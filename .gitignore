@@ -1,0 +1,4 @@
+# Haskell
+
+*.hi
+*.o

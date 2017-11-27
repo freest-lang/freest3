@@ -1,10 +1,23 @@
 {-# LANGUAGE FlexibleContexts #-} -- binary and infix functions need this
 
+module Parser () where
+
+import Types
 import Text.Parsec
 import qualified Text.Parsec.Token as P
 import Text.Parsec.Language (haskellDef)
 import Text.ParserCombinators.Parsec
 import Text.Parsec.Expr
+
+instance Read BasicType where
+  readsPrec _ s = case parserBasic s of
+    Right b -> [(b, "")]
+    Left m -> error "basic type parse error"
+
+instance Read Type where
+  readsPrec _ s = case parserType s of
+    Right t -> [(t, "")]
+    Left m -> error "basic type parse error"
 
 -- TOKENS
 
@@ -20,39 +33,39 @@ identifier = P.identifier lexer
 
 -- BASIC TYPES
 
-data BasicType =
-  IntType |
-  CharType |
-  BoolType |
-  UnitType
-  deriving (Eq, Show)
+-- data BasicType =
+--   IntType |
+--   CharType |
+--   BoolType |
+--   UnitType
+--   deriving (Eq, Show)
 
 parserBasic :: String -> Either ParseError BasicType
 parserBasic = parse parseBasicType "Context-free Sessions (Basic types)"
 
 parseBasicType :: Parser BasicType
 parseBasicType =
-      (Text.Parsec.try(string "Int")  >> return IntType)
-  <|> (Text.Parsec.try(string "Char") >> return CharType)
-  <|> (Text.Parsec.try(string "Bool") >> return BoolType)
+      (Text.Parsec.try (string "Int")  >> return IntType)
+  <|> (Text.Parsec.try (string "Char") >> return CharType)
+  <|> (Text.Parsec.try (string "Bool") >> return BoolType)
   <|> (string "()"   >> return UnitType)
   <?> "a basic type: Int, Char, Bool, or ()"
 
 -- TYPES
 
-data Type =
-  Skip |
-  Semi Type Type |
-  Out BasicType |
-  In BasicType |
-  Basic BasicType |
-  UnFun Type Type |
-  LinFun Type Type |
-  Pair Type Type |
-  Rec String Type |
-  Var String |
-  Forall String Type
-  deriving (Show)
+-- data Type =
+--   Skip |
+--   Semi Type Type |
+--   Out BasicType |
+--   In BasicType |
+--   Basic BasicType |
+--   UnFun Type Type |
+--   LinFun Type Type |
+--   Pair Type Type |
+--   Rec String Type |
+--   Var String |
+--   Forall String Type
+--   deriving (Show)
 -- TODO: internal and external choice, datatypes
 
 -- https://web.archive.org/web/20140528151730/http://legacy.cs.uu.nl/daan/parsec.html
