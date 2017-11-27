@@ -8,7 +8,7 @@ import Text.Parsec.Expr
 
 -- TOKENS
 
---lexer :: TokenParser ()
+-- lexer :: TokenParser ()
 lexer  = P.makeTokenParser haskellDef
 
 -- (haskellDef
@@ -26,15 +26,15 @@ data BasicType =
   BoolType |
   UnitType
   deriving (Eq, Show)
-  
+
 parserBasic :: String -> Either ParseError BasicType
 parserBasic = parse parseBasicType "Context-free Sessions (Basic types)"
 
 parseBasicType :: Parser BasicType
 parseBasicType =
-      (string "Int"  >> return IntType)
-  <|> (string "Char" >> return CharType)
-  <|> (string "Bool" >> return BoolType)
+      (Text.Parsec.try(string "Int")  >> return IntType)
+  <|> (Text.Parsec.try(string "Char") >> return CharType)
+  <|> (Text.Parsec.try(string "Bool") >> return BoolType)
   <|> (string "()"   >> return UnitType)
   <?> "a basic type: Int, Char, Bool, or ()"
 
@@ -64,11 +64,11 @@ parseType :: Parser Type
 parseType = buildExpressionParser table parseTerm
   <?> "a type: skip, T;T, ..., or ..."
 
-table = [ [binary "->" UnFun AssocRight, binary "-o" LinFun AssocRight ] -- -o not working
+table = [ [binary "->" UnFun AssocRight, binary "-o" LinFun AssocRight ] -- -o not working (now working)
         , [binary ";" Semi AssocLeft ]
         ]
 
-binary name fun assoc = Infix  (do{ string name; return fun }) assoc
+binary name fun assoc = Infix  (do{ Text.Parsec.try(string name); return fun }) assoc
 prefix name fun       = Prefix (do{ string name; return fun })
 
 parseTerm =
@@ -104,4 +104,3 @@ parseForall = do
   char '.'
   t <- parseType
   return $ Forall id t
-
