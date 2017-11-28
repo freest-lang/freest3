@@ -17,7 +17,7 @@ instance Read BasicType where
 instance Read Type where
   readsPrec _ s = case parserType s of
     Right t -> [(t, "")]
-    Left m -> error "basic type parse error"
+    Left m -> error "type parse error"
 
 -- TOKENS
 
@@ -74,7 +74,7 @@ parserType :: String -> Either ParseError Type
 parserType = parse parseType "Context-free Sessions (Types)"
 
 parseType :: Parser Type
-parseType = buildExpressionParser table parseTerm
+parseType = buildExpressionParser table   parseWithoutSpaces
   <?> "a type: skip, T;T, ..., or ..."
 
 table = [ [binary "->" UnFun AssocRight, binary "-o" LinFun AssocRight ] -- -o not working (now working)
@@ -84,9 +84,14 @@ table = [ [binary "->" UnFun AssocRight, binary "-o" LinFun AssocRight ] -- -o n
 binary name fun assoc = Infix  (do{ Text.Parsec.try(string name); return fun }) assoc
 prefix name fun       = Prefix (do{ string name; return fun })
 
+separator :: Parser ()
+separator = skipMany1 space
+
+parseWithoutSpaces = do{spaces;a<-parseTerm;spaces; return a}
+
 parseTerm =
       parens parseType
-  <|> (do { string "Skip";                 return Skip })
+  <|> (do { string "Skip";               return Skip })
   <|> (do { b <- parseBasicType;           return $ Basic b })
   <|> (do { char '?'; b <- parseBasicType; return $ In b })
   <|> (do { char '!'; b <- parseBasicType; return $ Out b })
@@ -94,7 +99,9 @@ parseTerm =
   <|> (do { id <- identifier;              return $ Var id })
   <|> parseRec
   <|> parseForall
+  -- <|> (do {a <- separator; return a})
   <?> "a type: Skip, T;T, !B, ?B, B, T->T, T-oT, (T,T), id, rec id.T, or forall id.t"
+
 
 parsePair = do
   char '('

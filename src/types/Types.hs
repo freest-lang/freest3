@@ -30,7 +30,7 @@ data Type =
   UnFun Type Type |
   LinFun Type Type |
   Pair Type Type |
-  ExternalChoice TypeMap | 
+  ExternalChoice TypeMap |
   InternalChoice TypeMap |
   Datatype TypeMap |
   Rec String Type |
