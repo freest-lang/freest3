@@ -2,3 +2,7 @@
 
 *.hi
 *.o
+*.html
+*.tix
+TestParse
+/.hpc/
