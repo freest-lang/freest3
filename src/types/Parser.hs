@@ -1,3 +1,4 @@
+-- https://web.archive.org/web/20140528151730/http://legacy.cs.uu.nl/daan/parsec.html
 {-# LANGUAGE FlexibleContexts #-} -- binary and infix functions need this
 
 module Parser () where
@@ -32,49 +33,29 @@ parens     = P.parens lexer
 identifier = P.identifier lexer
 
 -- BASIC TYPES
-
--- data BasicType =
---   IntType |
---   CharType |
---   BoolType |
---   UnitType
---   deriving (Eq, Show)
+--   IntType | CharType | BoolType | UnitType
 
 parserBasic :: String -> Either ParseError BasicType
 parserBasic = parse parseBasicType "Context-free Sessions (Basic types)"
 
 parseBasicType :: Parser BasicType
 parseBasicType =
-      (Text.Parsec.try (string "Int")  >> return IntType)
-  <|> (Text.Parsec.try (string "Char") >> return CharType)
-  <|> (Text.Parsec.try (string "Bool") >> return BoolType)
-  <|> (string "()"   >> return UnitType)
+      (spaces >> Text.Parsec.try (string "Int")  >> spaces >> return IntType)
+  <|> (spaces >> Text.Parsec.try (string "Char")  >> spaces  >> return CharType)
+  <|> (spaces >> Text.Parsec.try (string "Bool")  >> spaces >> return BoolType)
+  <|> (spaces >>  Text.Parsec.try (string "()") >> spaces  >> return UnitType)
   <?> "a basic type: Int, Char, Bool, or ()"
 
 -- TYPES
-
--- data Type =
---   Skip |
---   Semi Type Type |
---   Out BasicType |
---   In BasicType |
---   Basic BasicType |
---   UnFun Type Type |
---   LinFun Type Type |
---   Pair Type Type |
---   Rec String Type |
---   Var String |
---   Forall String Type
---   deriving (Show)
--- TODO: internal and external choice, datatypes
-
--- https://web.archive.org/web/20140528151730/http://legacy.cs.uu.nl/daan/parsec.html
+-- Skip | Semi Type Type | Out BasicType | In BasicType | Basic BasicType |
+-- UnFun Type Type | LinFun Type Type | Pair Type Type | ExternalChoice TypeMap |
+-- InternalChoice TypeMap | Datatype TypeMap | Rec String Type | Forall String Type | Var String |
 
 parserType :: String -> Either ParseError Type
 parserType = parse parseType "Context-free Sessions (Types)"
 
 parseType :: Parser Type
-parseType = buildExpressionParser table   parseWithoutSpaces
+parseType = buildExpressionParser table parseWithoutSpaces
   <?> "a type: skip, T;T, ..., or ..."
 
 table = [ [binary "->" UnFun AssocRight, binary "-o" LinFun AssocRight ] -- -o not working (now working)
@@ -84,22 +65,18 @@ table = [ [binary "->" UnFun AssocRight, binary "-o" LinFun AssocRight ] -- -o n
 binary name fun assoc = Infix  (do{ Text.Parsec.try(string name); return fun }) assoc
 prefix name fun       = Prefix (do{ string name; return fun })
 
-separator :: Parser ()
-separator = skipMany1 space
-
 parseWithoutSpaces = do{spaces;a<-parseTerm;spaces; return a}
 
 parseTerm =
-      parens parseType
-  <|> (do { string "Skip";               return Skip })
+      -- parens parseType
+   (do { string "Skip";               return Skip })
   <|> (do { b <- parseBasicType;           return $ Basic b })
   <|> (do { char '?'; b <- parseBasicType; return $ In b })
   <|> (do { char '!'; b <- parseBasicType; return $ Out b })
   <|> parsePair
-  <|> (do { id <- identifier;              return $ Var id })
   <|> parseRec
   <|> parseForall
-  -- <|> (do {a <- separator; return a})
+  <|> (do { id <- identifier;              return $ Var id })
   <?> "a type: Skip, T;T, !B, ?B, B, T->T, T-oT, (T,T), id, rec id.T, or forall id.t"
 
 
@@ -113,6 +90,7 @@ parsePair = do
 
 parseRec = do
   string "rec"
+  space
   id <- identifier
   char '.'
   t <- parseType
@@ -120,6 +98,7 @@ parseRec = do
 
 parseForall = do
   string "forall"
+  space
   id <- identifier
   char '.'
   t <- parseType

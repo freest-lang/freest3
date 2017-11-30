@@ -5,4 +5,4 @@
 *.html
 *.tix
 TestParse
-/.hpc/
+.hpc/
