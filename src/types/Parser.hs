@@ -10,6 +10,10 @@ import Text.Parsec.Language (haskellDef)
 import Text.ParserCombinators.Parsec
 import Text.Parsec.Expr
 
+--TODO: remove ??
+import qualified Data.Map.Strict as Map
+
+
 instance Read BasicType where
   readsPrec _ s = case parserBasic s of
     Right b -> [(b, "")]
@@ -22,16 +26,21 @@ instance Read Type where
 
 -- TOKENS
 
--- lexer :: TokenParser ()
-lexer  = P.makeTokenParser haskellDef
+lexer :: P.TokenParser ()
+lexer  = P.makeTokenParser
+        (haskellDef
+        {P.reservedNames = ["Int","Bool","Char", "Skip", "rec", "forall"{-unit? ,()-}]
+         ,P.reservedOpNames = [";", "!", "?", "->", "-o", "+", "&"]
+        })
 
--- (haskellDef
-         -- { P.reservedOpNames = [";", "!", "?", "->", "-o", "rec", "forall"]
-         -- })
-
+reservedOp = P.reservedOp lexer
 parens     = P.parens lexer
 identifier = P.identifier lexer
+reserved = P.reserved lexer
 
+rec = reserved "rec"
+forall = reserved "forall"
+skip = reserved "Skip"
 -- BASIC TYPES
 --   IntType | CharType | BoolType | UnitType
 
@@ -40,9 +49,9 @@ parserBasic = parse parseBasicType "Context-free Sessions (Basic types)"
 
 parseBasicType :: Parser BasicType
 parseBasicType =
-      (spaces >> Text.Parsec.try (string "Int")  >> spaces >> return IntType)
-  <|> (spaces >> Text.Parsec.try (string "Char")  >> spaces  >> return CharType)
-  <|> (spaces >> Text.Parsec.try (string "Bool")  >> spaces >> return BoolType)
+      (spaces >> reserved "Int"  >> spaces >> return IntType)
+  <|> (spaces >> reserved "Char"  >> spaces  >> return CharType)
+  <|> (spaces >> reserved "Bool"  >> spaces >> return BoolType)
   <|> (spaces >>  Text.Parsec.try (string "()") >> spaces  >> return UnitType)
   <?> "a basic type: Int, Char, Bool, or ()"
 
@@ -62,23 +71,26 @@ table = [ [binary "->" UnFun AssocRight, binary "-o" LinFun AssocRight ] -- -o n
         , [binary ";" Semi AssocLeft ]
         ]
 
-binary name fun assoc = Infix  (do{ Text.Parsec.try(string name); return fun }) assoc
+binary name fun assoc = Infix  (do{ reservedOp name; return fun }) assoc
 prefix name fun       = Prefix (do{ string name; return fun })
 
 parseWithoutSpaces = do{spaces;a<-parseTerm;spaces; return a}
 
+-- <|> parens parseType -- precedence problems??
+-- read "rec a . ((Int), Bool)" :: Type
 parseTerm =
-      -- parens parseType
-   (do { string "Skip";               return Skip })
-  <|> (do { b <- parseBasicType;           return $ Basic b })
-  <|> (do { char '?'; b <- parseBasicType; return $ In b })
-  <|> (do { char '!'; b <- parseBasicType; return $ Out b })
+   (do { skip;                     return Skip })
+  <|> (do { b <- parseBasicType;            return $ Basic b })
+  <|> (do { reservedOp "?"; b <- parseBasicType;  return $ In b })
+  <|> (do { reservedOp "!"; b <- parseBasicType;  return $ Out b })
   <|> parsePair
+  <|> parens parseType
+  <|> parseExternalChoice
+  <|> parseInternalChoice
   <|> parseRec
   <|> parseForall
-  <|> (do { id <- identifier;              return $ Var id })
+  <|> (do { id <- identifier;               return $ Var id })
   <?> "a type: Skip, T;T, !B, ?B, B, T->T, T-oT, (T,T), id, rec id.T, or forall id.t"
-
 
 parsePair = do
   char '('
@@ -89,17 +101,38 @@ parsePair = do
   return $ Pair t u
 
 parseRec = do
-  string "rec"
-  space
+  rec
+  --reserved "rec"
+  -- space
   id <- identifier
   char '.'
   t <- parseType
   return $ Rec id t
 
 parseForall = do
-  string "forall"
-  space
+  forall
+  -- space
   id <- identifier
   char '.'
   t <- parseType
   return $ Forall id t
+
+parseInternalChoice = do
+  reservedOp "+"
+  char '{'
+  a <- sepBy1 parseInternalPair (char ',')
+  char '}'
+  return $ InternalChoice $ Map.fromList a
+
+parseExternalChoice = do
+  reservedOp "&"
+  char '{'
+  a <- sepBy1 parseInternalPair (char ',')
+  char '}'
+  return $ ExternalChoice $ Map.fromList a
+
+parseInternalPair = do
+  id <- identifier
+  char ':'
+  ptype <- parseType -- TODO: what is this type? Basic?
+  return (id,ptype)
