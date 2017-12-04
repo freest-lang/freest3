@@ -33,14 +33,13 @@ test12 = TestCase (assertEqual "for (read \"&{a:Int,b:Bool}\"),"
       (ExternalChoice (Map.fromList [("a",Basic IntType),("b",Basic BoolType)])) (read "&{a:Int,b:Bool}" :: Type))
 test13 = TestCase (assertEqual "for (read \"+{a:Int,b:Bool}\"),"
       (InternalChoice (Map.fromList [("a",Basic IntType),("b",Basic BoolType)])) (read "+{a:Int,b:Bool}" :: Type))
+test14 = TestCase (assertEqual "for (read \"[a:Int,b:Bool]\"),"
+      (Datatype (Map.fromList [("a",Basic IntType),("b",Basic BoolType)])) (read "[a:Int,b:Bool]" :: Type))
 
--- TODO : Datatype
---test14 = Datatype TypeMap
 test15 = TestCase (assertEqual "for (read \"rec a.Bool\")," (Rec "a" (Basic BoolType)) (read "rec a.Bool" :: Type))
 test16 = TestCase (assertEqual "for (read \"forall a.Bool\")," (Forall "a" (Basic BoolType)) (read "forall a.Bool" :: Type))
 test17 = TestCase (assertEqual "for (read \"z\")," (Var "z") (read "z" :: Type))
 
--- TODO: Parser error )fix
 -- Precedence
 test18 = TestCase (assertEqual "for (read \"(Char)\")," (Basic CharType) (read "(Char)" :: Type))
 test19 = TestCase (assertEqual "for (read \"(Skip)\")," Skip (read "(Skip)" :: Type))
@@ -54,35 +53,25 @@ test24 = TestCase (assertEqual "for (read \" Int\")," IntType (read " Int " :: B
 test25 = TestCase (assertEqual "for (read \"Int ; Bool\")," (Semi (Basic IntType) (Basic BoolType)) (read " Int ; Bool " :: Type))
 test26 = TestCase (assertEqual "for (read \"Int -> Int\")," (UnFun (Basic IntType) (Basic IntType)) (read " Int -> Int " :: Type))
 test27 = TestCase (assertEqual "for (read \"Int -o Int\")," (LinFun (Basic IntType) (Basic IntType)) (read " Int -o Int " :: Type))
-test28 = TestCase (assertEqual "for (read \"( Int , Int )\")," (Pair (Basic IntType) (Basic IntType)) (read "( Int , Int )" :: Type)) -- TODO: Parser error )fix
+test28 = TestCase (assertEqual "for (read \"( Int , Int )\")," (Pair (Basic IntType) (Basic IntType)) (read "( Int , Int )" :: Type))
 test29 = TestCase (assertEqual "for (read \"rec a . A\")," (Rec "a" (Var "A")) (read "rec a . A" :: Type))
 
 test30 = TestCase (assertEqual "for (read \"+{i : Int, b : Bool}\"),"
       (InternalChoice (Map.fromList [("i",Basic IntType),("b",Basic BoolType)])) (read "+{i : Int, b : Bool}" :: Type))
 
--- read "+{i : Int, b : Bool}" :: Type
+--more complex structures
+test31 = TestCase (assertEqual "for (read \"((Int,Bool),a)\")," (Pair (Pair (Basic IntType)(Basic BoolType)) (Var "a")) (read "((Int,Bool),a)" :: Type))
+test32 = TestCase (assertEqual "for (read \"rec a . (rec i . Int)\")," (Rec "a" (Rec "i" (Basic IntType))) (read "rec a . (rec i . Int)" :: Type))
+test33 = TestCase (assertEqual "for (read \"forall a.(forall b.Bool)\")," (Forall "a" (Forall "b" (Basic BoolType))) (read "forall a.(forall b.Bool)" :: Type))
 
--- test40 = TestCase (assertEqual "for (read \" Skip ; Skip \")," (Semi Skip Skip) (read " Skip ; Skip " :: Type))
+-- associativity
+test34 = TestCase (assertEqual "for (read \"f -o f -> f\")," (LinFun (Var "f")(UnFun (Var "f")(Var "f"))) (read "f -o f -> f" :: Type))
+test35 = TestCase (assertEqual "for (read \"(f -o f) -> f\")," (UnFun (LinFun (Var "f")(Var "f")) (Var "f")) (read "(f -o f) -> f" :: Type))
+test36 = TestCase (assertEqual "for (read \"Skip;Skip;Skip\")," (Semi (Semi Skip Skip) Skip) (read "Skip;Skip;Skip" :: Type))
 
-
-
-
---TODO:
--- test try
--- test pairs of pairs
--- rec rec
--- forall forall
--- -> ->
--- -o -o
--- ; ;
--- maybe InternalChoice and ExternalChoice
--- comments: nested comments; comments inside types; block and line comments
--- test not followed parser
--- ex:
---  read "(Internal,Int)" :: Type - Pair (Var "Internal") (Basic IntType)
--- read "(Skiper,Int)" :: Type
--- TESTAR parser notFollowedBy nos operadores -o e ->
--- parens type combinated with other to evaluate precedence
+test37 = TestCase (assertEqual "for (read \"(Internal,Int)\")," (Pair (Var "Internal") (Basic IntType)) (read "(Internal,Int)" :: Type))
+test38 = TestCase (assertEqual "for (read \"(Skiper,Int)\")," (Pair (Var "Skiper") (Basic IntType)) (read "(Skiper,Int)" :: Type))
+test39 = TestCase (assertEqual "for (read \"a -> {-A comment inside-} b\")," (UnFun (Var "a") (Var "b")) (read "a -> {-A comment inside-} b" :: Type))
 
 
 validTests = TestList [TestLabel "test1" test1,
@@ -98,7 +87,7 @@ validTests = TestList [TestLabel "test1" test1,
                        TestLabel "test11" test11,
                        TestLabel "test12" test12,
                        TestLabel "test13" test13,
-                       -- TestLabel "test14" test14,
+                       TestLabel "test14" test14,
                        TestLabel "test15" test15,
                        TestLabel "test16" test16,
                        TestLabel "test17" test17,
@@ -114,7 +103,16 @@ validTests = TestList [TestLabel "test1" test1,
                        TestLabel "test27" test27,
                        TestLabel "test28" test28,
                        TestLabel "test29" test29,
-                       TestLabel "test30" test30
+                       TestLabel "test30" test30,
+                       TestLabel "test31" test31,
+                       TestLabel "test32" test32,
+                       TestLabel "test33" test33,
+                       TestLabel "test34" test34,
+                       TestLabel "test35" test35,
+                       TestLabel "test36" test36,
+                       TestLabel "test37" test37,
+                       TestLabel "test38" test38,
+                       TestLabel "test39" test39
                       ]
 
 --invalidTests = TestList [TestLabel "test5" test4]
@@ -132,7 +130,8 @@ main = do
     runAll
     return ()
 
--- INVALID TESTS
+-- TODO: test eq and show
+-- TODO: INVALID TESTS
 
 -- Invalid whitespaces
 -- testX = TestCase (assertEqual "for (read \"! Int\")," (Out IntType) (read "! Int" :: Type))

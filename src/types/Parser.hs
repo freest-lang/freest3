@@ -9,8 +9,6 @@ import qualified Text.Parsec.Token as P
 import Text.Parsec.Language (haskellDef)
 import Text.ParserCombinators.Parsec
 import Text.Parsec.Expr
-
---TODO: remove ??
 import qualified Data.Map.Strict as Map
 
 
@@ -37,6 +35,7 @@ reservedOp = P.reservedOp lexer
 parens     = P.parens lexer
 identifier = P.identifier lexer
 reserved = P.reserved lexer
+comma = P.comma lexer
 
 rec = reserved "rec"
 forall = reserved "forall"
@@ -79,14 +78,15 @@ parseWithoutSpaces = do{spaces;a<-parseTerm;spaces; return a}
 -- <|> parens parseType -- precedence problems??
 -- read "rec a . ((Int), Bool)" :: Type
 parseTerm =
-   (do { skip;                     return Skip })
+  Text.Parsec.try (parens parseType)
+  <|>  (do { skip;                     return Skip })
   <|> (do { b <- parseBasicType;            return $ Basic b })
   <|> (do { reservedOp "?"; b <- parseBasicType;  return $ In b })
   <|> (do { reservedOp "!"; b <- parseBasicType;  return $ Out b })
   <|> parsePair
-  <|> parens parseType
   <|> parseExternalChoice
   <|> parseInternalChoice
+  <|> parseDataType
   <|> parseRec
   <|> parseForall
   <|> (do { id <- identifier;               return $ Var id })
@@ -120,19 +120,29 @@ parseForall = do
 parseInternalChoice = do
   reservedOp "+"
   char '{'
-  a <- sepBy1 parseInternalPair (char ',')
+  a <- sepBy1 parseInternalPair comma
+  -- a <- sepBy1 parseInternalPair (char ',')
   char '}'
   return $ InternalChoice $ Map.fromList a
 
 parseExternalChoice = do
   reservedOp "&"
   char '{'
-  a <- sepBy1 parseInternalPair (char ',')
+  a <- sepBy1 parseInternalPair comma
   char '}'
   return $ ExternalChoice $ Map.fromList a
+
+parseDataType = do
+  char '['
+  a <- sepBy1 parseInternalPair comma
+  char ']'
+  return $ Datatype $ Map.fromList a
+
+-- TODO: parens inside ?
+-- read "+{(i : Int), b : Bool}" :: Type
 
 parseInternalPair = do
   id <- identifier
   char ':'
-  ptype <- parseType -- TODO: what is this type? Basic?
+  ptype <- parseType
   return (id,ptype)
