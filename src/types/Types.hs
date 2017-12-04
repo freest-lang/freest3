@@ -41,3 +41,8 @@ data Type =
 type Id = String
 
 type TypeMap = Map.Map Id Type
+
+-- TODO:
+-- instance Show BasicType where
+--   show IntType = "Int"
+-- instance Show Typez

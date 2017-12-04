@@ -11,7 +11,7 @@ import Text.ParserCombinators.Parsec
 import Text.Parsec.Expr
 import qualified Data.Map.Strict as Map
 
-
+-- TODO : check list
 instance Read BasicType where
   readsPrec _ s = case parserBasic s of
     Right b -> [(b, "")]
@@ -21,6 +21,7 @@ instance Read Type where
   readsPrec _ s = case parserType s of
     Right t -> [(t, "")]
     Left m -> error "type parse error"
+
 
 -- TOKENS
 
@@ -34,12 +35,13 @@ lexer  = P.makeTokenParser
 reservedOp = P.reservedOp lexer
 parens     = P.parens lexer
 identifier = P.identifier lexer
-reserved = P.reserved lexer
-comma = P.comma lexer
+reserved   = P.reserved lexer
+comma      = P.comma lexer
 
-rec = reserved "rec"
+rec    = reserved "rec"
 forall = reserved "forall"
-skip = reserved "Skip"
+skip   = reserved "Skip"
+
 -- BASIC TYPES
 --   IntType | CharType | BoolType | UnitType
 
@@ -66,7 +68,7 @@ parseType :: Parser Type
 parseType = buildExpressionParser table parseWithoutSpaces
   <?> "a type: skip, T;T, ..., or ..."
 
-table = [ [binary "->" UnFun AssocRight, binary "-o" LinFun AssocRight ] -- -o not working (now working)
+table = [ [binary "->" UnFun AssocRight, binary "-o" LinFun AssocRight ]
         , [binary ";" Semi AssocLeft ]
         ]
 
@@ -75,8 +77,6 @@ prefix name fun       = Prefix (do{ string name; return fun })
 
 parseWithoutSpaces = do{spaces;a<-parseTerm;spaces; return a}
 
--- <|> parens parseType -- precedence problems??
--- read "rec a . ((Int), Bool)" :: Type
 parseTerm =
   Text.Parsec.try (parens parseType)
   <|>  (do { skip;                     return Skip })

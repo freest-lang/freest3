@@ -1,5 +1,4 @@
 -- runTestTT allTests
--- main
 -- ghc -fhpc TestParse.hs --make
 -- ./TestParse
 -- hpc report TestParse --exclude=Main --exclude=QC
