@@ -1,0 +1,158 @@
+%\documentclass[preprint]{sigplanconf}
+\documentclass{sigplanconf}
+
+% ICFP 2016:
+% By Wednesday, March 16 2016, 15:00 (UTC), submit a full paper of at
+% most 12 pages (6 pages for an Experience Report), in standard
+% SIGPLAN conference format, including figures but excluding
+% bibliography. 
+
+% The following \documentclass options may be useful:
+
+% preprint      Remove this option only once the paper is in final form.
+% 10pt          To set in 10-point type instead of 9-point.
+% 11pt          To set in 11-point type instead of 9-point.
+% authoryear    To obtain author/year citation style instead of numeric.
+
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{stmaryrd}
+\usepackage{listings,color}
+\usepackage{alltt}
+\usepackage{flushend}
+\usepackage[utf8]{inputenc} % for proper diacritics: Universität, Hüttel, Luís
+\usepackage[T1]{fontenc}
+
+\input{macros}
+%%% for the draft
+% \renewcommand\vv[1]{}
+% \renewcommand\pt[1]{}
+
+\begin{document}
+\toappear{}
+% \special{papersize=8.5in,11in}
+% \setlength{\pdfpageheight}{\paperheight}
+% \setlength{\pdfpagewidth}{\paperwidth}
+
+% \conferenceinfo{ICFP'16}{September 19--21, 2016, Nara, Japan} 
+% \copyrightyear{2016} 
+% \copyrightdata{978-1-nnnn-nnnn-n/yy/mm} 
+% \doi{nnnnnnn.nnnnnnn}
+
+% Uncomment one of the following two, if you are not going for the 
+% traditional copyright transfer agreement.
+
+%\exclusivelicense                % ACM gets exclusive license to publish, 
+                                  % you retain copyright
+
+%\permissiontopublish             % ACM gets nonexclusive license to publish
+                                  % (paid open-access papers, 
+                                  % short abstracts)
+
+%\titlebanner{banner above paper title}        % These are ignored unless
+%\preprintfooter{short description of paper}   % 'preprint' option specified.
+
+\title{Context-Free Session Types}%Towards
+%\subtitle{Subtitle Text, if any}
+
+\authorinfo{Peter Thiemann}
+           {Universität Freiburg, Germany}
+           {thiemann@acm.org}
+\authorinfo{Vasco T. Vasconcelos}
+           {LaSIGE and University of Lisbon, Portugal}
+           {vmvasconcelos@ciencias.ulisboa.pt}
+
+\maketitle
+
+\begin{abstract}
+Session types describe structured communication on heterogeneously
+typed channels at a high level.
+Their tail-recursive structure imposes a protocol that can be
+described by a regular language. 
+The types of transmitted values are drawn from the underlying
+functional language, abstracting from the
+details of serializing values of structured data types.
+
+Context-free session types extend session types by allowing nested
+protocols that are not restricted to tail recursion. Nested protocols
+correspond to deterministic context-free languages. Such protocols are
+interesting in their own right, but they are particularly suited to
+describe the low-level serialization of tree-structured data in a
+type-safe way.  
+
+We establish the metatheory of context-free session types, prove that
+they properly generalize standard (two-party) session
+types, and take first steps towards type checking by showing
+that type equivalence is decidable.
+\end{abstract}
+% well we  (hope to) achieve the last two items
+
+\category{D.3.3}{Language Constructs and Features}{Concurrent programming structures}
+\category{D.3.1}{Formal Definitions and Theory}{}
+
+% general terms are not compulsory anymore, 
+% you may leave them out
+% \terms
+% term1, term2
+
+\keywords
+session types, semantics, type checking
+
+\pagestyle{plain}
+
+%  HOW DO WE ORGANISE THE PAPER?
+
+% * 1 - 1.5 pages introduction, perhaps giving some small example already
+% * >=2 pages motivation discussing a couple of progressively more complicated examples that highlight that problems and features
+% --- do you think a running example is needed? I suppose that technical points can be explained with mini examples made on the spot or by reference to one of the examples from the motivation
+% * Then defining formalities
+% ** introducing types and type equiv
+% ** expressions, statics, and dynamics
+% * Then properties (perhaps better interleaved with the formalities)
+% ** of types and equivalence
+% ** type soundness
+% * Then type checking
+% ** specification
+% ** decidability
+% * Conservative extension
+% * Related work
+% * Conclusion
+
+\input{intro}
+\input{examples}
+\input{types}
+\input{processes}
+\input{related}
+\input{conclusion}
+
+\acks % Acknowledgments, if needed.
+
+The authors would like to thank Philip Wadler, Simon Gay, Sam Lindley,
+Julian Lange, Hans Hüttel, and Luís Caires for fruitful discussions
+and pointers.
+
+% We recommend abbrvnat bibliography style.
+
+\bibliographystyle{abbrvnat}
+\bibliography{biblio}
+
+% The bibliography should be embedded for final submission.
+
+% \begin{thebibliography}{}
+% \softraggedright
+
+% \bibitem[Smith et~al.(2009)Smith, Jones]{smith02}
+% P. Q. Smith, and X. Y. Jones. ...reference text...
+
+% \end{thebibliography}
+
+
+% \clearpage{}
+% \input{appendix}
+
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:

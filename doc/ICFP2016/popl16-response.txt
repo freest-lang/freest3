@@ -1,0 +1,74 @@
+Thanks to the reviewers for their comments.
+
+Reviewer#A: first order session types
+
+The goal here is to provide a typed ground for low-level serialization, to be used in distributed systems where channel passing is difficult, if not impossible, to accomplish.
+
+No doubt that the code in SILL would solve the problem, but at the expense of channel creation and passing, something that we want to avoid. A similar exercise could be conducted on the Gay and Vasconcelos language [8]. (we'll add the reference to SILL, of course)
+Needless to say that the repeated channel creation is costly and counter to our intention to have a low-level system
+that governs a protocol on a single channel.
+
+We tried the second alternative (where the session type over-approximates the legal communications) using the expression server (section 2.4). For that we used the pi calculus with session types (more concretely, the SePi language, SEFM'14, LNCS 8368, another missed reference), and ended up with 100+ lines of code (excluding a stack encoding) that incorporate all sorts of runtime checks. This certainly not the way to go.
+
+We will certainly have a look at the third alternative (dependently typed session types), but the immediate benefit is not obvious, as stated by the reviewer. A preliminary investigation shows that the sendtree operation should be easy to
+type using dependent types; something like
+(t : Tree) -> Channel t
+- where Channel is a suitable type level function - will do.
+However, it may be tricky to write the receiving end. Essentially, you get a channel of type
+exists t. Channel t
+but this means you'd first have to have t before you can elaborate the type of the channel to receive t.
+That seems impossible to accomplish.
+
+Reviewer#B: polymorphic continuation channels
+
+Exactly. The act of sending a message is unrelated to whatever comes next on the channel.
+
+Reviewer#B: servers that avoid unnecessary communication
+
+We are not arguing for protocols that depend on the values transmitted; for that we would need dependent types, as suggested by the reviewer. Instead we let the server decide whether it requires further subterms, and communicate the decision to the client, as captured with a type such as:
+
+type TermChan = +{
+  Const : !int,
+  Add : TermChan ; TermChan,
+  Mult : TermChan ; &{more: TermChan, done: skip}
+}
+
+We don't understand the comment negating "lack of space". The CFP says: "Each paper should have no more than 12 pages of text, excluding bibliography, in at least 9 pt format." and we are at 12 pages + bibliography.
+
+Reviewer#B:  synchronous and buffered semantics
+
+Synchronous semantics is rendez-vous based: blocking output and blocking input. Buffered semantics assumes underlying unbounded buffers from where processes may read and write. As a result we have unblocking output (and possibly blocking input).
+
+Reviewer#C: larger class than context-free?
+
+Theorem 3.18 shows that our syntax yields omega-context-free traces.
+
+Reviewer#C: bisimulation
+
+The underlying graph is the obvious transition system where the nodes are session types and transitions are labeled with the trace action (Def.3.2). The bisimulation acts on that graph as in the related paper by Gay and Hole.
+
+Reviewer#C: Lemma 3.12: straightforward application of coinduction: why?
+
+\approx is defined as a gfp and the proof applies Tarski's fixpoint theorem.
+
+Reviewer#C: "separate coinductive argument"
+
+It's a routine application of Tarski.
+
+Reviewer#C: weak by inspection-shaky proof
+
+By examining the construction, it is clear that all DPDAs have the same number of states as the DPDA in Fig.3. Hence, they have the same structure. Fig.3 defines the priorities in line 1 and it is trivial to see that each transition increases the priority.
+
+Reviewer#C suggests applying Bonchi&Pous
+
+The speciality of Bonchi&Pous is the definition of a clever bisimulation-up-to. Moreover, their work applies to regular languages, whereas we are concerned with omega-context-free languages. We don't see how their method could be applicable to our problem as we are dealing with DPDAs, not NFAs.
+
+Reviewer#D: is the result on the decidability of type equivalence significant enough
+
+It implies that type checking is decidable.
+
+Reviewer#D: conjecture (3.16) and its relation to Theorem 3.20
+
+The proof wasn't finished by the time of the submission, but it turned out to be straightforward.
+Conjecture 3.16 is needed in the proof of 3.20:
+One direction of the "iff" in the first line of the proof is 3.16, the other is 3.17.

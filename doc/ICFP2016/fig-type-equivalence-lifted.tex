@@ -1,0 +1,43 @@
+\begin{figure}[tp]
+  \begin{gather*}
+    \frac
+    {T \TypeEquiv T'}
+    { \forall \alpha.T \TypeEquiv \forall \alpha. T'}
+    \qquad
+    \alpha \TypeEquiv \alpha
+    \qquad
+    B \TypeEquiv B
+    \\
+    \frac
+    { T_1 \TypeEquiv T_1' \quad T_2 \TypeEquiv T_2'}
+    {T_1 \to T_2 \TypeEquiv T_1' \to T_2'}
+    \qquad
+    \frac
+    { T_1 \TypeEquiv T_1' \quad T_2 \TypeEquiv T_2'}
+    { T_1 \multimap T_2 \TypeEquiv T_1' \multimap T_2'}
+    \\
+    \frac
+    {T_1 \TypeEquiv T_1' \quad T_2 \TypeEquiv T_2'}
+    { T_1 \otimes T_2 \TypeEquiv T_1' \otimes T_2'}
+    \qquad
+    \frac
+    {(\forall i\in I)~ T_i \TypeEquiv T_i'}
+    { [l_i:T_i]_{i\in I} \TypeEquiv [l_i:T_i']_{i\in I}}
+    \\
+    \frac
+    { T\subs{\mu x.T}x \TypeEquiv T'}
+    { \mu x.T \TypeEquiv T'}
+    \qquad
+    \frac
+    { T \TypeEquiv T'\subs{\mu x.T'}x}
+    { T \TypeEquiv \mu x.T'}
+  \end{gather*}
+  \caption{Type equivalence lifted to all types}
+  \label{fig:type-equivalence-lifted}
+\end{figure}
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

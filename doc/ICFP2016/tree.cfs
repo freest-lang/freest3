@@ -1,0 +1,32 @@
+type XformChan = oplus{
+  Leaf: skip,
+  Node: !int;XformChan;XformChan;?int}
+
+transform : forallalpha.Tree -> XformChan;alpha -> Tree otimes alpha
+transform Leaf c =
+  (Leaf,select Leaf c)
+transform (Node x l r) c =
+  let c1 = select Node c
+      c2 = send c x
+      l1,c3 = transform l c2
+      r1,c4 = transform r c3
+      x1,c5 = receive c4
+  in (Node x1 l1 r1,c5)
+  
+treeSum : forallalpha.dualof XformChan; alpha -o int otimes alpha
+treeSum c =
+  case c of
+    Leaf: lambdac1.(0,c1)
+    Node: lambdac1.let x,c2 = receive c1
+                  l,c3 = treeSum c2
+                  r,c4 = treeSum c3
+                  c5 = send c4 (x+l+r)
+              in (x+l+r,c5)
+
+aTree = Node 3 Leaf (Node 4 Leaf Leaf)
+
+go : Tree -> Tree
+go aTree =
+  let c, s = new XformChan
+  in fork (fst (treeSum s));
+     fst (transform aTree c)

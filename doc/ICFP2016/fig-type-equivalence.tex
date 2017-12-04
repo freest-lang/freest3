@@ -1,0 +1,78 @@
+\begin{figure}[tp]
+  \begin{align*}
+    % & F (R) \subseteq R \qquad R \subseteq F (R) \\
+    F &:  \Rangeof{S} \times \Rangeof{S} \to \Rangeof{S} \times \Rangeof{S} \\
+    F (R) &= \{ (\skipk, \skipk) \} \\
+    & \cup \{ (!B, !B) \} \\
+    & \cup \{ (?B, ?B) \} \\
+    & \cup \{ ((S_1; S_2), (S_1'; S_2')) \mid (S_1, S_1'), (S_2, S_2') \in R \} \\
+    & \cup \{ (\oplus\{l_i\colon S_i\}_{i\in I}, \oplus\{l_i\colon S_i'\}_{i\in I}) \mid \{ (S_i, S_i') \mid i\in I\} \subseteq R \} \\
+    & \cup \{ (\&\{l_i\colon S_i\}_{i\in I}, \&\{l_i\colon S_i'\}_{i\in I}) \mid \{ (S_i, S_i') \mid i\in I\} \subseteq R \} \\
+    & \cup \{ (\mu x.S, S') \mid (S[\mu x.S/x], S') \in R \} \\
+    & \cup \{ (S, \mu x.S') \mid (S, S'[\mu x.S'/x]) \in R \} \\
+            &\\
+    & \cup \{ ((S_1; S_2), S_2') \mid (S_2, S_2') \in R, (S_1, \skipk) \in R \} \\
+    & \cup \{ ((S_1; S_2), S_1') \mid (S_1, S_1') \in R, (S_2, \skipk) \in R \} \\
+    & \cup \{ (S_1, (S_1'; S_2')) \mid (S_1, S_1') \in R, (S_2', \skipk) \in R \} \\
+    & \cup \{ (S_2, (S_1'; S_2')) \mid (S_2, S_2') \in R, (S_1', \skipk) \in R \} \\
+    \\
+      & \cup \{ ((S;S_3),(S_1';S'))
+        \begin{array}[t]{ll}
+          \mid
+          & ((S_1;S_2), S) \in R,\\
+          & (S',(S_2';S_3')) \in R, \\
+          & (S_1, S_1') \in R,\\
+          & (S_2, S_2') \in R,\\
+          & (S_3, S_3') \in R\}
+        \end{array}
+    \\
+      & \cup \{ ((S_1';S'),(S;S_3))
+        \begin{array}[t]{ll}
+          \mid
+          & ((S_1;S_2), S) \in R,\\
+          & (S',(S_2';S_3')) \in R, \\
+          & (S_1, S_1') \in R,\\
+          & (S_2, S_2') \in R,\\
+          & (S_3, S_3') \in R\}
+        \end{array}
+    \\
+    % \\
+    % & \cup \{ (((S_1;S_2);S_3),S_4) \mid ((S_1;(S_2;S_3)), S_4) \in R\}\\
+    % & \cup \{ ((S_1;(S_2;S_3)),S_4) \mid (((S_1;S_2);S_3), S_4) \in R\}\\
+    % & \cup \{ (S_1,((S_2;S_3);S_4)) \mid  (S_1,(S_2;(S_3;S_4))) \in R\}\\
+    % & \cup \{ (S_1,(S_2;(S_3;S_4))) \mid  (S_1,((S_2;S_3);S_4)) \in
+    % R\}\\
+    \\
+    & \cup
+    \begin{array}[t]{ll}
+      \{ & ((\oplus\{l_i\colon S_i\}_{i\in I}; S), \oplus\{l_i\colon
+      S_i'\}_{i\in I}),
+      \\ & ((\&\{l_i\colon S_i\}_{i\in I}; S), \&\{l_i\colon S_i'\}_{i\in I})
+      \\ \mid & \qquad \{ ((S_i; S), S_i') \mid i\in I\} \subseteq R \}
+    \end{array}
+    \\
+    & \cup
+    \begin{array}[t]{ll}
+      \{ & ((\oplus\{l_i\colon S_i\}_{i\in I}), \oplus\{l_i\colon S_i'\}_{i\in I}; S)
+      \\ & ((\&\{l_i\colon S_i\}_{i\in I}), \&\{l_i\colon S_i'\}_{i\in I}; S)
+      \\\mid& \qquad \{ (S_i, (S_i';S)) \mid i\in I\} \subseteq R \}
+    \end{array}
+    \\
+    \\
+    \approx &\subseteq \Rangeof{S} \times \Rangeof{S} \\
+    \approx & = \GFP (F)
+  \end{align*}
+  % \begin{align*}
+% %     \cup & \{ ((\skipk;S_1), S_2) \mid (S_1, S_2) \in R\} \\
+% %     \cup & \{ ((S_1;\skipk), S_2) \mid (S_1, S_2) \in R\} \\
+% %     \cup & \{ (S_1,(\skipk;S_2)) \mid (S_1, S_2) \in R\} \\
+% %     \cup & \{ (S_1,(S_2;\skipk)) \mid (S_1, S_2) \in R\}\\
+%   \end{align*}
+  \caption{Session type equivalence}
+  \label{fig:type-equivalence}
+\end{figure}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

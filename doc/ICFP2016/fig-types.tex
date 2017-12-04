@@ -1,0 +1,35 @@
+\begin{figure}[t]
+  \begin{align*}
+    \prekind \grmeq& \kinds \mid \kindt \mid \kindsch  \qquad  \kinds
+                     < \kindt < \kindsch &&
+\text{Prekinds}
+%\text{Prekinds: session, type, or scheme}
+    \\
+    m \grmeq & \Unrestricted \grmor \Linear \;\quad\qquad \Unrestricted <
+               \Linear&&
+\text{Multiplicity}
+%\text{Multiplicity: unrestricted or linear}
+    \\
+    \kind \grmeq& \prekind^m && \text{Kinds}
+    \\
+    T \grmeq& \skipk \mid T;T \grmor \,!B \grmor \,?B  \grmor
+    && \text{Types}
+    \\
+    & \oplus\{l_i\colon T_i\}_{i\in I} \grmor \&\{l_i\colon T_i\}_{i\in I}\\
+    & B \grmor T\to T \grmor T\multimap T\\
+    & T \otimes T \grmor [l_i\colon T_i]_{i\in I}\\
+    & \mu x.T \grmor x \grmor \forall\alpha.T  \grmor \alpha 
+    \\
+    \Delta \grmeq& \cdot \mid \Delta, x :: \kind \mid \Delta, \alpha
+                   :: \kind && \text{Kind environments}
+    % \\
+    % \Gamma \grmeq& \cdot \mid \Gamma, x\colon T && \text{Type environments}
+  \end{align*}
+  \caption{Syntax of kinds, types, and kind environments}
+  \label{fig:types}
+\end{figure}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

@@ -1,0 +1,245 @@
+% notes
+\usepackage{xcolor}
+\newcommand{\todo}[2]{[{\color{blue}\textbf{#1}}: {#2}]}
+\newcommand{\vv}[1]{\todo{VV}{#1}}
+\newcommand{\pt}[1]{\todo{PT}{#1}}
+
+% Relations, predicates and operators
+%\newcommand\PAR{|}
+\newcommand\PAR{\mid}
+\newcommand\DONE[1]{#1 \checkmark}
+\newcommand\PDA{\mathcal{P}}
+\newcommand\SEnv{\sigma} % syntactic environment
+\newcommand\LEnv{\delta} % language environment
+\newcommand\bisim\sim
+\newcommand\Power{\wp}
+\newcommand{\Silent}{\tau}
+\newcommand{\Wderives}[1][{}]{\stackrel{#1}{\Longrightarrow}}
+\newcommand{\LTSderives}[1][a]{\stackrel{#1}{\longrightarrow}}
+\newcommand{\BPAderives}[1][a]{\stackrel{#1}{\longrightarrow}}
+\newcommand{\reduces}{\rightarrow}
+\newcommand{\subs}[2]{[{#1}/{#2}]}
+\newcommand\Rangeof[1]{\llparenthesis#1\rrparenthesis}
+\newcommand{\GFP}{\mathbf{gfp}}
+\newcommand{\subj}{\mathsf{subj}}
+\newcommand{\agree}{\mathsf{agree}}
+\newcommand{\un}{\mathsf{un}}
+\newcommand{\lin}{\mathsf{lin}}
+\newcommand{\dual}[1]{\overline{#1}}
+\newcommand{\dualof}{\mathsf{dual}}
+\newcommand\Contr{\vdash_{c}}
+%\newcommand\Contr{\vdash}
+\newcommand\Guarded{\mathsf{s}} % Should this be Skips?
+\newcommand\Productive{\mathsf{p}}
+\newcommand\Embed[1]{{(#1)}^\dagger}
+\newcommand\Unfold{\mathsf{unf}} % shortened from "unfold"
+\newcommand\Unravel{\mathsf{unr}} % shortened from "unravel"
+\newcommand\Norm{\mathsf{norm}}
+\newcommand\NT{\mathcal{NT}} % nonterminals
+%\newcommand\Tyvars{\mathcal{TV}} % not used (vv)
+%\newcommand{\Labels}{\mathcal L} % The set of labels in choice types; not used (vv)
+%\newcommand{\btypes}{\mathcal B} % The set of base types; not used (vv)
+\newcommand{\stypes}{\mathcal S} % The set of closed session types
+\newcommand{\types}{\mathcal T} % the set of (well formed) types
+\newcommand{\subterms}{\mathsf{sub}}
+\newcommand{\cardinality}[1]{|{#1}|}
+\newcommand{\measure}{\mathcal M}
+%\newcommand\TypeSim{\preceq}
+\newcommand\TypeEquiv{\sim}
+\newcommand{\unguarded}{\mathsf{unguarded}}
+\newcommand\TL{\ensuremath{\mathcal U}} %trace language
+\newcommand{\TR}{\mathsf{TR}}
+\newcommand{\TRw}{\mathsf{TR}^\omega}
+\newcommand\toBPATop[1]{\mathsf{BPATop} (#1)}
+\newcommand\toBPA[1]{\mathsf{BPA} (#1)}
+\newcommand\toCFG{\mathsf{CFG}}
+\newcommand\toLHS{\mathsf{RHS}}
+\newcommand\BLANK{\$}
+%\newcommand\Nat{\mathbf{N}} % was: used once, never defined
+\newcommand\MACHINE{\mathcal{M}}
+\newcommand\RHS{\mathsf{rhs}}
+\newcommand\Return{\ensuremath{\mathsf{return}}}
+\newcommand\Do{\ensuremath{\mathsf{do}}}
+\newcommand\Out{\ensuremath{\mathsf{out}}}
+\newcommand\Fresh{\ensuremath{\mathsf{fresh}}}
+\newcommand{\eqdef}{\triangleq} % equal by definition
+
+% syntax variables
+\newcommand\prekind{\upsilon}
+\newcommand\kind{\kappa}
+\newcommand\kinds{\stypes}
+\newcommand\kindt{\types}
+%\newcommand\kindsch{\Box}
+\newcommand\kindsch{\mathcal C}
+\newcommand{\isScheme}{~\scheme} % mathsf is always \upshape and slighter smaller
+%\newcommand{\isOk}{~\mathsf{ok}}
+\newcommand{\isOk}{:\mathsf{type}}
+\newcommand\Unrestricted{\ensuremath{\mathbf{u}}} % \infty
+\newcommand\Linear{\ensuremath{\mathbf{l}}} % 1 
+%\newcommand\GEnv{\Theta}
+\newcommand\GEnv{\Delta}
+\newcommand\BPAprocess\Theta
+
+% Labels for branches and choices
+\newcommand\lbl{\textit}
+
+% Keywords
+\newcommand{\keyword}[1]{\mathsf{#1}}
+\newcommand{\skipk}{\keyword{skip}}
+\newcommand{\intk}{\keyword{int}}
+\newcommand{\unitk}{\keyword{unit}}
+\newcommand{\sendk}{\keyword{send}}
+\newcommand{\recvk}{\keyword{receive}}
+\newcommand{\newk}{\keyword{new}}
+\newcommand{\forkk}{\keyword{fork}}
+% \newcommand{\inlk}{\keyword{inl}} % Are we going for labelled injection?
+% \newcommand{\inrk}{\keyword{inr}}
+\newcommand{\fixk}{\keyword{fix}}
+\newcommand{\letk}{\keyword{let}}
+\newcommand{\ink}{\keyword{in}}
+\newcommand{\matchk}{\keyword{match}}
+\newcommand{\withk}{\keyword{with}}
+\newcommand{\selectk}{\keyword{select}}
+\newcommand{\casek}{\keyword{case}}
+\newcommand{\ofk}{\keyword{of}}
+\newcommand{\scheme}{\keyword{sch}}
+\newcommand{\End}{\keyword{end}}
+
+% Process constructors
+\newcommand{\send}[2]{\sendk\,{#1}\,{#2}}
+\newcommand{\recv}[1]{\recvk\,{#1}}
+\newcommand{\fork}[1]{\forkk\,{#1}}
+\newcommand{\new}[1]{\nu\,{#1}}
+\newcommand{\letin}[3]{\letk\,{#1}={#2}\,\ink\,{#3}}
+\newcommand{\match}[2]{\matchk\,{#1}\,\withk\,[{#2}]}
+\newcommand{\fix}[2]{\fixk\,{#1}.{#2}}
+\newcommand{\select}[2]{\selectk{\,{#1}\,{#2}}}
+\newcommand{\inject}[2]{\ink{\,{#1}\,{#2}}}
+\newcommand{\case}[2]{\casek\,{#1}\,\ofk\,{#2}}
+
+% Grammars
+\newcommand{\grmeq}{\; ::= \;}
+\newcommand{\grmor}{\;\mid\;}
+
+% Theorem
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{conjecture}[theorem]{Conjecture}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+
+% Listings
+
+% Programming language: cfs
+\lstdefinelanguage{cfs}{
+  language=haskell,
+%  style=eclipse
+  basicstyle=\sffamily\small,
+  extendedchars=true,
+  breaklines=true,
+  morekeywords={new,send,receive,skip,select,dualof,int,fork,def},
+  tabsize=8,
+  literate=
+    {oplus}{$\oplus$}1 
+    {otimes}{$\otimes$}1 
+    {forall}{$\forall$}1
+    {alpha}{$\alpha$}1 
+    {beta}{$\beta$}1 
+    {->}{$\rightarrow$}1 
+    {==}{$\equiv$}1 
+    {lambda}{$\lambda$}1 
+    {->}{$\rightarrow$}1 
+    {-o}{$\multimap$}1
+}
+
+\lstset{language=cfs}   % Default language 
+
+%%% imported macros (Peter)
+
+\newcommand\kw\keyword %keyword
+\newcommand\MF[1]{\textup{\textit{#1}}} %metafunction
+%
+% general
+\newcommand\Multi[1]{\overrightarrow{#1}}
+
+% syntax types
+% meta variables
+\newcommand\TY{T}               %type
+\newcommand\TG{G}               %ground type
+\newcommand\SE{S}               %session
+\newcommand\LL{l}               %label
+\newcommand\GTY{G}              %ground type
+\newcommand\CG{\textit{ls}}     %choice group
+\newcommand\TC{\textit{tc}}     %type constructors
+\newcommand\TE{\Gamma}          %type environments
+\newcommand\TEempty{\cdot}
+% choice group constructors
+\newcommand\cgNothing\cdot
+% \newcommand\cgAlt[2]{#1:#2}     %in sessions
+% \newcommand\altSingle[2]{#1:#2} %in expressions
+\newcommand\cgAlt[2]{#1\colon #2}     %in sessions % \colon gives
+                                %better spacing
+\newcommand\altSingle[2]{#1\colon #2} %in expressions
+% session constructors
+%\newcommand\sEnd{\kw{END}} % use \End
+\newcommand\sRecv[1]{\textup{?}\,#1.}
+\newcommand\sSend[1]{\textup{!}\,#1.}
+\newcommand\sRecvChoice[2][{}]{\&^{#1}\{#2\}}
+\newcommand\sSendChoice[2][{}]{\oplus^{#1}\{#2\}}
+\newcommand\sVar{z}%{\sigma}
+\newcommand\sMu[1]{\mu#1.}
+
+\newcommand\scEnd{\kw{END}}
+\newcommand\scRecvChoice[2][{}]{\&^{#1}\{#2\}}
+\newcommand\scSendChoice[2][{}]{\oplus^{#1}\{#2\}}
+\newcommand\scCompose[1]{#1{;}}%{#1;\,}
+\newcommand\scUnit{\kw{skip}}
+\newcommand\scVar{z}
+\newcommand\scMu[1]{\mu#1.}
+
+
+\newcommand\tNProd[2][{}]{\prod^{#1}\langle#2\rangle}
+\newcommand\tNSum[2][{}]{\sum^{#1}\langle#2\rangle}
+
+
+\newcommand\scRecv{\textup{?}}
+\newcommand\scSend{\textup{!}}
+
+
+% type constructors
+\newcommand\tcUnit{\unitk}%{*}
+\newcommand\tcBase{B}
+\newcommand\tcPair\times
+\newcommand\tcSum{+}
+\newcommand\tcLolli\multimap
+\newcommand\tcFun\to
+\newcommand\tcPort[1]{{[#1]}}
+\newcommand\tcBang{\mathop!}
+% types
+\newcommand\tUnit\tcUnit
+\newcommand\tBase\tcBase
+\newcommand\tPair[2]{#1\tcPair#2}
+\newcommand\tSum[2]{#1\tcSum#2}
+\newcommand\tLolli[2]{#1\tcLolli#2}
+\newcommand\tFun[2]{#1\tcFun#2}
+\newcommand\tPort[1]{{[#1]}}
+\newcommand\tBang[1]{\tcBang#1}
+\newcommand\tDyn{D}
+\newcommand\tCoerce[3][{}]{#2\stackrel{#1}{\Rightarrow} #3}
+\newcommand\tWild{\diamondsuit}
+\newcommand\tCrash{\spadesuit}
+\newcommand\tVar{z}%{X}%{\tau}
+\newcommand\tMu[1]{\mu#1.}
+
+%metafunctions
+\newcommand\dom{\mathsf{dom}}
+\newcommand\seq{\mathsf{seq}}
+\newcommand\Free{\mathsf{free}}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

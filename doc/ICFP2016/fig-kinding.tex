@@ -1,0 +1,61 @@
+\begin{figure}[t]
+  \begin{gather*}
+    \frac{}{\Delta \vdash \skipk :: \kinds^\Unrestricted } \quad
+    \frac{}{\Delta \vdash \,!B :: \kinds^\Linear} \quad \frac{}{\Delta
+      \vdash \,?B :: \kinds^\Linear}
+    \\
+    \frac{\Delta \vdash T_1 :: \kinds^{m_1} \quad \Delta \vdash T_2 ::
+      \kinds^{m_2}}{\Delta \vdash (T_1;T_2) :: \kinds^{\max
+        (m_1,m_2)}}
+    \\
+    \frac{(\forall i\in I)~\Delta \vdash T_i :: \kinds^\Linear}{
+      \Delta \vdash \oplus\{l_i\colon T_i\}_{i\in I} ::
+      \kinds^\Linear}
+    \quad
+    \frac{(\forall i\in I)~\Delta \vdash T_i
+      :: \kinds^\Linear}{ \Delta \vdash \&\{l_i\colon T_i\}_{i\in I} :: \kinds^\Linear}
+    \\
+    \frac{}{\Delta, x :: \kind \vdash x :: \kind} \quad
+    \frac{}{\Delta, \alpha :: \kind \vdash \alpha :: \kind} \quad
+    \frac{}{\Delta \vdash B :: \kindt^\Unrestricted}
+    \\
+    \frac{
+      \Delta \Contr T%:\gamma 
+      \quad
+      \Delta, x :: \kind \vdash T :: \kind \quad
+      \kind \le \kindt^\Linear
+    }{\Delta \vdash \mu x.T :: \kind}
+    \\
+    \frac{
+      \Delta \vdash T_1 :: \kindt^\Linear \quad
+      \Delta \vdash T_2 :: \kindt^\Linear}{
+      \Delta \vdash T_1\to T_2 :: \kindt^\Unrestricted}
+    \quad
+    \frac{
+      \Delta \vdash T_1 :: \kindt^\Linear \quad
+      \Delta \vdash T_2 :: \kindt^\Linear}{
+      \Delta \vdash T_1\multimap T_2 :: \kindt^\Linear}
+    \\
+    \frac{
+      \Delta \vdash T_1 :: \kindt^\Linear \quad
+      \Delta \vdash T_2 :: \kindt^\Linear}{
+      \Delta \vdash T_1\otimes T_2 :: \kindt^\Linear} \quad
+    \frac{(\forall i\in I)~\Delta \vdash T_i :: \kindt^m}{ \Delta
+      \vdash [l_i\colon T_i]_{i\in I} :: \kindt^m}
+    \\
+    \frac{\Delta \vdash T :: \kind_1 \quad \kind_1 \le \kind_2}{\Delta \vdash T :: \kind_2}
+    \quad
+    \frac{
+      \Delta, \alpha :: \kind \vdash T :: \kindsch^m \quad
+      \kind \le \kindt^\Linear}{
+      \Delta \vdash \forall\alpha :: \kind.T :: \kindsch^m}
+  \end{gather*}
+
+  \caption{Kinding system, $\Delta \vdash T :: \kind$}
+  \label{fig:kinding}
+\end{figure}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

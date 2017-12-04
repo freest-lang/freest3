@@ -1,0 +1,870 @@
+\subsection{Type unfolding}
+\label{sec:type-unfolding}
+
+We establish a notion of type unfolding as a step towards
+defining type equivalence. The idea of unfolding is to expose the
+first nontrivial action of a session type by squeezing out sequences
+of $\skipk$s.
+Let $A$ range over $\alpha$, $!B$, and $?B$; let $\star$ range over
+$\oplus$ and $\&$. 
+%
+Define the unfolding of a type $T$,  $\Unfold(T)$, recursively by cases on the
+structure of~$T$ as follows. 
+\begin{enumerate}
+\item $\Unfold(\mu x.T) = \Unfold(T\subs{\mu x.T}x)$
+\item $\Unfold (S;S') = \left\{%
+  \begin{array}{ll}
+    \Unfold(S') & \Unfold(S) = \skipk
+    \\
+    (A; \Norm(S')) & \Unfold(S) = A
+    \\
+    (S_3; (S_4\fatsemi S')) & \Unfold(S) = (S_3;S_4)
+    \\
+    \star\{l_i\colon S_i\fatsemi S'\}  & \Unfold (S) = \star\{l_i\colon S_i\}
+  \end{array}
+  \right.
+$
+\item $\Unfold(T) = T$, otherwise
+\end{enumerate}
+We assume two auxiliary definitions
+\begin{align*}
+  \Norm (S) &=
+              \begin{cases}
+                S_1 \fatsemi S_2 & S = (S_1; S_2) \\
+                S & \text{otherwise}
+              \end{cases}
+  \\
+  S_1 \fatsemi S_2 &=
+                     \begin{cases}
+                       S_1' \fatsemi (S_1'' \fatsemi S_2) & S_1 =
+                       (S_1'; S_1'') \\
+                       (S_1; S_2) & \text{otherwise}
+                     \end{cases}
+\end{align*}
+
+The function $\Unfold$ is well-defined and terminating because we
+assume that the body of a recursive type is contractive. The auxiliary
+functions $\Norm$ and $\fatsemi$ are both terminating.
+The following
+lemmas establish well-definedness of $\Unfold$.
+
+\begin{lemma}\label{lemma:app:guarded=skip}
+  Suppose that $\GEnv$ does not bind recursion variables and that
+  $\sigma$ is a substitution of recursion variables by recursive types.
+  If $\GEnv \Contr S : \Guarded$, then $\Unfold (S\sigma) = \skipk$.
+\end{lemma}
+\begin{proof}
+  Induction on $\GEnv \Contr S : \Guarded$.
+
+  \textbf{Case }$\GEnv \Contr \skipk : \Guarded$. Immediate.
+
+  \textbf{Case }$\GEnv \Contr (S_1;S_2) : \Guarded$ because $\GEnv
+  \Contr S_1 : \Guarded$ and $\GEnv \Contr S_2 : \Guarded$. By
+  induction, $\Unfold (S_1\sigma) = \skipk$, hence $\Unfold ((S_1;S_2)\sigma) =
+  \Unfold (S_2\sigma) = \skipk$ by induction.
+
+  \textbf{Case }$\GEnv \Contr \mu x.S : \Guarded$ because $\GEnv
+  \Contr S : \Guarded$. In this case, $\Unfold ((\mu x.S)\sigma) = \Unfold
+  (S[\mu x.S/x]\sigma) = \skipk$ by induction (for $\sigma' = [\mu x.S/x]\sigma$).
+\end{proof}
+
+\begin{definition}
+  A \emph{guarded} type has one of the forms below.
+  % where $A$ ranges over $\alpha$, $!B$, and $?B$.
+\begin{gather*}
+  \skipk \quad A \quad A;S' \quad
+  \star\{l_i\colon S_i\} %\quad \&\{l_i\colon S_i\}
+  \\
+  T \to T' \quad T \multimap T' \quad T \otimes T' \quad [l_i : T_i]
+  \quad B 
+\end{gather*}
+\end{definition}
+% We say that %
+% %
+% \footnote{To me $T$ is only a type if $\Theta \vdash T \isOk$ holds,
+%   for some $\Theta$ that does not bind recursion variables. To
+%   $(B\rightarrow B;\skipk)$ I call a piece of \emph{junk syntax}. This
+%   means that ``there is no life outside types'' (the intuitionistic
+%   approach). Pragmatically, it means that, whenever we talk of $T$, we
+%   need not keep saying ``s.t.\ $\Theta \vdash T \isOk$ for some
+%   $\Theta$ that does not bind recursion variables.''. In this , a
+%   session type $S$ is a type such that $\Delta \vdash S: \kinds^m$,
+%   for some $\Delta$ that does not bind recursion variables.}
+% %
+
+
+\begin{lemma}[Characterization of $\Unfold$]
+  \label{lem:app:unfold-yields-guarded-types}
+  Suppose that $\GEnv$ does not bind recursion variables and that
+  $\GEnv \vdash T :: \kind$ for $\kind \le \kindt^\Unrestricted$, then $\Unfold (T)$ is defined and yields a
+  guarded type.
+
+  % result that has one of the following forms.
+  % \begin{enumerate}
+  % \item $ \skipk$,
+  % \item $(\alpha;S')$, $(!B; S')$, $(?B; S')$ for some $\Delta \vdash S' \isOk$,
+  % \item $\oplus\{l_i\colon S_i\}$,  $\&\{l_i\colon S_i\}$ for some
+  %   $\Delta \vdash S_i \isOk$.
+  % \end{enumerate}
+
+  % Furthermore, if $\GEnv \Contr S : \gamma$, then $\Unfold (\mu
+  % x.S)$ is defined and yields a guarded type.
+\end{lemma}
+\begin{proof}
+  Induction on the derivation of  $\GEnv \vdash T :: \kind$.
+
+  \textbf{Case }$\GEnv \vdash \skipk :: \kinds^\Unrestricted$.
+  In this case, $\Unfold (\skipk) = \skipk$.
+
+  \textbf{Case }$\GEnv \vdash A :: \kind$. $\Unfold (A) = {A}$.
+
+  % \textbf{Case }$\GEnv \vdash !B :: \kinds^\Linear$. $\Unfold (!B) = {!B}$.
+  % \textbf{Case }$\GEnv \vdash ?B :: \kinds^\Linear$. $\Unfold (?B) = {?B}$.
+
+  \textbf{Case }$\GEnv \vdash (S_1;S_2) :: \kinds^m$.
+
+  Inversion yields $\GEnv \vdash S_1 :: \kinds^{m_1}$ and  $\GEnv
+  \vdash S_2 :: \kinds^{m_2}$. By induction, $S_1' = \Unfold (S_1)$ is
+  guarded.
+
+  \textbf{Subcase }$S_1' = \skipk$. In this case, $\Unfold (S_1;S_2) =
+  \Unfold (S_2)$ which is guarded by induction.
+
+  \textbf{Subcase }$S_1' = A$. Then $\Unfold (S_1;S_2) = (A; S_2)$
+  which is guarded.
+
+  \textbf{Subcase }$S_1' = (A; S_3)$. Hence, $\Unfold (S_1;S_2) = (A; (S_3; S_2))$ is guarded.
+
+  \textbf{Subcase }$S_1' = \star\{l_i\colon S_i\}$: $\Unfold
+  (S_1;S_2) = \star\{l_i\colon (S_i; S_2) \}$.
+
+  % \textbf{Subcase }$S_1' = \&\{l_i\colon S_i\}$: $\Unfold
+  % (S_1;S_2) = \&\{l_i\colon (S_i; S_2) \}$.
+
+  \textbf{Case }$\GEnv \vdash \star\{l_i\colon S_i\}
+  :: \kinds^\Linear$. Immediate.
+
+  % \textbf{Case }$\GEnv \vdash \&\{l_i\colon S_i\}
+  % :: \kinds^\Linear$. Immediate.
+
+  % \textbf{Case }$\GEnv \vdash \alpha :: \kind$. Immediate: $\Unfold
+  % (\alpha) = \alpha$.
+
+  \textbf{Case }$\GEnv \vdash \mu x. T :: \kind$.
+%
+  Inversion yields $\GEnv, x:\kind \vdash T :: \kind$ and
+  $\GEnv \Contr T : \gamma$. Observe that
+  $\Unfold (\mu x.T) = \Unfold (T[\mu x.T/x])$ and
+  $\GEnv \Contr T[\mu x.T/x] : \gamma$. By the second claim 
+  $\Unfold (T[\mu x.T/x])$ is defined and yields a guarded type using
+  $\sigma = [\mu x.T/x]$.
+
+  \textbf{All other cases}: $\Unfold (T) = T$ is guarded.
+  
+  \textbf{Second claim.}
+  % It holds that $\Unfold (\mu x.S) = \Unfold (S[\mu x.S/x])$.
+  % Further $\GEnv\setminus x \Contr S : \gamma$ implies that
+  % $\GEnv \Contr S[\mu x.S/x] : \gamma$.
+  Suppose that  $\GEnv \Contr T :  \gamma$ where $\GEnv$ does not bind
+  recursion variables and that  $\sigma$ is a substitution on recursion variables.
+  Then  $\Unfold (T\sigma)$ is defined and yields a guarded type.
+
+  The proof is by induction on the derivation of $\GEnv \Contr T :
+  \gamma$.
+
+  \textbf{Case }$\skipk$. Immediate.
+
+  \textbf{Case }$A \in \{ {!B}, {?B}, \alpha\}$. $\Unfold (A\sigma) = A$ which is guarded.
+
+  \textbf{Case }$x$ cannot occur because $\GEnv$ 
+  contains no assumptions about recursion variables.
+
+  \textbf{Case }$\star\{l_i\colon S_i\}$. $\Unfold
+  ((\star\{l_i\colon S_i\})\sigma) = \Unfold (\star\{l_i\colon
+  S_i\sigma\}) = \star\{l_i\colon S_i\sigma\}$ which is guarded.
+
+  % \textbf{Case }$\&\{l_i\colon S_i\}$. Analogously.
+
+  \textbf{Case }$(S_1;S_2) : \Productive$ because $S_1 :
+  \Productive$. By induction $S_1' = \Unfold (S_1)$ is
+  guarded. Proceed by subcases on $S_1'$.
+
+  \textbf{Subcase }$\skipk$. Contradicts $S_1 : \Productive$.
+
+  \textbf{Subcase }$A$. Here, $\Unfold ((S_1;S_2)\sigma) = (A;
+  S_1)\sigma$, which is guarded.
+
+  \textbf{Subcase }$(A; S_3)$. $\Unfold
+  ((S_1;S_2)\sigma) = (A; (S_3; S_2))\sigma$, which is guarded. 
+
+  \textbf{Subcase }$\star\{l_i\colon S_i\}$. $\Unfold
+  ((S_1;S_2)\sigma) = \star\{l_i\colon (S_i; S_2)\sigma\}$ is guarded.
+
+  % \textbf{Subcase }$\&\{l_i\colon S_i\}$. Similar.
+
+  \textbf{Case }$(S_1;S_2) : \Productive$ because $S_1 :
+  \Guarded$ and $S_2 : \Productive$. In this case, $\Unfold (S_1) =
+  \skipk$ by Lemma~\ref{lemma:guarded=skip} so that the result is
+  $\Unfold (S_2\sigma)$, which is guarded by induction on $S_2 : \Productive$.
+
+  \textbf{Case }$\GEnv \Contr \mu x.T : \gamma$ because $\GEnv \Contr
+  T : \gamma$. Hence, $\Unfold ((\mu x.T)\sigma) = \Unfold (T\sigma[\mu
+  x.T\sigma/x])$. The result follows by induction using $\sigma' = \sigma[\mu
+  x.T\sigma/x]$.
+
+  % \textbf{Case }$\GEnv, \alpha : \gamma \Contr \alpha :
+  % \gamma$. Immediate.
+
+  \textbf{All remaining cases}: Immediate.
+\end{proof}
+
+Next, we consider invariance of kinding and contractivity under
+unfolding of recursion anywhere in the type.
+
+\begin{lemma}[Weakening]\label{lemma:app:weakening-kind}
+  If $\Delta \vdash T :: \kind$, then
+  $\Delta, x\colon \gamma \vdash T :: \kind$ for some $x$ not in
+  $\Delta$.
+\end{lemma}
+
+
+\begin{lemma}[Unfolding preserves kinding]
+  If $\Delta \vdash T :: \kind$ then $\Delta \vdash \Unfold(T) :: \kind$.
+\end{lemma}
+%
+\begin{proof}
+  We only consider the case for a recursive type as the other cases
+  are straightforward.
+  
+  % (Needs adjustment)
+  If  $\GEnv \vdash \mu x.T :: \kinds^m$, it must be because  $\GEnv,
+  x:\kinds^m \vdash T :: \kinds^m$ and $\GEnv \Contr T : \gamma$.
+  We prove by induction on $\GEnv, x:\kinds^m \vdash T :: \kinds^m$ that
+  $\GEnv \vdash T[\mu  x. T/x] :: \kinds^m$.
+
+  There are two interesting cases. In the first case, we encounter the
+  recursion variable $\GEnv, x::\kinds^m, \GEnv' \vdash x
+  :: \kinds^m$. At this point, we have to return $\GEnv, \GEnv' \vdash \mu
+  x.T :: \kinds^m$, which is derivable by the initial assumption and
+  weakening (Lemma~\ref{lemma:weakening-kind}).
+
+  The other case is a different $\mu$ operator in a judgment $\GEnv,
+  x::\kinds^m, \GEnv' \vdash \mu x'. T' :: \kinds^{m'}$. Inversion yields $\GEnv,
+  x::\kinds^m, \GEnv', x'::\kinds^{m'} \vdash T'  :: \kinds^{m'}$ and $\GEnv,
+  x:\gamma, \GEnv' \Contr T' : \gamma'$. The first part
+  can be handled by induction, but the second part requires an
+  auxiliary induction to prove that $(\GEnv, \GEnv')
+  \Contr T'[\mu x.T/x] : \gamma'$. For this auxiliary induction it is
+  sufficient to observe that a successful derivation never reaches a
+  recursion variable, so the unrolling does not matter. 
+\end{proof}
+
+\begin{lemma}
+  \label{lemma:app:unfold-fixpoints}
+  If $T$ is a guarded type, then $\Unfold (T) = T$.
+\end{lemma}
+\begin{proof}
+  Cases on $T$.
+
+  \textbf{Case }$\skipk$: Obvious.
+
+  \textbf{Case }$A$: $\Unfold (A) = A$.
+
+  \textbf{Case }$(A; S')$:
+  $\Unfold (A;S') = (A; S')$ as $\Unfold (A) = A$.
+
+  \textbf{Case }$\star\{l_i\colon S_i\}$: Immediate.
+
+  \textbf{Remaining cases}: Immediate.
+\end{proof}
+
+\begin{lemma}
+  \label{lemma:app:unfold-idempotent}
+  % For all well-formed types, $
+  $\Unfold (\Unfold (T)) = \Unfold (T).$
+\end{lemma}
+\begin{proof}
+  By Lemma~\ref{lem:unfold-yields-guarded-types}, $\Unfold (T)$ is guarded and hence a fixpoint of
+  $\Unfold$ by Lemma~\ref{lemma:unfold-fixpoints}.
+\end{proof}
+
+\subsection{Type equivalence}
+\label{sec:type-equivalence}
+
+We want to define a notion of type equivalence for session types that
+only depends on the communication behavior of a process with that
+type. To this end, we first define a (weak) labelled transition system
+$(\stypes, \Sigma, \LTSderives)$ that captures this behavior. The set
+of states is  $\stypes = \{ S \mid \GEnv \vdash S :: \kinds^m \}$
+where $\GEnv$ is an arbitrary, fixed kinding environment that binds no
+recursion variables. The
+actions in this system are drawn from the set $\Sigma = \{ {!B}, {?B}
+\mid  B \in \btypes \} \uplus \Tyvars \uplus \{ {!l}, {?l} \mid l
+\in \Labels\} $. We use the label $\Silent$ for the \emph{silent
+  action} that exhibits no externally observable behavior. The transition
+relation $\LTSderives$ is defined by the rule set in Figure~\ref{fig:type-behavior}. We write
+$\Wderives$ for the reflexive transitive closure of $\LTSderives[\Silent]$ and $\Wderives[\xi]$ for
+the composition $\Wderives \circ \LTSderives[\xi] \circ \Wderives$.
+
+\begin{figure}[tp]
+  \begin{gather*}
+    {A \LTSderives[A] \skipk }
+    \qquad
+    {\star\{\overline{l_n:S_n}\} \LTSderives[\star l_i] S_i}
+    \\
+    \frac{S_1 \LTSderives[\xi] S_1'}{(S_1; S_2) \LTSderives[\xi]
+      (S_1';S_2) }
+    \qquad
+    {(\skipk; S) \LTSderives[\Silent] S}
+    \\
+    {((S_1;S_2); S_3) \LTSderives[\Silent] (S_1; (S_2; S_3))}
+    \\
+    {(\star\{\overline{l_n:S_n}\}; S) \LTSderives[\Silent]
+      \star\{\overline{l_n:(S_n; S)}\}}
+    \\
+    { \mu x.S \LTSderives[\Silent] S[\mu x.S/x]}
+  \end{gather*}
+  \caption{Behavior of a type}
+  \label{fig:type-behavior}
+\end{figure}
+\begin{lemma}\label{lemma:app:unfold-silent}
+  If $S' = \Unfold (S)$ is defined, then $S \Wderives S'$.
+\end{lemma}
+\begin{proof}
+  By induction on the number of recursive calls to compute $\Unfold
+  (S)$.
+
+  \textbf{Case }$\Unfold (\mu x.S) = \Unfold (S[\mu x.S/x])$: By
+  definition, $\mu x.S \LTSderives[\Silent] S[\mu x.S/x] $ and by
+  induction $S[\mu x.S/x] \Wderives S'$.
+
+  \textbf{Case }$\Unfold (S_1;S_2)$.
+
+  \textbf{Subcase }$\Unfold (S_1) = \skipk$: By induction, $S_1
+  \Wderives \skipk$. By the context rule for behaviors,
+  $(S_1; S_2) \Wderives (\skipk; S_2 )$ and by the skip
+  rule: $(\skipk; S_2 ) \LTSderives[\Silent] S_2$. Proceed by another
+  induction on $S_2$.
+
+  \textbf{Subcase }$\Unfold (S_1) = A$. By induction and the context
+  rule.
+
+  \textbf{Subcase }$\Unfold (S_1) = (S_1'; S_1'')$. By induction and
+  the context rule, we obtain $(S_1;S_2) \Wderives
+  ((S_1'; S_1''); S_2) \LTSderives[\Silent] (S_1'; (S_1''; S_2))$
+  where the last step is an application of associativity.
+
+  \textbf{Subcase }$\Unfold (S_1) = \star\{\overline{l_n:S_n} \}$. By
+  induction and distributivity.
+
+  \textbf{Remaining cases}. No silent transition needed.
+\end{proof}
+
+\begin{lemma}\label{lemma:app:silent-unfold-compatible}
+  If $S\LTSderives[\Silent] S'$, then $\Unfold (S) = \Unfold (S')$.
+\end{lemma}
+\begin{proof}
+
+  \textbf{Case }$\mu x.S \LTSderives[\Silent] S[\mu x.S/x]$:
+  $\Unfold (\mu x.S) =  \Unfold (S[\mu x.S/x])$ by definition.
+
+  \textbf{Case }$    {(\star\{\overline{l_n:S_n}\}; S) \LTSderives[\Silent]
+    \star\{\overline{l_n:(S_n; S)}\}}$: Immediate by definition of
+  $\Unfold$.
+  
+  \textbf{Case }${((S_1;S_2); S_3) \LTSderives[\Silent] (S_1; (S_2;
+    S_3))}$: \\
+  Case analysis on the possible outcomes of $\Unfold (S_1)$ and $\Unfold (S_2)$. 
+
+  \textbf{Subcase } $\Unfold (S_1) = \skipk$:
+  
+  \textbf{Subsubcase }$\Unfold (S_2) = \skipk$:
+  
+  $\Unfold  (S_1; (S_2;  S_3)) = \Unfold (S_2; S_3) = \Unfold (S_3)$
+  and
+  $\Unfold ((S_1; S_2); S_3) = \Unfold (S_3)$.
+
+  \textbf{Subsubcase }$\Unfold (S_2) = A$.
+
+  $\Unfold  (S_1; (S_2;  S_3)) = \Unfold (S_2; S_3) = (A; S_3)$
+  and
+  $\Unfold ((S_1; S_2); S_3) = (A; S_3)$.
+
+  \textbf{Subsubcase }$\Unfold (S_2) = (S_2'; S_2'')$.
+
+  $\Unfold  (S_1; (S_2;  S_3)) = \Unfold (S_2; S_3) = (S_2' ;( S_2''; S_3))$
+  and
+  $\Unfold ((S_1; S_2); S_3) = (S_2'; (S_2''; S_3))$.
+
+  \textbf{Subsubcase }$\Unfold (S_2) =
+  \star\{\overline{l_n:S_n}\}$.
+
+  $\Unfold  (S_1; (S_2;  S_3)) = \Unfold (S_2; S_3) =
+  \star\{\overline{l_n:(S_n; S_3)} $
+  and
+  $\Unfold ((S_1; S_2); S_3) = \star\{\overline{l_n:(S_n; S_3)}$.
+
+  \textbf{Subcase }$\Unfold (S_1) = A$.
+
+  $\Unfold  (S_1; (S_2;  S_3)) =(A; (S_2; S_3))$
+  and
+  $\Unfold ((S_1; S_2); S_3) = (A; (S_2; S_3))$.
+
+  \textbf{Subcase }$\Unfold (S_1) = (S_1';S_1'')$.
+
+  $\Unfold  (S_1; (S_2;  S_3)) =(S_1'; (S_1''; (S_2; S_3)))$
+  and
+  $\Unfold ((S_1; S_2); S_3) = (S_1'; (S_1''; (S_2; S_3)))$.
+
+  \textbf{Subcase }$\Unfold (S_1) = \star\{\overline{l_n:S_n}\}$.
+
+  $\Unfold  (S_1; (S_2;  S_3)) =\star\{\overline{l_n:(S_n;
+    (S_2\fatsemi S_3))}\} $
+  and
+  $\Unfold ((S_1; S_2); S_3) = \star\{\overline{l_n:(S_n; (S_2\fatsemi
+    S_3)))}\}$.
+
+  \textbf{Case }${(\skipk; S) \LTSderives[\Silent] S}$:
+  $\Unfold (\skipk;S) = \Unfold (S) = S'$.
+
+  \textbf{Case }$(S_1; S_2) \LTSderives[\Silent] (S_1';S_2)$
+  because $S_1 \LTSderives[\Silent] S_1'$: By induction, $\Unfold
+  (S_1) = \Unfold(S_1')$, so that $\Unfold (S_1; S_2) = \Unfold
+  (S_1';S_2)$ by definition of unfolding.
+\end{proof}
+\begin{lemma}\label{lemma:app:silent-unfold}
+  If $S \Wderives S'$ and $S'$ is guarded, then $S' = \Unfold (S)$.
+\end{lemma}
+\begin{proof}
+  By induction on the number of silent steps.
+
+  \textbf{Case }$0$. If $S=S'$ is already guarded, then $S$ is a
+  fixpoint of $\Unfold$  by Lemma~\ref{lemma:unfold-fixpoints}.
+
+  \textbf{Case }$n>0$. In this case, there is some $S''$ such that $S
+  \LTSderives[\Silent] S''$ and $S'' \Wderives S'$ in less than $n$
+  steps. Now, $S' = \Unfold (S'') = \Unfold (S)$, the former by
+  induction  and the latter by
+  Lemma~\ref{lemma:silent-unfold-compatible}.
+\end{proof}
+
+% A relation $R \subseteq \stypes \times \stypes$ is a \emph{type
+%   simulation} if $(S_1,S_2)\in R$ implies the following conditions:
+% %
+% \begin{enumerate}
+% \item If $\Unfold(S_1) = \skipk$ then $\Unfold(S_2) = \skipk$. 
+% \item If $\Unfold(S_1) = (\alpha; S_1')$ then $\Unfold(S_2) =
+%   (\alpha;S_2')$ and $(S_1', S_2') \in R$. 
+% \item If $\Unfold(S_1) = (!B;S_1')$ then $\Unfold(S_2) = (!B;S_2')$  and $(S_1', S_2') \in R$. 
+% \item If $\Unfold(S_1) = (?B;S_1')$ then $\Unfold(S_2) = (?B;S_2')$  and $(S_1', S_2') \in R$. 
+% % \item If $\Unfold(S_1) = S_1';S_1''$ then $\Unfold(S_2) = S_2';S_2''$
+% %   and both $(S_1',S_2')$  and $(S_1'',S_2'')$ are in $R$.
+% \item If $\Unfold(S_1) = \oplus\{l_i\colon S_{1,i}'\}_{i\in I}$ then
+%   $\Unfold(S_2) = \oplus\{l_i\colon S_{2,i}'\}_{i\in I}$ and
+%   $(S_{1,i}',S_{2,i}')\in R$, for all $i\in I$.
+% \item If $\Unfold(S_1) = \&\{l_i\colon S_{1,i}'\}_{i\in I}$ then
+%   $\Unfold(S_2) = \&\{l_i\colon S_{2,i}'\}_{i\in I}$ and
+%   $(S_{1,i}',S_{2,i}')\in R$, for all $i\in I$.
+% \end{enumerate}
+
+\begin{definition}
+Define a monotone function~$F$ on $\stypes\times\stypes$ as 
+follows. 
+%
+\begin{align*}
+  F (R) &= \{ (S_1, S_2) \mid \Unfold (S_1) = \Unfold (S_2) = \skipk \}
+  \\
+        &\cup \{ (S_1, S_2) \mid \Unfold (S_1) = \Unfold (S_2) = A \}
+  \\
+        &\cup \{ (S_1, S_2) \mid
+          \begin{array}[t]{@{}l}
+            \Unfold (S_1) = (A; S_1'),\\
+            \Unfold (S_2) = (A; S_2'), \\
+            (S_1', S_2')  \in R \}
+          \end{array}
+  \\
+        &\cup \{ (S_1, S_2) \mid
+          \begin{array}[t]{@{}l}
+            \Unfold (S_1) = \star\{l_i\colon S_{1,i}'\}_{i\in I}, \\
+            \Unfold (S_2) = \star\{l_i\colon S_{2,i}'\}_{i\in I}, \\
+            \forall i: (S'_{1,i}, S'_{2,i}) \in R \}
+          \end{array}
+  % \\
+  %       &\cup \{ (S_1, S_2) \mid
+  %         \begin{array}[t]{@{}l}
+  %           \Unfold (S_1) = \oplus\{l_i\colon S_{1,i}'\}_{i\in I}, \\
+  %           \Unfold (S_2) = \oplus\{l_i\colon S_{2,i}'\}_{i\in I}, \\
+  %           \forall i: (S'_{1,i}, S'_{2,i}) \in R \}
+  %         \end{array}
+  % \\
+  %       &\cup \{ (S_1, S_2) \mid
+  %         \begin{array}[t]{@{}l}
+  %           \Unfold (S_1) = \&\{l_i\colon S_{1,i}'\}_{i\in I}, \\
+  %           \Unfold (S_2) = \&\{l_i\colon S_{2,i}'\}_{i\in I}, \\
+  %           \forall i: (S'_{1,i}, S'_{2,i}) \in R \}
+  %         \end{array}
+\end{align*}
+
+This function helps define (weak) bisimularity $\TypeEquiv$ for the labelled transition system
+$(\stypes, \Sigma, \LTSderives)$ on well-formed session types as a greatest fixpoint: ${\TypeEquiv}
+= \GFP (F)$. The 
+definition relies on the $\Unfold$ function instead of using silent transitions which is sanctioned
+by Lemmas~\ref{lemma:unfold-silent} and~\ref{lemma:silent-unfold}.
+\end{definition}
+
+Our goal is to use weak bisimilarity for type
+equivalence. To this end, we need to establish that it is indeed an
+equivalence relation.\footnote{This development can be extended to a
+  relation on $\kindt$, but the extension is entirely standard.}
+Reflexivity and symmetry follow directly from the definition. Transitivity requires some work.
+
+
+
+\begin{lemma}
+  Type  bisimilarity $\TypeEquiv$ is reflexive.
+\end{lemma}
+% \begin{proof}
+%   Obvious.
+% \end{proof}
+
+\begin{lemma}
+  Type bisimilarity $\TypeEquiv$ is symmetric.
+\end{lemma}
+% \begin{proof}
+%   Obvious.
+% \end{proof}
+
+\begin{lemma}
+  Type bisimilarity $\TypeEquiv$ is transitive.
+\end{lemma}
+\begin{proof}
+  Let $R  = {\TypeEquiv} \circ {\TypeEquiv}$. Show that $R \subseteq F(R)$, which implies that $R
+  \subseteq {\TypeEquiv}$. Observe that ${\TypeEquiv}
+  \subseteq R$ because $\TypeEquiv$ is reflexive.
+
+  Suppose that $S_1 \TypeEquiv S_2$ and $S_2 \TypeEquiv S_3$ so that $(S_1, S_3) \in R$.
+
+  \textbf{Case }$\Unfold (S_1) = \skipk$ implies $\Unfold (S_2) =\skipk$, which in turn implies $\Unfold (S_3) =
+  \skipk$. Hence, $(S_1, S_3) \in F (\emptyset)$.
+
+  \textbf{Case }$\Unfold (S_1) = A$. Then it must be the case that
+  $\Unfold (S_2) = A$ and also $\Unfold (S_3)=A$. Hence, $(S_1, S_3)
+  \in F (\emptyset)$.
+
+  \textbf{Case }$\Unfold (S_1) = (A; S_1')$ with $A$ either $\alpha$, $!B$, or $?B$. It must be the
+  case that $\Unfold (S_2) = (A; S_2')$ with $(S_1', S_2') \in {\TypeEquiv}$ and further
+  $\Unfold (S_3) = (A; S_3')$ with $(S_2', S_3') \in {\TypeEquiv}$. But then $(S_1', S_3') \in R =
+  {\TypeEquiv} \circ {\TypeEquiv}$ and hence $(S_1, S_3) \in F (R)$.
+
+  \textbf{Case }$\Unfold (S_1) = \star\{l_i\colon S_{1,i}'\}_{i\in I}$. Then it must be that
+  $\Unfold (S_2) = \star\{l_i\colon S_{2,i}'\}_{i\in I}$ with $S_{1,i}' \TypeEquiv S_{2,i}'$, for all
+  $i$, and $\Unfold (S_1) = \star\{l_i\colon S_{1,i}'\}_{i\in I}$ with  $S_{2,i}' \TypeEquiv S_{3,i}'$, for all
+  $i$. Hence, $(S_{1,i}', S_{3,i}') \in R $, for all $i$, so that $(S_1, S_3) \in F (R)$.
+  % \textbf{Case }$\Unfold (S_1) = \&\{l_i\colon S_{1,i}'\}_{i\in I}$. Analogously.
+\end{proof}
+
+\begin{lemma}
+  \label{lem:app:unfold-type-sim}
+  $S \TypeEquiv \Unfold(S)$.
+\end{lemma}
+\begin{proof}
+  Straightforward application of coinduction. We show that $\{ (S, \Unfold (S)) \} \subseteq
+  F (\TypeEquiv)$ because 
+  of idempotence of $\Unfold$ (Lemma \ref{lemma:unfold-idempotent}) and reflexivity of $\TypeEquiv$.
+\end{proof}
+
+\begin{lemma}
+  \label{lem:app:skip-elim}
+  $\skipk;S_1 \TypeEquiv \skipk;S_2$ iff $S_1 \TypeEquiv S_2$.
+\end{lemma}
+\begin{proof}
+  Immediate because $\Unfold (\skipk; S) = \Unfold (S)$.
+\end{proof}
+
+Outside this section, we write $\GEnv \vdash S_1 \TypeEquiv S_2$ to fix the environment $\GEnv$
+needed for the formation of $S_1$ and $S_2$. As usual, $\GEnv$ must
+not bind recursion variables.
+
+
+\subsection{Translation to BPA}
+\label{sec:translation-bpa}
+
+We define a variant of the unfolding
+function for a session type $S$,  $\Unravel(S)$, recursively by cases on the
+structure of~$S$. The difference to $\Unfold (S)$ is that the
+structure of $S$ is left intact as much as possible.
+\begin{enumerate}
+\item $\Unravel(\mu x.S) = \Unravel(S[\mu x.S/x])$
+\item $\Unravel (S;S') = \left\{%
+  \begin{array}{ll}
+    \Unravel(S') & \Unravel(S) = \skipk
+    \\
+    (\Unravel(S); S') & \Unravel(S) \ne \skipk
+  \end{array}
+  \right.
+$
+\item $\Unravel (S) = S$ for all other cases
+\end{enumerate}
+
+
+To define the translation to BPA,
+we need to show that, for a well-formed session type $S$, $\Unravel
+(S)$ is always guarded. That is the output of $\Unravel (S)$ is either
+$\skipk$ or it has one
+of the following forms:
+\begin{align*}
+  O &::= A \mid \star\{\overline{l_i:S_i}\} \mid (O; S)
+\end{align*}
+
+Now we define the translation of well-formed $S$ to a BPA as
+follows. Assume that all recursion variable bindings are unique in the
+sense that the set $\{ \mu x_1.S_1, \dots, \mu x_n.S_n\}$ contains all $\mu$-subterms
+of $S$ with $S_i : \Productive$ modulo $x_i \equiv \mu x_i.S_i$. 
+Define the BPA process equations for $S$ by 
+\begin{align*}
+  \toBPATop{S} &= \{ \\
+  x_0 &= \toBPA{S}, \\
+               x_1&= \toBPA{\Unravel (S_1[\mu x_1.S_1/x_1])}, &
+                                                                &\dots &
+                                                     & \}
+\end{align*}
+\begin{align*}
+  \toBPA{\skipk} &= \varepsilon \\
+  \toBPA{A} &= A\\
+  \toBPA{S_1;S_2} &= \toBPA{S_1} ; \toBPA{S_2} \\
+  \toBPA{\star\{\overline{l_n:S_n}\}} &= (\star l_1;
+                                        \toBPA{S_1} + \dots + \star
+                                        l_n; \toBPA{S_n}) \\
+  \toBPA{\mu x.S} &=
+                    \begin{cases}
+                      x & S : \Productive \\
+                      \varepsilon & S : \Guarded
+                    \end{cases}
+                   \\
+ \toBPA{x} &= x
+\end{align*}
+It is deliberate that we do \textbf{not} unfold the top-level type $S$
+in the defining equation for $x_0$. This equation need not be guarded
+because $x_0$ does not appear on the right-hand side of any equation.
+
+Alternative: one could also define the equation extraction by
+induction on the kind derivation for $S$ and the right-hand side
+extraction by induction on the contractivity judgment. 
+
+\begin{lemma}
+  If $\mu x.S$ is a subterm of well-formed $S_0$ with $\Delta \Contr S:\Productive$, then
+  $\toBPA{\Unravel (S)}$ is guarded with respect to $\toBPATop{S_0}$. 
+\end{lemma}
+
+\begin{proof}
+  By Lemma~\ref{lem:unfold-yields-guarded-types}, we know that
+  $\Unravel (S)$ yields a term of the form $A$, $A;S'$ or
+  $\star\{\overline{l_n:S_n}\}$. Clearly, the translation of a term of
+  one of these forms is guarded.
+
+  If $\mu x.S$ has a free variable $x' \ne x$, then
+  $\toBPA{\Unravel (S)}$ may have the form $x'$ or $x';S'$.
+\end{proof}
+
+It remains to show that $S$ is bisimilar to its
+translation. Essentially, we want to prove that the function
+$\toBPA{\cdot}$ is a bisimilation when considered as a relation.
+
+\begin{lemma}\label{lemma:app:skip-implies-done}
+  If $\Unravel (S) = \skipk$, then $\DONE{S}$.
+\end{lemma}
+\begin{proof}
+  Induction on the number $n$ of recursive calls to $\Unravel$.
+
+  \textbf{Case }$n=0$. $S=\skipk$ and $\DONE{\skipk}$.
+
+  \textbf{Case }$n>0$.
+
+  \textbf{Subcase }$\mu x.S$. $\Unravel (\mu x.S) = \skipk$ 
+  because $\Unravel (S[\mu x.S/x]) = \skipk$. By induction,
+  $\DONE{S[\mu x.S/x]}$ and by applying the mu-DONE rule $\DONE{\mu
+    x.S}$.
+
+  \textbf{Subcase }$S_1;S_2$.
+  $\Unravel (S_1;S_2) = \skipk$ because $\Unravel (S_1) =
+  \Unravel (S_2) = \skipk$. By induction $\DONE{S_1}$ and
+  $\DONE{S_2}$. By rule seq-DONE $\DONE{S_1;S_2}$.
+\end{proof}
+
+\begin{lemma}\label{lemma:app:s=unr-s}
+  Let $S$ be closed, well-formed. \\
+  Then
+  $\toBPA{S} \TypeEquiv \toBPA{\Unravel (S)}$.
+\end{lemma}
+\begin{proof}
+  Induction on the number $n$ of recursive calls to $\Unravel$.
+
+  \textbf{Case }$n=0$. In this case, $S$ must be $\skipk$, $A$, or
+  $\star\{\overline{l_i:S_i}\}$ and the claim is immediate.
+
+  \textbf{Case }$n>0$. There are two subcases.
+
+  \textbf{Subcase }$\mu x.S$. Then $\toBPA{\mu x.S} = x$ and there is
+  an equation $x = \toBPA{\Unravel(S[\mu x.S])}$. Now, $x$ is
+  obviously bisimilar to $\toBPA{\Unravel(S[\mu x.S])}$.
+
+  \textbf{Subcase }$S_1;S_2$. If $\Unravel (S_1) = \skipk$, then
+  $\DONE{S_1}$ and hence $\DONE{\toBPA{S_1}}$. Furthermore, $\Unravel
+  (S_1;S_2) = \Unravel (S_2)$ and, by induction, $\toBPA{S_2}
+  \TypeEquiv \toBPA{\Unravel(S_2)}$. The result follows because
+  $\toBPA{S_1;S_2} = \toBPA{S_1};\toBPA{S_2} \TypeEquiv \toBPA{S_2}$
+  and $\toBPA{\Unravel(S_2)} = \toBPA{\Unravel (S_1;S_2)}$.
+
+  If $\Unravel (S_1) =: S_u \ne \skipk$, then $\Unravel (S_1;S_2) =
+  S_u; S_2$.
+  By induction, we know that $\toBPA{S_1} \TypeEquiv \toBPA{S_u}$ and
+  as bisimilarity is a congruence  $\toBPA{S_1;S_2} \TypeEquiv
+  \toBPA{S_u}; \toBPA{S_2} = \toBPA{\Unravel (S_1;S_2)}$.
+\end{proof}
+
+\begin{lemma}\label{lemma:app:bisimulation-BPA-forwards}
+  Suppose $S$ is a well-formed closed session type.
+  If $S \LTSderives S'$, then $\toBPATop{S}
+  \LTSderives \toBPATop{S'}$.
+\end{lemma}
+\begin{proof}
+  By induction on  $S \LTSderives S'$.
+
+  \textbf{Case }$A \LTSderives[A] \skipk$.
+  In this case $\toBPATop{A} = \{ x_0 = A \} \LTSderives[A] \{ x_0 =
+  \varepsilon \} = \toBPATop{\skipk}$.
+
+  \textbf{Case }$\star\{\overline{l_i:S_i}\} \LTSderives[\star l_i]
+  S_i$.
+  In this case $\toBPATop{\star\{\overline{l_i:S_i}\}} = \{ x_0 =
+  (\dots+ \star l_i; \toBPA{S_i} + \dots) \} \LTSderives [\star l_i]
+  \{ x_0 = \toBPA{S_i} \} =  \toBPATop{S_i}$.
+
+  \textbf{Case }$\frac{S_1 \LTSderives S_1'}{S_1; S_2
+    \LTSderives S_1';S_2}$.
+  In this case $\toBPATop{S_1;S_2} = \{ x_0 = E_1;E_2, \dots \}$ where
+  $E_i = \toBPA{S_i}$ for $i=1,2$.
+  Because $S_1 \LTSderives S_1'$,
+  we obtain by induction that $\toBPATop{S_1} = \{ x_0 = E_1, \dots \}
+  \LTSderives \toBPATop{S_1'} = \{ x_0 = E_1', \dots
+  \}$. Therefore, $\{ x_0 = E_1;E_2, \dots \} \LTSderives \{ x_0 =
+  E_1';E_2, \dots \} = \toBPATop{S_1'; S_2}$.
+
+  \textbf{Case }$\frac{\DONE{S_1} \quad S_2 \LTSderives S_2'}{S_1; S_2
+    \LTSderives S_2'}$.
+  In this case $\toBPATop{S_1;S_2} = \{ x_0 = E_1;E_2, \dots \}$ where
+  $E_i = \toBPA{S_i}$ for $i=1,2$.
+  It is easy to see that $\DONE{S_1}$ implies $\DONE{\toBPA{S_1}}$,
+  that is, $\DONE{E_1}$.
+  Because $S_2 \LTSderives S_2'$,
+  we obtain by induction that $\toBPATop{S_2} = \{ x_0 = E_2, \dots \}
+  \LTSderives \toBPATop{S_2'} = \{ x_0 = E_2', \dots
+  \}$. 
+  Therefore, $\{ x_0 = E_1;E_2, \dots \} \LTSderives \{ x_0 =
+  E_2', \dots \} = \toBPATop{S_2'}$.
+
+  \textbf{Case }$\frac{S[\mu x.S/x] \LTSderives S'}{\mu x.S
+    \LTSderives S'}$.
+  In this case
+  $\toBPATop{\mu x.S} = \{ x_0 = x, x = E, \dots \}$ with $E = \toBPA{\Unravel
+    (S[\mu x.S/x])}$.
+  By induction, $\toBPATop{S[\mu x.S/x]} \LTSderives
+  \toBPATop{S'}$.
+  Now $\toBPATop{S[\mu x.S/x]} = \{ x_0 = \toBPA{S[\mu x.S/x]}, \dots
+  \}$ which proves the claim because $x_0 \TypeEquiv E$ by
+  Lemma~\ref{lemma:s=unr-s}. 
+\end{proof}
+
+\clearpage
+\begin{lemma}\label{lemma:app:bpa-unr-s}
+  Suppose that $\toBPA{\Unravel
+    (S)} \LTSderives E'$. Then $S \LTSderives S'$
+  and $E' = \toBPATop{S'}$.
+\end{lemma}
+\begin{proof}
+  By induction on the number $n$ of recursive calls of $\Unravel$.
+
+  \textbf{Case }$n=0$.
+
+  \textbf{Subcase }$S=\skipk$. Contradictory.
+
+  \textbf{Subcase }$S=A$. Then $a=A$, $E'=\varepsilon$, and $S' =
+  \skipk$.
+
+  \textbf{Subcase }$S = \star\{\overline{l_i:S_i}\}$. Then $a = \star
+  l_i$, $E' = \toBPA{S_i}$, and $S' = S_i$.
+
+  \textbf{Case }$n>0$.
+
+  \textbf{Subcase }$S = S_1;S_2$.
+  If $\Unravel (S_1) = \skipk$, then $\Unravel (S) = \Unravel
+  (S_2)$ with less than $n$ calls. As $\toBPA{\Unravel (S_2)} \LTSderives E'$, induction yields
+  that $S_2 \LTSderives S'$ and $E' = \toBPATop{S'}$.
+  As $\Unravel (S_1) = \skipk$, we know that $\DONE{S_1}$. Hence,
+  ${S_1;S_2} \LTSderives S'$ and $E' = \toBPATop{S'}$.
+
+  If $\Unravel (S_1)\ne \skipk$, then consider $\toBPA{\Unravel({S_1});
+    S_2} \LTSderives E'$ because $\toBPA{\Unravel({S_1})} \LTSderives
+  E_1'$, so that induction yields some $S_1'$ such that $S_1
+  \LTSderives S_1'$ and $E_1' = \toBPATop{S_1'}$.
+
+  \textbf{Subcase }$\mu x.S$.
+  $\Unravel (\mu x.S) = \Unravel (S[\mu x.S/x])$ with one less
+  invocation. As $\toBPA{\Unravel (S[\mu x.S/x])}
+  \LTSderives E'$, induction yields that  $S[\mu x.S/x] \LTSderives
+  S'$ with $E' = \toBPATop{S'} $.
+\end{proof}
+
+\begin{lemma}\label{lemma:app:bisimulation-BPA-backwards}
+  Suppose that $S$ is well-formed and let $\BPAprocess = \toBPATop{S}$
+  and $\BPAprocess \LTSderives \BPAprocess'$.
+
+  There is some $S'$ such that $S \LTSderives S'$ and $\BPAprocess' = \toBPATop{S'}$.
+\end{lemma}
+\begin{proof}
+  By induction on $S$.
+
+  \textbf{Case }$\skipk$. Contradictory.
+
+  \textbf{Case }$A$. For $\BPAprocess$, ${A \LTSderives \varepsilon
+  }$. Choose $S' = \skipk$.
+
+  \textbf{Case }$\star\{\overline{l_i:S_i}\}$. For $\BPAprocess$,
+  ${\sum \overline{\star l_i; \toBPA{S_i}} \LTSderives[\star l_i]
+    \toBPA{S_i} }$. Choose $S' = S_i$.
+
+  \textbf{Case }$S_1;S_2$.
+  If $\toBPA{S_1} \LTSderives E_1'$,
+  then $S_1 \LTSderives S_1'$ and $E_1' = \toBPA{S_1'}$, by induction.
+  Now, $\toBPA{S_1;S_2} \LTSderives E_1'; \toBPA{S_2} = \toBPA{S_1';
+    S_2}$. Choose $S' = S_1';S_2$.
+
+  If $\DONE{\toBPA{S_1}}$ and $\toBPA{S_2} \LTSderives E_2'$,
+  then $\DONE{S_1}$ and $S_2 \LTSderives S_2'$ and $E_2' =
+  \toBPA{S_2'}$, by induction. Now, $\toBPA{S_1;S_2} \LTSderives E_2' = \toBPA{S_2'}$. Choose $S' = S_2'$.
+
+  \textbf{Case }$\mu x.S$.
+  $\BPAprocess = \toBPATop{\mu x.S} = \{ x_0 = x, x = \toBPA{\Unravel
+    (S[\mu x. S/x])} \}$. If $\BPAprocess \LTSderives \BPAprocess'$,
+  then it must be because $\toBPA{\Unravel
+    (S[\mu x. S/x])} \LTSderives E'$. Use Lemma~\ref{lemma:bpa-unr-s}
+  to establish the claim.
+\end{proof}
+
+\begin{theorem}
+  Suppose that $S$ is well-formed and let $\BPAprocess = \toBPATop{S}$.
+  \begin{enumerate}
+  \item If $ S \LTSderives[a] S'$, then $\BPAprocess \BPAderives[a]
+    \BPAprocess'$ with $\BPAprocess' = \toBPATop{S'}$.
+  \item If $\BPAprocess \BPAderives[a] \BPAprocess'$, then $S
+    \LTSderives[a] S'$ with  $\BPAprocess' = \toBPATop{S'}$.
+  \end{enumerate}
+\end{theorem}
+\begin{proof}
+  By Lemmas~\ref{lemma:bisimulation-BPA-forwards} and~\ref{lemma:bisimulation-BPA-backwards}.
+\end{proof}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

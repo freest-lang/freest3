@@ -1,0 +1,39 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+Context-free session types extend the expressiveness of regular
+session types by generalizing the type structure from
+regular to context-free processes. This extension enables
+the low-level implementation of type-safe serialization of recursive datatypes
+among other examples. 
+
+While we have established decidability of type checking, there
+is still work to do towards a practical type checking
+algorithm. This algorithm could be based on the algorithm that decides
+BPA equivalence, but there may be other alternatives to consider \cite{DBLP:journals/iandc/LanesePSS11}.
+
+We further believe that our approach scales to the serialization of XML
+documents, but we leave the elaboration of this connection to future work.
+
+
+% \vv{Shall we say something about this: ``This is a reasonable simplification for a first study of context free session
+% types. There are, however, other decidability results for strong bisimulation of
+% the higher-order pi calculus which could perhaps support full context free
+% session types with delegation. For example:
+
+%   I. Lanese, J. A. Pérez, D. Sangiorgi, A. Schmitt, 
+%   On the expressiveness and decidability of higher-order process calculi,
+%   Information and Computation 2011.''}
+
+% \vv{Shall we say something about this: ``Does this mean that the only challenge for a type-checking algorithm is a
+% practical algorithm for deciding strong bisimulation? 
+
+% It is difficult to see an obvious answer by observing the fairly complex
+% inference rules of figure 6 (the type assignment system), and the paper itself
+% does not address this question. Even the challenge of finding a bisimulation
+% algorithm is not mentioned before the conclusions.''}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

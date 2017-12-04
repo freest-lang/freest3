@@ -1,0 +1,240 @@
+\begin{figure}[t]
+  Typing for expressions, $\Delta;\Gamma \vdash e: T$
+  %
+  \begin{gather*}
+    % 1 _ LAMBDA
+    \frac{\Delta \vdash \Gamma \quad \un_\Delta(\Gamma)}{\Delta;\Gamma \vdash () \colon \unitk}
+    \quad
+    % VAR
+    \frac{
+      \Delta \vdash \Gamma \quad
+      \un_\Delta(\Gamma) \quad
+      \Delta \vdash \vec T :: \vec \kind
+    }{
+      \Delta;\Gamma,a\colon \forall \vec\alpha::\vec\kind. T
+      \vdash a : T\subs{\vec T}{\vec \alpha}}
+    \\
+    % LET-poly
+    \frac{
+      %\begin{array}{c}
+      \Delta, \vec\alpha :: \vec\kind; \Gamma_1 \vdash e_1 : T_1 \quad
+      \Delta; \Gamma_2, a : \forall \vec\alpha::\vec\kind. T_1 \vdash
+      e_2 : T \quad
+      \vec\alpha \notin \Delta
+      %\end{array}
+    }{
+      \Delta;\Gamma_1\circ \Gamma_2 \vdash \letin{a}{e_1}{e_2} : T
+    }
+    \\
+    % FIX
+    \frac{
+      %\begin{array}{c}
+        \Delta, \vec\alpha :: \vec\kind;\Gamma, a\colon  \forall
+        \vec\alpha::\vec\kind. T \vdash e : T  \quad
+        \un_\Delta(\Gamma) \quad
+        \vec\alpha \notin \Delta
+      %\end{array}
+    }{
+      \Delta;\Gamma \vdash \fix ae :  \forall \vec\alpha::\vec\kind .T
+    }
+    \\
+    % Arrow Intro / Elim
+    \frac{
+      \Delta;\Gamma,a\colon T_1 \vdash e : T_2
+      \quad
+      \un_\Delta(\Gamma)
+      \quad
+      \Delta \vdash T_1,T_2 ::\kindt^\Linear
+    }{
+      \Delta;\Gamma \vdash \lambda a.e : T_1 \rightarrow T_2
+    }
+    \\
+    \frac{
+      \Delta;\Gamma,a\colon T_1 \vdash e : T_2::\kindt^\Linear
+      \quad
+      \Delta \vdash T_1,T_2 ::\kindt^\Linear
+    }{
+      \Delta;\Gamma \vdash \lambda a.e : T_1 \multimap T_2
+    }
+    \\
+    \frac{
+      \Delta;\Gamma_1 \vdash e_1 : T_1 \multimap T_2 \quad \Delta;\Gamma_2
+      \vdash e_2 : T_1
+    }{
+      \Delta;\Gamma_1\circ  \Gamma_2 \vdash e_1 e_2 : T_2
+    }
+    % \;\;%\quad
+    % \frac{
+    %   \Delta;\Gamma \vdash e : T_1 \rightarrow T_2
+    % }{
+    %   \Delta;\Gamma \vdash e : T_1 \multimap T_2
+    % }
+     \\
+    \frac{
+      \Delta;\Gamma_1 \vdash e_1 : T_1 \rightarrow T_2 \quad \Delta;\Gamma_2
+      \vdash e_2 : T_1
+    }{
+      \Delta;\Gamma_1\circ  \Gamma_2 \vdash e_1 e_2 : T_2
+    }
+   \\
+    % Tensor Intro / Elim
+    \frac{
+      \Delta;\Gamma_1 \vdash e_1 : T_1
+      \quad
+      \Delta;\Gamma_2 \vdash e_2 : T_2
+      \quad
+      \Delta \vdash T_1,T_2 ::\kindt^\Linear
+    }{
+      \Delta;\Gamma_1\circ \Gamma_2 \vdash (e_1,e_2) : T_1 \otimes T_2
+    }
+    \\
+    \frac{
+      \Delta;\Gamma_1 \vdash e_1 : T_1 \otimes T_2
+      \quad
+      \Delta;\Gamma_2, a\colon T_1, b\colon T_2 \vdash e_2: U
+    }{
+      \Delta;\Gamma_1 \circ \Gamma_2 \vdash \letin{a,b}{e_1}{e_2} : U
+    }
+    \\
+    % Variant Intro / Elim
+    \frac{
+      \Delta;\Gamma \vdash e : T_j \quad j\in I \quad
+      \Delta\vdash T_i::\kindt^\Linear
+    }{
+      \Delta;\Gamma \vdash \inject {l_j} e : [l_i\colon T_i]_{i\in I}
+    }
+    \\
+    \frac{
+      \Delta;\Gamma_1 \vdash e : [l_i\colon T_i]
+      \quad
+      \Delta;\Gamma_2 \vdash e_i : T_i \multimap T
+    }{
+      \Delta;\Gamma_1\circ \Gamma_2 \vdash \match e {l_i\colon e_i} : T
+    }
+    % \\
+    % % Forall Intro / Elim
+    % \frac{
+    %   \Delta;\Gamma \vdash e : T
+    %   \quad 
+    %   \alpha \notin \Delta,\Gamma
+    %   \quad 
+    %   \Delta,\alpha::\kind \vdash T :: \kindsch^\Linear
+    %   \quad
+    %   \kind \le \kindt^\Linear
+    % }{
+    %   \Delta;\Gamma \vdash e : \forall \alpha::\kind.T
+    % }
+    % \\
+    % \frac{
+    %   \Delta;\Gamma \vdash e : \forall\alpha::\kind.T_1
+    %   \quad
+    %   \Delta \vdash T_2::\kind
+    % }{
+    %   \Delta;\Gamma \vdash e : T_1 \subs{T_2} \alpha
+    % }
+    \\
+    % 2 _ SESSIONS
+    % New
+    \frac{
+      \Delta \vdash \Gamma
+      \quad
+      \Delta \vdash T::\kinds^\Linear
+    }{
+      \Delta;\Gamma \vdash \newk : T\otimes \dual T
+    }
+    \quad
+    % Send/Receive
+    \frac{
+      \Delta \vdash \Gamma
+      \quad
+      \Delta \vdash T::\kinds^\Linear
+    }{
+      \Delta;\Gamma\vdash \sendk : B \rightarrow \;!B;T \rightarrow T
+    }
+    \\
+    \frac{
+      \Delta \vdash \Gamma
+      \quad
+      \Delta \vdash T::\kinds^\Linear
+    }{
+      \Delta;\Gamma \vdash \recvk : \;?B;T \rightarrow (B \otimes T)
+    }
+    \\
+    % Select Intro
+    \frac{
+      \Delta;\Gamma \vdash e : \oplus\{l_i\colon T_i\}_{i\in I}
+      \quad
+      j\in I
+    }{
+      \Delta;\Gamma \vdash \select {l_j} e \colon T_j
+    }
+    \\
+    % Case Intro
+    \frac{
+      \Delta;\Gamma_1 \vdash e : \&\{l_i\colon T_i\} \quad \Delta;\Gamma_2 \vdash e_i
+      : T_i \multimap T
+    }{
+      \Delta;\Gamma_1\circ  \Gamma_2 \vdash \case e {l_i\colon e_i} : T
+    }
+    \\
+    % 3 _ CONCURRENCY
+    % Fork
+    \frac{
+      \Delta;\Gamma \vdash e : T
+      \quad
+      \un_\Delta(T)
+    }{
+      \Delta;\Gamma \vdash \forkk\,e : \unitk
+    }
+    \quad
+    % 4 _ STRUCTURAL (the forall rules are structural as well)
+    % Weak, Copy, Equiv
+    % \frac{
+    %   \Delta;\Gamma \vdash e : T_1 \quad \un_\Delta(T_2) \quad a\notin\Gamma
+    % }{
+    %   \Delta;\Gamma, a\colon T_2 \vdash e : T_1
+    % }
+    % \\
+    % \frac{
+    %   \Delta;\Gamma,a\colon T_1, a\colon T_1 \vdash e : T_2 \quad \un_\Delta(T_1)
+    % }{
+    %   \Delta;\Gamma, a\colon T_1 \vdash e : T_2
+    % }
+    % \\
+    \frac{
+      \Delta;\Gamma \vdash e : T_1 \quad \Delta \vdash T_1 \TypeEquiv T_2
+    }{
+      \Delta;\Gamma \vdash e : T_2
+    }
+  \end{gather*}
+  %
+   Typing for processes, $\Delta;\Gamma \vdash p$
+  \begin{gather*}
+    \frac{
+      \Delta;\Gamma \vdash e : T \quad \un_\Delta(T)
+    }{
+      \Delta;\Gamma \vdash e
+    }
+    \\
+    \frac{
+      \Delta;\Gamma_1 \vdash P_1 \quad \Delta;\Gamma_2 \vdash P_2
+    }{
+      \Delta;\Gamma_1\circ  \Gamma_2 \vdash p_1 \mid p_2
+    }
+    \quad
+    \frac{
+      \Delta;\Gamma, a\colon T, b \colon \dual T \vdash p
+            \quad
+      \Delta \vdash T::\kinds^\Linear
+    }{
+      \Delta;\Gamma \vdash (\new a,b)p
+    }
+  \end{gather*}
+  %
+  \caption{Typing for expressions and processes}
+  \label{fig:typing}
+\end{figure}
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

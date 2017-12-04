@@ -1,0 +1,155 @@
+\begin{lemma}[Termination]
+  \label{lem:alg-terminates}
+  The type equivalence algorithm always terminates on closed session
+  types.
+\end{lemma}
+%
+\begin{proof}
+  Define the set of \emph{subterms} of a session type $S$,
+  $\subterms(S)$, as follows.
+  \begin{equation*}
+    \{S,\Unfold(S)\} \cup\left\{
+      \begin{array}{ll}
+        \emptyset & \text{if } \Unfold(S) = \skipk
+        \\
+        \{S_1\}\cup\subterms(S_2) & \text{if } \Unfold(S) = S_1;S_2
+        \\
+        \{S_i\mid i\in I\}  & \text{if } \Unfold(S) = \mathsf{\_}\{l_i\colon S_i\}_{i\in I}
+      \end{array}
+      \right.
+  \end{equation*}
+
+  Given an initial goal $\cdot\vdash S^0_1\equiv S^0_2$, let $N$ be
+%  the natural number
+  $\cardinality{\subterms(S^0_1)} \times
+  \cardinality{\subterms(S^0_2)}$.
+  % 
+  Define the \emph{measure} $\measure$ of an arbitrary goal
+  $\Sigma \vdash S_1 \equiv S_2$ as the pair $(N-n,m)$ where~$n$ is
+  the number of assumptions in~$\Sigma$ and~$m$ is the sum of the
+  nesting of type constructors in~$S_1$ and~$S_2$. Assume $\measure$
+  equipped with the usual \emph{lexicographic ordering}.%
+  % 
+  \footnote{$(a,b)<(a',b')$ if either $a<a'$ or $a=a'$ and $b<b'$.}
+  %
+  It is straightforward to show that each application of a rule
+  strictly decreases $\measure$.
+
+  It remains to show that $\measure$ is well-founded; this follows
+  from the fact that $N$ is finite, that $N\ge n$ (below) and that
+  $m>0$ (the depth of a term is a positive number). That $N\ge n$ is
+  straightforward for all rules (where~$n$ is invariant) except the
+  last. For the last rule we have to show that, for each goal
+  $\Sigma \vdash S_0\equiv S_1$ arising in the execution of
+  $\cdot\vdash S^0_1\equiv S^0_2$, we have:
+  %
+  \begin{equation*}
+    (S_1,S_2) \in \subterms(S_1^0) \times \subterms(S_2^0)
+  \end{equation*}
+  (To be completeted)
+\end{proof}
+
+Now for soundness. We again follow Gay and
+Hole~\cite{DBLP:journals/acta/GayH05}.
+%
+Say that a goal
+$S_1 \equiv S'_1,\dots,S_{n-1}\equiv S_{n-1}' \vdash S_n \equiv S_n'$
+is \emph{sound} when $S_i \TypeSim S_i'$ for all $1\le i\le n$.
+
+\begin{lemma}
+  \label{lem:alg-subgoals}
+  If a goal is sound then the conclusion of one of the rules in
+  figure~\ref{fig:alg-type-equiv} matches the goal and the new
+  subgoals corresponding to the hypotheses are all sound goals.
+\end{lemma}
+%
+\begin{proof}
+  Let $\Sigma \vdash S_1 \equiv S_2$ be a sound goal. If
+  $S_1 \equiv S_2 \in \Sigma$, then the first axiom applies and there
+  are no subgoals.
+  
+  If $S_i = \alpha;S_i'$ with $i=1,2$, we know by hypothesis that
+  $\alpha;S_1' \TypeSim \alpha;S_2'$, and by definition that
+  $(\alpha;S_1', \alpha;S_2') \in R$, and by unfolding that
+  $(\skipk;S_1',\skipk;S_2') \in R$. The result follows from
+  Lemma~\ref{lem:skip-elim}.
+  %
+  The cases of $S_i = \;!;S_i'$ and $S_i = \;?;S_i'$ are similar.
+
+  In the cases for choice, soundness of the new subgoals follows from
+  the definition of~$\TypeSim$.
+
+  The case for the last rule follows from
+  Lemma~\ref{lem:unfold-type-sim}.
+\end{proof}
+
+\begin{lemma}
+  \label{lem:alg-not-false}
+  If $S_1 \TypeSim S_2$ then the type equivalence algorithm does not
+  return false when applied to $\cdot \vdash S_1 \equiv S_2$.
+\end{lemma}
+%
+\begin{proof}
+  Consider all the subgoals produced by the algorithm when given
+  $\cdot\vdash S_1\equiv S_2$. From the hypothesis we know that the
+  initial goal is sound; by Lemma~\ref{lem:alg-subgoals} all of the
+  generated subgoals are sound.  By the same lemma, the algorithm
+  either proceeds or returns true.
+\end{proof}
+
+\begin{theorem}[Soundness of algorithmic type equivalence]
+  \label{thm:alg-soundness}
+  If $S_1 \TypeSim S_2$ then $\cdot \vdash S_1 \equiv S_2$  
+\end{theorem}
+%
+\begin{proof}
+  By Lemma~\ref{lem:alg-terminates} the algorithm terminates. By
+  Lemma~\ref{lem:alg-not-false} the algorithm does not return
+  false. Therefore it must return true.
+\end{proof}
+
+Now for completeness.
+
+\begin{lemma}
+  \label{lem:unfold-preserves-alg-equiv}
+  If $\cdot\vdash S_1 \equiv S_2$ then
+  $\cdot\vdash \Unfold(S_1) \equiv \Unfold(S_2)$.
+\end{lemma}
+
+\begin{theorem}[Completeness of algorithmic type equivalence]
+  If $\cdot\vdash S_1 \equiv S_2$ then $S_1 \TypeSim S_2$.
+\end{theorem}
+%
+\begin{proof}
+  By Lemma~\ref{lem:unfold-preserves-alg-equiv} it is sufficient to
+  consider the case when $S_1$ and $S_2$ are guarded types. We show
+  that
+  %
+  \begin{equation*}
+    R = \{(S_1,S_2) \mid \cdot\vdash S_1 \equiv S_2 \text{ and } S_1
+    \text{ and } S_2 \text{ are guarded}\}
+  \end{equation*}
+  %
+  is a type simulation.
+
+  Consider case 6 (external choice, $\&$), and assume
+  $(S_1,S_2) \in R$ and
+  $\Unfold(S_1) = \;\&\{l_i\colon S_i\}_{i\in I}$. Since $S_1$ is
+  guarded we have $S_1=\;\&\{l_i\colon S_i\}_{i\in I}$. The only rule
+  in the algorithm that applies is the \&-rule, and we get that
+  $S_2 = \;\&\{l_j\colon S'_j\}_{j\in J}$. The rule ensures that $I=J$
+  and that $\cdot\vdash S_i \equiv S'_i$, for all $i \in I$. Then
+  Lemma~\ref{lem:unfold-preserves-alg-equiv} ensures that
+  $\cdot\vdash \Unfold(S_i) \equiv \Unfold(S'_i)$, and
+  Lemma~\ref{lem:unfold-yields-guarded-types} that $S_i$ and $S'_i$
+  are guarded, hence $(S_i',S_i') \in R$ as required.  
+\end{proof}
+
+\begin{corollary}
+  $\cdot \vdash S_1 \equiv S_2$ if and only if $\S_1 \TypeSim S_2$.
+\end{corollary}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

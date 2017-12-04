@@ -1,0 +1,69 @@
+\section{Related Work}
+\label{sec:related-work}
+
+The system we propose is ultimately rooted in the work of Honda et
+al.\ on session types~\cite{DBLP:conf/concur/Honda93,DBLP:conf/parle/TakeuchiHK94,DBLP:conf/esop/HondaVK98}.
+%
+The particular language of this paper is closely related to the one
+proposed by Gay and Vasconcelos~\cite{DBLP:journals/jfp/GayV10}. The
+main difference is at the level of semantics: we use a synchronous
+semantics in place of a buffered one. We make this choice to simplify
+the technical treatment of the operational semantics. We believe that
+a buffered semantics can be derived without compromising the most
+important properties of the language. At the level of the language,
+and in addition to Gay and Vasconcelos, we incorporate variant types
+and recursion on functional types. The linear treatment of session
+types is identical, including the syntactic distinction of the
+two ends of a channel, related by a $\nu$-binding.
+
+The predicative polymorphism we employ is closely related to that of
+Bono et al.~\cite{BonoPadovaniTosatto13}, including the kinding system
+for type variables. The extra complexity of context-free types lead us
+to a more elaborate kinding system, allowing to distinguish session (or
+end point) types, from functional types and type schemes (Bono et al.\
+rely on different syntactic categories).
+%
+% Predicative polymorphism for the $\pi$-calculus was introduced by
+% Vasconcelos~\cite{DBLP:conf/parle/Vasconcelos94}.
+%
+A different form of polymorphism---bounded polymorphism on the values
+transmitted on channels---was introduced by
+Gay~\cite{DBLP:journals/mscs/Gay08} in the realm of session types for
+the $\pi$-calculus.
+
+Wadler~\cite{DBLP:journals/jfp/Wadler14} gives a typing preserving
+translation of the Gay and Vasconcelos calculus mentioned before to a process
+calculus inspired by the work of Caires and
+Pfenning~\cite{DBLP:conf/concur/CairesP10}.  The semantics of these
+systems, given directly by the cut elimination rules of linear logic,
+ensure deadlock freedom. Even though our system ensures progress for
+the functional part of the language, the unrestricted interleaving of
+channel read/write on multiple channels may lead to deadlocked situations. That is the
+price to pay for the flexibility our language offers with respect to
+the work of Caires, Pfenning, and Wadler~\cite{DBLP:conf/concur/CairesP10,DBLP:journals/jfp/Wadler14}.
+
+% The Sill language described by Toninho, Caires, and
+% Pfenning~\cite{DBLP:conf/esop/ToninhoCP13} 
+Functional languages with conventional session
+types~\cite{DBLP:journals/jfp/GayV10,DBLP:conf/esop/ToninhoCP13} can
+describe type-safe protocols to transmit trees. Doing so
+requires a higher-order recursive session type of the following shape:
+\begin{lstlisting}
+TreeC = oplus{Leaf: end, Node: !int.!TreeC.!TreeC}
+\end{lstlisting}
+That is, to transmit a node \lstinline|Node(i,t1,t2)| on channel $c$, the originating process first sends the
+integer \lstinline|i| on $c$. But then it creates two new channels $c_1$ and $c_2$,
+sends their receiving ends on $c$, and closes $c$. Finally, it
+recursively transmits \lstinline|t1| on $c_1$ and \lstinline|t2| on
+$c_2$.
+In comparison, our calculus is intentionally closer to a low level
+language: it only supports the transmission of base type values. We
+furthermore believe that its run-time implementation is simpler and
+more efficient: only one channel is created and used for the
+transmission of the tree; thus, it avoids the overhead of multiple
+channel creation and channel passing.
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

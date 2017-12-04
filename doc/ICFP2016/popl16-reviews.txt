@@ -1,0 +1,210 @@
+===========================================================================
+                          POPL 2016 Review #111A
+---------------------------------------------------------------------------
+              Paper #111: Towards Context-Free Session Types
+---------------------------------------------------------------------------
+
+                         ===== Paper summary =====
+
+Recursive definition of session types describe regular patterns of
+interactions between processes, seen here in the technical sense of
+"regular languages".  This can be limiting if the pattern of
+interactions is more general and corresponds, for example, to
+context-free languages.  In order to allow such session types, the
+authors add two new session constructors: an empty session and a
+general sequential composition of two sessions.  In the presence of
+session polymorphism, these now allow some natural context-free
+sessions to be typed.  Unfortunately, they also create a number of
+technical complications, specifically a more complex notion of type
+equality and a difficult type checking problem (which is actually left
+to future work).
+
+The key application domain of context-free session types is the
+serialized form of tree-structured data types.  Interaction tends to
+be in sequences or streams of data even if their natural structure is
+that of a tree.  Such sequences can of course be represented with
+regular session types already, but they cannot be captured precisely:
+some illegal sequences of interactions would have to be detected
+dynamically.
+
+===== Comments for authors and suggestions to make this a strong paper =====
+
+I found the paper to be quite intriguing.  Systems of session types
+proposed in the literature are already so rich in expressive power
+that it never occurred to me to consider this particular limitation.
+There is a particular self-imposed restriction in this development,
+namely to what they call "first-order" session types that I find
+curious.  It seems that if we drop this restriction it should actually
+be relatively easy to express the desired functionality.  I'll
+elaborate on this in the following by providing three alternatives, one
+of them in some detail.  Since these alternatives are available, it
+would help me a great deal to have a clearer motivation for the
+particular restriction (to first-order session types) and
+generalization (to context-free sessions) considered together.  Since
+the paper is otherwise well done and makes several contribution,
+my judgment may ultimately depend on this point.
+
+I am providing here a solution in SILL (Toninho et al, ESOP 2013),
+which, incidentally, the author(s) seem to miss among the related
+work.  Channel names are preceded by a quote.
+
+type Tree = Leaf | Node Int Tree Tree;;
+
+ltype TreeChan = +{ leaf : 1 ; node : Int /\ TreeChan * TreeChan * 1 };;
+
+sendTree : Tree -> {TreeChan};;
+
+'c <- sendTree t = case t of
+| Leaf -> 'c.leaf ; close 'c
+| Node x l r -> 'c.node ;
+                send 'c x ;
+                'd <- sendTree l ; send 'c 'd ;
+                'e <- sendTree r ; send 'c 'e ;
+                close 'c
+;;
+
+The point here is to use the tensor (written as '*' above) to create
+tree-structured session that mimics the tree structure of the Tree
+type.  There is also no difficulty in writing the corresponding
+recvTree function.  The idiom '_ * 1' in the type is only used here
+to obtain simpler code and could be dropped.  The treeSum example
+can be rewrittin in an analogous way on this type.
+
+No doubt the authors are aware of a second alternative, where the
+session type over-approximates the legal communications.  For example,
+
+ltype LinTree = +{ leaf : LinTree ; data : Int /\ LinTree ; done : 1 };;
+
+While this is operationally adequate, it would not rule out incomplete
+serializations of trees to be sent---these would have to be discovered
+dynamically.
+
+Finally, a third alternative would be use a dependently typed session
+framework, such as as (Toninho et al., PPDP 2011).  Clearly, in this
+framework the context-free refinements of the regular types can also
+be described.  The cost of such an encoding in terms of proofs and
+proof objects is not immediately clear, but I think it is at least
+worth mentioning.
+
+Given these alternatives, is it still worth considering a direct
+extension to handle context-free session types?  The case can be made
+for two reasons: (1) The code, for example, in Listing 1 is
+exceptionally straightforward while the code shown above may be
+considered slightly more complicated, and (2) sequentially composing
+two session is a natural extension so it is worth investigating.
+Unfortunately, it does not turn out to be too simple because of the
+"commuting conversion" that have to be considered in the type
+equality.  This, together with the restriction to first-order types
+and the required polymorphic recursion, makes a concrete realization
+somewhat doubtful while the solutions I sketched above are rather
+straightforward from an implementation perspective.
+
+Otherwise, the paper is competently done to the extent that I have
+checked.  It is an interesting contribution of the paper that in the
+first-order case, precise characterization of the trace sets in terms
+of omega-context-free languages can be given.  This is technically
+significant and culminates in the decidability of equivalence of
+session types.  Ideally, this would be in the core of a type-checking
+algorithm, but, as the authors note in the conclusion, they are
+looking for sound approximations since the full algorithm may not be
+practical.
+
+As a side issue, give the Curry-Howard foundation for session types
+given by Caires et al [3, and some refs above] and Wadler [19] one
+might reasonably ask whether skip and composition have a logical
+meaning.  This might provide some hints about a stronger system where
+typing can also guarantee deadlock-freedom (which is not the case
+here).  In fact, this might be considered another significant drawback
+of the present system in light of these more recent discoveries since
+three of the four alternative solutions sketched above also rule out
+deadlocks statically.
+
+===========================================================================
+                          POPL 2016 Review #111B
+---------------------------------------------------------------------------
+              Paper #111: Towards Context-Free Session Types
+---------------------------------------------------------------------------
+
+                         ===== Paper summary =====
+
+Traditional session types allow the expression of communication over typed channels using protocols that can be described by a regular language.  This paper proposes extending session types with a type-level general sequence operation that allows them to express protocols that can be described by context-free languages.  Such an extension is necessary to express, for instance, a protocol for serializing and sending a tree data structure.  The authors present a calculus with context-free session types and give a type safety proof for it.  They show that type equivalence is decidable, which involves a significant amount of metatheoretical machinery, including setting up a bisimulation relation on types to use as the type equivalence relation and using a notion of trace semantics that interpret session types as sets of communication traces to show that it is decidable.
+
+===== Comments for authors and suggestions to make this a strong paper =====
+
+For the most part, I enjoyed reading this paper and found context-free session types to be an interesting and useful idea.  Speaking as a non-expert on session types, though, I found it hard to tell if the paper is a "POPL-sized" contribution.  The related work section seems skimpy for a POPL paper, making it difficult for me to situate this paper's contributions in relation to other work.  The authors themselves admit that the metatheory is quite hairy, and I wonder if the authors can come up with a way to simplify the metatheory while retaining the expressivity of context-free session types.  Therefore I think the paper might benefit from having some more time to mature.  Having said that, I think section 2 is well written and does a great job of illustrating some of the reasons why the metatheory has to be so complicated.
+
+I also have two high-level suggestions for how the paper's presentation could be improved.  First, I think that subsection 3.4 should be its own section and that it should follow section 4.  I can understand that the authors may have wanted the undecidability result in 3.4 to appear earlier in the paper in order to emphasize its importance.  But I think that the paper would be easier to read if section 4 came first.  It is frustrating to have to wait until the last third of a paper to see a language definition.  Second, I think that the proofs (but not the statements of the theorems and lemmas) belong in an appendix instead of in the main text.  As it is, section 3 is quite a long slog for the reader and both of these suggestions would help ameliorate that.
+
+Questions for authors:
+
+  - In the introduction, does "sending a message is naturally polymorphic over the continuation channel" mean that, when sending a message, the type of "whatever happens next" is unconstrained by whatever that message happened to be?
+
+  - At the end of section 2.4 the authors mention in passing an example of a client/server protocol where the server can avoid unncessary communication by inspecting the values already received from the client and deciding whether to ask for more based on those.  Details are left out due to lack of space.  What I'm wondering is whether this is really expressible using even context-free session types; at first glance it seems like it would require some form of dependent typing because the type of the protocol describing the rest of the communication would depend on the values received so far.  (Also, I don't really buy "lack of space" as a reason to leave out the details, because the authors have an entire page they are not using...)
+
+  - The related work section says that the language in this paper differs from previous work in that it uses a synchronous instead of a buffered semantics.  What do "synchronous" and "buffered" mean in this context?  There's no mention of "synchronous" in section 4, which seems like the right place for such an explanation.
+
+Minor presentational suggestions:
+
+  - In section 3.1, the sentence "They furthermore require that their body is contractive in `x`..." I think should read "The formation rule for recursive types requires that...".  The rule for recursive types is the only one that has the contractivity judgment.
+
+  - In section 2.2, I think the the type of `c` should be `TreeChannel; alpha`.
+
+  - In section 2.2, it would be handy to show the typing rule for `send` as well as `select`.
+
+  - Typo: "moniodal" (section 1).
+
+  - Typo: "et at." (section 5).
+
+===========================================================================
+                          POPL 2016 Review #111C
+---------------------------------------------------------------------------
+              Paper #111: Towards Context-Free Session Types
+---------------------------------------------------------------------------
+
+                         ===== Paper summary =====
+
+The paper studies an extension of session types - context-free session types. The approach is standard: the authors show an example that cannot be typed in current languages and observe that the problem lies in the semantics. The language of all sequences of communication actions described by a session type is regular whereas the example that they try to type gives rise to a non-regular language. Hence, the authors propose a change in the syntax that enables them to type a larger class of programs, including those that give rise to context-free languages.
+
+===== Comments for authors and suggestions to make this a strong paper =====
+
+
+
+There are several challenging things about the problem tackled in this paper. On the one hand, infinite executions are taken into account and hence omega-regular and omega-context free languages are really what its at play, not plain regular or context free languages. This generates problems when it comes to provide the operational semantics and the decidability results. On the other hand the syntax of session types should be minimally changed in order to cover the intended examples but without complicating further the already existing examples. 
+
+I found the paper quite dense and hard to read. I think the authors tried to put too much into one paper and ended up doing so at the cost of the presentation. 
+
+Here are several suggestions I have for improvement: 
+
+- It is not clear to me that the syntax you propose does not allow to define a larger class than context-free session types.
+- your use of coinduction is confusing and at points makes me doubt correctness. Example: In section 3.3. you say "This function defines a bisimulation relation". What do you mean by this? Is it an instance of a more general definition? Is it a bisimulation in the sense of Aczel-Mendler? Lemma 3.12: straightforward application of coinduction: why? Page 8, first column: "separate coinductive argument". You really should make this precise. All in all, IMO what you are using is Tarski theorem of greatest fixpoints and not really coinduction in the modern sense of the word. But I might be wrong, so it would have been good to clarify this. 
+- The proof of decidability is shaky to say the least: "This automaton is weak by inspection of the transition function."
+I would have liked to see this really spelled out, because as the authors know decidability of context free languages is a subtle topic (and I am not even going into omega-context free) and as it stands I feel that there is a lot of handwaving. 
+
+All in all, I feel this paper is not ready yet for publication. It would be great to see the use of coinduction really presented in a clean way. This would open the door to use recent techniques from coinduction and automata theory to develop an efficient type checking algorithm. See e.g. Communication ACM Feb. 2015 (Bonchi & Pous) for a nice overview article on recent work.
+
+===========================================================================
+                          POPL 2016 Review #111D
+---------------------------------------------------------------------------
+              Paper #111: Towards Context-Free Session Types
+---------------------------------------------------------------------------
+
+                         ===== Paper summary =====
+
+The paper proposes context-free session types, and extension of
+session types. Context-free session types are designed to describe
+serialization of tree-structured data. The main result of the paper is that type equivalence is decidable. The result is obtained by
+reduction to equivalence of weak omega-DPDAs (deterministic pushdown
+automata).
+
+===== Comments for authors and suggestions to make this a strong paper =====
+
+The problem of session types that can describe types for serialization of tree-structured data is interesting and well-motivated. The paper presents this very well in the first two sections. 
+
+Perhaps the main question regarding the paper is whether the result on the decidability of type equivalence is significant enough, or whether the type system would be properly validated only after the type checking algorithm is known (the authors mention that in practice a sound-but-not-complete algorithm might be needed). 
+
+Furthermore: the result that bisimulation between types implies trace
+inclusion (3.16) is stated as a conjecture. Is this not needed for
+Theorem 3.20 (one of the main results)?
+
+Presentation: The paper would be easier to read if it explained better
+where each lemma is used.

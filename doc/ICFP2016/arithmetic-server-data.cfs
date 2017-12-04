@@ -1,0 +1,30 @@
+data TermData = Const int | Add TermData TermData | Mult TermData TermData
+
+sendTerm :: forallalpha.TermData -o TermChannel;alpha -o alpha
+sendTerm (Const n) =
+  let c1 = select Const c
+  in send n c1
+sendTerm (Add t1 t2) =
+  let c1 = select Add c
+      c2 = sendTerm t1 c1
+  in sendTerm t2 c2
+sendTerm (AddMult t1 t2) =
+  let c1 = select Mult c
+      c2 = sendTerm t1 c1
+  in sendTerm t2 c2
+
+computeClient :: TermData -o TermChannel;?int -o int otimes skip
+computeClient = receive . sendTerm
+
+aTerm = Add (Const 5) (Mult (Const 7) (Const 9)) 
+go :: int otimes skip
+go =
+  let c s = new TermChannel;?int
+  in fork (computeService s);
+     computeClient aTerm c
+
+{- Exercise: write functions receiveTerm and eval in such a way that: -}
+
+computeService c =
+  let t c1 = receiveTerm c
+  in send (eval t) c1

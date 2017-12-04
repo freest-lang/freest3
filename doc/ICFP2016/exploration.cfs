@@ -1,0 +1,30 @@
+type XploreTreeChan = oplus{
+  Leaf: skip,
+  Node: XploreNodeChan
+}
+
+type XploreNodeChan = oplus{
+  Value: !int;XploreNodeChan,
+  Left:  XploreTreeChan;XploreNodeChan,
+  Right: XploreTreeChan;XploreNodeChan,
+  Exit: skip
+}
+
+exploreTree : Tree -> XploreTreeChan;alpha -> alpha
+exploreTree Leaf c =
+  select Leaf c
+exploreTree (Node x l r) c =
+  let c1 = select Node c
+  in exploreNode x l r c1
+
+exploreNode : int -> Tree -> Tree -> XploreNodeChan;alpha -> alpha
+exploreNode x l r c1
+  case c1 of {
+    Value: lambdac2.let c3 = send c2 x 
+               in  exploreNode x l r c3,
+    Left:  lambdac2.let c3 = exploreTree l c2
+               in  exploreNode x l r c3,
+    Right: lambdac2.let c3 = exploreTree r c2
+               in  exploreNode x l r c3,
+    Exit:  lambdac2.c2
+  }

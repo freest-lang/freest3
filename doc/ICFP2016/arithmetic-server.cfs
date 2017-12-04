@@ -1,0 +1,38 @@
+type TermChan = oplus{Const: !int,
+	          Add:TermChan;TermChan,
+	          Mult: TermChan;TermChan}
+
+computeService : dualof TermChan;!int -> skip
+computeService c =
+  let n1,c1 = receiveEval c
+  in send n1 c1
+
+receiveEval : forallalpha.dualof TermChan;alpha -> int otimes alpha
+receiveEval c =
+  case c of {
+    Const: lambdac.receive c
+    Add:  lambdac.let n1,c1 = receiveEval c
+                 n2,c2 = receiveEval c1
+	     in (n1+n2,c2)
+    Mult: lambdac.let n1,c1 = receiveEval c
+                 n2,c2 = receiveEval c1
+	     in (n1*n2,c2)
+  }
+
+client : TermChan;?int -> int otimes skip
+client c =
+  let c1 = select Add c
+      c2 = select Const c1
+      c3 = send 5 c2
+      c4 = select Mult c3
+      c5 = select Const c4
+      c6 = send 7 c5
+      c7 = select Const c6
+      c8 = send 9 c7
+    in receive c8
+      
+go : int
+go =
+  let c, s = new TermChan;?int
+  in fork (computeService s);
+     fst (client c)

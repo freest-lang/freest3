@@ -1,0 +1,187 @@
+\newpage
+\subsection{Properties of session type equivalence}
+
+\subsubsection{Contractivity}
+\label{sec:contractivity}
+
+
+Consider the (illformed) type $W = \mu x.(\skipk; x)$ and the rule
+\begin{equation}
+  F(R) = \dots {}\cup{} \{ ((\skipk;S_1), S_2) \mid (S_1, S_2) \in R \}\label{eq:1}
+\end{equation}
+Because the set $R = \{(W,T), ((\skipk; W), T) \mid \cdot \vdash T :: S\}$ is $F$-consistent, every session type would
+be equivalent to $W$! With symmetry and transitivity, every session type would be equivalent to
+every other.
+
+Fortunately, contractivity rules out types like $W$ so that the $\skipk$-canceling rules like~\eqref{eq:1} can only be
+applied a finite number of times between non-skip rules.
+
+\begin{lemma}\label{lemma:S=skip}
+  If $S \approx \skipk$, then $S \grmeq \skipk \grmor (S; S) \grmor
+  \mu x.S$.
+\end{lemma}
+\begin{proof}
+  The proof rests on the observation that the derivation of $S \approx
+  \skipk$ is finite because of contractivity. Thus, induction on the
+  derivation yields the result.
+\end{proof}
+
+\begin{lemma}\label{lemma:trans-skip}
+  If $S_1 \approx \skipk$ and $\skipk \approx S_3$, then $S_1 \approx S_3$.
+\end{lemma}
+\begin{proof}
+  Construct a derivation for $S_1\approx S_3$ by induction on $S_1$
+  using its structure according to Lemma~\ref{lemma:S=skip}.
+
+  \textbf{Case $\skipk$.} Immediate by assumption.
+
+  \textbf{Case $\mu x.S_1'$.} By  Lemma~\ref{lemma:S=skip}, $S_1'[\mu
+  x.S_1'/x] = S_1'$ so inversion of the $\mu$-left rule yields $S_1'
+  \approx \skipk$. By induction, there is a derivation for $S_1'
+  \approx S_3$ which can be completed by the $\mu$-left rule to $S_1
+  \approx S_3$.
+
+  \textbf{Case $(S_1';S_1'')$ where $S_1' \approx \skipk$ and $S_1''
+    \approx \skipk$.} We need to perform an auxiliary induction on
+  $S_3$.
+
+  %% This proof step requires the more general skip rules.
+  \textbf{Subcase $\skipk$.} Apply rule skip-left-left.
+
+  \textbf{Subcase $(S_3'; S_3'')$ where $\skipk \approx S_3'$ and
+    $\skipk \approx S_3''$.} Apply the semicolon rule to the
+  inductively constructed proofs for $S_1' \approx S_3'$ and $S_1''
+  \approx S_3''$.
+
+  \textbf{Subcase $\mu x. S_3'$.} Use the $\mu$-right rule. Analogous
+  to the case for the $\mu$-left rule.
+\end{proof}
+
+\begin{lemma}\label{lemma:S=B}
+  If $S \approx {!B}$, then $S \grmeq {!B} \grmor (S^{\skipk};
+  S)\grmor (S; S^{\skipk}) \grmor \mu x.S$ where $S^{\skipk}$ is
+  described in Lemma~\ref{lemma:S=skip}.
+\end{lemma}
+
+\begin{lemma}
+  If $S_1 \approx {!B}$ and ${!B} \approx S_3$, then $S_1 \approx S_3$.  
+\end{lemma}
+\begin{proof}
+  Construct a derivation for $S_1 \approx S_3$ by induction on $S_1$
+  using its structure according to Lemma~\ref{lemma:S=B}.
+
+  \textbf{Case $!B$.} Immediate by assumption.
+
+  \textbf{Case $(S^{\skipk}; S)$ where $S^{\skipk}\approx \skipk$ and
+    $S \approx{!B}$.} By induction $S \approx S_3$. Applying rule
+  skip-l-l yields $S_1 \approx S_3$.
+
+  \textbf{Case $(S; S^{\skipk})$ where $S^{\skipk}\approx \skipk$ and
+    $S \approx{!B}$.} Similar.
+
+  \textbf{Case $\mu x.S_1'$.} By Lemma~\ref{lemma:S=B}, $S_1'[\mu
+  x.S_1'/x] = S_1'$, so inversion of the $\mu$-left rule yields $S_1'
+  \approx {!B}$. By induction, there is a derivation for $S_1'
+  \approx S_3$ which can be completed by the $\mu$-left rule to $S_1
+  \approx S_3$.
+\end{proof}
+
+\begin{lemma}\label{lemma:S=oplus}
+  If $S \approx {\oplus\{l_i\colon S_i\}_{i\in I}}$, then $S \grmeq {\oplus\{l_i\colon S_i'\}_{i\in I}} \grmor (S^{\skipk};
+  S)\grmor (S; S^{\skipk}) \grmor \mu x.S$ where $S_i \approx S_i'$ and  $S^{\skipk}$ is
+  described in Lemma~\ref{lemma:S=skip}.
+\end{lemma}
+
+\begin{lemma}
+  If $S_1 \approx {\oplus\{l_i\colon S_i\}_{i\in I}}$ and
+  ${\oplus\{l_i\colon S_i\}_{i\in I}} \approx S_3$, then $S_1 \approx
+  S_3$.
+\end{lemma}
+
+\subsubsection{Reflexivity}
+\label{sec:reflexivity}
+
+Let $R = \{ (T, T) \mid \cdot \vdash T :: \kinds \} \cup \{(T'[\mu
+x.T' / x], \mu x.T') \mid \cdot \vdash T' :: \kinds \}$. Show that $R \subseteq F(R)$.
+
+Obvious, except for $(\mu x.T', \mu x.T') \in R$, but in this case
+$(\mu x.T', \mu x.T') \in F (\{(T'[\mu x.T' / x], \mu x.T')\}) \subseteq F (R)$.
+
+For $(T'[\mu x.T' / x], \mu x.T') \in R$, observe that
+$$(T'[\mu x.T' / x], \mu x.T') \in F (\{(T'[\mu x.T' / x], T'[\mu x.T'/x])\}) \subseteq F (R).$$
+
+\subsubsection{Symmetry}
+\label{sec:symmetry}
+
+Let $R = \{ (T_2, T_1) \mid T_1 \approx T_2 \}$. Show that $R \subseteq F(R)$.
+
+To consider an exemplary case,
+suppose that $((S_1'; S_2'), (S_1; S_2)) \in R$ because $((S_1; S_2) \approx (S_1'; S_2'))$ because
+$(S_1 \approx S_1')$ and $(S_2 \approx S_2')$. From the latter two assumptions, we obtain that
+$(S_1', S_1) \in R$ and $(S_2', S_2) \in R$, so that $((S_1'; S_2'), (S_1; S_2)) \in F(R)$.
+
+Suppose that $(S', \mu x.S) \in R$ because $\mu x.S \approx S'$ because $S[\mu x.S/x] \approx
+S'$. From the latter assumption, we obtain that $(S', S[\mu x.S/x]) \in R$ and hence $(S', \mu x.S)
+\in F (R)$. The other case involving $\mu$ is analogous.
+
+\subsubsection{Transitivity}
+\label{sec:transitivity}
+
+Let $R = \{ (T, T'') \mid \exists T'. T \approx T' \wedge T' \approx T''\}$. 
+Show that $R \subseteq F (R)$.
+
+Observe that, by reflexivity of $\approx$, ${\approx} \subseteq R$.
+
+Suppose that $(\mu x. S, T) \in R$ because $(\mu x.S, T) \in
+{\approx}$ and $(T, T) \in {\approx}$ (by reflexivity). Now  $(\mu x.S, T) \in
+{\approx}$ because $(S[\mu x.S/x], T) \in {\approx}$ and hence $(S[\mu
+x.S/x], T) \in R$, so that $(\mu x. S, T) \in F(R)$. 
+
+More cases omitted.
+
+Consider $(S_1, (\skipk; S_2)) \in {\approx}$ (because  $S_1\approx S_2$)
+and $((\skipk; S_2), S_3) \in {\approx}$ (because $S_2 \approx S_3$).
+Hence $(S_1, S_3) \in R$. Must show that $(S_1, S_3) \in F (R)$!
+
+But it might be the case that $S_2 = (\skipk; S_2')$ so that, by inverting the same rule, $S_1
+\approx S_2'$  and $S_2' \approx S_3$. Fortunately, contractivity tells us that $S_2$ cannot contain 
+unguarded recursion, so that an auxiliary induction on $S_2$ or on the proof of contractivity of $S_2$ can be
+applied. 
+
+\textbf{Case $S_2 = \skipk$.} In this case, we have $S_1 \approx
+\skipk$ and $\skipk \approx S_3$ and by Lemma~\ref{lemma:trans-skip} we
+obtain $(S_1, S_3) \in {\approx} = F ({\approx}) \subseteq F (R)$. 
+
+% \textbf{Subcase $S_1 = \skipk$, $S_3 = \skipk$.} Trivally in $F(R)$.
+
+% \textbf{Subcase $S_1 = \skipk$, $S_3 = \mu x.S'$.} It must be that $\skipk \approx S'[\mu x.S'/x]$,
+% so $(\skipk, S'[\mu x.S'/x]) \in R$, so $(\skipk, \mu x.S') \in F(R)$.
+
+% \textbf{Subcase $S_1 = \skipk$, $S_3 = (\skipk; S_3')$.} It must be that $(\skipk, S_3') \in
+% {\approx} \subseteq R$, so $(\skipk, S_3) \in F (R)$.
+
+% \textbf{Subcase $S_1 = \skipk$, $S_3 = (S_3'; \skipk)$.} Similar.
+
+% \textbf{Subcase $S_1 = \skipk$, $S_3 = ((S_2';S_3'); S_4')$.} It must be that $(\skipk,
+% (S_2';(S_3'; S_4'))) \in {\approx} \subseteq R$, so $(\skipk, ((S_2';S_3'); S_4')) \in F(R)$.
+
+% \textbf{Subcase $S_1 = \skipk$, $S_3 = (S_2';(S_3'; S_4'))$.} Similar.
+
+% \textbf{Subcase $S_1 = \mu x.S_1'$, $S_3 = \mu x.S_3'$.}
+% It must be that $S_1'[\mu x.S_1'/x] \approx \skipk$ and
+% $\skipk \approx S_3'[\mu x.S_3'/x]$.
+% By Lemma~\ref{lemma:S=skip}, $x$ does not occur in $S_1'$ or $S_3'$ so
+% we have $S_1' \approx \skipk$ and $\skipk \approx S_3'$.
+
+\textbf{Case $S_2 = !B$.} 
+In this case, we have $S_1 \approx {!B}$ and ${!B} \approx S_3$ and by
+Lemma~\ref{lemma:S=B} we obtain  $(S_1, S_3) \in {\approx} = F
+({\approx}) \subseteq F (R)$.
+
+\textbf{Case $S_2 = ?B$.} Analogous.
+
+\newpage
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

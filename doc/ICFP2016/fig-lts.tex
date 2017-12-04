@@ -1,0 +1,27 @@
+\begin{figure}[tp]
+  \begin{gather*}
+    \DONE{\skipk}
+    \qquad
+    \frac{\DONE{S_1} \quad \DONE{S_2}}{\DONE{S_1; S_2}}
+    \qquad
+%    \frac{\DONE{S}}{\DONE{\mu x.S}}
+    \frac{\DONE{S[\mu x.S/x]}}{\DONE{\mu x.S}}
+    \\
+    {A \LTSderives[A] \skipk }
+    \qquad
+    {\star\{l_i\colon S_i\}_{i\in I} \LTSderives[\star l_j] S_j}
+    \\
+    \frac{S_1 \LTSderives S_1'}{S_1; S_2 \LTSderives S_1';S_2}
+    \quad\;\;
+    \frac{\DONE{S_1} \quad S_2 \LTSderives S_2'}{S_1; S_2 \LTSderives S_2'}
+    \quad\;\;
+    \frac{S[\mu x.S/x] \LTSderives S'}{\mu x.S \LTSderives S'}
+  \end{gather*}
+  \caption{Labelled transition system for context free session types}
+  \label{fig:lts}
+\end{figure}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:
