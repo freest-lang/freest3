@@ -72,6 +72,11 @@ test37 = TestCase (assertEqual "for (read \"(Internal,Int)\")," (Pair (Var "Inte
 test38 = TestCase (assertEqual "for (read \"(Skiper,Int)\")," (Pair (Var "Skiper") (Basic IntType)) (read "(Skiper,Int)" :: Type))
 test39 = TestCase (assertEqual "for (read \"a -> {-A comment inside-} b\")," (UnFun (Var "a") (Var "b")) (read "a -> {-A comment inside-} b" :: Type))
 
+-- test40 = TestCase (assertEqual "for (read \"Skip;Skip;!Int\")," (Semi (Semi Skip Skip) (Out IntType)) (read "Skip;Skip;!Int" :: Type))
+
+-- Semi (Semi Skip Skip) (Out Int)
+-- read "Skip;Skip;!Int" :: Type
+
 
 validTests = TestList [TestLabel "test1" test1,
                        TestLabel "test2" test2,
@@ -112,6 +117,7 @@ validTests = TestList [TestLabel "test1" test1,
                        TestLabel "test37" test37,
                        TestLabel "test38" test38,
                        TestLabel "test39" test39
+                       -- TestLabel "test40" test40
                       ]
 
 --invalidTests = TestList [TestLabel "test5" test4]

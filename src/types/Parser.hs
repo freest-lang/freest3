@@ -37,6 +37,9 @@ parens     = P.parens lexer
 identifier = P.identifier lexer
 reserved   = P.reserved lexer
 comma      = P.comma lexer
+symbol     = P.symbol lexer
+lexeme     = P.lexeme lexer
+-- braces      = P.braces lexer
 
 rec    = reserved "rec"
 forall = reserved "forall"
@@ -75,21 +78,22 @@ table = [ [binary "->" UnFun AssocRight, binary "-o" LinFun AssocRight ]
 binary name fun assoc = Infix  (do{ reservedOp name; return fun }) assoc
 prefix name fun       = Prefix (do{ string name; return fun })
 
+-- TODO: remove
 parseWithoutSpaces = do{spaces;a<-parseTerm;spaces; return a}
 
 parseTerm =
   Text.Parsec.try (parens parseType)
-  <|>  (do { skip;                     return Skip })
-  <|> (do { b <- parseBasicType;            return $ Basic b })
-  <|> (do { reservedOp "?"; b <- parseBasicType;  return $ In b })
-  <|> (do { reservedOp "!"; b <- parseBasicType;  return $ Out b })
+  <|> (do { skip;                                return Skip })
+  <|> (do { b <- parseBasicType;                  return $ Basic b })
+  <|> (do { symbol "?"; b <- parseBasicType;  return $ In b })
+  <|> (do { symbol "!"; b <- parseBasicType;  return $ Out b })
   <|> parsePair
   <|> parseExternalChoice
   <|> parseInternalChoice
   <|> parseDataType
   <|> parseRec
   <|> parseForall
-  <|> (do { id <- identifier;               return $ Var id })
+  <|> (do { id <- identifier;                      return $ Var id })
   <?> "a type: Skip, T;T, !B, ?B, B, T->T, T-oT, (T,T), id, rec id.T, or forall id.t"
 
 parsePair = do
@@ -120,7 +124,7 @@ parseForall = do
 parseInternalChoice = do
   reservedOp "+"
   char '{'
-  a <- sepBy1 parseInternalPair comma
+  a <- sepBy1 parseBind comma
   -- a <- sepBy1 parseInternalPair (char ',')
   char '}'
   return $ InternalChoice $ Map.fromList a
@@ -128,20 +132,17 @@ parseInternalChoice = do
 parseExternalChoice = do
   reservedOp "&"
   char '{'
-  a <- sepBy1 parseInternalPair comma
+  a <- sepBy1 parseBind comma
   char '}'
   return $ ExternalChoice $ Map.fromList a
 
 parseDataType = do
   char '['
-  a <- sepBy1 parseInternalPair comma
+  a <- sepBy1 parseBind comma
   char ']'
   return $ Datatype $ Map.fromList a
 
--- TODO: parens inside ?
--- read "+{(i : Int), b : Bool}" :: Type
-
-parseInternalPair = do
+parseBind = do
   id <- identifier
   char ':'
   ptype <- parseType

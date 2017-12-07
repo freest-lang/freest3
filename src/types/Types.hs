@@ -17,7 +17,7 @@ data BasicType =
   CharType |
   BoolType |
   UnitType
-  deriving (Eq, Show)
+  deriving (Eq)
 
 -- TYPES
 
@@ -36,13 +36,24 @@ data Type =
   Rec String Type |
   Forall String Type |
   Var String
-  deriving (Eq, Show) -- This Eq must be redefined
+  deriving (Eq) -- This Eq must be redefined
 
 type Id = String
 
 type TypeMap = Map.Map Id Type
 
 -- TODO:
--- instance Show BasicType where
---   show IntType = "Int"
--- instance Show Typez
+instance Show BasicType where
+   show IntType = "Int"
+   show CharType = "Char"
+   show BoolType = "Bool"
+   show UnitType = "()"
+
+
+instance Show Type where
+  show (Basic x) = show x
+  show Skip = "Skip"
+  show (Semi x y) = "(" ++ show x ++ ";" ++ show y ++ ")"
+  show (Out x) = "(" ++ "!" ++ show x ++ ")"
+  show (In x) = "(" ++ "?" ++ show x ++ ")"
+  show x = show x
