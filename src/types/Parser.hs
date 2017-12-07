@@ -11,7 +11,11 @@ import Text.ParserCombinators.Parsec
 import Text.Parsec.Expr
 import qualified Data.Map.Strict as Map
 
+-- TODO: Skip Semi with in or Out
+-- read "Skip;!Int" :: Type
+
 -- TODO : check list
+
 instance Read BasicType where
   readsPrec _ s = case parserBasic s of
     Right b -> [(b, "")]
