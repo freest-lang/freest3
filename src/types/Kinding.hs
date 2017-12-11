@@ -1,7 +1,12 @@
 module Kinding
 ( isType
-, kindOf) where
+, kindOf
+, contractive
+, PreKind(..)
+,Multiplicity (..)
+,Kind (..)) where
 
+--TODO review contractive, kind and Multiplicity exports (test purposes)
 import Types
 import qualified Data.Map.Strict as Map
 
@@ -55,82 +60,15 @@ kinding delta (Pair t u) =
       Left $ Kind Arbitrary Lin
     _                                                                                         ->
       Right $ "Error Message. Type: " ++ show (Pair t u)
-kinding delta (Datatype xs) =
-  --  [Left (Kind Arbitrary Un),Left (Kind Arbitrary Un)]
-  let a = map (kinding delta) (allTypes (Map.toList xs))
-  in
-    if (all (isLeftKind) a)
-      then Left $ Kind Arbitrary (minimum $ map allMultiplicities a)
-      else Right $ "Error Message. Type: " ++ show (Datatype xs)
--- (Datatype (Map.fromList [("a",Basic IntType),("b",Basic BoolType)]))
-kinding delta (InternalChoice xs) =
-  kindOfIntAndExtChoices delta xs
-kinding delta (ExternalChoice xs) =
-  kindOfIntAndExtChoices delta xs
-kinding delta (Rec x k) =
-    let k' = kinding delta k
-    in
-      if(test k')
-        then Left $ t1 k'
-        else Right $ "Error Message. Type: "
-
--- <= (Kind Arbitrary Lin) or Multiplicity lower than lin
-
-kindOfIntAndExtChoices delta xs =
-  let a = map (kinding delta) (allTypes (Map.toList xs))
-  in
-    if (all (isLeftSession) a)
-      then Left $ Kind Session Lin
-      else Right $ "One of the operands is not a kind of the form T^u. \n " ++ show a
-
-allTypes :: [(a,b)] -> [b]
-allTypes = map (\(_,b) -> b)
-
-allMultiplicities :: Either Kind b -> Multiplicity
-allMultiplicities x =
-  case x of
-    (Left (Kind _ m1)) ->
-      m1
-      -- TODO: look for exhaustive patterns here
-
-isLeftSession :: Either Kind b -> Bool
-isLeftSession x =
-  case x of
-    (Left (Kind Session _))   ->
-      True
-    _                         ->
-      False
-
-isLeftKind :: Either Kind b -> Bool
-isLeftKind x =
-  case x of
-    (Left (Kind v1 _))  | v1 <= Arbitrary  ->
-      True
-    _                         ->
-      False
-
-t1 x =
-  case x of
-    (Left (k1)) ->
-      k1
 
 
-test x =
-  case x of
-    (Left (k1)) | k1 <= (Kind Arbitrary Lin) ->
-      True
-    _                                        ->
-      False
-
+-- TODO: check if all rules are covered
 contractive :: Env -> Type -> Bool
-contractive _ (UnFun _ _) = True
-contractive _ (LinFun _ _) = True
-contractive _ (Pair _ _) = True
-contractive _ (Datatype _) = True
 contractive delta (Semi t _) = contractive delta t
 contractive delta (Rec _ t) = contractive delta t
 contractive delta (Var x) = Map.member x delta
-
+contractive delta (Forall _ t) = contractive delta t
+contractive _ _ = True
 
 -- (int -> int);skip -> malformed
 
