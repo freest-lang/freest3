@@ -39,7 +39,7 @@ kinding delta (Semi t u) =
       Right $ "One of the operands is not a session kind"
 kinding delta (UnFun t u) =
   case (kinding delta t, kinding delta u) of
-    (Left(k1), Left(k2)) |  k1 <= (Kind Arbitrary Lin) && k2 <= (Kind Arbitrary Lin)          ->
+    (Left k1, Left k2) |  k1 <= Kind Arbitrary Lin && k2 <= Kind Arbitrary Lin          ->
       Left $ Kind Arbitrary Un
     _                                                                                         ->
       Right $ "Error Message. Type: " ++ show (UnFun t u)
@@ -113,7 +113,8 @@ t1 x =
   case x of
     (Left (k1)) ->
       k1
-  
+
+
 test x =
   case x of
     (Left (k1)) | k1 <= (Kind Arbitrary Lin) ->
@@ -126,7 +127,6 @@ contractive _ (UnFun _ _) = True
 contractive _ (LinFun _ _) = True
 contractive _ (Pair _ _) = True
 contractive _ (Datatype _) = True
--- contractive _ (Pair _ _) = True
 contractive delta (Semi t _) = contractive delta t
 contractive delta (Rec _ t) = contractive delta t
 contractive delta (Var x) = Map.member x delta

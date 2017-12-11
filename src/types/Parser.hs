@@ -32,7 +32,7 @@ instance Read Type where
 lexer :: P.TokenParser ()
 lexer  = P.makeTokenParser
         (haskellDef
-        {P.reservedNames = ["Int","Bool","Char", "Skip", "rec", "forall"{-unit? ,()-}]
+        {P.reservedNames = ["Int","Bool","Char", "Skip", "()", "rec", "forall"]
          ,P.reservedOpNames = [";", "!", "?", "->", "-o", "+", "&"]
         })
 
@@ -60,7 +60,7 @@ parseBasicType =
       (spaces >> reserved "Int"  >> spaces >> return IntType)
   <|> (spaces >> reserved "Char"  >> spaces  >> return CharType)
   <|> (spaces >> reserved "Bool"  >> spaces >> return BoolType)
-  <|> (spaces >>  Text.Parsec.try (string "()") >> spaces  >> return UnitType)
+  <|> (spaces >>  reserved "()" >> spaces  >> return UnitType)
   <?> "a basic type: Int, Char, Bool, or ()"
 
 -- TYPES
@@ -80,14 +80,14 @@ table = [ [binary "->" UnFun AssocRight, binary "-o" LinFun AssocRight ]
         ]
 
 binary name fun assoc = Infix  (do{ reservedOp name; return fun }) assoc
-prefix name fun       = Prefix (do{ string name; return fun })
+prefix name fun       = Prefix (do{ reservedOp name; return fun })
 
 -- TODO: remove
 parseWithoutSpaces = do{spaces;a<-parseTerm;spaces; return a}
 
 parseTerm =
   Text.Parsec.try (parens parseType)
-  <|> (do { skip;                                return Skip })
+  <|> ( spaces >> skip >> spaces >>                   return Skip )
   <|> (do { b <- parseBasicType;                  return $ Basic b })
   <|> (do { symbol "?"; b <- parseBasicType;  return $ In b })
   <|> (do { symbol "!"; b <- parseBasicType;  return $ Out b })

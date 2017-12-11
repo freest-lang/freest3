@@ -62,7 +62,7 @@ instance Show BasicType where
 
 instance Show Type where
   show (Basic x) = show x
-  show Skip = "Skip"
+  show Skip = "skip"
   show (Semi x y) = "(" ++ show x ++ ";" ++ show y ++ ")"
   show (Out x) = "(" ++ "!" ++ show x ++ ")"
   show (In x) = "(" ++ "?" ++ show x ++ ")"
@@ -72,8 +72,8 @@ instance Show Type where
   show (InternalChoice x) = "(+{" ++ show (Map.toList x) ++ "})"
   show (ExternalChoice x) = "(&{" ++ show (Map.toList x) ++ "})"
   show (Datatype x) =  "(" ++ show (Map.toList x) ++ ")" -- Datatype ?
-  show (Rec s t) = "(Rec " ++ show s ++ " . " ++ show t ++ ")"
-  show (Forall s t) = "(Forall " ++ show s ++ " . " ++ show t ++ ")"
+  show (Rec s t) = "(rec " ++ show s ++ " . " ++ show t ++ ")"
+  show (Forall s t) = "(forall " ++ show s ++ " . " ++ show t ++ ")"
   show (Var x) = show x
 
 
