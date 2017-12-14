@@ -14,6 +14,7 @@ Portability :  portable | non-portable (<reason>)
 module Types
 ( BasicType(..)
 , Type(..)
+, TypeMap(..)
 , Id
 ) where
 

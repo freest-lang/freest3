@@ -43,7 +43,9 @@ test13 = TestCase (assertEqual "for (Rec \"x\" (In BoolType))" True
           (contractive Map.empty (Rec "x" (In BoolType))))
 
 test14 = TestCase (assertEqual "for (Var \"x\")" False (contractive Map.empty (Var "x")))
+
 test15 = TestCase (assertEqual "for (Var \"x\")" True (contractive (Map.fromList [("x",(Kind Session Lin))]) (Var "x")))
+
 -- test1 = TestCase (assertEqual "" True (contractive Map.empty ()))
 test16 = TestCase (assertEqual "for (Forall \"a\" (Basic BoolType))" True
           (contractive Map.empty (Forall "a" (Basic BoolType))))
