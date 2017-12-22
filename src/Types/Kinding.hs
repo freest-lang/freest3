@@ -1,4 +1,4 @@
-module Kinding
+module Types.Kinding
 ( isType
 , kindOf
 , contractive
@@ -7,7 +7,7 @@ module Kinding
 ,Kind (..)) where
 
 --TODO review contractive, kind and Multiplicity exports (test purposes)
-import Types
+import Types.Types
 import qualified Data.Map.Strict as Map
 import Data.Either as E
 import Data.List
@@ -40,7 +40,6 @@ kinding _ Skip = Left $ Kind Session Un
 kinding _ (Out _) = Left $ Kind Session Lin
 kinding _ (In _) = Left $ Kind Session Lin
 kinding _ (Basic _) = Left $ Kind Arbitrary Un
-kinding delta (Var x) = Left $ Kind Scheme Lin --TODO: Check this
 kinding delta (Semi t u) =
   case (kinding delta t, kinding delta u) of
     (Left(Kind Session m1), Left(Kind Session m2))  ->
@@ -52,19 +51,19 @@ kinding delta (UnFun t u) =
     (Left k1, Left k2) |  k1 <= Kind Arbitrary Lin && k2 <= Kind Arbitrary Lin          ->
       Left $ Kind Arbitrary Un
     _                                                                                         ->
-      Right $ "Error Message. Type: " ++ show (UnFun t u)
+      Right $ "Error Message1. Type: " ++ show (UnFun t u)
 kinding delta (LinFun t u) =
   case (kinding delta t, kinding delta u) of
     (Left k1, Left k2) |  k1 <= (Kind Arbitrary Lin) && k2 <= (Kind Arbitrary Lin)          ->
       Left $ Kind Arbitrary Lin
     _                                                                                         ->
-      Right $ "Error Message. Type: " ++ show (LinFun t u)
+      Right $ "Error Message2. Type: " ++ show (LinFun t u)
 kinding delta (Pair t u) =
   case (kinding delta t, kinding delta u) of
     (Left k1, Left k2 ) |  k1 <= (Kind Arbitrary Lin) && k2 <= (Kind Arbitrary Lin)          ->
         Left $ Kind Arbitrary Lin
     _                                                                                         ->
-      Right $ "Error Message. Type: " ++ show (Pair t u)
+      Right $ "Error Message3. Type: " ++ show (Pair t u)
 kinding delta (Datatype m) =
   kindingMap delta m (Kind Arbitrary Un) ("One of the components in a Datatype is a type Scheme. \nType: " ++ show m)
 kinding delta (ExternalChoice m) =
@@ -87,7 +86,11 @@ kinding delta (Forall x t) =
   case kd of
     (Left k) | k <= (Kind Arbitrary Lin) -> Left k
     (Right m) -> Right m
-
+kinding delta (Var x) = -- Left $ Kind Scheme Lin --TODO: Check this
+  if Map.member x delta then
+    Left $ delta Map.! x
+  else
+    Right $ "Variable error"
 
   -- if (kd <= (Kind Arbitrary Lin))
   --   then Left kd
@@ -112,21 +115,18 @@ kindingMap delta m k message =
 
 liftl :: [KindingOut] -> Either [Kind] [Message]
 liftl xs =
-  let a = rights xs
-  in
-    if length a == 0
-      then
-        Left $ lefts xs
-      else
-        Right a
+  let a = rights xs in
+  if length a == 0
+    then
+      Left $ lefts xs
+    else
+      Right a
 
 -- liftElem :: KindingOut -> Either Kind Message
 -- liftElem ko =
 --   case ko of
 --     Left (k) -> k
 --     Right (m) -> m
-
-
 
 -- Contractivity
 contractive :: Env -> Type -> Bool

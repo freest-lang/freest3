@@ -1,9 +1,9 @@
 -- https://web.archive.org/web/20140528151730/http://legacy.cs.uu.nl/daan/parsec.html
 {-# LANGUAGE FlexibleContexts #-} -- binary and infix functions need this
 
-module Parser () where
+module Types.Parser () where
 
-import Types
+import Types.Types
 import Text.Parsec
 import qualified Text.Parsec.Token as P
 import Text.Parsec.Language (haskellDef)
@@ -15,7 +15,6 @@ import qualified Data.Map.Strict as Map
 -- read "Skip;!Int" :: Type
 
 -- TODO : check list
-
 instance Read BasicType where
   readsPrec _ s = case parserBasic s of
     Right b -> [(b, "")]
@@ -24,7 +23,7 @@ instance Read BasicType where
 instance Read Type where
   readsPrec _ s = case parserType s of
     Right t -> [(t, "")]
-    Left m -> error "type parse error"
+    Left m -> error $ "type parse error " ++ show m
 
 
 -- TOKENS
@@ -32,8 +31,9 @@ instance Read Type where
 lexer :: P.TokenParser ()
 lexer  = P.makeTokenParser
         (haskellDef
-        {P.reservedNames = ["Int","Bool","Char", "Skip", "()", "rec", "forall"]
-         ,P.reservedOpNames = [";", "!", "?", "->", "-o", "+", "&"]
+        {
+        P.reservedOpNames = [";", "!", "?", "->", "-o", "+", "&"],
+        P.reservedNames = ["Int","Bool","Char", "Skip", "()", "rec", "forall"]
         })
 
 reservedOp = P.reservedOp lexer
@@ -42,8 +42,13 @@ identifier = P.identifier lexer
 reserved   = P.reserved lexer
 comma      = P.comma lexer
 symbol     = P.symbol lexer
-lexeme     = P.lexeme lexer
--- braces      = P.braces lexer
+whiteSpace= P.whiteSpace lexer
+lexeme    = P.lexeme lexer
+semi = P.semi lexer
+dot = P.dot lexer
+colon = P.colon lexer
+-- braces = P.braces lexer
+squares = P.squares lexer
 
 rec    = reserved "rec"
 forall = reserved "forall"
@@ -72,48 +77,51 @@ parserType :: String -> Either ParseError Type
 parserType = parse parseType "Context-free Sessions (Types)"
 
 parseType :: Parser Type
-parseType = buildExpressionParser table parseWithoutSpaces
-  <?> "a type: skip, T;T, ..., or ..."
+parseType =
+    do{
+      whiteSpace
+      ; ret <- lexeme(buildExpressionParser table parseTerm)
+      --; eof
+      ; return ret
+    } <?> "a type: skip, T;T, ..., or ..."
+
+
 
 table = [ [binary "->" UnFun AssocRight, binary "-o" LinFun AssocRight ]
         , [binary ";" Semi AssocLeft ]
         ]
 
-binary name fun assoc = Infix  (do{ reservedOp name; return fun }) assoc
-prefix name fun       = Prefix (do{ reservedOp name; return fun })
+binary name fun assoc = Infix  (do{ Text.Parsec.try (symbol name); return fun }) assoc
+-- prefix name fun       = Prefix (do{ reservedOp name; return fun })
 
 -- TODO: remove
-parseWithoutSpaces = do{spaces;a<-parseTerm;spaces; return a}
+-- parseWithoutSpaces = do{spaces;a<-parseTerm;spaces; return a}
 
 parseTerm =
   Text.Parsec.try (parens parseType)
-  <|> ( spaces >> skip >> spaces >>                   return Skip )
+  <|> (do {  skip ;                               return Skip })
   <|> (do { b <- parseBasicType;                  return $ Basic b })
-  <|> (do { symbol "?"; b <- parseBasicType;  return $ In b })
-  <|> (do { symbol "!"; b <- parseBasicType;  return $ Out b })
-  <|> parsePair
+  <|> (do { Text.Parsec.try (symbol "?"); b <- parseBasicType;      return $ In b })
+  <|> (do { Text.Parsec.try (symbol "!"); b <- parseBasicType;      return $ Out b })
+  <|> parens parsePair
   <|> parseExternalChoice
   <|> parseInternalChoice
-  <|> parseDataType
+  <|> squares parseDataType
   <|> parseRec
   <|> parseForall
   <|> (do { id <- identifier;                      return $ Var id })
   <?> "a type: Skip, T;T, !B, ?B, B, T->T, T-oT, (T,T), id, rec id.T, or forall id.t"
 
 parsePair = do
-  char '('
   t <- parseType
-  char ','
+  comma
   u <- parseType
-  char ')'
   return $ Pair t u
 
 parseRec = do
   rec
-  --reserved "rec"
-  -- space
   id <- identifier
-  char '.'
+  dot
   t <- parseType
   return $ Rec id t
 
@@ -121,7 +129,7 @@ parseForall = do
   forall
   -- space
   id <- identifier
-  char '.'
+  dot
   t <- parseType
   return $ Forall id t
 
@@ -129,7 +137,6 @@ parseInternalChoice = do
   reservedOp "+"
   char '{'
   a <- sepBy1 parseBind comma
-  -- a <- sepBy1 parseInternalPair (char ',')
   char '}'
   return $ InternalChoice $ Map.fromList a
 
@@ -141,13 +148,15 @@ parseExternalChoice = do
   return $ ExternalChoice $ Map.fromList a
 
 parseDataType = do
-  char '['
   a <- sepBy1 parseBind comma
-  char ']'
   return $ Datatype $ Map.fromList a
 
 parseBind = do
   id <- identifier
-  char ':'
+  colon
   ptype <- parseType
   return (id,ptype)
+
+
+
+--TODO: error +{leaf:Skip, node:!Int;xFormChan;xFormChan;?Int}) -> espaço no ?Int

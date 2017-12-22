@@ -3,9 +3,10 @@
 -- ./TestParse
 -- hpc report TestParse --exclude=Main --exclude=QC
 -- hpc markup TestParse --exclude=Main --exclude=QC
+module Types.TestParse(allTests) where
 
-import Types
-import Parser
+import Types.Types
+import Types.Parser
 import Test.HUnit
 --TYPEMAP
 import qualified Data.Map.Strict as Map
@@ -72,51 +73,46 @@ test37 = TestCase (assertEqual "for (read \"(Internal,Int)\")," (Pair (Var "Inte
 test38 = TestCase (assertEqual "for (read \"(Skiper,Int)\")," (Pair (Var "Skiper") (Basic IntType)) (read "(Skiper,Int)" :: Type))
 test39 = TestCase (assertEqual "for (read \"a -> {-A comment inside-} b\")," (UnFun (Var "a") (Var "b")) (read "a -> {-A comment inside-} b" :: Type))
 
--- test40 = TestCase (assertEqual "for (read \"Skip;Skip;!Int\")," (Semi (Semi Skip Skip) (Out IntType)) (read "Skip;Skip;!Int" :: Type))
 
--- Semi (Semi Skip Skip) (Out Int)
--- read "Skip;Skip;!Int" :: Type
-
-
-validTests = TestList [TestLabel "test1" test1,
-                       TestLabel "test2" test2,
-                       TestLabel "test3" test3,
-                       TestLabel "test4" test4,
-                       TestLabel "test5" test5,
-                       TestLabel "test6" test6,
-                       TestLabel "test7" test7,
-                       TestLabel "test8" test8,
-                       TestLabel "test9" test9,
-                       TestLabel "test10" test10,
-                       TestLabel "test11" test11,
-                       TestLabel "test12" test12,
-                       TestLabel "test13" test13,
-                       TestLabel "test14" test14,
-                       TestLabel "test15" test15,
-                       TestLabel "test16" test16,
-                       TestLabel "test17" test17,
-                       TestLabel "test18" test18,
-                       TestLabel "test19" test19,
-                       TestLabel "test20" test20,
-                       TestLabel "test21" test21,
-                       TestLabel "test22" test22,
-                       TestLabel "test23" test23,
-                       TestLabel "test24" test24,
-                       TestLabel "test25" test25,
-                       TestLabel "test26" test26,
-                       TestLabel "test27" test27,
-                       TestLabel "test28" test28,
-                       TestLabel "test29" test29,
-                       TestLabel "test30" test30,
-                       TestLabel "test31" test31,
-                       TestLabel "test32" test32,
-                       TestLabel "test33" test33,
-                       TestLabel "test34" test34,
-                       TestLabel "test35" test35,
-                       TestLabel "test36" test36,
-                       TestLabel "test37" test37,
-                       TestLabel "test38" test38,
-                       TestLabel "test39" test39
+validTests = TestList [TestLabel "for (read \"Int\")" test1,
+                      TestLabel "for (read \"Char\")" test2,
+                      TestLabel "for (read \"Bool\")" test3,
+                      TestLabel "for (read \"Unit\")" test4,
+                      TestLabel "for (read \"Skip\")" test5,
+                      TestLabel "for (read \"Int;Bool\")" test6,
+                      TestLabel "for (read \"!Int\")" test7,
+                      TestLabel "for (read \"?Int\")" test8,
+                      TestLabel "for (read \"Int->Int\")" test9,
+                      TestLabel "for (read \"Int-oInt\")" test10,
+                      TestLabel "for (read \"(Int,Int)\")" test11,
+                      TestLabel "for (read \"&{a:Int,b:Bool}\")" test12,
+                      TestLabel "for (read \"+{a:Int,b:Bool}\")" test13,
+                      TestLabel "for (read \"[a:Int,b:Bool]\")" test14,
+                      TestLabel "for (read \"rec a.Bool\")" test15,
+                      TestLabel "for (read \"forall a.Bool\")" test16,
+                      TestLabel "for (read \"z\")" test17,
+                      TestLabel "for (read \"(Char)\")" test18,
+                      TestLabel "for (read \"(Skip)\")" test19,
+                      TestLabel "for (read \"(?Bool)\")" test20,
+                      TestLabel "for (read \"(!Char)\")" test21,
+                      TestLabel "for (read \"((Int,Char))\")" test22,
+                      TestLabel "for (read \" Skip\")" test23,
+                      TestLabel "for (read \" Int\")" test24,
+                      TestLabel "for (read \"Int ; Bool\")" test25,
+                      TestLabel "for (read \"Int -> Int\")" test26,
+                      TestLabel "for (read \"Int -o Int\")" test27,
+                      TestLabel "for (read \"( Int , Int )\")" test28,
+                      TestLabel "for (read \"rec a . A\")" test29,
+                      TestLabel "for (read \"+{i : Int, b : Bool}\")" test30,
+                      TestLabel "for (read \"((Int,Bool),a)\")" test31,
+                      TestLabel "for (read \"rec a . (rec i . Int)\")" test32,
+                      TestLabel "for (read \"forall a.(forall b.Bool)\")" test33,
+                      TestLabel "for (read \"f -o f -> f\")" test34,
+                      TestLabel "for (read \"(f -o f) -> f\")" test35,
+                      TestLabel "for (read \"Skip;Skip;Skip\")" test36,
+                      TestLabel "for (read \"(Internal,Int)\")" test37,
+                      TestLabel "for (read \"(Skiper,Int)\")" test38,
+                      TestLabel "for (read \"a -> {-A comment inside-} b\")" test39
                        -- TestLabel "test40" test40
                       ]
 
@@ -130,10 +126,10 @@ runValid = runTestTT validTests
 --runInvalid = runTestTT invalidTests
 
 -- runTestTT allTests
-main :: IO ()
-main = do
-    runAll
-    return ()
+-- main :: IO ()
+-- main = do
+--     runAll
+--     return ()
 
 -- TODO: test eq and show
 -- TODO: INVALID TESTS

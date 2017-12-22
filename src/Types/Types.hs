@@ -11,7 +11,7 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-module Types
+module Types.Types
 ( BasicType(..)
 , Type(..)
 , TypeMap(..)
@@ -46,7 +46,7 @@ data Type =
   Forall String Type |
   Var String
   deriving (Eq) -- This Eq must be redefined
-  -- deriving (Eq,Show) -- This Eq must be redefined
+  -- deriving (Eq,Show)
 
 
 type Id = String

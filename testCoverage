@@ -1,0 +1,8 @@
+#!/bin/bash
+#runhaskell -isrc -itest -fforce-recomp test/Spec.hs
+
+ghc -isrc -itest -fhpc test/Spec.hs --make
+./test/Spec
+mv Spec.tix test/
+hpc report test/Spec --exclude=Main --exclude=QC
+hpc markup test/Spec --exclude=Main --exclude=QC --destdir=test/outputs
