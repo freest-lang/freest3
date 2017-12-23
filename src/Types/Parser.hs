@@ -11,9 +11,6 @@ import Text.ParserCombinators.Parsec
 import Text.Parsec.Expr
 import qualified Data.Map.Strict as Map
 
--- TODO: Skip Semi with in or Out
--- read "Skip;!Int" :: Type
-
 -- TODO : check list
 instance Read BasicType where
   readsPrec _ s = case parserBasic s of
@@ -74,18 +71,29 @@ parseBasicType =
 -- InternalChoice TypeMap | Datatype TypeMap | Rec String Type | Forall String Type | Var String |
 
 parserType :: String -> Either ParseError Type
-parserType = parse parseType "Context-free Sessions (Types)"
+parserType = parse mainParser "Context-free Sessions (Types)"
 
-parseType :: Parser Type
-parseType =
+mainParser :: Parser Type
+mainParser =
     do{
       whiteSpace
-      ; ret <- lexeme(buildExpressionParser table parseTerm)
-      --; eof
+      ; ret <- parseType
+      ; eof
       ; return ret
-    } <?> "a type: skip, T;T, ..., or ..."
+  } <?> "a type: skip, T;T, ..., or ..."
+
+parseType :: Parser Type
+parseType =  lexeme(buildExpressionParser table parseTerm)
 
 
+-- parseType :: Parser Type
+-- parseType =
+--     do{
+--       whiteSpace
+--       ; ret <- lexeme(buildExpressionParser table parseTerm)
+--       ; eof
+--       ; return ret
+--     } <?> "a type: skip, T;T, ..., or ..."
 
 table = [ [binary "->" UnFun AssocRight, binary "-o" LinFun AssocRight ]
         , [binary ";" Semi AssocLeft ]
@@ -156,7 +164,3 @@ parseBind = do
   colon
   ptype <- parseType
   return (id,ptype)
-
-
-
---TODO: error +{leaf:Skip, node:!Int;xFormChan;xFormChan;?Int}) -> espaço no ?Int

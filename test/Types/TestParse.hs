@@ -132,8 +132,3 @@ runValid = runTestTT validTests
 --     return ()
 
 -- TODO: test eq and show
--- TODO: INVALID TESTS
-
--- Invalid whitespaces
--- testX = TestCase (assertEqual "for (read \"! Int\")," (Out IntType) (read "! Int" :: Type))
--- testX = TestCase (assertEqual "for (read \"? Int\")," (In IntType) (read "? Int" :: Type))

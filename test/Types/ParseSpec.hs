@@ -5,6 +5,7 @@ import Control.Exception (evaluate)
 import Types.TestParse
 import Test.Hspec.Contrib.HUnit (fromHUnitTest)
 import qualified Data.Map.Strict as Map
+import Test.Hspec.Expectations (anyException, shouldThrow)
 
 -- Just to be able to run it alone
 main :: IO ()
@@ -17,6 +18,7 @@ spec = do
 
   describe "Unit tests" $ do
     fromHUnitTest allTests
+--  evaluate (read "" :: Type) `shouldThrow` anyException
   describe "Paper examples (more complex tests)" $ do
 
     it "TreeChannel" $ do
@@ -47,7 +49,7 @@ spec = do
         (Rec "alpha" (Semi treeChannelType (Semi  treeChannelType (Var "alpha"))))
 
     it "forall beta . TreeChannel -> TreeChannel; beta -> beta" $ do
-      (read ("forall beta ."++treeChannelRead++"->"++treeChannelRead++";beta->beta)") :: Type) `shouldBe`
+      (read ("forall beta ."++treeChannelRead++"->"++treeChannelRead++";beta->beta") :: Type) `shouldBe`
         (Forall "beta" (Semi (UnFun treeChannelType treeChannelType) (UnFun (Var "beta")(Var "beta"))))
 
   describe "Remote tree transformation (Listing 2)" $ do
@@ -94,7 +96,24 @@ spec = do
     it "client" $ do
       (read (termChanRead ++ ";?Int->(Int,Skip)") :: Type) `shouldBe` (Semi (termChanType) (UnFun (In IntType)(Pair (Basic IntType) Skip)))
 
-  describe "Lazy tree traversal" $ do
+  describe "Lazy tree traversal (Listing 4)" $ do
+    let xploreTreeChanRead = "(rec XformChan . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int})"
+    let xploreTreeChanType = (Rec "XformChan" (InternalChoice $ Map.fromList ([("Leaf", Skip), ("Node", (Semi(Semi(Semi (Out IntType)(Var "XformChan")) (Var "XformChan")) (In IntType)))])))
+
+    let xploreNodeChanRead = "(rec XploreNodeChan . +{Value:!Int;XploreNodeChan, Left:"++xploreTreeChanRead++";XploreNodeChan,Right:"++xploreTreeChanRead++";XploreNodeChan,Exit:Skip})"
+
+    let xploreNodeChanType = (Rec "XploreNodeChan" (InternalChoice $ Map.fromList ([("Value", (Semi (Out IntType)(Var "XploreNodeChan"))),
+                                                                                    ("Left", (Semi (xploreTreeChanType)(Var "XploreNodeChan"))),
+                                                                                    ("Right", (Semi (xploreTreeChanType)(Var "XploreNodeChan"))),
+                                                                                    ("Exit", Skip)
+                                                                                   ])))
     it "xploreTreeChan" $ do
-      pendingWith "need to make this set of tests"
-      --(read () :: Type) `shouldBe` ()
+      (read (xploreTreeChanRead) :: Type) `shouldBe` (xploreTreeChanType)
+
+    it "xploreNodeChan" $ do
+      (read (xploreNodeChanRead) :: Type) `shouldBe` (xploreNodeChanType)
+
+    it "exploreTree" $ do
+      (read ("rec alpha . Int -> "++ treeChannelRead ++"->"++ treeChannelRead ++"->" ++ xploreNodeChanRead ++ ";alpha->alpha") :: Type)  `shouldBe`
+        (Rec "alpha" (Semi (UnFun (Basic IntType) (UnFun (treeChannelType) (UnFun (treeChannelType)(xploreNodeChanType))))
+                          (UnFun (Var "alpha")(Var "alpha"))))
