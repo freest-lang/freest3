@@ -1,6 +1,6 @@
 module Types.TestKinding (allTests) where
 
-import Types.Types
+import SpecHelper
 import Types.Kinding
 import Test.HUnit
 import qualified Data.Map.Strict as Map

@@ -1,7 +1,7 @@
 module SpecHelper
     ( module Test.Hspec
-    , module Types.Parser
+    , module Types.Types
     ) where
 
 import Test.Hspec
-import Types.Parser
+import Types.Types

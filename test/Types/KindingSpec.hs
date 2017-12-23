@@ -1,19 +1,15 @@
 module Types.KindingSpec(spec) where
 
-import Test.Hspec
-import Test.QuickCheck
+import SpecHelper
 import Control.Exception (evaluate)
 import Types.TestKinding
 import Test.Hspec.Contrib.HUnit (fromHUnitTest)
---import Test.Hspec.HUnit (fromHUnitTest)
-import Test.HUnit
 
-import SpecHelper
-
+-- Just to be able to run it alone
 main :: IO ()
 main = hspec spec
 
 spec :: Spec
 spec = do
-  describe "some legacy HUnit tests" $ do
+  describe "Unit tests" $ do
     fromHUnitTest allTests

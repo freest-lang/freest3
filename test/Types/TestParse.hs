@@ -5,11 +5,11 @@
 -- hpc markup TestParse --exclude=Main --exclude=QC
 module Types.TestParse(allTests) where
 
-import Types.Types
 import Types.Parser
 import Test.HUnit
 --TYPEMAP
 import qualified Data.Map.Strict as Map
+import SpecHelper
 
 test1 = TestCase (assertEqual "for (read \"Int\")," IntType (read "Int" :: BasicType))
 test2 = TestCase (assertEqual "for (read \"Char\")," CharType (read "Char" :: BasicType))
@@ -74,7 +74,7 @@ test38 = TestCase (assertEqual "for (read \"(Skiper,Int)\")," (Pair (Var "Skiper
 test39 = TestCase (assertEqual "for (read \"a -> {-A comment inside-} b\")," (UnFun (Var "a") (Var "b")) (read "a -> {-A comment inside-} b" :: Type))
 
 
-validTests = TestList [TestLabel "for (read \"Int\")" test1,
+validTests = "Testing Parser" ~: TestList [TestLabel "for (read \"Int\")" test1,
                       TestLabel "for (read \"Char\")" test2,
                       TestLabel "for (read \"Bool\")" test3,
                       TestLabel "for (read \"Unit\")" test4,
