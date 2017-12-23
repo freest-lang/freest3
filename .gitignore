@@ -6,6 +6,7 @@
 *.tix
 TestParse
 .hpc/
+Spec
 
 #Latex
 *.aux
