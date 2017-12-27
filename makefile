@@ -1,10 +1,11 @@
-
-
 test :
 	runhaskell -isrc -itest -fforce-recomp test/Spec.hs
 
+testTypes :
+	runhaskell -isrc -itest -fforce-recomp test/Types/TestTypesSpec.hs
+
 testParser :
-		runhaskell -isrc -itest -fforce-recomp test/Types/ParseSpec.hs
+	runhaskell -isrc -itest -fforce-recomp test/Types/ParseSpec.hs
 
 testKinding :
 	runhaskell -isrc -itest -fforce-recomp test/Types/KindingSpec.hs

@@ -19,6 +19,7 @@ module Types.Types
 ) where
 
 import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
 -- BASIC TYPES
 
 data BasicType =
@@ -45,7 +46,8 @@ data Type =
   Rec String Type |
   Forall String Type |
   Var String
-  deriving (Eq) -- This Eq must be redefined
+  -- deriving (Eq)
+  -- deriving (Show)
   -- deriving (Eq,Show)
 
 
@@ -77,6 +79,35 @@ instance Show Type where
   show (Forall s t) = "forall " ++ show s ++ " . " ++ show t
   show (Var x) = show x
 
+instance Eq Type where
+  (==) = equals Set.empty
 
--- read "Skip -o Int -> +{a:Int,b:Bool}" :: Type
--- LinFun Skip (UnFun (Basic Int) (InternalChoice (fromList [("a",Basic Int),("b",Basic Bool)])))
+equals :: Set.Set (Id, Id) -> Type -> Type -> Bool
+equals m Skip Skip = True
+equals m (Var x) (Var y)
+          | x == y = True
+          | otherwise = Set.member (x,y) m
+equals m (Forall x t)(Forall y u) = equals (Set.insert (x,y) m) t u
+equals m (Rec x t)(Rec y u) = equals (Set.insert (x,y) m) t u
+equals m (Semi t1 t2)(Semi v1 v2) = equals m t1 v1 && equals m t2 v2
+equals m (Basic x)(Basic y) = x == y
+equals m (Out x) (Out y) = x == y
+equals m (In x) (In y) = x == y
+equals m (LinFun s t)(LinFun u v) = equals m s u && equals m t v
+equals m (UnFun s t)(UnFun u v) = equals m s u && equals m t v
+equals m (Pair s t)(Pair u v) = equals m s u && equals m t v
+equals m (Datatype m1)(Datatype m2) = verifyListEquality m (Map.toList m1) (Map.toList m2)
+equals m (InternalChoice m1)(InternalChoice m2) = verifyListEquality m (Map.toList m1) (Map.toList m2)
+equals m (ExternalChoice m1)(ExternalChoice m2) = verifyListEquality m (Map.toList m1) (Map.toList m2)
+
+verifyListEquality :: Set.Set (Id, Id) -> [(Id, Type)] -> [(Id, Type)] -> Bool
+verifyListEquality _ [] _ = True
+verifyListEquality _ _ [] = True
+verifyListEquality m (m1:ms1)(m2:ms2) =
+  equals m (snd m1) (snd m2) && verifyListEquality m ms1 ms2
+
+
+
+
+
+-- equals m _ _ = False

@@ -47,3 +47,6 @@ spec = do
 
     it "parens UnFun"   $ do
       evaluate (read "Char (->) Char" :: Type) `shouldThrow` anyException
+
+
+-- out and in of a type that isn't basic
