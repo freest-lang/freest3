@@ -81,7 +81,7 @@ kinding delta (Rec x t) =
             else Right $ "The kind of the type is a type Scheme. \nType: " ++ show (Rec x t)
         else Right $ "The body of the type is not contractive. \nType: " ++ show (Rec x t)
     (Right m) -> Right m
-kinding delta (Forall x t) =
+kinding delta (Forall x t) = --TODO: insert in delta?? same for rec
   let kd = kinding delta t in
   case kd of
     (Left k) | k <= (Kind Arbitrary Lin) -> Left k

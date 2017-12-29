@@ -66,16 +66,16 @@ test23 = TestCase (assertEqual "kindOf (UnFun (Basic IntType)(Basic BoolType))" 
 test24 = TestCase (assertEqual "kindOf (LinFun (Basic IntType)(Basic BoolType))" (Kind Arbitrary Lin) (kindOf ((LinFun (Basic IntType)(Basic BoolType)))))
 test25 = TestCase (assertEqual "kindOf (Pair (Basic IntType)(Basic BoolType))" (Kind Arbitrary Lin) (kindOf (Pair (Basic IntType)(Basic BoolType))))
 test26 = TestCase (assertEqual "kindOf (Datatype (Map.fromList [(\"a\",Basic IntType),(\"b\",Basic BoolType)]))" (Kind Arbitrary Un) (kindOf (Datatype (Map.fromList [("a",Basic IntType),("b",Basic BoolType)]))))
+
 test27 = TestCase (assertEqual "kindOf (Pair (Basic IntType)(Basic BoolType))" (Kind Arbitrary Lin) (kindOf (Pair (Basic IntType)(Basic BoolType))))
 test28 = TestCase (assertEqual "kindOf (Basic IntType)" (Kind Arbitrary Un) (kindOf (Basic IntType)))
 test29 = TestCase (assertEqual "kindOf (Out IntType)" (Kind Session Lin) (kindOf (Out IntType)))
 
 test30 = TestCase (assertEqual "kindOf (In BoolType)" (Kind Session Lin) (kindOf (In BoolType)))
-
-
 test31 = TestCase (assertEqual "kindOf (Skip)" (Kind Session Un) (kindOf Skip))
 test32 = TestCase (assertEqual "kindOf (Semi (Out IntType)(In BoolType))" (Kind Session Lin) (kindOf (Semi (Out IntType)(In BoolType))))
-
+test33 = TestCase (assertEqual "kindOf (Rec \"x\" (In BoolType))" (Kind Session Lin) (kindOf (Rec "x" (In BoolType))))
+test34 = TestCase (assertEqual "kindOf (Forall \"a\" (Basic BoolType))" (Kind Arbitrary Un) (kindOf (Forall "a" (Basic BoolType))))
 
 
 
@@ -98,6 +98,8 @@ test32 = TestCase (assertEqual "kindOf (InternalChoice (Map.fromList [(\"a\",Bas
           (kindOf (InternalChoice (Map.fromList [("a",Basic IntType),("b",Basic BoolType)]))))
 
 test33 = TestCase (assertEqual "kindOf (Semi (Var \"x\")(In BoolType))" (Kind Session Lin) (kindOf (Semi (Var "x")(In BoolType))))
+
+test35 = TestCase (assertEqual "kindOf (Forall \"a\" (Var \"x\"))" (Kind Arbitrary Un) (kindOf (Forall "a" (Var "x"))))
 
 --}
 
@@ -134,9 +136,11 @@ validTests = "Kinding & Contractivity Unit tests" ~:TestList [
                       TestLabel "kindOf (Out IntType)"  test29,
                       TestLabel "kindOf (In BoolType)"  test30,
                       TestLabel "kindOf (Skip)" test31,
-                      TestLabel "kindOf (Semi (Out IntType)(In BoolType))" test32
-
-                      -- TestLabel "kindOf (ExternalChoice (Map.fromList [(\"a\",Basic IntType),(\"b\",Basic BoolType)]))"  test31,
+                      TestLabel "kindOf (Semi (Out IntType)(In BoolType))" test32,
+                      TestLabel "kindOf (Rec \"x\" (In BoolType))" test33,
+                      TestLabel "kindOf (Forall \"a\" (Basic BoolType))" test34,
+                      TestLabel "kindOf (Forall \"a\" (Var \"x\"))" test35
+                      -- TestLabel "kindOf (ExternalChoice (Map.fromList [(\"a  D \",Basic IntType),(\"b\",Basic BoolType)]))"  test31,
                       -- TestLabel "kindOf (InternalChoice (Map.fromList [(\"a\",Basic IntType),(\"b\",Basic BoolType)]))"  test32
 
                        ]

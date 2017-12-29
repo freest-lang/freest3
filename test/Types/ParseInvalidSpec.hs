@@ -36,17 +36,22 @@ spec = do
     it "Empty read (no input)" $ do
       evaluate (read "" :: Type) `shouldThrow` anyException
 
-    it "parens in" $ do
+    it "Parens in" $ do
       evaluate (read "(?)Int" :: Type) `shouldThrow` anyException
 
-    it "parens out" $ do
+    it "Parens out" $ do
        evaluate (read "(!)Char" :: Type) `shouldThrow` anyException
 
-    it "parens LinFun" $ do
+    it "Parens LinFun" $ do
       evaluate (read "Char (->) Char" :: Type) `shouldThrow` anyException
 
-    it "parens UnFun"   $ do
+    it "Parens UnFun"   $ do
       evaluate (read "Char (->) Char" :: Type) `shouldThrow` anyException
 
+    it "In not basic (skip)" $ do
+      evaluate (read "?Skip" :: Type)  `shouldThrow` anyException
+
+    it "Out not basic (skip)" $ do
+      evaluate (read "!Skip" :: Type)  `shouldThrow` anyException
 
 -- out and in of a type that isn't basic

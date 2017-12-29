@@ -7,6 +7,9 @@ testTypes :
 testParser :
 	runhaskell -isrc -itest -fforce-recomp test/Types/ParseSpec.hs
 
+testInvalidParser :
+	runhaskell -isrc -itest -fforce-recomp test/Types/ParseInvalidSpec.hs
+
 testKinding :
 	runhaskell -isrc -itest -fforce-recomp test/Types/KindingSpec.hs
 
