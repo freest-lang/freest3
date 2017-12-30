@@ -86,17 +86,11 @@ kinding delta (Forall x t) = --TODO: insert in delta?? same for rec
   case kd of
     (Left k) | k <= (Kind Arbitrary Lin) -> Left k
     (Right m) -> Right m
-kinding delta (Var x) = -- Left $ Kind Scheme Lin --TODO: Check this
+kinding delta (Var x) =
   if Map.member x delta then
     Left $ delta Map.! x
   else
     Right $ "Variable error"
-
-  -- if (kd <= (Kind Arbitrary Lin))
-  --   then Left kd
-  --   else Right $ "The kind of the type is a type Scheme. \nType: " ++ show (Rec x t)
-
--- (Rec "a" (Var "A")) (read "rec a . A" :: Type))
 
 kindingMap :: Env -> TypeMap -> Kind -> Message -> KindingOut
 kindingMap delta m k message =
@@ -121,12 +115,6 @@ liftl xs =
       Left $ lefts xs
     else
       Right a
-
--- liftElem :: KindingOut -> Either Kind Message
--- liftElem ko =
---   case ko of
---     Left (k) -> k
---     Right (m) -> m
 
 -- Contractivity
 contractive :: Env -> Type -> Bool

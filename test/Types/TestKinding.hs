@@ -17,47 +17,47 @@ test4 = TestCase (assertEqual "contractive Map.empty (Datatype (Map.fromList [(\
 test5 = TestCase (assertBool "contractive Map.empty (Basic IntType)" True )
 test6 = TestCase (assertBool "contractive Map.empty (Out IntType)" True)
 
-test7 = TestCase (assertEqual "for (In BoolType)" True (contractive Map.empty (In BoolType)))
+test7 = TestCase (assertEqual "contractive Map.empty (In BoolType)" True (contractive Map.empty (In BoolType)))
 
-test8 = TestCase (assertEqual "for (ExternalChoice (Map.fromList [(\"a\",Basic IntType),(\"b\",Basic BoolType)]))" True
+test8 = TestCase (assertEqual "contractive Map.empty (ExternalChoice (Map.fromList [(\"a\",Basic IntType),(\"b\",Basic BoolType)]))" True
           (contractive Map.empty (ExternalChoice (Map.fromList [("a",Basic IntType),("b",Basic BoolType)]))))
 
-test9 = TestCase (assertEqual "for (InternalChoice (Map.fromList [(\"a\",Basic IntType),(\"b\",Basic BoolType)]))" True
+test9 = TestCase (assertEqual "contractive Map.empty (InternalChoice (Map.fromList [(\"a\",Basic IntType),(\"b\",Basic BoolType)]))" True
           (contractive Map.empty (InternalChoice (Map.fromList [("a",Basic IntType),("b",Basic BoolType)]))))
 
 test10 = TestCase (assertBool "contractive Map.empty (Skip)" True)
 test11 = TestCase (assertBool "contractive Map.empty (Semi (Out IntType)(In BoolType))" True)
 
-test12 = TestCase (assertEqual "for (Semi (Var \"x\")(In BoolType))" False
+test12 = TestCase (assertEqual "contractive Map.empty (Semi (Var \"x\")(In BoolType))" False
           (contractive Map.empty (Semi (Var "x")(In BoolType))))
 
-test13 = TestCase (assertEqual "for (Rec \"x\" (In BoolType))" True
+test13 = TestCase (assertEqual "contractive Map.empty (Rec \"x\" (In BoolType))" True
           (contractive Map.empty (Rec "x" (In BoolType))))
 
-test14 = TestCase (assertEqual "for (Var \"x\")" False (contractive Map.empty (Var "x")))
+test14 = TestCase (assertEqual "contractive Map.empty (Var \"x\")" False (contractive Map.empty (Var "x")))
 
-test15 = TestCase (assertEqual "for (Var \"x\")" True (contractive (Map.fromList [("x",(Kind Session Lin))]) (Var "x")))
+test15 = TestCase (assertEqual "contractive Map.empty (Var \"x\")" True (contractive (Map.fromList [("x",(Kind Session Lin))]) (Var "x")))
 
-test16 = TestCase (assertEqual "for (Forall \"a\" (Basic BoolType))" True
+test16 = TestCase (assertEqual "contractive Map.empty (Forall \"a\" (Basic BoolType))" True
           (contractive Map.empty (Forall "a" (Basic BoolType))))
 
-test17 = TestCase (assertEqual "for (Forall \"a\" (Var \"x\"))" False
+test17 = TestCase (assertEqual "contractive Map.empty (Forall \"a\" (Var \"x\"))" False
             (contractive Map.empty (Forall "a" (Var "x"))))
 
 -- Paper examples:
-test18 = TestCase (assertEqual "for (Rec \"x\" (Semi Skip (Var \"x\")))," True
+test18 = TestCase (assertEqual "contractive Map.empty (Rec \"x\" (Semi Skip (Var \"x\")))," True
             (contractive Map.empty (Rec "x" (Semi Skip (Var "x")))))
 
-test19 = TestCase (assertEqual "for (Rec \"x\" (Semi (Var \"x\") (Out IntType)))" False
+test19 = TestCase (assertEqual "contractive Map.empty (Rec \"x\" (Semi (Var \"x\") (Out IntType)))" False
             (contractive Map.empty (Rec "x" (Semi (Var "x") (Out IntType)))))
 
-test20 = TestCase (assertEqual "for (Rec \"x\" (Semi (Out IntType) (Var \"x\")))" True
+test20 = TestCase (assertEqual "contractive Map.empty (Rec \"x\" (Semi (Out IntType) (Var \"x\")))" True
             (contractive Map.empty (Rec "x" (Semi (Out IntType) (Var "x")))))
 
-test21 = TestCase (assertEqual "for (Rec \"x\" (Rec \"y\" (Semi (Var \"x\") (Var \"y\"))))" False
+test21 = TestCase (assertEqual "contractive Map.empty (Rec \"x\" (Rec \"y\" (Semi (Var \"x\") (Var \"y\"))))" False
             (contractive Map.empty (Rec "x" (Rec "y" (Semi (Var "x") (Var "y"))))))
 
-test22 = TestCase (assertEqual "for (Rec \"x\" (Semi (Out Int) (Rec \"y\" (Semi (Var \"x\") (Var \"y\")))))" True
+test22 = TestCase (assertEqual "contractive Map.empty (Rec \"x\" (Semi (Out Int) (Rec \"y\" (Semi (Var \"x\") (Var \"y\")))))" True
             (contractive Map.empty (Rec "x" (Semi (Out IntType)(Rec "y" (Semi (Var "x") (Var "y")))))))
 
 -- Test Kinding system
@@ -77,18 +77,32 @@ test32 = TestCase (assertEqual "kindOf (Semi (Out IntType)(In BoolType))" (Kind 
 test33 = TestCase (assertEqual "kindOf (Rec \"x\" (In BoolType))" (Kind Session Lin) (kindOf (Rec "x" (In BoolType))))
 test34 = TestCase (assertEqual "kindOf (Forall \"a\" (Basic BoolType))" (Kind Arbitrary Un) (kindOf (Forall "a" (Basic BoolType))))
 
+--Paper kinding examples
+test35 = TestCase (assertEqual "kindOf (Rec \"x\" (Semi Skip Skip)))" (Kind Session Un) (kindOf (Rec "x" (Semi Skip Skip))))
+test36 = TestCase (assertEqual "kindOf (Rec \"x\" (Semi (Semi (Out IntType) Skip) (In IntType))))" (Kind Session Lin) (kindOf (Rec "x" (Semi (Semi (Out IntType) Skip) (In IntType)))))
+
+
+
+-- TODO: ERROR
+-- Paper examples:
+-- testXX = TestCase (assertEqual "kindOf (Rec \"x\" (Semi Skip (Var \"x\")))," (Kind Session Lin) (kindOf (Rec "x" (Semi Skip (Var "x")))))
+--
+-- test19 = TestCase (assertEqual "kindOf (Rec \"x\" (Semi (Var \"x\") (Out IntType)))" (Kind...) (kindOf (Rec "x" (Semi (Var "x") (Out IntType)))))
+--
+-- test20 = TestCase (assertEqual "kindOf (Rec \"x\" (Semi (Out IntType) (Var \"x\")))" (Kind...) (kindOf (Rec "x" (Semi (Out IntType) (Var "x")))))
+--
+-- test21 = TestCase (assertEqual "kindOf (Rec \"x\" (Rec \"y\" (Semi (Var \"x\") (Var \"y\"))))" (Kind...) (kindOf (Rec "x" (Rec "y" (Semi (Var "x") (Var "y"))))))
+--
+-- test22 = TestCase (assertEqual "kindOf (Rec \"x\" (Semi (Out Int) (Rec \"y\" (Semi (Var \"x\") (Var \"y\")))))" (Kind...) (kindOf (Rec "x" (Semi (Out IntType)(Rec "y" (Semi (Var "x") (Var "y")))))))
 
 
 {--
-
-
-
-test13 = TestCase (assertEqual "for (Rec \"x\" (In BoolType))" True
+test13 = TestCase (assertEqual "contractive Map.empty (Rec \"x\" (In BoolType))" True
           (contractive Map.empty (Rec "x" (In BoolType))))
 
-test14 = TestCase (assertEqual "for (Var \"x\")" False (contractive Map.empty (Var "x")))
+test14 = TestCase (assertEqual "contractive Map.empty (Var \"x\")" False (contractive Map.empty (Var "x")))
 
-test15 = TestCase (assertEqual "for (Var \"x\")" True (contractive (Map.fromList [("x",(Kind Session Lin))]) (Var "x")))
+test15 = TestCase (assertEqual "contractive Map.empty (Var \"x\")" True (contractive (Map.fromList [("x",(Kind Session Lin))]) (Var "x")))
 
 --- negative
 test31 = TestCase (assertEqual "kindOf (ExternalChoice (Map.fromList [(\"a\",Basic IntType),(\"b\",Basic BoolType)]))" (Kind Session Lin)
@@ -105,28 +119,28 @@ test35 = TestCase (assertEqual "kindOf (Forall \"a\" (Var \"x\"))" (Kind Arbitra
 
 
 validTests = "Kinding & Contractivity Unit tests" ~:TestList [
-                      TestLabel "for (UnFun (Basic IntType)(Basic BoolType))"  test1,
-                      TestLabel "for (LinFun (Basic IntType)(Basic BoolType))"  test2,
-                      TestLabel "for (Pair (Basic IntType)(Basic BoolType))"  test3,
-                      TestLabel "for (Datatype (Map.fromList [(\"a\",Basic IntType),(\"b\",Basic BoolType)]))"  test4,
-                      TestLabel "for (Basic IntType)"  test5,
-                      TestLabel "for (Out IntType)"  test6,
-                      TestLabel "for (In BoolType)"  test7,
-                      TestLabel "for (ExternalChoice (Map.fromList [(\"a\",Basic IntType),(\"b\",Basic BoolType)]))"  test8,
-                      TestLabel "for (InternalChoice (Map.fromList [(\"a\",Basic IntType),(\"b\",Basic BoolType)]))"  test9,
-                      TestLabel "for (Skip)"  test10,
-                      TestLabel "for (Semi (Out IntType)(In BoolType))"  test11,
-                      TestLabel "for (Semi (Var \"x\")(In BoolType))"  test12,
-                      TestLabel "for (Rec \"x\" (In BoolType))"  test13,
-                      TestLabel "for (Var \"x\")"  test14,
-                      TestLabel "for (Var \"x\")"  test15,
-                      TestLabel "for (Forall \"a\" (Basic BoolType))"  test16,
-                      TestLabel "for (Forall \"a\" (Var \"x\"))"  test17,
-                      TestLabel "for (Rec \"x\" (Semi Skip (Var \"x\")))"  test18,
-                      TestLabel "for (Rec \"x\" (Semi (Var \"x\") (Out IntType)))"  test19,
-                      TestLabel "for (Rec \"x\" (Semi (Out IntType) (Var \"x\")))"  test20,
-                      TestLabel "for (Rec \"x\" (Rec \"y\" (Semi (Var \"x\") (Var \"y\"))))"  test21,
-                      TestLabel "for (Rec \"x\" (Semi (Out Int) (Rec \"y\" (Semi (Var \"x\") (Var \"y\")))))"  test22,
+                      TestLabel "contractive Map.empty (UnFun (Basic IntType)(Basic BoolType))"  test1,
+                      TestLabel "contractive Map.empty (LinFun (Basic IntType)(Basic BoolType))"  test2,
+                      TestLabel "contractive Map.empty (Pair (Basic IntType)(Basic BoolType))"  test3,
+                      TestLabel "contractive Map.empty (Datatype (Map.fromList [(\"a\",Basic IntType),(\"b\",Basic BoolType)]))"  test4,
+                      TestLabel "contractive Map.empty (Basic IntType)"  test5,
+                      TestLabel "contractive Map.empty (Out IntType)"  test6,
+                      TestLabel "contractive Map.empty (In BoolType)"  test7,
+                      TestLabel "contractive Map.empty (ExternalChoice (Map.fromList [(\"a\",Basic IntType),(\"b\",Basic BoolType)]))"  test8,
+                      TestLabel "contractive Map.empty (InternalChoice (Map.fromList [(\"a\",Basic IntType),(\"b\",Basic BoolType)]))"  test9,
+                      TestLabel "contractive Map.empty (Skip)"  test10,
+                      TestLabel "contractive Map.empty (Semi (Out IntType)(In BoolType))"  test11,
+                      TestLabel "contractive Map.empty (Semi (Var \"x\")(In BoolType))"  test12,
+                      TestLabel "contractive Map.empty (Rec \"x\" (In BoolType))"  test13,
+                      TestLabel "contractive Map.empty (Var \"x\")"  test14,
+                      TestLabel "contractive Map.empty (Var \"x\")"  test15,
+                      TestLabel "contractive Map.empty (Forall \"a\" (Basic BoolType))"  test16,
+                      TestLabel "contractive Map.empty (Forall \"a\" (Var \"x\"))"  test17,
+                      TestLabel "contractive Map.empty (Rec \"x\" (Semi Skip (Var \"x\")))"  test18,
+                      TestLabel "contractive Map.empty (Rec \"x\" (Semi (Var \"x\") (Out IntType)))"  test19,
+                      TestLabel "contractive Map.empty (Rec \"x\" (Semi (Out IntType) (Var \"x\")))"  test20,
+                      TestLabel "contractive Map.empty (Rec \"x\" (Rec \"y\" (Semi (Var \"x\") (Var \"y\"))))"  test21,
+                      TestLabel "contractive Map.empty (Rec \"x\" (Semi (Out Int) (Rec \"y\" (Semi (Var \"x\") (Var \"y\")))))"  test22,
                       TestLabel "kindOf (UnFun (Basic IntType)(Basic BoolType))"  test23,
                       TestLabel "kindOf (LinFun (Basic IntType)(Basic BoolType))"  test24,
                       TestLabel "kindOf (Pair (Basic IntType)(Basic BoolType))"  test25,
@@ -139,7 +153,11 @@ validTests = "Kinding & Contractivity Unit tests" ~:TestList [
                       TestLabel "kindOf (Semi (Out IntType)(In BoolType))" test32,
                       TestLabel "kindOf (Rec \"x\" (In BoolType))" test33,
                       TestLabel "kindOf (Forall \"a\" (Basic BoolType))" test34,
-                      TestLabel "kindOf (Forall \"a\" (Var \"x\"))" test35
+                      TestLabel "kindOf (Rec \"x\" (Semi Skip Skip)))" test35,
+                      TestLabel "kindOf (Rec \"x\" (Semi (Semi (Out IntType) Skip) (In IntType))))" test36
+
+
+                      -- TestLabel "kindOf ()" test3
                       -- TestLabel "kindOf (ExternalChoice (Map.fromList [(\"a  D \",Basic IntType),(\"b\",Basic BoolType)]))"  test31,
                       -- TestLabel "kindOf (InternalChoice (Map.fromList [(\"a\",Basic IntType),(\"b\",Basic BoolType)]))"  test32
 
