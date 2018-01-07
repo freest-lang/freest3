@@ -11,11 +11,15 @@
 \usepackage{flushend}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
-
+\usepackage{mathtools}
+\pagestyle{empty}
 \input{macros}
 
 \begin{document}
-\textbf{Algorithmic Kinding} 
+	\begin{center}
+		\textbf{Algorithmic Kinding}
+	\end{center}
+
 \begin{figure}[ht]
 \centering
   \begin{gather*}
@@ -23,39 +27,40 @@
 	\frac{}{\Delta \Alg \,!B :: \kinds^\Linear} \quad \frac{}{\Delta
 			\Alg \,?B :: \kinds^\Linear}
     \\\\
-    \frac{\Delta \Alg T_1 :: k_1 \quad \Delta \Alg T_2 :: k_2 \quad k_1 \le \kindt^\Linear \quad k_2 \le \kindt^\Linear}
+    \frac{\Delta \Alg T_1 :: k_1 \quad \Delta \Alg T_2 :: k_2 \quad \splitdfrac{k_1 \le \kindt^\Linear}{k_2 \le \kindt^\Linear}}
     	{\Delta \Alg T_1 \to T_2 :: \kindt^\Unrestricted}	
-	\\\\
-    \frac{\Delta \Alg T_1 :: k_1 \quad \Delta \Alg T_2 :: k_2 \quad k_1 \le \kindt^\Linear \quad k_2 \le \kindt^\Linear}
+	\quad
+    \frac{\Delta \Alg T_1 :: k_1 \quad \Delta \Alg T_2 :: k_2 \quad \splitdfrac{k_1 \le \kindt^\Linear}{k_2 \le \kindt^\Linear}}
     	{\Delta \Alg T_1 \multimap T_2 :: \kindt^\Linear}	
     \\\\
-    \frac{\Delta \Alg T_1 :: k_1 \quad \Delta \Alg T_2 :: k_2 \quad k_1 \le \kindt^\Linear \quad k_2 \le \kindt^\Linear}
+    \frac{\Delta \Alg T_1 :: k_1 \quad \Delta \Alg T_2 :: k_2 \quad \splitdfrac{k_1 \le \kindt^\Linear}{k_2 \le \kindt^\Linear}}
     	{\Delta \Alg (T_1,T_2) :: \kindt^\Linear}	
-    \\\\
-    \frac{\Delta \Alg T_1 :: k_1 \quad...\quad \Delta \Alg T_n :: k_n \quad 
-    		m=min[m_1 ... m_k], all(\le \kindt)[v_1 ... v_n]}
+	\quad
+    \frac{\Delta \Alg T_1 :: k_1 \mbox{ ... } \Delta \Alg T_n :: k_n \quad 
+    	\splitfrac{m=min[m_1 ... m_k]}{all(\le \kindt)[v_1 ... v_n]}}
     	{\Delta \Alg [l_i\colon T_i]_{i\in I} :: \kindt^m}	
 	\\\\
 	\frac{\Delta \Alg T_1 :: k_1 \quad \Delta \Alg T_2 :: k_2 \quad all(== \kinds)[v_1,v_2]}
     	{\Delta \Alg T_1;T_2 :: \kinds^{\max(m_1, m_2)}}	    
-	\\
+	\\\\
 		\frac{\Delta \Alg T_1 :: \kinds^{m_1} \quad \mbox{...} \quad \Delta \Alg T_n :: S^{m_n}}{
       \Delta \Alg \oplus\{l_i\colon T_i\}_{i\in I} :: \kinds^\Linear}
     \quad
     \frac{\Delta \Alg T_1 :: \kinds^{m_1} \quad \mbox{...} \quad \Delta \Alg T_n :: S^{m_n}}
     { \Delta \Alg \&\{l_i\colon T_i\}_{i\in I} :: \kinds^\Linear}
-	\\
+	\\\\
 	 \frac{k \le T^\Linear \quad \Delta, x :: k \Alg T :: k' \quad \mbox{prekind } k' = \kindsch}
     { \Delta, x :: k \Alg \forall \alpha :: k'.T :: k}
 	\quad
 	\frac{\Delta, x :: k \Alg T :: k' \quad k' \le T^{\Linear}}
 	    { \Delta \Alg \recc \mbox{ } x :: k.T :: k'}
-	 \\	
+	 \\\\
 	m_i = \mbox{multiplicity } k_i \quad v_i = \mbox{prekind } k_i \quad 1 \le i \le n 
 	\end{gather*}
   \caption{Algorithmic Kinding system, $\Delta \Alg T :: \kind$}
   \label{fig:kinding}
 \end{figure}
+ 
 %
 
 
@@ -68,3 +73,5 @@
 
 
 \end{document}
+
+

@@ -74,7 +74,7 @@ instance Show Type where
   show (Pair x y) = "(" ++ show x ++ " , " ++ show y ++ ")" -- Double parens ?
   show (InternalChoice x) = "+{" ++ show (Map.toList x) ++ "}"
   show (ExternalChoice x) = "&{" ++ show (Map.toList x) ++ "}"
-  show (Datatype x) =   show (Map.toList x)  -- Datatype ?
+  show (Datatype x) =   show (Map.toList x)
   show (Rec s t) = "rec " ++ show s ++ " . " ++ show t
   show (Forall s t) = "forall " ++ show s ++ " . " ++ show t
   show (Var x) = show x
