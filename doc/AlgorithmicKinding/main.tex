@@ -37,10 +37,10 @@
     	{\Delta \Alg (T_1,T_2) :: \kindt^\Linear}	
 	\quad
     \frac{\Delta \Alg T_1 :: k_1 \mbox{ ... } \Delta \Alg T_n :: k_n \quad 
-    	\splitfrac{m=min[m_1 ... m_k]}{all(\le \kindt)[v_1 ... v_n]}}
+    	\splitfrac{m=\mbox{max}[m_1 ... m_k]}{\mbox{all}(\le \kindt)[v_1 ... v_n]}}
     	{\Delta \Alg [l_i\colon T_i]_{i\in I} :: \kindt^m}	
 	\\\\
-	\frac{\Delta \Alg T_1 :: k_1 \quad \Delta \Alg T_2 :: k_2 \quad all(== \kinds)[v_1,v_2]}
+	\frac{\Delta \Alg T_1 :: k_1 \quad \Delta \Alg T_2 :: k_2 \quad \mbox{all}(== \kinds)[v_1,v_2]}
     	{\Delta \Alg T_1;T_2 :: \kinds^{\max(m_1, m_2)}}	    
 	\\\\
 		\frac{\Delta \Alg T_1 :: \kinds^{m_1} \quad \mbox{...} \quad \Delta \Alg T_n :: S^{m_n}}{
@@ -49,8 +49,8 @@
     \frac{\Delta \Alg T_1 :: \kinds^{m_1} \quad \mbox{...} \quad \Delta \Alg T_n :: S^{m_n}}
     { \Delta \Alg \&\{l_i\colon T_i\}_{i\in I} :: \kinds^\Linear}
 	\\\\
-	 \frac{k \le T^\Linear \quad \Delta, x :: k \Alg T :: k' \quad \mbox{prekind } k' = \kindsch}
-    { \Delta, x :: k \Alg \forall \alpha :: k'.T :: k}
+	 \frac{k \le T^\Linear \quad \Delta, x :: k \Alg T :: k'}
+    { \Delta, x :: k \Alg \forall \alpha :: k.T }
 	\quad
 	\frac{\Delta, x :: k \Alg T :: k' \quad k' \le T^{\Linear}}
 	    { \Delta \Alg \recc \mbox{ } x :: k.T :: k'}
