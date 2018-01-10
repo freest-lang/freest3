@@ -12,10 +12,11 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Types.Types
-( BasicType(..)
-, Type(..)
-, TypeMap(..)
-, Id
+( BasicType(..),
+  Type(..),
+  TypeMap(..),
+  Id,
+  Field
 ) where
 
 import qualified Data.Map.Strict as Map
@@ -27,7 +28,7 @@ data BasicType =
   CharType |
   BoolType |
   UnitType
-  deriving (Eq)
+  deriving (Eq, Ord)
 
 -- TYPES
 
@@ -46,14 +47,16 @@ data Type =
   Rec String Type |
   Forall String Type |
   Var String
+  deriving Ord
   -- deriving (Eq)
   -- deriving (Show)
   -- deriving (Eq,Show)
 
 
 type Id = String
+type Field = String
+type TypeMap = Map.Map Field Type
 
-type TypeMap = Map.Map Id Type
 
 -- TODO: Review
 instance Show BasicType where

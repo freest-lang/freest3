@@ -1,0 +1,32 @@
+Int -> Bool
+  Kind Arbitrary Un
+Int -o Bool
+  Kind Arbitrary Lin
+(Int,Bool)
+  Kind Arbitrary Lin
+[a:Int,b:Bool]
+  Kind Arbitrary Un
+Int
+  Kind Arbitrary Un
+Bool
+  Kind Arbitrary Un
+Char
+  Kind Arbitrary Un
+()
+  Kind Arbitrary Un
+!Int
+  Kind Session Lin
+?Bool
+  Kind Session Lin
+Skip
+  Kind Session Un
+!Int;?Bool
+  Kind Session Lin
+rec x . ?Bool
+  Kind Session Lin
+forall a . Bool
+  Kind Arbitrary Un
+rec x . Skip;Skip
+  Kind Session Un
+rec x . !Int;Skip;?Int
+  Kind Session Lin

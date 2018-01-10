@@ -1,0 +1,4 @@
+x
+  y
+forall c . a
+  forall b . b

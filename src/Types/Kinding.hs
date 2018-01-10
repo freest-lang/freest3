@@ -1,10 +1,11 @@
 module Types.Kinding
 ( isType
+, isSessionType
 , kindOf
 , contractive
 , PreKind(..)
-,Multiplicity (..)
-,Kind (..)) where
+, Multiplicity (..)
+, Kind (..)) where
 
 --TODO review contractive, kind and Multiplicity exports (test purposes)
 import Types.Types
@@ -12,9 +13,9 @@ import qualified Data.Map.Strict as Map
 import Data.Either as E
 import Data.List
 
-data PreKind = Session | Arbitrary | Scheme deriving (Eq, Ord, Show)
-data Multiplicity = Un | Lin deriving (Eq, Ord, Show)
-data Kind = Kind PreKind Multiplicity deriving (Eq, Ord, Show)
+data PreKind = Session | Arbitrary | Scheme deriving (Eq, Ord, Show, Read)
+data Multiplicity = Un | Lin deriving (Eq, Ord, Show, Read)
+data Kind = Kind PreKind Multiplicity deriving (Eq, Ord, Show, Read)
 
 type Env = Map.Map Id Kind
 type Message = String
@@ -28,6 +29,10 @@ isType t = case kinding Map.empty t of
 isSession :: Kind -> Bool
 isSession (Kind Session _) = True
 isSession _                 = False
+
+isSessionType :: Type -> Bool
+isSessionType  = isSession . kindOf
+
 
 kindOf :: Type -> Kind
 kindOf t = case kinding Map.empty t of

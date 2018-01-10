@@ -1,0 +1,10 @@
+skip
+  skip
+forall a . a
+  forall b . b
+forall b . b
+  forall b . b
+forall a . b
+  forall b . b
+forall a . (forall b . a)
+  forall c . (forall d . c)

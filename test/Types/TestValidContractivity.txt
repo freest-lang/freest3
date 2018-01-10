@@ -1,0 +1,42 @@
+Int -> Bool
+  True
+Int -o Bool
+  True
+(Int,Bool)
+  True
+[a:Int,b:Bool]
+  True
+Int
+  True
+!Int
+  True
+?Int
+  True
++{a:Int,b:Bool}
+  True
+&{a:Int,b:Bool}
+  True
+Skip
+  True
+!Int;?Bool
+  True
+x;?Bool
+  False
+rec x . ?Bool
+  True
+x
+  False
+forall a . Bool
+  True
+forall a . x
+  False
+rec x . Skip;x
+  True
+rec x . x;!Int
+  False
+rec x . !Int;x
+  True
+rec x . rec y . x;y
+  False
+rec x . !Int; rec y . x ; y
+  True

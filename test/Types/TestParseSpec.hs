@@ -1,8 +1,8 @@
-module Types.ParseSpec(spec) where
+module Types.TestParseSpec(spec) where
 
 import SpecHelper
 import Control.Exception (evaluate)
-import Types.TestParse
+import Types.TestParseUnit
 import Test.Hspec.Contrib.HUnit (fromHUnitTest)
 import qualified Data.Map.Strict as Map
 import Test.Hspec.Expectations (anyException, shouldThrow)

@@ -3,7 +3,7 @@
 -- ./TestParse
 -- hpc report TestParse --exclude=Main --exclude=QC
 -- hpc markup TestParse --exclude=Main --exclude=QC
-module Types.TestParse(allTests) where
+module Types.TestParseUnit(allTests) where
 
 import Types.Parser
 import Test.HUnit
