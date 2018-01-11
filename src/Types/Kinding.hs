@@ -53,41 +53,44 @@ kinding delta (Semi t u) =
       Right $ "One of the operands is not a session kind"
 kinding delta (UnFun t u) =
   case (kinding delta t, kinding delta u) of
-    (Left k1, Left k2) |  k1 <= Kind Arbitrary Lin && k2 <= Kind Arbitrary Lin          ->
+    (Left k1, Left k2) |  k1 <= Kind Arbitrary Lin && k2 <= Kind Arbitrary Lin      ->
       Left $ Kind Arbitrary Un
-    _                                                                                         ->
-      Right $ "Error Message1. Type: " ++ show (UnFun t u)
+    _                                                                               ->
+      Right $ "One of the operands is a type Scheme. Type: " ++ show (UnFun t u)
 kinding delta (LinFun t u) =
   case (kinding delta t, kinding delta u) of
-    (Left k1, Left k2) |  k1 <= (Kind Arbitrary Lin) && k2 <= (Kind Arbitrary Lin)          ->
+    (Left k1, Left k2) |  k1 <= (Kind Arbitrary Lin) && k2 <= (Kind Arbitrary Lin)  ->
       Left $ Kind Arbitrary Lin
-    _                                                                                         ->
-      Right $ "Error Message2. Type: " ++ show (LinFun t u)
+    _                                                                               ->
+      Right $ "One of the operands is a type Scheme. Type: " ++ show (LinFun t u)
 kinding delta (Pair t u) =
   case (kinding delta t, kinding delta u) of
-    (Left k1, Left k2 ) |  k1 <= (Kind Arbitrary Lin) && k2 <= (Kind Arbitrary Lin)          ->
+    (Left k1, Left k2 ) |  k1 <= (Kind Arbitrary Lin) && k2 <= (Kind Arbitrary Lin) ->
         Left $ Kind Arbitrary Lin
-    _                                                                                         ->
-      Right $ "Error Message3. Type: " ++ show (Pair t u)
+    _                                                                               ->
+      Right $ "One of the operands is a type Scheme. Type: " ++ show (Pair t u)
 kinding delta (Datatype m) =
-  kindingMap delta m (Kind Arbitrary Un) ("One of the components in a Datatype is a type Scheme. \nType: " ++ show m)
+  kindingMap delta m (Kind Arbitrary Un)
+    ("One of the components in a Datatype is a type Scheme. \nType: " ++ show m)
 kinding delta (ExternalChoice m) =
-  kindingMap delta m (Kind Session Lin) ("One of the components in an ExternalChoice isn't lower than a S^l. \nType: " ++ show m)
+  kindingMap delta m (Kind Session Lin)
+    ("One of the components in an ExternalChoice isn't lower than a S^l. \nType: " ++ show m)
 kinding delta (InternalChoice m) =
-  kindingMap delta m (Kind Session Lin) ("One of the components in an InternalChoice isn't lower than a S^l. \nType: " ++ show m)
+  kindingMap delta m (Kind Session Lin)
+    ("One of the components in an InternalChoice isn't lower than a S^l. \nType: " ++ show m)
 kinding delta (Rec x t) =
-  let km = kinding delta t in
+  let km = kinding  (Map.insert x (Kind Session Un) delta) t in
   case km of
     (Left k) ->
-      if contractive (Map.insert x k delta) t
+     if contractive (Map.insert x k delta) t
         then
           if (k <= (Kind Arbitrary Lin))
             then Left k
             else Right $ "The kind of the type is a type Scheme. \nType: " ++ show (Rec x t)
         else Right $ "The body of the type is not contractive. \nType: " ++ show (Rec x t)
     (Right m) -> Right m
-kinding delta (Forall x t) = --TODO: insert in delta?? same for rec
-  let kd = kinding delta t in
+kinding delta (Forall x t) =
+  let kd = kinding (Map.insert x (Kind Session Un) delta) t in
   case kd of
     (Left k) | k <= (Kind Arbitrary Lin) -> Left k
     (Right m) -> Right m
@@ -95,7 +98,7 @@ kinding delta (Var x) =
   if Map.member x delta then
     Left $ delta Map.! x
   else
-    Right $ "Variable error"
+    Right $ show x ++ " is a free variable"
 
 kindingMap :: Env -> TypeMap -> Kind -> Message -> KindingOut
 kindingMap delta m k message =

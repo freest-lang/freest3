@@ -24,36 +24,34 @@
 \centering
   \begin{gather*}
 	\frac{}{\Delta \Alg \skipk :: \kinds^\Unrestricted} \quad
-	\frac{}{\Delta \Alg \,!B :: \kinds^\Linear} \quad \frac{}{\Delta
-			\Alg \,?B :: \kinds^\Linear}
+	\frac{}{\Delta \Alg \,!B :: \kinds^\Linear} \quad 
+	\frac{}{\Delta \Alg \,?B :: \kinds^\Linear} \quad
+	\frac{}{\Delta \Alg \,B :: \kindt^\Linear}	
     \\\\
-    \frac{\Delta \Alg T_1 :: k_1 \quad \Delta \Alg T_2 :: k_2 \quad \splitdfrac{k_1 \le \kindt^\Linear}{k_2 \le \kindt^\Linear}}
+    \frac{\Delta \Alg T_1 :: k_1 \quad \Delta \Alg T_2 :: k_2 \quad k_1, k_2 \le \kindt^\Linear}
     	{\Delta \Alg T_1 \to T_2 :: \kindt^\Unrestricted}	
 	\quad
-    \frac{\Delta \Alg T_1 :: k_1 \quad \Delta \Alg T_2 :: k_2 \quad \splitdfrac{k_1 \le \kindt^\Linear}{k_2 \le \kindt^\Linear}}
+    \frac{\Delta \Alg T_1 :: k_1 \quad \Delta \Alg T_2 :: k_2 \quad k_1, k_2 \le \kindt^\Linear}
     	{\Delta \Alg T_1 \multimap T_2 :: \kindt^\Linear}	
     \\\\
-    \frac{\Delta \Alg T_1 :: k_1 \quad \Delta \Alg T_2 :: k_2 \quad \splitdfrac{k_1 \le \kindt^\Linear}{k_2 \le \kindt^\Linear}}
+    \frac{\Delta \Alg T_1 :: k_1 \quad \Delta \Alg T_2 :: k_2 \quad k_1, k_2 \le \kindt^\Linear}
     	{\Delta \Alg (T_1,T_2) :: \kindt^\Linear}	
 	\quad
-    \frac{\Delta \Alg T_1 :: k_1 \mbox{ ... } \Delta \Alg T_n :: k_n \quad 
-    	\splitfrac{m=\mbox{max}[m_1 ... m_k]}{\mbox{all}(\le \kindt)[v_1 ... v_n]}}
-    	{\Delta \Alg [l_i\colon T_i]_{i\in I} :: \kindt^m}	
+    \frac{\Delta \Alg T_1 :: k_1 \mbox{ ... } \Delta \Alg T_n :: k_n \quad k_1\mbox{, ..., } k_n \le \kindt^\Linear}
+    	{\Delta \Alg [l_i\colon T_i]_{i\in I} :: \kindt^{\max(k_1 ... k_n)}}	
 	\\\\
-	\frac{\Delta \Alg T_1 :: k_1 \quad \Delta \Alg T_2 :: k_2 \quad \mbox{all}(== \kinds)[v_1,v_2]}
-    	{\Delta \Alg T_1;T_2 :: \kinds^{\max(m_1, m_2)}}	    
+	\frac{\Delta \Alg T_1 :: k_1 \quad \Delta \Alg T_2 :: k_2 \quad k_1, k_2 \le \kinds^\Linear}
+    	{\Delta \Alg T_1;T_2 :: \kinds^{\max(k_1 ... k_n)}}	    
 	\\\\
-		\frac{\Delta \Alg T_1 :: \kinds^{m_1} \quad \mbox{...} \quad \Delta \Alg T_n :: S^{m_n}}{
+		\frac{\Delta \Alg T_1 :: k_1 \quad \mbox{...} \quad \Delta \Alg T_n :: k_n \quad k_1\mbox{,..., }k_n \le \kinds^\Linear}{
       \Delta \Alg \oplus\{l_i\colon T_i\}_{i\in I} :: \kinds^\Linear}
-    \quad
-    \frac{\Delta \Alg T_1 :: \kinds^{m_1} \quad \mbox{...} \quad \Delta \Alg T_n :: S^{m_n}}
+    \\\\
+    \frac{\Delta \Alg T_1 :: k_1 \quad \mbox{...} \quad \Delta \Alg T_n :: k_n \quad k_1\mbox{,..., }k_n \le \kinds^\Linear}
     { \Delta \Alg \&\{l_i\colon T_i\}_{i\in I} :: \kinds^\Linear}
 	\\\\
-	 \frac{k \le T^\Linear \quad \Delta, x :: k \Alg T :: k'}
-    { \Delta, x :: k \Alg \forall \alpha :: k.T }
+	 \frac{k \le \kindt^\Linear \quad \Delta, x :: \kinds^\Unrestricted \Alg T :: k'}{\Delta, x :: k \Alg \forall \alpha :: k.T :: k'}
 	\quad
-	\frac{\Delta, x :: k \Alg T :: k' \quad k' \le T^{\Linear}}
-	    { \Delta \Alg \recc \mbox{ } x :: k.T :: k'}
+	\frac{\Delta, x :: \kinds^\Unrestricted \Alg T :: k' \quad k' \le \kindt^{\Linear}}{\Delta \Alg \recc \mbox{ } x :: k.T :: k'}
 	 \\\\
 	m_i = \mbox{multiplicity } k_i \quad v_i = \mbox{prekind } k_i \quad 1 \le i \le n 
 	\end{gather*}

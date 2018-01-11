@@ -74,7 +74,7 @@ instance Show Type where
   show (In x) = "(" ++ "?" ++ show x ++ ")"
   show (UnFun x y) = "(" ++ show x ++ " -> " ++ show y ++ ")"
   show (LinFun x y) = "(" ++ show x ++ " -o " ++ show y ++ ")"
-  show (Pair x y) = "(" ++ show x ++ " , " ++ show y ++ ")" -- Double parens ?
+  show (Pair x y) = show x ++ " , " ++ show y
   show (InternalChoice x) = "+{" ++ show (Map.toList x) ++ "}"
   show (ExternalChoice x) = "&{" ++ show (Map.toList x) ++ "}"
   show (Datatype x) =   show (Map.toList x)

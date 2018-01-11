@@ -30,3 +30,7 @@ rec x . Skip;Skip
   Kind Session Un
 rec x . !Int;Skip;?Int
   Kind Session Lin
+rec x . x
+  Kind Session Un
+forall x . x
+  Kind Session Un
