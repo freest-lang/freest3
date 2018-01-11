@@ -3,11 +3,8 @@ module Types.Kinding
 , isSessionType
 , kindOf
 , contractive
-, PreKind(..)
-, Multiplicity (..)
 , Kind (..)) where
-
---TODO review contractive, kind and Multiplicity exports (test purposes)
+  
 import Types.Types
 import qualified Data.Map.Strict as Map
 import Data.Either as E
