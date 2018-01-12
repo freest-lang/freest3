@@ -1,8 +1,8 @@
 test :
 	runhaskell -isrc -itest -fforce-recomp test/Spec.hs
 
-testTypes :
-	runhaskell -isrc -itest -fforce-recomp test/Types/TestTypesSpec.hs
+testValidTypes :
+	runhaskell -isrc -itest -fforce-recomp test/Types/TestValidTypesSpec.hs
 
 testParser :
 	runhaskell -isrc -itest -fforce-recomp test/Types/ParseSpec.hs
@@ -10,11 +10,14 @@ testParser :
 testInvalidParser :
 	runhaskell -isrc -itest -fforce-recomp test/Types/ParseInvalidSpec.hs
 
-testKinding :
-	runhaskell -isrc -itest -fforce-recomp test/Types/KindingSpec.hs
+testValidKinding :
+	runhaskell -isrc -itest -fforce-recomp test/Types/TestValidKindingSpec.hs
+
+#testInvalidKinding :
+#	runhaskell -isrc -itest -fforce-recomp test/Types/TestInvalidKindingSpec.hs
 
 clean :
-	rm `find ./ -name '*.o' -o -name '*.hi' -o -name '*.tix'` -rf
+	rm `find ./ -name '*.o' -o -name '*.hi' -o -name '*.tix'` -r
 
 cleanOuts :
 	rm test/outputs/*

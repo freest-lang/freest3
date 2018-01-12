@@ -2,8 +2,8 @@ module Types.TestParseSpec(spec) where
 
 import SpecHelper
 import Control.Exception (evaluate)
-import Types.TestParseUnit
-import Test.Hspec.Contrib.HUnit (fromHUnitTest)
+--import Types.TestParseUnit
+--import Test.Hspec.Contrib.HUnit (fromHUnitTest)
 import qualified Data.Map.Strict as Map
 import Test.Hspec.Expectations (anyException, shouldThrow)
 
@@ -16,8 +16,95 @@ spec = do
   let treeChannelRead = "(rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel})"
   let treeChannelType = (Rec "TreeChannel" (InternalChoice $ Map.fromList [("Leaf", Skip),("Node", (Semi (Semi (Out IntType)(Var "TreeChannel")) (Var "TreeChannel")))]))
 
-  describe "Unit tests" $ do
-    fromHUnitTest allTests
+  describe "Simple tests" $ do
+    it "Int" $ do
+      (read "Int" :: BasicType) `shouldBe` IntType
+    it "Char" $ do
+      (read "Char" :: BasicType) `shouldBe` CharType
+    it "Bool" $ do
+      (read "Bool" :: BasicType) `shouldBe` BoolType
+    it "Unit" $ do
+      (read "()" :: BasicType) `shouldBe` UnitType
+    it "Skip" $ do
+      (read "Skip" :: Type) `shouldBe` Skip
+    it "Int;Bool" $ do
+      (read "Int;Bool" :: Type) `shouldBe` (Semi (Basic IntType) (Basic BoolType))
+    it "!Int" $ do
+      (read "!Int" :: Type) `shouldBe` (Out IntType)
+    it "?Int" $ do
+      (read "?Int" :: Type) `shouldBe` (In IntType)
+    it "Int->Int" $ do
+      (read "Int->Int" :: Type) `shouldBe` (UnFun (Basic IntType) (Basic IntType))
+    it "Int-oInt" $ do
+      (read "Int-oInt" :: Type) `shouldBe` (LinFun (Basic IntType) (Basic IntType))
+    it "(Int,Int)" $ do
+      (read "(Int,Int)" :: Type) `shouldBe` (Pair (Basic IntType) (Basic IntType))
+    it "&{a:Int,b:Bool}" $ do
+      (read "&{a:Int,b:Bool}" :: Type) `shouldBe` (ExternalChoice (Map.fromList [("a",Basic IntType),("b",Basic BoolType)]))
+    it "+{a:Int,b:Bool}" $ do
+      (read "+{a:Int,b:Bool}" :: Type) `shouldBe` (InternalChoice (Map.fromList [("a",Basic IntType),("b",Basic BoolType)]))
+    it "[a:Int,b:Bool]" $ do
+      (read "[a:Int,b:Bool]" :: Type) `shouldBe` (Datatype (Map.fromList [("a",Basic IntType),("b",Basic BoolType)]))
+    it "rec a.Bool" $ do
+      (read "rec a.Bool" :: Type) `shouldBe` (Rec "a" (Basic BoolType))
+    it "forall a.Bool" $ do
+      (read "forall a.Bool" :: Type) `shouldBe` (Forall "a" (Basic BoolType))
+    it "z" $ do
+      (read "z" :: Type) `shouldBe` (Var "z")
+
+  describe "Operator precedence" $ do
+    it "(Char)" $ do
+      (read "(Char)" :: Type) `shouldBe` (Basic CharType)
+    it "(Skip)" $ do
+      (read "(Skip)" :: Type) `shouldBe` Skip
+    it "(?Bool)" $ do
+      (read "(?Bool)" :: Type) `shouldBe` (In BoolType)
+    it "(!Char)" $ do
+      (read "(!Char)" :: Type) `shouldBe` (Out CharType)
+    it "((Int,Char))" $ do
+      (read "((Int,Char))" :: Type) `shouldBe` (Pair (Basic IntType) (Basic CharType))
+
+  describe "Whitespaces" $ do
+    it " Skip" $ do
+      (read " Skip " :: Type) `shouldBe` Skip
+    it " Int" $ do
+      (read " Int " :: BasicType) `shouldBe`  IntType
+    it "Int ; Bool" $ do
+      (read " Int ; Bool " :: Type) `shouldBe` (Semi (Basic IntType) (Basic BoolType))
+    it "Int -> Int" $ do
+      (read " Int -> Int " :: Type) `shouldBe` (UnFun (Basic IntType) (Basic IntType))
+    it "Int -o Int" $ do
+      (read " Int -o Int " :: Type) `shouldBe` (LinFun (Basic IntType) (Basic IntType))
+    it "( Int , Int )" $ do
+      (read "( Int , Int )" :: Type) `shouldBe` (Pair (Basic IntType) (Basic IntType))
+    it "rec a . A" $ do
+      (read "rec a . A" :: Type) `shouldBe` (Rec "a" (Var "A"))
+    it "+{i : Int, b : Bool}" $ do
+      (read "+{i : Int, b : Bool}" :: Type) `shouldBe` (InternalChoice (Map.fromList [("i",Basic IntType),("b",Basic BoolType)]))
+
+  describe "Nested operators" $ do
+    it "((Int,Bool),a)" $ do
+      (read "((Int,Bool),a)" :: Type) `shouldBe` (Pair (Pair (Basic IntType)(Basic BoolType)) (Var "a"))
+    it "rec a . (rec i . Int)" $ do
+      (read "rec a . (rec i . Int)" :: Type) `shouldBe` (Rec "a" (Rec "i" (Basic IntType)))
+    it "forall a.(forall b.Bool)" $ do
+      (read "forall a.(forall b.Bool)" :: Type) `shouldBe` (Forall "a" (Forall "b" (Basic BoolType)))
+
+  describe "Associativity" $ do
+    it "f -o f -> f" $ do
+      (read "f -o f -> f" :: Type) `shouldBe` (LinFun (Var "f")(UnFun (Var "f")(Var "f")))
+    it "(f -o f) -> f" $ do
+      (read "(f -o f) -> f" :: Type) `shouldBe` (UnFun (LinFun (Var "f")(Var "f")) (Var "f"))
+    it "Skip;Skip;Skip" $ do
+      (read "Skip;Skip;Skip" :: Type) `shouldBe` (Semi (Semi Skip Skip) Skip)
+    it "(Internal,Int)" $ do
+      (read "(Internal,Int)" :: Type) `shouldBe` (Pair (Var "Internal") (Basic IntType))
+    it "(Skiper,Int)" $ do
+      (read "(Skiper,Int)" :: Type) `shouldBe` (Pair (Var "Skiper") (Basic IntType))
+    it "a -> {-A comment inside-} b" $ do
+      (read "a -> {-A comment inside-} b" :: Type) `shouldBe` (UnFun (Var "a") (Var "b"))
+
+
 --  evaluate (read "" :: Type) `shouldThrow` anyException
   describe "Paper examples (more complex tests)" $ do
 

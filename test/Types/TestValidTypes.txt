@@ -1,5 +1,17 @@
+Int
+  Int
+Char
+  Char
+Bool
+  Bool
+()
+  ()
 skip
   skip
+x
+  x
+Int;Bool
+    (Int;Bool)
 forall a . a
   forall b . b
 forall b . b
@@ -8,3 +20,7 @@ forall a . b
   forall b . b
 forall a . (forall b . a)
   forall c . (forall d . c)
+(forall x . !Int;x);forall y . !Bool;y
+  (forall y . !Int;y);forall x . !Bool;x
+forall x . !Int;x;forall y . !Bool;y
+  forall y . !Int;y;forall x . !Bool;x

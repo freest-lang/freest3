@@ -1,7 +1,6 @@
 ## Context Free Session Types - Test framework
 
 The test infrastructure contains a collection of tools for testing the Context Free Session Types compiler and displaying the results.
-(See also [README.md](../README.md) for more information about the compiler).
 
 ## Requirements
 
@@ -48,4 +47,4 @@ To add test to the infrastructure just edit the correspondent txt of the desired
 The txt file is structured as follows :
 
     Testing language phrase
-        Expected result
+        Expected 

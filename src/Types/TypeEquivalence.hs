@@ -92,7 +92,7 @@ equiv s t1 t2
 --   | otherwise = False
 --     where r1 = reduce t1
 --           r2 = reduce t2
--- 
+--
 -- unfold :: Type -> Type
 -- unfold (Rec x t) = unfold(subs (Rec x t) t x))
 -- unfold t = t
