@@ -12,6 +12,7 @@ x
   x
 Int;Bool
     (Int;Bool)
+    
 forall a . a
   forall b . b
 forall b . b
