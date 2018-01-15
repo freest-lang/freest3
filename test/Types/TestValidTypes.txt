@@ -12,7 +12,7 @@ x
   x
 Int;Bool
     (Int;Bool)
-    
+
 forall a . a
   forall b . b
 forall b . b
@@ -25,3 +25,19 @@ forall a . (forall b . a)
   (forall y . !Int;y);forall x . !Bool;x
 forall x . !Int;x;forall y . !Bool;y
   forall y . !Int;y;forall x . !Bool;x
+
+rec x . x
+  rec y . y
+rec x .!Int
+  rec y . !Int
+rec x . (?Bool -> !Int -> Bool)
+  rec x . ?Bool -> !Int -> Bool
+
+rec x . forall y . x;y
+  rec y . forall x . y;x
+
+[a:Int,b:Bool]
+  [c:Int, d:Bool]
+
+[a:Int,b:Bool]
+  [b:Int, a:Bool]

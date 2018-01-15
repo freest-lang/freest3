@@ -30,3 +30,6 @@ matchValidKindingSpec :: (String, String) -> Spec
 matchValidKindingSpec (a, b) =
   it a $ do
     (kindOf (read a :: Type)) `shouldBe` (read b :: Kind)
+
+-- INVALID:
+-- forall alpha . (rec Tree . &{Leaf:Skip, Node:?Int;Tree;Tree}) -> (rec TreeChannel . +{Leaf:Skip, Node:!Int;TreeChannel;TreeChannel});alpha->alpha

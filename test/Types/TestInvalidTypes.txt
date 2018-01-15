@@ -1,4 +1,29 @@
+Int
+  Char
+Int
+  Bool
+Int
+  ()
+Int
+  Skip
+()
+  Skip
+Bool
+  Char
 x
   y
+
 forall c . a
   forall b . b
+
+rec x .y
+  rec y .x
+
+rec x . Skip;x
+  rec x . x
+
+rec x . forall y . x;y
+  rec x . forall y . y;x
+
+[a:Int,b:Bool]
+  [c:Char, d:Bool]

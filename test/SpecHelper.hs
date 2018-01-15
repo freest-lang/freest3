@@ -4,6 +4,7 @@ module SpecHelper
     , module Types.Parser
     , readFromFile
     , convert
+    , module Data.Char
     ) where
 
 import Test.Hspec
@@ -13,9 +14,11 @@ import Types.Parser
 
 readFromFile filename = do
   str <- readFile filename
-  -- print $ map (dropWhile isSpace) $ lines str
-  return $ map (dropWhile isSpace) $ lines str
+  -- print $ filter (not . null) $ lines str
+  return $ filter (not . null) $ map (dropWhile isSpace) $ lines str
+  -- return $ map (dropWhile isSpace) $ lines str
 
 convert :: [String] -> [(String, String)]
 convert [] = []
 convert (k:v:t) = (k, v) : convert t
+-- convert t = error $ "ERRO: " ++ show t

@@ -1,11 +1,3 @@
-Int -> Bool
-  Kind Arbitrary Un
-Int -o Bool
-  Kind Arbitrary Lin
-(Int,Bool)
-  Kind Arbitrary Lin
-[a:Int,b:Bool]
-  Kind Arbitrary Un
 Int
   Kind Arbitrary Un
 Bool
@@ -14,23 +6,77 @@ Char
   Kind Arbitrary Un
 ()
   Kind Arbitrary Un
+Skip
+  Kind Session Un
 !Int
+  Kind Session Lin
+!Char
   Kind Session Lin
 ?Bool
   Kind Session Lin
-Skip
-  Kind Session Un
+?Char
+  Kind Session Lin
+Int -> Bool
+  Kind Arbitrary Un
+Int -o Bool
+  Kind Arbitrary Lin
+Char -> Skip
+  Kind Arbitrary Un
+Char -o Skip
+  Kind Arbitrary Lin
+(Int,Bool)
+  Kind Arbitrary Lin
+(!Char,())
+  Kind Arbitrary Lin
+(!Int, Skip)
+  Kind Arbitrary Lin
+[a:Int,b:Bool]
+  Kind Arbitrary Un
 !Int;?Bool
+  Kind Session Lin
+Skip;Skip
+  Kind Session Un
+!Int;Skip
+  Kind Session Lin
+Skip;+{s:Skip,i:!Int}
   Kind Session Lin
 rec x . ?Bool
   Kind Session Lin
-forall a . Bool
-  Kind Arbitrary Un
 rec x . Skip;Skip
   Kind Session Un
 rec x . !Int;Skip;?Int
   Kind Session Lin
 rec x . x
   Kind Session Un
+forall a . Bool
+  Kind Arbitrary Un
+
 forall x . x
+  Kind Session Un
+
+forall x . !Int ; x
+  Kind Session Lin
+
+forall x . Int -> x
+  Kind Arbitrary Un
+
+forall x . Int -o x
+  Kind Arbitrary Lin
+
+forall a . (forall b . a)
+  Kind Session Un
+
+forall x . !Int;x;forall y . !Bool;y
+  Kind Session Lin
+
+rec Tree . &{Leaf:Skip, Node:?Int;Tree;Tree}
+  Kind Session Lin
+
+rec TreeChannel . +{Leaf:Skip, Node:!Int;TreeChannel;TreeChannel}
+  Kind Session Lin
+
+rec alpha . !Int;rec TreeChannel . +{Leaf:Skip, Node:!Int;TreeChannel;TreeChannel};rec TreeChannel . +{Leaf:Skip, Node:!Int;TreeChannel;TreeChannel};alpha
+  Kind Session Lin
+
+forall x . rec y . rec z . x;y;z
   Kind Session Un

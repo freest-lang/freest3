@@ -16,7 +16,8 @@ module Types.Types
   Type(..),
   TypeMap(..),
   Id,
-  Field
+  Field,
+  test,
 ) where
 
 import qualified Data.Map.Strict as Map
@@ -102,6 +103,7 @@ equals m (Pair s t)(Pair u v) = equals m s u && equals m t v
 equals m (Datatype m1)(Datatype m2) = verifyListEquality m (Map.toList m1) (Map.toList m2)
 equals m (InternalChoice m1)(InternalChoice m2) = verifyListEquality m (Map.toList m1) (Map.toList m2)
 equals m (ExternalChoice m1)(ExternalChoice m2) = verifyListEquality m (Map.toList m1) (Map.toList m2)
+equals _ _ _ = False
 
 verifyListEquality :: Set.Set (Id, Id) -> [(Id, Type)] -> [(Id, Type)] -> Bool
 verifyListEquality _ [] _ = True
@@ -109,8 +111,8 @@ verifyListEquality _ _ [] = True
 verifyListEquality m (m1:ms1)(m2:ms2) =
   equals m (snd m1) (snd m2) && verifyListEquality m ms1 ms2
 
+-- equality test:
+--   [a:Int,b:Bool] == [b:Int, a:Bool] FAILED [1]
+-- Map.toList orders the elements by key
 
-
-
-
--- equals m _ _ = False
+-- test (Datatype m1) = do Map.map (\x -> print $ show(m1 Map.! x )  ++ "\n") m1

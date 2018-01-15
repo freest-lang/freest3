@@ -4,6 +4,9 @@ test :
 testValidTypes :
 	runhaskell -isrc -itest -fforce-recomp test/Types/TestValidTypesSpec.hs
 
+testInvalidTypes :
+	runhaskell -isrc -itest -fforce-recomp test/Types/TestInvalidTypesSpec.hs
+
 testParser :
 	runhaskell -isrc -itest -fforce-recomp test/Types/ParseSpec.hs
 
