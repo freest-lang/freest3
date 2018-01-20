@@ -48,26 +48,6 @@ rec x . !Int;Skip;?Int
   Kind Session Lin
 rec x . x
   Kind Session Un
-forall a . Bool
-  Kind Arbitrary Un
-
-forall x . x
-  Kind Session Un
-
-forall x . !Int ; x
-  Kind Session Lin
-
-forall x . Int -> x
-  Kind Arbitrary Un
-
-forall x . Int -o x
-  Kind Arbitrary Lin
-
-forall a . (forall b . a)
-  Kind Session Un
-
-forall x . !Int;x;forall y . !Bool;y
-  Kind Session Lin
 
 rec Tree . &{Leaf:Skip, Node:?Int;Tree;Tree}
   Kind Session Lin
@@ -78,5 +58,29 @@ rec TreeChannel . +{Leaf:Skip, Node:!Int;TreeChannel;TreeChannel}
 rec alpha . !Int;rec TreeChannel . +{Leaf:Skip, Node:!Int;TreeChannel;TreeChannel};rec TreeChannel . +{Leaf:Skip, Node:!Int;TreeChannel;TreeChannel};alpha
   Kind Session Lin
 
-forall x . rec y . rec z . x;y;z
-  Kind Session Un
+-- forall x . rec y . rec z . x;y;z
+--   Kind Session Un
+--
+-- forall alpha . Int -> (!Int;alpha) -> alpha
+--   Kind Arbitrary Un
+--
+-- forall a . Bool
+--   Kind Arbitrary Un
+--
+-- forall x . x
+--   Kind Session Un
+--
+-- forall x . !Int ; x
+--   Kind Session Lin
+--
+-- forall x . Int -> x
+--   Kind Arbitrary Un
+--
+-- forall x . Int -o x
+--   Kind Arbitrary Lin
+--
+-- forall a . (forall b . a)
+--   Kind Session Un
+--
+-- forall x . !Int;x;forall y . !Bool;y
+--   Kind Session Lin

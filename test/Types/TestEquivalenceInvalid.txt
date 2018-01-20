@@ -1,0 +1,15 @@
+Skip
+  Skip;!Int
+?Int
+  Skip;!Int;Skip
+x
+  y
+
+[a:Bool, b:Char]
+  [b:Char,a:Bool,c:Int]
+
++{a:?Bool, b:Skip;!Char}
+  +{b:Skip;!Char,a:?Bool, c:!Char}
+
+&{a:?Bool, b:Skip;!Char}
+  &{b:Skip;!Char,a:?Bool, c:!Char}

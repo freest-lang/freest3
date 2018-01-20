@@ -1,23 +1,30 @@
 test :
 	runhaskell -isrc -itest -fforce-recomp test/Spec.hs
 
-testValidTypes :
-	runhaskell -isrc -itest -fforce-recomp test/Types/TestValidTypesSpec.hs
+testTypesValid :
+	runhaskell -isrc -itest -fforce-recomp test/Types/TestTypesValidSpec.hs
 
-testInvalidTypes :
-	runhaskell -isrc -itest -fforce-recomp test/Types/TestInvalidTypesSpec.hs
+testTypesInvalid :
+	runhaskell -isrc -itest -fforce-recomp test/Types/TestTypesInvalidSpec.hs
 
-testParser :
-	runhaskell -isrc -itest -fforce-recomp test/Types/ParseSpec.hs
+testParserValid :
+	runhaskell -isrc -itest -fforce-recomp test/Types/TestParserValidSpec.hs
 
-testInvalidParser :
-	runhaskell -isrc -itest -fforce-recomp test/Types/ParseInvalidSpec.hs
+testParserInvalid :
+	runhaskell -isrc -itest -fforce-recomp test/Types/TestParserInvalidSpec.hs
 
-testValidKinding :
-	runhaskell -isrc -itest -fforce-recomp test/Types/TestValidKindingSpec.hs
+testKindingValid :
+	runhaskell -isrc -itest -fforce-recomp test/Types/TestKindingValidSpec.hs
 
-#testInvalidKinding :
+#testKindingInvalid :
 #	runhaskell -isrc -itest -fforce-recomp test/Types/TestInvalidKindingSpec.hs
+testEquivalenceValid :
+	runhaskell -isrc -itest -fforce-recomp test/Types/TestEquivalenceValidSpec.hs
+
+testEquivalenceInvalid :
+	runhaskell -isrc -itest -fforce-recomp test/Types/TestEquivalenceInvalidSpec.hs
+
+
 
 clean :
 	rm `find ./ -name '*.o' -o -name '*.hi' -o -name '*.tix'` -r

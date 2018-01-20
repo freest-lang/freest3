@@ -15,8 +15,11 @@ import Types.Parser
 readFromFile filename = do
   str <- readFile filename
   -- print $ filter (not . null) $ lines str
-  return $ filter (not . null) $ map (dropWhile isSpace) $ lines str
+  return $ filter (not . isComment) $ filter (not . null) $ map (dropWhile isSpace) $ lines str
   -- return $ map (dropWhile isSpace) $ lines str
+
+isComment (x:y:ys) = x == '-' && y == '-'
+isComment _ = False
 
 convert :: [String] -> [(String, String)]
 convert [] = []

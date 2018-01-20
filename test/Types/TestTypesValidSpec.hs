@@ -1,4 +1,4 @@
-module Types.TestValidTypesSpec(spec) where
+module Types.TestTypesValidSpec(spec) where
 
 -- import System.IO
 -- import Control.Monad
@@ -11,7 +11,7 @@ main = hspec spec
 
 spec :: Spec
 spec = do
-  t <- runIO $ readFromFile "test/Types/TestValidTypes.txt"
+  t <- runIO $ readFromFile "test/Types/TestTypesValid.txt"
   describe "Valid Equality Test" $ do
       mapM_ matchValidSpec (convert t)
 

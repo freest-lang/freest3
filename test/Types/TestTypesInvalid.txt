@@ -27,3 +27,12 @@ rec x . forall y . x;y
 
 [a:Int,b:Bool]
   [c:Char, d:Bool]
+
+[a:Int,b:Bool]
+  [a:Int, b:Bool, c:Char]
+
++{c:Int,b:Bool}
+  +{a:Int,b:Bool}
+
++{a:Int,b:Bool}
+  +{b:Int,a:Bool}

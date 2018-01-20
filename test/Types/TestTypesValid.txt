@@ -6,8 +6,8 @@ Bool
   Bool
 ()
   ()
-skip
-  skip
+Skip
+  Skip
 x
   x
 Int;Bool
@@ -37,7 +37,7 @@ rec x . forall y . x;y
   rec y . forall x . y;x
 
 [a:Int,b:Bool]
-  [c:Int, d:Bool]
+  [a:Int, b:Bool]
 
-[a:Int,b:Bool]
-  [b:Int, a:Bool]
++{a:Int,b:Bool}
+  +{a:Int,b:Bool}

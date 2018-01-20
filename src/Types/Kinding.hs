@@ -4,7 +4,7 @@ module Types.Kinding
 , kindOf
 , contractive
 , Kind (..)) where
-  
+
 import Types.Types
 import qualified Data.Map.Strict as Map
 import Data.Either as E
@@ -86,11 +86,18 @@ kinding delta (Rec x t) =
             else Right $ "The kind of the type is a type Scheme. \nType: " ++ show (Rec x t)
         else Right $ "The body of the type is not contractive. \nType: " ++ show (Rec x t)
     (Right m) -> Right m
+-- kinding delta (Forall x t) =
+--   let kd = kinding (Map.insert x (Kind Session Un) delta) t in
+--   case kd of
+--     (Left k) | k <= (Kind Arbitrary Lin) -> Left k
+--     (Right m) -> Right m
 kinding delta (Forall x t) =
   let kd = kinding (Map.insert x (Kind Session Un) delta) t in
   case kd of
-    (Left k) | k <= (Kind Arbitrary Lin) -> Left k
+    -- k is the kinding of the variable and it is always Kind Session Un ?
+    (Left k') | k' >= (Kind Scheme Un) -> Left k'
     (Right m) -> Right m
+    _ -> Right "Forall body is not a type Scheme"
 kinding delta (Var x) =
   if Map.member x delta then
     Left $ delta Map.! x

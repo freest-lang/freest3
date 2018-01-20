@@ -49,7 +49,7 @@
     \frac{\Delta \Alg T_1 :: k_1 \quad \mbox{...} \quad \Delta \Alg T_n :: k_n \quad k_1\mbox{,..., }k_n \le \kinds^\Linear}
     { \Delta \Alg \&\{l_i\colon T_i\}_{i\in I} :: \kinds^\Linear}
 	\\\\
-	 \frac{k \le \kindt^\Linear \quad \Delta, x :: \kinds^\Unrestricted \Alg T :: k'}{\Delta, x :: k \Alg \forall \alpha :: k.T :: k'}
+	 \frac{k \le \kindt^\Linear \quad \Delta, \alpha :: \kinds^\Unrestricted \Alg T :: k' \quad k' >= \kindsch^u}{\Delta, \alpha :: k \Alg \forall \alpha :: k.T :: k'}
 	\quad
 	\frac{\Delta, x :: \kinds^\Unrestricted \Alg T :: k' \quad k' \le \kindt^{\Linear}}{\Delta \Alg \recc \mbox{ } x :: k.T :: k'}
 	 \\\\

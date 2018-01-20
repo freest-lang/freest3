@@ -1,0 +1,162 @@
+Int
+  Int
+Char
+  Char
+Bool
+  Bool
+()
+  ()
+x
+  x
+
+!Int
+  !Int
+?Char
+  ?Char
+
+Skip
+  Skip
+!Int
+  Skip;!Int
+!Int
+  Skip;!Int;Skip
+!Int;Skip;?Int
+  !Int;?Int
+
+!Int
+  Skip;!Int
+!Int
+  !Int;Skip
+
+!Int -> Bool
+  !Int -> Bool
+!Int -> ?Bool
+  (Skip;!Int) -> ?Bool
+!Int -> Bool
+  (Skip;!Int) -> Bool
+!Int -> ?Char
+  !Int -> (Skip;?Char)
+!Int -> !Bool
+  !Int -> (!Bool;Skip)
+!Int -> Bool
+  (!Int;Skip) -> Bool
+
+!Int -> Bool
+  (!Int;Skip) -> Bool
+
+!Int -> ?Char -> Bool
+  !Int -> ?Char -> Bool
+
+!Char -o Bool
+  !Char -o Bool
+!Int -o Bool
+  (Skip;!Int) -o Bool
+!Int -o Bool
+  (Skip;!Int) -o Bool
+!Bool -o !Char
+  !Bool -o (Skip;!Char)
+!Int -o ?Bool
+  !Int -o (?Bool;Skip)
+!Int -o Bool
+  (!Int;Skip) -o Bool
+
+!Int -o Bool
+  (!Int;Skip) -o Bool
+
+(!Char, Bool)
+  (!Char, Bool)
+(!Int , Bool)
+  (Skip;!Int , Bool)
+(Bool, !Char)
+  (Bool , Skip;!Char)
+(Int , ?Bool)
+  (Int , ?Bool;Skip)
+(!Int , Bool)
+  (!Int;Skip , Bool)
+
+[a:Bool, b:Char]
+  [b:Char,a:Bool]
+[a:Bool, b:Skip;!Char]
+  [b:Skip;!Char,a:Bool]
+
++{a:!Bool, b:?Char}
+  +{b:?Char,a:!Bool}
++{a:?Bool, b:Skip;!Char}
+  +{b:Skip;!Char,a:?Bool}
+
+&{a:!Bool;Skip, b:?Char}
+  &{b:?Char,a:!Bool}
+&{a:?Bool, b:Skip;!Char}
+  &{b:Skip;!Char,a:?Bool}
+
++{Leaf:Skip, Node:!Int};Skip
+  +{Leaf:Skip;Skip, Node:!Int;Skip}
+
+-- Monoidal laws (a;b);c = a;(b;c) and Skip;a = a;Skip
+
+Skip;!Int
+  !Int;Skip
+
+!Int;Skip
+  Skip;!Int
+
+!Int
+  !Int;Skip
+
+!Int;Skip
+  !Int
+
+Skip;!Int
+  !Int
+
+!Int
+  Skip;!Int
+
+(!Int;?Int);?Bool
+  !Int;(?Int;?Bool)
+
+!Int;(?Int;?Bool)
+  (!Int;?Int);?Bool
+
+
+
+-- forall x . !Int
+--   forall x . !Int
+--
+-- forall x . !Int;x
+--   forall x . !Int ;x
+
+rec x . !Int;x
+    rec x . !Int;x
+
+rec x . !Int;x
+    rec x . !Int;!Int;x
+
+rec x . !Int;Skip
+  rec x . Skip;!Int
+
+rec x . Skip;!Int
+  rec x . !Int;Skip
+
+rec x . Skip;!Int
+  !Int
+
+rec x . +{l:!Int, m:x}
+  rec y . +{l:Skip, m:y};!Int
+
+rec x . !Int
+  rec x . !Bool
+
+-- TODO: Monoidal equivalence law: μ-type is equal to its unrolling.
+-- TODO: Will be true when the 2nd element is implemented
+-- rec x . Skip;x
+--   rec x . Skip;x
+--
+-- rec x . x;!Int
+--   rec x . !Int;x
+--
+-- rec x . ?Bool ; x
+--   rec y . ?Bool ;y;!Int
+--
+-- rec x . ?Bool ; x
+--   rec y . ?Bool ;y;y

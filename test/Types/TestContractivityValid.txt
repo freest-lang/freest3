@@ -1,3 +1,4 @@
+-- Tests for Contractivity
 Int -> Bool
   True
 Int -o Bool
