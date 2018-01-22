@@ -144,8 +144,8 @@ rec x . Skip;!Int
 rec x . +{l:!Int, m:x}
   rec y . +{l:Skip, m:y};!Int
 
-rec x . !Int
-  rec x . !Bool
+-- rec x . !Int
+--   rec x . !Bool
 
 -- TODO: Monoidal equivalence law: μ-type is equal to its unrolling.
 -- TODO: Will be true when the 2nd element is implemented

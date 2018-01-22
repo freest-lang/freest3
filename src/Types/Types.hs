@@ -69,17 +69,17 @@ instance Show BasicType where
 instance Show Type where
   show (Basic x) = show x
   show Skip = id "Skip"
-  show (Semi x y) = show x ++ ";" ++ show y
+  show (Semi x y) = "(" ++ show x ++ ";" ++ show y ++ ")"
   show (Out x) = "!" ++ show x
   show (In x) = "?" ++ show x
   show (UnFun x y) = "(" ++ show x ++ " -> " ++ show y ++ ")"
   show (LinFun x y) = "(" ++ show x ++ " -o " ++ show y ++ ")"
-  show (Pair x y) = show x ++ " , " ++ show y
+  show (Pair x y) =  "(" ++  show x ++ " , " ++ show y ++ ")"
   show (InternalChoice x) = "+{" ++ printMap x ++ "}"
   show (ExternalChoice x) = "&{" ++ printMap x ++ "}"
   show (Datatype x) =   "["++ printMap x ++"]"
-  show (Rec s t) = "rec " ++ id s ++ " . " ++ show t
-  show (Forall s t) = "forall " ++ id s ++ " . " ++ show t
+  show (Rec s t) = "(rec " ++ id s ++ " . " ++ show t ++ ")"
+  show (Forall s t) = "(forall " ++ id s ++ " . " ++ show t ++ ")"
   show (Var x) = id x
 
 printMap :: TypeMap -> String

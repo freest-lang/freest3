@@ -1,0 +1,132 @@
+-- Tests for Show
+Int
+Char
+Bool
+()
+x
+!Int
+?Char
+Skip
+
+-- Basic Types with parens
+(Int)
+(Char)
+(Bool)
+(Skip)
+
+-- In and out with parens
+(!Int)
+(?Char)
+
+--Simple Pair
+(Int,Bool)
+(!Char, Bool)
+
+-- Simple semi tests
+!Int;?Bool
+x;?Bool
+Skip;!Int
+!Int;Skip
+(Skip;!Int , Bool)
+(Bool , Skip;!Char)
+(Int , ?Bool;Skip)
+(!Int;Skip , Bool)
+(!Int;?Int);?Bool
+!Int;(?Int;?Bool)
+
+
+--Datatypes
+
+[a:Int,b:Bool]
+[a:Bool, b:Char]
+[a:Bool, b:Skip;!Char]
+[b:Skip;!Char,a:Bool]
+
+-- Internal and external choices
+
+&{a:Int,b:Bool}
+&{a:!Bool;Skip, b:?Char}
+&{b:?Char,a:!Bool}
+&{a:?Bool, b:Skip;!Char}
+&{b:Skip;!Char,a:?Bool}
+
++{a:Int,b:Bool}
++{a:!Bool, b:?Char}
++{b:?Char,a:!Bool}
++{a:?Bool, b:Skip;!Char}
++{b:Skip;!Char,a:?Bool}
++{Leaf:Skip, Node:!Int};Skip
++{Leaf:Skip;Skip, Node:!Int;Skip}
+
+-- Functions
+
+Int -> Bool
+!Int -> Bool
+!Int -> ?Bool
+(Skip;!Int) -> ?Bool
+(Skip;!Int) -> Bool
+!Int -> ?Char
+!Int -> (Skip;?Char)
+!Int -> !Bool
+!Int -> (!Bool;Skip)
+(!Int;Skip) -> Bool
+!Int -> ?Char -> Bool
+(Int -> Bool) -> Char
+(Int -> Bool) -o Char
+(Int -o Bool) -> Char
+Int -> (Bool -> Char)
+Int -> (Bool -o Char)
+
+Int -o Bool
+!Char -o Bool
+!Int -o Bool
+(Skip;!Int) -o Bool
+!Bool -o !Char
+!Bool -o (Skip;!Char)
+!Int -o ?Bool
+!Int -o (?Bool;Skip)
+(!Int;Skip) -o Bool
+(Int -o Bool) -o Char
+
+-- Forall tests
+
+forall a . Bool
+forall x . !Int
+forall x . !Int;x
+
+forall a . a
+forall b . b
+forall a . (forall b . a)
+(forall x . !Int;x);forall y . !Bool;y
+forall x . !Int;x;forall y . !Bool;y
+
+-- Recursive tests
+
+rec x . Skip;x
+rec x . x;!Int
+rec x . rec y . x;y
+rec x . !Int; rec y . x ; y
+rec x . !Int;x
+rec x . !Int;!Int;x
+rec x . !Int;Skip
+rec x . Skip;!Int
+rec x . +{l:!Int, m:x}
+rec y . +{l:Skip, m:y};!Int
+rec x . !Int
+rec x . ?Bool
+Skip;rec x . ((!Int);x)
+rec x . x
+rec x . (?Bool -> !Int -> Bool)
+rec x . forall y . x;y
+
+-- Complex tests
+
+rec alpha . (rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});alpha
+rec alpha . !Int;(rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});(rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});alpha
+rec alpha . (!Int;((rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});(rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel})));alpha
+rec alpha . !Int;(((rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});(rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel}));alpha)
+rec alpha . ((rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});(rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel}));alpha
+rec alpha .(rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});((rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});alpha)
+forall beta .(rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel})->(rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});beta->beta
+(rec XploreNodeChan . +{Value:!Int;XploreNodeChan, Left:(rec XformChan . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int});XploreNodeChan, Right:(rec XformChan . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int});XploreNodeChan,Exit:Skip})
+rec alpha . Int -> (rec XformChan . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int})->(rec XformChan . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int})->(rec XformChan . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int});alpha->alpha

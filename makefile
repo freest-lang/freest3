@@ -7,6 +7,10 @@ testTypesValid :
 testTypesInvalid :
 	runhaskell -isrc -itest -fforce-recomp test/Types/TestTypesInvalidSpec.hs
 
+testShow :
+	runhaskell -isrc -itest -fforce-recomp test/Types/TestShowValidSpec.hs
+
+
 testParserValid :
 	runhaskell -isrc -itest -fforce-recomp test/Types/TestParserValidSpec.hs
 
