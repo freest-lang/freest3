@@ -10,20 +10,12 @@ Int
   Skip
 Bool
   Char
-x
-  y
-
-forall c . a
-  forall b . b
-
-rec x .y
-  rec y .x
 
 rec x . Skip;x
   rec x . x
 
-rec x . forall y . x;y
-  rec x . forall y . y;x
+forall y . rec x . x;y
+  forall y . rec x . y;x
 
 [a:Int,b:Bool]
   [c:Char, d:Bool]
@@ -31,8 +23,8 @@ rec x . forall y . x;y
 [a:Int,b:Bool]
   [a:Int, b:Bool, c:Char]
 
-+{c:Int,b:Bool}
-  +{a:Int,b:Bool}
++{c:!Int,b:?Bool}
+  +{a:?Int,b:!Bool}
 
-+{a:Int,b:Bool}
-  +{b:Int,a:Bool}
++{a:?Int,b:!Bool}
+  +{b:!Int,a:?Bool}

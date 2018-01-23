@@ -8,17 +8,15 @@ Bool
   ()
 Skip
   Skip
-x
-  x
-Int;Bool
-    (Int;Bool)
+
+!Int;?Bool
+    (!Int;?Bool)
 
 forall a . a
   forall b . b
 forall b . b
   forall b . b
-forall a . b
-  forall b . b
+
 forall a . (forall b . a)
   forall c . (forall d . c)
 (forall x . !Int;x);forall y . !Bool;y
@@ -39,5 +37,5 @@ rec x . forall y . x;y
 [a:Int,b:Bool]
   [a:Int, b:Bool]
 
-+{a:Int,b:Bool}
-  +{a:Int,b:Bool}
++{a:?Int,b:?Bool}
+  +{a:?Int,b:?Bool}

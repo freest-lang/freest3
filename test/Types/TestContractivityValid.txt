@@ -13,24 +13,18 @@ Int
   True
 ?Int
   True
-+{a:Int,b:Bool}
++{a:!Int,b:?Bool}
   True
-&{a:Int,b:Bool}
+&{a:?Int,b:!Bool}
   True
 Skip
   True
 !Int;?Bool
   True
-x;?Bool
-  False
 rec x . ?Bool
   True
-x
-  False
 forall a . Bool
   True
-forall a . x
-  False
 rec x . Skip;x
   True
 rec x . x;!Int

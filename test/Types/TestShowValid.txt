@@ -3,7 +3,6 @@ Int
 Char
 Bool
 ()
-x
 !Int
 ?Char
 Skip
@@ -24,7 +23,6 @@ Skip
 
 -- Simple semi tests
 !Int;?Bool
-x;?Bool
 Skip;!Int
 !Int;Skip
 (Skip;!Int , Bool)
@@ -44,13 +42,13 @@ Skip;!Int
 
 -- Internal and external choices
 
-&{a:Int,b:Bool}
+&{a:!Int,b:?Bool}
 &{a:!Bool;Skip, b:?Char}
 &{b:?Char,a:!Bool}
 &{a:?Bool, b:Skip;!Char}
 &{b:Skip;!Char,a:?Bool}
 
-+{a:Int,b:Bool}
++{a:!Int,b:!Bool}
 +{a:!Bool, b:?Char}
 +{b:?Char,a:!Bool}
 +{a:?Bool, b:Skip;!Char}
@@ -127,6 +125,6 @@ rec alpha . (!Int;((rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChan
 rec alpha . !Int;(((rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});(rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel}));alpha)
 rec alpha . ((rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});(rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel}));alpha
 rec alpha .(rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});((rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});alpha)
-forall beta .(rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel})->(rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});beta->beta
+forall beta .(rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel})->((rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});beta)->beta
 (rec XploreNodeChan . +{Value:!Int;XploreNodeChan, Left:(rec XformChan . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int});XploreNodeChan, Right:(rec XformChan . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int});XploreNodeChan,Exit:Skip})
-rec alpha . Int -> (rec XformChan . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int})->(rec XformChan . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int})->(rec XformChan . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int});alpha->alpha
+rec alpha . Int -> (rec XformChan . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int})->(rec XformChan . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int})->((rec XformChan . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int});alpha)->alpha

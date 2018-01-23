@@ -30,7 +30,6 @@ isSession _                 = False
 isSessionType :: Type -> Bool
 isSessionType  = isSession . kindOf
 
-
 kindOf :: Type -> Kind
 kindOf t = case kinding Map.empty t of
   Left k  -> k
@@ -94,8 +93,9 @@ kinding delta (Rec x t) =
 kinding delta (Forall x t) =
   let kd = kinding (Map.insert x (Kind Session Un) delta) t in
   case kd of
-    -- k is the kinding of the variable and it is always Kind Session Un ?
-    (Left k') | k' >= (Kind Scheme Un) -> Left k'
+    -- TODO: k is the kinding of the variable and it is always Kind Session Un ?
+    -- (Left k') | k' >= (Kind Scheme Un) -> Left k'
+    (Left k') | k' <= (Kind Arbitrary Lin) -> Left k'
     (Right m) -> Right m
     _ -> Right "Forall body is not a type Scheme"
 kinding delta (Var x) =

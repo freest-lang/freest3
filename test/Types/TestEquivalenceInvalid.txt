@@ -2,9 +2,7 @@ Skip
   Skip;!Int
 ?Int
   Skip;!Int;Skip
-x
-  y
-
+  
 [a:Bool, b:Char]
   [b:Char,a:Bool,c:Int]
 

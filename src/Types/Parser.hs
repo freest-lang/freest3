@@ -10,6 +10,8 @@ import Text.Parsec.Language (haskellDef)
 import Text.ParserCombinators.Parsec
 import Text.Parsec.Expr
 import qualified Data.Map.Strict as Map
+import Types.Kinding
+
 
 -- TODO : check list
 instance Read BasicType where
@@ -19,12 +21,11 @@ instance Read BasicType where
 
 instance Read Type where
   readsPrec _ s = case parserType s of
-    Right t -> [(t, "")]
+    Right t -> if isType t then [(t,"")] else error $ "Type "++ (show t) ++" not well kinded"
     Left m -> error $ "type parse error " ++ show m
 
 
 -- TOKENS
-
 lexer :: P.TokenParser ()
 lexer  = P.makeTokenParser
         (haskellDef
