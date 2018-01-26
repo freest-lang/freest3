@@ -45,7 +45,7 @@ lexeme    = P.lexeme lexer
 -- semi = P.semi lexer
 dot = P.dot lexer
 colon = P.colon lexer
--- braces = P.braces lexer
+braces = P.braces lexer
 squares = P.squares lexer
 
 rec    = reserved "rec"
@@ -144,16 +144,17 @@ parseForall = do
 
 parseInternalChoice = do
   reservedOp "+"
-  char '{'
-  a <- sepBy1 parseBind comma
-  char '}'
+  -- char '{'
+  a <- braces $ sepBy1 parseBind comma
+  -- char '}'
   return $ InternalChoice $ Map.fromList a
 
 parseExternalChoice = do
   reservedOp "&"
-  char '{'
-  a <- sepBy1 parseBind comma
-  char '}'
+  -- char '{'
+
+  a <- braces $ sepBy1 parseBind comma
+  -- char '}'
   return $ ExternalChoice $ Map.fromList a
 
 parseDataType = do
