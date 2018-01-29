@@ -84,3 +84,7 @@ rec alpha . !Int;rec TreeChannel . +{Leaf:Skip, Node:!Int;TreeChannel;TreeChanne
 --
 -- forall x . !Int;x;forall y . !Bool;y
 --   Kind Session Lin
+
+
+[AkKLKBCT:(Skip;Skip), GYQehuKQtFTvuoJYDV:(rec lMRIFeRtllKiX . Skip), RzOhNCsmXQBVHTAh:!Bool, WDOuqegDvdBjOFiNRklv:+{BYZaFBLcAMNIkmfD:Skip, DcGN:Skip, HRgBuAGbVDTFA:Skip, ITVqxvLWgyNvVzi:Skip, QeN:Skip, aUs:Skip, iMcWEScmBZA:Skip, nKXJbSr:Skip, nzFjfhEklznanrBzRWU:Skip, wJzcjltne:Skip, zJykoUZtO:Skip}, WkSnuEJqpMeCzcRXFI:&{CGkSnqZZawAc:Skip, HwcNqbwIGzjXtsqmi:Skip, JNZNPsZbuJTQXylhX:Skip, NHUpXnVcDGqfwltixfP:Skip, OQenTqDnrERr:Skip, ObJSbXCEbDfKdv:Skip, SUixpKUClmfnLezituio:Skip,UFDTpWCrOzdDbUNjTsf:Skip, WEvwge:Skip, X:Skip, aDPf:Skip, cHWvBCXOUmq:Skip, iTLuORGYySEJJ:Skip, nCuiDmRlmcPGpT:Skip, phVQWRRHcEpiCeyIfOFK:Skip, rdyjHqIm:Skip, zKMbbwnzqvrfT:Skip}, ZZEbPF:&{CideCVMnnmD:Skip, HieBFAzZVYauWfrF:Skip, WLm:Skip, mPZjrQ:Skip, nQ:Skip, wh:Skip, xLw:Skip}, ccpVoOhjH:?Char, efsMiBfSSiJShvhp:(rec ctLjdKvKCIK . Skip), vTATSQCHdfghziu:!Int, wqVBU:?Bool]
+  Kind Arbitrary Lin

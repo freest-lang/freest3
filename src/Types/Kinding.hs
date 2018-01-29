@@ -1,6 +1,7 @@
 module Types.Kinding
 ( isType
 , isSessionType
+, isSchemeType
 , kindOf
 , contractive
 , Kind (..)) where
@@ -29,6 +30,13 @@ isSession _                 = False
 
 isSessionType :: Type -> Bool
 isSessionType  = isSession . kindOf
+
+isScheme :: Kind -> Bool
+isScheme (Kind Scheme _) = True
+isScheme _               = False
+
+isSchemeType :: Type -> Bool
+isSchemeType = isScheme . kindOf
 
 kindOf :: Type -> Kind
 kindOf t = case kinding Map.empty t of
@@ -66,7 +74,7 @@ kinding delta (Pair t u) =
     _                                                                               ->
       Right $ "One of the operands is a type Scheme. Type: " ++ show (Pair t u)
 kinding delta (Datatype m) =
-  kindingMap delta m (Kind Arbitrary Un)
+  kindingDatatypeMap delta m (Kind Arbitrary Un)
     ("One of the components in a Datatype is a type Scheme. \nType: " ++ show m)
 kinding delta (ExternalChoice m) =
   kindingMap delta m (Kind Session Lin)
@@ -110,14 +118,27 @@ kindingMap delta m k message =
   case km of
     (Left ks) ->
       if all (<= k) ks then
-        Left $ maximum ks
+        Left $ (Kind Session Lin)
       else
         Right message
     (Right ms) -> Right $ intercalate "\n" ms
 
+kindingDatatypeMap :: Env -> TypeMap -> Kind -> Message -> KindingOut
+kindingDatatypeMap delta m k message =
+  let km = liftl $ map (kinding delta) (Map.elems m) in
+  case km of
+    (Left ks) ->
+      if all (<= k) ks then
+        Left $ Kind Arbitrary (multiplicity $ maximum ks)
+      else
+        Right message
+    (Right ms) -> Right $ intercalate "\n" ms
 
 -- (Datatype (Map.fromList [("a",Basic IntType),("b",Basic BoolType)]))
 -- (Datatype (Map.fromList [("a",Basic IntType),("b",Basic BoolType),("c",Basic CharType)]))
+
+multiplicity :: Kind -> Multiplicity
+multiplicity (Kind _ m) = m
 
 liftl :: [KindingOut] -> Either [Kind] [Message]
 liftl xs =
