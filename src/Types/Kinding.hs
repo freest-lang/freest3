@@ -15,7 +15,7 @@ data PreKind = Session | Arbitrary | Scheme deriving (Eq, Ord, Show, Read)
 data Multiplicity = Un | Lin deriving (Eq, Ord, Show, Read)
 data Kind = Kind PreKind Multiplicity deriving (Eq, Ord, Show, Read)
 
-type Env = Map.Map Id Kind
+type KindEnv = Map.Map Id Kind
 type Message = String
 type KindingOut = Either Kind Message
 
@@ -26,7 +26,7 @@ isType t = case kinding Map.empty t of
 
 isSession :: Kind -> Bool
 isSession (Kind Session _) = True
-isSession _                 = False
+isSession _                = False
 
 isSessionType :: Type -> Bool
 isSessionType  = isSession . kindOf
@@ -44,7 +44,7 @@ kindOf t = case kinding Map.empty t of
   Right m -> error $ "Type " ++ show t ++ " not a proper type:\n" ++ m
   -- Right _ -> error $ "Type " ++ show t ++ " not a proper type"
 
-kinding :: Env -> Type -> KindingOut
+kinding :: KindEnv -> Type -> KindingOut
 kinding _ Skip = Left $ Kind Session Un
 kinding _ (Out _) = Left $ Kind Session Lin
 kinding _ (In _) = Left $ Kind Session Lin
@@ -105,14 +105,14 @@ kinding delta (Forall x t) =
     -- (Left k') | k' >= (Kind Scheme Un) -> Left k'
     (Left k') | k' <= (Kind Arbitrary Lin) -> Left k'
     (Right m) -> Right m
-    _ -> Right "Forall body is not a type Scheme"
+    -- _ -> Right "Forall body is not a type Scheme"
 kinding delta (Var x) =
   if Map.member x delta then
     Left $ delta Map.! x
   else
     Right $ show x ++ " is a free variable"
 
-kindingMap :: Env -> TypeMap -> Kind -> Message -> KindingOut
+kindingMap :: KindEnv -> TypeMap -> Kind -> Message -> KindingOut
 kindingMap delta m k message =
   let km = liftl $ map (kinding delta) (Map.elems m) in
   case km of
@@ -123,7 +123,7 @@ kindingMap delta m k message =
         Right message
     (Right ms) -> Right $ intercalate "\n" ms
 
-kindingDatatypeMap :: Env -> TypeMap -> Kind -> Message -> KindingOut
+kindingDatatypeMap :: KindEnv -> TypeMap -> Kind -> Message -> KindingOut
 kindingDatatypeMap delta m k message =
   let km = liftl $ map (kinding delta) (Map.elems m) in
   case km of
@@ -150,7 +150,7 @@ liftl xs =
       Right a
 
 -- Contractivity
-contractive :: Env -> Type -> Bool
+contractive :: KindEnv -> Type -> Bool
 contractive delta (Semi t _) = contractive delta t
 contractive delta (Rec _ t) = contractive delta t
 contractive delta (Var x) = Map.member x delta

@@ -99,7 +99,7 @@ spec = do
       (read "forall Internal . (Internal,Int)" :: Type) `shouldBe` (Forall "Internal" (Pair (Var "Internal") (Basic IntType)))
     it "forall Skiper . (Skiper,Int)" $ do
       (read "forall Skiper . (Skiper,Int)" :: Type) `shouldBe` (Forall "Skiper" (Pair (Var "Skiper") (Basic IntType)))
-    it "forall a . forall b . a -> {-A comment inside-} b" $ do
+    it "forall a . forall b . a -> {-A {-comment-} inside-} b" $ do
       (read "forall a . forall b . a -> {-A comment inside-} b" :: Type) `shouldBe` (Forall "a" (Forall "b" (UnFun (Var "a") (Var "b"))))
 
 

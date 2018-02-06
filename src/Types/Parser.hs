@@ -1,11 +1,11 @@
 -- https://web.archive.org/web/20140528151730/http://legacy.cs.uu.nl/daan/parsec.html
 {-# LANGUAGE FlexibleContexts #-} -- binary and infix functions need this
 
-module Types.Parser () where
+module Types.Parser (mainTypeParser) where
 
 import Types.Types
 import Text.Parsec
-import qualified Text.Parsec.Token as P
+import qualified Text.Parsec.Token as Token
 import Text.Parsec.Language (haskellDef)
 import Text.ParserCombinators.Parsec
 import Text.Parsec.Expr
@@ -26,27 +26,27 @@ instance Read Type where
 
 
 -- TOKENS
-lexer :: P.TokenParser ()
-lexer  = P.makeTokenParser
+lexer :: Token.TokenParser ()
+lexer  = Token.makeTokenParser
         (haskellDef
         {
-        P.reservedOpNames = [";", "!", "?", "->", "-o", "+", "&"],
-        P.reservedNames = ["Int","Bool","Char", "Skip", "()", "rec", "forall"]
+        Token.reservedOpNames = [";", "!", "?", "->", "-o", "+", "&"],
+        Token.reservedNames = ["Int","Bool","Char", "Skip", "()", "rec", "forall"]
         })
 
-reservedOp = P.reservedOp lexer
-parens     = P.parens lexer
-identifier = P.identifier lexer
-reserved   = P.reserved lexer
-comma      = P.comma lexer
-symbol     = P.symbol lexer
-whiteSpace= P.whiteSpace lexer
-lexeme    = P.lexeme lexer
--- semi = P.semi lexer
-dot = P.dot lexer
-colon = P.colon lexer
-braces = P.braces lexer
-squares = P.squares lexer
+reservedOp = Token.reservedOp lexer
+parens     = Token.parens lexer
+identifier = Token.identifier lexer
+reserved   = Token.reserved lexer
+comma      = Token.comma lexer
+symbol     = Token.symbol lexer
+whiteSpace = Token.whiteSpace lexer
+lexeme     = Token.lexeme lexer
+-- semi = Token.semi lexer
+dot = Token.dot lexer
+colon = Token.colon lexer
+braces = Token.braces lexer
+squares = Token.squares lexer
 
 rec    = reserved "rec"
 forall = reserved "forall"
@@ -72,10 +72,10 @@ parseBasicType =
 -- InternalChoice TypeMap | Datatype TypeMap | Rec String Type | Forall String Type | Var String |
 
 parserType :: String -> Either ParseError Type
-parserType = parse mainParser "Context-free Sessions (Types)"
+parserType = parse mainTypeParser "Context-free Sessions (Types)"
 
-mainParser :: Parser Type
-mainParser =
+mainTypeParser :: Parser Type
+mainTypeParser =
     do{
       whiteSpace
       ; ret <- parseType
@@ -84,17 +84,7 @@ mainParser =
   } <?> "a type: skip, T;T, ..., or ..."
 
 parseType :: Parser Type
-parseType =  lexeme(buildExpressionParser table parseTerm)
-
-
--- parseType :: Parser Type
--- parseType =
---     do{
---       whiteSpace
---       ; ret <- lexeme(buildExpressionParser table parseTerm)
---       ; eof
---       ; return ret
---     } <?> "a type: skip, T;T, ..., or ..."
+parseType =  lexeme $ buildExpressionParser table parseTerm
 
 table = [ [binary "->" UnFun AssocRight, binary "-o" LinFun AssocRight ]
         , [binary ";" Semi AssocLeft ]
@@ -102,9 +92,6 @@ table = [ [binary "->" UnFun AssocRight, binary "-o" LinFun AssocRight ]
 
 binary name fun assoc = Infix  (do{ Text.Parsec.try (symbol name); return fun }) assoc
 -- prefix name fun       = Prefix (do{ reservedOp name; return fun })
-
--- TODO: remove
--- parseWithoutSpaces = do{spaces;a<-parseTerm;spaces; return a}
 
 parseTerm =
   Text.Parsec.try (parens parseType)
@@ -136,7 +123,6 @@ parseRec = do
 
 parseForall = do
   forall
-  -- space
   id <- identifier
   dot
   t <- parseType
@@ -144,17 +130,12 @@ parseForall = do
 
 parseInternalChoice = do
   reservedOp "+"
-  -- char '{'
   a <- braces $ sepBy1 parseBind comma
-  -- char '}'
   return $ InternalChoice $ Map.fromList a
 
 parseExternalChoice = do
   reservedOp "&"
-  -- char '{'
-
   a <- braces $ sepBy1 parseBind comma
-  -- char '}'
   return $ ExternalChoice $ Map.fromList a
 
 parseDataType = do

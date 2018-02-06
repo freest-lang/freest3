@@ -16,7 +16,8 @@ module Types.Types
   Type(..),
   TypeMap(..),
   Id,
-  Field
+  Field,
+  dual
 ) where
 
 import qualified Data.Map.Strict as Map
@@ -24,11 +25,11 @@ import qualified Data.Set as Set
 -- BASIC TYPES
 
 data BasicType =
-  IntType |
-  CharType |
-  BoolType |
-  UnitType
-  deriving (Eq, Ord)
+          IntType  |
+          CharType |
+          BoolType |
+          UnitType
+          deriving (Eq, Ord)
 
 -- TYPES
 
@@ -60,10 +61,10 @@ type TypeMap = Map.Map Field Type
 
 -- TODO: Review
 instance Show BasicType where
-   show IntType = "Int"
-   show CharType = "Char"
-   show BoolType = "Bool"
-   show UnitType = "()"
+  show IntType = "Int"
+  show CharType = "Char"
+  show BoolType = "Bool"
+  show UnitType = "()"
 
 
 instance Show Type where
@@ -84,7 +85,7 @@ instance Show Type where
 
 printMap :: TypeMap -> String
 printMap m =
-    reverse $ drop 2 $ reverse (Map.foldlWithKey(\acc k v -> acc ++ id k ++ ":" ++ show v ++ ", ") "" m)
+  reverse $ drop 2 $ reverse (Map.foldlWithKey(\acc k v -> acc ++ id k ++ ":" ++ show v ++ ", ") "" m)
 
 
 instance Eq Type where
@@ -93,8 +94,8 @@ instance Eq Type where
 equals :: Set.Set (Id, Id) -> Type -> Type -> Bool
 equals m Skip Skip = True
 equals m (Var x) (Var y)
-          | x == y = True
-          | otherwise = Set.member (x,y) m
+    | x == y = True
+    | otherwise = Set.member (x,y) m
 equals m (Forall x t)(Forall y u) = equals (Set.insert (x,y) m) t u
 equals m (Rec x t)(Rec y u) = equals (Set.insert (x,y) m) t u
 equals m (Semi t1 t2)(Semi v1 v2) = equals m t1 v1 && equals m t2 v2
@@ -109,20 +110,18 @@ equals m (InternalChoice m1)(InternalChoice m2) = verifyMapEquality m m1 m2
 equals m (ExternalChoice m1)(ExternalChoice m2) = verifyMapEquality m m1 m2
 equals _ _ _ = False
 
-{--
-verifyListEquality :: Set.Set (Id, Id) -> [(Id, Type)] -> [(Id, Type)] -> Bool
-verifyListEquality _ [] _ = True
-verifyListEquality _ _ [] = True
-verifyListEquality m (m1:ms1)(m2:ms2) =
-  equals m (snd m1) (snd m2) && verifyListEquality m ms1 ms2
---}
-
 verifyMapEquality :: Set.Set (Id, Id) -> TypeMap -> TypeMap -> Bool
-verifyMapEquality m tm1 tm2 = Map.size tm1 == Map.size tm2 &&
-                              Map.foldlWithKey(\b l t -> b && l `Map.member` tm2 && equals m (tm2 Map.! l) t) True tm1
+verifyMapEquality m tm1 tm2 =
+   Map.size tm1 == Map.size tm2 &&
+      Map.foldlWithKey(\b l t -> b && l `Map.member` tm2 && equals m (tm2 Map.! l) t) True tm1
 
-
-
--- equality test:
---   [a:Int,b:Bool] == [b:Int, a:Bool] FAILED [1]
--- Map.toList orders the elements by key
+-- Assume that the type is a Session Type
+dual :: Type -> Type
+dual (Var v)            = Var v
+dual Skip               = Skip
+dual (Out b)            = In b
+dual (In b)             = Out b
+dual (InternalChoice m) = ExternalChoice $ Map.map (\x -> dual x) m
+dual (ExternalChoice m) = InternalChoice $ Map.map (\x -> dual x) m
+dual (Semi t1 t2)       = Semi (dual t1) (dual t2)
+dual (Rec x t)          = Rec x (dual t)
