@@ -50,7 +50,7 @@ data Type =
   Var Id
   deriving Ord
   -- deriving (Eq)
-  -- deriving (Show)
+  -- deriving (Ord,Show)
   -- deriving (Eq,Show)
 
 

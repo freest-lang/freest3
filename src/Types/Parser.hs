@@ -74,12 +74,13 @@ parseBasicType =
 parserType :: String -> Either ParseError Type
 parserType = parse mainTypeParser "Context-free Sessions (Types)"
 
+
 mainTypeParser :: Parser Type
 mainTypeParser =
     do{
       whiteSpace
       ; ret <- parseType
-      ; eof
+    --  ; eof
       ; return ret
   } <?> "a type: skip, T;T, ..., or ..."
 

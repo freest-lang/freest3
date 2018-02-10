@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-} -- binary and infix functions need this
 
+module Terms.Parser (mainProgram) where
 
 import Text.Parsec
 import qualified Text.Parsec.Token as Token
@@ -7,8 +8,11 @@ import Text.Parsec.Language (haskellDef)
 import Text.ParserCombinators.Parsec
 import Text.Parsec.Expr
 import Types.Types
+import Types.Kinding
 import Types.Parser
 import qualified Data.Map.Strict as Map
+import Data.Maybe
+import Data.Either
 -- import System.Directory
 -- import qualified Control.Applicative as ca
 
@@ -32,7 +36,7 @@ type TypeEnv = Map.Map TypeVar Type
 
 data Expression =
     BasicTerm BasicType
-  | App Expression Expression
+  | IntApp Expression Expression
   | BoolApp Expression Expression
   | Elim Expression Expression
   deriving Show
@@ -72,80 +76,87 @@ integer = Token.integer lexer
 
 -- PARSER
 
--- readInputFile = do
---   -- curDir <- getCurrentDirectory
---   str <- readFile "src/Terms/test.hs"
---   return $ lines str
---
--- run = do
---   t <- readInputFile
---   pure $ convertToMap (map parserProgram t) Map.empty Map.empty
 
-run = do
-   r <- parseFromFile mainParser "src/Terms/test.hs"
-   case r of
-     Left err  -> print err
-     Right xs  -> print xs
+-- type ProgramOut = ([Program], [Program])
 
+-- parserProgram :: String -> Either ParseError [Program]
+-- parserProgram = parse mainParser "Context-free Sessions (Parsing)"
+mainProgram :: IO (Either ParseError (Map.Map Id Type, Map.Map Id Expression))
+mainProgram = parseFromFile program "src/Terms/test.hs"
+  -- case () of
+  --   Right m -> return m
+    -- Left err -> error err
 
-convertToMap [] typeMap termMap = (typeMap,termMap)
-convertToMap (x:xs) typeMap termMap =
+program =  do{whiteSpace
+             ;(tds,vds) <- manyAlternate (Text.Parsec.try parseTypeDecl) (Text.Parsec.try parseExpressionDecl)
+             ;eof
+             ;return $ convertToMap Map.empty Map.empty (tds++vds)
+             -- ; return (tds,vds)
+             }
+
+manyAlternate :: Parser a -> Parser b -> Parser ([a],[b])
+manyAlternate pa pb = do{as<-many1 pa; (as',bs') <- manyAlternate pa pb; return (as++as',bs')}
+                      <|>
+                      do{bs<-many1 pb; (as',bs') <- manyAlternate pa pb; return (as',bs++bs')}
+                      <|>
+                      return ([],[])
+
+convertToMap :: Map.Map Id Type -> Map.Map Id Expression -> [Program] -> (Map.Map Id Type, Map.Map Id Expression)
+convertToMap typeMap termMap []  = (typeMap,termMap)
+convertToMap typeMap termMap (x:xs) =
   case x of
-    Right (TypeDecl i t) -> convertToMap xs (Map.insert i t typeMap) termMap
-    Right (FunDecl i _ e) -> convertToMap xs typeMap (Map.insert i e termMap)
+    (TypeDecl i t) -> convertToMap (Map.insert i t typeMap) termMap xs
+    (FunDecl i _ e) -> convertToMap typeMap (Map.insert i e termMap) xs
     _ -> error "not a type decl"
   -- | FunDecl i Args Expression
 
+-- parseProgram :: Parser Program
+-- parseProgram =
+--   choice [parseExpressionDecl, parseTypeDecl]
+  --     (Text.Parsec.try parseTypeDecl)
+  -- <|> (Text.Parsec.try parseExpressionDecl)
+  -- <?> "Program error"
 
-  -- type TermVar = String
-  -- type TypeVar = String
-  --
-  -- type TermEnv = Map.Map TermVar (Type, Expression)
-  -- type TypeEnv = Map.Map TypeVar Type
-
-
-parserProgram :: String -> Either ParseError Program
-parserProgram = parse mainParser "Context-free Sessions (Parsing)"
-
-mainParser :: Parser Program
-mainParser =
-    do{
-      whiteSpace
-      ; ret <- lexeme parseProgram
-      ; eof
-      ; return ret
-  } <?> "error"
-
- -- Text.Parsec.try
-
-parseProgram :: Parser Program
-parseProgram =
-      Text.Parsec.try parseTypeDecl
-  <|> Text.Parsec.try parseExpressionDecl
-  <?> "Program error"
+-- TODO: well kinded
+-- parseTypeDecl = do
+--   id <- identifier
+--   colon
+--   colon
+--   t <- mainTypeParser
+--   return $ TypeDecl id t
 
 parseTypeDecl = do
   id <- identifier
   colon
   colon
   t <- mainTypeParser
-  return $ TypeDecl id t
+  if isType t then
+    return $ TypeDecl id t
+  else
+    error $ "Type t is not well kinded: " ++ show t
+  -- case t of
+  --   Right t' -> if isType t then (return $ TypeDecl id t') else error $ "Type "++ (show t') ++" not well kinded"
+  --   Left m -> error $ "type parse error " ++ show m
+  -- return $ TypeDecl id t
+
+
+  -- Right t -> if isType t then [(t,"")] else error $ "Type "++ (show t) ++" not well kinded"
+  -- Left m -> error $ "type parse error " ++ show m
 
 parseExpressionDecl = do
   id <- identifier
-  ids <- many identifier
+  ids <- (many identifier)
   reservedOp "="
   e <- parseExpression
   return $ FunDecl id ids e
 
 --TODO: mod and rev Associativity and precedence
---TODO: 2rev2mod2 -> Valid?
 --TODO: bool priority
 --TODO: bool app one expr when applying not Operator
 
-table = [ [binOp "*" App AssocLeft, binOp "/" App AssocLeft ]
-        , [binOp "+" App AssocLeft, binOp "-" App AssocLeft,
-            binary "mod" App AssocLeft, binary "rev" App AssocLeft ]
+table = [ [binOp "*" IntApp AssocLeft, binOp "/" IntApp AssocLeft ]
+        , [binOp "+" IntApp AssocLeft, binOp "-" IntApp AssocLeft,
+            binary "mod" IntApp AssocLeft, binary "rev" IntApp AssocLeft ]
         , [binOp "&&" BoolApp AssocLeft, binOp "||" BoolApp AssocLeft
             --, prefix "not" BoolApp
           ]
@@ -156,7 +167,9 @@ binary name fun assoc = Infix  (do{ reserved name; return fun }) assoc
 prefix name fun       = Prefix (do{ reserved name; return fun })
 
 -- table = []
-parseExpression = buildExpressionParser table (lexeme parseExpr)
+-- parseExpression = buildExpressionParser table (lexeme parseExpr)
+parseExpression = buildExpressionParser table parseExpr
+
 
 parseExpr =
   parseBasic
