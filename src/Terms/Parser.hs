@@ -8,6 +8,7 @@ import Text.Parsec.Language (haskellDef)
 import Text.ParserCombinators.Parsec
 import Text.Parsec.Expr
 import Types.Types
+import Terms.Terms
 import Types.Kinding
 import Types.Parser
 import qualified Data.Map.Strict as Map
@@ -15,32 +16,6 @@ import Data.Maybe
 import Data.Either
 -- import System.Directory
 -- import qualified Control.Applicative as ca
-
-
---TODO: review
-type Args = [String]
-
-data Program =
-    Empty
-  | TypeDecl Id Type
-  | FunDecl Id Args Expression
-  -- | FunDecl Id Type Expression
-  deriving Show
-
-
-type TermVar = String
-type TypeVar = String
-
-type TermEnv = Map.Map TermVar (Type, Expression)
-type TypeEnv = Map.Map TypeVar Type
-
-data Expression =
-    BasicTerm BasicType
-  | IntApp Expression Expression
-  | BoolApp Expression Expression
-  | Elim Expression Expression
-  deriving Show
-
 
 -- LEXER
 lexer :: Token.TokenParser ()
@@ -76,13 +51,8 @@ integer = Token.integer lexer
 
 -- PARSER
 
-
--- type ProgramOut = ([Program], [Program])
-
--- parserProgram :: String -> Either ParseError [Program]
--- parserProgram = parse mainParser "Context-free Sessions (Parsing)"
-mainProgram :: IO (Either ParseError (Map.Map Id Type, Map.Map Id Expression))
-mainProgram = parseFromFile program "src/Terms/test.hs"
+mainProgram :: FilePath -> IO (Either ParseError (TypeEnv, ExpEnv))
+mainProgram filepath = parseFromFile program filepath
   -- case () of
   --   Right m -> return m
     -- Left err -> error err
@@ -158,7 +128,7 @@ table = [ [binOp "*" IntApp AssocLeft, binOp "/" IntApp AssocLeft ]
         , [binOp "+" IntApp AssocLeft, binOp "-" IntApp AssocLeft,
             binary "mod" IntApp AssocLeft, binary "rev" IntApp AssocLeft ]
         , [binOp "&&" BoolApp AssocLeft, binOp "||" BoolApp AssocLeft
-            --, prefix "not" BoolApp
+          , prefix "not" UnBoolApp
           ]
         ]
 
@@ -169,7 +139,6 @@ prefix name fun       = Prefix (do{ reserved name; return fun })
 -- table = []
 -- parseExpression = buildExpressionParser table (lexeme parseExpr)
 parseExpression = buildExpressionParser table parseExpr
-
 
 parseExpr =
   parseBasic

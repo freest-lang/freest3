@@ -4,7 +4,8 @@ module Types.Kinding
 , isSchemeType
 , kindOf
 , contractive
-, Kind (..)) where
+, Kind (..)
+, un) where
 
 import Types.Types
 import qualified Data.Map.Strict as Map
@@ -43,6 +44,13 @@ kindOf t = case kinding Map.empty t of
   Left k  -> k
   Right m -> error $ "Type " ++ show t ++ " not a proper type:\n" ++ m
   -- Right _ -> error $ "Type " ++ show t ++ " not a proper type"
+
+un :: Type -> Bool
+un = isUn . kindOf
+
+isUn :: Kind -> Bool
+isUn (Kind _ Un) = True
+isUn (Kind _ _) = False
 
 kinding :: KindEnv -> Type -> KindingOut
 kinding _ Skip = Left $ Kind Session Un

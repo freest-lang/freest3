@@ -2,7 +2,8 @@ x = 3 + 3
 q :: Int
 
 
-
+k :: Bool -> Bool -> Bool
+k = True && True
 
 
 -- comment

@@ -6,7 +6,7 @@ import Terms.Parser
 main :: IO ()
 main = do
   putStrLn "Starting parser ...\n"
-  ; prog     <- mainProgram
+  ; prog     <- mainProgram "src/Terms/test.hs"
   ; prog     <- case prog of
                  Left err -> do{ putStr (show(err)); return $ error ""}
                  Right d  -> return d
