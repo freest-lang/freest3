@@ -8,4 +8,4 @@ k = True && True
 
 -- comment
 y :: Int -> Int
-y = 2 rev 2 mod 2
+y a = 2 rev 2 mod 2

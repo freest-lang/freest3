@@ -32,5 +32,5 @@ data Expression =
   | IntApp Expression Expression
   | BoolApp Expression Expression
   | UnBoolApp Expression
-  | Elim Expression Expression
+  -- | Elim Expression Expression
   deriving Show

@@ -106,7 +106,7 @@ parseTypeDecl = do
     error $ "Type t is not well kinded: " ++ show t
   -- case t of
   --   Right t' -> if isType t then (return $ TypeDecl id t') else error $ "Type "++ (show t') ++" not well kinded"
-  --   Left m -> error $ "type parse error " ++ show m
+  --   Left m -> error $ "type parse error " ++ show m  
   -- return $ TypeDecl id t
 
 
