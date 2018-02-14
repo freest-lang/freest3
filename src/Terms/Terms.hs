@@ -2,7 +2,8 @@ module Terms.Terms (
     Program (..),
     Expression (..),
     ExpEnv,
-    TypeEnv
+    TypeEnv,
+    Args
   ) where
 
 import Types.Types
@@ -24,13 +25,15 @@ type TermVar = String
 type TypeVar = String
 
 -- type ExpEnv = Map.Map TermVar (Type, Expression)
-type ExpEnv = Map.Map TermVar Expression
 type TypeEnv = Map.Map TypeVar Type
+type ExpEnv = Map.Map TermVar (Args, Expression)
 
+type Op = String
 data Expression =
     BasicTerm BasicType
-  | IntApp Expression Expression
-  | BoolApp Expression Expression
-  | UnBoolApp Expression
+  | IntApp Op Expression Expression
+  | BoolApp Op Expression Expression
+  | UnBoolApp Op Expression
+  | Var Id
   -- | Elim Expression Expression
-  deriving Show
+  deriving (Show,Ord,Eq)

@@ -14,15 +14,13 @@ import Types.Parser
 import qualified Data.Map.Strict as Map
 import Data.Maybe
 import Data.Either
--- import System.Directory
--- import qualified Control.Applicative as ca
 
 -- LEXER
 lexer :: Token.TokenParser ()
 lexer  = Token.makeTokenParser
         (haskellDef
         {
-        Token.reservedOpNames = ["=","+","-","*","/", "mod", "rev", "&&", "||", "not"],
+        Token.reservedOpNames = ["=","+","-","*","/", "mod", "rem", "&&", "||", "not"],
         Token.reservedNames = ["send","receive","()", "new", "in", "let",
                                "fork", "match", "with", "select", "case", "of",
                                "True", "False", "mod", "rev", "not"]
@@ -41,6 +39,9 @@ identifier = Token.identifier lexer
 
 integer :: Parser Integer
 integer = Token.integer lexer
+
+
+apostrophe p = between (string "'") (string "'") p
 
 -- comma      = Token.comma lexer
 -- -- semi = Token.semi lexer
@@ -71,29 +72,15 @@ manyAlternate pa pb = do{as<-many1 pa; (as',bs') <- manyAlternate pa pb; return 
                       <|>
                       return ([],[])
 
-convertToMap :: Map.Map Id Type -> Map.Map Id Expression -> [Program] -> (Map.Map Id Type, Map.Map Id Expression)
+convertToMap :: TypeEnv -> ExpEnv -> [Program] -> (TypeEnv, ExpEnv)
 convertToMap typeMap termMap []  = (typeMap,termMap)
 convertToMap typeMap termMap (x:xs) =
   case x of
     (TypeDecl i t) -> convertToMap (Map.insert i t typeMap) termMap xs
-    (FunDecl i _ e) -> convertToMap typeMap (Map.insert i e termMap) xs
+    (FunDecl i a e) -> convertToMap typeMap (Map.insert i (a,e) termMap) xs
     _ -> error "not a type decl"
   -- | FunDecl i Args Expression
 
--- parseProgram :: Parser Program
--- parseProgram =
---   choice [parseExpressionDecl, parseTypeDecl]
-  --     (Text.Parsec.try parseTypeDecl)
-  -- <|> (Text.Parsec.try parseExpressionDecl)
-  -- <?> "Program error"
-
--- TODO: well kinded
--- parseTypeDecl = do
---   id <- identifier
---   colon
---   colon
---   t <- mainTypeParser
---   return $ TypeDecl id t
 
 parseTypeDecl = do
   id <- identifier
@@ -104,14 +91,6 @@ parseTypeDecl = do
     return $ TypeDecl id t
   else
     error $ "Type t is not well kinded: " ++ show t
-  -- case t of
-  --   Right t' -> if isType t then (return $ TypeDecl id t') else error $ "Type "++ (show t') ++" not well kinded"
-  --   Left m -> error $ "type parse error " ++ show m  
-  -- return $ TypeDecl id t
-
-
-  -- Right t -> if isType t then [(t,"")] else error $ "Type "++ (show t) ++" not well kinded"
-  -- Left m -> error $ "type parse error " ++ show m
 
 parseExpressionDecl = do
   id <- identifier
@@ -122,13 +101,12 @@ parseExpressionDecl = do
 
 --TODO: mod and rev Associativity and precedence
 --TODO: bool priority
---TODO: bool app one expr when applying not Operator
 
-table = [ [binOp "*" IntApp AssocLeft, binOp "/" IntApp AssocLeft ]
-        , [binOp "+" IntApp AssocLeft, binOp "-" IntApp AssocLeft,
-            binary "mod" IntApp AssocLeft, binary "rev" IntApp AssocLeft ]
-        , [binOp "&&" BoolApp AssocLeft, binOp "||" BoolApp AssocLeft
-          , prefix "not" UnBoolApp
+table = [ [binOp "*" (IntApp "*") AssocLeft, binOp "/" (IntApp "/") AssocLeft ]
+        , [binOp "+" (IntApp "+") AssocLeft, binOp "-" (IntApp "-") AssocLeft,
+            binary "mod" (IntApp "mod") AssocLeft, binary "rem" (IntApp "rem") AssocLeft ]
+        , [binOp "&&" (BoolApp "&&") AssocLeft, binOp "||" (BoolApp "||") AssocLeft
+          , prefix "not" (UnBoolApp "not")
           ]
         ]
 
@@ -138,15 +116,19 @@ prefix name fun       = Prefix (do{ reserved name; return fun })
 
 -- table = []
 -- parseExpression = buildExpressionParser table (lexeme parseExpr)
-parseExpression = buildExpressionParser table parseExpr
+parseExpression = buildExpressionParser table (lexeme parseExpr)
 
 parseExpr =
-  parseBasic
+      (parens parseExpression)
+  <|> parseBasic
+  <|> (do {id <- identifier; return $ Terms.Terms.Var id})
 
+
+-- TODO Check Char type
 parseBasic =
       (do {integer; return $ BasicTerm IntType})
   <|> parseBool
-  <|> (do {anyChar; return $ BasicTerm CharType})
+  <|> (do {apostrophe anyChar; return $ BasicTerm CharType})
 
 parseBool =
       (do {reserved "True"; return $ BasicTerm BoolType})

@@ -1,11 +1,11 @@
 x = 3 + 3
-q :: Int
+x :: Int
 
 
 k :: Bool -> Bool -> Bool
-k = True && True
+k x y = True && True
 
 
 -- comment
 y :: Int -> Int
-y a = 2 rev 2 mod 2
+y a = a rem (2 mod 2)
