@@ -1,23 +1,23 @@
 -- https://web.archive.org/web/20140528151730/http://legacy.cs.uu.nl/daan/parsec.html
-{-# LANGUAGE FlexibleContexts #-} -- binary and infix functions need this
+{-# LANGUAGE FlexibleContexts #-}
 
 module Types.Parser (mainTypeParser) where
 
-import Types.Types
-import Text.Parsec
-import qualified Text.Parsec.Token as Token
-import Text.Parsec.Language (haskellDef)
-import Text.ParserCombinators.Parsec
-import Text.Parsec.Expr
-import qualified Data.Map.Strict as Map
-import Types.Kinding
+import qualified Data.Map.Strict               as Map
+import           Text.Parsec
+import           Text.Parsec.Expr
+import           Text.Parsec.Language          (haskellDef)
+import qualified Text.Parsec.Token             as Token
+import           Text.ParserCombinators.Parsec
+import           Types.Kinding
+import           Types.Types
 
 
 -- TODO : check list
 instance Read BasicType where
   readsPrec _ s = case parserBasic s of
     Right b -> [(b, "")]
-    Left m -> error "basic type parse error"
+    Left m  -> error "basic type parse error"
 
 instance Read Type where
   readsPrec _ s = case parserType s of

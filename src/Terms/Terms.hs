@@ -6,8 +6,8 @@ module Terms.Terms (
     Args
   ) where
 
-import Types.Types
 import qualified Data.Map.Strict as Map
+import           Types.Types
 
 
 --TODO: review
@@ -31,9 +31,11 @@ type ExpEnv = Map.Map TermVar (Args, Expression)
 type Op = String
 data Expression =
     BasicTerm BasicType
-  | IntApp Op Expression Expression
-  | BoolApp Op Expression Expression
-  | UnBoolApp Op Expression
+  | App Op Expression Expression
+  -- | BoolApp Op Expression Expression
+  -- | UnBoolApp Op Expression
+  | UnApp Op Expression
+  | ExpPair Expression Expression
   | Var Id
   -- | Elim Expression Expression
   deriving (Show,Ord,Eq)

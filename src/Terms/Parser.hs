@@ -24,6 +24,7 @@ lexer  = Token.makeTokenParser
         Token.reservedNames = ["send","receive","()", "new", "in", "let",
                                "fork", "match", "with", "select", "case", "of",
                                "True", "False", "mod", "rev", "not"]
+        -- ,Token.identStart = letter <|> oneOf ['+','-','/','*']
         })
 
 reservedOp = Token.reservedOp lexer
@@ -36,14 +37,13 @@ symbol     = Token.symbol lexer
 parens     = Token.parens lexer
 colon      = Token.colon lexer
 identifier = Token.identifier lexer
+comma      = Token.comma lexer
 
 integer :: Parser Integer
 integer = Token.integer lexer
 
-
 apostrophe p = between (string "'") (string "'") p
 
--- comma      = Token.comma lexer
 -- -- semi = Token.semi lexer
 -- dot = Token.dot lexer
 -- braces = Token.braces lexer
@@ -52,16 +52,16 @@ apostrophe p = between (string "'") (string "'") p
 
 -- PARSER
 
-mainProgram :: FilePath -> IO (Either ParseError (TypeEnv, ExpEnv))
-mainProgram filepath = parseFromFile program filepath
+mainProgram :: FilePath -> TypeEnv -> IO (Either ParseError (TypeEnv, ExpEnv))
+mainProgram filepath env = parseFromFile (program env) filepath
   -- case () of
   --   Right m -> return m
     -- Left err -> error err
 
-program =  do{whiteSpace
+program env =  do{whiteSpace
              ;(tds,vds) <- manyAlternate (Text.Parsec.try parseTypeDecl) (Text.Parsec.try parseExpressionDecl)
              ;eof
-             ;return $ convertToMap Map.empty Map.empty (tds++vds)
+             ;return $ convertToMap env Map.empty (tds++vds)
              -- ; return (tds,vds)
              }
 
@@ -72,6 +72,7 @@ manyAlternate pa pb = do{as<-many1 pa; (as',bs') <- manyAlternate pa pb; return 
                       <|>
                       return ([],[])
 
+-- TODO: Verify if exists
 convertToMap :: TypeEnv -> ExpEnv -> [Program] -> (TypeEnv, ExpEnv)
 convertToMap typeMap termMap []  = (typeMap,termMap)
 convertToMap typeMap termMap (x:xs) =
@@ -81,9 +82,13 @@ convertToMap typeMap termMap (x:xs) =
     _ -> error "not a type decl"
   -- | FunDecl i Args Expression
 
+tryStr x = Text.Parsec.try (string x)
+
+ident = identifier <|>
+      choice [tryStr "(+)", tryStr "(-)", tryStr "(*)", tryStr "(/)", tryStr "mod", tryStr "rem", tryStr "(&&)", tryStr "(||)", tryStr "not"]
 
 parseTypeDecl = do
-  id <- identifier
+  id <- (lexeme ident)
   colon
   colon
   t <- mainTypeParser
@@ -102,11 +107,11 @@ parseExpressionDecl = do
 --TODO: mod and rev Associativity and precedence
 --TODO: bool priority
 
-table = [ [binOp "*" (IntApp "*") AssocLeft, binOp "/" (IntApp "/") AssocLeft ]
-        , [binOp "+" (IntApp "+") AssocLeft, binOp "-" (IntApp "-") AssocLeft,
-            binary "mod" (IntApp "mod") AssocLeft, binary "rem" (IntApp "rem") AssocLeft ]
-        , [binOp "&&" (BoolApp "&&") AssocLeft, binOp "||" (BoolApp "||") AssocLeft
-          , prefix "not" (UnBoolApp "not")
+table = [ [binOp "*" (App "(*)") AssocLeft, binOp "/" (App "(/)") AssocLeft ]
+        , [binOp "+" (App "(+)") AssocLeft, binOp "-" (App "(-)") AssocLeft,
+            binary "mod" (App "mod") AssocLeft, binary "rem" (App "rem") AssocLeft ]
+        , [binOp "&&" (App "(&&)") AssocLeft, binOp "||" (App "(||)") AssocLeft
+          , prefix "not" (UnApp "not")
           ]
         ]
 
@@ -114,12 +119,12 @@ binOp name fun assoc = Infix  (do{ reservedOp name; return fun }) assoc
 binary name fun assoc = Infix  (do{ reserved name; return fun }) assoc
 prefix name fun       = Prefix (do{ reserved name; return fun })
 
--- table = []
--- parseExpression = buildExpressionParser table (lexeme parseExpr)
+
 parseExpression = buildExpressionParser table (lexeme parseExpr)
 
 parseExpr =
-      (parens parseExpression)
+      (Text.Parsec.try $ parens parseExpression)
+  <|> parsePair
   <|> parseBasic
   <|> (do {id <- identifier; return $ Terms.Terms.Var id})
 
@@ -133,6 +138,14 @@ parseBasic =
 parseBool =
       (do {reserved "True"; return $ BasicTerm BoolType})
   <|> (do {reserved "False"; return $ BasicTerm BoolType})
+
+
+parsePair = parens $ do
+    e1 <- parseExpression
+    comma
+    e2 <- parseExpression
+    return $ ExpPair e1 e2
+
 
 
 --
