@@ -2,7 +2,7 @@
 -- x :: Bool
 --
 --
--- k :: Int -> Bool -> Bool
+-- k :: Bool -> Bool -> Bool
 -- k x y = x && True
 --
 --
@@ -10,4 +10,6 @@
 -- y :: Int -> Int
 -- y a = a rem (2 mod 2)
 
-x = (2+2,2)
+w :: Int -> (Int, Bool) -> Int
+-- w a = (a+2,True)
+w a z = 2+2
