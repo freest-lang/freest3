@@ -4,7 +4,7 @@ import SpecHelper
 import Control.Exception (evaluate)
 import Test.Hspec.Expectations (anyException, shouldThrow)
 -- import qualified Data.Map.Strict as Map
-import Types.Parser
+
 
 -- Just to be able to run it alone
 main :: IO ()

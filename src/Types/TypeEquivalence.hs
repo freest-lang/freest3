@@ -4,9 +4,9 @@ module Types.TypeEquivalence(
 
 import Types.Types
 import Types.Kinding
+import Types.TypeParser
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import Types.Parser
 
 -- testar Show
 -- testar igualdade rec inside rec and the same for ∀

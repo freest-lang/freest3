@@ -1,7 +1,7 @@
 -- https://web.archive.org/web/20140528151730/http://legacy.cs.uu.nl/daan/parsec.html
 {-# LANGUAGE FlexibleContexts #-}
 
-module Types.Parser (mainTypeParser) where
+module Types.TypeParser (mainTypeParser) where
 
 import qualified Data.Map.Strict               as Map
 import           Text.Parsec
@@ -67,9 +67,6 @@ parseBasicType =
   <?> "a basic type: Int, Char, Bool, or ()"
 
 -- TYPES
--- Skip | Semi Type Type | Out BasicType | In BasicType | Basic BasicType |
--- UnFun Type Type | LinFun Type Type | Pair Type Type | ExternalChoice TypeMap |
--- InternalChoice TypeMap | Datatype TypeMap | Rec String Type | Forall String Type | Var String |
 
 parserType :: String -> Either ParseError Type
 parserType = parse mainTypeParser "Context-free Sessions (Types)"
@@ -80,7 +77,7 @@ mainTypeParser =
     do{
       whiteSpace
       ; ret <- parseType
-    --  ; eof
+      -- ; eof
       ; return ret
   } <?> "a type: skip, T;T, ..., or ..."
 
@@ -91,7 +88,9 @@ table = [ [binary "->" UnFun AssocRight, binary "-o" LinFun AssocRight ]
         , [binary ";" Semi AssocLeft ]
         ]
 
+-- binary name fun assoc = Infix  (do{ Text.Parsec.try (symbol name); return fun }) assoc
 binary name fun assoc = Infix  (do{ Text.Parsec.try (symbol name); return fun }) assoc
+
 -- prefix name fun       = Prefix (do{ reservedOp name; return fun })
 
 parseTerm =

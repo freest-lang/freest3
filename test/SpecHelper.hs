@@ -1,7 +1,7 @@
 module SpecHelper
     ( module Test.Hspec
     , module Types.Types
-    , module Types.Parser
+    , module Types.TypeParser
     , readFromFile
     , convert
     , module Data.Char
@@ -10,7 +10,7 @@ module SpecHelper
 import Test.Hspec
 import Types.Types
 import Data.Char
-import Types.Parser
+import Types.TypeParser
 
 readFromFile filename = do
   str <- readFile filename
