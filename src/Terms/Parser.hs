@@ -118,8 +118,8 @@ parseExpr =
       (try $ parens parseExpression)
   <|> parsePair
   <|> parseBasic
+  <|> parseLet
   <|> (do {id <- identifier; return $ Terms.Terms.Var id})
-
 
 -- TODO Check Char type
 parseBasic =
@@ -131,12 +131,22 @@ parseBool =
       (do {reserved "True"; return $ BasicTerm BoolType})
   <|> (do {reserved "False"; return $ BasicTerm BoolType})
 
-
 parsePair = parens $ do
     e1 <- parseExpression
     comma
     e2 <- parseExpression
     return $ ExpPair e1 e2
+
+parseLet = do
+  reserved "let"
+  id1 <- identifier
+  comma
+  id2 <- identifier
+  reservedOp "="
+  e1 <- parseExpression
+  reserved "in"
+  e2 <- parseExpression
+  return $ Let id1 id2 e1 e2
 
 
 

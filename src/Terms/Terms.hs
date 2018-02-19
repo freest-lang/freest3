@@ -32,10 +32,8 @@ type Op = String
 data Expression =
     BasicTerm BasicType
   | App Op Expression Expression
-  -- | BoolApp Op Expression Expression
-  -- | UnBoolApp Op Expression
   | UnApp Op Expression
   | ExpPair Expression Expression
+  | Let Id Id Expression Expression
   | Var Id
-  -- | Elim Expression Expression
   deriving (Show,Ord,Eq)

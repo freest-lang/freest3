@@ -15,16 +15,16 @@ type TypeCheckOut = Either (Type,TypeEnv) Message
 
 test = do
 		prelude <- mainProgram "src/Terms/prelude.hs" Map.empty
-		prelude     <- case prelude of
-										 Left err -> do{ putStr (show(err)); return $ error ""}
-										 Right d  -> return d
+		prelude <- case prelude of
+								 Left err -> do{ putStr (show(err)); return $ error ""}
+								 Right d  -> return d
 		-- putStrLn "\n"
  		-- print prelude
  		-- putStrLn "\n"
 		prog <- mainProgram "src/Terms/test.hs" (fst prelude)
-		prog     <- case prog of
-									 Left err -> do{ putStr (show(err)); return $ error ""}
-									 Right d  -> return d
+		prog <- case prog of
+							 Left err -> do{ putStr (show(err)); return $ error ""}
+							 Right d  -> return d
 		-- a <- pure $ typeCheck Map.empty prog (UnBoolApp "not" (BasicTerm BoolType))
 		-- putStrLn "\n"
 		-- print prog
@@ -41,7 +41,6 @@ typeCheckFunction :: String -> (TypeEnv,ExpEnv) -> TypeCheckOut
 typeCheckFunction funName (tEnv,eEnv) =
 
 		if ((length types)-1 == (length args)) then
-			-- error $ show types
 			typeCheck Map.empty tEnv (argsMap types args) (tEnv Map.! funName) (snd(eEnv Map.! funName))
 		else
 			Right $ "not equal number of args " ++ funName ++ "\n (length types)= " ++ show (length types -1) ++ " | (length args) = " ++  show (length args)
@@ -54,7 +53,7 @@ argsMap :: [Type] -> Args -> ArgsMap
 argsMap t xs = Map.fromList $ zip xs t
 
 
--- TODO: cant be like this:  right associativity
+-- TODO: cant be like this?  right associativity
 deconstructType :: Type -> [Type]
 deconstructType (UnFun t1 t2) = [t1] ++ deconstructType t2
 deconstructType (LinFun t1 t2) = [t1] ++ deconstructType t2
@@ -93,6 +92,7 @@ typeCheck delta m1 args t (ExpPair e1 e2) =
 		_ 																										->
 			Right $ "One of the operands is not a valid type: " ++ show e1 ++ " | " ++ show e2
 
+typeCheck _ _ _ _ t = error $ show t -- TODO : remove after adding all patterns
 
 cmpReturnType t1 t2 m1 =
 	if(t1 == t2) then
