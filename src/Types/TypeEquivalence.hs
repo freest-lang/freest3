@@ -22,14 +22,14 @@ main = do
   print $ a `equivalent` b
   -- return()
 
--- Type bissimulation
+-- Type bisimulation
 
 data Label = OutLabel BasicType |
              InLabel BasicType |
              ExtChoiceLabel Field |
              IntChoiceLabel Field |
              VarLabel Id
-             deriving (Eq,Ord,Show)
+             deriving (Eq, Ord, Show)
 
 terminated :: Type -> Bool
 terminated Skip = True
@@ -49,7 +49,6 @@ reduce (InternalChoice m) = Map.mapKeys IntChoiceLabel m
 reduce (ExternalChoice m) = Map.mapKeys ExtChoiceLabel m
 reduce (Rec x t)          = reduce $ unfold (Rec x t)
 reduce _                  = Map.empty
-
 
 --TODO: equiv' Forall Forall
 equivalent :: Type -> Type -> Bool
@@ -84,6 +83,8 @@ isRec :: Type -> Bool
 isRec (Rec _ _) = True
 isRec _         = False
 
+unfold :: Type -> Type
+-- Assumes parameter is a Rec type
 unfold (Rec x t) = subs (Rec x t) x t
 
 -- Assume the second type is closed (no free vars)
