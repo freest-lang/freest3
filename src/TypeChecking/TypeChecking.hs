@@ -1,9 +1,10 @@
 {-# OPTIONS_GHC -fno-warn-tabs #-}
 module TypeChecking.TypeChecking () where
 
-import Terms.Terms
-import Types.Types
 import Types.Kinds
+import Types.Kinding
+import Types.Types
+import Terms.Terms
 import Terms.Parser
 import qualified Data.Map.Strict as Map
 
@@ -55,8 +56,7 @@ argsMap t xs = Map.fromList $ zip xs t
 
 -- TODO: cant be like this?  right associativity
 deconstructType :: Type -> [Type]
-deconstructType (UnFun t1 t2) = [t1] ++ deconstructType t2
-deconstructType (LinFun t1 t2) = [t1] ++ deconstructType t2
+deconstructType (Fun _ t1 t2) = [t1] ++ deconstructType t2
 deconstructType t = [t]
 
 type ArgsMap = Map.Map String Type

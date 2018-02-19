@@ -10,6 +10,7 @@ import Text.Parsec.Expr
 import Types.Types
 import Terms.Terms
 import Types.Kinds
+import Types.Kinding
 import Types.TypeParser
 import qualified Data.Map.Strict as Map
 import Data.Maybe

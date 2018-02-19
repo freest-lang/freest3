@@ -11,6 +11,7 @@ import qualified Text.Parsec.Token             as Token
 import           Text.ParserCombinators.Parsec
 import           Types.Kinds
 import           Types.Types
+import           Types.Kinding
 
 
 -- TODO : check list
@@ -84,7 +85,7 @@ mainTypeParser =
 parseType :: Parser Type
 parseType =  lexeme $ buildExpressionParser table parseTerm
 
-table = [ [binary "->" UnFun AssocRight, binary "-o" LinFun AssocRight ]
+table = [ [binary "->" (Fun Un) AssocRight, binary "-o" (Fun Lin) AssocRight ]
         , [binary ";" Semi AssocLeft ]
         ]
 

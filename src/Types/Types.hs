@@ -20,6 +20,7 @@ module Types.Types
 , dual
 ) where
 
+import Types.Kinds
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
@@ -51,8 +52,7 @@ data Type =
   Semi Type Type |
   Out BasicType |
   In BasicType |
-  UnFun Type Type |     -- TODO: merge UnFun and LinFun
-  LinFun Type Type |
+  Fun Multiplicity Type Type |
   Pair Type Type |
   ExternalChoice TypeMap |      -- TODO: merge ExternalChoice and InternalChoice
   InternalChoice TypeMap |
@@ -68,8 +68,8 @@ instance Show Type where
   show (Semi x y) = "(" ++ show x ++ ";" ++ show y ++ ")"
   show (Out x) = "!" ++ show x
   show (In x) = "?" ++ show x
-  show (UnFun x y) = "(" ++ show x ++ " -> " ++ show y ++ ")"
-  show (LinFun x y) = "(" ++ show x ++ " -o " ++ show y ++ ")"
+  show (Fun Lin x y) = showFun "-o" x y
+  show (Fun  Un x y) = showFun "->" x y
   show (Pair x y) =  "(" ++  show x ++ " , " ++ show y ++ ")"
   show (InternalChoice x) = "+{" ++ showMap x ++ "}"
   show (ExternalChoice x) = "&{" ++ showMap x ++ "}"
@@ -77,6 +77,9 @@ instance Show Type where
   show (Rec s t) = "(rec " ++ id s ++ " . " ++ show t ++ ")"
   show (Forall s t) = "(forall " ++ id s ++ " . " ++ show t ++ ")"
   show (Var x) = id x
+
+showFun :: String -> Type -> Type -> String
+showFun op left right = "(" ++ show left ++ " " ++ op ++ " " ++ show right ++ ")"
 
 showMap :: TypeMap -> String
 showMap m =
@@ -86,22 +89,21 @@ instance Eq Type where
   (==) = equals Set.empty
 
 equals :: Set.Set (Id, Id) -> Type -> Type -> Bool
-equals m Skip Skip = True
-equals m (Var x) (Var y)
+equals s Skip Skip = True
+equals s (Var x) (Var y)
     | x == y = True
-    | otherwise = Set.member (x,y) m
-equals m (Forall x t)(Forall y u) = equals (Set.insert (x,y) m) t u
-equals m (Rec x t)(Rec y u) = equals (Set.insert (x,y) m) t u
-equals m (Semi t1 t2)(Semi v1 v2) = equals m t1 v1 && equals m t2 v2
-equals m (Basic x)(Basic y) = x == y
-equals m (Out x) (Out y) = x == y
-equals m (In x) (In y) = x == y
-equals m (LinFun s t)(LinFun u v) = equals m s u && equals m t v
-equals m (UnFun s t)(UnFun u v) = equals m s u && equals m t v
-equals m (Pair s t)(Pair u v) = equals m s u && equals m t v
-equals m (Datatype m1)(Datatype m2) = equalMaps m m1 m2 -- verifyListEquality m (Map.toList m1) (Map.toList m2)
-equals m (InternalChoice m1)(InternalChoice m2) = equalMaps m m1 m2
-equals m (ExternalChoice m1)(ExternalChoice m2) = equalMaps m m1 m2
+    | otherwise = Set.member (x,y) s
+equals s (Forall x t)(Forall y u) = equals (Set.insert (x,y) s) t u
+equals s (Rec x t)(Rec y u) = equals (Set.insert (x,y) s) t u
+equals s (Semi t1 t2)(Semi v1 v2) = equals s t1 v1 && equals s t2 v2
+equals s (Basic x)(Basic y) = x == y
+equals s (Out x) (Out y) = x == y
+equals s (In x) (In y) = x == y
+equals s (Fun m t u) (Fun n v w) = m == n && equals s t v && equals s u w
+equals s (Pair t u)(Pair v w) = equals s t v && equals s u w
+equals s (Datatype m1)(Datatype m2) = equalMaps s m1 m2 -- verifyListEquality m (Map.toList m1) (Map.toList m2)
+equals s (InternalChoice m1)(InternalChoice m2) = equalMaps s m1 m2
+equals s (ExternalChoice m1)(ExternalChoice m2) = equalMaps s m1 m2
 equals _ _ _ = False
 
 equalMaps :: Set.Set (Id, Id) -> TypeMap -> TypeMap -> Bool

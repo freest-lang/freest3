@@ -6,6 +6,7 @@ module Types.TestKindingValidSpec(spec) where
 -- import Data.Char
 import SpecHelper
 import Types.Kinds
+import Types.Kinding
 import qualified Data.Map.Strict as Map
 
 -- Just to be able to run it alone

@@ -4,7 +4,7 @@ module Types.TypeEquivalence(
 
 import Types.Types
 import Types.Kinds
-import Types.TypeParser
+import Types.Kinding
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
@@ -15,13 +15,14 @@ import qualified Data.Set as Set
 -- sem parens
 
 --TODO: Delete (trace debug)
+{-
 main :: IO ()
 main = do
   let a = read "rec x . +{l:!Int, m:x}" :: Type
   let b = read "rec y . +{l:Skip, m:y};!Int" :: Type
   print $ a `equivalent` b
   -- return()
-
+-}
 -- Type bisimulation
 
 data Label = OutLabel BasicType |
@@ -61,8 +62,7 @@ equiv s t1 t2
 
 equiv' _ (Var x) (Var y)                = x == y
 equiv' _ (Basic b) (Basic c)            = b == c
-equiv' s (UnFun t1 t2) (UnFun t3 t4)    = equiv s  t1 t3 && equiv s t2 t4
-equiv' s (LinFun t1 t2) (LinFun t3 t4)  = equiv s t1 t3 && equiv s t2 t4
+equiv' s (Fun m1 t1 t2) (Fun m2 t3 t4)    = m1 == m2 && equiv s  t1 t3 && equiv s t2 t4
 equiv' s (Pair t1 t2) (Pair t3 t4)      = equiv s t1 t3 && equiv s t2 t4
 equiv' s (Datatype dt1) (Datatype dt2)  = Map.size dt1 == Map.size dt2 &&
       Map.foldlWithKey (\b l t -> b && l `Map.member` dt2 &&
