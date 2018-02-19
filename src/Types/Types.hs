@@ -15,8 +15,8 @@ module Types.Types
 ( BasicType(..)
 , Type(..)
 , TypeMap(..)
-, Id
-, Field
+, TypeVar
+, Constructor
 , ChoiceView(..)
 , dual
 ) where
@@ -28,11 +28,11 @@ import qualified Data.Set as Set
 -- BASIC TYPES
 
 data BasicType =
-          IntType  |
-          CharType |
-          BoolType |
-          UnitType
-          deriving (Eq, Ord)
+  IntType  |
+  CharType |
+  BoolType |
+  UnitType
+  deriving (Eq, Ord)
 
 instance Show BasicType where
   show IntType = "Int"
@@ -42,10 +42,11 @@ instance Show BasicType where
 
 -- TYPES
 
-type Id = String
--- The name of a field in a choice or in a datatype
-type Field = String -- TODO: rename to Constructor
-type TypeMap = Map.Map Field Type
+type TypeVar = String
+
+type Constructor = String
+
+type TypeMap = Map.Map Constructor Type
 
 data ChoiceView = External | Internal deriving (Eq, Ord)
 
@@ -56,12 +57,12 @@ data Type =
   Out BasicType |
   In BasicType |
   Fun Multiplicity Type Type |
-  Pair Type Type |
+  PairType Type Type |
   Choice ChoiceView TypeMap |
   Datatype TypeMap |
-  Rec Id Type |
-  Forall Id {- Kind TODO-} Type |
-  Var Id
+  Rec TypeVar Type |
+  Forall TypeVar {- Kind TODO-} Type |
+  Var TypeVar
   deriving Ord
 
 instance Show Type where
@@ -72,7 +73,7 @@ instance Show Type where
   show (In x) = "?" ++ show x
   show (Fun Lin x y) = showFun "-o" x y
   show (Fun  Un x y) = showFun "->" x y
-  show (Pair x y) =  "(" ++  show x ++ " , " ++ show y ++ ")"
+  show (PairType x y) =  "(" ++  show x ++ " , " ++ show y ++ ")"
   show (Choice Internal x) = showChoice "+" x
   show (Choice External x) = showChoice "&" x
   show (Datatype x) =   "["++ showMap x ++"]"
@@ -93,24 +94,24 @@ showMap m =
 instance Eq Type where
   (==) = equals Set.empty
 
-equals :: Set.Set (Id, Id) -> Type -> Type -> Bool
+equals :: Set.Set (TypeVar, TypeVar) -> Type -> Type -> Bool
 equals s Skip Skip = True
 equals s (Var x) (Var y)
     | x == y = True
     | otherwise = Set.member (x,y) s
-equals s (Forall x t)(Forall y u) = equals (Set.insert (x,y) s) t u
-equals s (Rec x t)(Rec y u) = equals (Set.insert (x,y) s) t u
-equals s (Semi t1 t2)(Semi v1 v2) = equals s t1 v1 && equals s t2 v2
-equals s (Basic x)(Basic y) = x == y
+equals s (Forall x t) (Forall y u) = equals (Set.insert (x,y) s) t u
+equals s (Rec x t) (Rec y u) = equals (Set.insert (x,y) s) t u
+equals s (Semi t1 t2) (Semi v1 v2) = equals s t1 v1 && equals s t2 v2
+equals s (Basic x) (Basic y) = x == y
 equals s (Out x) (Out y) = x == y
 equals s (In x) (In y) = x == y
 equals s (Fun m t u) (Fun n v w) = m == n && equals s t v && equals s u w
-equals s (Pair t u)(Pair v w) = equals s t v && equals s u w
-equals s (Datatype m1)(Datatype m2) = equalMaps s m1 m2 -- verifyListEquality m (Map.toList m1) (Map.toList m2)
+equals s (PairType t u) (PairType v w) = equals s t v && equals s u w
+equals s (Datatype m1) (Datatype m2) = equalMaps s m1 m2 -- verifyListEquality m (Map.toList m1) (Map.toList m2)
 equals s (Choice v1 m1)(Choice v2 m2) = v1 == v2 && equalMaps s m1 m2
 equals _ _ _ = False
 
-equalMaps :: Set.Set (Id, Id) -> TypeMap -> TypeMap -> Bool
+equalMaps :: Set.Set (TypeVar, TypeVar) -> TypeMap -> TypeMap -> Bool
 equalMaps m tm1 tm2 =
    Map.size tm1 == Map.size tm2 &&
       Map.foldlWithKey(\b l t -> b && l `Map.member` tm2 && equals m (tm2 Map.! l) t) True tm1

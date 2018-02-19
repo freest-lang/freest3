@@ -4,15 +4,16 @@ module TypeChecking.TypeChecking () where
 import Types.Kinds
 import Types.Kinding
 import Types.Types
+import Types.TypeEquivalence
 import Terms.Terms
-import Terms.Parser
+-- import Terms.Parser
 import qualified Data.Map.Strict as Map
 
+{-
 --TODO: remove
-type KindEnv = Map.Map Id Kind
+--type KindEnv = Map.Map Id Kind
 type Message = String
 type TypeCheckOut = Either (Type,TypeEnv) Message
-
 
 test = do
 		prelude <- mainProgram "src/Terms/prelude.hs" Map.empty
@@ -33,11 +34,12 @@ test = do
 		file <- pure $ Map.mapWithKey (\k y -> typeCheckFunction k prog) (snd prog)
 		print file
 		return ()
-
+-}
 
 -- TODO: ERROR
 -- The function ‘a’ is applied to two arguments,
 --    but its type ‘Int’ has none
+{-
 typeCheckFunction :: String -> (TypeEnv,ExpEnv) -> TypeCheckOut
 typeCheckFunction funName (tEnv,eEnv) =
 
@@ -49,6 +51,8 @@ typeCheckFunction funName (tEnv,eEnv) =
 		where
 				types = deconstructType (tEnv Map.! funName)
 				args  = fst(eEnv Map.! funName)
+-}
+type ArgsMap = Map.Map String Type
 
 argsMap :: [Type] -> Args -> ArgsMap
 argsMap t xs = Map.fromList $ zip xs t
@@ -58,8 +62,7 @@ argsMap t xs = Map.fromList $ zip xs t
 deconstructType :: Type -> [Type]
 deconstructType (Fun _ t1 t2) = [t1] ++ deconstructType t2
 deconstructType t = [t]
-
-type ArgsMap = Map.Map String Type
+{-
 typeCheck :: KindEnv -> TypeEnv -> ArgsMap -> Type -> Expression -> TypeCheckOut
 typeCheck _ m1 arg _ (BasicTerm b) =
 	--TODO: change un predicate
@@ -105,3 +108,65 @@ throwErr x y t1 t2 =
 		Right $ "Couldn't match expected type '" ++ show x ++ "' with actual type '" ++ show t1 ++ "'"
 	else
 		Right $ "Couldn't match expected type '" ++ show y ++ "' with actual type '" ++ show t2 ++ "'"
+-}
+
+--
+
+checkExp :: VarEnv -> Expression -> (Type, VarEnv)
+-- Basic expressions
+checkExp venv Unit = (Basic UnitType, venv)
+checkExp venv (Integer _) = (Basic IntType, venv)
+checkExp venv (Character _) = (Basic CharType, venv)
+checkExp venv (Boolean _) = (Basic BoolType, venv)
+-- Variables
+checkExp venv (Variable x) = (venv Map.! x, venv)
+-- Aplication
+checkExp venv1 (Application e1 e2) = (t2, venv3)
+  where (Fun _ t1 t2, venv2) = checkExp venv1 e1
+        (t3, venv3) = checkExp venv2 e2
+        _ = if equivalent t1 t3 then () else error "type equivalence in application"
+-- Conditional
+checkExp venv1 (Conditional e1 e2 e3) = (t1, venv3)
+  where (Basic BoolType, venv2) = checkExp venv1 e1
+        (t1, venv3) = checkExp venv2 e2
+        (t2, venv4) = checkExp venv3 e3
+        _ = if equivalent t1 t2 then () else error "type equivalence in conditional types"
+        _ = if equivalentEnvs venv3 venv4 then () else error "type equivalence in conditional envs"
+-- Pairs
+checkExp venv1 (Pair e1 e2) = (PairType t1 t2, venv3)
+  where (t1, venv2) = checkExp venv1 e1
+        (t2, venv3) = checkExp venv2 e2
+checkExp venv1 (Let x1 x2 e1 e2) = (t3, venv3)
+  where (PairType t1 t2, venv2) = checkExp venv1 e1
+        (t3, venv3) = checkExp (Map.insert x2 t2 (Map.insert x1 t1 venv2)) e2
+-- Session types
+checkExp venv (New t) = (PairType t (dual t), venv)
+  where _ = if isSessionType t then () else error "New type is not session type"
+{-
+checkExp venv1 (Send e1 e2) = (Fun Un b (Fun Un t1 t2), venv3)
+  where (b, venv2) = checkExp venv1 e1
+        (t1, venv3) = checkExp venv2 e2
+  where _ = if isSessionType t2 then () else error "New type is not session type"
+-}
+
+-- Expression environments
+-- venv contains the entries in the prelude as well as those in the source file
+checkExpEnv :: VarEnv -> ExpEnv -> Bool
+checkExpEnv venv eenv = Map.foldrWithKey (\fun pair b -> b && checkFun venv fun pair) True eenv
+
+checkFun venv1 fun (args, exp) = checkExp venv2 exp
+  where venv2 = add venv1 fun args
+
+-- TODO: mapas para o fim
+
+-- Variable environments
+
+equivalentEnvs :: VarEnv -> VarEnv -> Bool
+equivalentEnvs _ _ = True -- TODO: fix me!
+
+-- Type environments
+
+checkTypeEnv :: TypeEnv -> Bool
+checkTypeEnv tenv = Map.foldr (\(_,t) b -> b && isType kindEnv t) True tenv
+  where kindEnv = Map.map fst tenv
+
