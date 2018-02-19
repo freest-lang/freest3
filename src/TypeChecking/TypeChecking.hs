@@ -3,7 +3,7 @@ module TypeChecking.TypeChecking () where
 
 import Terms.Terms
 import Types.Types
-import Types.Kinding
+import Types.Kinds
 import Terms.Parser
 import qualified Data.Map.Strict as Map
 

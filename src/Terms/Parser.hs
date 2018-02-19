@@ -9,7 +9,7 @@ import Text.ParserCombinators.Parsec
 import Text.Parsec.Expr
 import Types.Types
 import Terms.Terms
-import Types.Kinding
+import Types.Kinds
 import Types.TypeParser
 import qualified Data.Map.Strict as Map
 import Data.Maybe

@@ -9,7 +9,7 @@ import           Text.Parsec.Expr
 import           Text.Parsec.Language          (haskellDef)
 import qualified Text.Parsec.Token             as Token
 import           Text.ParserCombinators.Parsec
-import           Types.Kinding
+import           Types.Kinds
 import           Types.Types
 
 

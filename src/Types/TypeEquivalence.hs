@@ -3,7 +3,7 @@ module Types.TypeEquivalence(
 ) where
 
 import Types.Types
-import Types.Kinding
+import Types.Kinds
 import Types.TypeParser
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set

@@ -28,7 +28,6 @@ type TypeEnv = Map.Map TypeVar Type
 type ExpEnv = Map.Map TermVar (Args, Expression)
 
 type Op = String
-{-
 data Expression =
     BasicTerm BasicType
   | App Op Expression Expression
@@ -37,10 +36,9 @@ data Expression =
   | Let Id Id Expression Expression
   | Var Id
   deriving (Show,Ord,Eq)
--}
 
 type TermVar = String
-
+{-
 data Expression =
   -- Basic types
     Unit
@@ -67,4 +65,4 @@ data Expression =
   | Value Constructor
   | Case Expression (Map.Map (ConstructorName, [TermVar]) Expression)
   deriving Show -- TODO: write a proper show
-
+-}

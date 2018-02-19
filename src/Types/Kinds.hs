@@ -1,4 +1,4 @@
-module Types.Kinding -- TODO: rename to Kinds
+module Types.Kinds
 ( isType
 , isSessionType
 , isSchemeType
