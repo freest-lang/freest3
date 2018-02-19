@@ -46,8 +46,8 @@ reduce (In b)             = Map.singleton (InLabel b) Skip
 reduce (Semi t1 t2)
     | terminated t1       = reduce t2
     | otherwise           = Map.map (\t -> if t == Skip then t2 else t `Semi` t2) (reduce t1)
-reduce (InternalChoice m) = Map.mapKeys IntChoiceLabel m
-reduce (ExternalChoice m) = Map.mapKeys ExtChoiceLabel m
+reduce (Choice Internal m) = Map.mapKeys IntChoiceLabel m
+reduce (Choice External m) = Map.mapKeys ExtChoiceLabel m
 reduce (Rec x t)          = reduce $ unfold (Rec x t)
 reduce _                  = Map.empty
 
@@ -103,5 +103,4 @@ subs t2 y (Forall x t1)
 subs t2 y (Rec x t1)
     | x == y                = Rec x t1
     | otherwise             = Rec x (subs t2 y t1)
-subs t y (InternalChoice m) = InternalChoice $ Map.map(subs t y) m
-subs t y (ExternalChoice m) = ExternalChoice $ Map.map(subs t y) m
+subs t y (Choice v m) = Choice v (Map.map(subs t y) m)

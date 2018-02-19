@@ -132,12 +132,12 @@ parseForall = do
 parseInternalChoice = do
   reservedOp "+"
   a <- braces $ sepBy1 parseBind comma
-  return $ InternalChoice $ Map.fromList a
+  return $ Choice Internal (Map.fromList a)
 
 parseExternalChoice = do
   reservedOp "&"
   a <- braces $ sepBy1 parseBind comma
-  return $ ExternalChoice $ Map.fromList a
+  return $ Choice External (Map.fromList a)
 
 parseDataType = do
   a <- sepBy1 parseBind comma

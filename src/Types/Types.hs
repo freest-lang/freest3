@@ -17,6 +17,7 @@ module Types.Types
 , TypeMap(..)
 , Id
 , Field
+, ChoiceView(..)
 , dual
 ) where
 
@@ -46,6 +47,8 @@ type Id = String
 type Field = String -- TODO: rename to Constructor
 type TypeMap = Map.Map Field Type
 
+data ChoiceView = External | Internal deriving (Eq, Ord)
+
 data Type =
   Basic BasicType |
   Skip |
@@ -54,8 +57,7 @@ data Type =
   In BasicType |
   Fun Multiplicity Type Type |
   Pair Type Type |
-  ExternalChoice TypeMap |      -- TODO: merge ExternalChoice and InternalChoice
-  InternalChoice TypeMap |
+  Choice ChoiceView TypeMap |
   Datatype TypeMap |
   Rec Id Type |
   Forall Id {- Kind TODO-} Type |
@@ -71,12 +73,15 @@ instance Show Type where
   show (Fun Lin x y) = showFun "-o" x y
   show (Fun  Un x y) = showFun "->" x y
   show (Pair x y) =  "(" ++  show x ++ " , " ++ show y ++ ")"
-  show (InternalChoice x) = "+{" ++ showMap x ++ "}"
-  show (ExternalChoice x) = "&{" ++ showMap x ++ "}"
+  show (Choice Internal x) = showChoice "+" x
+  show (Choice External x) = showChoice "&" x
   show (Datatype x) =   "["++ showMap x ++"]"
   show (Rec s t) = "(rec " ++ id s ++ " . " ++ show t ++ ")"
   show (Forall s t) = "(forall " ++ id s ++ " . " ++ show t ++ ")"
   show (Var x) = id x
+
+showChoice :: String -> TypeMap -> String
+showChoice op map = op ++ "{" ++ showMap map ++ "}"
 
 showFun :: String -> Type -> Type -> String
 showFun op left right = "(" ++ show left ++ " " ++ op ++ " " ++ show right ++ ")"
@@ -102,8 +107,7 @@ equals s (In x) (In y) = x == y
 equals s (Fun m t u) (Fun n v w) = m == n && equals s t v && equals s u w
 equals s (Pair t u)(Pair v w) = equals s t v && equals s u w
 equals s (Datatype m1)(Datatype m2) = equalMaps s m1 m2 -- verifyListEquality m (Map.toList m1) (Map.toList m2)
-equals s (InternalChoice m1)(InternalChoice m2) = equalMaps s m1 m2
-equals s (ExternalChoice m1)(ExternalChoice m2) = equalMaps s m1 m2
+equals s (Choice v1 m1)(Choice v2 m2) = v1 == v2 && equalMaps s m1 m2
 equals _ _ _ = False
 
 equalMaps :: Set.Set (Id, Id) -> TypeMap -> TypeMap -> Bool
@@ -118,7 +122,6 @@ dual (Var v)            = Var v
 dual Skip               = Skip
 dual (Out b)            = In b
 dual (In b)             = Out b
-dual (InternalChoice m) = ExternalChoice (Map.map dual m)
-dual (ExternalChoice m) = InternalChoice (Map.map dual m)
+dual (Choice v m) = Choice v (Map.map dual m)
 dual (Semi t1 t2)       = Semi (dual t1) (dual t2)
 dual (Rec x t)          = Rec x (dual t)
