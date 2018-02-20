@@ -4,16 +4,16 @@ module Terms.Parser (mainProgram) where
 
 -- import Text.Parsec
 import qualified Text.Parsec.Token as Token
-import Text.Parsec.Language (haskellDef)
-import Text.ParserCombinators.Parsec
-import Text.Parsec.Expr
-import Types.Types
-import Terms.Terms
-import Types.Kinding
-import Types.TypeParser
+import           Text.Parsec.Language (haskellDef)
+import           Text.ParserCombinators.Parsec
+import           Text.Parsec.Expr
+import           Types.Types
+import           Terms.Terms
+import           Types.Kinding
+import           Types.TypeParser
 import qualified Data.Map.Strict as Map
-import Data.Maybe
-import Data.Either
+import           Data.Maybe
+import           Data.Either
 
 -- LEXER
 lexer :: Token.TokenParser ()
@@ -118,13 +118,13 @@ parseExpr =
       (try $ parens parseExpression)
   <|> parsePair
   <|> parseBasic
-  <|> (do {id <- identifier; return $ Terms.Terms.Var id})
+  <|> (do {id <- identifier; return$ Terms.Terms.Var id})
 
 
 -- TODO Check Char type
 parseBasic =
       (do {integer; return $ BasicTerm IntType})
-  <|> parseBool
+  <|> parseBool  
   <|> (do {apostrophe anyChar; return $ BasicTerm CharType})
 
 parseBool =
@@ -133,11 +133,9 @@ parseBool =
 
 
 parsePair = parens $ do
-    e1 <- parseExpression
-    comma
-    e2 <- parseExpression
-    return $ ExpPair e1 e2
-
-
+  e1 <- parseExpression
+  comma
+  e2 <- parseExpression
+  return $ ExpPair e1 e2
 
 --
