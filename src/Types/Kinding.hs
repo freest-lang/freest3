@@ -5,23 +5,21 @@ module Types.Kinding
 , kindOf
 , contractive
 , Kind (..)
+, KindEnv
 , un) where
 
+import Types.Kinds
 import Types.Types
 import qualified Data.Map.Strict as Map
 import Data.Either as E
 import Data.List
 
-data PreKind = Session | Arbitrary | Scheme deriving (Eq, Ord, Show, Read)
-data Multiplicity = Un | Lin deriving (Eq, Ord, Show, Read)
-data Kind = Kind PreKind Multiplicity deriving (Eq, Ord, Show, Read)
-
-type KindEnv = Map.Map Id Kind
+type KindEnv = Map.Map TypeVar Kind
 type Message = String
 type KindingOut = Either Kind Message
 
-isType :: Type -> Bool
-isType t = case kinding Map.empty t of
+isType :: KindEnv -> Type -> Bool
+isType kenv t = case kinding kenv t of
   Left _  -> True
   Right _ -> False
 
@@ -63,33 +61,24 @@ kinding delta (Semi t u) =
       Left $ Kind Session (max m1 m2)
     _                                              ->
       Right $ "One of the operands is not a session kind"
-kinding delta (UnFun t u) =
+kinding delta (Fun m t u) =
   case (kinding delta t, kinding delta u) of
     (Left k1, Left k2) |  k1 <= Kind Arbitrary Lin && k2 <= Kind Arbitrary Lin      ->
-      Left $ Kind Arbitrary Un
+      Left $ Kind Arbitrary m
     _                                                                               ->
-      Right $ "One of the operands is a type Scheme. Type: " ++ show (UnFun t u)
-kinding delta (LinFun t u) =
-  case (kinding delta t, kinding delta u) of
-    (Left k1, Left k2) |  k1 <= (Kind Arbitrary Lin) && k2 <= (Kind Arbitrary Lin)  ->
-      Left $ Kind Arbitrary Lin
-    _                                                                               ->
-      Right $ "One of the operands is a type Scheme. Type: " ++ show (LinFun t u)
-kinding delta (Pair t u) =
+      Right $ "One of the operands is a type Scheme. Type: " ++ show (Fun m t u)
+kinding delta (PairType t u) =
   case (kinding delta t, kinding delta u) of
     (Left k1, Left k2 ) |  k1 <= (Kind Arbitrary Lin) && k2 <= (Kind Arbitrary Lin) ->
         Left $ Kind Arbitrary Lin
     _                                                                               ->
-      Right $ "One of the operands is a type Scheme. Type: " ++ show (Pair t u)
+      Right $ "One of the operands is a type Scheme. Type: " ++ show (PairType t u)
 kinding delta (Datatype m) =
   kindingDatatypeMap delta m (Kind Arbitrary Un)
     ("One of the components in a Datatype is a type Scheme. \nType: " ++ show m)
-kinding delta (ExternalChoice m) =
+kinding delta (Choice _ m) =
   kindingMap delta m (Kind Session Lin)
-    ("One of the components in an ExternalChoice isn't lower than a S^l. \nType: " ++ show m)
-kinding delta (InternalChoice m) =
-  kindingMap delta m (Kind Session Lin)
-    ("One of the components in an InternalChoice isn't lower than a S^l. \nType: " ++ show m)
+    ("One of the components in a choice isn't lower than a S^l. \nType: " ++ show m)
 kinding delta (Rec x t) =
   let km = kinding  (Map.insert x (Kind Session Un) delta) t in
   case km of

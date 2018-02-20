@@ -9,8 +9,9 @@ import           Text.Parsec.Expr
 import           Text.Parsec.Language          (haskellDef)
 import qualified Text.Parsec.Token             as Token
 import           Text.ParserCombinators.Parsec
-import           Types.Kinding
+import           Types.Kinds
 import           Types.Types
+import           Types.Kinding
 
 
 -- TODO : check list
@@ -21,7 +22,7 @@ instance Read BasicType where
 
 instance Read Type where
   readsPrec _ s = case parserType s of
-    Right t -> if isType t then [(t,"")] else error $ "Type "++ (show t) ++" not well kinded"
+    Right t -> if isType Map.empty t then [(t,"")] else error $ "Type "++ (show t) ++" not well kinded"
     Left m -> error $ "type parse error " ++ show m
 
 
@@ -84,7 +85,7 @@ mainTypeParser =
 parseType :: Parser Type
 parseType =  lexeme $ buildExpressionParser table parseTerm
 
-table = [ [binary "->" UnFun AssocRight, binary "-o" LinFun AssocRight ]
+table = [ [binary "->" (Fun Un) AssocRight, binary "-o" (Fun Lin) AssocRight ]
         , [binary ";" Semi AssocLeft ]
         ]
 
@@ -112,7 +113,7 @@ parsePair = do
   t <- parseType
   comma
   u <- parseType
-  return $ Pair t u
+  return $ PairType t u
 
 parseRec = do
   rec
@@ -131,12 +132,12 @@ parseForall = do
 parseInternalChoice = do
   reservedOp "+"
   a <- braces $ sepBy1 parseBind comma
-  return $ InternalChoice $ Map.fromList a
+  return $ Choice Internal (Map.fromList a)
 
 parseExternalChoice = do
   reservedOp "&"
   a <- braces $ sepBy1 parseBind comma
-  return $ ExternalChoice $ Map.fromList a
+  return $ Choice External (Map.fromList a)
 
 parseDataType = do
   a <- sepBy1 parseBind comma
