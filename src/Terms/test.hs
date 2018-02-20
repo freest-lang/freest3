@@ -1,9 +1,11 @@
 x = 3 + 2 + 4
 x :: Bool
 
+qq = 3 + 2 + 4
+qq :: Bool
 
-k :: Bool -> Bool -> Bool
-k x y = x && True
+k :: Bool
+k = True && True
 
 
 -- comment

@@ -56,19 +56,19 @@ data Expression =
   -- Aplication
   | Application Expression Expression
   -- Conditional
-  | Conditional Expression Expression Expression
+  | Conditional Expression Expression Expression -- TODO
   -- Pairs
   | Pair Expression Expression
   | Let TermVar TermVar Expression Expression
   -- Session types
-  | New Type
-  | Send Expression Expression
-  | Receive Expression
-  | Select Constructor Expression
+  | New Type                      -- TODO
+  | Send Expression Expression    -- TODO
+  | Receive Expression            -- TODO
+  | Select Constructor Expression -- TODO
   -- Branch - overloaded with Case
   -- Fork
-  | Fork Expression
+  | Fork Expression                -- TODO
   -- Datatypes
-  | Value Constructor
-  | Case Expression (Map.Map Constructor ([TermVar], Expression))
+  | Value Constructor               -- TODO
+  | Case Expression (Map.Map Constructor ([TermVar], Expression)) -- TODO
   deriving Show -- TODO: write a proper show

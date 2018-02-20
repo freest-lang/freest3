@@ -1,6 +1,8 @@
 {-# LANGUAGE FlexibleContexts #-} -- binary and infix functions need this
 
-module Terms.Parser (mainProgram) where
+module Terms.Parser (
+--  mainProgram
+) where
 
 -- import Text.Parsec
 import qualified Text.Parsec.Token as Token
@@ -51,7 +53,7 @@ apostrophe p = between (string "'") (string "'") p
 -- squares = Token.squares lexer
 
 -- PARSER
-
+{-
 mainProgram :: FilePath -> TypeEnv -> IO (Either ParseError (TypeEnv, ExpEnv))
 mainProgram filepath env = parseFromFile (program env) filepath
   -- case () of
@@ -79,6 +81,24 @@ convertToMap typeMap termMap (x:xs) =
     (TypeDecl i t) -> convertToMap (Map.insert i t typeMap) termMap xs
     (FunDecl i a e) -> convertToMap typeMap (Map.insert i (a,e) termMap) xs
     _ -> error "not a type decl"
+-}
+
+mainProgram :: FilePath -> TypeEnv -> IO (Either ParseError (TypeEnv, ExpEnv))
+mainProgram filepath tenv = parseFromFile (program tenv) filepath
+
+program tenv =  do
+    whiteSpace
+    m <- manyAlternate (try parseTypeDecl) (try parseExpressionDecl) tenv Map.empty
+    eof
+    return m
+
+manyAlternate :: Parser (TypeVar, (Kind, Type)) -> Parser (TermVar, (Args, Expression)) -> TypeEnv -> ExpEnv -> Parser (TypeEnv,ExpEnv)
+manyAlternate pa pb tenv eenv =
+      do{as<-many1 pa; (as',bs') <- manyAlternate pa pb tenv eenv; return (addListToMap as as', bs')}
+  <|> do{bs<-many1 pb; (as',bs') <- manyAlternate pa pb tenv eenv;  return (as', addListToMap bs bs')}
+  <|> return (Map.empty,Map.empty)
+  where
+    addListToMap xs m = Map.union m (Map.fromList xs)
 
 ident = identifier <|>
       choice [try (string "(+)"), try (string "(-)"), try (string "(*)"),
@@ -90,23 +110,33 @@ parseTypeDecl = do
   colon
   colon
   t <- mainTypeParser
-  if isType t then
-    return $ TypeDecl id t
+  if isType Map.empty t then
+    return $ (id,(kindOf t, t))
+    -- return $ TypeDecl id t
   else
     error $ "Type t is not well kinded: " ++ show t
+
 
 parseExpressionDecl = do
   id <- identifier
   ids <- (many identifier)
   reservedOp "="
   e <- parseExpression
-  return $ FunDecl id ids e
+  return $ (id ,(ids, e))--FunDecl
 
-table = [ [binOp "*" (App "(*)") AssocLeft, binOp "/" (App "(/)") AssocLeft ]
-        , [binOp "+" (App "(+)") AssocLeft, binOp "-" (App "(-)") AssocLeft,
-            binary "mod" (App "mod") AssocRight, binary "rem" (App "rem") AssocRight ]
-        , [prefix "not" (UnApp "not"), binOp "&&" (App "(&&)") AssocLeft,
-           binOp "||" (App "(||)") AssocLeft]
+-- table = [ [binOp "*" (Application "(*)") AssocLeft, binOp "/" (Application "(/)") AssocLeft ]
+--         , [binOp "+" (Application "(+)") AssocLeft, binOp "-" (Application "(-)") AssocLeft,
+--             binary "mod" (Application "mod") AssocRight, binary "rem" (Application "rem") AssocRight ]
+--         , [prefix "not" (UnApplication "not"), binOp "&&" (Application "(&&)") AssocLeft,
+--            binOp "||" (Application "(||)") AssocLeft]
+--         ]
+
+
+table = [ [binOp "*" Application AssocLeft, binOp "/" Application AssocLeft ]
+        , [binOp "+" Application AssocLeft, binOp "-" Application AssocLeft,
+            binary "mod" Application AssocRight, binary "rem" Application AssocRight ]
+        , [{-prefix "not" UnApplication,-} binOp "&&" Application AssocLeft,
+           binOp "||" Application AssocLeft]
         ]
 
 binOp name fun assoc = Infix  (do{ reservedOp name; return fun }) assoc
@@ -117,26 +147,28 @@ parseExpression = buildExpressionParser table (lexeme parseExpr)
 
 parseExpr =
       (try $ parens parseExpression)
-  <|> parsePair
-  <|> parseBasic
-  <|> parseLet
-  <|> (do {id <- identifier; return $ Terms.Terms.Var id})
+  <|> try parsePair
+  <|> try parseLet
+  <|> (do {id <- identifier; return $ Variable id})
+  <|> try parseBasic
 
 -- TODO Check Char type
+-- TODO review read i on Integer
 parseBasic =
-      (do {integer; return $ BasicTerm IntType})
-  <|> parseBool
-  <|> (do {apostrophe anyChar; return $ BasicTerm CharType})
+      (do {c <- apostrophe anyChar; return $ Character c})
+  <|> (do {b <- parseBool; return $ Boolean b})
+  <|> (do {reserved "()"; return Unit})
+  <|> (do {i <- many digit; return $ Integer (read i :: Int)})
 
 parseBool =
-      (do {reserved "True"; return $ BasicTerm BoolType})
-  <|> (do {reserved "False"; return $ BasicTerm BoolType})
+      (do {reserved "True"; return $ True})
+  <|> (do {reserved "False"; return $ False})
 
 parsePair = parens $ do
     e1 <- parseExpression
     comma
     e2 <- parseExpression
-    return $ ExpPair e1 e2
+    return $ Pair e1 e2
 
 parseLet = do
   reserved "let"
