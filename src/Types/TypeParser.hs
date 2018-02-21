@@ -3,12 +3,11 @@
 
 module Types.TypeParser (mainTypeParser) where
 
-import qualified Data.Map.Strict               as Map
-import           Text.Parsec
 import           Text.Parsec.Expr
 import           Text.Parsec.Language          (haskellDef)
 import qualified Text.Parsec.Token             as Token
 import           Text.ParserCombinators.Parsec
+import qualified Data.Map.Strict               as Map
 import           Types.Kinds
 import           Types.Types
 import           Types.Kinding
@@ -24,7 +23,6 @@ instance Read Type where
   readsPrec _ s = case parserType s of
     Right t -> if isType Map.empty t then [(t,"")] else error $ "Type "++ (show t) ++" not well kinded"
     Left m -> error $ "type parse error " ++ show m
-
 
 -- TOKENS
 lexer :: Token.TokenParser ()
@@ -89,17 +87,17 @@ table = [ [binary "->" (Fun Un) AssocRight, binary "-o" (Fun Lin) AssocRight ]
         , [binary ";" Semi AssocLeft ]
         ]
 
--- binary name fun assoc = Infix  (do{ Text.Parsec.try (symbol name); return fun }) assoc
-binary name fun assoc = Infix  (do{ Text.Parsec.try (symbol name); return fun }) assoc
+-- binary name fun assoc = Infix  (do{ try (symbol name); return fun }) assoc
+binary name fun assoc = Infix  (do{ try (symbol name); return fun }) assoc
 
 -- prefix name fun       = Prefix (do{ reservedOp name; return fun })
 
 parseTerm =
-  Text.Parsec.try (parens parseType)
+  try (parens parseType)
   <|> (do {  skip ;                               return Skip })
   <|> (do { b <- parseBasicType;                  return $ Basic b })
-  <|> (do { Text.Parsec.try (symbol "?"); b <- parseBasicType;      return $ In b })
-  <|> (do { Text.Parsec.try (symbol "!"); b <- parseBasicType;      return $ Out b })
+  <|> (do { try (symbol "?"); b <- parseBasicType;      return $ In b })
+  <|> (do { try (symbol "!"); b <- parseBasicType;      return $ Out b })
   <|> parens parsePair
   <|> parseExternalChoice
   <|> parseInternalChoice

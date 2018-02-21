@@ -8,11 +8,11 @@ module Types.Kinding
 , KindEnv
 , un) where
 
-import Types.Kinds
-import Types.Types
 import qualified Data.Map.Strict as Map
-import Data.Either as E
-import Data.List
+import           Types.Kinds
+import           Types.Types
+import           Data.Either (lefts,rights)
+import           Data.List (intercalate)
 
 type KindEnv = Map.Map TypeVar Kind
 type Message = String
@@ -28,7 +28,7 @@ isSession (Kind Session _) = True
 isSession _                = False
 
 isSessionType :: Type -> Bool
-isSessionType  = isSession . kindOf
+isSessionType = isSession . kindOf
 
 isScheme :: Kind -> Bool
 isScheme (Kind Scheme _) = True
@@ -37,18 +37,18 @@ isScheme _               = False
 isSchemeType :: Type -> Bool
 isSchemeType = isScheme . kindOf
 
-kindOf :: Type -> Kind
-kindOf t = case kinding Map.empty t of
-  Left k  -> k
-  Right m -> error $ "Type " ++ show t ++ " not a proper type:\n" ++ m
-  -- Right _ -> error $ "Type " ++ show t ++ " not a proper type"
-
 un :: Type -> Bool
 un = isUn . kindOf
 
 isUn :: Kind -> Bool
 isUn (Kind _ Un) = True
 isUn (Kind _ _) = False
+
+kindOf :: Type -> Kind
+kindOf t = case kinding Map.empty t of
+  Left k  -> k
+  Right m -> error $ "Type " ++ show t ++ " not a proper type:\n" ++ m
+  -- Right _ -> error $ "Type " ++ show t ++ " not a proper type"
 
 kinding :: KindEnv -> Type -> KindingOut
 kinding _ Skip = Left $ Kind Session Un
@@ -63,9 +63,9 @@ kinding delta (Semi t u) =
       Right $ "One of the operands is not a session kind"
 kinding delta (Fun m t u) =
   case (kinding delta t, kinding delta u) of
-    (Left k1, Left k2) |  k1 <= Kind Arbitrary Lin && k2 <= Kind Arbitrary Lin      ->
+    (Left k1, Left k2) |  k1 <= Kind Arbitrary Lin && k2 <= Kind Arbitrary Lin ->
       Left $ Kind Arbitrary m
-    _                                                                               ->
+    _                                                                          ->
       Right $ "One of the operands is a type Scheme. Type: " ++ show (Fun m t u)
 kinding delta (PairType t u) =
   case (kinding delta t, kinding delta u) of
@@ -90,11 +90,6 @@ kinding delta (Rec x t) =
             else Right $ "The kind of the type is a type Scheme. \nType: " ++ show (Rec x t)
         else Right $ "The body of the type is not contractive. \nType: " ++ show (Rec x t)
     (Right m) -> Right m
--- kinding delta (Forall x t) =
---   let kd = kinding (Map.insert x (Kind Session Un) delta) t in
---   case kd of
---     (Left k) | k <= (Kind Arbitrary Lin) -> Left k
---     (Right m) -> Right m
 kinding delta (Forall x t) =
   let kd = kinding (Map.insert x (Kind Session Un) delta) t in
   case kd of
@@ -108,6 +103,7 @@ kinding delta (Var x) =
     Left $ delta Map.! x
   else
     Right $ show x ++ " is a free variable"
+
 
 kindingMap :: KindEnv -> TypeMap -> Kind -> Message -> KindingOut
 kindingMap delta m k message =

@@ -1,12 +1,11 @@
 {-# LANGUAGE FlexibleContexts #-} -- binary and infix functions need this
 
 module Terms.Parser (
---  mainProgram
+  mainProgram
 ) where
 
 -- import Text.Parsec
 import qualified Text.Parsec.Token as Token
-<<<<<<< HEAD
 import           Text.Parsec.Language (haskellDef)
 import           Text.ParserCombinators.Parsec
 import           Text.Parsec.Expr
@@ -14,19 +13,8 @@ import           Types.Types
 import           Terms.Terms
 import           Types.Kinding
 import           Types.TypeParser
-=======
-import Text.Parsec.Language (haskellDef)
-import Text.ParserCombinators.Parsec
-import Text.Parsec.Expr
-import Types.Types
-import Terms.Terms
-import Types.Kinds
-import Types.Kinding
-import Types.TypeParser
->>>>>>> 38e3e0e38dff36e7ebe24ba771be0c11519cef85
 import qualified Data.Map.Strict as Map
-import           Data.Maybe
-import           Data.Either
+
 
 -- LEXER
 lexer :: Token.TokenParser ()
@@ -36,8 +24,7 @@ lexer  = Token.makeTokenParser
         Token.reservedOpNames = ["=","+","-","*","/", "mod", "rem", "&&", "||", "not"],
         Token.reservedNames = ["send","receive","()", "new", "in", "let",
                                "fork", "match", "with", "select", "case", "of",
-                               "True", "False", "mod", "rev", "not"]
-        -- ,Token.identStart = letter <|> oneOf ['+','-','/','*']
+                               "True", "False", "mod", "rev", "not", "if", "then", "else"]
         })
 
 reservedOp = Token.reservedOp lexer
@@ -57,55 +44,24 @@ integer = Token.integer lexer
 
 apostrophe p = between (string "'") (string "'") p
 
--- -- semi = Token.semi lexer
--- dot = Token.dot lexer
--- braces = Token.braces lexer
--- squares = Token.squares lexer
 
 -- PARSER
-{-
-mainProgram :: FilePath -> TypeEnv -> IO (Either ParseError (TypeEnv, ExpEnv))
-mainProgram filepath env = parseFromFile (program env) filepath
-  -- case () of
-  --   Right m -> return m
-    -- Left err -> error err
 
-program env =  do
+-- TODO : TypeEnv to VarEnv?
+-- mainProgram :: FilePath -> TypeEnv -> IO (Either ParseError (TypeEnv, ExpEnv))
+mainProgram :: FilePath -> VarEnv -> IO (Either ParseError (VarEnv, ExpEnv))
+mainProgram filepath venv = parseFromFile (program venv) filepath
+
+program venv =  do
     whiteSpace
-    (tds,vds) <- manyAlternate (try parseTypeDecl) (try parseExpressionDecl)
-    eof
-    return $ convertToMap env Map.empty (tds++vds)
-     -- ; return (tds,vds)
-
-manyAlternate :: Parser a -> Parser b -> Parser ([a],[b])
-manyAlternate pa pb =
-      do{as<-many1 pa; (as',bs') <- manyAlternate pa pb; return (as++as',bs')}
-  <|> do{bs<-many1 pb; (as',bs') <- manyAlternate pa pb; return (as',bs++bs')}
-  <|> return ([],[])
-
--- TODO: Verify if exists (Duplicated entries)
-convertToMap :: TypeEnv -> ExpEnv -> [Program] -> (TypeEnv, ExpEnv)
-convertToMap typeMap termMap []  = (typeMap,termMap)
-convertToMap typeMap termMap (x:xs) =
-  case x of
-    (TypeDecl i t) -> convertToMap (Map.insert i t typeMap) termMap xs
-    (FunDecl i a e) -> convertToMap typeMap (Map.insert i (a,e) termMap) xs
-    _ -> error "not a type decl"
--}
-
-mainProgram :: FilePath -> TypeEnv -> IO (Either ParseError (TypeEnv, ExpEnv))
-mainProgram filepath tenv = parseFromFile (program tenv) filepath
-
-program tenv =  do
-    whiteSpace
-    m <- manyAlternate (try parseTypeDecl) (try parseExpressionDecl) tenv Map.empty
+    m <- manyAlternate (try parseTypeDecl) (try parseExpressionDecl) venv Map.empty
     eof
     return m
 
-manyAlternate :: Parser (TypeVar, (Kind, Type)) -> Parser (TermVar, (Args, Expression)) -> TypeEnv -> ExpEnv -> Parser (TypeEnv,ExpEnv)
-manyAlternate pa pb tenv eenv =
-      do{as<-many1 pa; (as',bs') <- manyAlternate pa pb tenv eenv; return (addListToMap as as', bs')}
-  <|> do{bs<-many1 pb; (as',bs') <- manyAlternate pa pb tenv eenv;  return (as', addListToMap bs bs')}
+manyAlternate :: Parser (TermVar, Type) -> Parser (TermVar, (Args, Expression)) -> VarEnv -> ExpEnv -> Parser (VarEnv,ExpEnv)
+manyAlternate pa pb venv eenv =
+      do{as<-many1 pa; (as',bs') <- manyAlternate pa pb venv eenv; return (addListToMap as as', bs')}
+  <|> do{bs<-many1 pb; (as',bs') <- manyAlternate pa pb venv eenv;  return (as', addListToMap bs bs')}
   <|> return (Map.empty,Map.empty)
   where
     addListToMap xs m = Map.union m (Map.fromList xs)
@@ -121,7 +77,8 @@ parseTypeDecl = do
   colon
   t <- mainTypeParser
   if isType Map.empty t then
-    return $ (id,(kindOf t, t))
+    return $ (id,t)
+    -- return $ (id,(kindOf t, t))
     -- return $ TypeDecl id t
   else
     error $ "Type t is not well kinded: " ++ show t
@@ -132,15 +89,7 @@ parseExpressionDecl = do
   ids <- (many identifier)
   reservedOp "="
   e <- parseExpression
-  return $ (id ,(ids, e))--FunDecl
-
--- table = [ [binOp "*" (Application "(*)") AssocLeft, binOp "/" (Application "(/)") AssocLeft ]
---         , [binOp "+" (Application "(+)") AssocLeft, binOp "-" (Application "(-)") AssocLeft,
---             binary "mod" (Application "mod") AssocRight, binary "rem" (Application "rem") AssocRight ]
---         , [prefix "not" (UnApplication "not"), binOp "&&" (Application "(&&)") AssocLeft,
---            binOp "||" (Application "(||)") AssocLeft]
---         ]
-
+  return $ (id, (ids, e))--FunDecl
 
 table = [ [binOp "*" Application AssocLeft, binOp "/" Application AssocLeft ]
         , [binOp "+" Application AssocLeft, binOp "-" Application AssocLeft,
@@ -156,44 +105,52 @@ prefix name fun       = Prefix (do{ reserved name; return fun })
 parseExpression = buildExpressionParser table (lexeme parseExpr)
 
 parseExpr =
+  -- Application
       (try $ parens parseExpression)
-<<<<<<< HEAD
-  <|> parsePair
-  <|> parseBasic
-  <|> (do {id <- identifier; return$ Terms.Terms.Var id})
-
-=======
+  -- Variables
+  <|> parseVariables
+  -- Conditional
+  <|> parseConditional
+  -- Pairs
   <|> try parsePair
-  <|> try parseLet
-  <|> (do {id <- identifier; return $ Variable id})
+  <|> parseLet
+  -- Session Types
+  <|> parseNew
+  <|> parseSend
+  <|> parseReceive
+  <|> parseSelect
+  -- Fork
+  <|> parseFork
+  -- Datatypes : TODO
+  -- <|> parseValue
+  -- <|> parseCase
+  -- Basic expressions
   <|> try parseBasic
->>>>>>> 38e3e0e38dff36e7ebe24ba771be0c11519cef85
 
 -- TODO Check Char type
 -- TODO review read i on Integer
+
+-- Parse Basic Types (int, bool, char and unit)
+
 parseBasic =
-<<<<<<< HEAD
-      (do {integer; return $ BasicTerm IntType})
-  <|> parseBool  
-  <|> (do {apostrophe anyChar; return $ BasicTerm CharType})
-=======
       (do {c <- apostrophe anyChar; return $ Character c})
   <|> (do {b <- parseBool; return $ Boolean b})
   <|> (do {reserved "()"; return Unit})
   <|> (do {i <- many digit; return $ Integer (read i :: Int)})
->>>>>>> 38e3e0e38dff36e7ebe24ba771be0c11519cef85
 
 parseBool =
       (do {reserved "True"; return $ True})
   <|> (do {reserved "False"; return $ False})
 
+-- Parse Variables
+
+parseVariables = try $ do
+  id <- identifier
+  return $ Variable id
+
+-- Parse Pairs (Pair and let)
+
 parsePair = parens $ do
-<<<<<<< HEAD
-  e1 <- parseExpression
-  comma
-  e2 <- parseExpression
-  return $ ExpPair e1 e2
-=======
     e1 <- parseExpression
     comma
     e2 <- parseExpression
@@ -210,7 +167,65 @@ parseLet = do
   e2 <- parseExpression
   return $ Let id1 id2 e1 e2
 
+-- Parse Conditional (if then else)
 
->>>>>>> 38e3e0e38dff36e7ebe24ba771be0c11519cef85
+parseConditional = do
+  reserved "if"
+  e1 <- parseExpression
+  reserved "then"
+  e2 <- parseExpression
+  reserved "else"
+  e3 <- parseExpression
+  return $ Conditional e1 e2 e3
+
+-- Parse Session Types (new, send, receive and select)
+
+parseNew = do
+  reserved "new"
+  t <- mainTypeParser
+  return $ New t
+
+parseSend = do
+  reserved "send"
+  e1 <- parseExpression
+  e2 <- parseExpression
+  return $ Send e1 e2
+
+parseReceive = do
+  reserved "receive"
+  e <- parseExpression
+  return $ Receive e
+
+-- TODO review Constructor for now it is an id, but it must be in camel case
+parseSelect = do
+  reserved "select"
+  c <- identifier
+  e <- parseExpression
+  return $ Select c e
+
+-- Parse Fork
+
+parseFork = do
+  reserved "fork"
+  e <- parseExpression
+  return $ Fork e
+
+-- Parse Datatypes
+-- parseValue
+-- parseCase
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 --
