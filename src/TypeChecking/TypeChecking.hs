@@ -1,20 +1,26 @@
-{-# OPTIONS_GHC -fno-warn-tabs #-}
 module TypeChecking.TypeChecking (
   typeCheck
 ) where
 
-import Types.Kinds
-import Types.Kinding
-import Types.Types
-import Terms.Terms
-import Types.TypeEquivalence
 import qualified Data.Map.Strict as Map
-import System.Log.Logger
+import           Types.Kinds
+import           Types.Kinding
+import           Types.Types
+import           Terms.Terms
+import           Types.TypeEquivalence
+import           System.Log.Logger
+import           Control.Monad
 
-typeCheck :: Expression -> VarEnv -> IO(Type)
-typeCheck exp venv = do
+-- TODO REMOVE
+import Types.TypeParser
+
+typeCheck :: Args -> Expression -> TermVar -> VarEnv -> IO(Type)
+typeCheck args exp fname venv = do
   debugM "Type Checking" ("Goal: " ++ (show venv) ++ " |- " ++ (show exp))
-  (t, venv) <- checkExp exp venv
+  -- print venv
+  venv1 <- checkExpEnv fname args venv
+  -- print venv
+  (t, venv2) <- checkExp exp venv1
 --  checkVEnvUn venv -- TODO
   debugM "Type Checking" "Done!"
   return t
@@ -26,7 +32,8 @@ checkExp (Integer _) venv = return (Basic IntType, venv)
 checkExp (Character _) venv = return (Basic CharType, venv)
 checkExp (Boolean _) venv = return (Basic BoolType, venv)
 -- Variables
-checkExp (Variable x) venv = return (venv Map.! x, venv)
+checkExp (Variable x) venv = checkVar x venv
+--return (venv Map.! x, venv)
 -- Aplication
 checkExp (Application e1 e2) venv1 = do
    (t1, venv2) <- checkExp e1 venv1
@@ -69,7 +76,7 @@ checkExp (Fork e) venv1 = do
   checkUn t --TODO: review un predicate
   return (Basic UnitType, venv2)
 -- Datatypes
-
+-- TODO
 
 {-
 checkExp venv1 (Send e1 e2) = (Fun Un b (Fun Un t1 t2), venv3)
@@ -77,6 +84,13 @@ checkExp venv1 (Send e1 e2) = (Fun Un b (Fun Un t1 t2), venv3)
         (t1, venv3) = checkExp venv2 e2
   where _ = if isSessionType t2 then () else error "New type is not session type"
 -}
+
+checkVar :: TermVar -> VarEnv -> IO (Type,VarEnv)
+checkVar x venv
+  | Map.member x venv = return (venv Map.! x, venv)
+  | otherwise         = do
+      errorM "Type Checking" ("Not found " ++ x)
+      return (Basic UnitType,venv)
 
 checkEquivTypes :: Type -> Type -> IO()
 checkEquivTypes t1 t2
@@ -126,6 +140,33 @@ checkExpEnv venv eenv = Map.foldrWithKey (\fun pair b -> b && checkFun venv fun 
 checkFun venv1 fun (args, exp) = checkExp venv2 exp
   where venv2 = venv1 -- TODO: add venv1 fun args
 -}
+
+-- Expression environments
+-- venv contains the entries in the prelude as well as those in the source file
+checkExpEnv :: TermVar -> Args -> VarEnv -> IO (VarEnv)
+checkExpEnv fun args venv = foldM (\acc a -> checkParam acc fun a) venv arguments
+  where arguments = joinArgsAndType args (venv Map.! fun)
+  --checkExpArgs venv fname args
+  --foldM (\acc (fun, (args, e)) -> checkExpArgs acc fun args) venv (Map.toList eenv)
+
+-- checkExpArgs :: VarEnv -> TermVar -> Args -> IO (VarEnv)
+-- checkExpArgs venv fun args = foldM (\acc a -> checkParam acc fun a) venv arguments
+--   where arguments = joinArgsAndType args (venv Map.! fun)
+  -- foldr (\a acc -> f a acc) (tt venv) args
+
+checkParam :: VarEnv -> TermVar -> (TermVar,Type) -> IO (VarEnv)
+checkParam venv fun (arg,t)
+  | Map.member arg venv = do
+      errorM "Type Checking" ("Conflicting definitions for '" ++ arg ++ "'\n" ++ "In an equation for '" ++ fun ++ "'")
+      return venv
+  | otherwise = return $ (Map.insert arg t venv)
+
+-- Same size final and args
+joinArgsAndType :: Args -> Type -> [(TermVar,Type)]
+joinArgsAndType [] t = [] -- TODO  [("##RET", t)]
+joinArgsAndType (x:xs) (Fun _ t1 t2) = [(x,t1)] ++ joinArgsAndType xs t2
+joinArgsAndType (x:xs) t = [(x,t)]
+  -- error $ "List: " ++ show xs ++ "\nType: " ++ show t
 
 -- Variable environments
 equivalentEnvs :: VarEnv -> VarEnv -> Bool

@@ -9,24 +9,24 @@ main :: IO ()
 main = do
   putStrLn "Starting parser ...\n"
   prelude <- mainProgram "src/Terms/prelude.hs" Map.empty
-  prelude <- case prelude of
+  (prelude, _) <- case prelude of
                Left err -> do{ putStr (show(err)); return $ error ""}
                Right d  -> return d
 
   -- putStrLn "\n"
-  -- print prelude
+  -- print $ prelude
   -- putStrLn "\n"
-  prog     <- mainProgram "src/Terms/test.hs" Map.empty
+  prog     <- mainProgram "src/Terms/test.hs" prelude
   (p1,p2)  <- case prog of
                 Left err -> do{ putStr (show(err)); return $ error ""}
                 Right d  -> return d
-  print p1
-  putStrLn "\n"
-  print p2
-  putStrLn "\n"
+
+  -- putStrLn "\n"
+  -- print p1
+
   putStrLn "No parser errors found... \n"
   putStrLn "TypeChecking...\n"
-  a <- pure $ Map.map (\(a,e) -> typeCheck e p1) p2
+  a <- pure $ Map.mapWithKey (\fun (a,e) -> typeCheck a e fun p1) p2
   mapM (>>= putStrLn . show) a
   return ()
 

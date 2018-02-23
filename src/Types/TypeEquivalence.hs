@@ -14,15 +14,6 @@ import qualified Data.Set as Set
 -- *Types.TypeEquivalence> let t2 = read "(forall y . !Int;y);forall x . !Bool;x" :: Type
 -- sem parens
 
---TODO: Delete (trace debug)
-{-
-main :: IO ()
-main = do
-  let a = read "rec x . +{l:!Int, m:x}" :: Type
-  let b = read "rec y . +{l:Skip, m:y};!Int" :: Type
-  print $ a `equivalent` b
-  -- return()
--}
 -- Type bisimulation
 
 data Label = OutLabel BasicType |

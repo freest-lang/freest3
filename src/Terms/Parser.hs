@@ -62,7 +62,7 @@ manyAlternate :: Parser (TermVar, Type) -> Parser (TermVar, (Args, Expression)) 
 manyAlternate pa pb venv eenv =
       do{as<-many1 pa; (as',bs') <- manyAlternate pa pb venv eenv; return (addListToMap as as', bs')}
   <|> do{bs<-many1 pb; (as',bs') <- manyAlternate pa pb venv eenv;  return (as', addListToMap bs bs')}
-  <|> return (Map.empty,Map.empty)
+  <|> return (venv,Map.empty)
   where
     addListToMap xs m = Map.union m (Map.fromList xs)
 
@@ -91,12 +91,16 @@ parseExpressionDecl = do
   e <- parseExpression
   return $ (id, (ids, e))--FunDecl
 
-table = [ [binOp "*" Application AssocLeft, binOp "/" Application AssocLeft ]
-        , [binOp "+" Application AssocLeft, binOp "-" Application AssocLeft,
-            binary "mod" Application AssocRight, binary "rem" Application AssocRight ]
-        , [{-prefix "not" UnApplication,-} binOp "&&" Application AssocLeft,
-           binOp "||" Application AssocLeft]
+table = [ [binOp "*" (convertApp "(*)") AssocLeft, binOp "/" (convertApp "(/)") AssocLeft ]
+        , [binOp "+" (convertApp "(+)") AssocLeft, binOp "-" (convertApp "(-)") AssocLeft,
+            binary "mod" (convertApp "mod") AssocRight, binary "rem" (convertApp "rem") AssocRight ]
+        , [{-TODO prefix "not" UnApplication,-} binOp "&&" (convertApp "(&&)") AssocLeft,
+           binOp "||" (convertApp "(||)") AssocLeft]
         ]
+
+convertApp op e1 e2 = (Application (Application (Variable op) e1) e2)
+
+-- table = [[binOp "+" (convertApp "(+)") AssocLeft]]
 
 binOp name fun assoc = Infix  (do{ reservedOp name; return fun }) assoc
 binary name fun assoc = Infix  (do{ reserved name; return fun }) assoc

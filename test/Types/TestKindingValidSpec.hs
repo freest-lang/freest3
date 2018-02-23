@@ -1,9 +1,5 @@
 module Types.TestKindingValidSpec(spec) where
 
--- import System.IO
--- import Control.Monad
--- import Data.List
--- import Data.Char
 import SpecHelper
 import Types.Kinds
 import Types.Kinding
@@ -17,7 +13,7 @@ spec :: Spec
 spec = do
   t <- runIO $ readFromFile "test/Types/TestContractivityValid.txt"
   describe "Valid Contractivity Test" $ do
-      mapM_ matchValidSpec (convert t)
+    mapM_ matchValidSpec (convert t)
   describe "Valid kinding tests" $ do
     t <- runIO $ readFromFile "test/Types/TestKindingValid.txt"
     mapM_ matchValidKindingSpec (convert t)
