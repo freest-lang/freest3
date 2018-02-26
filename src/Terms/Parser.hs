@@ -21,10 +21,11 @@ lexer :: Token.TokenParser ()
 lexer  = Token.makeTokenParser
         (haskellDef
         {
-        Token.reservedOpNames = ["=","+","-","*","/", "mod", "rem", "&&", "||", "not"],
+        Token.reservedOpNames = ["=","+","-","*","/", "mod", "rem", "&&", "||", "not", "|"],
         Token.reservedNames = ["send","receive","()", "new", "in", "let",
                                "fork", "match", "with", "select", "case", "of",
-                               "True", "False", "mod", "rev", "not", "if", "then", "else"]
+                               "True", "False", "mod", "rev", "not",
+                               "if", "then", "else", "type", "data"]
         })
 
 reservedOp = Token.reservedOp lexer
@@ -39,39 +40,65 @@ colon      = Token.colon lexer
 identifier = Token.identifier lexer
 comma      = Token.comma lexer
 
-integer :: Parser Integer
-integer = Token.integer lexer
 
 apostrophe p = between (string "'") (string "'") p
 
+integer :: Parser Integer
+integer = Token.integer lexer
+
+
+-- TODO : fix ids
+-- Ex: A (just one letter)
+lowerIdentifier :: Parser [Char]
+lowerIdentifier = lexeme $ do
+  lc <- lower
+  id <- identifier
+  return $ [lc] ++ id
+
+constructor :: Parser [Char]
+constructor = lexeme $ do
+  uc <- upper
+  id <- identifier
+  return $ [uc] ++ id
+  -- (do {uc <- upper ; return [uc]})
+  -- <|>     (try test)
+
 
 -- PARSER
+type ParserOut = (VarEnv, ExpEnv, TypeEnv, ConstructorEnv)
 
--- TODO : TypeEnv to VarEnv?
 -- mainProgram :: FilePath -> TypeEnv -> IO (Either ParseError (TypeEnv, ExpEnv))
-mainProgram :: FilePath -> VarEnv -> IO (Either ParseError (VarEnv, ExpEnv))
+mainProgram :: FilePath -> VarEnv -> IO (Either ParseError ParserOut)
 mainProgram filepath venv = parseFromFile (program venv) filepath
 
 program venv =  do
     whiteSpace
-    m <- manyAlternate (try parseTypeDecl) (try parseExpressionDecl) venv Map.empty
+    m <- manyAlternate (try parseBindingDecl) (try parseExpressionDecl) (try parseTypeDecl) (try parseDataType) venv
     eof
     return m
 
-manyAlternate :: Parser (TermVar, Type) -> Parser (TermVar, (Args, Expression)) -> VarEnv -> ExpEnv -> Parser (VarEnv,ExpEnv)
-manyAlternate pa pb venv eenv =
-      do{as<-many1 pa; (as',bs') <- manyAlternate pa pb venv eenv; return (addListToMap as as', bs')}
-  <|> do{bs<-many1 pb; (as',bs') <- manyAlternate pa pb venv eenv;  return (as', addListToMap bs bs')}
-  <|> return (venv,Map.empty)
+--    type TypeEnv = Map.Map TypeVar (Kind, Type)b
+
+manyAlternate :: Parser (TermVar, Type) ->
+                 Parser (TermVar, (Args, Expression)) ->
+                 Parser (TypeVar, (Kind, Type)) ->
+                 Parser (Constructor, [(Constructor, [Type])]) ->
+                 VarEnv -> Parser ParserOut
+manyAlternate pa pb pc pd venv =
+      do{as <- many1 pa; (as', bs', cs', ds') <- manyAlternate pa pb pc pd venv; return (addListToMap as as', bs', cs', ds')}
+  <|> do{bs <- many1 pb; (as', bs', cs', ds') <- manyAlternate pa pb pc pd venv; return (as', addListToMap bs bs', cs', ds')}
+  <|> do{cs <- many1 pc; (as', bs', cs', ds') <- manyAlternate pa pb pc pd venv; return (as', bs', addListToMap cs cs', ds')}
+  <|> do{ds <- many1 pd; (as', bs', cs', ds') <- manyAlternate pa pb pc pd venv; return (as', bs', cs', addListToMap ds ds')}
+  <|> return (venv, Map.empty, Map.empty, Map.empty)
   where
-    addListToMap xs m = Map.union m (Map.fromList xs)
+    addListToMap xs m = Map.union m (Map.fromList xs) --TODO: Can't be an union (must test duplicated entries)
 
 ident = identifier <|>
       choice [try (string "(+)"), try (string "(-)"), try (string "(*)"),
               try (string "(/)"), try (string "mod"), try (string "rem"),
               try (string "(&&)"), try (string "(||)"), try (string "not")]
 
-parseTypeDecl = do
+parseBindingDecl = do
   id <- (lexeme ident)
   colon
   colon
@@ -89,7 +116,30 @@ parseExpressionDecl = do
   ids <- (many identifier)
   reservedOp "="
   e <- parseExpression
-  return $ (id, (ids, e))--FunDecl
+  return (id, (ids, e))--FunDecl
+
+parseTypeDecl = do
+  reserved "type"
+  c <- constructor
+  reservedOp "="
+  t <- mainTypeParser
+  return (c, ((kindOf t), t)) -- TODO : Kind
+
+parseDataType = do
+  reserved "data"
+  c <- constructor
+  reservedOp "="
+  ts <- sepBy1 parseTypeComponents (lexeme(char '|'))
+  return (c, ts)
+
+parseTypeComponents = do
+  c <- constructor
+  ts <- many mainTypeParser
+  return (c, ts)
+
+
+-- Parses Applications
+-- Builds a table that defines the priority and the associativity of each kind of Application
 
 table = [ [binOp "*" (convertApp "(*)") AssocLeft, binOp "/" (convertApp "(/)") AssocLeft ]
         , [binOp "+" (convertApp "(+)") AssocLeft, binOp "-" (convertApp "(-)") AssocLeft,
@@ -98,14 +148,16 @@ table = [ [binOp "*" (convertApp "(*)") AssocLeft, binOp "/" (convertApp "(/)") 
            binOp "||" (convertApp "(||)") AssocLeft]
         ]
 
+-- Converts a binary Application in an ternary application with an operator
+convertApp :: TermVar -> Expression -> Expression -> Expression
 convertApp op e1 e2 = (Application (Application (Variable op) e1) e2)
-
--- table = [[binOp "+" (convertApp "(+)") AssocLeft]]
 
 binOp name fun assoc = Infix  (do{ reservedOp name; return fun }) assoc
 binary name fun assoc = Infix  (do{ reserved name; return fun }) assoc
 prefix name fun       = Prefix (do{ reserved name; return fun })
 
+
+-- Parses an expression
 parseExpression = buildExpressionParser table (lexeme parseExpr)
 
 parseExpr =
@@ -200,10 +252,9 @@ parseReceive = do
   e <- parseExpression
   return $ Receive e
 
--- TODO review Constructor for now it is an id, but it must be in camel case
 parseSelect = do
   reserved "select"
-  c <- identifier
+  c <- constructor
   e <- parseExpression
   return $ Select c e
 
@@ -217,15 +268,6 @@ parseFork = do
 -- Parse Datatypes
 -- parseValue
 -- parseCase
-
-
-
-
-
-
-
-
-
 
 
 

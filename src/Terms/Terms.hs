@@ -3,7 +3,7 @@ module Terms.Terms (
 , ExpEnv
 , VarEnv
 , TypeEnv
---, ConstructorEnv
+, ConstructorEnv
 , TermVar
 , Args
 ) where
@@ -17,7 +17,9 @@ type Args = [TermVar]
 type VarEnv = Map.Map TermVar Type
 type ExpEnv = Map.Map TermVar (Args, Expression)
 type TypeEnv = Map.Map TypeVar (Kind, Type)
---type ConstructorEnv
+type ConstructorEnv = Map.Map Constructor [(Constructor, [Type])]
+
+
 
 data Expression =
   -- Basic expressions

@@ -9,7 +9,7 @@ main :: IO ()
 main = do
   putStrLn "Starting parser ...\n"
   prelude <- mainProgram "src/Terms/prelude.hs" Map.empty
-  (prelude, _) <- case prelude of
+  (prelude, _, _, _) <- case prelude of
                Left err -> do{ putStr (show(err)); return $ error ""}
                Right d  -> return d
 
@@ -17,14 +17,19 @@ main = do
   -- print $ prelude
   -- putStrLn "\n"
   prog     <- mainProgram "src/Terms/test.hs" prelude
-  (p1,p2)  <- case prog of
-                Left err -> do{ putStr (show(err)); return $ error ""}
-                Right d  -> return d
+  (p1,p2,p3,p4)  <- case prog of
+                      Left err -> do{ putStr (show(err)); return $ error ""}
+                      Right d  -> return d
+--type ParserOut = (VarEnv, ExpEnv, TypeEnv, ConstructorEnv)
 
   -- putStrLn "\n"
-  -- print p1
+  -- print $  p1
+  printEnv p1 "VarEnv"
+  printEnv p2 "ExpEnv"
+  printEnv p3 "TypeEnv"
+  printEnv p4 "ConstructorEnv"
 
-  putStrLn "No parser errors found... \n"
+  -- putStrLn "No parser errors found... \n"
   putStrLn "TypeChecking...\n"
   a <- pure $ Map.mapWithKey (\fun (a,e) -> typeCheck a e fun p1) p2
   mapM (>>= putStrLn . show) a
@@ -41,3 +46,7 @@ main = do
 
 
 -- typeCheck :: Expression -> VarEnv -> IO(Type)
+printEnv p desc = do
+  putStrLn $ desc ++ "\n"
+  print p
+  putStrLn ""
