@@ -17,10 +17,12 @@ import Types.TypeParser
 typeCheck :: Args -> Expression -> TermVar -> VarEnv -> IO(Type)
 typeCheck args exp fname venv = do
   debugM "Type Checking" ("Goal: " ++ (show venv) ++ " |- " ++ (show exp))
-  -- print venv
-  venv1 <- checkExpEnv fname args venv
-  -- print venv
+
+  let venv1 = checkExpEnv fname args venv
+  print $ "Fun Name: " ++ fname
+  -- print venv1
   (t, venv2) <- checkExp exp venv1
+
 --  checkVEnvUn venv -- TODO
   debugM "Type Checking" "Done!"
   return t
@@ -28,12 +30,16 @@ typeCheck args exp fname venv = do
 checkExp :: Expression -> VarEnv -> IO(Type, VarEnv)
 -- Basic expressions
 checkExp Unit venv = return (Basic UnitType, venv)
+
 checkExp (Integer _) venv = return (Basic IntType, venv)
+
 checkExp (Character _) venv = return (Basic CharType, venv)
+
 checkExp (Boolean _) venv = return (Basic BoolType, venv)
+
 -- Variables
 checkExp (Variable x) venv = checkVar x venv
---return (venv Map.! x, venv)
+
 -- Aplication
 checkExp (Application e1 e2) venv1 = do
    (t1, venv2) <- checkExp e1 venv1
@@ -41,7 +47,9 @@ checkExp (Application e1 e2) venv1 = do
    (t4, venv3) <- checkExp e2 venv2
    checkEquivTypes t2 t4
    return (t3, venv3)
+
 -- Conditional
+-- TODO: lub??
 checkExp (Conditional e1 e2 e3) venv1 = do
   (t1, venv2) <- checkExp e1 venv1
   checkBool t1
@@ -50,40 +58,80 @@ checkExp (Conditional e1 e2 e3) venv1 = do
   checkEquivTypes t2 t3
   checkEquivEnvs venv3 venv4
   return (t2, venv3)
+
 -- Pairs
 checkExp (Pair e1 e2) venv1 = do
   (t1, venv2) <- checkExp e1 venv1
   (t2, venv3) <- checkExp e2 venv2
   return (PairType t1 t2, venv3)
+
 checkExp (Let x1 x2 e1 e2) venv1 = do
   (t1, venv2) <- checkExp e1 venv1
   (t2, t3) <- checkPair t1
   (t4, venv3) <- checkExp e2 (Map.insert x2 t3 (Map.insert x1 t2 venv2))
   return (t4, venv3)
+
 -- Session types
 checkExp (New t) venv = do
   t <- checkSessionType t
   return (PairType t (dual t), venv)
--- send
+
 checkExp (Send e1 e2) venv1 = do
-  (b, venv2) <- checkExp e1 venv1
-  (t1, venv3) <- checkExp e2 venv2
-  -- TODO t2
-  return (Fun Un b (Fun Un t1 t1{-t2-}), venv3)
--- receive
+  (t1, venv2) <- checkExp e1 venv1
+  b1 <- checkBasic t1
+  (t2, venv3) <- checkExp e2 venv2
+  (t3, t4) <- checkSemi (canonical t2)
+  b2 <- checkOutType t3
+  checkEquivBasics b1 b2
+  return (Fun Un t1 (Fun Un t2 t4), venv3)
+
+checkExp (Receive e) venv1 = do
+  (t1, venv2) <- checkExp e venv1
+  (t2, t3) <- checkSemi (canonical t1)
+  b <- checkInType t2
+  return (Fun Un t1 (PairType (Basic b) t3), venv2)
+
+-- Fork
 checkExp (Fork e) venv1 = do
   (t, venv2) <- checkExp e venv1
   checkUn t --TODO: review un predicate
   return (Basic UnitType, venv2)
--- Datatypes
--- TODO
 
-{-
-checkExp venv1 (Send e1 e2) = (Fun Un b (Fun Un t1 t2), venv3)
-  where (b, venv2) = checkExp venv1 e1
-        (t1, venv3) = checkExp venv2 e2
-  where _ = if isSessionType t2 then () else error "New type is not session type"
--}
+-- Datatypes
+checkExp (Select c e) venv1 = do
+  (t,venv2) <- checkExp e venv1
+  return (Choice Internal (Map.singleton c t), venv2)
+-- TODO
+checkExp t env = return (Basic UnitType,env)--error $ show t
+
+canonical :: Type -> Type
+canonical (Rec x t) = canonical $ unfold $ Rec x t
+canonical (Semi Skip t) = canonical t
+canonical t = t
+
+checkBasic :: Type -> IO BasicType
+checkBasic (Basic b) = return b
+checkBasic t         = do
+  errorM "Type Checking" ("Expecting a basic type; found " ++ show t)
+  return IntType
+
+checkEquivBasics :: BasicType -> BasicType -> IO()
+checkEquivBasics b1 b2
+  | b1 == b2  = return ()
+  | otherwise = errorM "Type Checking" ("Expecting basic type " ++ (show b1) ++ " to be equivalent to basic type " ++ (show b2))
+
+checkOutType :: Type -> IO BasicType
+checkOutType (Out b) = return b
+checkOutType t       = do
+  errorM "Type Checking" ("Expecting an output type; found " ++ (show t))
+  return IntType
+
+checkInType :: Type -> IO BasicType
+checkInType (In b) = return b
+checkInType t      = do
+  errorM "Type Checking" ("Expecting an input type; found " ++ (show t))
+  return IntType
+
 
 checkVar :: TermVar -> VarEnv -> IO (Type,VarEnv)
 checkVar x venv
@@ -92,12 +140,12 @@ checkVar x venv
       errorM "Type Checking" ("Not found " ++ x)
       return (Basic UnitType,venv)
 
-checkEquivTypes :: Type -> Type -> IO()
+checkEquivTypes :: Type -> Type -> IO ()
 checkEquivTypes t1 t2
   | equivalent t1 t2 = return ()
   | otherwise        = errorM "Type Checking" ("Expecting type " ++ (show t1) ++ " to be equivalent to type " ++ (show t2))
 
-checkEquivEnvs :: VarEnv -> VarEnv -> IO()
+checkEquivEnvs :: VarEnv -> VarEnv -> IO ()
 checkEquivEnvs venv1 venv2
   | equivalentEnvs  venv1 venv2 = return ()
   | otherwise                   = errorM "Type Checking"
@@ -111,9 +159,15 @@ checkFun t             = do
 
 checkPair :: Type -> IO (Type, Type)
 checkPair (PairType t1 t2) = return (t1, t2)
-checkPair t             = do
+checkPair t                = do
   errorM "Type Checking" ("Expecting a pair type; found " ++ (show t))
   return (Basic IntType, Basic IntType)
+
+checkSemi :: Type -> IO (Type, Type)
+checkSemi (Semi t1 t2) = return (t1, t2)
+checkSemi t            = do
+  errorM "Type Checking" ("Expecting a sequential session type; found " ++ (show t))
+  return (Out IntType, Skip)
 
 checkSessionType :: Type -> IO(Type)
 checkSessionType t
@@ -143,9 +197,11 @@ checkFun venv1 fun (args, exp) = checkExp venv2 exp
 
 -- Expression environments
 -- venv contains the entries in the prelude as well as those in the source file
-checkExpEnv :: TermVar -> Args -> VarEnv -> IO (VarEnv)
-checkExpEnv fun args venv = foldM (\acc a -> checkParam acc fun a) venv arguments
+checkExpEnv :: TermVar -> Args -> VarEnv -> VarEnv
+checkExpEnv fun args venv = foldl (\acc (arg, t) -> Map.insert arg t acc) venv arguments
   where arguments = joinArgsAndType args (venv Map.! fun)
+--foldM (\acc a -> checkParam acc fun a) venv arguments
+
   --checkExpArgs venv fname args
   --foldM (\acc (fun, (args, e)) -> checkExpArgs acc fun args) venv (Map.toList eenv)
 
@@ -176,6 +232,6 @@ equivalentEnvs venv1 venv2 = Map.size venv1 == Map.size venv2 && equiveElems
 
 -- Type environments
 
-checkTypeEnv :: TypeEnv -> Bool
-checkTypeEnv tenv = Map.foldr (\(_,t) b -> b && isType kindEnv t) True tenv
-  where kindEnv = Map.map fst tenv
+-- checkTypeEnv :: TypeEnv -> Bool
+-- checkTypeEnv tenv = Map.foldr (\(_,t) b -> b && isType kindEnv t) True tenv
+--   where kindEnv = Map.map fst tenv

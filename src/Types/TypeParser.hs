@@ -81,7 +81,7 @@ mainTypeParser =
   } <?> "a type: skip, T;T, ..., or ..."
 
 parseType :: Parser Type
-parseType =  lexeme $ buildExpressionParser table parseTerm
+parseType =  buildExpressionParser table parseTerm
 
 table = [ [binary "->" (Fun Un) AssocRight, binary "-o" (Fun Lin) AssocRight ]
         , [binary ";" Semi AssocLeft ]
@@ -104,7 +104,7 @@ parseTerm =
   <|> squares parseDataType
   <|> parseRec
   <|> parseForall
-  <|> (do { id <- identifier;                      return $ Var id })
+  <|> (do { id <- identifier; notFollowedBy (do {colon;colon});                    return $ Var id })
   <?> "a type: Skip, T;T, !B, ?B, B, T->T, T-oT, (T,T), id, rec id.T, or forall id.t"
 
 parsePair = do

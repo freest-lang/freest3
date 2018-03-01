@@ -11,6 +11,7 @@ import           Text.ParserCombinators.Parsec
 import           Text.Parsec.Expr
 import           Types.Types
 import           Terms.Terms
+import           Types.Kinds
 import           Types.Kinding
 import           Types.TypeParser
 import qualified Data.Map.Strict as Map
@@ -21,7 +22,7 @@ lexer :: Token.TokenParser ()
 lexer  = Token.makeTokenParser
         (haskellDef
         {
-        Token.reservedOpNames = ["=","+","-","*","/", "mod", "rem", "&&", "||", "not", "|"],
+        Token.reservedOpNames = ["=","+","-","*","/", "mod", "rem", "&&", "||", "not", "|", "->"],
         Token.reservedNames = ["send","receive","()", "new", "in", "let",
                                "fork", "match", "with", "select", "case", "of",
                                "True", "False", "mod", "rev", "not",
@@ -46,26 +47,19 @@ apostrophe p = between (string "'") (string "'") p
 integer :: Parser Integer
 integer = Token.integer lexer
 
-
--- TODO : fix ids
--- Ex: A (just one letter)
 lowerIdentifier :: Parser [Char]
-lowerIdentifier = lexeme $ do
-  lc <- lower
-  id <- identifier
-  return $ [lc] ++ id
+lowerIdentifier = lexeme $
+      try (do{ lc <- lower; id <- identifier; return $ [lc] ++ id})
+  <|> (do{lc <- lower; return [lc]})
 
 constructor :: Parser [Char]
-constructor = lexeme $ do
-  uc <- upper
-  id <- identifier
-  return $ [uc] ++ id
-  -- (do {uc <- upper ; return [uc]})
-  -- <|>     (try test)
-
+constructor = lexeme $
+      try (do {uc <- upper; id <- identifier; return $ [uc] ++ id})
+  <|> (do{uc <- (try upper) ; return [uc]})
 
 -- PARSER
-type ParserOut = (VarEnv, ExpEnv, TypeEnv, ConstructorEnv)
+type ParserOut = (VarEnv, ExpEnv, {-TypeEnv,-} ConstructorEnv)
+
 
 -- mainProgram :: FilePath -> TypeEnv -> IO (Either ParseError (TypeEnv, ExpEnv))
 mainProgram :: FilePath -> VarEnv -> IO (Either ParseError ParserOut)
@@ -73,6 +67,7 @@ mainProgram filepath venv = parseFromFile (program venv) filepath
 
 program venv =  do
     whiteSpace
+    -- m <- manyAlternate (try parseBindingDecl) (try parseExpressionDecl) (try parseTypeAndData) venv
     m <- manyAlternate (try parseBindingDecl) (try parseExpressionDecl) (try parseTypeDecl) (try parseDataType) venv
     eof
     return m
@@ -81,17 +76,24 @@ program venv =  do
 
 manyAlternate :: Parser (TermVar, Type) ->
                  Parser (TermVar, (Args, Expression)) ->
-                 Parser (TypeVar, (Kind, Type)) ->
+                 Parser (TypeVar, Type) ->
                  Parser (Constructor, [(Constructor, [Type])]) ->
                  VarEnv -> Parser ParserOut
 manyAlternate pa pb pc pd venv =
-      do{as <- many1 pa; (as', bs', cs', ds') <- manyAlternate pa pb pc pd venv; return (addListToMap as as', bs', cs', ds')}
-  <|> do{bs <- many1 pb; (as', bs', cs', ds') <- manyAlternate pa pb pc pd venv; return (as', addListToMap bs bs', cs', ds')}
-  <|> do{cs <- many1 pc; (as', bs', cs', ds') <- manyAlternate pa pb pc pd venv; return (as', bs', addListToMap cs cs', ds')}
-  <|> do{ds <- many1 pd; (as', bs', cs', ds') <- manyAlternate pa pb pc pd venv; return (as', bs', cs', addListToMap ds ds')}
-  <|> return (venv, Map.empty, Map.empty, Map.empty)
+      do{as <- many1 pa; (as', bs', cs') <- manyAlternate pa pb pc pd venv; return (addListToMap as as', bs', cs')}
+  <|> do{bs <- many1 pb; (as', bs', cs') <- manyAlternate pa pb pc pd venv; return (as', addListToMap bs bs', cs')}
+  <|> do{cs <- many1 pc; (as', bs', cs') <- manyAlternate pa pb pc pd venv; return (as', bs', addListToMap cs cs')}
+  <|> do{ds <- many1 pd; (as', bs', ds') <- manyAlternate pa pb pc pd venv; return (as', bs', test ds ds')}
+  -- <|> do{ds <- many1 pd; (as', bs', ds') <- manyAlternate pa pb pc pd venv; return (as', bs', addListToMap ds ds')}
+  -- <|> return (venv, Map.empty, Map.empty, Map.empty)
+  <|> return (venv, Map.empty, Map.empty)
   where
     addListToMap xs m = Map.union m (Map.fromList xs) --TODO: Can't be an union (must test duplicated entries)
+    test xs m = addListToMap (foldl (\acc (x,y) -> acc ++ (convertType x y)) [] xs) m
+
+
+--[("Leaf",Tree),("Node",(Int -> (Tree -> (Tree -> Tree))))]
+
 
 ident = identifier <|>
       choice [try (string "(+)"), try (string "(-)"), try (string "(*)"),
@@ -99,44 +101,53 @@ ident = identifier <|>
               try (string "(&&)"), try (string "(||)"), try (string "not")]
 
 parseBindingDecl = do
-  id <- (lexeme ident)
+  id <- (try (lexeme ident))
   colon
   colon
   t <- mainTypeParser
-  if isType Map.empty t then
-    return $ (id,t)
-    -- return $ (id,(kindOf t, t))
-    -- return $ TypeDecl id t
-  else
-    error $ "Type t is not well kinded: " ++ show t
-
+  return $ (id,t)
+  -- if isType Map.empty t then
+  --  return $ (id,t)
+  -- else
+  --   error $ "Type t is not well kinded: " ++ show t
 
 parseExpressionDecl = do
-  id <- identifier
+  id <- try identifier
   ids <- (many identifier)
   reservedOp "="
   e <- parseExpression
   return (id, (ids, e))--FunDecl
+
+-- parseTypeAndData = choice [parseTypeDecl, parseDataType]
 
 parseTypeDecl = do
   reserved "type"
   c <- constructor
   reservedOp "="
   t <- mainTypeParser
-  return (c, ((kindOf t), t)) -- TODO : Kind
+  return (c, t)
+  -- return (c, ((kindOf t), t)) -- TODO : Kind (verify)
 
 parseDataType = do
   reserved "data"
   c <- constructor
   reservedOp "="
   ts <- sepBy1 parseTypeComponents (lexeme(char '|'))
-  return (c, ts)
+  -- newline
+
+  return $ (c, ts)
 
 parseTypeComponents = do
-  c <- constructor
-  ts <- many mainTypeParser
+  c <- try constructor
+  ts <- many (try mainTypeParser)
   return (c, ts)
 
+convertType :: Constructor -> [(Constructor, [Type])] -> [(Constructor, Type)]
+convertType c = map (\(construct, typeList) -> (construct, conv c typeList))
+
+conv :: Constructor -> [Type] -> Type
+conv c []     = (Var c)
+conv c (x:xs) = Fun Un x (conv c xs)
 
 -- Parses Applications
 -- Builds a table that defines the priority and the associativity of each kind of Application
@@ -179,7 +190,7 @@ parseExpr =
   <|> parseFork
   -- Datatypes : TODO
   -- <|> parseValue
-  -- <|> parseCase
+  <|> parseCase
   -- Basic expressions
   <|> try parseBasic
 
@@ -267,8 +278,21 @@ parseFork = do
 
 -- Parse Datatypes
 -- parseValue
--- parseCase
 
+
+parseCase = do
+  reserved "case"
+  e <- parseExpression
+  reserved "of"
+  v <- many1 parseCaseValues
+  return $ Case e (Map.fromList v)
+
+parseCaseValues = do
+  c <- constructor
+  ids <- (many identifier)
+  reservedOp "->"
+  e <- parseExpression
+  return $ (c,(ids, e))
 
 
 

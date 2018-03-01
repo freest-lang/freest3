@@ -1,5 +1,6 @@
 module Types.TypeEquivalence(
   equivalent
+, unfold
 ) where
 
 import Types.Types
