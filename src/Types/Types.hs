@@ -49,7 +49,7 @@ type TypeVar = String
 
 type TypeMap = Map.Map TypeVar Type
 
-data ChoiceView = External | Internal deriving (Eq, Ord)
+data ChoiceView = External | Internal deriving (Eq, Ord, Show)
 
 data Type =
     Basic BasicType

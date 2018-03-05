@@ -19,8 +19,7 @@ import qualified Data.Set as Set
 
 data Label = OutLabel BasicType |
              InLabel BasicType |
-             ExtChoiceLabel TypeVar |
-             IntChoiceLabel TypeVar |
+             ChoiceLabel ChoiceView TypeVar |
              VarLabel TypeVar
              deriving (Eq, Ord, Show)
 
@@ -38,8 +37,8 @@ reduce (In b)             = Map.singleton (InLabel b) Skip
 reduce (Semi t1 t2)
     | terminated t1       = reduce t2
     | otherwise           = Map.map (\t -> if t == Skip then t2 else t `Semi` t2) (reduce t1)
-reduce (Choice Internal m) = Map.mapKeys IntChoiceLabel m
-reduce (Choice External m) = Map.mapKeys ExtChoiceLabel m
+reduce (Choice v m) = Map.mapKeys (ChoiceLabel v) m
+--reduce (Choice External m) = Map.mapKeys ExtChoiceLabel m
 reduce (Rec x t)          = reduce $ unfold (Rec x t)
 reduce _                  = Map.empty
 
