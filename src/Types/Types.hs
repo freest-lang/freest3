@@ -28,10 +28,10 @@ import qualified Data.Set as Set
 -- BASIC TYPES
 
 data BasicType =
-  IntType  |
-  CharType |
-  BoolType |
-  UnitType
+    IntType
+  | CharType
+  | BoolType
+  | UnitType
   deriving (Eq, Ord)
 
 instance Show BasicType where
@@ -51,18 +51,18 @@ type TypeMap = Map.Map Constructor Type
 data ChoiceView = External | Internal deriving (Eq, Ord)
 
 data Type =
-  Basic BasicType |
-  Skip |
-  Semi Type Type |
-  Out BasicType |
-  In BasicType |
-  Fun Multiplicity Type Type |
-  PairType Type Type |
-  Choice ChoiceView TypeMap |
-  Datatype TypeMap |
-  Rec TypeVar Type |
-  Forall TypeVar {- Kind TODO-} Type |
-  Var TypeVar
+    Basic BasicType
+  | Skip
+  | Semi Type Type
+  | Out BasicType
+  | In BasicType
+  | Fun Multiplicity Type Type
+  | PairType Type Type
+  | Choice ChoiceView TypeMap
+  | Datatype TypeMap
+  | Rec TypeVar Type
+  | Forall TypeVar {- Kind TODO-} Type
+  | Var TypeVar
   deriving Ord
 
 instance Show Type where

@@ -1,13 +1,15 @@
--- https://web.archive.org/web/20140528151730/http://legacy.cs.uu.nl/daan/parsec.html
 {-# LANGUAGE FlexibleContexts #-}
+-- https://web.archive.org/web/20140528151730/http://legacy.cs.uu.nl/daan/parsec.htm)
 
-module Types.TypeParser (mainTypeParser) where
+module Types.TypeParser (
+  mainTypeParser
+) where
 
 import           Text.Parsec.Expr
-import           Text.Parsec.Language          (haskellDef)
-import qualified Text.Parsec.Token             as Token
+import           Text.Parsec.Language (haskellDef)
+import qualified Text.Parsec.Token as Token
 import           Text.ParserCombinators.Parsec
-import qualified Data.Map.Strict               as Map
+import qualified Data.Map.Strict as Map
 import           Types.Kinds
 import           Types.Types
 import           Types.Kinding
@@ -30,7 +32,7 @@ lexer  = Token.makeTokenParser
         (haskellDef
         {
         Token.reservedOpNames = [";", "!", "?", "->", "-o", "+", "&"],
-        Token.reservedNames = ["Int","Bool","Char", "Skip", "()", "rec", "forall"]
+        Token.reservedNames = ["Int","Bool","Char", "Skip", "()", "rec", "forall", "data"]
         })
 
 reservedOp = Token.reservedOp lexer
