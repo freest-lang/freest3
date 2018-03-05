@@ -91,7 +91,7 @@ manyAlternate ::
      Parser (TermVar, Type)
   -> Parser (TermVar, (Args, Expression))
   -> Parser (TypeVar, Type)
-  -> Parser (Constructor, [(Constructor, [Type])])
+  -> Parser (TypeVar, [(TypeVar, [Type])])
   -> VarEnv
   -> Parser ParserOut
 manyAlternate pa pb pc pd venv =
@@ -157,10 +157,10 @@ parseTypeComponents = do
   ts <- many (try mainTypeParser)
   return (c, ts)
 
-convertType :: Constructor -> [(Constructor, [Type])] -> [(Constructor, Type)]
+convertType :: TypeVar -> [(TypeVar, [Type])] -> [(TypeVar, Type)]
 convertType c = map (\(construct, typeList) -> (construct, conv c typeList))
 
-conv :: Constructor -> [Type] -> Type
+conv :: TypeVar -> [Type] -> Type
 conv c [] = (Var c)
 conv c (x:xs) = Fun Un x (conv c xs)
 
@@ -310,7 +310,7 @@ parseCaseValues = do
 
 parseValue = do
   c <- constructor
-  return $ Value c  
+  return $ Constructor c  
 
 
 

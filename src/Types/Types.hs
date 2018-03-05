@@ -16,7 +16,6 @@ module Types.Types
 , Type(..)
 , TypeMap(..)
 , TypeVar
-, Constructor
 , ChoiceView(..)
 , dual
 ) where
@@ -44,9 +43,11 @@ instance Show BasicType where
 
 type TypeVar = String
 
-type Constructor = String
 
-type TypeMap = Map.Map Constructor Type
+-- Const name
+-- value -> Constructor
+
+type TypeMap = Map.Map TypeVar Type
 
 data ChoiceView = External | Internal deriving (Eq, Ord)
 
@@ -123,6 +124,6 @@ dual (Var v)            = Var v
 dual Skip               = Skip
 dual (Out b)            = In b
 dual (In b)             = Out b
-dual (Choice v m) = Choice v (Map.map dual m)
+dual (Choice v m)       = Choice v (Map.map dual m)
 dual (Semi t1 t2)       = Semi (dual t1) (dual t2)
 dual (Rec x t)          = Rec x (dual t)

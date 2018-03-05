@@ -102,7 +102,7 @@ checkExp (Select c e) venv1 = do
   (t,venv2) <- checkExp e venv1 
   return (Choice Internal (Map.singleton c t), venv2)
 
-checkExp (Value c) venv = checkVar c venv
+checkExp (Constructor c) venv = checkVar c venv
 --  t <- checkConstructor c 
 --  return (venv Map.! c, venv)
 
@@ -201,7 +201,7 @@ checkConstruct b t m
       errorM loggerName ("Expecting type " ++ (show t) ++
                               " to be equivalent to all case types " ++ (show m))
 
-equivConstructType :: Type -> Constructor -> VarEnv -> IO Bool
+equivConstructType :: Type -> TypeVar -> VarEnv -> IO Bool
 equivConstructType t1 k venv
   | Map.member k venv = do
       let t2 = lastType (venv Map.! k)

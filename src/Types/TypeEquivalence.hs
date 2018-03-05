@@ -19,8 +19,8 @@ import qualified Data.Set as Set
 
 data Label = OutLabel BasicType |
              InLabel BasicType |
-             ExtChoiceLabel Constructor |
-             IntChoiceLabel Constructor |
+             ExtChoiceLabel TypeVar |
+             IntChoiceLabel TypeVar |
              VarLabel TypeVar
              deriving (Eq, Ord, Show)
 
