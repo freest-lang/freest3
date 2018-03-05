@@ -31,14 +31,12 @@ typeCheck args exp fname venv tenv = do
 
 -- Ensures: the type in the result is canonical
 checkExp :: Expression -> VarEnv -> IO(Type, VarEnv)
+
 -- Basic expressions
-checkExp Unit venv = return (Basic UnitType, venv)
-
-checkExp (Integer _) venv = return (Basic IntType, venv)
-
+checkExp Unit venv          = return (Basic UnitType, venv)
+checkExp (Integer _) venv   = return (Basic IntType, venv)
 checkExp (Character _) venv = return (Basic CharType, venv)
-
-checkExp (Boolean _) venv = return (Basic BoolType, venv)
+checkExp (Boolean _) venv   = return (Basic BoolType, venv)
 
 -- Variables
 checkExp (Variable x) venv = checkVar x venv
@@ -52,7 +50,6 @@ checkExp (Application e1 e2) venv1 = do
    return (t3, venv3)
 
 -- Conditional
--- TODO: lub??
 checkExp (Conditional e1 e2 e3) venv1 = do
   (t1, venv2) <- checkExp e1 venv1 
   checkBool t1
@@ -112,13 +109,56 @@ checkExp (Value c) venv = checkVar c venv
 checkExp (Case e m) venv1 = do
   (t, venv2) <- checkExp e venv1
   checkEquivConstructors t m venv2
-
 -- l = [(Type,Env)]
   l <- checkCaseMap m venv2
   checkEquivTypeList (map fst l)
   checkEquivEnvList (map snd l)
-
   return $ head l
+
+
+checkVar :: TermVar -> VarEnv -> IO (Type, VarEnv)
+checkVar x venv
+  | Map.member x venv = return (venv Map.! x, venv)
+  | otherwise         = do
+      errorM loggerName ("Variable not in scope: " ++ x)
+      return (Basic UnitType, venv)
+
+checkEquivTypes :: Type -> Type -> IO ()
+checkEquivTypes t1 t2
+  | equivalent t1 t2 = return ()
+  | otherwise        = errorM loggerName
+      ("Expecting type " ++ (show t1) ++ " to be equivalent to type " ++ (show t2))
+
+checkEquivEnvs :: VarEnv -> VarEnv -> IO ()
+checkEquivEnvs venv1 venv2
+  | equivalentEnvs  venv1 venv2 = return ()
+  | otherwise                   = errorM loggerName
+      ("Expecting environment " ++ (show venv1) ++ " to be equivalent to environment " ++ (show venv2))
+
+-- Pattern matching against the various type constructors
+
+checkBool :: Type -> IO ()
+checkBool (Basic BoolType) = return ()
+checkBool t                = errorM loggerName ("Expecting a boolean type; found " ++ (show t))
+
+checkFun :: Type -> IO (Type, Type)
+checkFun (Fun _ t1 t2) = return (t1, t2)
+checkFun t             = do
+  errorM loggerName ("Expecting a function type; found " ++ (show t))
+  return (Basic IntType, Basic IntType)
+
+checkPair :: Type -> IO (Type, Type)
+checkPair (PairType t1 t2) = return (t1, t2)
+checkPair t                = do
+  errorM loggerName ("Expecting a pair type; found " ++ (show t))
+  return (Basic IntType, Basic IntType)
+
+checkSemi :: Type -> IO (Type, Type)
+checkSemi (Semi t1 t2) = return (t1, t2)
+checkSemi t            = do
+  errorM loggerName ("Expecting a sequential session type; found " ++ (show t))
+  return (Out IntType, Skip)
+
 
 -- TODO: same number of args as in the datatype
 -- test haskell 
@@ -198,53 +238,12 @@ checkInType t      = do
   errorM loggerName ("Expecting an input type; found " ++ (show t))
   return IntType
 
-checkVar :: TermVar -> VarEnv -> IO (Type,VarEnv)
-checkVar x venv
-  | Map.member x venv = return (venv Map.! x, venv)
-  | otherwise         = do
-      errorM loggerName ("Not found " ++ x)
-      return (Basic UnitType, venv)
-
-checkEquivTypes :: Type -> Type -> IO ()
-checkEquivTypes t1 t2
-  | equivalent t1 t2 = return ()
-  | otherwise        = errorM loggerName ("Expecting type " ++ (show t1) ++
-                                               " to be equivalent to type " ++ (show t2))
-
-checkEquivEnvs :: VarEnv -> VarEnv -> IO ()
-checkEquivEnvs venv1 venv2
-  | equivalentEnvs  venv1 venv2 = return ()
-  | otherwise                   = errorM loggerName
-      ("Expecting enviroment " ++ (show venv1) ++ " to be equivalent to enviroment " ++ (show venv2))
-
-checkFun :: Type -> IO (Type, Type)
-checkFun (Fun _ t1 t2) = return (t1, t2)
-checkFun t             = do
-  errorM loggerName ("Expecting a function type; found " ++ (show t))
-  return (Basic IntType, Basic IntType)
-
-checkPair :: Type -> IO (Type, Type)
-checkPair (PairType t1 t2) = return (t1, t2)
-checkPair t                = do
-  errorM loggerName ("Expecting a pair type; found " ++ (show t))
-  return (Basic IntType, Basic IntType)
-
-checkSemi :: Type -> IO (Type, Type)
-checkSemi (Semi t1 t2) = return (t1, t2)
-checkSemi t            = do
-  errorM loggerName ("Expecting a sequential session type; found " ++ (show t))
-  return (Out IntType, Skip)
-
 checkSessionType :: Type -> IO(Type)
 checkSessionType t
   | isSessionType t = return t
   | otherwise       = do
       errorM loggerName ("Expecting a session type; found " ++ (show t))
       return Skip
-
-checkBool :: Type -> IO ()
-checkBool (Basic BoolType) = return ()
-checkBool t                = errorM loggerName ("Expecting a boolean type; found " ++ (show t))
 
 checkUn :: Type -> IO ()
 checkUn t
@@ -302,7 +301,12 @@ checkVEnvUn venv
 -- checkTypeEnv tenv = Map.foldr (\(_,t) b -> b && isType kindEnv t) True tenv
 --   where kindEnv = Map.map fst tenv
 
+{-
+Conversion to list head normal form.
+TODO: the inductive definition of the output type; a proof that the the function outputs one such type.
+-}
 canonical :: Type -> Type
 canonical (Rec x t)     = canonical $ unfold $ Rec x t
 canonical (Semi Skip t) = canonical t
+canonical (Semi t1 t2)  = canonical (Semi (canonical t1) t2)
 canonical t             = t
