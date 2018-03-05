@@ -12,10 +12,12 @@ import           Types.Kinds
 import           Types.TypeEquivalence
 import           Types.Types
 
+-- The name of the logger for type checking
+loggerName = "Type Checking"
 
 typeCheck :: Args -> Expression -> TermVar -> VarEnv -> TypeEnv -> IO(Type)
 typeCheck args exp fname venv tenv = do
-  debugM "Type Checking" ("Goal: " ++ (show venv) ++ " |- " ++ (show exp))
+  debugM loggerName ("Goal: " ++ (show venv) ++ " |- " ++ (show exp))
 
 --  let venv1 = checkExpEnv fname args venv
 --  venv1 <- checkExpEnv fname args venv
@@ -24,9 +26,10 @@ typeCheck args exp fname venv tenv = do
 
   (t,_) <- checkExp exp venv1
 --  checkVEnvUn venv
-  debugM "Type Checking" "Done!"
+  debugM loggerName "Done!"
   return t
 
+-- Ensures: the type in the result is canonical
 checkExp :: Expression -> VarEnv -> IO(Type, VarEnv)
 -- Basic expressions
 checkExp Unit venv = return (Basic UnitType, venv)
@@ -135,14 +138,12 @@ checkCaseMap cm venv = do
 -- checkExpEnv :: TermVar -> Args -> VarEnv -> IO VarEnv
 
 checkEquivTypeList :: [Type] -> IO ()
-checkEquivTypeList (x:xs) = do
-  mapM (checkEquivTypes x) xs
-  return ()
+checkEquivTypeList (x:xs) = 
+  mapM_ (checkEquivTypes x) xs
 
 checkEquivEnvList :: [VarEnv] -> IO ()
-checkEquivEnvList (x:xs) = do
-  mapM (checkEquivEnvs x) xs
-  return ()
+checkEquivEnvList (x:xs) =
+  mapM_ (checkEquivEnvs x) xs
 
 checkEquivConstructors :: Type -> CaseMap -> VarEnv -> IO ()
 checkEquivConstructors t m venv = do
@@ -156,10 +157,9 @@ checkEquivConstructors t m venv = do
 checkConstruct :: Bool -> Type -> CaseMap -> IO ()  
 checkConstruct b t m
   | b         = return ()
-  | otherwise = do
-      errorM "Type Checking" ("Expecting type " ++ (show t) ++
+  | otherwise =
+      errorM loggerName ("Expecting type " ++ (show t) ++
                               " to be equivalent to all case types " ++ (show m))
-      return ()  
 
 equivConstructType :: Type -> Constructor -> VarEnv -> IO Bool
 equivConstructType t1 k venv
@@ -167,94 +167,89 @@ equivConstructType t1 k venv
       let t2 = lastType (venv Map.! k)
       return $ equivalent t1 t2
   | otherwise         = do
-      errorM "Type Checking" ("Not in scope: data constructor '" ++ k ++ "'")
+      errorM loggerName ("Not in scope: data constructor '" ++ k ++ "'")
       return False
 
 lastType :: Type -> Type
 lastType (Fun _ t1 t2) = lastType t2
 lastType t             = t
 
-canonical :: Type -> Type
-canonical (Rec x t)     = canonical $ unfold $ Rec x t
-canonical (Semi Skip t) = canonical t
-canonical t             = t
-
 checkBasic :: Type -> IO BasicType
 checkBasic (Basic b) = return b
 checkBasic t         = do
-  errorM "Type Checking" ("Expecting a basic type; found " ++ show t)
+  errorM loggerName ("Expecting a basic type; found " ++ show t)
   return IntType
 
 checkEquivBasics :: BasicType -> BasicType -> IO ()
 checkEquivBasics b1 b2
   | b1 == b2  = return ()
-  | otherwise = errorM "Type Checking" ("Expecting basic type " ++ (show b1) ++
+  | otherwise = errorM loggerName ("Expecting basic type " ++ (show b1) ++
                                         " to be equivalent to basic type " ++ (show b2))
 
 checkOutType :: Type -> IO BasicType
 checkOutType (Out b) = return b
 checkOutType t       = do
-  errorM "Type Checking" ("Expecting an output type; found " ++ (show t))
+  errorM loggerName ("Expecting an output type; found " ++ (show t))
   return IntType
 
 checkInType :: Type -> IO BasicType
 checkInType (In b) = return b
 checkInType t      = do
-  errorM "Type Checking" ("Expecting an input type; found " ++ (show t))
+  errorM loggerName ("Expecting an input type; found " ++ (show t))
   return IntType
 
 checkVar :: TermVar -> VarEnv -> IO (Type,VarEnv)
 checkVar x venv
   | Map.member x venv = return (venv Map.! x, venv)
   | otherwise         = do
-      errorM "Type Checking" ("Not found " ++ x)
-      return (Basic UnitType,venv)
+      errorM loggerName ("Not found " ++ x)
+      return (Basic UnitType, venv)
 
 checkEquivTypes :: Type -> Type -> IO ()
 checkEquivTypes t1 t2
   | equivalent t1 t2 = return ()
-  | otherwise        = errorM "Type Checking" ("Expecting type " ++ (show t1) ++
+  | otherwise        = errorM loggerName ("Expecting type " ++ (show t1) ++
                                                " to be equivalent to type " ++ (show t2))
 
 checkEquivEnvs :: VarEnv -> VarEnv -> IO ()
 checkEquivEnvs venv1 venv2
   | equivalentEnvs  venv1 venv2 = return ()
-  | otherwise                   = errorM "Type Checking"
+  | otherwise                   = errorM loggerName
       ("Expecting enviroment " ++ (show venv1) ++ " to be equivalent to enviroment " ++ (show venv2))
 
 checkFun :: Type -> IO (Type, Type)
 checkFun (Fun _ t1 t2) = return (t1, t2)
 checkFun t             = do
-  errorM "Type Checking" ("Expecting a function type; found " ++ (show t))
+  errorM loggerName ("Expecting a function type; found " ++ (show t))
   return (Basic IntType, Basic IntType)
 
 checkPair :: Type -> IO (Type, Type)
 checkPair (PairType t1 t2) = return (t1, t2)
 checkPair t                = do
-  errorM "Type Checking" ("Expecting a pair type; found " ++ (show t))
+  errorM loggerName ("Expecting a pair type; found " ++ (show t))
   return (Basic IntType, Basic IntType)
 
 checkSemi :: Type -> IO (Type, Type)
 checkSemi (Semi t1 t2) = return (t1, t2)
 checkSemi t            = do
-  errorM "Type Checking" ("Expecting a sequential session type; found " ++ (show t))
+  errorM loggerName ("Expecting a sequential session type; found " ++ (show t))
   return (Out IntType, Skip)
 
 checkSessionType :: Type -> IO(Type)
 checkSessionType t
   | isSessionType t = return t
   | otherwise       = do
-      errorM "Type Checking" ("Expecting a session type; found " ++ (show t))
+      errorM loggerName ("Expecting a session type; found " ++ (show t))
       return Skip
 
 checkBool :: Type -> IO ()
 checkBool (Basic BoolType) = return ()
-checkBool t                = errorM "Type Checking" ("Expecting a boolean type; found " ++ (show t))
+checkBool t                = errorM loggerName ("Expecting a boolean type; found " ++ (show t))
 
 checkUn :: Type -> IO ()
 checkUn t
   | un t      = return ()
-  | otherwise = errorM "Type Checking" ("Type " ++ show t ++ " is not unrestricted")
+  | otherwise = errorM loggerName ("Type " ++ show t ++ " is not unrestricted")
 
 
 -- Expression environments
@@ -273,7 +268,7 @@ checkParam fun args =  unique Set.empty args
     unique _ [] = return ()
     unique s (a:as)
       | a `Set.member` s = do         
-         errorM "Type Checking" ("Conflicting definitions for " ++ a ++
+         errorM loggerName ("Conflicting definitions for " ++ a ++
                                  "'\n" ++ "In an equation for '" ++ fun ++ "'")
          unique s as
       | otherwise        = unique (Set.insert a s) as
@@ -297,7 +292,7 @@ checkVEnvUn :: VarEnv -> IO ()
 checkVEnvUn venv
   | all (== True) $ map un env = return ()
   | otherwise                  = do
-      errorM "Type Checking" ("Venv must be un") -- TODO: good error message
+      errorM loggerName ("Venv must be un") -- TODO: good error message
       return ()
   where env = map snd (Map.toList venv)
 
@@ -307,3 +302,7 @@ checkVEnvUn venv
 -- checkTypeEnv tenv = Map.foldr (\(_,t) b -> b && isType kindEnv t) True tenv
 --   where kindEnv = Map.map fst tenv
 
+canonical :: Type -> Type
+canonical (Rec x t)     = canonical $ unfold $ Rec x t
+canonical (Semi Skip t) = canonical t
+canonical t             = t
