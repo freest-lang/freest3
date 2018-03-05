@@ -89,7 +89,7 @@ program venv = do
 
 manyAlternate ::
      Parser (TermVar, Type)
-  -> Parser (TermVar, (Args, Expression))
+  -> Parser (TermVar, (Params, Expression))
   -> Parser (TypeVar, Type)
   -> Parser (TypeVar, [(TypeVar, [Type])])
   -> VarEnv

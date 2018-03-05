@@ -1,4 +1,3 @@
-
 module Terms.Terms
   ( Expression(..)
   , ExpEnv
@@ -6,7 +5,7 @@ module Terms.Terms
   , TypeEnv
  -- , ConstructorEnv
   , TermVar
-  , Args
+  , Params
   , CaseMap
   ) where
 
@@ -16,11 +15,11 @@ import           Types.Types
 
 type TermVar = String
 
-type Args = [TermVar]
+type Params = [TermVar]
 
 type VarEnv = Map.Map TermVar Type
 
-type ExpEnv = Map.Map TermVar (Args, Expression)
+type ExpEnv = Map.Map TermVar (Params, Expression)
 
 type TypeEnv = Map.Map TypeVar Type
 
@@ -29,7 +28,7 @@ type TypeEnv = Map.Map TypeVar Type
 -- type TypeEnv = Map.Map TypeVar (Kind, Type)
 -- type ConstructorEnv = Map.Map Constructor [(Constructor, [Type])]
 
-type CaseMap = (Map.Map TermVar (Args, Expression))
+type CaseMap = (Map.Map TermVar (Params, Expression))
 
 data Expression
   -- Basic expressions

@@ -15,7 +15,7 @@ import           Types.Types
 -- The name of the logger for type checking
 loggerName = "Type Checking"
 
-typeCheck :: Args -> Expression -> TermVar -> VarEnv -> TypeEnv -> IO(Type)
+typeCheck :: Params -> Expression -> TermVar -> VarEnv -> TypeEnv -> IO(Type)
 typeCheck args exp fname venv tenv = do
   debugM loggerName ("Goal: " ++ (show venv) ++ " |- " ++ (show exp))
 
@@ -91,37 +91,39 @@ checkExp (Receive e) venv1 = do
   b <- checkInType t2
   return (Fun Un t1 (PairType (Basic b) t3), venv2)
 
+checkExp (Select c e) venv1 = do
+  (t,venv2) <- checkExp e venv1 
+  return (Choice Internal (Map.singleton c t), venv2) -- TODO: add the other branches to this type
+
+-- TODO: Add match
+
 -- Fork
 checkExp (Fork e) venv1 = do
   (t, venv2) <- checkExp e venv1 
-  checkUn t --TODO: review un predicate
+  checkUn t
   return (Basic UnitType, venv2)
 
 -- Datatypes
-checkExp (Select c e) venv1 = do
-  (t,venv2) <- checkExp e venv1 
-  return (Choice Internal (Map.singleton c t), venv2)
-
 checkExp (Constructor c) venv = checkVar c venv
---  t <- checkConstructor c 
---  return (venv Map.! c, venv)
 
-checkExp (Case e m) venv1 = do
+checkExp (Case e cm) venv1 = do
   (t, venv2) <- checkExp e venv1
-  checkEquivConstructors t m venv2
--- l = [(Type,Env)]
-  l <- checkCaseMap m venv2
+  checkEquivConstructors venv2 t cm
+  l <- checkCaseMap cm venv2
   checkEquivTypeList (map fst l)
   checkEquivEnvList (map snd l)
   return $ head l
 
+-- Checking variables
 
 checkVar :: TermVar -> VarEnv -> IO (Type, VarEnv)
 checkVar x venv
   | Map.member x venv = return (venv Map.! x, venv)
   | otherwise         = do
-      errorM loggerName ("Variable not in scope: " ++ x)
+      errorM loggerName ("Variable or data constructor not in scope: " ++ x)
       return (Basic UnitType, venv)
+
+-- Checking equivalent types and environments
 
 checkEquivTypes :: Type -> Type -> IO ()
 checkEquivTypes t1 t2
@@ -134,6 +136,25 @@ checkEquivEnvs venv1 venv2
   | equivalentEnvs  venv1 venv2 = return ()
   | otherwise                   = errorM loggerName
       ("Expecting environment " ++ (show venv1) ++ " to be equivalent to environment " ++ (show venv2))
+
+equivalentEnvs :: VarEnv -> VarEnv -> Bool
+equivalentEnvs venv1 venv2 = Map.size venv1 == Map.size venv2 && equivElems
+  where equivElems = Map.foldlWithKey (\b tv t -> b && Map.member tv venv2 &&
+                            equivalent t (venv2 Map.! tv)) True venv1
+
+checkEquivTypeList :: [Type] -> IO ()
+checkEquivTypeList (x:xs) = 
+  mapM_ (checkEquivTypes x) xs
+
+checkEquivEnvList :: [VarEnv] -> IO ()
+checkEquivEnvList (x:xs) =
+  mapM_ (checkEquivEnvs x) xs
+
+checkEquivBasics :: BasicType -> BasicType -> IO ()
+checkEquivBasics b1 b2
+  | b1 == b2  = return ()
+  | otherwise = errorM loggerName ("Expecting basic type " ++ (show b1) ++
+                                        " to be equivalent to basic type " ++ (show b2))
 
 -- Pattern matching against the various type constructors
 
@@ -159,72 +180,49 @@ checkSemi t            = do
   errorM loggerName ("Expecting a sequential session type; found " ++ (show t))
   return (Out IntType, Skip)
 
+checkUn :: Type -> IO ()
+checkUn t
+  | un t      = return ()
+  | otherwise = errorM loggerName ("Type " ++ show t ++ " is not unrestricted")
 
--- TODO: same number of args as in the datatype
--- test haskell 
--- type CaseMap = (Map.Map Constructor ([TermVar], Expression))
-checkCaseMap :: CaseMap -> VarEnv -> IO ([(Type,VarEnv)])
-checkCaseMap cm venv = do
-  let venv1 = Map.foldlWithKey (\acc c (tv, _) -> insert c tv acc) venv cm 
-  l <- mapM (\e -> checkExp e venv1) exps
-  return l
-  where
---    vars = map fst (Map.elems cm)
-    exps = map snd (Map.elems cm)
-    types c tv venv1 = joinArgsAndType tv (venv1 Map.! c)
-    insert c tv venv1 = foldl (\acc (k, v) -> Map.insert k v acc) venv1 (types c tv venv1)
+-- Type checking the case constructor
 
--- joinArgsAndType :: Args -> Type -> [(TermVar, Type)]
--- checkExpEnv :: TermVar -> Args -> VarEnv -> IO VarEnv
+checkEquivConstructors :: VarEnv -> Type -> CaseMap -> IO ()
+checkEquivConstructors venv t cm = do
+  Map.foldrWithKey' (\c _ _ -> checkContructor venv c t) (return ()) cm
 
-checkEquivTypeList :: [Type] -> IO ()
-checkEquivTypeList (x:xs) = 
-  mapM_ (checkEquivTypes x) xs
+checkContructor :: VarEnv -> TermVar -> Type -> IO ()
+checkContructor venv c t1 = do
+  (t2, _) <- checkVar c venv
+  checkEquivTypes (last (toList t2)) t1
 
-checkEquivEnvList :: [VarEnv] -> IO ()
-checkEquivEnvList (x:xs) =
-  mapM_ (checkEquivEnvs x) xs
+checkCaseMap :: CaseMap -> VarEnv -> IO [(Type, VarEnv)]
+checkCaseMap cm venv =
+  Map.foldrWithKey' (checkCaseBranch venv) (return []) cm
 
-checkEquivConstructors :: Type -> CaseMap -> VarEnv -> IO ()
-checkEquivConstructors t m venv = do
-  b <- allEquiv
-  checkConstruct b t m
-  where
-    allEquiv = do
-      l <- (mapM (\k -> equivConstructType t k venv) (Map.keys m))
-      return $ all (== True) l
+checkCaseBranch :: VarEnv -> TypeVar -> (Params, Expression) -> IO [(Type, VarEnv)] -> IO [(Type, VarEnv)]
+checkCaseBranch venv c (params, exp) acc = do
+  (t, venv1) <- checkVar c venv
+  paramTypeList <- addToEnv c params (init (toList t))
+  let venv2 = Map.union (Map.fromList paramTypeList) venv1
+  pair <- checkExp exp venv2
+  pairs <- acc
+  return $ pair:pairs
 
-checkConstruct :: Bool -> Type -> CaseMap -> IO ()  
-checkConstruct b t m
-  | b         = return ()
-  | otherwise =
-      errorM loggerName ("Expecting type " ++ (show t) ++
-                              " to be equivalent to all case types " ++ (show m))
+addToEnv :: TypeVar -> Params -> [Type] -> IO [(TypeVar, Type)]
+addToEnv c ps ts
+  | length ps == length ts = return $ zip ps ts
+  | otherwise = do
+      errorM loggerName ("Constructor " ++ (show c) ++ "is applied to too few arguments")
+      return []
 
-equivConstructType :: Type -> TypeVar -> VarEnv -> IO Bool
-equivConstructType t1 k venv
-  | Map.member k venv = do
-      let t2 = lastType (venv Map.! k)
-      return $ equivalent t1 t2
-  | otherwise         = do
-      errorM loggerName ("Not in scope: data constructor '" ++ k ++ "'")
-      return False
-
-lastType :: Type -> Type
-lastType (Fun _ t1 t2) = lastType t2
-lastType t             = t
+-- Checking session types
 
 checkBasic :: Type -> IO BasicType
 checkBasic (Basic b) = return b
 checkBasic t         = do
   errorM loggerName ("Expecting a basic type; found " ++ show t)
   return IntType
-
-checkEquivBasics :: BasicType -> BasicType -> IO ()
-checkEquivBasics b1 b2
-  | b1 == b2  = return ()
-  | otherwise = errorM loggerName ("Expecting basic type " ++ (show b1) ++
-                                        " to be equivalent to basic type " ++ (show b2))
 
 checkOutType :: Type -> IO BasicType
 checkOutType (Out b) = return b
@@ -245,23 +243,17 @@ checkSessionType t
       errorM loggerName ("Expecting a session type; found " ++ (show t))
       return Skip
 
-checkUn :: Type -> IO ()
-checkUn t
-  | un t      = return ()
-  | otherwise = errorM loggerName ("Type " ++ show t ++ " is not unrestricted")
-
-
 -- Expression environments
 -- venv contains the entries in the prelude as well as those in the source file
 
-checkExpEnv :: TermVar -> Args -> VarEnv -> IO VarEnv
+checkExpEnv :: TermVar -> Params -> VarEnv -> IO VarEnv
 checkExpEnv fun args venv = do
   checkParam fun args
   return $ foldl (\acc (arg, t) -> Map.insert arg t acc) venv arguments
 -- checkExpEnv fun args venv = foldl (\acc (arg, t) -> Map.insert arg t acc) venv arguments
-  where arguments = joinArgsAndType args (venv Map.! fun)
+  where arguments = joinParamsAndType args (venv Map.! fun)
 
-checkParam :: TermVar -> Args -> IO ()
+checkParam :: TermVar -> Params -> IO ()
 checkParam fun args =  unique Set.empty args
   where
     unique _ [] = return ()
@@ -276,16 +268,10 @@ checkParam fun args =  unique Set.empty args
 --   where allUnique xs = length xs == length (Set.fromList xs)
 
 -- Same size final and args
-joinArgsAndType :: Args -> Type -> [(TermVar, Type)]
-joinArgsAndType [] t                 = [] -- TODO  [("##RET", t)]
-joinArgsAndType (x:xs) (Fun _ t1 t2) = [(x,t1)] ++ joinArgsAndType xs t2
-joinArgsAndType (x:xs) t             = [(x,t)]
-
--- Variable environments
-equivalentEnvs :: VarEnv -> VarEnv -> Bool
-equivalentEnvs venv1 venv2 = Map.size venv1 == Map.size venv2 && equiveElems
-  where equiveElems =  Map.foldlWithKey (\b tv t -> b && Map.member tv venv2 &&
-                            equivalent t (venv2 Map.! tv)) True venv1
+joinParamsAndType :: Params -> Type -> [(TermVar, Type)]
+joinParamsAndType [] t                 = [] -- TODO  [("##RET", t)]
+joinParamsAndType (x:xs) (Fun _ t1 t2) = [(x,t1)] ++ joinParamsAndType xs t2
+joinParamsAndType (x:xs) t             = [(x,t)]
 
 checkVEnvUn :: VarEnv -> IO ()
 checkVEnvUn venv
