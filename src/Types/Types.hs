@@ -121,13 +121,13 @@ equalMaps m tm1 tm2 =
 -- The dual of a session type
 -- Assume that the type is a Session Type
 dual :: Type -> Type
-dual (Var v)            = Var v
-dual Skip               = Skip
-dual (Out b)            = In b
-dual (In b)             = Out b
-dual (Choice v m)       = Choice v (Map.map dual m)
-dual (Semi t1 t2)       = Semi (dual t1) (dual t2)
-dual (Rec x t)          = Rec x (dual t)
+dual (Var v)      = Var v
+dual Skip         = Skip
+dual (Out b)      = In b
+dual (In b)       = Out b
+dual (Choice v m) = Choice v (Map.map dual m)
+dual (Semi t1 t2) = Semi (dual t1) (dual t2)
+dual (Rec x t)    = Rec x (dual t)
 
 toList :: Type -> [Type]
 toList (Fun _ t1 t2) = t1 : toList t2

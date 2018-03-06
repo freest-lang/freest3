@@ -28,7 +28,7 @@ type TypeEnv = Map.Map TypeVar Type
 -- type TypeEnv = Map.Map TypeVar (Kind, Type)
 -- type ConstructorEnv = Map.Map Constructor [(Constructor, [Type])]
 
-type CaseMap = (Map.Map TermVar (Params, Expression))
+type CaseMap = Map.Map TermVar (Params, Expression)
 
 data Expression
   -- Basic expressions
@@ -50,6 +50,7 @@ data Expression
   | Send Expression Expression
   | Receive Expression
   | Select TermVar Expression
+  | Match Expression (Map.Map TermVar (TypeVar, Expression))
   -- Branch - overloaded with Case
   -- Fork
   | Fork Expression

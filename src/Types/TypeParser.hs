@@ -96,17 +96,17 @@ binary name fun assoc = Infix  (do{ try (symbol name); return fun }) assoc
 
 parseTerm =
   try (parens parseType)
-  <|> (do {  skip ;                               return Skip })
-  <|> (do { b <- parseBasicType;                  return $ Basic b })
-  <|> (do { try (symbol "?"); b <- parseBasicType;      return $ In b })
-  <|> (do { try (symbol "!"); b <- parseBasicType;      return $ Out b })
+  <|> (do {  skip ;                                             return Skip })
+  <|> (do { b <- parseBasicType;                                return $ Basic b })
+  <|> (do { try (symbol "?"); b <- parseBasicType;              return $ In b })
+  <|> (do { try (symbol "!"); b <- parseBasicType;              return $ Out b })
   <|> parens parsePair
   <|> parseExternalChoice
   <|> parseInternalChoice
   <|> squares parseDataType
   <|> parseRec
   <|> parseForall
-  <|> (do { id <- identifier; notFollowedBy (do {colon;colon});                    return $ Var id })
+  <|> (do { id <- identifier; notFollowedBy (do {colon;colon}); return $ Var id })
   <?> "a type: Skip, T;T, !B, ?B, B, T->T, T-oT, (T,T), id, rec id.T, or forall id.t"
 
 parsePair = do

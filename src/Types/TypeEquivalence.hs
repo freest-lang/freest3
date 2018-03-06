@@ -74,10 +74,9 @@ isRec :: Type -> Bool
 isRec (Rec _ _) = True
 isRec _         = False
 
-unfold :: Type -> Type
 -- Assumes parameter is a Rec type
+unfold :: Type -> Type
 unfold (Rec x t) = subs (Rec x t) x t
-
 -- Assume the second type is closed (no free vars)
 subs :: Type -> TypeVar -> Type -> Type
 subs _ _ Skip               = Skip

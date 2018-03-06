@@ -206,6 +206,7 @@ parseExpr =
   <|> parseSelect
   <|> parseFork
   <|> parseCase
+  <|> parseMatch
   <|> parseVariables
   <|> try parseValue
 
@@ -304,6 +305,20 @@ parseCase = do
 parseCaseValues = do
   c <- constructor
   ids <- (many lowerIdentifier)
+  reservedOp "->"
+  e <- parseExpression
+  return $ (c, (ids, e))
+
+parseMatch = do
+  reserved "match"
+  e <- parseExpression
+  reserved "with"
+  v <- many1 parseMatchValues
+  return $ Match e (Map.fromList v)
+
+parseMatchValues = do
+  c <- constructor
+  ids <- lowerIdentifier
   reservedOp "->"
   e <- parseExpression
   return $ (c, (ids, e))
