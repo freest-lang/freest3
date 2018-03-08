@@ -1,146 +1,158 @@
 module Types.Kinding
-( isType
-, isSessionType
+( -- isType
+--,
+isSessionType
 , isSchemeType
 , kindOf
 , contractive
-, Kind (..)
+,Kind (..)
 , KindEnv
-, un) where
+, un
+) where
 
 import qualified Data.Map.Strict as Map
 import           Types.Kinds
 import           Types.Types
 import           Data.Either (lefts,rights)
 import           Data.List (intercalate)
+import           System.Log.Logger
+--import           Control.Monad
 
 type KindEnv = Map.Map TypeVar Kind
-type Message = String
-type KindingOut = Either Kind Message
+-- type Message = String
+-- type KindingOut = Either Kind Message
 
-isType :: KindEnv -> Type -> Bool
-isType kenv t = case kinding kenv t of
-  Left _  -> True
-  Right _ -> False
+loggerName = "Kinding"
+
+-- Kind of a Type
+
+kindOf :: Type -> IO Kind
+kindOf t = do
+  debugM loggerName ("Goal: KindOf " ++ show t)
+  k <- kinding Map.empty t
+  debugM loggerName "Done!"
+  return k
+
+
+kinding :: KindEnv -> Type -> IO Kind
+kinding _ Skip = return $ Kind Session Un
+kinding _ (Out _) = return $ Kind Session Lin
+kinding _ (In _) = return $ Kind Session Lin
+kinding _ (Basic _) = return $ Kind Arbitrary Un
+kinding delta (Var x) = checkVar delta x
+
+kinding delta (Semi t u) = do
+  kt <- kinding delta t 
+  ku <- kinding delta u
+  checkSessionType t kt
+  checkSessionType t ku
+  return $ Kind Session (max (multiplicity kt) (multiplicity ku))
+
+kinding delta (Fun m t u) = do
+  kt <- kinding delta t 
+  ku <- kinding delta u
+  checkNotTypeScheme t kt
+  checkNotTypeScheme t ku
+  return $ Kind Arbitrary m
+
+kinding delta (PairType t u) = do
+  kt <- kinding delta t 
+  ku <- kinding delta u
+  checkNotTypeScheme t kt
+  checkNotTypeScheme t ku
+  return $ Kind Arbitrary Lin
+
+kinding delta (Datatype m) = do
+  ks <- mapM (kinding delta) (Map.elems m)
+  checkDataType ks (Kind Arbitrary Un)
+      ("One of the components in a Datatype is a type Scheme. \nType: " ++ show m)
+  
+kinding delta (Choice _ m) = do
+  ks <- mapM (kinding delta) (Map.elems m)
+  checkTypeMapCases ks (Kind Session Lin)
+      ("One of the components in a choice isn't lower than a S^l. " ++ (show m))
+
+kinding delta (Rec x t) = do
+  k <- kinding (Map.insert x (Kind Session Un) delta) t
+  checkContractivity delta t
+  checkNotTypeScheme (Rec x t) k 
+  return k
+
+kinding delta (Forall x t) = --do
+  return $ Kind Arbitrary Lin
+  -- let kd = kinding (Map.insert x (Kind Session Un) delta) t in
+  -- case kd of
+  --   -- TODO: k is the kinding of the variable and it is always Kind Session Un ?
+  --   -- (Left k') | k' >= (Kind Scheme Un) -> Left k'
+  --   (Left k') | k' <= (Kind Arbitrary Lin) -> Left k'
+  --   (Right m) -> Right m
+  --   -- _ -> Right "Forall body is not a type Scheme"
+
+checkTypeMap :: KindEnv -> TypeMap -> Kind -> String -> IO Kind
+checkTypeMap delta tm k m = do--liftM $
+  ks <- mapM (kinding delta) (Map.elems tm)
+  checkTypeMapCases ks k m
+
+checkTypeMapCases :: [Kind] -> Kind -> String -> IO Kind
+checkTypeMapCases ks k m
+   | all (<= k) ks = return $ Kind Session Lin
+   | otherwise  = do
+       errorM loggerName m
+       return $ Kind Arbitrary Lin
+
+checkDataType :: [Kind] -> Kind -> String -> IO Kind
+checkDataType ks k m
+   | all (<= k) ks = return $ Kind Arbitrary (multiplicity $ maximum ks)
+   | otherwise  = do
+       errorM loggerName m
+       return $ Kind Arbitrary Lin
+  
+-- Check if a type is a session type
+checkSessionType :: Type -> Kind -> IO ()
+checkSessionType t k
+  | isSession k = return ()
+  | otherwise   = errorM loggerName ("Expecting type " ++ (show t) ++ " to be a session type but it is a " ++ (show k))
+      
+isSessionType :: Type -> IO Bool
+isSessionType t = do
+  k <- kindOf t
+  return $ isSession k
 
 isSession :: Kind -> Bool
 isSession (Kind Session _) = True
 isSession _                = False
 
-isSessionType :: Type -> Bool
-isSessionType = isSession . kindOf
+-- Check if a type is a type scheme
 
+isSchemeType :: Type -> IO Bool
+isSchemeType t = do -- isScheme . kindOf
+  k <- kindOf t
+  return $ isScheme k
+  
 isScheme :: Kind -> Bool
 isScheme (Kind Scheme _) = True
 isScheme _               = False
 
-isSchemeType :: Type -> Bool
-isSchemeType = isScheme . kindOf
-
-un :: Type -> Bool
-un = isUn . kindOf
-
-isUn :: Kind -> Bool
-isUn (Kind _ Un) = True
-isUn (Kind _ _) = False
-
-kindOf :: Type -> Kind
-kindOf t = case kinding Map.empty t of
-  Left k  -> k
-  Right m -> error $ "Type " ++ show t ++ " not a proper type:\n" ++ m
-  -- Right _ -> error $ "Type " ++ show t ++ " not a proper type"
-
-kinding :: KindEnv -> Type -> KindingOut
-kinding _ Skip = Left $ Kind Session Un
-kinding _ (Out _) = Left $ Kind Session Lin
-kinding _ (In _) = Left $ Kind Session Lin
-kinding _ (Basic _) = Left $ Kind Arbitrary Un
-kinding delta (Semi t u) =
-  case (kinding delta t, kinding delta u) of
-    (Left(Kind Session m1), Left(Kind Session m2))  ->
-      Left $ Kind Session (max m1 m2)
-    _                                              ->
-      Right $ "One of the operands is not a session kind"
-kinding delta (Fun m t u) =
-  case (kinding delta t, kinding delta u) of
-    (Left k1, Left k2) |  k1 <= Kind Arbitrary Lin && k2 <= Kind Arbitrary Lin ->
-      Left $ Kind Arbitrary m
-    _                                                                          ->
-      Right $ "One of the operands is a type Scheme. Type: " ++ show (Fun m t u)
-kinding delta (PairType t u) =
-  case (kinding delta t, kinding delta u) of
-    (Left k1, Left k2 ) |  k1 <= (Kind Arbitrary Lin) && k2 <= (Kind Arbitrary Lin) ->
-        Left $ Kind Arbitrary Lin
-    _                                                                               ->
-      Right $ "One of the operands is a type Scheme. Type: " ++ show (PairType t u)
-kinding delta (Datatype m) =
-  kindingDatatypeMap delta m (Kind Arbitrary Un)
-    ("One of the components in a Datatype is a type Scheme. \nType: " ++ show m)
-kinding delta (Choice _ m) =
-  kindingMap delta m (Kind Session Lin)
-    ("One of the components in a choice isn't lower than a S^l. \nType: " ++ show m)
-kinding delta (Rec x t) =
-  let km = kinding  (Map.insert x (Kind Session Un) delta) t in
-  case km of
-    (Left k) ->
-     if contractive (Map.insert x k delta) t
-        then
-          if (k <= (Kind Arbitrary Lin))
-            then Left k
-            else Right $ "The kind of the type is a type Scheme. \nType: " ++ show (Rec x t)
-        else Right $ "The body of the type is not contractive. \nType: " ++ show (Rec x t)
-    (Right m) -> Right m
-kinding delta (Forall x t) =
-  let kd = kinding (Map.insert x (Kind Session Un) delta) t in
-  case kd of
-    -- TODO: k is the kinding of the variable and it is always Kind Session Un ?
-    -- (Left k') | k' >= (Kind Scheme Un) -> Left k'
-    (Left k') | k' <= (Kind Arbitrary Lin) -> Left k'
-    (Right m) -> Right m
-    -- _ -> Right "Forall body is not a type Scheme"
-kinding delta (Var x) =
-  if Map.member x delta then
-    Left $ delta Map.! x
-  else
-    Right $ show x ++ " is a free variable"
+-- Check if a type is not a type scheme
+checkNotTypeScheme :: Type -> Kind -> IO ()
+checkNotTypeScheme t k
+  | not (isScheme k) = return ()
+  | otherwise        = errorM loggerName ("Type " ++ (show t) ++ " is a type Scheme")
 
 
-kindingMap :: KindEnv -> TypeMap -> Kind -> Message -> KindingOut
-kindingMap delta m k message =
-  let km = liftl $ map (kinding delta) (Map.elems m) in
-  case km of
-    (Left ks) ->
-      if all (<= k) ks then
-        Left $ (Kind Session Lin)
-      else
-        Right message
-    (Right ms) -> Right $ intercalate "\n" ms
+-- Check variables
+checkVar :: KindEnv -> TypeVar -> IO Kind
+checkVar delta v 
+  | Map.member v delta = return $ delta Map.! v
+  | otherwise          = do
+      errorM loggerName ("Variable " ++ (show v) ++ " is a free variable")
+      return $ Kind Arbitrary Lin
 
-kindingDatatypeMap :: KindEnv -> TypeMap -> Kind -> Message -> KindingOut
-kindingDatatypeMap delta m k message =
-  let km = liftl $ map (kinding delta) (Map.elems m) in
-  case km of
-    (Left ks) ->
-      if all (<= k) ks then
-        Left $ Kind Arbitrary (multiplicity $ maximum ks)
-      else
-        Right message
-    (Right ms) -> Right $ intercalate "\n" ms
-
--- (Datatype (Map.fromList [("a",Basic IntType),("b",Basic BoolType)]))
--- (Datatype (Map.fromList [("a",Basic IntType),("b",Basic BoolType),("c",Basic CharType)]))
+-- Extracts the multiplicity of a kind
 
 multiplicity :: Kind -> Multiplicity
 multiplicity (Kind _ m) = m
 
-liftl :: [KindingOut] -> Either [Kind] [Message]
-liftl xs =
-  let a = rights xs in
-  if length a == 0
-    then
-      Left $ lefts xs
-    else
-      Right a
 
 -- Contractivity
 contractive :: KindEnv -> Type -> Bool
@@ -150,9 +162,33 @@ contractive delta (Var x) = Map.member x delta
 contractive delta (Forall _ t) = contractive delta t
 contractive _ _ = True
 
--- (int -> int);skip -> malformed
+checkContractivity :: KindEnv -> Type -> IO ()
+checkContractivity delta t
+  | contractive delta t = return ()
+  | otherwise           = errorM loggerName ("Type " ++ (show t) ++ " is not contractive.")
+
+-- Check if a type is wellformed 
+
+-- isType :: KindEnv -> Type -> Bool
+-- isType kenv t =
+--   case kinding kenv t of
+--     Left _  -> True
+--     Right _ -> False
+
+-- Check if the type's multiplicity is unrestricted
+
+un :: Type -> IO Bool
+un t = do --isUn . kindOf
+  k <- kindOf t
+  return $ isUn k
+  
+isUn :: Kind -> Bool
+isUn (Kind _ Un) = True
+isUn (Kind _ _)  = False
 
 -- These should yield Left _
 -- kinding Map.empty (UnFun Skip Skip)
 -- kinding Map.empty (UnFun (Basic IntType) (Basic IntType))
 -- kinding Map.empty (UnFun (In IntType) (In IntType))
+-- (Datatype (Map.fromList [("a",Basic IntType),("b",Basic BoolType)]))
+-- (Datatype (Map.fromList [("a",Basic IntType),("b",Basic BoolType),("c",Basic CharType)]))

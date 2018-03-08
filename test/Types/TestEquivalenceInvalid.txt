@@ -11,3 +11,13 @@ Skip
 
 &{a:?Bool, b:Skip;!Char}
   &{b:Skip;!Char,a:?Bool, c:!Char}
+
+rec x . !Int
+  rec x . !Bool
+
+rec x . +{l:!Int, m:x}
+  rec y . +{m:Skip, l:y};!Bool
+
+-- should be false
+-- rec x . +{l:!Int, m:x}
+--   rec y . +{l:Skip, m:y};!Bool

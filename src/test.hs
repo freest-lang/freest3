@@ -37,7 +37,7 @@
 -- data Aa = AA Int -> Bool
 --         | CC Char Bool
 
--- parseSend: TODO: infinite
+-- --parseSend: TODO: infinite
 -- parseSend :: (!Int;Skip) -> Skip
 -- parseSend x = send 2 x
 
@@ -51,8 +51,9 @@
 -- parseReceive TODO
 -- (?Int;Skip) -> ((?Int;Skip) -> (Int , Skip))
 --  ((?Int;Skip) -> (Int , Skip))
-parseReceive ::  (?Int;Skip) -> (?Int;Skip) 
-parseReceive x = receive x
+-- parseReceive ::  (?Int;Skip) -> (?Int;Skip) 
+-- parseReceive x = receive x
+
 
 -- -- parseSelect
 -- -- parseSelect :: Int
@@ -79,3 +80,15 @@ parseReceive x = receive x
 --           B a b c -> a
 --           A i -> i
 --           C -> 'C'
+
+-- qqqq :: Int
+-- qqqq = 3*(2 - 1)
+
+-- start :: Int
+-- start = fact 12
+
+-- fact :: Int -> Int
+-- fact n = if n == 0 then 1 else n * n --fact (n-1)
+
+test :: Int -> Int
+test n = test 1

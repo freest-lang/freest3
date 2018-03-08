@@ -12,10 +12,11 @@ spec :: Spec
 spec = do
   t <- runIO $ readFromFile "test/Types/TestEquivalenceInvalid.txt"
   describe "Invalid Equivalence Test" $ do
-      mapM_ matchValidSpec (convert t)
+      mapM_ matchInvalidSpec (convert t)
 
 
-matchValidSpec :: (String, String) -> Spec
-matchValidSpec (a, b) =
+matchInvalidSpec :: (String, String) -> Spec
+matchInvalidSpec (a, b) =
   it (a ++ " `equivalent` " ++  b) $ do
-    ((read a :: Type) `equivalent` (read b :: Type)) `shouldBe` False
+    equiv <- ((read a :: Type) `equivalent` (read b :: Type))
+    equiv `shouldBe` False

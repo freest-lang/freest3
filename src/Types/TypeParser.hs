@@ -23,7 +23,8 @@ instance Read BasicType where
 
 instance Read Type where
   readsPrec _ s = case parserType s of
-    Right t -> if isType Map.empty t then [(t,"")] else error $ "Type "++ (show t) ++" not well kinded"
+    Right t -> [(t,"")]
+    --Right t -> if isType Map.empty t then [(t,"")] else error $ "Type "++ (show t) ++" not well kinded"
     Left m -> error $ "type parse error " ++ show m
 
 -- TOKENS

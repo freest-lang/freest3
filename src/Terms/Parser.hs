@@ -22,7 +22,7 @@ lexer =
   Token.makeTokenParser
     (haskellDef
        { Token.reservedOpNames =
-           ["=", "+", "-", "*", "/", "mod", "rem", "&&", "||", "not", "|", "->"]
+           ["=", "+", "-", "*", "/", "mod", "rem", "&&", "||", "not", "|", "->", "=="]
        , Token.reservedNames =
            [ "send", "receive", "()", "new", "in", "let"
            , "fork", "match", "with", "select", "case"
@@ -117,6 +117,7 @@ ident =
   choice [ try (string "(+)"), try (string "(-)"), try (string "(*)")
          , try (string "(/)"), try (string "mod"), try (string "rem")
          , try (string "(&&)"), try (string "(||)"), try (string "not")
+         , try (string "(==)")
          ]
 
 parseBindingDecl = do
@@ -124,6 +125,7 @@ parseBindingDecl = do
   colon
   colon
   t <- mainTypeParser
+  --error $ show id
   return $ (id, t)
   -- if isType Map.empty t then
   --  return $ (id,t)
@@ -175,7 +177,8 @@ table =
     , binary "mod" (convertApp "mod") AssocRight
     , binary "rem" (convertApp "rem") AssocRight
     ]
-  , [ binOp "&&" (convertApp "(&&)") AssocLeft {-TODO prefix "not" UnApplication,-}
+  , [ binOp "&&" (convertApp "(&&)") AssocLeft
+    , binOp "==" (convertApp "(==)") AssocLeft
     , prefix "not" (Application (Variable "not"))
     , binOp "||" (convertApp "(||)") AssocLeft
     ]
@@ -198,7 +201,7 @@ parseExpr =
       (try $ parens parseExpression)
   <|> parseBasic
   <|> parseConditional
-  <|> try parsePair
+  <|> parsePair
   <|> parseLet
   <|> parseNew
   <|> parseSend
@@ -208,10 +211,9 @@ parseExpr =
   <|> parseCase
   <|> parseMatch
   <|> parseVariables
-  <|> try parseValue
+  <|> parseConstructor
+  <|> parseFunApp
 
--- TODO Check Char type
--- TODO review read i on Integer
 -- Parse Basic Types (int, bool, char and unit)
 parseBasic =
       (do c <- apostrophe anyChar; return $ Character c)
@@ -230,14 +232,14 @@ parseBool =
 
 -- Parse Variables
 parseVariables =
-  try $ do
+  try $ do   
     id <- lowerIdentifier
---    error $ "PAJE"
+    notFollowedBy (do {colon;colon})
     return $ Variable id
 
 -- Parse Pairs (Pair and let)
 parsePair =
-  parens $ do
+  try $ parens $ do
     e1 <- parseExpression
     comma
     e2 <- parseExpression
@@ -323,9 +325,16 @@ parseMatchValues = do
   e <- parseExpression
   return $ (c, (ids, e))
 
-parseValue = do
+parseConstructor = do
   c <- constructor
   return $ Constructor c  
 
-
-
+parseFunApp = try $ do
+  c <- lowerIdentifier
+  e <- many1 parseExpression
+  return $ foldr apply (Application (Variable c) (head e)) (tail e)
+  where
+    apply e acc = Application acc e
+  
+-- TODO: remove (test purposes)
+run = mainProgram "src/test.hs" Map.empty

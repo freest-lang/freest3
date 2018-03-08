@@ -100,7 +100,7 @@ checkExp (Select c e) venv1 = do
 
 checkExp (Match e m) venv1 = do
   -- TODO
-  return (Basic UnitType, venv2)
+  return (Basic UnitType, venv1)
 -- Fork
 checkExp (Fork e) venv1 = do
   (t, venv2) <- checkExp e venv1 
@@ -131,22 +131,43 @@ checkVar x venv
 -- Checking equivalent types and environments
 
 checkEquivTypes :: Type -> Type -> IO ()
-checkEquivTypes t1 t2
-  | equivalent t1 t2 = return ()
-  | otherwise        = errorM loggerName
-      ("Expecting type " ++ (show t1) ++ " to be equivalent to type " ++ (show t2))
+checkEquivTypes t1 t2 = do
+  b <- equivalent t1 t2
+  equiv b
+  where
+    equiv b
+      | b         = return ()
+      | otherwise = errorM loggerName
+                      ("Expecting type " ++ (show t1) ++
+                       " to be equivalent to type " ++ (show t2))
 
 checkEquivEnvs :: VarEnv -> VarEnv -> IO ()
-checkEquivEnvs venv1 venv2
-  | equivalentEnvs  venv1 venv2 = return ()
-  | otherwise                   = errorM loggerName
-      ("Expecting environment " ++ (show venv1) ++ " to be equivalent to environment " ++ (show venv2))
+checkEquivEnvs venv1 venv2 = do
+  b <- equivalentEnvs venv1 venv2
+  equiv b
+  where
+    equiv b
+      | b  = return ()
+      | otherwise = errorM loggerName ("Expecting environment " ++ (show venv1) ++
+                                       " to be equivalent to environment " ++ (show venv2))
 
-equivalentEnvs :: VarEnv -> VarEnv -> Bool
-equivalentEnvs venv1 venv2 = Map.size venv1 == Map.size venv2 && equivElems
-  where equivElems = Map.foldlWithKey (\b tv t -> b && Map.member tv venv2 &&
-                            equivalent t (venv2 Map.! tv)) True venv1
+equivalentEnvs :: VarEnv -> VarEnv -> IO Bool
+equivalentEnvs venv1 venv2 = do  
+  b <- Map.foldlWithKey (equivEnvElem venv2) (return True) venv1
+  return $ (Map.size venv1 == Map.size venv2) && b
+  where 
+    equivEnvElem :: VarEnv -> IO Bool -> TermVar -> Type -> IO Bool
+    equivEnvElem venv2 acc tv t = do
+      b1 <- acc
+      b2 <- checkVarInEnv tv venv2
+      b3 <- equivalent t (venv2 Map.! tv)
+      return $ b1 && b2 && b3
 
+
+checkVarInEnv var env = return $ Map.member var env
+
+           -- where equivElems = Map.foldlWithKey (\b tv t -> b && Map.member tv venv2 &&
+           --                  equivalent t (venv2 Map.! tv)) True venv1
 checkEquivTypeList :: [Type] -> IO ()
 checkEquivTypeList (x:xs) = 
   mapM_ (checkEquivTypes x) xs
@@ -186,9 +207,13 @@ checkSemi t            = do
   return (Out IntType, Skip)
 
 checkUn :: Type -> IO ()
-checkUn t
-  | un t      = return ()
-  | otherwise = errorM loggerName ("Type " ++ show t ++ " is not unrestricted")
+checkUn t = do
+  b <- un t
+  unrestricted b
+    where
+      unrestricted b
+        | b         = return ()
+        | otherwise = errorM loggerName ("Type " ++ show t ++ " is not unrestricted")
 
 -- Type checking the case constructor
 
@@ -242,11 +267,15 @@ checkInType t      = do
   return IntType
 
 checkSessionType :: Type -> IO(Type)
-checkSessionType t
-  | isSessionType t = return t
-  | otherwise       = do
-      errorM loggerName ("Expecting a session type; found " ++ (show t))
-      return Skip
+checkSessionType t = do
+  b <- isSessionType t
+  session b
+  where
+    session b
+      | b         = return t
+      | otherwise = do
+          errorM loggerName ("Expecting a session type; found " ++ (show t))
+          return Skip
 
 -- Expression environments
 -- venv contains the entries in the prelude as well as those in the source file
@@ -267,12 +296,16 @@ checkParam fun args
      return ()
 
 checkVEnvUn :: VarEnv -> IO ()
-checkVEnvUn venv
-  | all (== True) $ map un env = return ()
-  | otherwise                  = do
-      errorM loggerName ("Venv must be un") -- TODO: good error message
-      return ()
-  where env = map snd (Map.toList venv)
+checkVEnvUn venv = do
+  l <- sequence $ map un env
+  allUn l
+  where
+    allUn l
+      | all (== True) l = return ()
+      | otherwise       = do
+          errorM loggerName ("Venv must be un") -- TODO: good error message
+          return ()
+    env = map snd (Map.toList venv)
 
 -- Type environments
 
