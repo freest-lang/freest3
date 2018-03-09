@@ -4,6 +4,9 @@
 -- x a x = a + a
 -- x :: Int -> Int -> Int
 
+-- plas :: Int
+-- plas = -10
+
 -- qq = 3 + 2 + 4
 -- qq :: Int
 
@@ -19,8 +22,8 @@
 -- -- w a = (a+2,True)
 -- w a z = 2+2
 
--- -- q :: Int
--- -- q = let x,y = 2+2 in 3
+-- q :: (Int,Int)
+-- q = let x,y = (2+2,2) in (3,4)
 
 -- z :: Int -> (!Int;Skip) -> Int
 -- z x y = 2
@@ -87,8 +90,18 @@
 -- start :: Int
 -- start = fact 12
 
--- fact :: Int -> Int
--- fact n = if n == 0 then 1 else n * n --fact (n-1)
+fact :: Int -> Int
+fact n = if n == 0 then 1 else n * fact 2-1
 
-test :: Int -> Int
-test n = test 1
+-- test :: Int -> Int
+-- test n = n -1
+
+a :: Int
+a = 2 * b 2-1
+
+b :: Int -> Int
+b x = x
+--test n = test 1
+
+myPair :: (Int,Bool)
+myPair = (2,True)

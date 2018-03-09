@@ -55,6 +55,7 @@ identifier = Token.identifier lexer
 
 comma = Token.comma lexer
 
+
 apostrophe p = between (string "'") (string "'") p
 
 integer :: Parser Integer
@@ -169,11 +170,18 @@ conv c (x:xs) = Fun Un x (conv c xs)
 -- Parses Applications
 -- Builds a table that defines the priority and the associativity of each kind of Application
 table =
-  [ [ binOp "*" (convertApp "(*)") AssocLeft
+  [
+    [
+      prefixOp "-" (Application (Variable "negate"))
+    ]
+  ,  
+    [ binOp "*" (convertApp "(*)") AssocLeft
     , binOp "/" (convertApp "(/)") AssocLeft
+
     ]
   , [ binOp "+" (convertApp "(+)") AssocLeft
     , binOp "-" (convertApp "(-)") AssocLeft
+
     , binary "mod" (convertApp "mod") AssocRight
     , binary "rem" (convertApp "rem") AssocRight
     ]
@@ -181,7 +189,9 @@ table =
     , binOp "==" (convertApp "(==)") AssocLeft
     , prefix "not" (Application (Variable "not"))
     , binOp "||" (convertApp "(||)") AssocLeft
+   
     ]
+  
   ]
 
 -- Converts a binary Application in an ternary application with an operator
@@ -193,6 +203,7 @@ binOp name fun assoc =  Infix (do reservedOp name; return fun) assoc
 binary name fun assoc = Infix (do reserved name; return fun) assoc
 
 prefix name fun =  Prefix (do reserved name; return fun)
+prefixOp name fun =  Prefix (do reservedOp name; return fun)
 
 -- Parses an expression
 parseExpression = buildExpressionParser table (lexeme parseExpr)
@@ -210,9 +221,11 @@ parseExpr =
   <|> parseFork
   <|> parseCase
   <|> parseMatch
-  <|> parseVariables
-  <|> parseConstructor
   <|> parseFunApp
+  <|> parseVariable
+  <|> parseConstructor
+   
+
 
 -- Parse Basic Types (int, bool, char and unit)
 parseBasic =
@@ -222,16 +235,24 @@ parseBasic =
   <|> (do reserved "()"; return Unit)
 --  <|> (do i <- many digit; return $ Integer (read i :: Int))
 
+-- parseInteger = do  
+--   i <- integer
+--   return $ Integer (fromInteger i)
+
 parseInteger = do  
-  i <- integer
+  i <- natural
   return $ Integer (fromInteger i)
+
+-- parseInteger =
+--       parseNatural
+--   <|> (do reservedOp "-"; n <- parseNatural; return $ Application (Variable "(-)") (n))
 
 parseBool =
       (do reserved "True"; return $ Boolean True)
   <|> (do reserved "False"; return $ Boolean False)
 
 -- Parse Variables
-parseVariables =
+parseVariable =
   try $ do   
     id <- lowerIdentifier
     notFollowedBy (do {colon;colon})
@@ -331,7 +352,7 @@ parseConstructor = do
 
 parseFunApp = try $ do
   c <- lowerIdentifier
-  e <- many1 parseExpression
+  e <- many1 $ try parseExpr -- (try $ parens parseExpression)
   return $ foldr apply (Application (Variable c) (head e)) (tail e)
   where
     apply e acc = Application acc e

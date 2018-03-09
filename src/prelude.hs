@@ -5,6 +5,7 @@
 (*) :: Int -> Int -> Int
 mod :: Int -> Int -> Int
 rem :: Int -> Int -> Int
+negate :: Int -> Int 
 
 not :: Bool -> Bool
 (&&) :: Bool -> Bool -> Bool

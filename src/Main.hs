@@ -1,8 +1,11 @@
+
 module Main where
 
 import qualified Data.Map.Strict as Map
-import Terms.Parser
-import TypeChecking.TypeChecking
+import           Terms.Parser
+import           TypeChecking.TypeChecking
+import           Data.List
+
 
 main :: IO ()
 main = do
@@ -26,14 +29,21 @@ main = do
       Right d -> return d
 
   -- printEnv p1 "VarEnv"
-  printEnv p2 "ExpEnv"
+  -- printEnv p2 "ExpEnv"
   -- printEnv p3 "TypeEnv"
   -- printEnv p4 "ConstructorEnv"
   putStrLn "No parser errors found... \n"
   putStrLn "TypeChecking...\n"
   let a = Map.mapWithKey (\fun (a, e) -> typeCheck a e fun p1 p3) p2
-
   mapM (>>= putStrLn . show) a
+
+  putStrLn "Linking... \n"
+
+  let b = Map.foldlWithKey (\acc fun (a, e) -> acc ++ (showFunSignature fun (p1 Map.! fun))
+                           ++ showExpr fun a e) "" p2
+  putStrLn b
+  
+  
   return ()
 
 --type ParserOut = (VarEnv, ExpEnv, TypeEnv, ConstructorEnv)
@@ -43,3 +53,8 @@ printEnv p desc = do
   print p
   putStrLn ""
   
+ 
+
+showFunSignature f t = f ++ " :: " ++ show t  ++ "\n"
+
+showExpr f a e = f ++ " " ++ (intercalate " " a) ++ " = " ++ show e ++ "\n\n"

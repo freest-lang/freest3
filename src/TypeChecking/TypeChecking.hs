@@ -24,6 +24,8 @@ typeCheck args exp fname venv tenv = do
   venv1 <- checkExpEnv fname args (Map.union venv tenv)
   print $ "Fun Name: " ++ fname
 
+  putStrLn $ show exp
+
   (t, venv2) <- checkExp exp venv1
   let lastType = last $ toList $ venv2 Map.! fname
   checkEquivTypes t lastType  
