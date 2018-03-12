@@ -7,11 +7,13 @@ module Terms.Terms
   , TermVar
   , Params
   , CaseMap
+  , showParams
   ) where
 
 import qualified Data.Map.Strict as Map
 import           Types.Kinds
 import           Types.Types
+import           Data.List
 
 type TermVar = String
 
@@ -81,7 +83,7 @@ instance Show Expression where
 --  show (Match e1 (Map.Map termVar (typeVar, es))) =
   show (Fork e1) = "Fork " ++ show e1
   show (Constructor tv) = tv
-  -- show (Case e1 cm) = 
+  show (Case e1 cm) = "case " ++ show e1 ++ " of\n  " ++ (showCaseMap cm)
 
 showApplication :: Expression -> Expression -> String
 showApplication (Application (Variable "(+)") e2) e3  = "(" ++ show e2 ++ " + " ++ show e3 ++ ")"
@@ -89,10 +91,29 @@ showApplication (Application (Variable "(-)") e2) e3  = "(" ++ show e2 ++ " - " 
 showApplication (Application (Variable "(/)") e2) e3  = "(" ++ show e2 ++ " / " ++ show e3 ++ ")"
 showApplication (Application (Variable "(*)") e2) e3  = "(" ++ show e2 ++ " * " ++ show e3 ++ ")"
 showApplication (Application (Variable "(==)") e2) e3 = "(" ++ show e2 ++ " == " ++ show e3 ++ ")"
-showApplication (Variable "negate") e2 = "-" ++ show e2
-showApplication (Application e1 e2) e3 = show e2 ++ " " ++ show e1  ++ " " ++ show e3
-showApplication e1 e2    = show e1 ++ " " ++ show e2 
+showApplication (Variable "negate") e2                = "-" ++ show e2
+showApplication (Application e1 e2) e3                = show e2 ++ " " ++ show e1  ++ " " ++ show e3
+showApplication e1 e2                                 = show e1 ++ " " ++ show e2 
 
 showLet :: TermVar -> TermVar -> Expression -> Expression -> String
-showLet tv1 tv2 e1 e2 = "let " ++ tv1 ++ " = " ++ show e1 ++ "\n" ++
-                        "let " ++ tv2 ++ " = " ++ show e2
+showLet tv1 tv2 e1 e2 = "let " ++ tv1 ++ " = " ++ showFst e1 ++ "\n" ++
+                        "let " ++ tv2 ++ " = " ++ showSnd e1 ++ " in " ++ show e2
+
+showFst :: Expression -> String
+showFst (Pair e1 _) = show e1
+showFst e           = show e
+
+showSnd :: Expression -> String
+showSnd (Pair _ e2) = show e2
+showSnd e           = show e
+
+-- type CaseMap = Map.Map TermVar (Params, Expression)
+showCaseMap :: CaseMap -> String
+showCaseMap = Map.foldlWithKey (\acc tv (params, e) -> acc ++ tv ++ " " ++
+                                 showParams params ++ "-> " ++ show e ++ "\n  ") ""  
+
+showParams :: Params -> String
+showParams as
+  | null as = ""
+  | otherwise = " " ++ (intercalate " " as)
+

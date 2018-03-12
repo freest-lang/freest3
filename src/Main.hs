@@ -1,23 +1,24 @@
 module Main where
 
 import qualified Data.Map.Strict as Map
-import           Terms.Parser
-import           TypeChecking.TypeChecking
-import           Data.List
+import           PreludeLoader
 import           System.Directory
 import           System.Environment
+import           Terms.Parser
+import           Terms.Terms
+import           TypeChecking.TypeChecking
 
 main :: IO ()
 main = do
   curDir <- getCurrentDirectory
   putStrLn "Starting parser ...\n"
-  prelude <- mainProgram (curDir ++ "/src/prelude.hs") Map.empty
-  (prelude, _, _) <-
-    case prelude of
-      Left err -> do
-        putStr (show err)
-        return $ error ""
-      Right d -> return d
+  -- prelude <- mainProgram (curDir ++ "/src/prelude.hs") Map.empty
+  -- (prelude, _, _) <-
+  --   case prelude of
+  --     Left err -> do
+  --       putStr (show err)
+  --       return $ error ""
+  --     Right d -> return d
   -- putStrLn "\n"
   -- print $ prelude
   -- putStrLn "\n"
@@ -58,8 +59,5 @@ main = do
 
 showFunSignature f t = f ++ " :: " ++ show t  ++ "\n"
 
-showExpr f as e = f ++ (showArgs as) ++ " = " ++ show e ++ "\n\n"
+showExpr f as e = f ++ (showParams as) ++ " = " ++ show e ++ "\n\n"
 
-showArgs as
-  | null as = ""
-  | otherwise = " " ++ (intercalate " " as)

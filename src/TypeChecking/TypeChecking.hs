@@ -116,7 +116,7 @@ checkExp venv1 (Case e cm) = do
   checkEquivConstructors venv2 t cm
   l <- checkCaseMap venv2 cm
   checkEquivTypeList (map fst l)
---  checkEquivEnvList (map snd l)
+  checkEquivEnvList (map snd l)
   return $ head l
  
 -- Checking variables

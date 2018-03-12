@@ -7,6 +7,7 @@
 TestParse
 .hpc/
 Spec
+dist/
 
 #Latex
 *.aux

@@ -11,6 +11,7 @@ not :: Bool -> Bool
 (&&) :: Bool -> Bool -> Bool
 (||) :: Bool -> Bool -> Bool
 (==) :: Int -> Int -> Bool
+-- (==) :: a -> a -> Bool
 -- (/=) :: a -> a -> Bool 
 
 -- (<) :: Int -> Int -> Bool
