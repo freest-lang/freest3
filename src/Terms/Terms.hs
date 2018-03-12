@@ -84,11 +84,11 @@ instance Show Expression where
   -- show (Case e1 cm) = 
 
 showApplication :: Expression -> Expression -> String
-showApplication (Application (Variable "(+)") e2) e3  = show e2 ++ " + " ++ show e3
-showApplication (Application (Variable "(-)") e2) e3  = show e2 ++ " - " ++ show e3
-showApplication (Application (Variable "(/)") e2) e3  = show e2 ++ " / " ++ show e3
-showApplication (Application (Variable "(*)") e2) e3  = show e2 ++ " * " ++ show e3
-showApplication (Application (Variable "(==)") e2) e3 = show e2 ++ " == " ++ show e3
+showApplication (Application (Variable "(+)") e2) e3  = "(" ++ show e2 ++ " + " ++ show e3 ++ ")"
+showApplication (Application (Variable "(-)") e2) e3  = "(" ++ show e2 ++ " - " ++ show e3 ++ ")"
+showApplication (Application (Variable "(/)") e2) e3  = "(" ++ show e2 ++ " / " ++ show e3 ++ ")"
+showApplication (Application (Variable "(*)") e2) e3  = "(" ++ show e2 ++ " * " ++ show e3 ++ ")"
+showApplication (Application (Variable "(==)") e2) e3 = "(" ++ show e2 ++ " == " ++ show e3 ++ ")"
 showApplication (Variable "negate") e2 = "-" ++ show e2
 showApplication (Application e1 e2) e3 = show e2 ++ " " ++ show e1  ++ " " ++ show e3
 showApplication e1 e2    = show e1 ++ " " ++ show e2 

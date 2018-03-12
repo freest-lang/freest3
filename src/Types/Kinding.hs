@@ -73,8 +73,10 @@ kinding delta (Choice _ m) = do
       ("One of the components in a choice isn't lower than a S^l. " ++ (show m))
 
 kinding delta (Rec x t) = do
-  k <- kinding (Map.insert x (Kind Session Un) delta) t
-  checkContractivity delta t
+  -- TODO: Maybe the kinding function should also return delta
+  let delta1 = (Map.insert x (Kind Session Un) delta)
+  k <- kinding delta1 t
+  checkContractivity delta1 t
   checkNotTypeScheme (Rec x t) k 
   return k
 

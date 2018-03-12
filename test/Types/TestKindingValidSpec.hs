@@ -1,9 +1,11 @@
 module Types.TestKindingValidSpec(spec) where
 
-import SpecHelper
-import Types.Kinds
-import Types.Kinding
+import           SpecHelper
+import           Types.Kinds
+import           Types.Kinding
 import qualified Data.Map.Strict as Map
+import           System.Log.Logger
+
 
 -- Just to be able to run it alone
 main :: IO ()
@@ -12,9 +14,11 @@ main = hspec spec
 spec :: Spec
 spec = do
   t <- runIO $ readFromFile "test/Types/TestContractivityValid.txt"
+
   -- describe "Valid Contractivity Test" $ do
   --   mapM_ matchValidSpec (convert t)
   describe "Valid kinding tests" $ do
+
     t <- runIO $ readFromFile "test/Types/TestKindingValid.txt"
     mapM_ matchValidKindingSpec (convert t)
 

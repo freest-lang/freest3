@@ -87,8 +87,8 @@
 -- qqqq :: Int
 -- qqqq = 3*(2 - 1)
 
--- start :: Int
--- start = fact 12
+start :: Int
+start = fact 12
 
 fact :: Int -> Int
 fact n = if n == 0 then 1 else n * fact 2-1
@@ -96,12 +96,12 @@ fact n = if n == 0 then 1 else n * fact 2-1
 -- test :: Int -> Int
 -- test n = n -1
 
-a :: Int
-a = 2 * b 2-1
+-- a :: Int
+-- a = 2 * b 2-1
 
-b :: Int -> Int
-b x = x
---test n = test 1
+-- b :: Int -> Int
+-- b x = x
+-- --test n = test 1
 
-myPair :: (Int,Bool)
-myPair = (2,True)
+-- myPair :: (Int,Bool)
+-- myPair = (2,True)

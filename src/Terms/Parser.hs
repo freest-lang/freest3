@@ -358,4 +358,4 @@ parseFunApp = try $ do
     apply e acc = Application acc e
   
 -- TODO: remove (test purposes)
-run = mainProgram "src/test.hs" Map.empty
+-- run = mainProgram "src/test.hs" Map.empty
