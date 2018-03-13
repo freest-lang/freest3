@@ -87,10 +87,10 @@
 -- qqqq :: Int
 -- qqqq = 3*(2 - 1)
 
-start :: Int
-start = fact 12
+-- start :: Bool
+-- start = fact 12
 
-fact :: Int -> Int
+fact :: Int -> Bool
 fact n = if n == 0 then 1 else n * fact 2-1
 
 -- test :: Int -> Int

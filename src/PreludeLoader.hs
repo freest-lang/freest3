@@ -5,8 +5,6 @@ import           Terms.Terms
 import           Types.TypeParser
 import           Types.Types
 
--- type VarEnv = Map.Map TermVar Type
-
 typeList :: [(String, String)]
 typeList = [ ("(+)", "Int -> Int -> Int")
            , ("(-)", "Int -> Int -> Int")

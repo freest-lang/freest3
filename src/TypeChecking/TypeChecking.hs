@@ -13,7 +13,7 @@ import           Types.TypeEquivalence
 import           Types.Types
 
 -- The name of the logger for type checking
-loggerName = "Type Checking"
+loggerName = "TypeChecking"
 
 typeCheck :: VarEnv -> TypeEnv -> Params -> Expression -> TermVar -> IO(Type)
 typeCheck venv tenv args exp fname = do
