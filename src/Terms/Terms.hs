@@ -45,28 +45,26 @@ data Expression
   -- Conditional
   | Conditional Expression Expression Expression
   -- Pairs
-  | Pair Expression Expression
+  | Pair Expression Expression -- TODO: Express as application
   | Let TermVar TermVar Expression Expression
   -- Session types
   | New Type
-  | Send Expression Expression
-  | Receive Expression
+  | Send Expression Expression -- TODO: Express as application
+  | Receive Expression -- TODO: Express as application
   | Select TermVar Expression
   | Match Expression (Map.Map TermVar (TypeVar, Expression))
   -- Branch - overloaded with Case
   -- Fork
-  | Fork Expression
+  | Fork Expression -- TODO: Express as application
   -- Datatypes
   | Constructor TermVar
   | Case Expression CaseMap
---  deriving (Show) -- TODO: write a proper show
-
 
 -- ("parseCase",([],Case (Application (Application (Variable "(+)") (Integer 2)) (Integer 2))
 --  (fromList [("C",(["a"],Integer 23)),("D",(["a"],Integer 24)),("E",(["a"],Integer 25))])))
 
 instance Show Expression where
-  show (Unit)              = "()"
+  show  Unit               = "()"
   show (Integer i)         = show i
   show (Character c)       = show c
   show (Boolean b)         = show b
