@@ -1,20 +1,20 @@
-module Compiler where
+module Main where
 
 import qualified Data.Map.Strict as Map
 import           PreludeLoader
-import           System.Directory
 import           System.Environment
 import           Terms.Parser
 import           Terms.Terms
 import           Types.Types
 import           TypeChecking.TypeChecking
 
-import System.Log.Logger
-import System.Log.Handler.Syslog
-import System.Log.Handler.Simple
-import System.Log.Handler (setFormatter, close)
-import System.Log.Formatter
-import System.IO
+-- import System.Log.Logger
+-- import System.Log.Handler.Syslog
+-- import System.Log.Handler.Simple
+-- import System.Log.Handler (setFormatter, close)
+-- import System.Log.Formatter
+-- import System.IO
+
 
 main :: IO ()
 main = do
@@ -22,9 +22,9 @@ main = do
   putStrLn "Starting parser ...\n"
 
   args <- getArgs
-  curDir <- getCurrentDirectory
-  prog <- mainProgram (curDir ++ "/src/test.hs") prelude
---  prog <- mainProgram (head args) prelude
+  --curDir <- getCurrentDirectory
+  --prog <- mainProgram (curDir ++ "/src/test.hs") prelude
+  prog <- mainProgram (head args) prelude
 
   (venv, eenv, tenv, cenv) <-
     case prog of
@@ -35,7 +35,7 @@ main = do
 
   -- h <- fileHandler "debug.log" ERROR >>= \lh -> return $ 
   --             setFormatter lh (simpleLogFormatter "$msg")
-  -- updateGlobalLogger rootLoggerName (setLevel ERROR . addHandler h) 
+  -- updateGlobalLogger "TypeChecking" (setLevel ERROR . addHandler h) 
   
 
   putStrLn "No parser errors found... \n"
