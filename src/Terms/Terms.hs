@@ -3,7 +3,7 @@ module Terms.Terms
   , ExpEnv
   , VarEnv
   , TypeEnv
- -- , ConstructorEnv
+  , ConstructorEnv
   , TermVar
   , Params
   , CaseMap
@@ -25,7 +25,7 @@ type ExpEnv = Map.Map TermVar (Params, Expression)
 
 type TypeEnv = Map.Map TypeVar Type
 
--- type ConstructorEnv = Map.Map Constructor Type
+type ConstructorEnv = Map.Map TypeVar Type
 
 -- type TypeEnv = Map.Map TypeVar (Kind, Type)
 -- type ConstructorEnv = Map.Map Constructor [(Constructor, [Type])]

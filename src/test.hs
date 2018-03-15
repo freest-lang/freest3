@@ -87,11 +87,13 @@
 -- qqqq :: Int
 -- qqqq = 3*(2 - 1)
 
--- start :: Bool
--- start = fact 12
+type MyType = String
 
-fact :: Int -> Bool
-fact n = if n == 0 then 1 else n * fact 2-1
+start :: Bool
+start = fact 12
+
+fact :: Int -> Int
+fact n = if n == 0 then 1 else n * fact (n-1)
 
 -- test :: Int -> Int
 -- test n = n -1

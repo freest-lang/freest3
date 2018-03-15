@@ -74,8 +74,8 @@ constructor =
    <|> (do uc <- (try upper); return [uc])
 
 -- PARSER
-type ParserOut = (VarEnv, ExpEnv, TypeEnv)
---type ParserOut = (VarEnv, ExpEnv, TypeEnv, ConstructorEnv)
+--type ParserOut = (VarEnv, ExpEnv, TypeEnv)
+type ParserOut = (VarEnv, ExpEnv, TypeEnv, ConstructorEnv)
 
 mainProgram :: FilePath -> VarEnv -> IO (Either ParseError ParserOut)
 mainProgram filepath venv = parseFromFile (program venv) filepath
@@ -97,18 +97,18 @@ manyAlternate ::
   -> Parser ParserOut
 manyAlternate pa pb pc pd venv =
      do as <- many1 pa
-        (as', bs', cs') <- manyAlternate pa pb pc pd venv
-        return (addListToMap as as', bs', cs')
+        (as', bs', cs', ds') <- manyAlternate pa pb pc pd venv
+        return (addListToMap as as', bs', cs', ds')
  <|> do bs <- many1 pb
-        (as', bs', cs') <- manyAlternate pa pb pc pd venv
-        return (as', addListToMap bs bs', cs')
+        (as', bs', cs', ds') <- manyAlternate pa pb pc pd venv
+        return (as', addListToMap bs bs', cs', ds')
  <|> do cs <- many1 pc
-        (as', bs', cs') <- manyAlternate pa pb pc pd venv
-        return (as', bs', addListToMap cs cs')
+        (as', bs', cs', ds') <- manyAlternate pa pb pc pd venv
+        return (as', bs', addListToMap cs cs', ds')
  <|> do ds <- many1 pd
-        (as', bs', ds') <- manyAlternate pa pb pc pd venv
-        return (as', bs', addDataTypesToMap ds ds')
- <|> return (venv, Map.empty, Map.empty)
+        (as', bs', cs', ds') <- manyAlternate pa pb pc pd venv
+        return (as', bs', cs', addDataTypesToMap ds ds')
+ <|> return (venv, Map.empty, Map.empty, Map.empty)
   where
    addListToMap xs m = Map.union m (Map.fromList xs) --TODO: Can't be an union (must test duplicated entries)
    addDataTypesToMap xs m = addListToMap (foldl (\acc (x, y) -> acc ++ (convertType x y)) [] xs) m

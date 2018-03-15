@@ -12,25 +12,32 @@ import           Types.Kinds
 import           Types.TypeEquivalence
 import           Types.Types
 
+
+import System.Log.Handler.Syslog
+import System.Log.Handler.Simple
+import System.Log.Handler (setFormatter, close)
+import System.Log.Formatter
+
 -- The name of the logger for type checking
 loggerName = "TypeChecking"
 
-typeCheck :: VarEnv -> TypeEnv -> Params -> Expression -> TermVar -> IO(Type)
+typeCheck :: VarEnv -> TypeEnv -> Params -> Expression -> TermVar -> IO Type
 typeCheck venv tenv args exp fname = do
-  debugM loggerName ("Goal: " ++ (show venv) ++ " |- " ++ (show exp))
-
---  let venv1 = checkExpEnv fname args venv
---  venv1 <- checkExpEnv fname args venv
+  
+  
+  debugM loggerName ("Goal: " ++ (show venv) ++ " |- " ++ (show exp))   
+  
+  -- Union ?? 
   venv1 <- checkExpEnv (Map.union venv tenv) fname args
--- print $ "Fun Name: " ++ fname
--- putStrLn $ show exp
+
 
   (t, venv2) <- checkExp venv1 exp
   let lastType = last $ toList $ venv2 Map.! fname
   checkEquivTypes t lastType  
-  
+    
 --  checkVEnvUn venv
   debugM loggerName "Done!"
+  --close h
   return t
 
 -- Ensures: the type in the result is canonical
