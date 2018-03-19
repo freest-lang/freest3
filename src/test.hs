@@ -89,7 +89,7 @@
 
 type MyType = String
 
-start :: Bool
+start :: Int
 start = fact 12
 
 fact :: Int -> Int

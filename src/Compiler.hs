@@ -9,6 +9,7 @@ import           Types.Types
 import           TypeChecking.TypeChecking
 import           Control.Monad.Writer
 import           Data.List
+import           System.Process
 
 
 main :: IO ()
@@ -28,11 +29,6 @@ main = do
         return $ error ""
       Right d -> return d
 
-  -- h <- fileHandler "debug.log" ERROR >>= \lh -> return $ 
-  --             setFormatter lh (simpleLogFormatter "$msg")
-  -- updateGlobalLogger "TypeChecking" (setLevel ERROR . addHandler h) 
-  
-
   putStrLn "No parser errors found... \n"
   putStrLn "Type Checking...\n"
   
@@ -40,8 +36,7 @@ main = do
 --  pure $ Map.mapWithKey (\fun (a, e) -> test venv tenv a e fun) eenv
   let tc = Map.mapWithKey (\fun (a, e) -> typeCheck venv tenv a e fun) eenv
   -- let b = Map.foldlWithKey (\acc fun (a, e) -> acc && typeChecks (typeCheck venv tenv a e fun)) True eenv
---  mapM (>>= putStrLn . show) a
-
+  
     --  datatypeGen
     --  typeGen
   if all (== True) (Map.map typeChecks tc) then
@@ -65,12 +60,12 @@ showErrors = snd . runWriter
 
 codeGen :: TypeEnv -> VarEnv -> ExpEnv -> IO () 
 codeGen tenv venv eenv = do 
-  putStrLn "Linking... \n"
   let types = Map.foldlWithKey showType "" tenv
   let file = Map.foldlWithKey (\acc fun (a, e) -> acc ++ (showFunSignature fun (venv Map.! fun))
                            ++ showExpr fun a e) "main = putStrLn (show start)\n\n" eenv
   writeFile "cfst.hs" (types ++ file)
-  putStrLn "Linking... \n"
+  callCommand "ghc cfst.hs"
+  callCommand "./cfst"
   return ()
 
 printErr :: Map.Map TermVar (TCheckM Type)-> IO ()
