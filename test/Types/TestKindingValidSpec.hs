@@ -4,7 +4,8 @@ import           SpecHelper
 import           Types.Kinds
 import           Types.Kinding
 import qualified Data.Map.Strict as Map
-import           System.Log.Logger
+-- import           System.Log.Logger
+import Control.Monad.Writer
 
 
 -- Just to be able to run it alone
@@ -30,8 +31,10 @@ spec = do
 matchValidKindingSpec :: (String, String) -> Spec
 matchValidKindingSpec (a, b) =
   it a $ do
-    k <- (kindOf (read a :: Type))
-    k `shouldBe` (read b :: Kind)
+    let t = (read a :: Type)
+    (fst $ runWriter (kindOf t)) `shouldBe` (read b :: Kind)
+
 
 -- INVALID:
 -- forall alpha . (rec Tree . &{Leaf:Skip, Node:?Int;Tree;Tree}) -> (rec TreeChannel . +{Leaf:Skip, Node:!Int;TreeChannel;TreeChannel});alpha->alpha
+

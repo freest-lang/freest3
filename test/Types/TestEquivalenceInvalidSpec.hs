@@ -18,5 +18,5 @@ spec = do
 matchInvalidSpec :: (String, String) -> Spec
 matchInvalidSpec (a, b) =
   it (a ++ " `equivalent` " ++  b) $ do
-    equiv <- ((read a :: Type) `equivalent` (read b :: Type))
+    let equiv = ((read a :: Type) `equivalent` (read b :: Type))
     equiv `shouldBe` False

@@ -59,7 +59,7 @@ data Expression
   -- Datatypes
   | Constructor TermVar
   | Case Expression CaseMap
-
+  -- deriving Show
 -- ("parseCase",([],Case (Application (Application (Variable "(+)") (Integer 2)) (Integer 2))
 --  (fromList [("C",(["a"],Integer 23)),("D",(["a"],Integer 24)),("E",(["a"],Integer 25))])))
 

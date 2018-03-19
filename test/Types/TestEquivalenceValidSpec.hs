@@ -18,5 +18,5 @@ spec = do
 matchValidSpec :: (String, String) -> Spec
 matchValidSpec (a, b) =
   it (a ++ " `equivalent` " ++  b) $ do
-    equiv <- ((read a :: Type) `equivalent` (read b :: Type))
+    let equiv = ((read a :: Type) `equivalent` (read b :: Type))
     equiv `shouldBe` True

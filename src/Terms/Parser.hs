@@ -209,7 +209,7 @@ prefixOp name fun =  Prefix (do reservedOp name; return fun)
 parseExpression = buildExpressionParser table (lexeme parseExpr)
 
 parseExpr =
-      (try $ parens parseExpression)
+      try (parens parseExpression)
   <|> parseBasic
   <|> parseConditional
   <|> parsePair

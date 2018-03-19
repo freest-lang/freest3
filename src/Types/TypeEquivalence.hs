@@ -43,31 +43,24 @@ reduce (Rec x t)          = reduce $ unfold (Rec x t)
 reduce _                  = Map.empty
 
 --TODO: equiv' Forall Forall
-equivalent :: Type -> Type -> IO Bool
+equivalent :: Type -> Type -> Bool
 equivalent = equiv Set.empty
 
-equiv :: Set.Set(Type,Type) -> Type -> Type -> IO Bool
+equiv :: Set.Set(Type,Type) -> Type -> Type -> Bool
 equiv s t1 t2
-    | (t1,t2) `Set.member` s = return True
+    | (t1,t2) `Set.member` s = True
     | otherwise              = equiv' s t1 t2
 
-equiv' :: Set.Set(Type,Type) -> Type -> Type -> IO Bool
-equiv' _ (Var x) (Var y)                = return $ x == y
-equiv' _ (Basic b) (Basic c)            = return $ b == c
+equiv' :: Set.Set(Type,Type) -> Type -> Type -> Bool
+equiv' _ (Var x) (Var y)                = x == y
+equiv' _ (Basic b) (Basic c)            = b == c
 
-equiv' s (Fun m1 t1 t2) (Fun m2 t3 t4)  = do
-  b1 <- equiv s t1 t3
-  b2 <- equiv s t2 t4
-  return $ m1 == m2 && b1 && b2
+equiv' s (Fun m1 t1 t2) (Fun m2 t3 t4)  = m1 == m2 && (equiv s t1 t3) && (equiv s t2 t4)
   
-equiv' s (PairType t1 t2) (PairType t3 t4) = do
-  b1 <- equiv s t1 t3
-  b2 <- equiv s t2 t4
-  return $ b1 && b2
+equiv' s (PairType t1 t2) (PairType t3 t4) = equiv s t1 t3 && equiv s t2 t4
    
-equiv' s (Datatype dt1) (Datatype dt2) = do
-  equivElems <- Map.foldlWithKey (checkBinding dt2 s) (return True) dt1
-  return $ Map.size dt1 == Map.size dt2 && equivElems
+equiv' s (Datatype dt1) (Datatype dt2) =
+  (Map.size dt1 == Map.size dt2) && (Map.foldlWithKey (checkBinding dt2 s) True dt1)
 -- -- equiv s (Forall x t1) (Forall y t2) = equiv s t1 t2
 
 equiv' s (Rec x t1) t2 = equiv (Set.insert ((Rec x t1), t2) s) (unfold (Rec x t1)) t2
@@ -77,31 +70,23 @@ equiv' s t1 t2 = do
   -- isSessionType t1 && isSessionType t2
   -- equivElems <- Map.foldlWithKey (checkBinding r2 s) (return True) r1
   -- return $ Map.size r1 == Map.size r2 && equivElems
-  st1 <- isSessionType t1
-  st2 <- isSessionType t2
-  equivSessionTypes s (st1 && st2) t1 t2
+  equivSessionTypes s (isSessionType t1 && isSessionType t2) t1 t2
 
 -- equiv' _ _ _ = return False
-equivSessionTypes :: Set.Set (Type, Type) -> Bool -> Type -> Type -> IO Bool 
+equivSessionTypes :: Set.Set (Type, Type) -> Bool -> Type -> Type -> Bool 
 equivSessionTypes s st t1 t2 
-  | st        = do
-      equivElems <- Map.foldlWithKey (checkBinding r2 s) (return True) r1
-      return $ Map.size r1 == Map.size r2 && equivElems
-      
-  | otherwise = return False
+  | st        = Map.size r1 == Map.size r2 && Map.foldlWithKey (checkBinding r2 s) True r1      
+  | otherwise = False
   where r1 = reduce t1
         r2 = reduce t2
         
 --checkBinding :: TypeMap -> Set.Set (Type, Type) -> IO Bool -> TypeVar -> Type -> IO Bool
-checkBinding tm s acc l t = do
-  b <- acc
-  b1 <- checkEquivVar s tm l t
-  return $ b && l `Map.member` tm && b1
+checkBinding tm s acc l t = acc && l `Map.member` tm && (checkEquivVar s tm l t) 
 
 --checkVar :: Set.Set(Type,Type) -> TypeMap -> TypeVar -> Type -> IO Bool
 checkEquivVar s tm l t
   | Map.member l tm = equiv s (tm Map.! l) t
-  | otherwise       = return False
+  | otherwise       = False
 
   
 

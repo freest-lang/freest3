@@ -5,7 +5,7 @@ isSessionType
 , isSchemeType
 , kindOf
 , contractive
-,Kind (..)
+, Kind (..)
 , KindEnv
 , un
 ) where
@@ -15,8 +15,11 @@ import           Types.Kinds
 import           Types.Types
 import           Data.Either (lefts,rights)
 import           Data.List (intercalate)
-import           System.Log.Logger
+-- import           System.Log.Logger
 --import           Control.Monad
+import Control.Monad.Writer
+
+type KindM = Writer [String]
 
 type KindEnv = Map.Map TypeVar Kind
 -- type Message = String
@@ -26,15 +29,10 @@ loggerName = "Kinding"
 
 -- Kind of a Type
 
-kindOf :: Type -> IO Kind
-kindOf t = do
-  debugM loggerName ("Goal: KindOf " ++ show t)
-  k <- kinding Map.empty t
-  debugM loggerName "Done!"
-  return k
+kindOf :: Type -> KindM Kind
+kindOf t = kinding Map.empty t
 
-
-kinding :: KindEnv -> Type -> IO Kind
+kinding :: KindEnv -> Type -> KindM Kind
 kinding _ Skip = return $ Kind Session Un
 kinding _ (Out _) = return $ Kind Session Lin
 kinding _ (In _) = return $ Kind Session Lin
@@ -90,35 +88,36 @@ kinding delta (Forall x t) = --do
   --   (Right m) -> Right m
   --   -- _ -> Right "Forall body is not a type Scheme"
 
-checkTypeMap :: KindEnv -> TypeMap -> Kind -> String -> IO Kind
+checkTypeMap :: KindEnv -> TypeMap -> Kind -> String -> KindM Kind
 checkTypeMap delta tm k m = do--liftM $
   ks <- mapM (kinding delta) (Map.elems tm)
   checkTypeMapCases ks k m
 
-checkTypeMapCases :: [Kind] -> Kind -> String -> IO Kind
+checkTypeMapCases :: [Kind] -> Kind -> String -> KindM Kind
 checkTypeMapCases ks k m
    | all (<= k) ks = return $ Kind Session Lin
    | otherwise  = do
-       errorM loggerName m
+       tell [m]
        return $ Kind Arbitrary Lin
 
-checkDataType :: [Kind] -> Kind -> String -> IO Kind
+checkDataType :: [Kind] -> Kind -> String -> KindM Kind
 checkDataType ks k m
    | all (<= k) ks = return $ Kind Arbitrary (multiplicity $ maximum ks)
    | otherwise  = do
-       errorM loggerName m
+       tell [m]
        return $ Kind Arbitrary Lin
   
 -- Check if a type is a session type
-checkSessionType :: Type -> Kind -> IO ()
+checkSessionType :: Type -> Kind ->  KindM ()
 checkSessionType t k
   | isSession k = return ()
-  | otherwise   = errorM loggerName ("Expecting type " ++ (show t) ++ " to be a session type but it is a " ++ (show k))
+  | otherwise   = tell ["Expecting type " ++ (show t) ++ " to be a session type but it is a " ++ (show k)]
       
-isSessionType :: Type -> IO Bool
-isSessionType t = do
-  k <- kindOf t
-  return $ isSession k
+isSessionType :: Type -> Bool
+isSessionType t =  isSession . fst $ runWriter (kindOf t)
+-- do
+--   k <- kindOf t
+--   return $ isSession k
 
 isSession :: Kind -> Bool
 isSession (Kind Session _) = True
@@ -126,7 +125,7 @@ isSession _                = False
 
 -- Check if a type is a type scheme
 
-isSchemeType :: Type -> IO Bool
+isSchemeType :: Type ->  KindM Bool
 isSchemeType t = do -- isScheme . kindOf
   k <- kindOf t
   return $ isScheme k
@@ -136,18 +135,18 @@ isScheme (Kind Scheme _) = True
 isScheme _               = False
 
 -- Check if a type is not a type scheme
-checkNotTypeScheme :: Type -> Kind -> IO ()
+checkNotTypeScheme :: Type -> Kind ->  KindM ()
 checkNotTypeScheme t k
   | not (isScheme k) = return ()
-  | otherwise        = errorM loggerName ("Type " ++ (show t) ++ " is a type Scheme")
+  | otherwise        = tell ["Type " ++ (show t) ++ " is a type Scheme"]
 
 
 -- Check variables
-checkVar :: KindEnv -> TypeVar -> IO Kind
+checkVar :: KindEnv -> TypeVar -> KindM Kind
 checkVar delta v 
   | Map.member v delta = return $ delta Map.! v
   | otherwise          = do
-      errorM loggerName ("Variable " ++ (show v) ++ " is a free variable")
+      tell ["Variable " ++ (show v) ++ " is a free variable"]
       return $ Kind Arbitrary Lin
 
 -- Extracts the multiplicity of a kind
@@ -164,10 +163,10 @@ contractive delta (Var x) = Map.member x delta
 contractive delta (Forall _ t) = contractive delta t
 contractive _ _ = True
 
-checkContractivity :: KindEnv -> Type -> IO ()
+checkContractivity :: KindEnv -> Type -> KindM ()
 checkContractivity delta t
   | contractive delta t = return ()
-  | otherwise           = errorM loggerName ("Type " ++ (show t) ++ " is not contractive.")
+  | otherwise           = tell ["Type " ++ (show t) ++ " is not contractive."]
 
 -- Check if a type is wellformed 
 
@@ -179,10 +178,11 @@ checkContractivity delta t
 
 -- Check if the type's multiplicity is unrestricted
 
-un :: Type -> IO Bool
-un t = do --isUn . kindOf
-  k <- kindOf t
-  return $ isUn k
+un :: Type -> Bool
+un t = isUn . fst $ runWriter (kindOf t)
+  -- do --isUn . kindOf
+  -- k <- kindOf t
+  -- return $ isUn k
   
 isUn :: Kind -> Bool
 isUn (Kind _ Un) = True

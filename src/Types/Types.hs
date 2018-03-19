@@ -66,6 +66,7 @@ data Type =
   | Forall TypeVar {- Kind TODO-} Type
   | Var TypeVar
   deriving Ord
+--  deriving (Ord,Show)
 
 instance Show Type where
   show (Basic x) = show x

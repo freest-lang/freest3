@@ -90,9 +90,7 @@ table = [ [binary "->" (Fun Un) AssocRight, binary "-o" (Fun Lin) AssocRight ]
         , [binary ";" Semi AssocLeft ]
         ]
 
--- binary name fun assoc = Infix  (do{ try (symbol name); return fun }) assoc
 binary name fun assoc = Infix  (do{ try (symbol name); return fun }) assoc
-
 -- prefix name fun       = Prefix (do{ reservedOp name; return fun })
 
 parseTerm =
