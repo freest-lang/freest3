@@ -73,7 +73,7 @@ checkExp venv1 (Let x1 x2 e1 e2) = do
   (t1, venv2) <- checkExp venv1 e1 
   (t2, t3) <- checkPair t1
   (t4, venv3) <- checkExp (Map.insert x2 t3 (Map.insert x1 t2 venv2)) e2
-  return (t4, venv3)
+  return (t4, venv3) -- TODO omit this return
 
 -- Session types
 checkExp venv (New t) = do
