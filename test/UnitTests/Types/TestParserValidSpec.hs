@@ -1,4 +1,4 @@
-module Types.TestParserValidSpec(spec) where
+module UnitTests.Types.TestParserValidSpec(spec) where
 
 import SpecHelper
 import Control.Exception (evaluate)

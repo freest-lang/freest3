@@ -1,4 +1,4 @@
-module Types.TestEquivalenceValidSpec(spec) where
+module UnitTests.Types.TestEquivalenceValidSpec(spec) where
 
 
 import SpecHelper
@@ -10,7 +10,7 @@ main = hspec spec
 
 spec :: Spec
 spec = do
-  t <- runIO $ readFromFile "test/Types/TestEquivalenceValid.txt"
+  t <- runIO $ readFromFile "test/UnitTests/Types/TestEquivalenceValid.txt"
   describe "Valid Equivalence Test" $ do
       mapM_ matchValidSpec (convert t)
 

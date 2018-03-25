@@ -1,4 +1,4 @@
-module Types.TestKindingValidSpec(spec) where
+module UnitTests.Types.TestKindingValidSpec(spec) where
 
 import           SpecHelper
 import           Types.Kinds
@@ -14,13 +14,13 @@ main = hspec spec
 
 spec :: Spec
 spec = do
-  t <- runIO $ readFromFile "test/Types/TestContractivityValid.txt"
+  t <- runIO $ readFromFile "test/UnitTests/Types/TestContractivityValid.txt"
 
   -- describe "Valid Contractivity Test" $ do
   --   mapM_ matchValidSpec (convert t)
   describe "Valid kinding tests" $ do
 
-    t <- runIO $ readFromFile "test/Types/TestKindingValid.txt"
+    t <- runIO $ readFromFile "test/UnitTests/Types/TestKindingValid.txt"
     mapM_ matchValidKindingSpec (convert t)
 
 -- matchValidSpec :: (String, String) -> Spec
@@ -37,4 +37,3 @@ matchValidKindingSpec (a, b) =
 
 -- INVALID:
 -- forall alpha . (rec Tree . &{Leaf:Skip, Node:?Int;Tree;Tree}) -> (rec TreeChannel . +{Leaf:Skip, Node:!Int;TreeChannel;TreeChannel});alpha->alpha
-

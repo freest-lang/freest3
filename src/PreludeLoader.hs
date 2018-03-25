@@ -12,13 +12,18 @@ typeList = [ ("(+)", "Int -> Int -> Int")
            , ("(*)", "Int -> Int -> Int")
            , ("mod", "Int -> Int -> Int")
            , ("rem", "Int -> Int -> Int")
+           , ("div", "Int -> Int -> Int")
            , ("negate", "Int -> Int")
            , ("not", "Bool -> Bool")
            , ("(&&)", "Bool -> Bool -> Bool")
            , ("(||)", "Bool -> Bool -> Bool")
            , ("(==)", "Int -> Int -> Bool")
+           , ("(<)", "Int -> Int -> Bool")
+           , ("(>)", "Int -> Int -> Bool")
+           , ("(<=)", "Int -> Int -> Bool")
+           , ("(>=)", "Int -> Int -> Bool")
            ]
-
+           
 prelude :: VarEnv
 prelude = preludeLoad Map.empty
 

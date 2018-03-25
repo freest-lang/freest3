@@ -59,7 +59,7 @@ data Expression
   -- Datatypes
   | Constructor TermVar
   | Case Expression CaseMap
-  -- deriving Show
+ -- deriving Show
 -- ("parseCase",([],Case (Application (Application (Variable "(+)") (Integer 2)) (Integer 2))
 --  (fromList [("C",(["a"],Integer 23)),("D",(["a"],Integer 24)),("E",(["a"],Integer 25))])))
 
@@ -84,15 +84,20 @@ instance Show Expression where
   show (Case e1 cm) = "case " ++ show e1 ++ " of\n  " ++ (showCaseMap cm)
 
 showApplication :: Expression -> Expression -> String
-showApplication (Application (Variable "(+)") e2) e3  = "(" ++ show e2 ++ " + " ++ show e3 ++ ")"
-showApplication (Application (Variable "(-)") e2) e3  = "(" ++ show e2 ++ " - " ++ show e3 ++ ")"
-showApplication (Application (Variable "(/)") e2) e3  = "(" ++ show e2 ++ " / " ++ show e3 ++ ")"
-showApplication (Application (Variable "(*)") e2) e3  = "(" ++ show e2 ++ " * " ++ show e3 ++ ")"
-showApplication (Application (Variable "(==)") e2) e3 = "(" ++ show e2 ++ " == " ++ show e3 ++ ")"
+showApplication (Application (Variable ('(':op:")")) e2) e3  = "(" ++ show e2 ++ [op] ++ show e3 ++ ")"
+showApplication (Application (Variable ('(':op:op2:")")) e2) e3  = "(" ++ show e2 ++ [op] ++ [op2] ++ show e3 ++ ")"
+-- showApplication (Application (Variable "(+)") e2) e3  = "(" ++ show e2 ++ " + " ++ show e3 ++ ")"
+-- showApplication (Application (Variable "(-)") e2) e3  = "(" ++ show e2 ++ " - " ++ show e3 ++ ")"
+-- showApplication (Application (Variable "(/)") e2) e3  = "(" ++ show e2 ++ " / " ++ show e3 ++ ")"
+-- showApplication (Application (Variable "(*)") e2) e3  = "(" ++ show e2 ++ " * " ++ show e3 ++ ")"
+-- showApplication (Application (Variable "(==)") e2) e3 = "(" ++ show e2 ++ " == " ++ show e3 ++ ")"
+-- showApplication (Application (Variable "(>=)") e2) e3 = "(" ++ show e2 ++ " == " ++ show e3 ++ ")"
 showApplication (Variable "negate") e2                = "-" ++ show e2
-showApplication (Application e1 e2) e3                = show e2 ++ " " ++ show e1  ++ " " ++ show e3
+showApplication (Application (Variable "div") e2) e3  = show e2 ++ " `div` " ++ show e3
+showApplication (Application (Variable "rem") e2) e3  = show e2 ++ " `rem` " ++ show e3
+-- TODO others
+-- showApplication (Application e1 e2) e3                = show e2 ++ " " ++ show e1  ++ " " ++ show e3
 showApplication e1 e2                                 = show e1 ++ " " ++ show e2 
-
 showLet :: TermVar -> TermVar -> Expression -> Expression -> String
 showLet tv1 tv2 e1 e2 = "let " ++ tv1 ++ " = " ++ showFst e1 ++ "\n" ++
                         "let " ++ tv2 ++ " = " ++ showSnd e1 ++ " in " ++ show e2

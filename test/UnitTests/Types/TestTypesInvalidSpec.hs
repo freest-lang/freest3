@@ -1,4 +1,4 @@
-module Types.TestTypesInvalidSpec(spec) where
+module UnitTests.Types.TestTypesInvalidSpec(spec) where
 
 import SpecHelper
 
@@ -8,7 +8,7 @@ main = hspec spec
 
 spec :: Spec
 spec = do
-  t <- runIO $ readFromFile "test/Types/TestTypesInvalid.txt"
+  t <- runIO $ readFromFile "test/UnitTests/Types/TestTypesInvalid.txt"
   describe "Invalid Equality Test" $ do
       mapM_ matchInvalidSpec (convert t)
 

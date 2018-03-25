@@ -1,4 +1,4 @@
-module Types.TestShowValidSpec(spec) where
+module UnitTests.Types.TestShowValidSpec(spec) where
 
 
 import SpecHelper
@@ -10,7 +10,7 @@ main = hspec spec
 
 spec :: Spec
 spec = do
-  t <- runIO $ readFromFile "test/Types/TestShowValid.txt"
+  t <- runIO $ readFromFile "test/UnitTests/Types/TestShowValid.txt"
   describe "Show Test" $ do
       mapM_ matchValidSpec t
 

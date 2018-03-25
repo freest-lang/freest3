@@ -22,7 +22,8 @@ lexer =
   Token.makeTokenParser
     (haskellDef
        { Token.reservedOpNames =
-           ["=", "+", "-", "*", "/", "mod", "rem", "&&", "||", "not", "|", "->", "=="]
+           ["=", "+", "-", "*", "/", "mod", "rem", "&&", "||", "not", "|", "->", "==",
+            ">", "<"]
        , Token.reservedNames =
            [ "send", "receive", "()", "new", "in", "let"
            , "fork", "match", "with", "select", "case"
@@ -61,17 +62,24 @@ apostrophe p = between (string "'") (string "'") p
 integer :: Parser Integer
 integer = Token.integer lexer
 
-lowerIdentifier :: Parser [Char]
-lowerIdentifier =
-  lexeme $ try
-      (do lc <- lower; id <- identifier; return $ [lc] ++ id)
-  <|> (do lc <- lower; return [lc])
+-- lowerIdentifier :: Parser [Char]
+-- lowerIdentifier =
+--   lexeme $ try
+--       (do lc <- lower; id <- identifier; return $ [lc] ++ id)
+--   <|> (do lc <- lower; return [lc])
 
-constructor :: Parser [Char]
-constructor =
-  lexeme $ try
-       (do uc <- upper; id <- identifier; return $ [uc] ++ id)
-   <|> (do uc <- (try upper); return [uc])
+-- constructor :: Parser [Char]
+-- constructor =
+--   lexeme $ try
+--        (do uc <- upper; id <- identifier; return $ [uc] ++ id)
+--    <|> (do uc <- (try upper); return [uc])
+
+-- constructor :: Parsec String u String
+constructor = lookAhead upper >> identifier
+  
+-- lowerIdentifier :: Parsec String u String
+lowerIdentifier = lookAhead lower >> identifier
+
 
 -- PARSER
 --type ParserOut = (VarEnv, ExpEnv, TypeEnv)
@@ -181,7 +189,7 @@ table =
     ]
   , [ binOp "+" (convertApp "(+)") AssocLeft
     , binOp "-" (convertApp "(-)") AssocLeft
-
+    
     , binary "mod" (convertApp "mod") AssocRight
     , binary "rem" (convertApp "rem") AssocRight
     ]
@@ -189,7 +197,10 @@ table =
     , binOp "==" (convertApp "(==)") AssocLeft
     , prefix "not" (Application (Variable "not"))
     , binOp "||" (convertApp "(||)") AssocLeft
-   
+    , binOp "<" (convertApp "(<)") AssocLeft
+    , binOp ">" (convertApp "(>)") AssocLeft
+    , binOp "<=" (convertApp "(<=)") AssocLeft
+    , binOp ">=" (convertApp "(>=)") AssocLeft
     ]
   
   ]
@@ -220,12 +231,10 @@ parseExpr =
   <|> parseSelect
   <|> parseFork
   <|> parseCase
-  <|> parseMatch
+  -- <|> parseMatch
   <|> parseFunApp
   <|> parseVariable
-  <|> parseConstructor
-   
-
+  <|> parseConstructor   
 
 -- Parse Basic Types (int, bool, char and unit)
 parseBasic =
@@ -233,19 +242,10 @@ parseBasic =
   <|> parseBool
   <|> parseInteger
   <|> (do reserved "()"; return Unit)
---  <|> (do i <- many digit; return $ Integer (read i :: Int))
-
--- parseInteger = do  
---   i <- integer
---   return $ Integer (fromInteger i)
 
 parseInteger = do  
   i <- natural
   return $ Integer (fromInteger i)
-
--- parseInteger =
---       parseNatural
---   <|> (do reservedOp "-"; n <- parseNatural; return $ Application (Variable "(-)") (n))
 
 parseBool =
       (do reserved "True"; return $ Boolean True)
@@ -285,6 +285,7 @@ parseConditional = do
   e2 <- parseExpression
   reserved "else"
   e3 <- parseExpression
+--   error $ show e1
   return $ Conditional e1 e2 e3
 
 -- Parse Session Types (new, send, receive and select)
@@ -332,19 +333,19 @@ parseCaseValues = do
   e <- parseExpression
   return $ (c, (ids, e))
 
-parseMatch = do
-  reserved "match"
-  e <- parseExpression
-  reserved "with"
-  v <- many1 parseMatchValues
-  return $ Match e (Map.fromList v)
+-- parseMatch = do
+--   reserved "match"
+--   e <- parseExpression
+--   reserved "with"
+--   v <- many1 parseMatchValues
+--   return $ Match e (Map.fromList v)
 
-parseMatchValues = do
-  c <- constructor
-  ids <- lowerIdentifier
-  reservedOp "->"
-  e <- parseExpression
-  return $ (c, (ids, e))
+-- parseMatchValues = do
+--   c <- constructor
+--   ids <- lowerIdentifier
+--   reservedOp "->"
+--   e <- parseExpression
+--   return $ (c, (ids, e))
 
 parseConstructor = do
   c <- constructor
