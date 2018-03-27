@@ -1,8 +1,9 @@
 module UnitTests.Types.TestEquivalenceValidSpec(spec) where
 
 
-import SpecHelper
-import Types.TypeEquivalence
+import qualified Data.Map.Strict as Map
+import           SpecHelper
+import           Types.TypeEquivalence
 
 -- Just to be able to run it alone
 main :: IO ()
@@ -18,5 +19,5 @@ spec = do
 matchValidSpec :: (String, String) -> Spec
 matchValidSpec (a, b) =
   it (a ++ " `equivalent` " ++  b) $ do
-    let equiv = ((read a :: Type) `equivalent` (read b :: Type))
+    let equiv = equivalent Map.empty (read a :: Type) (read b :: Type)
     equiv `shouldBe` True

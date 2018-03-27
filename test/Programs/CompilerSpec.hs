@@ -7,7 +7,7 @@ import           System.Directory
 import           System.Process
 import           System.Exit
 import           Test.Hspec
-import           Test.HUnit
+import           Test.HUnit (assertFailure)
 
 
 -- baseDir = "/test/Programs/ValidTests/"
@@ -53,6 +53,7 @@ testOne test filename = do
     (False, err) -> 
       it ("Testing " ++ filename) $ do
         assertFailure ("The compiler terminated with errors\n" ++ err)
+        return ()
     (True, _)  -> runAndCheckResult test filename
 
 
@@ -71,10 +72,10 @@ runAndCheckResult testFile filename = do
 
       it ("Testing " ++ filename) $ do
         (filter (/= '\n') cont) `shouldBe` (filter (/= '\n') output1)
-        
   else
-     it ("Testing " ++ filename) $ do
+    it ("Testing " ++ filename) $ do
       assertFailure errors
+      return ()
 
   -- runIO $ putStrLn $ "errors: " ++ show errors
 

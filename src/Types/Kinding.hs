@@ -28,8 +28,8 @@ loggerName = "Kinding"
 
 -- Kind of a Type
 
-kindOf :: Type -> Kind
-kindOf t = kindOf' (kinding Map.empty t)
+kindOf :: KindEnv -> Type -> Kind
+kindOf kenv t = kindOf' (kinding kenv t)
   where
     kindOf' :: KindM Kind -> Kind
     kindOf' = fst . runWriter
@@ -38,61 +38,61 @@ kinding :: KindEnv -> Type -> KindM Kind
 kinding _ Skip = return $ Kind Session Un
 kinding _ (Out _) = return $ Kind Session Lin
 kinding _ (In _) = return $ Kind Session Lin
-kinding _ (Basic _) = return $ Kind Arbitrary Un
-kinding delta (Var x) = checkVar delta x
+kinding _ (Basic _) = return $ Kind Functional Un
+kinding kenv (Var x) = checkVar kenv x
 
-kinding delta (Semi t u) = do
-  kt <- kinding delta t 
-  ku <- kinding delta u
+kinding kenv (Semi t u) = do
+  kt <- kinding kenv t 
+  ku <- kinding kenv u
   checkSessionType t kt
   checkSessionType t ku
   return $ Kind Session (max (multiplicity kt) (multiplicity ku))
 
-kinding delta (Fun m t u) = do
-  kt <- kinding delta t 
-  ku <- kinding delta u
+kinding kenv (Fun m t u) = do
+  kt <- kinding kenv t 
+  ku <- kinding kenv u
   checkNotTypeScheme t kt
   checkNotTypeScheme t ku
-  return $ Kind Arbitrary m
+  return $ Kind Functional m
 
-kinding delta (PairType t u) = do
-  kt <- kinding delta t 
-  ku <- kinding delta u
+kinding kenv (PairType t u) = do
+  kt <- kinding kenv t 
+  ku <- kinding kenv u
   checkNotTypeScheme t kt
   checkNotTypeScheme t ku
-  return $ Kind Arbitrary Lin
+  return $ Kind Functional Lin
 
-kinding delta (Datatype m) = do
-  ks <- mapM (kinding delta) (Map.elems m)
-  checkDataType ks (Kind Arbitrary Un)
+kinding kenv (Datatype m) = do
+  ks <- mapM (kinding kenv) (Map.elems m)
+  checkDataType ks (Kind Functional Un)
       ("One of the components in a Datatype is a type Scheme. \nType: " ++ show m)
   
-kinding delta (Choice _ m) = do
-  ks <- mapM (kinding delta) (Map.elems m)
+kinding kenv (Choice _ m) = do
+  ks <- mapM (kinding kenv) (Map.elems m)
   checkTypeMapCases ks (Kind Session Lin)
       ("One of the components in a choice isn't lower than a S^l. " ++ (show m))
 
-kinding delta (Rec x t) = do
-  -- TODO: Maybe the kinding function should also return delta
-  let delta1 = (Map.insert x (Kind Session Un) delta)
-  k <- kinding delta1 t
-  checkContractivity delta1 t
+kinding kenv (Rec x t) = do
+  -- TODO: Maybe the kinding function should also return kenv
+  let kenv1 = (Map.insert x (Kind Session Un) kenv)
+  k <- kinding kenv1 t
+  checkContractivity kenv1 t
   checkNotTypeScheme (Rec x t) k 
   return k
 
-kinding delta (Forall x t) = --do
-  return $ Kind Arbitrary Lin
-  -- let kd = kinding (Map.insert x (Kind Session Un) delta) t in
+kinding kenv (Forall x t) = --do
+  return $ Kind Functional Lin
+  -- let kd = kinding (Map.insert x (Kind Session Un) kenv) t in
   -- case kd of
   --   -- TODO: k is the kinding of the variable and it is always Kind Session Un ?
   --   -- (Left k') | k' >= (Kind Scheme Un) -> Left k'
-  --   (Left k') | k' <= (Kind Arbitrary Lin) -> Left k'
+  --   (Left k') | k' <= (Kind Functional Lin) -> Left k'
   --   (Right m) -> Right m
   --   -- _ -> Right "Forall body is not a type Scheme"
 
 checkTypeMap :: KindEnv -> TypeMap -> Kind -> String -> KindM Kind
-checkTypeMap delta tm k m = do--liftM $
-  ks <- mapM (kinding delta) (Map.elems tm)
+checkTypeMap kenv tm k m = do--liftM $
+  ks <- mapM (kinding kenv) (Map.elems tm)
   checkTypeMapCases ks k m
 
 checkTypeMapCases :: [Kind] -> Kind -> String -> KindM Kind
@@ -100,14 +100,14 @@ checkTypeMapCases ks k m
    | all (<= k) ks = return $ Kind Session Lin
    | otherwise  = do
        tell [m]
-       return $ Kind Arbitrary Lin
+       return $ Kind Functional Lin
 
 checkDataType :: [Kind] -> Kind -> String -> KindM Kind
 checkDataType ks k m
-   | all (<= k) ks = return $ Kind Arbitrary (multiplicity $ maximum ks)
+   | all (<= k) ks = return $ Kind Functional (multiplicity $ maximum ks)
    | otherwise  = do
        tell [m]
-       return $ Kind Arbitrary Lin
+       return $ Kind Functional Lin
   
 -- Check if a type is a session type
 checkSessionType :: Type -> Kind ->  KindM ()
@@ -115,8 +115,8 @@ checkSessionType t k
   | isSession k = return ()
   | otherwise   = tell ["Expecting type " ++ (show t) ++ " to be a session type but it is a " ++ (show k)]
       
-isSessionType :: Type -> Bool
-isSessionType =  isSession . kindOf
+isSessionType :: KindEnv -> Type -> Bool
+isSessionType kenv t =  isSession (kindOf kenv t)
 -- isSession . fst $ runWriter (kindOf t)
 -- do
 --   k <- kindOf t
@@ -147,11 +147,11 @@ checkNotTypeScheme t k
 
 -- Check variables
 checkVar :: KindEnv -> TypeVar -> KindM Kind
-checkVar delta v 
-  | Map.member v delta = return $ delta Map.! v
+checkVar kenv v 
+  | Map.member v kenv = return $ kenv Map.! v
   | otherwise          = do
       tell ["Variable " ++ (show v) ++ " is a free variable"]
-      return $ Kind Arbitrary Lin
+      return $ Kind Functional Lin
 
 -- Extracts the multiplicity of a kind
 
@@ -161,19 +161,19 @@ multiplicity (Kind _ m) = m
 
 -- Contractivity
 contractive :: KindEnv -> Type -> Bool
-contractive delta (Semi t _) = contractive delta t
-contractive delta (Rec _ t) = contractive delta t
-contractive delta (Var x) = Map.member x delta
-contractive delta (Forall _ t) = contractive delta t
+contractive kenv (Semi t _) = contractive kenv t
+contractive kenv (Rec _ t) = contractive kenv t
+contractive kenv (Var x) = Map.member x kenv
+contractive kenv (Forall _ t) = contractive kenv t
 contractive _ _ = True
 
 checkContractivity :: KindEnv -> Type -> KindM ()
-checkContractivity delta t
-  | contractive delta t = return ()
+checkContractivity kenv t
+  | contractive kenv t = return ()
   | otherwise           = tell ["Type " ++ (show t) ++ " is not contractive."]
 
 isType :: KindEnv -> Type -> Bool
-isType delta t = wellFormed (kinding delta t)
+isType kenv t = wellFormed (kinding kenv t)
   where
     wellFormed :: KindM Kind -> Bool
     wellFormed = null . snd . runWriter
@@ -188,8 +188,8 @@ isType delta t = wellFormed (kinding delta t)
 
 -- Check if the type's multiplicity is unrestricted
 
-un :: Type -> Bool
-un = isUn . kindOf
+un :: KindEnv -> Type -> Bool
+un kenv t = isUn (kindOf kenv t)
   -- isUn . fst $ runWriter (kindOf t)
   -- do --isUn . kindOf
   -- k <- kindOf t

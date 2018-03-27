@@ -1,11 +1,11 @@
 Int
-  Kind Arbitrary Un
+  Kind Functional Un
 Bool
-  Kind Arbitrary Un
+  Kind Functional Un
 Char
-  Kind Arbitrary Un
+  Kind Functional Un
 ()
-  Kind Arbitrary Un
+  Kind Functional Un
 Skip
   Kind Session Un
 !Int
@@ -17,21 +17,21 @@ Skip
 ?Char
   Kind Session Lin
 Int -> Bool
-  Kind Arbitrary Un
+  Kind Functional Un
 Int -o Bool
-  Kind Arbitrary Lin
+  Kind Functional Lin
 Char -> Skip
-  Kind Arbitrary Un
+  Kind Functional Un
 Char -o Skip
-  Kind Arbitrary Lin
+  Kind Functional Lin
 (Int,Bool)
-  Kind Arbitrary Lin
+  Kind Functional Lin
 (!Char,())
-  Kind Arbitrary Lin
+  Kind Functional Lin
 (!Int, Skip)
-  Kind Arbitrary Lin
+  Kind Functional Lin
 [a:Int,b:Bool]
-  Kind Arbitrary Un
+  Kind Functional Un
 !Int;?Bool
   Kind Session Lin
 Skip;Skip
@@ -62,10 +62,10 @@ rec alpha . !Int;rec TreeChannel . +{Leaf:Skip, Node:!Int;TreeChannel;TreeChanne
 --   Kind Session Un
 --
 -- forall alpha . Int -> (!Int;alpha) -> alpha
---   Kind Arbitrary Un
+--   Kind Functional Un
 --
 -- forall a . Bool
---   Kind Arbitrary Un
+--   Kind Functional Un
 --
 -- forall x . x
 --   Kind Session Un
@@ -74,10 +74,10 @@ rec alpha . !Int;rec TreeChannel . +{Leaf:Skip, Node:!Int;TreeChannel;TreeChanne
 --   Kind Session Lin
 --
 -- forall x . Int -> x
---   Kind Arbitrary Un
+--   Kind Functional Un
 --
 -- forall x . Int -o x
---   Kind Arbitrary Lin
+--   Kind Functional Lin
 --
 -- forall a . (forall b . a)
 --   Kind Session Un
@@ -87,4 +87,4 @@ rec alpha . !Int;rec TreeChannel . +{Leaf:Skip, Node:!Int;TreeChannel;TreeChanne
 
 
 [AkKLKBCT:(Skip;Skip), GYQehuKQtFTvuoJYDV:(rec lMRIFeRtllKiX . Skip), RzOhNCsmXQBVHTAh:!Bool, WDOuqegDvdBjOFiNRklv:+{BYZaFBLcAMNIkmfD:Skip, DcGN:Skip, HRgBuAGbVDTFA:Skip, ITVqxvLWgyNvVzi:Skip, QeN:Skip, aUs:Skip, iMcWEScmBZA:Skip, nKXJbSr:Skip, nzFjfhEklznanrBzRWU:Skip, wJzcjltne:Skip, zJykoUZtO:Skip}, WkSnuEJqpMeCzcRXFI:&{CGkSnqZZawAc:Skip, HwcNqbwIGzjXtsqmi:Skip, JNZNPsZbuJTQXylhX:Skip, NHUpXnVcDGqfwltixfP:Skip, OQenTqDnrERr:Skip, ObJSbXCEbDfKdv:Skip, SUixpKUClmfnLezituio:Skip,UFDTpWCrOzdDbUNjTsf:Skip, WEvwge:Skip, X:Skip, aDPf:Skip, cHWvBCXOUmq:Skip, iTLuORGYySEJJ:Skip, nCuiDmRlmcPGpT:Skip, phVQWRRHcEpiCeyIfOFK:Skip, rdyjHqIm:Skip, zKMbbwnzqvrfT:Skip}, ZZEbPF:&{CideCVMnnmD:Skip, HieBFAzZVYauWfrF:Skip, WLm:Skip, mPZjrQ:Skip, nQ:Skip, wh:Skip, xLw:Skip}, ccpVoOhjH:?Char, efsMiBfSSiJShvhp:(rec ctLjdKvKCIK . Skip), vTATSQCHdfghziu:!Int, wqVBU:?Bool]
-  Kind Arbitrary Lin
+  Kind Functional Lin

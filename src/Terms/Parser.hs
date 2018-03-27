@@ -99,7 +99,7 @@ program venv = do
 manyAlternate ::
      Parser (TermVar, Type)
   -> Parser (TermVar, (Params, Expression))
-  -> Parser (TypeVar, (Kind, Type))
+  -> Parser (TypeVar, Type)
   -> Parser (TypeVar, [(TypeVar, [Type])])
   -> VarEnv
   -> Parser ParserOut
@@ -154,7 +154,7 @@ parseTypeDecl = do
   c <- constructor
   reservedOp "="
   t <- mainTypeParser
-  return (c, ((kindOf t), t)) -- TODO : Kind (verify)
+  return (c, t) -- TODO : Kind (verify)
 
 parseDataType = do
   reserved "data"
@@ -360,4 +360,4 @@ parseFunApp = try $ do
     apply e acc = Application acc e
   
 -- TODO: remove (test purposes)
--- run = mainProgram "src/test.hs" Map.empty
+run = mainProgram "src/test.hs" Map.empty

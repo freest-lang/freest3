@@ -23,13 +23,14 @@ type VarEnv = Map.Map TermVar Type
 
 type ExpEnv = Map.Map TermVar (Params, Expression)
 
-type TypeEnv = Map.Map TypeVar (Kind, Type)
+type TypeEnv = Map.Map TypeVar Type
+-- type TypeEnv = Map.Map TypeVar (Kind, Type)
 
 type ConstructorEnv = Map.Map TypeVar Type
 
 data TypeVarBind = TypeVar Kind
 data TypeScheme = Functional Type | Scheme TypeVarBind TypeScheme
--- type TypeEnv = Map.Map TypeVar (Kind, Type)
+
 -- type ConstructorEnv = Map.Map Constructor [(Constructor, [Type])]
 
 type CaseMap = Map.Map TermVar (Params, Expression)
@@ -61,7 +62,7 @@ data Expression
   -- Datatypes
   | Constructor TermVar
   | Case Expression CaseMap
- -- deriving Show
+--  deriving Show
 -- ("parseCase",([],Case (Application (Application (Variable "(+)") (Integer 2)) (Integer 2))
 --  (fromList [("C",(["a"],Integer 23)),("D",(["a"],Integer 24)),("E",(["a"],Integer 25))])))
 

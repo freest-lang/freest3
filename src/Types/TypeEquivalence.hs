@@ -43,49 +43,50 @@ reduce (Rec x t)          = reduce $ unfold (Rec x t)
 reduce _                  = Map.empty
 
 --TODO: equiv' Forall Forall
-equivalent :: Type -> Type -> Bool
+equivalent :: KindEnv -> Type -> Type -> Bool
 equivalent = equiv Set.empty
 
-equiv :: Set.Set(Type,Type) -> Type -> Type -> Bool
-equiv s t1 t2
+equiv :: Set.Set(Type,Type) -> KindEnv -> Type -> Type -> Bool
+equiv s kenv t1 t2
     | (t1,t2) `Set.member` s = True
-    | otherwise              = equiv' s t1 t2
+    | otherwise              = equiv' s kenv t1 t2
 
-equiv' :: Set.Set(Type,Type) -> Type -> Type -> Bool
-equiv' _ (Var x) (Var y)                = x == y
-equiv' _ (Basic b) (Basic c)            = b == c
+equiv' :: Set.Set(Type,Type) -> KindEnv -> Type -> Type -> Bool
+equiv' _ _ (Var x) (Var y)                = x == y
+equiv' _ _ (Basic b) (Basic c)            = b == c
 
-equiv' s (Fun m1 t1 t2) (Fun m2 t3 t4)  = m1 == m2 && (equiv s t1 t3) && (equiv s t2 t4)
+equiv' s kenv (Fun m1 t1 t2) (Fun m2 t3 t4)  =
+  m1 == m2 && (equiv s kenv t1 t3) && (equiv s kenv t2 t4)
   
-equiv' s (PairType t1 t2) (PairType t3 t4) = equiv s t1 t3 && equiv s t2 t4
+equiv' s kenv (PairType t1 t2) (PairType t3 t4) = equiv s kenv t1 t3 && equiv s kenv t2 t4
    
-equiv' s (Datatype dt1) (Datatype dt2) =
-  (Map.size dt1 == Map.size dt2) && (Map.foldlWithKey (checkBinding dt2 s) True dt1)
+equiv' s kenv (Datatype dt1) (Datatype dt2) =
+  (Map.size dt1 == Map.size dt2) && (Map.foldlWithKey (checkBinding kenv dt2 s) True dt1)
 -- -- equiv s (Forall x t1) (Forall y t2) = equiv s t1 t2
 
-equiv' s (Rec x t1) t2 = equiv (Set.insert ((Rec x t1), t2) s) (unfold (Rec x t1)) t2
-equiv' s t1 (Rec x t2) = equiv (Set.insert (t1, (Rec x t2)) s) t1 (unfold (Rec x t2))
+equiv' s kenv (Rec x t1) t2 = equiv (Set.insert ((Rec x t1), t2) s) kenv (unfold (Rec x t1)) t2
+equiv' s kenv t1 (Rec x t2) = equiv (Set.insert (t1, (Rec x t2)) s) kenv t1 (unfold (Rec x t2))
 
-equiv' s t1 t2 = do 
+equiv' s kenv t1 t2 = do 
   -- isSessionType t1 && isSessionType t2
   -- equivElems <- Map.foldlWithKey (checkBinding r2 s) (return True) r1
   -- return $ Map.size r1 == Map.size r2 && equivElems
-  equivSessionTypes s (isSessionType t1 && isSessionType t2) t1 t2
+  equivSessionTypes s kenv (isSessionType kenv t1 && isSessionType kenv t2) t1 t2
 
 -- equiv' _ _ _ = return False
-equivSessionTypes :: Set.Set (Type, Type) -> Bool -> Type -> Type -> Bool 
-equivSessionTypes s st t1 t2 
-  | st        = Map.size r1 == Map.size r2 && Map.foldlWithKey (checkBinding r2 s) True r1      
+equivSessionTypes :: Set.Set (Type, Type) -> KindEnv -> Bool -> Type -> Type -> Bool 
+equivSessionTypes s kenv st t1 t2 
+  | st        = Map.size r1 == Map.size r2 && Map.foldlWithKey (checkBinding kenv r2 s) True r1      
   | otherwise = False
   where r1 = reduce t1
         r2 = reduce t2
         
 --checkBinding :: TypeMap -> Set.Set (Type, Type) -> IO Bool -> TypeVar -> Type -> IO Bool
-checkBinding tm s acc l t = acc && l `Map.member` tm && (checkEquivVar s tm l t) 
+checkBinding kenv tm s acc l t = acc && l `Map.member` tm && (checkEquivVar s kenv tm l t) 
 
 --checkVar :: Set.Set(Type,Type) -> TypeMap -> TypeVar -> Type -> IO Bool
-checkEquivVar s tm l t
-  | Map.member l tm = equiv s (tm Map.! l) t
+checkEquivVar s kenv tm l t
+  | Map.member l tm = equiv s kenv (tm Map.! l) t
   | otherwise       = False
 
   

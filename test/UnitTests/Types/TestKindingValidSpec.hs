@@ -31,7 +31,7 @@ spec = do
 matchValidKindingSpec :: (String, String) -> Spec
 matchValidKindingSpec (a, b) =
   it a $ do
-    (kindOf (read a :: Type)) `shouldBe` (read b :: Kind)
+    (kindOf Map.empty (read a :: Type)) `shouldBe` (read b :: Kind)
 
 
 -- INVALID:

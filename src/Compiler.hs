@@ -39,8 +39,8 @@ showFunSignature f t = f ++ " :: " ++ show t  ++ "\n"
 
 showExpr f as e = f ++ (showParams as) ++ " = " ++ show e ++ "\n\n"
 
-showType :: String -> TypeVar -> (Kind, Type) -> String
-showType acc tv (_, t) = acc ++ "type " ++ tv ++ " = " ++ show t ++ "\n\n"
+showType :: String -> TypeVar -> Type -> String
+showType acc tv t = acc ++ "type " ++ tv ++ " = " ++ show t ++ "\n\n"
   
 typeChecks :: TCheckM Type -> Bool
 typeChecks = null . snd . runWriter

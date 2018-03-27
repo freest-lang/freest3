@@ -12,11 +12,17 @@ module Types.Kinds
 -- TODO: Remove Scheme
 
 
-data PreKind = Session | Arbitrary  deriving (Eq, Ord, Show, Read)
+data PreKind = Session | Functional  deriving (Eq, Ord, Read)
 
-data Multiplicity = Un | Lin deriving (Eq, Ord, Show, Read)
+data Multiplicity = Un | Lin deriving (Eq, Ord, Read)
 
 -- TODO: Turn into a record
-data Kind = Kind PreKind Multiplicity deriving (Eq, Ord, Show, Read)
+data Kind = Kind PreKind Multiplicity deriving (Eq, Ord, Read)
 
 -- newtype Kind = Kind {getPreKindMultiplicity :: (PreKind, Multiplicity)}
+
+instance Show Kind where
+  show (Kind Session Lin) = "SL"
+  show (Kind Session Un) = "SU"
+  show (Kind Functional Lin) = "TL"
+  show (Kind Functional Un) = "TU" 
