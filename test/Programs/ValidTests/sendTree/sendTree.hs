@@ -4,7 +4,7 @@ Description :  As in "Context-Free Session Types"
 Copyright   :  (c) LaSIGE and University of Lisbon, Portugal
 Maintainer  :  balmeida@lasige.di.fc.ul.pt
 -}
-
+{-
 data Tree = Leaf | Node Int Tree Tree
 
 {-
@@ -60,3 +60,6 @@ try the same constructors for the datatype and the session type
 
         rec x.+{Leaf: Skip, Node: !Int;x;x}
 -}
+-}
+start :: Int
+start = 10

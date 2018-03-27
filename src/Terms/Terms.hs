@@ -23,10 +23,12 @@ type VarEnv = Map.Map TermVar Type
 
 type ExpEnv = Map.Map TermVar (Params, Expression)
 
-type TypeEnv = Map.Map TypeVar Type
+type TypeEnv = Map.Map TypeVar (Kind, Type)
 
 type ConstructorEnv = Map.Map TypeVar Type
 
+data TypeVarBind = TypeVar Kind
+data TypeScheme = Functional Type | Scheme TypeVarBind TypeScheme
 -- type TypeEnv = Map.Map TypeVar (Kind, Type)
 -- type ConstructorEnv = Map.Map Constructor [(Constructor, [Type])]
 

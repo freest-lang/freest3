@@ -6,11 +6,17 @@ module Types.Kinds
 , Kind (..)
 ) where
 
+  
+
 -- TODO: Arbitrary -> Functional
 -- TODO: Remove Scheme
-data PreKind = Session | Arbitrary | Scheme deriving (Eq, Ord, Show, Read)
+
+
+data PreKind = Session | Arbitrary  deriving (Eq, Ord, Show, Read)
 
 data Multiplicity = Un | Lin deriving (Eq, Ord, Show, Read)
 
 -- TODO: Turn into a record
 data Kind = Kind PreKind Multiplicity deriving (Eq, Ord, Show, Read)
+
+-- newtype Kind = Kind {getPreKindMultiplicity :: (PreKind, Multiplicity)}

@@ -127,7 +127,7 @@ subs t2 y (Rec x t1)
     | x == y                = Rec x t1
     | otherwise             = Rec x (subs t2 y t1)
 subs t y (Choice v m) = Choice v (Map.map(subs t y) m)
-subs _ _ T                  = T
+subs _ _ t                  = t
 -- subs _ _ Skip               = Skip
 -- subs _ _ (In b)             = In b
 -- subs _ _ (Out b)            = Out b

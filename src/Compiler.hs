@@ -9,17 +9,14 @@ import           TypeChecking.TypeChecking
 import           Control.Monad.Writer
 import           Data.List
 import           System.Exit
+import           Types.Kinds
 
 -- import           System.Process
 
 
-compile :: String -> IO Bool
+compile :: String -> IO (Bool, String)
 compile arg = do
   
-  -- putStrLn "Starting parser ...\n"
-
-  -- curDir <- getCurrentDirectory
-  -- prog <- mainProgram (curDir ++ "/src/test.hs") prelude
   prog <- mainProgram arg prelude
 
   (venv, eenv, tenv, cenv) <-
@@ -29,14 +26,11 @@ compile arg = do
         return $ error "Parser Error"
       Right d -> return d
 
-  -- putStrLn "No parser errors found... \n"
-  -- putStrLn "Type Checking...\n"
-  
   let tc = Map.mapWithKey (\fun (a, e) -> typeCheck venv tenv a e fun) eenv
     --  datatypeGen
     --  typeGen
   if all (== True) (Map.map typeChecks tc) then
-    codeGen tenv venv eenv
+    codeGen tenv venv eenv (reverse $ dropWhile (/= '/') (reverse arg))
   else
     printErr tc
 
@@ -45,8 +39,8 @@ showFunSignature f t = f ++ " :: " ++ show t  ++ "\n"
 
 showExpr f as e = f ++ (showParams as) ++ " = " ++ show e ++ "\n\n"
 
-showType :: String -> TypeVar -> Type -> String
-showType acc tv t = acc ++ "type " ++ tv ++ " = " ++ show t ++ "\n\n"
+showType :: String -> TypeVar -> (Kind, Type) -> String
+showType acc tv (_, t) = acc ++ "type " ++ tv ++ " = " ++ show t ++ "\n\n"
   
 typeChecks :: TCheckM Type -> Bool
 typeChecks = null . snd . runWriter
@@ -54,19 +48,19 @@ typeChecks = null . snd . runWriter
 showErrors :: TCheckM Type -> [String]
 showErrors = snd . runWriter
 
-codeGen :: TypeEnv -> VarEnv -> ExpEnv -> IO Bool 
-codeGen tenv venv eenv = do 
+codeGen :: TypeEnv -> VarEnv -> ExpEnv -> FilePath -> IO (Bool, String)
+codeGen tenv venv eenv path = do 
   let types = Map.foldlWithKey showType "" tenv
   let file = Map.foldlWithKey (\acc fun (a, e) -> acc ++ (showFunSignature fun (venv Map.! fun))
                            ++ showExpr fun a e) "main = putStrLn (show start)\n\n" eenv
-  writeFile "cfst.hs" (types ++ file)
+  writeFile (path ++ "cfst.hs") (types ++ file)
   -- callCommand "ghc cfst.hs"
   -- callCommand "./cfst"
-  return True
+  return (True, "")
 
-printErr :: Map.Map TermVar (TCheckM Type)-> IO Bool
+printErr :: Map.Map TermVar (TCheckM Type)-> IO (Bool, String)
 printErr tc = do
---putStrLn "Errors \n"   
+-- putStrLn "Errors \n"   
   let err = Map.foldl (\acc v -> acc ++ showErrors v) [] tc
-  putStrLn $ intercalate "\n" err  
-  return False
+--  putStrLn $ intercalate "\n" err  
+  return (False, intercalate "\n" err)

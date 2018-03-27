@@ -31,8 +31,7 @@ spec = do
 matchValidKindingSpec :: (String, String) -> Spec
 matchValidKindingSpec (a, b) =
   it a $ do
-    let t = (read a :: Type)
-    (fst $ runWriter (kindOf t)) `shouldBe` (read b :: Kind)
+    (kindOf (read a :: Type)) `shouldBe` (read b :: Kind)
 
 
 -- INVALID:

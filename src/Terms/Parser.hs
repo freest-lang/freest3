@@ -99,7 +99,7 @@ program venv = do
 manyAlternate ::
      Parser (TermVar, Type)
   -> Parser (TermVar, (Params, Expression))
-  -> Parser (TypeVar, Type)
+  -> Parser (TypeVar, (Kind, Type))
   -> Parser (TypeVar, [(TypeVar, [Type])])
   -> VarEnv
   -> Parser ParserOut
@@ -121,6 +121,7 @@ manyAlternate pa pb pc pd venv =
    addListToMap xs m = Map.union m (Map.fromList xs) --TODO: Can't be an union (must test duplicated entries)
    addDataTypesToMap xs m = addListToMap (foldl (\acc (x, y) -> acc ++ (convertType x y)) [] xs) m
 
+-- TODO: remove
 ident =
   lowerIdentifier <|>
   choice [ try (string "(+)"), try (string "(-)"), try (string "(*)")
@@ -153,7 +154,7 @@ parseTypeDecl = do
   c <- constructor
   reservedOp "="
   t <- mainTypeParser
-  return (c, t)-- return (c, ((kindOf t), t)) -- TODO : Kind (verify)
+  return (c, ((kindOf t), t)) -- TODO : Kind (verify)
 
 parseDataType = do
   reserved "data"

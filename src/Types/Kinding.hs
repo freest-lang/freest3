@@ -1,8 +1,7 @@
 module Types.Kinding
-( -- isType
---,
-isSessionType
-, isSchemeType
+( isType
+, isSessionType
+--, isSchemeType
 , kindOf
 , contractive
 , Kind (..)
@@ -29,8 +28,11 @@ loggerName = "Kinding"
 
 -- Kind of a Type
 
-kindOf :: Type -> KindM Kind
-kindOf t = kinding Map.empty t
+kindOf :: Type -> Kind
+kindOf t = kindOf' (kinding Map.empty t)
+  where
+    kindOf' :: KindM Kind -> Kind
+    kindOf' = fst . runWriter
 
 kinding :: KindEnv -> Type -> KindM Kind
 kinding _ Skip = return $ Kind Session Un
@@ -114,7 +116,8 @@ checkSessionType t k
   | otherwise   = tell ["Expecting type " ++ (show t) ++ " to be a session type but it is a " ++ (show k)]
       
 isSessionType :: Type -> Bool
-isSessionType t =  isSession . fst $ runWriter (kindOf t)
+isSessionType =  isSession . kindOf
+-- isSession . fst $ runWriter (kindOf t)
 -- do
 --   k <- kindOf t
 --   return $ isSession k
@@ -125,19 +128,20 @@ isSession _                = False
 
 -- Check if a type is a type scheme
 
-isSchemeType :: Type ->  KindM Bool
-isSchemeType t = do -- isScheme . kindOf
-  k <- kindOf t
-  return $ isScheme k
+-- isSchemeType :: Type -> Bool
+-- isSchemeType =  isScheme . kindOf
+--   -- do
+--   -- k <- kindOf t
+--   -- return $ isScheme k
   
-isScheme :: Kind -> Bool
-isScheme (Kind Scheme _) = True
-isScheme _               = False
+-- isScheme :: Kind -> Bool
+-- isScheme (Kind Scheme _) = True
+-- isScheme _               = False
 
 -- Check if a type is not a type scheme
 checkNotTypeScheme :: Type -> Kind ->  KindM ()
 checkNotTypeScheme t k
-  | not (isScheme k) = return ()
+  | k <= Kind Session Lin = return ()
   | otherwise        = tell ["Type " ++ (show t) ++ " is a type Scheme"]
 
 
@@ -168,6 +172,12 @@ checkContractivity delta t
   | contractive delta t = return ()
   | otherwise           = tell ["Type " ++ (show t) ++ " is not contractive."]
 
+isType :: KindEnv -> Type -> Bool
+isType delta t = wellFormed (kinding delta t)
+  where
+    wellFormed :: KindM Kind -> Bool
+    wellFormed = null . snd . runWriter
+
 -- Check if a type is wellformed 
 
 -- isType :: KindEnv -> Type -> Bool
@@ -179,7 +189,8 @@ checkContractivity delta t
 -- Check if the type's multiplicity is unrestricted
 
 un :: Type -> Bool
-un t = isUn . fst $ runWriter (kindOf t)
+un = isUn . kindOf
+  -- isUn . fst $ runWriter (kindOf t)
   -- do --isUn . kindOf
   -- k <- kindOf t
   -- return $ isUn k

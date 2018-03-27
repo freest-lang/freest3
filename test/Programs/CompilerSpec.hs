@@ -1,8 +1,6 @@
 module Programs.CompilerSpec (spec) where
 
 import           Compiler
-import           Control.Exception
-import           Control.Monad
 import           Data.List
 import qualified Data.Map.Strict as Map
 import           System.Directory
@@ -17,7 +15,7 @@ validTestDir curDir = curDir ++ "/test/Programs/ValidTests/"
 invalidTestDir curDir = curDir ++ "/test/Programs/InvalidTests/"
 
 main :: IO ()
-main = hspec spec
+main = hspec $ spec
 
 spec :: Spec
 spec = do
@@ -32,42 +30,47 @@ spec = do
   describe "Invalid Tests" $ do
     mapM_ (\dir -> testDir dir curDir) dirs
 
+  runIO $ setCurrentDirectory curDir
+
 -- TODO: test invalid with expect failure
 testDir :: String -> String -> Spec
 testDir dir curDir = do
   sourceFiles <- runIO $ listDirectory ((validTestDir curDir) ++ dir)
   let source = getSource sourceFiles
   testOne ((validTestDir curDir) ++ dir ++ "/" ++ source) source
+
   
 getSource :: [String] -> String
 getSource [] = ""
 getSource (x:xs)
-  | ".hs" `isInfixOf` x = x
+  | ".hs" `isInfixOf` x && x /= "cfst.hs" = x
   | otherwise = getSource xs
 
-testOne :: String -> String -> Spec
+testOne :: String -> String -> Spec    
 testOne test filename = do
   compiles <- runIO $ compile test
   case compiles of
-    False -> 
+    (False, err) -> 
       it ("Testing " ++ filename) $ do
-        assertFailure "The compiler terminated with errors"
-    True  -> runAndCheckResult test filename
-
+        assertFailure ("The compiler terminated with errors\n" ++ err)
+    (True, _)  -> runAndCheckResult test filename
 
 
 runAndCheckResult :: String -> String -> Spec
 runAndCheckResult testFile filename = do
+  let path = reverse $ dropWhile (/= '/') (reverse testFile)
+  runIO $ setCurrentDirectory path
+
   (exitcode, output, errors) <- runIO $ readProcessWithExitCode "ghc" ["cfst.hs"] ""
   -- putStrLn $ "exitcode: " ++ show exitcode
   -- putStrLn $ "output: " ++ show output
   if (exitcode == ExitSuccess) then
-    do
+    do      
       (exitcode1, output1, errors1) <- runIO $ readProcessWithExitCode "./cfst" [] ""
       cont <- runIO $ readFile ((takeWhile (/= '.') testFile) ++ ".expected")
 
       it ("Testing " ++ filename) $ do
-        cont `shouldBe` output1
+        (filter (/= '\n') cont) `shouldBe` (filter (/= '\n') output1)
         
   else
      it ("Testing " ++ filename) $ do
