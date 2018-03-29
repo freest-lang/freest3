@@ -122,20 +122,19 @@ manyAlternate pa pb pc pd venv =
    addDataTypesToMap xs m = addListToMap (foldl (\acc (x, y) -> acc ++ (convertType x y)) [] xs) m
 
 -- TODO: remove
-ident =
-  lowerIdentifier <|>
-  choice [ try (string "(+)"), try (string "(-)"), try (string "(*)")
-         , try (string "(/)"), try (string "mod"), try (string "rem")
-         , try (string "(&&)"), try (string "(||)"), try (string "not")
-         , try (string "(==)")
-         ]
+-- ident =
+--   lowerIdentifier <|>
+--   choice [ try (string "(+)"), try (string "(-)"), try (string "(*)")
+--          , try (string "(/)"), try (string "mod"), try (string "rem")
+--          , try (string "(&&)"), try (string "(||)"), try (string "not")
+--          , try (string "(==)")
+--          ]
 
 parseBindingDecl = do
-  id <- (try (lexeme ident))
+  id <- lowerIdentifier-- (try (lexeme ident))
   colon
   colon
   t <- mainTypeParser
-  --error $ show id
   return $ (id, t)
   -- if isType Map.empty t then
   --  return $ (id,t)
@@ -327,11 +326,12 @@ parseCase = do
   v <- many1 parseCaseValues
   return $ Case e (Map.fromList v)
 
-parseCaseValues = do
+parseCaseValues = try $ do
   c <- constructor
   ids <- (many lowerIdentifier)
   reservedOp "->"
   e <- parseExpression
+  error $ show e
   return $ (c, (ids, e))
 
 -- parseMatch = do

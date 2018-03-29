@@ -76,24 +76,24 @@
 -- -- testConstruct :: Int -> Tree -> Tree -> Tree
 -- -- testConstruct = Node
 
--- data C = A Char | B Int Char Bool | C
+data C = A Char | B Int Char Bool | D
 
--- aaa :: C -> Char
--- aaa x = case x of 
---           B a b c -> a
---           A i -> i
---           C -> 'C'
+aaa :: C -> Char
+aaa x = case x of 
+          B a b c -> b
+          A i -> i
+          D -> 'C'
 
 -- qqqq :: Int
 -- qqqq = 3*(2 - 1)
 
-type MyType = String
+-- type MyType = String
 
-start :: Int
-start = fact 12
+-- start :: Int
+-- start = fact 12
 
-fact :: Int -> Int
-fact n = if n == 0 then 1 else n * fact (n-1)
+-- fact :: Int -> Int
+-- fact n = if n == 0 then 1 else n * fact (n-1)
 
 -- test :: Int -> Int
 -- test n = n -1
