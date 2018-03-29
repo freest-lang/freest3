@@ -94,6 +94,7 @@ program venv = do
   m <- manyAlternate (try parseBindingDecl) (try parseExpressionDecl)
                      (try parseTypeDecl) (try parseDataType) venv
   eof
+ 
   return m
 
 manyAlternate ::
@@ -231,10 +232,10 @@ parseExpr =
   <|> parseSelect
   <|> parseFork
   <|> parseCase
-  -- <|> parseMatch
   <|> parseFunApp
-  <|> parseVariable
   <|> parseConstructor   
+  <|> parseVariable
+  -- <|> parseMatch
 
 -- Parse Basic Types (int, bool, char and unit)
 parseBasic =
@@ -331,7 +332,7 @@ parseCaseValues = try $ do
   ids <- (many lowerIdentifier)
   reservedOp "->"
   e <- parseExpression
-  error $ show e
+  -- error $ show e
   return $ (c, (ids, e))
 
 -- parseMatch = do
@@ -353,11 +354,17 @@ parseConstructor = do
   return $ Constructor c  
 
 parseFunApp = try $ do
-  c <- lowerIdentifier
+  c <- parseVariable -- lowerIdentifier
+  notFollowedBy constructor
   e <- many1 $ try parseExpr -- (try $ parens parseExpression)
-  return $ foldr apply (Application (Variable c) (head e)) (tail e)
+  return $ foldr apply (Application c (head e)) (tail e)
+--  retVal c e
   where
     apply e acc = Application acc e
-  
+    -- retVal c e
+    --   | length e == 0 = return c
+    --   | otherwise = return $ foldr apply (Application c (head e)) (tail e)
+
+      
 -- TODO: remove (test purposes)
 run = mainProgram "src/test.hs" Map.empty

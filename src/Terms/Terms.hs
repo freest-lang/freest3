@@ -62,29 +62,29 @@ data Expression
   -- Datatypes
   | Constructor TermVar
   | Case Expression CaseMap
-  deriving Show
+--  deriving Show
 -- ("parseCase",([],Case (Application (Application (Variable "(+)") (Integer 2)) (Integer 2))
 --  (fromList [("C",(["a"],Integer 23)),("D",(["a"],Integer 24)),("E",(["a"],Integer 25))])))
 
--- instance Show Expression where
---   show  Unit               = "()"
---   show (Integer i)         = show i
---   show (Character c)       = show c
---   show (Boolean b)         = show b
---   show (Variable v)        = v
---   show (Application e1 e2) = showApplication e1 e2
---   show (Conditional e1 e2 e3) = "if " ++ show e1 ++ " then " ++ show e2 ++ " else " ++ show e3
---   show (Pair e1 e2) = "(" ++ show e1 ++ ", " ++ show e2 ++ ")"
---   show (Let tv1 tv2 e1 e2) = showLet tv1 tv2 e1 e2
---   -- TODO...
---   show (New t) = "New " ++ show t
---   show (Send e1 e2) = "Send " ++ show e1 ++ " " ++ show e2
---   show (Receive e1) = "Receive " ++ show e1
---   show (Select tv e1) = "Select " ++ tv ++ " " ++ show e1 
--- --  show (Match e1 (Map.Map termVar (typeVar, es))) =
---   show (Fork e1) = "Fork " ++ show e1
---   show (Constructor tv) = tv
---   show (Case e1 cm) = "case " ++ show e1 ++ " of\n  " ++ (showCaseMap cm)
+instance Show Expression where
+  show  Unit               = "()"
+  show (Integer i)         = show i
+  show (Character c)       = show c
+  show (Boolean b)         = show b
+  show (Variable v)        = v
+  show (Application e1 e2) = showApplication e1 e2
+  show (Conditional e1 e2 e3) = "if " ++ show e1 ++ " then " ++ show e2 ++ " else " ++ show e3
+  show (Pair e1 e2) = "(" ++ show e1 ++ ", " ++ show e2 ++ ")"
+  show (Let tv1 tv2 e1 e2) = showLet tv1 tv2 e1 e2
+  -- TODO...
+  show (New t) = "New " ++ show t
+  show (Send e1 e2) = "Send " ++ show e1 ++ " " ++ show e2
+  show (Receive e1) = "Receive " ++ show e1
+  show (Select tv e1) = "Select " ++ tv ++ " " ++ show e1 
+--  show (Match e1 (Map.Map termVar (typeVar, es))) =
+  show (Fork e1) = "Fork " ++ show e1
+  show (Constructor tv) = tv
+  show (Case e1 cm) = "case " ++ show e1 ++ " of\n  " ++ (showCaseMap cm)
 
 showApplication :: Expression -> Expression -> String
 showApplication (Application (Variable ('(':op:")")) e2) e3  = "(" ++ show e2 ++ [op] ++ show e3 ++ ")"
@@ -121,5 +121,5 @@ showCaseMap = Map.foldlWithKey (\acc tv (params, e) -> acc ++ tv ++ " " ++
 showParams :: Params -> String
 showParams as
   | null as = ""
-  | otherwise = " " ++ (intercalate " " as)
+  | otherwise = (intercalate " " as) ++ " "
 
