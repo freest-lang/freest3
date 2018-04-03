@@ -39,7 +39,7 @@ reduce (Semi t1 t2)
     | otherwise           = Map.map (\t -> if t == Skip then t2 else t `Semi` t2) (reduce t1)
 reduce (Choice v m) = Map.mapKeys (ChoiceLabel v) m
 --reduce (Choice External m) = Map.mapKeys ExtChoiceLabel m
-reduce (Rec x t)          = reduce $ unfold (Rec x t)
+reduce (Rec x k t)          = reduce $ unfold (Rec x k t)
 reduce _                  = Map.empty
 
 --TODO: equiv' Forall Forall
@@ -64,8 +64,8 @@ equiv' s kenv (Datatype dt1) (Datatype dt2) =
   (Map.size dt1 == Map.size dt2) && (Map.foldlWithKey (checkBinding kenv dt2 s) True dt1)
 -- -- equiv s (Forall x t1) (Forall y t2) = equiv s t1 t2
 
-equiv' s kenv (Rec x t1) t2 = equiv (Set.insert ((Rec x t1), t2) s) kenv (unfold (Rec x t1)) t2
-equiv' s kenv t1 (Rec x t2) = equiv (Set.insert (t1, (Rec x t2)) s) kenv t1 (unfold (Rec x t2))
+equiv' s kenv (Rec x k t1) t2 = equiv (Set.insert ((Rec x k t1), t2) s) kenv (unfold (Rec x k t1)) t2
+equiv' s kenv t1 (Rec x k t2) = equiv (Set.insert (t1, (Rec x k t2)) s) kenv t1 (unfold (Rec x k t2))
 
 equiv' s kenv t1 t2 = do 
   -- isSessionType t1 && isSessionType t2
@@ -107,12 +107,12 @@ checkEquivVar s kenv tm l t
   
 
 isRec :: Type -> Bool
-isRec (Rec _ _) = True
+isRec (Rec _ _ _) = True
 isRec _         = False
 
 -- Assumes parameter is a Rec type
 unfold :: Type -> Type
-unfold (Rec x t) = subs (Rec x t) x t
+unfold (Rec x k t) = subs (Rec x k t) x t
 
 subs :: Type -> TypeVar -> Type -> Type
 subs t y (Var x)
@@ -124,9 +124,9 @@ subs t y (PairType t1 t2)   = PairType (subs t y t1) (subs t y t2)
 --     | x == y                = Forall x t1
 --     | otherwise             = Forall x (subs t2 y t1)
 -- Assume y /= x 
-subs t2 y (Rec x t1)
-    | x == y                = Rec x t1
-    | otherwise             = Rec x (subs t2 y t1)
+subs t2 y (Rec x k t1)
+    | x == y                = Rec x k t1
+    | otherwise             = Rec x k (subs t2 y t1)
 subs t y (Choice v m) = Choice v (Map.map(subs t y) m)
 subs _ _ t                  = t
 -- subs _ _ Skip               = Skip

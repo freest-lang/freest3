@@ -1,4 +1,4 @@
-module Programs.CompilerSpec (spec) where
+module CompilerSpec (spec) where
 
 import           Compiler
 import           Data.List

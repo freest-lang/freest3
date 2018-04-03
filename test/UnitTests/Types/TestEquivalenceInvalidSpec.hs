@@ -1,4 +1,4 @@
-module UnitTests.Types.TestEquivalenceInvalidSpec(spec) where
+module Types.TestEquivalenceInvalidSpec(spec) where
 
 import qualified Data.Map.Strict as Map
 import           SpecHelper

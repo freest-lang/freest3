@@ -21,7 +21,17 @@ type TCheckM = Writer [String]
 
 typeCheck :: VarEnv -> TypeEnv -> Params -> Expression -> TermVar -> TCheckM Type
 typeCheck venv tenv args exp fname = do
-    
+
+  -- 1 - Data declaration
+
+  
+  -- 2 - Function type declaration
+
+
+  -- 3 - Function declaration
+
+
+  
   -- Union ??
   venv1 <- checkExpEnv Map.empty venv fname args
 --  checkTypeEnv tenv
@@ -43,10 +53,15 @@ checkExp _ venv (Character _)  = return (Basic CharType, venv)
 checkExp _ venv (Boolean _)    = return (Basic BoolType, venv)
 
 -- Variables
-checkExp kenv venv (Variable x)   = checkVar kenv venv x
+checkExp kenv venv (Variable x)  = checkVar kenv venv x
+
+checkExp kenv venv1 (UnLet x e1 e2) = do -- checkVar kenv venv x
+  (t1, venv2) <- checkExp kenv venv1 e1
+  (t2, venv3) <- checkExp kenv (Map.insert x t1 venv2) e2
+  return (t2, venv3)
 
 -- Aplication
-checkExp kenv venv1 (Application e1 e2) = do
+checkExp kenv venv1 (App e1 e2) = do
    (t1, venv2) <- checkExp kenv venv1 e1 
    (t2, t3) <- checkFun t1
    (t4, venv3) <- checkExp kenv venv2 e2 
@@ -100,8 +115,9 @@ checkExp kenv venv1 (Receive e) = do
   return (Fun Un t1 (PairType (Basic b) t3), venv2)
 
 checkExp kenv venv1 (Select c e) = do
-  (t,venv2) <- checkExp kenv venv1 e 
-  return (Choice Internal (Map.singleton c t), venv2) -- TODO: add the other branches to this type
+  (t,venv2) <- checkExp kenv venv1 e
+  checkExternalChoice (canonical t)
+  checkVar kenv venv1 c
 
 -- Fork
 checkExp kenv venv1 (Fork e) = do
@@ -114,6 +130,7 @@ checkExp kenv venv (Constructor c) = checkVar kenv venv c
 
 checkExp kenv venv1 (Case e cm) = do
   (t, venv2) <- checkExp kenv venv1 e
+  checkInternalChoice (canonical t)
   checkEquivConstructors kenv venv2 t cm
   l <- checkCaseMap kenv venv2 cm
   checkEquivTypeList kenv (map fst l)
@@ -272,6 +289,16 @@ checkSessionType kenv t
           tell [("Expecting a session type; found " ++ (show t))]
           return Skip
 
+checkInternalChoice :: Type -> TCheckM ()
+checkInternalChoice (Choice Internal t) = return ()
+checkInternalChoice t                   = 
+  tell ["Expecting an internal choice; found " ++ show t]
+
+checkExternalChoice :: Type -> TCheckM ()
+checkExternalChoice (Choice External t) = return ()
+checkExternalChoice t                   = 
+  tell ["Expecting an external choice; found " ++ show t]
+
 -- Expression environments
 -- venv contains the entries in the prelude as well as those in the source file
 
@@ -314,7 +341,7 @@ Conversion to list head normal form.
 TODO: the inductive definition of the output type; a proof that the the function outputs one such type.
 -}
 canonical :: Type -> Type
-canonical (Rec x t)     = canonical $ unfold $ Rec x t
+canonical (Rec x k t)     = canonical $ unfold $ Rec x k t
 canonical (Semi Skip t) = canonical t
 -- canonical (Semi t1 t2)  = canonical (Semi (canonical t1) t2)
 canonical t             = t

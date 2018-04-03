@@ -43,8 +43,10 @@ data Expression
   | Boolean Bool
   -- Variables
   | Variable TermVar
+  | UnLet TermVar Expression Expression
   -- Aplication
-  | Application Expression Expression
+  | App Expression Expression
+  | TypeApp Expression Type
   -- Conditional
   | Conditional Expression Expression Expression
   -- Pairs
@@ -61,9 +63,9 @@ data Expression
   | Fork Expression -- TODO: Express as application
   -- Datatypes
   | Constructor TermVar
-  | Case Expression CaseMap
+  | Case Expression CaseMap  
 --  deriving Show
--- ("parseCase",([],Case (Application (Application (Variable "(+)") (Integer 2)) (Integer 2))
+-- ("parseCase",([],Case (App (App (Variable "(+)") (Integer 2)) (Integer 2))
 --  (fromList [("C",(["a"],Integer 23)),("D",(["a"],Integer 24)),("E",(["a"],Integer 25))])))
 
 instance Show Expression where
@@ -72,7 +74,9 @@ instance Show Expression where
   show (Character c)       = show c
   show (Boolean b)         = show b
   show (Variable v)        = v
-  show (Application e1 e2) = showApplication e1 e2
+  show (UnLet tv e1 e2)        = "let " ++ tv ++ " = " ++ show e1 ++ " in " ++ show e2
+  show (App e1 e2) = showApp e1 e2
+  show (TypeApp t e1) = "TYPEAPP " ++ show t ++ " " ++ show e1 
   show (Conditional e1 e2 e3) = "if " ++ show e1 ++ " then " ++ show e2 ++ " else " ++ show e3
   show (Pair e1 e2) = "(" ++ show e1 ++ ", " ++ show e2 ++ ")"
   show (Let tv1 tv2 e1 e2) = showLet tv1 tv2 e1 e2
@@ -86,21 +90,21 @@ instance Show Expression where
   show (Constructor tv) = tv
   show (Case e1 cm) = "case " ++ show e1 ++ " of\n  " ++ (showCaseMap cm)
 
-showApplication :: Expression -> Expression -> String
-showApplication (Application (Variable ('(':op:")")) e2) e3  = "(" ++ show e2 ++ [op] ++ show e3 ++ ")"
-showApplication (Application (Variable ('(':op:op2:")")) e2) e3  = "(" ++ show e2 ++ [op] ++ [op2] ++ show e3 ++ ")"
--- showApplication (Application (Variable "(+)") e2) e3  = "(" ++ show e2 ++ " + " ++ show e3 ++ ")"
--- showApplication (Application (Variable "(-)") e2) e3  = "(" ++ show e2 ++ " - " ++ show e3 ++ ")"
--- showApplication (Application (Variable "(/)") e2) e3  = "(" ++ show e2 ++ " / " ++ show e3 ++ ")"
--- showApplication (Application (Variable "(*)") e2) e3  = "(" ++ show e2 ++ " * " ++ show e3 ++ ")"
--- showApplication (Application (Variable "(==)") e2) e3 = "(" ++ show e2 ++ " == " ++ show e3 ++ ")"
--- showApplication (Application (Variable "(>=)") e2) e3 = "(" ++ show e2 ++ " == " ++ show e3 ++ ")"
-showApplication (Variable "negate") e2                = "-" ++ show e2
-showApplication (Application (Variable "div") e2) e3  = show e2 ++ " `div` " ++ show e3
-showApplication (Application (Variable "rem") e2) e3  = show e2 ++ " `rem` " ++ show e3
+showApp :: Expression -> Expression -> String
+showApp (App (Variable ('(':op:")")) e2) e3  = "(" ++ show e2 ++ [op] ++ show e3 ++ ")"
+showApp (App (Variable ('(':op:op2:")")) e2) e3  = "(" ++ show e2 ++ [op] ++ [op2] ++ show e3 ++ ")"
+-- showApp (App (Variable "(+)") e2) e3  = "(" ++ show e2 ++ " + " ++ show e3 ++ ")"
+-- showApp (App (Variable "(-)") e2) e3  = "(" ++ show e2 ++ " - " ++ show e3 ++ ")"
+-- showApp (App (Variable "(/)") e2) e3  = "(" ++ show e2 ++ " / " ++ show e3 ++ ")"
+-- showApp (App (Variable "(*)") e2) e3  = "(" ++ show e2 ++ " * " ++ show e3 ++ ")"
+-- showApp (App (Variable "(==)") e2) e3 = "(" ++ show e2 ++ " == " ++ show e3 ++ ")"
+-- showApp (App (Variable "(>=)") e2) e3 = "(" ++ show e2 ++ " == " ++ show e3 ++ ")"
+showApp (Variable "negate") e2                = "-" ++ show e2
+showApp (App (Variable "div") e2) e3  = show e2 ++ " `div` " ++ show e3
+showApp (App (Variable "rem") e2) e3  = show e2 ++ " `rem` " ++ show e3
 -- TODO others
--- showApplication (Application e1 e2) e3                = show e2 ++ " " ++ show e1  ++ " " ++ show e3
-showApplication e1 e2                                 = show e1 ++ " " ++ show e2 
+-- showApp (App e1 e2) e3                = show e2 ++ " " ++ show e1  ++ " " ++ show e3
+showApp e1 e2                                 = show e1 ++ " " ++ show e2 
 showLet :: TermVar -> TermVar -> Expression -> Expression -> String
 showLet tv1 tv2 e1 e2 = "let " ++ tv1 ++ " = " ++ showFst e1 ++ "\n" ++
                         "let " ++ tv2 ++ " = " ++ showSnd e1 ++ " in " ++ show e2
@@ -121,5 +125,5 @@ showCaseMap = Map.foldlWithKey (\acc tv (params, e) -> acc ++ tv ++ " " ++
 showParams :: Params -> String
 showParams as
   | null as = ""
-  | otherwise = (intercalate " " as) ++ " "
+  | otherwise = " " ++ (intercalate " " as)
 

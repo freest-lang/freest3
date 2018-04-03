@@ -1,4 +1,4 @@
-module UnitTests.Types.TestKindingValidSpec(spec) where
+module Types.TestKindingValidSpec(spec) where
 
 import           SpecHelper
 import           Types.Kinds

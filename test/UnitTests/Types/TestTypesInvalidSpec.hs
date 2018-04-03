@@ -1,4 +1,4 @@
-module UnitTests.Types.TestTypesInvalidSpec(spec) where
+module Types.TestTypesInvalidSpec(spec) where
 
 import SpecHelper
 

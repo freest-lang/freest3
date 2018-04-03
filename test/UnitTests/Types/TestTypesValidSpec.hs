@@ -1,4 +1,4 @@
-module UnitTests.Types.TestTypesValidSpec(spec) where
+module Types.TestTypesValidSpec(spec) where
 
 -- import System.IO
 -- import Control.Monad

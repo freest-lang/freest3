@@ -41,15 +41,15 @@
 --         | CC Char Bool
 
 -- --parseSend: TODO: infinite
--- parseSend :: (!Int;Skip) -> Skip
--- parseSend x = send 2 x
+-- parseSend :: Int -> (!Int;Skip) -> Skip
+-- parseSend i x = send i x
 
 -- parseCase :: Int
 -- parseCase =
 --   case 2+2 of
 --     Node -> 23
-    -- D a -> 24
-    -- E a -> 25
+--     D a -> 24
+--     E a -> 25
 
 -- parseReceive TODO
 -- (?Int;Skip) -> ((?Int;Skip) -> (Int , Skip))
@@ -76,13 +76,13 @@
 -- -- testConstruct :: Int -> Tree -> Tree -> Tree
 -- -- testConstruct = Node
 
-data C = A Char | B Int Char Bool | D
+-- data C = A Char | B Int Char Bool | D
 
-aaa :: C -> Char
-aaa x = case x of 
-          B a b c -> b
-          A i -> i
-          D -> 'C'
+-- aaa :: C -> Char
+-- aaa x = case x of 
+--           B a b c -> b
+--           A i -> i
+--           D -> 'C'
 
 -- qqqq :: Int
 -- qqqq = 3*(2 - 1)
@@ -107,3 +107,7 @@ aaa x = case x of
 
 -- myPair :: (Int,Bool)
 -- myPair = (2,True)
+
+
+asd aree = 2 + 2
+

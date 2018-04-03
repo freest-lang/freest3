@@ -2,7 +2,9 @@
 -- https://web.archive.org/web/20140528151730/http://legacy.cs.uu.nl/daan/parsec.htm)
 
 module Types.TypeParser (
-  mainTypeParser
+  parseType
+, parseKind
+, parseVarBind  
 ) where
 
 import           Text.Parsec.Expr
@@ -12,7 +14,7 @@ import           Text.ParserCombinators.Parsec
 import qualified Data.Map.Strict as Map
 import           Types.Kinds
 import           Types.Types
-import           Types.Kinding
+-- import           Types.Kinding
 
 
 -- TODO : check list
@@ -33,7 +35,8 @@ lexer  = Token.makeTokenParser
         (haskellDef
         {
         Token.reservedOpNames = [";", "!", "?", "->", "-o", "+", "&"],
-        Token.reservedNames = ["Int","Bool","Char", "Skip", "()", "rec", "forall", "data"]
+        Token.reservedNames = ["Int","Bool","Char", "Skip", "()",
+                               "rec", "forall", "data", "TU", "TL", "SU", "SL"]
         })
 
 reservedOp = Token.reservedOp lexer
@@ -71,21 +74,21 @@ parseBasicType =
 -- TYPES
 
 parserType :: String -> Either ParseError Type
-parserType = parse mainTypeParser "Context-free Sessions (Types)"
+parserType = parse parseType "Context-free Sessions (Types)"
 
-
-mainTypeParser :: Parser Type
-mainTypeParser =
-    do{
+parseType :: Parser Type
+parseType = 
+     do{
       whiteSpace
-      ; ret <- parseType
-      -- ; eof
+      ; ret <- typeExpr-- parseType
+--      ; eof
       ; return ret
   } <?> "a type: skip, T;T, ..., or ..."
 
-parseType :: Parser Type
-parseType =  buildExpressionParser table parseTerm
-
+typeExpr :: Parser Type
+typeExpr =  buildExpressionParser table parseTerm
+        <?> "an expression"
+         
 table = [ [binary "->" (Fun Un) AssocRight, binary "-o" (Fun Lin) AssocRight ]
         , [binary ";" Semi AssocLeft ]
         ]
@@ -94,11 +97,11 @@ binary name fun assoc = Infix  (do{ try (symbol name); return fun }) assoc
 -- prefix name fun       = Prefix (do{ reservedOp name; return fun })
 
 parseTerm =
-  try (parens parseType)
+  try (parens typeExpr)
   <|> (do {  skip ;                                             return Skip })
   <|> (do { b <- parseBasicType;                                return $ Basic b })
-  <|> (do { try (symbol "?"); b <- parseBasicType;              return $ In b })
-  <|> (do { try (symbol "!"); b <- parseBasicType;              return $ Out b })
+  <|> (do { try (symbol "?"); b <- parseBasicType;              return $ In b })  
+  <|> (do { try (symbol "!"); b <- parseBasicType;              return $ Out b })  
   <|> parens parsePair
   <|> parseExternalChoice
   <|> parseInternalChoice
@@ -108,42 +111,69 @@ parseTerm =
   <|> (do { id <- identifier; notFollowedBy (do {colon;colon}); return $ Var id })
   <?> "a type: Skip, T;T, !B, ?B, B, T->T, T-oT, (T,T), id, rec id.T, or forall id.t"
 
+  
+
+semi = Token.semi lexer
+
+parsePair :: Parser Type
 parsePair = do
-  t <- parseType
+  t <- typeExpr
   comma
-  u <- parseType
+  u <- typeExpr
   return $ PairType t u
 
+parseRec :: Parser Type
 parseRec = do
   rec
   id <- identifier
+  k <- option (Kind Session Un) parseVarBind
   dot
-  t <- parseType
-  return $ Rec id t
+  t <- typeExpr
+  return $ Rec id k t
 
+parseForall :: Parser Type
 parseForall = do
   forall
   id <- identifier
   dot
-  t <- parseType
+  t <- typeExpr
   return $ Forall id t
 
+parseInternalChoice :: Parser Type
 parseInternalChoice = do
   reservedOp "+"
   a <- braces $ sepBy1 parseBind comma
   return $ Choice Internal (Map.fromList a)
 
+parseExternalChoice :: Parser Type
 parseExternalChoice = do
   reservedOp "&"
   a <- braces $ sepBy1 parseBind comma
   return $ Choice External (Map.fromList a)
 
+parseDataType :: Parser Type
 parseDataType = do
   a <- sepBy1 parseBind comma
   return $ Datatype $ Map.fromList a
 
+parseBind :: Parser (TypeVar, Type)
 parseBind = do
   id <- identifier
   colon
-  ptype <- parseType
+  ptype <- typeExpr
   return (id,ptype)
+
+
+parseVarBind :: Parser Kind
+parseVarBind = do
+  colon
+  colon
+  parseKind
+
+parseKind :: Parser Kind
+parseKind = 
+      (do reserved "SU"; return $ Kind Session Un)
+  <|> (do reserved "SL"; return $ Kind Session Lin)
+  <|> (do reserved "TU"; return $ Kind Functional Un)
+  <|> (do reserved "TL"; return $ Kind Functional Lin)
+  <?> "a kind: SU, SL, TU or TL"

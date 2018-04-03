@@ -1,4 +1,4 @@
-module UnitTests.Types.TestShowValidSpec(spec) where
+module Types.TestShowValidSpec(spec) where
 
 
 import SpecHelper

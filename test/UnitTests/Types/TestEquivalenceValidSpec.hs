@@ -1,4 +1,4 @@
-module UnitTests.Types.TestEquivalenceValidSpec(spec) where
+module Types.TestEquivalenceValidSpec(spec) where
 
 
 import qualified Data.Map.Strict as Map

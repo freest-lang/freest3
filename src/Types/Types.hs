@@ -62,7 +62,7 @@ data Type =
   | PairType Type Type
   | Choice ChoiceView TypeMap
   | Datatype TypeMap
-  | Rec TypeVar Type
+  | Rec TypeVar Kind Type
   | Forall TypeVar {- Kind TODO-} Type
   | Var TypeVar
   deriving Ord
@@ -80,7 +80,7 @@ instance Show Type where
   show (Choice Internal x) = showChoice "+" x
   show (Choice External x) = showChoice "&" x
   show (Datatype x) =   "["++ showMap x ++"]"
-  show (Rec s t) = "(rec " ++ id s ++ " . " ++ show t ++ ")"
+  show (Rec s k t) = "(rec " ++ id s ++ " :: " ++ show k ++" . " ++ show t ++ ")"
   show (Forall s t) = "(forall " ++ id s ++ " . " ++ show t ++ ")"
   show (Var x) = id x
 
@@ -103,7 +103,7 @@ equals s (Var x) (Var y)
     | x == y = True
     | otherwise = Set.member (x,y) s
 equals s (Forall x t) (Forall y u) = equals (Set.insert (x,y) s) t u
-equals s (Rec x t) (Rec y u) = equals (Set.insert (x,y) s) t u
+equals s (Rec x k1 t) (Rec y k2 u) = equals (Set.insert (x,y) s) t u
 equals s (Semi t1 t2) (Semi v1 v2) = equals s t1 v1 && equals s t2 v2
 equals s (Basic x) (Basic y) = x == y
 equals s (Out x) (Out y) = x == y
@@ -128,7 +128,7 @@ dual (Out b)      = In b
 dual (In b)       = Out b
 dual (Choice v m) = Choice v (Map.map dual m)
 dual (Semi t1 t2) = Semi (dual t1) (dual t2)
-dual (Rec x t)    = Rec x (dual t)
+dual (Rec x k t)    = Rec x k (dual t)
 
 toList :: Type -> [Type]
 toList (Fun _ t1 t2) = t1 : toList t2

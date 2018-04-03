@@ -1,32 +1,32 @@
 test :
-	runhaskell -isrc -itest -fforce-recomp test/Spec.hs
+	runhaskell -isrc -itest -fforce-recomp test/UnitTests/UnitSpec.hs
 
 testTypesValid :
-	runhaskell -isrc -itest -fforce-recomp test/Types/TestTypesValidSpec.hs
+	runhaskell -isrc -itest -fforce-recomp test/UnitTests/Types/TestTypesValidSpec.hs
 
 testTypesInvalid :
-	runhaskell -isrc -itest -fforce-recomp test/Types/TestTypesInvalidSpec.hs
+	runhaskell -isrc -itest -fforce-recomp test/UnitTests/Types/TestTypesInvalidSpec.hs
 
 testShow :
-	runhaskell -isrc -itest -fforce-recomp test/Types/TestShowValidSpec.hs
+	runhaskell -isrc -itest -fforce-recomp test/UnitTests/Types/TestShowValidSpec.hs
 
 
 testParserValid :
-	runhaskell -isrc -itest -fforce-recomp test/Types/TestParserValidSpec.hs
+	runhaskell -isrc -itest -fforce-recomp test/UnitTests/Types/TestParserValidSpec.hs
 
 testParserInvalid :
-	runhaskell -isrc -itest -fforce-recomp test/Types/TestParserInvalidSpec.hs
+	runhaskell -isrc -itest -fforce-recomp test/UnitTests/Types/TestParserInvalidSpec.hs
 
 testKindingValid :
-	runhaskell -isrc -itest -fforce-recomp test/Types/TestKindingValidSpec.hs
+	runhaskell -isrc -itest -fforce-recomp test/UnitTests/Types/TestKindingValidSpec.hs
 
 #testKindingInvalid :
-#	runhaskell -isrc -itest -fforce-recomp test/Types/TestInvalidKindingSpec.hs
+#	runhaskell -isrc -itest -fforce-recomp test/UnitTests/Types/TestInvalidKindingSpec.hs
 testEquivalenceValid :
-	runhaskell -isrc -itest -fforce-recomp test/Types/TestEquivalenceValidSpec.hs
+	runhaskell -isrc -itest -fforce-recomp test/UnitTests/Types/TestEquivalenceValidSpec.hs
 
 testEquivalenceInvalid :
-	runhaskell -isrc -itest -fforce-recomp test/Types/TestEquivalenceInvalidSpec.hs
+	runhaskell -isrc -itest -fforce-recomp test/UnitTests/Types/TestEquivalenceInvalidSpec.hs
 
 
 
