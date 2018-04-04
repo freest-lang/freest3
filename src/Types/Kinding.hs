@@ -3,6 +3,7 @@ module Types.Kinding
 , isSessionType
 --, isSchemeType
 , kindOf
+, kindErr
 , contractive
 , Kind (..)
 , KindEnv
@@ -23,8 +24,6 @@ type KindM = Writer [String]
 type KindEnv = Map.Map TypeVar Kind
 -- type Message = String
 -- type KindingOut = Either Kind Message
-
-loggerName = "Kinding"
 
 -- Kind of a Type
 
@@ -49,10 +48,10 @@ kinding kenv (Semi t u) = do
   return $ Kind Session (max (multiplicity kt) (multiplicity ku))
 
 kinding kenv (Fun m t u) = do
-  kt <- kinding kenv t 
+  kt <- kinding kenv t
   ku <- kinding kenv u
   checkNotTypeScheme t kt
-  checkNotTypeScheme t ku
+  checkNotTypeScheme u ku
   return $ Kind Functional m
 
 kinding kenv (PairType t u) = do
@@ -141,7 +140,7 @@ isSession _                = False
 -- Check if a type is not a type scheme
 checkNotTypeScheme :: Type -> Kind ->  KindM ()
 checkNotTypeScheme t k
-  | k <= Kind Session Lin = return ()
+  | k <= Kind Functional Lin = return ()
   | otherwise        = tell ["Type " ++ (show t) ++ " is a type Scheme"]
 
 
@@ -178,6 +177,12 @@ isType kenv t = wellFormed (kinding kenv t)
     wellFormed :: KindM Kind -> Bool
     wellFormed = null . snd . runWriter
 
+kindErr :: KindEnv -> Type -> [String]
+kindErr kenv t = err (kinding kenv t)
+  where
+    err :: KindM Kind -> [String]
+    err = snd . runWriter
+-- fst . runWriter
 -- Check if a type is wellformed 
 
 -- isType :: KindEnv -> Type -> Bool

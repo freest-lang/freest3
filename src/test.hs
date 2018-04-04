@@ -68,10 +68,9 @@
 -- parseFork :: ()
 -- parseFork = 
 
--- data Tree =
---     Leaf
---   | Node Int Int Int
--- --  | Node Int Tree Tree
+data Tree =
+    Leaf
+  | Node Int Tree Tree
 
 -- -- testConstruct :: Int -> Tree -> Tree -> Tree
 -- -- testConstruct = Node
@@ -108,6 +107,6 @@
 -- myPair :: (Int,Bool)
 -- myPair = (2,True)
 
-
+asd :: Int -> Int 
 asd aree = 2 + 2
 

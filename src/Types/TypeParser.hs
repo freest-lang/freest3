@@ -108,12 +108,21 @@ parseTerm =
   <|> squares parseDataType
   <|> parseRec
   <|> parseForall
-  <|> (do { id <- identifier; notFollowedBy (do {colon;colon}); return $ Var id })
+  <|> parseVar
   <?> "a type: Skip, T;T, !B, ?B, B, T->T, T-oT, (T,T), id, rec id.T, or forall id.t"
 
   
+parseVar :: Parser Type
+parseVar = do
+  id <- identifier
+  return $ Var id
 
-semi = Token.semi lexer
+lowerIdentifier :: Parser String
+lowerIdentifier = lookAhead lower >> identifier  
+
+funDecl = try $ do
+  many1 lowerIdentifier
+  char '='
 
 parsePair :: Parser Type
 parsePair = do

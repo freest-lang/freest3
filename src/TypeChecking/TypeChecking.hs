@@ -19,28 +19,44 @@ import Control.Monad.Writer
 
 type TCheckM = Writer [String]
 
-typeCheck :: VarEnv -> TypeEnv -> Params -> Expression -> TermVar -> TCheckM Type
-typeCheck venv tenv args exp fname = do
+-- type ConstructorEnv = Map.Map TypeVar Type
+checkDataDecl :: KindEnv -> ConstructorEnv -> TCheckM ()
+checkDataDecl kenv cenv = do
+  Map.foldl (\_ k -> checkNotSessionType k) (return ()) kenv
+  Map.foldl (\_ t -> checkKinding kenv t) (return ()) cenv 
 
+checkKinding :: KindEnv -> Type -> TCheckM ()
+checkKinding kenv t -- = tell [ show $ isType kenv t, show t, show kenv]
+  | isType kenv t = return ()
+  | otherwise = tell (kindErr kenv t)
+
+checkFunTypeDecl :: KindEnv -> VarEnv -> TermVar -> TCheckM ()
+checkFunTypeDecl kenv venv fname = do
+  (t, venv2) <- checkVar kenv venv fname
+  checkKinding kenv t
+
+typeCheck :: KindEnv -> VarEnv -> ConstructorEnv -> Params -> Expression -> TermVar -> TCheckM Type
+typeCheck kenv venv cenv args exp fname = do
+
+--  error $ show cenv
+  -- (VarEnv, ExpEnv, TypeEnv, ConstructorEnv, KindEnv)
   -- 1 - Data declaration
-
+  checkDataDecl kenv cenv
   
   -- 2 - Function type declaration
-
+  checkFunTypeDecl kenv venv fname
 
   -- 3 - Function declaration
-
-
-  
   -- Union ??
-  venv1 <- checkExpEnv Map.empty venv fname args
+  venv1 <- checkExpEnv kenv venv fname args
 --  checkTypeEnv tenv
 
-  (t, venv2) <- checkExp Map.empty venv1 exp
+  (t, venv2) <- checkExp kenv venv1 exp
   let lastType = last $ toList $ venv2 Map.! fname
-  checkEquivTypes Map.empty t lastType 
-    
---  checkVEnvUn venv
+  checkEquivTypes kenv t lastType 
+
+  checkVEnvUn kenv venv
+  
   return t
 
 -- Ensures: the type in the result is canonical
@@ -289,6 +305,12 @@ checkSessionType kenv t
           tell [("Expecting a session type; found " ++ (show t))]
           return Skip
 
+checkNotSessionType :: Kind -> TCheckM ()
+checkNotSessionType k
+  | k >= (Kind Functional Un) = return ()
+  | otherwise = tell [("Expecting a functional (TU or TL) type; found a " ++ (show k) ++ " type.")]
+          
+
 checkInternalChoice :: Type -> TCheckM ()
 checkInternalChoice (Choice Internal t) = return ()
 checkInternalChoice t                   = 
@@ -317,17 +339,8 @@ checkParam fun args
            "'\n" ++ "In an equation for '" ++ fun ++ "'"]
      return ()
 
--- checkVEnvUn :: VarEnv -> IO ()
--- checkVEnvUn venv = do
---   l <- sequence $ map un env
---   allUn l
---   where
---     allUn l
---       | all (== True) l = return ()
---       | otherwise       = do
---           tell ["Venv must be un")] -- TODO: good error message
---           return ()
---     env = map snd (Map.toList venv)
+checkVEnvUn :: KindEnv -> VarEnv -> TCheckM ()
+checkVEnvUn kenv venv = Map.foldlWithKey (\b k t -> checkUn kenv t) (return ()) venv
 
 -- Type environments
 

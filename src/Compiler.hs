@@ -19,20 +19,20 @@ compile arg = do
   
   prog <- mainProgram arg prelude
 
-  (venv, eenv, tenv, cenv) <-
+  (venv, eenv, tenv, cenv, kenv) <-
     case prog of
       Left err -> do
         putStr (show err)
         return $ error "Parser Error"
       Right d -> return d
 
-  let tc = Map.mapWithKey (\fun (a, e) -> typeCheck venv tenv a e fun) eenv
+  let tc = Map.mapWithKey (\fun (a, e) -> typeCheck kenv venv cenv a e fun) eenv
     --  datatypeGen
     --  typeGen
   if all (== True) (Map.map typeChecks tc) then
     codeGen tenv venv eenv (reverse $ dropWhile (/= '/') (reverse arg))
   else
-    printErr tc
+    checkErr tc
 
 
 showFunSignature f t = f ++ " :: " ++ show t  ++ "\n"
@@ -58,8 +58,8 @@ codeGen tenv venv eenv path = do
   -- callCommand "./cfst"
   return (True, "")
 
-printErr :: Map.Map TermVar (TCheckM Type)-> IO (Bool, String)
-printErr tc = do
+checkErr :: Map.Map TermVar (TCheckM Type)-> IO (Bool, String)
+checkErr tc = do
 -- putStrLn "Errors \n"   
   let err = Map.foldl (\acc v -> acc ++ showErrors v) [] tc
 --  putStrLn $ intercalate "\n" err  

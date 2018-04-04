@@ -8,10 +8,6 @@ module Types.Kinds
 
   
 
--- TODO: Arbitrary -> Functional
--- TODO: Remove Scheme
-
-
 data PreKind = Session | Functional  deriving (Eq, Ord, Read)
 
 data Multiplicity = Un | Lin deriving (Eq, Ord, Read)
