@@ -1,6 +1,7 @@
 module Types.TypeEquivalence(
   equivalent
 , unfold
+, subs  
 ) where
 
 import Types.Types
@@ -127,7 +128,7 @@ subs t y (PairType t1 t2)   = PairType (subs t y t1) (subs t y t2)
 subs t2 y (Rec x k t1)
     | x == y                = Rec x k t1
     | otherwise             = Rec x k (subs t2 y t1)
-subs t y (Choice v m) = Choice v (Map.map(subs t y) m)
+subs t y (Choice v m)       = Choice v (Map.map(subs t y) m)
 subs _ _ t                  = t
 -- subs _ _ Skip               = Skip
 -- subs _ _ (In b)             = In b

@@ -37,7 +37,12 @@ compile arg = do
 
 showFunSignature f t = f ++ " :: " ++ show t  ++ "\n"
 
-showExpr f as e = f ++ (showParams as) ++ " = " ++ show e ++ "\n\n"
+showExpr f as e = f ++ (showParamsWithBang as) ++ " = " ++ show e ++ "\n\n"
+
+showParamsWithBang :: Params -> String
+showParamsWithBang as
+  | null as = ""
+  | otherwise = " !" ++ (intercalate " !" as)
 
 showType :: String -> TypeVar -> Type -> String
 showType acc tv t = acc ++ "type " ++ tv ++ " = " ++ show t ++ "\n\n"
@@ -52,7 +57,7 @@ codeGen :: TypeEnv -> VarEnv -> ExpEnv -> FilePath -> IO (Bool, String)
 codeGen tenv venv eenv path = do 
   let types = Map.foldlWithKey showType "" tenv
   let file = Map.foldlWithKey (\acc fun (a, e) -> acc ++ (showFunSignature fun (venv Map.! fun))
-                           ++ showExpr fun a e) "main = putStrLn (show start)\n\n" eenv
+                           ++ showExpr fun a e) mainFun eenv
   writeFile (path ++ "cfst.hs") (types ++ file)
   -- callCommand "ghc cfst.hs"
   -- callCommand "./cfst"
@@ -64,3 +69,7 @@ checkErr tc = do
   let err = Map.foldl (\acc v -> acc ++ showErrors v) [] tc
 --  putStrLn $ intercalate "\n" err  
   return (False, intercalate "\n" err)
+
+mainFun :: String
+mainFun = "{-# LANGUAGE BangPatterns #-}\n\n" ++
+          "main = putStrLn (show start)\n\n"

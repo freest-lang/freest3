@@ -15,6 +15,7 @@ import           Types.Kinding
 import           Types.Kinds
 import           Types.TypeParser
 import           Types.Types
+-- import qualified Text.Parsec as P
 
 -- LEXER
 -- Token.reservedNames haskellDef ++ 
@@ -80,6 +81,7 @@ lowerIdentifier = lookAhead lower >> identifier
 squares :: Parser a -> Parser a
 squares = Token.squares lexer
 
+
 -- PARSER
 --type ParserOut = (VarEnv, ExpEnv, TypeEnv)
 type ParserOut = (VarEnv, ExpEnv, TypeEnv, ConstructorEnv, KindEnv)
@@ -90,11 +92,9 @@ mainProgram filepath venv = parseFromFile (program venv) filepath
 program :: VarEnv -> Parser ParserOut
 program venv = do
   whiteSpace
-    -- m <- manyAlternate (try parseBindingDecl) (try parseExpressionDecl) (try parseTypeAndData) venv
   m <- manyAlternate (try parseBindingDecl) (try parseExpressionDecl)
                      (try parseTypeDecl) (try parseDataType) venv
   eof
- 
   return m
 
 manyAlternate ::
@@ -106,26 +106,31 @@ manyAlternate ::
   -> Parser ParserOut
 manyAlternate pa pb pc pd venv =
      do as <- many1 pa
-        (as', bs', cs', ds', ks') <- manyAlternate pa pb pc pd venv
+        (as', bs', cs', ds', ks') <- manyAlternate pa pb pc pd venv         
         return (addListToMap as as', bs', cs', ds', ks')
- <|> do bs <- many1 pb
-        (as', bs', cs', ds', ks') <- manyAlternate pa pb pc pd venv
-        return (as', addListToMap bs bs', cs', ds', ks')
- <|> do cs <- many1 pc
-        (as', bs', cs', ds', ks') <- manyAlternate pa pb pc pd venv
-        return (as', bs', addListToMap cs cs', ds', ks')
- <|> do ds <- many1 pd
-        (as', bs', cs', ds', ks') <- manyAlternate pa pb pc pd venv
-        return (as', bs', cs', addDataTypesToMap ds ds', kindEnv ks' ds)
+ -- <|> do bs <- many1 pb
+ --        (as', bs', cs', ds', ks') <- manyAlternate pa pb pc pd venv
+ --        return (as', addListToMap bs bs', cs', ds', ks')
+ -- <|> do cs <- many1 pc
+ --        (as', bs', cs', ds', ks') <- manyAlternate pa pb pc pd venv
+ --        return (as', bs', addListToMap cs cs', ds', ks')
+ -- <|> do ds <- many1 pd
+ --        (as', bs', cs', ds', ks') <- manyAlternate pa pb pc pd venv
+ --        return (as', bs', cs', addDataTypesToMap ds ds', kindEnv ks' ds)
  <|> return (venv, Map.empty, Map.empty, Map.empty, Map.empty)
  <?> "a funtion type declaration, a data declaration or a function declaration"
   where
    --TODO: Can't be an union (must test duplicated entries)
    addListToMap xs m = Map.union m (Map.fromList xs)
+   -- foldl checkDup (return m) xs
    addDataTypesToMap xs m = addListToMap (foldl (\acc ((x, _), y) ->
                                           acc ++ (convertType x y)) [] xs) m
-   kindEnv ks ds = foldl (\acc ((v, k), _) -> Map.insert v k ks) ks ds 
+   kindEnv ks ds = foldl (\acc ((v, k), _) -> Map.insert v k ks) ks ds
 
+checkDup :: Ord k => Map.Map k a -> (k, a) -> Map.Map k a
+checkDup m (k, v)
+  | Map.member k m = m
+  | otherwise      = Map.insert k v m
 
 parseBindingDecl :: Parser (TermVar, Type)
 parseBindingDecl = do
@@ -418,4 +423,4 @@ constructApp = try $ do
 run = mainProgram path Map.empty
 path = "src/test.hs"
 --path = "/home/balmeida/tmp/testDT/dt.hs"
---path = "/home/balmeida/workspaces/ContextFreeSession/test/Programs/ValidTests/sendTree/oldTree"
+--path = "/home/balmeida/workspaces/ContextFreeSession/test/Programs/ValidTests/sendTree/oldTree.hs"

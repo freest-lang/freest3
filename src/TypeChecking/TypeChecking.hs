@@ -4,6 +4,7 @@ module TypeChecking.TypeChecking (
 ) where
 
 import           Control.Monad
+import           Control.Monad.Writer
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import           Terms.Terms
@@ -12,34 +13,13 @@ import           Types.Kinds
 import           Types.TypeEquivalence
 import           Types.Types
 
--- test only
-import PreludeLoader
-
-import Control.Monad.Writer
-
 type TCheckM = Writer [String]
 
--- type ConstructorEnv = Map.Map TypeVar Type
-checkDataDecl :: KindEnv -> ConstructorEnv -> TCheckM ()
-checkDataDecl kenv cenv = do
-  Map.foldl (\_ k -> checkNotSessionType k) (return ()) kenv
-  Map.foldl (\_ t -> checkKinding kenv t) (return ()) cenv 
-
-checkKinding :: KindEnv -> Type -> TCheckM ()
-checkKinding kenv t -- = tell [ show $ isType kenv t, show t, show kenv]
-  | isType kenv t = return ()
-  | otherwise = tell (kindErr kenv t)
-
-checkFunTypeDecl :: KindEnv -> VarEnv -> TermVar -> TCheckM ()
-checkFunTypeDecl kenv venv fname = do
-  (t, venv2) <- checkVar kenv venv fname
-  checkKinding kenv t
+run =  typeCheck (Map.fromList [("Tree",Kind Functional Lin)]) (Map.fromList [("start", (Basic IntType))]) (Map.fromList [("Leaf",Var "Tree"), ("Node",Fun Un (Basic IntType) (Fun Un (Var "Tree") (Fun Un (Var "Tree") (Var "Tree"))))]) [] (Integer 23) "start"
 
 typeCheck :: KindEnv -> VarEnv -> ConstructorEnv -> Params -> Expression -> TermVar -> TCheckM Type
 typeCheck kenv venv cenv args exp fname = do
 
---  error $ show cenv
-  -- (VarEnv, ExpEnv, TypeEnv, ConstructorEnv, KindEnv)
   -- 1 - Data declaration
   checkDataDecl kenv cenv
   
@@ -47,15 +27,16 @@ typeCheck kenv venv cenv args exp fname = do
   checkFunTypeDecl kenv venv fname
 
   -- 3 - Function declaration
+  (t, venv1) <- checkVar kenv venv "start"
   -- Union ??
-  venv1 <- checkExpEnv kenv venv fname args
---  checkTypeEnv tenv
+  venv2 <- checkExpEnv kenv venv1 fname args
+  --  checkTypeEnv tenv
 
-  (t, venv2) <- checkExp kenv venv1 exp
-  let lastType = last $ toList $ venv2 Map.! fname
+  (t, venv3) <- checkExp kenv venv2 exp
+  let lastType = last $ toList $ venv3 Map.! fname
   checkEquivTypes kenv t lastType 
 
-  checkVEnvUn kenv venv
+  checkVEnvUn kenv venv3
   
   return t
 
@@ -71,7 +52,7 @@ checkExp _ venv (Boolean _)    = return (Basic BoolType, venv)
 -- Variables
 checkExp kenv venv (Variable x)  = checkVar kenv venv x
 
-checkExp kenv venv1 (UnLet x e1 e2) = do -- checkVar kenv venv x
+checkExp kenv venv1 (UnLet x e1 e2) = do
   (t1, venv2) <- checkExp kenv venv1 e1
   (t2, venv3) <- checkExp kenv (Map.insert x t1 venv2) e2
   return (t2, venv3)
@@ -83,6 +64,14 @@ checkExp kenv venv1 (App e1 e2) = do
    (t4, venv3) <- checkExp kenv venv2 e2 
    checkEquivTypes kenv t2 t4
    return (t3, venv3)
+
+-- TypeApp Expression Type
+checkExp kenv venv1 (TypeApp e t) = do
+  (t1, venv2) <- checkExp kenv venv1 e
+  (v, c) <- checkForall kenv t1
+  checkKinding kenv t
+  -- checkEquivKinds k k1
+  return (subs t v t, venv2) --TODO: May never end because of subs
 
 -- Conditional
 checkExp kenv venv1 (Conditional e1 e2 e3) = do
@@ -152,7 +141,15 @@ checkExp kenv venv1 (Case e cm) = do
   checkEquivTypeList kenv (map fst l)
   checkEquivEnvList kenv (map snd l)
   return $ head l
- 
+
+-- (v, c) <- checkForall kenv t1
+checkForall :: KindEnv -> Type -> TCheckM (TypeVar, Type)
+checkForall kenv (Forall x {-k-} t) = return (x, t)
+checkForall kenv t = do
+  tell ["Expecting a forall type; found " ++ show t]
+  return ("", (Basic UnitType))
+
+  
 -- Checking variables
 
 checkVar :: KindEnv -> VarEnv -> TermVar -> TCheckM (Type, VarEnv)
@@ -168,7 +165,7 @@ checkUnLinVar :: VarEnv -> Kind -> Type -> TermVar -> (Type, VarEnv)
 checkUnLinVar venv (Kind _ Lin) t var = (t, Map.delete var venv)
 checkUnLinVar venv (Kind _ Un) t var  =  (t, venv)
 
--- -- Checking equivalent types and environments
+-- Checking equivalent types and environments
 
 checkEquivTypes :: KindEnv -> Type -> Type -> TCheckM ()
 checkEquivTypes kenv t1 t2
@@ -202,11 +199,8 @@ equivalentEnvs kenv venv1 venv2 =
 checkVarInEnv :: VarEnv -> TermVar -> Bool
 checkVarInEnv env var = Map.member var env
 
---            -- where equivElems = Map.foldlWithKey (\b tv t -> b && Map.member tv venv2 &&
---            --                  equivalent t (venv2 Map.! tv)) True venv1
 checkEquivTypeList :: KindEnv -> [Type] -> TCheckM ()
-checkEquivTypeList kenv (x:xs) = 
-  mapM_ (checkEquivTypes kenv x) xs
+checkEquivTypeList kenv (x:xs) = mapM_ (checkEquivTypes kenv x) xs
 
 checkEquivEnvList :: KindEnv -> [VarEnv] -> TCheckM ()
 checkEquivEnvList kenv (x:xs) =
@@ -343,6 +337,24 @@ checkVEnvUn :: KindEnv -> VarEnv -> TCheckM ()
 checkVEnvUn kenv venv = Map.foldlWithKey (\b k t -> checkUn kenv t) (return ()) venv
 
 -- Type environments
+
+checkDataDecl :: KindEnv -> ConstructorEnv -> TCheckM ()
+checkDataDecl kenv cenv = do
+  Map.foldl (\_ k -> checkNotSessionType k) (return ()) kenv
+  Map.foldl (\_ t -> checkKinding kenv t) (return ()) cenv 
+
+checkKinding :: KindEnv -> Type -> TCheckM ()
+checkKinding kenv t -- = tell [ show $ isType kenv t, show t, show kenv]
+  | isType kenv t = return ()
+  | otherwise = tell (kindErr kenv t)
+
+-- checkKind :: KindEnv -> Type -> TCheckM Kind
+-- checkKind kenv t = return $ kindOf kenv t
+
+checkFunTypeDecl :: KindEnv -> VarEnv -> TermVar -> TCheckM ()
+checkFunTypeDecl kenv venv fname = do
+  (t, venv2) <- checkVar kenv venv fname
+  checkKinding kenv t
 
 -- TODO: Change to tell an error
 -- checkTypeEnv :: TypeEnv -> TCheckM Bool
