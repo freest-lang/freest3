@@ -11,15 +11,12 @@ import           Data.List
 import           System.Exit
 import           Types.Kinds
 
--- import           System.Process
-
-
 compile :: String -> IO (Bool, String)
 compile arg = do
   
   prog <- mainProgram arg prelude
 
-  (venv, eenv, tenv, cenv, kenv) <-
+  (venv, eenv, cenv, kenv) <-
     case prog of
       Left err -> do
         putStr (show err)
@@ -30,7 +27,7 @@ compile arg = do
     --  datatypeGen
     --  typeGen
   if all (== True) (Map.map typeChecks tc) then
-    codeGen tenv venv eenv (reverse $ dropWhile (/= '/') (reverse arg))
+    codeGen venv eenv (reverse $ dropWhile (/= '/') (reverse arg))
   else
     checkErr tc
 
@@ -44,8 +41,8 @@ showParamsWithBang as
   | null as = ""
   | otherwise = " !" ++ (intercalate " !" as)
 
-showType :: String -> TypeVar -> Type -> String
-showType acc tv t = acc ++ "type " ++ tv ++ " = " ++ show t ++ "\n\n"
+-- showType :: String -> TypeVar -> Type -> String
+-- showType acc tv t = acc ++ "type " ++ tv ++ " = " ++ show t ++ "\n\n"
   
 typeChecks :: TCheckM Type -> Bool
 typeChecks = null . snd . runWriter
@@ -53,14 +50,12 @@ typeChecks = null . snd . runWriter
 showErrors :: TCheckM Type -> [String]
 showErrors = snd . runWriter
 
-codeGen :: TypeEnv -> VarEnv -> ExpEnv -> FilePath -> IO (Bool, String)
-codeGen tenv venv eenv path = do 
-  let types = Map.foldlWithKey showType "" tenv
+codeGen :: VarEnv -> ExpEnv -> FilePath -> IO (Bool, String)
+codeGen venv eenv path = do 
+--  let types = Map.foldlWithKey showType "" tenv
   let file = Map.foldlWithKey (\acc fun (a, e) -> acc ++ (showFunSignature fun (venv Map.! fun))
                            ++ showExpr fun a e) mainFun eenv
-  writeFile (path ++ "cfst.hs") (types ++ file)
-  -- callCommand "ghc cfst.hs"
-  -- callCommand "./cfst"
+  writeFile (path ++ "cfst.hs") file -- (types ++ file)
   return (True, "")
 
 checkErr :: Map.Map TermVar (TCheckM Type)-> IO (Bool, String)

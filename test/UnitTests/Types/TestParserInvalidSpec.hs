@@ -42,11 +42,11 @@ spec = do
     it "Parens out" $ do
        evaluate (read "(!)Char" :: Type) `shouldThrow` anyException
 
-    it "Parens LinFun" $ do
-      evaluate (read "Char (->) Char" :: Type) `shouldThrow` anyException
+    -- it "Parens LinFun" $ do
+    --   evaluate (read "Char (->) Char" :: Type) `shouldThrow` anyException
 
-    it "Parens UnFun"   $ do
-      evaluate (read "Char (->) Char" :: Type) `shouldThrow` anyException
+    -- it "Parens UnFun"   $ do
+    --   evaluate (read "Char (->) Char" :: Type) `shouldThrow` anyException
 
     it "In not basic (skip)" $ do
       evaluate (read "?Skip" :: Type)  `shouldThrow` anyException

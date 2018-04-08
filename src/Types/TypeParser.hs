@@ -14,10 +14,9 @@ import           Text.ParserCombinators.Parsec
 import qualified Data.Map.Strict as Map
 import           Types.Kinds
 import           Types.Types
--- import           Types.Kinding
+import           Text.Parsec (Parsec (..))
 
 
--- TODO : check list
 instance Read BasicType where
   readsPrec _ s = case parserBasic s of
     Right b -> [(b, "")]
@@ -26,11 +25,10 @@ instance Read BasicType where
 instance Read Type where
   readsPrec _ s = case parserType s of
     Right t -> [(t,"")]
-    --Right t -> if isType Map.empty t then [(t,"")] else error $ "Type "++ (show t) ++" not well kinded"
     Left m -> error $ "type parse error " ++ show m
 
 -- TOKENS
-lexer :: Token.TokenParser ()
+lexer :: Token.TokenParser u
 lexer  = Token.makeTokenParser
         (haskellDef
         {
@@ -56,14 +54,15 @@ squares = Token.squares lexer
 rec    = reserved "rec"
 forall = reserved "forall"
 skip   = reserved "Skip"
+--lowerIdentifier = lookAhead lower >> identifier
 
--- BASIC TYPES
+-- PARSE BASIC TYPES
 --   IntType | CharType | BoolType | UnitType
 
 parserBasic :: String -> Either ParseError BasicType
 parserBasic = parse parseBasicType "Context-free Sessions (Basic types)"
 
-parseBasicType :: Parser BasicType
+parseBasicType :: Parsec String u BasicType
 parseBasicType =
       (spaces >> reserved "Int"  >> spaces >> return IntType)
   <|> (spaces >> reserved "Char"  >> spaces  >> return CharType)
@@ -71,21 +70,21 @@ parseBasicType =
   <|> (spaces >>  reserved "()" >> spaces  >> return UnitType)
   <?> "a basic type: Int, Char, Bool, or ()"
 
--- TYPES
+-- PARSE TYPES
 
 parserType :: String -> Either ParseError Type
 parserType = parse parseType "Context-free Sessions (Types)"
 
-parseType :: Parser Type
+parseType :: Parsec String u Type
 parseType = 
      do{
       whiteSpace
-      ; ret <- typeExpr-- parseType
+      ; ret <- typeExpr
 --      ; eof
       ; return ret
   } <?> "a type: skip, T;T, ..., or ..."
 
-typeExpr :: Parser Type
+typeExpr :: Parsec String u Type
 typeExpr =  buildExpressionParser table parseTerm
         <?> "an expression"
          
@@ -96,6 +95,7 @@ table = [ [binary "->" (Fun Un) AssocRight, binary "-o" (Fun Lin) AssocRight ]
 binary name fun assoc = Infix  (do{ try (symbol name); return fun }) assoc
 -- prefix name fun       = Prefix (do{ reservedOp name; return fun })
 
+parseTerm :: Parsec String u Type
 parseTerm =
   try (parens typeExpr)
   <|> (do {  skip ;                                             return Skip })
@@ -112,26 +112,19 @@ parseTerm =
   <?> "a type: Skip, T;T, !B, ?B, B, T->T, T-oT, (T,T), id, rec id.T, or forall id.t"
 
   
-parseVar :: Parser Type
+parseVar :: Parsec String u Type
 parseVar = do
   id <- identifier
   return $ Var id
 
-lowerIdentifier :: Parser String
-lowerIdentifier = lookAhead lower >> identifier  
-
-funDecl = try $ do
-  many1 lowerIdentifier
-  char '='
-
-parsePair :: Parser Type
+parsePair :: Parsec String u Type
 parsePair = do
   t <- typeExpr
   comma
   u <- typeExpr
   return $ PairType t u
 
-parseRec :: Parser Type
+parseRec :: Parsec String u Type
 parseRec = do
   rec
   id <- identifier
@@ -140,7 +133,7 @@ parseRec = do
   t <- typeExpr
   return $ Rec id k t
 
-parseForall :: Parser Type
+parseForall :: Parsec String u Type
 parseForall = do
   forall
   id <- identifier
@@ -148,24 +141,24 @@ parseForall = do
   t <- typeExpr
   return $ Forall id t
 
-parseInternalChoice :: Parser Type
+parseInternalChoice :: Parsec String u Type
 parseInternalChoice = do
   reservedOp "+"
   a <- braces $ sepBy1 parseBind comma
   return $ Choice Internal (Map.fromList a)
 
-parseExternalChoice :: Parser Type
+parseExternalChoice :: Parsec String u Type
 parseExternalChoice = do
   reservedOp "&"
   a <- braces $ sepBy1 parseBind comma
   return $ Choice External (Map.fromList a)
 
-parseDataType :: Parser Type
+parseDataType :: Parsec String u Type
 parseDataType = do
   a <- sepBy1 parseBind comma
   return $ Datatype $ Map.fromList a
 
-parseBind :: Parser (TypeVar, Type)
+parseBind :: Parsec String u (TypeVar, Type)
 parseBind = do
   id <- identifier
   colon
@@ -173,13 +166,13 @@ parseBind = do
   return (id,ptype)
 
 
-parseVarBind :: Parser Kind
+parseVarBind :: Parsec String u Kind
 parseVarBind = do
   colon
   colon
   parseKind
 
-parseKind :: Parser Kind
+parseKind :: Parsec String u Kind
 parseKind = 
       (do reserved "SU"; return $ Kind Session Un)
   <|> (do reserved "SL"; return $ Kind Session Lin)

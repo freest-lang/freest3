@@ -22,7 +22,7 @@ type TreeChannel = rec x::Su. +{
 -}
 
 -- Type-safe serialization of a binary tree
---sendTree :: a :: Su => Tree -> rec x::Su.+{Leaf: Skip, Node: !Int;x;x} ; a -> a
+--sendTree :: a :: SU => Tree -> rec x::SU.+{Leaf: Skip, Node: !Int;x;x} ; a -> a
 sendTree :: Tree -> rec x.+{LeafC: Skip, NodeC: !Int;x;x} ; a -> a
 sendTree t c =
   case t of
@@ -42,8 +42,8 @@ receiveTree c =
       (Leaf, c1)
     NodeC c1 ->
       let x, c2 = receive c1 in
-      let (left, c3) = receiveTree[rec x.&{LeafC: Skip, NodeC: ?Int;x;x} ; a] c2 in
-      let (right, c4) = receiveTree[a] c3 in
+      let left, c3 = receiveTree[rec x.&{LeafC: Skip, NodeC: ?Int;x;x} ; a] c2 in
+      let right, c4 = receiveTree[a] c3 in
       (Node x left right, c4)
 
 start :: Tree
@@ -52,7 +52,7 @@ start =
  let writer,reader = new rec x.+{LeafC: Skip, NodeC: !Int;x;x} in
  let w = fork (sendTree[Skip] inTree writer) in
  let outTree, r = receiveTree[Skip] reader in
- in outTree
+ outTree
 
 {-
 TODO:
