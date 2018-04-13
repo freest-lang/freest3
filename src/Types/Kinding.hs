@@ -44,7 +44,7 @@ kinding kenv (Semi t u) = do
   kt <- kinding kenv t 
   ku <- kinding kenv u
   checkSessionType t kt
-  checkSessionType t ku
+  checkSessionType u ku
   return $ Kind Session (max (multiplicity kt) (multiplicity ku))
 
 kinding kenv (Fun m t u) = do
@@ -79,8 +79,10 @@ kinding kenv (Rec x k t) = do
   checkNotTypeScheme (Rec x k t) k 
   return k
 
-kinding kenv (Forall x t) = --do
-  return $ Kind Functional Lin
+kinding kenv (Forall x k t) = do
+  k1 <- kinding (Map.insert x k kenv) t
+  -- TODO: Check k1 >= C^u
+  return $ k1
   -- let kd = kinding (Map.insert x (Kind Session Un) kenv) t in
   -- case kd of
   --   -- TODO: k is the kinding of the variable and it is always Kind Session Un ?
@@ -163,7 +165,7 @@ contractive :: KindEnv -> Type -> Bool
 contractive kenv (Semi t _) = contractive kenv t
 contractive kenv (Rec _ _ t) = contractive kenv t
 contractive kenv (Var x) = Map.member x kenv
-contractive kenv (Forall _ t) = contractive kenv t
+contractive kenv (Forall _ _ t) = contractive kenv t
 contractive _ _ = True
 
 checkContractivity :: KindEnv -> Type -> KindM ()

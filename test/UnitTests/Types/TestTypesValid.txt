@@ -12,17 +12,17 @@ Skip
 !Int;?Bool
     (!Int;?Bool)
 
-forall a . a
-  forall b . b
-forall b . b
-  forall b . b
+forall a :: TU => a
+  forall b :: TU => b
+forall b :: TU => b
+  forall b :: TU => b
 
-forall a . (forall b . a)
-  forall c . (forall d . c)
-(forall x . !Int;x);forall y . !Bool;y
-  (forall y . !Int;y);forall x . !Bool;x
-forall x . !Int;x;forall y . !Bool;y
-  forall y . !Int;y;forall x . !Bool;x
+forall a :: TU => (forall b :: TU => a)
+  forall c :: TU => (forall d :: TU => c)
+(forall x :: SU => !Int;x);forall y :: SU => !Bool;y
+  (forall y :: SU => !Int;y);forall x :: SU => !Bool;x
+forall x  :: SU => !Int;x;forall y  :: SU => !Bool;y
+  forall y :: SU => !Int;y;forall x :: SU => !Bool;x
 
 rec x . x
   rec y . y
@@ -31,8 +31,8 @@ rec x .!Int
 rec x . (?Bool -> !Int -> Bool)
   rec x . ?Bool -> !Int -> Bool
 
-rec x . forall y . x;y
-  rec y . forall x . y;x
+rec x . forall y :: SU => x;y
+  rec y . forall x :: SU => y;x
 
 [a:Int,b:Bool]
   [a:Int, b:Bool]

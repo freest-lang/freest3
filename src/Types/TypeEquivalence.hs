@@ -121,14 +121,15 @@ subs t y (Var x)
     | otherwise             = Var x
 subs t y (Semi t1 t2)       = Semi (subs t y t1) (subs t y t2)
 subs t y (PairType t1 t2)   = PairType (subs t y t1) (subs t y t2)
--- subs t2 y (Forall x t1)
---     | x == y                = Forall x t1
---     | otherwise             = Forall x (subs t2 y t1)
+-- subs t2 y (Forall x k t1)
+--     | x == y                = Forall x k t1
+--     | otherwise             = Forall x k (subs t2 y t1)
 -- Assume y /= x 
 subs t2 y (Rec x k t1)
     | x == y                = Rec x k t1
     | otherwise             = Rec x k (subs t2 y t1)
 subs t y (Choice v m)       = Choice v (Map.map(subs t y) m)
+subs t y (Fun m t1 t2)      = Fun m (subs t y t1) (subs t y t2)
 subs _ _ t                  = t
 -- subs _ _ Skip               = Skip
 -- subs _ _ (In b)             = In b

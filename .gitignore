@@ -6,6 +6,7 @@
 *.tix
 TestParse
 .hpc/
+.hspec-failures/
 Spec
 dist/
 cfst*

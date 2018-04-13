@@ -32,7 +32,7 @@ lexer :: Token.TokenParser u
 lexer  = Token.makeTokenParser
         (haskellDef
         {
-        Token.reservedOpNames = [";", "!", "?", "->", "-o", "+", "&"],
+        Token.reservedOpNames = [";", "!", "?", "->", "-o", "+", "&", "=>"],
         Token.reservedNames = ["Int","Bool","Char", "Skip", "()",
                                "rec", "forall", "data", "TU", "TL", "SU", "SL"]
         })
@@ -88,8 +88,8 @@ typeExpr :: Parsec String u Type
 typeExpr =  buildExpressionParser table parseTerm
         <?> "an expression"
          
-table = [ [binary "->" (Fun Un) AssocRight, binary "-o" (Fun Lin) AssocRight ]
-        , [binary ";" Semi AssocLeft ]
+table = [[binary ";" Semi AssocRight ]
+        , [binary "->" (Fun Un) AssocRight, binary "-o" (Fun Lin) AssocRight ]
         ]
 
 binary name fun assoc = Infix  (do{ try (symbol name); return fun }) assoc
@@ -137,9 +137,11 @@ parseForall :: Parsec String u Type
 parseForall = do
   forall
   id <- identifier
-  dot
+  k <- parseVarBind
+  reserved "=>"  
+--  dot
   t <- typeExpr
-  return $ Forall id t
+  return $ Forall id k t
 
 parseInternalChoice :: Parsec String u Type
 parseInternalChoice = do

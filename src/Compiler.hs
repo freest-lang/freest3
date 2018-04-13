@@ -13,7 +13,6 @@ import           Types.Kinds
 
 compile :: String -> IO (Bool, String)
 compile arg = do
-  
   prog <- mainProgram arg prelude
 
   (venv, eenv, cenv, kenv) <-
@@ -51,7 +50,7 @@ showErrors :: TCheckM Type -> [String]
 showErrors = snd . runWriter
 
 codeGen :: VarEnv -> ExpEnv -> FilePath -> IO (Bool, String)
-codeGen venv eenv path = do 
+codeGen venv eenv path = do
 --  let types = Map.foldlWithKey showType "" tenv
   let file = Map.foldlWithKey (\acc fun (a, e) -> acc ++ (showFunSignature fun (venv Map.! fun))
                            ++ showExpr fun a e) mainFun eenv
@@ -68,3 +67,5 @@ checkErr tc = do
 mainFun :: String
 mainFun = "{-# LANGUAGE BangPatterns #-}\n\n" ++
           "main = putStrLn (show start)\n\n"
+
+

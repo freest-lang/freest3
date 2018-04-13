@@ -71,7 +71,7 @@ runAndCheckResult testFile filename = do
       cont <- runIO $ readFile ((takeWhile (/= '.') testFile) ++ ".expected")
 
       it ("Testing " ++ filename) $ do
-        (filter (/= '\n') cont) `shouldBe` (filter (/= '\n') output1)
+        (filter (/= '\n') output1) `shouldBe` (filter (/= '\n') cont)
   else
     it ("Testing " ++ filename) $ do
       assertFailure errors

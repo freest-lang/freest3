@@ -14,8 +14,8 @@ Bool
 rec x . Skip;x
   rec x . x
 
-forall y . rec x . x;y
-  forall y . rec x . y;x
+forall y :: TU => rec x . x;y
+  forall y :: TU => rec x . y;x
 
 [a:Int,b:Bool]
   [c:Char, d:Bool]

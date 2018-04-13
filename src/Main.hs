@@ -20,7 +20,8 @@ checkResult res filepath = do
   setCurrentDirectory filepath
   case res of
     (True, _) -> do
-      (exitcode, output, errors) <- readProcessWithExitCode "ghc" ["cfst.hs"] ""
+      (exitcode, _, errors) <- readProcessWithExitCode "ghc" ["cfst.hs"] ""
+      checkGhcOut exitcode errors
       (exitcode1, output1, errors1) <- readProcessWithExitCode "./cfst" [] ""
       putStr output1
       exitSuccess
@@ -29,3 +30,11 @@ checkResult res filepath = do
       exitFailure
   
     
+  
+checkGhcOut exitcode errors =
+  if (exitcode /= ExitSuccess) then
+    do
+      putStrLn errors
+      exitFailure
+  else
+    return ()

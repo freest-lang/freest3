@@ -22,8 +22,8 @@ type TreeChannel = rec x::Su. +{
 -}
 
 -- Type-safe serialization of a binary tree
---sendTree :: a :: SU => Tree -> rec x::SU.+{Leaf: Skip, Node: !Int;x;x} ; a -> a
-sendTree :: Tree -> rec x.+{LeafC: Skip, NodeC: !Int;x;x} ; a -> a
+sendTree :: a :: SU => Tree -> rec x::SU.+{Leaf: Skip, Node: !Int;x;x} ; a -> a
+--sendTree :: Tree -> rec x.+{LeafC: Skip, NodeC: !Int;x;x} ; a -> a
 sendTree t c =
   case t of
     Leaf ->

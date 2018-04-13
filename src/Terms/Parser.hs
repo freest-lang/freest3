@@ -61,15 +61,15 @@ type CFSTSubParser = Parsec String ParserOut
 mainProgram :: FilePath -> VarEnv -> IO (Either ParseError ParserOut)
 mainProgram filepath venv = do -- parseFromFile (program venv) filepath
   file <- readFile filepath
-  return $ parseWith program (venv, Map.empty, Map.empty, Map.empty) file
+  return $ parseWith filepath  program (venv, Map.empty, Map.empty, Map.empty) file
 
-parseWith :: CFSTParser -> ParserOut -> String -> Either ParseError ParserOut
-parseWith p pout = runParser p pout "CFST Error"
+parseWith :: FilePath -> CFSTParser -> ParserOut -> String -> Either ParseError ParserOut
+parseWith filepath p pout = runParser p pout ("CFST Error in " ++ filepath)
 
 program :: CFSTParser
 program = do
   whiteSpace  
-  many1 (try parseTypeSignature <|> try parseExpressionDecl <|> parseDataType)
+  many1 (try parseTypeSignature <|> try parseFunction <|> parseDataType)
   eof
   s <- getState
   return s
@@ -89,20 +89,21 @@ parseTypeSignature = do
   checkDup (getVEnv s) id ("Duplicate type signatures for '" ++ id ++ "'") pos
   colon
   colon
-  optional $ try $ parseTypeBinding
+--  optional $ try $ parseTypeBinding
   t <- parseType
   modifyState (changeVEnv id t)
 
-parseTypeBinding = do
-  id <- lowerIdentifier
-  colon
-  colon
-  k <- parseKind
-  string "=>"
-  --modifyState (change4th id k)
+-- parseTypeBinding :: CFSTSubParser String
+-- parseTypeBinding = do
+--   id <- lowerIdentifier
+--   colon
+--   colon
+--   k <- parseKind
+--   string "=>"
+--  --modifyState (change4th id k)
 
-parseExpressionDecl :: CFSTSubParser ()
-parseExpressionDecl = do
+parseFunction :: CFSTSubParser ()
+parseFunction = do
   pos <- getPosition
   id <- try lowerIdentifier
   ids <- (many lowerIdentifier)
@@ -129,8 +130,10 @@ parseDataType = do
   k <- option (Kind Functional Un) parseVarBind
   reservedOp "="
   ts <- sepBy1 parseTypeComponents (lexeme (char '|'))
-  mapM (\(tc, v) -> modifyState (changeCEnv tc v)) (types c ts)
+  let bindingList = types c ts
+  mapM (\(tc, v) -> modifyState (changeCEnv tc v)) bindingList
   modifyState (changeKEnv c k)
+  modifyState (changeCEnv c (Choice External (Map.fromList bindingList)))
   return ()
 
   where
@@ -152,7 +155,7 @@ parseTypeComponents = do
 
 untilParser :: CFSTSubParser ()
 untilParser = do
-      lookAhead $ try $ parseExpressionDecl
+      lookAhead $ try $ parseFunction
   <|> (do {lookAhead $ try parseDataType})
   <|> (do {lookAhead $ try parseTypeSignature})
   <|> (do {lookAhead(try $ char '|'); return ()})
@@ -201,7 +204,7 @@ prefixOp name fun =  Prefix (do reservedOp name; return fun)
 -- Parses an expression
 parseExpression :: CFSTSubParser Expression
 parseExpression =
-  buildExpressionParser table (lexeme $ parseFunApp <|> constructApp <|> parseExpr)
+  buildExpressionParser table (parseExpr)
 
 parseExpr :: CFSTSubParser Expression
 parseExpr =
@@ -218,8 +221,11 @@ parseExpr =
   <|> parseFork
   <|> parseCase
   <|> parseTypeApp
+  <|> parseFunApp
+  <|> constructApp
   <|> parseVariable
   <|> parseConstructor
+
   <?> "an expression"
 
   -- <|> parseMatch
@@ -428,8 +434,8 @@ checkDup env id msg pos
 
 --TODO: remove (test purposes)
 run = mainProgram path Map.empty
-path = "src/test.hs"
+--path = "src/test.hs"
+path = "/home/balmeida/workspaces/ContextFreeSession/test/Programs/ValidTests/intList/intList.hs"
 --path = "/home/balmeida/tmp/testDT/dt.hs"
 --path = "/home/balmeida/workspaces/ContextFreeSession/test/Programs/ValidTests/sendTree/oldTree"
-
 

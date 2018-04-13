@@ -63,7 +63,7 @@ data Type =
   | Choice ChoiceView TypeMap
   | Datatype TypeMap
   | Rec TypeVar Kind Type
-  | Forall TypeVar {- Kind TODO-} Type
+  | Forall TypeVar Kind Type
   | Var TypeVar
   deriving Ord
 --  deriving (Ord, Show)
@@ -81,7 +81,7 @@ instance Show Type where
   show (Choice External x) = showChoice "&" x
   show (Datatype x) =   "["++ showMap x ++"]"
   show (Rec s k t) = "(rec " ++ id s ++ " :: " ++ show k ++" . " ++ show t ++ ")"
-  show (Forall s t) = "(forall " ++ id s ++ " . " ++ show t ++ ")"
+  show (Forall s k t) = "(forall " ++ id s ++ " :: " ++ show k ++ " => " ++ show t ++ ")"
   show (Var x) = id x
 
 showChoice :: String -> TypeMap -> String
@@ -102,8 +102,8 @@ equals s Skip Skip = True
 equals s (Var x) (Var y)
     | x == y = True
     | otherwise = Set.member (x,y) s
-equals s (Forall x t) (Forall y u) = equals (Set.insert (x,y) s) t u
-equals s (Rec x k1 t) (Rec y k2 u) = equals (Set.insert (x,y) s) t u
+equals s (Forall x k t) (Forall y w u) = {-k == w &&-} equals (Set.insert (x,y) s) t u
+equals s (Rec x k t) (Rec y w u) = {-k == w &&-} equals (Set.insert (x,y) s) t u
 equals s (Semi t1 t2) (Semi v1 v2) = equals s t1 v1 && equals s t2 v2
 equals s (Basic x) (Basic y) = x == y
 equals s (Out x) (Out y) = x == y
@@ -132,4 +132,5 @@ dual (Rec x k t)    = Rec x k (dual t)
 
 toList :: Type -> [Type]
 toList (Fun _ t1 t2) = t1 : toList t2
+toList (Forall _ _ t) = toList t
 toList t = [t]

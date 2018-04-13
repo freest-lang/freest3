@@ -106,8 +106,8 @@ showApp (App (Variable "rem") e2) e3  = show e2 ++ " `rem` " ++ show e3
 showApp e1 e2                                 = show e1 ++ " " ++ show e2
 
 showLet :: TermVar -> TermVar -> Expression -> Expression -> String
-showLet tv1 tv2 e1 e2 = "let " ++ tv1 ++ " = " ++ showFst e1 ++ "\n" ++
-                        "let " ++ tv2 ++ " = " ++ showSnd e1 ++ " in " ++ show e2
+showLet tv1 tv2 e1 e2 = "let " ++ tv1 ++ " = fst(" ++ showFst e1 ++ ")\n" ++
+                        "let " ++ tv2 ++ " = snd(" ++ showSnd e1 ++ ") in " ++ show e2
 
 showFst :: Expression -> String
 showFst (Pair e1 _) = show e1
