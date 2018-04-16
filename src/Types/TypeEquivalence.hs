@@ -13,7 +13,7 @@ import qualified Data.Set as Set
 -- testar Show
 -- testar igualdade rec inside rec and the same for ∀
 -- (==) *Types.TypeEquivalence> let t1 = read "(forall x . !Int;x);forall y . !Bool;y" :: Type
--- *Types.TypeEquivalence> let t2 = read "(forall y . !Int;y);forall x . !Bool;x" :: Type
+-- Types.TypeEquivalence> let t2 = read "(forall y . !Int;y);forall x . !Bool;x" :: Type
 -- sem parens
 
 -- Type bisimulation
@@ -121,9 +121,9 @@ subs t y (Var x)
     | otherwise             = Var x
 subs t y (Semi t1 t2)       = Semi (subs t y t1) (subs t y t2)
 subs t y (PairType t1 t2)   = PairType (subs t y t1) (subs t y t2)
--- subs t2 y (Forall x k t1)
---     | x == y                = Forall x k t1
---     | otherwise             = Forall x k (subs t2 y t1)
+subs t2 y (Forall x k t1)
+    | x == y                = Forall x k t1
+    | otherwise             = Forall x k (subs t2 y t1)
 -- Assume y /= x 
 subs t2 y (Rec x k t1)
     | x == y                = Rec x k t1

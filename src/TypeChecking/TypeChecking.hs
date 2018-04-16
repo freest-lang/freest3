@@ -15,12 +15,6 @@ import           Types.Types
 
 type TCheckM = Writer [String]
 
-run =  typeCheck (Map.fromList [("Tree",Kind Functional Lin)]) (Map.fromList [("start", (Basic IntType))]) (Map.fromList [("Leaf",Var "Tree"), ("Node",Fun Un (Basic IntType) (Fun Un (Var "Tree") (Fun Un (Var "Tree") (Var "Tree"))))]) [] (Integer 23) "start"
-
-test fun venv
-  | fun == "id" = error $ show $ toList (venv Map.! fun)
-  | otherwise = return ()
-
 typeCheck :: KindEnv -> VarEnv -> ConstructorEnv -> Params -> Expression -> TermVar -> TCheckM Type
 typeCheck kenv venv cenv args exp fname = do
  
@@ -28,26 +22,25 @@ typeCheck kenv venv cenv args exp fname = do
   checkDataDecl kenv cenv
   
   -- 2 - Function type declaration
-  checkFunTypeDecl kenv venv fname
+  venv2 <- checkFunTypeDecl kenv venv fname
 
-  -- 3 - Function declaration
-  (t, venv2) <- checkVar kenv venv "start"
+ -- error $ (show venv2) ++ "\n\n\n"
+
+  -- 3 - Function declaration  
+  (t, venv3) <- checkVar kenv venv2 "start"
   
   -- Union ??
-  venv3 <- checkExpEnv kenv venv2 fname args
+  venv4 <- checkExpEnv  kenv (Map.union venv3 cenv) fname args
   --  checkTypeEnv tenv
 
-  (t, venv4) <- checkExp kenv venv3 exp
-  -- error $ fname ++ "\n\n" ++ show venv3
- -- tell $ [fname ++ "\n\n" ++ show venv3]
-  --test fname venv3
-  let lastType = last $ toList $ venv4 Map.! fname
+  (t, venv5) <- checkExp kenv venv4 exp
 
-  -- error $ show $ kenv
+  let lastType = last $ toList $ venv5 Map.! fname
+
   checkEquivTypes kenv t lastType 
 
-  checkVEnvUn kenv venv4
-  
+  checkVEnvUn kenv venv5
+
   return t
 
 -- Ensures: the type in the result is canonical
@@ -70,7 +63,6 @@ checkExp kenv venv1 (UnLet x e1 e2) = do
 -- Aplication
 checkExp kenv venv1 (App e1 e2) = do
    (t1, venv2) <- checkExp kenv venv1 e1
---   tell ["APP: " ++ show e1 ++ " -> t1: " ++ show t1 ++ " | " ++ show e2]
    (t2, t3) <- checkFun t1
    (t4, venv3) <- checkExp kenv venv2 e2 
    checkEquivTypes kenv t2 t4
@@ -79,13 +71,11 @@ checkExp kenv venv1 (App e1 e2) = do
 -- TypeApp Expression Type
 checkExp kenv venv1 (TypeApp e t) = do
   (t1, venv2) <- checkExp kenv venv1 e
-  -- tell ["tapp: " ++ show e ++ " -> t1: " ++ show t1 ++ " | TYPE: " ++ show t]
   (v, c) <- checkForall kenv t1
---  tell ["Check Forall " ++ show v ++ " | " ++ show c]
   checkKinding kenv t
   -- checkEquivKinds k k1
-  return (subs t v c, venv2) --TODO: May never end because of subs
-
+  return (subs t v c, venv2)
+  
 -- Conditional
 checkExp kenv venv1 (Conditional e1 e2 e3) = do
   (t1, venv2) <- checkExp kenv venv1 e1 
@@ -106,6 +96,7 @@ checkExp kenv venv1 (Let x1 x2 e1 e2) = do
   (t1, venv2) <- checkExp kenv venv1 e1 
   (t2, t3) <- checkPair t1
   (t4, venv3) <- checkExp kenv (Map.insert x2 t3 (Map.insert x1 t2 venv2)) e2
+  -- TODO: Check
   checkVarUn kenv venv3 x1
   checkVarUn kenv venv3 x2
   let venv4 = Map.delete x1 venv3
@@ -120,13 +111,13 @@ checkExp kenv venv (New t) = do
 checkExp kenv venv1 (Send e1 e2) = do
   (t1, venv2) <- checkExp kenv venv1 e1 
   b1 <- checkBasic t1
-  (t2, venv3) <- checkExp kenv venv2 e2 
+  (t2, venv3) <- checkExp kenv venv2 e2
   (t3, t4) <- checkSemi (canonical t2)
   b2 <- checkOutType t3
   checkEquivBasics b1 b2
   return (t4, venv3)
 
-checkExp kenv venv1 (Receive e) = do
+checkExp kenv venv1 (Receive e) = do  
   (t1, venv2) <- checkExp kenv venv1 e
   (t2, t3) <- checkSemi (canonical t1)
   b <- checkInType t2
@@ -135,6 +126,7 @@ checkExp kenv venv1 (Receive e) = do
 
 checkExp kenv venv1 (Select c e) = do
   (t,venv2) <- checkExp kenv venv1 e
+  -- error $ show (canonical t)
   checkInternalChoice (canonical t)
   checkVar kenv venv1 c
 
@@ -149,12 +141,11 @@ checkExp kenv venv (Constructor c) = checkVar kenv venv c
 
 checkExp kenv venv1 (Case e cm) = do
   (t, venv2) <- checkExp kenv venv1 e
---  tell ["ERROR " ++ show t]
-  checkExternalChoice (canonical t)
+  checkExternalChoice kenv venv2 (canonical t)
   checkEquivConstructors kenv venv2 t cm
-  l <- checkCaseMap kenv venv2 cm
-  checkEquivTypeList kenv (map fst l)
-  checkEquivEnvList kenv (map snd l)
+  l <- checkCaseMap kenv venv2 e cm
+--  checkEquivTypeList kenv (map fst l)
+--  checkEquivEnvList kenv (map snd l)
   return $ head l
 
  
@@ -281,12 +272,16 @@ checkNotSessionType k
 
 checkInternalChoice :: Type -> TCheckM ()
 checkInternalChoice (Choice Internal t) = return ()
+--checkInternalChoice (Semi (Choice Internal t1) t2) = return ()
 checkInternalChoice t                   = 
   tell ["Expecting an internal choice; found " ++ show t]
 
-checkExternalChoice :: Type -> TCheckM ()
-checkExternalChoice (Choice External t) = return ()
-checkExternalChoice t                   = 
+checkExternalChoice :: KindEnv -> VarEnv -> Type -> TCheckM ()
+checkExternalChoice _ _ (Choice External t) = return ()
+checkExternalChoice kenv venv (Var x)       = do
+  (t, venv) <- checkVar kenv venv x
+  checkExternalChoice kenv venv t 
+checkExternalChoice _ _ t                    = 
   tell ["Expecting an external choice; found " ++ show t]
 
 checkSemi :: Type -> TCheckM (Type, Type)
@@ -305,43 +300,61 @@ checkUn kenv t
 -- Type checking the case constructor
 
 checkEquivConstructors :: KindEnv -> VarEnv -> Type -> CaseMap -> TCheckM ()
-checkEquivConstructors kenv venv t cm = do
-  Map.foldrWithKey' (\c _ _ -> checkContructor kenv venv c t) (return ()) cm
+checkEquivConstructors kenv venv t cm =
+   Map.foldrWithKey' (\c _ _ -> checkContructor kenv venv c t) (return ()) cm
 
 checkContructor :: KindEnv -> VarEnv -> TermVar -> Type -> TCheckM ()
 checkContructor kenv venv c t1 = do
   (t2, _) <- checkVar kenv venv c
+  -- error $ "venv: " ++ show venv ++ "\n\nc: " ++ show c ++ "\n\nt2: "
+  --   ++ show t2 ++ "\nlast: " ++ show (last (toList t2)) ++ "\nt1: " ++ show t1
+  equivConstructorTypes kenv (last (toList t2)) t1 c
+  -- checkEquivTypes kenv (last (toList t2)) t1
+  return ()
+
+equivConstructorTypes kenv t2 (Choice _ tm) c =
+  checkEquivTypes kenv (last (toList t2)) (tm Map.! c)
+equivConstructorTypes kenv t2 t1 c =
   checkEquivTypes kenv (last (toList t2)) t1
 
-checkCaseMap :: KindEnv -> VarEnv -> CaseMap -> TCheckM [(Type, VarEnv)]
-checkCaseMap kenv venv cm =
-  Map.foldrWithKey' (checkCaseBranch kenv venv) (return []) cm
 
-checkCaseBranch :: KindEnv -> VarEnv -> TypeVar -> (Params, Expression) -> TCheckM [(Type, VarEnv)] -> TCheckM [(Type, VarEnv)]
-checkCaseBranch kenv venv c (params, exp) acc = do
+
+checkCaseMap :: KindEnv -> VarEnv -> Expression -> CaseMap -> TCheckM [(Type, VarEnv)]
+checkCaseMap kenv venv e cm =
+   Map.foldrWithKey' (checkCaseBranch kenv venv e) (return []) cm
+
+checkCaseBranch :: KindEnv -> VarEnv -> Expression -> TypeVar -> (Params, Expression) -> TCheckM [(Type, VarEnv)] -> TCheckM [(Type, VarEnv)]
+checkCaseBranch kenv venv e c (params, exp) acc = do
   (t, venv1) <- checkVar kenv venv c
   paramTypeList <- addToEnv c params (init (toList t))
   let venv2 = Map.union (Map.fromList paramTypeList) venv1
-  pair <- checkExp kenv venv2 exp
+  let venv3 = checkExpVar venv2 e (last (toList t))
+  pair <- checkExp kenv venv3 exp
   pairs <- acc
   return $ pair:pairs
 
+checkExpVar venv (Variable c) t = Map.insert c t venv
+checkExpVar venv _ _  = venv
+
 addToEnv :: TypeVar -> Params -> [Type] -> TCheckM [(TypeVar, Type)]
-addToEnv c ps ts
-  | length ps == length ts = return $ zip ps ts
-  | otherwise = do
-      tell ["Constructor " ++ (show c) ++ "is applied to too few arguments"]
+addToEnv c ps ts 
+  | length ps == length ts = return $ zip ps (map canonical ts)
+  | length ps > length ts = do
+      tell ["Function or constructor " ++ (show c) ++ " is applied to too few arguments"]
+      return []
+  | length ps < length ts = do
+      tell ["Function or constructor " ++ (show c) ++ " is applied to too many arguments"]
       return []
 
 -- Expression environments
 -- venv contains the entries in the prelude as well as those in the source file
 
--- TODO: Can call checkVar? it will delete un functions
+-- TODO: Can call checkVar? it will delete un functions?
 checkExpEnv :: KindEnv -> VarEnv -> TermVar -> Params -> TCheckM VarEnv
 checkExpEnv kenv venv fun params = do
   checkParam fun params
   (t, venv1) <- checkVar kenv venv fun
-  parameters <- addToEnv fun params (init (toList t))
+  parameters <- addToEnv fun params (init (toList t))  
 --  parameters <- addToEnv fun params (init (toList (venv Map.! fun)))
   return $ foldl (\acc (arg, t) -> Map.insert arg t acc) venv1 parameters
 
@@ -373,17 +386,30 @@ checkKinding kenv t -- = tell [ show $ isType kenv t, show t, show kenv]
 -- checkKind :: KindEnv -> Type -> TCheckM Kind
 -- checkKind kenv t = return $ kindOf kenv t
 
-checkFunTypeDecl :: KindEnv -> VarEnv -> TermVar -> TCheckM ()
+checkFunTypeDecl :: KindEnv -> VarEnv -> TermVar -> TCheckM VarEnv
 checkFunTypeDecl kenv venv  fname = do
   (t, venv2) <- checkVar kenv venv fname
+  venv3 <- checkChoiceParam t venv2
   checkKinding kenv t
+  return venv3
 --  return $ Map.insert fname (convertConstructor t cenv) venv
 
--- convertConstructor (Fun m t1 t2) cenv = Fun m (convertConstructor t1 cenv) (convertConstructor t2 cenv)
--- convertConstructor (Var x) cenv
---   | Map.member x cenv = cenv Map.! x
---   | otherwise = Var x
--- convertConstructor t _ = t
+-- TODO : Canonical???
+-- TODO : Dups ?? 
+checkChoiceParam :: Type -> VarEnv -> TCheckM VarEnv
+checkChoiceParam (Forall _ _ t) venv = checkChoiceParam (canonical t) venv
+checkChoiceParam (Rec _ _ t) venv = checkChoiceParam (canonical t) venv
+checkChoiceParam (Fun _ t1 t2) venv = do
+  venv1 <- checkChoiceParam (canonical t1) venv
+  checkChoiceParam (canonical t2) venv1
+checkChoiceParam (Choice _ tm) venv = return $ Map.union venv tm
+checkChoiceParam (Semi t1 t2) venv = do
+  venv1 <- checkChoiceParam (canonical t1) venv
+  checkChoiceParam (canonical t2) venv1
+checkChoiceParam t venv = return $ venv
+
+
+
 
 
 -- TODO: Change to tell an error
@@ -398,5 +424,17 @@ TODO: the inductive definition of the output type; a proof that the the function
 canonical :: Type -> Type
 canonical (Rec x k t)     = canonical $ unfold $ Rec x k t
 canonical (Semi Skip t) = canonical t
--- canonical (Semi t1 t2)  = canonical (Semi (canonical t1) t2)
+canonical (Semi (Choice cv tm) t2) =
+  Choice cv (Map.map (\t -> if t == Skip then t2 else t `Semi` t2) tm)
+canonical (Semi t1 t2)  = Semi (canonical t1) t2
 canonical t             = t
+
+
+-- reduce :: Type -> Map.Map Label Type
+-- reduce (Semi t1 t2)
+--     | terminated t1       = reduce t2
+--     | otherwise           = Map.map (\t -> if t == Skip then t2 else t `Semi` t2) (reduce t1)
+-- reduce (Choice v m) = Map.mapKeys (ChoiceLabel v) m
+-- --reduce (Choice External m) = Map.mapKeys ExtChoiceLabel m
+-- reduce (Rec x k t)          = reduce $ unfold (Rec x k t)
+-- reduce _                  = Map.empty

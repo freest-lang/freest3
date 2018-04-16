@@ -50,6 +50,7 @@ dot = Token.dot lexer
 colon = Token.colon lexer
 braces = Token.braces lexer
 squares = Token.squares lexer
+commaSep1 = Token.commaSep1 lexer
 
 rec    = reserved "rec"
 forall = reserved "forall"
@@ -136,12 +137,13 @@ parseRec = do
 parseForall :: Parsec String u Type
 parseForall = do
   forall
-  id <- identifier
-  k <- parseVarBind
+  bindings <- commaSep1 (do {id <- identifier; k <- parseVarBind; return (id, k)})
   reserved "=>"  
---  dot
   t <- typeExpr
-  return $ Forall id k t
+  return $ foldl apply (inner (last bindings) t) (init bindings)
+  where
+    inner (id, k) t = Forall id k t
+    apply acc (id, k) = Forall id k acc
 
 parseInternalChoice :: Parsec String u Type
 parseInternalChoice = do

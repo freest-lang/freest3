@@ -22,14 +22,44 @@ compile arg = do
         return $ error "Parser Error"
       Right d -> return d
 
+-- print venv
+
   let tc = Map.mapWithKey (\fun (a, e) -> typeCheck kenv venv cenv a e fun) eenv
     --  datatypeGen
-    --  typeGen
+
+  -- let env = genDataType cenv kenv
+  -- putStrLn $ showDT env ++ "\n\n"
+      
   if all (== True) (Map.map typeChecks tc) then
     codeGen venv eenv (reverse $ dropWhile (/= '/') (reverse arg))
   else
     checkErr tc
 
+--type T = Map.Map TypeVar [(TypeVar, Type)]
+-- Map.Map TypeVar Kind
+genDataType :: Map.Map TypeVar Type -> Map.Map TypeVar Kind -> Map.Map TypeVar [(TypeVar, Type)]
+genDataType cenv kenv =
+  Map.foldlWithKey' (\acc k _ -> Map.insert k (fromCenv cenv k) acc) Map.empty kenv
+
+fromCenv m c =
+  Map.foldlWithKey' (checkLast c) [] m
+
+-- checkLast :: Type -> [(t, Type)] -> t -> Type -> [(t, Type)]
+checkLast c acc k t
+  | last tl == (Var c) = acc ++ [(k, t)]
+  | otherwise = acc
+  where
+    tl = toList t
+
+showDT m =
+  (Map.foldlWithKey' (\acc n dl -> acc ++ "data " ++ n ++ " = " ++ intercalate " | " (showDTList dl) ++ " deriving Show\n") "" m)
+
+showDTList l = foldl (\acc (k, v) -> acc ++ [k ++ " " ++ intercalate " " (init (showType v))]) [] l
+
+showType (Fun Un t1 t2) = showType t1 ++ showType t2
+showType t = [show t]
+
+  
 
 showFunSignature f t = f ++ " :: " ++ show t  ++ "\n"
 

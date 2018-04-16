@@ -123,8 +123,22 @@
 --   let n, r1 = receive r in
 --   n
 
-start :: Int
-start = succ' 1
+-- start :: Int
+-- start = succ' 1
 
-succ' :: Int -> Int
-succ' x = x + 1
+-- succ' :: Int -> Int
+-- succ' x = x + 1
+
+-- Type-safe serialization of a binary tree
+-- sendTree :: forall a :: SU => Tree -> rec x::SU.+{Leaf: Skip, Node: !Int;x;x} ; a -> a
+-- sendTree :: Tree -> rec x.+{LeafC: Skip, NodeC: !Int;x;x} ; a -> a
+sendTree t c =
+  case t of
+    Leaf ->
+       select LeafC c
+    Node x l r ->
+      let c1 = select NodeC c in
+      let c2 = send x c1 in
+      let c3 = sendTree[rec x.+{LeafC: Skip, NodeC: !Int;x;x} ; a] l c2 in
+      let c4 = sendTree[a] r c3 in
+      c4

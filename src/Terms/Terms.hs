@@ -62,7 +62,8 @@ data Expression
   | Fork Expression -- TODO: Express as application
   -- Datatypes
   | Constructor TermVar
-  | Case Expression CaseMap  
+  | Case Expression CaseMap
+--  deriving Eq
 --   deriving Show
 -- ("parseCase",([],Case (App (App (Variable "(+)") (Integer 2)) (Integer 2))
 --  (fromList [("C",(["a"],Integer 23)),("D",(["a"],Integer 24)),("E",(["a"],Integer 25))])))
@@ -75,7 +76,7 @@ instance Show Expression where
   show (Variable v)        = v
   show (UnLet tv e1 e2)        = "let " ++ tv ++ " = " ++ show e1 ++ " in " ++ show e2
   show (App e1 e2) = showApp e1 e2
-  show (TypeApp t e1) = "TypeApp " ++ show t ++ " " ++ show e1 -- TODO: proper show
+  show (TypeApp t e1) = "(TypeApp " ++ show t ++ " " ++ show e1 ++ ")" -- TODO: proper show
   show (Conditional e1 e2 e3) = "if " ++ show e1 ++ " then " ++ show e2 ++ " else " ++ show e3
   show (Pair e1 e2) = "(" ++ show e1 ++ ", " ++ show e2 ++ ")"
   show (Let tv1 tv2 e1 e2) = showLet tv1 tv2 e1 e2
@@ -103,19 +104,10 @@ showApp (App (Variable "div") e2) e3  = show e2 ++ " `div` " ++ show e3
 showApp (App (Variable "rem") e2) e3  = show e2 ++ " `rem` " ++ show e3
 -- TODO others
 -- showApp (App e1 e2) e3                = show e2 ++ " " ++ show e1  ++ " " ++ show e3
-showApp e1 e2                                 = show e1 ++ " " ++ show e2
+showApp e1 e2                                 = "(" ++ show e1 ++ " " ++ show e2 ++ ")"
 
 showLet :: TermVar -> TermVar -> Expression -> Expression -> String
-showLet tv1 tv2 e1 e2 = "let " ++ tv1 ++ " = fst(" ++ showFst e1 ++ ")\n" ++
-                        "let " ++ tv2 ++ " = snd(" ++ showSnd e1 ++ ") in " ++ show e2
-
-showFst :: Expression -> String
-showFst (Pair e1 _) = show e1
-showFst e           = show e
-
-showSnd :: Expression -> String
-showSnd (Pair _ e2) = show e2
-showSnd e           = show e
+showLet tv1 tv2 e1 e2 = "let (" ++ tv1 ++ ", " ++ tv2 ++ ") = " ++ show e1 ++  " in " ++ show e2
 
 -- type CaseMap = Map.Map TermVar (Params, Expression)
 showCaseMap :: CaseMap -> String

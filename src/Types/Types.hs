@@ -133,4 +133,5 @@ dual (Rec x k t)    = Rec x k (dual t)
 toList :: Type -> [Type]
 toList (Fun _ t1 t2) = t1 : toList t2
 toList (Forall _ _ t) = toList t
+-- toList (Semi t1 t2) = toList t1 ++ toList t2
 toList t = [t]
