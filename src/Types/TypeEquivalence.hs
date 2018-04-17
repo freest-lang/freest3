@@ -40,7 +40,7 @@ equiv' s kenv (Fun m1 t1 t2) (Fun m2 t3 t4)  =
 equiv' s kenv (PairType t1 t2) (PairType t3 t4) =
   equiv s kenv t1 t3 && equiv s kenv t2 t4
 equiv' s kenv (Datatype dt1) (Datatype dt2) =
-  (Map.size dt1 == Map.size dt2) && (Map.foldlWithKey (checkBinding kenv dt2 s) True dt1)
+  Map.size dt1 == Map.size dt2 && Map.foldlWithKey (checkBinding kenv dt2 s) True dt1
 equiv' s kenv (Rec x k t1) t2 =
   equiv (Set.insert ((Rec x k t1), t2) s) kenv (unfold (Rec x k t1)) t2
 equiv' s kenv t1 (Rec x k t2) =
@@ -53,13 +53,10 @@ equivSessionTypes s kenv t1 t2 =
   Map.size r1 == Map.size r2 && Map.foldlWithKey (checkBinding kenv r2 s) True r1      
   where r1 = reduce t1
         r2 = reduce t2
-        
---checkBinding :: Ord k => KindEnv -> Map.Map k Type -> Set.Set (Type, Type) -> Bool -> k -> Type -> Bool
-checkBinding kenv tm s acc l t = acc && l `Map.member` tm && equiv s kenv (tm Map.! l) t
 
---checkEquivVar s kenv tm l t = equiv s kenv (tm Map.! l) t
---  | Map.member l tm = equiv s kenv (tm Map.! l) t
---  | otherwise       = False
+-- Used both for datatypes and for session types, hence the 'Ord k'
+checkBinding :: Ord k => KindEnv -> Map.Map k Type -> Set.Set (Type, Type) -> Bool -> k -> Type -> Bool
+checkBinding kenv tm s acc l t = acc && l `Map.member` tm && equiv s kenv (tm Map.! l) t
 
 terminated :: Type -> Bool
 terminated Skip = True
