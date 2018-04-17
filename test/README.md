@@ -8,32 +8,43 @@ This section contains the requirements for the test framework.
 It's necessary to have the following tools installed:
 
   * The Haskell platform (See [`Haskell Website`](https://www.haskell.org/platform/))
-  * See [`README.md`](ContextFreeSession/README.md) for installation details
+  * See [`README.md`](../README.md) for installation details
 
 ## Automated testing - Run Tests
 
 To be able to run the tests you need to be on the root folder of the project (ContextFreeSession directory) and run ``` cabal build ```.
 After building the compiler you can choose one of the following options:
 
-  * To run all the tests: ``` cabal test ```
-  * To run only the Unit tests: ``` cabal test CFST-UnitTests ```
-  * To run only the Programs tests: ``` cabal test CFST-ProgTests ```
+  * To run all the tests:
+    ```
+    $ cabal test
+    ```
+  * To run only the Unit tests:
+    ```
+    $ cabal test CFST-UnitTests
+    ```
+  * To run only the Programs tests:
+    ```
+    $ cabal test CFST-ProgTests
+    ```
 
 There are also available options to run valid and invalid tests separately for all the units:
 
 By running one of the following:
 
-  * Parser valid tests: ``` make testParserValid ```
-  * Parser invalid tests: ``` make testParserInvalid ```
-  * Types valid tests:  ``` make testTypesValid ```
-  * Types invalid tests: ``` make testTypesInvalid ```
-  * Kinding valid tests: ``` make testKindingValid ```
-  * Type Equivalence valid tests: ``` make testEquivalenceValid ```
-  * Type Equivalence invalid tests: ``` make testEquivalenceInvalid ```
-  * Test Show (only valid): ``` make testShow ```
+  * Parser valid tests: ```$ make testParserValid ```
+  * Parser invalid tests: ```$ make testParserInvalid ```
+  * Types valid tests:  ```$ make testTypesValid ```
+  * Types invalid tests: ```$ make testTypesInvalid ```
+  * Kinding valid tests: ```$ make testKindingValid ```
+  * Type Equivalence valid tests: ```$ make testEquivalenceValid ```
+  * Type Equivalence invalid tests: ```$ make testEquivalenceInvalid ```
+  * Test Show (only valid): ```$ make testShow ```
 
 Or, by running:
-  ```cabal build && cabal exec -- runhaskell -isrc -itest/UnitTests/ test/UnitTests/Types/[TESTNAME]```
+  ```
+  $ cabal build && cabal exec -- runhaskell -isrc -itest/UnitTests/ test/UnitTests/Types/[TESTNAME]
+  ```
 
 It's absolutely necessary to have installed the ghc, parsec, hspec and hspec-discover packages.
 
