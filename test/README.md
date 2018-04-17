@@ -8,11 +8,11 @@ This section contains the requirements for the test framework.
 It's necessary to have the following tools installed:
 
   * The Haskell platform (See [`Haskell Website`](https://www.haskell.org/platform/))
-  * See [`README.md`](../../README.md) for installation details
+  * See [`README.md`](../README.md) for installation details
 
 ## Automated testing - Run Tests
 
-To be able to run the tests you need to be on the root folder of the project (ContextFreeSession directory) and run ``` cabal build ```.
+To be able to run the tests you need to be in the root folder of the project (ContextFreeSession directory) and run ``` cabal build ```.
 After building the compiler you can choose one of the following options:
 
   * To run all the tests:

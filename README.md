@@ -17,7 +17,7 @@ It's necessary to have the following tools installed:
 
 Run ``` $ cabal build ```.
 
-To run the compiler just create a file (with ".hs" extension) and the run ``` cabal run [filepath] ```
+To run the compiler just create a file (with ".hs" extension) and then run ``` cabal run [filepath] ```
 
 For example, to compile the file named "test.hs" located in the directory "dir" you just have to run
 ```
