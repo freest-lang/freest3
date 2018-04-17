@@ -8,7 +8,7 @@ This section contains the requirements for the test framework.
 It's necessary to have the following tools installed:
 
   * The Haskell platform (See [`Haskell Website`](https://www.haskell.org/platform/))
-  * See [`README.md`](../README.md) for installation details
+  * See [`README.md`](README.md) for installation details
 
 ## Automated testing - Run Tests
 
@@ -54,4 +54,4 @@ To add test to the infrastructure just edit the correspondent txt of the desired
 The txt file is structured as follows :
 
     Testing language phrase
-        Expected 
+        Expected
