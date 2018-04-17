@@ -7,26 +7,33 @@ The test infrastructure contains a collection of tools for testing the Context F
 This section contains the requirements for the test framework.
 It's necessary to have the following tools installed:
 
-  * The Haskell platform (TODO See [`Haskell Website`](https://www.haskell.org/platform/))
+  * The Haskell platform (See [`Haskell Website`](https://www.haskell.org/platform/))
   * Hspec & Hspec-discover
 
 ## Automated testing - Run Tests
 
-To be able to run the tests you need to be on the root folder of the project (ContextFreeSession directory) and then:
+To be able to run the tests you need to be on the root folder of the project (ContextFreeSession directory) and run ``` cabal build ```.
+After building the compiler you can choose one of the following options:
 
-  * Run all tests: ``` make test ```
-  * Run valid tests: ``` make testValid ```
-  * Run invalid tests: ``` make testInvalid ```
+  * To run all the tests: ``` cabal test ```
+  * To run only the Unit tests: ``` cabal test CFST-UnitTests ```
+  * To run only the Programs tests: ``` cabal test CFST-ProgTests ```
 
 There are also available options to run valid and invalid tests separately for all the units:
 
-  * Parser valid tests: ``` make testValidParser ```
-  * Parser invalid tests: ``` make testInvalidParser ```
-  * Types valid tests: ``` make testValidTypes ```
-  * Types invalid tests: ``` make testInvalidTypes ```
-  * Kinding valid tests: ``` make testValidKinding ```
-  * Kinding invalid tests: ``` make testInvalidKinding ```
+By running one of the following:
 
+  * Parser valid tests: ``` make testParserValid ```
+  * Parser invalid tests: ``` make testParserInvalid ```
+  * Types valid tests:  ``` make testTypesValid ```
+  * Types invalid tests: ``` make testTypesInvalid ```
+  * Kinding valid tests: ``` make testKindingValid ```
+  * Type Equivalence valid tests: ``` make testEquivalenceValid ```
+  * Type Equivalence invalid tests: ``` make testEquivalenceInvalid ```
+  * Test Show (only valid): ``` make testShow ```
+
+Or, by running:
+  ```cabal build && cabal exec -- runhaskell -isrc -itest/UnitTests/ test/UnitTests/Types/[TESTNAME]```
 
 It's absolutely necessary to have installed the ghc, parsec, hspec and hspec-discover packages.
 
