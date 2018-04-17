@@ -8,7 +8,7 @@ This section contains the requirements for the test framework.
 It's necessary to have the following tools installed:
 
   * The Haskell platform (See [`Haskell Website`](https://www.haskell.org/platform/))
-  * Hspec & Hspec-discover
+  * See [`README.md`](../README.md) for installation details
 
 ## Automated testing - Run Tests
 
