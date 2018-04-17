@@ -1,5 +1,12 @@
-Install `System.Log.Logger` using cabal:
+* Build cabal
 
 ```
-$ cabal install hslogger
+$ cabal install --dependencies-only
+$ cabal build
+```
+
+* Running tests (check the entries in file `ContextFreeSession.cabal`)
+
+```
+$ cabal test CFST-UnitTests
 ```

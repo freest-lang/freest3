@@ -28,53 +28,48 @@ terminated :: Type -> Bool
 terminated Skip = True
 terminated (Semi t1 t2) = terminated t1 && terminated t2
 terminated t
-    | isRec t = terminated $ unfold t
+    | isRec t = terminated (unfold t)
     | otherwise = False
 
 reduce :: Type -> Map.Map Label Type
-reduce (Var x)            = Map.singleton (VarLabel x) Skip
-reduce (Out b)            = Map.singleton (OutLabel b) Skip
-reduce (In b)             = Map.singleton (InLabel b) Skip
+reduce (Var x)      = Map.singleton (VarLabel x) Skip
+reduce (Out b)      = Map.singleton (OutLabel b) Skip
+reduce (In b)       = Map.singleton (InLabel b) Skip
 reduce (Semi t1 t2)
-    | terminated t1       = reduce t2
-    | otherwise           = Map.map (\t -> if t == Skip then t2 else t `Semi` t2) (reduce t1)
+    | terminated t1 = reduce t2
+    | otherwise     = Map.map (\t -> if t == Skip then t2 else t `Semi` t2) (reduce t1)
 reduce (Choice v m) = Map.mapKeys (ChoiceLabel v) m
---reduce (Choice External m) = Map.mapKeys ExtChoiceLabel m
-reduce (Rec x k t)          = reduce $ unfold (Rec x k t)
-reduce _                  = Map.empty
+reduce (Rec x k t)  = reduce (unfold (Rec x k t))
+reduce _            = Map.empty
 
---TODO: equiv' Forall Forall
 equivalent :: KindEnv -> Type -> Type -> Bool
 equivalent = equiv Set.empty
 
 equiv :: Set.Set(Type,Type) -> KindEnv -> Type -> Type -> Bool
 equiv s kenv t1 t2
-    | (t1,t2) `Set.member` s = True
-    | otherwise              = equiv' s kenv t1 t2
+    | (t1, t2) `Set.member` s = True
+    | otherwise               = equiv' s kenv t1 t2
 
 equiv' :: Set.Set(Type,Type) -> KindEnv -> Type -> Type -> Bool
-equiv' _ _ (Var x) (Var y)                = x == y
-equiv' _ _ (Basic b) (Basic c)            = b == c
-
+equiv' _ _ (Var x) (Var y) = x == y
+equiv' _ _ (Basic b) (Basic c) = b == c
 equiv' s kenv (Fun m1 t1 t2) (Fun m2 t3 t4)  =
   m1 == m2 && (equiv s kenv t1 t3) && (equiv s kenv t2 t4)
-  
-equiv' s kenv (PairType t1 t2) (PairType t3 t4) = equiv s kenv t1 t3 && equiv s kenv t2 t4
-   
+equiv' s kenv (PairType t1 t2) (PairType t3 t4) =
+  equiv s kenv t1 t3 && equiv s kenv t2 t4
 equiv' s kenv (Datatype dt1) (Datatype dt2) =
   (Map.size dt1 == Map.size dt2) && (Map.foldlWithKey (checkBinding kenv dt2 s) True dt1)
--- -- equiv s (Forall x t1) (Forall y t2) = equiv s t1 t2
-
-equiv' s kenv (Rec x k t1) t2 = equiv (Set.insert ((Rec x k t1), t2) s) kenv (unfold (Rec x k t1)) t2
-equiv' s kenv t1 (Rec x k t2) = equiv (Set.insert (t1, (Rec x k t2)) s) kenv t1 (unfold (Rec x k t2))
-
+equiv' s kenv (Rec x k t1) t2 =
+  equiv (Set.insert ((Rec x k t1), t2) s) kenv (unfold (Rec x k t1)) t2
+equiv' s kenv t1 (Rec x k t2) =
+  equiv (Set.insert (t1, (Rec x k t2)) s) kenv t1 (unfold (Rec x k t2))
 equiv' s kenv t1 t2 = do 
   -- isSessionType t1 && isSessionType t2
   -- equivElems <- Map.foldlWithKey (checkBinding r2 s) (return True) r1
   -- return $ Map.size r1 == Map.size r2 && equivElems
   equivSessionTypes s kenv (isSessionType kenv t1 && isSessionType kenv t2) t1 t2
-
 -- equiv' _ _ _ = return False
+
 equivSessionTypes :: Set.Set (Type, Type) -> KindEnv -> Bool -> Type -> Type -> Bool 
 equivSessionTypes s kenv st t1 t2 
   | st        = Map.size r1 == Map.size r2 && Map.foldlWithKey (checkBinding kenv r2 s) True r1      
@@ -82,10 +77,11 @@ equivSessionTypes s kenv st t1 t2
   where r1 = reduce t1
         r2 = reduce t2
         
---checkBinding :: TypeMap -> Set.Set (Type, Type) -> IO Bool -> TypeVar -> Type -> IO Bool
+--checkBinding :: KindEnv -> Map.Map Label Type -> Set.Set (Type, Type) -> Bool -> Label -> Type -> Bool
 checkBinding kenv tm s acc l t = acc && l `Map.member` tm && (checkEquivVar s kenv tm l t) 
 
---checkVar :: Set.Set(Type,Type) -> TypeMap -> TypeVar -> Type -> IO Bool
+checkEquivVar :: Ord k => Set.Set (Type, Type) -> KindEnv -> Map.Map k Type -> k -> Type -> Bool
+-- Set.Set(Type,Type) -> KindEnv -> TypeMap -> Type -> Type -> IO Bool
 checkEquivVar s kenv tm l t
   | Map.member l tm = equiv s kenv (tm Map.! l) t
   | otherwise       = False
