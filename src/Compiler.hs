@@ -15,25 +15,26 @@ compile :: String -> IO (Bool, String)
 compile arg = do
   prog <- mainProgram arg prelude
 
-  (venv, eenv, cenv, kenv) <-
-    case prog of
-      Left err -> do
-        putStr (show err)
-        return $ error "Parser Error"
-      Right d -> return d
+  -- (venv, eenv, cenv, kenv) <-
+  --   case prog of
+  --     Left err -> do
+  --       putStr (show err)
+  --       return $ error "Parser Error"
+  --     Right d -> return d
 
 -- print venv
-
-  let tc = Map.mapWithKey (\fun (a, e) -> typeCheck kenv venv cenv a e fun) eenv
+  case prog of
+    Right (venv, eenv, cenv, kenv) -> do
+      let tc = Map.mapWithKey (\fun (a, e) -> typeCheck kenv venv cenv a e fun) eenv
     --  datatypeGen
 
-  -- let env = genDataType cenv kenv
-  -- putStrLn $ showDT env ++ "\n\n"
       
-  if all (== True) (Map.map typeChecks tc) then
-    codeGen venv eenv (reverse $ dropWhile (/= '/') (reverse arg))
-  else
-    checkErr tc
+      if all (== True) (Map.map typeChecks tc) then
+        codeGen venv eenv cenv kenv (reverse $ dropWhile (/= '/') (reverse arg))
+      else
+        checkErr tc
+    Left err ->     
+      return (False, show err)
 
 --type T = Map.Map TypeVar [(TypeVar, Type)]
 -- Map.Map TypeVar Kind
@@ -79,12 +80,15 @@ typeChecks = null . snd . runWriter
 showErrors :: TCheckM Type -> [String]
 showErrors = snd . runWriter
 
-codeGen :: VarEnv -> ExpEnv -> FilePath -> IO (Bool, String)
-codeGen venv eenv path = do
+-- codeGen :: VarEnv -> ExpEnv -> FilePath -> IO (Bool, String)
+codeGen venv eenv cenv kenv path = do
 --  let types = Map.foldlWithKey showType "" tenv
-  let file = Map.foldlWithKey (\acc fun (a, e) -> acc ++ (showFunSignature fun (venv Map.! fun))
-                           ++ showExpr fun a e) mainFun eenv
-  writeFile (path ++ "cfst.hs") file -- (types ++ file)
+  let file = Map.foldlWithKey (\acc fun (a, e) -> acc {-++ (showFunSignature fun (venv Map.! fun))-}
+                           ++ showExpr fun a e) "" eenv
+  
+  let dataMap = genDataType cenv kenv
+      -- putStrLn $ showDT env ++ "\n\n"             
+  writeFile (path ++ "cfst.hs") (mainFun ++ showDT dataMap ++ file) -- (types ++ file)
   return (True, "")
 
 checkErr :: Map.Map TermVar (TCheckM Type)-> IO (Bool, String)

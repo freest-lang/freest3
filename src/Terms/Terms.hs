@@ -7,6 +7,7 @@ module Terms.Terms
   , TermVar
   , Params
   , CaseMap
+  , MatchMap
   ) where
 
 import qualified Data.Map.Strict as Map
@@ -32,7 +33,8 @@ data TypeScheme = Functional Type | Scheme TypeVarBind TypeScheme
 
 -- type ConstructorEnv = Map.Map Constructor [(Constructor, [Type])]
 
-type CaseMap = Map.Map TermVar (Params, Expression)
+type CaseMap = Map.Map TermVar (TermVar, Expression)
+type MatchMap = Map.Map TermVar (Params, Expression)
 
 data Expression
   -- Basic expressions
@@ -56,7 +58,7 @@ data Expression
   | Send Expression Expression -- TODO: Express as application
   | Receive Expression -- TODO: Express as application
   | Select TermVar Expression
-  | Match Expression (Map.Map TermVar (TypeVar, Expression))
+  | Match Expression MatchMap  
   -- Branch - overloaded with Case
   -- Fork
   | Fork Expression -- TODO: Express as application
@@ -76,7 +78,7 @@ instance Show Expression where
   show (Variable v)        = v
   show (UnLet tv e1 e2)        = "let " ++ tv ++ " = " ++ show e1 ++ " in " ++ show e2
   show (App e1 e2) = showApp e1 e2
-  show (TypeApp t e1) = "(TypeApp " ++ show t ++ " " ++ show e1 ++ ")" -- TODO: proper show
+  show (TypeApp e1 t) = show e1 -- TODO: proper show
   show (Conditional e1 e2 e3) = "if " ++ show e1 ++ " then " ++ show e2 ++ " else " ++ show e3
   show (Pair e1 e2) = "(" ++ show e1 ++ ", " ++ show e2 ++ ")"
   show (Let tv1 tv2 e1 e2) = showLet tv1 tv2 e1 e2
@@ -89,6 +91,7 @@ instance Show Expression where
   show (Fork e1) = "Fork " ++ show e1
   show (Constructor tv) = tv
   show (Case e1 cm) = "case " ++ show e1 ++ " of\n  " ++ (showCaseMap cm)
+  show (Match e1 cm) = "case " ++ show e1 ++ " of\n  " ++ (showMatchMap cm)
 
 showApp :: Expression -> Expression -> String
 showApp (App (Variable ('(':op:")")) e2) e3  = "(" ++ show e2 ++ [op] ++ show e3 ++ ")"
@@ -111,9 +114,14 @@ showLet tv1 tv2 e1 e2 = "let (" ++ tv1 ++ ", " ++ tv2 ++ ") = " ++ show e1 ++  "
 
 -- type CaseMap = Map.Map TermVar (Params, Expression)
 showCaseMap :: CaseMap -> String
-showCaseMap = Map.foldlWithKey (\acc tv (params, e) -> acc ++ tv ++ " " ++
+showCaseMap = Map.foldlWithKey (\acc tv (param, e) -> acc ++ tv ++ " " ++
+                                 param ++ "-> " ++ show e ++ "\n  ") ""
+-- TODO: review
+showMatchMap :: MatchMap -> String
+showMatchMap = Map.foldlWithKey (\acc tv (params, e) -> acc ++ tv ++ " " ++
                                  showParams params ++ "-> " ++ show e ++ "\n  ") ""  
 
+-- TODO use on match
 showParams :: Params -> String
 showParams as
   | null as = ""

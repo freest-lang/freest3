@@ -1,10 +1,8 @@
 data IntList = Nil | Cons Int IntList
--- Transform to &
-
 
 null' :: IntList -> Bool
 null' l =
-  case l of
+  match l with
     Nil -> True
     Cons x y -> False
 

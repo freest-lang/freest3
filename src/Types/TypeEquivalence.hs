@@ -47,6 +47,7 @@ equiv' s kenv t1 (Rec x k t2) =
   equiv (Set.insert (t1, (Rec x k t2)) s) kenv t1 (unfold (Rec x k t2))
 equiv' s kenv t1 t2
   | isSessionType kenv t1 && isSessionType kenv t2 = equivSessionTypes s kenv t1 t2
+  | otherwise = False
 
 equivSessionTypes :: Set.Set (Type, Type) -> KindEnv -> Type -> Type -> Bool 
 equivSessionTypes s kenv t1 t2 =

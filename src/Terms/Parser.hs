@@ -73,10 +73,6 @@ program = do
   eof
   s <- getState
   return s
-  -- if null err then
-  --   return m
-  -- else
-  --   fail (intercalate "\n" err)
 
 -- MAIN PARSER COMBINATORS
 -- Responsible for parsing Type Signatures, Expression Declarations and DataTypes
@@ -92,15 +88,6 @@ parseTypeSignature = do
 --  optional $ try $ parseTypeBinding
   t <- parseType
   modifyState (changeVEnv id t)
-
--- parseTypeBinding :: CFSTSubParser String
--- parseTypeBinding = do
---   id <- lowerIdentifier
---   colon
---   colon
---   k <- parseKind
---   string "=>"
---  --modifyState (change4th id k)
 
 parseFunction :: CFSTSubParser ()
 parseFunction = do
@@ -133,7 +120,7 @@ parseDataType = do
   let bindingList = types c ts
   mapM (\(tc, v) -> modifyState (changeCEnv tc v)) bindingList
   modifyState (changeKEnv c k)
-  modifyState (changeVEnv c (Choice External (Map.fromList bindingList)))
+  modifyState (changeVEnv c (Datatype (Map.fromList bindingList)))
   return ()
 
   where
@@ -220,6 +207,7 @@ parseExpr =
   <|> parseSelect
   <|> parseFork
   <|> parseCase
+  <|> parseMatch
   <|> parseTypeApp
   <|> constructApp
   <|> parseVariable
@@ -343,12 +331,28 @@ parseCase = do
   v <- many1 parseCaseValues  
   return $ Case e (Map.fromList v)
 
-parseCaseValues :: CFSTSubParser (String, ([String], Expression))
+parseCaseValues :: CFSTSubParser (String, (String, Expression))
 parseCaseValues = do
+  c <- constructor
+  id <- lowerIdentifier
+  reservedOp "->"
+  e <- parseExpr
+  return $ (c, (id, e))
+
+parseMatch :: CFSTSubParser Expression
+parseMatch = do
+  reserved "match"
+  e <- parseExpr
+  reserved "with"
+  v <- many1 parseMatchValues
+  return $ Match e (Map.fromList v)
+
+parseMatchValues :: CFSTSubParser (String, ([String], Expression))
+parseMatchValues = do
   c <- constructor
   ids <- (many lowerIdentifier)
   reservedOp "->"
-  e <- parseExpr
+  e <- parseExpression
   return $ (c, (ids, e))
 
 parseConstructor :: CFSTSubParser Expression
