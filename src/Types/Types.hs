@@ -126,9 +126,13 @@ dual (Var v)      = Var v
 dual Skip         = Skip
 dual (Out b)      = In b
 dual (In b)       = Out b
-dual (Choice v m) = Choice v (Map.map dual m)
+dual (Choice v m) = Choice (dualChoice v) (Map.map dual m)
 dual (Semi t1 t2) = Semi (dual t1) (dual t2)
 dual (Rec x k t)    = Rec x k (dual t)
+
+dualChoice :: ChoiceView -> ChoiceView
+dualChoice External = Internal
+dualChoice Internal = External
 
 toList :: Type -> [Type]
 toList (Fun _ t1 t2) = t1 : toList t2

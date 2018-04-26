@@ -2,17 +2,26 @@
 mathServer :: &{Opp: ?Int;!Int;Skip, Plus: ?Int;?Int;!Int;Skip} -> Skip
 mathServer c =
   case c of
-    Opp x ->
-      let n, c1 = receive x in
-      send (-n) c1
+    Opp c1 ->
+      let n, c2 = receive c1 in
+      send (-n) c2
       
-    Plus y ->
-      let n1, c1 = receive y in
-      let n2, c2 = receive c1 in
-      send (n1+n2) c2  
+    Plus c1 ->
+      let n1, c2 = receive c1 in
+      let n2, c3 = receive c2 in
+      send (n1+n2) c3  
         
           
-start :: ()
-start = ()
+start :: Int
+start =
+  let w,r = new +{Opp: !Int;?Int;Skip, Plus: !Int;!Int;?Int;Skip} in
+  let x = fork (mathServer r) in
+  let w1 = select Opp w in
+  let r1 = send 5 w1 in
+  let x, w1 = receive r1 in
+  x
+
+
+  
  
         

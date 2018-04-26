@@ -29,7 +29,7 @@ lexer =
        , Token.reservedNames =
            [ "send", "receive", "()", "new", "in", "let"
            , "fork", "match", "with", "select", "case"
-           , "of", "True", "False", "mod", "rev", "not"
+           , "of", "True", "False"
            , "if", "then", "else", "type", "data"
            ]
        }       
@@ -155,7 +155,7 @@ untilParser = do
 -- Builds a table that defines the priority and the associativity of each kind of App
 table =
   [
-    [ prefixOp "-" (App (Variable "negate"))
+    [ prefixOp "-" (App (0,0) (Variable (0,0) "negate"))
     ]
   ,
     [ binOp "*" (convertApp "(*)") AssocLeft
@@ -163,12 +163,12 @@ table =
     ]
   , [ binOp "+" (convertApp "(+)") AssocLeft
     , binOp "-" (convertApp "(-)") AssocLeft
-    , binary "mod" (convertApp "mod") AssocRight
-    , binary "rem" (convertApp "rem") AssocRight
+    , binOp "mod" (convertApp "mod") AssocRight
+    , binOp "rem" (convertApp "rem") AssocRight
     ]
   , [ binOp "&&" (convertApp "(&&)") AssocLeft
     , binOp "==" (convertApp "(==)") AssocLeft
-    , prefix "not" (App (Variable "not"))
+    , prefixOp "not" (App (0,0) (Variable (0,0) "not"))
     , binOp "||" (convertApp "(||)") AssocLeft
     , binOp "<" (convertApp "(<)") AssocLeft
     , binOp ">" (convertApp "(>)") AssocLeft
@@ -179,14 +179,13 @@ table =
 
 -- Converts a binary App in an ternary application with an operator
 convertApp :: TermVar -> Expression -> Expression -> Expression
-convertApp op e1 e2 = (App (App (Variable op) e1) e2)
+convertApp op e1 e2 = (App (0,0) (App (0,0) (Variable (0,0) op) e1) e2)
 
 binOp name fun assoc =  Infix (do reservedOp name; return fun) assoc
-
-binary name fun assoc = Infix (do reserved name; return fun) assoc
-
-prefix name fun =  Prefix (do reserved name; return fun)
 prefixOp name fun =  Prefix (do reservedOp name; return fun)
+
+-- binary name fun assoc = Infix (do reserved name; return fun) assoc
+-- prefix name fun =  Prefix (do reserved name; return fun)
 
 -- Parses an expression
 parseExpression :: CFSTSubParser Expression
@@ -239,32 +238,36 @@ parseBool =
 parseVariable :: CFSTSubParser Expression
 parseVariable =
   try $ do
+    pos <- getPosition
     id <- lowerIdentifier
     notFollowedBy (do {colon;colon})
-    return $ Variable id
+    return $ Variable (posPair pos) id
 
 parseUnLet :: CFSTSubParser Expression
 parseUnLet = try $ do
   reserved "let"
+  pos <- getPosition
   id <- lowerIdentifier
   reservedOp "="
   e1 <- parseExpression
   reserved "in"
   e2 <- parseExpression
-  return $ UnLet id e1 e2
+  return $ UnLet (posPair pos) id e1 e2
 
 -- Parse Pairs (Pair and let)
 parsePair :: CFSTSubParser Expression
 parsePair =
-  try $ parens $ do
+  try $ parens $ do  
+    pos <- getPosition
     e1 <- parseExpression
     comma
     e2 <- parseExpression
-    return $ Pair e1 e2
+    return $ Pair (posPair pos) e1 e2
 
 parseLet :: CFSTSubParser Expression
 parseLet = try $ do
   reserved "let"
+  pos <- getPosition
   id1 <- lowerIdentifier
   comma
   id2 <- lowerIdentifier
@@ -272,64 +275,71 @@ parseLet = try $ do
   e1 <- parseExpression
   reserved "in"
   e2 <- parseExpression
-  return $ Let id1 id2 e1 e2
+  return $ Let (posPair pos) id1 id2 e1 e2
 
 -- Parse Conditional (if then else)
 parseConditional :: CFSTSubParser Expression
 parseConditional = do
   reserved "if"
+  pos <- getPosition
   e1 <- parseExpression
   reserved "then"
   e2 <- parseExpression
   reserved "else"
   e3 <- parseExpression
 --   error $ show e1
-  return $ Conditional e1 e2 e3
+  return $ Conditional (posPair pos) e1 e2 e3
 
 -- Parse Session Types (new, send, receive and select)
 parseNew :: CFSTSubParser Expression
 parseNew = do
   reserved "new"
+  pos <- getPosition
   t <- parseType
-  return $ New t
+  return $ New (posPair pos) t
 
 parseSend :: CFSTSubParser Expression
 parseSend = do
   reserved "send"
+  pos <- getPosition
   e1 <- parseExpr
   e2 <- parseExpr
-  return $ Send e1 e2
+  return $ Send (posPair pos) e1 e2
 
 parseReceive :: CFSTSubParser Expression
 parseReceive = do
   reserved "receive"
+  pos <- getPosition
   e <- parseExpression
-  return $ Receive e
+  return $ Receive (posPair pos) e
 
 parseSelect :: CFSTSubParser Expression
 parseSelect = try $ do
   reserved "select"
+  pos <- getPosition
   c <- constructor
 --  notFollowedBy (constructApp <|> parseConstructor)
   e <- parseExpr
-  return $ Select c e
+  return $ Select (posPair pos) c e
 
 -- Parse Fork
 parseFork :: CFSTSubParser Expression
 parseFork = do
   reserved "fork"
+  pos <- getPosition
   e <- parseExpression
-  return $ Fork e
-
+  return $ Fork (posPair pos) e
+  
 -- Parse Datatypes
 -- parseValue
 parseCase :: CFSTSubParser Expression
 parseCase = do
   reserved "case"
+  pos <- getPosition
   e <- parseExpr
   reserved "of"
   v <- many1 parseCaseValues  
-  return $ Case e (Map.fromList v)
+  return $ Case (posPair pos) e (Map.fromList v)
 
 parseCaseValues :: CFSTSubParser (String, (String, Expression))
 parseCaseValues = do
@@ -342,10 +352,11 @@ parseCaseValues = do
 parseMatch :: CFSTSubParser Expression
 parseMatch = do
   reserved "match"
+  pos <- getPosition
   e <- parseExpr
   reserved "with"
   v <- many1 parseMatchValues
-  return $ Match e (Map.fromList v)
+  return $ Match (posPair pos) e (Map.fromList v)
 
 parseMatchValues :: CFSTSubParser (String, ([String], Expression))
 parseMatchValues = do
@@ -358,37 +369,44 @@ parseMatchValues = do
 parseConstructor :: CFSTSubParser Expression
 parseConstructor = do
   c <- constructor
-  return $ Constructor c
+  pos <- getPosition
+  return $ Constructor (posPair pos) c
 
 parseFunApp :: CFSTSubParser Expression
 parseFunApp = try $ do
+  pos <- getPosition
   c <- parseVariable
 --  notFollowedBy constructor
   e <- many1 $ parseExpr -- (try $ parens parseExpression)
-  return $ foldl apply (App c (head e)) (tail e)
+  let p = posPair pos
+  return $ foldl (apply p) (App p c (head e)) (tail e)
   where
-    apply acc e = App acc e
+    apply p acc e = App p acc e
 
 
 parseTypeApp :: CFSTSubParser Expression
 parseTypeApp = try $ do
+  pos <- getPosition
   c <- parseVariable
   ts <- many1 $ squares $ parseType
   e <- many parseExpr  -- (try $ parens parseExpression)
 --  error $ show ts
-  return $ foldl apply (appTypeApp c ts) e
+  let p = posPair pos
+  return $ foldl (apply p) (appTypeApp p c ts) e
   where
-    appTypeApp c ts = foldl applyType (TypeApp c (head ts)) (tail ts)
-    applyType acc t = TypeApp acc t
-    apply acc e = App acc e
+    appTypeApp p c ts = foldl (applyType p) (TypeApp p c (head ts)) (tail ts)
+    applyType p acc t = TypeApp p acc t
+    apply p acc e = App p acc e
 
 constructApp :: CFSTSubParser Expression
-constructApp = try $ do
+constructApp = try $ do 
+  pos <- getPosition
   c <- constructor
   e <- many1 parseExpr
-  return $ foldl apply (App (Constructor c) (head e)) (tail e)
+  let p = posPair pos
+  return $ foldl (apply p) (App p (Constructor p c) (head e)) (tail e)
   where
-    apply acc e = App acc e
+    apply p acc e = App p acc e
 
 
 -- Helper functions to manage ParserOut
@@ -422,6 +440,10 @@ checkDup env id msg pos
   | otherwise         = return ()
   where position = " (line " ++ show (sourceLine pos) ++
                    ", column " ++ show (sourceColumn pos) ++ ")"
+
+
+posPair :: SourcePos -> (Int, Int)
+posPair pos = (sourceLine pos, sourceColumn pos)
 
 --TODO: remove (test purposes)
 run = mainProgram path Map.empty

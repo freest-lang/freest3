@@ -12,3 +12,6 @@ start :: Bool
 start = dot [Int] [Int] [Bool] isZero double 7
 -- dot [Int->Bool] [Int->Int] [Int] isZero double 7
 
+
+a :: Int
+a = 2 mod 3
