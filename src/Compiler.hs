@@ -9,6 +9,7 @@ import           Terms.Terms
 import           Types.Types
 import           TypeChecking.TypeChecking
 import           Control.Monad.Writer
+import           Control.Monad.State
 import           Data.List
 import           System.Exit
 import           Types.Kinds
@@ -35,7 +36,7 @@ compile arg = do
 showFunSignature f t = f ++ " :: " ++ show t  ++ "\n"
 
 showExpr f as e =
-  let (h, m) = translate e in
+  let (h, m) = evalState (translate e) 0 in
   genExpr h m
   where
     genExpr h m
@@ -64,6 +65,7 @@ codeGen venv eenv cenv kenv path = do
   let dataMap = genDataType cenv kenv        
   writeFile (path ++ "cfst.hs") (mainFun start (venv Map.! "start")  ++ showDT dataMap ++ file) -- (types ++ file)
   return (True, "")
+
 
 checkErr :: TCheckM () -> IO (Bool, String)
 checkErr tc = do
@@ -107,7 +109,7 @@ genImports :: String
 genImports = "import Control.Concurrent (forkIO)\nimport Control.Concurrent.Chan.Synchronous\nimport Unsafe.Coerce"
 
 genMain (params, startExp) t =  
-  let (h, b) = translate startExp in
+  let (h, b) = evalState (translate startExp) 0 in
   if b then
     "main = start >>= \\res -> putStrLn (show (res :: " ++ show t ++ "))\n\n" ++
     genStart params h b 

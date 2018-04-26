@@ -275,7 +275,7 @@ parseLet = try $ do
   e1 <- parseExpression
   reserved "in"
   e2 <- parseExpression
-  return $ Let (posPair pos) id1 id2 e1 e2
+  return $ BinLet (posPair pos) id1 id2 e1 e2
 
 -- Parse Conditional (if then else)
 parseConditional :: CFSTSubParser Expression

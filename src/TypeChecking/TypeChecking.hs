@@ -96,7 +96,7 @@ checkExp kenv venv1 (Pair _ e1 e2) = do
   (t2, venv3) <- checkExp kenv venv2 e2 
   return (PairType t1 t2, venv3)
 
-checkExp kenv venv1 (Let p x1 x2 e1 e2) = do
+checkExp kenv venv1 (BinLet p x1 x2 e1 e2) = do
   (t1, venv2) <- checkExp kenv venv1 e1 
   (t2, t3) <- checkPair p t1
   (t4, venv3) <- checkExp kenv (Map.insert x2 t3 (Map.insert x1 t2 venv2)) e2

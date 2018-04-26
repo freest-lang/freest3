@@ -17,6 +17,7 @@ import qualified Data.Map.Strict as Map
 import           Types.Kinds
 import           Types.Types
 import           Data.List
+import           Control.Monad.State
 
 
 type TermVar = String
@@ -57,7 +58,7 @@ data Expression
   | Conditional Pos Expression Expression Expression
   -- Pairs
   | Pair Pos Expression Expression
-  | Let Pos TermVar TermVar Expression Expression
+  | BinLet Pos TermVar TermVar Expression Expression
   -- Session types
   | New Pos Type
   | Send Pos Expression Expression
@@ -83,10 +84,10 @@ instance Show Expression where
   show (Variable _ v)      = v
   show (UnLet _ tv e1 e2)    = showUnLet tv e1 e2
   show (App _ e1 e2) = showApp e1 e2
-  show (TypeApp _ e1 t) = show e1 -- TODO: proper show
+  show (TypeApp _ e1 t) = show e1
   show (Conditional _ e1 e2 e3) = "if " ++ show e1 ++ " then " ++ show e2 ++ " else " ++ show e3
   show (Pair _ e1 e2) = "(" ++ show e1 ++ ", " ++ show e2 ++ ")"
-  show (Let _ tv1 tv2 e1 e2) = showLet tv1 tv2 e1 e2
+  show (BinLet _ tv1 tv2 e1 e2) = showBinLet tv1 tv2 e1 e2
   -- TODO...
   show (New _ _) = "new" -- ++ show t
   show (Send _ e1 e2) = showSend e1 e2
@@ -120,8 +121,8 @@ showParams as
   | null as = ""
   | otherwise = " " ++ (intercalate " " as)
 
-showLet :: TermVar -> TermVar -> Expression -> Expression -> String
-showLet tv1 tv2 e1 e2 = "let (" ++ tv1 ++ ", " ++ tv2 ++ ") = " ++ show e1 ++  " in\n  " ++ show e2
+showBinLet :: TermVar -> TermVar -> Expression -> Expression -> String
+showBinLet tv1 tv2 e1 e2 = "let (" ++ tv1 ++ ", " ++ tv2 ++ ") = " ++ show e1 ++  " in\n  " ++ show e2
 
 showUnLet tv e1 e2 = "let " ++ tv ++ " = " ++ show e1 ++ "\n  " ++ show e2
 
@@ -132,113 +133,126 @@ showSend e1 e2 = "send " ++ show e1 ++ " " ++ show e2
 -- Translate from X code to Haskell code
 
 type HaskellCode = String
+type TranslateMonad = State Int
 
-translate :: Expression -> (HaskellCode, Bool)
-translate Unit = ("()", False)
-translate (Integer i) = (show i, False)
-translate (Character c) = (show c, False)
-translate (Boolean b) =  (show b, False)
-translate (Variable _ x) =  (x, False)
-translate (Constructor _ c) =  (c, False)
-translate (Pair _ e1 e2) =
-  ("(" ++ fst(translate e1) ++ ", " ++ fst (translate e2) ++ ")", False)
+-- nextState :: Int->Int
+-- nextState x = 1+x
 
-translate (UnLet _ x e1 e2) =
-  let (h1,b1) = translate e1
-      (h2,b2) = translate e2 in
+-- getNextFreshVar :: TranslateMonad String
+-- getNextFreshVar  = state  (\st -> let st' = nextState(st) in ("_Var" ++ show st',st') )
+
+translate :: Expression -> TranslateMonad (HaskellCode, Bool)
+translate Unit = return ("()", False)
+translate (Integer i) = return (show i, False)
+translate (Character c) = return (show c, False)
+translate (Boolean b) =  return (show b, False)
+translate (Variable _ x) =  return (x, False)
+translate (Constructor _ c) =  return (c, False)
+translate (Pair _ e1 e2) = do
+  h1 <- translate e1
+  h2 <- translate e2
+  return ("(" ++ fst h1 ++ ", " ++ fst h2 ++ ")", False)
+
+translate (UnLet _ x e1 e2) = do 
+  (h1,b1) <- translate e1
+  (h2,b2) <- translate e2
   if b1 then
-    (h1 ++ " >>= \\" ++ x ++ " -> " ++ h2, b1 || b2) 
+    return (h1 ++ " >>= \\" ++ x ++ " -> " ++ h2, b1 || b2) 
   else
-    ("let " ++ x ++ " = " ++ h1 ++ " in " ++ h2, b2)
+    return ("let " ++ x ++ " = " ++ h1 ++ " in " ++ h2, b2)
 
-translate (Let _ x y e1 e2) =
-  let (h1,b1) = translate e1
-      (h2,b2) = translate e2 in
+translate (BinLet _ x y e1 e2) = do
+  (h1,b1) <- translate e1
+  (h2,b2) <- translate e2
   if b1 then
-    (h1 ++ " >>= \\(" ++ x ++ "," ++ y ++ ")" ++ " -> " ++ h2, b1 || b2) 
+    return (h1 ++ " >>= \\(" ++ x ++ "," ++ y ++ ")" ++ " -> " ++ h2, b1 || b2) 
   else
-    ("let (" ++ x ++ "," ++ y ++ ")" ++ " = " ++ h1 ++ " in " ++ h2, b2)
+    return ("let (" ++ x ++ "," ++ y ++ ")" ++ " = " ++ h1 ++ " in " ++ h2, b2)
 
-translate (Conditional _ c e1 e2) =
-  let (h1, b1) = translate e1
-      (h2, b2) = translate e2 in
-  ("if " ++ (fst (translate c)) ++ " then " ++ h1 ++ " else " ++ h2, b1 || b2)
+translate (Conditional _ c e1 e2) = do
+  (c1, _) <- translate c
+  (h1, b1) <- translate e1
+  (h2, b2) <- translate e2
+  return ("if " ++ c1 ++ " then " ++ h1 ++ " else " ++ h2, b1 || b2)
       
-translate (App _ e1 e2) =
-  let (h1,b1) = translate e1
-      (h2,b2) = translate e2 in
+translate (App _ e1 e2) = do
+  (h1,b1) <- translate e1
+  (h2,b2) <- translate e2
+  if b2 then
+    do
+      fresh <- get
+      modify (+1)
+      return (h2 ++ " >>= \\ " ++ "_Var" ++ show fresh ++ " -> " ++ h1, b1 || b2)
+  else
+    return ("(" ++ h1 ++ " " ++  h2 ++ ")", False)
+
+translate (TypeApp _ e _) = translate e
+
+translate (Send _ e1 e2) = do
+  (h1, b1) <- translate e1
+  (h2, b2) <- translate e2
   if b2 then
     -- freshVar
-    (h2 ++ " >>= \\ " ++ "x1' " ++ " -> " ++ h1, b1 || b2)
+    do
+      fresh <- get
+      modify (+1)
+      return (h2 ++ " >>= \\" ++  "_Var" ++ show fresh ++ " -> " ++ "send " ++ h1, True)
   else
-    ("(" ++ h1 ++ " " ++  h2 ++ ")", False)
+    return ("(send (" ++ h1 ++ ")" ++ "(" ++  h2 ++ "))", True)
 
-translate (Send _ e1 e2) =
-  let (h1, b1) = translate e1
-      (h2, b2) = translate e2 in
-  if b2 then
-    -- freshVar
-    (h2 ++ " >>= \\" ++  "x2'" ++ " -> " ++ "send " ++ h1, True)
-  else
-    ("(send (" ++ h1 ++ ")" ++ "(" ++  h2 ++ "))", True)
-
-translate (Receive _ e) =
-  let (h1, b1) = translate e in
+translate (Receive _ e) = do
+  (h1, b1) <- translate e
   if b1 then
-    -- freshVar
-    ("\\" ++  "x3'" ++ " -> " ++ "receive " ++ h1, True)
+    do
+      fresh <- get
+      modify (+1)
+      return ("\\" ++ "_Var" ++ show fresh ++ " -> " ++ "receive " ++ h1, True)
   else
-    ("receive " ++ h1 , True)
+    return ("receive " ++ h1 , True)
 
-translate (New _ _) =
+translate (New _ _) = do
 --  let (h,_) = translate e in
-  ("new ", True)
+  return ("new ", True)
 
-translate (Fork _ e) =
-  let (h,_) = translate e in
-  ("fork " ++ h, True)
+translate (Fork _ e) = do
+  (h,_) <- translate e
+  return ("fork " ++ h, True)
 
-translate (Match _ e m) =
-  let (h1,_) = translate e
-      h2 = translateMatchMap m in
-  ("case " ++ h1 ++ " of " ++ h2, False)
+translate (Match _ e m) = do
+  (h1,_) <- translate e
+  h2 <- translateMatchMap m
+  return ("case " ++ h1 ++ " of " ++ h2, False)
 
-translate (Case _ e m) =
-  let (h1, _) = translate e
-      (h2, params) = translateCaseMap m in 
- --   if b1 then
-      -- fresh var
-      ("receive " ++ h1 ++ " >>= \\(" ++ "fRESH3" ++  ", " ++ (head params) ++ ") -> case "
-       ++ "fRESH3" ++ " of " ++ h2, False) 
-    -- else
-    --   ("b1 " ++ show b1 ++ " b2 " ++ show b2  ++ "\n" ++ "case " ++ h1 ++ " of " ++ h2, b2)
+translate (Case _ e m) = do
+  (h1, _) <- translate e
+  (h2, params) <- translateCaseMap m
+  fresh <- get
+  modify (+1)
+  let fvar = "_Var" ++ show fresh in
+    return ("receive " ++ h1 ++ " >>= \\(" ++ fvar ++  ", " ++ (head params) ++
+          ") -> case " ++ fvar ++ " of " ++ h2, False) 
 
-translate (Select _ l e) =
-  let (h, _) = translate e in
-    ("send \"" ++ l ++ "\" " ++ h, True)
+translate (Select _ l e) = do
+  (h, _) <- translate e
+  return ("send \"" ++ l ++ "\" " ++ h, True)
   
 
-translate e = (show e, True)
-
-
--- typeapp
--- select
--- case
-
-translateMatchMap = Map.foldlWithKey translateMatchMap' "" 
+translateMatchMap :: MatchMap -> TranslateMonad String
+translateMatchMap = Map.foldlWithKey translateMatchMap' (return "")
   where
-    translateMatchMap' acc v (params, e) =
-      let (h, _) = translate e in
-        acc ++ "\n    " ++ v ++ showParams params ++ " -> " ++ h ++ " "
+    translateMatchMap' acc v (params, e) = do
+      (h, _) <- translate e
+      acc' <- acc
+      return (acc' ++ "\n    " ++ v ++ showParams params ++ " -> " ++ h ++ " ")
 
 
-translateCaseMap = Map.foldlWithKey translateCaseMap' ("", [])
+translateCaseMap :: CaseMap -> TranslateMonad (String, [String])
+translateCaseMap = Map.foldlWithKey translateCaseMap' (return ("", []))
   where
-    translateCaseMap' acc v (param, e) =
-      let (h, _) = translate e in
-        (fst acc ++ "\n    \"" ++ v ++ "\" " ++ " -> "
-         ++ h ++ " >>= \\" ++ "fRESH5" ++ " -> return ()", snd acc ++ [param])
-    -- translateCaseExpr h =
-    --   let (x,y) = splitAt (last (findIndices (`elem` (">=" :: String)) h) + 1) h in
-    --     x ++ " return" ++ y
-        
+    translateCaseMap' acc v (param, e) = do
+      (h, _) <- translate e
+      acc' <- acc
+      fresh <- get
+      modify (+1) 
+      return (fst acc' ++ "\n    \"" ++ v ++ "\" " ++ " -> "
+         ++ h ++ " >>= \\" ++ "_Var" ++ show fresh ++ " -> return ()", snd acc' ++ [param])
