@@ -1,9 +1,9 @@
 
 testTypesValid :
-	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Types/TestTypesValidSpec.hs
+	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Types/TestTypesEqSpec.hs
 
 testTypesInvalid :
-	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Types/TestTypesInvalidSpec.hs
+	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Types/TestEqInvalidSpec.hs
 
 testShow :
 	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Types/TestShowValidSpec.hs

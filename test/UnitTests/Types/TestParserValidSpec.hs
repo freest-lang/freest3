@@ -96,10 +96,10 @@ spec = do
       (read "forall f :: TU => (f -o f) -> f" :: Type) `shouldBe` (Forall "f" (Kind Functional Un) (Fun Un (Fun Lin (Var "f")(Var "f")) (Var "f")))
     it "Skip;Skip;Skip" $ do
       (read "Skip;Skip;Skip" :: Type) `shouldBe` (Semi Skip (Semi Skip Skip))
-    it "forall Internal . (Internal,Int)" $ do
-      (read "forall Internal :: TU => (Internal,Int)" :: Type) `shouldBe` (Forall "Internal" (Kind Functional Un) (PairType (Var "Internal") (Basic IntType)))
-    it "forall Skiper . (Skiper,Int)" $ do
-      (read "forall Skiper :: TU => (Skiper,Int)" :: Type) `shouldBe` (Forall "Skiper" (Kind Functional Lin) (PairType (Var "Skiper") (Basic IntType)))
+    it "forall a . (a,Int)" $ do
+      (read "forall a :: TU => (a,Int)" :: Type) `shouldBe` (Forall "a" (Kind Functional Un) (PairType (Var "a") (Basic IntType)))
+    it "forall a . (a,Int)" $ do
+      (read "forall a :: TU => (a,Int)" :: Type) `shouldBe` (Forall "a" (Kind Functional Lin) (PairType (Var "a") (Basic IntType)))
     it "forall a . forall b . a -> {-A {-comment-} inside-} b" $ do
       (read "forall a :: TU => forall b :: TU => a -> {-A comment inside-} b" :: Type) `shouldBe` (Forall "a" (Kind Functional Un) (Forall "b" (Kind Functional Un) (Fun Un (Var "a") (Var "b"))))
 
