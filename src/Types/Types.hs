@@ -24,6 +24,7 @@ module Types.Types
 import Types.Kinds
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
+import Data.List -- intersperse
 
 -- BASIC TYPES
 
@@ -44,13 +45,16 @@ instance Show BasicType where
 
 type TypeVar = String
 
-
--- Const name
--- value -> Constructor
-
 type TypeMap = Map.Map TypeVar Type
 
-data ChoiceView = External | Internal deriving (Eq, Ord, Show)
+data ChoiceView =
+    External
+  | Internal
+  deriving (Eq, Ord)
+
+instance Show ChoiceView where
+  show External = "&"
+  show Internal = "+"
 
 data Type =
     Basic BasicType
@@ -68,30 +72,26 @@ data Type =
   deriving Ord
 
 instance Show Type where
-  show (Basic x) = show x
-  show Skip = "Skip"
-  show (Semi t u) = "(" ++ show t ++ ";" ++ show u ++ ")"
-  show (Out b) = "!" ++ show b
-  show (In b) = "?" ++ show b
-  show (Fun Lin t u) = showFun "-o" t u
-  show (Fun Un t u) = showFun "->" t u
-  show (PairType t u) =  "(" ++  show t ++ ", " ++ show u ++ ")"
-  show (Choice Internal t) = showChoice "+" t
-  show (Choice External t) = showChoice "&" t
-  show (Datatype t) =   "["++ showMap t ++"]"
-  show (Rec s k t) = "(rec " ++ id s ++ " :: " ++ show k ++" . " ++ show t ++ ")"
-  show (Forall s k t) = "(forall " ++ id s ++ " :: " ++ show k ++ " => " ++ show t ++ ")"
-  show (Var s) = id s
+  show (Basic b)      = show b
+  show Skip           = "Skip"
+  show (Semi t u)     = "(" ++ show t ++ ";" ++ show u ++ ")"
+  show (Out b)        = "!" ++ show b
+  show (In b)         = "?" ++ show b
+  show (Fun Lin t u)  = showFun t "-o" u
+  show (Fun Un t u)   = showFun t "->" u
+  show (PairType t u) = "(" ++  show t ++ ", " ++ show u ++ ")"
+  show (Choice v m)   = show v ++ "{" ++ showMap m ++ "}"
+  show (Datatype m)   = "["++ showMap m ++"]"
+  show (Rec x k t)    = "(rec " ++ x ++ " :: " ++ show k ++" . " ++ show t ++ ")"
+  show (Forall x k t) = "(forall " ++ x ++ " :: " ++ show k ++ " => " ++ show t ++ ")"
+  show (Var s)        = s
 
-showChoice :: String -> TypeMap -> String
-showChoice op map = op ++ "{" ++ showMap map ++ "}"
-
-showFun :: String -> Type -> Type -> String
-showFun op left right = "(" ++ show left ++ " " ++ op ++ " " ++ show right ++ ")"
+showFun :: Type -> String -> Type -> String
+showFun t op u = "(" ++ show t ++ " " ++ op ++ " " ++ show u ++ ")"
 
 showMap :: TypeMap -> String
-showMap m =
-  reverse $ drop 2 $ reverse (Map.foldlWithKey(\acc k v -> acc ++ id k ++ ":" ++ show v ++ ", ") "" m)
+showMap m = concat $ intersperse ", " (map showPair (Map.assocs m))
+  where showPair (k, v) = k ++ ": " ++ show v
 
 instance Eq Type where
   (==) = equals Set.empty
@@ -129,7 +129,7 @@ dual (Out b)      = In b
 dual (In b)       = Out b
 dual (Choice v m) = Choice (dualChoice v) (Map.map dual m)
 dual (Semi t1 t2) = Semi (dual t1) (dual t2)
-dual (Rec x k t)    = Rec x k (dual t)
+dual (Rec x k t)  = Rec x k (dual t)
 
 dualChoice :: ChoiceView -> ChoiceView
 dualChoice External = Internal
