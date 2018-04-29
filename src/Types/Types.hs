@@ -17,6 +17,7 @@ module Types.Types
 , TypeMap(..)
 , TypeVar
 , ChoiceView(..)
+, Bind(..)
 , dual
 , toList
 ) where
@@ -66,10 +67,12 @@ data Type =
   | PairType Type Type
   | Choice ChoiceView TypeMap
   | Datatype TypeMap
-  | Rec TypeVar Kind Type    -- TODO: Use 'Rec Bind Type'
+  | Rec Bind Type
   | Forall TypeVar Kind Type -- TODO: remove, use TypeScheme instead
   | Var TypeVar
   deriving Ord
+
+-- TYPES EQUALITY
 
 instance Eq Type where
   (==) = equalTypes Set.empty
@@ -79,7 +82,7 @@ equalTypes s Skip           Skip           = True
 equalTypes s (Var x)        (Var y)        = x == y || Set.member (x, y) s
 equalTypes s (Forall x k t) (Forall y w u) =
   k == w && equalTypes (Set.insert (x, y) s) t u
-equalTypes s (Rec x k t)    (Rec y w u)    =
+equalTypes s (Rec (Bind x k) t)    (Rec (Bind y w) u) =
   k == w && equalTypes (Set.insert (x, y) s) t u
 equalTypes s (Semi t1 t2)   (Semi u1 u2)   = equalTypes s t1 u1 && equalTypes s t2 u2
 equalTypes s (Basic x)      (Basic y)      = x == y
@@ -98,6 +101,8 @@ equalMaps s m1 m2 =
     Map.foldlWithKey(\b l t ->
       b && l `Map.member` m2 && equalTypes s t (m2 Map.! l)) True m1
 
+-- TYPES SHOW
+
 instance Show Type where
   show (Basic b)      = show b
   show Skip           = "Skip"
@@ -109,7 +114,7 @@ instance Show Type where
   show (PairType t u) = "(" ++  show t ++ ", " ++ show u ++ ")"
   show (Choice v m)   = show v ++ "{" ++ showMap m ++ "}"
   show (Datatype m)   = "["++ showMap m ++"]"
-  show (Rec x k t)    = "(rec " ++ x ++ " :: " ++ show k ++" . " ++ show t ++ ")"
+  show (Rec (Bind x k) t)    = "(rec " ++ x ++ " :: " ++ show k ++" . " ++ show t ++ ")"
   show (Forall x k t) = "(forall " ++ x ++ " :: " ++ show k ++ " => " ++ show t ++ ")"
   show (Var s)        = s
 
@@ -158,7 +163,7 @@ dual (Out b)      = In b
 dual (In b)       = Out b
 dual (Choice v m) = Choice (dualChoice v) (Map.map dual m)
 dual (Semi t1 t2) = Semi (dual t1) (dual t2)
-dual (Rec x k t)  = Rec x k (dual t)
+dual (Rec (Bind x k) t)  = Rec (Bind x k) (dual t)
 
 dualChoice :: ChoiceView -> ChoiceView
 dualChoice External = Internal

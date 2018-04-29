@@ -17,6 +17,7 @@ type TCheckM = Writer [String]
 
 typeCheck :: VarEnv -> ExpEnv -> ConstructorEnv -> KindEnv -> TCheckM ()
 typeCheck venv eenv cenv kenv = do
+--  error $ show eenv
   -- 1 - Data declaration
   checkDataDecl kenv cenv
   
@@ -68,7 +69,8 @@ checkExp kenv venv1 (UnLet _ x e1 e2) = do
 checkExp kenv venv1 (App p e1 e2) = do
    (t1, venv2) <- checkExp kenv venv1 e1
    (t2, t3) <- checkFun p t1
-   (t4, venv3) <- checkExp kenv venv2 e2 
+   (t4, venv3) <- checkExp kenv venv2 e2
+   -- error $ "\n\nERROR: \nt1: " ++ show t1 ++ "\nt2: "  ++ show t2 ++ "\nt3: "  ++ show t3 ++ "\nt4: "  ++ show t4 ++ "\n\n VENV: " ++ show venv2
    checkEquivTypes p kenv t2 t4
    return (t3, venv3)
 
@@ -78,7 +80,11 @@ checkExp kenv venv1 (TypeApp p e t) = do
   (v, c) <- checkForall p kenv t1
   checkKinding kenv t
   -- checkEquivKinds k k1
-  return (subs t v c, venv2)
+  let sub = subs t v c
+  let m = Map.insert (show e) sub venv2
+  -- error $ show sub ++ "\n" ++ show m
+  return (sub, m)
+          
   
 -- Conditional
 checkExp kenv venv1 (Conditional p e1 e2 e3) = do
@@ -131,9 +137,11 @@ checkExp kenv venv1 (Receive p e) = do
 
 checkExp kenv venv1 (Select p c e) = do
   (t,venv2) <- checkExp kenv venv1 e
+  let venv3 = checkInternalToVenv venv2 t
+--  error $ "\n\n ERR: \n t: " ++ show t ++ "\n venv2" ++show venv3
   -- error $ show (canonical t)
   checkInternalChoice p (canonical t)
-  checkVar p kenv venv1 c
+  checkVar p kenv venv3 c
 
 -- Fork
 checkExp kenv venv1 (Fork p e) = do
@@ -457,7 +465,7 @@ Conversion to list head normal form.
 TODO: the inductive definition of the output type; a proof that the the function outputs one such type.
 -}
 canonical :: Type -> Type
-canonical (Rec x k t)     = canonical $ unfold $ Rec x k t
+canonical (Rec (Bind x k) t)     = canonical $ unfold $ Rec (Bind x k) t
 canonical (Semi Skip t) = canonical t
 canonical (Semi (Choice cv tm) t2) =
   Choice cv (Map.map (\t -> if t == Skip then t2 else t `Semi` t2) tm)

@@ -41,10 +41,10 @@ equiv' s kenv (PairType t1 t2) (PairType t3 t4) =
   equiv s kenv t1 t3 && equiv s kenv t2 t4
 equiv' s kenv (Datatype dt1) (Datatype dt2) =
   Map.size dt1 == Map.size dt2 && Map.foldlWithKey (checkBinding kenv dt2 s) True dt1
-equiv' s kenv (Rec x k t1) t2 =
-  equiv (Set.insert ((Rec x k t1), t2) s) kenv (unfold (Rec x k t1)) t2
-equiv' s kenv t1 (Rec x k t2) =
-  equiv (Set.insert (t1, (Rec x k t2)) s) kenv t1 (unfold (Rec x k t2))
+equiv' s kenv (Rec (Bind x k) t1) t2 =
+  equiv (Set.insert ((Rec (Bind x k) t1), t2) s) kenv (unfold (Rec (Bind x k) t1)) t2
+equiv' s kenv t1 (Rec (Bind x k) t2) =
+  equiv (Set.insert (t1, (Rec (Bind x k) t2)) s) kenv t1 (unfold (Rec (Bind x k) t2))
 equiv' s kenv t1 t2
   | isSessionType kenv t1 && isSessionType kenv t2 = equivSessionTypes s kenv t1 t2
   | otherwise = False
@@ -74,16 +74,16 @@ reduce (Semi t1 t2)
     | terminated t1 = reduce t2
     | otherwise     = Map.map (\t -> if t == Skip then t2 else t `Semi` t2) (reduce t1)
 reduce (Choice v m) = Map.mapKeys (ChoiceLabel v) m
-reduce (Rec x k t)  = reduce (unfold (Rec x k t))
+reduce (Rec (Bind x k) t)  = reduce (unfold (Rec (Bind x k) t))
 reduce _            = Map.empty
 
 isRec :: Type -> Bool
-isRec (Rec _ _ _) = True
+isRec (Rec _  _) = True
 isRec _         = False
 
 -- Assumes parameter is a Rec type
 unfold :: Type -> Type
-unfold (Rec x k t) = subs (Rec x k t) x t
+unfold (Rec (Bind x k) t) = subs (Rec (Bind x k) t) x t
 
 subs :: Type -> TypeVar -> Type -> Type
 subs t y (Var x)
@@ -95,9 +95,9 @@ subs t2 y (Forall x k t1)
     | x == y                = Forall x k t1
     | otherwise             = Forall x k (subs t2 y t1)
 -- Assume y /= x 
-subs t2 y (Rec x k t1)
-    | x == y                = Rec x k t1
-    | otherwise             = Rec x k (subs t2 y t1)
+subs t2 y (Rec (Bind x k) t1)
+    | x == y                = Rec (Bind x k) t1
+    | otherwise             = Rec (Bind x k) (subs t2 y t1)
 subs t y (Choice v m)       = Choice v (Map.map(subs t y) m)
 subs t y (Fun m t1 t2)      = Fun m (subs t y t1) (subs t y t2)
 subs _ _ t                  = t

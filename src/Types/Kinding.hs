@@ -71,12 +71,12 @@ kinding kenv (Choice _ m) = do
   checkTypeMapCases ks (Kind Session Lin)
       ("One of the components in a choice isn't lower than a S^l. " ++ (show m))
 
-kinding kenv (Rec x k t) = do
+kinding kenv (Rec (Bind x k) t) = do
   -- TODO: Maybe the kinding function should also return kenv
   let kenv1 = (Map.insert x k kenv)
   k <- kinding kenv1 t
   checkContractivity kenv1 t
-  checkNotTypeScheme (Rec x k t) k 
+  checkNotTypeScheme (Rec (Bind x k) t) k 
   return k
 
 kinding kenv (Forall x k t) = do
@@ -163,7 +163,7 @@ multiplicity (Kind _ m) = m
 -- Contractivity
 contractive :: KindEnv -> Type -> Bool
 contractive kenv (Semi t _) = contractive kenv t
-contractive kenv (Rec _ _ t) = contractive kenv t
+contractive kenv (Rec _ t) = contractive kenv t
 contractive kenv (Var x) = Map.member x kenv
 contractive kenv (Forall _ _ t) = contractive kenv t
 contractive _ _ = True

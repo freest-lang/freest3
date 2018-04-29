@@ -132,7 +132,7 @@ parseRec = do
   k <- option (Kind Session Un) parseVarBind
   dot
   t <- typeExpr
-  return $ Rec id k t
+  return $ Rec (Bind id k) t
 
 parseForall :: Parsec String u Type
 parseForall = do
