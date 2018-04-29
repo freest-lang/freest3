@@ -135,6 +135,25 @@ instance Show Bind where
 
 -- TYPE SCHEMES
 
+{- alternative:
+
+data TypeScheme = TypeScheme [Bind] Type deriving Ord
+
+instance Eq TypeScheme where
+  (==) = equalSchemes Set.empty
+
+equalSchemes :: Set.Set (TypeVar, TypeVar) -> TypeScheme -> TypeScheme -> Bool
+equalSchemes s (TypeScheme [] t)     (TypeScheme [] u)     = equalTypes s t u
+equalSchemes s (TypeScheme (b:bs) t) (TypeScheme (c:cs) u) =
+  kind b == kind c && equalSchemes (Set.insert (var b, var c) s) (TypeScheme bs t) (TypeScheme cs u)
+
+instance Show TypeScheme where
+  show (TypeScheme bs t) = "forall " ++ showBindings bs ++ " => " ++ show t
+
+showBindings :: [Bind] -> String
+showBindings bs = concat $ intersperse ", " (map show bs)
+-}
+
 data TypeScheme =
     Polymorphic Bind TypeScheme
   | Monomorphic Type
