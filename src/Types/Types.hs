@@ -72,7 +72,7 @@ data Type =
   | Var TypeVar
   deriving Ord
 
--- TYPES EQUALITY
+-- TYPE EQUALITY
 
 instance Eq Type where
   (==) = equalTypes Set.empty
@@ -101,7 +101,7 @@ equalMaps s m1 m2 =
     Map.foldlWithKey(\b l t ->
       b && l `Map.member` m2 && equalTypes s t (m2 Map.! l)) True m1
 
--- TYPES SHOW
+-- TYPE SHOW
 
 instance Show Type where
   show (Basic b)      = show b
@@ -114,7 +114,7 @@ instance Show Type where
   show (PairType t u) = "(" ++  show t ++ ", " ++ show u ++ ")"
   show (Choice v m)   = show v ++ "{" ++ showMap m ++ "}"
   show (Datatype m)   = "["++ showMap m ++"]"
-  show (Rec (Bind x k) t)    = "(rec " ++ x ++ " :: " ++ show k ++" . " ++ show t ++ ")"
+  show (Rec b t)      = "(rec " ++ show b ++ " . " ++ show t ++ ")"
   show (Forall x k t) = "(forall " ++ x ++ " :: " ++ show k ++ " => " ++ show t ++ ")"
   show (Var s)        = s
 
@@ -128,7 +128,10 @@ showMap m = concat $ intersperse ", " (map showAssoc (Map.assocs m))
 -- TYPE VARIABLE BINDING
 
 data Bind = Bind {var :: TypeVar, kind :: Kind}
-  deriving (Eq, Ord)
+  deriving Ord
+
+instance Eq Bind where
+  b == c = kind b == kind c
 
 instance Show Bind where
   show b = var b ++ " :: " ++ show (kind b)
@@ -136,7 +139,7 @@ instance Show Bind where
 -- TYPE SCHEMES
 
 {- alternative:
-
+-}
 data TypeScheme = TypeScheme [Bind] Type deriving Ord
 
 instance Eq TypeScheme where
@@ -152,8 +155,8 @@ instance Show TypeScheme where
 
 showBindings :: [Bind] -> String
 showBindings bs = concat $ intersperse ", " (map show bs)
--}
 
+{-
 data TypeScheme =
     Polymorphic Bind TypeScheme
   | Monomorphic Type
@@ -170,7 +173,7 @@ equalSchemes s (Polymorphic b t) (Polymorphic c u) =
 instance Show TypeScheme where
   show (Monomorphic t)   = show t
   show (Polymorphic b s) = "forall " ++ show b ++ " => " ++ show s
-
+-}
 -- DUALITY
 
 -- The dual of a session type
