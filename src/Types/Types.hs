@@ -125,7 +125,7 @@ showMap :: TypeMap -> String
 showMap m = concat $ intersperse ", " (map showAssoc (Map.assocs m))
   where showAssoc (k, v) = k ++ ": " ++ show v
 
--- TYPE VARIABLE BINDING
+-- TYPE VARIABLE BINDINGS
 
 data Bind = Bind {var :: TypeVar, kind :: Kind}
   deriving Ord
@@ -138,17 +138,17 @@ instance Show Bind where
 
 -- TYPE SCHEMES
 
-{- alternative:
--}
 data TypeScheme = TypeScheme [Bind] Type deriving Ord
 
 instance Eq TypeScheme where
   (==) = equalSchemes Set.empty
 
 equalSchemes :: Set.Set (TypeVar, TypeVar) -> TypeScheme -> TypeScheme -> Bool
-equalSchemes s (TypeScheme [] t)     (TypeScheme [] u)     = equalTypes s t u
-equalSchemes s (TypeScheme (b:bs) t) (TypeScheme (c:cs) u) =
-  kind b == kind c && equalSchemes (Set.insert (var b, var c) s) (TypeScheme bs t) (TypeScheme cs u)
+equalSchemes s (TypeScheme bs t) (TypeScheme cs u) =
+  bs == cs && equalTypes (insertBinds bs cs s) t u
+
+insertBinds :: [Bind] -> [Bind] -> Set.Set (TypeVar, TypeVar) -> Set.Set (TypeVar, TypeVar)
+insertBinds bs cs s = foldr (\(b,c) -> Set.insert (var b, var c)) s (zip bs cs)
 
 instance Show TypeScheme where
   show (TypeScheme bs t) = "forall " ++ showBindings bs ++ " => " ++ show t
@@ -156,7 +156,7 @@ instance Show TypeScheme where
 showBindings :: [Bind] -> String
 showBindings bs = concat $ intersperse ", " (map show bs)
 
-{-
+{- Alternative:
 data TypeScheme =
     Polymorphic Bind TypeScheme
   | Monomorphic Type
@@ -174,6 +174,7 @@ instance Show TypeScheme where
   show (Monomorphic t)   = show t
   show (Polymorphic b s) = "forall " ++ show b ++ " => " ++ show s
 -}
+
 -- DUALITY
 
 -- The dual of a session type
