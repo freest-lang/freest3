@@ -15,6 +15,7 @@ module Types.Types
 ( TypeVar
 , Bind(..)
 , BasicType(..)
+, Constructor
 , TypeMap(..)
 , ChoiceView(..)
 , Type(..)
@@ -56,7 +57,9 @@ instance Show BasicType where
 
 -- TYPES
 
-type TypeMap = Map.Map TypeVar Type
+type Constructor = String
+
+type TypeMap = Map.Map Constructor Type
 
 data ChoiceView =
     External

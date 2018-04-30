@@ -1,3 +1,16 @@
+{- |
+Module      :  Types
+Description :  <optional short text displayed on contents page>
+Copyright   :  (c) <Authors or Affiliations>
+License     :  <license>
+
+Maintainer  :  <email>
+Stability   :  unstable | experimental | provisional | stable | frozen
+Portability :  portable | non-portable (<reason>)
+
+<module description starting at first column>
+-}
+
 module Types.TypeEquivalence(
   equivalent
 , unfold
@@ -10,76 +23,40 @@ import Types.Kinding
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
--- testar Show
--- testar igualdade rec inside rec and the same for ∀
--- (==) *Types.TypeEquivalence> let t1 = read "(forall x . !Int;x);forall y . !Bool;y" :: Type
--- Types.TypeEquivalence> let t2 = read "(forall y . !Int;y);forall x . !Bool;x" :: Type
--- sem parens
+-- GREIBACH NORMAL FORMS
 
--- Type bisimulation
+type Vars = [TypeVar]
 
-data Label = OutLabel BasicType |
-             InLabel BasicType |
-             ChoiceLabel ChoiceView TypeVar |
-             VarLabel TypeVar
-             deriving (Eq, Ord, Show)
+type Node = Set.Set (Vars, Vars)
+
+data Label =
+  ChoiceLabel ChoiceView TypeVar |
+  OutLabel BasicType |
+  InLabel BasicType |
+  VarLabel TypeVar
+  deriving (Eq, Ord, Show)
+
+data GNF = GNF {productions :: Map.Map (TypeVar, Label) Vars, start :: TypeVar}
+
+--convertToGNF :: Type -> (GNF
+
+
+-- TYPE EQUIVALENCE
 
 equivalent :: KindEnv -> Type -> Type -> Bool
-equivalent = equiv Set.empty
+equivalent _ _ _ = True
 
-equiv :: Set.Set(Type,Type) -> KindEnv -> Type -> Type -> Bool
-equiv s kenv t1 t2
-    | (t1, t2) `Set.member` s = True
-    | otherwise               = equiv' s kenv t1 t2
+{-
+bisim :: Word -> Word -> GNF -> Bool
+bisim w1 w2 = check [simplify (Set.singleton (w1, w2))]
 
-equiv' :: Set.Set(Type, Type) -> KindEnv -> Type -> Type -> Bool
-equiv' _ _ (Var x) (Var y) = x == y
-equiv' _ _ (Basic b) (Basic c) = b == c
-equiv' s kenv (Fun m1 t1 t2) (Fun m2 t3 t4)  =
-  m1 == m2 && (equiv s kenv t1 t3) && (equiv s kenv t2 t4)
-equiv' s kenv (PairType t1 t2) (PairType t3 t4) =
-  equiv s kenv t1 t3 && equiv s kenv t2 t4
-equiv' s kenv (Datatype dt1) (Datatype dt2) =
-  Map.size dt1 == Map.size dt2 && Map.foldlWithKey (checkBinding kenv dt2 s) True dt1
-equiv' s kenv (Rec (Bind x k) t1) t2 =
-  equiv (Set.insert ((Rec (Bind x k) t1), t2) s) kenv (unfold (Rec (Bind x k) t1)) t2
-equiv' s kenv t1 (Rec (Bind x k) t2) =
-  equiv (Set.insert (t1, (Rec (Bind x k) t2)) s) kenv t1 (unfold (Rec (Bind x k) t2))
-equiv' s kenv t1 t2
-  | isSessionType kenv t1 && isSessionType kenv t2 = equivSessionTypes s kenv t1 t2
-  | otherwise = False
+check :: [Node] -> GNF -> Bool
+check ns gnf =
+  Set.isempty ns || expandNode (head ns)
 
-equivSessionTypes :: Set.Set (Type, Type) -> KindEnv -> Type -> Type -> Bool 
-equivSessionTypes s kenv t1 t2 =
-  Map.size r1 == Map.size r2 && Map.foldlWithKey (checkBinding kenv r2 s) True r1      
-  where r1 = reduce t1
-        r2 = reduce t2
+-}
 
--- Used both for datatypes and for session types, hence the 'Ord k'
-checkBinding :: Ord k => KindEnv -> Map.Map k Type -> Set.Set (Type, Type) -> Bool -> k -> Type -> Bool
-checkBinding kenv tm s acc l t = acc && l `Map.member` tm && equiv s kenv (tm Map.! l) t
 
-terminated :: Type -> Bool
-terminated Skip = True
-terminated (Semi t1 t2) = terminated t1 && terminated t2
-terminated t
-    | isRec t = terminated (unfold t)
-    | otherwise = False
-
-reduce :: Type -> Map.Map Label Type
-reduce (Var x)      = Map.singleton (VarLabel x) Skip
-reduce (Out b)      = Map.singleton (OutLabel b) Skip
-reduce (In b)       = Map.singleton (InLabel b) Skip
-reduce (Semi t1 t2)
-    | terminated t1 = reduce t2
-    | otherwise     = Map.map (\t -> if t == Skip then t2 else t `Semi` t2) (reduce t1)
-reduce (Choice v m) = Map.mapKeys (ChoiceLabel v) m
-reduce (Rec (Bind x k) t)  = reduce (unfold (Rec (Bind x k) t))
-reduce _            = Map.empty
-
-isRec :: Type -> Bool
-isRec (Rec _  _) = True
-isRec _         = False
 
 -- Assumes parameter is a Rec type
 unfold :: Type -> Type
