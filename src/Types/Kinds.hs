@@ -17,7 +17,7 @@ module Types.Kinds
 , Kind (..)
 ) where
 
-data PreKind = Session | Functional  deriving (Eq, Ord, Read)
+data PreKind = Session | Functional deriving (Eq, Ord, Read)
 
 instance Show PreKind where
   show Session    = "S"

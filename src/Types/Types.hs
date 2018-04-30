@@ -12,21 +12,33 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Types.Types
-( BasicType(..)
-, Type(..)
-, TypeMap(..)
-, TypeVar
-, ChoiceView(..)
+( TypeVar
 , Bind(..)
-, TypeScheme(..)
+, BasicType(..)
+, Constructor
+, TypeMap(..)
+, ChoiceView(..)
+, Type(..)
 , dual
 , toList
 ) where
 
 import Types.Kinds
 import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
 import Data.List -- intersperse
+
+-- TYPE VARIABLE BINDINGS
+
+type TypeVar = String
+
+data Bind = Bind {var :: TypeVar, kind :: Kind}
+  deriving Ord
+
+instance Eq Bind where
+  b == c = kind b == kind c
+
+instance Show Bind where
+  show b = var b ++ " :: " ++ show (kind b)
 
 -- BASIC TYPES
 
@@ -45,9 +57,9 @@ instance Show BasicType where
 
 -- TYPES
 
-type TypeVar = String
+type Constructor = String
 
-type TypeMap = Map.Map TypeVar Type
+type TypeMap = Map.Map Constructor Type
 
 data ChoiceView =
     External
@@ -73,36 +85,37 @@ data Type =
   | Var TypeVar
   deriving Ord
 
--- TYPES EQUALITY
+-- Type equality
 
 instance Eq Type where
-  (==) = equalTypes Set.empty
+  (==) = equalTypes Map.empty
 
-equalTypes :: Set.Set (TypeVar, TypeVar) -> Type -> Type -> Bool
+equalTypes :: Map.Map TypeVar TypeVar -> Type -> Type -> Bool
 equalTypes s Skip           Skip           = True
-equalTypes s (Var x)        (Var y)        = x == y || Set.member (x, y) s
-equalTypes s (Forall x k t) (Forall y w u) =
-  k == w && equalTypes (Set.insert (x, y) s) t u
-equalTypes s (Rec (Bind x k) t)    (Rec (Bind y w) u) =
-  k == w && equalTypes (Set.insert (x, y) s) t u
+equalTypes s (Var x)        (Var y)        = equalVars (Map.lookup x s) x y
+equalTypes s (Forall x k t) (Forall y w u) = k == w && equalTypes (Map.insert x y s) t u
+equalTypes s (Rec b t)      (Rec c u)      = b == c && equalTypes (insertBind (b, c) s) t u
 equalTypes s (Semi t1 t2)   (Semi u1 u2)   = equalTypes s t1 u1 && equalTypes s t2 u2
 equalTypes s (Basic x)      (Basic y)      = x == y
 equalTypes s (Out x)        (Out y)        = x == y
 equalTypes s (In x)         (In y)         = x == y
-equalTypes s (Fun m t u)    (Fun n v w)    =
-  m == n && equalTypes s t v && equalTypes s u w
+equalTypes s (Fun m t u)    (Fun n v w)    = m == n && equalTypes s t v && equalTypes s u w
 equalTypes s (PairType t u) (PairType v w) = equalTypes s t v && equalTypes s u w
 equalTypes s (Datatype m1)  (Datatype m2)  = equalMaps s m1 m2
 equalTypes s (Choice v1 m1) (Choice v2 m2) = v1 == v2 && equalMaps s m1 m2
 equalTypes _ _              _              = False
 
-equalMaps :: Set.Set (TypeVar, TypeVar) -> TypeMap -> TypeMap -> Bool
+equalVars :: Maybe TypeVar -> TypeVar -> TypeVar -> Bool
+equalVars Nothing  x y = x == y
+equalVars (Just z) _ y = z == y
+
+equalMaps :: Map.Map TypeVar TypeVar -> TypeMap -> TypeMap -> Bool
 equalMaps s m1 m2 =
   Map.size m1 == Map.size m2 &&
     Map.foldlWithKey(\b l t ->
       b && l `Map.member` m2 && equalTypes s t (m2 Map.! l)) True m1
 
--- TYPES SHOW
+-- Type show
 
 instance Show Type where
   show (Basic b)      = show b
@@ -115,7 +128,7 @@ instance Show Type where
   show (PairType t u) = "(" ++  show t ++ ", " ++ show u ++ ")"
   show (Choice v m)   = show v ++ "{" ++ showMap m ++ "}"
   show (Datatype m)   = "["++ showMap m ++"]"
-  show (Rec (Bind x k) t)    = "(rec " ++ x ++ " :: " ++ show k ++" . " ++ show t ++ ")"
+  show (Rec b t)      = "(rec " ++ show b ++ " . " ++ show t ++ ")"
   show (Forall x k t) = "(forall " ++ x ++ " :: " ++ show k ++ " => " ++ show t ++ ")"
   show (Var s)        = s
 
@@ -126,31 +139,48 @@ showMap :: TypeMap -> String
 showMap m = concat $ intersperse ", " (map showAssoc (Map.assocs m))
   where showAssoc (k, v) = k ++ ": " ++ show v
 
--- TYPE VARIABLE BINDING
-
-data Bind = Bind {var :: TypeVar, kind :: Kind}
-  deriving (Eq, Ord)
-
-instance Show Bind where
-  show b = var b ++ " :: " ++ show (kind b)
-
 -- TYPE SCHEMES
 
 data TypeScheme = TypeScheme [Bind] Type deriving Ord
 
 instance Eq TypeScheme where
-  (==) = equalSchemes Set.empty
+  (==) = equalSchemes Map.empty
 
-equalSchemes :: Set.Set (TypeVar, TypeVar) -> TypeScheme -> TypeScheme -> Bool
-equalSchemes s (TypeScheme [] t)     (TypeScheme [] u)     = equalTypes s t u
-equalSchemes s (TypeScheme (b:bs) t) (TypeScheme (c:cs) u) =
-  kind b == kind c && equalSchemes (Set.insert (var b, var c) s) (TypeScheme bs t) (TypeScheme cs u)
+equalSchemes :: Map.Map TypeVar TypeVar -> TypeScheme -> TypeScheme -> Bool
+equalSchemes s (TypeScheme bs t) (TypeScheme cs u) =
+  bs == cs && equalTypes (insertBinds bs cs s) t u
+
+insertBinds :: [Bind] -> [Bind] -> Map.Map TypeVar TypeVar -> Map.Map TypeVar TypeVar
+insertBinds bs cs s = foldr insertBind s (zip bs cs)
+
+insertBind :: (Bind, Bind) -> Map.Map TypeVar TypeVar -> Map.Map TypeVar TypeVar
+insertBind (b, c) = Map.insert (var b) (var c)
 
 instance Show TypeScheme where
   show (TypeScheme bs t) = "forall " ++ showBindings bs ++ " => " ++ show t
 
 showBindings :: [Bind] -> String
 showBindings bs = concat $ intersperse ", " (map show bs)
+
+{- Alternative:
+data TypeScheme =
+    Polymorphic Bind TypeScheme
+  | Monomorphic Type
+  deriving Ord
+>>>>>>> 45035fd798ec0441baa9ef3170599e4aa9ff7f5c
+
+instance Eq TypeScheme where
+  (==) = equalSchemes Map.empty
+
+equalSchemes :: Map.Set (TypeVar, TypeVar) -> TypeScheme -> TypeScheme -> Bool
+equalSchemes s (Monomorphic t)   (Monomorphic u)   = equalTypes s t u
+equalSchemes s (Polymorphic b t) (Polymorphic c u) =
+  kind b == kind c && equalSchemes (Map.insert (var b, var c) s) t u
+
+instance Show TypeScheme where
+  show (Monomorphic t)   = show t
+  show (Polymorphic b s) = "forall " ++ show b ++ " => " ++ show s
+-}
 
 -- DUALITY
 
