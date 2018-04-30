@@ -18,6 +18,7 @@ module Types.Types
 , TypeVar
 , ChoiceView(..)
 , Bind(..)
+, TypeScheme(..)
 , dual
 , toList
 ) where
@@ -135,22 +136,21 @@ instance Show Bind where
 
 -- TYPE SCHEMES
 
-data TypeScheme =
-    Polymorphic Bind TypeScheme
-  | Monomorphic Type
-  deriving Ord
+data TypeScheme = TypeScheme [Bind] Type deriving Ord
 
 instance Eq TypeScheme where
   (==) = equalSchemes Set.empty
 
 equalSchemes :: Set.Set (TypeVar, TypeVar) -> TypeScheme -> TypeScheme -> Bool
-equalSchemes s (Monomorphic t)   (Monomorphic u)   = equalTypes s t u
-equalSchemes s (Polymorphic b t) (Polymorphic c u) =
-  kind b == kind c && equalSchemes (Set.insert (var b, var c) s) t u
+equalSchemes s (TypeScheme [] t)     (TypeScheme [] u)     = equalTypes s t u
+equalSchemes s (TypeScheme (b:bs) t) (TypeScheme (c:cs) u) =
+  kind b == kind c && equalSchemes (Set.insert (var b, var c) s) (TypeScheme bs t) (TypeScheme cs u)
 
 instance Show TypeScheme where
-  show (Monomorphic t)   = show t
-  show (Polymorphic b s) = "forall " ++ show b ++ " => " ++ show s
+  show (TypeScheme bs t) = "forall " ++ showBindings bs ++ " => " ++ show t
+
+showBindings :: [Bind] -> String
+showBindings bs = concat $ intersperse ", " (map show bs)
 
 -- DUALITY
 
@@ -172,5 +172,4 @@ dualChoice Internal = External
 toList :: Type -> [Type]
 toList (Fun _ t1 t2) = t1 : toList t2
 toList (Forall _ _ t) = toList t
--- toList (Semi t1 t2) = toList t1 ++ toList t2
 toList t = [t]
