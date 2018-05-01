@@ -1,90 +1,90 @@
 Int
-  Kind Functional Un
+  Kind {prekind = Functional, multiplicity = Un}
 Bool
-  Kind Functional Un
+  Kind {prekind = Functional, multiplicity = Un}
 Char
-  Kind Functional Un
+  Kind {prekind = Functional, multiplicity = Un}
 ()
-  Kind Functional Un
+  Kind {prekind = Functional, multiplicity = Un}
 Skip
-  Kind Session Un
+  Kind {prekind = Session, multiplicity = Un}
 !Int
-  Kind Session Lin
+  Kind {prekind = Session, multiplicity = Lin}
 !Char
-  Kind Session Lin
+  Kind {prekind = Session, multiplicity = Lin}
 ?Bool
-  Kind Session Lin
+  Kind {prekind = Session, multiplicity = Lin}
 ?Char
-  Kind Session Lin
+  Kind {prekind = Session, multiplicity = Lin}
 Int -> Bool
-  Kind Functional Un
+  Kind {prekind = Functional, multiplicity = Un}
 Int -o Bool
-  Kind Functional Lin
+  Kind {prekind = Functional, multiplicity = Lin}
 Char -> Skip
-  Kind Functional Un
+  Kind {prekind = Functional, multiplicity = Un}
 Char -o Skip
-  Kind Functional Lin
+  Kind {prekind = Functional, multiplicity = Lin}
 (Int,Bool)
-  Kind Functional Lin
+  Kind {prekind = Functional, multiplicity = Lin}
 (!Char,())
-  Kind Functional Lin
+  Kind {prekind = Functional, multiplicity = Lin}
 (!Int, Skip)
-  Kind Functional Lin
+  Kind {prekind = Functional, multiplicity = Lin}
 [a:Int,b:Bool]
-  Kind Functional Un
+  Kind {prekind = Functional, multiplicity = Un}
 !Int;?Bool
-  Kind Session Lin
+  Kind {prekind = Session, multiplicity = Lin}
 Skip;Skip
-  Kind Session Un
+  Kind {prekind = Session, multiplicity = Un}
 !Int;Skip
-  Kind Session Lin
+  Kind {prekind = Session, multiplicity = Lin}
 Skip;+{s:Skip,i:!Int}
-  Kind Session Lin
+  Kind {prekind = Session, multiplicity = Lin}
 rec x . ?Bool
-  Kind Session Lin
+  Kind {prekind = Session, multiplicity = Lin}
 rec x . Skip;Skip
-  Kind Session Un
+  Kind {prekind = Session, multiplicity = Un}
 rec x . !Int;Skip;?Int
-  Kind Session Lin
+  Kind {prekind = Session, multiplicity = Lin}
 rec x . x
-  Kind Session Un
+  Kind {prekind = Session, multiplicity = Un}
 
 rec Tree . &{Leaf:Skip, Node:?Int;Tree;Tree}
-  Kind Session Lin
+  Kind {prekind = Session, multiplicity = Lin}
 
 rec TreeChannel . +{Leaf:Skip, Node:!Int;TreeChannel;TreeChannel}
-  Kind Session Lin
+  Kind {prekind = Session, multiplicity = Lin}
 
 rec alpha . !Int;rec TreeChannel . +{Leaf:Skip, Node:!Int;TreeChannel;TreeChannel};rec TreeChannel . +{Leaf:Skip, Node:!Int;TreeChannel;TreeChannel};alpha
-  Kind Session Lin
+  Kind {prekind = Session, multiplicity = Lin}
 
 -- forall x . rec y . rec z . x;y;z
---   Kind Session Un
+--   Kind {prekind = Session, multiplicity = Un}
 --
 -- forall alpha . Int -> (!Int;alpha) -> alpha
---   Kind Functional Un
+--   Kind {prekind = Functional, multiplicity = Un}
 --
 -- forall a . Bool
---   Kind Functional Un
+--   Kind {prekind = Functional, multiplicity = Un}
 --
 -- forall x . x
---   Kind Session Un
+--   Kind {prekind = Session, multiplicity = Un}
 --
 -- forall x . !Int ; x
---   Kind Session Lin
+--   Kind {prekind = Session, multiplicity = Lin}
 --
 -- forall x . Int -> x
---   Kind Functional Un
+--   Kind {prekind = Functional, multiplicity = Un}
 --
 -- forall x . Int -o x
---   Kind Functional Lin
+--   Kind {prekind = Functional, multiplicity = Lin}
 --
 -- forall a . (forall b . a)
---   Kind Session Un
+--   Kind {prekind = Session, multiplicity = Un}
 --
 -- forall x . !Int;x;forall y . !Bool;y
---   Kind Session Lin
+--   Kind {prekind = Session, multiplicity = Lin}
 
 
 [AkKLKBCT:(Skip;Skip), GYQehuKQtFTvuoJYDV:(rec lMRIFeRtllKiX . Skip), RzOhNCsmXQBVHTAh:!Bool, WDOuqegDvdBjOFiNRklv:+{BYZaFBLcAMNIkmfD:Skip, DcGN:Skip, HRgBuAGbVDTFA:Skip, ITVqxvLWgyNvVzi:Skip, QeN:Skip, aUs:Skip, iMcWEScmBZA:Skip, nKXJbSr:Skip, nzFjfhEklznanrBzRWU:Skip, wJzcjltne:Skip, zJykoUZtO:Skip}, WkSnuEJqpMeCzcRXFI:&{CGkSnqZZawAc:Skip, HwcNqbwIGzjXtsqmi:Skip, JNZNPsZbuJTQXylhX:Skip, NHUpXnVcDGqfwltixfP:Skip, OQenTqDnrERr:Skip, ObJSbXCEbDfKdv:Skip, SUixpKUClmfnLezituio:Skip,UFDTpWCrOzdDbUNjTsf:Skip, WEvwge:Skip, X:Skip, aDPf:Skip, cHWvBCXOUmq:Skip, iTLuORGYySEJJ:Skip, nCuiDmRlmcPGpT:Skip, phVQWRRHcEpiCeyIfOFK:Skip, rdyjHqIm:Skip, zKMbbwnzqvrfT:Skip}, ZZEbPF:&{CideCVMnnmD:Skip, HieBFAzZVYauWfrF:Skip, WLm:Skip, mPZjrQ:Skip, nQ:Skip, wh:Skip, xLw:Skip}, ccpVoOhjH:?Char, efsMiBfSSiJShvhp:(rec ctLjdKvKCIK . Skip), vTATSQCHdfghziu:!Int, wqVBU:?Bool]
-  Kind Functional Lin
+  Kind {prekind = Functional, multiplicity = Lin}

@@ -323,14 +323,14 @@ checkExternalChoice _ _ _ t                    =
 checkSemi :: Pos -> Type -> TCheckM (Type, Type)
 checkSemi _ (Semi t1 t2) = return (t1, t2)
 checkSemi p t            = do
-  tell [show p ++ ": Expecting a sequential session type; found " ++ (show t)]
+  tell [show p ++ ": Expecting a sequential session type; found " ++ show t]
   return (Out IntType, Skip)
 
 -- Check multiplicity   
 
 checkUn :: Pos -> KindEnv -> Type -> TCheckM ()
 checkUn p kenv t
-  | un kenv t = return ()
+  | isUn kenv t = return ()
   | otherwise = tell [show p ++ ": Type " ++ show t ++ " is not unrestricted"]
 
 -- Type checking the case constructor
@@ -444,8 +444,8 @@ checkDataDecl kenv cenv = do
   Map.foldl (\_ t -> checkKinding kenv t) (return ()) cenv 
 
 checkKinding :: KindEnv -> Type -> TCheckM ()
-checkKinding kenv t -- = tell [ show $ isType kenv t, show t, show kenv]
-  | isType kenv t = return ()
+checkKinding kenv t -- = tell [ show $ isWellKindedType kenv t, show t, show kenv]
+  | isWellKindedType kenv t = return ()
   | otherwise = tell (kindErr kenv t)
 
 checkFunTypeDecl :: KindEnv -> VarEnv -> TermVar -> TCheckM ()
@@ -457,7 +457,7 @@ checkFunTypeDecl kenv venv  fname = do
 
 -- TODO: Change to tell an error
 -- checkTypeEnv :: TypeEnv -> TCheckM Bool
--- checkTypeEnv tenv = return $ Map.foldr (\(_,t) b -> b && isType kindEnv t) True tenv
+-- checkTypeEnv tenv = return $ Map.foldr (\(_,t) b -> b && isWellKindedType kindEnv t) True tenv
 --   where kindEnv = Map.map fst tenv
 
 {-

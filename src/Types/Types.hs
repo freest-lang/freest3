@@ -25,7 +25,7 @@ module Types.Types
 
 import Types.Kinds
 import qualified Data.Map.Strict as Map
-import Data.List -- intersperse
+import Data.List (intersperse)
 
 -- TYPE VARIABLE BINDINGS
 
@@ -167,7 +167,6 @@ data TypeScheme =
     Polymorphic Bind TypeScheme
   | Monomorphic Type
   deriving Ord
->>>>>>> 45035fd798ec0441baa9ef3170599e4aa9ff7f5c
 
 instance Eq TypeScheme where
   (==) = equalSchemes Map.empty
@@ -193,7 +192,7 @@ dual (Out b)      = In b
 dual (In b)       = Out b
 dual (Choice v m) = Choice (dualChoice v) (Map.map dual m)
 dual (Semi t1 t2) = Semi (dual t1) (dual t2)
-dual (Rec (Bind x k) t)  = Rec (Bind x k) (dual t)
+dual (Rec b t)    = Rec b (dual t)
 
 dualChoice :: ChoiceView -> ChoiceView
 dualChoice External = Internal

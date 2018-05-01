@@ -29,10 +29,20 @@ instance Show Multiplicity where
   show Un  = "U"
   show Lin = "L"
 
+data Kind = Kind {prekind :: PreKind, multiplicity :: Multiplicity}
+  deriving (Eq, Ord, Read)
+
+instance Show Kind where
+  show k = show (prekind k) ++ show (multiplicity k)
+
+{- Was:
+
 data Kind = Kind PreKind Multiplicity deriving (Eq, Ord, Read)
 
 instance Show Kind where
   show (Kind p m) = show p ++ show m
+-}
+
 
 {- Alternative. Worth the refactoring?
 
