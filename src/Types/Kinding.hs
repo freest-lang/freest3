@@ -1,12 +1,13 @@
 module Types.Kinding
-( isType
+( Kind (..)
+, KindEnv
+, isType
 , isSessionType
 --, isSchemeType
 , kindOf
 , kindErr
 , contractive
-, Kind (..)
-, KindEnv
+, kindOfScheme
 , un
 ) where
 
@@ -79,10 +80,10 @@ kinding kenv (Rec (Bind x k) t) = do
   checkNotTypeScheme (Rec (Bind x k) t) k 
   return k
 
-kinding kenv (Forall x k t) = do
-  k1 <- kinding (Map.insert x k kenv) t
-  -- TODO: Check k1 >= C^u
-  return $ k1
+-- TODO: ADD A Kinding function to typeschemes
+-- kinding kenv (Forall x k t) = do
+--   k1 <- kinding (Map.insert x k kenv) t
+--   return $ k1
   -- let kd = kinding (Map.insert x (Kind Session Un) kenv) t in
   -- case kd of
   --   -- TODO: k is the kinding of the variable and it is always Kind Session Un ?
@@ -90,6 +91,17 @@ kinding kenv (Forall x k t) = do
   --   (Left k') | k' <= (Kind Functional Lin) -> Left k'
   --   (Right m) -> Right m
   --   -- _ -> Right "Forall body is not a type Scheme"
+-- fst . runWriter
+kindOfScheme :: KindEnv -> TypeScheme -> Kind
+kindOfScheme kenv t = kinds (kindOfScheme' kenv t)
+  where kinds = fst . runWriter 
+
+kindOfScheme' :: KindEnv -> TypeScheme -> KindM Kind
+kindOfScheme' kenv (TypeScheme bs t) = do
+  k1 <- kinding (toMap kenv bs) t
+  return k1
+  where toMap kenv = foldr (\b acc -> Map.insert (var b) (kind b) acc) kenv  
+
 
 checkTypeMap :: KindEnv -> TypeMap -> Kind -> String -> KindM Kind
 checkTypeMap kenv tm k m = do--liftM $
@@ -165,7 +177,7 @@ contractive :: KindEnv -> Type -> Bool
 contractive kenv (Semi t _) = contractive kenv t
 contractive kenv (Rec _ t) = contractive kenv t
 contractive kenv (Var x) = Map.member x kenv
-contractive kenv (Forall _ _ t) = contractive kenv t
+-- contractive kenv (Forall _ _ t) = contractive kenv t
 contractive _ _ = True
 
 checkContractivity :: KindEnv -> Type -> KindM ()

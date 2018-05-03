@@ -19,6 +19,7 @@ module Types.Types
 , TypeMap(..)
 , ChoiceView(..)
 , Type(..)
+, TypeScheme(..)
 , dual
 , toList
 ) where
@@ -81,7 +82,7 @@ data Type =
   | Choice ChoiceView TypeMap
   | Datatype TypeMap
   | Rec Bind Type
-  | Forall TypeVar Kind Type -- TODO: remove, use TypeScheme instead
+--  | Forall TypeVar Kind Type -- TODO: remove, use TypeScheme instead
   | Var TypeVar
   deriving Ord
 
@@ -93,7 +94,7 @@ instance Eq Type where
 equalTypes :: Map.Map TypeVar TypeVar -> Type -> Type -> Bool
 equalTypes s Skip           Skip           = True
 equalTypes s (Var x)        (Var y)        = equalVars (Map.lookup x s) x y
-equalTypes s (Forall x k t) (Forall y w u) = k == w && equalTypes (Map.insert x y s) t u
+--equalTypes s (Forall x k t) (Forall y w u) = k == w && equalTypes (Map.insert x y s) t u
 equalTypes s (Rec b t)      (Rec c u)      = b == c && equalTypes (insertBind (b, c) s) t u
 equalTypes s (Semi t1 t2)   (Semi u1 u2)   = equalTypes s t1 u1 && equalTypes s t2 u2
 equalTypes s (Basic x)      (Basic y)      = x == y
@@ -129,7 +130,7 @@ instance Show Type where
   show (Choice v m)   = show v ++ "{" ++ showMap m ++ "}"
   show (Datatype m)   = "["++ showMap m ++"]"
   show (Rec b t)      = "(rec " ++ show b ++ " . " ++ show t ++ ")"
-  show (Forall x k t) = "(forall " ++ x ++ " :: " ++ show k ++ " => " ++ show t ++ ")"
+--  show (Forall x k t) = "(forall " ++ x ++ " :: " ++ show k ++ " => " ++ show t ++ ")"
   show (Var s)        = s
 
 showFun :: Type -> String -> Type -> String
@@ -167,7 +168,6 @@ data TypeScheme =
     Polymorphic Bind TypeScheme
   | Monomorphic Type
   deriving Ord
->>>>>>> 45035fd798ec0441baa9ef3170599e4aa9ff7f5c
 
 instance Eq TypeScheme where
   (==) = equalSchemes Map.empty
@@ -201,5 +201,5 @@ dualChoice Internal = External
 
 toList :: Type -> [Type]
 toList (Fun _ t1 t2) = t1 : toList t2
-toList (Forall _ _ t) = toList t
+-- toList (Forall _ _ t) = toList t
 toList t = [t]

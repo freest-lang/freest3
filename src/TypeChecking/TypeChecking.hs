@@ -37,15 +37,15 @@ typeCheck venv eenv cenv kenv = do
 
 checkFD :: VarEnv -> KindEnv -> TermVar -> Params -> Expression -> TCheckM ()
 checkFD venv kenv fname args exp = do
-  venv4 <- checkExpEnv (0,0) kenv venv fname args
+  venv1 <- checkExpEnv (0,0) kenv venv fname args
   --  checkTypeEnv tenv
-  (t, venv5) <- checkExp kenv venv4 exp
+  (t, venv2) <- checkExp kenv venv1 exp
 
-  let lastType = last $ toList $ venv5 Map.! fname
+  let lastType = last $ toList $ venv Map.! fname
 
   checkEquivTypes (0,0) kenv t lastType 
 
-  checkVEnvUn kenv venv5
+  checkVEnvUn kenv venv2
   return ()
 
 -- Ensures: the type in the result is canonical
@@ -70,7 +70,6 @@ checkExp kenv venv1 (App p e1 e2) = do
    (t1, venv2) <- checkExp kenv venv1 e1
    (t2, t3) <- checkFun p t1
    (t4, venv3) <- checkExp kenv venv2 e2
-   -- error $ "\n\nERROR: \nt1: " ++ show t1 ++ "\nt2: "  ++ show t2 ++ "\nt3: "  ++ show t3 ++ "\nt4: "  ++ show t4 ++ "\n\n VENV: " ++ show venv2
    checkEquivTypes p kenv t2 t4
    return (t3, venv3)
 
@@ -146,17 +145,19 @@ checkExp kenv venv1 (Select p c e) = do
 -- Fork
 checkExp kenv venv1 (Fork p e) = do
   (t, venv2) <- checkExp kenv venv1 e 
+  -- TODO: t == unit
+  checkUnit p t
   checkUn p kenv t
   return (Basic UnitType, venv2)
 
 -- Datatypes
 checkExp kenv venv (Constructor p c) = checkVar p kenv venv c
 
-checkExp kenv venv1 (Match p e m) = do
+checkExp kenv venv1 (Case p e m) = do
   (t, venv2) <- checkExp kenv venv1 e
   -- check datatype?
   checkEquivConstructors p kenv venv2 t m
-  l <- checkMatchMap p kenv venv2 e m
+  l <- checkCaseMap p kenv venv2 e m
 
   let ts = (map fst l)
   let venvs1 = (map snd l)
@@ -168,12 +169,12 @@ checkExp kenv venv1 (Match p e m) = do
   return (head ts, head venvs2)
 
 --checkExp kenv venv t = 
-checkExp kenv venv1 (Case p e cm) = do
+checkExp kenv venv1 (Match p e cm) = do
   (t, venv2) <- checkExp kenv venv1 e
   checkExternalChoice p kenv venv2 (canonical t)
   venv3 <- choiceConst venv2 t
   -- checkEquivConstructors kenv venv2 t cm
-  l <- checkCaseMap p kenv venv3 e cm
+  l <- checkMatchMap p kenv venv3 e cm
 
   let ts = (map fst l)
   let venvs1 = (map snd l)
@@ -192,7 +193,7 @@ checkVar pos kenv venv x
   | Map.member x venv = return $ checkUnLinVar venv (kindOf kenv t) t x
   | otherwise         = do
       tell [show pos ++  ": Variable or data constructor not in scope: " ++ x]
-      return (Basic UnitType, venv)
+      return (Basic UnitType, venv) 
   where
     t = venv Map.! x
   
@@ -252,6 +253,12 @@ checkEquivBasics p b1 b2
 checkBool :: Pos -> Type -> TCheckM ()
 checkBool _ (Basic BoolType) = return ()
 checkBool p t                = tell [show p ++ ": Expecting a boolean type; found " ++ (show t)]
+
+checkUnit :: Pos -> Type -> TCheckM ()
+checkUnit _ (Basic UnitType) = return ()
+-- checkUnit _ Skip = return ()
+checkUnit p t = tell [show p ++ ": Expecting a unit type; found " ++ (show t)]
+
 
 checkFun :: Pos -> Type -> TCheckM (Type, Type)
 checkFun _ (Fun _ t1 t2)     = return (t1, t2)
@@ -335,12 +342,12 @@ checkUn p kenv t
 
 -- Type checking the case constructor
 
-checkCaseMap :: Pos -> KindEnv -> VarEnv -> Expression -> CaseMap -> TCheckM [(Type, VarEnv)]
-checkCaseMap p kenv venv e cm = 
-  Map.foldrWithKey' (checkCaseBranch p kenv venv e) (return []) cm
+checkMatchMap :: Pos -> KindEnv -> VarEnv -> Expression -> MatchMap -> TCheckM [(Type, VarEnv)]
+checkMatchMap p kenv venv e cm = 
+  Map.foldrWithKey' (checkMatchBranch p kenv venv e) (return []) cm
 
-checkCaseBranch :: Pos -> KindEnv -> VarEnv -> Expression -> TypeVar -> (TermVar, Expression) -> TCheckM [(Type, VarEnv)] -> TCheckM [(Type, VarEnv)]
-checkCaseBranch p kenv venv e c (param, exp) acc = do
+checkMatchBranch :: Pos -> KindEnv -> VarEnv -> Expression -> TypeVar -> (TermVar, Expression) -> TCheckM [(Type, VarEnv)] -> TCheckM [(Type, VarEnv)]
+checkMatchBranch p kenv venv e c (param, exp) acc = do
   (t, venv1) <- checkVar p kenv venv c
   -- add to list
   paramTypeList <- addToEnv p c [param] ( (toList t))
@@ -353,7 +360,7 @@ choiceConst :: VarEnv -> Type -> TCheckM VarEnv
 choiceConst venv (Choice _ tm) = return $ Map.union tm venv
 choiceConst venv _ = return $ venv
 
-checkFinalEnvs :: [VarEnv] -> CaseMap -> TCheckM [VarEnv]
+checkFinalEnvs :: [VarEnv] -> MatchMap -> TCheckM [VarEnv]
 checkFinalEnvs venvs1 cm = 
   return $ map (\x -> finalEnv x cm) venvs1 
   where
@@ -362,7 +369,7 @@ checkFinalEnvs venvs1 cm =
 
 -- Type checking the match constructor
 
-checkEquivConstructors :: Pos -> KindEnv -> VarEnv -> Type -> MatchMap -> TCheckM ()
+checkEquivConstructors :: Pos -> KindEnv -> VarEnv -> Type -> CaseMap -> TCheckM ()
 checkEquivConstructors p kenv venv t cm =
    Map.foldrWithKey' (\c _ _ -> checkContructor p kenv venv c t) (return ()) cm
 
@@ -372,12 +379,12 @@ checkContructor p kenv venv c t1 = do
   checkEquivTypes p kenv (last (toList t2)) t1
   return ()
 
-checkMatchMap :: Pos -> KindEnv -> VarEnv -> Expression -> MatchMap -> TCheckM [(Type, VarEnv)]
-checkMatchMap p kenv venv e cm =
-   Map.foldrWithKey' (checkMatchBranch p kenv venv e) (return []) cm
+checkCaseMap :: Pos -> KindEnv -> VarEnv -> Expression -> CaseMap -> TCheckM [(Type, VarEnv)]
+checkCaseMap p kenv venv e cm =
+   Map.foldrWithKey' (checkCaseBranch p kenv venv e) (return []) cm
 
-checkMatchBranch :: Pos -> KindEnv -> VarEnv -> Expression -> TypeVar -> (Params, Expression) -> TCheckM [(Type, VarEnv)] -> TCheckM [(Type, VarEnv)]
-checkMatchBranch p kenv venv e c (params, exp) acc = do
+checkCaseBranch :: Pos -> KindEnv -> VarEnv -> Expression -> TypeVar -> (Params, Expression) -> TCheckM [(Type, VarEnv)] -> TCheckM [(Type, VarEnv)]
+checkCaseBranch p kenv venv e c (params, exp) acc = do
   (t, venv1) <- checkVar p kenv venv c
   paramTypeList <- addToEnv p c params (init (toList t))
   let venv2 = Map.union (Map.fromList paramTypeList) venv1
@@ -389,7 +396,7 @@ checkMatchBranch p kenv venv e c (params, exp) acc = do
 checkExpVar venv (Variable _ c) t = Map.insert c t venv
 checkExpVar venv _ _  = venv
 
-checkFinalMatchEnvs :: [VarEnv] -> MatchMap -> TCheckM [VarEnv]
+checkFinalMatchEnvs :: [VarEnv] -> CaseMap -> TCheckM [VarEnv]
 checkFinalMatchEnvs venvs1 cm = 
   return $ map (\x -> finalEnv x cm) venvs1 
   where
@@ -401,10 +408,10 @@ addToEnv :: Pos -> TypeVar -> Params -> [Type] -> TCheckM [(TypeVar, Type)]
 addToEnv p c ps ts 
   | length ps == length ts = return $ zip ps (map canonical ts)
   | length ps > length ts = do
-      tell ["Function or constructor " ++ (show c) ++ " is applied to too many arguments"]
+      tell ["Function or constructor " ++ show c ++ " is applied to too many arguments"]
       return []
   | length ps < length ts = do
-      tell ["Function or constructor " ++ (show c) ++ " is applied to too few arguments"]
+      tell ["Function or constructor " ++ show c ++ " is applied to too few arguments"]
       return []
 
 -- Expression environments

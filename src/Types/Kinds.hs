@@ -17,19 +17,19 @@ module Types.Kinds
 , Kind (..)
 ) where
 
-data PreKind = Session | Functional deriving (Eq, Ord, Read)
+data PreKind = Session | Functional deriving (Eq, Ord)
 
 instance Show PreKind where
   show Session    = "S"
   show Functional = "T"
 
-data Multiplicity = Un | Lin deriving (Eq, Ord, Read)
+data Multiplicity = Un | Lin deriving (Eq, Ord)
 
 instance Show Multiplicity where
   show Un  = "U"
   show Lin = "L"
 
-data Kind = Kind PreKind Multiplicity deriving (Eq, Ord, Read)
+data Kind = Kind PreKind Multiplicity deriving (Eq, Ord)
 
 instance Show Kind where
   show (Kind p m) = show p ++ show m
