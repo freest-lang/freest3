@@ -4,12 +4,13 @@ start =
   let x = fork (client w) in
   let n, r1 = receive r in
   let r2 = send (n >= 0) r1 in
-  ()  
+  ()
+  
 
 
-client :: !Int;?Bool;Skip -> Bool
+client :: !Int;?Bool;Skip -> ()
 client c =
   let c1 = send 5 c in
   let b, c2 = receive c1
-  in b
+  in ()
 

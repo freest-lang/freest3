@@ -1,15 +1,17 @@
 
-mathServer :: &{Opp: ?Int;!Int;Skip, Plus: ?Int;?Int;!Int;Skip} -> Skip
+mathServer :: &{Opp: ?Int;!Int;Skip, Plus: ?Int;?Int;!Int;Skip} -> ()
 mathServer c =
-  case c of
+  match c with
     Opp c1 ->
       let n, c2 = receive c1 in
-      send (-n) c2
-      
+      let x = send (-n) c2 in
+      ()
+
     Plus c1 ->
       let n1, c2 = receive c1 in
       let n2, c3 = receive c2 in
-      send (n1+n2) c3  
+      let x = send (n1+n2) c3 in
+      ()
         
           
 start :: Int
@@ -21,8 +23,3 @@ start =
   let r1 = send 18 w2 in
   let x, w1 = receive r1 in
   x
-
-
-  
- 
-        
