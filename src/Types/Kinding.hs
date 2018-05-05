@@ -14,24 +14,13 @@ Portability :  portable | non-portable (<reason>)
 module Types.Kinding
 ( Kind (..)
 , KindEnv
-<<<<<<< HEAD
-, isType
-, isSessionType
---, isSchemeType
-=======
->>>>>>> 0ee90bda6154fd550c8487d6357acad9f69a255a
 , kindOf
 , isWellKindedType
 , isSessionType
 , isContractive
 , isUn
 , kindErr
-<<<<<<< HEAD
-, contractive
 , kindOfScheme
-, un
-=======
->>>>>>> 0ee90bda6154fd550c8487d6357acad9f69a255a
 ) where
 
 import qualified Data.Map.Strict as Map
@@ -83,23 +72,18 @@ kinding kenv (Rec (Bind x k) t) = do
   let kenv1 = (Map.insert x k kenv)
   k <- kinding kenv1 t
   checkContractivity kenv1 t
-  -- checkNotTypeScheme (Rec (Bind x k) t) k 
+  -- checkNotTypeScheme (Rec (Bind x k) t) k 33
   return k
-<<<<<<< HEAD
 
 -- TODO: ADD A Kinding function to typeschemes
 -- kinding kenv (Forall x k t) = do
 --   k1 <- kinding (Map.insert x k kenv) t
+--   -- TODO: Check k1 >= C^u
 --   return $ k1
-  -- let kd = kinding (Map.insert x (Kind Session Un) kenv) t in
-  -- case kd of
-  --   -- TODO: k is the kinding of the variable and it is always Kind Session Un ?
-  --   -- (Left k') | k' >= (Kind Scheme Un) -> Left k'
-  --   (Left k') | k' <= (Kind Functional Lin) -> Left k'
-  --   (Right m) -> Right m
-  --   -- _ -> Right "Forall body is not a type Scheme"
+  
 -- fst . runWriter
 kindOfScheme :: KindEnv -> TypeScheme -> Kind
+kindOfScheme kenv (TypeScheme [] t) = kindOf kenv t
 kindOfScheme kenv t = kinds (kindOfScheme' kenv t)
   where kinds = fst . runWriter 
 
@@ -109,16 +93,10 @@ kindOfScheme' kenv (TypeScheme bs t) = do
   return k1
   where toMap kenv = foldr (\b acc -> Map.insert (var b) (kind b) acc) kenv  
 
-=======
-kinding kenv (Forall x k t) = do
-  k1 <- kinding (Map.insert x k kenv) t
-  -- TODO: Check k1 >= C^u
-  return $ k1
 
 -- Used when an error is found
 topKind :: Kind
 topKind = Kind Functional Lin
->>>>>>> 0ee90bda6154fd550c8487d6357acad9f69a255a
 
 checkTypeMap :: KindEnv -> TypeMap -> Kind -> String -> KindM Kind
 checkTypeMap kenv tm k m = do--liftM $
@@ -158,7 +136,7 @@ isContractive :: KindEnv -> Type -> Bool
 isContractive kenv (Semi t _) = isContractive kenv t
 isContractive kenv (Rec _ t)  = isContractive kenv t
 isContractive kenv (Var x)    = Map.member x kenv
-isContractive kenv (Forall _ _ t) = isContractive kenv t
+-- isContractive kenv (Forall _ _ t) = isContractive kenv t
 isContractive _    _          = True
 
 -- Check the contractivity of a given type; issue an error if not
@@ -174,8 +152,12 @@ isWellKindedType kenv t = null $ snd $ runWriter (kinding kenv t)
 isSessionType :: KindEnv -> Type -> Bool
 isSessionType kenv t =  prekind (kindOf kenv t) == Session
 
-isUn :: KindEnv -> Type -> Bool
-isUn kenv t = multiplicity (kindOf kenv t) == Un 
+isUn :: KindEnv -> TypeScheme -> Bool
+isUn kenv t = multiplicity (kindOfScheme kenv t) == Un 
+
+-- WAS: 
+-- isUn :: KindEnv -> Type -> Bool
+-- isUn kenv t = multiplicity (kindOf kenv t) == Un 
 
 kindErr :: KindEnv -> Type -> [String]
 kindErr kenv t = err (kinding kenv t)

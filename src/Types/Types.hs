@@ -82,7 +82,7 @@ data Type =
   | Choice ChoiceView TypeMap
   | Datatype TypeMap
   | Rec Bind Type
---  | Forall TypeVar Kind Type -- TODO: remove, use TypeScheme instead
+  | Forall TypeVar Kind Type -- TODO: remove, use TypeScheme instead
   | Var TypeVar
   deriving Ord
 
@@ -199,7 +199,14 @@ dualChoice :: ChoiceView -> ChoiceView
 dualChoice External = Internal
 dualChoice Internal = External
 
-toList :: Type -> [Type]
-toList (Fun _ t1 t2) = t1 : toList t2
+toList :: TypeScheme -> [TypeScheme]
+toList (TypeScheme b (Fun _ t1 t2)) = (TypeScheme b t1) : toList (TypeScheme b t2)
 -- toList (Forall _ _ t) = toList t
 toList t = [t]
+
+{- WAS:
+toList :: Type -> [Type]
+toList (Fun _ t1 t2) = t1 : toList t2
+toList (Forall _ _ t) = toList t
+toList t = [t]
+-}

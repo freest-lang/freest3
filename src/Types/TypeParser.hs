@@ -108,7 +108,6 @@ parseTerm =
   <|> parseInternalChoice
   <|> squares parseDataType
   <|> parseRec
-  <|> parseForall
   <|> parseVar
   <?> "a type: Skip, T;T, !B, ?B, B, T->T, T-oT, (T,T), id, rec id.T, or forall id.t"
 
@@ -133,18 +132,7 @@ parseRec = do
   dot
   t <- typeExpr
   return $ Rec (Bind id k) t
-
-parseForall :: Parsec String u Type
-parseForall = do
-  forall
-  bindings <- commaSep1 (do {id <- identifier; k <- parseVarBind; return (id, k)})
-  reserved "=>"  
-  t <- typeExpr
-  return $ foldl apply (inner (last bindings) t) (init bindings)
-  where
-    inner (id, k) t = Forall id k t
-    apply acc (id, k) = Forall id k acc
-
+ 
 parseInternalChoice :: Parsec String u Type
 parseInternalChoice = do
   reservedOp "+"

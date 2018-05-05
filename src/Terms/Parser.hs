@@ -30,7 +30,7 @@ lexer =
            [ "send", "receive", "()", "new", "in", "let"
            , "fork", "match", "with", "select", "case"
            , "of", "True", "False"
-           , "if", "then", "else", "type", "data"
+           , "if", "then", "else", "type", "data", "forall"
            ]
        }       
     )
@@ -51,7 +51,8 @@ squares = Token.squares lexer
 apostrophe p = between (string "'") (string "'") p
 constructor = lookAhead upper >> identifier
 lowerIdentifier = lookAhead lower >> identifier
-
+commaSep1 = Token.commaSep1 lexer
+commaSep = Token.commaSep lexer
 
 -- PARSER
 type ParserOut = (VarEnv, ExpEnv, ConstructorEnv, KindEnv)
@@ -86,8 +87,20 @@ parseTypeSignature = do
   colon
   colon
 --  optional $ try $ parseTypeBinding
-  t <- parseType
+  t <- (do {t1 <- parseType; return (TypeScheme [] t1)} <|> parseTypeScheme)
   modifyState (changeVEnv id t)
+
+parseTypeScheme :: CFSTSubParser TypeScheme
+parseTypeScheme = do
+  reserved "forall"
+  bindings <- commaSep1 (do {id <- identifier; k <- parseVarBind; return $ Bind id k})
+  reserved "=>"  
+  t <- parseType
+  return $ TypeScheme bindings t
+    -- foldl apply (inner (last bindings) t) (init bindings)
+  -- where
+  --   inner (id, k) t = Forall id k t
+  --   apply acc (id, k) = Forall id k acc
 
 parseFunction :: CFSTSubParser ()
 parseFunction = do
@@ -118,9 +131,9 @@ parseDataType = do
   reservedOp "="
   ts <- sepBy1 parseTypeComponents (lexeme (char '|'))
   let bindingList = types c ts
-  mapM (\(tc, v) -> modifyState (changeCEnv tc v)) bindingList
+  mapM (\(tc, v) -> modifyState (changeCEnv tc (TypeScheme [] v))) bindingList
   modifyState (changeKEnv c k)
-  modifyState (changeVEnv c (Datatype (Map.fromList bindingList)))
+  modifyState (changeVEnv c (TypeScheme [] (Datatype (Map.fromList bindingList))))
   return ()
 
   where
@@ -332,34 +345,34 @@ parseFork = do
   
 -- Parse Datatypes
 -- parseValue
-parseCase :: CFSTSubParser Expression
-parseCase = do
-  reserved "case"
-  pos <- getPosition
-  e <- parseExpr
-  reserved "of"
-  v <- many1 parseCaseValues  
-  return $ Case (posPair pos) e (Map.fromList v)
-
-parseCaseValues :: CFSTSubParser (String, (String, Expression))
-parseCaseValues = do
-  c <- constructor
-  id <- lowerIdentifier
-  reservedOp "->"
-  e <- parseExpr
-  return $ (c, (id, e))
-
 parseMatch :: CFSTSubParser Expression
 parseMatch = do
   reserved "match"
   pos <- getPosition
   e <- parseExpr
   reserved "with"
-  v <- many1 parseMatchValues
+  v <- many1 parseMatchValues  
   return $ Match (posPair pos) e (Map.fromList v)
 
-parseMatchValues :: CFSTSubParser (String, ([String], Expression))
+parseMatchValues :: CFSTSubParser (String, (String, Expression))
 parseMatchValues = do
+  c <- constructor
+  id <- lowerIdentifier
+  reservedOp "->"
+  e <- parseExpr
+  return $ (c, (id, e))
+
+parseCase :: CFSTSubParser Expression
+parseCase = do
+  reserved "case"
+  pos <- getPosition
+  e <- parseExpr
+  reserved "of"
+  v <- many1 parseCaseValues
+  return $ Case (posPair pos) e (Map.fromList v)
+
+parseCaseValues :: CFSTSubParser (String, ([String], Expression))
+parseCaseValues = do
   c <- constructor
   ids <- (many lowerIdentifier)
   reservedOp "->"
@@ -388,16 +401,18 @@ parseTypeApp :: CFSTSubParser Expression
 parseTypeApp = try $ do
   pos <- getPosition
   c <- parseVariable
-  ts <- many1 $ squares $ parseType
+  ts <- squares $ commaSep parseType
   e <- many parseExpr  -- (try $ parens parseExpression)
 --  error $ show ts
   let p = posPair pos
-  return $ foldl (apply p) (appTypeApp p c ts) e
+--  return $ TypeApp p c ts e)
+  return $ foldl (apply p) (TypeApp p c ts) e
+  -- return $ foldl (apply p) (appTypeApp p c ts) e
   where
-    appTypeApp p c ts = foldl (applyType p) (TypeApp p c (head ts)) (tail ts)
-    applyType p acc t = TypeApp p acc t
-    apply p acc e = App p acc e
-
+  --   appTypeApp p c ts = foldl (applyType p) (TypeApp p c (head ts)) (tail ts)
+  --   applyType p acc t = TypeApp p acc t
+     apply p acc e = App p acc e
+ 
 constructApp :: CFSTSubParser Expression
 constructApp = try $ do 
   pos <- getPosition
@@ -412,7 +427,7 @@ constructApp = try $ do
 -- Helper functions to manage ParserOut
 -- Get and insert elements for each element of ParserOut n-tuple
 
-changeVEnv :: TermVar -> Type -> ParserOut -> ParserOut
+changeVEnv :: TypeVar -> TypeScheme -> ParserOut -> ParserOut
 changeVEnv k v (m1,m2,m3,m4) = (Map.insert k v m1, m2, m3, m4)
 
 getVEnv :: ParserOut -> VarEnv
@@ -421,7 +436,7 @@ getVEnv (m1,_,_,_) = m1
 changeEEnv :: TermVar -> (Params, Expression) -> ParserOut -> ParserOut
 changeEEnv k v (m1,m2,m3,m4) = (m1, Map.insert k v m2, m3, m4)
 
-changeCEnv :: TermVar -> Type -> ParserOut -> ParserOut
+changeCEnv :: TermVar -> TypeScheme -> ParserOut -> ParserOut
 changeCEnv k v (m1,m2,m3,m4) = (m1, m2, Map.insert k v m3, m4)
 
 getCEnv :: ParserOut -> ConstructorEnv
@@ -447,7 +462,7 @@ posPair pos = (sourceLine pos, sourceColumn pos)
 
 --TODO: remove (test purposes)
 run = mainProgram path Map.empty
---path = "src/test.hs"
-path = "/home/balmeida/workspaces/ContextFreeSession/test/Programs/ValidTests/dot/dot.hs"
+path = "src/test.hs"
+--path = "/home/balmeida/workspaces/ContextFreeSession/test/Programs/ValidTests/dot/dot.hs"
 --path = "/home/balmeida/workspaces/ContextFreeSession/test/Programs/ValidTests/sendTree/sendTree.hs"
 

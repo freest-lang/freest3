@@ -28,4 +28,4 @@ prelude :: VarEnv
 prelude = preludeLoad Map.empty
 
 preludeLoad :: VarEnv -> VarEnv
-preludeLoad map = foldl (\acc (tv, t) -> Map.insert tv (read t :: Type) acc) map typeList
+preludeLoad map = foldl (\acc (tv, t) -> Map.insert tv (TypeScheme [] (read t :: Type)) acc) map typeList

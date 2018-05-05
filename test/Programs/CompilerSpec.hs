@@ -62,7 +62,7 @@ runAndCheckResult testFile filename = do
   let path = reverse $ dropWhile (/= '/') (reverse testFile)
   runIO $ setCurrentDirectory path
 
-  (exitcode, output, errors) <- runIO $ readProcessWithExitCode "ghc" ["cfst.hs"] ""
+  (exitcode, output, errors) <- runIO $ readProcessWithExitCode "ghc" ["cfst.hs", "-fno-code", "-O0"] ""
   -- putStrLn $ "exitcode: " ++ show exitcode
   -- putStrLn $ "output: " ++ show output
   if (exitcode == ExitSuccess) then

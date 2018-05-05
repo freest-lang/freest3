@@ -51,7 +51,7 @@ data Expression
   | UnLet Pos TermVar Expression Expression
   -- Aplication
   | App Pos Expression Expression
-  | TypeApp Pos Expression Type
+  | TypeApp Pos Expression [Type]
   -- Conditional
   | Conditional Pos Expression Expression Expression
   -- Pairs
