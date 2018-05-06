@@ -38,7 +38,19 @@ data Label =
 
 data GNF = GNF {productions :: Map.Map (TypeVar, Label) Vars, start :: TypeVar}
 
---convertToGNF :: Type -> (GNF
+-- Assume: t is a session type
+convertToGNF :: Type -> GNF
+convertToGNF t = toGBF (GNF Map.empty  t
+
+toGBF :: Type 
+toGBF Skip = []
+toGBF (Var x) = [NonTerm x]
+toGBF (Out b) = [TermOut b]
+toGBF (In b) = [TermIn b]
+toGBF (Var a) = [TermVar a]
+toGBF (Choice v m) = [TermVar a]
+
+
 
 
 -- TYPE EQUIVALENCE
