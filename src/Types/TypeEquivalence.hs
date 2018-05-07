@@ -41,13 +41,14 @@ instance Show Label where
   show (MessageLabel p t) = show p ++ show t
   show (VarLabel l) = l
 
-type Productions = Map.Map (TypeVar, Label) Vars
+type Productions = Map.Map TypeVar (Map.Map Label Vars)
 
-data GNF = GNF {productions :: Productions, start :: TypeVar} deriving Show
+data GNF = GNF {start :: TypeVar, productions :: Productions} deriving Show
 
--- Managing the state of translation to GNF procedure
+-- The state of the translation to GNF
 
 type Visited = Map.Map Type TypeVar
+
 type GNFState = State (Productions, Visited, Int)
 
 initial :: (Productions, Visited, Int)
@@ -59,40 +60,60 @@ freshVar = do
   modify (\(p, v, n) -> (p, v, n+1))
   return $ "_x" ++ show n
 
-visitedLookup :: Type -> GNFState (Maybe TypeVar)
-visitedLookup t = do
+lookupVisited :: Type -> GNFState (Maybe TypeVar)
+lookupVisited t = do
   (_, v, _) <- get
   return $ Map.lookup t v
 
 insertVisited :: Type -> TypeVar -> GNFState ()
-insertVisited t x = modify (\(p, v, n) -> (p, Map.insert t x v, n))
+insertVisited t x =
+  modify (\(p, v, n) -> (p, Map.insert t x v, n))
+
+getAllProductions :: GNFState Productions
+getAllProductions = do
+  (p, _, _) <- get
+  return p
+
+getProductions :: TypeVar -> GNFState (Map.Map Label Vars)
+getProductions x = do
+  p <- getAllProductions
+  return $ p Map.! x
 
 insertProduction :: TypeVar -> Label -> Vars -> GNFState ()
 insertProduction x l w =
-  modify (\(p, v, n) -> (Map.insert (x, l) w p, v, n))
+  modify (\(p, v, n) -> (Map.insertWith Map.union x (Map.singleton l w) p, v, n))
 
-backPatchProductions :: Vars -> TypeVar -> GNFState ()
-backPatchProductions w x =
-  modify (\(p, v, n) -> (Map.map (replace w x) p, v, n))
+insertProductions :: TypeVar -> (Map.Map Label Vars) -> GNFState ()
+insertProductions x m = do
+  let _ = Map.mapWithKey (\l w -> insertProduction x l w) m
+  return ()
 
-replace :: Vars -> TypeVar -> Vars -> Vars
+replaceInProductions :: Vars -> TypeVar -> GNFState ()
+replaceInProductions w x =
+  modify (\(p, v, n) -> (Map.map (Map.map (replace w x)) p, v, n))
+
 replace _ _ [] = []
-replace w y (x:xs) 
-  | x == y    = w ++ (replace w y xs)
-  | otherwise = x : (replace w y xs)
+replace w x (y:ys)
+  | x == y    = w ++ (replace w x ys)
+  | otherwise = y : (replace w x ys)
 
 -- Translation to GNF
 
--- Assume: t is a session type
+-- Assume: t is a session type different from Skip
 convertToGNF :: Type -> GNF
-convertToGNF t =
-  case runState (toGNF t) initial of
-    ([x], (p, _, _)) -> GNF {productions = p, start = x}
---    (w, (p, _, _)) -> TODO
+convertToGNF t = evalState (generateGNF t) initial
+
+generateGNF :: Type -> GNFState GNF
+generateGNF t = do
+  (y:v) <- toGNF t
+  m <- getProductions y
+  insertProductions y (Map.map (\w -> v ++ w) m)
+  p <- getAllProductions
+  return $ GNF {start = y, productions = p}
 
 toGNF :: Type -> GNFState Vars
 toGNF t = do
-  maybe <- visitedLookup t
+  maybe <- lookupVisited t
   case maybe of
     Nothing -> toGNF' t
     Just x ->  return [x]
@@ -102,6 +123,10 @@ toGNF' Skip = return []
 toGNF' (Message p b) = do
   y <- freshVar
   insertProduction y (MessageLabel p b) []
+  return [y]
+toGNF' (Var x) = do
+  y <- freshVar
+  insertProduction y (VarLabel x) []
   return [y]
 --toGNF' (Semi (Choice p m) t) = do --- TODO
 toGNF' (Semi t1 t2) = do
@@ -115,9 +140,8 @@ toGNF' (Choice p m) = do
 toGNF' (Rec (Bind x k) t) = do
   insertVisited (Rec (Bind x k) t) x
   w <- toGNF (unfold (Rec (Bind x k) t))
-  backPatchProductions w x
+  replaceInProductions w x
   return w
---toGNF' x where x is a free type variable
 
 assocsToGNF :: TypeVar -> ChoiceView -> [(Constructor, Type)] -> GNFState ()
 assocsToGNF _ _ [] = return ()
@@ -125,6 +149,21 @@ assocsToGNF y p ((l, t):as) = do
   w <- toGNF t
   insertProduction y (ChoiceLabel p l) w  
   assocsToGNF y p as
+
+-- tests
+
+t1 = convertToGNF $ Message Out IntType
+t2 = convertToGNF $ (Var "alpha")
+t3 = convertToGNF $ Semi (Message Out IntType) (Message In BoolType)
+t4 = convertToGNF $ Choice External (Map.fromList
+  [("Leaf", Skip),
+   ("Node", Message In BoolType)])
+linSessionKind = Kind {prekind = Session, multiplicity = Un}
+treeSend = Rec (Bind "y" linSessionKind) (Choice External (Map.fromList
+  [("Leaf",Skip),
+   ("Node", Semi (Message Out IntType) (Semi (Var "y") (Var "y")))]))
+t5 = convertToGNF treeSend
+t6 = convertToGNF $ Semi treeSend (Var "alpha")
 
 -- TYPE EQUIVALENCE
 
