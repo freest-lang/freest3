@@ -31,16 +31,14 @@ type Vars = [TypeVar]
 --type Node = Set.Set (Vars, Vars)
 
 data Label =
-  ChoiceLabel Polarity Constructor |
+  ChoiceLabel ChoiceView Constructor |
   MessageLabel Polarity BasicType |
   VarLabel TypeVar
   deriving (Eq, Ord)
 
-instance Label Show where
-  show (ChoiceLabel In l) = '&' : l
-  show (ChoiceLabel Out l) = '+' : l
-  show (MessageLabel In t) = '?' : show t
-  show (MessageLabel Out t) = '!' : show t
+instance Show Label where
+  show (ChoiceLabel v l) = show v ++ l
+  show (MessageLabel p t) = show p ++ show t
   show (VarLabel l) = l
 
 type Productions = Map.Map (TypeVar, Label) Vars
@@ -121,7 +119,7 @@ toGNF' (Rec (Bind x k) t) = do
   return w
 --toGNF' x where x is a free type variable
 
-assocsToGNF :: TypeVar -> Polarity -> [(Constructor, Type)] -> GNFState ()
+assocsToGNF :: TypeVar -> ChoiceView -> [(Constructor, Type)] -> GNFState ()
 assocsToGNF _ _ [] = return ()
 assocsToGNF y p ((l, t):as) = do
   w <- toGNF t

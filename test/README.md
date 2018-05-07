@@ -14,8 +14,10 @@ It's necessary to have the following tools installed:
 
 To be able to run the tests you need to be in the root folder of the project (ContextFreeSession directory) and run
 
-* ```cabal install --dependencies-only```
-* ``` cabal build ```
+```
+$ cabal install --dependencies-only
+$ cabal build
+```
 
 After building the compiler you can choose one of the following options:
 
