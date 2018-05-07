@@ -61,8 +61,12 @@ instance Show BasicType where
 data Polarity =
     In  -- or External
   | Out -- or Internal
-  deriving (Eq, Ord) -- Show: In can be '&' or '?', out can be '+' or '!'
+  deriving (Eq, Ord)
 
+instance Show Polarity where
+  show In = "?" -- Also '&'
+  show Out = "!" -- Also '+'
+ 
 -- TYPES
 
 type Constructor = String
