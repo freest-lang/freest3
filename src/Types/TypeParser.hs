@@ -101,8 +101,8 @@ parseTerm =
   try (parens typeExpr)
   <|> (do {  skip ;                                             return Skip })
   <|> (do { b <- parseBasicType;                                return $ Basic b })
-  <|> (do { try (symbol "?"); b <- parseBasicType;              return $ In b })  
-  <|> (do { try (symbol "!"); b <- parseBasicType;              return $ Out b })  
+  <|> (do { try (symbol "?"); b <- parseBasicType;              return $ Message In b })  
+  <|> (do { try (symbol "!"); b <- parseBasicType;              return $ Message Out b })  
   <|> parens parsePair
   <|> parseExternalChoice
   <|> parseInternalChoice
@@ -137,13 +137,13 @@ parseInternalChoice :: Parsec String u Type
 parseInternalChoice = do
   reservedOp "+"
   a <- braces $ sepBy1 parseBind comma
-  return $ Choice Internal (Map.fromList a)
+  return $ Choice Out (Map.fromList a)
 
 parseExternalChoice :: Parsec String u Type
 parseExternalChoice = do
   reservedOp "&"
   a <- braces $ sepBy1 parseBind comma
-  return $ Choice External (Map.fromList a)
+  return $ Choice In (Map.fromList a)
 
 parseDataType :: Parsec String u Type
 parseDataType = do

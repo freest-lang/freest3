@@ -36,11 +36,10 @@ kindOf :: KindEnv -> Type -> Kind
 kindOf kenv t = fst $ runWriter (kinding kenv t)
 
 kinding :: KindEnv -> Type -> KindM Kind
-kinding _    Skip       = return $ Kind Session Un
-kinding _    (Out _)    = return $ Kind Session Lin
-kinding _    (In _)     = return $ Kind Session Lin
-kinding _    (Basic _)  = return $ Kind Functional Un
-kinding kenv (Var x)    = checkVar kenv x
+kinding _    Skip          = return $ Kind Session Un
+kinding _    (Message _ _) = return $ Kind Session Lin
+kinding _    (Basic _)     = return $ Kind Functional Un
+kinding kenv (Var x)       = checkVar kenv x
 kinding kenv (Semi t u) = do
   kt <- kinding kenv t 
   ku <- kinding kenv u

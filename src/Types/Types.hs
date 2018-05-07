@@ -17,7 +17,7 @@ module Types.Types
 , BasicType(..)
 , Constructor
 , TypeMap(..)
-, ChoiceView(..)
+, Polarity(..)
 , Type(..)
 , TypeScheme(..)
 , dual
@@ -56,31 +56,30 @@ instance Show BasicType where
   show BoolType = "Bool"
   show UnitType = "()"
 
+-- POLARITY
+
+data Polarity =
+    In  -- or External
+  | Out -- or Internal
+  deriving (Eq, Ord) -- Show: In can be '&' or '?', out can be '+' or '!'
+
 -- TYPES
 
 type Constructor = String
 
 type TypeMap = Map.Map Constructor Type
 
-data ChoiceView =
-    External
-  | Internal
-  deriving (Eq, Ord)
-
-instance Show ChoiceView where
-  show External = "&"
-  show Internal = "+"
-
 data Type =
+  -- Functional types
     Basic BasicType
-  | Skip
-  | Semi Type Type
-  | Out BasicType
-  | In BasicType
   | Fun Multiplicity Type Type
   | PairType Type Type
-  | Choice ChoiceView TypeMap
   | Datatype TypeMap
+  -- Session types
+  | Skip
+  | Semi Type Type
+  | Message Polarity BasicType
+  | Choice Polarity TypeMap
   | Rec Bind Type
   | Forall TypeVar Kind Type -- TODO: remove, use TypeScheme instead
   | Var TypeVar
@@ -98,8 +97,7 @@ equalTypes s (Var x)        (Var y)        = equalVars (Map.lookup x s) x y
 equalTypes s (Rec b t)      (Rec c u)      = b == c && equalTypes (insertBind (b, c) s) t u
 equalTypes s (Semi t1 t2)   (Semi u1 u2)   = equalTypes s t1 u1 && equalTypes s t2 u2
 equalTypes s (Basic x)      (Basic y)      = x == y
-equalTypes s (Out x)        (Out y)        = x == y
-equalTypes s (In x)         (In y)         = x == y
+equalTypes s (Message p x)  (Message q y)  = p == q && x == y
 equalTypes s (Fun m t u)    (Fun n v w)    = m == n && equalTypes s t v && equalTypes s u w
 equalTypes s (PairType t u) (PairType v w) = equalTypes s t v && equalTypes s u w
 equalTypes s (Datatype m1)  (Datatype m2)  = equalMaps s m1 m2
@@ -122,12 +120,13 @@ instance Show Type where
   show (Basic b)      = show b
   show Skip           = "Skip"
   show (Semi t u)     = "(" ++ show t ++ ";" ++ show u ++ ")"
-  show (Out b)        = "!" ++ show b
-  show (In b)         = "?" ++ show b
+  show (Message Out b)= "!" ++ show b
+  show (Message In b) = "?" ++ show b
   show (Fun Lin t u)  = showFun t "-o" u
   show (Fun Un t u)   = showFun t "->" u
   show (PairType t u) = "(" ++  show t ++ ", " ++ show u ++ ")"
-  show (Choice v m)   = show v ++ "{" ++ showMap m ++ "}"
+  show (Choice Out m) = "+{" ++ showMap m ++ "}"
+  show (Choice In m)  = "&{" ++ showMap m ++ "}"
   show (Datatype m)   = "["++ showMap m ++"]"
   show (Rec b t)      = "(rec " ++ show b ++ " . " ++ show t ++ ")"
 --  show (Forall x k t) = "(forall " ++ x ++ " :: " ++ show k ++ " => " ++ show t ++ ")"
@@ -189,15 +188,14 @@ instance Show TypeScheme where
 dual :: Type -> Type
 dual (Var v)      = Var v
 dual Skip         = Skip
-dual (Out b)      = In b
-dual (In b)       = Out b
-dual (Choice v m) = Choice (dualChoice v) (Map.map dual m)
+dual (Message p b)= Message (dualPolarity p) b
+dual (Choice p m) = Choice (dualPolarity p) (Map.map dual m)
 dual (Semi t1 t2) = Semi (dual t1) (dual t2)
 dual (Rec b t)    = Rec b (dual t)
 
-dualChoice :: ChoiceView -> ChoiceView
-dualChoice External = Internal
-dualChoice Internal = External
+dualPolarity :: Polarity -> Polarity
+dualPolarity In = Out
+dualPolarity Out = In
 
 toList :: TypeScheme -> [TypeScheme]
 toList (TypeScheme b (Fun _ t1 t2)) = (TypeScheme b t1) : toList (TypeScheme b t2)

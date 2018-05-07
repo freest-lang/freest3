@@ -15,7 +15,7 @@ main = hspec spec
 spec :: Spec
 spec = do
   let treeChannelRead = "(rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel})"
-  let treeChannelType = (Rec (Bind "TreeChannel" (Kind Session Un)) (Choice Internal $ Map.fromList [("Leaf", Skip),("Node", (Semi (Out IntType) (Semi(Var "TreeChannel") (Var "TreeChannel"))))]))
+  let treeChannelType = (Rec (Bind "TreeChannel" (Kind Session Un)) (Choice Out $ Map.fromList [("Leaf", Skip),("Node", (Semi (Message Out IntType) (Semi(Var "TreeChannel") (Var "TreeChannel"))))]))
 
   describe "Simple tests" $ do
     it "Int" $ do
@@ -29,11 +29,11 @@ spec = do
     it "Skip" $ do
       (read "Skip" :: Type) `shouldBe` Skip
     it "!Int;?Bool" $ do
-      (read "!Int;?Bool" :: Type) `shouldBe` (Semi (Out IntType) (In BoolType))
+      (read "!Int;?Bool" :: Type) `shouldBe` (Semi (Message Out IntType) (Message In BoolType))
     it "!Int" $ do
-      (read "!Int" :: Type) `shouldBe` (Out IntType)
+      (read "!Int" :: Type) `shouldBe` (Message Out IntType)
     it "?Int" $ do
-      (read "?Int" :: Type) `shouldBe` (In IntType)
+      (read "?Int" :: Type) `shouldBe` (Message In IntType)
     it "Int->Int" $ do
       (read "Int->Int" :: Type) `shouldBe` (Fun Un (Basic IntType) (Basic IntType))
     it "Int-oInt" $ do
@@ -41,9 +41,9 @@ spec = do
     it "(Int,Int)" $ do
       (read "(Int,Int)" :: Type) `shouldBe` (PairType (Basic IntType) (Basic IntType))
     it "&{a:?Int,b:!Bool}" $ do
-      (read "&{a:?Int,b:!Bool}" :: Type) `shouldBe` (Choice External (Map.fromList [("a",In IntType),("b",Out BoolType)]))
+      (read "&{a:?Int,b:!Bool}" :: Type) `shouldBe` (Choice In (Map.fromList [("a",Message In IntType),("b",Message Out BoolType)]))
     it "+{a:!Int,b:?Bool}" $ do
-      (read "+{a:!Int,b:?Bool}" :: Type) `shouldBe` (Choice Internal (Map.fromList [("a",Out IntType),("b",In BoolType)]))
+      (read "+{a:!Int,b:?Bool}" :: Type) `shouldBe` (Choice Out (Map.fromList [("a",Message Out IntType),("b",Message In BoolType)]))
     it "[a:Int,b:Bool]" $ do
       (read "[a:Int,b:Bool]" :: Type) `shouldBe` (Datatype (Map.fromList [("a",Basic IntType),("b",Basic BoolType)]))
     it "rec a.Bool" $ do
@@ -57,9 +57,9 @@ spec = do
     it "(Skip)" $ do
       (read "(Skip)" :: Type) `shouldBe` Skip
     it "(?Bool)" $ do
-      (read "(?Bool)" :: Type) `shouldBe` (In BoolType)
+      (read "(?Bool)" :: Type) `shouldBe` (Message In BoolType)
     it "(!Char)" $ do
-      (read "(!Char)" :: Type) `shouldBe` (Out CharType)
+      (read "(!Char)" :: Type) `shouldBe` (Message Out CharType)
     it "((Int,Char))" $ do
       (read "((Int,Char))" :: Type) `shouldBe` (PairType (Basic IntType) (Basic CharType))
 
@@ -69,7 +69,7 @@ spec = do
     it " Int" $ do
       (read " Int " :: BasicType) `shouldBe`  IntType
     it "?Int ; !Bool" $ do
-      (read " ?Int ; !Bool " :: Type) `shouldBe` (Semi (In IntType) (Out BoolType))
+      (read " ?Int ; !Bool " :: Type) `shouldBe` (Semi (Message In IntType) (Message Out BoolType))
     it "Int -> Int" $ do
       (read " Int -> Int " :: Type) `shouldBe` (Fun Un (Basic IntType) (Basic IntType))
     it "Int -o Int" $ do
@@ -79,7 +79,7 @@ spec = do
     it "rec a . a" $ do
       (read "rec a . a" :: Type) `shouldBe` (Rec (Bind "a" (Kind Session Un)) (Var "a"))
     it "+{i : !Int, b : !Bool}" $ do
-      (read "+{i : !Int, b : !Bool}" :: Type) `shouldBe` (Choice Internal (Map.fromList [("i",Out IntType),("b",Out BoolType)]))
+      (read "+{i : !Int, b : !Bool}" :: Type) `shouldBe` (Choice Out (Map.fromList [("i",Message Out IntType),("b",Message Out BoolType)]))
 
   describe "Nested operators" $ do
     it "((Int,Bool),Char)" $ do
@@ -116,15 +116,15 @@ spec = do
 
     it "rec alpha . !int;TreeChannel;TreeChannel;alpha" $ do
       (read ("rec alpha . !Int;" ++ treeChannelRead ++ ";" ++ treeChannelRead ++ ";alpha") :: Type) `shouldBe`
-        (Rec (Bind "alpha" (Kind Session Un)) (Semi (Out IntType) (Semi treeChannelType (Semi treeChannelType (Var "alpha")))))
+        (Rec (Bind "alpha" (Kind Session Un)) (Semi (Message Out IntType) (Semi treeChannelType (Semi treeChannelType (Var "alpha")))))
 
     it "rec alpha . (!int;(TreeChannel;TreeChannel));alpha" $ do
       (read ("rec alpha . !Int;("++treeChannelRead++";"++treeChannelRead++");alpha") :: Type) `shouldBe`
-        (Rec (Bind "alpha" (Kind Session Un)) (Semi (Out IntType) (Semi (Semi treeChannelType treeChannelType ) (Var "alpha"))))
+        (Rec (Bind "alpha" (Kind Session Un)) (Semi (Message Out IntType) (Semi (Semi treeChannelType treeChannelType ) (Var "alpha"))))
 
     it "rec alpha . !int;((TreeChannel;TreeChannel);alpha)" $ do
       (read ("rec alpha . !Int;(("++treeChannelRead++";"++treeChannelRead++");alpha)") :: Type) `shouldBe`
-        (Rec (Bind "alpha" (Kind Session Un)) (Semi (Out IntType) (Semi (Semi treeChannelType treeChannelType) (Var "alpha"))))
+        (Rec (Bind "alpha" (Kind Session Un)) (Semi (Message Out IntType) (Semi (Semi treeChannelType treeChannelType) (Var "alpha"))))
 
     it "rec alpha . (TreeChannel;TreeChannel);alpha" $ do
       (read ("rec alpha . ("++treeChannelRead++";"++treeChannelRead++");alpha") :: Type) `shouldBe`
@@ -140,15 +140,15 @@ spec = do
 
   describe "Remote tree transformation (Listing 2)" $ do
     let xFormChanRead = "(rec xFormChan . +{Leaf:Skip,Node:!Int;xFormChan;xFormChan;?Int})"
-    let xFormChanType = (Rec (Bind "xFormChan" (Kind Session Un)) (Choice Internal $
+    let xFormChanType = (Rec (Bind "xFormChan" (Kind Session Un)) (Choice Out $
                                                             Map.fromList ([("Leaf",Skip),
-                                                                           ("Node",(Semi (Out IntType) (Semi (Var "xFormChan") (Semi (Var "xFormChan")(In IntType)))))])))
+                                                                           ("Node",(Semi (Message Out IntType) (Semi (Var "xFormChan") (Semi (Var "xFormChan")(Message In IntType)))))])))
 
     let xFormChanDualRead = "(rec xFormChan . &{Leaf:Skip,Node:?Int;xFormChan;xFormChan;!Int})"
-    let xFormChanDualType = (Rec (Bind "xFormChan" (Kind Session Un)) (Choice External $
+    let xFormChanDualType = (Rec (Bind "xFormChan" (Kind Session Un)) (Choice In $
                                                                 Map.fromList ([("Leaf",Skip),
-                                                                               ("Node",(Semi (In IntType) (Semi (Var "xFormChan")
-                                                                                                           (Semi (Var "xFormChan")(Out IntType)))))])))
+                                                                               ("Node",(Semi (Message In IntType) (Semi (Var "xFormChan")
+                                                                                                           (Semi (Var "xFormChan")(Message Out IntType)))))])))
 
     it "xFormChan Type" $ do
       (read (xFormChanRead) :: Type) `shouldBe` xFormChanType
@@ -168,11 +168,11 @@ spec = do
 
   describe "Arithmetic expression server (Listing 3)" $ do
     let termChanRead = "(rec TermChan . +{Const:!Int,Add:TermChan;TermChan,Mult:TermChan;TermChan} )"
-    let termChanType = (Rec (Bind "TermChan" (Kind Session Un)) (Choice Internal $ Map.fromList ([("Const",(Out IntType)),("Add",(Semi (Var "TermChan")(Var "TermChan"))),
+    let termChanType = (Rec (Bind "TermChan" (Kind Session Un)) (Choice Out $ Map.fromList ([("Const",(Message Out IntType)),("Add",(Semi (Var "TermChan")(Var "TermChan"))),
                                                                                            ("Mult",(Semi (Var "TermChan")(Var "TermChan")))])))
 
     let termChanDualRead = "(rec TermChan . &{Const:?Int,Add:TermChan;TermChan,Mult:TermChan;TermChan} )"
-    let termChanDualType = (Rec (Bind "TermChan" (Kind Session Un)) (Choice External $ Map.fromList ([("Const",(In IntType)),("Add",(Semi (Var "TermChan")(Var "TermChan"))),
+    let termChanDualType = (Rec (Bind "TermChan" (Kind Session Un)) (Choice In $ Map.fromList ([("Const",(Message In IntType)),("Add",(Semi (Var "TermChan")(Var "TermChan"))),
                                                                                                ("Mult",(Semi (Var "TermChan")(Var "TermChan")))])))
 
     it "TermChan Type" $ do
@@ -182,24 +182,24 @@ spec = do
       (read (termChanDualRead) :: Type) `shouldBe` termChanDualType
 
     it "computeService" $ do
-      (read ("(" ++ termChanDualRead ++ ";!Int)->Skip") :: Type) `shouldBe`  (Fun Un (Semi termChanDualType (Out IntType)) Skip)
+      (read ("(" ++ termChanDualRead ++ ";!Int)->Skip") :: Type) `shouldBe`  (Fun Un (Semi termChanDualType (Message Out IntType)) Skip)
 
     it "receiveEval" $ do
       (read ("forall alpha :: TU => (" ++ termChanDualRead ++ ";!Int)->(Int, alpha)") :: Type) `shouldBe`
-            (Forall "alpha" (Kind Functional Un) (Fun Un (Semi termChanDualType (Out IntType))(PairType (Basic IntType)(Var "alpha"))))
+            (Forall "alpha" (Kind Functional Un) (Fun Un (Semi termChanDualType (Message Out IntType))(PairType (Basic IntType)(Var "alpha"))))
 
     it "client" $ do
-      (read ("(" ++ termChanRead ++ ";?Int)->(Int,Skip)") :: Type) `shouldBe` (Fun Un (Semi termChanType (In IntType))(PairType (Basic IntType) Skip))
+      (read ("(" ++ termChanRead ++ ";?Int)->(Int,Skip)") :: Type) `shouldBe` (Fun Un (Semi termChanType (Message In IntType))(PairType (Basic IntType) Skip))
 
   describe "Lazy tree traversal (Listing 4)" $ do
     let xploreTreeChanRead = "(rec XformChan . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int})"
-    let xploreTreeChanType = (Rec (Bind "XformChan" (Kind Session Un)) (Choice Internal $
+    let xploreTreeChanType = (Rec (Bind "XformChan" (Kind Session Un)) (Choice Out $
                                                                  Map.fromList ([("Leaf", Skip),
-                                                                                ("Node", (Semi (Out IntType) (Semi (Var "XformChan") (Semi (Var "XformChan") (In IntType)))))])))
+                                                                                ("Node", (Semi (Message Out IntType) (Semi (Var "XformChan") (Semi (Var "XformChan") (Message In IntType)))))])))
 
     let xploreNodeChanRead = "(rec XploreNodeChan . +{Value:!Int;XploreNodeChan, Left:"++xploreTreeChanRead++";XploreNodeChan,Right:"++xploreTreeChanRead++";XploreNodeChan,Exit:Skip})"
 
-    let xploreNodeChanType = (Rec (Bind "XploreNodeChan" (Kind Session Un)) (Choice Internal $ Map.fromList ([("Value", (Semi (Out IntType)(Var "XploreNodeChan"))),
+    let xploreNodeChanType = (Rec (Bind "XploreNodeChan" (Kind Session Un)) (Choice Out $ Map.fromList ([("Value", (Semi (Message Out IntType)(Var "XploreNodeChan"))),
                                                                                     ("Left", (Semi (xploreTreeChanType)(Var "XploreNodeChan"))),
                                                                                     ("Right", (Semi (xploreTreeChanType)(Var "XploreNodeChan"))),
                                                                                     ("Exit", Skip)

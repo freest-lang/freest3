@@ -341,13 +341,13 @@ checkBasic p (TypeScheme _ t)         = do
 -- -- Checking session types
 
 checkOutType :: Pos -> Type -> TCheckM BasicType
-checkOutType _ (Out b) = return b
+checkOutType _ (Message Out b) = return b
 checkOutType p t       = do
   tell [show p ++ ": Expecting an output type; found " ++ (show t)]
   return IntType
 
 checkInType :: Type -> TCheckM BasicType
-checkInType (In b) = return b
+checkInType (Message In b) = return b
 checkInType t      = do
   tell ["Expecting an input type; found " ++ (show t)]
   return IntType
@@ -367,13 +367,13 @@ checkNotSessionType k
           
 
 checkInternalChoice :: Pos -> TypeScheme -> TCheckM ()
-checkInternalChoice _ (TypeScheme _ (Choice Internal t)) = return ()
+checkInternalChoice _ (TypeScheme _ (Choice Out t)) = return ()
 --checkInternalChoice (Semi (Choice Internal t1) t2) = return ()
 checkInternalChoice p (TypeScheme _ t)                   = 
   tell [show p ++ ": Expecting an internal choice; found " ++ show t]
 
 checkExternalChoice :: Pos -> KindEnv -> VarEnv -> TypeScheme -> TCheckM ()
-checkExternalChoice _ _ _ (TypeScheme _ (Choice External t)) = return ()
+checkExternalChoice _ _ _ (TypeScheme _ (Choice In t)) = return ()
 checkExternalChoice p kenv venv (TypeScheme _ (Var x))       = do
   (t, venv) <- checkVar p kenv venv x
   checkExternalChoice p kenv venv t 
@@ -384,7 +384,7 @@ checkSemi :: Pos -> TypeScheme -> TCheckM (Type, Type)
 checkSemi _ (TypeScheme bs (Semi t1 t2)) = return (t1, t2)
 checkSemi p (TypeScheme _ t)             = do
   tell [show p ++ ": Expecting a sequential session type; found " ++ show t]
-  return (Out IntType, Skip)
+  return (Message Out IntType, Skip)
 
 -- -- Check multiplicity   
 
