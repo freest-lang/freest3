@@ -45,7 +45,6 @@ checkFD venv kenv fname args exp = do
 
   checkEquivTypes (0,0) kenv t lastType 
 
-  -- TODO: uncomment
   checkVEnvUn kenv venv2
   return ()
 
