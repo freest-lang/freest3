@@ -366,13 +366,13 @@ checkNotSessionType k
           
 
 checkInternalChoice :: Pos -> TypeScheme -> TCheckM ()
-checkInternalChoice _ (TypeScheme _ (Choice Out t)) = return ()
+checkInternalChoice _ (TypeScheme _ (Choice Internal t)) = return ()
 --checkInternalChoice (Semi (Choice Internal t1) t2) = return ()
 checkInternalChoice p (TypeScheme _ t)                   = 
   tell [show p ++ ": Expecting an internal choice; found " ++ show t]
 
 checkExternalChoice :: Pos -> KindEnv -> VarEnv -> TypeScheme -> TCheckM ()
-checkExternalChoice _ _ _ (TypeScheme _ (Choice In t)) = return ()
+checkExternalChoice _ _ _ (TypeScheme _ (Choice External t)) = return ()
 checkExternalChoice p kenv venv (TypeScheme _ (Var x))       = do
   (t, venv) <- checkVar p kenv venv x
   checkExternalChoice p kenv venv t 

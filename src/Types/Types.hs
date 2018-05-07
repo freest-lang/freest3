@@ -17,6 +17,7 @@ module Types.Types
 , BasicType(..)
 , Constructor
 , TypeMap(..)
+, ChoiceView(..)
 , Polarity(..)
 , Type(..)
 , TypeScheme(..)
@@ -59,13 +60,24 @@ instance Show BasicType where
 -- POLARITY
 
 data Polarity =
-    In  -- or External
-  | Out -- or Internal
+    In
+  | Out
   deriving (Eq, Ord)
 
 instance Show Polarity where
-  show In = "?" -- Also '&'
-  show Out = "!" -- Also '+'
+  show In = "?"
+  show Out = "!"
+ 
+-- Choice View
+
+data ChoiceView =
+    External
+  | Internal
+  deriving (Eq, Ord)
+
+instance Show ChoiceView where
+  show External = "&"
+  show Internal = "+"
  
 -- TYPES
 
@@ -83,7 +95,7 @@ data Type =
   | Skip
   | Semi Type Type
   | Message Polarity BasicType
-  | Choice Polarity TypeMap
+  | Choice ChoiceView TypeMap
   | Rec Bind Type
   | Forall TypeVar Kind Type -- TODO: remove, use TypeScheme instead
   | Var TypeVar
@@ -129,8 +141,7 @@ instance Show Type where
   show (Fun Lin t u)  = showFun t "-o" u
   show (Fun Un t u)   = showFun t "->" u
   show (PairType t u) = "(" ++  show t ++ ", " ++ show u ++ ")"
-  show (Choice Out m) = "+{" ++ showMap m ++ "}"
-  show (Choice In m)  = "&{" ++ showMap m ++ "}"
+  show (Choice v m) = show v ++ "{" ++ showMap m ++ "}"
   show (Datatype m)   = "["++ showMap m ++"]"
   show (Rec b t)      = "(rec " ++ show b ++ " . " ++ show t ++ ")"
 --  show (Forall x k t) = "(forall " ++ x ++ " :: " ++ show k ++ " => " ++ show t ++ ")"
@@ -193,13 +204,17 @@ dual :: Type -> Type
 dual (Var v)      = Var v
 dual Skip         = Skip
 dual (Message p b)= Message (dualPolarity p) b
-dual (Choice p m) = Choice (dualPolarity p) (Map.map dual m)
+dual (Choice p m) = Choice (dualView p) (Map.map dual m)
 dual (Semi t1 t2) = Semi (dual t1) (dual t2)
 dual (Rec b t)    = Rec b (dual t)
 
 dualPolarity :: Polarity -> Polarity
 dualPolarity In = Out
 dualPolarity Out = In
+
+dualView :: ChoiceView -> ChoiceView
+dualView External = Internal
+dualView Internal = External
 
 toList :: TypeScheme -> [TypeScheme]
 toList (TypeScheme b (Fun _ t1 t2)) = (TypeScheme b t1) : toList (TypeScheme b t2)

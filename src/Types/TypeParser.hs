@@ -137,13 +137,13 @@ parseInternalChoice :: Parsec String u Type
 parseInternalChoice = do
   reservedOp "+"
   a <- braces $ sepBy1 parseBind comma
-  return $ Choice Out (Map.fromList a)
+  return $ Choice Internal (Map.fromList a)
 
 parseExternalChoice :: Parsec String u Type
 parseExternalChoice = do
   reservedOp "&"
   a <- braces $ sepBy1 parseBind comma
-  return $ Choice In (Map.fromList a)
+  return $ Choice External (Map.fromList a)
 
 parseDataType :: Parsec String u Type
 parseDataType = do
