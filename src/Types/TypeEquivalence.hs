@@ -23,6 +23,7 @@ import Types.Kinding
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import Control.Monad.State
+import Data.List (intersperse)
 
 -- GREIBACH NORMAL FORMS
 
@@ -41,7 +42,19 @@ instance Show Label where
 
 type Productions = Map.Map TypeVar (Map.Map Label Vars)
 
-data GNF = GNF {start :: TypeVar, productions :: Productions} deriving Show
+data GNF = GNF {start :: TypeVar, productions :: Productions} -- deriving Show
+
+instance Show GNF where
+  show g = "start: " ++ start g ++ showProductions (productions g)
+
+showProductions :: Productions -> String
+showProductions = Map.foldrWithKey showProds ""
+
+showProds :: TypeVar -> (Map.Map Label Vars) -> String -> String
+showProds x m s = s ++ "\n" ++ Map.foldrWithKey (showProd x) "" m
+
+showProd :: TypeVar -> Label -> Vars -> String -> String
+showProd x l ys s = s ++ "\n" ++ x ++ " -" ++ show l ++ "-> " ++ concat ys
 
 -- The state of the translation to GNF
 
@@ -109,9 +122,9 @@ convertToGNF t = evalState (generateGNF t) initial
 
 generateGNF :: Type -> GNFState GNF
 generateGNF t = do
-  (y:v) <- toGNF t
+  (y:ys) <- toGNF t
   m <- getProductions y
-  insertProductions y (Map.map (\w -> w ++ v) m)
+  insertProductions y (Map.map (++ ys) m)
   p <- getAllProductions
   return $ GNF {start = y, productions = p}
 
@@ -123,7 +136,8 @@ toGNF t = do
     Just x ->  return [x]
 
 toGNF' :: Type -> GNFState Vars
-toGNF' Skip = return []
+toGNF' Skip =
+  return []
 toGNF' (Message p b) = do
   y <- freshVar
   insertProduction y (MessageLabel p b) []
@@ -132,19 +146,23 @@ toGNF' (Var a) = do -- This is a free variable
   y <- freshVar
   insertProduction y (VarLabel a) []
   return [y]
-toGNF' (Semi t1 t2) = do
-  w1 <- toGNF t1
-  w2 <- toGNF t2
-  return $ w1 ++ w2
+toGNF' (Semi t u) = do
+  xs <- toGNF t
+  ys <- toGNF u
+  return $ xs ++ ys
 toGNF' (Choice p m) = do
   y <- freshVar
   assocsToGNF y p (Map.assocs m)
   return [y]
-toGNF' (Rec (Bind x k) t) = do
-  insertVisited (Rec (Bind x k) t) x
-  w <- toGNF (unfold (Rec (Bind x k) t))
-  replaceInProductions w x
-  return w -- TODO: not working
+toGNF' (Rec b t) = do
+  y <- freshVar
+  let u = rename (Rec b t) y
+  insertVisited u y
+  (z:zs) <- toGNF (unfold u)
+  m <- getProductions z
+  insertProductions y (Map.map (++ replace [z] y zs) m)
+  replaceInProductions (z:zs) y
+  return [z]
 
 assocsToGNF :: TypeVar -> ChoiceView -> [(Constructor, Type)] -> GNFState ()
 assocsToGNF _ _ [] = return ()
@@ -168,14 +186,33 @@ t5 = convertToGNF $ Choice External (Map.fromList
 t6 = convertToGNF $ Choice External (Map.fromList
   [("Leaf", Skip),
    ("Node", s3)])
-linSessionKind = Kind {prekind = Session, multiplicity = Lin}
-treeSend = Rec (Bind "y" linSessionKind) (Choice External (Map.fromList
+yBind = Bind "y" (Kind {prekind = Session, multiplicity = Lin})
+treeSend = Rec yBind (Choice External (Map.fromList
   [("Leaf",Skip),
    ("Node", Semi (Message Out IntType) (Semi (Var "y") (Var "y")))]))
 t7 = convertToGNF treeSend
 t8 = convertToGNF $ Semi treeSend (Var "alpha")
-s9 = Rec (Bind "y" linSessionKind) (Semi s1 (Var "y"))
+s9 = Rec yBind (Semi s1 (Var "y"))
 t9 = convertToGNF s9
+s10 = Semi s4 (Semi (Semi s3 s1) s4)
+t10 = convertToGNF s10
+s11 = Semi (Rec yBind (Semi treeSend (Var "y"))) treeSend
+t11 = convertToGNF s11
+zBind = Bind "z" (Kind {prekind = Session, multiplicity = Lin})
+s12 = Semi (Rec zBind (Semi treeSend (Var "z"))) treeSend
+t12 = convertToGNF s12
+s13 = Semi treeSend Skip
+t13 = convertToGNF s13
+s14 = Semi Skip treeSend
+t14 = convertToGNF s14
+s15 = Semi treeSend treeSend
+t15 = convertToGNF s15
+treeSend1 = Rec zBind (Choice External (Map.fromList
+  [("Leaf",Skip),
+   ("Node", Semi (Message Out IntType) (Semi (Var "z") (Var "z")))]))
+s16 = Semi treeSend treeSend1
+t16 = convertToGNF s16
+
 
 -- TYPE EQUIVALENCE
 
@@ -194,26 +231,30 @@ check ns gnf =
 
 
 
--- Assumes parameter is a Rec type
 unfold :: Type -> Type
+-- Assumes parameter is a Rec type
 unfold (Rec (Bind x k) t) = subs (Rec (Bind x k) t) x t
+
+rename :: Type -> TypeVar -> Type
+-- Assumes parameter is a Rec type
+rename (Rec (Bind x k) t) y = Rec (Bind y k) (subs (Var y) x t)
 
 subs :: Type -> TypeVar -> Type -> Type
 subs t y (Var x)
-    | x == y                = t
-    | otherwise             = Var x
-subs t y (Semi t1 t2)       = Semi (subs t y t1) (subs t y t2)
-subs t y (PairType t1 t2)   = PairType (subs t y t1) (subs t y t2)
-subs t2 y (Forall x k t1)
-    | x == y                = Forall x k t1
-    | otherwise             = Forall x k (subs t2 y t1)
+    | x == y              = t
+    | otherwise           = Var x
+subs t y (Semi t1 t2)     = Semi (subs t y t1) (subs t y t2)
+subs t y (PairType t1 t2) = PairType (subs t y t1) (subs t y t2)
+-- subs t2 y (Forall x k t1)
+--     | x == y                = Forall x k t1
+--     | otherwise             = Forall x k (subs t2 y t1)
 -- Assume y /= x 
 subs t2 y (Rec (Bind x k) t1)
-    | x == y                = Rec (Bind x k) t1
-    | otherwise             = Rec (Bind x k) (subs t2 y t1)
-subs t y (Choice v m)       = Choice v (Map.map(subs t y) m)
-subs t y (Fun m t1 t2)      = Fun m (subs t y t1) (subs t y t2)
-subs _ _ t                  = t
+    | x == y              = Rec (Bind x k) t1
+    | otherwise           = Rec (Bind x k) (subs t2 y t1)
+subs t y (Choice v m)     = Choice v (Map.map(subs t y) m)
+subs t y (Fun m t1 t2)    = Fun m (subs t y t1) (subs t y t2)
+subs _ _ t                = t
 -- subs _ _ Skip               = Skip
 -- subs _ _ (In b)             = In b
 -- subs _ _ (Out b)            = Out b
