@@ -1,8 +1,8 @@
 
-testTypesValid :
-	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Types/TestTypesEqSpec.hs
+testEqValid :
+	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Types/TestEqValidSpec.hs
 
-testTypesInvalid :
+testEqInvalid :
 	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Types/TestEqInvalidSpec.hs
 
 testShow :
@@ -17,8 +17,9 @@ testParserInvalid :
 testKindingValid :
 	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Types/TestKindingValidSpec.hs
 
-#testKindingInvalid :
-#	runhaskell -isrc -itest/UnitTests/  test/UnitTests/Types/TestInvalidKindingSpec.hs
+testKindingInvalid :
+	runhaskell -isrc -itest/UnitTests/  test/UnitTests/Types/TestKindingInvalidSpec.hs
+
 testEquivalenceValid :
 	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Types/TestEquivalenceValidSpec.hs
 

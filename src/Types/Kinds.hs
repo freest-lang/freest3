@@ -17,7 +17,7 @@ module Types.Kinds
 , Kind (..)
 ) where
 
-data PreKind = Session | Functional deriving (Eq, Ord, Read)
+data PreKind = Session | Functional deriving (Eq, Ord)
 
 instance Show PreKind where
   show Session    = "S"
@@ -30,7 +30,7 @@ instance Show Multiplicity where
   show Lin = "L"
 
 data Kind = Kind {prekind :: PreKind, multiplicity :: Multiplicity}
-  deriving (Eq, Ord, Read)
+  deriving (Eq, Ord)
 
 instance Show Kind where
   show k = show (prekind k) ++ show (multiplicity k)

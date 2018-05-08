@@ -27,6 +27,11 @@ instance Read Type where
     Right t -> [(t,"")]
     Left m -> error $ "type parse error " ++ show m
 
+instance Read Kind where
+  readsPrec _ s = case parserKind s of
+    Right k -> [(k,"")]
+    Left m -> error $ "kind error " ++ show m
+
 -- TOKENS
 lexer :: Token.TokenParser u
 lexer  = Token.makeTokenParser
@@ -62,6 +67,10 @@ skip   = reserved "Skip"
 
 parserBasic :: String -> Either ParseError BasicType
 parserBasic = parse parseBasicType "Context-free Sessions (Basic types)"
+
+parserKind :: String -> Either ParseError Kind
+parserKind = parse parseKind "Context-free Sessions (Kind)"
+
 
 parseBasicType :: Parsec String u BasicType
 parseBasicType =

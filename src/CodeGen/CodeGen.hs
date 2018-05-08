@@ -15,7 +15,6 @@ import  Data.List -- TODO: Delete
 type MonadicMap = Map.Map TermVar Bool
 
 -- type ExpEnv = Map.Map TermVar (Params, Expression)
-
 checkMonadicEEnv :: ExpEnv -> MonadicMap
 checkMonadicEEnv = Map.foldrWithKey (\f (_, e) acc -> Map.insert f (isMonadic e) acc) Map.empty
 
@@ -64,7 +63,7 @@ translate m e = do
 
 check :: MonadicMap -> Expression -> Bool
 check m (App _ (Variable _ x) _) = Map.member x m && m Map.! x
-check m (App _ _ (Variable _ x)) = Map.member x m && m Map.! x
+-- check m (App _ _ (Variable _ x)) = Map.member x m && m Map.! x
 check m (Variable _ x) = Map.member x m && m Map.! x
 check _ _ = False
 

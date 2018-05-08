@@ -96,9 +96,9 @@ subs t y (Var x)
     | otherwise             = Var x
 subs t y (Semi t1 t2)       = Semi (subs t y t1) (subs t y t2)
 subs t y (PairType t1 t2)   = PairType (subs t y t1) (subs t y t2)
-subs t2 y (Forall x k t1)
-    | x == y                = Forall x k t1
-    | otherwise             = Forall x k (subs t2 y t1)
+-- subs t2 y (Forall x k t1)
+--     | x == y                = Forall x k t1
+--     | otherwise             = Forall x k (subs t2 y t1)
 -- Assume y /= x 
 subs t2 y (Rec (Bind x k) t1)
     | x == y                = Rec (Bind x k) t1

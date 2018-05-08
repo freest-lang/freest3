@@ -1,90 +1,90 @@
 Int
-  Kind {prekind = Functional, multiplicity = Un}
+  TU
 Bool
-  Kind {prekind = Functional, multiplicity = Un}
+  TU
 Char
-  Kind {prekind = Functional, multiplicity = Un}
+  TU
 ()
-  Kind {prekind = Functional, multiplicity = Un}
+  TU
 Skip
-  Kind {prekind = Session, multiplicity = Un}
+  SU
 !Int
-  Kind {prekind = Session, multiplicity = Lin}
+  SL
 !Char
-  Kind {prekind = Session, multiplicity = Lin}
+  SL
 ?Bool
-  Kind {prekind = Session, multiplicity = Lin}
+  SL
 ?Char
-  Kind {prekind = Session, multiplicity = Lin}
+  SL
 Int -> Bool
-  Kind {prekind = Functional, multiplicity = Un}
+  TU
 Int -o Bool
-  Kind {prekind = Functional, multiplicity = Lin}
+  TL
 Char -> Skip
-  Kind {prekind = Functional, multiplicity = Un}
+  TU
 Char -o Skip
-  Kind {prekind = Functional, multiplicity = Lin}
+  TL
 (Int,Bool)
-  Kind {prekind = Functional, multiplicity = Lin}
+  TL
 (!Char,())
-  Kind {prekind = Functional, multiplicity = Lin}
+  TL
 (!Int, Skip)
-  Kind {prekind = Functional, multiplicity = Lin}
+  TL
 [a:Int,b:Bool]
-  Kind {prekind = Functional, multiplicity = Un}
+  TU
 !Int;?Bool
-  Kind {prekind = Session, multiplicity = Lin}
+  SL
 Skip;Skip
-  Kind {prekind = Session, multiplicity = Un}
+  SU
 !Int;Skip
-  Kind {prekind = Session, multiplicity = Lin}
+  SL
 Skip;+{s:Skip,i:!Int}
-  Kind {prekind = Session, multiplicity = Lin}
+  SL
 rec x . ?Bool
-  Kind {prekind = Session, multiplicity = Lin}
+  SL
 rec x . Skip;Skip
-  Kind {prekind = Session, multiplicity = Un}
+  SU
 rec x . !Int;Skip;?Int
-  Kind {prekind = Session, multiplicity = Lin}
+  SL
 rec x . x
-  Kind {prekind = Session, multiplicity = Un}
+  SU
 
 rec Tree . &{Leaf:Skip, Node:?Int;Tree;Tree}
-  Kind {prekind = Session, multiplicity = Lin}
+  SL
 
 rec TreeChannel . +{Leaf:Skip, Node:!Int;TreeChannel;TreeChannel}
-  Kind {prekind = Session, multiplicity = Lin}
+  SL
 
 rec alpha . !Int;rec TreeChannel . +{Leaf:Skip, Node:!Int;TreeChannel;TreeChannel};rec TreeChannel . +{Leaf:Skip, Node:!Int;TreeChannel;TreeChannel};alpha
-  Kind {prekind = Session, multiplicity = Lin}
+  SL
 
 -- forall x . rec y . rec z . x;y;z
---   Kind {prekind = Session, multiplicity = Un}
+--   SU
 --
 -- forall alpha . Int -> (!Int;alpha) -> alpha
---   Kind {prekind = Functional, multiplicity = Un}
+--   TU
 --
 -- forall a . Bool
---   Kind {prekind = Functional, multiplicity = Un}
+--   TU
 --
 -- forall x . x
---   Kind {prekind = Session, multiplicity = Un}
+--   SU
 --
 -- forall x . !Int ; x
---   Kind {prekind = Session, multiplicity = Lin}
+--   SL
 --
 -- forall x . Int -> x
---   Kind {prekind = Functional, multiplicity = Un}
+--   TU
 --
 -- forall x . Int -o x
---   Kind {prekind = Functional, multiplicity = Lin}
+--   TL
 --
 -- forall a . (forall b . a)
---   Kind {prekind = Session, multiplicity = Un}
+--   SU
 --
 -- forall x . !Int;x;forall y . !Bool;y
---   Kind {prekind = Session, multiplicity = Lin}
+--   SL
 
 
 [AkKLKBCT:(Skip;Skip), GYQehuKQtFTvuoJYDV:(rec lMRIFeRtllKiX . Skip), RzOhNCsmXQBVHTAh:!Bool, WDOuqegDvdBjOFiNRklv:+{BYZaFBLcAMNIkmfD:Skip, DcGN:Skip, HRgBuAGbVDTFA:Skip, ITVqxvLWgyNvVzi:Skip, QeN:Skip, aUs:Skip, iMcWEScmBZA:Skip, nKXJbSr:Skip, nzFjfhEklznanrBzRWU:Skip, wJzcjltne:Skip, zJykoUZtO:Skip}, WkSnuEJqpMeCzcRXFI:&{CGkSnqZZawAc:Skip, HwcNqbwIGzjXtsqmi:Skip, JNZNPsZbuJTQXylhX:Skip, NHUpXnVcDGqfwltixfP:Skip, OQenTqDnrERr:Skip, ObJSbXCEbDfKdv:Skip, SUixpKUClmfnLezituio:Skip,UFDTpWCrOzdDbUNjTsf:Skip, WEvwge:Skip, X:Skip, aDPf:Skip, cHWvBCXOUmq:Skip, iTLuORGYySEJJ:Skip, nCuiDmRlmcPGpT:Skip, phVQWRRHcEpiCeyIfOFK:Skip, rdyjHqIm:Skip, zKMbbwnzqvrfT:Skip}, ZZEbPF:&{CideCVMnnmD:Skip, HieBFAzZVYauWfrF:Skip, WLm:Skip, mPZjrQ:Skip, nQ:Skip, wh:Skip, xLw:Skip}, ccpVoOhjH:?Char, efsMiBfSSiJShvhp:(rec ctLjdKvKCIK . Skip), vTATSQCHdfghziu:!Int, wqVBU:?Bool]
-  Kind {prekind = Functional, multiplicity = Lin}
+  TL
