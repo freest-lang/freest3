@@ -23,11 +23,10 @@ import Types.Kinding
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import Control.Monad.State
-import Data.List (intersperse)
 
 -- GREIBACH NORMAL FORMS
 
-type Vars = [TypeVar]
+-- type Vars = [TypeVar]
 
 data Label =
   ChoiceLabel ChoiceView Constructor |
@@ -40,21 +39,21 @@ instance Show Label where
   show (MessageLabel p t) = show p ++ show t
   show (VarLabel l) = l
 
-type Productions = Map.Map TypeVar (Map.Map Label Vars)
+type Productions = Map.Map TypeVar (Map.Map Label [TypeVar])
 
-data GNF = GNF {start :: TypeVar, productions :: Productions} -- deriving Show
+data GNF = GNF {start :: TypeVar, productions :: Productions}
 
 instance Show GNF where
-  show g = "start: " ++ start g ++ showProductions (productions g)
+  show g = "start:" ++ start g ++ showProductions (productions g)
 
 showProductions :: Productions -> String
 showProductions = Map.foldrWithKey showProds ""
 
-showProds :: TypeVar -> (Map.Map Label Vars) -> String -> String
+showProds :: TypeVar -> (Map.Map Label [TypeVar]) -> String -> String
 showProds x m s = s ++ "\n" ++ Map.foldrWithKey (showProd x) "" m
 
-showProd :: TypeVar -> Label -> Vars -> String -> String
-showProd x l ys s = s ++ "\n" ++ x ++ " -" ++ show l ++ "-> " ++ concat ys
+showProd :: TypeVar -> Label -> [TypeVar] -> String -> String
+showProd x l ys s = s ++ "\n" ++ x ++ " ::= " ++ show l ++ " " ++ (if null ys then "ε" else concat ys)
 
 -- The state of the translation to GNF
 
@@ -87,16 +86,21 @@ getAllProductions = do
   (p, _, _) <- get
   return p
 
-getProductions :: TypeVar -> GNFState (Map.Map Label Vars)
+getProductions :: TypeVar -> GNFState (Map.Map Label [TypeVar])
 getProductions x = do
   p <- getAllProductions
   return $ p Map.! x
 
-insertProduction :: TypeVar -> Label -> Vars -> GNFState ()
+member :: TypeVar -> GNFState Bool
+member x = do
+  p <- getAllProductions
+  return $ Map.member x p
+
+insertProduction :: TypeVar -> Label -> [TypeVar] -> GNFState ()
 insertProduction x l w =
   modify (\(p, v, n) -> (Map.insertWith Map.union x (Map.singleton l w) p, v, n))
 
-insertProductions :: TypeVar -> (Map.Map Label Vars) -> GNFState ()
+insertProductions :: TypeVar -> (Map.Map Label [TypeVar]) -> GNFState ()
 insertProductions x m = insertProductions' x (Map.assocs m)
 
 insertProductions' x [] = return ()
@@ -104,7 +108,7 @@ insertProductions' x ((l, w):as) = do
   insertProduction x l w
   insertProductions' x as
 
-replaceInProductions :: Vars -> TypeVar -> GNFState ()
+replaceInProductions :: [TypeVar] -> TypeVar -> GNFState ()
 replaceInProductions w x =
   modify (\(p, v, n) -> (Map.map (Map.map (replace w x)) p, v, n))
 
@@ -122,20 +126,18 @@ convertToGNF t = evalState (generateGNF t) initial
 
 generateGNF :: Type -> GNFState GNF
 generateGNF t = do
-  (y:ys) <- toGNF t
-  m <- getProductions y
-  insertProductions y (Map.map (++ ys) m)
+  [y] <- toGNF t
   p <- getAllProductions
   return $ GNF {start = y, productions = p}
 
-toGNF :: Type -> GNFState Vars
+toGNF :: Type -> GNFState [TypeVar]
 toGNF t = do
   maybe <- lookupVisited t
   case maybe of
     Nothing -> toGNF' t
     Just x ->  return [x]
 
-toGNF' :: Type -> GNFState Vars
+toGNF' :: Type -> GNFState [TypeVar]
 toGNF' Skip =
   return []
 toGNF' (Message p b) = do
@@ -147,20 +149,24 @@ toGNF' (Var a) = do -- This is a free variable
   insertProduction y (VarLabel a) []
   return [y]
 toGNF' (Semi t u) = do
-  xs <- toGNF t
+  (x:xs) <- toGNF t
   ys <- toGNF u
-  return $ xs ++ ys
+  b <- member x
+  if b then do
+    m <- getProductions x
+    insertProductions x (Map.map (++ xs ++ ys) m)
+    return [x]
+  else
+    return $ (x:xs) ++ ys -- E.g., rec x. !Int;(x;x)
 toGNF' (Choice p m) = do
   y <- freshVar
   assocsToGNF y p (Map.assocs m)
   return [y]
 toGNF' (Rec b t) = do
   y <- freshVar
-  let u = rename (Rec b t) y
+  let u = rename (Rec b t) y -- On the fly alpha conversion
   insertVisited u y
   (z:zs) <- toGNF (unfold u)
-  m <- getProductions z
-  insertProductions y (Map.map (++ replace [z] y zs) m)
   replaceInProductions (z:zs) y
   return [z]
 
@@ -175,7 +181,7 @@ assocsToGNF y p ((l, t):as) = do
 
 s1 = Message Out CharType
 t1 = convertToGNF s1
-t2 = convertToGNF $ (Var "alpha")
+t2 = convertToGNF $ (Var "α")
 s3 = Semi (Message Out IntType) (Message In BoolType)
 t3 = convertToGNF s3
 s4 = Semi s3 s1
@@ -191,7 +197,7 @@ treeSend = Rec yBind (Choice External (Map.fromList
   [("Leaf",Skip),
    ("Node", Semi (Message Out IntType) (Semi (Var "y") (Var "y")))]))
 t7 = convertToGNF treeSend
-t8 = convertToGNF $ Semi treeSend (Var "alpha")
+t8 = convertToGNF $ Semi treeSend (Var "α")
 s9 = Rec yBind (Semi s1 (Var "y"))
 t9 = convertToGNF s9
 s10 = Semi s4 (Semi (Semi s3 s1) s4)
@@ -212,28 +218,45 @@ treeSend1 = Rec zBind (Choice External (Map.fromList
    ("Node", Semi (Message Out IntType) (Semi (Var "z") (Var "z")))]))
 s16 = Semi treeSend treeSend1
 t16 = convertToGNF s16
+s17 = Rec zBind (Semi s1 (Var "z"))
+t17 = convertToGNF s17
+s18 = Rec zBind (Semi s1 (Semi (Var "z") (Var "z")))
+t18 = convertToGNF s18
+s19 = Rec zBind (Semi (Semi s1 (Var "z")) (Var "z"))
+t19 = convertToGNF s19
 
+-- BISIMULATION
+
+type Node = Set.Set ([TypeVar], [TypeVar])
+
+bisim :: [TypeVar] -> [TypeVar] -> GNF -> Bool
+bisim xs ys = check [simplify (Set.singleton (xs, ys))]
+
+check :: [Node] -> GNF -> Bool
+-- Most recent node first
+-- Assume: the most recent node is simplified
+check (n:ns) g =
+  Set.null n ||
+  case expandNode n g of
+    Nothing -> False
+    Just n' -> check ((simplify n'):n:ns) g
+
+expandNode :: Node -> GNF -> Maybe Node
+expandNode n _ = Just n
+
+simplify :: Node -> Node
+simplify = id
 
 -- TYPE EQUIVALENCE
 
 equivalent :: KindEnv -> Type -> Type -> Bool
 equivalent _ _ _ = True
 
-{-
-bisim :: Word -> Word -> GNF -> Bool
-bisim w1 w2 = check [simplify (Set.singleton (w1, w2))]
-
-check :: [Node] -> GNF -> Bool
-check ns gnf =
-  Set.isempty ns || expandNode (head ns)
-
--}
-
-
+-- UNFOLDING, RENAMING, SUBSTITUTION
 
 unfold :: Type -> Type
 -- Assumes parameter is a Rec type
-unfold (Rec (Bind x k) t) = subs (Rec (Bind x k) t) x t
+unfold (Rec b t) = subs (Rec b t) (var b) t
 
 rename :: Type -> TypeVar -> Type
 -- Assumes parameter is a Rec type
@@ -245,16 +268,10 @@ subs t y (Var x)
     | otherwise           = Var x
 subs t y (Semi t1 t2)     = Semi (subs t y t1) (subs t y t2)
 subs t y (PairType t1 t2) = PairType (subs t y t1) (subs t y t2)
--- subs t2 y (Forall x k t1)
---     | x == y                = Forall x k t1
---     | otherwise             = Forall x k (subs t2 y t1)
 -- Assume y /= x 
-subs t2 y (Rec (Bind x k) t1)
-    | x == y              = Rec (Bind x k) t1
-    | otherwise           = Rec (Bind x k) (subs t2 y t1)
+subs t2 y (Rec b t1)
+    | var b == y          = Rec b t1
+    | otherwise           = Rec b (subs t2 y t1)
 subs t y (Choice v m)     = Choice v (Map.map(subs t y) m)
 subs t y (Fun m t1 t2)    = Fun m (subs t y t1) (subs t y t2)
 subs _ _ t                = t
--- subs _ _ Skip               = Skip
--- subs _ _ (In b)             = In b
--- subs _ _ (Out b)            = Out b
