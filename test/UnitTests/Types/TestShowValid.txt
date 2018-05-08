@@ -103,7 +103,7 @@ rec x :: SU . ?Bool
 Skip;rec x :: SU . ((!Int);x)
 rec x :: SU . x
 rec x :: SU . (?Bool -> !Int -> Bool)
--- rec x :: SU . forall y :: SU => x;y
+
 
 -- Complex tests
 

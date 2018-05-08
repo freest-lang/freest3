@@ -117,13 +117,6 @@ Skip;!Int
   (!Int;?Int);?Bool
 
 
-
--- forall x . !Int
---   forall x . !Int
---
--- forall x . !Int;x
---   forall x . !Int ;x
-
 rec x . !Int;x
     rec x . !Int;x
 
