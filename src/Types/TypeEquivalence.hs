@@ -23,6 +23,7 @@ import Types.Kinding
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import Control.Monad.State
+import Data.List(isPrefixOf)
 
 -- GREIBACH NORMAL FORMS
 
@@ -39,15 +40,15 @@ instance Show Label where
   show (MessageLabel p t) = show p ++ show t
   show (VarLabel l) = l
 
-type Productions = Map.Map TypeVar (Map.Map Label [TypeVar])
+type Grammar = Map.Map TypeVar (Map.Map Label [TypeVar])
 
-data GNF = GNF {start :: TypeVar, productions :: Productions}
+data GNF = GNF {start :: TypeVar, productions :: Grammar}
 
 instance Show GNF where
-  show g = "start:" ++ start g ++ showProductions (productions g)
+  show g = "start:" ++ start g ++ showGrammar (productions g)
 
-showProductions :: Productions -> String
-showProductions = Map.foldrWithKey showProds ""
+showGrammar :: Grammar -> String
+showGrammar = Map.foldrWithKey showProds ""
 
 showProds :: TypeVar -> (Map.Map Label [TypeVar]) -> String -> String
 showProds x m s = s ++ "\n" ++ Map.foldrWithKey (showProd x) "" m
@@ -59,11 +60,11 @@ showProd x l ys s = s ++ "\n" ++ x ++ " ::= " ++ show l ++ " " ++ (if null ys th
 
 type Visited = Map.Map Type TypeVar
 
-type GNFState = State (Productions, Visited, Int)
+type GNFState = State (Grammar, Visited, Int)
 
 -- State manipulation functions
 
-initial :: (Productions, Visited, Int)
+initial :: (Grammar, Visited, Int)
 initial = (Map.empty, Map.empty, 0)
 
 freshVar :: GNFState String
@@ -81,35 +82,35 @@ insertVisited :: Type -> TypeVar -> GNFState ()
 insertVisited t x =
   modify (\(p, v, n) -> (p, Map.insert t x v, n))
 
-getAllProductions :: GNFState Productions
-getAllProductions = do
+getAllGrammar :: GNFState Grammar
+getAllGrammar = do
   (p, _, _) <- get
   return p
 
-getProductions :: TypeVar -> GNFState (Map.Map Label [TypeVar])
-getProductions x = do
-  p <- getAllProductions
+getGrammar :: TypeVar -> GNFState (Map.Map Label [TypeVar])
+getGrammar x = do
+  p <- getAllGrammar
   return $ p Map.! x
 
 member :: TypeVar -> GNFState Bool
 member x = do
-  p <- getAllProductions
+  p <- getAllGrammar
   return $ Map.member x p
 
 insertProduction :: TypeVar -> Label -> [TypeVar] -> GNFState ()
 insertProduction x l w =
   modify (\(p, v, n) -> (Map.insertWith Map.union x (Map.singleton l w) p, v, n))
 
-insertProductions :: TypeVar -> (Map.Map Label [TypeVar]) -> GNFState ()
-insertProductions x m = insertProductions' x (Map.assocs m)
+insertGrammar :: TypeVar -> (Map.Map Label [TypeVar]) -> GNFState ()
+insertGrammar x m = insertGrammar' x (Map.assocs m)
 
-insertProductions' x [] = return ()
-insertProductions' x ((l, w):as) = do
+insertGrammar' x [] = return ()
+insertGrammar' x ((l, w):as) = do
   insertProduction x l w
-  insertProductions' x as
+  insertGrammar' x as
 
-replaceInProductions :: [TypeVar] -> TypeVar -> GNFState ()
-replaceInProductions w x =
+replaceInGrammar :: [TypeVar] -> TypeVar -> GNFState ()
+replaceInGrammar w x =
   modify (\(p, v, n) -> (Map.map (Map.map (replace w x)) p, v, n))
 
 replace :: Eq a => [a] -> a -> [a] -> [a]
@@ -120,10 +121,10 @@ replace w x (y:ys)
 
 -- Conversion to GNF
 
--- convertToGNF :: (Productions, Visited, Int) -> Type -> (GNF, (Productions, Visited, Int))
+-- convertToGNF :: (Grammar, Visited, Int) -> Type -> (GNF, (Grammar, Visited, Int))
 -- -- Assume: t is a session type different from Skip
 -- convertToGNF s t = runState (generateGNF t) s
-convertToGNF :: (Productions, Visited, Int) -> Type -> (TypeVar, (Productions, Visited, Int))
+convertToGNF :: (Grammar, Visited, Int) -> Type -> (TypeVar, (Grammar, Visited, Int))
 -- Assume: t is a session type different from Skip
 convertToGNF state t = (x, state')
   where ([x], state') = runState (toGNF t) state
@@ -131,7 +132,7 @@ convertToGNF state t = (x, state')
 generateGNF :: Type -> GNFState GNF
 generateGNF t = do
   [y] <- toGNF t
-  p <- getAllProductions
+  p <- getAllGrammar
   return $ GNF {start = y, productions = p}
 
 toGNF :: Type -> GNFState [TypeVar]
@@ -157,8 +158,8 @@ toGNF' (Semi t u) = do
   ys <- toGNF u
   b <- member x
   if b then do
-    m <- getProductions x
-    insertProductions x (Map.map (++ xs ++ ys) m)
+    m <- getGrammar x
+    insertGrammar x (Map.map (++ xs ++ ys) m)
     return [x]
   else
     return $ (x:xs) ++ ys -- E.g., rec x. !Int;(x;x)
@@ -171,7 +172,7 @@ toGNF' (Rec b t) = do
   let u = rename (Rec b t) y -- On the fly alpha conversion
   insertVisited u y
   (z:zs) <- toGNF (unfold u)
-  replaceInProductions (z:zs) y
+  replaceInGrammar (z:zs) y
   return [z]
 
 assocsToGNF :: TypeVar -> ChoiceView -> [(Constructor, Type)] -> GNFState ()
@@ -242,27 +243,29 @@ s22 = Semi (Semi s1 s2) s20
 
 type Node = Set.Set ([TypeVar], [TypeVar])
 
-bisim :: [TypeVar] -> [TypeVar] -> Productions -> Bool
+type History = [Node]
+
+bisim :: [TypeVar] -> [TypeVar] -> Grammar -> Bool
 bisim xs ys g = check [simplify g [] (Set.singleton (xs, ys))] g
 
-check :: [Node] -> Productions -> Bool
+check :: History -> Grammar -> Bool
 -- Most recent node first
 -- Assume: the most recent node is simplified
-check (n:ns) g =
-  Set.null n ||
-  case expandNode n g of
-    Nothing -> False
-    Just n' -> check ((simplify g ns n'):n:ns) g
+check (n:ns) g
+  | Set.null n = True
+  | otherwise  = case expandNode n g of
+      Nothing -> False
+      Just n' -> check ((simplify g (n:ns) n'):n:ns) g
 
-expandNode :: Node -> Productions -> Maybe Node
+expandNode :: Node -> Grammar -> Maybe Node
 expandNode n g =
-  Set.fold(\p acc -> case acc of
-    Nothing -> Nothing
-    Just s1 -> case expandPair p g of
-      Nothing -> Nothing
-      Just s2 -> Just (Set.union s1 s2)) (Just Set.empty) n
+  Set.foldr(\p acc -> case acc of
+    Nothing  -> Nothing
+    Just ns1 -> case expandPair p g of
+      Nothing  -> Nothing
+      Just ns2 -> Just (Set.union ns1 ns2)) (Just Set.empty) n
 
-expandPair :: ([TypeVar], [TypeVar]) -> Productions -> Maybe Node
+expandPair :: ([TypeVar], [TypeVar]) -> Grammar -> Maybe Node
 expandPair (xs, ys) g =
   if Map.keysSet m1 == Map.keysSet m2
   then Just (match m1 m2)
@@ -270,37 +273,70 @@ expandPair (xs, ys) g =
   where m1 = reduce g xs
         m2 = reduce g ys
 
-reduce :: Productions -> [TypeVar] -> Map.Map Label [TypeVar]
-reduce _ []     = Map.empty
+reduce :: Grammar -> [TypeVar] -> Map.Map Label [TypeVar]
+reduce _ []     = Map.empty    -- This should not happen
 reduce g (x:xs) = Map.map (++ xs) (g Map.! x)
 
 match :: Map.Map Label [TypeVar] -> Map.Map Label [TypeVar] -> Node
 match m1 m2 =
-  Map.foldrWithKey (\l xs node -> Set.insert (xs, m2 Map.! l) node) Set.empty m1
+  Map.foldrWithKey (\l xs n -> Set.insert (xs, m2 Map.! l) n) Set.empty m1
 
-simplify :: Productions -> [Node] -> Node -> Node
-simplify p ns = Set.filter (retain p ns)
+simplify :: Grammar -> History -> Node -> Node
+simplify g h n = foldr (apply g h) n [bpa1, reflex, congruence]
+-- Perhaps we need to iterate until reaching a fixed point
 
-retain :: Productions -> [Node] -> ([TypeVar], [TypeVar]) -> Bool
-retain g ns (xs, ys) = not $
-  xs == ys &&
-  inCongruenceList ns xs ys &&
-  True && -- BPA 1
-  True && -- BPA 2
-  True    -- Remove weakly normed
+-- The different node transformations
 
-inCongruenceList :: [Node] -> [TypeVar] -> [TypeVar] -> Bool
-inCongruenceList ns xs ys = or $ map (inCongruenceNode xs ys) ns
+type NodeTransformation = Grammar -> History -> ([TypeVar], [TypeVar]) -> Node
 
-inCongruenceNode :: [TypeVar] -> [TypeVar] -> Node -> Bool
-inCongruenceNode xs ys n = or $ Set.map (inCongruencePair xs ys) n
+apply :: Grammar -> History -> NodeTransformation -> Node -> Node
+apply g h trans = Set.foldr (\p n -> Set.union (trans g h p) n) Set.empty
 
-inCongruencePair :: [TypeVar] -> [TypeVar] -> ([TypeVar], [TypeVar]) -> Bool
-inCongruencePair _ _ ([], _) = False
-inCongruencePair _ _ (_, []) = False
-inCongruencePair xs ys (xs', ys')
-  | xs == xs' && ys == ys' = True
-  | otherwise = head xs' == head ys' && inCongruencePair xs ys (tail xs', tail ys')
+reflex :: NodeTransformation
+reflex _ _ (xs, ys)
+  | xs == ys  = Set.empty
+  | otherwise = Set.singleton (xs, ys)
+
+congruence :: NodeTransformation
+congruence _ h p
+  | inCongruenceList h p = Set.empty
+  | otherwise            = Set.singleton p
+
+inCongruenceList :: History -> ([TypeVar], [TypeVar]) -> Bool
+inCongruenceList h p = or $ map (inCongruenceNode p) h
+
+inCongruenceNode :: ([TypeVar], [TypeVar]) -> Node -> Bool
+inCongruenceNode p n = or $ Set.map (inCongruencePair p) n
+
+inCongruencePair :: ([TypeVar], [TypeVar]) -> ([TypeVar], [TypeVar]) -> Bool
+inCongruencePair (xs, ys) (xs', ys') =
+  xs `isPrefixOf` xs' &&
+  ys `isPrefixOf` ys' &&
+  (drop (length xs) xs') == (drop (length ys) ys')
+-- inCongruencePair _ ([], _) = False
+-- inCongruencePair _ (_, []) = False
+-- inCongruencePair (xs, ys) (xs', ys')
+--   | xs == xs' && ys == ys' = True
+--   | otherwise = head xs' == head ys' && inCongruencePair (xs, ys) (tail xs', tail ys')
+
+bpa1 :: NodeTransformation
+bpa1 g h (x:xs, y:ys) =
+  case findInHistory h x y of
+    Nothing         -> Set.singleton (x:xs, y:ys)
+    Just (xs', ys') -> Set.fromList [(xs,xs'), (ys,ys')]
+bpa1 _ _ p = Set.singleton p
+
+findInHistory :: History -> TypeVar -> TypeVar -> Maybe ([TypeVar], [TypeVar])
+findInHistory h x y =
+ foldr (\n acc -> case acc of
+   Just p  -> Just p
+   Nothing -> findInNode n x y) Nothing h
+
+findInNode :: Node -> TypeVar -> TypeVar -> Maybe ([TypeVar], [TypeVar])
+findInNode n x y =
+  Set.foldr (\((x':xs), (y':ys)) acc -> case acc of
+    Just p  -> Just p
+    Nothing -> if x == x' && y == y' then Just (xs, ys) else Nothing) Nothing n
 
 -- TYPE EQUIVALENCE
 
@@ -314,10 +350,10 @@ equivalent _ t u = bisim [x] [y] p
 
 -- testing
 
--- convertTwo :: Type -> Type -> (TypeVar, TypeVar, Productions)
--- convertTwo t u = (start g, start h, productions h)
---   where (g, state) = convertToGNF initial t
---         (h, _    ) = convertToGNF state u
+convertTwo :: Type -> Type -> (TypeVar, TypeVar, Grammar)
+convertTwo t u = (x, y, g)
+  where (x, state)   = convertToGNF initial t
+        (y, (g,_,_)) = convertToGNF state u
 
 e1 = equivalent Map.empty s1 s1
 e2 = equivalent Map.empty s1 s2 -- False
