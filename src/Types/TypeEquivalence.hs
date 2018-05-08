@@ -28,8 +28,6 @@ import Control.Monad.State
 
 type Vars = [TypeVar]
 
---type Node = Set.Set (Vars, Vars)
-
 data Label =
   ChoiceLabel ChoiceView Constructor |
   MessageLabel Polarity BasicType |
@@ -50,6 +48,8 @@ data GNF = GNF {start :: TypeVar, productions :: Productions} deriving Show
 type Visited = Map.Map Type TypeVar
 
 type GNFState = State (Productions, Visited, Int)
+
+-- State manipulation functions
 
 initial :: (Productions, Visited, Int)
 initial = (Map.empty, Map.empty, 0)
@@ -84,30 +84,34 @@ insertProduction x l w =
   modify (\(p, v, n) -> (Map.insertWith Map.union x (Map.singleton l w) p, v, n))
 
 insertProductions :: TypeVar -> (Map.Map Label Vars) -> GNFState ()
-insertProductions x m = do
-  let _ = Map.mapWithKey (\l w -> insertProduction x l w) m
-  return ()
+insertProductions x m = insertProductions' x (Map.assocs m)
+
+insertProductions' x [] = return ()
+insertProductions' x ((l, w):as) = do
+  insertProduction x l w
+  insertProductions' x as
 
 replaceInProductions :: Vars -> TypeVar -> GNFState ()
 replaceInProductions w x =
   modify (\(p, v, n) -> (Map.map (Map.map (replace w x)) p, v, n))
 
+replace :: Eq a => [a] -> a -> [a] -> [a]
 replace _ _ [] = []
 replace w x (y:ys)
   | x == y    = w ++ (replace w x ys)
   | otherwise = y : (replace w x ys)
 
--- Translation to GNF
+-- Conversion to GNF
 
--- Assume: t is a session type different from Skip
 convertToGNF :: Type -> GNF
+-- Assume: t is a session type different from Skip
 convertToGNF t = evalState (generateGNF t) initial
 
 generateGNF :: Type -> GNFState GNF
 generateGNF t = do
   (y:v) <- toGNF t
   m <- getProductions y
-  insertProductions y (Map.map (\w -> v ++ w) m)
+  insertProductions y (Map.map (\w -> w ++ v) m)
   p <- getAllProductions
   return $ GNF {start = y, productions = p}
 
@@ -124,11 +128,10 @@ toGNF' (Message p b) = do
   y <- freshVar
   insertProduction y (MessageLabel p b) []
   return [y]
-toGNF' (Var x) = do
+toGNF' (Var a) = do -- This is a free variable
   y <- freshVar
-  insertProduction y (VarLabel x) []
+  insertProduction y (VarLabel a) []
   return [y]
---toGNF' (Semi (Choice p m) t) = do --- TODO
 toGNF' (Semi t1 t2) = do
   w1 <- toGNF t1
   w2 <- toGNF t2
@@ -141,7 +144,7 @@ toGNF' (Rec (Bind x k) t) = do
   insertVisited (Rec (Bind x k) t) x
   w <- toGNF (unfold (Rec (Bind x k) t))
   replaceInProductions w x
-  return w
+  return w -- TODO: not working
 
 assocsToGNF :: TypeVar -> ChoiceView -> [(Constructor, Type)] -> GNFState ()
 assocsToGNF _ _ [] = return ()
@@ -152,18 +155,27 @@ assocsToGNF y p ((l, t):as) = do
 
 -- tests
 
-t1 = convertToGNF $ Message Out IntType
+s1 = Message Out CharType
+t1 = convertToGNF s1
 t2 = convertToGNF $ (Var "alpha")
-t3 = convertToGNF $ Semi (Message Out IntType) (Message In BoolType)
-t4 = convertToGNF $ Choice External (Map.fromList
+s3 = Semi (Message Out IntType) (Message In BoolType)
+t3 = convertToGNF s3
+s4 = Semi s3 s1
+t4 = convertToGNF s4
+t5 = convertToGNF $ Choice External (Map.fromList
   [("Leaf", Skip),
-   ("Node", Message In BoolType)])
-linSessionKind = Kind {prekind = Session, multiplicity = Un}
+   ("Node", s1)])
+t6 = convertToGNF $ Choice External (Map.fromList
+  [("Leaf", Skip),
+   ("Node", s3)])
+linSessionKind = Kind {prekind = Session, multiplicity = Lin}
 treeSend = Rec (Bind "y" linSessionKind) (Choice External (Map.fromList
   [("Leaf",Skip),
    ("Node", Semi (Message Out IntType) (Semi (Var "y") (Var "y")))]))
-t5 = convertToGNF treeSend
-t6 = convertToGNF $ Semi treeSend (Var "alpha")
+t7 = convertToGNF treeSend
+t8 = convertToGNF $ Semi treeSend (Var "alpha")
+s9 = Rec (Bind "y" linSessionKind) (Semi s1 (Var "y"))
+t9 = convertToGNF s9
 
 -- TYPE EQUIVALENCE
 
