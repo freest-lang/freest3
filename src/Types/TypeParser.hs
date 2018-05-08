@@ -108,10 +108,10 @@ binary name fun assoc = Infix  (do{ try (symbol name); return fun }) assoc
 parseTerm :: Parsec String u Type
 parseTerm =
   try (parens typeExpr)
-  <|> (do {  skip ;                                             return Skip })
-  <|> (do { b <- parseBasicType;                                return $ Basic b })
-  <|> (do { try (symbol "?"); b <- parseBasicType;              return $ Message In b })  
-  <|> (do { try (symbol "!"); b <- parseBasicType;              return $ Message Out b })  
+  <|> (do {  skip ;                                return Skip })
+  <|> (do { b <- parseBasicType;                   return $ Basic b })
+  <|> (do { try (symbol "?"); b <- parseBasicType; return $ Message In b })  
+  <|> (do { try (symbol "!"); b <- parseBasicType; return $ Message Out b })  
   <|> parens parsePair
   <|> parseExternalChoice
   <|> parseInternalChoice

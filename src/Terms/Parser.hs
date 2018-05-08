@@ -59,6 +59,7 @@ type ParserOut = (VarEnv, ExpEnv, ConstructorEnv, KindEnv)
 type CFSTParser = Parsec String ParserOut ParserOut
 type CFSTSubParser = Parsec String ParserOut
 
+-- TODO: runParserT
 mainProgram :: FilePath -> VarEnv -> IO (Either ParseError ParserOut)
 mainProgram filepath venv = do -- parseFromFile (program venv) filepath
   file <- readFile filepath
@@ -93,14 +94,15 @@ parseTypeSignature = do
 parseTypeScheme :: CFSTSubParser TypeScheme
 parseTypeScheme = do
   reserved "forall"
-  bindings <- commaSep1 (do {id <- identifier; k <- parseVarBind; return $ Bind id k})
+  bindings <- commaSep1 parseBindings
   reserved "=>"  
   t <- parseType
   return $ TypeScheme bindings t
-    -- foldl apply (inner (last bindings) t) (init bindings)
-  -- where
-  --   inner (id, k) t = Forall id k t
-  --   apply acc (id, k) = Forall id k acc
+
+parseBindings = do
+  id <- identifier
+  k <- option (Kind Session Un) parseVarBind
+  return $ Bind id k
 
 parseFunction :: CFSTSubParser ()
 parseFunction = do
@@ -461,8 +463,19 @@ posPair :: SourcePos -> (Int, Int)
 posPair pos = (sourceLine pos, sourceColumn pos)
 
 --TODO: remove (test purposes)
-run = mainProgram path Map.empty
-path = "src/test.hs"
+-- run = mainProgram path Map.empty
+-- path = "src/test.hs"
 --path = "/home/balmeida/workspaces/ContextFreeSession/test/Programs/ValidTests/dot/dot.hs"
 --path = "/home/balmeida/workspaces/ContextFreeSession/test/Programs/ValidTests/sendTree/sendTree.hs"
+
+-- Read instance for type schemes
+
+instance Read TypeScheme where
+  readsPrec _ s =
+    case parserTScheme s of
+      Right b -> [(b, "")]
+      Left m  -> error "TypeScheme parse error"
+    where
+      parserTScheme s =
+        runParser parseTypeScheme (Map.empty, Map.empty, Map.empty, Map.empty) "" s
 
