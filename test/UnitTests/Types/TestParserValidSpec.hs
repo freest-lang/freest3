@@ -48,8 +48,8 @@ spec = do
       (read "[a:Int,b:Bool]" :: Type) `shouldBe` (Datatype (Map.fromList [("a",Basic IntType),("b",Basic BoolType)]))
     it "rec a.Bool" $ do
       (read "rec a.Bool" :: Type) `shouldBe` (Rec (Bind "a" (Kind Session Un)) (Basic BoolType))
-    it "forall a.Bool" $ do
-      (read "forall a :: TU => Bool" :: Type) `shouldBe` (Forall "a" (Kind Functional Un) (Basic BoolType))
+    -- it "forall a.Bool" $ do
+    --   (read "forall a :: TU => Bool" :: Type) `shouldBe` (Forall "a" (Kind Functional Un) (Basic BoolType))
 
   describe "Operator precedence" $ do
     it "(Char)" $ do
@@ -86,22 +86,22 @@ spec = do
       (read "((Int,Bool),Char)" :: Type) `shouldBe` (PairType (PairType (Basic IntType)(Basic BoolType)) (Basic CharType))
     it "rec a . (rec i . Int)" $ do
       (read "rec a . (rec i . Int)" :: Type) `shouldBe` (Rec (Bind "a" (Kind Session Un)) (Rec (Bind "i" (Kind Session Un)) (Basic IntType)))
-    it "forall a.(forall b.Bool)" $ do
-      (read "forall a :: TU => (forall b :: TU => Bool)" :: Type) `shouldBe` (Forall "a" (Kind Functional Un) (Forall "b" (Kind Functional Un) (Basic BoolType)))
+    -- it "forall a.(forall b.Bool)" $ do
+  --     (read "forall a :: TU => (forall b :: TU => Bool)" :: Type) `shouldBe` (Forall "a" (Kind Functional Un) (Forall "b" (Kind Functional Un) (Basic BoolType)))
 
-  describe "Associativity" $ do
-    it "forall f . f -o f -> f" $ do
-      (read "forall f :: TU => f -o f -> f" :: Type) `shouldBe` (Forall "f" (Kind Functional Un) (Fun Lin (Var "f")(Fun Un (Var "f")(Var "f"))))
-    it "forall f . (f -o f) -> f" $ do
-      (read "forall f :: TU => (f -o f) -> f" :: Type) `shouldBe` (Forall "f" (Kind Functional Un) (Fun Un (Fun Lin (Var "f")(Var "f")) (Var "f")))
-    it "Skip;Skip;Skip" $ do
-      (read "Skip;Skip;Skip" :: Type) `shouldBe` (Semi Skip (Semi Skip Skip))
-    it "forall a . (a,Int)" $ do
-      (read "forall a :: TU => (a,Int)" :: Type) `shouldBe` (Forall "a" (Kind Functional Un) (PairType (Var "a") (Basic IntType)))
-    it "forall a . (a,Int)" $ do
-      (read "forall a :: TU => (a,Int)" :: Type) `shouldBe` (Forall "a" (Kind Functional Un) (PairType (Var "a") (Basic IntType)))
-    it "forall a . forall b . a -> {-A {-comment-} inside-} b" $ do
-      (read "forall a :: TU => forall b :: TU => a -> {-A comment inside-} b" :: Type) `shouldBe` (Forall "a" (Kind Functional Un) (Forall "b" (Kind Functional Un) (Fun Un (Var "a") (Var "b"))))
+  -- describe "Associativity" $ do
+  --   it "forall f . f -o f -> f" $ do
+  --     (read "forall f :: TU => f -o f -> f" :: Type) `shouldBe` (Forall "f" (Kind Functional Un) (Fun Lin (Var "f")(Fun Un (Var "f")(Var "f"))))
+  --   it "forall f . (f -o f) -> f" $ do
+  --     (read "forall f :: TU => (f -o f) -> f" :: Type) `shouldBe` (Forall "f" (Kind Functional Un) (Fun Un (Fun Lin (Var "f")(Var "f")) (Var "f")))
+  --   it "Skip;Skip;Skip" $ do
+  --     (read "Skip;Skip;Skip" :: Type) `shouldBe` (Semi Skip (Semi Skip Skip))
+  --   it "forall a . (a,Int)" $ do
+  --     (read "forall a :: TU => (a,Int)" :: Type) `shouldBe` (Forall "a" (Kind Functional Un) (PairType (Var "a") (Basic IntType)))
+  --   it "forall a . (a,Int)" $ do
+  --     (read "forall a :: TU => (a,Int)" :: Type) `shouldBe` (Forall "a" (Kind Functional Un) (PairType (Var "a") (Basic IntType)))
+  --   it "forall a . forall b . a -> {-A {-comment-} inside-} b" $ do
+  --     (read "forall a :: TU => forall b :: TU => a -> {-A comment inside-} b" :: Type) `shouldBe` (Forall "a" (Kind Functional Un) (Forall "b" (Kind Functional Un) (Fun Un (Var "a") (Var "b"))))
 
 
 --  evaluate (read "" :: Type) `shouldThrow` anyException
@@ -134,9 +134,9 @@ spec = do
       (read ("rec alpha ."++treeChannelRead++";("++treeChannelRead++";alpha)") :: Type) `shouldBe`
         (Rec (Bind "alpha" (Kind Session Un)) (Semi treeChannelType (Semi  treeChannelType (Var "alpha"))))
 
-    it "forall beta . TreeChannel -> TreeChannel; beta -> beta" $ do
-      (read ("forall beta :: TU => "++treeChannelRead++"->("++treeChannelRead++";beta)->beta") :: Type) `shouldBe`
-        (Forall "beta" (Kind Functional Un) (Fun Un treeChannelType (Fun Un (Semi treeChannelType (Var "beta")) (Var "beta"))))
+    -- it "forall beta . TreeChannel -> TreeChannel; beta -> beta" $ do
+    --   (read ("forall beta :: TU => "++treeChannelRead++"->("++treeChannelRead++";beta)->beta") :: Type) `shouldBe`
+    --     (Forall "beta" (Kind Functional Un) (Fun Un treeChannelType (Fun Un (Semi treeChannelType (Var "beta")) (Var "beta"))))
 
   describe "Remote tree transformation (Listing 2)" $ do
     let xFormChanRead = "(rec xFormChan . +{Leaf:Skip,Node:!Int;xFormChan;xFormChan;?Int})"
@@ -156,15 +156,13 @@ spec = do
     it "xFormChan Dual Type" $ do
       (read (xFormChanDualRead) :: Type) `shouldBe` xFormChanDualType
 
-    it "transform" $ do
-      (read ("forall alpha :: TU => " ++ treeChannelRead ++ "->(" ++ xFormChanRead ++ ";alpha)->("++treeChannelRead++",alpha)")) `shouldBe`
-        (Forall "alpha" (Kind Functional Un) (Fun Un treeChannelType (Fun Un (Semi xFormChanType (Var "alpha")) (PairType treeChannelType (Var "alpha")))))
-              -- (Semi (Fun Un treeChannelType xFormChanType) (Fun Un (Var "alpha") (PairType treeChannelType (Var "alpha")))))
-        -- (Forall "alpha" (Semi (Fun Un treeChannelType xFormChanType) (Fun Un (Var "alpha") (PairType treeChannelType (Var "alpha")))))
+    -- it "transform" $ do
+    --   (read ("forall alpha :: TU => " ++ treeChannelRead ++ "->(" ++ xFormChanRead ++ ";alpha)->("++treeChannelRead++",alpha)")) `shouldBe`
+    --     (Forall "alpha" (Kind Functional Un) (Fun Un treeChannelType (Fun Un (Semi xFormChanType (Var "alpha")) (PairType treeChannelType (Var "alpha")))))
 
-    it "treeSum" $ do
-      (read ("forall alpha :: TU => (" ++ xFormChanDualRead ++ ";alpha) -o (Int, alpha) ")) `shouldBe`
-        (Forall "alpha" (Kind Functional Un) (Fun Lin (Semi xFormChanDualType  (Var "alpha")) (PairType (Basic IntType) (Var "alpha"))))
+    -- it "treeSum" $ do
+    --   (read ("forall alpha :: TU => (" ++ xFormChanDualRead ++ ";alpha) -o (Int, alpha) ")) `shouldBe`
+    --     (Forall "alpha" (Kind Functional Un) (Fun Lin (Semi xFormChanDualType  (Var "alpha")) (PairType (Basic IntType) (Var "alpha"))))
 
   describe "Arithmetic expression server (Listing 3)" $ do
     let termChanRead = "(rec TermChan . +{Const:!Int,Add:TermChan;TermChan,Mult:TermChan;TermChan} )"
@@ -184,9 +182,9 @@ spec = do
     it "computeService" $ do
       (read ("(" ++ termChanDualRead ++ ";!Int)->Skip") :: Type) `shouldBe`  (Fun Un (Semi termChanDualType (Message Out IntType)) Skip)
 
-    it "receiveEval" $ do
-      (read ("forall alpha :: TU => (" ++ termChanDualRead ++ ";!Int)->(Int, alpha)") :: Type) `shouldBe`
-            (Forall "alpha" (Kind Functional Un) (Fun Un (Semi termChanDualType (Message Out IntType))(PairType (Basic IntType)(Var "alpha"))))
+    -- it "receiveEval" $ do
+    --   (read ("forall alpha :: TU => (" ++ termChanDualRead ++ ";!Int)->(Int, alpha)") :: Type) `shouldBe`
+    --         (Forall "alpha" (Kind Functional Un) (Fun Un (Semi termChanDualType (Message Out IntType))(PairType (Basic IntType)(Var "alpha"))))
 
     it "client" $ do
       (read ("(" ++ termChanRead ++ ";?Int)->(Int,Skip)") :: Type) `shouldBe` (Fun Un (Semi termChanType (Message In IntType))(PairType (Basic IntType) Skip))

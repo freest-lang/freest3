@@ -18,15 +18,11 @@ spec = do
 
   -- describe "Valid Contractivity Test" $ do
   --   mapM_ matchValidSpec (convert t)
+
   describe "Valid kinding tests" $ do
 
     t <- runIO $ readFromFile "test/UnitTests/Types/TestKindingValid.txt"
     mapM_ matchValidKindingSpec (convert t)
-
--- matchValidSpec :: (String, String) -> Spec
--- matchValidSpec (a, b) =
---   it a $ do
---     (contractive Map.empty (read a :: Type)) `shouldBe` (read b :: Bool)
 
 matchValidKindingSpec :: (String, String) -> Spec
 matchValidKindingSpec (a, b) =

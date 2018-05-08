@@ -88,15 +88,15 @@ Int -o Bool
 
 -- Forall tests
 
-forall a :: TU => Bool
-forall x :: TU => !Int
-forall x :: SU => !Int;x
+-- forall a :: TU => Bool
+-- forall x :: TU => !Int
+-- forall x :: SU => !Int;x
 
-forall a :: TU => a
-forall b :: TU => b
-forall a :: TU => (forall b :: TU => a)
-(forall x :: TU => !Int;x);forall y :: TU => !Bool;y
-forall x :: TU => !Int;x;forall y :: TU => !Bool;y
+-- forall a :: TU => a
+-- forall b :: TU => b
+-- forall a :: TU => (forall b :: TU => a)
+-- (forall x :: TU => !Int;x);forall y :: TU => !Bool;y
+-- forall x :: TU => !Int;x;forall y :: TU => !Bool;y
 
 -- Recursive tests
 
@@ -115,7 +115,7 @@ rec x :: SU . ?Bool
 Skip;rec x :: SU . ((!Int);x)
 rec x :: SU . x
 rec x :: SU . (?Bool -> !Int -> Bool)
-rec x :: SU . forall y :: SU => x;y
+-- rec x :: SU . forall y :: SU => x;y
 
 -- Complex tests
 
@@ -126,7 +126,7 @@ rec alpha :: SU . !Int;(((rec TreeChannel :: SU . +{Leaf:Skip,Node:!Int;TreeChan
 rec alpha :: SU . ((rec TreeChannel :: SU . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});(rec TreeChannel :: SU . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel}));alpha
 rec alpha :: SU .(rec TreeChannel :: SU . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});((rec TreeChannel :: SU . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});alpha)
 
-forall beta :: TU => (rec TreeChannel :: SU . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel})->((rec TreeChannel :: SU . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});beta)->beta
+-- forall beta :: TU => (rec TreeChannel :: SU . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel})->((rec TreeChannel :: SU . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});beta)->beta
 
 (rec XploreNodeChan :: SU . +{Value:!Int;XploreNodeChan, Left:(rec XformChan :: SU . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int});XploreNodeChan, Right:(rec XformChan :: SU . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int});XploreNodeChan,Exit:Skip})
 
