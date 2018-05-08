@@ -120,9 +120,13 @@ replace w x (y:ys)
 
 -- Conversion to GNF
 
-convertToGNF :: Type -> GNF
+-- convertToGNF :: (Productions, Visited, Int) -> Type -> (GNF, (Productions, Visited, Int))
+-- -- Assume: t is a session type different from Skip
+-- convertToGNF s t = runState (generateGNF t) s
+convertToGNF :: (Productions, Visited, Int) -> Type -> (TypeVar, (Productions, Visited, Int))
 -- Assume: t is a session type different from Skip
-convertToGNF t = evalState (generateGNF t) initial
+convertToGNF state t = (x, state')
+  where ([x], state') = runState (toGNF t) state
 
 generateGNF :: Type -> GNFState GNF
 generateGNF t = do
@@ -179,80 +183,156 @@ assocsToGNF y p ((l, t):as) = do
 
 -- tests
 
+buildGNF :: Type -> GNF
+buildGNF t = evalState (generateGNF t) initial
+
 s1 = Message Out CharType
-t1 = convertToGNF s1
-t2 = convertToGNF $ (Var "α")
+t1 = buildGNF s1
+s2 = Var "α"
+t2 = buildGNF s2
 s3 = Semi (Message Out IntType) (Message In BoolType)
-t3 = convertToGNF s3
+t3 = buildGNF s3
 s4 = Semi s3 s1
-t4 = convertToGNF s4
-t5 = convertToGNF $ Choice External (Map.fromList
+t4 = buildGNF s4
+s5 = Choice External (Map.fromList
   [("Leaf", Skip),
    ("Node", s1)])
-t6 = convertToGNF $ Choice External (Map.fromList
+t5 = buildGNF s5
+s6 = Choice External (Map.fromList
   [("Leaf", Skip),
    ("Node", s3)])
+t6 = buildGNF s6
 yBind = Bind "y" (Kind {prekind = Session, multiplicity = Lin})
 treeSend = Rec yBind (Choice External (Map.fromList
   [("Leaf",Skip),
    ("Node", Semi (Message Out IntType) (Semi (Var "y") (Var "y")))]))
-t7 = convertToGNF treeSend
-t8 = convertToGNF $ Semi treeSend (Var "α")
+t7 = buildGNF treeSend
+t8 = buildGNF $ Semi treeSend (Var "α")
 s9 = Rec yBind (Semi s1 (Var "y"))
-t9 = convertToGNF s9
+t9 = buildGNF s9
 s10 = Semi s4 (Semi (Semi s3 s1) s4)
-t10 = convertToGNF s10
+t10 = buildGNF s10
 s11 = Semi (Rec yBind (Semi treeSend (Var "y"))) treeSend
-t11 = convertToGNF s11
+t11 = buildGNF s11
 zBind = Bind "z" (Kind {prekind = Session, multiplicity = Lin})
 s12 = Semi (Rec zBind (Semi treeSend (Var "z"))) treeSend
-t12 = convertToGNF s12
+t12 = buildGNF s12
 s13 = Semi treeSend Skip
-t13 = convertToGNF s13
+t13 = buildGNF s13
 s14 = Semi Skip treeSend
-t14 = convertToGNF s14
+t14 = buildGNF s14
 s15 = Semi treeSend treeSend
-t15 = convertToGNF s15
+t15 = buildGNF s15
 treeSend1 = Rec zBind (Choice External (Map.fromList
   [("Leaf",Skip),
    ("Node", Semi (Message Out IntType) (Semi (Var "z") (Var "z")))]))
 s16 = Semi treeSend treeSend1
-t16 = convertToGNF s16
+t16 = buildGNF s16
 s17 = Rec zBind (Semi s1 (Var "z"))
-t17 = convertToGNF s17
+t17 = buildGNF s17
 s18 = Rec zBind (Semi s1 (Semi (Var "z") (Var "z")))
-t18 = convertToGNF s18
+t18 = buildGNF s18
 s19 = Rec zBind (Semi (Semi s1 (Var "z")) (Var "z"))
-t19 = convertToGNF s19
+t19 = buildGNF s19
+s20 = Message In IntType
+s21 = Semi s1 (Semi s2 s20)
+s22 = Semi (Semi s1 s2) s20
 
 -- BISIMULATION
 
 type Node = Set.Set ([TypeVar], [TypeVar])
 
-bisim :: [TypeVar] -> [TypeVar] -> GNF -> Bool
-bisim xs ys = check [simplify (Set.singleton (xs, ys))]
+bisim :: [TypeVar] -> [TypeVar] -> Productions -> Bool
+bisim xs ys g = check [simplify g [] (Set.singleton (xs, ys))] g
 
-check :: [Node] -> GNF -> Bool
+check :: [Node] -> Productions -> Bool
 -- Most recent node first
 -- Assume: the most recent node is simplified
 check (n:ns) g =
   Set.null n ||
   case expandNode n g of
     Nothing -> False
-    Just n' -> check ((simplify n'):n:ns) g
+    Just n' -> check ((simplify g ns n'):n:ns) g
 
-expandNode :: Node -> GNF -> Maybe Node
-expandNode n _ = Just n
+expandNode :: Node -> Productions -> Maybe Node
+expandNode n g =
+  Set.fold(\p acc -> case acc of
+    Nothing -> Nothing
+    Just s1 -> case expandPair p g of
+      Nothing -> Nothing
+      Just s2 -> Just (Set.union s1 s2)) (Just Set.empty) n
 
-simplify :: Node -> Node
-simplify = id
+expandPair :: ([TypeVar], [TypeVar]) -> Productions -> Maybe Node
+expandPair (xs, ys) g =
+  if Map.keysSet m1 == Map.keysSet m2
+  then Just (match m1 m2)
+  else Nothing
+  where m1 = reduce g xs
+        m2 = reduce g ys
+
+reduce :: Productions -> [TypeVar] -> Map.Map Label [TypeVar]
+reduce _ []     = Map.empty
+reduce g (x:xs) = Map.map (++ xs) (g Map.! x)
+
+match :: Map.Map Label [TypeVar] -> Map.Map Label [TypeVar] -> Node
+match m1 m2 =
+  Map.foldrWithKey (\l xs node -> Set.insert (xs, m2 Map.! l) node) Set.empty m1
+
+simplify :: Productions -> [Node] -> Node -> Node
+simplify p ns = Set.filter (retain p ns)
+
+retain :: Productions -> [Node] -> ([TypeVar], [TypeVar]) -> Bool
+retain g ns (xs, ys) = not $
+  xs == ys &&
+  inCongruenceList ns xs ys &&
+  True && -- BPA 1
+  True && -- BPA 2
+  True    -- Remove weakly normed
+
+inCongruenceList :: [Node] -> [TypeVar] -> [TypeVar] -> Bool
+inCongruenceList ns xs ys = or $ map (inCongruenceNode xs ys) ns
+
+inCongruenceNode :: [TypeVar] -> [TypeVar] -> Node -> Bool
+inCongruenceNode xs ys n = or $ Set.map (inCongruencePair xs ys) n
+
+inCongruencePair :: [TypeVar] -> [TypeVar] -> ([TypeVar], [TypeVar]) -> Bool
+inCongruencePair _ _ ([], _) = False
+inCongruencePair _ _ (_, []) = False
+inCongruencePair xs ys (xs', ys')
+  | xs == xs' && ys == ys' = True
+  | otherwise = head xs' == head ys' && inCongruencePair xs ys (tail xs', tail ys')
 
 -- TYPE EQUIVALENCE
 
 equivalent :: KindEnv -> Type -> Type -> Bool
-equivalent _ _ _ = True
+equivalent _ Skip Skip = True
+equivalent _ Skip _    = False
+equivalent _ _    Skip = False
+equivalent _ t u = bisim [x] [y] p
+  where (x, state)     = convertToGNF initial t
+        (y, (p, _, _)) = convertToGNF state u
 
--- UNFOLDING, RENAMING, SUBSTITUTION
+-- testing
+
+-- convertTwo :: Type -> Type -> (TypeVar, TypeVar, Productions)
+-- convertTwo t u = (start g, start h, productions h)
+--   where (g, state) = convertToGNF initial t
+--         (h, _    ) = convertToGNF state u
+
+e1 = equivalent Map.empty s1 s1
+e2 = equivalent Map.empty s1 s2 -- False
+e3 = equivalent Map.empty s1 s3 -- False
+e4 = equivalent Map.empty s3 s3
+e5 = equivalent Map.empty s3 s4 -- False
+e6 = equivalent Map.empty s1 s5 -- False
+e7 = equivalent Map.empty s4 s5 -- False
+e8 = equivalent Map.empty s5 s6 -- False
+e9 = equivalent Map.empty s9 s9
+e10 = equivalent Map.empty treeSend treeSend
+e11 = equivalent Map.empty s21 s22
+
+
+-- UNFOLDING, RENAMING, SUBSTITUTING
 
 unfold :: Type -> Type
 -- Assumes parameter is a Rec type
@@ -262,7 +342,7 @@ rename :: Type -> TypeVar -> Type
 -- Assumes parameter is a Rec type
 rename (Rec (Bind x k) t) y = Rec (Bind y k) (subs (Var y) x t)
 
-subs :: Type -> TypeVar -> Type -> Type
+subs :: Type -> TypeVar -> Type -> Type -- t[x/u]
 subs t y (Var x)
     | x == y              = t
     | otherwise           = Var x
