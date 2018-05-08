@@ -74,21 +74,3 @@ rec y. [A: ?Int, B: !Int; y]
 
 +{A: ?Int, B: rec x. &{C: rec y. !Int; y; x}}
 +{B: rec y. &{C: rec x. !Int; x; y}, A: ?Int}
-
--- Polymorphism
-
--- forall a :: TU => a
--- forall b :: TU => b
-
--- forall b :: TU => b
--- forall b :: TU => b
-
--- forall a :: TU => forall b :: TU => a
--- forall c :: TU => forall d :: TU => c
-
--- (forall x :: SU => !Int;x); forall y :: SU => !Bool;y
--- (forall y :: SU => !Int;y); forall x :: SU => !Bool;x
-
--- forall x :: SU => !Int;x; forall y :: SU => !Bool;y
--- forall y :: SU => !Int;y; forall x :: SU => !Bool;x
-
