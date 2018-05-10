@@ -154,15 +154,19 @@ toGNF' (Var a) = do -- This is a free variable
   insertProduction y (VarLabel a) []
   return [y]
 toGNF' (Semi t u) = do
-  (x:xs) <- toGNF t
+  xs <- toGNF t
   ys <- toGNF u
-  b <- member x
-  if b then do
-    m <- getGrammar x
-    insertGrammar x (Map.map (++ xs ++ ys) m)
-    return [x]
-  else
-    return $ (x:xs) ++ ys -- E.g., rec x. !Int;(x;x)
+  if null xs
+  then return ys
+  else do
+    let (x:xs') = xs
+    b <- member x
+    if b then do
+      m <- getGrammar x
+      insertGrammar x (Map.map (++ xs' ++ ys) m)
+      return [x]
+    else
+      return $ xs ++ ys -- E.g., rec x. !Int;(x;x)
 toGNF' (Choice p m) = do
   y <- freshVar
   assocsToGNF y p (Map.assocs m)
@@ -238,6 +242,7 @@ t19 = buildGNF s19
 s20 = Message In IntType
 s21 = Semi s1 (Semi s2 s20)
 s22 = Semi (Semi s1 s2) s20
+s23 = Semi Skip s1
 
 -- BISIMULATION
 
@@ -341,10 +346,14 @@ findInNode n x y =
 -- TYPE EQUIVALENCE
 
 equivalent :: KindEnv -> Type -> Type -> Bool
-equivalent _ Skip Skip = True
-equivalent _ Skip _    = False
-equivalent _ _    Skip = False
-equivalent _ t u = bisim [x] [y] p
+equivalent k t u
+  | isSessionType k t && isSessionType k u = equivalent' t u
+  | otherwise = True
+  
+equivalent' Skip Skip = True
+equivalent' Skip _    = False
+equivalent' _    Skip = False
+equivalent' t u = bisim [x] [y] p
   where (x, state)     = convertToGNF initial t
         (y, (p, _, _)) = convertToGNF state u
 
@@ -366,6 +375,7 @@ e8 = equivalent Map.empty s5 s6 -- False
 e9 = equivalent Map.empty s9 s9
 e10 = equivalent Map.empty treeSend treeSend
 e11 = equivalent Map.empty s21 s22
+e12 = equivalent Map.empty s1 s23
 
 
 -- UNFOLDING, RENAMING, SUBSTITUTING
