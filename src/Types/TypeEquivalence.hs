@@ -242,7 +242,7 @@ t19 = buildGNF s19
 s20 = Message In IntType
 s21 = Semi s1 (Semi s2 s20)
 s22 = Semi (Semi s1 s2) s20
-s23 = Semi Skip s1
+s23 = Semi s1 Skip
 
 -- BISIMULATION
 
@@ -346,16 +346,27 @@ findInNode n x y =
 -- TYPE EQUIVALENCE
 
 equivalent :: KindEnv -> Type -> Type -> Bool
-equivalent k t u
-  | isSessionType k t && isSessionType k u = equivalent' t u
-  | otherwise = True
+equivalent _ t u = equiv t u
+
+equiv :: Type -> Type -> Bool
+equiv (Var x) (Var y) = x == y
+equiv (Basic b) (Basic c) = b == c
+equiv (Fun m t1 t2) (Fun n u1 u2) = m == n && equiv t1 u1 && equiv t2 u2
+equiv (PairType t1 t2) (PairType u1 u2) = equiv t1 u1 && equiv t2 u2
+equiv (Datatype m1) (Datatype m2) =
+  Map.size m1 == Map.size m2 && Map.foldlWithKey (checkBinding m2) True m1
+equiv Skip Skip = True
+equiv Skip _ = False
+equiv _ Skip = False
+equiv t u
+  | isSessionType Map.empty t && isSessionType Map.empty u = bisim [x] [y] p
+  | otherwise = False
+    where (x, state)     = convertToGNF initial t
+          (y, (p, _, _)) = convertToGNF state u
   
-equivalent' Skip Skip = True
-equivalent' Skip _    = False
-equivalent' _    Skip = False
-equivalent' t u = bisim [x] [y] p
-  where (x, state)     = convertToGNF initial t
-        (y, (p, _, _)) = convertToGNF state u
+-- Used both for datatypes and for session types, hence the 'Ord k'
+checkBinding :: TypeMap -> Bool -> Constructor -> Type -> Bool
+checkBinding m acc l t = acc && l `Map.member` m && equiv (m Map.! l) t
 
 -- testing
 

@@ -1,26 +1,26 @@
 Int
-  Bool
+Bool
 
 Skip
-  Skip;!Int
+Skip;!Int
+
 ?Int
-  Skip;!Int;Skip
-  
-[a:Bool, b:Char]
-  [b:Char,a:Bool,c:Int]
+Skip;!Int;Skip
 
-+{a:?Bool, b:Skip;!Char}
-  +{b:Skip;!Char,a:?Bool, c:!Char}
+[A:Bool, B:Char]
+[B:Char,A:Bool, C:Int]
 
-&{a:?Bool, b:Skip;!Char}
-  &{b:Skip;!Char,a:?Bool, c:!Char}
++{A: ?Bool, B: Skip; !Char}
++{B: Skip; !Char, A: ?Bool, C: !Char}
+
+&{A: ?Bool, B: Skip; !Char}
+&{B: Skip; !Char, A: ?Bool, C:!Char}
 
 rec x . !Int
-  rec x . !Bool
+rec x . !Bool
 
 rec x . +{l:!Int, m:x}
-  rec y . +{m:Skip, l:y};!Bool
+rec y . +{m:Skip, l:y};!Bool
 
--- should be false
--- rec x . +{l:!Int, m:x}
---   rec y . +{l:Skip, m:y};!Bool
+rec x . +{A: !Int, B: x}
+rec y . +{A: Skip, B: y};!Bool
