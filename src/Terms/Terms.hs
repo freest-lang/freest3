@@ -42,10 +42,10 @@ type CaseMap = Map.Map TermVar (Params, Expression)
 
 data Expression
   -- Basic expressions
-  = Unit
-  | Integer Int
-  | Character Char
-  | Boolean Bool
+  = Unit Pos
+  | Integer Pos Int
+  | Character Pos Char
+  | Boolean Pos Bool
   -- Variables
   | Variable Pos TermVar
   | UnLet Pos TermVar Expression Expression
@@ -69,5 +69,4 @@ data Expression
   -- Datatypes
   | Constructor Pos TermVar
   | Case Pos Expression CaseMap
-   deriving Show
-  --  deriving Eq
+   deriving (Show, Eq, Ord)

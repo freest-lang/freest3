@@ -54,10 +54,10 @@ checkFD venv kenv fname args exp = do
 checkExp :: KindEnv -> VarEnv -> Expression -> TCheckM (TypeScheme, VarEnv)
 
 -- Basic expressions
-checkExp _ venv  Unit          = return (TypeScheme [] (Basic UnitType), venv)
-checkExp _ venv (Integer _)    = return (TypeScheme [] (Basic IntType), venv)
-checkExp _ venv (Character _)  = return (TypeScheme [] (Basic CharType), venv)
-checkExp _ venv (Boolean _)    = return (TypeScheme [] (Basic BoolType), venv)
+checkExp _ venv (Unit _)         = return (TypeScheme [] (Basic UnitType), venv)
+checkExp _ venv (Integer _ _)    = return (TypeScheme [] (Basic IntType), venv)
+checkExp _ venv (Character _ _)  = return (TypeScheme [] (Basic CharType), venv)
+checkExp _ venv (Boolean _ _)    = return (TypeScheme [] (Basic BoolType), venv)
 
 -- Variables
 checkExp kenv venv (Variable p x)  = checkVar p kenv venv x

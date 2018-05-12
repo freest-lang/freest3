@@ -47,8 +47,12 @@ type HaskellCode = String
 type TranslateMonad = State Int
 
 -- Gets the next fresh var based on the state
-nextFresh :: Int -> TranslateMonad String 
-nextFresh i = return $ "_x" ++ show i
+nextFresh :: TranslateMonad String
+nextFresh = do
+  fresh <- get
+  modify (+1)
+  return $ "_x" ++ show fresh
+
 
 -- Translate function, takes the monadic map and an expression and returns the translated haskell code
 
@@ -73,10 +77,10 @@ check _ _ = False
 --   | otherwise = False
 
 translate' :: Expression -> TranslateMonad (HaskellCode, HaskellCode, Expression, Bool)
-translate' Unit = return ([], "()", Unit, False)
-translate' (Integer i) = return ([], show i, Integer i, False)
-translate' (Character c) = return ([], show c, Character c, False)
-translate' (Boolean b) =  return ([], show b, Boolean b, False)
+translate' (Unit p) = return ([], "()", Unit p, False)
+translate' (Integer p i) = return ([], show i, Integer p i, False)
+translate' (Character p c) = return ([], show c, Character p c, False)
+translate' (Boolean p b) =  return ([], show b, Boolean p b, False)
 translate' (Variable p x) =  return ([], x, Variable p x, False)
 translate' (Constructor p c) =  return ([], c, Constructor p c, False)
 translate' (Pair _ e1 e2) = do
@@ -111,9 +115,7 @@ translate' (App _ e1 e2) = do
   (h3, h4, _, b2) <- translate' e2
   if b1 then    
     do
-      fresh <- get
-      modify (+1)
-      v <- nextFresh fresh
+      v <- nextFresh
       return (h3 ++ h4 ++ " >>= \\ " ++ v ++ " -> " ++ h1, h2, le, b1 || b2)
   else
     return ([] , "(" ++ h1 ++ h2 ++ " " ++ h3 ++ h4 ++ ")", le,  False)
@@ -125,9 +127,7 @@ translate' (Send p e1 e2) = do
   (h3, h4, _, b2) <- translate' e2
   if b2 then
     do
-      fresh <- get
-      modify (+1)
-      v <- nextFresh fresh
+      v <- nextFresh
       return (h3 ++ h4 ++ " >>= \\" ++ v ++ " -> " ++ "send " ++ h1 ++ h2,
               [], (Variable p "send"), True)
   else
@@ -137,9 +137,7 @@ translate' (Receive p e) = do
   (h1, h2, _, b1) <- translate' e
   if b1 then
     do
-      fresh <- get
-      modify (+1)
-      v <- nextFresh fresh
+      v <- nextFresh
       return ("\\" ++ v ++ " -> " ++ "receive " ++ h1 ++ h2, [], (Variable p "receive"), True)
   else
     return ("receive " ++ h1 ++ h2, [], (Variable p "receive"), True)
@@ -153,9 +151,7 @@ translate' (Fork p e) = do
 translate' (Match _ e m) = do
   (h1, h2, le, _) <- translate' e
   (h3, params) <- translateMatchMap m
-  fresh <- get
-  modify (+1)
-  v <- nextFresh fresh
+  v <- nextFresh
   return ("receive " ++ h1 ++ h2 ++ " >>= \\(" ++ v ++  ", " ++ (head params) ++
           ") -> case " ++ v ++ " of " ++ h3, [], le, False)
 
@@ -176,9 +172,6 @@ translateMatchMap = Map.foldlWithKey translateMatchMap' (return ("", []))
     translateMatchMap' acc v (param, e) = do
       (h1, h2, _, _) <- translate' e
       acc' <- acc
-      -- fresh <- get
-      -- modify (+1)
-      -- v' <- nextFresh fresh
       return (fst acc' ++ "\n    \"" ++ v ++ "\" " ++ " -> "
          ++ h1 ++ " return " ++ h2, snd acc' ++ [param])
 
@@ -195,5 +188,7 @@ showParams :: Params -> String
 showParams as
   | null as = ""
   | otherwise = " " ++ (intercalate " " as)
+
+  
 
 

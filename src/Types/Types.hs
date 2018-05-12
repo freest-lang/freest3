@@ -97,9 +97,9 @@ data Type =
   | Message Polarity BasicType
   | Choice ChoiceView TypeMap
   | Rec Bind Type
-  | Forall TypeVar Kind Type -- TODO: remove, use TypeScheme instead
+  -- | Forall TypeVar Kind Type -- TODO: remove, use TypeScheme instead
   | Var TypeVar
-  deriving Ord
+  deriving (Ord)
 
 -- Type equality
 

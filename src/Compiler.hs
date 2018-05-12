@@ -19,13 +19,13 @@ import           Types.Kinding
 compile :: String -> IO (Bool, String)
 compile arg = do
   prog <- mainProgram arg prelude
-
+  
   case prog of
     Right (venv, eenv, cenv, kenv) -> do
-
+--      error $ show eenv
       let a = typeCheck venv eenv cenv kenv
 
-      if typeChecks a then
+      if typeChecks a then        
         codeGen venv eenv cenv kenv (reverse $ dropWhile (/= '/') (reverse arg))
       else
         checkErr a
