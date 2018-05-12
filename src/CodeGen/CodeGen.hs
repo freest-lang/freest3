@@ -77,10 +77,10 @@ check _ _ = False
 --   | otherwise = False
 
 translate' :: Expression -> TranslateMonad (HaskellCode, HaskellCode, Expression, Bool)
-translate' Unit = return ([], "()", Unit, False)
-translate' (Integer i) = return ([], show i, Integer i, False)
-translate' (Character c) = return ([], show c, Character c, False)
-translate' (Boolean b) =  return ([], show b, Boolean b, False)
+translate' (Unit p) = return ([], "()", Unit p, False)
+translate' (Integer p i) = return ([], show i, Integer p i, False)
+translate' (Character p c) = return ([], show c, Character p c, False)
+translate' (Boolean p b) =  return ([], show b, Boolean p b, False)
 translate' (Variable p x) =  return ([], x, Variable p x, False)
 translate' (Constructor p c) =  return ([], c, Constructor p c, False)
 translate' (Pair _ e1 e2) = do
@@ -115,8 +115,6 @@ translate' (App _ e1 e2) = do
   (h3, h4, _, b2) <- translate' e2
   if b1 then    
     do
-      v <- nextFresh
-      v <- nextFresh
       v <- nextFresh
       return (h3 ++ h4 ++ " >>= \\ " ++ v ++ " -> " ++ h1, h2, le, b1 || b2)
   else

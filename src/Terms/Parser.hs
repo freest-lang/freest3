@@ -232,21 +232,22 @@ parseExpr =
 -- Parse Basic Types (int, bool, char and unit)
 parseBasic :: CFSTSubParser Expression
 parseBasic =
-      (do c <- apostrophe anyChar; return $ Character c)
+      (do pos <- getPosition; c <- apostrophe anyChar; return $ Character (posPair pos) c)
   <|> parseBool
   <|> parseInteger
-  <|> (do reserved "()"; return Unit)
+  <|> (do  pos <- getPosition; reserved "()"; return $ Unit (posPair pos))
   <?> "basic type"
 
 parseInteger :: CFSTSubParser Expression
 parseInteger = do
+  pos <- getPosition
   i <- natural
-  return $ Integer (fromInteger i)
+  return $ Integer (posPair pos) (fromInteger i)
 
 parseBool :: CFSTSubParser Expression
 parseBool =
-      (do reserved "True"; return $ Boolean True)
-  <|> (do reserved "False"; return $ Boolean False)
+      (do pos <- getPosition; reserved "True"; return $ Boolean (posPair pos) True)
+  <|> (do pos <- getPosition; reserved "False"; return $ Boolean (posPair pos) False)
   <?> "a boolean value"
 -- Parse Variables
 
