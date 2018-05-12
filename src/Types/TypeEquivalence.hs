@@ -243,6 +243,11 @@ s20 = Message In IntType
 s21 = Semi s1 (Semi s2 s20)
 s22 = Semi (Semi s1 s2) s20
 s23 = Semi s1 Skip
+s24 = Rec yBind (Rec zBind (Semi (Semi s1 (Var "y")) (Var "z")))
+t24 = buildGNF s24
+s25 = Rec yBind (Rec zBind (Semi (Semi s1 (Var "z")) (Var "y")))
+t25 = buildGNF s25
+
 
 -- BISIMULATION
 
