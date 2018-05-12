@@ -153,14 +153,14 @@ Skip; !Bool
 
 -- Distributivity
 
-+{Leaf: Skip, Node: !Int}; ?Bool
-+{Leaf: Skip; ?Bool, Node: !Int; ?Bool}
++{Leaf: Skip, Node: !Int}; α
++{Leaf: Skip; α, Node: !Int; α}
 
-+{Leaf: Skip, Node: !Int}; ?Bool
-+{Leaf: ?Bool, Node: !Int; ?Bool}
++{Leaf: Skip, Node: !Int}; α
++{Leaf: α, Node: !Int; α}
 
-+{Leaf: Skip, Node: Skip}; ?Bool
-+{Leaf: ?Bool, Node: ?Bool}
++{Leaf: Skip, Node: Skip}; α
++{Leaf: α, Node: α}
 
 -- Recursive types
 
@@ -171,13 +171,13 @@ rec x . !Int;x
 rec y . !Int;y
 
 rec x . !Int;x
-rec x . !Int;!Int;x
+rec x . !Int; !Int;x
 
-rec x . !Int;Skip
-rec x . Skip;!Int
+rec x . !Int; Skip
+rec x . Skip; !Int
 
-rec x . Skip;!Int
-rec x . !Int;Skip
+rec x . Skip; !Int
+rec x . !Int; Skip
 
 rec x . Skip;!Int
 !Int
@@ -191,11 +191,11 @@ rec y. rec x. !Int; x
 rec x. rec y. !Int; x
 rec x. !Int; x
 
-rec x . +{A: !Int, B: x; !Int}
-rec y . +{A: Skip, B: y}; !Int
+rec x . +{A: α, B: x; α}
+rec y . +{A: Skip, B: y}; α
 
-rec y . +{A: Skip, B: y}; !Int
-rec x . +{A: !Int, B: x; !Int}
+rec y . +{A: Skip, B: y}; α
+rec x . +{A: α, B: x; α}
 
 rec x . ?Bool; x
 rec y . ?Bool; y; !Int

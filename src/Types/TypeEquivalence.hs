@@ -62,7 +62,7 @@ type Visited = Map.Map Type TypeVar
 
 type GNFState = State (Grammar, Visited, Int)
 
--- State manipulation functions
+-- State manipulating functions
 
 initial :: (Grammar, Visited, Int)
 initial = (Map.empty, Map.empty, 0)
@@ -121,19 +121,10 @@ replace w x (y:ys)
 
 -- Conversion to GNF
 
--- convertToGNF :: (Grammar, Visited, Int) -> Type -> (GNF, (Grammar, Visited, Int))
--- -- Assume: t is a session type different from Skip
--- convertToGNF s t = runState (generateGNF t) s
 convertToGNF :: (Grammar, Visited, Int) -> Type -> (TypeVar, (Grammar, Visited, Int))
 -- Assume: t is a session type different from Skip
 convertToGNF state t = (x, state')
   where ([x], state') = runState (toGNF t) state
-
-generateGNF :: Type -> GNFState GNF
-generateGNF t = do
-  [y] <- toGNF t
-  p <- getAllGrammar
-  return $ GNF {start = y, productions = p}
 
 toGNF :: Type -> GNFState [TypeVar]
 toGNF t = do
@@ -190,6 +181,12 @@ assocsToGNF y p ((l, t):as) = do
 
 buildGNF :: Type -> GNF
 buildGNF t = evalState (generateGNF t) initial
+
+generateGNF :: Type -> GNFState GNF
+generateGNF t = do
+  [y] <- toGNF t
+  p <- getAllGrammar
+  return $ GNF {start = y, productions = p}
 
 s1 = Message Out CharType
 t1 = buildGNF s1
@@ -253,30 +250,29 @@ t25 = buildGNF s25
 
 type Node = Set.Set ([TypeVar], [TypeVar])
 
-type History = [Node]
+type History = Node
 
-bisim :: [TypeVar] -> [TypeVar] -> Grammar -> Bool
-bisim xs ys g = check [simplify g [] (Set.singleton (xs, ys))] g
+bisim :: Grammar -> [TypeVar] -> [TypeVar] -> Bool
+bisim g xs ys = check g Set.empty  (Set.singleton (xs, ys))
 
-check :: History -> Grammar -> Bool
--- Most recent node first
--- Assume: the most recent node is simplified
-check (n:ns) g
-  | Set.null n = True
-  | otherwise  = case expandNode n g of
+check :: Grammar -> History -> Node -> Bool
+check g h n
+  | Set.null n' = True
+  | otherwise  = case expandNode g n' of
       Nothing -> False
-      Just n' -> check ((simplify g (n:ns) n'):n:ns) g
+      Just n'' -> check g (Set.union n' h) n''
+  where n' = simplify g h n
 
-expandNode :: Node -> Grammar -> Maybe Node
-expandNode n g =
+expandNode :: Grammar -> Node -> Maybe Node
+expandNode g =
   Set.foldr(\p acc -> case acc of
     Nothing  -> Nothing
-    Just ns1 -> case expandPair p g of
+    Just n' -> case expandPair g p of
       Nothing  -> Nothing
-      Just ns2 -> Just (Set.union ns1 ns2)) (Just Set.empty) n
+      Just n'' -> Just (Set.union n' n'')) (Just Set.empty)
 
-expandPair :: ([TypeVar], [TypeVar]) -> Grammar -> Maybe Node
-expandPair (xs, ys) g =
+expandPair :: Grammar -> ([TypeVar], [TypeVar]) -> Maybe Node
+expandPair g (xs, ys) =
   if Map.keysSet m1 == Map.keysSet m2
   then Just (match m1 m2)
   else Nothing
@@ -313,21 +309,13 @@ congruence _ h p
   | otherwise            = Set.singleton p
 
 inCongruenceList :: History -> ([TypeVar], [TypeVar]) -> Bool
-inCongruenceList h p = or $ map (inCongruenceNode p) h
-
-inCongruenceNode :: ([TypeVar], [TypeVar]) -> Node -> Bool
-inCongruenceNode p n = or $ Set.map (inCongruencePair p) n
+inCongruenceList h p = or $ Set.map (inCongruencePair p) h
 
 inCongruencePair :: ([TypeVar], [TypeVar]) -> ([TypeVar], [TypeVar]) -> Bool
 inCongruencePair (xs, ys) (xs', ys') =
   xs `isPrefixOf` xs' &&
   ys `isPrefixOf` ys' &&
-  (drop (length xs) xs') == (drop (length ys) ys')
--- inCongruencePair _ ([], _) = False
--- inCongruencePair _ (_, []) = False
--- inCongruencePair (xs, ys) (xs', ys')
---   | xs == xs' && ys == ys' = True
---   | otherwise = head xs' == head ys' && inCongruencePair (xs, ys) (tail xs', tail ys')
+  drop (length xs) xs' == drop (length ys) ys'
 
 bpa1 :: NodeTransformation
 bpa1 g h (x:xs, y:ys) =
@@ -338,15 +326,14 @@ bpa1 _ _ p = Set.singleton p
 
 findInHistory :: History -> TypeVar -> TypeVar -> Maybe ([TypeVar], [TypeVar])
 findInHistory h x y =
- foldr (\n acc -> case acc of
+ Set.foldr (\p acc -> case acc of
    Just p  -> Just p
-   Nothing -> findInNode n x y) Nothing h
+   Nothing -> findInPair p x y) Nothing h
 
-findInNode :: Node -> TypeVar -> TypeVar -> Maybe ([TypeVar], [TypeVar])
-findInNode n x y =
-  Set.foldr (\((x':xs), (y':ys)) acc -> case acc of
-    Just p  -> Just p
-    Nothing -> if x == x' && y == y' then Just (xs, ys) else Nothing) Nothing n
+findInPair :: ([TypeVar], [TypeVar]) -> TypeVar -> TypeVar -> Maybe ([TypeVar], [TypeVar])
+findInPair ((x':xs), (y':ys)) x y
+  | x == x' && y == y' = Just (xs, ys)
+  | otherwise          = Nothing
 
 -- TYPE EQUIVALENCE
 
@@ -364,12 +351,11 @@ equiv Skip Skip = True
 equiv Skip _ = False
 equiv _ Skip = False
 equiv t u
-  | isSessionType Map.empty t && isSessionType Map.empty u = bisim [x] [y] p
+  | isSessionType Map.empty t && isSessionType Map.empty u = bisim p [x] [y]
   | otherwise = False
     where (x, state)     = convertToGNF initial t
           (y, (p, _, _)) = convertToGNF state u
   
--- Used both for datatypes and for session types, hence the 'Ord k'
 checkBinding :: TypeMap -> Bool -> Constructor -> Type -> Bool
 checkBinding m acc l t = acc && l `Map.member` m && equiv (m Map.! l) t
 
@@ -392,6 +378,8 @@ e9 = equiv s9 s9
 e10 = equiv treeSend treeSend
 e11 = equiv s21 s22
 e12 = equiv s1 s23
+e13 = equiv s24 s24
+e14 = equiv s24 s25
 
 -- UNFOLDING, RENAMING, SUBSTITUTING
 
