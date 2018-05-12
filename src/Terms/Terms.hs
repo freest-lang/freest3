@@ -69,5 +69,5 @@ data Expression
   -- Datatypes
   | Constructor Pos TermVar
   | Case Pos Expression CaseMap
-   deriving Show
-  --  deriving Eq
+   deriving (Show, Eq, Ord)
+
