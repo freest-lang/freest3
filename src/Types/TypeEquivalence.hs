@@ -380,19 +380,18 @@ convertTwo t u = (x, y, g)
   where (x, state)   = convertToGNF initial t
         (y, (g,_,_)) = convertToGNF state u
 
-e1 = equivalent Map.empty s1 s1
-e2 = equivalent Map.empty s1 s2 -- False
-e3 = equivalent Map.empty s1 s3 -- False
-e4 = equivalent Map.empty s3 s3
-e5 = equivalent Map.empty s3 s4 -- False
-e6 = equivalent Map.empty s1 s5 -- False
-e7 = equivalent Map.empty s4 s5 -- False
-e8 = equivalent Map.empty s5 s6 -- False
-e9 = equivalent Map.empty s9 s9
-e10 = equivalent Map.empty treeSend treeSend
-e11 = equivalent Map.empty s21 s22
-e12 = equivalent Map.empty s1 s23
-
+e1 = equiv s1 s1
+e2 = equiv s1 s2 -- False
+e3 = equiv s1 s3 -- False
+e4 = equiv s3 s3
+e5 = equiv s3 s4 -- False
+e6 = equiv s1 s5 -- False
+e7 = equiv s4 s5 -- False
+e8 = equiv s5 s6 -- False
+e9 = equiv s9 s9
+e10 = equiv treeSend treeSend
+e11 = equiv s21 s22
+e12 = equiv s1 s23
 
 -- UNFOLDING, RENAMING, SUBSTITUTING
 
