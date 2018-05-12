@@ -244,29 +244,36 @@ s24 = Rec yBind (Rec zBind (Semi (Semi s1 (Var "y")) (Var "z")))
 t24 = buildGNF s24
 s25 = Rec yBind (Rec zBind (Semi (Semi s1 (Var "z")) (Var "y")))
 t25 = buildGNF s25
-
+s26 = Semi (Choice External (Map.fromList
+  [("Leaf", Skip),
+   ("Node", Skip)])) (Var "α")
+t26 = buildGNF s26
+s27 = Choice External (Map.fromList
+  [("Leaf", (Var "α")),
+   ("Node", (Var "α"))])
+t27 = buildGNF s27
 
 -- BISIMULATION
 
 type Node = Set.Set ([TypeVar], [TypeVar])
 
-type History = Node
+type Ancestors = Node
 
 bisim :: Grammar -> [TypeVar] -> [TypeVar] -> Bool
 bisim g xs ys = check g Set.empty  (Set.singleton (xs, ys))
 
-check :: Grammar -> History -> Node -> Bool
+check :: Grammar -> Ancestors -> Node -> Bool
 check g h n
   | Set.null n' = True
   | otherwise  = case expandNode g n' of
-      Nothing -> False
+      Nothing  -> False
       Just n'' -> check g (Set.union n' h) n''
   where n' = simplify g h n
 
 expandNode :: Grammar -> Node -> Maybe Node
 expandNode g =
   Set.foldr(\p acc -> case acc of
-    Nothing  -> Nothing
+    Nothing  -> expandPair g p
     Just n' -> case expandPair g p of
       Nothing  -> Nothing
       Just n'' -> Just (Set.union n' n'')) (Just Set.empty)
@@ -287,15 +294,15 @@ match :: Map.Map Label [TypeVar] -> Map.Map Label [TypeVar] -> Node
 match m1 m2 =
   Map.foldrWithKey (\l xs n -> Set.insert (xs, m2 Map.! l) n) Set.empty m1
 
-simplify :: Grammar -> History -> Node -> Node
+-- Apply  different node transformations
+
+simplify :: Grammar -> Ancestors -> Node -> Node
 simplify g h n = foldr (apply g h) n [bpa1, reflex, congruence]
 -- Perhaps we need to iterate until reaching a fixed point
 
--- The different node transformations
+type NodeTransformation = Grammar -> Ancestors -> ([TypeVar], [TypeVar]) -> Node
 
-type NodeTransformation = Grammar -> History -> ([TypeVar], [TypeVar]) -> Node
-
-apply :: Grammar -> History -> NodeTransformation -> Node -> Node
+apply :: Grammar -> Ancestors -> NodeTransformation -> Node -> Node
 apply g h trans = Set.foldr (\p n -> Set.union (trans g h p) n) Set.empty
 
 reflex :: NodeTransformation
@@ -305,27 +312,27 @@ reflex _ _ (xs, ys)
 
 congruence :: NodeTransformation
 congruence _ h p
-  | inCongruenceList h p = Set.empty
-  | otherwise            = Set.singleton p
+  | congruentToAncestors h p = Set.empty
+  | otherwise                = Set.singleton p
 
-inCongruenceList :: History -> ([TypeVar], [TypeVar]) -> Bool
-inCongruenceList h p = or $ Set.map (inCongruencePair p) h
+congruentToAncestors :: Ancestors -> ([TypeVar], [TypeVar]) -> Bool
+congruentToAncestors h p = or $ Set.map (congruentToPair p) h
 
-inCongruencePair :: ([TypeVar], [TypeVar]) -> ([TypeVar], [TypeVar]) -> Bool
-inCongruencePair (xs, ys) (xs', ys') =
+congruentToPair :: ([TypeVar], [TypeVar]) -> ([TypeVar], [TypeVar]) -> Bool
+congruentToPair (xs, ys) (xs', ys') =
   xs `isPrefixOf` xs' &&
   ys `isPrefixOf` ys' &&
   drop (length xs) xs' == drop (length ys) ys'
 
 bpa1 :: NodeTransformation
-bpa1 g h (x:xs, y:ys) =
-  case findInHistory h x y of
+bpa1 _ h (x:xs, y:ys) =
+  case findInAncestors h x y of
     Nothing         -> Set.singleton (x:xs, y:ys)
     Just (xs', ys') -> Set.fromList [(xs,xs'), (ys,ys')]
 bpa1 _ _ p = Set.singleton p
 
-findInHistory :: History -> TypeVar -> TypeVar -> Maybe ([TypeVar], [TypeVar])
-findInHistory h x y =
+findInAncestors :: Ancestors -> TypeVar -> TypeVar -> Maybe ([TypeVar], [TypeVar])
+findInAncestors h x y =
  Set.foldr (\p acc -> case acc of
    Just p  -> Just p
    Nothing -> findInPair p x y) Nothing h
