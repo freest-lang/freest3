@@ -260,35 +260,34 @@ type Node = Set.Set ([TypeVar], [TypeVar])
 type Ancestors = Node
 
 bisim :: Grammar -> [TypeVar] -> [TypeVar] -> Bool
-bisim g xs ys = check g Set.empty  (Set.singleton (xs, ys))
+bisim g xs ys = bisim' g Set.empty  (Set.singleton (xs, ys))
 
-check :: Grammar -> Ancestors -> Node -> Bool
-check g h n
+bisim' :: Grammar -> Ancestors -> Node -> Bool
+bisim' g a n
   | Set.null n' = True
   | otherwise  = case expandNode g n' of
       Nothing  -> False
-      Just n'' -> check g (Set.union n' h) n''
-  where n' = simplify g h n
+      Just n'' -> bisim' g (Set.union n' a) n''
+  where n' = simplify g a n
 
 expandNode :: Grammar -> Node -> Maybe Node
 expandNode g =
   Set.foldr(\p acc -> case acc of
     Nothing  -> expandPair g p
-    Just n' -> case expandPair g p of
+    Just n'  -> case expandPair g p of
       Nothing  -> Nothing
       Just n'' -> Just (Set.union n' n'')) (Just Set.empty)
 
 expandPair :: Grammar -> ([TypeVar], [TypeVar]) -> Maybe Node
-expandPair g (xs, ys) =
-  if Map.keysSet m1 == Map.keysSet m2
-  then Just (match m1 m2)
-  else Nothing
-  where m1 = reduce g xs
-        m2 = reduce g ys
+expandPair g (xs, ys)
+  | Map.keysSet m1 == Map.keysSet m2 = Just $ match m1 m2
+  | otherwise                        = Nothing
+  where m1 = transitions g xs
+        m2 = transitions g ys
 
-reduce :: Grammar -> [TypeVar] -> Map.Map Label [TypeVar]
-reduce _ []     = Map.empty    -- This should not happen
-reduce g (x:xs) = Map.map (++ xs) (g Map.! x)
+transitions :: Grammar -> [TypeVar] -> Map.Map Label [TypeVar]
+transitions _ []     = Map.empty
+transitions g (x:xs) = Map.map (++ xs) (g Map.! x)
 
 match :: Map.Map Label [TypeVar] -> Map.Map Label [TypeVar] -> Node
 match m1 m2 =
@@ -297,13 +296,13 @@ match m1 m2 =
 -- Apply  different node transformations
 
 simplify :: Grammar -> Ancestors -> Node -> Node
-simplify g h n = foldr (apply g h) n [bpa1, reflex, congruence]
+simplify g a n = foldr (apply g a) n [reflex, congruence, bpa1]
 -- Perhaps we need to iterate until reaching a fixed point
 
 type NodeTransformation = Grammar -> Ancestors -> ([TypeVar], [TypeVar]) -> Node
 
 apply :: Grammar -> Ancestors -> NodeTransformation -> Node -> Node
-apply g h trans = Set.foldr (\p n -> Set.union (trans g h p) n) Set.empty
+apply g a trans = Set.foldr (\p n -> Set.union (trans g a p) n) Set.empty
 
 reflex :: NodeTransformation
 reflex _ _ (xs, ys)
@@ -311,12 +310,12 @@ reflex _ _ (xs, ys)
   | otherwise = Set.singleton (xs, ys)
 
 congruence :: NodeTransformation
-congruence _ h p
-  | congruentToAncestors h p = Set.empty
+congruence _ a p
+  | congruentToAncestors a p = Set.empty
   | otherwise                = Set.singleton p
 
 congruentToAncestors :: Ancestors -> ([TypeVar], [TypeVar]) -> Bool
-congruentToAncestors h p = or $ Set.map (congruentToPair p) h
+congruentToAncestors a p = or $ Set.map (congruentToPair p) a
 
 congruentToPair :: ([TypeVar], [TypeVar]) -> ([TypeVar], [TypeVar]) -> Bool
 congruentToPair (xs, ys) (xs', ys') =
@@ -325,17 +324,17 @@ congruentToPair (xs, ys) (xs', ys') =
   drop (length xs) xs' == drop (length ys) ys'
 
 bpa1 :: NodeTransformation
-bpa1 _ h (x:xs, y:ys) =
-  case findInAncestors h x y of
+bpa1 _ a (x:xs, y:ys) =
+  case findInAncestors a x y of
     Nothing         -> Set.singleton (x:xs, y:ys)
     Just (xs', ys') -> Set.fromList [(xs,xs'), (ys,ys')]
 bpa1 _ _ p = Set.singleton p
 
 findInAncestors :: Ancestors -> TypeVar -> TypeVar -> Maybe ([TypeVar], [TypeVar])
-findInAncestors h x y =
+findInAncestors a x y =
  Set.foldr (\p acc -> case acc of
    Just p  -> Just p
-   Nothing -> findInPair p x y) Nothing h
+   Nothing -> findInPair p x y) Nothing a
 
 findInPair :: ([TypeVar], [TypeVar]) -> TypeVar -> TypeVar -> Maybe ([TypeVar], [TypeVar])
 findInPair ((x':xs), (y':ys)) x y
@@ -387,6 +386,7 @@ e11 = equiv s21 s22
 e12 = equiv s1 s23
 e13 = equiv s24 s24
 e14 = equiv s24 s25
+e15 = equiv s26 s27
 
 -- UNFOLDING, RENAMING, SUBSTITUTING
 
