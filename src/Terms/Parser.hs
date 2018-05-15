@@ -463,12 +463,6 @@ checkDup env id msg pos
 posPair :: SourcePos -> (Int, Int)
 posPair pos = (sourceLine pos, sourceColumn pos)
 
---TODO: remove (test purposes)
--- run = mainProgram path Map.empty
--- path = "src/test.hs"
---path = "/home/balmeida/workspaces/ContextFreeSession/test/Programs/ValidTests/dot/dot.hs"
---path = "/home/balmeida/workspaces/ContextFreeSession/test/Programs/ValidTests/sendTree/sendTree.hs"
-
 -- Read instance for type schemes
 
 instance Read TypeScheme where
@@ -480,3 +474,9 @@ instance Read TypeScheme where
       parserTScheme s =
         runParser parseTypeScheme (Map.empty, Map.empty, Map.empty, Map.empty) "" s
 
+
+--TODO: remove (test purposes)
+run = mainProgram path Map.empty
+path = "src/test.hs"
+--path = "/home/balmeida/workspaces/ContextFreeSession/test/Programs/ValidTests/dot/dot.hs"
+--path = "/home/balmeida/workspaces/ContextFreeSession/test/Programs/ValidTests/sendTree/sendTree.hs"

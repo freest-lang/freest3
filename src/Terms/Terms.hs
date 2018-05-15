@@ -62,8 +62,7 @@ data Expression
   | Send Pos Expression Expression
   | Receive Pos Expression 
   | Select Pos TermVar Expression
-  | Match Pos Expression MatchMap  
-  -- Branch - overloaded with Case
+  | Match Pos Expression MatchMap
   -- Fork
   | Fork Pos Expression
   -- Datatypes

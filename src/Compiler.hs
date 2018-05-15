@@ -6,7 +6,7 @@ import qualified Data.Map.Strict as Map
 import           PreludeLoader
 import           Terms.Parser
 import           Terms.Terms
-import           CodeGen.CodeGen
+import           CodeGen.CodeGen1
 import           Types.Types
 import           TypeChecking.TypeChecking
 import           Control.Monad.Writer
@@ -35,12 +35,23 @@ compile arg = do
 
 -- CODE GEN
 
+codeGen :: VarEnv -> ExpEnv -> ConstructorEnv -> KindEnv ->
+           FilePath -> IO (Bool, HaskellCode)
+codeGen venv eenv cenv kenv path = do
+  let start = eenv Map.! "start"
+ -- let eenv1 = Map.delete "start" eenv
+  genProgram venv eenv cenv kenv path
+  -- writeFile (path ++ "cfst.hs") file
+  return (True, "")
+
+{-
 codeGen :: VarEnv -> ExpEnv -> ConstructorEnv -> KindEnv -> FilePath -> IO (Bool, HaskellCode)
 codeGen venv eenv cenv kenv path = do
   let m = checkMonadicEEnv eenv
   let start = eenv Map.! "start"
   let eenv1 = Map.delete "start" eenv
-  let file = Map.foldlWithKey (\acc fun (a, e) -> acc ++ showExpr fun a e m) "" eenv1
+  let file = genProgram eenv
+        -- Map.foldlWithKey (\acc fun (a, e) -> acc ++ showExpr fun a e m) "" eenv1
 
   let dataMap = genDataType cenv kenv
   writeFile (path ++ "cfst.hs") (mainFun start (venv Map.! "start") m  ++ showDT dataMap ++ file) -- (types ++ file)
@@ -58,14 +69,7 @@ mainFun start t m =
 genImports :: String
 genImports = "import Control.Concurrent (forkIO)\nimport Control.Concurrent.Chan.Synchronous\nimport Unsafe.Coerce"
 
-genMain :: (Params, Expression) -> TypeScheme -> MonadicMap -> HaskellCode
-genMain (params, startExp) (TypeScheme _ t) m =  
-  let (h, b) = evalState (translate m startExp) 0 in
-  if b then
-    "main = start >>= \\res -> putStrLn (show (res :: " ++ show t ++ "))\n\n" ++
-    genStart params h b
-  else
-    "main = putStrLn (show start)\n\n" ++ genStart params h b ++ "\n\n"
+
 
 
 genStart :: Params -> HaskellCode -> Bool -> String
@@ -74,23 +78,6 @@ genStart p h b = "start " ++ (showBangParams p) ++ " = \n  " ++ h ++ "\n\n"
   --   let (x,y) = splitAt (last (findIndices (`elem` (">=" :: String)) h) + 1) h in     "start " ++ (showBangParams p) ++ " = \n  " ++ x ++ " return " ++ y ++ "\n\n"
   -- | otherwise =
   --       "start " ++ (showBangParams p) ++ " = \n  " ++ h ++ "\n\n"
-
--- TODO Turn into an imported module
-genCommunication :: String
-genCommunication = genFork ++ "\n\n" ++ genNew ++ "\n\n" ++ genSend ++ "\n\n" ++ genReceive
-
-genFork :: String
-genFork = "fork e = do\n  forkIO e\n  return ()"
-
-genNew :: String
-genNew = "new = do\n  ch <- newChan\n  return (ch, ch)"
-
-genSend :: String
-genSend = "send x ch  = do\n  writeChan ch (unsafeCoerce x)\n  return ch"
-
-genReceive :: String
-genReceive = "receive ch = do\n  a <- readChan ch\n  return ((unsafeCoerce a), ch)"
-  
 
 -- GEN EXPRESSIONS
 
@@ -138,7 +125,7 @@ genDataType cenv kenv =
     checkLast c acc k t
       | last (toList t) == (TypeScheme [] (Var c)) = acc ++ [(k, t)]
       | otherwise = acc
-    
+-}    
 
 
 -- Functions to deal with typecheck monad

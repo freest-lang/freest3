@@ -34,7 +34,7 @@ import Data.List (intersperse)
 type TypeVar = String
 
 data Bind = Bind {var :: TypeVar, kind :: Kind}
-  deriving Ord
+  deriving (Ord)
 
 instance Eq Bind where
   b == c = kind b == kind c
@@ -172,7 +172,11 @@ insertBind :: (Bind, Bind) -> Map.Map TypeVar TypeVar -> Map.Map TypeVar TypeVar
 insertBind (b, c) = Map.insert (var b) (var c)
 
 instance Show TypeScheme where
-  show (TypeScheme bs t) = "forall " ++ showBindings bs ++ " => " ++ show t
+  show (TypeScheme bs t) = showTypeScheme bs t
+
+showTypeScheme :: [Bind] -> Type -> String
+showTypeScheme [] t = show t
+showTypeScheme bs t = "forall " ++ showBindings bs ++ " => " ++ show t
 
 showBindings :: [Bind] -> String
 showBindings bs = concat $ intersperse ", " (map show bs)

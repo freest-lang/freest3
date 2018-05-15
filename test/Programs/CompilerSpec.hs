@@ -26,9 +26,9 @@ spec = do
   describe "Valid Tests" $ do
     mapM_ (\dir -> testDir dir curDir) dirs
 
-  dirs <- runIO $ listDirectory (invalidTestDir curDir)
-  describe "Invalid Tests" $ do
-    mapM_ (\dir -> testDir dir curDir) dirs
+  -- dirs <- runIO $ listDirectory (invalidTestDir curDir)
+  -- describe "Invalid Tests" $ do
+  --   mapM_ (\dir -> testDir dir curDir) dirs
 
   runIO $ setCurrentDirectory curDir
 
@@ -43,7 +43,7 @@ testDir dir curDir = do
 getSource :: [String] -> String
 getSource [] = ""
 getSource (x:xs)
-  | ".hs" `isInfixOf` x && x /= "cfst.hs" = x
+  | ".hs" `isInfixOf` x && x /= "cfst.hs" && x /= "CFSTCommunication.hs" = x
   | otherwise = getSource xs
 
 testOne :: String -> String -> Spec    
@@ -61,12 +61,21 @@ runAndCheckResult :: String -> String -> Spec
 runAndCheckResult testFile filename = do
   let path = reverse $ dropWhile (/= '/') (reverse testFile)
   runIO $ setCurrentDirectory path
+ 
+  (exitcode, output, errors) <- runIO $ readProcessWithExitCode "ghc" ["cfst.hs"] ""
+  -- (exitcode, output, errors) <- runIO $ readProcessWithExitCode "ghc" ["cfst.hs", "-fno-code", "-O0"] ""
 
-  (exitcode, output, errors) <- runIO $ readProcessWithExitCode "ghc" ["cfst.hs", "-fno-code", "-O0"] ""
-  -- putStrLn $ "exitcode: " ++ show exitcode
-  -- putStrLn $ "output: " ++ show output
+-- t <- runIO $ listDirectory path
+--   error $ show t  
+-- error $ show path
+--  error $ "exitcode: " ++ show exitcode
+--  error $ "output: " ++ show output
+
   if (exitcode == ExitSuccess) then
-    do      
+    do
+      -- b <- runIO $ doesFileExist "cfst"
+      -- if (not b) then error (show path) else return ()
+      
       (exitcode1, output1, errors1) <- runIO $ readProcessWithExitCode "./cfst" [] ""
       cont <- runIO $ readFile ((takeWhile (/= '.') testFile) ++ ".expected")
 
