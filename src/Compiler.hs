@@ -57,27 +57,6 @@ codeGen venv eenv cenv kenv path = do
   writeFile (path ++ "cfst.hs") (mainFun start (venv Map.! "start") m  ++ showDT dataMap ++ file) -- (types ++ file)
   return (True, "")
 
--- Main function, imports and communication details
-
-mainFun :: (Params, Expression) -> TypeScheme -> MonadicMap -> String
-mainFun start t m =
-           "{-# LANGUAGE BangPatterns #-}\n\n" ++
-           genImports ++ "\n\n" ++ 
-           genMain start t m ++
-           genCommunication ++ "\n\n"
-
-genImports :: String
-genImports = "import Control.Concurrent (forkIO)\nimport Control.Concurrent.Chan.Synchronous\nimport Unsafe.Coerce"
-
-
-
-
-genStart :: Params -> HaskellCode -> Bool -> String
-genStart p h b = "start " ++ (showBangParams p) ++ " = \n  " ++ h ++ "\n\n"
-  -- | b =
-  --   let (x,y) = splitAt (last (findIndices (`elem` (">=" :: String)) h) + 1) h in     "start " ++ (showBangParams p) ++ " = \n  " ++ x ++ " return " ++ y ++ "\n\n"
-  -- | otherwise =
-  --       "start " ++ (showBangParams p) ++ " = \n  " ++ h ++ "\n\n"
 
 -- GEN EXPRESSIONS
 
