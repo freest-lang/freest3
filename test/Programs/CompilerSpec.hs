@@ -34,7 +34,7 @@ spec = do
 
 -- TODO: test invalid with expect failure
 testDir :: String -> String -> Spec
-testDir dir curDir = do
+testDir dir curDir = parallel $ do
   sourceFiles <- runIO $ listDirectory ((validTestDir curDir) ++ dir)
   let source = getSource sourceFiles
   testOne ((validTestDir curDir) ++ dir ++ "/" ++ source) source
@@ -62,20 +62,11 @@ runAndCheckResult testFile filename = do
   let path = reverse $ dropWhile (/= '/') (reverse testFile)
   runIO $ setCurrentDirectory path
  
-  (exitcode, output, errors) <- runIO $ readProcessWithExitCode "ghc" ["cfst.hs"] ""
-  -- (exitcode, output, errors) <- runIO $ readProcessWithExitCode "ghc" ["cfst.hs", "-fno-code", "-O0"] ""
-
--- t <- runIO $ listDirectory path
---   error $ show t  
--- error $ show path
---  error $ "exitcode: " ++ show exitcode
---  error $ "output: " ++ show output
+  (exitcode, output, errors) <- runIO $ readProcessWithExitCode "ghc" ["-dynamic", "-XBangPatterns", "cfst.hs"] ""  
+  -- (exitcode, output, errors) - runIO $ readProcessWithExitCode "ghc" ["cfst.hs", "-fno-code", "-O0"] ""
 
   if (exitcode == ExitSuccess) then
-    do
-      -- b <- runIO $ doesFileExist "cfst"
-      -- if (not b) then error (show path) else return ()
-      
+    do     
       (exitcode1, output1, errors1) <- runIO $ readProcessWithExitCode "./cfst" [] ""
       cont <- runIO $ readFile ((takeWhile (/= '.') testFile) ++ ".expected")
 
@@ -86,10 +77,5 @@ runAndCheckResult testFile filename = do
       assertFailure errors
       return ()
 
-  -- runIO $ putStrLn $ "errors: " ++ show errors
-
-  -- putStrLn $ "exitcode1: " ++ show exitcode1
-  -- putStrLn $ "output1: " ++ show output1
-  -- putStrLn $ "errors1: " ++ show errors1
   
 

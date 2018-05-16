@@ -35,7 +35,7 @@ cleanOuts :
 cleanAll : clean cleanOuts
 
 coverage :
-	./testCoverage
+	./coverage
 
 # LOGFILE=$(LOGPATH)/`date +'%y.%m.%d %H:%M:%S'`
 TM=$(shell date '+%Y-%m-%d-%H:%M')

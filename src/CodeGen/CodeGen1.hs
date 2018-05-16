@@ -31,7 +31,7 @@ isMonadicEnv = Map.foldl (\acc x -> menv acc x) Map.empty
      menv acc (p,x) = Map.union (fst (isMonadic False acc x)) (monadicParams p)
      
      monadicParams :: Params -> MonadicMap
-     monadicParams = foldr (\x acc -> fst $ (isMonadic False acc (Variable (3,24) x))) Map.empty
+     monadicParams = foldr (\x acc -> fst $ (isMonadic False acc (Variable (0,0) x))) Map.empty
 
 -- This function checks if an expression is in the monadic form
 -- and then updates the monadic map with that information.
@@ -41,7 +41,8 @@ isMonadic b m (Unit p) = (Map.insert (Unit p) b m, b)
 isMonadic b m (Integer p i) = (Map.insert (Integer p i) b m, b)
 isMonadic b m (Character p c) = (Map.insert (Character p c) b m, b)
 isMonadic b' m (Boolean p b) = (Map.insert (Boolean p b) b' m, b')
-isMonadic b m (Variable p x) = (Map.insert (Variable p x) b m, b)
+isMonadic b m (Variable p x) =
+  (Map.insert (Variable p x) b m, b)
 isMonadic b m (UnLet p x e1 e2) =
   let (m1, b1) = isMonadic b m e1
       (m2, b2) = isMonadic b1 m1 e2 in
@@ -291,13 +292,13 @@ translateCaseMap m = Map.foldlWithKey (translateCaseMap' m) (return "")
 genProgram :: VarEnv -> ExpEnv -> ConstructorEnv -> KindEnv -> FilePath -> IO ()
 genProgram venv eenv cenv kenv path = do
   genCFSTComm path
-  let start = eenv Map.! "start"
-  let startType = last $ toList $ venv Map.! "start"
-  let monadicMap = isMonadicEnv eenv
-  let dataTypes = showDT (genDataType cenv kenv)
-  let file = genFile monadicMap eenv
-  let mainFun = genMain eenv monadicMap start startType
-  writeFile (path ++ "cfst.hs") (genPragmas ++ genImports ++ dataTypes ++ file ++ mainFun)
+  let start      = eenv Map.! "start"
+      startType  = last $ toList $ venv Map.! "start"
+      monadicMap = isMonadicEnv eenv
+      dataTypes  = showDT (genDataType cenv kenv)
+      file       = genFile monadicMap eenv
+      mainFun    = genMain eenv monadicMap start startType in
+      writeFile (path ++ "cfst.hs") (genPragmas ++ genImports ++ dataTypes ++ file ++ mainFun)
     
 
 genFile :: MonadicMap -> ExpEnv -> HaskellCode
@@ -319,26 +320,26 @@ genPragmas = "{-# LANGUAGE BangPatterns #-}\n\n"
 genMain :: ExpEnv -> MonadicMap -> (Params, Expression) -> TypeScheme -> HaskellCode
 genMain eenv m (params, startExp) t =  
   let (h, b) = evalState (translate m startExp) 0 -- in
-      b1 = monadicStart eenv startExp in
+      b1 = monadicFun eenv startExp in
   if b || b1 then
     "main = start >>= \\res -> putStrLn (show (res :: " ++ show t ++ "))\n\n"
   else
     "main = putStrLn (show start)\n\n"
 
-monadicStart :: ExpEnv -> Expression -> Bool
-monadicStart eenv (Variable p x) =
-  if Map.member x eenv then monadicStart eenv (snd (eenv Map.! x)) else False
-monadicStart eenv (UnLet p x e1 e2) = monadicStart eenv e1 || monadicStart eenv e2
-monadicStart eenv (App p e1 e2) = monadicStart eenv e1 || monadicStart eenv e2
-monadicStart eenv (TypeApp p e ts) = monadicStart eenv e-- TODO
-monadicStart eenv (BinLet p x y e1 e2) = monadicStart eenv e1 || monadicStart eenv e2
-monadicStart eenv (New p t) = True
-monadicStart eenv (Send p e1 e2) = True
-monadicStart eenv (Receive p e) = True
-monadicStart eenv (Select p x e) = True
-monadicStart eenv (Match p e mmap) = True
-monadicStart eenv (Fork p e) = True
-monadicStart eenv _ = False
+monadicFun :: ExpEnv -> Expression -> Bool
+monadicFun eenv (Variable p x) =
+  if Map.member x eenv then monadicFun eenv (snd (eenv Map.! x)) else False
+monadicFun eenv (UnLet _ _ e1 e2) = monadicFun eenv e1 || monadicFun eenv e2
+monadicFun eenv (App _ e1 e2) = monadicFun eenv e1 || monadicFun eenv e2
+monadicFun eenv (TypeApp _ e _) = monadicFun eenv e-- TODO
+monadicFun eenv (BinLet _ _ _ e1 e2) = monadicFun eenv e1 || monadicFun eenv e2
+monadicFun eenv (New _ _) = True
+monadicFun eenv (Send _ _ _) = True
+monadicFun eenv (Receive _ _) = True
+monadicFun eenv (Select _ _ _) = True
+monadicFun eenv (Match _ _ _) = True
+monadicFun eenv (Fork _ _) = True
+monadicFun eenv _ = False
 
 -- TODO: Review
 -- GEN DATATYPES
@@ -465,3 +466,6 @@ t9 = Map.fromList [("f1", (["c"], (UnLet (12,11) "zzz" (Send (12,20) (Integer (1
 -- (Match (31,9) (Variable (31,9) "c") (fromList [("And",("c1",BinLet (33,11) "n1" "c2" (Receive (33,28) (Variable (33,28) "c1")) (BinLet (34,11) "n2" "c3" (Receive (34,28) (Variable (34,28) "c2")) (UnLet (35,11) "x" (Send (35,20) (App (0,0) (App (0,0) (Variable (0,0) "(&&)") (Variable (35,21) "n1")) (Variable (35,27) "n2")) (Variable (35,31) "c3")) (Unit (36,7)))))),("Not",("c1",BinLet (45,11) "n1" "c2" (Receive (45,28) (Variable (45,28) "c1")) (UnLet (46,11) "x" (Send (46,20) (App (0,0) (Variable (0,0) "not") (Variable (46,25) "n1")) (Variable (46,29) "c2")) (Unit (47,7))))),("Or",("c1",BinLet (39,11) "n1" "c2" (Receive (39,28) (Variable (39,28) "c1")) (BinLet (40,11) "n2" "c3" (Receive (40,28) (Variable (40,28) "c2")) (UnLet (41,11) "x" (Send (41,20) (App (0,0) (App (0,0) (Variable (0,0) "(||)") (Variable (41,21) "n1")) (Variable (41,27) "n2")) (Variable (41,31) "c3")) (Unit (42,7))))))]),True)
 
 t10 = Map.fromList [("boolServer",(["c"],Match (5,9) (Variable (5,9) "c") (Map.fromList [("And",("c1",BinLet (7,11) "n1" "c2" (Receive (7,28) (Variable (7,28) "c1")) (BinLet (8,11) "n2" "c3" (Receive (8,28) (Variable (8,28) "c2")) (UnLet (9,11) "x" (Send (9,20) (App (0,0) (App (0,0) (Variable (0,0) "(&&)") (Variable (9,21) "n1")) (Variable (9,27) "n2")) (Variable (9,31) "c3")) (Unit (10,7)))))),("Not",("c1",BinLet (19,11) "n1" "c2" (Receive (19,28) (Variable (19,28) "c1")) (UnLet (20,11) "x" (Send (20,20) (App (0,0) (Variable (0,0) "not") (Variable (20,25) "n1")) (Variable (20,29) "c2")) (Unit (21,7))))),("Or",("c1",BinLet (13,11) "n1" "c2" (Receive (13,28) (Variable (13,28) "c1")) (BinLet (14,11) "n2" "c3" (Receive (14,28) (Variable (14,28) "c2")) (UnLet (15,11) "x" (Send (15,20) (App (0,0) (App (0,0) (Variable (0,0) "(||)") (Variable (15,21) "n1")) (Variable (15,27) "n2")) (Variable (15,31) "c3")) (Unit (16,7))))))]))),("client1",(["w"],UnLet (29,7) "w1" (Select (29,19) "And" (Variable (29,23) "w")) (UnLet (30,7) "w2" (Send (30,17) (Boolean (30,17) True) (Variable (30,22) "w1")) (UnLet (31,7) "r1" (Send (31,17) (Boolean (31,17) False) (Variable (31,23) "w2")) (BinLet (32,7) "x" "r2" (Receive (32,23) (Variable (32,23) "r1")) (Variable (33,3) "x")))))),("start",([],App (25,9) (Variable (25,9) "startClient") (Variable (25,21) "client1"))),("startClient",(["client"],BinLet (38,7) "w" "r" (New (38,17) (Choice Internal (Map.fromList [("And",Semi (Message Out BoolType) (Semi (Message Out BoolType) (Semi (Message In BoolType) Skip))),("Not",Semi (Message Out BoolType) (Semi (Message In BoolType) Skip)),("Or",Semi (Message Out BoolType) (Semi (Message Out BoolType) (Semi (Message In BoolType) Skip)))]))) (UnLet (39,7) "x" (Fork (39,16) (App (39,17) (Variable (39,17) "boolServer") (Variable (39,28) "r"))) (App (40,3) (Variable (40,3) "client") (Variable (40,10) "w")))))]
+
+
+t11 = Map.fromList [("boolServer",(["c"],Match (5,9) (Variable (5,9) "c") (Map.fromList [("And",("c1",BinLet (7,11) "n1" "c2" (Receive (7,28) (Variable (7,28) "c1")) (BinLet (8,11) "n2" "c3" (Receive (8,28) (Variable (8,28) "c2")) (UnLet (9,11) "x" (Send (9,20) (App (0,0) (App (0,0) (Variable (0,0) "(&&)") (Variable (9,21) "n1")) (Variable (9,27) "n2")) (Variable (9,31) "c3")) (Unit (10,7)))))),("Not",("c1",BinLet (19,11) "n1" "c2" (Receive (19,28) (Variable (19,28) "c1")) (UnLet (20,11) "x" (Send (20,20) (App (0,0) (Variable (0,0) "not") (Variable (20,25) "n1")) (Variable (20,29) "c2")) (Unit (21,7))))),("Or",("c1",BinLet (13,11) "n1" "c2" (Receive (13,28) (Variable (13,28) "c1")) (BinLet (14,11) "n2" "c3" (Receive (14,28) (Variable (14,28) "c2")) (UnLet (15,11) "x" (Send (15,20) (App (0,0) (App (0,0) (Variable (0,0) "(||)") (Variable (15,21) "n1")) (Variable (15,27) "n2")) (Variable (15,31) "c3")) (Unit (16,7))))))]))),("client1",(["w"],UnLet (32,7) "w1" (Select (32,19) "And" (Variable (32,23) "w")) (UnLet (33,7) "w2" (Send (33,17) (Boolean (33,17) True) (Variable (33,22) "w1")) (UnLet (34,7) "r1" (Send (34,17) (Boolean (34,17) False) (Variable (34,23) "w2")) (BinLet (35,7) "x" "r2" (Receive (35,23) (Variable (35,23) "r1")) (Variable (36,3) "x")))))),("client2",(["w"],UnLet (40,7) "w1" (Select (40,19) "Not" (Variable (40,23) "w")) (UnLet (41,7) "r1" (Send (41,17) (Boolean (41,17) True) (Variable (41,22) "w1")) (BinLet (42,7) "x" "r2" (Receive (42,23) (Variable (42,23) "r1")) (Variable (43,3) "x"))))),("start",([],UnLet (25,7) "c1" (App (25,12) (Variable (25,12) "startClient") (Variable (25,24) "client1")) (UnLet (26,7) "c2" (App (26,12) (Variable (26,12) "startClient") (Variable (26,24) "client2")) (App (0,0) (App (0,0) (Variable (0,0) "(||)") (Variable (27,3) "c1")) (Variable (27,9) "c2"))))),("startClient",(["client"],BinLet (48,7) "w" "r" (New (48,17) (Choice Internal (Map.fromList [("And",Semi (Message Out BoolType) (Semi (Message Out BoolType) (Semi (Message In BoolType) Skip))),("Not",Semi (Message Out BoolType) (Semi (Message In BoolType) Skip)),("Or",Semi (Message Out BoolType) (Semi (Message Out BoolType) (Semi (Message In BoolType) Skip)))]))) (UnLet (49,7) "x" (Fork (49,16) (App (49,17) (Variable (49,17) "boolServer") (Variable (49,28) "r"))) (App (50,3) (Variable (50,3) "client") (Variable (50,10) "w")))))]
