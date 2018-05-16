@@ -7,7 +7,7 @@
 TestParse
 .hpc/
 .hspec-failures
-Spec
+UnitSpec
 dist/
 cfst*
 CFSTCommunication.hs
