@@ -82,7 +82,7 @@ isMonadic fm b m (Conditional p e1 e2 e3) =
 isMonadic fm b m (Pair p e1 e2)  = 
   let (m1, _) = isMonadic fm False m e1
       (m2, _) = isMonadic fm False m1 e2 in
-      (Map.insert (Pair p e1 e2) False m2, False)
+      (Map.insert (Pair p e1 e2) b m2, b)
 
 isMonadic fm b m (BinLet p x y e1 e2)  = 
   let (m1, b1) = isMonadic fm b m e1
@@ -232,10 +232,11 @@ translate fm m (Conditional _ c e1 e2) = do
   
   return ("if " ++ b1 ++ " then " ++ h1 ++ " else " ++ h2, b2 || b3)
 
-translate fm m (Pair _ e1 e2) = do
+translate fm m (Pair p e1 e2) = do
   (h1, b1) <- translate fm m e1
   (h2, b2) <- translate fm m e2
-  return ("(" ++ h1 ++ ", " ++ h2 ++ ")", False)
+  c <- translateExpr ("(" ++ h1 ++ ", " ++ h2 ++ ")") (expected m (Pair p e1 e2)) (b1||b2)
+  return (c, False)
 
 translate fm m (BinLet p x y e1 e2) = do
   (h1, b1) <- translate fm m e1
@@ -244,13 +245,13 @@ translate fm m (BinLet p x y e1 e2) = do
  -- c1 <- translateExpr h1 (expected m e1) b1
  -- c2 <- translateExpr h2 (expected m (BinLet p x y e1 e2)) b2
 --  c2 <- translateExpr h2 m e2 b2
-  c1 <- translateExpr h1 (expected m e1) b1
-  c2 <- translateExpr h2 (expected m e2) b2
+  -- c1 <- translateExpr h1 (expected m e1) b1
+  -- c2 <- translateExpr h2 (expected m e2) b2
   
   if b1 then
-    return (c1  ++ " >>= \\(" ++ x ++ ", " ++ y ++ ")" ++ " -> " ++ c2, True) 
+    return (h1  ++ " >>= \\(" ++ x ++ ", " ++ y ++ ")" ++ " -> " ++ h2, True) 
   else
-    return ("let (" ++ x ++ ", " ++ y ++ ")" ++ " = " ++ c1 ++ " in " ++ c2, b2)
+    return ("let (" ++ x ++ ", " ++ y ++ ")" ++ " = " ++ h1 ++ " in " ++ h2, b2)
   
 translate fm m (New _ _) = return ("new", True)
 
@@ -376,8 +377,13 @@ monadicFun eenv (Send _ _ _) = True
 monadicFun eenv (Receive _ _) = True
 monadicFun eenv (Select _ _ _) = True
 monadicFun eenv (Match _ _ _) = True
+monadicFun eenv (Case _ e cm) = monadicFun eenv e || monadicCase eenv cm
 monadicFun eenv (Fork _ _) = True
 monadicFun eenv _ = False
+
+
+monadicCase :: ExpEnv -> CaseMap -> Bool
+monadicCase eenv = Map.foldr (\(_, e) acc -> acc || monadicFun eenv e) False
 
 -- TODO: Review
 -- GEN DATATYPES
@@ -449,12 +455,12 @@ genReceive = "receive ch = do\n  a <- readChan ch\n  return ((unsafeCoerce a), c
 -- tester (test t2) t2
 
 t str =
-  let m0 = monadicFuns t11
+  let m0 = monadicFuns t13
     --  m1 = foldr (\x acc -> Map.insert x False acc) m0 (fst (t11 Map.! "start"))
-      m2 = fst $ isMonadic m0 False Map.empty (snd (t11 Map.! str)) in
-      fst $ evalState (translate m0 m2 (snd (t11 Map.! str))) 0
+      m2 = fst $ isMonadic m0 False Map.empty (snd (t13 Map.! str)) in
+      fst $ evalState (translate m0 m2 (snd (t13 Map.! str))) 0
 
-t' srt= let m = monadicFuns t11 in fst $ isMonadic m False Map.empty (snd (t11 Map.! srt))
+t' srt= let m = monadicFuns t11 in fst $ isMonadic m False Map.empty (snd (t13 Map.! srt))
 
 tester :: ExpEnv -> IO ()
 tester eenv = putStrLn $ tester' eenv
@@ -520,3 +526,5 @@ t10 = Map.fromList [("boolServer",(["c"],Match (5,9) (Variable (5,9) "c") (Map.f
 t11 = Map.fromList [("boolServer",(["c"],Match (5,9) (Variable (5,9) "c") (Map.fromList [("And",("c1",BinLet (7,11) "n1" "c2" (Receive (7,28) (Variable (7,28) "c1")) (BinLet (8,11) "n2" "c3" (Receive (8,28) (Variable (8,28) "c2")) (UnLet (9,11) "x" (Send (9,20) (App (0,0) (App (0,0) (Variable (0,0) "(&&)") (Variable (9,21) "n1")) (Variable (9,27) "n2")) (Variable (9,31) "c3")) (Unit (10,7)))))),("Not",("c1",BinLet (19,11) "n1" "c2" (Receive (19,28) (Variable (19,28) "c1")) (UnLet (20,11) "x" (Send (20,20) (App (0,0) (Variable (0,0) "not") (Variable (20,25) "n1")) (Variable (20,29) "c2")) (Unit (21,7))))),("Or",("c1",BinLet (13,11) "n1" "c2" (Receive (13,28) (Variable (13,28) "c1")) (BinLet (14,11) "n2" "c3" (Receive (14,28) (Variable (14,28) "c2")) (UnLet (15,11) "x" (Send (15,20) (App (0,0) (App (0,0) (Variable (0,0) "(||)") (Variable (15,21) "n1")) (Variable (15,27) "n2")) (Variable (15,31) "c3")) (Unit (16,7))))))]))),("client1",(["w"],UnLet (32,7) "w1" (Select (32,19) "And" (Variable (32,23) "w")) (UnLet (33,7) "w2" (Send (33,17) (Boolean (33,17) True) (Variable (33,22) "w1")) (UnLet (34,7) "r1" (Send (34,17) (Boolean (34,17) False) (Variable (34,23) "w2")) (BinLet (35,7) "x" "r2" (Receive (35,23) (Variable (35,23) "r1")) (Variable (36,3) "x")))))),("client2",(["w"],UnLet (40,7) "w1" (Select (40,19) "Not" (Variable (40,23) "w")) (UnLet (41,7) "r1" (Send (41,17) (Boolean (41,17) True) (Variable (41,22) "w1")) (BinLet (42,7) "x" "r2" (Receive (42,23) (Variable (42,23) "r1")) (Variable (43,3) "x"))))),("start",([],UnLet (25,7) "c1" (App (25,12) (Variable (25,12) "startClient") (Variable (25,24) "client1")) (UnLet (26,7) "c2" (App (26,12) (Variable (26,12) "startClient") (Variable (26,24) "client2")) (App (0,0) (App (0,0) (Variable (0,0) "(||)") (Variable (27,3) "c1")) (Variable (27,9) "c2"))))),("startClient",(["client"],BinLet (48,7) "w" "r" (New (48,17) (Choice Internal (Map.fromList [("And",Semi (Message Out BoolType) (Semi (Message Out BoolType) (Semi (Message In BoolType) Skip))),("Not",Semi (Message Out BoolType) (Semi (Message In BoolType) Skip)),("Or",Semi (Message Out BoolType) (Semi (Message Out BoolType) (Semi (Message In BoolType) Skip)))]))) (UnLet (49,7) "x" (Fork (49,16) (App (49,17) (Variable (49,17) "boolServer") (Variable (49,28) "r"))) (App (50,3) (Variable (50,3) "client") (Variable (50,10) "w")))))]
 
 t12 = Map.fromList [("sendTree",(["t","c"],Case (13,8) (Variable (13,8) "t") (Map.fromList [("Leaf",([],UnLet (15,11) "x" (Select (15,22) "LeafC" (Variable (15,28) "c")) (Unit (16,7)))),("Node",(["x","l","r"],UnLet (18,12) "x" (Select (18,23) "LeafC" (Variable (18,29) "c")) (Unit (19,7))))]))),("start",([],Integer (70,9) 10))]
+
+t13 = Map.fromList [("receiveOne",(["c"],Match (40,9) (Variable (40,9) "c") (Map.fromList [("LeafC",("c1",Pair (42,8) (Constructor (42,13) "LeafA") (Constructor (42,20) "LeafA"))),("NodeC",("c1",BinLet (44,11) "x" "c2" (Receive (44,27) (Variable (44,27) "c1")) (BinLet (45,11) "left" "c3" (App (45,22) (Variable (45,22) "receiveOne") (Variable (45,33) "c2")) (Pair (47,8) (App (47,8) (App (47,8) (Constructor (47,8) "NodeA") (Variable (47,14) "x")) (Variable (47,16) "left")) (Variable (47,22) "left")))))]))),("sendOne",(["t","c"],Case (27,8) (Variable (27,8) "t") (Map.fromList [("LeafA",([],UnLet (29,11) "x" (Select (29,22) "LeafC" (Variable (29,28) "c")) (Unit (30,7)))),("NodeA",(["x","l"],UnLet (32,11) "w1" (Select (32,23) "NodeC" (Variable (32,29) "c")) (UnLet (33,11) "w2" (Send (33,21) (Variable (33,21) "x") (Variable (33,23) "w1")) (UnLet (34,11) "w3" (App (34,16) (App (34,16) (Variable (34,16) "sendOne") (Variable (34,24) "l")) (Variable (34,26) "w2")) (Unit (36,7))))))]))),("start",([],UnLet (113,6) "inTree" (App (113,15) (App (113,15) (Constructor (113,15) "NodeA") (Integer (113,21) 7)) (Constructor (113,29) "LeafA")) (BinLet (116,6) "writer" "reader" (New (116,26) (Rec (Bind {var = "x", kind = Kind {prekind = Session, multiplicity = Un}}) (Choice Internal (Map.fromList [("LeafC",Skip),("NodeC",Semi (Message Out IntType) (Var "x"))])))) (UnLet (117,6) "w" (Fork (117,15) (App (117,16) (App (117,16) (Variable (117,16) "sendOne") (Variable (117,24) "inTree")) (Variable (117,31) "writer"))) (BinLet (118,6) "outTree" "r" (App (118,19) (Variable (118,19) "receiveOne") (Variable (118,30) "reader")) (Variable (119,2) "outTree"))))))]
