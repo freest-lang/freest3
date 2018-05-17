@@ -116,7 +116,7 @@ isMonadic fm b m (Constructor p x) = (Map.insert (Constructor p x) False m, Fals
 
 isMonadic fm b m (Case p e cm) = 
   let m1 = isMapMonadic fm m cm in
-      (Map.insert (Case p e cm) False m, False) 
+      (Map.insert (Case p e cm) False m1, False) 
 
 isMapMonadic :: FunsMap -> MonadicMap -> Map.Map a (b, Expression) -> MonadicMap
 isMapMonadic fm m mmap = Map.foldr (\x acc -> fst $ isMonadic fm True acc (snd x)) m mmap
@@ -274,8 +274,8 @@ translate fm m (Receive p e) = do
 
 translate fm m (Select p x e) = do
   (h, _) <- translate fm m e
-  c <- translateExpr ("send \"" ++ x ++ "\" " ++ h) (expected m (Select p x e)) True
-  return (c, True)  
+  -- c <- translateExpr ("send \"" ++ x ++ "\" " ++ h) (expected m (Select p x e)) True
+  return ("send \"" ++ x ++ "\" " ++ h, True)  
 
 translate fm m (Match p e mm) = do
   (h1, b1) <- translate fm m e
@@ -296,7 +296,7 @@ translate fm m (Constructor p x) = do
 translate fm m (Case p e cm) = do
   (h1,_) <- translate fm m e 
   hcase <- translateCaseMap fm m cm
-  return ("case " ++ h1 ++ " of " ++ hcase, False)
+  return ("case " ++ h1 ++ " of " ++ hcase, False) -- TODO: Can be monadic
   
 -- TODO: Join with case
 translateMatchMap :: FunsMap -> MonadicMap -> MatchMap -> TranslateMonad (String, [String])
@@ -518,3 +518,5 @@ t10 = Map.fromList [("boolServer",(["c"],Match (5,9) (Variable (5,9) "c") (Map.f
 
 
 t11 = Map.fromList [("boolServer",(["c"],Match (5,9) (Variable (5,9) "c") (Map.fromList [("And",("c1",BinLet (7,11) "n1" "c2" (Receive (7,28) (Variable (7,28) "c1")) (BinLet (8,11) "n2" "c3" (Receive (8,28) (Variable (8,28) "c2")) (UnLet (9,11) "x" (Send (9,20) (App (0,0) (App (0,0) (Variable (0,0) "(&&)") (Variable (9,21) "n1")) (Variable (9,27) "n2")) (Variable (9,31) "c3")) (Unit (10,7)))))),("Not",("c1",BinLet (19,11) "n1" "c2" (Receive (19,28) (Variable (19,28) "c1")) (UnLet (20,11) "x" (Send (20,20) (App (0,0) (Variable (0,0) "not") (Variable (20,25) "n1")) (Variable (20,29) "c2")) (Unit (21,7))))),("Or",("c1",BinLet (13,11) "n1" "c2" (Receive (13,28) (Variable (13,28) "c1")) (BinLet (14,11) "n2" "c3" (Receive (14,28) (Variable (14,28) "c2")) (UnLet (15,11) "x" (Send (15,20) (App (0,0) (App (0,0) (Variable (0,0) "(||)") (Variable (15,21) "n1")) (Variable (15,27) "n2")) (Variable (15,31) "c3")) (Unit (16,7))))))]))),("client1",(["w"],UnLet (32,7) "w1" (Select (32,19) "And" (Variable (32,23) "w")) (UnLet (33,7) "w2" (Send (33,17) (Boolean (33,17) True) (Variable (33,22) "w1")) (UnLet (34,7) "r1" (Send (34,17) (Boolean (34,17) False) (Variable (34,23) "w2")) (BinLet (35,7) "x" "r2" (Receive (35,23) (Variable (35,23) "r1")) (Variable (36,3) "x")))))),("client2",(["w"],UnLet (40,7) "w1" (Select (40,19) "Not" (Variable (40,23) "w")) (UnLet (41,7) "r1" (Send (41,17) (Boolean (41,17) True) (Variable (41,22) "w1")) (BinLet (42,7) "x" "r2" (Receive (42,23) (Variable (42,23) "r1")) (Variable (43,3) "x"))))),("start",([],UnLet (25,7) "c1" (App (25,12) (Variable (25,12) "startClient") (Variable (25,24) "client1")) (UnLet (26,7) "c2" (App (26,12) (Variable (26,12) "startClient") (Variable (26,24) "client2")) (App (0,0) (App (0,0) (Variable (0,0) "(||)") (Variable (27,3) "c1")) (Variable (27,9) "c2"))))),("startClient",(["client"],BinLet (48,7) "w" "r" (New (48,17) (Choice Internal (Map.fromList [("And",Semi (Message Out BoolType) (Semi (Message Out BoolType) (Semi (Message In BoolType) Skip))),("Not",Semi (Message Out BoolType) (Semi (Message In BoolType) Skip)),("Or",Semi (Message Out BoolType) (Semi (Message Out BoolType) (Semi (Message In BoolType) Skip)))]))) (UnLet (49,7) "x" (Fork (49,16) (App (49,17) (Variable (49,17) "boolServer") (Variable (49,28) "r"))) (App (50,3) (Variable (50,3) "client") (Variable (50,10) "w")))))]
+
+t12 = Map.fromList [("sendTree",(["t","c"],Case (13,8) (Variable (13,8) "t") (Map.fromList [("Leaf",([],UnLet (15,11) "x" (Select (15,22) "LeafC" (Variable (15,28) "c")) (Unit (16,7)))),("Node",(["x","l","r"],UnLet (18,12) "x" (Select (18,23) "LeafC" (Variable (18,29) "c")) (Unit (19,7))))]))),("start",([],Integer (70,9) 10))]

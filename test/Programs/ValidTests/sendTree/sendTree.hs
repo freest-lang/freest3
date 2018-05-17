@@ -18,8 +18,20 @@ type TreeChannel = rec x::Su. +{
   LeafC : Skip,
   NodeC : !Int ; x ; x
 }
-
 -}
+
+sendTree :: forall a :: SU => Tree -> (rec x . +{LeafC : Skip, NodeC: !Int; x;x} ; a) -> ()
+sendTree t c =
+  case t of
+    Leaf ->
+      let x = select LeafC c in
+      ()
+    Node x l r ->
+       let w1 = select NodeC c in
+       let w2 = send x w1 in
+       let w3 = sendTree [rec x.+{LeafC: Skip, NodeC: !Int;x;x} ; Skip] l w2 in
+     --  let w4 = sendTree [Skip] r w2 in       
+      ()
 
 -- Type-safe serialization of a binary tree
 -- sendTree :: forall a :: SU => Tree -> (rec x::SU.+{LeafC: Skip, NodeC: !Int;x;x} ; a) -> a
