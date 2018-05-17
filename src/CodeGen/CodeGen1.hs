@@ -466,9 +466,9 @@ tester' eenv =
   where 
     code e p =
       let m0 = monadicFuns eenv
-          m1 = foldr (\x acc -> Map.insert x False acc) m0 p
-          m2 = fst $ isMonadic m1 False Map.empty e in
-      fst $ evalState (translate m1 m2 e) 0 
+--          m1 = foldr (\x acc -> Map.insert x False acc) m0 p
+          m2 = fst $ isMonadic m0 False Map.empty e in
+      fst $ evalState (translate m0 m2 e) 0 
 
 showParams :: Params -> String
 showParams [] = ""
