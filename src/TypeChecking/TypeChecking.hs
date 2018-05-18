@@ -188,7 +188,7 @@ checkExp kenv venv1 (Case p e m) = do
   checkEquivTypeList p kenv ts
   
   venvs2 <- checkFinalMatchEnvs venvs1 m
-  checkEquivEnvList kenv venvs2
+  -- checkEquivEnvList kenv venvs2
   return (head ts, head venvs2)
 
 --checkExp kenv venv t = 

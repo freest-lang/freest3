@@ -339,12 +339,13 @@ genFile :: ExpEnv -> HaskellCode
 genFile eenv =
   Map.foldrWithKey (\f (p, e) acc ->
                       acc ++ f ++ showParams p ++ " = " ++
-                      code e ++ "\n\n") "" eenv
+                      code f e p ++ "\n\n") "" eenv
   where 
-    code e =
+    code f e p =
       let m = monadicFuns eenv
-          m1 = fst $ isMonadic m False Map.empty e in
-      fst $ evalState (translate m m1 e) 0 
+          m1 = foldr (\x acc -> Map.insert x False acc) m p
+          m2 = fst $ isMonadic m1 (m1 Map.! f) Map.empty e in
+      fst $ evalState (translate m1 m2 e) 0 
 
 
 
@@ -468,12 +469,12 @@ tester eenv = putStrLn $ tester' eenv
 tester' :: ExpEnv -> String
 tester' eenv =
   Map.foldrWithKey (\f (p, e) acc ->
-                      acc ++ f ++ showParams p ++ " = " ++ code e p ++ "\n\n") "" eenv
+                      acc ++ f ++ showParams p ++ " = " ++ code f e p ++ "\n\n") "" eenv
   where 
-    code e p =
+    code f e p =
       let m0 = monadicFuns eenv
 --          m1 = foldr (\x acc -> Map.insert x False acc) m0 p
-          m2 = fst $ isMonadic m0 False Map.empty e in
+          m2 = fst $ isMonadic m0 (m0 Map.! f) Map.empty e in
       fst $ evalState (translate m0 m2 e) 0 
 
 showParams :: Params -> String
@@ -528,3 +529,45 @@ t11 = Map.fromList [("boolServer",(["c"],Match (5,9) (Variable (5,9) "c") (Map.f
 t12 = Map.fromList [("sendTree",(["t","c"],Case (13,8) (Variable (13,8) "t") (Map.fromList [("Leaf",([],UnLet (15,11) "x" (Select (15,22) "LeafC" (Variable (15,28) "c")) (Unit (16,7)))),("Node",(["x","l","r"],UnLet (18,12) "x" (Select (18,23) "LeafC" (Variable (18,29) "c")) (Unit (19,7))))]))),("start",([],Integer (70,9) 10))]
 
 t13 = Map.fromList [("receiveOne",(["c"],Match (40,9) (Variable (40,9) "c") (Map.fromList [("LeafC",("c1",Pair (42,8) (Constructor (42,13) "LeafA") (Constructor (42,20) "LeafA"))),("NodeC",("c1",BinLet (44,11) "x" "c2" (Receive (44,27) (Variable (44,27) "c1")) (BinLet (45,11) "left" "c3" (App (45,22) (Variable (45,22) "receiveOne") (Variable (45,33) "c2")) (Pair (47,8) (App (47,8) (App (47,8) (Constructor (47,8) "NodeA") (Variable (47,14) "x")) (Variable (47,16) "left")) (Variable (47,22) "left")))))]))),("sendOne",(["t","c"],Case (27,8) (Variable (27,8) "t") (Map.fromList [("LeafA",([],UnLet (29,11) "x" (Select (29,22) "LeafC" (Variable (29,28) "c")) (Unit (30,7)))),("NodeA",(["x","l"],UnLet (32,11) "w1" (Select (32,23) "NodeC" (Variable (32,29) "c")) (UnLet (33,11) "w2" (Send (33,21) (Variable (33,21) "x") (Variable (33,23) "w1")) (UnLet (34,11) "w3" (App (34,16) (App (34,16) (Variable (34,16) "sendOne") (Variable (34,24) "l")) (Variable (34,26) "w2")) (Unit (36,7))))))]))),("start",([],UnLet (113,6) "inTree" (App (113,15) (App (113,15) (Constructor (113,15) "NodeA") (Integer (113,21) 7)) (Constructor (113,29) "LeafA")) (BinLet (116,6) "writer" "reader" (New (116,26) (Rec (Bind {var = "x", kind = Kind {prekind = Session, multiplicity = Un}}) (Choice Internal (Map.fromList [("LeafC",Skip),("NodeC",Semi (Message Out IntType) (Var "x"))])))) (UnLet (117,6) "w" (Fork (117,15) (App (117,16) (App (117,16) (Variable (117,16) "sendOne") (Variable (117,24) "inTree")) (Variable (117,31) "writer"))) (BinLet (118,6) "outTree" "r" (App (118,19) (Variable (118,19) "receiveOne") (Variable (118,30) "reader")) (Variable (119,2) "outTree"))))))]
+
+
+
+-- Is param monadic
+
+monadicParams :: ExpEnv -> TermVar -> FunsMap -> FunsMap
+monadicParams eenv f fm =
+  let pl = fst $ eenv Map.! f in 
+  checkMonadicParams (Map.delete f eenv) fm pl
+  
+-- Tudo de uma vez
+--  Map.foldrWithKey (\f (pl, _) acc -> checkMonadicParams (Map.delete f eenv) acc pl) Map.empty
+
+checkMonadicParams :: ExpEnv -> FunsMap -> Params -> FunsMap
+checkMonadicParams eenv fm = foldr (checkMonadicParams' eenv) fm
+
+checkMonadicParams' :: ExpEnv -> TermVar -> FunsMap -> FunsMap
+checkMonadicParams' eenv param fm =
+  Map.foldrWithKey (checkMonadicParam param) fm eenv
+
+checkMonadicParam :: TermVar -> TermVar -> (Params, Expression) -> FunsMap -> FunsMap
+checkMonadicParam param fun (pl, e) fm
+  | param /= fun &&
+    (not (param `elem` pl)) = Map.insert param (checkParam param e) fm
+  | otherwise               = Map.insert param False fm 
+  
+
+checkParam :: TermVar -> Expression -> Bool
+checkParam p e = True
+
+
+
+
+                     
+-- checkMonadicParams' :: ExpEnv -> FunMap -> FunMap
+-- checkMonadicParams' eenv fm e =
+--   Map.foldrWithKey (checkParam) eenv
+
+-- checkParam :: TermVar -> (Params, Expression) -> FunMap
+
+
+-- checkParam' :: TermVar -> Expression -> Bool

@@ -20,18 +20,48 @@ type TreeChannel = rec x::Su. +{
 }
 -}
 
-sendTree :: forall a :: SU => Tree -> (rec x . +{LeafC : Skip, NodeC: !Int; x;x} ; a) -> ()
-sendTree t c =
+data A = LeafA | NodeA Int A
+
+sendOne :: A -> (rec x . +{LeafC : Skip, NodeC: !Int;x}) -> ()
+sendOne t c =
   case t of
-    Leaf ->
-      let x = select LeafC c in
+    LeafA ->      
+      let x = select LeafC c in        
       ()
-    Node x l r ->
-       let w1 = select NodeC c in
-       let w2 = send x w1 in
-       let w3 = sendTree [rec x.+{LeafC: Skip, NodeC: !Int;x;x} ; Skip] l w2 in
-     --  let w4 = sendTree [Skip] r w2 in       
+    NodeA x l ->
+      let w1 = select NodeC c in
+      let w2 = send x w1 in
+      let w3 = sendOne l w2 in
+--      let w4 = sendOne r w3 in
       ()
+
+receiveOne :: (rec x.&{LeafC: Skip, NodeC: ?Int;x}) -> (A, A)
+receiveOne c =
+  match c with
+    LeafC c1 ->
+      (LeafA, LeafA)
+    NodeC c1 ->
+      let x, c2 = receive c1 in
+      let left, c3 = receiveOne c2 in
+--      let right, c4 = receiveTree[a] c3 in
+      (NodeA x left, left)
+
+
+
+
+-- TODO:
+-- sendTree :: forall a :: SU => Tree -> (rec x . +{LeafC : Skip, NodeC: !Int; x;x} ; a) -> ()
+-- sendTree t c =
+--   case t of
+--     Leaf ->
+--       let x = select LeafC c in
+--       ()
+--     Node x l r ->
+--        let w1 = select NodeC c in
+--        let w2 = send x w1 in
+--        let w3 = sendTree [rec x.+{LeafC: Skip, NodeC: !Int;x;x} ; Skip] l w2 in
+--      --  let w4 = sendTree [Skip] r w2 in       
+--       ()
 
 -- Type-safe serialization of a binary tree
 -- sendTree :: forall a :: SU => Tree -> (rec x::SU.+{LeafC: Skip, NodeC: !Int;x;x} ; a) -> a
@@ -74,5 +104,16 @@ try the same constructors for the datatype and the session type
         rec x.+{Leaf: Skip, Node: !Int;x;x}
 -}
 
-start :: Int
-start = 10
+-- start :: Int
+-- start = 10
+
+
+start :: A
+start =
+ let inTree = NodeA 7 LeafA in
+  -- (NodeA 5 (LeafA) (LeafA)) in
+  -- (Node 9 (Node 11 Leaf Leaf) (Node 15 Leaf Leaf)) in
+ let writer,reader = new (rec x . +{LeafC: Skip, NodeC: !Int;x}) in
+ let w = fork (sendOne inTree writer) in
+ let outTree, r = receiveOne reader in
+ outTree
