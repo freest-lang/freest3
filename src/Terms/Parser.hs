@@ -205,7 +205,8 @@ prefixOp name fun =  Prefix (do reservedOp name; return fun)
 -- Parses an expression
 parseExpression :: CFSTSubParser Expression
 parseExpression =
-  buildExpressionParser table (parseFunApp <|> parseExpr)
+  buildExpressionParser table (parseFunApp <|> constructApp <|> parseExpr)
+
 
 parseExpr :: CFSTSubParser Expression
 parseExpr =
@@ -223,7 +224,6 @@ parseExpr =
   <|> parseCase
   <|> parseMatch
   <|> parseTypeApp
-  <|> constructApp
   <|> parseVariable
   <|> parseConstructor
   <?> "an expression"
@@ -419,13 +419,12 @@ parseTypeApp = try $ do
 constructApp :: CFSTSubParser Expression
 constructApp = try $ do 
   pos <- getPosition
-  c <- constructor
+  c <- parseConstructor
   e <- many1 parseExpr
   let p = posPair pos
-  return $ foldl (apply p) (App p (Constructor p c) (head e)) (tail e)
+  return $ foldl (apply p) (App p c (head e)) (tail e)
   where
     apply p acc e = App p acc e
-
 
 -- Helper functions to manage ParserOut
 -- Get and insert elements for each element of ParserOut n-tuple
@@ -480,3 +479,4 @@ run = mainProgram path Map.empty
 path = "src/test.hs"
 --path = "/home/balmeida/workspaces/ContextFreeSession/test/Programs/ValidTests/dot/dot.hs"
 --path = "/home/balmeida/workspaces/ContextFreeSession/test/Programs/ValidTests/sendTree/sendTree.hs"
+

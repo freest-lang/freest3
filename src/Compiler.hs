@@ -6,7 +6,7 @@ import qualified Data.Map.Strict as Map
 import           PreludeLoader
 import           Terms.Parser
 import           Terms.Terms
-import           CodeGen.CodeGen1
+import           CodeGen.CodeGen
 import           Types.Types
 import           TypeChecking.TypeChecking
 import           Control.Monad.Writer
@@ -22,9 +22,8 @@ compile arg = do
   
   case prog of
     Right (venv, eenv, cenv, kenv) -> do
-  --    error $ show eenv
+     -- error $ show eenv
       let a = typeCheck venv eenv cenv kenv
-
       if typeChecks a then        
         codeGen venv eenv cenv kenv (reverse $ dropWhile (/= '/') (reverse arg))
       else

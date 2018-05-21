@@ -12,12 +12,12 @@ import           Types.Kinding
 import           Types.Kinds
 import           Types.TypeEquivalence
 import           Types.Types
+import           Types.TypeParser
 
 type TCheckM = Writer [String]
 
 typeCheck :: VarEnv -> ExpEnv -> ConstructorEnv -> KindEnv -> TCheckM ()
 typeCheck venv eenv cenv kenv = do
---  error $ show eenv
   -- 1 - Data declaration
   checkDataDecl kenv cenv
   
@@ -28,7 +28,6 @@ typeCheck venv eenv cenv kenv = do
   (_, venv1) <- checkVar (0,0) kenv venv "start"
 
   let venv2 = Map.union venv1 cenv
-  --a <- Map.foldlWithKey (\acc fun (a, e) -> checkFD venv2 kenv fun a e) (return ()) eenv
   let a = Map.mapWithKey (\fun (a, e) -> checkFD venv2 kenv fun a e) eenv
   tell $ Map.foldl (\acc v -> acc ++ execWriter v) [] a
 
@@ -47,7 +46,6 @@ checkFD venv kenv fname args exp = do
 
   checkVEnvUn kenv venv2
   return ()
-
 
 
 -- Ensures: the type in the result is canonical
@@ -75,27 +73,13 @@ checkExp kenv venv1 (App p e1 e2) = do
    checkEquivTypes p kenv t2 t4
    return (t3, venv3)
 
--- TODO: 
--- TypeApp Expression Type
 checkExp kenv venv1 (TypeApp p e t) = do
   (t1, venv2) <- checkExp kenv venv1 e
---  error $ show e ++ " | " ++ show t1
   (v, c) <- checkScheme p kenv t1
 
   mapM (\t' -> checkKinding kenv (TypeScheme [] t')) t 
-  -- checkKinding kenv (TypeScheme [] t)
   -- checkEquivKinds k k1
---  let sub = subs t v c
---  let sub = foldr (\x acc -> subs acc (var x) c) t
-
---   error $ show v ++ " | " ++ show c
   let sub = foldr (\(t', b) acc -> subs t' (var b) acc) c (zip t v) 
-                  
-  
-  -- [Type]
-  -- TCheckM ([Bind], Type)
---  let m = Map.insert (show e) sub venv2
-  
   return ((TypeScheme [] sub), venv2)
 
 {- WAS:
@@ -168,8 +152,8 @@ checkExp kenv venv1 (Select p c e) = do
 -- Fork
 checkExp kenv venv1 (Fork p e) = do
   (t, venv2) <- checkExp kenv venv1 e 
-  -- TODO: t == unit
-  checkUnit p t
+  -- TODO removi: t == unit
+  -- checkUnit p t
   checkUn p kenv t
   return (TypeScheme [] (Basic UnitType), venv2)
 
@@ -303,7 +287,6 @@ checkUnit p (TypeScheme _ t) = tell [show p ++ ": Expecting a unit type; found "
 
 checkFun :: Pos -> TypeScheme -> TCheckM (TypeScheme, TypeScheme)
 checkFun _ (TypeScheme bs (Fun _ t1 t2)) = return (TypeScheme bs t1, TypeScheme bs t2)
--- checkFun pos (Forall _ _  t) = checkFun pos t
 checkFun pos (TypeScheme _ t)                           = do
   tell [show pos ++  ": Expecting a function type; found " ++ (show t)]
   return (TypeScheme [] (Basic IntType), TypeScheme [] (Basic IntType))
@@ -380,6 +363,7 @@ checkExternalChoice _ _ _ (TypeScheme _ t)                   =
   tell ["Expecting an external choice; found " ++ show t]
 
 checkSemi :: Pos -> TypeScheme -> TCheckM (Type, Type)
+-- checkSemi _ (TypeScheme bs (Semi (Semi t1 t2) t3)) = return (t1, (Semi t2 t3)) -- NEW!! It's supposed?
 checkSemi _ (TypeScheme bs (Semi t1 t2)) = return (t1, t2)
 checkSemi p (TypeScheme _ t)             = do
   tell [show p ++ ": Expecting a sequential session type; found " ++ show t]
@@ -402,13 +386,15 @@ checkMatchBranch :: Pos -> KindEnv -> VarEnv -> Expression -> TypeVar -> (TermVa
 checkMatchBranch p kenv venv e c (param, exp) acc = do
   (t, venv1) <- checkVar p kenv venv c
   -- add to list
-  paramTypeList <- addToEnv p c [param] ( (toList t))
+  paramTypeList <- addToEnv p c [param] (toList t)
   let venv2 = Map.union (Map.fromList paramTypeList) venv1
   pair <- checkExp kenv venv2 exp
   pairs <- acc
   return $ pair:pairs
 
 choiceConst :: VarEnv -> TypeScheme -> TCheckM VarEnv
+-- TODO: any semi?
+choiceConst venv (TypeScheme _ (Semi (Choice m tm) _)) = choiceConst venv (TypeScheme [] (Choice m tm)) 
 choiceConst venv (TypeScheme _ (Choice _ tm)) = return $ Map.union (typeToScheme tm) venv
   where typeToScheme = Map.foldrWithKey (\k t acc -> Map.insert k (TypeScheme [] t) acc) Map.empty
 choiceConst venv _ = return $ venv
@@ -471,6 +457,7 @@ addToEnv p c ps ts
 -- -- venv contains the entries in the prelude as well as those in the source file
 
 checkInternalToVenv :: VarEnv -> Type -> VarEnv 
+checkInternalToVenv venv (Semi (Choice m map) _) = checkInternalToVenv venv (Choice m map)
 checkInternalToVenv venv (Choice _ m) = Map.union (typeToScheme m) venv
   where typeToScheme = Map.foldrWithKey (\k t acc -> Map.insert k (TypeScheme [] t) acc) Map.empty
 checkInternalToVenv venv _ = venv
@@ -527,11 +514,13 @@ canonical :: TypeScheme -> TypeScheme
 canonical (TypeScheme b (Rec (Bind x k) t)) = canonical $ (TypeScheme b (unfold $ Rec (Bind x k) t))
 canonical (TypeScheme b (Semi Skip t)) = canonical (TypeScheme b t)
 canonical (TypeScheme b (Semi (Choice cv tm) t2)) =
-  TypeScheme b (Choice cv (Map.map (\t -> if t == Skip then t2 else t `Semi` t2) tm))
+   TypeScheme b (Choice cv (Map.map (\t -> if t == Skip then t2 else t `Semi` t2) tm))
 canonical (TypeScheme b (Semi t1 t2))  =
   let (TypeScheme _ t1') = canonical (TypeScheme b t1) in
   TypeScheme b (Semi t1' t2)
 canonical t            = t
+
+
 
 {- WAS
 canonical :: Type -> Type

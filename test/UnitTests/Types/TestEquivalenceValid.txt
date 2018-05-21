@@ -202,3 +202,9 @@ rec y . ?Bool; y; !Int
 
 rec x . ?Bool; x
 rec y . ?Bool; y; y
+
+rec x.&{LeafC: Skip, NodeC: ?Int;x;x}
+rec x.&{LeafC: Skip, NodeC: ?Int;x;x}
+
+(rec x.&{LeafC: Skip, NodeC: ?Int;x;x});(rec x.&{LeafC: Skip, NodeC: ?Int;x;x})
+(rec x.&{LeafC: Skip, NodeC: ?Int;x;x});(rec x.&{LeafC: Skip, NodeC: ?Int;x;x})
