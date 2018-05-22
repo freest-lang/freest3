@@ -22,7 +22,7 @@ type TreeChannel = rec x::Su. +{
 
 -- data A = LeafA | NodeA Int A A
 
-sendOne :: forall a => Tree -> ((rec x . +{LeafC : Skip, NodeC: !Int;x;x}); a) -> a
+sendOne :: forall a => Tree -> (rec x . +{LeafC : Skip, NodeC: !Int;x;x}); a -> a
 sendOne t c =
   case t of
     Leaf ->
@@ -38,7 +38,7 @@ sendOne t c =
 -- TEST:      let w4 = sendOne[Int] r w3 in
       w4
 
-receiveOne :: forall a => ((rec x.&{LeafC: Skip, NodeC: ?Int;x;x}); a) -> (Tree, a)
+receiveOne :: forall a => (rec x.&{LeafC: Skip, NodeC: ?Int;x;x}); a -> (Tree, a)
 receiveOne c =
   match c with
     LeafC c1 ->

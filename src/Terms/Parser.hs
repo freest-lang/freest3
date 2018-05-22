@@ -120,7 +120,7 @@ parseFunction = do
 --   reservedOp "="
 --   t <- parseType
 --   return (err, (c, t))
-  -- TODO : Kind (verify)
+
 
 parseDataType :: CFSTSubParser ()
 parseDataType = do
