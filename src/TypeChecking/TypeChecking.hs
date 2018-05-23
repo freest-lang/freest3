@@ -14,7 +14,13 @@ import           Types.TypeEquivalence
 import           Types.Types
 import           Types.TypeParser
 
+import Types.TypeParser -- TODO : remove
+
 type TCheckM = Writer [String]
+
+
+-- Main function
+-- It returns unit and possibly error on the writer monad TCheckM
 
 typeCheck :: VarEnv -> ExpEnv -> ConstructorEnv -> KindEnv -> TCheckM ()
 typeCheck venv eenv cenv kenv = do
@@ -33,6 +39,8 @@ typeCheck venv eenv cenv kenv = do
 
   return ()
 
+-- Checks one function declaration
+
 checkFD :: VarEnv -> KindEnv -> TermVar -> Params -> Expression -> TCheckM ()
 checkFD venv kenv fname args exp = do
   venv1 <- checkExpEnv (0,0) kenv venv fname args
@@ -47,7 +55,7 @@ checkFD venv kenv fname args exp = do
   checkVEnvUn kenv venv2
   return ()
 
-
+-- Checks if an expression is well typed
 -- Ensures: the type in the result is canonical
 checkExp :: KindEnv -> VarEnv -> Expression -> TCheckM (TypeScheme, VarEnv)
 
@@ -81,19 +89,7 @@ checkExp kenv venv1 (TypeApp p e t) = do
   -- checkEquivKinds k k1
   let sub = foldr (\(t', b) acc -> subs t' (var b) acc) c (zip t v) 
   return ((TypeScheme [] sub), venv2)
-
-{- WAS:
-checkExp kenv venv1 (TypeApp p e t) = do
-  (t1, venv2) <- checkExp kenv venv1 e
-  (v, c) <- checkForall p kenv t1
-  checkKinding kenv t
-  -- checkEquivKinds k k1
-  let sub = subs t v creturn
-  let m = Map.insert (show e) sub venv2
-  -- error $ show sub ++ "\n" ++ show m
-  return (sub, m)
--}
-  
+ 
 -- Conditional
 checkExp kenv venv1 (Conditional p e1 e2 e3) = do
   (t1, venv2) <- checkExp kenv venv1 e1 
@@ -140,7 +136,8 @@ checkExp kenv venv1 (Receive p e) = do
   (t1, venv2) <- checkExp kenv venv1 e
   (t2, t3) <- checkSemi p (canonical t1)
   b <- checkInType t2
-  return (TypeScheme [] (PairType (Basic b) t3), venv2)
+  let (TypeScheme _ t4) = canonical (TypeScheme [] t3)
+  return (TypeScheme [] (PairType (Basic b) t4), venv2)
 
 checkExp kenv venv1 (Select p c e) = do
   (t, venv2) <- checkExp kenv venv1 e
@@ -152,7 +149,7 @@ checkExp kenv venv1 (Select p c e) = do
 -- Fork
 checkExp kenv venv1 (Fork p e) = do
   (t, venv2) <- checkExp kenv venv1 e 
-  -- TODO removi: t == unit
+  -- t == unit
   -- checkUnit p t
   checkUn p kenv t
   return (TypeScheme [] (Basic UnitType), venv2)
@@ -172,7 +169,7 @@ checkExp kenv venv1 (Case p e m) = do
   checkEquivTypeList p kenv ts
   
   venvs2 <- checkFinalMatchEnvs venvs1 m
-  -- checkEquivEnvList kenv venvs2
+  checkEquivEnvList kenv venvs2 -- TODO: SendTree fails - details in the end
   return (head ts, head venvs2)
 
 --checkExp kenv venv t = 
@@ -192,6 +189,8 @@ checkExp kenv venv1 (Match p e cm) = do
   checkEquivEnvList kenv venvs2
   return (head ts, head venvs2)
 
+
+  
 
 -- Checking variables
 
@@ -214,13 +213,7 @@ checkEquivTypes pos kenv (TypeScheme _ t1) (TypeScheme _ t2)
   | equivalent kenv t1 t2 = return ()
   | otherwise        = tell [show pos ++  ": Expecting type " ++ (show t1) ++
                               " to be equivalent to type " ++ (show t2)]
-{- Was: 
-checkEquivTypes :: Pos -> KindEnv -> Type -> Type -> TCheckM ()
-checkEquivTypes pos kenv t1 t2
-  | equivalent kenv t1 t2 = return ()
-  | otherwise        = tell [show pos ++  ": Expecting type " ++ (show t1) ++
-                              " to be equivalent to type " ++ (show t2)]
--}
+
 
 -- checkVarUn :: Pos -> KindEnv -> VarEnv -> TermVar -> TCheckM ()
 -- checkVarUn p kenv venv v
@@ -235,27 +228,22 @@ checkEquivEnvs kenv venv1 venv2
   | equivalentEnvs kenv venv1 venv2  = return ()
   | otherwise = tell [("Expecting environment " ++ (show venv1) ++
                        " to be equivalent to environment " ++ (show venv2))]
-
+-- New
 equivalentEnvs :: KindEnv -> VarEnv -> VarEnv -> Bool
 equivalentEnvs kenv venv1 venv2 =
-  (Map.size venv1 == Map.size venv2) &&
-  (Map.foldlWithKey (equivEnvElem venv2) True venv1)
-  where 
-    equivEnvElem :: VarEnv -> Bool -> TermVar -> TypeScheme -> Bool
-    equivEnvElem venv2 acc tv t =
-      acc && (checkVarInEnv venv2 tv) && t == (venv2 Map.! tv)
-       -- && (equivalent kenv t (venv2 Map.! tv))
-
-{- WAS:
-equivalentEnvs :: KindEnv -> VarEnv -> VarEnv -> Bool
-equivalentEnvs kenv venv1 venv2 =
-  (Map.size venv1 == Map.size venv2) &&
-  (Map.foldlWithKey (equivEnvElem venv2) True venv1)
-  where 
-    equivEnvElem :: VarEnv -> Bool -> TermVar -> Type -> Bool
-    equivEnvElem venv2 acc tv t =
-      acc && (checkVarInEnv venv2 tv) && (equivalent kenv t (venv2 Map.! tv))
--}
+--  (Map.size venv1 == Map.size venv2) &&
+  let venv3 = Map.filter f1 venv1
+      venv4 = Map.filter f1 venv2 in
+  Map.isSubmapOfBy f venv3 venv4 && Map.isSubmapOfBy f venv4 venv3
+  where
+    f (TypeScheme b t) (TypeScheme _ u) = {-isUn kenv (TypeScheme b t) || -}equivalent kenv t u
+    f1 t = not (isUn kenv t)
+  -- (Map.foldlWithKey (equivEnvElem venv2) True venv1)
+  -- where 
+  --   equivEnvElem :: VarEnv -> Bool -> TermVar -> TypeScheme -> Bool
+  --   equivEnvElem venv2 acc tv t =
+  --     acc && (checkVarInEnv venv2 tv) && t == (venv2 Map.! tv)
+  --      -- && (equivalent kenv t (venv2 Map.! tv))
 
 checkVarInEnv :: VarEnv -> TermVar -> Bool
 checkVarInEnv env var = Map.member var env
@@ -281,7 +269,6 @@ checkBool p (TypeScheme _ t)                = tell [show p ++ ": Expecting a boo
 
 checkUnit :: Pos -> TypeScheme -> TCheckM ()
 checkUnit _ (TypeScheme _ (Basic UnitType)) = return ()
--- checkUnit _ Skip = return ()
 checkUnit p (TypeScheme _ t) = tell [show p ++ ": Expecting a unit type; found " ++ (show t)]
 
 
@@ -304,15 +291,6 @@ checkScheme p kenv (TypeScheme bs t)
      tell [show p ++ ": Expecting a type scheme; found " ++ show t]
      return ([], (Basic UnitType))
     
-
-{- Was
--- TODO: check schemes
-checkForall :: Pos -> KindEnv -> Type -> TCheckM (TypeVar, Type)
-checkForall _ kenv  (Forall x _ t) = return (x, t)
-checkForall p kenv t = do
-  tell [show p ++ ": Expecting a forall type; found " ++ show t]
-  return ("", (Basic UnitType))
--}
 
 checkBasic :: Pos -> TypeScheme -> TCheckM BasicType
 checkBasic _ (TypeScheme _ (Basic b)) = return b
@@ -341,7 +319,7 @@ checkSessionType p kenv t
           tell [show p ++ ": Expecting a session type; found " ++ (show t)]
           return Skip
 
--- TODO REMOVE ?? 
+
 checkNotSessionType :: Kind -> TCheckM ()
 checkNotSessionType k
   | k >= (Kind Functional Un) = return ()
@@ -350,7 +328,6 @@ checkNotSessionType k
 
 checkInternalChoice :: Pos -> TypeScheme -> TCheckM ()
 checkInternalChoice _ (TypeScheme _ (Choice Internal t)) = return ()
---checkInternalChoice (Semi (Choice Internal t1) t2) = return ()
 checkInternalChoice p (TypeScheme _ t)                   = 
   tell [show p ++ ": Expecting an internal choice; found " ++ show t]
 
@@ -363,20 +340,19 @@ checkExternalChoice _ _ _ (TypeScheme _ t)                   =
   tell ["Expecting an external choice; found " ++ show t]
 
 checkSemi :: Pos -> TypeScheme -> TCheckM (Type, Type)
--- checkSemi _ (TypeScheme bs (Semi (Semi t1 t2) t3)) = return (t1, (Semi t2 t3)) -- NEW!! It's supposed?
 checkSemi _ (TypeScheme bs (Semi t1 t2)) = return (t1, t2)
 checkSemi p (TypeScheme _ t)             = do
   tell [show p ++ ": Expecting a sequential session type; found " ++ show t]
   return (Message Out IntType, Skip)
 
--- -- Check multiplicity   
+-- Check multiplicity   
 
 checkUn :: Pos -> KindEnv -> TypeScheme -> TCheckM ()
 checkUn p kenv t
   | isUn kenv t = return ()
   | otherwise = tell [show p ++ ": Type " ++ show t ++ " is not unrestricted"]
 
--- -- Type checking the case constructor
+-- Type checking the case constructor
 
 checkMatchMap :: Pos -> KindEnv -> VarEnv -> Expression -> MatchMap -> TCheckM [(TypeScheme, VarEnv)]
 checkMatchMap p kenv venv e cm = 
@@ -467,7 +443,6 @@ checkExpEnv p kenv venv fun params = do
   checkParam fun params
   (t, venv1) <- checkVar p kenv venv fun
   parameters <- addToEnv p fun params (init (toList t))  
---  parameters <- addToEnv fun params (init (toList (venv Map.! fun)))
   return $ foldl (\acc (arg, t) -> Map.insert arg t acc) venv1 parameters
 
 checkParam :: TermVar -> Params -> TCheckM ()
@@ -489,7 +464,7 @@ checkDataDecl kenv cenv = do
   Map.foldl (\_ t -> checkKinding kenv t) (return ()) cenv 
 
 checkKinding :: KindEnv -> TypeScheme -> TCheckM ()
-checkKinding kenv (TypeScheme _ t) -- = tell [ show $ isWellKindedType kenv t, show t, show kenv]
+checkKinding kenv (TypeScheme _ t)
   | isWellKindedType kenv t = return ()
   | otherwise = tell (kindErr kenv t)
 
@@ -498,7 +473,7 @@ checkFunTypeDecl kenv venv  fname = do
   (t, _) <- checkVar (0,0) kenv venv fname
  -- venv3 <- checkChoiceParam t venv2
   checkKinding kenv t
-  return () --venv2
+  return ()
 
 -- -- TODO: Change to tell an error
 -- -- checkTypeEnv :: TypeEnv -> TCheckM Bool
@@ -532,3 +507,56 @@ canonical (Semi t1 t2)  = Semi (canonical t1) t2
 canonical t             = t
 
 -}
+
+{- WAS:
+checkExp kenv venv1 (TypeApp p e t) = do
+  (t1, venv2) <- checkExp kenv venv1 e
+  (v, c) <- checkForall p kenv t1
+  checkKinding kenv t
+  -- checkEquivKinds k k1
+  let sub = subs t v creturn
+  let m = Map.insert (show e) sub venv2
+  -- error $ show sub ++ "\n" ++ show m
+  return (sub, m)
+-}
+
+{- WAS:
+equivalentEnvs :: KindEnv -> VarEnv -> VarEnv -> Bool
+equivalentEnvs kenv venv1 venv2 =
+  (Map.size venv1 == Map.size venv2) &&
+  (Map.foldlWithKey (equivEnvElem venv2) True venv1)
+  where 
+    equivEnvElem :: VarEnv -> Bool -> TermVar -> Type -> Bool
+    equivEnvElem venv2 acc tv t =
+      acc && (checkVarInEnv venv2 tv) && (equivalent kenv t (venv2 Map.! tv))
+-}
+
+{- Was
+-- TODO: check schemes
+checkForall :: Pos -> KindEnv -> Type -> TCheckM (TypeVar, Type)
+checkForall _ kenv  (Forall x _ t) = return (x, t)
+checkForall p kenv t = do
+  tell [show p ++ ": Expecting a forall type; found " ++ show t]
+  return ("", (Basic UnitType))
+-}
+
+{- Was: 
+checkEquivTypes :: Pos -> KindEnv -> Type -> Type -> TCheckM ()
+checkEquivTypes pos kenv t1 t2
+  | equivalent kenv t1 t2 = return ()
+  | otherwise        = tell [show pos ++  ": Expecting type " ++ (show t1) ++
+                              " to be equivalent to type " ++ (show t2)]
+-}
+
+
+
+-- SEND TREE FAIL
+
+
+{-
+[("(&&)",(Bool -> (Bool -> Bool))),("(*)",(Int -> (Int -> Int))),("(+)",(Int -> (Int -> Int))),("(-)",(Int -> (Int -> Int))),("(/)",(Int -> (Int -> Int))),("(<)",(Int -> (Int -> Bool))),("(<=)",(Int -> (Int -> Bool))),("(==)",(Int -> (Int -> Bool))),("(>)",(Int -> (Int -> Bool))),("(>=)",(Int -> (Int -> Bool))),("(||)",(Bool -> (Bool -> Bool))),("LeafC",Skip),("NodeC",(!Int;((rec x :: SU . +{LeafC: Skip, NodeC: (!Int;(x;x))});(rec x :: SU . +{LeafC: Skip, NodeC: (!Int;(x;x))})))),("Tree",[Leaf: Tree, Node: (Int -> (Tree -> (Tree -> Tree)))]),("div",(Int -> (Int -> Int))),("mod",(Int -> (Int -> Int))),("negate",(Int -> Int)),("not",(Bool -> Bool)),("receiveOne",forall a :: SU => (((rec x :: SU . &{LeafC: Skip, NodeC: (?Int;(x;x))});a) -> (Tree, a))),("rem",(Int -> (Int -> Int))),("sendOne",forall a :: SU => (Tree -> (((rec x :: SU . +{LeafC: Skip, NodeC: (!Int;(x;x))});a) -> a))),("start",Tree),("t",Tree)]
+
+[("(&&)",(Bool -> (Bool -> Bool))),("(*)",(Int -> (Int -> Int))),("(+)",(Int -> (Int -> Int))),("(-)",(Int -> (Int -> Int))),("(/)",(Int -> (Int -> Int))),("(<)",(Int -> (Int -> Bool))),("(<=)",(Int -> (Int -> Bool))),("(==)",(Int -> (Int -> Bool))),("(>)",(Int -> (Int -> Bool))),("(>=)",(Int -> (Int -> Bool))),("(||)",(Bool -> (Bool -> Bool))),("LeafC",Skip),("Tree",[Leaf: Tree, Node: (Int -> (Tree -> (Tree -> Tree)))]),("div",(Int -> (Int -> Int))),("mod",(Int -> (Int -> Int))),("negate",(Int -> Int)),("not",(Bool -> Bool)),("receiveOne",forall a :: SU => (((rec x :: SU . &{LeafC: Skip, NodeC: (?Int;(x;x))});a) -> (Tree, a))),("rem",(Int -> (Int -> Int))),("sendOne",forall a :: SU => (Tree -> (((rec x :: SU . +{LeafC: Skip, NodeC: (!Int;(x;x))});a) -> a))),("start",Tree),("t",Tree),("w4",Skip)]
+
+-}
+
