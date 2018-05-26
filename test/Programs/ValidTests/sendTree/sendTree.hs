@@ -21,84 +21,32 @@ type TreeChannel = rec x::Su. +{
 -}
 
 -- data A = LeafA | NodeA Int A A
-
-sendOne :: forall a => Tree -> (rec x . +{LeafC : Skip, NodeC: !Int;x;x}); a -> a
-sendOne t c =
+-- Type-safe serialization of a binary tree
+sendTree :: forall a => Tree -> (rec x . +{LeafC : Skip, NodeC: !Int;x;x}); a -> a
+sendTree t c =
   case t of
     Leaf ->
       select LeafC c
-      -- let x = select LeafC c in        
-      -- c
     Node x l r ->
       let w1 = select NodeC c in
       let w2 = send x w1 in
-      let w3 = sendOne[rec x . +{LeafC : Skip, NodeC: !Int;x;x}] l w2 in
---      let w3 = sendOne[(rec x . +{LeafC : Skip, NodeC: !Int;x;x}); a] l w2 in
-      let w4 = sendOne[Skip] r w3 in
--- TEST:      let w4 = sendOne[Int] r w3 in
+      let w3 = sendTree[rec x . +{LeafC : Skip, NodeC: !Int;x;x}] l w2 in
+      let w4 = sendTree[Skip] r w3 in
       w4
 
-receiveOne :: forall a => (rec x.&{LeafC: Skip, NodeC: ?Int;x;x}); a -> (Tree, a)
-receiveOne c =
+receiveTree :: forall a => (rec x.&{LeafC: Skip, NodeC: ?Int;x;x}); a -> (Tree, a)
+receiveTree c =
   match c with
     LeafC c1 ->
       (Leaf, c1)
     NodeC c1 ->
       let x, c2 = receive c1 in
-      let left, c3 = receiveOne [rec x.&{LeafC: Skip, NodeC: ?Int;x;x}] c2 in
-      let right, c4 = receiveOne [Skip] c3 in
+      let left, c3 = receiveTree [rec x.&{LeafC: Skip, NodeC: ?Int;x;x}] c2 in
+      let right, c4 = receiveTree [Skip] c3 in
       (Node x left right, c4)
 
 
 
-
--- TODO:
--- sendTree :: forall a :: SU => Tree -> (rec x . +{LeafC : Skip, NodeC: !Int; x;x} ; a) -> ()
--- sendTree t c =
---   case t of
---     Leaf ->
---       let x = select LeafC c in
---       ()
---     Node x l r ->
---        let w1 = select NodeC c in
---        let w2 = send x w1 in
---        let w3 = sendTree [rec x.+{LeafC: Skip, NodeC: !Int;x;x} ; Skip] l w2 in
---      --  let w4 = sendTree [Skip] r w2 in       
---       ()
-
--- Type-safe serialization of a binary tree
--- sendTree :: forall a :: SU => Tree -> (rec x::SU.+{LeafC: Skip, NodeC: !Int;x;x} ; a) -> a
--- --sendTree :: Tree -> rec x.+{LeafC: Skip, NodeC: !Int;x;x} ; a -> a
--- sendTree t c =
---   case t of
---     Leaf ->
---       select LeafC c
---     Node x l r ->
---       let c1 = select NodeC c in
---       let c2 = send x c1 in
---       let c3 = sendTree[rec x.+{LeafC: Skip, NodeC: !Int;x;x} ; a] l c2 in
---       let c4 = sendTree[a] r c3 in
---       c4
-      
-
--- receiveTree :: forall a :: SU => rec x.&{LeafC: Skip, NodeC: ?Int;x;x} ; a -> (Tree, a)
--- receiveTree c =
---   case c of
---     LeafC c1 ->
---       (Leaf, c1)
---     NodeC c1 ->
---       let x, c2 = receive c1 in
---       let left, c3 = receiveTree[rec x.&{LeafC: Skip, NodeC: ?Int;x;x} ; a] c2 in
---       let right, c4 = receiveTree[a] c3 in
---       (Node x left right, c4)
-
--- start :: Tree
--- start =
---  let inTree = Node 7 (Node 5 (Leaf) (Leaf)) (Node 9 (Node 11 Leaf Leaf) (Node 15 Leaf Leaf)) in
---  let writer,reader = new rec x.+{LeafC: Skip, NodeC: !Int;x;x} in
---  let w = fork (sendTree[Skip] inTree writer) in
---  let outTree, r = receiveTree[Skip] reader in
---  outTree
 
 {-
 TODO:
@@ -115,6 +63,6 @@ start :: Tree
 start =
   let inTree = Node 7 (Node 5 Leaf Leaf) (Node 9 (Node 11 Leaf Leaf) (Node 15 Leaf Leaf)) in
   let writer,reader = new (rec x . +{LeafC: Skip, NodeC: !Int;x;x}) in
-  let w = fork (sendOne[Skip] inTree writer) in
-  let outTree, r = receiveOne reader in
+  let w = fork (sendTree[Skip] inTree writer) in
+  let outTree, r = receiveTree reader in
   outTree
