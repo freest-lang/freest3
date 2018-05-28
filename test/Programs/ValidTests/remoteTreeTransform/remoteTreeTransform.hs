@@ -21,9 +21,28 @@ transform tree c =
 
 
 
-start :: Int
-start = 10
-         
-      
+treeSum :: forall x => (rec xFormChan . &{LeafC: Skip, NodeC: ?Int;xFormChan;xFormChan;!Int});x -> (Int, x)
+treeSum c =
+  match c with
+    LeafC c1 -> (0, c1)
+    NodeC c1 ->
+      let x, c2 = receive c1 in
+      let l, c3 = treeSum[rec xFormChan . &{LeafC: Skip, NodeC: ?Int;xFormChan;xFormChan;!Int}] c2 in
+      let r, c4 = treeSum[!Int;Skip] c3 in
+      let c5    = send (x+l+r) c4 in
+      (x+l+r, c5)
   
 
+
+-- V1
+
+start :: Int
+start =
+  let aTree = Node 3 Leaf (Node 4 Leaf Leaf) in
+  let w, r  = new (rec xFormChan . +{LeafC: Skip, NodeC: !Int;xFormChan;xFormChan;?Int}) in
+  let x = fork (transform[Skip] aTree w) in
+  let size, r1 = treeSum r in
+  size
+  
+         
+  

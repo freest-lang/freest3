@@ -1,6 +1,8 @@
 module TypeChecking.TypeChecking (
     typeCheck
   , TCheckM
+  , canonical -- TODO: Remove
+  , unfold -- TODO: Remove
 ) where
 
 import           Control.Monad
@@ -127,10 +129,11 @@ checkExp kenv venv1 (Send p e1 e2) = do
   (t1, venv2) <- checkExp kenv venv1 e1 
   b1 <- checkBasic p t1
   (t2, venv3) <- checkExp kenv venv2 e2
+ -- tell ["   |   " ++ show t2 ++ " ### " ++ show (canonical t2) ++ "   |   "]
   (t3, t4) <- checkSemi p (canonical t2)
   b2 <- checkOutType p t3
   checkEquivBasics p b1 b2
-  return (TypeScheme [] t4, venv3)
+  return (canonical (TypeScheme [] t4), venv3)
 
 checkExp kenv venv1 (Receive p e) = do  
   (t1, venv2) <- checkExp kenv venv1 e
@@ -139,18 +142,17 @@ checkExp kenv venv1 (Receive p e) = do
   let (TypeScheme _ t4) = canonical (TypeScheme [] t3)
   return (TypeScheme [] (PairType (Basic b) t4), venv2)
 
-checkExp kenv venv1 (Select p c e) = do
+checkExp kenv venv1 (Select p c e) = do  
   (t, venv2) <- checkExp kenv venv1 e
   let (TypeScheme bs t') = t 
   let venv3 = checkInternalToVenv venv2 t'
   checkInternalChoice p (canonical t)
-  checkVar p kenv venv3 c
+  (t1, venv4) <- checkVar p kenv venv3 c
+  return (canonical t1, venv4)
 
 -- Fork
 checkExp kenv venv1 (Fork p e) = do
   (t, venv2) <- checkExp kenv venv1 e 
-  -- t == unit
-  -- checkUnit p t
   checkUn p kenv t
   return (TypeScheme [] (Basic UnitType), venv2)
 
@@ -328,11 +330,15 @@ checkNotSessionType k
 
 checkInternalChoice :: Pos -> TypeScheme -> TCheckM ()
 checkInternalChoice _ (TypeScheme _ (Choice Internal t)) = return ()
+-- new ? 
+checkInternalChoice _ (TypeScheme _ (Semi (Choice Internal t) _)) = return () 
 checkInternalChoice p (TypeScheme _ t)                   = 
   tell [show p ++ ": Expecting an internal choice; found " ++ show t]
 
 checkExternalChoice :: Pos -> KindEnv -> VarEnv -> TypeScheme -> TCheckM ()
 checkExternalChoice _ _ _ (TypeScheme _ (Choice External t)) = return ()
+-- new ?
+checkExternalChoice _ _ _ (TypeScheme _ (Semi (Choice External t) Skip)) = return ()
 checkExternalChoice p kenv venv (TypeScheme _ (Var x))       = do
   (t, venv) <- checkVar p kenv venv x
   checkExternalChoice p kenv venv t 
@@ -486,77 +492,20 @@ TODO: the inductive definition of the output type; a proof that the the function
 -}
 
 canonical :: TypeScheme -> TypeScheme
-canonical (TypeScheme b (Rec (Bind x k) t)) = canonical $ (TypeScheme b (unfold $ Rec (Bind x k) t))
+
 canonical (TypeScheme b (Semi Skip t)) = canonical (TypeScheme b t)
 canonical (TypeScheme b (Semi (Choice cv tm) t2)) =
-   TypeScheme b (Choice cv (Map.map (\t -> if t == Skip then t2 else t `Semi` t2) tm))
+  canonical $ TypeScheme b (Choice cv (Map.map (canonicalType t2) tm))
 canonical (TypeScheme b (Semi t1 t2))  =
   let (TypeScheme _ t1') = canonical (TypeScheme b t1) in
   TypeScheme b (Semi t1' t2)
+canonical (TypeScheme b (Rec (Bind x k) t)) =
+  canonical $ (TypeScheme b (unfold $ Rec (Bind x k) t))
 canonical t            = t
 
 
-
-{- WAS
-canonical :: Type -> Type
-canonical (Rec (Bind x k) t)     = canonical $ unfold $ Rec (Bind x k) t
-canonical (Semi Skip t) = canonical t
-canonical (Semi (Choice cv tm) t2) =
-  Choice cv (Map.map (\t -> if t == Skip then t2 else t `Semi` t2) tm)
-canonical (Semi t1 t2)  = Semi (canonical t1) t2
-canonical t             = t
-
--}
-
-{- WAS:
-checkExp kenv venv1 (TypeApp p e t) = do
-  (t1, venv2) <- checkExp kenv venv1 e
-  (v, c) <- checkForall p kenv t1
-  checkKinding kenv t
-  -- checkEquivKinds k k1
-  let sub = subs t v creturn
-  let m = Map.insert (show e) sub venv2
-  -- error $ show sub ++ "\n" ++ show m
-  return (sub, m)
--}
-
-{- WAS:
-equivalentEnvs :: KindEnv -> VarEnv -> VarEnv -> Bool
-equivalentEnvs kenv venv1 venv2 =
-  (Map.size venv1 == Map.size venv2) &&
-  (Map.foldlWithKey (equivEnvElem venv2) True venv1)
-  where 
-    equivEnvElem :: VarEnv -> Bool -> TermVar -> Type -> Bool
-    equivEnvElem venv2 acc tv t =
-      acc && (checkVarInEnv venv2 tv) && (equivalent kenv t (venv2 Map.! tv))
--}
-
-{- Was
--- TODO: check schemes
-checkForall :: Pos -> KindEnv -> Type -> TCheckM (TypeVar, Type)
-checkForall _ kenv  (Forall x _ t) = return (x, t)
-checkForall p kenv t = do
-  tell [show p ++ ": Expecting a forall type; found " ++ show t]
-  return ("", (Basic UnitType))
--}
-
-{- Was: 
-checkEquivTypes :: Pos -> KindEnv -> Type -> Type -> TCheckM ()
-checkEquivTypes pos kenv t1 t2
-  | equivalent kenv t1 t2 = return ()
-  | otherwise        = tell [show pos ++  ": Expecting type " ++ (show t1) ++
-                              " to be equivalent to type " ++ (show t2)]
--}
-
-
-
--- SEND TREE FAIL
-
-
-{-
-[("(&&)",(Bool -> (Bool -> Bool))),("(*)",(Int -> (Int -> Int))),("(+)",(Int -> (Int -> Int))),("(-)",(Int -> (Int -> Int))),("(/)",(Int -> (Int -> Int))),("(<)",(Int -> (Int -> Bool))),("(<=)",(Int -> (Int -> Bool))),("(==)",(Int -> (Int -> Bool))),("(>)",(Int -> (Int -> Bool))),("(>=)",(Int -> (Int -> Bool))),("(||)",(Bool -> (Bool -> Bool))),("LeafC",Skip),("NodeC",(!Int;((rec x :: SU . +{LeafC: Skip, NodeC: (!Int;(x;x))});(rec x :: SU . +{LeafC: Skip, NodeC: (!Int;(x;x))})))),("Tree",[Leaf: Tree, Node: (Int -> (Tree -> (Tree -> Tree)))]),("div",(Int -> (Int -> Int))),("mod",(Int -> (Int -> Int))),("negate",(Int -> Int)),("not",(Bool -> Bool)),("receiveOne",forall a :: SU => (((rec x :: SU . &{LeafC: Skip, NodeC: (?Int;(x;x))});a) -> (Tree, a))),("rem",(Int -> (Int -> Int))),("sendOne",forall a :: SU => (Tree -> (((rec x :: SU . +{LeafC: Skip, NodeC: (!Int;(x;x))});a) -> a))),("start",Tree),("t",Tree)]
-
-[("(&&)",(Bool -> (Bool -> Bool))),("(*)",(Int -> (Int -> Int))),("(+)",(Int -> (Int -> Int))),("(-)",(Int -> (Int -> Int))),("(/)",(Int -> (Int -> Int))),("(<)",(Int -> (Int -> Bool))),("(<=)",(Int -> (Int -> Bool))),("(==)",(Int -> (Int -> Bool))),("(>)",(Int -> (Int -> Bool))),("(>=)",(Int -> (Int -> Bool))),("(||)",(Bool -> (Bool -> Bool))),("LeafC",Skip),("Tree",[Leaf: Tree, Node: (Int -> (Tree -> (Tree -> Tree)))]),("div",(Int -> (Int -> Int))),("mod",(Int -> (Int -> Int))),("negate",(Int -> Int)),("not",(Bool -> Bool)),("receiveOne",forall a :: SU => (((rec x :: SU . &{LeafC: Skip, NodeC: (?Int;(x;x))});a) -> (Tree, a))),("rem",(Int -> (Int -> Int))),("sendOne",forall a :: SU => (Tree -> (((rec x :: SU . +{LeafC: Skip, NodeC: (!Int;(x;x))});a) -> a))),("start",Tree),("t",Tree),("w4",Skip)]
-
--}
+canonicalType :: Type -> Type -> Type
+canonicalType t Skip = t
+canonicalType t t1 = t1 `Semi` t
+-- canonical (TypeScheme b (Semi (Semi t1 t2) t3))       = t
 

@@ -44,4 +44,3 @@ startClient client =
 
   
 -- remove skips from the end
--- Type check : environment checks only the linear part (filter)
