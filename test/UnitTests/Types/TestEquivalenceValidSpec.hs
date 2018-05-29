@@ -18,8 +18,4 @@ spec = do
 matchValidSpec :: (String, String, String) -> Spec
 matchValidSpec (k, t, u) =
   it (k ++ "  |-  " ++ t ++ " ~ " ++  u) $
-    equivalent (bindsToKenv (read k)) (read t) (read u) `shouldBe` True
-
-bindsToKenv :: [(TypeVar, Kind)] -> KindEnv
-bindsToKenv []         = Map.empty
-bindsToKenv ((x,k):bs) = Map.insert x k (bindsToKenv bs)
+    equivalent (Map.fromList (read k)) (read t) (read u) `shouldBe` True

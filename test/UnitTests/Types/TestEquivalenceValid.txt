@@ -196,15 +196,16 @@ Skip;!Int -> Bool
 !Bool; Skip
 !Bool
 
-[]
+-- The below kinding environment is not strictly needed
+[(α, SL)]
 ?Char; Skip
 ?Char
 
 -- Distributivity
 
 [(α, SL)]
-+{Leaf: Skip}
-+{Leaf: α}   
++{Leaf: Skip}; α   
++{Leaf: α}
 
 [(α, SL)]
 +{Node: !Int}; α
