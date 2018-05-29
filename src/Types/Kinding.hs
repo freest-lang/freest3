@@ -15,7 +15,7 @@ module Types.Kinding
 ( Kind (..)
 , KindEnv
 , kindOf
-, isWellKindedType
+, isWellKinded
 , isSessionType
 , isContractive
 , isUn
@@ -49,38 +49,25 @@ kinding kenv (Semi t u) = do
 kinding kenv (Fun m t u) = do
   kinding kenv t
   kinding kenv u
---  checkNotTypeScheme t kt
---  checkNotTypeScheme u ku
   return $ Kind Functional m
 kinding kenv (PairType t u) = do
   kinding kenv t 
   kinding kenv u
-  -- checkNotTypeScheme t kt
-  -- checkNotTypeScheme t ku
   return $ Kind Functional Lin
 kinding kenv (Datatype m) = do
   ks <- mapM (kinding kenv) (Map.elems m)
-  checkDataType ks (Kind Functional Un)
-      ("One of the components in a Datatype is a type Scheme. \nType: " ++ show m)
+  checkDatatype ks (Kind Functional Un)
+      ("One of the components in a Datatype is a type Scheme. \nType: " ++ show m) -- TODO: ??? type scheme ?
 kinding kenv (Choice _ m) = do
   ks <- mapM (kinding kenv) (Map.elems m)
-  checkTypeMapCases ks (Kind Session Lin)
-      ("One of the components in a choice isn't lower than a S^l. " ++ (show m))
+  checkChoice ks
 kinding kenv (Rec (Bind x k) t) = do
   -- TODO: Maybe the kinding function should also return kenv
   let kenv1 = (Map.insert x k kenv)
   k <- kinding kenv1 t
   checkContractivity kenv1 t
-  -- checkNotTypeScheme (Rec (Bind x k) t) k 33
   return k
-
--- TODO: ADD A Kinding function to typeschemes
--- kinding kenv (Forall x k t) = do
---   k1 <- kinding (Map.insert x k kenv) t
---   -- TODO: Check k1 >= C^u
---   return $ k1
   
--- fst . runWriter
 kindOfScheme :: KindEnv -> TypeScheme -> Kind
 kindOfScheme kenv (TypeScheme [] t) = kindOf kenv t
 kindOfScheme kenv t = kinds (kindOfScheme' kenv t)
@@ -92,29 +79,28 @@ kindOfScheme' kenv (TypeScheme bs t) = do
   return k1
   where toMap kenv = foldr (\b acc -> Map.insert (var b) (kind b) acc) kenv  
 
-
 -- Used when an error is found
 topKind :: Kind
 topKind = Kind Functional Lin
 
-checkTypeMap :: KindEnv -> TypeMap -> Kind -> String -> KindM Kind
-checkTypeMap kenv tm k m = do--liftM $
-  ks <- mapM (kinding kenv) (Map.elems tm)
-  checkTypeMapCases ks k m
+-- checkTypeMap :: KindEnv -> TypeMap -> Kind -> String -> KindM Kind
+-- checkTypeMap kenv tm k m = do--liftM $
+--   ks <- mapM (kinding kenv) (Map.elems tm)
+--   checkChoice ks k m
 
-checkTypeMapCases :: [Kind] -> Kind -> String -> KindM Kind
-checkTypeMapCases ks k m
-   | all (<= k) ks = return $ Kind Session Lin
+checkChoice :: [Kind] -> KindM Kind
+checkChoice ks
+   | all (<= Kind Session Lin) ks = return $ Kind Session Lin
    | otherwise  = do
-       tell [m]
-       return $ topKind
+       tell ["One of the components in a choice isn't lower than SL"]
+       return topKind
 
-checkDataType :: [Kind] -> Kind -> String -> KindM Kind
-checkDataType ks k m
+checkDatatype :: [Kind] -> Kind -> String -> KindM Kind
+checkDatatype ks k m
    | all (<= k) ks = return $ Kind Functional (multiplicity $ maximum ks)
    | otherwise  = do
        tell [m]
-       return $ topKind
+       return topKind
   
 -- Check if a type is a session type
 checkSessionType :: Type -> Kind ->  KindM ()
@@ -135,18 +121,16 @@ isContractive :: KindEnv -> Type -> Bool
 isContractive kenv (Semi t _) = isContractive kenv t
 isContractive kenv (Rec _ t)  = isContractive kenv t
 isContractive kenv (Var x)    = Map.member x kenv
--- isContractive kenv (Forall _ _ t) = isContractive kenv t
 isContractive _    _          = True
 
 -- Check the contractivity of a given type; issue an error if not
-
 checkContractivity :: KindEnv -> Type -> KindM ()
 checkContractivity kenv t
   | isContractive kenv t = return ()
   | otherwise            = tell ["Type " ++ show t ++ " is not contractive"]
 
-isWellKindedType :: KindEnv -> Type -> Bool
-isWellKindedType kenv t = null $ snd $ runWriter (kinding kenv t)
+isWellKinded :: KindEnv -> Type -> Bool
+isWellKinded kenv t = null $ snd $ runWriter (kinding kenv t)
 
 isSessionType :: KindEnv -> Type -> Bool
 isSessionType kenv t =  prekind (kindOf kenv t) == Session
@@ -154,19 +138,8 @@ isSessionType kenv t =  prekind (kindOf kenv t) == Session
 isUn :: KindEnv -> TypeScheme -> Bool
 isUn kenv t = multiplicity (kindOfScheme kenv t) == Un 
 
--- WAS: 
--- isUn :: KindEnv -> Type -> Bool
--- isUn kenv t = multiplicity (kindOf kenv t) == Un 
-
 kindErr :: KindEnv -> Type -> [String]
 kindErr kenv t = err (kinding kenv t)
   where
     err :: KindM Kind -> [String]
     err = snd . runWriter
-
--- These should yield Left _
--- kinding Map.empty (UnFun Skip Skip)
--- kinding Map.empty (UnFun (Basic IntType) (Basic IntType))
--- kinding Map.empty (UnFun (In IntType) (In IntType))
--- (Datatype (Map.fromList [("a",Basic IntType),("b",Basic BoolType)]))
--- (Datatype (Map.fromList [("a",Basic IntType),("b",Basic BoolType),("c",Basic CharType)]))

@@ -471,7 +471,7 @@ checkDataDecl kenv cenv = do
 
 checkKinding :: KindEnv -> TypeScheme -> TCheckM ()
 checkKinding kenv (TypeScheme _ t)
-  | isWellKindedType kenv t = return ()
+  | isWellKinded kenv t = return ()
   | otherwise = tell (kindErr kenv t)
 
 checkFunTypeDecl :: KindEnv -> VarEnv -> TermVar -> TCheckM ()
@@ -483,7 +483,7 @@ checkFunTypeDecl kenv venv  fname = do
 
 -- -- TODO: Change to tell an error
 -- -- checkTypeEnv :: TypeEnv -> TCheckM Bool
--- -- checkTypeEnv tenv = return $ Map.foldr (\(_,t) b -> b && isWellKindedType kindEnv t) True tenv
+-- -- checkTypeEnv tenv = return $ Map.foldr (\(_,t) b -> b && isWellKinded kindEnv t) True tenv
 -- --   where kindEnv = Map.map fst tenv
 
 {-

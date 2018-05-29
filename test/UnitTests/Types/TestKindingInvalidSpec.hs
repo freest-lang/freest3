@@ -20,7 +20,7 @@ spec = do
 matchInvalidKindingSpec :: String -> Spec
 matchInvalidKindingSpec str =
   it str $ do
-    (isWellKindedType Map.empty (read str :: Type)) `shouldBe` False
+    (isWellKinded Map.empty (read str :: Type)) `shouldBe` False
 
 
 -- INVALID:

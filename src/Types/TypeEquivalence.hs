@@ -358,8 +358,9 @@ equiv _ Skip = False
 equiv t u
   | isSessionType Map.empty t && isSessionType Map.empty u = bisim g [x] [y]
   | otherwise = False
-    where (x, state)     = convertToGNF initial t
-          (y, (g, _, _)) = convertToGNF state u
+    where (x, y, (g, _, _)) = convertTwo t u
+    -- where (x, state)     = convertToGNF initial t
+    --       (y, (g, _, _)) = convertToGNF state u
   
 checkBinding :: TypeMap -> Bool -> Constructor -> Type -> Bool
 checkBinding m acc l t = acc && l `Map.member` m && equiv (m Map.! l) t
@@ -368,7 +369,7 @@ checkBinding m acc l t = acc && l `Map.member` m && equiv (m Map.! l) t
 
 convertTwo :: Type -> Type -> (TypeVar, TypeVar, (Grammar, Visited, Int))
 convertTwo t u = (x, y, s)
-  where (x, state)   = convertToGNF initial t
+  where (x, state) = convertToGNF initial t
         (y, s) = convertToGNF state u
 
 e1 = equiv s1 s1
