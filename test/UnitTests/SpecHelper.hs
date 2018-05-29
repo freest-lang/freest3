@@ -19,5 +19,5 @@ readFromFile filename = do
   return $ filter (not . isComment) $ filter (not . null) $ map (dropWhile isSpace) $ lines str
   -- return $ map (dropWhile isSpace) $ lines str
 
-isComment (x:y:ys) = x == '-' && y == '-'
-isComment _ = False
+isComment ('-':'-':_) = True
+isComment _           = False

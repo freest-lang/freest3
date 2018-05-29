@@ -6,10 +6,6 @@ import Types.Kinds
 import Types.Kinding
 import qualified Data.Map as Map
 
-
-main :: IO ()
-main = hspec spec
-
 spec :: Spec
 spec = do
   describe "Equal TypeSchemes" $ do
@@ -46,3 +42,5 @@ matchKindingValidSpec [ts, k] =
   it ts $ do
     (kindOfScheme Map.empty (read ts :: TypeScheme)) `shouldBe` (read k :: Kind)
 
+main :: IO ()
+main = hspec spec
