@@ -145,7 +145,7 @@ Skip;!Int -> Bool
 !Int; (?Bool; !Char)  
 (!Int; ?Bool); !Char 
 
-Skip; !Bool
+!Bool; Skip
 !Bool
 
 ?Char; Skip
@@ -153,14 +153,17 @@ Skip; !Bool
 
 -- Distributivity
 
-+{Leaf: Skip, Node: !Int}; α
-+{Leaf: Skip; α, Node: !Int; α}
++{Leaf: Skip}; α
++{Leaf: α}
 
-+{Leaf: Skip, Node: !Int}; α
-+{Leaf: α, Node: !Int; α}
++{Node: !Int}; α
++{Node: !Int; α}
 
 +{Leaf: Skip, Node: Skip}; α
 +{Leaf: α, Node: α}
+
++{Leaf: Skip, Node: !Int}; α
++{Leaf: Skip; α, Node: !Int; α}
 
 -- Recursive types
 

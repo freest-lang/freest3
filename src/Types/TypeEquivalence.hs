@@ -82,19 +82,19 @@ insertVisited :: Type -> TypeVar -> GNFState ()
 insertVisited t x =
   modify (\(p, v, n) -> (p, Map.insert t x v, n))
 
-getAllGrammar :: GNFState Grammar
-getAllGrammar = do
+getGrammar :: GNFState Grammar
+getGrammar = do
   (p, _, _) <- get
   return p
 
-getGrammar :: TypeVar -> GNFState (Map.Map Label [TypeVar])
-getGrammar x = do
-  p <- getAllGrammar
+getProductions :: TypeVar -> GNFState (Map.Map Label [TypeVar])
+getProductions x = do
+  p <- getGrammar
   return $ p Map.! x
 
 member :: TypeVar -> GNFState Bool
 member x = do
-  p <- getAllGrammar
+  p <- getGrammar
   return $ Map.member x p
 
 insertProduction :: TypeVar -> Label -> [TypeVar] -> GNFState ()
@@ -104,6 +104,7 @@ insertProduction x l w =
 insertGrammar :: TypeVar -> (Map.Map Label [TypeVar]) -> GNFState ()
 insertGrammar x m = insertGrammar' x (Map.assocs m)
 
+insertGrammar' :: TypeVar -> [(Label, [TypeVar])] -> GNFState ()
 insertGrammar' x [] = return ()
 insertGrammar' x ((l, w):as) = do
   insertProduction x l w
@@ -149,11 +150,13 @@ toGNF' (Semi t u) = do
   ys <- toGNF u
   if null xs
   then return ys
+--  else if null ys
+--  then return xs
   else do
     let (x:xs') = xs
     b <- member x
     if b then do
-      m <- getGrammar x
+      m <- getProductions x
       insertGrammar x (Map.map (++ xs' ++ ys) m)
       return [x]
     else
@@ -185,7 +188,7 @@ buildGNF t = evalState (generateGNF t) initial
 generateGNF :: Type -> GNFState GNF
 generateGNF t = do
   [y] <- toGNF t
-  p <- getAllGrammar
+  p <- getGrammar
   return $ GNF {start = y, productions = p}
 
 s1 = Message Out CharType
@@ -244,13 +247,9 @@ s24 = Rec yBind (Rec zBind (Semi (Semi s1 (Var "y")) (Var "z")))
 t24 = buildGNF s24
 s25 = Rec yBind (Rec zBind (Semi (Semi s1 (Var "z")) (Var "y")))
 t25 = buildGNF s25
-s26 = Semi (Choice External (Map.fromList
-  [("Leaf", Skip),
-   ("Node", Skip)])) (Var "α")
+s26 = Semi (Choice External (Map.fromList [("Leaf", Skip)])) (Var "α")
 t26 = buildGNF s26
-s27 = Choice External (Map.fromList
-  [("Leaf", (Var "α")),
-   ("Node", (Var "α"))])
+s27 = Choice External (Map.fromList [("Leaf", (Var "α"))])
 t27 = buildGNF s27
 
 -- BISIMULATION
@@ -357,20 +356,20 @@ equiv Skip Skip = True
 equiv Skip _ = False
 equiv _ Skip = False
 equiv t u
-  | isSessionType Map.empty t && isSessionType Map.empty u = bisim p [x] [y]
+  | isSessionType Map.empty t && isSessionType Map.empty u = bisim g [x] [y]
   | otherwise = False
     where (x, state)     = convertToGNF initial t
-          (y, (p, _, _)) = convertToGNF state u
+          (y, (g, _, _)) = convertToGNF state u
   
 checkBinding :: TypeMap -> Bool -> Constructor -> Type -> Bool
 checkBinding m acc l t = acc && l `Map.member` m && equiv (m Map.! l) t
 
 -- testing
 
-convertTwo :: Type -> Type -> (TypeVar, TypeVar, Grammar)
-convertTwo t u = (x, y, g)
+convertTwo :: Type -> Type -> (TypeVar, TypeVar, (Grammar, Visited, Int))
+convertTwo t u = (x, y, s)
   where (x, state)   = convertToGNF initial t
-        (y, (g,_,_)) = convertToGNF state u
+        (y, s) = convertToGNF state u
 
 e1 = equiv s1 s1
 e2 = equiv s1 s2 -- False
