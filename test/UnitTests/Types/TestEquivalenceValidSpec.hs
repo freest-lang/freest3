@@ -1,7 +1,7 @@
 module Types.TestEquivalenceValidSpec(spec) where
 
-import qualified Data.Map.Strict as Map
 import SpecHelper
+import qualified Data.Map.Strict as Map
 import Types.Kinds
 import Types.Kinding
 import Types.TypeEquivalence
@@ -13,9 +13,9 @@ main = hspec spec
 spec :: Spec
 spec = do
   t <- runIO $ readFromFile "test/UnitTests/Types/TestEquivalenceValid.txt"
-  describe "Valid Equivalence Test" $ mapM_ matchValidSpec (convert3 t)
+  describe "Valid Equivalence Test" $ mapM_ matchValidSpec (chunksOf 3 t)
 
-matchValidSpec :: (String, String, String) -> Spec
-matchValidSpec (k, t, u) =
+matchValidSpec :: [String] -> Spec
+matchValidSpec [k, t, u] =
   it (k ++ "  |-  " ++ t ++ " ~ " ++  u) $
     equivalent (Map.fromList (read k)) (read t) (read u) `shouldBe` True

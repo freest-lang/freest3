@@ -6,10 +6,10 @@ spec :: Spec
 spec = do
   t <- runIO $ readFromFile "test/UnitTests/Types/TestEqInvalid.txt"
   describe "Invalid Equality Test" $ do
-      mapM_ matchInvalidSpec (convert t)
+      mapM_ matchInvalidSpec (chunksOf 2 t)
 
-matchInvalidSpec :: (String, String) -> Spec
-matchInvalidSpec (t, u) =
+matchInvalidSpec :: [String] -> Spec
+matchInvalidSpec [t, u] =
   it (t ++ " == " ++  u) $ do
     ((read t :: Type) == (read u :: Type)) `shouldBe` False
 

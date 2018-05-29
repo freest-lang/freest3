@@ -1,10 +1,10 @@
 module Types.TestEqTypeSchemesSpec(spec) where
 
+import SpecHelper
+import Terms.Parser
+import Types.Kinds
+import Types.Kinding
 import qualified Data.Map as Map
-import           SpecHelper
-import           Terms.Parser
-import           Types.Kinds
-import           Types.Kinding
 
 
 main :: IO ()
@@ -14,11 +14,11 @@ spec :: Spec
 spec = do
   describe "Equal TypeSchemes" $ do
     t <- runIO $ readFromFile "test/UnitTests/Types/TestEqTypeSchemeValid.txt"
-    mapM_ (matchEqSpec True) (convert t) 
+    mapM_ (matchEqSpec True) (chunksOf 2 t) 
 
   describe "Not equal TypeSchemes" $ do
     t <- runIO $ readFromFile "test/UnitTests/Types/TestEqTypeSchemeInvalid.txt"
-    mapM_ (matchEqSpec False) (convert t)
+    mapM_ (matchEqSpec False) (chunksOf 2 t)
 
   describe "Valid Show TypeSchemes" $ do
     t <- runIO $ readFromFile "test/UnitTests/Types/TestShowTypeScheme.txt"
@@ -26,11 +26,11 @@ spec = do
  
   describe "Valid Kinding TypeSchemes" $ do
     t <- runIO $ readFromFile "test/UnitTests/Types/TestTypeSchemeKindingValid.txt"
-    mapM_ matchKindingValidSpec (convert t)
+    mapM_ matchKindingValidSpec (chunksOf 2 t)
  
 
-matchEqSpec :: Bool -> (String, String) -> Spec
-matchEqSpec b (ts1, ts2) =
+matchEqSpec :: Bool -> [String] -> Spec
+matchEqSpec b [ts1, ts2] =
   it (ts1 ++ " == " ++ ts2) $ do
     (read ts1 :: TypeScheme) == (read ts2 :: TypeScheme) `shouldBe` b
 
@@ -41,8 +41,8 @@ matchShowSpec a =
     (read (show(read a :: TypeScheme)) :: TypeScheme) `shouldBe` (read a :: TypeScheme)
 
 
-matchKindingValidSpec :: (String, String) -> Spec
-matchKindingValidSpec (ts, k) =
+matchKindingValidSpec :: [String] -> Spec
+matchKindingValidSpec [ts, k] =
   it ts $ do
     (kindOfScheme Map.empty (read ts :: TypeScheme)) `shouldBe` (read k :: Kind)
 

@@ -2,16 +2,16 @@ module SpecHelper
     ( module Test.Hspec
     , module Types.Types
     , module Types.TypeParser
-    , readFromFile
-    , convert
-    , convert3
+    , module Data.List.Split
     , module Data.Char
+    , readFromFile
     ) where
 
 import Test.Hspec
 import Types.Types
 import Data.Char
 import Types.TypeParser
+import Data.List.Split(chunksOf)
 
 readFromFile filename = do
   str <- readFile filename
@@ -21,12 +21,3 @@ readFromFile filename = do
 
 isComment (x:y:ys) = x == '-' && y == '-'
 isComment _ = False
-
-convert :: [String] -> [(String, String)]
-convert [] = []
-convert (k:v:t) = (k, v) : convert t
-
-convert3 :: [String] -> [(String, String, String)]
-convert3 [] = []
-convert3 (k:t:u:xs) = (k, t, u) : convert3 xs
--- convert t = error $ "ERRO: " ++ show t

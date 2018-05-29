@@ -11,12 +11,11 @@ main = hspec spec
 spec :: Spec
 spec = do
   t <- runIO $ readFromFile "test/UnitTests/Types/TestEquivalenceInvalid.txt"
-  describe "Invalid Equivalence Test" $ do
-      mapM_ matchInvalidSpec (convert t)
+  describe "Invalid Equivalence Test" $
+      mapM_ matchInvalidSpec (chunksOf 2 t)
 
 
-matchInvalidSpec :: (String, String) -> Spec
-matchInvalidSpec (a, b) =
-  it (a ++ " `equivalent` " ++  b) $ do
-    let equiv = equivalent Map.empty (read a :: Type) (read b :: Type)
-    equiv `shouldBe` False
+matchInvalidSpec :: [String] -> Spec
+matchInvalidSpec [a, b] =
+  it (a ++ " `equivalent` " ++  b) $
+    equivalent Map.empty (read a) (read b) `shouldBe` False
