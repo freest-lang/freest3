@@ -32,9 +32,6 @@ type KindM = Writer [String]
 
 type KindEnv = Map.Map TypeVar Kind
 
-kindOf :: KindEnv -> Type -> Kind
-kindOf kenv t = fst $ runWriter (kinding kenv t)
-
 kinding :: KindEnv -> Type -> KindM Kind
 kinding _    Skip          = return $ Kind Session Un
 kinding _    (Message _ _) = return $ Kind Session Lin
@@ -68,25 +65,9 @@ kinding kenv (Rec (Bind x k) t) = do
   checkContractivity kenv1 t
   return k
   
-kindOfScheme :: KindEnv -> TypeScheme -> Kind
-kindOfScheme kenv (TypeScheme [] t) = kindOf kenv t
-kindOfScheme kenv t = kinds (kindOfScheme' kenv t)
-  where kinds = fst . runWriter 
-
-kindOfScheme' :: KindEnv -> TypeScheme -> KindM Kind
-kindOfScheme' kenv (TypeScheme bs t) = do
-  k1 <- kinding (toMap kenv bs) t
-  return k1
-  where toMap kenv = foldr (\b acc -> Map.insert (var b) (kind b) acc) kenv  
-
 -- Used when an error is found
 topKind :: Kind
 topKind = Kind Functional Lin
-
--- checkTypeMap :: KindEnv -> TypeMap -> Kind -> String -> KindM Kind
--- checkTypeMap kenv tm k m = do--liftM $
---   ks <- mapM (kinding kenv) (Map.elems tm)
---   checkChoice ks k m
 
 checkChoice :: [Kind] -> KindM Kind
 checkChoice ks
@@ -116,6 +97,12 @@ checkVar kenv v
       tell ["Variable " ++ show v ++ " is free"]
       return $ topKind
 
+-- Check the contractivity of a given type; issue an error if not
+checkContractivity :: KindEnv -> Type -> KindM ()
+checkContractivity kenv t
+  | isContractive kenv t = return ()
+  | otherwise            = tell ["Type " ++ show t ++ " is not contractive"]
+
 -- Is a given type contractive?
 isContractive :: KindEnv -> Type -> Bool
 isContractive kenv (Semi t _) = isContractive kenv t
@@ -123,23 +110,35 @@ isContractive kenv (Rec _ t)  = isContractive kenv t
 isContractive kenv (Var x)    = Map.member x kenv
 isContractive _    _          = True
 
--- Check the contractivity of a given type; issue an error if not
-checkContractivity :: KindEnv -> Type -> KindM ()
-checkContractivity kenv t
-  | isContractive kenv t = return ()
-  | otherwise            = tell ["Type " ++ show t ++ " is not contractive"]
+-- Predicates and functions based on kinding
+
+kindOf :: KindEnv -> Type -> Kind
+kindOf kenv t = fst $ runWriter (kinding kenv t)
 
 isWellKinded :: KindEnv -> Type -> Bool
 isWellKinded kenv t = null $ snd $ runWriter (kinding kenv t)
 
 isSessionType :: KindEnv -> Type -> Bool
-isSessionType kenv t =  prekind (kindOf kenv t) == Session
-
-isUn :: KindEnv -> TypeScheme -> Bool
-isUn kenv t = multiplicity (kindOfScheme kenv t) == Un 
+isSessionType kenv t = isWellKinded kenv t && prekind (kindOf kenv t) == Session
 
 kindErr :: KindEnv -> Type -> [String]
 kindErr kenv t = err (kinding kenv t)
   where
     err :: KindM Kind -> [String]
     err = snd . runWriter
+
+-- Type Schemes
+
+isUn :: KindEnv -> TypeScheme -> Bool
+isUn kenv t = multiplicity (kindOfScheme kenv t) == Un 
+
+kindOfScheme :: KindEnv -> TypeScheme -> Kind
+kindOfScheme kenv (TypeScheme [] t) = kindOf kenv t
+kindOfScheme kenv t = kinds (kindOfScheme' kenv t)
+  where kinds = fst . runWriter 
+
+kindOfScheme' :: KindEnv -> TypeScheme -> KindM Kind
+kindOfScheme' kenv (TypeScheme bs t) = do
+  k1 <- kinding (toMap kenv bs) t
+  return k1
+  where toMap kenv = foldr (\b acc -> Map.insert (var b) (kind b) acc) kenv  

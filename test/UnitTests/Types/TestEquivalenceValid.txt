@@ -1,213 +1,281 @@
 -- Simple types
 
+[]
 Int
 Int
 
+[]
 Char
 Char
 
+[]
 Bool
 Bool
+
+[]
 ()
 ()
 
 -- Functional
 
+[]
 [A:Bool, B:Char]
 [B:Char, A:Bool]
 
 -- Session types
 
+[]
 !Int
 !Int
 
+[]
 ?Char
 ?Char
 
+[]
 !Bool 
 !Bool 
 
+[]
 ?() 
 ?() 
 
+[]
 Skip
 Skip
 
+[]
 !Int
 Skip;!Int
 
+[]
 !Int
 !Int;Skip 
 
+[]
 !Int
 Skip;!Int;Skip
 
+[]
 !Int
 Skip;Skip;Skip;Skip;!Int;Skip;Skip;Skip
 
+[]
 !Int;Skip;?Int
 !Int;?Int
 
+[]
 Skip;!Int
 !Int;Skip
 
+[]
 !Int;Skip
 Skip;!Int
 
 -- Functional and session
 
+[]
 !Int -> Bool
 !Int -> Bool
 
+[]
 !Int -> ?Bool
 Skip;!Int -> ?Bool
 
+[]
 !Int -> Bool
 Skip;!Int -> Bool
 
+[]
 !Int -> Bool
 !Int;Skip -> Bool
 
+[]
 !Int -> ?Char
 !Int -> Skip;?Char
 
+[]
 !Int -> !Bool
 !Int -> Skip;!Bool
 
+[]
 !Int -> Bool
 !Int;Skip -> Bool
 
+[]
 !Int -> Bool
 !Int;Skip -> Bool
 
+[]
 !Int -> ?Char -> Bool
 !Int -> ?Char -> Bool
 
+[]
 !Char -o Bool
 !Char -o Bool
 
+[]
 !Int -o Bool
 (Skip;!Int) -o Bool
 
+[]
 !Int -o Bool
 (Skip;!Int) -o Bool
 
+[]
 !Bool -o !Char
 !Bool -o !Char;Skip
 
+[]
 !Int -o ?Bool
 !Int -o ?Bool;Skip
 
+[]
 !Int -o Bool
 !Int;Skip -o Bool
 
+[]
 !Int -o Bool
 !Int;Skip -o Bool
 
+[]
 (!Char, Bool)
 (!Char, Bool)
   
+[]
 (!Int , Bool)
 (Skip;!Int , Bool)
 
+[]
 (Bool, !Char)
-(Bool , Skip;!Char)
+(Bool, Skip;!Char)
 
+[]
 (Int, ?Bool)
 (Int, ?Bool;Skip)
 
+[]
 (!Int , Bool)
 (!Int;Skip , Bool)
 
+[]
 [A: Bool, B: Skip;!Char]
 [B: Skip;!Char ,A: Bool]
 
+[]
 +{A: !Bool, B: ?Char}
 +{B: ?Char, A: !Bool}
   
+[]
 +{A: ?Bool, B: Skip;!Char}
 +{B: Skip;!Char, A: ?Bool}
 
+[]
 &{A: !Bool;Skip, B: ?Char}
 &{B: ?Char, A: !Bool}
 
+[]
 &{A: ?Bool, B: Skip;!Char}
 &{B: Skip;!Char, A: ?Bool}
 
+[]
 +{Leaf: Skip, Node: !Int};Skip
 +{Leaf: Skip;Skip, Node: !Int;Skip}
 
 -- Monoidal laws
 
+[]
 (!Int; ?Bool); !Char 
 !Int; (?Bool; !Char)
 
+[]
 !Int; (?Bool; !Char)  
 (!Int; ?Bool); !Char 
 
+[]
 !Bool; Skip
 !Bool
 
+[]
 ?Char; Skip
 ?Char
 
 -- Distributivity
 
-+{Leaf: Skip}; α
-+{Leaf: α}
+[(α, SL)]
++{Leaf: Skip}
++{Leaf: α}   
 
+[(α, SL)]
 +{Node: !Int}; α
 +{Node: !Int; α}
 
+[(α, SL)]
 +{Leaf: Skip, Node: Skip}; α
 +{Leaf: α, Node: α}
 
+[(α, SL)]
 +{Leaf: Skip, Node: !Int}; α
 +{Leaf: Skip; α, Node: !Int; α}
 
 -- Recursive types
 
+[]
 rec x . !Int;x
 rec x . !Int;x
 
+[]
 rec x . !Int;x
 rec y . !Int;y
 
+[]
 rec x . !Int;x
 rec x . !Int; !Int;x
 
+[]
 rec x . !Int; Skip
 rec x . Skip; !Int
 
+[]
 rec x . Skip; !Int
 rec x . !Int; Skip
 
+[]
 rec x . Skip;!Int
 !Int
 
+[]
 rec x. rec y. !Int; x; y 
 rec y. rec x. !Int; x; y 
 
+[]
 rec x. rec y. !Int; x
 rec y. rec x. !Int; x
 
+[]
 rec x. rec y. !Int; x
 rec x. !Int; x
 
+[(α, SL)]
 rec x . +{A: α, B: x; α}
 rec y . +{A: Skip, B: y}; α
 
+[(α, SL)]
 rec y . +{A: Skip, B: y}; α
 rec x . +{A: α, B: x; α}
 
+[]
 rec x . ?Bool; x
 rec y . ?Bool; y; !Int
 
+[]
 rec x . ?Bool; x
 rec y . ?Bool; y; y
 
+[]
 rec x.&{LeafC: Skip, NodeC: ?Int;x;x}
 rec x.&{LeafC: Skip, NodeC: ?Int;x;x}
 
+[]
 (rec x.&{LeafC: Skip, NodeC: ?Int;x;x});(rec x.&{LeafC: Skip, NodeC: ?Int;x;x})
 (rec x.&{LeafC: Skip, NodeC: ?Int;x;x});(rec x.&{LeafC: Skip, NodeC: ?Int;x;x})

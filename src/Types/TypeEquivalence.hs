@@ -343,27 +343,25 @@ findInPair ((x':xs), (y':ys)) x y
 -- TYPE EQUIVALENCE
 
 equivalent :: KindEnv -> Type -> Type -> Bool
-equivalent _ t u = equiv t u
-
-equiv :: Type -> Type -> Bool
-equiv (Var x) (Var y) = x == y
-equiv (Basic b) (Basic c) = b == c
-equiv (Fun m t1 t2) (Fun n u1 u2) = m == n && equiv t1 u1 && equiv t2 u2
-equiv (PairType t1 t2) (PairType u1 u2) = equiv t1 u1 && equiv t2 u2
-equiv (Datatype m1) (Datatype m2) =
-  Map.size m1 == Map.size m2 && Map.foldlWithKey (checkBinding m2) True m1
-equiv Skip Skip = True
-equiv Skip _ = False
-equiv _ Skip = False
-equiv t u
-  | isSessionType Map.empty t && isSessionType Map.empty u = bisim g [x] [y]
+equivalent _ (Var x) (Var y) = x == y
+equivalent _ (Basic b) (Basic c) = b == c
+equivalent k (Fun m t1 t2) (Fun n u1 u2) =
+  m == n && equivalent k t1 u1 && equivalent k t2 u2
+equivalent k (PairType t1 t2) (PairType u1 u2) =
+  equivalent k t1 u1 && equivalent k t2 u2
+equivalent k (Datatype m1) (Datatype m2) =
+  Map.size m1 == Map.size m2 && Map.foldlWithKey (checkBinding k m2) True m1
+equivalent _ Skip Skip = True
+equivalent _ Skip _ = False
+equivalent _ _ Skip = False
+equivalent k t u
+  | isSessionType k t && isSessionType k u = bisim g [x] [y]
   | otherwise = False
-    where (x, y, (g, _, _)) = convertTwo t u
-    -- where (x, state)     = convertToGNF initial t
-    --       (y, (g, _, _)) = convertToGNF state u
+  where (x, state)     = convertToGNF initial t
+        (y, (g, _, _)) = convertToGNF state u
   
-checkBinding :: TypeMap -> Bool -> Constructor -> Type -> Bool
-checkBinding m acc l t = acc && l `Map.member` m && equiv (m Map.! l) t
+checkBinding :: KindEnv -> TypeMap -> Bool -> Constructor -> Type -> Bool
+checkBinding k m acc l t = acc && l `Map.member` m && equivalent k (m Map.! l) t
 
 -- testing
 
@@ -372,21 +370,23 @@ convertTwo t u = (x, y, s)
   where (x, state) = convertToGNF initial t
         (y, s) = convertToGNF state u
 
-e1 = equiv s1 s1
-e2 = equiv s1 s2 -- False
-e3 = equiv s1 s3 -- False
-e4 = equiv s3 s3
-e5 = equiv s3 s4 -- False
-e6 = equiv s1 s5 -- False
-e7 = equiv s4 s5 -- False
-e8 = equiv s5 s6 -- False
-e9 = equiv s9 s9
-e10 = equiv treeSend treeSend
-e11 = equiv s21 s22
-e12 = equiv s1 s23
-e13 = equiv s24 s24
-e14 = equiv s24 s25
-e15 = equiv s26 s27
+alphaKinding = Map.singleton "α" (Kind Session Lin)
+
+e1 = equivalent alphaKinding s1 s1
+e2 = equivalent alphaKinding s1 s2 -- False
+e3 = equivalent alphaKinding s1 s3 -- False
+e4 = equivalent alphaKinding s3 s3
+e5 = equivalent alphaKinding s3 s4 -- False
+e6 = equivalent alphaKinding s1 s5 -- False
+e7 = equivalent alphaKinding s4 s5 -- False
+e8 = equivalent alphaKinding s5 s6 -- False
+e9 = equivalent alphaKinding s9 s9
+e10 = equivalent alphaKinding treeSend treeSend
+e11 = equivalent alphaKinding s21 s22
+e12 = equivalent alphaKinding s1 s23
+e13 = equivalent alphaKinding s24 s24
+e14 = equivalent alphaKinding s24 s25
+e15 = equivalent alphaKinding s26 s27
 
 -- UNFOLDING, RENAMING, SUBSTITUTING
 

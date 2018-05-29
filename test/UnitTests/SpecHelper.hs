@@ -4,6 +4,7 @@ module SpecHelper
     , module Types.TypeParser
     , readFromFile
     , convert
+    , convert3
     , module Data.Char
     ) where
 
@@ -24,4 +25,8 @@ isComment _ = False
 convert :: [String] -> [(String, String)]
 convert [] = []
 convert (k:v:t) = (k, v) : convert t
+
+convert3 :: [String] -> [(String, String, String)]
+convert3 [] = []
+convert3 (k:t:u:xs) = (k, t, u) : convert3 xs
 -- convert t = error $ "ERRO: " ++ show t
