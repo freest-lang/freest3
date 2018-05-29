@@ -197,25 +197,24 @@ Skip;!Int -> Bool
 !Bool
 
 -- The below kinding environment is not strictly needed
-[(α, SL)]
+[("α", SL)]
 ?Char; Skip
 ?Char
 
 -- Distributivity
-
-[(α, SL)]
-+{Leaf: Skip}; α   
+[("α", SL)]
++{Leaf: Skip}; α
 +{Leaf: α}
 
-[(α, SL)]
+[("α", SL)]
 +{Node: !Int}; α
 +{Node: !Int; α}
 
-[(α, SL)]
+[("α", SL)]
 +{Leaf: Skip, Node: Skip}; α
 +{Leaf: α, Node: α}
 
-[(α, SL)]
+[("α", SL)]
 +{Leaf: Skip, Node: !Int}; α
 +{Leaf: Skip; α, Node: !Int; α}
 
@@ -257,11 +256,11 @@ rec y. rec x. !Int; x
 rec x. rec y. !Int; x
 rec x. !Int; x
 
-[(α, SL)]
+[("α", SL)]
 rec x . +{A: α, B: x; α}
 rec y . +{A: Skip, B: y}; α
 
-[(α, SL)]
+[("α", SL)]
 rec y . +{A: Skip, B: y}; α
 rec x . +{A: α, B: x; α}
 

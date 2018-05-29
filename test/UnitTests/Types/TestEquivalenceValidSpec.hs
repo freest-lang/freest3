@@ -15,7 +15,13 @@ spec = do
   t <- runIO $ readFromFile "test/UnitTests/Types/TestEquivalenceValid.txt"
   describe "Valid Equivalence Test" $ mapM_ matchValidSpec (chunksOf 3 t)
 
+
 matchValidSpec :: [String] -> Spec
-matchValidSpec [k, t, u] =
-  it (k ++ "  |-  " ++ t ++ " ~ " ++  u) $
-    equivalent (Map.fromList (read k)) (read t) (read u) `shouldBe` True
+matchValidSpec [k, t, u] = 
+  it (k ++ "  |-  " ++ t ++ " ~ " ++  u) $ do
+--   error $ show k
+   equivalent (Map.fromList (read k :: [(String, Kind)])) (read t) (read u) `shouldBe` True
+
+   -- let xs = read k :: [(String, String)]
+   --      ys = map (\(x,y) -> (x, read y :: Kind)) xs in
+   --  equivalent (Map.fromList ys) (read t) (read u) `shouldBe` True
