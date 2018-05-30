@@ -31,7 +31,7 @@ After building the compiler you can choose one of the following options:
     ```
   * To run only the Programs tests:
     ```
-    $ cabal test CFST-ProgTests
+    $ cabal test programs
     ```
 
 There are also available options to run valid and invalid tests separately for all the units:
