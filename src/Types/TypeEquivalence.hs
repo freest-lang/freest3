@@ -120,6 +120,26 @@ replace w x (y:ys)
   | x == y    = w ++ (replace w x ys)
   | otherwise = y : (replace w x ys)
 
+-- Normalisation
+
+normed :: Grammar -> TypeVar -> Bool
+normed g x = normedWord g Set.empty [x]
+
+normedWord :: Grammar -> Set.Set TypeVar -> [TypeVar] -> Bool
+normedWord _ _ []     = True
+normedWord g v (x:xs) =
+  not (x `Set.member` v) &&
+  any id (map (normedWord g (Set.insert x v)) (Map.elems (transitions g (x:xs))))
+
+normalise :: Grammar -> Grammar
+normalise g = Map.map (Map.map (normaliseWord g)) g
+
+normaliseWord :: Grammar -> [TypeVar] -> [TypeVar]
+normaliseWord _ []     = []
+normaliseWord g (x:xs)
+  | normed g x = x : normaliseWord g xs
+  | otherwise  = [x]
+
 -- Conversion to GNF
 
 convertToGNF :: (Grammar, Visited, Int) -> Type -> (TypeVar, (Grammar, Visited, Int))
@@ -284,6 +304,7 @@ expandPair g (xs, ys)
   where m1 = transitions g xs
         m2 = transitions g ys
 
+-- this is an op on grammars
 transitions :: Grammar -> [TypeVar] -> Map.Map Label [TypeVar]
 transitions _ []     = Map.empty
 transitions g (x:xs) = Map.map (++ xs) (g Map.! x)
@@ -355,7 +376,7 @@ equivalent _ Skip Skip = True
 equivalent _ Skip _ = False
 equivalent _ _ Skip = False
 equivalent k t u
-  | isSessionType k t && isSessionType k u = bisim g [x] [y]
+  | isSessionType k t && isSessionType k u = bisim (normalise g) [x] [y]
   | otherwise = False
   where (x, state)     = convertToGNF initial t
         (y, (g, _, _)) = convertToGNF state u
