@@ -1,26 +1,74 @@
+-- Functional
+
 Int
 Bool
 
+Int -> Int
+Int -o Int
+
+[A: Bool]
+[B: Bool]
+
+[A: Bool, B: Char]
+[B: Char, A: Bool, C: Int]
+
+-- Regular Session Types
+
+!Int
+?Bool
+
 Skip
-Skip;!Int
+!Int
+
+Skip
+Skip; !Int
 
 ?Int
-Skip;!Int;Skip
+Skip; !Int; Skip
 
-[A:Bool, B:Char]
-[B:Char,A:Bool, C:Int]
++{A: Skip}
++{B: Skip}
+
++{A: Skip}
++{A: !Char}
 
 +{A: ?Bool, B: Skip; !Char}
 +{B: Skip; !Char, A: ?Bool, C: !Char}
 
+&{A: ?Bool}
+&{B: ?Bool}
+
+&{A: ?Bool}
+&{A: Skip}
+
 &{A: ?Bool, B: Skip; !Char}
 &{B: Skip; !Char, A: ?Bool, C:!Char}
+
+!Int
+rec x . !Bool
 
 rec x . !Int
 rec x . !Bool
 
-rec x . +{l:!Int, m:x}
-rec y . +{m:Skip, l:y};!Bool
+rec x. !Int; x; x
+rec x. ?Int; x; x
+
+rec x. rec y. !Int; x; y 
+rec y. rec x. !Char; x; ?Bool; y
+
+rec x . ?Bool; x
+rec y . !Bool; y; y; !Char; y; ?Int; y; y; ?Bool; y; y
+
+rec x . +{A: !Bool;x}
+rec y . +{A: y}; !Bool
 
 rec x . +{A: !Int, B: x}
-rec y . +{A: Skip, B: y};!Bool
+rec y . +{A: y, B: Skip}; !Bool
+
+rec x . +{A: !Int, B: x}
+rec y . +{A: Skip, B: y}; !Bool
+
+rec x. &{Leaf: ?Bool; x, Node: ?Int;x;x}
+rec x. &{Leaf: ?Bool, Node: ?Int;x;x}
+
+
