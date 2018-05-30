@@ -1,6 +1,7 @@
 module PreludeLoader (prelude) where
 
 import qualified Data.Map.Strict as Map
+import           Terms.Parser
 import           Terms.Terms
 import           Types.TypeParser
 import           Types.Types
@@ -23,9 +24,20 @@ typeList = [ ("(+)", "Int -> Int -> Int")
            , ("(<=)", "Int -> Int -> Bool")
            , ("(>=)", "Int -> Int -> Bool")
            ]
-           
+
+-- TODO: add more           
+schemeList :: [(String, String)]
+schemeList = [ ("fst", "forall a, b => (a, b) -> a")
+           ]
+     
 prelude :: VarEnv
-prelude = preludeLoad Map.empty
+prelude = schemeLoad (preludeLoad Map.empty)
 
 preludeLoad :: VarEnv -> VarEnv
-preludeLoad map = foldl (\acc (tv, t) -> Map.insert tv (TypeScheme [] (read t :: Type)) acc) map typeList
+preludeLoad map =
+  foldl (\acc (tv, t) -> Map.insert tv (TypeScheme [] (read t :: Type)) acc) map typeList
+
+schemeLoad :: VarEnv -> VarEnv
+schemeLoad map =
+  foldl (\acc (tv, t) -> Map.insert tv (read t :: TypeScheme) acc) map schemeList
+

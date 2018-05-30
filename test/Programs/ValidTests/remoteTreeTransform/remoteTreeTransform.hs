@@ -33,6 +33,7 @@ treeSum c =
       (x+l+r, c5)
   
 
+-- --   fork (((transform aTree) w) >>= \x -> return (fst (x)) >> return ())
 
 -- V1
 
@@ -40,7 +41,7 @@ start :: Int
 start =
   let aTree = Node 3 Leaf (Node 4 Leaf Leaf) in
   let w, r  = new (rec xFormChan . +{LeafC: Skip, NodeC: !Int;xFormChan;xFormChan;?Int}) in
-  let x = fork (transform[Skip] aTree w) in
+  let x = fork (fst[Tree, Skip] (transform[Skip] aTree w)) in
   let size, r1 = treeSum r in
   size
   
