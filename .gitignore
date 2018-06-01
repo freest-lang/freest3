@@ -10,7 +10,7 @@ TestParse
 UnitSpec
 dist/
 cfst*
-CFSTCommunication.hs
+CFSTUtils.hs
 
 #Latex
 *.aux

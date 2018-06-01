@@ -245,12 +245,12 @@ translate fm m (BinLet p x y e1 e2) = do
   else
     return ("let (" ++ x ++ ", " ++ y ++ ")" ++ " = " ++ h1 ++ " in " ++ h2, b2)
   
-translate fm m (New _ _) = return ("new", True)
+translate fm m (New _ _) = return ("_new", True)
 
 translate fm m (Send p e1 e2) = do
   (h1, _) <- translate fm m e1
   (h2, _) <- translate fm m e2
-  c <- translateExpr ("send " ++ h1 ++ " " ++ h2) (expected m (Send p e1 e2)) True
+  c <- translateExpr ("_send " ++ h1 ++ " " ++ h2) (expected m (Send p e1 e2)) True
   return (c, True)
 
 translate fm m (Receive p e) = do
@@ -260,24 +260,24 @@ translate fm m (Receive p e) = do
   if b then
     do
       v <- nextFresh
-      return ("\\" ++ v ++ " -> " ++ "receive " ++ c, True)
+      return ("\\" ++ v ++ " -> " ++ "_receive " ++ c, True)
   else
-    return ("receive " ++ c, True)
+    return ("_receive " ++ c, True)
 
 translate fm m (Select p x e) = do
   (h, _) <- translate fm m e
-  return ("send \"" ++ x ++ "\" " ++ h, True)  
+  return ("_send \"" ++ x ++ "\" " ++ h, True)  
 
 translate fm m (Match p e mm) = do
   (h1, b1) <- translate fm m e
   (h2, params) <- translateMatchMap fm m mm
   v <- nextFresh
-  return ("receive " ++ h1 ++ " >>= \\(" ++ v ++  ", " ++ (head params) ++
+  return ("_receive " ++ h1 ++ " >>= \\(" ++ v ++  ", " ++ (head params) ++
           ") -> case " ++ v ++ " of " ++ h2, False)
 
 translate fm m (Fork p e) = do
   (h1, b1) <- translate fm m e
-  c1 <- translateExpr ("fork (" ++ h1 ++ " >> return ())") (expected m (Fork p e)) True
+  c1 <- translateExpr ("_fork (" ++ h1 ++ " >> return ())") (expected m (Fork p e)) True
   return (c1, True)
   
 translate fm m (Constructor p x) = do

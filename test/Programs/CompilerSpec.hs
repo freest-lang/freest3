@@ -43,7 +43,7 @@ testDir dir curDir = parallel $ do
 getSource :: [String] -> String
 getSource [] = ""
 getSource (x:xs)
-  | ".hs" `isInfixOf` x && x /= "cfst.hs" && x /= "CFSTCommunication.hs" = x
+  | ".hs" `isInfixOf` x && x /= "cfst.hs" && x /= "CFSTUtils.hs" = x
   | otherwise = getSource xs
 
 testOne :: String -> String -> Spec    
