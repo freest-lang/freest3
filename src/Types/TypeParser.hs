@@ -148,7 +148,7 @@ parseRec :: Parsec String u Type
 parseRec = do
   rec
   id <- identifier
-  k <- option (Kind Session Un) parseVarBind
+  k <- option (Kind Session Lin) parseVarBind
   dot
   t <- typeExpr
   return $ Rec (Bind id k) t

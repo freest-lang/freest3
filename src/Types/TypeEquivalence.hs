@@ -362,6 +362,7 @@ findInPair :: ([TypeVar], [TypeVar]) -> TypeVar -> TypeVar -> Maybe ([TypeVar], 
 findInPair ((x':xs), (y':ys)) x y
   | x == x' && y == y' = Just (xs, ys)
   | otherwise          = Nothing
+findInPair _ _ _       = Nothing
 
 -- vv made this rule. Sound?
 bpa3 :: NodeTransformation

@@ -36,7 +36,7 @@ client1 w =
   y
 
 
-startClient :: (+{And: !Bool;!Bool;?Bool;Skip, Or: !Bool;!Bool;?Bool;Skip, Not: !Bool;?Bool;x} -> Bool) -> Bool
+startClient :: ((rec x . +{And: !Bool;!Bool;?Bool;Skip, Or: !Bool;!Bool;?Bool;Skip, Not: !Bool;?Bool;x}) -> Bool) -> Bool
 startClient client =
   let w,r = new (rec x . +{And: !Bool;!Bool;?Bool;Skip, Or: !Bool;!Bool;?Bool;Skip, Not: !Bool;?Bool;x}) in
   let x = fork (boolServer r) in
