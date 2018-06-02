@@ -323,3 +323,11 @@ rec x . +{A: α, B: x; α}
 []
 (rec x. &{Leaf: Skip, Node: ?Int;x;x}); (rec x. &{Leaf: Skip, Node: ?Int;x;x})
 (rec x. &{Leaf: Skip, Node: ?Int;x;x}); (rec x. &{Leaf: Skip, Node: ?Int;x;x})
+
+[]
+&{Add: (((rec x :: SL . &{Add: (x;x), Const: ?Int, Mult: (x;x)});(rec x :: SL . &{Add: (x;x), Const: ?Int, Mult: (x;x)}));!Int), Const: (?Int;!Int), Mult: (((rec x :: SL . &{Add: (x;x), Const: ?Int, Mult: (x;x)});(rec x :: SL . &{Add: (x;x), Const: ?Int, Mult: (x;x)}));!Int)}
+&{Add: (((rec x :: SL . &{Add: (x;x), Const: ?Int, Mult: (x;x)});(rec x :: SL . &{Add: (x;x), Const: ?Int, Mult: (x;x)}));!Int), Const: (?Int;!Int), Mult: (((rec x :: SL . &{Add: (x;x), Const: ?Int, Mult: (x;x)});(rec x :: SL . &{Add: (x;x), Const: ?Int, Mult: (x;x)}));!Int)}
+
+[]
+rec x . &{Add: ((x;x);!Int), Const: (?Int;!Int), Mult: ((x;x);!Int)}
+rec x . &{Add: ((x;x);!Int), Const: (?Int;!Int), Mult: ((x;x);!Int)}
