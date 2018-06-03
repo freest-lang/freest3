@@ -51,8 +51,8 @@ isMonadic fm b m (App p e1 e2) =
       (Map.insert (App p e1 e2) (bool || b1 || b2) m2, b1 || b2)
 
 isMonadic fm b m (TypeApp p e ts) = 
-  let (m1, b1) = isMonadic fm b m e in
-      (Map.insert (TypeApp p e ts) b1 m1, b1)
+  let (m1, b1) = isMonadic fm False m e in
+      (Map.insert (TypeApp p e ts) (b || b1) m1, b || b1)
 
 isMonadic fm b m (Conditional p e1 e2 e3) =
   let (m1, _) = isMonadic fm False m e1
@@ -61,9 +61,10 @@ isMonadic fm b m (Conditional p e1 e2 e3) =
     (Map.insert (Conditional p e1 e2 e3) b1 m3, b1)
       
 isMonadic fm b m (Pair p e1 e2)  = 
-  let (m1, _) = isMonadic fm False m e1
-      (m2, _) = isMonadic fm False m1 e2 in
-      (Map.insert (Pair p e1 e2) b m2, b)
+  let (m1, b1) = isMonadic fm False m e1
+      (m2, b2) = isMonadic fm False m1 e2 in
+      (Map.insert (Pair p e1 e2) (b || b1 || b2) m2, b || b1 || b2)
+--      (Map.insert (Pair p e1 e2) b m2, b)
 
 isMonadic fm b m (BinLet p x y e1 e2)  = 
   let (m1, b1) = isMonadic fm b m e1
@@ -72,26 +73,26 @@ isMonadic fm b m (BinLet p x y e1 e2)  =
       (Map.insert (BinLet p x y e1 e2) b2 m2, b2)
 --      (Map.insert (BinLet p x y e1 e2) (bool || b1 || b2) m2, b1 || b2)
       
-isMonadic fm b m (New p t) = (Map.insert (New p t) True m, True)
+isMonadic fm _ m (New p t) = (Map.insert (New p t) True m, True)
 
-isMonadic fm b m (Send p e1 e2) =
+isMonadic fm _ m (Send p e1 e2) =
   let (m1, _) = isMonadic fm False m e1
       (m2, _) = isMonadic fm False m1 e2 in
       (Map.insert (Send p e1 e2) True m2, True)
       
-isMonadic fm b m (Receive p e) =  
+isMonadic fm _ m (Receive p e) =  
   let (m1,_) = isMonadic fm False m e in
       (Map.insert (Receive p e) True m1, True)
       
-isMonadic fm b m (Select p x e) =  
+isMonadic fm _ m (Select p x e) =  
   let (m1,_) = isMonadic fm False m e in
       (Map.insert (Select p x e) True m1, True)
       
-isMonadic fm b m (Match p e mmap) =
+isMonadic fm _ m (Match p e mmap) =
   let m1 = isMapMonadic True fm m mmap in
       (Map.insert (Match p e mmap) True m1, True)
 
-isMonadic fm b m (Fork p e) =
+isMonadic fm _ m (Fork p e) =
   let (m1,_) = isMonadic fm True m e in
   (Map.insert (Fork p e) True m1, True)
 
@@ -189,10 +190,6 @@ translate fm m (UnLet p x e1 e2) = do
   (h1, b1) <- translate fm m e1
   (h2, b2) <- translate fm m e2
 
-  -- c1 <- translateExpr h1 (expected m e1) b1
-  -- c2 <- translateExpr h2 (expected m e2) b2
---  c2 <- translateExpr h2 (expected m (UnLet p x e1 e2)) b2
-
   if b1 || b2 then
     return (h1 ++ " >>= \\" ++ x ++ " -> " ++ h2, True) 
   else
@@ -203,13 +200,25 @@ translate fm m (App p e1 e2) = do
   (h1, b1) <- translate fm m e1
   (h2, b2) <- translate fm m e2
 
-  --checkFun m (h1,b1) (h2,b2) e1 e2
--- (expected m (App p e1 e2))
+  if (not b1) && b2 then
+    do
+      v <- nextFresh
+      c <- translateExpr ("(" ++ h1 ++ " " ++ v ++ ")") (expected m (App p e1 e2)) False -- TODO
+      return (h2 ++ " >>= \\ " ++ v ++ " -> " ++ c, b1)
+  else
+    do
+      c <- translateExpr ("(" ++ h1 ++ " " ++ h2 ++ ")") (expected m (App p e1 e2)) (b1||b2)
+      return (c, b1 || b2)
 
+{- Was
+translate fm m (App p e1 e2) = do
+  (h1, b1) <- translate fm m e1
+  (h2, b2) <- translate fm m e2
+  
   c <- translateExpr ("(" ++ h1 ++ " " ++ h2 ++ ")") (expected m (App p e1 e2)) (b1||b2)
   return (c, b1 || b2)
+-}
 
--- TODO:
 translate fm m (TypeApp p e ts) = translate fm m e
 
 translate fm m (Conditional _ c e1 e2) = do
@@ -217,40 +226,32 @@ translate fm m (Conditional _ c e1 e2) = do
   (h1, b2) <- translate fm m e1
   (h2, b3) <- translate fm m e2
 
---  c1 <- translateExpr h1 (expected m e1) b2
---  c2 <- translateExpr h2 (expected m e2) b3
-  
   return ("if " ++ b1 ++ " then " ++ h1 ++ " else " ++ h2, b2 || b3)
 
 translate fm m (Pair p e1 e2) = do
   (h1, b1) <- translate fm m e1
   (h2, b2) <- translate fm m e2
-  c <- translateExpr ("(" ++ h1 ++ ", " ++ h2 ++ ")") (expected m (Pair p e1 e2)) (b1||b2)
-  return (c, False)
+  (hc1, hc2) <- genPair h1 b1 h2 b2
+  c <- translateExpr hc2 (expected m (Pair p e1 e2)) False
+  --c <- translateExpr ("(" ++ h1 ++ ", " ++ h2 ++ ")") (expected m (Pair p e1 e2)) (b1||b2)
+  return (hc1 ++ c, False)
 
 translate fm m (BinLet p x y e1 e2) = do
   (h1, b1) <- translate fm m e1
   (h2, b2) <- translate fm m e2
-
- -- c1 <- translateExpr h1 (expected m e1) b1
- -- c2 <- translateExpr h2 (expected m (BinLet p x y e1 e2)) b2
---  c2 <- translateExpr h2 m e2 b2
-  -- c1 <- translateExpr h1 (expected m e1) b1
-  -- c2 <- translateExpr h2 (expected m e2) b2
   
   if b1 then
     return (h1  ++ " >>= \\(" ++ x ++ ", " ++ y ++ ")" ++ " -> " ++ h2, True) 
   else
     return ("let (" ++ x ++ ", " ++ y ++ ")" ++ " = " ++ h1 ++ " in " ++ h2, b2)
   
-translate fm m (New _ _) = return ("new", True)
+translate fm m (New _ _) = return ("_new", True)
 
 translate fm m (Send p e1 e2) = do
   (h1, _) <- translate fm m e1
   (h2, _) <- translate fm m e2
-  c <- translateExpr ("send " ++ h1 ++ " " ++ h2) (expected m (Send p e1 e2)) True
+  c <- translateExpr ("_send " ++ h1 ++ " " ++ h2) (expected m (Send p e1 e2)) True
   return (c, True)
---  return ("send " ++ h1 ++ " " ++ h2, True)
 
 translate fm m (Receive p e) = do
   (h, b) <- translate fm m e
@@ -259,25 +260,24 @@ translate fm m (Receive p e) = do
   if b then
     do
       v <- nextFresh
-      return ("\\" ++ v ++ " -> " ++ "receive " ++ c, True)
+      return ("\\" ++ v ++ " -> " ++ "_receive " ++ c, True)
   else
-    return ("receive " ++ c, True)
+    return ("_receive " ++ c, True)
 
 translate fm m (Select p x e) = do
   (h, _) <- translate fm m e
-  -- c <- translateExpr ("send \"" ++ x ++ "\" " ++ h) (expected m (Select p x e)) True
-  return ("send \"" ++ x ++ "\" " ++ h, True)  
+  return ("_send \"" ++ x ++ "\" " ++ h, True)  
 
 translate fm m (Match p e mm) = do
   (h1, b1) <- translate fm m e
   (h2, params) <- translateMatchMap fm m mm
   v <- nextFresh
-  return ("receive " ++ h1 ++ " >>= \\(" ++ v ++  ", " ++ (head params) ++
+  return ("_receive " ++ h1 ++ " >>= \\(" ++ v ++  ", " ++ (head params) ++
           ") -> case " ++ v ++ " of " ++ h2, False)
 
 translate fm m (Fork p e) = do
   (h1, b1) <- translate fm m e
-  c1 <- translateExpr ("fork (" ++ h1 ++ ">> return ())") (expected m (Fork p e)) True
+  c1 <- translateExpr ("_fork (" ++ h1 ++ " >> return ())") (expected m (Fork p e)) True
   return (c1, True)
   
 translate fm m (Constructor p x) = do
@@ -307,6 +307,24 @@ translateCaseMap fm m = Map.foldlWithKey translateCaseMap' (return "")
       acc' <- acc
       return (acc' ++ "\n    " ++ v ++ showCaseParams params ++ " -> " ++ h1 ++ " ")
 
+
+-- Gen pairs, if one of the elements is monadic extract it from the pair
+-- bind it to a variable and return a pair that containt that variable
+genPair :: HaskellCode -> Bool -> HaskellCode -> Bool -> TranslateMonad (HaskellCode, HaskellCode)
+genPair h1 False h2 False = return $ ("", "(" ++ h1 ++ ", " ++ h2 ++ ")")
+genPair h1 False h2 True =  do
+  v <- nextFresh
+  return (h2 ++ " >>= \\" ++ v ++ " -> ", "(" ++ h1 ++ ", " ++ v ++ ")")
+genPair h1 True h2 False =  do
+  v <- nextFresh
+  return (h1 ++ " >>= \\" ++ v ++ " -> ", "(" ++ v ++ ", " ++ h2 ++ ")")
+  
+genPair h1 True h2 True =  do
+  v1 <- nextFresh
+  v2 <- nextFresh
+  return (h1 ++ " >>= \\" ++ v1 ++ " -> " ++ h2 ++ " >>= \\" ++ v2 ++ " -> ",
+          "(" ++ v1 ++ ", " ++ v2 ++ ")")
+  
 
 type FunsMap = Map.Map TermVar Bool
 monadicFuns :: ExpEnv -> Map.Map TermVar Bool

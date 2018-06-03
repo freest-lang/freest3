@@ -43,68 +43,6 @@ codeGen venv eenv cenv kenv path = do
   -- writeFile (path ++ "cfst.hs") file
   return (True, "")
 
-{-
-codeGen :: VarEnv -> ExpEnv -> ConstructorEnv -> KindEnv -> FilePath -> IO (Bool, HaskellCode)
-codeGen venv eenv cenv kenv path = do
-  let m = checkMonadicEEnv eenv
-  let start = eenv Map.! "start"
-  let eenv1 = Map.delete "start" eenv
-  let file = genProgram eenv
-        -- Map.foldlWithKey (\acc fun (a, e) -> acc ++ showExpr fun a e m) "" eenv1
-
-  let dataMap = genDataType cenv kenv
-  writeFile (path ++ "cfst.hs") (mainFun start (venv Map.! "start") m  ++ showDT dataMap ++ file) -- (types ++ file)
-  return (True, "")
-
-
--- GEN EXPRESSIONS
-
-showExpr :: TermVar -> Params -> Expression -> MonadicMap -> HaskellCode
-showExpr f as e m =
-
-  let (h, m1) = evalState (translate m e) 0 in
-  genExpr h m1
-  where
-    genExpr h m1 = f ++ (showBangParams as) ++ " = \n  " ++ h ++ "\n\n"
-      -- | m1 =
-      --     let (x,y) = splitAt (last (findIndices (`elem` (">=" :: String)) h) + 1) h in
-      --     f ++ (showBangParams as) ++ " = \n  " ++ x ++ " return " ++ y ++ "\n\n"
-      -- | otherwise = f ++ (showBangParams as) ++ " = \n  " ++ h ++ "\n\n"
-
-showBangParams :: Params -> String
-showBangParams as
-  | null as = ""
-  | otherwise = " !" ++ (intercalate " !" as)
-
--- GEN DATATYPES
-
-showDT :: Map.Map TypeVar [(TypeVar, TypeScheme)] -> HaskellCode
-showDT m =
-  Map.foldlWithKey' (\acc n dl ->
-                       acc ++ "data " ++ n ++ " = " ++
-                       intercalate " | " (showDTList dl) ++ " deriving Show\n") "" m
-  where
-    showDTList :: [(TypeVar, TypeScheme)] -> [HaskellCode]
-    showDTList l =
-      foldl (\acc (k, (TypeScheme _ v)) -> acc ++
-              [k ++ " " ++ intercalate " " (init (showType v))]) [] l
-
-    showType (Fun Un t1 t2) = showType t1 ++ [" "] ++ showType t2
-    showType t = [show t]
-
-genDataType :: Map.Map TypeVar TypeScheme -> Map.Map TypeVar Kind -> Map.Map TypeVar [(TypeVar, TypeScheme)]
-genDataType cenv kenv =
-  Map.foldlWithKey' (\acc k _ -> Map.insert k (fromCenv cenv k) acc) Map.empty kenv
-  where
-    fromCenv :: Map.Map TypeVar TypeScheme -> TypeVar -> [(TypeVar, TypeScheme)]
-    fromCenv m c = Map.foldlWithKey' (checkLast c) [] m
-
-    checkLast :: TypeVar -> [(TypeVar, TypeScheme)] -> TypeVar -> TypeScheme -> [(TypeVar, TypeScheme)]
-    checkLast c acc k t
-      | last (toList t) == (TypeScheme [] (Var c)) = acc ++ [(k, t)]
-      | otherwise = acc
--}    
-
 
 -- Functions to deal with typecheck monad
 
@@ -117,4 +55,4 @@ showErrors = snd . runWriter
 
 checkErr :: TCheckM () -> IO (Bool, String)
 checkErr tc = do
-  return (False, intercalate "\n" (showErrors tc))
+  return (False, intercalate "\n\n" (showErrors tc))

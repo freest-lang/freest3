@@ -9,8 +9,9 @@ TestParse
 .hspec-failures
 UnitSpec
 dist/
-cfst*
-CFSTCommunication.hs
+cfst.h*
+cfst
+CFSTUtils.hs
 
 #Latex
 *.aux
@@ -27,3 +28,6 @@ CFSTCommunication.hs
 *.dvi
 *.ps
 main.pdf
+
+# Inforum
+cfst-inforum18.pdf

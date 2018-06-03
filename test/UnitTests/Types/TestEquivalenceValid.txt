@@ -197,29 +197,28 @@ Skip;!Int -> Bool
 !Bool
 
 -- The below kinding environment is not strictly needed
-[(α, SL)]
+[("α", SL)]
 ?Char; Skip
 ?Char
 
 -- Distributivity
-
-[(α, SL)]
-+{Leaf: Skip}; α   
+[("α", SL)]
++{Leaf: Skip}; α
 +{Leaf: α}
 
-[(α, SL)]
+[("α", SL)]
 +{Node: !Int}; α
 +{Node: !Int; α}
 
-[(α, SL)]
+[("α", SL)]
 +{Leaf: Skip, Node: Skip}; α
 +{Leaf: α, Node: α}
 
-[(α, SL)]
+[("α", SL)]
 +{Leaf: Skip, Node: !Int}; α
 +{Leaf: Skip; α, Node: !Int; α}
 
--- Recursive types
+-- Regular Recursive types
 
 []
 rec x . !Int;x
@@ -234,8 +233,12 @@ rec x . !Int;x
 rec x . !Int; !Int;x
 
 []
+rec x . !Int
+!Int
+
+[]
 rec x . !Int; Skip
-rec x . Skip; !Int
+Skip; !Int
 
 []
 rec x . Skip; !Int
@@ -246,10 +249,6 @@ rec x . Skip;!Int
 !Int
 
 []
-rec x. rec y. !Int; x; y 
-rec y. rec x. !Int; x; y 
-
-[]
 rec x. rec y. !Int; x
 rec y. rec x. !Int; x
 
@@ -257,13 +256,19 @@ rec y. rec x. !Int; x
 rec x. rec y. !Int; x
 rec x. !Int; x
 
-[(α, SL)]
-rec x . +{A: α, B: x; α}
-rec y . +{A: Skip, B: y}; α
+-- Context-free Recursive Types, non-normed
 
-[(α, SL)]
-rec y . +{A: Skip, B: y}; α
-rec x . +{A: α, B: x; α}
+[]
+rec x. !Int; x; x
+rec x. !Int; x; x
+
+[]
+rec x. rec y. !Int; x; y 
+rec y. rec x. !Int; x; y
+
+[]
+rec x. rec y. !Int; x; y 
+rec y. rec x. !Int; x; ?Bool; y
 
 []
 rec x . ?Bool; x
@@ -274,9 +279,55 @@ rec x . ?Bool; x
 rec y . ?Bool; y; y
 
 []
-rec x.&{LeafC: Skip, NodeC: ?Int;x;x}
-rec x.&{LeafC: Skip, NodeC: ?Int;x;x}
+rec x . +{A: x}
+rec y . +{A: y}; !Bool
 
 []
-(rec x.&{LeafC: Skip, NodeC: ?Int;x;x});(rec x.&{LeafC: Skip, NodeC: ?Int;x;x})
-(rec x.&{LeafC: Skip, NodeC: ?Int;x;x});(rec x.&{LeafC: Skip, NodeC: ?Int;x;x})
+rec x . +{A: x}; ?Bool
+rec y . +{A: y}; !Bool
+
+[]
+rec x . ?Bool; x
+rec y . ?Bool; y; y; !Char; y; ?Int; y; y; ?Bool; y; y
+
+[]
+rec x. &{Node: ?Int;x}
+rec x. &{Node: ?Int;x}
+
+[]
+rec x. &{Node: ?Int;x;x}
+rec x. &{Node: ?Int;x}
+
+-- Context-free Recursive Types, normed
+
+[]
+rec x. &{Leaf: Skip, Node: ?Int;x}
+rec x. &{Leaf: Skip, Node: ?Int;x}
+
+[]
+rec x. &{Leaf: ?Bool, Node: ?Int;x;x}
+rec x. &{Leaf: ?Bool, Node: ?Int;x;x}
+
+[]
+rec x. &{Leaf: Skip, Node: ?Int;x;x}
+rec x. &{Leaf: Skip, Node: ?Int;x;x}
+
+[("α", SL)]
+rec x . +{A: α, B: x; α}
+rec y . +{A: Skip, B: y}; α
+
+[("α", SL)]
+rec y . +{A: Skip, B: y}; α
+rec x . +{A: α, B: x; α}
+
+[]
+(rec x. &{Leaf: Skip, Node: ?Int;x;x}); (rec x. &{Leaf: Skip, Node: ?Int;x;x})
+(rec x. &{Leaf: Skip, Node: ?Int;x;x}); (rec x. &{Leaf: Skip, Node: ?Int;x;x})
+
+[]
+&{Add: (((rec x :: SL . &{Add: (x;x), Const: ?Int, Mult: (x;x)});(rec x :: SL . &{Add: (x;x), Const: ?Int, Mult: (x;x)}));!Int), Const: (?Int;!Int), Mult: (((rec x :: SL . &{Add: (x;x), Const: ?Int, Mult: (x;x)});(rec x :: SL . &{Add: (x;x), Const: ?Int, Mult: (x;x)}));!Int)}
+&{Add: (((rec x :: SL . &{Add: (x;x), Const: ?Int, Mult: (x;x)});(rec x :: SL . &{Add: (x;x), Const: ?Int, Mult: (x;x)}));!Int), Const: (?Int;!Int), Mult: (((rec x :: SL . &{Add: (x;x), Const: ?Int, Mult: (x;x)});(rec x :: SL . &{Add: (x;x), Const: ?Int, Mult: (x;x)}));!Int)}
+
+[]
+rec x . &{Add: ((x;x);!Int), Const: (?Int;!Int), Mult: ((x;x);!Int)}
+rec x . &{Add: ((x;x);!Int), Const: (?Int;!Int), Mult: ((x;x);!Int)}

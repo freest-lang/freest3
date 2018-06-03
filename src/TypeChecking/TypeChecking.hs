@@ -80,13 +80,12 @@ checkExp kenv venv1 (App p e1 e2) = do
    (t1, venv2) <- checkExp kenv venv1 e1
    (t2, t3) <- checkFun p t1
    (t4, venv3) <- checkExp kenv venv2 e2
-   checkEquivTypes p kenv t2 t4
+   checkEquivTypes p kenv (canonical t2) t4
    return (t3, venv3)
 
 checkExp kenv venv1 (TypeApp p e t) = do
   (t1, venv2) <- checkExp kenv venv1 e
   (v, c) <- checkScheme p kenv t1
-
   mapM (\t' -> checkKinding kenv (TypeScheme [] t')) t 
   -- checkEquivKinds k k1
   let sub = foldr (\(t', b) acc -> subs t' (var b) acc) c (zip t v) 
@@ -346,6 +345,9 @@ checkExternalChoice _ _ _ (TypeScheme _ t)                   =
   tell ["Expecting an external choice; found " ++ show t]
 
 checkSemi :: Pos -> TypeScheme -> TCheckM (Type, Type)
+-- TODO Remove this one
+checkSemi p (TypeScheme bs (Semi (Semi t1 t2) t3)) =
+  checkSemi p (TypeScheme bs (Semi t1 (Semi t2 t3)))  
 checkSemi _ (TypeScheme bs (Semi t1 t2)) = return (t1, t2)
 checkSemi p (TypeScheme _ t)             = do
   tell [show p ++ ": Expecting a sequential session type; found " ++ show t]
@@ -498,7 +500,10 @@ canonical (TypeScheme b (Semi (Choice cv tm) t2)) =
   canonical $ TypeScheme b (Choice cv (Map.map (canonicalType t2) tm))
 canonical (TypeScheme b (Semi t1 t2))  =
   let (TypeScheme _ t1') = canonical (TypeScheme b t1) in
-  TypeScheme b (Semi t1' t2)
+  if (Semi t1 t2) /= (Semi t1' t2) then
+    canonical $ TypeScheme b (Semi t1' t2)
+  else
+    TypeScheme b (Semi t1' t2)
 canonical (TypeScheme b (Rec (Bind x k) t)) =
   canonical $ (TypeScheme b (unfold $ Rec (Bind x k) t))
 canonical t            = t

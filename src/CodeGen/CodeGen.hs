@@ -18,7 +18,7 @@ import           Types.Types
 -- TODO : PARAM BANG
 genProgram :: VarEnv -> ExpEnv -> ConstructorEnv -> KindEnv -> FilePath -> IO ()
 genProgram venv eenv cenv kenv path = do
-  genCFSTComm path
+  genUtils path
   let start      = eenv Map.! "start"
       startType  = last $ toList $ venv Map.! "start"
       dataTypes  = genDataTypes cenv
@@ -45,7 +45,7 @@ showBangParams [] = ""
 showBangParams args = "!" ++ intercalate " !" args
 
 genImports :: String
-genImports = "import CFSTCommunication\n\n"
+genImports = "import CFSTUtils\n\n"
 
 genPragmas :: String
 genPragmas = "{-# LANGUAGE BangPatterns #-}\n\n"
@@ -64,23 +64,40 @@ genMain eenv (params, startExp) t =
 
 -- GENERATES THE COMMUNICATION AND THREAD CREATION MODULE
 
-genCFSTComm :: FilePath -> IO ()
-genCFSTComm path = do
-  b <- doesFileExist (path ++ "CFSTCommunication.hs")
-  if b then return () else genCFSTCommFile (path ++ "CFSTCommunication.hs")
+genUtils :: FilePath -> IO ()
+genUtils path = do
+  b <- doesFileExist (path ++ "CFSTUtils.hs")
+  if b then return () else genUtilsFile (path ++ "CFSTUtils.hs")
 
-genCFSTCommFile :: FilePath -> IO ()
-genCFSTCommFile path =
-  writeFile path ("module CFSTCommunication (fork, new, send, receive) where\n\n" ++
-                  genCFSTCommImports ++ "\n\n" ++
+genUtilsFile :: FilePath -> IO ()
+genUtilsFile path =
+  writeFile path ("module CFSTUtils (_fork, _new, _send, _receive) where\n\n" ++
+                  genUtilsImports ++ "\n\n" ++
                   genFork ++ "\n\n" ++ genNew ++ "\n\n" ++
                   genSend ++ "\n\n" ++ genReceive)
 
-genCFSTCommImports :: String
-genCFSTCommImports = "import Control.Concurrent (forkIO)\nimport Control.Concurrent.Chan.Synchronous\nimport Unsafe.Coerce"
+genUtilsImports :: String
+genUtilsImports =
+  "import Control.Concurrent (forkIO, newEmptyMVar, putMVar, takeMVar)\nimport Unsafe.Coerce\n\n"
+
 
 genFork :: String
-genFork = "fork e = do\n  forkIO e\n  return ()"
+genFork = "_fork e = do\n  forkIO e\n  return ()"
+
+genNew :: String
+genNew = "_new = do\n  ch <- newEmptyMVar\n  return (ch, ch)"
+
+genSend :: String
+genSend = "_send x ch = do\n  putMVar ch (unsafeCoerce x)\n  return ch"
+
+genReceive :: String
+genReceive = "_receive ch = do\n  a <- takeMVar ch\n  return ((unsafeCoerce a), ch)"
+
+{- With channels
+
+genUtilsImports :: String
+genUtilsImports =
+  "import Control.Concurrent (forkIO)\nimport Control.Concurrent.Chan.Synchronous\nimport Unsafe.Coerce"
 
 genNew :: String
 genNew = "new = do\n  ch <- newChan\n  return (ch, ch)"
@@ -90,9 +107,7 @@ genSend = "send x ch  = do\n  writeChan ch (unsafeCoerce x)\n  return ch"
 
 genReceive :: String
 genReceive = "receive ch = do\n  a <- readChan ch\n  return ((unsafeCoerce a), ch)"
-
-
-
+-}
   
 -- -- TESTING
 -- -- Must to import Kinds

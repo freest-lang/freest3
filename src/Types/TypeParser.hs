@@ -27,10 +27,21 @@ instance Read Type where
     Right t -> [(t,"")]
     Left m -> error $ "type parse error " ++ show m
 
+
 instance Read Kind where
-  readsPrec _ s = case parserKind s of
-    Right k -> [(k,"")]
-    Left m -> error $ "kind error " ++ show m
+  readsPrec _ s = parsecToReadsPrec parseKind 0 s
+    -- case parserKind s of
+    -- Right k -> [(k,"")]
+    -- Left m -> error $ "kind error: \n" ++ show m ++ " , but got: " ++ show s
+
+withRemaining :: Parser a -> Parser (a, String)
+withRemaining p = (,) <$> p <*> getInput
+
+parsecToReadsPrec :: Parser a -> Int -> ReadS a
+parsecToReadsPrec parsecParser prec s
+    = case parse (withRemaining  (do {whiteSpace; parsecParser})) "" s of
+        Left _ -> []
+        Right result -> [result]
 
 -- TOKENS
 lexer :: Token.TokenParser u
@@ -137,7 +148,7 @@ parseRec :: Parsec String u Type
 parseRec = do
   rec
   id <- identifier
-  k <- option (Kind Session Un) parseVarBind
+  k <- option (Kind Session Lin) parseVarBind
   dot
   t <- typeExpr
   return $ Rec (Bind id k) t
@@ -175,8 +186,9 @@ parseVarBind = do
 
 parseKind :: Parsec String u Kind
 parseKind = 
-      (do reserved "SU"; return $ Kind Session Un)
-  <|> (do reserved "SL"; return $ Kind Session Lin)
-  <|> (do reserved "TU"; return $ Kind Functional Un)
-  <|> (do reserved "TL"; return $ Kind Functional Lin)
+      (spaces >> reserved "SU" >> spaces >> return (Kind Session Un))
+  <|> (spaces >> reserved "SL" >> spaces >> return (Kind Session Lin))
+  <|> (spaces >> reserved "TU" >> spaces >> return (Kind Functional Un))
+  <|> (spaces >> reserved "TL" >> spaces >> return (Kind Functional Lin))
   <?> "a kind: SU, SL, TU or TL"
+

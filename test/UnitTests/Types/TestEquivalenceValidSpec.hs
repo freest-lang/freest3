@@ -9,6 +9,7 @@ spec = do
   t <- runIO $ readFromFile "test/UnitTests/Types/TestEquivalenceValid.txt"
   describe "Valid Equivalence Test" $ mapM_ matchValidSpec (chunksOf 3 t)
 
+
 matchValidSpec :: [String] -> Spec
 matchValidSpec [k, t, u] =
   it (k ++ "  |-  " ++ t ++ " ~ " ++  u) $
@@ -16,3 +17,4 @@ matchValidSpec [k, t, u] =
 
 main :: IO ()
 main = hspec spec
+

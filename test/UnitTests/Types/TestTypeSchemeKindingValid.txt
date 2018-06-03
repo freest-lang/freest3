@@ -41,7 +41,7 @@ forall f :: TU => (f -o f) -> f
 
 -- Forall with rec
 forall x  => rec y . rec z . x;y;z
-  SU
+  SL
   
 forall x :: SL  => rec y . rec z . x;y;z
   SL

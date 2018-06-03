@@ -47,7 +47,7 @@ rec x . Skip;Skip
 rec x . !Int;Skip;?Int
   SL
 rec x . x
-  SU
+  SL
 
 rec Tree . &{Leaf:Skip, Node:?Int;Tree;Tree}
   SL

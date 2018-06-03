@@ -120,6 +120,26 @@ replace w x (y:ys)
   | x == y    = w ++ (replace w x ys)
   | otherwise = y : (replace w x ys)
 
+-- Normalisation
+
+normalise :: Grammar -> Grammar
+normalise g = Map.map (Map.map (normaliseWord g)) g
+
+normaliseWord :: Grammar -> [TypeVar] -> [TypeVar]
+normaliseWord _ []     = []
+normaliseWord g (x:xs)
+  | normed g x = x : normaliseWord g xs
+  | otherwise  = [x]
+
+normed :: Grammar -> TypeVar -> Bool
+normed g x = normedWord g Set.empty [x]
+
+normedWord :: Grammar -> Set.Set TypeVar -> [TypeVar] -> Bool
+normedWord _ _ []     = True
+normedWord g v (x:xs) =
+  not (x `Set.member` v) &&
+  any id (map (normedWord g (Set.insert x v)) (Map.elems (transitions g (x:xs))))
+
 -- Conversion to GNF
 
 convertToGNF :: (Grammar, Visited, Int) -> Type -> (TypeVar, (Grammar, Visited, Int))
@@ -284,6 +304,7 @@ expandPair g (xs, ys)
   where m1 = transitions g xs
         m2 = transitions g ys
 
+-- this is an op on grammars
 transitions :: Grammar -> [TypeVar] -> Map.Map Label [TypeVar]
 transitions _ []     = Map.empty
 transitions g (x:xs) = Map.map (++ xs) (g Map.! x)
@@ -292,10 +313,10 @@ match :: Map.Map Label [TypeVar] -> Map.Map Label [TypeVar] -> Node
 match m1 m2 =
   Map.foldrWithKey (\l xs n -> Set.insert (xs, m2 Map.! l) n) Set.empty m1
 
--- Apply  different node transformations
+-- Apply the different node transformations
 
 simplify :: Grammar -> Ancestors -> Node -> Node
-simplify g a n = foldr (apply g a) n [reflex, congruence, bpa1]
+simplify g a n = foldr (apply g a) n [reflex, congruence, bpa1, bpa3]
 -- Perhaps we need to iterate until reaching a fixed point
 
 type NodeTransformation = Grammar -> Ancestors -> ([TypeVar], [TypeVar]) -> Node
@@ -322,6 +343,8 @@ congruentToPair (xs, ys) (xs', ys') =
   ys `isPrefixOf` ys' &&
   drop (length xs) xs' == drop (length ys) ys'
 
+-- Needed in this case:
+--   [("α", SL)]  |-  rec x . +{A: α, B: x; α} ~ rec y . +{A: Skip, B: y}; α
 bpa1 :: NodeTransformation
 bpa1 _ a (x:xs, y:ys) =
   case findInAncestors a x y of
@@ -339,6 +362,16 @@ findInPair :: ([TypeVar], [TypeVar]) -> TypeVar -> TypeVar -> Maybe ([TypeVar], 
 findInPair ((x':xs), (y':ys)) x y
   | x == x' && y == y' = Just (xs, ys)
   | otherwise          = Nothing
+findInPair _ _ _       = Nothing
+
+-- vv made this rule. Sound?
+bpa3 :: NodeTransformation
+bpa3 _ a (x:xs, y:ys) =
+  case findInAncestors a x y of
+    Nothing         -> Set.singleton (x:xs, y:ys)
+    Just ([], []) -> Set.fromList [(xs,ys)]
+    Just (xs', ys') -> Set.fromList [(x:xs,y:ys)]
+bpa3 _ _ p = Set.singleton p
 
 -- TYPE EQUIVALENCE
 
@@ -355,7 +388,7 @@ equivalent _ Skip Skip = True
 equivalent _ Skip _ = False
 equivalent _ _ Skip = False
 equivalent k t u
-  | isSessionType k t && isSessionType k u = bisim g [x] [y]
+  | isSessionType k t && isSessionType k u = bisim (normalise g) [x] [y]
   | otherwise = False
   where (x, state)     = convertToGNF initial t
         (y, (g, _, _)) = convertToGNF state u
