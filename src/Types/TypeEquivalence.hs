@@ -271,6 +271,7 @@ s26 = Semi (Choice External (Map.fromList [("Leaf", Skip)])) (Var "α")
 t26 = buildGNF s26
 s27 = Choice External (Map.fromList [("Leaf", (Var "α"))])
 t27 = buildGNF s27
+s28 = Rec yBind (Choice External (Map.fromList [("Add", Semi (Semi (Var "y") (Var "y")) (Message Out IntType)), ("Const", Skip)]))
 
 -- BISIMULATION
 
@@ -316,7 +317,7 @@ match m1 m2 =
 -- Apply the different node transformations
 
 simplify :: Grammar -> Ancestors -> Node -> Node
-simplify g a n = foldr (apply g a) n [reflex, congruence, bpa1, bpa3]
+simplify g a n = foldr (apply g a) n [reflex, congruence, bpa1, bpa3, bpa3]
 -- Perhaps we need to iterate until reaching a fixed point
 
 type NodeTransformation = Grammar -> Ancestors -> ([TypeVar], [TypeVar]) -> Node
@@ -369,8 +370,9 @@ bpa3 :: NodeTransformation
 bpa3 _ a (x:xs, y:ys) =
   case findInAncestors a x y of
     Nothing         -> Set.singleton (x:xs, y:ys)
-    Just ([], []) -> Set.fromList [(xs,ys)]
-    Just (xs', ys') -> Set.fromList [(x:xs,y:ys)]
+    Just (xs', ys') -> Set.fromList [(xs'++xs, ys'++ys)]
+    -- Just ([], [])   -> Set.fromList [(xs, ys)]
+    -- Just (xs', ys') -> Set.fromList [(x:xs, y:ys)]
 bpa3 _ _ p = Set.singleton p
 
 -- TYPE EQUIVALENCE
