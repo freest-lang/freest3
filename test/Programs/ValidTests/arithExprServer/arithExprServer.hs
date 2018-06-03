@@ -3,12 +3,12 @@
 -- &{Const: ?Int, Add: TermChan;TermChan, Mult: TermChan;TermChan}
 
 
-computeService :: (rec TermChan . &{Const: ?Int;Skip, Add: TermChan;TermChan, Mult: TermChan;TermChan};!Int) -> Skip
+computeService :: (rec TermChan . &{Const: ?Int, Add: TermChan;TermChan, Mult: TermChan;TermChan});!Int -> Skip
 computeService c =
   let n1, c1 = receiveEval[!Int;Skip] c in
   send n1 c1
 
-receiveEval :: forall x => (rec TermChan . &{Const: ?Int, Add: TermChan;TermChan, Mult: TermChan;TermChan};x) -> (Int, x)
+receiveEval :: forall x => (rec TermChan . &{Const: ?Int, Add: TermChan;TermChan, Mult: TermChan;TermChan});x -> (Int, x)
 receiveEval c =
   match c with
     Const c1 ->

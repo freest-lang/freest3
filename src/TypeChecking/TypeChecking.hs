@@ -80,13 +80,12 @@ checkExp kenv venv1 (App p e1 e2) = do
    (t1, venv2) <- checkExp kenv venv1 e1
    (t2, t3) <- checkFun p t1
    (t4, venv3) <- checkExp kenv venv2 e2
-   checkEquivTypes p kenv t2 t4
+   checkEquivTypes p kenv (canonical t2) t4
    return (t3, venv3)
 
 checkExp kenv venv1 (TypeApp p e t) = do
   (t1, venv2) <- checkExp kenv venv1 e
   (v, c) <- checkScheme p kenv t1
-
   mapM (\t' -> checkKinding kenv (TypeScheme [] t')) t 
   -- checkEquivKinds k k1
   let sub = foldr (\(t', b) acc -> subs t' (var b) acc) c (zip t v) 

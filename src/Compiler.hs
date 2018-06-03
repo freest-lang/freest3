@@ -55,4 +55,4 @@ showErrors = snd . runWriter
 
 checkErr :: TCheckM () -> IO (Bool, String)
 checkErr tc = do
-  return (False, intercalate "\n" (showErrors tc))
+  return (False, intercalate "\n\n" (showErrors tc))
