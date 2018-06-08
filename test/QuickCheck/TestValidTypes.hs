@@ -1,7 +1,7 @@
 import Test.QuickCheck
-import Types.Types
+import Syntax.Types
 import Types.Parser
-import Types.Kinds
+import Syntax.Kinds
 import Control.Monad
 import qualified Data.Map.Strict as Map
 

@@ -1,10 +1,10 @@
-module Types.TestEqInvalidSpec(spec) where
+module Syntax.TestEqInvalidSpec(spec) where
 
 import SpecHelper
 
 spec :: Spec
 spec = do
-  t <- runIO $ readFromFile "test/UnitTests/Types/TestEqInvalid.txt"
+  t <- runIO $ readFromFile "test/UnitTests/Syntax/TestEqInvalid.txt"
   describe "Invalid Equality Test" $ do
       mapM_ matchInvalidSpec (chunksOf 2 t)
 

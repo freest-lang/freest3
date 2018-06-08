@@ -11,7 +11,7 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-module Types.Kinding
+module Validation.Kinding
 ( Kind (..)
 , KindEnv
 , kindOf
@@ -24,8 +24,8 @@ module Types.Kinding
 ) where
 
 import qualified Data.Map.Strict as Map
-import Types.Kinds
-import Types.Types
+import Syntax.Kinds
+import Syntax.Types
 import Control.Monad.Writer
 
 type KindM = Writer [String]

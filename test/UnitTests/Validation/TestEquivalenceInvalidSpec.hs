@@ -1,12 +1,12 @@
-module Types.TestEquivalenceInvalidSpec(spec) where
+module Validation.TestEquivalenceInvalidSpec(spec) where
 
 import SpecHelper
-import Types.TypeEquivalence
+import Validation.TypeEquivalence
 import qualified Data.Map.Strict as Map
 
 spec :: Spec
 spec = do
-  t <- runIO $ readFromFile "test/UnitTests/Types/TestEquivalenceInvalid.txt"
+  t <- runIO $ readFromFile "test/UnitTests/Validation/TestEquivalenceInvalid.txt"
   describe "Invalid Equivalence Test" $ mapM_ matchInvalidSpec (chunksOf 2 t)
 
 matchInvalidSpec :: [String] -> Spec

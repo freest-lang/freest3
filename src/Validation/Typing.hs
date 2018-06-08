@@ -1,4 +1,4 @@
-module TypeChecking.TypeChecking (
+module Validation.Typing (
     typeCheck
   , TCheckM
   , canonical -- TODO: Remove
@@ -9,14 +9,14 @@ import           Control.Monad
 import           Control.Monad.Writer
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import           Terms.Terms
-import           Types.Kinding
-import           Types.Kinds
-import           Types.TypeEquivalence
-import           Types.Types
-import           Types.TypeParser
+import           Syntax.Terms
+import           Validation.Kinding
+import           Syntax.Kinds
+import           Validation.TypeEquivalence
+import           Syntax.Types
 
-import Types.TypeParser -- TODO : remove
+import           Parse.TypeParser -- TODO: Remove?
+
 
 type TCheckM = Writer [String]
 

@@ -11,7 +11,7 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-module Types.Types
+module Syntax.Types
 ( TypeVar
 , Bind(..)
 , BasicType(..)
@@ -25,7 +25,7 @@ module Types.Types
 , toList
 ) where
 
-import Types.Kinds
+import Syntax.Kinds
 import qualified Data.Map.Strict as Map
 import Data.List (intersperse)
 

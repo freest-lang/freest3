@@ -1,20 +1,21 @@
 {-# LANGUAGE FlexibleContexts #-}
 -- https://web.archive.org/web/20140528151730/http://legacy.cs.uu.nl/daan/parsec.htm)
 
-module Types.TypeParser (
+module Parse.TypeParser (
   parseType
 , parseKind
 , parseVarBind  
 ) where
 
+import qualified Data.Map.Strict as Map
+import           Parse.Lexer
+import           Syntax.Kinds
+import           Syntax.Types
+import           Text.Parsec (Parsec (..))
 import           Text.Parsec.Expr
 import           Text.Parsec.Language (haskellDef)
 import qualified Text.Parsec.Token as Token
 import           Text.ParserCombinators.Parsec
-import qualified Data.Map.Strict as Map
-import           Types.Kinds
-import           Types.Types
-import           Text.Parsec (Parsec (..))
 
 
 instance Read BasicType where
@@ -43,35 +44,6 @@ parsecToReadsPrec parsecParser prec s
         Left _ -> []
         Right result -> [result]
 
--- TOKENS
-lexer :: Token.TokenParser u
-lexer  = Token.makeTokenParser
-        (haskellDef
-        {
-        Token.reservedOpNames = [";", "!", "?", "->", "-o", "+", "&", "=>"],
-        Token.reservedNames = ["Int","Bool","Char", "Skip", "()",
-                               "rec", "forall", "data", "TU", "TL", "SU", "SL"]
-        })
-
-reservedOp = Token.reservedOp lexer
-parens     = Token.parens lexer
-identifier = Token.identifier lexer
-reserved   = Token.reserved lexer
-comma      = Token.comma lexer
-symbol     = Token.symbol lexer
-whiteSpace = Token.whiteSpace lexer
-lexeme     = Token.lexeme lexer
--- semi = Token.semi lexer
-dot = Token.dot lexer
-colon = Token.colon lexer
-braces = Token.braces lexer
-squares = Token.squares lexer
-commaSep1 = Token.commaSep1 lexer
-
-rec    = reserved "rec"
-forall = reserved "forall"
-skip   = reserved "Skip"
---lowerIdentifier = lookAhead lower >> identifier
 
 -- PARSE BASIC TYPES
 --   IntType | CharType | BoolType | UnitType

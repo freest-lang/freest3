@@ -1,10 +1,10 @@
-module Types.TestEqValidSpec(spec) where
+module Syntax.TestEqValidSpec(spec) where
 
 import SpecHelper
 
 spec :: Spec
 spec = do
-  t <- runIO $ readFromFile "test/UnitTests/Types/TestEqValid.txt"
+  t <- runIO $ readFromFile "test/UnitTests/Syntax/TestEqValid.txt"
   describe "Valid Equality Test" $
       mapM_ matchValidSpec (chunksOf 2 t)
 

@@ -1,8 +1,8 @@
-module Types.TestParserValidSpec(spec) where
+module Parse.TestParserValidSpec(spec) where
 
 import           SpecHelper
 import           Control.Exception (evaluate)
-import           Types.Kinds
+import           Syntax.Kinds
 import qualified Data.Map.Strict as Map
 import           Test.Hspec.Expectations (anyException, shouldThrow)
 

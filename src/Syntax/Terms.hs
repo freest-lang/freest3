@@ -1,4 +1,4 @@
-module Terms.Terms
+module Syntax.Terms
   ( Expression(..)
   , ExpEnv
   , VarEnv
@@ -12,8 +12,8 @@ module Terms.Terms
   ) where
 
 import qualified Data.Map.Strict as Map
-import           Types.Kinds
-import           Types.Types
+import           Syntax.Kinds
+import           Syntax.Types
 
 
 type TermVar = String

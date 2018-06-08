@@ -10,9 +10,9 @@ import           Control.Monad.State
 import           Data.List
 import qualified Data.Map.Strict as Map
 import           System.Directory
-import           Terms.Terms
-import           Types.Kinding
-import           Types.Types
+import           Syntax.Terms
+import           Validation.Kinding
+import           Syntax.Types
 
 
 -- TODO : PARAM BANG

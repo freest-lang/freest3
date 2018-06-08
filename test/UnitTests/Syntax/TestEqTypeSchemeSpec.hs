@@ -1,28 +1,28 @@
-module Types.TestEqTypeSchemesSpec(spec) where
+module Syntax.TestEqTypeSchemeSpec(spec) where
 
-import SpecHelper
-import Terms.Parser
-import Types.Kinds
-import Types.Kinding
 import qualified Data.Map as Map
+import           Parse.Parser
+import           SpecHelper
+import           Validation.Kinding
+import           Syntax.Kinds
 
 spec :: Spec
 spec = do
   describe "Equal TypeSchemes" $ do
-    t <- runIO $ readFromFile "test/UnitTests/Types/TestEqTypeSchemeValid.txt"
+    t <- runIO $ readFromFile "test/UnitTests/Syntax/TestEqTypeSchemeValid.txt"
     mapM_ (matchEqSpec True) (chunksOf 2 t) 
 
   describe "Not equal TypeSchemes" $ do
-    t <- runIO $ readFromFile "test/UnitTests/Types/TestEqTypeSchemeInvalid.txt"
+    t <- runIO $ readFromFile "test/UnitTests/Syntax/TestEqTypeSchemeInvalid.txt"
     mapM_ (matchEqSpec False) (chunksOf 2 t)
 
   describe "Valid Show TypeSchemes" $ do
-    t <- runIO $ readFromFile "test/UnitTests/Types/TestShowTypeScheme.txt"
+    t <- runIO $ readFromFile "test/UnitTests/Syntax/TestShowTypeScheme.txt"
     mapM_ matchShowSpec t
  
-  describe "Valid Kinding TypeSchemes" $ do
-    t <- runIO $ readFromFile "test/UnitTests/Types/TestTypeSchemeKindingValid.txt"
-    mapM_ matchKindingValidSpec (chunksOf 2 t)
+  --describe "Valid Kinding TypeSchemes" $ do
+  --  t <- runIO $ readFromFile "test/UnitTests/Syntax/TestTypeSchemeKindingValid.txt"
+  --  mapM_ matchKindingValidSpec (chunksOf 2 t)
  
 
 matchEqSpec :: Bool -> [String] -> Spec

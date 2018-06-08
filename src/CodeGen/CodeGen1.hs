@@ -8,7 +8,7 @@ module CodeGen.CodeGen1
 import           Control.Monad.State
 import           Data.List
 import qualified Data.Map.Strict as Map
-import           Terms.Terms
+import           Syntax.Terms
 import  Data.List -- TODO: Delete
   
 -- 1st Pass to check which are the monadic functions

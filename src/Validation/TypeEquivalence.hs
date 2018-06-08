@@ -11,15 +11,15 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-module Types.TypeEquivalence(
+module Validation.TypeEquivalence(
   equivalent
 , unfold
 , subs  
 ) where
 
-import Types.Types
-import Types.Kinds
-import Types.Kinding
+import Syntax.Types
+import Syntax.Kinds
+import Validation.Kinding
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import Control.Monad.State

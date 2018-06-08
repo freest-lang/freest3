@@ -4,17 +4,17 @@ module Compiler (compile) where
 import           Control.Concurrent.Chan.Synchronous
 import qualified Data.Map.Strict as Map
 import           PreludeLoader
-import           Terms.Parser
-import           Terms.Terms
+import           Parse.Parser
+import           Syntax.Terms
 import           CodeGen.CodeGen
-import           Types.Types
-import           TypeChecking.TypeChecking
+import           Syntax.Types
+import           Validation.Typing
 import           Control.Monad.Writer
 import           Control.Monad.State
 import           Data.List
 import           System.Exit
-import           Types.Kinds
-import           Types.Kinding
+import           Syntax.Kinds
+import           Validation.Kinding
 
 compile :: String -> IO (Bool, String)
 compile arg = do

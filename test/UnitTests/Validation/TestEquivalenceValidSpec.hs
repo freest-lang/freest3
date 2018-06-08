@@ -1,12 +1,12 @@
-module Types.TestEquivalenceValidSpec(spec) where
+module Validation.TestEquivalenceValidSpec(spec) where
 
 import SpecHelper
-import Types.TypeEquivalence
+import Validation.TypeEquivalence
 import qualified Data.Map.Strict as Map
 
 spec :: Spec
 spec = do
-  t <- runIO $ readFromFile "test/UnitTests/Types/TestEquivalenceValid.txt"
+  t <- runIO $ readFromFile "test/UnitTests/Validation/TestEquivalenceValid.txt"
   describe "Valid Equivalence Test" $ mapM_ matchValidSpec (chunksOf 3 t)
 
 

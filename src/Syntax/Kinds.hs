@@ -11,7 +11,7 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-module Types.Kinds
+module Syntax.Kinds
 ( PreKind (..)
 , Multiplicity (..)
 , Kind (..)

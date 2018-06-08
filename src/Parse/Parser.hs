@@ -1,58 +1,21 @@
 {-# LANGUAGE FlexibleContexts #-} -- binary and infix functions need this
 
-module Terms.Parser
+module Parse.Parser
 (
   mainProgram
 ) where
 
 import qualified Data.Map.Strict as Map
-import           Terms.Terms
+import           Parse.Lexer
+import           Parse.TypeParser
+import           Syntax.Kinds
+import           Syntax.Terms
+import           Syntax.Types
 import           Text.Parsec (Parsec (..), modifyState)
 import           Text.Parsec.Expr
-import           Text.Parsec.Language (haskellDef)
-import qualified Text.Parsec.Token as Token
 import           Text.ParserCombinators.Parsec
-import           Types.Kinding
-import           Types.Kinds
-import           Types.TypeParser
-import           Types.Types
+import           Validation.Kinding
  
--- LEXER
--- Token.reservedNames haskellDef ++ 
-lexer :: Token.TokenParser ParserOut
-lexer =
-  Token.makeTokenParser
-    (haskellDef
-       { Token.reservedOpNames =
-           ["=", "+", "-", "*", "/", "mod", "rem", "&&", "||", "not", "|", "->", "==",
-            ">", "<"]
-       , Token.reservedNames =
-           [ "send", "receive", "()", "new", "in", "let"
-           , "fork", "match", "with", "select", "case"
-           , "of", "True", "False"
-           , "if", "then", "else", "type", "data", "forall"
-           ]
-       }       
-    )
-
-
-reservedOp = Token.reservedOp lexer
-reserved = Token.reserved lexer
-whiteSpace = Token.whiteSpace lexer
-natural = Token.natural lexer
-lexeme = Token.lexeme lexer
-symbol = Token.symbol lexer
-parens = Token.parens lexer
-colon = Token.colon lexer
-identifier = Token.identifier lexer
-comma = Token.comma lexer
-integer = Token.integer lexer
-squares = Token.squares lexer
-apostrophe p = between (string "'") (string "'") p
-constructor = lookAhead upper >> identifier
-lowerIdentifier = lookAhead lower >> identifier
-commaSep1 = Token.commaSep1 lexer
-commaSep = Token.commaSep lexer
 
 -- PARSER
 type ParserOut = (VarEnv, ExpEnv, ConstructorEnv, KindEnv)
@@ -475,8 +438,8 @@ instance Read TypeScheme where
 
 
 --TODO: remove (test purposes)
-run = mainProgram path Map.empty
-path = "src/test.hs"
+-- run = mainProgram path Map.empty
+-- path = "src/test.hs"
 --path = "/home/balmeida/workspaces/ContextFreeSession/test/Programs/ValidTests/dot/dot.hs"
 --path = "/home/balmeida/workspaces/ContextFreeSession/test/Programs/ValidTests/sendTree/sendTree.hs"
 

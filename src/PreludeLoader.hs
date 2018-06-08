@@ -1,10 +1,10 @@
 module PreludeLoader (prelude) where
 
 import qualified Data.Map.Strict as Map
-import           Terms.Parser
-import           Terms.Terms
-import           Types.TypeParser
-import           Types.Types
+import           Parse.Parser
+import           Syntax.Terms
+import           Parse.TypeParser
+import           Syntax.Types
 
 typeList :: [(String, String)]
 typeList = [ ("(+)", "Int -> Int -> Int")

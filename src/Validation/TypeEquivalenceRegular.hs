@@ -3,22 +3,22 @@ Deprecated
 Type equivalence as if the type language were a regular language
 -}
 
-module Types.TypeEquivalence(
+module Validation.TypeEquivalence(
   equivalent
 , unfold
 , subs  
 ) where
 
-import Types.Types
-import Types.Kinds
-import Types.Kinding
+import Syntax.Types
+import Syntax.Kinds
+import Validation.Kinding
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
 -- testar Show
 -- testar igualdade rec inside rec and the same for ∀
--- (==) *Types.TypeEquivalence> let t1 = read "(forall x . !Int;x);forall y . !Bool;y" :: Type
--- Types.TypeEquivalence> let t2 = read "(forall y . !Int;y);forall x . !Bool;x" :: Type
+-- (==) *Validation.TypeEquivalence> let t1 = read "(forall x . !Int;x);forall y . !Bool;y" :: Type
+-- Validation.TypeEquivalence> let t2 = read "(forall y . !Int;y);forall x . !Bool;x" :: Type
 -- sem parens
 
 -- Type bisimulation
