@@ -12,133 +12,170 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Validation.Kinding
-( Kind (..)
-, KindEnv
-, kindOf
-, isWellKinded
-, isSessionType
-, isContractive
-, isUn
-, kindErr
-, kindOfScheme
+(   Kind (..)
+  , kindOf
+  , isWellKinded
+  , isSessionType
+  , contractive
+  , un
+  , lin 
+  , kindErr
+  , kindOfScheme
+  , checkAgainstKind
 ) where
 
+import           Control.Monad.State
 import qualified Data.Map.Strict as Map
-import Syntax.Kinds
-import Syntax.Types
-import Control.Monad.Writer
+import           Syntax.Kinds
+import           Syntax.Terms
+import           Syntax.Types
+import           Validation.TypingState
 
-type KindM = Writer [String]
+-- Determines whether the type is linear or not
+lin :: KindEnv -> Type -> Bool
+lin _ (Basic _) = False
+lin _ (Fun m _ _) = m == Lin
+lin _ (PairType _ _) = False
+lin _ (Datatype _) = False
+lin _ Skip = False
+lin kenv (Semi t1 t2) = lin kenv t1 || lin kenv t2
+lin _ (Message _ _) = True
+lin _ (Choice _ _) = True
+lin kenv (Rec _ t) = lin kenv t
+lin kenv (Var x) =
+  if Map.member x kenv then multiplicity (kenv Map.! x) == Lin
+  else error $ show x
 
-type KindEnv = Map.Map TypeVar Kind
+-- Determines whether the type is unrestricted or not
+un :: KindEnv -> Type -> Bool
+un kenv t = not (lin kenv t)
 
-kinding :: KindEnv -> Type -> KindM Kind
-kinding _    Skip          = return $ Kind Session Un
-kinding _    (Message _ _) = return $ Kind Session Lin
-kinding _    (Basic _)     = return $ Kind Functional Un
-kinding kenv (Var x)       = checkVar kenv x
-kinding kenv (Semi t u) = do
-  kt <- kinding kenv t 
-  ku <- kinding kenv u
-  checkSessionType t kt
-  checkSessionType u ku
-  return $ Kind Session (max (multiplicity kt) (multiplicity ku))
-kinding kenv (Fun m t u) = do
-  kinding kenv t
-  kinding kenv u
-  return $ Kind Functional m
-kinding kenv (PairType t u) = do
-  kinding kenv t 
-  kinding kenv u
-  return $ Kind Functional Lin
-kinding kenv (Datatype m) = do
-  ks <- mapM (kinding kenv) (Map.elems m)
-  checkDatatype ks (Kind Functional Un)
-      ("One of the components in a Datatype is a type Scheme. \nType: " ++ show m) -- TODO: ??? type scheme ?
-kinding kenv (Choice _ m) = do
-  ks <- mapM (kinding kenv) (Map.elems m)
-  checkChoice ks
-kinding kenv (Rec (Bind x k) t) = do
-  -- TODO: Maybe the kinding function should also return kenv
-  let kenv1 = (Map.insert x k kenv)
-  k <- kinding kenv1 t
-  checkContractivity kenv1 t
-  return k
-  
+-- Is a given type contractive?
+contractive :: KindEnv -> Type -> Bool
+contractive kenv (Semi t _) = contractive kenv t
+contractive kenv (Rec _ t)  = contractive kenv t
+contractive kenv (Var x)    = Map.member x kenv
+contractive _    _          = True
+
 -- Used when an error is found
 topKind :: Kind
 topKind = Kind Functional Lin
 
-checkChoice :: [Kind] -> KindM Kind
+-- Check variables
+checkVar :: TypeVar -> TypingState Kind
+checkVar v = do
+  b <- kenvMember v
+  if b then
+    getKind v
+  else do
+    addError (show v ++ " is a free variable.")
+    return $ topKind
+
+-- Check if a type is a session type
+checkSessionType :: Type -> Kind ->  TypingState ()
+checkSessionType t k
+  | prekind k == Session = return ()
+  | otherwise            =
+      addError ("Expecting type " ++ show t ++ " to be a session type; found kind " ++ show k)
+
+-- Checks if all the elements of a choice are session types
+checkChoice :: [Kind] -> TypingState Kind
 checkChoice ks
    | all (<= Kind Session Lin) ks = return $ Kind Session Lin
    | otherwise  = do
-       tell ["One of the components in a choice isn't lower than SL"]
+       addError ("One of the components in a choice isn't lower than SL")
        return topKind
-
-checkDatatype :: [Kind] -> Kind -> String -> KindM Kind
-checkDatatype ks k m
-   | all (<= k) ks = return $ Kind Functional (multiplicity $ maximum ks)
-   | otherwise  = do
-       tell [m]
-       return topKind
-  
--- Check if a type is a session type
-checkSessionType :: Type -> Kind ->  KindM ()
-checkSessionType t k
-  | prekind k == Session = return ()
-  | otherwise            = tell ["Expecting type " ++ show t ++ " to be a session type; found kind " ++ show k]
-
--- Check variables
-checkVar :: KindEnv -> TypeVar -> KindM Kind
-checkVar kenv v 
-  | Map.member v kenv = return $ kenv Map.! v
-  | otherwise         = do
-      tell ["Variable " ++ show v ++ " is free"]
-      return $ topKind
 
 -- Check the contractivity of a given type; issue an error if not
-checkContractivity :: KindEnv -> Type -> KindM ()
+checkContractivity :: KindEnv -> Type -> TypingState ()
 checkContractivity kenv t
-  | isContractive kenv t = return ()
-  | otherwise            = tell ["Type " ++ show t ++ " is not contractive"]
+  | contractive kenv t = return ()
+  | otherwise          = addError ("Type " ++ show t ++ " is not contractive")
 
--- Is a given type contractive?
-isContractive :: KindEnv -> Type -> Bool
-isContractive kenv (Semi t _) = isContractive kenv t
-isContractive kenv (Rec _ t)  = isContractive kenv t
-isContractive kenv (Var x)    = Map.member x kenv
-isContractive _    _          = True
+-- Determines the kinding of a type
 
--- Predicates and functions based on kinding
+-- TODO ...
+-- kinding :: Type -> TypingState Kind
+kinding :: Type -> Kind
+kinding t = evalState (synthetize t) initialState
 
-kindOf :: KindEnv -> Type -> Kind
-kindOf kenv t = fst $ runWriter (kinding kenv t)
-
-isWellKinded :: KindEnv -> Type -> Bool
-isWellKinded kenv t = null $ snd $ runWriter (kinding kenv t)
-
-isSessionType :: KindEnv -> Type -> Bool
-isSessionType kenv t = isWellKinded kenv t && prekind (kindOf kenv t) == Session
-
-kindErr :: KindEnv -> Type -> [String]
-kindErr kenv t = err (kinding kenv t)
-  where
-    err :: KindM Kind -> [String]
-    err = snd . runWriter
-
--- Type Schemes
-
-isUn :: KindEnv -> TypeScheme -> Bool
-isUn kenv t = multiplicity (kindOfScheme kenv t) == Un 
-
-kindOfScheme :: KindEnv -> TypeScheme -> Kind
-kindOfScheme kenv (TypeScheme [] t) = kindOf kenv t
-kindOfScheme kenv t = kinds (kindOfScheme' kenv t)
-  where kinds = fst . runWriter 
-
-kindOfScheme' :: KindEnv -> TypeScheme -> KindM Kind
-kindOfScheme' kenv (TypeScheme bs t) = do
-  k1 <- kinding (toMap kenv bs) t
+synthetize :: Type -> TypingState Kind
+synthetize Skip = return $ Kind Session Un
+synthetize (Message _ _) = return $ Kind Session Lin
+synthetize (Basic _)     = return $ Kind Functional Un
+synthetize (Var x)       = checkVar x
+synthetize (Semi t u) = do
+  kt <- synthetize t 
+  ku <- synthetize u
+  checkSessionType t kt
+  checkSessionType u ku
+  return $ Kind Session (max (multiplicity kt) (multiplicity ku))
+synthetize (Fun m t u) = do
+  synthetize t
+  synthetize u
+  return $ Kind Functional m
+synthetize (PairType t u) = do
+  synthetize t 
+  synthetize u
+  return $ Kind Functional Lin
+synthetize (Datatype m) = do
+  ks <- mapM synthetize (Map.elems m)
+  return $ Kind Functional (multiplicity $ maximum ks)
+synthetize (Choice _ m) = do
+  ks <- mapM synthetize (Map.elems m)
+  checkChoice ks  
+synthetize (Rec (Bind x k) t) = do
+  addToKenv x k
+  k1 <- synthetize t
+  kenv <- getKindEnv
+  checkContractivity kenv t
   return k1
-  where toMap kenv = foldr (\b acc -> Map.insert (var b) (kind b) acc) kenv  
+
+
+synthetizeScheme :: TypeScheme -> TypingState Kind
+synthetizeScheme (TypeScheme [] t) = synthetize t
+synthetizeScheme (TypeScheme bs t) = do
+  foldr (\b _ -> addToKenv (var b) (kind b)) (return ()) bs
+  synthetize t
+
+
+-- TODO ...
+
+checkAgainstKind :: Type -> Kind -> TypingState Type
+checkAgainstKind t k = do
+  k' <- synthetize t
+  isSubKindOf k' k
+  return t
+
+isSubKindOf :: Kind -> Kind -> TypingState ()
+isSubKindOf k1 k2
+  | k1 <= k2  = return ()
+  | otherwise = addError ("ERROR")
+      
+
+-- TODO: review
+
+kindOf :: Type -> Kind
+kindOf t = evalState (synthetize t) initialState
+
+kindOfScheme :: TypeScheme -> Kind
+kindOfScheme t = evalState (synthetizeScheme t) initialState
+
+
+isWellKinded :: Type -> Bool
+isWellKinded t =
+  let (_, _, err) = execState (synthetize t) initialState in null err
+
+isSessionType :: Type -> Bool
+isSessionType t = isWellKinded t && prekind (kindOf t) == Session
+
+-- Need this ?? 
+kindErr :: Type -> [String]
+kindErr t =
+  let (_, _, err) = execState (synthetize t) initialState in err
+
+
+-- runState :: State s a -> s -> (a, s)
+-- evalState :: State s a -> s -> a
+-- execState :: State s a -> s -> s
+

@@ -17,13 +17,14 @@ module Validation.TypeEquivalence(
 , subs  
 ) where
 
-import Syntax.Types
-import Syntax.Kinds
-import Validation.Kinding
+import           Control.Monad.State
+import           Data.List (isPrefixOf)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import Control.Monad.State
-import Data.List(isPrefixOf)
+import           Syntax.Kinds
+import           Syntax.Types
+import           Validation.Kinding
+import           Validation.TypingState (KindEnv)
 
 -- GREIBACH NORMAL FORMS
 
@@ -389,8 +390,8 @@ equivalent k (Datatype m1) (Datatype m2) =
 equivalent _ Skip Skip = True
 equivalent _ Skip _ = False
 equivalent _ _ Skip = False
-equivalent k t u
-  | isSessionType k t && isSessionType k u = bisim (normalise g) [x] [y]
+equivalent _ t u
+  | isSessionType t && isSessionType u = bisim (normalise g) [x] [y]
   | otherwise = False
   where (x, state)     = convertToGNF initial t
         (y, (g, _, _)) = convertToGNF state u

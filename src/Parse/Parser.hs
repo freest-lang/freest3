@@ -14,7 +14,7 @@ import           Syntax.Types
 import           Text.Parsec (Parsec (..), modifyState)
 import           Text.Parsec.Expr
 import           Text.ParserCombinators.Parsec
-import           Validation.Kinding
+import           Validation.TypingState
  
 
 -- PARSER
@@ -438,8 +438,8 @@ instance Read TypeScheme where
 
 
 --TODO: remove (test purposes)
--- run = mainProgram path Map.empty
--- path = "src/test.hs"
+run = mainProgram path Map.empty
+path = "src/test.hs"
 --path = "/home/balmeida/workspaces/ContextFreeSession/test/Programs/ValidTests/dot/dot.hs"
 --path = "/home/balmeida/workspaces/ContextFreeSession/test/Programs/ValidTests/sendTree/sendTree.hs"
 

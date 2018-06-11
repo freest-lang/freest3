@@ -97,7 +97,7 @@ data Type =
   | Message Polarity BasicType
   | Choice ChoiceView TypeMap
   | Rec Bind Type
-  -- | Forall TypeVar Kind Type -- TODO: remove, use TypeScheme instead
+  -- | Forall TypeVar Kind Type
   | Var TypeVar
   deriving (Ord)
 
@@ -144,7 +144,6 @@ instance Show Type where
   show (Choice v m) = show v ++ "{" ++ showMap m ++ "}"
   show (Datatype m)   = "["++ showMap m ++"]"
   show (Rec b t)      = "(rec " ++ show b ++ " . " ++ show t ++ ")"
---  show (Forall x k t) = "(forall " ++ x ++ " :: " ++ show k ++ " => " ++ show t ++ ")"
   show (Var s)        = s
 
 showFun :: Type -> String -> Type -> String
@@ -181,25 +180,6 @@ showTypeScheme bs t = "forall " ++ showBindings bs ++ " => " ++ show t
 showBindings :: [Bind] -> String
 showBindings bs = concat $ intersperse ", " (map show bs)
 
-{- Alternative:
-data TypeScheme =
-    Polymorphic Bind TypeScheme
-  | Monomorphic Type
-  deriving Ord
-
-instance Eq TypeScheme where
-  (==) = equalSchemes Map.empty
-
-equalSchemes :: Map.Set (TypeVar, TypeVar) -> TypeScheme -> TypeScheme -> Bool
-equalSchemes s (Monomorphic t)   (Monomorphic u)   = equalTypes s t u
-equalSchemes s (Polymorphic b t) (Polymorphic c u) =
-  kind b == kind c && equalSchemes (Map.insert (var b, var c) s) t u
-
-instance Show TypeScheme where
-  show (Monomorphic t)   = show t
-  show (Polymorphic b s) = "forall " ++ show b ++ " => " ++ show s
--}
-
 -- DUALITY
 
 -- The dual of a session type
@@ -222,12 +202,24 @@ dualView Internal = External
 
 toList :: TypeScheme -> [TypeScheme]
 toList (TypeScheme b (Fun _ t1 t2)) = (TypeScheme b t1) : toList (TypeScheme b t2)
--- toList (Forall _ _ t) = toList t
 toList t = [t]
 
-{- WAS:
-toList :: Type -> [Type]
-toList (Fun _ t1 t2) = t1 : toList t2
-toList (Forall _ _ t) = toList t
-toList t = [t]
+
+{- Alternative:
+data TypeScheme =
+    Polymorphic Bind TypeScheme
+  | Monomorphic Type
+  deriving Ord
+
+instance Eq TypeScheme where
+  (==) = equalSchemes Map.empty
+
+equalSchemes :: Map.Set (TypeVar, TypeVar) -> TypeScheme -> TypeScheme -> Bool
+equalSchemes s (Monomorphic t)   (Monomorphic u)   = equalTypes s t u
+equalSchemes s (Polymorphic b t) (Polymorphic c u) =
+  kind b == kind c && equalSchemes (Map.insert (var b, var c) s) t u
+
+instance Show TypeScheme where
+  show (Monomorphic t)   = show t
+  show (Polymorphic b s) = "forall " ++ show b ++ " => " ++ show s
 -}
