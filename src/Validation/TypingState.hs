@@ -24,6 +24,11 @@ initialState = (Map.empty, Map.empty, [])
 addError :: String -> TypingState ()
 addError err = modify (\(kenv, venv, errors) -> (kenv, venv, errors ++ [err])) 
 
+getErrors :: TypingState Errors
+getErrors = do
+  (_ , _, err) <- get
+  return err
+
 -- VarEnv
 
 getVarEnv :: TypingState VarEnv

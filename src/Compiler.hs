@@ -9,6 +9,7 @@ import           Syntax.Terms
 import           CodeGen.CodeGen
 import           Syntax.Types
 import           Validation.Typing
+import           Validation.TypingState
 import           Control.Monad.Writer
 import           Control.Monad.State
 import           Data.List
@@ -16,18 +17,21 @@ import           System.Exit
 import           Syntax.Kinds
 import           Validation.Kinding
 
+-- TODO
+
 compile :: String -> IO (Bool, String)
 compile arg = do
   prog <- mainProgram arg prelude
   
   case prog of
-    Right (venv, eenv, cenv, kenv) -> do
+    Right (venv, eenv, cenv, kenv) ->
+      do
      -- error $ show eenv
-      let a = typeCheck venv eenv cenv kenv
-      if typeChecks a then        
+      let (_, (_, _, errors)) = runState (typeCheck venv eenv cenv kenv) initialState
+      if null errors then        
         codeGen venv eenv cenv kenv (reverse $ dropWhile (/= '/') (reverse arg))
       else
-        checkErr a
+        checkErr errors
     Left err ->     
       return (False, show err)
  
@@ -46,13 +50,24 @@ codeGen venv eenv cenv kenv path = do
 
 -- Functions to deal with typecheck monad
 
-typeChecks :: TCheckM () -> Bool
-typeChecks = null . snd . runWriter
+-- typeChecks :: TypingState () -> TypingState Bool
+-- typeChecks :: TypingState Bool
+-- typeChecks = do
+--   xs <- getErrors
+--   return $ null xs
+  -- null . snd . runWriter
 
-showErrors :: TCheckM () -> [String]
-showErrors = snd . runWriter
+-- getErrors :: TypingState Errors
+-- getErrors = do
+--   (_ , _, err) <- get
+--   return err
+  
+
+showErrors :: TypingState [String]
+showErrors = getErrors -- snd . runWriter
 
 
-checkErr :: TCheckM () -> IO (Bool, String)
+-- checkErr :: TypingState () -> IO (Bool, String)
+checkErr :: Errors -> IO (Bool, String)
 checkErr tc = do
-  return (False, intercalate "\n\n" (showErrors tc))
+  return (False, intercalate "\n\n" tc)

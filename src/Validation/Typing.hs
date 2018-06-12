@@ -1,15 +1,6 @@
 module Validation.Typing (
-  --   typeCheck
-  -- , TCheckM
-  -- , canonical -- TODO: Remove
-  -- , unfold -- TODO: Remove
+     typeCheck  
 ) where
-
--- import qualified Data.Map.Strict as Map
--- import qualified Data.Set as Set
--- import           Syntax.Kinds
--- 
--- import           Parse.TypeParser -- TODO: Remove?
 
 import Control.Monad.State
 import Syntax.Terms
@@ -22,6 +13,8 @@ import Validation.TypingState
 import PreludeLoader
 import qualified Data.Map.Strict as Map
 import Syntax.Kinds
+
+typeCheck venv eenv cenv kenv = return ()
 
 checkExp :: Expression -> TypingState TypeScheme
 -- Basic expressions
@@ -82,10 +75,13 @@ checkExp (BinLet p x y e1 e2) = do
   addToVEnv y (TypeScheme [] u2)
   u <- checkExp e2 
   -- TODO: remove x and y from env ??
-  kenv <- getKindEnv
-  removeLinVar kenv x (TypeScheme [] u1)
-  removeLinVar kenv y (TypeScheme [] u2)
+  -- was:
+  -- kenv <- getKindEnv
+  -- removeLinVar kenv x (TypeScheme [] u1)
+  -- removeLinVar kenv y (TypeScheme [] u2)
   --
+  removeFromVarEnv x
+  removeFromVarEnv y
   return u
 
 -- Session types
@@ -118,8 +114,57 @@ checkExp (Select p c e) = do
   u <- extractConstructor p c m
   return $ TypeScheme [] u
 
+checkExp (Match p e cm) = do
+  t <- checkExp e
+--  m <- extractExtChoice p t
+  let (c, (x, e1)) = Map.elemAt 0 cm
+  t2 <- extractExtChoice p t c  
+  
+  addToVEnv x (TypeScheme [] t2)
+  u <- checkExp e1
+
+  Map.foldrWithKey (\k (v1,v2) _ -> checkMap p t u k ([v1], v2) extractExtChoice) (return ()) (Map.delete c cm)
+
+  return u
+--  return $ TypeScheme [] (Basic UnitType)
+
+  -- let (c, t1) = Map.elemAt 0 m
+  -- addToVEnv c (TypeScheme [] t1)
+  -- t2 <- checkExp (snd (cm Map.! c))
 
 
+checkExp (Constructor p c) = checkVar p c
+
+checkExp (Fork p e) = do
+  t <- checkExp e
+  checkUn p t
+  return $ TypeScheme [] (Basic UnitType)
+  
+checkExp (Case p e cm) = do
+  t <- checkExp e
+--  m <- extractExtChoice p t
+  let (c, (x, e1)) = Map.elemAt 0 cm
+  t2 <- extractDatatype p t c  
+  
+  --addToVEnv x (TypeScheme [] t2)
+  foldr (\v acc -> addToVEnv v (TypeScheme [] t2)) (return ()) x
+  u <- checkExp e1
+
+  Map.foldrWithKey (\k v _ -> checkMap p t u k v extractDatatype) (return ()) (Map.delete c cm)
+
+  return u
+  
+-- | Case Pos Expression CaseMap
+
+checkMap :: Pos -> TypeScheme -> TypeScheme -> TermVar ->
+            (Params, Expression) -> (Pos -> TypeScheme -> Constructor -> TypingState Type) -> TypingState ()
+checkMap p choice (TypeScheme _ t) c (x, e) f = do
+  t1 <- f{-extractDatatype  ExtChoice-} p choice c
+  -- partir o tipo por param
+ -- addToVEnv x (TypeScheme [] t1)
+  foldr (\v acc -> addToVEnv v (TypeScheme [] t1)) (return ()) x
+  checkAgainst p e t
+  return ()
   
 -- Functions to deal with environments
 
@@ -143,6 +188,18 @@ checkEquivBasics p b1 b2
   | b1 == b2  = return ()
   | otherwise = addError (show p ++ ": Expecting basic type " ++ (show b1) ++
                       " to be equivalent to basic type " ++ (show b2))
+
+-- Some check funs
+
+checkUn :: Pos -> TypeScheme -> TypingState ()
+checkUn p (TypeScheme _ t) = do
+  kenv <- getKindEnv
+  if un kenv t then    
+    return ()
+  else
+    addError (show p ++ ": Type " ++ show t ++ " is not unrestricted")
+
+
 
 -- The Extract Functions
 
@@ -209,6 +266,28 @@ extractInChoice p t = do
   addError (show p ++  ": Expecting an internal choice; found " ++ show t)
   return Skip
 
+extractExtChoice :: Pos -> TypeScheme -> Constructor -> TypingState Type
+extractExtChoice p (TypeScheme [] (Semi Skip t)) c =  extractExtChoice p (TypeScheme [] t) c
+extractExtChoice _ (TypeScheme [] (Choice External m)) c = return $ m Map.! c -- Choice External m
+extractExtChoice _ (TypeScheme [] (Semi (Choice External m) t)) c =
+  return $ (Map.map (`Semi` t) m) Map.! c -- Choice External (Map.map (`Semi` t) m)
+extractExtChoice p (TypeScheme [] (Rec b t)) c = extractExtChoice p (TypeScheme [] (unfold (Rec b t))) c
+-- TODO
+-- extractExtChoice p (TypeScheme [] (Semi t1 t2)) = do
+extractExtChoice p t _ = do
+  addError (show p ++  ": Expecting an external choice; found " ++ show t)
+  return Skip
+
+extractDatatype :: Pos -> TypeScheme -> Constructor -> TypingState Type
+extractDatatype _ (TypeScheme [] (Datatype m)) c = return $ m Map.! c -- Choice External m
+extractDatatype p (TypeScheme [] (Rec b t)) c =
+  extractDatatype p (TypeScheme [] (unfold (Rec b t))) c
+-- TODO
+-- extractDatatype p (TypeScheme [] (Semi t1 t2)) = do
+extractDatatype p t _ = do
+  addError (show p ++  ": Expecting a datatype; found " ++ show t)
+  return (Basic IntType)  
+
 extractConstructor :: Pos -> Constructor -> TypeMap -> TypingState Type
 extractConstructor p c tm =
   if Map.member c tm then
@@ -227,7 +306,6 @@ extractChoiceMap  (Semi t1 t2) = do
   m2 <- extractChoiceMap t2
   return $ Map.union m1 m2
 extractChoiceMap  _ = return Map.empty
-
 
 
 -- Checking variables
@@ -286,13 +364,24 @@ initState = (initKindEnv, initVarEnv, [])
 
 initVarEnv =
   let v1 = prelude
-      v2 = Map.insert "myId" t3 v1
-      v3 = Map.insert "c" (TypeScheme [] cType) v2
-      v4 = Map.insert "w" (TypeScheme [] wType) v3
-  in v4
+      -- v2 = Map.insert "myId" t3 v1
+      -- v3 = v2 --Map.insert "c" (TypeScheme [] cType) v2
+      -- v4 = Map.insert "w" (TypeScheme [] wType) v3
+      -- v5 = Map.insert "C" (TypeScheme [] (Fun Un (Basic IntType)(Basic IntType))) v4
+      -- v6 = Map.insert "z" (TypeScheme [] (Fun Lin (Basic IntType)(Basic IntType))) v5
+      -- v2 = Map.insert "c" (TypeScheme [] cType1) v1
+      -- v2 = Map.insert "c1" (TypeScheme [] c1Type) v1
+      v2 = Map.insert "l" (TypeScheme [] intlistType) v1
+      v3 = Map.insert "IntList" (TypeScheme [] intlistType) v2
+  in v2
 
 cType = read "!();!Int;?Bool;Skip" :: Type
 wType = read "Skip;Skip;Skip;+{Plus:Int};Skip" :: Type
+cType1 = read "&{And: Skip;?Bool;?Bool;!Bool;Skip, Or: Skip;?Int;?Bool;!Bool;Skip, Not: Skip;?Bool;!Bool}" :: Type
+c1Type = read "Skip;?Bool;?Int;!Bool;Skip" :: Type
+
+lType = Var "IntList" -- TODO: Param as a variable to datatype
+intlistType = read "[Cons: (Int -> (IntList -> IntList)), Nil: IntList]" :: Type
 
 initKindEnv =
   Map.foldrWithKey (\x (TypeScheme _ y) acc -> Map.insert x (kindOf y) acc) Map.empty initVarEnv
@@ -329,6 +418,9 @@ e10 = BinLet (81,15) "x" "y" (Integer (81,22) 1) (Variable (81,27) "x")
 -- True
 e11 = BinLet (78,7) "x" "y" (Pair (78,15) (Integer (78,15) 1) (Integer (78,17) 2)) (Variable (78,23) "x")
 
+e11_1 = BinLet (120,13) "n1" "c2" (Receive (120,30) (Variable (120,30) "c1")) (BinLet (121,11) "n2" "c3" (Receive (121,28) (Variable (121,28) "c2")) (UnLet (122,11) "x" (Send (122,20) (App (0,0) (App (0,0) (Variable (0,0) "(||)") (Variable (122,21) "n1")) (Variable (122,27) "n2")) (Variable (122,31) "c3")) (Unit (122,37))))
+
+
 -- new
 e12 = New (85,12) (Message Out IntType)
 e13 = New (85,12) (Choice Internal (Map.fromList [("A", (Message Out IntType))]))
@@ -357,5 +449,33 @@ e20 = UnLet (88,7) "c1" (Send (88,17) (Integer (88,17) 5) (Variable (88,19) "c")
 -- 
 e21 = Select (96,19) "Plus" (Variable (96,24) "w")
 -- Error: C not int scope: "Plusa"
-e21 = Select (96,19) "Plusa" (Variable (96,24) "w")
+e22 = Select (96,19) "Plusa" (Variable (96,24) "w")
 
+-- Constructor
+-- error
+e23 = Constructor (100,23) "Tree"
+-- send receive
+-- add C to init
+e24 = Constructor (100,23) "C"
+
+-- Fork
+e25 = Fork (1,2) (Integer (3,4) 2)
+-- not un
+-- add z as Fun Lin Int Int
+e26 = Fork (1,2) (Variable (3,4) "z")
+
+-- match - Ok
+-- add c as
+-- &{And: Skip;?Bool;?Bool;!Bool;Skip, Or: Skip;?Bool;?Bool;!Bool;Skip, Not: Skip;?Bool;!Bool}
+-- change type of c to turn into invalid tests
+e27 = Match (106,9) (Variable (106,9) "c") (Map.fromList [("And",("c1",BinLet (108,11) "n1" "c2" (Receive (108,28) (Variable (108,28) "c1")) (BinLet (109,11) "n2" "c3" (Receive (109,28) (Variable (109,28) "c2")) (UnLet (110,11) "x" (Send (110,20) (App (0,0) (App (0,0) (Variable (0,0) "(&&)") (Variable (110,21) "n1")) (Variable (110,27) "n2")) (Variable (110,31) "c3")) (Unit (111,7)))))),("Or",("c1",BinLet (114,11) "n1" "c2" (Receive (114,28) (Variable (114,28) "c1")) (BinLet (115,11) "n2" "c3" (Receive (115,28) (Variable (115,28) "c2")) (UnLet (116,11) "x" (Send (116,20) (App (0,0) (App (0,0) (Variable (0,0) "(||)") (Variable (116,21) "n1")) (Variable (116,27) "n2")) (Variable (116,31) "c3")) (Unit (117,7))))))])
+
+-- should fail, n1 (not) not in scope
+e28 = Match (106,9) (Variable (106,9) "c") (Map.fromList [("And",("c1",BinLet (108,11) "n1" "c2" (Receive (108,28) (Variable (108,28) "c1")) (BinLet (109,11) "n2" "c3" (Receive (109,28) (Variable (109,28) "c2")) (UnLet (110,11) "x" (Send (110,20) (App (0,0) (App (0,0) (Variable (0,0) "(&&)") (Variable (110,21) "n1")) (Variable (110,27) "n2")) (Variable (110,31) "c3")) (Unit (111,7)))))),("Not",("c1",BinLet (120,11) "n2" "c3" (Receive (120,28) (Variable (120,28) "c1")) (UnLet (121,11) "x" (Send (121,20) (App (0,0) (App (0,0) (Variable (0,0) "(||)") (Variable (121,21) "n1")) (Variable (121,27) "n2")) (Variable (121,31) "c3")) (Unit (122,7))))),("Or",("c1",BinLet (114,11) "n1" "c2" (Receive (114,28) (Variable (114,28) "c1")) (BinLet (115,11) "n2" "c3" (Receive (115,28) (Variable (115,28) "c2")) (UnLet (116,11) "x" (Send (116,20) (App (0,0) (App (0,0) (Variable (0,0) "(||)") (Variable (116,21) "n1")) (Variable (116,27) "n2")) (Variable (116,31) "c3")) (Unit (117,7))))))])
+
+e29 = Match (106,9) (Variable (106,9) "c") (Map.fromList [("And",("c1",BinLet (108,11) "n1" "c2" (Receive (108,28) (Variable (108,28) "c1")) (BinLet (109,11) "n2" "c3" (Receive (109,28) (Variable (109,28) "c2")) (UnLet (110,11) "x" (Send (110,20) (App (0,0) (App (0,0) (Variable (0,0) "(&&)") (Variable (110,21) "n1")) (Variable (110,27) "n2")) (Variable (110,31) "c3")) (Unit (111,7)))))),("Not",("c1",BinLet (120,11) "n2" "c3" (Receive (120,28) (Variable (120,28) "c1")) (UnLet (121,11) "x" (Send (121,20) (App (0,0) (Variable (0,0) "not") (Variable (121,25) "n2")) (Variable (121,29) "c3")) (Unit (122,7))))),("Or",("c1",BinLet (114,11) "n1" "c2" (Receive (114,28) (Variable (114,28) "c1")) (BinLet (115,11) "n2" "c3" (Receive (115,28) (Variable (115,28) "c2")) (UnLet (116,11) "x" (Send (116,20) (App (0,0) (App (0,0) (Variable (0,0) "(||)") (Variable (116,21) "n1")) (Variable (116,27) "n2")) (Variable (116,31) "c3")) (Unit (117,7))))))])
+-- 
+
+-- CASE
+
+e30 = Case (107,8) (Variable (107,8) "l") (Map.fromList [("Cons",(["x","y"],Boolean (109,17) False)),("Nil",([],Boolean (108,12) True))])
