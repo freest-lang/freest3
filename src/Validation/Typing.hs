@@ -8,13 +8,109 @@ import Syntax.Types
 import Validation.Kinding
 import Validation.TypeEquivalence
 import Validation.TypingState
+import qualified Data.Set as Set
 
 -- TODO remove
 import PreludeLoader
 import qualified Data.Map.Strict as Map
 import Syntax.Kinds
 
-typeCheck venv eenv cenv kenv = return ()
+
+typeCheck ::  ExpEnv -> ConstructorEnv -> TypingState ()
+typeCheck eenv cenv = do
+  -- 1 - Data declaration
+  checkDataDecl cenv
+  
+  -- 2 - Function type declaration
+  pure $ Map.mapWithKey (\fun (a, e) -> checkFunTypeDecl fun) eenv
+
+  -- 3 - Function declaration  
+  checkVar (0,0) "start"
+
+  venv1 <- getVarEnv
+  let venv2 = Map.union venv1 cenv
+  setVEnv venv2
+
+
+  let a = Map.mapWithKey (\fun (a, e) -> checkFD fun a e) eenv
+ -- let a =
+  -- Map.foldrWithKey (\fun (a, e) _ -> checkFD fun a e) (return ()) eenv
+  -- tell $ Map.foldl (\acc v -> acc ++ execWriter v) [] a
+--  let err =
+  s <- get
+  addErrorList $ Map.foldl (\acc v -> acc ++ errors s v) [] a
+  -- mapM (addError) err
+  
+  return ()
+
+errors :: (KindEnv, VarEnv, Errors) -> TypingState () -> [String]
+errors is s =
+  let (_,_,err) = execState s is in
+    err
+
+checkFD ::  TermVar -> Params -> Expression -> TypingState ()
+checkFD fname args exp = do
+  checkExpEnv (0,0) fname args
+  venv <- getVarEnv
+  let (TypeScheme _ lt) = last $ toList $ venv Map.! fname
+  checkAgainst (0,0) exp lt
+
+--  checkVEnvUn kenv venv2
+  return ()
+
+checkExpEnv :: Pos -> TermVar -> Params -> TypingState ()
+checkExpEnv p fun params = do
+  checkParam fun params
+  t <- checkVar p fun
+  parameters <- addToEnv p fun params (init (toList t))  
+--  parameters <- addToEnv fun params (init (toList (venv Map.! fun)))
+  venv <- getVarEnv
+  -- Map.insert arg t acc
+  foldM (\acc (arg, t) -> addToVEnv arg t) () parameters
+  return ()
+
+addToEnv :: Pos -> TypeVar -> Params -> [TypeScheme] -> TypingState [(TypeVar, TypeScheme)]
+addToEnv p c ps ts 
+  | length ps == length ts = return $ zip ps ts--(map canonical ts)
+  | length ps > length ts = do
+      addError ("Function or constructor " ++ show c ++ " is applied to too many arguments")
+      return []
+  | length ps < length ts = do
+      addError ("Function or constructor " ++ show c ++ " is applied to too few arguments")
+      return []
+
+checkParam :: TermVar -> Params -> TypingState ()
+checkParam fun args
+  | length args == length (Set.fromList args) = return ()
+  | otherwise                                = do
+     addError ("Conflicting definitions for " ++ fun ++
+           "'\n" ++ "In an equation for '" ++ fun ++ "'")
+     return ()
+
+
+checkDataDecl :: ConstructorEnv -> TypingState ()
+checkDataDecl cenv = do
+  kenv <- getKindEnv
+  Map.foldl (\_ k -> checkFunctionalKind k) (return ()) kenv
+  Map.foldl (\_ t -> checkKinding kenv t) (return ()) cenv 
+
+checkFunctionalKind :: Kind -> TypingState ()
+checkFunctionalKind k
+  | k >= (Kind Functional Un) = return ()
+  | otherwise = addError ("Expecting a functional (TU or TL) type; found a " ++ (show k) ++ " type.")
+
+checkFunTypeDecl :: TermVar -> TypingState ()
+checkFunTypeDecl fname = do  
+  t <- checkVar (0,0) fname
+  kenv <- getKindEnv
+  checkKinding kenv t
+  return ()
+
+checkKinding :: KindEnv -> TypeScheme -> TypingState ()
+checkKinding kenv (TypeScheme _ t) = kinding t >> return ()
+
+
+-- Typing rules for expressions
 
 checkExp :: Expression -> TypingState TypeScheme
 -- Basic expressions
@@ -384,7 +480,8 @@ lType = Var "IntList" -- TODO: Param as a variable to datatype
 intlistType = read "[Cons: (Int -> (IntList -> IntList)), Nil: IntList]" :: Type
 
 initKindEnv =
-  Map.foldrWithKey (\x (TypeScheme _ y) acc -> Map.insert x (kindOf y) acc) Map.empty initVarEnv
+  Map.foldrWithKey (\x (TypeScheme _ y) acc ->
+                      Map.insert x (kindOf (Map.empty) y) acc) Map.empty initVarEnv
   
 
 t1 = TypeScheme [] (Fun Lin (Basic IntType) (Basic IntType))

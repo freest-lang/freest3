@@ -22,7 +22,10 @@ initialState = (Map.empty, Map.empty, [])
 -- Errors
 
 addError :: String -> TypingState ()
-addError err = modify (\(kenv, venv, errors) -> (kenv, venv, errors ++ [err])) 
+addError err = modify (\(kenv, venv, errors) -> (kenv, venv, errors ++ [err]))
+
+addErrorList :: [String] -> TypingState ()
+addErrorList err = modify (\(kenv, venv, errors) -> (kenv, venv, errors ++ err)) 
 
 getErrors :: TypingState Errors
 getErrors = do

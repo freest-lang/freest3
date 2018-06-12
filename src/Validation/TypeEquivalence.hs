@@ -390,8 +390,8 @@ equivalent k (Datatype m1) (Datatype m2) =
 equivalent _ Skip Skip = True
 equivalent _ Skip _ = False
 equivalent _ _ Skip = False
-equivalent _ t u
-  | isSessionType t && isSessionType u = bisim (normalise g) [x] [y]
+equivalent k t u
+  | isSessionType k t && isSessionType k u = bisim (normalise g) [x] [y]
   | otherwise = False
   where (x, state)     = convertToGNF initial t
         (y, (g, _, _)) = convertToGNF state u

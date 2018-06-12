@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Compiler (compile) where
 
-import           Control.Concurrent.Chan.Synchronous
+-- import           Control.Concurrent.Chan.Synchronous
 import qualified Data.Map.Strict as Map
 import           PreludeLoader
 import           Parse.Parser
@@ -27,7 +27,8 @@ compile arg = do
     Right (venv, eenv, cenv, kenv) ->
       do
      -- error $ show eenv
-      let (_, (_, _, errors)) = runState (typeCheck venv eenv cenv kenv) initialState
+      let (x,y,z) = initialState
+      let (_, _, errors) = execState (typeCheck eenv cenv) (Map.union kenv x, Map.union venv y, z)
       if null errors then        
         codeGen venv eenv cenv kenv (reverse $ dropWhile (/= '/') (reverse arg))
       else

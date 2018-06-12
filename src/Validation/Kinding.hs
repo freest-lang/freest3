@@ -14,6 +14,7 @@ Portability :  portable | non-portable (<reason>)
 module Validation.Kinding
 (   Kind (..)
   , kindOf
+  , kinding
   , isWellKinded
   , isSessionType
   , contractive
@@ -96,8 +97,8 @@ checkContractivity kenv t
 
 -- TODO ...
 -- kinding :: Type -> TypingState Kind
-kinding :: Type -> Kind
-kinding t = evalState (synthetize t) initialState
+kinding :: Type -> TypingState Kind
+kinding t = synthetize t -- ) initialState
 
 synthetize :: Type -> TypingState Kind
 synthetize Skip = return $ Kind Session Un
@@ -135,7 +136,7 @@ synthetize (Rec (Bind x k) t) = do
 synthetizeScheme :: TypeScheme -> TypingState Kind
 synthetizeScheme (TypeScheme [] t) = synthetize t
 synthetizeScheme (TypeScheme bs t) = do
-  foldr (\b _ -> addToKenv (var b) (kind b)) (return ()) bs
+  foldM_ (\_ b -> addToKenv (var b) (kind b)) () bs
   synthetize t
 
 
@@ -155,19 +156,22 @@ isSubKindOf k1 k2
 
 -- TODO: review
 
-kindOf :: Type -> Kind
-kindOf t = evalState (synthetize t) initialState
+kindOf :: KindEnv -> Type -> Kind
+kindOf k t =
+  let (x,y,z) = initialState in
+  evalState (synthetize t) (Map.union k x, y, z)
 
 kindOfScheme :: TypeScheme -> Kind
 kindOfScheme t = evalState (synthetizeScheme t) initialState
 
 
-isWellKinded :: Type -> Bool
-isWellKinded t =
-  let (_, _, err) = execState (synthetize t) initialState in null err
+isWellKinded :: KindEnv -> Type -> Bool
+isWellKinded k t =
+  let (x,y,z) = initialState in
+  let (_, _, err) = execState (synthetize t) (Map.union k x, y, z) in null err
 
-isSessionType :: Type -> Bool
-isSessionType t = isWellKinded t && prekind (kindOf t) == Session
+isSessionType :: KindEnv -> Type -> Bool
+isSessionType k t = isWellKinded k t && prekind (kindOf k t) == Session
 
 -- Need this ?? 
 kindErr :: Type -> [String]
