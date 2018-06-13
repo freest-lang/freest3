@@ -3,12 +3,11 @@
 % Version 2.20 of 2017/10/04
 %
 \documentclass[runningheads]{llncs}
-\usepackage[portuguese]{babel}
-\usepackage[utf8]{inputenc}  % for proper diacritics
-\usepackage {listings}
-\usepackage{tikz}
+
+\input{macros}
+
 %
-\usepackage{graphicx}
+%\usepackage{graphicx}
 % Used for displaying a sample figure. If possible, figure files should
 % be included in EPS format.
 %
@@ -20,7 +19,8 @@
 
 \title{Uma linguagem de programação com tipos de sessão independentes do contexto}
 
-\titlerunning{Abbreviated paper title}%
+\titlerunning{Cresstie}%
+%\titlerunning{Linguagem com tipos de sessão independentes do contexto}%
 % If the paper title is too long for the running head, you can set
 % an abbreviated paper title here
 %
@@ -47,6 +47,11 @@
 \end{abstract}
 
 \input{intro}
+\input{related-work}
+\input{language}
+\subsection{Testes}
+\section{Conclusion and future work}
+
 % How to
 % \section{First Section}
 % \subsection{A Subsection Sample}
@@ -96,32 +101,8 @@
 % % BibTeX users should specify bibliography style 'splncs04'.
 % % References will then be sorted and formatted in the correct style.
 % %
-\bibliographystyle{splncs04}
-\bibliography{mybibliography}
-%
-\begin{thebibliography}{8}
-\bibitem{ref_article1}
-Author, F.: Article title. Journal \textbf{2}(5), 99--110 (2016)
 
-\bibitem{ref_lncs1}
-Author, F., Author, S.: Title of a proceedings paper. In: Editor,
-F., Editor, S. (eds.) CONFERENCE 2016, LNCS, vol. 9999, pp. 1--13.
-Springer, Heidelberg (2016). \doi{10.10007/1234567890}
-
-\bibitem{ref_book1}
-Author, F., Author, S., Author, T.: Book title. 2nd edn. Publisher,
-Location (1999)
-
-\bibitem{ref_proc1}
-Author, A.-B.: Contribution title. In: 9th International Proceedings
-on Proceedings, pp. 1--2. Publisher, Location (2010)
-
-\bibitem{ref_url1}
-LNCS Homepage, \url{http://www.springer.com/lncs}. Last accessed 4
-Oct 2017
-\end{thebibliography}
-
-% \bibliography{biblio}
+\input{biblio}
 \end{document}
 
 %%% Local Variables:

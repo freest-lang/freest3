@@ -1,0 +1,81 @@
+\section{A Linguagem}
+\lstset{language=CFST}
+Esta secção introduz a linguagem apresentando exemplos, a sua sintaxe e semântica e o sistema de tipos. 
+
+A linguagem que propomos é funcional e, como tal, apresenta uma sintaxe bastante semelhante à do Haskell acrescida com primitivas para criação de canais e de envio e receção de dados nos mesmos. Vamos considerar como exemplo ao longo desta secção, o envio de um tipo de dados estrururado em forma de árvore num canal.
+
+A única primitiva de comunicação que a linguagem disponibiliza é troca de mensagens. As mensagens são trocadas em canais de comunicação síncronos e bidireccionais. Cada canal pode ser descrito pelas suas duas extremidades (\textit{endpoints}) e são caracterizados por tipos que descrevem a sequência de mensagens que passam no canal.
+Os processos podem escrever numa das pontas do canal ou ler na outra.
+
+Na seguinte figura \ref{fig:types} estão presentes os tipos que estão disponíveis na linguagem.
+
+\input{fig-types}
+
+Os tipos básicos representados na figura \ref{fig:types} são alguns dos existentes no Haskell, inteiros, caracteres, booleanos e ainda o tipo Unit (``()''). Os restantes tipos são compostos a partir do operador de sequenciação $\tSemi{\_}{\_}$ da sua unidade $\tskip$, os tipos que representam o envio $\tOut{B}$, a receção $\tIn{B}$, escolhas internas e externas, $\tIChoice{\{l_i\colon T_i\}}_{i\in I}$ e $\tEChoice{\{l_i\colon T_i\}}_{i\in I}$ respectivamente, funções lineares e \textit{unrestricted}, $\tLinFun{T}{T}$ e $\tUnFun{T}{T}$ e ainda pares $\tPair{T}{T}$, tipos de dados $\tDatatype{l_i\colon T_i}_{i\in I}$, tipos recursivos $\tRecK{x}{T}$ e variáveis \textit{x}.
+
+Deste modo, um tipo \lstinline"!Int;?Bool;Skip" é um tipo que descreve uma ponta de um canal que espera fazer sequencialmente as operações de enviar um inteiro, receber um booleano e de seguida termina sem mais nenhuma interação.
+
+\subsection{Exemplo: Enviar uma árvore binária num canal}
+\label{sec:example}
+Para realizar este exemplo, vamos definir o tipo de dados que representa uma árvore binária:
+
+\begin{lstlisting}
+  data Tree = Leaf | Node Int Tree Tree
+\end{lstlisting}
+
+O tipo de sessão que descreve o envio da árvore é \lstinline"rec x . +{Leaf: Skip, Node: !Int;x;x}". Este, apresenta uma escolha interna ($\tIChoice{\{l_i\colon T_i\}}_{i\in I}$) que contempla duas opções: \lstinline"Leaf" e \lstinline"Node". No ramo \lstinline"Leaf: Skip" temos o valor \lstinline"Skip" que representa a unidade (um canal vazio). No ramo \lstinline"Node: !Int;x;x" podemos observar a chamada recursiva (\lstinline"rec") do tipo para que seja possível enviar as duas subárvores que este define.
+
+Assim sendo, a função que envia árvores binárias num canal tem o seguinte tipo:
+
+\begin{lstlisting}
+  sendTree :: forall a => Tree -> (rec x . +{LeafC : Skip, NodeC: !Int;x;x}); a -> a
+\end{lstlisting}
+
+
+No caso em que se envia uma \lstinline"Leaf", é necessário escolher o ramo através da operação \lstinline"select Leaf" que espera um canal que tenha tipo na forma $\tIChoice{\{l_i\colon T_i\}}_{i\in I}$.
+Por outro lado, quando se envia um \lstinline"Node", selecionamos o ramo certo: \lstinline"select Node" e ficamos com o tipo $\tSemi{\tOut{\inte}}{\tSemi{x}{x}}$, assim sendo, primeiro enviamos o inteiro v no canal c ($\sende{v}{c}$) de seguida, é necessário fazer uma chamada recursiva à função para as duas subárvores.
+
+\begin{lstlisting}
+  sendTree[rec x . +{LeafC : Skip, NodeC: !Int;x;x}] l c1
+  sendTree[Skip] r c2
+\end{lstlisting}
+
+O polimorfismo, presente no tipo da função raramente é considerado com tipos de sessão. No entanto, como se pode observar no exemplo, este aparece de forma bastante natural, visto que, o envio de uma árvore generaliza o envio de um único valor, que é polimorfico.
+
+As chamadas a funções polimorficas, são na forma \lstinline"sendTree [Skip]" porque nesta linguagem é necessário especificar o tipo de que as variáveis (neste caso \textit{a}) vão adotar na chamada recursiva.
+
+A função que recebe a árvore binária é análoga mas com o tipo de sessão dual \lstinline"rec x . &{Leaf: Skip, Node: ?Int;x;x}" que, em vez de impor a seleção de um dos ramos (\lstinline"select"), oferefece um escolha $\matche{tree}{\{l_i\,\to\,S_i\}_{i\in I}}$.
+\begin{lstlisting}  
+  receiveTree c =
+    match c with
+      LeafC c1 -> (Leaf, c1)
+      NodeC c1 ->
+        let x, c2 = receive c1 in
+        let left, c3 = receiveTree [rec x.&{LeafC: Skip, NodeC: ?Int;x;x}] c2 in
+        let right, c4 = receiveTree [Skip] c3 in
+        (Node x left right, c4)
+\end{lstlisting}
+
+
+\subsection{Expressões}
+A figura \ref{fig:expressions} apresenta a sintaxe para as expressões da linguagem. As expressões básicas (para os tipos básicos) são inteiros (ex: 1), caracteres (ex: 'a'), booleanos (True e False) e ainda o tipo Unit (``()'').
+As aplicações, operações de envio e receção em canais e expressões para escolhas foram brevemente descritas na secção \ref{sec:example}
+
+Das restantes expresões, é importante realçar as operações de criação de canais e de fios de execução (\textit{threads}).
+A operação de criação de canais \lstinline"new T", devolve um par com as duas extremidades do canal que são descritas pelo tipo T. Mais precisamente, a primeira extremidade (primeiro elemento do par) é descrita pelo tipo T e a segunda extremidade (segundo elemento) pelo seu dual (\textbf{dualof} T).
+A expressão \lstinline"fork e" é responsável por criar um novo fio de execução onde a expressão e vai ser executada, esta operação devolve $\unite$.
+
+\input{fig-expressions}
+
+\subsection{Verificação de tipos... (Validation)}
+\todo{Kinding + typechecking + type equiv}
+
+\subsection{CodeGen}
+
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "cfst-inforum18"
+%%% End:
