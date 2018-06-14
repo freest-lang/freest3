@@ -135,6 +135,7 @@
 % \newcommand\emptyEnv{\cdot}
 \newcommand\emptyEnv{\varepsilon}
 \newcommand\kindEnv{\Delta}
+\newcommand\varEnv{\Gamma}
 
 % Language
 % Expressions
@@ -162,7 +163,7 @@
 % Session Types
 \newcommand\newe[1]{\keyword{new}\;#1}
 \newcommand\sende[2]{\keyword{send}\;#1\; #2}
-\newcommand\recve[2]{\keyword{receive}\;#1\; #2}
+\newcommand\recve[1]{\keyword{receive}\;#1}
 \newcommand\selecte[1]{\keyword{select}\;#1}
 \newcommand\matche[2]{\keyword{match}\;#1\;\keyword{with}\;#2}
 
@@ -175,6 +176,9 @@
 
 % Goal
 \newcommand\Alg{\vdash_{a}}
+
+% Equivalent
+\newcommand\Equiv[2]{#1\,\thicksim\,#2}
 
 
 %%% Local Variables:

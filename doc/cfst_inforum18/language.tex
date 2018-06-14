@@ -11,7 +11,7 @@ Na seguinte figura \ref{fig:types} estão presentes os tipos que estão disponí
 
 \input{fig-types}
 
-Os tipos básicos representados na figura \ref{fig:types} são alguns dos existentes no Haskell, inteiros, caracteres, booleanos e ainda o tipo Unit (``()''). Os restantes tipos são compostos a partir do operador de sequenciação $\tSemi{\_}{\_}$ da sua unidade $\tskip$, os tipos que representam o envio $\tOut{B}$, a receção $\tIn{B}$, escolhas internas e externas, $\tIChoice{\{l_i\colon T_i\}}_{i\in I}$ e $\tEChoice{\{l_i\colon T_i\}}_{i\in I}$ respectivamente, funções lineares e \textit{unrestricted}, $\tLinFun{T}{T}$ e $\tUnFun{T}{T}$ e ainda pares $\tPair{T}{T}$, tipos de dados $\tDatatype{l_i\colon T_i}_{i\in I}$, tipos recursivos $\tRecK{x}{T}$ e variáveis \textit{x}.
+Os tipos básicos representados na figura \ref{fig:types} são alguns dos existentes no Haskell, inteiros, caracteres, booleanos e ainda o tipo Unit (``()''). Os restantes tipos são compostos pelo operador de sequenciação $\tSemi{\_}{\_}$, pela sua unidade $\tskip$, pelos tipos que representam o envio $\tOut{B}$, a receção $\tIn{B}$, escolhas internas e externas, $\tIChoice{\{l_i\colon T_i\}}_{i\in I}$ e $\tEChoice{\{l_i\colon T_i\}}_{i\in I}$ respectivamente, funções lineares e \textit{unrestricted}, $\tLinFun{T}{T}$ e $\tUnFun{T}{T}$ e ainda pares $\tPair{T}{T}$, tipos de dados $\tDatatype{l_i\colon T_i}_{i\in I}$, tipos recursivos $\tRecK{x}{T}$ e variáveis \textit{x}.
 
 Deste modo, um tipo \lstinline"!Int;?Bool;Skip" é um tipo que descreve uma ponta de um canal que espera fazer sequencialmente as operações de enviar um inteiro, receber um booleano e de seguida termina sem mais nenhuma interação.
 
@@ -23,7 +23,7 @@ Para realizar este exemplo, vamos definir o tipo de dados que representa uma ár
   data Tree = Leaf | Node Int Tree Tree
 \end{lstlisting}
 
-O tipo de sessão que descreve o envio da árvore é \lstinline"rec x . +{Leaf: Skip, Node: !Int;x;x}". Este, apresenta uma escolha interna ($\tIChoice{\{l_i\colon T_i\}}_{i\in I}$) que contempla duas opções: \lstinline"Leaf" e \lstinline"Node". No ramo \lstinline"Leaf: Skip" temos o valor \lstinline"Skip" que representa a unidade (um canal vazio). No ramo \lstinline"Node: !Int;x;x" podemos observar a chamada recursiva (\lstinline"rec") do tipo para que seja possível enviar as duas subárvores que este define.
+O tipo de sessão que descreve o envio da árvore é \lstinline"rec x . +{Leaf: Skip, Node: !Int;x;x}". Este, apresenta uma escolha interna ($\tIChoice{\{l_i\colon T_i\}}_{i\in I}$) que contempla duas opções: \lstinline"Leaf" e \lstinline"Node". No ramo \lstinline"Leaf: Skip" temos o valor \lstinline"Skip" que representa a unidade (não há comunicação). No ramo \lstinline"Node: !Int;x;x" podemos observar a chamada recursiva (\lstinline"rec") do tipo para que seja possível enviar as duas subárvores que este define.
 
 Assim sendo, a função que envia árvores binárias num canal tem o seguinte tipo:
 
@@ -66,13 +66,64 @@ A operação de criação de canais \lstinline"new T", devolve um par com as dua
 A expressão \lstinline"fork e" é responsável por criar um novo fio de execução onde a expressão e vai ser executada, esta operação devolve $\unite$.
 
 \input{fig-expressions}
+\todo{Kinding + typechecking + type equiv}\\
+\subsection{Validação}
 
-\subsection{Verificação de tipos... (Validation)}
-\todo{Kinding + typechecking + type equiv}
+Para garantir que o sistema está isento de erros a nossa fase de validação contempla com um sistema de kinding para assegurar a boa formação dos tipos, uma verificação de tipos onde se verifica se todas as expressões têm o tipo esperado e uma parte que define quando é que dois tipos são equivalentes.
 
-\subsection{CodeGen}
+\subsubsection{Sistema de kinding}
+O sistema de \textit{kinding} tem como objetivo assegurar a boa formação dos tipos. Para além de verifar se os tipos são bem formados classifica-os nas categorias de tipos de sessão ou tipos gerais. Associa ainda multiplicidades aos tipos (linear ou \textit{unrestricted}).
+Por exemplo, o tipo $\tOut{Int}$ é bem formado e é um tipo de sessão linear, isto é, só pode ser utilizado uma vez. Por outro lado o tipo $\tRec{x}{\tSemi{a}{x}}$ é mal formado se a variável \textit{a} não estiver no ambiente de kinding (onde estão todas as associações de variáveis com os respetivos kinds).
 
+\subsubsection{Verificação de tipos}
+Para fazermos a verificação de tipos utilizámos um sistema bidirecional, isto é, distinguimos duas relações:
+\begin{itemize}
+\item Dado um contexto e uma expressão, sintetizar o tipo T: \input{fig-synthesize}
+\item Dado um contexto, uma expressão e um tipo verificar o tipo da expressão de encontro ao tipo esperado:
+\input{fig-checkAgainst}
+\end{itemize}
 
+\subsubsection{Equivalencia de tipos}
+\todo{TODO: Type equivalence}    \\
+
+\subsection{Geração de código}
+A linguagem foi implementada na linguagem Haskell e derivado disso, as operações de envio ($\sende{v}{c}$), receção ($\recve{c}$), criação de canais ($\newe{T}$) e criação de fios de execução ($\forke{e}$) são forçosamente monádicas, mais precisamente, são operações de IO.
+
+Este facto representa uma dificuldade que é decidir quando traduzir as expressões para código monádico. A cada momento da tradução ($[\![e]\!]$) apenas temos disponível uma expressão, que sabemos se é monádica ou não, mas não temos qualquer informação acerca das expressões anteriores (na mesma função). Se, num dado momento, encontramos uma expressão que origina código monádico, teriamos de retraduzir o código anterior para estar também na forma monádica.
+
+A nossa aproximação foi resolver este problema antes de aplicar a função de tradução, isto é, anotar a árvore sintática com valores booleanos que representam o estado que é esperado de cada expressão. Antes disso, é necessário percorrer as expressões para saber que funções são monadicas (têm alguma expressão monádica), isto porque, as chamadas a funções são apenas aplicações de variáveis.
+
+Assim sendo, após a primeira iteração obtemos uma estrutura com as funções e um valor booleano associado que indica se são monádicas. Após esta fase, vamos anotar a árvore sintática e terminamos este processo com os valores esperados para cada nó da árvore.
+
+Neste momento, a função de tradução, para cada expressão, tem informação acerca do valor momádico esperado e do encontrado (na própria função de tradução).
+
+A tabela \ref{tab:monad} contempla as combinações dos valores monádicos encontrados e esperados assim como o código que deve ser gerado em cada um dos casos.
+
+\begin{table}
+\begin{center}
+  \begin{tabular}[h!]{| c | c | c |}
+    \hline  
+    \quad Valor esperado \quad&\quad Valor encontrado \quad&\quad Código gerado \quad\\\hline
+    False & False & e \\
+    True & False & \lstinline"return e" \\
+    True & True & e \\
+    False & True & \lstinline"e >>= x -> x" \\
+    \hline
+  \end{tabular}
+  \vspace{0.2cm}
+  \caption{Tabela para geração de código monádico}
+  \label{tab:monad}
+\end{center}
+\end{table}
+
+Nos casos em o valor esperado e o valor encontrado são iguais a tradução deve ser literal, no caso em que o valor esperado é true e o valor encontrado é false a tradução deve ser \lstinline"return e" para tornar o valor que é suposto ser monádico num valor monádico. No último caso, em que o valor esperado é false e o valor encontrado é true devemos, ao traduzir, retirar o valor do monad: \lstinline"e >>= x -> x".
+
+\subsection{Testes}
+
+ % Foram realizados testes para aferir a robustez do compilador.
+\todo{hspec + hunit}\\
+\todo{hpc}\\
+\todo{testes unitários e programas}
 
 
 %%% Local Variables:
