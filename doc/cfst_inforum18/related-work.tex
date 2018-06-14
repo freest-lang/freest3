@@ -1,0 +1,45 @@
+
+\section{Trabalho relacionado}
+\label{sec:rel-work}
+
+Muitas linguagens de programação e outros formalismos foram sendo propostos ao longo do tempo para endereçar os aspetos de comunicação no software. Dois modelos comuns para lidar com a comunicação entre componentes numa computação concorrente são a memória partilhada e a troca de mensagens.
+
+Neste artigo focamo-nos no modelo de troca de mensagens, destacando os aspetos principais da programação baseada em canais de comunicação \ref{sec:prog-chan} e da programação baseada em atores \ref{sec:actors}.
+
+\subsection{Programação baseada em canais}
+\label{sec:prog-chan}
+
+\subsubsection{Tipos de sessão}
+\label{sec:session-types} Os tipos de sessão têm como principal objetivo enriquecer a expressividade que os tipos tradicionais fornecem, tornando possível estruturar interações complexas numa computação
+concorrente onde são trocadas muitas mensagens em canais de tipos heterogéneos. Apareceram, em primeiro lugar, numa variante do cálculo pi apresentando uma distinção sintática entre canais lineares e canais partilhados \cite{ref-lang-primitives}. Mais tarde, Gay e Hole \cite{ref-sessions-pi} introduziram o conceito de sub-tipos para os tipos de sessão o que permitiu que as especificações de um protocolo fossem estendidas levando a descrições mais ricas das interações.
+
+% Session types[12] are by now a well-established methodology for typed, message-passing concurrent computations. By assigning session types to communication channels, and by checking programs against session type systems, a number important program properties can be established, including the absence of races in channel manipulation operations, and the guarantee that channels are used as prescribed by their types. 
+
+\subsubsection{Go}
+\label{sec:go}
+\lstset{language=Golang}
+Hoare apresentou, como alternativa ao uso de memória partilhada a linguagem CSP (Communicating Sequential Processes) \cite{ref-CSP-Hoare}, onde apenas existe uma primitiva: a comunicação síncrona. Deste modo, os processos comunicam através de canais cuja operação de envio bloqueia até que o recetor leia a mensagem, fornecendo assim um mecanismo de sincronização.
+
+Go ou \textit{golang} \cite{ref-go}, é uma linguagem de programação concorrente desenvolvida pela Google que recorre ao uso de canais para enviar variáveis partilhadas. O uso de canais permite não só que duas rotinas comuniquem entre si, mas também que sincronizem as suas execuções. Antes de um canal ser utilizado é necessário inicializá-lo e definir o tipo de dados que transporta. Por exemplo, a seguinte inicialização representa \lstinline"ch := make (chan int)" um canal de inteiros.
+
+\subsubsection{SePi}
+\label{sec:sepi}
+\lstset{language=Sepi}
+Franco e Vasconcelos \cite{ref-sepi} apresentaram uma linguagem concorrente baseada no cálculo pi monádico onde as interações são feitas recorrendo a tipos que resultam de uma combinação entre tipos de sessão e tipos linearmente refinados.
+
+Nesta linguagem, os canais de comunicação são síncronos e bi-direcionais. São descritos pelas suas duas extremidades, onde os processos podem ler ou escrever em qualquer parte dos programas e usam tipos para descrever o fluxo de mensagens que são escritas/lidas no canal.
+
+Baltazar et al. introduziram um conceito em que combinam os tipos de sessão com alguns refinamentos originando assim os tipos linearmente refinados \cite{ref-lin-ref-st}. Estes tipos permitem ao programador acoplar formulas a tipos permitindo especificar propriedades nos tipos. Um exemplo de um tipo linearmente refinado é \{x : \lstinline"integer" $|$ A\}, no qual \textit{x} representa um inteiro que tem de respeitar a formula A. Estes tipos serviram de base para implementar linguagens como o SePi.
+
+\subsection{Programação baseada em atores}
+\label{sec:actors}
+
+\todo{Worth??}
+
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "cfst-inforum18"
+%%% End:

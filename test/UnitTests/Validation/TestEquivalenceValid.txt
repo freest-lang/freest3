@@ -1,0 +1,385 @@
+-- Simple types
+
+[]
+Int
+Int
+
+[]
+Char
+Char
+
+[]
+Bool
+Bool
+
+[]
+()
+()
+
+-- Functional
+
+[]
+[A:Bool, B:Char]
+[B:Char, A:Bool]
+
+-- Session types
+
+[]
+!Int
+!Int
+
+[]
+?Char
+?Char
+
+[]
+!Bool 
+!Bool 
+
+[]
+?() 
+?() 
+
+[]
+Skip
+Skip
+
+[]
+!Int
+Skip;!Int
+
+[]
+!Int
+!Int;Skip 
+
+[]
+!Int
+Skip;!Int;Skip
+
+[]
+!Int
+Skip;Skip;Skip;Skip;!Int;Skip;Skip;Skip
+
+[]
+!Int;Skip;?Int
+!Int;?Int
+
+[]
+Skip;!Int
+!Int;Skip
+
+[]
+!Int;Skip
+Skip;!Int
+
+-- Functional and session
+
+[]
+!Int -> Bool
+!Int -> Bool
+
+[]
+!Int -> ?Bool
+Skip;!Int -> ?Bool
+
+[]
+!Int -> Bool
+Skip;!Int -> Bool
+
+[]
+!Int -> Bool
+!Int;Skip -> Bool
+
+[]
+!Int -> ?Char
+!Int -> Skip;?Char
+
+[]
+!Int -> !Bool
+!Int -> Skip;!Bool
+
+[]
+!Int -> Bool
+!Int;Skip -> Bool
+
+[]
+!Int -> Bool
+!Int;Skip -> Bool
+
+[]
+!Int -> ?Char -> Bool
+!Int -> ?Char -> Bool
+
+[]
+!Char -o Bool
+!Char -o Bool
+
+[]
+!Int -o Bool
+(Skip;!Int) -o Bool
+
+[]
+!Int -o Bool
+(Skip;!Int) -o Bool
+
+[]
+!Bool -o !Char
+!Bool -o !Char;Skip
+
+[]
+!Int -o ?Bool
+!Int -o ?Bool;Skip
+
+[]
+!Int -o Bool
+!Int;Skip -o Bool
+
+[]
+!Int -o Bool
+!Int;Skip -o Bool
+
+[]
+(!Char, Bool)
+(!Char, Bool)
+  
+[]
+(!Int , Bool)
+(Skip;!Int , Bool)
+
+[]
+(Bool, !Char)
+(Bool, Skip;!Char)
+
+[]
+(Int, ?Bool)
+(Int, ?Bool;Skip)
+
+[]
+(!Int , Bool)
+(!Int;Skip , Bool)
+
+[]
+[A: Bool, B: Skip;!Char]
+[B: Skip;!Char ,A: Bool]
+
+[]
++{A: !Bool, B: ?Char}
++{B: ?Char, A: !Bool}
+  
+[]
++{A: ?Bool, B: Skip;!Char}
++{B: Skip;!Char, A: ?Bool}
+
+[]
+&{A: !Bool;Skip, B: ?Char}
+&{B: ?Char, A: !Bool}
+
+[]
+&{A: ?Bool, B: Skip;!Char}
+&{B: Skip;!Char, A: ?Bool}
+
+[]
++{Leaf: Skip, Node: !Int};Skip
++{Leaf: Skip;Skip, Node: !Int;Skip}
+
+-- Monoidal laws
+
+[]
+(!Int; ?Bool); !Char 
+!Int; (?Bool; !Char)
+
+[]
+!Int; (?Bool; !Char)  
+(!Int; ?Bool); !Char 
+
+[]
+!Bool; Skip
+!Bool
+
+-- The below kinding environment is not strictly needed
+[("α", SL)]
+?Char; Skip
+?Char
+
+-- Distributivity
+[("α", SL)]
++{Leaf: Skip}; α
++{Leaf: α}
+
+[("α", SL)]
++{Node: !Int}; α
++{Node: !Int; α}
+
+[("α", SL)]
++{Leaf: Skip, Node: Skip}; α
++{Leaf: α, Node: α}
+
+[("α", SL)]
++{Leaf: Skip, Node: !Int}; α
++{Leaf: Skip; α, Node: !Int; α}
+
+-- Regular Recursive types
+
+[]
+rec x . !Int;x
+rec x . !Int;x
+
+[]
+rec x . !Int;x
+rec y . !Int;y
+
+[]
+rec x . !Int;x
+rec x . !Int; !Int;x
+
+[]
+rec x . !Int
+!Int
+
+[]
+rec x . !Int; Skip
+Skip; !Int
+
+[]
+rec x . Skip; !Int
+rec x . !Int; Skip
+
+[]
+rec x . Skip;!Int
+!Int
+
+[]
+rec x. rec y. !Int; x
+rec y. rec x. !Int; x
+
+[]
+rec x. rec y. !Int; x
+rec x. !Int; x
+
+-- Context-free Recursive Types, unnormed
+
+[]
+rec x. !Int; x; x
+rec x. !Int; x; x
+
+[]
+rec x. rec y. !Int; x; y 
+rec y. rec x. !Int; x; y
+
+[]
+rec x. rec y. !Int; x; y 
+rec y. rec x. !Int; x; ?Bool; y
+
+[]
+rec x . ?Bool; x
+rec y . ?Bool; y; !Int
+
+[]
+rec x . ?Bool; x
+rec y . ?Bool; y; y
+
+[]
+rec x . +{A: x}
+rec y . +{A: y}; !Bool
+
+[]
+rec x . +{A: x}; ?Bool
+rec y . +{A: y}; !Bool
+
+[]
+rec x . ?Bool; x
+rec y . ?Bool; y; y; !Char; y; ?Int; y; y; ?Bool; y; y
+
+[]
+rec x. &{Node: ?Int;x}
+rec x. &{Node: ?Int;x}
+
+[]
+rec x. &{Node: ?Int;x;x}
+rec x. &{Node: ?Int;x}
+
+[]
+rec x . &{Add: x;x;!Int}
+rec x . &{Add: x;x;!Int}
+
+-- Context-free Recursive Types, normed
+
+[]
+rec x. &{Leaf: Skip, Node: ?Int;x}
+rec x. &{Leaf: Skip, Node: ?Int;x}
+
+[]
+rec x. &{Leaf: ?Bool, Node: ?Int;x;x}
+rec x. &{Leaf: ?Bool, Node: ?Int;x;x}
+
+[]
+rec x. &{Leaf: Skip, Node: ?Int;x;x}
+rec x. &{Leaf: Skip, Node: ?Int;x;x}
+
+[("α", SL)]
+rec x . +{A: α, B: x; α}
+rec y . +{A: Skip, B: y}; α
+
+[("α", SL)]
+rec y . +{A: Skip, B: y}; α
+rec x . +{A: α, B: x; α}
+
+[]
+(rec x. &{Leaf: Skip, Node: ?Int;x;x}); (rec x. &{Leaf: Skip, Node: ?Int;x;x})
+(rec x. &{Leaf: Skip, Node: ?Int;x;x}); (rec x. &{Leaf: Skip, Node: ?Int;x;x})
+
+[]
+rec x . &{Add: x;x, Const: Skip}
+rec x . &{Add: x;x, Const: Skip}
+
+[]
+rec x . &{Add: x;x;Skip, Const: Skip}
+rec x . &{Add: x;x;Skip, Const: Skip}
+
+[]
+rec x . &{Add: x;x;x, Const: Skip}
+rec x . &{Add: x;x;x, Const: Skip}
+
+[]
+rec x . &{Add: x;x;!Int, Const: Skip}
+rec x . &{Add: x;x;!Int, Const: Skip}
+
+[]
+rec x . &{Add: x;x;!Int, Const: ?Int}
+rec x . &{Add: x;x;!Int, Const: ?Int}
+
+[]
+rec x . &{Add: x;x;!Int, Const: ?Int;!Int}
+rec x . &{Add: x;x;!Int, Const: ?Int;!Int}
+
+[]
+rec x . &{Add: x;x;!Int, Const: ?Int;!Int, Mult: x;x;!Int}
+rec x . &{Add: x;x;!Int, Const: ?Int;!Int, Mult: x;x;!Int}
+
+[]
+&{Add: (((rec x. &{Add: (x;x), Const: ?Int, Mult: (x;x)}));!Int), Const: Skip}
+&{Add: (((rec x. &{Add: (x;x), Const: ?Int, Mult: (x;x)}));!Int), Const: Skip}
+
+[]
+&{Add: (((rec x. &{Add: x;x, Const: Skip}); (rec x. &{Add: x;x, Const: Skip})); !Int), Const: Skip}
+&{Add: (((rec x. &{Add: x;x, Const: Skip}); (rec x. &{Add: x;x, Const: Skip})); !Int), Const: Skip}
+
+[]
+&{Add: rec x . &{Add: x;x, Const: Skip}; rec x. &{Add: x;x, Const: ?Int}; !Int, Const: Skip}
+&{Add: rec x . &{Add: x;x, Const: Skip}; rec x. &{Add: x;x, Const: ?Int}; !Int, Const: Skip}
+
+[]
+&{Add: (rec x . &{Add: x;x, Const: Skip}; rec x. &{Add: x;x, Const: Skip}); !Int, Const: Skip}
+&{Add: (rec x . &{Add: x;x, Const: Skip}; rec x. &{Add: x;x, Const: Skip}); !Int, Const: Skip}
+
+[]
+&{Add: (rec x . &{Add: x;x, Const: Skip}; rec x. &{Add: x;x, Const: ?Int}); !Int, Const: Skip}
+&{Add: (rec x . &{Add: x;x, Const: Skip}; rec x. &{Add: x;x, Const: ?Int}); !Int, Const: Skip}
+
+[]
+&{Add: (((rec x. &{Add: (x;x), Const: ?Int, Mult: (x;x)});(rec x. &{Add: (x;x), Const: ?Int, Mult: (x;x)}));!Int), Const: ?Int;!Int, Mult: (((rec x. &{Add: (x;x), Const: ?Int, Mult: (x;x)});(rec x. &{Add: (x;x), Const: ?Int, Mult: (x;x)}));!Int)}
+&{Add: (((rec x. &{Add: (x;x), Const: ?Int, Mult: (x;x)});(rec x. &{Add: (x;x), Const: ?Int, Mult: (x;x)}));!Int), Const: ?Int;!Int, Mult: (((rec x. &{Add: (x;x), Const: ?Int, Mult: (x;x)});(rec x. &{Add: (x;x), Const: ?Int, Mult: (x;x)}));!Int)}
+
+[]
+&{LeafC: (rec x :: SL . &{LeafC: Skip, NodeC: (?Int;(x;x))}), NodeC: ((?Int;((rec x :: SL . &{LeafC: Skip, NodeC: (?Int;(x;x))});(rec x :: SL . &{LeafC: Skip, NodeC: (?Int;(x;x))})));(rec x :: SL . &{LeafC: Skip, NodeC: (?Int;(x;x))}))}
+&{LeafC: (rec x :: SL . &{LeafC: Skip, NodeC: (?Int;(x;x))}), NodeC: ((?Int;((rec x :: SL . &{LeafC: Skip, NodeC: (?Int;(x;x))});(rec x :: SL . &{LeafC: Skip, NodeC: (?Int;(x;x))})));(rec x :: SL . &{LeafC: Skip, NodeC: (?Int;(x;x))}))}
