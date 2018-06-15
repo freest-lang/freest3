@@ -8,7 +8,7 @@ A engenharia de software moderna reconhece a importância das linguagens de prog
 % No caso concreto do software concorrente, em que os processos comunicam exclusivamente por troca de mensagens, a comunicação torna-se facilmente complexa devido ao elevado número de mensagens que são trocadas entre os participantes. Portanto, é importante definir abstrações que permitam controlar e estruturar a comunicação intensiva. Os tipos de sessão foram desenvolvidos com este propósito.
 % Inicialmente foram propostos como uma extensão do cálculo pi para especificar padrões de comunicação e verificar se a comunicação entre processos concorrentes está bem estruturada, foram depois alargados a outros tipos de linguagens incluindo as funcionais e as orientadas a objetos.
 
-Os tipos de sessão tradicionais têm inúmeras aplicações. Por exemplo, se for necessário enviar uma lista num canal (\textit{stream}) de uma lista, podemos utilizar os tipos de sessão para garantir segurança de tipos na comunicação. O tipo recursivo apresentado de seguida descreve uma lista:
+Os tipos de sessão tradicionais têm inúmeras aplicações. Por exemplo, se for necessário enviar uma lista num canal (\textit{stream}) de uma lista, podemos utilizar os tipos de sessão para garantir segurança de tipos na comunicação. O tipo de dados recursivo apresentado de seguida descreve uma lista:
 \begin{lstlisting}[language=Python]
 	type List = Nil | Cons int List
 \end{lstlisting}
