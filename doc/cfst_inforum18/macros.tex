@@ -1,6 +1,7 @@
 \usepackage[portuguese]{babel}
 \usepackage[utf8]{inputenc}  % for proper diacritics
 \usepackage[T1]{fontenc}
+\usepackage{color}
 \usepackage {listings}
 \usepackage{tikz}
 % \usepackage{xcolor}
@@ -9,11 +10,46 @@
 
 \usepackage{amsmath,amssymb}
 %\usepackage{stmaryrd}
-\usepackage{listings,color}
 \usepackage{alltt}
 \usepackage{flushend}
 
 
+% Colour
+
+\newcommand{\Blue}[1]{\textcolor{blue}{#1}}
+\newcommand{\Red}[1]{\textcolor{red}{#1}}
+\newcommand{\Brown}[1]{\textcolor{brown}{#1}}
+\newcommand{\highlight}[1]{\Blue{#1}}
+
+% ECLIPSE LOOK
+
+\newcommand\Small{\small}
+%\newcommand\Small{\fontsize{7.5}{8}\selectfont} 
+
+\definecolor{darkviolet}{rgb}{0.5,0,0.4}
+\definecolor{darkgreen}{rgb}{0,0.4,0.2} 
+\definecolor{darkblue}{rgb}{0.1,0.1,0.9}
+\definecolor{darkgrey}{rgb}{0.5,0.5,0.5}
+\definecolor{lightblue}{rgb}{0.4,0.4,1}
+
+\lstdefinestyle{eclipse}{
+  breaklines=true,
+  basicstyle=\sffamily\Small,
+  emphstyle=\color{red}\bfseries, 
+  keywordstyle=\color{darkviolet}\bfseries,
+  commentstyle=\color{darkgreen},
+  stringstyle=\color{darkblue},
+  numberstyle=\color{darkgrey},%\lstfontfamily,
+  emphstyle=\color{red},
+  % get also javadoc style comments
+  morecomment=[s][\color{lightblue}]{/**}{*/},
+  %columns=fullflexible, %spaceflexible, %flexible, fullflexible             
+  %  escapeinside=`',
+  %  escapechar=@,
+  showstringspaces=false,
+  numbers=left,
+  tabsize=2
+}
 
 %\usepackage[T1]{fontenc}
 
@@ -61,8 +97,8 @@
    morestring=[s]{`}{`},%
  }
 
-\lstdefinelanguage{CFST}%
-{
+\lstdefinelanguage{CFST}{
+  style=eclipse,
   morekeywords=[1]{Int, Char, Bool, Skip, forall, rec, let, in, if, then, else, new, send, receive,
     select, fork, case, of, data, match, with},%  
   sensitive=true,%
@@ -75,6 +111,10 @@
    morestring=[s]{`}{`},%
  }
 
+\lstset{
+  language=CFST,
+  numbers=none
+}
  
 
 % notes
