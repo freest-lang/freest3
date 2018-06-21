@@ -9,7 +9,7 @@ A engenharia de software moderna reconhece a importância das linguagens de prog
 % Inicialmente foram propostos como uma extensão do cálculo pi para especificar padrões de comunicação e verificar se a comunicação entre processos concorrentes está bem estruturada, foram depois alargados a outros tipos de linguagens incluindo as funcionais e as orientadas a objetos.
 
 
-Os tipos de sessão tradicionais têm inúmeras aplicações. Por exemplo, se for necessário enviar uma lista num canal (\textit{stream}) de uma lista, podemos utilizar os tipos de sessão para garantir segurança de tipos na comunicação. O tipo O tipo de dados recursivo apresentado de seguida descreve uma lista:
+Os tipos de sessão tradicionais têm inúmeras aplicações. Por exemplo, se for necessário enviar uma lista num canal (\textit{stream}) de uma lista, podemos utilizar os tipos de sessão para garantir segurança de tipos na comunicação. O tipo de dados recursivo apresentado de seguida descreve uma lista:
 \begin{lstlisting}
 	type List = Nil | Cons int List
 \end{lstlisting}
@@ -21,7 +21,7 @@ e o tipo de sessão, do ponto de vista de quem lê o canal, é o seguinte:
 	}
 \end{lstlisting}
 
-Neste tipo de sessão temos o operador \& que oferece um ponto de escolha, ou seja, qualquer função que seja do tipo \lstinline"ListServer" tem de oferecer as duas opções especificadas: ou \lstinline"Nil" e termina a comunicação ou \lstinline"Cons" onde primeiro é lido um inteiro e de seguida é lida, recursivamente, a restante lista.
+Neste tipo de sessão temos o operador \& que oferece um ponto de escolha, ou seja, qualquer leia de um canal tem de estar preparado para aceitar as duas opções especificadas: ou \lstinline"Nil" e termina a comunicação ou \lstinline"Cons" onde primeiro é lido um inteiro e de seguida é lida, recursivamente, a restante lista.
 
 A sequência de operações para serializar a lista pode ser reconhecida por um autómato finito, apresentado abaixo:
 
