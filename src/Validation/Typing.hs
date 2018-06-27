@@ -106,6 +106,7 @@ checkKinding :: TypeScheme -> TypingState ()
 checkKinding (TypeScheme bs t) = do
   kenv <- getKindEnv
   let m = Map.union (Map.fromList bs) kenv
+  
   kinding t
   return ()
 
