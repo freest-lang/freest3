@@ -31,15 +31,11 @@ typeCheck eenv cenv = do
   let venv2 = Map.union venv1 cenv
   setVEnv venv2
 
-
   let a = Map.mapWithKey (\fun (a, e) -> checkFD fun a e) eenv
- -- let a =
   -- Map.foldrWithKey (\fun (a, e) _ -> checkFD fun a e) (return ()) eenv
   -- tell $ Map.foldl (\acc v -> acc ++ execWriter v) [] a
---  let err =
   s <- get
   addErrorList $ Map.foldl (\acc v -> acc ++ errors s v) [] a
-  -- mapM (addError) err
   
   return ()
 
@@ -90,9 +86,8 @@ checkParam fun args
 
 checkDataDecl :: ConstructorEnv -> TypingState ()
 checkDataDecl cenv = do
-  kenv <- getKindEnv
   Map.foldl (\_ k -> checkFunctionalKind k) (return ()) kenv
-  Map.foldl (\_ t -> checkKinding kenv t) (return ()) cenv 
+  Map.foldl (\_ t -> checkKinding t) (return ()) cenv 
 
 checkFunctionalKind :: Kind -> TypingState ()
 checkFunctionalKind k
@@ -103,11 +98,16 @@ checkFunTypeDecl :: TermVar -> TypingState ()
 checkFunTypeDecl fname = do  
   t <- checkVar (0,0) fname
   kenv <- getKindEnv
-  checkKinding kenv t
+  checkKinding t
   return ()
 
-checkKinding :: KindEnv -> TypeScheme -> TypingState ()
-checkKinding kenv (TypeScheme _ t) = kinding t >> return ()
+
+checkKinding :: TypeScheme -> TypingState ()
+checkKinding (TypeScheme bs t) = do
+  kenv <- getKindEnv
+  let m = Map.union (Map.fromList bs) kenv
+  kinding t
+  return ()
 
 
 -- Typing rules for expressions

@@ -32,14 +32,15 @@ start =
 client1 :: (rec x . +{And: !Bool;!Bool;?Bool;Skip, Or: !Bool;!Bool;?Bool;Skip, Not: !Bool;?Bool;x,End: Skip}) -> Bool
 client1 w =
   let w1 = select Not w in
-  let r1 = send True w1 in
+  let r1 = send False w1 in
   let x, w2 = receive r1 in
   let w3 = select Not w2 in
   let r2 = send x w3 in
   let y, w4 = receive r2 in
-  let w5 = select End w4 in
+--  let w5 = select End w4 in
   y
 
+-- TODO: with end commented should not pass
 
 startClient :: ((rec x . +{And: !Bool;!Bool;?Bool;Skip, Or: !Bool;!Bool;?Bool;Skip, Not: !Bool;?Bool;x, End: Skip}) -> Bool) -> Bool
 startClient client =

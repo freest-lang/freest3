@@ -45,7 +45,7 @@ lin _ (Choice _ _) = True
 lin kenv (Rec _ t) = lin kenv t
 lin kenv (Var x) =
   if Map.member x kenv then multiplicity (kenv Map.! x) == Lin
-  else error $ show x
+  else error $ "Internal error: predicate lin, var " ++  show x ++ " not in scope" -- should not happen
 
 -- Determines whether the type is unrestricted or not
 un :: KindEnv -> Type -> Bool

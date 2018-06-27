@@ -28,7 +28,7 @@ compile arg = do
       do
      -- error $ show eenv
       let (x,y,z) = initialState
-      let (_, _, errors) = execState (typeCheck eenv cenv) (Map.union kenv x, Map.union venv y, z)
+      let (_, _, errors) = execState (typeCheck eenv cenv) (kenv, venv, [])
       if null errors then        
         codeGen venv eenv cenv kenv (reverse $ dropWhile (/= '/') (reverse arg))
       else
