@@ -4,14 +4,14 @@
 
 Muitas linguagens de programação e outros formalismos foram sendo propostos ao longo do tempo para endereçar os aspetos de comunicação no software. Dois modelos comuns para lidar com a comunicação entre componentes numa computação concorrente são a memória partilhada e a troca de mensagens.
 
-Neste artigo focamo-nos no modelo de troca de mensagens, destacando os aspetos principais da programação baseada em canais de comunicação \ref{sec:prog-chan} e da programação baseada em atores \ref{sec:actors}.
+Neste artigo focamo-nos no modelo de troca de mensagens, destacando os aspetos principais da programação baseada em canais de comunicação e da programação baseada em atores.
 
 \subsection{Programação baseada em canais}
 \label{sec:prog-chan}
 
 \subsubsection{Tipos de sessão}
 \label{sec:session-types} Os tipos de sessão têm como principal objetivo enriquecer a expressividade que os tipos tradicionais fornecem, tornando possível estruturar interações complexas numa computação
-concorrente onde são trocadas muitas mensagens em canais de tipos heterogéneos. Apareceram, em primeiro lugar, numa variante do cálculo pi apresentando uma distinção sintática entre canais lineares e canais partilhados \cite{ref-lang-primitives}. Mais tarde, Gay e Hole \cite{ref-sessions-pi} introduziram o conceito de sub-tipos para os tipos de sessão o que permitiu que as especificações de um protocolo fossem estendidas levando a descrições mais ricas das interações.
+concorrente onde são trocadas muitas mensagens em canais de tipos heterogéneos. Honda, Vasconcelos e Kubo \cite{ref-lang-primitives}, apresentaram uma variante do cálculo pi na qual é feita uma distinção sintática entre canais lineares e canais partilhados \cite{ref-lang-primitives}. Mais tarde, Gay e Hole \cite{ref-sessions-pi} introduziram o conceito de sub-tipos para os tipos de sessão o que permitiu que as especificações de um protocolo fossem estendidas levando a descrições mais ricas das interações.
 
 % Session types[12] are by now a well-established methodology for typed, message-passing concurrent computations. By assigning session types to communication channels, and by checking programs against session type systems, a number important program properties can be established, including the absence of races in channel manipulation operations, and the guarantee that channels are used as prescribed by their types. 
 
@@ -28,19 +28,21 @@ Go ou \textit{golang} \cite{ref-go}, é uma linguagem de programação concorren
 Franco e Vasconcelos \cite{ref-sepi} apresentaram uma linguagem concorrente baseada no cálculo pi monádico onde as interações são feitas recorrendo a tipos que resultam de uma combinação entre tipos de sessão e tipos linearmente refinados.
 Nesta linguagem, os canais de comunicação são síncronos e bi-direcionais. São descritos pelas suas duas extremidades, onde os processos podem ler ou escrever em qualquer parte dos programas e usam tipos para descrever o fluxo de mensagens que são escritas/lidas no canal.
 
-Baltazar et al. introduziram um conceito em que combinam os tipos de sessão com alguns refinamentos originando assim os tipos linearmente refinados \cite{ref-lin-ref-st}. Estes tipos permitem ao programador acoplar formulas a tipos de sessão, permitindo especificar algumas propriedades. Estes, serviram de base para implementar linguagens como o SePi.
+%Baltazar et al. introduziram um conceito em que combinam os tipos de sessão com alguns refinamentos originando assim os tipos linearmente refinados \cite{ref-lin-ref-st}. Estes tipos permitem ao programador acoplar formulas a tipos de sessão, permitindo especificar algumas propriedades. Estes, serviram de base para implementar linguagens como o SePi.
+ Os tipos de sessão tradicionais têm limitações na sua estrutura que impedem a serialização de forma eficiente e com segurança de tipos de estruturas de dados organizadas em forma de árvore. A linguagem que propomos permite definir protocolos que descrevem eficientemente essas estruturas recorrendo a tipos de sessão independentes do contexto.
+%O SePi é uma linguagem que usufrui dos tipos de sessão tradicionais definir protocolos que descrevam os dados que circulam nos canais de comunicação. No entanto, as limitações destes tipos impedem a serialização com segurança de tipos de estruturas em forma de árvore. A linguagem que propomos permite definir protocolos que descrevem eficientemente essas estruturas recorrendo a tipos de sessão independentes do contexto.
 
 
 \subsection{Programação baseada em atores}
 \label{sec:actors}
-Esta secção apresenta brevemente o modelo de atores e a linguagem Erlang que implementa este modelo. Descreve ainda o Akka que é um conjunto de ferramentas que também implementa o modelo de atores e que pode ser utilizado nas linguagens de programação Java e Scala.
+%Esta secção apresenta brevemente o modelo de atores e a linguagem Erlang que implementa este modelo. Descreve ainda o Akka que é um conjunto de ferramentas que também implementa o modelo de atores e que pode ser utilizado nas linguagens de programação Java e Scala.
 
 \subsubsection{Modelo de atores}
 \label{sec:actors}
-O conceito de atores foi introduzido por Hewitt et. al \cite{Hewitt:StructuresAsPatternsOfPassingMessages,Hewitt:ActorFormalismForAI} como um formalismo que se foca na relação entre eventos que é causada por um ator. Os atores são entidades concorrentes que trocam mensagens de forma assíncrona. De tal forma, os problemas tradicionais que estão inerentes à programação concorrente como as situações de impasse e as condições de corrida foram também tidos em consideração, de modo a que não seja necessário recorrer ao uso de semáforos para limitar o acesso a regiões criticas dos programas\cite{Agha:Actors}.
+O conceito de atores foi introduzido por Hewitt et al. \cite{Hewitt:StructuresAsPatternsOfPassingMessages} como um formalismo que se foca na relação entre eventos que é causada por um ator. Os atores são entidades concorrentes que trocam mensagens de forma assíncrona. De tal forma, os problemas tradicionais que estão inerentes à programação concorrente como as situações de impasse e as condições de corrida foram também tidos em consideração, de modo a que não seja necessário recorrer ao uso de semáforos para limitar o acesso a regiões críticas dos programas. %\cite{Agha:Actors}.
 
 \subsubsection{Erlang}
-O Erlang é uma linguagem de programação que foi desenhada com o objetivo de desenvolver software concorrente, em tempo-real e sistemas distribuídos tolerantes a faltas \cite{Armstrong:ErlangBook}. É a implementação mais conhecida do modelo de atores \ref{sec:actors}.
+O Erlang é uma linguagem de programação que foi desenhada com o objetivo de desenvolver software concorrente, em tempo-real e sistemas distribuídos tolerantes a faltas \cite{Armstrong:ErlangBook}. É a implementação mais conhecida do modelo de atores.
 
 Nesta linguagem, programadores têm de especificar quais são as atividades que são representadas em processos paralelos e toda a comunicação existente entre os processos. Esta visão de concorrência é similar à do CSP \cite{Hoare:CSP} que visa obter o máximo desempenho compilando os programas para execução paralela e não para modelar a concorrência do mundo real.
 
@@ -49,11 +51,14 @@ O modelo de concorrência desta linguagem é baseado em processos com troca de m
 \subsubsection{Akka}
 
 Akka é um conjunto de ferramentas que foi desenhado com o intuito de construir sistemas escaláveis e resilientes.
-Implementa o modelo de atores proposto por Hewitt  \cite{Hewitt:ActorFormalismForAI} com o objetivo de fornecer um nível de abstração que facilite a escrita de sistemas concorrentes, paralelos e distribuídos, este pode ser utilizado em Java o Scala.
+Implementa o modelo de atores proposto por Hewitt  \cite{Hewitt:ActorFormalismForAI} com o objetivo de fornecer um nível de abstração que facilite a escrita de sistemas concorrentes, paralelos e distribuídos, este pode ser utilizado em Java ou Scala.
 
-Em Akka, os atores são semelhantes aos descritos em \ref{sec:actors}: são assíncronos e usam um sistema de comunicação baseado em troca de mensagens não bloqueantes, são considerados processos mais leves, são orientados a eventos, isto é, esperam por mensagens e de seguida reagem a essas mensagens. As mensagens que transitam entre atores não têm tipos apesar de existirem atores com tipos nas versões mais recentes.
+Em Akka, os atores são assíncronos e usam um sistema de comunicação baseado em troca de mensagens não bloqueantes, são considerados processos mais leves, são orientados a eventos, isto é, esperam por mensagens e de seguida reagem a essas mensagens. As mensagens que transitam entre atores não têm tipos apesar de existirem atores com tipos nas versões mais recentes.
 
 Um ator tem estado, uma ``caixa de correio'' (\textit{mailbox}) e um determinado comportamento, pode ter como filhos outros atores por ele criados que têm de ser explicitamente terminados. O comportamento dos atores pode mudar ao longo do tempo (operações \lstinline"become" e \lstinline"unbecome").
+
+\todo{(VS.) assíncronos, sistema de comunicação baseado em troca de mensagens não bloqueantes}
+%O modelo de atores foca-se no conceito de ator e na relação entre os eventos causada pelos atores. Tem em consideração aspetos relativos à programação concorrente como as situações de impasse e as condições de corrida que também são tidos em consideração na programação baseada em canais. Contudo, a comunicação entre atores é assíncrona recorrendo a uma ``caixa de correio'' para guardar as mensagens que ainda não foram entregues. A linguagem que apresentamos comunica de forma síncrona
 
 %%% Local Variables:
 %%% mode: latex

@@ -9,6 +9,7 @@ import           System.Exit
 import           Test.Hspec
 import           Test.HUnit (assertFailure)
 
+import Control.Exception
 
 -- baseDir = "/test/Programs/ValidTests/"
 validTestDir curDir = curDir ++ "/test/Programs/ValidTests/"
@@ -48,7 +49,10 @@ getSource (x:xs)
 
 testOne :: String -> String -> Spec    
 testOne test filename = do
-  compiles <- runIO $ compile test
+  compiles <- runIO $ catch (compile test)
+                         (\e -> do let err = show (e :: SomeException)
+                                   return  $ (False, show e)
+                         )
   case compiles of
     (False, err) -> 
       it ("Testing " ++ filename) $ do
@@ -56,6 +60,9 @@ testOne test filename = do
         return ()
     (True, _)  -> runAndCheckResult test filename
 
+-- t6 = catch (evaluate lin)
+--      (\e -> do let err = show (e :: SomeException)
+--                return $ (False, ("Warning: Couldn't open " ++ ": " )))  
 
 runAndCheckResult :: String -> String -> Spec
 runAndCheckResult testFile filename = do

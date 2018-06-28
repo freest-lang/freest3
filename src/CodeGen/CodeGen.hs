@@ -65,17 +65,19 @@ genMain eenv (params, startExp) t =
 
 -- GENERATES THE COMMUNICATION AND THREAD CREATION MODULE
 
-genUtils :: FilePath -> IO ()
-genUtils path = do
-  b <- doesFileExist (path ++ "CFSTUtils.hs")
-  if b then return () else genUtilsFile (path ++ "CFSTUtils.hs")
+-- genUtils :: FilePath -> IO ()
+-- genUtils path = do
+--   b <- doesFileExist (path ++ "CFSTUtils.hs")
+--   if b then return () else genUtilsFile (path ++ "CFSTUtils.hs")
 
-genUtilsFile :: FilePath -> IO ()
-genUtilsFile path =
-  writeFile path ("module CFSTUtils (_fork, _new, _send, _receive) where\n\n" ++
-                  genUtilsImports ++ "\n\n" ++
-                  genFork ++ "\n\n" ++ genNew ++ "\n\n" ++
-                  genSend ++ "\n\n" ++ genReceive)
+-- genUtilsFile :: FilePath -> IO ()
+genUtils :: FilePath -> IO ()
+genUtils path =
+  writeFile (path ++ "CFSTUtils.hs")
+    ("module CFSTUtils (_fork, _new, _send, _receive) where\n\n" ++
+     genUtilsImports ++ "\n\n" ++
+     genFork ++ "\n\n" ++ genNew ++ "\n\n" ++
+     genSend ++ "\n\n" ++ genReceive)
 
 genUtilsImports :: String
 genUtilsImports =
@@ -86,13 +88,13 @@ genFork :: String
 genFork = "_fork e = do\n  forkIO e\n  return ()"
 
 genNew :: String
-genNew = "_new = do\n  ch <- newEmptyMVar\n  return (ch, ch)"
+genNew = "_new = do\n  m1 <- newEmptyMVar\n  m2 <- newEmptyMVar\n  return ((m1, m2), (m2, m1))"
 
 genSend :: String
-genSend = "_send x ch = do\n  putMVar ch (unsafeCoerce x)\n  return ch"
+genSend = "_send x (m1, m2) = do\n  putMVar m2 (unsafeCoerce x)\n  return (m1, m2)"
 
 genReceive :: String
-genReceive = "_receive ch = do\n  a <- takeMVar ch\n  return ((unsafeCoerce a), ch)"
+genReceive = "_receive (m1, m2) = do\n  a <- takeMVar m1\n  return ((unsafeCoerce a), (m1, m2))"
 
 {- With channels
 

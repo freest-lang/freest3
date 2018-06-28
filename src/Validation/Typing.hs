@@ -31,12 +31,9 @@ typeCheck eenv cenv = do
   let venv2 = Map.union venv1 cenv
   setVEnv venv2
 
-  let a = Map.mapWithKey (\fun (a, e) -> checkFD fun a e) eenv
-  -- Map.foldrWithKey (\fun (a, e) _ -> checkFD fun a e) (return ()) eenv
-  -- tell $ Map.foldl (\acc v -> acc ++ execWriter v) [] a
+  let a = Map.mapWithKey (\fun (a, e) -> checkFD fun a e) eenv 
   s <- get
   addErrorList $ Map.foldl (\acc v -> acc ++ errors s v) [] a
-  
   return ()
 
 errors :: (KindEnv, VarEnv, Errors) -> TypingState () -> [String]
@@ -46,11 +43,15 @@ errors is s =
 
 checkFD ::  TermVar -> Params -> Expression -> TypingState ()
 checkFD fname args exp = do
+
+  -- venv <- getVarEnv
+  -- addError ("\n\n VarEnv: " ++ show venv ++ "\n\n")
+  
   checkExpEnv (0,0) fname args
   venv <- getVarEnv
   let (TypeScheme _ lt) = last $ toList $ venv Map.! fname
   checkAgainst (0,0) exp lt
-
+  -- TODO: add...
 --  checkVEnvUn kenv venv2
   return ()
 
@@ -58,8 +59,9 @@ checkExpEnv :: Pos -> TermVar -> Params -> TypingState ()
 checkExpEnv p fun params = do
   checkParam fun params
   t <- checkVar p fun
+
   parameters <- addToEnv p fun params (init (toList t))  
---  parameters <- addToEnv fun params (init (toList (venv Map.! fun)))
+
   venv <- getVarEnv
   -- Map.insert arg t acc
   foldM (\acc (arg, t) -> addToVEnv arg t) () parameters
@@ -86,6 +88,7 @@ checkParam fun args
 
 checkDataDecl :: ConstructorEnv -> TypingState ()
 checkDataDecl cenv = do
+  kenv <- getKindEnv
   Map.foldl (\_ k -> checkFunctionalKind k) (return ()) kenv
   Map.foldl (\_ t -> checkKinding t) (return ()) cenv 
 
@@ -101,12 +104,16 @@ checkFunTypeDecl fname = do
   checkKinding t
   return ()
 
-
+-- TODO: review
 checkKinding :: TypeScheme -> TypingState ()
-checkKinding (TypeScheme bs t) = do
-  kenv <- getKindEnv
-  let m = Map.union (Map.fromList bs) kenv
-  
+checkKinding t = do
+  -- kenv <- getKindEnv
+  -- TODO: add bs to kenv 
+  -- let m = Map.union (Map.fromList bs) kenv
+ --  let m = foldr (\b acc -> Map.insert (var b) (kind b) acc) Map.empty bs
+--  let m = Map.union m kenv
+--  error $ show m
+  -- setKEnv m
   kinding t
   return ()
 
@@ -239,11 +246,10 @@ checkExp (Fork p e) = do
   
 checkExp (Case p e cm) = do
   t <- checkExp e
---  m <- extractExtChoice p t
-  let (c, (x, e1)) = Map.elemAt 0 cm
+
+  let (c, (x, e1)) = Map.elemAt 0 cm  
   t2 <- extractDatatype p t c  
   
-  --addToVEnv x (TypeScheme [] t2)
   foldr (\v acc -> addToVEnv v (TypeScheme [] t2)) (return ()) x
   u <- checkExp e1
 
@@ -251,13 +257,16 @@ checkExp (Case p e cm) = do
 
   return u
   
--- | Case Pos Expression CaseMap
 
+-- TODO: Finish add params ...
 checkMap :: Pos -> TypeScheme -> TypeScheme -> TermVar ->
-            (Params, Expression) -> (Pos -> TypeScheme -> Constructor -> TypingState Type) -> TypingState ()
+            (Params, Expression) ->
+            (Pos -> TypeScheme -> Constructor -> TypingState Type) -> TypingState ()
+            
 checkMap p choice (TypeScheme _ t) c (x, e) f = do
   t1 <- f{-extractDatatype  ExtChoice-} p choice c
   -- partir o tipo por param
+  error $ show t1
  -- addToVEnv x (TypeScheme [] t1)
   foldr (\v acc -> addToVEnv v (TypeScheme [] t1)) (return ()) x
   checkAgainst p e t
@@ -301,7 +310,9 @@ checkUn p (TypeScheme _ t) = do
 -- The Extract Functions
 
 extractFun :: Pos -> TypeScheme -> TypingState (Type, Type)
-extractFun _ (TypeScheme [] (Fun _ t u)) = return (t, u)
+extractFun _ (TypeScheme bs (Fun _ t u)) = do
+  addBindsToKenv bs
+  return (t, u)
 extractFun p t                           = do
   addError (show p ++  ": Expecting a function type; found " ++ show t)
   return (Basic IntType, Basic IntType)
@@ -313,18 +324,23 @@ extractScheme p (TypeScheme [] t) = do
 extractScheme _ (TypeScheme bs t) = return (bs, t)
 
 extractPair :: Pos -> TypeScheme -> TypingState (Type, Type)
-extractPair _ (TypeScheme [] (PairType t u)) = return (t, u)
+extractPair _ (TypeScheme bs (PairType t u)) = do
+  addBindsToKenv bs
+  return (t, u)
 extractPair p t                         = do
   addError (show p ++  ": Expecting a pair type; found " ++ show t)
   return (Basic IntType, Basic IntType)
 
 extractBasic :: Pos -> TypeScheme -> TypingState BasicType
-extractBasic _ (TypeScheme [] (Basic t)) = return t
+extractBasic _ (TypeScheme bs (Basic t)) = do
+  addBindsToKenv bs
+  return t
 extractBasic p t                         = do
   addError (show p ++  ": Expecting a basic type; found " ++ show t)
   return UnitType
 
--- !~> 
+-- !~>
+-- TODO: review this case (bindings)
 extractOutput :: Pos -> TypeScheme -> TypingState (BasicType, Type)
 extractOutput p (TypeScheme [] (Semi Skip t)) =  extractOutput p (TypeScheme [] t)
 extractOutput _ (TypeScheme [] (Semi (Message Out b) t)) = return (b,t)
@@ -337,6 +353,7 @@ extractOutput p t = do
   addError (show p ++  ": Expecting an output type; found " ++ show t)
   return (UnitType, Skip)
 
+-- TODO: review this case (bindings)
 extractInput :: Pos -> TypeScheme -> TypingState (BasicType, Type)
 extractInput p (TypeScheme [] (Semi Skip t)) =  extractInput p (TypeScheme [] t)
 extractInput _ (TypeScheme [] (Semi (Message In b) t)) = return (b,t)
@@ -349,6 +366,7 @@ extractInput p t = do
   addError (show p ++  ": Expecting an input type; found " ++ show t)
   return (UnitType, Skip)
 
+-- TODO: review this case (bindings)
 extractInChoice :: Pos -> TypeScheme -> TypingState Type
 extractInChoice p (TypeScheme [] (Semi Skip t)) =  extractInChoice p (TypeScheme [] t)
 extractInChoice _ (TypeScheme [] (Choice Internal m)) = return $ Choice Internal m
@@ -363,6 +381,7 @@ extractInChoice p t = do
   addError (show p ++  ": Expecting an internal choice; found " ++ show t)
   return Skip
 
+-- TODO: review this case (bindings)
 extractExtChoice :: Pos -> TypeScheme -> Constructor -> TypingState Type
 extractExtChoice p (TypeScheme [] (Semi Skip t)) c =  extractExtChoice p (TypeScheme [] t) c
 extractExtChoice _ (TypeScheme [] (Choice External m)) c = return $ m Map.! c -- Choice External m
@@ -375,11 +394,24 @@ extractExtChoice p t _ = do
   addError (show p ++  ": Expecting an external choice; found " ++ show t)
   return Skip
 
+-- TODO: review this case (bindings)
 extractDatatype :: Pos -> TypeScheme -> Constructor -> TypingState Type
-extractDatatype _ (TypeScheme [] (Datatype m)) c = return $ m Map.! c -- Choice External m
-extractDatatype p (TypeScheme [] (Rec b t)) c =
-  extractDatatype p (TypeScheme [] (unfold (Rec b t))) c
--- TODO
+extractDatatype _ (TypeScheme bs (Datatype m)) c = do
+  addBindsToKenv bs
+  return $ m Map.! c -- Choice External m
+extractDatatype p (TypeScheme bs (Rec b t)) c =
+  extractDatatype p (TypeScheme bs (unfold (Rec b t))) c
+
+extractDatatype p (TypeScheme _ (Var x)) c = do -- Should be here?
+  b <- venvMember x
+  if b then do
+    dt <- getFromVarEnv x
+    extractDatatype p dt c
+  else do
+    addError (show p ++  ": Expecting a datatype; found " ++ show (Var x))
+    return (Basic IntType)  
+  
+-- TODO ??
 -- extractDatatype p (TypeScheme [] (Semi t1 t2)) = do
 extractDatatype p t _ = do
   addError (show p ++  ": Expecting a datatype; found " ++ show t)
@@ -396,9 +428,9 @@ extractConstructor p c tm =
 -- Extract Without Errors
 
 extractChoiceMap :: Type -> TypingState TypeMap
-extractChoiceMap  (Choice _ m) = return m
-extractChoiceMap  (Semi (Choice _ m) t2) = return (Map.map (`Semi` t2) m)
-extractChoiceMap  (Semi t1 t2) = do
+extractChoiceMap (Choice _ m) = return m
+extractChoiceMap (Semi (Choice _ m) t2) = return (Map.map (`Semi` t2) m)
+extractChoiceMap (Semi t1 t2) = do
   m1 <- extractChoiceMap t1
   m2 <- extractChoiceMap t2
   return $ Map.union m1 m2
@@ -411,10 +443,11 @@ checkVar :: Pos -> TermVar -> TypingState TypeScheme
 checkVar pos x = do
   member <- venvMember x
   if member then do
-    t <- getFromVarEnv x
+    (TypeScheme bs t) <- getFromVarEnv x
+    addBindsToKenv bs
     kenv <- getKindEnv
-    removeLinVar kenv x t
-    return t
+    removeLinVar kenv x (TypeScheme bs t)
+    return (TypeScheme bs t)
   else do
     addError (show pos ++  ": Variable or data constructor not in scope: " ++ x)
     return $ TypeScheme [] (Basic UnitType)
@@ -425,6 +458,17 @@ removeLinVar kenv x (TypeScheme _ t)
   | otherwise  = return ()
 
 
+addBindsToKenv :: [Bind] -> TypingState ()
+addBindsToKenv bs = foldM (\_ b -> addToKenv (var b) (kind b)) () bs
+  
+    -- kenv <- getKindEnv
+  -- TODO: add bs to kenv 
+  -- let m = Map.union (Map.fromList bs) kenv
+ --  let m = foldr (\b acc -> Map.insert (var b) (kind b) acc) Map.empty bs
+--  let m = Map.union m kenv
+--  error $ show m
+  -- setKEnv m
+  
 -- Type check against type
 
 checkAgainst :: Pos -> Expression -> Type -> TypingState ()
@@ -468,9 +512,9 @@ initVarEnv =
       -- v6 = Map.insert "z" (TypeScheme [] (Fun Lin (Basic IntType)(Basic IntType))) v5
       -- v2 = Map.insert "c" (TypeScheme [] cType1) v1
       -- v2 = Map.insert "c1" (TypeScheme [] c1Type) v1
-      v2 = Map.insert "l" (TypeScheme [] intlistType) v1
-      v3 = Map.insert "IntList" (TypeScheme [] intlistType) v2
-  in v2
+      v9 = Map.insert "l" (TypeScheme [] intlistType) v1
+      v10 = Map.insert "IntList" (TypeScheme [] intlistType) v9
+  in v9
 
 cType = read "!();!Int;?Bool;Skip" :: Type
 wType = read "Skip;Skip;Skip;+{Plus:Int};Skip" :: Type
@@ -577,3 +621,11 @@ e29 = Match (106,9) (Variable (106,9) "c") (Map.fromList [("And",("c1",BinLet (1
 -- CASE
 
 e30 = Case (107,8) (Variable (107,8) "l") (Map.fromList [("Cons",(["x","y"],Boolean (109,17) False)),("Nil",([],Boolean (108,12) True))])
+
+
+-- id
+
+-- [("(&&)",(Bool -> (Bool -> Bool))),("(*)",(Int -> (Int -> Int))),("(+)",(Int -> (Int -> Int))),("(-)",(Int -> (Int -> Int))),("(/)",(Int -> (Int -> Int))),("(<)",(Int -> (Int -> Bool))),("(<=)",(Int -> (Int -> Bool))),("(==)",(Int -> (Int -> Bool))),("(>)",(Int -> (Int -> Bool))),("(>=)",(Int -> (Int -> Bool))),("(||)",(Bool -> (Bool -> Bool))),("div",(Int -> (Int -> Int))),("fst",forall a :: SU, b :: SU => ((a, b) -> a)),("id'",forall a :: TU => (a -> a)),("mod",(Int -> (Int -> Int))),("negate",(Int -> Int)),("not",(Bool -> Bool)),("rem",(Int -> (Int -> Int))),("start",Int)]
+
+
+-- Map.fromList [("id'",(["x"],Variable (5,9) "x"))]

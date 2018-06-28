@@ -26,8 +26,8 @@ compile arg = do
   case prog of
     Right (venv, eenv, cenv, kenv) ->
       do
-     -- error $ show eenv
-      let (x,y,z) = initialState
+--      error $ show venv ++ "\n\n\n" ++ show eenv
+      -- let (x,y,z) = initialState
       let (_, _, errors) = execState (typeCheck eenv cenv) (kenv, venv, [])
       if null errors then        
         codeGen venv eenv cenv kenv (reverse $ dropWhile (/= '/') (reverse arg))

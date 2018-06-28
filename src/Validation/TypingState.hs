@@ -79,6 +79,6 @@ getKind :: TypeVar -> TypingState Kind
 getKind x = do
   kenv <- getKindEnv
   return $ kenv Map.! x
- 
-setKEnv :: VarEnv -> TypingState ()
-setVEnv venv = modify (\(kenv, _, errors) -> (kenv, venv, errors))
+
+setKEnv :: KindEnv -> TypingState ()
+setKEnv kenv = modify (\(_, venv, errors) -> (kenv, venv, errors))

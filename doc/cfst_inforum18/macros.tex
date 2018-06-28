@@ -154,7 +154,7 @@
 
 % Keywords for types
 \newcommand\kRec{\keyword{rec}}
-
+\newcommand\kForall{\keyword{forall}}
 
 % Types
 \newcommand{\tskip}{\keyword{Skip}}
@@ -167,8 +167,9 @@
 \newcommand\tLinFun[2]{#1\tcLolli#2}
 \newcommand\tPair[2]{#1\otimes#2}
 \newcommand\tDatatype[1]{{[#1]}}
-\newcommand\tRec[2]{\mu\,#1\,.\,#2}
-\newcommand\tForall[2]{\forall\,#1\,.\,#2}
+\newcommand\tRec[2]{\kRec\,#1\,.\,#2}
+%\newcommand\tForall[2]{\forall\,#1\,.\,#2}
+\newcommand\tForall[2]{\kForall\,#1\,=>\,#2}
 
 \newcommand\tRecK[2]{\kRec\,#1\,.\,#2}
 % Environments

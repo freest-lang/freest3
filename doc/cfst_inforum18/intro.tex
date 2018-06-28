@@ -21,17 +21,17 @@ e o tipo de sessão, do ponto de vista de quem lê o canal, é o seguinte:
 	}
 \end{lstlisting}
 
-Neste tipo de sessão temos o operador \& que oferece um ponto de escolha, ou seja, qualquer leia de um canal tem de estar preparado para aceitar as duas opções especificadas: ou \lstinline"Nil" e termina a comunicação ou \lstinline"Cons" onde primeiro é lido um inteiro e de seguida é lida, recursivamente, a restante lista.
+Neste tipo de sessão temos o operador \& que oferece um ponto de escolha, ou seja, qualquer processo que leia de um canal do tipo \lstinline"ListServer" tem de estar preparado para aceitar as duas opções especificadas: ou \lstinline"Nil" e termina a comunicação ou \lstinline"Cons" onde primeiro é lido um inteiro e de seguida é lida, recursivamente, a restante lista.
 
 A sequência de operações para serializar a lista pode ser reconhecida por um autómato finito, apresentado abaixo:
 
 \input{fig-automata}
 
-Deste modo, podemos verificar que é possível enviar listas de uma maneira segura recorrendo a tipos de sessão. Contudo, estes tipos têm limitações na sua estrutura que tornam impossível a descrição eficiente de serializações de dados estruturados em forma de árvore \cite{ref-cfst}.
+Deste modo, podemos verificar que é possível enviar listas de um modo seguro recorrendo a tipos de sessão. Contudo, estes tipos têm limitações na sua estrutura que tornam impossível a descrição eficiente de serializações de dados estruturados em forma de árvore.
 %\cite{ref_Thiemann_Vasconcelos_CFST}.
 
 O exemplo proposto por Thiemann e Vasconcelos \cite{ref-cfst}
-mostra a limitação dos tipos de sessão, formalizando o envio de árvores binárias num canal de comunicação. Neste exemplo, à semelhança do anterior, definiu-se o tipo recursivo para as árvores:
+mostra a limitação dos tipos de sessão, recorrendo ao envio de árvores binárias num canal de comunicação. Neste exemplo, à semelhança do anterior, definiu-se o tipo de dados para as árvores:
 \begin{lstlisting}
 	type Tree = Leaf | Node int Tree Tree
 \end{lstlisting}
@@ -39,9 +39,9 @@ Para serializar esta estrutura é necessário percorrê-la numa determinada orde
 \begin{lstlisting}
 	N ::= Leaf | Node int N N
 \end{lstlisting}
-Se observarmos a linguagem produzida pelo não terminal N podemos constatar que é livre de contexto mas não é regular, contrariamente à linguagem do exemplo da lista, que é descrita pela seguinte expressão regular $(\&\mbox{Cons}\,.\,?\mbox{int})^{*}\,\&\mbox{Nil}$. Como cada tipo de sessão tradicional tem como linguagem a união de uma linguagem regular com uma linguagem $\omega$-regular, que descreve as sequências finitas e infinitas admitidas pelo tipo, podemos concluir que não é possível serializar uma árvore recorrendo a tipos de sessão.
+Se observarmos a linguagem produzida pelo não terminal N podemos constatar que é livre de contexto mas não é regular, contrariamente à linguagem do exemplo da lista, que é descrita pela seguinte expressão regular $(\&\textsf{Cons}\,?\textsf{int})^{*}\,\&\textsf{Nil}$. Como cada tipo de sessão tradicional tem como linguagem a união de uma linguagem regular com uma linguagem $\omega$-regular, que descreve as sequências finitas e infinitas admitidas pelo tipo, podemos concluir que não é possível serializar uma árvore recorrendo a tipos de sessão.
 
-A linguagem que apresentamos é concorrente e explicitamente tipificada, onde os processos comunicam exclusivamente por troca de mensagens cujos protocolos são definidos pelos tipos de sessão livres de contexto apresentados por Thiemann e Vasconcelos \cite{ref-cfst}.
+A linguagem que apresentamos é concorrente e explicitamente tipificada, onde os processos comunicam exclusivamente por troca de mensagens cujos protocolos são definidos pelos tipos de sessão livres de contexto.
 
 
 %%% Local Variables:

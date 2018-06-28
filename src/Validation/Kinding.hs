@@ -43,9 +43,10 @@ lin kenv (Semi t1 t2) = lin kenv t1 || lin kenv t2
 lin _ (Message _ _) = True
 lin _ (Choice _ _) = True
 lin kenv (Rec _ t) = lin kenv t
-lin kenv (Var x) =
-  if Map.member x kenv then multiplicity (kenv Map.! x) == Lin
-  else error $ "Internal error: predicate lin, var " ++  show x ++ " not in scope" -- should not happen
+lin kenv (Var x) = 
+  if Map.member x kenv then
+    multiplicity (kenv Map.! x) == Lin
+  else error $ "Internal error: predicate lin, type var " ++  show x ++ " not in scope" -- should not happen
 
 -- Determines whether the type is unrestricted or not
 un :: KindEnv -> Type -> Bool
@@ -97,8 +98,14 @@ checkContractivity kenv t
 
 -- TODO ...
 -- kinding :: Type -> TypingState Kind
-kinding :: Type -> TypingState Kind
-kinding t = synthetize t -- ) initialState
+kinding :: TypeScheme -> TypingState Kind
+kinding t = synthetizeScheme t -- ) initialState
+
+synthetizeScheme :: TypeScheme -> TypingState Kind
+synthetizeScheme (TypeScheme [] t) = synthetize t
+synthetizeScheme (TypeScheme bs t) = do
+  foldM_ (\_ b -> addToKenv (var b) (kind b)) () bs
+  synthetize t
 
 synthetize :: Type -> TypingState Kind
 synthetize Skip = return $ Kind Session Un
@@ -133,11 +140,6 @@ synthetize (Rec (Bind x k) t) = do
   return k1
 
 
-synthetizeScheme :: TypeScheme -> TypingState Kind
-synthetizeScheme (TypeScheme [] t) = synthetize t
-synthetizeScheme (TypeScheme bs t) = do
-  foldM_ (\_ b -> addToKenv (var b) (kind b)) () bs
-  synthetize t
 
 
 -- TODO ...

@@ -2,7 +2,7 @@
 \lstset{language=CFST, style=eclipse}
 Apresentámos uma linguagem de programação concorrente e explicitamente tipificada, onde os processos comunicam exclusivamente por troca de mensagens. As mensagens são trocadas em canais síncronos que são descritos por tipos de sessão independentes do contexto. Graças a estes tipos, a linguagem é capaz de serializar, por exemplo, tipos de dados recursivos, estruturados em forma de árvore com segurança de tipos, entre outros exemplos.
 
-Como trabalho futuro, temos o objetivo de reduzir a verbosidade da linguagem tornando possível abreviar tipos (\lstinline{type SendInt = !Int}), deste modo, reduz-se a necessidade de escrever tipos ao longo do código fonte, reduzindo a probabilidade de existirem erros nas declarações de tipos das funções e/ou nas aplicações de tipos. Existe ainda o objetivo de fazer inferência de tipos em alguns cenários como as aplicaçoes de tipos ``e[T].''
+Como trabalho futuro, temos por objetivo reduzir a verbosidade da linguagem tornando possível abreviar tipos (\lstinline{type SendInt = !Int}), deste modo, reduz-se a necessidade de escrever tipos ao longo do código fonte, reduzindo a probabilidade da ocorrência erros nas declarações de tipos das funções e/ou nas aplicações de tipos. Existe ainda o objetivo de fazer inferência de tipos em alguns cenários como as aplicaçoes de tipos \lstinline|e[T]|.
  Assim como introduzir a nocanais partilhados e o operador de \textbf{dualof}.
  
 %%% Local Variables:

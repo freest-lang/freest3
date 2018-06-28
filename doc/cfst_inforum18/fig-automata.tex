@@ -6,9 +6,9 @@
    \node[state] (input) [above right=of choice] {$?$}; 
    \node[state,accepting] (end) [below right=of choice] {\textsf{end}}; 
 
-   \path[edge] (choice) to[bend left] node {\text{Cons}} (input);
-   \path[edge] (input) to[bend left] node {int} (choice);
-   \path[edge] (choice) edge node {Nil} (end);
+   \path[edge] (choice) to[bend left] node {\textsf{Cons}} (input);
+   \path[edge] (input) to[bend left] node {\textsf{int}} (choice);
+   \path[edge] (choice) edge node {\textsf{Nil}} (end);
    
   \end{tikzpicture}
 \end{center}
