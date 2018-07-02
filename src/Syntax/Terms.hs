@@ -37,6 +37,7 @@ data TypeVarBind = TypeVar Kind
 type Pos = (Int, Int)
 -- type ConstructorEnv = Map.Map Constructor [(Constructor, [Type])]
 
+-- TODO: Join
 type MatchMap = Map.Map TermVar (TermVar, Expression)
 type CaseMap = Map.Map TermVar (Params, Expression)
 

@@ -31,6 +31,9 @@ import           Syntax.Kinds
 import           Syntax.Terms
 import           Syntax.Types
 import           Validation.TypingState
+--- import Parse.TypeParser
+
+-- forall x :: SU => ((rec xFormChan :: SL . &{LeafC: Skip, NodeC: (?Int;(xFormChan;(xFormChan;!Int)))});x)
 
 -- Determines whether the type is linear or not
 lin :: KindEnv -> Type -> Bool
@@ -39,11 +42,11 @@ lin _ (Fun m _ _) = m == Lin
 lin _ (PairType _ _) = False
 lin _ (Datatype _) = False
 lin _ Skip = False
-lin kenv (Semi t1 t2) = lin kenv t1 || lin kenv t2
+lin kenv (Semi t1 t2) = lin kenv t1 && lin kenv t2 -- WAS : ||
 lin _ (Message _ _) = True
 lin _ (Choice _ _) = True
-lin kenv (Rec _ t) = lin kenv t
-lin kenv (Var x) = 
+lin kenv (Rec x t) = lin (Map.insert (var x) (kind x) kenv) t
+lin kenv (Var x) =
   if Map.member x kenv then
     multiplicity (kenv Map.! x) == Lin
   else error $ "Internal error: predicate lin, type var " ++  show x ++ " not in scope" -- should not happen

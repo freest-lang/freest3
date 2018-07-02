@@ -11,9 +11,9 @@ computeService c =
 receiveEval :: forall x => (rec TermChan . &{Const: ?Int, Add: TermChan;TermChan, Mult: TermChan;TermChan});x -> (Int, x)
 receiveEval c =
   match c with
-    Const c1 ->
+  {-  Const c1 ->
       let x, y = receive c1 in
-      (x,y)
+      (x,y)-}
     Add c1 ->
       let n1, c2 = receiveEval[rec TermChan . &{Const: ?Int, Add: TermChan;TermChan, Mult: TermChan;TermChan}] c1 in
       let n2, c3 = receiveEval[rec TermChan . &{Const: ?Int, Add: TermChan;TermChan, Mult: TermChan;TermChan}] c2 in
@@ -23,7 +23,7 @@ receiveEval c =
       let n2, c3 = receiveEval[rec TermChan . &{Const: ?Int, Add: TermChan;TermChan, Mult: TermChan;TermChan}] c2 in
       (n1*n2, c3)
 
-client ::  (rec TermChan . +{Const: !Int, Add: TermChan;TermChan, Mult: TermChan;TermChan});?Int;Skip -> (Int, Skip)
+client :: (rec TermChan . +{Const: !Int, Add: TermChan;TermChan, Mult: TermChan;TermChan});?Int;Skip -> (Int, Skip)
 client c =
   let c1 = select Add c in
   let c2 = select Const c1 in
