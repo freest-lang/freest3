@@ -270,10 +270,6 @@ checkMap pos choice (TypeScheme _ against) c (x, e) f = do
   t1 <- f pos choice c   
   let x' = zip x (myInit (toList (TypeScheme [] t1)))
   foldM (\_ (p, t) -> addToVEnv p t) () x'
-
-  -- venv <- getVarEnv
-  -- addError $ "\nc = " ++ show c ++ "\n" ++ show t1 ++ "\n\n" -- ++ show venv ++ "\n\n"
-  
   checkAgainst pos e against
   return ()
 
