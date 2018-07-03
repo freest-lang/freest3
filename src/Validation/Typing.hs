@@ -139,9 +139,9 @@ checkExp (UnLet p x e1 e2) = do
   
 -- Applications
 checkExp (App p e1 e2) = do
-  -- if fst p == 29 then do
+  -- if fst p ==  then do
   --   venv <- getVarEnv
-  --   addError $ "\n venv1: " ++ show venv
+  --   addError $ "\n e1: " ++ show e1 ++ "\n\n e2: " ++ show e2 ++ "\n"
   -- else return ()
 
   t <- checkExp e1
