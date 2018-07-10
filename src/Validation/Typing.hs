@@ -49,7 +49,7 @@ checkFD fname args exp = do
   
   checkExpEnv (0,0) fname args
   venv <- getVarEnv
-  let (TypeScheme _ lt) = last $ toList $ venv Map.! fname
+  let lt = last $ toList $ venv Map.! fname
 
   -- checkExp exp  
   checkAgainst (0,0) exp lt
@@ -110,15 +110,12 @@ checkFunTypeDecl fname = do
 checkKinding :: TypeScheme -> TypingState ()
 checkKinding t = do
   -- kenv <- getKindEnv
-  -- TODO: add bs to kenv 
   -- let m = Map.union (Map.fromList bs) kenv
  --  let m = foldr (\b acc -> Map.insert (var b) (kind b) acc) Map.empty bs
 --  let m = Map.union m kenv
---  error $ show m
   -- setKEnv m
   kinding t
   return ()
-
 
 -- Typing rules for expressions
 
@@ -139,37 +136,33 @@ checkExp (UnLet p x e1 e2) = do
   
 -- Applications
 checkExp (App p e1 e2) = do
-  -- if fst p ==  then do
-  --   venv <- getVarEnv
-  --   addError $ "\n e1: " ++ show e1 ++ "\n\n e2: " ++ show e2 ++ "\n"
-  -- else return ()
-
+  -- TODO: REMOVE
+--  venv <- getVarEnv
   t <- checkExp e1
   (u1, u2) <- extractFun p t
-
-  -- if fst p == 29 then do
-  --   venv <- getVarEnv
-  --   addError $ "\n venv2: " ++ show venv
-  -- else return ()
-
-
   checkAgainst p e2 u1
-  return $ TypeScheme [] u2
+--  setVEnv venv
+  return u2
 
 checkExp (TypeApp p e t) = do
   t1 <- checkExp e  
   -- TODO: checkAgainstKind??
   (binds, t2) <- extractScheme p t1
   let sub = foldr (\(t', b) acc -> subs t' (var b) acc) t2 (zip t binds)
+  -- addToVEnv (show e) (TypeScheme [] sub)
+  
+  -- foldM (\_ (t', b) -> addToVEnv (var b) (TypeScheme [] t')) () (zip t binds)
+   
+  -- TODO: if type scheme then sub by skip ?? not correct
   -- TODO: isWellKinded sub???
   return $ TypeScheme [] sub
 
 -- Conditional
 
 checkExp (Conditional p e1 e2 e3) = do
-  checkAgainst p e1 (Basic BoolType)
+  checkAgainst p e1 (TypeScheme [] (Basic BoolType))
   venv2 <- getVarEnv
-  (TypeScheme _ t2) <- checkExp e2  
+  t2 <- checkExp e2  
   venv3 <- getVarEnv
   setVEnv venv2
   checkAgainst p e3 t2
@@ -177,20 +170,20 @@ checkExp (Conditional p e1 e2 e3) = do
   kenv <- getKindEnv
   checkEquivEnvs kenv venv3 venv4
   setVEnv venv2
-  return $ TypeScheme [] t2
+  return t2
 
  -- Pairs
 
 checkExp (Pair p e1 e2) = do
- (TypeScheme _ t1) <- checkExp e1 
- (TypeScheme _ t2) <- checkExp e2 
- return $ TypeScheme [] (PairType t1 t2)
+ (TypeScheme bs1 t1) <- checkExp e1 
+ (TypeScheme bs2 t2) <- checkExp e2 
+ return $ TypeScheme (bs1++bs2) (PairType t1 t2)
 
 checkExp (BinLet p x y e1 e2) = do
   t1 <- checkExp e1
   (u1,u2) <- extractPair p t1                     
-  addToVEnv x (TypeScheme [] u1)
-  addToVEnv y (TypeScheme [] u2)
+  addToVEnv x u1
+  addToVEnv y u2
   u <- checkExp e2 
   removeFromVarEnv x
   removeFromVarEnv y
@@ -208,31 +201,29 @@ checkExp (Send p e1 e2) = do
   t1 <- checkExp e1
   b1 <- extractBasic p t1
   t2 <- checkExp e2
-  (b2, u) <- extractOutput p t2
   checkEquivBasics p b1 b2
   return u
 
 checkExp (Receive p e) = do
+  venv <- getVarEnv
   t <- checkExp e
-  (b, t1) <- extractInput p t
-  return $ TypeScheme [] (PairType (Basic b) t1)
+  (b, TypeScheme bs t1) <- extractInput p t
+  return $ TypeScheme bs (PairType (Basic b) t1)
 
 -- Branching
 checkExp (Select p c e) = do
   t <- checkExp e
-  (TypeScheme bs choice) <- extractInChoice p t       
-  m <- extractChoiceMap choice
-  u <- extractConstructor p c m
+  (TypeScheme bs choice) <- extractInChoice p t  
+--  m <- extractChoiceMap choice
+
+  u <- extractConstructor p c choice  
   return $ TypeScheme bs u
 
 checkExp (Match p e cm) = do
   t1 <- checkExp e
   let (c, (x, e1)) = Map.elemAt 0 cm
-  t2 <- extractExtChoice p t1 c  
-  addToVEnv x (TypeScheme [] t2)
-  
-  --addError $ "\nc = " ++ show c ++ "\n" ++ show t2 ++ "\n\n"
-  
+  t2 <- extractExtChoice p t1 c
+  addToVEnv x t2
   u <- checkExp e1
   Map.foldrWithKey (\k (v1,v2) _ -> checkMap p t1 u k ([v1], v2) extractExtChoice)
                    (return ()) (Map.delete c cm)
@@ -253,7 +244,7 @@ checkExp (Case pos e cm) = do
   let (c, (x, e1)) = Map.elemAt 0 cm  
   t2 <- extractDatatype pos t c  
 
-  let x' = zip x (init (toList (TypeScheme [] t2)))        
+  let x' = zip x (init (toList t2))        
   foldM (\_ (p, t) -> addToVEnv p t) () x' 
   u <- checkExp e1
   Map.foldrWithKey (\k v _ -> checkMap pos t u k v extractDatatype)
@@ -263,12 +254,12 @@ checkExp (Case pos e cm) = do
 
 checkMap :: Pos -> TypeScheme -> TypeScheme -> TermVar ->
             (Params, Expression) ->
-            (Pos -> TypeScheme -> Constructor -> TypingState Type) ->
+            (Pos -> TypeScheme -> Constructor -> TypingState TypeScheme) ->
             TypingState ()
             
-checkMap pos choice (TypeScheme _ against) c (x, e) f = do 
+checkMap pos choice against c (x, e) f = do 
   t1 <- f pos choice c   
-  let x' = zip x (myInit (toList (TypeScheme [] t1)))
+  let x' = zip x (myInit (toList t1))
   foldM (\_ (p, t) -> addToVEnv p t) () x'
   checkAgainst pos e against
   return ()
@@ -315,13 +306,13 @@ checkUn p (TypeScheme _ t) = do
 
 -- The Extract Functions
 
-extractFun :: Pos -> TypeScheme -> TypingState (Type, Type)
+extractFun :: Pos -> TypeScheme -> TypingState (TypeScheme, TypeScheme)
 extractFun _ (TypeScheme bs (Fun _ t u)) = do
   addBindsToKenv bs
-  return (t, u)
+  return (TypeScheme bs t, TypeScheme bs u)
 extractFun p t                           = do
   addError (show p ++  ": Expecting a function type; found " ++ show t)
-  return (Basic IntType, Basic IntType)
+  return (TypeScheme [] (Basic IntType), TypeScheme [] (Basic IntType))
 
 extractScheme :: Pos -> TypeScheme -> TypingState ([Bind], Type)
 extractScheme p (TypeScheme [] t) = do
@@ -329,13 +320,13 @@ extractScheme p (TypeScheme [] t) = do
   return ([], (Basic UnitType))
 extractScheme _ (TypeScheme bs t) = return (bs, t)
 
-extractPair :: Pos -> TypeScheme -> TypingState (Type, Type)
+extractPair :: Pos -> TypeScheme -> TypingState (TypeScheme, TypeScheme)
 extractPair _ (TypeScheme bs (PairType t u)) = do
   addBindsToKenv bs
-  return (t, u)
+  return (TypeScheme bs t, TypeScheme bs u)
 extractPair p t                         = do
   addError (show p ++  ": Expecting a pair type; found " ++ show t)
-  return (Basic IntType, Basic IntType)
+  return (TypeScheme [] (Basic IntType), TypeScheme [] (Basic IntType))
 
 extractBasic :: Pos -> TypeScheme -> TypingState BasicType
 extractBasic _ (TypeScheme bs (Basic t)) = do
@@ -350,7 +341,7 @@ extractBasic p t                         = do
 extractOutput :: Pos -> TypeScheme -> TypingState (BasicType, TypeScheme)
 extractOutput p (TypeScheme bs (Semi Skip t)) = do
   addBindsToKenv bs
-  extractOutput p (TypeScheme [] t)
+  extractOutput p (TypeScheme bs t)
 extractOutput _ (TypeScheme bs (Semi (Message Out b) t)) = return (b, TypeScheme bs t)
 extractOutput _ (TypeScheme bs (Message Out b)) = return (b, TypeScheme bs Skip)
 extractOutput p (TypeScheme bs (Rec b t)) = do
@@ -363,24 +354,24 @@ extractOutput p t = do
   return (UnitType, TypeScheme [] Skip)
 
 -- TODO: review this case (bindings)
-extractInput :: Pos -> TypeScheme -> TypingState (BasicType, Type)
+extractInput :: Pos -> TypeScheme -> TypingState (BasicType, TypeScheme)
 extractInput p (TypeScheme bs (Semi Skip t)) = do
   addBindsToKenv bs
   extractInput p (TypeScheme bs t)
-extractInput _ (TypeScheme _ (Semi (Message In b) t)) = return (b,t)
-extractInput _ (TypeScheme _ (Message In b)) = return (b, Skip)
+extractInput _ (TypeScheme bs (Semi (Message In b) t)) =
+  return (b, TypeScheme bs t)
+extractInput _ (TypeScheme bs (Message In b)) = return (b, TypeScheme [] Skip)
 extractInput p (TypeScheme bs (Rec b t)) = do
   addBindsToKenv bs
   extractInput p (TypeScheme bs (unfold (Rec b t)))
 extractInput p (TypeScheme bs (Semi t u)) = do -- TODO: Wrong?
-  (b, t1) <- extractInput p (TypeScheme bs t)
-  return (b, t1 `Semi` u)
+  (b, TypeScheme _ t1) <- extractInput p (TypeScheme bs t)
+  return (b, TypeScheme bs (t1 `Semi` u))
 extractInput p t = do
   addError (show p ++  ": Expecting an input type; found " ++ show t)
-  return (UnitType, Skip)
+  return (UnitType, TypeScheme [] Skip)
 
 -- TODO: review this case (bindings)
---   error $ "\n\n" ++ show t ++ "\n\n"
 extractInChoice :: Pos -> TypeScheme -> TypingState TypeScheme
 extractInChoice p (TypeScheme bs (Semi Skip t)) = do
   addBindsToKenv bs
@@ -391,49 +382,42 @@ extractInChoice _ (TypeScheme bs (Semi (Choice Internal m) t)) =
 extractInChoice p (TypeScheme bs (Rec b t)) = do
   addBindsToKenv bs
   extractInChoice p (TypeScheme bs (unfold (Rec b t)))
--- extractInChoice p (TypeScheme [] (Semi (Rec b t1) t2)) = --do
--- --  error $ "\n\n" ++ show (unfold (Rec b t1)) ++ "\n\n"
---   extractInChoice p (TypeScheme [] (Semi (unfold (Rec b t1)) t2))
 -- TODO: Finish
 extractInChoice p (TypeScheme bs (Semi t1 t2)) = do
---  addBindsToKenv bs    
-  (TypeScheme bs' t3) <- extractInChoice p (TypeScheme bs t1)
-  -- TODO: what to return??
-  -- extractInChoice p (TypeScheme [] (Semi t3 t2))
-  return $ TypeScheme bs' (Semi t3 t2)
+  -- addBindsToKenv bs    
+  (TypeScheme bs' (Choice Internal m)) <- extractInChoice p (TypeScheme bs t1)
+  return $ TypeScheme bs (Choice Internal (Map.map (`Semi` t2) m))
   
 extractInChoice p t = do
   addError (show p ++  ": Expecting an internal choice; found " ++ show t)
-  return $ TypeScheme [] Skip
+  return $ TypeScheme [] Skip 
+
 
 -- TODO: review this case (bindings)
-extractExtChoice :: Pos -> TypeScheme -> Constructor -> TypingState Type
-extractExtChoice p (TypeScheme bs (Semi Skip t)) c =  do
-  addBindsToKenv bs
-  extractExtChoice p (TypeScheme [] t) c
-extractExtChoice _ (TypeScheme _ (Choice External m)) c = return $ m Map.! c -- Choice External m
-extractExtChoice _ (TypeScheme _ (Semi (Choice External m) t)) c =
-  return $ (Map.map (`Semi` t) m) Map.! c
+extractExtChoice :: Pos -> TypeScheme -> Constructor -> TypingState TypeScheme
+extractExtChoice p (TypeScheme bs (Semi Skip t)) c = extractExtChoice p (TypeScheme bs t) c
+extractExtChoice _ (TypeScheme bs (Choice External m)) c =
+  return $ TypeScheme bs (m Map.! c) -- Choice External m
+extractExtChoice _ (TypeScheme bs (Semi (Choice External m) t)) c =
+  return $ TypeScheme bs ((Map.map (`Semi` t) m) Map.! c)
 extractExtChoice p (TypeScheme bs (Rec b t)) c = do
   addBindsToKenv bs  
-  extractExtChoice p (TypeScheme [] (unfold (Rec b t))) c
-  -- error $ "\n\n" ++ show c ++ "\n\n" ++ show (unfold (Rec b t)) ++ "\n\n" ++ show b1 ++ "\n\n"
---  error $ "\n\n" ++ show b ++ "\n\n"
+  extractExtChoice p (TypeScheme bs (unfold (Rec b t))) c
 --  return b1
 extractExtChoice p (TypeScheme bs (Semi t1 t2)) c = do  
   addBindsToKenv bs  
-  t3 <- extractExtChoice p (TypeScheme [] t1) c
---  error $ "\n\n" ++ show t1  ++ "\n\n" ++ show t3 ++ "\n\n"
-  return $ Semi t3 t2
+  (TypeScheme _ t3) <- extractExtChoice p (TypeScheme bs t1) c
+  return $ TypeScheme bs (Semi t3 t2)
+  
 extractExtChoice p t _ = do
   addError (show p ++  ": Expecting an external choice; found " ++ show t)
-  return Skip
+  return $ TypeScheme [] Skip
 
 -- TODO: review this case (bindings)
-extractDatatype :: Pos -> TypeScheme -> Constructor -> TypingState Type
+extractDatatype :: Pos -> TypeScheme -> Constructor -> TypingState TypeScheme
 extractDatatype _ (TypeScheme bs (Datatype m)) c = do
   addBindsToKenv bs
-  return $ m Map.! c -- Choice External m
+  return $ TypeScheme bs (m Map.! c)
 extractDatatype p (TypeScheme bs (Rec b t)) c =
   extractDatatype p (TypeScheme bs (unfold (Rec b t))) c
 
@@ -444,22 +428,25 @@ extractDatatype p (TypeScheme _ (Var x)) c = do -- Should be here?
     extractDatatype p dt c
   else do
     addError (show p ++  ": Expecting a datatype; found " ++ show (Var x))
-    return (Basic IntType)  
+    return $ TypeScheme [] (Basic IntType)
   
 -- TODO ??
 -- extractDatatype p (TypeScheme [] (Semi t1 t2)) = do
 extractDatatype p t _ = do
   addError (show p ++  ": Expecting a datatype; found " ++ show t)
-  return (Basic IntType)  
+  return $ TypeScheme [] (Basic IntType)  
 
-extractConstructor :: Pos -> Constructor -> TypeMap -> TypingState Type
-extractConstructor p c tm =
+extractConstructor :: Pos -> Constructor -> Type -> TypingState Type
+extractConstructor p c (Choice _ tm) =
   if Map.member c tm then
     return $ tm Map.! c 
   else do
     addError (show p ++ ": Constructor " ++ show c ++ " not in scope" )
     return (Basic UnitType)
-
+extractConstructor p c t = do
+  addError $ show p ++  ": Expecting a choice; found " ++ show t
+  return (Basic UnitType)
+  
 -- Extract Without Errors
 
 extractChoiceMap :: Type -> TypingState TypeMap
@@ -506,9 +493,18 @@ addBindsToKenv bs = foldM (\_ b -> addToKenv (var b) (kind b)) () bs
   
 -- Type check against type
 
-checkAgainst :: Pos -> Expression -> Type -> TypingState ()
-checkAgainst p e t = do
-  (TypeScheme _ u) <- checkExp e
+checkAgainst :: Pos -> Expression -> TypeScheme -> TypingState ()
+checkAgainst p e (TypeScheme bs1 t) = do
+  (TypeScheme bs2 u) <- checkExp e
+  
+  -- let t1 = foldr (\b acc -> subs Skip (var b) acc) t bs1
+  -- let u1 = foldr (\b acc -> subs Skip (var b) acc) u bs2
+
+  -- if fst p == 40 then do
+  --   addError $ "bs1: " ++ show bs1 ++ " bs2: " ++ show bs2
+  -- else return ()
+  -- addError $ "expression e: " ++ show e ++ " | with type: " ++ show u ++ "| subs to " ++ show u1 ++ "| is checked against type " ++ show t1  
+
   kenv <- getKindEnv
   if (equivalent kenv t u) then
     return ()

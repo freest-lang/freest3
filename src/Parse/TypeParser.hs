@@ -81,7 +81,7 @@ typeExpr :: Parsec String u Type
 typeExpr =  buildExpressionParser table parseTerm
         <?> "an expression"
          
-table = [[binary ";" Semi AssocRight ]
+table = [[binary ";" Semi AssocLeft ]
         , [binary "->" (Fun Un) AssocRight, binary "-o" (Fun Lin) AssocRight ]
         ]
 

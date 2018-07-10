@@ -71,3 +71,8 @@ data Expression
   | Case Pos Expression CaseMap
    deriving (Show, Eq, Ord)
 
+-- -- TODO: ??
+-- instance Show Expression where
+--   show (Variable _ x) = x
+--   show e = ""
+

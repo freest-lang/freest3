@@ -1,30 +1,30 @@
 
 testEqValid :
-	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Types/TestEqValidSpec.hs
+	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Syntax/TestEqValidSpec.hs
 
 testEqInvalid :
-	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Types/TestEqInvalidSpec.hs
+	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Syntax/TestEqInvalidSpec.hs
 
 testShow :
-	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Types/TestShowValidSpec.hs
+	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Syntax/TestShowValidSpec.hs
 
 testParserValid :
-	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Types/TestParserValidSpec.hs
+	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Parse/TestParserValidSpec.hs
 
 testParserInvalid :
-	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Types/TestParserInvalidSpec.hs
+	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Parse/TestParserInvalidSpec.hs
 
 testKindingValid :
-	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Types/TestKindingValidSpec.hs
+	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Validation/TestKindingValidSpec.hs
 
 testKindingInvalid :
-	runhaskell -isrc -itest/UnitTests/  test/UnitTests/Types/TestKindingInvalidSpec.hs
+	runhaskell -isrc -itest/UnitTests/  test/UnitTests/Validation/TestKindingInvalidSpec.hs
 
 testEquivalenceValid :
-	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Types/TestEquivalenceValidSpec.hs
+	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Validation/TestEquivalenceValidSpec.hs
 
 testEquivalenceInvalid :
-	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Types/TestEquivalenceInvalidSpec.hs
+	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Validation/TestEquivalenceInvalidSpec.hs
 
 clean :
 	rm `find ./ -name '*.o' -o -name '*.hi' -o -name '*.tix'` -r

@@ -22,6 +22,7 @@ type TreeChannel = rec x::Su. +{
 
 -- data A = LeafA | NodeA Int A A
 -- Type-safe serialization of a binary tree
+
 sendTree :: forall a => Tree -> (rec x . +{LeafC : Skip, NodeC: !Int;x;x}); a -> a
 sendTree t c =
   case t of
@@ -30,8 +31,8 @@ sendTree t c =
     Node x l r ->
       let w1 = select NodeC c in
       let w2 = send x w1 in
-      let w3 = sendTree[rec x . +{LeafC : Skip, NodeC: !Int;x;x}] l w2 in
-      let w4 = sendTree[Skip] r w3 in
+      let w3 = sendTree[(rec x . +{LeafC : Skip, NodeC: !Int;x;x});a] l w2 in
+      let w4 = sendTree[a] r w3 in
       w4
 
 receiveTree :: forall a => (rec x.&{LeafC: Skip, NodeC: ?Int;x;x}); a -> (Tree, a)
@@ -41,22 +42,9 @@ receiveTree c =
       (Leaf, c1)
     NodeC c1 ->
       let x, c2 = receive c1 in
-      let left, c3 = receiveTree [rec x.&{LeafC: Skip, NodeC: ?Int;x;x}] c2 in
-      let right, c4 = receiveTree [Skip] c3 in
+      let left, c3 = receiveTree [(rec x.&{LeafC: Skip, NodeC: ?Int;x;x});a] c2 in
+      let right, c4 = receiveTree [a] c3 in
       (Node x left right, c4)
-
-
-
-
-{-
-TODO:
-try the same constructors for the datatype and the session type
-
-        rec x.+{Leaf: Skip, Node: !Int;x;x}
--}
-
--- start :: Int
--- start = 10
 
 
 start :: Tree
@@ -66,3 +54,4 @@ start =
   let w = fork (sendTree[Skip] inTree writer) in
   let outTree, r = receiveTree reader in
   outTree
+
