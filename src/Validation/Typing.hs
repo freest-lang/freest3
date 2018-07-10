@@ -201,6 +201,7 @@ checkExp (Send p e1 e2) = do
   t1 <- checkExp e1
   b1 <- extractBasic p t1
   t2 <- checkExp e2
+  (b2, u) <- extractOutput p t2
   checkEquivBasics p b1 b2
   return u
 
