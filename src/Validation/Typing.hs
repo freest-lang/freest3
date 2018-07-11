@@ -136,12 +136,15 @@ checkExp (UnLet p x e1 e2) = do
   
 -- Applications
 checkExp (App p e1 e2) = do
-  -- TODO: REMOVE
---  venv <- getVarEnv
   t <- checkExp e1
   (u1, u2) <- extractFun p t
+
+  -- addError $ "\n"++show p++"\n"
+  -- if fst p == 23 then do
+  --   addError $ "\n\n\n" ++ show e2 ++ "\n\n\n"
+  -- else return ()
+
   checkAgainst p e2 u1
---  setVEnv venv
   return u2
 
 checkExp (TypeApp p e t) = do
@@ -383,12 +386,24 @@ extractInChoice _ (TypeScheme bs (Semi (Choice Internal m) t)) =
 extractInChoice p (TypeScheme bs (Rec b t)) = do
   addBindsToKenv bs
   extractInChoice p (TypeScheme bs (unfold (Rec b t)))
--- TODO: Finish
-extractInChoice p (TypeScheme bs (Semi t1 t2)) = do
+extractInChoice p (TypeScheme bs (Semi (Semi t1 t2) t3)) = do
   -- addBindsToKenv bs    
-  (TypeScheme bs' (Choice Internal m)) <- extractInChoice p (TypeScheme bs t1)
-  return $ TypeScheme bs (Choice Internal (Map.map (`Semi` t2) m))
+  (TypeScheme _ t4) <- extractInChoice p (TypeScheme bs (Semi t1 t2))
+  extractInChoice p (TypeScheme bs (Semi t4 t3))
   
+extractInChoice p (TypeScheme bs (Semi t1 t2)) = do
+  (TypeScheme bs' t3) <- extractInChoice p (TypeScheme bs t1)
+  extractInChoice p (TypeScheme bs (Semi t3 t2))
+
+  
+-- extractInChoice p (TypeScheme bs (Semi t1 t2)) = do
+--   -- addBindsToKenv bs
+--   (TypeScheme bs' (Choice v m)) <- extractInChoice p (TypeScheme bs t1)
+--   return $ TypeScheme bs (Choice v (Map.map (`Semi` t2) m))  
+
+--(rec y . +{A:!Int;y});x
+
+
 extractInChoice p t = do
   addError (show p ++  ": Expecting an internal choice; found " ++ show t)
   return $ TypeScheme [] Skip 
@@ -661,3 +676,18 @@ e30 = Case (107,8) (Variable (107,8) "l") (Map.fromList [("Cons",(["x","y"],Bool
 
 
 -- Map.fromList [("id'",(["x"],Variable (5,9) "x"))]
+
+
+-- extract in choice
+runner t = runState (extractInChoice (0,0) (TypeScheme [] t)) (Map.empty, Map.empty, [])
+
+t100 = read "+{A:!Int};x;x" :: Type
+t101 = read "+{A:!Int, B: ?Char};x;x" :: Type
+t102 = read "+{A:!Int};x" :: Type
+t103 = read "+{A:!Int, B: Skip};x" :: Type
+t104 = read "rec y . +{A:!Int;y};x" :: Type
+
+t105 = read "(rec y . +{A:!Int;y});x" :: Type  -- Error
+
+t106 = read "rec x . +{A:!Int};x" :: Type
+t107 = read "rec y . +{A:!Int;y, B: y};x" :: Type -- 104 - 2 options

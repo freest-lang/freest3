@@ -14,12 +14,12 @@ receiveEval c =
       let x, y = receive c1 in
       (x,y)
     Add c1 ->
-      let n1, c2 = receiveEval[rec TermChan . &{Const: ?Int, Add: TermChan;TermChan, Mult: TermChan;TermChan}] c1 in
-      let n2, c3 = receiveEval[rec TermChan . &{Const: ?Int, Add: TermChan;TermChan, Mult: TermChan;TermChan}] c2 in
+      let n1, c2 = receiveEval[(rec TermChan . &{Const: ?Int, Add: TermChan;TermChan, Mult: TermChan;TermChan});x] c1 in
+      let n2, c3 = receiveEval[x] c2 in
       (n1+n2, c3)
     Mult c1 ->
-      let n1, c2 = receiveEval[rec TermChan . &{Const: ?Int, Add: TermChan;TermChan, Mult: TermChan;TermChan}] c1 in
-      let n2, c3 = receiveEval[rec TermChan . &{Const: ?Int, Add: TermChan;TermChan, Mult: TermChan;TermChan}] c2 in
+      let n1, c2 = receiveEval[(rec TermChan . &{Const: ?Int, Add: TermChan;TermChan, Mult: TermChan;TermChan});x] c1 in
+      let n2, c3 = receiveEval[x] c2 in
       (n1*n2, c3)
 
 client :: (rec TermChan . +{Const: !Int, Add: TermChan;TermChan, Mult: TermChan;TermChan});?Int -> (Int, Skip)
