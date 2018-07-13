@@ -29,7 +29,7 @@ Franco e Vasconcelos \cite{ref-sepi} apresentaram uma linguagem concorrente base
 Nesta linguagem, os canais de comunicação são síncronos e bi-direcionais. São descritos pelas suas duas extremidades, onde os processos podem ler ou escrever em qualquer parte dos programas e usam tipos para descrever o fluxo de mensagens que são escritas/lidas no canal.
 
 %Baltazar et al. introduziram um conceito em que combinam os tipos de sessão com alguns refinamentos originando assim os tipos linearmente refinados \cite{ref-lin-ref-st}. Estes tipos permitem ao programador acoplar formulas a tipos de sessão, permitindo especificar algumas propriedades. Estes, serviram de base para implementar linguagens como o SePi.
- Os tipos de sessão tradicionais têm limitações na sua estrutura que impedem a serialização de forma eficiente e com segurança de tipos de estruturas de dados organizadas em forma de árvore. A linguagem que propomos permite definir protocolos que descrevem eficientemente essas estruturas recorrendo a tipos de sessão independentes do contexto.
+\paragraph{}Os tipos de sessão tradicionais têm limitações na sua estrutura que impedem a serialização de forma eficiente e com segurança de tipos de estruturas de dados organizadas em forma de árvore. A linguagem que propomos permite definir protocolos que descrevem eficientemente essas estruturas recorrendo a tipos de sessão independentes do contexto.
 %O SePi é uma linguagem que usufrui dos tipos de sessão tradicionais definir protocolos que descrevam os dados que circulam nos canais de comunicação. No entanto, as limitações destes tipos impedem a serialização com segurança de tipos de estruturas em forma de árvore. A linguagem que propomos permite definir protocolos que descrevem eficientemente essas estruturas recorrendo a tipos de sessão independentes do contexto.
 
 
@@ -38,7 +38,7 @@ Nesta linguagem, os canais de comunicação são síncronos e bi-direcionais. S�
 %Esta secção apresenta brevemente o modelo de atores e a linguagem Erlang que implementa este modelo. Descreve ainda o Akka que é um conjunto de ferramentas que também implementa o modelo de atores e que pode ser utilizado nas linguagens de programação Java e Scala.
 
 \subsubsection{Modelo de atores}
-\label{sec:actors}
+\label{sec:actor-model}
 O conceito de atores foi introduzido por Hewitt et al. \cite{Hewitt:StructuresAsPatternsOfPassingMessages} como um formalismo que se foca na relação entre eventos que é causada por um ator. Os atores são entidades concorrentes que trocam mensagens de forma assíncrona. De tal forma, os problemas tradicionais que estão inerentes à programação concorrente como as situações de impasse e as condições de corrida foram também tidos em consideração, de modo a que não seja necessário recorrer ao uso de semáforos para limitar o acesso a regiões críticas dos programas. %\cite{Agha:Actors}.
 
 \subsubsection{Erlang}
@@ -57,7 +57,8 @@ Em Akka, os atores são assíncronos e usam um sistema de comunicação baseado 
 
 Um ator tem estado, uma ``caixa de correio'' (\textit{mailbox}) e um determinado comportamento, pode ter como filhos outros atores por ele criados que têm de ser explicitamente terminados. O comportamento dos atores pode mudar ao longo do tempo (operações \lstinline"become" e \lstinline"unbecome").
 
-\todo{(VS.) assíncronos, sistema de comunicação baseado em troca de mensagens não bloqueantes}
+\paragraph{}O modelo de atores foca-se no conceito de ator e na relação entre os eventos causada pelos atores. Tem em consideração aspetos relativos à programação concorrente como as situações de impasse e as condições de corrida que também são tidos em consideração na programação baseada em canais. A diferença em relação à linguagem que apresentamos é que os atores trocam mensagens assíncronamente enquanto que a nesta linguagem as mensagens são trocadas síncrononamente.
+
 %O modelo de atores foca-se no conceito de ator e na relação entre os eventos causada pelos atores. Tem em consideração aspetos relativos à programação concorrente como as situações de impasse e as condições de corrida que também são tidos em consideração na programação baseada em canais. Contudo, a comunicação entre atores é assíncrona recorrendo a uma ``caixa de correio'' para guardar as mensagens que ainda não foram entregues. A linguagem que apresentamos comunica de forma síncrona
 
 %%% Local Variables:

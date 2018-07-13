@@ -54,8 +54,17 @@ checkFD fname args exp = do
   -- checkExp exp  
   checkAgainst (0,0) exp lt
   -- TODO: add...
---  checkVEnvUn kenv venv2
+  checkVEnvUn 
   return ()
+
+-- TODO: Add Pos
+-- TODO: Test
+checkVEnvUn :: TypingState ()
+checkVEnvUn = do
+  venv <- getVarEnv
+  Map.foldr (\t acc -> checkUn (0,0) t) (return ()) venv
+  return ()
+
 
 checkExpEnv :: Pos -> TermVar -> Params -> TypingState ()
 checkExpEnv p fun params = do

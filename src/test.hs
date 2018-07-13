@@ -100,10 +100,26 @@
 --   x
 
 
-data IntList = Nil | Cons Int IntList
+-- data IntList = Nil | Cons Int IntList
 
-null' :: IntList -> Bool
-null' l =
-  case l of
-    Nil -> True
-    Cons x y -> False
+-- null' :: IntList -> Bool
+-- null' l =
+--   case l of
+--     Nil -> True
+--     Cons x y -> False
+
+
+exploreNode :: forall x => Int -> Tree -> Tree -> (rec xPloreNodeChan . &{Value: !Int;xPloreNodeChan, Left: (rec xPloreTreeChan . +{LeafC: Skip, NodeC: xPloreNodeChan});xPloreNodeChan, Right: (rec xPloreTreeChan . +{LeafC: Skip, NodeC: xPloreNodeChan});xPloreNodeChan, Exit: Skip});x -> x
+exploreNode x l r c1 =
+  match c1 with
+    Value c2 ->
+      let c3 = send x c2 in
+      exploreNode[x] x l r c3
+    Left c2 ->
+      let c3 = exploreTree[(rec xPloreNodeChan . &{Value: !Int;xPloreNodeChan, Left: (rec xPloreTreeChan . +{LeafC: Skip, NodeC: xPloreNodeChan});xPloreNodeChan, Right: (rec xPloreTreeChan . +{LeafC: Skip, NodeC: xPloreNodeChan});xPloreNodeChan, Exit: Skip});x] r c2 in
+      exploreNode[x] x l r c3
+    Right c2 ->
+      let c3 = exploreTree[(rec xPloreNodeChan . &{Value: !Int;xPloreNodeChan, Left: (rec xPloreTreeChan . +{LeafC: Skip, NodeC: xPloreNodeChan});xPloreNodeChan, Right: (rec xPloreTreeChan . +{LeafC: Skip, NodeC: xPloreNodeChan});xPloreNodeChan, Exit: Skip});x] r c2 in
+      exploreNode x l r c3
+    Exit c2 ->
+      c2

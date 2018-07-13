@@ -169,8 +169,7 @@ prefixOp name fun =  Prefix (do reservedOp name; return fun)
 parseExpression :: CFSTSubParser Expression
 parseExpression =
   buildExpressionParser table (parseFunApp <|> constructApp <|> parseExpr)
-
-
+  
 parseExpr :: CFSTSubParser Expression
 parseExpr =
       try (parens parseExpression)
@@ -289,7 +288,7 @@ parseReceive :: CFSTSubParser Expression
 parseReceive = do
   reserved "receive"
   pos <- getPosition
-  e <- parseExpression
+  e <- parseExpr
   return $ Receive (posPair pos) e
 
 parseSelect :: CFSTSubParser Expression
@@ -314,18 +313,27 @@ parseFork = do
 parseMatch :: CFSTSubParser Expression
 parseMatch = do
   reserved "match"
+  -- t <- many1 anyChar
+  -- error $ show t
   pos <- getPosition
-  e <- parseExpr
+  e <- parseExpression
   reserved "with"
-  v <- many1 parseMatchValues  
+  v <- many1 parseMatchValues
   return $ Match (posPair pos) e (Map.fromList v)
+
+-- parseMatchOption = do
+--   c <- constructor
+--   id <- lowerIdentifier
+--   reservedOp "->"
+--   return (c, id)
 
 parseMatchValues :: CFSTSubParser (String, (String, Expression))
 parseMatchValues = do
+--  (c, id) <- parseMatchOption
   c <- constructor
   id <- lowerIdentifier
   reservedOp "->"
-  e <- parseExpr
+  e <- try parseExpr
   return $ (c, (id, e))
 
 parseCase :: CFSTSubParser Expression
@@ -337,11 +345,15 @@ parseCase = do
   v <- many1 parseCaseValues
   return $ Case (posPair pos) e (Map.fromList v)
 
-parseCaseValues :: CFSTSubParser (String, ([String], Expression))
-parseCaseValues = do
+parseCatchOption = do
   c <- constructor
   ids <- (many lowerIdentifier)
   reservedOp "->"
+  return (c, ids)
+
+parseCaseValues :: CFSTSubParser (String, ([String], Expression))
+parseCaseValues = do
+  (c, ids) <- parseCatchOption
   e <- parseExpression
   return $ (c, (ids, e))
 
@@ -356,12 +368,12 @@ parseFunApp = try $ do
   pos <- getPosition
   c <- parseVariable
 --  notFollowedBy constructor
-  e <- many1 $ parseExpr -- (try $ parens parseExpression)
+  e <- many1 parseExpr
+-- e <- manyTill parseExpression untilParser1
   let p = posPair pos
   return $ foldl (apply p) (App p c (head e)) (tail e)
   where
     apply p acc e = App p acc e
-
 
 parseTypeApp :: CFSTSubParser Expression
 parseTypeApp = try $ do
@@ -369,16 +381,23 @@ parseTypeApp = try $ do
   c <- parseVariable
   ts <- squares $ commaSep parseType
   e <- many parseExpr  -- (try $ parens parseExpression)
---  error $ show ts
+--  e <- manyTill parseExpression untilParser1  -- (try $ parens parseExpression)
   let p = posPair pos
---  return $ TypeApp p c ts e)
   return $ foldl (apply p) (TypeApp p c ts) e
-  -- return $ foldl (apply p) (appTypeApp p c ts) e
   where
-  --   appTypeApp p c ts = foldl (applyType p) (TypeApp p c (head ts)) (tail ts)
-  --   applyType p acc t = TypeApp p acc t
      apply p acc e = App p acc e
- 
+
+-- untilParser1 :: CFSTSubParser ()
+-- untilParser1 = do
+--           lookAhead $ try $ parseMatchOption >> return ()
+--           lookAhead $ try $ parseCatchOption >> return ()
+--   <|> do {lookAhead $ try (reserved "in") >> return ()}
+--   <|> do {lookAhead $ try $ parseFunction}
+--   <|> (do {lookAhead $ try parseDataType})
+--   <|> (do {lookAhead $ try parseTypeSignature})
+--   <|> do {lookAhead $ try eof >> return ()}
+  
+
 constructApp :: CFSTSubParser Expression
 constructApp = try $ do 
   pos <- getPosition
@@ -439,7 +458,7 @@ instance Read TypeScheme where
 
 --TODO: remove (test purposes)
 run = mainProgram path Map.empty
-path = "src/test.hs"
---path = "/home/balmeida/workspaces/ContextFreeSession/test/Programs/ValidTests/dot/dot.hs"
+--path = "src/test.hs"
+path = "test/Programs/ValidTests/multDivPrecedence/multDivPrecedence.hs"
 --path = "/home/balmeida/workspaces/ContextFreeSession/test/Programs/ValidTests/sendTree/sendTree.hs"
 

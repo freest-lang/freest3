@@ -36,7 +36,7 @@ Assim sendo, a função que envia árvores binárias num canal tem o seguinte ti
 No caso em que se envia uma \lstinline"Leaf", é necessário escolher o ramo através da operação \lstinline"select Leaf" que espera um canal que tenha tipo na forma $\tIChoice{\{l_i\colon T_i\}}_{i\in I}$.
 Por outro lado, quando se envia um \lstinline"Node", selecionamos o ramo certo: \lstinline"select Node" e ficamos com o tipo $\tSemi{\tOut{\inte}}{\tSemi{x}{x}}$, assim sendo, primeiro enviamos o inteiro v no canal c ($\sende{v}{c}$) de seguida, é necessário fazer uma chamada recursiva à função para as duas subárvores.
 
-As chamadas a funções recursivas são na forma \lstinline"e[T]" porque nesta linguagem é necessário especificar o tipo de que as variáveis vão adotar em cada chamada recursiva.
+As chamadas a funções recursivas são na forma \lstinline"e[T]" porque nesta linguagem é necessário especificar o tipo que as variáveis vão adotar em cada chamada recursiva.
 Neste exemplo, as chamadas recursivas à função \lstinline"sendTree" especificam os tipos que variável \lstinline"a" vai adotar: \lstinline"rec x . +{LeafC : Skip, NodeC: !Int;x;x}" e \lstinline"Skip" respetivamente.
 %As chamadas a funções polimórficas, são na forma \lstinline"sendTree [Skip]" porque nesta linguagem é necessário especificar o tipo de que as variáveis (neste caso \textit{a}) vão adotar na chamada recursiva.
 
@@ -47,8 +47,8 @@ sendTree t c =
    Node x l r ->
      let c1 = select NodeC c in
      let c2 = send x c1 in
-     let c3 = sendTree[rec x.+{LeafC : Skip, NodeC: !Int;x;x}] l c2 in
-     let c4 = sendTree[Skip] r c3 in
+     let c3 = sendTree[(rec x.+{LeafC : Skip, NodeC: !Int;x;x});a] l c2 in
+     let c4 = sendTree[a] r c3 in
      c4
 
 \end{lstlisting}
@@ -63,8 +63,8 @@ A função que recebe a árvore binária é análoga mas com o tipo de sessão d
       LeafC c1 -> (Leaf, c1)
       NodeC c1 ->
         let x, c2 = receive c1 in
-        let left, c3 = receiveTree [rec x.&{LeafC: Skip, NodeC: ?Int;x;x}] c2 in
-        let right, c4 = receiveTree [Skip] c3 in
+        let left, c3 = receiveTree [(rec x.&{LeafC: Skip, NodeC: ?Int;x;x});a] c2 in
+        let right, c4 = receiveTree [a] c3 in
         (Node x left right, c4)
 \end{lstlisting}
 
@@ -87,11 +87,10 @@ O sistema de \textit{kinding} tem como objetivo assegurar a boa formação dos t
 Por exemplo, o tipo \lstinline|!Int| é bem formado e é um tipo de sessão linear, isto é, só pode ser utilizado uma vez. O seguinte tipo \lstinline|(Int->Bool);Int| não é bem formado porque mistura tipos funcionais com tipos de sessão. Por outro lado o tipo \lstinline|rec x . a;x| é mal formado se a variável \lstinline|a| não estiver no ambiente de \textit{kinding} (onde estão todas as associações de variáveis com os respetivos \textit{kinds}) ou se estiver no ambiente e o seu \textit{kind} não indicar que é um tipo de sessão.
 
 \subsubsection{Verificação de tipos}
-\label{sec:typecheck}
 Para fazermos a verificação de tipos utilizámos um sistema bidirecional, isto é, distinguimos duas relações:
 \begin{itemize}
 \item Dado um contexto e uma expressão, sintetizar o tipo T: \input{fig-synthesize}
-\item Dado um contexto, uma expressão e um tipo verificar o tipo da expressão de encontro ao tipo esperado através da relação de equivalência ($\thicksim$):%, neste caso verifica se U e T são equivalentes ($\Equiv{U}{T}$):
+\item Dado um contexto, uma expressão e um tipo esperado (T), verificar se o tipo da expressão (U) é equivalente ao tipo esperado (através da relação de equivalência $\thicksim$):%, neste caso verifica se U e T são equivalentes ($\Equiv{U}{T}$):
   \input{fig-checkAgainst}  
 \end{itemize}
 
@@ -111,19 +110,24 @@ A linguagem alvo da geração de código é Haskell que apresenta quatro desafio
 \newline
 \item O código gerado relativo às operações de comunicação presentes na figura \ref{fig:expressions} foi implementado recorrendo a uma \textit{MVar} que é uma zona de memória mutável que apenas tem dois estados, ou vazio ou um valor do tipo t. Tem duas operações fundamentais \textit{putMVar} para escrever nessa zona de memória (operação de \lstinline"send") e \textit{takeMVar} para ler dessa zona (operação de \lstinline"receive").
 \newline
-\item Uma \textit{MVar} t têm um tipo associado (t) que é sempre o mesmo para cada \textit{MVar}. Como esta é utilizada para a implementação dos canais de comunicação necessitamos que o seu tipo possa variar para que seja possível enviar, por exemplo, um valor inteiro seguido de um booleano (\lstinline"!Int;!Bool"). Para que o sistema de tipos do Haskell não verifique os tipos que circulam nos canais utilizámos uma primitiva do Haskell que converte um valor de um tipo noutro. Apesar de insegura, esta primitiva não apresenta qualquer problema porque fazemos a nossa própria verificação de tipos (secção \ref{sec:typecheck}).
-  As funções que concretizam o envio e a receção de valores em canais, mostram o uso desta primitiva (\lstinline|unsafeCoerce|) e ainda das \textit{MVar}:
-  \begin{lstlisting}[language=Haskell]
-    send x ch = do
-      putMVar ch (unsafeCoerce x)
-      return ch
+\item Uma \textit{MVar} t têm um tipo associado (t) que é sempre o mesmo para cada \textit{MVar}. Como esta é utilizada para a implementação dos canais de comunicação necessitamos que o seu tipo possa variar para que seja possível enviar, por exemplo, um valor inteiro seguido de um booleano (\lstinline"!Int;!Bool"). Para que o sistema de tipos do Haskell não verifique os tipos que circulam nos canais utilizámos uma primitiva do Haskell que converte um valor de um tipo noutro. Apesar de insegura, esta primitiva não apresenta qualquer problema porque fazemos a nossa própria verificação de tipos2.
+  As funções que concretizam o envio e a receção de valores em canais, mostram o uso desta primitiva (\lstinline|unsafeCoerce|) e ainda das \textit{MVar} cuja criação está representada pela função \lstinline|_new|:
+\begin{lstlisting}[language=Haskell]
+  _new = do
+    m1 <- newEmptyMVar
+    m2 <- newEmptyMVar
+    return ((m1, m2), (m2, m1))
 
-    receive ch = do
-      a <- takeMVar ch
-      return ((unsafeCoerce a), ch)
-  \end{lstlisting}
+  _send x (m1, m2) = do
+    putMVar m2 (unsafeCoerce x)
+    return (m1, m2)
 
-\item Como código gerado está escrito na linguagem Haskell as operações de envio ($\sende{v}{c}$), de receção ($\recve{c}$), de criação de canais ($\newe{T}$) e de fios de execução ($\forke{e}$) são forçosamente operações sobre um mónade, mais precisamente, são operações de IO.
+  _receive (m1, m2) = do
+    a <- takeMVar m1
+    return ((unsafeCoerce a), (m1, m2))
+\end{lstlisting}
+
+\item Como a linguagem alvo da geração de código é Haskell, as operações de envio ($\sende{v}{c}$), de receção ($\recve{c}$), de criação de canais ($\newe{T}$) e de fios de execução ($\forke{e}$) são forçosamente operações sobre um mónade, mais precisamente, são operações de IO.
 
 Este facto representa uma dificuldade que é decidir quando traduzir as expressões para código de um mónade ou não. % A cada momento da tradução ($[\![e]\!]$) apenas temos disponível uma expressão, que sabemos se é monádica ou não, mas não temos qualquer informação acerca das expressões anteriores (na mesma função). Se, num dado momento, encontramos uma expressão que origina código monádico, teríamos de retraduzir o código anterior para estar também na forma monádica.
 
@@ -193,8 +197,6 @@ Note-se que, como são enviados e recebidos valores o código encontra-se num mo
 \subsection{Testes}
 
 Foram realizados diversos tipos de testes, com diversas ferramentas para aferir a robustez do compilador. As ferramentas que utilizámos foram o \textit{HSpec}\footnote{\url{http://hspec.github.io/}} e o \textit{HUnit}\footnote{\url{https://github.com/hspec/HUnit}} para desenvolver os testes e o \textit{HPC}\footnote{\url{https://wiki.haskell.org/Haskell_program_coverage}} para aferir a cobertura dos testes. Foram feitos testes unitários para testar diversas funções isoladamente e ainda testes com programas, nos quais escrevemos um programa na linguagem apresentada e verificamos se o seu resultado é o esperado.
-
-
 
 %%% Local Variables:
 %%% mode: latex
