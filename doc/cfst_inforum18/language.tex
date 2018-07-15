@@ -32,13 +32,13 @@ Assim sendo, a função que envia árvores binárias num canal tem o seguinte ti
   sendTree :: forall a => Tree -> (rec x . +{LeafC : Skip, NodeC: !Int;x;x}); a -> a
 \end{lstlisting}
 
+Neste tipo feita uma abstração sobre o tipo \lstinline|a|. A função recebe uma \lstinline|Tree| e um canal que primeiro corre o protocolo recursivo \lstinline|rec x . +{LeafC : Skip, NodeC: !Int;x;x}| e de seguida o protocolo especificado por \lstinline|a|. O canal especificado por \lstinline|a| é retornado o que deixa o seu processamento para a continuação. Esta abstração é necessária porque com um tipo na forma \lstinline|Tree -> rec x . +{LeafC : Skip, NodeC: !Int;x;x} -> Skip| não é possível continuar após a primeira chamada recursiva.
 
 No caso em que se envia uma \lstinline"Leaf", é necessário escolher o ramo através da operação \lstinline"select Leaf" que espera um canal que tenha tipo na forma $\tIChoice{\{l_i\colon T_i\}}_{i\in I}$.
 Por outro lado, quando se envia um \lstinline"Node", selecionamos o ramo certo: \lstinline"select Node" e ficamos com o tipo $\tSemi{\tOut{\inte}}{\tSemi{x}{x}}$, assim sendo, primeiro enviamos o inteiro v no canal c ($\sende{v}{c}$) de seguida, é necessário fazer uma chamada recursiva à função para as duas subárvores.
 
-As chamadas a funções recursivas são na forma \lstinline"e[T]" porque nesta linguagem é necessário especificar o tipo que as variáveis vão adotar em cada chamada recursiva.
-Neste exemplo, as chamadas recursivas à função \lstinline"sendTree" especificam os tipos que variável \lstinline"a" vai adotar: \lstinline"rec x . +{LeafC : Skip, NodeC: !Int;x;x}" e \lstinline"Skip" respetivamente.
-%As chamadas a funções polimórficas, são na forma \lstinline"sendTree [Skip]" porque nesta linguagem é necessário especificar o tipo de que as variáveis (neste caso \textit{a}) vão adotar na chamada recursiva.
+As chamadas a funções polimórficas são na forma \lstinline"e[T]" porque nesta linguagem é necessário especificar o tipo que as variáveis vão adotar em cada chamada à função. Neste exemplo, as chamadas recursivas à função \lstinline"sendTree" especificam os tipos que variável \lstinline"a" vai adotar: \lstinline|(rec x.+{LeafC : Skip, NodeC: !Int;x;x});a| e \lstinline|a| respetivamente.
+
 
 \begin{lstlisting}
 sendTree t c =
@@ -52,8 +52,6 @@ sendTree t c =
      c4
 
 \end{lstlisting}
-
-O polimorfismo presente no tipo da função raramente é considerado com tipos de sessão. No entanto, como se pode observar no exemplo, este aparece de forma bastante natural.%, visto que, o envio de uma árvore generaliza o envio de um único valor, que é polimórfico.
 
 A função que recebe a árvore binária é análoga mas com o tipo de sessão dual \lstinline"rec x . &{Leaf: Skip, Node: ?Int;x;x}" que, em vez de impor a seleção de um dos ramos (\lstinline"select"), oferece uma escolha $\matche{tree}{\{l_i\,\to\,S_i\}_{i\in I}}$ dos mesmos.
 \begin{lstlisting}
@@ -106,13 +104,13 @@ O algoritmo que utilizamos está baseado nas ideias de Jančar et al. \cite{bisi
 A linguagem alvo da geração de código é Haskell que apresenta quatro desafios principais:
 
 \begin{itemize}
-\item  A linguagem que apresentamos é \textit{call-by-value} e o Haskell (código gerado) é \textit{call-by-name}, isto é, apenas computa as expressões que são passadas como argumento quando estas são utilizadas em vez de computar antes de chamar a função. Para resolver esta questão, tirámos partido da extensão da linguagem Haskell \textit{BangPatterns} que, permite a utilização de um ponto de exclamação antes de cada parâmetro força a avaliação do mesmo. Uma função \lstinline"fun x = e" quando traduzida fica \lstinline"fun !x = e".
+\item  A linguagem que apresentamos é \textit{call-by-value} e o Haskell (linguagem alvo da geração de código) é \textit{call-by-name}, isto é, apenas computa as expressões que são passadas como argumento quando estas são utilizadas em vez de computar antes de chamar a função. Para resolver esta questão, tirámos partido da extensão da linguagem Haskell \textit{BangPatterns} que, permite a utilização de um ponto de exclamação antes de cada parâmetro forçando assim a avaliação do mesmo. Uma função \lstinline"fun x = e" quando traduzida fica \lstinline"fun !x = e".
 \newline
-\item O código gerado relativo às operações de comunicação presentes na figura \ref{fig:expressions} foi implementado recorrendo a uma \textit{MVar} que é uma zona de memória mutável que apenas tem dois estados, ou vazio ou um valor do tipo t. Tem duas operações fundamentais \textit{putMVar} para escrever nessa zona de memória (operação de \lstinline"send") e \textit{takeMVar} para ler dessa zona (operação de \lstinline"receive").
+\item O código gerado relativo às operações de comunicação presentes na figura \ref{fig:expressions} foi implementado recorrendo a duas \textit{MVar} que são zonas de memória mutável que apenas tem dois estados, ou vazio ou um valor do tipo t. Tem duas operações fundamentais \textit{putMVar} para escrever nessa zona de memória (operação de \lstinline"send") e \textit{takeMVar} para ler dessa zona (operação de \lstinline"receive").
 \newline
-\item Uma \textit{MVar} t têm um tipo associado (t) que é sempre o mesmo para cada \textit{MVar}. Como esta é utilizada para a implementação dos canais de comunicação necessitamos que o seu tipo possa variar para que seja possível enviar, por exemplo, um valor inteiro seguido de um booleano (\lstinline"!Int;!Bool"). Para que o sistema de tipos do Haskell não verifique os tipos que circulam nos canais utilizámos uma primitiva do Haskell que converte um valor de um tipo noutro. Apesar de insegura, esta primitiva não apresenta qualquer problema porque fazemos a nossa própria verificação de tipos2.
+\item Uma \textit{MVar} t têm um tipo associado (t) que é sempre o mesmo para cada \textit{MVar}. Como esta é utilizada para a implementação dos canais de comunicação necessitamos que o seu tipo possa variar para que seja possível enviar, por exemplo, um valor inteiro seguido de um booleano (\lstinline"!Int;!Bool"). Para que o sistema de tipos do Haskell não verifique os tipos que circulam nos canais utilizámos uma primitiva que converte um valor de um tipo noutro. Apesar de insegura, esta primitiva não apresenta qualquer problema porque fazemos a nossa própria verificação de tipos.
   As funções que concretizam o envio e a receção de valores em canais, mostram o uso desta primitiva (\lstinline|unsafeCoerce|) e ainda das \textit{MVar} cuja criação está representada pela função \lstinline|_new|:
-\begin{lstlisting}[language=Haskell]
+\begin{lstlisting}[language=Haskell, style=eclipse]
   _new = do
     m1 <- newEmptyMVar
     m2 <- newEmptyMVar
@@ -129,28 +127,22 @@ A linguagem alvo da geração de código é Haskell que apresenta quatro desafio
 
 \item Como a linguagem alvo da geração de código é Haskell, as operações de envio ($\sende{v}{c}$), de receção ($\recve{c}$), de criação de canais ($\newe{T}$) e de fios de execução ($\forke{e}$) são forçosamente operações sobre um mónade, mais precisamente, são operações de IO.
 
-Este facto representa uma dificuldade que é decidir quando traduzir as expressões para código de um mónade ou não. % A cada momento da tradução ($[\![e]\!]$) apenas temos disponível uma expressão, que sabemos se é monádica ou não, mas não temos qualquer informação acerca das expressões anteriores (na mesma função). Se, num dado momento, encontramos uma expressão que origina código monádico, teríamos de retraduzir o código anterior para estar também na forma monádica.
+Este facto representa uma dificuldade que é decidir quando traduzir as expressões para código de um mónade ou não. 
+Para resolver este problema, antes de aplicar a função de tradução, anotámos a árvore sintática com valores booleanos que representam o estado que é esperado de cada expressão, isto é, se é expectável que uma dada expressão seja uma operação sobre um monáde.
+Para cada função, é necessário percorrer as suas expressões para determinar as que são operações sobre um mónade, ou seja, as que têm alguma expressão de IO. Esta fase é necessária porque as chamadas a funções são apenas aplicações de variáveis e podem por sua vez, também estar na forma de um monáde.
 
-Para resolver este problema, antes de aplicar a função de tradução, anotámos a árvore sintática com valores booleanos que representam o estado que é esperado de cada expressão. Antes disso, é necessário percorrer as expressões para saber que funções são sobre um mónade, isto é, se têm alguma expressão de IO. Esta fase é necessária porque as chamadas a funções são apenas aplicações de variáveis.
-
-Assim sendo, geramos código para cada expressão com base na tabela \ref{tab:monad} que contempla o valor esperado e o encontrado pela função de tradução a cada momento da geração de código.
-
-% Assim sendo, após a primeira iteração obtemos uma estrutura com as funções e um valor booleano associado que indica se são monádicas. Após esta fase, vamos anotar a árvore sintática e terminamos este processo com os valores esperados para cada nó da árvore.
-
-% Neste momento, a função de tradução, para cada expressão, tem informação acerca do valor monádico esperado e do encontrado (na própria função de tradução).
-
-% A tabela \ref{tab:monad} contempla as combinações dos valores monádicos encontrados e esperados assim como o código que deve ser gerado em cada um dos casos.
+Assim sendo, geramos código para cada expressão com base na tabela \ref{tab:monad} que contempla o valor esperado (anotado na árvore sintática) e o encontrado pela função de tradução a cada momento da geração de código.
 
 \begin{table}
 \begin{center}
   \begin{tabular}[ht!]{| c | c | c |}
     \hline  
     \quad Valor esperado \quad&\quad Valor encontrado \quad&\quad Código gerado \quad\\
-    \quad (anotação na árvore sintática) \quad&\quad (na função de tradução) \quad& (Haskell) \quad\\\hline
-    False & False & \lstinline|e| \\
-    True & False & \lstinline|return e| \\
-    True & True & \lstinline|e| \\
-    False & True & \lstinline|e >>= x -> x| \\
+    \quad (anotação da árvore sintática) \quad&\quad (na função de tradução) \quad& (Haskell) \quad\\\hline
+    \lstinline|False| & \lstinline|False| & \lstinline|e| \\
+    \lstinline|True| & \lstinline|False| & \lstinline|return e| \\
+    \lstinline|True| & \lstinline|True| & \lstinline|e| \\
+    \lstinline|False| & \lstinline|True| & \lstinline|e >>= x -> x| \\
     \hline
   \end{tabular}
   \vspace{0.2cm}
@@ -159,8 +151,8 @@ Assim sendo, geramos código para cada expressão com base na tabela \ref{tab:mo
 \end{center}
 \end{table}
 
-%  
-%  
+Nos casos em que o valor esperado e o valor encontrado são iguais a tradução deve ser literal. Quando é esperado que uma expressão \lstinline|e| seja uma operação sobre um monáde (valor esperado é \lstinline|True|) e esta não o é (valor encontrado é \lstinline|False|) a tradução deve ser \lstinline"return e" para que a operação passe a ser sobre um monáde. No último caso, em que o valor esperado é \lstinline|False| e o valor encontrado é \lstinline|True| devemos, ao traduzir, retirar a expressão do monáde: \lstinline"e >>= x -> x".
+
 % Nos casos em o valor esperado e o valor encontrado são iguais a tradução deve ser literal, no caso em que o valor esperado é true e o valor encontrado é false a tradução deve ser \lstinline"return e" para tornar o valor que é suposto ser monádico num valor monádico. No último caso, em que o valor esperado é false e o valor encontrado é true devemos, ao traduzir, retirar o valor do monad: \lstinline"e >>= x -> x".
 Por exemplo, o código fonte para o envio de uma árvore seria:
 
@@ -172,13 +164,13 @@ Por exemplo, o código fonte para o envio de uma árvore seria:
       Node x l r ->
         let c1 = select NodeC c in
         let c2 = send x c1 in
-        let c3 = sendTree[rec x . +{LeafC : Skip, NodeC: !Int;x;x}] l c2 in
-        let c4 = sendTree[Skip] r c3 in
+        let c3 = sendTree[(rec x . +{LeafC : Skip, NodeC: !Int;x;x});a] l c2 in
+        let c4 = sendTree[a] r c3 in
         c4
 \end{lstlisting}
 
 e o código gerado:
-\begin{lstlisting}[language=Haskell]
+\begin{lstlisting}[language=Haskell, style=eclipse]
   sendTree !t !c =
     case t of 
       Leaf -> _send "LeafC" c 
@@ -190,15 +182,24 @@ e o código gerado:
         \c4 -> return c4 
 \end{lstlisting}
 
-Note-se que, como são enviados e recebidos valores o código encontra-se num monáde de IO. 
+Note-se que, como são enviados e recebidos valores, o código traduzido se encontra num monáde de IO. É ainda importante realçar que após a tradução, os parâmetros (\lstinline|t| e \lstinline|c|) são precedidos do operador \lstinline|!| que devido à extensão \textit{BangPatterns} torna a função \textit{call-by-value}.
 
 \end{itemize}
 
 \subsection{Testes}
 
-Foram realizados diversos tipos de testes, com diversas ferramentas para aferir a robustez do compilador. As ferramentas que utilizámos foram o \textit{HSpec}\footnote{\url{http://hspec.github.io/}} e o \textit{HUnit}\footnote{\url{https://github.com/hspec/HUnit}} para desenvolver os testes e o \textit{HPC}\footnote{\url{https://wiki.haskell.org/Haskell_program_coverage}} para aferir a cobertura dos testes. Foram feitos testes unitários para testar diversas funções isoladamente e ainda testes com programas, nos quais escrevemos um programa na linguagem apresentada e verificamos se o seu resultado é o esperado.
+Foram realizados diversos tipos de testes para aferir a robustez do compilador. As ferramentas que utilizámos foram o \textit{HSpec}\footnote{\url{http://hspec.github.io/}} e o \textit{HUnit}\footnote{\url{https://github.com/hspec/HUnit}} para desenvolver os testes e o \textit{HPC}\footnote{\url{https://wiki.haskell.org/Haskell_program_coverage}} para aferir a cobertura dos testes.
+
+Foram feitos testes unitários com o intuito de verificar diversas funções isoladamente. Estes permitiram verificar diversas propriedades da linguagem, como por exemplo, se os tipos depois de interpretados têm a representação interna correta, se dois tipos são equivalentes (e vice-versa), se o \textit{kinding} de um tipo é o esperado, entre outras. Deste modo, foi possível verificar se as diversas partes da linguagem têm o comportamento esperado e detetar possíveis erros de implementação.
+
+Foram ainda feitos testes com programas, nos quais escrevemos um programa na linguagem apresentada e verificamos se o seu resultado é o esperado. Nestes testes, o compilador é testado de um modo mais global, uma vez que, para testar um programa é necessário passar por todas as fases do compilador.
+
+% Para além destes testes, foi utilizada a ferramenta \textit{QuickCheck}\footnote{\url{https://github.com/nick8325/quickcheck}} que permitiu testar alguma propriedades do compilador. Para que o resultado do uso desta ferramenta seja significativo, foi necessário garantir que os tipos gerados são tipos bem formados o que é garantido pelo sistema de \textit{kinding}.
+
 
 %%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "cfst-inforum18"
 %%% End:
+
+% LocalWords:  classifica-os
