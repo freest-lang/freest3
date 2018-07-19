@@ -31,7 +31,7 @@ import           Syntax.Kinds
 import           Syntax.Terms
 import           Syntax.Types
 import           Validation.TypingState
---- import Parse.TypeParser
+import Parse.TypeParser
 
 -- forall x :: SU => ((rec xFormChan :: SL . &{LeafC: Skip, NodeC: (?Int;(xFormChan;(xFormChan;!Int)))});x)
 
@@ -99,8 +99,6 @@ checkContractivity kenv t
 
 -- Determines the kinding of a type
 
--- TODO ...
--- kinding :: Type -> TypingState Kind
 kinding :: TypeScheme -> TypingState Kind
 kinding t = synthetizeScheme t -- ) initialState
 
@@ -142,10 +140,6 @@ synthetize (Rec (Bind x k) t) = do
   checkContractivity kenv t
   return k1
 
-
-
-
--- TODO ...
 
 checkAgainstKind :: Type -> Kind -> TypingState Type
 checkAgainstKind t k = do
