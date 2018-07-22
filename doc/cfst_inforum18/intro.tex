@@ -19,15 +19,18 @@ e o tipo de sessão, do ponto de vista de quem lê o canal, é o seguinte:
 		Nil : end
 		Cons : ?int.ListServer
 	}
-\end{lstlisting}
+\end{lstlisting}`
 
 Neste tipo de sessão temos o operador \& que oferece um ponto de escolha, ou seja, qualquer processo que leia de um canal do tipo \lstinline"ListServer" tem de estar preparado para aceitar as duas opções especificadas: ou \lstinline"Nil" e termina a comunicação ou \lstinline"Cons" onde primeiro é lido um inteiro e de seguida é lida, recursivamente, a restante lista.
 
-A sequência de operações para serializar a lista pode ser reconhecida por um autómato finito, apresentado abaixo:
-
 \input{fig-automata}
-
-Deste modo, podemos verificar que é possível enviar listas de um modo seguro recorrendo a tipos de sessão. Contudo, estes tipos têm limitações na sua estrutura que tornam impossível a descrição eficiente de serializações de dados estruturados em forma de árvore.
+ 
+A sequência de operações para serializar a lista pode ser reconhecida
+por um autómato finito, apresentado ao lado.  Deste modo, podemos
+verificar que é possível enviar listas de um modo seguro recorrendo a
+tipos de sessão. Contudo, estes tipos têm limitações na sua estrutura
+que tornam impossível a descrição eficiente de serializações de dados
+estruturados em forma de árvore.
 %\cite{ref_Thiemann_Vasconcelos_CFST}.
 
 O exemplo proposto por Thiemann e Vasconcelos \cite{ref-cfst}
