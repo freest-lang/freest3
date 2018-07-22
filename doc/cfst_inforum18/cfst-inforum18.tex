@@ -4,44 +4,55 @@
 %
 \documentclass[runningheads]{llncs}
 
-\input{macros}
+\usepackage[portuguese]{babel}
+\usepackage[utf8]{inputenc}  % for proper diacritics
+\usepackage[T1]{fontenc}
+\usepackage{color}
+\usepackage {listings}
+\usepackage{tikz}
+\usepackage{hyperref}
+\usepackage{amsmath,amssymb}
+\usepackage{alltt}
+\usepackage{flushend}
+\usepackage{graphicx}
 
-%
-%\usepackage{graphicx}
-% Used for displaying a sample figure. If possible, figure files should
-% be included in EPS format.
-%
 % If you use the hyperref package, please uncomment the following line
 % to display URLs in blue roman font according to Springer's eBook style:
-% \renewcommand\UrlFont{\color{blue}\rmfamily}
+\renewcommand\UrlFont{\color{blue}\rmfamily}
 
-\begin{document}
+\input{macros}
 
 \title{Uma linguagem de programação com tipos de sessão independentes do contexto}
-
-\titlerunning{Uma linguagem com tipos de sessão independentes do contexto}%
-
-%\titlerunning{Linguagem com tipos de sessão independentes do contexto}%
-% If the paper title is too long for the running head, you can set
-% an abbreviated paper title here
-%
+\titlerunning{Uma linguagem com tipos de sessão independentes do contexto}
 \author{Bernardo Almeida e Vasco T. Vasconcelos}
-
 %\authorrunning{F. Author et al.}
 
 \institute{LASIGE, Faculdade de Ciências, Universidade de Lisboa, Portugal}
-%
+
+\begin{document}
+
 \maketitle
 
 \begin{abstract}
 
-  Os sistemas de software distribuídos têm uma comunicação intensiva onde a complexidade do padrão de mensagens trocadas entre processos tende a tornar a codificação dos mesmos difícil.
+  Sistemas de software distribuídos apresentam por vezes padrões de
+  comunicação intensivos cuja complexidade dificulta a sua
+  codificação.
   
-  Os tipos de sessão foram propostos para responder a esta necessidade, permitindo definir protocolos na forma de tipos que representam ``interações corretas'' do sistema e que garantem propriedades tais como a inexistência de erros na comunicação e de situações de impasse.
+  Os tipos de sessão foram propostos para responder a esta
+  necessidade, permitindo definir protocolos na forma de tipos que
+  representam interações corretas do sistema e que garantem
+  propriedades tais como a inexistência de erros na comunicação e de
+  situações de impasse.
   
-  Os tipos de sessão tradicionais são descritos por linguagens regulares, permitindo, por exemplo, a definição de protocolos na forma de lista mas não em forma de árvore.
+  Os tipos de sessão tradicionais são descritos por linguagens
+  regulares, permitindo, por exemplo, a definição de protocolos em
+  forma de lista mas não em forma de árvore.
 
-  Neste artigo apresenta-se uma linguagem de programação concorrente, explicitamente tipificada, onde os processos comunicam exclusivamente por troca de mensagens cujos protocolos são definidos por tipos de sessão livres do contexto.
+  Neste artigo apresenta-se uma linguagem de programação concorrente,
+  explicitamente tipificada, onde os processos comunicam
+  exclusivamente por troca de mensagens cujos protocolos são definidos
+  por tipos de sessão livres do contexto.
 
 \keywords{Concorrência \and Troca de mensagens \and Tipos de sessão livres do contexto.}
 
@@ -52,6 +63,12 @@
 \input{language}
 \input{conclusion}
 
+\paragraph{Agradecimentos.}
+
+Este trabalho foi apoiado em parte pela FCT através do projeto
+\emph{Communication Contracts for Distributed Systems Development},
+PTDC/EEI-CTP/4503/2014 e da Unidade de Investigação LASIGE,
+UID/CEC/00408/2013.
 
 % How to
 % \section{First Section}
