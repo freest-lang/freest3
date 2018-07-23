@@ -35,6 +35,24 @@
   tabsize=2
 }
 
+\lstdefinestyle{eclipse-Haskell}{
+  breaklines=true,
+  basicstyle=\sffamily\Small,
+  emphstyle=\color{red}\bfseries, 
+  keywordstyle=\color{darkviolet}\bfseries,
+  commentstyle=\color{darkgreen},
+  stringstyle=\color{darkblue},
+  emphstyle=\color{red},
+  % get also javadoc style comments
+  morecomment=[s][\color{lightblue}]{/**}{*/},
+  %columns=fullflexible, %spaceflexible, %flexible, fullflexible             
+  %  escapeinside=`',
+  %  escapechar=@,
+  showstringspaces=false,
+  numbers=none,
+  tabsize=2
+}
+
 %\usepackage[T1]{fontenc}
 
 % \lstdefinestyle{Go}{	
@@ -84,7 +102,7 @@
 \lstdefinelanguage{CFST}{
   style=eclipse,
   morekeywords=[1]{Int, Char, Bool, Skip, forall, rec, let, in, if, then, else, new, send, receive,
-    select, fork, case, of, data, match, with},%  
+    select, fork, case, of, data, match, with, True, False},%  
   sensitive=true,%
   literate={->}{{$\rightarrow$}}1,%
    breaklines=true,
@@ -202,6 +220,7 @@
 
 % Goal
 \newcommand\Alg{\vdash_{a}}
+\newcommand\Goal{\vdash}
 
 % Equivalent
 \newcommand\Equiv[2]{#1\,\thicksim\,#2}
