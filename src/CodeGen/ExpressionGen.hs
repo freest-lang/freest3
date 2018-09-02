@@ -270,9 +270,10 @@ translate fm m (Select p x e) = do
 
 translate fm m (Match p e mm) = do
   (h1, b1) <- translate fm m e
-  (h2, params) <- translateMatchMap fm m mm
   v <- nextFresh
-  return ("_receive " ++ h1 ++ " >>= \\(" ++ v ++  ", " ++ (head params) ++
+  fresh <- nextFresh
+  h2 <- translateMatchMap fresh fm m mm  
+  return ("_receive " ++ h1 ++ " >>= \\(" ++ v ++  ", " ++ fresh ++
           ") -> case " ++ v ++ " of " ++ h2, False)
 
 translate fm m (Fork p e) = do
@@ -290,14 +291,15 @@ translate fm m (Case p e cm) = do
   return ("case " ++ h1 ++ " of " ++ hcase, False) -- TODO: Can be monadic
   
 -- TODO: Join with case
-translateMatchMap :: FunsMap -> MonadicMap -> MatchMap -> TranslateMonad (String, [String])
-translateMatchMap fm m = Map.foldlWithKey translateMatchMap' (return ("", []))
+translateMatchMap :: String -> FunsMap -> MonadicMap -> MatchMap -> TranslateMonad String
+translateMatchMap fresh fm m = Map.foldlWithKey (translateMatchMap' fresh) (return "")
   where
-    translateMatchMap' acc v (param, e) = do
+    translateMatchMap' fresh acc v (param, e) = do
       (h, b) <- translate fm m e
       acc' <- acc
-      return (fst acc' ++ "\n    \"" ++ v ++ "\" " ++ " -> " ++ h
-             , snd acc' ++ [param])
+      return $ acc' ++ "\n    \"" ++ v ++ "\" " ++
+        " -> let " ++ param ++ " = " ++ fresh ++ " in " ++ h
+             
 
 translateCaseMap :: FunsMap -> MonadicMap -> CaseMap -> TranslateMonad String
 translateCaseMap fm m = Map.foldlWithKey translateCaseMap' (return "")

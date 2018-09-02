@@ -40,8 +40,8 @@ receiveTree c =
   match c with
     LeafC c1 ->
       (Leaf, c1)
-    NodeC c1 ->
-      let x, c2 = receive c1 in
+    NodeC c9 ->
+      let x, c2 = receive c9 in
       let left, c3 = receiveTree [(rec x.&{LeafC: Skip, NodeC: ?Int;x;x});a] c2 in
       let right, c4 = receiveTree [a] c3 in
       (Node x left right, c4)
