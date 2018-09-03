@@ -1,0 +1,17 @@
+\begin{figure}[h!]
+  \begin{align*}
+    \tcBase \grmeq & \inte \grmor \, \chare \grmor \, \boole \grmor \, \unite && \text{Tipos básicos}\\
+    T \grmeq       & \tskip \grmor \tSemi{T}{T} \grmor \,\tOut{\tcBase} \grmor \,\tIn{\tcBase} && \text{Tipos}\\
+    \grmor         & \tIChoice\{l_i\colon T_i\}_{i\in I} \grmor \tEChoice\{l_i\colon T_i\}_{i\in I} \\ 
+    \grmor         & \tcBase \grmor \tUnFun{T}{T} \grmor \tLinFun{T}{T}\\   
+    \grmor         & \tPair{T}{T} \grmor \tDatatype{l_i\colon T_i}_{i\in I} \grmor \tRec{\alpha}{T} \grmor \alpha\\
+    \kindsch \grmeq & T \grmor \tForall{\alpha}{\kindsch}  && \text{Esquemas de tipos}
+    % 
+  \end{align*}
+\end{figure}
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "cfst"
+%%% End:

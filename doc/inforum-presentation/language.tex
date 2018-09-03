@@ -1,0 +1,193 @@
+\section{A linguagem}
+
+\begin{frame}[fragile]{A linguagem}
+
+  \begin{itemize}
+  \item Sintaxe semelhante à do Haskell
+  \newline
+  \item Acrescida de primitivas para
+    \begin{itemize}
+    \item Criação de canais
+    \item Envio de valores nos canais
+    \item Receção de valores nos canais
+    \end{itemize}
+ 
+  \item Primitivas de comunicação: troca de mensagens e escolhas
+  \newline
+  \item Canais de comunicação síncronos e bidirecionais
+  \newline
+  \item Os processos podem escrever numa das extremidades do canal ou ler na outra.
+  \end{itemize}  
+\end{frame}
+
+\begin{frame}[fragile]{A linguagem}
+  Os tipos disponíveis na linguagem são:
+  \input{fig-types}  
+\end{frame}
+
+\lstset{language=CFST, style=eclipse, frame=none, numbers=none}
+\begin{frame}[fragile]{A linguagem - Exemplo}
+  \begin{itemize}
+  \item \textbf{Objetivo}: Transmitir uma árvore binária num canal
+    \newline
+  \item \textbf{Tipo de dados:}
+\begin{lstlisting}
+  data Tree a = Leaf | Node a Tree Tree
+\end{lstlisting}
+
+  \item \textbf{Tipo da função que envia a árvore}
+\begin{lstlisting}
+  sendTree :: forall a => Tree -> (rec x . +{LeafC : Skip, NodeC: !Int;x;x}); a -> a
+\end{lstlisting}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{A linguagem - Envio de uma árvore}
+  O código da função para enviar uma árvore é:
+    \vskip 0.5cm
+  \begin{lstlisting}
+sendTree :: forall a => Tree -> (rec x . +{LeafC : Skip, NodeC: !Int;x;x}); a -> a
+sendTree t c =
+ case t of
+   Leaf -> select LeafC c
+   Node x l r ->
+     let c1 = select NodeC c in
+     let c2 = send x c1 in
+     let c3 = sendTree[(rec x.+{LeafC : Skip, NodeC: !Int;x;x});a] l c2 in
+     let c4 = sendTree[a] r c3 in
+     c4
+
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{A linguagem - Receção de uma árvore}
+  O código da função complementar que permite receber uma árvore é:
+  \vskip 0.5cm
+  \begin{lstlisting}
+receiveTree :: forall a => (rec x.&{LeafC: Skip, NodeC: ?Int;x;x}); a -> (Tree, a)
+receiveTree c =
+  match c with
+    LeafC c1 -> (Leaf, c1)
+    NodeC c1 ->
+      let x, c2 = receive c1 in
+      let left, c3 = receiveTree [(rec x.&{LeafC: Skip, NodeC: ?Int;x;x});a] c2 in
+      let right, c4 = receiveTree [a] c3 in
+      (Node x left right, c4)
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile, shrink=20]{A linguagem - Sintaxe das expressões}
+  \vskip 1cm
+  A sintaxe das expressões disponíveis na linguagem é:
+  \input{fig-expressions}
+\end{frame}
+
+\begin{frame}[fragile]{A linguagem - Validação}
+  \begin{itemize}
+  \item Sistema de \textit{kinding}:
+    \begin{itemize}
+    \item Boa formação dos tipos
+    \item Classifica os tipos nas categorias de tipos de sessão ou tipos gerais
+    \item Associa multiplicidades      
+    \end{itemize}
+  \item Exemplos:
+    \begin{itemize}
+    \item \lstinline|!Int|: Bem formado ($\kinds^\Lin$)
+    \item \lstinline|(Int->Bool);Int| não é bem formado
+    \item \lstinline|rec x . a;x|
+      \begin{itemize}
+      \item Mal formado se \lstinline|a| não estiver no ambiente de \textit{kinding}
+      \item Mal formado se \lstinline|a| não for um tipo de sessão
+      \end{itemize}
+    \end{itemize}
+    
+  \item Verificação de tipos
+  \end{itemize}
+\end{frame}
+  
+\begin{frame}[fragile]{A linguagem - Geração de código}
+  \begin{itemize}
+  \item A linguagem alvo da geração de código é Haskell
+  \item Quatro desafios do processo de tradução:
+  \end{itemize}
+  \begin{enumerate}
+    \item \textit{Call-by-value} VS. \textit{Call-by-name}\\
+      \textbf{Solução:} \textit{BangPatterns}\\      
+      ex: \lstinline|fun x = e| quando traduzida fica \lstinline|fun !x = e|
+   \newline
+ \item Operações de comunicação implementadas através de recorrendo a duas \textit{MVar} por canal.
+   \begin{itemize}
+   \item \lstinline[Haskell]|putMVar| - Operação \lstinline|send|
+   \item \lstinline[Haskell]|takeMVar| - Operação \lstinline|receive|
+   \end{itemize}
+  \end{enumerate}
+
+\end{frame}
+
+\begin{frame}[fragile]{A linguagem - Geração de código}
+  \begin{enumerate}
+    \setcounter{enumi}{2}    
+  \item \textit{MVar} só têm um tipo que se mantém inalterado durante a computação
+    \begin{itemize}
+    \item Canais necessitam que o tipo possa variar (ex: \lstinline|!Int;!Bool|)
+    \item Sistema de tipos do Haskell não pode verificar os tipos dos canais (\textit{unsafeCoerce})
+    \end{itemize}
+  \end{enumerate}
+  \begin{lstlisting}[language=Haskell]
+
+  _send x (m1, m2) = do
+    putMVar m2 (unsafeCoerce x)
+    return (m1, m2)
+
+  _receive (m1, m2) = do
+    a <- takeMVar m1
+    return ((unsafeCoerce a), (m1, m2))
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{A linguagem - Geração de código}
+  \begin{enumerate}
+    \setcounter{enumi}{3}  
+  \item Operações de comunicação (\lstinline|fork|, \lstinline|send|, \lstinline|receive| e \lstinline|new|) são operações sobre um monáde
+    \begin{itemize}
+    \item Quando traduzir uma expressão para código de um monáde?
+    \item Anotação da árvore sintática com valores booleanos
+    \end{itemize}
+  \end{enumerate}
+  Geramos código com base na seguinte tabela:
+  \vskip 0.2cm
+\resizebox{\textwidth}{!}{%
+  \begin{tabular}[ht!]{| c | c | c |}
+    \hline  
+    \quad Valor esperado \quad&\quad Valor encontrado \quad&\quad Código gerado \quad\\
+    \quad (anotação da árvore sintática) \quad&\quad (na função de tradução) \quad& (Haskell) \quad\\\hline
+    \lstinline|False| & \lstinline|False| & \lstinline|e| \\
+    \lstinline|True| & \lstinline|False| & \lstinline|return e| \\
+    \lstinline|True| & \lstinline|True| & \lstinline|e| \\
+    \lstinline|False| & \lstinline|True| & \lstinline|e >>= x -> x| \\
+    \hline
+  \end{tabular}}
+\end{frame}
+
+\begin{frame}[fragile]{A linguagem - Função traduzida}
+  \textbf{Resultado:}
+  \vskip 0.5cm
+  \begin{lstlisting}[language=Haskell]
+  sendTree !t !c =
+    case t of 
+      Leaf -> _send "LeafC" c 
+      Node x l r ->
+        _send "NodeC" c >>=
+        \c1 -> _send x c1 >>=
+        \c2 -> sendTree l c2 >>=
+        \c3 -> sendTree r c3 >>=
+        \c4 -> return c4 
+   \end{lstlisting}
+\end{frame}
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "cfst"
+%%% End:

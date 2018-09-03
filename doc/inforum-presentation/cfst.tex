@@ -1,0 +1,47 @@
+\documentclass[unknownkeysallowed]{beamer}
+
+\mode<presentation>
+{
+  \usetheme{default}      % or try Darmstadt, Madrid, Warsaw, ...
+  \usecolortheme{default} % or try albatross, beaver, crane, ...
+  \usefonttheme{default}  % or try serif, structurebold, ...
+  \setbeamertemplate{navigation symbols}{}
+  \setbeamertemplate{caption}[numbered]
+} 
+
+% \usepackage[portuguese]{babel}
+% \usepackage[utf8x]{inputenc}
+% \usepackage{listings, color}
+% \usepackage{tikz}
+% \usepackage{tcolorbox}
+% \usepackage{amsmath,amssymb,amsthm, MnSymbol}
+% \usepackage{mathtools}
+\input{preamble}
+\input{macros}
+
+\title[Uma linguagem com tipos de sessão independentes do contexto]{Uma linguagem de programação com tipos de
+sessão independentes do contexto}
+\author{Bernardo Almeida e Vasco T. Vasconcelos}
+\institute{LASIGE, Faculdade de Ciências, Universidade de Lisboa}
+\date{4 de Setembro de 2018}
+
+\begin{document}
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\input{motivation}
+\input{language}
+%\input{tests}
+\input{conclusion}
+
+
+\end{document}
+
+%\lstset{language=CFST, style=eclipse}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
