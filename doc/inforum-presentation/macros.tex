@@ -3,7 +3,7 @@
 \newcommand{\todo}[1]{{\color{blue}\textbf{TODO:} #1}}
 
 % Keywords
-\newcommand{\keyword}[1]{\mathsf{#1}}
+\newcommand{\keyword}[1]{\mathbf{#1}}
 
 % Prekinds
 
@@ -201,7 +201,7 @@
 \lstdefinelanguage{CFST}{
   style=eclipse,
   morekeywords=[1]{Int, Char, Bool, Skip, forall, rec, let, in, if, then, else, new, send, receive,
-    select, fork, case, of, data, match, with, True, False},%  
+    select, fork, case, of, data, match, with, True, False,type},%  
   sensitive=true,%
   literate={->}{{$\rightarrow\;$}}1,%
    breaklines=true,

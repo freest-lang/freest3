@@ -30,14 +30,18 @@
   \begin{itemize}
   \item \textbf{Objetivo}: Transmitir uma árvore binária num canal
     \newline
-  \item \textbf{Tipo de dados:}
+  \item \textbf{Tipos de dados:}
 \begin{lstlisting}
-  data Tree a = Leaf | Node a Tree Tree
+data Tree = Leaf | Node Int Tree Tree 
+type TreeChannel =
+  +{LeafC: Skip,
+    NodeC: !Int; TreeChannel; TreeChannel}
 \end{lstlisting}
 
   \item \textbf{Tipo da função que envia a árvore}
 \begin{lstlisting}
-  sendTree :: forall a => Tree -> (rec x . +{LeafC : Skip, NodeC: !Int;x;x}); a -> a
+sendTree :: forall a =>
+  Tree -> (TreeChannel; a) -> a
 \end{lstlisting}
   \end{itemize}
 \end{frame}
@@ -46,14 +50,15 @@
   O código da função para enviar uma árvore é:
     \vskip 0.5cm
   \begin{lstlisting}
-sendTree :: forall a => Tree -> (rec x . +{LeafC : Skip, NodeC: !Int;x;x}); a -> a
+sendTree :: forall a =>
+  Tree -> (TreeChannel; a) -> a
 sendTree t c =
  case t of
    Leaf -> select LeafC c
    Node x l r ->
      let c1 = select NodeC c in
      let c2 = send x c1 in
-     let c3 = sendTree[(rec x.+{LeafC : Skip, NodeC: !Int;x;x});a] l c2 in
+     let c3 = sendTree[TreeChannel;a] l c2 in
      let c4 = sendTree[a] r c3 in
      c4
 
@@ -64,13 +69,16 @@ sendTree t c =
   O código da função complementar que permite receber uma árvore é:
   \vskip 0.5cm
   \begin{lstlisting}
-receiveTree :: forall a => (rec x.&{LeafC: Skip, NodeC: ?Int;x;x}); a -> (Tree, a)
+type TreeChannelR =
+  &{LeafC: Skip, NodeC: ?Int; TreeChannelR ; TreeChannelR}
+receiveTree :: forall a =>
+  (TreeChannelR; a) -> (Tree, a)
 receiveTree c =
   match c with
     LeafC c1 -> (Leaf, c1)
     NodeC c1 ->
       let x, c2 = receive c1 in
-      let left, c3 = receiveTree [(rec x.&{LeafC: Skip, NodeC: ?Int;x;x});a] c2 in
+      let left, c3 = receiveTree [TreeChannelR;a] c2 in
       let right, c4 = receiveTree [a] c3 in
       (Node x left right, c4)
 \end{lstlisting}
@@ -88,13 +96,13 @@ receiveTree c =
     \begin{itemize}
     \item Boa formação dos tipos
     \item Classifica os tipos nas categorias de tipos de sessão ou tipos gerais
-    \item Associa multiplicidades      
+    \item Associa multiplicidades (linear ou partilhado)
     \end{itemize}
   \item Exemplos:
     \begin{itemize}
-    \item \lstinline|!Int|: Bem formado ($\kinds^\Lin$)
+    \item \lstinline|!Int|: Bem formado (tipo de sessão, linear) % $\kinds^\Lin$)
     \item \lstinline|(Int->Bool);Int| não é bem formado
-    \item \lstinline|rec x . a;x|
+    \item \lstinline|rec x.a;x|
       \begin{itemize}
       \item Mal formado se \lstinline|a| não estiver no ambiente de \textit{kinding}
       \item Mal formado se \lstinline|a| não for um tipo de sessão
@@ -115,7 +123,7 @@ receiveTree c =
       \textbf{Solução:} \textit{BangPatterns}\\      
       ex: \lstinline|fun x = e| quando traduzida fica \lstinline|fun !x = e|
    \newline
- \item Operações de comunicação implementadas através de recorrendo a duas \textit{MVar} por canal.
+ \item Canais de comunicação implementadas através de duas \textit{MVar} por canal.
    \begin{itemize}
    \item \lstinline[Haskell]|putMVar| - Operação \lstinline|send|
    \item \lstinline[Haskell]|takeMVar| - Operação \lstinline|receive|
@@ -129,7 +137,8 @@ receiveTree c =
     \setcounter{enumi}{2}    
   \item \textit{MVar} só têm um tipo que se mantém inalterado durante a computação
     \begin{itemize}
-    \item Canais necessitam que o tipo possa variar (ex: \lstinline|!Int;!Bool|)
+    \item Canais necessitam que o tipo possa variar (ex:
+      \lstinline|!Int;?Bool| progride para \lstinline|?Bool| )
     \item Sistema de tipos do Haskell não pode verificar os tipos dos canais (\textit{unsafeCoerce})
     \end{itemize}
   \end{enumerate}
