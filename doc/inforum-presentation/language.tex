@@ -135,7 +135,7 @@ receiveTree c =
 \begin{frame}[fragile]{A linguagem - Geração de código}
   \begin{enumerate}
     \setcounter{enumi}{2}    
-  \item \textit{MVar} só têm um tipo que se mantém inalterado durante a computação
+  \item As \textit{MVar} só têm um tipo que se mantém inalterado durante a computação
     \begin{itemize}
     \item Canais necessitam que o tipo possa variar (ex:
       \lstinline|!Int;?Bool| progride para \lstinline|?Bool| )
@@ -178,7 +178,7 @@ receiveTree c =
   \end{tabular}}
 \end{frame}
 
-\begin{frame}[fragile]{A linguagem - Função traduzida}
+\begin{frame}[fragile]{A linguagem - Função após a tradução}
   \textbf{Resultado:}
   \vskip 0.5cm
   \begin{lstlisting}[language=Haskell]
