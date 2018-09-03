@@ -28,6 +28,10 @@ CFSTUtils.hs
 *.dvi
 *.ps
 main.pdf
+cfst.pdf
+*.nav
+*.snm
+*.vrb
 
 # Inforum
 cfst-inforum18.pdf
