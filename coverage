@@ -10,8 +10,8 @@ ghc -isrc -itest/Programs -fhpc test/Programs/ProgSpec.hs --make
 
 hpc sum UnitSpec.tix ProgSpec.tix --output=Specs.tix --exclude=Main --union
 
-hpc report Specs --exclude=Parse.TestParserInvalidSpec
-hpc markup Specs --exclude=Parse.TestParserInvalidSpec --destdir=test/outputs
+hpc report Specs --exclude=Parse.TestParserInvalidSpec --exclude=Parse.TestParserValidSpec --exclude=Syntax.TestEqInvalidSpec --exclude=Syntax.TestEqTypeSchemeSpec --exclude=Syntax.TestEqValidSpec --exclude=Syntax.TestShowValidSpec --exclude=Validation.TestEquivalenceInvalidSpec --exclude=Validation.TestEquivalenceValidSpec --exclude=Validation.TestKindingInvalidSpec --exclude=Validation.TestKindingValidSpec --exclude=Validation.TestTypeSchemeKindingSpec 
+hpc markup Specs --exclude=Parse.TestParserInvalidSpec --exclude=Parse.TestParserValidSpec --exclude=Syntax.TestEqInvalidSpec --exclude=Syntax.TestEqTypeSchemeSpec --exclude=Syntax.TestEqValidSpec --exclude=Syntax.TestShowValidSpec --exclude=Validation.TestEquivalenceInvalidSpec --exclude=Validation.TestEquivalenceValidSpec --exclude=Validation.TestKindingInvalidSpec --exclude=Validation.TestKindingValidSpec --exclude=Validation.TestTypeSchemeKindingSpec --destdir=test/outputs
 
 
 #hpc report test/UnitTests/UnitSpec --exclude=Parse.TestParserInvalidSpec --exclude=QC
