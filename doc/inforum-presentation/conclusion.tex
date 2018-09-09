@@ -1,19 +1,35 @@
 \section{Conclusão e trabalho futuro}
 
-\begin{frame}[fragile]{Conclusão e Trabalho futuro}
+\begin{frame}[fragile]{Conclusão e trabalho futuro}
   \textbf{Conclusão:}
   \begin{itemize}
   \item Linguagem concorrente e explicitamente tipificada
-  \item Comunicação exclusiva por troca de mensagens
-  \item Canais síncronos descritos por tipos de sessão independentes do contexto.
+  \item Comunicação unicamente por troca de mensagens
+  \item Canais síncronos descritos por tipos de sessão independentes do contexto
   \end{itemize}
   \textbf{Trabalho futuro:}
   \begin{itemize}
   \item Reduzir a verbosidade da linguagem
   \item Abreviar tipos: \lstinline{type SendInt = !Int}
-  \item Inferência de tipos em alguns cenários (as aplicaçoes de tipos \lstinline|e[T]|)
+  \item Inferência de tipos em alguns cenários (as aplicações de tipos \lstinline|e[T]|)
   \item Canais partilhados
-  \item Operador de \textbf{dualof}    
+  \item Operador de \lstinline|dualof|
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Motivação}
+  \begin{tcolorbox}[colback=blue!5,colframe=blue!60!black,title=Facto,arc=2pt,outer arc=2pt]
+    A linguagem produzida pela gramática que descreve um tipo de sessão é:
+    \begin{itemize}
+    \item Reconhecida por um autómato finito
+    \item Uma linguagem ($\omega$-) regular
+    \end{itemize}
+  \end{tcolorbox}
+  \begin{itemize}
+  \item \textbf{Gramática das árvores é independente do contexto:} \lstinline"Tree ::= Leaf | Node int Tree Tree" 
+  %\item Linguagem produzida pelo não terminal \lstinline|N| é independente do contexto
+  \item \textbf{Consequência:} Os tipos de sessão tradicionais não podem descrever a transmissão destas estruturas 
+  \item \textbf{Solução:} Tipos de sessão independentes do contexto propostos por Thiemann e Vasconcelos.
   \end{itemize}
 \end{frame}
 

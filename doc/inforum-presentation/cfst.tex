@@ -1,21 +1,15 @@
 \documentclass[unknownkeysallowed]{beamer}
+\usepackage[compress]{beamerthemeAmsterdam}
 
-\mode<presentation>
-{
-  \usetheme{default}      % or try Darmstadt, Madrid, Warsaw, ...
-  \usecolortheme{default} % or try albatross, beaver, crane, ...
-  \usefonttheme{default}  % or try serif, structurebold, ...
-  \setbeamertemplate{navigation symbols}{}
-  \setbeamertemplate{caption}[numbered]
-} 
+% \mode<presentation>
+% { 
+%   \usetheme{default}      % or try Darmstadt, Madrid, Warsaw, ...
+%   \usecolortheme{default} % or try albatross, beaver, crane, ...
+%   \usefonttheme{default}  % or try serif, structurebold, ...
+%   \setbeamertemplate{navigation symbols}{}
+%   \setbeamertemplate{caption}[numbered]
+% } 
 
-% \usepackage[portuguese]{babel}
-% \usepackage[utf8x]{inputenc}
-% \usepackage{listings, color}
-% \usepackage{tikz}
-% \usepackage{tcolorbox}
-% \usepackage{amsmath,amssymb,amsthm, MnSymbol}
-% \usepackage{mathtools}
 \input{preamble}
 \input{macros}
 
@@ -24,16 +18,30 @@ sessão independentes do contexto}
 \author{Bernardo Almeida e Vasco T. Vasconcelos}
 \institute{LASIGE, Faculdade de Ciências, Universidade de Lisboa}
 \date{4 de Setembro de 2018}
+\logo{\includegraphics[scale=0.03]{fcul.png}}
+
+% Add frame numbers to the slides
+\expandafter\def\expandafter\insertshortauthor\expandafter{%
+	\insertshortauthor\hfill\insertframenumber\,/\,\inserttotalframenumber
+}
+
+\usebackgroundtemplate{%
+\tikz\shade[bottom color=white!100,top color=beamer@blendedblue!30] 
+  (0,0) rectangle +(\paperwidth,\paperheight);
+\tikz[overlay,remember picture]\node[opacity=0.05,anchor=east] at (current page.east) {% \includegraphics{FCUL}
+};}
+
 
 \begin{document}
 
-\begin{frame}
+\begin{frame}[plain]
   \titlepage
 \end{frame}
 
+
 \input{motivation}
 \input{language}
-%\input{tests}
+%\input{tests} 
 \input{conclusion}
 
 

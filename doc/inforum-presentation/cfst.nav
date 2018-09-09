@@ -1,9 +1,8 @@
-\beamer@endinputifotherversion {3.36pt}
 \headcommand {\slideentry {0}{0}{1}{1/1}{}{0}}
 \headcommand {\beamer@framepages {1}{1}}
-\headcommand {\sectionentry {1}{Motiva\IeC {\c c}\IeC {\~a}o}{2}{Motiva\IeC {\c c}\IeC {\~a}o}{0}}
 \headcommand {\beamer@sectionpages {1}{1}}
 \headcommand {\beamer@subsectionpages {1}{1}}
+\headcommand {\sectionentry {1}{Motiva\IeC {\c c}\IeC {\~a}o}{2}{Motiva\IeC {\c c}\IeC {\~a}o}{0}}
 \headcommand {\slideentry {1}{0}{1}{2/2}{}{0}}
 \headcommand {\beamer@framepages {2}{2}}
 \headcommand {\slideentry {1}{0}{2}{3/3}{}{0}}
@@ -12,9 +11,9 @@
 \headcommand {\beamer@framepages {4}{4}}
 \headcommand {\slideentry {1}{0}{4}{5/5}{}{0}}
 \headcommand {\beamer@framepages {5}{5}}
-\headcommand {\sectionentry {2}{A linguagem}{6}{A linguagem}{0}}
 \headcommand {\beamer@sectionpages {2}{5}}
 \headcommand {\beamer@subsectionpages {2}{5}}
+\headcommand {\sectionentry {2}{A nossa linguagem}{6}{A nossa linguagem}{0}}
 \headcommand {\slideentry {2}{0}{1}{6/6}{}{0}}
 \headcommand {\beamer@framepages {6}{6}}
 \headcommand {\slideentry {2}{0}{2}{7/7}{}{0}}
@@ -37,13 +36,15 @@
 \headcommand {\beamer@framepages {15}{15}}
 \headcommand {\slideentry {2}{0}{11}{16/16}{}{0}}
 \headcommand {\beamer@framepages {16}{16}}
-\headcommand {\sectionentry {3}{Conclus\IeC {\~a}o e trabalho futuro}{17}{Conclus\IeC {\~a}o e trabalho futuro}{0}}
 \headcommand {\beamer@sectionpages {6}{16}}
 \headcommand {\beamer@subsectionpages {6}{16}}
+\headcommand {\sectionentry {3}{Conclus\IeC {\~a}o e trabalho futuro}{17}{Conclus\IeC {\~a}o e trabalho futuro}{0}}
 \headcommand {\slideentry {3}{0}{1}{17/17}{}{0}}
 \headcommand {\beamer@framepages {17}{17}}
-\headcommand {\beamer@partpages {1}{17}}
-\headcommand {\beamer@subsectionpages {17}{17}}
-\headcommand {\beamer@sectionpages {17}{17}}
-\headcommand {\beamer@documentpages {17}}
-\headcommand {\def \inserttotalframenumber {17}}
+\headcommand {\slideentry {3}{0}{2}{18/18}{}{0}}
+\headcommand {\beamer@framepages {18}{18}}
+\headcommand {\beamer@partpages {1}{18}}
+\headcommand {\beamer@subsectionpages {17}{18}}
+\headcommand {\beamer@sectionpages {17}{18}}
+\headcommand {\beamer@documentpages {18}}
+\headcommand {\gdef \inserttotalframenumber {18}}

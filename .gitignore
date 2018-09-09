@@ -8,6 +8,7 @@ TestParse
 .hpc/
 .hspec-failures
 UnitSpec
+ProgSpec
 dist/
 cfst.h*
 cfst

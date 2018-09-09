@@ -52,7 +52,7 @@
 \newcommand\tPair[2]{(#1,\,#2)}
 \newcommand\tDatatype[1]{{[#1]}}
 \newcommand\tRec[2]{\kRec\,#1\,.\,#2}
-\newcommand\tForall[2]{\kForall\,#1\,=>\,#2}
+\newcommand\tForall[2]{\kForall\,#1\,\Rightarrow\,#2}
 %\newcommand\tRec[2]{\mu\,#1\,.\,#2}
 %\newcommand\tForall[2]{\forall\,#1\,.\,#2}
 \newcommand\tRecK[2]{\kRec\,#1\,.\,#2}
@@ -201,9 +201,9 @@
 \lstdefinelanguage{CFST}{
   style=eclipse,
   morekeywords=[1]{Int, Char, Bool, Skip, forall, rec, let, in, if, then, else, new, send, receive,
-    select, fork, case, of, data, match, with, True, False,type},%  
+    select, fork, case, of, data, match, with, True, False,type,dualof},%  
   sensitive=true,%
-  literate={->}{{$\rightarrow\;$}}1,%
+  literate={->}{$\rightarrow\;$}1{=>}{$\Rightarrow\;$}1,
    breaklines=true,
    morecomment=[l]{--},%
    morecomment=[s]{{-}{-}},%
