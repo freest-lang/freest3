@@ -13,9 +13,8 @@ transform tree c =
     Node x l r ->
       let c1 = select NodeC c in
       let c2 = send x c1 in
-      let l1, c3 = transform[(rec xFormChan . +{LeafC: Skip, NodeC: !Int;xFormChan;xFormChan;?Int});x] l c2 in
+      let l1, c3 = transform[(rec xFormChan . +{LeafC: Skip, NodeC: !Int;xFormChan;xFormChan;?Int});?Int;x] l c2 in
       let r1, c4 = transform[?Int;x] r c3 in
-      -- let r1, c4 = transform[rec xFormChan . +{LeafC: Skip, NodeC: !Int;xFormChan;xFormChan;?Int}] r c3 in
       let x1, c5 = receive c4 in
       (Node x1 l1 r1, c5)
 
