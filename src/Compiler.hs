@@ -8,7 +8,6 @@ import           CodeGen.CodeGen
 import           Syntax.Types
 import           Validation.Typing
 import           Validation.TypingState
--- import           Control.Monad.Writer
 import           Control.Monad.State
 import           Data.List
 import           System.Exit
