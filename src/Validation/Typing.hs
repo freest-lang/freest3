@@ -540,163 +540,163 @@ checkAgainst p e (TypeScheme bs1 t) = do
 
 -- TESTS
 
-test e = -- runState (checkExp e) initState
-  let (r, (_, _, err)) = runState (checkExp e) initState in
-    (r, err)
+-- test e = -- runState (checkExp e) initState
+--   let (r, (_, _, err)) = runState (checkExp e) initState in
+--     (r, err)
 
--- runState :: State s a -> s -> (a, s)
--- evalState :: State s a -> s -> a
--- execState :: State s a -> s -> s
-
-
-e1 = (App (0,0) (App (0,1) (Variable (0,2) "(+)") (Integer (0,3) 2)) (Integer (0,4) 2))
-e2 = (App (1,0) (App (1,1) (Variable (1,2) "(+)") (Integer (1,3) 2)) (Boolean (1,4) True))
-e3 = (UnLet (2, 0) "x" e1 (Variable (2, 10) "x"))
-
-e4 = (UnLet (2, 0) "x" e1 (Variable (2, 10) "y"))
+-- -- runState :: State s a -> s -> (a, s)
+-- -- evalState :: State s a -> s -> a
+-- -- execState :: State s a -> s -> s
 
 
-initState :: (KindEnv, VarEnv, Errors)
-initState = (initKindEnv, initVarEnv, [])
+-- e1 = (App (0,0) (App (0,1) (Variable (0,2) "(+)") (Integer (0,3) 2)) (Integer (0,4) 2))
+-- e2 = (App (1,0) (App (1,1) (Variable (1,2) "(+)") (Integer (1,3) 2)) (Boolean (1,4) True))
+-- e3 = (UnLet (2, 0) "x" e1 (Variable (2, 10) "x"))
 
-initVarEnv =
-  let v1 = prelude
-      -- v2 = Map.insert "myId" t3 v1
-      -- v3 = v2 --Map.insert "c" (TypeScheme [] cType) v2
-      -- v4 = Map.insert "w" (TypeScheme [] wType) v3
-      -- v5 = Map.insert "C" (TypeScheme [] (Fun Un (Basic IntType)(Basic IntType))) v4
-      -- v6 = Map.insert "z" (TypeScheme [] (Fun Lin (Basic IntType)(Basic IntType))) v5
-      -- v2 = Map.insert "c" (TypeScheme [] cType1) v1
-      -- v2 = Map.insert "c1" (TypeScheme [] c1Type) v1
-      v9 = Map.insert "l" (TypeScheme [] intlistType) v1
-      v10 = Map.insert "IntList" (TypeScheme [] intlistType) v9
-  in v9
+-- e4 = (UnLet (2, 0) "x" e1 (Variable (2, 10) "y"))
 
-cType = read "!();!Int;?Bool;Skip" :: Type
-wType = read "Skip;Skip;Skip;+{Plus:Int};Skip" :: Type
-cType1 = read "&{And: Skip;?Bool;?Bool;!Bool;Skip, Or: Skip;?Int;?Bool;!Bool;Skip, Not: Skip;?Bool;!Bool}" :: Type
-c1Type = read "Skip;?Bool;?Int;!Bool;Skip" :: Type
 
-lType = Var "IntList" -- TODO: Param as a variable to datatype
-intlistType = read "[Cons: (Int -> (IntList -> IntList)), Nil: IntList]" :: Type
+-- initState :: (KindEnv, VarEnv, Errors)
+-- initState = (initKindEnv, initVarEnv, [])
 
-initKindEnv =
-  Map.foldrWithKey (\x (TypeScheme _ y) acc ->
-                      Map.insert x (kindOf (Map.empty) y) acc) Map.empty initVarEnv
+-- initVarEnv =
+--   let v1 = prelude
+--       -- v2 = Map.insert "myId" t3 v1
+--       -- v3 = v2 --Map.insert "c" (TypeScheme [] cType) v2
+--       -- v4 = Map.insert "w" (TypeScheme [] wType) v3
+--       -- v5 = Map.insert "C" (TypeScheme [] (Fun Un (Basic IntType)(Basic IntType))) v4
+--       -- v6 = Map.insert "z" (TypeScheme [] (Fun Lin (Basic IntType)(Basic IntType))) v5
+--       -- v2 = Map.insert "c" (TypeScheme [] cType1) v1
+--       -- v2 = Map.insert "c1" (TypeScheme [] c1Type) v1
+--       v9 = Map.insert "l" (TypeScheme [] intlistType) v1
+--       v10 = Map.insert "IntList" (TypeScheme [] intlistType) v9
+--   in v9
+
+-- cType = read "!();!Int;?Bool;Skip" :: Type
+-- wType = read "Skip;Skip;Skip;+{Plus:Int};Skip" :: Type
+-- cType1 = read "&{And: Skip;?Bool;?Bool;!Bool;Skip, Or: Skip;?Int;?Bool;!Bool;Skip, Not: Skip;?Bool;!Bool}" :: Type
+-- c1Type = read "Skip;?Bool;?Int;!Bool;Skip" :: Type
+
+-- lType = Var "IntList" -- TODO: Param as a variable to datatype
+-- intlistType = read "[Cons: (Int -> (IntList -> IntList)), Nil: IntList]" :: Type
+
+-- initKindEnv =
+--   Map.foldrWithKey (\x (TypeScheme _ y) acc ->
+--                       Map.insert x (kindOf (Map.empty) y) acc) Map.empty initVarEnv
   
 
-t1 = TypeScheme [] (Fun Lin (Basic IntType) (Basic IntType))
-t2 (TypeScheme _ t) kenv = lin kenv t
+-- t1 = TypeScheme [] (Fun Lin (Basic IntType) (Basic IntType))
+-- t2 (TypeScheme _ t) kenv = lin kenv t
 
--- t3
--- type app
+-- -- t3
+-- -- type app
 
-t3 = TypeScheme [(Bind {var="a",kind=kindt3})] t3'
-t3' = read "a -> a" :: Type
-kindt3 = Kind Session Un
-
-
--- myId Error
-e5 = App (58,6) (Variable (58,6) "myId") (Integer (58,11) 1)
--- myId Ok ...
-e6 = App (61,6) (TypeApp (61,6) (Variable (61,6) "myId") [(Basic IntType)]) (Integer (61,17) 1)
-
--- conditional
-
-e7 = Conditional (64,15) (Boolean (64,15) True) (Integer (64,22) 2) (Integer (64,29) 2)
-
--- invalid conditional
-
-e8 = Conditional (64,15) (Integer (64,15) 2) (Integer (64,22) 2) (Integer (64,29) 2)
-e9 = UnLet (69,7) "y" (Conditional (70,8) (Boolean (70,8) True) (UnLet (71,11) "x" (Integer (71,15) 5) (Integer (71,20) 7)) (UnLet (73,11) "x" (Integer (73,15) 3) (Integer (73,20) 9))) (Variable (74,6) "x")
-
--- bin let and pairs
--- False
-e10 = BinLet (81,15) "x" "y" (Integer (81,22) 1) (Variable (81,27) "x")
--- True
-e11 = BinLet (78,7) "x" "y" (Pair (78,15) (Integer (78,15) 1) (Integer (78,17) 2)) (Variable (78,23) "x")
-
-e11_1 = BinLet (120,13) "n1" "c2" (Receive (120,30) (Variable (120,30) "c1")) (BinLet (121,11) "n2" "c3" (Receive (121,28) (Variable (121,28) "c2")) (UnLet (122,11) "x" (Send (122,20) (App (0,0) (App (0,0) (Variable (0,0) "(||)") (Variable (122,21) "n1")) (Variable (122,27) "n2")) (Variable (122,31) "c3")) (Unit (122,37))))
+-- t3 = TypeScheme [(Bind {var="a",kind=kindt3})] t3'
+-- t3' = read "a -> a" :: Type
+-- kindt3 = Kind Session Un
 
 
--- new
-e12 = New (85,12) (Message Out IntType)
-e13 = New (85,12) (Choice Internal (Map.fromList [("A", (Message Out IntType))]))
-e14 = New (85,12) (Semi (Choice Internal (Map.fromList [("A", (Message Out IntType))])) (Message In IntType))
-e15 = New (85,12) (Semi (Semi (Choice Internal (Map.fromList [("A", (Message Out IntType))])) (Message In IntType)) ((Message In BoolType)))
+-- -- myId Error
+-- e5 = App (58,6) (Variable (58,6) "myId") (Integer (58,11) 1)
+-- -- myId Ok ...
+-- e6 = App (61,6) (TypeApp (61,6) (Variable (61,6) "myId") [(Basic IntType)]) (Integer (61,17) 1)
 
-e16 = New (85,12) (Semi (Choice Internal (Map.fromList [("A", (Message Out IntType))]))
-                   (Semi (Message In IntType) (Message In BoolType)))
+-- -- conditional
 
--- send receive
--- add c
-e17 = UnLet (88,7) "c1" (Send (88,17) (Integer (88,17) 5) (Variable (88,19) "c")) (BinLet (89,7) "b" "c2" (Receive (89,23) (Variable (89,23) "c1")) (Unit (90,6)))
+-- e7 = Conditional (64,15) (Boolean (64,15) True) (Integer (64,22) 2) (Integer (64,29) 2)
 
--- error on send
-e18 = UnLet (88,7) "c1" (Send (88,17) (Boolean (88,17) True) (Variable (88,19) "c")) (BinLet (89,7) "b" "c2" (Receive (89,23) (Variable (89,23) "c1")) (Unit (90,6)))
+-- -- invalid conditional
 
--- error on receive
-e19 = UnLet (88,7) "c1" (Send (88,17) (Integer (88,17) 5) (Variable (88,19) "c")) (BinLet (89,7) "b" "c2" (Receive (89,23) (Variable (89,23) "c13")) (Unit (90,6)))
+-- e8 = Conditional (64,15) (Integer (64,15) 2) (Integer (64,22) 2) (Integer (64,29) 2)
+-- e9 = UnLet (69,7) "y" (Conditional (70,8) (Boolean (70,8) True) (UnLet (71,11) "x" (Integer (71,15) 5) (Integer (71,20) 7)) (UnLet (73,11) "x" (Integer (73,15) 3) (Integer (73,20) 9))) (Variable (74,6) "x")
 
--- error on receive2
--- change c to Skip in the begining
-e20 = UnLet (88,7) "c1" (Send (88,17) (Integer (88,17) 5) (Variable (88,19) "c")) (BinLet (89,7) "b" "c2" (Receive (89,23) (Variable (89,23) "c1")) (Unit (90,6)))
+-- -- bin let and pairs
+-- -- False
+-- e10 = BinLet (81,15) "x" "y" (Integer (81,22) 1) (Variable (81,27) "x")
+-- -- True
+-- e11 = BinLet (78,7) "x" "y" (Pair (78,15) (Integer (78,15) 1) (Integer (78,17) 2)) (Variable (78,23) "x")
 
-
--- SELECT
--- 
-e21 = Select (96,19) "Plus" (Variable (96,24) "w")
--- Error: C not int scope: "Plusa"
-e22 = Select (96,19) "Plusa" (Variable (96,24) "w")
-
--- Constructor
--- error
-e23 = Constructor (100,23) "Tree"
--- send receive
--- add C to init
-e24 = Constructor (100,23) "C"
-
--- Fork
-e25 = Fork (1,2) (Integer (3,4) 2)
--- not un
--- add z as Fun Lin Int Int
-e26 = Fork (1,2) (Variable (3,4) "z")
-
--- match - Ok
--- add c as
--- &{And: Skip;?Bool;?Bool;!Bool;Skip, Or: Skip;?Bool;?Bool;!Bool;Skip, Not: Skip;?Bool;!Bool}
--- change type of c to turn into invalid tests
-e27 = Match (106,9) (Variable (106,9) "c") (Map.fromList [("And",("c1",BinLet (108,11) "n1" "c2" (Receive (108,28) (Variable (108,28) "c1")) (BinLet (109,11) "n2" "c3" (Receive (109,28) (Variable (109,28) "c2")) (UnLet (110,11) "x" (Send (110,20) (App (0,0) (App (0,0) (Variable (0,0) "(&&)") (Variable (110,21) "n1")) (Variable (110,27) "n2")) (Variable (110,31) "c3")) (Unit (111,7)))))),("Or",("c1",BinLet (114,11) "n1" "c2" (Receive (114,28) (Variable (114,28) "c1")) (BinLet (115,11) "n2" "c3" (Receive (115,28) (Variable (115,28) "c2")) (UnLet (116,11) "x" (Send (116,20) (App (0,0) (App (0,0) (Variable (0,0) "(||)") (Variable (116,21) "n1")) (Variable (116,27) "n2")) (Variable (116,31) "c3")) (Unit (117,7))))))])
-
--- should fail, n1 (not) not in scope
-e28 = Match (106,9) (Variable (106,9) "c") (Map.fromList [("And",("c1",BinLet (108,11) "n1" "c2" (Receive (108,28) (Variable (108,28) "c1")) (BinLet (109,11) "n2" "c3" (Receive (109,28) (Variable (109,28) "c2")) (UnLet (110,11) "x" (Send (110,20) (App (0,0) (App (0,0) (Variable (0,0) "(&&)") (Variable (110,21) "n1")) (Variable (110,27) "n2")) (Variable (110,31) "c3")) (Unit (111,7)))))),("Not",("c1",BinLet (120,11) "n2" "c3" (Receive (120,28) (Variable (120,28) "c1")) (UnLet (121,11) "x" (Send (121,20) (App (0,0) (App (0,0) (Variable (0,0) "(||)") (Variable (121,21) "n1")) (Variable (121,27) "n2")) (Variable (121,31) "c3")) (Unit (122,7))))),("Or",("c1",BinLet (114,11) "n1" "c2" (Receive (114,28) (Variable (114,28) "c1")) (BinLet (115,11) "n2" "c3" (Receive (115,28) (Variable (115,28) "c2")) (UnLet (116,11) "x" (Send (116,20) (App (0,0) (App (0,0) (Variable (0,0) "(||)") (Variable (116,21) "n1")) (Variable (116,27) "n2")) (Variable (116,31) "c3")) (Unit (117,7))))))])
-
-e29 = Match (106,9) (Variable (106,9) "c") (Map.fromList [("And",("c1",BinLet (108,11) "n1" "c2" (Receive (108,28) (Variable (108,28) "c1")) (BinLet (109,11) "n2" "c3" (Receive (109,28) (Variable (109,28) "c2")) (UnLet (110,11) "x" (Send (110,20) (App (0,0) (App (0,0) (Variable (0,0) "(&&)") (Variable (110,21) "n1")) (Variable (110,27) "n2")) (Variable (110,31) "c3")) (Unit (111,7)))))),("Not",("c1",BinLet (120,11) "n2" "c3" (Receive (120,28) (Variable (120,28) "c1")) (UnLet (121,11) "x" (Send (121,20) (App (0,0) (Variable (0,0) "not") (Variable (121,25) "n2")) (Variable (121,29) "c3")) (Unit (122,7))))),("Or",("c1",BinLet (114,11) "n1" "c2" (Receive (114,28) (Variable (114,28) "c1")) (BinLet (115,11) "n2" "c3" (Receive (115,28) (Variable (115,28) "c2")) (UnLet (116,11) "x" (Send (116,20) (App (0,0) (App (0,0) (Variable (0,0) "(||)") (Variable (116,21) "n1")) (Variable (116,27) "n2")) (Variable (116,31) "c3")) (Unit (117,7))))))])
--- 
-
--- CASE
-
-e30 = Case (107,8) (Variable (107,8) "l") (Map.fromList [("Cons",(["x","y"],Boolean (109,17) False)),("Nil",([],Boolean (108,12) True))])
+-- e11_1 = BinLet (120,13) "n1" "c2" (Receive (120,30) (Variable (120,30) "c1")) (BinLet (121,11) "n2" "c3" (Receive (121,28) (Variable (121,28) "c2")) (UnLet (122,11) "x" (Send (122,20) (App (0,0) (App (0,0) (Variable (0,0) "(||)") (Variable (122,21) "n1")) (Variable (122,27) "n2")) (Variable (122,31) "c3")) (Unit (122,37))))
 
 
--- id
+-- -- new
+-- e12 = New (85,12) (Message Out IntType)
+-- e13 = New (85,12) (Choice Internal (Map.fromList [("A", (Message Out IntType))]))
+-- e14 = New (85,12) (Semi (Choice Internal (Map.fromList [("A", (Message Out IntType))])) (Message In IntType))
+-- e15 = New (85,12) (Semi (Semi (Choice Internal (Map.fromList [("A", (Message Out IntType))])) (Message In IntType)) ((Message In BoolType)))
 
--- [("(&&)",(Bool -> (Bool -> Bool))),("(*)",(Int -> (Int -> Int))),("(+)",(Int -> (Int -> Int))),("(-)",(Int -> (Int -> Int))),("(/)",(Int -> (Int -> Int))),("(<)",(Int -> (Int -> Bool))),("(<=)",(Int -> (Int -> Bool))),("(==)",(Int -> (Int -> Bool))),("(>)",(Int -> (Int -> Bool))),("(>=)",(Int -> (Int -> Bool))),("(||)",(Bool -> (Bool -> Bool))),("div",(Int -> (Int -> Int))),("fst",forall a :: SU, b :: SU => ((a, b) -> a)),("id'",forall a :: TU => (a -> a)),("mod",(Int -> (Int -> Int))),("negate",(Int -> Int)),("not",(Bool -> Bool)),("rem",(Int -> (Int -> Int))),("start",Int)]
+-- e16 = New (85,12) (Semi (Choice Internal (Map.fromList [("A", (Message Out IntType))]))
+--                    (Semi (Message In IntType) (Message In BoolType)))
+
+-- -- send receive
+-- -- add c
+-- e17 = UnLet (88,7) "c1" (Send (88,17) (Integer (88,17) 5) (Variable (88,19) "c")) (BinLet (89,7) "b" "c2" (Receive (89,23) (Variable (89,23) "c1")) (Unit (90,6)))
+
+-- -- error on send
+-- e18 = UnLet (88,7) "c1" (Send (88,17) (Boolean (88,17) True) (Variable (88,19) "c")) (BinLet (89,7) "b" "c2" (Receive (89,23) (Variable (89,23) "c1")) (Unit (90,6)))
+
+-- -- error on receive
+-- e19 = UnLet (88,7) "c1" (Send (88,17) (Integer (88,17) 5) (Variable (88,19) "c")) (BinLet (89,7) "b" "c2" (Receive (89,23) (Variable (89,23) "c13")) (Unit (90,6)))
+
+-- -- error on receive2
+-- -- change c to Skip in the begining
+-- e20 = UnLet (88,7) "c1" (Send (88,17) (Integer (88,17) 5) (Variable (88,19) "c")) (BinLet (89,7) "b" "c2" (Receive (89,23) (Variable (89,23) "c1")) (Unit (90,6)))
 
 
--- Map.fromList [("id'",(["x"],Variable (5,9) "x"))]
+-- -- SELECT
+-- -- 
+-- e21 = Select (96,19) "Plus" (Variable (96,24) "w")
+-- -- Error: C not int scope: "Plusa"
+-- e22 = Select (96,19) "Plusa" (Variable (96,24) "w")
+
+-- -- Constructor
+-- -- error
+-- e23 = Constructor (100,23) "Tree"
+-- -- send receive
+-- -- add C to init
+-- e24 = Constructor (100,23) "C"
+
+-- -- Fork
+-- e25 = Fork (1,2) (Integer (3,4) 2)
+-- -- not un
+-- -- add z as Fun Lin Int Int
+-- e26 = Fork (1,2) (Variable (3,4) "z")
+
+-- -- match - Ok
+-- -- add c as
+-- -- &{And: Skip;?Bool;?Bool;!Bool;Skip, Or: Skip;?Bool;?Bool;!Bool;Skip, Not: Skip;?Bool;!Bool}
+-- -- change type of c to turn into invalid tests
+-- e27 = Match (106,9) (Variable (106,9) "c") (Map.fromList [("And",("c1",BinLet (108,11) "n1" "c2" (Receive (108,28) (Variable (108,28) "c1")) (BinLet (109,11) "n2" "c3" (Receive (109,28) (Variable (109,28) "c2")) (UnLet (110,11) "x" (Send (110,20) (App (0,0) (App (0,0) (Variable (0,0) "(&&)") (Variable (110,21) "n1")) (Variable (110,27) "n2")) (Variable (110,31) "c3")) (Unit (111,7)))))),("Or",("c1",BinLet (114,11) "n1" "c2" (Receive (114,28) (Variable (114,28) "c1")) (BinLet (115,11) "n2" "c3" (Receive (115,28) (Variable (115,28) "c2")) (UnLet (116,11) "x" (Send (116,20) (App (0,0) (App (0,0) (Variable (0,0) "(||)") (Variable (116,21) "n1")) (Variable (116,27) "n2")) (Variable (116,31) "c3")) (Unit (117,7))))))])
+
+-- -- should fail, n1 (not) not in scope
+-- e28 = Match (106,9) (Variable (106,9) "c") (Map.fromList [("And",("c1",BinLet (108,11) "n1" "c2" (Receive (108,28) (Variable (108,28) "c1")) (BinLet (109,11) "n2" "c3" (Receive (109,28) (Variable (109,28) "c2")) (UnLet (110,11) "x" (Send (110,20) (App (0,0) (App (0,0) (Variable (0,0) "(&&)") (Variable (110,21) "n1")) (Variable (110,27) "n2")) (Variable (110,31) "c3")) (Unit (111,7)))))),("Not",("c1",BinLet (120,11) "n2" "c3" (Receive (120,28) (Variable (120,28) "c1")) (UnLet (121,11) "x" (Send (121,20) (App (0,0) (App (0,0) (Variable (0,0) "(||)") (Variable (121,21) "n1")) (Variable (121,27) "n2")) (Variable (121,31) "c3")) (Unit (122,7))))),("Or",("c1",BinLet (114,11) "n1" "c2" (Receive (114,28) (Variable (114,28) "c1")) (BinLet (115,11) "n2" "c3" (Receive (115,28) (Variable (115,28) "c2")) (UnLet (116,11) "x" (Send (116,20) (App (0,0) (App (0,0) (Variable (0,0) "(||)") (Variable (116,21) "n1")) (Variable (116,27) "n2")) (Variable (116,31) "c3")) (Unit (117,7))))))])
+
+-- e29 = Match (106,9) (Variable (106,9) "c") (Map.fromList [("And",("c1",BinLet (108,11) "n1" "c2" (Receive (108,28) (Variable (108,28) "c1")) (BinLet (109,11) "n2" "c3" (Receive (109,28) (Variable (109,28) "c2")) (UnLet (110,11) "x" (Send (110,20) (App (0,0) (App (0,0) (Variable (0,0) "(&&)") (Variable (110,21) "n1")) (Variable (110,27) "n2")) (Variable (110,31) "c3")) (Unit (111,7)))))),("Not",("c1",BinLet (120,11) "n2" "c3" (Receive (120,28) (Variable (120,28) "c1")) (UnLet (121,11) "x" (Send (121,20) (App (0,0) (Variable (0,0) "not") (Variable (121,25) "n2")) (Variable (121,29) "c3")) (Unit (122,7))))),("Or",("c1",BinLet (114,11) "n1" "c2" (Receive (114,28) (Variable (114,28) "c1")) (BinLet (115,11) "n2" "c3" (Receive (115,28) (Variable (115,28) "c2")) (UnLet (116,11) "x" (Send (116,20) (App (0,0) (App (0,0) (Variable (0,0) "(||)") (Variable (116,21) "n1")) (Variable (116,27) "n2")) (Variable (116,31) "c3")) (Unit (117,7))))))])
+-- -- 
+
+-- -- CASE
+
+-- e30 = Case (107,8) (Variable (107,8) "l") (Map.fromList [("Cons",(["x","y"],Boolean (109,17) False)),("Nil",([],Boolean (108,12) True))])
 
 
--- extract in choice
-runner t = runState (extractInChoice (0,0) (TypeScheme [] t)) (Map.empty, Map.empty, [])
+-- -- id
 
-t100 = read "+{A:!Int};x;x" :: Type
-t101 = read "+{A:!Int, B: ?Char};x;x" :: Type
-t102 = read "+{A:!Int};x" :: Type
-t103 = read "+{A:!Int, B: Skip};x" :: Type
-t104 = read "rec y . +{A:!Int;y};x" :: Type
+-- -- [("(&&)",(Bool -> (Bool -> Bool))),("(*)",(Int -> (Int -> Int))),("(+)",(Int -> (Int -> Int))),("(-)",(Int -> (Int -> Int))),("(/)",(Int -> (Int -> Int))),("(<)",(Int -> (Int -> Bool))),("(<=)",(Int -> (Int -> Bool))),("(==)",(Int -> (Int -> Bool))),("(>)",(Int -> (Int -> Bool))),("(>=)",(Int -> (Int -> Bool))),("(||)",(Bool -> (Bool -> Bool))),("div",(Int -> (Int -> Int))),("fst",forall a :: SU, b :: SU => ((a, b) -> a)),("id'",forall a :: TU => (a -> a)),("mod",(Int -> (Int -> Int))),("negate",(Int -> Int)),("not",(Bool -> Bool)),("rem",(Int -> (Int -> Int))),("start",Int)]
 
-t105 = read "(rec y . +{A:!Int;y});x" :: Type  -- Error
 
-t106 = read "rec x . +{A:!Int};x" :: Type
-t107 = read "rec y . +{A:!Int;y, B: y};x" :: Type -- 104 - 2 options
+-- -- Map.fromList [("id'",(["x"],Variable (5,9) "x"))]
+
+
+-- -- extract in choice
+-- runner t = runState (extractInChoice (0,0) (TypeScheme [] t)) (Map.empty, Map.empty, [])
+
+-- t100 = read "+{A:!Int};x;x" :: Type
+-- t101 = read "+{A:!Int, B: ?Char};x;x" :: Type
+-- t102 = read "+{A:!Int};x" :: Type
+-- t103 = read "+{A:!Int, B: Skip};x" :: Type
+-- t104 = read "rec y . +{A:!Int;y};x" :: Type
+
+-- t105 = read "(rec y . +{A:!Int;y});x" :: Type  -- Error
+
+-- t106 = read "rec x . +{A:!Int};x" :: Type
+-- t107 = read "rec y . +{A:!Int;y, B: y};x" :: Type -- 104 - 2 options

@@ -22,9 +22,8 @@ type ParserOut = (VarEnv, ExpEnv, ConstructorEnv, KindEnv)
 type CFSTParser = Parsec String ParserOut ParserOut
 type CFSTSubParser = Parsec String ParserOut
 
--- TODO: runParserT
 mainProgram :: FilePath -> VarEnv -> IO (Either ParseError ParserOut)
-mainProgram filepath venv = do -- parseFromFile (program venv) filepath
+mainProgram filepath venv = do
   file <- readFile filepath
   return $ parseWith filepath  program (venv, Map.empty, Map.empty, Map.empty) file
 

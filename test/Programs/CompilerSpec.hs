@@ -1,36 +1,28 @@
 module CompilerSpec (spec) where
 
-import           Compiler
-import           Data.List
-import qualified Data.Map.Strict as Map
-import           System.Directory
-import           System.Process
-import           System.Exit
-import           Test.Hspec
-import           Test.HUnit (assertFailure)
-
+import Compiler
+import System.Directory
+import System.Process
+import System.Exit
+import Test.Hspec
+import Test.HUnit (assertFailure)
+import System.FilePath
 import Control.Exception
 
--- baseDir = "/test/Programs/ValidTests/"
 validTestDir curDir = curDir ++ "/test/Programs/ValidTests/"
-invalidTestDir curDir = curDir ++ "/test/Programs/InvalidTests/"
+-- invalidTestDir curDir = curDir ++ "/test/Programs/InvalidTests/"
 
 main :: IO ()
 main = hspec $ spec
 
 spec :: Spec
 spec = do
-   -- TESTING
   curDir <- runIO $ getCurrentDirectory
   dirs <- runIO $ listDirectory (validTestDir curDir)
 
   describe "Valid Tests" $ do
     mapM_ (\dir -> testDir dir curDir) dirs
-
-  -- dirs <- runIO $ listDirectory (invalidTestDir curDir)
-  -- describe "Invalid Tests" $ do
-  --   mapM_ (\dir -> testDir dir curDir) dirs
-
+    
   runIO $ setCurrentDirectory curDir
 
 -- TODO: test invalid with expect failure
@@ -44,7 +36,7 @@ testDir dir curDir = parallel $ do
 getSource :: [String] -> String
 getSource [] = ""
 getSource (x:xs)
-  | ".hs" `isInfixOf` x && x /= "cfst.hs" && x /= "CFSTUtils.hs" = x
+  | takeExtension x == ".cfs" = x
   | otherwise = getSource xs
 
 testOne :: String -> String -> Spec    
@@ -60,18 +52,12 @@ testOne test filename = do
         return ()
     (True, _)  -> runAndCheckResult test filename
 
--- t6 = catch (evaluate lin)
---      (\e -> do let err = show (e :: SomeException)
---                return $ (False, ("Warning: Couldn't open " ++ ": " )))  
-
 runAndCheckResult :: String -> String -> Spec
 runAndCheckResult testFile filename = do
-  let path = reverse $ dropWhile (/= '/') (reverse testFile)
-  runIO $ setCurrentDirectory path
- 
+  
+  runIO $ setCurrentDirectory $ takeDirectory testFile
   (exitcode, output, errors) <- runIO $ readProcessWithExitCode "ghc" ["-dynamic", "-XBangPatterns", "cfst.hs"] ""  
-  -- (exitcode, output, errors) - runIO $ readProcessWithExitCode "ghc" ["cfst.hs", "-fno-code", "-O0"] ""
-
+ 
   if (exitcode == ExitSuccess) then
     do     
       (exitcode1, output1, errors1) <- runIO $ readProcessWithExitCode "./cfst" [] ""

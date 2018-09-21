@@ -18,12 +18,12 @@ cabal-version:       >=1.10
 executable ContextFreeSession
   main-is:             Main.hs
   other-extensions:    FlexibleContexts
-  build-depends:       HUnit >= 1.3.0.0, base >=4.8, containers >=0.5 && <0.6, directory >= 1.3.2.0, hspec >= 2.4.4, mtl >= 2.2.1, parsec >=3.1 && <3.2, process >= 1.6.3.0
+  build-depends:       HUnit >= 1.3.0.0, base >=4.8, containers >=0.5 && <0.6, directory >= 1.3.2.0, hspec >= 2.4.4, mtl >= 2.2.1, parsec >=3.1 && <3.2, process >= 1.6.3.0, filepath >= 1.4.2
   hs-source-dirs:      src
   default-language:    Haskell2010
   other-modules:       Compiler, PreludeLoader, Parse.Parser, Syntax.Terms, Validation.Typing, Validation.Kinding, Syntax.Kinds, Validation.TypeEquivalence, Parse.TypeParser, Syntax.Types, CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen, Parse.Lexer, Validation.TypingState
 
-test-suite CFST-UnitTests
+test-suite unit-tests
   main-is:             UnitSpec.hs
   Type:                exitcode-stdio-1.0
   other-extensions:    FlexibleContexts
@@ -32,11 +32,11 @@ test-suite CFST-UnitTests
   default-language:    Haskell2010
   other-modules:       SpecHelper, Validation.Kinding, Syntax.Kinds, Validation.TestEquivalenceInvalidSpec, Validation.TestEquivalenceValidSpec, Validation.TestKindingValidSpec, Parse.TestParserInvalidSpec, Parse.TestParserValidSpec, Syntax.TestShowValidSpec, Syntax.TestEqInvalidSpec, Syntax.TestEqValidSpec, Validation.TestKindingInvalidSpec, Validation.TypeEquivalence, Parse.TypeParser, Syntax.Types, Parse.Parser, Syntax.Terms, Syntax.TestEqTypeSchemeSpec, Parse.Lexer, Validation.TestTypeSchemeKindingSpec, Validation.TypingState
   
-test-suite programs
+test-suite program-tests
   main-is:             ProgSpec.hs
   Type:                exitcode-stdio-1.0
   other-extensions:    FlexibleContexts
-  build-depends:       HUnit >= 1.3.0.0, QuickCheck >=2.8, base >=4.8, containers >=0.5 && <0.6, directory >= 1.3.2.0, hspec >=2.4, hspec-expectations >=0.8, mtl >= 2.2.1, parsec >=3.1 && <3.2, process >= 1.6.3.0
+  build-depends:       HUnit >= 1.3.0.0, QuickCheck >=2.8, base >=4.8, containers >=0.5 && <0.6, directory >= 1.3.2.0, hspec >=2.4, hspec-expectations >=0.8, mtl >= 2.2.1, parsec >=3.1 && <3.2, process >= 1.6.3.0, filepath >= 1.4.2
   hs-source-dirs:      src, test/Programs
   ghc-options:         -threaded
   default-language:    Haskell2010

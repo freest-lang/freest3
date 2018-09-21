@@ -5,14 +5,33 @@ import System.Environment
 import System.Process
 import System.Exit
 import System.Directory
+import System.FilePath
 
 
 main :: IO ()
 main = do
   args <- getArgs
-  res <- compile (head args)
-  let filepath = reverse $ dropWhile (/= '/') (reverse (head args))
-  checkResult res filepath
+  -- putStrLn $ show $ length args
+
+  if length args == 1 then
+    compileFile (head args)
+  else
+    putStrLn "Error: Incorrect number of arguments, provide just one argument"
+
+  -- res <- compile (head args)
+  -- let filepath = reverse $ dropWhile (/= '/') (reverse (head args))
+  -- checkResult res filepath
+
+
+
+compileFile args
+  | takeExtension args == ".cfs" =
+    do
+      res <- compile args
+      let filepath = reverse $ dropWhile (/= '/') (reverse args)
+      checkResult res filepath
+  | otherwise = do
+      putStrLn "Error: File extension not recognized, provide a .cfs file"
 
 
 checkResult :: (Bool, String) -> String -> IO ()

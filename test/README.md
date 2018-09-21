@@ -27,11 +27,11 @@ After building the compiler you can choose one of the following options:
     ```
   * To run only the Unit tests:
     ```
-    $ cabal test CFST-UnitTests
+    $ cabal test unit-tests
     ```
   * To run only the Programs tests:
     ```
-    $ cabal test programs
+    $ cabal test program-tests
     ```
 
 There are also available options to run valid and invalid tests separately for all the units:
