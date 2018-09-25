@@ -3,12 +3,13 @@
 ## Requirements
 
 This section contains the requirements for running the compiler.
-It's necessary to have the following tools installed:
+The following tools are required:
 
   * The Haskell platform (See [`Haskell Website`](https://www.haskell.org/platform/))
-  * Build cabal
+  * Cabal
 
     ```
+    $ cabal update
     $ cabal install --dependencies-only
     $ cabal build
     ```

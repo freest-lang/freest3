@@ -5,7 +5,7 @@ The test infrastructure contains a collection of tools for testing the Context F
 ## Requirements
 
 This section contains the requirements for the test framework.
-It's necessary to have the following tools installed:
+Requirements:
 
   * The Haskell platform (See [`Haskell Website`](https://www.haskell.org/platform/))
   * See [`README.md`](../README.md) for installation details
@@ -15,6 +15,7 @@ It's necessary to have the following tools installed:
 To be able to run the tests you need to be in the root folder of the project (ContextFreeSession directory) and run
 
 ```
+$ cabal update
 $ cabal install --dependencies-only
 $ cabal build
 ```

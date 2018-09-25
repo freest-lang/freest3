@@ -203,76 +203,76 @@ assocsToGNF y p ((l, t):as) = do
 
 -- tests
 
--- buildGNF :: Type -> GNF
--- buildGNF t = evalState (generateGNF t) initial
+buildGNF :: Type -> GNF
+buildGNF t = evalState (generateGNF t) initial
 
--- generateGNF :: Type -> GNFState GNF
--- generateGNF t = do
---   [y] <- toGNF t
---   p <- getGrammar
---   return $ GNF {start = y, productions = p}
+generateGNF :: Type -> GNFState GNF
+generateGNF t = do
+  [y] <- toGNF t
+  p <- getGrammar
+  return $ GNF {start = y, productions = p}
 
--- s1 = Message Out CharType
--- t1 = buildGNF s1
--- s2 = Var "α"
--- t2 = buildGNF s2
--- s3 = Semi (Message Out IntType) (Message In BoolType)
--- t3 = buildGNF s3
--- s4 = Semi s3 s1
--- t4 = buildGNF s4
--- s5 = Choice External (Map.fromList
---   [("Leaf", Skip),
---    ("Node", s1)])
--- t5 = buildGNF s5
--- s6 = Choice External (Map.fromList
---   [("Leaf", Skip),
---    ("Node", s3)])
--- t6 = buildGNF s6
--- yBind = Bind "y" (Kind {prekind = Session, multiplicity = Lin})
--- treeSend = Rec yBind (Choice External (Map.fromList
---   [("Leaf",Skip),
---    ("Node", Semi (Message Out IntType) (Semi (Var "y") (Var "y")))]))
--- t7 = buildGNF treeSend
--- t8 = buildGNF $ Semi treeSend (Var "α")
--- s9 = Rec yBind (Semi s1 (Var "y"))
--- t9 = buildGNF s9
--- s10 = Semi s4 (Semi (Semi s3 s1) s4)
--- t10 = buildGNF s10
--- s11 = Semi (Rec yBind (Semi treeSend (Var "y"))) treeSend
--- t11 = buildGNF s11
--- zBind = Bind "z" (Kind {prekind = Session, multiplicity = Lin})
--- s12 = Semi (Rec zBind (Semi treeSend (Var "z"))) treeSend
--- t12 = buildGNF s12
--- s13 = Semi treeSend Skip
--- t13 = buildGNF s13
--- s14 = Semi Skip treeSend
--- t14 = buildGNF s14
--- s15 = Semi treeSend treeSend
--- t15 = buildGNF s15
--- treeSend1 = Rec zBind (Choice External (Map.fromList
---   [("Leaf",Skip),
---    ("Node", Semi (Message Out IntType) (Semi (Var "z") (Var "z")))]))
--- s16 = Semi treeSend treeSend1
--- t16 = buildGNF s16
--- s17 = Rec zBind (Semi s1 (Var "z"))
--- t17 = buildGNF s17
--- s18 = Rec zBind (Semi s1 (Semi (Var "z") (Var "z")))
--- t18 = buildGNF s18
--- s19 = Rec zBind (Semi (Semi s1 (Var "z")) (Var "z"))
--- t19 = buildGNF s19
--- s20 = Message In IntType
--- s21 = Semi s1 (Semi s2 s20)
--- s22 = Semi (Semi s1 s2) s20
--- s23 = Semi s1 Skip
--- s24 = Rec yBind (Rec zBind (Semi (Semi s1 (Var "y")) (Var "z")))
--- t24 = buildGNF s24
--- s25 = Rec yBind (Rec zBind (Semi (Semi s1 (Var "z")) (Var "y")))
--- t25 = buildGNF s25
--- s26 = Semi (Choice External (Map.fromList [("Leaf", Skip)])) (Var "α")
--- t26 = buildGNF s26
--- s27 = Choice External (Map.fromList [("Leaf", (Var "α"))])
--- t27 = buildGNF s27
--- s28 = Rec yBind (Choice External (Map.fromList [("Add", Semi (Semi (Var "y") (Var "y")) (Message Out IntType)), ("Const", Skip)]))
+s1 = Message Out CharType
+t1 = buildGNF s1
+s2 = Var "α"
+t2 = buildGNF s2
+s3 = Semi (Message Out IntType) (Message In BoolType)
+t3 = buildGNF s3
+s4 = Semi s3 s1
+t4 = buildGNF s4
+s5 = Choice External (Map.fromList
+  [("Leaf", Skip),
+   ("Node", s1)])
+t5 = buildGNF s5
+s6 = Choice External (Map.fromList
+  [("Leaf", Skip),
+   ("Node", s3)])
+t6 = buildGNF s6
+yBind = Bind "y" (Kind {prekind = Session, multiplicity = Lin})
+treeSend = Rec yBind (Choice External (Map.fromList
+  [("Leaf",Skip),
+   ("Node", Semi (Message Out IntType) (Semi (Var "y") (Var "y")))]))
+t7 = buildGNF treeSend
+t8 = buildGNF $ Semi treeSend (Var "α")
+s9 = Rec yBind (Semi s1 (Var "y"))
+t9 = buildGNF s9
+s10 = Semi s4 (Semi (Semi s3 s1) s4)
+t10 = buildGNF s10
+s11 = Semi (Rec yBind (Semi treeSend (Var "y"))) treeSend
+t11 = buildGNF s11
+zBind = Bind "z" (Kind {prekind = Session, multiplicity = Lin})
+s12 = Semi (Rec zBind (Semi treeSend (Var "z"))) treeSend
+t12 = buildGNF s12
+s13 = Semi treeSend Skip
+t13 = buildGNF s13
+s14 = Semi Skip treeSend
+t14 = buildGNF s14
+s15 = Semi treeSend treeSend
+t15 = buildGNF s15
+treeSend1 = Rec zBind (Choice External (Map.fromList
+  [("Leaf",Skip),
+   ("Node", Semi (Message Out IntType) (Semi (Var "z") (Var "z")))]))
+s16 = Semi treeSend treeSend1
+t16 = buildGNF s16
+s17 = Rec zBind (Semi s1 (Var "z"))
+t17 = buildGNF s17
+s18 = Rec zBind (Semi s1 (Semi (Var "z") (Var "z")))
+t18 = buildGNF s18
+s19 = Rec zBind (Semi (Semi s1 (Var "z")) (Var "z"))
+t19 = buildGNF s19
+s20 = Message In IntType
+s21 = Semi s1 (Semi s2 s20)
+s22 = Semi (Semi s1 s2) s20
+s23 = Semi s1 Skip
+s24 = Rec yBind (Rec zBind (Semi (Semi s1 (Var "y")) (Var "z")))
+t24 = buildGNF s24
+s25 = Rec yBind (Rec zBind (Semi (Semi s1 (Var "z")) (Var "y")))
+t25 = buildGNF s25
+s26 = Semi (Choice External (Map.fromList [("Leaf", Skip)])) (Var "α")
+t26 = buildGNF s26
+s27 = Choice External (Map.fromList [("Leaf", (Var "α"))])
+t27 = buildGNF s27
+s28 = Rec yBind (Choice External (Map.fromList [("Add", Semi (Semi (Var "y") (Var "y")) (Message Out IntType)), ("Const", Skip)]))
 
 -- BISIMULATION
 
@@ -401,28 +401,28 @@ checkBinding k m acc l t = acc && l `Map.member` m && equivalent k (m Map.! l) t
 
 -- -- testing
 
--- convertTwo :: Type -> Type -> (TypeVar, TypeVar, (Grammar, Visited, Int))
--- convertTwo t u = (x, y, s)
---   where (x, state) = convertToGNF initial t
---         (y, s) = convertToGNF state u
+convertTwo :: Type -> Type -> (TypeVar, TypeVar, (Grammar, Visited, Int))
+convertTwo t u = (x, y, s)
+  where (x, state) = convertToGNF initial t
+        (y, s) = convertToGNF state u
 
--- alphaKinding = Map.singleton "α" (Kind Session Lin)
+alphaKinding = Map.singleton "α" (Kind Session Lin)
 
--- e1 = equivalent alphaKinding s1 s1
--- e2 = equivalent alphaKinding s1 s2 -- False
--- e3 = equivalent alphaKinding s1 s3 -- False
--- e4 = equivalent alphaKinding s3 s3
--- e5 = equivalent alphaKinding s3 s4 -- False
--- e6 = equivalent alphaKinding s1 s5 -- False
--- e7 = equivalent alphaKinding s4 s5 -- False
--- e8 = equivalent alphaKinding s5 s6 -- False
--- e9 = equivalent alphaKinding s9 s9
--- e10 = equivalent alphaKinding treeSend treeSend
--- e11 = equivalent alphaKinding s21 s22
--- e12 = equivalent alphaKinding s1 s23
--- e13 = equivalent alphaKinding s24 s24
--- e14 = equivalent alphaKinding s24 s25
--- e15 = equivalent alphaKinding s26 s27
+e1 = equivalent alphaKinding s1 s1
+e2 = equivalent alphaKinding s1 s2 -- False
+e3 = equivalent alphaKinding s1 s3 -- False
+e4 = equivalent alphaKinding s3 s3
+e5 = equivalent alphaKinding s3 s4 -- False
+e6 = equivalent alphaKinding s1 s5 -- False
+e7 = equivalent alphaKinding s4 s5 -- False
+e8 = equivalent alphaKinding s5 s6 -- False
+e9 = equivalent alphaKinding s9 s9
+e10 = equivalent alphaKinding treeSend treeSend
+e11 = equivalent alphaKinding s21 s22
+e12 = equivalent alphaKinding s1 s23
+e13 = equivalent alphaKinding s24 s24
+e14 = equivalent alphaKinding s24 s25
+e15 = equivalent alphaKinding s26 s27
 
 -- UNFOLDING, RENAMING, SUBSTITUTING
 
