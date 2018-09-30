@@ -136,8 +136,9 @@ instance Show Type where
   show (Basic b)      = show b
   show Skip           = "Skip"
   show (Semi t u)     = "(" ++ show t ++ ";" ++ show u ++ ")"
-  show (Message Out b)= "!" ++ show b
-  show (Message In b) = "?" ++ show b
+  -- show (Message Out b)= "!" ++ show b
+  -- show (Message In b) = "?" ++ show b
+  show (Message p b) = show p ++ show b
   show (Fun Lin t u)  = showFun t "-o" u
   show (Fun Un t u)   = showFun t "->" u
   show (PairType t u) = "(" ++  show t ++ ", " ++ show u ++ ")"

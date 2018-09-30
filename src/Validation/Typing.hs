@@ -22,7 +22,8 @@ typeCheck eenv cenv = do
   checkDataDecl cenv
   
   -- 2 - Function type declaration
-  pure $ Map.mapWithKey (\fun (a, e) -> checkFunTypeDecl fun) eenv
+--   pure $ Map.mapWithKey (\fun (a, e) -> checkFunTypeDecl fun) eenv
+  Map.foldrWithKey (\fun (a, e) _ -> checkFunTypeDecl fun) (return ()) eenv
 
   -- 3 - Function declaration  
   checkVar (0,0) "start"

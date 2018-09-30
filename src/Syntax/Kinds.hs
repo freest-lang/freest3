@@ -17,13 +17,13 @@ module Syntax.Kinds
 , Kind (..)
 ) where
   
-data PreKind = Session | Functional deriving (Eq, Ord)
+data PreKind = Session | Functional deriving (Eq)
 
 instance Show PreKind where
   show Session    = "S"
   show Functional = "T"
 
-data Multiplicity = Un | Lin deriving (Eq, Ord, Read)
+data Multiplicity = Un | Lin deriving Eq
 
 instance Show Multiplicity where
   show Un  = "U"
@@ -35,6 +35,18 @@ data Kind = Kind {prekind :: PreKind, multiplicity :: Multiplicity}
 instance Show Kind where
   show k = show (prekind k) ++ show (multiplicity k)
 
+
+instance Ord Multiplicity where
+  (<=) = compareMultiplicities
+
+compareMultiplicities Lin Un = False
+compareMultiplicities _ _ = True
+
+instance Ord PreKind where
+  (<=) = comparePreKinds
+
+comparePreKinds Functional Session = False
+comparePreKinds _ _ = True
 
 {- Alternative. Worth the refactoring?
 

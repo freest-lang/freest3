@@ -69,7 +69,7 @@ data Expression
   -- Datatypes
   | Constructor Pos TermVar
   | Case Pos Expression CaseMap
-   deriving (Show, Eq, Ord)
+   deriving (Eq, Ord)
 
 -- -- TODO: ??
 -- instance Show Expression where

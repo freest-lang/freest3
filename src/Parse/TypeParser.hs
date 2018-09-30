@@ -51,8 +51,8 @@ parsecToReadsPrec parsecParser prec s
 parserBasic :: String -> Either ParseError BasicType
 parserBasic = parse parseBasicType "Context-free Sessions (Basic types)"
 
-parserKind :: String -> Either ParseError Kind
-parserKind = parse parseKind "Context-free Sessions (Kind)"
+-- parserKind :: String -> Either ParseError Kind
+-- parserKind = parse parseKind "Context-free Sessions (Kind)"
 
 
 parseBasicType :: Parsec String u BasicType

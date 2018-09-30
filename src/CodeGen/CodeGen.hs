@@ -20,11 +20,10 @@ import           Syntax.Types
 genProgram :: VarEnv -> ExpEnv -> ConstructorEnv -> KindEnv -> FilePath -> IO ()
 genProgram venv eenv cenv kenv path = do
   genUtils path
-  let start      = eenv Map.! "start"
-      startType  = last $ toList $ venv Map.! "start"
+  let startType  = last $ toList $ venv Map.! "start"
       dataTypes  = genDataTypes cenv
       file       = genFile eenv
-      mainFun    = genMain eenv start startType in
+      mainFun    = genMain eenv (eenv Map.! "start") startType in
       writeFile (path ++ "cfst.hs") (genPragmas ++ genImports ++ dataTypes ++ file ++ mainFun)
 
 
@@ -54,10 +53,12 @@ genPragmas = "{-# LANGUAGE BangPatterns #-}\n\n"
 genMain :: ExpEnv  -> (Params, Expression) -> TypeScheme -> HaskellCode
 genMain eenv (params, startExp) t =  
   let m = monadicFuns eenv
-      m1 = foldr (\x acc -> Map.insert x False acc) m params
-      (m2, b1) = isMonadic m1 (m1 Map.! "start") Map.empty startExp
-      (h,b) = evalState (translate m1 m2 startExp) 0 in
-     -- b1 = monadicFun eenv "start" startExp in
+-- Main doesn't have parens
+--      m1 = foldr (\x acc -> Map.insert x False acc) m params
+--      (m2, b1) = isMonadic m1 (m1 Map.! "start") Map.empty startExp
+      (m2, b1) = isMonadic m (m Map.! "start") Map.empty startExp
+      (h,b) = evalState (translate m m2 startExp) 0 in
+--      (h,b) = evalState (translate m1 m2 startExp) 0 in
   if b || b1 then
     "main = start >>= \\res -> putStrLn (show (res :: " ++ show t ++ "))\n\n"
   else

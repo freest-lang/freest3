@@ -10,8 +10,11 @@ ghc -isrc -itest/Programs -fhpc test/Programs/ProgSpec.hs --make
 
 hpc sum UnitSpec.tix ProgSpec.tix --output=Specs.tix --exclude=Main --union
 
-hpc report Specs --exclude=Parse.TestParserInvalidSpec --exclude=Parse.TestParserValidSpec --exclude=Syntax.TestEqInvalidSpec --exclude=Syntax.TestEqTypeSchemeSpec --exclude=Syntax.TestEqValidSpec --exclude=Syntax.TestShowValidSpec --exclude=Validation.TestEquivalenceInvalidSpec --exclude=Validation.TestEquivalenceValidSpec --exclude=Validation.TestKindingInvalidSpec --exclude=Validation.TestKindingValidSpec --exclude=Validation.TestTypeSchemeKindingSpec --exclude=SpecHelper 
-hpc markup Specs --exclude=Parse.TestParserInvalidSpec --exclude=Parse.TestParserValidSpec --exclude=Syntax.TestEqInvalidSpec --exclude=Syntax.TestEqTypeSchemeSpec --exclude=Syntax.TestEqValidSpec --exclude=Syntax.TestShowValidSpec --exclude=Validation.TestEquivalenceInvalidSpec --exclude=Validation.TestEquivalenceValidSpec --exclude=Validation.TestKindingInvalidSpec --exclude=Validation.TestKindingValidSpec --exclude=Validation.TestTypeSchemeKindingSpec --destdir=test/outputs --exclude=SpecHelper 
+hpc report --srcdir=src/ --hpcdir=../.hpc Specs
+#hpc markup --srcdir=src/ --hpcdir=../.hpc --destdir=test/outputs Specs
+
+#hpc report Specs --exclude=Parse.TestParserInvalidSpec --exclude=Parse.TestParserValidSpec --exclude=Syntax.TestEqInvalidSpec --exclude=Syntax.TestEqTypeSchemeSpec --exclude=Syntax.TestEqValidSpec --exclude=Syntax.TestShowValidSpec --exclude=Validation.TestEquivalenceInvalidSpec --exclude=Validation.TestEquivalenceValidSpec --exclude=Validation.TestKindingInvalidSpec --exclude=Validation.TestKindingValidSpec --exclude=Validation.TestTypeSchemeKindingSpec --exclude=SpecHelper 
+hpc markup Specs --exclude=Parse.TestParserInvalidSpec --exclude=Parse.TestParserValidSpec --exclude=Syntax.TestEqInvalidSpec --exclude=Syntax.TestEqTypeSchemeSpec --exclude=Syntax.TestEqValidSpec --exclude=Syntax.TestShowValidSpec --exclude=Validation.TestEquivalenceInvalidSpec --exclude=Validation.TestEquivalenceValidSpec --exclude=Validation.TestKindingInvalidSpec --exclude=Validation.TestKindingValidSpec --exclude=Validation.TestTypeSchemeKindingSpec --destdir=test/outputs --exclude=SpecHelper  --exclude=CompilerSpec --exclude=Syntax.TestTermsEqSpec
 
 
 

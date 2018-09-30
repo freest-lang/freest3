@@ -55,7 +55,8 @@ parseTypeSignature = do
 
 parseTypeScheme :: CFSTSubParser TypeScheme
 parseTypeScheme = do
-  reserved "forall"
+-- reserved "forall"
+  forall
   bindings <- commaSep1 parseBindings
   reserved "=>"  
   t <- parseType
@@ -456,8 +457,8 @@ instance Read TypeScheme where
 
 
 --TODO: remove (test purposes)
-run = mainProgram path Map.empty
+--run = mainProgram path Map.empty
 --path = "src/test.hs"
-path = "test/Programs/ValidTests/multDivPrecedence/multDivPrecedence.hs"
+--path = "test/Programs/ValidTests/multDivPrecedence/multDivPrecedence.hs"
 --path = "/home/balmeida/workspaces/ContextFreeSession/test/Programs/ValidTests/sendTree/sendTree.hs"
 

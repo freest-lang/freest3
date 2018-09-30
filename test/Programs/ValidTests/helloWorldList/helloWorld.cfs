@@ -1,0 +1,37 @@
+
+data List = Cons Char List | Nil
+
+start1 :: List
+start1 = 
+  let str = (Cons 'H'(Cons 'e'(Cons 'l'(Cons 'l'(Cons 'o'Nil))))) in
+  str
+
+start :: List
+start = 
+  let str = (Cons 'H'(Cons 'e'(Cons 'l'(Cons 'l'(Cons 'o'Nil))))) in
+  let c,s = new (rec x .+{ConsChan: !Char;x, NilChan: Skip}) in
+  let x = fork (client[Skip] str c) in
+  let res, c = server s in 
+  res
+
+client :: forall a => List -> (rec x .+{ConsChan: !Char;x, NilChan: Skip});a -> a
+client l c = 
+  case l of
+    Nil -> select NilChan c
+    Cons cons l -> 
+      let c1 = select ConsChan c in
+      let c2 = send cons c1 in
+      let c3 = client[a] l c2 in
+      c3
+--    Nil -> select NilChan c
+
+
+server :: forall a => (rec x .&{ConsChan: ?Char;x, NilChan: Skip});a -> (List, a)
+server c =
+  match c with
+    ConsChan c1 -> 
+      let x1,c2 = receive c1 in
+      let x2,c3 = server[a] c2 in
+      (Cons x1 x2, c3)
+    NilChan c1 -> (Nil, c1)
+

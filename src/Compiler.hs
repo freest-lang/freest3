@@ -40,8 +40,8 @@ codeGen venv eenv cenv kenv path = do
   return (True, "")
  
 
-showErrors :: TypingState [String]
-showErrors = getErrors
+-- showErrors :: TypingState [String]
+-- showErrors = getErrors
 
 checkErr :: Errors -> IO (Bool, String)
 checkErr tc = do

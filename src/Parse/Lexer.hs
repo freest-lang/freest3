@@ -15,7 +15,7 @@ module Parse.Lexer
 , squares
 , commaSep1
 , natural
-, integer
+--, integer
 , apostrophe
 , constructor
 , lowerIdentifier
@@ -60,7 +60,7 @@ braces = Token.braces lexer
 squares = Token.squares lexer
 commaSep1 = Token.commaSep1 lexer
 natural = Token.natural lexer
-integer = Token.integer lexer
+--integer = Token.integer lexer
 apostrophe p = between (string "'") (string "'") p
 constructor = lookAhead upper >> identifier
 lowerIdentifier = lookAhead lower >> identifier

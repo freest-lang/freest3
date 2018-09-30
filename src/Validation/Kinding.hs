@@ -20,7 +20,7 @@ module Validation.Kinding
   , contractive
   , un
   , lin 
-  , kindErr
+--  , kindErr
   , kindOfScheme
   , checkAgainstKind
 ) where
@@ -173,9 +173,9 @@ isSessionType :: KindEnv -> Type -> Bool
 isSessionType k t = isWellKinded k t && prekind (kindOf k t) == Session
 
 -- Need this ?? 
-kindErr :: Type -> [String]
-kindErr t =
-  let (_, _, err) = execState (synthetize t) initialState in err
+--kindErr :: Type -> [String]
+--kindErr t =
+--  let (_, _, err) = execState (synthetize t) initialState in err
 
 
 -- runState :: State s a -> s -> (a, s)

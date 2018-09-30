@@ -27,10 +27,10 @@ addError err = modify (\(kenv, venv, errors) -> (kenv, venv, errors ++ [err]))
 addErrorList :: [String] -> TypingState ()
 addErrorList err = modify (\(kenv, venv, errors) -> (kenv, venv, errors ++ err)) 
 
-getErrors :: TypingState Errors
-getErrors = do
-  (_ , _, err) <- get
-  return err
+-- getErrors :: TypingState Errors
+-- getErrors = do
+--   (_ , _, err) <- get
+--   return err
 
 -- VarEnv
 
@@ -80,5 +80,5 @@ getKind x = do
   kenv <- getKindEnv
   return $ kenv Map.! x
 
-setKEnv :: KindEnv -> TypingState ()
-setKEnv kenv = modify (\(_, venv, errors) -> (kenv, venv, errors))
+-- setKEnv :: KindEnv -> TypingState ()
+-- setKEnv kenv = modify (\(_, venv, errors) -> (kenv, venv, errors))
