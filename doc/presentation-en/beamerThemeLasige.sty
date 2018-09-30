@@ -1,0 +1,154 @@
+% Author: Bernardo Almeida
+
+\DeclareOptionBeamer{compress}{\beamer@compresstrue}
+\ProcessOptionsBeamer
+
+\mode<presentation>
+
+\logo{\includegraphics[scale=1.5]{pics/logos.png}}
+%\useoutertheme[footline=authortitle]{miniframes}
+\useinnertheme{circles}
+\usecolortheme{whale}
+\usecolortheme{orchid}
+
+\definecolor{color1}{RGB}{156,31,51}
+\definecolor{color2}{RGB}{208,92,125}
+
+% BACKGROUND COLOR
+
+\usebackgroundtemplate{
+\tikz\shade[left color=color1!100,right color=color2!100] 
+  (0,0) rectangle +(\paperwidth,\paperheight);
+  \tikz[overlay,remember picture]\node[opacity=0.05,anchor=east] at (current page.east) {};
+}
+
+\setbeamertemplate{navigation symbols}{}
+
+\setbeamercolor{structure}{fg=color1}
+\setbeamercolor{titlelike}{parent=structure}
+\setbeamercolor{frametitle}{fg=white}
+\setbeamercolor{title}{fg=white}
+\setbeamercolor{frametitle}{fg=white}
+\setbeamercolor{author}{fg=white}
+\setbeamercolor{institute}{fg=white}
+\setbeamercolor{date}{fg=white}
+\setbeamercolor{normal text}{fg=white}
+\setbeamertemplate{itemize item}{\color{white}$\blacksquare$}
+\setbeamertemplate{itemize subitem}{\color{white}$\blacktriangleright$}
+\setbeamertemplate{itemize subsubitem}{\color{white}$\bullet$}
+% \setbeamercolor{enumerate item}{\color{white}$\circle$}
+\setbeamercolor{item projected}{fg=color1, bg=white}
+
+
+%\setbeamercolor{title}{bg=beamer@blendedblue}
+\setbeamercolor{title}{fg=white, opacity=0}
+
+
+\setbeamertemplate{frametitle}
+{
+  \ifbeamercolorempty[bg]{frametitle}{}{\nointerlineskip}%
+  \@tempdima=\textwidth%
+  \advance\@tempdima by\beamer@leftmargin%
+  \advance\@tempdima by\beamer@rightmargin%
+    \pgfsetfillopacity{0}     %<------ fix filling opacityz
+  \begin{beamercolorbox}[sep=0.3cm,left,wd=\the\@tempdima]{frametitle}
+    \usebeamerfont{frametitle}%
+    \vbox{}\vskip-1ex%
+    \if@tempswa\else\csname beamer@fteleft\endcsname\fi%
+    \strut\pgfsetfillopacity{1}\insertframetitle\strut\par%  <---- text opacity
+    {%
+      \ifx\insertframesubtitle\@empty%
+      \else%
+      {\usebeamerfont{framesubtitle}\usebeamercolor[fg]{framesubtitle}\insertframesubtitle\strut\par}%
+      \fi
+    }%
+    \vskip-1ex%
+    \if@tempswa\else\vskip-.6cm\fi% set inside beamercolorbox... evil here...
+  \end{beamercolorbox}%
+    \pgfsetfillopacity{0}  
+    \begin{beamercolorbox}[sep=0.3cm,right,wd=\the\@tempdima]{frametitle}
+      \pgfsetfillopacity{1} 
+      \begin{tikzpicture}[remember picture,overlay]
+      \node [left ]{\includegraphics[scale=0.15]{pics/lasige.png}};
+    \end{tikzpicture}
+  \end{beamercolorbox}%
+}
+
+\setbeamertemplate{headline}{}
+\setbeamertemplate{footline}
+{
+\leavevmode%
+\hbox{%
+  \pgfsetfillopacity{0}
+  \begin{beamercolorbox}[wd=.5\paperwidth,ht=1.25ex,dp=2ex,center]{title in head/foot}%
+     \usebeamerfont{title in head/foot}\pgfsetfillopacity{1}\insertshorttitle
+   \end{beamercolorbox}%
+   \pgfsetfillopacity{0}
+  \begin{beamercolorbox}[wd=.4\paperwidth,ht=1.25ex,dp=2ex,center]{author in head/foot}%
+    \usebeamerfont{author in head/foot}\pgfsetfillopacity{1}\insertshortauthor
+  \end{beamercolorbox}%
+    \pgfsetfillopacity{0}
+   \begin{beamercolorbox}[wd=.07\paperwidth,ht=1.25ex,dp=2ex,right]{date in head/foot}%
+     \usebeamerfont{date in head/foot}\pgfsetfillopacity{1}
+     \hfill\insertframenumber{}\,/\,\inserttotalframenumber
+   \end{beamercolorbox}
+
+ }%
+\vskip0pt%
+}
+
+\setbeamertemplate{title page}
+{
+  % \pgfsetfillopacity{0}  
+  % \begin{beamercolorbox}[sep=0.3cm, right,wd=\the\@tempdima]{frametitle}
+  %   \vskip-10ex%
+  %     \pgfsetfillopacity{1} 
+  %     \begin{tikzpicture}[remember picture,overlay]
+  %     \node []{\includegraphics[scale=0.15]{pics/lasige.png}};
+  %   \end{tikzpicture}
+  % \end{beamercolorbox}%
+  \vbox{}   
+  \begin{centering}
+    \pgfsetfillopacity{0}
+    \begin{beamercolorbox}[sep=8pt,center]{title}
+      \pgfsetfillopacity{1}
+      \usebeamerfont{title}\inserttitle\par%
+      \ifx\insertsubtitle\@empty%
+      \else%
+        \vskip0.25em%
+        {\usebeamerfont{subtitle}\usebeamercolor[fg]{subtitle}\insertsubtitle\par}%
+      \fi%     
+    \end{beamercolorbox}%
+    \vskip1em\par
+
+    \pgfsetfillopacity{0}
+    \begin{beamercolorbox}[sep=8pt,center]{author}
+      \pgfsetfillopacity{1}
+      \usebeamerfont{author}\insertauthor
+    \end{beamercolorbox}
+
+    \pgfsetfillopacity{0}
+    \begin{beamercolorbox}[sep=8pt,center]{institute}
+      \pgfsetfillopacity{1}
+      \usebeamerfont{institute}\insertinstitute
+    \end{beamercolorbox}
+
+    \pgfsetfillopacity{0}
+    \begin{beamercolorbox}[sep=8pt,center]{date}
+      \pgfsetfillopacity{1}
+      \usebeamerfont{date}\insertdate
+    \end{beamercolorbox}%\vskip0.5em
+  \end{centering}
+  %\vfill
+}
+
+%     
+
+
+\mode
+<all>
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "cfst"
+%%% End:

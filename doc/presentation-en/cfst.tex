@@ -1,0 +1,335 @@
+\documentclass[unknownkeysallowed]{beamer}
+
+\usepackage[compress]{beamerThemeLasige}
+\input{preamble}
+\input{macros}
+
+\title[A Programming Language with Context-Free Session Types]{A Programming Language with Context-Free Session Types}
+\author{Bernardo Almeida and Vasco T. Vasconcelos}
+\institute{LASIGE, Faculdade de Ciências, Universidade de Lisboa}
+%\date{24 de Setembro de 2018}
+\date{September 24th, 2018}
+
+\begin{document}
+\begin{frame}{\null}
+  \titlepage 
+\end{frame}
+
+\begin{frame}[fragile]{Context}
+  \begin{itemize}
+  \item Static verification of concurrent programs that communicate through message passing
+    %Static program verification where communication is achieved by message passing
+%  \item Verificação estática da comunicação em programas concorrentes com troca de mensagens
+    \newline
+  \item Communication channels are described by session types
+%  \item Canais de comunicação governados por tipos de sessão
+  \end{itemize}
+\end{frame}
+
+\lstset{language=CFST, numbers=none}
+\begin{frame}[fragile]{Motivation}
+
+  \begin{itemize}
+  \item How to transmit a list on a communication channel?
+    %Transmitir uma lista num canal de comunicação
+    \newline
+    
+
+    
+\begin{lstlisting}  
+data List = Nil | Cons Int List
+
+type ListServer = &{
+  Nil : end
+  Cons : ?int . ListServer
+}
+\end{lstlisting}
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}{Motivation}
+  \begin{itemize}
+    \item The sequence of operations on a channel is defined by a finite automaton
+%    \item A sequência de operações num canal é definida por um autómato finito:
+      \newline
+      \input{fig-automata}
+    \item Regular expression: $(\textsf{\&Cons}\,\cdot\textsf{?Int})^*\cdot\textsf{\&Nil}$
+      
+  \end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]{Goal}
+  \begin{itemize}
+  \item Type-safe streaming of a tree (on a single channel)?
+  \newline
+    \begin{center}
+      \lstinline"data Tree = Leaf | Node Int Tree Tree"
+    \end{center}
+  \vspace{0.5cm}
+  \item Serialize the tree into a stream of basic data
+    \newline
+  \item Send sequences of \lstinline|Node|, \lstinline|Leaf| and \lstinline|Int| values
+    \newline
+  \item And deserialize the result stream back into \lstinline|Tree|  
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Goal}
+  \begin{itemize}
+    \item Communication restricted to base types (\lstinline|Int|, \lstinline|Bool| and \lstinline|Char|)
+    \newline
+  \item First order session types
+    \newline
+  \item Session types must ensure that trees are well-formed\\
+    \vspace{0.3cm}
+    Example: \lstinline|Node 2 Leaf Node 5 Leaf Leaf|\\
+    Non example: \lstinline|Node Leaf 2 Node Leaf|
+    \newline
+  \item \textbf{Context-Free session types}
+  \end{itemize}
+\end{frame}
+
+% Language
+\begin{frame}[fragile]{The language - FreeST}
+
+  \begin{itemize}
+  \item Haskell-like syntax
+  \newline
+  \item With primitives for:
+    \begin{itemize}
+    \item Creating channels
+    \item Sending values on channels
+    \item Receiving values on channels
+    \item Forking new threads
+    \end{itemize}
+  \vspace{0.5cm}  
+\item Communication through message passing
+  \newline
+\item Communication channels are synchronous and bidirectional 
+  \end{itemize}  
+\end{frame}
+
+\begin{frame}[fragile]{Type Syntax}
+  \input{fig-types}  
+\end{frame}
+
+
+\begin{frame}[fragile]{Transmit a Tree on a channel}
+  \begin{itemize}
+  \item \textbf{Datatype:}
+    \begin{lstlisting}
+data Tree = Leaf | Node Int Tree Tree
+      
+type TreeChannel =
+  +{LeafC: Skip,
+    NodeC: !Int; TreeChannel; TreeChannel}
+\end{lstlisting}
+\vspace{0.3cm}
+\item \textbf{Type of the sendTree function:}
+  \lstinline|sendTree :: forall a => Tree -> (TreeChannel; a) -> a|
+  \vspace{0.3cm}
+\item \textbf{Top-level call:}\\
+  \lstinline|start t c = ... sendTree[Skip] t c ...|
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Serialization of a Tree}
+  \begin{lstlisting}
+sendTree :: forall a => Tree -> (TreeChannel; a) -> a
+sendTree t c =
+ case t of
+   Leaf -> select LeafC c
+   Node x l r ->
+     let c1 = select NodeC c in
+                @\color{blue}{--c1:!Int;TreeChannel;TreeChannel;a}@
+     let c2 = send x c1 in
+                @\color{blue}{--c2:TreeChannel;TreeChannel;a}@
+     let c3 = sendTree[TreeChannel;a] l c2 in
+                @\color{blue}{--c3:TreeChannel;a}@
+     let c4 = sendTree[a] r c3 in
+                @\color{blue}{--c4: a}@
+     c4
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Deserialization of a Tree}
+  \begin{lstlisting}
+type TreeChannelR =
+  &{LeafC: Skip,
+    NodeC: ?Int ; TreeChannelR ; TreeChannelR}
+
+recvTree :: forall a => (TreeChannelR;a) -> (Tree,a)
+recvTree c =
+ match c with
+   LeafC c1 -> (Leaf, c1)
+   NodeC c1 ->
+     let x, c2 = receive c1 in
+     let left, c3 = recvTree [TreeChannelR;a] c2 in
+     let right, c4 = recvTree [a] c3 in
+     (Node x left right, c4)
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile, shrink=20]{Expression Syntax}
+  \input{fig-expressions}
+\end{frame}
+
+\begin{frame}[fragile]{Validation}
+  \begin{itemize}
+  \item Kinding system:
+    \begin{itemize}
+    \item Establishes what constitutes a valid type
+    \item Distinguishes session types from general types
+    \item Distinguishes linear from unrestricted types.
+    \end{itemize}
+  \vspace{0.3cm}  
+  \item Examples:
+    \begin{itemize}
+    \item \lstinline|!Int|: Well-formed (linear session type)
+    \item \lstinline|(Int->Bool);Int| not well-formed
+    \item \lstinline|!Bool;x|
+      \begin{itemize}
+      \item Not well-formed if \lstinline|x| is not on the kinding environment $\kindEnv$
+      \item Not well-formed if \lstinline|x| is not a session type
+      \end{itemize}
+    \end{itemize}
+  \vspace{0.3cm}      
+  \item Type checking
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Code Generation}
+  \begin{itemize}
+  \item Process that translates from CorFu to Haskell
+  \item Four main challenges:
+  \end{itemize}
+  \begin{enumerate}
+    \item \textit{Call-by-value} VS. \textit{Call-by-name}\\
+      \textbf{Solution:} \textit{BangPatterns}\\      
+      ex: $\llbracket$\lstinline|fun x = e|$\rrbracket \Rightarrow$ \lstinline|fun !x =| $\llbracket$\lstinline|e|$\rrbracket$ 
+    \newline
+    \item Communication channels were implemented with two \textit{MVar}      
+   \begin{itemize}
+   \item \lstinline[Haskell]|putMVar| -- \lstinline|send|
+   \item \lstinline[Haskell]|takeMVar| -- \lstinline|receive|
+   \end{itemize}
+  \end{enumerate}
+\end{frame}
+
+\lstset{language=Haskell, style= eclipse}
+\begin{frame}[fragile]{Code Generation}
+  \begin{enumerate}
+  \setcounter{enumi}{2}    
+  \item An \lstinline|MVar t| is mutable location that is either empty or contains a value of type t (doesn't change during the computation)
+% As \textit{MVar} Haskell só têm um tipo que se mantém inalterado durante a computação
+    \begin{itemize}
+    \item Channels require type \lstinline|t| to change (eg: \lstinline|!Int;?Bool| changes to \lstinline|?Bool|)
+      %Canais necessitam que o tipo possa variar (ex:
+      %\lstinline|!Int;?Bool| progride para \lstinline|?Bool| )
+    \item Haskell type system can't verify the channel types (\textit{unsafeCoerce} primitive)
+      %Sistema de tipos do Haskell não pode verificar os tipos dos canais (\textit{unsafeCoerce})
+    \end{itemize}
+  \end{enumerate}
+  \pause
+  \begin{columns}[onlytextwidth,T]
+  \begin{column}{0.6\textwidth}
+    \begin{lstlisting}
+_new = do
+  m1 <- newEmptyMVar
+  m2 <- newEmptyMVar
+  return ((m1, m2),(m2, m1))
+
+_receive c = do
+  a <- takeMVar (fst c)
+  return (unsafeCoerce a, c)
+    \end{lstlisting}
+  \end{column}
+  \begin{column}{0.4\textwidth}
+    \begin{lstlisting}
+_send x c = do
+  putMVar (snd c)
+    (unsafeCoerce x)
+  return c
+    \end{lstlisting}
+  \end{column}
+  \end{columns}
+\end{frame}
+
+\lstset{language=CFST, style=eclipse}
+\begin{frame}[fragile]{Code Generation}
+  \begin{enumerate}
+    \setcounter{enumi}{3}  
+  \item \lstinline|fork|, \lstinline|send|, \lstinline|receive| and \lstinline|new| are monad operations (IO)
+    \begin{itemize}
+    \item When should we translate an expression to monadic code?
+      % Quando traduzir uma expressão para código de um mónade?
+    \item Annotate the AST with boolean values
+      %Anotação da árvore sintática com valores booleanos
+    \end{itemize}
+  \end{enumerate}
+  Code generation is based on the following table:
+%  Geramos código com base na seguinte tabela:
+  \vskip 0.2cm
+\resizebox{\textwidth}{!}{%
+  \begin{tabular}[ht!]{| c | c | c |}
+    \hline  
+    \quad Expected value \quad&\quad Found value \quad&\quad Generated code \quad\\
+    \quad (AST annotation) \quad&\quad (translation function) \quad& (Haskell) \quad\\\hline
+    \lstinline|False| & \lstinline|False| & \lstinline|e| \\
+    \lstinline|True| & \lstinline|False| & \lstinline[language=Haskell]|return e| \\
+    \lstinline|True| & \lstinline|True| & \lstinline|e| \\
+    \lstinline|False| & \lstinline|True| & \lstinline|e >>= x -> x| \\
+    \hline
+  \end{tabular}}
+\end{frame}
+
+\lstset{language=Haskell, style=eclipse}
+\begin{frame}[fragile]{Translation result}
+  \textbf{Haskell code:}
+  \vskip 0.3cm
+  \begin{lstlisting}
+  sendTree !t !c =
+    case t of 
+      Leaf -> _send "LeafC" c 
+      Node x l r ->
+        _send "NodeC" c >>=
+        \c1 -> _send x c1 >>=
+        \c2 -> sendTree l c2 >>=
+        \c3 -> sendTree r c3 >>=
+        \c4 -> return c4 
+      \end{lstlisting}
+ \end{frame}
+
+ \lstset{language=CFST, style=eclipse}
+ \begin{frame}[fragile]{Conclusion and future work}
+  \textbf{Conclusion:}
+  \begin{itemize}
+  \item Concurrent typed language
+  \item Functional language (syntax inspired in Haskell)
+  \item Communication only by message passing
+  \item Synchronous channels described by \textbf{Context-Free Session Types}
+  \end{itemize}
+  \pause
+  \textbf{Future work:}
+  \begin{itemize}
+  \item Implement type abbreviation: \lstinline{type SendInt = !Int}
+  \item Type inference in some scenarios (eg: type applications \lstinline|e[T]|)
+  \item Shared channels
+  \item Introduce the \lstinline|dualof| operator
+  \end{itemize}
+\end{frame}
+
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
+
+
+% \begin{column}{0.5\textwidth}
+% \end{column}
+% 
