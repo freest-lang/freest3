@@ -53,7 +53,7 @@ rec x . !Bool
 rec x. !Int; x; x
 rec x. ?Int; x; x
 
-rec x. rec y. !Int; x; y 
+rec x. rec y. !Int; x; y
 rec y. rec x. !Char; x; ?Bool; y
 
 rec x . ?Bool; x
@@ -71,4 +71,5 @@ rec y . +{A: Skip, B: y}; !Bool
 rec x. &{Leaf: ?Bool; x, Node: ?Int;x;x}
 rec x. &{Leaf: ?Bool, Node: ?Int;x;x}
 
-
+(((rec x :: SL . &{LeafC: Skip, NodeC: (?Int;(x;x))});(rec x :: SL . &{LeafC: Skip, NodeC: (?Int;(x;x))}));a)
+((rec x :: SL . &{LeafC: Skip, NodeC: (?Int;(x;x))});(rec x :: SL . (&{LeafC: Skip, NodeC: (?Int;(x;x))};a)))
