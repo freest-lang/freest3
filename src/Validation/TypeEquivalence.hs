@@ -14,7 +14,7 @@ Portability :  portable | non-portable (<reason>)
 module Validation.TypeEquivalence(
   equivalent
 , unfold
-, subs  
+, subs
 ) where
 
 import           Control.Monad.State
@@ -146,7 +146,14 @@ normedWord g v (x:xs) =
 convertToGNF :: (Grammar, Visited, Int) -> Type -> (TypeVar, (Grammar, Visited, Int))
 -- Assume: t is a session type different from Skip
 convertToGNF state t = (x, state')
-  where ([x], state') = runState (toGNF t) state
+  where ([x], state') = runState (toGNF0 t) state
+
+toGNF0 :: Type -> GNFState [TypeVar]
+toGNF0 t = do
+  w <- toGNF t
+  y <- freshVar
+  insertProduction y (MessageLabel In UnitType) w
+  return [y]
 
 toGNF :: Type -> GNFState [TypeVar]
 toGNF t = do
@@ -166,13 +173,15 @@ toGNF' (Var a) = do -- This is a free variable
   y <- freshVar
   insertProduction y (VarLabel a) []
   return [y]
-toGNF' (Semi t u) = do
-  xs <- toGNF t
+toGNF' (Semi (Choice p m) u) = do
+  xs <- toGNF (Choice p m)
   ys <- toGNF u
   if null xs
   then return ys
 --  else if null ys
 --  then return xs
+  --else if t == (Rec b t)
+  --then return $ xs ++ ys
   else do
     let (x:xs') = xs
     b <- member x
@@ -182,6 +191,10 @@ toGNF' (Semi t u) = do
       return [x]
     else
       return $ xs ++ ys -- E.g., rec x. !Int;(x;x)
+toGNF' (Semi t u) = do
+  xs <- toGNF t
+  ys <- toGNF u
+  return $ xs ++ ys
 toGNF' (Choice p m) = do
   y <- freshVar
   assocsToGNF y p (Map.assocs m)
@@ -198,7 +211,7 @@ assocsToGNF :: TypeVar -> ChoiceView -> [(Constructor, Type)] -> GNFState ()
 assocsToGNF _ _ [] = return ()
 assocsToGNF y p ((l, t):as) = do
   w <- toGNF t
-  insertProduction y (ChoiceLabel p l) w  
+  insertProduction y (ChoiceLabel p l) w
   assocsToGNF y p as
 
 -- tests
@@ -208,7 +221,9 @@ buildGNF t = evalState (generateGNF t) initial
 
 generateGNF :: Type -> GNFState GNF
 generateGNF t = do
-  [y] <- toGNF t
+  w <- toGNF t
+  y <- freshVar
+  insertProduction y (MessageLabel In UnitType) w
   p <- getGrammar
   return $ GNF {start = y, productions = p}
 
@@ -286,17 +301,23 @@ bisim g xs ys = bisim' g Set.empty  (Set.singleton (xs, ys))
 bisim' :: Grammar -> Ancestors -> Node -> Bool
 bisim' g a n
   | Set.null n' = True
-  | otherwise  = case expandNode g n' of
+  | otherwise  = case expandNode0 g n' of
       Nothing  -> False
-      Just n'' -> bisim' g (Set.union n' a) n''
+      Just n'' -> if (any( `elem` [([],[])]) n'' ) then True else bisim' g (Set.union n' a) n''
   where n' = simplify g a n
+
+expandNode0 :: Grammar -> Node -> Maybe Node
+expandNode0 g n
+  | m == Just Set.empty = Nothing
+  | otherwise           = m
+    where m = expandNode g n
 
 expandNode :: Grammar -> Node -> Maybe Node
 expandNode g =
   Set.foldr(\p acc -> case acc of
     Nothing  -> expandPair g p
     Just n'  -> case expandPair g p of
-      Nothing  -> Nothing
+      Nothing  -> Just n'
       Just n'' -> Just (Set.union n' n'')) (Just Set.empty)
 
 expandPair :: Grammar -> ([TypeVar], [TypeVar]) -> Maybe Node
@@ -318,7 +339,7 @@ match m1 m2 =
 -- Apply the different node transformations
 
 simplify :: Grammar -> Ancestors -> Node -> Node
-simplify g a n = foldr (apply g a) n [reflex, congruence, bpa1, bpa3, bpa3]
+simplify g a n = foldr (apply g a) n [reflex, congruence, bpa1{-, bpa3, bpa3-}]
 -- Perhaps we need to iterate until reaching a fixed point
 
 type NodeTransformation = Grammar -> Ancestors -> ([TypeVar], [TypeVar]) -> Node
@@ -387,15 +408,17 @@ equivalent k (PairType t1 t2) (PairType u1 u2) =
   equivalent k t1 u1 && equivalent k t2 u2
 equivalent k (Datatype m1) (Datatype m2) =
   Map.size m1 == Map.size m2 && Map.foldlWithKey (checkBinding k m2) True m1
-equivalent _ Skip Skip = True
-equivalent _ Skip _ = False
-equivalent _ _ Skip = False
+--equivalent _ Skip Skip = True
+--equivalent _ Skip _ = False
+--equivalent _ _ Skip = False
 equivalent k t u
-  | isSessionType k t && isSessionType k u = bisim (normalise g) [x] [y]
+  | isSessionType k t && isSessionType k u =
+--    normalise(productions (buildGNF t)) == normalise(productions (buildGNF u))|| --hack to mitigate failures
+      bisim (normalise g) [x] [y]
   | otherwise = False
   where (x, state)     = convertToGNF initial t
         (y, (g, _, _)) = convertToGNF state u
-  
+
 checkBinding :: KindEnv -> TypeMap -> Bool -> Constructor -> Type -> Bool
 checkBinding k m acc l t = acc && l `Map.member` m && equivalent k (m Map.! l) t
 
@@ -440,7 +463,7 @@ subs t y (Var x)
     | otherwise           = Var x
 subs t y (Semi t1 t2)     = Semi (subs t y t1) (subs t y t2)
 subs t y (PairType t1 t2) = PairType (subs t y t1) (subs t y t2)
--- Assume y /= x 
+-- Assume y /= x
 subs t2 y (Rec b t1)
     | var b == y          = Rec b t1
     | otherwise           = Rec b (subs t2 y t1)
