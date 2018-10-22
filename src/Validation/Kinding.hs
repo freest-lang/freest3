@@ -1,5 +1,5 @@
-{- |
-Module      :  Types
+{-|
+Module      :  Kinding
 Description :  <optional short text displayed on contents page>
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
@@ -12,25 +12,24 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Validation.Kinding
-(   Kind (..)
-  , kindOf
-  , kinding
-  , isWellKinded
-  , isSessionType
-  , contractive
-  , un
-  , lin 
---  , kindErr
-  , kindOfScheme
-  , checkAgainstKind
+( Kind (..)
+, kindOf
+, kinding
+, isWellKinded
+, isSessionType
+, contractive
+, un
+, lin 
+, kindOfScheme
+, checkAgainstKind
 ) where
 
-import           Control.Monad.State
+import Control.Monad.State
 import qualified Data.Map.Strict as Map
-import           Syntax.Kinds
-import           Syntax.Terms
-import           Syntax.Types
-import           Validation.TypingState
+import Syntax.Kinds
+import Syntax.Terms
+import Syntax.Types
+import Validation.TypingState
 import Parse.TypeParser
 
 -- forall x :: SU => ((rec xFormChan :: SL . &{LeafC: Skip, NodeC: (?Int;(xFormChan;(xFormChan;!Int)))});x)
