@@ -112,7 +112,7 @@ checkFunctionalKind k
 checkFunTypeDecl :: TermVar -> TypingState ()
 checkFunTypeDecl fname = do  
   t <- checkVar (0,0) fname
-  kenv <- getKindEnv
+  -- kenv <- getKindEnv
   checkKinding t
   return ()
 
