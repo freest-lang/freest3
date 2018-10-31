@@ -26,31 +26,27 @@ treeSum c =
     LeafC c1 -> (0, c1)
     NodeC c1 ->
       let x, c2 = receive c1 in
-      let l, c3 = treeSum[(rec xFormChan . &{LeafC: Skip, NodeC: ?Int;xFormChan;xFormChan;!Int});x] c2 in
+      let l, c3 = treeSum[(rec xFormChan . &{LeafC: Skip, NodeC: ?Int;xFormChan;xFormChan;!Int});!Int;x] c2 in
       let r, c4 = treeSum[!Int;x] c3 in
       let c5    = send (x+l+r) c4 in
       (x+l+r, c5)
-  
-
--- --   fork (((transform aTree) w) >>= \x -> return (fst (x)) >> return ())
-
--- V1
--- Node 7 Leaf (Node 4 Leaf Leaf)
-start :: Tree
-start =
-  let aTree = Node 3 Leaf (Node 4 Leaf Leaf) in
-  let w, r  = new (rec xFormChan . +{LeafC: Skip, NodeC: !Int;xFormChan;xFormChan;?Int}) in
-  let x = fork (fst[Int, Skip] (treeSum[Skip] r)) in
-  (fst[Tree, Skip] (transform[Skip] aTree w))
- 
-{- deadlock
 
 start :: Int
 start =
   let aTree = Node 3 Leaf (Node 4 Leaf Leaf) in
   let w, r  = new (rec xFormChan . +{LeafC: Skip, NodeC: !Int;xFormChan;xFormChan;?Int}) in
-  let x = fork (fst[Tree, Skip] (transform[Skip] aTree w)) in
-  let size, r1 = treeSum r in
+  let t = fork (transform[Skip] aTree w) in
+  let size, r1 = treeSum[Skip] r in
   size
--}         
   
+{- This start requires a different .expect file:
+   Node 7 Leaf (Node 4 Leaf Leaf)
+
+start :: Tree
+start =
+  let aTree = Node 3 Leaf (Node 4 Leaf Leaf) in
+  let w, r  = new (rec xFormChan . +{LeafC: Skip, NodeC: !Int;xFormChan;xFormChan;?Int}) in
+  let x = fork (treeSum[Skip] r) in
+    fst[Tree, Skip] (transform[Skip] aTree w)
+
+-}

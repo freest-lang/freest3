@@ -1,5 +1,19 @@
-module Validation.Typing (
-     typeCheck  
+{-|
+Module      :  Typing
+Description :  <optional short text displayed on contents page>
+Copyright   :  (c) <Authors or Affiliations>
+License     :  <license>
+
+Maintainer  :  <email>
+Stability   :  unstable | experimental | provisional | stable | frozen
+Portability :  portable | non-portable (<reason>)
+
+<module description starting at first column>
+-}
+
+module Validation.Typing
+(
+  typeCheck  
 ) where
 
 import Control.Monad.State
@@ -9,12 +23,9 @@ import Validation.Kinding
 import Validation.TypeEquivalence
 import Validation.TypingState
 import qualified Data.Set as Set
-
--- TODO remove
-import PreludeLoader
+import PreludeLoader -- TODO remove
 import qualified Data.Map.Strict as Map
 import Syntax.Kinds
-
 
 typeCheck ::  ExpEnv -> ConstructorEnv -> TypingState ()
 typeCheck eenv cenv = do
