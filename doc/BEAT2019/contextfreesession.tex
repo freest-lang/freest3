@@ -1,0 +1,91 @@
+\section{Context-free session types}
+\label{sec:contextfreesession}
+
+The types we consider build upon some base sets, such as: {\it recursion variables}, denoted by $x$, $y$, $z$; {\it type variables}, denoted by $\alpha, \beta$; {\it labels}, denoted by $\ell$, and {\it base types} denoted by $B$. The syntax of types is summarized in Figure~\ref{fig:types}. We consider session types: $\skipk$ to represent no communication, $\,!B$ for sending a base type value, $\,?B$ for receiving a base type value, and $(S_1;S_2)$ for the sequence of actions denoted by $S_1$ followed by those denoted by $S_2$. We also consider branch types $\oplus\{\ell_i\colon T_i\}_{i\in I}$ and choice types $\&\{\ell_i\colon T_i\}_{i\in I}$ that, respectively, select and send a label $\ell_i$ or branch on such a received label and then continue on the corresponding branch. 
+
+\begin{figure}[h!]
+\vspace*{-4mm}
+  \begin{align*}
+    T \grmeq& \skipk \mid T;T \grmor \,!B \grmor \,?B \grmor 
+     \oplus\{\ell_i\colon T_i\}_{i\in I} \grmor \&\{\ell_i\colon T_i\}_{i\in I} B \grmor T\to T \grmor T\multimap T\\
+    & T \otimes T \grmor [\ell_i\colon T_i]_{i\in I} \grmor \mu x.T \grmor x \grmor \forall\alpha.T  \grmor \alpha 
+  \end{align*}
+  \vspace*{-4mm}
+  \caption{Syntax of context-free session types}
+  \label{fig:types}
+\end{figure}
+
+We follow the type equivalence approach relying on bisimulation proposed in~\cite{thiemann2016context}. According to this approach, two session types are equivalent if they exhibit the same behavior. We consider the labelled transition system for context-free session types presented in Figure~\ref{fig:lts}, considering that $A$ ranges over $\alpha$, $\,!B$, and $\,?B$, $\star$ ranges over
+$\oplus$ and $\&$, and $a$ ranges over both $A$ and $\star l$. 
+The labelled transition system is given the set of (well-formed) types
+ as states, the set of \emph{actions} ranged over by $a$, and
+the transition relation $\LTSderives$ defined by the rules presented in
+Figure~\ref{fig:lts}. The transition relation 
+makes use of an auxiliary judgment $\DONE{S}$ that characterizes
+``terminated'' session types that exhibit no further action~\cite{DBLP:journals/jacm/AcetoH92} . 
+
+\begin{figure}[h!]
+\vspace*{-4mm}
+  \begin{gather*}
+    \DONE{\skipk}
+    \qquad
+    \frac{\DONE{S_1} \quad \DONE{S_2}}{\DONE{S_1; S_2}}
+    \qquad
+    \frac{\DONE{S[\mu x.S/x]}}{\DONE{\mu x.S}}
+    \qquad
+    {A \LTSderives[A] \skipk }
+    \qquad
+    {\star\{l_i\colon S_i\}_{i\in I} \LTSderives[\star l_j] S_j}
+    \\
+    \frac{S_1 \LTSderives S_1'}{S_1; S_2 \LTSderives S_1';S_2}
+    \quad\;\;
+    \frac{\DONE{S_1} \quad S_2 \LTSderives S_2'}{S_1; S_2 \LTSderives S_2'}
+    \quad\;\;
+    \frac{S[\mu x.S/x] \LTSderives S'}{\mu x.S \LTSderives S'}
+  \end{gather*}
+  \vspace*{-4mm}
+  \caption{Labelled transition system for context free session types}
+  \label{fig:lts}
+\end{figure}
+
+{\it Type bisimilarity} $\sim$ is defined in the usual way from the labelled transition system, and is extended to the remaining type constructors as described in Figure~\ref{fig:type-equivalence-lifted}.
+
+\begin{figure}[h!]
+\vspace*{-4mm}
+  \begin{gather*}
+    \frac
+    {T \TypeEquiv T'}
+    { \forall \alpha.T \TypeEquiv \forall \alpha. T'}
+    \qquad
+    \alpha \TypeEquiv \alpha
+    \qquad
+    B \TypeEquiv B
+    \qquad
+    \frac
+    { T_1 \TypeEquiv T_1' \quad T_2 \TypeEquiv T_2'}
+    {T_1 \to T_2 \TypeEquiv T_1' \to T_2'}
+    \qquad
+    \frac
+    { T_1 \TypeEquiv T_1' \quad T_2 \TypeEquiv T_2'}
+    { T_1 \multimap T_2 \TypeEquiv T_1' \multimap T_2'}
+    \\\smallskip
+    \frac
+    {T_1 \TypeEquiv T_1' \quad T_2 \TypeEquiv T_2'}
+    { T_1 \otimes T_2 \TypeEquiv T_1' \otimes T_2'}
+    \qquad
+    \frac
+    {(\forall i\in I)~ T_i \TypeEquiv T_i'}
+    { [l_i:T_i]_{i\in I} \TypeEquiv [l_i:T_i']_{i\in I}}
+    \qquad
+    \frac
+    { T\subs{\mu x.T}x \TypeEquiv T'}
+    { \mu x.T \TypeEquiv T'}
+    \qquad
+    \frac
+    { T \TypeEquiv T'\subs{\mu x.T'}x}
+    { T \TypeEquiv \mu x.T'}
+  \end{gather*}
+  \vspace*{-4mm}
+  \caption{Type equivalence lifted to all types}
+  \label{fig:type-equivalence-lifted}
+\end{figure}
