@@ -1,0 +1,46 @@
+\appendix
+\section{Algorithm implementation: some details}
+\label{app:algorithm}
+
+\begin{figure}[h!]
+\begin{lstlisting}
+simplify :: Graph -> Ancestors -> Node -> Node
+simplify g a n = foldr (apply g a) n [reflex, congruence, bpa1]
+
+apply :: Graph -> Ancestors -> NodeTransformation -> Node -> Node
+apply g a trans = Set.foldr (\p n -> Set.union (trans g a p) n) Set.empty
+\end{lstlisting}
+\label{fig:simplify}
+\caption{Implementation of the function that simplifies the nodes of the PA graph, applying reflexivity, congruence and BPA1 rules~\cite{janvcar1999techniques}.}
+\end{figure}
+
+
+\begin{figure}[h!]
+\begin{lstlisting}
+bisim' :: Graph -> Ancestors -> Node -> Bool
+bisim' g a n
+ | Set.null n' = True
+ | otherwise  = case expandNode g n' of
+    Nothing  -> False
+    Just m -> if ( m == Set.empty ) then False
+             else any (`elem` [([],[])]) m || bisim' g (Set.union n' a) m
+ where n' = simplify g a n
+  
+expandNode :: Graph -> Node -> Maybe Node
+expandNode g =
+ Set.foldr(\p acc -> case acc of
+   Nothing  -> expandPair g p
+   Just n'  -> case expandPair g p of
+     Nothing  -> Just n'
+     Just m -> Just (Set.union n' m)) (Just Set.empty)
+
+expandPair :: Graph -> ([TypeVar], [TypeVar]) -> Maybe Node
+expandPair g (xs, ys)
+  | Map.keysSet m1 == Map.keysSet m2 = Just $ match m1 m2
+  | otherwise                        = Nothing
+  where m1 = transitions g xs
+        m2 = transitions g ys
+\end{lstlisting}
+\label{fig:bisim}
+\caption{Implementation of the bisimilarity function.}
+\end{figure}
