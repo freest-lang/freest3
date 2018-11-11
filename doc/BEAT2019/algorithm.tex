@@ -67,7 +67,7 @@ apply g a trans = Set.foldr (\p n -> Set.union (trans g a p) n) Set.empty
 type Graph = Map.Map TermVar (Map.Map Label [TermVar])
 type Node = Set.Set ([TermVar], [TermVar])
 type Ancestors = Node
-type NodeTransformation = Grammar -> Ancestors -> ([TermVar], [TermVar]) -> Node
+type NodeTransformation = Grammar -> Ancestors -> ([TermVar],[TermVar]) -> Node
 \end{lstlisting}
 
 % Given types $S$ and $T$, we decide on its equivalence by building the
@@ -77,6 +77,27 @@ type NodeTransformation = Grammar -> Ancestors -> ([TermVar], [TermVar]) -> Node
 % \begin{lstlisting}
 % bisim graph Set.empty (Set.singleton (xs, ys))
 % \end{lstlisting}
+
+We showcase this procedure on a couple of examples. Details can be found in the Appendix.
+
+\begin{example}
+\label{ex:example1}
+	Let the base types $\intk$ and $\boolk$ represent integer and Boolean values, $\ell$ and $m$ denote labels for the internal and external choices on the branches, and consider the types:
+	\[
+	S\triangleq \mu x. (\oplus\{\ell\colon !\,\intk; \&\{\ell\colon x, m\colon \skipk \} , m\colon !\, \boolk; \&\{\ell\colon x, m\colon \skipk \} \}); \mu x. (\&\{\ell\colon\skipk, m\colon ?\,\boolk; x \})
+	\]
+	\[
+	T\triangleq \mu x. (\oplus\{\ell\colon !\,\intk , m\colon !\, \boolk\}; \&\{\ell\colon x, m\colon \mu y. (\&\{\ell\colon\skipk, m\colon ?\,\boolk; y \})\})
+	\]
+	Using the proposed algorithm, we are able to derive the expansion tree as a sequence of nodes and conclude that $S\sim T$.\smallskip
+	
+	Using the same algorithm, we conclude that the following types are not equivalent:
+	\[ R \triangleq \mu x.\&\{\ell\colon ?\,\boolk;x, m\colon ?\,\intk;x;x \} \text{ and }  U \triangleq \mu x.\&\{\ell\colon ?\,\boolk, m\colon ?\,\intk;x;x\} \enspace .\]
+	We provide the expansion lists and further details in the Appendix. \hfill$\triangle$
+\end{example}
+
+
+
 
 Our algorithm gathers the simplification rules presented
 in~\cite{janvcar1999techniques} and implements the derivation flow on
