@@ -1,4 +1,4 @@
-\section{Context-free session types}
+\paragraph{Context-free session types}
 \label{sec:contextfreesession}
 
 The types we consider build upon some base sets, such as:
@@ -12,34 +12,23 @@ $B$.  The syntax of types is given by the grammar below.%summarized in
        \oplus\{\ell_i\colon S_i\}_{i\in I} \grmor \&\{\ell_i\colon S_i\}_{i\in I} \grmor B \grmor
        \mu x.S \grmor x
 \end{equation*}
-We consider session types: $\skipk$ to represent no communication,
-$\,!B$ and $\,?B$ for sending and receiving base type values,
-$S;T$ for the sequence of actions,
-% denoted by $S_1$ followed by those denoted by $S_2$;
-$\oplus\{\ell_i\colon T_i\}_{i\in I}$ and
-$\&\{\ell_i\colon T_i\}_{i\in I}$ for internal and external choice,
-and $\mu x.T$ and $x$ for recursion.
+% We consider session types: $\skipk$ to represent no communication,
+% $\,!B$ and $\,?B$ for sending and receiving base type values,
+% $S;T$ for the sequence of actions,
+% % denoted by $S_1$ followed by those denoted by $S_2$;
+% $\oplus\{\ell_i\colon T_i\}_{i\in I}$ and
+% $\&\{\ell_i\colon T_i\}_{i\in I}$ for internal and external choice,
+% and $\mu x.T$ and $x$ for recursion.
 
-% \begin{figure}[h!]
-% \vspace*{-4mm}
-%   \begin{align*}
-%     T \grmeq& \skipk \mid T;T \grmor \,!B \grmor \,?B \grmor 
-%      \oplus\{\ell_i\colon T_i\}_{i\in I} \grmor \&\{\ell_i\colon T_i\}_{i\in I} B \grmor T\to T \grmor T\multimap T\\
-%     & T \otimes T \grmor [\ell_i\colon T_i]_{i\in I} \grmor \mu x.T \grmor x \grmor \forall\alpha.T  \grmor \alpha 
-%   \end{align*}
-%   \vspace*{-4mm}
-%   \caption{Syntax of context-free session types}
-%   \label{fig:types}
-% \end{figure}
-
-Type equivalence is based on the notion of bisimulation, as
-in~\cite{thiemann2016context}. According to this approach, two session
-types are equivalent if they exhibit the same behavior. We consider a
-labelled transition system where $A$ ranges over $\alpha$, $\,!B$, and
-$\,?B$, $\star$ ranges over $\oplus$ and $\&$, and $a$ ranges over
-both $A$ and $\star l$.
+Type equivalence for context-free session types is based on the notion
+of bisimulation~\cite{thiemann2016context}.%  According to this
+% approach, two session types are equivalent if they exhibit the same
+% behavior. 
+We consider a labelled transition system where $A$ ranges
+over $\alpha$, $\,!B$, and $\,?B$, $\star$ ranges over $\oplus$ and
+$\&$, and $a$ ranges over both $A$ and $\star l$.
 %
-The labelled transition system is given the set of types as
+The labelled transition system is given by the set of types as
 \emph{states}, the set of \emph{actions} ranged over by $a$, and the
 transition relation $\LTSderives$ defined by the rules below. The
 transition relation makes use of an auxiliary judgment $\DONE{S}$ that

@@ -1,29 +1,44 @@
-\section{Introduction}
+\paragraph{Motivation}
 \label{sec:introduction}
 
-Session types came to enhance the expressivity of traditional types, enabling to express structured communication on heterogeneously typed channels~\cite{DBLP:conf/concur/Honda93,DBLP:conf/parle/TakeuchiHK94}. Session types have been extended to deal with many realistic situations, e.g., multi-party session types~\cite{DBLP:conf/popl/HondaYC08}, session types for distributed object-oriented programming~\cite{DBLP:conf/popl/GayVRGC10}, session types for programming web services~\cite{DBLP:journals/toplas/CarboneHY12}. Thiemann and Vasconcelos~\cite{thiemann2016context} proposed {\it context-free session types} as an extension of session types by allowing nested protocols that are not restricted to tail recursion. Context-free session types capture the type-safe serialization of recursive datatypes and enable the type-safe implementation of remote operations on recursive datatypes. 
+Session types enhance the expressivity of traditional types, enabling
+to express structured communication on heterogeneously typed
+channels~\cite{DBLP:conf/concur/Honda93,DBLP:conf/parle/TakeuchiHK94}.
+% Session types have been extended to deal with many realistic
+% situations, e.g., multi-party session
+% types~\cite{DBLP:conf/popl/HondaYC08}, session types for distributed
+% object-oriented programming~\cite{DBLP:conf/popl/GayVRGC10}, session
+% types for programming web
+% services~\cite{DBLP:journals/toplas/CarboneHY12}.
+Thiemann and
+Vasconcelos~\cite{thiemann2016context} proposed {\it context-free
+  session types} as an extension of session types by allowing nested
+protocols that are not restricted to tail recursion. Context-free
+session types capture the type-safe serialization of recursive
+datatypes and enable the type-safe implementation of remote operations
+on recursive datatypes.
 
 Inspired by the context-free session types' framework, Almeida and
 Vasconcelos~\cite{bernardo} proposed a functional programming language
-with context-free session types. The usability of such a programming
-language is highly dependent on an algorithm to decide type
-equivalence. We have developed and implemented an algorithm to decide
-type equivalence. Our work capitalizes on the metatheory of
-context-free session types proposed by Thiemann and
+equipped with context-free session types.  Such a programming language
+is highly dependent on an algorithm to decide type equivalence. We
+have developed and implemented an algorithm to decide type
+equivalence. Our work capitalizes on the metatheory of context-free
+session types proposed by Thiemann and
 Vasconcelos~\cite{thiemann2016context}, where type equivalence was
 proved to be decidable. Although the decidability of equivalence on
 context-free session types has been addressed in the
 literature~\cite{DBLP:journals/iandc/ChristensenHS95,janvcar1999techniques,thiemann2016context},
-to the best of our knowledge, an algorithm was not yet implemented and
-a possible implementation was not obvious.
+to the best of our knowledge, no algorithm was ever implemented.
+% and a possible implementation was not obvious.
 
 This document summarizes an ongoing work whose main contributions
 stand on the proposal and implementation of an algorithm to decide
-type equivalence of context-free session types, prove the soundness of
-the algorithm against the declarative definition
-in~\cite{thiemann2016context}, study and possibly prove the
-completeness of the algorithm, and validate the algorithm on several
-meaningful examples.
+type equivalence of context-free session types, a proof the correctness of
+the algorithm against the declarative definition,
+in~\cite{thiemann2016context}, % study and possibly prove the
+% completeness of the algorithm
+and the validation the algorithm on several meaningful examples.
 
 
 %%% Local Variables:
