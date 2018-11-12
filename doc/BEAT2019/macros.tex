@@ -247,5 +247,23 @@
 %theorems
 \newtheorem{example}{Example}[section]
 
+%arrows
+\makeatletter
+\providecommand*\xdashrightarrow[2][]{%
+  \ext@arrow 0055{\dashrightarrowfill@}{#1}{#2}}
+\def\rightarrowfill@@{\arrowfill@@\relax\relbar\rightarrow}
+\def\leftarrowfill@@{\arrowfill@@\leftarrow\relbar\relax}
+\def\leftrightarrowfill@@{\arrowfill@@\leftarrow\relbar\rightarrow}
+\def\dasharrowfill@#1#2#3#4{%
+        $\m@th
+        \thickmuskip0mu
+        \thinmuskip\thickmuskip
+        \thinmuskip\thickmuskip
+        \relax
+        #2#2#2#2#3$%
+}
+\def\dashrightarrowfill@{\dasharrowfill@\relbar\relbar\rightarrow}
+\makeatother
+
 
 

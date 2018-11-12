@@ -116,13 +116,13 @@ We get the expansion list below for $S\sim T$.  \smallskip
 \end{tikzcd} 
 $\xrightarrow{\mathit{expand}}$\\\\
 \begin{tikzcd}[cells={nodes={draw=black}}, column sep=large]
-& \enspace(XX_5,Y),(XX_5,Y),(X_5,Y_4),(X_5,Y_4)  \enspace\ar[r,dashed,"bpa1"]
-&\enspace (X_5,\varepsilon),(X_5,Y_4) \enspace 
+& (XX_5,Y),(X_5,Y_4) \ar[r,dashed,"bpa1"]
+& (X_5,\varepsilon),(X_5,Y_4)  \ar[r,"expand"]
+&(X_6X_5,Y_5Y_4),(\varepsilon,\varepsilon) 
 \end{tikzcd} 
-$\xrightarrow{\mathit{expand}}$ \\\\
+$\xdashrightarrow{\enspace\mathit{reflex}\enspace}$ \\\\
 \begin{tikzcd}[cells={nodes={draw=black}}, column sep=large]
-&\enspace(X_6X_5,Y_5Y_4),(\varepsilon,\varepsilon) \enspace\ar[r,dashed,"reflex"] 
-&\enspace (X_6X_5,Y_5Y_4)\enspace \ar[r,"expand"]
+& (X_6X_5,Y_5Y_4) \ar[r,"expand"]
 & \enspace(X_5,Y_4)\enspace \ar[r,dashed,"bpa1"]
 &\emptyset
 \end{tikzcd}
