@@ -1,0 +1,74 @@
+% easychair.tex,v 3.5 2017/03/15
+
+\documentclass{easychair}
+
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{stmaryrd}
+\usepackage{listings,color}
+\usepackage{alltt}
+\usepackage{flushend}
+\usepackage[utf8]{inputenc} % for proper diacritics: Universität, Hüttel, Luís
+\usepackage[T1]{fontenc}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{graphicx}
+\usepackage{tikz-cd}
+\usepackage{multicol}
+
+\input{macros}
+
+\title{Checking  the equivalence of context-free session types%
+\thanks{This work was supported by LASIGE Research Unit, ref. UID/CEC/00408/2013.}}
+
+% Authors are joined by \and. Their affiliations are given by \inst, which indexes
+% into the list defined using \institute
+%
+\author{
+Andreia Mordido
+\and
+Vasco T. Vasconcelos
+}
+
+% Institutes for affiliations are also joined by \and,
+\institute{
+  LASIGE, Faculdade de Ciências, 
+  Universidade de Lisboa, Portugal\\
+  \email{afmordido,vmvasconcelos@fc.ul.pt}
+ }
+
+%  \authorrunning{} has to be set for the shorter version of the authors' names;
+% otherwise a warning will be rendered in the running heads. When processed by
+% EasyChair, this command is mandatory: a document without \authorrunning
+% will be rejected by EasyChair
+
+\authorrunning{A. Mordido, V.T. Vasconcelos}
+
+% \titlerunning{} has to be set to either the main title or its shorter
+% version for the running heads. When processed by
+% EasyChair, this command is mandatory: a document without \titlerunning
+% will be rejected by EasyChair
+\titlerunning{Checking  the equivalence of context-free session types}
+
+\begin{document}
+
+\maketitle
+
+\input{abstract}
+\input{introduction}
+\input{contextfreesession}
+\input{algorithm}
+\input{conclusion}
+
+\label{sect:bib}
+\bibliographystyle{plain}
+\bibliography{biblio}
+
+%\input{appendix}
+
+\end{document}
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
