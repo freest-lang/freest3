@@ -18,9 +18,10 @@ module Validation.TypeEquivalence(
 ) where
 
 import           Control.Monad.State
-import           Data.List (isPrefixOf)
+import           Data.List (isPrefixOf, union)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
+import qualified Queue.Queue as Queue
 import           Syntax.Kinds
 import           Syntax.Types
 import           Validation.Kinding
@@ -140,6 +141,19 @@ normedWord _ _ []     = True
 normedWord g v (x:xs) =
   not (x `Set.member` v) &&
   any id (map (normedWord g (Set.insert x v)) (Map.elems (transitions g (x:xs))))
+
+norm :: Grammar -> [TypeVar] -> Int
+norm _ []   = 0
+norm g xs = normList g [xs]
+
+normList :: Grammar -> [[TypeVar]] -> Int
+normList g xs
+  | [] `elem` m = 0
+  | otherwise = 1 + (normList g (foldr union [] m))
+  where m = map (trans g) xs
+
+trans :: Grammar -> [TypeVar] -> [[TypeVar]]
+trans g xs = Map.elems (transitions g xs)
 
 -- Conversion to GNF
 
@@ -295,16 +309,19 @@ type Node = Set.Set ([TypeVar], [TypeVar])
 
 type Ancestors = Node
 
-bisim :: Grammar -> [TypeVar] -> [TypeVar] -> Bool
-bisim g xs ys = bisim' g Set.empty  (Set.singleton (xs, ys))
+type NodeQueue = Queue.Queue (Node, Ancestors)
 
-bisim' :: Grammar -> Ancestors -> Node -> Bool
-bisim' g a n
-  | Set.null n' = True
-  | otherwise  = case expandNode0 g n' of
-      Nothing  -> False
-      Just n'' -> if (any( `elem` [([],[])]) n'' ) then True else bisim' g (Set.union n' a) n''
-  where n' = simplify g a n
+bisim :: Grammar -> [TypeVar] -> [TypeVar] -> Bool
+bisim g xs ys = bisim' g (Queue.enqueue (Set.singleton (xs, ys), Set.empty) Queue.empty)--Set.empty  (Set.singleton (xs, ys)) True True
+
+bisim' :: Grammar -> NodeQueue -> Bool
+bisim' g q
+  | Queue.isEmpty q             = False
+  | n == Set.fromList [([],[])] = True --any Set.null (map fst ns) = True
+  | otherwise                   = case expandNode0 g n of
+      Nothing  -> bisim' g (Queue.dequeue q)
+      Just n'  -> bisim' g (foldr Queue.enqueue (Queue.dequeue q) (simplify g (Set.union a n) n') )
+  where (n,a) = Queue.front q
 
 expandNode0 :: Grammar -> Node -> Maybe Node
 expandNode0 g n
@@ -317,7 +334,7 @@ expandNode g =
   Set.foldr(\p acc -> case acc of
     Nothing  -> expandPair g p
     Just n'  -> case expandPair g p of
-      Nothing  -> Just n'
+      Nothing  -> Nothing
       Just n'' -> Just (Set.union n' n'')) (Just Set.empty)
 
 expandPair :: Grammar -> ([TypeVar], [TypeVar]) -> Maybe Node
@@ -338,12 +355,18 @@ match m1 m2 =
 
 -- Apply the different node transformations
 
-simplify :: Grammar -> Ancestors -> Node -> Node
-simplify g a n = foldr (apply g a) n [reflex, congruence, bpa1{-, bpa3, bpa3-}]
+simplify :: Grammar -> Ancestors ->  Node -> [(Node, Ancestors)]
+simplify g a n
+  | Set.size n' == Set.size n && Set.isSubsetOf n n' = [(n,a)]
+  | otherwise                                        = Set.foldr (\p q -> (Set.singleton p, Set.union a n):q) [(n,a)] n'
+    where m = foldr  (apply g a) n [reflex,congruence]
+          n' = foldr  (apply g a) m [bpa1,bpa2]
 -- Perhaps we need to iterate until reaching a fixed point
 
 type NodeTransformation = Grammar -> Ancestors -> ([TypeVar], [TypeVar]) -> Node
 
+-- is applying transf to all elements, should be one at a time
+-- should return a list of nodes instead of a node ..?
 apply :: Grammar -> Ancestors -> NodeTransformation -> Node -> Node
 apply g a trans = Set.foldr (\p n -> Set.union (trans g a p) n) Set.empty
 
@@ -358,13 +381,15 @@ congruence _ a p
   | otherwise                = Set.singleton p
 
 congruentToAncestors :: Ancestors -> ([TypeVar], [TypeVar]) -> Bool
-congruentToAncestors a p = or $ Set.map (congruentToPair p) a
+congruentToAncestors a p = or $ Set.map (congruentToPair a p) a
 
-congruentToPair :: ([TypeVar], [TypeVar]) -> ([TypeVar], [TypeVar]) -> Bool
-congruentToPair (xs, ys) (xs', ys') =
-  xs `isPrefixOf` xs' &&
-  ys `isPrefixOf` ys' &&
-  drop (length xs) xs' == drop (length ys) ys'
+congruentToPair :: Ancestors -> ([TypeVar], [TypeVar]) -> ([TypeVar], [TypeVar]) -> Bool
+congruentToPair a (xs, ys) (xs', ys') =
+  length xs' > 0 && xs' `isPrefixOf` xs &&
+  length ys' > 0 && ys' `isPrefixOf` ys &&
+  ( x1 == x2 || congruentToAncestors a (x1, x2) )
+  where x1 = drop (length xs') xs
+        x2 = drop (length ys') ys
 
 -- Needed in this case:
 --   [("α", SL)]  |-  rec x . +{A: α, B: x; α} ~ rec y . +{A: Skip, B: y}; α
@@ -374,6 +399,14 @@ bpa1 _ a (x:xs, y:ys) =
     Nothing         -> Set.singleton (x:xs, y:ys)
     Just (xs', ys') -> Set.fromList [(xs,xs'), (ys,ys')]
 bpa1 _ _ p = Set.singleton p
+
+-- AM: only works for the same norm
+bpa2 :: NodeTransformation
+bpa2 g a (x:xs, y:ys)
+  | m && norm g [x] == norm g [y] = Set.fromList [([x],[y]), (xs,ys)]
+  | otherwise                     = Set.singleton (x:xs, y:ys)
+  where m = normed g x && normed g y && (length xs > 0 || length ys > 0)
+bpa2 _ _ p = Set.singleton p
 
 findInAncestors :: Ancestors -> TypeVar -> TypeVar -> Maybe ([TypeVar], [TypeVar])
 findInAncestors a x y =
