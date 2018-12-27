@@ -143,10 +143,10 @@ normedWord g v (x:xs) =
   any id (map (normedWord g (Set.insert x v)) (Map.elems (transitions g (x:xs))))
 
 norm :: Grammar -> [TypeVar] -> Int
-norm _ []   = 0
+norm _ []   = 0 -- TODO: redundant; remove
 norm g xs = normList g [xs]
 
-normList :: Grammar -> [[TypeVar]] -> Int
+normList :: Grammar -> [[TypeVar]] -> Int       -- TODO: use Set [TypeVar] rather than [[TypeVar]]
 normList g xs
   | [] `elem` m = 0
   | otherwise = 1 + (normList g (foldr union [] m))
@@ -420,7 +420,7 @@ findInPair ((x':xs), (y':ys)) x y
   | otherwise          = Nothing
 findInPair _ _ _       = Nothing
 
--- vv made this rule. Sound?
+-- vv made this rule. Sound? TODO: remove
 bpa3 :: NodeTransformation
 bpa3 _ a (x:xs, y:ys) =
   case findInAncestors a x y of
@@ -480,6 +480,7 @@ e13 = equivalent alphaKinding s24 s24
 e14 = equivalent alphaKinding s24 s25
 e15 = equivalent alphaKinding s26 s27
 
+-- TODO: move to Syntax.Types
 -- UNFOLDING, RENAMING, SUBSTITUTING
 
 unfold :: Type -> Type

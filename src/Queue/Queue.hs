@@ -11,6 +11,9 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
+-- TODO: Use instead Data.Sequence, http://hackage.haskell.org/package/containers-0.6.0.1/docs/Data-Sequence.html
+-- and the bidirectional patterns Empty, :<|, and :|>.
+
 module Queue.Queue
 ( Queue,
   enqueue,
