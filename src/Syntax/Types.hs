@@ -23,6 +23,9 @@ module Syntax.Types
 , TypeScheme(..)
 , dual
 , toList
+, unfold
+, rename
+, subs
 ) where
 
 import Syntax.Kinds
@@ -67,7 +70,7 @@ data Polarity =
 instance Show Polarity where
   show In = "?"
   show Out = "!"
- 
+
 -- Choice View
 
 data ChoiceView =
@@ -78,7 +81,7 @@ data ChoiceView =
 instance Show ChoiceView where
   show External = "&"
   show Internal = "+"
- 
+
 -- TYPES
 
 type Constructor = String
@@ -205,6 +208,30 @@ toList :: TypeScheme -> [TypeScheme]
 toList (TypeScheme b (Fun _ t1 t2)) = (TypeScheme b t1) : toList (TypeScheme b t2)
 toList t = [t]
 
+-- brought from Validation.TypeEquivalence
+-- UNFOLDING, RENAMING, SUBSTITUTING
+
+unfold :: Type -> Type
+-- Assumes parameter is a Rec type
+unfold (Rec b t) = subs (Rec b t) (var b) t
+
+rename :: Type -> TypeVar -> Type
+-- Assumes parameter is a Rec type
+rename (Rec (Bind x k) t) y = Rec (Bind y k) (subs (Var y) x t)
+
+subs :: Type -> TypeVar -> Type -> Type -- t[x/u]
+subs t y (Var x)
+    | x == y              = t
+    | otherwise           = Var x
+subs t y (Semi t1 t2)     = Semi (subs t y t1) (subs t y t2)
+subs t y (PairType t1 t2) = PairType (subs t y t1) (subs t y t2)
+-- Assume y /= x
+subs t2 y (Rec b t1)
+    | var b == y          = Rec b t1
+    | otherwise           = Rec b (subs t2 y t1)
+subs t y (Choice v m)     = Choice v (Map.map(subs t y) m)
+subs t y (Fun m t1 t2)    = Fun m (subs t y t1) (subs t y t2)
+subs _ _ t                = t
 
 {- Alternative:
 data TypeScheme =
