@@ -8,5 +8,9 @@ $ cabal build
 * Running tests (check the entries in file `ContextFreeSession.cabal`)
 
 ```
-$ cabal test CFST-UnitTests
+$ cabal test unit-tests
+```
+or
+```
+$ cabal test program-tests
 ```
