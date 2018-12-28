@@ -48,10 +48,11 @@ bisim g xs ys = bisim' g (Queue.enqueue (Set.singleton (xs, ys), Set.empty) Queu
 bisim' :: Grammar -> NodeQueue -> Bool
 bisim' g q
   | Queue.isEmpty q             = False
-  | n == Set.fromList [([],[])] = True --any Set.null (map fst ns) = True
+  | n == Set.fromList []        = True
+  -- | n == Set.fromList [([],[])] = True --any Set.null (map fst ns) = True
   | otherwise                   = case expandNode0 g n of
       Nothing  -> bisim' g (Queue.dequeue q)
-      Just n'  -> bisim' g (foldr Queue.enqueue (Queue.dequeue q) (simplify g (Set.union a n) n') )
+      Just n'  -> if n' == Set.fromList [([],[])] then True else bisim' g (foldr Queue.enqueue (Queue.dequeue q) (simplify g (Set.union a n) n') )
   where (n,a) = Queue.front q
 
 expandNode0 :: Grammar -> Node -> Maybe Node
@@ -82,11 +83,10 @@ match m1 m2 =
 -- Apply the different node transformations
 
 simplify :: Grammar -> Ancestors ->  Node -> [(Node, Ancestors)]
-simplify g a n
-  | length n' == 1  = [(n,a)]
-  | otherwise       = foldr (\p q -> (p, Set.union a n):q) [(n,a)] n'
-    where m = foldr  (apply g a) n [reflex,congruence]
-          n' = foldr (\p n -> (applyBPAs g a (Set.delete p m) p) ++ n) [] (Set.toList m)
+simplify g a n  = foldr (\p q -> (p, Set.union a n):q) [(n'',a)] m
+    where n' = Set.foldr (\p n -> Set.union (reflex g a p) n) Set.empty n
+          n'' = Set.foldr (\p n -> Set.union (congruence g a p) n) Set.empty n'
+          m = foldr (\p ps -> (applyBPAs g a (Set.delete p n'') p) ++ ps) [] (Set.toList n'')
 -- Perhaps we need to iterate until reaching a fixed point
 
 -- is applying transf to all elements, should be one at a time
@@ -127,7 +127,7 @@ congruentToPair a (xs, ys) (xs', ys') =
 bpa1 :: NodeTransformationSiblings
 bpa1 g a (x:xs, y:ys) =
   case findInAncestors a x y of
-    Nothing         -> [Set.singleton (x:xs, y:ys)]
+    Nothing         -> []
     Just (xs', ys') -> [Set.fromList [(xs,xs'), (ys,ys')]] ++ (bpa1 g (Set.delete (x:xs', y:ys') a) (x:xs, y:ys))
 bpa1 _ _ p = [Set.singleton p]
 
@@ -135,7 +135,7 @@ bpa1 _ _ p = [Set.singleton p]
 bpa2 :: NodeTransformationSiblings
 bpa2 g a (x:xs, y:ys)
   | m && norm g [x] == norm g [y] = [Set.fromList [([x],[y]), (xs,ys)]]
-  | otherwise                     = [Set.singleton (x:xs, y:ys)]
+  | otherwise                     = []
   where m = normed g x && normed g y && (length xs > 0 || length ys > 0)
 bpa2 _ _ p = [Set.singleton p]
 
