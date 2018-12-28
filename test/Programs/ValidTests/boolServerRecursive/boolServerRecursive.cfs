@@ -19,7 +19,8 @@ boolServer c =
       (boolServer c)
 --      (boolServer (send (not n) c))
 
-    End c -> ()
+    End c ->
+      ()
       
 client1 :: (rec x. +{And: !Bool;!Bool;?Bool;x, Or: !Bool;!Bool;?Bool;x, Not: !Bool;?Bool;x,End: Skip}) -> Bool
 client1 c =
