@@ -47,7 +47,7 @@ expansionTree' g q
   | n == Set.fromList []        = True
   | otherwise                   = case expandNode0 g n of
       Nothing  -> expansionTree' g (Queue.dequeue q)
-      Just n'  -> if n' == Set.fromList [([],[])] then True else expansionTree' g (Set.foldr Queue.enqueue (Queue.dequeue q) (simplify g (Set.union a n) n') )
+      Just n'  -> if n' == Set.fromList [([],[])] then True else expansionTree' g (simplifyAndExpand g (Set.union a n) n' q)
   where (n,a) = Queue.front q
 
 expandNode0 :: Grammar -> Node -> Maybe Node
@@ -59,7 +59,7 @@ expandNode0 g n
 expandNode :: Grammar -> Node -> Maybe Node
 expandNode g =
   Set.foldr(\p acc -> case acc of
-    Nothing  -> expandPair g p
+    Nothing  -> Nothing
     Just n'  -> case expandPair g p of
       Nothing  -> Nothing
       Just n'' -> Just (Set.union n' n'')) (Just Set.empty)
@@ -77,11 +77,12 @@ match m1 m2 =
 
 -- Apply the different node transformations
 
-simplify :: Grammar -> Ancestors ->  Node -> Set.Set (Node, Ancestors)
-simplify g a n  = Set.union (Set.map (\p -> (p, Set.union a n)) m) (Set.singleton (n'',a))
+simplifyAndExpand :: Grammar -> Ancestors ->  Node -> NodeQueue -> NodeQueue
+simplifyAndExpand g a n q = Set.foldr Queue.enqueue (Queue.dequeue q) siblingNodes
     where n'  = Set.foldr (\p n -> Set.union (Set.fold Set.union Set.empty (reflex g a p)) n) Set.empty n
           n'' = Set.foldr (\p n -> Set.union (Set.fold Set.union Set.empty (congruence g a p)) n) Set.empty n'
           m   = Set.foldr (\p n -> Set.union (applyBPAs g a (Set.delete p n'') p) n) Set.empty n''
+          siblingNodes = Set.union (Set.map (\p -> (p, Set.union a n)) m) (Set.singleton (n'',a))
 -- Perhaps we need to iterate until reaching a fixed point
 
 -- is applying transf to all elements, should be one at a time
