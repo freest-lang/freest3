@@ -1,7 +1,7 @@
 * Build cabal
 
 ```
-$ cabal install --dependencies-only
+$ cabal install --enable-tests --only-dependencies
 $ cabal build
 ```
 
@@ -13,4 +13,9 @@ $ cabal test unit-tests
 or
 ```
 $ cabal test program-tests
+```
+
+If you need to configure your package manually, you can also enable tests with
+```
+$ cabal configure --enable-tests
 ```
