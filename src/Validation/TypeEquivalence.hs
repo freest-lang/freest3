@@ -30,29 +30,24 @@ import           Validation.Grammar
 import           Validation.TypeToGrammar
 import           Validation.Norm
 
--- BISIMULATION
-
 type Node = Set.Set ([TypeVar], [TypeVar])
 
 type Ancestors = Node
 
 type NodeQueue = Queue.Queue (Node, Ancestors)
 
-type NodeTransformation = Grammar -> Ancestors -> ([TypeVar], [TypeVar]) -> Node
+type NodeTransformation = Grammar -> Ancestors -> ([TypeVar], [TypeVar]) -> Set.Set Node
 
-type NodeTransformationSiblings = Grammar -> Ancestors -> ([TypeVar], [TypeVar]) -> [Node]
+expansionTree :: Grammar -> [TypeVar] -> [TypeVar] -> Bool
+expansionTree g xs ys = expansionTree' g (Queue.enqueue (Set.singleton (xs, ys), Set.empty) Queue.empty)
 
-bisim :: Grammar -> [TypeVar] -> [TypeVar] -> Bool
-bisim g xs ys = bisim' g (Queue.enqueue (Set.singleton (xs, ys), Set.empty) Queue.empty)--Set.empty  (Set.singleton (xs, ys)) True True
-
-bisim' :: Grammar -> NodeQueue -> Bool
-bisim' g q
+expansionTree' :: Grammar -> NodeQueue -> Bool
+expansionTree' g q
   | Queue.isEmpty q             = False
   | n == Set.fromList []        = True
-  -- | n == Set.fromList [([],[])] = True --any Set.null (map fst ns) = True
   | otherwise                   = case expandNode0 g n of
-      Nothing  -> bisim' g (Queue.dequeue q)
-      Just n'  -> if n' == Set.fromList [([],[])] then True else bisim' g (foldr Queue.enqueue (Queue.dequeue q) (simplify g (Set.union a n) n') )
+      Nothing  -> expansionTree' g (Queue.dequeue q)
+      Just n'  -> if n' == Set.fromList [([],[])] then True else expansionTree' g (Set.foldr Queue.enqueue (Queue.dequeue q) (simplify g (Set.union a n) n') )
   where (n,a) = Queue.front q
 
 expandNode0 :: Grammar -> Node -> Maybe Node
@@ -82,34 +77,31 @@ match m1 m2 =
 
 -- Apply the different node transformations
 
-simplify :: Grammar -> Ancestors ->  Node -> [(Node, Ancestors)]
-simplify g a n  = foldr (\p q -> (p, Set.union a n):q) [(n'',a)] m
-    where n' = Set.foldr (\p n -> Set.union (reflex g a p) n) Set.empty n
-          n'' = Set.foldr (\p n -> Set.union (congruence g a p) n) Set.empty n'
-          m = foldr (\p ps -> (applyBPAs g a (Set.delete p n'') p) ++ ps) [] (Set.toList n'')
+simplify :: Grammar -> Ancestors ->  Node -> Set.Set (Node, Ancestors)
+simplify g a n  = Set.union (Set.map (\p -> (p, Set.union a n)) m) (Set.singleton (n'',a))
+    where n'  = Set.foldr (\p n -> Set.union (Set.fold Set.union Set.empty (reflex g a p)) n) Set.empty n
+          n'' = Set.foldr (\p n -> Set.union (Set.fold Set.union Set.empty (congruence g a p)) n) Set.empty n'
+          m   = Set.foldr (\p n -> Set.union (applyBPAs g a (Set.delete p n'') p) n) Set.empty n''
 -- Perhaps we need to iterate until reaching a fixed point
 
 -- is applying transf to all elements, should be one at a time
 -- should return a list of nodes instead of a node ..?
-apply :: Grammar -> Ancestors -> NodeTransformation -> Node -> Node
-apply g a trans = Set.foldr (\p n -> Set.union (trans g a p) n) Set.empty
+-- apply :: Grammar -> Ancestors -> NodeTransformation -> Node -> Node
+-- apply g a trans = Set.foldr (\p n -> Set.union (trans g a p) n) Set.empty
 
-applyBPAs :: Grammar -> Ancestors -> Node -> ([TypeVar], [TypeVar]) -> [Node]
-applyBPAs g a n p = map (\v -> Set.union v n) m
-  where m = foldr (\t l -> (createSiblings g a t p) ++ l ) [] [bpa1,bpa2]
-
-createSiblings :: Grammar -> Ancestors -> NodeTransformationSiblings -> ([TypeVar], [TypeVar]) -> [Node]
-createSiblings g a trans p = trans g a p
+applyBPAs :: Grammar -> Ancestors -> Node -> ([TypeVar], [TypeVar]) -> Set.Set Node
+applyBPAs g a n p = Set.map (\v -> Set.union v n) m
+  where m = foldr (\trans l -> Set.union (trans g a p) l ) Set.empty [bpa1,bpa2]
 
 reflex :: NodeTransformation
 reflex _ _ (xs, ys)
   | xs == ys  = Set.empty
-  | otherwise = Set.singleton (xs, ys)
+  | otherwise = Set.singleton (Set.singleton (xs, ys))
 
 congruence :: NodeTransformation
 congruence _ a p
   | congruentToAncestors a p = Set.empty
-  | otherwise                = Set.singleton p
+  | otherwise                = Set.singleton (Set.singleton p)
 
 congruentToAncestors :: Ancestors -> ([TypeVar], [TypeVar]) -> Bool
 congruentToAncestors a p = or $ Set.map (congruentToPair a p) a
@@ -122,22 +114,20 @@ congruentToPair a (xs, ys) (xs', ys') =
   where x1 = drop (length xs') xs
         x2 = drop (length ys') ys
 
--- Needed in this case:
---   [("α", SL)]  |-  rec x . +{A: α, B: x; α} ~ rec y . +{A: Skip, B: y}; α
-bpa1 :: NodeTransformationSiblings
+bpa1 :: NodeTransformation
 bpa1 g a (x:xs, y:ys) =
   case findInAncestors a x y of
-    Nothing         -> []
-    Just (xs', ys') -> [Set.fromList [(xs,xs'), (ys,ys')]] ++ (bpa1 g (Set.delete (x:xs', y:ys') a) (x:xs, y:ys))
-bpa1 _ _ p = [Set.singleton p]
+    Nothing         -> Set.empty
+    Just (xs', ys') -> Set.union (Set.singleton (Set.fromList [(xs,xs'), (ys,ys')])) (bpa1 g (Set.delete (x:xs', y:ys') a) (x:xs, y:ys))
+bpa1 _ _ p = Set.singleton (Set.singleton p)
 
--- only works for the same norm
-bpa2 :: NodeTransformationSiblings
+-- only works for equal norms
+bpa2 :: NodeTransformation
 bpa2 g a (x:xs, y:ys)
-  | m && norm g [x] == norm g [y] = [Set.fromList [([x],[y]), (xs,ys)]]
-  | otherwise                     = []
+  | m && norm g [x] == norm g [y] = Set.singleton (Set.fromList [([x],[y]), (xs,ys)])
+  | otherwise                     = Set.empty
   where m = normed g x && normed g y && (length xs > 0 || length ys > 0)
-bpa2 _ _ p = [Set.singleton p]
+bpa2 _ _ p = Set.singleton (Set.singleton p)
 
 findInAncestors :: Ancestors -> TypeVar -> TypeVar -> Maybe ([TypeVar], [TypeVar])
 findInAncestors a x y =
@@ -150,16 +140,6 @@ findInPair ((x':xs), (y':ys)) x y
   | x == x' && y == y' = Just (xs, ys)
   | otherwise          = Nothing
 findInPair _ _ _       = Nothing
-
--- vv made this rule. Sound? TODO: remove
-bpa3 :: NodeTransformation
-bpa3 _ a (x:xs, y:ys) =
-  case findInAncestors a x y of
-    Nothing         -> Set.singleton (x:xs, y:ys)
-    Just (xs', ys') -> Set.fromList [(xs'++xs, ys'++ys)]
-    -- Just ([], [])   -> Set.fromList [(xs, ys)]
-    -- Just (xs', ys') -> Set.fromList [(x:xs, y:ys)]
-bpa3 _ _ p = Set.singleton p
 
 -- TYPE EQUIVALENCE
 
@@ -176,9 +156,7 @@ equivalent k (Datatype m1) (Datatype m2) =
 --equivalent _ Skip _ = False
 --equivalent _ _ Skip = False
 equivalent k t u
-  | isSessionType k t && isSessionType k u =
---    normalise(productions (buildGNF t)) == normalise(productions (buildGNF u))|| --hack to mitigate failures
-      bisim (normalise g) [x] [y]
+  | isSessionType k t && isSessionType k u = expansionTree (normalise g) [x] [y]
   | otherwise = False
   where (x, state)     = convertToGNF initial t
         (y, (g, _, _)) = convertToGNF state u
