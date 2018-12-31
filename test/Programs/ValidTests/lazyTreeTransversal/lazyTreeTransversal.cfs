@@ -2,7 +2,12 @@ data Tree = Leaf | Node Int Tree Tree
 
 -- client
 
-exploreTree :: forall α => Tree -> (rec x. +{LeafC: Skip, NodeC: rec y. &{Value: !Int;y, Left: x;y, Right: x;y, Exit: Skip}});α -> α
+exploreTree :: forall α => Tree -> (
+  rec x. +{LeafC: Skip,
+           NodeC: rec y. &{Value: !Int;y,
+                           Left:  x;y,
+                           Right: x;y,
+                           Exit: Skip}});α -> α
 exploreTree tree c =
   case tree of
     Leaf ->
@@ -11,7 +16,11 @@ exploreTree tree c =
       let c = select NodeC c in
       exploreNode[α] x l r c
 
-exploreNode :: forall α => Int -> Tree -> Tree -> (rec y. &{Value: !Int;y, Left: +{LeafC: Skip, NodeC: y};y, Right: +{LeafC: Skip, NodeC: y};y, Exit: Skip});α -> α
+exploreNode :: forall α => Int -> Tree -> Tree -> (
+  rec y. &{Value: !Int;y,
+           Left:  +{LeafC: Skip, NodeC: y};y,
+           Right: +{LeafC: Skip, NodeC: y};y,
+           Exit: Skip});α -> α
 exploreNode x l r c =
   match c with
     Value c ->
@@ -26,36 +35,47 @@ exploreNode x l r c =
     Exit c1 ->
       c1
 
--- server: compute the product of the integer values in a tree
+-- server: compute the product of the values in a tree; stop as soon a zero is received
 -- to be completed
 
-server :: forall α => Int -> (rec x. &{LeafC: Skip, NodeC: rec y. +{Value: ?Int;y, Left: x;y, Right: x;y, Exit: Skip}});α -> (α, Int)
+server :: forall α => Int -> (
+  rec x. &{LeafC: Skip,
+           NodeC: rec y. +{Value: ?Int;y,
+                           Left:  x;y,
+                           Right: x;y,
+                           Exit:  Skip}});α -> (Int, α)
 server n c =
   match c with
     LeafC c ->
-      (c, n)
+      (n, c)
     NoceC c ->
-      if n == 0
-      then let c = select Exit c in
-           (c, n)
-      else let c = select Value c in
-           let c, m = receive c in
-           server (n * m) c
-  
+      serverNode[α] n c
+
+serverNode :: forall α => Int -> (
+  rec y. +{Value: ?Int;y,
+           Left:  &{LeafC: Skip, NodeC: y};y,
+           Right: &{LeafC: Skip, NodeC: y};y,
+           Exit:  Skip});α -> (α, Int)
+serverNode n c =
+  let c = select Value c in
+  let c, m = receive c in
+  if m == 0
+  then let c = select Exit c in (0, c)
+  else
+    let c = select Left c in
+    let c, m = server[α] (m * n) c in
+    let c = select Right c in
+    server[α] m c
+
 -- main
+
+aTree :: Tree
+aTree = Node 7 (Node 5 Leaf Leaf) (Node 9 (Node 11 Leaf Leaf) (Node 15 Leaf Leaf))
 
 start :: Int
 start =
   let writer, reader = new (rec x. +{LeafC: Skip, NodeC: rec y. &{Value: !Int;y, Left: x;y, Right: x;y, Exit: Skip}}) in
-  let tree = Node 7 (Node 5 Leaf Leaf) (Node 9 (Node 11 Leaf Leaf) (Node 15 Leaf Leaf)) in
-  let w = fork (exploreTree[Skip] tree writer) in
-  let w, n = server[Skip] 1 reader in
+  let x = fork (exploreTree[Skip] tree writer) in
+  let n, r = server[Skip] 1 reader in
   n
-
-
--- let inTree = Node 7 (Node 5 Leaf Leaf) (Node 9 (Node 11 Leaf Leaf) (Node 15 Leaf Leaf)) in
---   let writer,reader = new (rec x . +{LeafC: Skip, NodeC: !Int;x;xn}) in
---   let w = fork (sendTree[Skip] inTree writer) in
---   let outTree, r = receiveTree reader in
---   outTree
 
