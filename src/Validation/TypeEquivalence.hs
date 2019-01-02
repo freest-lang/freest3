@@ -1,3 +1,5 @@
+{-# LANGUAGE NoMonadFailDesugaring #-}
+
 {- |
 Module      :  Types
 Description :  <optional short text displayed on contents page>

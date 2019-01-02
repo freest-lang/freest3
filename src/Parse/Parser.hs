@@ -15,7 +15,7 @@ import           Text.Parsec (Parsec (..), modifyState)
 import           Text.Parsec.Expr
 import           Text.ParserCombinators.Parsec
 import           Validation.TypingState
- 
+import           Data.List
 
 -- PARSER
 type ParserOut = (VarEnv, ExpEnv, ConstructorEnv, KindEnv)
@@ -95,6 +95,7 @@ parseDataType = do
   k <- option (Kind Functional Un) parseVarBind
   reservedOp "="
   ts <- sepBy1 parseTypeComponents (lexeme (char '|'))
+  checkDupComp (map fst ts) "Multiple declarations of '" pos
   let bindingList = types c ts
   mapM (\(tc, v) -> modifyState (changeCEnv tc (TypeScheme [] v))) bindingList
   modifyState (changeKEnv c k)
@@ -108,6 +109,22 @@ parseDataType = do
     typeToFun :: TypeVar -> [Type] -> Type
     typeToFun c [] = (Var c)
     typeToFun c (x:xs) = Fun Un x (typeToFun c xs)
+
+    checkDupComp :: [TypeVar] -> String -> SourcePos -> CFSTSubParser ()
+    checkDupComp bs msg pos
+      | length bs == length (nub bs) = return ()
+      | otherwise = fail $ msg ++ show (nub(intersect bs (nub bs))) ++ "'" ++ position 
+      where position = " (line " ++ show (sourceLine pos) ++
+                       ", column " ++ show (sourceColumn pos) ++ ")"
+
+-- -- Checking for duplicate declarations
+-- checkDup :: Ord k => Map.Map k a -> k -> [Char] -> SourcePos -> CFSTSubParser ()
+-- checkDup env id msg pos
+--   | Map.member id env = fail $ msg ++ position
+--   | otherwise         = return ()
+--   where position = " (line " ++ show (sourceLine pos) ++
+--                    ", column " ++ show (sourceColumn pos) ++ ")"
+
 
 parseTypeComponents :: CFSTSubParser (TypeVar, [Type])
 parseTypeComponents = do
