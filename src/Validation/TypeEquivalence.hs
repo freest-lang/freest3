@@ -20,202 +20,161 @@ module Validation.TypeEquivalence(
 ) where
 
 import           Control.Monad.State
-import           Data.List (isPrefixOf)
+import           Data.List (isPrefixOf, union)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
+import qualified Queue.Queue as Queue
 import           Syntax.Kinds
 import           Syntax.Types
 import           Validation.Kinding
 import           Validation.TypingState (KindEnv)
+import           Validation.Grammar
+import           Validation.TypeToGrammar
+import           Validation.Norm
 
--- GREIBACH NORMAL FORMS
+type Node = Set.Set ([TypeVar], [TypeVar])
 
--- type Vars = [TypeVar]
+type Ancestors = Node
 
-data Label =
-  ChoiceLabel ChoiceView Constructor |
-  MessageLabel Polarity BasicType |
-  VarLabel TypeVar
-  deriving (Eq, Ord)
+type NodeQueue = Queue.Queue (Node, Ancestors)
 
-instance Show Label where
-  show (ChoiceLabel v l) = show v ++ l
-  show (MessageLabel p t) = show p ++ show t
-  show (VarLabel l) = l
+type NodeTransformation = Grammar -> Ancestors -> ([TypeVar], [TypeVar]) -> Set.Set Node
 
-type Grammar = Map.Map TypeVar (Map.Map Label [TypeVar])
+expansionTree :: Grammar -> [TypeVar] -> [TypeVar] -> Bool
+expansionTree g xs ys = expansionTree' g (Queue.enqueue (Set.singleton (xs, ys), Set.empty) Queue.empty)
 
-data GNF = GNF {start :: TypeVar, productions :: Grammar}
+expansionTree' :: Grammar -> NodeQueue -> Bool
+expansionTree' g q
+  | Queue.isEmpty q             = False
+  | n == Set.fromList []        = True
+  | otherwise                   = case expandNode0 g n of
+      Nothing  -> expansionTree' g (Queue.dequeue q)
+      Just n'  -> if n' == Set.fromList [([],[])] then True else expansionTree' g (simplifyAndExpand g (Set.union a n) n' q)
+  where (n,a) = Queue.front q
 
-instance Show GNF where
-  show g = "start:" ++ start g ++ showGrammar (productions g)
+expandNode0 :: Grammar -> Node -> Maybe Node
+expandNode0 g n
+  | m == Just Set.empty = Nothing
+  | otherwise           = m
+    where m = expandNode g n
 
-showGrammar :: Grammar -> String
-showGrammar = Map.foldrWithKey showProds ""
+expandNode :: Grammar -> Node -> Maybe Node
+expandNode g =
+  Set.foldr(\p acc -> case acc of
+    Nothing  -> Nothing
+    Just n'  -> case expandPair g p of
+      Nothing  -> Nothing
+      Just n'' -> Just (Set.union n' n'')) (Just Set.empty)
 
-showProds :: TypeVar -> (Map.Map Label [TypeVar]) -> String -> String
-showProds x m s = s ++ "\n" ++ Map.foldrWithKey (showProd x) "" m
+expandPair :: Grammar -> ([TypeVar], [TypeVar]) -> Maybe Node
+expandPair g (xs, ys)
+  | Map.keysSet m1 == Map.keysSet m2 = Just $ match m1 m2
+  | otherwise                        = Nothing
+  where m1 = transitions g xs
+        m2 = transitions g ys
 
-showProd :: TypeVar -> Label -> [TypeVar] -> String -> String
-showProd x l ys s = s ++ "\n" ++ x ++ " ::= " ++ show l ++ " " ++ (if null ys then "ε" else concat ys)
+match :: Map.Map Label [TypeVar] -> Map.Map Label [TypeVar] -> Node
+match m1 m2 =
+  Map.foldrWithKey (\l xs n -> Set.insert (xs, m2 Map.! l) n) Set.empty m1
 
--- The state of the translation to GNF
+-- Apply the different node transformations
 
-type Visited = Map.Map Type TypeVar
+simplifyAndExpand :: Grammar -> Ancestors ->  Node -> NodeQueue -> NodeQueue
+simplifyAndExpand g a n q = Set.foldr Queue.enqueue (Queue.dequeue q) siblingNodes
+    where n'  = Set.foldr (\p n -> Set.union (Set.fold Set.union Set.empty (reflex g a p)) n) Set.empty n
+          n'' = Set.foldr (\p n -> Set.union (Set.fold Set.union Set.empty (congruence g a p)) n) Set.empty n'
+          m   = Set.foldr (\p n -> Set.union (applyBPAs g a (Set.delete p n'') p) n) Set.empty n''
+          siblingNodes = Set.union (Set.map (\p -> (p, Set.union a n)) m) (Set.singleton (n'',a))
+-- Perhaps we need to iterate until reaching a fixed point
 
-type GNFState = State (Grammar, Visited, Int)
+-- is applying transf to all elements, should be one at a time
+-- should return a list of nodes instead of a node ..?
+-- apply :: Grammar -> Ancestors -> NodeTransformation -> Node -> Node
+-- apply g a trans = Set.foldr (\p n -> Set.union (trans g a p) n) Set.empty
 
--- State manipulating functions
+applyBPAs :: Grammar -> Ancestors -> Node -> ([TypeVar], [TypeVar]) -> Set.Set Node
+applyBPAs g a n p = Set.map (\v -> Set.union v n) m
+  where m = foldr (\trans l -> Set.union (trans g a p) l ) Set.empty [bpa1,bpa2]
 
-initial :: (Grammar, Visited, Int)
-initial = (Map.empty, Map.empty, 0)
+reflex :: NodeTransformation
+reflex _ _ (xs, ys)
+  | xs == ys  = Set.empty
+  | otherwise = Set.singleton (Set.singleton (xs, ys))
 
-freshVar :: GNFState String
-freshVar = do
-  (_, _, n) <- get
-  modify (\(p, v, n) -> (p, v, n+1))
-  return $ "_x" ++ show n
+congruence :: NodeTransformation
+congruence _ a p
+  | congruentToAncestors a p = Set.empty
+  | otherwise                = Set.singleton (Set.singleton p)
 
-lookupVisited :: Type -> GNFState (Maybe TypeVar)
-lookupVisited t = do
-  (_, v, _) <- get
-  return $ Map.lookup t v
+congruentToAncestors :: Ancestors -> ([TypeVar], [TypeVar]) -> Bool
+congruentToAncestors a p = or $ Set.map (congruentToPair a p) a
 
-insertVisited :: Type -> TypeVar -> GNFState ()
-insertVisited t x =
-  modify (\(p, v, n) -> (p, Map.insert t x v, n))
+congruentToPair :: Ancestors -> ([TypeVar], [TypeVar]) -> ([TypeVar], [TypeVar]) -> Bool
+congruentToPair a (xs, ys) (xs', ys') =
+  length xs' > 0 && xs' `isPrefixOf` xs &&
+  length ys' > 0 && ys' `isPrefixOf` ys &&
+  ( x1 == x2 || congruentToAncestors a (x1, x2) )
+  where x1 = drop (length xs') xs
+        x2 = drop (length ys') ys
 
-getGrammar :: GNFState Grammar
-getGrammar = do
-  (p, _, _) <- get
-  return p
+bpa1 :: NodeTransformation
+bpa1 g a (x:xs, y:ys) =
+  case findInAncestors a x y of
+    Nothing         -> Set.empty
+    Just (xs', ys') -> Set.union (Set.singleton (Set.fromList [(xs,xs'), (ys,ys')])) (bpa1 g (Set.delete (x:xs', y:ys') a) (x:xs, y:ys))
+bpa1 _ _ p = Set.singleton (Set.singleton p)
 
-getProductions :: TypeVar -> GNFState (Map.Map Label [TypeVar])
-getProductions x = do
-  p <- getGrammar
-  return $ p Map.! x
+-- only works for equal norms
+bpa2 :: NodeTransformation
+bpa2 g a (x:xs, y:ys)
+  | m && norm g [x] == norm g [y] = Set.singleton (Set.fromList [([x],[y]), (xs,ys)])
+  | otherwise                     = Set.empty
+  where m = normed g x && normed g y && (length xs > 0 || length ys > 0)
+bpa2 _ _ p = Set.singleton (Set.singleton p)
 
-member :: TypeVar -> GNFState Bool
-member x = do
-  p <- getGrammar
-  return $ Map.member x p
+findInAncestors :: Ancestors -> TypeVar -> TypeVar -> Maybe ([TypeVar], [TypeVar])
+findInAncestors a x y =
+ Set.foldr (\p acc -> case acc of
+   Just p  -> Just p
+   Nothing -> findInPair p x y) Nothing a
 
-insertProduction :: TypeVar -> Label -> [TypeVar] -> GNFState ()
-insertProduction x l w =
-  modify (\(p, v, n) -> (Map.insertWith Map.union x (Map.singleton l w) p, v, n))
+findInPair :: ([TypeVar], [TypeVar]) -> TypeVar -> TypeVar -> Maybe ([TypeVar], [TypeVar])
+findInPair ((x':xs), (y':ys)) x y
+  | x == x' && y == y' = Just (xs, ys)
+  | otherwise          = Nothing
+findInPair _ _ _       = Nothing
 
-insertGrammar :: TypeVar -> (Map.Map Label [TypeVar]) -> GNFState ()
-insertGrammar x m = insertGrammar' x (Map.assocs m)
+-- TYPE EQUIVALENCE
 
-insertGrammar' :: TypeVar -> [(Label, [TypeVar])] -> GNFState ()
-insertGrammar' x [] = return ()
-insertGrammar' x ((l, w):as) = do
-  insertProduction x l w
-  insertGrammar' x as
+equivalent :: KindEnv -> Type -> Type -> Bool
+equivalent _ (Var x) (Var y) = x == y
+equivalent _ (Basic b) (Basic c) = b == c
+equivalent k (Fun m t1 t2) (Fun n u1 u2) =
+  m == n && equivalent k t1 u1 && equivalent k t2 u2
+equivalent k (PairType t1 t2) (PairType u1 u2) =
+  equivalent k t1 u1 && equivalent k t2 u2
+equivalent k (Datatype m1) (Datatype m2) =
+  Map.size m1 == Map.size m2 && Map.foldlWithKey (checkBinding k m2) True m1
+--equivalent _ Skip Skip = True
+--equivalent _ Skip _ = False
+--equivalent _ _ Skip = False
+equivalent k t u
+  | isSessionType k t && isSessionType k u = expansionTree (normalise g) [x] [y]
+  | otherwise = False
+  where (x, state)     = convertToGNF initial t
+        (y, (g, _, _)) = convertToGNF state u
 
-replaceInGrammar :: [TypeVar] -> TypeVar -> GNFState ()
-replaceInGrammar w x =
-  modify (\(p, v, n) -> (Map.map (Map.map (replace w x)) p, v, n))
+checkBinding :: KindEnv -> TypeMap -> Bool -> Constructor -> Type -> Bool
+checkBinding k m acc l t = acc && l `Map.member` m && equivalent k (m Map.! l) t
 
-replace :: Eq a => [a] -> a -> [a] -> [a]
-replace _ _ [] = []
-replace w x (y:ys)
-  | x == y    = w ++ (replace w x ys)
-  | otherwise = y : (replace w x ys)
+-- -- testing
 
--- Normalisation
+convertTwo :: Type -> Type -> (TypeVar, TypeVar, (Grammar, Visited, Int))
+convertTwo t u = (x, y, s)
+  where (x, state) = convertToGNF initial t
+        (y, s) = convertToGNF state u
 
-normalise :: Grammar -> Grammar
-normalise g = Map.map (Map.map (normaliseWord g)) g
-
-normaliseWord :: Grammar -> [TypeVar] -> [TypeVar]
-normaliseWord _ []     = []
-normaliseWord g (x:xs)
-  | normed g x = x : normaliseWord g xs
-  | otherwise  = [x]
-
-normed :: Grammar -> TypeVar -> Bool
-normed g x = normedWord g Set.empty [x]
-
-normedWord :: Grammar -> Set.Set TypeVar -> [TypeVar] -> Bool
-normedWord _ _ []     = True
-normedWord g v (x:xs) =
-  not (x `Set.member` v) &&
-  any id (map (normedWord g (Set.insert x v)) (Map.elems (transitions g (x:xs))))
-
--- Conversion to GNF
-
-convertToGNF :: (Grammar, Visited, Int) -> Type -> (TypeVar, (Grammar, Visited, Int))
--- Assume: t is a session type different from Skip
-convertToGNF state t = (x, state')
-  where ([x], state') = runState (toGNF0 t) state
-
-toGNF0 :: Type -> GNFState [TypeVar]
-toGNF0 t = do
-  w <- toGNF t
-  y <- freshVar
-  insertProduction y (MessageLabel In UnitType) w
-  return [y]
-
-toGNF :: Type -> GNFState [TypeVar]
-toGNF t = do
-  maybe <- lookupVisited t
-  case maybe of
-    Nothing -> toGNF' t
-    Just x ->  return [x]
-
-toGNF' :: Type -> GNFState [TypeVar]
-toGNF' Skip =
-  return []
-toGNF' (Message p b) = do
-  y <- freshVar
-  insertProduction y (MessageLabel p b) []
-  return [y]
-toGNF' (Var a) = do -- This is a free variable
-  y <- freshVar
-  insertProduction y (VarLabel a) []
-  return [y]
-toGNF' (Semi (Choice p m) u) = do
-  xs <- toGNF (Choice p m)
-  ys <- toGNF u
-  if null xs
-  then return ys
---  else if null ys
---  then return xs
-  --else if t == (Rec b t)
-  --then return $ xs ++ ys
-  else do
-    let (x:xs') = xs
-    b <- member x
-    if b then do
-      m <- getProductions x
-      insertGrammar x (Map.map (++ xs' ++ ys) m)
-      return [x]
-    else
-      return $ xs ++ ys -- E.g., rec x. !Int;(x;x)
-toGNF' (Semi t u) = do
-  xs <- toGNF t
-  ys <- toGNF u
-  return $ xs ++ ys
-toGNF' (Choice p m) = do
-  y <- freshVar
-  assocsToGNF y p (Map.assocs m)
-  return [y]
-toGNF' (Rec b t) = do
-  y <- freshVar
-  let u = rename (Rec b t) y -- On the fly alpha conversion
-  insertVisited u y
-  (z:zs) <- toGNF (unfold u)
-  replaceInGrammar (z:zs) y
-  return [z]
-
-assocsToGNF :: TypeVar -> ChoiceView -> [(Constructor, Type)] -> GNFState ()
-assocsToGNF _ _ [] = return ()
-assocsToGNF y p ((l, t):as) = do
-  w <- toGNF t
-  insertProduction y (ChoiceLabel p l) w
-  assocsToGNF y p as
-
+-- TODO: move to another folder
 -- tests
 
 buildGNF :: Type -> GNF
@@ -291,146 +250,6 @@ s27 = Choice External (Map.fromList [("Leaf", (Var "α"))])
 t27 = buildGNF s27
 s28 = Rec yBind (Choice External (Map.fromList [("Add", Semi (Semi (Var "y") (Var "y")) (Message Out IntType)), ("Const", Skip)]))
 
--- BISIMULATION
-
-type Node = Set.Set ([TypeVar], [TypeVar])
-
-type Ancestors = Node
-
-bisim :: Grammar -> [TypeVar] -> [TypeVar] -> Bool
-bisim g xs ys = bisim' g Set.empty  (Set.singleton (xs, ys))
-
-bisim' :: Grammar -> Ancestors -> Node -> Bool
-bisim' g a n
-  | Set.null n' = True
-  | otherwise  = case expandNode0 g n' of
-      Nothing  -> False
-      Just n'' -> if (any( `elem` [([],[])]) n'' ) then True else bisim' g (Set.union n' a) n''
-  where n' = simplify g a n
-
-expandNode0 :: Grammar -> Node -> Maybe Node
-expandNode0 g n
-  | m == Just Set.empty = Nothing
-  | otherwise           = m
-    where m = expandNode g n
-
-expandNode :: Grammar -> Node -> Maybe Node
-expandNode g =
-  Set.foldr(\p acc -> case acc of
-    Nothing  -> expandPair g p
-    Just n'  -> case expandPair g p of
-      Nothing  -> Just n'
-      Just n'' -> Just (Set.union n' n'')) (Just Set.empty)
-
-expandPair :: Grammar -> ([TypeVar], [TypeVar]) -> Maybe Node
-expandPair g (xs, ys)
-  | Map.keysSet m1 == Map.keysSet m2 = Just $ match m1 m2
-  | otherwise                        = Nothing
-  where m1 = transitions g xs
-        m2 = transitions g ys
-
--- this is an op on grammars
-transitions :: Grammar -> [TypeVar] -> Map.Map Label [TypeVar]
-transitions _ []     = Map.empty
-transitions g (x:xs) = Map.map (++ xs) (g Map.! x)
-
-match :: Map.Map Label [TypeVar] -> Map.Map Label [TypeVar] -> Node
-match m1 m2 =
-  Map.foldrWithKey (\l xs n -> Set.insert (xs, m2 Map.! l) n) Set.empty m1
-
--- Apply the different node transformations
-
-simplify :: Grammar -> Ancestors -> Node -> Node
-simplify g a n = foldr (apply g a) n [reflex, congruence, bpa1{-, bpa3, bpa3-}]
--- Perhaps we need to iterate until reaching a fixed point
-
-type NodeTransformation = Grammar -> Ancestors -> ([TypeVar], [TypeVar]) -> Node
-
-apply :: Grammar -> Ancestors -> NodeTransformation -> Node -> Node
-apply g a trans = Set.foldr (\p n -> Set.union (trans g a p) n) Set.empty
-
-reflex :: NodeTransformation
-reflex _ _ (xs, ys)
-  | xs == ys  = Set.empty
-  | otherwise = Set.singleton (xs, ys)
-
-congruence :: NodeTransformation
-congruence _ a p
-  | congruentToAncestors a p = Set.empty
-  | otherwise                = Set.singleton p
-
-congruentToAncestors :: Ancestors -> ([TypeVar], [TypeVar]) -> Bool
-congruentToAncestors a p = or $ Set.map (congruentToPair p) a
-
-congruentToPair :: ([TypeVar], [TypeVar]) -> ([TypeVar], [TypeVar]) -> Bool
-congruentToPair (xs, ys) (xs', ys') =
-  xs `isPrefixOf` xs' &&
-  ys `isPrefixOf` ys' &&
-  drop (length xs) xs' == drop (length ys) ys'
-
--- Needed in this case:
---   [("α", SL)]  |-  rec x . +{A: α, B: x; α} ~ rec y . +{A: Skip, B: y}; α
-bpa1 :: NodeTransformation
-bpa1 _ a (x:xs, y:ys) =
-  case findInAncestors a x y of
-    Nothing         -> Set.singleton (x:xs, y:ys)
-    Just (xs', ys') -> Set.fromList [(xs,xs'), (ys,ys')]
-bpa1 _ _ p = Set.singleton p
-
-findInAncestors :: Ancestors -> TypeVar -> TypeVar -> Maybe ([TypeVar], [TypeVar])
-findInAncestors a x y =
- Set.foldr (\p acc -> case acc of
-   Just p  -> Just p
-   Nothing -> findInPair p x y) Nothing a
-
-findInPair :: ([TypeVar], [TypeVar]) -> TypeVar -> TypeVar -> Maybe ([TypeVar], [TypeVar])
-findInPair ((x':xs), (y':ys)) x y
-  | x == x' && y == y' = Just (xs, ys)
-  | otherwise          = Nothing
-findInPair _ _ _       = Nothing
-
--- vv made this rule. Sound?
-bpa3 :: NodeTransformation
-bpa3 _ a (x:xs, y:ys) =
-  case findInAncestors a x y of
-    Nothing         -> Set.singleton (x:xs, y:ys)
-    Just (xs', ys') -> Set.fromList [(xs'++xs, ys'++ys)]
-    -- Just ([], [])   -> Set.fromList [(xs, ys)]
-    -- Just (xs', ys') -> Set.fromList [(x:xs, y:ys)]
-bpa3 _ _ p = Set.singleton p
-
--- TYPE EQUIVALENCE
-
-equivalent :: KindEnv -> Type -> Type -> Bool
-equivalent _ (Var x) (Var y) = x == y
-equivalent _ (Basic b) (Basic c) = b == c
-equivalent k (Fun m t1 t2) (Fun n u1 u2) =
-  m == n && equivalent k t1 u1 && equivalent k t2 u2
-equivalent k (PairType t1 t2) (PairType u1 u2) =
-  equivalent k t1 u1 && equivalent k t2 u2
-equivalent k (Datatype m1) (Datatype m2) =
-  Map.size m1 == Map.size m2 && Map.foldlWithKey (checkBinding k m2) True m1
---equivalent _ Skip Skip = True
---equivalent _ Skip _ = False
---equivalent _ _ Skip = False
-equivalent k t u
-  | isSessionType k t && isSessionType k u =
---    normalise(productions (buildGNF t)) == normalise(productions (buildGNF u))|| --hack to mitigate failures
-      bisim (normalise g) [x] [y]
-  | otherwise = False
-  where (x, state)     = convertToGNF initial t
-        (y, (g, _, _)) = convertToGNF state u
-
-checkBinding :: KindEnv -> TypeMap -> Bool -> Constructor -> Type -> Bool
-checkBinding k m acc l t = acc && l `Map.member` m && equivalent k (m Map.! l) t
-
--- -- testing
-
-convertTwo :: Type -> Type -> (TypeVar, TypeVar, (Grammar, Visited, Int))
-convertTwo t u = (x, y, s)
-  where (x, state) = convertToGNF initial t
-        (y, s) = convertToGNF state u
-
 alphaKinding = Map.singleton "α" (Kind Session Lin)
 
 e1 = equivalent alphaKinding s1 s1
@@ -448,27 +267,3 @@ e12 = equivalent alphaKinding s1 s23
 e13 = equivalent alphaKinding s24 s24
 e14 = equivalent alphaKinding s24 s25
 e15 = equivalent alphaKinding s26 s27
-
--- UNFOLDING, RENAMING, SUBSTITUTING
-
-unfold :: Type -> Type
--- Assumes parameter is a Rec type
-unfold (Rec b t) = subs (Rec b t) (var b) t
-
-rename :: Type -> TypeVar -> Type
--- Assumes parameter is a Rec type
-rename (Rec (Bind x k) t) y = Rec (Bind y k) (subs (Var y) x t)
-
-subs :: Type -> TypeVar -> Type -> Type -- t[x/u]
-subs t y (Var x)
-    | x == y              = t
-    | otherwise           = Var x
-subs t y (Semi t1 t2)     = Semi (subs t y t1) (subs t y t2)
-subs t y (PairType t1 t2) = PairType (subs t y t1) (subs t y t2)
--- Assume y /= x
-subs t2 y (Rec b t1)
-    | var b == y          = Rec b t1
-    | otherwise           = Rec b (subs t2 y t1)
-subs t y (Choice v m)     = Choice v (Map.map(subs t y) m)
-subs t y (Fun m t1 t2)    = Fun m (subs t y t1) (subs t y t2)
-subs _ _ t                = t

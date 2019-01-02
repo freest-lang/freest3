@@ -211,7 +211,7 @@ parseExpr =
 -- Parse Basic Types (int, bool, char and unit)
 parseBasic :: CFSTSubParser Expression
 parseBasic =
-      (do pos <- getPosition; c <- apostrophe anyChar; return $ Character (posPair pos) c)
+      (do pos <- getPosition; c <- apostrophe anyChar; whiteSpace ; return $ Character (posPair pos) c)
   <|> parseBool
   <|> parseInteger
   <|> (do  pos <- getPosition; reserved "()"; return $ Unit (posPair pos))

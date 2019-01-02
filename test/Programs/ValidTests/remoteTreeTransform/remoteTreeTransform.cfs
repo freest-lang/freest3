@@ -1,43 +1,38 @@
-
 data Tree = Leaf | Node Int Tree Tree
--- (rec xFormChan . +{LeafC: Skip, NodeC: !Int;xFormChan;xFormChan;?Int})
 
-
-
-transform :: forall x => Tree -> (rec xFormChan . +{LeafC: Skip, NodeC: !Int;xFormChan;xFormChan;?Int});x -> (Tree, x)
+transform :: forall α => Tree -> (rec x. +{LeafC: Skip, NodeC: !Int;x;x;?Int});α -> (Tree, α)
 transform tree c =
   case tree of
     Leaf ->
       (Leaf, select LeafC c)
-
     Node x l r ->
-      let c1 = select NodeC c in
-      let c2 = send x c1 in
-      let l1, c3 = transform[(rec xFormChan . +{LeafC: Skip, NodeC: !Int;xFormChan;xFormChan;?Int});?Int;x] l c2 in
-      let r1, c4 = transform[?Int;x] r c3 in
-      let x1, c5 = receive c4 in
-      (Node x1 l1 r1, c5)
+      let c = select NodeC c in
+      let c = send x c in
+      let l1, c = transform[(rec x. +{LeafC: Skip, NodeC: !Int;x;x;?Int});?Int;α] l c in
+      let r1, c = transform[?Int;α] r c in
+      let x1, c = receive c in
+      (Node x1 l1 r1, c)
 
-
-
-treeSum :: forall x => (rec xFormChan . &{LeafC: Skip, NodeC: ?Int;xFormChan;xFormChan;!Int});x -> (Int, x)
+treeSum :: forall α => (rec x. &{LeafC: Skip, NodeC: ?Int;x;x;!Int});α -> (Int, α)
 treeSum c =
   match c with
-    LeafC c1 -> (0, c1)
-    NodeC c1 ->
-      let x, c2 = receive c1 in
-      let l, c3 = treeSum[(rec xFormChan . &{LeafC: Skip, NodeC: ?Int;xFormChan;xFormChan;!Int});!Int;x] c2 in
-      let r, c4 = treeSum[!Int;x] c3 in
-      let c5    = send (x+l+r) c4 in
-      (x+l+r, c5)
+    LeafC c -> (0, c)
+    NodeC c ->
+      let x, c = receive c in
+      let l, c = treeSum[(rec x . &{LeafC: Skip, NodeC: ?Int;x;x;!Int});!Int;α] c in
+      let r, c = treeSum[!Int;α] c in
+      let c    = send (x+l+r) c in
+      (x + l + r, c)
+
+aTree :: Tree
+aTree = Node 1 (Node 2 Leaf (Node 3 Leaf (Node 4 Leaf (Node 5 Leaf Leaf)))) (Node 6 Leaf (Node 7 Leaf (Node 8 Leaf Leaf)))
 
 start :: Int
 start =
-  let aTree = Node 3 Leaf (Node 4 Leaf Leaf) in
-  let w, r  = new (rec xFormChan . +{LeafC: Skip, NodeC: !Int;xFormChan;xFormChan;?Int}) in
+  let w, r  = new (rec x. +{LeafC: Skip, NodeC: !Int;x;x;?Int}) in
   let t = fork (transform[Skip] aTree w) in
-  let size, r1 = treeSum[Skip] r in
-  size
+  let n, r1 = treeSum[Skip] r in
+  n
   
 {- This start requires a different .expect file:
    Node 7 Leaf (Node 4 Leaf Leaf)
@@ -45,7 +40,7 @@ start =
 start :: Tree
 start =
   let aTree = Node 3 Leaf (Node 4 Leaf Leaf) in
-  let w, r  = new (rec xFormChan . +{LeafC: Skip, NodeC: !Int;xFormChan;xFormChan;?Int}) in
+  let w, r  = new (rec x . +{LeafC: Skip, NodeC: !Int;x;x;?Int}) in
   let x = fork (treeSum[Skip] r) in
     fst[Tree, Skip] (transform[Skip] aTree w)
 

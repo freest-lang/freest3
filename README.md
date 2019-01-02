@@ -10,7 +10,7 @@ The following tools are required:
 
     ```
     $ cabal update
-    $ cabal install --dependencies-only
+    $ cabal install --enable-tests --dependencies-only
     $ cabal build
     ```
 
