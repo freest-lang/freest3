@@ -1,5 +1,3 @@
-{-# LANGUAGE NoMonadFailDesugaring #-}
-
 {- |
 Module      :  Types
 Description :  <optional short text displayed on contents page>
@@ -20,7 +18,7 @@ module Validation.TypeEquivalence(
 ) where
 
 import           Control.Monad.State
-import           Data.List (isPrefixOf, union)
+import           Data.List (isPrefixOf, union, sortBy, reverse)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Queue.Queue as Queue
@@ -47,16 +45,10 @@ expansionTree' :: Grammar -> NodeQueue -> Bool
 expansionTree' g q
   | Queue.isEmpty q             = False
   | n == Set.fromList []        = True
-  | otherwise                   = case expandNode0 g n of
+  | otherwise                   = case expandNode g n of
       Nothing  -> expansionTree' g (Queue.dequeue q)
       Just n'  -> if n' == Set.fromList [([],[])] then True else expansionTree' g (simplifyAndExpand g (Set.union a n) n' q)
   where (n,a) = Queue.front q
-
-expandNode0 :: Grammar -> Node -> Maybe Node
-expandNode0 g n
-  | m == Just Set.empty = Nothing
-  | otherwise           = m
-    where m = expandNode g n
 
 expandNode :: Grammar -> Node -> Maybe Node
 expandNode g =
@@ -80,11 +72,11 @@ match m1 m2 =
 -- Apply the different node transformations
 
 simplifyAndExpand :: Grammar -> Ancestors ->  Node -> NodeQueue -> NodeQueue
-simplifyAndExpand g a n q = Set.foldr Queue.enqueue (Queue.dequeue q) siblingNodes
+simplifyAndExpand g a n q = foldr Queue.enqueue (Queue.dequeue q) s
     where n'  = Set.foldr (\p n -> Set.union (Set.fold Set.union Set.empty (reflex g a p)) n) Set.empty n
           n'' = Set.foldr (\p n -> Set.union (Set.fold Set.union Set.empty (congruence g a p)) n) Set.empty n'
-          m   = Set.foldr (\p n -> Set.union (applyBPAs g a (Set.delete p n'') p) n) Set.empty n''
-          siblingNodes = Set.union (Set.map (\p -> (p, Set.union a n)) m) (Set.singleton (n'',a))
+          m   = iterateBPAs g (Set.singleton (n'',a))
+          s = [(n'',a)] ++ reverse (sortBy (\(n1,_) (n2,_) -> compare (maximumLength n1) (maximumLength n2)) (Set.toList m))
 -- Perhaps we need to iterate until reaching a fixed point
 
 -- is applying transf to all elements, should be one at a time
@@ -92,9 +84,38 @@ simplifyAndExpand g a n q = Set.foldr Queue.enqueue (Queue.dequeue q) siblingNod
 -- apply :: Grammar -> Ancestors -> NodeTransformation -> Node -> Node
 -- apply g a trans = Set.foldr (\p n -> Set.union (trans g a p) n) Set.empty
 
+-- auxiliar function: returns the maximum length of the pairs in a node
+maximumLength :: Node -> Int
+maximumLength n = Set.findMax (Set.map (\(a,b) -> if (length a) > (length b) then (length a) else (length b)) n)
+
+-- iteration BPAs
+
+iterateBPAs :: Grammar -> Set.Set (Node, Ancestors) -> Set.Set (Node, Ancestors)
+iterateBPAs g ns =
+  Set.foldr (\(n,a) nas -> Set.union (Set.map (\s -> (s, Set.union n a)) (iterateBPAs' g a 1 (nrIterations n) (Set.singleton n))) nas) Set.empty ns
+
+iterateBPAs' :: Grammar -> Ancestors -> Int -> Int -> Set.Set Node -> Set.Set Node
+iterateBPAs' g a i nrIterations ns
+  | Set.fromList [([],[])] `Set.member` m' = m'
+  | ns == ns' || i > nrIterations = ns'
+  | otherwise = iterateBPAs' g a (i+1) nrIterations ns'
+  where m = Set.map (\n -> Set.foldr (\p ps -> Set.union (applyBPAs g a (Set.delete p n) p) ps) Set.empty n) ns
+        m' = Set.fold Set.union ns m
+        ns' = Set.filter (hasExpansion g) m'
+
+hasExpansion :: Grammar -> Node -> Bool
+hasExpansion g n = case expandNode g n of
+  Nothing -> False
+  Just n' -> True
+
+nrIterations :: Node -> Int
+nrIterations n = Set.foldr (\(u,v) n -> (max 0 (length u - 1)) + n) 0 n
+
 applyBPAs :: Grammar -> Ancestors -> Node -> ([TypeVar], [TypeVar]) -> Set.Set Node
 applyBPAs g a n p = Set.map (\v -> Set.union v n) m
   where m = foldr (\trans l -> Set.union (trans g a p) l ) Set.empty [bpa1,bpa2]
+
+-- node transformations
 
 reflex :: NodeTransformation
 reflex _ _ (xs, ys)
