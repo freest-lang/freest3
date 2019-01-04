@@ -25,33 +25,33 @@ import           Syntax.Types
 
 -- Normalisation
 
-normalise :: Grammar -> Grammar
+normalise :: Productions -> Productions
 normalise g = Map.map (Map.map (normaliseWord g)) g
 
-normaliseWord :: Grammar -> [TypeVar] -> [TypeVar]
+normaliseWord :: Productions -> [TypeVar] -> [TypeVar]
 normaliseWord _ []     = []
 normaliseWord g (x:xs)
   | normed g x = x : normaliseWord g xs
   | otherwise  = [x]
 
-normed :: Grammar -> TypeVar -> Bool
+normed :: Productions -> TypeVar -> Bool
 normed g x = normedWord g Set.empty [x]
 
-normedWord :: Grammar -> Set.Set TypeVar -> [TypeVar] -> Bool
+normedWord :: Productions -> Set.Set TypeVar -> [TypeVar] -> Bool
 normedWord _ _ []     = True
 normedWord g v (x:xs) =
   not (x `Set.member` v) &&
   any id (map (normedWord g (Set.insert x v)) (Map.elems (transitions g (x:xs))))
 
-norm :: Grammar -> [TypeVar] -> Int
+norm :: Productions -> [TypeVar] -> Int
 norm _ []   = 0 -- TODO: redundant; remove
 norm g xs = normList g [xs]
 
-normList :: Grammar -> [[TypeVar]] -> Int       -- TODO: use Set [TypeVar] rather than [[TypeVar]]
+normList :: Productions -> [[TypeVar]] -> Int       -- TODO: use Set [TypeVar] rather than [[TypeVar]]
 normList g xs
   | [] `elem` m = 0
   | otherwise = 1 + (normList g (foldr union [] m))
   where m = map (trans g) xs
 
-trans :: Grammar -> [TypeVar] -> [[TypeVar]]
+trans :: Productions -> [TypeVar] -> [[TypeVar]]
 trans g xs = Map.elems (transitions g xs)

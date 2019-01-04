@@ -36,12 +36,12 @@ type Ancestors = Node
 
 type NodeQueue = Queue.Queue (Node, Ancestors)
 
-type NodeTransformation = Grammar -> Ancestors -> Node -> Set.Set Node
+type NodeTransformation = Productions -> Ancestors -> Node -> Set.Set Node
 
-expansionTree :: Grammar -> [TypeVar] -> [TypeVar] -> Bool
+expansionTree :: Productions -> [TypeVar] -> [TypeVar] -> Bool
 expansionTree g xs ys = expansionTree' g (Queue.enqueue (Set.singleton (xs, ys), Set.empty) Queue.empty)
 
-expansionTree' :: Grammar -> NodeQueue -> Bool
+expansionTree' :: Productions -> NodeQueue -> Bool
 expansionTree' g q
   | Queue.isEmpty q   = False
   | Set.null n        = True
@@ -50,7 +50,7 @@ expansionTree' g q
       Just n'  -> if n' == Set.fromList [([],[])] then True else expansionTree' g (simplify g (Set.union a n) n' q)
   where (n,a) = Queue.front q
 
-expandNode :: Grammar -> Node -> Maybe Node
+expandNode :: Productions -> Node -> Maybe Node
 expandNode g =
   Set.foldr(\p acc -> case acc of
     Nothing  -> Nothing
@@ -58,7 +58,7 @@ expandNode g =
       Nothing  -> Nothing
       Just n'' -> Just (Set.union n' n'')) (Just Set.empty)
 
-expandPair :: Grammar -> ([TypeVar], [TypeVar]) -> Maybe Node
+expandPair :: Productions -> ([TypeVar], [TypeVar]) -> Maybe Node
 expandPair g (xs, ys)
   | Map.keysSet m1 == Map.keysSet m2 = Just $ match m1 m2
   | otherwise                        = Nothing
@@ -71,16 +71,16 @@ match m1 m2 =
 
 -- Apply the different node transformations
 
-simplify :: Grammar -> Ancestors ->  Node -> NodeQueue -> NodeQueue
+simplify :: Productions -> Ancestors ->  Node -> NodeQueue -> NodeQueue
 simplify g a n q = foldr Queue.enqueue (Queue.dequeue q) s
      where m = findFixedPoint g a (Set.singleton (n,a))
            s  = reverse (sortBy (\(n1,_) (n2,_) -> compare (maximumLength n1) (maximumLength n2)) (Set.toList m))
 
 --if we could compare transformations (i.e. t1==t2), we could have a single apply
-apply :: Grammar -> NodeTransformation -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
+apply :: Productions -> NodeTransformation -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
 apply g trans ns = Set.fold (\(n,a) ns -> Set.union (Set.map (\s -> (s,a)) (trans g a n)) ns) Set.empty ns
 
-findFixedPoint :: Grammar -> Ancestors -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
+findFixedPoint :: Productions -> Ancestors -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
 findFixedPoint g a nas
   | nas == nas' = nas
   | otherwise = findFixedPoint g a nas'
@@ -113,7 +113,7 @@ bpa1 :: NodeTransformation
 bpa1 g a n =
   Set.foldr (\p ps -> Set.union (Set.map (\v -> Set.union v (Set.delete p n)) (bpa1' g a p)) ps) (Set.singleton n) n
 
-bpa1' :: Grammar -> Ancestors -> ([TypeVar],[TypeVar]) -> Set.Set Node
+bpa1' :: Productions -> Ancestors -> ([TypeVar],[TypeVar]) -> Set.Set Node
 bpa1' g a (x:xs,y:ys) =
   case findInAncestors a x y of
     Nothing         -> Set.empty
@@ -125,7 +125,7 @@ bpa2 :: NodeTransformation
 bpa2 g a n =
   Set.foldr (\p ps -> Set.union (Set.map (\v -> Set.union v (Set.delete p n)) (bpa2' g a p)) ps) (Set.singleton n) n
 
-bpa2' :: Grammar -> Ancestors -> ([TypeVar],[TypeVar]) -> Set.Set Node
+bpa2' :: Productions -> Ancestors -> ([TypeVar],[TypeVar]) -> Set.Set Node
 bpa2' g a (x:xs, y:ys)
   | m && norm g [x] == norm g [y] = Set.singleton (Set.fromList [([x],[y]), (xs,ys)])
 -- | m                             = Set.map (pairsBPA2 g (x:xs, y:ys)) gammas
@@ -134,12 +134,12 @@ bpa2' g a (x:xs, y:ys)
         gammas = gammasBPA2 g (x,y)
 bpa2' _ _ p = Set.singleton (Set.singleton p)
 
-pairsBPA2 :: Grammar -> ([TypeVar],[TypeVar]) -> [TypeVar] -> Node
+pairsBPA2 :: Productions -> ([TypeVar],[TypeVar]) -> [TypeVar] -> Node
 pairsBPA2 g (x:xs, y:ys) gamma = Set.fromList [p1, p2]
   where  p1 = if (norm g [x] >= norm g [y]) then ( [x], [y] ++ gamma ) else ( [x] ++ gamma, [y] )
          p2 = if (norm g [x] >= norm g [y]) then ( gamma ++ xs, ys ) else ( xs, gamma ++ ys )
 
-gammasBPA2 :: Grammar -> (TypeVar,TypeVar) -> Set.Set [TypeVar]
+gammasBPA2 :: Productions -> (TypeVar,TypeVar) -> Set.Set [TypeVar]
 gammasBPA2 g (x,y) = gammaSellection g nt diff
   where diff = norm g [x] - norm g [y]
         ks =  Map.keys g
@@ -152,20 +152,20 @@ index x i max
   | x == ("_x"++show i) = i
   | otherwise    = index x (i+1) max
 
-splitNonTerminal :: Grammar -> [TypeVar] -> ([TypeVar],[TypeVar])
+splitNonTerminal :: Productions -> [TypeVar] -> ([TypeVar],[TypeVar])
 splitNonTerminal g ks = break (== (last vs)) ks
   where ts = (map (\k -> transitions g [k]) ks)
         ts' = foldr union [] (map Map.toList ts)
         vs = map (\(l,x) -> head x) (filter (\(a,b) -> show a == "?()") ts')
 
-gammaSellection :: Grammar -> [TypeVar] -> Int -> Set.Set [TypeVar]
+gammaSellection :: Productions -> [TypeVar] -> Int -> Set.Set [TypeVar]
 gammaSellection g xs diff = foldr (\x xs -> Set.union (substringGamma g diff (Set.singleton x)) xs) Set.empty preGammas
   where l = foldr union [] (map (\x -> Map.elems (transitions g [x])) xs)
         l' = filter (all (normed g)) l
         n = filter (\xs -> sum (map (\x -> norm g [x]) xs) >= diff) l'
         preGammas = foldr union [] (map (\l -> map (\i -> drop i l) [0..(length l-1)]) n)
 
-substringGamma :: Grammar -> Int -> Set.Set [TypeVar] -> Set.Set [TypeVar]
+substringGamma :: Productions -> Int -> Set.Set [TypeVar] -> Set.Set [TypeVar]
 substringGamma g i ys
   | s == i    = ys
   | s < i     = Set.empty
@@ -199,93 +199,93 @@ equivalent k (Datatype m1) (Datatype m2) =
 equivalent k t u
   | isSessionType k t && isSessionType k u = expansionTree (normalise g) [x] [y]
   | otherwise = False
-  where (x, state) = convertToGNF initial t
-        (y, (g, _, i))   = convertToGNF state u
+  where (x, state) = convertToGrammar initial t
+        (y, (g, _, i))   = convertToGrammar state u
 
 checkBinding :: KindEnv -> TypeMap -> Bool -> Constructor -> Type -> Bool
 checkBinding k m acc l t = acc && l `Map.member` m && equivalent k (m Map.! l) t
 
 -- -- testing
 
--- convertTwo :: Type -> Type -> (TypeVar, TypeVar, (Grammar, Visited, Int))
+-- convertTwo :: Type -> Type -> (TypeVar, TypeVar, (Productions, Visited, Int))
 -- convertTwo t u = (x, y, s)
---   where (x, state) = convertToGNF initial t
---         (y, s) = convertToGNF state u
+--   where (x, state) = convertToGrammar initial t
+--         (y, s) = convertToGrammar state u
 
 -- TODO: move to another folder
 -- tests
 
-buildGNF :: Type -> GNF
-buildGNF t = evalState (generateGNF t) initial
+buildGrammar :: Type -> Grammar
+buildGrammar t = evalState (generateGrammar t) initial
 
-generateGNF :: Type -> GNFState GNF
-generateGNF t = do
-  w <- toGNF t
+generateGrammar :: Type -> TransState Grammar
+generateGrammar t = do
+  w <- toGrammar t
   y <- freshVar
   insertProduction y (MessageLabel In UnitType) w
   p <- getGrammar
-  return $ GNF {start = y, productions = p}
+  return $ Grammar {start = y, productions = p}
 
 s1 = Message Out CharType
-t1 = buildGNF s1
+t1 = buildGrammar s1
 s2 = Var "α"
-t2 = buildGNF s2
+t2 = buildGrammar s2
 s3 = Semi (Message Out IntType) (Message In BoolType)
-t3 = buildGNF s3
+t3 = buildGrammar s3
 s4 = Semi s3 s1
-t4 = buildGNF s4
+t4 = buildGrammar s4
 s5 = Choice External (Map.fromList
   [("Leaf", Skip),
    ("Node", s1)])
-t5 = buildGNF s5
+t5 = buildGrammar s5
 s6 = Choice External (Map.fromList
   [("Leaf", Skip),
    ("Node", s3)])
-t6 = buildGNF s6
+t6 = buildGrammar s6
 yBind = Bind "y" (Kind {prekind = Session, multiplicity = Lin})
 treeSend = Rec yBind (Choice External (Map.fromList
   [("Leaf",Skip),
    ("Node", Semi (Message Out IntType) (Semi (Var "y") (Var "y")))]))
-t7 = buildGNF treeSend
-t8 = buildGNF $ Semi treeSend (Var "α")
+t7 = buildGrammar treeSend
+t8 = buildGrammar $ Semi treeSend (Var "α")
 s9 = Rec yBind (Semi s1 (Var "y"))
-t9 = buildGNF s9
+t9 = buildGrammar s9
 s10 = Semi s4 (Semi (Semi s3 s1) s4)
-t10 = buildGNF s10
+t10 = buildGrammar s10
 s11 = Semi (Rec yBind (Semi treeSend (Var "y"))) treeSend
-t11 = buildGNF s11
+t11 = buildGrammar s11
 zBind = Bind "z" (Kind {prekind = Session, multiplicity = Lin})
 s12 = Semi (Rec zBind (Semi treeSend (Var "z"))) treeSend
-t12 = buildGNF s12
+t12 = buildGrammar s12
 s13 = Semi treeSend Skip
-t13 = buildGNF s13
+t13 = buildGrammar s13
 s14 = Semi Skip treeSend
-t14 = buildGNF s14
+t14 = buildGrammar s14
 s15 = Semi treeSend treeSend
-t15 = buildGNF s15
+t15 = buildGrammar s15
 treeSend1 = Rec zBind (Choice External (Map.fromList
   [("Leaf",Skip),
    ("Node", Semi (Message Out IntType) (Semi (Var "z") (Var "z")))]))
 s16 = Semi treeSend treeSend1
-t16 = buildGNF s16
+t16 = buildGrammar s16
 s17 = Rec zBind (Semi s1 (Var "z"))
-t17 = buildGNF s17
+t17 = buildGrammar s17
 s18 = Rec zBind (Semi s1 (Semi (Var "z") (Var "z")))
-t18 = buildGNF s18
+t18 = buildGrammar s18
 s19 = Rec zBind (Semi (Semi s1 (Var "z")) (Var "z"))
-t19 = buildGNF s19
+t19 = buildGrammar s19
 s20 = Message In IntType
 s21 = Semi s1 (Semi s2 s20)
 s22 = Semi (Semi s1 s2) s20
 s23 = Semi s1 Skip
 s24 = Rec yBind (Rec zBind (Semi (Semi s1 (Var "y")) (Var "z")))
-t24 = buildGNF s24
+t24 = buildGrammar s24
 s25 = Rec yBind (Rec zBind (Semi (Semi s1 (Var "z")) (Var "y")))
-t25 = buildGNF s25
+t25 = buildGrammar s25
 s26 = Semi (Choice External (Map.fromList [("Leaf", Skip)])) (Var "α")
-t26 = buildGNF s26
+t26 = buildGrammar s26
 s27 = Choice External (Map.fromList [("Leaf", (Var "α"))])
-t27 = buildGNF s27
+t27 = buildGrammar s27
 s28 = Rec yBind (Choice External (Map.fromList [("Add", Semi (Semi (Var "y") (Var "y")) (Message Out IntType)), ("Const", Skip)]))
 
 alphaKinding = Map.singleton "α" (Kind Session Lin)

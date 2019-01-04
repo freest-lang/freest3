@@ -12,11 +12,10 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Validation.TypeToGrammar
-( Visited
-, GNFState
-, convertToGNF
+( TransState
+, convertToGrammar
 , initial
-, toGNF
+, toGrammar
 , freshVar
 , insertProduction
 , getGrammar
@@ -28,61 +27,63 @@ import           Validation.Grammar
 import           Syntax.Types
 import           Syntax.Kinds
 
--- The state of the translation to GNF
+-- The state of the translation to grammars
 
 type Visited = Map.Map Type TypeVar
 
-type GNFState = State (Grammar, Visited, Int)
+type Trans = (Productions, Visited, Int)
+
+type TransState = State Trans
 
 -- State manipulating functions
 
-initial :: (Grammar, Visited, Int)
+initial :: Trans
 initial = (Map.empty, Map.empty, 0)
 
-freshVar :: GNFState String
+freshVar :: TransState String
 freshVar = do
   (_, _, n) <- get
   modify (\(p, v, n) -> (p, v, n+1))
   return $ "_x" ++ show n
 
-lookupVisited :: Type -> GNFState (Maybe TypeVar)
+lookupVisited :: Type -> TransState (Maybe TypeVar)
 lookupVisited t = do
   (_, v, _) <- get
   return $ Map.lookup t v
 
-insertVisited :: Type -> TypeVar -> GNFState ()
+insertVisited :: Type -> TypeVar -> TransState ()
 insertVisited t x =
   modify (\(p, v, n) -> (p, Map.insert t x v, n))
 
-getGrammar :: GNFState Grammar
+getGrammar :: TransState Productions
 getGrammar = do
   (p, _, _) <- get
   return p
 
-getProductions :: TypeVar -> GNFState (Map.Map Label [TypeVar])
+getProductions :: TypeVar -> TransState Transitions
 getProductions x = do
   p <- getGrammar
   return $ p Map.! x
 
-member :: TypeVar -> GNFState Bool
+member :: TypeVar -> TransState Bool
 member x = do
   p <- getGrammar
   return $ Map.member x p
 
-insertProduction :: TypeVar -> Label -> [TypeVar] -> GNFState ()
+insertProduction :: TypeVar -> Label -> [TypeVar] -> TransState ()
 insertProduction x l w =
   modify (\(p, v, n) -> (Map.insertWith Map.union x (Map.singleton l w) p, v, n))
 
-insertGrammar :: TypeVar -> (Map.Map Label [TypeVar]) -> GNFState ()
+insertGrammar :: TypeVar -> Transitions -> TransState ()
 insertGrammar x m = insertGrammar' x (Map.assocs m)
 
-insertGrammar' :: TypeVar -> [(Label, [TypeVar])] -> GNFState ()
+insertGrammar' :: TypeVar -> [(Label, [TypeVar])] -> TransState ()
 insertGrammar' x [] = return ()
 insertGrammar' x ((l, w):as) = do
   insertProduction x l w
   insertGrammar' x as
 
-replaceInGrammar :: [TypeVar] -> TypeVar -> GNFState ()
+replaceInGrammar :: [TypeVar] -> TypeVar -> TransState ()
 replaceInGrammar w x =
   modify (\(p, v, n) -> (Map.map (Map.map (replace w x)) p, v, n))
 
@@ -92,41 +93,40 @@ replace w x (y:ys)
   | x == y    = w ++ (replace w x ys)
   | otherwise = y : (replace w x ys)
 
--- Conversion to GNF
+-- Conversion to context-free grammars
 
-convertToGNF :: (Grammar, Visited, Int) -> Type -> (TypeVar, (Grammar, Visited, Int))
--- Assume: t is a session type different from Skip
-convertToGNF state t = (x, state')
-  where ([x], state') = runState (toGNF0 t) state
+convertToGrammar :: Trans -> Type -> (TypeVar, Trans)
+convertToGrammar state t = (x, state')
+  where ([x], state') = runState (toGrammar0 t) state
 
-toGNF0 :: Type -> GNFState [TypeVar]
-toGNF0 t = do
-  w <- toGNF t
+toGrammar0 :: Type -> TransState [TypeVar]
+toGrammar0 t = do
+  w <- toGrammar t
   y <- freshVar
   insertProduction y (MessageLabel In UnitType) w
   return [y]
 
-toGNF :: Type -> GNFState [TypeVar]
-toGNF t = do
+toGrammar :: Type -> TransState [TypeVar]
+toGrammar t = do
   maybe <- lookupVisited t
   case maybe of
-    Nothing -> toGNF' t
+    Nothing -> toGrammar' t
     Just x ->  return [x]
 
-toGNF' :: Type -> GNFState [TypeVar]
-toGNF' Skip =
+toGrammar' :: Type -> TransState [TypeVar]
+toGrammar' Skip =
   return []
-toGNF' (Message p b) = do
+toGrammar' (Message p b) = do
   y <- freshVar
   insertProduction y (MessageLabel p b) []
   return [y]
-toGNF' (Var a) = do -- This is a free variable
+toGrammar' (Var a) = do -- This is a free variable
   y <- freshVar
   insertProduction y (VarLabel a) []
   return [y]
-toGNF' (Semi (Choice p m) u) = do
-  xs <- toGNF (Choice p m)
-  ys <- toGNF u
+toGrammar' (Semi (Choice p m) u) = do
+  xs <- toGrammar (Choice p m)
+  ys <- toGrammar u
   if null xs
   then return ys
 --  else if null ys
@@ -142,25 +142,25 @@ toGNF' (Semi (Choice p m) u) = do
       return [x]
     else
       return $ xs ++ ys -- E.g., rec x. !Int;(x;x)
-toGNF' (Semi t u) = do
-  xs <- toGNF t
-  ys <- toGNF u
+toGrammar' (Semi t u) = do
+  xs <- toGrammar t
+  ys <- toGrammar u
   return $ xs ++ ys
-toGNF' (Choice p m) = do
+toGrammar' (Choice p m) = do
   y <- freshVar
-  assocsToGNF y p (Map.assocs m)
+  assocsToGrammar y p (Map.assocs m)
   return [y]
-toGNF' (Rec b t) = do
+toGrammar' (Rec b t) = do
   y <- freshVar
   let u = rename (Rec b t) y -- On the fly alpha conversion
   insertVisited u y
-  (z:zs) <- toGNF (unfold u)
+  (z:zs) <- toGrammar (unfold u)
   replaceInGrammar (z:zs) y
   return [z]
 
-assocsToGNF :: TypeVar -> ChoiceView -> [(Constructor, Type)] -> GNFState ()
-assocsToGNF _ _ [] = return ()
-assocsToGNF y p ((l, t):as) = do
-  w <- toGNF t
+assocsToGrammar :: TypeVar -> ChoiceView -> [(Constructor, Type)] -> TransState ()
+assocsToGrammar _ _ [] = return ()
+assocsToGrammar y p ((l, t):as) = do
+  w <- toGrammar t
   insertProduction y (ChoiceLabel p l) w
-  assocsToGNF y p as
+  assocsToGrammar y p as
