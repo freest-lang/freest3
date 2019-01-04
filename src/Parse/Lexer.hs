@@ -34,9 +34,9 @@ lexer :: Token.TokenParser u
 lexer  = Token.makeTokenParser
         (haskellDef
         {
-        Token.reservedOpNames = [";", "!", "?", "->", "-o", "+", "&", "=>",
-                                "=", "+", "-", "*", "/", "mod", "rem", "&&",
-                                "||", "not", "|", "->", "==", ">", "<"],
+        -- Token.reservedOpNames = [";", "!", "?", "->", "-o", "+", "&", "=>",
+        --                         "=", "+", "-", "*", "/", "mod", "rem", "&&",
+        --                         "||", "not", "|", "->", "==", ">", "<"],
           
         Token.reservedNames = ["Int","Bool","Char", "Skip", "()",
                                "rec", "forall", "data", "TU", "TL", "SU", "SL",

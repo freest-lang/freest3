@@ -16,16 +16,20 @@ module Validation.Typing
   typeCheck  
 ) where
 
-import Control.Monad.State
-import Syntax.Terms
-import Syntax.Types
-import Validation.Kinding
-import Validation.TypeEquivalence
-import Validation.TypingState
-import qualified Data.Set as Set
-import PreludeLoader -- TODO remove
+import           Control.Monad.State
 import qualified Data.Map.Strict as Map
-import Syntax.Kinds
+import qualified Data.Set as Set
+import qualified Data.Traversable as Trans
+import           Syntax.Kinds
+import           Syntax.Terms
+import           Syntax.Types
+import           Validation.Kinding
+import           Validation.TypeEquivalence
+import           Validation.TypingState
+
+
+mapWithKeyM :: Monad m => (k -> a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)
+mapWithKeyM f m = Trans.sequence (Map.mapWithKey (f) m)
 
 typeCheck ::  ExpEnv -> ConstructorEnv -> TypingState ()
 typeCheck eenv cenv = do
@@ -33,37 +37,36 @@ typeCheck eenv cenv = do
   checkDataDecl cenv
   
   -- 2 - Function type declaration
---   pure $ Map.mapWithKey (\fun (a, e) -> checkFunTypeDecl fun) eenv
-  Map.foldrWithKey (\fun (a, e) _ -> checkFunTypeDecl fun) (return ()) eenv
 
+  --let l = Map.keys eenv
+  --mapM_ checkFunTypeDecl l
+  mapWithKeyM (\fun _ -> checkFunTypeDecl fun) eenv
+  
   -- 3 - Function declaration  
-  checkVar (0,0) "start"
+  checkFun (0,0) "start"
 
   venv1 <- getVarEnv
   let venv2 = Map.union venv1 cenv
   setVEnv venv2
 
+--  let a = Map.mapWithKey (\fun (a, e) -> checkFD fun a e) eenv 
   let a = Map.mapWithKey (\fun (a, e) -> checkFD fun a e) eenv 
   s <- get
+  -- (_,_,err) <- get
+  -- error $ show err
   addErrorList $ Map.foldl (\acc v -> acc ++ errors s v) [] a
+  
   return ()
 
 errors :: (KindEnv, VarEnv, Errors) -> TypingState () -> [String]
-errors is s =
-  let (_,_,err) = execState s is in
-    err
+errors is s = let (_,_,err) = execState s is in err
 
 checkFD ::  TermVar -> Params -> Expression -> TypingState ()
 checkFD fname args exp = do
 
-  -- venv <- getVarEnv
-  -- addError ("\n\n VarEnv: " ++ show venv ++ "\n\n")
-  
   checkExpEnv (0,0) fname args
   venv <- getVarEnv
   let lt = last $ toList $ venv Map.! fname
-
-  -- checkExp exp  
   checkAgainst (0,0) exp lt
   -- TODO: add...
   checkVEnvUn 
@@ -74,14 +77,15 @@ checkFD fname args exp = do
 checkVEnvUn :: TypingState ()
 checkVEnvUn = do
   venv <- getVarEnv
-  Map.foldr (\t acc -> checkUn (0,0) t) (return ()) venv
+  Trans.mapM (checkUn (0,0)) venv
+-- Map.foldr (\t acc -> checkUn (0,0) t) (return ()) venv
   return ()
-
 
 checkExpEnv :: Pos -> TermVar -> Params -> TypingState ()
 checkExpEnv p fun params = do
   checkParam fun params
-  t <- checkVar p fun
+  -- TODO: 
+  t <- checkFun p fun
 
   parameters <- addToEnv p fun params (init (toList t))  
 
@@ -122,21 +126,28 @@ checkFunctionalKind k
 
 checkFunTypeDecl :: TermVar -> TypingState ()
 checkFunTypeDecl fname = do  
-  t <- checkVar (0,0) fname
+  t <- checkFun (0,0) fname
   -- kenv <- getKindEnv
-  checkKinding t
+--  checkKinding t
+  kinding t
   return ()
 
 -- TODO: review
 checkKinding :: TypeScheme -> TypingState ()
 checkKinding t = do
-  -- kenv <- getKindEnv
-  -- let m = Map.union (Map.fromList bs) kenv
- --  let m = foldr (\b acc -> Map.insert (var b) (kind b) acc) Map.empty bs
---  let m = Map.union m kenv
-  -- setKEnv m
   kinding t
   return ()
+
+
+checkFun :: Pos -> TermVar -> TypingState TypeScheme
+checkFun pos x = do
+  member <- venvMember x
+  if member then do
+    (TypeScheme bs t) <- getFromVarEnv x
+    return (TypeScheme bs t)
+  else do
+    addError (show pos ++  ": Function not in scope: " ++ x)
+    return $ TypeScheme [] (Basic UnitType)
 
 -- Typing rules for expressions
 
@@ -159,26 +170,24 @@ checkExp (UnLet p x e1 e2) = do
 checkExp (App p e1 e2) = do
   t <- checkExp e1
   (u1, u2) <- extractFun p t
-
-  -- addError $ "\n"++show p++"\n"
-  -- if fst p == 23 then do
-  --   addError $ "\n\n\n" ++ show e2 ++ "\n\n\n"
-  -- else return ()
-
+  checkPoly p u1
+--  addError $ show u1
   checkAgainst p e2 u1
   return u2
 
-checkExp (TypeApp p e t) = do
+checkExp (TypeApp p e ts) = do
   t1 <- checkExp e  
   -- TODO: checkAgainstKind??
   (binds, t2) <- extractScheme p t1
-  let sub = foldr (\(t', b) acc -> subs t' (var b) acc) t2 (zip t binds)
+
+  -- TODO: move to other module and call subL
+  -- TODO: x is well formed (e[x] based on the kind)
+  -- TODO: number of binds equal to ts
+  -- TODO: the result type is well formed
+  
+  let sub = foldr (\(t', b) acc -> subs t' (var b) acc) t2 (zip ts binds)
   -- addToVEnv (show e) (TypeScheme [] sub)
   
-  -- foldM (\_ (t', b) -> addToVEnv (var b) (TypeScheme [] t')) () (zip t binds)
-   
-  -- TODO: if type scheme then sub by skip ?? not correct
-  -- TODO: isWellKinded sub???
   return $ TypeScheme [] sub
 
 -- Conditional
@@ -222,6 +231,7 @@ checkExp (New p t) = do
   return $ TypeScheme [] (PairType u (dual u))
 
 checkExp (Send p e1 e2) = do
+  venv <- getVarEnv
   t1 <- checkExp e1
   b1 <- extractBasic p t1
   t2 <- checkExp e2
@@ -276,6 +286,9 @@ checkExp (Case pos e cm) = do
                    (return ()) (Map.delete c cm)
   return u
   
+checkPoly p (TypeScheme [] _) = return ()
+checkPoly p _ = addError $ show p ++ " Not enough arguments to polymorphic function call"
+
 
 checkMap :: Pos -> TypeScheme -> TypeScheme -> TermVar ->
             (Params, Expression) ->
@@ -410,8 +423,7 @@ extractInChoice p (TypeScheme bs (Rec b t)) = do
 extractInChoice p (TypeScheme bs (Semi (Semi t1 t2) t3)) = do
   -- addBindsToKenv bs    
   (TypeScheme _ t4) <- extractInChoice p (TypeScheme bs (Semi t1 t2))
-  extractInChoice p (TypeScheme bs (Semi t4 t3))
-  
+  extractInChoice p (TypeScheme bs (Semi t4 t3))  
 extractInChoice p (TypeScheme bs (Semi t1 t2)) = do
   (TypeScheme bs' t3) <- extractInChoice p (TypeScheme bs t1)
   extractInChoice p (TypeScheme bs (Semi t3 t2))
@@ -444,8 +456,7 @@ extractExtChoice p (TypeScheme bs (Rec b t)) c = do
 extractExtChoice p (TypeScheme bs (Semi t1 t2)) c = do  
   addBindsToKenv bs  
   (TypeScheme _ t3) <- extractExtChoice p (TypeScheme bs t1) c
-  return $ TypeScheme bs (Semi t3 t2)
-  
+  return $ TypeScheme bs (Semi t3 t2)  
 extractExtChoice p t _ = do
   addError (show p ++  ": Expecting an external choice; found " ++ show t)
   return $ TypeScheme [] Skip
@@ -457,7 +468,6 @@ extractDatatype _ (TypeScheme bs (Datatype m)) c = do
   return $ TypeScheme bs (m Map.! c)
 extractDatatype p (TypeScheme bs (Rec b t)) c =
   extractDatatype p (TypeScheme bs (unfold (Rec b t))) c
-
 extractDatatype p (TypeScheme _ (Var x)) c = do -- Should be here?
   b <- venvMember x
   if b then do
@@ -465,8 +475,7 @@ extractDatatype p (TypeScheme _ (Var x)) c = do -- Should be here?
     extractDatatype p dt c
   else do
     addError (show p ++  ": Expecting a datatype; found " ++ show (Var x))
-    return $ TypeScheme [] (Basic IntType)
-  
+    return $ TypeScheme [] (Basic IntType)  
 -- TODO ??
 -- extractDatatype p (TypeScheme [] (Semi t1 t2)) = do
 extractDatatype p t _ = do
@@ -519,35 +528,17 @@ removeLinVar kenv x (TypeScheme _ t)
 
 addBindsToKenv :: [Bind] -> TypingState ()
 addBindsToKenv bs = foldM (\_ b -> addToKenv (var b) (kind b)) () bs
-  
-    -- kenv <- getKindEnv
-  -- TODO: add bs to kenv 
-  -- let m = Map.union (Map.fromList bs) kenv
- --  let m = foldr (\b acc -> Map.insert (var b) (kind b) acc) Map.empty bs
---  let m = Map.union m kenv
---  error $ show m
-  -- setKEnv m
-  
+    
 -- Type check against type
 
 checkAgainst :: Pos -> Expression -> TypeScheme -> TypingState ()
 checkAgainst p e (TypeScheme bs1 t) = do
   (TypeScheme bs2 u) <- checkExp e
-  
-  -- let t1 = foldr (\b acc -> subs Skip (var b) acc) t bs1
-  -- let u1 = foldr (\b acc -> subs Skip (var b) acc) u bs2
-
-  -- if fst p == 40 then do
-  --   addError $ "bs1: " ++ show bs1 ++ " bs2: " ++ show bs2
-  -- else return ()
-  -- addError $ "expression e: " ++ show e ++ " | with type: " ++ show u ++ "| subs to " ++ show u1 ++ "| is checked against type " ++ show t1  
-
   kenv <- getKindEnv
   if (equivalent kenv t u) then
     return ()
   else
     addError (show p ++ ": Expecting type " ++ show u ++ " to be equivalent to type " ++ show t)
-
 
 
 -- TESTS
