@@ -14,11 +14,10 @@ Portability :  portable | non-portable (<reason>)
 module Validation.TypeEquivalence(
   equivalent
 , unfold
-, subs
 ) where
 
 import           Control.Monad.State
-import           Data.List (isPrefixOf, union, sortBy, reverse)
+import           Data.List (isPrefixOf, union, sortBy, reverse, delete, head, break, sortOn, deleteBy)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Queue.Queue as Queue
@@ -29,6 +28,7 @@ import           Validation.TypingState (KindEnv)
 import           Validation.Grammar
 import           Validation.TypeToGrammar
 import           Validation.Norm
+import           Text.Printf
 
 type Node = Set.Set ([TypeVar], [TypeVar])
 
@@ -36,18 +36,18 @@ type Ancestors = Node
 
 type NodeQueue = Queue.Queue (Node, Ancestors)
 
-type NodeTransformation = Grammar -> Ancestors -> ([TypeVar], [TypeVar]) -> Set.Set Node
+type NodeTransformation = Grammar -> Ancestors -> Node -> Set.Set Node
 
 expansionTree :: Grammar -> [TypeVar] -> [TypeVar] -> Bool
 expansionTree g xs ys = expansionTree' g (Queue.enqueue (Set.singleton (xs, ys), Set.empty) Queue.empty)
 
 expansionTree' :: Grammar -> NodeQueue -> Bool
 expansionTree' g q
-  | Queue.isEmpty q             = False
-  | n == Set.fromList []        = True
-  | otherwise                   = case expandNode g n of
+  | Queue.isEmpty q   = False
+  | Set.null n        = True
+  | otherwise         = case expandNode g n of
       Nothing  -> expansionTree' g (Queue.dequeue q)
-      Just n'  -> if n' == Set.fromList [([],[])] then True else expansionTree' g (simplifyAndExpand g (Set.union a n) n' q)
+      Just n'  -> if n' == Set.fromList [([],[])] then True else expansionTree' g (simplify g (Set.union a n) n' q)
   where (n,a) = Queue.front q
 
 expandNode :: Grammar -> Node -> Maybe Node
@@ -71,61 +71,32 @@ match m1 m2 =
 
 -- Apply the different node transformations
 
-simplifyAndExpand :: Grammar -> Ancestors ->  Node -> NodeQueue -> NodeQueue
-simplifyAndExpand g a n q = foldr Queue.enqueue (Queue.dequeue q) s
-    where n'  = Set.foldr (\p n -> Set.union (Set.fold Set.union Set.empty (reflex g a p)) n) Set.empty n
-          n'' = Set.foldr (\p n -> Set.union (Set.fold Set.union Set.empty (congruence g a p)) n) Set.empty n'
-          m   = iterateBPAs g (Set.singleton (n'',a))
-          s = [(n'',a)] ++ reverse (sortBy (\(n1,_) (n2,_) -> compare (maximumLength n1) (maximumLength n2)) (Set.toList m))
--- Perhaps we need to iterate until reaching a fixed point
+simplify :: Grammar -> Ancestors ->  Node -> NodeQueue -> NodeQueue
+simplify g a n q = foldr Queue.enqueue (Queue.dequeue q) s
+     where m = findFixedPoint g a (Set.singleton (n,a))
+           s  = reverse (sortBy (\(n1,_) (n2,_) -> compare (maximumLength n1) (maximumLength n2)) (Set.toList m))
 
--- is applying transf to all elements, should be one at a time
--- should return a list of nodes instead of a node ..?
--- apply :: Grammar -> Ancestors -> NodeTransformation -> Node -> Node
--- apply g a trans = Set.foldr (\p n -> Set.union (trans g a p) n) Set.empty
+--if we could compare transformations (i.e. t1==t2), we could have a single apply
+apply :: Grammar -> NodeTransformation -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
+apply g trans ns = Set.fold (\(n,a) ns -> Set.union (Set.map (\s -> (s,a)) (trans g a n)) ns) Set.empty ns
+
+findFixedPoint :: Grammar -> Ancestors -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
+findFixedPoint g a nas
+  | nas == nas' = nas
+  | otherwise = findFixedPoint g a nas'
+  where nas' = foldr (apply g) nas [reflex, congruence, bpa1, reflex, congruence, bpa2, reflex, congruence]
 
 -- auxiliar function: returns the maximum length of the pairs in a node
 maximumLength :: Node -> Int
-maximumLength n = Set.findMax (Set.map (\(a,b) -> if (length a) > (length b) then (length a) else (length b)) n)
-
--- iteration BPAs
-
-iterateBPAs :: Grammar -> Set.Set (Node, Ancestors) -> Set.Set (Node, Ancestors)
-iterateBPAs g ns =
-  Set.foldr (\(n,a) nas -> Set.union (Set.map (\s -> (s, Set.union n a)) (iterateBPAs' g a 1 (nrIterations n) (Set.singleton n))) nas) Set.empty ns
-
-iterateBPAs' :: Grammar -> Ancestors -> Int -> Int -> Set.Set Node -> Set.Set Node
-iterateBPAs' g a i nrIterations ns
-  | Set.fromList [([],[])] `Set.member` m' = m'
-  | ns == ns' || i > nrIterations = ns'
-  | otherwise = iterateBPAs' g a (i+1) nrIterations ns'
-  where m = Set.map (\n -> Set.foldr (\p ps -> Set.union (applyBPAs g a (Set.delete p n) p) ps) Set.empty n) ns
-        m' = Set.fold Set.union ns m
-        ns' = Set.filter (hasExpansion g) m'
-
-hasExpansion :: Grammar -> Node -> Bool
-hasExpansion g n = case expandNode g n of
-  Nothing -> False
-  Just n' -> True
-
-nrIterations :: Node -> Int
-nrIterations n = Set.foldr (\(u,v) n -> (max 0 (length u - 1)) + n) 0 n
-
-applyBPAs :: Grammar -> Ancestors -> Node -> ([TypeVar], [TypeVar]) -> Set.Set Node
-applyBPAs g a n p = Set.map (\v -> Set.union v n) m
-  where m = foldr (\trans l -> Set.union (trans g a p) l ) Set.empty [bpa1,bpa2]
+maximumLength n = Set.findMax (Set.map (\(a,b) -> max (length a) (length b)) n)
 
 -- node transformations
 
 reflex :: NodeTransformation
-reflex _ _ (xs, ys)
-  | xs == ys  = Set.empty
-  | otherwise = Set.singleton (Set.singleton (xs, ys))
+reflex _ _ n = Set.singleton (Set.filter (\(xs,ys) -> not ( xs == ys )) n)
 
 congruence :: NodeTransformation
-congruence _ a p
-  | congruentToAncestors a p = Set.empty
-  | otherwise                = Set.singleton (Set.singleton p)
+congruence _ a n = Set.singleton (Set.filter (\p -> not (congruentToAncestors a p)) n)
 
 congruentToAncestors :: Ancestors -> ([TypeVar], [TypeVar]) -> Bool
 congruentToAncestors a p = or $ Set.map (congruentToPair a p) a
@@ -139,19 +110,68 @@ congruentToPair a (xs, ys) (xs', ys') =
         x2 = drop (length ys') ys
 
 bpa1 :: NodeTransformation
-bpa1 g a (x:xs, y:ys) =
+bpa1 g a n =
+  Set.foldr (\p ps -> Set.union (Set.map (\v -> Set.union v (Set.delete p n)) (bpa1' g a p)) ps) (Set.singleton n) n
+
+bpa1' :: Grammar -> Ancestors -> ([TypeVar],[TypeVar]) -> Set.Set Node
+bpa1' g a (x:xs,y:ys) =
   case findInAncestors a x y of
     Nothing         -> Set.empty
-    Just (xs', ys') -> Set.union (Set.singleton (Set.fromList [(xs,xs'), (ys,ys')])) (bpa1 g (Set.delete (x:xs', y:ys') a) (x:xs, y:ys))
-bpa1 _ _ p = Set.singleton (Set.singleton p)
+    Just (xs', ys') -> Set.union (Set.singleton (Set.fromList [(xs,xs'), (ys,ys')])) (bpa1' g (Set.delete (x:xs', y:ys') a) (x:xs, y:ys))
+bpa1' _ _ p = Set.singleton (Set.singleton p)
 
 -- only works for equal norms
 bpa2 :: NodeTransformation
-bpa2 g a (x:xs, y:ys)
+bpa2 g a n =
+  Set.foldr (\p ps -> Set.union (Set.map (\v -> Set.union v (Set.delete p n)) (bpa2' g a p)) ps) (Set.singleton n) n
+
+bpa2' :: Grammar -> Ancestors -> ([TypeVar],[TypeVar]) -> Set.Set Node
+bpa2' g a (x:xs, y:ys)
   | m && norm g [x] == norm g [y] = Set.singleton (Set.fromList [([x],[y]), (xs,ys)])
+-- | m                             = Set.map (pairsBPA2 g (x:xs, y:ys)) gammas
   | otherwise                     = Set.empty
-  where m = normed g x && normed g y && (length xs > 0 || length ys > 0)
-bpa2 _ _ p = Set.singleton (Set.singleton p)
+  where m      = normed g x && normed g y && (length xs > 0 || length ys > 0)
+        gammas = gammasBPA2 g (x,y)
+bpa2' _ _ p = Set.singleton (Set.singleton p)
+
+pairsBPA2 :: Grammar -> ([TypeVar],[TypeVar]) -> [TypeVar] -> Node
+pairsBPA2 g (x:xs, y:ys) gamma = Set.fromList [p1, p2]
+  where  p1 = if (norm g [x] >= norm g [y]) then ( [x], [y] ++ gamma ) else ( [x] ++ gamma, [y] )
+         p2 = if (norm g [x] >= norm g [y]) then ( gamma ++ xs, ys ) else ( xs, gamma ++ ys )
+
+gammasBPA2 :: Grammar -> (TypeVar,TypeVar) -> Set.Set [TypeVar]
+gammasBPA2 g (x,y) = gammaSellection g nt diff
+  where diff = norm g [x] - norm g [y]
+        ks =  Map.keys g
+        ks' = sortOn (\x -> index x 0 (length ks + 4)) ks
+        nt = if diff >= 0 then snd (splitNonTerminal g ks') else fst (splitNonTerminal g ks')
+
+index :: TypeVar -> Int -> Int -> Int
+index x i max
+  | i == max     = -1
+  | x == ("_x"++show i) = i
+  | otherwise    = index x (i+1) max
+
+splitNonTerminal :: Grammar -> [TypeVar] -> ([TypeVar],[TypeVar])
+splitNonTerminal g ks = break (== (last vs)) ks
+  where ts = (map (\k -> transitions g [k]) ks)
+        ts' = foldr union [] (map Map.toList ts)
+        vs = map (\(l,x) -> head x) (filter (\(a,b) -> show a == "?()") ts')
+
+gammaSellection :: Grammar -> [TypeVar] -> Int -> Set.Set [TypeVar]
+gammaSellection g xs diff = foldr (\x xs -> Set.union (substringGamma g diff (Set.singleton x)) xs) Set.empty preGammas
+  where l = foldr union [] (map (\x -> Map.elems (transitions g [x])) xs)
+        l' = filter (all (normed g)) l
+        n = filter (\xs -> sum (map (\x -> norm g [x]) xs) >= diff) l'
+        preGammas = foldr union [] (map (\l -> map (\i -> drop i l) [0..(length l-1)]) n)
+
+substringGamma :: Grammar -> Int -> Set.Set [TypeVar] -> Set.Set [TypeVar]
+substringGamma g i ys
+  | s == i    = ys
+  | s < i     = Set.empty
+  | otherwise = substringGamma g i (Set.singleton (take ((length xs) - 1) xs))
+  where xs = foldr union [] (Set.toList ys)
+        s = sum (map (\x -> norm g [x]) xs)
 
 findInAncestors :: Ancestors -> TypeVar -> TypeVar -> Maybe ([TypeVar], [TypeVar])
 findInAncestors a x y =
@@ -176,24 +196,21 @@ equivalent k (PairType t1 t2) (PairType u1 u2) =
   equivalent k t1 u1 && equivalent k t2 u2
 equivalent k (Datatype m1) (Datatype m2) =
   Map.size m1 == Map.size m2 && Map.foldlWithKey (checkBinding k m2) True m1
---equivalent _ Skip Skip = True
---equivalent _ Skip _ = False
---equivalent _ _ Skip = False
 equivalent k t u
   | isSessionType k t && isSessionType k u = expansionTree (normalise g) [x] [y]
   | otherwise = False
-  where (x, state)     = convertToGNF initial t
-        (y, (g, _, _)) = convertToGNF state u
+  where (x, state) = convertToGNF initial t
+        (y, (g, _, i))   = convertToGNF state u
 
 checkBinding :: KindEnv -> TypeMap -> Bool -> Constructor -> Type -> Bool
 checkBinding k m acc l t = acc && l `Map.member` m && equivalent k (m Map.! l) t
 
 -- -- testing
 
-convertTwo :: Type -> Type -> (TypeVar, TypeVar, (Grammar, Visited, Int))
-convertTwo t u = (x, y, s)
-  where (x, state) = convertToGNF initial t
-        (y, s) = convertToGNF state u
+-- convertTwo :: Type -> Type -> (TypeVar, TypeVar, (Grammar, Visited, Int))
+-- convertTwo t u = (x, y, s)
+--   where (x, state) = convertToGNF initial t
+--         (y, s) = convertToGNF state u
 
 -- TODO: move to another folder
 -- tests
