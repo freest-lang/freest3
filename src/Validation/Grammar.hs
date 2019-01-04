@@ -32,7 +32,6 @@ module Validation.Grammar
 , Grammar(..)
 , transitions
 , addTransition
-, addTransitions
 ) where
 
 import qualified Data.Map.Strict as Map

@@ -149,10 +149,6 @@ toGrammar' (Semi t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
   return $ xs ++ ys
-toGrammar' (Choice p m) = do
-  y <- freshVar
-  assocsToGrammar y p (Map.assocs m)
-  return [y]
 toGrammar' (Rec b t) = do
   y <- freshVar
   let u = rename (Rec b t) y -- On the fly alpha conversion
@@ -160,10 +156,14 @@ toGrammar' (Rec b t) = do
   (z:zs) <- toGrammar (unfold u)
   replaceInGrammar (z:zs) y
   return [z]
-
-assocsToGrammar :: TypeVar -> ChoiceView -> [(Constructor, Type)] -> TransState ()
-assocsToGrammar _ _ [] = return ()
-assocsToGrammar y p ((l, t):as) = do
-  w <- toGrammar t
-  insertProduction y (ChoiceLabel p l) w
-  assocsToGrammar y p as
+toGrammar' (Choice p m) = do
+  y <- freshVar
+  assocsToGrammar y p (Map.assocs m)
+  return [y]
+  where
+    assocsToGrammar :: TypeVar -> ChoiceView -> [(Constructor, Type)] -> TransState ()
+    assocsToGrammar _ _ [] = return ()
+    assocsToGrammar y p ((l, t):as) = do
+      w <- toGrammar t
+      insertProduction y (ChoiceLabel p l) w
+      assocsToGrammar y p as
