@@ -17,7 +17,7 @@ module Validation.TypeEquivalence(
 ) where
 
 import           Control.Monad.State
-import           Data.List (isPrefixOf, union, sortBy, reverse, delete, head, break, sortOn, deleteBy)
+import           Data.List (isPrefixOf, union, sortBy, reverse, head, break, sortOn)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Queue.Queue as Queue
@@ -72,9 +72,15 @@ match m1 m2 =
 -- Apply the different node transformations
 
 simplify :: Productions -> Ancestors ->  Node -> NodeQueue -> NodeQueue
-simplify g a n q = foldr Queue.enqueue (Queue.dequeue q) s
+simplify g a n q = foldr enqueueNode (Queue.dequeue q) s
      where m = findFixedPoint g a (Set.singleton (n,a))
            s  = reverse (sortBy (\(n1,_) (n2,_) -> compare (maximumLength n1) (maximumLength n2)) (Set.toList m))
+
+enqueueNode :: (Node,Ancestors) -> NodeQueue -> NodeQueue
+enqueueNode (n,a) q
+ | Set.null n           = Queue.priorityEnqueue (n,a) q
+ | maximumLength n == 1 = Queue.priorityEnqueue (n,a) q
+ | otherwise            = Queue.enqueue (n,a) q
 
 --if we could compare transformations (i.e. t1==t2), we could have a single apply
 apply :: Productions -> NodeTransformation -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
@@ -118,7 +124,7 @@ bpa1' g a (x:xs,y:ys) =
   case findInAncestors a x y of
     Nothing         -> Set.empty
     Just (xs', ys') -> Set.union (Set.singleton (Set.fromList [(xs,xs'), (ys,ys')])) (bpa1' g (Set.delete (x:xs', y:ys') a) (x:xs, y:ys))
-bpa1' _ _ p = Set.singleton (Set.singleton p)
+bpa1' _ _ p = Set.empty
 
 -- only works for equal norms
 bpa2 :: NodeTransformation
@@ -127,12 +133,13 @@ bpa2 g a n =
 
 bpa2' :: Productions -> Ancestors -> ([TypeVar],[TypeVar]) -> Set.Set Node
 bpa2' g a (x:xs, y:ys)
-  | m && norm g [x] == norm g [y] = Set.singleton (Set.fromList [([x],[y]), (xs,ys)])
--- | m                             = Set.map (pairsBPA2 g (x:xs, y:ys)) gammas
-  | otherwise                     = Set.empty
-  where m      = normed g x && normed g y && (length xs > 0 || length ys > 0)
+  | not (normed g x && normed g y) = Set.empty
+  | norm g [x] == norm g [y]       = Set.singleton (Set.fromList [([x],[y]), (xs,ys)])
+  | m                              = Set.map (pairsBPA2 g (x:xs, y:ys)) gammas
+  | otherwise                      = Set.empty
+  where m = (not (norm g [x] > norm g [y]) || length ys > 0) && (not (norm g [x] < norm g [y]) || length xs > 0)
         gammas = gammasBPA2 g (x,y)
-bpa2' _ _ p = Set.singleton (Set.singleton p)
+bpa2' _ _ p = Set.empty
 
 pairsBPA2 :: Productions -> ([TypeVar],[TypeVar]) -> [TypeVar] -> Node
 pairsBPA2 g (x:xs, y:ys) gamma = Set.fromList [p1, p2]

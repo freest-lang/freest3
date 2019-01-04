@@ -403,3 +403,7 @@ rec x . &{Add: x;x;!Int, Const: ?Int;!Int, Mult: x;x;!Int}
 []
 !Char ; (rec x . &{A: !Int ; x,  B: Skip}) ; ?Bool
 !Char ; ((rec x . &{A: !Int ; x, B: Skip}) ; ?Bool)
+
+[]
+rec x . &{N: x; !Int, L: !Int}
+(rec x . &{N: x; !Int, L: Skip}); !Int

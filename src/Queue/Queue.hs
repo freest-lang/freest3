@@ -15,13 +15,14 @@ Portability :  portable | non-portable (<reason>)
 -- and the bidirectional patterns Empty, :<|, and :|>.
 
 module Queue.Queue
-( Queue,
-  enqueue,
+( Queue
+,  enqueue
+,  priorityEnqueue
   --enqueueBatch,
-  dequeue,
-  front,
-  empty,
-  isEmpty
+,  dequeue
+,  front
+,  empty
+,  isEmpty
 ) where
 
 import           Syntax.Types
@@ -39,6 +40,9 @@ norm (fr,tr) = (fr,tr)
 
 enqueue :: a -> Queue a -> Queue a
 enqueue x (Q (fr,tr)) = Q (norm (fr, x:tr))
+
+priorityEnqueue :: a -> Queue a -> Queue a
+priorityEnqueue x (Q (fr,tr)) = Q (norm (x:fr, tr))
 --
 -- enqueueBatch :: Queue -> [(Node, Ancestors)] -> Queue
 -- enqueueBatch q xs = foldr enqueue q xs
