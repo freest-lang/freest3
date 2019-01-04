@@ -206,21 +206,14 @@ equivalent k (Datatype m1) (Datatype m2) =
 equivalent k t u
   | isSessionType k t && isSessionType k u = expansionTree (normalise g) [x] [y]
   | otherwise = False
-  where (x, state) = convertToGrammar initial t
-        (y, (g, _, _))   = convertToGrammar state u
+  where (g, [x, y]) = convertToGrammar [t, u]
 
 checkBinding :: KindEnv -> TypeMap -> Bool -> Constructor -> Type -> Bool
 checkBinding k m acc l t = acc && l `Map.member` m && equivalent k (m Map.! l) t
 
--- -- testing
-
--- convertTwo :: Type -> Type -> (TypeVar, TypeVar, (Productions, Visited, Int))
--- convertTwo t u = (x, y, s)
---   where (x, state) = convertToGrammar initial t
---         (y, s) = convertToGrammar state u
-
+{-
+-- testing
 -- TODO: move to another folder
--- tests
 
 buildGrammar :: Type -> Grammar
 buildGrammar t = evalState (generateGrammar t) initial
@@ -312,3 +305,4 @@ e12 = equivalent alphaKinding s1 s23
 e13 = equivalent alphaKinding s24 s24
 e14 = equivalent alphaKinding s24 s25
 e15 = equivalent alphaKinding s26 s27
+-}

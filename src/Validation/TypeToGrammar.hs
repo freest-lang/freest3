@@ -13,20 +13,19 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Validation.TypeToGrammar
-( TransState
-, convertToGrammar
-, initial
-, toGrammar
-, freshVar
-, insertProduction
-, getGrammar
+( convertToGrammar
+--, TransState
+--, toGrammar
+--, freshVar
+--, insertProduction
+--, getGrammar
 ) where
 
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
 import           Validation.Grammar
 import           Syntax.Types
-import           Syntax.Kinds
+--import           Syntax.Kinds
 
 -- The state of the translation to grammars
 
@@ -74,7 +73,7 @@ member x = do
 insertProduction :: TypeVar -> Label -> [TypeVar] -> TransState ()
 insertProduction x l w =
   modify $ \(p, v, n) -> (addTransition p x l w, v, n)
-{-
+
 insertGrammar :: TypeVar -> Transitions -> TransState ()
 insertGrammar x m = insertGrammar' x (Map.assocs m)
 
@@ -83,7 +82,7 @@ insertGrammar' x [] = return ()
 insertGrammar' x ((l, w):as) = do
   insertProduction x l w
   insertGrammar' x as
--}
+
 replaceInGrammar :: [TypeVar] -> TypeVar -> TransState ()
 replaceInGrammar w x =
   modify (\(p, v, n) -> (Map.map (Map.map (replace w x)) p, v, n))
@@ -96,10 +95,21 @@ replace w x (y:ys)
 
 -- Conversion to context-free grammars
 
+convertToGrammar :: [Type] -> (Productions, [TypeVar])
+convertToGrammar ts = (p, w)
+  where (w, (p, _, _)) = runState (toGrammar00 ts) initial
+
+toGrammar00 :: [Type] -> TransState [TypeVar]
+toGrammar00 []     = return []
+toGrammar00 (t:ts) = do
+  [x] <- toGrammar0 t
+  xs <- toGrammar00 ts
+  return (x:xs)
+{-
 convertToGrammar :: TState -> Type -> (TypeVar, TState)
 convertToGrammar state t = (x, state')
   where ([x], state') = runState (toGrammar0 t) state
-
+-}
 toGrammar0 :: Type -> TransState [TypeVar]
 toGrammar0 t = do
   w <- toGrammar t
@@ -125,7 +135,6 @@ toGrammar' (Var a) = do -- This is a free variable
   y <- freshVar
   insertProduction y (VarLabel a) []
   return [y]
-{-
 toGrammar' (Semi (Choice p m) u) = do
   xs <- toGrammar (Choice p m)
   ys <- toGrammar u
@@ -144,7 +153,6 @@ toGrammar' (Semi (Choice p m) u) = do
       return [x]
     else
       return $ xs ++ ys -- E.g., rec x. !Int;(x;x)
--}
 toGrammar' (Semi t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
@@ -154,16 +162,17 @@ toGrammar' (Rec b t) = do
   let u = rename (Rec b t) y -- On the fly alpha conversion
   insertVisited u y
   (z:zs) <- toGrammar (unfold u)
+  ps <- getProductions y
   replaceInGrammar (z:zs) y
   return [z]
 toGrammar' (Choice p m) = do
   y <- freshVar
   assocsToGrammar y p (Map.assocs m)
   return [y]
-  where
-    assocsToGrammar :: TypeVar -> ChoiceView -> [(Constructor, Type)] -> TransState ()
-    assocsToGrammar _ _ [] = return ()
-    assocsToGrammar y p ((l, t):as) = do
-      w <- toGrammar t
-      insertProduction y (ChoiceLabel p l) w
-      assocsToGrammar y p as
+
+assocsToGrammar :: TypeVar -> ChoiceView -> [(Constructor, Type)] -> TransState ()
+assocsToGrammar _ _ [] = return ()
+assocsToGrammar y p ((l, t):as) = do
+  w <- toGrammar t
+  insertProduction y (ChoiceLabel p l) w
+  assocsToGrammar y p as
