@@ -32,19 +32,19 @@ import           Syntax.Kinds
 
 type Visited = Map.Map Type TypeVar
 
-type Trans = (Productions, Visited, Int)
+type TState = (Productions, Visited, Int)
 
-type TransState = State Trans
+type TransState = State TState
 
 -- State manipulating functions
 
-initial :: Trans
+initial :: TState
 initial = (Map.empty, Map.empty, 0)
 
 freshVar :: TransState String
 freshVar = do
   (_, _, n) <- get
-  modify (\(p, v, n) -> (p, v, n+1))
+  modify (\(p, v, n) -> (p, v, n + 1))
   return $ "_x" ++ show n
 
 lookupVisited :: Type -> TransState (Maybe TypeVar)
@@ -73,8 +73,8 @@ member x = do
 
 insertProduction :: TypeVar -> Label -> [TypeVar] -> TransState ()
 insertProduction x l w =
-  modify (\(p, v, n) -> (Map.insertWith Map.union x (Map.singleton l w) p, v, n))
-
+  modify $ \(p, v, n) -> (addTransition p x l w, v, n)
+{-
 insertGrammar :: TypeVar -> Transitions -> TransState ()
 insertGrammar x m = insertGrammar' x (Map.assocs m)
 
@@ -83,7 +83,7 @@ insertGrammar' x [] = return ()
 insertGrammar' x ((l, w):as) = do
   insertProduction x l w
   insertGrammar' x as
-
+-}
 replaceInGrammar :: [TypeVar] -> TypeVar -> TransState ()
 replaceInGrammar w x =
   modify (\(p, v, n) -> (Map.map (Map.map (replace w x)) p, v, n))
@@ -96,7 +96,7 @@ replace w x (y:ys)
 
 -- Conversion to context-free grammars
 
-convertToGrammar :: Trans -> Type -> (TypeVar, Trans)
+convertToGrammar :: TState -> Type -> (TypeVar, TState)
 convertToGrammar state t = (x, state')
   where ([x], state') = runState (toGrammar0 t) state
 
@@ -125,6 +125,7 @@ toGrammar' (Var a) = do -- This is a free variable
   y <- freshVar
   insertProduction y (VarLabel a) []
   return [y]
+{-
 toGrammar' (Semi (Choice p m) u) = do
   xs <- toGrammar (Choice p m)
   ys <- toGrammar u
@@ -143,6 +144,7 @@ toGrammar' (Semi (Choice p m) u) = do
       return [x]
     else
       return $ xs ++ ys -- E.g., rec x. !Int;(x;x)
+-}
 toGrammar' (Semi t u) = do
   xs <- toGrammar t
   ys <- toGrammar u

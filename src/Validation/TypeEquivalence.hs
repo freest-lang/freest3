@@ -207,7 +207,7 @@ equivalent k t u
   | isSessionType k t && isSessionType k u = expansionTree (normalise g) [x] [y]
   | otherwise = False
   where (x, state) = convertToGrammar initial t
-        (y, (g, _, i))   = convertToGrammar state u
+        (y, (g, _, _))   = convertToGrammar state u
 
 checkBinding :: KindEnv -> TypeMap -> Bool -> Constructor -> Type -> Bool
 checkBinding k m acc l t = acc && l `Map.member` m && equivalent k (m Map.! l) t

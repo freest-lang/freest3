@@ -17,7 +17,7 @@ module Validation.Norm
 , norm
 ) where
 
-import           Data.List (isPrefixOf, union)
+import           Data.List (union)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import           Validation.Grammar
