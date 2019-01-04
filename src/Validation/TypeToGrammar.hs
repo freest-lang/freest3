@@ -88,7 +88,7 @@ replaceInGrammar :: [TypeVar] -> TypeVar -> TransState ()
 replaceInGrammar w x =
   modify (\(p, v, n) -> (Map.map (Map.map (replace w x)) p, v, n))
 
-replace :: Eq a => [a] -> a -> [a] -> [a]
+replace :: [TypeVar] -> TypeVar -> [TypeVar] -> [TypeVar]
 replace _ _ [] = []
 replace w x (y:ys)
   | x == y    = w ++ (replace w x ys)
