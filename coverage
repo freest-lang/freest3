@@ -1,6 +1,8 @@
 #!/bin/bash
 #runhaskell -isrc -itest -fforce-recomp test/Spec.hs
 
+rm *.tix
+
 ghc -isrc -itest/UnitTests -fhpc test/UnitTests/UnitSpec.hs --make
 ./test/UnitTests/UnitSpec
 #mv UnitSpec.tix test/UnitTests/

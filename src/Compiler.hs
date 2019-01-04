@@ -35,7 +35,7 @@ compile arg = do
 codeGen :: VarEnv -> ExpEnv -> ConstructorEnv -> KindEnv ->
            FilePath -> IO (Bool, HaskellCode)
 codeGen venv eenv cenv kenv path = do
-  let start = eenv Map.! "start"
+  -- let start = eenv Map.! "start"
   genProgram venv eenv cenv kenv path
   return (True, "")
  

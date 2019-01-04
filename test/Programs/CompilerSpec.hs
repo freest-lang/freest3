@@ -5,12 +5,12 @@ import System.Directory
 import System.Process
 import System.Exit
 import Test.Hspec
-import Test.HUnit (assertFailure)
+import Test.HUnit (assertFailure, assertEqual)
 import System.FilePath
 import Control.Exception
 
 validTestDir curDir = curDir ++ "/test/Programs/ValidTests/"
--- invalidTestDir curDir = curDir ++ "/test/Programs/InvalidTests/"
+invalidTestDir curDir = curDir ++ "/test/Programs/InvalidTests/"
 
 main :: IO ()
 main = hspec $ spec
@@ -18,21 +18,30 @@ main = hspec $ spec
 spec :: Spec
 spec = do
   curDir <- runIO $ getCurrentDirectory
+  
   dirs <- runIO $ listDirectory (validTestDir curDir)
-
   describe "Valid Tests" $ do
-    mapM_ (\dir -> testDir dir curDir) dirs
-    
+    mapM_ (\dir -> testDir True dir curDir) dirs
   runIO $ setCurrentDirectory curDir
 
--- TODO: test invalid with expect failure
-testDir :: String -> String -> Spec
-testDir dir curDir = parallel $ do
-  sourceFiles <- runIO $ listDirectory ((validTestDir curDir) ++ dir)
-  let source = getSource sourceFiles
-  testOne ((validTestDir curDir) ++ dir ++ "/" ++ source) source
-
+  dirs <- runIO $ listDirectory (invalidTestDir curDir)
+  describe "Invalid Tests" $ do
+    mapM_ (\dir -> testDir False dir curDir) dirs
+  runIO $ setCurrentDirectory curDir  
   
+testDir :: Bool -> String -> String -> Spec
+testDir b dir curDir = parallel $ do
+  sourceFiles <- runIO $ listDirectory ((validOrInvalidDir b) ++ dir)
+  let source = getSource sourceFiles
+  validOrInvalid source
+  where
+    validOrInvalid source
+      | b = testOne ((validTestDir curDir) ++ dir ++ "/" ++ source) source
+      | otherwise = testOneInvalid ((invalidTestDir curDir) ++ dir ++ "/" ++ source) source
+    validOrInvalidDir b
+      | b = validTestDir curDir
+      | otherwise = invalidTestDir curDir
+        
 getSource :: [String] -> String
 getSource [] = ""
 getSource (x:xs)
@@ -51,6 +60,24 @@ testOne test filename = do
         assertFailure ("The compiler terminated with errors\n" ++ err)
         return ()
     (True, _)  -> runAndCheckResult test filename
+
+
+testOneInvalid :: String -> String -> Spec    
+testOneInvalid test filename = do
+  compiles <- runIO $ catch (compile test)
+                         (\e -> do let err = show (e :: SomeException)
+                                   return  $ (False, show e)
+                         )
+  case compiles of
+    (False, err) -> 
+      it ("Testing " ++ filename) $ do
+        (assertEqual "" 1 1)
+        -- assertFailure ("The compiler terminated with errors\n" ++ err)
+        return ()
+    (True, _)  ->
+      it ("Testing " ++ filename) $ do
+        assertFailure ("It was expected an error but it's ok")
+        return ()
 
 runAndCheckResult :: String -> String -> Spec
 runAndCheckResult testFile filename = do

@@ -42,7 +42,8 @@ genFile eenv =
 
 showBangParams :: Params -> String
 showBangParams [] = ""
-showBangParams args = "!" ++ intercalate " !" args
+showBangParams args = intercalate " " args
+--showBangParams args = "!" ++ intercalate " !" args
 
 genImports :: String
 genImports = "import CFSTUtils\n\n"
