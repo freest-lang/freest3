@@ -31,7 +31,7 @@ module Validation.Grammar
 , Productions
 , Grammar(..)
 , transitions
-, addTransition
+, addProduction
 ) where
 
 import qualified Data.Map.Strict as Map
@@ -60,8 +60,8 @@ transitions :: Productions -> [TypeVar] -> Transitions
 transitions _ []     = Map.empty
 transitions g (x:xs) = Map.map (++ xs) (g Map.! x)
 
-addTransition :: Productions -> TypeVar -> Label -> [TypeVar] -> Productions
-addTransition p x l w = Map.insertWith Map.union x (Map.singleton l w) p
+addProduction :: Productions -> TypeVar -> Label -> [TypeVar] -> Productions
+addProduction p x l w = Map.insertWith Map.union x (Map.singleton l w) p
 
 -- Showing grammars
 

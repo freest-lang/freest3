@@ -219,7 +219,8 @@ rename :: Type -> TypeVar -> Type
 -- Assumes parameter is a Rec type
 rename (Rec (Bind x k) t) y = Rec (Bind y k) (subs (Var y) x t)
 
-subs :: Type -> TypeVar -> Type -> Type -- t[x/u]
+-- [u/x]t, substitute u for x on t
+subs :: Type -> TypeVar -> Type -> Type 
 subs t y (Var x)
     | x == y              = t
     | otherwise           = Var x
