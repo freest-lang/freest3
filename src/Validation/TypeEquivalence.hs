@@ -147,7 +147,7 @@ pairsBPA2 g (x:xs, y:ys) gamma = Set.fromList [p1, p2]
          p2 = if (norm g [x] >= norm g [y]) then ( gamma ++ xs, ys ) else ( xs, gamma ++ ys )
 
 gammasBPA2 :: Productions -> (TypeVar,TypeVar) -> Set.Set [TypeVar]
-gammasBPA2 g (x,y) = gammaSellection g nt diff
+gammasBPA2 g (x,y) = gammaSellection g nt (abs diff)
   where diff = norm g [x] - norm g [y]
         ks =  Map.keys g
         ks' = sortOn (\x -> index x 0 (length ks + 4)) ks
