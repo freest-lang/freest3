@@ -53,25 +53,30 @@ lookupVisited t = do
 
 insertVisited :: Type -> TypeVar -> TransState ()
 insertVisited t x =
-  modify (\(p, v, n) -> (p, Map.insert t x v, n))
+  modify $ \(p, v, n) -> (p, Map.insert t x v, n)
 
 getGrammar :: TransState Productions
 getGrammar = do
   (p, _, _) <- get
   return p
 
-getProductions :: TypeVar -> TransState Transitions
-getProductions x = do
+getTransitions :: TypeVar -> TransState Transitions
+getTransitions x = do
   p <- getGrammar
+--  return $ Map.findWithDefault Map.empty x p
   return $ p Map.! x
 
-insertProduction :: TypeVar -> Label -> [TypeVar] -> TransState ()
-insertProduction x l w =
-  modify $ \(p, v, n) -> (addProduction p x l w, v, n)
+addProduction :: TypeVar -> Label -> [TypeVar] -> TransState ()
+addProduction x l w =
+  modify $ \(p, v, n) -> (insertProduction p x l w, v, n)
 
-removeProduction :: TypeVar -> TransState ()
-removeProduction x =
-  modify $ \(p, v, n) -> 
+addProductions :: TypeVar -> Transitions -> TransState ()
+addProductions x m =
+  modify $ \(p, v, n) -> (Map.insert x m p, v, n)
+
+removeProductions :: TypeVar -> TransState ()
+removeProductions x =
+  modify $ \(p, v, n) -> (Map.delete x p, v, n)
 
 member :: TypeVar -> TransState Bool
 member x = do
@@ -84,7 +89,7 @@ insertGrammar x m = insertGrammar' x (Map.assocs m)
 insertGrammar' :: TypeVar -> [(Label, [TypeVar])] -> TransState ()
 insertGrammar' x [] = return ()
 insertGrammar' x ((l, w):as) = do
-  insertProduction x l w
+  addProduction x l w
   insertGrammar' x as
 
 replaceInGrammar :: [TypeVar] -> TypeVar -> TransState ()
@@ -118,7 +123,7 @@ toGrammar0 :: Type -> TransState [TypeVar]
 toGrammar0 t = do
   w <- toGrammar t
   y <- freshVar
-  insertProduction y (MessageLabel In UnitType) w
+  addProduction y (MessageLabel In UnitType) w
   return [y]
 
 toGrammar :: Type -> TransState [TypeVar]
@@ -133,12 +138,13 @@ toGrammar' Skip =
   return []
 toGrammar' (Message p b) = do
   y <- freshVar
-  insertProduction y (MessageLabel p b) []
+  addProduction y (MessageLabel p b) []
   return [y]
 toGrammar' (Var a) = do -- This is a free variable
   y <- freshVar
-  insertProduction y (VarLabel a) []
+  addProduction y (VarLabel a) []
   return [y]
+{-
 toGrammar' (Semi (Choice p m) u) = do
   xs <- toGrammar (Choice p m)
   ys <- toGrammar u
@@ -152,27 +158,25 @@ toGrammar' (Semi (Choice p m) u) = do
     let (x:xs') = xs
     b <- member x
     if b then do
-      m <- getProductions x
+      m <- getTransitions x
       insertGrammar x (Map.map (++ xs' ++ ys) m)
       return [x]
     else
       return $ xs ++ ys -- E.g., rec x. !Int;(x;x)
+-}
 toGrammar' (Semi t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
   return $ xs ++ ys
 toGrammar' (Rec Bind{var=x} t) = do
   y <- freshVar
---  let u = rename (Rec b t) y -- On the fly alpha conversion
-  let u = subs (Var y) x t -- On the fly alpha conversion
   insertVisited (Var y) y
+  let u = subs (Var y) x t -- On the fly alpha conversion
   (z:zs) <- toGrammar u
-  ps <- getProductions y
-  addProductions x (append p zs)
-  removeProductions z
-  return [x]
---  replaceInGrammar (z:zs) y
---  return [z]
+  m <- getTransitions z
+  addProductions y (Map.map (++ zs) m)
+--  removeProductions z
+  return [y]
 toGrammar' (Choice p m) = do
   y <- freshVar
   assocsToGrammar y p (Map.assocs m)
@@ -182,7 +186,7 @@ assocsToGrammar :: TypeVar -> ChoiceView -> [(Constructor, Type)] -> TransState 
 assocsToGrammar _ _ [] = return ()
 assocsToGrammar y p ((l, t):as) = do
   w <- toGrammar t
-  insertProduction y (ChoiceLabel p l) w
+  addProduction y (ChoiceLabel p l) w
   assocsToGrammar y p as
 
 
@@ -197,7 +201,7 @@ generateGrammar :: Type -> TransState Grammar
 generateGrammar t = do
   w <- toGrammar t
   y <- freshVar
-  insertProduction y (MessageLabel In UnitType) w
+  addProduction y (MessageLabel In UnitType) w
   p <- getGrammar
   return $ Grammar {start = y, productions = p}
 
