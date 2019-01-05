@@ -407,3 +407,11 @@ rec x . &{Add: x;x;!Int, Const: ?Int;!Int, Mult: x;x;!Int}
 []
 rec x . &{N: x; !Int, L: !Int}
 (rec x . &{N: x; !Int, L: Skip}); !Int
+
+[]
+rec x . &{N: x;!Int, L: Skip}; ?Int
+rec x . &{N: x;!Int;?Int, L: ?Int}
+
+[]
+rec x . &{N: x;!Int, L: x}
+rec x . &{N: x, L: x};!Int
