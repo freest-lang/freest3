@@ -25,7 +25,7 @@ import           Control.Monad.State
 import qualified Data.Map.Strict as Map
 import           Validation.Grammar
 import           Syntax.Types
---import           Syntax.Kinds
+import           Syntax.Kinds -- for testing
 
 -- The state of the translation to grammars
 
@@ -63,7 +63,6 @@ getGrammar = do
 getTransitions :: TypeVar -> TransState Transitions
 getTransitions x = do
   p <- getGrammar
---  return $ Map.findWithDefault Map.empty x p
   return $ p Map.! x
 
 addProduction :: TypeVar -> Label -> [TypeVar] -> TransState ()
@@ -121,9 +120,9 @@ convertToGrammar state t = (x, state')
 -}
 toGrammar0 :: Type -> TransState [TypeVar]
 toGrammar0 t = do
-  w <- toGrammar t
+  xs <- toGrammar t
   y <- freshVar
-  addProduction y (MessageLabel In UnitType) w
+  addProduction y (MessageLabel In UnitType) xs
   return [y]
 
 toGrammar :: Type -> TransState [TypeVar]
@@ -172,27 +171,27 @@ toGrammar' (Rec Bind{var=x} t) = do
   y <- freshVar
   insertVisited (Var y) y
   let u = subs (Var y) x t -- On the fly alpha conversion
-  (z:zs) <- toGrammar u
-  m <- getTransitions z
-  addProductions y (Map.map (++ zs) m)
---  removeProductions z
-  return [y]
-toGrammar' (Choice p m) = do
+--  (z:zs) <- toGrammar u
+  zs <- toGrammar u
+  if null zs
+    then return []
+  else do
+    m <- getTransitions $ head zs
+    addProductions y (Map.map (++ tail zs) m)
+    return [y]
+toGrammar' (Choice c m) = do
   y <- freshVar
-  assocsToGrammar y p (Map.assocs m)
+  assocsToGrammar y c (Map.assocs m)
   return [y]
 
 assocsToGrammar :: TypeVar -> ChoiceView -> [(Constructor, Type)] -> TransState ()
 assocsToGrammar _ _ [] = return ()
-assocsToGrammar y p ((l, t):as) = do
-  w <- toGrammar t
-  addProduction y (ChoiceLabel p l) w
-  assocsToGrammar y p as
+assocsToGrammar y c ((l, t):as) = do
+  xs <- toGrammar t
+  addProduction y (ChoiceLabel c l) xs
+  assocsToGrammar y c as
 
-
-{-
 -- testing
--- TODO: move to another folder
 
 buildGrammar :: Type -> Grammar
 buildGrammar t = evalState (generateGrammar t) initial
@@ -266,22 +265,9 @@ t26 = buildGrammar s26
 s27 = Choice External (Map.fromList [("Leaf", (Var "α"))])
 t27 = buildGrammar s27
 s28 = Rec yBind (Choice External (Map.fromList [("Add", Semi (Semi (Var "y") (Var "y")) (Message Out IntType)), ("Const", Skip)]))
+t28 = buildGrammar s28
+s29 = Semi s5 (Message In IntType)
+t29 = buildGrammar s29
+s30 = Rec yBind s29
+t30 = buildGrammar s29
 
-alphaKinding = Map.singleton "α" (Kind Session Lin)
-
-e1 = equivalent alphaKinding s1 s1
-e2 = equivalent alphaKinding s1 s2 -- False
-e3 = equivalent alphaKinding s1 s3 -- False
-e4 = equivalent alphaKinding s3 s3
-e5 = equivalent alphaKinding s3 s4 -- False
-e6 = equivalent alphaKinding s1 s5 -- False
-e7 = equivalent alphaKinding s4 s5 -- False
-e8 = equivalent alphaKinding s5 s6 -- False
-e9 = equivalent alphaKinding s9 s9
-e10 = equivalent alphaKinding treeSend treeSend
-e11 = equivalent alphaKinding s21 s22
-e12 = equivalent alphaKinding s1 s23
-e13 = equivalent alphaKinding s24 s24
-e14 = equivalent alphaKinding s24 s25
-e15 = equivalent alphaKinding s26 s27
--}

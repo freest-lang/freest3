@@ -48,7 +48,7 @@ data Label =
 -- The transitions from a given label
 type Transitions = Map.Map Label [TypeVar]
 
--- The production of a grammar
+-- The productions of a grammar
 type Productions = Map.Map TypeVar Transitions
 
 -- The grammar
@@ -61,8 +61,8 @@ transitions _ []     = Map.empty
 transitions p (x:xs) = Map.map (++ xs) (p Map.! x)
 
 insertProduction :: Productions -> TypeVar -> Label -> [TypeVar] -> Productions
-insertProduction p x l w = Map.insert x (Map.singleton l w) p
---  Map.insertWith Map.union x (Map.singleton l w) p
+-- insertProduction p x l w = Map.insert x (Map.singleton l w) p
+insertProduction p x l w = Map.insertWith Map.union x (Map.singleton l w) p
 
 -- Showing grammars
 
@@ -72,17 +72,19 @@ instance Show Label where
   show (VarLabel l) = l
 
 instance Show Grammar where
-  show g = "start:" ++ start g ++ showProductions (productions g)
+  show g = "start: " ++ start g ++ showProductions (productions g)
 
 showProductions :: Productions -> String
 showProductions = Map.foldrWithKey showTransitions ""
 
 showTransitions :: TypeVar -> Transitions -> String -> String
-showTransitions x m s = s ++ "\n" ++ Map.foldrWithKey (showTransition x) "" m
+showTransitions x m s = s ++ Map.foldrWithKey (showTransition x) "" m
 
 showTransition :: TypeVar -> Label -> [TypeVar] -> String -> String
-showTransition x l xs s = s ++ "\n" ++ x ++ " ::= " ++ show l ++ " " ++ showRHS xs
+showTransition x l xs s = s ++ "\n" ++ x ++ " -> " ++ show l ++ " " ++ concat xs
 
+{-
 showRHS :: [TypeVar] -> String
 showRHS [] = "ε"
 showRHS xs = concat xs
+-}

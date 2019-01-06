@@ -210,3 +210,25 @@ equivalent k t u
 
 checkBinding :: KindEnv -> TypeMap -> Bool -> Constructor -> Type -> Bool
 checkBinding k m acc l t = acc && l `Map.member` m && equivalent k (m Map.! l) t
+
+{- testing
+
+alphaKinding = Map.singleton "α" (Kind Session Lin)
+
+e1 = equivalent alphaKinding s1 s1
+e2 = equivalent alphaKinding s1 s2 -- False
+e3 = equivalent alphaKinding s1 s3 -- False
+e4 = equivalent alphaKinding s3 s3
+e5 = equivalent alphaKinding s3 s4 -- False
+e6 = equivalent alphaKinding s1 s5 -- False
+e7 = equivalent alphaKinding s4 s5 -- False
+e8 = equivalent alphaKinding s5 s6 -- False
+e9 = equivalent alphaKinding s9 s9
+e10 = equivalent alphaKinding treeSend treeSend
+e11 = equivalent alphaKinding s21 s22
+e12 = equivalent alphaKinding s1 s23
+e13 = equivalent alphaKinding s24 s24
+e14 = equivalent alphaKinding s24 s25
+e15 = equivalent alphaKinding s26 s27
+
+-}

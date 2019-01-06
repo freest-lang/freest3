@@ -222,7 +222,45 @@ Skip;!Int -> Bool
 +{Leaf: Skip, Node: !Int}; α
 +{Leaf: Skip; α, Node: !Int; α}
 
--- Regular Recursive types
+-- Degenerated Recursive Types
+
+[]
+rec x. Skip
+Skip
+
+[]
+Skip
+rec x. Skip
+
+[]
+rec x. (Skip; Skip)
+Skip
+
+[]
+rec x. rec y. Skip
+Skip
+
+[]
+rec x. (Skip; rec y. Skip)
+Skip
+
+[]
+rec x. rec y. (Skip; rec z. Skip; ?Int; Skip)
+?Int
+
+[]
+rec x. rec y. (!Int; y)
+rec z. (!Int; z)
+
+[]
+rec x. (rec y. !Int; x)
+rec z. (!Int; z)
+
+[]
+rec x. rec y. rec z. (!Int; y)
+rec z. (!Int; z)
+
+-- Regular Recursive Types
 
 []
 rec x . !Int;x
