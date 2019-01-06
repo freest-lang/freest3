@@ -19,9 +19,9 @@ module Validation.TypeToGrammar
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import           Validation.Grammar
 import           Syntax.Types
 import           Syntax.Kinds -- for testing
+import           Validation.Grammar
 
 -- The state of the translation to grammars
 
@@ -66,19 +66,19 @@ addProductions x m =
 
 -- Conversion to context-free grammars
 
-convertToGrammar :: [Type] -> (Productions, [TypeVar])
-convertToGrammar ts = (p, w)
-  where (w, (p, _, _)) = runState (typesToGrammar ts) initial
+convertToGrammar :: [Type] -> Grammar
+convertToGrammar ts = Grammar xs p
+  where (xs, (p, _, _)) = runState (typesToGrammar ts) initial
 
 typesToGrammar :: [Type] -> TransState [TypeVar]
 typesToGrammar []     = return []
 typesToGrammar (t:ts) = do
-  [x] <- toGrammar0 t
+  [x] <- typeToGrammar t
   xs <- typesToGrammar ts
   return (x:xs)
 
-toGrammar0 :: Type -> TransState [TypeVar]
-toGrammar0 t = do
+typeToGrammar :: Type -> TransState [TypeVar]
+typeToGrammar t = do
   xs <- toGrammar t
   y <- freshVar
   addProduction y (MessageLabel In UnitType) xs
@@ -91,6 +91,10 @@ toGrammar (Message p b) = do
   y <- freshVar
   addProduction y (MessageLabel p b) []
   return [y]
+toGrammar (Semi t u) = do
+  xs <- toGrammar t
+  ys <- toGrammar u
+  return $ xs ++ ys
 toGrammar (Var a) = do
   b <- memberVisited a
   if b
@@ -100,10 +104,6 @@ toGrammar (Var a) = do
     y <- freshVar
     addProduction y (VarLabel a) []
     return [y]
-toGrammar (Semi t u) = do
-  xs <- toGrammar t
-  ys <- toGrammar u
-  return $ xs ++ ys
 toGrammar (Rec Bind{var=x} t) = do
   y <- freshVar
   insertVisited y
@@ -126,83 +126,72 @@ assocsToGrammar y c ((l, t):as) = do
   addProduction y (ChoiceLabel c l) xs
   assocsToGrammar y c as
 
--- Testing
-
-buildGrammar :: Type -> Grammar
-buildGrammar t = evalState (generateGrammar t) initial
-
-generateGrammar :: Type -> TransState Grammar
-generateGrammar t = do
-  w <- toGrammar t
-  y <- freshVar
-  addProduction y (MessageLabel In UnitType) w
-  (p, _, _) <- get
-  return $ Grammar {start = y, productions = p}
+-- Some tests
 
 s1 = Message Out CharType
-t1 = buildGrammar s1
+t1 = convertToGrammar [s1]
 s2 = Var "α"
-t2 = buildGrammar s2
+t2 = convertToGrammar [s2]
 s3 = Semi (Message Out IntType) (Message In BoolType)
-t3 = buildGrammar s3
+t3 = convertToGrammar [s3]
 s4 = Semi s3 s1
-t4 = buildGrammar s4
+t4 = convertToGrammar [s4]
 s5 = Choice External (Map.fromList
   [("Leaf", Skip),
    ("Node", s1)])
-t5 = buildGrammar s5
+t5 = convertToGrammar [s5]
 s6 = Choice External (Map.fromList
   [("Leaf", Skip),
    ("Node", s3)])
-t6 = buildGrammar s6
+t6 = convertToGrammar [s6]
 yBind = Bind "y" (Kind {prekind = Session, multiplicity = Lin})
 treeSend = Rec yBind (Choice External (Map.fromList
   [("Leaf",Skip),
    ("Node", Semi (Message Out IntType) (Semi (Var "y") (Var "y")))]))
-t7 = buildGrammar treeSend
-t8 = buildGrammar $ Semi treeSend (Var "α")
+t7 = convertToGrammar [treeSend]
+t8 = convertToGrammar [Semi treeSend (Var "α")]
 s9 = Rec yBind (Semi s1 (Var "y"))
-t9 = buildGrammar s9
+t9 = convertToGrammar [s9]
 s10 = Semi s4 (Semi (Semi s3 s1) s4)
-t10 = buildGrammar s10
+t10 = convertToGrammar [s10]
 s11 = Semi (Rec yBind (Semi treeSend (Var "y"))) treeSend
-t11 = buildGrammar s11
+t11 = convertToGrammar [s11]
 zBind = Bind "z" (Kind {prekind = Session, multiplicity = Lin})
 s12 = Semi (Rec zBind (Semi treeSend (Var "z"))) treeSend
-t12 = buildGrammar s12
+t12 = convertToGrammar [s12]
 s13 = Semi treeSend Skip
-t13 = buildGrammar s13
+t13 = convertToGrammar [s13]
 s14 = Semi Skip treeSend
-t14 = buildGrammar s14
+t14 = convertToGrammar [s14]
 s15 = Semi treeSend treeSend
-t15 = buildGrammar s15
+t15 = convertToGrammar [s15]
 treeSend1 = Rec zBind (Choice External (Map.fromList
   [("Leaf",Skip),
    ("Node", Semi (Message Out IntType) (Semi (Var "z") (Var "z")))]))
 s16 = Semi treeSend treeSend1
-t16 = buildGrammar s16
+t16 = convertToGrammar [s16]
 s17 = Rec zBind (Semi s1 (Var "z"))
-t17 = buildGrammar s17
+t17 = convertToGrammar [s17]
 s18 = Rec zBind (Semi s1 (Semi (Var "z") (Var "z")))
-t18 = buildGrammar s18
+t18 = convertToGrammar [s18]
 s19 = Rec zBind (Semi (Semi s1 (Var "z")) (Var "z"))
-t19 = buildGrammar s19
+t19 = convertToGrammar [s19]
 s20 = Message In IntType
 s21 = Semi s1 (Semi s2 s20)
 s22 = Semi (Semi s1 s2) s20
 s23 = Semi s1 Skip
 s24 = Rec yBind (Rec zBind (Semi (Semi s1 (Var "y")) (Var "z")))
-t24 = buildGrammar s24
+t24 = convertToGrammar [s24]
 s25 = Rec yBind (Rec zBind (Semi (Semi s1 (Var "z")) (Var "y")))
-t25 = buildGrammar s25
+t25 = convertToGrammar [s25]
 s26 = Semi (Choice External (Map.fromList [("Leaf", Skip)])) (Var "α")
-t26 = buildGrammar s26
+t26 = convertToGrammar [s26]
 s27 = Choice External (Map.fromList [("Leaf", (Var "α"))])
-t27 = buildGrammar s27
+t27 = convertToGrammar [s27]
 s28 = Rec yBind (Choice External (Map.fromList [("Add", Semi (Semi (Var "y") (Var "y")) (Message Out IntType)), ("Const", Skip)]))
-t28 = buildGrammar s28
+t28 = convertToGrammar [s28]
 s29 = Semi s5 (Message In IntType)
-t29 = buildGrammar s29
+t29 = convertToGrammar [s29]
 s30 = Rec yBind s29
-t30 = buildGrammar s29
+t30 = convertToGrammar [s24,s25,s26,s27,s28,s29,s30]
 

@@ -27,11 +27,12 @@ map from labels to lists of type variables.
 
 module Validation.Grammar
 ( Label(..)
+, TypeVar -- aka non-terminal
 , Transitions
 , Productions
+, Grammar(..)
 , transitions
 , insertProduction
-, Grammar(..) -- for testing purposes
 ) where
 
 import qualified Data.Map.Strict as Map
@@ -44,21 +45,26 @@ data Label =
   VarLabel TypeVar
   deriving (Eq, Ord)
 
+-- Non-terminal symbols are type variables TypeVar
+
 -- The transitions from a given label
 type Transitions = Map.Map Label [TypeVar]
 
 -- The productions of a grammar
 type Productions = Map.Map TypeVar Transitions
 
--- The grammar
-data Grammar = Grammar {start :: TypeVar, productions :: Productions}
+-- The grammar, we have one initial non-terminal for each type that we
+-- convert together
+data Grammar = Grammar [TypeVar] Productions
 
 -- Operations on grammars
 
+-- The transitions from a word, as opposed to the transitions from a non-terminal
 transitions :: Productions -> [TypeVar] -> Transitions
 transitions _ []     = Map.empty
 transitions p (x:xs) = Map.map (++ xs) (p Map.! x)
 
+-- Add a production from a non-terminal; the productions may already contain transitions for the given nonterminal (hence the insertWith and union)
 insertProduction :: Productions -> TypeVar -> Label -> [TypeVar] -> Productions
 insertProduction p x l w = Map.insertWith Map.union x (Map.singleton l w) p
 
@@ -70,7 +76,9 @@ instance Show Label where
   show (VarLabel l) = l
 
 instance Show Grammar where
-  show g = "start: " ++ start g ++ showProductions (productions g)
+  show (Grammar xs p) =
+    "start symbols: " ++ concat xs ++
+    "\nproductions: " ++ showProductions p
 
 showProductions :: Productions -> String
 showProductions = Map.foldrWithKey showTransitions ""

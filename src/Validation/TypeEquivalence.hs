@@ -13,7 +13,6 @@ Portability :  portable | non-portable (<reason>)
 
 module Validation.TypeEquivalence(
   equivalent
-, unfold
 ) where
 
 import           Control.Monad.State
@@ -28,7 +27,7 @@ import           Validation.TypingState (KindEnv)
 import           Validation.Grammar
 import           Validation.TypeToGrammar
 import           Validation.Norm
-import           Text.Printf
+-- import           Text.Printf
 
 type Node = Set.Set ([TypeVar], [TypeVar])
 
@@ -147,11 +146,11 @@ pairsBPA2 g (x:xs, y:ys) gamma = Set.fromList [p1, p2]
          p2 = if (norm g [x] >= norm g [y]) then ( gamma ++ xs, ys ) else ( xs, gamma ++ ys )
 
 gammasBPA2 :: Productions -> (TypeVar,TypeVar) -> Set.Set [TypeVar]
-gammasBPA2 g (x,y) = gammaSellection g nt (abs diff)
+gammasBPA2 g (x,y) = gammaSelection g nt (abs diff)
   where diff = norm g [x] - norm g [y]
         ks =  Map.keys g
         ks' = sortOn (\x -> index x 0 (length ks + 4)) ks
-        nt = if diff >= 0 then snd (splitNonTerminal g ks') else fst (splitNonTerminal g ks')
+        nt = if diff >= 0 then snd (splitTypeVar g ks') else fst (splitTypeVar g ks')
 
 index :: TypeVar -> Int -> Int -> Int
 index x i max
@@ -159,14 +158,14 @@ index x i max
   | x == ("_x"++show i) = i
   | otherwise    = index x (i+1) max
 
-splitNonTerminal :: Productions -> [TypeVar] -> ([TypeVar],[TypeVar])
-splitNonTerminal g ks = break (== (last vs)) ks
+splitTypeVar :: Productions -> [TypeVar] -> ([TypeVar],[TypeVar])
+splitTypeVar g ks = break (== (last vs)) ks
   where ts = (map (\k -> transitions g [k]) ks)
         ts' = foldr union [] (map Map.toList ts)
         vs = map (\(l,x) -> head x) (filter (\(a,b) -> show a == "?()") ts')
 
-gammaSellection :: Productions -> [TypeVar] -> Int -> Set.Set [TypeVar]
-gammaSellection g xs diff = foldr (\x xs -> Set.union (substringGamma g diff (Set.singleton x)) xs) Set.empty preGammas
+gammaSelection :: Productions -> [TypeVar] -> Int -> Set.Set [TypeVar]
+gammaSelection g xs diff = foldr (\x xs -> Set.union (substringGamma g diff (Set.singleton x)) xs) Set.empty preGammas
   where l = foldr union [] (map (\x -> Map.elems (transitions g [x])) xs)
         l' = filter (all (normed g)) l
         n = filter (\xs -> sum (map (\x -> norm g [x]) xs) >= diff) l'
@@ -202,11 +201,13 @@ equivalent k (Fun m t1 t2) (Fun n u1 u2) =
 equivalent k (PairType t1 t2) (PairType u1 u2) =
   equivalent k t1 u1 && equivalent k t2 u2
 equivalent k (Datatype m1) (Datatype m2) =
-  Map.size m1 == Map.size m2 && Map.foldlWithKey (checkBinding k m2) True m1
-equivalent k t u
-  | isSessionType k t && isSessionType k u = expansionTree (normalise g) [x] [y]
-  | otherwise = False
-  where (g, [x, y]) = convertToGrammar [t, u]
+  Map.size m1 == Map.size m2 &&
+  Map.foldlWithKey (checkBinding k m2) True m1
+equivalent k t u =
+  isSessionType k t &&
+  isSessionType k u &&
+  expansionTree (normalise p) [x] [y]
+  where Grammar [x, y] p = convertToGrammar [t, u]
 
 checkBinding :: KindEnv -> TypeMap -> Bool -> Constructor -> Type -> Bool
 checkBinding k m acc l t = acc && l `Map.member` m && equivalent k (m Map.! l) t

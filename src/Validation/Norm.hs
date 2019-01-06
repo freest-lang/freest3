@@ -21,7 +21,6 @@ import           Data.List (union)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import           Validation.Grammar
-import           Syntax.Types
 
 -- Normalisation
 
@@ -48,10 +47,10 @@ norm :: Productions -> [TypeVar] -> Int
 norm p xs = normList p [xs]
 
 normList :: Productions -> [[TypeVar]] -> Int
-normList p xs
+normList p xss
   | [] `elem` m = 0
   | otherwise = 1 + normList p (foldr union [] m)
-  where m = map (trans p) xs
+  where m = map (trans p) xss
 
 trans :: Productions -> [TypeVar] -> [[TypeVar]]
 trans p xs = Map.elems (transitions p xs)
