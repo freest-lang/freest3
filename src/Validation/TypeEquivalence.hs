@@ -46,7 +46,8 @@ expansionTree' g q
   | Set.null n        = True
   | otherwise         = case expandNode g n of
       Nothing  -> expansionTree' g (Queue.dequeue q)
-      Just n'  -> if n' == Set.fromList [([],[])] then True else expansionTree' g (simplify g (Set.union a n) n' q)
+      Just n'  -> n' == Set.fromList [([],[])] ||
+                        expansionTree' g (simplify g (Set.union a n) n' q)
   where (n,a) = Queue.front q
 
 expandNode :: Productions -> Node -> Maybe Node
@@ -64,7 +65,7 @@ expandPair g (xs, ys)
   where m1 = transitions g xs
         m2 = transitions g ys
 
-match :: Map.Map Label [TypeVar] -> Map.Map Label [TypeVar] -> Node
+match :: Transitions -> Transitions -> Node
 match m1 m2 =
   Map.foldrWithKey (\l xs n -> Set.insert (xs, m2 Map.! l) n) Set.empty m1
 
@@ -72,8 +73,8 @@ match m1 m2 =
 
 simplify :: Productions -> Ancestors ->  Node -> NodeQueue -> NodeQueue
 simplify g a n q = foldr enqueueNode (Queue.dequeue q) s
-     where m = findFixedPoint g a (Set.singleton (n,a))
-           s  = reverse (sortBy (\(n1,_) (n2,_) -> compare (maximumLength n1) (maximumLength n2)) (Set.toList m))
+  where m = findFixedPoint g a (Set.singleton (n,a))
+        s = reverse (sortBy (\(n1,_) (n2,_) -> compare (maximumLength n1) (maximumLength n2)) (Set.toList m))
 
 enqueueNode :: (Node,Ancestors) -> NodeQueue -> NodeQueue
 enqueueNode (n,a) q
@@ -91,38 +92,38 @@ findFixedPoint g a nas
   | otherwise = findFixedPoint g a nas'
   where nas' = foldr (apply g) nas [reflex, congruence, bpa1, reflex, congruence, bpa2, reflex, congruence]
 
--- auxiliar function: returns the maximum length of the pairs in a node
+-- The maximum length of the pairs in a node
 maximumLength :: Node -> Int
 maximumLength n = Set.findMax (Set.map (\(a,b) -> max (length a) (length b)) n)
 
--- node transformations
+-- The various node transformations
 
 reflex :: NodeTransformation
-reflex _ _ n = Set.singleton (Set.filter (\(xs,ys) -> not ( xs == ys )) n)
+reflex _ _ = Set.singleton . Set.filter (uncurry (/=))
 
 congruence :: NodeTransformation
-congruence _ a n = Set.singleton (Set.filter (\p -> not (congruentToAncestors a p)) n)
+congruence _ a = Set.singleton . Set.filter (not . congruentToAncestors a)
 
 congruentToAncestors :: Ancestors -> ([TypeVar], [TypeVar]) -> Bool
 congruentToAncestors a p = or $ Set.map (congruentToPair a p) a
 
 congruentToPair :: Ancestors -> ([TypeVar], [TypeVar]) -> ([TypeVar], [TypeVar]) -> Bool
 congruentToPair a (xs, ys) (xs', ys') =
-  length xs' > 0 && xs' `isPrefixOf` xs &&
-  length ys' > 0 && ys' `isPrefixOf` ys &&
-  ( x1 == x2 || congruentToAncestors a (x1, x2) )
-  where x1 = drop (length xs') xs
-        x2 = drop (length ys') ys
+  not (null xs') && xs' `isPrefixOf` xs &&
+  not (null ys') && ys' `isPrefixOf` ys &&
+  (xs'' == ys'' || congruentToAncestors a (xs'', ys''))
+  where xs'' = drop (length xs') xs
+        ys'' = drop (length ys') ys
 
 bpa1 :: NodeTransformation
 bpa1 g a n =
   Set.foldr (\p ps -> Set.union (Set.map (\v -> Set.union v (Set.delete p n)) (bpa1' g a p)) ps) (Set.singleton n) n
 
 bpa1' :: Productions -> Ancestors -> ([TypeVar],[TypeVar]) -> Set.Set Node
-bpa1' g a (x:xs,y:ys) =
+bpa1' p a (x:xs,y:ys) =
   case findInAncestors a x y of
     Nothing         -> Set.empty
-    Just (xs', ys') -> Set.union (Set.singleton (Set.fromList [(xs,xs'), (ys,ys')])) (bpa1' g (Set.delete (x:xs', y:ys') a) (x:xs, y:ys))
+    Just (xs', ys') -> Set.union (Set.singleton (Set.fromList [(xs,xs'), (ys,ys')])) (bpa1' p (Set.delete (x:xs', y:ys') a) (x:xs, y:ys))
 bpa1' _ _ p = Set.empty
 
 -- only works for equal norms
@@ -131,26 +132,26 @@ bpa2 g a n =
   Set.foldr (\p ps -> Set.union (Set.map (\v -> Set.union v (Set.delete p n)) (bpa2' g a p)) ps) (Set.singleton n) n
 
 bpa2' :: Productions -> Ancestors -> ([TypeVar],[TypeVar]) -> Set.Set Node
-bpa2' g a (x:xs, y:ys)
-  | not (normed g x && normed g y) = Set.empty
-  | norm g [x] == norm g [y]       = Set.singleton (Set.fromList [([x],[y]), (xs,ys)])
-  | m                              = Set.map (pairsBPA2 g (x:xs, y:ys)) gammas
+bpa2' p a (x:xs, y:ys)
+  | not (normed p x && normed p y) = Set.empty
+  | norm p [x] == norm p [y]       = Set.singleton (Set.fromList [([x],[y]), (xs,ys)])
+  | m                              = Set.map (pairsBPA2 p (x:xs, y:ys)) gammas
   | otherwise                      = Set.empty
-  where m = (not (norm g [x] > norm g [y]) || length ys > 0) && (not (norm g [x] < norm g [y]) || length xs > 0)
-        gammas = gammasBPA2 g (x,y)
-bpa2' _ _ p = Set.empty
+  where m = (not (norm p [x] > norm p [y]) || length ys > 0) && (not (norm p [x] < norm p [y]) || length xs > 0)
+        gammas = gammasBPA2 p (x,y)
+bpa2' _ _ _ = Set.empty
 
 pairsBPA2 :: Productions -> ([TypeVar],[TypeVar]) -> [TypeVar] -> Node
-pairsBPA2 g (x:xs, y:ys) gamma = Set.fromList [p1, p2]
-  where  p1 = if (norm g [x] >= norm g [y]) then ( [x], [y] ++ gamma ) else ( [x] ++ gamma, [y] )
-         p2 = if (norm g [x] >= norm g [y]) then ( gamma ++ xs, ys ) else ( xs, gamma ++ ys )
+pairsBPA2 p (x:xs, y:ys) gamma = Set.fromList [p1, p2]
+  where  p1 = if (norm p [x] >= norm p [y]) then ( [x], [y] ++ gamma ) else ( [x] ++ gamma, [y] )
+         p2 = if (norm p [x] >= norm p [y]) then ( gamma ++ xs, ys ) else ( xs, gamma ++ ys )
 
 gammasBPA2 :: Productions -> (TypeVar,TypeVar) -> Set.Set [TypeVar]
-gammasBPA2 g (x,y) = gammaSelection g nt (abs diff)
-  where diff = norm g [x] - norm g [y]
-        ks =  Map.keys g
+gammasBPA2 p (x,y) = gammaSelection p nt (abs diff)
+  where diff = norm p [x] - norm p [y]
+        ks =  Map.keys p
         ks' = sortOn (\x -> index x 0 (length ks + 4)) ks
-        nt = if diff >= 0 then snd (splitTypeVar g ks') else fst (splitTypeVar g ks')
+        nt = if diff >= 0 then snd (splitTypeVar p ks') else fst (splitTypeVar p ks')
 
 index :: TypeVar -> Int -> Int -> Int
 index x i max
@@ -159,25 +160,25 @@ index x i max
   | otherwise    = index x (i+1) max
 
 splitTypeVar :: Productions -> [TypeVar] -> ([TypeVar],[TypeVar])
-splitTypeVar g ks = break (== (last vs)) ks
-  where ts = (map (\k -> transitions g [k]) ks)
+splitTypeVar p ks = break (== (last vs)) ks
+  where ts = (map (\k -> transitions p [k]) ks)
         ts' = foldr union [] (map Map.toList ts)
         vs = map (\(l,x) -> head x) (filter (\(a,b) -> show a == "?()") ts')
 
 gammaSelection :: Productions -> [TypeVar] -> Int -> Set.Set [TypeVar]
-gammaSelection g xs diff = foldr (\x xs -> Set.union (substringGamma g diff (Set.singleton x)) xs) Set.empty preGammas
-  where l = foldr union [] (map (\x -> Map.elems (transitions g [x])) xs)
-        l' = filter (all (normed g)) l
-        n = filter (\xs -> sum (map (\x -> norm g [x]) xs) >= diff) l'
+gammaSelection p xs diff = foldr (\x xs -> Set.union (substringGamma p diff (Set.singleton x)) xs) Set.empty preGammas
+  where l = foldr union [] (map (\x -> Map.elems (transitions p [x])) xs)
+        l' = filter (all (normed p)) l
+        n = filter (\xs -> sum (map (\x -> norm p [x]) xs) >= diff) l'
         preGammas = foldr union [] (map (\l -> map (\i -> drop i l) [0..(length l-1)]) n)
 
 substringGamma :: Productions -> Int -> Set.Set [TypeVar] -> Set.Set [TypeVar]
-substringGamma g i ys
+substringGamma p i ys
   | s == i    = ys
   | s < i     = Set.empty
-  | otherwise = substringGamma g i (Set.singleton (take ((length xs) - 1) xs))
+  | otherwise = substringGamma p i (Set.singleton (take ((length xs) - 1) xs))
   where xs = foldr union [] (Set.toList ys)
-        s = sum (map (\x -> norm g [x]) xs)
+        s = sum (map (\x -> norm p [x]) xs)
 
 findInAncestors :: Ancestors -> TypeVar -> TypeVar -> Maybe ([TypeVar], [TypeVar])
 findInAncestors a x y =
