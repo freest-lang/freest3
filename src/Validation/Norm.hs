@@ -26,32 +26,32 @@ import           Syntax.Types
 -- Normalisation
 
 normalise :: Productions -> Productions
-normalise g = Map.map (Map.map (normaliseWord g)) g
+normalise p = Map.map (Map.map (normaliseWord p)) p
 
 normaliseWord :: Productions -> [TypeVar] -> [TypeVar]
-normaliseWord _ []     = []
-normaliseWord g (x:xs)
-  | normed g x = x : normaliseWord g xs
+normaliseWord _ [] = []
+normaliseWord p (x:xs)
+  | normed p x = x : normaliseWord p xs
   | otherwise  = [x]
 
 normed :: Productions -> TypeVar -> Bool
-normed g x = normedWord g Set.empty [x]
+normed p x = normedWord p Set.empty [x]
 
 normedWord :: Productions -> Set.Set TypeVar -> [TypeVar] -> Bool
 normedWord _ _ []     = True
-normedWord g v (x:xs) =
-  not (x `Set.member` v) &&
-  any id (map (normedWord g (Set.insert x v)) (Map.elems (transitions g (x:xs))))
+normedWord p v (x:xs) =
+  x `Set.notMember` v &&
+  or (map (normedWord p (Set.insert x v))
+          (Map.elems (transitions p (x:xs))))
 
 norm :: Productions -> [TypeVar] -> Int
-norm _ []   = 0 -- TODO: redundant; remove
-norm g xs = normList g [xs]
+norm p xs = normList p [xs]
 
-normList :: Productions -> [[TypeVar]] -> Int       -- TODO: use Set [TypeVar] rather than [[TypeVar]]
-normList g xs
+normList :: Productions -> [[TypeVar]] -> Int
+normList p xs
   | [] `elem` m = 0
-  | otherwise = 1 + (normList g (foldr union [] m))
-  where m = map (trans g) xs
+  | otherwise = 1 + normList p (foldr union [] m)
+  where m = map (trans p) xs
 
 trans :: Productions -> [TypeVar] -> [[TypeVar]]
-trans g xs = Map.elems (transitions g xs)
+trans p xs = Map.elems (transitions p xs)

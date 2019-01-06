@@ -26,7 +26,6 @@ module Syntax.Types
 , unfold
 , rename
 , subs
-, recType
 ) where
 
 import Syntax.Kinds
@@ -234,9 +233,6 @@ subs t2 y (Rec b t1)
 subs t y (Choice v m)     = Choice v (Map.map(subs t y) m)
 subs t y (Fun m t1 t2)    = Fun m (subs t y t1) (subs t y t2)
 subs _ _ t                = t
-
-recType :: TypeVar -> Type -> Type
-recType x t = Rec Bind{var=x, kind=Kind{prekind=Session, multiplicity=Lin}} t
 
 {- Alternative:
 data TypeScheme =

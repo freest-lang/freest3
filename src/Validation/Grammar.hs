@@ -29,16 +29,15 @@ module Validation.Grammar
 ( Label(..)
 , Transitions
 , Productions
-, Grammar(..)
 , transitions
 , insertProduction
+, Grammar(..) -- for testing purposes
 ) where
 
 import qualified Data.Map.Strict as Map
 import           Syntax.Types
 
--- The representation of a grammar
-
+-- Terminal symbols are called labels
 data Label =
   ChoiceLabel ChoiceView Constructor |
   MessageLabel Polarity BasicType |
@@ -61,10 +60,9 @@ transitions _ []     = Map.empty
 transitions p (x:xs) = Map.map (++ xs) (p Map.! x)
 
 insertProduction :: Productions -> TypeVar -> Label -> [TypeVar] -> Productions
--- insertProduction p x l w = Map.insert x (Map.singleton l w) p
 insertProduction p x l w = Map.insertWith Map.union x (Map.singleton l w) p
 
--- Showing grammars
+-- Showing a grammar
 
 instance Show Label where
   show (ChoiceLabel v l) = show v ++ l
@@ -82,9 +80,3 @@ showTransitions x m s = s ++ Map.foldrWithKey (showTransition x) "" m
 
 showTransition :: TypeVar -> Label -> [TypeVar] -> String -> String
 showTransition x l xs s = s ++ "\n" ++ x ++ " -> " ++ show l ++ " " ++ concat xs
-
-{-
-showRHS :: [TypeVar] -> String
-showRHS [] = "ε"
-showRHS xs = concat xs
--}
