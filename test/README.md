@@ -73,3 +73,34 @@ The txt file is structured as follows :
 
     Testing language phrase
         Expected
+
+
+## Profiling
+
+To profile a test suite we need to add "ghc-options" to the ContextFreeSession.cabal file.
+
+For example:
+
+```
+test-suite unit-tests
+  main-is:             UnitSpec.hs
+  ghc-options:
+             -fprof-auto-top
+             "-with-rtsopts=-N -p -s -h -i0.1"
+  Type:                exitcode-stdio-1.0
+  ...
+```
+
+The compiler options for profiling can be found in this page: https://downloads.haskell.org/~ghc/7.6.2/docs/html/users_guide/prof-compiler-options.html with useful explanations.
+
+With this setup, run:
+
+```
+$ cabal clean
+$ cabal configure --enable-library-profiling --enable-profiling --enable-tests --enable-benchmarks
+$ cabal build
+$ cabal test unit-tests
+```
+
+Then, it will be generated a file unit-tests.prof (in this case) that contains the data gathered.
+An useful explanation to interpret the data collected can be found in the following page: https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/profiling.html
