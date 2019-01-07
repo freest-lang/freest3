@@ -13,7 +13,7 @@ spec = do
 matchValidSpec :: [String] -> Spec
 matchValidSpec [k, t, u] =
   it (k ++ "  |-  " ++ t ++ " ~ " ++  u) $
-    equivalent (Map.fromList (read k)) (read t) (read u) `shouldBe` True
+    {-# SCC "EQUIVALENT_TEST_CALL" #-}equivalent (Map.fromList (read k)) (read t) (read u) `shouldBe` True
 
 main :: IO ()
 main = hspec spec
