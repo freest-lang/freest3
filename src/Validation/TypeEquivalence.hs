@@ -94,7 +94,9 @@ findFixedPoint g a nas
 
 -- The maximum length of the pairs in a node
 maximumLength :: Node -> Int
-maximumLength n = Set.findMax (Set.map (\(a,b) -> max (length a) (length b)) n)
+maximumLength n
+  | Set.null n = 0
+  | otherwise  = Set.findMax (Set.map (\(a,b) -> max (length a) (length b)) n)
 
 -- The various node transformations
 
