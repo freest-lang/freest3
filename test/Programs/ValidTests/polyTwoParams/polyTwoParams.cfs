@@ -1,4 +1,4 @@
-mkPair :: forall a, b => (a, b)
+mkPair :: forall a, b => a -> b -> (a, b)
 mkPair x y = (x, y)
 
 start :: (Int, Bool)

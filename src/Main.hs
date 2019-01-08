@@ -11,17 +11,10 @@ import System.FilePath
 main :: IO ()
 main = do
   args <- getArgs
-  -- putStrLn $ show $ length args
-
   if length args == 1 then
     compileFile (head args)
   else
     putStrLn "Error: Incorrect number of arguments, provide just one argument"
-
-  -- res <- compile (head args)
-  -- let filepath = reverse $ dropWhile (/= '/') (reverse (head args))
-  -- checkResult res filepath
-
 
 
 compileFile args
@@ -36,7 +29,7 @@ compileFile args
 
 checkResult :: (Bool, String) -> String -> IO ()
 checkResult res filepath = do
-  setCurrentDirectory filepath
+  changeDir filepath   
   case res of
     (True, _) -> do
       (exitcode, _, errors) <- readProcessWithExitCode "ghc" ["cfst.hs"] ""
@@ -47,7 +40,11 @@ checkResult res filepath = do
     (False, err) -> do
       putStrLn err
       exitFailure
-  
+  where
+    changeDir :: String -> IO ()
+    changeDir d
+      | not (null d) = setCurrentDirectory d
+      | otherwise    = return ()
     
   
 checkGhcOut exitcode errors =

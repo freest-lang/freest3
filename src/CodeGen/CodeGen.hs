@@ -36,14 +36,16 @@ genFile eenv =
   where 
     code f e p =
       let m = monadicFuns eenv
-          m1 = foldr (\x acc -> Map.insert x False acc) m p
+          m1 = addParams p m
           m2 = fst $ isMonadic m1 (m1 Map.! f) Map.empty e in
-      fst $ evalState (translate m1 m2 e) 0 
+      fst $ evalState (translate m1 m2 e) 0
+
+    addParams p m = foldr (\x acc -> Map.insert x False acc) m p
 
 showBangParams :: Params -> String
 showBangParams [] = ""
-showBangParams args = intercalate " " args
---showBangParams args = "!" ++ intercalate " !" args
+--showBangParams args = intercalate " " args
+showBangParams args = "!" ++ intercalate " !" args
 
 genImports :: String
 genImports = "import CFSTUtils\n\n"

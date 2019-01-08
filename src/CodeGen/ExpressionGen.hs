@@ -39,14 +39,11 @@ isMonadic fm b m (Variable p x) =
 isMonadic fm b m (UnLet p x e1 e2) =
   let (m1, b1) = isMonadic fm b m e1
       (m2, b2) = isMonadic fm b1 m1 e2 in
---      (Map.insert (UnLet p x e1 e2) b2 m2, b2)
---      m3 = Map.insert (Variable (27,3) x) (b1 || b2) m2 in
       (Map.insert (UnLet p x e1 e2) b2 m2, b2)
      
 isMonadic fm b m (App p e1 e2) = 
   let (m1, b1) = isMonadic fm False m e1
       (m2, b2) = isMonadic fm False m1 e2 
---      (Map.insert (App p e1 e2) False m2, False)
       bool     = b && monadicVar fm e1 in
       (Map.insert (App p e1 e2) (bool || b1 || b2) m2, b1 || b2)
 
@@ -64,14 +61,11 @@ isMonadic fm b m (Pair p e1 e2)  =
   let (m1, b1) = isMonadic fm False m e1
       (m2, b2) = isMonadic fm False m1 e2 in
       (Map.insert (Pair p e1 e2) (b || b1 || b2) m2, b || b1 || b2)
---      (Map.insert (Pair p e1 e2) b m2, b)
 
 isMonadic fm b m (BinLet p x y e1 e2)  = 
   let (m1, b1) = isMonadic fm b m e1
       (m2, b2) = isMonadic fm b1 m1 e2 in
---      bool     = b && monadicVar fm e1 in
       (Map.insert (BinLet p x y e1 e2) b2 m2, b2)
---      (Map.insert (BinLet p x y e1 e2) (bool || b1 || b2) m2, b1 || b2)
       
 isMonadic fm _ m (New p t) = (Map.insert (New p t) True m, True)
 
@@ -110,13 +104,6 @@ monadicVar fm (Variable _ x)
   | Map.member x fm = fm Map.! x
   | otherwise = False
 monadicVar _ _ = True
-
-{- Was
-isMapMonadic :: MonadicMap -> Map.Map a (b, Expression) -> (MonadicMap, Bool)
-isMapMonadic m mmap = head $
-  Map.foldl (\acc (_, e) -> acc ++ [isMonadic m e]) [] mmap
--}
-
 
 -- 2ND PASSAGE
 
@@ -200,14 +187,18 @@ translate fm m (App p e1 e2) = do
   (h1, b1) <- translate fm m e1
   (h2, b2) <- translate fm m e2
 
+  -- let b = "\n\n"++ (show e1) ++ "--->" ++ show b1 ++ "\n" ++
+  --                  (show e2) ++ "--->" ++ show b2 ++ "\n\n"
+   
   if (not b1) && b2 then
+--  if b1 && b2 then
     do
       v <- nextFresh
-      c <- translateExpr ("(" ++ h1 ++ " " ++ v ++ ")") (expected m (App p e1 e2)) False -- TODO
+      c <- translateExpr ("(" ++ h1 ++ " " ++ v ++ ")") (expected m (App p e1 e2)) False -- TODO was False ... breaks other programs
       return (h2 ++ " >>= \\ " ++ v ++ " -> " ++ c, b1)
   else
     do
-      c <- translateExpr ("(" ++ h1 ++ " " ++ h2 ++ ")") (expected m (App p e1 e2)) (b1||b2)
+      c <- translateExpr ("(" ++ h1 ++ " " ++ h2 ++ ")") (expected m (App p e1 e2)) (b1||b2) --False
       return (c, b1 || b2)
 
 {- Was
