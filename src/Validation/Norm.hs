@@ -12,7 +12,7 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Validation.Norm
-( normalise
+( prune
 , normed
 , norm
 ) where
@@ -24,13 +24,13 @@ import           Validation.Grammar
 
 -- Normalisation
 
-normalise :: Productions -> Productions
-normalise p = Map.map (Map.map (normaliseWord p)) p
+prune :: Productions -> Productions
+prune p = Map.map (Map.map (pruneWord p)) p
 
-normaliseWord :: Productions -> [TypeVar] -> [TypeVar]
-normaliseWord _ [] = []
-normaliseWord p (x:xs)
-  | normed p x = x : normaliseWord p xs
+pruneWord :: Productions -> [TypeVar] -> [TypeVar]
+pruneWord _ [] = []
+pruneWord p (x:xs)
+  | normed p x = x : pruneWord p xs
   | otherwise  = [x]
 
 normed :: Productions -> TypeVar -> Bool
