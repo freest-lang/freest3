@@ -115,7 +115,7 @@ congruence :: NodeTransformation
 congruence _ a = Set.singleton . Set.filter (not . congruentToAncestors a)
 
 congruentToAncestors :: Ancestors -> ([TypeVar], [TypeVar]) -> Bool
-congruentToAncestors a (xs,ys) = or $ Set.map (\p -> (congruentToPair a (xs,ys) p) || (congruentToPair a (ys,xs) p)) a
+congruentToAncestors a p = or $ Set.map (congruentToPair a p) a
 
 congruentToPair :: Ancestors -> ([TypeVar], [TypeVar]) -> ([TypeVar], [TypeVar]) -> Bool
 congruentToPair a (xs, ys) (xs', ys') =
