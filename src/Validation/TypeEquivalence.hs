@@ -209,7 +209,7 @@ equivalent k (Datatype m1) (Datatype m2) =
 equivalent k t u =
   isSessionType k t &&
   isSessionType k u &&
-  expansionTree (normalise p) [x] [y]
+  expansionTree (prune p) [x] [y]
   where Grammar [x, y] p = convertToGrammar [t, u]
 
 checkBinding :: KindEnv -> TypeMap -> Bool -> Constructor -> Type -> Bool
