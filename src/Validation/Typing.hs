@@ -69,22 +69,27 @@ checkFD fname p exp = do
   checkVEnvUn 
   return ()
 
+-- TODO: rename
+-- TODO: refector params to args
+-- TODO: refector addToENV -> só verifica erros (ver)
+-- Verifica conflitos nos params
+-- Verifica se uma função tem tipo
+-- adiciona args to env
+checkExpEnv :: Pos -> TermVar -> Params -> TypingState ()
+checkExpEnv p fun params = do
+  -- TODO: mover para cima
+  checkParam fun params
+  t <- checkFun p fun
+  parameters <- addToEnv p fun params (normalizeType (init (toList t))) 
+  foldM (\acc (arg, t) -> addToVEnv arg t) () parameters
+  return ()
+
 -- TODO: Add Pos
 -- TODO: Test
 checkVEnvUn :: TypingState ()
 checkVEnvUn = do
   venv <- getVarEnv
   Trans.mapM (checkUn (0,0)) venv
--- Map.foldr (\t acc -> checkUn (0,0) t) (return ()) venv
-  return ()
-
-checkExpEnv :: Pos -> TermVar -> Params -> TypingState ()
-checkExpEnv p fun params = do
-  checkParam fun params
-  -- TODO: 
-  t <- checkFun p fun
-  parameters <- addToEnv p fun params (normalizeType (init (toList t))) 
-  foldM (\acc (arg, t) -> addToVEnv arg t) () parameters
   return ()
 
 -- TESTING
@@ -112,7 +117,7 @@ normalizeType' (TypeScheme bs t) = (TypeScheme binds t)
 
 
 
--- END TESTING       normalizeType (TypeScheme (Bind {var="x", kind=(Kind Session Un)}) (Var "x"))
+-- END TESTING
 
 
 addToEnv :: Pos -> TypeVar -> Params -> [TypeScheme] -> TypingState [(TypeVar, TypeScheme)]
@@ -290,7 +295,7 @@ checkExp (Match p e cm) = do
   addToVEnv x t2
   venv <- getVarEnv
   u <- checkExp e1
-  Map.foldrWithKey (\k (v1,v2) _ -> checkMap p t1 u k ([v1], v2) extractExtChoice)
+  Map.foldrWithKey (\k (v1,v2) _ -> checkMap venv p t1 u k ([v1], v2) extractExtChoice)
                    (return ()) (Map.delete c cm)
   return u
 
@@ -310,9 +315,12 @@ checkExp (Case pos e cm) = do
   t2 <- extractDatatype pos t c  
 
   let x' = zip x (init (toList t2))        
-  foldM (\_ (p, t) -> addToVEnv p t) () x'  
+  foldM (\_ (p, t) -> addToVEnv p t) () x' 
+  venv <- getVarEnv
+  
   u <- checkExp e1
-  Map.foldrWithKey (\k v _ -> checkMap pos t u k v extractDatatype)
+  -- setVEnv venv
+  Map.foldrWithKey (\k v _ -> checkMap venv pos t u k v extractDatatype)
                    (return ()) (Map.delete c cm)
   return u
 
@@ -345,16 +353,18 @@ checkUnVar venv p x
 -- checkPoly p _ = addError $ show p ++ " Not enough arguments to polymorphic function call"
 
 
-checkMap :: Pos -> TypeScheme -> TypeScheme -> TermVar ->
+checkMap :: VarEnv -> Pos -> TypeScheme -> TypeScheme -> TermVar ->
             (Params, Expression) ->
             (Pos -> TypeScheme -> Constructor -> TypingState TypeScheme) ->
             TypingState ()
             
-checkMap pos choice against c (x, e) f = do 
+checkMap venv pos choice against c (x, e) f = do 
+  setVEnv venv
   t1 <- f pos choice c  
   let x' = zip x (myInit (toList t1))
   foldM (\_ (p, t) -> addToVEnv p t) () x' 
   checkAgainst pos e against
+--  addError $ "\n"++show c ++ "\n" ++ show venv
   return ()
 
 myInit :: [a] -> [a]
@@ -418,7 +428,7 @@ extractFun p (TypeScheme [] t)           = do
 
 extractFun p (TypeScheme bs _)           = do
 --  addError $ show p ++ ": Not enough arguments to polymorphic function call"
-  addError $ show p ++ "Polymorphic functions cannot be applied; instantiate function prior to applying"
+  addError $ show p ++ ": Polymorphic functions cannot be applied; instantiate function prior to applying"
   return (TypeScheme [] (Basic IntType), TypeScheme [] (Basic IntType))
 
 

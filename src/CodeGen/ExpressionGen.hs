@@ -163,7 +163,7 @@ translate fm m (Boolean p b) = do
 
 translate fm m (Variable p x) = do
   if Map.member x fm then
-    do
+    do      
       let b = expected m (Variable p x)
       h <- translateExpr x b (fm Map.! x)
       return (h, b) -- fm Map.! x)
