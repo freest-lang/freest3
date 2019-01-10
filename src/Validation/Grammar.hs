@@ -33,10 +33,14 @@ module Validation.Grammar
 , Grammar(..)
 , transitions
 , insertProduction
+, trans
+, reachable
+, backwards
 ) where
 
 import qualified Data.Map.Strict as Map
 import           Syntax.Types
+import           Data.List (union,delete)
 
 -- Terminal symbols are called labels
 data Label =
@@ -67,6 +71,24 @@ transitions p (x:xs) = Map.map (++ xs) (p Map.! x)
 -- Add a production from a non-terminal; the productions may already contain transitions for the given nonterminal (hence the insertWith and union)
 insertProduction :: Productions -> TypeVar -> Label -> [TypeVar] -> Productions
 insertProduction p x l w = Map.insertWith Map.union x (Map.singleton l w) p
+
+-- Determine transitions from a word
+trans :: Productions -> [TypeVar] -> [[TypeVar]]
+trans p xs = Map.elems (transitions p xs)
+
+reachable :: Productions -> [TypeVar] -> [TypeVar]
+reachable p xs
+  | length xs == length ts  = xs
+  | otherwise               = reachable p ts
+  where ts = foldr union xs (trans p xs)
+
+backwards :: Productions -> [TypeVar] -> TypeVar
+backwards p xs
+  | not (null k) = head k
+  | otherwise    = backwards p (Map.keys ps)
+  where ps = Map.filter (\y -> or (map (`elem` (foldr union [] (Map.elems y))) xs)) p
+        f  = Map.filter (\y ->  Map.member (MessageLabel In UnitType) y) ps
+        k  = Map.keys f
 
 -- Showing a grammar
 

@@ -73,7 +73,9 @@ match m1 m2 =
 
 simplify :: Productions -> Ancestors ->  Node -> NodeQueue -> NodeQueue
 simplify g a n q = foldr enqueueNode (Queue.dequeue q) s
-  where m = findFixedPoint g a (Set.singleton (n,a))
+  where m = findFixedPoint g (Set.singleton (n,a))
+        --mx = Set.fold (\x xs -> (max 1 x) * xs) 1 (Set.map (\(x,y) -> min (length x) (length y)) n)
+        --m = iterateSimplify g 1 mx (Set.singleton (n,a))
         s = reverse (sortBy (\(n1,_) (n2,_) -> compare (maximumLength n1) (maximumLength n2)) (Set.toList m))
 
 enqueueNode :: (Node,Ancestors) -> NodeQueue -> NodeQueue
@@ -86,11 +88,17 @@ enqueueNode (n,a) q
 apply :: Productions -> NodeTransformation -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
 apply g trans ns = Set.fold (\(n,a) ns -> Set.union (Set.map (\s -> (s,a)) (trans g a n)) ns) Set.empty ns
 
-findFixedPoint :: Productions -> Ancestors -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
-findFixedPoint g a nas
+findFixedPoint :: Productions -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
+findFixedPoint g nas
   | nas == nas' = nas
-  | otherwise = findFixedPoint g a nas'
+  | otherwise = findFixedPoint g nas'
   where nas' = foldr (apply g) nas [reflex, congruence, bpa1, reflex, congruence, bpa2, reflex, congruence]
+
+-- iterateSimplify :: Productions -> Int -> Int -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
+-- iterateSimplify g i mx nas
+--   | nas == nas' || i > mx = nas'
+--   | otherwise = iterateSimplify g (i+1) mx nas'
+--   where nas' = foldr (apply g) nas [reflex, congruence, bpa1, reflex, congruence, bpa2, reflex, congruence]
 
 -- The maximum length of the pairs in a node
 maximumLength :: Node -> Int
@@ -107,7 +115,7 @@ congruence :: NodeTransformation
 congruence _ a = Set.singleton . Set.filter (not . congruentToAncestors a)
 
 congruentToAncestors :: Ancestors -> ([TypeVar], [TypeVar]) -> Bool
-congruentToAncestors a p = or $ Set.map (congruentToPair a p) a
+congruentToAncestors a (xs,ys) = or $ Set.map (\p -> (congruentToPair a (xs,ys) p) || (congruentToPair a (ys,xs) p)) a
 
 congruentToPair :: Ancestors -> ([TypeVar], [TypeVar]) -> ([TypeVar], [TypeVar]) -> Bool
 congruentToPair a (xs, ys) (xs', ys') =
@@ -128,7 +136,6 @@ bpa1' p a (x:xs,y:ys) =
     Just (xs', ys') -> Set.union (Set.singleton (Set.fromList [(xs,xs'), (ys,ys')])) (bpa1' p (Set.delete (x:xs', y:ys') a) (x:xs, y:ys))
 bpa1' _ _ p = Set.empty
 
--- only works for equal norms
 bpa2 :: NodeTransformation
 bpa2 g a n =
   Set.foldr (\p ps -> Set.union (Set.map (\v -> Set.union v (Set.delete p n)) (bpa2' g a p)) ps) (Set.singleton n) n
@@ -149,38 +156,18 @@ pairsBPA2 p (x:xs, y:ys) gamma = Set.fromList [p1, p2]
          p2 = if (norm p [x] >= norm p [y]) then ( gamma ++ xs, ys ) else ( xs, gamma ++ ys )
 
 gammasBPA2 :: Productions -> (TypeVar,TypeVar) -> Set.Set [TypeVar]
-gammasBPA2 p (x,y) = gammaSelection p nt (abs diff)
+gammasBPA2 p (x,y) = gammaSelection p vs (abs diff)
   where diff = norm p [x] - norm p [y]
-        ks =  Map.keys p
-        ks' = sortOn (\x -> index x 0 (length ks + 4)) ks
-        nt = if diff >= 0 then snd (splitTypeVar p ks') else fst (splitTypeVar p ks')
-
-index :: TypeVar -> Int -> Int -> Int
-index x i max
-  | i == max     = -1
-  | x == ("_x"++show i) = i
-  | otherwise    = index x (i+1) max
-
-splitTypeVar :: Productions -> [TypeVar] -> ([TypeVar],[TypeVar])
-splitTypeVar p ks = break (== (last vs)) ks
-  where ts = (map (\k -> transitions p [k]) ks)
-        ts' = foldr union [] (map Map.toList ts)
-        vs = map (\(l,x) -> head x) (filter (\(a,b) -> show a == "?()") ts')
+        x0 = if diff >= 0 then (backwards p [y]) else (backwards p [x])
+        vs = reachable p [x0]
 
 gammaSelection :: Productions -> [TypeVar] -> Int -> Set.Set [TypeVar]
-gammaSelection p xs diff = foldr (\x xs -> Set.union (substringGamma p diff (Set.singleton x)) xs) Set.empty preGammas
-  where l = foldr union [] (map (\x -> Map.elems (transitions p [x])) xs)
-        l' = filter (all (normed p)) l
-        n = filter (\xs -> sum (map (\x -> norm p [x]) xs) >= diff) l'
-        preGammas = foldr union [] (map (\l -> map (\i -> drop i l) [0..(length l-1)]) n)
+gammaSelection p xs diff = Set.filter (\xs -> norm p xs == diff) (Set.fromList (powerset ys))
+  where ys  = filter (\x -> norm p [x] <= diff) xs
 
-substringGamma :: Productions -> Int -> Set.Set [TypeVar] -> Set.Set [TypeVar]
-substringGamma p i ys
-  | s == i    = ys
-  | s < i     = Set.empty
-  | otherwise = substringGamma p i (Set.singleton (take ((length xs) - 1) xs))
-  where xs = foldr union [] (Set.toList ys)
-        s = sum (map (\x -> norm p [x]) xs)
+powerset :: [TypeVar] -> [[TypeVar]]
+powerset [] = [[]]
+powerset (x:xs) = map (x:) (powerset xs) ++ powerset xs
 
 findInAncestors :: Ancestors -> TypeVar -> TypeVar -> Maybe ([TypeVar], [TypeVar])
 findInAncestors a x y =

@@ -51,6 +51,3 @@ normList p xss
   | [] `elem` m = 0
   | otherwise = 1 + normList p (foldr union [] m)
   where m = map (trans p) xss
-
-trans :: Productions -> [TypeVar] -> [[TypeVar]]
-trans p xs = Map.elems (transitions p xs)
