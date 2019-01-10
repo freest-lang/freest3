@@ -73,16 +73,16 @@ convertToGrammar ts = Grammar xs p
 typesToGrammar :: [Type] -> TransState [TypeVar]
 typesToGrammar []     = return []
 typesToGrammar (t:ts) = do
-  [x] <- typeToGrammar t
+  x <- typeToGrammar t
   xs <- typesToGrammar ts
   return (x:xs)
 
-typeToGrammar :: Type -> TransState [TypeVar]
+typeToGrammar :: Type -> TransState TypeVar
 typeToGrammar t = do
   xs <- toGrammar t
   y <- freshVar
   addProduction y (MessageLabel In UnitType) xs
-  return [y]
+  return y
 
 toGrammar :: Type -> TransState [TypeVar]
 toGrammar Skip =
@@ -194,4 +194,3 @@ s29 = Semi s5 (Message In IntType)
 t29 = convertToGrammar [s29]
 s30 = Rec yBind s29
 t30 = convertToGrammar [s24,s25,s26,s27,s28,s29,s30]
-
