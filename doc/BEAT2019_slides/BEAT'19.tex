@@ -53,11 +53,11 @@
 \begin{frame}[fragile]{Motivation}
 \vspace*{5mm}
 
-\begin{lstlisting}
+\begin{lstlisting}[language=CFST]
 data Tree = Leaf | Node Int Tree Tree
 \end{lstlisting}
 
-\begin{lstlisting}
+\begin{lstlisting}[language=CFST]
 sendTree Leaf c =
   select Leaf c
 sendTree (Node x l r) c =
@@ -513,3 +513,8 @@ sendTree (Node x l r) c =
 
 
 \end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
