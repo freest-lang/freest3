@@ -68,14 +68,7 @@ addProductions x m =
 
 convertToGrammar :: [Type] -> Grammar
 convertToGrammar ts = Grammar xs p
-  where (xs, (p, _, _)) = runState (typesToGrammar ts) initial
-
-typesToGrammar :: [Type] -> TransState [TypeVar]
-typesToGrammar []     = return []
-typesToGrammar (t:ts) = do
-  x <- typeToGrammar t
-  xs <- typesToGrammar ts
-  return (x:xs)
+  where (xs, (p, _, _)) = runState (mapM typeToGrammar ts) initial
 
 typeToGrammar :: Type -> TransState TypeVar
 typeToGrammar t = do
@@ -116,15 +109,13 @@ toGrammar (Rec Bind{var=x} t) = do
     return [y]
 toGrammar (Choice c m) = do
   y <- freshVar
-  assocsToGrammar y c (Map.assocs m)
+  mapM_ (assocToGrammar y c) (Map.assocs m)
   return [y]
 
-assocsToGrammar :: TypeVar -> ChoiceView -> [(Constructor, Type)] -> TransState ()
-assocsToGrammar _ _ [] = return ()
-assocsToGrammar y c ((l, t):as) = do
+assocToGrammar :: TypeVar -> ChoiceView -> (Constructor, Type) -> TransState ()
+assocToGrammar y c (l, t) = do
   xs <- toGrammar t
   addProduction y (ChoiceLabel c l) xs
-  assocsToGrammar y c as
 
 -- Some tests
 
