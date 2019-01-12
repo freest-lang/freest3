@@ -181,8 +181,8 @@ sendTree (Node x l r) c =
 
 	\vspace*{-2.8cm}
 	\metroset{block=fill}
-	\begin{varblock}[7.8cm]{Definition ((Un)normed symbols\footnote{\label{note1} Christensen et al. Bisimulation equivalence is decidable for all CF processes. 1995})}
-		\smallskip 
+	\begin{varblock}[7.8cm]{Definition ((Un)normed symbols)\footnote{\label{note1} Christensen et al. Bisimulation equivalence is decidable for all CF processes. 1995} }
+			\smallskip 
 		A sequence of symbols $\alpha$ is \emph{normed} if there is a path $\alpha \rightarrow \cdots \rightarrow \varepsilon$. 
 		Otherwise, $\alpha$ is said to be \emph{unnormed}.\\
 	\end{varblock}
@@ -281,7 +281,7 @@ sendTree (Node x l r) c =
 \begin{frame}{Simplify and Expand}
 	All these transformation rules preserve the \emph{safeness property}:
 	\metroset{block=fill}
-	\begin{block}{Safeness property\footnotemark[\value{footnote}]}
+	\begin{block}{Safeness property\footnote{Jan{\v{c}}ar, Moller. Techniques for decidability and undecidability of bisimilarity. 1999}}
 		\smallskip
 		$S\sim T$ iff the expansion tree rooted at $\{(S,T\,)\}$ has a successful branch.	
 	\end{block}
