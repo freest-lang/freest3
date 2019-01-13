@@ -88,7 +88,7 @@ sendTree (Node x l r) c =
 
   	\begin{itemize}
     	\item Implement an algorithm that decides the \emph{type equivalence problem}.
-    	\item Prove its soundness and completeness w.r.t. the metatheory of context-free session types proposed by Thiemann and Vasconcelos.
+    	\item Prove its soundness and completeness w.r.t.\ the metatheory of context-free session types proposed by Thiemann and Vasconcelos.
     	\item Provide results on complexity.
   	\end{itemize}
 \end{frame}
@@ -117,11 +117,11 @@ sendTree (Node x l r) c =
   	\vspace*{-2.5cm}
   	  	We consider a finite set of productions $X \rightarrow a \vec Y$ where:
    	\begin{itemize}
-     	\item $X, Y$ represent \emph{non-terminal variables}
-     	\item $a$ is a \emph{label} in the labelled transition system
+     	\item $X, Y$ represent \emph{non-terminal symbols}
+     	\item $a$ is a \emph{terminal symbol} (a \emph{label} in the labelled transition system)
    	\end{itemize}
 	}\hfill\includegraphics[height=2.8cm]{img/typeToGrammar.png}
-	Context-free session types are seen as \emph{simple grammars}, i.e.:
+	Context-free session types are seen as \emph{simple grammars}:
   	\begin{itemize}
 		\item context-free grammars in \emph{Greibach normal form} 
 		\item s.t. for each $X$ and $a$ there is at most one production $X \rightarrow a \vec Y$
@@ -179,11 +179,12 @@ sendTree (Node x l r) c =
 \begin{frame} {Prune unnormed productions}
 	\hfill\includegraphics[height=2.8cm]{img/prune.png}
 
-	\vspace*{-3cm}
+	\vspace*{-2.8cm}
 	\metroset{block=fill}
-	\begin{varblock}[7.8cm]{Definition ((Un)normed terms\footnote{\label{note1} Christensen et al. Bisimulation equivalence is decidable for all CF processes. 1995})}
-		\smallskip 
-		A term $\alpha$ is \emph{normed} if there is a path from $\alpha$ to $\varepsilon$. Otherwise, it is said to be \emph{unnormed}.
+	\begin{varblock}[7.8cm]{Definition ((Un)normed symbols)\footnote{\label{note1} Christensen et al. Bisimulation equivalence is decidable for all CF processes. 1995} }
+			\smallskip 
+		A sequence of symbols $\alpha$ is \emph{normed} if there is a path $\alpha \rightarrow \cdots \rightarrow \varepsilon$. 
+		Otherwise, $\alpha$ is said to be \emph{unnormed}.\\
 	\end{varblock}
 
 	Christensen, Huttel, and Stirling\footnotemark[\value{footnote}] noted that:\\\smallskip
@@ -280,7 +281,7 @@ sendTree (Node x l r) c =
 \begin{frame}{Simplify and Expand}
 	All these transformation rules preserve the \emph{safeness property}:
 	\metroset{block=fill}
-	\begin{block}{Safeness property\footnotemark[\value{footnote}]}
+	\begin{block}{Safeness property\footnote{Jan{\v{c}}ar, Moller. Techniques for decidability and undecidability of bisimilarity. 1999}}
 		\smallskip
 		$S\sim T$ iff the expansion tree rooted at $\{(S,T\,)\}$ has a successful branch.	
 	\end{block}
@@ -490,7 +491,7 @@ sendTree (Node x l r) c =
 	Implementation choices aiming to achieve completeness:
 	\begin{itemize}
 		\item Instead of looking for a fixed point, iterate the simplification phase (there may not be a fixed point)
-		\item Double ended enqueue, prepending \emph{promising} nodes, as opposed to queuing all new nodes
+		\item Use double ended enqueue, prepending \emph{promising} nodes, as opposed to queuing all new nodes
 	\end{itemize}
 \end{frame}
 
@@ -500,7 +501,7 @@ sendTree (Node x l r) c =
 		\item Soundness {\color{olive}\checkmark}
 		\item Completeness {\color{orange}?} {\color{gray} ... on our way to achieve it.}
 		\item Complexity {\color{orange}?} {\color{gray} ... in practice it does not seem to take much longer \\\hspace*{2.4cm} than parsing.}
-		\item Lines of Haskell code: approx.$\setminus$ $300$
+		\item Lines of Haskell code: approx.\ $300$
 	\end{itemize}
 	
 	{\color{teal}Coming soon: }\\\smallskip
