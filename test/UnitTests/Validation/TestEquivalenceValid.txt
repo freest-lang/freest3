@@ -201,6 +201,7 @@ Skip;!Int -> Bool
 !Bool
 
 -- The below kinding environment is not strictly needed
+
 [("α", SL)]
 ?Char; Skip
 ?Char
@@ -453,3 +454,4 @@ rec x . &{N: x;!Int;?Int, L: ?Int}
 []
 rec x . &{N: x;!Int, L: x}
 rec x . &{N: x, L: x};!Int
+

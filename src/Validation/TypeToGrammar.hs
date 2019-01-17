@@ -40,7 +40,7 @@ freshVar :: TransState String
 freshVar = do
   (p, v, n) <- get
   put (p, v, n + 1)
-  return $ "_x" ++ show n
+  return $ "_X" ++ show n
 
 memberVisited :: TypeVar -> TransState Bool
 memberVisited t = do
