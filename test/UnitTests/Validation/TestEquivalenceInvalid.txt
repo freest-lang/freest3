@@ -76,3 +76,6 @@ rec x. &{Leaf: ?Bool, Node: ?Int;x;x}
 
 (rec x . &{N: x;!Int, L: Skip});?Int
 rec x . &{N: x;!Int;?Int, L:?Int}
+
+rec x. +{A: x; !Bool, B: !Bool}
+rec x. +{A: x; !Bool, B: !Bool}; +{B: Skip}; +{B: Skip}; !Bool

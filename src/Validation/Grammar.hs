@@ -39,6 +39,7 @@ module Validation.Grammar
 ) where
 
 import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
 import           Syntax.Types
 import           Data.List (union,delete)
 
@@ -76,11 +77,12 @@ insertProduction p x l w = Map.insertWith Map.union x (Map.singleton l w) p
 trans :: Productions -> [TypeVar] -> [[TypeVar]]
 trans p xs = Map.elems (transitions p xs)
 
-reachable :: Productions -> [TypeVar] -> [TypeVar]
+reachable :: Productions -> Set.Set TypeVar -> Set.Set TypeVar
 reachable p xs
-  | length xs == length ts  = xs
-  | otherwise               = reachable p ts
-  where ts = foldr union xs (trans p xs)
+  | xs == ts  = xs
+  | otherwise = reachable p ts
+  where ys = foldr union [] $ trans p (Set.toList xs)
+        ts = Set.union xs (Set.fromList ys)
 
 backwards :: Productions -> [TypeVar] -> TypeVar
 backwards p xs

@@ -130,10 +130,11 @@ bpa1 g a n =
   Set.foldr (\p ps -> Set.union (Set.map (\v -> Set.union v (Set.delete p n)) (bpa1' g a p)) ps) (Set.singleton n) n
 
 bpa1' :: Productions -> Ancestors -> ([TypeVar],[TypeVar]) -> Set.Set Node
-bpa1' p a (x:xs,y:ys) =
-  case findInAncestors a x y of
-    Nothing         -> Set.empty
-    Just (xs', ys') -> Set.union (Set.singleton (Set.fromList [(xs,xs'), (ys,ys')])) (bpa1' p (Set.delete (x:xs', y:ys') a) (x:xs, y:ys))
+bpa1' p a (x:xs,y:ys)
+  | normed p x && normed p y = Set.empty
+  | otherwise = case findInAncestors a x y of
+      Nothing         -> Set.empty
+      Just (xs', ys') -> Set.union (Set.singleton (Set.fromList [(xs,xs'), (ys,ys')])) (bpa1' p (Set.delete (x:xs', y:ys') a) (x:xs, y:ys))
 bpa1' _ _ p = Set.empty
 
 bpa2 :: NodeTransformation
@@ -158,8 +159,8 @@ pairsBPA2 p (x:xs, y:ys) gamma = Set.fromList [p1, p2]
 gammasBPA2 :: Productions -> (TypeVar,TypeVar) -> Set.Set [TypeVar]
 gammasBPA2 p (x,y) = gammaSelection p vs (abs diff)
   where diff = norm p [x] - norm p [y]
-        x0 = if diff >= 0 then (backwards p [y]) else (backwards p [x])
-        vs = reachable p [x0]
+        x0 = if diff >= 0 then (backwards p [x]) else (backwards p [y])
+        vs = Set.toList $ reachable p (Set.singleton x0)
 
 gammaSelection :: Productions -> [TypeVar] -> Int -> Set.Set [TypeVar]
 gammaSelection p xs diff = Set.filter (\xs -> norm p xs == diff) (Set.fromList (powerset ys))
