@@ -72,7 +72,8 @@ checkVar v = do
   if b then
     getKind v
   else do
-    addError (show v ++ " is a free variable.")
+    addError (show v ++ " is a free variable.")    
+    addToKenv v topKind
     return $ topKind
 
 -- Check if a type is a session type
@@ -137,6 +138,7 @@ synthetize (Rec (Bind x k) t) = do
   k1 <- synthetize t
   kenv <- getKindEnv
   checkContractivity kenv t
+  removeFromKenv x
   return k1
 
 

@@ -80,5 +80,14 @@ getKind x = do
   kenv <- getKindEnv
   return $ kenv Map.! x
 
+removeFromKenv :: TypeVar -> TypingState ()
+removeFromKenv x = do
+  kenv <- getKindEnv
+  if (Map.member x kenv) then
+    modify (\(kenv, venv, errors) -> (Map.delete x kenv, venv, errors))
+  else
+    return ()
+      
+
 -- setKEnv :: KindEnv -> TypingState ()
 -- setKEnv kenv = modify (\(_, venv, errors) -> (kenv, venv, errors))
