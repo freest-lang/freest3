@@ -14,6 +14,7 @@ Portability :  portable | non-portable (<reason>)
 module Validation.Norm
 ( prune
 , normed
+, sameNorm
 , norm
 ) where
 
@@ -51,3 +52,10 @@ normList p xss
   | [] `elem` m = 0
   | otherwise = 1 + normList p (foldr union [] m)
   where m = map (trans p) xss
+
+sameNorm :: Productions -> [TypeVar] -> [TypeVar] -> Bool
+sameNorm p xs ys =
+  (not normedXs && not normedYs) ||
+  (normedXs && normedYs && norm p xs == norm p ys )
+  where normedXs = normedWord p Set.empty xs
+        normedYs = normedWord p Set.empty ys
