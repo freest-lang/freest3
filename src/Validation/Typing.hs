@@ -112,7 +112,8 @@ normalizeType' (TypeScheme bs t) = (TypeScheme binds t)
      tcvar b (Message _ _) = []
      tcvar b (Basic _) = []
      tcvar b (Choice _ m) = Map.foldl (\acc t -> acc ++ (tcvar b t)) [] m
-     -- DataType, basic, pair, 
+     tcvar b (PairType t1 t2) = tcvar b t1 ++ tcvar b t2
+     -- DataType
      tcvar b t = error $ "INTERNAL ERROR: " ++ show b ++ " " ++ show t
 
 
@@ -208,10 +209,7 @@ checkExp (TypeApp p e ts) = do
   t1 <- checkExp e  
   (binds, t2) <- extractScheme p t1
   wellFormedCall p e ts binds
-
-  -- venv <- getVarEnv
-  -- addError $ "\n\n" ++ (show venv) ++ "\n\n"
-    
+  
   -- TODO: move to other module and call subL
   let sub = foldr (\(t', b) acc -> subs t' (var b) acc) t2 (zip ts binds)
   kenv <- getKindEnv
@@ -328,18 +326,14 @@ checkExp (Case pos e cm) = do
   -- x is well formed (e[x] based on the kind)
 wellFormedCall :: Pos -> Expression -> [Type] -> [Bind] -> TypingState ()
 wellFormedCall p e ts binds = do
-  kenv <- getKindEnv
-  mapM (f kenv) ts
+  mapM (\t -> kinding (TypeScheme [] t)) ts
   sameNumber
-  where
-    f kenv t
-      | isWellKinded kenv t = return ()
-      | otherwise           = addError $ (show p) ++ ": Type " ++ (show t) ++ " is not well formed"
+  where   
     sameNumber
       | length binds == length ts = return ()
       | otherwise                 =
-        addError $ (show p) ++ ": Expecting " ++ (show (length ts)) ++
-          " types on type app; found " ++ (show (length binds))
+        addError $ (show p) ++ ": Expecting " ++ (show (length binds)) ++
+          " type(s) on type app; found " ++ (show (length ts))
 
 
 checkUnVar :: VarEnv -> Pos -> TermVar -> TypingState ()
@@ -597,6 +591,7 @@ checkVar pos x = do
     removeLinVar kenv x (TypeScheme bs t)
     return (TypeScheme bs t)
   else do
+--    addToVEnv x (TypeScheme [] Skip)
     addError (show pos ++  ": Variable or data constructor not in scope: " ++ x)
     return $ TypeScheme [] (Basic UnitType)
 
