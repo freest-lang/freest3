@@ -73,10 +73,15 @@ match m1 m2 =
 
 simplify :: Productions -> Ancestors ->  Node -> NodeQueue -> NodeQueue
 simplify g a n q = foldr enqueueNode (Queue.dequeue q) s
-  where m = findFixedPoint g (Set.singleton (n,a))
+  where m' = findFixedPoint g (Set.singleton (n,a))
+        -- removes children nodes whose pairs don't have the same norm
+        m = Set.filter (\(n,a) -> normsMatch g n) m'
         --mx = Set.fold (\x xs -> (max 1 x) * xs) 1 (Set.map (\(x,y) -> min (length x) (length y)) n)
         --m = iterateSimplify g 1 mx (Set.singleton (n,a))
         s = reverse (sortBy (\(n1,_) (n2,_) -> compare (maximumLength n1) (maximumLength n2)) (Set.toList m))
+
+normsMatch :: Productions -> Node -> Bool
+normsMatch g n = and $ Set.map (\(xs,ys) -> sameNorm g xs ys) n
 
 enqueueNode :: (Node,Ancestors) -> NodeQueue -> NodeQueue
 enqueueNode (n,a) q
@@ -144,10 +149,12 @@ bpa2 g a n =
 bpa2' :: Productions -> Ancestors -> ([TypeVar],[TypeVar]) -> Set.Set Node
 bpa2' p a (x:xs, y:ys)
   | not (normed p x && normed p y) = Set.empty
-  | norm p [x] == norm p [y]       = Set.singleton (Set.fromList [([x],[y]), (xs,ys)])
-  | m                              = Set.map (pairsBPA2 p (x:xs, y:ys)) gammas
+  | lengthsPositive && equalNorms  = Set.singleton (Set.fromList [([x],[y]), (xs,ys)])
+  | lengthsPositive && not equalNorms = Set.map (pairsBPA2 p (x:xs, y:ys)) gammas
   | otherwise                      = Set.empty
-  where m = (not (norm p [x] > norm p [y]) || length ys > 0) && (not (norm p [x] < norm p [y]) || length xs > 0)
+  where lengthsPositive = length ys > 0 && length xs > 0
+        equalNorms = norm p [x] == norm p [y]
+        -- m = (not (norm p [x] > norm p [y]) || length ys > 0) && (not (norm p [x] < norm p [y]) || length xs > 0)
         gammas = gammasBPA2 p (x,y)
 bpa2' _ _ _ = Set.empty
 
