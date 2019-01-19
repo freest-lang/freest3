@@ -1,4 +1,6 @@
 {-
+The language of S0 is {a^nb^n | n >= 1}
+
 type S0 = +{A: S1}
 type S1 = +{A: S1; +{B: Skip}, B: Skip}
 
@@ -9,10 +11,10 @@ type S1 = (rec x. +{A: x; +{B: Skip}, B: Skip})
 -- client :: Int -> S0 -> Skip
 client :: Int -> +{A: rec x. +{A: x; +{B: Skip}, B: Skip}} -> Skip
 client n c =
-  (let c = select A c in
-  client'[Skip] (n - 1) c)
+  let c = select A c in
+  client'[Skip] (n - 1) c
 
--- client' :: Int -> S1 -> Skip
+-- client' :: Int -> S1;α -> α
 client' :: forall α => Int -> (rec x. +{A: x; +{B: Skip}, B: Skip}); α -> α
 client' n c =
   if n == 0
@@ -21,7 +23,7 @@ client' n c =
   else
     let c = select A c in                       -- c: S1; +{B: Skip}; α
     let c = client'[+{B: Skip}; α] (n - 1) c in -- c: +{B: Skip}; α
-    select B c                                   -- :α
+    select B c                                  -- :α
 
 server :: &{A: rec x. &{A: x; &{B: Skip}, B: Skip}} -> Skip
 server c =
@@ -40,7 +42,7 @@ server' c =
 
 start :: Skip
 start =
-  let w, r = new rec x. +{A: x; +{B: Skip}, B: Skip} in
-  let t = fork (client 25) in
+  let w, r = new +{A: rec x. +{A: x; +{B: Skip}, B: Skip}} in
+  let t = fork (client 25 w) in
   server r
 
