@@ -1,0 +1,46 @@
+{-
+type S0 = +{A: S1}
+type S1 = +{A: S1; +{B: Skip}, B: Skip}
+
+type S0 = +{A: rec x. +{A: x; +{B: Skip}, B: Skip}} 
+type S1 = (rec x. +{A: x; +{B: Skip}, B: Skip})
+-}
+
+-- client :: Int -> S0 -> Skip
+client :: Int -> +{A: rec x. +{A: x; +{B: Skip}, B: Skip}} -> Skip
+client n c =
+  (let c = select A c in
+  client'[Skip] (n - 1) c)
+
+-- client' :: Int -> S1 -> Skip
+client' :: forall α => Int -> (rec x. +{A: x; +{B: Skip}, B: Skip}); α -> α
+client' n c =
+  if n == 0
+  then
+    select B c                                  -- c: α
+  else
+    let c = select A c in                       -- c: S1; +{B: Skip}; α
+    let c = client'[+{B: Skip}; α] (n - 1) c in -- c: +{B: Skip}; α
+    select B c                                   -- :α
+
+server :: &{A: rec x. &{A: x; &{B: Skip}, B: Skip}} -> Skip
+server c =
+  match c with
+    A c -> server'[Skip] c
+
+server' :: forall α => (rec x. &{A: x; &{B: Skip}}); &{B: Skip}; α -> α
+server' c =
+  match c with
+    A c ->
+      (let c = server'[&{B: Skip}; α] c in
+      case c of
+        B c1 -> c1)
+    B c ->
+      c
+
+start :: Skip
+start =
+  let w, r = new rec x. +{A: x; +{B: Skip}, B: Skip} in
+  let t = fork (client 25) in
+  server r
+
