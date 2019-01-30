@@ -1,0 +1,165 @@
+\section{Programming in FreeST}
+\label{sec:programming}
+
+\freest{} is a basic implementation of the language introduced by
+Thiemann and Vasconcelos~\cite{DBLP:conf/icfp/ThiemannV16}. Here we
+provide a gentle introduction.
+
+We have chosen the concrete syntax to be aligned with that of Haskell,
+as much as possible. A \freest{} script is a collection of type
+abbreviations, datatype and function (or value) declarations. Function
+\lstinline|start| starts it all.
+
+Our first example serializes a tree object on a channel. We need a
+datatype for trees, for which we take a binary tree with integer
+values on the internal nodes:
+%
+\begin{lstlisting}
+data Tree = Leaf | Node Int Tree Tree
+\end{lstlisting}
+
+We also need a channel capable of transmitting a tree. The type below
+describes a channel that not only sends a tree, but for each
+\lstinline|Node| also receives back an integer value. The
+\lstinline|+| type constructor introduces an internal choice (the
+process in possession of the channel end chooses) with two
+alternatives labelled \lstinline|Leaf| and \lstinline|Node|. These two
+labels should not be confused with those of the datatype introduced
+above. \lstinline|Leaf| states that no further interaction is possible
+on the channel (\lstinline|Skip|); \lstinline|Node| branch writes
+an integer value, followed by two trees, and terminates by reading an
+integer value (\lstinline|!Int;TreeC;TreeC;?Int|).
+%
+\begin{lstlisting}
+type TreeC = +{Leaf: Skip, Node: !Int;TreeC;TreeC;?Int}
+\end{lstlisting}
+
+The writer process, \lstinline|transform|, writes a tree on a given
+channel. The channel is of type \lstinline|TreeC;alpha|, for
+\lstinline|alpha| a type variable. It returns a \lstinline|Tree| and
+the residual of the input channel, of type \lstinline|alpha|.
+
+\begin{lstlisting}
+transform: forall alpha => Tree -> TreeC;alpha -> (Tree, alpha)
+\end{lstlisting}
+
+For each \lstinline|Node| in the input tree, \lstinline|transform|
+sends the reads an integer from the channel and returns a tree
+isomorphic to the input where each integer in nodes is read from the
+channel. 
+%
+The \lstinline|transform| function performs a \lstinline|case|
+analysis on the \lstinline|Tree| constructor (either \lstinline|Leaf|
+or \lstinline|Node|). In the former case, \lstinline|select|s the
+\lstinline|Leaf| choice returns a pair composed of the original tree
+and the residual of the channel. In the latter case, the function
+\lstinline|select|s the \lstinline|Node| choice, then sends the
+integer value in the node, followed by the two subtrees (via recursive
+calls). Finally, reads an integer \lstinline|y| from the channel,
+assembles a tree with \lstinline|y| at the \lstinline|Node| and
+returns this tree together with the residual of the channel.
+%
+\begin{lstlisting}
+transform tree c =
+  case tree of
+    Leaf ->
+      (Leaf, select Leaf c)
+    Node x l r ->
+      let c   = select Node c in
+      let c   = send x c in
+      let l,c = transform l c in
+      let r,c = transform r c in
+      let y,c = receive c in
+      (Node y l r, c)
+\end{lstlisting}
+
+Notice that the language requires a continuous rebinding of channel
+\lstinline|c|, for its type changes at each interaction, as in Gay and
+Vasconcelos~\cite{DBLP:journals/jfp/GayV10}. Also \freest{} infers the
+appropriate types that instantiate \lstinline|alpha| in both recursive
+calls, namely, \lstinline|TreeC;?Int;alpha| and
+\lstinline|?Int;alpha|.
+
+The reader process, \lstinline|treeSum|, reads a tree from a given
+channel, writes back on the channel the sum of the elements in the
+tree and returns this sum. This process sees the channel from the
+other end: rather than performing an internal choice (\lstinline|+|),
+it performs an internal choice (\lstinline|&|), rather than writing
+(\lstinline|!|), it reads (\lstinline|?|), and rather than reading, it
+writes. We could write its type as
+\lstinline|rec x. &{Leaf: Skip, Node: ?Int;x;x;!Int}|,
+but the \lstinline|dualof| operator provides an handy abbreviation.
+%
+\begin{lstlisting}
+treeSum: forall alpha => dualof TreeC;alpha -> (Int, alpha)
+\end{lstlisting}
+
+Rather than performing a case analysis on a \lstinline|Tree|, function
+\lstinline|treeSum| \lstinline|match|es the channel against its two
+possible choices (\lstinline|Leaf| and \lstinline|Node|). In the form
+case the function returns \lstinline|0| and the residual channel. In
+the latter, the function reads receives an integer from the channel,
+then reads two subtrees (via recursive calls) and sends on the channel
+the sum of the values in the subtree. It finally returns this exact
+sum, together with the channel residual.
+%
+\begin{lstlisting}
+treeSum c =
+  match c with
+    Leaf c ->
+      (0, c)
+    Node c ->
+      let x, c = receive c in
+      let l, c = treeSum c in
+      let r, c = treeSum c in
+      let c    = send (x + l + r) c in
+      (x + l + r, c)
+\end{lstlisting}
+
+Again notice the continuous rebinding of channel \lstinline|c| and the
+omission of two types that instantiate variable \lstinline|alpha| in
+the two recursive calls, namely \lstinline|dualof TreeC;!Int;alpha|
+and \lstinline|!Int;alpha|.
+
+Function \lstinline|start| completes the script. It starts by creating
+a \lstinline|new| channel. This channel constructor takes a type
+\lstinline|T| and returns a pair of type
+%
+\lstinline|(T,dualof T)|. Then the \lstinline|start| function
+\lstinline|fork|s a new thread to compute the \lstinline|treeSum|. In
+the main thread, it \lstinline|transform|s a given tree
+(\lstinline|aTree|). Function\lstinline|treeSum| uses the
+\lstinline|r| end of the channel and \lstinline|transform| the other
+end, \lstinline|w|. In these calls, both functions are (implicitly)
+applied to type \lstinline|Skip|. This means that both channel ends
+\lstinline|r| and \lstinline|w| are both consumed to \lstinline|Skip|,
+and hence can be safely discarded. In addition to the residual of
+channel end \lstinline|w|, function \lstinline|transform| also returns
+a new tree \lstinline|t|, which becomes the result of the function.
+%
+\begin{lstlisting}
+start: Tree
+start =
+  let w,r = new TreeC in
+  let u   = fork (treeSum r) in
+  let t,w = transform aTree w in
+  t
+\end{lstlisting}
+
+The two diagrams below show a tree transformation, from tree
+\lstinline|aTree| into tree \lstinline|t|. \todo{sketch the diagram}
+
+\begin{lstlisting}
+aTree = Node 1 (Node 2 Leaf (Node 3 Leaf (Node 4 Leaf (Node 5 Leaf Leaf)))) (Node 6 Leaf (Node 7 Leaf (Node 8 Leaf Leaf)))
+\end{lstlisting}
+
+\begin{lstlisting}
+t = Node 36 (Node 14 Leaf (Node 12 Leaf (Node 9 Leaf (Node 5 Leaf Leaf)))) (Node 21 Leaf (Node 15 Leaf (Node 8 Leaf Leaf)))
+\end{lstlisting}
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:
