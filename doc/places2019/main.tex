@@ -21,6 +21,21 @@
 \begin{document}
 \maketitle
 
+Session types have been long subject to the shackles of tail
+recursion. Regular languages have the evident advantage of simple
+algorithms for checking type equivalence or subtyping. Given two
+types, the fixed-point construction algorithm introduced by Gay and
+Hole~\cite{acta} builds in polynomial time a bisimulation relating the
+two types, or decides that no such relation exists. The scenario
+complicates a little when when we let go of tail recursion, for now
+the fixed-point construction algorithm does not necessary terminate.
+
+This is one of the reasons why session types have been confined to
+($\omega$-) regular languages for so many years. In 2016, Thiemann and
+Vasconcelos introduced a functional programming language equipped with
+context-free session types and proved type equivalence
+decidable~\cite{tv}.
+
 \paragraph{Acknowledgements}
 
 This work was supported by FCT through project Confident, ref.\
