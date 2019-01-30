@@ -1,11 +1,15 @@
 {-
-The language of S0 is {a^nb^n | n >= 1}
+The language of S0 is {A^nB^n | n >= 1}
+
+S0 -> a S1
+S1 -> a S1 b | b
 
 type S0 = +{A: S1}
 type S1 = +{A: S1; +{B: Skip}, B: Skip}
 
 type S0 = +{A: rec x. +{A: x; +{B: Skip}, B: Skip}} 
 type S1 = (rec x. +{A: x; +{B: Skip}, B: Skip})
+
 -}
 
 -- client :: Int -> S0 -> Skip
@@ -19,7 +23,7 @@ client' :: forall α => Int -> (rec x. +{A: x; +{B: Skip}, B: Skip}); α -> α
 client' n c =
   if n == 0
   then
-    select B c                                  -- c: α
+    select B c                                  -- :α
   else
     let c = select A c in                       -- c: S1; +{B: Skip}; α
     let c = client'[+{B: Skip}; α] (n - 1) c in -- c: +{B: Skip}; α
