@@ -150,8 +150,8 @@ start =
   t
 \end{lstlisting}
 
-The two diagrams below show a tree transformation, from tree
-\lstinline|aTree| into tree \lstinline|t|. \todo{sketch the diagram}
+The two diagrams in Figure~\ref{fig:trees} show a tree transformation, from tree
+\lstinline|aTree| into tree \lstinline|t|.
 
 \begin{lstlisting}
 aTree = Node 1 (Node 2 Leaf (Node 3 Leaf (Node 4 Leaf (Node 5 Leaf Leaf)))) (Node 6 Leaf (Node 7 Leaf (Node 8 Leaf Leaf)))
@@ -160,6 +160,57 @@ aTree = Node 1 (Node 2 Leaf (Node 3 Leaf (Node 4 Leaf (Node 5 Leaf Leaf)))) (Nod
 \begin{lstlisting}
 t = Node 36 (Node 14 Leaf (Node 12 Leaf (Node 9 Leaf (Node 5 Leaf Leaf)))) (Node 21 Leaf (Node 15 Leaf (Node 8 Leaf Leaf)))
 \end{lstlisting}
+
+\begin{figure}
+\centering
+\begin{tikzpicture}[level/.style={sibling distance=35mm/#1}, 
+                    level distance = 7mm]
+\node{\lstinline|1|}
+	child { node {\lstinline|2|}
+		child { node {\lstinline|Leaf|}}
+		child { node  {\lstinline|3|}
+			child { node {\lstinline|Leaf|}}
+			child { node  {\lstinline|4|}
+				child { node {\lstinline|Leaf|}}
+				child { node  {\lstinline|5|}
+					child { node {\lstinline|Leaf|}}
+					child { node {\lstinline|Leaf|}}}}}}
+	child { node {\lstinline|6|}
+		child { node {\lstinline|Leaf|}}
+		child { node  {\lstinline|7|}
+			child { node {\lstinline|Leaf|}}
+			child { node {\lstinline|8|}
+				child { node {\lstinline|Leaf|}}
+				child { node {\lstinline|Leaf|}}}}}
+;
+\end{tikzpicture} 
+\hspace*{5mm}
+\begin{tikzpicture}[level/.style={sibling distance=35mm/#1}, 
+                   level distance = 7mm]
+\node{\lstinline|36|}
+	child { node {\lstinline|14|}
+		child { node {\lstinline|Leaf|}}
+		child { node  {\lstinline|12|}
+			child { node {\lstinline|Leaf|}}
+			child { node  {\lstinline|9|}
+				child { node {\lstinline|Leaf|}}
+				child { node  {\lstinline|5|}
+					child { node {\lstinline|Leaf|}}
+					child { node {\lstinline|Leaf|}}}}}}
+	child { node {\lstinline|21|}
+		child { node {\lstinline|Leaf|}}
+		child { node  {\lstinline|15|}
+			child { node {\lstinline|Leaf|}}
+			child { node {\lstinline|8|}
+				child { node {\lstinline|Leaf|}}
+				child { node {\lstinline|Leaf|}}}}}
+;
+\end{tikzpicture}
+\caption{Tree transformation from \lstinline|aTree| (on the left) into tree \lstinline|t| (on the right)}
+\label{fig:trees}
+\end{figure}
+
+
 
 
 
