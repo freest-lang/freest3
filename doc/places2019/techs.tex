@@ -1,0 +1,103 @@
+\section{The compiler}
+\label{sec:compiler}
+
+\freest{} is written in Haskell and generates Haskell code that can be
+compiled with a conventional (ghc) Haskell compiler.
+
+The validation phase features a kinding system and a typing
+system. Only declarative versions of these systems are described in
+Thiemann and Vasconcelos~\cite{DBLP:conf/icfp/ThiemannV16}.
+
+The \emph{kinding system} classifies types in kinds, composed of a
+prekind (session or functional) and a multiplicity (unrestricted or
+linear). For example \lstinline|!Int| is a well formed type of kind
+linear session type. On the other hand \lstinline|(Int->Bool);Int| is
+not well formed for it mixes functional types with session types.
+%
+It is polymorphism that precludes the syntactic separation of session
+and functional types. For example, type \lstinline|TreeC;alpha| is
+well formed only in a context assigning a session kind to type
+variable \lstinline|alpha|. In this case the type is of kind linear
+session.
+%
+The declarative kinding system comprises a rule of kind subsumption,
+and is therefore not guided by the syntax of types. The algorithmic
+version used in the compiler is obtained by transforming the original
+system into a bidirectional system.
+
+The \emph{typing system} is a conventional type system for GV-like
+languages~\cite{DBLP:journals/jfp/GayV10}. Again, the original system
+is not syntax-directed since it includes a type equivalence rule,
+allowing to replace the type of an expression by an equivalent
+type~\cite{DBLP:conf/icfp/ThiemannV16}. Again, the algorithmic version
+is obtained by transforming the original system into a bidirectional
+system.
+
+Checking \emph{type equivalence} is the main challenge of the
+compiler. We are presently working on an algorithm to decide whether
+two context-free session types are equivalent or not. \todo{some more
+  input here}.
+
+The rest of this section concentrates on \emph{code generation}.
+
+The runtime system of \freest{} is surprisingly compact. We build on
+modules \lstinline|Control.Concurrent| and
+\lstinline|Unsafe.Coerce|.
+%
+To fork a new thread, we use the forkIO primitive. The primitive
+returns a threadId, which we discard and convert into the unit value.
+%
+\begin{lstlisting}[language=Haskell]
+_fork e = forkIO e >> return ()
+\end{lstlisting}
+
+Each channel is implement with a pair of \lstinline|MVar|s. The
+\lstinline|_new| function creates such a pair and returns the two
+channel ends. Each channel end is itself a pair of crossed
+\lstinline|MVar|s.
+%
+\begin{lstlisting}[language=Haskell, literate={<-}{{$\leftarrow$}}1]
+_new = do
+  m1 <- newEmptyMVar
+  m2 <- newEmptyMVar
+  return ((m1, m2), (m2, m1))
+\end{lstlisting}
+% _new = newEmptyMVar >>= \m1 -> newEmptyMVar >>= \m2 -> return ((m1, m2), (m2, m1)) 
+
+To write on a channel end, we use the second \lstinline|MVar| in the
+given pair. Because the type of values transmitted on a channel vary
+over time, we use \lstinline|unsafeCoerce| to bypass the Haskell type
+system. To write on the channel end we use the \lstinline|putMVar|
+primitive. If the \lstinline|MVar| is currently full,
+\lstinline|putMVar| waits until it becomes empty.  The result of
+\lstinline|_send| is the original channel end, which must be rebind in
+programs, as discussed in the previous section.
+%
+\begin{lstlisting}[language=Haskell, literate={<-}{{$\leftarrow$}}1]
+_send x (m1, m2) = putMVar m2 (unsafeCoerce x) >> return (m1, m2)
+\end{lstlisting}
+
+Finally, to read from a channel end, we use the first element of the
+pair. The \lstinline|takeMVar| primitive returns the contents of the
+\lstinline|MVar|. If the \lstinline|MVar| is empty,
+\lstinline|takeMVar| waits until it is full. After a
+\lstinline|takeMVar|, the \lstinline|MVar| is left empty. The result
+of \lstinline|_receive| is a pair composed of the value read from the
+\lstinline|MVar| and the original channel (which, again, should be
+rebind in the program).
+%
+\begin{lstlisting}[language=Haskell, literate={->}{{$\rightarrow$}}1]
+_receive (m1, m2) = takeMVar m1 >>= \x -> return (unsafeCoerce x, (m1, m2))
+\end{lstlisting}
+
+The semantics of Haskell \lstinline|MVar|s are completely aligned with
+that of the communication primitives of (synchronous) session types
+primitives, providing for the rendez-vous (the first to arrive at the
+read/write point waits) mechanism underlying session
+communication. Given the linear nature of \freest{} channels, no
+actual queues are required.
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:
