@@ -1,20 +1,135 @@
 \section{Introduction}
 
 Session types have been long subject to the shackles of tail
-recursion. Regular languages have the evident advantage of simple
-algorithms for checking type equivalence or subtyping. Given two
-types, the fixed-point construction algorithm introduced by Gay and
-Hole~\cite{DBLP:journals/acta/GayH05} builds in polynomial time a
-bisimulation relating the two types, or decides that no such relation
-exists. The scenario complicates a little when when we let go of tail
-recursion, for now the fixed-point construction algorithm does not
-necessary terminate.
+recursion. Regular session-type languages bear the evident advantage
+of providing for simple algorithms to check type equivalence and
+subtyping. Given two types, a fixed-point construction algorithm such
+as the one introduced by Gay and Hole builds, in polynomial time and
+space, a bisimulation relating the two types, or decides that no such
+relation exists~\cite{DBLP:journals/acta/GayH05}. The scenario darkens
+when one decides to let go of tail recursion, for now the fixed-point
+construction algorithm does not necessarily terminate.
+%
+This is one of the main reasons why session types have been confined
+to ($\omega$-) regular languages for so many years.
 
-This is one of the reasons why session types have been confined to
-($\omega$-) regular languages for so many years. In 2016, Thiemann and
-Vasconcelos introduced a functional programming language equipped with
+The discipline of conventional (that is, regular) session types
+provides guarantees not easily accessible to simpler languages such as
+concurrent ML, where channels are unidirectional and transport values
+of a fixed size~\cite{DBLP:conf/mcmaster/Reppy93}. Session types, in
+turn, provide for the description of richer protocols, epitomised by
+the math server~\cite{DBLP:journals/acta/GayH05}, which can be
+rendered in the SePi language~\cite{DBLP:conf/sefm/FrancoV13} as
+follows:
+%
+\begin{lstlisting}[morekeywords=end]
+MathServer = +{
+  Plus: !Int.!Int.?Int.MathServer,
+  Gz: !Int.?Bool.MathServer,
+  Done: end
+}
+\end{lstlisting}
+
+Type \lstinline|MathServer| describes the client side of the protocol,
+introducing three choices: \lstinline|Plus|, \lstinline|Gz|, and
+\lstinline|Done|. A client that chooses the \lstinline|Plus| choice is
+supposed to send two integer values and to receive a further integer
+(possibly representing the sum of the former two), after which it goes
+back to the beginning. The \lstinline|Done| option terminates the
+protocol, as described by type \lstinline[morekeywords=end]|end|.
+
+The guarantees introduced by session type systems include the
+adherence of the code to the protocol and the related absence of
+runtime errors, including race
+conditions~\cite{DBLP:conf/esop/HondaVK98}. Some systems further
+guarantee progress~\cite{DBLP:conf/concur/CairesP10}. All this, under
+a rather expressive type language, that of (regular) session types.
+
+There is one further characteristic of session types that attest for
+its flexibility: the ability send channels on channels, often called
+delegation. This feature provides for the transmission of complex data
+on channels in a typeful manner. Suppose we want to stream a tree
+%
+\begin{lstlisting}
+data Tree = Leaf | Node Int Tree Tree
+\end{lstlisting}
+%
+on a channel. One has to choose between using multiple channels for
+sending the tree or incurring on runtime checks to check adherence to
+the protocol. In the former scenario, trees are sent on channels of
+the form
+%
+\begin{lstlisting}[morekeywords=end]
+type TreeChannel = +{Leaf: end, Node: !Int.!TreeChannel.!TreeChannel.end}
+\end{lstlisting}
+%
+and we see that two new channels must be created and exchanged for
+each \lstinline|Node| in a tree, so that $2n+1$ channels are needed to
+stream an $n$-\lstinline|Node| tree.
+%
+In the latter case, tree parts are sent on a single stream, but not
+necessarily in a ``tree'' form. A suitable channel type is
+%
+\begin{lstlisting}[morekeywords=end]
+type TreeParts = +{Leaf: TreeParts, Node: !Int.TreeParts, EOS: end}
+\end{lstlisting}
+%
+where \lstinline|EOS| represents the end of stream. In this case tree
+\lstinline|Node 1 (Node 2 Leaf Leaf) Leaf| can be streamed as
+\lstinline|Node 1 Node 2 Leaf Leaf Leaf EOS|, when visited in a
+depth-first manner. It should be easy to see that type
+\lstinline|TreeParts| allows streaming many different tree parts that
+do not add up to a tree, hence the necessary runtime checks to look
+over unexpected parts in the stream.
+
+In 2016, Thiemann and Vasconcelos introduced the concept of
 context-free session types and proved type equivalence
 decidable~\cite{DBLP:conf/icfp/ThiemannV16}.
+%
+Context-free session types appear as a natural extension of
+conventional (regular) session-types. Syntactically, the changes are
+minor: rather than dot (\lstinline|.|), the prefix operator, we use
+semi-colon (\lstinline|;|), a new binary operator on types. We also
+take the chance to replace \lstinline [morekeywords=end]|end| by
+\lstinline|Skip| to make it clear that it does not necessarily
+``ends'' a session type, but else merely introduces a mark that can
+sometimes be omitted (\lstinline|Skip| is the identity element of the
+semi-colon operation).
+%
+Using the syntax of \freest, a channel that streams a tree can be
+written as follows:
+%
+\begin{lstlisting}
+type TreeChannel = +{Leaf: Skip, Node: !Int;TreeChannel;TreeChannel}
+\end{lstlisting}
+
+The language \freest, described in the sequel, provides for the best
+of both worlds: stream the tree in a \emph{single} channel,
+\emph{without} extraneous runtime checks.
+
+% Related work
+
+There are a few experimental programming languages based on session
+types, and there are many proposals for encoding session types in
+mainstream programming languages. We cannot possible cover them all in
+this short abstract; the interested reader is referred to a 2016
+survey on behavioural types in programming
+languages~\cite{DBLP:journals/ftpl/AnconaBB0CDGGGH16}.  Here, we briefly
+discuss prototypical programming languages.
+
+SePi is a programming language based on the pi-calculus whose channels
+are governed by regular session types refined with uninterpreted
+predicates~\cite{DBLP:conf/sefm/FrancoV13}. The concrete syntax we
+choose for \freest{} is heavily influenced by SePi.
+
+The only other implementation of context-free session types we are
+aware of is that of Padovani~\cite{DBLP:conf/esop/Padovani17}, a
+language that admits equivalence, subtyping and, of particular
+interest, inference algorithms. It does however require a structural
+alignment between the process code and the session types, enforced by
+a \emph{resumption} process operator that explicitly breaks a type
+$S;T$. This implies that the monoidal rules proposed by Thiemann and
+Vasconcelos are not taken into consideration.
 
 %%% Local Variables:
 %%% mode: latex
