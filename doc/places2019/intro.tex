@@ -1,13 +1,14 @@
 \section{Introduction}
 
 Session types have been long subject to the shackles of tail
-recursion. Regular session-type languages bear the evident advantage
-of providing for simple algorithms to check type equivalence and
-subtyping. Given two types, a fixed-point construction algorithm such
-as the one introduced by Gay and Hole builds, in polynomial time and
-space, a bisimulation relating the two types, or decides that no such
-relation exists~\cite{DBLP:journals/acta/GayH05}. The scenario darkens
-when one decides to let go of tail recursion, for now the fixed-point
+recursion~\cite{DBLP:conf/concur/Honda93,DBLP:conf/esop/HondaVK98}. Regular
+session-type languages bear the evident advantage of providing for
+simple algorithms to check type equivalence and subtyping. Given two
+types, a fixed-point construction algorithm such as the one introduced
+by Gay and Hole builds, in polynomial time and space, a bisimulation
+relating the two types, or decides that no such relation
+exists~\cite{DBLP:journals/acta/GayH05}. The scenario darkens when one
+decides to let go of tail recursion, for now the fixed-point
 construction algorithm does not necessarily terminate.
 %
 This is one of the main reasons why session types have been confined
@@ -115,12 +116,33 @@ mainstream programming languages. We cannot possible cover them all in
 this short abstract; the interested reader is referred to a 2016
 survey on behavioural types in programming
 languages~\cite{DBLP:journals/ftpl/AnconaBB0CDGGGH16}.  Here, we briefly
-discuss prototypical programming languages.
+discuss a few prototypical programming languages.
 
 SePi is a programming language based on the pi-calculus whose channels
 are governed by regular session types refined with uninterpreted
 predicates~\cite{DBLP:conf/sefm/FrancoV13}. The concrete syntax we
 choose for \freest{} is heavily influenced by SePi.
+%
+SILL is a functional language with session typed concurrency, based on
+the Curry-Howard interpretation of intuitionistic linear
+logic~\cite{DBLP:conf/concur/CairesP10}, further extended with
+recursive types and
+processes~\cite{Toninho:phd,DBLP:conf/esop/ToninhoCP13}.
+%
+C1 is an imperative language~\cite{Pfenning:C1} developed along the
+lines of SILL, featuring types that expression
+sharing~\cite{DBLP:journals/pacmpl/BalzerP17}.
+%
+All these languages use regular session types. Compared to \freest,
+they present stronger properties (including progress), at the expense
+of imposing a particular form of programming (derived from the
+Curry-Howard interpretation) whereby each process uses zero or more
+channels and provides exactly one. At the time of this writing,
+\freest{} does not include shared types.
+
+Links~\cite{DBLP:conf/fmco/CooperLWY06} is a functional programming
+language for the web, later extended with session types
+primitives~\cite{Lindley.Morris_Lightweight.functional.session.types}.
 
 The only other implementation of context-free session types we are
 aware of is that of Padovani~\cite{DBLP:conf/esop/Padovani17}, a
