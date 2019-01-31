@@ -56,7 +56,7 @@ returns a threadId, which we discard and convert into the unit value.
 _fork e = forkIO e >> return ()
 \end{lstlisting}
 
-Each channel is implement with a pair of \lstinline|MVar|s. The
+Each channel is implemented with a pair of \lstinline|MVar|s. The
 \lstinline|_new| function creates such a pair and returns the two
 channel ends. Each channel end is itself a pair of crossed
 \lstinline|MVar|s.
