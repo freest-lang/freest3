@@ -57,7 +57,7 @@ or \lstinline|Node|). In the former case, it \lstinline|select|s the
 \lstinline|Leaf| choice and returns a pair composed of the original
 tree and the residual of the channel. In the latter case, the function
 \lstinline|select|s the \lstinline|Node| choice, then sends the
-integer value in the node, followed by the two subtrees (via recursive
+integer value in the channel, followed by the two subtrees (via recursive
 calls). Finally, reads an integer \lstinline|y| from the channel,
 assembles a tree with \lstinline|y| at the \lstinline|Node| and
 returns this tree together with the residual of the channel.
