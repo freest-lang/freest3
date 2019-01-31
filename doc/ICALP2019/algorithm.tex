@@ -1,0 +1,433 @@
+\section{Type equivalence algorithm}
+\label{sec:algorithm}
+
+% The main purpose of this work is to present and implement an algorithm to decide the type equivalence problem. In this section, we briefly describe our proposed algorithm.
+We start by recalling the type equivalence problem for context-free 
+session types.
+
+\begin{quote}
+  Given context-free session types $S$ and $T$, the type equivalence
+  problem consists in deciding if types $S$ and $T$ are equivalent,
+  i.e., $S \TypeEquiv T$.
+\end{quote}
+
+In this section we propose an algorithm to check the equivalence of 
+context-free session types. This algorithm has three main stages: 
+it starts by converting types into grammars, then prunes unnormed 
+productions and, finally, explores an expansion tree, alternating 
+between simplification and expansion operations, until either finding 
+an empty node---case in which we decide equivalence positively---or 
+failing to expand a node---case in which we decide equivalence negatively.
+
+\subsection{Convert types to a grammar}
+\label{subsec:typeToGrammar}
+
+We will consider context-free session types as being represented by a 
+finite set of productions, built upon the labelled transition system (\LTS)
+presented in Figure~\ref{lts}. In this line, a context-free session type 
+is seen as a finite set of productions of the form $X\rightarrow a \vec Y$, 
+where $X$ range over a finite set of \emph{non-terminal symbols}, $\vec Y$ 
+is a sequence of non-terminal symbols, and $a$ is a \emph{terminal symbol}
+ranging over the set of labels in the \LTS, extended with an initial (dummy) 
+label $!\,(\enspace)$. In general, we refer to $X, Y, a$ as \emph{symbols}.
+
+Given a context-free session type $S$, the set of productions $\mathcal{P}$
+is defined recursively on the structure of $S$. We start by considering 
+a non-terminal symbol $X_S$ to represent $S$ and let the set of productions 
+$\mathcal{P}$ be initialized as the singleton with the initial production: 
+\begin{equation}
+\label{initial_prod}
+	X_S \rightarrow \enspace \initialProd\enspace \mathsf{toGrammar}(\mathsf{freshVar}(\,),S) 	
+\end{equation}
+where $\mathsf{toGrammar}$ is defined recursively as presented 
+in Algorithm~\ref{alg:toGrammar} and:
+\begin{itemize}
+	\item $\mathsf{freshVar}$ returns a fresh non-terminal variable;
+	\item $\mathsf{addProduction}$ inserts the given production in $\mathcal{P}$;
+	\item $\mathsf{insertVisited}$ marks a non-terminal symbol as visited;
+	\item $\mathsf{isVisited}$ identifies whether the given non-terminal symbol was visited;
+	\item $\mathsf{subst}(x,X,S)$ replaces the occurrences of $x$ by $Y$ in $S$;
+	\item $\vec X \vec Y$ represents the concatenation of the sequences of symbols $\vec X$ and $\vec Y$;
+	\item $\varepsilon$ represents the empty sequence of symbols.
+\end{itemize}
+
+\begin{algorithm}
+\caption{Algorithm to convert context-free session types into a grammar. Pseudocode.}
+\label{alg:toGrammar}
+\begin{algorithmic}
+\\
+\State \textsf{toGrammar} (\_, $\skipk$) = 
+\State \qquad \Return{$\varepsilon$}\smallskip
+\State \textsf{toGrammar} ($X$, $A$) = \Comment{$A$ ranges over $?\, \boolk$, $!\, \boolk$}
+\State \qquad \textsf{addProduction} ($X \rightarrow A$)
+\State \qquad \Return{$X$}\smallskip
+\State \textsf{toGrammar} ($X$, $\alpha$) = 
+\State \qquad\textbf{if} \textsf{isVisited} ($\alpha$) \textbf {then}
+\State \qquad\qquad \Return{$\alpha$}
+\State \qquad\textbf{else}
+\State \qquad\qquad \textsf{addProduction} ($X \rightarrow \alpha$)
+\State \qquad\qquad \Return{$X$}\smallskip
+\State \textsf{toGrammar} ($X$, $\star \{\ell_i : S_i \}_{j\in I}$) =  \Comment{$\star$ ranges over $\oplus$, $\&$}
+\State \qquad \textbf{for} {$j\in I$} \textbf{do} 
+\State \qquad \qquad \textsf{addProduction} ($X \rightarrow \enspace \star \ell_j \enspace \mathsf{toGrammar}(\mathsf{freshVar}(\,), S_j)$)
+\State \qquad \qquad \Return{$X$}\smallskip
+\State \textsf{toGrammar} (\_, $S;T$) =
+\State \qquad $\vec X_S$ $\gets$ \textsf{toGrammar} (\textsf{freshVar} (\,), $S$)
+\State \qquad $\vec X_T$ $\gets$ \textsf{toGrammar} (\textsf{freshVar} (\,), $T$)
+\State \qquad \Return{$\vec X_S \, \vec X_T$}\smallskip
+\State \textsf{toGrammar} ($X$, $\mu x.S$) =
+\State \qquad \textsf{insertVisited} $X$\smallskip
+\State \qquad $\vec X_S$ $\gets$ \textsf{toGrammar} ($X$, $\mathsf{subst}(x,X,S)$)
+\State \qquad \textbf{if} \textsf{null} $\vec X_S$ \textbf{then} 
+\State \qquad \qquad \Return{$\varepsilon$}
+\State \qquad \textbf{else} 
+\State \qquad \qquad \Return{$X$}\smallskip
+\end{algorithmic}
+\end{algorithm}
+
+\todo{AM}{example productions}
+
+
+Notice that this recursive procedure always terminates and the resulting 
+set of productions $\mathcal{P}$ is finite, because the recursion is always 
+on subterms, except for recursive types, where we mark visited symbols, thus 
+ensuring that the process terminates with a finite set of productions.
+
+Due to the deterministic nature of the labelled transition system, context-free 
+session types are always converted into \emph{simple grammars}~\cite{baeten1993decidability}, i.e., 
+context-free grammars in Greibach normal form such that, for each non-terminal 
+symbol $X$ and terminal symbol $a$, there is at most one production of the form 
+$X\rightarrow a \enspace \vec Y$.
+
+The bisimulation relation, $\ProdEquiv$, is defined in the usual way from the 
+set of productions. Throughout the text we drop the subscript $\mathcal{P}$ when 
+it is clear from context.
+
+\subsection{Prune unnormed productions}
+\label{subsec:prune}
+
+Using the same approach as~\cite{DBLP:journals/iandc/ChristensenHS95} on 
+the definition of (un)normed processes, we say that a sequence of symbols 
+$\vec Y$ is \emph{normed} if there are labels $\ell_1,\ldots, \ell_k$ 
+such that:
+\[\vec Y \rightarrow \ell_1\enspace Y_1 \rightarrow \cdots \rightarrow \ell_k 
+\rightarrow \varepsilon.\]
+$\vec Y$ is said to be \emph{unnormed} when it is not normed. If $\vec Y$ 
+is normed, we define its \emph{norm} as: 
+\[ | \vec Y | = \underset{k}{\mathsf{min}} \{\vec Y \rightarrow \ell_1\enspace Y_1 
+\rightarrow \cdots \rightarrow \ell_k \rightarrow \varepsilon \}.\]
+
+As observed by Christensen et al.~\cite{DBLP:journals/iandc/ChristensenHS95}, 
+any unnormed sequence of symbols $\vec Y$ is equivalent to its concatenation 
+with any other symbol:
+\[ \text{ if } \vec Y \text{ is unnormed, then } \vec Y \sim \vec Y X.\]
+
+Upon the definition of the production underlying the context-free session types,
+our algorithm proceeds with pruning on the unnormed productions. The Haskell code 
+is presented in Listing~\ref{lst:prune}.
+
+\begin{lstlisting}[caption={Haskell code for the stage of pruning unnormed productions},label={lst:prune},captionpos=b]
+type Transitions = Map.Map Label [TypeVar]
+type Productions = Map.Map TypeVar Transitions
+
+prune :: Productions -> Productions
+prune p = Map.map (Map.map (pruneWord p)) p
+
+pruneWord :: Productions -> [TypeVar] -> [TypeVar]
+pruneWord _ [] = []
+pruneWord p (x:xs)
+  | normed p x = x : pruneWord p xs
+  | otherwise  = [x]
+
+normed :: Productions -> TypeVar -> Bool
+normed p x = normedWord p Set.empty [x]
+
+normedWord :: Productions -> Set.Set TypeVar -> [TypeVar] -> Bool
+normedWord _ _ []     = True
+normedWord p v (x:xs) =
+  x `Set.notMember` v &&
+  or (map (normedWord p v') (Map.elems (transitions p (x:xs))))
+  where v' = if or $ map (x `elem`) (Map.elems (transitions p [x])) 
+                then Set.insert x v else v
+\end{lstlisting}
+
+\todo{AM}{pruning example}
+
+\subsection{Expansion Tree}
+\label{subsec:expand}
+
+We recall that, given two context-free session types $S$ and $T$, our main goal 
+is to decide whether these types are equivalent or not. For this purpose, 
+the algorithm we propose starts by applying Algorithm~\ref{alg:toGrammar} 
+and converts $S$ and $T$ into a grammar containing the productions derived 
+from them. Afterwards, the algorithm in listing~\ref{lst:prune} is used to 
+streamline the grammars, by pruning unnormed sequences of symbols.
+
+Throughout this section we focus on the third and last stage of the algorithm.
+We use the notion of \emph{expansion tree} proposed by Jan{\v{c}}ar 
+and Moller~\cite{janvcar1999techniques} as as adaption of the former idea by 
+Hirshfeld~\cite{hirshfeld1996bisimulation}. We say a set of pairs $N'$ is an 
+\emph{expansion} of $N$ if $N'$ is a minimal set such that: for every pair 
+$(\vec X, \vec Y) \in N$,
+\begin{itemize}
+	\item if $\vec X \rightarrow a \enspace\vec X'$ then $\vec Y \rightarrow 
+		  a \enspace\vec Y'$ with $(\vec X',\vec Y')\in N'$;
+	\item if $\vec Y \rightarrow a \enspace\vec Y'$ then $\vec X \rightarrow 
+	      a \enspace\vec X'$ with $(\vec X',\vec Y')\in N'$.
+\end{itemize}
+
+Given a set of productions, an \emph{expansion tree} is composed by nodes 
+labelled by pairs of sequences of symbols. The naive proposal for an
+expansion tree considers that any children node is obtained by expansion 
+from its parent node. Nevertheless, as Jan{\v{c}}ar and Moller 
+observed, this would often lead to infinite expansion trees. Hence,
+we follow the proposal in~\cite{janvcar1999techniques} and let the 
+expansion tree alternate between simplification and expansion operations
+until either finding an empty node---case in which we
+decide equivalence positively---or failing to expand a node---case in
+which we decide equivalence negatively.
+
+We say that a branch
+is \emph{successful} if it is infinite or finishes in an empty node, 
+otherwise it is said to be \emph{unsuccessful}.
+
+\paragraph{Expansion stage:}
+In the expansion stage, each node $N$ derives a single children node, 
+obtained as an expansion of $N$. As we are dealing with simple grammars, 
+no branching is expected in the expansion tree at this stage.
+Before proceeding to the simplification stage, the sequences of symbols 
+in the children nodes are pruned.
+
+\paragraph{Simplification stage:} The simplification stage has three main
+ rules:
+\begin{itemize}
+	\item {\bf Reflexive rule:} omit from a node $N$ any reflexive pair;
+	\item {\bf Congruence rule:}  omit from a node $N$ any pair that 
+	      belongs to the least congruence containing the ancestors of $N$;
+	\item {\bf Basic Process Algebra (\BPA) rules:} \todo{AM}{add details}
+	\item {\bf Filtering rule:} remove any node containing a pair
+	       $(\vec X, \vec Y)$ such that $|\vec X|\neq |\vec Y|$.
+\end{itemize}
+
+Notice that, contrarily to the remaining (simplification and expansion) operations, 
+\BPA\ rules promote branching on the expansion tree. 
+
+At the simplification stage, we iterate each simplification rule until reaching
+a fixed point. \todo{AM}{elaborate on this}. 
+
+\subsection{Algorithm to check the equivalence of context-free session types}
+
+The algorithm to decide the equivalence of context-free session 
+types capitalizes on the previous algorithms. We have implemented 
+a breadth-first search on the expansion tree, through the use of a 
+queue for the children nodes.
+
+Given two context-free session types $\mathsf{t}$ and $\mathsf{u}$,
+the algorithm sketched in Listing~\ref{lst:algorithm} returns \textsf{true}
+if the types are equivalent and \textsf{false} otherwise. 
+This algorithm capitalizes on the previous algorithms, is written in Haskell 
+and should now be self explanatory.
+
+\begin{lstlisting}[caption={Algorithm to check the equivalence of context-free session types. Haskell code.},label={lst:algorithm},captionpos=b]
+type Node = Set.Set ([TypeVar], [TypeVar])
+type Ancestors = Node
+type NodeQueue = Queue.Queue (Node, Ancestors)
+type NodeTransformation = Productions -> Ancestors -> Node -> Set.Set 
+
+equivalent :: KindEnv -> Type -> Type -> Bool
+equivalent k t u =
+  isSessionType k t &&
+  isSessionType k u &&
+  expansionTree (prune p) [x] [y]
+  where Grammar [x, y] p = toGrammar [t, u]
+
+expansionTree :: Productions -> NodeQueue -> Bool
+expansionTree g q
+  | Queue.isEmpty q   = False
+  | Set.null n        = True
+  | otherwise         = case expandNode g n of
+      Nothing  -> expansionTree' g (Queue.dequeue q)
+      Just n' -> n' = = Set.fromList [([],[])] ||
+                expansionTree g (simplify g (Set.union a n) 
+                             (pruneNode g n') q)
+  where (n,a) = Queue.front q
+
+simplify :: Productions -> Ancestors ->  Node -> NodeQueue -> NodeQueue
+simplify g a n q = foldr enqueueNode (Queue.dequeue q) m'
+  where m' = findFixedPoint g (Set.singleton (n,a))
+
+findFixedPoint :: Productions -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
+findFixedPoint g nas
+  | nas == nas' = nas
+  | otherwise = findFixedPoint g nas'
+  where nas' = 
+      if allNormed g 
+         then foldr (apply g) nas [reflex, congruence, bpa2, filtering]
+         else foldr (apply g) nas [reflex, congruence, bpa1, filtering]
+\end{lstlisting}
+
+
+%Any algorithm must build upon some representation of the context-free
+%session types. For this purpose, we recall that Jan{\v{c}}ar and
+%Moller~\cite{janvcar1999techniques} noted that any process can be seen
+%as a (possible infinite) process algebra graph (PA-graph).  Such a
+%graph can be finitely represented by a finite set of productions
+%$X \LTSderives \alpha$, where $X$ ranges over a finite set of
+%\emph{term variables} $V$, $a$ ranges over the set of actions
+%described above, and $\alpha$ ranges over the terms of the free
+%algebra over $V$ generated by the semi-colon operator.
+%The vertices of the PA-graph are then represented by terms~$\alpha$ of
+%the algebra, whereas the edges are given by the production rules.
+%
+%We build on the notion of expansion trees, only that in our case we
+%can work with \emph{expansion lists}, given the deterministic nature
+%of transitions in context-free session types.
+%% \footnote{PA-graphs for context-free session types are such that,
+%%   given a variable $X$ and an action $a$, we cannot derive two
+%%   distinct terms in the algebra.}
+%%
+%Nodes in this list are sets of pairs of terms~$\alpha$.
+%%
+%Given two session types $S$ and $T$, the first step of the algorithm
+%builds the PA-graph and the initial node $\{(X,Y)\}$, where~$X$ is the
+%term variable corresponding to~$S$ and~$Y$ to~$T$. This step further
+%normalizes $\alpha$-terms by removing terms preceded by unnormed
+%terms, given that $\alpha \sim \alpha\beta$ whenever $\alpha$ is
+%unnormed~\cite{janvcar1999techniques}.
+%%
+%The algorithm then alternates between simplification and expansion
+%operations, until either finding an empty node---case in which we
+%decide equivalence positively---or failing to expand a node---case in
+%which we decide equivalence negatively.
+%
+%The simplification procedure builds on  Jan{\v{c}}ar and
+%Moller rules, namely reflexivity and BPA1.
+%%
+%The algorithm, written in Haskell, should be self explanatory.
+%%
+%\begin{lstlisting}
+%bisim :: Graph -> Ancestors -> Node -> Bool
+%bisim g a n
+% | Set.null n' = True
+% | otherwise   = case expandNode g n' of
+%    Nothing  -> False
+%    Just n'' -> bisim g (Set.union n' a) n''
+% where n' = simplify g a n
+%
+%simplify :: Graph -> Ancestors -> Node -> Node
+%simplify g a n = foldr (apply g a) n [reflex, bpa1]
+%
+%apply :: Graph -> Ancestors -> NodeTransformation -> Node -> Node
+%apply g a trans = Set.foldr (\p n -> Set.union (trans g a p) n) Set.empty
+%
+%type Graph = Map.Map TermVar (Map.Map Label [TermVar])
+%type Node = Set.Set ([TermVar], [TermVar])
+%type Ancestors = Node
+%type NodeTransformation = Graph -> Ancestors -> ([TermVar],[TermVar]) -> Node
+%\end{lstlisting}
+%
+%
+%We showcase this procedure on a couple of examples. %Details can be
+%% found in the Appendix.
+%%
+%% \begin{example}
+%%   \label{ex:example1}
+%Consider two types $S$ and $T$:
+%%
+%\begin{align*}
+%  S &\triangleq \mu x. (\oplus\{\ell\colon !\,\intk; \&\{\ell\colon x,
+%      m\colon \skipk \} , m\colon !\, \boolk; \&\{\ell\colon x,
+%      m\colon \skipk \} \}); \mu x. (\&\{\ell\colon\skipk, m\colon
+%      ?\,\boolk; x \})
+%  \\
+%  T &\triangleq \mu x. (\oplus\{\ell\colon !\,\intk , m\colon !\,
+%      \boolk\}; \&\{\ell\colon x, m\colon \mu
+%      y. (\&\{\ell\colon\skipk, m\colon ?\,\boolk; y \})\})
+%\end{align*}
+%%
+%The associated PA-graph is given by the following productions, from the initial node $\{(X,Y)\}$:
+%\begin{center}
+%\begin{tabular}{ |l l |l l| }
+%  \hline
+%  \multicolumn{4}{|c|}{Productions for $S$ and $T$} \\
+%  \hline
+%  \hline
+%\multicolumn{2}{|c|}{$S$}&  \multicolumn{2}{|c|}{$T$} \\ \hline
+%$X \xrightarrow{\oplus \ell} X_1 X_2 X_5$ & $X_4 \xrightarrow{\& \ell} X$ & $Y \xrightarrow{\oplus \ell} Y_1 Y_3$ & $Y_3 \xrightarrow{\& m} Y_4$ \\
+%$X \xrightarrow{\oplus m} X_3 X_4 X_5$& $X_4 \xrightarrow{\& m} \varepsilon$ & $Y \xrightarrow{\oplus m} Y_2 Y_3$ & $Y_4 \xrightarrow{\& \ell} \varepsilon$\\
+%$X_1 \xrightarrow{!\, \intk} \varepsilon$& $X_5 \xrightarrow{\& \ell} \varepsilon$& $Y_1 \xrightarrow{!\intk} \varepsilon$ & $Y_4 \xrightarrow{\& m} Y_5 Y_4$\\
+%$X_2 \xrightarrow{\& \ell} X$& $X_5 \xrightarrow{\& m} X_6 X_5$& $Y_2 \xrightarrow{!\boolk} \varepsilon$ & $Y_5 \xrightarrow{?\,\boolk} \varepsilon$\\
+%$X_2 \xrightarrow{\& m} \varepsilon$& $X_6 \xrightarrow{?\,\boolk} \varepsilon$& $Y_3 \xrightarrow{\& \ell} Y$ &\\
+%$X_3 \xrightarrow{!\, \boolk} \varepsilon$&&&\\
+%  \hline
+%\end{tabular}
+%\end{center}
+%
+%%
+%\noindent
+%We get the expansion list below for $S\sim T$.  \smallskip
+%\par\noindent
+%\begin{tikzcd}[cells={nodes={draw=black}}, column sep=large]
+%   (X,Y)  \ar[r,"expand"]
+%&   (X_1X_2X_5,Y_1Y_3), (X_3X_4X_5, Y_2Y_3)  \ar[r,"expand"]
+%&   (X_2X_5,Y_3), (X_4X_5, Y_3)   
+%\end{tikzcd} 
+%$\xrightarrow{\mathit{expand}}$\\\\
+%\begin{tikzcd}[cells={nodes={draw=black}}, column sep=large]
+%& (XX_5,Y),(X_5,Y_4) \ar[r,dashed,"bpa1"]
+%& (X_5,\varepsilon),(X_5,Y_4)  \ar[r,"expand"]
+%&(X_6X_5,Y_5Y_4),(\varepsilon,\varepsilon) 
+%\end{tikzcd} 
+%$\xdashrightarrow{\enspace\mathit{reflex}\enspace}$ \\\\
+%\begin{tikzcd}[cells={nodes={draw=black}}, column sep=large]
+%& (X_6X_5,Y_5Y_4) \ar[r,"expand"]
+%& \enspace(X_5,Y_4)\enspace \ar[r,dashed,"bpa1"]
+%&\emptyset
+%\end{tikzcd}
+%\enspace  $\checkmark$\\\smallskip
+%
+%Now consider the types $R$ and $U$:
+%%
+%\begin{align*}
+%  R \triangleq \mu x.\&\{\ell\colon ?\,\boolk;x, m\colon ?\,\intk;x;x\}
+%      &&
+%  U \triangleq \mu x.\&\{\ell\colon ?\,\boolk, m\colon ?\,\intk;x;x\}
+%\end{align*}
+%%
+%The associated PA-graph is given by the following productions, from the initial node $\{(Z,W)\}$:
+%\begin{center}
+%\begin{tabular}{ |l l |l l| }
+%  \hline
+%  \multicolumn{4}{|c|}{Productions for $R$ and $T$} \\
+%  \hline
+%  \hline
+%\multicolumn{2}{|c|}{$R$}&  \multicolumn{2}{|c|}{$U$} \\ \hline
+%$Z \xrightarrow{\& \ell} Z_1 Z$ & $Z_1 \xrightarrow{?\, \boolk} \varepsilon$ &$W \xrightarrow{\& \ell} W_1$ & $W_1 \xrightarrow{?\, \boolk} \varepsilon$\\
+%$Z \xrightarrow{\& m} Z_2 Z Z$ & $Z_2 \xrightarrow{?\, \intk} \varepsilon$& $W \xrightarrow{\& m} W_2 W W$ & $W_2 \xrightarrow{?\, \intk} \varepsilon$\\
+%  \hline
+%\end{tabular}
+%\end{center}
+%%
+%The expansion list is as follows:\smallskip
+%\par\noindent
+%\begin{tikzcd}[cells={nodes={draw=black}}, column sep=large]
+%  (Z,W) \ar[r,"expand"]
+%& (Z_1 Z,W_1), \atop(Z_2 Z Z, W_2 W W) \ar[r,"expand"]
+%& (Z,\varepsilon), (ZZ, WW) \ar[r,dashed,"bpa1"] 
+%& (Z,\varepsilon), (W,\varepsilon) 
+%\end{tikzcd} 
+%\enspace  $\times$\smallskip
+%
+%Our algorithm uses the simplification rules of  Jan{\v{c}}ar and
+%Moller~\cite{janvcar1999techniques} and implements the derivation flow on
+%a simplified version of PA graphs. For these reasons, we
+%believe that our implementation is sound. Furthermore, we have tested
+%our algorithm in more than one hundred examples and we have not
+%obtained any false positive nor any true negative result. This
+%reinforces our conviction that this algorithm should be sound (and
+%possibly complete).
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:
