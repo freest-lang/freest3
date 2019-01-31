@@ -34,9 +34,14 @@ is obtained by transforming the original system into a bidirectional
 system.
 
 Checking \emph{type equivalence} is the main challenge of the
-compiler. We are presently working on an algorithm to decide whether
-two context-free session types are equivalent or not. \todo{some more
-  input here}.
+compiler. Due to the recursive structure underlying context-free 
+session types, a bisimulation between two types is often infinite. 
+Deciding the equivalence of types relies, then, on the construction 
+of a finite relation whose least congruence with respect to  
+sequential composition coincides with the bisimulation. We are 
+presently working on an algorithm that capitalizes on results by 
+Christensen et al.~\cite{DBLP:journals/iandc/ChristensenHS95} and 
+decides whether two context-free session types are equivalent or not.  
 
 The rest of this section concentrates on \emph{code generation}.
 
