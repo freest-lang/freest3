@@ -1,9 +1,9 @@
-\section{The \freest{} compiler}
+\section{Let \freest{} run}
 \label{sec:compiler}
 
 \freest{} is written in Haskell and generates Haskell code that can be
-compiled with a conventional (GHC) Haskell compiler.
-
+compiled with a conventional GHC compiler.
+%
 The validation phase features a kinding system and a typing
 system. Only declarative versions of these systems are described in
 Thiemann and Vasconcelos~\cite{DBLP:conf/icfp/ThiemannV16}.
@@ -26,12 +26,19 @@ version used in the compiler is obtained by transforming the original
 system into a bidirectional system.
 
 The \emph{typing system} is a conventional type system for GV-like
-languages~\cite{DBLP:journals/jfp/GayV10}. Again, the original system
-is not syntax-directed since it includes a type equivalence rule,
-allowing to replace the type of an expression by an equivalent
-type~\cite{DBLP:conf/icfp/ThiemannV16}. Again, the algorithmic version
-is obtained by transforming the original system into a bidirectional
-system.
+languages~\cite{DBLP:journals/jfp/GayV10}. It further includes the
+specialisation rule, typical of Hindley-Milner type
+systems~\cite{DBLP:journals/jcss/Milner78}, allowing to replace a
+polymorphic type with a monomorphic one. The original system is not
+syntax-directed due to specialisation and to a type equivalence rule
+that allows replacing the type of an expression by an equivalent
+type.
+%
+Again, the algorithmic version is obtained by transforming the
+original system into a bidirectional system. The specialisation rule
+becomes tied together with function application, where a simple
+algorithm infers the right type for the polymorphic variable in the
+target function.
 
 Checking \emph{type equivalence} is the main challenge of the
 compiler. Due to the recursive structure underlying context-free 

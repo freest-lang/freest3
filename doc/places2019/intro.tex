@@ -1,4 +1,4 @@
-\section{Introduction}
+\section{Session types deserve to be free}
 
 Session types have been long subject to the shackles of tail
 recursion~\cite{DBLP:conf/concur/Honda93,DBLP:conf/esop/HondaVK98}. Regular
@@ -73,7 +73,7 @@ each \lstinline|Node| in a tree, so that $2n+1$ channels are needed to
 stream an $n$-\lstinline|Node| tree.
 %
 In the latter case, tree parts are sent on a single stream, but not
-necessarily in a ``tree'' form. A suitable channel type is
+necessarily in a ``tree form''. A suitable channel type is
 %
 \begin{lstlisting}[morekeywords=end]
 type TreeParts = +{Leaf: TreeParts, Node: !Int.TreeParts, EOS: end}
@@ -85,7 +85,7 @@ where \lstinline|EOS| represents the end of stream. In this case tree
 in a depth-first manner. It should be easy to see that type
 \lstinline|TreeParts| allows streaming many different tree parts that
 do not add up to a tree, hence the necessary runtime checks to look
-over unexpected parts in the stream.
+over unexpected parts on the stream.
 
 In 2016, Thiemann and Vasconcelos introduced the concept of
 context-free session types and proved that type equivalence remains
@@ -96,12 +96,12 @@ conventional (regular) session-types. Syntactically, the changes are
 minor: rather than dot (\lstinline|.|), the prefix operator, we use
 semi-colon (\lstinline|;|), a new binary operator on types. We also
 take the chance to replace \lstinline [morekeywords=end]|end| by
-\lstinline|Skip| to make it clear that it does not necessarily
-``ends'' a session type, but else merely introduces a mark that can
-sometimes be omitted (\lstinline|Skip| is the identity element of the
-semi-colon operation, so that
+\lstinline|Skip| to make it clear that it does not necessarily ``end''
+a session type, but else merely introduces a mark that can sometimes
+be omitted. In fact \lstinline|Skip| is the identity element of
+sequential composition, so that \freest{} enjoys the monoidal axioms:
 \lstinline|Skip;T| $\equiv$ \lstinline|T;Skip| $\equiv$ \lstinline|T|,
-for all types \lstinline|T|).
+for all types \lstinline|T|.
 %
 Using the syntax of \freest, a channel that streams a tree can be
 written as follows:
@@ -136,7 +136,7 @@ recursive types and
 processes~\cite{Toninho:phd,DBLP:conf/esop/ToninhoCP13}.
 %
 C1 is an imperative language~\cite{Pfenning:C1} developed along the
-lines of SILL, featuring types that expression
+lines of SILL, featuring types that express
 sharing~\cite{DBLP:journals/pacmpl/BalzerP17}.
 %
 All these languages use regular session types. Compared to \freest,
