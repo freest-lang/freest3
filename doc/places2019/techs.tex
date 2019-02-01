@@ -102,6 +102,21 @@ read/write point waits) mechanism underlying session
 communication. Given the linear nature of \freest{} channels, no
 actual queues are required.
 
+Context-free session types are difficult (if not impossible) to
+translate into Haskell types. Coercions (calls to the
+\lstinline|unsafeCoerce| function) are then inserted so has to avoid
+typing errors in the GHC backend. Surprisingly, the occurrences of
+\lstinline|unsafeCoerce| are limited to \emph{two} places: when reading
+and when writing from \lstinline|MVar|s, in runtime functions
+\lstinline|_receive| and \lstinline|_send|, respectively.
+
+Call-by-value and call-by-name. The original proposal of context-free
+session types feature a call-by-value semantics. In order to align
+\freest{} with this semantics, we use Haskell's \emph{bang
+  patterns}. For example, the \lstinline|transform| function is
+compiled into \lstinline|transform !tree !c = ...|, forcing the
+evaluation of both parameters.
+
 %%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "main"
