@@ -520,9 +520,9 @@ extractInChoice p t = do
 -- TODO: error on Map.!
 extractExtChoice :: Pos -> TypeScheme -> Constructor -> TypingState TypeScheme
 extractExtChoice p (TypeScheme bs (Semi Skip t)) c = extractExtChoice p (TypeScheme bs t) c
-extractExtChoice _ t@(TypeScheme bs (Choice External m)) c =
+extractExtChoice p t@(TypeScheme bs (Choice External m)) c =
   if not (Map.member c m) then do
-    addError $ show pos ++ ": Choice label not in scope " ++ show t ++ "\n" ++ show c
+    addError $ show p ++ ": Choice label not in scope " ++ show t ++ "\n" ++ show c
     return $ TypeScheme [] Skip
   else
     return $ TypeScheme bs (m Map.! c) -- Choice External m
