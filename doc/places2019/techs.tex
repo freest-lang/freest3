@@ -93,7 +93,7 @@ primitive. If the \lstinline|MVar| is currently full,
 programs, as discussed in the previous section.
 %
 \begin{lstlisting}[language=Haskell, literate={<-}{{$\leftarrow$}}1]
-send :: c -> ChannelEnd a b -> IO (ChannelEnd a b)
+send :: b -> ChannelEnd a b -> IO (ChannelEnd a b)
 send x (m1, m2) = putMVar m2 (unsafeCoerce x) >> return (m1, m2)
 \end{lstlisting}
 
@@ -107,7 +107,7 @@ of \lstinline|receive| is a pair composed of the value read from the
 rebound in the program).
 %
 \begin{lstlisting}[language=Haskell, literate={->}{{$\rightarrow$}}1]
-receive :: ChannelEnd a b -> IO (c, ChannelEnd a b)
+receive :: ChannelEnd a b -> IO (a, ChannelEnd a b)
 receive (m1, m2) = takeMVar m1 >>= \x -> return (unsafeCoerce x, (m1, m2))
 \end{lstlisting}
 
