@@ -149,58 +149,64 @@ The two diagrams in Figure~\ref{fig:trees} show a tree transformation, from tree
 \lstinline|aTree| into tree \lstinline|t|.
 
 \begin{lstlisting}
-aTree = Node 1 (Node 2 Leaf (Node 3 Leaf (Node 4 Leaf (Node 5 Leaf Leaf)))) (Node 6 Leaf (Node 7 Leaf (Node 8 Leaf Leaf)))
+aTree = Node 1 (Node 2 (Node 8 Leaf Leaf) (Node 3 (Node 5 Leaf Leaf) (Node 4 Leaf Leaf))) (Node 6 Leaf (Node 7 Leaf Leaf))
 \end{lstlisting}
 
 \begin{lstlisting}
-t = Node 36 (Node 14 Leaf (Node 12 Leaf (Node 9 Leaf (Node 5 Leaf Leaf)))) (Node 21 Leaf (Node 15 Leaf (Node 8 Leaf Leaf)))
+t = Node 36 (Node 22 (Node 8 Leaf Leaf) (Node 12 (Node 5 Leaf Leaf) (Node 4 Leaf Leaf))) (Node 13 Leaf (Node 7 Leaf Leaf))
 \end{lstlisting}
 
 \begin{figure}
 \centering
-\begin{tikzpicture}[level/.style={sibling distance=35mm/#1}, 
+\begin{tikzpicture}[level 1/.style={sibling distance=3cm}, 
+                    level 2/.style={sibling distance=2.2cm}, 
+                    level 3/.style={sibling distance=1.8cm}, 
+                    level 4/.style={sibling distance=1cm},
                     level distance = 7mm]
 \node{\lstinline|1|}
 	child { node {\lstinline|2|}
-		child { node {\lstinline|Leaf|}}
+		child [level 3/.append style={sibling distance=1cm}]{ node {\lstinline|8|}
+				child { node {\lstinline|Leaf|}}
+				child { node {\lstinline|Leaf|}}}
 		child { node  {\lstinline|3|}
-			child { node {\lstinline|Leaf|}}
+			child { node  {\lstinline|5|}
+					child { node {\lstinline|Leaf|}}
+					child { node {\lstinline|Leaf|}}}
 			child { node  {\lstinline|4|}
 				child { node {\lstinline|Leaf|}}
-				child { node  {\lstinline|5|}
-					child { node {\lstinline|Leaf|}}
-					child { node {\lstinline|Leaf|}}}}}}
-	child { node {\lstinline|6|}
+				child { node {\lstinline|Leaf|}} }}}
+	child[level 2/.append style={sibling distance=1cm}] { node {\lstinline|6|}
 		child { node {\lstinline|Leaf|}}
-		child { node  {\lstinline|7|}
+		child[level 3/.append style={sibling distance=1cm}] { node  {\lstinline|7|}
 			child { node {\lstinline|Leaf|}}
-			child { node {\lstinline|8|}
-				child { node {\lstinline|Leaf|}}
-				child { node {\lstinline|Leaf|}}}}}
+			child { node {\lstinline|Leaf|}}}}
 ;
 \end{tikzpicture} 
-\hspace*{5mm}
-\begin{tikzpicture}[level/.style={sibling distance=35mm/#1}, 
-                   level distance = 7mm]
+\hspace*{10mm}
+\begin{tikzpicture}[level 1/.style={sibling distance=3cm}, 
+                    level 2/.style={sibling distance=2.2cm}, 
+                    level 3/.style={sibling distance=1.8cm}, 
+                    level 4/.style={sibling distance=1cm},
+                    level distance = 7mm]
 \node{\lstinline|36|}
-	child { node {\lstinline|14|}
-		child { node {\lstinline|Leaf|}}
+	child { node {\lstinline|22|}
+		child [level 3/.append style={sibling distance=1cm}]{ node {\lstinline|8|}
+				child { node {\lstinline|Leaf|}}
+				child { node {\lstinline|Leaf|}}}
 		child { node  {\lstinline|12|}
-			child { node {\lstinline|Leaf|}}
-			child { node  {\lstinline|9|}
-				child { node {\lstinline|Leaf|}}
-				child { node  {\lstinline|5|}
+			child { node  {\lstinline|5|}
 					child { node {\lstinline|Leaf|}}
-					child { node {\lstinline|Leaf|}}}}}}
-	child { node {\lstinline|21|}
-		child { node {\lstinline|Leaf|}}
-		child { node  {\lstinline|15|}
-			child { node {\lstinline|Leaf|}}
-			child { node {\lstinline|8|}
+					child { node {\lstinline|Leaf|}}}
+			child { node  {\lstinline|4|}
 				child { node {\lstinline|Leaf|}}
-				child { node {\lstinline|Leaf|}}}}}
+				child { node {\lstinline|Leaf|}} }}}
+	child[level 2/.append style={sibling distance=1cm}] { node {\lstinline|13|}
+		child { node {\lstinline|Leaf|}}
+		child[level 3/.append style={sibling distance=1cm}] { node  {\lstinline|7|}
+			child { node {\lstinline|Leaf|}}
+			child { node {\lstinline|Leaf|}}}}
 ;
-\end{tikzpicture}
+\end{tikzpicture} 
 \caption{Tree transformation from \lstinline|aTree| (on the left) into tree \lstinline|t| (on the right)}
 \label{fig:trees}
 \end{figure}
