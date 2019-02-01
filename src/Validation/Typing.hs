@@ -52,7 +52,8 @@ typeCheck eenv cenv = do
   let a = Map.mapWithKey (\fun (a, e) -> checkFD fun a e) eenv 
   s <- get
   addErrorList $ Map.foldl (\acc v -> acc ++ errors s v) [] a
-  
+
+  checkVEnvUn 
   return ()
 
 errors :: (KindEnv, VarEnv, Errors) -> TypingState () -> [String]
@@ -66,7 +67,6 @@ checkFD fname p exp = do
   let lt = last $ toList $ venv Map.! fname
   checkAgainst (0,0) exp lt
   -- TODO: add...
-  checkVEnvUn 
   return ()
 
 -- TODO: rename
@@ -292,7 +292,7 @@ checkExp (Match p e cm) = do
   t2 <- extractExtChoice p t1 c
   addToVEnv x t2
   venv <- getVarEnv
-  u <- checkExp e1
+  u <- checkExp e1  
   Map.foldrWithKey (\k (v1,v2) _ -> checkMap venv p t1 u k ([v1], v2) extractExtChoice)
                    (return ()) (Map.delete c cm)
   return u
@@ -305,6 +305,7 @@ checkExp (Fork p e) = do
   t <- checkExp e
   checkUn p t
   return $ TypeScheme [] (Basic UnitType)
+--  return t
   
 checkExp (Case pos e cm) = do
   t <- checkExp e
@@ -354,11 +355,10 @@ checkMap :: VarEnv -> Pos -> TypeScheme -> TypeScheme -> TermVar ->
             
 checkMap venv pos choice against c (x, e) f = do 
   setVEnv venv
-  t1 <- f pos choice c  
+  t1 <- f pos choice c
   let x' = zip x (myInit (toList t1))
   foldM (\_ (p, t) -> addToVEnv p t) () x' 
   checkAgainst pos e against
---  addError $ "\n"++show c ++ "\n" ++ show venv
   return ()
 
 myInit :: [a] -> [a]
@@ -517,10 +517,15 @@ extractInChoice p t = do
 
 
 -- TODO: review this case (bindings)
+-- TODO: error on Map.!
 extractExtChoice :: Pos -> TypeScheme -> Constructor -> TypingState TypeScheme
 extractExtChoice p (TypeScheme bs (Semi Skip t)) c = extractExtChoice p (TypeScheme bs t) c
-extractExtChoice _ (TypeScheme bs (Choice External m)) c =
-  return $ TypeScheme bs (m Map.! c) -- Choice External m
+extractExtChoice p t@(TypeScheme bs (Choice External m)) c =
+  if not (Map.member c m) then do
+    addError $ show p ++ ": Choice label not in scope " ++ show t ++ "\n" ++ show c
+    return $ TypeScheme [] Skip
+  else
+    return $ TypeScheme bs (m Map.! c) -- Choice External m
 extractExtChoice _ (TypeScheme bs (Semi (Choice External m) t)) c =
   return $ TypeScheme bs ((Map.map (`Semi` t) m) Map.! c)
 extractExtChoice p (TypeScheme bs (Rec b t)) c = do
