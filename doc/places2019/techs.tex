@@ -111,12 +111,40 @@ receive :: ChannelEnd a b -> IO (a, ChannelEnd a b)
 receive (m1, m2) = takeMVar m1 >>= \x -> return (unsafeCoerce x, (m1, m2))
 \end{lstlisting}
 
-The semantics of Haskell \lstinline|MVar|s are completely aligned with
-that of the communication primitives of (synchronous) session types
-primitives, providing for the rendez-vous (the first to arrive at the
-read/write point waits) mechanism underlying session
-communication. Given the linear nature of \freest{} channels, no
-actual queues are required.
+Our implementation is \emph{not} completely aligned with the
+operational semantics of \emph{synchronous} session types (and that
+proposed by Thiemman and Vasconcelos in particular). We use
+\lstinline|MVar|s to implement \emph{asynchronous} communication with
+buffers of size one. The discrepancy can be witnessed with the standard
+cross write-read on two channels. In the following program
+\lstinline|w1|-\lstinline|r1| and \lstinline|w2|-\lstinline|r2| are
+two channels.
+%
+\begin{lstlisting}
+writer :: !Char -> !Bool -> Skip
+writer w1 w2 =
+  let w1 = send 'c' w1 in
+  send False w2
+reader :: ?Char -> ?Bool -> Bool
+reader r1 r2 =
+  let x, r2 = receive r2 in
+  let y, r1 = receive r1 in
+  x
+\end{lstlisting}
+%
+The program does not deadlock in our current implementation but does
+so in a synchronous semantics. However, deadlock occurs in a simple
+adaptation of the program with two consecutive writes two consecutive
+reads on each channel (using a \lstinline|writer| of type
+\lstinline|!Char;!Char -> !Bool;!Bool -> Skip| and dually for
+\lstinline|reader|).
+
+% The semantics of Haskell \lstinline|MVar|s are completely aligned with
+% that of the communication primitives of (synchronous) session types. O
+% \lstinline|MVar|s implement a one-place buffer providing for the
+% rendez-vous (the first to arrive at the read/write point waits)
+% mechanism underlying session communication. Given the linear nature of
+% \freest{} channels, no actual queues are required.
 
 Context-free session types are difficult (if not impossible) to
 translate into Haskell types. Coercions (calls to the
@@ -126,12 +154,13 @@ typing errors in the GHC backend. Surprisingly, the occurrences of
 and when writing from \lstinline|MVar|s, in runtime functions
 \lstinline|receive| and \lstinline|send|, respectively.
 
-Call-by-value and call-by-name. The original proposal of context-free
-session types feature a call-by-value semantics. In order to align
-\freest{} with this semantics, we use Haskell's \emph{bang
-  patterns}. For example, the \lstinline|transform| function is
-compiled into \lstinline|transform !tree !c = ...|, forcing the
-evaluation of both parameters.
+% Call-by-value and call-by-name.
+The original proposal of context-free session types feature a
+call-by-value semantics. In order to align \freest{} with this
+semantics, we use Haskell's \emph{bang patterns}. For example, the
+\lstinline|transform| function is compiled into
+\lstinline|transform !tree !c = ...|, forcing the evaluation of both
+parameters.
 
 %%% Local Variables:
 %%% mode: latex
