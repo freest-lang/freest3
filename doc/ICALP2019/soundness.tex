@@ -175,17 +175,23 @@ would lead to unsuccessful branches.
 \end{lemma}
 
 \begin{proof}
-	Assume that $n = |\vec X| < |\vec Y|$. This means that 
-	\[\vec X \rightarrow \ell_1 \vec X_1 \rightarrow \cdots 
-	\rightarrow \ell_n \rightarrow \varepsilon.\]
+	Assume that $n = |\vec X| < |\vec Y|$. This means that:
+	\begin{equation}
+	\label{pathX}
+		\vec X \rightarrow \ell_1 \vec X_1 \rightarrow \cdots 
+		\rightarrow \ell_n \rightarrow \varepsilon.
+	\end{equation}
 	Now assume that $\vec Y$ has an expansion sequence whose 
-	labels coincide with those from $\vec X$ (otherwise, we would immediately have
-	$\vec X \not\ProdEquiv \vec Y$). Since $\vec Y > n$, there should exist a label
-	$\ell_{n+1}$ such that:
+	labels coincide with those from $\vec X$ (otherwise, we would immediately
+	have $\vec X \not\ProdEquiv \vec Y$). Since $\vec Y > n$, there should 
+	exist a label $\ell_{n+1}$ such that:
 	\[\vec Y \rightarrow \ell_1 \vec Y_1 \rightarrow \cdots 
-	\rightarrow \ell_n \vec Y_n\rightarrow \ell_{n+1} \vec Y_n \rightarrow \cdots\]
-	The $(n+1)$-th expansion of $\vec X$ with label $\ell_{n+1}$ would fail, 
-	hence $\vec X \not\ProdEquiv \vec Y$.
+	\rightarrow \ell_n \vec Y_n\rightarrow \ell_{n+1} \vec Y_n 
+	\rightarrow \cdots\]
+	Since our grammar is simple, \eqref{pathX} is the unique path from $\vec X$
+	through labels $\ell_1, \ldots, \ell_n$. Hence, the $(n+1)$-th expansion of
+	$\vec X$ with label $\ell_{n+1}$ would fail and we conclude that
+	$\vec X \not\ProdEquiv \vec Y$.
 \end{proof}
 
 The \emph{safeness property} is paramount for the soundness of our algorithm:

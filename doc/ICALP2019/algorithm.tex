@@ -29,9 +29,8 @@ presented in Figure~\ref{lts}. In this line, a context-free session type
 is seen as a finite set of productions of the form $X\rightarrow a \vec Y$, 
 where $X$ range over a finite set of \emph{non-terminal symbols}, $\vec Y$ 
 is a sequence of non-terminal symbols, and $a$ is a \emph{terminal symbol}
-ranging over the set of labels in the \LTS, extended with an initial (dummy) 
-label $!\,(\enspace)$. When no distinction is required, we refer to $X, Y, a$ 
-simply as \emph{symbols}.
+ranging over the set of labels in the \LTS. When no distinction is required, 
+we refer to $X, Y, a$ simply as \emph{symbols}.
 
 Given a context-free session type $S$, the set of productions $\mathcal{P}$
 is defined recursively on the structure of $S$. We start by considering 
@@ -60,7 +59,7 @@ in Algorithm~\ref{alg:toGrammar} and:
 \\
 \State \textsf{toGrammar} (\_, $\skipk$) = 
 \State \qquad \Return{$\varepsilon$}\smallskip
-\State \textsf{toGrammar} ($X$, $A$) = \Comment{$A$ ranges over $?\, \boolk$, $!\, \boolk$}
+\State \textsf{toGrammar} ($X$, $A$) = \Comment{$A$ ranges over $?\, B$, $!\, B$}
 \State \qquad \textsf{addProduction} ($X \rightarrow A$)
 \State \qquad \Return{$X$}\smallskip
 \State \textsf{toGrammar} ($X$, $\alpha$) = 
@@ -69,10 +68,10 @@ in Algorithm~\ref{alg:toGrammar} and:
 \State \qquad\textbf{else}
 \State \qquad\qquad \textsf{addProduction} ($X \rightarrow \alpha$)
 \State \qquad\qquad \Return{$X$}\smallskip
-\State \textsf{toGrammar} ($X$, $\star \{\ell_i : S_i \}_{j\in I}$) =  \Comment{$\star$ ranges over $\oplus$, $\&$}
+\State \textsf{toGrammar} ($X$, $\star \{\ell_i : S_i \}_{i\in I}$) =  \Comment{$\star$ ranges over $\oplus$, $\&$}
 \State \qquad \textbf{for} {$j\in I$} \textbf{do} 
 \State \qquad \qquad \textsf{addProduction} ($X \rightarrow \enspace \star \ell_j \enspace \mathsf{toGrammar}(\mathsf{freshVar}(\,), S_j)$)
-\State \qquad \qquad \Return{$X$}\smallskip
+\State \qquad \Return{$X$}\smallskip
 \State \textsf{toGrammar} (\_, $S;T$) =
 \State \qquad $\vec X_S$ $\gets$ \textsf{toGrammar} (\textsf{freshVar} (\,), $S$)
 \State \qquad $\vec X_T$ $\gets$ \textsf{toGrammar} (\textsf{freshVar} (\,), $T$)
