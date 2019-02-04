@@ -34,8 +34,8 @@ module Validation.Grammar
 , transitions
 , insertProduction
 , trans
-, reachable
-, backwards
+--, reachable
+--, backwards
 ) where
 
 import qualified Data.Map.Strict as Map
@@ -77,20 +77,20 @@ insertProduction p x l w = Map.insertWith Map.union x (Map.singleton l w) p
 trans :: Productions -> [TypeVar] -> [[TypeVar]]
 trans p xs = Map.elems (transitions p xs)
 
-reachable :: Productions -> Set.Set TypeVar -> Set.Set TypeVar
-reachable p xs
-  | xs == ts  = xs
-  | otherwise = reachable p ts
-  where ys = foldr union [] $ trans p (Set.toList xs)
-        ts = Set.union xs (Set.fromList ys)
+-- reachable :: Productions -> Set.Set TypeVar -> Set.Set TypeVar
+-- reachable p xs
+--   | xs == ts  = xs
+--   | otherwise = reachable p ts
+--   where ys = foldr union [] $ trans p (Set.toList xs)
+--         ts = Set.union xs (Set.fromList ys)
 
-backwards :: Productions -> [TypeVar] -> TypeVar
-backwards p xs
-  | not (null k) = head k
-  | otherwise    = backwards p (Map.keys ps)
-  where ps = Map.filter (\y -> or (map (`elem` (foldr union [] (Map.elems y))) xs)) p
-        f  = Map.filter (\y ->  Map.member (MessageLabel In UnitType) y) ps
-        k  = Map.keys f
+-- backwards :: Productions -> [TypeVar] -> TypeVar
+-- backwards p xs
+--   | not (null k) = head k
+--   | otherwise    = backwards p (Map.keys ps)
+--   where ps = Map.filter (\y -> or (map (`elem` (foldr union [] (Map.elems y))) xs)) p
+--         f  = Map.filter (\y ->  Map.member (MessageLabel In UnitType) y) ps
+--         k  = Map.keys f
 
 -- Showing a grammar
 

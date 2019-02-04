@@ -13,8 +13,9 @@ session types.
 
 In this section we propose an algorithm to check the equivalence of 
 context-free session types. This algorithm has three main stages: 
-it starts by converting types into grammars, then prunes unnormed 
-productions and, finally, explores an expansion tree, alternating 
+it starts by converting types into grammars, then streamlines the grammar
+by pruning out unreachable symbols from the productions and, finally, 
+explores an expansion tree, alternating 
 between simplification and expansion operations, until either finding 
 an empty node---case in which we decide equivalence positively---or 
 failing to expand a node---case in which we decide equivalence negatively.
@@ -29,7 +30,8 @@ is seen as a finite set of productions of the form $X\rightarrow a \vec Y$,
 where $X$ range over a finite set of \emph{non-terminal symbols}, $\vec Y$ 
 is a sequence of non-terminal symbols, and $a$ is a \emph{terminal symbol}
 ranging over the set of labels in the \LTS, extended with an initial (dummy) 
-label $!\,(\enspace)$. In general, we refer to $X, Y, a$ as \emph{symbols}.
+label $!\,(\enspace)$. When no distinction is required, we refer to $X, Y, a$ 
+simply as \emph{symbols}.
 
 Given a context-free session type $S$, the set of productions $\mathcal{P}$
 is defined recursively on the structure of $S$. We start by considering 
@@ -46,7 +48,7 @@ in Algorithm~\ref{alg:toGrammar} and:
 	\item $\mathsf{addProduction}$ inserts the given production in $\mathcal{P}$;
 	\item $\mathsf{insertVisited}$ marks a non-terminal symbol as visited;
 	\item $\mathsf{isVisited}$ identifies whether the given non-terminal symbol was visited;
-	\item $\mathsf{subst}(x,X,S)$ replaces the occurrences of $x$ by $Y$ in $S$;
+	\item $\mathsf{subst}(x,X,S)$ replaces the occurrences of $x$ by $X$ in $S$;
 	\item $\vec X \vec Y$ represents the concatenation of the sequences of symbols $\vec X$ and $\vec Y$;
 	\item $\varepsilon$ represents the empty sequence of symbols.
 \end{itemize}
@@ -99,6 +101,10 @@ context-free grammars in Greibach normal form such that, for each non-terminal
 symbol $X$ and terminal symbol $a$, there is at most one production of the form 
 $X\rightarrow a \enspace \vec Y$.
 
+We notice that given two context-free session types $S$ and $T$, we can obtain 
+a set of productions $\mathcal{P}$ for both, by ensuring that fresh variables
+do not overlap.
+
 The bisimulation relation, $\ProdEquiv$, is defined in the usual way from the 
 set of productions. Throughout the text we drop the subscript $\mathcal{P}$ when 
 it is clear from context.
@@ -120,10 +126,14 @@ is normed, we define its \emph{norm} as:
 As observed by Christensen et al.~\cite{DBLP:journals/iandc/ChristensenHS95}, 
 any unnormed sequence of symbols $\vec Y$ is equivalent to its concatenation 
 with any other symbol:
-\[ \text{ if } \vec Y \text{ is unnormed, then } \vec Y \sim \vec Y X.\]
+\begin{equation}
+\label{unnormed}
+\text{ if } \vec Y \text{ is unnormed, then } \vec Y \sim \vec Y X.
+\end{equation}
 
-Upon the definition of the production underlying the context-free session types,
-our algorithm proceeds with pruning on the unnormed productions. The Haskell code 
+Upon the definition of the productions underlying the context-free session types,
+our algorithm builds upon~\eqref{unnormed} to prune out unreachable symbols in
+unnormed sequences of symbols in $\mathcal{P}$. The Haskell code 
 is presented in Listing~\ref{lst:prune}.
 
 \begin{lstlisting}[caption={Haskell code for the stage of pruning unnormed productions},label={lst:prune},captionpos=b]
@@ -159,11 +169,11 @@ normedWord p v (x:xs) =
 We recall that, given two context-free session types $S$ and $T$, our main goal 
 is to decide whether these types are equivalent or not. For this purpose, 
 the algorithm we propose starts by applying Algorithm~\ref{alg:toGrammar} 
-and converts $S$ and $T$ into a grammar containing the productions derived 
-from them. Afterwards, the algorithm in listing~\ref{lst:prune} is used to 
+to convert $S$ and $T$ into a grammar containing the productions derived 
+from them. Afterwards, the algorithm in Listing~\ref{lst:prune} is used to 
 streamline the grammars, by pruning unnormed sequences of symbols.
-
 Throughout this section we focus on the third and last stage of the algorithm.
+
 We use the notion of \emph{expansion tree} proposed by Jan{\v{c}}ar 
 and Moller~\cite{janvcar1999techniques} as as adaption of the former idea by 
 Hirshfeld~\cite{hirshfeld1996bisimulation}. We say a set of pairs $N'$ is an 
@@ -196,7 +206,7 @@ In the expansion stage, each node $N$ derives a single children node,
 obtained as an expansion of $N$. As we are dealing with simple grammars, 
 no branching is expected in the expansion tree at this stage.
 Before proceeding to the simplification stage, the sequences of symbols 
-in the children nodes are pruned.
+labelling the children nodes are pruned, in accordance with~\eqref{unnormed}.
 
 \paragraph{Simplification stage:} The simplification stage consists on the application of the following \emph{simplification rules}:
 \begin{itemize}
@@ -213,14 +223,18 @@ Notice that, contrarily to the remaining (simplification and expansion) operatio
 
 \todo{performance enhanced through fixed point approach}. 
 
+Notice that the sibling nodes do not exclude the (often) infinite branch 
+resulting from successive expansions.
+
 \subsection{Algorithm to check the equivalence of context-free session types}
 
 The algorithm to decide the equivalence of context-free session 
-types capitalizes on the previous algorithms. We have implemented 
-a breadth-first search on the expansion tree, through the use of a 
-queue for the children nodes.
+types capitalizes on the previous algorithms. To avoid getting stuck in an 
+infinite branch of the expansion tree, we have implemented 
+a breadth-first search on the expansion tree. Upcoming nodes are stored
+in a queue.
 
-Given two context-free session types $\mathsf{t}$ and $\mathsf{u}$,
+Given two context-free session types \lstinline|t| and \lstinline|u|,
 the algorithm sketched in Listing~\ref{lst:algorithm} returns \textsf{true}
 if the types are equivalent and \textsf{false} otherwise. 
 This algorithm capitalizes on the previous algorithms, is written in Haskell 
