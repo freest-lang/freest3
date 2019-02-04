@@ -13,9 +13,12 @@ Portability :  portable | non-portable (<reason>)
 
 module Validation.Norm
 ( prune
+, pruneWord
 , normed
 , sameNorm
 , norm
+, allNormed
+, normedWord
 ) where
 
 import           Data.List (union)
@@ -41,8 +44,8 @@ normedWord :: Productions -> Set.Set TypeVar -> [TypeVar] -> Bool
 normedWord _ _ []     = True
 normedWord p v (x:xs) =
   x `Set.notMember` v &&
-  or (map (normedWord p (Set.insert x v))
-          (Map.elems (transitions p (x:xs))))
+  or (map (normedWord p v') (Map.elems (transitions p (x:xs))))
+  where v' = if or $ map (x `elem`) (Map.elems (transitions p [x])) then Set.insert x v else v
 
 norm :: Productions -> [TypeVar] -> Int
 norm p xs = normList p [xs]
@@ -59,3 +62,8 @@ sameNorm p xs ys =
   (normedXs && normedYs && norm p xs == norm p ys )
   where normedXs = normedWord p Set.empty xs
         normedYs = normedWord p Set.empty ys
+
+-- Identify the existence of unnormed symbols
+
+allNormed :: Productions -> Bool
+allNormed p = and $ map (normed p) (Map.keys p)

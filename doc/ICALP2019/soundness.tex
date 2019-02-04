@@ -56,16 +56,16 @@ transition system (Fig.~\ref{lts}):
 	      does not add any production.
 	\item If $S\triangleq A$, where $A$ ranges over $!B$ and $?B$, 
 	      then $S  \LTSderives[A] \skipk$. On the other hand, 
-	      $\mathsf{toGrammar}(X,S)$ inserts a production $X\rightarrow A$, 
+	      $\mathsf{toGrammar}(X,S)$ returns $X$ and inserts a production $X\rightarrow A$, 
 	      i.e., $X\rightarrow A \enspace  \mathsf{toGrammar}(\skipk).$  
 	\item If $S \triangleq \alpha$, then $S   \LTSderives[\alpha] \skipk$. 
 	      On the other hand, since $\alpha$ does not contain non-terminal 
-	      symbols, $\mathsf{toGrammar}(X,S)$ inserts a production 
-	      $X\rightarrow \alpha$, i.e.,  $X\rightarrow \alpha \enspace 
+	      symbols, $\mathsf{toGrammar}(X,S)$ returns $X$ and inserts a production 
+	      $X\rightarrow \alpha$, i.e.,\linebreak  $X\rightarrow \alpha \enspace 
 	      \mathsf{toGrammar}(\skipk).$
 	\item If $S\triangleq \star\{l_i\colon S_i\}_{i\in I}$ then, for each 
           $j\in I$, $S \LTSderives[\star l_j] S_j$. On the other hand, 
-          for each $j\in I$, $\mathsf{toGrammar}(X,S)$ inserts a production 
+          for each $j\in I$, $\mathsf{toGrammar}(X,S)$ returns $X$ and  inserts a production 
           $X\rightarrow \star l_j \enspace \mathsf{toGrammar}(S_j)$.
 	\item If $S\triangleq \mu x.S$ and $S[\mu x.S/x] \LTSderives[a] S'$, 
 	      then $\mu x.S \LTSderives[a] S'$. By induction hypothesis, 
@@ -73,7 +73,7 @@ transition system (Fig.~\ref{lts}):
 	      $X \rightarrow a\enspace  \mathsf{toGrammar}(S')$.
 	\item If $S\triangleq T;U$ and $T \LTSderives[a] T'$ then $S \LTSderives[a] T';U$. 
 	      By induction hypothesis, $\mathsf{toGrammar}(X,T)$ adds the production 
-	      $X\rightarrow a \enspace \mathsf{toGrammar}(T')$.
+	      $X\rightarrow a \enspace \mathsf{toGrammar}(T')$ to $\mathcal P$.
 		Denoting by 
 		\begin{align*}
 			\vec Y_T &\leftarrow \mathsf{toGrammar}(X,T)\\
@@ -130,14 +130,14 @@ Given a session type $S$ and a label $\ell$,
 		     $S[\mu x.S/x] \LTSderives[a] S'$ leads to a transition 
 		     $\mu x.S \LTSderives[a] S'$.
 		\item[Case $S \triangleq T;U$:] $\mathsf{toGrammar}(S)$ recursively adds 
-		     all productions from  $\mathsf{toGrammar}(T)$ and $\mathsf{toGrammar}(U)$.
+		     all productions from  $\mathsf{toGrammar}(T)$ and, then, from $\mathsf{toGrammar}(U)$.
 		     By induction hypothesis, all these productions have corresponding 
 		     transitions in the \LTS.
 	\end{description}
 \end{proof}
 
 Having proved that any labelled transition in the LTS has a corresponding
-transition in the grammars and vice-versa, the following theorem is now 
+transition in the grammar and vice-versa, the following theorem is now 
 immediate.
 
 \begin{theorem}
@@ -149,12 +149,12 @@ immediate.
 \subsection{\textit{Unnormedness} is preserved}
 
 To prove that the pruning stage is in accordance with the results 
-from Christensen et al., we now observe that unnormed types have 
-unnormed non-terminal symbols and vice-versa. These results follow 
+from Christensen et al., we now observe that unnormed non-terminal symbols 
+corresponding to (un)normed types are (un)normed. These results follow 
 immediately from the previous results. 
 
 \begin{corollary}
-	Given a context-free session type $S$, $|S| = |\mathsf{toGrammar}(\_,S)|$.
+	Given a context-free session type $S$, $|S| = |\mathsf{toGrammar}(S)|$.
 \end{corollary}
 
 \begin{corollary}
@@ -169,29 +169,35 @@ stands on proving that all nodes excluded by the filtering rule
 would lead to unsuccessful branches.
 
 \begin{lemma}
+\label{lemma:filtering}
 	Let $(\vec X, \vec Y)$ be a pair in node $N$ of the expansion tree. 
 	If $|\vec X| \neq |\vec Y|$ then  $\vec X \not\ProdEquiv \vec Y$.
 \end{lemma}
 
 \begin{proof}
-	Assume that $n = |\vec X| < |\vec Y|$. This means that 
-	\[\vec X \rightarrow \ell_1 \vec X_1 \rightarrow \cdots 
-	\rightarrow \ell_n \rightarrow \varepsilon.\]
+	Assume that $n = |\vec X| < |\vec Y|$. This means that:
+	\begin{equation}
+	\label{pathX}
+		\vec X \rightarrow \ell_1 \vec X_1 \rightarrow \cdots 
+		\rightarrow \ell_n \rightarrow \varepsilon.
+	\end{equation}
 	Now assume that $\vec Y$ has an expansion sequence whose 
-	labels coincide with those from $\vec X$. The derivation for $\vec Y$ 
-	should be of the form
+	labels coincide with those from $\vec X$ (otherwise, we would immediately
+	have $\vec X \not\ProdEquiv \vec Y$). Since $\vec Y > n$, there should 
+	exist a label $\ell_{n+1}$ such that:
 	\[\vec Y \rightarrow \ell_1 \vec Y_1 \rightarrow \cdots 
-	\rightarrow \ell_n \vec Y_n\rightarrow \ell_{n+1} \vec Y_n \rightarrow \cdots\]
-	The $(n+1)$-th expansion of $\vec X$ with label $\ell_{n+1}$ would fail, 
-	hence $\vec X \not\ProdEquiv \vec Y$.
+	\rightarrow \ell_n \vec Y_n\rightarrow \ell_{n+1} \vec Y_n 
+	\rightarrow \cdots\]
+	Since our grammar is simple, \eqref{pathX} is the unique path from $\vec X$
+	through labels $\ell_1, \ldots, \ell_n$. Hence, the $(n+1)$-th expansion of
+	$\vec X$ with label $\ell_{n+1}$ would fail and we conclude that
+	$\vec X \not\ProdEquiv \vec Y$.
 \end{proof}
 
-The expansion and simplification operations we have presented in 
-subsection~\ref{subsec:expand} were proved to preserve the safeness 
-property~\cite{janvcar1999techniques}:
+The \emph{safeness property} is paramount for the soundness of our algorithm:
 
 \begin{proposition} [Safeness Property~\cite{janvcar1999techniques}]
-\label{safeness}
+\label{prop:safeness}
 	$\vec X \ProdEquiv \vec Y$ if and only if the expansion tree rooted 
 	at $\{(\vec X, \vec Y)\}$ has a successful branch.
 \end{proposition}
@@ -199,8 +205,13 @@ property~\cite{janvcar1999techniques}:
 \begin{proof}
 	The reflexive, congruence and \BPA\ rules were already proved to 
 	preserve the safeness property~\cite{janvcar1999techniques}.
-	It remains to prove that the filtering rule also preserves 
-	the safeness property: \todo{AM}{complete}
+	On the other hand, as observed in~\cite{janvcar1999techniques},
+	the union of nodes along a successful branch is a relation $R$ 
+	such that $R\subseteq \ProdEquiv$. Hence, any pair $(\vec X, \vec Y)$ 
+	occurring along a successful branch is such that $\vec X \ProdEquiv \vec Y$,
+	which, by Lemma~\ref{lemma:filtering}, means that $|\vec X|=|\vec Y|$.
+	So, the filtering rule would node exclude any node in the successful branch
+	and, then, also preserved the safeness property.
 \end{proof}
 
 The results on the soundness of the algorithm are now straightforward. 
@@ -237,10 +248,14 @@ importance to prove completeness.
 \end{proposition}
 
 \begin{proof}
-	The reflexive, congruence and \BPA\ rules were already proved to 
-	preserve the finite witness property~\cite{janvcar1999techniques}.
-	It remains to prove that the filtering rule also preserves 
-	it: \todo{AM}{complete}
+	The \BPA\ rules were proved to ensure the finite witness 
+	property~\cite{janvcar1999techniques}. The remaining rules do not
+	affect any successful branch: reflexive and congruence rules only remove 
+	redundant pairs, because we all these results consider the least 
+	congruence relation containing the union of the nodes in the 
+	successful branch, whereas the filtering rule was proved to exclude 
+	only unsuccessful branches (see Lemma~\ref{lemma:filtering} and proof 
+	of Proposition~\ref{prop:safeness}).
 \end{proof}
 
 \begin{theorem}
