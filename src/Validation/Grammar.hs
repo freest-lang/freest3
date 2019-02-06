@@ -34,6 +34,8 @@ module Validation.Grammar
 , transitions
 , insertProduction
 , trans
+, pathToSkip
+, throughPath
 --, reachable
 --, backwards
 ) where
@@ -77,20 +79,26 @@ insertProduction p x l w = Map.insertWith Map.union x (Map.singleton l w) p
 trans :: Productions -> [TypeVar] -> [[TypeVar]]
 trans p xs = Map.elems (transitions p xs)
 
--- reachable :: Productions -> Set.Set TypeVar -> Set.Set TypeVar
--- reachable p xs
---   | xs == ts  = xs
---   | otherwise = reachable p ts
---   where ys = foldr union [] $ trans p (Set.toList xs)
---         ts = Set.union xs (Set.fromList ys)
+-- only applicable on normed variables
+pathToSkip :: Productions -> TypeVar -> [Label]
+pathToSkip p x = fst . head $ filter ( null . snd ) ps
+  where ps = pathToSkip' p ( Map.assocs $ (Map.mapKeys (\k -> [k]) (transitions p [x])) )
 
--- backwards :: Productions -> [TypeVar] -> TypeVar
--- backwards p xs
---   | not (null k) = head k
---   | otherwise    = backwards p (Map.keys ps)
---   where ps = Map.filter (\y -> or (map (`elem` (foldr union [] (Map.elems y))) xs)) p
---         f  = Map.filter (\y ->  Map.member (MessageLabel In UnitType) y) ps
---         k  = Map.keys f
+pathToSkip' :: Productions -> [([Label],[TypeVar])] -> [([Label],[TypeVar])]
+pathToSkip' p ps
+  | any (null . snd) ps = ps
+  | otherwise           = pathToSkip' p ps'
+  where ps' = foldr (\(ls,xs) ts -> union
+                    (map (\(l,ys) -> (ls++[l], ys)) $ Map.assocs $ transitions p xs)
+                    ts ) [] ps
+
+throughPath :: Productions -> [Label] -> [TypeVar] -> Maybe [TypeVar]
+throughPath p (l:ls) xs
+  | not (Map.member l ts) = Nothing
+  | otherwise = throughPath p ls xs'
+  where ts  = (transitions p xs)
+        xs' = ts Map.! l
+throughPath p _ xs = Just xs
 
 -- Showing a grammar
 

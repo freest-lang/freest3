@@ -47,7 +47,7 @@ expansionTree' g q
   | otherwise         = case expandNode g n of
       Nothing  -> expansionTree' g (Queue.dequeue q)
       Just n'  -> n' == Set.fromList [([],[])] ||
-                  expansionTree' g (simplify g (Set.union a n) (pruneNode g n') q)
+                  expansionTree' g (simplify g (Set.union a n) n' q)
   where (n,a) = Queue.front q
 
 expandNode :: Productions -> Node -> Maybe Node
@@ -89,11 +89,11 @@ apply :: Productions -> NodeTransformation -> Set.Set (Node,Ancestors) -> Set.Se
 apply g trans ns = Set.fold (\(n,a) ns -> Set.union (Set.map (\s -> (s,a)) (trans g a n)) ns) Set.empty ns
 
 findFixedPoint :: Productions -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
-findFixedPoint g nas 
+findFixedPoint g nas
   | nas == nas' = nas
   | otherwise = findFixedPoint g nas'
   where nas' = if allNormed g then foldr (apply g) nas [reflex, congruence, bpa2, filtering]
-                              else foldr (apply g) nas [reflex, congruence, bpa1, filtering]
+                              else foldr (apply g) nas [reflex, congruence, bpa1, bpa2, filtering]
 
 normsMatch :: Productions -> Node -> Bool
 normsMatch g n = and $ Set.map (\(xs,ys) -> sameNorm g xs ys) n
@@ -149,13 +149,10 @@ bpa2 g a n =
 
 bpa2' :: Productions -> Ancestors -> ([TypeVar],[TypeVar]) -> Set.Set Node
 bpa2' p a (x:xs, y:ys)
-  | m && equalNorms     = Set.singleton (Set.fromList [([x],[y]), (xs,ys)])
-  | m && not equalNorms = Set.map (pairsBPA2 p (x:xs, y:ys)) gammas
-  | otherwise           = Set.empty
-  where equalNorms = norm p [x] == norm p [y]
-        gammas     = gammasBPA2 p (x,y)
-        m = (not (norm p [x] > norm p [y]) || length ys > 0) &&
-            (not (norm p [x] < norm p [y]) || length xs > 0)
+  | not (normed p x && normed p y) = Set.empty
+  | otherwise  = case gammaBPA2 p (x,y) of
+      Nothing    -> Set.empty
+      Just gamma -> Set.singleton (pairsBPA2 p (x:xs, y:ys) gamma)
 bpa2' _ _ _ = Set.empty
 
 pairsBPA2 :: Productions -> ([TypeVar],[TypeVar]) -> [TypeVar] -> Node
@@ -163,29 +160,11 @@ pairsBPA2 p (x:xs, y:ys) gamma = Set.fromList [p1, p2]
   where  p1 = if (norm p [x] >= norm p [y]) then ( [x], [y] ++ gamma ) else ( [x] ++ gamma, [y] )
          p2 = if (norm p [x] >= norm p [y]) then ( gamma ++ xs, ys ) else ( xs, gamma ++ ys )
 
-gammasBPA2 :: Productions -> (TypeVar,TypeVar) -> Set.Set [TypeVar]
-gammasBPA2 p (x,y) = gammaSelection p x0 n1 n2
- where n1 = min (norm p [x]) (norm p [y])
-       n2 = max (norm p [x]) (norm p [y])
-       x0 = if norm p [x] >= norm p [y] then x else y
-       -- vs = Set.toList $ reachable p (Set.singleton x0)
-
--- gammaSelection :: Productions -> [TypeVar] -> Int -> Set.Set [TypeVar]
--- gammaSelection p xs diff = Set.filter (\xs -> norm p xs == diff) (Set.fromList (powerset ys))
---   where ys  = filter (\x -> norm p [x] <= diff) xs
-
-gammaSelection :: Productions -> TypeVar -> Int -> Int -> Set.Set [TypeVar]
-gammaSelection p x n1 n2 = gammaSelection' p (Set.singleton [x]) n1 (n2-n1) 0
-
-gammaSelection' :: Productions -> Set.Set [TypeVar] -> Int -> Int -> Int -> Set.Set [TypeVar]
-gammaSelection' p xs n diff i
-  | i < n     = gammaSelection' p xs' n diff (i+1)
-  | otherwise = Set.filter (\x -> norm p x == diff) xs
-  where xs'  = Set.fromList $ Set.foldr (\w ws -> union (trans p w) ws) [] xs
-
--- powerset :: [TypeVar] -> [[TypeVar]]
--- powerset [] = [[]]
--- powerset (x:xs) = map (x:) (powerset xs) ++ powerset xs
+gammaBPA2 :: Productions -> (TypeVar,TypeVar) -> Maybe [TypeVar]
+gammaBPA2 p (x,y) = throughPath p ls [x1]
+ where x0 = if norm p [x] <= norm p [y] then x else y
+       x1 = if norm p [x] <= norm p [y] then y else x
+       ls = pathToSkip p x0
 
 findInAncestors :: Ancestors -> TypeVar -> TypeVar -> Maybe ([TypeVar], [TypeVar])
 findInAncestors a x y =
