@@ -40,7 +40,44 @@ Now we prove that any transition in the \LTS\ has a
 corresponding transition derived from the set of productions.
 
 \begin{lemma}
-Given session types $S,S'$ and a label $\ell$,
+\label{lemma:terminated_session}
+	Given a context-free session type $S$, 
+	\[S \checkmark \text{ if and only if } \mathsf{toGrammar}(S) = \varepsilon.\]
+\end{lemma}
+
+\begin{proof}
+	We prove the direct implication by induction on the structure of a terminated
+	context-free session type $S$:
+	\begin{description}
+		\item[Case $S\triangleq \skipk$,] then $\mathsf{toGrammar}$ does not 
+		add any production and returns $\varepsilon$.
+		\item[Case $S\triangleq S_1;S_2$] for terminated session types $S_1$ and
+		$S_2$, $\mathsf{toGrammar}(S)$ recursively adds the productions from 
+		$\mathsf{toGrammar}(S_1)$ and $\mathsf{toGrammar}(S_2)$. But $S_1$ and 
+		$S_2$ are terminated session types, hence no production is added and
+		$\varepsilon$ is returned, hence $\mathsf{toGrammar}(S)$
+		returns $\varepsilon\varepsilon$.
+		\item[Case $S\triangleq \mu x. S$,] where $S[\mu x.S/x] \checkmark$,
+		$\mathsf{toGrammar}(S)$ adds the productions from \linebreak
+		$\mathsf{toGrammar}(S[\mu x.S/x])$. But $S[\mu x.S/x]$ is a terminated
+		session, thus $\mathsf{toGrammar}(S)$ returns $\varepsilon$.
+	\end{description}
+	Reciprocally, assume that $\mathsf{toGrammar}(S)$ returns $\varepsilon$ and
+	adds no productions. By induction on the structure of S, either:
+	\begin{itemize}
+		\item $S\triangleq \skipk$ and obviously $S\checkmark$.
+		\item $S\triangleq S_1;S_2$, where $\mathsf{toGrammar}(S_1)$ and
+			  $\mathsf{toGrammar}(S_2)$ do not add any productions and
+			  return $\varepsilon$. Hence, $S_1\checkmark$ and $S_2\checkmark$,
+			  which by the \LTS\ implies that $S\checkmark$.
+		\item $S\triangleq \mu x. S_1$, where $\mathsf{toGrammar}(\mathsf{subst}(x,X,S))$
+			  does not add any productions and returns $\varepsilon$. Hence, 
+			  $S[\mu x.S/x] \checkmark$ and, then, $\mu x. S_1 \checkmark$.
+	\end{itemize}
+\end{proof}
+
+\begin{lemma}
+Given context-free session types $S,S'$ and a label $\ell$,
 	\[ \text{if } S \LTSderives[\ell] S' \text{ then } 
 	\mathsf{toGrammar}(S) \rightarrow \enspace \ell \enspace \vec Y, \]
 	where $\mathsf{toGrammar}(S')$ is prefix of $\vec Y$.
@@ -70,7 +107,9 @@ transition system (Fig.~\ref{lts}):
 	\item If $S\triangleq \mu x.S$ and $S[\mu x.S/x] \LTSderives[a] S'$, 
 	      then $\mu x.S \LTSderives[a] S'$. By induction hypothesis, 
 	      $\mathsf{toGrammar}(X,\mathsf{subst}(x,X,S))$ adds the production 
-	      $X \rightarrow a\enspace  \mathsf{toGrammar}(S')$.
+	      $X \rightarrow a\enspace  \mathsf{toGrammar}(S')$ and returns $\vec X_S$.
+	      Since $S[\mu x.S/x]$ is not a terminated session, $\vec X_S$ is not $\varepsilon$, 
+	      thus we have \linebreak$\mathsf{toGrammar}(S) \rightarrow a\enspace  \mathsf{toGrammar}(S')$.
 	\item If $S\triangleq T;U$ and $T \LTSderives[a] T'$ then $S \LTSderives[a] T';U$. 
 	      By induction hypothesis, $\mathsf{toGrammar}(X,T)$ adds the production 
 	      $X\rightarrow a \enspace \mathsf{toGrammar}(T')$ to $\mathcal P$.
@@ -85,14 +124,14 @@ transition system (Fig.~\ref{lts}):
 		\rightarrow a \enspace \mathsf{toGrammar}(T') \enspace \vec  Y_T' 
 		\enspace \vec Y_U.\]
 	\item If $S\triangleq T;U$, $T$ is a terminated session, with no further 
-	      action, and $U \LTSderives[a] U'$ then, by induction hypothesis, 
-	
-	    \begin{tabular}{lll}
-			$\mathsf{toGrammar}(T)$ & $= \varepsilon$\\
-			$\mathsf{toGrammar}(X,U)$ & adds a production 
-			$X \rightarrow a \enspace \mathsf{toGrammar}(U')$
-		\end{tabular}\\\\
-		then, considering $\vec X_U \leftarrow \mathsf{toGrammar}(X,U)$, 
+	      action, and $U \LTSderives[a] U'$ then, by induction hypothesis and 
+	      using Lemma~\ref{lemma:terminated_session}:
+	    \begin{itemize}
+			\item $\mathsf{toGrammar}(T)$  returns $\varepsilon$,
+			\item $\mathsf{toGrammar}(X,U)$  adds a production 
+			$X \rightarrow a \enspace \mathsf{toGrammar}(U')$.
+		\end{itemize}
+		Then, considering $\vec X_U \leftarrow \mathsf{toGrammar}(X,U)$, 
 		we notice that $X_U = X \enspace \vec X_U'$ for some sequence of 
 		non-terminal symbols $\vec X_U'$. Hence, by congruence, we have a 
 		transition 
