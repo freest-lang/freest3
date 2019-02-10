@@ -10,73 +10,70 @@ by Thiemann and Vasconcelos~\cite{thiemann2016context}.
 We start by showing that the bisimulation relation proposed by 
 Thiemann and Vasconcelos, $\TypeEquiv$, is equivalent to the 
 bisimulation relation obtained from the productions, $\ProdEquiv$. 
-Then, based on results from Christensen, H{\"{u}}ttel, 
-Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}, Jan{\v{c}}ar 
+Then, based on results from Caucal~\cite{caucal1986decidabilite}, Christensen, 
+H{\"{u}}ttel, Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}, Jan{\v{c}}ar 
 and Moller~\cite{janvcar1999techniques}, we conclude that our algorithm 
 is sound and complete.
 
 \subsection{The bisimilarities coincide}
 
-To ease notation, we will represent $\mathsf{toGrammar}
-(\mathsf{freshVar}(\,),S)$ as $\mathsf{toGrammar}(S)$ whenever 
-the fresh variable is not relevant in the context.
-
 In the following lemma we prove that the initial (dummy) production 
 does not affect equivalence checking.
 \begin{lemma}
-	Given two session types $S_1, S_2$, 
-	\[ X_{S_1} \sim X_{S_2}  \text{ if and only if } 
-	\mathsf{toGrammar}(S_1) \sim \mathsf{toGrammar}(S_2).\]
+	Given two session types $S$ and $T$, 
+	\[ X_{S} \sim X_{T}  \text{ if and only if } 
+	\text{\lstinline{toGrammar S}} \sim \text{\lstinline{toGrammar T}}.\]
 \end{lemma}
 
 \begin{proof}
 	By~\eqref{initial_prod}, we have:
-	\[ X_{S_1}  \rightarrow \enspace \initialProd\enspace \mathsf{toGrammar}(S_1) 	\]
-    \[ X_{S_2}  \rightarrow \enspace \initialProd\enspace \mathsf{toGrammar}(S_2) 	\]
+	\[X_S \rightarrow \enspace \initialProd\enspace \text{(\lstinline{toGrammar S})}\]
+    \[X_T \rightarrow \enspace \initialProd\enspace \text{(\lstinline{toGrammar T})}\]
 
-Hence, $X_{S_1}\sim X_{S_2}$ if and only if 
-$\mathsf{toGrammar}(S_1) \sim \mathsf{toGrammar}(S_2)$.
+Hence, $X_S\sim X_T$ if and only if 
+\lstinline{toGrammar S} $\sim$ \lstinline{toGrammar T}.
 \end{proof}
 
-Now we prove that any transition in the \LTS\ has a 
-corresponding transition derived from the set of productions.
 
 \begin{lemma}
 \label{lemma:terminated_session}
 	Given a context-free session type $S$, 
-	\[S \checkmark \text{ if and only if } \mathsf{toGrammar}(S) = \varepsilon.\]
+	\[S \checkmark \text{ if and only if } 
+	\text{\lstinline{toGrammar S = [ ]}}.\]
 \end{lemma}
 
 \begin{proof}
 	We prove the direct implication by induction on the structure of a terminated
 	context-free session type $S$:
 	\begin{description}
-		\item[Case $S\triangleq \skipk$,] then $\mathsf{toGrammar}$ does not 
-		add any production and returns $\varepsilon$.
+		\item[Case $S\triangleq \skipk$,] then \lstinline{toGrammar} does not 
+		add any production and returns \lstinline{[ ]}.
 		\item[Case $S\triangleq S_1;S_2$] for terminated session types $S_1$ and
-		$S_2$, $\mathsf{toGrammar}(S)$ recursively adds the productions from 
-		$\mathsf{toGrammar}(S_1)$ and $\mathsf{toGrammar}(S_2)$. But $S_1$ and 
+		$S_2$, \lstinline{toGrammar S} recursively adds the productions from 
+		\lstinline{toGrammar S1} and \lstinline{toGrammar S2}. But $S_1$ and 
 		$S_2$ are terminated session types, hence no production is added and
-		$\varepsilon$ is returned, hence $\mathsf{toGrammar}(S)$
-		returns $\varepsilon\varepsilon$.
+		\lstinline{[ ]} is returned.
 		\item[Case $S\triangleq \mu x. S$,] where $S[\mu x.S/x] \checkmark$,
-		$\mathsf{toGrammar}(S)$ adds the productions from \linebreak
-		$\mathsf{toGrammar}(S[\mu x.S/x])$. But $S[\mu x.S/x]$ is a terminated
-		session, thus $\mathsf{toGrammar}(S)$ returns $\varepsilon$.
+		\lstinline{toGrammar S} adds the productions from \linebreak
+		\lstinline{toGrammar (subs (Var y) x t)}. But $S[\mu x.S/x]$ is a terminated
+		session, thus \lstinline{toGrammar S} returns \lstinline{[ ]}.
 	\end{description}
-	Reciprocally, assume that $\mathsf{toGrammar}(S)$ returns $\varepsilon$ and
+	Reciprocally, assume that \lstinline{toGrammar S} returns \lstinline{[ ]} and
 	adds no productions. By induction on the structure of S, either:
 	\begin{itemize}
 		\item $S\triangleq \skipk$ and obviously $S\checkmark$.
-		\item $S\triangleq S_1;S_2$, where $\mathsf{toGrammar}(S_1)$ and
-			  $\mathsf{toGrammar}(S_2)$ do not add any productions and
-			  return $\varepsilon$. Hence, $S_1\checkmark$ and $S_2\checkmark$,
+		\item $S\triangleq S_1;S_2$, where \lstinline{toGrammar S1} and
+			  \lstinline{toGrammar S2} do not add any productions and
+			  return \lstinline{[ ]}. Hence, $S_1\checkmark$ and $S_2\checkmark$,
 			  which by the \LTS\ implies that $S\checkmark$.
-		\item $S\triangleq \mu x. S_1$, where $\mathsf{toGrammar}(\mathsf{subst}(x,X,S))$
-			  does not add any productions and returns $\varepsilon$. Hence, 
+		\item $S\triangleq \mu x. S_1$, where \lstinline{toGrammar (subs (Var y) x t)}
+			  does not add any productions and returns \lstinline{[ ]}. Hence, 
 			  $S[\mu x.S/x] \checkmark$ and, then, $\mu x. S_1 \checkmark$.
 	\end{itemize}
 \end{proof}
+
+Now we prove that any transition in the \LTS\ has a 
+corresponding transition derived from the set of productions.
 
 \begin{lemma}
 Given context-free session types $S,S'$ and a label $\ell$,
