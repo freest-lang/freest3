@@ -27,10 +27,10 @@ We will consider context-free session types as being represented by a
 finite set of productions, built upon the labelled transition system (\LTS)
 presented in Figure~\ref{lts}. In this line, a context-free session type 
 is seen as a finite set of productions of the form $X\rightarrow a \vec Y$, 
-where $X$ range over a finite set of \emph{non-terminal symbols}, $\vec Y$ 
+where $X$ ranges over a finite set of \emph{non-terminal symbols}, $\vec Y$ 
 is a sequence of non-terminal symbols, and $a$ is a \emph{terminal symbol}
 ranging over the set of labels in the \LTS. When no distinction is required, 
-we refer to $X, Y, a$ simply as \emph{symbols}.
+we refer to $X$, $Y$ and $a$ simply as \emph{symbols}.
 
 Given a context-free session type $S$, the set of productions $\mathcal{P}$
 is defined recursively on the structure of $S$. We start by considering 
@@ -38,56 +38,106 @@ a non-terminal symbol $X_S$ to represent $S$ and inserting the following
 initial production in the set of productions $\mathcal{P}$: 
 \begin{equation}
 \label{initial_prod}
-	X_S \rightarrow \enspace \initialProd\enspace \mathsf{toGrammar}(\mathsf{freshVar}(\,),S) 	
+	X_S \rightarrow \enspace \initialProd\enspace \text{(\lstinline{toGrammar S})}	
 \end{equation}
-where $\mathsf{toGrammar}$ is defined recursively as presented 
-in Algorithm~\ref{alg:toGrammar} and:
+where \lstinline{toGrammar S} represents the sequence of symbols returned by the
+recursive function presented in Listing~\ref{lst:toGrammar}. In our implementation, 
+we keep the set of productions $\mathcal{P}$ in the state \lstinline{TState}
+and consider the following functions:
 \begin{itemize}
-	\item $\mathsf{freshVar}$ returns a fresh non-terminal variable;
-	\item $\mathsf{addProduction}$ inserts the given production in $\mathcal{P}$;
-	\item $\mathsf{insertVisited}$ marks a non-terminal symbol as visited;
-	\item $\mathsf{isVisited}$ identifies whether the given non-terminal symbol was visited;
-	\item $\mathsf{subst}(x,X,S)$ replaces the occurrences of $x$ by $X$ in $S$;
-	\item $\vec X \vec Y$ represents the concatenation of the sequences of symbols $\vec X$ and $\vec Y$;
-	\item $\varepsilon$ represents the empty sequence of symbols.
+	\item \lstinline{freshVar} returns a fresh non-terminal variable;
+	\item \lstinline{addProduction} updates the state by inserting 
+	      the given production;
+	\item \lstinline{insertVisited} marks a non-terminal symbol as visited;
+	\item \lstinline{isVisited} identifies whether the given non-terminal symbol 
+	      was visited;
+	\item \lstinline{subst x X S} replaces the occurrences of \lstinline{x} by 
+	      \lstinline{X} in \lstinline{S}.
 \end{itemize}
+Furthermore, the type $\skipk$ is represented by \lstinline{Skip}, 
+\lstinline{MessageLabel p b} stands for types of the form $?B$ or $!B$,
+\lstinline{VarLabel} stands for variables, 
+\lstinline{Semi} represents sequential composition,
+\lstinline{Rec} represents recursive types, and
+\lstinline{Choice} stands for the choice operators $\oplus$ and $\&$.
 
-\begin{algorithm}
-\caption{Algorithm to convert context-free session types into a grammar. Pseudocode.}
-\label{alg:toGrammar}
-\begin{algorithmic}
-\\
-\State \textsf{toGrammar} (\_, $\skipk$) = 
-\State \qquad \Return{$\varepsilon$}\smallskip
-\State \textsf{toGrammar} ($X$, $A$) = \Comment{$A$ ranges over $?\, B$, $!\, B$}
-\State \qquad \textsf{addProduction} ($X \rightarrow A$)
-\State \qquad \Return{$X$}\smallskip
-\State \textsf{toGrammar} ($X$, $\alpha$) = 
-\State \qquad\textbf{if} \textsf{isVisited} ($\alpha$) \textbf {then}
-\State \qquad\qquad \Return{$\alpha$}
-\State \qquad\textbf{else}
-\State \qquad\qquad \textsf{addProduction} ($X \rightarrow \alpha$)
-\State \qquad\qquad \Return{$X$}\smallskip
-\State \textsf{toGrammar} ($X$, $\star \{\ell_i : S_i \}_{i\in I}$) =  \Comment{$\star$ ranges over $\oplus$, $\&$}
-\State \qquad \textbf{for} {$j\in I$} \textbf{do} 
-\State \qquad \qquad \textsf{addProduction} ($X \rightarrow \enspace \star \ell_j \enspace \mathsf{toGrammar}(\mathsf{freshVar}(\,), S_j)$)
-\State \qquad \Return{$X$}\smallskip
-\State \textsf{toGrammar} (\_, $S;T$) =
-\State \qquad $\vec X_S$ $\gets$ \textsf{toGrammar} (\textsf{freshVar} (\,), $S$)
-\State \qquad $\vec X_T$ $\gets$ \textsf{toGrammar} (\textsf{freshVar} (\,), $T$)
-\State \qquad \Return{$\vec X_S \, \vec X_T$}\smallskip
-\State \textsf{toGrammar} ($X$, $\mu x.S$) =
-\State \qquad \textsf{insertVisited} $X$\smallskip
-\State \qquad $\vec X_S$ $\gets$ \textsf{toGrammar} ($X$, $\mathsf{subst}(x,X,S)$)
-\State \qquad \textbf{if} \textsf{null} $\vec X_S$ \textbf{then} 
-\State \qquad \qquad \Return{$\varepsilon$}
-\State \qquad \textbf{else} 
-\State \qquad \qquad \Return{$X$}\smallskip
-\end{algorithmic}
-\end{algorithm}
+\begin{lstlisting}[caption={Haskell code for the conversion of types into
+                   grammars},label={lst:toGrammar} ,captionpos=b]
+type TState = (Productions, Visited, Int)
+type TransState = State TState
+
+toGrammar :: Type -> TransState [TypeVar]
+toGrammar Skip =
+  return [ ]
+toGrammar (Message p b) = do
+  y <- freshVar
+  addProduction y (MessageLabel p b) [ ]
+  return [y]
+toGrammar (Semi t u) = do
+  xs <- toGrammar t
+  ys <- toGrammar u
+  return $ xs ++ ys
+toGrammar (Var a) = do
+  b <- memberVisited a
+  if b
+  then    -- This is a recursion variable
+    return [a]
+  else do -- This is a free variable
+    y <- freshVar
+    addProduction y (VarLabel a) [ ]
+    return [y]
+toGrammar (Rec Bind{var=x} t) = do
+  y <- freshVar
+  insertVisited y
+  zs <- toGrammar $ subs (Var y) x t -- On the fly alpha conversion
+  if null zs
+    then return [ ]
+  else do
+    m <- getTransitions $ head zs
+    addProductions y (Map.map (++ tail zs) m)
+    return [y]
+toGrammar (Choice c m) = do
+  y <- freshVar
+  mapM_ (assocToGrammar y c) (Map.assocs m)
+  return [y]
+\end{lstlisting}
+
+%\begin{algorithm}
+%\caption{Algorithm to convert context-free session types into a grammar. Pseudocode.}
+%\label{alg:toGrammar}
+%\begin{algorithmic}
+%\\
+%\State \textsf{toGrammar} (\_, $\skipk$) = 
+%\State \qquad \Return{$\varepsilon$}\smallskip
+%\State \textsf{toGrammar} ($X$, $A$) = \Comment{$A$ ranges over $?\, B$, $!\, B$}
+%\State \qquad \textsf{addProduction} ($X \rightarrow A$)
+%\State \qquad \Return{$X$}\smallskip
+%\State \textsf{toGrammar} ($X$, $\alpha$) = 
+%\State \qquad\textbf{if} \textsf{isVisited} ($\alpha$) \textbf {then}
+%\State \qquad\qquad \Return{$\alpha$}
+%\State \qquad\textbf{else}
+%\State \qquad\qquad \textsf{addProduction} ($X \rightarrow \alpha$)
+%\State \qquad\qquad \Return{$X$}\smallskip
+%\State \textsf{toGrammar} ($X$, $\star \{\ell_i : S_i \}_{i\in I}$) =  \Comment{$\star$ ranges over $\oplus$, $\&$}
+%\State \qquad \textbf{for} {$j\in I$} \textbf{do} 
+%\State \qquad \qquad \textsf{addProduction} ($X \rightarrow \enspace \star \ell_j \enspace \mathsf{toGrammar}(\mathsf{freshVar}(\,), S_j)$)
+%\State \qquad \Return{$X$}\smallskip
+%\State \textsf{toGrammar} (\_, $S;T$) =
+%\State \qquad $\vec X_S$ $\gets$ \textsf{toGrammar} (\textsf{freshVar} (\,), $S$)
+%\State \qquad $\vec X_T$ $\gets$ \textsf{toGrammar} (\textsf{freshVar} (\,), $T$)
+%\State \qquad \Return{$\vec X_S \, \vec X_T$}\smallskip
+%\State \textsf{toGrammar} ($X$, $\mu x.S$) =
+%\State \qquad \textsf{insertVisited} $X$\smallskip
+%\State \qquad $\vec X_S$ $\gets$ \textsf{toGrammar} ($X$, $\mathsf{subst}(x,X,S)$)
+%\State \qquad \textbf{if} \textsf{null} $\vec X_S$ \textbf{then} 
+%\State \qquad \qquad \Return{$\varepsilon$}
+%\State \qquad \textbf{else} 
+%\State \qquad \qquad \Return{$X$}\smallskip
+%\end{algorithmic}
+%\end{algorithm}
 
 Notice that this recursive procedure always terminates and the resulting 
-set of productions $\mathcal{P}$ is finite, because the recursion is always 
+set of productions $\mathcal{P}$ is finite, because recursion is always 
 on subterms, except for recursive types, where we mark visited symbols, thus 
 ensuring that the process terminates with a finite set of productions.
 
@@ -108,7 +158,7 @@ do not overlap.
 		S & \triangleq & (\mu x . \&\{n: x;x;?\intk, \ell: ?\intk\});(\mu z . !\intk ; z;z)\\
 		T & \triangleq & (\mu y . \&\{n: y;y, \ell: ?\skipk\};?\intk);(\mu z . !\intk ; z)
 	\end{array}\]
-	$\mathsf{toGrammar}$ applied to $S$ and $T$ leads to the following productions:\\
+	\lstinline{toGrammar} applied to $S$ and $T$ leads to the following productions:\\
 	
 	\centering
 	\begin{tabular}{l l l |l l l}
@@ -191,8 +241,8 @@ normedWord p v (x:xs) =
 \label{ex:prune}
 	Recall Example~\ref{ex:productions} and notice that both $X_S$ and $Y_T$ 
 	are unnormed. Furthermore, we can easily realize that the last occurrence of 
-	$X_4$ in the last production is unreachable. Hence, by pruning the productions 
-	for $X_S$ we get:\\
+	$X_4$ in the last production for $S$ is unreachable. Hence, by pruning the 
+	productions for $S$ we get:\\
 	
 	\centering
 	\begin{tabular}{l l l }
@@ -212,14 +262,15 @@ normedWord p v (x:xs) =
 
 We recall that, given two context-free session types $S$ and $T$, our main goal 
 is to decide whether these types are equivalent or not. For this purpose, 
-the algorithm we propose starts by applying Algorithm~\ref{alg:toGrammar} 
-to convert $S$ and $T$ into a grammar containing the productions derived 
-from them. Afterwards, the algorithm in Listing~\ref{lst:prune} is used to 
-streamline the grammars, by pruning unnormed sequences of symbols.
-Throughout this section we focus on the third and last stage of the algorithm.
+the algorithm we propose starts by applying algorithm presented in
+Listing~\ref{lst:toGrammar} to convert $S$ and $T$ into a grammar containing 
+the productions derived from them. Afterwards, the algorithm in 
+Listing~\ref{lst:prune} is used to streamline the grammars, by pruning 
+unnormed sequences of symbols. Throughout this section we focus on the 
+third and last stage of the algorithm.
 
 We use the notion of \emph{expansion tree} proposed by Jan{\v{c}}ar 
-and Moller~\cite{janvcar1999techniques} as as adaption of the former idea by 
+and Moller~\cite{janvcar1999techniques} as an adaption of the former idea by 
 Hirshfeld~\cite{hirshfeld1996bisimulation}. We say a set of pairs $N'$ is an 
 \emph{expansion} of $N$ if $N'$ is a minimal set such that: for every pair 
 $(\vec X, \vec Y) \in N$,
@@ -231,7 +282,7 @@ $(\vec X, \vec Y) \in N$,
 \end{itemize}
 
 Given a set of productions, an \emph{expansion tree} is composed by nodes 
-labelled by pairs of sequences of symbols. The naive proposal for an
+labelled by pairs of sequences of symbols. The na\"ive proposal for an
 expansion tree considers that any children node is obtained by expansion 
 from its parent node. Nevertheless, as Jan{\v{c}}ar and Moller 
 observed, this would often lead to infinite expansion trees. Hence,
@@ -245,14 +296,12 @@ We say that a branch
 is \emph{successful} if it is infinite or finishes in an empty node, 
 otherwise it is said to be \emph{unsuccessful}.
 
-\paragraph{Expansion stage:}
+\subsubsection{Expansion stage:}
 In the expansion stage, each node $N$ derives a single children node, 
 obtained as an expansion of $N$. As we are dealing with simple grammars, 
 no branching is expected in the expansion tree at this stage.
-Before proceeding to the simplification stage, the sequences of symbols 
-labelling the children nodes are pruned, in accordance with~\eqref{unnormed}.
 
-\paragraph{Simplification stage:} The simplification stage consists on the 
+\subsubsection{Simplification stage:} The simplification stage consists on the 
 application of the following \emph{simplification rules}:
 \begin{itemize}
 	\item {\bf Reflexive rule:} omit from a node $N$ any reflexive pair;
@@ -282,8 +331,8 @@ application of the following \emph{simplification rules}:
 		  	          $(X_0 \vec X, Y_0 \vec Y)$.
 		  	\end{itemize}
 		  \end{description}
-	\item {\bf Filtering rule:} remove any node containing a pair
-	       $(\vec X, \vec Y)$ such that $|\vec X|\neq |\vec Y|$.
+%	\item {\bf Filtering rule:} remove any node containing a pair
+%	       $(\vec X, \vec Y)$ such that $|\vec X|\neq |\vec Y|$.
 \end{itemize}
 
 Notice that, contrarily to the remaining (simplification and expansion) operations, 
@@ -326,23 +375,16 @@ expansionTree g q
   | Set.null n        = True
   | otherwise         = case expandNode g n of
       Nothing  -> expansionTree' g (Queue.dequeue q)
-      Just n' -> n' = = Set.fromList [([],[])] ||
-                expansionTree g (simplify g (Set.union a n) 
-                             (pruneNode g n') q)
+      Just n'  -> n' == Set.fromList [([],[])] ||
+                  expansionTree' g (simplify g (Set.union a n) n' q)
   where (n,a) = Queue.front q
 
 simplify :: Productions -> Ancestors ->  Node -> NodeQueue -> NodeQueue
 simplify g a n q = foldr enqueueNode (Queue.dequeue q) m'
-  where m' = findFixedPoint g (Set.singleton (n,a))
-
-findFixedPoint :: Productions -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
-findFixedPoint g nas
-  | nas == nas' = nas
-  | otherwise = findFixedPoint g nas'
-  where nas' = 
-      if allNormed g 
-         then foldr (apply g) nas [reflex, congruence, bpa2, filtering]
-         else foldr (apply g) nas [reflex, congruence, bpa1, filtering]
+  where nas = Set.singleton (n,a)
+        m' = if allNormed g 
+                then foldr (apply g) nas [reflex,congruence,bpa2]
+                else foldr (apply g) nas [reflex,congruence,bpa1,bpa2]
 \end{lstlisting}
 
 \begin{example}
@@ -355,174 +397,9 @@ findFixedPoint g nas
 
 \begin{figure}[h]
 \centering
-\label{fig:expansionTree}
 	\includegraphics[width=8.5cm]{expansionTree}
 	\caption{Expansion tree for the context-free session types $S$ and $T$
 	introduced in Example~\ref{ex:productions}.}
+	\label{fig:expansionTree}
 \end{figure}
 
-
-%Any algorithm must build upon some representation of the context-free
-%session types. For this purpose, we recall that Jan{\v{c}}ar and
-%Moller~\cite{janvcar1999techniques} noted that any process can be seen
-%as a (possible infinite) process algebra graph (PA-graph).  Such a
-%graph can be finitely represented by a finite set of productions
-%$X \LTSderives \alpha$, where $X$ ranges over a finite set of
-%\emph{term variables} $V$, $a$ ranges over the set of actions
-%described above, and $\alpha$ ranges over the terms of the free
-%algebra over $V$ generated by the semi-colon operator.
-%The vertices of the PA-graph are then represented by terms~$\alpha$ of
-%the algebra, whereas the edges are given by the production rules.
-%
-%We build on the notion of expansion trees, only that in our case we
-%can work with \emph{expansion lists}, given the deterministic nature
-%of transitions in context-free session types.
-%% \footnote{PA-graphs for context-free session types are such that,
-%%   given a variable $X$ and an action $a$, we cannot derive two
-%%   distinct terms in the algebra.}
-%%
-%Nodes in this list are sets of pairs of terms~$\alpha$.
-%%
-%Given two session types $S$ and $T$, the first step of the algorithm
-%builds the PA-graph and the initial node $\{(X,Y)\}$, where~$X$ is the
-%term variable corresponding to~$S$ and~$Y$ to~$T$. This step further
-%normalizes $\alpha$-terms by removing terms preceded by unnormed
-%terms, given that $\alpha \sim \alpha\beta$ whenever $\alpha$ is
-%unnormed~\cite{janvcar1999techniques}.
-%%
-%The algorithm then alternates between simplification and expansion
-%operations, until either finding an empty node---case in which we
-%decide equivalence positively---or failing to expand a node---case in
-%which we decide equivalence negatively.
-%
-%The simplification procedure builds on  Jan{\v{c}}ar and
-%Moller rules, namely reflexivity and BPA1.
-%%
-%The algorithm, written in Haskell, should be self explanatory.
-%%
-%\begin{lstlisting}
-%bisim :: Graph -> Ancestors -> Node -> Bool
-%bisim g a n
-% | Set.null n' = True
-% | otherwise   = case expandNode g n' of
-%    Nothing  -> False
-%    Just n'' -> bisim g (Set.union n' a) n''
-% where n' = simplify g a n
-%
-%simplify :: Graph -> Ancestors -> Node -> Node
-%simplify g a n = foldr (apply g a) n [reflex, bpa1]
-%
-%apply :: Graph -> Ancestors -> NodeTransformation -> Node -> Node
-%apply g a trans = Set.foldr (\p n -> Set.union (trans g a p) n) Set.empty
-%
-%type Graph = Map.Map TermVar (Map.Map Label [TermVar])
-%type Node = Set.Set ([TermVar], [TermVar])
-%type Ancestors = Node
-%type NodeTransformation = Graph -> Ancestors -> ([TermVar],[TermVar]) -> Node
-%\end{lstlisting}
-%
-%
-%We showcase this procedure on a couple of examples. %Details can be
-%% found in the Appendix.
-%%
-%% \begin{example}
-%%   \label{ex:example1}
-%Consider two types $S$ and $T$:
-%%
-%\begin{align*}
-%  S &\triangleq \mu x. (\oplus\{\ell\colon !\,\intk; \&\{\ell\colon x,
-%      m\colon \skipk \} , m\colon !\, \boolk; \&\{\ell\colon x,
-%      m\colon \skipk \} \}); \mu x. (\&\{\ell\colon\skipk, m\colon
-%      ?\,\boolk; x \})
-%  \\
-%  T &\triangleq \mu x. (\oplus\{\ell\colon !\,\intk , m\colon !\,
-%      \boolk\}; \&\{\ell\colon x, m\colon \mu
-%      y. (\&\{\ell\colon\skipk, m\colon ?\,\boolk; y \})\})
-%\end{align*}
-%%
-%The associated PA-graph is given by the following productions, from the initial node $\{(X,Y)\}$:
-%\begin{center}
-%\begin{tabular}{ |l l |l l| }
-%  \hline
-%  \multicolumn{4}{|c|}{Productions for $S$ and $T$} \\
-%  \hline
-%  \hline
-%\multicolumn{2}{|c|}{$S$}&  \multicolumn{2}{|c|}{$T$} \\ \hline
-%$X \xrightarrow{\oplus \ell} X_1 X_2 X_5$ & $X_4 \xrightarrow{\& \ell} X$ & $Y \xrightarrow{\oplus \ell} Y_1 Y_3$ & $Y_3 \xrightarrow{\& m} Y_4$ \\
-%$X \xrightarrow{\oplus m} X_3 X_4 X_5$& $X_4 \xrightarrow{\& m} \varepsilon$ & $Y \xrightarrow{\oplus m} Y_2 Y_3$ & $Y_4 \xrightarrow{\& \ell} \varepsilon$\\
-%$X_1 \xrightarrow{!\, \intk} \varepsilon$& $X_5 \xrightarrow{\& \ell} \varepsilon$& $Y_1 \xrightarrow{!\intk} \varepsilon$ & $Y_4 \xrightarrow{\& m} Y_5 Y_4$\\
-%$X_2 \xrightarrow{\& \ell} X$& $X_5 \xrightarrow{\& m} X_6 X_5$& $Y_2 \xrightarrow{!\boolk} \varepsilon$ & $Y_5 \xrightarrow{?\,\boolk} \varepsilon$\\
-%$X_2 \xrightarrow{\& m} \varepsilon$& $X_6 \xrightarrow{?\,\boolk} \varepsilon$& $Y_3 \xrightarrow{\& \ell} Y$ &\\
-%$X_3 \xrightarrow{!\, \boolk} \varepsilon$&&&\\
-%  \hline
-%\end{tabular}
-%\end{center}
-%
-%%
-%\noindent
-%We get the expansion list below for $S\sim T$.  \smallskip
-%\par\noindent
-%\begin{tikzcd}[cells={nodes={draw=black}}, column sep=large]
-%   (X,Y)  \ar[r,"expand"]
-%&   (X_1X_2X_5,Y_1Y_3), (X_3X_4X_5, Y_2Y_3)  \ar[r,"expand"]
-%&   (X_2X_5,Y_3), (X_4X_5, Y_3)   
-%\end{tikzcd} 
-%$\xrightarrow{\mathit{expand}}$\\\\
-%\begin{tikzcd}[cells={nodes={draw=black}}, column sep=large]
-%& (XX_5,Y),(X_5,Y_4) \ar[r,dashed,"bpa1"]
-%& (X_5,\varepsilon),(X_5,Y_4)  \ar[r,"expand"]
-%&(X_6X_5,Y_5Y_4),(\varepsilon,\varepsilon) 
-%\end{tikzcd} 
-%$\xdashrightarrow{\enspace\mathit{reflex}\enspace}$ \\\\
-%\begin{tikzcd}[cells={nodes={draw=black}}, column sep=large]
-%& (X_6X_5,Y_5Y_4) \ar[r,"expand"]
-%& \enspace(X_5,Y_4)\enspace \ar[r,dashed,"bpa1"]
-%&\emptyset
-%\end{tikzcd}
-%\enspace  $\checkmark$\\\smallskip
-%
-%Now consider the types $R$ and $U$:
-%%
-%\begin{align*}
-%  R \triangleq \mu x.\&\{\ell\colon ?\,\boolk;x, m\colon ?\,\intk;x;x\}
-%      &&
-%  U \triangleq \mu x.\&\{\ell\colon ?\,\boolk, m\colon ?\,\intk;x;x\}
-%\end{align*}
-%%
-%The associated PA-graph is given by the following productions, from the initial node $\{(Z,W)\}$:
-%\begin{center}
-%\begin{tabular}{ |l l |l l| }
-%  \hline
-%  \multicolumn{4}{|c|}{Productions for $R$ and $T$} \\
-%  \hline
-%  \hline
-%\multicolumn{2}{|c|}{$R$}&  \multicolumn{2}{|c|}{$U$} \\ \hline
-%$Z \xrightarrow{\& \ell} Z_1 Z$ & $Z_1 \xrightarrow{?\, \boolk} \varepsilon$ &$W \xrightarrow{\& \ell} W_1$ & $W_1 \xrightarrow{?\, \boolk} \varepsilon$\\
-%$Z \xrightarrow{\& m} Z_2 Z Z$ & $Z_2 \xrightarrow{?\, \intk} \varepsilon$& $W \xrightarrow{\& m} W_2 W W$ & $W_2 \xrightarrow{?\, \intk} \varepsilon$\\
-%  \hline
-%\end{tabular}
-%\end{center}
-%%
-%The expansion list is as follows:\smallskip
-%\par\noindent
-%\begin{tikzcd}[cells={nodes={draw=black}}, column sep=large]
-%  (Z,W) \ar[r,"expand"]
-%& (Z_1 Z,W_1), \atop(Z_2 Z Z, W_2 W W) \ar[r,"expand"]
-%& (Z,\varepsilon), (ZZ, WW) \ar[r,dashed,"bpa1"] 
-%& (Z,\varepsilon), (W,\varepsilon) 
-%\end{tikzcd} 
-%\enspace  $\times$\smallskip
-%
-%Our algorithm uses the simplification rules of  Jan{\v{c}}ar and
-%Moller~\cite{janvcar1999techniques} and implements the derivation flow on
-%a simplified version of PA graphs. For these reasons, we
-%believe that our implementation is sound. Furthermore, we have tested
-%our algorithm in more than one hundred examples and we have not
-%obtained any false positive nor any true negative result. This
-%reinforces our conviction that this algorithm should be sound (and
-%possibly complete).
-
-%%% Local Variables:
-%%% mode: latex
-%%% TeX-master: "main"
-%%% End:
