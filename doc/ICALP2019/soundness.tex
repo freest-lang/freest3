@@ -1,5 +1,3 @@
-\todo{reviewed up to this point}{Proceed from here}
-
 \section{Soundness and Completeness}
 \label{sec:soundness}
 
@@ -194,7 +192,7 @@ corresponding to (un)normed types are (un)normed. These results follow
 immediately from the previous results. 
 
 \begin{corollary}
-	Given a context-free session type $S$, $|S| = |\mathsf{toGrammar}(S)|$.
+	Given a context-free session type $S$, $|S| = |\text{\lstinline{toGrammar S}}|$.
 \end{corollary}
 
 \begin{corollary}
@@ -203,38 +201,40 @@ immediately from the previous results.
 \end{corollary}
 
 \subsection{The expansion tree is correct}
+%
+%Let us start by proving a small lemma, whose ultimate purpose 
+%stands on proving that all nodes excluded by the filtering rule
+%would lead to unsuccessful branches.
+%
+%\begin{lemma}
+%\label{lemma:filtering}
+%	Let $(\vec X, \vec Y)$ be a pair in node $N$ of the expansion tree. 
+%	If $|\vec X| \neq |\vec Y|$ then  $\vec X \not\ProdEquiv \vec Y$.
+%\end{lemma}
+%
+%\begin{proof}
+%	Assume that $n = |\vec X| < |\vec Y|$. This means that:
+%	\begin{equation}
+%	\label{pathX}
+%		\vec X \rightarrow \ell_1 \vec X_1 \rightarrow \cdots 
+%		\rightarrow \ell_n \rightarrow \varepsilon.
+%	\end{equation}
+%	Now assume that $\vec Y$ has an expansion sequence whose 
+%	labels coincide with those from $\vec X$ (otherwise, we would immediately
+%	have $\vec X \not\ProdEquiv \vec Y$). Since $\vec Y > n$, there should 
+%	exist a label $\ell_{n+1}$ such that:
+%	\[\vec Y \rightarrow \ell_1 \vec Y_1 \rightarrow \cdots 
+%	\rightarrow \ell_n \vec Y_n\rightarrow \ell_{n+1} \vec Y_n 
+%	\rightarrow \cdots\]
+%	Since our grammar is simple, \eqref{pathX} is the unique path from $\vec X$
+%	through labels $\ell_1, \ldots, \ell_n$. Hence, the $(n+1)$-th expansion of
+%	$\vec X$ with label $\ell_{n+1}$ would fail and we conclude that
+%	$\vec X \not\ProdEquiv \vec Y$.
+%\end{proof}
 
-Let us start by proving a small lemma, whose ultimate purpose 
-stands on proving that all nodes excluded by the filtering rule
-would lead to unsuccessful branches.
-
-\begin{lemma}
-\label{lemma:filtering}
-	Let $(\vec X, \vec Y)$ be a pair in node $N$ of the expansion tree. 
-	If $|\vec X| \neq |\vec Y|$ then  $\vec X \not\ProdEquiv \vec Y$.
-\end{lemma}
-
-\begin{proof}
-	Assume that $n = |\vec X| < |\vec Y|$. This means that:
-	\begin{equation}
-	\label{pathX}
-		\vec X \rightarrow \ell_1 \vec X_1 \rightarrow \cdots 
-		\rightarrow \ell_n \rightarrow \varepsilon.
-	\end{equation}
-	Now assume that $\vec Y$ has an expansion sequence whose 
-	labels coincide with those from $\vec X$ (otherwise, we would immediately
-	have $\vec X \not\ProdEquiv \vec Y$). Since $\vec Y > n$, there should 
-	exist a label $\ell_{n+1}$ such that:
-	\[\vec Y \rightarrow \ell_1 \vec Y_1 \rightarrow \cdots 
-	\rightarrow \ell_n \vec Y_n\rightarrow \ell_{n+1} \vec Y_n 
-	\rightarrow \cdots\]
-	Since our grammar is simple, \eqref{pathX} is the unique path from $\vec X$
-	through labels $\ell_1, \ldots, \ell_n$. Hence, the $(n+1)$-th expansion of
-	$\vec X$ with label $\ell_{n+1}$ would fail and we conclude that
-	$\vec X \not\ProdEquiv \vec Y$.
-\end{proof}
-
-The \emph{safeness property} is paramount for the soundness of our algorithm:
+In this section we focus on the correctness of our algorithm, 
+presented in Listing~\ref{lst:algorithm}. 
+The \emph{safeness property} is paramount to prove soundness:
 
 \begin{proposition} [Safeness Property~\cite{janvcar1999techniques}]
 \label{prop:safeness}
@@ -243,18 +243,16 @@ The \emph{safeness property} is paramount for the soundness of our algorithm:
 \end{proposition}
 
 \begin{proof}
-	The reflexive, congruence and \BPA\ rules were already proved to 
+	The reflexive, congruence and \BPA\ rules were proved to 
 	preserve the safeness property~\cite{janvcar1999techniques}.
-	On the other hand, as observed in~\cite{janvcar1999techniques},
-	the union of nodes along a successful branch is a relation $R$ 
-	such that $R\subseteq \ProdEquiv$. Hence, any pair $(\vec X, \vec Y)$ 
-	occurring along a successful branch is such that $\vec X \ProdEquiv \vec Y$,
-	which, by Lemma~\ref{lemma:filtering}, means that $|\vec X|=|\vec Y|$.
-	So, the filtering rule would node exclude any node in the successful branch
-	and, then, also preserved the safeness property.
+%	On the other hand, as observed in~\cite{janvcar1999techniques},
+%	the union of nodes along a successful branch is a relation $R$ 
+%	such that $R\subseteq \ProdEquiv$. Hence, any pair $(\vec X, \vec Y)$ 
+%	occurring along a successful branch is such that $\vec X \ProdEquiv \vec Y$,
+%	which, by Lemma~\ref{lemma:filtering}, means that $|\vec X|=|\vec Y|$.
+%	So, the filtering rule would node exclude any node in the successful branch
+%	and, then, also preserved the safeness property.
 \end{proof}
-
-The results on the soundness of the algorithm are now straightforward. 
 
 \begin{theorem}
 	If Algorithm~\ref{lst:algorithm} returns \textsf{true} on input 
@@ -288,14 +286,8 @@ importance to prove completeness.
 \end{proposition}
 
 \begin{proof}
-	The \BPA\ rules were proved to ensure the finite witness 
-	property~\cite{janvcar1999techniques}. The remaining rules do not
-	affect any successful branch: reflexive and congruence rules only remove 
-	redundant pairs, because we all these results consider the least 
-	congruence relation containing the union of the nodes in the 
-	successful branch, whereas the filtering rule was proved to exclude 
-	only unsuccessful branches (see Lemma~\ref{lemma:filtering} and proof 
-	of Proposition~\ref{prop:safeness}).
+	The reflexive, congruence and \BPA\ rules were proved to ensure 
+	the finite witness property~\cite{janvcar1999techniques}. 
 \end{proof}
 
 \begin{theorem}
