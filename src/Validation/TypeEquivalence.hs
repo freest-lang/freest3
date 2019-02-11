@@ -42,9 +42,9 @@ expansionTree g xs ys = expansionTree' g (Queue.enqueue (Set.singleton (xs, ys),
 
 expansionTree' :: Productions -> NodeQueue -> Bool
 expansionTree' g q
-  | Queue.isEmpty q   = False
-  | Set.null n        = True
-  | otherwise         = case expandNode g n of
+  | Queue.isEmpty q = False
+  | Set.null n      = True
+  | otherwise       = case expandNode g n of
       Nothing  -> expansionTree' g (Queue.dequeue q)
       Just n'  -> expansionTree' g (simplify g (Set.union a n) n' q)
   where (n,a) = Queue.front q

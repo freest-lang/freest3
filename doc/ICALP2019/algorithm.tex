@@ -356,10 +356,15 @@ a breadth-first search on the expansion tree. Upcoming nodes are stored
 in a queue.
 
 Given two context-free session types \lstinline|t| and \lstinline|u|,
-the algorithm sketched in Listing~\ref{lst:algorithm} returns \textsf{true}
-if the types are equivalent and \textsf{false} otherwise. 
-This algorithm capitalizes on the previous algorithms, is written in Haskell 
-and should now be self explanatory.
+the algorithm sketched in Listing~\ref{lst:algorithm} starts by converting 
+the session types into a grammar, which is then pruned. An expansion tree is
+computed afterwards, through an alternation between expansion of the children
+nodes according to the \emph{pruned} grammar, and their simplification, 
+using the reflexive, congruence, and \BPA\ rules. This recursive procedure
+terminates as soon as an empty node is reached, case is which the
+algorithm returns \lstinline|true|, or, either, all nodes fail to expand
+and, thus, the queue is empty, case in which the algorithm returns
+\lstinline|false|. 
 
 \begin{lstlisting}[caption={Algorithm to check the equivalence of context-free session types. Haskell code.},label={lst:algorithm},captionpos=b]
 type Node = Set.Set ([TypeVar], [TypeVar])
@@ -367,29 +372,28 @@ type Ancestors = Node
 type NodeQueue = Queue.Queue (Node, Ancestors)
 type NodeTransformation = Productions -> Ancestors -> Node -> Set.Set 
 
-equivalent :: KindEnv -> Type -> Type -> Bool
 equivalent k t u =
   isSessionType k t &&
   isSessionType k u &&
-  expansionTree (prune p) [x] [y]
-  where Grammar [x, y] p = toGrammar [t, u]
+  expansionTree (prune p) (Queue.enqueue root Queue.empty)
+  where Grammar [x, y] p = convertToGrammar [t, u]
+        root = (Set.singleton ([x],[y]), Set.empty)
 
 expansionTree :: Productions -> NodeQueue -> Bool
-expansionTree g q
-  | Queue.isEmpty q   = False
-  | Set.null n        = True
-  | otherwise         = case expandNode g n of
-      Nothing  -> expansionTree' g (Queue.dequeue q)
-      Just n'  -> n' == Set.fromList [([],[])] ||
-                  expansionTree' g (simplify g (Set.union a n) n' q)
+expansionTree p q
+  | Queue.isEmpty q = False
+  | Set.null n      = True
+  | otherwise       = case expandNode p n of
+      Nothing  -> expansionTree p (Queue.dequeue q)
+      Just n'  -> expansionTree p (simplify p (Set.union a n) n' q)
   where (n,a) = Queue.front q
 
 simplify :: Productions -> Ancestors ->  Node -> NodeQueue -> NodeQueue
-simplify g a n q = foldr enqueueNode (Queue.dequeue q) m'
+simplify p a n q = foldr enqueueNode (Queue.dequeue q) m'
   where nas = Set.singleton (n,a)
-        m' = if allNormed g 
-                then foldr (apply g) nas [reflex,congruence,bpa2]
-                else foldr (apply g) nas [reflex,congruence,bpa1,bpa2]
+        m' = if allNormed p 
+                then foldr (apply p) nas [reflex,congruence,bpa2]
+                else foldr (apply p) nas [reflex,congruence,bpa1,bpa2]
 \end{lstlisting}
 
 \begin{example}
