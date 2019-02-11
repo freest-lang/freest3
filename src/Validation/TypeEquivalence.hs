@@ -46,8 +46,7 @@ expansionTree' g q
   | Set.null n        = True
   | otherwise         = case expandNode g n of
       Nothing  -> expansionTree' g (Queue.dequeue q)
-      Just n'  -> n' == Set.fromList [([],[])] ||
-                  expansionTree' g (simplify g (Set.union a n) n' q)
+      Just n'  -> expansionTree' g (simplify g (Set.union a n) n' q)
   where (n,a) = Queue.front q
 
 expandNode :: Productions -> Node -> Maybe Node
