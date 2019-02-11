@@ -8,10 +8,11 @@ by Thiemann and Vasconcelos~\cite{thiemann2016context}.
 We start by showing that the bisimulation relation proposed by 
 Thiemann and Vasconcelos, $\TypeEquiv$, is equivalent to the 
 bisimulation relation obtained from the productions, $\ProdEquiv$. 
-Then, based on results from Caucal~\cite{caucal1986decidabilite}, Christensen, 
-H{\"{u}}ttel, Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}, Jan{\v{c}}ar 
-and Moller~\cite{janvcar1999techniques}, we conclude that our algorithm 
-is sound and complete.
+Then, based on results from Caucal~\cite{caucal1986decidabilite}, 
+Christensen, H{\"{u}}ttel, 
+Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}, 
+Jan{\v{c}}ar and Moller~\cite{janvcar1999techniques}, we conclude that 
+our algorithm is sound and complete.
 
 \subsection{The bisimilarities coincide}
 
@@ -48,11 +49,11 @@ do not originate new productions.
 	\begin{description}
 		\item[Case $S\triangleq \skipk$,] then \lstinline{toGrammar} does not 
 		add any production and returns \lstinline{[ ]}.
-		\item[Case $S\triangleq S_1;S_2$] for terminated session types $S_1$ and
-		$S_2$, \lstinline{toGrammar S} recursively adds the productions from 
-		\lstinline{toGrammar S1} and \lstinline{toGrammar S2}. But $S_1$ and 
-		$S_2$ are terminated session types, hence no production is added and
-		\lstinline{[ ]} is returned.
+		\item[Case $S\triangleq S_1;S_2$] for terminated session types $S_1$ 
+		and $S_2$, \lstinline{toGrammar S} recursively adds the productions 
+		from \lstinline{toGrammar S1} and \lstinline{toGrammar S2}. But $S_1$ 
+		and $S_2$ are terminated session types, hence no production is added 
+		and \lstinline{[ ]} is returned.
 		\item[Case $S\triangleq \mu x. S$,] where $S[\mu x.S/x] \checkmark$,
 		\lstinline{toGrammar S} adds the productions from \linebreak
 		\lstinline{toGrammar (subs (Var y) x t)}. But $S[\mu x.S/x]$ is a terminated
@@ -233,18 +234,26 @@ immediately from the previous results.
 %\end{proof}
 
 In this section we focus on the correctness of our algorithm, 
-presented in Listing~\ref{lst:algorithm}. 
-The \emph{safeness property} is paramount to prove soundness:
+presented in Listing~\ref{lst:algorithm}.
+Before proceeding to soundness, we recall the \emph{safeness property} 
+presented by Jan{\v{c}}ar and Moller in~\cite{janvcar1999techniques}. 
 
-\begin{proposition} [Safeness Property~\cite{janvcar1999techniques}]
+\begin{proposition} [Safeness Property]
 \label{prop:safeness}
 	$\vec X \ProdEquiv \vec Y$ if and only if the expansion tree rooted 
 	at $\{(\vec X, \vec Y)\}$ has a successful branch.
 \end{proposition}
 
-\begin{proof}
-	The reflexive, congruence and \BPA\ rules were proved to 
-	preserve the safeness property~\cite{janvcar1999techniques}.
+Notice that the expansion tree we present in Listing~\ref{lst:algorithm} is 
+a sequence of expansion and simplification operations with the reflexive, 
+congruence and \BPA\ rules, as proposed by Jan{\v{c}}ar and Moller.
+In~\cite{janvcar1999techniques}, it was proved that these simplification 
+rules were \emph{safe}, meaning that the application of these rules would
+always preserve equivalence from parent nodes to at least one children node
+and, reciprocally, that equivalence on a children node would imply the 
+equivalence of its parent node, thus proving the safeness property.
+
+%\begin{proof}
 %	On the other hand, as observed in~\cite{janvcar1999techniques},
 %	the union of nodes along a successful branch is a relation $R$ 
 %	such that $R\subseteq \ProdEquiv$. Hence, any pair $(\vec X, \vec Y)$ 
@@ -252,55 +261,66 @@ The \emph{safeness property} is paramount to prove soundness:
 %	which, by Lemma~\ref{lemma:filtering}, means that $|\vec X|=|\vec Y|$.
 %	So, the filtering rule would node exclude any node in the successful branch
 %	and, then, also preserved the safeness property.
-\end{proof}
+%\end{proof}
 
 \begin{theorem}
-	If Algorithm~\ref{lst:algorithm} returns \textsf{true} on input 
-	$(S_1,S_2)$, then $X_{S_1} \ProdEquiv X_{S_2}$.
+	Given two context-free session types $S$ and $T$, if the function
+	\lstinline|equivalent|, presented in Listing~\ref{lst:algorithm}, 
+	returns \lstinline|true|, then $X_{S} \ProdEquiv X_{T}$.
 \end{theorem}
 
 \begin{proof}
-	The algorithm returns \textsf{true} on input $(S_1,S_2)$ whenever 
+	The algorithm returns \textsf{true} for $S$ and $T$ whenever 
 	it reaches a finite successful branch in the expansion tree rooted 
-	at $\{(X_{S_1}, X_{S_2})\}$. Since all rules preserve the safeness 
-	property, if $\{(X_{S_1}, X_{S_2})\}$ has a (finite) successful 
-	branch then $X_{S_1} \ProdEquiv X_{S_2}$.
+	at $\{(X_{S}, X_{T})\}$. By Proposition~\ref{prop:safeness}, whenever the 
+	expansion tree rooted at $\{(X_{S}, X_{T})\}$ has a (finite) 
+	successful branch, we conclude that $X_{S} \ProdEquiv X_{T}$.
 \end{proof}
 
-Using Theorem~\ref{cfst_vs_grammar}, the soundness of our algorithm is 
-immediate:
+From the previous results, and recalling Theorem~\ref{cfst_vs_grammar}, 
+the soundness of our algorithm is now immediate:
 
 \begin{theorem}
-	Algorithm~\ref{lst:algorithm} is sound with respect to the meta-theory 
-	of context-free session types, i.e., if it returns \textsf{true} then $S_1 \TypeEquiv S_2$.
+	The algorithm to check the equivalence of context-free session types,
+	presented in Listing~\ref{lst:algorithm} is sound with respect to the 
+	meta-theory of context-free session types, i.e.,\linebreak if 
+	\lstinline|equivalent _ s t| returns 
+	\lstinline|true| then \lstinline|s| $\TypeEquiv$ \lstinline|t|.
 \end{theorem}
 
 Having observed that the safeness property was paramount for soundness, 
 we now notice that the \emph{finite witness property} is of utmost 
-importance to prove completeness.
+importance to prove completeness. This result follows immediately from the
+ analysis by Jan{\v{c}}ar and Moller~\cite{janvcar1999techniques}, which 
+ capitalizes on results by 
+Caucal~\cite{caucal1986decidabilite}, Christensen, H{\"{u}}ttel, and 
+Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}:
 
-\begin{proposition} [Finite Witness Property~\cite{janvcar1999techniques}]
+\begin{proposition} [Finite Witness Property]
 \label{finite_witness}
 	If $\vec X \ProdEquiv \vec Y$, then the expansion tree rooted at 
 	$\{(\vec X, \vec Y)\}$ has a finite successful branch.
 \end{proposition}
 
-\begin{proof}
-	The reflexive, congruence and \BPA\ rules were proved to ensure 
-	the finite witness property~\cite{janvcar1999techniques}. 
-\end{proof}
+
 
 \begin{theorem}
-	Algorithm~\ref{lst:algorithm} is complete with respect to the meta-theory 
-	of context-free session types, i.e., if $S_1 \TypeEquiv S_2$ then 
-	the algorithm returns \textsf{true}.
+	The algorithm to check the equivalence of context-free session types,
+	presented in Listing~\ref{lst:algorithm} is complete with respect to the 
+	meta-theory of context-free session types, i.e., \linebreak if 
+	\lstinline|s| $\TypeEquiv$ \lstinline|t| then 
+	\lstinline|equivalent _ s t| returns \lstinline|true|.
 \end{theorem}
 
 \begin{proof}
-	Assuming that $S_1 \TypeEquiv S_2$, by Theorem~\ref{cfst_vs_grammar}, we 
-	have $X_{S_1} \ProdEquiv X_{S_2}$. Hence, the finite witness property 
+	Assuming that \lstinline|s| $\TypeEquiv$ \lstinline|t|, by 
+	Theorem~\ref{cfst_vs_grammar}, we 
+	have $X_{\text{\lstinline|s|}} \ProdEquiv X_{\text{\lstinline|t|}}$.
+	Hence, the finite witness property 
 	ensures the existence of a finite successful branch on the expansion 
-	tree rooted at $\{(X_{S_1},  X_{S_2})\}$. Since our algorithm traverses 
+	tree rooted at $\{(X_{\text{\lstinline|s|}},X_{\text{\lstinline|t|}})\}$, 
+	i.e., a branch finishing in an empty node.
+	Since our algorithm traverses 
 	the expansion tree using breadth-first search we will, eventually, 
-	reach the finite successful branch and conclude the equivalence positively.
+	reach the empty node and conclude the equivalence positively.
 \end{proof}

@@ -372,6 +372,7 @@ type Ancestors = Node
 type NodeQueue = Queue.Queue (Node, Ancestors)
 type NodeTransformation = Productions -> Ancestors -> Node -> Set.Set 
 
+equivalent :: KindEnv -> Type -> Type -> Bool
 equivalent k t u =
   isSessionType k t &&
   isSessionType k u &&
