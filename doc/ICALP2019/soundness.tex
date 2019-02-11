@@ -34,16 +34,18 @@ Hence, $X_S\sim X_T$ if and only if
 \lstinline{toGrammar S} $\sim$ \lstinline{toGrammar T}.
 \end{proof}
 
+We start by proving that terminated session types
+do not originate new productions.
 
 \begin{lemma}
 \label{lemma:terminated_session}
 	Given a context-free session type $S$, 
-	\[S \checkmark \text{ if and only if } 
-	\text{\lstinline{toGrammar S = [ ]}}.\]
+	if \DONE{S} then \lstinline{toGrammar S} does not add any 
+	production and returns \lstinline{[ ]}.
 \end{lemma}
 
 \begin{proof}
-	We prove the direct implication by induction on the structure of a terminated
+	The proof is done by induction on the structure of a terminated
 	context-free session type $S$:
 	\begin{description}
 		\item[Case $S\triangleq \skipk$,] then \lstinline{toGrammar} does not 
@@ -56,20 +58,9 @@ Hence, $X_S\sim X_T$ if and only if
 		\item[Case $S\triangleq \mu x. S$,] where $S[\mu x.S/x] \checkmark$,
 		\lstinline{toGrammar S} adds the productions from \linebreak
 		\lstinline{toGrammar (subs (Var y) x t)}. But $S[\mu x.S/x]$ is a terminated
-		session, thus \lstinline{toGrammar S} returns \lstinline{[ ]}.
+		session, thus \lstinline{toGrammar S} returns does not add 
+		any production and returns \lstinline{[ ]}.
 	\end{description}
-	Reciprocally, assume that \lstinline{toGrammar S} returns \lstinline{[ ]} and
-	adds no productions. By induction on the structure of S, either:
-	\begin{itemize}
-		\item $S\triangleq \skipk$ and obviously $S\checkmark$.
-		\item $S\triangleq S_1;S_2$, where \lstinline{toGrammar S1} and
-			  \lstinline{toGrammar S2} do not add any productions and
-			  return \lstinline{[ ]}. Hence, $S_1\checkmark$ and $S_2\checkmark$,
-			  which by the \LTS\ implies that $S\checkmark$.
-		\item $S\triangleq \mu x. S_1$, where \lstinline{toGrammar (subs (Var y) x t)}
-			  does not add any productions and returns \lstinline{[ ]}. Hence, 
-			  $S[\mu x.S/x] \checkmark$ and, then, $\mu x. S_1 \checkmark$.
-	\end{itemize}
 \end{proof}
 
 Now we prove that any transition in the \LTS\ has a 
@@ -78,8 +69,9 @@ corresponding transition derived from the set of productions.
 \begin{lemma}
 Given context-free session types $S,S'$ and a label $\ell$,
 	\[ \text{if } S \LTSderives[\ell] S' \text{ then } 
-	\mathsf{toGrammar}(S) \rightarrow \enspace \ell \enspace \vec Y, \]
-	where $\mathsf{toGrammar}(S')$ is prefix of $\vec Y$.
+	\text{\lstinline{toGrammar S}} \rightarrow \enspace 
+	\ell \enspace \vec Y, \]
+	where \lstinline{toGrammar S'} is prefix of $\vec Y$.
 \end{lemma}
 
 \begin{proof}
@@ -88,55 +80,54 @@ transition system (Fig.~\ref{lts}):
 \begin{itemize}
 	\item If $S\triangleq \skipk$, then $S$ is a terminated 
 	      session type, with no further transition. Similarly, 
-	      $\mathsf{toGrammar}(S)$ returns $\varepsilon$ and 
+	      \lstinline{toGrammar S} returns \lstinline{[ ]} and 
 	      does not add any production.
 	\item If $S\triangleq A$, where $A$ ranges over $!B$ and $?B$, 
 	      then $S  \LTSderives[A] \skipk$. On the other hand, 
-	      $\mathsf{toGrammar}(X,S)$ returns $X$ and inserts a production $X\rightarrow A$, 
-	      i.e., $X\rightarrow A \enspace  \mathsf{toGrammar}(\skipk).$  
+	      \lstinline{toGrammar S} returns a fresh variable $X$ and 
+	      inserts a production $X\rightarrow A$. 
 	\item If $S \triangleq \alpha$, then $S   \LTSderives[\alpha] \skipk$. 
 	      On the other hand, since $\alpha$ does not contain non-terminal 
-	      symbols, $\mathsf{toGrammar}(X,S)$ returns $X$ and inserts a production 
-	      $X\rightarrow \alpha$, i.e.,\linebreak  $X\rightarrow \alpha \enspace 
-	      \mathsf{toGrammar}(\skipk).$
+	      symbols, \lstinline{toGrammar S} returns a fresh variable $X$ and 
+	      inserts a production $X\rightarrow \alpha$.
 	\item If $S\triangleq \star\{l_i\colon S_i\}_{i\in I}$ then, for each 
           $j\in I$, $S \LTSderives[\star l_j] S_j$. On the other hand, 
-          for each $j\in I$, $\mathsf{toGrammar}(X,S)$ returns $X$ and  inserts a production 
-          $X\rightarrow \star l_j \enspace \mathsf{toGrammar}(S_j)$.
+          \lstinline{toGrammar S} returns a fresh variable 
+          $X$ and, recursively, inserts a production 
+          $X\rightarrow \star l_j \enspace \text{(\lstinline{toGrammar Sj})}$
+          for each $j\in I$.
 	\item If $S\triangleq \mu x.S$ and $S[\mu x.S/x] \LTSderives[a] S'$, 
-	      then $\mu x.S \LTSderives[a] S'$. By induction hypothesis, 
-	      $\mathsf{toGrammar}(X,\mathsf{subst}(x,X,S))$ adds the production 
-	      $X \rightarrow a\enspace  \mathsf{toGrammar}(S')$ and returns $\vec X_S$.
-	      Since $S[\mu x.S/x]$ is not a terminated session, $\vec X_S$ is not $\varepsilon$, 
-	      thus we have \linebreak$\mathsf{toGrammar}(S) \rightarrow a\enspace  \mathsf{toGrammar}(S')$.
+	      then $\mu x.S \LTSderives[a] S'$. By induction hypothesis,
+	      the corresponding production in \lstinline{toGrammar (subs (Var y) x t)} 
+	      is recursively added by \lstinline{toGrammar S} in the form
+	      $X \rightarrow a\enspace  \text{(\lstinline{toGrammar S'})}$,
+	      where $X$ is a fresh variable that is, then, returned by 
+	      \lstinline{toGrammar S}.
 	\item If $S\triangleq T;U$ and $T \LTSderives[a] T'$ then $S \LTSderives[a] T';U$. 
-	      By induction hypothesis, $\mathsf{toGrammar}(X,T)$ adds the production 
-	      $X\rightarrow a \enspace \mathsf{toGrammar}(T')$ to $\mathcal P$.
-		Denoting by 
-		\begin{align*}
-			\vec Y_T &\leftarrow \mathsf{toGrammar}(X,T)\\
-			\vec Y_U &\leftarrow \mathsf{toGrammar}(Y,U)
-		\end{align*}
-		we notice that $\vec Y_T = X \enspace \vec Y_T'$ for some 
-		sequence of non-terminal symbols $\vec Y_T'$. By congruence, we have: 
-		\[\mathsf{toGrammar}(S) = X \enspace \vec Y_T' \enspace \vec Y_U' 
-		\rightarrow a \enspace \mathsf{toGrammar}(T') \enspace \vec  Y_T' 
-		\enspace \vec Y_U.\]
+	      By induction hypothesis, \lstinline{toGrammar T} adds the production 
+	      $X\rightarrow a \enspace \text{(\lstinline{toGrammar T'})}$, where 
+	      $X$ is a fresh variable.
+		  We notice that \lstinline{toGrammar T} $= X \, \vec X_T$ for some 
+		  sequence of non-terminal symbols $\vec X_T$. By congruence, we have: 
+		  \[\text{\lstinline{toGrammar S}} = X \, \vec X_T \, \text{(\lstinline{toGrammar U})} 
+		  \rightarrow a \enspace \text{(\lstinline{toGrammar T'})} \, \vec X_T  \, 
+		  \text{(\lstinline{toGrammar U})} .\]
 	\item If $S\triangleq T;U$, $T$ is a terminated session, with no further 
-	      action, and $U \LTSderives[a] U'$ then, by induction hypothesis and 
+	      action, and $U \LTSderives[a] U'$ then, using the \LTS\ we have
+	      $T;U \LTSderives[a] U'$. On the other hand, by induction hypothesis and 
 	      using Lemma~\ref{lemma:terminated_session}:
 	    \begin{itemize}
-			\item $\mathsf{toGrammar}(T)$  returns $\varepsilon$,
-			\item $\mathsf{toGrammar}(X,U)$  adds a production 
-			$X \rightarrow a \enspace \mathsf{toGrammar}(U')$.
+			\item \lstinline{toGrammar T}  returns \lstinline{[ ]},
+			\item \lstinline{toGrammar U}  adds a production 
+			$X \rightarrow a \enspace \text{\lstinline{toGrammar U'}}$, where $X$
+			is a fresh variable.
 		\end{itemize}
-		Then, considering $\vec X_U \leftarrow \mathsf{toGrammar}(X,U)$, 
-		we notice that $X_U = X \enspace \vec X_U'$ for some sequence of 
-		non-terminal symbols $\vec X_U'$. Hence, by congruence, we have a 
+		We notice that \lstinline{toGrammar U} $= X \, \vec X_U$ for some sequence of 
+		non-terminal symbols $\vec X_U$. Hence, by congruence, we have a 
 		transition 
-		\[\mathsf{toGrammar}(S) = \enspace \varepsilon \enspace X \enspace 
-		\vec X_U' \rightarrow \enspace a \enspace \mathsf{toGrammar}(U') \enspace 
-		\vec X_U'.\]
+		\[\text{\lstinline{toGrammar S}} = \, \text{\lstinline{[ ]}} \, X \, 
+		\vec X_U \rightarrow \enspace a \enspace \text{(\lstinline{toGrammar U'})} \, 
+		\vec X_U.\]
 \end{itemize}
 \end{proof}
 
@@ -144,33 +135,44 @@ Conversely, we prove that any transition derived from the productions
 has a corresponding labelled transition in the \LTS.
 
 \begin{lemma}
-Given a session type $S$ and a label $\ell$,
-	\[ \text{if } \mathsf{toGrammar}(S) \rightarrow \enspace \ell \enspace 
-	 \vec Y \text{ then } S \LTSderives[\ell] S', \text{for some $S'$}.\]
+Given a context-free session type $S$ and a label $\ell$,
+	\[ \text{if } \text{\lstinline{toGrammar S}} \rightarrow \enspace \ell \enspace 
+	 \vec Y \text{ then } S \LTSderives[\ell] S', \text{ for some context-free session type $S'$}.\]
 \end{lemma}
 
 \begin{proof}
-	The proof is by induction on the structure of $S$:
+	The proof is done by induction on the structure of $S$:
 	\begin{description}
-		\item[Case $S \triangleq \skipk$:] $\mathsf{toGrammar}(S)$ does not 
+		\item[Case $S \triangleq \skipk$:] \lstinline{toGrammar S} does not 
 		     add any production, and \DONE{S}.
-		\item[Case $S \triangleq A$:] $\mathsf{toGrammar}(Y,S)$ adds the 
-		     production $Y\rightarrow A$ and, in the LTS, $S \LTSderives[A] 
-		     \skipk$, where $A$ ranges over $!B$, $?B$, and $\alpha$.
-		\item[Case $S\triangleq \star \{\ell_i : S_i\}_{i\in I}$:] for each 
-		     $j\in I$, $\mathsf{toGrammar}(Y,S)$ adds a production 
-		     \linebreak $Y \rightarrow \star \ell_j \enspace 
-		     \mathsf{toGrammar}(S_j)$. In the \LTS\ we also have 
-		     $S_1 \LTSderives[\star \ell_j] S_j$, for each $j\in I$.
-		\item[Case $S\triangleq \mu x.S$:] $\mathsf{toGrammar}(\_,S)$ adds, 
-		     recursively, all productions from \linebreak$\mathsf{toGrammar}
-		     (\mathsf{subst}(x,Y,S))$. Analogously, in the \LTS\ side, any transition 
+		\item[Case $S \triangleq A$:] from \lstinline{toGrammar S} the 
+		     production $Y\rightarrow A$ is added and, from the \LTS, we derive
+		     $S \LTSderives[A] \skipk$, where $A$ ranges over $!B$, $?B$, 
+		     and $\alpha$.
+		\item[Case $S\triangleq \star \{\ell_i : S_i\}_{i\in I}$:] 
+		     \lstinline{toGrammar} recursively adds 
+		     $\text{\lstinline{toGrammar S}} \rightarrow \star \ell_j\, 
+		     \text{(\lstinline{toGrammar Sj})}$, 
+		     for each $j\in I$. In the \LTS\ we also have 
+		     $S \LTSderives[\star \ell_j] S_j$, for each $j\in I$.
+		\item[Case $S\triangleq \mu x.S$:] \lstinline{toGrammar S} adds, 
+		     recursively, all productions from \linebreak \lstinline{toGrammar (subs (Var y) x t)}. 
+		     Analogously, in the \LTS\ side, any transition 
 		     $S[\mu x.S/x] \LTSderives[a] S'$ leads to a transition 
 		     $\mu x.S \LTSderives[a] S'$.
-		\item[Case $S \triangleq T;U$:] $\mathsf{toGrammar}(S)$ recursively adds 
-		     all productions from  $\mathsf{toGrammar}(T)$ and, then, from $\mathsf{toGrammar}(U)$.
-		     By induction hypothesis, all these productions have corresponding 
-		     transitions in the \LTS.
+		\item[Case $S \triangleq T;U$:]   \lstinline{toGrammar S} recursively adds 
+		     all productions from   \lstinline{toGrammar T} and from  
+		     \lstinline{toGrammar U}. Hence, if 
+		     $\text{(\lstinline{toGrammar S})} \rightarrow \, \ell \, \vec Y$ then,
+		     either: 
+		     \begin{itemize}
+		     	\item $\text{(\lstinline{toGrammar T}}) \rightarrow \, \ell \, \vec Y$ and,	
+		     	      in this case, by induction hypothesis $T \LTSderives[\ell] T'$ and 
+		     	      from the \LTS\ we derive $S \LTSderives[\ell] T';U$;
+		     	\item \DONE{T} and $\text{(\lstinline{toGrammar U}}) \rightarrow \, 
+		     	      \ell \, \vec Y$ and, by induction hypothesis $U \LTSderives[\ell] U'$
+		     	      and from the \LTS\ we derive $S \LTSderives[\ell] U'$.
+		     \end{itemize}
 	\end{description}
 \end{proof}
 

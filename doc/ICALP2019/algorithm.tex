@@ -46,8 +46,8 @@ we keep the set of productions $\mathcal{P}$ in the state \lstinline{TState}
 and consider the following functions:
 \begin{itemize}
 	\item \lstinline{freshVar} returns a fresh non-terminal variable;
-	\item \lstinline{addProduction} updates the state by inserting 
-	      the given production;
+	\item \lstinline{addProduction y label ys} updates the state by inserting 
+	      the production \lstinline{y} $\rightarrow$ \lstinline{label ++ ys};
 	\item \lstinline{insertVisited} marks a non-terminal symbol as visited;
 	\item \lstinline{isVisited} identifies whether the given non-terminal symbol 
 	      was visited;
@@ -98,8 +98,13 @@ toGrammar (Rec Bind{var=x} t) = do
     return [y]
 toGrammar (Choice c m) = do
   y <- freshVar
-  mapM_ (assocToGrammar y c) (Map.assocs m)
+  mapM_ (assGrammar y c) (Map.assocs m)
   return [y]
+  
+assGrammar :: TypeVar -> ChoiceView -> (Constructor,Type) -> TransState()
+assGrammar y c (l, t) = do
+  xs <- toGrammar t
+  addProduction y (ChoiceLabel c l) xs
 \end{lstlisting}
 
 %\begin{algorithm}
