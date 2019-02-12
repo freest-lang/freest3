@@ -1,4 +1,4 @@
-\section{Soundness and Completeness}
+\section{Soundness and completeness of the algorithm}
 \label{sec:soundness}
 
 In this section we prove that our algorithm is sound and complete 
@@ -13,7 +13,7 @@ H{\"{u}}ttel, Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}, Jan{\v{c}}ar
 and Moller~\cite{janvcar1999techniques}, we conclude that our algorithm 
 is sound and complete.
 
-\subsection{The bisimilarities coincide}
+\subsection{The two bisimulations coincide}
 
 In the following lemma we prove that the initial (dummy) production 
 does not affect equivalence checking.
@@ -39,7 +39,7 @@ do not originate new productions.
 \label{lemma:terminated_session}
 	Given a context-free session type $S$, 
 	if \DONE{S} then \lstinline{toGrammar S} does not add any 
-	production and returns \lstinline{[ ]}.
+	production and returns \lstinline{[]}.
 \end{lemma}
 
 \begin{proof}
@@ -47,17 +47,17 @@ do not originate new productions.
 	context-free session type $S$:
 	\begin{description}
 		\item[Case $S\triangleq \skipk$,] then \lstinline{toGrammar} does not 
-		add any production and returns \lstinline{[ ]}.
+		add any production and returns \lstinline{[]}.
 		\item[Case $S\triangleq S_1;S_2$] for terminated session types $S_1$ and
 		$S_2$, \lstinline{toGrammar S} recursively adds the productions from 
 		\lstinline{toGrammar S1} and \lstinline{toGrammar S2}. But $S_1$ and 
 		$S_2$ are terminated session types, hence no production is added and
-		\lstinline{[ ]} is returned.
+		\lstinline{[]} is returned.
 		\item[Case $S\triangleq \mu x. S$,] where $S[\mu x.S/x] \checkmark$,
 		\lstinline{toGrammar S} adds the productions from \linebreak
 		\lstinline{toGrammar (subs (Var y) x t)}. But $S[\mu x.S/x]$ is a terminated
 		session, thus \lstinline{toGrammar S} returns does not add 
-		any production and returns \lstinline{[ ]}.
+		any production and returns \lstinline{[]}.
 	\end{description}
 \end{proof}
 
@@ -78,7 +78,7 @@ transition system (Fig.~\ref{lts}):
 \begin{itemize}
 	\item If $S\triangleq \skipk$, then $S$ is a terminated 
 	      session type, with no further transition. Similarly, 
-	      \lstinline{toGrammar S} returns \lstinline{[ ]} and 
+	      \lstinline{toGrammar S} returns \lstinline{[]} and 
 	      does not add any production.
 	\item If $S\triangleq A$, where $A$ ranges over $!B$ and $?B$, 
 	      then $S  \LTSderives[A] \skipk$. On the other hand, 
@@ -115,7 +115,7 @@ transition system (Fig.~\ref{lts}):
 	      $T;U \LTSderives[a] U'$. On the other hand, by induction hypothesis and 
 	      using Lemma~\ref{lemma:terminated_session}:
 	    \begin{itemize}
-			\item \lstinline{toGrammar T}  returns \lstinline{[ ]},
+			\item \lstinline{toGrammar T}  returns \lstinline{[]},
 			\item \lstinline{toGrammar U}  adds a production 
 			$X \rightarrow a \enspace \text{\lstinline{toGrammar U'}}$, where $X$
 			is a fresh variable.
@@ -123,7 +123,7 @@ transition system (Fig.~\ref{lts}):
 		We notice that \lstinline{toGrammar U} $= X \, \vec X_U$ for some sequence of 
 		non-terminal symbols $\vec X_U$. Hence, by congruence, we have a 
 		transition 
-		\[\text{\lstinline{toGrammar S}} = \, \text{\lstinline{[ ]}} \, X \, 
+		\[\text{\lstinline{toGrammar S}} = \, \text{\lstinline{[]}} \, X \, 
 		\vec X_U \rightarrow \enspace a \enspace \text{(\lstinline{toGrammar U'})} \, 
 		\vec X_U.\]
 \end{itemize}

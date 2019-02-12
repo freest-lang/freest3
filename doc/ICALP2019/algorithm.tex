@@ -40,7 +40,8 @@ initial production in the set of productions $\mathcal{P}$:
 \label{initial_prod}
 	X_S \rightarrow \enspace \initialProd\enspace \text{(\lstinline{toGrammar S})}	
 \end{equation}
-where \lstinline{toGrammar S} represents the sequence of symbols returned by the
+where $( \enspace )$ is assumed to be a type in $B$ and 
+\lstinline{toGrammar S} represents the sequence of symbols returned by the
 recursive function presented in Listing~\ref{lst:toGrammar}. In our implementation, 
 we keep the set of productions $\mathcal{P}$ in the state \lstinline{TState}
 and consider the following functions:
@@ -51,8 +52,8 @@ and consider the following functions:
 	\item \lstinline{insertVisited} marks a non-terminal symbol as visited;
 	\item \lstinline{isVisited} identifies whether the given non-terminal symbol 
 	      was visited;
-	\item \lstinline{subst x X S} replaces the occurrences of \lstinline{x} by 
-	      \lstinline{X} in \lstinline{S}.
+	\item \lstinline{subst x T S} replaces the occurrences of \lstinline{x} by 
+	      \lstinline{T} in \lstinline{S}.
 \end{itemize}
 Furthermore, the type $\skipk$ is represented by \lstinline{Skip}, 
 \lstinline{MessageLabel p b} stands for types of the form $?B$ or $!B$,
@@ -68,10 +69,10 @@ type TransState = State TState
 
 toGrammar :: Type -> TransState [TypeVar]
 toGrammar Skip =
-  return [ ]
+  return []
 toGrammar (Message p b) = do
   y <- freshVar
-  addProduction y (MessageLabel p b) [ ]
+  addProduction y (MessageLabel p b) []
   return [y]
 toGrammar (Semi t u) = do
   xs <- toGrammar t
@@ -84,14 +85,14 @@ toGrammar (Var a) = do
     return [a]
   else do -- This is a free variable
     y <- freshVar
-    addProduction y (VarLabel a) [ ]
+    addProduction y (VarLabel a) []
     return [y]
 toGrammar (Rec Bind{var=x} t) = do
   y <- freshVar
   insertVisited y
   zs <- toGrammar $ subs (Var y) x t -- On the fly alpha conversion
   if null zs
-    then return [ ]
+    then return []
   else do
     m <- getTransitions $ head zs
     addProductions y (Map.map (++ tail zs) m)
@@ -166,16 +167,18 @@ do not overlap.
 	\lstinline{toGrammar} applied to $S$ and $T$ leads to the following productions:\\
 	
 	\centering
-	\begin{tabular}{l l l |l l l}
-    	&Productions for $S$& & & Productions for $T$& \\ \hline
-    	&$X_S \rightarrow \,! (\,)\,X_1 X_4$ & & &$Y_T \rightarrow \,! (\,)\, Y_1 Y_3 $ &\\
-    	&$X_1 \rightarrow \& n\, X_1 X_1 X_2$ & & &$Y_1 \rightarrow \& n\, Y_1 Y_1 Y_2 $ &\\
-    	&$X_1 \rightarrow \& \ell\, X_3$ &&& $Y_1 \rightarrow \& \ell \,Y_2 $&\\
-    	&$X_2 \rightarrow \,? \intk$&&& $Y_2 \rightarrow \,? \intk$&\\
-    	&$X_3 \rightarrow \,? \intk$&&& $Y_3 \rightarrow \,!\intk\, Y_3$&\\
-    	&$X_4 \rightarrow \,!\intk\, X_4 X_4$ &&&&\\
-  	\end{tabular}	\\
-  	\hfill$\triangle$
+	\begin{tabular}{l l}
+		\multicolumn{2}{c}{Productions for $S$}\\ \hline
+		$X_S \rightarrow \,! (\,)\,X_1 X_4$ &$X_2 \rightarrow \,? \intk$\\
+		$X_1 \rightarrow \& n\, X_1 X_1 X_2$&$X_3 \rightarrow \,? \intk$\\
+		$X_1 \rightarrow \& \ell\, X_3$ &$X_4 \rightarrow \,!\intk\, X_4 X_4$\\
+	\end{tabular} \qquad
+	\begin{tabular}{l l}
+		\multicolumn{2}{c}{Productions for $T$}\\ \hline
+		$Y_T \rightarrow \,! (\,)\, Y_1 Y_3 $&$Y_2 \rightarrow \,? \intk$\\
+		$Y_1 \rightarrow \& n\, Y_1 Y_1 Y_2 $&$Y_3 \rightarrow \,!\intk\, Y_3$\\
+		$Y_1 \rightarrow \& \ell \,Y_2 $ &\\
+	\end{tabular}
 \end{example}
 
 The bisimulation relation, $\ProdEquiv$, is defined in the usual way from the 
@@ -250,19 +253,15 @@ normedWord p v (x:xs) =
 	productions for $S$ we get:\\
 	
 	\centering
-	\begin{tabular}{l l l }
- 		&\emph{Pruned} productions for $S$&  \\ \hline
- 		&\hspace*{4mm}$X_S \rightarrow \,! (\,)\,X_1 X_4$ &\\
-  		&\hspace*{4mm}$X_1 \rightarrow \& n\, X_1 X_1 X_2$ & \\
-  		&\hspace*{4mm}$X_1 \rightarrow \& \ell\, X_3$ &\\
- 		&\hspace*{4mm}$X_2 \rightarrow \,? \intk$&\\
-  		&\hspace*{4mm}$X_3 \rightarrow \,? \intk$&\\
-  		&\hspace*{4mm}$X_4 \rightarrow \,!\intk\, X_4 $ &\\
-	\end{tabular}\\
-  	\hfill$\triangle$
+	\begin{tabular}{l l}
+		\multicolumn{2}{c}{\emph{Pruned} productions for $S$}\\ \hline
+		$X_S \rightarrow \,! (\,)\,X_1 X_4$ &$X_2 \rightarrow \,? \intk$\\
+		$X_1 \rightarrow \& n\, X_1 X_1 X_2$&$X_3 \rightarrow \,? \intk$\\
+		$X_1 \rightarrow \& \ell\, X_3$ &$X_4 \rightarrow \,!\intk\, X_4$\\
+	\end{tabular}
 \end{example}
 
-\subsection{Expansion Tree}
+\subsection{Expansion tree}
 \label{subsec:expand}
 
 We recall that, given two context-free session types $S$ and $T$, our main goal 
@@ -301,12 +300,12 @@ We say that a branch
 is \emph{successful} if it is infinite or finishes in an empty node, 
 otherwise it is said to be \emph{unsuccessful}.
 
-\subsubsection{Expansion stage:}
+\paragraph*{Expansion stage}
 In the expansion stage, each node $N$ derives a single children node, 
 obtained as an expansion of $N$. As we are dealing with simple grammars, 
 no branching is expected in the expansion tree at this stage.
 
-\subsubsection{Simplification stage:} The simplification stage consists on the 
+\paragraph*{Simplification stage} The simplification stage consists on the 
 application of the following \emph{simplification rules}:
 \begin{itemize}
 	\item {\bf Reflexive rule:} omit from a node $N$ any reflexive pair;
@@ -328,7 +327,7 @@ application of the following \emph{simplification rules}:
 		  	          for $N$ including the pairs $(X_0, Y_0 \vec Z)$ 
 		  	          and $(\vec Z \vec X, \vec Y)$ instead of 
 		  	          $(X_0 \vec X, Y_0 \vec Y)$.
-		  	     \item case $|Y_0| > |Y_0|$, let $\vec \ell$ be a minimal 
+		  	     \item case $|X_0| > |Y_0|$, let $\vec \ell$ be a minimal 
 		  	          path for $Y_0$, $\vec Z$ a sequence of symbols such that 
 		  	          $\vec X_0 \xrightarrow{\vec \ell} \vec Z$ and add a sibling node 
 		  	          for $N$ including the pairs $(X_0 \vec Z, Y_0 )$ 
@@ -367,10 +366,8 @@ type Ancestors = Node
 type NodeQueue = Queue.Queue (Node, Ancestors)
 type NodeTransformation = Productions -> Ancestors -> Node -> Set.Set 
 
-equivalent :: KindEnv -> Type -> Type -> Bool
-equivalent k t u =
-  isSessionType k t &&
-  isSessionType k u &&
+equivalent :: Type -> Type -> Bool
+equivalent t u =
   expansionTree (prune p) [x] [y]
   where Grammar [x, y] p = toGrammar [t, u]
 
@@ -397,7 +394,7 @@ simplify g a n q = foldr enqueueNode (Queue.dequeue q) m'
 	``pruned'' in Example~\ref{ex:prune}. We sketch the expansion tree for 
 	$X_S, Y_T$ in Figure~\ref{fig:expansionTree}. As soon as it reaches
 	the successful branch, the algorithm presented in Listing~\ref{lst:algorithm}
-	decides that $X_S\sim Y_T$. \hfill$\triangle$
+	decides that $X_S\sim Y_T$. 
 \end{example}
 
 \begin{figure}[h]
