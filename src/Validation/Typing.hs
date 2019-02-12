@@ -66,7 +66,7 @@ typeCheck = do
 
 -- | temporary function to remove prelude from venv
 --   it makes debugging easier
-removePrelude venv = Map.foldlWithKey (\acc x _ -> Map.delete x acc) venv prelude
+-- removePrelude venv = Map.foldlWithKey (\acc x _ -> Map.delete x acc) venv prelude
 
 -- | AUXILIARY FUNCTIONS TO VERIFY DATATYPES
 
@@ -373,6 +373,7 @@ checkExp (Fork p e) = do
   t <- checkExp e
   checkUn p t
   return $ TypeScheme [] (Basic UnitType)
+--  return t
   
 checkExp (Case pos e cm) = do
   t <- checkExp e
@@ -390,7 +391,6 @@ checkExp (Case pos e cm) = do
                    (return ()) (Map.delete c cm)
   return u
   
-
 
 -- Extract Without Errors
 -- TODO: check: need?
@@ -563,6 +563,7 @@ extractConstructor p c t = do
   return (Basic UnitType)
 
 -- TODO: review this case (bindings)
+-- TODO: error on Map.!
 extractExtChoice :: Pos -> TypeScheme -> Constructor -> TypingState TypeScheme
 extractExtChoice p (TypeScheme bs (Semi Skip t)) c = extractExtChoice p (TypeScheme bs t) c
 extractExtChoice p t@(TypeScheme bs (Choice External m)) c =

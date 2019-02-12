@@ -1,0 +1,111 @@
+\section{Context-free session types}
+\label{sec:contextfreesession}
+
+The types we consider build upon some base sets, such as:
+\emph{recursion variables}, denoted by $x$, $y$, $z$;
+\emph{labels}, denoted by $\ell$; and \emph{regular types} denoted by
+$B$.  The syntax of types is given by the grammar below.%summarized in
+% Figure~\ref{fig:types}.
+%
+\begin{equation*}
+    S,T \grmeq \skipk \mid S;T \grmor \,!B \grmor \,?B \grmor 
+       \oplus\{\ell_i\colon S_i\}_{i\in I} \grmor \&\{\ell_i\colon S_i\}_{i\in I} \grmor B \grmor
+       \mu x.S \grmor x
+\end{equation*}
+% We consider session types: $\skipk$ to represent no communication,
+% $\,!B$ and $\,?B$ for sending and receiving base type values,
+% $S;T$ for the sequence of actions,
+% % denoted by $S_1$ followed by those denoted by $S_2$;
+% $\oplus\{\ell_i\colon T_i\}_{i\in I}$ and
+% $\&\{\ell_i\colon T_i\}_{i\in I}$ for internal and external choice,
+% and $\mu x.T$ and $x$ for recursion.
+
+Type equivalence for context-free session types is based on the notion
+of bisimulation~\cite{thiemann2016context}.%  According to this
+% approach, two session types are equivalent if they exhibit the same
+% behavior. 
+ We consider a labelled transition system where $A$ ranges
+over $\alpha$, $\,!B$, and $\,?B$, $\star$ ranges over $\oplus$ and
+$\&$, and $a$ ranges over both $A$ and $\star l$.
+%
+The labelled transition system is given by the set of types as
+\emph{states}, the set of \emph{actions} ranged over by $a$, and the
+transition relation $\LTSderives$ defined by the rules below. The
+transition relation makes use of an auxiliary judgment $\DONE{S}$ that
+characterizes ``terminated'' session types that exhibit no further
+action~\cite{DBLP:journals/jacm/AcetoH92} .
+%
+\begin{figure}
+% \vspace*{-4mm}
+  \begin{gather*}
+    \DONE{\skipk}
+    \qquad
+    \frac{\DONE{S_1} \quad \DONE{S_2}}{\DONE{S_1; S_2}}
+    \qquad
+    \frac{\DONE{S[\mu x.S/x]}}{\DONE{\mu x.S}}
+    \qquad
+    {A \LTSderives[A] \skipk }
+    \qquad
+    {\star\{l_i\colon S_i\}_{i\in I} \LTSderives[\star l_j] S_j}
+    \\
+    \frac{S_1 \LTSderives S_1'}{S_1; S_2 \LTSderives S_1';S_2}
+    \quad\;\;
+    \frac{\DONE{S_1} \quad S_2 \LTSderives S_2'}{S_1; S_2 \LTSderives S_2'}
+    \quad\;\;
+    \frac{S[\mu x.S/x] \LTSderives S'}{\mu x.S \LTSderives S'}
+  \end{gather*}
+%   \vspace*{-4mm}
+%   \caption{Labelled transition system for context free session types}
+%   \label{fig:lts}
+\caption{Labelled transition system for context-free session types~\cite{thiemann2016context}.}
+\label{lts}
+\end{figure}
+
+\emph{Type bisimilarity}, $\TypeEquiv$, is defined in the usual way from the
+labelled transition system.
+% , and is extended to the remaining type constructors as described in Figure~\ref{fig:type-equivalence-lifted}.
+
+% \begin{figure}[h!]
+% \vspace*{-4mm}
+%   \begin{gather*}
+%     \frac
+%     {T \TypeEquiv T'}
+%     { \forall \alpha.T \TypeEquiv \forall \alpha. T'}
+%     \qquad
+%     \alpha \TypeEquiv \alpha
+%     \qquad
+%     B \TypeEquiv B
+%     \qquad
+%     \frac
+%     { T_1 \TypeEquiv T_1' \quad T_2 \TypeEquiv T_2'}
+%     {T_1 \to T_2 \TypeEquiv T_1' \to T_2'}
+%     \qquad
+%     \frac
+%     { T_1 \TypeEquiv T_1' \quad T_2 \TypeEquiv T_2'}
+%     { T_1 \multimap T_2 \TypeEquiv T_1' \multimap T_2'}
+%     \\\smallskip
+%     \frac
+%     {T_1 \TypeEquiv T_1' \quad T_2 \TypeEquiv T_2'}
+%     { T_1 \otimes T_2 \TypeEquiv T_1' \otimes T_2'}
+%     \qquad
+%     \frac
+%     {(\forall i\in I)~ T_i \TypeEquiv T_i'}
+%     { [l_i:T_i]_{i\in I} \TypeEquiv [l_i:T_i']_{i\in I}}
+%     \qquad
+%     \frac
+%     { T\subs{\mu x.T}x \TypeEquiv T'}
+%     { \mu x.T \TypeEquiv T'}
+%     \qquad
+%     \frac
+%     { T \TypeEquiv T'\subs{\mu x.T'}x}
+%     { T \TypeEquiv \mu x.T'}
+%   \end{gather*}
+%   \vspace*{-4mm}
+%   \caption{Type equivalence lifted to all types}
+%   \label{fig:type-equivalence-lifted}
+% \end{figure}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

@@ -16,7 +16,7 @@ module Validation.TypeEquivalence(
 ) where
 
 import           Control.Monad.State
-import           Data.List (isPrefixOf, union, sortBy, reverse, head, break, sortOn)
+import           Data.List (isPrefixOf, union)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Queue.Queue as Queue
@@ -42,12 +42,11 @@ expansionTree g xs ys = expansionTree' g (Queue.enqueue (Set.singleton (xs, ys),
 
 expansionTree' :: Productions -> NodeQueue -> Bool
 expansionTree' g q
-  | Queue.isEmpty q   = False
-  | Set.null n        = True
-  | otherwise         = case expandNode g n of
+  | Queue.isEmpty q = False
+  | Set.null n      = True
+  | otherwise       = case expandNode g n of
       Nothing  -> expansionTree' g (Queue.dequeue q)
-      Just n'  -> n' == Set.fromList [([],[])] ||
-                        expansionTree' g (simplify g (Set.union a n) n' q)
+      Just n'  -> expansionTree' g (simplify g (Set.union a n) n' q)
   where (n,a) = Queue.front q
 
 expandNode :: Productions -> Node -> Maybe Node
@@ -69,19 +68,15 @@ match :: Transitions -> Transitions -> Node
 match m1 m2 =
   Map.foldrWithKey (\l xs n -> Set.insert (xs, m2 Map.! l) n) Set.empty m1
 
+-- Prune nodes once expanded
+pruneNode :: Productions -> Node ->  Node
+pruneNode g = Set.map (\(xs,ys) -> (pruneWord g xs, pruneWord g ys))
+
 -- Apply the different node transformations
 
 simplify :: Productions -> Ancestors ->  Node -> NodeQueue -> NodeQueue
-simplify g a n q = foldr enqueueNode (Queue.dequeue q) s
+simplify g a n q = foldr enqueueNode (Queue.dequeue q) m'
   where m' = findFixedPoint g (Set.singleton (n,a))
-        -- removes children nodes whose pairs don't have the same norm
-        m = Set.filter (\(n,a) -> normsMatch g n) m'
-        --mx = Set.fold (\x xs -> (max 1 x) * xs) 1 (Set.map (\(x,y) -> min (length x) (length y)) n)
-        --m = iterateSimplify g 1 mx (Set.singleton (n,a))
-        s = reverse (sortBy (\(n1,_) (n2,_) -> compare (maximumLength n1) (maximumLength n2)) (Set.toList m))
-
-normsMatch :: Productions -> Node -> Bool
-normsMatch g n = and $ Set.map (\(xs,ys) -> sameNorm g xs ys) n
 
 enqueueNode :: (Node,Ancestors) -> NodeQueue -> NodeQueue
 enqueueNode (n,a) q
@@ -89,7 +84,6 @@ enqueueNode (n,a) q
  | maximumLength n == 1 = Queue.priorityEnqueue (n,a) q
  | otherwise            = Queue.enqueue (n,a) q
 
---if we could compare transformations (i.e. t1==t2), we could have a single apply
 apply :: Productions -> NodeTransformation -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
 apply g trans ns = Set.fold (\(n,a) ns -> Set.union (Set.map (\s -> (s,a)) (trans g a n)) ns) Set.empty ns
 
@@ -97,15 +91,14 @@ findFixedPoint :: Productions -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ances
 findFixedPoint g nas
   | nas == nas' = nas
   | otherwise = findFixedPoint g nas'
-  where nas' = foldr (apply g) nas [reflex, congruence, bpa1, reflex, congruence, bpa2, reflex, congruence]
+  where nas' = if allNormed g then foldr (apply g) nas [reflex, congruence, bpa2, filtering]
+                              else foldr (apply g) nas [reflex, congruence, bpa1, bpa2, filtering]
 
--- iterateSimplify :: Productions -> Int -> Int -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
--- iterateSimplify g i mx nas
---   | nas == nas' || i > mx = nas'
---   | otherwise = iterateSimplify g (i+1) mx nas'
---   where nas' = foldr (apply g) nas [reflex, congruence, bpa1, reflex, congruence, bpa2, reflex, congruence]
+normsMatch :: Productions -> Node -> Bool
+normsMatch g n = and $ Set.map (\(xs,ys) -> sameNorm g xs ys) n
 
 -- The maximum length of the pairs in a node
+
 maximumLength :: Node -> Int
 maximumLength n
   | Set.null n = 0
@@ -118,6 +111,11 @@ reflex _ _ = Set.singleton . Set.filter (uncurry (/=))
 
 congruence :: NodeTransformation
 congruence _ a = Set.singleton . Set.filter (not . congruentToAncestors a)
+
+filtering :: NodeTransformation
+filtering p _ n
+  | normsMatch p n = Set.singleton(n)
+  | otherwise      = Set.empty
 
 congruentToAncestors :: Ancestors -> ([TypeVar], [TypeVar]) -> Bool
 congruentToAncestors a p = or $ Set.map (congruentToPair a p) a
@@ -135,27 +133,25 @@ bpa1 g a n =
   Set.foldr (\p ps -> Set.union (Set.map (\v -> Set.union v (Set.delete p n)) (bpa1' g a p)) ps) (Set.singleton n) n
 
 bpa1' :: Productions -> Ancestors -> ([TypeVar],[TypeVar]) -> Set.Set Node
-bpa1' p a (x:xs,y:ys)
-  | normed p x && normed p y = Set.empty
-  | otherwise = case findInAncestors a x y of
+bpa1' p a (x:xs,y:ys) = case findInAncestors a x y of
       Nothing         -> Set.empty
-      Just (xs', ys') -> Set.union (Set.singleton (Set.fromList [(xs,xs'), (ys,ys')])) (bpa1' p (Set.delete (x:xs', y:ys') a) (x:xs, y:ys))
+      Just (xs', ys') -> Set.union
+                            (Set.singleton (Set.fromList [(xs,xs'), (ys,ys')]))
+                            (bpa1' p (Set.delete (x:xs', y:ys') a) (x:xs, y:ys))
 bpa1' _ _ p = Set.empty
 
 bpa2 :: NodeTransformation
 bpa2 g a n =
-  Set.foldr (\p ps -> Set.union (Set.map (\v -> Set.union v (Set.delete p n)) (bpa2' g a p)) ps) (Set.singleton n) n
+  Set.foldr (\p ps ->
+                Set.union (Set.map (\v -> Set.union v (Set.delete p n)) (bpa2' g a p))
+                          ps) (Set.singleton n) n
 
 bpa2' :: Productions -> Ancestors -> ([TypeVar],[TypeVar]) -> Set.Set Node
 bpa2' p a (x:xs, y:ys)
   | not (normed p x && normed p y) = Set.empty
-  | lengthsPositive && equalNorms  = Set.singleton (Set.fromList [([x],[y]), (xs,ys)])
-  | lengthsPositive && not equalNorms = Set.map (pairsBPA2 p (x:xs, y:ys)) gammas
-  | otherwise                      = Set.empty
-  where lengthsPositive = length ys > 0 && length xs > 0
-        equalNorms = norm p [x] == norm p [y]
-        -- m = (not (norm p [x] > norm p [y]) || length ys > 0) && (not (norm p [x] < norm p [y]) || length xs > 0)
-        gammas = gammasBPA2 p (x,y)
+  | otherwise  = case gammaBPA2 p (x,y) of
+      Nothing    -> Set.empty
+      Just gamma -> Set.singleton (pairsBPA2 p (x:xs, y:ys) gamma)
 bpa2' _ _ _ = Set.empty
 
 pairsBPA2 :: Productions -> ([TypeVar],[TypeVar]) -> [TypeVar] -> Node
@@ -163,19 +159,11 @@ pairsBPA2 p (x:xs, y:ys) gamma = Set.fromList [p1, p2]
   where  p1 = if (norm p [x] >= norm p [y]) then ( [x], [y] ++ gamma ) else ( [x] ++ gamma, [y] )
          p2 = if (norm p [x] >= norm p [y]) then ( gamma ++ xs, ys ) else ( xs, gamma ++ ys )
 
-gammasBPA2 :: Productions -> (TypeVar,TypeVar) -> Set.Set [TypeVar]
-gammasBPA2 p (x,y) = gammaSelection p vs (abs diff)
-  where diff = norm p [x] - norm p [y]
-        x0 = if diff >= 0 then (backwards p [x]) else (backwards p [y])
-        vs = Set.toList $ reachable p (Set.singleton x0)
-
-gammaSelection :: Productions -> [TypeVar] -> Int -> Set.Set [TypeVar]
-gammaSelection p xs diff = Set.filter (\xs -> norm p xs == diff) (Set.fromList (powerset ys))
-  where ys  = filter (\x -> norm p [x] <= diff) xs
-
-powerset :: [TypeVar] -> [[TypeVar]]
-powerset [] = [[]]
-powerset (x:xs) = map (x:) (powerset xs) ++ powerset xs
+gammaBPA2 :: Productions -> (TypeVar,TypeVar) -> Maybe [TypeVar]
+gammaBPA2 p (x,y) = throughPath p ls [x1]
+ where x0 = if norm p [x] <= norm p [y] then x else y
+       x1 = if norm p [x] <= norm p [y] then y else x
+       ls = pathToSkip p x0
 
 findInAncestors :: Ancestors -> TypeVar -> TypeVar -> Maybe ([TypeVar], [TypeVar])
 findInAncestors a x y =

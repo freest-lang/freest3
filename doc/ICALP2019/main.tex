@@ -1,0 +1,83 @@
+%This is a template for producing LIPIcs articles. 
+%See lipics-manual.pdf for further information.
+%for A4 paper format use option "a4paper", for US-letter use option "letterpaper"
+%for british hyphenation rules use option "UKenglish", for american hyphenation rules use option "USenglish"
+%for section-numbered lemmas etc., use "numberwithinsect"
+%for enabling cleveref support, use "cleveref"
+%for enabling cleveref support, use "autoref"
+
+\documentclass[a4paper,UKenglish,cleveref, autoref]{lipics-v2019}
+
+\graphicspath{{./img/}}%helpful if your graphic files are in another directory
+
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{stmaryrd}
+\usepackage{listings,color}
+\usepackage{alltt}
+\usepackage{flushend}
+\usepackage[utf8]{inputenc} % for proper diacritics: Universität, Hüttel, Luís
+\usepackage[T1]{fontenc}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{graphicx}
+\usepackage{tikz-cd}
+\usepackage{multicol, enumitem}
+\bibliographystyle{plainurl}
+
+\input{macros}
+
+\title{Checking  the equivalence of context-free session types}
+
+%optional, please use if title is longer than one line
+\titlerunning{Checking  the equivalence of context-free session types}
+
+\author{Andreia Mordido}{LASIGE, Faculdade de Ciências, Universidade de Lisboa, Portugal}{afmordido@fc.ul.pt}{[funding]}{}
+
+\author{Vasco T. Vasconcelos}{LASIGE, Faculdade de Ciências, Universidade de Lisboa, Portugal}{vmvasconcelos@fc.ul.pt}{[funding]}{}
+
+
+%TODO mandatory, please use full name; only 1 author per \author macro; first two parameters are mandatory, other parameters can be empty. Please provide at least the name of the affiliation and the country. The full address is optional
+
+\authorrunning{A. Mordido and V.\,T. Vasconcelos}
+
+\Copyright{Andreia Mordido, Vasco T. Vasconcelos}%TODO mandatory, please use full first names. LIPIcs license is "CC-BY";  http://creativecommons.org/licenses/by/3.0/
+
+\funding{This work was supported by LASIGE Research Unit, ref. UID/CEC/00408/2019.}%optional, to capture a funding statement, which applies to all authors. Please enter author specific funding statements as fifth argument of the \author macro.
+
+%\ccsdesc[100]{General and reference~General literature}
+%\ccsdesc[100]{General and reference}%TODO mandatory: Please choose ACM 2012 classifications from https://dl.acm.org/ccs/ccs_flat.cfm 
+%
+%\keywords{Dummy keyword}%TODO mandatory; please add comma-separated list of keywords
+%
+%\category{}%optional, e.g. invited paper
+%
+%
+%\supplement{}%optional, e.g. related research data, source code, ... 
+%hosted on a repository like zenodo, figshare, GitHub, ...
+
+%\acknowledgements{I want to thank \dots}%optional
+
+\begin{document}
+
+\maketitle
+
+\input{abstract}
+\input{introduction}
+\input{contextfreesession}
+\input{algorithm}
+\input{soundness}
+\input{conclusion}
+
+\label{sect:bib}
+\bibliographystyle{plain}
+\bibliography{biblio}
+
+%\input{appendix}
+
+\end{document}
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
