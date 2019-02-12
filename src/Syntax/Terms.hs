@@ -9,6 +9,7 @@ module Syntax.Terms
   , CaseMap
   , MatchMap
   , Pos
+  , getEPos
   ) where
 
 import qualified Data.Map.Strict as Map
@@ -20,15 +21,15 @@ type TermVar = String
 
 type Params = [TermVar]
 
-type VarEnv = Map.Map TermVar TypeScheme
+type VarEnv = Map.Map TermVar (Pos, TypeScheme)
 -- type VarEnv = Map.Map TermVar Type
 
-type ExpEnv = Map.Map TermVar (Params, Expression)
+type ExpEnv = Map.Map TermVar (Pos, Params, Expression)
 
 type TypeEnv = Map.Map TypeVar Type
 -- type TypeEnv = Map.Map TypeVar (Kind, Type)
 
-type ConstructorEnv = Map.Map TypeVar TypeScheme
+type ConstructorEnv = Map.Map TypeVar (Pos, TypeScheme)
 -- type ConstructorEnv = Map.Map TypeVar Type
 
 data TypeVarBind = TypeVar Kind
@@ -69,10 +70,26 @@ data Expression
   -- Datatypes
   | Constructor Pos TermVar
   | Case Pos Expression CaseMap
-   deriving (Eq, Ord)
+   deriving (Eq, Ord, Show)
 
--- -- TODO: ??
--- instance Show Expression where
---   show (Variable _ x) = x
---   show e = ""
 
+getEPos :: Expression -> Pos
+getEPos (Unit p) = p
+getEPos (Integer p _) = p
+getEPos (Character p _) = p
+getEPos (Boolean p _) = p
+getEPos (Variable p _) = p
+getEPos (UnLet p _ _ _) = p
+getEPos (App p _ _) = p
+getEPos (TypeApp p _ _) = p
+getEPos (Conditional p _ _ _) = p
+getEPos (Pair p _ _) = p
+getEPos (BinLet p _ _ _ _) = p
+getEPos (New p _) = p
+getEPos (Send p _ _) = p
+getEPos (Receive p _ ) = p
+getEPos (Select p _ _) = p
+getEPos (Match p _ _) = p
+getEPos (Fork p _) = p
+getEPos (Constructor p _) = p
+getEPos (Case p _ _) = p

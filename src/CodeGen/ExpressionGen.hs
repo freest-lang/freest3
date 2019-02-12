@@ -322,14 +322,14 @@ genPair h1 True h2 True =  do
 type FunsMap = Map.Map TermVar Bool
 monadicFuns :: ExpEnv -> Map.Map TermVar Bool
 monadicFuns eenv =
-  Map.foldrWithKey (\f (_, e) acc ->
+  Map.foldrWithKey (\f (_, _, e) acc ->
                      Map.insert f
                      (monadicFun eenv f e) acc) Map.empty eenv
 
 
 monadicFun :: ExpEnv -> TermVar -> Expression -> Bool
 monadicFun eenv fun (Variable p x)
-  | Map.member x eenv && fun /= x = monadicFun eenv x (snd (eenv Map.! x))
+  | Map.member x eenv && fun /= x = let (_,_,e) = eenv Map.! x in monadicFun eenv x e
   | otherwise                     = False
 monadicFun eenv fun (UnLet _ _ e1 e2) = monadicFun eenv fun e1 || monadicFun eenv fun e2
 monadicFun eenv fun (App _ e1 e2) = monadicFun eenv fun e1 || monadicFun eenv fun e2

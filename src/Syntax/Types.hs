@@ -100,11 +100,11 @@ data Type =
   | Message Polarity BasicType
   | Choice ChoiceView TypeMap
   | Rec Bind Type
-  -- | Forall TypeVar Kind Type
+  -- Functional or Session
   | Var TypeVar
   deriving (Ord)
 
--- Type equality
+-- Type equality, up to alpha-conversion
 
 instance Eq Type where
   (==) = equalTypes Map.empty

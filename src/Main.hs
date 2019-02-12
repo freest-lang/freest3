@@ -35,6 +35,7 @@ checkResult res filepath = do
       (exitcode, _, errors) <- readProcessWithExitCode "ghc" ["cfst.hs"] ""
       checkGhcOut exitcode errors
       (exitcode1, output1, errors1) <- readProcessWithExitCode "./cfst" [] ""
+      checkGhcOut exitcode1 errors1
       putStr output1
       exitSuccess
     (False, err) -> do

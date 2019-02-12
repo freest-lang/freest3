@@ -13,6 +13,8 @@ dist/
 cfst.h*
 cfst
 CFSTUtils.hs
+Parser.hs
+Lexer.hs
 
 #Latex
 *.aux
