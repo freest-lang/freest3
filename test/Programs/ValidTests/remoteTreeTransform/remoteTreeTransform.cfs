@@ -4,7 +4,7 @@ transform :: forall α => Tree -> (rec x. +{LeafC: Skip, NodeC: !Int;x;x;?Int});
 transform tree c =
   case tree of
     Leaf ->
-      (Leaf, select LeafC c)
+      (Leaf, select LeafC c);
     Node x l r ->
       let c = select NodeC c in
       let c = send x c in
@@ -16,7 +16,7 @@ transform tree c =
 treeSum :: forall α => (rec x. &{LeafC: Skip, NodeC: ?Int;x;x;!Int});α -> (Int, α)
 treeSum c =
   match c with
-    LeafC c -> (0, c)
+    LeafC c -> (0, c);
     NodeC c ->
       let x, c = receive c in
       let l, c = treeSum[(rec x . &{LeafC: Skip, NodeC: ?Int;x;x;!Int});!Int;α] c in

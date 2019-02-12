@@ -30,13 +30,13 @@ server c =
   match c with
     A c -> server'[Skip] c
 
-server' :: forall α => (rec x. &{A: x; &{B: Skip}}); &{B: Skip}; α -> α
+server' :: forall a => (rec x. &{A: x; &{B: Skip}, B: Skip}); a -> a
 server' c =
   match c with
     A c ->
-      (let c = server'[&{B: Skip}; α] c in
-      case c of
-        B c1 -> c1)
+      (let c = server'[&{B: Skip}; a] c in
+      match c with
+        B c1 -> c1);
     B c ->
       c
 
