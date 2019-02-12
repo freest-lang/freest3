@@ -284,8 +284,8 @@ the soundness of our algorithm is now immediate:
 	The algorithm to check the equivalence of context-free session types,
 	presented in Listing~\ref{lst:algorithm} is sound with respect to the
 	meta-theory of context-free session types, i.e.,\linebreak if
-	\lstinline|equivalent _ s t| returns
-	\lstinline|true| then \lstinline|s| $\TypeEquiv$ \lstinline|t|.
+	\lstinline|equivalent S T| returns
+	\lstinline|True| then \lstinline|S| $\TypeEquiv$ \lstinline|T|.
 \end{theorem}
 
 Having observed that the safeness property was paramount for soundness,
@@ -308,17 +308,17 @@ Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}:
 	The algorithm to check the equivalence of context-free session types,
 	presented in Listing~\ref{lst:algorithm} is complete with respect to the
 	meta-theory of context-free session types, i.e., \linebreak if
-	\lstinline|s| $\TypeEquiv$ \lstinline|t| then
-	\lstinline|equivalent _ s t| returns \lstinline|true|.
+	$S \TypeEquiv T$ then
+	\lstinline|equivalent S T| returns \lstinline|True|.
 \end{theorem}
 
 \begin{proof}
-	Assuming that \lstinline|s| $\TypeEquiv$ \lstinline|t|, by
+	Assuming that $S \TypeEquiv T$, by
 	Theorem~\ref{cfst_vs_grammar}, we
-	have $X_{\text{\lstinline|s|}} \ProdEquiv X_{\text{\lstinline|t|}}$.
+	have $X_{S} \ProdEquiv X_{T}$.
 	Hence, the finite witness property
 	ensures the existence of a finite successful branch on the expansion
-	tree rooted at $\{(X_{\text{\lstinline|s|}},X_{\text{\lstinline|t|}})\}$,
+	tree rooted at $\{(X_{S},X_{T})\}$,
 	i.e., a branch finishing in an empty node.
 	Since our algorithm traverses
 	the expansion tree using breadth-first search we will, eventually,

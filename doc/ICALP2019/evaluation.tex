@@ -1,0 +1,23 @@
+\section{Evaluation}
+\label{sec:evaluation}
+
+In this section, we analyze the performance of our algorithm
+to check the equivalence of context-free session types. 
+To do so, we have implemented the algorithm we have presented
+thus far (sketched in Listings~\ref{lst:toGrammar}, 
+\ref{lst:prune}, \ref{lst:algorithm}) 
+in Haskell, and used Haskel compiler 
+Glasgow Haskell Compiler, GHC version 8.6.3, from which we have 
+obtained the running times we present throughout this section.
+The machine used for the evaluation was a Mac mini at 3,6 GHz Intel 
+Core i3 with 8 GB of memory. 
+
+At this stage, we were aiming to analyze the performance of
+our type equivalence checking algorithm, when we came across 
+a particular test whose context-free session types where:
+\begin{align}
+	S \triangleq \mu x . \&\{ \mathsf{add}: x;x; !\,\intk,
+							  \mathsf{const}: ?\,\intk;!\in\intk,
+							  \mathsf{mult}: x;x;!\,\intk\}
+
+\end{align}
