@@ -1,7 +1,7 @@
 module SpecHelper
     ( module Test.Hspec
     , module Syntax.Types
-    , module Parse.TypeParser
+    , module Parse.Parser
     , module Data.List.Split
     , module Data.Char
     , readFromFile
@@ -10,7 +10,7 @@ module SpecHelper
 import Test.Hspec
 import Syntax.Types
 import Data.Char
-import Parse.TypeParser
+import Parse.Parser
 import Data.List.Split(chunksOf)
 
 readFromFile filename = do

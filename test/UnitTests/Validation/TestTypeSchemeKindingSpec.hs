@@ -15,7 +15,7 @@ spec = do
 matchKindingValidSpec :: [String] -> Spec
 matchKindingValidSpec [ts, k] =
   it ts $ do
-    (kindOfScheme (read ts :: TypeScheme)) `shouldBe` (read k :: Kind)
+    (kindOfScheme (0,0) (read ts :: TypeScheme)) `shouldBe` (read k :: Kind)
 
 main :: IO ()
 main = hspec spec

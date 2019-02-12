@@ -49,8 +49,8 @@ Char
 rec x . Skip ; x
 rec x . !Int ; x
 
-rec x . rec y . !Bool ; x ; y 
-rec y . rec x . !Bool ; x ; y 
+(rec x . (rec y . !Bool ; x ; y))
+(rec y . (rec x . !Bool ; x ; y))
 
 rec x . rec y . !Bool ; x ; y 
 rec x . rec y . !Bool ; y ; x 

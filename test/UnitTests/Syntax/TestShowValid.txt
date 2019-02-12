@@ -35,24 +35,24 @@ Skip;!Int
 
 --Datatypes
 
-[a:Int,b:Bool]
-[a:Bool, b:Char]
-[a:Bool, b:Skip;!Char]
-[b:Skip;!Char,a:Bool]
+[A:Int,B:Bool]
+[A:Bool, B:Char]
+[A:Bool, B:Skip;!Char]
+[B:Skip;!Char,A:Bool]
 
 -- Internal and external choices
 
-&{a:!Int,b:?Bool}
-&{a:!Bool;Skip, b:?Char}
-&{b:?Char,a:!Bool}
-&{a:?Bool, b:Skip;!Char}
-&{b:Skip;!Char,a:?Bool}
+&{A:!Int,B:?Bool}
+&{A:!Bool;Skip, B:?Char}
+&{B:?Char,A:!Bool}
+&{A:?Bool, B:Skip;!Char}
+&{B:Skip;!Char,A:?Bool}
 
-+{a:!Int,b:!Bool}
-+{a:!Bool, b:?Char}
-+{b:?Char,a:!Bool}
-+{a:?Bool, b:Skip;!Char}
-+{b:Skip;!Char,a:?Bool}
++{A:!Int,B:!Bool}
++{A:!Bool, B:?Char}
++{B:?Char,A:!Bool}
++{A:?Bool, B:Skip;!Char}
++{B:Skip;!Char,A:?Bool}
 +{Leaf:Skip, Node:!Int};Skip
 +{Leaf:Skip;Skip, Node:!Int;Skip}
 
@@ -96,8 +96,8 @@ rec x :: SU . !Int;x
 rec x :: SU . !Int;!Int;x
 rec x :: SU . !Int;Skip
 rec x :: SU . Skip;!Int
-rec x :: SU . +{l:!Int, m:x}
-rec y :: SU . +{l:Skip, m:y};!Int
+rec x :: SU . +{L:!Int, M:x}
+rec y :: SU . +{L:Skip, M:y};!Int
 rec x :: SU . !Int
 rec x :: SU . ?Bool
 Skip;rec x :: SU . ((!Int);x)

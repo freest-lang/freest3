@@ -1,7 +1,7 @@
 module Syntax.TestEqTypeSchemeSpec(spec) where
 
 import qualified Data.Map as Map
-import           Parse.Parser
+-- import           Parse.Parser
 import           SpecHelper
 import           Validation.Kinding
 import           Syntax.Kinds
@@ -40,7 +40,7 @@ matchShowSpec a =
 matchKindingValidSpec :: [String] -> Spec
 matchKindingValidSpec [ts, k] =
   it ts $ do
-    (kindOfScheme (read ts :: TypeScheme)) `shouldBe` (read k :: Kind)
+    (kindOfScheme (0,0) (read ts :: TypeScheme)) `shouldBe` (read k :: Kind)
 
 main :: IO ()
 main = hspec spec

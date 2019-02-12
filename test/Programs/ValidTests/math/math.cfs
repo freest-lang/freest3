@@ -5,7 +5,7 @@ mathServer c =
     Opp c1 ->
       let n, c2 = receive c1 in
       let x = send (-n) c2 in
-      ()
+      ();
       
     Plus c1 ->
       let n1, c2 = receive c1 in
@@ -16,7 +16,7 @@ mathServer c =
           
 start :: Int
 start =
-  let w,r = new +{Opp: !Int;?Int;Skip, Plus: !Int;!Int;?Int;Skip} in
+  let r,w = new &{Opp: ?Int;!Int;Skip, Plus: ?Int;?Int;!Int;Skip} in
   let x = fork (mathServer r) in
   let w1 = select Opp w in
   let r1 = send 5 w1 in

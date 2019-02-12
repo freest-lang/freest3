@@ -264,16 +264,16 @@ rec z. (!Int; z)
 -- Regular Recursive Types
 
 []
-rec x . !Int;x
-rec x . !Int;x
+rec x . (!Int;x)
+rec x . (!Int;x)
 
 []
-rec x . !Int;x
-rec y . !Int;y
+rec x . (!Int;x)
+rec y . (!Int;y)
 
 []
-rec x . !Int;x
-rec x . !Int; !Int;x
+rec x . (!Int;x)
+rec x . (!Int; !Int;x)
 
 []
 rec x . !Int
@@ -292,34 +292,34 @@ rec x . Skip;!Int
 !Int
 
 []
-rec x. rec y. !Int; x
-rec y. rec x. !Int; x
+rec x. rec y. (!Int; x)
+rec y. rec x. (!Int; x)
 
 []
-rec x. rec y. !Int; x
-rec x. !Int; x
+rec x. rec y. (!Int; x)
+rec x. (!Int; x)
 
 -- Context-free Recursive Types, unnormed
 
 []
-rec x. !Int; x; x
-rec x. !Int; x; x
+rec x. (!Int; x; x)
+rec x. (!Int; x; x)
 
 []
-rec x. rec y. !Int; x; y
-rec y. rec x. !Int; x; y
+rec x. rec y. (!Int; x; y)
+rec y. rec x. (!Int; x; y)
 
 []
-rec x. rec y. !Int; x; y
-rec y. rec x. !Int; x; ?Bool; y
+rec x. rec y. (!Int; x; y)
+rec y. rec x. (!Int; x; ?Bool; y)
 
 []
-rec x . ?Bool; x
-rec y . ?Bool; y; !Int
+rec x . (?Bool; x)
+rec y . (?Bool; y; !Int)
 
 []
-rec x . ?Bool; x
-rec y . ?Bool; y; y
+rec x . (?Bool; x)
+rec y . (?Bool; y; y)
 
 []
 rec x . +{A: x}
@@ -330,8 +330,8 @@ rec x . +{A: x}; ?Bool
 rec y . +{A: y}; !Bool
 
 []
-rec x . ?Bool; x
-rec y . ?Bool; y; y; !Char; y; ?Int; y; y; ?Bool; y; y
+rec x . (?Bool; x)
+rec y . (?Bool; y; y; !Char; y; ?Int; y; y; ?Bool; y; y)
 
 []
 rec x. &{Node: ?Int;x}
@@ -361,10 +361,10 @@ rec x. &{Leaf: Skip, Node: ?Int;x;x}
 
 [("α", SL)]
 rec x . +{A: α, B: x; α}
-rec y . +{A: Skip, B: y}; α
+rec y . (+{A: Skip, B: y}; α)
 
 [("α", SL)]
-rec y . +{A: Skip, B: y}; α
+rec y . (+{A: Skip, B: y}; α)
 rec x . +{A: α, B: x; α}
 
 []
@@ -448,7 +448,7 @@ rec x . &{N: x; !Int, L: !Int}
 (rec x . &{N: x; !Int, L: Skip}); !Int
 
 []
-rec x . &{N: x;!Int, L: Skip}; ?Int
+rec x . (&{N: x;!Int, L: Skip}; ?Int)
 rec x . &{N: x;!Int;?Int, L: ?Int}
 
 []
