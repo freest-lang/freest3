@@ -298,7 +298,7 @@ translateCaseMap fm m = Map.foldlWithKey translateCaseMap' (return "")
     translateCaseMap' acc v (params, e) = do
       (h1, _) <- translate fm m e
       acc' <- acc
-      return (acc' ++ "\n    " ++ v ++ showCaseParams params ++ " -> " ++ h1 ++ " ")
+      return (acc' ++ "\n    " ++ v ++ showCaseParams params ++ " -> " ++ h1 ++ ";")
 
 
 -- Gen pairs, if one of the elements is monadic extract it from the pair
