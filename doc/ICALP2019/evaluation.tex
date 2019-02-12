@@ -15,9 +15,17 @@ Core i3 with 8 GB of memory.
 At this stage, we were aiming to analyze the performance of
 our type equivalence checking algorithm, when we came across 
 a particular test whose context-free session types where:
-\begin{align}
-	S \triangleq \mu x . \&\{ \mathsf{add}: x;x; !\,\intk,
-							  \mathsf{const}: ?\,\intk;!\in\intk,
-							  \mathsf{mult}: x;x;!\,\intk\}
-
-\end{align}
+\begin{equation}
+	\begin{aligned}
+		S &\triangleq \mu x . \&\{ \mathsf{add}: x;x; !\,\intk,
+							       \mathsf{const}: ?\,\intk;!\in\intk,
+							       \mathsf{mult}: x;x;!\,\intk\}\\
+		T &\triangleq \mu x . \&\{ \mathsf{add}: x;x,
+							  	   \mathsf{const}: ?\,\intk,
+							       \mathsf{mult}: x;x\}; !\,\intk
+	\end{aligned}
+\end{equation}
+\lstinline{equivalent S T} took 4560 seconds to decide the equivalence
+positively. This was not a reasonable amount of time for a
+feasible compiler. Hence, we started to pave the way to improve the
+running time. For this purpose, we proposed:
