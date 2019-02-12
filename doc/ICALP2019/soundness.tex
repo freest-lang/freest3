@@ -1,25 +1,26 @@
 \section{Soundness and completeness of the algorithm}
 \label{sec:soundness}
 
-In this section we prove that our algorithm is sound and complete 
-with respect to the meta-theory of context-free session types proposed 
+In this section we prove that our algorithm is sound and complete
+with respect to the meta-theory of context-free session types proposed
 by Thiemann and Vasconcelos~\cite{thiemann2016context}.
 
-We start by showing that the bisimulation relation proposed by 
-Thiemann and Vasconcelos, $\TypeEquiv$, is equivalent to the 
-bisimulation relation obtained from the productions, $\ProdEquiv$. 
-Then, based on results from Caucal~\cite{caucal1986decidabilite}, Christensen, 
-H{\"{u}}ttel, Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}, Jan{\v{c}}ar 
-and Moller~\cite{janvcar1999techniques}, we conclude that our algorithm 
-is sound and complete.
+We start by showing that the bisimulation relation proposed by
+Thiemann and Vasconcelos, $\TypeEquiv$, is equivalent to the
+bisimulation relation obtained from the productions, $\ProdEquiv$.
+Then, based on results from Caucal~\cite{caucal1986decidabilite},
+Christensen, H{\"{u}}ttel,
+Stirling~\cite{DBLP:journals/iandc/ChristensenHS95},
+Jan{\v{c}}ar and Moller~\cite{janvcar1999techniques}, we conclude that
+our algorithm is sound and complete.
 
 \subsection{The two bisimulations coincide}
 
-In the following lemma we prove that the initial (dummy) production 
+In the following lemma we prove that the initial (dummy) production
 does not affect equivalence checking.
 \begin{lemma}
-	Given two session types $S$ and $T$, 
-	\[ X_{S} \sim X_{T}  \text{ if and only if } 
+	Given two session types $S$ and $T$,
+	\[ X_{S} \sim X_{T}  \text{ if and only if }
 	\text{\lstinline{toGrammar S}} \sim \text{\lstinline{toGrammar T}}.\]
 \end{lemma}
 
@@ -28,7 +29,7 @@ does not affect equivalence checking.
 	\[X_S \rightarrow \enspace \initialProd\enspace \text{(\lstinline{toGrammar S})}\]
     \[X_T \rightarrow \enspace \initialProd\enspace \text{(\lstinline{toGrammar T})}\]
 
-Hence, $X_S\sim X_T$ if and only if 
+Hence, $X_S\sim X_T$ if and only if
 \lstinline{toGrammar S} $\sim$ \lstinline{toGrammar T}.
 \end{proof}
 
@@ -37,8 +38,8 @@ do not originate new productions.
 
 \begin{lemma}
 \label{lemma:terminated_session}
-	Given a context-free session type $S$, 
-	if \DONE{S} then \lstinline{toGrammar S} does not add any 
+	Given a context-free session type $S$,
+	if \DONE{S} then \lstinline{toGrammar S} does not add any
 	production and returns \lstinline{[]}.
 \end{lemma}
 
@@ -46,128 +47,128 @@ do not originate new productions.
 	The proof is done by induction on the structure of a terminated
 	context-free session type $S$:
 	\begin{description}
-		\item[Case $S\triangleq \skipk$,] then \lstinline{toGrammar} does not 
+		\item[Case $S\triangleq \skipk$,] then \lstinline{toGrammar} does not
 		add any production and returns \lstinline{[]}.
 		\item[Case $S\triangleq S_1;S_2$] for terminated session types $S_1$ and
-		$S_2$, \lstinline{toGrammar S} recursively adds the productions from 
-		\lstinline{toGrammar S1} and \lstinline{toGrammar S2}. But $S_1$ and 
+		$S_2$, \lstinline{toGrammar S} recursively adds the productions from
+		\lstinline{toGrammar S1} and \lstinline{toGrammar S2}. But $S_1$ and
 		$S_2$ are terminated session types, hence no production is added and
 		\lstinline{[]} is returned.
 		\item[Case $S\triangleq \mu x. S$,] where $S[\mu x.S/x] \checkmark$,
 		\lstinline{toGrammar S} adds the productions from \linebreak
 		\lstinline{toGrammar (subs (Var y) x t)}. But $S[\mu x.S/x]$ is a terminated
-		session, thus \lstinline{toGrammar S} returns does not add 
+		session, thus \lstinline{toGrammar S} returns does not add
 		any production and returns \lstinline{[]}.
 	\end{description}
 \end{proof}
 
-Now we prove that any transition in the \LTS\ has a 
+Now we prove that any transition in the \LTS\ has a
 corresponding transition derived from the set of productions.
 
 \begin{lemma}
 Given context-free session types $S,S'$ and a label $\ell$,
-	\[ \text{if } S \LTSderives[\ell] S' \text{ then } 
-	\text{\lstinline{toGrammar S}} \rightarrow \enspace 
+	\[ \text{if } S \LTSderives[\ell] S' \text{ then }
+	\text{\lstinline{toGrammar S}} \rightarrow \enspace
 	\ell \enspace \vec Y, \]
 	where \lstinline{toGrammar S'} is prefix of $\vec Y$.
 \end{lemma}
 
 \begin{proof}
-The proof is done by induction on the structure of the labelled 
+The proof is done by induction on the structure of the labelled
 transition system (Fig.~\ref{lts}):
 \begin{itemize}
-	\item If $S\triangleq \skipk$, then $S$ is a terminated 
-	      session type, with no further transition. Similarly, 
-	      \lstinline{toGrammar S} returns \lstinline{[]} and 
+	\item If $S\triangleq \skipk$, then $S$ is a terminated
+	      session type, with no further transition. Similarly,
+	      \lstinline{toGrammar S} returns \lstinline{[]} and
 	      does not add any production.
-	\item If $S\triangleq A$, where $A$ ranges over $!B$ and $?B$, 
-	      then $S  \LTSderives[A] \skipk$. On the other hand, 
-	      \lstinline{toGrammar S} returns a fresh variable $X$ and 
-	      inserts a production $X\rightarrow A$. 
-	\item If $S \triangleq \alpha$, then $S   \LTSderives[\alpha] \skipk$. 
-	      On the other hand, since $\alpha$ does not contain non-terminal 
-	      symbols, \lstinline{toGrammar S} returns a fresh variable $X$ and 
+	\item If $S\triangleq A$, where $A$ ranges over $!B$ and $?B$,
+	      then $S  \LTSderives[A] \skipk$. On the other hand,
+	      \lstinline{toGrammar S} returns a fresh variable $X$ and
+	      inserts a production $X\rightarrow A$.
+	\item If $S \triangleq \alpha$, then $S   \LTSderives[\alpha] \skipk$.
+	      On the other hand, since $\alpha$ does not contain non-terminal
+	      symbols, \lstinline{toGrammar S} returns a fresh variable $X$ and
 	      inserts a production $X\rightarrow \alpha$.
-	\item If $S\triangleq \star\{l_i\colon S_i\}_{i\in I}$ then, for each 
-          $j\in I$, $S \LTSderives[\star l_j] S_j$. On the other hand, 
-          \lstinline{toGrammar S} returns a fresh variable 
-          $X$ and, recursively, inserts a production 
+	\item If $S\triangleq \star\{l_i\colon S_i\}_{i\in I}$ then, for each
+          $j\in I$, $S \LTSderives[\star l_j] S_j$. On the other hand,
+          \lstinline{toGrammar S} returns a fresh variable
+          $X$ and, recursively, inserts a production
           $X\rightarrow \star l_j \enspace \text{(\lstinline{toGrammar Sj})}$
           for each $j\in I$.
-	\item If $S\triangleq \mu x.S$ and $S[\mu x.S/x] \LTSderives[a] S'$, 
+	\item If $S\triangleq \mu x.S$ and $S[\mu x.S/x] \LTSderives[a] S'$,
 	      then $\mu x.S \LTSderives[a] S'$. By induction hypothesis,
-	      the corresponding production in \lstinline{toGrammar (subs (Var y) x t)} 
+	      the corresponding production in \lstinline{toGrammar (subs (Var y) x t)}
 	      is recursively added by \lstinline{toGrammar S} in the form
 	      $X \rightarrow a\enspace  \text{(\lstinline{toGrammar S'})}$,
-	      where $X$ is a fresh variable that is, then, returned by 
+	      where $X$ is a fresh variable that is, then, returned by
 	      \lstinline{toGrammar S}.
-	\item If $S\triangleq T;U$ and $T \LTSderives[a] T'$ then $S \LTSderives[a] T';U$. 
-	      By induction hypothesis, \lstinline{toGrammar T} adds the production 
-	      $X\rightarrow a \enspace \text{(\lstinline{toGrammar T'})}$, where 
+	\item If $S\triangleq T;U$ and $T \LTSderives[a] T'$ then $S \LTSderives[a] T';U$.
+	      By induction hypothesis, \lstinline{toGrammar T} adds the production
+	      $X\rightarrow a \enspace \text{(\lstinline{toGrammar T'})}$, where
 	      $X$ is a fresh variable.
-		  We notice that \lstinline{toGrammar T} $= X \, \vec X_T$ for some 
-		  sequence of non-terminal symbols $\vec X_T$. By congruence, we have: 
-		  \[\text{\lstinline{toGrammar S}} = X \, \vec X_T \, \text{(\lstinline{toGrammar U})} 
-		  \rightarrow a \enspace \text{(\lstinline{toGrammar T'})} \, \vec X_T  \, 
+		  We notice that \lstinline{toGrammar T} $= X \, \vec X_T$ for some
+		  sequence of non-terminal symbols $\vec X_T$. By congruence, we have:
+		  \[\text{\lstinline{toGrammar S}} = X \, \vec X_T \, \text{(\lstinline{toGrammar U})}
+		  \rightarrow a \enspace \text{(\lstinline{toGrammar T'})} \, \vec X_T  \,
 		  \text{(\lstinline{toGrammar U})} .\]
-	\item If $S\triangleq T;U$, $T$ is a terminated session, with no further 
+	\item If $S\triangleq T;U$, $T$ is a terminated session, with no further
 	      action, and $U \LTSderives[a] U'$ then, using the \LTS\ we have
-	      $T;U \LTSderives[a] U'$. On the other hand, by induction hypothesis and 
+	      $T;U \LTSderives[a] U'$. On the other hand, by induction hypothesis and
 	      using Lemma~\ref{lemma:terminated_session}:
 	    \begin{itemize}
 			\item \lstinline{toGrammar T}  returns \lstinline{[]},
-			\item \lstinline{toGrammar U}  adds a production 
+			\item \lstinline{toGrammar U}  adds a production
 			$X \rightarrow a \enspace \text{\lstinline{toGrammar U'}}$, where $X$
 			is a fresh variable.
 		\end{itemize}
-		We notice that \lstinline{toGrammar U} $= X \, \vec X_U$ for some sequence of 
-		non-terminal symbols $\vec X_U$. Hence, by congruence, we have a 
-		transition 
-		\[\text{\lstinline{toGrammar S}} = \, \text{\lstinline{[]}} \, X \, 
-		\vec X_U \rightarrow \enspace a \enspace \text{(\lstinline{toGrammar U'})} \, 
+		We notice that \lstinline{toGrammar U} $= X \, \vec X_U$ for some sequence of
+		non-terminal symbols $\vec X_U$. Hence, by congruence, we have a
+		transition
+		\[\text{\lstinline{toGrammar S}} = \, \text{\lstinline{[]}} \, X \,
+		\vec X_U \rightarrow \enspace a \enspace \text{(\lstinline{toGrammar U'})} \,
 		\vec X_U.\]
 \end{itemize}
 \end{proof}
 
-Conversely, we prove that any transition derived from the productions 
+Conversely, we prove that any transition derived from the productions
 has a corresponding labelled transition in the \LTS.
 
 \begin{lemma}
 Given a context-free session type $S$ and a label $\ell$,
-	\[ \text{if } \text{\lstinline{toGrammar S}} \rightarrow \enspace \ell \enspace 
+	\[ \text{if } \text{\lstinline{toGrammar S}} \rightarrow \enspace \ell \enspace
 	 \vec Y \text{ then } S \LTSderives[\ell] S', \text{ for some context-free session type $S'$}.\]
 \end{lemma}
 
 \begin{proof}
 	The proof is done by induction on the structure of $S$:
 	\begin{description}
-		\item[Case $S \triangleq \skipk$:] \lstinline{toGrammar S} does not 
+		\item[Case $S \triangleq \skipk$:] \lstinline{toGrammar S} does not
 		     add any production, and \DONE{S}.
-		\item[Case $S \triangleq A$:] from \lstinline{toGrammar S} the 
+		\item[Case $S \triangleq A$:] from \lstinline{toGrammar S} the
 		     production $Y\rightarrow A$ is added and, from the \LTS, we derive
-		     $S \LTSderives[A] \skipk$, where $A$ ranges over $!B$, $?B$, 
+		     $S \LTSderives[A] \skipk$, where $A$ ranges over $!B$, $?B$,
 		     and $\alpha$.
-		\item[Case $S\triangleq \star \{\ell_i : S_i\}_{i\in I}$:] 
-		     \lstinline{toGrammar} recursively adds 
-		     $\text{\lstinline{toGrammar S}} \rightarrow \star \ell_j\, 
-		     \text{(\lstinline{toGrammar Sj})}$, 
-		     for each $j\in I$. In the \LTS\ we also have 
+		\item[Case $S\triangleq \star \{\ell_i : S_i\}_{i\in I}$:]
+		     \lstinline{toGrammar} recursively adds
+		     $\text{\lstinline{toGrammar S}} \rightarrow \star \ell_j\,
+		     \text{(\lstinline{toGrammar Sj})}$,
+		     for each $j\in I$. In the \LTS\ we also have
 		     $S \LTSderives[\star \ell_j] S_j$, for each $j\in I$.
-		\item[Case $S\triangleq \mu x.S$:] \lstinline{toGrammar S} adds, 
-		     recursively, all productions from \linebreak \lstinline{toGrammar (subs (Var y) x t)}. 
-		     Analogously, in the \LTS\ side, any transition 
-		     $S[\mu x.S/x] \LTSderives[a] S'$ leads to a transition 
+		\item[Case $S\triangleq \mu x.S$:] \lstinline{toGrammar S} adds,
+		     recursively, all productions from \linebreak \lstinline{toGrammar (subs (Var y) x t)}.
+		     Analogously, in the \LTS\ side, any transition
+		     $S[\mu x.S/x] \LTSderives[a] S'$ leads to a transition
 		     $\mu x.S \LTSderives[a] S'$.
-		\item[Case $S \triangleq T;U$:]   \lstinline{toGrammar S} recursively adds 
-		     all productions from   \lstinline{toGrammar T} and from  
-		     \lstinline{toGrammar U}. Hence, if 
+		\item[Case $S \triangleq T;U$:]   \lstinline{toGrammar S} recursively adds
+		     all productions from   \lstinline{toGrammar T} and from
+		     \lstinline{toGrammar U}. Hence, if
 		     $\text{(\lstinline{toGrammar S})} \rightarrow \, \ell \, \vec Y$ then,
-		     either: 
+		     either:
 		     \begin{itemize}
-		     	\item $\text{(\lstinline{toGrammar T}}) \rightarrow \, \ell \, \vec Y$ and,	
-		     	      in this case, by induction hypothesis $T \LTSderives[\ell] T'$ and 
+		     	\item $\text{(\lstinline{toGrammar T}}) \rightarrow \, \ell \, \vec Y$ and,
+		     	      in this case, by induction hypothesis $T \LTSderives[\ell] T'$ and
 		     	      from the \LTS\ we derive $S \LTSderives[\ell] T';U$;
-		     	\item \DONE{T} and $\text{(\lstinline{toGrammar U}}) \rightarrow \, 
+		     	\item \DONE{T} and $\text{(\lstinline{toGrammar U}}) \rightarrow \,
 		     	      \ell \, \vec Y$ and, by induction hypothesis $U \LTSderives[\ell] U'$
 		     	      and from the \LTS\ we derive $S \LTSderives[\ell] U'$.
 		     \end{itemize}
@@ -175,7 +176,7 @@ Given a context-free session type $S$ and a label $\ell$,
 \end{proof}
 
 Having proved that any labelled transition in the LTS has a corresponding
-transition in the grammar and vice-versa, the following theorem is now 
+transition in the grammar and vice-versa, the following theorem is now
 immediate.
 
 \begin{theorem}
@@ -186,29 +187,29 @@ immediate.
 
 \subsection{\textit{Unnormedness} is preserved}
 
-To prove that the pruning stage is in accordance with the results 
-from Christensen et al., we now observe that unnormed non-terminal symbols 
-corresponding to (un)normed types are (un)normed. These results follow 
-immediately from the previous results. 
+To prove that the pruning stage is in accordance with the results
+from Christensen et al., we now observe that unnormed non-terminal symbols
+corresponding to (un)normed types are (un)normed. These results follow
+immediately from the previous results.
 
 \begin{corollary}
 	Given a context-free session type $S$, $|S| = |\text{\lstinline{toGrammar S}}|$.
 \end{corollary}
 
 \begin{corollary}
-	A context-free session type $S$ is unnormed if and only if 
+	A context-free session type $S$ is unnormed if and only if
 	$X_S$ is unnormed.
 \end{corollary}
 
 \subsection{The expansion tree is correct}
 %
-%Let us start by proving a small lemma, whose ultimate purpose 
+%Let us start by proving a small lemma, whose ultimate purpose
 %stands on proving that all nodes excluded by the filtering rule
 %would lead to unsuccessful branches.
 %
 %\begin{lemma}
 %\label{lemma:filtering}
-%	Let $(\vec X, \vec Y)$ be a pair in node $N$ of the expansion tree. 
+%	Let $(\vec X, \vec Y)$ be a pair in node $N$ of the expansion tree.
 %	If $|\vec X| \neq |\vec Y|$ then  $\vec X \not\ProdEquiv \vec Y$.
 %\end{lemma}
 %
@@ -216,15 +217,15 @@ immediately from the previous results.
 %	Assume that $n = |\vec X| < |\vec Y|$. This means that:
 %	\begin{equation}
 %	\label{pathX}
-%		\vec X \rightarrow \ell_1 \vec X_1 \rightarrow \cdots 
+%		\vec X \rightarrow \ell_1 \vec X_1 \rightarrow \cdots
 %		\rightarrow \ell_n \rightarrow \varepsilon.
 %	\end{equation}
-%	Now assume that $\vec Y$ has an expansion sequence whose 
+%	Now assume that $\vec Y$ has an expansion sequence whose
 %	labels coincide with those from $\vec X$ (otherwise, we would immediately
-%	have $\vec X \not\ProdEquiv \vec Y$). Since $\vec Y > n$, there should 
+%	have $\vec X \not\ProdEquiv \vec Y$). Since $\vec Y > n$, there should
 %	exist a label $\ell_{n+1}$ such that:
-%	\[\vec Y \rightarrow \ell_1 \vec Y_1 \rightarrow \cdots 
-%	\rightarrow \ell_n \vec Y_n\rightarrow \ell_{n+1} \vec Y_n 
+%	\[\vec Y \rightarrow \ell_1 \vec Y_1 \rightarrow \cdots
+%	\rightarrow \ell_n \vec Y_n\rightarrow \ell_{n+1} \vec Y_n
 %	\rightarrow \cdots\]
 %	Since our grammar is simple, \eqref{pathX} is the unique path from $\vec X$
 %	through labels $\ell_1, \ldots, \ell_n$. Hence, the $(n+1)$-th expansion of
@@ -232,75 +233,94 @@ immediately from the previous results.
 %	$\vec X \not\ProdEquiv \vec Y$.
 %\end{proof}
 
-In this section we focus on the correctness of our algorithm, 
-presented in Listing~\ref{lst:algorithm}. 
-The \emph{safeness property} is paramount to prove soundness:
+In this section we focus on the correctness of our algorithm,
+presented in Listing~\ref{lst:algorithm}.
+Before proceeding to soundness, we recall the \emph{safeness property}
+presented by Jan{\v{c}}ar and Moller in~\cite{janvcar1999techniques}.
 
-\begin{proposition} [Safeness Property~\cite{janvcar1999techniques}]
+\begin{proposition} [Safeness Property]
 \label{prop:safeness}
-	$\vec X \ProdEquiv \vec Y$ if and only if the expansion tree rooted 
+	$\vec X \ProdEquiv \vec Y$ if and only if the expansion tree rooted
 	at $\{(\vec X, \vec Y)\}$ has a successful branch.
 \end{proposition}
 
-\begin{proof}
-	The reflexive, congruence and \BPA\ rules were proved to 
-	preserve the safeness property~\cite{janvcar1999techniques}.
+Notice that the expansion tree we present in Listing~\ref{lst:algorithm} is
+a sequence of expansion and simplification operations with the reflexive,
+congruence and \BPA\ rules, as proposed by Jan{\v{c}}ar and Moller.
+In~\cite{janvcar1999techniques}, it was proved that these simplification
+rules were \emph{safe}, meaning that the application of these rules would
+always preserve equivalence from parent nodes to at least one children node
+and, reciprocally, that equivalence on a children node would imply the
+equivalence of its parent node, thus proving the safeness property.
+
+%\begin{proof}
 %	On the other hand, as observed in~\cite{janvcar1999techniques},
-%	the union of nodes along a successful branch is a relation $R$ 
-%	such that $R\subseteq \ProdEquiv$. Hence, any pair $(\vec X, \vec Y)$ 
+%	the union of nodes along a successful branch is a relation $R$
+%	such that $R\subseteq \ProdEquiv$. Hence, any pair $(\vec X, \vec Y)$
 %	occurring along a successful branch is such that $\vec X \ProdEquiv \vec Y$,
 %	which, by Lemma~\ref{lemma:filtering}, means that $|\vec X|=|\vec Y|$.
 %	So, the filtering rule would node exclude any node in the successful branch
 %	and, then, also preserved the safeness property.
-\end{proof}
+%\end{proof}
 
 \begin{theorem}
-	If Algorithm~\ref{lst:algorithm} returns \textsf{true} on input 
-	$(S_1,S_2)$, then $X_{S_1} \ProdEquiv X_{S_2}$.
+	Given two context-free session types $S$ and $T$, if the function
+	\lstinline|equivalent|, presented in Listing~\ref{lst:algorithm},
+	returns \lstinline|true|, then $X_{S} \ProdEquiv X_{T}$.
 \end{theorem}
 
 \begin{proof}
-	The algorithm returns \textsf{true} on input $(S_1,S_2)$ whenever 
-	it reaches a finite successful branch in the expansion tree rooted 
-	at $\{(X_{S_1}, X_{S_2})\}$. Since all rules preserve the safeness 
-	property, if $\{(X_{S_1}, X_{S_2})\}$ has a (finite) successful 
-	branch then $X_{S_1} \ProdEquiv X_{S_2}$.
+	The algorithm returns \textsf{true} for $S$ and $T$ whenever
+	it reaches a finite successful branch in the expansion tree rooted
+	at $\{(X_{S}, X_{T})\}$. By Proposition~\ref{prop:safeness}, whenever the
+	expansion tree rooted at $\{(X_{S}, X_{T})\}$ has a (finite)
+	successful branch, we conclude that $X_{S} \ProdEquiv X_{T}$.
 \end{proof}
 
-Using Theorem~\ref{cfst_vs_grammar}, the soundness of our algorithm is 
-immediate:
+From the previous results, and recalling Theorem~\ref{cfst_vs_grammar},
+the soundness of our algorithm is now immediate:
 
 \begin{theorem}
-	Algorithm~\ref{lst:algorithm} is sound with respect to the meta-theory 
-	of context-free session types, i.e., if it returns \textsf{true} then $S_1 \TypeEquiv S_2$.
+	The algorithm to check the equivalence of context-free session types,
+	presented in Listing~\ref{lst:algorithm} is sound with respect to the
+	meta-theory of context-free session types, i.e.,\linebreak if
+	\lstinline|equivalent _ s t| returns
+	\lstinline|true| then \lstinline|s| $\TypeEquiv$ \lstinline|t|.
 \end{theorem}
 
-Having observed that the safeness property was paramount for soundness, 
-we now notice that the \emph{finite witness property} is of utmost 
-importance to prove completeness.
+Having observed that the safeness property was paramount for soundness,
+we now notice that the \emph{finite witness property} is of utmost
+importance to prove completeness. This result follows immediately from the
+ analysis by Jan{\v{c}}ar and Moller~\cite{janvcar1999techniques}, which
+ capitalizes on results by
+Caucal~\cite{caucal1986decidabilite}, Christensen, H{\"{u}}ttel, and
+Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}:
 
-\begin{proposition} [Finite Witness Property~\cite{janvcar1999techniques}]
+\begin{proposition} [Finite Witness Property]
 \label{finite_witness}
-	If $\vec X \ProdEquiv \vec Y$, then the expansion tree rooted at 
+	If $\vec X \ProdEquiv \vec Y$, then the expansion tree rooted at
 	$\{(\vec X, \vec Y)\}$ has a finite successful branch.
 \end{proposition}
 
-\begin{proof}
-	The reflexive, congruence and \BPA\ rules were proved to ensure 
-	the finite witness property~\cite{janvcar1999techniques}. 
-\end{proof}
+
 
 \begin{theorem}
-	Algorithm~\ref{lst:algorithm} is complete with respect to the meta-theory 
-	of context-free session types, i.e., if $S_1 \TypeEquiv S_2$ then 
-	the algorithm returns \textsf{true}.
+	The algorithm to check the equivalence of context-free session types,
+	presented in Listing~\ref{lst:algorithm} is complete with respect to the
+	meta-theory of context-free session types, i.e., \linebreak if
+	\lstinline|s| $\TypeEquiv$ \lstinline|t| then
+	\lstinline|equivalent _ s t| returns \lstinline|true|.
 \end{theorem}
 
 \begin{proof}
-	Assuming that $S_1 \TypeEquiv S_2$, by Theorem~\ref{cfst_vs_grammar}, we 
-	have $X_{S_1} \ProdEquiv X_{S_2}$. Hence, the finite witness property 
-	ensures the existence of a finite successful branch on the expansion 
-	tree rooted at $\{(X_{S_1},  X_{S_2})\}$. Since our algorithm traverses 
-	the expansion tree using breadth-first search we will, eventually, 
-	reach the finite successful branch and conclude the equivalence positively.
+	Assuming that \lstinline|s| $\TypeEquiv$ \lstinline|t|, by
+	Theorem~\ref{cfst_vs_grammar}, we
+	have $X_{\text{\lstinline|s|}} \ProdEquiv X_{\text{\lstinline|t|}}$.
+	Hence, the finite witness property
+	ensures the existence of a finite successful branch on the expansion
+	tree rooted at $\{(X_{\text{\lstinline|s|}},X_{\text{\lstinline|t|}})\}$,
+	i.e., a branch finishing in an empty node.
+	Since our algorithm traverses
+	the expansion tree using breadth-first search we will, eventually,
+	reach the empty node and conclude the equivalence positively.
 \end{proof}

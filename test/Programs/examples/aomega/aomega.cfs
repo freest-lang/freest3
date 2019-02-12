@@ -1,18 +1,18 @@
 -- This program does not terminate
 
-client :: Int -> (rec x.!Int;x;!Bool) -> Char
+client :: Int -> rec x.(!Int;x;!Bool) -> Char
 client n c =
   let c = send n c in
   client (n+1) c
 
-server :: (rec x.?Int;x;!Char;?Bool) -> Char
+server :: rec x.(?Int;x;!Char;?Bool) -> Char
 server c =
   let n, c = receive c
   in server c
 
 start :: Char
 start =
-  let w, r = new rec x.!Int;x in
+  let w, r = new rec x.(!Int;x) in
   let t = fork (client 0 w) in
   server r
 

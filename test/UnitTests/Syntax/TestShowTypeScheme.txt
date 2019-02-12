@@ -14,6 +14,8 @@ forall x :: TU, y :: TU => !Int;x;!Bool;y
 
 forall beta :: TU => (rec TreeChannel :: SU . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel})->((rec TreeChannel :: SU . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});beta)->beta
 
+-- forall beta :: TU => (rec TreeChannel :: SU . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel}) -> (rec TreeChannel :: SU . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel};beta)->beta
+
 -- "Associativity"
 
 forall f :: TU => f -o f -> f
@@ -27,7 +29,7 @@ forall a :: TU, b :: TU => a -> b
 
 -- TreeChannel
 
-forall beta => (rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel})->(rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});beta)->beta
+forall beta => (rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel})->(rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});beta->beta
 
 -- Transform
 

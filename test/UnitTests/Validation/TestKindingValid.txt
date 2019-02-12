@@ -30,7 +30,7 @@ Char -o Skip
   TL
 (!Int, Skip)
   TL
-[a:Int,b:Bool]
+[A:Int,B:Bool]
   TU
 !Int;?Bool
   SL
@@ -38,7 +38,7 @@ Skip;Skip
   SU
 !Int;Skip
   SL
-Skip;+{s:Skip,i:!Int}
+Skip;+{S:Skip,I:!Int}
   SL
 rec x . ?Bool
   SL
@@ -49,17 +49,11 @@ rec x . !Int;Skip;?Int
 rec x . x
   SL
 
-rec Tree . &{Leaf:Skip, Node:?Int;Tree;Tree}
+rec tree . &{Leaf:Skip, Node:?Int;tree;tree}
   SL
 
-rec TreeChannel . +{Leaf:Skip, Node:!Int;TreeChannel;TreeChannel}
+rec treeChannel . +{Leaf:Skip, Node:!Int;treeChannel;treeChannel}
   SL
 
-rec alpha . !Int;rec TreeChannel . +{Leaf:Skip, Node:!Int;TreeChannel;TreeChannel};rec TreeChannel . +{Leaf:Skip, Node:!Int;TreeChannel;TreeChannel};alpha
+rec alpha . !Int;rec treeChannel . +{Leaf:Skip, Node:!Int;treeChannel;treeChannel};rec treeChannel . +{Leaf:Skip, Node:!Int;treeChannel;treeChannel};alpha
   SL
-
-
-
-
-[AkKLKBCT:(Skip;Skip), GYQehuKQtFTvuoJYDV:(rec lMRIFeRtllKiX . Skip), RzOhNCsmXQBVHTAh:!Bool, WDOuqegDvdBjOFiNRklv:+{BYZaFBLcAMNIkmfD:Skip, DcGN:Skip, HRgBuAGbVDTFA:Skip, ITVqxvLWgyNvVzi:Skip, QeN:Skip, aUs:Skip, iMcWEScmBZA:Skip, nKXJbSr:Skip, nzFjfhEklznanrBzRWU:Skip, wJzcjltne:Skip, zJykoUZtO:Skip}, WkSnuEJqpMeCzcRXFI:&{CGkSnqZZawAc:Skip, HwcNqbwIGzjXtsqmi:Skip, JNZNPsZbuJTQXylhX:Skip, NHUpXnVcDGqfwltixfP:Skip, OQenTqDnrERr:Skip, ObJSbXCEbDfKdv:Skip, SUixpKUClmfnLezituio:Skip,UFDTpWCrOzdDbUNjTsf:Skip, WEvwge:Skip, X:Skip, aDPf:Skip, cHWvBCXOUmq:Skip, iTLuORGYySEJJ:Skip, nCuiDmRlmcPGpT:Skip, phVQWRRHcEpiCeyIfOFK:Skip, rdyjHqIm:Skip, zKMbbwnzqvrfT:Skip}, ZZEbPF:&{CideCVMnnmD:Skip, HieBFAzZVYauWfrF:Skip, WLm:Skip, mPZjrQ:Skip, nQ:Skip, wh:Skip, xLw:Skip}, ccpVoOhjH:?Char, efsMiBfSSiJShvhp:(rec ctLjdKvKCIK . Skip), vTATSQCHdfghziu:!Int, wqVBU:?Bool]
-  TL

@@ -27,7 +27,7 @@ sendTree :: forall a => Tree -> (rec x . +{LeafC : Skip, NodeC: !Int;x;x}); a ->
 sendTree t c =
   case t of
     Leaf ->
-      select LeafC c
+      select LeafC c;
     Node x l r ->
       let w1 = select NodeC c in
       let w2 = send x w1 in
@@ -39,7 +39,7 @@ receiveTree :: forall a => (rec x.&{LeafC: Skip, NodeC: ?Int;x;x}); a -> (Tree, 
 receiveTree c =
   match c with
     LeafC c1 ->
-      (Leaf, c1)
+      (Leaf, c1);
     NodeC c9 ->
       let x, c2 = receive c9 in
       let left, c3 = receiveTree [(rec x.&{LeafC: Skip, NodeC: ?Int;x;x});a] c2 in

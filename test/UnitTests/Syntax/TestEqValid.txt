@@ -14,8 +14,8 @@ Bool
 
 -- Functional types
 
-[a:Int,b:Bool]
-[a:Int, b:Bool]
+[A:Int,B:Bool]
+[A:Int, B:Bool]
 
 Int -> Bool 
 Int -> Bool 
@@ -51,20 +51,20 @@ Skip
 rec x. !Int
 rec y. !Int
 
-rec x. ?Bool -> x
-rec y. ?Bool -> y
+rec x. (?Bool -> x)
+rec y. (?Bool -> y)
 
-rec x. rec y. Skip ; x ; y 
-rec y. rec x. Skip ; y ; x
+-- rec x. (rec y. (Skip ; x ; y))
+-- rec y. (rec x. (Skip ; y ; x))
 
 rec x. Skip ; rec x. Skip
 rec x. Skip ; rec x. Skip 
 
-rec x. Skip ; x; rec x. Skip ; x  
-rec x. Skip ; x; rec x. Skip ; x  
+rec x. (Skip ; x; (rec x. Skip ; x))
+rec x. (Skip ; x; (rec x. Skip ; x))
 
-rec x. Skip ; x; rec y. Skip ; y   
-rec y. Skip ; y; rec x. Skip ; x
+-- rec x. (Skip ; x; (rec y. Skip ; y))
+-- rec y. (Skip ; y; (rec x. Skip ; x))
 
 rec x. &{A: ?Int, B: !Int; x} 
 rec y. &{A: ?Int, B: !Int; y}
@@ -72,5 +72,5 @@ rec y. &{A: ?Int, B: !Int; y}
 rec x. [A: ?Int, B: !Int; x]
 rec y. [A: ?Int, B: !Int; y]
 
-+{A: ?Int, B: rec x. &{C: rec y. !Int; y; x}}
-+{B: rec y. &{C: rec x. !Int; x; y}, A: ?Int}
+-- +{A: ?Int, B: rec x. &{C: rec y. !Int; y; x}}
+-- +{B: rec y. &{C: rec x. !Int; x; y}, A: ?Int}

@@ -3,7 +3,6 @@ module PreludeLoader (prelude) where
 import qualified Data.Map.Strict as Map
 import           Parse.Parser
 import           Syntax.Terms
-import           Parse.TypeParser
 import           Syntax.Types
 
 typeList :: [(String, String)]
@@ -32,13 +31,16 @@ schemeList = [
   ]
      
 prelude :: VarEnv
-prelude = schemeLoad (preludeLoad Map.empty)
+prelude =
+  schemeLoad (preludeLoad Map.empty)
 
+
+-- TODO: REF - ver pos
 preludeLoad :: VarEnv -> VarEnv
 preludeLoad map =
-  foldl (\acc (tv, t) -> Map.insert tv (TypeScheme [] (read t :: Type)) acc) map typeList
+  foldl (\acc (tv, t) -> Map.insert tv ((0,0),(TypeScheme [] (read t :: Type))) acc) map typeList
 
 schemeLoad :: VarEnv -> VarEnv
 schemeLoad map =
-  foldl (\acc (tv, t) -> Map.insert tv (read t :: TypeScheme) acc) map schemeList
+  foldl (\acc (tv, t) -> Map.insert tv ((0,0),(read t :: TypeScheme)) acc) map schemeList
 
