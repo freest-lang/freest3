@@ -386,7 +386,7 @@ expansionTree p q
   where (n,a) = Queue.front q
 
 simplify :: Productions -> Ancestors ->  Node -> NodeQueue -> NodeQueue
-simplify p a n q = foldr enqueueNode (Queue.dequeue q) m'
+simplify p a n q = foldr Queue.enqueue (Queue.dequeue q) m'
   where nas = Set.singleton (n,a)
         m' = if allNormed p
                 then foldr (apply p) nas [reflex,congruence,bpa2]
