@@ -56,13 +56,14 @@ getTransitions x = do
   (p, _, _) <- get
   return $ p Map.! x
 
-addProduction :: TypeVar -> Label -> [TypeVar] -> TransState ()
-addProduction x l w =
-  modify $ \(p, v, n) -> (insertProduction p x l w, v, n)
-
 addProductions :: TypeVar -> Transitions -> TransState ()
 addProductions x m =
   modify $ \(p, v, n) -> (Map.insert x m p, v, n)
+
+addProduction :: TypeVar -> Label -> [TypeVar] -> TransState ()
+addProduction x l w =
+  addProductions x (Map.singleton l w)
+--  modify $ \(p, v, n) -> (insertProduction p x l w, v, n)
 
 -- Conversion to context-free grammars
 
@@ -100,7 +101,7 @@ toGrammar (Var a) = do
 toGrammar (Rec Bind{var=x} t) = do
   y <- freshVar
   insertVisited y
-  zs <- toGrammar $ subs (Var y) x t -- On the fly alpha conversion
+  zs <- toGrammar $ subs (Var y) x t -- On the fly α-conversion
   if null zs
     then return []
   else do

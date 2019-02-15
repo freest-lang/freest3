@@ -32,10 +32,11 @@ prune :: Productions -> Productions
 prune p = Map.map (Map.map (pruneWord p)) p
 
 pruneWord :: Productions -> [TypeVar] -> [TypeVar]
-pruneWord _ [] = []
-pruneWord p (x:xs)
-  | normed p x = x : pruneWord p xs
-  | otherwise  = [x]
+pruneWord p = foldr (\x ys -> if normed p x then x:ys else [x]) []
+-- pruneWord _ [] = []
+-- pruneWord p (x:xs)
+--   | normed p x = x : pruneWord p xs
+--   | otherwise  = [x]
 
 normed :: Productions -> TypeVar -> Bool
 normed p x = normedWord p Set.empty [x]
