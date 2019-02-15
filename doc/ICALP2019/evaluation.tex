@@ -51,8 +51,172 @@ hence, for a given node $N$, we are able to compute the
 simplification rules.
 
 \begin{theorem}
-	\todo{fixed point exists}{}
+\label{thm:fixed_point}
+	The simplification function that results from applying the reflexive,
+	congruence, and \BPA\ rules, has a fixed point in the complete partial
+	ordered set \lstinline{Set (Node,Ancestors)}, where the set of ancestors
+	is supposed to be fixed and equal to $A$.
 \end{theorem}
+
+Throughout the proof of Theorem~\ref{thm:fixed_point}, we will abuse 
+notation and denote the application of simplification rules
+to nodes or to elements of $\text{\lstinline{Set (Node,Ancestors)}}$
+in the same way, when no ambiguities arise.
+
+\begin{proof}
+	Consider the order 
+	$\leqSets$ defined in $\text{\lstinline{Set (Node,Ancestors)}}
+	\times \text{\lstinline{Set (Node,Ancestors)}}$ as follows:
+	$S_1 \leqSets S_2$ if $|S_1| \leq |S_2|$ and:
+	\begin{itemize}
+		\item if $|S_1|=|S_2|$ then exists a bijection 
+			$\sigma : S_1 \rightarrow S_2$ s.t.\  
+			$\sigma(N_1,A) = (N_2,A)$ with $N_2\subseteq N_1$;
+		\item if $|S_1| < |S_2|$ then $S_1\subseteq S_2$.
+	\end{itemize}
+	
+	\noindent\textbf{$\leqSets$ is a partial order:} The proof that
+	$\leqSets$ is reflexive and transitive is straightforward. 
+	To prove that it is 
+	antisymmetric, assume that $S_1\leqSets S_2$ and $S_2 \leqSets S_1$.
+	This means that $|S_1|=|S_2|$ and, so, let 
+	$\sigma_1 : S_1 \rightarrow S_2$ and $\sigma_2 : S_2 \rightarrow S_1$
+	be the corresponding bijections. Notice that $\sigma_1\circ \sigma_2$  
+	is the identity map, otherwise we could consider $(N,A)\in S_2$
+	where $N$ is minimal w.r.t.\ inclusion and s.t.\
+	$(\sigma_1\circ \sigma_2)(N,A) \neq (N,A)$, i.e.,
+	$(\sigma_1\circ \sigma_2)(N,A) = (N',A)$ with $N'\subseteq N$ 
+	for some $(N',A)\in S_2$;
+	due to the minimality of $N$, we would have 
+	$(\sigma_1\circ \sigma_2)(N',A) = (N',A)$, which would contradict the
+	injectivity of $\sigma_1\circ \sigma_2$. For the same reason 
+	$\sigma_1\circ \sigma_2$ is also the identity map, and so, since
+	$\sigma_i (N,A) = (N',A)$ is such that $N'\subseteq N$, we shall 
+	have $\sigma_i (N,A) = (N,A)$. Hence, $S_1=S_2$.\\
+	
+	\noindent\textbf{The simplification function is order-preserving:}
+	To prove that the reflexive rule preserves the order, let $S_1$ and 
+	$S_2$ be s.t.\ $S_1\leqSets S_2$ and let us prove that 
+	$\text{\lstinline{reflex}} S_1\leqSets\text{\lstinline{reflex}}S_2$.
+	Start noticing that $|S| = |\text{\lstinline{reflex}} S|$, hence
+	the number of children nodes is preserved by using the reflexive
+	rule, let us analyze each case. Let $(N,A)\in \text{\lstinline{reflex}} S_1$
+	and notice that there exists $(N_1,A)\in S_1$, such that
+	$\text{\lstinline{reflex}} N_1 = N $, and:
+	\begin{itemize}
+		\item case $|S_1| < |S_2|$, since $S_1\subseteq S_2$,
+		      $(N_1,A)\in S_2$ and so, $\text{\lstinline{reflex}} S_2$
+			  should also contain $(N,A)$;
+		\item case $|S_1| = |S_2|$, exists $(N_2,A)=\sigma(N_1,A)$ 
+		      s.t. $N_2\subseteq N_1$, hence 
+		      $\text{\lstinline{reflex}} N_2 \subseteq
+		      \text{\lstinline{reflex}} N_1 = N$.
+	\end{itemize}
+	
+	The same reasoning applies to prove that if $S_1\leqSets S_2$ then 
+	$\text{\lstinline{congruence} } S_1\leqSets\text{\lstinline{congruence} }S_2$.
+	
+	To prove that \lstinline{bpa1} also preserves the order, just start
+	noting that 
+	$S \subseteq \text{\lstinline{bpa1} }S$. Consider that 
+	$S_1\leqSets S_2$, let $(N,A)\in \text{\lstinline{bpa1} }S_1$, 
+	and denote by $(N_1,A)\in S_1$ and $(\vec X,\vec Y)\in N_1$  
+	the node and the pair whose simplification 
+	led to $(N,A)$:
+	\begin{itemize}
+		\item case $|S_1|<|S_2|$, then $(N_1,A)\in S_2$ and so
+		      $(N,A)\in \text{\lstinline{bpa1} }S_2$;
+		\item case $|S_1|=|S_2|$, then there exists $(N_2,A)\in S_2$
+		      such that $N_2 \subseteq N_1$. If $(\vec X,\vec Y)\in N_2$,
+		      then the \lstinline{bpa1} simplification of $N_2$ with
+		      the pair $(\vec X,\vec Y)$ generates 
+		      $(N',A)\in \text{\lstinline{bpa1} }S_2$ such that 
+		      $N'\subseteq N$. On the other hand, if 
+		      $(\vec X,\vec Y)\not \in N_2$, then $N_2\subseteq N$ 
+		      and, since  $S_2 \subseteq \text{\lstinline{bpa1} }S_2$,
+		      we have $(N_2,A)\in \text{\lstinline{bpa1} }S_2$ such that
+		      $N_2\subseteq N$.
+	\end{itemize}
+	
+	The same reasoning applies to \lstinline{bpa2}. 
+	Since the simplification procedure results of the successive 
+	application of this rules, we have proved that the simplification
+	function preserves the order.\\
+	
+	\noindent\textbf{$(\text{\lstinline{Set (Node,Ancestors)}}, \leqSets)$
+	is a lattice:} Given 
+	$S_1, S_2\in \text{\lstinline{Set (Node,Ancestors)}}$:
+	\begin{itemize}
+		\item $(\bigcap_{(N,A)\in S_1}N\cap 
+		      \bigcap_{(N',A)\in S_2}N, A)$ is an upper bound;
+		\item $(\bigcup_{(N,A)\in S_1}N\cup 
+		      \bigcup_{(N',A)\in S_2}N, A)$ is a lower bound;
+	\end{itemize}
+	
+	\noindent\textbf{$(\text{\lstinline{Set (Node,Ancestors)}}, \leqSets)$
+	is a complete lattice:} Given 
+	$\mathcal{B}\subseteq \text{\lstinline{Set (Node,Ancestors)}}$:
+	\begin{itemize}
+		\item $(\emptyset, A)$ is an upper bound;
+		\item $(\{(\vec X, \vec Y) \mid \vec X, \vec Y \in T V^*\}, A)$ 
+			  is a lower bound, where $T$ and $V$ represent the sets of 
+			  terminal and non-terminal symbols in the grammar,
+			  respectively;
+	\end{itemize}
+	
+	Using the fixed point theorem from Tarski~\cite{tarski1955lattice}, 
+	we conclude that the simplification function has a
+	fixed point.
+%	Consider the order 
+%	$\leqSets$ defined in $\text{\lstinline{Set (Node,Ancestors)}}
+%	\times \text{\lstinline{Set (Node,Ancestors)}}$ as follows:
+%	$S_1 \leqSets S_2$ if $|S_1| \geq |S_2|$ and:
+%	\begin{itemize}
+%		\item if $|S_1|=|S_2|$ then exists a bijection 
+%			$\sigma : S_1 \rightarrow S_2$ s.t.\  
+%			$\sigma(N,A) = (N',A)$ with $N\subseteq N'$;
+%		\item if $|S_1| > |S_2|$ then for each 
+%			$(N,A)\in S_1$ exists $(N',A')\in S_2$ s.t.\ 
+%			$(N,A) \preceq (N',A')$,
+%	\end{itemize}
+%	where $|S|$ represents the number of elements of $S$ and
+%	$\leqNAS$ is defined on $\text{\lstinline{(Node,Ancestors)}}
+%	\times \text{\lstinline{(Node,Ancestors)}}$ as follows:
+%	$(N,A) \leqNAS (N',A')$ if $A=A'$ and for each 
+%	$(\vec X,\vec Y)\in N$ either:
+%	\begin{itemize}
+%		\item $(\vec X, \vec Y)\in N'$, or
+%		\item exists $(\vec{X'},\vec{Y'})\in N'\setminus N$ s.t.
+%			  $\size(\vec X, \vec Y) < \size(\vec{X'},\vec{Y'})$,
+%	\end{itemize}
+%	where, finally, $\size (\vec X, \vec Y) = \mathsf{min}\{s(\vec X), s(\vec Y)\}$
+%	and 
+%	\[ s(\vec X Y) = 
+%	\begin{cases}
+%		|\vec X Y| & \text{if $Y$ is normed}\\
+%		|\vec X| & \text{otherwise}
+%	\end{cases}
+%	\]
+%	
+%	\noindent\textbf{$\leqSets$ is a partial order:} The proof that
+%	$\leqSets$ is reflexive and transitive is straightforward. 
+%	To prove that it is 
+%	antisymmetric, assume that $S_1\leqSets S_2$ and $S_2 \leqSets S_1$.
+%	This means that $|S_1|=|S_2|$ and, so, let 
+%	$\sigma_1 : S_1 \rightarrow S_2$ and $\sigma_2 : S_2 \rightarrow S_1$
+%	be the corresponding bijections. Notice that $\sigma_1\circ \sigma_2$  
+%	is the identity map, otherwise we could consider $(N,A)\in S_2$
+%	where $N$ is minimal w.r.t.\ inclusion and s.t.\
+%	$(\sigma_1\circ \sigma_2)(N,A) \neq (N,A)$, i.e.,
+%	$(\sigma_1\circ \sigma_2)(N,A) = (N',A)$ with $N'\subseteq N$ 
+%	for some $(N',A)\in S_2$;
+%	due to the minimality of $N$, we would have 
+%	$(\sigma_1\circ \sigma_2)(N',A) = (N',A)$, which would contradict the
+%	injectivity of $\sigma_1\circ \sigma_2$. For the same reason 
+%	$\sigma_1\circ \sigma_2$ is also the identity map, and so, since
+%	$\sigma_i (N,A) = (N',A)$ is such that $N'\subseteq N$, we shall 
+%	have $\sigma_i (N,A) = (N,A)$. Hence, $S_1=S_2$.	
+\end{proof}
 
 We have tested the several combination of the previous proposals
 in our algorithm on a batch of 138 tests. The results are presented 
