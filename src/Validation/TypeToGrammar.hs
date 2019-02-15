@@ -63,6 +63,7 @@ addProductions x m =
 addProduction :: TypeVar -> Label -> [TypeVar] -> TransState ()
 addProduction x l w =
   modify $ \(p, v, n) -> (insertProduction p x l w, v, n)
+--  addProductions x (Map.singleton l w) -- does not work; I wonder why
 
 -- Conversion to context-free grammars
 
