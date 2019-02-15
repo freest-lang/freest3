@@ -3,6 +3,7 @@
 \newcommand{\todo}[2]{[{\color{blue}\textbf{#1}}: {#2}]}
 \newcommand{\vv}[1]{\todo{VV}{#1}}
 \newcommand{\pt}[1]{\todo{PT}{#1}}
+\newcommand{\am}[1]{\todo{AM}{#1}}
 
 % Relations, predicates and operators
 %\newcommand\PAR{|}
@@ -45,8 +46,8 @@
 \newcommand{\cardinality}[1]{|{#1}|}
 \newcommand{\measure}{\mathcal M}
 %\newcommand\TypeSim{\preceq}
-\newcommand\TypeEquiv{\sim_{\mathsf{TV}}}
-\newcommand\ProdEquiv{\sim_{\mathcal{P}}}
+\newcommand\TypeEquiv{\sim_{\mathcal T}}
+\newcommand\ProdEquiv{\sim_{\productions}}
 \newcommand{\unguarded}{\mathsf{unguarded}}
 \newcommand\TL{\ensuremath{\mathcal U}} %trace language
 \newcommand{\TR}{\mathsf{TR}}
@@ -55,7 +56,8 @@
 \newcommand\toBPA[1]{\mathsf{BPA} (#1)}
 \newcommand\toCFG{\mathsf{CFG}}
 \newcommand\toLHS{\mathsf{RHS}}
-\newcommand\LTS{\textsf{LTS}}
+%\newcommand\LTS{\textsf{LTS}}
+\newcommand\LTS{LTS}
 \newcommand\BPA{\textsf{BPA}}
 \newcommand\BLANK{\$}
 %\newcommand\Nat{\mathbf{N}} % was: used once, never defined
@@ -110,7 +112,9 @@
 \newcommand{\End}{\keyword{end}}
 
 % Productions
-\newcommand{\initialProd}{\,!\, ( \enspace )}
+%\newcommand{\initialProd}{\,!\, ( \enspace )}
+\newcommand{\initialProd}{!\unitk}
+\newcommand{\productions}{\mathcal P}
 
 % Process constructors
 \newcommand{\send}[2]{\sendk\,{#1}\,{#2}}
@@ -163,6 +167,7 @@
     {==}{$\equiv$}1 
     {lambda}{$\lambda$}1 
     {->}{$\rightarrow$}1 
+    {<-}{$\leftarrow$}1 
     {-o}{$\multimap$}1
 }
 
@@ -271,3 +276,8 @@
 
 
 
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

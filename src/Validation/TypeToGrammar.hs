@@ -89,14 +89,14 @@ toGrammar (Semi t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
   return $ xs ++ ys
-toGrammar (Var a) = do
-  b <- memberVisited a
+toGrammar (Var x) = do
+  b <- memberVisited x
   if b
   then    -- This is a recursion variable
-    return [a]
+    return [x]
   else do -- This is a free variable
     y <- freshVar
-    addProduction y (VarLabel a) []
+    addProduction y (VarLabel x) []
     return [y]
 toGrammar (Rec Bind{var=x} t) = do
   y <- freshVar

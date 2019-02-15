@@ -1,237 +1,200 @@
-\section{Type equivalence algorithm}
+\section{An algorithm to decide type bisimulation}
 \label{sec:algorithm}
 
-% The main purpose of this work is to present and implement an algorithm to decide the type equivalence problem. In this section, we briefly describe our proposed algorithm.
-We start by recalling the type equivalence problem for context-free
-session types.
+% Recall the type bisimulation problem for context-free session types.
 
-\begin{quote}
-  Given context-free session types $S$ and $T$, the type equivalence
-  problem consists in deciding if types $S$ and $T$ are equivalent,
-  i.e., $S \TypeEquiv T$.
-\end{quote}
+% \begin{quote}
+%   Given context-free session types $S$ and $T$, the type equivalence
+%   problem consists in deciding if types $S$ and $T$ are equivalent,
+%   i.e., $S \TypeEquiv T$.
+% \end{quote}
 
-In this section we propose an algorithm to check the equivalence of
-context-free session types. This algorithm has three main stages:
-it starts by converting types into grammars, then streamlines the grammar
-by pruning out unreachable symbols from the productions and, finally,
-explores an expansion tree, alternating
-between simplification and expansion operations, until either finding
-an empty node---case in which we decide equivalence positively---or
-failing to expand a node---case in which we decide equivalence negatively.
+This section presents an algorithm to decide type bisimulation. The
+algorithm comprises three main stages: it starts by converting types
+into grammars, then streamlines the grammar by pruning unreachable
+symbols in productions and, finally, explores an expansion tree,
+alternating between simplification and expansion operations, until
+either finding an empty node---case in which it decides
+positively---or failing to expand a node---case in which it decides
+negatively.
 
-\subsection{Convert types to a grammar}
+\subsection{Converting types to grammars}
 \label{subsec:typeToGrammar}
 
-We will consider context-free session types as being represented by a
-finite set of productions, built upon the labelled transition system (\LTS)
-presented in Figure~\ref{lts}. In this line, a context-free session type
-is seen as a finite set of productions of the form $X\rightarrow a \vec Y$,
-where $X$ ranges over a finite set of \emph{non-terminal symbols}, $\vec Y$
-is a sequence of non-terminal symbols, and $a$ is a \emph{terminal symbol}
-ranging over the set of labels in the \LTS. When no distinction is required,
-we refer to $X$, $Y$ and $a$ simply as \emph{symbols}.
+A context-free grammar in Greibach normal form is a pair
+$(X,\productions)$ where~$X$ is the \emph{start symbol} and~$P$ a
+\emph{set of productions} of the form
+$X \rightarrow a\vec Y$~\cite{GNF}. Denote by~$\varepsilon$ the empty
+sequence o type variables.
+%
+The grammars we are interested in are \emph{simple}: for each
+non-terminal symbol~$X$ and each terminal symbol~$a$, there is at most
+one production of the form
+$X \rightarrow a\vec Y$~\cite{simpleGrammar}.
 
-Given a context-free session type $S$, the set of productions $\mathcal{P}$
-is defined recursively on the structure of $S$. We start by considering
-a non-terminal symbol $X_S$ to represent $S$ and inserting the following
-initial production in the set of productions $\mathcal{P}$:
-\begin{equation}
-\label{initial_prod}
-	X_S \rightarrow \enspace \initialProd\enspace \text{(\lstinline{toGrammar S})}
-\end{equation}
-where $( \enspace )$ is assumed to be a type in $B$ and
-\lstinline{toGrammar S} represents the sequence of symbols returned by the
-recursive function presented in Listing~\ref{lst:toGrammar}. In our implementation,
-we keep the set of productions $\mathcal{P}$ in the state \lstinline{TState}
-and consider the following functions:
+% We will consider context-free session types as being represented by a
+% finite set of productions, built upon the labelled transition system (\LTS)
+% presented in Figure~\ref{lts}. In this line, a context-free session type
+% is seen as a finite set of productions of the form $X\rightarrow a \vec Y$,
+% where $X$ ranges over a finite set of \emph{non-terminal symbols}, $\vec Y$
+% is a sequence of non-terminal symbols, and $a$ is a \emph{terminal symbol}
+% ranging over the set of labels in the \LTS. When no distinction is required,
+% we refer to $X$, $Y$ and $a$ simply as \emph{symbols}.
+
+Given a context-free session type $S$, a set of productions is
+computed recursively on the structure of $S$ by algorithm
+\lstinline|toGrammar| in Listing~\ref{lst:toGrammar}. The algorithm
+starts by inserting the following initial production in the set of
+productions.
+%
+\begin{equation*}
+%  \label{initial_prod}
+  X_S \rightarrow \enspace\initialProd\enspace
+  \text{(\lstinline{toGrammar} S)}
+\end{equation*}
+%
+% where $( \enspace )$ is assumed to be a type in $B$ and
+% \lstinline{toGrammar S} represents the sequence of symbols returned by the
+% recursive function presented in Listing~\ref{lst:toGrammar}. 
+The algorithm keeps the set of productions in the monadic state
+\lstinline{TransState} and uses the following functions:
 \begin{itemize}
-	\item \lstinline{freshVar} returns a fresh non-terminal variable;
-	\item \lstinline{addProduction y label ys} updates the state by inserting
-	      the production \lstinline{y} $\rightarrow$ \lstinline{label ++ ys};
-	\item \lstinline{insertVisited} marks a non-terminal symbol as visited;
-	\item \lstinline{isVisited} identifies whether the given non-terminal symbol
-	      was visited;
-	\item \lstinline{subst x T S} replaces the occurrences of \lstinline{x} by
-	      \lstinline{T} in \lstinline{S}.
+\item \lstinline{freshVar} returns a fresh non-terminal symbol (a type
+  variable);
+\item \lstinline{addProduction}$\,X\,a\,\vec Y$ updates the state by inserting
+  the production $X\rightarrow a\vec Y$;
+\item \lstinline{insertVisited} marks a non-terminal symbol as visited;
+\item \lstinline{isVisited} identifies whether the given non-terminal symbol
+  was previously visited;
+\item \lstinline{subst} $X\,T\,S$ replaces the occurrences of~$X$
+  by~$T$ in~$S$;
+\item \lstinline|getTransitions|$\,Y$ retrives the transitions form~$X$
+  (a map from LTS labels $a$ to sequences~$\vec X$ of type variables).
 \end{itemize}
+
 Furthermore, the type $\skipk$ is represented by \lstinline{Skip},
 \lstinline{MessageLabel p b} stands for types of the form $?B$ or $!B$,
-\lstinline{VarLabel} stands for variables,
+%\lstinline{VarLabel} stands for variables,
 \lstinline{Semi} represents sequential composition,
 \lstinline{Rec} represents recursive types, and
 \lstinline{Choice} stands for the choice operators $\oplus$ and $\&$.
 
-\begin{lstlisting}[caption={Haskell code for the conversion of types into
-                   grammars},label={lst:toGrammar} ,captionpos=b]
-type TState = (Productions, Visited, Int)
-type TransState = State TState
+\input{listing-toGrammar}
 
-toGrammar :: Type -> TransState [TypeVar]
-toGrammar Skip =
-  return []
-toGrammar (Message p b) = do
-  y <- freshVar
-  addProduction y (MessageLabel p b) []
-  return [y]
-toGrammar (Semi t u) = do
-  xs <- toGrammar t
-  ys <- toGrammar u
-  return $ xs ++ ys
-toGrammar (Var a) = do
-  b <- memberVisited a
-  if b
-  then    -- This is a recursion variable
-    return [a]
-  else do -- This is a free variable
-    y <- freshVar
-    addProduction y (VarLabel a) []
-    return [y]
-toGrammar (Rec Bind{var=x} t) = do
-  y <- freshVar
-  insertVisited y
-  zs <- toGrammar $ subs (Var y) x t -- On the fly alpha conversion
-  if null zs
-    then return []
-  else do
-    m <- getTransitions $ head zs
-    addProductions y (Map.map (++ tail zs) m)
-    return [y]
-toGrammar (Choice c m) = do
-  y <- freshVar
-  mapM_ (assGrammar y c) (Map.assocs m)
-  return [y]
-
-assGrammar :: TypeVar -> ChoiceView -> (Constructor,Type) -> TransState()
-assGrammar y c (l, t) = do
-  xs <- toGrammar t
-  addProduction y (ChoiceLabel c l) xs
-\end{lstlisting}
-
-%\begin{algorithm}
-%\caption{Algorithm to convert context-free session types into a grammar. Pseudocode.}
-%\label{alg:toGrammar}
-%\begin{algorithmic}
-%\\
-%\State \textsf{toGrammar} (\_, $\skipk$) =
-%\State \qquad \Return{$\varepsilon$}\smallskip
-%\State \textsf{toGrammar} ($X$, $A$) = \Comment{$A$ ranges over $?\, B$, $!\, B$}
-%\State \qquad \textsf{addProduction} ($X \rightarrow A$)
-%\State \qquad \Return{$X$}\smallskip
-%\State \textsf{toGrammar} ($X$, $\alpha$) =
-%\State \qquad\textbf{if} \textsf{isVisited} ($\alpha$) \textbf {then}
-%\State \qquad\qquad \Return{$\alpha$}
-%\State \qquad\textbf{else}
-%\State \qquad\qquad \textsf{addProduction} ($X \rightarrow \alpha$)
-%\State \qquad\qquad \Return{$X$}\smallskip
-%\State \textsf{toGrammar} ($X$, $\star \{\ell_i : S_i \}_{i\in I}$) =  \Comment{$\star$ ranges over $\oplus$, $\&$}
-%\State \qquad \textbf{for} {$j\in I$} \textbf{do}
-%\State \qquad \qquad \textsf{addProduction} ($X \rightarrow \enspace \star \ell_j \enspace \mathsf{toGrammar}(\mathsf{freshVar}(\,), S_j)$)
-%\State \qquad \Return{$X$}\smallskip
-%\State \textsf{toGrammar} (\_, $S;T$) =
-%\State \qquad $\vec X_S$ $\gets$ \textsf{toGrammar} (\textsf{freshVar} (\,), $S$)
-%\State \qquad $\vec X_T$ $\gets$ \textsf{toGrammar} (\textsf{freshVar} (\,), $T$)
-%\State \qquad \Return{$\vec X_S \, \vec X_T$}\smallskip
-%\State \textsf{toGrammar} ($X$, $\mu x.S$) =
-%\State \qquad \textsf{insertVisited} $X$\smallskip
-%\State \qquad $\vec X_S$ $\gets$ \textsf{toGrammar} ($X$, $\mathsf{subst}(x,X,S)$)
-%\State \qquad \textbf{if} \textsf{null} $\vec X_S$ \textbf{then}
-%\State \qquad \qquad \Return{$\varepsilon$}
-%\State \qquad \textbf{else}
-%\State \qquad \qquad \Return{$X$}\smallskip
-%\end{algorithmic}
-%\end{algorithm}
-
-Notice that this recursive procedure always terminates and the resulting
-set of productions $\mathcal{P}$ is finite, because recursion is always
-on subterms, except for recursive types, where we mark visited symbols, thus
-ensuring that the process terminates with a finite set of productions.
-
-Due to the deterministic nature of the labelled transition system, context-free
-session types are always converted into \emph{simple grammars}~\cite{baeten1993decidability}, i.e.,
-context-free grammars in Greibach normal form such that, for each non-terminal
-symbol $X$ and terminal symbol $a$, there is at most one production of the form
-$X\rightarrow a \enspace \vec Y$.
-
-We notice that given two context-free session types $S$ and $T$, we can obtain
-a set of productions $\mathcal{P}$ for both, by ensuring that fresh variables
-do not overlap.
+Notice that function \lstinline|toGrammar| terminates on all inputs and
+that the resulting set of productions is finite, because recursion is
+always on subterms, except for recursive types, where we mark visited
+symbols.
+% , thus ensuring that the process terminates with a finite set of
+% productions.
+%
+Furthermore, due to the deterministic nature of the LTS
+\lstinline|toGrammar| returns a simple grammar.
+%
+% , context-free session types are always converted into \emph{simple
+%   grammars}~\cite{baeten1993decidability}, i.e., context-free grammars
+% in Greibach normal form such that, for each non-terminal symbol $X$
+% and terminal symbol $a$, there is at most one production of the form
+% $X\rightarrow a \enspace \vec Y$.
+%
+One can obtain a unique set of productions for two types by
+ensuring that fresh variables do not overlap.
 
 \begin{example}
 \label{ex:productions}
-	Consider the context-free session types $S$ and $T$ defined by:
-	\[\begin{array}{lll}
-		S & \triangleq & (\mu x . \&\{n: x;x;?\intk, \ell: ?\intk\});(\mu z . !\intk ; z;z)\\
-		T & \triangleq & (\mu y . \&\{n: y;y, \ell: ?\skipk\};?\intk);(\mu z . !\intk ; z)
-	\end{array}\]
-	\lstinline{toGrammar} applied to $S$ and $T$ leads to the following productions:\\
-
-	\centering
-	\begin{tabular}{l l}
-		\multicolumn{2}{c}{Productions for $S$}\\ \hline
-		$X_S \rightarrow \,! (\,)\,X_1 X_4$ &$X_2 \rightarrow \,? \intk$\\
-		$X_1 \rightarrow \& n\, X_1 X_1 X_2$&$X_3 \rightarrow \,? \intk$\\
-		$X_1 \rightarrow \& \ell\, X_3$ &$X_4 \rightarrow \,!\intk\, X_4 X_4$\\
-	\end{tabular} \qquad
-	\begin{tabular}{l l}
-		\multicolumn{2}{c}{Productions for $T$}\\ \hline
-		$Y_T \rightarrow \,! (\,)\, Y_1 Y_3 $&$Y_2 \rightarrow \,? \intk$\\
-		$Y_1 \rightarrow \& n\, Y_1 Y_1 Y_2 $&$Y_3 \rightarrow \,!\intk\, Y_3$\\
-		$Y_1 \rightarrow \& \ell \,Y_2 $ &\\
-	\end{tabular}
+Consider the following context-free session types.
+%
+\begin{equation*}
+\begin{array}{lll}
+    S & \triangleq & (\mu x . \&\{n: x;x;?\intk, \ell: ?\intk\});(\mu z . !\intk ; z;z)\\
+    T & \triangleq & (\mu y . \&\{n: y;y, \ell: ?\skipk\};?\intk);(\mu z . !\intk ; z)
+\end{array}
+\end{equation*}
+%
+Function \lstinline{toGrammar}, when applied to $S$ and $T$, produces
+the following productions.
+\begin{center}
+  \begin{tabular}{l l}
+    \multicolumn{2}{c}{Productions for $S$}\\ \hline
+    $X_S \rightarrow \,\initialProd\, X_1 X_4$ &$X_2 \rightarrow \,? \intk$\\
+    $X_1 \rightarrow \& n\, X_1 X_1 X_2$&$X_3 \rightarrow \,? \intk$\\
+    $X_1 \rightarrow \& \ell\, X_3$ &$X_4 \rightarrow \,!\intk\, X_4 X_4$\\
+  \end{tabular} \qquad
+  \begin{tabular}{l l}
+    \multicolumn{2}{c}{Productions for $T$}\\ \hline
+    $Y_T \rightarrow \,\initialProd\, Y_1 Y_3 $&$Y_2 \rightarrow \,? \intk$\\
+    $Y_1 \rightarrow \& n\, Y_1 Y_1 Y_2 $&$Y_3 \rightarrow \,!\intk\, Y_3$\\
+    $Y_1 \rightarrow \& \ell \,Y_2 $ &
+  \end{tabular}
+\end{center}
 \end{example}
 
-The bisimulation relation, $\ProdEquiv$, is defined in the usual way from the
-set of productions. Throughout the text we drop the subscript $\mathcal{P}$ when
-it is clear from context.
+The bisimulation relation, $\ProdEquiv$, is defined in the usual way
+from the set of productions~$\productions$.
+% Throughout the text we drop the subscript $\productions$ when it is
+% clear from context.
+\vv{reference here}
 
-\subsection{Prune unnormed productions}
+\subsection{Pruning unnormed productions}
 \label{subsec:prune}
 
-Using the same approach as~\cite{DBLP:journals/iandc/ChristensenHS95} on
-the definition of (un)normed processes, we say that a sequence of symbols
-$\vec Y$ is \emph{normed} if there are labels $\ell_1,\ldots, \ell_k$
-such that:
-\begin{equation}
-\label{eq:path}
-	\vec Y \rightarrow \ell_1\enspace Y_1 \rightarrow \cdots \rightarrow \ell_k
-	\rightarrow \varepsilon.
-\end{equation}
-$\vec Y$ is said to be \emph{unnormed} when it is not normed. If $\vec Y$
-is normed, we define its \emph{norm} as:
-\[ | \vec Y | = \underset{k}{\mathsf{min}} \{\vec Y \rightarrow \ell_1\enspace Y_1
-\rightarrow \cdots \rightarrow \ell_k \rightarrow \varepsilon \}.\]
-A \emph{minimal path} for a normed sequence of symbols $\vec Y$ is a sequence of
-labels $\vec \ell = \ell_1,\ldots,\ell_k$ as in~\eqref{eq:path} such that
-$k = | \vec Y |$. To ease notation, we will also represent~\eqref{eq:path} as
-$\vec Y \xrightarrow{\vec \ell} \varepsilon$.
+For $\vec l$ a sequence of labels $\ell_1,\ldots, \ell_k$ ($k\ge1$),
+write $\vec Y \xrightarrow{\vec \ell} \varepsilon$ when
+$\vec Y \rightarrow \ell_1\vec Y_1 \rightarrow \cdots \rightarrow
+\ell_k$.
+%
+We say that $\vec Y$ is \emph{normed} when
+$\vec Y \xrightarrow{\vec \ell} \varepsilon$ for some sequence of
+labels~$\vec \ell$, and that $\vec Y$ is \emph{unnormed} otherwise.
+%
+When $\vec Y$ is normed, the \emph{minimal path} of $\vec Y$ is the
+shortest~$\vec \ell$ such that $\vec Y \xrightarrow{\vec\ell}
+\varepsilon$.
+%
+In this case, the \emph{norm} of $\vec Y$, denoted by $|\vec Y|$, is
+the length of~$\vec\ell$.
 
+% Using the same approach as~\cite{DBLP:journals/iandc/ChristensenHS95} on
+% the definition of (un)normed processes, we say that a sequence of symbols
+% $\vec Y$ is \emph{normed} if there are labels $\ell_1,\ldots, \ell_k$
+% such that:
+% \begin{equation}
+% \label{eq:path}
+% 	\vec Y \rightarrow \ell_1\enspace Y_1 \rightarrow \cdots \rightarrow \ell_k
+% 	\rightarrow \varepsilon.
+% \end{equation}
+% $\vec Y$ is said to be \emph{unnormed} when it is not normed. If $\vec Y$
+% is normed, we define its \emph{norm} as:
+% \[ | \vec Y | = \underset{k}{\mathsf{min}} \{\vec Y \rightarrow \ell_1\enspace Y_1
+% \rightarrow \cdots \rightarrow \ell_k \rightarrow \varepsilon \}.\]
+% A \emph{minimal path} for a normed sequence of symbols $\vec Y$ is a sequence of
+% labels $\vec \ell = \ell_1,\ldots,\ell_k$ as in~\eqref{eq:path} such that
+% $k = | \vec Y |$. To ease notation, we will also represent~\eqref{eq:path} as
+% $\vec Y \xrightarrow{\vec \ell} \varepsilon$.
 
-As observed by Christensen et al.~\cite{DBLP:journals/iandc/ChristensenHS95},
-any unnormed sequence of symbols $\vec Y$ is equivalent to its concatenation
-with any other symbol:
-\begin{equation}
-\label{unnormed}
-\text{ if } \vec Y \text{ is unnormed, then } \vec Y \sim \vec Y X.
-\end{equation}
+As observed by Christensen et
+al.~\cite{DBLP:journals/iandc/ChristensenHS95}, any unnormed sequence
+of symbols $\vec Y$ is bisimilar to its concatenation with any other
+symbols, that is, if $\vec Y$ is unnormed, then
+$\vec Y \sim \vec Y\vec X$.
+%
+% \begin{equation}
+%\label{unnormed}
+%\text{ if } \vec Y \text{ is unnormed, then } \vec Y \sim \vec Y X.
+%\end{equation}
+%
+We use this fact
+% Upon the definition of the productions underlying the context-free session types,
+% our algorithm builds upon~\eqref{unnormed}
+to prune out unreachable symbols in unnormed sequences of symbols. The
+code is in Listing~\ref{lst:prune}. \vv{normedWord needs to be rewritten}
 
-Upon the definition of the productions underlying the context-free session types,
-our algorithm builds upon~\eqref{unnormed} to prune out unreachable symbols in
-unnormed sequences of symbols in $\mathcal{P}$. The Haskell code
-is presented in Listing~\ref{lst:prune}.
-
-\begin{lstlisting}[caption={Haskell code for the stage of pruning unnormed productions},label={lst:prune},captionpos=b]
-type Transitions = Map.Map Label [TypeVar]
-type Productions = Map.Map TypeVar Transitions
-
+\begin{lstlisting}[caption={Haskell code for the stage 2: pruning unnormed productions},label={lst:prune},captionpos=b]
 prune :: Productions -> Productions
 prune p = Map.map (Map.map (pruneWord p)) p
 
 pruneWord :: Productions -> [TypeVar] -> [TypeVar]
-pruneWord _ [] = []
-pruneWord p (x:xs)
-  | normed p x = x : pruneWord p xs
-  | otherwise  = [x]
+pruneWord p xs = foldr (\x ys -> if normed p x then x:ys else [x]) []
 
 normed :: Productions -> TypeVar -> Bool
 normed p x = normedWord p Set.empty [x]
@@ -246,19 +209,26 @@ normedWord p v (x:xs) =
 \end{lstlisting}
 
 \begin{example}
-\label{ex:prune}
-	Recall Example~\ref{ex:productions} and notice that both $X_S$ and $Y_T$
-	are unnormed. Furthermore, we can easily realize that the last occurrence of
-	$X_4$ in the last production for $S$ is unreachable. Hence, by pruning the
-	productions for $S$ we get:\\
-
-	\centering
-	\begin{tabular}{l l}
-		\multicolumn{2}{c}{\emph{Pruned} productions for $S$}\\ \hline
-		$X_S \rightarrow \,! (\,)\,X_1 X_4$ &$X_2 \rightarrow \,? \intk$\\
-		$X_1 \rightarrow \& n\, X_1 X_1 X_2$&$X_3 \rightarrow \,? \intk$\\
-		$X_1 \rightarrow \& \ell\, X_3$ &$X_4 \rightarrow \,!\intk\, X_4$\\
-	\end{tabular}
+  \label{ex:prune}
+  Recall Example~\ref{ex:productions} and notice that both
+  $X_S$ and
+  $Y_T$ are unnormed. We can easily see that the last occurrence of
+  $X_4$ in the last production for
+  $S$ is unreachable. Hence, by pruning the productions for
+  $S$ we get:
+  %
+  \begin{center}
+    \begin{tabular}{l l l}
+      \multicolumn{3}{c}{Pruned productions for $S$}\\ \hline
+      $X_S \rightarrow \,! (\,)\,X_1 X_4$ &
+      $X_2 \rightarrow \,? \intk$ &
+      $X_1 \rightarrow \& n\, X_1 X_1 X_2$
+      \\
+      $X_3 \rightarrow \,? \intk$ &
+      $X_1 \rightarrow \& \ell\, X_3$ &
+      $X_4 \rightarrow \,!\intk\, X_4$
+    \end{tabular}
+  \end{center}
 \end{example}
 
 \subsection{Expansion tree}
@@ -408,3 +378,8 @@ simplify p a n q = foldr Queue.enqueue (Queue.dequeue q) m'
 	introduced in Example~\ref{ex:productions}.}
 	\label{fig:expansionTree}
 \end{figure}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:
