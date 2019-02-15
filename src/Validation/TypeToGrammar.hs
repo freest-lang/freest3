@@ -62,8 +62,7 @@ addProductions x m =
 
 addProduction :: TypeVar -> Label -> [TypeVar] -> TransState ()
 addProduction x l w =
-  addProductions x (Map.singleton l w)
---  modify $ \(p, v, n) -> (insertProduction p x l w, v, n)
+  modify $ \(p, v, n) -> (insertProduction p x l w, v, n)
 
 -- Conversion to context-free grammars
 
