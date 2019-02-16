@@ -1,5 +1,7 @@
-\begin{lstlisting}[caption={Haskell code for stage 1: the conversion of types into
-                   grammars},label={lst:toGrammar} ,captionpos=b]
+\begin{lstlisting}[
+  caption={Haskell code for step 1: the conversion of types into grammars},
+  label={lst:toGrammar},
+  captionpos=b]
 type Transitions = Map.Map LTSLabel [TypeVar]
 type Productions = Map.Map TypeVar Transitions
 type Visited = Set.Set TypeVar

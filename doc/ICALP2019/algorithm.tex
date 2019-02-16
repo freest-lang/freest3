@@ -10,9 +10,9 @@
 % \end{quote}
 
 This section presents an algorithm to decide type bisimulation. The
-algorithm comprises three stages. It starts by converting types into
+algorithm comprises three steps. It starts by converting types into
 grammars and then streamlines the grammar by pruning unreachable symbols
-in productions. The last stage explores an expansion tree, alternating
+in productions. The last step explores an expansion tree, alternating
 between simplification and expansion operations, until either finding
 an empty node---case in which it decides positively---or failing to
 expand a node---case in which it decides negatively.
@@ -193,7 +193,11 @@ We use this fact
 to prune out unreachable symbols in unnormed sequences of symbols. The
 code is in Listing~\ref{lst:prune}. \vv{normedWord needs to be rewritten}
 
-\begin{lstlisting}[caption={Haskell code for the stage 2: pruning unnormed productions},label={lst:prune},captionpos=b]
+\begin{lstlisting}[
+  caption={Haskell code for step 2: pruning unnormed productions},
+  label={lst:prune},
+  captionpos=b
+  ]
 prune :: Productions -> Productions
 prune p = Map.map (Map.map (pruneWord p)) p
 
@@ -245,7 +249,7 @@ normedWord p v (x:xs) =
 % the productions derived from them. Afterwards, the algorithm in
 % Listing~\ref{lst:prune} is used to streamline the grammars, by pruning
 % unnormed sequences of symbols. Throughout this section we focus on the
-% third and last stage of the algorithm.
+% third and last step of the algorithm.
 
 We use the notion of \emph{expansion tree} proposed by Jan{\v{c}}ar
 and Moller~\cite{janvcar1999techniques}, an adaption of an idea by
@@ -330,57 +334,62 @@ finite~\cite{DBLP:journals/iandc/ChristensenHS95}.
 Notice that the sibling nodes do not exclude the (often) infinite
 branch resulting from successive expansions.
 
-\subsection{Checking bisimulation}
+\subsection{Checking bisimilarity}
 
-The algorithm to decide the equivalence of context-free session
-types capitalizes on the previous algorithms. To avoid getting stuck in an
+% The algorithm to decide the equivalence of context-free session
+% types capitalizes on the previous algorithms.
+
+Given two context-free session types, function \lstinline|bisimilar|
+in Listing~\ref{lst:algorithm} starts by converting the two session
+types into a grammar, which is then pruned. An expansion tree is
+computed afterwards, through an alternation between expansion of the
+children nodes according to the \emph{pruned} grammar, and their
+simplification, using the reflexive, congruence, and \BPA\ rules. This
+recursive procedure terminates as soon as an empty node is reached,
+case is which the algorithm returns \lstinline|true|, or, either, all
+nodes fail to expand and, thus, the queue is empty, case in which the
+algorithm returns \lstinline|false|.
+
+To avoid getting stuck in an
 infinite branch of the expansion tree, we have implemented
 a breadth-first search on the expansion tree. Upcoming nodes are stored
 in a queue.
 
-Given two context-free session types \lstinline|t| and \lstinline|u|,
-the algorithm sketched in Listing~\ref{lst:algorithm} starts by converting
-the session types into a grammar, which is then pruned. An expansion tree is
-computed afterwards, through an alternation between expansion of the children
-nodes according to the \emph{pruned} grammar, and their simplification,
-using the reflexive, congruence, and \BPA\ rules. This recursive procedure
-terminates as soon as an empty node is reached, case is which the
-algorithm returns \lstinline|true|, or, either, all nodes fail to expand
-and, thus, the queue is empty, case in which the algorithm returns
-\lstinline|false|.
-
-\begin{lstlisting}[caption={Algorithm to check the equivalence of context-free session types. Haskell code.},label={lst:algorithm},captionpos=b]
+\begin{lstlisting}[
+  caption={Haskell code for checking the bisimilarity of context-free
+    session types},
+  label={lst:algorithm},
+  captionpos=b
+  ]
 type Node = Set.Set ([TypeVar], [TypeVar])
 type Ancestors = Node
 type NodeQueue = Queue.Queue (Node, Ancestors)
 type NodeTransformation = Productions -> Ancestors -> Node -> Set.Set
 
-equivalent :: Type -> Type -> Bool
-equivalent t u =
-  expansionTree (prune p) [x] [y]
-  where Grammar [x, y] p = toGrammar [t, u]
+bisimilar :: Type -> Type -> Bool
+bisimilar t u =
+  expand (prune p) [x] [y]
+  where Grammar [x, y] p = convertToGrammar [t, u]
 
-expansionTree :: Productions -> NodeQueue -> Bool
-expansionTree p q
-  | Queue.isEmpty q = False
-  | Set.null n      = True
-  | otherwise       = case expandNode p n of
-      Nothing  -> expansionTree p (Queue.dequeue q)
-      Just n'  -> expansionTree p (simplify p (Set.union a n) n' q)
+expand :: Productions -> NodeQueue -> Bool
+expand p q
+  | Queue.null q = False 
+  | Set.null n   = True
+  | otherwise    = case expandNode p n of
+      Nothing -> expand p (Queue.dequeue q)
+      Just n' -> expand p (simplify p n' (Set.union a n) q)
   where (n,a) = Queue.front q
 
-simplify :: Productions -> Ancestors ->  Node -> NodeQueue -> NodeQueue
-simplify p a n q = foldr Queue.enqueue (Queue.dequeue q) m'
-  where nas = Set.singleton (n,a)
-        m' = if allNormed p
-                then foldr (apply p) nas [reflex,congruence,bpa2]
-                else foldr (apply p) nas [reflex,congruence,bpa1,bpa2]
+simplify :: Productions -> Node -> Ancestors -> NodeQueue -> NodeQueue
+simplify p n a q = foldr Queue.enqueue (Queue.dequeue q) ns
+  where ns = foldr (apply p) (Set.singleton (n,a)) simplifications
+        simplifications = [reflex,congruence,bpa1,bpa2]
 \end{lstlisting}
 
 \begin{example}
 	Recall our running example introduced in Example~\ref{ex:productions} and then
 	``pruned'' in Example~\ref{ex:prune}. We sketch the expansion tree for
-	$X_S, Y_T$ in Figure~\ref{fig:expansionTree}. As soon as it reaches
+	$X_S, Y_T$ in Figure~\ref{fig:expand}. As soon as it reaches
 	the successful branch, the algorithm presented in Listing~\ref{lst:algorithm}
 	decides that $X_S\sim Y_T$.
 \end{example}

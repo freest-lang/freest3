@@ -37,17 +37,17 @@ type NodeQueue = Queue.Queue (Node, Ancestors)
 
 type NodeTransformation = Productions -> Ancestors -> Node -> Set.Set Node
 
-expansionTree :: Productions -> [TypeVar] -> [TypeVar] -> Bool
-expansionTree g xs ys = expansionTree' g (Queue.enqueue (Set.singleton (xs, ys), Set.empty) Queue.empty)
+expand :: Productions -> [TypeVar] -> [TypeVar] -> Bool
+expand g xs ys = expand' g (Queue.enqueue (Set.singleton (xs, ys), Set.empty) Queue.empty)
 
-expansionTree' :: Productions -> NodeQueue -> Bool
-expansionTree' g q
+expand' :: Productions -> NodeQueue -> Bool
+expand' g q
   | Queue.isEmpty q = False
   | Set.null n      = True
   | otherwise       = case expandNode g n of
-      Nothing  -> expansionTree' g (Queue.dequeue q)
-      Just n'  -> expansionTree' g (simplify g (Set.union a n) n' q)
-  where (n,a) = Queue.front q
+      Nothing -> expand' g (Queue.dequeue q)
+      Just n' -> expand' g (simplify g n' (Set.union a n) q)
+  where (n, a) = Queue.front q
 
 expandNode :: Productions -> Node -> Maybe Node
 expandNode g =
@@ -74,9 +74,9 @@ pruneNode g = Set.map (\(xs,ys) -> (pruneWord g xs, pruneWord g ys))
 
 -- Apply the different node transformations
 
-simplify :: Productions -> Ancestors ->  Node -> NodeQueue -> NodeQueue
-simplify g a n q = foldr enqueueNode (Queue.dequeue q) m'
-  where m' = findFixedPoint g (Set.singleton (n,a))
+simplify :: Productions -> Node -> Ancestors -> NodeQueue -> NodeQueue
+simplify g n a q =
+  foldr enqueueNode (Queue.dequeue q) (findFixedPoint g (Set.singleton (n, a)))
 
 enqueueNode :: (Node,Ancestors) -> NodeQueue -> NodeQueue
 enqueueNode (n,a) q
@@ -192,7 +192,7 @@ equivalent k (Datatype m1) (Datatype m2) =
 equivalent k t u =
   isSessionType k t &&
   isSessionType k u &&
-  expansionTree (prune p) [x] [y]
+  expand (prune p) [x] [y]
   where Grammar [x, y] p = convertToGrammar [t, u]
 
 checkBinding :: KindEnv -> TypeMap -> Bool -> Constructor -> Type -> Bool
