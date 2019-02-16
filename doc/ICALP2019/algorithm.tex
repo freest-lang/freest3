@@ -10,9 +10,9 @@
 % \end{quote}
 
 This section presents an algorithm to decide type bisimulation. The
-algorithm comprises three stages: it starts by converting types into
-grammars, then streamlines the grammar by pruning unreachable symbols
-in productions and, finally, explores an expansion tree, alternating
+algorithm comprises three stages. It starts by converting types into
+grammars and then streamlines the grammar by pruning unreachable symbols
+in productions. The last stage explores an expansion tree, alternating
 between simplification and expansion operations, until either finding
 an empty node---case in which it decides positively---or failing to
 expand a node---case in which it decides negatively.
@@ -29,7 +29,16 @@ sequence of type variables.
 The grammars we are interested in are \emph{simple}: for each
 non-terminal symbol~$X$ and each terminal symbol~$a$, there is at most
 one production of the form
-$X \rightarrow a\vec Y$~\cite{simpleGrammar}.
+$X \rightarrow a\vec Y$~\cite{simpleGrammar}. 
+
+Grammars in Greibach Normal Form naturally induce an LTS by taking
+sequences of non-terminal symbols~$\vec X$ as states, terminal
+symbols~$a$ as the set of actions, and the transition relation
+$\LTSderives$ defined as $X\vec Y\LTSderives \vec Z\vec Y$ when
+$X \LTSderives a\vec Z \in\productions$. \vv{reference here} The
+associated bisimulation is denoted by $\ProdEquiv$.
+% Throughout the text we drop the subscript $\productions$ when it is
+% clear from context.
 
 % We will consider context-free session types as being represented by a
 % finite set of productions, built upon the labelled transition system (\LTS)
@@ -40,21 +49,21 @@ $X \rightarrow a\vec Y$~\cite{simpleGrammar}.
 % ranging over the set of labels in the \LTS. When no distinction is required,
 % we refer to $X$, $Y$ and $a$ simply as \emph{symbols}.
 
-Given a context-free session type $S$, a set of productions is
-computed recursively on the structure of $S$ by algorithm
-\lstinline|toGrammar| in Listing~\ref{lst:toGrammar}. The algorithm
-starts by inserting the following initial production in the set of
+Given a context-free session type $S$, the algorithm starts by
+inserting an initial production of the form
+$X_S \rightarrow \enspace\initialProd\enspace
+\text{(\lstinline{toGrammar} S)}$ in the set of productions.
+%
+Function \lstinline|toGrammar| (Listing~\ref{lst:toGrammar}) returns a
+sequence of non-terminal symbols, while computing the remaining
 productions.
 %
-\begin{equation*}
-%  \label{initial_prod}
-  X_S \rightarrow \enspace\initialProd\enspace
-  \text{(\lstinline{toGrammar} S)}
-\end{equation*}
+% \begin{equation*}
+% %  \label{initial_prod}
+%   X_S \rightarrow \enspace\initialProd\enspace
+%   \text{(\lstinline{toGrammar} S)}
+% \end{equation*}
 %
-% where $( \enspace )$ is assumed to be a type in $B$ and
-% \lstinline{toGrammar S} represents the sequence of symbols returned by the
-% recursive function presented in Listing~\ref{lst:toGrammar}. 
 The algorithm keeps the set of productions in the monadic state
 \lstinline{TransState} and uses the following functions:
 \begin{itemize}
@@ -67,16 +76,19 @@ The algorithm keeps the set of productions in the monadic state
   was previously visited;
 \item \lstinline{subst} $X\,T\,S$ replaces the occurrences of~$X$
   by~$T$ in~$S$;
-\item \lstinline|getTransitions|$\,X$ retrives the transitions from~$X$
-  (a map from LTS labels $a$ to sequences~$\vec Y$ of type variables).
+\item \lstinline|getTransitions|$\,X$ retrives the transitions
+  from~$X$ (a map from non-terminal symbols~$a$ to sequences~$\vec Y$
+  of type variables).
 \end{itemize}
 
-Furthermore, the type $\skipk$ is represented by \lstinline{Skip},
-\lstinline{MessageLabel p b} stands for types of the form $?B$ or $!B$,
+In Listing~\ref{lst:toGrammar}, type $\skipk$ is represented by
+\lstinline{Skip}, \lstinline{Message p b} stands for types of the form
+$\sharp B$,
 %\lstinline{VarLabel} stands for variables,
 \lstinline{Semi} represents sequential composition,
 \lstinline{Rec} represents recursive types, and
-\lstinline{Choice} stands for the choice operators $\oplus$ and $\&$.
+\lstinline{Choice} stands for the choice operators $\oplus$ and
+$\&$. \vv{cut? looks obvious, and there is many more related things to say}
 
 \input{listing-toGrammar}
 
@@ -87,7 +99,7 @@ symbols.
 % , thus ensuring that the process terminates with a finite set of
 % productions.
 %
-Furthermore, due to the deterministic nature of the LTS
+Furthermore, due to the deterministic nature of the LTSw
 \lstinline|toGrammar| returns a simple grammar.
 %
 % , context-free session types are always converted into \emph{simple
@@ -106,7 +118,7 @@ Consider the following context-free session types.
 \begin{equation*}
 \begin{array}{lll}
     S & \triangleq & (\mu x . \&\{n: x;x;?\intk, \ell: ?\intk\});(\mu z . !\intk ; z;z)\\
-    T & \triangleq & (\mu y . \&\{n: y;y, \ell: ?\skipk\};?\intk);(\mu z . !\intk ; z)
+    T & \triangleq & (\mu y . \&\{n: y;y, \ell: ?\skipk\};?\intk);(\mu w. !\intk ; w)
 \end{array}
 \end{equation*}
 %
@@ -128,19 +140,12 @@ the following productions.
 \end{center}
 \end{example}
 
-The bisimulation relation, $\ProdEquiv$, is defined in the usual way
-from the set of productions~$\productions$.
-% Throughout the text we drop the subscript $\productions$ when it is
-% clear from context.
-\vv{reference here}
-
 \subsection{Pruning unnormed productions}
 \label{subsec:prune}
 
 For $\vec l$ a sequence of labels $\ell_1,\ldots, \ell_k$ ($k\ge1$),
-write $\vec Y \xrightarrow{\vec \ell} \varepsilon$ when
-$\vec Y \rightarrow \ell_1\vec Y_1 \rightarrow \cdots \rightarrow
-\ell_k$. \vv{this transition relation is not defined}
+write $\vec Y \xrightarrow{\vec \ell} \vec Z$ when
+$\vec Y \LTSderives[\ell_1] \cdots \LTSderives[\ell_k] \vec Z$.
 %
 We say that $\vec Y$ is \emph{normed} when
 $\vec Y \xrightarrow{\vec \ell} \varepsilon$ for some sequence of
@@ -175,7 +180,7 @@ As observed by Christensen et
 al.~\cite{DBLP:journals/iandc/ChristensenHS95}, any unnormed sequence
 of symbols $\vec Y$ is bisimilar to its concatenation with any other
 symbols, that is, if $\vec Y$ is unnormed, then
-$\vec Y \sim \vec YX$.
+$\vec Y \ProdEquiv \vec YX$.
 %
 % \begin{equation}
 %\label{unnormed}
