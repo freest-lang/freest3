@@ -67,21 +67,17 @@ in the same way, when no ambiguities arise.
 	Consider the order 
 	$\leqSets$ defined in $\text{\lstinline{Set (Node,Ancestors)}}
 	\times \text{\lstinline{Set (Node,Ancestors)}}$ as follows:
-	$S_1 \leqSets S_2$ if $|S_1| \leq |S_2|$ and:
-	\begin{itemize}
-		\item if $|S_1|=|S_2|$ then exists a bijection 
-			$\sigma : S_1 \rightarrow S_2$ s.t.\  
-			$\sigma(N_1,A) = (N_2,A)$ with $N_2\subseteq N_1$;
-		\item if $|S_1| < |S_2|$ then $S_1\subseteq S_2$.
-	\end{itemize}
+	$S_1 \leqSets S_2$ if $|S_1| \leq |S_2|$ and
+	exists an injective map $\sigma : S_1 \rightarrow S_2$ s.t.\  
+	$\sigma(N_1,A) = (N_2,A)$ with $N_2\subseteq N_1$.\\
 	
 	\noindent\textbf{$\leqSets$ is a partial order:} The proof that
 	$\leqSets$ is reflexive and transitive is straightforward. 
 	To prove that it is 
 	antisymmetric, assume that $S_1\leqSets S_2$ and $S_2 \leqSets S_1$.
-	This means that $|S_1|=|S_2|$ and, so, let 
+	This means that $|S_1|=|S_2|$ and, furthermore, the maps 
 	$\sigma_1 : S_1 \rightarrow S_2$ and $\sigma_2 : S_2 \rightarrow S_1$
-	be the corresponding bijections. Notice that $\sigma_1\circ \sigma_2$  
+	are bijective. Notice that $\sigma_1\circ \sigma_2$  
 	is the identity map, otherwise we could consider $(N,A)\in S_2$
 	where $N$ is minimal w.r.t.\ inclusion and s.t.\
 	$(\sigma_1\circ \sigma_2)(N,A) \neq (N,A)$, i.e.,
@@ -98,20 +94,16 @@ in the same way, when no ambiguities arise.
 	To prove that the reflexive rule preserves the order, let $S_1$ and 
 	$S_2$ be s.t.\ $S_1\leqSets S_2$ and let us prove that 
 	$\text{\lstinline{reflex}} S_1\leqSets\text{\lstinline{reflex}}S_2$.
-	Start noticing that $|S| = |\text{\lstinline{reflex}} S|$, hence
-	the number of children nodes is preserved by using the reflexive
-	rule, let us analyze each case. Let $(N,A)\in \text{\lstinline{reflex}} S_1$
+	%Start noticing that $|S| = |\text{\lstinline{reflex}} S|$, hence
+	%the number of children nodes is preserved by using the reflexive
+	%rule, let us analyze each case. 
+	Let $(N,A)\in \text{\lstinline{reflex}} S_1$
 	and notice that there exists $(N_1,A)\in S_1$, such that
-	$\text{\lstinline{reflex}} N_1 = N $, and:
-	\begin{itemize}
-		\item case $|S_1| < |S_2|$, since $S_1\subseteq S_2$,
-		      $(N_1,A)\in S_2$ and so, $\text{\lstinline{reflex}} S_2$
-			  should also contain $(N,A)$;
-		\item case $|S_1| = |S_2|$, exists $(N_2,A)=\sigma(N_1,A)$ 
-		      s.t. $N_2\subseteq N_1$, hence 
-		      $\text{\lstinline{reflex}} N_2 \subseteq
-		      \text{\lstinline{reflex}} N_1 = N$.
-	\end{itemize}
+	$\text{\lstinline{reflex}} N_1 = N $, and so,
+	in $S_2$ there is $(N_2,A)=\sigma(N_1,A)$ s.t. $N_2\subseteq N_1$. 
+	Since $N_2\subseteq N_1$, we have
+	$\text{\lstinline{reflex}} N_2 \subseteq
+    \text{\lstinline{reflex}} N_1 = N$.
 	
 	The same reasoning applies to prove that if $S_1\leqSets S_2$ then 
 	$\text{\lstinline{congruence} } S_1\leqSets\text{\lstinline{congruence} }S_2$.
@@ -122,24 +114,19 @@ in the same way, when no ambiguities arise.
 	$S_1\leqSets S_2$, let $(N,A)\in \text{\lstinline{bpa1} }S_1$, 
 	and denote by $(N_1,A)\in S_1$ and $(\vec X,\vec Y)\in N_1$  
 	the node and the pair whose simplification 
-	led to $(N,A)$:
-	\begin{itemize}
-		\item case $|S_1|<|S_2|$, then $(N_1,A)\in S_2$ and so
-		      $(N,A)\in \text{\lstinline{bpa1} }S_2$;
-		\item case $|S_1|=|S_2|$, then there exists $(N_2,A)\in S_2$
-		      such that $N_2 \subseteq N_1$. If $(\vec X,\vec Y)\in N_2$,
-		      then the \lstinline{bpa1} simplification of $N_2$ with
-		      the pair $(\vec X,\vec Y)$ generates 
-		      $(N',A)\in \text{\lstinline{bpa1} }S_2$ such that 
-		      $N'\subseteq N$. On the other hand, if 
-		      $(\vec X,\vec Y)\not \in N_2$, then $N_2\subseteq N$ 
-		      and, since  $S_2 \subseteq \text{\lstinline{bpa1} }S_2$,
-		      we have $(N_2,A)\in \text{\lstinline{bpa1} }S_2$ such that
-		      $N_2\subseteq N$.
-	\end{itemize}
+	led to $(N,A)$. We know that there exists $(N_2,A)\in S_2$
+	such that $N_2 \subseteq N_1$. If $(\vec X,\vec Y)\in N_2$,
+	then the \lstinline{bpa1} simplification of $N_2$ with
+	the pair $(\vec X,\vec Y)$ generates 
+	$(N',A)\in \text{\lstinline{bpa1} }S_2$ such that 
+	$N'\subseteq N$. On the other hand, if 
+	$(\vec X,\vec Y)\not \in N_2$, then $N_2\subseteq N$ 
+	and, since  $S_2 \subseteq \text{\lstinline{bpa1} }S_2$,
+	$(N_2,A)\in \text{\lstinline{bpa1} }S_2$ is such that
+	$N_2\subseteq N$.
 	
 	The same reasoning applies to \lstinline{bpa2}. 
-	Since the simplification procedure results of the successive 
+	As the simplification procedure results of the successive 
 	application of this rules, we have proved that the simplification
 	function preserves the order.\\
 	
@@ -147,26 +134,21 @@ in the same way, when no ambiguities arise.
 	is a lattice:} Given 
 	$S_1, S_2\in \text{\lstinline{Set (Node,Ancestors)}}$:
 	\begin{itemize}
-		\item $(\bigcap_{(N,A)\in S_1}N\cap 
-		      \bigcap_{(N',A)\in S_2}N, A)$ is an upper bound;
-		\item $(\bigcup_{(N,A)\in S_1}N\cup 
-		      \bigcup_{(N',A)\in S_2}N, A)$ is a lower bound;
+		\item $S_1 \cup S_2$ is an upper bound;
+		\item $S_1 \cap S_2$ is a lower bound.
 	\end{itemize}
 	
 	\noindent\textbf{$(\text{\lstinline{Set (Node,Ancestors)}}, \leqSets)$
 	is a complete lattice:} Given 
 	$\mathcal{B}\subseteq \text{\lstinline{Set (Node,Ancestors)}}$:
 	\begin{itemize}
-		\item $(\emptyset, A)$ is an upper bound;
-		\item $(\{(\vec X, \vec Y) \mid \vec X, \vec Y \in T V^*\}, A)$ 
-			  is a lower bound, where $T$ and $V$ represent the sets of 
-			  terminal and non-terminal symbols in the grammar,
-			  respectively;
+		\item $\bigcup_{S\in \mathcal{B}} S$ is an upper bound;
+		\item $\bigcap_{S\in \mathcal{B}} S$ is a lower bound.
 	\end{itemize}
 	
 	Using the fixed point theorem from Tarski~\cite{tarski1955lattice}, 
 	we conclude that the simplification function has a
-	fixed point.
+	fixed point in $(\text{\lstinline{Set (Node,Ancestors)}}$.
 %	Consider the order 
 %	$\leqSets$ defined in $\text{\lstinline{Set (Node,Ancestors)}}
 %	\times \text{\lstinline{Set (Node,Ancestors)}}$ as follows:
