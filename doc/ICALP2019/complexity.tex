@@ -1,0 +1,118 @@
+\section{Complexity Analysis}
+\label{sec:complexity}
+
+Throughout this section, we carry out an analysis of the
+improved version of algorithm \lstinline{bisimilar},
+that involves the algorithms from Listings~\ref{lst:toGrammar},
+\ref{lst:prune}, \ref{lst:algorithm}, and the improved version
+of the simplification stage in Listing~\ref{lst:enhanced}.
+
+
+\todo{AM}{complexity analysis for toGrammar (and prune)}
+
+Despite the great branching ability of this expansion tree, 
+we will prove throughout this section that it has polynomial 
+size on the length of the root. For this, consider $X_S$ and
+$X_T$ the initial non-terminal symbols for $S$ and $T$, let 
+$\mathcal{P}$ denote the set of productions for $S$ and $T$ and 
+also:
+\begin{itemize}
+	\item $S$ represent the maximum size of right-hand size of
+		  the productions in $\mathcal{P}$;
+	\item $L$ stand for the maximum number of labels within the choice 
+		  operators in $\mathcal{P}$;
+	\item $N_0^+$ and $N_0^-$ represent the maximum and minimum values
+		  of the norms of $X_S$ and $X_T$, respectively, where we 
+		  assume $|X|=\infty$ whenever $X$ is unnormed.
+\end{itemize}
+
+We will analyze the complexity of each simplification or expansion 
+step in the expansion tree. For this, we now fix some notation, to 
+refer to the number ``elements'' (read: nodes, pairs, length, etc.)
+at the $i^{th}$ level of the expansion tree:
+\begin{itemize}
+	\item $a_i$ denotes the number of ancestors;
+	\item $n_i$ denotes the number of nodes;
+	\item $p_i$ refers to the maximum number of pairs in each node
+				at level $i$;
+	\item $s_i^+$ and $s_i^-$ denotes the maximum and minimum 
+		  number of symbols in the sequences composing each pair;
+	\item $\rho_i^+$ and $\rho_i^-$ denotes the maximum and minimum
+		  norms occurring among all pairs.
+\end{itemize}
+
+Observe that in the root we have: $a_0=0$, $n_0=1$, $p_0=1$,
+$s_0^+=s_0^-=1$, $\rho_0^+=N_0^+$, $\rho_0^-=N_0^-$. Now assume 
+that at the $i^{th}$ level we succeed on an expansion step to
+level $i+1$;
+we would have: $a_{i+1}=a_1+1$, $n_{i+1}=n_i$, $p_{i+1}=p_i\cdot L$,
+$s_{i+1}^+=s_i^++S$, $s_{i+1}^-=s_i^-+S$, $\rho_{i+1}^+=\rho_i^+-1$ 
+is $\rho_i^+$ is finite and  $\rho_{i+1}^+ = \infty$ otherwise.
+
+Similarly, notice that when applying \lstinline{bpa2} from level $i$
+to level $i+1$, we have: $a_{i+1}=a_i$, $n_{i+1} = n_i\cdot p_i + n_i$,
+$p_{i+1}=p_i+1$, $s_{i+1}^+=s_i^+$, $s_{i+1}^-=1$, 
+$\rho_{i+1}^\pm\leq \rho_i^\pm$ if $\rho_i^\pm$ are finite. 
+Finally, when applying \lstinline{bpa1} from level $i$
+to level $i+1$, we have: $a_{i+1}=a_i$, $n_{i+1} = p_i \cdot a_i+n_i$,
+$p_{i+1}=p_i+1$, $s_{i+1}^- \leq s_i^- - 1$.
+
+Before proceeding, just notice that \lstinline{reflex} and 
+\lstinline{congruence} do not affect the complexity analysis, hence 
+we will omit them from this analysis.
+So far, we have made a simple analysis on the complexity of each 
+simplification and expansion operation, and we conclude that
+these operations promote a polynomial increase on the size of the
+expansion tree. 
+
+However, the proposed algorithm, alternates between expansion 
+operations and iterations of the simplification phase until 
+reaching a fixed point. We will carry out this analysis by 
+splitting into two cases: the case in which all symbols 
+in the productions are normed, and the case where some
+of them are unnormed.\\
+
+\noindent\textbf{Case 1:} In the simplest case where all symbols
+occurring in $\mathcal{P}$ are normed, the expansion stage should 
+terminate because at each iteration step, from level $i$ to level
+$i+1$, we have $\rho_{i+1}^+ < \rho_i^+$. Furthermore, in the 
+simplification stage, \lstinline{bpa2} also promotes the reduction 
+in the maximum norm, hence the expansion procedure should terminate.
+On the other hand, and since the application of \lstinline{bpa2} from 
+level $i$ to level $i+1$ also ensures that $\rho_{i+1}^+ < \rho_i^+$,
+the simplification stage can only iterate at most 
+$(n_i\cdot p_i)\cdot (n_{i+1}\cdot p_{i+1})\ldots (n_{i+\rho_i^+}\cdot
+p_{i+\rho_i^+})$ times. Still, the number of nodes in $n_{i+\rho_i^+}$, 
+the number of pairs $p_{i+\rho_i^+}$ are all of polynomial size on the 
+size of the root.\\
+
+\noindent\textbf{Case 2:} 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
