@@ -75,21 +75,92 @@ of them are unnormed.\\
 \noindent\textbf{Case 1:} In the simplest case where all symbols
 occurring in $\mathcal{P}$ are normed, the expansion stage should 
 terminate because at each iteration step, from level $i$ to level
-$i+1$, we have $\rho_{i+1}^+ < \rho_i^+$. Furthermore, in the 
-simplification stage, \lstinline{bpa2} also promotes the reduction 
-in the maximum norm, hence the expansion procedure should terminate.
-On the other hand, and since the application of \lstinline{bpa2} from 
-level $i$ to level $i+1$ also ensures that $\rho_{i+1}^+ < \rho_i^+$,
-the simplification stage can only iterate at most 
+$i+1$, we have $\rho_{i+1}^+ < \rho_i^+$, hence the expansion procedure 
+should terminate.
+On the other hand, the application of \lstinline{bpa2} from 
+level $i$ to level $i+1$ a number of times equal to $p_i$
+ensures that the maximum norm occurring among the pairs in
+all nodes except the nodes at level $i$ strictly decreases.
+Note that for the purpose of computing the fixed point, the
+presence of the nodes in level $i$ is not relevant.
+For these reasons, the simplification stage iterates at most 
 $(n_i\cdot p_i)\cdot (n_{i+1}\cdot p_{i+1})\ldots (n_{i+\rho_i^+}\cdot
-p_{i+\rho_i^+})$ times. Still, the number of nodes in $n_{i+\rho_i^+}$, 
-the number of pairs $p_{i+\rho_i^+}$ are all of polynomial size on the 
+p_{i+\rho_i^+})$ times until reaching a fixed point. 
+Still, the number of nodes in $n_{i+\rho_i^+}$, 
+the number of pairs $p_{i+\rho_i^+}$ are of polynomial size on the 
 size of the root.\\
 
-\noindent\textbf{Case 2:} 
+\noindent\textbf{Case 2:} In the case where there are unnormed symbols
+in the productions, the expansion tree might not terminate, however
+we now prove that in the case where the equivalence should be decided
+positively, we reach an empty node within a polynomial number of steps.
+Just note that in the case where the equivalence should be decided negatively
+the branch keeping the expansion tree (free of simplifications) will terminate 
+in, at most, $L\cdot \sum_{k\in\Delta} k$ simplification steps, where 
+$\Delta = \{|X| : X \text{ is a non-terminal symbol occurring in }\mathcal{P}\}.$
 
+Let us remark that, in this case, \lstinline{bpa1} and \lstinline{bpa2}
+terminate in polynomial time. To justify this, consider the following
+metric on the pairs: $\mathsf{length}(\vec X, \vec Y) = 
+\min \{\mathsf{length} \vec X, \mathsf{length} \vec Y\}.$ 
+Consider also the following metrics on the nodes:
+$\mathsf{length_j}(N) = \max_{(\vec X, \vec Y)\in \Gamma_j} 
+\{\mathsf{length}(\vec X, \vec Y)\}$
+where $\Gamma_j=\{(\vec X,\vec Y)\in N : \text{\lstinline{bpaj} is
+applicable to }(\vec X,\vec Y) \}$. Notice that at each iteration
+of \lstinline{bpa1} and \lstinline{bpa2} the metrics
+$\mathsf{length_j}(N)$ strictly decrease. Hence, the computation
+of the fixed point should terminate in polynomial time. %%%%%%%%%%%%%%%%%HERE
+ 
+When the grammar involves unnormed variables, the problem
+stands on when fo we reach a successful branch, and the
+answer is based on the work by Christensen et 
+al.~\cite{DBLP:journals/iandc/ChristensenHS95}.
+For a given pair $(X_0\vec X, Y_0,\vec Y)$:
+\begin{enumerate}
+	\item if $X_0$ and $Y_0$ are unnormed, then $\vec X = \varepsilon$
+		  and $\vec Y = \varepsilon$ and the conclusion on the equivalence
+		  follows right after the next expansion operation;
+	\item if $X_0$ is unnormed and $Y_0$ is normed, then $\vec X = \varepsilon$
+		  and the procedure will either terminate as soon as
+		  \begin{itemize}
+		  	\item $Y_0\vec Y\LTSderives[\vec\ell] \varepsilon$, and takes 
+		  		  $|Y_0\vec Y|$ expansion steps,
+		  	\item $Y_0\vec Y\LTSderives[\vec\ell] Y_0\vec Y'$, case in which
+		  		  there will be a successful branch using 
+		  		  \lstinline{bpa1}~\cite{DBLP:journals/iandc/ChristensenHS95}, or
+		  	\item $Y_0\vec Y$ reaches an unnormed variable (bullet point 1.).
+		  \end{itemize}
+	\item if we have $X_0$ and $Y_0$ normed, let 
+		  $\rho^* = \min \{|\vec X|, |\vec Y|\}$. After $\rho^*$ expansion
+		  operations, we will reach a pair $(X_0'\vec{X'}, Y_0',\vec{Y'})$
+		  where $X_0$ is unnormed and $Y_0$ is (un)normed (or vice-versa)
+		  and we reduce to the previous cases.
+\end{enumerate}
 
+We conclude that, in both cases, despite being (potentially) huge, the
+number of steps to decide whether $S\sim T$ or not is polynomial on 
+the size of the context-free session types $S$ and $T$.
 
+We also remark that the double ended queue improves the 
+performance of the algorithm by allowing the analysis of promising nodes 
+in advance and, thus, we should expect that this complexity
+results should be slightly improved by this feature, 
+although not directly reflected in the complexity result.
+We should also highlight that, in practice, the values of the 
+parameters we have been analyzing are usually very small,
+which justifies the running times we have presented in 
+Section~\ref{sec:evaluation}.
+
+We can now formulate the main complexity result:
+
+\begin{theorem}
+	The algorithm to check the equivalence of context-free 
+	session types presented in Listings~\ref{lst:toGrammar},
+	\ref{lst:prune}, \ref{lst:algorithm}, and improved with the
+	simplification function presented in Listing~\ref{lst:enhanced}
+	terminates in polynomial time.
+\end{theorem}
 
 
 
