@@ -110,7 +110,7 @@ in the same way, when no ambiguities arise.
 	
 	To prove that \lstinline{bpa1} also preserves the order, just start
 	noting that 
-	$S \subseteq \text{\lstinline{bpa1} }S$. Consider that 
+	$S \subseteq \text{\lstinline{bpa1} }S$. Assume that 
 	$S_1\leqSets S_2$, let $(N,A)\in \text{\lstinline{bpa1} }S_1$, 
 	and denote by $(N_1,A)\in S_1$ and $(\vec X,\vec Y)\in N_1$  
 	the node and the pair whose simplification 
@@ -125,10 +125,11 @@ in the same way, when no ambiguities arise.
 	$(N_2,A)\in \text{\lstinline{bpa1} }S_2$ is such that
 	$N_2\subseteq N$.
 	
-	The same reasoning applies to \lstinline{bpa2}. 
-	As the simplification procedure results of the successive 
+	The same reasoning applies to \lstinline{bpa2}. Having proved
+	that each simplification function preserves the order, and
+	since the simplification procedure results from the successive 
 	application of this rules, we have proved that the simplification
-	function preserves the order.\\
+	function also preserves the order.\\
 	
 	\noindent\textbf{$(\text{\lstinline{Set (Node,Ancestors)}}, \leqSets)$
 	is a lattice:} Given 
@@ -148,7 +149,7 @@ in the same way, when no ambiguities arise.
 	
 	Using the fixed point theorem from Tarski~\cite{tarski1955lattice}, 
 	we conclude that the simplification function has a
-	fixed point in $(\text{\lstinline{Set (Node,Ancestors)}}$.
+	fixed point in $\text{\lstinline{Set (Node,Ancestors)}}$.
 %	Consider the order 
 %	$\leqSets$ defined in $\text{\lstinline{Set (Node,Ancestors)}}
 %	\times \text{\lstinline{Set (Node,Ancestors)}}$ as follows:
