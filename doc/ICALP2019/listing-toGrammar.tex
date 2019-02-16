@@ -2,6 +2,7 @@
                    grammars},label={lst:toGrammar} ,captionpos=b]
 type Transitions = Map.Map LTSLabel [TypeVar]
 type Productions = Map.Map TypeVar Transitions
+type Visited = Set.Set TypeVar
 type TransState = State (Productions, Visited, Int)
 
 toGrammar :: Type -> TransState [TypeVar]

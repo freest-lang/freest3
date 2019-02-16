@@ -10,13 +10,12 @@
 % \end{quote}
 
 This section presents an algorithm to decide type bisimulation. The
-algorithm comprises three main stages: it starts by converting types
-into grammars, then streamlines the grammar by pruning unreachable
-symbols in productions and, finally, explores an expansion tree,
-alternating between simplification and expansion operations, until
-either finding an empty node---case in which it decides
-positively---or failing to expand a node---case in which it decides
-negatively.
+algorithm comprises three stages: it starts by converting types into
+grammars, then streamlines the grammar by pruning unreachable symbols
+in productions and, finally, explores an expansion tree, alternating
+between simplification and expansion operations, until either finding
+an empty node---case in which it decides positively---or failing to
+expand a node---case in which it decides negatively.
 
 \subsection{Converting types to grammars}
 \label{subsec:typeToGrammar}
@@ -24,8 +23,8 @@ negatively.
 A context-free grammar in Greibach normal form is a pair
 $(X,\productions)$ where~$X$ is the \emph{start symbol} and~$P$ a
 \emph{set of productions} of the form
-$X \rightarrow a\vec Y$~\cite{GNF}. Denote by~$\varepsilon$ the empty
-sequence o type variables.
+$Y \rightarrow a\vec Z$~\cite{GNF}. Denote by~$\varepsilon$ the empty
+sequence of type variables.
 %
 The grammars we are interested in are \emph{simple}: for each
 non-terminal symbol~$X$ and each terminal symbol~$a$, there is at most
@@ -68,8 +67,8 @@ The algorithm keeps the set of productions in the monadic state
   was previously visited;
 \item \lstinline{subst} $X\,T\,S$ replaces the occurrences of~$X$
   by~$T$ in~$S$;
-\item \lstinline|getTransitions|$\,Y$ retrives the transitions form~$X$
-  (a map from LTS labels $a$ to sequences~$\vec X$ of type variables).
+\item \lstinline|getTransitions|$\,X$ retrives the transitions from~$X$
+  (a map from LTS labels $a$ to sequences~$\vec Y$ of type variables).
 \end{itemize}
 
 Furthermore, the type $\skipk$ is represented by \lstinline{Skip},
@@ -141,7 +140,7 @@ from the set of productions~$\productions$.
 For $\vec l$ a sequence of labels $\ell_1,\ldots, \ell_k$ ($k\ge1$),
 write $\vec Y \xrightarrow{\vec \ell} \varepsilon$ when
 $\vec Y \rightarrow \ell_1\vec Y_1 \rightarrow \cdots \rightarrow
-\ell_k$.
+\ell_k$. \vv{this transition relation is not defined}
 %
 We say that $\vec Y$ is \emph{normed} when
 $\vec Y \xrightarrow{\vec \ell} \varepsilon$ for some sequence of
@@ -176,7 +175,7 @@ As observed by Christensen et
 al.~\cite{DBLP:journals/iandc/ChristensenHS95}, any unnormed sequence
 of symbols $\vec Y$ is bisimilar to its concatenation with any other
 symbols, that is, if $\vec Y$ is unnormed, then
-$\vec Y \sim \vec Y\vec X$.
+$\vec Y \sim \vec YX$.
 %
 % \begin{equation}
 %\label{unnormed}
@@ -194,23 +193,23 @@ prune :: Productions -> Productions
 prune p = Map.map (Map.map (pruneWord p)) p
 
 pruneWord :: Productions -> [TypeVar] -> [TypeVar]
-pruneWord p xs = foldr (\x ys -> if normed p x then x:ys else [x]) []
+pruneWord p = foldr (\x ys -> if normed p x then x:ys else [x]) []
 
 normed :: Productions -> TypeVar -> Bool
 normed p x = normedWord p Set.empty [x]
 
-normedWord :: Productions -> Set.Set TypeVar -> [TypeVar] -> Bool
+normedWord :: Productions -> Visited -> [TypeVar] -> Bool
 normedWord _ _ []     = True
 normedWord p v (x:xs) =
   x `Set.notMember` v &&
-  or (map (normedWord p v') (Map.elems (transitions p (x:xs))))
-  where v' = if or $ map (x `elem`) (Map.elems (transitions p [x]))
-                then Set.insert x v else v
+  any (normedWord p v') (Map.elems (transitions p (x:xs)))
+  where v' = if any (x `elem`) (Map.elems (transitions p [x]))
+               then Set.insert x v else v
 \end{lstlisting}
 
 \begin{example}
   \label{ex:prune}
-  Recall Example~\ref{ex:productions} and notice that both
+  Recall example~\ref{ex:productions} and notice that both
   $X_S$ and
   $Y_T$ are unnormed. We can easily see that the last occurrence of
   $X_4$ in the last production for

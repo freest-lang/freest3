@@ -41,12 +41,14 @@ pruneWord p = foldr (\x ys -> if normed p x then x:ys else [x]) []
 normed :: Productions -> TypeVar -> Bool
 normed p x = normedWord p Set.empty [x]
 
-normedWord :: Productions -> Set.Set TypeVar -> [TypeVar] -> Bool
+type Visited = Set.Set TypeVar
+
+normedWord :: Productions -> Visited -> [TypeVar] -> Bool
 normedWord _ _ []     = True
 normedWord p v (x:xs) =
   x `Set.notMember` v &&
-  or (map (normedWord p v') (Map.elems (transitions p (x:xs))))
-  where v' = if or $ map (x `elem`) (Map.elems (transitions p [x])) then Set.insert x v else v
+  any (normedWord p v') (Map.elems (transitions p (x:xs)))
+  where v' = if any (x `elem`) (Map.elems (transitions p [x])) then Set.insert x v else v
 
 norm :: Productions -> [TypeVar] -> Int
 norm p xs = normList p [xs]

@@ -24,8 +24,9 @@ below.
 %
 The labelled transition system (LTS) for context-free session types is
 given by the set of types as \emph{states}, the set of \emph{actions}
-ranged over by $A$, and the \emph{transition relation} $\LTSderives$
-defined by the rules below~\cite{thiemann2016context}.
+ranged over by $a$, and the \emph{transition relation} $\LTSderives$
+defined by the rules below, taken from Thiemann and
+Vasconcelos~\cite{thiemann2016context}.
 % in figure~\ref{fig:lts}.
 The transition relation makes
 use of an auxiliary judgment $\DONE{S}$ that characterizes terminated
@@ -35,22 +36,21 @@ action~\cite{DBLP:journals/jacm/AcetoH92} .
 %\begin{figure}
   \begin{gather*}
     \DONE{\skipk}
-    \quad
+    \qquad
     \frac{\DONE{S} \quad \DONE{T}}{\DONE{S; T}}
-    \quad
+    \qquad
     \frac{\DONE{S[\mu X.S/X]}}{\DONE{\mu X.S}}
-    \\
-%    {a \LTSderives \skipk }
+    \qquad\qquad\qquad
     X \LTSderives[X] \skipk
-    \quad
+    \qquad
     \sharp B \LTSderives[\sharp B] \skipk
-    \quad
+    \\
     \star\{l_i\colon S_i\} \LTSderives[\star l_j] S_j
-    \quad
+    \qquad
     \frac{S \LTSderives S'}{S; T \LTSderives S';T}
-    \quad
+    \qquad
     \frac{\DONE{S} \quad T \LTSderives T'}{S; T \LTSderives T'}
-    \quad
+    \qquad
     \frac{S[\mu X.S/X] \LTSderives S'}{\mu X.S \LTSderives S'}
   \end{gather*}
 % \caption{Labelled transition system for context-free session types~\cite{thiemann2016context}.}
