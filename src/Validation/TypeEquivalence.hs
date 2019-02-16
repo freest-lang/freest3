@@ -19,7 +19,7 @@ import           Control.Monad.State
 import           Data.List (isPrefixOf, union)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import qualified Queue.Queue as Queue
+import qualified Queue.Queue as Queue -- Use instead http://hackage.haskell.org/package/containers-0.6.0.1/docs/Data-Sequence.html
 import           Syntax.Kinds
 import           Syntax.Types
 import           Validation.Kinding
