@@ -1,4 +1,4 @@
-\section{An algorithm to decide type bisimulation}
+\section{An algorithm to decide type bisimilarity}
 \label{sec:algorithm}
 
 % Recall the type bisimulation problem for context-free session types.
@@ -9,13 +9,14 @@
 %   i.e., $S \TypeEquiv T$.
 % \end{quote}
 
-This section presents an algorithm to decide type bisimulation. The
-algorithm comprises three steps. It starts by converting types into
-grammars and then streamlines the grammar by pruning unreachable symbols
-in productions. The last step explores an expansion tree, alternating
-between simplification and expansion operations, until either finding
-an empty node---case in which it decides positively---or failing to
-expand a node---case in which it decides negatively.
+This section presents an algorithm to decide whether two types are in
+a bisimulation relation. The algorithm comprises three steps. It
+starts by converting types into grammars and then streamlines the
+grammar by pruning unreachable symbols in productions. The last step
+explores an expansion tree, alternating between simplification and
+expansion operations, until either finding an empty node---case in
+which it decides positively---or failing to expand a node---case in
+which it decides negatively.
 
 \subsection{Converting types to grammars}
 \label{subsec:typeToGrammar}
@@ -23,8 +24,10 @@ expand a node---case in which it decides negatively.
 A context-free grammar in Greibach normal form is a pair
 $(X,\productions)$ where~$X$ is the \emph{start symbol} and~$P$ a
 \emph{set of productions} of the form
-$Y \rightarrow a\vec Z$~\cite{GNF}. We call \emph{words} to sequences
-of type variables, and denote by~$\varepsilon$ the empty word.
+$Y \rightarrow a\vec Z$~\cite{GNF}. Type variables are the
+\emph{non-terminal symbols} and LTS labels the \emph{terminal
+  symbols}. We call \emph{words} to sequences of type
+variables~$\vec X$, and denote by~$\varepsilon$ the empty word.
 %
 The grammars we are interested in are \emph{simple}: for each
 non-terminal symbol~$X$ and each terminal symbol~$a$, there is at most
@@ -35,7 +38,7 @@ Grammars in Greibach Normal Form naturally induce an LTS by taking
 sequences of non-terminal symbols~$\vec X$ as states, terminal
 symbols~$a$ as the set of actions, and the transition relation
 $\LTSderives$ defined as $X\vec Y\LTSderives \vec Z\vec Y$ when
-$X \LTSderives a\vec Z \in\productions$. \vv{reference here} The
+$X \rightarrow a\vec Z \in\productions$. \vv{reference here} The
 associated bisimulation is denoted by $\ProdEquiv$.
 % Throughout the text we drop the subscript $\productions$ when it is
 % clear from context.
@@ -64,8 +67,11 @@ productions.
 %   \text{(\lstinline{toGrammar} S)}
 % \end{equation*}
 %
-The algorithm keeps the set of productions in the monadic state
-\lstinline{TransState} and uses the following functions:
+The algorithm keeps the set of productions, the set of visited type
+variables, and an index to generate fresh non-terminal symbols in the
+monadic state \lstinline{TransState}. It uses the following functions
+to manipulate state.
+%
 \begin{itemize}
 \item \lstinline{freshVar} returns a fresh non-terminal symbol (a type
   variable);
@@ -81,14 +87,14 @@ The algorithm keeps the set of productions in the monadic state
   of type variables).
 \end{itemize}
 
-In Listing~\ref{lst:toGrammar}, type $\skipk$ is represented by
-\lstinline{Skip}, \lstinline{Message p b} stands for types of the form
-$\sharp B$,
-%\lstinline{VarLabel} stands for variables,
-\lstinline{Semi} represents sequential composition,
-\lstinline{Rec} represents recursive types, and
-\lstinline{Choice} stands for the choice operators $\oplus$ and
-$\&$. \vv{cut? looks obvious, and there is many more related things to say}
+% In Listing~\ref{lst:toGrammar}, type $\skipk$ is represented by
+% \lstinline{Skip}, \lstinline{Message p b} stands for types of the form
+% $\sharp B$,
+% %\lstinline{VarLabel} stands for variables,
+% \lstinline{Semi} represents sequential composition,
+% \lstinline{Rec} represents recursive types, and
+% \lstinline{Choice} stands for the choice operators $\oplus$ and
+% $\&$. \vv{cut? looks obvious, and there is many more related things to say}
 
 \input{listing-toGrammar}
 
@@ -334,26 +340,29 @@ finite~\cite{DBLP:journals/iandc/ChristensenHS95}.
 Notice that the sibling nodes do not exclude the (often) infinite
 branch resulting from successive expansions.
 
-\subsection{Checking bisimilarity}
+\subsection{Checking the bisimilarity of context-free session types}
 
 % The algorithm to decide the equivalence of context-free session
 % types capitalizes on the previous algorithms.
 
 Given two context-free session types, function \lstinline|bisimilar|
 in Listing~\ref{lst:algorithm} starts by converting the two session
-types into a grammar, which is then pruned. An expansion tree is
-computed afterwards, through an alternation between expansion of the
-children nodes according to the \emph{pruned} grammar, and their
-simplification, using the reflexive, congruence, and \BPA\ rules. This
-recursive procedure terminates as soon as an empty node is reached,
-case is which the algorithm returns \lstinline|true|, or, either, all
-nodes fail to expand and, thus, the queue is empty, case in which the
-algorithm returns \lstinline|false|.
-
-To avoid getting stuck in an
-infinite branch of the expansion tree, we have implemented
-a breadth-first search on the expansion tree. Upcoming nodes are stored
-in a queue.
+types into a grammar, which is then pruned. Function
+\lstinline|convertToGrammar| (not shown) builds the initial monadic
+state, and runs the algorithm of section~\ref{subsec:typeToGrammar} to
+convert the session types given as parameters.
+%
+An expansion tree is computed afterwards, through an alternation of
+expansion of children nodes and their simplification, using the
+reflexive, congruence, and \BPA\ rules. This recursive procedure
+terminates as soon as all nodes fail to expand and, thus, the queue is
+empty, case in which the algorithm returns \lstinline|False|, or an
+empty node is reached, case is which the algorithm returns
+\lstinline|True|.
+%
+To avoid getting stuck in an infinite branch of the expansion tree, we
+use a breadth-first search on the expansion tree. Upcoming nodes are
+stored in a queue.
 
 \begin{lstlisting}[
   caption={Haskell code for checking the bisimilarity of context-free
@@ -367,8 +376,7 @@ type NodeQueue = Queue.Queue (Node, Ancestors)
 type NodeTransformation = Productions -> Ancestors -> Node -> Set.Set
 
 bisimilar :: Type -> Type -> Bool
-bisimilar t u =
-  expand (prune p) [x] [y]
+bisimilar t u = expand (prune p) [x] [y]
   where Grammar [x, y] p = convertToGrammar [t, u]
 
 expand :: Productions -> NodeQueue -> Bool
@@ -383,15 +391,14 @@ expand p q
 simplify :: Productions -> Node -> Ancestors -> NodeQueue -> NodeQueue
 simplify p n a q = foldr Queue.enqueue (Queue.dequeue q) ns
   where ns = foldr (apply p) (Set.singleton (n,a)) simplifications
-        simplifications = [reflex,congruence,bpa1,bpa2]
+        simplifications = [reflex, congruence, bpa1, bpa2]
 \end{lstlisting}
 
 \begin{example}
-	Recall our running example introduced in Example~\ref{ex:productions} and then
-	``pruned'' in Example~\ref{ex:prune}. We sketch the expansion tree for
-	$X_S, Y_T$ in Figure~\ref{fig:expand}. As soon as it reaches
-	the successful branch, the algorithm presented in Listing~\ref{lst:algorithm}
-	decides that $X_S\sim Y_T$.
+  The expansion tree for our running example is
+  in Figure~\ref{fig:expansionTree}. Once a successful
+  branch is reached (the $\checkmark$ in the figure), the algorithm in
+  Listing~\ref{lst:algorithm} decides that $S\TypeEquiv T$.
 \end{example}
 
 \begin{figure}[h]

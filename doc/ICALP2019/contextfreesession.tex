@@ -39,7 +39,7 @@ action~\cite{DBLP:journals/jacm/AcetoH92} .
     \qquad
     \frac{\DONE{S} \quad \DONE{T}}{\DONE{S; T}}
     \qquad
-    \frac{\DONE{S[\mu X.S/X]}}{\DONE{\mu X.S}}
+    \frac{\DONE{\subs{\mu X.S}{X} S}}{\DONE{\mu X.S}}
     \qquad\qquad\qquad
     X \LTSderives[X] \skipk
     \qquad
@@ -51,7 +51,7 @@ action~\cite{DBLP:journals/jacm/AcetoH92} .
     \qquad
     \frac{\DONE{S} \quad T \LTSderives T'}{S; T \LTSderives T'}
     \qquad
-    \frac{S[\mu X.S/X] \LTSderives S'}{\mu X.S \LTSderives S'}
+    \frac{\subs{\mu X.S}{X}S \LTSderives S'}{\mu X.S \LTSderives S'}
   \end{gather*}
 % \caption{Labelled transition system for context-free session types~\cite{thiemann2016context}.}
 % \label{fig:lts}
