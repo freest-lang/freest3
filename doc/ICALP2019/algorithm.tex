@@ -37,7 +37,7 @@ $X \rightarrow a\vec Y$~\cite{simpleGrammar}.
 Grammars in Greibach Normal Form naturally induce an LTS by taking
 sequences of non-terminal symbols~$\vec X$ as states, terminal
 symbols~$a$ as the set of actions, and the transition relation
-$\LTSderives$ defined as $X\vec Y\LTSderives \vec Z\vec Y$ when
+$\LTSderivesP$ defined as $X\vec Y\LTSderivesP \vec Z\vec Y$ when
 $X \rightarrow a\vec Z \in\productions$. \vv{reference here} The
 associated bisimulation is denoted by $\ProdEquiv$.
 % Throughout the text we drop the subscript $\productions$ when it is
@@ -54,8 +54,8 @@ associated bisimulation is denoted by $\ProdEquiv$.
 
 Given a context-free session type $S$, the algorithm starts by
 inserting an initial production of the form
-$X_S \rightarrow \enspace\initialProd\enspace
-\text{(\lstinline{toGrammar} S)}$ in the set of productions.
+$X_S \rightarrow \,\initialProd(\toGrammarf\,S)$ in the set of
+productions.
 %
 Function \lstinline|toGrammar| (Listing~\ref{lst:toGrammar}) returns a
 sequence of non-terminal symbols, while computing the remaining
