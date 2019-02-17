@@ -221,28 +221,30 @@ enqueueing and the computation of a fixed point at the
 simplification phase. Listing~\ref{lst:enhanced} presents
 an enhanced version of the simplification stage coping the new
 proposals.
-\begin{lstlisting}[caption={Haskell code for the adapted simplification
-                   stage of the improved algorithm to check the 
-                   equivalence of context-free session types},
-                   label={lst:enhanced} ,captionpos=b] 
-simplify :: Productions -> Ancestors ->  Node -> NodeQueue -> NodeQueue
-simplify g a n q = foldr enqueueNode (Queue.dequeue q) m'
-  where m' = findFixedPoint g (Set.singleton (n,a))
+
+\begin{lstlisting}[
+  caption={Haskell code for the improved simplification step (replaces
+    function \lstinline|simplify| in figure~\ref{lst:algorithm})},
+  label={lst:enhanced},
+  captionpos=b]
+simplify :: Productions -> Node -> Ancestors -> NodeQueue -> NodeQueue
+simplify ps n a q = foldr enqueueNode (Queue.dequeue q) nas
+  where nas = findFixedPoint ps (Set.singleton (n,a))
 
 enqueueNode :: (Node,Ancestors) -> NodeQueue -> NodeQueue
 enqueueNode (n,a) q
- | Set.null n           = Queue.priorityEnqueue (n,a) q
- | maximumLength n == 1 = Queue.priorityEnqueue (n,a) q
- | otherwise            = Queue.enqueue (n,a) q
+ | Set.null n       = Queue.prepend (n,a) q
+ | maxLength n == 1 = Queue.prepend (n,a) q
+ | otherwise        = Queue.append (n,a) q
 
 findFixedPoint :: Productions -> Set.Set (Node,Ancestors) -> 
-                  Set.Set (Node,Ancestors)
-findFixedPoint g nas
+                    Set.Set (Node,Ancestors)
+findFixedPoint ps nas
   | nas == nas' = nas
-  | otherwise = findFixedPoint g nas'
-  where nas' = if allNormed p
-                then foldr (apply p) nas [reflex,congruence,bpa2]
-                else foldr (apply p) nas [reflex,congruence,bpa1,bpa2]
+  | otherwise   = findFixedPoint ps nas'
+  where nas' = if allNormed ps
+               then foldr (apply ps) nas [reflex,congruence,bpa2]
+               else foldr (apply ps) nas [reflex,congruence,bpa1,bpa2]
 \end{lstlisting}
 
 

@@ -33,10 +33,6 @@ prune p = Map.map (Map.map (pruneWord p)) p
 
 pruneWord :: Productions -> [TypeVar] -> [TypeVar]
 pruneWord p = foldr (\x ys -> if normed p x then x:ys else [x]) []
--- pruneWord _ [] = []
--- pruneWord p (x:xs)
---   | normed p x = x : pruneWord p xs
---   | otherwise  = [x]
 
 normed :: Productions -> TypeVar -> Bool
 normed p x = normedWord p Set.empty [x]
@@ -61,12 +57,12 @@ normList p xss
 
 sameNorm :: Productions -> [TypeVar] -> [TypeVar] -> Bool
 sameNorm p xs ys =
-  (not normedXs && not normedYs) ||
-  (normedXs && normedYs && norm p xs == norm p ys )
+  not normedXs && not normedYs ||
+  normedXs && normedYs && norm p xs == norm p ys
   where normedXs = normedWord p Set.empty xs
         normedYs = normedWord p Set.empty ys
 
 -- Identify the existence of unnormed symbols
 
 allNormed :: Productions -> Bool
-allNormed p = and $ map (normed p) (Map.keys p)
+allNormed p = all (normed p) (Map.keys p)
