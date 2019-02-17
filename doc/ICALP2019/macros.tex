@@ -133,6 +133,9 @@
 \newcommand{\grmeq}{\; ::= \;}
 \newcommand{\grmor}{\;\mid\;}
 
+% New environments
+\newenvironment{itemizeproof}{\begin{proof}}{\vspace{-4.85ex}\end{proof}}
+
 % Theorem
 %\newtheorem{theorem}{Theorem}[section]
 %\newtheorem{lemma}[theorem]{Lemma}
@@ -144,6 +147,12 @@
 %\newtheorem{definition}{Definition}[section]
 
 % Listings
+
+\newcommand{\textlstinline}[1]{\text{\lstinline|#1|}}
+% The k is for keyword 
+\newcommand{\toGrammark}{\textlstinline{toGrammar}}
+% The f is for function
+\newcommand{\toGrammarf}[1]{\toGrammark\,{#1}}
 
 \lstset{
   language=haskell,

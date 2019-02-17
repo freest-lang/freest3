@@ -5,19 +5,19 @@ In this section we prove that our algorithm is sound and complete
 with respect to the meta-theory of context-free session types proposed
 by Thiemann and Vasconcelos~\cite{thiemann2016context}.
 
-We start by showing that the bisimulation relation proposed by
-Thiemann and Vasconcelos, $\TypeEquiv$, is equivalent to the
-bisimulation relation obtained from the productions, $\ProdEquiv$.
-Then, based on results from Caucal~\cite{caucal1986decidabilite},
-Christensen, H{\"{u}}ttel,
-Stirling~\cite{DBLP:journals/iandc/ChristensenHS95},
+We start by showing that the bisimulation relation on context-free
+session types, $\TypeEquiv$, is equivalent to the bisimulation
+relation obtained from the productions, $\ProdEquiv$.  Then, based on
+results from Caucal~\cite{caucal1986decidabilite}, Christensen,
+H{\"{u}}ttel, Stirling~\cite{DBLP:journals/iandc/ChristensenHS95},
 Jan{\v{c}}ar and Moller~\cite{janvcar1999techniques}, we conclude that
 our algorithm is sound and complete.
 
 \subsection{The two bisimulations coincide}
 
-In the following lemma we prove that the initial (dummy) production
-does not affect equivalence checking.
+We start by showing that the initial (dummy) production does not
+affect bisimulation checking.
+%
 \begin{lemma}
 	Given two session types $S$ and $T$,
 	\[ X_{S} \sim X_{T}  \text{ if and only if }
@@ -33,102 +33,107 @@ Hence, $X_S\sim X_T$ if and only if
 \lstinline{toGrammar S} $\sim$ \lstinline{toGrammar T}.
 \end{proof}
 
-We start by proving that terminated session types
-do not originate new productions.
+Terminated session types do not originate new productions.
 
 \begin{lemma}
-\label{lemma:terminated_session}
-	Given a context-free session type $S$,
-	if \DONE{S} then \lstinline{toGrammar S} does not add any
-	production and returns \lstinline{[]}.
+  \label{lemma:terminated_session}
+  If \DONE{S}, then \upshape{\lstinline|toGrammar |}$S$ adds no
+  productions and returns \upshape{\lstinline|[]|}.
 \end{lemma}
 
-\begin{proof}
-	The proof is done by induction on the structure of a terminated
-	context-free session type $S$:
-	\begin{description}
-		\item[Case $S\triangleq \skipk$,] then \lstinline{toGrammar} does not
-		add any production and returns \lstinline{[]}.
-		\item[Case $S\triangleq S_1;S_2$] for terminated session types $S_1$ and
-		$S_2$, \lstinline{toGrammar S} recursively adds the productions from
-		\lstinline{toGrammar S1} and \lstinline{toGrammar S2}. But $S_1$ and
-		$S_2$ are terminated session types, hence no production is added and
-		\lstinline{[]} is returned.
-		\item[Case $S\triangleq \mu x. S$,] where $S[\mu x.S/x] \checkmark$,
-		\lstinline{toGrammar S} adds the productions from \linebreak
-		\lstinline{toGrammar (subs (Var y) x t)}. But $S[\mu x.S/x]$ is a terminated
-		session, thus \lstinline{toGrammar S} returns does not add
-		any production and returns \lstinline{[]}.
-	\end{description}
-\end{proof}
+\begin{itemizeproof}
+  By rule induction  on the hypothesis.
+  \begin{itemize}
+  \item If $S\triangleq \skipk$, then \lstinline{toGrammar} adds no
+    productions and returns \lstinline{[]}.
+  \item If $S\triangleq S;T$, then \DONE S and \DONE T. By induction,
+    the recursive calls add no productions and return
+    \lstinline|[]|. Then, function \lstinline|toGrammar| returns
+    \lstinline|[]++[]|, which evaluates to \lstinline|[]|.
+  \item If $S\triangleq \mu X. T$, then
+    $\subs{S}{X}T \checkmark$.
+    %
+    Function \lstinline|toGrammar |$S$ adds the productions from
+    \lstinline|toGrammar (subs (Var y) X t)|. But $\subs{S}{X} T$ is a
+    terminated session, thus \lstinline{toGrammar }$T$ adds no
+    productions and returns \lstinline{[]}. \vv{does not work:
+      $\subs{S}{X} T$ is different from
+      %
+      \lstinline|toGrammar (subs (Var y) X t)|}.
+  \end{itemize}
+\end{itemizeproof}
 
 Now we prove that any transition in the \LTS\ has a
 corresponding transition derived from the set of productions.
 
 \begin{lemma}
-Given context-free session types $S,S'$ and a label $\ell$,
-	\[ \text{if } S \LTSderives[\ell] S' \text{ then }
-	\text{\lstinline{toGrammar S}} \rightarrow \enspace
-	\ell \enspace \vec Y, \]
-	where \lstinline{toGrammar S'} is prefix of $\vec Y$.
+  If $S \LTSderives T$, then (\upshape{\lstinline|toGrammar|} $S)
+  \LTSderives \vec X$ and \upshape{\lstinline|toGrammar|} $T$ is a
+  prefix of~$\vec X$. \vv{Panic! \upshape{\lstinline|toGrammar|} $T$
+    is not defined on $\skipk$.}
+%
+% Given context-free session types $S,S'$ and a label $\ell$,
+% 	\[ \text{if } S \LTSderives[\ell] S' \text{ then }
+% 	\text{\lstinline{toGrammar S}} \rightarrow \enspace
+% 	\ell \enspace \vec Y, \]
+% 	where \lstinline{toGrammar S'} is prefix of $\vec Y$.
 \end{lemma}
 
-\begin{proof}
-The proof is done by induction on the structure of the labelled
-transition system (Fig.~\ref{lts}):
+\begin{itemizeproof}
+By rule induction on the hypothesis.
 \begin{itemize}
-	\item If $S\triangleq \skipk$, then $S$ is a terminated
-	      session type, with no further transition. Similarly,
-	      \lstinline{toGrammar S} returns \lstinline{[]} and
-	      does not add any production.
-	\item If $S\triangleq A$, where $A$ ranges over $!B$ and $?B$,
-	      then $S  \LTSderives[A] \skipk$. On the other hand,
-	      \lstinline{toGrammar S} returns a fresh variable $X$ and
-	      inserts a production $X\rightarrow A$.
-	\item If $S \triangleq \alpha$, then $S   \LTSderives[\alpha] \skipk$.
-	      On the other hand, since $\alpha$ does not contain non-terminal
-	      symbols, \lstinline{toGrammar S} returns a fresh variable $X$ and
-	      inserts a production $X\rightarrow \alpha$.
-	\item If $S\triangleq \star\{l_i\colon S_i\}_{i\in I}$ then, for each
-          $j\in I$, $S \LTSderives[\star l_j] S_j$. On the other hand,
-          \lstinline{toGrammar S} returns a fresh variable
-          $X$ and, recursively, inserts a production
-          $X\rightarrow \star l_j \enspace \text{(\lstinline{toGrammar Sj})}$
-          for each $j\in I$.
-	\item If $S\triangleq \mu x.S$ and $S[\mu x.S/x] \LTSderives[a] S'$,
-	      then $\mu x.S \LTSderives[a] S'$. By induction hypothesis,
-	      the corresponding production in \lstinline{toGrammar (subs (Var y) x t)}
-	      is recursively added by \lstinline{toGrammar S} in the form
-	      $X \rightarrow a\enspace  \text{(\lstinline{toGrammar S'})}$,
-	      where $X$ is a fresh variable that is, then, returned by
-	      \lstinline{toGrammar S}.
-	\item If $S\triangleq T;U$ and $T \LTSderives[a] T'$ then $S \LTSderives[a] T';U$.
-	      By induction hypothesis, \lstinline{toGrammar T} adds the production
-	      $X\rightarrow a \enspace \text{(\lstinline{toGrammar T'})}$, where
-	      $X$ is a fresh variable.
-		  We notice that \lstinline{toGrammar T} $= X \, \vec X_T$ for some
-		  sequence of non-terminal symbols $\vec X_T$. By congruence, we have:
-		  \[\text{\lstinline{toGrammar S}} = X \, \vec X_T \, \text{(\lstinline{toGrammar U})}
-		  \rightarrow a \enspace \text{(\lstinline{toGrammar T'})} \, \vec X_T  \,
-		  \text{(\lstinline{toGrammar U})} .\]
-	\item If $S\triangleq T;U$, $T$ is a terminated session, with no further
-	      action, and $U \LTSderives[a] U'$ then, using the \LTS\ we have
-	      $T;U \LTSderives[a] U'$. On the other hand, by induction hypothesis and
-	      using Lemma~\ref{lemma:terminated_session}:
-	    \begin{itemize}
-			\item \lstinline{toGrammar T}  returns \lstinline{[]},
-			\item \lstinline{toGrammar U}  adds a production
-			$X \rightarrow a \enspace \text{\lstinline{toGrammar U'}}$, where $X$
-			is a fresh variable.
-		\end{itemize}
-		We notice that \lstinline{toGrammar U} $= X \, \vec X_U$ for some sequence of
-		non-terminal symbols $\vec X_U$. Hence, by congruence, we have a
-		transition
-		\[\text{\lstinline{toGrammar S}} = \, \text{\lstinline{[]}} \, X \,
-		\vec X_U \rightarrow \enspace a \enspace \text{(\lstinline{toGrammar U'})} \,
-		\vec X_U.\]
+% \item If $S\triangleq \skipk$, then $S$ is a terminated
+%   session type, with no further transition. Similarly,
+%   \lstinline{toGrammar S} returns \lstinline{[]} and
+%   does not add any production. % This case does not apply!
+% \item If $S \triangleq \alpha$, then $S   \LTSderives[\alpha] \skipk$.
+%   On the other hand, since $\alpha$ does not contain non-terminal
+%   symbols, \lstinline{toGrammar S} returns a fresh variable $X$ and
+%   inserts a production $X\rightarrow \alpha$. % This case in now
+%   handled as in #B; not even part of the grammar.
+\item If $S\triangleq \sharp B$, then
+  $S \LTSderives[\sharp B] \skipk$. The call $\toGrammarf S$
+  returns a fresh variable $Y$ and inserts a production
+  $Y\rightarrow S$.
+\item If $S\triangleq \star\{l_i\colon S_i\}_{i\in I}$ then,
+  $S \LTSderives[\star l_j] S_j$, for each $j\in I$. Function
+  $\toGrammarf S$ returns a fresh variable $Y$ and, recursively,
+  inserts a production $Y\rightarrow \star l_j (\toGrammarf{S_j})$,
+  for each $j\in I$.
+\item If $S\triangleq \mu x.T$, then $\subs SXT \LTSderives T'$.
+  % , then $\mu x.S \LTSderives[a] S'$.
+  By induction, the corresponding production in
+  %
+  \lstinline{toGrammar (subs (Var y) x t)} is recursively added by
+  $\toGrammarf S$ in the form $Y \rightarrow a (\toGrammarf{T'})$,
+  where $Y$ is a fresh variable that is, then, returned by
+  $\toGrammarf S$.
+\item If $S\triangleq T;U$ and $T \LTSderives[a] T'$, then
+  $S \LTSderives[a] T';U$.  By induction hypothesis, $\toGrammarf T$
+  adds the production $Y\rightarrow a (\toGrammarf{T'})$, where $Y$
+  is a fresh variable.  We notice that $\toGrammarf T$
+  $= Y \vec Y_T$ for some sequence of non-terminal symbols
+  $\vec Y_T$. By congruence, we have:
+  \[\toGrammarf S = Y\vec Y_T(\toGrammarf U)
+    \rightarrow a(\toGrammarf T')\vec Y_T(\toGrammarf U)
+    .\]
+\item If $S\triangleq T;U$, $T$ is a terminated session, with no further
+  action, and $U \LTSderives[a] U'$ then, using the \LTS\ we have
+  $T;U \LTSderives[a] U'$. On the other hand, by induction hypothesis and
+  using Lemma~\ref{lemma:terminated_session}:
+  \begin{itemize}
+  \item $\toGrammarf T$  returns \lstinline{[]},
+  \item $\toGrammarf U$ adds a production
+    $Y \rightarrow a (\toGrammarf U')$, where $Y$ is a fresh
+    variable.
+  \end{itemize}
+  We notice that $\toGrammarf U = Y\vec Y_U$ for some sequence of
+  non-terminal symbols $\vec Y_U$. Hence, by congruence, we have a
+  transition
+  \[\toGrammarf S = \text{\lstinline{[]}} Y
+    \vec Y_U \rightarrow a (\toGrammarf{U')} \vec Y_U.\]
 \end{itemize}
-\end{proof}
+\end{itemizeproof}
 
 Conversely, we prove that any transition derived from the productions
 has a corresponding labelled transition in the \LTS.
@@ -249,9 +254,9 @@ a sequence of expansion and simplification operations with the reflexive,
 congruence and \BPA\ rules, as proposed by Jan{\v{c}}ar and Moller.
 In~\cite{janvcar1999techniques}, it was proved that these simplification
 rules were \emph{safe}, meaning that the application of these rules would
-always preserve equivalence from parent nodes to at least one children node
-and, reciprocally, that equivalence on a children node would imply the
-equivalence of its parent node, thus proving the safeness property.
+always preserve bisimulation from parent nodes to at least one children node
+and, reciprocally, that bisimulation on a children node would imply the
+bisimulation of its parent node, thus proving the safeness property.
 
 %\begin{proof}
 %	On the other hand, as observed in~\cite{janvcar1999techniques},
@@ -281,7 +286,7 @@ From the previous results, and recalling Theorem~\ref{cfst_vs_grammar},
 the soundness of our algorithm is now immediate:
 
 \begin{theorem}
-	The algorithm to check the equivalence of context-free session types,
+	The algorithm to check the bisimulation of context-free session types,
 	presented in Listing~\ref{lst:algorithm} is sound with respect to the
 	meta-theory of context-free session types, i.e.,\linebreak if
 	\lstinline|equivalent S T| returns
@@ -305,7 +310,7 @@ Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}:
 
 
 \begin{theorem}
-	The algorithm to check the equivalence of context-free session types,
+	The algorithm to check the bisimulation of context-free session types,
 	presented in Listing~\ref{lst:algorithm} is complete with respect to the
 	meta-theory of context-free session types, i.e., \linebreak if
 	$S \TypeEquiv T$ then
@@ -322,5 +327,10 @@ Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}:
 	i.e., a branch finishing in an empty node.
 	Since our algorithm traverses
 	the expansion tree using breadth-first search we will, eventually,
-	reach the empty node and conclude the equivalence positively.
+	reach the empty node and conclude the bisimulation positively.
 \end{proof}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:
