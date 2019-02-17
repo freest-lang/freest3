@@ -153,15 +153,15 @@ the following productions.
 \label{subsec:prune}
 
 For $\vec a$ a sequence of non-terminal symbols $a_1,\ldots, a_k$
-($k\ge1$), write $\vec Y \xrightarrow{\vec a} \vec Z$ when
-$\vec Y \LTSderives[a_1] \cdots \LTSderives[a_k] \vec Z$.
+($k\ge1$), write $\vec Y \LTSderivesP[\vec a] \vec Z$ when
+$\vec Y \LTSderivesP[a_1] \cdots \LTSderivesP[a_k] \vec Z$.
 %
 We say that $\vec Y$ is \emph{normed} when
-$\vec Y \xrightarrow{\vec a} \varepsilon$ for some~$\vec a$, and that
+$\vec Y \LTSderivesP[\vec a] \varepsilon$ for some~$\vec a$, and that
 $\vec Y$ is \emph{unnormed} otherwise.
 %
 When $\vec Y$ is normed, the \emph{minimal path} of $\vec Y$ is the
-shortest~$\vec a$ such that $\vec Y \xrightarrow{\vec a}
+shortest~$\vec a$ such that $\vec Y \LTSderivesP[\vec a]
 \varepsilon$.
 %
 In this case, the \emph{norm} of $\vec Y$, denoted by $|\vec Y|$, is
