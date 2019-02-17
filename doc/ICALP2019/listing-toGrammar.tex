@@ -30,7 +30,7 @@ toGrammar (Var x) = do
 toGrammar (Rec x t) = do
   y <- freshVar
   insertVisited y
-  zs <- toGrammar (subs (Var y) x t) -- On the fly alpha-conversion
+  zs <- toGrammar (subs (Var y) x t) -- On-the-fly alpha-conversion
   if null zs
     then return []
   else do

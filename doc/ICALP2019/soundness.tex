@@ -70,10 +70,9 @@ Now we prove that any transition in the \LTS\ has a
 corresponding transition derived from the set of productions.
 
 \begin{lemma}
-  If $S \LTSderives T$, then \upshape{\lstinline|toGrammar|} $S
-  \LTSderivesP \vec X$ and \upshape{\lstinline|toGrammar|} $T$ is a
-  prefix of~$\vec X$. \vv{Panic! \upshape{\lstinline|toGrammar|} $T$
-    is not defined on $\skipk$.}
+  If $S \LTSderives T$, then \upshape{\lstinline|toGrammar|}
+  $S \LTSderivesP \vec X$ and \upshape{\lstinline|toGrammar|} $T$ is a
+  prefix of~$\vec X$.
 %
 % Given context-free session types $S,S'$ and a label $\ell$,
 % 	\[ \text{if } S \LTSderives[\ell] S' \text{ then }
@@ -97,7 +96,7 @@ By rule induction on the hypothesis.
 \item If $S\triangleq \sharp B$, then
   $S \LTSderives[\sharp B] \skipk$. The call $\toGrammarf S$
   returns a fresh variable $Y$ and inserts a production
-  $Y\rightarrow S$.
+  $Y\rightarrow \sharp B$.
 \item If $S\triangleq \star\{l_i\colon S_i\}_{i\in I}$ then,
   $S \LTSderives[\star l_j] S_j$, for each $j\in I$. Function
   $\toGrammarf S$ returns a fresh variable $Y$ and, recursively,
