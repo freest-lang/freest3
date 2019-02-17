@@ -19,7 +19,8 @@ We start by showing that the initial (dummy) production does not
 affect bisimulation checking.
 %
 \begin{lemma}
-  $X_S \TypeEquiv X_T$ if and only if
+  \label{lem:dummy}
+  $X_S \ProdEquiv X_T$ if and only if
   $\toGrammarf S \ProdEquiv \toGrammarf T$.
 	% Given two session types $S$ and $T$,
 	% \[ X_{S} \sim X_{T}  \text{ if and only if }
@@ -27,8 +28,8 @@ affect bisimulation checking.
 \end{lemma}
 
 \begin{proof}
-  We have $X_S \rightarrow\enspace \initialProd\,(\toGrammarf S)$
-  and $X_T \rightarrow\enspace \initialProd\,(\toGrammarf T)$.
+  We have $X_S \rightarrow\, \initialProd\,(\toGrammarf S)$ and
+  $X_T \rightarrow\, \initialProd\,(\toGrammarf T)$.
     %     By~\eqref{initial_prod}, we have:
     %     \[X_S \rightarrow \enspace \initialProd\enspace \text{(\lstinline{toGrammar S})}\]
     % \[X_T \rightarrow \enspace \initialProd\enspace \text{(\lstinline{toGrammar T})}\]
@@ -70,6 +71,7 @@ Now we prove that any transition in the \LTS\ has a
 corresponding transition derived from the set of productions.
 
 \begin{lemma}
+  \label{lem:type-to-prod}
   If $S \LTSderives T$, then \upshape{\lstinline|toGrammar|}
   $S \LTSderivesP \vec X$ and \upshape{\lstinline|toGrammar|} $T$ is a
   prefix of~$\vec X$.
@@ -143,6 +145,7 @@ Conversely, we prove that any transition derived from the productions
 has a corresponding labelled transition in the \LTS.
 
 \begin{lemma}
+  \label{lem:prod-to-type}
   If $\toGrammarf S \LTSderivesP \vec Y$, then $S\LTSderives
   T$.\\ \vv{and there must be some relation on $\vec Y$ and $T$, for
     induction purposes}
@@ -190,11 +193,15 @@ transition in the grammar and vice-versa, the following theorem is now
 immediate.
 
 \begin{theorem}
-  \label{cfst_vs_grammar}
+  \label{thm:cfst_vs_grammar}
   $S\TypeEquiv T$  if and only if $ X_S \ProdEquiv X_T$.
 	% Given two context-free session types $S_1, S_2$,
 	% \[ S_1 \TypeEquiv S_2 \text{ if and only if } X_{S_1} \ProdEquiv X_{S_2}. \]
 \end{theorem}
+
+\begin{proof}
+  From lemmas~\ref{lem:dummy}, \ref{lem:type-to-prod}, and~\ref{lem:prod-to-type}.
+\end{proof}
 
 \subsection{Unnormedness is preserved by pruning}
 
@@ -280,13 +287,14 @@ the safeness property.
 %	and, then, also preserved the safeness property.
 %\end{proof}
 
-\begin{theorem}
+\begin{lemma}
+  \label{lem:bisimilar-to-prod}
   If $\bisimf S T$ returns \upshape{\lstinline|True|}, then
   $X_{S} \ProdEquiv X_{T}$.
 	% Given two context-free session types $S$ and $T$, if the function
 	% \lstinline|equivalent|, presented in Listing~\ref{lst:algorithm},
 	% returns \lstinline|true|, then $X_{S} \ProdEquiv X_{T}$.
-\end{theorem}
+\end{lemma}
 
 \begin{proof}
   Function \lstinline|bisimilar| returns \lstinline|True| for $S$ and
@@ -298,15 +306,19 @@ the safeness property.
   % kn that $X_{S} \ProdEquiv X_{T}$.
 \end{proof}
 
-From the previous results, and recalling
-Theorem~\ref{cfst_vs_grammar}, the soundness of our algorithm is now
-immediate.  The algorithm to check the bisimulation of context-free
+From the previous results, the soundness of our algorithm is now
+immediate: the algorithm to check the bisimulation of context-free
 session types (listing~\ref{lst:algorithm}) is sound with respect to
 the meta-theory of context-free session types.
 
 \begin{theorem}
   If $\bisimf ST$ returns \upshape{\lstinline|True|} then $S\TypeEquiv T$.
 \end{theorem}
+
+\begin{proof}
+  From theorem~\ref{thm:cfst_vs_grammar} and
+  lemma~\ref{lem:bisimilar-to-prod}.
+\end{proof}
 
 Having observed that the safeness property was paramount for
 soundness, we now notice that the \emph{finite witness property} is of
