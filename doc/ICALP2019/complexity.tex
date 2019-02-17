@@ -115,29 +115,31 @@ $|\Gamma|\cdot\mathsf{length}(N)$. Hence, the computation
 of the fixed point terminates in polynomial time. 
  
 When the grammar involves unnormed variables, the problem
-stands on when fo we reach a successful branch, and the
+stands on when do we reach a successful branch, and the
 answer is based on the work by Christensen et 
 al.~\cite{DBLP:journals/iandc/ChristensenHS95}.
 For a given pair $(X_0\vec X, Y_0,\vec Y)$:
 \begin{enumerate}
-	\item if $X_0$ and $Y_0$ are unnormed, then $\vec X = \varepsilon$
-		  and $\vec Y = \varepsilon$ and the conclusion on the equivalence
+	\item \label{bullet:un,un}  if $X_0$ and $Y_0$ are unnormed, then 
+		  $\vec X = \varepsilon$
+		  and $\vec Y = \varepsilon$ and the conclusion on its equivalence
 		  follows right after the next expansion operation;
 	\item if $X_0$ is unnormed and $Y_0$ is normed, then $\vec X = \varepsilon$
 		  and the procedure will either terminate as soon as
 		  \begin{itemize}
-		  	\item $Y_0\vec Y\LTSderives[\vec\ell] \varepsilon$, and takes 
+		  	\item $Y_0\vec Y\LTSderives[\vec a] \varepsilon$, and takes 
 		  		  $|Y_0\vec Y|$ expansion steps,
-		  	\item $Y_0\vec Y\LTSderives[\vec\ell] Y_0\vec Y'$, case in which
+		  	\item $Y_0\vec Y\LTSderives[\vec a] Y_0\vec Y'$, case in which
 		  		  there will be a successful branch using 
 		  		  \lstinline{bpa1}~\cite{DBLP:journals/iandc/ChristensenHS95}, or
-		  	\item $Y_0\vec Y$ reaches an unnormed variable (bullet point 1.).
+		  	\item $Y_0\vec Y$ reaches an unnormed variable 
+		  		  (reduces to~\ref{bullet:un,un}.);
 		  \end{itemize}
-	\item if we have $X_0$ and $Y_0$ normed, let 
-		  $\rho^* = \min \{|\vec X|, |\vec Y|\}$. After $\rho^*$ expansion
+	\item if $X_0$ and $Y_0$ are normed, let 
+		  $\rho^* = \min \{|X_0|, |Y_0|\}$. After $\rho^*$ expansion
 		  operations, we will reach a pair $(X_0'\vec{X'}, Y_0',\vec{Y'})$
 		  where $X_0$ is unnormed and $Y_0$ is (un)normed (or vice-versa)
-		  and we reduce to the previous cases.
+		  and are reduced to the previous cases.
 \end{enumerate}
 
 We conclude that, in both cases, despite being (potentially) huge, the
@@ -145,12 +147,12 @@ number of steps to decide whether $S\sim T$ or not is polynomial on
 the size of the context-free session types $S$ and $T$.
 
 We also remark that the double ended queue improves the 
-performance of the algorithm by allowing the analysis of promising nodes 
+performance of the algorithm by enabling the analysis of promising nodes 
 in advance and, thus, we should expect that this complexity
 results should be slightly improved by this feature, 
 although not directly reflected in the complexity result.
 We should also highlight that, in practice, the values of the 
-parameters we have been analyzing are usually very small,
+parameters we have been handling are usually very small,
 which justifies the running times we have presented in 
 Section~\ref{sec:evaluation}.
 
