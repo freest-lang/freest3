@@ -1,41 +1,42 @@
 \section{Evaluation}
 \label{sec:evaluation}
 
-In this section, we analyze the performance of our algorithm
-to check the equivalence of context-free session types. 
-To do so, we have implemented the algorithm we have presented
-thus far (sketched in Listings~\ref{lst:toGrammar}, 
-\ref{lst:prune}, \ref{lst:algorithm}) 
-in Haskell, and used Haskel compiler 
-Glasgow Haskell Compiler, GHC version 8.6.3, from which we have 
-obtained the running times we present throughout this section.
-The machine used for the evaluation was a Mac mini at 3,6 GHz Intel 
-Core i3 with 8 GB of memory. 
-
-At this stage, we were aiming to analyze the performance of
-our type equivalence checking algorithm, when we came across 
-a particular test whose context-free session types where:
+% In this section, we analyze the performance of our algorithm
+% to check the equivalence of context-free session types. 
+% To do so, 
+We implemented the algorithm
+% we have presented thus far (sketched in
+% Listings~\ref{lst:toGrammar}, \ref{lst:prune}, \ref{lst:algorithm})
+in Haskell and used the Glasgow Haskell Compiler, GHC version 8.6.3,
+from which we have obtained the running times we present throughout
+this section.  Evaluation was conducted on a Mac mini equipped with a
+3.6 GHz Intel Core i3, 8 GB of memory, and running MacOS 10.14.3.
+%
+Armed with the results in section~\ref{sec:algorithm}, we decided to
+benchmark the algorithm on a test suite of carefully crafted pair of
+types. During this process we came across a pair of types,
 \begin{equation}
 \label{ex:chaotic}
-	\begin{aligned}
-		S &\triangleq \mu x . \&\{ \mathsf{add}: x;x; !\,\intk,
-							       \mathsf{const}: ?\,\intk;!\in\intk,
-							       \mathsf{mult}: x;x;!\,\intk\}\\
-		T &\triangleq \mu x . \&\{ \mathsf{add}: x;x,
-							  	   \mathsf{const}: ?\,\intk,
-							       \mathsf{mult}: x;x\}; !\,\intk
-	\end{aligned}
+\begin{aligned}
+  S &\triangleq \mu x . \&\{ \mathsf{Add}\colon x;x; !\,\intk,
+  \mathsf{Const}\colon ?\,\intk;!\in\intk,
+  \mathsf{Mult}\colon x;x;!\,\intk\}\\
+  T &\triangleq \mu x . \&\{ \mathsf{Add}\colon x;x,
+  \mathsf{Const}\colon ?\,\intk,
+  \mathsf{Mult}\colon x;x\}; !\,\intk
+\end{aligned}
 \end{equation}
-\lstinline{equivalent S T} took 4810.21 seconds to decide the equivalence
-positively. This would not be a reasonable amount of time for a
-feasible compiler. Hence, we started to pave the way to improve the
-running times. For this purpose, we propose:
+%
+on which function \lstinline|bisimilar| took 4810.21 seconds (that is
+one hour and forty minutes) to terminate. This is certainly not a
+reasonable running time for an algorithm to be included in a
+compiler. Hence, we looked into ways to improve the running
+times. Among the different optimisations that we try, too stand out:
 \begin{enumerate}
-	\item to iterate the simplification stage until a fixed point
-	on the \emph{simplest children nodes} is reached;
-	\item to consider a double ended queue, where \emph{promising} 
-	children nodes would be prepended, as opposed to enqueuing 
-	all new nodes.
+\item Iterate the simplification stage until a fixed point on the
+  \emph{simplest children nodes} \vv{on the simplest children nodes?} is reached;
+\item Use a double ended queue where promising children is prepended
+  rather than appended.
 \end{enumerate}
 
 If, in one hand, we believe that the computation of the expansion
