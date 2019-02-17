@@ -9,7 +9,7 @@ We start by showing that the bisimulation relation on context-free
 session types, $\TypeEquiv$, is equivalent to the bisimulation
 relation obtained from the productions, $\ProdEquiv$.  Then, based on
 results from Caucal~\cite{caucal1986decidabilite}, Christensen,
-H{\"{u}}ttel, Stirling~\cite{DBLP:journals/iandc/ChristensenHS95},
+H{\"{u}}ttel, and Stirling~\cite{DBLP:journals/iandc/ChristensenHS95},
 Jan{\v{c}}ar and Moller~\cite{janvcar1999techniques}, we conclude that
 our algorithm is sound and complete.
 
@@ -195,23 +195,27 @@ immediate.
 	% \[ S_1 \TypeEquiv S_2 \text{ if and only if } X_{S_1} \ProdEquiv X_{S_2}. \]
 \end{theorem}
 
-\subsection{\textit{Unnormedness} is preserved}
+\subsection{Unnormedness is preserved by pruning}
 
-To prove that the pruning stage is in accordance with the results
-from Christensen et al., we now observe that unnormed non-terminal symbols
-corresponding to (un)normed types are (un)normed. These results follow
-immediately from the previous results.
+To prove that the pruning stage is in accordance with the results from
+Christensen et al.~\cite{DBLP:journals/iandc/ChristensenHS95}, we
+observe that unnormed non-terminal symbols corresponding to (un)normed
+types are (un)normed. These results follow immediately from the
+previous results. \vv{from which results, exactly?}
 
 \begin{corollary}
-	Given a context-free session type $S$, $|S| = |\text{\lstinline{toGrammar S}}|$.
+  Given a context-free session type $S$, $|S| = |\toGrammarf S|$.
 \end{corollary}
 
 \begin{corollary}
-	A context-free session type $S$ is unnormed if and only if
-	$X_S$ is unnormed.
+  A context-free session type $S$ is unnormed if and only if $X_S$ is
+  unnormed.
 \end{corollary}
 
-\subsection{The expansion tree is correct}
+\vv{these notions are not defined on session types}
+
+%\subsection{The expansion tree is correct}
+\subsection{Correctness of the algorithm}
 %
 %Let us start by proving a small lemma, whose ultimate purpose
 %stands on proving that all nodes excluded by the filtering rule
@@ -243,25 +247,27 @@ immediately from the previous results.
 %	$\vec X \not\ProdEquiv \vec Y$.
 %\end{proof}
 
-In this section we focus on the correctness of our algorithm,
-presented in Listing~\ref{lst:algorithm}.
-Before proceeding to soundness, we recall the \emph{safeness property}
-presented by Jan{\v{c}}ar and Moller in~\cite{janvcar1999techniques}.
+We now focus on the correctness of the algorithm in
+Listing~\ref{lst:algorithm}.  Before proceeding to soundness, we
+recall the \emph{safeness property} presented by Jan{\v{c}}ar and
+Moller.
 
-\begin{proposition} [Safeness Property]
-\label{prop:safeness}
-	$\vec X \ProdEquiv \vec Y$ if and only if the expansion tree rooted
-	at $\{(\vec X, \vec Y)\}$ has a successful branch.
+\begin{proposition} [Safeness Property \cite{janvcar1999techniques}]
+  \label{prop:safeness}
+  $\vec X \ProdEquiv \vec Y$ if and only if the expansion tree rooted
+  at $\{(\vec X, \vec Y)\}$ has a successful branch.
 \end{proposition}
 
-Notice that the expansion tree we present in Listing~\ref{lst:algorithm} is
-a sequence of expansion and simplification operations with the reflexive,
-congruence and \BPA\ rules, as proposed by Jan{\v{c}}ar and Moller.
-In~\cite{janvcar1999techniques}, it was proved that these simplification
-rules were \emph{safe}, meaning that the application of these rules would
-always preserve bisimulation from parent nodes to at least one children node
-and, reciprocally, that bisimulation on a children node would imply the
-bisimulation of its parent node, thus proving the safeness property.
+Notice that function \lstinline|bisimilar|
+(Listing~\ref{lst:algorithm}) builds an expansion tree by alternating
+between expansion and simplification operations (reflexive,
+congruence and \BPA\ rules), as proposed by Jan{\v{c}}ar and Moller.
+%
+These simplification rules are \emph{safe}, in the sense that the
+application of any rule preserves the bisimulation from a parent node
+to at least one child node and, reciprocally, that bisimulation on a
+children node implies the bisimulation of its parent node, thus proving
+the safeness property.
 
 %\begin{proof}
 %	On the other hand, as observed in~\cite{janvcar1999techniques},
@@ -274,35 +280,38 @@ bisimulation of its parent node, thus proving the safeness property.
 %\end{proof}
 
 \begin{theorem}
-	Given two context-free session types $S$ and $T$, if the function
-	\lstinline|equivalent|, presented in Listing~\ref{lst:algorithm},
-	returns \lstinline|true|, then $X_{S} \ProdEquiv X_{T}$.
+  If $\bisimf S T$ returns \upshape{\lstinline|True|}, then
+  $X_{S} \ProdEquiv X_{T}$.
+	% Given two context-free session types $S$ and $T$, if the function
+	% \lstinline|equivalent|, presented in Listing~\ref{lst:algorithm},
+	% returns \lstinline|true|, then $X_{S} \ProdEquiv X_{T}$.
 \end{theorem}
 
 \begin{proof}
-	The algorithm returns \textsf{true} for $S$ and $T$ whenever
-	it reaches a finite successful branch in the expansion tree rooted
-	at $\{(X_{S}, X_{T})\}$. By Proposition~\ref{prop:safeness}, whenever the
-	expansion tree rooted at $\{(X_{S}, X_{T})\}$ has a (finite)
-	successful branch, we conclude that $X_{S} \ProdEquiv X_{T}$.
+  Function \lstinline|bisimilar| returns \lstinline|True| for $S$ and
+  $T$ whenever it reaches a (finite) successful branch in the expansion
+  tree rooted at $\{(X_{S}, X_{T})\}$. Conclude with the safeness property,
+  proposition~\ref{prop:safeness}.
+  % , whenever the expansion tree rooted
+  % at $\{(X_{S}, X_{T})\}$ has a (finite) successful branch, we
+  % kn that $X_{S} \ProdEquiv X_{T}$.
 \end{proof}
 
-From the previous results, and recalling Theorem~\ref{cfst_vs_grammar},
-the soundness of our algorithm is now immediate:
+From the previous results, and recalling
+Theorem~\ref{cfst_vs_grammar}, the soundness of our algorithm is now
+immediate.  The algorithm to check the bisimulation of context-free
+session types (listing~\ref{lst:algorithm}) is sound with respect to
+the meta-theory of context-free session types.
 
 \begin{theorem}
-	The algorithm to check the bisimulation of context-free session types,
-	presented in Listing~\ref{lst:algorithm} is sound with respect to the
-	meta-theory of context-free session types, i.e.,\linebreak if
-	\lstinline|equivalent S T| returns
-	\lstinline|True| then \lstinline|S| $\TypeEquiv$ \lstinline|T|.
+  If $\bisimf ST$ returns \upshape{\lstinline|True|} then $S\TypeEquiv T$.
 \end{theorem}
 
-Having observed that the safeness property was paramount for soundness,
-we now notice that the \emph{finite witness property} is of utmost
-importance to prove completeness. This result follows immediately from the
- analysis by Jan{\v{c}}ar and Moller~\cite{janvcar1999techniques}, which
- capitalizes on results by
+Having observed that the safeness property was paramount for
+soundness, we now notice that the \emph{finite witness property} is of
+utmost importance to prove completeness. This result follows
+immediately from the analysis by Jan{\v{c}}ar and
+Moller~\cite{janvcar1999techniques}, which capitalizes on results by
 Caucal~\cite{caucal1986decidabilite}, Christensen, H{\"{u}}ttel, and
 Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}:
 
@@ -312,27 +321,23 @@ Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}:
 	$\{(\vec X, \vec Y)\}$ has a finite successful branch.
 \end{proposition}
 
-
+The algorithm to check the bisimulation of context-free session types
+is complete with respect to the meta-theory of context-free session
+types.
 
 \begin{theorem}
-	The algorithm to check the bisimulation of context-free session types,
-	presented in Listing~\ref{lst:algorithm} is complete with respect to the
-	meta-theory of context-free session types, i.e., \linebreak if
-	$S \TypeEquiv T$ then
-	\lstinline|equivalent S T| returns \lstinline|True|.
+  If $S \TypeEquiv T$ then $\bisimf S T$ returns
+  \upshape{\lstinline|True|}.
 \end{theorem}
 
 \begin{proof}
-	Assuming that $S \TypeEquiv T$, by
-	Theorem~\ref{cfst_vs_grammar}, we
-	have $X_{S} \ProdEquiv X_{T}$.
-	Hence, the finite witness property
-	ensures the existence of a finite successful branch on the expansion
-	tree rooted at $\{(X_{S},X_{T})\}$,
-	i.e., a branch finishing in an empty node.
-	Since our algorithm traverses
-	the expansion tree using breadth-first search we will, eventually,
-	reach the empty node and conclude the bisimulation positively.
+  Assuming that $S \TypeEquiv T$, by theorem~\ref{cfst_vs_grammar} we
+  have $X_{S} \ProdEquiv X_{T}$.  Hence, the finite witness property
+  ensures the existence of a finite successful branch on the expansion
+  tree rooted at $\{(X_{S},X_{T})\}$, i.e., a branch terminating in an
+  empty node.  Since our algorithm traverses the expansion tree using
+  breadth-first search it will, eventually, reach the empty node and
+  conclude the bisimulation positively.
 \end{proof}
 
 %%% Local Variables:

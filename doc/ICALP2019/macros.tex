@@ -149,11 +149,13 @@
 
 % Listings
 
-\newcommand{\textlstinline}[1]{\text{\lstinline|#1|}}
+\newcommand{\textlstinline}[1]{\text{\upshape{\lstinline|#1|}}}
 % The k is for keyword 
 \newcommand{\toGrammark}{\textlstinline{toGrammar}}
+\newcommand{\bisimk}{\textlstinline{bisimilar}}
 % The f is for function
 \newcommand{\toGrammarf}[1]{\toGrammark\:{#1}}
+\newcommand{\bisimf}[2]{\bisimk{#1}\:{#2}}
 
 \lstset{
   language=haskell,
