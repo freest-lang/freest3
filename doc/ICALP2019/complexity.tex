@@ -47,7 +47,7 @@ $s_0^+=s_0^-=1$, $\rho_0^+=N_0^+$, $\rho_0^-=N_0^-$. And now, let us proceed
 with this analysis by exploring the structure of the expansion tree. Assume 
 that at the $i^{th}$ level we succeed on an expansion step to
 level $i+1$;
-we would have: $a_{i+1}=a_1+n_i$, $n_{i+1}\leq n_i$, 
+we would have: $a_{i+1}=a_i+n_i$, $n_{i+1}\leq n_i$, 
 $p_{i+1}\leq p_i\cdot L$,
 $s_{i+1}^+\leq s_i^++S$, $s_{i+1}^-\leq s_i^-+S$, $\rho_{i+1}^+=\rho_i^+-1$ 
 if $\rho_i^+$ is finite and  $\rho_{i+1}^+ = \infty$ otherwise.
@@ -59,15 +59,14 @@ $\rho_{i+1}^\pm\leq \rho_i^\pm$ if $\rho_i^\pm$ are finite.
 Finally, when applying \lstinline{bpa1} from level $i$
 to level $i+1$, we have: $a_{i+1}=a_i$, $n_{i+1} \leq p_i \cdot a_i+n_i$,
 $p_{i+1}\leq p_i+1$, $s_{i+1}^- \leq s_i^- - 1$.
-
 Before proceeding, just notice that \lstinline{reflex} and 
 \lstinline{congruence} do not affect the complexity analysis, hence 
 we will omit them from this analysis.
+
 So far, we have made a simple analysis on the complexity of each 
 simplification and expansion operations, and we conclude that
 these operations promote a polynomial increase on the size of the
 expansion tree. 
-
 However, the proposed algorithm, alternates between expansion 
 operations and iterations of the simplification phase until 
 reaching a fixed point. We will carry out this analysis by 
@@ -77,21 +76,18 @@ of them are unnormed.\smallskip
 
 \noindent\textbf{Case 1:} In the simplest case where all symbols
 occurring in $\mathcal{P}$ are normed, the expansion stage should 
-terminate because at each iteration step, from level $i$ to level
-$i+1$, we have $\rho_{i+1}^+ < \rho_i^+$, hence the expansion procedure 
-should terminate.
-On the other hand, the application of \lstinline{bpa2} from 
-level $i$ to level $i+1$ a number of times equal to $p_i$
-ensures that the maximum norm occurring among the pairs in
-all nodes except the nodes at level $i$ strictly decreases.
+terminate in polynomial time because at each iteration step, from level 
+$i$ to level $i+1$, we have $\rho_{i+1}^+ < \rho_i^+$, 
+hence the expansion procedure should terminate in, at most, $\rho_i^+$.
+On the other hand, the application of \lstinline{bpa2} 
+on a given node $N$ forces a strict decrease on the minimal
+norm occurring among pairs in the new sibling $N'$. 
 Note that for the purpose of computing the fixed point, the
-presence of the nodes in level $i$ is not relevant.
+presence of nodes from level $i$ at level $i+1$ is not relevant.
 For these reasons, the simplification stage iterates at most 
-$(n_i\cdot p_i)\cdot (n_{i+1}\cdot p_{i+1})\ldots (n_{i+\rho_i^+}\cdot
-p_{i+\rho_i^+})$ times until reaching a fixed point. 
-Still, the number of nodes in $n_{i+\rho_i^+}$, 
-the number of pairs $p_{i+\rho_i^+}$ are of polynomial size on the 
-size of the root.\smallskip
+$(n_i\cdot p_i)+ (n_{i+1}\cdot p_{i+1}) +
+\ldots + (n_{i+\rho_i^+}\cdot p_{i+\rho_i^+})$ 
+times until reaching a fixed point. \smallskip
 
 \noindent\textbf{Case 2:} In the case where there are unnormed symbols
 in the productions, the expansion tree might not terminate, however
