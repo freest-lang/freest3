@@ -5,20 +5,21 @@ Throughout this section, we carry out an analysis of the
 improved version of algorithm \lstinline{bisimilar},
 that involves the algorithms from Listings~\ref{lst:toGrammar},
 \ref{lst:prune}, \ref{lst:algorithm}, and the improved version
-of the simplification stage in Listing~\ref{lst:enhanced}.
+of the simplification stage presented in Listing~\ref{lst:enhanced}.
 
 
 \todo{AM}{complexity analysis for toGrammar (and prune)}
 
 Despite the great branching ability of this expansion tree, 
-we will prove throughout this section that it has polynomial 
-size on the length of the root. For this, consider $X_S$ and
+we will prove throughout this section that we can decide 
+equivalence of symbols in the root in polynomial time. 
+For this, consider $X_S$ and
 $X_T$ the initial non-terminal symbols for $S$ and $T$, let 
 $\mathcal{P}$ denote the set of productions for $S$ and $T$ and 
 also:
 \begin{itemize}
-	\item $S$ represent the maximum size of right-hand size of
-		  the productions in $\mathcal{P}$;
+	\item $S$ represent the maximum number of symbols in the RHS
+	      of productions in $\mathcal{P}$;
 	\item $L$ stand for the maximum number of labels within the choice 
 		  operators in $\mathcal{P}$;
 	\item $N_0^+$ and $N_0^-$ represent the maximum and minimum values
@@ -26,7 +27,7 @@ also:
 		  assume $|X|=\infty$ whenever $X$ is unnormed.
 \end{itemize}
 
-We will analyze the complexity of each simplification or expansion 
+We start by analyzing the complexity of each simplification or expansion 
 step in the expansion tree. For this, we now fix some notation, to 
 refer to the number ``elements'' (read: nodes, pairs, length, etc.)
 at the $i^{th}$ level of the expansion tree:
@@ -42,12 +43,14 @@ at the $i^{th}$ level of the expansion tree:
 \end{itemize}
 
 Observe that in the root we have: $a_0=0$, $n_0=1$, $p_0=1$,
-$s_0^+=s_0^-=1$, $\rho_0^+=N_0^+$, $\rho_0^-=N_0^-$. Now assume 
+$s_0^+=s_0^-=1$, $\rho_0^+=N_0^+$, $\rho_0^-=N_0^-$. And now, let us proceed
+by induction on the structure of the expansion tree. Assume 
 that at the $i^{th}$ level we succeed on an expansion step to
 level $i+1$;
-we would have: $a_{i+1}=a_1+1$, $n_{i+1}=n_i$, $p_{i+1}=p_i\cdot L$,
-$s_{i+1}^+=s_i^++S$, $s_{i+1}^-=s_i^-+S$, $\rho_{i+1}^+=\rho_i^+-1$ 
-is $\rho_i^+$ is finite and  $\rho_{i+1}^+ = \infty$ otherwise.
+we would have: $a_{i+1}=a_1+n_i$, $n_{i+1}\leq n_i$, 
+$p_{i+1}\leq p_i\cdot L$,
+$s_{i+1}^+\leq s_i^++S$, $s_{i+1}^-\leq s_i^-+S$, $\rho_{i+1}^+=\rho_i^+-1$ 
+if $\rho_i^+$ is finite and  $\rho_{i+1}^+ = \infty$ otherwise.
 
 Similarly, notice that when applying \lstinline{bpa2} from level $i$
 to level $i+1$, we have: $a_{i+1}=a_i$, $n_{i+1} = n_i\cdot p_i + n_i$,

@@ -66,10 +66,10 @@ in the same way, when no ambiguities arise.
 \begin{proof}
 	Consider the order 
 	$\leqSets$ defined in $\text{\lstinline{Set (Node,Ancestors)}}
-	\times \text{\lstinline{Set (Node,Ancestors)}}$ as follows:
+	\times \text{\lstinline{Set (Node,Ancestors)}}$ by:
 	$S_1 \leqSets S_2$ if $|S_1| \leq |S_2|$ and
 	exists an injective map $\sigma : S_1 \rightarrow S_2$ s.t.\  
-	$\sigma(N_1,A) = (N_2,A)$ with $N_2\subseteq N_1$.\\
+	$\sigma(N_1,A) = (N_2,A)$ with $N_2\subseteq N_1$.\smallskip
 	
 	\noindent\textbf{$\leqSets$ is a partial order:} The proof that
 	$\leqSets$ is reflexive and transitive is straightforward. 
@@ -85,10 +85,9 @@ in the same way, when no ambiguities arise.
 	for some $(N',A)\in S_2$;
 	due to the minimality of $N$, we would have 
 	$(\sigma_1\circ \sigma_2)(N',A) = (N',A)$, which would contradict the
-	injectivity of $\sigma_1\circ \sigma_2$. For the same reason 
-	$\sigma_1\circ \sigma_2$ is also the identity map, and so, since
-	$\sigma_i (N,A) = (N',A)$ is such that $N'\subseteq N$, we shall 
-	have $\sigma_i (N,A) = (N,A)$. Hence, $S_1=S_2$.\\
+	injectivity of $\sigma_1\circ \sigma_2$. Since
+	$\sigma_1 (N,A) = (N',A)$ is such that $N'\subseteq N$, we shall 
+	have $\sigma_1 (N,A) = (N,A)$. Hence, $S_1=S_2$.\smallskip
 	
 	\noindent\textbf{The simplification function is order-preserving:}
 	To prove that the reflexive rule preserves the order, let $S_1$ and 
@@ -104,18 +103,17 @@ in the same way, when no ambiguities arise.
 	Since $N_2\subseteq N_1$, we have
 	$\text{\lstinline{reflex}} N_2 \subseteq
     \text{\lstinline{reflex}} N_1 = N$.
-	
 	The same reasoning applies to prove that if $S_1\leqSets S_2$ then 
 	$\text{\lstinline{congruence} } S_1\leqSets\text{\lstinline{congruence} }S_2$.
 	
-	To prove that \lstinline{bpa1} also preserves the order, just start
-	noting that 
+	To prove that \lstinline{bpa1} preserves the order,
+	note that 
 	$S \subseteq \text{\lstinline{bpa1} }S$. Assume that 
 	$S_1\leqSets S_2$, let $(N,A)\in \text{\lstinline{bpa1} }S_1$, 
 	and denote by $(N_1,A)\in S_1$ and $(\vec X,\vec Y)\in N_1$  
 	the node and the pair whose simplification 
-	led to $(N,A)$. We know that there exists $(N_2,A)\in S_2$
-	such that $N_2 \subseteq N_1$. If $(\vec X,\vec Y)\in N_2$,
+	led to $(N,A)$. We know that exists $(N_2,A)\in S_2$
+	s.t.\ $N_2 \subseteq N_1$. If $(\vec X,\vec Y)\in N_2$,
 	then the \lstinline{bpa1} simplification of $N_2$ with
 	the pair $(\vec X,\vec Y)$ generates 
 	$(N',A)\in \text{\lstinline{bpa1} }S_2$ such that 
@@ -124,28 +122,26 @@ in the same way, when no ambiguities arise.
 	and, since  $S_2 \subseteq \text{\lstinline{bpa1} }S_2$,
 	$(N_2,A)\in \text{\lstinline{bpa1} }S_2$ is such that
 	$N_2\subseteq N$.
+	The same reasoning applies to \lstinline{bpa2}. 
 	
-	The same reasoning applies to \lstinline{bpa2}. Having proved
+	Having proved
 	that each simplification function preserves the order, and
 	since the simplification procedure results from the successive 
-	application of this rules, we have proved that the simplification
-	function also preserves the order.\\
+	application of these rules, we have proved that the simplification
+	function also preserves the order.\smallskip
 	
 	\noindent\textbf{$(\text{\lstinline{Set (Node,Ancestors)}}, \leqSets)$
 	is a lattice:} Given 
-	$S_1, S_2\in \text{\lstinline{Set (Node,Ancestors)}}$:
-	\begin{itemize}
-		\item $S_1 \cup S_2$ is an upper bound;
-		\item $S_1 \cap S_2$ is a lower bound.
-	\end{itemize}
+	$S_1, S_2\in \text{\lstinline{Set (Node,Ancestors)}}$,
+	$S_1 \cup S_2$ is an upper bound and
+	$S_1 \cap S_2$ is a lower bound for $S_1$ and $S_2$.\smallskip
 	
 	\noindent\textbf{$(\text{\lstinline{Set (Node,Ancestors)}}, \leqSets)$
 	is a complete lattice:} Given 
 	$\mathcal{B}\subseteq \text{\lstinline{Set (Node,Ancestors)}}$:
-	\begin{itemize}
-		\item $\bigcup_{S\in \mathcal{B}} S$ is an upper bound;
-		\item $\bigcap_{S\in \mathcal{B}} S$ is a lower bound.
-	\end{itemize}
+	$\bigcup_{S\in \mathcal{B}} S$ is an upper bound and
+	$\bigcap_{S\in \mathcal{B}} S$ is a lower bound for the sets in 
+	$\mathcal{B}$.
 	
 	Using the fixed point theorem from Tarski~\cite{tarski1955lattice}, 
 	we conclude that the simplification function has a
