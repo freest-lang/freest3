@@ -96,7 +96,8 @@ By rule induction on the hypothesis.
 \item If $S\triangleq \sharp B$, then
   $S \LTSderives[\sharp B] \skipk$. The call $\toGrammarf S$
   returns a fresh variable $Y$ and inserts a production
-  $Y\rightarrow \sharp B$.
+  $Y\rightarrow \sharp B$. Then $S \LTSderivesP \varepsilon$ and
+  $\toGrammarf\,\skipk =$ \lstinline{[]}, that is, $\varepsilon$.
 \item If $S\triangleq \star\{l_i\colon S_i\}_{i\in I}$ then,
   $S \LTSderives[\star l_j] S_j$, for each $j\in I$. Function
   $\toGrammarf S$ returns a fresh variable $Y$ and, recursively,
