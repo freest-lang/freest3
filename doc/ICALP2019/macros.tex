@@ -8,7 +8,7 @@
 % Relations, predicates and operators
 %\newcommand\PAR{|}
 \newcommand\PAR{\mid}
-\newcommand\DONE[1]{#1 \checkmark}
+\newcommand\DONE[1]{#1\checkmark}
 \newcommand\PDA{\mathcal{P}}
 \newcommand\SEnv{\sigma} % syntactic environment
 \newcommand\LEnv{\delta} % language environment
@@ -16,7 +16,8 @@
 \newcommand\Power{\wp}
 \newcommand{\Silent}{\tau}
 \newcommand{\Wderives}[1][{}]{\stackrel{#1}{\Longrightarrow}}
-\newcommand{\LTSderives}[1][a]{\stackrel{#1}{\longrightarrow}}
+\newcommand{\LTSderives}[1][a]{\stackrel{#1}{\longrightarrow}_\types}
+\newcommand{\LTSderivesP}[1][a]{\stackrel{#1}{\longrightarrow}_\productions}
 \newcommand{\BPAderives}[1][a]{\stackrel{#1}{\longrightarrow}}
 \newcommand{\reduces}{\rightarrow}
 \newcommand{\subs}[2]{[{#1}/{#2}]}
@@ -46,8 +47,8 @@
 \newcommand{\cardinality}[1]{|{#1}|}
 \newcommand{\measure}{\mathcal M}
 %\newcommand\TypeSim{\preceq}
-\newcommand\TypeEquiv{\sim_{\mathcal T}}
-\newcommand\ProdEquiv{\sim_{\productions}}
+\newcommand\TypeEquiv{\sim_\types}
+\newcommand\ProdEquiv{\sim_\productions}
 \newcommand{\unguarded}{\mathsf{unguarded}}
 \newcommand\TL{\ensuremath{\mathcal U}} %trace language
 \newcommand{\TR}{\mathsf{TR}}
@@ -152,7 +153,7 @@
 % The k is for keyword 
 \newcommand{\toGrammark}{\textlstinline{toGrammar}}
 % The f is for function
-\newcommand{\toGrammarf}[1]{\toGrammark\,{#1}}
+\newcommand{\toGrammarf}[1]{\toGrammark\:{#1}}
 
 \lstset{
   language=haskell,
