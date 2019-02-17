@@ -80,8 +80,7 @@ simplify ps n a q =
 
 enqueueNode :: (Node,Ancestors) -> NodeQueue -> NodeQueue
 enqueueNode (n,a) q
- | Set.null n       = Queue.priorityEnqueue (n,a) q
- | maxLength n == 1 = Queue.priorityEnqueue (n,a) q
+ | maxLength n <= 1 = Queue.priorityEnqueue (n,a) q
  | otherwise        = Queue.enqueue (n,a) q
 
 apply :: Productions -> NodeTransformation -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
@@ -92,8 +91,8 @@ findFixedPoint ps nas
   | nas == nas' = nas
   | otherwise = findFixedPoint ps nas'
   where nas' = if allNormed ps
-                 then foldr (apply ps) nas [reflex, congruence, bpa2, filtering]
-                 else foldr (apply ps) nas [reflex, congruence, bpa1, bpa2, filtering]
+                 then foldr (apply ps) nas [reflex, congruence, bpa2]
+                 else foldr (apply ps) nas [reflex, congruence, bpa1, bpa2]
 
 normsMatch :: Productions -> Node -> Bool
 normsMatch ps n = and $ Set.map (\(xs,ys) -> sameNorm ps xs ys) n

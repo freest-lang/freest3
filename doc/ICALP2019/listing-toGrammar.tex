@@ -5,7 +5,7 @@
 type Transitions = Map.Map LTSLabel [TypeVar]
 type Productions = Map.Map TypeVar Transitions
 type Visited = Set.Set TypeVar
-type TransState = State (Productions, Visited, Int)
+type TransState = State (Productions, Int)
 
 toGrammar :: Type -> TransState [TypeVar]
 toGrammar Skip =
@@ -14,35 +14,26 @@ toGrammar (Message p b) = do
   y <- freshVar
   addProduction y (MessageLabel p b) []
   return [y]
-toGrammar (Semi t u) = do
-  xs <- toGrammar t
-  ys <- toGrammar u
-  return (xs ++ ys)
-toGrammar (Var x) = do
-  b <- memberVisited x
-  if b
-  then    -- This is a recursion variable
-    return [x]
-  else do -- This is a free variable
-    y <- freshVar
-    addProduction y (VarLabel x) []
-    return [y]
-toGrammar (Rec x t) = do
-  y <- freshVar
-  insertVisited y
-  zs <- toGrammar (subs (Var y) x t) -- On-the-fly alpha-conversion
-  if null zs
-    then return []
-  else do
-    m <- getTransitions (head zs)
-    addProductions y (Map.map (++ tail zs) m)
-    return [y]
 toGrammar (Choice c m) = do
   y <- freshVar
   mapM_ (assocsToGrm y c) (Map.assocs m)
   return [y]
+toGrammar (Semi t u) = do
+  xs <- toGrammar t
+  ys <- toGrammar u
+  return (xs ++ ys)
+toGrammar (Rec x t) = do
+  zs <- toGrammar t
+  if null zs
+    then return []
+    else do
+      m <- getTransitions (head zs)
+      addProductions x (Map.map (++ tail zs) m)
+      return [x]
+toGrammar (Var x) =
+  return [x]
 
-assocsToGrm :: TypeVar -> ChoiceView -> (TypeLabel,Type) -> TransState()
+assocsToGrm :: TypeVar -> ChoiceView -> (TypeLabel,Type) -> TransState ()
 assocsToGrm y c (l, t) = do
   xs <- toGrammar t
   addProduction y (ChoiceLabel c l) xs

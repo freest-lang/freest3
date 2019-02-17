@@ -67,21 +67,21 @@ productions.
 %   \text{(\lstinline{toGrammar} S)}
 % \end{equation*}
 %
-The algorithm keeps the set of productions, the set of visited type
-variables, and an index to generate fresh non-terminal symbols in the
-monadic state \lstinline{TransState}. It uses the following functions
-to manipulate state.
+The algorithm keeps the set of productions and an index to generate
+fresh non-terminal symbols in the monadic state
+\lstinline{TransState}. It uses the following functions to manipulate
+state.
 %
 \begin{itemize}
 \item \lstinline{freshVar} returns a fresh non-terminal symbol (a type
   variable);
 \item \lstinline{addProduction}$\,X\,a\,\vec Y$ updates the state by inserting
   the production $X\rightarrow a\vec Y$;
-\item \lstinline{insertVisited} marks a non-terminal symbol as visited;
-\item \lstinline{isVisited} identifies whether the given non-terminal symbol
-  was previously visited;
-\item \lstinline{subst} $X\,T\,S$ replaces the occurrences of~$X$
-  by~$T$ in~$S$;
+% \item \lstinline{insertVisited} marks a non-terminal symbol as visited;
+% \item \lstinline{isVisited} identifies whether the given non-terminal symbol
+%   was previously visited;
+% \item \lstinline{subst} $X\,T\,S$ replaces the occurrences of~$X$
+%   by~$T$ in~$S$;
 \item \lstinline|getTransitions|$\,X$ retrives the transitions
   from~$X$ (a map from non-terminal symbols~$a$ to sequences~$\vec Y$
   of type variables).
@@ -97,6 +97,9 @@ to manipulate state.
 % $\&$. \vv{cut? looks obvious, and there is many more related things to say}
 
 \input{listing-toGrammar}
+
+\vv{faz-me especie que as provas nao falem do caso Rec que tanto tempo
+  levou a afinar}
 
 Notice that function \lstinline|toGrammar| terminates on all inputs and
 that the resulting set of productions is finite, because recursion is
@@ -132,13 +135,13 @@ Function \lstinline{toGrammar}, when applied to $S$ and $T$, produces
 the following productions.
 \begin{center}
   \begin{tabular}{l l}
-    \multicolumn{2}{c}{Productions for $S$}\\ \hline
+    \multicolumn{2}{c}{Productions for type $S$}\\ \hline
     $X_S \rightarrow \,\initialProd\, X_1 X_4$ &$X_2 \rightarrow \,? \intk$\\
     $X_1 \rightarrow \& n\, X_1 X_1 X_2$&$X_3 \rightarrow \,? \intk$\\
     $X_1 \rightarrow \& \ell\, X_3$ &$X_4 \rightarrow \,!\intk\, X_4 X_4$\\
   \end{tabular} \qquad
   \begin{tabular}{l l}
-    \multicolumn{2}{c}{Productions for $T$}\\ \hline
+    \multicolumn{2}{c}{Productions for type $T$}\\ \hline
     $Y_T \rightarrow \,\initialProd\, Y_1 Y_3 $&$Y_2 \rightarrow \,? \intk$\\
     $Y_1 \rightarrow \& n\, Y_1 Y_1 Y_2 $&$Y_3 \rightarrow \,!\intk\, Y_3$\\
     $Y_1 \rightarrow \& \ell \,Y_2 $ &
@@ -224,7 +227,7 @@ normedWord p v (x:xs) =
 
 \begin{example}
   \label{ex:prune}
-  Recall example~\ref{ex:productions} and notice that both
+  Recall Example~\ref{ex:productions} and notice that both
   $X_S$ and
   $Y_T$ are unnormed. We can easily see that the last occurrence of
   $X_4$ in the last production for
@@ -233,7 +236,7 @@ normedWord p v (x:xs) =
   %
   \begin{center}
     \begin{tabular}{l l l}
-      \multicolumn{3}{c}{Pruned productions for $S$}\\ \hline
+      \multicolumn{3}{c}{Pruned productions for type $S$}\\ \hline
       $X_S \rightarrow \,\initialProd\, X_1 X_4$ &
       $X_2 \rightarrow \,? \intk$ &
       $X_1 \rightarrow \& n\, X_1 X_1 X_2$
@@ -257,8 +260,9 @@ normedWord p v (x:xs) =
 % unnormed sequences of symbols. Throughout this section we focus on the
 % third and last step of the algorithm.
 
-We use the notion of \emph{expansion tree} proposed by Jan{\v{c}}ar
-and Moller~\cite{janvcar1999techniques}, an adaption of an idea by
+We base the third stage of the algorithm on the notion of
+\emph{expansion tree} proposed by Jan{\v{c}}ar and
+Moller~\cite{janvcar1999techniques}, an adaption of an idea by
 Hirshfeld~\cite{hirshfeld1996bisimulation}. We say a set of pairs $N'$
 of words is an \emph{expansion} of $N$ if $N'$ is a minimal set such
 that: for every pair $(\vec X, \vec Y) \in N$,
@@ -271,11 +275,11 @@ that: for every pair $(\vec X, \vec Y) \in N$,
 
 An \emph{expansion tree} is built from nodes. Children nodes are
 obtained by expansion from its parent node. Jan{\v{c}}ar and Moller
-observed that expansion alone often leads to infinite trees. We again
-follow Jan{\v{c}}ar and Moller and build trees by alternating between
-expansion and simplification operations, until either finding an empty
-node---case in which we decide equivalence positively---or failing to
-expand a node---case in which we decide equivalence negatively.
+observed that expansion alone often leads to infinite trees. We then
+alternate between expansion and simplification operations, until
+either finding an empty node---case in which we decide equivalence
+positively---or failing to expand a node---case in which we decide
+equivalence negatively.
 %
 % The na\"ive proposal for an expansion tree considers that any
 % children node is obtained by expansion from its parent
@@ -296,33 +300,33 @@ In the \emph{expansion step}, each node $N$ derives a single children
 node, obtained as an expansion of $N$. As we are dealing with simple
 grammars, no branching is expected in the expansion tree at this
 step.
-
+%
 % \paragraph*{Simplification step}
 The \emph{simplification step} consists on the application of the
 following rules:
 %
 \begin{description}
-\item[Reflexive rule:] omit from a node any reflexive pair;
-\item[Congruence rule:] omit from a node $N$ any pair that belongs to
+\item[Reflexive rule:] Omit from a node any reflexive pair;
+\item[Congruence rule:] Omit from a node $N$ any pair that belongs to
   the least congruence containing the ancestors of $N$;
   % \item {\bf Basic Process Algebra rules:} create sibling nodes for $N$
   % according to the following rules:
   % \begin{description}
-\item[BPA1 rule:] if $(X_0 \vec X, Y_0 \vec Y)$ is in
+\item[BPA1 rule:] If $(X_0 \vec X, Y_0 \vec Y)$ is in
   $N$ and $(X_0 \vec {X'}, Y_0 \vec {Y'})$ belongs to the ancestors of
   $N$, then create a sibling node for $N$ replacing
   $(X_0 \vec X, Y_0 \vec Y)$ by $(\vec X, \vec {X'})$ and
-  $(\vec Y, \vec {Y'})$.
-\item[BPA2 rule:] if $(X_0 \vec X, Y_0 \vec Y)$ is in $N$
+  $(\vec Y, \vec {Y'})$;
+\item[BPA2 rule:] If $(X_0 \vec X, Y_0 \vec Y)$ is in $N$
   and $X_0$ and $Y_0$ are normed, then:
   \begin{description}
-  \item[Case] $|X_0| \leq |Y_0|$: let $\vec a$ to be a minimal path
+  \item[Case] $|X_0| \leq |Y_0|$: Let $\vec a$ be a minimal path
     for $X_0$ and $\vec Z$ a word such that
-    $\vec Y_0 \LTSderives[\vec a] \vec Z$. Add a sibling node for
+    $\vec Y_0 \LTSderivesP[\vec a] \vec Z$. Add a sibling node for
     $N$ including the pairs $(X_0, Y_0 \vec Z)$ and
-    $(\vec Z \vec X, \vec Y)$ in place of $(X_0 \vec X, Y_0 \vec Y)$.
-  \item[Case] $|X_0| > |Y_0|$: let $\vec a$ be a minimal path for
-    $Y_0$ and $\vec Z$ a word such that $\vec X_0 \LTSderives[\vec a] \vec
+    $(\vec Z \vec X, \vec Y)$ in place of $(X_0 \vec X, Y_0 \vec Y)$;
+  \item[Case] $|X_0| > |Y_0|$: Let $\vec a$ be a minimal path for
+    $Y_0$ and $\vec Z$ a word such that $\vec X_0 \LTSderivesP[\vec a] \vec
     Z$. Add a sibling node for $N$ including the pairs
     $(X_0 \vec Z, Y_0 )$ and $(\vec X, \vec Z \vec Y)$ in place of
     $(X_0 \vec X, Y_0 \vec Y)$.
@@ -332,9 +336,9 @@ following rules:
 %	       $(\vec X, \vec Y)$ such that $|\vec X|\neq |\vec Y|$.
 \end{description}
 
-Contrarily to simplification and expansion, \BPA\ rules promote
-branching in the expansion tree. The number of children nodes
-generated by these rules is
+Contrarily to expansion and the reflexive and congruence
+simplifications, \BPA\ rules promote branching in the expansion
+tree. The number of children nodes generated by these rules is
 finite~\cite{DBLP:journals/iandc/ChristensenHS95}.
 %
 Notice that the sibling nodes do not exclude the (often) infinite
@@ -394,20 +398,20 @@ simplify ps n a q = foldr Queue.append (Queue.dequeue q) ns
         simplifications = [reflex, congruence, bpa1, bpa2]
 \end{lstlisting}
 
-\begin{example}
-  The expansion tree for our running example is
-  in Figure~\ref{fig:expansionTree}. Once a successful
-  branch is reached (the $\checkmark$ in the figure), the algorithm in
-  Listing~\ref{lst:algorithm} decides that $S\TypeEquiv T$.
-\end{example}
-
-\begin{figure}[h]
+\begin{figure}[t!]
 \centering
 	\includegraphics[width=8.5cm]{expansionTree}
 	\caption{Expansion tree for the context-free session types $S$ and $T$
 	introduced in Example~\ref{ex:productions}.}
 	\label{fig:expansionTree}
 \end{figure}
+
+\begin{example}
+  The expansion tree for our running example is
+  in Figure~\ref{fig:expansionTree}. Once a successful
+  branch is reached (the $\checkmark$ in the figure), the algorithm in
+  Listing~\ref{lst:algorithm} decides that $S\TypeEquiv T$.
+\end{example}
 
 %%% Local Variables:
 %%% mode: latex
