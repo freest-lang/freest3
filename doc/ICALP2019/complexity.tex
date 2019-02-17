@@ -94,22 +94,25 @@ in the productions, the expansion tree might not terminate, however
 we now prove that in the case where the equivalence should be decided
 positively, we reach an empty node within a polynomial number of steps.
 Just note that in the case where the equivalence should be decided negatively
-the branch keeping the expansion tree (free of simplifications) will terminate 
-in, at most, $L\cdot \sum_{k\in\Delta} k$ simplification steps, where 
-$\Delta = \{|X| : X \text{ is a non-terminal symbol occurring in }\mathcal{P}\}.$
+the branch keeping the expansion tree (free of simplifications) will
+terminate in, at most, $L\cdot \sum_{k\in\Delta} k$ expansion steps, 
+where $\Delta = \{|X| : X \text{ is a non-terminal symbol 
+occurring in }\mathcal{P}\}.$
 
-Let us remark that, in this case, \lstinline{bpa1} and \lstinline{bpa2}
-terminate in polynomial time. To justify this, consider the following
+Let us remark that, in this second case, \lstinline{bpa1} and 
+\lstinline{bpa2} terminate in polynomial time. 
+To justify this, consider the following
 metric on the pairs: $\mathsf{length}(\vec X, \vec Y) = 
 \min \{\mathsf{length} \vec X, \mathsf{length} \vec Y\}.$ 
 Consider also the following metrics on the nodes:
-$\mathsf{length_j}(N) = \max_{(\vec X, \vec Y)\in \Gamma_j} 
+$\mathsf{length}(N) = \max_{(\vec X, \vec Y)\in \Gamma} 
 \{\mathsf{length}(\vec X, \vec Y)\}$
-where $\Gamma_j=\{(\vec X,\vec Y)\in N : \text{\lstinline{bpaj} is
-applicable to }(\vec X,\vec Y) \}$. Notice that at each iteration
-of \lstinline{bpa1} and \lstinline{bpa2} the metrics
-$\mathsf{length_j}(N)$ strictly decrease. Hence, the computation
-of the fixed point should terminate in polynomial time. %%%%%%%%%%%%%%%%%HERE
+where $\Gamma=\{(\vec X,\vec Y)\in N : \text{\lstinline{bpa1} or  
+\lstinline{bpa2} is applicable to }(\vec X,\vec Y) \}$. 
+Notice that for each node $N$, the application
+of \lstinline{bpa1} and \lstinline{bpa2} can be applied at most
+$|\Gamma|\cdot\mathsf{length}(N)$. Hence, the computation
+of the fixed point terminates in polynomial time. 
  
 When the grammar involves unnormed variables, the problem
 stands on when fo we reach a successful branch, and the
