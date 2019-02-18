@@ -382,9 +382,11 @@ expand ps q
   where (n,a) = Queue.front q
 
 simplify :: Productions -> Node -> Ancestors -> NodeQueue -> NodeQueue
-simplify ps n a q = foldr Queue.append (Queue.dequeue q) ns
-  where ns = foldr (apply ps) (Set.singleton (n,a)) simplifications
-        simplifications = [reflex, congruence, bpa1, bpa2]
+simplify ps n a q = foldr Queue.append (Queue.dequeue q) ns'
+  where ns  = Set.singleton (n,a)
+        ns' = if allNormed ps
+               then foldr (apply ps) ns [reflex,congruence,bpa2]
+               else foldr (apply ps) ns [reflex,congruence,bpa1,bpa2]
 \end{lstlisting}
 
 \begin{figure}[t!]
