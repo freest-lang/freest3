@@ -35,13 +35,12 @@ on which function \lstinline|bisimilar| took 4379.98 seconds (that is
 one hour and forty minutes) to terminate. This is certainly not a
 reasonable running time for an algorithm to be included in a
 compiler. Hence, we looked into ways to improve the running
-times. Among the different optimisations that we tried, three stand
+times. Among the different optimisations that we tried, two stand
 out:
 \begin{enumerate}
 \item Iterate the simplification stage until a fixed point is reached;
 \item Use a double-ended queue where promising children is prepended
   rather than appended.
-\item \vv{allNormed}
 \end{enumerate}
 
 If, on the one hand, we believed that the computation of the expansion
