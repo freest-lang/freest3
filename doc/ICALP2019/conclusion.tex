@@ -1,7 +1,24 @@
-\section{Conclusion and future work}
+\section{Conclusion}
 \label{sec:conclusion}
 
-% Motivated by the need of having a practical and implementable
-% algorithm to decide type equivalence on context-free session types, we
-% have proposed an algorithm that takes advantage of a process algebra
-% graph representation of types to decide type equivalence. 
+Context-free session types are a promising tool to describe protocols
+in concurrent programs. In order to be incorporated in programming
+languages and effectively used in compilers, a practical algorithm to
+decide bisimulation is called for.
+%
+Taking advantage of a process algebra graph representation of types to
+decide
+bisimulation~\cite{DBLP:journals/tcs/HirshfeldJM96,DBLP:conf/concur/HirshfeldM94},
+we have developed one such algorithm (and proved it correct), which we
+incorporated on a compiler for a concurrent functional language
+equipped with context-free session types~\cite{freeST}.
+
+% Motivated by the need of a practical algorithm to decide type
+% equivalence on context-free session types, we have proposed an
+% algorithm that takes advantage of a process algebra graph
+% representation of types to decide type equivalence.
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:
