@@ -31,6 +31,7 @@ the \lstinline|toGrammar|$S$.
 \end{proof}
 
 \begin{theorem}
+\label{thm:cfst_vs_grammar}
   $S$ is bisimilar to $\toGrammarf{S}$.
 \end{theorem}
 
@@ -245,7 +246,7 @@ the \lstinline|toGrammar|$S$.
 \subsection{Correctness of the algorithm}
 
 We now focus on the correctness of the algorithm in
-Listing~\ref{lst:algorithm}.  Before proceeding to soundness, we
+listing~\ref{lst:algorithm}.  Before proceeding to soundness, we
 recall the \emph{safeness property} presented by Jan{\v{c}}ar and
 Moller.
 
@@ -256,14 +257,14 @@ Moller.
 \end{proposition}
 
 Notice that function \lstinline|bisimilar|
-(Listing~\ref{lst:algorithm}) builds an expansion tree by alternating
+(listing~\ref{lst:algorithm}) builds an expansion tree by alternating
 between expansion and simplification operations (reflexive,
 congruence and \BPA\ rules), as proposed by Jan{\v{c}}ar and Moller.
 %
-These simplification rules are \emph{safe}, in the sense that the
+These simplification rules are \emph{safe}~\cite{janvcar1999techniques}, in the sense that the
 application of any rule preserves the bisimulation from a parent node
 to at least one child node and, reciprocally, that bisimulation on a
-children node implies the bisimulation of its parent node, thus proving
+child node implies the bisimulation of its parent node, thus proving
 the safeness property.
 
 %\begin{proof}
