@@ -45,17 +45,14 @@ improvement on more than 12,000,000\% of the base case, by
 achieving an average of 0,04 seconds for the running time and 62 Mb
 of allocated memory.
 
-The running times and memory allocated are presented in
-Figure~\ref{fig:results}, exhibit an improvement on more than
-12,000,000\%.
+We should also highlight that, we have run example in~\eqref{ex:chaotic} 
+with the improved algorithm, in a battery os 100 runs, and obtained an
+average running time of 0.008 seconds. 
 
-The running time of example in~\eqref{ex:chaotic} was
-brought down to 0.008 seconds. For this reasons, our
-proposal for an algorithm to check the equivalence of context-free
-session types stands on adapting the simplification stage to enable
-double-ended enqueueing and the computation of a fixed point at the
-simplification phase Listing~\ref{lst:enhanced} presents an enhanced
-version of the simplification stage coping the new proposals.
+The heuristic we proposed actually circumvents the exponential complexity 
+inherent to the expansion tree, thus allowing to obtain running times that 
+are manifestly small, thus allowing the use of this algorithm as an integral 
+part of a compiler, as we had intended from the beginning.
 
 %%% Local Variables:
 %%% mode: latex
