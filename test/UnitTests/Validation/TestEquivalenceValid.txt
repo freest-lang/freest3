@@ -314,6 +314,10 @@ rec x. rec y. (!Int; x; y)
 rec y. rec x. (!Int; x; ?Bool; y)
 
 []
+rec x. (Skip; x)
+rec x. (Skip; x)
+
+[]
 rec x . (?Bool; x)
 rec y . (?Bool; y; !Int)
 
