@@ -123,6 +123,13 @@ in the same way, when no ambiguities arise.
 	fixed point in $\text{\lstinline{Set (Node,Ancestors)}}$.
 \end{proof}
 
+The optimizations we propose aim to improve the performance of the algorithm, 
+however the branching nature of the expansion tree promotes an exponential 
+complexity, since each simplification step (potentially) generates a number of 
+nodes polynomial in the size of input, and the same simplification phase may, in 
+the worst case, be iterated a linear number of times in the size of the input.
+Nevertheless, the heuristic we present seems to succeed very well in practice, as 
+we will see in the next section.
 
 
 %%% Local Variables:
