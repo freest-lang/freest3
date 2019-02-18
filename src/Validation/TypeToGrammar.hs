@@ -94,14 +94,13 @@ toGrammar (Var x) = do
   if b
   then    -- This is a recursion variable
     return [x]
-  else do -- This is a free variable
+  else do -- This is a polymorphic variable
     y <- freshVar
     addProduction y (VarLabel x) []
     return [y]
-toGrammar u@(Rec Bind{var=x} t) =
-  if isChecked u Set.empty
-  then return []
-  else do
+toGrammar u@(Rec Bind{var=x} t)
+  | isChecked u Set.empty = return []
+  | otherwise = do
     y <- freshVar
     insertVisited y
     zs <- toGrammar $ subs (Var y) x t -- On the fly α-conversion

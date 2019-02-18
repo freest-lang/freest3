@@ -22,14 +22,13 @@ toGrammar (Semi t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
   return (xs ++ ys)
-toGrammar (Rec x t) = do
-  zs <- toGrammar t
-  if null zs
-    then return []
-    else do
-      m <- getTransitions (head zs)
-      addProductions x (Map.map (++ tail zs) m)
-      return [x]
+toGrammar (Rec x t) =
+  | isChecked (Rec x t) = return []
+  | otherwise = do
+    zs <- toGrammar t
+    m <- getTransitions (head zs)
+    addProductions x (Map.map (++ tail zs) m)
+    return [x]
 toGrammar (Var x) =
   return [x]
 
