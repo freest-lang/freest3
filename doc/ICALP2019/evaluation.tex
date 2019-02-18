@@ -11,11 +11,14 @@ results we present in this section.  Evaluation was conducted on a Mac
 mini equipped with a 3.6 GHz Intel Core i3, 8 GB of memory, running
 MacOS 10.14.3.
 
-We tested the various combinations of the two optimisations discussed
-in Section~\ref{sec:optimisations} against the base case (that
-presented in Section~\ref{sec:algorithm}) on a test suite of 150
-carefully crafted tests. The results are presented in
-Figure~\ref{fig:results}.
+Once the proposals for improvement of the algorithm were established,
+we have benchmarked the algorithm on a test suite of carefully crafted
+pair of types. These tests comprise valid and invalid equivalences,
+for a total of 138 tests. We have profiled our program for the time
+and memory allocated during the tests. For this purpose, we have used
+GHC's profiling feature, that maintains a cost-centre stack to keep
+track of the incurred costs. The results are presented in
+figure~\ref{fig:results}.
 
 \begin{figure}[h]
   \includegraphics[height=4.8cm]{img/run_time}
@@ -27,17 +30,15 @@ Figure~\ref{fig:results}.
   \label{fig:results}
 \end{figure}
 
-When compared to the base algorithm, the running times and memory
-allocated exhibit an improvement of more than 12,000,000\%. The
-running time of the example in~\eqref{ex:chaotic} was brought down to
-0.008 seconds.
-
-% For this reasons, our proposal for an algorithm to
-% check the equivalence of context-free session types stands on adapting
-% the simplification stage to enable double-ended enqueueing and the
-% computation of a fixed point at the simplification phase
-% Listing~\ref{lst:enhanced} presents an enhanced version of the
-% simplification stage coping the new proposals.
+The running times and memory allocated are presented in
+Figure~\ref{fig:results}, exhibit an improvement on more than
+12,000,000\%. The running time of example in~\eqref{ex:chaotic} was
+brought down to 0.008 seconds. For this reasons, our
+proposal for an algorithm to check the equivalence of context-free
+session types stands on adapting the simplification stage to enable
+double-ended enqueueing and the computation of a fixed point at the
+simplification phase Listing~\ref{lst:enhanced} presents an enhanced
+version of the simplification stage coping the new proposals.
 
 %%% Local Variables:
 %%% mode: latex
