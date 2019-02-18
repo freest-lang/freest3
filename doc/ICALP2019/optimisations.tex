@@ -3,7 +3,7 @@
 
 Armed with the results in section~\ref{sec:algorithm}, we decided to
 benchmark the algorithm on a test suite of carefully crafted pair of
-types (more on this in section~\ref{sec:evaluation}). During this 
+types (more on this in Section~\ref{sec:evaluation}). During this 
 process we came across a pair of types,
 \begin{equation}
 \label{ex:chaotic}
@@ -22,7 +22,7 @@ on which function \lstinline|bisimilar| took 4379.98 seconds (that is
 one hour and forty minutes) to terminate. This is certainly not a
 reasonable running time for an algorithm to be included in a
 compiler. Hence, we looked into ways to improve the running
-times. Among the different optimisations that we tried, two stand
+time. Among the different optimisations that we tried, two stand
 out:
 \begin{enumerate}
 \item Iterate the simplification stage until a fixed point is reached;
@@ -33,13 +33,19 @@ out:
 If, on the one hand, we believed that the computation of the expansion
 tree could be speeded up by extending the simplification phase, on the
 other hand we suspected that a double-ended queue would allow
-prioritizing nodes with potential to reach an empty node faster.  The
-latter is obtained by prepending nodes that are already empty or,
-either, whose pairs $(\vec X, \vec Y)$ are such that $|\vec X|\leq 1$
-and $|\vec Y| \leq 1$.  For the former, we need to check that a fixed
-point exists and, hence, for a given node $N$, we are able to compute
-all the children nodes derived from $N$ using the
-simplification rules, at that stage.
+prioritizing nodes with potential to reach an empty node faster.
+%
+Iterating the simplification procedure on a given node $N$, the
+algorithm computes the \emph{simplest} possible children nodes derived
+from $N$. Of course, we need to make sure that a fixed-point exists,
+which we do with Theorem~\ref{thm:fixed_point}.
+%
+Using a double-ended queue, the algorithm prepends (rather than
+appends) nodes that are already empty or whose pairs $(\vec X, \vec Y)$
+are such that $|\vec X|\leq 1$ and $|\vec Y| \leq 1$.
+%
+The revised \lstinline|simplify| function is in Listing~\ref
+{lst:enhanced}.
 
 In the next theorem we prove that the simplification function that consists 
 in applying the reflexive, congruence and \BPA\ rules has a fixed point.
@@ -50,19 +56,19 @@ normed as in the case they are not.
 \label{thm:fixed_point}
 	The simplification function that results from applying the reflexive,
 	congruence, and \BPA\ rules, has a fixed point in the complete partial
-	ordered set \lstinline{Set (Node,Ancestors)}, where the set of ancestors
+	ordered set \upshape{\lstinline|Set (Node, Ancestors)|}, where the set of ancestors
 	is supposed to be fixed and equal to $A$.
 \end{theorem}
 
 Throughout the proof of Theorem~\ref{thm:fixed_point}, we will abuse 
 notation and denote the application of simplification rules
-to nodes or to elements of $\text{\lstinline{Set (Node,Ancestors)}}$
+to nodes or to elements of $\text{\lstinline{Set (Node, Ancestors)}}$
 in the same way, when no ambiguities arise.
 
 \begin{proof}
 	Consider the order 
-	$\leqSets$ defined in $\text{\lstinline{Set (Node,Ancestors)}}
-	\times \text{\lstinline{Set (Node,Ancestors)}}$ by:
+	$\leqSets$ defined in $\text{\lstinline{Set (Node, Ancestors)}}
+	\times \text{\lstinline{Set (Node, Ancestors)}}$ by:
 	$S_1 \leqSets S_2$ if $|S_1| \leq |S_2|$ and
 	exists an injective map $\sigma : S_1 \rightarrow S_2$ s.t.\  
 	$\sigma(N_1,A) = (N_2,A)$ with $N_2\subseteq N_1$.\smallskip
@@ -126,22 +132,22 @@ in the same way, when no ambiguities arise.
 	application of these rules, we have proved that the simplification
 	function also preserves the order.\smallskip
 	
-	\noindent\textbf{$(\text{\lstinline{Set (Node,Ancestors)}}, \leqSets)$
+	\noindent\textbf{$(\text{\lstinline{Set (Node, Ancestors)}}, \leqSets)$
 	is a lattice:} Given 
-	$S_1, S_2\in \text{\lstinline{Set (Node,Ancestors)}}$,
+	$S_1, S_2\in \text{\lstinline{Set (Node, Ancestors)}}$,
 	$S_1 \cup S_2$ is an upper bound and
 	$S_1 \cap S_2$ is a lower bound for $S_1$ and $S_2$.\smallskip
 	
-	\noindent\textbf{$(\text{\lstinline{Set (Node,Ancestors)}}, \leqSets)$
+	\noindent\textbf{$(\text{\lstinline{Set (Node, Ancestors)}}, \leqSets)$
 	is a complete lattice:} Given 
-	$\mathcal{B}\subseteq \text{\lstinline{Set (Node,Ancestors)}}$:
+	$\mathcal{B}\subseteq \text{\lstinline{Set (Node, Ancestors)}}$:
 	$\bigcup_{S\in \mathcal{B}} S$ is an upper bound and
 	$\bigcap_{S\in \mathcal{B}} S$ is a lower bound for the sets in 
 	$\mathcal{B}$.
 	
 	Using the fixed point theorem from Tarski~\cite{tarski1955lattice}, 
 	we conclude that the simplification function has a
-	fixed point in $\text{\lstinline{Set (Node,Ancestors)}}$.
+	fixed point in $\text{\lstinline{Set (Node, Ancestors)}}$.
 \end{proof}
 
 Having proved that the fixed point exists, we can now adapt the simplification 

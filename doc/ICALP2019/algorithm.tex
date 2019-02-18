@@ -382,18 +382,18 @@ expand ps q
   where (n,a) = Queue.front q
 
 simplify :: Productions -> Node -> Ancestors -> NodeQueue -> NodeQueue
-simplify ps n a q = foldr Queue.append (Queue.dequeue q) ns'
-  where ns  = Set.singleton (n,a)
-        ns' = if allNormed ps
-               then foldr (apply ps) ns [reflex,congruence,bpa2]
-               else foldr (apply ps) ns [reflex,congruence,bpa1,bpa2]
+simplify ps n a q = foldr Queue.append (Queue.dequeue q) nas'
+  where nas  = Set.singleton (n,a)
+        nas' = if allNormed ps
+               then foldr (apply ps) nas [reflex,congruence,bpa2]
+               else foldr (apply ps) nas [reflex,congruence,bpa1,bpa2]
 \end{lstlisting}
 
-\begin{figure}[t!]
+\begin{figure}[h]
 \centering
 	\includegraphics[width=8.5cm]{expansionTree}
 	\caption{Expansion tree for the context-free session types $S$ and $T$
-	introduced in Example~\ref{ex:productions}.}
+	introduced in Example~\ref{ex:productions}}
 	\label{fig:expansionTree}
 \end{figure}
 
