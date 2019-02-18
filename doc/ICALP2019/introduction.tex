@@ -16,11 +16,11 @@ liberate traditional session types from the shackles of tail
 recursion, allowing for example, the safe serialization of arbitrary
 recursive datatypes~\cite{thiemann2016context}.
 
-If the algorithm aspects of the type equivalence for regular session
-types are well known (Gay and Hole show authored an algorithm to
-decide subtyting~\cite{DBLP:journals/acta/GayH05}, from which type
-equivalence can be decided), the same does not apply to context-free
-session types.
+If the algorithm aspects of the problem of type equivalence for
+regular session types are well known (Gay and Hole authored an
+algorithm to decide subtyting~\cite{DBLP:journals/acta/GayH05}, from
+which type equivalence can be derived), the same does not apply to
+context-free session types.
 
 In the aforementioned work, Thiemann and Vasconcelos showed that the
 equivalence of context-free session types is decidable, by reducing
@@ -34,21 +34,39 @@ effect.
 %
 Similarly, even if the problem of deciding the equivalence of BPA
 terms has been addressed in the
-literature~\cite{DBLP:journals/iandc/ChristensenHS95,janvcar1999techniques,thiemann2016context},
+literature~\cite{DBLP:journals/iandc/ChristensenHS95,janvcar1999techniques},
 to the best of our knowledge, no practical algorithm was ever
 proposed.
 
+% Related work here
+
+A basic result from Baeten, Bergstra, and Klop states that any guarded
+BPA system can be transformed in Greibach Normal Formal (GNF) while
+preserving bisimulation equivalence, but unfortunately no procedure is
+presented~\cite{baeten1993decidability}. The first stage of our
+algorithm builds a GNF (in fact a simple grammar) from a a
+context-free session type in a way that bisimulation is preserved.
+
+Context-free session types are not necessarily normed, which precludes
+using the original result by Baeten, Bergstra, and
+Klop~\cite{baeten1993decidability}, as well as improvements by Janc\v
+ar, Hirshfeld and
+Moller~\cite{DBLP:journals/tcs/HirshfeldJM96,DBLP:conf/concur/HirshfeldM94}.
+
+
+
+% Contributions
 We present an algorithm to decide the equivalence of context-free
-session types, practical to the point that it may be included in any
-compiler, an exercise that we conducted in parallel~\cite{freeST}.
+session types, practical to the point that it may be readily included
+in any compiler, an exercise that we conducted in
+parallel~\cite{freeST}.
 %
 The main contributions of this work are:
 %
 \begin{itemize}
 \item The proposal and implementation of an algorithm to decide type
-  equivalence of context-free session types (in the process we also
-  provide an algorithm to decide the equivalence of simple
-  context-free grammars),
+  equivalence of context-free session types (in 300 lines of Haskell
+  code),
 \item a proof of soundness and completeness of the algorithm against
   the declarative definition,
 \item A study of the complexity of the algorithm,
@@ -56,6 +74,8 @@ The main contributions of this work are:
   time in 12,000,000\%.
 %\item validation of the algorithm on several meaningful examples.
 \end{itemize}
+
+% Outline
 
 The rest of the paper is organized as follows: context-free session
 types in Section~\ref{sec:contextfreesession}, the algorithm in

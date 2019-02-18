@@ -27,11 +27,11 @@ which it decides negatively.
 A context-free grammar in Greibach normal form is a pair
 $(X,\productions)$ where~$X$ is the \emph{start symbol}
 and~$\mathcal P$ a \emph{set of productions} of the form
-$Y \rightarrow a\vec Z$~\cite{GNF} (we do not allow productions of the
-form $X \rightarrow\varepsilon$). Type variables are the
-\emph{non-terminal symbols} and LTS labels the \emph{terminal
-  symbols}. We call \emph{words} to sequences of type
-variables~$\vec X$, and denote by~$\varepsilon$ the empty word.
+$Y \rightarrow a\vec Z$ (we do not allow productions of the form
+$X \rightarrow\varepsilon$). Type variables are the \emph{non-terminal
+  symbols} and LTS labels the \emph{terminal symbols}. We call
+\emph{words} to sequences of type variables~$\vec X$, and denote
+by~$\varepsilon$ the empty word.
 %
 The grammars we are interested in are \emph{simple}: for each
 non-terminal symbol~$X$ and each terminal symbol~$a$, there is at most
@@ -55,8 +55,8 @@ Function \lstinline|toGrammar| (Listing~\ref{lst:toGrammar}) returns a
 sequence of non-terminal symbols, while computing the remaining
 productions.
 %
-The algorithm keeps the set of productions and an index to generate
-fresh non-terminal symbols in the monadic state
+The algorithm keeps the set of productions and an integer (to generate
+fresh non-terminal symbols) in the monadic state
 \lstinline{TransState}. It uses the following functions to manipulate
 state.
 %
@@ -154,10 +154,6 @@ shortest~$\vec a$ such that $\vec Y \LTSderivesP[\vec a]
 %
 In this case, the \emph{norm} of $\vec Y$, denoted by $|\vec Y|$, is
 the length of~$\vec a$.
-%
-Notice that context-free session types are not necessarily normed,
-which precludes using the results by Janc\v ar, Hirshfeld and
-Moller~\cite{DBLP:journals/tcs/HirshfeldJM96,DBLP:conf/concur/HirshfeldM94}.
 
 % Using the same approach as~\cite{DBLP:journals/iandc/ChristensenHS95} on
 % the definition of (un)normed processes, we say that a sequence of symbols
