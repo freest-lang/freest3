@@ -10,7 +10,10 @@
 % \end{quote}
 
 This section presents an algorithm to decide whether two types are in
-a bisimulation relation. The algorithm comprises three stages. It
+a bisimulation relation. In the process we also provide an algorithm
+to decide the equivalence of simple context-free languages.
+%
+The algorithm comprises three stages. It
 starts by converting types into grammars and then streamlines the
 grammar by pruning unreachable symbols in productions. The last stage
 explores an expansion tree, alternating between simplification and
@@ -22,9 +25,10 @@ which it decides negatively.
 \label{subsec:typeToGrammar}
 
 A context-free grammar in Greibach normal form is a pair
-$(X,\productions)$ where~$X$ is the \emph{start symbol} and~$P$ a
-\emph{set of productions} of the form
-$Y \rightarrow a\vec Z$~\cite{GNF}. Type variables are the
+$(X,\productions)$ where~$X$ is the \emph{start symbol}
+and~$\mathcal P$ a \emph{set of productions} of the form
+$Y \rightarrow a\vec Z$~\cite{GNF} (we do not allow productions of the
+form $X \rightarrow\varepsilon$). Type variables are the
 \emph{non-terminal symbols} and LTS labels the \emph{terminal
   symbols}. We call \emph{words} to sequences of type
 variables~$\vec X$, and denote by~$\varepsilon$ the empty word.
@@ -38,19 +42,9 @@ Grammars in Greibach Normal Form naturally induce an LTS by taking
 sequences of non-terminal symbols~$\vec X$ as states, terminal
 symbols~$a$ as the set of actions, and the transition relation
 $\LTSderivesP$ defined as $X\vec Y\LTSderivesP \vec Z\vec Y$ when
-$X \rightarrow a\vec Z \in\productions$. \vv{reference here} The
-associated bisimulation is denoted by $\ProdEquiv$.
-% Throughout the text we drop the subscript $\productions$ when it is
-% clear from context.
-
-% We will consider context-free session types as being represented by a
-% finite set of productions, built upon the labelled transition system (\LTS)
-% presented in Figure~\ref{lts}. In this line, a context-free session type
-% is seen as a finite set of productions of the form $X\rightarrow a \vec Y$,
-% where $X$ ranges over a finite set of \emph{non-terminal symbols}, $\vec Y$
-% is a sequence of non-terminal symbols, and $a$ is a \emph{terminal symbol}
-% ranging over the set of labels in the \LTS. When no distinction is required,
-% we refer to $X$, $Y$ and $a$ simply as \emph{symbols}.
+$X \rightarrow a\vec Z \in\productions$.
+% \vv{reference here}
+The associated bisimulation is denoted by $\ProdEquiv$.
 
 Given a context-free session type $S$, the algorithm starts by
 inserting an initial production of the form
@@ -60,12 +54,6 @@ productions.
 Function \lstinline|toGrammar| (Listing~\ref{lst:toGrammar}) returns a
 sequence of non-terminal symbols, while computing the remaining
 productions.
-%
-% \begin{equation*}
-% %  \label{initial_prod}
-%   X_S \rightarrow \enspace\initialProd\enspace
-%   \text{(\lstinline{toGrammar} S)}
-% \end{equation*}
 %
 The algorithm keeps the set of productions and an index to generate
 fresh non-terminal symbols in the monadic state
@@ -166,6 +154,10 @@ shortest~$\vec a$ such that $\vec Y \LTSderivesP[\vec a]
 %
 In this case, the \emph{norm} of $\vec Y$, denoted by $|\vec Y|$, is
 the length of~$\vec a$.
+%
+Notice that context-free session types are not necessarily normed,
+which precludes using the results by Janc\v ar, Hirshfeld and
+Moller~\cite{DBLP:journals/tcs/HirshfeldJM96,DBLP:conf/concur/HirshfeldM94}.
 
 % Using the same approach as~\cite{DBLP:journals/iandc/ChristensenHS95} on
 % the definition of (un)normed processes, we say that a sequence of symbols
