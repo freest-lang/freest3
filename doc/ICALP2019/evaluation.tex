@@ -27,21 +27,39 @@ pair of types. These tests comprise valid and invalid equivalences,
 for a total of 138 tests. We have profiled our program for the
 time and memory allocated during the tests. For this purpose,
 we have used GHC's profiling feature, that maintains a cost-centre stack
-to keep track of the incurred costs. The results are presented 
-in figure~\ref{fig:results}.
+to keep track of the incurred costs. We ran the tests 10 times, 
+kept a record of the run time and memory allocated for each run,
+discarded the best and worst values obtained and, then, we have 
+measured the average of the remaining values. The results are 
+depicted in figure~\ref{fig:results}.
 
 \begin{figure}[h]
-	\includegraphics[height=4.8cm]{img/run_time}	\qquad 
-	\includegraphics[height=4.8cm]{img/memory_alloc}	
+	\includegraphics[height=5cm]{img/run_time}	\enspace 
+	\includegraphics[height=5cm]{img/memory_alloc}	
 	\caption{Test results: running times (on the left) and
 	memory allocated (on the right) checking the equivalence 
 	of context-free session types in 138 tests.}
 	\label{fig:results}
 \end{figure}
 
+For the base algorithm, proposed in listing~\ref{lst:algorithm},
+we have obtained an average running time of about 4445,38 seconds
+and 8259115 Mb memory allocated. From the moment we introduced 
+optimizations in the algorithm the results have improved remarkably:
+iterating the simplification phase in the search for a fixed point 
+allowed to reduce the value of the running time to 110,35 seconds and 
+the memory allocated to 164745 Mb, whereas the implementation of the 
+double-ended queue allowed to reduce the running time to 18,45 seconds 
+and the allocated memory to 29298. The combination of both exhibit an 
+improvement on more than 12,000,000\% of the base case, by 
+achieving an average of 0,04 seconds for the running time and 62 Mb 
+of allocated memory.
+
 The running times and memory allocated are presented in
 Figure~\ref{fig:results}, exhibit an improvement on more than
-12,000,000\%. The running time of example in~\eqref{ex:chaotic} was
+12,000,000\%. 
+
+The running time of example in~\eqref{ex:chaotic} was
 brought down to 0.008 seconds. For this reasons, our
 proposal for an algorithm to check the equivalence of context-free
 session types stands on adapting the simplification stage to enable
