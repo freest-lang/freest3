@@ -102,7 +102,7 @@ toGrammar (Rec Bind{var=x} t) = do
   y <- freshVar
   insertVisited y
   zs <- toGrammar $ subs (Var y) x t -- On the fly α-conversion
-  if null zs
+  if isChecked (Rec Bind{var=x} t) Set.empty -- null zs
     then return []
   else do
     m <- getTransitions $ head zs
@@ -117,6 +117,16 @@ assocToGrammar :: TypeVar -> ChoiceView -> (Constructor, Type) -> TransState ()
 assocToGrammar y c (l, t) = do
   xs <- toGrammar t
   addProduction y (ChoiceLabel c l) xs
+
+isChecked :: Type -> Visited -> Bool
+isChecked Skip _ = True
+isChecked (Semi s t) v = isChecked s v && isChecked' t v
+isChecked (Rec Bind{var=x} t) v = isChecked t (Set.insert x v)
+isChecked _ _ = False
+
+isChecked' :: Type -> Visited -> Bool
+isChecked' (Var x) v = Set.member x v
+isChecked' s v = isChecked s v
 
 -- Some tests
 
