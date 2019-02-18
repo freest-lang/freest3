@@ -19,6 +19,19 @@ from the grammar below.
   a \grmeq \sharp B \grmor \star l %\grmor \alpha
 \end{gather*}
 
+We assume that all occurrences of variables in a type are introduced
+by some $\mu$-binder (no free variables in types).
+%
+We further assume that types are renamed so that all variables
+introduced by~$\mu$ are distinct.
+%
+Finally, we require types to be contractive (no subterms of the form
+$\mu X_1.\mu X_2 \dots \mu
+X_n. X_1$)~\cite{DBLP:journals/tcs/Courcelle83,thiemann2016context}.
+%
+For simplicity we removed polymorphic type variables (not bound by
+$\mu$) from the grammar; they can be treated as $\sharp B$.
+
 The labelled transition system (LTS) for context-free session types is
 given by the set of types as \emph{states}, the set of \emph{actions}
 ranged over by $a$, and the \emph{transition relation} $\LTSderives$
@@ -49,13 +62,6 @@ action~\cite{DBLP:journals/jacm/AcetoH92} .
 
 \emph{Type bisimulation}, $\TypeEquiv$, is defined in the usual way from the
 labelled transition system~\cite{sangiorgi2014introduction}.
-%
-Polymorphic type variables (not bound by $\mu$) can be treated as
-$\sharp B$.
-%
-We assume that types are renamed so that all variables introduced
-by~$\mu$ are distinct. We further assume that all occurrences of
-variables in a type are introduced by some~$\mu$ binder.
 
 %%% Local Variables:
 %%% mode: latex
