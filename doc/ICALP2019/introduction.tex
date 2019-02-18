@@ -1,44 +1,89 @@
 \section{Motivation}
 \label{sec:introduction}
 
-Session types enhance the expressivity of traditional types, enabling
-to express structured communication on heterogeneously typed
-channels~\cite{DBLP:conf/concur/Honda93,DBLP:conf/parle/TakeuchiHK94}.
-% Session types have been extended to deal with many realistic
-% situations, e.g., multi-party session
-% types~\cite{DBLP:conf/popl/HondaYC08}, session types for distributed
-% object-oriented programming~\cite{DBLP:conf/popl/GayVRGC10}, session
-% types for programming web
-% services~\cite{DBLP:journals/toplas/CarboneHY12}.
-Thiemann and
-Vasconcelos~\cite{thiemann2016context} proposed {\it context-free
-  session types} as an extension of session types by allowing nested
-protocols that are not restricted to tail recursion. Context-free
-session types capture the type-safe serialization of recursive
-datatypes and enable the type-safe implementation of remote operations
-on recursive datatypes.
+Session types enhance the expressivity of traditional types for
+programming languages by enabling expressing structured communication
+on heterogeneously typed
+channels~\cite{DBLP:conf/concur/Honda93,DBLP:conf/esop/HondaVK98,DBLP:conf/parle/TakeuchiHK94}.
+%
+Traditional session types are \emph{regular}, in the sense that the
+sequences of communication actions admitted by a type are in the union
+of a regular language (for finite executions) and an $\omega$-regular
+language (for infinite executions).
+%
+Introduced by Thiemann and Vasconcelos, context-free session types
+liberate traditional session types from the shackles of tail
+recursion, allowing for example, the safe serialization of arbitrary
+recursive datatypes~\cite{thiemann2016context}.
 
-Inspired by the context-free session types' framework, Almeida and
-Vasconcelos~\cite{bernardo} proposed a functional programming language
-equipped with context-free session types.  Such a programming language
-is highly dependent on an algorithm to decide type equivalence. We
-have developed and implemented an algorithm to decide type
-equivalence. Our work capitalizes on the metatheory of context-free
-session types proposed by Thiemann and
-Vasconcelos~\cite{thiemann2016context}, where type equivalence was
-proved to be decidable. Although the decidability of equivalence on
-context-free session types has been addressed in the
+If the algorithm aspects of the type equivalence for regular session
+types are well known (Gay and Hole show authored an algorithm to
+decide subtyting~\cite{DBLP:journals/acta/GayH05}, from which type
+equivalence can be decided), the same does not apply to context-free
+session types.
+
+In the aforementioned work, Thiemann and Vasconcelos showed that the
+equivalence of context-free session types is decidable, by reducing
+the problem to the verification of bisimulation for Basic Process
+Algebra (BPA) which, in turn, was proved decidable by Christensen,
+H{\"{u}}ttel, and Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}.
+%
+Even if the equivalence problem for context-free session types is
+known to be decidable, to date, no algorithm has been proposed for the
+effect.
+%
+Similarly, even if the problem of deciding the equivalence of BPA
+terms has been addressed in the
 literature~\cite{DBLP:journals/iandc/ChristensenHS95,janvcar1999techniques,thiemann2016context},
-to the best of our knowledge, no algorithm was ever implemented.
-% and a possible implementation was not obvious.
+to the best of our knowledge, no practical algorithm was ever
+proposed.
 
-The main contributions of this work are: the proposal and implementation of an algorithm to decide
-type equivalence of context-free session types, a proof of soundness and completeness of
-the algorithm against the declarative definition,
-in~\cite{thiemann2016context}, % study and possibly prove the
-% completeness of the algorithm
-and the validation of  the algorithm on several meaningful examples.
+We present an algorithm to decide the equivalence of context-free
+session types, practical to the point that it may be included in any
+compiler, an exercise that we conducted in parallel~\cite{freeST}.
+%
+The main contributions of this work are:
+%
+\begin{itemize}
+\item The proposal and implementation of an algorithm to decide type
+  equivalence of context-free session types,
+\item a proof of soundness and completeness of the algorithm against
+  the declarative definition, in~\cite{thiemann2016context}, 
+\item The study of the complexity of the algorithm,
+\item The exploration of several optimizations that cut the running
+  time in 12,000,000\%.
+%\item validation of the algorithm on several meaningful examples.
+\end{itemize}
 
+The rest of the paper is organized as follows: context-free session
+types in Section~\ref{sec:contextfreesession}, the algorithm in
+Section~\ref{sec:algorithm}, the main results in
+Section~\ref{sec:soundness}, optimizations in
+Section~\ref{sec:optimisations}, evaluation in
+Section~\ref{sec:evaluation}, and related work and conclusions in
+Section~\ref{sec:conclusion}.
+
+% Thiemann and
+% Vasconcelos~\cite{thiemann2016context} proposed {\it context-free
+%   session types} as an extension of session types by allowing nested
+% protocols that are not restricted to tail recursion. Context-free
+% session types capture the type-safe serialization of recursive
+% datatypes and enable the type-safe implementation of remote operations
+% on recursive datatypes.
+
+% Inspired by the context-free session types' framework, Almeida and
+% Vasconcelos~\cite{bernardo} proposed a functional programming language
+% equipped with context-free session types.  Such a programming language
+% is highly dependent on an algorithm to decide type equivalence. We
+% have developed and implemented an algorithm to decide type
+% equivalence. Our work capitalizes on the metatheory of context-free
+% session types proposed by Thiemann and
+% Vasconcelos~\cite{thiemann2016context}, where type equivalence was
+% proved to be decidable. Although the decidability of equivalence on
+% context-free session types has been addressed in the
+% literature~\cite{DBLP:journals/iandc/ChristensenHS95,janvcar1999techniques,thiemann2016context},
+% to the best of our knowledge, no algorithm was ever implemented.
+% % and a possible implementation was not obvious.
 
 %%% Local Variables:
 %%% mode: latex
