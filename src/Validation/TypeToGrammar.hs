@@ -98,13 +98,13 @@ toGrammar (Var x) = do
     y <- freshVar
     addProduction y (VarLabel x) []
     return [y]
-toGrammar (Rec Bind{var=x} t) = do
-  y <- freshVar
-  insertVisited y
-  zs <- toGrammar $ subs (Var y) x t -- On the fly α-conversion
-  if isChecked (Rec Bind{var=x} t) Set.empty -- null zs
-    then return []
+toGrammar u@(Rec Bind{var=x} t) =
+  if isChecked u Set.empty
+  then return []
   else do
+    y <- freshVar
+    insertVisited y
+    zs <- toGrammar $ subs (Var y) x t -- On the fly α-conversion
     m <- getTransitions $ head zs
     addProductions y (Map.map (++ tail zs) m)
     return [y]

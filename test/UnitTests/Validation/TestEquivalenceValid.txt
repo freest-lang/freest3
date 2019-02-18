@@ -314,10 +314,6 @@ rec x. rec y. (!Int; x; y)
 rec y. rec x. (!Int; x; ?Bool; y)
 
 []
-rec x. (Skip; x)
-rec x. (Skip; x)
-
-[]
 rec x . (?Bool; x)
 rec y . (?Bool; y; !Int)
 
@@ -348,6 +344,40 @@ rec x. &{Node: ?Int;x}
 []
 rec x . &{Add: x;x;!Int}
 rec x . &{Add: x;x;!Int}
+
+-- Terminated types
+
+[]
+rec x. (Skip; x)
+rec x. (Skip; x)
+
+[]
+rec x. (Skip; x); rec x. (Skip; x)  
+rec x. (Skip; x)
+
+[]
+rec x. (Skip; x); rec x. (Skip; x)  
+rec x. (Skip; x); rec x. (Skip; x)  
+
+[]
+Skip
+Skip; Skip
+
+[]
+rec x. (Skip; x)
+Skip
+
+[]
+rec x. (Skip; x)
+Skip; Skip
+
+[]
+rec x. (Skip; x; (rec x. (Skip; x)))
+rec x. (Skip; x); rec x. (Skip; x)  
+
+[]
+rec x. ((rec x. (Skip; x)); (rec x. (Skip; x)))
+rec x. (Skip; x); rec x. (Skip; x)  
 
 -- Context-free Recursive Types, normed
 
