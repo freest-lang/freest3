@@ -1,22 +1,12 @@
 \section{Complexity Analysis}
 \label{sec:complexity}
 
-Throughout this section, we carry out an analysis of the
-improved version of algorithm \lstinline{bisimilar},
-that involves the algorithms from Listings~\ref{lst:toGrammar},
-\ref{lst:prune}, \ref{lst:algorithm}, and the improved version
-of the simplification stage presented in Listing~\ref{lst:enhanced}.
-
-
 \todo{AM}{complexity analysis for toGrammar (and prune)}
 
-Despite the great branching ability of this expansion tree, 
-we will prove throughout this section that we can decide 
-equivalence of symbols in the root in polynomial time. 
-For this, consider $X_S$ and
-$X_T$ the initial non-terminal symbols for $S$ and $T$, let 
-$\mathcal{P}$ denote the set of productions for $S$ and $T$ and 
-also:
+To carry out an analysis on the complexity of the algorithm, 
+consider $X_S$ and $X_T$ the initial non-terminal symbols for 
+$S$ and $T$, let $\mathcal{P}$ denote the set of productions for 
+$S$ and $T$ and also:
 \begin{itemize}
 	\item $S$ represent the maximum number of symbols in the RHS
 	      of productions in $\mathcal{P}$;
@@ -73,6 +63,11 @@ reaching a fixed point. We will carry out this analysis by
 splitting into two cases: the case in which all symbols 
 in the productions are normed, and the case where some
 of them are unnormed.\smallskip
+
+\begin{theorem}
+	The finite branch as polynomial length on the size of the root
+	$(X_S,X_T)$.
+\end{theorem}
 
 \noindent\textbf{Case 1:} In the simplest case where all symbols
 occurring in $\mathcal{P}$ are normed, the expansion stage should 
