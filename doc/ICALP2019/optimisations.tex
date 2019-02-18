@@ -1,6 +1,47 @@
 \section{Optimisations}
 \label{sec:optimisations}
 
+Armed with the results in section~\ref{sec:algorithm}, we decided to
+benchmark the algorithm on a test suite of carefully crafted pair of
+types (more on this in section~\ref{sec:evaluation}). During this 
+process we came across a pair of types,
+\begin{equation}
+\label{ex:chaotic}
+\begin{aligned}
+  S &\triangleq \mu x . \&\{ \mathsf{Add}\colon x;x; !\,\intk,
+  \mathsf{Const}\colon ?\,\intk;!\intk,
+  \mathsf{Mult}\colon x;x;!\,\intk\}
+  \\
+  T &\triangleq \mu x . \&\{ \mathsf{Add}\colon x;x,
+  \mathsf{Const}\colon ?\,\intk,
+  \mathsf{Mult}\colon x;x\}; !\,\intk
+\end{aligned}
+\end{equation}
+%
+on which function \lstinline|bisimilar| took 4379.98 seconds (that is
+one hour and forty minutes) to terminate. This is certainly not a
+reasonable running time for an algorithm to be included in a
+compiler. Hence, we looked into ways to improve the running
+times. Among the different optimisations that we tried, two stand
+out:
+\begin{enumerate}
+\item Iterate the simplification stage until a fixed point is reached;
+\item Use a double-ended queue where promising children are prepended
+  rather than appended.
+\end{enumerate}
+
+If, on the one hand, we believed that the computation of the expansion
+tree could be speeded up by extending the simplification phase, on the
+other hand we suspected that a double-ended queue would allow
+prioritizing nodes with potential to reach an empty node faster.  The
+latter is obtained by prepending nodes that are already empty or,
+either, whose pairs $(\vec X, \vec Y)$ are such that $|\vec X|\leq 1$
+and $|\vec Y| \leq 1$.  For the former, we need to check that a fixed
+point exists and, hence, for a given node $N$, we are able to compute
+the \emph{simplest} children nodes derived from $N$ using the
+simplification rules.
+
+
 \begin{lstlisting}[
   caption={Haskell code for the improved simplification step (replaces
     function \lstinline|simplify| in Listing~\ref{lst:algorithm})},
