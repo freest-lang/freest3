@@ -15,190 +15,213 @@ our algorithm is sound and complete.
 
 \subsection{The two bisimulations coincide}
 
-We start by showing that the initial (dummy) production does not
-affect bisimulation checking.
-%
+We show that the translation in Listing~\ref{lst:toGrammar} is itself
+a bisimulation.
+
+We start with a lemma that relates terminated types~$S$ with the result of
+the \lstinline|toGrammar|$S$.
+
 \begin{lemma}
-  \label{lem:dummy}
-  $X_S \ProdEquiv X_T$ if and only if
-  $\toGrammarf S \ProdEquiv \toGrammarf T$.
-	% Given two session types $S$ and $T$,
-	% \[ X_{S} \sim X_{T}  \text{ if and only if }
-	% \text{\lstinline{toGrammar S}} \sim \text{\lstinline{toGrammar T}}.\]
+  \label{lem:terminated-togrammar}
+  \DONE S if and only if $\toGrammarf{S} = \varepsilon$.
 \end{lemma}
 
 \begin{proof}
-  We have $X_S \rightarrow\, \initialProd\,(\toGrammarf S)$ and
-  $X_T \rightarrow\, \initialProd\,(\toGrammarf T)$.
-    %     By~\eqref{initial_prod}, we have:
-    %     \[X_S \rightarrow \enspace \initialProd\enspace \text{(\lstinline{toGrammar S})}\]
-    % \[X_T \rightarrow \enspace \initialProd\enspace \text{(\lstinline{toGrammar T})}\]
-  Hence, $X_S \TypeEquiv X_T$ if and only if
-  $\toGrammarf S \ProdEquiv \toGrammarf T$. \vv{prove both directions separately}
+  \vv{TODO}
 \end{proof}
 
-Terminated session types do not originate new productions.
-
-\begin{lemma}
-  \label{lemma:terminated_session}
-  If \DONE{S}, then \upshape{\lstinline|toGrammar |}$S$ adds no
-  productions and returns \upshape{\lstinline|[]|}.
-\end{lemma}
-
-\begin{itemizeproof}
-  By rule induction  on the hypothesis.
-  \begin{itemize}
-  \item If $S\triangleq \skipk$, then \lstinline{toGrammar} adds no
-    productions and returns \lstinline{[]}.
-  \item If $S\triangleq S;T$, then \DONE S and \DONE T. By induction,
-    the recursive calls add no productions and return
-    \lstinline|[]|. Then, function \lstinline|toGrammar| returns
-    \lstinline|[]++[]|, which evaluates to \lstinline|[]|.
-  \item If $S\triangleq \mu X. T$, then
-    $\subs{S}{X}T \checkmark$.
-    %
-    Function \lstinline|toGrammar |$S$ adds the productions from
-    \lstinline|toGrammar (subs (Var y) X t)|. But $\subs{S}{X} T$ is a
-    terminated session, thus \lstinline{toGrammar }$T$ adds no
-    productions and returns \lstinline{[]}. \vv{co-induction?}.
-  \end{itemize}
-\end{itemizeproof}
-
-Now we prove that any transition in the \LTS\ has a
-corresponding transition derived from the set of productions.
-
-\begin{lemma}
-  \label{lem:type-to-prod}
-  If $S \LTSderives T$, then \upshape{\lstinline|toGrammar|}
-  $S \LTSderivesP \vec X$ and \upshape{\lstinline|toGrammar|} $T$ is a
-  prefix of~$\vec X$.
-%
-% Given context-free session types $S,S'$ and a label $\ell$,
-% 	\[ \text{if } S \LTSderives[\ell] S' \text{ then }
-% 	\text{\lstinline{toGrammar S}} \rightarrow \enspace
-% 	\ell \enspace \vec Y, \]
-% 	where \lstinline{toGrammar S'} is prefix of $\vec Y$.
-\end{lemma}
-
-\begin{itemizeproof}
-By rule induction on the hypothesis.
-\begin{itemize}
-% \item If $S\triangleq \skipk$, then $S$ is a terminated
-%   session type, with no further transition. Similarly,
-%   \lstinline{toGrammar S} returns \lstinline{[]} and
-%   does not add any production. % This case does not apply!
-% \item If $S \triangleq \alpha$, then $S   \LTSderives[\alpha] \skipk$.
-%   On the other hand, since $\alpha$ does not contain non-terminal
-%   symbols, \lstinline{toGrammar S} returns a fresh variable $X$ and
-%   inserts a production $X\rightarrow \alpha$. % This case in now
-%   handled as in #B; not even part of the grammar.
-\item If $S\triangleq \sharp B$, then
-  $S \LTSderives[\sharp B] \skipk$. The call $\toGrammarf S$
-  returns a fresh variable $Y$ and inserts a production
-  $Y\rightarrow \sharp B$. Then $S \LTSderivesP \varepsilon$ and
-  $\toGrammarf\,\skipk =$ \lstinline{[]}, that is, $\varepsilon$.
-\item If $S\triangleq \star\{l_i\colon S_i\}_{i\in I}$ then,
-  $S \LTSderives[\star l_j] S_j$, for each $j\in I$. Function
-  $\toGrammarf S$ returns a fresh variable $Y$ and, recursively,
-  inserts a production $Y\rightarrow \star l_j (\toGrammarf{S_j})$,
-  for each $j\in I$, hence
-  $Y \LTSderivesP[\star l_j] \toGrammarf{S_j}$.
-\item If $S\triangleq T;U$ and $T \LTSderives[a] T'$, then
-  $S \LTSderives[a] T';U$.  By induction hypothesis, $\toGrammarf T$
-  adds the production $Y\rightarrow a (\toGrammarf{T'})$, where $Y$
-  is a fresh variable.  We notice that $\toGrammarf T$
-  $= Y \vec Y_T$ for some sequence of non-terminal symbols
-  $\vec Y_T$. By congruence, we have:
-  \[\toGrammarf S = Y\vec Y_T(\toGrammarf U)
-    \rightarrow a(\toGrammarf T')\vec Y_T(\toGrammarf U)
-    .\]
-\item If $S\triangleq \mu x.T$, then $\subs SXT \LTSderives T'$.
-  % , then $\mu x.S \LTSderives[a] S'$.
-  By induction, the corresponding production in
-  %
-  \lstinline{toGrammar (subs (Var y) x t)} is recursively added by
-  $\toGrammarf S$ in the form $Y \rightarrow a (\toGrammarf{T'})$,
-  where $Y$ is a fresh variable that is, then, returned by
-  $\toGrammarf S$.
-\item If $S\triangleq T;U$, $T$ is a terminated session, with no further
-  action, and $U \LTSderives[a] U'$ then, using the \LTS\ we have
-  $T;U \LTSderives[a] U'$. On the other hand, by induction hypothesis and
-  using Lemma~\ref{lemma:terminated_session}:
-  \begin{itemize}
-  \item $\toGrammarf T$  returns \lstinline{[]},
-  \item $\toGrammarf U$ adds a production
-    $Y \rightarrow a (\toGrammarf U')$, where $Y$ is a fresh
-    variable.
-  \end{itemize}
-  We notice that $\toGrammarf U = Y\vec Y_U$ for some sequence of
-  non-terminal symbols $\vec Y_U$. Hence, by congruence, we have a
-  transition
-  \[\toGrammarf S = \text{\lstinline{[]}} Y
-    \vec Y_U \rightarrow a (\toGrammarf{U')} \vec Y_U.\]
-\end{itemize}
-\end{itemizeproof}
-
-Conversely, we prove that any transition derived from the productions
-has a corresponding labelled transition in the \LTS.
-
-\begin{lemma}
-  \label{lem:prod-to-type}
-  If $\toGrammarf S \LTSderivesP \vec Y$, then $S\LTSderives
-  T$.\\ \vv{and there must be some relation on $\vec Y$ and $T$, for
-    induction purposes}
-% Given a context-free session type $S$ and a label $\ell$,
-% 	\[ \text{if } \text{\lstinline{toGrammar S}} \rightarrow \enspace \ell \enspace
-% 	 \vec Y \text{ then } S \LTSderives[\ell] S', \text{ for some context-free session type $S'$}.\]
-\end{lemma}
-
-\begin{itemizeproof}
-  By induction on the structure of $S$: \vv{redo}
-  \begin{itemize}
-  % \item If $S \triangleq \skipk$, then $\toGrammarf S$ does not add
-  %   any production, and \DONE{S}. \vv{Skip does not reduce; we're not
-  %     in the hypothesis here!}
-  \item If $S \triangleq \sharp B$, then $\toGrammarf S$ adds the
-    production $Y\rightarrow \sharp B$ and we know that
-    $S \LTSderivesP[\sharp B] \skipk$.
-  \item If $S\triangleq \star \{\ell_i : S_i\}_{i\in I}$, then
-    $\toGrammarf S$ recursively adds
-    $\toGrammarf S \rightarrow \star \ell_j(\toGrammarf{Sj})$ for each
-    $j\in I$. In the \LTS\ for productions we also have
-    $S \LTSderivesP[\star\ell_j] S_j$ for each $j\in I$.
-  \item If $S \triangleq T;U$, then $\toGrammarf S$ recursively adds
-    all productions from $\toGrammarf T$ and from $\toGrammarf
-    U$. Hence, if $\toGrammarf S \LTSderivesP \vec Y$ then, either:
-    \begin{itemize}
-    \item $\toGrammarf T \LTSderivesP \vec Y$ and, in this case, by
-      induction we know that $T \LTSderives T'$ and from the \LTS\ for
-      productions we obtain $S \LTSderivesP T';U$;
-    \item \DONE{T} and $\toGrammarf U \rightarrow a\vec Y$ and, by
-      induction we know that $U \LTSderives[a] U'$ and from the \LTS\
-      for productions we obtain $S \LTSderives U'$.
-    \end{itemize}
-  \item If $S\triangleq \mu x.T$, then $\toGrammarf S$ adds,
-    recursively, all productions from
-    %
-    \lstinline|toGrammar (subs (Var y) x t)|.  Analogously, in the
-    \LTS\ for productions, any transition $\subs SXT \LTSderives T'$
-    leads to a transition $S \LTSderives T'$. \vv{Why?}
-  \end{itemize}
-\end{itemizeproof}
-
-Having proved that any labelled transition in the LTS has a corresponding
-transition in the grammar and vice-versa, the following theorem is now
-immediate.
-
 \begin{theorem}
-  \label{thm:cfst_vs_grammar}
-  $S\TypeEquiv T$  if and only if $ X_S \ProdEquiv X_T$.
-	% Given two context-free session types $S_1, S_2$,
-	% \[ S_1 \TypeEquiv S_2 \text{ if and only if } X_{S_1} \ProdEquiv X_{S_2}. \]
+  $S$ is bisimilar to $\toGrammarf{S}$.
 \end{theorem}
 
 \begin{proof}
-  From lemmas~\ref{lem:dummy}, \ref{lem:type-to-prod}, and~\ref{lem:prod-to-type}.
+  Let $\mathcal R$ be the binary relation on types $\times$ (words
+  $\times$ productions) that contains the following sets of pairs.
+  %
+  \begin{gather*}
+    (\skipk, (\varepsilon, \emptyset))
+    \\
+    (\sharp B, (X, \{X \LTSderivesP[\sharp B] \varepsilon\}))
+    \\
+    (\star\{l_i\colon S_i\}_{i\in I}, (X, \{X \LTSderivesP[\star l_i]
+    \vec Y_i\}_{i\in I} \cup (\cup \mathcal P_i)_{i\in I}))
+    \text{ when } \vec Y_i,\mathcal P_i = \toGrammarf{S_i}
+    \\
+    (S_1;S_2, (\vec X_1\vec X_2, \mathcal P_1 \cup \mathcal P_2))
+    \text{ when } \vec X_i,\mathcal P_i = \toGrammarf{S_i}
+    \\
+    (\mu X.S, (\varepsilon, \mathcal P))
+    \text{ when } \varepsilon,\mathcal P = \toGrammarf{S}
+    \\
+    (\mu X.S, (X, \{X \LTSderivesP[a_i] \vec Z_i\vec Y\}_{i\in I} \cup \mathcal P))
+    \\
+    (T_i, (\vec Z_i\vec Y, \{X \LTSderivesP[a_i] \vec Z_i\vec Y\}_{i\in I} \cup \mathcal P))
+   \\\quad
+    \text{ when } Y\vec Y,\mathcal P = \toGrammarf{S}
+    \text{ and } Y \LTSderivesP[a_i] Z_i \in \mathcal P 
+    \text{ and } \subs{\mu X.S}{X} S \LTSderives[a_i] T_i
+  \end{gather*}
+  %
+  That $\mathcal R$ is a bisimulation follows from a routine inspection,
+  using lemma~\ref{lem:terminated-togrammar} and the fact that
+  $S \bisim \subs{\mu X.S}{X} S$~\cite{thiemann2016context}. \vv{check
+    the details}
 \end{proof}
+
+% We start by showing that the initial (dummy) production does not
+% affect bisimulation checking.
+% %
+% \begin{lemma}
+%   \label{lem:dummy}
+%   $X_S \ProdEquiv X_T$ if and only if
+%   $\toGrammarf S \ProdEquiv \toGrammarf T$.
+% \end{lemma}
+
+% \begin{proof}
+%   We have $X_S \rightarrow\, \initialProd\,(\toGrammarf S)$ and
+%   $X_T \rightarrow\, \initialProd\,(\toGrammarf T)$.
+%   Hence, $X_S \TypeEquiv X_T$ if and only if
+%   $\toGrammarf S \ProdEquiv \toGrammarf T$. \vv{prove both directions separately}
+% \end{proof}
+
+% Terminated session types do not originate new productions.
+
+% \begin{lemma}
+%   \label{lemma:terminated_session}
+%   If \DONE{S}, then \upshape{\lstinline|toGrammar |}$S$ adds no
+%   productions and returns \upshape{\lstinline|[]|}.
+% \end{lemma}
+
+% \begin{itemizeproof}
+%   By rule induction  on the hypothesis.
+%   \begin{itemize}
+%   \item If $S\triangleq \skipk$, then \lstinline{toGrammar} adds no
+%     productions and returns \lstinline{[]}.
+%   \item If $S\triangleq S;T$, then \DONE S and \DONE T. By induction,
+%     the recursive calls add no productions and return
+%     \lstinline|[]|. Then, function \lstinline|toGrammar| returns
+%     \lstinline|[]++[]|, which evaluates to \lstinline|[]|.
+%   \item If $S\triangleq \mu X. T$, then
+%     $\subs{S}{X}T \checkmark$.
+%     %
+%     Function \lstinline|toGrammar |$S$ adds the productions from
+%     \lstinline|toGrammar (subs (Var y) X t)|. But $\subs{S}{X} T$ is a
+%     terminated session, thus \lstinline{toGrammar }$T$ adds no
+%     productions and returns \lstinline{[]}. \vv{co-induction?}.
+%   \end{itemize}
+% \end{itemizeproof}
+
+% Now we prove that any transition in the \LTS\ has a
+% corresponding transition derived from the set of productions.
+
+% \begin{lemma}
+%   \label{lem:type-to-prod}
+%   If $S \LTSderives T$, then \upshape{\lstinline|toGrammar|}
+%   $S \LTSderivesP \vec X$ and \upshape{\lstinline|toGrammar|} $T$ is a
+%   prefix of~$\vec X$.
+% \end{lemma}
+
+% \begin{itemizeproof}
+% By rule induction on the hypothesis.
+% \begin{itemize}
+% \item If $S\triangleq \sharp B$, then
+%   $S \LTSderives[\sharp B] \skipk$. The call $\toGrammarf S$
+%   returns a fresh variable $Y$ and inserts a production
+%   $Y\rightarrow \sharp B$. Then $S \LTSderivesP \varepsilon$ and
+%   $\toGrammarf\,\skipk =$ \lstinline{[]}, that is, $\varepsilon$.
+% \item If $S\triangleq \star\{l_i\colon S_i\}_{i\in I}$ then,
+%   $S \LTSderives[\star l_j] S_j$, for each $j\in I$. Function
+%   $\toGrammarf S$ returns a fresh variable $Y$ and, recursively,
+%   inserts a production $Y\rightarrow \star l_j (\toGrammarf{S_j})$,
+%   for each $j\in I$, hence
+%   $Y \LTSderivesP[\star l_j] \toGrammarf{S_j}$.
+% \item If $S\triangleq T;U$ and $T \LTSderives[a] T'$, then
+%   $S \LTSderives[a] T';U$.  By induction hypothesis, $\toGrammarf T$
+%   adds the production $Y\rightarrow a (\toGrammarf{T'})$, where $Y$
+%   is a fresh variable.  We notice that $\toGrammarf T$
+%   $= Y \vec Y_T$ for some sequence of non-terminal symbols
+%   $\vec Y_T$. By congruence, we have:
+%   \[\toGrammarf S = Y\vec Y_T(\toGrammarf U)
+%     \rightarrow a(\toGrammarf T')\vec Y_T(\toGrammarf U)
+%     .\]
+% \item If $S\triangleq \mu x.T$, then $\subs SXT \LTSderives T'$.
+%   By induction, the corresponding production in
+%   %
+%   \lstinline{toGrammar (subs (Var y) x t)} is recursively added by
+%   $\toGrammarf S$ in the form $Y \rightarrow a (\toGrammarf{T'})$,
+%   where $Y$ is a fresh variable that is, then, returned by
+%   $\toGrammarf S$.
+% \item If $S\triangleq T;U$, $T$ is a terminated session, with no further
+%   action, and $U \LTSderives[a] U'$ then, using the \LTS\ we have
+%   $T;U \LTSderives[a] U'$. On the other hand, by induction hypothesis and
+%   using Lemma~\ref{lemma:terminated_session}:
+%   \begin{itemize}
+%   \item $\toGrammarf T$  returns \lstinline{[]},
+%   \item $\toGrammarf U$ adds a production
+%     $Y \rightarrow a (\toGrammarf U')$, where $Y$ is a fresh
+%     variable.
+%   \end{itemize}
+%   We notice that $\toGrammarf U = Y\vec Y_U$ for some sequence of
+%   non-terminal symbols $\vec Y_U$. Hence, by congruence, we have a
+%   transition
+%   \[\toGrammarf S = \text{\lstinline{[]}} Y
+%     \vec Y_U \rightarrow a (\toGrammarf{U')} \vec Y_U.\]
+% \end{itemize}
+% \end{itemizeproof}
+
+% Conversely, we prove that any transition derived from the productions
+% has a corresponding labelled transition in the \LTS.
+
+% \begin{lemma}
+%   \label{lem:prod-to-type}
+%   If $\toGrammarf S \LTSderivesP \vec Y$, then $S\LTSderives
+%   T$.\\ \vv{and there must be some relation on $\vec Y$ and $T$, for
+%     induction purposes}
+% \end{lemma}
+
+% \begin{itemizeproof}
+%   By induction on the structure of $S$: \vv{redo}
+%   \begin{itemize}
+%   \item If $S \triangleq \sharp B$, then $\toGrammarf S$ adds the
+%     production $Y\rightarrow \sharp B$ and we know that
+%     $S \LTSderivesP[\sharp B] \skipk$.
+%   \item If $S\triangleq \star \{\ell_i : S_i\}_{i\in I}$, then
+%     $\toGrammarf S$ recursively adds
+%     $\toGrammarf S \rightarrow \star \ell_j(\toGrammarf{Sj})$ for each
+%     $j\in I$. In the \LTS\ for productions we also have
+%     $S \LTSderivesP[\star\ell_j] S_j$ for each $j\in I$.
+%   \item If $S \triangleq T;U$, then $\toGrammarf S$ recursively adds
+%     all productions from $\toGrammarf T$ and from $\toGrammarf
+%     U$. Hence, if $\toGrammarf S \LTSderivesP \vec Y$ then, either:
+%     \begin{itemize}
+%     \item $\toGrammarf T \LTSderivesP \vec Y$ and, in this case, by
+%       induction we know that $T \LTSderives T'$ and from the \LTS\ for
+%       productions we obtain $S \LTSderivesP T';U$;
+%     \item \DONE{T} and $\toGrammarf U \rightarrow a\vec Y$ and, by
+%       induction we know that $U \LTSderives[a] U'$ and from the \LTS\
+%       for productions we obtain $S \LTSderives U'$.
+%     \end{itemize}
+%   \item If $S\triangleq \mu x.T$, then $\toGrammarf S$ adds,
+%     recursively, all productions from
+%     %
+%     \lstinline|toGrammar (subs (Var y) x t)|.  Analogously, in the
+%     \LTS\ for productions, any transition $\subs SXT \LTSderives T'$
+%     leads to a transition $S \LTSderives T'$. \vv{Why?}
+%   \end{itemize}
+% \end{itemizeproof}
+
+% Having proved that any labelled transition in the LTS has a corresponding
+% transition in the grammar and vice-versa, the following theorem is now
+% immediate.
+
+% \begin{theorem}
+%   \label{thm:cfst_vs_grammar}
+%   $S\TypeEquiv T$  if and only if $ X_S \ProdEquiv X_T$.
+% \end{theorem}
+
+% \begin{proof}
+%   From lemmas~\ref{lem:dummy}, \ref{lem:type-to-prod}, and~\ref{lem:prod-to-type}.
+% \end{proof}
 
 % \subsection{Unnormedness is preserved by pruning} % Not needed?
 
