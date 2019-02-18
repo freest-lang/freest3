@@ -51,16 +51,17 @@ the \lstinline|toGrammar|$S$.
     (S_1;S_2, (\vec X_1\vec X_2, \mathcal P_1 \cup \mathcal P_2))
     \text{ when } \vec X_i,\mathcal P_i = \toGrammarf{S_i}
     \\
-    (\mu X.S, (\varepsilon, \mathcal P))
-    \text{ when } \varepsilon,\mathcal P = \toGrammarf{S}
+    (\mu X.S, (\varepsilon, \emptyset))
+    \text{ when } \isCheckedf \mu X.S
     \\
     (\mu X.S, (X, \{X \LTSderivesP[a_i] \vec Z_i\vec Y\}_{i\in I} \cup \mathcal P))
     \\
     (T_i, (\vec Z_i\vec Y, \{X \LTSderivesP[a_i] \vec Z_i\vec Y\}_{i\in I} \cup \mathcal P))
-   \\\quad
-    \text{ when } Y\vec Y,\mathcal P = \toGrammarf{S}
-    \text{ and } Y \LTSderivesP[a_i] Z_i \in \mathcal P 
-    \text{ and } \subs{\mu X.S}{X} S \LTSderives[a_i] T_i
+   \text{ when not }  \isCheckedf \mu X.S \text{ and }
+   \\\quad 
+   Y\vec Y,\mathcal P = \toGrammarf{S}
+   \text{ and } Y \LTSderivesP[a_i] Z_i \in \mathcal P 
+   \text{ and } \subs{\mu X.S}{X} S \LTSderives[a_i] T_i
   \end{gather*}
   %
   That $\mathcal R$ is a bisimulation follows from a routine inspection,
