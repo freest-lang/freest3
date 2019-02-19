@@ -392,6 +392,13 @@ simplify ps n a q = foldr Queue.append (Queue.dequeue q) nas'
                else foldr (apply ps) nas [reflex,congruence,bpa1,bpa2]
 \end{lstlisting}
 
+\begin{example}
+  The expansion tree for our running example is
+  in Figure~\ref{fig:expansionTree}. Once a successful
+  branch is reached (the $\checkmark$ in the figure), the algorithm in
+  Listing~\ref{lst:algorithm} decides that $S\TypeEquiv T$.
+\end{example}
+
 \begin{figure}[h]
 \centering
 	\includegraphics[width=8.5cm]{expansionTree}
@@ -399,13 +406,6 @@ simplify ps n a q = foldr Queue.append (Queue.dequeue q) nas'
 	introduced in Example~\ref{ex:productions}}
 	\label{fig:expansionTree}
 \end{figure}
-
-\begin{example}
-  The expansion tree for our running example is
-  in Figure~\ref{fig:expansionTree}. Once a successful
-  branch is reached (the $\checkmark$ in the figure), the algorithm in
-  Listing~\ref{lst:algorithm} decides that $S\TypeEquiv T$.
-\end{example}
 
 %%% Local Variables:
 %%% mode: latex
