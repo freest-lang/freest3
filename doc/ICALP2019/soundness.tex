@@ -15,10 +15,10 @@ our algorithm is sound and complete.
 
 \subsection{The two bisimulations coincide}
 
-For the purpose of providing a bisimulation between context-free session types
-and their corresponding symbols in the grammar, we start with a lemma that relates 
-terminated types~$S$ 
-with the result of the \lstinline|toGrammar|$S$.
+For the purpose of providing a bisimulation between context-free
+session types and their corresponding symbols in the grammar, we start
+with a lemma that relates terminated types~$S$ to the result of the
+$\toGrammarf S$.
 
 \begin{lemma}
   \label{lem:terminated-togrammar}
@@ -35,12 +35,11 @@ with the result of the \lstinline|toGrammar|$S$.
 \end{proof}
 
 To conclude that the bisimulations on context-free session types and
-those on productions coincide, we now present a bisimulation
-between context-free session types and the result of \lstinline|toGrammar|.
+those on productions coincide, we present a bisimulation between
+context-free session types and the result of \lstinline|toGrammar|.
 %
-As the implementation of \isCheckedf was not shown, we assume that
-$\isCheckedf S$ returns
-\lstinline|True| if and only if $\DONE S$.
+As the implementation of \isCheckedf is not shown, we assume that
+$\isCheckedf S$ returns \lstinline|True| if and only if $\DONE S$.
 
 \begin{theorem}
 \label{thm:cfst_vs_grammar}
@@ -281,7 +280,7 @@ $\isCheckedf S$ returns
 \subsection{Correctness of the algorithm}
 
 We now focus on the correctness of the algorithm in
-listing~\ref{lst:algorithm}.  Before proceeding to soundness, we
+Listing~\ref{lst:algorithm}.  Before proceeding to soundness, we
 recall the \emph{safeness property} presented by Jan{\v{c}}ar and
 Moller.
 
@@ -292,7 +291,7 @@ Moller.
 \end{proposition}
 
 Notice that function \lstinline|bisimilar|
-(listing~\ref{lst:algorithm}) builds an expansion tree by alternating
+(Listing~\ref{lst:algorithm}) builds an expansion tree by alternating
 between expansion and simplification operations (reflexive,
 congruence and \BPA\ rules), as proposed by Jan{\v{c}}ar and Moller.
 %
@@ -325,7 +324,7 @@ the safeness property.
   Function \lstinline|bisimilar| returns \lstinline|True| for $S$ and
   $T$ whenever it reaches a (finite) successful branch in the expansion
   tree rooted at $\{(X_{S}, X_{T})\}$. Conclude with the safeness property,
-  proposition~\ref{prop:safeness}.
+  Proposition~\ref{prop:safeness}.
   % , whenever the expansion tree rooted
   % at $\{(X_{S}, X_{T})\}$ has a (finite) successful branch, we
   % kn that $X_{S} \ProdEquiv X_{T}$.
@@ -333,7 +332,7 @@ the safeness property.
 
 From the previous results, the soundness of our algorithm is now
 immediate: the algorithm to check the bisimulation of context-free
-session types (listing~\ref{lst:algorithm}) is sound with respect to
+session types (Listing~\ref{lst:algorithm}) is sound with respect to
 the meta-theory of context-free session types.
 
 \begin{theorem}
@@ -341,8 +340,8 @@ the meta-theory of context-free session types.
 \end{theorem}
 
 \begin{proof}
-  From theorem~\ref{thm:cfst_vs_grammar} and
-  lemma~\ref{lem:bisimilar-to-prod}.
+  From Theorem~\ref{thm:cfst_vs_grammar} and
+  Lemma~\ref{lem:bisimilar-to-prod}.
 \end{proof}
 
 Having observed that the safeness property was paramount for
@@ -350,7 +349,7 @@ soundness, we now notice that the \emph{finite witness property} is of
 utmost importance to prove completeness. This result follows
 immediately from the analysis by Jan{\v{c}}ar and
 Moller~\cite{janvcar1999techniques}, which capitalizes on results by
-Caucal~\cite{caucal1986decidabilite}, Christensen, H{\"{u}}ttel, and
+Caucal~\cite{caucal1986decidabilite}, and Christensen, H{\"{u}}ttel, and
 Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}:
 
 \begin{proposition} [Finite Witness Property]
@@ -359,15 +358,15 @@ Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}:
 	$\{(\vec X, \vec Y)\}$ has a finite successful branch.
 \end{proposition}
 
-We refer to~\cite{DBLP:journals/iandc/ChristensenHS95, caucal1986decidabilite}
-for details on the proof of existence of a finite witness, as stated in 
-proposition~\ref{finite_witness}. This proof is particularly interesting in that 
-it highlights the importance of BPA rules and of pruning productions
-on reaching such (finite) witness. The results 
-in~\cite{DBLP:journals/iandc/ChristensenHS95, caucal1986decidabilite} 
-also allow us to unravel the reason for the distinction of the 
-simplification phase in the case where all the symbols in the grammar 
-are normed from the case where they are not, as presented in listing~\ref{lst:algorithm}.
+We refer to Caucal, Christensen, H{\"{u}}ttel, and Stirling for
+details on the proof of existence of a finite witness, as stated in
+Proposition~\ref{finite_witness}. This proof is particularly
+interesting in that it highlights the importance of BPA rules and of
+pruning productions on reaching such (finite) witness. The results in
+these two papers also allow us to unravel the reason for the
+distinction of the simplification phase in the case where all the
+symbols in the grammar are normed from the case where they are not, as
+presented in Listing~\ref{lst:algorithm}.
 
 Proposition~\ref{finite_witness} paved the way to obtain the completeness result. 
 We now prove that the algorithm to check the bisimulation of context-free session 
@@ -380,8 +379,8 @@ types.
 \end{theorem}
 
 \begin{proof}
-  Assuming that $S \TypeEquiv T$, by theorem~\ref{thm:cfst_vs_grammar}
-  we have $X_{S} \ProdEquiv X_{T}$.  Hence, the proposition~\ref{finite_witness}
+  Assuming that $S \TypeEquiv T$, by Theorem~\ref{thm:cfst_vs_grammar}
+  we have $X_{S} \ProdEquiv X_{T}$.  Hence, the Proposition~\ref{finite_witness}
   ensures the existence of a finite successful branch on the
   expansion tree rooted at $\{(X_{S},X_{T})\}$, i.e., a branch
   terminating in an empty node.  Since our algorithm traverses the
