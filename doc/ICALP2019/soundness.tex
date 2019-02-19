@@ -15,10 +15,9 @@ our algorithm is sound and complete.
 
 \subsection{The two bisimulations coincide}
 
-We observe that the translation in listing~\ref{lst:toGrammar} is itself
-a bisimulation.
-%
-For this purpose, we start with a lemma that relates terminated types~$S$ 
+For the purpose of providing a bisimulation between context-free session types
+and their corresponding symbols in the grammar, we start with a lemma that relates 
+terminated types~$S$ 
 with the result of the \lstinline|toGrammar|$S$.
 
 \begin{lemma}
@@ -37,7 +36,7 @@ with the result of the \lstinline|toGrammar|$S$.
 
 To conclude that the bisimulations on context-free session types and
 those on productions coincide, we now present a bisimulation
-for the translation in listing~\ref{lst:toGrammar}.
+between context-free session types and the result of \lstinline|toGrammar|.
 %
 As the implementation of \isCheckedf was not shown, we assume that
 $\isCheckedf S$ returns
