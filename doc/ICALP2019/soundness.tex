@@ -23,7 +23,7 @@ the \lstinline|toGrammar|$S$.
 
 \begin{lemma}
   \label{lem:terminated-togrammar}
-  \DONE S if and only if $\toGrammarf{S} = \varepsilon$.
+  \DONE S if and only if $\varepsilon, P = \toGrammarf S$.
 \end{lemma}
 
 \begin{proof} Given that all variables in a type are under some
@@ -42,7 +42,8 @@ the \lstinline|toGrammar|$S$.
 
 \begin{proof}
   Let $\mathcal R$ be the binary relation on types $\times$ (words
-  $\times$ productions) that contains the following sets of pairs.
+  $\times$ productions) that contains the following sets of pairs
+  $(S, (\vec X, P))$ built in such a way that $\vec X, P = \toGrammarf S$.
   %
   \begin{gather*}
     (\skipk, (\varepsilon, \emptyset))
@@ -62,17 +63,17 @@ the \lstinline|toGrammar|$S$.
     (S_1;S_2, (\vec X_1\vec X_2,  P_1 \cup  P_2))
     %
     \text{ when } \vec X_i, P_i = \toGrammarf{S_i}, i = 1,2
-    \\
-    (S'_1;S_2, (\vec Y,  P_1 \cup  P_2))
-    %
-    \text{ and, in addition, } S_1 \LTSderives S_1' 
-    \text{ and } \vec X_1\vec X_2 \rightarrow a \vec Y
-    \\
-    (S_2', (\vec Y,  P_1 \cup  P_2))
-    %
-    \text{ and, in addition, } \DONE{S_1}
-    \text{ and } S_2 \LTSderives S_2' 
-    \text{ and } \vec X_1\vec X_2 \rightarrow a \vec Y
+    % \\
+    % (S'_1;S_2, (\vec Y,  P_1 \cup  P_2))
+    % %
+    % \text{ and, in addition, } S_1 \LTSderives S_1' 
+    % \text{ and } \vec X_1\vec X_2 \rightarrow a \vec Y
+    % \\
+    % (S_2', (\vec Y,  P_1 \cup  P_2))
+    % %
+    % \text{ and, in addition, } \DONE{S_1}
+    % \text{ and } S_2 \LTSderives S_2' 
+    % \text{ and } \vec X_1\vec X_2 \rightarrow a \vec Y
     \\
     (\mu X.S, (\varepsilon, \emptyset))
     \text{ when } \isCheckedf \mu X.S
