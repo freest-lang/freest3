@@ -48,27 +48,28 @@ the \lstinline|toGrammar|$S$.
     (\skipk, (\varepsilon, \emptyset))
     \\
     (\sharp B, (X, \{X \LTSderivesP[\sharp B] \varepsilon\}))
+    \text{ when } X = \toGrammarf{\sharp B}
     \\
     (\star\{l_i\colon S_i\}_{i\in I}, (X, \{X \LTSderivesP[\star l_i]
-    \vec Y_i\}_{i\in I} \cup (\cup \mathcal P_i)_{i\in I}))
+    \vec Y_i\}_{i\in I} \cup (\cup  P_i)_{i\in I}))
     %
-    \text{ when } \vec Y_i,\mathcal P_i = \toGrammarf{S_i}, i \in I
+    \text{ when } \vec Y_i, P_i = \toGrammarf{S_i}, i \in I
     \\
     (S_i, (\vec Y_i, \{X \LTSderivesP[\star l_i]
-    \vec Y_i\}_{i\in I} \cup (\cup \mathcal P_i)_{i\in I}))
+    \vec Y_i\}_{i\in I} \cup (\cup  P_i)_{i\in I}))
     %
-    \text{ when } \vec Y_i,\mathcal P_i = \toGrammarf{S_i}, i \in I
+    \text{ when } \vec Y_i, P_i = \toGrammarf{S_i}, i \in I
     \\
-    (S_1;S_2, (\vec X_1\vec X_2, \mathcal P_1 \cup \mathcal P_2))
+    (S_1;S_2, (\vec X_1\vec X_2,  P_1 \cup  P_2))
     %
-    \text{ when } \vec X_i,\mathcal P_i = \toGrammarf{S_i}, i = 1,2
+    \text{ when } \vec X_i, P_i = \toGrammarf{S_i}, i = 1,2
     \\
-    (S'_1;S_2, (\vec Y, \mathcal P_1 \cup \mathcal P_2))
+    (S'_1;S_2, (\vec Y,  P_1 \cup  P_2))
     %
     \text{ and, in addition, } S_1 \LTSderives S_1' 
     \text{ and } \vec X_1\vec X_2 \LTSderivesP \vec Y
     \\
-    (S_2', (\vec Y, \mathcal P_1 \cup \mathcal P_2))
+    (S_2', (\vec Y,  P_1 \cup  P_2))
     %
     \text{ and, in addition, } \DONE{S_1}
     \text{ and } S_2 \LTSderives S_2' 
@@ -77,15 +78,15 @@ the \lstinline|toGrammar|$S$.
     (\mu X.S, (\varepsilon, \emptyset))
     \text{ when } \isCheckedf \mu X.S
     \\
-    (\mu X.S, (X, \{X \LTSderivesP[a] \vec Z\vec Y\} \cup \mathcal P))
+    (\mu X.S, (X, \{X \LTSderivesP[a] \vec Z\vec Y\} \cup  P))
     %
     \text{ when not }  \isCheckedf \mu X.S \text{ and }
     \\\quad
-    Y\vec Y,\mathcal P = \toGrammarf{S}
+    Y\vec Y, P = \toGrammarf{S}
     \text{ and }
-    Y \LTSderivesP \vec Z \in \mathcal P
+    Y \LTSderivesP \vec Z \in  P
     \\
-    (T, (\vec Z\vec Y, \{X \LTSderivesP \vec Z\vec Y\} \cup \mathcal P))
+    (T, (\vec Z\vec Y, \{X \LTSderivesP \vec Z\vec Y\} \cup  P))
     %
     \text{ and, in addition, } Y \LTSderivesP \vec Z
    \text{ and } \subs{\mu X.S}{X} S \LTSderives T
