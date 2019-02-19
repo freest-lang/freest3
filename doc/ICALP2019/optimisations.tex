@@ -35,9 +35,9 @@ other hand we suspected that a double-ended queue would allow
 prioritizing nodes with potential to reach an empty node faster.
 %
 Iterating the simplification procedure on a given node $N$, the
-algorithm computes the \emph{simplest} possible children nodes derived
-from $N$. Of course, we need to make sure that a fixed-point exists,
-which we do with Theorem~\ref{thm:fixed_point}.
+algorithm computes the simplest possible children nodes derived from
+$N$. Of course, we need to make sure that a fixed-point exists, which
+we do with Theorem~\ref{thm:fixed_point}.
 %
 Using a double-ended queue, the algorithm prepends (rather than
 appends) nodes that are already empty or whose pairs $(\vec X, \vec Y)$
