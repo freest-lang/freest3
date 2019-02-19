@@ -76,22 +76,19 @@ builds on the result of Christensen, H\"uttel, and
 Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}.
 %
 The \emph{third stage} constructs an expansion tree, by alternating
-between expansion and simplification steps. 
-This last stage uses ideas on the expansion operations proposed by
-Janc\v ar, Moller, and
-Hirshfeld~\cite{hirshfeld1996bisimulation,janvcar1999techniques}, 
-and ideas on the simplification rules proposed by
-Caucal, Christensen, H\"uttel, Stirling, Janc\v ar, and Moller
+between expansion and simplification steps.  This last stage uses
+ideas on the expansion operations proposed by Janc\v ar, Moller, and
+Hirshfeld~\cite{hirshfeld1996bisimulation,janvcar1999techniques}, and
+ideas on the simplification rules proposed by Caucal, Christensen,
+H\"uttel, Stirling, Janc\v ar, and Moller
 ~\cite{caucal1986decidabilite,
-  DBLP:journals/iandc/ChristensenHS95,janvcar1999techniques}.
-The finite representation of
-bisimulations of \BPA\ transition graphs presented
-in~\cite{caucal1986decidabilite,
-  DBLP:journals/iandc/ChristensenHS95}
-is paramount for our results of soundness and
-completeness. The branching nature of the expansion tree confers an
-exponential complexity to the algorithm, however we propose heuristics
-that allow constructing the relation in a reasonable time.
+  DBLP:journals/iandc/ChristensenHS95,janvcar1999techniques}.  The
+finite representation of bisimulations of \BPA\ transition
+graphs~\cite{caucal1986decidabilite,
+  DBLP:journals/iandc/ChristensenHS95} is paramount for our results of
+soundness and completeness. The branching nature of the expansion tree
+confers an exponential complexity to the algorithm, however we propose
+heuristics that allow constructing the relation in a reasonable time.
 
 % Contributions
 We present an algorithm to decide the equivalence of context-free
@@ -103,8 +100,8 @@ The main contributions of this work are:
 %
 \begin{itemize}
 \item The proposal and implementation of an algorithm to decide type
-  equivalence of context-free session types and simple grammars (in
-  300 lines of Haskell code),
+  equivalence of context-free session types and that of simple
+  grammars (in 300 lines of Haskell code),
 \item A proof of its soundness and completeness against the
   declarative definition,
 \item The exploration of several optimizations that cut the running
