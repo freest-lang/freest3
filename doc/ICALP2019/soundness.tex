@@ -26,9 +26,14 @@ the \lstinline|toGrammar|$S$.
   \DONE S if and only if $\toGrammarf{S} = \varepsilon$.
 \end{lemma}
 
-% \begin{proof}
-%   \vv{TODO}
-% \end{proof}
+\begin{proof} Given that all variables in a type are under some
+  $\mu$-binder, there is a simple inductive characterization of
+  $\DONE S$, namely, $\DONE \skipk$, $\DONE{(S;T)}$ if $\DONE S$ and
+  $\DONE T$, $\DONE{(\mu X.S)}$ if $\DONE S$, $\DONE X$, and false in
+  all other cases. The proof then follows by a simple induction on
+  this characterization for the ``if'' direction, and induction on
+  \lstinline|toGrammar| for the ``only if'' direction.
+\end{proof}
 
 \begin{theorem}
 \label{thm:cfst_vs_grammar}
@@ -72,12 +77,15 @@ the \lstinline|toGrammar|$S$.
     (\mu X.S, (\varepsilon, \emptyset))
     \text{ when } \isCheckedf \mu X.S
     \\
-    (\mu X.S, (X, \{X \LTSderivesP[a] \vec Z\vec Y\}_{i\in I} \cup \mathcal P))
+    (\mu X.S, (X, \{X \LTSderivesP[a] \vec Z\vec Y\} \cup \mathcal P))
     %
-    \text{ when not }  \isCheckedf \mu X.S
-    \text{ and } Y\vec Y,\mathcal P = \toGrammarf{S}
+    \text{ when not }  \isCheckedf \mu X.S \text{ and }
+    \\\quad
+    Y\vec Y,\mathcal P = \toGrammarf{S}
+    \text{ and }
+    Y \LTSderivesP \vec Z \in \mathcal P
     \\
-    (T, (\vec Z\vec Y, \{X \LTSderivesP \vec Z\vec Y\}_{i\in I} \cup \mathcal P))
+    (T, (\vec Z\vec Y, \{X \LTSderivesP \vec Z\vec Y\} \cup \mathcal P))
     %
     \text{ and, in addition, } Y \LTSderivesP \vec Z
    \text{ and } \subs{\mu X.S}{X} S \LTSderives T

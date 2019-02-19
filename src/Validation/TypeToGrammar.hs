@@ -121,7 +121,7 @@ isChecked :: Type -> Visited -> Bool
 isChecked Skip _ = True
 isChecked (Semi s t) v = isChecked s v && isChecked t v
 isChecked (Rec Bind{var=x} t) v = isChecked t (Set.insert x v)
-isChecked (Var x) v = Set.member x v
+isChecked (Var x) v = Set.member x v -- Only bound variables are checked
 isChecked _ _ = False
 
 -- Some tests
