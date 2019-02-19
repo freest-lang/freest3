@@ -20,12 +20,13 @@ from the grammar below.
 \end{gather*}
 
 We assume that all occurrences of variables in a type are introduced
-by some $\mu$-binder (no free variables in types).
+by some $\mu$-binder (thus precluding free variables in types).
 %
 We further assume that types are renamed so that all variables
 introduced by~$\mu$ are distinct.
 %
-Finally, we require types to be contractive (no subterms of the form
+Finally, we require types to be contractive (thus forbidding subterms
+of the form
 $\mu X_1.\mu X_2 \dots \mu
 X_n. X_1$)~\cite{DBLP:journals/tcs/Courcelle83,thiemann2016context}.
 %

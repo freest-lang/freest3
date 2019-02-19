@@ -24,14 +24,13 @@ which it decides negatively.
 \subsection{Converting types to grammars}
 \label{subsec:typeToGrammar}
 
-A context-free grammar in Greibach normal form is a pair
-$(X,\productions)$ where~$X$ is the \emph{start symbol}
-and~$\mathcal P$ a \emph{set of productions} of the form
-$Y \rightarrow a\vec Z$ (we do not allow productions of the form
-$X \rightarrow\varepsilon$). Type variables are the \emph{non-terminal
-  symbols} and LTS labels the \emph{terminal symbols}. We call
-\emph{words} to sequences of type variables~$\vec X$, and denote
-by~$\varepsilon$ the empty word.
+A context-free grammar in Greibach normal form is a pair $(X,P)$
+where~$X$ is the \emph{start symbol} and~$P$ a \emph{set of
+  productions} of the form $Y \rightarrow a\vec Z$ (we do not allow
+productions of the form $X \rightarrow\varepsilon$). Type variables
+are the \emph{non-terminal symbols} and LTS labels the \emph{terminal
+  symbols}. We call \emph{words} to sequences of type
+variables~$\vec X$, and denote by~$\varepsilon$ the empty word.
 %
 The grammars we are interested in are \emph{simple}: for each
 non-terminal symbol~$X$ and each terminal symbol~$a$, there is at most
@@ -170,10 +169,10 @@ the length of~$\vec a$.
 % $k = | \vec Y |$. To ease notation, we will also represent~\eqref{eq:path} as
 % $\vec Y \xrightarrow{\vec a} \varepsilon$.
 
-As observed by Christensen et
-al.~\cite{DBLP:journals/iandc/ChristensenHS95}, any unnormed sequence
-of symbols $\vec Y$ is bisimilar to its concatenation with any other
-symbols, that is, if $\vec Y$ is unnormed, then
+As observed by Christensen H\"uttel, and
+Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}, any unnormed
+words $\vec Y$ is bisimilar to its concatenation with any other
+nonterminal symbols, that is, if $\vec Y$ is unnormed, then
 $\vec Y \ProdEquiv \vec YX$.
 %
 % \begin{equation}
@@ -307,16 +306,16 @@ following rules:
 \item[BPA2 rule:] If $(X_0 \vec X, Y_0 \vec Y)$ is in $N$
   and $X_0$ and $Y_0$ are normed, then:
   \begin{description}
-  \item[Case] $|X_0| \leq |Y_0|$: considering $\vec a$ as a minimal path
+  \item[Case] $|X_0| \leq |Y_0|$: Let $\vec a$ be a minimal path
     for $X_0$ and $\vec Z$ a word such that
     $\vec Y_0 \LTSderivesP[\vec a] \vec Z$. Add a sibling node for
     $N$ including the pairs $(X_0 \vec Z, Y_0)$ and
     $(\vec X, \vec Z \vec Y)$ in place of $(X_0 \vec X, Y_0 \vec Y)$;
-  \item[Case] $|X_0| > |Y_0|$: considering $\vec a$ as a minimal path for
-    $Y_0$ and $\vec Z$ a word such that $\vec X_0 \LTSderivesP[\vec a] \vec
-    Z$. Add a sibling node for $N$ including the pairs
-    $(X_0 , Y_0 \vec Z )$ and $(\vec Z\vec X, \vec Y)$ in place of
-    $(X_0 \vec X, Y_0 \vec Y)$.
+  \item[Case] $|X_0| > |Y_0|$: Let $\vec a$ be a minimal path for
+    $Y_0$ and $\vec Z$ a word such that
+    $\vec X_0 \LTSderivesP[\vec a] \vec Z$. Add a sibling node for $N$
+    including the pairs $(X_0 , Y_0 \vec Z )$ and
+    $(\vec Z\vec X, \vec Y)$ in place of $(X_0 \vec X, Y_0 \vec Y)$.
   \end{description}
 %		  \end{description}
 %	\item {\bf Filtering rule:} remove any node containing a pair
@@ -337,7 +336,7 @@ branch resulting from successive expansions.
 % types capitalizes on the previous algorithms.
 
 Given two context-free session types, function \lstinline|bisimilar|
-in listing~\ref{lst:algorithm} starts by converting the two session
+(in Listing~\ref{lst:algorithm}) starts by converting the two session
 types into a grammar, which is then pruned. Function
 \lstinline|convertToGrammar| (not shown) builds the initial monadic
 state, and runs the algorithm of section~\ref{subsec:typeToGrammar} to
@@ -345,20 +344,20 @@ convert the session types given as parameters.
 %
 An expansion tree is computed afterwards, through an alternation of
 expansion of children nodes and their simplification, using the
-reflexive, congruence, and \BPA\ rules. The simplification stage 
-distinguishes the case where all type variables are normed,
-in which case \BPA1 is not required to decide 
-equivalence~\cite{caucal1986decidabilite,DBLP:journals/iandc/ChristensenHS95}, 
-from the case
-where some type variables might be unnormed. The recursive procedure
-terminates as soon as all nodes fail to expand and, thus, the queue is
-empty, case in which the algorithm returns \lstinline|False|, or an
-empty node is reached, case is which the algorithm returns
-\lstinline|True|.
+reflexive, congruence, and \BPA\ rules.
 %
 To avoid getting stuck in an infinite branch of the expansion tree, we
 use a breadth-first search on the expansion tree. Upcoming nodes are
 stored in a queue.
+%
+The simplification stage distinguishes the case where all type
+variables are normed, in which case \BPA1 is not required to decide
+equivalence~\cite{caucal1986decidabilite,DBLP:journals/iandc/ChristensenHS95},
+from the case where some type variables might be unnormed. The
+recursive procedure terminates as soon as all nodes fail to expand
+and, thus, the queue is empty, case in which the algorithm returns
+\lstinline|False|, or an empty node is reached, case is which the
+algorithm returns \lstinline|True|.
 
 \begin{lstlisting}[
   caption={Haskell code for checking the bisimilarity of context-free
