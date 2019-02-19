@@ -1,7 +1,7 @@
 \section{Optimisations}
 \label{sec:optimisations}
 
-Armed with the results in section~\ref{sec:algorithm}, we decided to
+Armed with the results in Section~\ref{sec:algorithm}, we decided to
 benchmark the algorithm on a test suite of carefully crafted pair of
 types (more on this in Section~\ref{sec:evaluation}). During this 
 process we came across a pair of types,
@@ -21,9 +21,8 @@ process we came across a pair of types,
 on which function \lstinline|bisimilar| took 4379.98 seconds (that is
 one hour and forty minutes) to terminate. This is certainly not a
 reasonable running time for an algorithm to be included in a
-compiler. Hence, we looked into ways to improve the running
-time. Among the different optimisations that we tried, two stand
-out:
+compiler. Hence we looked into ways to improve the running time. Among
+the different optimisations that we tried, two stand out:
 \begin{enumerate}
 \item Iterate the simplification stage until a fixed point is reached;
 \item Use a double-ended queue where promising children are prepended
@@ -47,67 +46,71 @@ are such that $|\vec X|\leq 1$ and $|\vec Y| \leq 1$.
 The revised \lstinline|simplify| function is in Listing~\ref
 {lst:enhanced}.
 
-In the next theorem we prove that the simplification function that consists 
-in applying the reflexive, congruence and \BPA\ rules has a fixed point.
-Note that the result applies either in the case where all symbols are 
-normed as in the case they are not.
+The next theorem shows that the simplification function that consists
+in applying the reflexive, congruence and \BPA\ rules has a fixed
+point.  The result applies regardless of whether all nonterminal
+symbols symbols are normed or not.
 
 \begin{theorem}
-\label{thm:fixed_point}
-	The simplification function that results from applying the reflexive,
-	congruence, and \BPA\ rules, has a fixed point in the complete partial
-	ordered set \upshape{\lstinline|Set (Node, Ancestors)|}, where the set of ancestors
-	is supposed to be fixed and equal to $A$.
+  \label{thm:fixed_point}
+  The simplification function that results from applying the
+  reflexive, congruence, and \BPA\ rules, has a fixed point in the
+  complete partial ordered set
+  {\upshape\lstinline|Set (Node, Ancestors)|}, where the set of
+  ancestors is supposed to be fixed. % and equal to $A$.
 \end{theorem}
 
-Throughout the proof of Theorem~\ref{thm:fixed_point}, we will abuse 
-notation and denote the application of simplification rules
-to nodes or to elements of $\text{\lstinline{Set (Node, Ancestors)}}$
-in the same way, when no ambiguities arise.
-
 \begin{proof}
-	Consider the order 
-	$\leqSets$ defined in $\text{\lstinline{Set (Node, Ancestors)}}
-	\times \text{\lstinline{Set (Node, Ancestors)}}$ by:
-	$S_1 \leqSets S_2$ if $|S_1| \leq |S_2|$ and
-	exists an injective map $\sigma : S_1 \rightarrow S_2$ s.t.\  
-	$\sigma(N_1,A) = (N_2,A)$ with $N_2\subseteq N_1$.\smallskip
-	
-	\noindent\textbf{$\leqSets$ is a partial order:} The proof that
-	$\leqSets$ is reflexive and transitive is straightforward. 
-	To prove that it is 
-	antisymmetric, assume that $S_1\leqSets S_2$ and $S_2 \leqSets S_1$.
-	This means that $|S_1|=|S_2|$ and, furthermore, the maps 
-	$\sigma_1 : S_1 \rightarrow S_2$ and $\sigma_2 : S_2 \rightarrow S_1$
-	are bijective. Notice that $\sigma_1\circ \sigma_2$  
-	is the identity map, otherwise we could consider $(N,A)\in S_2$
-	where $N$ is minimal w.r.t.\ inclusion and s.t.\
-	$(\sigma_1\circ \sigma_2)(N,A) \neq (N,A)$, i.e.,
-	$(\sigma_1\circ \sigma_2)(N,A) = (N',A)$ with $N'\subseteq N$ 
-	for some $(N',A)\in S_2$;
-	due to the minimality of $N$, we would have 
-	$(\sigma_1\circ \sigma_2)(N',A) = (N',A)$, which would contradict the
-	injectivity of $\sigma_1\circ \sigma_2$. Since
-	$\sigma_1 (N,A) = (N',A)$ is such that $N'\subseteq N$, we shall 
-	have $\sigma_1 (N,A) = (N,A)$. Hence, $S_1=S_2$.\smallskip
-	
-	\noindent\textbf{The simplification function is order-preserving:}
-	To prove that the reflexive rule preserves the order, let $S_1$ and 
-	$S_2$ be s.t.\ $S_1\leqSets S_2$ and let us prove that 
-	$\text{\lstinline{reflex}} S_1\leqSets\text{\lstinline{reflex}}S_2$.
-	%Start noticing that $|S| = |\text{\lstinline{reflex}} S|$, hence
-	%the number of children nodes is preserved by using the reflexive
-	%rule, let us analyze each case. 
-	Let $(N,A)\in \text{\lstinline{reflex}} S_1$
-	and notice that there exists $(N_1,A)\in S_1$, such that
-	$\text{\lstinline{reflex}} N_1 = N $, and so,
-	in $S_2$ there is $(N_2,A)=\sigma(N_1,A)$ s.t. $N_2\subseteq N_1$. 
-	Since $N_2\subseteq N_1$, we have
-	$\text{\lstinline{reflex}} N_2 \subseteq
-    \text{\lstinline{reflex}} N_1 = N$.
-	The same reasoning applies to prove that if $S_1\leqSets S_2$ then 
-	$\text{\lstinline{congruence} } S_1\leqSets\text{\lstinline{congruence} }S_2$.
-	
+  Throughout the proof we abuse notation and denote the application
+  of simplification rules to nodes and to elements of
+  $\text{\lstinline{Set (Node, Ancestors)}}$ similarly, when no
+  ambiguity arises.
+%
+  Consider the order $\leqSets$, defined on
+  $\text{\lstinline{Set (Node, Ancestors)}} \times
+  \text{\lstinline{Set (Node, Ancestors)}}$, as $S_1 \leqSets S_2$ if
+  $|S_1| \leq |S_2|$ and there exists an injective map
+  $\sigma : S_1 \rightarrow S_2$ s.t.\ $\sigma(N_1,A) = (N_2,A)$ with
+  $N_2\subseteq N_1$.
+  % 
+  \begin{itemize}
+  \item $\leqSets$ is a partial order. The proof that $\leqSets$ is
+    reflexive and transitive is straightforward.  To prove that it is
+    antisymmetric, assume that $S_1\leqSets S_2$ and
+    $S_2 \leqSets S_1$.  This means that $|S_1|=|S_2|$ and,
+    furthermore, the maps $\sigma_1 : S_1 \rightarrow S_2$ and
+    $\sigma_2 : S_2 \rightarrow S_1$ are bijective. Notice that
+    $\sigma_1\circ \sigma_2$ is the identity map, otherwise we could
+    consider $(N,A)\in S_2$ where $N$ is minimal w.r.t.\ inclusion and
+    s.t.\ $(\sigma_1\circ \sigma_2)(N,A) \neq (N,A)$, i.e.,
+    $(\sigma_1\circ \sigma_2)(N,A) = (N',A)$ with $N'\subseteq N$ for
+    some $(N',A)\in S_2$; due to the minimality of $N$, we would have
+    $(\sigma_1\circ \sigma_2)(N',A) = (N',A)$, which would contradict
+    the injectivity of $\sigma_1\circ \sigma_2$. Since
+    $\sigma_1 (N,A) = (N',A)$ is such that $N'\subseteq N$, we shall
+    have $\sigma_1 (N,A) = (N,A)$. Hence, $S_1=S_2$.
+  \item The simplification function is order-preserving.
+	To prove that the reflexive rule preserves the order, let
+        $S_1$ and $S_2$ be s.t.\ $S_1\leqSets S_2$ and let us prove
+        that
+        $\text{\lstinline{reflex}}
+        S_1\leqSets\text{\lstinline{reflex}}S_2$.
+	% Start noticing that $|S| = |\text{\lstinline{reflex}} S|$,
+	% hence
+	% the number of children nodes is preserved by using the
+	% reflexive
+	% rule, let us analyze each case.
+	Let $(N,A)\in \text{\lstinline{reflex}} S_1$ and notice that
+        there exists $(N_1,A)\in S_1$, such that
+        $\text{\lstinline{reflex}} N_1 = N $, and so, in $S_2$ there
+        is $(N_2,A)=\sigma(N_1,A)$ s.t. $N_2\subseteq N_1$.  Since
+        $N_2\subseteq N_1$, we have
+        $\text{\lstinline{reflex}} N_2 \subseteq
+        \text{\lstinline{reflex}} N_1 = N$.  The same reasoning
+        applies to prove that if $S_1\leqSets S_2$ then
+        $\text{\lstinline{congruence} }
+        S_1\leqSets\text{\lstinline{congruence} }S_2$.
+%
 	To prove that \lstinline{bpa1} preserves the order,
 	note that 
 	$S \subseteq \text{\lstinline{bpa1} }S$. Assume that 
@@ -125,47 +128,37 @@ in the same way, when no ambiguities arise.
 	$(N_2,A)\in \text{\lstinline{bpa1} }S_2$ is such that
 	$N_2\subseteq N$.
 	The same reasoning applies to \lstinline{bpa2}. 
-	
-	Having proved
-	that each simplification function preserves the order, and
-	since the simplification procedure results from the successive 
-	application of these rules, we have proved that the simplification
-	function also preserves the order.\smallskip
-	
-	\noindent\textbf{$(\text{\lstinline{Set (Node, Ancestors)}}, \leqSets)$
-	is a lattice:} Given 
-	$S_1, S_2\in \text{\lstinline{Set (Node, Ancestors)}}$,
-	$S_1 \cup S_2$ is an upper bound and
-	$S_1 \cap S_2$ is a lower bound for $S_1$ and $S_2$.\smallskip
-	
-	\noindent\textbf{$(\text{\lstinline{Set (Node, Ancestors)}}, \leqSets)$
-	is a complete lattice:} Given 
-	$\mathcal{B}\subseteq \text{\lstinline{Set (Node, Ancestors)}}$:
-	$\bigcup_{S\in \mathcal{B}} S$ is an upper bound and
-	$\bigcap_{S\in \mathcal{B}} S$ is a lower bound for the sets in 
-	$\mathcal{B}$.
-	
-	Using the fixed point theorem from Tarski~\cite{tarski1955lattice}, 
-	we conclude that the simplification function has a
-	fixed point in $\text{\lstinline{Set (Node, Ancestors)}}$.
+      \end{itemize}
+      
+      Having proved that each simplification function preserves the
+      order, and since the simplification procedure results from the
+      successive application of these rules, we have proved that the
+      simplification function also preserves the order.\smallskip
+      %
+      \begin{itemize}
+      \item $(\text{\lstinline{Set (Node, Ancestors)}}, \leqSets)$ is
+        a lattice. Given
+        $S_1, S_2\in \text{\lstinline{Set (Node, Ancestors)}}$,
+        $S_1 \cup S_2$ is an upper bound and $S_1 \cap S_2$ is a lower
+        bound for $S_1$ and $S_2$.
+      \item $(\text{\lstinline{Set (Node, Ancestors)}}, \leqSets)$ is
+        a complete lattice. Given
+      $\mathcal{B}\subseteq \text{\lstinline{Set (Node, Ancestors)}}$:
+      $\bigcup_{S\in \mathcal{B}} S$ is an upper bound and
+      $\bigcap_{S\in \mathcal{B}} S$ is a lower bound for the sets in
+      $\mathcal{B}$.
+    \end{itemize}
+    Using Tarski's fixed point theorem~\cite{tarski1955lattice}, we
+    conclude that the simplification function has a fixed point in
+    $\text{\lstinline{Set (Node, Ancestors)}}$.
 \end{proof}
 
-Having proved that the fixed point exists, we can now adapt the simplification 
-phase to, on the one hand, go through an iteration of the simplification rules 
-until reaching the fixed point and, on the other hand, identify promising nodes 
-and prepend them rather than appending. An improved version of the 
-\lstinline|simplify| function proposed in listing~\ref{lst:algorithm} is 
-thus presented in listing~\ref{lst:enhanced}.
-
-The optimisations we propose aim to improve the performance of the algorithm, 
-however the branching nature of the expansion tree promotes an exponential 
-complexity. Indeed, each simplification step (potentially) generates a polynomial 
-number of nodes, each of which with linear size on the size of the input.
-In its turn, the same simplification phase may, in 
-the worst case, be iterated a linear number of times in the size of the input.
-For these reasons the complexity turns out to be exponential.
-Nevertheless, the heuristic we present seems to succeed very well in practice, as 
-we will see in the next section.
+Having proved that the fixed point exists, we can now adapt the
+simplification phase to, on the one hand, iterate the simplification
+rules until reaching a fixed point and, on the other hand, identify
+and prepend promising nodes. An improved version of the
+\lstinline|simplify| function (Listing~\ref{lst:algorithm}) is in
+Listing~\ref{lst:enhanced}.
 
 \begin{lstlisting}[
   caption={Haskell code for the improved simplification step (replaces
@@ -191,7 +184,15 @@ findFixedPoint ps nas
                else foldr (apply ps) nas [reflex,congruence,bpa1,bpa2]
 \end{lstlisting}
 
-
+The optimisations we propose aim at improving the performance of the
+algorithm, however the branching nature of the expansion tree promotes
+an exponential complexity: each simplification step (potentially)
+generates a polynomial number of nodes, each of which with linear size
+on the size of the input.  In turn, the same simplification phase may,
+in the worst case, be iterated a linear number of times on the size of
+the input.  For these reasons the complexity turns out to be
+exponential.  Nevertheless, these heuristics seems to work quite well
+in practice, as we show in the next section.
 
 %%% Local Variables:
 %%% mode: latex
