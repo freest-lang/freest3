@@ -1,8 +1,8 @@
-\section{Motivation}
+\section{Introduction}
 \label{sec:introduction}
 
 Session types enhance the expressivity of traditional types for
-programming languages by enabling describing structured communication
+programming languages by enabling to describe structured communication
 on heterogeneously typed
 channels~\cite{DBLP:conf/concur/Honda93,DBLP:conf/esop/HondaVK98,DBLP:conf/parle/TakeuchiHK94}.
 %
@@ -29,8 +29,15 @@ Algebra (BPA) which, in turn, was proved decidable by Christensen,
 H{\"{u}}ttel, and Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}.
 %
 Even if the equivalence problem for context-free session types is
-known to be decidable, to date, no algorithm has been proposed for the
-effect.
+known to be decidable, to date, the only implementation of 
+context-free session types we are
+aware of is that of Padovani~\cite{DBLP:conf/esop/Padovani17}, a
+language that admits equivalence, subtyping and, of particular
+interest, inference algorithms. It does however require a structural
+alignment between the process code and the session types, enforced by
+a \emph{resumption} process operator that explicitly breaks a type
+$S;T$. This implies that the monoidal rules proposed by Thiemann and
+Vasconcelos cannot be used.
 
 % Related work here
 
@@ -43,8 +50,8 @@ these papers.
 %
 Furthermore, context-free session types are not necessarily normed,
 which precludes using the original result by Baeten, Bergstra, and
-Klop~\cite{baeten1993decidability}, as well as improvements by Janc\v
-ar, Hirshfeld and
+Klop~\cite{baeten1993decidability}, as well as improvements by Hirshfeld,
+Janc\v ar, and
 Moller~\cite{DBLP:journals/tcs/HirshfeldJM96,DBLP:conf/concur/HirshfeldM94}.
 
 Our algorithm works along three stages.
@@ -59,14 +66,24 @@ presented~\cite{baeten1993decidability}.
 %
 The \emph{second stage} prunes the grammar by removing unreachable
 symbols in unnormed sequences of non-terminal symbols. This stage
-builds on the result of Janc\v ar, Hirshfeld and Moller.
+builds on the result of Christensen, H\"uttel, and Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}.
 %
 The \emph{third stage} constructs an expansion tree, by alternating
-between expansion and simplification steps, using ideas from Janc\v
+between expansion and simplification steps. The latter stage
+uses ideas from Janc\v
 ar, Moller, and
-Hirshfeld~\cite{hirshfeld1996bisimulation,janvcar1999techniques}.
-%
-\vv{mais trabalho relacionado aqui}
+Hirshfeld~\cite{hirshfeld1996bisimulation,janvcar1999techniques},
+on the expansion operations, but also on the simplification
+operations, where~\cite{janvcar1999techniques} builds itself
+upon the work by Caucal, Christensen, H\"uttel, and 
+Stirling~\cite{caucal1986decidabilite, DBLP:journals/iandc/ChristensenHS95}
+where they prove that the maximal bisimulation of any \BPA\ 
+transition graph is finitely representable as a Thue congruence; 
+this finite representation of a bisimulation is paramount for our results 
+of soundness and completeness. The branching nature 
+of the expansion tree confers an exponential complexity to the algorithm, 
+however we propose heuristics that allow us to reach this finite relation 
+faster.
 
 % Contributions
 We present an algorithm to decide the equivalence of context-free
@@ -91,11 +108,11 @@ The main contributions of this work are:
 
 The rest of the paper is organized as follows: context-free session
 types in Section~\ref{sec:contextfreesession}, the algorithm in
-Section~\ref{sec:algorithm}, the main results in
-Section~\ref{sec:soundness}, optimizations in
-Section~\ref{sec:optimisations}, evaluation in
-Section~\ref{sec:evaluation}, and conclusions in
-Section~\ref{sec:conclusion}.
+section~\ref{sec:algorithm}, the main results in
+section~\ref{sec:soundness}, optimizations in
+section~\ref{sec:optimisations}, evaluation in
+section~\ref{sec:evaluation}, and conclusions in
+section~\ref{sec:conclusion}.
 
 % Thiemann and
 % Vasconcelos~\cite{thiemann2016context} proposed {\it context-free
