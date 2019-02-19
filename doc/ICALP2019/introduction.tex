@@ -72,20 +72,23 @@ presented~\cite{baeten1993decidability}.
 %
 The \emph{second stage} prunes the grammar by removing unreachable
 symbols in unnormed sequences of non-terminal symbols. This stage
-builds on the result of Christensen, H\"uttel, and Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}.
+builds on the result of Christensen, H\"uttel, and 
+Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}.
 %
 The \emph{third stage} constructs an expansion tree, by alternating
-between expansion and simplification steps. This last stage uses ideas
-from Janc\v ar, Moller, and
-Hirshfeld~\cite{hirshfeld1996bisimulation,janvcar1999techniques} on
-expansion operations, but also on simplification operations,
-where~\cite{janvcar1999techniques} builds itself upon the work by
-Caucal, Christensen, H\"uttel, and
-Stirling~\cite{caucal1986decidabilite,
-  DBLP:journals/iandc/ChristensenHS95} where they prove that the
-maximal bisimulation of any \BPA\ transition graph is finitely
-representable as a Thue congruence. This finite representation of a
-bisimulation is paramount for our results of soundness and
+between expansion and simplification steps. 
+This last stage uses ideas on the expansion operations proposed by
+Janc\v ar, Moller, and
+Hirshfeld~\cite{hirshfeld1996bisimulation,janvcar1999techniques}, 
+and ideas on the simplification rules proposed by
+Caucal, Christensen, H\"uttel, Stirling, Janc\v ar, and Moller
+~\cite{caucal1986decidabilite,
+  DBLP:journals/iandc/ChristensenHS95,janvcar1999techniques}.
+The finite representation of
+bisimulations of \BPA\ transition graphs presented
+in~\cite{caucal1986decidabilite,
+  DBLP:journals/iandc/ChristensenHS95}
+is paramount for our results of soundness and
 completeness. The branching nature of the expansion tree confers an
 exponential complexity to the algorithm, however we propose heuristics
 that allow constructing the relation in a reasonable time.
