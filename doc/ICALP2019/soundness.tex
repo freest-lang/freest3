@@ -15,11 +15,11 @@ our algorithm is sound and complete.
 
 \subsection{The two bisimulations coincide}
 
-We show that the translation in Listing~\ref{lst:toGrammar} is itself
+We observe that the translation in listing~\ref{lst:toGrammar} is itself
 a bisimulation.
 %
-We start with a lemma that relates terminated types~$S$ with the result of
-the \lstinline|toGrammar|$S$.
+For this purpose, we start with a lemma that relates terminated types~$S$ 
+with the result of the \lstinline|toGrammar|$S$.
 
 \begin{lemma}
   \label{lem:terminated-togrammar}
@@ -36,10 +36,11 @@ the \lstinline|toGrammar|$S$.
 \end{proof}
 
 To conclude that the bisimulations on context-free session types and
-those on productions coincide, we now prove that
-\lstinline|toGrammar| is itself a bisimulation.
+those on productions coincide, we now present a bisimulation
+for the translation in listing~\ref{lst:toGrammar}.
 %
-We assume that the implementation of $\isCheckedf S$ returns
+As the implementation of \isCheckedf was not shown, we assume that
+$\isCheckedf S$ returns
 \lstinline|True| if and only if $\DONE S$.
 
 \begin{theorem}
