@@ -17,7 +17,7 @@ our algorithm is sound and complete.
 
 We show that the translation in Listing~\ref{lst:toGrammar} is itself
 a bisimulation.
-
+%
 We start with a lemma that relates terminated types~$S$ with the result of
 the \lstinline|toGrammar|$S$.
 
@@ -34,6 +34,13 @@ the \lstinline|toGrammar|$S$.
   this characterization for the ``if'' direction, and induction on
   \lstinline|toGrammar| for the ``only if'' direction.
 \end{proof}
+
+To conclude that the bisimulations on context-free session types and
+those on productions coincide, we now prove that
+\lstinline|toGrammar| is itself a bisimulation.
+%
+We assume that the implementation of $\isCheckedf S$ returns
+\lstinline|True| if and only if $\DONE S$.
 
 \begin{theorem}
 \label{thm:cfst_vs_grammar}
@@ -93,7 +100,7 @@ the \lstinline|toGrammar|$S$.
   \end{gather*}
   %
   That $\mathcal R$ is a bisimulation follows by co-induction, using
-  lemma~\ref{lem:terminated-togrammar}. % and the fact that
+  Lemma~\ref{lem:terminated-togrammar}. % and the fact that
   % $S \bisim \subs{\mu X.S}{X} S$~\cite{thiemann2016context}.
 \end{proof}
 
