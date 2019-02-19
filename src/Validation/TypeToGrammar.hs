@@ -119,13 +119,10 @@ assocToGrammar y c (l, t) = do
 
 isChecked :: Type -> Visited -> Bool
 isChecked Skip _ = True
-isChecked (Semi s t) v = isChecked s v && isChecked' t v
+isChecked (Semi s t) v = isChecked s v && isChecked t v
 isChecked (Rec Bind{var=x} t) v = isChecked t (Set.insert x v)
+isChecked (Var x) v = Set.member x v
 isChecked _ _ = False
-
-isChecked' :: Type -> Visited -> Bool
-isChecked' (Var x) v = Set.member x v
-isChecked' s v = isChecked s v
 
 -- Some tests
 
