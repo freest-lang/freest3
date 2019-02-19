@@ -2,11 +2,11 @@
 \label{sec:introduction}
 
 Session types enhance the expressivity of traditional types for
-programming languages by enabling to describe structured communication
+programming languages by enabling describing structured communication
 on heterogeneously typed
 channels~\cite{DBLP:conf/concur/Honda93,DBLP:conf/esop/HondaVK98,DBLP:conf/parle/TakeuchiHK94}.
 %
-Traditional session types are \emph{regular}, in the sense that the
+Traditional session types are \emph{regular} in the sense that the
 sequences of communication actions admitted by a type are in the union
 of a regular language (for finite executions) and an $\omega$-regular
 language (for infinite executions).
@@ -29,17 +29,12 @@ Algebra (BPA) which, in turn, was proved decidable by Christensen,
 H{\"{u}}ttel, and Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}.
 %
 Even if the equivalence problem for context-free session types is
-known to be decidable, the only implementation of 
-context-free session types we are
-aware of is that of Padovani~\cite{DBLP:conf/esop/Padovani17}, a
-language that admits equivalence, subtyping and, of particular
-interest, inference algorithms. It does however require a structural
-alignment between the process code and the session types, enforced by
-a \emph{resumption} process operator that explicitly breaks a type
-$S;T$. This implies that the monoidal rules proposed by Thiemann and
-Vasconcelos cannot be used.
-
-% Related work here
+known to be decidable, the only implementation of context-free session
+types we are aware of is that of
+Padovani~\cite{DBLP:conf/esop/Padovani17}, included in a programming
+language that requires a structural alignment between code and types
+(enforced by an explicit resumption process operator that explicitly
+breaks a type $S;T$), thus sidestepping checking type equivalence.
 
 After the breakthrough by Christensen, H\"uttel, and Stirling--- a
 result that provides no immediate practical algorithm---the problem of
@@ -60,13 +55,12 @@ study~\cite{janvcar2008selected,senizergues1997equivalence,stirling2001decidabil
 Several techniques have been proposed to solve the problem, 
 however no immediate practical algorithm had been proposed until
 Henry and S{\'e}nizergues provide an implementation of a correct algorithm 
-for this problem~\cite{henry2013lalblc}, however its performance is far below 
-what is desired.
-
+for this problem~\cite{henry2013lalblc}. Its poor performance
+precludes its incorporation in a compiler.
 
 Our algorithm to decide the equivalence of context-free session types
-can also be seen as an algorithm to decide the equivalence of simple 
-grammars. It works along three distinct stages.
+can also be seen as an algorithm to decide the equivalence of simple
+grammars. It follows three distinct stages.
 %
 The \emph{first stage} builds a context-free grammar in Greibach
 Normal Formal (GNF)---in fact a simple grammar---from a context-free
@@ -81,21 +75,20 @@ symbols in unnormed sequences of non-terminal symbols. This stage
 builds on the result of Christensen, H\"uttel, and Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}.
 %
 The \emph{third stage} constructs an expansion tree, by alternating
-between expansion and simplification steps. The latter
-uses ideas from Janc\v
-ar, Moller, and
-Hirshfeld~\cite{hirshfeld1996bisimulation,janvcar1999techniques}
-on the expansion operations, but also on the simplification
-operations, where~\cite{janvcar1999techniques} builds itself
-upon the work by Caucal, Christensen, H\"uttel, and 
-Stirling~\cite{caucal1986decidabilite, DBLP:journals/iandc/ChristensenHS95}
-where they prove that the maximal bisimulation of any \BPA\ 
-transition graph is finitely representable as a Thue congruence; 
-this finite representation of a bisimulation is paramount for our results 
-of soundness and completeness. The branching nature 
-of the expansion tree confers an exponential complexity to the algorithm, 
-however we propose heuristics that allow us to reach this finite relation 
-faster.
+between expansion and simplification steps. This last stage uses ideas
+from Janc\v ar, Moller, and
+Hirshfeld~\cite{hirshfeld1996bisimulation,janvcar1999techniques} on
+expansion operations, but also on simplification operations,
+where~\cite{janvcar1999techniques} builds itself upon the work by
+Caucal, Christensen, H\"uttel, and
+Stirling~\cite{caucal1986decidabilite,
+  DBLP:journals/iandc/ChristensenHS95} where they prove that the
+maximal bisimulation of any \BPA\ transition graph is finitely
+representable as a Thue congruence. This finite representation of a
+bisimulation is paramount for our results of soundness and
+completeness. The branching nature of the expansion tree confers an
+exponential complexity to the algorithm, however we propose heuristics
+that allow constructing the relation in a reasonable time.
 
 % Contributions
 We present an algorithm to decide the equivalence of context-free
@@ -107,10 +100,10 @@ The main contributions of this work are:
 %
 \begin{itemize}
 \item The proposal and implementation of an algorithm to decide type
-  equivalence of context-free session types (in 300 lines of Haskell
-  code),
-\item A proof of soundness and completeness of the algorithm against
-  the declarative definition,
+  equivalence of context-free session types and simple grammars (in
+  300 lines of Haskell code),
+\item A proof of its soundness and completeness against the
+  declarative definition,
 \item The exploration of several optimizations that cut the running
   time in 12,000,000\%.
 %\item validation of the algorithm on several meaningful examples.
@@ -119,12 +112,12 @@ The main contributions of this work are:
 % Outline
 
 The rest of the paper is organized as follows: context-free session
-types in section~\ref{sec:contextfreesession}, the algorithm in
-section~\ref{sec:algorithm}, the main results in
-section~\ref{sec:soundness}, optimizations in
-section~\ref{sec:optimisations}, evaluation in
-section~\ref{sec:evaluation}, and conclusions in
-section~\ref{sec:conclusion}.
+types in Section~\ref{sec:contextfreesession}, the algorithm in
+Section~\ref{sec:algorithm}, the main results in
+Section~\ref{sec:soundness}, optimizations in
+Section~\ref{sec:optimisations}, evaluation in
+Section~\ref{sec:evaluation}, and conclusions in
+Section~\ref{sec:conclusion}.
 
 % Thiemann and
 % Vasconcelos~\cite{thiemann2016context} proposed {\it context-free
