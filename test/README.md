@@ -112,4 +112,4 @@ To collect the run times and allocated memory of a test suite with 10 runs, use 
 $ bash ./testSuiteProf.sh
 ```
 
-This will generate a file testsProf.prof with the running times and allocated memory.
+This will generate a file testSuiteProf.prof with the running times and allocated memory.

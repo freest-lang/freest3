@@ -1,12 +1,12 @@
 #!/bin/bash
 
-echo "Run times and memory allocated" > testsProf.prof
+echo "Run times and memory allocated" > testSuiteProf.prof
 declare -r N=10
-echo "Number of runs: $N" >> testsProf.prof
+echo "Number of runs: $N" >> testSuiteProf.prof
 
 for i in $( seq 1 $N )
 do
-   echo "---------------------------------" >> testsProf.prof
+   echo "---------------------------------" >> testSuiteProf.prof
    cabal test testEquiv
-   cat testEquiv.prof | grep "total" >> testsProf.prof
+   cat testEquiv.prof | grep "total" >> testSuiteProf.prof
 done
