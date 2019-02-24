@@ -1,10 +1,9 @@
 \begin{figure}[h!]
-  \centering
   \hfill\fbox{$\algkindout T \kind$}
   \begin{gather*}
     % Functional types
     \frac{}{\algkindout{\tcBase}{\kindt^\Un}}
-    \quad 
+    \qquad 
     \frac{
       \algkindout{T_1}{\kind_1}
       \quad
@@ -14,21 +13,21 @@
     }
     \\
     \frac{
-      \algkindin{T_1}{\kindt^\Un}
+      \algkindout{T_1}{\kind_1}
       \quad
-      \algkindin{T_2}{\kindt^\Un}
+      \algkindout{T_2}{\kind_2}
     }{
-      \algkindout{\tUnFun{T_1}{T_2}}{\kindt^\Un}
+      \algkindout{(\tUnFun{T_1}{T_2})}{\kindt^\Un}
       }
-    \quad
+    \qquad
     \frac{
-      \algkindin{T_1}{\kindt^\Lin}
+      \algkindout{T_1}{\kind_1}
       \quad
-      \algkindin{T_2}{\kindt^\Lin}
+      \algkindout{T_2}{\kind_2}
     }{
-      \algkindout{\tLinFun{T_1}{T_2}}{\kindt^\Lin}
+      \algkindout{(\tLinFun{T_1}{T_2})}{\kindt^\Lin}
     }
-    % \quad % Wrong, this is  treated separately as a datatype
+    % \qquad % Wrong, this is  treated separately as a datatype
     % \frac{
     %   \algkindout{T_i}{\kind_i}
     % }{
@@ -37,7 +36,7 @@
     \\
     % This is both functional and session
     \frac{x :: \kind \in \kindEnv}{\algkindout x \kind}
-   \quad
+   \qquad
     %
     % Session types
     %
@@ -48,9 +47,9 @@
    }
     \\
     \frac{}{\kindEnv \Alg \tskip \rightarrow \kinds^\Un}
-    \quad 
+    \qquad 
     \frac{}{\algkindout{\tMsg T}{\kinds^\Lin}}
-    \quad
+    \qquad
     \frac{
       \algkindin{T_1}{\kinds^\Lin}
       \quad
@@ -58,7 +57,7 @@
     }{
       \algkindout{\tSemi{T_1}{T_2}}{\kinds^\Lin}
     }
-    \quad
+    \qquad
     \frac{
       \algkindin{T_i}{\kinds^\Lin}
     }{

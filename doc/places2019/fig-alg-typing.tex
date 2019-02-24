@@ -1,0 +1,95 @@
+\begin{figure}[h!]
+The \emph{synthesise} relation\hfill\fbox{$\algtypeout e T \varEnv$}
+\begin{gather*}
+  \frac{
+    x\colon T \in \varEnv
+    \quad
+    \linp T
+  }{
+    \algtypeout x T {\varEnv\setminus\{x\}}
+  }
+  \qquad
+  \frac{
+    x\colon T \in \varEnv
+    \quad
+    \unp T
+  }{
+    \algtypeout x T \varEnv
+  }
+  \qquad
+  \frac{
+    \algtypeout[\kindEnv;\varEnv_1]{e_1}{T_2}{\varEnv_2}
+    \quad
+    \algtypeout[\kindEnv;\varEnv_2,x\colon T_1]{e_2}{T_2}{\Gamma_3}
+  }{
+    \algtypeout[\kindEnv;\varEnv_1]{\unlete{x}{e_1}{e_2}}{T_2}{\varEnv_3}
+  }
+  \\
+  % Application
+  \frac{
+    \algtypeout[\kindEnv;\varEnv_1]{e_1}{T}{\varEnv_2}
+    \quad
+    T \Extract{\rightarrow\multimap} (U_1\rightarrow U_2)
+    \quad
+    \algtypein[\kindEnv;\varEnv_2]{e_2}{U_1}{\varEnv_3}
+  }{
+    \algtypeout[\kindEnv;\varEnv_1]{e_1e_2}{U_2}{\varEnv_3}
+  }
+  \\
+  % Type application
+  \frac{
+    \algtypeout[\kindEnv;\varEnv_1]{e}{T_1}{\varEnv_2}
+    \quad
+    T_1 \Extract{\forall} (\forall x\colon\kind.U)
+    \quad
+    \algkindin T \kind
+  }{
+    \algtypeout[\kindEnv;\varEnv_1]{e}{\subs T x U}{\varEnv_2}
+  }
+  \\
+  % Conditional
+  \frac{
+    \algtypeout[\kindEnv;\varEnv_1]{e_1}{\boole;\varEnv_2}
+    \quad
+    \algtypeout[\kindEnv;\varEnv_2]{e_2}{T}{\varEnv_3}
+    \quad
+    \algtypein[\kindEnv;\varEnv_2]{e_3}{T}{\varEnv_4}
+  }{
+    \algtypeout[\kindEnv;\varEnv_1]{\conditionale{e_1}{e_2}{e_3}}{T}{\varEnv_4}
+  }
+  \\
+  % Pair constructor
+  \frac{
+    \algtypeout[\kindEnv ; \varEnv_1]{e_1}{T_1}{\varEnv_2}
+    \quad
+    \algtypeout[\kindEnv ; \varEnv_2]{e_2}{T_2}{\varEnv_3}
+  }{
+    \algtypeout[\kindEnv ; \varEnv_1]{(e_1, e_2)}{(T_1,T_2)}{\varEnv_3}
+  }
+  \\
+    % Pair destructor
+  \frac{
+    \algtypeout[\kindEnv ; \varEnv_1]{e_1}{T}{\varEnv_2}
+    \quad
+    T \Extract{\bigotimes} (U_1, U_2)
+    \quad
+    \algtypeout[\kindEnv; \varEnv_2, x\colon U_1, y\colon U_2]{e_2}{U}{\varEnv_3}
+  }{
+    \algtypeout[\kindEnv;
+    \varEnv_1]{\binlete{x}{y}{e_1}{e_2}}{U}{\varEnv_3}
+  }
+\end{gather*}
+% 
+% 
+The \emph{check against} relation\hfill\fbox{$\algtypein e T \varEnv$}
+\begin{gather*}
+  \text{todo}
+\end{gather*}
+\caption{Algorithmic type checking}
+\label{fig:alg-typing}
+\end{figure}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:
