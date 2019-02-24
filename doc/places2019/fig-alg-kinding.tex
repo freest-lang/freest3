@@ -1,0 +1,88 @@
+\begin{figure}[h!]
+  \centering
+  \hfill\fbox{$\algkindout T \kind$}
+  \begin{gather*}
+    % Functional types
+    \frac{}{\algkindout{\tcBase}{\kindt^\Un}}
+    \quad 
+    \frac{
+      \algkindout{T_1}{\kind_1}
+      \quad
+      \algkindout{T_2}{\kind_2}
+    }{
+      \algkindout{\tPair{T_1}{T_2}}{\max(\kind_1, \kind_2)}
+    }
+    \\
+    \frac{
+      \algkindin{T_1}{\kindt^\Un}
+      \quad
+      \algkindin{T_2}{\kindt^\Un}
+    }{
+      \algkindout{\tUnFun{T_1}{T_2}}{\kindt^\Un}
+      }
+    \quad
+    \frac{
+      \algkindin{T_1}{\kindt^\Lin}
+      \quad
+      \algkindin{T_2}{\kindt^\Lin}
+    }{
+      \algkindout{\tLinFun{T_1}{T_2}}{\kindt^\Lin}
+    }
+    % \quad % Wrong, this is  treated separately as a datatype
+    % \frac{
+    %   \algkindout{T_i}{\kind_i}
+    % }{
+    %   \algkindout{\tDatatype{l_i\colon T_i}_{i\in I}}{\max{\kind_i}}
+    % }
+    \\
+    % This is both functional and session
+    \frac{x :: \kind \in \kindEnv}{\algkindout x \kind}
+   \quad
+    %
+    % Session types
+    %
+   \frac{
+     \algkindout[\kindEnv, x\colon \kinds^\Lin] T \kind
+   }{
+     \algkindout{\tRec xT}{\kind}
+   }
+    \\
+    \frac{}{\kindEnv \Alg \tskip \rightarrow \kinds^\Un}
+    \quad 
+    \frac{}{\algkindout{\tMsg T}{\kinds^\Lin}}
+    \quad
+    \frac{
+      \algkindin{T_1}{\kinds^\Lin}
+      \quad
+      \algkindin{T_2}{\kinds^\Lin}
+    }{
+      \algkindout{\tSemi{T_1}{T_2}}{\kinds^\Lin}
+    }
+    \quad
+    \frac{
+      \algkindin{T_i}{\kinds^\Lin}
+    }{
+      \algkindout{\tChoice{\{l_i\colon T_i\}}_{i\in I}}{\kinds^\Lin}
+    }
+  \end{gather*}
+  % 
+  \hfill\fbox{$\algkindin T \kind$}
+  %
+  \begin{equation*}
+    \frac{
+      \algkindout{T}{\kind_1}
+      \quad
+      \subkind{\kind_1}{\kind_2}
+    }{
+      \algkindin T {\kind_2}
+    }
+  \end{equation*}
+  % 
+  \caption{Algorithmic kinding system}
+  \label{fig:kinding-system}
+\end{figure}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

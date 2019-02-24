@@ -120,8 +120,10 @@
 \newcommand\tSemi[2]{#1;#2}
 \newcommand\tOut[1]{\tcBang#1}
 \newcommand\tIn[1]{?#1}
-\newcommand\tIChoice[1]{\oplus#1}
-\newcommand\tEChoice[1]{\&#1}
+\newcommand{\tMsg}[1]{\sharp{#1}}
+\newcommand\tIChoice[1]{\oplus{#1}}
+\newcommand\tEChoice[1]{\&{#1}}
+\newcommand{\tChoice}[1]{\star{#1}}
 \newcommand\tUnFun[2]{#1\tcFun#2}
 \newcommand\tLinFun[2]{#1\tcLolli#2}
 \newcommand\tPair[2]{(#1,\,#2)}
@@ -130,6 +132,11 @@
 %\newcommand\tForall[2]{\forall\,#1\,.\,#2}
 %\newcommand\tForall[2]{\kForall\,#1\,=>\,#2}
 \newcommand\tForall[2]{\kForall\,#1\Rightarrow#2}
+% Basic Types
+\newcommand{\unite}{()}
+\newcommand{\inte}{\keyword{Int}}
+\newcommand{\chare}{\keyword{Char}}
+\newcommand{\boole}{\keyword{Bool}}
 
 \newcommand\tRecK[2]{\kRec\,#1\,.\,#2}
 % Environments
@@ -138,13 +145,6 @@
 \newcommand\kindEnv{\Delta}
 \newcommand\varEnv{\Gamma}
 
-% Language
-% Expressions
-% Language Types
-\newcommand{\unite}{()}
-\newcommand{\inte}{\keyword{Int}}
-\newcommand{\chare}{\keyword{Char}}
-\newcommand{\boole}{\keyword{Bool}}
 
 % Variables
 \newcommand\vare[1]{#1}
@@ -175,16 +175,16 @@
 \newcommand{\ctrcte}{C}
 \newcommand\casee[2]{\keyword{case}\;#1\;\keyword{of}\;#2}
 
-% Goal
-\newcommand\Alg{\vdash_{a}}
-\newcommand\Goal{\vdash}
+% Sequents
+\newcommand{\algkindout}[3][\kindEnv]{{#1} \Alg {#2} \rightarrow{ #3}}
+\newcommand{\algkindin}[3][\kindEnv]{{#1} \Alg {#2} \leftarrow {#3}}
+\newcommand{\subkind}[3][\kindEnv]{{#1} \vdash {#2} <: {#3}}
+\newcommand\Alg{\vdash_{\textsf a}}
 
 % Equivalent
 \newcommand\Equiv[2]{#1\,\thicksim\,#2}
 
-
 %%% Local Variables:
 %%% mode: latex
-%%% TeX-master: "cfst-inforum18"
+%%% TeX-master: "main"
 %%% End:
-      
