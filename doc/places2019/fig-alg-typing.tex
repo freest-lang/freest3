@@ -54,8 +54,10 @@ The \emph{synthesise} relation\hfill\fbox{$\algtypeout e T \varEnv$}
     \algtypeout[\kindEnv;\varEnv_2]{e_2}{T}{\varEnv_3}
     \quad
     \algtypein[\kindEnv;\varEnv_2]{e_3}{T}{\varEnv_4}
+    \quad
+    \ctxequiv{\varEnv_3}{\varEnv_4}
   }{
-    \algtypeout[\kindEnv;\varEnv_1]{\conditionale{e_1}{e_2}{e_3}}{T}{\varEnv_4}
+    \algtypeout[\kindEnv;\varEnv_1]{\conditionale{e_1}{e_2}{e_3}}{T}{\varEnv_3}
   }
   \\
   % Pair constructor
@@ -78,6 +80,90 @@ The \emph{synthesise} relation\hfill\fbox{$\algtypeout e T \varEnv$}
     \algtypeout[\kindEnv;
     \varEnv_1]{\binlete{x}{y}{e_1}{e_2}}{U}{\varEnv_3}
   }
+  \\
+  % Channel creation
+  \frac{
+    \kindEnv \Alg T \leftarrow \kinds^{\Lin}
+  }{
+    \kindEnv;\varEnv \Alg \newe{T} \rightarrow (T, \dual{T}); \varEnv
+  }
+  \qquad
+  % Send
+  \frac{
+    \algtypeout[\kindEnv;\varEnv_1]{e}{T}{\varEnv_2}
+    \quad
+    T\Extract{!} (!U_1;U_2)
+  }{
+    \algtypeout[\kindEnv;\varEnv_1]{\sendce e}{(U_1\multimap U_2)}{\varEnv_2}
+  }
+  \\
+  % Receive
+  \frac{
+    \algtypeout[\kindEnv;\varEnv_1]{e_1}{T}{\varEnv_2}
+    \quad T
+    \Extract{?} (?U_1;U_2)
+  }{
+    \algtypeout[\kindEnv;\varEnv_1]{\recve e}{(U_1,U_2)}{\varEnv_2}
+  }
+  \qquad
+  % Select
+  \frac{
+    \algtypeout[\kindEnv;\varEnv]{e}{T}{\varEnv_2}
+    \quad
+    T \Extract{\oplus}\oplus\{C_i\colon U_i\}
+    \quad
+    j \in I
+  }{
+    \algtypeout[\kindEnv;\varEnv]{\selecte{C_j}{e}}{U}{\varEnv_2}
+  }
+  \\
+  % Match
+    \frac{
+      \begin{array}{c}
+        \algtypeout[\kindEnv;\varEnv_1]{e}{T}{\varEnv_2}\\
+        T \Extract{\&} \&\{C_i\colon T_i\}\\
+      \end{array}
+      \quad 
+      \begin{array}{c}\\
+      \algtypeout[\kindEnv;\varEnv_2, x_1\colon T_1]{e_1}{U}{\Sigma_1}
+      \end{array}
+      \quad 
+      \Bigg(\;\begin{array}{c}
+        % T \Extract{\&} C_i : T_i\\
+        \algtypein[\kindEnv;\varEnv_2,x_i\colon T_i]{e_i}{U}{\Sigma_i}\\
+        \ctxequiv{\Sigma_1}{\Sigma_i} 
+      \end{array}
+      \;\Bigg)^{i>1}
+    }{
+      \algtypeout[\kindEnv;\varEnv_1]{\matche{e}{\{C_i\,x \rightarrow e_i\}}}{U}{\varEnv_1}
+    }
+    \\
+    \frac{
+      \algtypeout[\kindEnv;\varEnv_1]{e}{T}{\varEnv_2}
+      \quad
+      \unp T
+    }{
+      \algtypeout[\kindEnv;\varEnv_1]{\forke{e}}{\unite}{\varEnv_2}
+    }
+    \\
+    \frac{
+      \begin{array}{c}
+        \algtypeout[\kindEnv;\varEnv_1]{e}{T}{\varEnv_2}\\
+        T \Extract{[]}[C_i\colon\vec T_i]\\
+      \end{array}
+      \quad
+      \begin{array}{c}\\
+        \algtypeout[\kindEnv;\varEnv_2, \vec x\colon\vec T_1]{e_1}{U}{\Sigma_1}
+      \end{array}
+      \quad
+      \Bigg(\;\begin{array}{c}
+                \algtypein[\kindEnv;\varEnv_2,x:T_i]{e_1}{U}{\Sigma_i}\\
+                \ctxequiv{\Sigma_1}{\Sigma_i} 
+              \end{array}
+              \;\Bigg)^{i>1}
+            }{
+              \algtypeout[\kindEnv;\varEnv_1]{\casee{e}{\{C_i\,\vec x\rightarrow e_i\}}}{U}{\varEnv_1}
+            }
 \end{gather*}
 % 
 % 

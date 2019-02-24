@@ -84,8 +84,9 @@
 % Session Types
 \newcommand\newe[1]{\keyword{new}\;#1}
 \newcommand\sende[2]{\keyword{send}\;#1\; #2}
+\newcommand\sendce[1]{\keyword{send}\;#1}
 \newcommand\recve[1]{\keyword{receive}\;#1}
-\newcommand\selecte[1]{\keyword{select}\;#1}
+\newcommand\selecte[2]{\keyword{select}\;#1\;{#2}}
 \newcommand\matche[2]{\keyword{match}\;#1\;\keyword{with}\;#2}
 
 % Fork
@@ -99,18 +100,22 @@
 \newcommand{\algkindout}[3][\kindEnv]{{#1} \Alg {#2} \shortrightarrow{ #3}}
 \newcommand{\algkindin}[3][\kindEnv]{{#1} \Alg {#2} \shortleftarrow {#3}}
 \newcommand{\subkind}[3][\kindEnv]{{#1} \vdash {#2} <: {#3}}
-\newcommand{\algtypeout}[4][\kindEnv;\varEnv]{{#1} \Alg {#2} \shortrightarrow {#3};{#4}}
-\newcommand{\algtypein}[4][\kindEnv;\varEnv]{{#1} \Alg {#2}
-  \colon {#3} \shortrightarrow {#4}}
+\newcommand{\algtypeout}[4][\kindEnv;\varEnv]{{#1} \Alg {#2}
+  \shortrightarrow {#3};{#4}}
+\newcommand{\algtypein}[4][\kindEnv;\varEnv]{{#1} \Alg {#2}\colon {#3}
+  \shortrightarrow {#4}}
+\newcommand{\ctxequiv}[3][\kindEnv]{{#1} \vdash \Equiv{#2}{#3}}
 %\newcommand\Alg{\vdash_{\textsf a}}
 \newcommand\Alg{\vdash}
 
-% Operartors
+% Operators
 \newcommand\Extract[1]{\leadsto_{#1}}% \rightlsquigarrow}
 \newcommand{\subs}[3]{[#1/#2]#3}
+\newcommand\dual[1]{\overline{#1}}
 
 % Predicates
-\newcommand\Equiv[2]{#1\,\thicksim\,#2}
+%\newcommand\Equiv[2]{#1\,\thicksim\,#2}
+\newcommand\Equiv[2]{#1\,\sim\,#2}
 \newcommand{\linp}[1]{\link(#1)}
 \newcommand{\unp}[1]{\unk(#1)}
 
