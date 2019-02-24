@@ -38,18 +38,18 @@ The \emph{synthesise} relation\hfill\fbox{$\algtypeout e T \varEnv$}
   \\
   % Type application
   \frac{
-    \algtypeout[\kindEnv;\varEnv_1]{e}{T_1}{\varEnv_2}
+    \algtypeout[\kindEnv;\varEnv_1]{e}{U}{\varEnv_2}
     \quad
-    T_1 \Extract{\forall} (\forall x\colon\kind.U)
+    U \Extract{\forall} (\forall x\colon\kind.V)
     \quad
     \algkindin T \kind
   }{
-    \algtypeout[\kindEnv;\varEnv_1]{e}{\subs T x U}{\varEnv_2}
+    \algtypeout[\kindEnv;\varEnv_1]{e[T]}{\subs T x V}{\varEnv_2}
   }
   \\
   % Conditional
   \frac{
-    \algtypeout[\kindEnv;\varEnv_1]{e_1}{\boole;\varEnv_2}
+    \algtypein[\kindEnv;\varEnv_1]{e_1}{\boole}{\varEnv_2}
     \quad
     \algtypeout[\kindEnv;\varEnv_2]{e_2}{T}{\varEnv_3}
     \quad
@@ -169,7 +169,13 @@ The \emph{synthesise} relation\hfill\fbox{$\algtypeout e T \varEnv$}
 % 
 The \emph{check against} relation\hfill\fbox{$\algtypein e T \varEnv$}
 \begin{gather*}
-  \text{todo}
+  \frac{
+    \algtypeout e U \varEnv
+    \quad
+    \typeequiv T U
+  }{
+    \algtypein e T \varEnv
+  }
 \end{gather*}
 \caption{Algorithmic type checking}
 \label{fig:alg-typing}
