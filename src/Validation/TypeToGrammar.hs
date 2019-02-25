@@ -78,17 +78,17 @@ typeToGrammar t = do
   return y
 
 toGrammar :: Type -> TransState [TypeVar]
-toGrammar Skip =
+toGrammar (Skip _) =
   return []
-toGrammar (Message p b) = do
+toGrammar (Message _ p b) = do
   y <- freshVar
   addProduction y (MessageLabel p b) []
   return [y]
-toGrammar (Semi t u) = do
+toGrammar (Semi _ t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
   return $ xs ++ ys
-toGrammar (Var a) = do
+toGrammar (Var _ a) = do
   b <- memberVisited a
   if b
   then    -- This is a recursion variable
@@ -97,17 +97,17 @@ toGrammar (Var a) = do
     y <- freshVar
     addProduction y (VarLabel a) []
     return [y]
-toGrammar (Rec Bind{var=x} t) = do
+toGrammar (Rec p Bind{var=x} t) = do
   y <- freshVar
   insertVisited y
-  zs <- toGrammar $ subs (Var y) x t -- On the fly alpha conversion
+  zs <- toGrammar $ subs (Var p y) x t -- On the fly alpha conversion
   if null zs
     then return []
   else do
     m <- getTransitions $ head zs
     addProductions y (Map.map (++ tail zs) m)
     return [y]
-toGrammar (Choice c m) = do
+toGrammar (Choice _ c m) = do
   y <- freshVar
   mapM_ (assocToGrammar y c) (Map.assocs m)
   return [y]
@@ -119,69 +119,69 @@ assocToGrammar y c (l, t) = do
 
 -- Some tests
 
-s1 = Message Out CharType
+s1 = Message (0,0) Out CharType
 t1 = convertToGrammar [s1]
-s2 = Var "α"
+s2 = Var (0,0) "α"
 t2 = convertToGrammar [s2]
-s3 = Semi (Message Out IntType) (Message In BoolType)
+s3 = Semi (0,0) (Message (0,0) Out IntType) (Message (0,0) In BoolType)
 t3 = convertToGrammar [s3]
-s4 = Semi s3 s1
+s4 = Semi (0,0) s3 s1
 t4 = convertToGrammar [s4]
-s5 = Choice External (Map.fromList
-  [("Leaf", Skip),
+s5 = Choice (0,0) External (Map.fromList
+  [("Leaf", Skip (0,0)),
    ("Node", s1)])
 t5 = convertToGrammar [s5]
-s6 = Choice External (Map.fromList
-  [("Leaf", Skip),
+s6 = Choice (0,0) External (Map.fromList
+  [("Leaf", Skip (0,0)),
    ("Node", s3)])
 t6 = convertToGrammar [s6]
 yBind = Bind "y" (Kind {prekind = Session, multiplicity = Lin})
-treeSend = Rec yBind (Choice External (Map.fromList
-  [("Leaf",Skip),
-   ("Node", Semi (Message Out IntType) (Semi (Var "y") (Var "y")))]))
+treeSend = Rec (0,0) yBind (Choice (0,0) External (Map.fromList
+  [("Leaf",Skip (0,0)),
+   ("Node", Semi (0,0) (Message (0,0) Out IntType) (Semi (0,0) (Var (0,0) "y") (Var (0,0) "y")))]))
 t7 = convertToGrammar [treeSend]
-t8 = convertToGrammar [Semi treeSend (Var "α")]
-s9 = Rec yBind (Semi s1 (Var "y"))
+t8 = convertToGrammar [Semi (0,0) treeSend (Var (0,0) "α")]
+s9 = Rec (0,0) yBind (Semi (0,0) s1 (Var (0,0) "y"))
 t9 = convertToGrammar [s9]
-s10 = Semi s4 (Semi (Semi s3 s1) s4)
+s10 = Semi (0,0) s4 (Semi (0,0) (Semi (0,0) s3 s1) s4)
 t10 = convertToGrammar [s10]
-s11 = Semi (Rec yBind (Semi treeSend (Var "y"))) treeSend
+s11 = Semi (0,0) (Rec (0,0) yBind (Semi (0,0) treeSend (Var (0,0) "y"))) treeSend
 t11 = convertToGrammar [s11]
 zBind = Bind "z" (Kind {prekind = Session, multiplicity = Lin})
-s12 = Semi (Rec zBind (Semi treeSend (Var "z"))) treeSend
+s12 = Semi (0,0) (Rec (0,0) zBind (Semi (0,0) treeSend (Var (0,0) "z"))) treeSend
 t12 = convertToGrammar [s12]
-s13 = Semi treeSend Skip
+s13 = Semi (0,0) treeSend (Skip (0,0))
 t13 = convertToGrammar [s13]
-s14 = Semi Skip treeSend
+s14 = Semi (0,0) (Skip (0,0)) treeSend
 t14 = convertToGrammar [s14]
-s15 = Semi treeSend treeSend
+s15 = Semi (0,0) treeSend treeSend
 t15 = convertToGrammar [s15]
-treeSend1 = Rec zBind (Choice External (Map.fromList
-  [("Leaf",Skip),
-   ("Node", Semi (Message Out IntType) (Semi (Var "z") (Var "z")))]))
-s16 = Semi treeSend treeSend1
+treeSend1 = Rec (0,0) zBind (Choice (0,0) External (Map.fromList
+  [("Leaf",Skip (0,0)),
+   ("Node", Semi (0,0) (Message (0,0) Out IntType) (Semi (0,0) (Var (0,0) "z") (Var (0,0) "z")))]))
+s16 = Semi (0,0) treeSend treeSend1
 t16 = convertToGrammar [s16]
-s17 = Rec zBind (Semi s1 (Var "z"))
+s17 = Rec (0,0) zBind (Semi (0,0) s1 (Var (0,0) "z"))
 t17 = convertToGrammar [s17]
-s18 = Rec zBind (Semi s1 (Semi (Var "z") (Var "z")))
+s18 = Rec (0,0) zBind (Semi (0,0) s1 (Semi (0,0) (Var (0,0) "z") (Var (0,0) "z")))
 t18 = convertToGrammar [s18]
-s19 = Rec zBind (Semi (Semi s1 (Var "z")) (Var "z"))
+s19 = Rec (0,0) zBind (Semi (0,0) (Semi (0,0) s1 (Var (0,0) "z")) (Var (0,0) "z"))
 t19 = convertToGrammar [s19]
-s20 = Message In IntType
-s21 = Semi s1 (Semi s2 s20)
-s22 = Semi (Semi s1 s2) s20
-s23 = Semi s1 Skip
-s24 = Rec yBind (Rec zBind (Semi (Semi s1 (Var "y")) (Var "z")))
+s20 = Message (0,0) In IntType
+s21 = Semi (0,0) s1 (Semi (0,0) s2 s20)
+s22 = Semi (0,0) (Semi (0,0) s1 s2) s20
+s23 = Semi (0,0) s1 (Skip (0,0))
+s24 = Rec (0,0) yBind (Rec (0,0) zBind (Semi (0,0) (Semi (0,0) s1 (Var (0,0) "y")) (Var (0,0) "z")))
 t24 = convertToGrammar [s24]
-s25 = Rec yBind (Rec zBind (Semi (Semi s1 (Var "z")) (Var "y")))
+s25 = Rec (0,0) yBind (Rec (0,0) zBind (Semi (0,0) (Semi (0,0) s1 (Var (0,0) "z")) (Var (0,0) "y")))
 t25 = convertToGrammar [s25]
-s26 = Semi (Choice External (Map.fromList [("Leaf", Skip)])) (Var "α")
+s26 = Semi (0,0) (Choice (0,0) External (Map.fromList [("Leaf", Skip (0,0))])) (Var (0,0) "α")
 t26 = convertToGrammar [s26]
-s27 = Choice External (Map.fromList [("Leaf", (Var "α"))])
+s27 = Choice (0,0) External (Map.fromList [("Leaf", (Var (0,0) "α"))])
 t27 = convertToGrammar [s27]
-s28 = Rec yBind (Choice External (Map.fromList [("Add", Semi (Semi (Var "y") (Var "y")) (Message Out IntType)), ("Const", Skip)]))
+s28 = Rec (0,0) yBind (Choice (0,0) External (Map.fromList [("Add", Semi (0,0) (Semi (0,0) (Var (0,0) "y") (Var (0,0) "y")) (Message (0,0) Out IntType)), ("Const", Skip (0,0))]))
 t28 = convertToGrammar [s28]
-s29 = Semi s5 (Message In IntType)
+s29 = Semi (0,0) s5 (Message (0,0) In IntType)
 t29 = convertToGrammar [s29]
-s30 = Rec yBind s29
+s30 = Rec (0,0) yBind s29
 t30 = convertToGrammar [s24,s25,s26,s27,s28,s29,s30]

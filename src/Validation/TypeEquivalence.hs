@@ -180,13 +180,13 @@ findInPair _ _ _       = Nothing
 -- TYPE EQUIVALENCE
 
 equivalent :: KindEnv -> Type -> Type -> Bool
-equivalent _ (Var x) (Var y) = x == y
-equivalent _ (Basic b) (Basic c) = b == c
-equivalent k (Fun m t1 t2) (Fun n u1 u2) =
+equivalent _ (Var _ x) (Var _ y) = x == y
+equivalent _ (Basic _ b) (Basic _ c) = b == c
+equivalent k (Fun _ m t1 t2) (Fun _ n u1 u2) =
   m == n && equivalent k t1 u1 && equivalent k t2 u2
-equivalent k (PairType t1 t2) (PairType u1 u2) =
+equivalent k (PairType _ t1 t2) (PairType _ u1 u2) =
   equivalent k t1 u1 && equivalent k t2 u2
-equivalent k (Datatype m1) (Datatype m2) =
+equivalent k (Datatype _ m1) (Datatype _ m2) =
   Map.size m1 == Map.size m2 &&
   Map.foldlWithKey (checkBinding k m2) True m1
 equivalent k t u =
