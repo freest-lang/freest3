@@ -106,8 +106,9 @@
   \shortrightarrow {#4}}
 \newcommand{\ctxequiv}[3][\kindEnv]{{#1} \vdash \Equiv{#2}{#3}}
 \newcommand{\typeequiv}[3][\kindEnv]{{#1} \vdash \Equiv{#2}{#3}}
-\newcommand{\isLin}[2][\kindEnv]{{#1} \vdash {#2}\colon\link}
-\newcommand{\isUn}[2][\kindEnv]{{#1} \vdash {#2}\colon\unk}
+\newcommand{\isqualifier}[3][\kindEnv]{{#1} \vdash {#2}\colon{#3}}
+\newcommand{\isLin}[2][\kindEnv]{\isqualifier[#1]{#2}\link}
+\newcommand{\isUn}[2][\kindEnv]{\isqualifier[#1]{#2}\unk}
 \newcommand{\contractive}[2][\kindEnv]{{#1} \vdash_{\textsf c} {#2}}
 %\newcommand\Alg{\vdash_{\textsf a}}
 \newcommand\Alg{\vdash}
