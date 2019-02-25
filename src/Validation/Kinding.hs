@@ -74,8 +74,7 @@ checkVar p v = do
     getKind v
   else do
     file <- getFileName
-    addError $ styleError file p
-               [styleRed $ "'" ++ v ++ "'", "is a free variable."]
+    addError p [styleRed $ "'" ++ v ++ "'", "is a free variable."]
     addToKenv p v topKind
     return $ topKind
 
@@ -83,10 +82,8 @@ checkVar p v = do
 checkSessionType :: Pos -> Type -> Kind ->  TypingState ()
 checkSessionType p t k
   | prekind k == Session = return ()
-  | otherwise            = do
-      file <- getFileName
-      addError $ styleError file p
-                 ["Expecting type", styleRed $ show t,
+  | otherwise            =
+      addError p ["Expecting type", styleRed $ show t,
                   "to be a session type; found kind", styleRed $ show k]
 
 -- Checks if all the elements of a choice are session types
@@ -94,19 +91,15 @@ checkChoice :: Pos -> [Kind] -> TypingState Kind
 checkChoice p ks
    | all (<= Kind Session Lin) ks = return $ Kind Session Lin
    | otherwise  = do
-       file <- getFileName
-       addError $ styleError file p
-                  ["One of the components in a choice isn't lower than SL"]
+       addError p ["One of the components in a choice isn't lower than SL"]
        return topKind
 
 -- Check the contractivity of a given type; issue an error if not
 checkContractivity :: Pos -> KindEnv -> Type -> TypingState ()
 checkContractivity p kenv t
   | contractive kenv t = return ()
-  | otherwise          = do
-      file <- getFileName
-      addError $ styleError file p
-                 ["Type", styleRed $ show t, "is not contractive"]
+  | otherwise          = 
+      addError p ["Type", styleRed $ show t, "is not contractive"]
 
 -- Determines the kinding of a type
 
@@ -171,8 +164,7 @@ isSubKindOf p k1 k2
   | k1 <= k2  = return ()
   | otherwise = do
       file <- getFileName
-      addError $ styleError file p
-                  ["Expection kind", styleRed $ show k1, "to be a sub-kind of kind",
+      addError p ["Expection kind", styleRed $ show k1, "to be a sub-kind of kind",
                    styleRed $ show k2, "but it isn't."]
       
 
@@ -184,12 +176,12 @@ kindOf k t =
   evalState (synthetize t) (f, venv, eenv, cenv, Map.union k kenv, err)
 
 kindOfScheme :: Pos -> TypeScheme -> Kind
-kindOfScheme p t = evalState (synthetizeScheme p t) (initialState "filename")
+kindOfScheme p t = evalState (synthetizeScheme p t) (initialState "")
 
 
 isWellKinded :: KindEnv -> Type -> Bool
 isWellKinded k t =
-  let (f, venv, eenv, cenv, kenv, err) = (initialState "filename") in
+  let (f, venv, eenv, cenv, kenv, err) = (initialState "") in
   let (_,_,_,_,_,errors) =
         execState (synthetize t) (f, venv, eenv, cenv, Map.union k kenv, err) in
     null errors

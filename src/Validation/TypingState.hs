@@ -5,6 +5,7 @@ import qualified Data.Map.Strict as Map
 import           Syntax.Kinds
 import           Syntax.Terms
 import           Syntax.Types
+import           Utils.Errors
 
 type KindEnv = Map.Map TypeVar (Pos, Kind)
 
@@ -112,10 +113,11 @@ removeFromKenv x = do
 
 -- ERRORS
 
-addError :: String -> TypingState ()
-addError er =
-  modify (\(f, venv, eenv, cenv, kenv, err) ->
-            (f, venv, eenv, cenv, kenv,  err ++ [er]))
+addError :: Pos -> [String] -> TypingState ()
+addError p es = do
+  file <- getFileName 
+  modify (\(f, venv, eenv, cenv, kenv, e) ->
+            (f, venv, eenv, cenv, kenv,  e ++ [styleError file p es]))
 
 addErrorList :: [String] -> TypingState ()
 addErrorList ers =
