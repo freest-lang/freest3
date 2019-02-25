@@ -13,14 +13,14 @@ Portability :  portable | non-portable (<reason>)
 
 module Validation.Kinding
 ( Kind (..)
-, kindOf
+, kindOf -- test
 , kinding
-, isWellKinded
+, isWellKinded -- test
 , isSessionType
 , un
 , lin 
-, kindOfScheme
-, checkAgainstKind
+, kindOfScheme -- test
+, checkAgainst
 ) where
 
 import           Control.Monad.State
@@ -144,22 +144,14 @@ synthetize (Rec p (Bind x k) t) = do
   removeFromKenv x
   return k1
 
-{- WAS:
-checkAgainstKind :: Pos -> Type -> Kind -> TypingState Type
-checkAgainstKind p t k = do
-  k' <- synthetize p t
-  isSubKindOf k' k
-  return t
--}
-
-checkAgainstKind :: Type -> Kind -> TypingState ()
-checkAgainstKind t k = do
+checkAgainst :: Type -> Kind -> TypingState ()
+checkAgainst t k = do
   k' <- synthetize t
-  isSubKindOf (typePos t) k' k
+  checkSubKind (typePos t) k' k
   return ()
 
-isSubKindOf :: Pos -> Kind -> Kind -> TypingState ()
-isSubKindOf p k1 k2
+checkSubKind :: Pos -> Kind -> Kind -> TypingState ()
+checkSubKind p k1 k2
   | k1 <= k2  = return ()
   | otherwise = do
       file <- getFileName

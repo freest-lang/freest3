@@ -21,10 +21,10 @@ import qualified Data.Map.Strict as Map
 import           Data.List ((\\), nub, intercalate)
 import qualified Data.Set as Set
 import qualified Data.Traversable as Trav
-import           Syntax.Kinds
+import           Syntax.Kinds 
 import           Syntax.Terms
 import           Syntax.Types
-import           Validation.Kinding
+import qualified Validation.Kinding as K
 import           Validation.TypeEquivalence
 import           Validation.TypingState
 import           Utils.Errors
@@ -81,7 +81,7 @@ checkFunctionalKind (p, k)
 
 checkKinding :: Pos -> TypeScheme -> TypingState ()
 checkKinding p t = do
-  kinding p t
+  K.kinding p t
   return ()
 
 -- | AUXILIARY FUNCTIONS TO VERIFY FUNCTION TYPES
@@ -90,7 +90,7 @@ checkKinding p t = do
 checkFunTypeDecl :: Pos -> TermVar -> TypingState ()
 checkFunTypeDecl pos fname = do  
   (p,t) <- checkFun pos fname
-  kinding p t
+  K.kinding p t
   return ()
 
 checkFun :: Pos -> TermVar -> TypingState (Pos, TypeScheme)
@@ -194,7 +194,7 @@ normalizeType' (TypeScheme bs t) = (TypeScheme binds t)
 checkUn :: Pos -> TypeScheme -> TypingState ()
 checkUn p (TypeScheme _ t) = do
   kenv <- getKenv
-  if un kenv t then    
+  if K.un kenv t then    
     return ()
   else
     addError p ["Type", styleRed $ "'" ++ show t ++ "'",
@@ -292,7 +292,7 @@ checkExp (BinLet p (px,x) (py,y) e1 e2) = do
 -- Session types
 
 checkExp (New p t) = do
-  checkAgainstKind t (Kind Session Lin)
+  K.checkAgainst t (Kind Session Lin)
   -- m <- extractChoiceMap t
   -- Map.foldrWithKey (\c t _ -> addToVenv p c (TypeScheme [] t)) (return ()) m
   return $ TypeScheme [] (PairType p t (dual t))
@@ -379,7 +379,7 @@ addBindsToKenv p bs = foldM (\_ b -> addToKenv p (var b) (kind b)) () bs
 
 removeLinVar :: KindEnv -> TermVar -> TypeScheme -> TypingState ()
 removeLinVar kenv x (TypeScheme _ t)
-  | lin kenv t = removeFromVenv x   
+  | K.lin kenv t = removeFromVenv x   
   | otherwise  = return ()
 
 checkUnVar :: VarEnv -> Pos -> TermVar -> TypingState ()
@@ -549,7 +549,7 @@ extractDatatype p t _ = do
   -- TODO: TEST
 wellFormedCall :: Pos -> Expression -> [Type] -> [Bind] -> TypingState ()
 wellFormedCall p e ts binds = do
-  mapM_ (\t -> kinding p (TypeScheme [] t)) ts
+  mapM_ (\t -> K.kinding p (TypeScheme [] t)) ts
   sameNumber
   where   
     sameNumber
@@ -598,7 +598,7 @@ equivalentEnvs kenv venv1 venv2 =
   Map.isSubmapOfBy f venv3 venv4 && Map.isSubmapOfBy f venv4 venv3
   where
     f (_,(TypeScheme _ t)) (_,(TypeScheme _ u)) = equivalent kenv t u
-    f1 (_,(TypeScheme _ t)) = lin kenv t
+    f1 (_,(TypeScheme _ t)) = K.lin kenv t
 
 
 checkEquivBasics :: Pos -> BasicType -> BasicType -> TypingState ()
