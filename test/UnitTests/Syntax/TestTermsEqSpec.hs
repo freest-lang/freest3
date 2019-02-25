@@ -13,64 +13,64 @@ main = hspec spec
 spec :: Spec
 spec = do  
 -- ("Node", (Semi (Message Out IntType) (Semi(Var "TreeChannel") (Var "TreeChannel"))))]))
-
+  let p = (0,0)
   describe "Eq Expressions" $ do
     it "Unit" $ do
-     (Unit (0,0)) == (Unit (0,0)) `shouldBe` True
+     (Unit p) == (Unit p) `shouldBe` True
     it "Int" $ do
-     (Integer (0,0) 2) == (Integer (0,0) 2) `shouldBe` True
+     (Integer p 2) == (Integer p 2) `shouldBe` True
     it "Character" $ do
-      (Character (0,0) 'c') == (Character (0,0) 'c') `shouldBe` True
+      (Character p 'c') == (Character p 'c') `shouldBe` True
     it "Bool" $ do
-      (Boolean (0,0) True) == (Boolean (0,0) True) `shouldBe` True
+      (Boolean p True) == (Boolean p True) `shouldBe` True
     it "Bool" $ do
-      (Boolean (0,0) False) == (Boolean (0,0) False) `shouldBe` True
+      (Boolean p False) == (Boolean p False) `shouldBe` True
     it "Variable" $ do
-      (Variable (0,0) "x") == (Variable (0,0) "x") `shouldBe` True
+      (Variable p "x") == (Variable p "x") `shouldBe` True
     it "UnLet" $ do
-      (UnLet (0,0) "x" (Integer (0,0) 2) (Integer (0,0) 2)) ==
-        (UnLet (0,0) "x" (Integer (0,0) 2) (Integer (0,0) 2)) `shouldBe` True      
+      (UnLet p (p,"x") (Integer p 2) (Integer p 2)) ==
+        (UnLet p (p,"x") (Integer p 2) (Integer p 2)) `shouldBe` True      
     it "App" $ do
-      (App (0,0) (Variable (0,0) "x") (Integer (0,0) 2)) ==
-        (App (0,0) (Variable (0,0) "x") (Integer (0,0) 2)) `shouldBe` True
+      (App p (Variable p "x") (Integer p 2)) ==
+        (App p (Variable p "x") (Integer p 2)) `shouldBe` True
     it "TypeApp" $ do
-      (TypeApp (0,0) (Variable (0,0) "x") [(Basic IntType)]) ==
-        (TypeApp (0,0) (Variable (0,0) "x") [(Basic IntType)]) `shouldBe` True
+      (TypeApp p (Variable p "x") [(Basic p IntType)]) ==
+        (TypeApp p (Variable p "x") [(Basic p IntType)]) `shouldBe` True
     it "Conditional" $ do
-      (Conditional (0,0) (Boolean (0,0) True) (Integer (0,0) 2) (Integer (0,0) 2)) ==
-        (Conditional (0,0) (Boolean (0,0) True) (Integer (0,0) 2) (Integer (0,0) 2))
+      (Conditional p (Boolean p True) (Integer p 2) (Integer p 2)) ==
+        (Conditional p (Boolean p True) (Integer p 2) (Integer p 2))
            `shouldBe` True
     it "Pair" $ do
-      (Pair (0,0) (Variable (0,0) "x") (Integer (0,0) 2)) ==
-        (Pair (0,0) (Variable (0,0) "x") (Integer (0,0) 2)) `shouldBe` True
+      (Pair p (Variable p "x") (Integer p 2)) ==
+        (Pair p (Variable p "x") (Integer p 2)) `shouldBe` True
     it "BinLet" $ do
-        (BinLet (0,0) "x" "y" (Integer (0,0) 2) (Integer (0,0) 2)) ==
-          (BinLet (0,0) "x" "y" (Integer (0,0) 2) (Integer (0,0) 2)) `shouldBe` True    
+        (BinLet p (p,"x") (p,"y") (Integer p 2) (Integer p 2)) ==
+          (BinLet p (p,"x") (p,"y") (Integer p 2) (Integer p 2)) `shouldBe` True    
     it "New" $ do
-      (New (0,0) (Basic IntType)) ==
-        (New (0,0) (Basic IntType)) `shouldBe` True
+      (New p (Basic p IntType)) ==
+        (New p (Basic p IntType)) `shouldBe` True
     it "Send" $ do
-      (Send (0,0) (Variable (0,0) "x") (Variable (0,0) "c")) ==
-        (Send (0,0) (Variable (0,0) "x") (Variable (0,0) "c")) `shouldBe` True
+      (Send p (Variable p "x") (Variable p "c")) ==
+        (Send p (Variable p "x") (Variable p "c")) `shouldBe` True
     it "Receive" $ do
-      (Receive (0,0) (Variable (0,0) "c")) ==
-        (Receive (0,0) (Variable (0,0) "c")) `shouldBe` True
+      (Receive p (Variable p "c")) ==
+        (Receive p (Variable p "c")) `shouldBe` True
     it "Select" $ do
-      (Select (0,0) "x" (Variable (0,0) "x")) ==
-        (Select (0,0) "x" (Variable (0,0) "x")) `shouldBe` True
+      (Select p "x" (Variable p "x")) ==
+        (Select p "x" (Variable p "x")) `shouldBe` True
     it "Match" $ do
-      (Match (0,0) (Variable (0,0) "x") (Map.singleton "C" ("w", (Integer (0,0) 2)))) ==
-        (Match (0,0) (Variable (0,0) "x") (Map.singleton "C" ("w", (Integer (0,0) 2))))
+      (Match p (Variable p "x") (Map.singleton "C" ("w", (Integer p 2)))) ==
+        (Match p (Variable p "x") (Map.singleton "C" ("w", (Integer p 2))))
           `shouldBe` True
     it "Fork" $ do
-      (Fork (0,0) (Variable (0,0) "x")) ==
-        (Fork (0,0) (Variable (0,0) "x")) `shouldBe` True
+      (Fork p (Variable p "x")) ==
+        (Fork p (Variable p "x")) `shouldBe` True
     it "Constructor" $ do
-      (Constructor (0,0) "x") ==
-        (Constructor (0,0) "x") `shouldBe` True
+      (Constructor p "x") ==
+        (Constructor p "x") `shouldBe` True
     it "Case" $ do
-      (Case (0,0) (Variable (0,0) "x") (Map.singleton "C" (["w"], (Integer (0,0) 2)))) ==
-        (Case (0,0) (Variable (0,0) "x") (Map.singleton "C" (["w"], (Integer (0,0) 2))))
+      (Case p (Variable p "x") (Map.singleton "C" (["w"], (Integer p 2)))) ==
+        (Case p (Variable p "x") (Map.singleton "C" (["w"], (Integer p 2))))
           `shouldBe` True  
 
     it "Ord prekinds" $ do
@@ -91,3 +91,4 @@ spec = do
     -- it "multiplicity" $ do
     --   Lin `compare` Lin `shouldBe` EQ
  
+

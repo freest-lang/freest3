@@ -7,7 +7,6 @@ import System.Exit
 import System.Directory
 import System.FilePath
 
-
 main :: IO ()
 main = do
   args <- getArgs
@@ -20,11 +19,11 @@ main = do
 compileFile args
   | takeExtension args == ".cfs" =
     do
-      res <- compile args
-      let filepath = reverse $ dropWhile (/= '/') (reverse args)
-      checkResult res filepath
+      res <- compile args 
+--      checkResult res (takeDirectory args)
+      checkResult res (reverse $ dropWhile (/= '/') (reverse args))
   | otherwise = do
-      putStrLn "Error: File extension not recognized, provide a .cfs file"
+      putStrLn $ "Error: File extension not recognized, provide a .cfs file: " ++ args
 
 
 checkResult :: (Bool, String) -> String -> IO ()

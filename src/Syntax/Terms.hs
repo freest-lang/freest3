@@ -8,7 +8,6 @@ module Syntax.Terms
   , Params
   , CaseMap
   , MatchMap
-  , Pos
   , getEPos
   ) where
 
@@ -35,12 +34,13 @@ type ConstructorEnv = Map.Map TypeVar (Pos, TypeScheme)
 data TypeVarBind = TypeVar Kind
 -- data TypeScheme = Functional Type | Scheme TypeVarBind TypeScheme
 
-type Pos = (Int, Int)
+
 -- type ConstructorEnv = Map.Map Constructor [(Constructor, [Type])]
 
 -- TODO: Join
 type MatchMap = Map.Map TermVar (TermVar, Expression)
-type CaseMap = Map.Map TermVar (Params, Expression)
+type CaseMap  = Map.Map TermVar (Params, Expression)
+type VarDef   = (Pos,TermVar) 
 
 data Expression
   -- Basic expressions
@@ -50,7 +50,7 @@ data Expression
   | Boolean Pos Bool
   -- Variables
   | Variable Pos TermVar
-  | UnLet Pos TermVar Expression Expression
+  | UnLet Pos VarDef Expression Expression
   -- Aplication
   | App Pos Expression Expression
   | TypeApp Pos Expression [Type]
@@ -58,7 +58,7 @@ data Expression
   | Conditional Pos Expression Expression Expression
   -- Pairs
   | Pair Pos Expression Expression
-  | BinLet Pos TermVar TermVar Expression Expression
+  | BinLet Pos VarDef VarDef Expression Expression
   -- Session types
   | New Pos Type
   | Send Pos Expression Expression

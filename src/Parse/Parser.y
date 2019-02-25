@@ -87,33 +87,34 @@ import           Data.Char
 %left '*'
 
 %nonassoc '.'
+%left NEG
 
 %%
 
 ---------------
 -- MAIN RULE --
 ---------------
--- TODO: Block comments with line comments inside
+-- TODO: Block comments with line comments inide
 
 Prog : Defs                {% return ()}
      | Defs NL Prog        {% return ()}
---     | {-empty-}           {% return ()}
+    -- | {-empty-}           {% return ()}
 
-Defs : DataDecl
+Defs : DataDecl 
          {% do 
 	     let (p,c,k,ts) = $1
              kenv <- getKenv
              checkNamesClash kenv c
                ("Multiple declarations of " ++ (styleRed ("'" ++ c ++ "'"))) p
 	     addToKenv c (p, k)
-	     let binds = typesToFun c ts
+	     let binds = typesToFun p c ts
 
              checkBindsClash binds
 	     mapM (\(cons, (p, t)) -> addToCenv cons p (TypeScheme [] t)) binds
-	     addToVenv c p (TypeScheme [] (convertDT binds))
+	     addToVenv c p (TypeScheme [] (convertDT p binds))
 	     return ()
 	 }
-     | FunType  {% do 
+     | FunSig  {% do 
 	           let (p,x,y) = $1
                    venv <- getVenv
                    checkNamesClash venv x
@@ -124,7 +125,9 @@ Defs : DataDecl
    	           let (x,y) = $1
 		   addToEenv x y
 		   return ()
-	       }
+	        }
+
+  
 
 
 NL : nl NL     {}
@@ -138,15 +141,15 @@ NL : nl NL     {}
 -- DATATYPES --
 ---------------
 
-DataDecl : data CONS KindTU '=' DataCons  {let (TokenCons p x) = $2 in (pos p,x,$3,$5)}
+DataDecl : data CONS KindTU '=' DataCons   {let (TokenCons p x) = $2 in (pos p,x,$3,$5)}
 
 DataCons : DataCon {[$1]}
          | DataCons '|' DataCon {$1 ++ [$3]}
 
-DataCon : CONS TypeParams {let (TokenCons p x) = $1 in (x,(pos p,$2))}
+DataCon : CONS TypeParams  {let (TokenCons p x) = $1 in (x,(pos p,$2))}
 
 TypeParams : {- empty -} { [] }
-           | TypeParams Types { $1 ++ [$2] }
+           | TypeParams Types  { $1 ++ [$2] }
 
 KindTU :: { Kind }
 KindTU
@@ -161,7 +164,7 @@ KindTU
 -- FUN TYPE DECLARATIONS --
 ---------------------------
 
-FunType : VAR ':'':' FunTypeScheme {let (TokenVar p x) = $1 in (pos p,x,$4)}
+FunSig : VAR ':'':' FunTypeScheme  {let (TokenVar p x) = $1 in (pos p,x,$4)}
 
 FunTypeScheme : TypeScheme {$1}
               | Types      {TypeScheme [] $1}
@@ -170,7 +173,7 @@ FunTypeScheme : TypeScheme {$1}
 -- FUN DECLARATIONS --
 ----------------------
 
-FunDecl : VAR Params '=' Expr {let (TokenVar p x) = $1 in (x,(pos p, $2, $4))}
+FunDecl : VAR Params '=' Expr   {let (TokenVar p x) = $1 in (x,(pos p, $2, $4))}
 
 Params : {- empty -}   {[]}
        | Params VAR    {let (TokenVar _ x) = $2 in ($1 ++ [x])}
@@ -182,13 +185,13 @@ Params : {- empty -}   {[]}
 
 
 Expr : let VAR '=' Expr in Expr         {let (TokenLet p) = $1 in
-				         let (TokenVar _ x) = $2 in
-				         UnLet (pos p) x $4 $6}    
+				         let (TokenVar px x) = $2 in
+				         UnLet (pos p) (pos px,x) $4 $6}    
 
      | let VAR ',' VAR '=' Expr in Expr {let (TokenLet p) = $1 in
-          		                 let (TokenVar _ x) = $2 in
-					 let (TokenVar _ y) = $4 in
-		          		 BinLet (pos p) x y $6 $8}
+          		                 let (TokenVar px x) = $2 in
+					 let (TokenVar py y) = $4 in
+		          		 BinLet (pos p) (pos px,x) (pos py,y) $6 $8}
 
      | '(' Expr ',' Expr ')'            {let (TokenLParen p) = $1 in
                                          Pair (pos p) $2 $4}
@@ -198,6 +201,7 @@ Expr : let VAR '=' Expr in Expr         {let (TokenLet p) = $1 in
 			                }
 
      | new Types                        {New (getPos $1) $2}
+     
 
      | receive Expr                     {Receive (getPos $1) $2}
 
@@ -213,13 +217,13 @@ Expr : let VAR '=' Expr in Expr         {let (TokenLet p) = $1 in
      | Form {$1}
 
 
-Form : '-' Form        {App (getPos $1) (Variable (getPos $1) "negate") $2}
-     | Form '+' Form   {App (getEPos $1) (App (getEPos $1) (Variable (getPos $2) "(+)") $1) $3}
-     | Form '-' Form   {App (getEPos $1) (App (getEPos $1) (Variable (getPos $2) "(-)") $1) $3}
-     | Form '*' Form   {App (getEPos $1) (App (getEPos $1) (Variable (getPos $2) "(*)") $1) $3}
-     | Form OP Form    {let (TokenOp p s) = $2 in
-                          App (getEPos $1) (App (getEPos $1) (Variable (pos p) s) $1) $3}
-     | Juxt            {$1}       
+Form : '-' Form %prec NEG {App (getPos $1) (Variable (getPos $1) "negate") $2}
+     | Form '+' Form      {App (getEPos $1) (App (getEPos $1) (Variable (getPos $2) "(+)") $1) $3}
+     | Form '-' Form      {App (getEPos $1) (App (getEPos $1) (Variable (getPos $2) "(-)") $1) $3}
+     | Form '*' Form      {App (getEPos $1) (App (getEPos $1) (Variable (getPos $2) "(*)") $1) $3}
+     | Form OP Form       {let (TokenOp p s) = $2 in
+                            App (getEPos $1) (App (getEPos $1) (Variable (pos p) s) $1) $3}
+     | Juxt               {$1}       
 
 
 Juxt : Juxt Atom                   {App (getEPos $1) $1 $2}
@@ -247,7 +251,7 @@ Atom : '(' Expr ')'                {$2}
 		         	     Character (pos p) x}
 
      | VAR                         {let (TokenVar p x) = $1 in
-			              Variable (pos p) x} 
+                                     Variable (pos p) x} 
 
      | CONS                        {let (TokenCons p x) = $1 in
 				      Constructor (pos p) x}
@@ -295,36 +299,36 @@ UnKind :: { Kind }
 
 -- {let (TokenVar _ x) = $2 in (Rec (Bind x $3) $5)}
 Types : '(' Types ')'                {$2}
-      | rec VarCons KindSL '.' Types {(Rec (Bind $2 $3) $5)}
-      | Types ';' Types              {Semi $1 $3}
-      | Types '->' Types             {Fun Un $1 $3}
-      | Types '-o' Types             {Fun Lin $1 $3}
-      | '(' Types ',' Types ')'      {PairType $2 $4}
-      | '?' BasicType                {Message In $2}
-      | '!' BasicType                {Message Out $2}
-      | '[' Constructor ']'          {Datatype (Map.fromList $2)}
+      | rec VarCons KindSL '.' Types {Rec (getPos $1) (Bind $2 $3) $5}
+      | Types ';' Types              {Semi (getPos $2) $1 $3}
+      | Types '->' Types             {Fun (getPos $2) Un $1 $3}
+      | Types '-o' Types             {Fun (getPos $2) Lin $1 $3}
+      | '(' Types ',' Types ')'      {PairType (getPos $3) $2 $4}
+      | '?' BasicType                {let (_,t) = $2 in Message (getPos $1) In t}
+      | '!' BasicType                {let (_,t) = $2 in Message (getPos $1) Out t}
+      | '[' Constructor ']'          {Datatype (getPos $1) (Map.fromList $2)}
       | Choice                       {$1}
-      | Skip                         {Skip}
-      | BasicType                    {Basic $1}
-      | VAR                          {let (TokenVar _ x) = $1 in Var x}
-      | CONS                         {let (TokenCons _ x) = $1 in Var x}
+      | Skip                         {Skip (getPos $1)}
+      | BasicType                    {let (p,t) = $1 in Basic p t}
+      | VAR                          {let (TokenVar p x) = $1 in Var (pos p) x}
+      | CONS                         {let (TokenCons p x) = $1 in Var (pos p) x}
 
 -- TODO: add position
 VarCons : VAR  {let (TokenVar _ x) = $1 in x}
         | CONS {let (TokenCons _ x) = $1 in x}
 
-Choice : '+{' Constructor '}'  {Choice Internal (Map.fromList $2)}
-       | '&{' Constructor '}'  {Choice External (Map.fromList $2)}
+Choice : '+{' Constructor '}'  {Choice (getPos $1) Internal (Map.fromList $2)}
+       | '&{' Constructor '}'  {Choice (getPos $1) External (Map.fromList $2)}
 
 Constructor : Con                  {$1}
             | Constructor ',' Con  {$3 ++ $1}
 
 Con : CONS ':' Types {let (TokenCons _ x) = $1 in [(x, $3)]}
 
-BasicType  : Int  {IntType}
-           | Char {CharType}
-           | Bool {BoolType}
-           | '()' {UnitType}
+BasicType  : Int  {(getPos $1, IntType)}
+           | Char {(getPos $1, CharType)}
+           | Bool {(getPos $1, BoolType)}
+           | '()' {(getPos $1, UnitType)}
 
 
 KindSL :: { Kind }
@@ -353,8 +357,8 @@ type Errors = [String]
 type ParserOut = (String, VarEnv, ExpEnv, ConstructorEnv, KindEnv, Errors)
 type ParserState = State ParserOut
 
-initialState :: String -> ParserOut
-initialState s = (s,Map.empty,Map.empty,Map.empty,Map.empty, [])
+initialState :: String -> VarEnv -> ParserOut
+initialState s venv = (s,venv,Map.empty,Map.empty,Map.empty, [])
 
 addToKenv :: TypeVar -> (Pos, Kind) -> ParserState ()
 addToKenv x k = modify (\(f, venv, eenv, cenv, kenv, err) ->
@@ -402,15 +406,15 @@ addError e = modify (\(f, venv, eenv, cenv, kenv, err) ->
 -- Parsing functions --
 -----------------------
 parseKind :: String -> Kind
-parseKind  s = fst $ runState (parse s) (initialState "")
+parseKind  s = fst $ runState (parse s) (initialState "" Map.empty)
   where parse = kinds . scanTokens
 
 parseType :: String -> Type
-parseType s = fst $ runState (parse s) (initialState "")
+parseType s = fst $ runState (parse s) (initialState "" Map.empty)
   where parse = types . scanTokens
 
 parseTypeScheme :: String -> TypeScheme
-parseTypeScheme s = fst $ runState (parse s) (initialState "")
+parseTypeScheme s = fst $ runState (parse s) (initialState "" Map.empty)
   where parse = typeScheme . scanTokens
 
 instance Read Type where
@@ -436,13 +440,14 @@ instance Read Kind where
           
 -- parseDefs file str = p str 
 --  where p = scanTokens
-parseDefs file str = execState (parse str) (initialState file)   --p str 
+parseDefs file venv str = execState (parse str) (initialState file venv)
    where parse = terms . scanTokens
                
-parseProgram inputFile = do
+parseProgram inputFile venv = do
   src <- readFile inputFile
-  let p = parseDefs inputFile src
+  let p = parseDefs inputFile venv src
   -- error $ show p
+  -- return (initialState "FILE")
   checkErrors p
   return p
 
@@ -473,7 +478,7 @@ checkNamesClash m t msg p = do
   if Map.member t m then
     let (p1,_) = m Map.! t in
       addError $ styleError file p
-                 [msg, "\n\t at " ++ file ++ prettyPos p1 ++ "\n\t   " ++ file ++ prettyPos p]
+                 [msg, "\n\t at " ++ file ++ prettyPos p1 ++ "\n\t    " ++ file ++ prettyPos p]
       
   else
     return ()
@@ -512,15 +517,15 @@ checkBindsClash binds =
 -- Auxiliary functions --
 -------------------------
   
-typesToFun :: TypeVar -> [(TypeVar, (Pos, [Type]))] -> [(TypeVar, (Pos, Type))]
-typesToFun tv = foldl (\acc (k,(p,ts)) -> acc ++ [(k, (p, typeToFun tv ts))]) [] 
+typesToFun :: Pos -> TypeVar -> [(TypeVar, (Pos, [Type]))] -> [(TypeVar, (Pos, Type))]
+typesToFun p tv = foldl (\acc (k,(p,ts)) -> acc ++ [(k, (p, typeToFun p tv ts))]) [] 
   where
-    typeToFun :: TypeVar -> [Type] -> Type
-    typeToFun c [] = (Var c)
-    typeToFun c (x:xs) = Fun Un x (typeToFun c xs)
+    typeToFun :: Pos -> TypeVar -> [Type] -> Type
+    typeToFun p c [] = (Var p c)
+    typeToFun p c (x:xs) = Fun (typePos x) Un x (typeToFun p c xs)
 
-convertDT :: [(TypeVar,(Pos, Type))] -> Type
-convertDT ts = Datatype $ Map.fromList $ removePos
+convertDT :: Pos -> [(TypeVar,(Pos, Type))] -> Type
+convertDT p ts = Datatype p $ Map.fromList $ removePos
   where
     removePos = map (\(x,(_,t)) -> (x,t)) ts
 

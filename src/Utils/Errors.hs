@@ -14,7 +14,7 @@ This module provides tools to prettify & format errors with ANSI colors for term
 module Utils.Errors (styleError, styleRed, prettyPos) where 
 
 import System.Console.Pretty (Color (..), Style (..), color, style)
-import Syntax.Terms (Pos)
+import Syntax.Types (Pos)
 
 styleError :: String -> Pos -> [String] -> String
 styleError f p body = styleHeader f p ++ styleBody body

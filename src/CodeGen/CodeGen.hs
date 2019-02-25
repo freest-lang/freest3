@@ -21,34 +21,39 @@ import           Syntax.Types
 genProgram :: VarEnv -> ExpEnv -> ConstructorEnv -> KindEnv -> FilePath -> IO ()
 genProgram venv eenv cenv kenv path = do
   genUtils path
-  let (_,st)          = venv Map.! "start"
-      startType       = last $ toList st
-      dataTypes       = genDataTypes cenv
-      file            = genFile eenv
-      (_,ps,mainBody) = eenv Map.! "start"
-      mainFun         = genMain eenv (ps, mainBody) startType in
-      writeFile (path ++ "cfst.hs") (genPragmas ++ genImports ++ dataTypes ++ file ++ mainFun)
+  let
+    (_,st)          = venv Map.! "start"
+    (_,_,stBody)   = eenv Map.! "start"
+    dataTypes       = genDataTypes cenv
+    file            = translateExpEnv eenv
+  -- let (_,st)          = venv Map.! "start"
+--       startType       = last $ toList st
+--       dataTypes       = genDataTypes cenv
+--       file            = genFile eenv
+--       (_,ps,mainBody) = eenv Map.! "start"
+    mainFun         = genMain eenv stBody st in
+    writeFile (path ++ "cfst.hs") (genPragmas ++ genImports ++ dataTypes ++ file ++ mainFun)
 
 
 
-genFile :: ExpEnv -> HaskellCode
-genFile eenv =
-  Map.foldrWithKey (\f (_,p, e) acc ->
-                      acc ++ f ++ " " ++ showBangParams p ++ " = " ++
-                      code f e p ++ "\n\n") "" eenv
-  where 
-    code f e p =
-      let m = monadicFuns eenv
-          --m1 = addParams p m
-          m2 = fst $ isMonadic m (m Map.! f) Map.empty e in
-      fst $ evalState (translate m m2 e) 0
+-- genFile :: ExpEnv -> HaskellCode
+-- genFile eenv =
+--   Map.foldrWithKey (\f (_,p, e) acc ->
+--                       acc ++ f ++ " " ++ showBangParams p ++ " = " ++
+--                       code f e p ++ "\n\n") "" eenv
+--   where 
+--     code f e p =
+--       let m = monadicFuns eenv
+--           --m1 = addParams p m
+--           m2 = fst $ isMonadic m (m Map.! f) Map.empty e in
+--       fst $ evalState (translate m m2 e) 0
 
-    addParams p m = foldr (\x acc -> Map.insert x False acc) m p
+--     addParams p m = foldr (\x acc -> Map.insert x False acc) m p
 
-showBangParams :: Params -> String
-showBangParams [] = ""
---showBangParams args = intercalate " " args
-showBangParams args = "!" ++ intercalate " !" args
+-- showBangParams :: Params -> String
+-- showBangParams [] = ""
+-- --showBangParams args = intercalate " " args
+-- showBangParams args = "!" ++ intercalate " !" args
 
 genImports :: String
 genImports = "import CFSTUtils\n\n"
@@ -56,16 +61,14 @@ genImports = "import CFSTUtils\n\n"
 genPragmas :: String
 genPragmas = "{-# LANGUAGE BangPatterns #-}\n\n"
 
-genMain :: ExpEnv  -> (Params, Expression) -> TypeScheme -> HaskellCode
-genMain eenv (params, startExp) t =  
+genMain :: ExpEnv  -> Expression -> TypeScheme -> HaskellCode
+genMain eenv startExp t =  -- "main = putStrLn \"Hello CodeGen\"\n\n"
   let m = monadicFuns eenv
--- Main doesn't have parens
---      m1 = foldr (\x acc -> Map.insert x False acc) m params
---      (m2, b1) = isMonadic m1 (m1 Map.! "start") Map.empty startExp
-      (m2, b1) = isMonadic m (m Map.! "start") Map.empty startExp
-      (h,b) = evalState (translate m m2 startExp) 0 in
---      (h,b) = evalState (translate m1 m2 startExp) 0 in
-  if b || b1 then
+--      b = (m Map.! "start")
+--      m2 = annotateAST' Map.empty m b startExp
+      m2 = annotateAST m "start" startExp
+      h = evalState (translate m m2 startExp) 0 in
+  if m Map.! "start" then
     "main = start >>= \\res -> putStrLn (show (res :: " ++ show t ++ "))\n\n"
   else
     "main = putStrLn (show start)\n\n"

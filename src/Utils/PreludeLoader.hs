@@ -1,4 +1,4 @@
-module PreludeLoader (prelude) where
+module Utils.PreludeLoader (prelude) where
 
 import qualified Data.Map.Strict as Map
 import           Parse.Parser

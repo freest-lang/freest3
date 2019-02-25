@@ -23,15 +23,13 @@ $digit = 0-9
 -- @charL = \' [$var $digit \_] \
 @char = \' ([\\.] | . ) \'
 
-@blockComment = "{-" (\\.|[^\{\-]|\n|[^$symbol].*)* "-}"
+@blockComment = "{-" (\\.|[^\{\-]|\n|\-\-|[^$symbol].*)* "-}"
   
 tokens :-  
   $eol*"--".*                               ;
   $white*$eol                           {\p s -> TokenNL p}
   $eol+                                 {\p s -> TokenNL p}
   $white+                                ;
---  $eol*"{-" (\\.|[^\{\-]|\n)* "-}"$eol*      ;
---  $eol*"{-" (\\.|[^\{\-]|\n|\{)* "-}"$eol*   ;
   @blockComment                          ;
   Int					{\p s -> TokenIntT p}
   Char					{\p s -> TokenCharT p}

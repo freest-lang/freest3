@@ -23,7 +23,7 @@ executable ContextFreeSession
   hs-source-dirs:      src
   default-language:    Haskell2010
   build-tools:         alex, happy
-  other-modules:       Compiler, PreludeLoader, Parse.Parser, Syntax.Terms, Validation.Typing, Validation.Kinding, Syntax.Kinds, Validation.TypeEquivalence, Syntax.Types, CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen, Parse.Lexer, Validation.TypingState, Queue.Queue, Validation.Grammar, Validation.TypeToGrammar, Validation.Norm, Utils.Errors
+  other-modules:       Compiler, Utils.PreludeLoader, Parse.Parser, Syntax.Terms, Validation.Typing, Validation.Kinding, Syntax.Kinds, Validation.TypeEquivalence, Syntax.Types, CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen, Parse.Lexer, Validation.TypingState, Queue.Queue, Validation.Grammar, Validation.TypeToGrammar, Validation.Norm, Utils.Errors
 
 test-suite unit-tests
   main-is:             UnitSpec.hs
@@ -42,7 +42,7 @@ test-suite program-tests
   hs-source-dirs:      src, test/Programs
   ghc-options:         -threaded
   default-language:    Haskell2010
-  other-modules:       Compiler, CompilerSpec, PreludeLoader, Parse.Parser, Syntax.Terms, Validation.Typing, Validation.Kinding, Syntax.Kinds, Validation.TypeEquivalence, Syntax.Types, CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen, Parse.Lexer, Validation.TypingState, Queue.Queue, Validation.Grammar, Validation.TypeToGrammar, Validation.Norm, Utils.Errors
+  other-modules:       Compiler, CompilerSpec, Utils.PreludeLoader, Parse.Parser, Syntax.Terms, Validation.Typing, Validation.Kinding, Syntax.Kinds, Validation.TypeEquivalence, Syntax.Types, CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen, Parse.Lexer, Validation.TypingState, Queue.Queue, Validation.Grammar, Validation.TypeToGrammar, Validation.Norm, Utils.Errors
 
 
 test-suite testEquiv

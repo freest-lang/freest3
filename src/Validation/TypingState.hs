@@ -94,7 +94,6 @@ kenvMember x = do
   kenv <- getKenv
   return $ Map.member x kenv
 
--- TODO: REF kind,position
 getKind :: TypeVar -> TypingState Kind
 getKind x = do
   kenv <- getKenv
