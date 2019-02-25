@@ -1,5 +1,5 @@
 \begin{figure}[h!]
-  \hfill\fbox{$\algkindout T \kind$}
+  The \emph{synthesise} relation \hfill\fbox{$\algkindout T \kind$}
   \begin{gather*}
     % Functional types
     \frac{}{\algkindout{\tcBase}{\kindt^\Un}}
@@ -41,6 +41,8 @@
     % Session types
     %
    \frac{
+     \contractive T
+     \qquad
      \algkindout[\kindEnv, x\colon \kinds^\Lin] T \kind
    }{
      \algkindout{\tRec xT}{\kind}
@@ -65,7 +67,7 @@
     }
   \end{gather*}
   % 
-  \hfill\fbox{$\algkindin T \kind$}
+  The \emph{check against} relation\hfill\fbox{$\algkindin T \kind$}
   %
   \begin{equation*}
     \frac{
@@ -77,7 +79,7 @@
     }
   \end{equation*}
   % 
-  \hfill\fbox{$\isLin T$}\quad\fbox{$\isUn T$}
+  The $\link$ and $\unk$ predicate  \hfill\fbox{$\isLin T$}\quad\fbox{$\isUn T$}
   %
   \begin{equation*}
     \frac{
@@ -90,6 +92,24 @@
       \algkindout T {v^\Un}
     }{
       \isLin T
+    }
+  \end{equation*}
+  % 
+  The is-contractive predicate  \hfill\fbox{$\isLin T$}\quad\fbox{$\contractive T$}
+  %
+  \begin{equation*}
+    \frac{
+      \contractive{T}
+    }{
+      \contractive{T;U}
+    }
+    \qquad
+    \contractive[\kindEnv,x\colon\kind]{x}
+    \qquad 
+    \frac{
+      \contractive{T}
+    }{
+      \contractive{\tRecK xT}
     }
   \end{equation*}
   \caption{Algorithmic kinding system}

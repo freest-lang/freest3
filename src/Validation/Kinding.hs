@@ -17,7 +17,6 @@ module Validation.Kinding
 , kinding
 , isWellKinded
 , isSessionType
-, contractive
 , un
 , lin 
 , kindOfScheme
