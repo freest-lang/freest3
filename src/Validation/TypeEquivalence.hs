@@ -19,7 +19,7 @@ import           Control.Monad.State
 import           Data.List (isPrefixOf, union)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import qualified Queue.Queue as Queue
+import qualified Queue.Queue as Queue -- Use instead http://hackage.haskell.org/package/containers-0.6.0.1/docs/Data-Sequence.html
 import           Syntax.Kinds
 import           Syntax.Types
 import           Validation.Kinding
@@ -37,32 +37,32 @@ type NodeQueue = Queue.Queue (Node, Ancestors)
 
 type NodeTransformation = Productions -> Ancestors -> Node -> Set.Set Node
 
-expansionTree :: Productions -> [TypeVar] -> [TypeVar] -> Bool
-expansionTree g xs ys = expansionTree' g (Queue.enqueue (Set.singleton (xs, ys), Set.empty) Queue.empty)
+expand :: Productions -> [TypeVar] -> [TypeVar] -> Bool
+expand ps xs ys = expand' ps (Queue.enqueue (Set.singleton (xs, ys), Set.empty) Queue.empty)
 
-expansionTree' :: Productions -> NodeQueue -> Bool
-expansionTree' g q
+expand' :: Productions -> NodeQueue -> Bool
+expand' ps q
   | Queue.isEmpty q = False
   | Set.null n      = True
-  | otherwise       = case expandNode g n of
-      Nothing  -> expansionTree' g (Queue.dequeue q)
-      Just n'  -> expansionTree' g (simplify g (Set.union a n) n' q)
-  where (n,a) = Queue.front q
+  | otherwise       = case expandNode ps n of
+      Nothing -> expand' ps (Queue.dequeue q)
+      Just n' -> expand' ps (simplify ps n' (Set.union a n) q)
+  where (n, a) = Queue.front q
 
 expandNode :: Productions -> Node -> Maybe Node
-expandNode g =
+expandNode ps =
   Set.foldr(\p acc -> case acc of
     Nothing  -> Nothing
-    Just n'  -> case expandPair g p of
+    Just n'  -> case expandPair ps p of
       Nothing  -> Nothing
       Just n'' -> Just (Set.union n' n'')) (Just Set.empty)
 
 expandPair :: Productions -> ([TypeVar], [TypeVar]) -> Maybe Node
-expandPair g (xs, ys)
+expandPair ps (xs, ys)
   | Map.keysSet m1 == Map.keysSet m2 = Just $ match m1 m2
   | otherwise                        = Nothing
-  where m1 = transitions g xs
-        m2 = transitions g ys
+  where m1 = transitions ps xs
+        m2 = transitions ps ys
 
 match :: Transitions -> Transitions -> Node
 match m1 m2 =
@@ -70,37 +70,37 @@ match m1 m2 =
 
 -- Prune nodes once expanded
 pruneNode :: Productions -> Node ->  Node
-pruneNode g = Set.map (\(xs,ys) -> (pruneWord g xs, pruneWord g ys))
+pruneNode ps = Set.map (\(xs,ys) -> (pruneWord ps xs, pruneWord ps ys))
 
 -- Apply the different node transformations
 
-simplify :: Productions -> Ancestors ->  Node -> NodeQueue -> NodeQueue
-simplify g a n q = foldr enqueueNode (Queue.dequeue q) m'
-  where m' = findFixedPoint g (Set.singleton (n,a))
+simplify :: Productions -> Node -> Ancestors -> NodeQueue -> NodeQueue
+simplify ps n a q =
+  foldr enqueueNode (Queue.dequeue q) (findFixedPoint ps (Set.singleton (n, a)))
 
 enqueueNode :: (Node,Ancestors) -> NodeQueue -> NodeQueue
 enqueueNode (n,a) q
- | Set.null n           = Queue.priorityEnqueue (n,a) q
- | maximumLength n == 1 = Queue.priorityEnqueue (n,a) q
- | otherwise            = Queue.enqueue (n,a) q
+ | maxLength n <= 1 = Queue.priorityEnqueue (n,a) q
+ | otherwise        = Queue.enqueue (n,a) q
 
 apply :: Productions -> NodeTransformation -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
-apply g trans ns = Set.fold (\(n,a) ns -> Set.union (Set.map (\s -> (s,a)) (trans g a n)) ns) Set.empty ns
+apply ps trans ns = Set.fold (\(n,a) ns -> Set.union (Set.map (\s -> (s,a)) (trans ps a n)) ns) Set.empty ns
 
 findFixedPoint :: Productions -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
-findFixedPoint g nas
+findFixedPoint ps nas
   | nas == nas' = nas
-  | otherwise = findFixedPoint g nas'
-  where nas' = if allNormed g then foldr (apply g) nas [reflex, congruence, bpa2, filtering]
-                              else foldr (apply g) nas [reflex, congruence, bpa1, bpa2, filtering]
+  | otherwise = findFixedPoint ps nas'
+  where nas' = if allNormed ps
+                 then foldr (apply ps) nas [reflex, congruence, bpa2]
+                 else foldr (apply ps) nas [reflex, congruence, bpa1, bpa2]
 
 normsMatch :: Productions -> Node -> Bool
-normsMatch g n = and $ Set.map (\(xs,ys) -> sameNorm g xs ys) n
+normsMatch ps n = and $ Set.map (\(xs,ys) -> sameNorm ps xs ys) n
 
 -- The maximum length of the pairs in a node
 
-maximumLength :: Node -> Int
-maximumLength n
+maxLength :: Node -> Int
+maxLength n
   | Set.null n = 0
   | otherwise  = Set.findMax (Set.map (\(a,b) -> max (length a) (length b)) n)
 
@@ -192,7 +192,7 @@ equivalent k (Datatype _ m1) (Datatype _ m2) =
 equivalent k t u =
   isSessionType k t &&
   isSessionType k u &&
-  expansionTree (prune p) [x] [y]
+  expand (prune p) [x] [y]
   where Grammar [x, y] p = convertToGrammar [t, u]
 
 checkBinding :: KindEnv -> TypeMap -> Bool -> Constructor -> Type -> Bool

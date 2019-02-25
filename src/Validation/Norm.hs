@@ -32,20 +32,19 @@ prune :: Productions -> Productions
 prune p = Map.map (Map.map (pruneWord p)) p
 
 pruneWord :: Productions -> [TypeVar] -> [TypeVar]
-pruneWord _ [] = []
-pruneWord p (x:xs)
-  | normed p x = x : pruneWord p xs
-  | otherwise  = [x]
+pruneWord p = foldr (\x ys -> if normed p x then x:ys else [x]) []
 
 normed :: Productions -> TypeVar -> Bool
 normed p x = normedWord p Set.empty [x]
 
-normedWord :: Productions -> Set.Set TypeVar -> [TypeVar] -> Bool
+type Visited = Set.Set TypeVar
+
+normedWord :: Productions -> Visited -> [TypeVar] -> Bool
 normedWord _ _ []     = True
 normedWord p v (x:xs) =
   x `Set.notMember` v &&
-  or (map (normedWord p v') (Map.elems (transitions p (x:xs))))
-  where v' = if or $ map (x `elem`) (Map.elems (transitions p [x])) then Set.insert x v else v
+  any (normedWord p v') (Map.elems (transitions p (x:xs)))
+  where v' = if any (x `elem`) (Map.elems (transitions p [x])) then Set.insert x v else v
 
 norm :: Productions -> [TypeVar] -> Int
 norm p xs = normList p [xs]
@@ -58,12 +57,12 @@ normList p xss
 
 sameNorm :: Productions -> [TypeVar] -> [TypeVar] -> Bool
 sameNorm p xs ys =
-  (not normedXs && not normedYs) ||
-  (normedXs && normedYs && norm p xs == norm p ys )
+  not normedXs && not normedYs ||
+  normedXs && normedYs && norm p xs == norm p ys
   where normedXs = normedWord p Set.empty xs
         normedYs = normedWord p Set.empty ys
 
 -- Identify the existence of unnormed symbols
 
 allNormed :: Productions -> Bool
-allNormed p = and $ map (normed p) (Map.keys p)
+allNormed p = all (normed p) (Map.keys p)

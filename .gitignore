@@ -1,5 +1,7 @@
-# Haskell
+# PDF
+*pdf
 
+# Haskell
 *.hi
 *.o
 *.html
@@ -15,6 +17,8 @@ cfst
 CFSTUtils.hs
 Parser.hs
 Lexer.hs
+testEquiv.hp
+testEquiv.prof
 
 #Latex
 *.aux
@@ -30,14 +34,11 @@ Lexer.hs
 *.toc
 *.dvi
 *.ps
-main.pdf
-cfst.pdf
+*.rel
+*.vtc
 *.nav
 *.snm
 *.vrb
-
-# Inforum
-cfst-inforum18.pdf
 
 # AucTeX
 auto

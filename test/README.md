@@ -104,3 +104,12 @@ $ cabal test unit-tests
 
 Then, it will be generated a file unit-tests.prof (in this case) that contains the data gathered.
 An useful explanation to interpret the data collected can be found in the following page: https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/profiling.html
+
+## Test suite profiling
+To collect the run times and allocated memory of a test suite with 10 runs, use the command:
+
+```
+$ bash ./testSuiteProf.sh
+```
+
+This will generate a file testSuiteProf.prof with the running times and allocated memory.

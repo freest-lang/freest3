@@ -56,13 +56,14 @@ getTransitions x = do
   (p, _, _) <- get
   return $ p Map.! x
 
-addProduction :: TypeVar -> Label -> [TypeVar] -> TransState ()
-addProduction x l w =
-  modify $ \(p, v, n) -> (insertProduction p x l w, v, n)
-
 addProductions :: TypeVar -> Transitions -> TransState ()
 addProductions x m =
   modify $ \(p, v, n) -> (Map.insert x m p, v, n)
+
+addProduction :: TypeVar -> Label -> [TypeVar] -> TransState ()
+addProduction x l w =
+  modify $ \(p, v, n) -> (insertProduction p x l w, v, n)
+--  addProductions x (Map.singleton l w) -- does not work; I wonder why
 
 -- Conversion to context-free grammars
 
@@ -88,22 +89,21 @@ toGrammar (Semi _ t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
   return $ xs ++ ys
-toGrammar (Var _ a) = do
-  b <- memberVisited a
+toGrammar (Var _ x) = do
+  b <- memberVisited x
   if b
   then    -- This is a recursion variable
-    return [a]
-  else do -- This is a free variable
+    return [x]
+  else do -- This is a polymorphic variable
     y <- freshVar
-    addProduction y (VarLabel a) []
+    addProduction y (VarLabel x) []
     return [y]
-toGrammar (Rec p Bind{var=x} t) = do
-  y <- freshVar
-  insertVisited y
-  zs <- toGrammar $ subs (Var p y) x t -- On the fly alpha conversion
-  if null zs
-    then return []
-  else do
+toGrammar u@(Rec p Bind{var=x} t)
+  | isChecked u Set.empty = return []
+  | otherwise = do
+    y <- freshVar
+    insertVisited y
+    zs <- toGrammar $ subs (Var p y) x t -- On the fly α-conversion
     m <- getTransitions $ head zs
     addProductions y (Map.map (++ tail zs) m)
     return [y]
@@ -116,6 +116,13 @@ assocToGrammar :: TypeVar -> ChoiceView -> (Constructor, Type) -> TransState ()
 assocToGrammar y c (l, t) = do
   xs <- toGrammar t
   addProduction y (ChoiceLabel c l) xs
+
+isChecked :: Type -> Visited -> Bool
+isChecked (Skip _) _ = True
+isChecked (Semi _ s t) v = isChecked s v && isChecked t v
+isChecked (Rec _ Bind{var=x} t) v = isChecked t (Set.insert x v)
+isChecked (Var _ x) v = Set.member x v -- Only bound variables are checked
+isChecked _ _ = False
 
 -- Some tests
 
