@@ -14,8 +14,8 @@ contractive _    _            = True
 
 
 -- Check the contractivity of a given type; issue an error if not
-checkContractive :: Pos -> KindEnv -> Type -> TypingState ()
-checkContractive p kenv t
+checkContractive :: KindEnv -> Type -> TypingState ()
+checkContractive kenv t
   | contractive kenv t = return ()
   | otherwise          = 
-      addError p ["Type", styleRed $ show t, "is not contractive"]
+      addError (typePos t) ["Type", styleRed $ show t, "is not contractive"]

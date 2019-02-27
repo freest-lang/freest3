@@ -29,6 +29,7 @@ module Syntax.Types
 , subL
 , Pos
 , typePos
+, isPreSession
 ) where
 
 import           Data.List (intersperse)
@@ -274,3 +275,13 @@ typePos (Choice p _ _) = p
 typePos (Rec p _ _) = p
 typePos (Var p _) = p
         
+-- Is this type a pre session type? (a session type that is
+-- syntactically correct, but necessarilty well-kinded)
+
+isPreSession :: Type -> Bool
+isPreSession (Skip _) = True
+isPreSession (Semi _ _ _) = True
+isPreSession (Message _ _ _) = True
+isPreSession (Choice _ _ _) = True
+isPreSession (Rec _ _ _) = True
+isPreSession _ = False

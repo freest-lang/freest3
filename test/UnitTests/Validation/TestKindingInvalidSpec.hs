@@ -13,7 +13,7 @@ spec = do
 matchInvalidKindingSpec :: String -> Spec
 matchInvalidKindingSpec str =
   it str $ do
-    (isWellKinded Map.empty (read str)) `shouldBe` False
+    (read str `isWellFormed` Map.empty) `shouldBe` False
 
 -- INVALID:
 -- forall alpha . (rec Tree . &{Leaf:Skip, Node:?Int;Tree;Tree}) -> (rec TreeChannel . +{Leaf:Skip, Node:!Int;TreeChannel;TreeChannel});alpha->alpha

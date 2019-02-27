@@ -16,7 +16,7 @@ spec = do
 matchValidKindingSpec :: [String] -> Spec
 matchValidKindingSpec [a, b] =
   it a $
-    (kindOf Map.empty (read a)) `shouldBe` (read b)
+    kindOfType Map.empty (read a) <= read b `shouldBe` True
 
 -- INVALID:
 -- forall alpha . (rec Tree . &{Leaf:Skip, Node:?Int;Tree;Tree}) -> (rec TreeChannel . +{Leaf:Skip, Node:!Int;TreeChannel;TreeChannel});alpha->alpha

@@ -35,7 +35,7 @@
     % }
     \\
     % This is both functional and session
-    \frac{x :: \kind \in \kindEnv}{\algkindout x \kind}
+    \frac{x : \kind \in \kindEnv}{\algkindout x \kind}
    \qquad
     %
     % Session types
@@ -53,11 +53,11 @@
     \frac{}{\algkindout{\tMsg T}{\kinds^\Lin}}
     \qquad
     \frac{
-      \algkindin{T_1}{\kinds^\Lin}
+      \algkindout{T_1}{\kinds^m}
       \quad
-      \algkindin{T_2}{\kinds^\Lin}
+      \algkindout{T_2}{\kinds^n}
     }{
-      \algkindout{\tSemi{T_1}{T_2}}{\kinds^\Lin}
+      \algkindout{\tSemi{T_1}{T_2}}{\kinds^{\max(m,n)}}
     }
     \qquad
     \frac{

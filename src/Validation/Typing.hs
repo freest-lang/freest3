@@ -290,7 +290,7 @@ checkExp (BinLet p (px,x) (py,y) e1 e2) = do
 -- Session types
 
 checkExp (New p t) = do
-  K.checkAgainst t (Kind Session Lin)
+  K.checkAgainst (Kind Session Lin) t
   -- m <- extractChoiceMap t
   -- Map.foldrWithKey (\c t _ -> addToVenv p c (TypeScheme [] t)) (return ()) m
   return $ TypeScheme [] (PairType p t (dual t))

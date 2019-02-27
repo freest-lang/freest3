@@ -104,6 +104,7 @@ toGrammar u@(Rec p Bind{var=x} t)
     y <- freshVar
     insertVisited y
     zs <- toGrammar $ subs (Var p y) x t -- On the fly α-conversion
+    -- TODO: use the p in the Bind
     m <- getTransitions $ head zs
     addProductions y (Map.map (++ tail zs) m)
     return [y]

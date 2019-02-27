@@ -190,8 +190,8 @@ equivalent k (Datatype _ m1) (Datatype _ m2) =
   Map.size m1 == Map.size m2 &&
   Map.foldlWithKey (checkBinding k m2) True m1
 equivalent k t u =
-  isSessionType k t &&
-  isSessionType k u &&
+  isPreSession t &&
+  isPreSession u &&
   expand (prune p) [x] [y]
   where Grammar [x, y] p = convertToGrammar [t, u]
 
