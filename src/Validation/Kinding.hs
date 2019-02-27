@@ -29,53 +29,107 @@ import           Syntax.Kinds
 import           Syntax.Terms
 import           Syntax.Types
 import           Utils.Errors
+import           Validation.Contractive
 import           Validation.TypingState
 
 
--- Determines whether the type is linear or not
-lin :: KindEnv -> Type -> Bool
-lin _ (Basic _ _)       = False
-lin _ (Fun _ m _ _)     = m == Lin
-lin _ (PairType _ _ _)  = False
-lin _ (Datatype _ _)    = False
-lin _ (Skip _)          = False
-lin kenv (Semi _ t1 t2) = lin kenv t1 ||  lin kenv t2 -- WAS: && -- WAS : ||
-lin _ (Message _ _ _)   = True
-lin _ (Choice _ _ _)    = True
-lin kenv (Rec p x t)    = lin (Map.insert (var x) (p, (kind x)) kenv) t
-lin kenv (Var _ x)        =
-  case kenv Map.!? x of
-    Just (_,k) -> multiplicity k == Lin
-    Nothing    -> -- should not happen
-      error $ "Internal error: predicate lin, type var " ++  show x ++ " not in scope"
-      
 
--- Determines whether the type is unrestricted or not
-un :: KindEnv -> Type -> Bool
-un kenv t = not (lin kenv t)
+-- Determines the kinding of a type
 
--- Is a given type contractive?
-contractive :: KindEnv -> Type -> Bool
-contractive kenv (Semi _ t _) = contractive kenv t
-contractive kenv (Rec _ _ t)  = contractive kenv t
-contractive kenv (Var _ x)    = Map.member x kenv
-contractive _    _            = True
+kinding :: Pos -> TypeScheme -> TypingState Kind
+kinding p t = synthetizeScheme p t -- ) initialState
 
--- Used when an error is found
-topKind :: Kind
-topKind = Kind Functional Lin
+synthetizeScheme :: Pos -> TypeScheme -> TypingState Kind
+synthetizeScheme _ (TypeScheme [] t) = synthetize t
+synthetizeScheme p (TypeScheme bs t) = do
+  foldM_ (\_ b -> addToKenv p (var b) (kind b)) () bs
+  synthetize t
 
--- Check variables
-checkVar :: Pos -> TypeVar -> TypingState Kind
-checkVar p v = do
+-- The synthetize function:
+-- It synthetizes a kind of a given type
+
+synthetize :: Type -> TypingState Kind
+synthetize (Skip _)        = return $ Kind Session Un
+synthetize (Message _ _ _) = return $ Kind Session Lin
+synthetize (Basic _ _)     = return $ Kind Functional Un
+synthetize (Var p v)       = do
   b <- kenvMember v
   if b then
     getKind v
   else do
-    file <- getFileName
     addError p [styleRed $ "'" ++ v ++ "'", "is a free variable."]
     addToKenv p v topKind
     return $ topKind
+synthetize (Semi p t u) = do
+  kt <- synthetize t 
+  ku <- synthetize u
+  checkSessionType p t kt
+  checkSessionType p u ku
+  -- checkAgainst t (Kind Session Lin)
+  -- checkAgainst u (Kind Session Lin)
+  return $ Kind Session (max (multiplicity kt) (multiplicity ku))
+synthetize (Fun _ m t u) = do
+  synthetize t
+  synthetize u
+  return $ Kind Functional m
+synthetize (PairType _ t u) = do
+  -- kt <- synthetize t
+  -- ku <- synthetize u
+  -- return $ (max kt ku)
+  synthetize t 
+  synthetize u
+  return $ Kind Functional Lin
+synthetize (Datatype _ m) = do
+  ks <- mapM synthetize (Map.elems m)
+  return $ Kind Functional (multiplicity $ maximum ks)
+synthetize (Choice p _ m) = do
+  ks <- mapM synthetize (Map.elems m)
+  checkChoice p ks  
+synthetize (Rec p (Bind x k) t) = do  
+  kenv <- getKenv
+  checkContractive p kenv t
+  b <- kenvMember x
+  addToKenv p x k
+  k1 <- synthetize t
+  if b then return ()
+  else removeFromKenv x
+  return k1
+
+
+-- The check against function:
+-- Given a type and kind, it checks if the kind
+-- of the given type is a sub kind of the given kind
+
+checkAgainst :: Type -> Kind -> TypingState ()
+checkAgainst t k = do
+  k' <- synthetize t
+  checkSubKind (typePos t) k' k
+  return ()
+
+-- Checks if one kind is a sub kind of another kind
+-- gives an error message if it isn't
+checkSubKind :: Pos -> Kind -> Kind -> TypingState ()
+checkSubKind p k1 k2
+  | k1 <= k2  = return ()
+  | otherwise =
+      addError p ["Expecting kind", styleRed $ show k1, "to be a sub-kind of kind",
+                   styleRed $ show k2, "but it isn't."]
+
+-- Determines whether the type is linear or not
+lin :: Type -> TypingState Bool
+lin t = do
+  k <- synthetize t
+  return $ multiplicity k == Lin
+      
+-- Determines whether the type is unrestricted or not
+un :: Type -> TypingState Bool
+un t = do
+  l <- lin t
+  return $ not l
+
+-- Used to insert in the kinding environment when an error is found
+topKind :: Kind
+topKind = Kind Functional Lin
 
 -- Check if a type is a session type
 checkSessionType :: Pos -> Type -> Kind ->  TypingState ()
@@ -93,71 +147,6 @@ checkChoice p ks
        addError p ["One of the components in a choice isn't lower than SL"]
        return topKind
 
--- Check the contractivity of a given type; issue an error if not
-checkContractivity :: Pos -> KindEnv -> Type -> TypingState ()
-checkContractivity p kenv t
-  | contractive kenv t = return ()
-  | otherwise          = 
-      addError p ["Type", styleRed $ show t, "is not contractive"]
-
--- Determines the kinding of a type
-
-kinding :: Pos -> TypeScheme -> TypingState Kind
-kinding p t = synthetizeScheme p t -- ) initialState
-
-synthetizeScheme :: Pos -> TypeScheme -> TypingState Kind
-synthetizeScheme _ (TypeScheme [] t) = synthetize t
-synthetizeScheme p (TypeScheme bs t) = do
-  foldM_ (\_ b -> addToKenv p (var b) (kind b)) () bs
-  synthetize t
-
-synthetize :: Type -> TypingState Kind
-synthetize (Skip _)        = return $ Kind Session Un
-synthetize (Message _ _ _) = return $ Kind Session Lin
-synthetize (Basic _ _)     = return $ Kind Functional Un
-synthetize (Var p x)       = checkVar p x
-synthetize (Semi p t u) = do -- TODO: Pos
-  kt <- synthetize t 
-  ku <- synthetize u
-  checkSessionType p t kt
-  checkSessionType p u ku
-  return $ Kind Session (max (multiplicity kt) (multiplicity ku))
-synthetize (Fun _ m t u) = do
-  synthetize t
-  synthetize u
-  return $ Kind Functional m
-synthetize (PairType _ t u) = do
-  synthetize t 
-  synthetize u
-  return $ Kind Functional Lin
-synthetize (Datatype _ m) = do
-  ks <- mapM synthetize (Map.elems m)
-  return $ Kind Functional (multiplicity $ maximum ks)
-synthetize (Choice p _ m) = do
-  ks <- mapM synthetize (Map.elems m)
-  checkChoice p ks  
-synthetize (Rec p (Bind x k) t) = do
-  addToKenv p x k
-  k1 <- synthetize t
-  kenv <- getKenv
-  checkContractivity p kenv t
-  removeFromKenv x
-  return k1
-
-checkAgainst :: Type -> Kind -> TypingState ()
-checkAgainst t k = do
-  k' <- synthetize t
-  checkSubKind (typePos t) k' k
-  return ()
-
-checkSubKind :: Pos -> Kind -> Kind -> TypingState ()
-checkSubKind p k1 k2
-  | k1 <= k2  = return ()
-  | otherwise = do
-      file <- getFileName
-      addError p ["Expection kind", styleRed $ show k1, "to be a sub-kind of kind",
-                   styleRed $ show k2, "but it isn't."]
-      
 
 -- TODO: review & union should not be necessary
 -- TODO: filename
@@ -179,3 +168,25 @@ isWellKinded k t =
 
 isSessionType :: KindEnv -> Type -> Bool
 isSessionType kenv t = isWellKinded kenv t && prekind (kindOf kenv t) == Session
+
+
+{- WAS: 
+lin :: KindEnv -> Type -> Bool
+lin _ (Basic _ _)       = False
+lin _ (Fun _ m _ _)     = m == Lin
+lin _ (PairType _ _ _)  = False
+lin _ (Datatype _ _)    = False
+lin _ (Skip _)          = False
+lin kenv (Semi _ t1 t2) = lin kenv t1 ||  lin kenv t2 -- WAS: && -- WAS : ||
+lin _ (Message _ _ _)   = True
+lin _ (Choice _ _ _)    = True
+lin kenv (Rec p x t)    = lin (Map.insert (var x) (p, (kind x)) kenv) t
+lin kenv (Var _ x)        =
+  case kenv Map.!? x of
+    Just (_,k) -> multiplicity k == Lin
+    Nothing    -> -- should not happen
+      error $ "Internal error: predicate lin, type var " ++  show x ++ " not in scope"
+
+un :: KindEnv -> Type -> Bool
+un kenv t = not (lin kenv t)
+-}

@@ -1,6 +1,7 @@
 module Validation.TestKindingValidSpec(spec) where
 
 import SpecHelper
+import Validation.Contractive
 import Validation.Kinding
 --
 import qualified Data.Map.Strict as Map

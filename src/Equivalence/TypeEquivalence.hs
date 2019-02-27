@@ -11,7 +11,7 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-module Validation.TypeEquivalence(
+module Equivalence.TypeEquivalence(
   equivalent
 ) where
 
@@ -24,9 +24,9 @@ import           Syntax.Kinds
 import           Syntax.Types
 import           Validation.Kinding
 import           Validation.TypingState (KindEnv)
-import           Validation.Grammar
-import           Validation.TypeToGrammar
-import           Validation.Norm
+import           Equivalence.Grammar
+import           Equivalence.TypeToGrammar
+import           Equivalence.Norm
 -- import           Text.Printf
 
 type Node = Set.Set ([TypeVar], [TypeVar])

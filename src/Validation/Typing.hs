@@ -17,21 +17,18 @@ module Validation.Typing
 ) where
 
 import           Control.Monad.State
-import qualified Data.Map.Strict as Map
 import           Data.List ((\\), nub, intercalate)
+import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.Traversable as Trav
-import           Syntax.Kinds 
+import           Syntax.Kinds
 import           Syntax.Terms
 import           Syntax.Types
-import qualified Validation.Kinding as K
-import           Validation.TypeEquivalence
-import           Validation.TypingState
 import           Utils.Errors
+import           Equivalence.TypeEquivalence
+import qualified Validation.Kinding as K
+import           Validation.TypingState
 
-
-mapWithKeyM :: Monad m => (k -> a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)
-mapWithKeyM f m = Trav.sequence (Map.mapWithKey (f) m)
 
 typeCheck :: TypingState ()
 typeCheck = do
@@ -193,8 +190,8 @@ normalizeType' (TypeScheme bs t) = (TypeScheme binds t)
 -- | Checks if a type is unrestricted
 checkUn :: Pos -> TypeScheme -> TypingState ()
 checkUn p (TypeScheme _ t) = do
-  kenv <- getKenv
-  if K.un kenv t then    
+  isUn <- K.un t
+  if isUn then    
     return ()
   else
     addError p ["Type", styleRed $ "'" ++ show t ++ "'",
@@ -204,6 +201,7 @@ checkUn p (TypeScheme _ t) = do
 checkAgainst :: Pos -> Expression -> TypeScheme -> TypingState ()
 checkAgainst p e (TypeScheme bs1 t) = do
   (TypeScheme bs2 u) <- checkExp e
+--  addError p [styleRed $ "##### " ++ show e ++ " #####"]
   kenv <- getKenv
   if (equivalent kenv t u) then
     return ()
@@ -378,10 +376,13 @@ addBindsToKenv :: Pos -> [Bind] -> TypingState ()
 addBindsToKenv p bs = foldM (\_ b -> addToKenv p (var b) (kind b)) () bs
 
 removeLinVar :: KindEnv -> TermVar -> TypeScheme -> TypingState ()
-removeLinVar kenv x (TypeScheme _ t)
-  | K.lin kenv t = removeFromVenv x   
-  | otherwise  = return ()
-
+removeLinVar kenv x (TypeScheme _ t) = do
+  isLin <- K.lin t
+  if isLin then
+    removeFromVenv x
+  else
+    return ()
+ 
 checkUnVar :: VarEnv -> Pos -> TermVar -> TypingState ()
 checkUnVar venv p x
   | Map.member x venv = let (_,x1) = venv Map.! x in checkUn p x1
@@ -584,22 +585,52 @@ myInit x = init x
 -- | TODO: position, diff, better error message, maybe with diff between maps
 -- and something else (only compares keys)
 checkEquivEnvs :: KindEnv -> VarEnv -> VarEnv -> TypingState ()
-checkEquivEnvs kenv venv1 venv2 -- = return ()
-  | equivalentEnvs kenv venv1 venv2  = return ()
-  | otherwise =
-      let (_,(tmp,_)) = Map.elemAt 0 venv1 in 
+checkEquivEnvs kenv venv1 venv2 = do
+  equiv <- equivalentEnvs kenv venv1 venv2
+  if equiv then
+    return ()
+  else
+    let (_,(tmp,_)) = Map.elemAt 0 venv1 in 
       addError tmp ["Expecting environment", show venv1,
-                    "to be equivalent to environment", show venv2]
-
-equivalentEnvs :: KindEnv -> VarEnv -> VarEnv -> Bool
-equivalentEnvs kenv venv1 venv2 =
-  let venv3 = Map.filter f1 venv1
-      venv4 = Map.filter f1 venv2 in
-  Map.isSubmapOfBy f venv3 venv4 && Map.isSubmapOfBy f venv4 venv3
+                    "to be equivalent to environment", show venv2]      
+ -- | TODO: position, diff, better error message, maybe with diff between maps
+equivalentEnvs :: KindEnv -> VarEnv -> VarEnv -> TypingState Bool
+equivalentEnvs kenv venv1 venv2 = do
+  venv3 <- Map.foldlWithKey f1 (return Map.empty) venv1
+  venv4 <- Map.foldlWithKey f1 (return Map.empty) venv2
+  return $ Map.isSubmapOfBy f venv3 venv4 && Map.isSubmapOfBy f venv4 venv3
+  return True
   where
     f (_,(TypeScheme _ t)) (_,(TypeScheme _ u)) = equivalent kenv t u
-    f1 (_,(TypeScheme _ t)) = K.lin kenv t
 
+    f1 :: TypingState VarEnv -> TermVar -> (Pos,TypeScheme) -> TypingState VarEnv
+    f1 m k t@(_,(TypeScheme _ t1)) = do
+      isLin <- K.lin t1
+
+      if isLin then do
+        m1 <- m        
+        return $ Map.insert k t m1
+      else m
+
+
+-- WAS
+-- -- and something else (only compares keys)
+-- checkEquivEnvs :: KindEnv -> VarEnv -> VarEnv -> TypingState ()
+-- checkEquivEnvs kenv venv1 venv2 -- = return ()
+--   | equivalentEnvs kenv venv1 venv2  = return ()
+--   | otherwise =
+--       let (_,(tmp,_)) = Map.elemAt 0 venv1 in 
+--       addError tmp ["Expecting environment", show venv1,
+--                     "to be equivalent to environment", show venv2]
+--
+-- equivalentEnvs :: KindEnv -> VarEnv -> VarEnv -> Bool
+-- equivalentEnvs kenv venv1 venv2 =
+--   let venv3 = Map.filter f1 venv1
+--       venv4 = Map.filter f1 venv2 in
+--   Map.isSubmapOfBy f venv3 venv4 && Map.isSubmapOfBy f venv4 venv3
+--   where
+--     f (_,(TypeScheme _ t)) (_,(TypeScheme _ u)) = equivalent kenv t u
+--     f1 (_,(TypeScheme _ t)) = K.lin kenv t
 
 checkEquivBasics :: Pos -> BasicType -> BasicType -> TypingState ()
 checkEquivBasics p b1 b2
@@ -607,3 +638,6 @@ checkEquivBasics p b1 b2
   | otherwise =
       addError p ["Expecting basic type", styleRed $ show b1,
                   "to be equivalent to basic type", styleRed $ show b2]
+
+mapWithKeyM :: Monad m => (k -> a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)
+mapWithKeyM f m = Trav.sequence (Map.mapWithKey f m)

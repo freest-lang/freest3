@@ -19,30 +19,70 @@ executable ContextFreeSession
   main-is:             Main.hs
 --  ghc-options:         -prof -fprof-auto "-with-rtsopts=-xc"
   other-extensions:    FlexibleContexts
-  build-depends:       base >=4.8, containers >=0.5, directory >= 1.3.2.0, mtl >= 2.2.1, parsec >=3.1 && <3.2, process >= 1.6.3.0, filepath >= 1.4.2, array <= 0.5.3.0, pretty-terminal <= 0.1.0.0
+  build-depends:       base >=4.8, containers >=0.5, directory >= 1.3.2.0, mtl >= 2.2.1, parsec >=3.1 && <3.2,
+                       process >= 1.6.3.0, filepath >= 1.4.2, array <= 0.5.3.0, pretty-terminal <= 0.1.0.0
   hs-source-dirs:      src
   default-language:    Haskell2010
   build-tools:         alex, happy
-  other-modules:       Compiler, Utils.PreludeLoader, Parse.Parser, Syntax.Terms, Validation.Typing, Validation.Kinding, Syntax.Kinds, Validation.TypeEquivalence, Syntax.Types, CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen, Parse.Lexer, Validation.TypingState, Queue.Queue, Validation.Grammar, Validation.TypeToGrammar, Validation.Norm, Utils.Errors
+  other-modules:       Compiler,
+                       Syntax.Terms, Syntax.Kinds, Syntax.Types,     
+                       Parse.Parser, Parse.Lexer,
+                       Utils.PreludeLoader, Utils.Errors,
+                       Queue.Queue,
+                       Validation.Typing, Validation.Kinding, Validation.Contractive, Validation.TypingState,
+                       Equivalence.TypeEquivalence, Equivalence.Grammar, Equivalence.TypeToGrammar, Equivalence.Norm,
+                       CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen
+                       
+
 
 test-suite unit-tests
   main-is:             UnitSpec.hs
   Type:                exitcode-stdio-1.0
   other-extensions:    FlexibleContexts
-  build-depends:       HUnit >= 1.3.0.0, QuickCheck >=2.8, base >=4.8, containers >=0.5, directory >= 1.3.2.0, hspec >=2.4, hspec-expectations >=0.8, mtl >= 2.2.1, parsec >=3.1 && <3.2, process >= 1.6.3.0, split >= 0.2.2, array <= 0.5.3.0, pretty-terminal <= 0.1.0.0
+  build-depends:       HUnit >= 1.3.0.0, QuickCheck >=2.8, base >=4.8, containers >=0.5,
+                       directory >= 1.3.2.0, hspec >=2.4, hspec-expectations >=0.8, mtl >= 2.2.1,
+                       parsec >=3.1 && <3.2, process >= 1.6.3.0, split >= 0.2.2, array <= 0.5.3.0,
+                       pretty-terminal <= 0.1.0.0
   hs-source-dirs:      src, test/UnitTests
   default-language:    Haskell2010
-  other-modules:       SpecHelper, Validation.Kinding, Syntax.Kinds, Validation.TestEquivalenceInvalidSpec, Validation.TestEquivalenceValidSpec, Validation.TestKindingValidSpec, Parse.TestParserInvalidSpec, Parse.TestParserValidSpec, Syntax.TestShowValidSpec, Syntax.TestEqInvalidSpec, Syntax.TestEqValidSpec, Validation.TestKindingInvalidSpec, Validation.TypeEquivalence, Syntax.Types, Parse.Parser, Syntax.Terms, Syntax.TestEqTypeSchemeSpec, Parse.Lexer, Validation.TestTypeSchemeKindingSpec, Validation.TypingState, Syntax.TestTermsEqSpec, Queue.Queue, Validation.Grammar, Validation.TypeToGrammar, Validation.Norm, Utils.Errors
+  other-modules:       Syntax.Kinds, Syntax.Types, Syntax.Terms,
+                       Parse.Parser, Parse.Lexer,
+                       Queue.Queue,
+                       Validation.Kinding, Validation.Contractive,
+                       Validation.TypingState, Equivalence.TypeEquivalence,
+                       Equivalence.Grammar, Equivalence.TypeToGrammar,
+                       Equivalence.Norm,
+                       Utils.Errors,
+                       SpecHelper,
+                       Syntax.TestShowValidSpec, Syntax.TestEqInvalidSpec, Syntax.TestEqValidSpec,
+                       Syntax.TestEqTypeSchemeSpec, Syntax.TestTermsEqSpec,
+                       Parse.TestParserInvalidSpec, Parse.TestParserValidSpec,
+                       Validation.TestKindingValidSpec, Validation.TestKindingInvalidSpec,
+                       Validation.TestTypeSchemeKindingSpec,
+                       Equivalence.TestEquivalenceInvalidSpec, Equivalence.TestEquivalenceValidSpec
+
+
 
 test-suite program-tests
   main-is:             ProgSpec.hs
   Type:                exitcode-stdio-1.0
   other-extensions:    FlexibleContexts
-  build-depends:       HUnit >= 1.3.0.0, QuickCheck >=2.8, base >=4.8, containers >=0.5, directory >= 1.3.2.0, hspec >=2.4, hspec-expectations >=0.8, mtl >= 2.2.1, parsec >=3.1 && <3.2, process >= 1.6.3.0, filepath >= 1.4.2, array <= 0.5.3.0, pretty-terminal <= 0.1.0.0
+  build-depends:       HUnit >= 1.3.0.0, QuickCheck >=2.8, base >=4.8, containers >=0.5, directory >= 1.3.2.0,
+                       hspec >=2.4, hspec-expectations >=0.8, mtl >= 2.2.1, parsec >=3.1 && <3.2, process >= 1.6.3.0,
+                       filepath >= 1.4.2, array <= 0.5.3.0, pretty-terminal <= 0.1.0.0
   hs-source-dirs:      src, test/Programs
   ghc-options:         -threaded
   default-language:    Haskell2010
-  other-modules:       Compiler, CompilerSpec, Utils.PreludeLoader, Parse.Parser, Syntax.Terms, Validation.Typing, Validation.Kinding, Syntax.Kinds, Validation.TypeEquivalence, Syntax.Types, CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen, Parse.Lexer, Validation.TypingState, Queue.Queue, Validation.Grammar, Validation.TypeToGrammar, Validation.Norm, Utils.Errors
+  other-modules:       Compiler, CompilerSpec, 
+                       Syntax.Terms, Syntax.Kinds, Syntax.Types,
+                       Parse.Lexer, Parse.Parser,
+                       Utils.PreludeLoader, Utils.Errors,
+                       Queue.Queue,        
+                       Validation.Typing, Validation.Kinding,
+                       Validation.Contractive, Validation.TypingState,
+                       Equivalence.TypeEquivalence, Equivalence.Grammar,
+                       Equivalence.TypeToGrammar, Equivalence.Norm, 
+                       CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen
 
 
 test-suite testEquiv
@@ -52,7 +92,16 @@ test-suite testEquiv
               "-with-rtsopts=-N -p -s -h -i0.1"
   Type:                exitcode-stdio-1.0
   other-extensions:    FlexibleContexts
-  build-depends:       HUnit >= 1.3.0.0, QuickCheck >=2.8, base >=4.8, containers >=0.5, directory >= 1.3.2.0, hspec >=2.4, hspec-expectations >=0.8, mtl >= 2.2.1, parsec >=3.1 && <3.2, process >= 1.6.3.0, split >= 0.2.2, array <= 0.5.3.0, pretty-terminal <= 0.1.0.0
+  build-depends:       HUnit >= 1.3.0.0, QuickCheck >=2.8, base >=4.8, containers >=0.5, directory >= 1.3.2.0,
+                       hspec >=2.4, hspec-expectations >=0.8, mtl >= 2.2.1, parsec >=3.1 && <3.2, process >= 1.6.3.0,
+                       split >= 0.2.2, array <= 0.5.3.0, pretty-terminal <= 0.1.0.0
   hs-source-dirs:      src, test/UnitTests
   default-language:    Haskell2010
-  other-modules:       SpecHelper, Validation.Kinding, Syntax.Kinds, Syntax.Types, Parse.Parser, Syntax.Terms, Parse.Lexer, Validation.TypingState, Queue.Queue, Validation.Grammar, Validation.TypeToGrammar, Validation.Norm, Validation.TypeEquivalence, Validation.TestEquivalenceValidSpec, Validation.TestEquivalenceInvalidSpec, Utils.Errors
+  other-modules:       SpecHelper,
+                       Syntax.Kinds, Syntax.Types, Syntax.Terms,
+                       Parse.Parser, Parse.Lexer,
+                       Queue.Queue, Utils.Errors,
+                       Validation.Kinding,  Validation.TypingState, Validation.Contractive,
+                       Equivalence.Grammar, Equivalence.TypeToGrammar,
+                       Equivalence.Norm, Equivalence.TypeEquivalence,
+                       Equivalence.TestEquivalenceValidSpec, Equivalence.TestEquivalenceInvalidSpec

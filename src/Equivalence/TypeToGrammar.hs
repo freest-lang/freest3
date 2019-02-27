@@ -12,7 +12,7 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-module Validation.TypeToGrammar
+module Equivalence.TypeToGrammar
 ( convertToGrammar
 ) where
 
@@ -21,7 +21,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import           Syntax.Types
 import           Syntax.Kinds -- for testing
-import           Validation.Grammar
+import           Equivalence.Grammar
 
 -- The state of the translation to grammars
 

@@ -3,17 +3,17 @@ Deprecated
 Type equivalence as if the type language were a regular language
 -}
 
-module Validation.TypeEquivalence(
+module Equivalence.TypeEquivalence(
   equivalent
 , unfold
 , subs  
 ) where
 
-import Syntax.Types
-import Syntax.Kinds
-import Validation.Kinding
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
+import           Syntax.Types
+import           Syntax.Kinds
+import           Validation.Kinding
 
 -- testar Show
 -- testar igualdade rec inside rec and the same for ∀
