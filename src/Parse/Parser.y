@@ -98,7 +98,7 @@ import           Data.Char
 
 Prog : Defs                {% return ()}
      | Defs NL Prog        {% return ()}
-    -- | {-empty-}           {% return ()}
+    
 
 Defs : DataDecl 
          {% do 
@@ -446,10 +446,11 @@ parseDefs file venv str = execState (parse str) (initialState file venv)
 parseProgram inputFile venv = do
   src <- readFile inputFile
   let p = parseDefs inputFile venv src
-  -- error $ show p
-  -- return (initialState "FILE")
   checkErrors p
   return p
+  -- let p = parseDefs inputFile src
+  -- error $ show p
+  -- return (initialState "FILE")
 
 
 checkErrors (_,_,_,_,_,[]) = return ()

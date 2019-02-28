@@ -277,11 +277,18 @@ typePos (Var p _) = p
         
 -- Is this type a pre session type? (a session type that is
 -- syntactically correct, but necessarilty well-kinded)
-
-isPreSession :: Type -> Bool
-isPreSession (Skip _) = True
-isPreSession (Semi _ _ _) = True
-isPreSession (Message _ _ _) = True
-isPreSession (Choice _ _ _) = True
-isPreSession (Rec _ _ _) = True
-isPreSession _ = False
+-- TODO:
+-- Map.Map TypeVar (Pos,Kind) stands for KindEnv, can't import it
+-- due to a cycle of imports error, some refactor needed.
+isPreSession :: Type -> Map.Map TypeVar (Pos,Kind) -> Bool
+isPreSession (Skip _) _ = True
+isPreSession (Semi _ _ _) _ = True
+isPreSession (Message _ _ _) _ = True
+isPreSession (Choice _ _ _) _ = True
+isPreSession (Rec _ _ _) _ = True
+isPreSession (Var _ x) kenv =
+  if Map.member x kenv then
+    True
+  else
+    False
+isPreSession _ _ = False

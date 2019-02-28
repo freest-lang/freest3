@@ -22,14 +22,14 @@ $symbol = [\!\#\$\%\&\*\+\.\/\<\=\>\?\@\\\^\|\-\~]
 $digit = 0-9
 -- @charL = \' [$var $digit \_] \
 @char = \' ([\\.] | . ) \'
-
+@lineComment  = $eol*"--".* 
 @blockComment = "{-" (\\.|[^\{\-]|\n|\-\-|[^$symbol].*)* "-}"
   
-tokens :-  
-  $eol*"--".*                               ;
+tokens :-    
   $white*$eol                           {\p s -> TokenNL p}
   $eol+                                 {\p s -> TokenNL p}
   $white+                                ;
+  @lineComment                           ;
   @blockComment                          ;
   Int					{\p s -> TokenIntT p}
   Char					{\p s -> TokenCharT p}
