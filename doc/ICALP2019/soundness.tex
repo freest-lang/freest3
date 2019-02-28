@@ -52,31 +52,33 @@ Consider the relation $\mathcal{R}$ given by:
     \vec Y_i\}_{i\in I} \cup (\cup  P_i)_{i\in I})) \mid 
     \begin{array}[t]{l}
     	\text{$S_i$ is any type, $l_i$ is any label,}\\
-    	\text{$Y_i, P_i = \toGrammarf{S_i}$, $i \in I$ }\} \,\cup\\
+    	\text{$Y_i, P_i = \toGrammarf{S_i}$, $i \in I$ }\\
+    	\text{and $X$ does not occur in $P_i$}\} \,\cup\\
     \end{array}\\
     &\{(S_1;S_2, (\vec X_1\vec X_2,  P_1 \cup  P_2)) \mid
     \text{$S_i$ is any type, $\vec X_i, P_i = \toGrammarf{S_i}, i = 1,2$ } \}\,\cup\\
     & \{(\mu X.S, (\varepsilon, \emptyset)) \mid 
-    \text{$S$ is any type with bounded variable $X$ and $\isCheckedf \mu X.S$}\}\,\cup\\
-    & \{(\mu X.S, (X, \{X \rightarrow a \vec Z\vec Y\} \cup  P)) \mid 
+    \text{$S$ is any type and $\isCheckedf \mu X.S$}\}\,\cup\\
+    & \{(\mu X.S, (X, \{X \rightarrow a_j \vec {Z_j}\vec Y\}_{j\in J} \cup  P)) \mid 
     \begin{array}[t]{l}
-      \text{$S$ is any type with bounded variable $X$, }\\
-      \text{not }\isCheckedf \mu X.S, \\
-      Y\vec Y, P = \toGrammarf{S} \text{ and } Y \rightarrow a \vec Z \in  P\}
+      \text{$S$ is any type, not } \isCheckedf \mu X.S,\\
+      Y\vec Y, P = \toGrammarf{S}, \text{ $X$ does not}\\
+      \text{occur in $P$ }\text{ and } Y \rightarrow a_j \vec {Z_j} \in  P\\
+      \text{with $j\in J$ are all the transitions from $Y$}\}
     \end{array}\\
 \end{array}\]
 
 \begin{lemma}
 \label{lemma:bisim_unr}
 	For any type $S$, if not $\isCheckedf \mu X.S$ and 
-	$(\mu X.S, (X, \{X \rightarrow a \vec Z\vec Y\} \cup  P))\in \mathcal{R}$
+	$(\mu X.S, (X, \{X \rightarrow a_j \vec {Z_j}\vec Y\}_{j\in J} \cup  P))\in \mathcal{R}$
 	with $Y \rightarrow a \vec Z \in  P$, then
-	$(\Unravel(\mu X.S), (X, \{X \rightarrow a \vec Z\vec Y\} \cup  P))
+	$(\Unravel(\mu X.S), (X, \{X \rightarrow a_j \vec {Z_j}\vec Y\}_{j\in J} \cup  P))
 	\in \mathcal{R}$.
 \end{lemma}
 
 \begin{proof}
-	Notice that $Y \rightarrow a \vec Z \in  P$ is precisely the first 
+	Notice that $Y \rightarrow a \vec Z_j \in  P$ is precisely the first 
 	transition of $\Unravel(\mu X.S)$. Furthermore, since 
 	$\subs{\mu X.S}{X} S$ is obtained from $S$ by 
 	replacing the occurrences of $X$ by $\mu X.S$, all the productions for
@@ -84,6 +86,9 @@ Consider the relation $\mathcal{R}$ given by:
 	are given by the productions of $S$, as using $\mu X.S$
 	instead of $X$ does not contribute with any new production on $S$.
 \end{proof}
+
+We remark that whenever a type $S$ has a transition, then $\isCheckedf S$
+does not hold.
 
 \begin{lemma}
 \label{lemma:bisim_semi}
@@ -95,7 +100,8 @@ Consider the relation $\mathcal{R}$ given by:
 	and $(S_i, (\vec Y_i,  Q_i))\in\mathcal{R}$. Since 
 	$ \vec X_i, P_i = \toGrammarf{S_i}$ and, by construction of $\mathcal{R}$,
 	we necessarily have $ \vec Y_i, Q_i = \toGrammarf{S_i}$, it follows that
-	$\vec Y_i = \vec X_i$ and $Q_i=P_i$.
+	$\vec Y_i = \vec X_i$ and $Q_i=P_i$. With a similar reasoning we prove the
+	reciprocal implication.
 \end{proof}
 
 With the same argument, we can prove the following lemma.
@@ -108,7 +114,12 @@ With the same argument, we can prove the following lemma.
 \end{lemma}
 
 Now we prove that the relation $\mathcal{R}$ is a bisimilarity. We do it
-by induction. For that, just notice that for any recursive type 
+by induction. For that, we use the unravelling function proposed 
+in~\cite{thiemann2016context}:
+
+\todo{AM}{unr}
+%
+Notice that for any recursive type 
 $\mu X.S$, $\Unravel(\mu X.S)$ is not a recursive type and preserves the 
 transitions from $\mu X.S$.
 
@@ -121,7 +132,13 @@ transitions from $\mu X.S$.
 	We prove that for each $(S, (\vec X, P))\in \mathcal{R}$	, if
 	$S \LTSderives[a] T$ then $\vec X \rightarrow a \vec Y\in P$
 	and $(T, (\vec Y, P'))\in \mathcal{R}$ for some $P'$. The proof is by
-	induction on the structure of $S$.
+	induction on the structure of $S$. With this purpose, whenever $S$ is a 
+	recursive type, we reduce the analysis to $\Unravel(S)$, that
+	is not recursive. Indeed, without loss of generality, 
+	we can always reduce the analysis of $S$
+	to the analysis of $\Unravel(S)$
+	because when $S$ is not recursive we have
+	$\Unravel(S)=S$.
 	\begin{itemize}
 		\item $(\skipk, (\varepsilon, \emptyset))$: $\skipk$ does not have any
 		transition.
@@ -136,41 +153,43 @@ transitions from $\mu X.S$.
     	for each $i\in I$. 
     	\item $(S_1;S_2, (\vec X_1\vec X_2,  P_1 \cup  P_2))$: start noting
     	that by lemma~\ref{lemma:bisim_semi} 
-    	$(S_i, (\vec X_i, P_i))\in \mathcal{R}$, $i=1,2$.
+    	$(S_i, (\vec X_i, P_i))\in \mathcal{R}$, $i=1,2$. 
     	\begin{itemize}
     	\item if 
     	$S_1;S_2\LTSderives[a] S_1'; S_2$ with $S_1\LTSderives[a] S_1'$, then 
-    	$\Unravel(S_1)\LTSderives[a] S_1'$. By 
+    	$\Unravel(S_1)\LTSderives[a] S_1'$ (recall that $\Unravel(S_1)=S_1$ when
+    	$S_1$ is not recursive). By 
     	lemma~\ref{lemma:bisim_unr}, 
     	since $(S_1,(\vec X_1, P_1))\in\mathcal{R}$, we have
     	$(\Unravel(S_1), (\vec X_1, P_1))\in \mathcal{R}$ 
     	(if $S_1$ is not a recursive type, $\Unravel(S_1)$ 
     	coincides with $S_1$).
-    	Hence, by induction hypothesis, we know that 
+    	Hence, by induction hypothesis on $\Unravel(S_1)$, we know that 
     	$\vec X_1 \rightarrow a \vec Y_1$ and 
     	$(S_1', (\vec Y_1,P_1'))\in \mathcal{R}$. 
     	By lemma~\ref{lemma:bisim_semi}, we conclude that 
     	$(S_1';S_2, (\vec Y_1 \vec X_2,P_1'\cup P_2))\in \mathcal{R}$. 
     	\item if $S_1;S_2\LTSderives[a] S_2'$, where $\DONE{S_1}$ and 
     	$S_2\LTSderives[a] S_2'$, it follows that 
-    	$\Unravel(S_2)\LTSderives[a] S_2'$. Since
-    	$(S_2, (\vec X_2, P_2))\in \mathcal{R}$ we have 
-    	$(\Unravel(S_2), (\vec X_2, P_2))\in \mathcal{R}$. 
-    	By induction hypothesis, we thus have
+    	$\Unravel(S_2)\LTSderives[a] S_2'$. By lemma~\ref{lemma:bisim_unr},
+    	since $(S_2, (\vec X_2, P_2))\in \mathcal{R}$ we have 
+    	$(\Unravel(S_2), (\vec X_2, P_2))\in \mathcal{R}$ (again, 
+    	this is only required when $S_2$ is recursive). 
+    	By induction hypothesis on $\Unravel(S_2)$, we thus have
     	$\vec X_2 \rightarrow a \vec Y_2$ where 
     	$(S_2', (\vec Y_2,P_2'))\in \mathcal{R}$. Since $\DONE{S_1}$, by
-    	lemma~\ref{lem:terminated-togrammar} $\vec X_1 = \varepsilon$, 
+    	lemma~\ref{lem:terminated-togrammar} we have $\vec X_1 = \varepsilon$, 
     	hence $\vec X_1 \vec X_2 = \vec X_2 \rightarrow a \vec Y_2$.
     	\end{itemize}
     	\item $(\mu X.S, (\varepsilon, \emptyset))$: in this case, 
     	$\isCheckedf \mu X.S$, thus
     	we do not have any transition (lemma~\ref{lem:terminated-togrammar}).
-    	\item $(\mu X.S, (X, \{X \rightarrow a \vec Z\vec Y\} \cup  P))$: 
-    	if $\mu X.S\LTSderives[l] T$, then $\Unravel(\mu X.S)\LTSderives[l] T$.
-    	Furthermore, we know that 
-    	$(\Unravel(\mu X.S), (X, \{X \rightarrow a \vec Z\vec Y\} \cup  P))
-    	\in\mathcal{R}$. By induction hypothesis, it follows that $l=a$ and 
-    	$(T, (\vec Z \vec Y, P'))\in \mathcal{R}$.
+    	\item $(\mu X.S, (X, \{X \rightarrow a_j \vec {Z_j}\vec Y\}_{j\in J} \cup  P))$: 
+    	if $\mu X.S\LTSderives[b] T$, then $\Unravel(\mu X.S)\LTSderives[b] T$.
+    	Furthermore, by lemma~\ref{lemma:bisim_unr} we know that 
+    	$(\Unravel(\mu X.S), (X, \{X \rightarrow a_j \vec {Z_j}\vec Y\}_{j\in J} \cup  P))
+    	\in\mathcal{R}$. By induction hypothesis on $\Unravel(\mu X.S)$, it follows 
+    	that $b=a_j$ for some $j\in J$ and $(T, (\vec Z_j \vec Y, P'))\in \mathcal{R}$.
 	\end{itemize} 
 	The proof that any transition in the productions leads to a transition in 
 	the corresponding type is very similar and is also done by induction. 
