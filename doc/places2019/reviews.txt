@@ -1,0 +1,308 @@
+Dear Vasco,
+
+I am pleased to inform you that your submission:
+
+7: FreeST: context-free session types in a functional language}
+
+has been conditionally accepted to PLACES 2019, including publication in the EPTCS proceedings.
+
+The acceptance is conditional due to a few concerns from reviewers that we believe can be addressed suitably in the given time. In order to ensure that these criteria are met satisfactorily, an anonymous shepherd has been assigned from amongst the reviewers. They would like to see an updated version by March 5th at the latest (AoE), which should be uploaded to EasyChair.
+
+The camera ready version of your paper can be up to 10 pages in length (excluding bibliography and appendices) and is due March 8th (AoE). We will provide instructions on how to submit camera ready soon.
+
+The conditions requested by your shepherd are listed at the end of this e-mail before the reviews. If you have any questions or concerns, please e-mail us and we can relay these to the shepherd if necessary.
+
+Best regards,
+Dominic and Francisco
+
+-------------------------------------------------------------------------------------------
+
+1. The main contribution of the paper is the implementation of a language with context-free session types. However, the authors concentrate more on the runtime system in their description of the implementation. The runtime system seems much like those already explored in various Haskell embeddings and so is not a contribution.
+
+We would like to see the authors instead describe more details about the design and implementation of the type system. This need not be formal (but can be, if the authors wish). Example points of discussion include a grammar of the language; a more detailed discussion of the kinding system; intricacies which arise due to context-free session types that do not arise in GV; the implementation of the type-checking algorithm; or initial first steps in generalising the algorithm to make use of the monoidal laws.
+
+2. The authors must be clearer about the current status of the work. We appreciate that certain parts are a work-in-progress, but the supported features and limitations of the system must be made clear. In particular: does the type system currently work up to type equality rather than equivalence? Somewhere between equality and Thiemann & Vasconcelos' rules?
+
+3. The authors should be more precise in their comparison to Padovani's implementation, which is the most-closely related work.
+
+Although not a requirement for acceptance, we strongly encourage the authors to make the implementation publicly available before the workshop.
+
+
+----------------------- REVIEW 1 ---------------------
+PAPER: 7
+TITLE: FreeST: context-free session types in a functional language}
+AUTHORS: Bernardo Almeida, Andreia Mordido and Vasco T. Vasconcelos
+
+Overall evaluation: 2 (accept)
+Reviewer's confidence: 5 ((expert))
+
+----------- Overall evaluation -----------
+# Summary
+Session types are a type discipline for structured communication-centric
+programming.  Traditional accounts of session typing involve prefixed send (!A.S)
+and receive (?A.S) types with standard recursive types "mu x. S", and can thus
+be described by a regular language. While this has
+advantages in the simplicity of the underlying metatheory, in particular wrt.
+subtyping and type equivalence, it becomes cumbersome to encode certain
+protocols such as those which serialise recursive datatypes such as trees.
+
+At ICFP'16, Thiemann & Vasconcelos proposed _context-free_ session types, which
+replace the prefixed presentations of send and receive types with standalone
+send and receive types (!A and ?A respectively), which together with a
+sequencing operator (;) and unit (skip) form a monoid.
+However, this increase in expressiveness comes at a cost, in that the underlying
+metatheory---in particular, type equivalence---becomes more involved. While
+Thiemann & Vasconcelos proved that type equivalence is decidable via an encoding
+into the context-free BPA calculus, they did not provide an implementation.
+
+This work presents FreeST, a Haskell implementation of a core functional
+language supporting context-free session types. Until now, the only
+implementation of context-free session types was by Padovani (ESOP 2017), which
+makes use of identity polymorphism and resumptions to incorporate sequential
+composition, but requires that the structure of an implementation wrt.
+sequential composition must exactly match the type. As a result, Thiemann &
+Vasconcelos' monoidal equivalence rules cannot be used.
+
+The paper provides an informal tutorial introduction to FreeST, describes its
+implementation, and provides directions for future work.
+
+# Evaluation
+
+## Strengths
+
+ - First standalone language implementation using context-free session types
+ - Very nicely written, convincing, and easy to follow
+
+## Weaknesses
+
+ - A few claims need tempering, or to be better supported with citations
+ - Not entirely clear from the abstract how mature the work is
+
+## Overall
+
+Overall I very much enjoyed reading this paper and think it would make an
+excellent addition to the workshop programme. The problem and proposed solution
+are clear, and demonstrated with examples throughout.
+
+I had only minor issues with the submission: there were a few times throughout
+the paper that I was a little dubious about some of the claims, and there were
+times that it was unclear how mature the work was. Details below.
+
+## Details
+
+p1:
+ - "concurrent ML" --> "Concurrent ML"
+ - "where channels are unidirectional and transport values of a fixed size":
+   I'm not sure this is true. CML provides channels on which any process with
+   access to the endpoint can synchronise (and where synchronisation is
+   first-class). Each CML channel can transmit values of a fixed _type_, but of
+   arbitrary size.
+ - "MathServer": It's odd to call this type "MathServer" rather than
+   "MathClient", given that it is describing the client side of the protocol.
+ - "the ability send" --> "the ability to send"
+
+p2:
+ - "incurring on runtime checks" --> "incurring runtime checks"
+ - "in the sequel" --> "in the remainder of the paper"
+ - "session types primitives" --> "session typing primitives"
+ - "also include recursion" --> "also includes recursion"
+ - "foregoing deadlock freedom": it's true that Links includes recursion and
+   access points, but it also includes a "fork" construct of type
+   "(dualof S -> ()) -> S" which allows tree-based communication topologies and
+   thus deadlock-freedom if a developer only uses that fragment of the language
+   (see Lindley & Morris, ESOP'15). Recursion does not affect deadlock-freedom
+   (but does violate termination and livelock-freedom).
+
+p3:
+ - "This implies that the monoidal rules proposed by Thiemann & Vasconcelos
+   cannot be used" -- indeed it does, but it's worth noting as a result that
+   the primary simplification gained by Padovani's system is that type
+   equivalence is no longer necessary at the term typing level, only in
+   reasoning about the metatheory
+
+ - "for \alpha a type variable" --> "for a type variable \alpha"
+
+p4:
+ - "an handy" --> "a handy", but preferably "a useful"
+ - Note explicitly that your kinding rules mean that "Skip" is unrestricted
+
+p5:
+ - The kinding system sounds very similar to FST by Lindley & Morris (2017) in
+   that FST also involves prekinds and multiplicities. Lightweight Functional
+   Session Types is already cited, but the similarities to FST should be noted
+   here.
+ - "Checking type equivalence is the main challenge of the compiler...": this
+   sentence made me unsure of the current status of the work. Does it mean, in
+   that case, that the typechecker works for types where the structure of the
+   code follows the structure of the protocol exactly, but cannot take
+   advantage of the monoidal laws? Please clarify.
+ - "the rest of the section concentrates on code generation" -- it seems like
+   the remainder of the section concentrates more on the runtime system than
+   code generation.
+ - The runtime system implementation seems rather standard; perhaps concentrate
+   more on the novel features regarding the implementation of the type system.
+ - The use of `unsafeCoerce` is standard in Haskell implementations of session
+   types. Pucella & Tov (2008) prove that this is safe; citing this will
+   strengthen your argument here.
+ - You should cite Concurrent ML for MVars, and Peyton Jones et al. (1996) for
+   `Control.Concurrent`.
+ - The monadic combinators are not described. Consider giving type signatures
+   for ">>" and ">>=" and perhaps citing Wadler (1995).
+
+p6:
+ - "Context-free session types are difficult (if not impossible) to translate
+   into Haskell types" -- I was originally confused here (and I don't quite
+   agree: an ADT encoding using a fixed tagged universe of types would suffice,
+   I believe). I think the point I was missing is that since this isn't an
+   embedding into Haskell, but instead a standalone language, that the types
+   are not needed in the Haskell RTS since the typechecking has already
+   happened. I'd advise making this clearer.
+
+# References
+
+Lindley, S., & Morris, J. G. (2015, April). A semantics for propositions as
+ sessions. In European Symposium on Programming Languages and Systems (pp.
+ 560-584). Springer, Berlin, Heidelberg.
+
+Peyton Jones, S., Gordon, A., & Finne, S. (1996, January). Concurrent Haskell.
+ In POPL (Vol. 96, pp. 295-308).
+
+Pucella, R., & Tov, J. A. (2008, December). Haskell session types with (almost)
+ no class. In 1st ACM SIGPLAN Haskell Symposium, Haskell '08 (pp. 25-36).
+
+Wadler, P. (1995, May). Monads for functional programming. In International
+ School on Advanced Functional Programming (pp. 24-52). Springer, Berlin,
+ Heidelberg.
+
+
+----------------------- REVIEW 2 ---------------------
+PAPER: 7
+TITLE: FreeST: context-free session types in a functional language}
+AUTHORS: Bernardo Almeida, Andreia Mordido and Vasco T. Vasconcelos
+
+Overall evaluation: 1 (weak accept)
+Reviewer's confidence: 5 ((expert))
+
+----------- Overall evaluation -----------
+FreeST is an implementation of Thiemann & Vasconcelos 2016 paper on context-free session types. FreeST is written in Haskell and generates Haskell code which is then compiled and run in the standard ways. 
+
+I think the paper is interesting and definitely in scope for PLACES. I like the tittle of the sections: they are a bit different from the usual ones… I mainly have presentational comments, which follow.
+Section 1 and 2 pretty much are at the same level, in the sense that one does not feel more of an introduction than the other. This can be due to sections being written by different authors or at different times, or perhaps other stylistic approach to the paper… However, I suggest a bit of a revision here.
+
+In Section 1, pg 2, paragraph starting “In 2016, Thiemann and Vasconcelos… “ it is a bit difficult to see in this paragraph where the description of the 2016 paper ends and FreeST begins…  There’s a bit of a blending. In the paragraph right before that, where point b) is discussed, am I right in saying that stream to tree is not a function? In the sense that, if you have a stream, they represent different trees? This is not very clear to me. Whatever the answer — which might have been given in Thiemann & Vasconcelos 2016 paper —  I suggest you report it here.
+
+In Section 2, I found the presentation of the several processes a bit abrupt, also there’s quite a jump from one process to another and to me it felt like reading through a bunch of processes, without necessarily any aim at the end. I suggest at the opening of this section a map of what processes are being introduced and why.
+Now, wouldn’t it be interesting and especially useful to give the syntax of types and terms of the language, even though they might be the same as in Thiemann & Vasconcelos 2016 paper? It will give a bit of a context (no pun intended!) to the reader.
+Mid of pg 3, when describing TreeC: these types have been introduced before, so perhaps in section 1 the authors should describe what +, the alternative labels and so on.
+Mid of pg 3, when describing rec x type, the authors say this is valid in FreeST; and this type is not valid in standard session types. Perhaps it is useful to spell this out and why this is not the case, for the reader. In pg 3 and later, when giving code snippets, consider using line numbers and commenting on the code by referring to the lines. Commenting on the whole block and “asking" the reader to follow, requires more effort.
+
+Pg 6, paragraph Call-by-value and call-by-name, barely classifies as a paragraph… Consider rewriting this simply by integrating it in the text.
+
+About the bright future of FreeSt: it’s good that there’s future work be done, but I would have liked a bit of discussion on the work/implementation itself, namely what are the limitations of this implementation and what can be improved.
+
+
+----------------------- REVIEW 3 ---------------------
+PAPER: 7
+TITLE: FreeST: context-free session types in a functional language}
+AUTHORS: Bernardo Almeida, Andreia Mordido and Vasco T. Vasconcelos
+
+Overall evaluation: 0 (borderline paper)
+Reviewer's confidence: 5 ((expert))
+
+----------- Overall evaluation -----------
+Until recently, almost all work on session types has provided a
+limited form of recursion: tail recursion. This is largely due to
+style of prefixing for sequencing, limiting the compositionality of
+session types.  Recent work by Thiemann and Vasconcelos (2016) has
+introduced a mechanism for context-free session types, allowing more
+interesting recursion patterns and improving expressivity. The present
+paper describes an implementation of this work (FreeST), providing a
+small functional language based on GV that is compiled by translation
+into Haskell.  The language is demonstrated based on the example of
+sending and receiving binary trees, which I thought was a nice
+canonical example and easy to understand.
+
+This paper gives a good introduction into contextual sessions and
+describes some interesting work on implementing this as a language. I
+think this is interesting work, but my main concern with the paper is
+that it is very light on details.
+
+Specifically, I would have liked far more detail about the actual
+implemented type system since this is the key novelty here it
+seems. For example, a declaration specification of the rules would
+have been good (for instance, I was interested to see how the
+linearity of GV and the polymorphism went together), or more details
+of the algorithm for type checking. Does the algorithm give us
+inference (since you mentioned Hindley-Milner, but only
+obliquely). There was some hint about the kinding, but not much
+detail, despite the paper being 2 pages under the limit.  There is
+some mention of a decision procedure (based on [4]) that checks type
+equality, so does that mean the type system is not quite done yet? Or
+at least, it's done up to type equality? I also wondered how
+unrestricted types are managed since in the example, integer values
+like `l` and `r` (on p.4) are used in more than once.
+
+There was some interesting thing about having to use Haskell bang
+patterns to get CBV semantics. That sounds interesting, but no details
+were given of how this works. That was a shame.
+
+Details were also missing about what else is included in the language.
+Higher order functions? How do the ADTs look? There was talk about
+including more Haskell primitives but having to be careful about
+linearity. Can't your kinding take care of that?
+
+p.3 talks about the Padovani work which "explicitly breaks a type S;T"
+I didn't understand what this means. Since the Padovani work is the
+most closely related, I think more of a comparison is needed (at
+least, more of an explanation of how that approach differs to this and
+what the advantages/disadvantages are).
+
+Other minor comments:
+
+* Motivation for session types is given, but it comes after the
+introductory paragraph which discusses that session types are usually
+restricted to a regular language. I think it would be nicer for the
+reader to have the session type motivation first.
+
+* p.1 "providing for simple" -> "providing simple"
+* p.1 "Type MathServer" -> "The type MathServer"
+* p.1 "the ability send" -> "the ability to send"
+* p.2 "2n + 1 channels..." I thought it could be
+more clearly explained why we get to 2n+1.
+* p.2 "sent on a single stream" better to say channel?
+There is a bit of a confusion here between streams and
+channels. I think best to say what is meant by 'streaming'
+(sending all the data on a single channel, without the structure).
+* p.2 "include recursion" -> "includes recursion" (re Links)
+* I found the choice of the word "script" a bit unusual. Why call
+it "script" rather than just "program"?
+* p.4 "an handy" -> "a handy"
+* p.6 I didn't think it was surprising that unsafeCoerce is contained
+in just two places. I think other implementations of sessions
+for Haskell are a bit like this already probably.
+
+
+----------------------- REVIEW 4 ---------------------
+PAPER: 7
+TITLE: FreeST: context-free session types in a functional language}
+AUTHORS: Bernardo Almeida, Andreia Mordido and Vasco T. Vasconcelos
+
+Overall evaluation: 1 (weak accept)
+Reviewer's confidence: 3 ((medium))
+
+----------- Overall evaluation -----------
+The paper describes an implementation of context-free session types, in terms of a language and its compiler. It uses a binary tree as a primary example throughout the paper, to first introduce the idea of context-free session type, as well as discussing various aspects of the implementation. I find the paper easy to read and comprehend, though it falls short in contributions. It also appears to be a work-in-progress, since type equivalence checking is still being worked on.
+
+Details:
+
+- page 2, paragraph "In 2016, ...": FreeST appears out-of-context without explanation (it was only mentioned in abastract). It should be given a proper definition first.
+
+- page 3, there lacks explanation on why "TypeC" includes a reply of "?Int" as part of the "Node" branch. Perhaps it should first mention that the example problem here is to implement a function that maps all values of tree nodes to the sum of values in its sub-tree. 
+
+- page 3, it says "or each Node in the input tree, function transform reads an integer from the channel and returns a tree isomorphic to the input where the integer values in nodes are read from the channel." However, the program indeed reads the integer last, so it bears a better explanation here.
+
+- page 4, paragraph "Function start ...": there is an extra "that" in "... we see that that channel .. ".
+
+- page 2-3, section 2. I'd suggest actually spelling out the type of channel "c" in the example programs, despite that it is inferred. I think it can help reader understand better how session type works, and how it is consumed. The consumption of a session to "Skip" is also mentioned in discussion, but I'd suggest actual spelling it out in the code, either as type annotation or in comments.
+
+- In section 3, the send and receive function uses putMVar and takeMVar, which, if freely used by Haskell program, will cause deadlock. Perhaps it'll help to explain that these functions are only used by code compiled from FreeST, and thus session type guarantees no deadlock is going to happen.
