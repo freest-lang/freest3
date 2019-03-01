@@ -18,7 +18,7 @@ import           Validation.Kinding
 compile :: String -> IO (Bool, String)
 compile arg = do
   bs@(f, venv, eenv, cenv, kenv, err) <- parseProgram arg prelude
-  let (_,_,_,_,_,ers) = execState typeCheck (f, venv, eenv, cenv, kenv, err)
+  let (_,_,_,_,_,ers, _) = execState typeCheck (f, venv, eenv, cenv, kenv, err, 0)
   checkErr ers venv eenv cenv kenv arg
     
 -- CODE GEN

@@ -11,28 +11,29 @@ type KindEnv = Map.Map TypeVar (Pos, Kind)
 
 -- | The typing state
 type Errors = [String]
-type TypingState = State (String, VarEnv, ExpEnv, ConstructorEnv, KindEnv, Errors)
+type TypingState = State (String, VarEnv, ExpEnv, ConstructorEnv, KindEnv, Errors, Int)
   
 -- | State manipulating functions
 
 -- | Initial State
 -- (_,_,_,_,_,_)
--- (f, venv, eenv, cenv, kenv, err)
-initialState :: String -> (String, VarEnv, ExpEnv, ConstructorEnv, KindEnv, Errors)
-initialState f = (f, Map.empty, Map.empty, Map.empty, Map.empty, [])
+-- (f, venv, eenv, cenv, kenv, err, n)
+initialState :: String ->
+                 (String, VarEnv, ExpEnv, ConstructorEnv, KindEnv, Errors, Int)
+initialState f = (f, Map.empty, Map.empty, Map.empty, Map.empty, [], 0)
 
 -- | FILE NAME
 
 getFileName :: TypingState String
 getFileName = do
-  (f,_,_,_,_,_) <- get
+  (f,_,_,_,_,_,_) <- get
   return f
 
 -- | VAR ENV
 
 getVenv :: TypingState VarEnv
 getVenv = do
-  (_,venv,_,_,_,_) <- get
+  (_,venv,_,_,_,_,_) <- get
   return venv
 
 getFromVenv :: TermVar -> TypingState (Pos, TypeScheme)
@@ -42,13 +43,13 @@ getFromVenv x = do
 
 removeFromVenv :: TermVar -> TypingState ()
 removeFromVenv x =
-  modify (\(f, venv, eenv, cenv, kenv, err) ->
-            (f, Map.delete x venv, eenv, cenv, kenv, err))
+  modify (\(f, venv, eenv, cenv, kenv, e, n) ->
+            (f, Map.delete x venv, eenv, cenv, kenv, e, n))
   
 addToVenv :: Pos -> TermVar -> TypeScheme -> TypingState ()
 addToVenv p x t =
-  modify (\(f, venv, eenv, cenv, kenv, err) ->
-            (f, Map.insert x (p, t) venv, eenv, cenv, kenv, err))
+  modify (\(f, venv, eenv, cenv, kenv, e, n) ->
+            (f, Map.insert x (p, t) venv, eenv, cenv, kenv, e, n))
 
 venvMember :: TermVar -> TypingState Bool
 venvMember x = do
@@ -56,14 +57,14 @@ venvMember x = do
   return $ Map.member x venv
 
 setVenv :: VarEnv -> TypingState ()
-setVenv venv = modify (\(f, _, eenv, cenv, kenv, err) ->
-                         (f, venv, eenv, cenv, kenv, err))
+setVenv venv = modify (\(f, _, eenv, cenv, kenv, e, n) ->
+                         (f, venv, eenv, cenv, kenv, e, n))
 
 -- | EXP ENV
 
 getEenv :: TypingState ExpEnv
 getEenv = do
-  (_,_,eenv,_,_,_) <- get
+  (_,_,eenv,_,_,_,_) <- get
   return eenv
 
 -- Unsafe - must exist
@@ -76,19 +77,19 @@ getFromEenv x = do
 -- | CONSTRUCTOR ENV
 getCenv :: TypingState ConstructorEnv
 getCenv = do
-  (_,_,_,cenv,_,_) <- get
+  (_,_,_,cenv,_,_,_) <- get
   return cenv
 
 -- | KIND ENV
 getKenv :: TypingState KindEnv
 getKenv = do
-  (_,_,_,_,kenv,_) <- get
+  (_,_,_,_,kenv,_,_) <- get
   return kenv
 
 addToKenv :: Pos -> TypeVar -> Kind -> TypingState ()
 addToKenv p x k =
-  modify (\(f, venv, eenv, cenv, kenv, err) ->
-            (f, venv, eenv, cenv, Map.insert x (p,k) kenv, err))
+  modify (\(f, venv, eenv, cenv, kenv, e, n) ->
+            (f, venv, eenv, cenv, Map.insert x (p,k) kenv, e, n))
 
 kenvMember :: TypeVar -> TypingState Bool
 kenvMember x = do
@@ -105,8 +106,8 @@ removeFromKenv :: TypeVar -> TypingState ()
 removeFromKenv x = do
   kenv <- getKenv
   if Map.member x kenv then
-    modify (\(f, venv, eenv, cenv, kenv, err) ->
-              (f, venv, eenv, cenv, Map.delete x kenv, err))
+    modify (\(f, venv, eenv, cenv, kenv, e, n) ->
+              (f, venv, eenv, cenv, Map.delete x kenv, e, n))
   else
     return ()      
 
@@ -114,21 +115,21 @@ removeFromKenv x = do
 -- ERRORS
 
 addError :: Pos -> [String] -> TypingState ()
-addError p es = do
+addError p e = do
   file <- getFileName 
-  modify (\(f, venv, eenv, cenv, kenv, e) ->
-            (f, venv, eenv, cenv, kenv,  e ++ [styleError file p es]))
+  modify (\(f, venv, eenv, cenv, kenv, e', n) ->
+            (f, venv, eenv, cenv, kenv,  e' ++ [styleError file p e], n))
 
 addErrorList :: [String] -> TypingState ()
-addErrorList ers =
-   modify (\(f, venv, eenv, cenv, kenv, err) ->
-            (f, venv, eenv, cenv, kenv, err ++ ers))
+addErrorList es =
+   modify (\(f, venv, eenv, cenv, kenv, e, n) ->
+            (f, venv, eenv, cenv, kenv, e ++ es, n))
 
 
+-- FRESH VARS
 
--- getErrors :: TypingState Errors
--- getErrors = do
---   (_ , _, err) <- get
---   return err
-
-
+freshVar :: TypingState String
+freshVar = do
+  (f, venv, eenv, cenv, kenv, e, n) <- get
+  put (f, venv, eenv, cenv, kenv, e, n+1)
+  return $ "_X" ++ show n

@@ -32,10 +32,11 @@ import           Validation.Contractive
 import           Validation.TypingState
 
 -- Returns the kind of a given type scheme
-kinding :: Pos -> TypeScheme -> TypingState Kind
-kinding _ (TypeScheme [] t) = synthetize t
-kinding p (TypeScheme bs t) = do
-  foldM_ (\_ b -> addToKenv p (var b) (kind b)) () bs
+kinding :: TypeScheme -> TypingState Kind
+kinding (TypeScheme [] t) = synthetize t
+kinding (TypeScheme bs t) = do
+  -- TODO: addToKenv -> addBindsLToKenv
+  foldM_ (\_ b -> addToKenv (0,0) (var b) (kind b)) () bs
   synthetize t
 
 -- Returns the kind of a given type
@@ -46,11 +47,11 @@ synthetize (Message _ _ _) = return $ Kind Session Lin
 synthetize (Choice p _ m) = do
   ks <- mapM (checkAgainst (Kind Session Lin)) (Map.elems m)
   return (Kind Session Lin)
-synthetize (Semi p t u) = do
+synthetize (Semi _ t u) = do
   kt <- synthetize t 
   ku <- synthetize u
-  m <- checkSessionKind p t kt
-  n <- checkSessionKind p u ku
+  m <- checkSessionKind t kt
+  n <- checkSessionKind u ku
   return $ Kind Session (max m n)
 -- Functional
 synthetize (Basic _ _) = return $ Kind Functional Un
@@ -69,16 +70,15 @@ synthetize (Datatype _ m) = do
   ks <- mapM synthetize (Map.elems m)
   return $ Kind Functional (multiplicity $ maximum ks)
 synthetize (Rec p (Bind x k) t) = do
-{-
   kenv <- getKenv
   checkContractive kenv t
-  y <- freshVar                  
-  addToKenv y k
-  k' <- synthetize (Var p y) x t -- On the fly α-conversion
+  y <- freshVar
+  addToKenv p y k -- TODO, remove pos
+  k' <- synthetize $ subs (Var p y) x t -- On the fly α-conversion
   -- TODO: use the p in the Bind
   removeFromKenv y
   return k'
--}
+{-
   kenv <- getKenv
   checkContractive kenv t
   b <- kenvMember x
@@ -87,6 +87,7 @@ synthetize (Rec p (Bind x k) t) = do
   if b then return ()
   else removeFromKenv x
   return k1
+-}
 -- Session or functional
 synthetize (Var p v) = do
   b <- kenvMember v
@@ -99,11 +100,11 @@ synthetize (Var p v) = do
 
 -- Check whether a given kind is session; issue an error if not. In
 -- either case return the multiplicity
-checkSessionKind :: Pos -> Type -> Kind -> TypingState Multiplicity
-checkSessionKind p t k
+checkSessionKind :: Type -> Kind -> TypingState Multiplicity
+checkSessionKind t k
   | prekind k == Session = return $ multiplicity k
   | otherwise            = do
-      addError p ["Expecting type", styleRed $ show t,
+      addError (typePos t) ["Expecting type", styleRed $ show t,
                   "to be a session type; found kind", styleRed $ show k]
       return $ multiplicity k
 
@@ -144,15 +145,15 @@ topKind = Kind Functional Lin
 
 kindOfType :: KindEnv -> Type -> Kind
 kindOfType k t =
-  let (f, venv, eenv, cenv, kenv, err) = (initialState  "") in
-  evalState (synthetize t) (f, venv, eenv, cenv, Map.union k kenv, err)
+  let (f, venv, eenv, cenv, kenv, err, n) = (initialState  "") in
+  evalState (synthetize t) (f, venv, eenv, cenv, Map.union k kenv, err, n)
 
-kindOfScheme :: Pos -> TypeScheme -> Kind
-kindOfScheme p t = evalState (kinding p t) (initialState "")
+kindOfScheme :: TypeScheme -> Kind
+kindOfScheme t = evalState (kinding t) (initialState "")
 
 isWellFormed :: Type -> KindEnv -> Bool
 isWellFormed t k =
-  let (f, venv, eenv, cenv, kenv, err) = initialState "" in
-  let (_, _, _, _, _, errors) =
-        execState (synthetize t) (f, venv, eenv, cenv, k, err) in
+  let (f, venv, eenv, cenv, kenv, err, n) = initialState "" in
+  let (_, _, _, _, _, errors, _) =
+        execState (synthetize t) (f, venv, eenv, cenv, k, err, n) in
     null errors

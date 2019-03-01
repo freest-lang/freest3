@@ -66,7 +66,8 @@ checkDataDecl = do
   kenv <- getKenv
   mapM_ (\k -> checkFunctionalKind k) kenv
   cenv <- getCenv
-  mapM_ (\(p,t) -> checkKinding p t) cenv
+--  mapM_ (\(_,t) -> checkKinding t) cenv
+  mapM_ (checkKinding . snd) cenv
 
 
 checkFunctionalKind :: (Pos, Kind) -> TypingState ()
@@ -76,9 +77,9 @@ checkFunctionalKind (p, k)
      addError p ["Expecting a functional (TU or TL) type; found a",
                   styleRed (show k), "type."]
 
-checkKinding :: Pos -> TypeScheme -> TypingState ()
-checkKinding p t = do
-  K.kinding p t
+checkKinding :: TypeScheme -> TypingState ()
+checkKinding t = do
+  K.kinding t
   return ()
 
 -- | AUXILIARY FUNCTIONS TO VERIFY FUNCTION TYPES
@@ -86,20 +87,20 @@ checkKinding p t = do
 -- | Verifies if a function exists and if it is well kinded
 checkFunTypeDecl :: Pos -> TermVar -> TypingState ()
 checkFunTypeDecl pos fname = do  
-  (p,t) <- checkFun pos fname
-  K.kinding p t
+  t <- checkFun pos fname
+  K.kinding t
   return ()
 
-checkFun :: Pos -> TermVar -> TypingState (Pos, TypeScheme)
+checkFun :: Pos -> TermVar -> TypingState TypeScheme
 checkFun pos x = do
   member <- venvMember x
   if member then do
-    (p, (TypeScheme bs t)) <- getFromVenv x
-    return (p,(TypeScheme bs t))
+    (_, (TypeScheme bs t)) <- getFromVenv x
+    return $ TypeScheme bs t
   else do
     addError pos ["Function", styleRed ("'" ++ x ++ "'"), "not in scope"]
     addToVenv pos x (TypeScheme [] (Basic pos UnitType))
-    return $ (pos, TypeScheme [] (Basic pos UnitType))
+    return $ TypeScheme [] (Basic pos UnitType)
 
 
 -- | FUNCTION DECLARATION
@@ -107,7 +108,6 @@ checkFun pos x = do
 {- | Checks a function declaration:
    |  - Checks the function form
    |  - Checks the function body (expression) against the declared type
-   |  - Checks if the resulting environment is unrestricted
 -}
 checkFD ::  VarEnv -> TermVar -> Params -> Expression -> TypingState ()
 checkFD venv fname p exp = do
@@ -550,7 +550,7 @@ extractDatatype p t _ = do
   -- TODO: TEST
 wellFormedCall :: Pos -> Expression -> [Type] -> [Bind] -> TypingState ()
 wellFormedCall p e ts binds = do
-  mapM_ (\t -> K.kinding p (TypeScheme [] t)) ts
+  mapM_ (\t -> K.kinding (TypeScheme [] t)) ts
   sameNumber
   where   
     sameNumber
