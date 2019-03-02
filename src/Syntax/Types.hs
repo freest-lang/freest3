@@ -285,7 +285,8 @@ isPreSession (Skip _) _ = True
 isPreSession (Semi _ _ _) _ = True
 isPreSession (Message _ _ _) _ = True
 isPreSession (Choice _ _ _) _ = True
-isPreSession (Rec _ _ _) _ = True
+isPreSession (Rec _ Bind{kind=Kind Session _} _) _ = True
+-- isPreSession (Rec _ _ _) _ = True
 isPreSession (Var _ x) kenv =
   if Map.member x kenv then
     True
