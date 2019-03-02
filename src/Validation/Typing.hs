@@ -333,20 +333,16 @@ checkExp (Fork p e) = do
   
 checkExp (Case pos e cm) = do
   t <- checkExp e
-
   let (c, (x, e1)) = Map.elemAt 0 cm  
   t2 <- extractDatatype pos t c  
-
   let x' = zip x (init (toList t2))        
   foldM (\_ (p, t) -> addToVenv pos p t) () x' 
   venv <- getVenv
-  
   u <- checkExp e1
   -- setVEnv venv
   Map.foldrWithKey (\k v _ -> checkMap venv pos t u k v extractDatatype)
                    (return ()) (Map.delete c cm)
   return u
-  
 
 -- | Checking Variables
 
@@ -393,7 +389,6 @@ extractFun p (TypeScheme [] t)           = do
 extractFun p (TypeScheme bs _)           = do
   addError p ["Polymorphic functions cannot be applied; instantiate function prior to applying"]
   return (TypeScheme [] (Basic p UnitType), TypeScheme [] (Basic p UnitType))
-
 
 extractScheme :: Pos -> TypeScheme -> TypingState ([Bind], Type)
 extractScheme p (TypeScheme [] t) = do
