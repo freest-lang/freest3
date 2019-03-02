@@ -83,6 +83,7 @@ tokens :-
   case					{\p s -> TokenCase p}
   of					{\p s -> TokenOf p}
   forall				{\p s -> TokenForall p}
+  dualof				{\p s -> TokenDualof p}
   -- Operators
   [\>\<]  	          		{\p s -> TokenOp p ("(" ++ s ++ ")")}
   \>\=  			        {\p s -> TokenOp p ("(>=)")}
@@ -154,6 +155,7 @@ data Token =
   | TokenCase AlexPosn
   | TokenOf AlexPosn
   | TokenForall AlexPosn
+  | TokenDualof AlexPosn 
   | TokenFArrow AlexPosn
 -- Operators
   | TokenMinus AlexPosn
@@ -219,6 +221,7 @@ instance Show Token where
   show (TokenCase p) = show (pos p) ++ ": case"  
   show (TokenOf p) = show (pos p) ++ ": of"  
   show (TokenForall p) = show (pos p) ++ ": forall"  
+  show (TokenDualof p) = show (pos p) ++ ": dualof"  
   show (TokenFArrow p) = show (pos p) ++ ": =>"
 -- Operators
   show (TokenMinus p) = show (pos p) ++ ": -"  
@@ -290,6 +293,7 @@ getPos (TokenFork p) = pos p
 getPos (TokenMatch p) = pos p
 getPos (TokenCase p) = pos p
 getPos (TokenForall p) = pos p
+getPos (TokenDualof p) = pos p
 getPos (TokenMinus p) = pos p
 getPos (TokenTimes p) = pos p
 getPos (TokenLT p) = pos p

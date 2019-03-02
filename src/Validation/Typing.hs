@@ -152,11 +152,11 @@ checkArgs :: Pos -> TypeVar -> Params -> [TypeScheme] -> TypingState [(TypeVar, 
 checkArgs p c ps ts
   | length ps == length ts = return $ zip ps ts
   | length ps > length ts = do
-      addError p ["Function or constructor", styleRed $ "'" ++ c ++ "'",
+      addError p ["Function or constructor '", styleRed c ++ "'",
                   "is applied to too many arguments"]
       return []
   | length ps < length ts = do
-      addError p ["Function or constructor", styleRed $ "'" ++ c ++ "'",
+      addError p ["Function or constructor '", styleRed c ++ "'",
                   "is applied to too few arguments"]
       return []
 
@@ -225,10 +225,8 @@ checkExp (UnLet _ (px,x) e1 e2) = do
   t1 <- checkExp e1
   addToVenv px x t1
   t2 <- checkExp e2
-  
   venv <- getVenv
   checkUnVar venv px x
-    
   removeFromVenv x
   return t2
   
@@ -278,11 +276,9 @@ checkExp (BinLet p (px,x) (py,y) e1 e2) = do
   addToVenv px x u1
   addToVenv py y u2
   u <- checkExp e2
-    
   venv <- getVenv
   checkUnVar venv px x
   checkUnVar venv py y
-
   removeFromVenv x
   removeFromVenv y
   return u
@@ -326,7 +322,6 @@ checkExp (Match p e cm) = do
   u <- checkExp e1
   Map.foldrWithKey (\k (v1,v2) _ -> checkMap venv p t1 u k ([v1], v2) extractExtChoice) (return ()) (Map.delete c cm)
   return u
-
 
 checkExp (Constructor p c) = checkVar p c
 
