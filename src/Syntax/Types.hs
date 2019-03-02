@@ -78,8 +78,6 @@ instance Show Polarity where
   show In = "?"
   show Out = "!"
 
--- Choice View
-
 data ChoiceView =
     External
   | Internal
@@ -112,7 +110,6 @@ data Type =
   deriving (Ord)
 
 -- Type equality, up to alpha-conversion.
-
 instance Eq Type where
   (==) = equalTypes Map.empty
 
@@ -213,7 +210,7 @@ dual (Semi p t1 t2)    = Semi p (dual t1) (dual t2)
 dual (Rec p b t)       = Rec p b (dual t)
 
 dualPolarity :: Polarity -> Polarity
-dualPolarity In = Out
+dualPolarity In  = Out
 dualPolarity Out = In
 
 dualView :: ChoiceView -> ChoiceView
@@ -254,6 +251,8 @@ subL :: Type -> [(Type,Bind)] -> Type
 subL t bs =
   foldr (\(t', b) acc -> subs t' (var b) acc) t bs
 -}
+
+-- SESSION TYPES
 
 -- Is this type a pre session type? (a session type that is
 -- syntactically correct, but not necessarilty well-kinded)
