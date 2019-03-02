@@ -265,7 +265,7 @@ Types :
   | '(' Types ',' Types ')'      { PairType (getPos $3) $2 $4 }
   | '?' BasicType                { let (_,t) = $2 in Message (getPos $1) In t }
   | '!' BasicType                { let (_,t) = $2 in Message (getPos $1) Out t }
-  | '[' Field ']'                { Datatype (getPos $1) (Map.fromList $2) }
+  | '[' FieldList ']'            { Datatype (getPos $1) (Map.fromList $2) }
   | '+{' FieldList '}'           { Choice (getPos $1) Internal (Map.fromList $2) }
   | '&{' FieldList '}'           { Choice (getPos $1) External (Map.fromList $2) }
   | Skip                         { Skip (getPos $1) }
