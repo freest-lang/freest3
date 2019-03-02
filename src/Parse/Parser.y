@@ -12,12 +12,14 @@ import           Data.List (nubBy, deleteFirstsBy, intercalate)
 import           Utils.Errors
 import           System.Exit (die)
 import           Data.Char
+
 }
 
 %name types Types
 %name typeScheme TypeScheme
 %name terms Prog
 %name kinds Kind
+%name expr Expr
 %tokentype { Token }
 %error { parseError }
 %monad { ParserState }
@@ -317,8 +319,8 @@ Types : '(' Types ')'                {$2}
 VarCons : VAR  {let (TokenVar _ x) = $1 in x}
         | CONS {let (TokenCons _ x) = $1 in x}
 
-Choice : '+{' Constructor '}'  {Choice (getPos $1) Internal (Map.fromList $2)}
-       | '&{' Constructor '}'  {Choice (getPos $1) External (Map.fromList $2)}
+Choice : '+{' Constructor '}'  {checkClash (getPos $1) Internal $2}-- {Choice (getPos $1) Internal (Map.fromList $2)}
+       | '&{' Constructor '}'  {checkClash (getPos $1) External $2}
 
 Constructor : Con                  {$1}
             | Constructor ',' Con  {$3 ++ $1}
@@ -347,6 +349,21 @@ Kind :: { Kind }
 
 {
 
+checkClash :: Pos -> ChoiceView -> [(Constructor, Type)] -> Type
+checkClash p v xs = 
+  let clashes = bindClashes xs in
+  if null clashes then
+    Choice p v (Map.fromList xs)
+  else
+    error (prettyPos p ++ " Multiple declarations for " ++ (show (map fst clashes)))
+    Choice p v (Map.fromList xs)
+  where
+    bindClashes :: [(Constructor, Type)] -> [(Constructor, Type)]
+    bindClashes bs = deleteFirstsBy f bs (nubBy f bs)
+
+    f :: (Constructor, Type) -> (Constructor, Type) -> Bool
+    f = (\(x,_) (y,_) -> x == y)
+  
 -- TODO: tmp ... remove   
 -- type KindEnv = Map.Map TypeVar (Pos, Kind)
 
@@ -413,17 +430,16 @@ parseType :: String -> Type
 parseType s = fst $ runState (parse s) (initialState "" Map.empty)
   where parse = types . scanTokens
 
+instance Read Type where
+  readsPrec _ s = [(parseType s, "")]
+
 parseTypeScheme :: String -> TypeScheme
 parseTypeScheme s = fst $ runState (parse s) (initialState "" Map.empty)
   where parse = typeScheme . scanTokens
 
-instance Read Type where
-  readsPrec _ s = [(parseType s, "")]
-
 instance Read TypeScheme where
   readsPrec _ s = [(parseTypeScheme s, "")]
 
--- [(parseKind s, "")]
 -- TODO: move to kinds ??
 instance Read Kind where
   readsPrec _ s = -- [(parseKind s, "")]    
@@ -437,7 +453,15 @@ instance Read Kind where
             then [(result, drop (length attempt) (trim s))]
             else tryParse xs
           trim s = dropWhile isSpace s
-          
+
+
+parseExpr :: String -> Expression
+parseExpr s = fst $ runState (parse s) (initialState "" Map.empty)
+  where parse = expr . scanTokens
+  
+instance Read Expression where
+  readsPrec _ s = [(parseExpr s, "")]
+  
 -- parseDefs file str = p str 
 --  where p = scanTokens
 parseDefs file venv str = execState (parse str) (initialState file venv)
