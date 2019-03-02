@@ -22,11 +22,11 @@ module Syntax.Types
 , Type(..)
 , TypeScheme(..)
 , dual
-, toList
+--, toList
 , unfold
 , rename
 , subs
-, subL
+--, subL
 , Pos
 , typePos
 , isPreSession
@@ -36,7 +36,7 @@ import           Data.List (intersperse)
 import qualified Data.Map.Strict as Map
 import           Syntax.Kinds
 
--- POSITION
+-- POSITION -- TODO: This should be common to all syntax
 type Pos = (Int, Int)
 
 -- TYPE VARIABLE BINDINGS
@@ -54,7 +54,7 @@ instance Show Bind where
 
 -- BASIC TYPES
 
-data BasicType =
+data BasicType = -- TODO: Add Pos
     IntType
   | CharType
   | BoolType
@@ -111,7 +111,7 @@ data Type =
   | Var Pos TypeVar
   deriving (Ord)
 
--- Type equality, up to alpha-conversion
+-- Type equality, up to alpha-conversion.
 
 instance Eq Type where
   (==) = equalTypes Map.empty
@@ -139,8 +139,7 @@ equalMaps s m1 m2 =
     Map.foldlWithKey(\b l t ->
       b && l `Map.member` m2 && equalTypes s t (m2 Map.! l)) True m1
 
--- Type show
-
+-- Showing a type
 instance Show Type where
   show (Basic _ b)      = show b
   show (Skip _)         = "Skip"
@@ -160,6 +159,19 @@ showFun t op u = "(" ++ show t ++ " " ++ op ++ " " ++ show u ++ ")"
 showMap :: TypeMap -> String
 showMap m = concat $ intersperse ", " (map showAssoc (Map.assocs m))
   where showAssoc (k, v) = k ++ ": " ++ show v
+
+-- The position of a type
+typePos :: Type -> Pos
+typePos (Basic p _) = p
+typePos (Fun p _ _ _) = p
+typePos (PairType p _ _) = p
+typePos (Datatype p _) = p
+typePos (Skip p) = p
+typePos (Semi p _ _) = p
+typePos (Message p _ _) = p
+typePos (Choice p _ _) = p
+typePos (Rec p _ _) = p
+typePos (Var p _) = p
 
 -- TYPE SCHEMES
 
@@ -207,12 +219,12 @@ dualPolarity Out = In
 dualView :: ChoiceView -> ChoiceView
 dualView External = Internal
 dualView Internal = External
-
+{-
 toList :: TypeScheme -> [TypeScheme]
 toList (TypeScheme b (Fun _ _ t1 t2)) = (TypeScheme b t1) : toList (TypeScheme b t2)
 toList t = [t]
+-}
 
--- brought from Validation.TypeEquivalence
 -- UNFOLDING, RENAMING, SUBSTITUTING
 
 unfold :: Type -> Type
@@ -232,63 +244,27 @@ subs t y (Semi p t1 t2)     = Semi p (subs t y t1) (subs t y t2)
 subs t y (PairType p t1 t2) = PairType p (subs t y t1) (subs t y t2)
 -- Assume y /= x
 subs t2 y (Rec p b t1)
-    | var b == y            = Rec p b t1
-    | otherwise             = Rec p b (subs t2 y t1)
+  | var b == y              = Rec p b t1
+  | otherwise               = Rec p b (subs t2 y t1)
 subs t y (Choice p v m)     = Choice p v (Map.map(subs t y) m)
 subs t y (Fun p m t1 t2)    = Fun p m (subs t y t1) (subs t y t2)
 subs _ _ t                  = t
-
-
+{-
 subL :: Type -> [(Type,Bind)] -> Type
 subL t bs =
   foldr (\(t', b) acc -> subs t' (var b) acc) t bs
-  
-{- Alternative:
-data TypeScheme =
-    Polymorphic Bind TypeScheme
-  | Monomorphic Type
-  deriving Ord
-
-instance Eq TypeScheme where
-  (==) = equalSchemes Map.empty
-
-equalSchemes :: Map.Set (TypeVar, TypeVar) -> TypeScheme -> TypeScheme -> Bool
-equalSchemes s (Monomorphic t)   (Monomorphic u)   = equalTypes s t u
-equalSchemes s (Polymorphic b t) (Polymorphic c u) =
-  kind b == kind c && equalSchemes (Map.insert (var b, var c) s) t u
-
-instance Show TypeScheme where
-  show (Monomorphic t)   = show t
-  show (Polymorphic b s) = "forall " ++ show b ++ " => " ++ show s
 -}
 
--- Position of a type
-typePos :: Type -> Pos
-typePos (Basic p _) = p
-typePos (Fun p _ _ _) = p
-typePos (PairType p _ _) = p
-typePos (Datatype p _) = p
-typePos (Skip p) = p
-typePos (Semi p _ _) = p
-typePos (Message p _ _) = p
-typePos (Choice p _ _) = p
-typePos (Rec p _ _) = p
-typePos (Var p _) = p
-        
 -- Is this type a pre session type? (a session type that is
--- syntactically correct, but necessarilty well-kinded)
+-- syntactically correct, but not necessarilty well-kinded)
 -- TODO:
 -- Map.Map TypeVar (Pos,Kind) stands for KindEnv, can't import it
 -- due to a cycle of imports error, some refactor needed.
 isPreSession :: Type -> Map.Map TypeVar (Pos,Kind) -> Bool
-isPreSession (Skip _) _ = True
-isPreSession (Semi _ _ _) _ = True
+isPreSession (Skip _) _        = True
+isPreSession (Semi _ _ _) _    = True
 isPreSession (Message _ _ _) _ = True
-isPreSession (Choice _ _ _) _ = True
-isPreSession (Rec _ _ _) _ = True
-isPreSession (Var _ x) kenv =
-  if Map.member x kenv then
-    True
-  else
-    False
-isPreSession _ _ = False
+isPreSession (Choice _ _ _) _  = True
+isPreSession (Rec _ _ _) _     = True
+isPreSession (Var _ x) kenv    = Map.member x kenv
+isPreSession _ _               = False
