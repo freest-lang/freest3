@@ -11,7 +11,7 @@ type KindEnv = Map.Map TypeVar (Pos, Kind)
 
 -- | The typing state
 type Errors = [String]
-type TypingState = State (String, VarEnv, ExpEnv, ConstructorEnv, KindEnv, Errors, Int)
+type TypingState = State (String, VarEnv, ExpEnv, ConstructorEnv, KindEnv, Errors, Int) -- TODO: use a record
   
 -- | State manipulating functions
 
@@ -132,4 +132,4 @@ freshVar :: TypingState String
 freshVar = do
   (f, venv, eenv, cenv, kenv, e, n) <- get
   put (f, venv, eenv, cenv, kenv, e, n+1)
-  return $ "_X" ++ show n
+  return $ "_x" ++ show n

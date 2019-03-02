@@ -40,8 +40,8 @@ import           Data.Char
   ';'      {TokenSemi _}
   '!'      {TokenMOut _}
   '?'      {TokenMIn _}
-  '+{'      {TokenLIChoice _}
-  '&{'      {TokenLEChoice _}
+'+{'      {TokenLIChoice _} -- TODO: separate
+  '&{'      {TokenLEChoice _} -- TODO: separate
   '}'      {TokenRBrace _}
   '=>'     {TokenFArrow _}
   '+'      {TokenPlus _}
@@ -98,50 +98,39 @@ import           Data.Char
 
 Prog : Defs                {% return ()}
      | Defs NL Prog        {% return ()}
-    
 
 Defs : DataDecl 
          {% do 
 	     let (p,c,k,ts) = $1
              kenv <- getKenv
              checkNamesClash kenv c
-               ("Multiple declarations of " ++ (styleRed ("'" ++ c ++ "'"))) p
+               ("Multiple declarations of '" ++ styleRed c ++ "'") p
 	     addToKenv c (p, k)
 	     let binds = typesToFun p c ts
-
              checkBindsClash binds
 	     mapM (\(cons, (p, t)) -> addToCenv cons p (TypeScheme [] t)) binds
 	     addToVenv c p (TypeScheme [] (convertDT p binds))
-	     return ()
 	 }
      | FunSig  {% do 
-	           let (p,x,y) = $1
+	           let (p,f,y) = $1
                    venv <- getVenv
-                   checkNamesClash venv x
-                     ("Duplicate type signatures for " ++ (styleRed ("'" ++ x ++ "'"))) p
-		   addToVenv x p y
-		   return ()}
-     | FunDecl  {% do 
-   	           let (x,y) = $1
-		   addToEenv x y
-		   return ()
-	        }
-
-  
-
+                   checkNamesClash venv f
+                     ("Duplicate type signatures for '" ++ styleRed f ++ "'") p
+		   addToVenv f p y
+		}
+     | FunDecl  {% let (x,y) = $1 in addToEenv x y}
 
 NL : nl NL     {}
    | nl        {}
-
--- emptyNL : nl NL     {}
---         | nl        {}
---         | {-empty-} {}
 
 ---------------
 -- DATATYPES --
 ---------------
 
-DataDecl : data CONS KindTU '=' DataCons   {let (TokenCons p x) = $2 in (pos p,x,$3,$5)}
+DataDecl :
+  data CONS '=' DataCons { let (TokenCons p x) = $2 in (pos p, x, Kind Functional Un, $4) }
+
+-- DataDecl : data CONS KindTU '=' DataCons   {let (TokenCons p x) = $2 in (pos p,x,$3,$5)}
 
 DataCons : DataCon {[$1]}
          | DataCons '|' DataCon {$1 ++ [$3]}
@@ -150,15 +139,6 @@ DataCon : CONS TypeParams  {let (TokenCons p x) = $1 in (x,(pos p,$2))}
 
 TypeParams : {- empty -} { [] }
            | TypeParams Types  { $1 ++ [$2] }
-
-KindTU :: { Kind }
-KindTU
-     : ':'':' SU   {Kind Session Un}
-     | ':'':' SL   {Kind Session Lin}
-     | ':'':' TU   {Kind Functional Un}
-     | ':'':' TL   {Kind Functional Lin}
-     | {- empty -} {Kind Functional Un}
-
 
 ---------------------------
 -- FUN TYPE DECLARATIONS --
@@ -228,38 +208,24 @@ Form : '-' Form %prec NEG {App (getPos $1) (Variable (getPos $1) "negate") $2}
 
 Juxt : Juxt Atom                   {App (getEPos $1) $1 $2}
 
-     | VAR '[' CommaTypes ']'      {let (TokenVar p x) = $1 in
+     | VAR '[' TypeList ']'      {let (TokenVar p x) = $1 in
                                    TypeApp (pos p) (Variable (pos p) x) $3}  
 
      | send Atom Atom              {Send (getPos $1) $2 $3}
    
      | Atom                        {$1}
 
+Atom :
+    '()'            { Unit (getPos $1) }
+  | NUM             { let (TokenInteger p x) = $1 in Integer (pos p) x }
+  | BOOL            { let (TokenBool p x) = $1 in Boolean (pos p) x }
+  | CHAR            { let (TokenChar p x) = $1 in Character (pos p) x }
+  | VAR             { let (TokenVar p x) = $1 in Variable (pos p) x }
+  | CONS            { let (TokenCons p x) = $1 in Constructor (pos p) x }
+  | '(' Expr ')'    { $2 }
 
-
-Atom : '(' Expr ')'                {$2}
-
-     | '()'                        {Unit (getPos $1)}
-
-     | NUM                         {let (TokenInteger p x) = $1 in
-		         	     Integer (pos p) x}
-
-     | BOOL                        {let (TokenBool p x) = $1 in
-			              Boolean (pos p) x}
-
-     | CHAR                        {let (TokenChar p x) = $1 in
-		         	     Character (pos p) x}
-
-     | VAR                         {let (TokenVar p x) = $1 in
-                                     Variable (pos p) x} 
-
-     | CONS                        {let (TokenCons p x) = $1 in
-				      Constructor (pos p) x}
-
-CommaTypes : Types                   {[$1]}
-           | CommaTypes ',' Types    {$1 ++ [$3]}
-
-
+TypeList : Types                 {[$1]}
+         | TypeList ',' Types    {$1 ++ [$3]}
 
 MatchMap : MatchValue MatchNext  {$1 : $2}
 
@@ -269,7 +235,6 @@ MatchNext : ';' MatchMap         {$2}
 MatchValue : CONS VAR '->' Expr   {let (TokenCons _ c) = $1 in
 				       let (TokenVar _ x) = $2 in
                                        (c, (x,$4))}
-
 
 CaseMap : CaseValue CaseNext  {$1 : $2}
 
@@ -283,53 +248,52 @@ CaseValue : CONS Params '->' Expr   {let (TokenCons _ c) = $1 in
 -- TYPES --
 -----------
 
-TypeScheme : forall CommaBinds '=>' Types {TypeScheme $2 $4}
+TypeScheme : forall BindList '=>' Types {TypeScheme $2 $4}
 
-CommaBinds : Bind                 {[$1]}
-           | CommaBinds ',' Bind  {$1 ++ [$3]}
+BindList :
+   Bind               {[$1]}
+ | BindList ',' Bind  {$1 ++ [$3]}
 
-Bind : VAR UnKind    {let (TokenVar _ x) = $1 in Bind x $2}
+Bind :
+  VAR KindUn    {let (TokenVar _ x) = $1 in Bind x $2}
 
-UnKind :: { Kind }
+Types :
+    rec VarCons KindSL '.' Types { Rec (getPos $1) (Bind $2 $3) $5 }
+  | Types ';' Types              { Semi (getPos $2) $1 $3 }
+  | Types '->' Types             { Fun (getPos $2) Un $1 $3 }
+  | Types '-o' Types             { Fun (getPos $2) Lin $1 $3 }
+  | '(' Types ',' Types ')'      { PairType (getPos $3) $2 $4 }
+  | '?' BasicType                { let (_,t) = $2 in Message (getPos $1) In t }
+  | '!' BasicType                { let (_,t) = $2 in Message (getPos $1) Out t }
+  | '[' Field ']'                { Datatype (getPos $1) (Map.fromList $2) }
+  | '+{' FieldList '}'           { Choice (getPos $1) Internal (Map.fromList $2) }
+  | '&{' FieldList '}'           { Choice (getPos $1) External (Map.fromList $2) }
+  | Skip                         { Skip (getPos $1) }
+  | BasicType                    { let (p,t) = $1 in Basic p t }
+  | VAR                          { let (TokenVar p x) = $1 in Var (pos p) x }
+  | CONS                         { let (TokenCons p x) = $1 in Var (pos p) x }
+  | '(' Types ')'                { $2 }
+
+-- TODO: add position
+VarCons : VAR  {let (TokenVar _ x) = $1 in x }
+        | CONS {let (TokenCons _ x) = $1 in x }
+
+FieldList : Field                {$1 }
+          | FieldList ',' Field  {$3 ++ $1 }
+
+Field : CONS ':' Types {let (TokenCons _ x) = $1 in [(x, $3)] }
+
+BasicType  : Int  {(getPos $1, IntType) }
+           | Char {(getPos $1, CharType) }
+           | Bool {(getPos $1, BoolType) }
+           | '()' {(getPos $1, UnitType) }
+
+KindUn :: { Kind }
      : ':'':' SU   {Kind Session Un}
      | ':'':' SL   {Kind Session Lin}
      | ':'':' TU   {Kind Functional Un}
      | ':'':' TL   {Kind Functional Lin}
      | {- empty -} {Kind Session Un}
-
--- {let (TokenVar _ x) = $2 in (Rec (Bind x $3) $5)}
-Types : '(' Types ')'                {$2}
-      | rec VarCons KindSL '.' Types {Rec (getPos $1) (Bind $2 $3) $5}
-      | Types ';' Types              {Semi (getPos $2) $1 $3}
-      | Types '->' Types             {Fun (getPos $2) Un $1 $3}
-      | Types '-o' Types             {Fun (getPos $2) Lin $1 $3}
-      | '(' Types ',' Types ')'      {PairType (getPos $3) $2 $4}
-      | '?' BasicType                {let (_,t) = $2 in Message (getPos $1) In t}
-      | '!' BasicType                {let (_,t) = $2 in Message (getPos $1) Out t}
-      | '[' Constructor ']'          {Datatype (getPos $1) (Map.fromList $2)}
-      | Choice                       {$1}
-      | Skip                         {Skip (getPos $1)}
-      | BasicType                    {let (p,t) = $1 in Basic p t}
-      | VAR                          {let (TokenVar p x) = $1 in Var (pos p) x}
-      | CONS                         {let (TokenCons p x) = $1 in Var (pos p) x}
-
--- TODO: add position
-VarCons : VAR  {let (TokenVar _ x) = $1 in x}
-        | CONS {let (TokenCons _ x) = $1 in x}
-
-Choice : '+{' Constructor '}'  {Choice (getPos $1) Internal (Map.fromList $2)}
-       | '&{' Constructor '}'  {Choice (getPos $1) External (Map.fromList $2)}
-
-Constructor : Con                  {$1}
-            | Constructor ',' Con  {$3 ++ $1}
-
-Con : CONS ':' Types {let (TokenCons _ x) = $1 in [(x, $3)]}
-
-BasicType  : Int  {(getPos $1, IntType)}
-           | Char {(getPos $1, CharType)}
-           | Bool {(getPos $1, BoolType)}
-           | '()' {(getPos $1, UnitType)}
-
 
 KindSL :: { Kind }
      : ':'':' SU   {Kind Session Un}
