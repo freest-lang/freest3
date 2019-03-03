@@ -268,8 +268,8 @@ Types :
   | '?' BasicType                { let (_,t) = $2 in Message (getPos $1) In t }
   | '!' BasicType                { let (_,t) = $2 in Message (getPos $1) Out t }
   | '[' FieldList ']'            { Datatype (getPos $1) (Map.fromList $2) }
-  | '+{' FieldList '}'           { Choice (getPos $1) Internal (Map.fromList $2) }
-  | '&{' FieldList '}'           { Choice (getPos $1) External (Map.fromList $2) }
+  | '+{' FieldList '}'           { checkClash (getPos $1) Internal $2 }
+  | '&{' FieldList '}'           { checkClash (getPos $1) External $2 }
   | dualof Types                 { Dualof (getPos $1) $2 }
   | Skip                         { Skip (getPos $1) }
   | BasicType                    { let (p,t) = $1 in Basic p t }
