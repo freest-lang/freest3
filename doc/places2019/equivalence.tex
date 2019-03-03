@@ -1,0 +1,54 @@
+\section{\freest{} requires a type equivalence checker}
+\label{sec:equivalence}
+
+Checking type equivalence is the main challenge of the
+compiler. If, on the one hand, the algorithm should be sound and 
+complete, on the other hand it should have a runtime compatible
+with the efficiency needs of a compiler.
+However, the recursive structure underlying context-free 
+session types often make bisimulations between two types infinite. 
+
+In~\cite{typeEquivalence} we propose an algorithm to decide
+the equivalence of context-free session types. 
+It has three distinct stages.
+%
+The \emph{first stage} builds a context-free grammar in Greibach
+Normal Formal (GNF)---in fact a simple grammar---from a context-free
+session type in a way that bisimulation is preserved.  
+%
+The \emph{second stage} prunes the grammar by removing unreachable
+symbols in unnormed sequences of non-terminal symbols. This stage
+builds on the result of Christensen, H\"uttel, and 
+Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}.
+%
+The \emph{third stage} constructs an expansion tree, by alternating
+between expansion and simplification steps.  This last stage uses
+ideas on the expansion operations proposed by Janc\v ar, Moller, and
+Hirshfeld~\cite{hirshfeld1996bisimulation,janvcar1999techniques}, and
+ideas on the simplification rules proposed by Caucal, Christensen,
+H\"uttel, Stirling, Janc\v ar, and Moller
+~\cite{caucal1986decidabilite,
+  DBLP:journals/iandc/ChristensenHS95,janvcar1999techniques}.  
+We use breadth-first search on the expansion tree and the 
+algorithm terminates as soon as it reaches an empty node---case
+in which it decides positively---or it fails to expand a node---case
+in which it decides negatively.  
+The
+finite representation of bisimulations of BPA transition
+graphs~\cite{caucal1986decidabilite, DBLP:journals/iandc/ChristensenHS95} 
+is thus paramount for the soundness and completeness of the algorithm,
+which we prove. 
+
+Although the branching nature of the expansion tree confers an exponential 
+complexity to the algorithm, we propose heuristics that allow constructing 
+the relation in a reasonable time. We have benchmarked the algorithm 
+on a test suite of carefully crafted pair of types comprising valid and invalid 
+equivalences, for a total os 138 tests. By running the tests on the base and
+optimized algorithms, we observe an improvement of more than 
+$11,000,000\%$ on runtime and memory allocated: it goes from 4445.38 
+seconds and 8,259,115 Mb memory allocated
+with the base algorithm to an average of 0.04
+seconds for the running time and 62 Mb of allocated memory with the 
+optimized algorithm.
+
+
