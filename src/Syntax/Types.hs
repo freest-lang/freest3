@@ -22,11 +22,11 @@ module Syntax.Types
 , Type(..)
 , TypeScheme(..)
 , dual
-, toList
+, toList -- TODO: not quite sure this belongs here
 , unfold
 , rename
 , subs
-, subL
+, subL -- TODO: not quite sure this belongs here
 , Pos
 , typePos
 , isPreSession
@@ -107,6 +107,8 @@ data Type =
   | Rec Pos Bind Type
   -- Functional or Session
   | Var Pos TypeVar
+  -- Type operators
+  | Dualof Pos Type
   deriving (Ord)
 
 -- Type equality, up to alpha-conversion.
@@ -124,6 +126,7 @@ equalTypes s (Fun _ m t u)    (Fun _ n v w)    = m == n && equalTypes s t v && e
 equalTypes s (PairType _ t u) (PairType _ v w) = equalTypes s t v && equalTypes s u w
 equalTypes s (Datatype _ m1)  (Datatype _ m2)  = equalMaps s m1 m2
 equalTypes s (Choice _ v1 m1) (Choice _ v2 m2) = v1 == v2 && equalMaps s m1 m2
+equalTypes s (Dualof _ t)     (Dualof _ u)     = t == u
 equalTypes _ _              _                  = False
 
 equalVars :: Maybe TypeVar -> TypeVar -> TypeVar -> Bool
@@ -136,7 +139,7 @@ equalMaps s m1 m2 =
     Map.foldlWithKey(\b l t ->
       b && l `Map.member` m2 && equalTypes s t (m2 Map.! l)) True m1
 
--- Showing a type
+-- Showing a type -- TODO: parenthesis needed
 instance Show Type where
   show (Basic _ b)      = show b
   show (Skip _)         = "Skip"
@@ -149,6 +152,7 @@ instance Show Type where
   show (Datatype _ m)   = "["++ showMap m ++"]"
   show (Rec _ b t)      = "(rec " ++ show b ++ " . " ++ show t ++ ")"
   show (Var _ s)        = s
+  show (Dualof _ s)     = "dualof " ++ show s
 
 showFun :: Type -> String -> Type -> String
 showFun t op u = "(" ++ show t ++ " " ++ op ++ " " ++ show u ++ ")"
@@ -169,6 +173,7 @@ typePos (Message p _ _) = p
 typePos (Choice p _ _) = p
 typePos (Rec p _ _) = p
 typePos (Var p _) = p
+typePos (Dualof p _) = p
 
 -- TYPE SCHEMES
 
@@ -208,6 +213,7 @@ dual (Message pos p b) = Message pos (dualPolarity p) b
 dual (Choice pos p m)  = Choice pos (dualView p) (Map.map dual m)
 dual (Semi p t1 t2)    = Semi p (dual t1) (dual t2)
 dual (Rec p b t)       = Rec p b (dual t)
+dual (Dualof _ t)      = t
 
 dualPolarity :: Polarity -> Polarity
 dualPolarity In  = Out
@@ -220,7 +226,6 @@ dualView Internal = External
 toList :: TypeScheme -> [TypeScheme]
 toList (TypeScheme b (Fun _ _ t1 t2)) = (TypeScheme b t1) : toList (TypeScheme b t2)
 toList t = [t]
-
 
 -- UNFOLDING, RENAMING, SUBSTITUTING
 
@@ -250,7 +255,6 @@ subs _ _ t                  = t
 subL :: Type -> [(Type,Bind)] -> Type
 subL t bs =
   foldr (\(t', b) acc -> subs t' (var b) acc) t bs
-
 
 -- SESSION TYPES
 

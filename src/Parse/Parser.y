@@ -42,8 +42,8 @@ import           Data.Char
   ';'      {TokenSemi _}
   '!'      {TokenMOut _}
   '?'      {TokenMIn _}
-'+{'      {TokenLIChoice _} -- TODO: separate
-  '&{'      {TokenLEChoice _} -- TODO: separate
+  '+{'     {TokenLIChoice _} -- TODO: separate
+  '&{'     {TokenLEChoice _} -- TODO: separate
   '}'      {TokenRBrace _}
   '=>'     {TokenFArrow _}
   '+'      {TokenPlus _}
@@ -79,7 +79,7 @@ import           Data.Char
   case     {TokenCase _}
   of       {TokenOf _}
   forall   {TokenForall _}
-  
+  dualof   {TokenDualof _}  
 
 %right in
 %nonassoc nl new send OP -- '<' '>'
@@ -268,8 +268,9 @@ Types :
   | '?' BasicType                { let (_,t) = $2 in Message (getPos $1) In t }
   | '!' BasicType                { let (_,t) = $2 in Message (getPos $1) Out t }
   | '[' FieldList ']'            { Datatype (getPos $1) (Map.fromList $2) }
-  | '+{' FieldList '}'           { checkClash (getPos $1) Internal $2 }
-  | '&{' FieldList '}'           { checkClash (getPos $1) External $2 }
+  | '+{' FieldList '}'           { Choice (getPos $1) Internal (Map.fromList $2) }
+  | '&{' FieldList '}'           { Choice (getPos $1) External (Map.fromList $2) }
+  | dualof Types                 { Dualof (getPos $1) $2 }
   | Skip                         { Skip (getPos $1) }
   | BasicType                    { let (p,t) = $1 in Basic p t }
   | VAR                          { let (TokenVar p x) = $1 in Var (pos p) x }
