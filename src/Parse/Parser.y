@@ -101,26 +101,27 @@ import           Data.Char
 Prog : Defs                {% return ()}
      | Defs NL Prog        {% return ()}
 
-Defs : DataDecl 
-         {% do 
-	     let (p,c,k,ts) = $1
-             kenv <- getKenv
-             checkNamesClash kenv c
-               ("Multiple declarations of '" ++ styleRed c ++ "'") p
-	     addToKenv c (p, k)
-	     let binds = typesToFun p c ts
-             checkBindsClash binds
-	     mapM (\(cons, (p, t)) -> addToCenv cons p (TypeScheme [] t)) binds
-	     addToVenv c p (TypeScheme [] (convertDT p binds))
-	 }
-     | FunSig  {% do 
-	           let (p,f,y) = $1
-                   venv <- getVenv
-                   checkNamesClash venv f
-                     ("Duplicate type signatures for '" ++ styleRed f ++ "'") p
-		   addToVenv f p y
-		}
-     | FunDecl  {% let (x,y) = $1 in addToEenv x y}
+Defs :
+    DataDecl 
+      {% do 
+           let (p,c,k,ts) = $1
+           kenv <- getKenv
+           checkNamesClash kenv c
+             ("Multiple declarations of '" ++ styleRed c ++ "'") p
+           addToKenv c (p, k)
+           let binds = typesToFun p c ts
+           checkBindsClash binds
+           mapM (\(cons, (p, t)) -> addToCenv cons p (TypeScheme [] t)) binds
+           addToVenv c p (TypeScheme [] (convertDT p binds)) }
+  | FunSig
+      {% do 
+           let (p,f,y) = $1
+           venv <- getVenv
+           checkNamesClash venv f
+              ("Duplicate type signatures for '" ++ styleRed f ++ "'") p
+           addToVenv f p y }
+  | FunDecl
+      {% uncurry addToEenv $1 }
 
 NL : nl NL     {}
    | nl        {}
@@ -253,8 +254,8 @@ CaseValue : CONS Params '->' Expr   {let (TokenCons _ c) = $1 in
 TypeScheme : forall BindList '=>' Types {TypeScheme $2 $4}
 
 BindList :
-   Bind               {[$1]}
- | BindList ',' Bind  {$1 ++ [$3]}
+   Bind               { [$1] }
+ | BindList ',' Bind  { $1 ++ [$3] }
 
 Bind :
   VAR KindUn    {let (TokenVar _ x) = $1 in Bind x $2}
@@ -281,22 +282,25 @@ Types :
 VarCons : VAR  {let (TokenVar _ x) = $1 in x }
         | CONS {let (TokenCons _ x) = $1 in x }
 
-FieldList : Field                {$1 }
-          | FieldList ',' Field  {$3 ++ $1 }
+FieldList :
+    Field                { $1 }
+  | FieldList ',' Field  { $3 ++ $1 }
 
-Field : CONS ':' Types {let (TokenCons _ x) = $1 in [(x, $3)] }
+Field :
+    CONS ':' Types { let (TokenCons _ x) = $1 in [(x, $3)] }
 
-BasicType  : Int  {(getPos $1, IntType) }
-           | Char {(getPos $1, CharType) }
-           | Bool {(getPos $1, BoolType) }
-           | '()' {(getPos $1, UnitType) }
+BasicType :
+    Int  { (getPos $1, IntType) }
+  | Char { (getPos $1, CharType) }
+  | Bool { (getPos $1, BoolType) }
+  | '()' { (getPos $1, UnitType) }
 
-KindUn :: { Kind }
-     : ':'':' SU   {Kind Session Un}
-     | ':'':' SL   {Kind Session Lin}
-     | ':'':' TU   {Kind Functional Un}
-     | ':'':' TL   {Kind Functional Lin}
-     | {- empty -} {Kind Session Un}
+KindUn :: { Kind } :
+    ':'':' SU   {Kind Session Un}
+  | ':'':' SL   {Kind Session Lin}
+  | ':'':' TU   {Kind Functional Un}
+  | ':'':' TL   {Kind Functional Lin}
+  | {- empty -} {Kind Session Un}
 
 KindSL :: { Kind }
      : ':'':' SU   {Kind Session Un}
@@ -504,7 +508,7 @@ checkBindsClash binds =
    --  bindClashes bs = bs \\ nub bs
 
 -------------------------
--- Auxiliary functions --
+-- Auxiliary functions -- TODO: all functions are auxiliar
 -------------------------
   
 typesToFun :: Pos -> TypeVar -> [(TypeVar, (Pos, [Type]))] -> [(TypeVar, (Pos, Type))]

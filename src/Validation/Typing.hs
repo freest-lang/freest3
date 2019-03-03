@@ -194,8 +194,7 @@ checkUn p (TypeScheme _ t) = do
   if isUn then    
     return ()
   else
-    addError p ["Type", styleRed $ "'" ++ show t ++ "'",
-                "is not unrestricted"]
+    addError p ["Type '", styleRed (show t) ++ "'", "is linear"]
 
 -- | Checks an expression against a given type
 checkAgainst :: Pos -> Expression -> TypeScheme -> TypingState ()

@@ -21,3 +21,5 @@ Char (->) Char
 &{ A: Unit, A: Bool, B: Int }
 &{ A: Unit, B: Int, A: Bool }
 &{ A: Unit, B: Int, B: Int, A: Bool }
+&{}
++{}

@@ -33,7 +33,6 @@ import           Validation.TypingState
 
 -- Returns the kind of a given type scheme
 kinding :: TypeScheme -> TypingState Kind
-kinding (TypeScheme [] t) = synthetize t
 kinding (TypeScheme bs t) = do
   -- TODO: addToKenv -> addBindsLToKenv
   foldM_ (\_ b -> addToKenv (0,0) (var b) (kind b)) () bs
@@ -42,11 +41,13 @@ kinding (TypeScheme bs t) = do
 -- Returns the kind of a given type
 synthetize :: Type -> TypingState Kind
 -- Session types
-synthetize (Skip _) = return $ Kind Session Un
-synthetize (Message _ _ _) = return $ Kind Session Lin
+synthetize (Skip _) =
+  return $ Kind Session Un
+synthetize (Message _ _ _) =
+  return $ Kind Session Lin
 synthetize (Choice p _ m) = do
   ks <- mapM (checkAgainst (Kind Session Lin)) (Map.elems m)
-  return (Kind Session Lin)
+  return $ Kind Session Lin
 synthetize (Semi _ t u) = do
   kt <- synthetize t 
   ku <- synthetize u
@@ -54,49 +55,36 @@ synthetize (Semi _ t u) = do
   n <- checkSessionKind u ku
   return $ Kind Session (max m n)
 -- Functional
-synthetize (Basic _ _) = return $ Kind Functional Un
+synthetize (Basic _ _) =
+  return $ Kind Functional Un
 synthetize (Fun _ m t u) = do
   synthetize t
   synthetize u
   return $ Kind Functional m
 synthetize (PairType _ t u) = do
-  -- kt <- synthetize t
-  -- ku <- synthetize u
-  -- return $ (max kt ku)
-  synthetize t 
-  synthetize u
-  return $ Kind Functional Lin
+  kt <- synthetize t
+  ku <- synthetize u
+  return $ max kt ku
 synthetize (Datatype _ m) = do
   ks <- mapM synthetize (Map.elems m)
-  return $ Kind Functional (multiplicity $ maximum ks)
+  return $ Kind Functional $ multiplicity $ maximum ks
 synthetize (Rec p (Bind x k) t) = do
-  kenv <- getKenv
-  checkContractive kenv t
+  checkContractive t
   y <- freshVar
   addToKenv p y k -- TODO, remove pos
   k' <- synthetize $ subs (Var p y) x t -- On the fly α-conversion
   -- TODO: use the p in the Bind
   removeFromKenv y
   return k'
-{-
-  kenv <- getKenv
-  checkContractive kenv t
-  b <- kenvMember x
-  addToKenv p x k
-  k1 <- synthetize t
-  if b then return ()
-  else removeFromKenv x
-  return k1
--}
 -- Session or functional
 synthetize (Var p v) = do
   b <- kenvMember v
   if b then
     getKind v
   else do
-    addError p [styleRed $ "'" ++ v ++ "'", "is a free variable."]
+    addError p ["'" ++ (styleRed v) ++ "'", "is a free variable."]
     addToKenv p v topKind
-    return $ topKind
+    return topKind
 
 -- Check whether a given kind is session; issue an error if not. In
 -- either case return the multiplicity
