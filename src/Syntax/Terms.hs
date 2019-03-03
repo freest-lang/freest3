@@ -1,3 +1,16 @@
+{- |
+Module      :  Types
+Description :  <optional short text displayed on contents page>
+Copyright   :  (c) <Authors or Affiliations>
+License     :  <license>
+
+Maintainer  :  <email>
+Stability   :  unstable | experimental | provisional | stable | frozen
+Portability :  portable | non-portable (<reason>)
+
+<module description starting at first column>
+-}
+
 module Syntax.Terms
   ( Expression(..)
   , ExpEnv
@@ -15,27 +28,19 @@ import qualified Data.Map.Strict as Map
 import           Syntax.Kinds
 import           Syntax.Types
 
-
 type TermVar = String
 
 type Params = [TermVar]
 
 type VarEnv = Map.Map TermVar (Pos, TypeScheme)
--- type VarEnv = Map.Map TermVar Type
 
 type ExpEnv = Map.Map TermVar (Pos, Params, Expression)
 
 type TypeEnv = Map.Map TypeVar Type
--- type TypeEnv = Map.Map TypeVar (Kind, Type)
 
 type ConstructorEnv = Map.Map TypeVar (Pos, TypeScheme)
--- type ConstructorEnv = Map.Map TypeVar Type
 
 data TypeVarBind = TypeVar Kind
--- data TypeScheme = Functional Type | Scheme TypeVarBind TypeScheme
-
-
--- type ConstructorEnv = Map.Map Constructor [(Constructor, [Type])]
 
 -- TODO: Join
 type MatchMap = Map.Map TermVar (TermVar, Expression)
@@ -71,7 +76,6 @@ data Expression
   | Constructor Pos TermVar
   | Case Pos Expression CaseMap
    deriving (Eq, Ord, Show)
-
 
 getEPos :: Expression -> Pos
 getEPos (Unit p) = p
