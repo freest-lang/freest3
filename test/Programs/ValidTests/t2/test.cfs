@@ -1,0 +1,25 @@
+
+-- data A :: TU = A Int | B Int
+-- -- data A :: TU = B Int | B Int
+
+start : Int
+start = 1
+
+
+-- f :: forall x => !Int; x -> Bool
+-- f c =
+--   let x = send 5 c in
+--   let b, y = receive x in
+--   b
+
+-- start :: Bool;Skip
+-- start =
+--   let r, w = new (!Int; ?Bool) in
+--   let b  = f[?Bool] r in
+--   b
+
+-- z :: !Int;Int
+-- z = 12
+
+
+

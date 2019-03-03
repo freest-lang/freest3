@@ -1,5 +1,5 @@
 
-mathServer :: &{Opp: ?Int;!Int;Skip, Plus: ?Int;?Int;!Int;Skip} -> ()
+mathServer : &{Opp: ?Int;!Int;Skip, Plus: ?Int;?Int;!Int;Skip} -> ()
 mathServer c =
   match c with
     Opp c1 ->
@@ -14,7 +14,7 @@ mathServer c =
       ()
         
           
-start :: Int
+start : Int
 start =
   let w,r = new +{Opp: !Int;?Int;Skip, Plus: !Int;!Int;?Int;Skip} in
   let x = fork (mathServer r) in

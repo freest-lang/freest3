@@ -12,14 +12,14 @@ type S1 = (rec x. +{A: x; +{B: Skip}, B: Skip})
 
 -}
 
--- client :: Int -> S0 -> Skip
-client :: Int -> +{A: rec x. +{A: x; +{B: Skip}, B: Skip}} -> Skip
+-- client : Int -> S0 -> Skip
+client : Int -> +{A: rec x. +{A: x; +{B: Skip}, B: Skip}} -> Skip
 client n c =
   let c = select A c in
   client'[Skip] (n - 1) c
 
--- client' :: Int -> S1;α -> α
-client' :: forall α => Int -> (rec x. +{A: x; +{B: Skip}, B: Skip}); α -> α
+-- client' : Int -> S1;α -> α
+client' : forall α => Int -> (rec x. +{A: x; +{B: Skip}, B: Skip}); α -> α
 client' n c =
   if n == 0
   then
@@ -29,14 +29,14 @@ client' n c =
     let c = client'[+{B: Skip}; α] (n - 1) c in -- +{B: Skip}; α
     select B c                                  -- α
 
-server :: &{A: rec x. &{A: x; &{B: Skip}, B: Skip}} -> Skip
+server : &{A: rec x. &{A: x; &{B: Skip}, B: Skip}} -> Skip
 server c =
   match c with
     A c -> server'[Skip] c
 
 
--- server' :: forall α => (rec x. &{A: x; &{B: Skip}}); &{B: Skip}; α -> α
-server' :: forall α => (rec x. &{A: x; &{B: Skip}, B: Skip}); α -> α
+-- server' : forall α => (rec x. &{A: x; &{B: Skip}}); &{B: Skip}; α -> α
+server' : forall α => (rec x. &{A: x; &{B: Skip}, B: Skip}); α -> α
 server' c =
   match c with
     A c ->               -- (rec x. &{A: x; &{B: Skip}, B: Skip})) ; &{B: Skip}
@@ -46,7 +46,7 @@ server' c =
     B c ->               -- α
       c
 
-start :: ()
+start : ()
 start =
   let w, r = new +{A: rec x. +{A: x; +{B: Skip}, B: Skip}} in
   let t = fork (client 25 w) in

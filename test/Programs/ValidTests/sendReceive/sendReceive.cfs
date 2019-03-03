@@ -1,4 +1,4 @@
-start :: ()
+start : ()
 start =
   let w, r = new !Int;?Bool;Skip in
   let x = fork (client w) in
@@ -8,7 +8,7 @@ start =
   
 
 
-client :: !Int;?Bool;Skip -> ()
+client : !Int;?Bool;Skip -> ()
 client c =
   let c1 = send 5 c in
   let b, c2 = receive c1

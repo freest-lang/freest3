@@ -7,18 +7,18 @@ should deadlock.
 
 -}
 
-writer :: !Char -> !Bool -> Skip
+writer : !Char -> !Bool -> Skip
 writer w1 w2 =
   let w1 = send 'c' w1 in
   send False w2
 
-reader :: ?Char -> ?Bool -> Bool
+reader : ?Char -> ?Bool -> Bool
 reader r1 r2 =
   let x, r2 = receive r2 in
   let y, r1 = receive r1 in
   x
 
-start :: Bool
+start : Bool
 start =
   let w1, r1 = new !Char in
   let w2, r2 = new !Bool in

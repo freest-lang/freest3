@@ -147,7 +147,7 @@ TypeParams : {- empty -} { [] }
 -- FUN TYPE DECLARATIONS --
 ---------------------------
 
-FunSig : VAR ':'':' FunTypeScheme  {let (TokenVar p x) = $1 in (pos p,x,$4)}
+FunSig : VAR ':' FunTypeScheme  {let (TokenVar p x) = $1 in (pos p,x,$3)}
 
 FunTypeScheme : TypeScheme {$1}
               | Types      {TypeScheme [] $1}

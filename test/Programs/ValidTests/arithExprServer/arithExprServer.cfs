@@ -2,14 +2,14 @@
 -- &{Const: ?Int, Add: TermChan;TermChan, Mult: TermChan;TermChan}
 
 
--- computeService :: (rec TermChan . &{Const: ?Int, Add: TermChan;TermChan, Mult: TermChan;TermChan});!Int -> Skip
-computeService :: (rec termChan . &{Const: ?Int, Add: termChan;termChan, Mult: termChan;termChan});!Int -> Skip
+-- computeService : (rec TermChan . &{Const: ?Int, Add: TermChan;TermChan, Mult: TermChan;TermChan});!Int -> Skip
+computeService : (rec termChan . &{Const: ?Int, Add: termChan;termChan, Mult: termChan;termChan});!Int -> Skip
 computeService c =
   let n1, c1 = receiveEval[!Int;Skip] c in
   send n1 c1
 
--- receiveEval :: forall x => (rec TermChan . &{Const: ?Int, Add: TermChan;TermChan, Mult: TermChan;TermChan});x -> (Int, x)
-receiveEval :: forall x => (rec termChan . &{Const: ?Int, Add: termChan;termChan, Mult: termChan;termChan});x -> (Int, x)
+-- receiveEval : forall x => (rec TermChan . &{Const: ?Int, Add: TermChan;TermChan, Mult: TermChan;TermChan});x -> (Int, x)
+receiveEval : forall x => (rec termChan . &{Const: ?Int, Add: termChan;termChan, Mult: termChan;termChan});x -> (Int, x)
 receiveEval c =
   match c with
     Const c1 ->
@@ -25,8 +25,8 @@ receiveEval c =
       let n2, c3 = receiveEval[x] c2 in
       (n1*n2, c3)
 
--- client :: (rec TermChan . +{Const: !Int, Add: TermChan;TermChan, Mult: TermChan;TermChan});?Int -> (Int, Skip)
-client :: (rec termChan . +{Const: !Int, Add: termChan;termChan, Mult: termChan;termChan});?Int -> (Int, Skip)
+-- client : (rec TermChan . +{Const: !Int, Add: TermChan;TermChan, Mult: TermChan;TermChan});?Int -> (Int, Skip)
+client : (rec termChan . +{Const: !Int, Add: termChan;termChan, Mult: termChan;termChan});?Int -> (Int, Skip)
 client c =
   let c1 = select Add c in
   let c2 = select Const c1 in
@@ -38,7 +38,7 @@ client c =
   let c8 = send 9 c7 in
   receive c8
 
-start :: Int
+start : Int
 start =
   let w, r  = 
       new ((rec termChan . &{Const: ?Int, Add: termChan;termChan, Mult: termChan;termChan});!Int) in
