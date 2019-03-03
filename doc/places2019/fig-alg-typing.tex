@@ -40,7 +40,7 @@
     \frac{
       \algtypeout[\kindEnv;\varEnv_1]{e}{U}{\varEnv_2}
       \quad
-      U \Extract{\forall} (\forall x\colon\kind.V)
+      U \Extract{} (\forall x\colon\kind.V)
       \quad
       \algkindin T \kind
     }{
@@ -84,7 +84,7 @@
     \frac{
       \algtypeout[\kindEnv ; \varEnv_1]{e_1}{T}{\varEnv_2}
       \quad
-      T \Extract{\bigotimes} q(U_1, U_2)
+      T \Extract{} q(U_1, U_2)
       \quad
       \algtypeout[\kindEnv; \varEnv_2, x\colon U_1, y\colon U_2]{e_2}{U}{\varEnv_3}
     }{
@@ -103,7 +103,7 @@
     \frac{
       \algtypeout[\kindEnv;\varEnv_1]{e}{T}{\varEnv_2}
       \quad
-      T\Extract{!} (!U_1;U_2)
+      T\Extract{} (!U_1;U_2)
     }{
       \algtypeout[\kindEnv;\varEnv_1]{\sendce e}{(U_1\multimap U_2)}{\varEnv_2}
     }
@@ -112,7 +112,7 @@
     \frac{
       \algtypeout[\kindEnv;\varEnv_1]{e_1}{T}{\varEnv_2}
       \quad T
-      \Extract{?} (?U_1;U_2)
+      \Extract{} ?U_1;U_2
     }{
       \algtypeout[\kindEnv;\varEnv_1]{\recve e}{(U_1,U_2)}{\varEnv_2}
     }
@@ -121,7 +121,7 @@
     \frac{
       \algtypeout[\kindEnv;\varEnv]{e}{T}{\varEnv_2}
       \quad
-      T \Extract{\oplus}\oplus\{C_i\colon U_i\}
+      T \Extract{}\oplus\{C_i\colon U_i\}
       \quad
       j \in I
     }{
@@ -142,7 +142,7 @@
     }{
       \algtypeout[\kindEnv;\varEnv_1]{\matche{e}{\{C_i\,x_i \rightarrow e_i\}}}{U_1}{\Sigma_1}
     }
-  \\
+  % \\
   % Match  bis
   % \frac{
   %   \begin{array}{c}
@@ -163,7 +163,39 @@
   %         }{
   %           \algtypeout[\kindEnv;\varEnv_1]{\matche{e}{\{C_i\,x_i \rightarrow e_i\}}}{U}{\Sigma_1}
   %         }
-  % \\
+  \\
+  \frac{
+    \algtypeout[\kindEnv;\varEnv_1]{e}{T}{\varEnv_2}
+    \quad
+    T \Extract{}[C_i\colon\vec T_i]
+    \quad
+    \algtypeout[\kindEnv;\varEnv_2, \vec x_i\colon\vec T_i]{e_i}{U_i}{\Sigma_i}
+    \quad
+    \typeequiv{U_1}{U_i}    
+    \quad
+    \ctxequiv{\Sigma_1}{\Sigma_i} 
+  }{
+    \algtypeout[\kindEnv;\varEnv_1]{\casee{e}{\{C_i\,\vec x\rightarrow e_i\}}}{U}{\Sigma_1}
+  }
+  % \frac{
+  %   \begin{array}{c}
+  %     \algtypeout[\kindEnv;\varEnv_1]{e}{T}{\varEnv_2}\\
+  %     T \Extract{[]}[C_i\colon\vec T_i]\\
+  %   \end{array}
+  %   \quad
+  %   \begin{array}{c}\\
+  %     \algtypeout[\kindEnv;\varEnv_2, \vec x\colon\vec T_1]{e_1}{U}{\Sigma_1}
+  %   \end{array}
+  %   \quad
+  %   \Bigg(\;\begin{array}{c}
+  %             \algtypein[\kindEnv;\varEnv_2,x:T_i]{e_1}{U}{\Sigma_i}\\
+  %             \ctxequiv{\Sigma_1}{\Sigma_i} 
+  %           \end{array}
+  %           \;\Bigg)^{i>1}
+  %         }{
+  %           \algtypeout[\kindEnv;\varEnv_1]{\casee{e}{\{C_i\,\vec x\rightarrow e_i\}}}{U}{\Sigma_1}
+  %         }
+  \\ % Fork
   \frac{
     \algtypeout[\kindEnv;\varEnv_1]{e}{T}{\varEnv_2}
     \quad
@@ -171,31 +203,44 @@
   }{
     \algtypeout[\kindEnv;\varEnv_1]{\forke{e}}{\unite}{\varEnv_2}
   }
-  \\
-  \frac{
-    \begin{array}{c}
-      \algtypeout[\kindEnv;\varEnv_1]{e}{T}{\varEnv_2}\\
-      T \Extract{[]}[C_i\colon\vec T_i]\\
-    \end{array}
-    \quad
-    \begin{array}{c}\\
-      \algtypeout[\kindEnv;\varEnv_2, \vec x\colon\vec T_1]{e_1}{U}{\Sigma_1}
-    \end{array}
-    \quad
-    \Bigg(\;\begin{array}{c}
-              \algtypein[\kindEnv;\varEnv_2,x:T_i]{e_1}{U}{\Sigma_i}\\
-              \ctxequiv{\Sigma_1}{\Sigma_i} 
-            \end{array}
-            \;\Bigg)^{i>1}
-          }{
-            \algtypeout[\kindEnv;\varEnv_1]{\casee{e}{\{C_i\,\vec x\rightarrow e_i\}}}{U}{\Sigma_1}
-          }
   \end{gather*}
   % 
   % 
   The \emph{check against} relation\hfill\fbox{$\algtypein e T \varEnv$}
   \begin{gather*}
+    % Let, a derived constructor
     \frac{
+      \algtypeout[\kindEnv;\varEnv_1]{e_1}{T_1}{\varEnv_2}
+      \quad
+      \algtypein[\kindEnv;\varEnv_2,x\colon T_1]{e_2}{T_2}{\Gamma_3}
+    }{
+      \algtypein[\kindEnv;\varEnv_1]{\unlete{x}{e_1}{e_2}}{T_2}{\varEnv_3}
+    }
+    \quad
+    % Pair destructor
+    \frac{
+      \algtypeout[\kindEnv ; \varEnv_1]{e_1}{T}{\varEnv_2}
+      \quad
+      \algtypein[\kindEnv; \varEnv_2, x\colon U_1, y\colon U_2]{e_2}{U}{\varEnv_3}
+    }{
+      \algtypein[\kindEnv;
+      \varEnv_1]{\binlete{x}{y}{e_1}{e_2}}{U}{\varEnv_3} \div (x\colon U_1, y\colon U_2)
+    }
+    \\
+    % Conditional
+    \frac{
+      \algtypein[\kindEnv;\varEnv_1]{e_1}{\boole}{\varEnv_2}
+      \quad
+      \algtypein[\kindEnv;\varEnv_2]{e_2}{T}{\varEnv_3}
+      \quad
+      \algtypein[\kindEnv;\varEnv_2]{e_3}{T}{\varEnv_4}
+      \quad
+      \ctxequiv{\varEnv_3}{\varEnv_4}
+    }{
+      \algtypein[\kindEnv;\varEnv_1]{\conditionale{e_1}{e_2}{e_3}}{T}{\varEnv_3}
+    }
+    \\
+        \frac{
       \algtypeout e U \varEnv
       \quad
       \typeequiv T U
