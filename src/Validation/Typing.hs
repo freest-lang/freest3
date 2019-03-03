@@ -262,7 +262,7 @@ checkExp (Conditional p e1 e2 e3) = do
   checkAgainst p e3 t2
   venv4 <- getVenv
   kenv <- getKenv
-  checkEquivEnvs kenv venv3 venv4
+  checkEquivEnvs kenv venv3 venv4 -- TODO: remove kenv
   setVenv venv2
   return t2
 
@@ -277,12 +277,10 @@ checkExp (BinLet p (px,x) (py,y) e1 e2) = do
   (u1,u2) <- extractPair p t1                     
   addToVenv px x u1
   addToVenv py y u2
-  u <- checkExp e2
-    
+  u <- checkExp e2    
   venv <- getVenv
   checkUnVar venv px x
   checkUnVar venv py y
-
   removeFromVenv x
   removeFromVenv y
   return u
@@ -296,9 +294,8 @@ checkExp (New p t) = do
   return $ TypeScheme [] (PairType p t (dual t))
 
 checkExp (Send p e1 e2) = do
-  venv <- getVenv
   t1 <- checkExp e1
-  b1 <- extractBasic (getEPos e1) t1
+  b1 <- extractBasic (getEPos e1) t1 -- TODO: remove pos
   t2 <- checkExp e2
   (b2, u) <- extractOutput p t2
   checkEquivBasics p b1 b2
@@ -307,11 +304,11 @@ checkExp (Send p e1 e2) = do
 checkExp (Receive p e) = do
   venv <- getVenv
   t <- checkExp e
-  (b, TypeScheme bs t1) <- extractInput (getEPos e) t
-  return $ TypeScheme bs (PairType p (Basic p b) t1)
+  (b, TypeScheme _ t1) <- extractInput (getEPos e) t -- TODO : return a type
+  return $ TypeScheme [] (PairType p (Basic p b) t1)
 
 -- Branching
-checkExp (Select p c e) = do
+checkExp (Select p c e) = do --TODO: check with rule
   t <- checkExp e
   (TypeScheme bs choice) <- extractInChoice p t
   u <- extractConstructor p c choice  
