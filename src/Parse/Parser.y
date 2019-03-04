@@ -42,10 +42,10 @@ import           Data.Char
   ';'      {TokenSemi _}
   '!'      {TokenMOut _}
   '?'      {TokenMIn _}
-  '+{'     {TokenLIChoice _} -- TODO: separate
-  '&{'     {TokenLEChoice _} -- TODO: separate
+  '{'      {TokenLBrace _}
   '}'      {TokenRBrace _}
   '=>'     {TokenFArrow _}
+  '&'      {TokenAmpersand _} 
   '+'      {TokenPlus _}
   '-'      {TokenMinus _}
   '*'      {TokenTimes _}
@@ -65,6 +65,7 @@ import           Data.Char
   in       {TokenIn _}
   '='      {TokenEq _}
   data     {TokenData _}
+  type     {TokenType _}
   '|'      {TokenPipe _}
   if       {TokenIf _}
   then     {TokenThen _}
@@ -112,19 +113,36 @@ Defs :
            let binds = typesToFun p c ts
            checkBindsClash binds
            mapM (\(cons, (p, t)) -> addToCenv cons p (TypeScheme [] t)) binds
-           addToVenv c p (TypeScheme [] (convertDT p binds)) }
+           addToVenv c (p, TypeScheme [] (convertDT p binds)) }
   | FunSig
       {% do 
            let (p,f,y) = $1
            venv <- getVenv
            checkNamesClash venv f
               ("Duplicate type signatures for '" ++ styleRed f ++ "'") p
-           addToVenv f p y }
+           addToVenv f (p, y) }
   | FunDecl
       {% uncurry addToEenv $1 }
 
+  | TypeAbbrv
+      {% do
+           -- TODO: review verifications & envs added
+           let (c,(p,t)) = $1
+           venv <- getVenv
+           checkNamesClash venv c
+             ("Multiple declarations of '" ++ styleRed c ++ "'") p
+           addToKenv c (p,(Kind Functional Un))
+           addToVenv c (p,t)}
+
 NL : nl NL     {}
    | nl        {}
+
+------------------------
+-- TYPE ABBREVIATIONS --
+------------------------
+
+
+TypeAbbrv : type CONS '=' Types  {let (TokenCons p x) = $2 in (x, (pos p,TypeScheme [] $4))}
 
 ---------------
 -- DATATYPES --
@@ -269,8 +287,8 @@ Types :
   | '?' BasicType                { let (_,t) = $2 in Message (getPos $1) In t }
   | '!' BasicType                { let (_,t) = $2 in Message (getPos $1) Out t }
   | '[' FieldList ']'            { Datatype (getPos $1) (Map.fromList $2) }
-  | '+{' FieldList '}'            { checkClash (getPos $1) Internal $2 }
-  | '&{' FieldList '}'           { checkClash (getPos $1) External $2 }
+  | '+''{' FieldList '}'         { checkClash (getPos $1) Internal $3 }
+  | '&''{' FieldList '}'         { checkClash (getPos $1) External $3 }
   | dualof Types                 { Dualof (getPos $1) $2 }
   | Skip                         { Skip (getPos $1) }
   | BasicType                    { let (p,t) = $1 in Basic p t }
@@ -296,17 +314,17 @@ BasicType :
   | '()' { (getPos $1, UnitType) }
 
 KindUn :: { Kind } :
-    ':'':' SU   {Kind Session Un}
-  | ':'':' SL   {Kind Session Lin}
-  | ':'':' TU   {Kind Functional Un}
-  | ':'':' TL   {Kind Functional Lin}
+    ':' SU   {Kind Session Un}
+  | ':' SL   {Kind Session Lin}
+  | ':' TU   {Kind Functional Un}
+  | ':' TL   {Kind Functional Lin}
   | {- empty -} {Kind Session Un}
 
 KindSL :: { Kind }
-    : ':'':' SU   {Kind Session Un}
-  | ':'':' SL   {Kind Session Lin}
-  | ':'':' TU   {Kind Functional Un}
-  | ':'':' TL   {Kind Functional Lin}
+  : ':' SU   {Kind Session Un}
+  | ':' SL   {Kind Session Lin}
+  | ':' TU   {Kind Functional Un}
+  | ':' TL   {Kind Functional Lin}
   | {- empty -} {Kind Session Lin}
 
 Kind :: { Kind }
@@ -356,10 +374,10 @@ getKenv = do
   return kenv
 
 
-addToVenv :: TermVar -> Pos -> TypeScheme -> ParserState ()
-addToVenv x p t =
+addToVenv :: TermVar -> (Pos, TypeScheme) -> ParserState ()
+addToVenv x p =
   modify (\(f, venv, eenv, cenv, kenv, err) ->
-            (f, Map.insert x (p,t) venv, eenv, cenv, kenv, err))
+            (f, Map.insert x p venv, eenv, cenv, kenv, err))
 
 getVenv :: ParserState VarEnv
 getVenv = do

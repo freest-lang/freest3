@@ -42,8 +42,7 @@ tokens :-
   \)					{\p s -> TokenRParen p}
   \[					{\p s -> TokenLBracket p}
   \]			                {\p s -> TokenRBracket p}
-  \+\{					{\p s -> TokenLIChoice p}
-  \&\{					{\p s -> TokenLEChoice p}
+  \{					{\p s -> TokenLBrace p}
   \}			                {\p s -> TokenRBrace p}
   [\,]					{\p s -> TokenComma p}
   Skip					{\p s -> TokenSkip p}
@@ -51,7 +50,7 @@ tokens :-
   [\;]	       	      	  		{\p s -> TokenSemi p}
   [\!]					{\p s -> TokenMOut p}
   [\?]					{\p s -> TokenMIn p}
---  [\&]					{\p s -> TokenAmpersand p}
+  [\&]					{\p s -> TokenAmpersand p}
   [\+]					{\p s -> TokenPlus p}  
   [\-]					{\p s -> TokenMinus p}
   [\*]					{\p s -> TokenTimes p}
@@ -69,6 +68,7 @@ tokens :-
   \=                                    {\p s -> TokenEq p}
   in                                    {\p s -> TokenIn p}
   data                                  {\p s -> TokenData p}
+  type                                  {\p s -> TokenType p}
   \|                                    {\p s -> TokenPipe p}
   if					{\p s -> TokenIf p}
   then					{\p s -> TokenThen p}
@@ -118,9 +118,7 @@ data Token =
   | TokenSemi AlexPosn 
   | TokenMOut AlexPosn 
   | TokenMIn AlexPosn 
---  | TokenLBrace AlexPosn 
-  | TokenLIChoice AlexPosn 
-  | TokenLEChoice AlexPosn 
+  | TokenLBrace AlexPosn 
   | TokenRBrace AlexPosn 
   | TokenAmpersand AlexPosn 
   | TokenPlus AlexPosn 
@@ -141,6 +139,7 @@ data Token =
   | TokenIn AlexPosn
   | TokenEq AlexPosn
   | TokenData AlexPosn
+  | TokenType AlexPosn
   | TokenPipe AlexPosn
   | TokenIf AlexPosn
   | TokenThen AlexPosn
@@ -184,11 +183,9 @@ instance Show Token where
   show (TokenSemi p) = show (pos p) ++ ": ;"  
   show (TokenMOut p) = show (pos p) ++ ": !"  
   show (TokenMIn p) = show (pos p) ++ ": ?"  
---  show (TokenLBrace p) = show (pos p) ++ ": {"
-  show (TokenLIChoice p) = show (pos p) ++ ": +{"
-  show (TokenLEChoice p) = show (pos p) ++ ": &{"
+  show (TokenLBrace p) = show (pos p) ++ ": {"
   show (TokenRBrace p) = show (pos p) ++ ": }"
---  show (TokenAmpersand p) = show (pos p) ++ ": &"
+  show (TokenAmpersand p) = show (pos p) ++ ": &"
   show (TokenPlus p) = show (pos p) ++ ": +"
   show (TokenRec p) = show (pos p) ++ ": rec"
   show (TokenDot p) = show (pos p) ++ ": ."
@@ -207,6 +204,7 @@ instance Show Token where
   show (TokenIn p) = show (pos p) ++ ": in"
   show (TokenEq p) = show (pos p) ++ ": ="
   show (TokenData p) = show (pos p) ++ ": data"  
+  show (TokenType p) = show (pos p) ++ ": type"  
   show (TokenPipe p) = show (pos p) ++ ": |"  
   show (TokenIf p) = show (pos p) ++ ": if"  
   show (TokenThen p) = show (pos p) ++ ": then"  
@@ -262,9 +260,7 @@ getPos (TokenCons p _) = pos p
 getPos (TokenSemi p) = pos p 
 getPos (TokenMOut p) = pos p 
 getPos (TokenMIn p) = pos p 
--- getPos (TokenLBrace p) = pos p
-getPos (TokenLIChoice p) = pos p
-getPos (TokenLEChoice p) = pos p
+getPos (TokenLBrace p) = pos p
 getPos (TokenRBrace p) = pos p 
 getPos (TokenAmpersand p) = pos p 
 getPos (TokenPlus p) = pos p 
@@ -282,8 +278,8 @@ getPos (TokenLet p) = pos p
 getPos (TokenIn p) = pos p
 getPos (TokenEq p) = pos p
 getPos (TokenData p) = pos p
+getPos (TokenType p) = pos p
 getPos (TokenPipe p) = pos p
--- Some missing
 getPos (TokenNL p) = pos p
 getPos (TokenNew p) = pos p
 getPos (TokenSend p) = pos p
@@ -299,6 +295,7 @@ getPos (TokenTimes p) = pos p
 getPos (TokenLT p) = pos p
 getPos (TokenGT p) = pos p
 getPos (TokenOp p _) = pos p
+getPos t = error $ show t
 
 pos (AlexPn _ l c) = (l,c) 
 
