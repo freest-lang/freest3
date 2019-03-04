@@ -84,14 +84,18 @@ runAndCheckResult testFile filename = do
   
   runIO $ setCurrentDirectory $ takeDirectory testFile
   (exitcode, output, errors) <- runIO $ readProcessWithExitCode "ghc" ["-dynamic", "-XBangPatterns", "cfst.hs"] ""  
- 
+  
   if (exitcode == ExitSuccess) then
     do     
       (exitcode1, output1, errors1) <- runIO $ readProcessWithExitCode "./cfst" [] ""
-      cont <- runIO $ readFile ((takeWhile (/= '.') testFile) ++ ".expected")
-
-      it ("Testing " ++ filename) $ do
-        (filter (/= '\n') output1) `shouldBe` (filter (/= '\n') cont)
+      if (exitcode1 /= ExitSuccess) then
+         it ("Testing " ++ filename) $ do
+           assertFailure errors1
+           return ()
+      else do  
+         cont <- runIO $ readFile ((takeWhile (/= '.') testFile) ++ ".expected")
+         it ("Testing " ++ filename) $ do
+           (filter (/= '\n') output1) `shouldBe` (filter (/= '\n') cont)
   else
     it ("Testing " ++ filename) $ do
       assertFailure errors
