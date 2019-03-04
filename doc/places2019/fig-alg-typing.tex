@@ -42,7 +42,9 @@
       \quad
       U \Extract{} (\forall x\colon\kind.V)
       \quad
-      \algkindin T \kind
+      \algkindout T {\kind'}
+      \quad
+      \subkind{\kind'}{\kind}
     }{
       \algtypeout[\kindEnv;\varEnv_1]{e[T]}{\subs T x V}{\varEnv_2}
     }

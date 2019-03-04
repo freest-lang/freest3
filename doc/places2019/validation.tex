@@ -53,16 +53,14 @@ are solely introduced with the \lstinline|forall| construct. The
 non-abbreviated type for function \lstinline|treeSum| is as follows.
 %
 \begin{lstlisting}
-forall alpha:SU => Tree -> TreeC;alpha -> (Tree,alpha)
+forall alpha:SL => Tree -> TreeC;alpha -> (Tree,alpha)
 \end{lstlisting}
 %
-The absence of an explicit kinding is understood as \lstinline|SU|. In
-this particular case, it allows replacing \lstinline|alpha| by
-\lstinline|Skip : SU|, as well \lstinline|?Int;alpha : SL| in the examples
-in Section~\ref{sec:programming}.
-%
-It also allows  replacing \lstinline|alpha| by \lstinline|Int : TU|,
-which yields a non-session type!!!
+The absence of an explicit kinding is understood as \lstinline|SL|. In
+this particular case, one can replace \lstinline|alpha| by any type
+with a smaller or equal kind, including \lstinline|Skip : SU|, and
+\lstinline|?Int;alpha : SL| in the examples in
+Section~\ref{sec:programming}.
 
 %%% Local Variables:
 %%% mode: latex
