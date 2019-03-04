@@ -141,7 +141,6 @@ NL : nl NL     {}
 -- TYPE ABBREVIATIONS --
 ------------------------
 
-
 TypeAbbrv : type CONS '=' Types  {let (TokenCons p x) = $2 in (x, (pos p,TypeScheme [] $4))}
 
 ---------------
@@ -237,7 +236,7 @@ Juxt : Juxt Atom                   {App (getEPos $1) $1 $2}
      | Atom                        {$1}
 
 Atom :
-    '()'            { Unit (getPos $1) }
+    '()'            { Unit (getPos $1) } 
   | NUM             { let (TokenInteger p x) = $1 in Integer (pos p) x }
   | BOOL            { let (TokenBool p x) = $1 in Boolean (pos p) x }
   | CHAR            { let (TokenChar p x) = $1 in Character (pos p) x }
@@ -320,12 +319,12 @@ KindUn :: { Kind } :
   | ':' TL   {Kind Functional Lin}
   | {- empty -} {Kind Session Un}
 
-KindSL :: { Kind }
-  : ':' SU   {Kind Session Un}
-  | ':' SL   {Kind Session Lin}
-  | ':' TU   {Kind Functional Un}
-  | ':' TL   {Kind Functional Lin}
-  | {- empty -} {Kind Session Lin}
+-- KindSL :: { Kind }
+--   : ':' SU   {Kind Session Un}
+--   | ':' SL   {Kind Session Lin}
+--   | ':' TU   {Kind Functional Un}
+--   | ':' TL   {Kind Functional Lin}
+--   | {- empty -} {Kind Session Lin}
 
 Kind :: { Kind }
     : SU   {Kind Session Un}

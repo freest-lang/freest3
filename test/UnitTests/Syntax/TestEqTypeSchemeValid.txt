@@ -1,13 +1,13 @@
 -- Polymorphism
 
-forall a :: TU => a
-forall b :: TU => b
+forall a : TU => a
+forall b : TU => b
 
-forall b :: TU => b
-forall b :: TU => b
+forall b : TU => b
+forall b : TU => b
 
-forall a :: TU, b :: TU => a
-forall c :: TU, d :: TU => c
+forall a : TU, b : TU => a
+forall c : TU, d : TU => c
 
-forall x :: SU, y :: SU => !Int;x;!Bool;y
-forall y :: SU, x :: SU => !Int;y;!Bool;x
+forall x : SU, y : SU => !Int;x;!Bool;y
+forall y : SU, x : SU => !Int;y;!Bool;x

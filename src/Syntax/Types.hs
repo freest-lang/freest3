@@ -50,7 +50,7 @@ instance Eq Bind where
   b == c = kind b == kind c
 
 instance Show Bind where
-  show b = var b ++ " :: " ++ show (kind b)
+  show b = var b ++ " : " ++ show (kind b)
 
 -- BASIC TYPES
 

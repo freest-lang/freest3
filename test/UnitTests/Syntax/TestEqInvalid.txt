@@ -66,5 +66,5 @@ rec x . +{A: rec y . !Bool ; y ; x}
 
 -- Forall, these are not types anymore
 
--- forall y :: TU => rec x . x;y
--- forall y :: TU => rec x . y;x
+-- forall y : TU => rec x . x;y
+-- forall y : TU => rec x . y;x

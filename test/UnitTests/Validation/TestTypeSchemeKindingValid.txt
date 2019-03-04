@@ -6,10 +6,10 @@ forall a => Bool
 forall x => x
   SU
 
-forall a :: TU, b => a
+forall a : TU, b => a
   TU
 
-forall a :: SU, b => b
+forall a : SU, b => b
   SU
 
 -- Forall semi
@@ -31,10 +31,10 @@ forall x => Int -> x
 forall x => Int -o x
   TL
 
-forall f :: TU => f -o f -> f
+forall f : TU => f -o f -> f
   TL
 
-forall f :: TU => (f -o f) -> f
+forall f : TU => (f -o f) -> f
   TU
 
 -- Forall with rec
@@ -42,8 +42,8 @@ forall f :: TU => (f -o f) -> f
 forall x  => rec y . rec z . x; y; z
   SL
   
-forall x :: SL  => rec y . rec z . x; y; z
+forall x : SL  => rec y . rec z . x; y; z
   SL
 
-forall y :: SU => rec x :: SU . x; y
+forall y : SU => rec x : SU . x; y
   SU
