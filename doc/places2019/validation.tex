@@ -1,6 +1,8 @@
 \section{Only valid programs are allowed to run}
 \label{sec:valid}
 
+Intro here.
+
 \paragraph{Kinding validates types}
 
 \freest{} requires kinding; GV does not. And the reason lies on
@@ -8,18 +10,18 @@ polymorphism, not on context-free types.
 %
 \lstinline|!Int| is undoubtedly a session type, and so is
 \lstinline|!Int;?Bool|. On the other hand, \lstinline|Int->Bool| and
-\lstinline|(Int,Bool)| are certainly funcional types. GV allows a
-stratified grammar with separate syntactic categories for functional
-types and for session types, even if mutually recursive.
-
-Now let \lstinline|alpha| be a type variable. Is
-\lstinline|!Int;alpha| a session type? What about \lstinline|alpha|
-itself? The former is a session type only when \lstinline|alpha|
-represents a session type; the latter is a functional type when
-\lstinline|alpha| denotes a functional type, and a session type
-otherwise. If \lstinline|alpha| does not denote a session type, then
-\lstinline|!Int;alpha| is not a type, its simply a piece of useless
-syntax.
+\lstinline|(Int,Bool)| are certainly functional types. The GV language
+allows a stratified grammar with separate syntactic categories for
+functional types and for session types, even if mutually recursive.
+%
+In \freest{} this is not possible.  To see why, take for
+\lstinline|alpha| a type variable. Is \lstinline|!Int;alpha| a
+session type? What about \lstinline|alpha| itself? The former is a
+session type only when \lstinline|alpha| represents a session type;
+the latter is a functional type when \lstinline|alpha| denotes a
+functional type, and is a session type otherwise. If \lstinline|alpha|
+does not denote a session type, then \lstinline|!Int;alpha| is not a
+type, it is simply a piece of useless syntax.
 
 \begin{wrapfigure}{R}{0.12\textwidth}
   \begin{tikzpicture}[scale=.7]
@@ -31,9 +33,9 @@ syntax.
   \end{tikzpicture}
 \end{wrapfigure}
 %
-Types, type variables included, are classified into \emph{kinds}. 
+To accommodate polymorphism, types are classified into \emph{kinds}.
 %
-Kinds classify types. Kinds are pairs composed of a \emph{prekind} and
+Kinds classify types. They are pairs composed of a \emph{prekind} and
 a \emph{multiplicity}. Prekinds distinguish functional types,
 \lstinline|T|, from session types, \lstinline|S|.
 %
@@ -43,42 +45,106 @@ more---unrestricted, \lstinline|U|. Both prekinds and multiplicities
 come equipped with an ordering relation. Together they form the
 lattice in the diagram on the right.
 %
-Types of kind \lstinline|TU| can be used at kind
-\lstinline|TL|. Similarly, types of kind \lstinline|SU| can be used
-at kind \lstinline|SL|. Any type can be seen at type \lstinline|TL|,
-the top of the hierarchy.
+Types of kind \lstinline|TU| can be used at kind \lstinline|TL|. Also
+types of kind \lstinline|SL| can be used at kind \lstinline|TL|.
+Finally, any type can be seen of kind \lstinline|TL|, the kind sitting
+at top of the hierarchy, the kind that carries the least information.
+
+Equipped with kinds, \freest{} features as functional types the
+following:
+%
+\begin{itemize}
+\item The basic types, \lstinline|B : TU|, that is, \lstinline|Int|,
+  \lstinline|Bool|, \lstinline|Char|, and \lstinline|()|,
+\item Unrestricted and linear functions, \lstinline|T1 -> T2 : TU| and
+  \lstinline|T1 -o T2 : TL|,
+\item Unrestricted and linear pairs, \lstinline|<T1, T2> : TU| and
+  \lstinline|(T1, T2) : TL|, and
+\item Datatypes, \lstinline|[l1: T1, .., ln: Tn]| of kind
+  \lstinline|SU| or \lstinline|SL| depending on the kinds of the
+  various types \lstinline|Si|.
+\end{itemize}
+
+The session types are the following:
+\begin{itemize}
+\item The terminated type, \lstinline|Skip : SU|,
+\item Sequential composition, \lstinline|S1;S2| of kind \lstinline|SU|
+  or \lstinline|SL| depending on \lstinline|S1| and \lstinline|S2|,
+\item  Messages, \lstinline|!B, ?B|, both of kind \lstinline|SL|,
+\item Choices, \lstinline|+{l1: S1, .., ln:Sn}, &{l1: S1, .., ln:Sn}|,
+  both of kind \lstinline|SL|,
+\item Recursive types, \lstinline|rec x.S|, bearing the kind of
+  \lstinline|S|.
+\end{itemize}
+
+\paragraph{One function, many forms}
 
 We are now in a better position to understand the type signature for
 the functions in Section~\ref{sec:programming}.  Polymorphic variables
-are solely introduced with the \lstinline|forall| construct. The
-non-abbreviated type for function \lstinline|treeSum| is as follows.
+are introduced solely with the \lstinline|forall| construct. The
+non-abbreviated type for function \lstinline|treeSum| spells out the
+kind for the polymorphic type variable \lstinline|alpha|, as follows:
 %
 \begin{lstlisting}
 forall alpha:SL => Tree -> TreeC;alpha -> (Tree,alpha)
 \end{lstlisting}
 %
-The absence of an explicit kinding is understood as \lstinline|SL|. In
-this particular case, one can replace \lstinline|alpha| by any type
-with kind \lstinline|SL| or smaller, including types
-\lstinline|Skip : SU| and \lstinline|?Int;alpha : SL| in the examples
-in Section~\ref{sec:programming}. Functional types cannot replace
-\lstinline|alpha|. For example,
+The absence of an explicit kind for a polymorphic variable is
+understood as \lstinline|SL|. In this particular case, one can replace
+\lstinline|alpha| by any type with kind \lstinline|SL| or smaller,
+including types \lstinline|TreeC;?Int;alpha : SL| (line 8 in the code
+for \lstinline|TreeSum| on Section~\ref{sec:programming}),
+\lstinline|?Int;alpha : SL| (line 9), and \lstinline|Skip : SU| (line
+25 in the code for \lstinline|main|).
 %
-\lstinline|Tree -> TreeC;(Int->Bool) -> (Tree,Int->Bool)|
-is not a well formed type, for the semicolon operator is defined only
-on session types.
+The call to function \lstinline|transform| on line
+8 effectively calls the function at type
+%
+\begin{lstlisting}
+Tree -> TreeC;TreeC;?Int;alpha -> (Tree, TreeC;?Int;alpha).
+\end{lstlisting}
+%
+making it clear that channel \lstinline|c| is supposed to convey two
+trees (the left and the right subtrees of a non-empty tree) before it
+produces an integer value. The function reads one tree from the
+channel and returns the unused part of the channel, namely
+\lstinline|TreeC;?Int;alpha|.
 
-\paragraph{Unbounded behavior}
+Because we declared \lstinline|alpha| of kind \lstinline|SL|,
+functional types cannot replace \lstinline|alpha|.  If one tries to
+replace \lstinline|alpha| by \lstinline|Int->Bool|, one would get
+%
+\lstinline|Tree -> TreeC;(Int->Bool) -> (Tree,Int->Bool)|, which is
+not a well formed type for the semicolon operator is defined on
+session types only.
+%
+At the time of this writing datatypes are monomorphic.
+
+\paragraph{Unbounded behavior is welcome}
 
 A characteristic central to session types is their ability to describe
-unbounded behavior, usually captured by recursive types. Recursive
-types are certainly useful in types such as \lstinline|TreeChannel| in
+unbounded behavior, usually captured by recursive types. Recursion is
+certainly useful in types such as \lstinline|TreeChannel| in
 Section~\ref{sec:programming}, meant do describe channels able to
-transmit binary trees of different sizes. We have seen that identifier
+transmit binary trees of different sizes. We have seen that name
 \lstinline|TreeC| abbreviates type
 %
 \lstinline|rec x. +{Leaf: Skip, Node: !Int;x;x;?Int}|.  Type variable
-\lstinline|x|, monomorphic, is of kind
+\lstinline|x|, monomorphic, belongs to kind \lstinline|SU| so that
+type
+%
+\lstinline|+{Leaf: Skip, Node: !Int;x;x;?Int}| may be deemed well
+formed (and of kind \lstinline|SL|).
+%xs
+Only session types can be recursive. Recursion in the functional part
+of the type language is obtained via datatypes as usual.
+
+Recursive types must be \emph{contractive} or free from unguarded
+recursion. The following types are not contractive:
+%
+\lstinline|rec x1. ... rec xn.x1| and
+%
+\lstinline|rec x1. ... rec xn.(x1;S)|, for \lstinline|n>1| and for any \lstinline|S|.
 
 %%% Local Variables:
 %%% mode: latex

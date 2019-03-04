@@ -62,7 +62,7 @@ recursive calls). Finally, reads an integer \lstinline|y| from the
 channel, assembles a tree with \lstinline|y| at the \lstinline|Node|
 and returns this tree together with the residual of the channel.
 %
-\begin{lstlisting}
+\begin{lstlisting}[numbers=left]
 transform tree c =
   case tree of
     Leaf ->
@@ -70,7 +70,7 @@ transform tree c =
     Node x l r ->
       let c   = select Node c in
       let c   = send x c in
-      let l,c = transform[Tree;?Int;alpha] l c in
+      let l,c = transform[TreeC;?Int;alpha] l c in
       let r,c = transform[?Int;alpha] r c in
       let y,c = receive c in
       (Node y l r, c)
@@ -107,15 +107,16 @@ recursive calls) and sends on the channel the sum of the values in the
 subtree. It finally returns this exact sum, together with the residual
 channel.
 %
-\begin{lstlisting}
+\label{lst:treeSum}
+\begin{lstlisting}[numbers=left,firstnumber=12]
 treeSum c =
   match c with
     Leaf c ->
       (0, c)
     Node c ->
       let x, c = receive c in
-      let l, c = treeSum c in
-      let r, c = treeSum c in
+      let l, c = treeSum[dualof TreeC;!Int;alpha] c in
+      let r, c = treeSum[!Int;alpha] c in
       let c    = send (x + l + r) c in
       (x + l + r, c)
 \end{lstlisting}
@@ -144,7 +145,7 @@ below). In addition to the residual of channel end \lstinline|w|,
 function \lstinline|transform| also returns a new tree \lstinline|t|,
 which becomes the result of the \lstinline|start| function.
 %
-\begin{lstlisting}
+\begin{lstlisting}[numbers=left,firstnumber=22]
 main: Tree
 main =
   let w,r = new TreeC in

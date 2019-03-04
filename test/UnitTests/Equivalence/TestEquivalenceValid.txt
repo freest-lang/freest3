@@ -261,6 +261,26 @@ rec z. (!Int; z)
 rec x. rec y. rec z. (!Int; y)
 rec z. (!Int; z)
 
+[]
+rec x.( Skip; x)
+rec x.( Skip; x)
+
+[]
+rec x.( Skip; x; Skip)
+rec x.( Skip; x)
+
+[]
+rec x.( Skip; x; Skip)
+rec x.( Skip; x; Skip)
+
+[]
+rec x.( Skip; x)
+Skip
+
+[]
+rec x.( Skip; x; Skip)
+Skip
+
 -- Regular Recursive Types
 
 []

@@ -1,5 +1,7 @@
-\section{\freest{} requires a type equivalence checker}
-\label{sec:equivalence}
+% \section{\freest{} requires a type equivalence checker}
+% \label{sec:equivalence}
+
+\paragraph{Type equivalence must be checked}
 
 Checking type equivalence is the main challenge of the
 compiler. If, on the one hand, the algorithm should be sound and 
@@ -8,9 +10,9 @@ with the efficiency needs of a compiler.
 However, the recursive structure underlying context-free 
 session types often make bisimulations between two types infinite. 
 
-In~\cite{typeEquivalence} we propose an algorithm to decide
-the equivalence of context-free session types. 
-It has three distinct stages.
+We have developed an algorithm to decide the equivalence of
+context-free session types~\cite{typeEquivalence}.  It has three
+distinct stages.
 %
 The \emph{first stage} builds a context-free grammar in Greibach
 Normal Formal (GNF)---in fact a simple grammar---from a context-free
