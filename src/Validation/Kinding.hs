@@ -45,8 +45,8 @@ synthetize (Skip _) =
   return $ Kind Session Un
 synthetize (Message _ _ _) =
   return $ Kind Session Lin
-synthetize (Choice p _ m) = do
-  ks <- mapM (checkAgainst (Kind Session Lin)) (Map.elems m)
+synthetize (Choice _ _ m) = do
+  mapM_ (checkAgainst (Kind Session Lin)) (Map.elems m)
   return $ Kind Session Lin
 synthetize (Semi _ t u) = do
   kt <- synthetize t 
@@ -68,21 +68,20 @@ synthetize (PairType _ t u) = do
 synthetize (Datatype _ m) = do
   ks <- mapM synthetize (Map.elems m)
   return $ Kind Functional $ multiplicity $ maximum ks
-synthetize (Rec p (Bind x k) t) = do
+synthetize (Rec p (Bind x _) t) = do
   checkContractive t
   y <- freshVar
-  addToKenv p y k -- TODO, remove pos
-  k' <- synthetize $ subs (Var p y) x t -- On the fly α-conversion
-  -- TODO: use the p in the Bind
+  addToKenv p y (Kind Session Un)
+  k <- synthetize $ subs (Var p y) x t -- On the fly α-conversion
   removeFromKenv y
-  return k'
+  return k
 -- Session or functional
 synthetize (Var p v) = do
   b <- kenvMember v
   if b then
     getKind v
   else do
-    addError p ["'" ++ (styleRed v) ++ "'", "is a free variable."]
+    addError p ["Variable not in scope: ", styleRed v]
     addToKenv p v topKind
     return topKind
 
@@ -96,8 +95,14 @@ checkSessionKind t k
                   "to be a session type; found kind", styleRed $ show k]
       return $ multiplicity k
 
--- Checks whether a given type has a given kind
+-- Check whether a given type has a given kind
 checkAgainst :: Kind -> Type -> TypingState ()
+checkAgainst k (Rec p (Bind x _) t) = do
+  checkContractive t
+  y <- freshVar
+  addToKenv p y (Kind Session Un)
+  checkAgainst k$ subs (Var p y) x t -- On the fly α-conversion
+  removeFromKenv y
 checkAgainst k t = do
   k' <- synthetize t
   checkSubkind (typePos t) k' k
@@ -108,8 +113,7 @@ checkSubkind :: Pos -> Kind -> Kind -> TypingState ()
 checkSubkind p k1 k2
   | k1 <= k2  = return ()
   | otherwise =
-      addError p ["Expecting kind", styleRed $ show k1, "to be a sub-kind of kind",
-                   styleRed $ show k2, "but it isn't."]
+      addError p ["Expecting kind", styleRed $ show k1, "to be a sub-kind of kind of kind", styleRed $ show k2]
 
 -- Determines whether a given type is of a given multiplicity
 mult :: Multiplicity -> Type -> TypingState Bool

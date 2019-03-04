@@ -65,6 +65,12 @@
   }{
     \algkindout{\tChoice{\{l_i\colon T_i\}}_{i\in I}}{\kinds^\Lin}
   }
+  \quad
+  \frac{
+    \algkindout{T_i}{v^{m_i}}
+  }{
+    \algkindout{\tData{\{l_i\colon T_i\}}_{i\in I}}{\kindt^{\max(m_i)}}
+  }
   \end{gather*}
   % 
   The \emph{check against} relation\hfill\fbox{$\algkindin T \kind$}
@@ -87,7 +93,7 @@
     }
   \end{equation*}
   % 
-  The qualifier predicates predicates \hfill\fbox{$\isLin T$}\quad\fbox{$\isqualifier T\kind$}
+  The qualifier predicates \hfill\fbox{$\isLin T$}\quad\fbox{$\isqualifier T\kind$}
   %
   \begin{equation*}
     \frac{
@@ -103,7 +109,7 @@
     }
   \end{equation*}
   % 
-  The is-contractive predicate \fbox{$\contractive T$}
+  The is-contractive predicate \hfill\fbox{$\contractive T$}
   %
   \begin{equation*}
     \frac{

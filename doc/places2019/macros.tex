@@ -45,6 +45,7 @@
 \newcommand\tIChoice[1]{\oplus{#1}}
 \newcommand\tEChoice[1]{\&{#1}}
 \newcommand{\tChoice}[1]{\star{#1}}
+\newcommand{\tData}[1]{[{#1}]}
 \newcommand\tUnFun[2]{#1\tcFun#2}
 \newcommand\tLinFun[2]{#1\tcLolli#2}
 \newcommand\tPair[2]{(#1,\,#2)}
@@ -100,7 +101,7 @@
 \newcommand{\isType}[3][\Delta]{{#1} \vdash {#2} : {#3}}
 \newcommand{\algkindout}[3][\kindEnv]{{#1} \Alg {#2} \shortrightarrow{ #3}}
 \newcommand{\algkindin}[3][\kindEnv]{{#1} \Alg {#2} \shortleftarrow {#3}}
-\newcommand{\subkind}[3][\kindEnv]{{#1} \vdash {#2} <: {#3}}
+\newcommand{\subkind}[2]{{#1} <: {#2}}
 \newcommand{\algtypeout}[4][\kindEnv;\varEnv]{{#1} \Alg {#2} \shortrightarrow {#3};{#4}}
 %\newcommand{\algtypein}[4][\kindEnv;\varEnv]{{#1} \Alg {#2}\colon {#3}\shortrightarrow {#4}}
 \newcommand{\algtypein}[4][\kindEnv;\varEnv]{{#1} \Alg {#2}\shortleftarrow {#3}; {#4}}
