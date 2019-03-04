@@ -261,7 +261,7 @@ Bind :
   VAR KindUn    {let (TokenVar _ x) = $1 in Bind x $2}
 
 Types :
-    rec VarCons KindSL '.' Types { Rec (getPos $1) (Bind $2 $3) $5 }
+    rec VarCons KindUn '.' Types { Rec (getPos $1) (Bind $2 $3) $5 }
   | Types ';' Types              { Semi (getPos $2) $1 $3 }
   | Types '->' Types             { Fun (getPos $2) Un $1 $3 }
   | Types '-o' Types             { Fun (getPos $2) Lin $1 $3 }
