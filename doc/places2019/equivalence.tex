@@ -22,34 +22,43 @@ builds on the result of Christensen, H\"uttel, and
 Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}.
 %
 The \emph{third stage} constructs an expansion tree, by alternating
-between expansion and simplification steps.  This last stage uses
-ideas on the expansion operations proposed by Janc\v ar, Moller, and
-Hirshfeld~\cite{hirshfeld1996bisimulation,janvcar1999techniques}, and
-ideas on the simplification rules proposed by Caucal, Christensen,
-H\"uttel, Stirling, Janc\v ar, and Moller
-~\cite{caucal1986decidabilite,
-  DBLP:journals/iandc/ChristensenHS95,janvcar1999techniques}.  
-We use breadth-first search on the expansion tree and the 
+between expansion and simplification steps. During an expansion step, 
+all children nodes are expanded according to the transitions in the 
+grammar. Since we have simple grammars, no branching is expect at the
+expansion phase. Throughout a simplification phase, the reflexive, 
+congruence and basic process algebra
+rules proposed by Janc\v ar and Moller in~\cite{janvcar1999techniques}
+are applied to each node $N$, and a number of sibling nodes arise.
+The simplification phase promotes branching on the expansion tree.
+The tree is traversed using breadth-first search and the 
 algorithm terminates as soon as it reaches an empty node---case
 in which it decides positively---or it fails to expand a node---case
 in which it decides negatively.  
-The
-finite representation of bisimulations of BPA transition
+The finite representation of bisimulations of BPA transition
 graphs~\cite{caucal1986decidabilite, DBLP:journals/iandc/ChristensenHS95} 
-is thus paramount for the soundness and completeness of the algorithm,
-which we prove. 
+is paramount for the soundness and completeness of the algorithm,
+that we prove. 
 
 Although the branching nature of the expansion tree confers an exponential 
 complexity to the algorithm, we propose heuristics that allow constructing 
-the relation in a reasonable time. We have benchmarked the algorithm 
-on a test suite of carefully crafted pair of types comprising valid and invalid 
-equivalences, for a total os 138 tests. By running the tests on the base and
-optimized algorithms, we observe an improvement of more than 
-$11,000,000\%$ on runtime and memory allocated: it goes from 4445.38 
-seconds and 8,259,115 Mb memory allocated
-with the base algorithm to an average of 0.04
-seconds for the running time and 62 Mb of allocated memory with the 
-optimized algorithm.
+the relation in a reasonable time. For this purpose, we have implemented a
+double ended queue that allows prioritizing nodes with potential to reach
+an empty node faster. 
+We have also speeded up the computation of the expansion
+tree by extending the simplification phase with iterations of the 
+simplification rules until reaching a fixed point, that we prove to exist.
+These optimizations led to an improvement of more than $11,000,000\%$
+on the runtime of the algorithm.
+
+%We have benchmarked the algorithm 
+%on a test suite of carefully crafted pair of types comprising valid and invalid 
+%equivalences, for a total os 138 tests. By running the tests on the base and
+%optimized algorithms, we observe an improvement of more than 
+%$11,000,000\%$ on runtime and memory allocated: it goes from 4445.38 
+%seconds and 8,259,115 Mb memory allocated
+%with the base algorithm to an average of 0.04
+%seconds for the running time and 62 Mb of allocated memory with the 
+%optimized algorithm.
 
 %%% Local Variables:
 %%% mode: latex
