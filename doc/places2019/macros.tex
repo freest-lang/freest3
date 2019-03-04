@@ -102,8 +102,8 @@
 \newcommand{\subkind}[3][\kindEnv]{{#1} \vdash {#2} <: {#3}}
 \newcommand{\algtypeout}[4][\kindEnv;\varEnv]{{#1} \Alg {#2}
   \shortrightarrow {#3};{#4}}
-\newcommand{\algtypein}[4][\kindEnv;\varEnv]{{#1} \Alg {#2}\colon {#3}
-  \shortrightarrow {#4}}
+%\newcommand{\algtypein}[4][\kindEnv;\varEnv]{{#1} \Alg {#2}\colon {#3}\shortrightarrow {#4}}
+\newcommand{\algtypein}[4][\kindEnv;\varEnv]{{#1} \Alg {#2}\shortleftarrow {#3}; {#4}}
 \newcommand{\ctxequiv}[3][\kindEnv]{{#1} \vdash \Equiv{#2}{#3}}
 \newcommand{\typeequiv}[3][\kindEnv]{{#1} \vdash \Equiv{#2}{#3}}
 \newcommand{\isqualifier}[3][\kindEnv]{{#1} \vdash {#2}\colon{#3}}

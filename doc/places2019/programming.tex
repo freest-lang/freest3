@@ -70,8 +70,8 @@ transform tree c =
     Node x l r ->
       let c   = select Node c in
       let c   = send x c in
-      let l,c = transform l c in
-      let r,c = transform r c in
+      let l,c = transform[Tree;?Int;alpha] l c in
+      let r,c = transform[?Int;alpha] r c in
       let y,c = receive c in
       (Node y l r, c)
 \end{lstlisting}
@@ -145,11 +145,11 @@ function \lstinline|transform| also returns a new tree \lstinline|t|,
 which becomes the result of the \lstinline|start| function.
 %
 \begin{lstlisting}
-start: Tree
-start =
+main: Tree
+main =
   let w,r = new TreeC in
-  let _   = fork (treeSum r) in
-  let t,_ = transform aTree w in
+  let _   = fork (treeSum[Skip] r) in
+  let t,_ = transform[Skip] aTree w in
   t
 \end{lstlisting}
 
@@ -188,7 +188,7 @@ the one on the right. We use \leaf{} for \lstinline|Leaf|.
       style={sibling distance=1cm}] { node {\lstinline|7|} child {
           node {\leaf}} child { node {\leaf}}}} ;
   \end{tikzpicture}
-  \hspace*{10mm}
+  \hspace*{2em}
   \begin{tikzpicture}[level 1/.style={sibling distance=3cm}, level
     2/.style={sibling distance=2.2cm}, level 3/.style={sibling
       distance=1.8cm}, level 4/.style={sibling distance=1cm}, level

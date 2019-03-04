@@ -1,0 +1,66 @@
+\section{\freest{} requires a type equivalence checker}
+\label{sec:equivalence}
+
+Checking type equivalence is the main challenge of the
+compiler. If, on the one hand, the algorithm should be sound and 
+complete, on the other hand it should have a runtime compatible
+with the efficiency needs of a compiler.
+However, the recursive structure underlying context-free 
+session types often make bisimulations between two types infinite. 
+
+In~\cite{typeEquivalence} we propose an algorithm to decide
+the equivalence of context-free session types. 
+It has three distinct stages.
+%
+The \emph{first stage} builds a context-free grammar in Greibach
+Normal Formal (GNF)---in fact a simple grammar---from a context-free
+session type in a way that bisimulation is preserved.  
+%
+The \emph{second stage} prunes the grammar by removing unreachable
+symbols in unnormed sequences of non-terminal symbols. This stage
+builds on the result of Christensen, H\"uttel, and 
+Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}.
+%
+The \emph{third stage} constructs an expansion tree, by alternating
+between expansion and simplification steps. During an expansion step, 
+all children nodes are expanded according to the transitions in the 
+grammar. Since we have simple grammars, no branching is expect at the
+expansion phase. Throughout a simplification phase, the reflexive, 
+congruence and basic process algebra
+rules proposed by Janc\v ar and Moller in~\cite{janvcar1999techniques}
+are applied to each node $N$, and a number of sibling nodes arise.
+The simplification phase promotes branching on the expansion tree.
+The tree is traversed using breadth-first search and the 
+algorithm terminates as soon as it reaches an empty node---case
+in which it decides positively---or it fails to expand a node---case
+in which it decides negatively.  
+The finite representation of bisimulations of BPA transition
+graphs~\cite{caucal1986decidabilite, DBLP:journals/iandc/ChristensenHS95} 
+is paramount for the soundness and completeness of the algorithm,
+that we prove. 
+
+Although the branching nature of the expansion tree confers an exponential 
+complexity to the algorithm, we propose heuristics that allow constructing 
+the relation in a reasonable time. For this purpose, we have implemented a
+double ended queue that allows prioritizing nodes with potential to reach
+an empty node faster. 
+We have also speeded up the computation of the expansion
+tree by extending the simplification phase with iterations of the 
+simplification rules until reaching a fixed point, that we prove to exist.
+These optimizations led to an improvement of more than $11,000,000\%$
+on the runtime of the algorithm.
+
+%We have benchmarked the algorithm 
+%on a test suite of carefully crafted pair of types comprising valid and invalid 
+%equivalences, for a total os 138 tests. By running the tests on the base and
+%optimized algorithms, we observe an improvement of more than 
+%$11,000,000\%$ on runtime and memory allocated: it goes from 4445.38 
+%seconds and 8,259,115 Mb memory allocated
+%with the base algorithm to an average of 0.04
+%seconds for the running time and 62 Mb of allocated memory with the 
+%optimized algorithm.
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

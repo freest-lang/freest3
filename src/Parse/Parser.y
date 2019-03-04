@@ -12,12 +12,14 @@ import           Data.List (nubBy, deleteFirstsBy, intercalate)
 import           Utils.Errors
 import           System.Exit (die)
 import           Data.Char
+
 }
 
 %name types Types
 %name typeScheme TypeScheme
 %name terms Prog
 %name kinds Kind
+%name expr Expr
 %tokentype { Token }
 %error { parseError }
 %monad { ParserState }
@@ -40,8 +42,8 @@ import           Data.Char
   ';'      {TokenSemi _}
   '!'      {TokenMOut _}
   '?'      {TokenMIn _}
-'+{'      {TokenLIChoice _} -- TODO: separate
-  '&{'      {TokenLEChoice _} -- TODO: separate
+  '+{'     {TokenLIChoice _} -- TODO: separate
+  '&{'     {TokenLEChoice _} -- TODO: separate
   '}'      {TokenRBrace _}
   '=>'     {TokenFArrow _}
   '+'      {TokenPlus _}
@@ -77,7 +79,7 @@ import           Data.Char
   case     {TokenCase _}
   of       {TokenOf _}
   forall   {TokenForall _}
-  
+  dualof   {TokenDualof _}  
 
 %right in
 %nonassoc nl new send OP -- '<' '>'
@@ -99,26 +101,27 @@ import           Data.Char
 Prog : Defs                {% return ()}
      | Defs NL Prog        {% return ()}
 
-Defs : DataDecl 
-         {% do 
-	     let (p,c,k,ts) = $1
-             kenv <- getKenv
-             checkNamesClash kenv c
-               ("Multiple declarations of '" ++ styleRed c ++ "'") p
-	     addToKenv c (p, k)
-	     let binds = typesToFun p c ts
-             checkBindsClash binds
-	     mapM (\(cons, (p, t)) -> addToCenv cons p (TypeScheme [] t)) binds
-	     addToVenv c p (TypeScheme [] (convertDT p binds))
-	 }
-     | FunSig  {% do 
-	           let (p,f,y) = $1
-                   venv <- getVenv
-                   checkNamesClash venv f
-                     ("Duplicate type signatures for '" ++ styleRed f ++ "'") p
-		   addToVenv f p y
-		}
-     | FunDecl  {% let (x,y) = $1 in addToEenv x y}
+Defs :
+    DataDecl 
+      {% do 
+           let (p,c,k,ts) = $1
+           kenv <- getKenv
+           checkNamesClash kenv c
+             ("Multiple declarations of '" ++ styleRed c ++ "'") p
+           addToKenv c (p, k)
+           let binds = typesToFun p c ts
+           checkBindsClash binds
+           mapM (\(cons, (p, t)) -> addToCenv cons p (TypeScheme [] t)) binds
+           addToVenv c p (TypeScheme [] (convertDT p binds)) }
+  | FunSig
+      {% do 
+           let (p,f,y) = $1
+           venv <- getVenv
+           checkNamesClash venv f
+              ("Duplicate type signatures for '" ++ styleRed f ++ "'") p
+           addToVenv f p y }
+  | FunDecl
+      {% uncurry addToEenv $1 }
 
 NL : nl NL     {}
    | nl        {}
@@ -144,7 +147,7 @@ TypeParams : {- empty -} { [] }
 -- FUN TYPE DECLARATIONS --
 ---------------------------
 
-FunSig : VAR ':'':' FunTypeScheme  {let (TokenVar p x) = $1 in (pos p,x,$4)}
+FunSig : VAR ':' FunTypeScheme  {let (TokenVar p x) = $1 in (pos p,x,$3)}
 
 FunTypeScheme : TypeScheme {$1}
               | Types      {TypeScheme [] $1}
@@ -251,8 +254,8 @@ CaseValue : CONS Params '->' Expr   {let (TokenCons _ c) = $1 in
 TypeScheme : forall BindList '=>' Types {TypeScheme $2 $4}
 
 BindList :
-   Bind               {[$1]}
- | BindList ',' Bind  {$1 ++ [$3]}
+   Bind               { [$1] }
+ | BindList ',' Bind  { $1 ++ [$3] }
 
 Bind :
   VAR KindUn    {let (TokenVar _ x) = $1 in Bind x $2}
@@ -266,8 +269,9 @@ Types :
   | '?' BasicType                { let (_,t) = $2 in Message (getPos $1) In t }
   | '!' BasicType                { let (_,t) = $2 in Message (getPos $1) Out t }
   | '[' FieldList ']'            { Datatype (getPos $1) (Map.fromList $2) }
-  | '+{' FieldList '}'           { Choice (getPos $1) Internal (Map.fromList $2) }
-  | '&{' FieldList '}'           { Choice (getPos $1) External (Map.fromList $2) }
+  | '+{' FieldList '}'            { checkClash (getPos $1) Internal $2 }
+  | '&{' FieldList '}'           { checkClash (getPos $1) External $2 }
+  | dualof Types                 { Dualof (getPos $1) $2 }
   | Skip                         { Skip (getPos $1) }
   | BasicType                    { let (p,t) = $1 in Basic p t }
   | VAR                          { let (TokenVar p x) = $1 in Var (pos p) x }
@@ -282,16 +286,17 @@ FieldList :
     Field                { $1 }
   | FieldList ',' Field  { $3 ++ $1 }
 
-Field : CONS ':' Types {let (TokenCons _ x) = $1 in [(x, $3)] }
+Field :
+    CONS ':' Types { let (TokenCons _ x) = $1 in [(x, $3)] }
 
-BasicType  :
-    Int  {(getPos $1, IntType) }
-  | Char {(getPos $1, CharType) }
-  | Bool {(getPos $1, BoolType) }
-  | '()' {(getPos $1, UnitType) }
+BasicType :
+    Int  { (getPos $1, IntType) }
+  | Char { (getPos $1, CharType) }
+  | Bool { (getPos $1, BoolType) }
+  | '()' { (getPos $1, UnitType) }
 
-KindUn :: { Kind }
-    : ':'':' SU   {Kind Session Un}
+KindUn :: { Kind } :
+    ':'':' SU   {Kind Session Un}
   | ':'':' SL   {Kind Session Lin}
   | ':'':' TU   {Kind Functional Un}
   | ':'':' TL   {Kind Functional Lin}
@@ -313,6 +318,21 @@ Kind :: { Kind }
 
 {
 
+checkClash :: Pos -> ChoiceView -> [(Constructor, Type)] -> Type
+checkClash p v xs = 
+  let clashes = bindClashes xs in
+  if null clashes then
+    Choice p v (Map.fromList xs)
+  else
+    error (prettyPos p ++ " Multiple declarations for " ++ (show (map fst clashes)))
+    Choice p v (Map.fromList xs)
+  where
+    bindClashes :: [(Constructor, Type)] -> [(Constructor, Type)]
+    bindClashes bs = deleteFirstsBy f bs (nubBy f bs)
+
+    f :: (Constructor, Type) -> (Constructor, Type) -> Bool
+    f = (\(x,_) (y,_) -> x == y)
+  
 -- TODO: tmp ... remove   
 -- type KindEnv = Map.Map TypeVar (Pos, Kind)
 
@@ -379,17 +399,16 @@ parseType :: String -> Type
 parseType s = fst $ runState (parse s) (initialState "" Map.empty)
   where parse = types . scanTokens
 
+instance Read Type where
+  readsPrec _ s = [(parseType s, "")]
+
 parseTypeScheme :: String -> TypeScheme
 parseTypeScheme s = fst $ runState (parse s) (initialState "" Map.empty)
   where parse = typeScheme . scanTokens
 
-instance Read Type where
-  readsPrec _ s = [(parseType s, "")]
-
 instance Read TypeScheme where
   readsPrec _ s = [(parseTypeScheme s, "")]
 
--- [(parseKind s, "")]
 -- TODO: move to kinds ??
 instance Read Kind where
   readsPrec _ s = -- [(parseKind s, "")]    
@@ -403,7 +422,15 @@ instance Read Kind where
             then [(result, drop (length attempt) (trim s))]
             else tryParse xs
           trim s = dropWhile isSpace s
-          
+
+
+parseExpr :: String -> Expression
+parseExpr s = fst $ runState (parse s) (initialState "" Map.empty)
+  where parse = expr . scanTokens
+  
+instance Read Expression where
+  readsPrec _ s = [(parseExpr s, "")]
+  
 -- parseDefs file str = p str 
 --  where p = scanTokens
 parseDefs file venv str = execState (parse str) (initialState file venv)
@@ -481,7 +508,7 @@ checkBindsClash binds =
    --  bindClashes bs = bs \\ nub bs
 
 -------------------------
--- Auxiliary functions --
+-- Auxiliary functions -- TODO: all functions are auxiliar
 -------------------------
   
 typesToFun :: Pos -> TypeVar -> [(TypeVar, (Pos, [Type]))] -> [(TypeVar, (Pos, Type))]
