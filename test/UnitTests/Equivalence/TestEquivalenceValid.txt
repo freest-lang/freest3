@@ -22,10 +22,6 @@ Bool
 [A:Bool, B:Char]
 [B:Char, A:Bool]
 
-[]
-rec x :: TU . (Int -> x)
-rec x :: TU . (Int -> x)
-
 -- Session types
 
 []

@@ -18,7 +18,7 @@
       \algkindout{T_2}{\kind_2}
     }{
       \algkindout{(\tUnFun{T_1}{T_2})}{\kindt^\Un}
-      }
+    }
     \quad
     \frac{
       \algkindout{T_1}{\kind_1}
@@ -40,36 +40,44 @@
     %
     % Session types
     %
-   \frac{
-     \contractive T
-     \qquad
-     \algkindout[\kindEnv, x\colon \kinds^\Lin] T \kind
-   }{
-     \algkindout{\tRec xT}{\kind}
-   }
+  \frac{
+    \contractive T
+    \qquad
+    \algkindout[\kindEnv, x\colon \kinds^\Un] T \kind
+  }{
+    \algkindout{\tRec xT}{\kind}
+  }
+  \quad
+  \frac{}{\kindEnv \Alg \tskip \rightarrow \kinds^\Un}
+  \quad 
+  \frac{}{\algkindout{\tMsg T}{\kinds^\Lin}}
+  \\
+  \frac{
+    \algkindout{T_1}{\kinds^m}
     \quad
-    \frac{}{\kindEnv \Alg \tskip \rightarrow \kinds^\Un}
-    \quad 
-    \frac{}{\algkindout{\tMsg T}{\kinds^\Lin}}
-    \\
-    \frac{
-      \algkindout{T_1}{\kinds^m}
-      \quad
-      \algkindout{T_2}{\kinds^n}
-    }{
-      \algkindout{\tSemi{T_1}{T_2}}{\kinds^{\max(m,n)}}
-    }
-    \quad
-    \frac{
-      \algkindin{T_i}{\kinds^\Lin}
-    }{
-      \algkindout{\tChoice{\{l_i\colon T_i\}}_{i\in I}}{\kinds^\Lin}
-    }
+    \algkindout{T_2}{\kinds^n}
+  }{
+    \algkindout{\tSemi{T_1}{T_2}}{\kinds^{\max(m,n)}}
+  }
+  \quad
+  \frac{
+    \algkindin{T_i}{\kinds^\Lin}
+  }{
+    \algkindout{\tChoice{\{l_i\colon T_i\}}_{i\in I}}{\kinds^\Lin}
+  }
   \end{gather*}
   % 
   The \emph{check against} relation\hfill\fbox{$\algkindin T \kind$}
   %
   \begin{equation*}
+    \frac{
+      \contractive T
+      \qquad
+      \algkindin[\kindEnv, x\colon \kinds^\Un] T \kind
+    }{
+      \algkindin{\tRec xT}{\kind}
+    }
+    \quad
     \frac{
       \algkindout{T}{\kind_1}
       \quad
