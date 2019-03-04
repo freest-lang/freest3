@@ -138,7 +138,7 @@ the main thread, it \lstinline|transform|s a given tree
 \lstinline|w|, the other end. In these calls, both functions are
 (implicitly) applied to type \lstinline|Skip|. Analysing the
 signatures of the two functions (they both return a channel of type
-\lstinline|alpha|), we see that that channel ends \lstinline|r| and
+\lstinline|alpha|), we see that the channel ends \lstinline|r| and
 \lstinline|w| are both consumed to \lstinline|Skip|, and hence can be
 safely discarded (hence the two wilcards in the \lstinline|let|s
 below). In addition to the residual of channel end \lstinline|w|,
