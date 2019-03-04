@@ -278,35 +278,37 @@ Types :
 VarCons : VAR  {let (TokenVar _ x) = $1 in x }
         | CONS {let (TokenCons _ x) = $1 in x }
 
-FieldList : Field                {$1 }
-          | FieldList ',' Field  {$3 ++ $1 }
+FieldList :
+    Field                { $1 }
+  | FieldList ',' Field  { $3 ++ $1 }
 
 Field : CONS ':' Types {let (TokenCons _ x) = $1 in [(x, $3)] }
 
-BasicType  : Int  {(getPos $1, IntType) }
-           | Char {(getPos $1, CharType) }
-           | Bool {(getPos $1, BoolType) }
-           | '()' {(getPos $1, UnitType) }
+BasicType  :
+    Int  {(getPos $1, IntType) }
+  | Char {(getPos $1, CharType) }
+  | Bool {(getPos $1, BoolType) }
+  | '()' {(getPos $1, UnitType) }
 
 KindUn :: { Kind }
-     : ':'':' SU   {Kind Session Un}
-     | ':'':' SL   {Kind Session Lin}
-     | ':'':' TU   {Kind Functional Un}
-     | ':'':' TL   {Kind Functional Lin}
-     | {- empty -} {Kind Session Un}
+    : ':'':' SU   {Kind Session Un}
+  | ':'':' SL   {Kind Session Lin}
+  | ':'':' TU   {Kind Functional Un}
+  | ':'':' TL   {Kind Functional Lin}
+  | {- empty -} {Kind Session Un}
 
 KindSL :: { Kind }
-     : ':'':' SU   {Kind Session Un}
-     | ':'':' SL   {Kind Session Lin}
-     | ':'':' TU   {Kind Functional Un}
-     | ':'':' TL   {Kind Functional Lin}
-     | {- empty -} {Kind Session Lin}
+    : ':'':' SU   {Kind Session Un}
+  | ':'':' SL   {Kind Session Lin}
+  | ':'':' TU   {Kind Functional Un}
+  | ':'':' TL   {Kind Functional Lin}
+  | {- empty -} {Kind Session Lin}
 
 Kind :: { Kind }
-     : SU   {Kind Session Un}
-     | SL   {Kind Session Lin}
-     | TU   {Kind Functional Un}
-     | TL   {Kind Functional Lin}
+    : SU   {Kind Session Un}
+  | SL   {Kind Session Lin}
+  | TU   {Kind Functional Un}
+  | TL   {Kind Functional Lin}
 
 
 {
