@@ -133,15 +133,15 @@ topKind = Kind Functional Lin
 
 kindOfType :: KindEnv -> Type -> Kind
 kindOfType k t =
-  let (f, venv, eenv, cenv, kenv, err, n) = (initialState  "") in
-  evalState (synthetize t) (f, venv, eenv, cenv, Map.union k kenv, err, n)
+  let (f, venv, eenv, cenv, _, err, n) = (initialState  "") in
+  evalState (synthetize t) (f, venv, eenv, cenv, k, err, n)
 
 kindOfScheme :: TypeScheme -> Kind
 kindOfScheme t = evalState (kinding t) (initialState "")
 
 isWellFormed :: Type -> KindEnv -> Bool
 isWellFormed t k =
-  let (f, venv, eenv, cenv, kenv, err, n) = initialState "" in
+  let (f, venv, eenv, cenv, _, err, n) = initialState "" in
   let (_, _, _, _, _, errors, _) =
         execState (synthetize t) (f, venv, eenv, cenv, k, err, n) in
     null errors
