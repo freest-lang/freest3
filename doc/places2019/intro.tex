@@ -159,8 +159,18 @@ language that admits equivalence, subtyping and, of particular
 interest, inference algorithms. It does however require a structural
 alignment between the process code and the session types, enforced by
 a \emph{resumption} process operator that explicitly breaks a type
-$S;T$. This implies that the monoidal rules proposed by Thiemann and
-Vasconcelos cannot be used.
+$S;T$. The usage of resumptions requires additional annotations
+from the programmer---which we would like to avoid in 
+\freest---and, beyond that, it does not solve the type equivalence
+problem since the monoidal rules proposed by Thiemann and
+Vasconcelos cannot be used. Padovani proposes the use of 
+\emph{explicit coercions} to fix this limitation, but this
+would require a greater effort from the programmer. 
+Any additional effort by the programmer is error-prone, hence
+we have embedded a type equivalence checker into  
+\freest\ so that it does not need to rely on any
+additional annotation from the programmer.
+
 
 %%% Local Variables:
 %%% mode: latex

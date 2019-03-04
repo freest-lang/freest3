@@ -24,7 +24,7 @@ Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}.
 The \emph{third stage} constructs an expansion tree, by alternating
 between expansion and simplification steps. During an expansion step, 
 all children nodes are expanded according to the transitions in the 
-grammar. Since we have simple grammars, no branching is expect at the
+grammar. Since we have simple grammars, no branching is expected at the
 expansion phase. Throughout a simplification phase, the reflexive, 
 congruence and basic process algebra
 rules proposed by Janc\v ar and Moller in~\cite{janvcar1999techniques}
@@ -42,8 +42,8 @@ that we prove.
 Although the branching nature of the expansion tree confers an exponential 
 complexity to the algorithm, we propose heuristics that allow constructing 
 the relation in a reasonable time. For this purpose, we have implemented a
-double ended queue that allows prioritizing nodes with potential to reach
-an empty node faster. 
+double-ended queue that allows prioritizing nodes with potential to 
+reach an empty node faster. 
 We have also speeded up the computation of the expansion
 tree by extending the simplification phase with iterations of the 
 simplification rules until reaching a fixed point, that we prove to exist.
