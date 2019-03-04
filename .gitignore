@@ -39,6 +39,7 @@ testEquiv.prof
 *.nav
 *.snm
 *.vrb
+*.pag
 
 # AucTeX
 auto

@@ -45,7 +45,8 @@ lattice in the diagram on the right.
 %
 Types of kind \lstinline|TU| can be used at kind
 \lstinline|TL|. Similarly, types of kind \lstinline|SU| can be used
-at kind \lstinline|SL|. Any type can be seen at type \lstinline|TL|.
+at kind \lstinline|SL|. Any type can be seen at type \lstinline|TL|,
+the top of the hierarchy.
 
 We are now in a better position to understand the type signature for
 the functions in Section~\ref{sec:programming}.  Polymorphic variables
@@ -58,9 +59,26 @@ forall alpha:SL => Tree -> TreeC;alpha -> (Tree,alpha)
 %
 The absence of an explicit kinding is understood as \lstinline|SL|. In
 this particular case, one can replace \lstinline|alpha| by any type
-with a smaller or equal kind, including \lstinline|Skip : SU|, and
-\lstinline|?Int;alpha : SL| in the examples in
-Section~\ref{sec:programming}.
+with kind \lstinline|SL| or smaller, including types
+\lstinline|Skip : SU| and \lstinline|?Int;alpha : SL| in the examples
+in Section~\ref{sec:programming}. Functional types cannot replace
+\lstinline|alpha|. For example,
+%
+\lstinline|Tree -> TreeC;(Int->Bool) -> (Tree,Int->Bool)|
+is not a well formed type, for the semicolon operator is defined only
+on session types.
+
+\paragraph{Unbounded behavior}
+
+A characteristic central to session types is their ability to describe
+unbounded behavior, usually captured by recursive types. Recursive
+types are certainly useful in types such as \lstinline|TreeChannel| in
+Section~\ref{sec:programming} meant do describe channels able to
+transmit binary trees of different sizes. We have seen that identifier
+\lstinline|TreeC| abbreviates type
+%
+\lstinline|rec x. +{Leaf: Skip, Node: !Int;x;x;?Int}|.  Type variable
+\lstinline|x|, monomorphic, is of kind
 
 %%% Local Variables:
 %%% mode: latex

@@ -65,7 +65,7 @@ to the protocol. In the former scenario, trees are sent on channels of
 type
 %
 \begin{lstlisting}[morekeywords=end]
-type TreeChannel = +{Leaf: end, Node: !Int.!TreeChannel.!TreeChannel.end}
+type TreeChannelR = +{Leaf:end, Node:!Int.!TreeChannelR.!TreeChannelR.end}
 \end{lstlisting}
 %
 and we see that two new channels must be created and exchanged for
