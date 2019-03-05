@@ -97,42 +97,16 @@ import           Data.Char
 ---------------
 -- MAIN RULE --
 ---------------
--- TODO: Block comments with line comments inide
 
-Prog : Defs                {% return ()}
-     | Defs NL Prog        {% return ()}
+Prog : Defs                {}
+     | Defs NL Prog        {}
 
-Defs :
-    DataDecl 
-      {% do 
-           let (p,c,k,ts) = $1
-           kenv <- getKenv
-           checkNamesClash kenv c
-             ("Multiple declarations of '" ++ styleRed c ++ "'") p
-           addToKenv c (p, k)
-           let binds = typesToFun p c ts
-           checkBindsClash binds
-           mapM (\(cons, (p, t)) -> addToCenv cons p (TypeScheme [] t)) binds
-           addToVenv c (p, TypeScheme [] (convertDT p binds)) }
-  | FunSig
-      {% do 
-           let (p,f,y) = $1
-           venv <- getVenv
-           checkNamesClash venv f
-              ("Duplicate type signatures for " ++ styleRed f) p
-           addToVenv f (p, y) }
-  | FunDecl
-      {% uncurry addToEenv $1 }
+Defs
+  : DataDecl  {}
+  | FunSig    {}
+  | FunDecl   {}
+  | TypeAbbrv {}
 
-  | TypeAbbrv
-      {% do
-           -- TODO: review verifications & envs added
-           let (c,(p,t)) = $1
-           venv <- getVenv
-           checkNamesClash venv c
-             ("Multiple declarations of " ++ styleRed c) p
-           addToKenv c (p,(Kind Functional Un))
-           addToVenv c (p,t)}
 
 NL : nl NL     {}
    | nl        {}
@@ -141,42 +115,80 @@ NL : nl NL     {}
 -- TYPE ABBREVIATIONS --
 ------------------------
 
-TypeAbbrv : type CONS '=' Types  {let (TokenCons p x) = $2 in (x, (pos p,TypeScheme [] $4))}
+ -- TODO: review verifications & envs added & Kind
+TypeAbbrv :: { () } :
+  type CONS '=' Types
+    {% do
+         let (TokenCons p c) = $2
+         venv <- getVenv
+         checkNamesClash venv c
+           ("Multiple declarations of " ++ styleRed c) (pos p)
+         addToKenv c (pos p, Kind Functional Un)
+         addToVenv c (pos p, TypeScheme [] $4)
+    }
 
 ---------------
 -- DATATYPES --
 ---------------
 
-DataDecl :
-  data CONS '=' DataCons { let (TokenCons p x) = $2 in (pos p, x, Kind Functional Un, $4) }
+DataDecl :: { () } :
+  data CONS '=' DataCons
+    {% do
+        let (TokenCons p c) = $2
+        kenv <- getKenv
+        checkNamesClash kenv c
+          ("Multiple declarations of '" ++ styleRed c ++ "'") (pos p)
+        addToKenv c (pos p, Kind Functional Un)
+        let binds = typesToFun (pos p) c $4
+        checkBindsClash binds
+        mapM (\(cons, (p, t)) -> addToCenv cons p (TypeScheme [] t)) binds
+        addToVenv c (pos p, TypeScheme [] (convertDT (pos p) binds))
+    }
 
--- DataDecl : data CONS KindTU '=' DataCons   {let (TokenCons p x) = $2 in (pos p,x,$3,$5)}
+DataCons :: { [(Constructor, (Pos, [Type]))] }
+  : DataCon {[$1]}
+  | DataCons '|' DataCon {$1 ++ [$3]}
 
-DataCons : DataCon {[$1]}
-         | DataCons '|' DataCon {$1 ++ [$3]}
+DataCon :: { (Constructor, (Pos, [Type])) } :
+  CONS TypeParams  {let (TokenCons p x) = $1 in (x,(pos p,$2))}
 
-DataCon : CONS TypeParams  {let (TokenCons p x) = $1 in (x,(pos p,$2))}
 
-TypeParams : {- empty -} { [] }
-           | TypeParams Types  { $1 ++ [$2] }
+TypeParams :: { [Type] }
+  : {- empty -} { [] }
+  | TypeParams Types  { $1 ++ [$2] }
 
 ---------------------------
 -- FUN TYPE DECLARATIONS --
 ---------------------------
 
-FunSig : VAR ':' FunTypeScheme  {let (TokenVar p x) = $1 in (pos p,x,$3)}
+FunSig :: { () } :
+  VAR ':' FunTypeScheme
+    {% do
+        let (TokenVar p f) = $1
+        venv <- getVenv
+        checkNamesClash venv f
+          ("Duplicate type signatures for " ++ styleRed f) (pos p)
+        addToVenv f (pos p, $3) 
+    }
 
-FunTypeScheme : TypeScheme {$1}
-              | Types      {TypeScheme [] $1}
+FunTypeScheme :: { TypeScheme }
+  : TypeScheme {$1}
+  | Types      {TypeScheme [] $1}
 
 ----------------------
 -- FUN DECLARATIONS --
 ----------------------
 
-FunDecl : VAR Params '=' Expr   {let (TokenVar p x) = $1 in (x,(pos p, $2, $4))}
+FunDecl :: { () } :
+  VAR Params '=' Expr
+    {% do
+        let (TokenVar p x) = $1
+        addToEenv x (pos p, $2, $4)
+    }
 
-Params : {- empty -}   {[]}
-       | Params VAR    {let (TokenVar _ x) = $2 in ($1 ++ [x])}
+Params :: { Params }
+  : {- empty -}   {[]}
+  | Params VAR    {let (TokenVar _ x) = $2 in ($1 ++ [x])}
 
 
 -----------------
@@ -184,60 +196,60 @@ Params : {- empty -}   {[]}
 -----------------
 
 
-Expr : let VAR '=' Expr in Expr         {let (TokenLet p) = $1 in
-				         let (TokenVar px x) = $2 in
-				         UnLet (pos p) (pos px,x) $4 $6}    
+Expr :: { Expression }
+  : let VAR '=' Expr in Expr         {let (TokenLet p) = $1 in
+                                      let (TokenVar px x) = $2 in
+				      UnLet (pos p) (pos px,x) $4 $6}    
 
-     | let VAR ',' VAR '=' Expr in Expr {let (TokenLet p) = $1 in
+  | let VAR ',' VAR '=' Expr in Expr {let (TokenLet p) = $1 in
           		                 let (TokenVar px x) = $2 in
 					 let (TokenVar py y) = $4 in
 		          		 BinLet (pos p) (pos px,x) (pos py,y) $6 $8}
 
-     | '(' Expr ',' Expr ')'            {let (TokenLParen p) = $1 in
+  | '(' Expr ',' Expr ')'            {let (TokenLParen p) = $1 in
                                          Pair (pos p) $2 $4}
 
-     | if Expr then Expr else Expr      {let (TokenIf p) = $1 in
-                                         Conditional (pos p) $2 $4 $6
-			                }
+  | if Expr then Expr else Expr      {let (TokenIf p) = $1 in
+                                         Conditional (pos p) $2 $4 $6}
 
-     | new Types                        {New (getPos $1) $2}
+  | new Types                        {New (getPos $1) $2}
      
+  | receive Expr                     {Receive (getPos $1) $2}
 
-     | receive Expr                     {Receive (getPos $1) $2}
-
-     | select CONS Expr                 {let (TokenCons _ x) = $2 in
+  | select CONS Expr                 {let (TokenCons _ x) = $2 in
 					   Select (getPos $1) x $3}
 
-     | match Expr with MatchMap         {Match (getPos $1) $2 (Map.fromList $4)}
+  | match Expr with MatchMap         {Match (getPos $1) $2 $4}
 
-     | fork Expr                        {Fork (getPos $1) $2}
+  | fork Expr                        {Fork (getPos $1) $2}
 
---     | case Expr of CaseMap             {Case (getPos $1) $2 $4}
-     | case Expr of CaseMap             {Case (getPos $1) $2 (Map.fromList $4)}
+  | case Expr of CaseMap             {Case (getPos $1) $2 $4}
 
-     | Form {$1}
-
-
-Form : '-' Form %prec NEG {App (getPos $1) (Variable (getPos $1) "negate") $2}
-     | Form '+' Form      {App (getEPos $1) (App (getEPos $1) (Variable (getPos $2) "(+)") $1) $3}
-     | Form '-' Form      {App (getEPos $1) (App (getEPos $1) (Variable (getPos $2) "(-)") $1) $3}
-     | Form '*' Form      {App (getEPos $1) (App (getEPos $1) (Variable (getPos $2) "(*)") $1) $3}
-     | Form OP Form       {let (TokenOp p s) = $2 in
-                            App (getEPos $1) (App (getEPos $1) (Variable (pos p) s) $1) $3}
-     | Juxt               {$1}       
+  | Form {$1}
 
 
-Juxt : Juxt Atom                   {App (getEPos $1) $1 $2}
+Form :: { Expression }
+  : '-' Form %prec NEG {App (getPos $1) (Variable (getPos $1) "negate") $2}
+  | Form '+' Form      {App (getEPos $1) (App (getEPos $1) (Variable (getPos $2) "(+)") $1) $3}
+  | Form '-' Form      {App (getEPos $1) (App (getEPos $1) (Variable (getPos $2) "(-)") $1) $3}
+  | Form '*' Form      {App (getEPos $1) (App (getEPos $1) (Variable (getPos $2) "(*)") $1) $3}
+  | Form OP Form       {let (TokenOp p s) = $2 in
+                          App (getEPos $1) (App (getEPos $1) (Variable (pos p) s) $1) $3}
+  | Juxt               {$1}       
 
-     | VAR '[' TypeList ']'      {let (TokenVar p x) = $1 in
-                                   TypeApp (pos p) (Variable (pos p) x) $3}  
 
-     | send Atom Atom              {Send (getPos $1) $2 $3}
+Juxt :: { Expression }
+  :  Juxt Atom            {App (getEPos $1) $1 $2}
+
+  | VAR '[' TypeList ']'  {let (TokenVar p x) = $1 in
+                            TypeApp (pos p) (Variable (pos p) x) $3}  
+
+  | send Atom Atom        {Send (getPos $1) $2 $3}
    
-     | Atom                        {$1}
+  | Atom                  {$1}
 
-Atom :
-    '()'            { Unit (getPos $1) } 
+Atom :: { Expression }
+  : '()'            { Unit (getPos $1) } 
   | NUM             { let (TokenInteger p x) = $1 in Integer (pos p) x }
   | BOOL            { let (TokenBool p x) = $1 in Boolean (pos p) x }
   | CHAR            { let (TokenChar p x) = $1 in Character (pos p) x }
@@ -245,35 +257,40 @@ Atom :
   | CONS            { let (TokenCons p x) = $1 in Constructor (pos p) x }
   | '(' Expr ')'    { $2 }
 
-TypeList : Types                 {[$1]}
-         | TypeList ',' Types    {$1 ++ [$3]}
 
-MatchMap : MatchValue MatchNext  {$1 : $2}
+TypeList :: { [Type] }
+  : Types                 {[$1]}
+  | TypeList ',' Types    {$1 ++ [$3]}
 
-MatchNext : ';' MatchMap         {$2}
-          | {- empty -}          {[]}
 
-MatchValue : CONS VAR '->' Expr   {let (TokenCons _ c) = $1 in
-				       let (TokenVar _ x) = $2 in
-                                       (c, (x,$4))}
+MatchMap :: { MatchMap } :
+  MatchValue MatchNext  { Map.union $1 $2 }
 
-CaseMap -- :: { CaseMap }
-  : CaseValue CaseNext  { $1 : $2 }
---  : CaseValue CaseNext  { Map.fromList ($1 : $2) }
+MatchNext :: { MatchMap }
+  : ';' MatchMap  { $2 }
+  | {- empty -}   { Map.empty }
 
-CaseNext :: { [(TermVar, (Params, Expression))] }
-  : ';' CaseMap         {$2}
-  | {- empty -}         {[]}
+MatchValue :: { MatchMap } :
+  CONS VAR '->' Expr   {let (TokenCons _ c) = $1 in
+                        let (TokenVar _ x) = $2 in
+                        Map.singleton c (x,$4)}
 
-CaseValue :: { (TermVar, (Params, Expression)) }
-  : CONS Params '->' Expr   {let (TokenCons _ c) = $1 in (c, ($2,$4))}
+CaseMap :: { CaseMap }
+  : CaseValue CaseNext  { Map.union $1 $2 }
+
+CaseNext  :: { CaseMap }
+  : ';' CaseMap         { $2 }
+  | {- empty -}         { Map.empty }
+
+CaseValue :: { CaseMap } : 
+  CONS Params '->' Expr   {let (TokenCons _ c) = $1 in Map.singleton c ($2,$4)}
 
 -----------
 -- TYPES --
 -----------
 
-TypeScheme :: { TypeScheme }
-  : forall BindList '=>' Types {TypeScheme $2 $4}
+TypeScheme :: { TypeScheme } :
+  forall BindList '=>' Types {TypeScheme $2 $4}
 
 BindList :: { [Bind] }
   : Bind               { [$1] }
