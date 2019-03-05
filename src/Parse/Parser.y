@@ -87,7 +87,7 @@ import           Data.Char
 %right '->' '-o' in
 %left ';'
 %left '+' '-'
-%left '*'
+%left '*' '/' '%'
 
 %nonassoc '.'
 %left NEG
@@ -119,7 +119,7 @@ Defs :
            let (p,f,y) = $1
            venv <- getVenv
            checkNamesClash venv f
-              ("Duplicate type signatures for '" ++ styleRed f ++ "'") p
+              ("Duplicate type signatures for " ++ styleRed f) p
            addToVenv f (p, y) }
   | FunDecl
       {% uncurry addToEenv $1 }
@@ -130,7 +130,7 @@ Defs :
            let (c,(p,t)) = $1
            venv <- getVenv
            checkNamesClash venv c
-             ("Multiple declarations of '" ++ styleRed c ++ "'") p
+             ("Multiple declarations of " ++ styleRed c) p
            addToKenv c (p,(Kind Functional Un))
            addToVenv c (p,t)}
 
@@ -278,19 +278,19 @@ Bind :
   VAR KindUn    {let (TokenVar _ x) = $1 in Bind x $2}
 
 Types :
-    rec VarCons KindUn '.' Types { Rec (getPos $1) (Bind $2 $3) $5 }
+    rec VarCons KindUn '.' Types { Rec (getPos $1) (Bind $2 $3) $5 } -- TODO: rec VAR apenas?
   | Types ';' Types              { Semi (getPos $2) $1 $3 }
   | Types '->' Types             { Fun (getPos $2) Un $1 $3 }
   | Types '-o' Types             { Fun (getPos $2) Lin $1 $3 }
-  | '(' Types ',' Types ')'      { PairType (getPos $3) $2 $4 }
-  | '?' BasicType                { let (_,t) = $2 in Message (getPos $1) In t }
-  | '!' BasicType                { let (_,t) = $2 in Message (getPos $1) Out t }
+  | '(' Types ',' Types ')'      { PairType (getPos $1) $2 $4 }
+  | '?' BasicType                { Message (getPos $1) In (snd $2) }
+  | '!' BasicType                { Message (getPos $1) Out (snd $2) }
   | '[' FieldList ']'            { Datatype (getPos $1) (Map.fromList $2) }
   | '+''{' FieldList '}'         { checkClash (getPos $1) Internal $3 }
   | '&''{' FieldList '}'         { checkClash (getPos $1) External $3 }
   | dualof Types                 { Dualof (getPos $1) $2 }
   | Skip                         { Skip (getPos $1) }
-  | BasicType                    { let (p,t) = $1 in Basic p t }
+  | BasicType                    { uncurry Basic $1 }
   | VAR                          { let (TokenVar p x) = $1 in Var (pos p) x }
   | CONS                         { let (TokenCons p x) = $1 in Var (pos p) x }
   | '(' Types ')'                { $2 }
@@ -306,28 +306,21 @@ FieldList :
 Field :
     CONS ':' Types { let (TokenCons _ x) = $1 in [(x, $3)] }
 
-BasicType :
+BasicType :: { (Pos, BasicType) } :
     Int  { (getPos $1, IntType) }
   | Char { (getPos $1, CharType) }
   | Bool { (getPos $1, BoolType) }
   | '()' { (getPos $1, UnitType) }
 
 KindUn :: { Kind } :
-    ':' SU   {Kind Session Un}
-  | ':' SL   {Kind Session Lin}
-  | ':' TU   {Kind Functional Un}
-  | ':' TL   {Kind Functional Lin}
-  | {- empty -} {Kind Session Un}
+    ':' SU   { Kind Session Un }
+  | ':' SL   { Kind Session Lin }
+  | ':' TU   { Kind Functional Un }
+  | ':' TL   { Kind Functional Lin }
+  |          { Kind Session Un }
 
--- KindSL :: { Kind }
---   : ':' SU   {Kind Session Un}
---   | ':' SL   {Kind Session Lin}
---   | ':' TU   {Kind Functional Un}
---   | ':' TL   {Kind Functional Lin}
---   | {- empty -} {Kind Session Lin}
-
-Kind :: { Kind }
-    : SU   {Kind Session Un}
+Kind :: { Kind } :
+    SU   {Kind Session Un}
   | SL   {Kind Session Lin}
   | TU   {Kind Functional Un}
   | TL   {Kind Functional Lin}
