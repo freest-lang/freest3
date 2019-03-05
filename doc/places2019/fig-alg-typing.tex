@@ -5,14 +5,39 @@
     \frac{
       \isLin T
     }{
-      \algtypeout[\kindEnv;\varEnv, x\colon T] x T \varEnv
+      \algtypeout[\kindEnv;\varEnv, x\colon \tForall \Empty T] x T \varEnv
     }
     \qquad
     \frac{
       \isUn T
     }{
-      \algtypeout[\kindEnv;\varEnv, x\colon T] x T {\kindEnv;\varEnv, x\colon T}
+      \algtypeout[\kindEnv;\varEnv, x\colon \tForall \Empty T] x T {\kindEnv;\varEnv, x\colon T}
     }
+    \\
+    % Type application
+    \frac{
+      % \algtypeout[\kindEnv;\varEnv_1]{e}{U}{\varEnv_2}
+      % \quad
+      % U \Extract{} (\forall x\colon\kind.V)
+      \isLin T
+      \quad
+      \algkindout U {\kind'}
+      \quad
+      \subkind{\kind'}{\kind}
+    }{
+      \algtypeout[\kindEnv;\varEnv,x\colon\tForall{y\colon\kind}{T}]{x[U]}{\subs U x T}{\varEnv}
+    }
+    \quad
+    \frac{
+      \isUn T
+      \quad
+      \algkindout U {\kind'}
+      \quad
+      \subkind{\kind'}{\kind}
+    }{
+      \algtypeout[\kindEnv;\varEnv,x\colon\tForall{y\colon\kind}{T}]{x[U]}{\subs
+        U x T}{\varEnv,x\colon\tForall{y\colon\kind}{T}}
+      }
     \\
     % Abstraction
     \frac{
@@ -34,19 +59,6 @@
       \algtypein[\kindEnv;\varEnv_2]{e_2}{U_1}{\varEnv_3}
     }{
       \algtypeout[\kindEnv;\varEnv_1]{e_1e_2}{U_2}{\varEnv_3}
-    }
-    \\
-    % Type application
-    \frac{
-      \algtypeout[\kindEnv;\varEnv_1]{e}{U}{\varEnv_2}
-      \quad
-      U \Extract{} (\forall x\colon\kind.V)
-      \quad
-      \algkindout T {\kind'}
-      \quad
-      \subkind{\kind'}{\kind}
-    }{
-      \algtypeout[\kindEnv;\varEnv_1]{e[T]}{\subs T x V}{\varEnv_2}
     }
     \\
     % Let, a derived constructor
@@ -144,27 +156,6 @@
     }{
       \algtypeout[\kindEnv;\varEnv_1]{\matche{e}{\{C_i\,x_i \rightarrow e_i\}}}{U_1}{\Sigma_1}
     }
-  % \\
-  % Match  bis
-  % \frac{
-  %   \begin{array}{c}
-  %     \algtypeout[\kindEnv;\varEnv_1]{e}{T}{\varEnv_2}\\
-  %     T \Extract{\&} \&\{C_i\colon T_i\}\\
-  %   \end{array}
-  %   \quad 
-  %   \begin{array}{c}\\
-  %     \algtypeout[\kindEnv;\varEnv_2, x_1\colon T_1]{e_1}{U}{\Sigma_1}
-  %   \end{array}
-  %   \quad 
-  %   \Bigg(\;\begin{array}{c}
-  %     % T \Extract{\&} C_i : T_i\\
-  %             \algtypein[\kindEnv;\varEnv_2,x_i\colon T_i]{e_i}{U}{\Sigma_i}\\
-  %             \ctxequiv{\Sigma_1}{\Sigma_i} 
-  %           \end{array}
-  %           \;\Bigg)^{i>1}
-  %         }{
-  %           \algtypeout[\kindEnv;\varEnv_1]{\matche{e}{\{C_i\,x_i \rightarrow e_i\}}}{U}{\Sigma_1}
-  %         }
   \\
   \frac{
     \algtypeout[\kindEnv;\varEnv_1]{e}{T}{\varEnv_2}
@@ -179,24 +170,6 @@
   }{
     \algtypeout[\kindEnv;\varEnv_1]{\casee{e}{\{C_i\,\vec x\rightarrow e_i\}}}{U}{\Sigma_1}
   }
-  % \frac{
-  %   \begin{array}{c}
-  %     \algtypeout[\kindEnv;\varEnv_1]{e}{T}{\varEnv_2}\\
-  %     T \Extract{[]}[C_i\colon\vec T_i]\\
-  %   \end{array}
-  %   \quad
-  %   \begin{array}{c}\\
-  %     \algtypeout[\kindEnv;\varEnv_2, \vec x\colon\vec T_1]{e_1}{U}{\Sigma_1}
-  %   \end{array}
-  %   \quad
-  %   \Bigg(\;\begin{array}{c}
-  %             \algtypein[\kindEnv;\varEnv_2,x:T_i]{e_1}{U}{\Sigma_i}\\
-  %             \ctxequiv{\Sigma_1}{\Sigma_i} 
-  %           \end{array}
-  %           \;\Bigg)^{i>1}
-  %         }{
-  %           \algtypeout[\kindEnv;\varEnv_1]{\casee{e}{\{C_i\,\vec x\rightarrow e_i\}}}{U}{\Sigma_1}
-  %         }
   \\ % Fork
   \frac{
     \algtypeout[\kindEnv;\varEnv_1]{e}{T}{\varEnv_2}

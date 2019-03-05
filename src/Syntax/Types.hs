@@ -78,6 +78,8 @@ instance Show Polarity where
   show In = "?"
   show Out = "!"
 
+-- CHOICE
+
 data ChoiceView =
     External
   | Internal
@@ -139,23 +141,23 @@ equalMaps s m1 m2 =
     Map.foldlWithKey(\b l t ->
       b && l `Map.member` m2 && equalTypes s t (m2 Map.! l)) True m1
 
--- Showing a type -- TODO: parenthesis needed
+-- Showing a type
 instance Show Type where
   show (Basic _ b)      = show b
   show (Skip _)         = "Skip"
   show (Semi _ t u)     = "(" ++ show t ++ ";" ++ show u ++ ")"
   show (Message _ p b)  = show p ++ show b
-  show (Fun _ Lin t u)  = showFun t "-o" u
-  show (Fun _ Un t u)   = showFun t "->" u
-  show (PairType _ t u) = "(" ++  show t ++ ", " ++ show u ++ ")"
+  show (Fun _ m t u)    = "(" ++ show t ++ showFunOp m ++ show u ++ ")"
+  show (PairType _ t u) = "(" ++ show t ++ ", " ++ show u ++ ")"
   show (Choice _ v m)   = show v ++ "{" ++ showMap m ++ "}"
   show (Datatype _ m)   = "["++ showMap m ++"]"
   show (Rec _ b t)      = "(rec " ++ show b ++ " . " ++ show t ++ ")"
   show (Var _ s)        = s
   show (Dualof _ s)     = "dualof " ++ show s
 
-showFun :: Type -> String -> Type -> String
-showFun t op u = "(" ++ show t ++ " " ++ op ++ " " ++ show u ++ ")"
+showFunOp :: Multiplicity -> String
+showFunOp Lin = " -o "
+showFunOp Un  = " -> "
 
 showMap :: TypeMap -> String
 showMap m = concat $ intersperse ", " (map showAssoc (Map.assocs m))

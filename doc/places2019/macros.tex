@@ -53,7 +53,7 @@
 \newcommand\tRec[2]{\kRec\,#1\,.\,#2}
 %\newcommand\tForall[2]{\forall\,#1\,.\,#2}
 %\newcommand\tForall[2]{\kForall\,#1\,=>\,#2}
-\newcommand\tForall[2]{\kForall\,#1\Rightarrow#2}
+\newcommand\tForall[2]{\forall\,#1\Rightarrow#2}
 % Basic Types
 \newcommand{\unite}{()}
 \newcommand{\inte}{\keyword{Int}}
@@ -62,8 +62,8 @@
 
 \newcommand\tRecK[2]{\kRec\,#1\,.\,#2}
 % Environments
-% \newcommand\emptyEnv{\cdot}
-\newcommand\emptyEnv{\varepsilon}
+\newcommand{\Empty}{\varepsilon}
+\newcommand\emptyEnv{\Empty}
 \newcommand\kindEnv{\Delta}
 \newcommand\varEnv{\Gamma}
 
