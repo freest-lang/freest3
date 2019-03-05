@@ -37,7 +37,7 @@ that is valid in \freest.
 
 The writer process, \lstinline|transform|, writes a tree on a given
 channel. The channel is of type \lstinline|TreeC;alpha|, for
-\lstinline|alpha| a type variable. It returns a \lstinline|Tree| and
+a type variable \lstinline|alpha|. It returns a \lstinline|Tree| and
 the residual of the input channel, of type \lstinline|alpha|. The type
 of \lstinline|transform| is \emph{polymorphic}: different calls to the
 function use different values for \lstinline|alpha|.
@@ -91,7 +91,7 @@ it performs an external choice (\lstinline|&|), rather than writing
 (\lstinline|!|), it reads (\lstinline|?|), and rather than reading, it
 writes. We could write its type as a recursive type
 \lstinline|rec x. &{Leaf: Skip, Node: ?Int;x;x;!Int}|,
-but the \lstinline|dualof| operator provides an handy abbreviation.
+but the \lstinline|dualof| operator provides a handy abbreviation.
 %
 \begin{lstlisting}
 treeSum: forall alpha => dualof TreeC;alpha -> (Int, alpha)
