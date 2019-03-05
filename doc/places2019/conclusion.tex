@@ -24,7 +24,15 @@ replacing the back-end.
 The original proposal of context-free sessions is based on a
 call-by-value operational semantics and we kept that strategy in
 \freest. We however plan to experiment with call-by-need, taking
-advantage of the back-end in Haskell.
+advantage of the back-end in Haskell. We also intend to allow messages
+and choices to contain any functional or session type, rather than
+containing only basic types. To achieve this,
+the type equivalence algorithm for context-free session 
+types should be intertwined with the type equivalence
+algorithm for functional types, which is a challenging task.
+Finally, we plan to incorporate type inference on type 
+applications, namely in a wider scope where subtypes are 
+considered.
 
 %%% Local Variables:
 %%% mode: latex
