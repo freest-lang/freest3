@@ -52,25 +52,25 @@ rec x . Skip
 rec x . Skip
   SL
   
-rec x . Skip; Skip
+rec x . (Skip; Skip)
   SU
   
-rec x . Skip; (Skip; Skip); Skip
+rec x . (Skip; (Skip; Skip); Skip)
   SU
   
-rec x . Skip; x
+rec x . (Skip; x)
   SU
   
-rec x . Skip; x
+rec x . (Skip; x)
   SL
   
-rec x . Skip; ((Skip; x); Skip); Skip
+rec x . (Skip; ((Skip; x); Skip); Skip)
   SU
   
-rec x . Skip; ((Skip; x); Skip); Skip
+rec x . (Skip; ((Skip; x); Skip); Skip)
   SL
   
-rec x . !Int; Skip; ?Int
+rec x . (!Int; Skip; ?Int)
   SL
   
 rec tree . &{Leaf: Skip, Node: ?Int;tree;tree}
