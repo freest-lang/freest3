@@ -15,7 +15,7 @@ import           Data.Char
 
 }
 
-%name types Types
+%name types Type
 %name typeScheme TypeScheme
 %name terms Prog
 %name kinds Kind
@@ -117,7 +117,7 @@ NL : nl NL     {}
 
  -- TODO: review verifications & envs added & Kind
 TypeAbbrv :: { () } :
-  type CONS '=' Types
+  type CONS '=' Type
     {% do
          let (TokenCons p c) = $2
          venv <- getVenv
@@ -155,7 +155,7 @@ DataCon :: { (Constructor, (Pos, [Type])) } :
 
 TypeParams :: { [Type] }
   : {- empty -} { [] }
-  | TypeParams Types  { $1 ++ [$2] }
+  | TypeParams Type  { $1 ++ [$2] }
 
 ---------------------------
 -- FUN TYPE DECLARATIONS --
@@ -173,7 +173,7 @@ FunSig :: { () } :
 
 FunTypeScheme :: { TypeScheme }
   : TypeScheme {$1}
-  | Types      {TypeScheme [] $1}
+  | Type      {TypeScheme [] $1}
 
 ----------------------
 -- FUN DECLARATIONS --
@@ -212,7 +212,7 @@ Expr :: { Expression }
   | if Expr then Expr else Expr      {let (TokenIf p) = $1 in
                                          Conditional (pos p) $2 $4 $6}
 
-  | new Types                        {New (getPos $1) $2}
+  | new Type                        {New (getPos $1) $2}
      
   | receive Expr                     {Receive (getPos $1) $2}
 
@@ -259,8 +259,8 @@ Atom :: { Expression }
 
 
 TypeList :: { [Type] }
-  : Types                 {[$1]}
-  | TypeList ',' Types    {$1 ++ [$3]}
+  : Type                 {[$1]}
+  | TypeList ',' Type    {$1 ++ [$3]}
 
 
 MatchMap :: { MatchMap } :
@@ -290,7 +290,7 @@ CaseValue :: { CaseMap } :
 -----------
 
 TypeScheme :: { TypeScheme } :
-  forall BindList '=>' Types {TypeScheme $2 $4}
+  forall BindList '=>' Type {TypeScheme $2 $4}
 
 BindList :: { [Bind] }
   : Bind               { [$1] }
@@ -300,24 +300,34 @@ Bind :: { Bind }
   : VAR KindUn    {let (TokenVar _ x) = $1 in Bind x $2}
 
 
-Types :: { Type }
-  : rec VarCons KindUn '.' Types { Rec (getPos $1) (Bind $2 $3) $5 } -- TODO: rec VAR apenas?
-  | Types ';' Types              { Semi (getPos $2) $1 $3 }
-  | Types '->' Types             { Fun (getPos $2) Un $1 $3 }
-  | Types '-o' Types             { Fun (getPos $2) Lin $1 $3 }
-  | '(' Types ',' Types ')'      { PairType (getPos $1) $2 $4 }
-  | '?' BasicType                { Message (getPos $1) In (snd $2) }
-  | '!' BasicType                { Message (getPos $1) Out (snd $2) }
+Type :: { Type }
+  : rec VarCons KindUn '.' Type  { Rec (getPos $1) (Bind $2 $3) $5 } -- TODO: rec VAR apenas?
+  | Type ';' Type                { Semi (getPos $2) $1 $3 }
+  | Type Multiplicity Type       { Fun (fst $2) (snd $2) $1 $3 }
+  | '(' Type ',' Type ')'        { PairType (getPos $1) $2 $4 }
+  | Polarity BasicType           { Message (fst $1) (snd $1) (snd $2) }
   | '[' FieldList ']'            { Datatype (getPos $1) (Map.fromList $2) }
-  | '+''{' FieldList '}'         { checkClash (getPos $1) Internal $3 }
-  | '&''{' FieldList '}'         { checkClash (getPos $1) External $3 }
-  | dualof Types                 { Dualof (getPos $1) $2 }
+  | ChoiceView '{' FieldList '}' { checkClash (fst $1) (snd $1) $3 }
+  | dualof Type                  { Dualof (getPos $1) $2 }
   | Skip                         { Skip (getPos $1) }
   | BasicType                    { uncurry Basic $1 }
   | VAR                          { let (TokenVar p x) = $1 in Var (pos p) x }
   | CONS                         { let (TokenCons p x) = $1 in Var (pos p) x }
-  | '(' Types ')'                { $2 }
+  | '(' Type ')'                 { $2 }
 
+
+Polarity :: { (Pos, Polarity) }
+  : '?' { (getPos $1, In) }
+  | '!' { (getPos $1, Out) }
+
+Multiplicity :: { (Pos, Multiplicity) }
+  : '->' { (getPos $1, Un) }
+  | '-o' { (getPos $1, Lin) }
+
+ChoiceView :: { (Pos, ChoiceView) }
+  : '+' { (getPos $1, Internal) }
+  | '&' { (getPos $1, External) }
+  
 -- TODO: add position
 -- Either a var or a constructor
 VarCons :: { String }
@@ -329,7 +339,7 @@ FieldList :: { [(Constructor, Type)] }
   | FieldList ',' Field  { $3 ++ $1 }
 
 Field :: { [(Constructor, Type)] }
-  : CONS ':' Types { let (TokenCons _ x) = $1 in [(x, $3)] }
+  : CONS ':' Type { let (TokenCons _ x) = $1 in [(x, $3)] }
 
 BasicType :: { (Pos, BasicType) }
   : Int  { (getPos $1, IntType) }
