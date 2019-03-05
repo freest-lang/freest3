@@ -178,7 +178,7 @@ The session-type related expression are:
 %
 \begin{itemize}
 \item Channel creation, \lstinline|new S|,
-\item Message send and reception, \lstinline|Send E| and
+\item Message send and reception, \lstinline|send E| and
   \lstinline|receive E|, and
 \item Branch selection, \lstinline|select C E|, and match,
   \lstinline|match E with C1 x -> E1,...,Cn -> En|.
@@ -196,8 +196,8 @@ Programs are composed of
 
 Both functions and datatypes can be mutually recursive. Haskell code
 is generated for programs that contain a function named
-\lstinline|main| with a non-function type. Result of the evaluation of
-this function is printed on the console.
+\lstinline|main| with a non-function type. The result of the
+evaluation of this function is printed on the console.
 
 %%% Local Variables:
 %%% mode: latex
