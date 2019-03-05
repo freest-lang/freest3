@@ -30,7 +30,7 @@ import           Syntax.Types
 
 type TermVar = String
 
-type Params = [TermVar]
+type Params = [TermVar] -- Params is a semantic notion, not syntatic - eliminate, use [TermVar]
 
 type VarEnv = Map.Map TermVar (Pos, TypeScheme)
 
@@ -45,36 +45,39 @@ data TypeVarBind = TypeVar Kind
 -- TODO: Join
 type MatchMap = Map.Map TermVar (TermVar, Expression)
 type CaseMap  = Map.Map TermVar (Params, Expression)
-type VarDef   = (Pos,TermVar) 
+type VarDef   = (Pos, TermVar) -- TODO: porque é que este tem Pos e o Multiplicity e o PreKind não?
 
-data Expression
-  -- Basic expressions
-  = Unit Pos
+data Expression =
+  -- Basic values
+    Unit Pos
   | Integer Pos Int
   | Character Pos Char
   | Boolean Pos Bool
-  -- Variables
+  -- Variable
   | Variable Pos TermVar
-  | UnLet Pos VarDef Expression Expression
-  -- Aplication
+  -- Abstraction intro and elim
+  {- Lam Pos Multiplicity TermVar Exp -}
   | App Pos Expression Expression
-  | TypeApp Pos Expression [Type]
+  -- Pair intro and elim
+  | Pair Pos {- Multiplicity -} Expression Expression
+  | BinLet Pos VarDef VarDef Expression Expression
+  -- Datatype intro and elim
+  | Constructor Pos TermVar
+  | Case Pos Expression CaseMap
+  -- Type application
+  | TypeApp Pos Expression [Type] -- Expression -> TermVar
   -- Conditional
   | Conditional Pos Expression Expression Expression
-  -- Pairs
-  | Pair Pos Expression Expression
-  | BinLet Pos VarDef VarDef Expression Expression
+  -- Let
+  | UnLet Pos VarDef Expression Expression -- Derived; eliminate?
+  -- Fork
+  | Fork Pos Expression
   -- Session types
   | New Pos Type
-  | Send Pos Expression Expression
+  | Send Pos Expression Expression -- Omit the last Expression
   | Receive Pos Expression 
   | Select Pos TermVar Expression
   | Match Pos Expression MatchMap
-  -- Fork
-  | Fork Pos Expression
-  -- Datatypes
-  | Constructor Pos TermVar
-  | Case Pos Expression CaseMap
    deriving (Eq, Ord, Show)
 
 getEPos :: Expression -> Pos

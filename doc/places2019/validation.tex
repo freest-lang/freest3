@@ -3,6 +3,8 @@
 
 Intro here.
 
+
+
 \paragraph{Kinding validates types}
 
 \freest{} requires kinding; GV does not. And the reason lies on
@@ -35,8 +37,9 @@ type, it is simply a piece of useless syntax.
 %
 To accommodate polymorphism, types are classified into \emph{kinds}.
 %
-Kinds classify types. They are pairs composed of a \emph{prekind} and
-a \emph{multiplicity}. Prekinds distinguish functional types,
+% Kinds classify types. 
+Kinds are pairs composed of a \emph{prekind} and a
+\emph{multiplicity}. Prekinds distinguish functional types,
 \lstinline|T|, from session types, \lstinline|S|.
 %
 Multiplicities control the number of times a value may be used in a
@@ -60,7 +63,7 @@ following:
   \lstinline|T1 -o T2 : TL|,
 \item Unrestricted and linear pairs, \lstinline|<T1, T2> : TU| and
   \lstinline|(T1, T2) : TL|, and
-\item Datatypes, \lstinline|[l1: T1, .., ln: Tn]| of kind
+\item Datatypes, \lstinline|[l1: T1, ..., ln: Tn]| of kind
   \lstinline|SU| or \lstinline|SL| depending on the kinds of the
   various types \lstinline|Ti|.
 \end{itemize}
@@ -71,7 +74,7 @@ The session types are the following:
 \item Sequential composition, \lstinline|S1;S2| of kind \lstinline|SU|
   or \lstinline|SL| depending on \lstinline|S1| and \lstinline|S2|,
 \item  Messages, \lstinline|!B, ?B|, both of kind \lstinline|SL|,
-\item Choices, \lstinline|+{l1: S1, .., ln:Sn}, &{l1: S1, .., ln:Sn}|,
+\item Choices, \lstinline|+{l1: S1, ..., ln:Sn}, &{l1: S1, ..., ln:Sn}|,
   both of kind \lstinline|SL|,
 \item Recursive types, \lstinline|rec x.S|, bearing the kind of
   \lstinline|S|.
@@ -135,18 +138,68 @@ type
 %
 \lstinline|+{Leaf: Skip, Node: !Int;x;x;?Int}| may be deemed well
 formed (and of kind \lstinline|SL|).
-%xs
-Only session types can be recursive. Recursion in the functional part
-of the type language is obtained via datatypes as usual.
-
+%
 Recursive types must be \emph{contractive} or free from unguarded
 recursion. The following types are not contractive:
 %
 \lstinline|rec x1. ... rec xn.x1| and
 %
-\lstinline|rec x1. ... rec xn.(x1;S)|, for \lstinline|n>1| and for any \lstinline|S|.
+\lstinline|rec x1. ... rec xn.(x1;S)|, for \lstinline|n>1| and for any
+session type \lstinline|S|.
+%
+Only session types can be recursive. Recursion in the functional part
+of the type language is obtained via datatypes as usual.
+
+\paragraph{Expressions}
+
+\freest{} blends expressions typical of functional languages and of
+session types. In a way, it is not much different from GV.
+%
+The expressions inspired from functional languages include:
+%
+\begin{itemize}
+\item Basic values: characters, integer and boolean values, and the
+  unit value, \lstinline|()|,
+\item Term variables (as opposed to type variables),
+\item Lambda introduction, \lstinline|\x -o E| for linear abstractions
+  and \lstinline|\x -> E| for unrestricted abstractions, and
+  elimination, \lstinline|E1 E2|,
+\item Pair introduction, \lstinline|<E1,E2>| for linear pairs and
+  \lstinline|(E1,E2)| for unrestricted pairs, and elimination,
+  \lstinline|let x = E1 in E2|,
+\item Datatype elimination,
+  \lstinline|case E of C1 x11...x1k -> E1, ..., Cn xn1...xnk -> En|, and
+\item Conditional, \lstinline|if E1 then E2 else E3|, type
+  application, \lstinline|x[T1,...Tn]|, and thread creation,
+  \lstinline|fork E|.
+\end{itemize}
+
+The session-type related expression are:
+%
+\begin{itemize}
+\item Channel creation, \lstinline|new S|,
+\item Message send and reception, \lstinline|Send E| and
+  \lstinline|receive E|, and
+\item Branch selection, \lstinline|select C E|, and match,
+  \lstinline|match E with C1 x -> E1,...,Cn -> En|.
+\end{itemize}
+
+\paragraph{Programs}
+
+Programs are composed of
+%
+\begin{itemize}
+\item Function signatures and function declarations, 
+\item Datatype declaration,
+\item Type abbreviations.
+\end{itemize}
+
+Both functions and datatypes can be mutually recursive. Haskell code
+is generated for programs that contain a function named
+\lstinline|main| with a non-function type. Result of the evaluation of
+this function is printed on the console.
 
 %%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "main"
-%%% End:
+%%% End
