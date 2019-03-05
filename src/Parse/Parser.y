@@ -212,6 +212,7 @@ Expr : let VAR '=' Expr in Expr         {let (TokenLet p) = $1 in
 
      | fork Expr                        {Fork (getPos $1) $2}
 
+--     | case Expr of CaseMap             {Case (getPos $1) $2 $4}
      | case Expr of CaseMap             {Case (getPos $1) $2 (Map.fromList $4)}
 
      | Form {$1}
@@ -256,29 +257,34 @@ MatchValue : CONS VAR '->' Expr   {let (TokenCons _ c) = $1 in
 				       let (TokenVar _ x) = $2 in
                                        (c, (x,$4))}
 
-CaseMap : CaseValue CaseNext  {$1 : $2}
+CaseMap -- :: { CaseMap }
+  : CaseValue CaseNext  { $1 : $2 }
+--  : CaseValue CaseNext  { Map.fromList ($1 : $2) }
 
-CaseNext : ';' CaseMap         {$2}
-         | {- empty -}         {[]}
+CaseNext :: { [(TermVar, (Params, Expression))] }
+  : ';' CaseMap         {$2}
+  | {- empty -}         {[]}
 
-CaseValue : CONS Params '->' Expr   {let (TokenCons _ c) = $1 in			       
-                                       (c, ($2,$4))}
+CaseValue :: { (TermVar, (Params, Expression)) }
+  : CONS Params '->' Expr   {let (TokenCons _ c) = $1 in (c, ($2,$4))}
 
 -----------
 -- TYPES --
 -----------
 
-TypeScheme : forall BindList '=>' Types {TypeScheme $2 $4}
+TypeScheme :: { TypeScheme }
+  : forall BindList '=>' Types {TypeScheme $2 $4}
 
-BindList :
-   Bind               { [$1] }
- | BindList ',' Bind  { $1 ++ [$3] }
+BindList :: { [Bind] }
+  : Bind               { [$1] }
+  | BindList ',' Bind  { $1 ++ [$3] }
 
-Bind :
-  VAR KindUn    {let (TokenVar _ x) = $1 in Bind x $2}
+Bind :: { Bind }
+  : VAR KindUn    {let (TokenVar _ x) = $1 in Bind x $2}
 
-Types :
-    rec VarCons KindUn '.' Types { Rec (getPos $1) (Bind $2 $3) $5 }
+
+Types :: { Type }
+  : rec VarCons KindUn '.' Types { Rec (getPos $1) (Bind $2 $3) $5 }
   | Types ';' Types              { Semi (getPos $2) $1 $3 }
   | Types '->' Types             { Fun (getPos $2) Un $1 $3 }
   | Types '-o' Types             { Fun (getPos $2) Lin $1 $3 }
@@ -296,24 +302,26 @@ Types :
   | '(' Types ')'                { $2 }
 
 -- TODO: add position
-VarCons : VAR  {let (TokenVar _ x) = $1 in x }
-        | CONS {let (TokenCons _ x) = $1 in x }
+-- Either a var or a constructor
+VarCons :: { String }
+  : VAR  {let (TokenVar _ x) = $1 in x }
+  | CONS {let (TokenCons _ x) = $1 in x }
 
-FieldList :
-    Field                { $1 }
+FieldList :: { [(Constructor, Type)] }
+  : Field                { $1 }
   | FieldList ',' Field  { $3 ++ $1 }
 
-Field :
-    CONS ':' Types { let (TokenCons _ x) = $1 in [(x, $3)] }
+Field :: { [(Constructor, Type)] }
+  : CONS ':' Types { let (TokenCons _ x) = $1 in [(x, $3)] }
 
-BasicType :
-    Int  { (getPos $1, IntType) }
+BasicType :: { (Pos, BasicType) }
+  : Int  { (getPos $1, IntType) }
   | Char { (getPos $1, CharType) }
   | Bool { (getPos $1, BoolType) }
   | '()' { (getPos $1, UnitType) }
 
-KindUn :: { Kind } :
-    ':' SU   {Kind Session Un}
+KindUn :: { Kind }
+  : ':' SU   {Kind Session Un}
   | ':' SL   {Kind Session Lin}
   | ':' TU   {Kind Functional Un}
   | ':' TL   {Kind Functional Lin}
