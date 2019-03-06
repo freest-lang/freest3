@@ -59,8 +59,8 @@ spec = do
       (Select p "x" (Variable p "x")) ==
         (Select p "x" (Variable p "x")) `shouldBe` True
     it "Match" $ do
-      (Match p (Variable p "x") (Map.singleton "C" ("w", (Integer p 2)))) ==
-        (Match p (Variable p "x") (Map.singleton "C" ("w", (Integer p 2))))
+      (Match p (Variable p "x") (Map.singleton "C" (Param {pos=p,param="w"}, (Integer p 2)))) ==
+        (Match p (Variable p "x") (Map.singleton "C" (Param {pos=p,param="w"}, (Integer p 2))))
           `shouldBe` True
     it "Fork" $ do
       (Fork p (Variable p "x")) ==
@@ -69,8 +69,8 @@ spec = do
       (Constructor p "x") ==
         (Constructor p "x") `shouldBe` True
     it "Case" $ do
-      (Case p (Variable p "x") (Map.singleton "C" ([(p,"w")], (Integer p 2)))) ==
-        (Case p (Variable p "x") (Map.singleton "C" ([(p,"w")], (Integer p 2))))
+      (Case p (Variable p "x") (Map.singleton "C" ([Param {pos=p,param="w"}], (Integer p 2)))) ==
+        (Case p (Variable p "x") (Map.singleton "C" ([Param {pos=p,param="w"}], (Integer p 2))))
           `shouldBe` True  
 
     it "Ord prekinds" $ do
