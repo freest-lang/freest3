@@ -19,7 +19,8 @@ import           Control.Monad.State
 import           Data.List (isPrefixOf, union)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import qualified Queue.Queue as Queue -- Use instead http://hackage.haskell.org/package/containers-0.6.0.1/docs/Data-Sequence.html
+import qualified Data.Sequence as Sequence
+-- import qualified Queue.Queue as Queue -- Use instead http://hackage.haskell.org/package/containers-0.6.0.1/docs/Data-Sequence.html
 import           Syntax.Kinds
 import           Syntax.Types
 import           Validation.Kinding
@@ -33,21 +34,20 @@ type Node = Set.Set ([TypeVar], [TypeVar])
 
 type Ancestors = Node
 
-type NodeQueue = Queue.Queue (Node, Ancestors)
+type NodeQueue = Sequence.Seq (Node, Ancestors)
 
 type NodeTransformation = Productions -> Ancestors -> Node -> Set.Set Node
 
 expand :: Productions -> [TypeVar] -> [TypeVar] -> Bool
-expand ps xs ys = expand' ps (Queue.enqueue (Set.singleton (xs, ys), Set.empty) Queue.empty)
+expand ps xs ys = expand' ps (Sequence.singleton (Set.singleton (xs, ys), Set.empty))
 
 expand' :: Productions -> NodeQueue -> Bool
-expand' ps q
-  | Queue.isEmpty q = False
+expand' ps ((n, a) Sequence.:<| q')
   | Set.null n      = True
   | otherwise       = case expandNode ps n of
-      Nothing -> expand' ps (Queue.dequeue q)
-      Just n' -> expand' ps (simplify ps n' (Set.union a n) q)
-  where (n, a) = Queue.front q
+      Nothing -> expand' ps q'
+      Just n' -> expand' ps (simplify ps n' (Set.union a n) q')
+expand' ps Sequence.Empty = False
 
 expandNode :: Productions -> Node -> Maybe Node
 expandNode ps =
@@ -76,12 +76,12 @@ pruneNode ps = Set.map (\(xs,ys) -> (pruneWord ps xs, pruneWord ps ys))
 
 simplify :: Productions -> Node -> Ancestors -> NodeQueue -> NodeQueue
 simplify ps n a q =
-  foldr enqueueNode (Queue.dequeue q) (findFixedPoint ps (Set.singleton (n, a)))
+  foldr enqueueNode q (findFixedPoint ps (Set.singleton (n, a)))
 
 enqueueNode :: (Node,Ancestors) -> NodeQueue -> NodeQueue
 enqueueNode (n,a) q
- | maxLength n <= 1 = Queue.priorityEnqueue (n,a) q
- | otherwise        = Queue.enqueue (n,a) q
+ | maxLength n <= 1 = (n,a) Sequence.<| q
+ | otherwise        = q Sequence.|> (n,a)
 
 apply :: Productions -> NodeTransformation -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
 apply ps trans ns = Set.fold (\(n,a) ns -> Set.union (Set.map (\s -> (s,a)) (trans ps a n)) ns) Set.empty ns
