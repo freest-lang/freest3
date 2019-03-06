@@ -28,7 +28,7 @@ between expansion and simplification steps. During an expansion step,
 all children nodes are expanded according to the transitions in the 
 grammar. % Since we have simple grammars, no branching is expected at the
 % expansion phase.
-Throughout a simplification phase, the reflexive, congruence and basic
+Throughout the simplification phase, the reflexive, congruence and basic
 process algebra rules proposed by Janc\v ar and Moller
 in~\cite{janvcar1999techniques} are applied to each node $N$, yielding
 a number of sibling nodes.  The simplification phase promotes
@@ -39,7 +39,7 @@ fails to expand a node---case in which it decides negatively.  The
 finite representation of bisimulations of BPA transition
 graphs~\cite{caucal1986decidabilite,
   DBLP:journals/iandc/ChristensenHS95} is paramount for the soundness
-and completeness of the algorithm, a result that we prove.
+and completeness of the algorithm, a result that we show to hold.
 
 Although the branching nature of the expansion tree confers an
 exponential complexity to the algorithm, we propose heuristics that

@@ -5,10 +5,10 @@ This section introduces the main syntactic categories of the language:
 kinds, types, expressions, and programs. It also discusses type
 equivalence.
 
-\paragraph{Kinding validate typea}
+\paragraph{Kinding validate types}
 
-\freest{} requires kinding; GV does not. And the reason lies on
-polymorphism, not on context-free types.
+\freest{} requires kinding; GV~\cite{DBLP:journals/acta/GayH05} does
+not. And the reason lies on polymorphism, not on context-free types.
 %
 \lstinline|!Int| is undoubtedly a session type, and so is
 \lstinline|!Int;?Bool|. On the other hand, \lstinline|Int->Bool| and
@@ -48,21 +48,26 @@ more---unrestricted, \lstinline|U|. Both prekinds and multiplicities
 come equipped with an ordering relation. Together they form the
 lattice in the diagram on the right.
 %
+This is essentially the Lindley and Morris kinding system when
+restricted to prekinds and
+multiplicities~\cite{Lindley.Morris_Lightweight.functional.session.types}.
+%
 Types of kind \lstinline|TU| can be used at kind \lstinline|TL|. Also
 types of kind \lstinline|SL| can be used at kind \lstinline|TL|.
 Finally, any type can be seen of kind \lstinline|TL|, the kind sitting
 at top of the hierarchy, the kind that carries the least information.
 
-Equipped with kinds, \freest{} features as functional types the
-following:
+Equipped with a kinding system, \freest{} features as functional types
+the following:
 %
 \begin{itemize}
-\item The basic types, \lstinline|B : TU|, that is, \lstinline|Int|,
+\item Basic types, \lstinline|B : TU|, that is, \lstinline|Int|,
   \lstinline|Bool|, \lstinline|Char|, and \lstinline|()|,
 \item Unrestricted and linear functions, \lstinline|T1 -> T2 : TU| and
   \lstinline|T1 -o T2 : TL|,
-\item Unrestricted and linear pairs, \lstinline|<T1, T2> : TU| and
-  \lstinline|(T1, T2) : TL|, and
+\item linear pairs, \lstinline|(T1, T2)| of kind \lstinline|SU| or
+  \lstinline|SL| depending on the kinds of \lstinline|T1| and
+  \lstinline|T2|, and
 \item Datatypes, \lstinline|[l1: T1, ..., ln: Tn]| of kind
   \lstinline|SU| or \lstinline|SL| depending on the kinds of the
   various types \lstinline|Ti|.
@@ -109,7 +114,7 @@ Tree -> TreeC;TreeC;?Int;alpha -> (Tree, TreeC;?Int;alpha).
 %
 making it clear that channel \lstinline|c| is supposed to convey two
 trees (the left and the right subtrees of a non-empty tree) before it
-produces an integer value. The function reads one tree from the
+produces an integer value and continues as \lstinline|alpha|. The function reads one tree from the
 channel and returns the unused part of the channel, namely
 \lstinline|TreeC;?Int;alpha|.
 
@@ -148,7 +153,8 @@ recursion. The following types are not contractive:
 session type \lstinline|S|.
 %
 Only session types can be recursive. Recursion in the functional part
-of the type language is obtained via datatypes as usual.
+of the type language is obtained via datatypes as usual, and the
+fixed-point operator is built into function definition described below.
 
 \paragraph{Expressions}
 
