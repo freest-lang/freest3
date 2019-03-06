@@ -4,61 +4,69 @@
 \freest{} is written in Haskell and generates Haskell code that can be
 compiled with a conventional GHC compiler.
 %
-The validation phase features a kinding system and a typing
-system. Only declarative versions of these systems are described in
-Thiemann and Vasconcelos~\cite{DBLP:conf/icfp/ThiemannV16}.
+The validation phase features a kinding system and a typing system
+briefly described in the previous section. Only declarative versions
+of these systems are described in Thiemann and
+Vasconcelos~\cite{DBLP:conf/icfp/ThiemannV16}; we have developed the
+corresponding algorithmic versions.
 
-The \emph{kinding system} classifies types in kinds, composed of a
-prekind (session or functional) and a multiplicity (unrestricted or
-linear). For example \lstinline|!Int| is a well formed type of kind
-linear session type. On the other hand \lstinline|(Int->Bool);Int| is
-not well formed for it mixes functional types with session types.
+% The \emph{kinding system} classifies types in kinds, composed of a
+% prekind (session or functional) and a multiplicity (unrestricted or
+% linear). For example \lstinline|!Int| is a well formed type of kind
+% linear session type. On the other hand \lstinline|(Int->Bool);Int| is
+% not well formed for it mixes functional types with session types.
+% %
+% It is polymorphism that precludes the syntactic separation of session
+% and functional types. For example, type \lstinline|TreeC;alpha| is
+% well formed only in a context assigning a session kind to type
+% variable \lstinline|alpha|. In such a case the type is of kind linear
+% session.
+% %
+% The declarative kinding system comprises a rule of kind subsumption,
+% and is therefore not guided by the syntax of types. The algorithmic
+% version used in the compiler is obtained by transforming the original
+% system into a bidirectional system.
 %
-It is polymorphism that precludes the syntactic separation of session
-and functional types. For example, type \lstinline|TreeC;alpha| is
-well formed only in a context assigning a session kind to type
-variable \lstinline|alpha|. In such a case the type is of kind linear
-session.
+% The \emph{typing system} is a conventional type system for GV-like
+% languages~\cite{DBLP:journals/jfp/GayV10}. It further includes the
+% specialisation rule, typical of Hindley-Milner type
+% systems~\cite{DBLP:journals/jcss/Milner78}, allowing to replace a
+% polymorphic type with a monomorphic one. The original system is not
+% syntax-directed due to specialisation and to a type equivalence rule
+% that allows replacing the type of an expression by an equivalent
+% type.
+% %
+% Again, the algorithmic version is obtained by transforming the
+% original system into a bidirectional system. The specialisation rule
+% becomes tied together with function application, where a simple
+% algorithm infers the right type for the polymorphic variable in the
+% target function.
 %
-The declarative kinding system comprises a rule of kind subsumption,
-and is therefore not guided by the syntax of types. The algorithmic
-version used in the compiler is obtained by transforming the original
-system into a bidirectional system.
-
-The \emph{typing system} is a conventional type system for GV-like
-languages~\cite{DBLP:journals/jfp/GayV10}. It further includes the
-specialisation rule, typical of Hindley-Milner type
-systems~\cite{DBLP:journals/jcss/Milner78}, allowing to replace a
-polymorphic type with a monomorphic one. The original system is not
-syntax-directed due to specialisation and to a type equivalence rule
-that allows replacing the type of an expression by an equivalent
-type.
+% Checking \emph{type equivalence} is the main challenge of the
+% compiler. Due to the recursive structure underlying context-free 
+% session types, a bisimulation between two types is often infinite. 
+% Deciding the equivalence of types relies, then, on the construction 
+% of a finite relation whose least congruence with respect to  
+% sequential composition coincides with the bisimulation. As mentioned
+% in section~\ref{sec:valid}, we have implemented an algorithm 
+% to check the equivalence of types. We have proved its soundness 
+% and completeness with respect to the meta-theory
+% of context-free session types proposed by Thiemann and 
+% Vasconcelos~\cite{DBLP:conf/icfp/ThiemannV16}. This algorithm
+% is incorporated in the compiler.
 %
-Again, the algorithmic version is obtained by transforming the
-original system into a bidirectional system. The specialisation rule
-becomes tied together with function application, where a simple
-algorithm infers the right type for the polymorphic variable in the
-target function.
-
-Checking \emph{type equivalence} is the main challenge of the
-compiler. Due to the recursive structure underlying context-free 
-session types, a bisimulation between two types is often infinite. 
-Deciding the equivalence of types relies, then, on the construction 
-of a finite relation whose least congruence with respect to  
-sequential composition coincides with the bisimulation. As mentioned
-in section~\ref{sec:valid}, we have implemented an algorithm 
-to check the equivalence of types. We have proved its soundness 
-and completeness with respect to the meta-theory
-of context-free session types proposed by Thiemann and 
-Vasconcelos~\cite{DBLP:conf/icfp/ThiemannV16}. This algorithm
-is incorporated in the compiler.
-
-The rest of this section concentrates on \emph{code generation}.
+This section concentrates on the \emph{runtime system}.
 %
 The runtime system of \freest{} is surprisingly compact. We build on
-modules \lstinline|Control.Concurrent| and
-\lstinline|Unsafe.Coerce|.
+modules \lstinline|Control.Concurrent| and \lstinline|Unsafe.Coerce|,
+and make particular use of the monadic
+combinators~\cite{DBLP:conf/afp/Wadler95}:
 %
+\begin{lstlisting}[language=Haskell]
+(>>) :: Monad m => m a -> m b -> m b
+(>>=) :: Monad m => m a -> (a -> m b) -> m b
+\end{lstlisting}
+
 To fork a new thread, we use the forkIO primitive. The primitive
 returns a threadId, which we discard and convert into the unit value.
 %
@@ -67,8 +75,9 @@ fork :: IO () -> IO ()
 fork e = forkIO e >> return ()
 \end{lstlisting}
 
-Each channel is implemented with a pair of \lstinline|MVar|s. Each
-channel end is itself a pair of crossed \lstinline|MVar|s.
+Each channel is implemented with a pair of
+\lstinline|MVar|s~\cite{DBLP:conf/popl/JonesGF96}. Each channel end is
+itself a pair of crossed \lstinline|MVar|s.
 %
 \begin{lstlisting}
 type ChannelEnd a b = (MVar a, MVar b)
@@ -89,11 +98,13 @@ new = do
 To write on a channel end, we use the second \lstinline|MVar| in the
 given pair. Because the type of values transmitted on a channel vary
 over time, we use \lstinline|unsafeCoerce| to bypass the Haskell type
-system. To write on the channel end we use the \lstinline|putMVar|
-primitive. If the \lstinline|MVar| is currently full,
-\lstinline|putMVar| waits until it becomes empty.  The result of
-\lstinline|send| is the original channel end, which must be rebound in
-programs, as discussed in the previous section.
+system, common in standard implementations of session types, includind
+that of Pucella and Tov~\cite{DBLP:conf/haskell/PucellaT08}. To write
+on the channel end we use the \lstinline|putMVar| primitive. If the
+\lstinline|MVar| is currently full, \lstinline|putMVar| waits until it
+becomes empty.  The result of \lstinline|send| is the original channel
+end, which must be rebound in programs, as discussed in the previous
+section.
 %
 \begin{lstlisting}[language=Haskell, literate={<-}{{$\leftarrow$}}1]
 send :: b -> ChannelEnd a b -> IO (ChannelEnd a b)
@@ -149,13 +160,16 @@ reads on each channel (using a \lstinline|writer| of type
 % mechanism underlying session communication. Given the linear nature of
 % \freest{} channels, no actual queues are required.
 
-Context-free session types are difficult (if not impossible) to
-translate into Haskell types. Coercions (calls to the
-\lstinline|unsafeCoerce| function) are then inserted so has to avoid
-typing errors in the GHC backend. Surprisingly, the occurrences of
-\lstinline|unsafeCoerce| are limited to \emph{two} places: when reading
-and when writing from \lstinline|MVar|s, in runtime functions
-\lstinline|receive| and \lstinline|send|, respectively.
+\freest{} is a standalone language whose types need not be in the
+runtime system of Haskell, since type checking is performed by the
+\freest{} front-end.
+%
+Coercions (that is, calls to the \lstinline|unsafeCoerce| function)
+are then inserted so has to avoid typing errors in the GHC
+backend. The occurrences of \lstinline|unsafeCoerce| are limited to
+\emph{two} places: when reading and when writing from
+\lstinline|MVar|s, in runtime functions \lstinline|receive| and
+\lstinline|send|, respectively.
 
 % Call-by-value and call-by-name.
 The original proposal of context-free session types feature a
