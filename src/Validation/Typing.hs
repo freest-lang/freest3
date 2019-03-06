@@ -17,21 +17,18 @@ module Validation.Typing
 ) where
 
 import           Control.Monad.State
-import qualified Data.Map.Strict as Map
 import           Data.List ((\\), nub, intercalate)
+import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.Traversable as Trav
 import           Syntax.Kinds
-import           Syntax.Terms
+import           Syntax.Exps
 import           Syntax.Types
-import           Validation.Kinding
-import           Validation.TypeEquivalence
-import           Validation.TypingState
 import           Utils.Errors
+import           Equivalence.TypeEquivalence
+import qualified Validation.Kinding as K
+import           Validation.TypingState
 
-
-mapWithKeyM :: Monad m => (k -> a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)
-mapWithKeyM f m = Trav.sequence (Map.mapWithKey (f) m)
 
 typeCheck :: TypingState ()
 typeCheck = do
@@ -69,21 +66,20 @@ checkDataDecl = do
   kenv <- getKenv
   mapM_ (\k -> checkFunctionalKind k) kenv
   cenv <- getCenv
-  mapM_ (\(p,t) -> checkKinding p t) cenv
+--  mapM_ (\(_,t) -> checkKinding t) cenv
+  mapM_ (checkKinding . snd) cenv
 
 
 checkFunctionalKind :: (Pos, Kind) -> TypingState ()
 checkFunctionalKind (p, k)
   | k >= (Kind Functional Un) = return ()
-  | otherwise = do
-     file <- getFileName
-     addError $ styleError file p
-                [ "Expecting a functional (TU or TL) type; found a",
-                   styleRed (show k), "type."]
+  | otherwise = 
+     addError p ["Expecting a functional (TU or TL) type; found a",
+                  styleRed (show k), "type."]
 
-checkKinding :: Pos -> TypeScheme -> TypingState ()
-checkKinding p t = do
-  kinding p t
+checkKinding :: TypeScheme -> TypingState ()
+checkKinding t = do
+  K.kinding t
   return ()
 
 -- | AUXILIARY FUNCTIONS TO VERIFY FUNCTION TYPES
@@ -91,22 +87,20 @@ checkKinding p t = do
 -- | Verifies if a function exists and if it is well kinded
 checkFunTypeDecl :: Pos -> TermVar -> TypingState ()
 checkFunTypeDecl pos fname = do  
-  (p,t) <- checkFun pos fname
-  kinding p t
+  t <- checkFun pos fname
+  K.kinding t
   return ()
 
-checkFun :: Pos -> TermVar -> TypingState (Pos, TypeScheme)
+checkFun :: Pos -> TermVar -> TypingState TypeScheme
 checkFun pos x = do
   member <- venvMember x
   if member then do
-    (p, (TypeScheme bs t)) <- getFromVenv x
-    return (p,(TypeScheme bs t))
+    (_, (TypeScheme bs t)) <- getFromVenv x
+    return $ TypeScheme bs t
   else do
-    file <- getFileName
-    addError $ styleError file pos
-               ["Function", styleRed ("'" ++ x ++ "'"), "not in scope"]
+    addError pos ["Function", styleRed ("'" ++ x ++ "'"), "not in scope"]
     addToVenv pos x (TypeScheme [] (Basic pos UnitType))
-    return $ (pos, TypeScheme [] (Basic pos UnitType))
+    return $ TypeScheme [] (Basic pos UnitType)
 
 
 -- | FUNCTION DECLARATION
@@ -114,7 +108,6 @@ checkFun pos x = do
 {- | Checks a function declaration:
    |  - Checks the function form
    |  - Checks the function body (expression) against the declared type
-   |  - Checks if the resulting environment is unrestricted
 -}
 checkFD ::  VarEnv -> TermVar -> Params -> Expression -> TypingState ()
 checkFD venv fname p exp = do
@@ -146,14 +139,12 @@ checkArgsConflits :: TermVar -> Params -> TypingState ()
 checkArgsConflits fun args
   | length args == length (Set.fromList args) = return ()
   | otherwise                                = do
-     file <- getFileName
      (p,_,_) <- getFromEenv fun
-     mapM (err file p) clash
+     mapM (err p) clash
      return ()
   where
-    err file p c = addError $ styleError file p
-                     ["Conflicting definitions for", showClashes c,
-                      "\n\t In an equation for", styleRed $ "'" ++ fun ++ "'"]
+    err p c = addError p ["Conflicting definitions for", showClashes c,
+                          "\n\t In an equation for", styleRed $ "'" ++ fun ++ "'"]
     clash = args \\ nub args
     showClashes x = styleRed $ "'" ++ x ++ "'"
 
@@ -161,15 +152,11 @@ checkArgs :: Pos -> TypeVar -> Params -> [TypeScheme] -> TypingState [(TypeVar, 
 checkArgs p c ps ts
   | length ps == length ts = return $ zip ps ts
   | length ps > length ts = do
-      file <- getFileName
-      addError $ styleError file p
-                 ["Function or constructor", styleRed $ "'" ++ c ++ "'",
+      addError p ["Function or constructor '", styleRed c ++ "'",
                   "is applied to too many arguments"]
       return []
   | length ps < length ts = do
-      file <- getFileName
-      addError $ styleError file p
-                 ["Function or constructor", styleRed $ "'" ++ c ++ "'",
+      addError p ["Function or constructor '", styleRed c ++ "'",
                   "is applied to too few arguments"]
       return []
 
@@ -203,14 +190,11 @@ normalizeType' (TypeScheme bs t) = (TypeScheme binds t)
 -- | Checks if a type is unrestricted
 checkUn :: Pos -> TypeScheme -> TypingState ()
 checkUn p (TypeScheme _ t) = do
-  kenv <- getKenv
-  if un kenv t then    
+  isUn <- K.un t
+  if isUn then    
     return ()
-  else do
-    file <- getFileName
-    addError $ styleError file p
-               ["Type", styleRed $ "'" ++ show t ++ "'",
-                "is not unrestricted"]
+  else
+    addError p ["Type", "'" ++ styleRed (show t) ++ "'", "is linear"]
 
 -- | Checks an expression against a given type
 checkAgainst :: Pos -> Expression -> TypeScheme -> TypingState ()
@@ -219,10 +203,8 @@ checkAgainst p e (TypeScheme bs1 t) = do
   kenv <- getKenv
   if (equivalent kenv t u) then
     return ()
-  else do
-    file <- getFileName
-    addError $ styleError file p
-                ["Expecting type", styleRed (show u),
+  else
+    addError p ["Expecting type", styleRed (show u),
                  "to be equivalent to type", styleRed (show t)]
 
 -- | Typing rules for expressions
@@ -241,10 +223,8 @@ checkExp (UnLet _ (px,x) e1 e2) = do
   t1 <- checkExp e1
   addToVenv px x t1
   t2 <- checkExp e2
-  
   venv <- getVenv
   checkUnVar venv px x
-    
   removeFromVenv x
   return t2
   
@@ -257,17 +237,20 @@ checkExp (App p e1 e2) = do
 
 checkExp (TypeApp p e ts) = do
   t1 <- checkExp e  
-  (binds, t2) <- extractScheme p t1
+  (binds, v) <- extractScheme p t1
   wellFormedCall p e ts binds
-  
-  -- TODO: move to other module and call subL
---  let sub = foldr (\(t', b) acc -> subs t' (var b) acc) t2 (zip ts binds)
-  let sub = subL t2 (zip ts binds)
-  -- kenv <- getKenv
-  
-  -- TODO: the result type is well formed  
-  return $ TypeScheme [] sub
 
+  let typeBind = zip ts binds
+  mapM (\(t,b) -> K.checkAgainst (kind b) t) typeBind
+  let sub = subL v typeBind
+  -- TODO: TEMPORARY
+  kenv <- getKenv
+  if K.isWellFormed sub kenv then 
+    return $ TypeScheme [] sub -- (subL v typeBind) --(subs v "a" (Skip p))
+  else
+    return $ TypeScheme [] (Skip p)
+--   return $ TypeScheme [] (subL v typeBind)
+    
 -- Conditional
 checkExp (Conditional p e1 e2 e3) = do
   checkAgainst p e1 (TypeScheme [] (Basic p BoolType))
@@ -278,7 +261,7 @@ checkExp (Conditional p e1 e2 e3) = do
   checkAgainst p e3 t2
   venv4 <- getVenv
   kenv <- getKenv
-  checkEquivEnvs kenv venv3 venv4
+  checkEquivEnvs kenv venv3 venv4 -- TODO: remove kenv
   setVenv venv2
   return t2
 
@@ -294,11 +277,9 @@ checkExp (BinLet p (px,x) (py,y) e1 e2) = do
   addToVenv px x u1
   addToVenv py y u2
   u <- checkExp e2
-    
   venv <- getVenv
   checkUnVar venv px x
   checkUnVar venv py y
-
   removeFromVenv x
   removeFromVenv y
   return u
@@ -306,15 +287,14 @@ checkExp (BinLet p (px,x) (py,y) e1 e2) = do
 -- Session types
 
 checkExp (New p t) = do
-  checkAgainstKind t (Kind Session Lin)
+  K.checkAgainst (Kind Session Lin) t
   -- m <- extractChoiceMap t
   -- Map.foldrWithKey (\c t _ -> addToVenv p c (TypeScheme [] t)) (return ()) m
   return $ TypeScheme [] (PairType p t (dual t))
 
 checkExp (Send p e1 e2) = do
-  venv <- getVenv
   t1 <- checkExp e1
-  b1 <- extractBasic (getEPos e1) t1
+  b1 <- extractBasic (getEPos e1) t1 -- TODO: remove pos
   t2 <- checkExp e2
   (b2, u) <- extractOutput p t2
   checkEquivBasics p b1 b2
@@ -323,11 +303,11 @@ checkExp (Send p e1 e2) = do
 checkExp (Receive p e) = do
   venv <- getVenv
   t <- checkExp e
-  (b, TypeScheme bs t1) <- extractInput (getEPos e) t
-  return $ TypeScheme bs (PairType p (Basic p b) t1)
+  (b, TypeScheme _ t1) <- extractInput (getEPos e) t -- TODO : return a type
+  return $ TypeScheme [] (PairType p (Basic p b) t1)
 
 -- Branching
-checkExp (Select p c e) = do
+checkExp (Select p c e) = do --TODO: check with rule
   t <- checkExp e
   (TypeScheme bs choice) <- extractInChoice p t
   u <- extractConstructor p c choice  
@@ -343,7 +323,6 @@ checkExp (Match p e cm) = do
   Map.foldrWithKey (\k (v1,v2) _ -> checkMap venv p t1 u k ([v1], v2) extractExtChoice) (return ()) (Map.delete c cm)
   return u
 
-
 checkExp (Constructor p c) = checkVar p c
 
 checkExp (Fork p e) = do
@@ -354,20 +333,16 @@ checkExp (Fork p e) = do
   
 checkExp (Case pos e cm) = do
   t <- checkExp e
-
   let (c, (x, e1)) = Map.elemAt 0 cm  
   t2 <- extractDatatype pos t c  
-
   let x' = zip x (init (toList t2))        
   foldM (\_ (p, t) -> addToVenv pos p t) () x' 
   venv <- getVenv
-  
   u <- checkExp e1
   -- setVEnv venv
   Map.foldrWithKey (\k v _ -> checkMap venv pos t u k v extractDatatype)
                    (return ()) (Map.delete c cm)
   return u
-  
 
 -- | Checking Variables
 
@@ -384,9 +359,7 @@ checkVar p x = do
     removeLinVar kenv x t
     return t
   else do
-    file <- getFileName
-    addError $ styleError file p
-               ["Variable or data constructor not in scope:", styleRed x]
+    addError p ["Variable or data constructor not in scope:", styleRed x]
     addToVenv p x (TypeScheme [] (Basic p UnitType))
     return $ TypeScheme [] (Basic p UnitType)
 
@@ -394,10 +367,13 @@ addBindsToKenv :: Pos -> [Bind] -> TypingState ()
 addBindsToKenv p bs = foldM (\_ b -> addToKenv p (var b) (kind b)) () bs
 
 removeLinVar :: KindEnv -> TermVar -> TypeScheme -> TypingState ()
-removeLinVar kenv x (TypeScheme _ t)
-  | lin kenv t = removeFromVenv x   
-  | otherwise  = return ()
-
+removeLinVar kenv x (TypeScheme _ t) = do
+  isLin <- K.lin t
+  if isLin then
+    removeFromVenv x
+  else
+    return ()
+ 
 checkUnVar :: VarEnv -> Pos -> TermVar -> TypingState ()
 checkUnVar venv p x
   | Map.member x venv = let (_,x1) = venv Map.! x in checkUn p x1
@@ -408,45 +384,32 @@ checkUnVar venv p x
 extractFun :: Pos -> TypeScheme -> TypingState (TypeScheme, TypeScheme)
 extractFun _ (TypeScheme [] (Fun _ _ t u)) = return (TypeScheme [] t, TypeScheme [] u)
 extractFun p (TypeScheme [] t)           = do
-  file <- getFileName
-  addError $ styleError file p
-             ["Expecting a function type; found:", styleRed $ show t]
+  addError p ["Expecting a function type; found:", styleRed $ show t]
   return (TypeScheme [] (Basic p UnitType), TypeScheme [] (Basic p UnitType))
 extractFun p (TypeScheme bs _)           = do
-  file <- getFileName
-  addError $ styleError file p
-             ["Polymorphic functions cannot be applied; instantiate function prior to applying"]
+  addError p ["Polymorphic functions cannot be applied; instantiate function prior to applying"]
   return (TypeScheme [] (Basic p UnitType), TypeScheme [] (Basic p UnitType))
-
 
 extractScheme :: Pos -> TypeScheme -> TypingState ([Bind], Type)
 extractScheme p (TypeScheme [] t) = do
-  file <- getFileName 
-  addError $ styleError file p
-             ["Expecting a type scheme; found", styleRed $ show t]
+  addError p ["Expecting a type scheme; found", styleRed $ show t]
   return ([], (Basic p UnitType))
 extractScheme _ (TypeScheme bs t) = return (bs, t)
 
--- | TODO TESTAR
 extractPair :: Pos -> TypeScheme -> TypingState (TypeScheme, TypeScheme)
 extractPair p (TypeScheme bs (PairType _ t u)) = do
   addBindsToKenv p bs
   return (TypeScheme bs t, TypeScheme bs u)
 extractPair p t                         = do
-  file <- getFileName
-  addError $ styleError file p
-             ["Expecting a pair type; found ", styleRed $ show t]
+  addError p ["Expecting a pair type; found ", styleRed $ show t]
   return (TypeScheme [] (Basic p IntType), TypeScheme [] (Basic p IntType))
 
--- | TODO TESTAR
 extractBasic :: Pos -> TypeScheme -> TypingState BasicType
 extractBasic p (TypeScheme bs (Basic _ t)) = do
   addBindsToKenv p bs
   return t
 extractBasic p t                         = do
-  file <- getFileName
-  addError $ styleError file p
-             ["Expecting a basic type; found", styleRed $ show t]
+  addError p ["Expecting a basic type; found", styleRed $ show t]
   return UnitType
 
   -- !~>
@@ -463,9 +426,7 @@ extractOutput p (TypeScheme bs (Semi _ t u)) = do -- TODO: Wrong?
   (b, TypeScheme bs' t1) <- extractOutput p (TypeScheme bs t)
   return (b, TypeScheme bs' (Semi p t1 u)) -- TODO: Pos
 extractOutput p t = do
-  file <- getFileName
-  addError $ styleError file p
-             ["Expecting an output type; found", styleRed $ show t]
+  addError p ["Expecting an output type; found", styleRed $ show t]
   return (UnitType, TypeScheme [] (Skip p)) -- TODO: POS
 
 -- TODO: review this case (bindings)
@@ -483,9 +444,7 @@ extractInput p (TypeScheme bs (Semi _ t u)) = do -- TODO: Wrong?
   (b, TypeScheme _ t1) <- extractInput p (TypeScheme bs t)
   return (b, TypeScheme bs (Semi p t1 u)) --TODO: Pos
 extractInput p t = do
-  file <- getFileName
-  addError $ styleError file p
-             ["Expecting an input type; found", styleRed $ show t]
+  addError p ["Expecting an input type; found", styleRed $ show t]
   return (UnitType, TypeScheme [] (Skip p)) --TODO: Pos
 
 
@@ -508,9 +467,7 @@ extractInChoice p (TypeScheme bs (Semi _ t1 t2)) = do
   (TypeScheme bs' t3) <- extractInChoice p (TypeScheme bs t1)
   extractInChoice p (TypeScheme bs (Semi p t3 t2))
 extractInChoice p t = do
-  file <- getFileName
-  addError $ styleError file p
-             ["Expecting an internal choice; found", styleRed $ show t]
+  addError p ["Expecting an internal choice; found", styleRed $ show t]
   return $ TypeScheme [] (Skip p) --TODO: Pos
 
 extractConstructor :: Pos -> Constructor -> Type -> TypingState Type
@@ -518,14 +475,10 @@ extractConstructor p c (Choice _ _ tm) =
   if Map.member c tm then
     return $ tm Map.! c 
   else do
-    file <- getFileName
-    addError $ styleError file p
-             ["Constructor", styleRed $ "'"++c++"'", "not in scope"]             
+    addError p ["Constructor", styleRed $ "'"++c++"'", "not in scope"]             
     return (Basic p UnitType)
 extractConstructor p c t = do
-  file <- getFileName
-  addError $ styleError file p
-             ["Expecting a choice; found", styleRed $ show t]
+  addError p ["Expecting a choice; found", styleRed $ show t]
   return (Basic p UnitType)
 
 -- TODO: review this case (bindings)
@@ -534,9 +487,7 @@ extractExtChoice :: Pos -> TypeScheme -> Constructor -> TypingState TypeScheme
 extractExtChoice p (TypeScheme bs (Semi _ (Skip _) t)) c = extractExtChoice p (TypeScheme bs t) c
 extractExtChoice p t@(TypeScheme bs (Choice _ External m)) c =
   if not (Map.member c m) then do
-    file <- getFileName
-    addError $ styleError file p
-               ["Choice label not in scope", styleRed $ show t, "\n", styleRed $ show c]    
+    addError p ["Choice label not in scope", styleRed $ show t, "\n", styleRed $ show c]    
     return $ TypeScheme [] (Skip p) --TODO: Pos
   else
    return $ TypeScheme bs (m Map.! c) -- Choice External m
@@ -552,9 +503,7 @@ extractExtChoice p (TypeScheme bs (Semi _ t1 t2)) c = do
   (TypeScheme _ t3) <- extractExtChoice p (TypeScheme bs t1) c
   return $ TypeScheme bs (Semi p t3 t2)  -- TODO: Pos
 extractExtChoice p t _ = do
-  file <- getFileName
-  addError $ styleError file p
-            ["Expecting an external choice; found", styleRed $ show t]    
+  addError p ["Expecting an external choice; found", styleRed $ show t]    
   return $ TypeScheme [] (Skip p) --TODO: Pos
 
 -- TODO: review this case (bindings)
@@ -570,16 +519,12 @@ extractDatatype p (TypeScheme _ (Var pv x)) c = do -- Should be here?
     (_,dt) <- getFromVenv x
     extractDatatype p dt c
   else do
-    file <- getFileName
-    addError $ styleError file p
-               ["Expecting a datatype; found", styleRed $ show (Var pv x)]
+    addError p ["Expecting a datatype; found", styleRed $ show (Var pv x)]
     return $ TypeScheme [] (Basic p IntType)  
 -- TODO ??
 -- extractDatatype p (TypeScheme [] (Semi t1 t2)) = do
 extractDatatype p t _ = do
-  file <- getFileName
-  addError $ styleError file p
-               ["Expecting a datatype; found", styleRed $ show t]
+  addError p ["Expecting a datatype; found", styleRed $ show t]
   return $ TypeScheme [] (Basic p IntType)  
 
 
@@ -593,15 +538,13 @@ extractDatatype p t _ = do
   -- TODO: TEST
 wellFormedCall :: Pos -> Expression -> [Type] -> [Bind] -> TypingState ()
 wellFormedCall p e ts binds = do
-  mapM_ (\t -> kinding p (TypeScheme [] t)) ts
+  mapM_ (\t -> K.kinding (TypeScheme [] t)) ts
   sameNumber
   where   
     sameNumber
       | length binds == length ts = return ()
-      | otherwise                 = do
-          file <- getFileName
-          addError $ styleError file p
-                     ["Expecting", show $ length binds,
+      | otherwise                 =          
+          addError p ["Expecting", show $ length binds,
                       "type(s) on type app; found", show $ length ts]
 
 
@@ -630,30 +573,59 @@ myInit x = init x
 -- | TODO: position, diff, better error message, maybe with diff between maps
 -- and something else (only compares keys)
 checkEquivEnvs :: KindEnv -> VarEnv -> VarEnv -> TypingState ()
-checkEquivEnvs kenv venv1 venv2 -- = return ()
-  | equivalentEnvs kenv venv1 venv2  = return ()
-  | otherwise = do
-      file <- getFileName
-      let (_,(tmp,_)) = Map.elemAt 0 venv1
-      addError $ styleError file tmp
-                 ["Expecting environment", show venv1,
-                  "to be equivalent to environment", show venv2]
-
-equivalentEnvs :: KindEnv -> VarEnv -> VarEnv -> Bool
-equivalentEnvs kenv venv1 venv2 =
-  let venv3 = Map.filter f1 venv1
-      venv4 = Map.filter f1 venv2 in
-  Map.isSubmapOfBy f venv3 venv4 && Map.isSubmapOfBy f venv4 venv3
+checkEquivEnvs kenv venv1 venv2 = do
+  equiv <- equivalentEnvs kenv venv1 venv2
+  if equiv then
+    return ()
+  else
+    let (_,(tmp,_)) = Map.elemAt 0 venv1 in 
+      addError tmp ["Expecting environment", show venv1,
+                    "to be equivalent to environment", show venv2]      
+ -- | TODO: position, diff, better error message, maybe with diff between maps
+equivalentEnvs :: KindEnv -> VarEnv -> VarEnv -> TypingState Bool
+equivalentEnvs kenv venv1 venv2 = do
+  venv3 <- Map.foldlWithKey f1 (return Map.empty) venv1
+  venv4 <- Map.foldlWithKey f1 (return Map.empty) venv2
+  return $ Map.isSubmapOfBy f venv3 venv4 && Map.isSubmapOfBy f venv4 venv3
+  return True
   where
     f (_,(TypeScheme _ t)) (_,(TypeScheme _ u)) = equivalent kenv t u
-    f1 (_,(TypeScheme _ t)) = lin kenv t
 
+    f1 :: TypingState VarEnv -> TermVar -> (Pos,TypeScheme) -> TypingState VarEnv
+    f1 m k t@(_,(TypeScheme _ t1)) = do
+      isLin <- K.lin t1
+
+      if isLin then do
+        m1 <- m        
+        return $ Map.insert k t m1
+      else m
+
+
+-- WAS
+-- -- and something else (only compares keys)
+-- checkEquivEnvs :: KindEnv -> VarEnv -> VarEnv -> TypingState ()
+-- checkEquivEnvs kenv venv1 venv2 -- = return ()
+--   | equivalentEnvs kenv venv1 venv2  = return ()
+--   | otherwise =
+--       let (_,(tmp,_)) = Map.elemAt 0 venv1 in 
+--       addError tmp ["Expecting environment", show venv1,
+--                     "to be equivalent to environment", show venv2]
+--
+-- equivalentEnvs :: KindEnv -> VarEnv -> VarEnv -> Bool
+-- equivalentEnvs kenv venv1 venv2 =
+--   let venv3 = Map.filter f1 venv1
+--       venv4 = Map.filter f1 venv2 in
+--   Map.isSubmapOfBy f venv3 venv4 && Map.isSubmapOfBy f venv4 venv3
+--   where
+--     f (_,(TypeScheme _ t)) (_,(TypeScheme _ u)) = equivalent kenv t u
+--     f1 (_,(TypeScheme _ t)) = K.lin kenv t
 
 checkEquivBasics :: Pos -> BasicType -> BasicType -> TypingState ()
 checkEquivBasics p b1 b2
   | b1 == b2  = return ()
-  | otherwise =  do
-      file <- getFileName
-      addError $ styleError file p
-                 ["Expecting basic type", styleRed $ show b1,
+  | otherwise =
+      addError p ["Expecting basic type", styleRed $ show b1,
                   "to be equivalent to basic type", styleRed $ show b2]
+
+mapWithKeyM :: Monad m => (k -> a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)
+mapWithKeyM f m = Trav.sequence (Map.mapWithKey f m)

@@ -25,7 +25,7 @@ map from labels to lists of type variables.
 
 -}
 
-module Validation.Grammar
+module Equivalence.Grammar
 ( Label(..)
 , TypeVar -- aka non-terminal
 , Transitions

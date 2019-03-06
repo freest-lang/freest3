@@ -11,7 +11,7 @@ module CodeGen.ExpressionGen
 import           Control.Monad.State
 import           Data.List
 import qualified Data.Map.Strict as Map
-import           Syntax.Terms
+import           Syntax.Exps
 
 {- 1st passage:
 ----------------
@@ -272,7 +272,7 @@ translate fm m (BinLet _ (_,x) (_,y) e1 e2) = do
   (h1, b1) <- translate fm m e1
   (h2, b2) <- translate fm m e2
   
-  if b1 then
+  if b1 || b2 then
     return (h1  ++ " >>= \\(" ++ x ++ ", " ++ y ++ ")" ++ " -> " ++ h2, True) 
   else
     return ("let (" ++ x ++ ", " ++ y ++ ")" ++ " = " ++ h1 ++ " in " ++ h2, b2)

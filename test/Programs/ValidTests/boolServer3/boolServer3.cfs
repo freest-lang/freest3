@@ -1,4 +1,4 @@
-boolServer ::  &{And: Skip;?Bool;?Bool;!Bool;Skip,
+boolServer :  &{And: Skip;?Bool;?Bool;!Bool;Skip,
                 Or: Skip;?Bool;?Bool;!Bool;Skip,
                 Not: Skip;?Bool;!Bool;Skip} -> ()
 boolServer c =
@@ -20,18 +20,18 @@ boolServer c =
       let x = send (not n1) c2 in
       ()
       
-start :: Bool
+start : Bool
 start = 
   s1
 
 
-s1 :: Bool
+s1 : Bool
 s1 = 
   let c1 = startClient client1 in
   let c2 = startClient client2 in
   c1 || c2
   
-client1 :: +{And: !Bool;!Bool;?Bool;Skip, Or: !Bool;!Bool;?Bool;Skip, Not: !Bool;?Bool;Skip} -> Bool
+client1 : +{And: !Bool;!Bool;?Bool;Skip, Or: !Bool;!Bool;?Bool;Skip, Not: !Bool;?Bool;Skip} -> Bool
 client1 w =
   let w1 = select And w in
   let w2 = send True w1 in
@@ -39,7 +39,7 @@ client1 w =
   let x, r2 = receive r1 in
   x
 
-client2 :: +{And: !Bool;!Bool;?Bool;Skip, Or: !Bool;!Bool;?Bool;Skip, Not: !Bool;?Bool;Skip} -> Bool
+client2 : +{And: !Bool;!Bool;?Bool;Skip, Or: !Bool;!Bool;?Bool;Skip, Not: !Bool;?Bool;Skip} -> Bool
 client2 w =
   let w1 = select Not w in
   let r1 = send True w1 in
@@ -47,7 +47,7 @@ client2 w =
   x
 
 
-startClient :: (+{And: !Bool;!Bool;?Bool;Skip, Or: !Bool;!Bool;?Bool;Skip, Not: !Bool;?Bool;Skip} -> Bool) -> Bool
+startClient : (+{And: !Bool;!Bool;?Bool;Skip, Or: !Bool;!Bool;?Bool;Skip, Not: !Bool;?Bool;Skip} -> Bool) -> Bool
 startClient client =
   let w,r = new +{And: !Bool;!Bool;?Bool;Skip, Or: !Bool;!Bool;?Bool;Skip, Not: !Bool;?Bool;Skip} in
   let x = fork (boolServer r) in

@@ -37,7 +37,7 @@ that is valid in \freest.
 
 The writer process, \lstinline|transform|, writes a tree on a given
 channel. The channel is of type \lstinline|TreeC;alpha|, for
-\lstinline|alpha| a type variable. It returns a \lstinline|Tree| and
+a type variable \lstinline|alpha|. It returns a \lstinline|Tree| and
 the residual of the input channel, of type \lstinline|alpha|. The type
 of \lstinline|transform| is \emph{polymorphic}: different calls to the
 function use different values for \lstinline|alpha|.
@@ -62,7 +62,7 @@ recursive calls). Finally, reads an integer \lstinline|y| from the
 channel, assembles a tree with \lstinline|y| at the \lstinline|Node|
 and returns this tree together with the residual of the channel.
 %
-\begin{lstlisting}
+\begin{lstlisting}[numbers=left]
 transform tree c =
   case tree of
     Leaf ->
@@ -70,8 +70,8 @@ transform tree c =
     Node x l r ->
       let c   = select Node c in
       let c   = send x c in
-      let l,c = transform l c in
-      let r,c = transform r c in
+      let l,c = transform[TreeC;?Int;alpha] l c in
+      let r,c = transform[?Int;alpha] r c in
       let y,c = receive c in
       (Node y l r, c)
 \end{lstlisting}
@@ -91,7 +91,7 @@ it performs an external choice (\lstinline|&|), rather than writing
 (\lstinline|!|), it reads (\lstinline|?|), and rather than reading, it
 writes. We could write its type as a recursive type
 \lstinline|rec x. &{Leaf: Skip, Node: ?Int;x;x;!Int}|,
-but the \lstinline|dualof| operator provides an handy abbreviation.
+but the \lstinline|dualof| operator provides a handy abbreviation.
 %
 \begin{lstlisting}
 treeSum: forall alpha => dualof TreeC;alpha -> (Int, alpha)
@@ -107,15 +107,16 @@ recursive calls) and sends on the channel the sum of the values in the
 subtree. It finally returns this exact sum, together with the residual
 channel.
 %
-\begin{lstlisting}
+\label{lst:treeSum}
+\begin{lstlisting}[numbers=left,firstnumber=12]
 treeSum c =
   match c with
     Leaf c ->
       (0, c)
     Node c ->
       let x, c = receive c in
-      let l, c = treeSum c in
-      let r, c = treeSum c in
+      let l, c = treeSum[dualof TreeC;!Int;alpha] c in
+      let r, c = treeSum[!Int;alpha] c in
       let c    = send (x + l + r) c in
       (x + l + r, c)
 \end{lstlisting}
@@ -137,19 +138,19 @@ the main thread, it \lstinline|transform|s a given tree
 \lstinline|w|, the other end. In these calls, both functions are
 (implicitly) applied to type \lstinline|Skip|. Analysing the
 signatures of the two functions (they both return a channel of type
-\lstinline|alpha|), we see that that channel ends \lstinline|r| and
+\lstinline|alpha|), we see that the channel ends \lstinline|r| and
 \lstinline|w| are both consumed to \lstinline|Skip|, and hence can be
 safely discarded (hence the two wilcards in the \lstinline|let|s
 below). In addition to the residual of channel end \lstinline|w|,
 function \lstinline|transform| also returns a new tree \lstinline|t|,
 which becomes the result of the \lstinline|start| function.
 %
-\begin{lstlisting}
-start: Tree
-start =
+\begin{lstlisting}[numbers=left,firstnumber=22]
+main: Tree
+main =
   let w,r = new TreeC in
-  let _   = fork (treeSum r) in
-  let t,_ = transform aTree w in
+  let _   = fork (treeSum[Skip] r) in
+  let t,_ = transform[Skip] aTree w in
   t
 \end{lstlisting}
 
@@ -188,7 +189,7 @@ the one on the right. We use \leaf{} for \lstinline|Leaf|.
       style={sibling distance=1cm}] { node {\lstinline|7|} child {
           node {\leaf}} child { node {\leaf}}}} ;
   \end{tikzpicture}
-  \hspace*{10mm}
+  \hspace*{2em}
   \begin{tikzpicture}[level 1/.style={sibling distance=3cm}, level
     2/.style={sibling distance=2.2cm}, level 3/.style={sibling
       distance=1.8cm}, level 4/.style={sibling distance=1cm}, level

@@ -2,7 +2,7 @@
 
 Session types have been long subject to the shackles of tail
 recursion~\cite{DBLP:conf/concur/Honda93,DBLP:conf/esop/HondaVK98}. Regular
-session-type languages bear the evident advantage of providing for
+session-type languages bear the evident advantage of providing
 simple algorithms to check type equivalence and subtyping. Given two
 types, a fixed-point construction algorithm such as the one introduced
 by Gay and Hole builds, in polynomial time and space, a bisimulation
@@ -16,22 +16,22 @@ to ($\omega$-) regular languages for so many years.
 
 The discipline of conventional (that is, regular) session types
 provides guarantees not easily accessible to simpler languages such as
-concurrent ML, where channels are unidirectional and transport values
+Concurrent ML, where channels are unidirectional and transport values
 of a fixed size~\cite{DBLP:conf/mcmaster/Reppy93}. Session types, in
 turn, provide for the description of richer protocols, epitomised by
-the math server~\cite{DBLP:journals/acta/GayH05}, which can be
+the math client~\cite{DBLP:journals/acta/GayH05}, which can be
 rendered in the SePi language~\cite{DBLP:conf/sefm/FrancoV13} as
 follows:
 %
 \begin{lstlisting}[morekeywords=end]
-MathServer = +{
-  Plus: !Int.!Int.?Int.MathServer,
-  Eq: !Int.!Int.?Bool.MathServer,
+MathClient = +{
+  Plus: !Int.!Int.?Int.MathClient,
+  Eq: !Int.!Int.?Bool.MathClient,
   Done: end
 }
 \end{lstlisting}
 
-Type \lstinline|MathServer| describes the client side of the protocol,
+The type \lstinline|MathClient| describes the client side of the protocol,
 introducing three choices: \lstinline|Plus|, \lstinline|Eq|, and
 \lstinline|Done|. A client that chooses the \lstinline|Plus| choice is
 supposed to send two integer values and to receive a further integer
@@ -51,7 +51,7 @@ guarantee progress~\cite{DBLP:conf/concur/CairesP10}. All this, under
 a rather expressive type language, that of (regular) session types.
 
 There is one further characteristic of session types that attest for
-its flexibility: the ability send channels on channels, often called
+its flexibility: the ability to send channels on channels, often called
 delegation. This feature provides for the transmission of complex data
 on channels in a typeful manner. Suppose we want to stream a tree
 %
@@ -60,12 +60,12 @@ data Tree = Leaf | Node Int Tree Tree
 \end{lstlisting}
 %
 on a channel. One has to choose between a) using multiple channels for
-sending the tree or b) incurring on runtime checks to check adherence
+sending the tree or b) incurring runtime checks to check adherence
 to the protocol. In the former scenario, trees are sent on channels of
 type
 %
 \begin{lstlisting}[morekeywords=end]
-type TreeChannel = +{Leaf: end, Node: !Int.!TreeChannel.!TreeChannel.end}
+type TreeChannelR = +{Leaf:end, Node:!Int.!TreeChannelR.!TreeChannelR.end}
 \end{lstlisting}
 %
 and we see that two new channels must be created and exchanged for
@@ -110,7 +110,8 @@ written as follows:
 type TreeChannel = +{Leaf: Skip, Node: !Int;TreeChannel;TreeChannel}
 \end{lstlisting}
 
-The language \freest, described in the sequel, provides for the best
+The language \freest, described in the remainder of the paper, 
+provides for the best
 of both worlds: stream the tree on a \emph{single} channel,
 \emph{without} extraneous runtime checks.
 
@@ -150,7 +151,7 @@ Links~\cite{DBLP:conf/fmco/CooperLWY06} is a functional programming
 language for the web, later extended with session types
 primitives~\cite{Lindley.Morris_Lightweight.functional.session.types}. Very
 much like SILL and C1, the base language is deadlock-free and
-terminating. Links also include recursion and shared channels,
+terminating. Links also includes recursion and shared channels,
 foregoing deadlock-freedom.
 
 The only other implementation of context-free session types we are
@@ -159,8 +160,18 @@ language that admits equivalence, subtyping and, of particular
 interest, inference algorithms. It does however require a structural
 alignment between the process code and the session types, enforced by
 a \emph{resumption} process operator that explicitly breaks a type
-$S;T$. This implies that the monoidal rules proposed by Thiemann and
-Vasconcelos cannot be used.
+$S;T$. The usage of resumptions requires additional annotations
+from the programmer---which we would like to avoid in 
+\freest---and, beyond that, it does not solve the type equivalence
+problem since the monoidal rules proposed by Thiemann and
+Vasconcelos cannot be used. Padovani proposes the use of 
+\emph{explicit coercions} to fix this limitation, but this
+would require a greater effort from the programmer. 
+Any additional effort by the programmer is error-prone, hence
+we have embedded a type equivalence checker into  
+\freest\ so that it does not need to rely on any
+additional annotation from the programmer.
+
 
 %%% Local Variables:
 %%% mode: latex

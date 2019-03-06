@@ -1,4 +1,4 @@
-boolServer :: &{And: ?Bool;?Bool;!Bool;Skip,
+boolServer : &{And: ?Bool;?Bool;!Bool;Skip,
                 Or: ?Bool;?Bool;!Bool;Skip,
                 Not: ?Bool;!Bool;Skip} -> ()
 boolServer c =
@@ -20,7 +20,7 @@ boolServer c =
 
 
 
-start :: Bool
+start : Bool
 start =
   let w,r = new +{And: !Bool;!Bool;?Bool;Skip, Or: !Bool;!Bool;?Bool;Skip, Not: !Bool;?Bool;Skip} in
   let x = fork (boolServer r) in
@@ -29,7 +29,7 @@ start =
 
   
 
-client1 :: +{And: !Bool;!Bool;?Bool;Skip, Or: !Bool;!Bool;?Bool;Skip, Not: !Bool;?Bool;Skip} -> Bool
+client1 : +{And: !Bool;!Bool;?Bool;Skip, Or: !Bool;!Bool;?Bool;Skip, Not: !Bool;?Bool;Skip} -> Bool
 client1 w =
   let w1 = select Or w in
   let w2 = send True w1 in

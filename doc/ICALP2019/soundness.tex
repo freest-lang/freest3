@@ -17,12 +17,13 @@ our algorithm is sound and complete.
 
 For the purpose of providing a bisimulation between context-free
 session types and their corresponding symbols in the grammar, we start
-with a lemma that relates terminated types~$S$ to the result of the
+with a lemma that relates terminated types~$S$ to the result of
 $\toGrammarf S$.
 
 \begin{lemma}
   \label{lem:terminated-togrammar}
-  \DONE S if and only if $\varepsilon, P = \toGrammarf S$.
+  %% replaced P by \emptyset
+  \DONE S if and only if $\varepsilon, \emptyset = \toGrammarf S$.
 \end{lemma}
 
 \begin{proof} Given that all variables in a type are under some
@@ -35,73 +36,245 @@ $\toGrammarf S$.
 \end{proof}
 
 To conclude that the bisimulations on context-free session types and
-those on productions coincide, we present a bisimulation between
+those on productions coincide, we present a bisimilarity between
 context-free session types and the result of \lstinline|toGrammar|.
 %
 As the implementation of \isCheckedf is not shown, we assume that
 $\isCheckedf S$ returns \lstinline|True| if and only if $\DONE S$.
+%
+%% new from here
+Consider the relation $\mathcal{R}$ given by:
+\[\begin{array}{lll}
+	\mathcal{R} = & \{ (\skipk, (\varepsilon, \emptyset))\} \,\cup\\
+	& \{(\sharp B,(X,\{X \rightarrow \sharp B\})) \mid \text{$B$ is any base type}\} 
+	   \,\cup\\
+	& \{ (\star\{l_i\colon S_i\}_{i\in I}, (X, \{X \rightarrow \star l_i
+    \vec Y_i\}_{i\in I} \cup (\cup  P_i)_{i\in I})) \mid 
+    \begin{array}[t]{l}
+    	\text{$S_i$ is any type, $l_i$ is any label,}\\
+    	\text{$\vec Y_i, P_i = \toGrammarf{S_i}$, $i \in I$ }\\
+    	\text{and $X$ does not occur in $P_i$}\} \,\cup\\
+    \end{array}\\
+    &\{(S_1;S_2, (\vec X_1\vec X_2,  P_1 \cup  P_2)) \mid
+    \text{$S_i$ is any type, $\vec X_i, P_i = \toGrammarf{S_i}, i = 1,2$ } \}\,\cup\\
+    & \{(\mu X.S, (\varepsilon, \emptyset)) \mid 
+    \text{$S$ is any type and $\isCheckedf \mu X.S$}\}\,\cup\\
+    & \{(\mu X.S, (X, \{X \rightarrow a_j \vec {Z_j}\vec Y\}_{j\in J} \cup  P)) \mid 
+    \begin{array}[t]{l}
+      \text{$S$ is any type, not } \isCheckedf \mu X.S,\\
+      Y\vec Y, P = \toGrammarf{S}, \text{ $X$ does not}\\
+      \text{occur in $P$ }\text{ and } \{Y \rightarrow a_j \vec {Z_j}\}_{j\in J} 
+      \subseteq  P\\
+      \text{are all the transitions from $Y$}\}
+    \end{array}\\
+\end{array}\]
+
+\begin{lemma}
+\label{lemma:bisim_unr}
+	For any type $S$, if not $\isCheckedf \mu X.S$ and 
+	$(\mu X.S, (X, \{X \rightarrow a_j \vec {Z_j}\vec Y\}_{j\in J} \cup  P))\in \mathcal{R}$
+	with $\{Y \rightarrow a_j \vec {Z_j}\}_{j\in J}\subseteq P$, then
+	$(\Unravel(\mu X.S), (X, \{X \rightarrow a_j \vec {Z_j}\vec Y\}_{j\in J} \cup  P))
+	\in \mathcal{R}$.
+\end{lemma}
+
+\begin{proof}
+	Notice that $\{Y \rightarrow a_j \vec {Z_j}\}_{j\in J}\subseteq P$ are 
+	precisely the first 
+	transitions from $\Unravel(\mu X.S)$. Furthermore, since 
+	$\subs{\mu X.S}{X} S$ is obtained from $S$ by 
+	replacing the occurrences of $X$ by $\mu X.S$, all the productions for
+	$\subs{\mu X.S}{X} S$ 
+	are given by the productions of $S$, as using $\mu X.S$
+	instead of $X$ does not contribute with any new production on $S$.
+\end{proof}
+
+We remark that whenever a type $S$ has a transition, then $\isCheckedf S$
+does not hold.
+
+\begin{lemma}
+\label{lemma:bisim_semi}
+	$(S_1;S_2, (\vec X_1\vec X_2,  P_1 \cup  P_2))\in\mathcal{R}$ iff 
+	$(S_i, (\vec X_i,  P_i))\in\mathcal{R}$, for $i=1,2$.
+\end{lemma}
+\begin{proof}
+	Assume that $(S_1;S_2, (\vec X_1\vec X_2,  P_1 \cup  P_2))\in\mathcal{R}$
+	and $(S_i, (\vec Y_i,  Q_i))\in\mathcal{R}$. Since 
+	$ \vec X_i, P_i = \toGrammarf{S_i}$ and, by construction of $\mathcal{R}$,
+	we necessarily have $ \vec Y_i, Q_i = \toGrammarf{S_i}$, it follows that
+	$\vec Y_i = \vec X_i$ and $Q_i=P_i$. With a similar reasoning we prove the
+	reciprocal implication.
+\end{proof}
+
+The same argument applies to the proof of the following lemma.
+
+\begin{lemma}
+\label{lemma:bisim_choice}
+	$(\star\{l_i\colon S_i\}_{i\in I}, (X, \{X \rightarrow \star l_i
+    \vec Y_i\}_{i\in I} \cup (\cup  P_i)_{i\in I}))\in\mathcal{R}$ iff 
+	$(S_i, (\vec Y_i,  P_i))\in\mathcal{R}$, $i \in I$.
+\end{lemma}
+
+Now we prove that the relation $\mathcal{R}$ is a bisimilarity. We do it
+by induction. For that, we use the unravelling function proposed 
+in~\cite{thiemann2016context}:
+
+\[\begin{aligned}
+\Unravel(\mu x . S) &= \Unravel(\subs{\mu X.S}{X} S)\\
+\Unravel(S_1;S_2) &= 
+\begin{cases}
+	\Unravel(S_2) & \Unravel(S_1)=\skipk\\
+	\Unravel(S_1);S_2 & \Unravel(S_1)\neq\skipk\\
+\end{cases} \\
+\Unravel(S)&= S \text{  for all other cases}
+\end{aligned}\]
+%
+Notice that for any recursive type 
+$\mu X.S$, $\Unravel(\mu X.S)$ is not a recursive type and preserves the 
+transitions from $\mu X.S$.
 
 \begin{theorem}
 \label{thm:cfst_vs_grammar}
-  $S$ is bisimilar to $\toGrammarf{S}$.
+	$\mathcal{R}$ is a bisimilarity.
 \end{theorem}
 
 \begin{proof}
-  Let $\mathcal R$ be the binary relation on types $\times$ (words
-  $\times$ productions) that contains the following sets of pairs
-  $(S, (\vec X, P))$ built in such a way that $\vec X, P = \toGrammarf S$.
-  %
-  \begin{gather*}
-    (\skipk, (\varepsilon, \emptyset))
-    \\
-    (\sharp B, (X, \{X \rightarrow \sharp B\}))
-    \\
-    (\star\{l_i\colon S_i\}_{i\in I}, (X, \{X \rightarrow \star l_i
-    \vec Y_i\}_{i\in I} \cup (\cup  P_i)_{i\in I}))
-    %
-    \text{ when } \vec Y_i, P_i = \toGrammarf{S_i}, i \in I
-    % \\
-    % (S_i, (\vec Y_i, \{X \LTSderivesP[\star l_i]
-    % \vec Y_i\}_{i\in I} \cup (\cup  P_i)_{i\in I}))
-    % %
-    % \text{ when } \vec Y_i, P_i = \toGrammarf{S_i}, i \in I
-    \\
-    (S_1;S_2, (\vec X_1\vec X_2,  P_1 \cup  P_2))
-    %
-    \text{ when } \vec X_i, P_i = \toGrammarf{S_i}, i = 1,2
-    % \\
-    % (S'_1;S_2, (\vec Y,  P_1 \cup  P_2))
-    % %
-    % \text{ and, in addition, } S_1 \LTSderives S_1' 
-    % \text{ and } \vec X_1\vec X_2 \rightarrow a \vec Y
-    % \\
-    % (S_2', (\vec Y,  P_1 \cup  P_2))
-    % %
-    % \text{ and, in addition, } \DONE{S_1}
-    % \text{ and } S_2 \LTSderives S_2' 
-    % \text{ and } \vec X_1\vec X_2 \rightarrow a \vec Y
-    \\
-    (\mu X.S, (\varepsilon, \emptyset))
-    \text{ when } \isCheckedf \mu X.S
-    \\
-    (\mu X.S, (X, \{X \rightarrow a \vec Z\vec Y\} \cup  P))
-    %
-    \text{ when not }  \isCheckedf \mu X.S \text{ and }
-    \\\quad
-    Y\vec Y, P = \toGrammarf{S}
-    \text{ and }
-    Y \rightarrow a \vec Z \in  P
-   %  \\
-   %  (T, (\vec Z\vec Y, \{X \LTSderivesP \vec Z\vec Y\} \cup  P))
-   %  %
-   %  \text{ and, in addition, } Y \LTSderivesP \vec Z
-   % \text{ and } \subs{\mu X.S}{X} S \LTSderives T
-  \end{gather*}
-  %
-  That $\mathcal R$ is a bisimulation follows by co-induction, using
-  Lemma~\ref{lem:terminated-togrammar}. % and the fact that
-  % $S \bisim \subs{\mu X.S}{X} S$~\cite{thiemann2016context}.
+	We prove that for each $(S, (\vec X, P))\in \mathcal{R}$	, if
+	$S \LTSderives[a] T$ then $\vec X \rightarrow a \vec Y\in P$
+	and $(T, (\vec Y, P'))\in \mathcal{R}$ for some $P'$. The proof is by
+	induction on the structure of $S$. With this purpose, whenever $S$ is a 
+	recursive type, we reduce the analysis to $\Unravel(S)$, that
+	is not recursive. Indeed, without loss of generality, 
+	we can always reduce the analysis of $S$
+	to the analysis of $\Unravel(S)$
+	because when $S$ is not recursive we have
+	$\Unravel(S)=S$.
+	\begin{itemize}
+		\item $(\skipk, (\varepsilon, \emptyset))$: $\skipk$ does not have any
+		transition.
+		\item $(\sharp B,(X,\{X \rightarrow \sharp B\}))$: by the \LTS,
+		$\sharp B\LTSderives[\sharp B] \skipk$ and $X\rightarrow \sharp B$ with
+		$(\skipk, (\varepsilon, \emptyset))\in \mathcal{R}$.
+		\item $(\star\{l_i\colon S_i\}_{i\in I}, (X, \{X \rightarrow \star l_i
+    	\vec Y_i\}_{i\in I} \cup (\cup  P_i)_{i\in I}))$: 
+    	$\star\{l_i\colon S_i\}_{i\in I}\LTSderives[l_i] S_i$ and 
+    	$X \rightarrow \star l_i \vec Y_i$ for each $i\in I$. By 
+    	lemma~\ref{lemma:bisim_choice}, $(S_i, (\vec Y_i,  P_i))\in\mathcal{R}$
+    	for each $i\in I$. 
+    	\item $(S_1;S_2, (\vec X_1\vec X_2,  P_1 \cup  P_2))$: start noting
+    	that, by lemma~\ref{lemma:bisim_semi}, 
+    	$(S_i, (\vec X_i, P_i))\in \mathcal{R}$ for $i=1,2$. 
+    	\begin{itemize}
+    	\item if 
+    	$S_1;S_2\LTSderives[a] S_1'; S_2$ with $S_1\LTSderives[a] S_1'$, then 
+    	$\Unravel(S_1)\LTSderives[a] S_1'$ (recall that $\Unravel(S_1)=S_1$ when
+    	$S_1$ is not recursive). 
+    	Since $(S_1,(\vec X_1, P_1))\in\mathcal{R}$, we have
+    	$(\Unravel(S_1), (\vec X_1, P_1))\in \mathcal{R}$ 
+    	(if $S_1$ is not a recursive type, $\Unravel(S_1)$ 
+    	coincides with $S_1$, otherwise apply lemma~\ref{lemma:bisim_unr}).
+    	Hence, by induction hypothesis on $\Unravel(S_1)$, we know that 
+    	$\vec X_1 \rightarrow a \vec Y_1$ and 
+    	$(S_1', (\vec Y_1,P_1'))\in \mathcal{R}$. 
+    	By lemma~\ref{lemma:bisim_semi}, we conclude that 
+    	$(S_1';S_2, (\vec Y_1 \vec X_2,P_1'\cup P_2))\in \mathcal{R}$. 
+    	\item if $S_1;S_2\LTSderives[a] S_2'$, where $\DONE{S_1}$ and 
+    	$S_2\LTSderives[a] S_2'$, it follows that 
+    	$\Unravel(S_2)\LTSderives[a] S_2'$. 
+    	Since $(S_2, (\vec X_2, P_2))\in \mathcal{R}$ we have 
+    	$(\Unravel(S_2), (\vec X_2, P_2))\in \mathcal{R}$ (again, 
+    	if $S_2$ is not a recursive type $\Unravel(S_2)=S_2$, 
+    	otherwise use lemma~\ref{lemma:bisim_unr}). 
+    	By induction hypothesis on $\Unravel(S_2)$, we thus have
+    	$\vec X_2 \rightarrow a \vec Y_2$ where 
+    	$(S_2', (\vec Y_2,P_2'))\in \mathcal{R}$. Since $\DONE{S_1}$, by
+    	lemma~\ref{lem:terminated-togrammar} we have $\vec X_1 = \varepsilon$, 
+    	hence $\vec X_1 \vec X_2 = \vec X_2 \rightarrow a \vec Y_2$.
+    	\end{itemize}
+    	\item $(\mu X.S, (\varepsilon, \emptyset))$: in this case, 
+    	$\isCheckedf \mu X.S$, thus
+    	we do not have any transition (lemma~\ref{lem:terminated-togrammar}).
+    	\item $(\mu X.S, (X, \{X \rightarrow a_j \vec {Z_j}\vec Y\}_{j\in J} \cup  P))$: 
+    	if $\mu X.S\LTSderives[b] T$, then $\Unravel(\mu X.S)\LTSderives[b] T$.
+    	Furthermore, by lemma~\ref{lemma:bisim_unr} we know that 
+    	$(\Unravel(\mu X.S), (X, \{X \rightarrow a_j \vec {Z_j}\vec Y\}_{j\in J} \cup  P))
+    	\in\mathcal{R}$. By induction hypothesis on $\Unravel(\mu X.S)$, 
+    	and since $X$ does not occur in $P$, it follows 
+    	that $b=a_j$ for some $j\in J$ and $(T, (\vec Z_j \vec Y, P'))\in \mathcal{R}$.
+	\end{itemize} 
+	The proof that any transition in the productions leads to a transition in 
+	the corresponding type is very similar and is also done by induction. 
+	For that,
+	we only need to recall that the variable $X$ is a fresh variable and, thus, 
+	the transitions from $X$ are simply the ones explicitly detailed in each 
+	pair from $\mathcal{R}$.
 \end{proof}
+
+
+%% new until here
+
+%% old proof here
+%\begin{theorem}
+%\label{thm:cfst_vs_grammar}
+%  $S$ is bisimilar to $\toGrammarf{S}$.
+%\end{theorem}
+%
+%\begin{proof}
+%  Let $\mathcal R$ be the binary relation on types $\times$ (words
+%  $\times$ productions) that contains the following sets of pairs
+%  $(S, (\vec X, P))$ built in such a way that $\vec X, P = \toGrammarf S$.
+%  %
+%  \begin{gather*}
+%    (\skipk, (\varepsilon, \emptyset))
+%    \\
+%    (\sharp B, (X, \{X \rightarrow \sharp B\}))
+%    \\
+%    (\star\{l_i\colon S_i\}_{i\in I}, (X, \{X \rightarrow \star l_i
+%    \vec Y_i\}_{i\in I} \cup (\cup  P_i)_{i\in I}))
+%    %
+%    \text{ when } \vec Y_i, P_i = \toGrammarf{S_i}, i \in I
+%    % \\
+%    % (S_i, (\vec Y_i, \{X \LTSderivesP[\star l_i]
+%    % \vec Y_i\}_{i\in I} \cup (\cup  P_i)_{i\in I}))
+%    % %
+%    % \text{ when } \vec Y_i, P_i = \toGrammarf{S_i}, i \in I
+%    \\
+%    (S_1;S_2, (\vec X_1\vec X_2,  P_1 \cup  P_2))
+%    %
+%    \text{ when } \vec X_i, P_i = \toGrammarf{S_i}, i = 1,2
+%    % \\
+%    % (S'_1;S_2, (\vec Y,  P_1 \cup  P_2))
+%    % %
+%    % \text{ and, in addition, } S_1 \LTSderives S_1' 
+%    % \text{ and } \vec X_1\vec X_2 \rightarrow a \vec Y
+%    % \\
+%    % (S_2', (\vec Y,  P_1 \cup  P_2))
+%    % %
+%    % \text{ and, in addition, } \DONE{S_1}
+%    % \text{ and } S_2 \LTSderives S_2' 
+%    % \text{ and } \vec X_1\vec X_2 \rightarrow a \vec Y
+%    \\
+%    (\mu X.S, (\varepsilon, \emptyset))
+%    \text{ when } \isCheckedf \mu X.S
+%    \\
+%    (\mu X.S, (X, \{X \rightarrow a \vec Z\vec Y\} \cup  P))
+%    %
+%    \text{ when not }  \isCheckedf \mu X.S \text{ and }
+%    \\\quad
+%    Y\vec Y, P = \toGrammarf{S}
+%    \text{ and }
+%    Y \rightarrow a \vec Z \in  P
+%   %  \\
+%   %  (T, (\vec Z\vec Y, \{X \LTSderivesP \vec Z\vec Y\} \cup  P))
+%   %  %
+%   %  \text{ and, in addition, } Y \LTSderivesP \vec Z
+%   % \text{ and } \subs{\mu X.S}{X} S \LTSderives T
+%  \end{gather*}
+%  %
+%  That $\mathcal R$ is a bisimulation follows by co-induction, using
+%  Lemma~\ref{lem:terminated-togrammar}. % and the fact that
+%  % $S \bisim \subs{\mu X.S}{X} S$~\cite{thiemann2016context}.
+%\end{proof}
 
 % We start by showing that the initial (dummy) production does not
 % affect bisimulation checking.

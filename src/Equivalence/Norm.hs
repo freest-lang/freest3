@@ -11,7 +11,7 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-module Validation.Norm
+module Equivalence.Norm
 ( prune
 , pruneWord
 , normed
@@ -24,7 +24,7 @@ module Validation.Norm
 import           Data.List (union)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import           Validation.Grammar
+import           Equivalence.Grammar
 
 -- Normalisation
 

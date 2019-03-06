@@ -27,7 +27,7 @@ rec y . +{Value: !Int;y,
 -}
 
 
-exploreTree :: forall α => Tree -> (
+exploreTree : forall α => Tree -> (
   rec x. +{LeafC: Skip,
            NodeC: rec y. &{Value: !Int;y,
                            Left:  x;y,
@@ -41,7 +41,7 @@ exploreTree tree c =
       let c = select NodeC c in
       exploreNode[α] x l r c
 
-exploreNode :: forall α => Int -> Tree -> Tree -> (
+exploreNode : forall α => Int -> Tree -> Tree -> (
   rec y. &{Value: !Int;y,
            Left:  +{LeafC: Skip, NodeC: y};y,
            Right: +{LeafC: Skip, NodeC: y};y,
@@ -63,7 +63,7 @@ exploreNode x l r c =
 -- server: compute the product of the values in a tree; stop as soon a zero is received
 -- to be completed
 
-server :: forall α => Int -> (
+server : forall α => Int -> (
   rec x. &{LeafC: Skip,
            NodeC: rec y. +{Value: ?Int;y,
                            Left:  x;y,
@@ -76,7 +76,7 @@ server n c =
     NodeC c ->
       serverNode[α] n c
 
-serverNode :: forall α => Int -> (
+serverNode : forall α => Int -> (
   rec y. +{Value: ?Int;y,
            Left:  &{LeafC: Skip, NodeC: y};y,
            Right: &{LeafC: Skip, NodeC: y};y,
@@ -94,10 +94,10 @@ serverNode n c =
 
 -- main
 
-aTree :: Tree
+aTree : Tree
 aTree = Node 7 (Node 5 Leaf Leaf) (Node 9 (Node 11 Leaf Leaf) (Node 15 Leaf Leaf))
 
-start :: Int
+start : Int
 start =
   let writer, reader = new (rec x. +{LeafC: Skip, NodeC: rec y. &{Value: !Int;y, Left: x;y, Right: x;y, Exit: Skip}}) in
   let x = fork (exploreTree[Skip] aTree writer) in

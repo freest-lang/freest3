@@ -40,20 +40,44 @@ Skip;Skip
   SL
 Skip;+{S:Skip,I:!Int}
   SL
+
+-- recursive types
+
 rec x . ?Bool
   SL
-rec x . Skip;Skip
+  
+rec x . Skip
   SU
-rec x . !Int;Skip;?Int
+  
+rec x . Skip
   SL
-rec x . x
+  
+rec x . (Skip; Skip)
+  SU
+  
+rec x . (Skip; (Skip; Skip); Skip)
+  SU
+  
+rec x . (Skip; x)
+  SU
+  
+rec x . (Skip; x)
   SL
-
-rec tree . &{Leaf:Skip, Node:?Int;tree;tree}
+  
+rec x . (Skip; ((Skip; x); Skip); Skip)
+  SU
+  
+rec x . (Skip; ((Skip; x); Skip); Skip)
   SL
-
-rec treeChannel . +{Leaf:Skip, Node:!Int;treeChannel;treeChannel}
+  
+rec x . (!Int; Skip; ?Int)
   SL
-
-rec alpha . !Int;rec treeChannel . +{Leaf:Skip, Node:!Int;treeChannel;treeChannel};rec treeChannel . +{Leaf:Skip, Node:!Int;treeChannel;treeChannel};alpha
+  
+rec tree . &{Leaf: Skip, Node: ?Int;tree;tree}
+  SL
+  
+rec treeChannel . +{Leaf: Skip, Node: !Int;treeChannel;treeChannel}
+  SL
+  
+rec alpha . !Int;rec treeChannel . +{Leaf:Skip, Node:!Int;treeChannel;treeChannel};rec treeChannel . +{Leaf:Skip, Node:!Int;treeChannel;treeChannel};x
   SL

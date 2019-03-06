@@ -40,7 +40,7 @@ matchShowSpec a =
 matchKindingValidSpec :: [String] -> Spec
 matchKindingValidSpec [ts, k] =
   it ts $ do
-    (kindOfScheme (0,0) (read ts :: TypeScheme)) `shouldBe` (read k :: Kind)
+    (kindOfScheme (read ts :: TypeScheme)) `shouldBe` (read k :: Kind)
 
 main :: IO ()
 main = hspec spec

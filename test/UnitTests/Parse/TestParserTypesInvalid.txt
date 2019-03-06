@@ -1,0 +1,37 @@
+!? Int
+!Int;;?Int
++&{Leaf:Skip,Node:!Int;?Int}
+!Skip
+?Skip
+!Int ->-o !Int
+(?)Int
+(!)Char
+Char (->) Char
+Char (->) Char
+?Skip
+!Skip
+
+-- Syntatically invalid choices, conflicting choices
+
++{ A: Unit, A: Bool }
++{ A: Unit, A: Bool, B: Int }
++{ A: Unit, B: Int, A: Bool }
++{ A: Unit, B: Int, B: Int, A: Bool }
+&{ A: Unit, A: Bool }
+&{ A: Unit, A: Bool, B: Int }
+&{ A: Unit, B: Int, A: Bool }
+&{ A: Unit, B: Int, B: Int, A: Bool }
+&{}
++{}
+
+-- Syntatically invalid datatypes, conflicting 
+
+[ A: Char, A: Bool ]
+[ A: Char, A: Bool, B: Int ]
+[ A: Char, B: Int, A: Bool ]
+[ A: Char, B: Int, B: Int, A: Bool ]
+[ A: Char, A: Bool ]
+[ A: Char, A: Bool, B: Int ]
+[ A: Char, B: Int, A: Bool ]
+[ A: Char, B: Int, B: Int, A: Bool ]
+[]

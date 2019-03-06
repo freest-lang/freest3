@@ -45,6 +45,7 @@
 \newcommand\tIChoice[1]{\oplus{#1}}
 \newcommand\tEChoice[1]{\&{#1}}
 \newcommand{\tChoice}[1]{\star{#1}}
+\newcommand{\tData}[1]{[{#1}]}
 \newcommand\tUnFun[2]{#1\tcFun#2}
 \newcommand\tLinFun[2]{#1\tcLolli#2}
 \newcommand\tPair[2]{(#1,\,#2)}
@@ -52,7 +53,7 @@
 \newcommand\tRec[2]{\kRec\,#1\,.\,#2}
 %\newcommand\tForall[2]{\forall\,#1\,.\,#2}
 %\newcommand\tForall[2]{\kForall\,#1\,=>\,#2}
-\newcommand\tForall[2]{\kForall\,#1\Rightarrow#2}
+\newcommand\tForall[2]{\forall\,#1\Rightarrow#2}
 % Basic Types
 \newcommand{\unite}{()}
 \newcommand{\inte}{\keyword{Int}}
@@ -61,8 +62,8 @@
 
 \newcommand\tRecK[2]{\kRec\,#1\,.\,#2}
 % Environments
-% \newcommand\emptyEnv{\cdot}
-\newcommand\emptyEnv{\varepsilon}
+\newcommand{\Empty}{\varepsilon}
+\newcommand\emptyEnv{\Empty}
 \newcommand\kindEnv{\Delta}
 \newcommand\varEnv{\Gamma}
 
@@ -97,23 +98,25 @@
 \newcommand\casee[2]{\keyword{case}\;#1\;\keyword{of}\;#2}
 
 % Sequents
+\newcommand{\isType}[3][\Delta]{{#1} \vdash {#2} : {#3}}
 \newcommand{\algkindout}[3][\kindEnv]{{#1} \Alg {#2} \shortrightarrow{ #3}}
 \newcommand{\algkindin}[3][\kindEnv]{{#1} \Alg {#2} \shortleftarrow {#3}}
-\newcommand{\subkind}[3][\kindEnv]{{#1} \vdash {#2} <: {#3}}
-\newcommand{\algtypeout}[4][\kindEnv;\varEnv]{{#1} \Alg {#2}
-  \shortrightarrow {#3};{#4}}
-\newcommand{\algtypein}[4][\kindEnv;\varEnv]{{#1} \Alg {#2}\colon {#3}
-  \shortrightarrow {#4}}
+\newcommand{\subkind}[2]{{#1} <: {#2}}
+\newcommand{\algtypeout}[4][\kindEnv;\varEnv]{{#1} \Alg {#2} \shortrightarrow {#3};{#4}}
+%\newcommand{\algtypein}[4][\kindEnv;\varEnv]{{#1} \Alg {#2}\colon {#3}\shortrightarrow {#4}}
+\newcommand{\algtypein}[4][\kindEnv;\varEnv]{{#1} \Alg {#2}\shortleftarrow {#3}; {#4}}
 \newcommand{\ctxequiv}[3][\kindEnv]{{#1} \vdash \Equiv{#2}{#3}}
 \newcommand{\typeequiv}[3][\kindEnv]{{#1} \vdash \Equiv{#2}{#3}}
-\newcommand{\isLin}[2][\kindEnv]{{#1} \vdash {#2}\colon\link}
-\newcommand{\isUn}[2][\kindEnv]{{#1} \vdash {#2}\colon\unk}
+\newcommand{\isqualifier}[3][\kindEnv]{{#1} \vdash {#2}\colon{#3}}
+\newcommand{\isLin}[2][\kindEnv]{\isqualifier[#1]{#2}\link}
+\newcommand{\isUn}[2][\kindEnv]{\isqualifier[#1]{#2}\unk}
+\newcommand{\contractive}[2][\kindEnv]{{#1} \vdash_{\textsf c} {#2}}
 %\newcommand\Alg{\vdash_{\textsf a}}
 \newcommand\Alg{\vdash}
 
 % Operators
 \newcommand\Extract[1]{\leadsto_{#1}}% \rightlsquigarrow}
-\newcommand{\subs}[3]{[#1/#2]#3}
+\newcommand{\subs}[3]{[{#1}/{#2}]{#3}}
 \newcommand\dual[1]{\overline{#1}}
 
 % Predicates
@@ -177,17 +180,20 @@
 
 \lstdefinelanguage{freest}{
   style=eclipse,
-  morekeywords=[1]{Int, Char, Bool, Skip, type, dualof, forall, rec, let, in, if, then, else, new, send, receive,
-    select, fork, case, of, data, match, with, True, False},
-  sensitive=true,%
-  literate={->}{{$\rightarrow$}}1 {=>}{{$\Rightarrow$}}1{alpha}{{$\alpha$}}1,%
-   breaklines=true,
-   morecomment=[l]{--},%
-   morecomment=[s]{{-}{-}},%
-   morestring=[b]',%
-   morestring=[b]",%
-   morestring=[s]{`}{`},%
- }
+  morekeywords=[1]{Int, Char, Bool, Skip, type, dualof, forall, rec, let, in, if, then, else, new, send, receive, select, fork, case, of, data, match, with, True, False},
+  sensitive=true,
+  literate=
+  {->}{$\rightarrow$}2
+  {-o}{$\multimap$}2
+  {=>}{$\Rightarrow$}2
+  {alpha}{$\alpha$}1,
+  breaklines=true,
+  morecomment=[l]{--},%
+  morecomment=[s]{{-}{-}},%
+  morestring=[b]',%
+  morestring=[b]",%
+  morestring=[s]{`}{`},%
+}
 
 \lstset{
   language=freest,

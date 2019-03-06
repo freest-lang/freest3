@@ -1,0 +1,9 @@
+id' : forall a : SU => a -> a
+id' x = x
+
+f : Int -o Int
+f x = x
+
+start : Int
+start =
+  (id'[Int -o Int] f) 5

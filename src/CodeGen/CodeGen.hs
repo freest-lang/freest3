@@ -10,7 +10,7 @@ import           Control.Monad.State
 import           Data.List
 import qualified Data.Map.Strict as Map
 import           System.Directory
-import           Syntax.Terms
+import           Syntax.Exps
 import           Validation.Kinding
 import           Validation.TypingState(KindEnv)
 import           Syntax.Types
@@ -89,13 +89,11 @@ genUtils path =
      genFork ++ "\n\n" ++ genNew ++ "\n\n" ++
      genSend ++ "\n\n" ++ genReceive)
 
+{-
 genUtilsImports :: String
 genUtilsImports =
   "import Control.Concurrent (forkIO, newEmptyMVar, putMVar, takeMVar)\nimport Unsafe.Coerce\n\n"
 
-
-genFork :: String
-genFork = "_fork e = do\n  forkIO e\n  return ()"
 
 genNew :: String
 genNew = "_new = do\n  m1 <- newEmptyMVar\n  m2 <- newEmptyMVar\n  return ((m1, m2), (m2, m1))"
@@ -105,20 +103,24 @@ genSend = "_send x (m1, m2) = do\n  putMVar m2 (unsafeCoerce x)\n  return (m1, m
 
 genReceive :: String
 genReceive = "_receive (m1, m2) = do\n  a <- takeMVar m1\n  return ((unsafeCoerce a), (m1, m2))"
+-}
 
-{- With channels
+-- With channels
+
+genFork :: String
+genFork = "_fork e = do\n  forkIO e\n  return ()"
 
 genUtilsImports :: String
 genUtilsImports =
   "import Control.Concurrent (forkIO)\nimport Control.Concurrent.Chan.Synchronous\nimport Unsafe.Coerce"
 
 genNew :: String
-genNew = "new = do\n  ch <- newChan\n  return (ch, ch)"
+genNew = "_new = do\n  ch <- newChan\n  return (ch, ch)"
 
 genSend :: String
-genSend = "send x ch  = do\n  writeChan ch (unsafeCoerce x)\n  return ch"
+genSend = "_send x ch  = do\n  writeChan ch (unsafeCoerce x)\n  return ch"
 
 genReceive :: String
-genReceive = "receive ch = do\n  a <- readChan ch\n  return ((unsafeCoerce a), ch)"
--}
+genReceive = "_receive ch = do\n  a <- readChan ch\n  return (unsafeCoerce a, ch)"
+
   

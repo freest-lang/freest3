@@ -5,19 +5,21 @@ import           Parse.Lexer
 import           Validation.TypingState (KindEnv)
 import           Syntax.Types
 import           Syntax.Kinds
-import           Syntax.Terms
+import           Syntax.Exps
 import qualified Data.Map.Strict as Map
 import           Control.Monad.State
 import           Data.List (nubBy, deleteFirstsBy, intercalate)
 import           Utils.Errors
 import           System.Exit (die)
 import           Data.Char
+
 }
 
-%name types Types
+%name types Type
 %name typeScheme TypeScheme
 %name terms Prog
 %name kinds Kind
+%name expr Expr
 %tokentype { Token }
 %error { parseError }
 %monad { ParserState }
@@ -40,10 +42,10 @@ import           Data.Char
   ';'      {TokenSemi _}
   '!'      {TokenMOut _}
   '?'      {TokenMIn _}
-  '+{'      {TokenLIChoice _}
-  '&{'      {TokenLEChoice _}
+  '{'      {TokenLBrace _}
   '}'      {TokenRBrace _}
   '=>'     {TokenFArrow _}
+  '&'      {TokenAmpersand _} 
   '+'      {TokenPlus _}
   '-'      {TokenMinus _}
   '*'      {TokenTimes _}
@@ -63,6 +65,7 @@ import           Data.Char
   in       {TokenIn _}
   '='      {TokenEq _}
   data     {TokenData _}
+  type     {TokenType _}
   '|'      {TokenPipe _}
   if       {TokenIf _}
   then     {TokenThen _}
@@ -77,14 +80,14 @@ import           Data.Char
   case     {TokenCase _}
   of       {TokenOf _}
   forall   {TokenForall _}
-  
+  dualof   {TokenDualof _}  
 
 %right in
 %nonassoc nl new send OP -- '<' '>'
 %right '->' '-o' in
 %left ';'
 %left '+' '-'
-%left '*'
+%left '*' '/' '%'
 
 %nonassoc '.'
 %left NEG
@@ -94,89 +97,99 @@ import           Data.Char
 ---------------
 -- MAIN RULE --
 ---------------
--- TODO: Block comments with line comments inide
 
-Prog : Defs                {% return ()}
-     | Defs NL Prog        {% return ()}
-    -- | {-empty-}           {% return ()}
+Prog
+  : Defs         {}
+  | Defs NL Prog {}
 
-Defs : DataDecl 
-         {% do 
-	     let (p,c,k,ts) = $1
-             kenv <- getKenv
-             checkNamesClash kenv c
-               ("Multiple declarations of " ++ (styleRed ("'" ++ c ++ "'"))) p
-	     addToKenv c (p, k)
-	     let binds = typesToFun p c ts
-
-             checkBindsClash binds
-	     mapM (\(cons, (p, t)) -> addToCenv cons p (TypeScheme [] t)) binds
-	     addToVenv c p (TypeScheme [] (convertDT p binds))
-	     return ()
-	 }
-     | FunSig  {% do 
-	           let (p,x,y) = $1
-                   venv <- getVenv
-                   checkNamesClash venv x
-                     ("Duplicate type signatures for " ++ (styleRed ("'" ++ x ++ "'"))) p
-		   addToVenv x p y
-		   return ()}
-     | FunDecl  {% do 
-   	           let (x,y) = $1
-		   addToEenv x y
-		   return ()
-	        }
-
-  
+Defs
+  : DataDecl  {}
+  | FunSig    {}
+  | FunDecl   {}
+  | TypeAbbrv {}
 
 
 NL : nl NL     {}
    | nl        {}
 
--- emptyNL : nl NL     {}
---         | nl        {}
---         | {-empty-} {}
+------------------------
+-- TYPE ABBREVIATIONS --
+------------------------
+
+ -- TODO: review verifications & envs added & Kind
+TypeAbbrv :: { () } :
+  type CONS '=' Type
+    {% do
+         let (TokenCons p c) = $2
+         venv <- getVenv
+         checkNamesClash venv c
+           ("Multiple declarations of " ++ styleRed c) (pos p)
+         addToKenv c (pos p, Kind Functional Un)
+         addToVenv c (pos p, TypeScheme [] $4)
+    }
 
 ---------------
 -- DATATYPES --
 ---------------
 
-DataDecl : data CONS KindTU '=' DataCons   {let (TokenCons p x) = $2 in (pos p,x,$3,$5)}
+DataDecl :: { () } :
+  data CONS '=' DataCons
+    {% do
+        let (TokenCons p c) = $2
+        kenv <- getKenv
+        checkNamesClash kenv c
+          ("Multiple declarations of '" ++ styleRed c ++ "'") (pos p)
+        addToKenv c (pos p, Kind Functional Un)
+        let binds = typesToFun (pos p) c $4
+        checkBindsClash binds
+        mapM (\(cons, (p, t)) -> addToCenv cons p (TypeScheme [] t)) binds
+        addToVenv c (pos p, TypeScheme [] (convertDT (pos p) binds))
+    }
 
-DataCons : DataCon {[$1]}
-         | DataCons '|' DataCon {$1 ++ [$3]}
+DataCons :: { [(Constructor, (Pos, [Type]))] }
+  : DataCon {[$1]}
+  | DataCons '|' DataCon {$1 ++ [$3]}
 
-DataCon : CONS TypeParams  {let (TokenCons p x) = $1 in (x,(pos p,$2))}
+DataCon :: { (Constructor, (Pos, [Type])) } :
+  CONS TypeParams  {let (TokenCons p x) = $1 in (x,(pos p,$2))}
 
-TypeParams : {- empty -} { [] }
-           | TypeParams Types  { $1 ++ [$2] }
 
-KindTU :: { Kind }
-KindTU
-     : ':'':' SU   {Kind Session Un}
-     | ':'':' SL   {Kind Session Lin}
-     | ':'':' TU   {Kind Functional Un}
-     | ':'':' TL   {Kind Functional Lin}
-     | {- empty -} {Kind Functional Un}
-
+TypeParams :: { [Type] }
+  : {- empty -} { [] }
+  | TypeParams Type  { $1 ++ [$2] }
 
 ---------------------------
 -- FUN TYPE DECLARATIONS --
 ---------------------------
 
-FunSig : VAR ':'':' FunTypeScheme  {let (TokenVar p x) = $1 in (pos p,x,$4)}
+FunSig :: { () } :
+  VAR ':' FunTypeScheme
+    {% do
+        let (TokenVar p f) = $1
+        venv <- getVenv
+        checkNamesClash venv f
+          ("Duplicate type signatures for " ++ styleRed f) (pos p)
+        addToVenv f (pos p, $3) 
+    }
 
-FunTypeScheme : TypeScheme {$1}
-              | Types      {TypeScheme [] $1}
+FunTypeScheme :: { TypeScheme }
+  : TypeScheme { $1 }
+  | Type       { TypeScheme [] $1 }
 
 ----------------------
 -- FUN DECLARATIONS --
 ----------------------
 
-FunDecl : VAR Params '=' Expr   {let (TokenVar p x) = $1 in (x,(pos p, $2, $4))}
+FunDecl :: { () } :
+  VAR Params '=' Expr
+    {% do
+        let (TokenVar p x) = $1
+        addToEenv x (pos p, $2, $4)
+    }
 
-Params : {- empty -}   {[]}
-       | Params VAR    {let (TokenVar _ x) = $2 in ($1 ++ [x])}
+Params :: { Params }
+  : {- empty -}   {[]}
+  | Params VAR    {let (TokenVar _ x) = $2 in ($1 ++ [x])}
 
 
 -----------------
@@ -184,172 +197,194 @@ Params : {- empty -}   {[]}
 -----------------
 
 
-Expr : let VAR '=' Expr in Expr         {let (TokenLet p) = $1 in
-				         let (TokenVar px x) = $2 in
-				         UnLet (pos p) (pos px,x) $4 $6}    
+Expr :: { Expression }
+  : let VAR '=' Expr in Expr         {let (TokenLet p) = $1 in
+                                      let (TokenVar px x) = $2 in
+				      UnLet (pos p) (pos px,x) $4 $6}    
 
-     | let VAR ',' VAR '=' Expr in Expr {let (TokenLet p) = $1 in
+  | let VAR ',' VAR '=' Expr in Expr {let (TokenLet p) = $1 in
           		                 let (TokenVar px x) = $2 in
 					 let (TokenVar py y) = $4 in
 		          		 BinLet (pos p) (pos px,x) (pos py,y) $6 $8}
 
-     | '(' Expr ',' Expr ')'            {let (TokenLParen p) = $1 in
+  | '(' Expr ',' Expr ')'            {let (TokenLParen p) = $1 in
                                          Pair (pos p) $2 $4}
 
-     | if Expr then Expr else Expr      {let (TokenIf p) = $1 in
-                                         Conditional (pos p) $2 $4 $6
-			                }
+  | if Expr then Expr else Expr      {let (TokenIf p) = $1 in
+                                         Conditional (pos p) $2 $4 $6}
 
-     | new Types                        {New (getPos $1) $2}
+  | new Type                        {New (getPos $1) $2}
      
+  | receive Expr                     {Receive (getPos $1) $2}
 
-     | receive Expr                     {Receive (getPos $1) $2}
-
-     | select CONS Expr                 {let (TokenCons _ x) = $2 in
+  | select CONS Expr                 {let (TokenCons _ x) = $2 in
 					   Select (getPos $1) x $3}
 
-     | match Expr with MatchMap         {Match (getPos $1) $2 (Map.fromList $4)}
+  | match Expr with MatchMap         {Match (getPos $1) $2 $4}
 
-     | fork Expr                        {Fork (getPos $1) $2}
+  | fork Expr                        {Fork (getPos $1) $2}
 
-     | case Expr of CaseMap             {Case (getPos $1) $2 (Map.fromList $4)}
+  | case Expr of CaseMap             {Case (getPos $1) $2 $4}
 
-     | Form {$1}
-
-
-Form : '-' Form %prec NEG {App (getPos $1) (Variable (getPos $1) "negate") $2}
-     | Form '+' Form      {App (getEPos $1) (App (getEPos $1) (Variable (getPos $2) "(+)") $1) $3}
-     | Form '-' Form      {App (getEPos $1) (App (getEPos $1) (Variable (getPos $2) "(-)") $1) $3}
-     | Form '*' Form      {App (getEPos $1) (App (getEPos $1) (Variable (getPos $2) "(*)") $1) $3}
-     | Form OP Form       {let (TokenOp p s) = $2 in
-                            App (getEPos $1) (App (getEPos $1) (Variable (pos p) s) $1) $3}
-     | Juxt               {$1}       
+  | Form {$1}
 
 
-Juxt : Juxt Atom                   {App (getEPos $1) $1 $2}
+Form :: { Expression }
+  : '-' Form %prec NEG {App (getPos $1) (Variable (getPos $1) "negate") $2}
+  | Form '+' Form      {App (getEPos $1) (App (getEPos $1) (Variable (getPos $2) "(+)") $1) $3}
+  | Form '-' Form      {App (getEPos $1) (App (getEPos $1) (Variable (getPos $2) "(-)") $1) $3}
+  | Form '*' Form      {App (getEPos $1) (App (getEPos $1) (Variable (getPos $2) "(*)") $1) $3}
+  | Form OP Form       {let (TokenOp p s) = $2 in
+                          App (getEPos $1) (App (getEPos $1) (Variable (pos p) s) $1) $3}
+  | Juxt               {$1}       
 
-     | VAR '[' CommaTypes ']'      {let (TokenVar p x) = $1 in
-                                   TypeApp (pos p) (Variable (pos p) x) $3}  
 
-     | send Atom Atom              {Send (getPos $1) $2 $3}
+Juxt :: { Expression }
+  :  Juxt Atom            {App (getEPos $1) $1 $2}
+
+  | VAR '[' TypeList ']'  {let (TokenVar p x) = $1 in
+                            TypeApp (pos p) (Variable (pos p) x) $3}  
+
+  | send Atom Atom        {Send (getPos $1) $2 $3}
    
-     | Atom                        {$1}
+  | Atom                  {$1}
+
+Atom :: { Expression }
+  : '()'            { Unit (getPos $1) } 
+  | NUM             { let (TokenInteger p x) = $1 in Integer (pos p) x }
+  | BOOL            { let (TokenBool p x) = $1 in Boolean (pos p) x }
+  | CHAR            { let (TokenChar p x) = $1 in Character (pos p) x }
+  | VAR             { let (TokenVar p x) = $1 in Variable (pos p) x }
+  | CONS            { let (TokenCons p x) = $1 in Constructor (pos p) x }
+  | '(' Expr ')'    { $2 }
 
 
-
-Atom : '(' Expr ')'                {$2}
-
-     | '()'                        {Unit (getPos $1)}
-
-     | NUM                         {let (TokenInteger p x) = $1 in
-		         	     Integer (pos p) x}
-
-     | BOOL                        {let (TokenBool p x) = $1 in
-			              Boolean (pos p) x}
-
-     | CHAR                        {let (TokenChar p x) = $1 in
-		         	     Character (pos p) x}
-
-     | VAR                         {let (TokenVar p x) = $1 in
-                                     Variable (pos p) x} 
-
-     | CONS                        {let (TokenCons p x) = $1 in
-				      Constructor (pos p) x}
-
-CommaTypes : Types                   {[$1]}
-           | CommaTypes ',' Types    {$1 ++ [$3]}
+TypeList :: { [Type] }
+  : Type                 {[$1]}
+  | TypeList ',' Type    {$1 ++ [$3]}
 
 
+MatchMap :: { MatchMap } :
+  MatchValue MatchNext  { Map.union $1 $2 }
 
-MatchMap : MatchValue MatchNext  {$1 : $2}
+MatchNext :: { MatchMap }
+  : ';' MatchMap  { $2 }
+  | {- empty -}   { Map.empty }
 
-MatchNext : ';' MatchMap         {$2}
-          | {- empty -}          {[]}
+MatchValue :: { MatchMap } :
+  CONS VAR '->' Expr   {let (TokenCons _ c) = $1 in
+                        let (TokenVar _ x) = $2 in
+                        Map.singleton c (x,$4)}
 
-MatchValue : CONS VAR '->' Expr   {let (TokenCons _ c) = $1 in
-				       let (TokenVar _ x) = $2 in
-                                       (c, (x,$4))}
+CaseMap :: { CaseMap }
+  : CaseValue CaseNext  { Map.union $1 $2 }
 
+CaseNext  :: { CaseMap }
+  : ';' CaseMap         { $2 }
+  | {- empty -}         { Map.empty }
 
-CaseMap : CaseValue CaseNext  {$1 : $2}
-
-CaseNext : ';' CaseMap         {$2}
-         | {- empty -}         {[]}
-
-CaseValue : CONS Params '->' Expr   {let (TokenCons _ c) = $1 in			       
-                                       (c, ($2,$4))}
+CaseValue :: { CaseMap } : 
+  CONS Params '->' Expr   {let (TokenCons _ c) = $1 in Map.singleton c ($2,$4)}
 
 -----------
 -- TYPES --
 -----------
 
-TypeScheme : forall CommaBinds '=>' Types {TypeScheme $2 $4}
+TypeScheme :: { TypeScheme } :
+  forall BindList '=>' Type {TypeScheme $2 $4}
 
-CommaBinds : Bind                 {[$1]}
-           | CommaBinds ',' Bind  {$1 ++ [$3]}
+BindList :: { [Bind] }
+  : Bind               { [$1] }
+  | BindList ',' Bind  { checkBindClash $1 $3 }
 
-Bind : VAR UnKind    {let (TokenVar _ x) = $1 in Bind x $2}
+Bind :: { Bind }
+  : VAR KindUn    {let (TokenVar p x) = $1 in Bind x (pos p) $2}
 
-UnKind :: { Kind }
-     : ':'':' SU   {Kind Session Un}
-     | ':'':' SL   {Kind Session Lin}
-     | ':'':' TU   {Kind Functional Un}
-     | ':'':' TL   {Kind Functional Lin}
-     | {- empty -} {Kind Session Un}
 
--- {let (TokenVar _ x) = $2 in (Rec (Bind x $3) $5)}
-Types : '(' Types ')'                {$2}
-      | rec VarCons KindSL '.' Types {Rec (getPos $1) (Bind $2 $3) $5}
-      | Types ';' Types              {Semi (getPos $2) $1 $3}
-      | Types '->' Types             {Fun (getPos $2) Un $1 $3}
-      | Types '-o' Types             {Fun (getPos $2) Lin $1 $3}
-      | '(' Types ',' Types ')'      {PairType (getPos $3) $2 $4}
-      | '?' BasicType                {let (_,t) = $2 in Message (getPos $1) In t}
-      | '!' BasicType                {let (_,t) = $2 in Message (getPos $1) Out t}
-      | '[' Constructor ']'          {Datatype (getPos $1) (Map.fromList $2)}
-      | Choice                       {$1}
-      | Skip                         {Skip (getPos $1)}
-      | BasicType                    {let (p,t) = $1 in Basic p t}
-      | VAR                          {let (TokenVar p x) = $1 in Var (pos p) x}
-      | CONS                         {let (TokenCons p x) = $1 in Var (pos p) x}
+Type :: { Type }
+  : rec VarCons KindUn '.' Type  { Rec (getPos $1) (Bind (snd $2) (fst $2) $3) $5 } -- TODO: rec VAR apenas?
+  | Type ';' Type                { Semi (getPos $2) $1 $3 }
+  | Type Multiplicity Type       { Fun (fst $2) (snd $2) $1 $3 }
+  | '(' Type ',' Type ')'        { PairType (getPos $1) $2 $4 }
+  | Polarity BasicType           { Message (fst $1) (snd $1) (snd $2) }
+  | '[' FieldList ']'            { Datatype (getPos $1) $2 }
+  | ChoiceView '{' FieldList '}' { Choice (fst $1) (snd $1) $3 } --{ checkClash (fst $1) (snd $1) $3 }
+  | dualof Type                  { Dualof (getPos $1) $2 }
+  | Skip                         { Skip (getPos $1) }
+  | BasicType                    { uncurry Basic $1 }
+  | VAR                          { let (TokenVar p x) = $1 in Var (pos p) x }
+  | CONS                         { let (TokenCons p x) = $1 in Var (pos p) x }
+  | '(' Type ')'                 { $2 }
 
+
+Polarity :: { (Pos, Polarity) }
+  : '?' { (getPos $1, In) }
+  | '!' { (getPos $1, Out) }
+
+Multiplicity :: { (Pos, Multiplicity) }
+  : '->' { (getPos $1, Un) }
+  | '-o' { (getPos $1, Lin) }
+
+ChoiceView :: { (Pos, ChoiceView) }
+  : '+' { (getPos $1, Internal) }
+  | '&' { (getPos $1, External) }
+  
 -- TODO: add position
-VarCons : VAR  {let (TokenVar _ x) = $1 in x}
-        | CONS {let (TokenCons _ x) = $1 in x}
+-- Either a var or a constructor
+VarCons :: { (Pos,String) }
+  : VAR  {let (TokenVar p x) = $1 in (pos p, x) }
+  | CONS {let (TokenCons p x) = $1 in (pos p, x) }
 
-Choice : '+{' Constructor '}'  {Choice (getPos $1) Internal (Map.fromList $2)}
-       | '&{' Constructor '}'  {Choice (getPos $1) External (Map.fromList $2)}
+FieldList :: { TypeMap }-- { [(Constructor, Type)] }
+  : Field                { uncurry Map.singleton $1 }
+  | FieldList ',' Field  { checkLabelClash $1 $3 }
 
-Constructor : Con                  {$1}
-            | Constructor ',' Con  {$3 ++ $1}
+Field :: { (Constructor, Type) }
+  : CONS ':' Type { let (TokenCons _ x) = $1 in (x, $3) }
 
-Con : CONS ':' Types {let (TokenCons _ x) = $1 in [(x, $3)]}
+BasicType :: { (Pos, BasicType) }
+  : Int  { (getPos $1, IntType) }
+  | Char { (getPos $1, CharType) }
+  | Bool { (getPos $1, BoolType) }
+  | '()' { (getPos $1, UnitType) }
 
-BasicType  : Int  {(getPos $1, IntType)}
-           | Char {(getPos $1, CharType)}
-           | Bool {(getPos $1, BoolType)}
-           | '()' {(getPos $1, UnitType)}
+KindUn :: { Kind } :
+    ':' SU   { Kind Session Un }
+  | ':' SL   { Kind Session Lin }
+  | ':' TU   { Kind Functional Un }
+  | ':' TL   { Kind Functional Lin }
+  |          { Kind Session Un }
 
-
-KindSL :: { Kind }
-     : ':'':' SU   {Kind Session Un}
-     | ':'':' SL   {Kind Session Lin}
-     | ':'':' TU   {Kind Functional Un}
-     | ':'':' TL   {Kind Functional Lin}
-     | {- empty -} {Kind Session Lin}
-
-Kind :: { Kind }
-     : SU   {Kind Session Un}
-     | SL   {Kind Session Lin}
-     | TU   {Kind Functional Un}
-     | TL   {Kind Functional Lin}
+Kind :: { Kind } :
+    SU   {Kind Session Un}
+  | SL   {Kind Session Lin}
+  | TU   {Kind Functional Un}
+  | TL   {Kind Functional Lin}
 
 
 {
 
--- TODO: tmp ... remove   
--- type KindEnv = Map.Map TypeVar (Pos, Kind)
+checkLabelClash :: TypeMap -> (Constructor, Type) -> TypeMap
+checkLabelClash m1 (c,t) =
+  if Map.member c m1 then
+    (error $ prettyPos (typePos t) ++ " Multiple declarations for " ++ show c)
+  else
+    Map.insert c t m1
 
+-- TODO: Add position to bind
+checkBindClash :: [Bind] -> Bind -> [Bind]
+checkBindClash bs b@Bind{var=x} = 
+  if b `elem` bs then
+    bs ++ [b]-- (error (prettyPos (0,0) ++ " Multiple declarations for bind " ++ show x)) -- ++ "\n\n" ++ show b ++ "\n" ++ show bs
+  else
+    bs ++ [b]
+    
+  -- case m1 Map.!? c of
+  --   Just _ ->
+  --     error $ prettyPos (typePos t) ++ " Multiple declarations for " ++ show c
+  --   Nothing -> Map.insert c t m1
+  
+  
 ------------------------
 -- Handle Parse Monad --
 ------------------------
@@ -370,10 +405,10 @@ getKenv = do
   return kenv
 
 
-addToVenv :: TermVar -> Pos -> TypeScheme -> ParserState ()
-addToVenv x p t =
+addToVenv :: TermVar -> (Pos, TypeScheme) -> ParserState ()
+addToVenv x p =
   modify (\(f, venv, eenv, cenv, kenv, err) ->
-            (f, Map.insert x (p,t) venv, eenv, cenv, kenv, err))
+            (f, Map.insert x p venv, eenv, cenv, kenv, err))
 
 getVenv :: ParserState VarEnv
 getVenv = do
@@ -413,17 +448,16 @@ parseType :: String -> Type
 parseType s = fst $ runState (parse s) (initialState "" Map.empty)
   where parse = types . scanTokens
 
+instance Read Type where
+  readsPrec _ s = [(parseType s, "")]
+
 parseTypeScheme :: String -> TypeScheme
 parseTypeScheme s = fst $ runState (parse s) (initialState "" Map.empty)
   where parse = typeScheme . scanTokens
 
-instance Read Type where
-  readsPrec _ s = [(parseType s, "")]
-
 instance Read TypeScheme where
   readsPrec _ s = [(parseTypeScheme s, "")]
 
--- [(parseKind s, "")]
 -- TODO: move to kinds ??
 instance Read Kind where
   readsPrec _ s = -- [(parseKind s, "")]    
@@ -437,7 +471,15 @@ instance Read Kind where
             then [(result, drop (length attempt) (trim s))]
             else tryParse xs
           trim s = dropWhile isSpace s
-          
+
+
+parseExpr :: String -> Expression
+parseExpr s = fst $ runState (parse s) (initialState "" Map.empty)
+  where parse = expr . scanTokens
+  
+instance Read Expression where
+  readsPrec _ s = [(parseExpr s, "")]
+  
 -- parseDefs file str = p str 
 --  where p = scanTokens
 parseDefs file venv str = execState (parse str) (initialState file venv)
@@ -446,10 +488,11 @@ parseDefs file venv str = execState (parse str) (initialState file venv)
 parseProgram inputFile venv = do
   src <- readFile inputFile
   let p = parseDefs inputFile venv src
-  -- error $ show p
-  -- return (initialState "FILE")
   checkErrors p
   return p
+  -- let p = parseDefs inputFile src
+  -- error $ show p
+  -- return (initialState "FILE")
 
 
 checkErrors (_,_,_,_,_,[]) = return ()
@@ -514,7 +557,7 @@ checkBindsClash binds =
    --  bindClashes bs = bs \\ nub bs
 
 -------------------------
--- Auxiliary functions --
+-- Auxiliary functions -- TODO: all functions are auxiliar
 -------------------------
   
 typesToFun :: Pos -> TypeVar -> [(TypeVar, (Pos, [Type]))] -> [(TypeVar, (Pos, Type))]

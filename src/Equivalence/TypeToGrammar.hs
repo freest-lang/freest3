@@ -12,7 +12,7 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-module Validation.TypeToGrammar
+module Equivalence.TypeToGrammar
 ( convertToGrammar
 ) where
 
@@ -21,7 +21,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import           Syntax.Types
 import           Syntax.Kinds -- for testing
-import           Validation.Grammar
+import           Equivalence.Grammar
 
 -- The state of the translation to grammars
 
@@ -104,6 +104,7 @@ toGrammar u@(Rec p Bind{var=x} t)
     y <- freshVar
     insertVisited y
     zs <- toGrammar $ subs (Var p y) x t -- On the fly α-conversion
+    -- TODO: use the p in the Bind
     m <- getTransitions $ head zs
     addProductions y (Map.map (++ tail zs) m)
     return [y]
@@ -142,7 +143,7 @@ s6 = Choice (0,0) External (Map.fromList
   [("Leaf", Skip (0,0)),
    ("Node", s3)])
 t6 = convertToGrammar [s6]
-yBind = Bind "y" (Kind {prekind = Session, multiplicity = Lin})
+yBind = Bind "y" (0,0) (Kind {prekind = Session, multiplicity = Lin})
 treeSend = Rec (0,0) yBind (Choice (0,0) External (Map.fromList
   [("Leaf",Skip (0,0)),
    ("Node", Semi (0,0) (Message (0,0) Out IntType) (Semi (0,0) (Var (0,0) "y") (Var (0,0) "y")))]))
@@ -154,7 +155,7 @@ s10 = Semi (0,0) s4 (Semi (0,0) (Semi (0,0) s3 s1) s4)
 t10 = convertToGrammar [s10]
 s11 = Semi (0,0) (Rec (0,0) yBind (Semi (0,0) treeSend (Var (0,0) "y"))) treeSend
 t11 = convertToGrammar [s11]
-zBind = Bind "z" (Kind {prekind = Session, multiplicity = Lin})
+zBind = Bind "z" (0,0) (Kind {prekind = Session, multiplicity = Lin})
 s12 = Semi (0,0) (Rec (0,0) zBind (Semi (0,0) treeSend (Var (0,0) "z"))) treeSend
 t12 = convertToGrammar [s12]
 s13 = Semi (0,0) treeSend (Skip (0,0))

@@ -1,4 +1,17 @@
-module Syntax.Terms
+{- |
+Module      :  Types
+Description :  <optional short text displayed on contents page>
+Copyright   :  (c) <Authors or Affiliations>
+License     :  <license>
+
+Maintainer  :  <email>
+Stability   :  unstable | experimental | provisional | stable | frozen
+Portability :  portable | non-portable (<reason>)
+
+<module description starting at first column>
+-}
+
+module Syntax.Exps
   ( Expression(..)
   , ExpEnv
   , VarEnv
@@ -15,63 +28,57 @@ import qualified Data.Map.Strict as Map
 import           Syntax.Kinds
 import           Syntax.Types
 
-
 type TermVar = String
 
-type Params = [TermVar]
+type Params = [TermVar] -- Params is a semantic notion, not syntatic - eliminate, use [TermVar]
 
 type VarEnv = Map.Map TermVar (Pos, TypeScheme)
--- type VarEnv = Map.Map TermVar Type
 
 type ExpEnv = Map.Map TermVar (Pos, Params, Expression)
 
 type TypeEnv = Map.Map TypeVar Type
--- type TypeEnv = Map.Map TypeVar (Kind, Type)
 
 type ConstructorEnv = Map.Map TypeVar (Pos, TypeScheme)
--- type ConstructorEnv = Map.Map TypeVar Type
 
 data TypeVarBind = TypeVar Kind
--- data TypeScheme = Functional Type | Scheme TypeVarBind TypeScheme
-
-
--- type ConstructorEnv = Map.Map Constructor [(Constructor, [Type])]
 
 -- TODO: Join
 type MatchMap = Map.Map TermVar (TermVar, Expression)
 type CaseMap  = Map.Map TermVar (Params, Expression)
-type VarDef   = (Pos,TermVar) 
+type VarDef   = (Pos, TermVar) -- TODO: porque é que este tem Pos e o Multiplicity e o PreKind não?
 
-data Expression
-  -- Basic expressions
-  = Unit Pos
+data Expression =
+  -- Basic values
+    Unit Pos
   | Integer Pos Int
   | Character Pos Char
   | Boolean Pos Bool
-  -- Variables
+  -- Variable
   | Variable Pos TermVar
-  | UnLet Pos VarDef Expression Expression
-  -- Aplication
+  -- Abstraction intro and elim
+  {- Lam Pos Multiplicity TermVar Exp -}
   | App Pos Expression Expression
-  | TypeApp Pos Expression [Type]
+  -- Pair intro and elim
+  | Pair Pos {- Multiplicity -} Expression Expression
+  | BinLet Pos VarDef VarDef Expression Expression
+  -- Datatype intro and elim
+  | Constructor Pos TermVar
+  | Case Pos Expression CaseMap
+  -- Type application
+  | TypeApp Pos Expression [Type] -- Expression -> TermVar
   -- Conditional
   | Conditional Pos Expression Expression Expression
-  -- Pairs
-  | Pair Pos Expression Expression
-  | BinLet Pos VarDef VarDef Expression Expression
+  -- Let
+  | UnLet Pos VarDef Expression Expression -- Derived; eliminate?
+  -- Fork
+  | Fork Pos Expression
   -- Session types
   | New Pos Type
-  | Send Pos Expression Expression
+  | Send Pos Expression Expression -- Omit the last Expression
   | Receive Pos Expression 
   | Select Pos TermVar Expression
   | Match Pos Expression MatchMap
-  -- Fork
-  | Fork Pos Expression
-  -- Datatypes
-  | Constructor Pos TermVar
-  | Case Pos Expression CaseMap
    deriving (Eq, Ord, Show)
-
 
 getEPos :: Expression -> Pos
 getEPos (Unit p) = p
