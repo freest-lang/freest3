@@ -1,0 +1,41 @@
+\documentclass{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{color}
+\usepackage{listings}
+\usepackage{tikz}
+\usepackage{wrapfig}
+\usepackage{amsmath,amssymb,stmaryrd}
+\input{macros}
+
+\title{Session types deserve to be free}
+% \author{
+%   Bernardo Almeida
+%   \and
+%   Andreia Mordido
+%   \and
+%   Vasco T. Vasconcelos
+%   \institute{LASIGE, Faculdade de Ciências, Universidade de Lisboa, Portugal}
+% }
+
+\begin{document}
+%\maketitle
+
+\input{fig-alg-kinding}
+\input{fig-alg-typing}
+
+Substitution Lemma for Types.
+%
+If $\isType[\Delta,x\colon\kind] T\kind'$ and $\isType U\kind$, then
+$\isType{\subs xUT}{\kind'}$.
+
+% \bibliography{biblio}
+% \bibliographystyle{plain}
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
