@@ -17,7 +17,7 @@ to ($\omega$-) regular languages for so many years.
 The discipline of conventional (that is, regular) session types
 provides guarantees not easily accessible to simpler languages such as
 Concurrent ML, where channels are unidirectional and transport values
-of a fixed size~\cite{DBLP:conf/mcmaster/Reppy93}. Session types, in
+of a fixed type~\cite{DBLP:conf/mcmaster/Reppy93}. Session types, in
 turn, provide for the description of richer protocols, epitomised by
 the math client~\cite{DBLP:journals/acta/GayH05}, which can be
 rendered in the SePi language~\cite{DBLP:conf/sefm/FrancoV13} as
@@ -60,9 +60,9 @@ data Tree = Leaf | Node Int Tree Tree
 \end{lstlisting}
 %
 on a channel. One has to choose between a) using multiple channels for
-sending the tree or b) incurring runtime checks to check adherence
-to the protocol. In the former scenario, trees are sent on channels of
-type
+sending the tree or b) using a single channel but incurring runtime
+checks to check adherence to the protocol. In the former scenario,
+trees are sent on channels of type
 %
 \begin{lstlisting}[morekeywords=end]
 type TreeChannelR = +{Leaf:end, Node:!Int.!TreeChannelR.!TreeChannelR.end}
@@ -81,11 +81,13 @@ type TreeParts = +{Leaf: TreeParts, Node: !Int.TreeParts, EOS: end}
 %
 where \lstinline|EOS| represents the end of stream. In this case tree
 \lstinline|Node 1 (Node 2 Leaf Leaf) Leaf| can be streamed as
-\lstinline|Node 1 Node 2 Leaf Leaf Leaf EOS|, when the tree is visited
-in a depth-first manner. It should be easy to see that type
+\lstinline|Node 1 Node 2 Leaf Leaf Leaf EOS|, when visited in a
+depth-first manner. It should be easy to see that type
 \lstinline|TreeParts| allows streaming many different tree parts that
-do not add up to a tree, hence the necessary runtime checks to look
-over unexpected parts on the stream.
+do not add up to a tree (such as,
+%
+\lstinline|Node 1 Leaf Leaf Node 2 Leaf EOS|), hence the necessary
+runtime checks to look over unexpected parts on the stream.
 
 In 2016, Thiemann and Vasconcelos introduced the concept of
 context-free session types and proved that type equivalence remains
@@ -128,7 +130,7 @@ discuss a few prototypical programming languages using session types.
 SePi is a programming language based on the pi-calculus whose channels
 are governed by regular session types refined with uninterpreted
 predicates~\cite{DBLP:conf/sefm/FrancoV13}. The concrete syntax we
-choose for \freest{} is heavily influenced by SePi.
+choose for \freest{} types is influenced by SePi.
 
 SILL is a functional language with session typed concurrency, based on
 the Curry-Howard interpretation of intuitionistic linear
