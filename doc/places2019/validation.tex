@@ -1,11 +1,11 @@
-\section{Only valid programs are allowed to run}
+\section{Only valid programs may run}
 \label{sec:valid}
 
-Intro here.
+This section introduces the main syntactic categories of the language:
+kinds, types, expressions, and programs. It also discusses type
+equivalence.
 
-
-
-\paragraph{Kinding validates types}
+\paragraph{Kinding validate typea}
 
 \freest{} requires kinding; GV does not. And the reason lies on
 polymorphism, not on context-free types.
@@ -123,7 +123,7 @@ session types only.
 %
 At the time of this writing datatypes are monomorphic.
 
-\paragraph{Unbounded behavior is welcome}
+\paragraph{Repeated behavior}
 
 A characteristic central to session types is their ability to describe
 unbounded behavior, usually captured by recursive types. Recursion is
@@ -164,9 +164,9 @@ The expressions inspired from functional languages include:
 \item Lambda introduction, \lstinline|\x -o E| for linear abstractions
   and \lstinline|\x -> E| for unrestricted abstractions, and
   elimination, \lstinline|E1 E2|,
-\item Pair introduction, \lstinline|<E1,E2>| for linear pairs and
-  \lstinline|(E1,E2)| for unrestricted pairs, and elimination,
-  \lstinline|let x = E1 in E2|,
+\item Pair introduction, \lstinline|(E1,E2)|, and elimination,
+  \lstinline|let x, y = E1 in E2| (linear versions only, at the time
+  of this writing),
 \item Datatype elimination,
   \lstinline|case E of C1 x11...x1k -> E1, ..., Cn xn1...xnk -> En|, and
 \item Conditional, \lstinline|if E1 then E2 else E3|, type
