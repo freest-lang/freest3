@@ -194,13 +194,12 @@ checkUn p (TypeScheme _ t) = do
   if isUn then    
     return ()
   else
-    addError p ["Type '", styleRed (show t) ++ "'", "is linear"]
+    addError p ["Type", "'" ++ styleRed (show t) ++ "'", "is linear"]
 
 -- | Checks an expression against a given type
 checkAgainst :: Pos -> Expression -> TypeScheme -> TypingState ()
 checkAgainst p e (TypeScheme bs1 t) = do
   (TypeScheme bs2 u) <- checkExp e
---  addError p [styleRed $ "##### " ++ show e ++ " #####"]
   kenv <- getKenv
   if (equivalent kenv t u) then
     return ()
@@ -238,17 +237,20 @@ checkExp (App p e1 e2) = do
 
 checkExp (TypeApp p e ts) = do
   t1 <- checkExp e  
-  (binds, t2) <- extractScheme p t1
+  (binds, v) <- extractScheme p t1
   wellFormedCall p e ts binds
-  
-  -- TODO: move to other module and call subL
---  let sub = foldr (\(t', b) acc -> subs t' (var b) acc) t2 (zip ts binds)
-  let sub = subL t2 (zip ts binds)
-  -- kenv <- getKenv
-  
-  -- TODO: the result type is well formed  
-  return $ TypeScheme [] sub
 
+  let typeBind = zip ts binds
+  mapM (\(t,b) -> K.checkAgainst (kind b) t) typeBind
+  let sub = subL v typeBind
+  -- TODO: TEMPORARY
+  kenv <- getKenv
+  if K.isWellFormed sub kenv then 
+    return $ TypeScheme [] sub -- (subL v typeBind) --(subs v "a" (Skip p))
+  else
+    return $ TypeScheme [] (Skip p)
+--   return $ TypeScheme [] (subL v typeBind)
+    
 -- Conditional
 checkExp (Conditional p e1 e2 e3) = do
   checkAgainst p e1 (TypeScheme [] (Basic p BoolType))
@@ -394,7 +396,6 @@ extractScheme p (TypeScheme [] t) = do
   return ([], (Basic p UnitType))
 extractScheme _ (TypeScheme bs t) = return (bs, t)
 
--- | TODO TESTAR
 extractPair :: Pos -> TypeScheme -> TypingState (TypeScheme, TypeScheme)
 extractPair p (TypeScheme bs (PairType _ t u)) = do
   addBindsToKenv p bs
@@ -403,7 +404,6 @@ extractPair p t                         = do
   addError p ["Expecting a pair type; found ", styleRed $ show t]
   return (TypeScheme [] (Basic p IntType), TypeScheme [] (Basic p IntType))
 
--- | TODO TESTAR
 extractBasic :: Pos -> TypeScheme -> TypingState BasicType
 extractBasic p (TypeScheme bs (Basic _ t)) = do
   addBindsToKenv p bs
