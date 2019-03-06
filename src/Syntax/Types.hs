@@ -43,7 +43,7 @@ type Pos = (Int, Int)
 
 type TypeVar = String
 
-data Bind = Bind {var :: TypeVar, kind :: Kind}
+data Bind = Bind {var :: TypeVar, p :: Pos, kind :: Kind}
   deriving (Ord)
 
 instance Eq Bind where
@@ -237,7 +237,7 @@ unfold (Rec p b t) = subs (Rec p b t) (var b) t
 
 rename :: Type -> TypeVar -> Type
 -- Assumes parameter is a Rec type
-rename (Rec p (Bind x k) t) y = Rec p (Bind y k) (subs (Var p y) x t)
+rename (Rec p (Bind x pb k) t) y = Rec p (Bind y pb k) (subs (Var p y) x t)
 
 -- [u/x]t, substitute u for x on t
 subs :: Type -> TypeVar -> Type -> Type 

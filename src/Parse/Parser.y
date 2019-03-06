@@ -298,11 +298,11 @@ BindList :: { [Bind] }
   | BindList ',' Bind  { checkBindClash $1 $3 }
 
 Bind :: { Bind }
-  : VAR KindUn    {let (TokenVar _ x) = $1 in Bind x $2}
+  : VAR KindUn    {let (TokenVar p x) = $1 in Bind x (pos p) $2}
 
 
 Type :: { Type }
-  : rec VarCons KindUn '.' Type  { Rec (getPos $1) (Bind $2 $3) $5 } -- TODO: rec VAR apenas?
+  : rec VarCons KindUn '.' Type  { Rec (getPos $1) (Bind (snd $2) (fst $2) $3) $5 } -- TODO: rec VAR apenas?
   | Type ';' Type                { Semi (getPos $2) $1 $3 }
   | Type Multiplicity Type       { Fun (fst $2) (snd $2) $1 $3 }
   | '(' Type ',' Type ')'        { PairType (getPos $1) $2 $4 }
@@ -331,9 +331,9 @@ ChoiceView :: { (Pos, ChoiceView) }
   
 -- TODO: add position
 -- Either a var or a constructor
-VarCons :: { String }
-  : VAR  {let (TokenVar _ x) = $1 in x }
-  | CONS {let (TokenCons _ x) = $1 in x }
+VarCons :: { (Pos,String) }
+  : VAR  {let (TokenVar p x) = $1 in (pos p, x) }
+  | CONS {let (TokenCons p x) = $1 in (pos p, x) }
 
 FieldList :: { TypeMap }-- { [(Constructor, Type)] }
   : Field                { uncurry Map.singleton $1 }
