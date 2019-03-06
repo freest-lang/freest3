@@ -24,15 +24,24 @@ replacing the back-end.
 The original proposal of context-free sessions is based on a
 call-by-value operational semantics and we kept that strategy in
 \freest. We however plan to experiment with call-by-need, taking
-advantage of the back-end in Haskell. We also intend to allow messages
-and choices to contain any functional or session type, rather than
-containing only basic types. To achieve this,
+advantage of the back-end in Haskell. 
+
+We also plan to extend the expressivity of \freest{}
+by allowing, for instance, session types to be used to 
+send or receive other session types. 
+For this purpose, we intend to enable 
+message operators to be applied not only to basic
+types but to any functional or session type.
+In this wider scope, 
 the type equivalence algorithm for context-free session 
-types should be intertwined with the type equivalence
-algorithm for functional types, which is a challenging task.
-Finally, we plan to incorporate type inference on type 
+types should, therefore, be intertwined with the type equivalence
+algorithm for functional types.
+
+Last but not least, we plan to incorporate type inference on type 
 applications in order to allow the automatic identification of the
-unifier matching a polymorphic type with the next type.
+unifier matching a polymorphic type with the next type. This 
+unification process should recognize the unifiers of two types 
+up to type equivalence.
 
 %%% Local Variables:
 %%% mode: latex
