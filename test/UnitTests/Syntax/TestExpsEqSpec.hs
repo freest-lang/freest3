@@ -69,8 +69,8 @@ spec = do
       (Constructor p "x") ==
         (Constructor p "x") `shouldBe` True
     it "Case" $ do
-      (Case p (Variable p "x") (Map.singleton "C" (["w"], (Integer p 2)))) ==
-        (Case p (Variable p "x") (Map.singleton "C" (["w"], (Integer p 2))))
+      (Case p (Variable p "x") (Map.singleton "C" ([(p,"w")], (Integer p 2)))) ==
+        (Case p (Variable p "x") (Map.singleton "C" ([(p,"w")], (Integer p 2))))
           `shouldBe` True  
 
     it "Ord prekinds" $ do

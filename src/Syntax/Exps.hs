@@ -19,6 +19,7 @@ module Syntax.Exps
   , ConstructorEnv
   , TermVar
   , Params
+  , Param(..)
   , CaseMap
   , MatchMap
   , getEPos
@@ -30,7 +31,18 @@ import           Syntax.Types
 
 type TermVar = String
 
-type Params = [TermVar] -- Params is a semantic notion, not syntatic - eliminate, use [TermVar]
+data Param = Param {pos :: Pos, param :: TermVar}
+
+instance Eq Param where
+  b == c = param b == param c
+
+instance Ord Param where
+  (Param _ x) `compare` (Param _ y) = x `compare` y
+
+instance Show Param where
+  show p = param p
+
+type Params = [Param] -- Params is a semantic notion, not syntatic - eliminate, use [TermVar]
 
 type VarEnv = Map.Map TermVar (Pos, TypeScheme)
 
@@ -43,7 +55,7 @@ type ConstructorEnv = Map.Map TypeVar (Pos, TypeScheme)
 data TypeVarBind = TypeVar Kind
 
 -- TODO: Join
-type MatchMap = Map.Map TermVar (TermVar, Expression)
+type MatchMap = Map.Map TermVar (Param, Expression)
 type CaseMap  = Map.Map TermVar (Params, Expression)
 type VarDef   = (Pos, TermVar) -- TODO: porque é que este tem Pos e o Multiplicity e o PreKind não?
 

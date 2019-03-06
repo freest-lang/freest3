@@ -164,8 +164,9 @@ translateExpEnv eenv =
         (fst (evalState (translate fm mm e) 0))
 
     showBangParams :: Params -> String
-    showBangParams [] = ""
-    showBangParams args = " !" ++ intercalate " !" args
+    showBangParams [] = "" 
+    showBangParams args = foldl (\acc a -> acc ++ " !" ++ show a) "" args
+--    showBangParams args = " !" ++ intercalate " !" (words (show args))
 
 
     
@@ -326,11 +327,11 @@ translate fm m (Case _ e cm) = do
 translateMatchMap :: String -> FunsMap -> MonadicMap -> MatchMap -> TranslateMonad String
 translateMatchMap fresh fm m = Map.foldlWithKey (translateMatchMap' fresh) (return "")
   where
-    translateMatchMap' fresh acc v (param, e) = do
+    translateMatchMap' fresh acc v (p, e) = do
       (h, b) <- translate fm m e
       acc' <- acc
       return $ acc' ++ "\n    \"" ++ v ++ "\" " ++
-        " -> let " ++ param ++ " = " ++ fresh ++ " in " ++ h ++ ";"
+        " -> let " ++ (param p) ++ " = " ++ fresh ++ " in " ++ h ++ ";"
              
 
 translateCaseMap :: FunsMap -> MonadicMap -> CaseMap -> TranslateMonad String
@@ -343,7 +344,9 @@ translateCaseMap fm m = Map.foldlWithKey translateCaseMap' (return "")
 
     showCaseParams :: Params -> String
     showCaseParams [] = ""
-    showCaseParams args = " " ++ unwords args
+    showCaseParams args = foldl (\acc a -> acc ++ " " ++ show a) "" args
+--    showCaseParams args = " " ++ unwords (words $ show args)
+--    showCaseParams args = " " ++ intersperse ' ' (show args)
 
 -- Gen pairs, if one of the elements is monadic extract it from the pair
 -- bind it to a variable and return a pair that containt that variable

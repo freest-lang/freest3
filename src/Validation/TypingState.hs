@@ -68,7 +68,7 @@ getEenv = do
   return eenv
 
 -- Unsafe - must exist
-getFromEenv :: TermVar -> TypingState (Pos, [TermVar], Expression)
+getFromEenv :: TermVar -> TypingState (Pos, Params, Expression)
 getFromEenv x = do
   eenv <- getEenv
   return $ eenv Map.! x

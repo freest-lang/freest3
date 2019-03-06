@@ -132,7 +132,7 @@ checkFunForm venv fun args = do
   checkArgsConflits fun args
   let (p,t) = venv Map.! fun
   arguments <- checkArgs p fun args (normalizeType (init (toList t)))
-  foldM (\acc (arg, t) -> addToVenv p arg t) () arguments
+  foldM (\acc (arg, t) -> addToVenv (pos arg) (param arg) t) () arguments
   return ()
 
 checkArgsConflits :: TermVar -> Params -> TypingState ()
@@ -140,15 +140,15 @@ checkArgsConflits fun args
   | length args == length (Set.fromList args) = return ()
   | otherwise                                = do
      (p,_,_) <- getFromEenv fun
-     mapM (err p) clash
+     mapM err clash
      return ()
   where
-    err p c = addError p ["Conflicting definitions for", showClashes c,
+    err (Param p c) = addError p ["Conflicting definitions for", showClashes c,
                           "\n\t In an equation for", styleRed $ "'" ++ fun ++ "'"]
     clash = args \\ nub args
     showClashes x = styleRed $ "'" ++ x ++ "'"
 
-checkArgs :: Pos -> TypeVar -> Params -> [TypeScheme] -> TypingState [(TypeVar, TypeScheme)]
+checkArgs :: Pos -> TypeVar -> Params -> [TypeScheme] -> TypingState [(Param, TypeScheme)]
 checkArgs p c ps ts
   | length ps == length ts = return $ zip ps ts
   | length ps > length ts = do
@@ -317,7 +317,7 @@ checkExp (Match p e cm) = do
   t1 <- checkExp e
   let (c, (x, e1)) = Map.elemAt 0 cm
   t2 <- extractExtChoice p t1 c
-  addToVenv p x t2
+  addToVenv (pos x) (param x) t2
   venv <- getVenv
   u <- checkExp e1
   Map.foldrWithKey (\k (v1,v2) _ -> checkMap venv p t1 u k ([v1], v2) extractExtChoice) (return ()) (Map.delete c cm)
@@ -331,16 +331,16 @@ checkExp (Fork p e) = do
   return $ TypeScheme [] (Basic p UnitType)
 --  return t
   
-checkExp (Case pos e cm) = do
+checkExp (Case cp e cm) = do
   t <- checkExp e
   let (c, (x, e1)) = Map.elemAt 0 cm  
-  t2 <- extractDatatype pos t c  
+  t2 <- extractDatatype cp t c  
   let x' = zip x (init (toList t2))        
-  foldM (\_ (p, t) -> addToVenv pos p t) () x' 
+  foldM (\_ (p, t) -> addToVenv (pos p) (param p) t) () x' 
   venv <- getVenv
   u <- checkExp e1
   -- setVEnv venv
-  Map.foldrWithKey (\k v _ -> checkMap venv pos t u k v extractDatatype)
+  Map.foldrWithKey (\k v _ -> checkMap venv cp t u k v extractDatatype)
                    (return ()) (Map.delete c cm)
   return u
 
@@ -554,12 +554,12 @@ checkMap :: VarEnv -> Pos -> TypeScheme -> TypeScheme -> TermVar ->
             (Pos -> TypeScheme -> Constructor -> TypingState TypeScheme) ->
             TypingState ()
             
-checkMap venv pos choice against c (x, e) f = do 
+checkMap venv mp choice against c (x, e) f = do 
   setVenv venv
-  t1 <- f pos choice c  
+  t1 <- f mp choice c  
   let x' = zip x (myInit (toList t1))
-  foldM (\_ (p, t) -> addToVenv pos p t) () x' 
-  checkAgainst pos e against
+  foldM (\_ (p, t) -> addToVenv (pos p) (param p) t) () x' 
+  checkAgainst mp e against
   return ()
 
 myInit :: [a] -> [a]

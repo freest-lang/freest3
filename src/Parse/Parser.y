@@ -5,7 +5,7 @@ import           Parse.Lexer
 import           Validation.TypingState (KindEnv)
 import           Syntax.Types
 import           Syntax.Kinds
-import           Syntax.Exps
+import           Syntax.Exps hiding (pos)
 import qualified Data.Map.Strict as Map
 import           Control.Monad.State
 import           Data.List (nubBy, deleteFirstsBy, intercalate)
@@ -189,7 +189,7 @@ FunDecl :: { () } :
 
 Params :: { Params }
   : {- empty -}   {[]}
-  | Params VAR    {let (TokenVar _ x) = $2 in ($1 ++ [x])}
+  | Params VAR    {let (TokenVar p x) = $2 in ($1 ++ [Param (pos p) x])}
 
 
 -----------------
@@ -273,8 +273,8 @@ MatchNext :: { MatchMap }
 
 MatchValue :: { MatchMap } :
   CONS VAR '->' Expr   {let (TokenCons _ c) = $1 in
-                        let (TokenVar _ x) = $2 in
-                        Map.singleton c (x,$4)}
+                        let (TokenVar p x) = $2 in
+                        Map.singleton c (Param (pos p) x,$4)}
 
 CaseMap :: { CaseMap }
   : CaseValue CaseNext  { Map.union $1 $2 }
