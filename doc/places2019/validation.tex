@@ -8,7 +8,7 @@ equivalence.
 \paragraph{Kinding validate types}
 
 \freest{} requires kinding; GV~\cite{DBLP:journals/acta/GayH05} does
-not. And the reason lies on polymorphism, not on context-free types.
+not. And the reason is on polymorphism, not on context-free types.
 %
 \lstinline|!Int| is undoubtedly a session type, and so is
 \lstinline|!Int;?Bool|. On the other hand, \lstinline|Int->Bool| and
@@ -16,14 +16,14 @@ not. And the reason lies on polymorphism, not on context-free types.
 allows a stratified grammar with separate syntactic categories for
 functional types and for session types, even if mutually recursive.
 %
-In \freest{} this is not possible.  To see why, take for
-\lstinline|alpha| a type variable. Is \lstinline|!Int;alpha| a
-session type? What about \lstinline|alpha| itself? The former is a
-session type only when \lstinline|alpha| represents a session type;
-the latter is a functional type when \lstinline|alpha| denotes a
-functional type, and is a session type otherwise. If \lstinline|alpha|
-does not denote a session type, then \lstinline|!Int;alpha| is not a
-type, it is simply a piece of useless syntax.
+In \freest{} this is not possible.  To see why, consider a type
+variable \lstinline|alpha|. Is \lstinline|!Int;alpha| a session type?
+What about \lstinline|alpha| itself? The former is a session type only
+when \lstinline|alpha| represents a session type; the latter is a
+functional type when \lstinline|alpha| denotes a functional type, and
+is a session type otherwise. If \lstinline|alpha| does not denote a
+session type, then \lstinline|!Int;alpha| is not a type, it is simply
+a piece of useless syntax.
 
 \begin{wrapfigure}{R}{0.12\textwidth}
   \begin{tikzpicture}[scale=.7]

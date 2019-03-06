@@ -101,7 +101,7 @@ To write on a channel end, we use the second \lstinline|MVar| in the
 given pair. Because the type of values transmitted on a channel vary
 over time, we use \lstinline|unsafeCoerce| to bypass the Haskell type
 system, a technique common in standard implementations of session
-types, includind that of Pucella and
+types, including that of Pucella and
 Tov~\cite{DBLP:conf/haskell/PucellaT08}. To write on the channel end
 we use the \lstinline|putMVar| primitive. If the \lstinline|MVar| is
 currently full, \lstinline|putMVar| waits until it becomes empty.  The
@@ -167,9 +167,9 @@ runtime system of Haskell, since type checking is performed by the
 \freest{} front-end.
 %
 Coercions (that is, calls to the \lstinline|unsafeCoerce| function)
-are then inserted so has to avoid typing errors in the GHC
-backend. The occurrences of \lstinline|unsafeCoerce| are limited to
-\emph{two} places: when reading and when writing from
+are then inserted so as to avoid typing errors when compiling the
+target Haskell code. The occurrences of \lstinline|unsafeCoerce| are
+limited to \emph{two} places: when reading and when writing from
 \lstinline|MVar|s, in runtime functions \lstinline|receive| and
 \lstinline|send|, respectively.
 

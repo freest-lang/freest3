@@ -47,10 +47,10 @@ allow constructing the relation in a reasonable time. For this
 purpose, we use a double-ended queue that allows prioritizing nodes
 with potential to reach an empty node faster.  We have also speeded up
 the computation of the expansion tree by iterating the simplification
-phase until a fixed point is reached (we showed that the fixed point
-exists).  These optimizations led to an improvement of more than
-$11,000,000\%$ on the runtime of the algorithm, so that it can now be
-effectively incorporated in the compiler for \freest.
+phase until a fixed point is reached.  These optimizations led to an
+improvement of more than $11,000,000\%$ on the runtime of the
+algorithm, so that it can now be effectively incorporated in the
+compiler for \freest.
 
 %We have benchmarked the algorithm 
 %on a test suite of carefully crafted pair of types comprising valid and invalid 
