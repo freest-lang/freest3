@@ -10,7 +10,7 @@ import           Control.Monad.State
 import           Data.List
 import qualified Data.Map.Strict as Map
 import           System.Directory
-import           Syntax.Terms
+import           Syntax.Exps
 import           Validation.Kinding
 import           Validation.TypingState(KindEnv)
 import           Syntax.Types

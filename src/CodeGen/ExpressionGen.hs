@@ -11,7 +11,7 @@ module CodeGen.ExpressionGen
 import           Control.Monad.State
 import           Data.List
 import qualified Data.Map.Strict as Map
-import           Syntax.Terms
+import           Syntax.Exps
 
 {- 1st passage:
 ----------------

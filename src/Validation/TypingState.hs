@@ -3,7 +3,7 @@ module Validation.TypingState  where
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
 import           Syntax.Kinds
-import           Syntax.Terms
+import           Syntax.Exps
 import           Syntax.Types
 import           Utils.Errors
 

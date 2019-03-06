@@ -5,7 +5,7 @@ import           Parse.Lexer
 import           Validation.TypingState (KindEnv)
 import           Syntax.Types
 import           Syntax.Kinds
-import           Syntax.Terms
+import           Syntax.Exps
 import qualified Data.Map.Strict as Map
 import           Control.Monad.State
 import           Data.List (nubBy, deleteFirstsBy, intercalate)
@@ -98,8 +98,9 @@ import           Data.Char
 -- MAIN RULE --
 ---------------
 
-Prog : Defs                {}
-     | Defs NL Prog        {}
+Prog
+  : Defs         {}
+  | Defs NL Prog {}
 
 Defs
   : DataDecl  {}
@@ -172,8 +173,8 @@ FunSig :: { () } :
     }
 
 FunTypeScheme :: { TypeScheme }
-  : TypeScheme {$1}
-  | Type      {TypeScheme [] $1}
+  : TypeScheme { $1 }
+  | Type       { TypeScheme [] $1 }
 
 ----------------------
 -- FUN DECLARATIONS --
@@ -294,7 +295,7 @@ TypeScheme :: { TypeScheme } :
 
 BindList :: { [Bind] }
   : Bind               { [$1] }
-  | BindList ',' Bind  { $1 ++ [$3] }
+  | BindList ',' Bind  { checkBindClash $1 $3 }
 
 Bind :: { Bind }
   : VAR KindUn    {let (TokenVar _ x) = $1 in Bind x $2}
@@ -306,8 +307,8 @@ Type :: { Type }
   | Type Multiplicity Type       { Fun (fst $2) (snd $2) $1 $3 }
   | '(' Type ',' Type ')'        { PairType (getPos $1) $2 $4 }
   | Polarity BasicType           { Message (fst $1) (snd $1) (snd $2) }
-  | '[' FieldList ']'            { Datatype (getPos $1) (Map.fromList $2) }
-  | ChoiceView '{' FieldList '}' { checkClash (fst $1) (snd $1) $3 }
+  | '[' FieldList ']'            { Datatype (getPos $1) $2 }
+  | ChoiceView '{' FieldList '}' { Choice (fst $1) (snd $1) $3 } --{ checkClash (fst $1) (snd $1) $3 }
   | dualof Type                  { Dualof (getPos $1) $2 }
   | Skip                         { Skip (getPos $1) }
   | BasicType                    { uncurry Basic $1 }
@@ -334,12 +335,12 @@ VarCons :: { String }
   : VAR  {let (TokenVar _ x) = $1 in x }
   | CONS {let (TokenCons _ x) = $1 in x }
 
-FieldList :: { [(Constructor, Type)] }
-  : Field                { $1 }
-  | FieldList ',' Field  { $3 ++ $1 }
+FieldList :: { TypeMap }-- { [(Constructor, Type)] }
+  : Field                { uncurry Map.singleton $1 }
+  | FieldList ',' Field  { checkLabelClash $1 $3 }
 
-Field :: { [(Constructor, Type)] }
-  : CONS ':' Type { let (TokenCons _ x) = $1 in [(x, $3)] }
+Field :: { (Constructor, Type) }
+  : CONS ':' Type { let (TokenCons _ x) = $1 in (x, $3) }
 
 BasicType :: { (Pos, BasicType) }
   : Int  { (getPos $1, IntType) }
@@ -363,24 +364,27 @@ Kind :: { Kind } :
 
 {
 
-checkClash :: Pos -> ChoiceView -> [(Constructor, Type)] -> Type
-checkClash p v xs = 
-  let clashes = bindClashes xs in
-  if null clashes then
-    Choice p v (Map.fromList xs)
+checkLabelClash :: TypeMap -> (Constructor, Type) -> TypeMap
+checkLabelClash m1 (c,t) =
+  if Map.member c m1 then
+    (error $ prettyPos (typePos t) ++ " Multiple declarations for " ++ show c)
   else
-    error (prettyPos p ++ " Multiple declarations for " ++ (show (map fst clashes)))
-    Choice p v (Map.fromList xs)
-  where
-    bindClashes :: [(Constructor, Type)] -> [(Constructor, Type)]
-    bindClashes bs = deleteFirstsBy f bs (nubBy f bs)
+    Map.insert c t m1
 
-    f :: (Constructor, Type) -> (Constructor, Type) -> Bool
-    f = (\(x,_) (y,_) -> x == y)
+-- TODO: Add position to bind
+checkBindClash :: [Bind] -> Bind -> [Bind]
+checkBindClash bs b@Bind{var=x} = 
+  if b `elem` bs then
+    bs ++ [b]-- (error (prettyPos (0,0) ++ " Multiple declarations for bind " ++ show x)) -- ++ "\n\n" ++ show b ++ "\n" ++ show bs
+  else
+    bs ++ [b]
+    
+  -- case m1 Map.!? c of
+  --   Just _ ->
+  --     error $ prettyPos (typePos t) ++ " Multiple declarations for " ++ show c
+  --   Nothing -> Map.insert c t m1
   
--- TODO: tmp ... remove   
--- type KindEnv = Map.Map TypeVar (Pos, Kind)
-
+  
 ------------------------
 -- Handle Parse Monad --
 ------------------------

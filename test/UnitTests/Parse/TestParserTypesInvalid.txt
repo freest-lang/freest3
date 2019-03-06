@@ -23,3 +23,15 @@ Char (->) Char
 &{ A: Unit, B: Int, B: Int, A: Bool }
 &{}
 +{}
+
+-- Syntatically invalid datatypes, conflicting 
+
+[ A: Char, A: Bool ]
+[ A: Char, A: Bool, B: Int ]
+[ A: Char, B: Int, A: Bool ]
+[ A: Char, B: Int, B: Int, A: Bool ]
+[ A: Char, A: Bool ]
+[ A: Char, A: Bool, B: Int ]
+[ A: Char, B: Int, A: Bool ]
+[ A: Char, B: Int, B: Int, A: Bool ]
+[]

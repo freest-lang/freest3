@@ -1,7 +1,7 @@
-module Syntax.TestTermsEqSpec(spec) where
+module Syntax.TestExpsEqSpec(spec) where
 
 import           SpecHelper
-import           Syntax.Terms
+import           Syntax.Exps
 import           Syntax.Types -- TODO REMOVE
 import           Syntax.Kinds
 import qualified Data.Map.Strict as Map

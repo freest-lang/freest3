@@ -22,7 +22,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.Traversable as Trav
 import           Syntax.Kinds
-import           Syntax.Terms
+import           Syntax.Exps
 import           Syntax.Types
 import           Utils.Errors
 import           Equivalence.TypeEquivalence

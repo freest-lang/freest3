@@ -3,7 +3,7 @@ module Compiler (compile) where
 import qualified Data.Map.Strict as Map
 import           Utils.PreludeLoader
 import           Parse.Parser (parseProgram)
-import           Syntax.Terms
+import           Syntax.Exps
 import           CodeGen.CodeGen
 import           Syntax.Types
 import           Validation.Typing
