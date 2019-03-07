@@ -129,24 +129,24 @@ checkFD venv fname p exp = do
 
 checkFunForm :: VarEnv -> TermVar -> Params -> TypingState ()
 checkFunForm venv fun args = do
-  checkArgsConflits fun args
+--  checkArgsConflits fun args
   let (p,t) = venv Map.! fun
   arguments <- checkArgs p fun args (normalizeType (init (toList t)))
   foldM (\acc (arg, t) -> addToVenv (pos arg) (param arg) t) () arguments
   return ()
 
-checkArgsConflits :: TermVar -> Params -> TypingState ()
-checkArgsConflits fun args
-  | length args == length (Set.fromList args) = return ()
-  | otherwise                                = do
-     (p,_,_) <- getFromEenv fun
-     mapM err clash
-     return ()
-  where
-    err (Param p c) = addError p ["Conflicting definitions for", showClashes c,
-                          "\n\t In an equation for", styleRed $ "'" ++ fun ++ "'"]
-    clash = args \\ nub args
-    showClashes x = styleRed $ "'" ++ x ++ "'"
+-- checkArgsConflits :: TermVar -> Params -> TypingState ()
+-- checkArgsConflits fun args
+--   | length args == length (Set.fromList args) = return ()
+--   | otherwise                                = do
+--      (p,_,_) <- getFromEenv fun
+--      mapM err clash
+--      return ()
+--   where
+--     err (Param p c) = addError p ["Conflicting definitions for", showClashes c,
+--                           "\n\t In an equation for", styleRed $ "'" ++ fun ++ "'"]
+--     clash = args \\ nub args
+--     showClashes x = styleRed $ "'" ++  x ++ "'"
 
 checkArgs :: Pos -> TypeVar -> Params -> [TypeScheme] -> TypingState [(Param, TypeScheme)]
 checkArgs p c ps ts

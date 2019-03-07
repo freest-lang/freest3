@@ -5,10 +5,10 @@ import           Parse.Lexer
 import           Validation.TypingState (KindEnv)
 import           Syntax.Types
 import           Syntax.Kinds
-import           Syntax.Exps hiding (pos)
+import           Syntax.Exps
 import qualified Data.Map.Strict as Map
 import           Control.Monad.State
-import           Data.List (nubBy, deleteFirstsBy, intercalate)
+import           Data.List (nubBy, deleteFirstsBy, intercalate, find)
 import           Utils.Errors
 import           System.Exit (die)
 import           Data.Char
@@ -123,9 +123,9 @@ TypeAbbrv :: { () } :
          let (TokenCons p c) = $2
          venv <- getVenv
          checkNamesClash venv c
-           ("Multiple declarations of " ++ styleRed c) (pos p)
-         addToKenv c (pos p, Kind Functional Un)
-         addToVenv c (pos p, TypeScheme [] $4)
+           ("Multiple declarations of " ++ styleRed c) (posAlexToPos p)
+         addToKenv c (posAlexToPos p, Kind Functional Un)
+         addToVenv c (posAlexToPos p, TypeScheme [] $4)
     }
 
 ---------------
@@ -138,12 +138,12 @@ DataDecl :: { () } :
         let (TokenCons p c) = $2
         kenv <- getKenv
         checkNamesClash kenv c
-          ("Multiple declarations of '" ++ styleRed c ++ "'") (pos p)
-        addToKenv c (pos p, Kind Functional Un)
-        let binds = typesToFun (pos p) c $4
+          ("Multiple declarations of '" ++ styleRed c ++ "'") (posAlexToPos p)
+        addToKenv c (posAlexToPos p, Kind Functional Un)
+        let binds = typesToFun (posAlexToPos p) c $4
         checkBindsClash binds
         mapM (\(cons, (p, t)) -> addToCenv cons p (TypeScheme [] t)) binds
-        addToVenv c (pos p, TypeScheme [] (convertDT (pos p) binds))
+        addToVenv c (posAlexToPos p, TypeScheme [] (convertDT (posAlexToPos p) binds))
     }
 
 DataCons :: { [(Constructor, (Pos, [Type]))] }
@@ -151,7 +151,7 @@ DataCons :: { [(Constructor, (Pos, [Type]))] }
   | DataCons '|' DataCon {$1 ++ [$3]}
 
 DataCon :: { (Constructor, (Pos, [Type])) } :
-  CONS TypeParams  {let (TokenCons p x) = $1 in (x,(pos p,$2))}
+  CONS TypeParams  {let (TokenCons p x) = $1 in (x,(posAlexToPos p,$2))}
 
 
 TypeParams :: { [Type] }
@@ -168,8 +168,8 @@ FunSig :: { () } :
         let (TokenVar p f) = $1
         venv <- getVenv
         checkNamesClash venv f
-          ("Duplicate type signatures for " ++ styleRed f) (pos p)
-        addToVenv f (pos p, $3) 
+          ("Duplicate type signatures for " ++ styleRed f) (posAlexToPos p)
+        addToVenv f (posAlexToPos p, $3) 
     }
 
 FunTypeScheme :: { TypeScheme }
@@ -184,12 +184,15 @@ FunDecl :: { () } :
   VAR Params '=' Expr
     {% do
         let (TokenVar p x) = $1
-        addToEenv x (pos p, $2, $4)
+        addToEenv x (posAlexToPos p, $2, $4)
     }
 
 Params :: { Params }
   : {- empty -}   {[]}
-  | Params VAR    {let (TokenVar p x) = $2 in ($1 ++ [Param (pos p) x])}
+  | Params VAR    {% do
+                      let (TokenVar p x) = $2
+                      checkParamClash $1 (Param (posAlexToPos p) x)                      
+                  }
 
 
 -----------------
@@ -200,18 +203,18 @@ Params :: { Params }
 Expr :: { Expression }
   : let VAR '=' Expr in Expr         {let (TokenLet p) = $1 in
                                       let (TokenVar px x) = $2 in
-				      UnLet (pos p) (pos px,x) $4 $6}    
+				      UnLet (posAlexToPos p) (posAlexToPos px,x) $4 $6}    
 
   | let VAR ',' VAR '=' Expr in Expr {let (TokenLet p) = $1 in
           		                 let (TokenVar px x) = $2 in
 					 let (TokenVar py y) = $4 in
-		          		 BinLet (pos p) (pos px,x) (pos py,y) $6 $8}
+		          		 BinLet (posAlexToPos p) (posAlexToPos px,x) (posAlexToPos py,y) $6 $8}
 
   | '(' Expr ',' Expr ')'            {let (TokenLParen p) = $1 in
-                                         Pair (pos p) $2 $4}
+                                         Pair (posAlexToPos p) $2 $4}
 
   | if Expr then Expr else Expr      {let (TokenIf p) = $1 in
-                                         Conditional (pos p) $2 $4 $6}
+                                         Conditional (posAlexToPos p) $2 $4 $6}
 
   | new Type                        {New (getPos $1) $2}
      
@@ -235,15 +238,15 @@ Form :: { Expression }
   | Form '-' Form      {App (getEPos $1) (App (getEPos $1) (Variable (getPos $2) "(-)") $1) $3}
   | Form '*' Form      {App (getEPos $1) (App (getEPos $1) (Variable (getPos $2) "(*)") $1) $3}
   | Form OP Form       {let (TokenOp p s) = $2 in
-                          App (getEPos $1) (App (getEPos $1) (Variable (pos p) s) $1) $3}
+                          App (getEPos $1) (App (getEPos $1) (Variable (posAlexToPos p) s) $1) $3}
   | Juxt               {$1}       
 
 
 Juxt :: { Expression }
-  :  Juxt Atom            {App (getEPos $1) $1 $2}
+  : Juxt Atom            {App (getEPos $1) $1 $2}
 
   | VAR '[' TypeList ']'  {let (TokenVar p x) = $1 in
-                            TypeApp (pos p) (Variable (pos p) x) $3}  
+                            TypeApp (posAlexToPos p) (Variable (posAlexToPos p) x) $3}  
 
   | send Atom Atom        {Send (getPos $1) $2 $3}
    
@@ -251,11 +254,11 @@ Juxt :: { Expression }
 
 Atom :: { Expression }
   : '()'            { Unit (getPos $1) } 
-  | NUM             { let (TokenInteger p x) = $1 in Integer (pos p) x }
-  | BOOL            { let (TokenBool p x) = $1 in Boolean (pos p) x }
-  | CHAR            { let (TokenChar p x) = $1 in Character (pos p) x }
-  | VAR             { let (TokenVar p x) = $1 in Variable (pos p) x }
-  | CONS            { let (TokenCons p x) = $1 in Constructor (pos p) x }
+  | NUM             { let (TokenInteger p x) = $1 in Integer (posAlexToPos p) x }
+  | BOOL            { let (TokenBool p x) = $1 in Boolean (posAlexToPos p) x }
+  | CHAR            { let (TokenChar p x) = $1 in Character (posAlexToPos p) x }
+  | VAR             { let (TokenVar p x) = $1 in Variable (posAlexToPos p) x }
+  | CONS            { let (TokenCons p x) = $1 in Constructor (posAlexToPos p) x }
   | '(' Expr ')'    { $2 }
 
 
@@ -274,7 +277,7 @@ MatchNext :: { MatchMap }
 MatchValue :: { MatchMap } :
   CONS VAR '->' Expr   {let (TokenCons _ c) = $1 in
                         let (TokenVar p x) = $2 in
-                        Map.singleton c (Param (pos p) x,$4)}
+                        Map.singleton c (Param (posAlexToPos p) x,$4)}
 
 CaseMap :: { CaseMap }
   : CaseValue CaseNext  { Map.union $1 $2 }
@@ -295,10 +298,10 @@ TypeScheme :: { TypeScheme } :
 
 BindList :: { [Bind] }
   : Bind               { [$1] }
-  | BindList ',' Bind  { checkBindClash $1 $3 }
+  | BindList ',' Bind  {% checkBindClash $1 $3 }
 
 Bind :: { Bind }
-  : VAR KindUn    {let (TokenVar p x) = $1 in Bind x (pos p) $2}
+  : VAR KindUn    {let (TokenVar p x) = $1 in Bind x (posAlexToPos p) $2}
 
 
 Type :: { Type }
@@ -312,8 +315,8 @@ Type :: { Type }
   | dualof Type                  { Dualof (getPos $1) $2 }
   | Skip                         { Skip (getPos $1) }
   | BasicType                    { uncurry Basic $1 }
-  | VAR                          { let (TokenVar p x) = $1 in Var (pos p) x }
-  | CONS                         { let (TokenCons p x) = $1 in Var (pos p) x }
+  | VAR                          { let (TokenVar p x) = $1 in Var (posAlexToPos p) x }
+  | CONS                         { let (TokenCons p x) = $1 in Var (posAlexToPos p) x }
   | '(' Type ')'                 { $2 }
 
 
@@ -332,15 +335,15 @@ ChoiceView :: { (Pos, ChoiceView) }
 -- TODO: add position
 -- Either a var or a constructor
 VarCons :: { (Pos,String) }
-  : VAR  {let (TokenVar p x) = $1 in (pos p, x) }
-  | CONS {let (TokenCons p x) = $1 in (pos p, x) }
+  : VAR  {let (TokenVar p x) = $1 in (posAlexToPos p, x) }
+  | CONS {let (TokenCons p x) = $1 in (posAlexToPos p, x) }
 
 FieldList :: { TypeMap }-- { [(Constructor, Type)] }
-  : Field                { uncurry Map.singleton $1 }
-  | FieldList ',' Field  { checkLabelClash $1 $3 }
+  : Field                { uncurry Map.singleton (snd $1) }
+  | FieldList ',' Field  {% checkLabelClash $1 $3 }
 
-Field :: { (Constructor, Type) }
-  : CONS ':' Type { let (TokenCons _ x) = $1 in (x, $3) }
+Field :: { (Pos, (Constructor, Type)) }
+  : CONS ':' Type { let (TokenCons p x) = $1 in (posAlexToPos p, (x, $3)) }
 
 BasicType :: { (Pos, BasicType) }
   : Int  { (getPos $1, IntType) }
@@ -364,26 +367,43 @@ Kind :: { Kind } :
 
 {
 
-checkLabelClash :: TypeMap -> (Constructor, Type) -> TypeMap
-checkLabelClash m1 (c,t) =
-  if Map.member c m1 then
-    (error $ prettyPos (typePos t) ++ " Multiple declarations for " ++ show c)
-  else
-    Map.insert c t m1
+checkParamClash :: Params -> Param -> ParserState Params
+checkParamClash ps p =
+  case find (== p) ps of
+    Just x -> do
+      file <- getFileName
+      addError $ styleError file (pos x)
+                 ["Conflicting definitions for argument", styleRed $ "'" ++ show p ++ "'\n\t",
+                  "Bound at:", file ++ ":" ++ prettyPos (pos x) ++ "\n\t",
+                  "          " ++ file ++ ":" ++ prettyPos (pos p)]
+      return $ ps
+    Nothing -> return $ ps ++ [p]
 
--- TODO: Add position to bind
-checkBindClash :: [Bind] -> Bind -> [Bind]
-checkBindClash bs b@Bind{var=x} = 
-  if b `elem` bs then
-    bs ++ [b]-- (error (prettyPos (0,0) ++ " Multiple declarations for bind " ++ show x)) -- ++ "\n\n" ++ show b ++ "\n" ++ show bs
-  else
-    bs ++ [b]
-    
-  -- case m1 Map.!? c of
-  --   Just _ ->
-  --     error $ prettyPos (typePos t) ++ " Multiple declarations for " ++ show c
-  --   Nothing -> Map.insert c t m1
-  
+checkLabelClash :: TypeMap -> (Pos, (Constructor, Type)) -> ParserState TypeMap
+checkLabelClash m1 (p, (c,t)) = -- map position?
+  case m1 Map.!? c of
+    Just x -> do
+      file <- getFileName
+      addError $ styleError file (typePos x)
+               ["Conflicting definitions for label", styleRed $ "'" ++ c ++ "'\n\t",
+                "Bound at:", file ++ ":" ++ prettyPos (typePos x) ++ "\n\t",
+                "          " ++ file ++ ":" ++ prettyPos p]
+      return m1
+    Nothing ->
+      return $ Map.insert c t m1  
+
+
+checkBindClash :: [Bind] -> Bind -> ParserState [Bind]
+checkBindClash bs b@Bind{var=x, p=pb} =
+  case find (\b1 -> var b1 == var b) bs of
+    Just b1 -> do
+      file <- getFileName
+      addError $ styleError file (p b1)
+               ["Conflicting definitions for bind", styleRed $ "'" ++ x ++ "'\n\t",
+                "Bound at:", file ++ ":" ++ prettyPos (p b1) ++ "\n\t",
+                "          " ++ file ++ ":" ++ prettyPos pb]
+      return bs      
+    Nothing -> return $ bs ++ [b]  
   
 ------------------------
 -- Handle Parse Monad --
