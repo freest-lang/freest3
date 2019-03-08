@@ -64,7 +64,7 @@ previous section that not only sends a tree, but, for each
 \lstinline|Node|, also receives back an integer value.
 %
 \begin{lstlisting}
-type TreeS = +{Leaf: Skip, Node: !Int;TreeS;TreeS;?Int}
+type TreeC = +{Leaf: Skip, Node: !Int;TreeC;TreeC;?Int}
 \end{lstlisting}
 
 The \lstinline|+| type constructor introduces an internal choice (the
@@ -75,26 +75,26 @@ two labels should not be confused with the constructors of datatype
 interaction is possible on the channel (denoted by \lstinline|Skip|);
 the \lstinline|Node| branch writes an integer value, followed by two
 trees, and terminates by reading an integer value
-(\lstinline|!Int;TreeS;TreeS;?Int|).
+(\lstinline|!Int;TreeC;TreeC;?Int|).
 %
 The type declaration introduces an \emph{abbreviation} to a recursive
 type \lstinline|rec x. +{Leaf: Skip, Node: !Int;x;x;?Int}|.
 %
 The \lstinline|rec| notation introduces recursive types. The
-\lstinline|TreeS| type is not valid in conventional session types
+\lstinline|TreeC| type is not valid in conventional session types
 given the non tail-recursive nature of the occurrences of
 \lstinline|x|.
 
 
 The writer process, \lstinline|transform|, writes a tree on a given
-channel. The channel is of type \lstinline|TreeS;alpha|, for
+channel. The channel is of type \lstinline|TreeC;alpha|, for
 a type variable \lstinline|alpha|. It returns a \lstinline|Tree| and
 the residual of the input channel, of type \lstinline|alpha|. The type
 of \lstinline|transform| is \emph{polymorphic}: different calls to the
 function use different values for \lstinline|alpha|.
 
 \begin{lstlisting}
-transform: forall alpha => Tree -> TreeS;alpha -> (Tree, alpha)
+transform: forall alpha => Tree -> TreeC;alpha -> (Tree, alpha)
 \end{lstlisting}
 
 For each \lstinline|Node| in the input tree, function
@@ -121,7 +121,7 @@ transform tree c =
     Node x l r ->
       let c   = select Node c in
       let c   = send x c in
-      let l,c = transform[TreeS;?Int;alpha] l c in
+      let l,c = transform[TreeC;?Int;alpha] l c in
       let r,c = transform[?Int;alpha] r c in
       let y,c = receive c in
       (Node y l r, c)
@@ -134,7 +134,7 @@ as in Gay and Vasconcelos~\cite{DBLP:journals/jfp/GayV10}.
 At this point in time, \freest{} is not able to infer the appropriate
 types that instantiate the polymorphic type variable \lstinline|alpha|
 in the type of function \lstinline|transform|. We thus help the
-compiler by supplying these types (\lstinline|TreeS;?Int;alpha| and
+compiler by supplying these types (\lstinline|TreeC;?Int;alpha| and
 \lstinline|?Int;alpha|) in lines~8 and~9.
 
 The reader process, \lstinline|treeSum|, reads a tree from a given
@@ -145,10 +145,10 @@ the other end: rather than performing an internal choice
 rather than writing (\lstinline|!|), it reads (\lstinline|?|), and
 rather than reading, it writes. We abbreviate the thus obtained type,
 \lstinline|rec x. &{Leaf: Skip, Node: ?Int;x;x;!Int}|, as
-\lstinline|TreeR|.
+\lstinline|TreeS|.
 %
 \begin{lstlisting}
-treeSum: forall alpha => TreeR;alpha -> (Int, alpha)
+treeSum: forall alpha => TreeS;alpha -> (Int, alpha)
 \end{lstlisting}
 
 Rather than performing a case analysis on a \lstinline|Tree| as in the
@@ -169,7 +169,7 @@ treeSum c =
       (0, c)
     Node c ->
       let x, c = receive c in
-      let l, c = treeSum[TreeR;!Int;alpha] c in
+      let l, c = treeSum[TreeS;!Int;alpha] c in
       let r, c = treeSum[!Int;alpha] c in
       let c    = send (x + l + r) c in
       (x + l + r, c)
@@ -178,7 +178,7 @@ treeSum c =
 Again notice the continuous rebinding of channel \lstinline|c| (lines
 17--20) and the explicit types that instantiate variable
 \lstinline|alpha| in the two recursive calls
-(\lstinline|TreeR;!Int;alpha| and \lstinline|!Int;alpha|) in lines~18
+(\lstinline|TreeS;!Int;alpha| and \lstinline|!Int;alpha|) in lines~18
 and~19.
 
 Function \lstinline|main| completes the script. It begins by creating
@@ -204,7 +204,7 @@ function.
 \begin{lstlisting}[numbers=left,firstnumber=22]
 main: Tree
 main =
-  let w,r = new TreeS in
+  let w,r = new TreeC in
   let _   = fork (treeSum[Skip] r) in
   let t,_ = transform[Skip] aTree w in
   t

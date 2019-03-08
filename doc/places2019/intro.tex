@@ -67,7 +67,7 @@ checks to check adherence to the protocol. In the former scenario,
 trees are sent on channels of type
 %
 \begin{lstlisting}[morekeywords=end]
-type TreeChannelR = +{Leaf:end, Node:!Int.!TreeChannelR.!TreeChannelR.end}
+type TreeChannelC = +{Leaf:end, Node:!Int.!TreeChannelC.!TreeChannelC.end}
 \end{lstlisting}
 %
 and we see that two new channels must be created and exchanged for
@@ -76,10 +76,10 @@ transmit an $n$-\lstinline|Node| tree (equivalently, $n$ channels are
 needed to transmit a tree with~$n$ \lstinline|Leaf| or
 \lstinline|Node| components).
 %
-To see why, notice that type \lstinline|TreeChannelR| is not
+To see why, notice that type \lstinline|TreeChannelC| is not
 recursive: a \lstinline|Leaf| is sent on the given channel, a
 \lstinline|Node| is sent on the channel, but two the two subtrees are
-sent of newly created channels (the parts \lstinline|!TreeChannelR| in
+sent of newly created channels (the parts \lstinline|!TreeChannelC| in
 the type above).
 %
 In the latter case, tree parts are sent on a single channel, but not
