@@ -47,8 +47,9 @@ The guarantees introduced by session type systems include the
 adherence of code to protocols and the related absence of runtime
 errors, including race
 conditions~\cite{DBLP:conf/esop/HondaVK98}. Some systems further
-guarantee progress~\cite{DBLP:conf/concur/CairesP10}. All this, under
-a rather expressive type language, that of (regular) session types.
+guarantee progress (e.g.~\cite{DBLP:conf/concur/CairesP10}). All this,
+under a rather expressive type language, that of (regular) session
+types.
 
 There is one further characteristic of session types that attest for
 its flexibility: the ability to send channels on channels, often
@@ -73,12 +74,12 @@ type TreeChannelC = +{Leaf:end, Node:!Int.!TreeChannelC.!TreeChannelC.end}
 and we see that two new channels must be created and exchanged for
 each \lstinline|Node| in a tree, so that $2n+1$ channels are needed to
 transmit an $n$-\lstinline|Node| tree (equivalently, $n$ channels are
-needed to transmit a tree with~$n$ \lstinline|Leaf| or
+needed to transmit a tree with~$n$ \lstinline|Leaf| and
 \lstinline|Node| components).
 %
 To see why, notice that type \lstinline|TreeChannelC| is not
 recursive: a \lstinline|Leaf| is sent on the given channel, and so is
-\lstinline|Node|, but two the two subtrees are sent of newly created
+\lstinline|Node|, but two the two subtrees are sent on newly created
 channels (witnessed by the parts \lstinline|!TreeChannelC| in the type).
 
 In the latter case, tree parts are sent on a single channel, but not
@@ -108,13 +109,12 @@ conventional (regular) session-types. Syntactically, the changes are
 minor: rather than dot (\lstinline|.|), the prefix operator, we use
 semi-colon (\lstinline|;|), a new binary operator on types. We also
 take the chance to replace \lstinline [morekeywords=end]|end| by
-\lstinline|Skip| to make it clear that it does not necessarily ``end''
-a session type, but else merely introduces a mark that can sometimes
-be omitted. In fact \lstinline|Skip| is the identity element of
-sequential composition. The concurrent programming language
-we present, \freest, is an implementation of the
-language proposed by Thiemann and Vasconcelos.
-\freest{} types enjoy the monoidal axioms,
+\lstinline|Skip| to make it clear that it does not necessarily ends a
+session type, but else merely introduces a mark that can sometimes be
+omitted. In fact \lstinline|Skip| is the identity element of
+sequential composition. The concurrent programming language we
+present, \freest, is an implementation of the language proposed by
+Thiemann and Vasconcelos.  \freest{} types enjoy the monoidal axioms,
 \lstinline|Skip;S| $\equiv$ \lstinline|S;Skip| $\equiv$ \lstinline|S|,
 associativity of sequential composition, \lstinline|S;(T;U)| $\equiv$
 \lstinline|(S;T);U|, as well as the distributive property,
@@ -164,15 +164,16 @@ All these languages use regular session types. Compared to \freest,
 they present stronger properties (including progress), at the expense
 of imposing a particular form of programming (derived from the
 Curry-Howard interpretation) whereby each process uses zero or more
-channels and provides exactly one. At the time of this writing,
-\freest{} does not allow for multiple threads to share a same channel.
+channels and provides exactly one. Unlike these languages, at the time
+of this writing, \freest{} does not allow for multiple threads to
+share a same channel.
 
 Links is a functional programming language for the web, later extended
 with session typing
 primitives~\cite{DBLP:conf/fmco/CooperLWY06,DBLP:conf/esop/LindleyM15,Lindley.Morris_Lightweight.functional.session.types}. Very
 much like SILL and C1, the base language is deadlock-free and
 terminating. Links also includes recursion and shared channels, the
-later foregoing termination and deadlock-freedom.
+latter foregoing termination and deadlock-freedom.
 %
 The kinding system of \freest{} is quite similar to that of FST,
 proposed by Lindley and

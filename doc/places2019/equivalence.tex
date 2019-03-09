@@ -29,14 +29,14 @@ all children nodes are expanded according to the transitions in the
 grammar. % Since we have simple grammars, no branching is expected at the
 % expansion phase.
 Throughout the simplification phase, the reflexive, congruence and
-basic process algebra rules proposed by Janc\v ar and Moller
+Basic Process Algebra (BPA) rules proposed by Janc\v ar and Moller
 in~\cite{janvcar1999techniques} are applied to each node, yielding a
 number of sibling nodes.  The simplification phase promotes branching
 on the expansion tree.  The tree is traversed using breadth-first
 search and the algorithm terminates as soon as it reaches an empty
 node---case in which it decides positively---or it fails to expand a
 node---case in which it decides negatively.  The finite representation
-of bisimulations of Basic Process Algebra transition
+of bisimulations of BPA transition
 graphs~\cite{caucal1986decidabilite,
   DBLP:journals/iandc/ChristensenHS95} is paramount for the soundness
 and completeness of the algorithm, a result that we show to hold.

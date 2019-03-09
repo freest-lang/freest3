@@ -54,10 +54,12 @@ multiplicities~\cite{Lindley.Morris_Lightweight.functional.session.types}
 or the Thiemann and Vasconcelos system where kinds for type schemes
 are elided~\cite{DBLP:conf/icfp/ThiemannV16}.
 %
-Types of kind \lstinline|TU| can be used at kind \lstinline|TL|. Also
-types of kind \lstinline|SL| can be used at kind \lstinline|TL|.
-Finally, any type can be seen of kind \lstinline|TL|, the kind sitting
-at top of the hierarchy, the kind that carries the least information.
+Types of kind \lstinline|TU| can be used at kind
+\lstinline|TL|. Similarly
+types of kind \lstinline|SL| can be used at
+kind \lstinline|TL|.  Finally, any type can be seen of kind
+\lstinline|TL|, the kind sitting at top of the hierarchy, the kind
+that carries the least information.
 
 Equipped with a kinding system, \freest{} features as functional types
 the following:
@@ -67,11 +69,11 @@ the following:
   \lstinline|Bool|, \lstinline|Char|, and \lstinline|()|,
 \item Unrestricted and linear functions, \lstinline|T1 -> T2 : TU| and
   \lstinline|T1 -o T2 : TL|,
-\item linear pairs, \lstinline|(T1, T2)| of kind \lstinline|SU| or
-  \lstinline|SL| depending on the kinds of \lstinline|T1| and
-  \lstinline|T2|, and
+\item Pairs \lstinline|(T1, T2)| of kind
+  depending on the kinds of
+  \lstinline|T1| and \lstinline|T2|, and
 \item Datatypes, \lstinline|[l1: T1, ..., ln: Tn]| of kind
-  \lstinline|SU| or \lstinline|SL| depending on the kinds of the
+  \lstinline|TU| or \lstinline|TL| depending on the kinds of the
   various types \lstinline|Ti|.
 \end{itemize}
 
@@ -79,7 +81,8 @@ The session types are the following:
 \begin{itemize}
 \item The terminated type, \lstinline|Skip : SU|,
 \item Sequential composition, \lstinline|S1;S2| of kind \lstinline|SU|
-  or \lstinline|SL| depending on \lstinline|S1| and \lstinline|S2|,
+  or \lstinline|SL| depending on the kinds of \lstinline|S1| and
+  \lstinline|S2|,
 \item  Messages, \lstinline|!B, ?B|, both of kind \lstinline|SL|,
 \item Choices, \lstinline|+{l1: S1, ..., ln:Sn}, &{l1: S1, ..., ln:Sn}|,
   both of kind \lstinline|SL|,
@@ -116,9 +119,9 @@ Tree -> TreeC;TreeC;?Int;alpha -> (Tree, TreeC;?Int;alpha).
 %
 making it clear that channel \lstinline|c| is supposed to convey two
 trees (the left and the right subtrees of a non-empty tree) before it
-produces an integer value and continues as \lstinline|alpha|. The function reads one tree from the
-channel and returns the unused part of the channel, namely
-\lstinline|TreeC;?Int;alpha|.
+produces an integer value and continue as \lstinline|alpha|. The
+function reads one tree from the channel and returns the unused part
+of the channel, namely \lstinline|TreeC;?Int;alpha|.
 
 Because we declared \lstinline|alpha| of kind \lstinline|SL|,
 functional types cannot replace \lstinline|alpha|.  If one tries to
@@ -134,7 +137,7 @@ At the time of this writing datatypes are monomorphic.
 
 A characteristic central to session types is their ability to describe
 unbounded behavior, usually captured by recursive types. Recursion is
-certainly useful in types such as \lstinline|TreeChannel| in
+certainly useful in types such as \lstinline|TreeC| in
 Section~\ref{sec:programming}, meant do describe channels able to
 transmit binary trees of different sizes. We have seen that name
 \lstinline|TreeC| abbreviates type
@@ -182,14 +185,14 @@ The expressions inspired from functional languages include:
   \lstinline|fork E|.
 \end{itemize}
 
-The session-type related expression are:
+The session-type related expressions are:
 %
 \begin{itemize}
 \item Channel creation, \lstinline|new S|,
-\item Message send and reception, \lstinline|send E| and
+\item Message sending and receiving, \lstinline|send E| and
   \lstinline|receive E|, and
 \item Branch selection, \lstinline|select C E|, and match,
-  \lstinline|match E with C1 x -> E1,...,Cn -> En|.
+  \lstinline|match E with C1 x -> E1,...,Cn x -> En|.
 \end{itemize}
 
 \paragraph{Programs}
