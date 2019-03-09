@@ -25,8 +25,15 @@ is a session type otherwise. If \lstinline|alpha| does not denote a
 session type, then \lstinline|!Int;alpha| is not a type, it is simply
 a piece of useless syntax.
 
-\begin{wrapfigure}{R}{0.12\textwidth}
-  \begin{tikzpicture}[scale=.7]
+To accommodate polymorphism, types are classified into \emph{kinds}.
+%
+% Kinds classify types. 
+Kinds are pairs composed of a \emph{prekind} and a
+\emph{multiplicity}. Prekinds distinguish functional types,
+\lstinline|T|, from session types, \lstinline|S|.
+%
+\begin{wrapfigure}{r}{0.1\textwidth}
+  \begin{tikzpicture}[scale=.67]
     \node (TL) at (0,1) {\lstinline|TL|};
     \node (TU) at (-1,0) {\lstinline|TU|};
     \node (SL) at (1,0) {\lstinline|SL|};
@@ -34,13 +41,6 @@ a piece of useless syntax.
     \draw (TL) -- (TU) -- (SU) -- (SL) -- (TL);
   \end{tikzpicture}
 \end{wrapfigure}
-%
-To accommodate polymorphism, types are classified into \emph{kinds}.
-%
-% Kinds classify types. 
-Kinds are pairs composed of a \emph{prekind} and a
-\emph{multiplicity}. Prekinds distinguish functional types,
-\lstinline|T|, from session types, \lstinline|S|.
 %
 Multiplicities control the number of times a value may be used in a
 given context: exactly one---linear, \lstinline|L|---or zero or
