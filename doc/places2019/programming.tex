@@ -2,13 +2,12 @@
 \label{sec:programming}
 
 \freest{} is a basic implementation of the language introduced by
-Thiemann and Vasconcelos~\cite{DBLP:conf/icfp/ThiemannV16}. Here we
-provide a gentle introduction to the language.
+Thiemann and Vasconcelos~\cite{DBLP:conf/icfp/ThiemannV16}.
 %
 We have chosen the concrete syntax to be aligned with that of Haskell,
-as much as possible. A \freest{} script is a collection of type
+as much as possible. A \freest{} program is a collection of type
 abbreviations, datatype and function (or value) declarations. Function
-\lstinline|main| runs the script.
+\lstinline|main| runs the program.
 
 Our example serializes a tree object on a channel. The aim is to
 transform a tree by interacting with a remote server. The client
@@ -20,7 +19,7 @@ node.
 %
 \newcommand{\leaf}{$\bullet$}
 %
-As an example, our script transforms the tree on the left into the one
+As an example, our program transforms the tree on the left into the one
 on the right, where we use \leaf{} to abbreviate \lstinline|Leaf|.
 
 \begin{center}
@@ -87,11 +86,12 @@ given the non tail-recursive nature of the occurrences of
 
 
 The writer process, \lstinline|transform|, writes a tree on a given
-channel. The channel is of type \lstinline|TreeC;alpha|, for
-a type variable \lstinline|alpha|. It returns a \lstinline|Tree| and
-the residual of the input channel, of type \lstinline|alpha|. The type
-of \lstinline|transform| is \emph{polymorphic}: different calls to the
-function use different values for \lstinline|alpha|.
+channel. It receives a tree of type \lstinline|Tree|  and a channel
+of type \lstinline|TreeC;alpha|, for a type variable
+\lstinline|alpha|. It returns a \lstinline|Tree| and the residual of
+the input channel, of type \lstinline|alpha|. The type of
+\lstinline|transform| is \emph{polymorphic}: different calls to the
+function use different values for \lstinline|alpha|, as we show below.
 
 \begin{lstlisting}
 transform: forall alpha => Tree -> TreeC;alpha -> (Tree, alpha)
@@ -107,11 +107,11 @@ The function performs a \lstinline|case| analysis on the
 \lstinline|Node|). In the former case, it selects the \lstinline|Leaf|
 choice and returns a pair composed of the original tree and the
 residual of the channel. In the latter case, the function selects the
-\lstinline|Node| choice, then sends the integer value in the channel,
-followed by the two subtrees (via recursive calls). Finally, it reads
-an integer \lstinline|y| from the channel, assembles a tree with
-\lstinline|y| at the root and returns this tree together with the
-residual of the channel.
+\lstinline|Node| choice, then sends the integer value, followed by the
+two subtrees (via recursive calls). Finally, it reads an integer
+\lstinline|y| from the channel, assembles a tree with \lstinline|y| at
+the root and returns this tree together with the residual of the
+channel.
 %
 \begin{lstlisting}[numbers=left]
 transform tree c =
@@ -145,7 +145,9 @@ the other end: rather than performing an internal choice
 rather than writing (\lstinline|!|), it reads (\lstinline|?|), and
 rather than reading, it writes. We abbreviate the thus obtained type,
 \lstinline|rec x. &{Leaf: Skip, Node: ?Int;x;x;!Int}|, as
-\lstinline|TreeS|.
+\lstinline|TreeS|. We say that \lstinline|TreeS| is \emph{dual} to
+\lstinline|TreeC| and conversely. The signature of the reader process
+is as follows.
 %
 \begin{lstlisting}
 treeSum: forall alpha => TreeS;alpha -> (Int, alpha)
@@ -181,25 +183,25 @@ Again notice the continuous rebinding of channel \lstinline|c| (lines
 (\lstinline|TreeS;!Int;alpha| and \lstinline|!Int;alpha|) in lines~18
 and~19.
 
-Function \lstinline|main| completes the script. It begins by creating
-a \lstinline|new| channel. This channel constructor takes a type
+Function \lstinline|main| completes the program. It begins by creating
+a new channel (line 24). The \lstinline|new| constructor takes a type
 \lstinline|T| and returns a pair of channel ends of type
 \lstinline|(T, U)|, where \lstinline|U| is a type dual to
 \lstinline|T|. Then the \lstinline|main| function forks a new thread
-to compute the \lstinline|treeSum|. In the main thread, it
+to compute the \lstinline|treeSum| (line 25). In the main thread, it
 \lstinline|transform|s a given tree (\lstinline|aTree|). Function
 \lstinline|treeSum| uses the \lstinline|r| end of the channel and
 \lstinline|transform| uses \lstinline|w|, the other end. In these
-calls, both functions are applied to type \lstinline|Skip|. Analysing
-the signatures of the two functions (they both return a channel of
-type \lstinline|alpha|), we see that the channel ends \lstinline|r|
-and \lstinline|w| are both consumed to \lstinline|Skip|. Type
-\lstinline|Skip| is unrestricted in nature (of kind unrestricted) and
-hence its values can be safely discarded (cf.\ the two wilcards in
-the \lstinline|let|s below). In addition to the residual of channel
-end \lstinline|w|, function \lstinline|transform| also returns a new
-tree \lstinline|t|, which becomes the result of the \lstinline|main|
-function.
+calls, both functions are applied to type \lstinline|Skip| (lines
+25--26). Analysing the signatures of the two functions (they both
+return a channel of type \lstinline|alpha|), we see that the channel
+ends \lstinline|r| and \lstinline|w| are both consumed to
+\lstinline|Skip|. Type \lstinline|Skip| is unrestricted in nature (of
+kind unrestricted) and hence its values can be safely discarded (cf.\
+the two wilcards in the lets on lines 25--26). In addition to the residual of
+channel end \lstinline|w|, function \lstinline|transform| also returns
+a new tree \lstinline|t|, which becomes the result of the
+\lstinline|main| function.
 %
 \begin{lstlisting}[numbers=left,firstnumber=22]
 main: Tree

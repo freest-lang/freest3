@@ -7,8 +7,8 @@ equivalence.
 
 \paragraph{Kinding validate types}
 
-\freest{} requires kinding; GV~\cite{DBLP:journals/acta/GayH05} does
-not. And the reason is on polymorphism, not on context-free types.
+\freest{} requires kinding; GV does. And the reason is on
+polymorphism, not on context-free types.
 %
 \lstinline|!Int| is undoubtedly a session type, and so is
 \lstinline|!Int;?Bool|. On the other hand, \lstinline|Int->Bool| and
@@ -50,7 +50,9 @@ lattice in the diagram on the right.
 %
 This is essentially the Lindley and Morris kinding system when
 restricted to prekinds and
-multiplicities~\cite{Lindley.Morris_Lightweight.functional.session.types}.
+multiplicities~\cite{Lindley.Morris_Lightweight.functional.session.types}
+or the Thiemann and Vasconcelos system where kinds for type schemes
+are elided~\cite{DBLP:conf/icfp/ThiemannV16}.
 %
 Types of kind \lstinline|TU| can be used at kind \lstinline|TL|. Also
 types of kind \lstinline|SL| can be used at kind \lstinline|TL|.
@@ -101,7 +103,7 @@ The absence of an explicit kind for a polymorphic variable is
 understood as \lstinline|SL|. In this particular case, one can replace
 \lstinline|alpha| by any type with kind \lstinline|SL| or smaller,
 including types \lstinline|TreeC;?Int;alpha : SL| (line 8 in the code
-for \lstinline|TreeSum| on Section~\ref{sec:programming}),
+for \lstinline|TreeSum| in Section~\ref{sec:programming}),
 \lstinline|?Int;alpha : SL| (line 9), and \lstinline|Skip : SU| (line
 25 in the code for \lstinline|main|).
 %
@@ -154,7 +156,7 @@ session type \lstinline|S|.
 %
 Only session types can be recursive. Recursion in the functional part
 of the type language is obtained via datatypes as usual, and the
-fixed-point operator is built into function definition described below.
+fixed-point operator is built into function definition.
 
 \paragraph{Expressions}
 
@@ -195,8 +197,9 @@ The session-type related expression are:
 Programs are composed of
 %
 \begin{itemize}
-\item Function signatures and function declarations, 
-\item Datatype declarations,
+\item Function signatures and
+  declarations, 
+\item Datatype declarations, and
 \item Type abbreviations.
 \end{itemize}
 

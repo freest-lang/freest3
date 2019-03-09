@@ -58,8 +58,9 @@ corresponding algorithmic versions.
 This section concentrates on the \emph{runtime system}, a surprisingly
 compact system. We build on modules \lstinline|Control.Concurrent| and
 \lstinline|Unsafe.Coerce|, and make particular use of the monadic
-combinators~\cite{DBLP:conf/afp/Wadler95}. The \lstinline|do| notation
-is built on top of these combinators.
+combinators~\cite{DBLP:conf/afp/Wadler95}. The
+\lstinline[language=Haskell]|do| notation is built on top of these
+combinators.
 %
 \begin{lstlisting}[language=Haskell]
 (>>) :: Monad m => m a -> m b -> m b
@@ -139,12 +140,12 @@ two channels.
 \begin{lstlisting}
 writer :: !Char -> !Bool -> Skip
 writer w1 w2 =
-  let w1 = send 'c' w1 in
+  let _ = send 'c' w1 in
   send False w2
 reader :: ?Char -> ?Bool -> Bool
 reader r1 r2 =
   let x, r2 = receive r2 in
-  let y, r1 = receive r1 in
+  let _, r1 = receive r1 in
   x
 \end{lstlisting}
 %

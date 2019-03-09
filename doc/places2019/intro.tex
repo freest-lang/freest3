@@ -31,21 +31,21 @@ MathClient = +{
 }
 \end{lstlisting}
 
-The type \lstinline|MathClient| describes the client side of the
-protocol, introducing three choices: \lstinline|Plus|, \lstinline|Eq|,
-and \lstinline|Done|. A client that chooses the \lstinline|Plus|
-choice is supposed to send two integer values and to receive a further
-integer (possibly representing the sum of the two values sent), after
-which it goes back to the beginning. If the same client chooses
-instead the \lstinline|Eq| option, it must subsequently send two
-integer values and expect a boolean result (possibly describing
-whether the two integers are equal), after which it must go back to
-the beginning.  The \lstinline|Done| option terminates the protocol,
-as described by type \lstinline[morekeywords=end]|end|.
+The type \lstinline|MathClient| describes the client side of a
+protocol that introduces three choices: \lstinline|Plus|,
+\lstinline|Eq|, and \lstinline|Done|. A client that chooses the
+\lstinline|Plus| choice is supposed to send two integer values and to
+receive a further integer (possibly representing the sum of the two
+values sent), after which it goes back to the beginning. If the same
+client chooses instead the \lstinline|Eq| option, it must subsequently
+send two integer values and expect a boolean result (possibly
+describing whether the two integers are equal), after which it must go
+back to the beginning.  The \lstinline|Done| option terminates the
+protocol, as described by type \lstinline[morekeywords=end]|end|.
 
 The guarantees introduced by session type systems include the
-adherence of the code to the protocol and the related absence of
-runtime errors, including race
+adherence of code to protocols and the related absence of runtime
+errors, including race
 conditions~\cite{DBLP:conf/esop/HondaVK98}. Some systems further
 guarantee progress~\cite{DBLP:conf/concur/CairesP10}. All this, under
 a rather expressive type language, that of (regular) session types.
@@ -77,13 +77,13 @@ needed to transmit a tree with~$n$ \lstinline|Leaf| or
 \lstinline|Node| components).
 %
 To see why, notice that type \lstinline|TreeChannelC| is not
-recursive: a \lstinline|Leaf| is sent on the given channel, a
-\lstinline|Node| is sent on the channel, but two the two subtrees are
-sent of newly created channels (the parts \lstinline|!TreeChannelC| in
-the type above).
-%
+recursive: a \lstinline|Leaf| is sent on the given channel, and so is
+\lstinline|Node|, but two the two subtrees are sent of newly created
+channels (witnessed by the parts \lstinline|!TreeChannelC| in the type).
+
 In the latter case, tree parts are sent on a single channel, but not
-necessarily in a ``tree form''. A suitable channel type is
+necessarily in a ``tree form''. A suitable channel type in this case
+is
 %
 \begin{lstlisting}[morekeywords=end]
 type TreeParts = +{Leaf: TreeParts, Node: !Int.TreeParts, EOS: end}
@@ -114,11 +114,16 @@ be omitted. In fact \lstinline|Skip| is the identity element of
 sequential composition. The concurrent programming language
 we present, \freest, is an implementation of the
 language proposed by Thiemann and Vasconcelos.
-\freest{} enjoys the monoidal axioms:
-\lstinline|Skip;T| $\equiv$ \lstinline|T;Skip| $\equiv$ \lstinline|T|,
-for all types \lstinline|T|.
+\freest{} types enjoy the monoidal axioms,
+\lstinline|Skip;S| $\equiv$ \lstinline|S;Skip| $\equiv$ \lstinline|S|,
+associativity of sequential composition, \lstinline|S;(T;U)| $\equiv$
+\lstinline|(S;T);U|, as well as the distributive property,
 %
-Using the syntax of \freest, a channel that streams a tree can be
+\lstinline|+{l:S, m:T};U| $\equiv$ \lstinline|+{l:S;U, m:T;U}| (and
+similarly for external choice).
+%for all types \lstinline|T|.
+%
+Using the \freest{} syntax, a channel that streams a tree can be
 written as follows:
 %
 \begin{lstlisting}
@@ -162,9 +167,9 @@ Curry-Howard interpretation) whereby each process uses zero or more
 channels and provides exactly one. At the time of this writing,
 \freest{} does not allow for multiple threads to share a same channel.
 
-Links~\cite{DBLP:conf/fmco/CooperLWY06} is a functional programming
-language for the web, later extended with session typing
-primitives~\cite{DBLP:conf/esop/LindleyM15,Lindley.Morris_Lightweight.functional.session.types}. Very
+Links is a functional programming language for the web, later extended
+with session typing
+primitives~\cite{DBLP:conf/fmco/CooperLWY06,DBLP:conf/esop/LindleyM15,Lindley.Morris_Lightweight.functional.session.types}. Very
 much like SILL and C1, the base language is deadlock-free and
 terminating. Links also includes recursion and shared channels, the
 later foregoing termination and deadlock-freedom.
@@ -182,13 +187,12 @@ a \emph{resumption} process operator that explicitly breaks a type
 $S;T$. The usage of resumptions requires additional annotations in
 programs---something we managed to avoid in \freest---and,
 furthermore, it does not solve the type equivalence problem since the
-monoidal rules proposed by Thiemann and Vasconcelos cannot be
-used. Padovani proposes the use of \emph{explicit coercions} to
-overcome this limitation, but this requires greater efforts from
-programmers.  Additional effort by programmers are always time
-consuming and error-prone, hence we have embedded a full-fledged type
-equivalence checker into the compiler, thus avoiding additional
-annotations.
+monoidal, associativity and distributivity properties typical of
+context-free session types are not accounted for. Padovani proposes
+the use of \emph{explicit coercions} to overcome this limitation, but
+this requires greater efforts from programmers.  Additional effort by
+programmers are always time consuming and error-prone, hence we have
+embedded a full-fledged type equivalence checker into the compiler.
 
 %%% Local Variables:
 %%% mode: latex

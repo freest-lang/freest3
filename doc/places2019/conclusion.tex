@@ -18,12 +18,12 @@ have to annotate with \freest{} types.
 %
 We have chosen a buffered semantics with buffers of size one, for ease
 of implementation, but we plan to experiment with buffered channels of
-arbitrary size by simply replacing the back-end.
+arbitrary size by simply replacing the runtime system.
 %
 The original proposal of context-free sessions is based on a
 call-by-value operational semantics and we kept that strategy in
 \freest. We however plan to experiment with call-by-need, taking
-advantage of the back-end in Haskell. 
+advantage of the fact that \freest{} compiles to Haskell.
 %
 Shared channels allow for multiple readers and multiple writers,
 thus introducing (benign) races. There are several proposals in the
