@@ -13,7 +13,7 @@ Our example serializes a tree object on a channel. The aim is to
 transform a tree by interacting with a remote server. The client
 process streams a tree on a (single) channel. In addition, for each
 node sent, an integer is received. The server process reads a tree
-from the other end of the channel and, for each node received sends
+from the other end of the channel and, for each node received, sends
 back the sum of the integer values under (and including) that
 node.
 %
