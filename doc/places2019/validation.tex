@@ -30,7 +30,7 @@ To accommodate polymorphism, types are classified into \emph{kinds}.
 % Kinds classify types. 
 Kinds are pairs composed of a \emph{prekind} and a
 \emph{multiplicity}. Prekinds distinguish functional types,
-\lstinline|T|, from session types, \lstinline|S|.
+\lstinline|T|, from session types, \lstinline|S|. Multiplicities
 %
 \begin{wrapfigure}{r}{0.12\textwidth}
   \begin{tikzpicture}[scale=.67]
@@ -42,7 +42,7 @@ Kinds are pairs composed of a \emph{prekind} and a
   \end{tikzpicture}
 \end{wrapfigure}
 %
-Multiplicities control the number of times a value may be used in a
+control the number of times a value may be used in a
 given context: exactly one---linear, \lstinline|L|---or zero or
 more---unrestricted, \lstinline|U|. Both prekinds and multiplicities
 come equipped with an ordering relation. Together they form the
