@@ -34,8 +34,8 @@ spec = do
       (App p (Variable p "x") (Integer p 2)) ==
         (App p (Variable p "x") (Integer p 2)) `shouldBe` True
     it "TypeApp" $ do
-      (TypeApp p (Variable p "x") [(Basic p IntType)]) ==
-        (TypeApp p (Variable p "x") [(Basic p IntType)]) `shouldBe` True
+      (TypeApp p "x" [(Basic p IntType)]) ==
+        (TypeApp p "x" [(Basic p IntType)]) `shouldBe` True
     it "Conditional" $ do
       (Conditional p (Boolean p True) (Integer p 2) (Integer p 2)) ==
         (Conditional p (Boolean p True) (Integer p 2) (Integer p 2))

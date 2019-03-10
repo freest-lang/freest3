@@ -235,21 +235,30 @@ checkExp (App p e1 e2) = do
   checkAgainst p e2 u1
   return u2
 
-checkExp (TypeApp p e ts) = do
-  t1 <- checkExp e  
-  (binds, v) <- extractScheme p t1
-  wellFormedCall p e ts binds
+checkExp (TypeApp p x ts) = do
+  t' <- checkVar p x
+  (bs, t) <- extractScheme t'
+-- wellFormedCall p e ts binds
 
-  let typeBind = zip ts binds
+  let typeBind = zip ts bs
   mapM (\(t,b) -> K.checkAgainst (kind b) t) typeBind
-  let sub = subL v typeBind
-  -- TODO: TEMPORARY
-  kenv <- getKenv
-  if K.isWellFormed sub kenv then 
-    return $ TypeScheme [] sub -- (subL v typeBind) --(subs v "a" (Skip p))
-  else
-    return $ TypeScheme [] (Skip p)
---   return $ TypeScheme [] (subL v typeBind)
+  -- well formed sub??
+  return $ TypeScheme [] (subL t typeBind)
+ 
+--   t1 <- checkVar p x  
+--   (binds, v) <- extractScheme p t1
+--   wellFormedCall p e ts binds
+
+--   let typeBind = zip ts binds
+--   mapM (\(t,b) -> K.checkAgainst (kind b) t) typeBind
+--   let sub = subL v typeBind
+--   -- TODO: TEMPORARY
+--   kenv <- getKenv
+--   if K.isWellFormed sub kenv then 
+--     return $ TypeScheme [] sub -- (subL v typeBind) --(subs v "a" (Skip p))
+--   else
+--     return $ TypeScheme [] (Skip p)
+-- --   return $ TypeScheme [] (subL v typeBind)
     
 -- Conditional
 checkExp (Conditional p e1 e2 e3) = do
@@ -390,11 +399,11 @@ extractFun p (TypeScheme bs _)           = do
   addError p ["Polymorphic functions cannot be applied; instantiate function prior to applying"]
   return (TypeScheme [] (Basic p UnitType), TypeScheme [] (Basic p UnitType))
 
-extractScheme :: Pos -> TypeScheme -> TypingState ([Bind], Type)
-extractScheme p (TypeScheme [] t) = do
-  addError p ["Expecting a type scheme; found", styleRed $ show t]
-  return ([], (Basic p UnitType))
-extractScheme _ (TypeScheme bs t) = return (bs, t)
+extractScheme :: TypeScheme -> TypingState ([Bind], Type)
+extractScheme (TypeScheme [] t) = do
+  addError (typePos t) ["Expecting a type scheme; found", styleRed $ show t]
+  return ([], (Basic (typePos t) UnitType))
+extractScheme (TypeScheme bs t) = return (bs, t)
 
 extractPair :: Pos -> TypeScheme -> TypingState (TypeScheme, TypeScheme)
 extractPair p (TypeScheme bs (PairType _ t u)) = do

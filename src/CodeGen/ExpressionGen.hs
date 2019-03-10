@@ -39,7 +39,9 @@ monadicFuns eenv =
       | otherwise                     = False
     monadicFun eenv fun (UnLet _ _ e1 e2) = monadicFun eenv fun e1 || monadicFun eenv fun e2
     monadicFun eenv fun (App _ e1 e2) = monadicFun eenv fun e1 || monadicFun eenv fun e2
-    monadicFun eenv fun (TypeApp _ e _) = monadicFun eenv fun e-- TODO?
+    monadicFun eenv fun (TypeApp _ x _) -- TODO: Review      
+      | Map.member x eenv && fun /= x = let (_,_,e) = eenv Map.! x in monadicFun eenv x e
+      | otherwise                     = False
     monadicFun eenv fun (Conditional _ e1 e2 e3) = 
       monadicFun eenv fun e1 || monadicFun eenv fun e2 || monadicFun eenv fun e3
     monadicFun eenv fun (BinLet _ _ _ e1 e2) = monadicFun eenv fun e1 || monadicFun eenv fun e2
@@ -87,10 +89,14 @@ annotateAST' m fm b e@(App _ e1 e2) =
       b3 = b && monadicVar fm e1 in
       (Map.insert e (b1 || b2 || b3) m2, b1 || b2)
  
-annotateAST' m fm b e@(TypeApp _ e1 _) = -- TODO: Was: b = False
-  let (m1, b1) = annotateAST' m fm False e1 in
-     -- b1 = b && monadicVar fm e1 in
-      (Map.insert e (b || b1) m1, b || b1)
+annotateAST' m fm b e@(TypeApp _ x _) = -- TODO: Was: b = False
+    case fm Map.!? x of
+      Just b1 -> (Map.insert e (b || b1) m, b || b1)
+      Nothing -> (Map.insert e b m, b)
+  
+  -- let (m1, b1) = annotateAST' m fm False e1 in
+  --    -- b1 = b && monadicVar fm e1 in
+  --     (Map.insert e (b || b1) m1, b || b1)
 
 annotateAST' m fm b e@(Conditional _ e1 e2 e3) =
   let (m1,_) = annotateAST' m fm False  e1
@@ -253,7 +259,16 @@ translate fm m e@(App _ e1 e2) = do
       c <- translateExpr ("(" ++ h1 ++ " " ++ h2 ++ ")") (expected m e) (b1||b2) --False
       return (c, b1 || b2)
 
-translate fm m (TypeApp _ e _) = translate fm m e
+translate fm m e@(TypeApp _ x _) = do -- translate fm m e
+  let b = expected m e
+  if Map.member x fm then
+    do      
+      h <- translateExpr x b (fm Map.! x)
+      return (h, b) -- fm Map.! x)
+  else
+    do
+      h <- translateExpr x b False
+      return (h, b)
 
 translate fm m (Conditional _ c e1 e2) = do
   (b1, _) <- translate fm m c

@@ -246,7 +246,7 @@ Juxt :: { Expression }
   : Juxt Atom            {App (getEPos $1) $1 $2}
 
   | VAR '[' TypeList ']'  {let (TokenVar p x) = $1 in
-                            TypeApp (pos p) (Variable (pos p) x) $3}  
+                            TypeApp (pos p) x $3}  
 
   | send Atom Atom        {Send (getPos $1) $2 $3}
    

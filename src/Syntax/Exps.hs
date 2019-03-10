@@ -77,7 +77,7 @@ data Expression =
   | Constructor Pos TermVar
   | Case Pos Expression CaseMap
   -- Type application
-  | TypeApp Pos Expression [Type] -- Expression -> TermVar
+  | TypeApp Pos TermVar [Type] -- Expression -> TermVar
   -- Conditional
   | Conditional Pos Expression Expression Expression
   -- Let
