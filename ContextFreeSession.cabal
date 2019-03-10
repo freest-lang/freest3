@@ -25,7 +25,7 @@ executable ContextFreeSession
   default-language:    Haskell2010
   build-tools:         alex, happy
   other-modules:       Compiler,
-                       Syntax.Exps, Syntax.Kinds, Syntax.Types,     
+                       Syntax.Exps, Syntax.Kinds, Syntax.Types, Syntax.Programs,
                        Parse.Parser, Parse.Lexer,
                        Utils.PreludeLoader, Utils.Errors,
                        Queue.Queue,
@@ -55,7 +55,7 @@ test-suite unit-tests
                        Utils.Errors,
                        SpecHelper,
                        Syntax.TestShowValidSpec, Syntax.TestEqInvalidSpec, Syntax.TestEqValidSpec,
-                       Syntax.TestEqTypeSchemeSpec, Syntax.TestExpsEqSpec,
+                       Syntax.TestEqTypeSchemeSpec, Syntax.TestExpsEqSpec, Syntax.Programs,
                        Parse.TestParserInvalidSpec, Parse.TestParserValidSpec,
                        Validation.TestKindingValidSpec, Validation.TestKindingInvalidSpec,
                        Validation.TestTypeSchemeKindingSpec,
@@ -74,7 +74,7 @@ test-suite program-tests
   ghc-options:         -threaded
   default-language:    Haskell2010
   other-modules:       Compiler, CompilerSpec, 
-                       Syntax.Exps, Syntax.Kinds, Syntax.Types,
+                       Syntax.Exps, Syntax.Kinds, Syntax.Types, Syntax.Programs,
                        Parse.Lexer, Parse.Parser,
                        Utils.PreludeLoader, Utils.Errors,
                        Queue.Queue,        
@@ -98,7 +98,7 @@ test-suite testEquiv
   hs-source-dirs:      src, test/UnitTests
   default-language:    Haskell2010
   other-modules:       SpecHelper,
-                       Syntax.Kinds, Syntax.Types, Syntax.Exps,
+                       Syntax.Kinds, Syntax.Types, Syntax.Exps, Syntax.Programs,
                        Parse.Parser, Parse.Lexer,
                        Queue.Queue, Utils.Errors,
                        Validation.Kinding,  Validation.TypingState, Validation.Contractive,

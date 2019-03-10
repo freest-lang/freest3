@@ -24,8 +24,9 @@ module Validation.Kinding
 
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
-import           Syntax.Kinds
 import           Syntax.Exps
+import           Syntax.Kinds
+import           Syntax.Programs
 import           Syntax.Types
 import           Utils.Errors
 import           Validation.Contractive

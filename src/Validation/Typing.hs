@@ -23,6 +23,7 @@ import qualified Data.Set as Set
 import qualified Data.Traversable as Trav
 import           Syntax.Kinds
 import           Syntax.Exps
+import           Syntax.Programs
 import           Syntax.Types
 import           Utils.Errors
 import           Equivalence.TypeEquivalence

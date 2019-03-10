@@ -2,7 +2,7 @@ module Utils.PreludeLoader (prelude) where
 
 import qualified Data.Map.Strict as Map
 import           Parse.Parser
-import           Syntax.Exps
+import           Syntax.Programs (VarEnv)
 import           Syntax.Types
 
 typeList :: [(String, String)]

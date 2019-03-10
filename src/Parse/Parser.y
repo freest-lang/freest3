@@ -1,17 +1,17 @@
 {
 module Parse.Parser (parseType, parseTypeScheme, parseDefs, parseProgram, getEPos) where
   
-import           Parse.Lexer
-import           Validation.TypingState (KindEnv)
-import           Syntax.Types
-import           Syntax.Kinds
-import           Syntax.Exps
-import qualified Data.Map.Strict as Map
 import           Control.Monad.State
-import           Data.List (nubBy, deleteFirstsBy, intercalate, find)
-import           Utils.Errors
-import           System.Exit (die)
 import           Data.Char
+import           Data.List (nubBy, deleteFirstsBy, intercalate, find)
+import qualified Data.Map.Strict as Map
+import           Parse.Lexer
+import           Syntax.Exps
+import           Syntax.Kinds
+import           Syntax.Types
+import           Syntax.Programs
+import           System.Exit (die)
+import           Utils.Errors
 
 }
 

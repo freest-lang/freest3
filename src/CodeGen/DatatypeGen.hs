@@ -2,7 +2,7 @@ module CodeGen.DatatypeGen (genDataTypes) where
 
 import           Data.List
 import qualified Data.Map.Strict as Map
-import           Syntax.Exps
+import           Syntax.Programs
 import           Syntax.Types
 
 -- GEN DATATYPES

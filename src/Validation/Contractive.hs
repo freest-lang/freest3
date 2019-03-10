@@ -17,6 +17,7 @@ module Validation.Contractive
 where
 
 import qualified Data.Map.Strict as Map
+import           Syntax.Programs
 import           Syntax.Types
 import           Utils.Errors
 import           Validation.TypingState

@@ -9,11 +9,11 @@ import           CodeGen.ExpressionGen
 import           Control.Monad.State
 import           Data.List
 import qualified Data.Map.Strict as Map
-import           System.Directory
 import           Syntax.Exps
-import           Validation.Kinding
-import           Validation.TypingState(KindEnv)
+import           Syntax.Programs
 import           Syntax.Types
+import           System.Directory
+import           Validation.Kinding
 
 
 -- TODO : PARAM BANG

@@ -1,18 +1,14 @@
 module Compiler (compile) where
 
-import qualified Data.Map.Strict as Map
-import           Utils.PreludeLoader
-import           Parse.Parser (parseProgram)
-import           Syntax.Exps
-import           CodeGen.CodeGen
-import           Syntax.Types
-import           Validation.Typing
-import           Validation.TypingState
-import           Control.Monad.State
-import           Data.List
-import           System.Exit
-import           Syntax.Kinds
-import           Validation.Kinding
+import CodeGen.CodeGen (HaskellCode, genProgram)
+import Control.Monad.State
+import Data.List (intercalate)
+import Parse.Parser (parseProgram)
+import Syntax.Programs
+import System.Exit
+import Utils.PreludeLoader (prelude)
+import Validation.Typing (typeCheck)
+import Validation.TypingState (Errors)
 
 
 compile :: String -> IO (Bool, String)

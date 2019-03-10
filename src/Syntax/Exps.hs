@@ -13,10 +13,6 @@ Portability :  portable | non-portable (<reason>)
 
 module Syntax.Exps
   ( Expression(..)
-  , ExpEnv
-  , VarEnv
-  , TypeEnv
-  , ConstructorEnv
   , TermVar
   , Params
   , Param(..)
@@ -43,14 +39,6 @@ instance Show Param where
   show p = param p
 
 type Params = [Param] -- Params is a semantic notion, not syntatic - eliminate, use [TermVar]
-
-type VarEnv = Map.Map TermVar (Pos, TypeScheme)
-
-type ExpEnv = Map.Map TermVar (Pos, Params, Expression)
-
-type TypeEnv = Map.Map TypeVar Type
-
-type ConstructorEnv = Map.Map TypeVar (Pos, TypeScheme)
 
 data TypeVarBind = TypeVar Kind
 

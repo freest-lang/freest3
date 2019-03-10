@@ -5,9 +5,8 @@ import qualified Data.Map.Strict as Map
 import           Syntax.Kinds
 import           Syntax.Exps
 import           Syntax.Types
+import           Syntax.Programs
 import           Utils.Errors
-
-type KindEnv = Map.Map TypeVar (Pos, Kind)
 
 -- | The typing state
 type Errors = [String]
