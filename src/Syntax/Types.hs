@@ -43,7 +43,7 @@ type Pos = (Int, Int)
 
 type TypeVar = String
 
-data Bind = Bind {var :: TypeVar, p :: Pos, kind :: Kind}
+data Bind = Bind {var :: TypeVar, bindPos :: Pos, kind :: Kind}
   deriving (Ord)
 
 instance Eq Bind where

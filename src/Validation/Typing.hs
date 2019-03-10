@@ -132,7 +132,7 @@ checkFunForm venv fun args = do
 --  checkArgsConflits fun args
   let (p,t) = venv Map.! fun
   arguments <- checkArgs p fun args (normalizeType (init (toList t)))
-  foldM (\acc (arg, t) -> addToVenv (pos arg) (param arg) t) () arguments
+  foldM (\acc (arg, t) -> addToVenv (paramPos arg) (param arg) t) () arguments
   return ()
 
 -- checkArgsConflits :: TermVar -> Params -> TypingState ()
@@ -317,7 +317,7 @@ checkExp (Match p e cm) = do
   t1 <- checkExp e
   let (c, (x, e1)) = Map.elemAt 0 cm
   t2 <- extractExtChoice p t1 c
-  addToVenv (pos x) (param x) t2
+  addToVenv (paramPos x) (param x) t2
   venv <- getVenv
   u <- checkExp e1
   Map.foldrWithKey (\k (v1,v2) _ -> checkMap venv p t1 u k ([v1], v2) extractExtChoice) (return ()) (Map.delete c cm)
@@ -336,7 +336,7 @@ checkExp (Case cp e cm) = do
   let (c, (x, e1)) = Map.elemAt 0 cm  
   t2 <- extractDatatype cp t c  
   let x' = zip x (init (toList t2))        
-  foldM (\_ (p, t) -> addToVenv (pos p) (param p) t) () x' 
+  foldM (\_ (p, t) -> addToVenv (paramPos p) (param p) t) () x' 
   venv <- getVenv
   u <- checkExp e1
   -- setVEnv venv
@@ -558,7 +558,7 @@ checkMap venv mp choice against c (x, e) f = do
   setVenv venv
   t1 <- f mp choice c  
   let x' = zip x (myInit (toList t1))
-  foldM (\_ (p, t) -> addToVenv (pos p) (param p) t) () x' 
+  foldM (\_ (p, t) -> addToVenv (paramPos p) (param p) t) () x' 
   checkAgainst mp e against
   return ()
 

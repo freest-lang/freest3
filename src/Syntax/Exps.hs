@@ -31,7 +31,7 @@ import           Syntax.Types
 
 type TermVar = String
 
-data Param = Param {pos :: Pos, param :: TermVar}
+data Param = Param {paramPos :: Pos, param :: TermVar}
 
 instance Eq Param where
   b == c = param b == param c
