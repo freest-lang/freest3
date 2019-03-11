@@ -19,6 +19,8 @@ Parser.hs
 Lexer.hs
 testEquiv.hp
 testEquiv.prof
+Parser.hs
+Lexer.hs
 
 #Latex
 *.aux
