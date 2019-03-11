@@ -45,5 +45,5 @@ forall x  => rec y . rec z . x; y; z
 forall x : SL  => rec y . rec z . x; y; z
   SL
 
-forall y : SU => rec x : SU . x; y
+forall y : SU => rec x . x; y
   SU

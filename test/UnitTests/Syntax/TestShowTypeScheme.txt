@@ -1,5 +1,5 @@
 -- Recursive tests
-forall y : SU => rec x : SU . x;y
+forall y : SU => rec x  . x;y
 
 -- Forall tests
 
@@ -12,9 +12,9 @@ forall b : TU => b
 forall a : TU, b : TU => a
 forall x : TU, y : TU => !Int;x;!Bool;y
 
-forall beta : TU => (rec TreeChannel : SU . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel})->((rec TreeChannel : SU . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});beta)->beta
+forall beta : TU => (rec TreeChannel  . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel})->((rec TreeChannel  . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});beta)->beta
 
--- forall beta : TU => (rec TreeChannel : SU . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel}) -> (rec TreeChannel : SU . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel};beta)->beta
+-- forall beta : TU => (rec TreeChannel  . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel}) -> (rec TreeChannel  . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel};beta)->beta
 
 -- "Associativity"
 

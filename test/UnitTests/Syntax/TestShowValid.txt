@@ -88,32 +88,32 @@ Int -o Bool
 
 -- Recursive tests
 
-rec x : SU . Skip;x
-rec x : SU . x;!Int
-rec x : SU . rec y . x;y
-rec x : SU . !Int; rec y . x ; y
-rec x : SU . !Int;x
-rec x : SU . !Int;!Int;x
-rec x : SU . !Int;Skip
-rec x : SU . Skip;!Int
-rec x : SU . +{L:!Int, M:x}
-rec y : SU . +{L:Skip, M:y};!Int
-rec x : SU . !Int
-rec x : SU . ?Bool
-Skip;rec x : SU . ((!Int);x)
-rec x : SU . x
-rec x : SU . (?Bool -> !Int -> Bool)
+rec x . Skip;x
+rec x . x;!Int
+rec x . rec y . x;y
+rec x . !Int; rec y . x ; y
+rec x . !Int;x
+rec x . !Int;!Int;x
+rec x . !Int;Skip
+rec x . Skip;!Int
+rec x . +{L:!Int, M:x}
+rec y . +{L:Skip, M:y};!Int
+rec x . !Int
+rec x . ?Bool
+Skip;rec x . ((!Int);x)
+rec x . x
+rec x . (?Bool -> !Int -> Bool)
 
 
 -- Complex tests
 
-rec alpha : SU . (rec TreeChannel : SU . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});alpha
-rec alpha : SU . !Int;(rec TreeChannel : SU . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});(rec TreeChannel : SU . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});alpha
-rec alpha : SU . (!Int;((rec TreeChannel : SU . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});(rec TreeChannel : SU . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel})));alpha
-rec alpha : SU . !Int;(((rec TreeChannel : SU . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});(rec TreeChannel : SU . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel}));alpha)
-rec alpha : SU . ((rec TreeChannel : SU . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});(rec TreeChannel : SU . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel}));alpha
-rec alpha : SU .(rec TreeChannel : SU . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});((rec TreeChannel : SU . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});alpha)
+rec alpha . (rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});alpha
+rec alpha . !Int;(rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});(rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});alpha
+rec alpha . (!Int;((rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});(rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel})));alpha
+rec alpha . !Int;(((rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});(rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel}));alpha)
+rec alpha . ((rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});(rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel}));alpha
+rec alpha .(rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});((rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});alpha)
 
-(rec XploreNodeChan : SU . +{Value:!Int;XploreNodeChan, Left:(rec XformChan : SU . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int});XploreNodeChan, Right:(rec XformChan : SU . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int});XploreNodeChan,Exit:Skip})
+(rec XploreNodeChan . +{Value:!Int;XploreNodeChan, Left:(rec XformChan . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int});XploreNodeChan, Right:(rec XformChan . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int});XploreNodeChan,Exit:Skip})
 
-rec alpha : SU . Int -> (rec XformChan : SU . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int})->(rec XformChan : SU . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int})->((rec XformChan : SU . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int});alpha)->alpha
+rec alpha . Int -> (rec XformChan . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int})->(rec XformChan . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int})->((rec XformChan . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int});alpha)->alpha

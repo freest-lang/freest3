@@ -478,12 +478,12 @@ rec x . &{Add: x;x;!Int, Const: ?Int;!Int, Mult: x;x;!Int}
 &{Add: (((rec x. &{Add: (x;x), Const: ?Int, Mult: (x;x)});(rec x. &{Add: (x;x), Const: ?Int, Mult: (x;x)}));!Int), Const: ?Int;!Int, Mult: (((rec x. &{Add: (x;x), Const: ?Int, Mult: (x;x)});(rec x. &{Add: (x;x), Const: ?Int, Mult: (x;x)}));!Int)}
 
 []
-&{LeafC: (rec x : SL . &{LeafC: Skip, NodeC: (?Int;(x;x))}), NodeC: ((?Int;((rec x : SL . &{LeafC: Skip, NodeC: (?Int;(x;x))});(rec x : SL . &{LeafC: Skip, NodeC: (?Int;(x;x))})));(rec x : SL . &{LeafC: Skip, NodeC: (?Int;(x;x))}))}
-&{LeafC: (rec x : SL . &{LeafC: Skip, NodeC: (?Int;(x;x))}), NodeC: ((?Int;((rec x : SL . &{LeafC: Skip, NodeC: (?Int;(x;x))});(rec x : SL . &{LeafC: Skip, NodeC: (?Int;(x;x))})));(rec x : SL . &{LeafC: Skip, NodeC: (?Int;(x;x))}))}
+&{LeafC: (rec x . &{LeafC: Skip, NodeC: (?Int;(x;x))}), NodeC: ((?Int;((rec x . &{LeafC: Skip, NodeC: (?Int;(x;x))});(rec x . &{LeafC: Skip, NodeC: (?Int;(x;x))})));(rec x . &{LeafC: Skip, NodeC: (?Int;(x;x))}))}
+&{LeafC: (rec x . &{LeafC: Skip, NodeC: (?Int;(x;x))}), NodeC: ((?Int;((rec x . &{LeafC: Skip, NodeC: (?Int;(x;x))});(rec x . &{LeafC: Skip, NodeC: (?Int;(x;x))})));(rec x . &{LeafC: Skip, NodeC: (?Int;(x;x))}))}
 
 []
-((rec TermChan : SL . +{Add: (TermChan;TermChan), Const: !Int, Mult: (TermChan;TermChan)});!Int)
-((rec TermChan : SL . +{Add: (TermChan;TermChan), Const: !Int, Mult: (TermChan;TermChan)});!Int)
+((rec TermChan . +{Add: (TermChan;TermChan), Const: !Int, Mult: (TermChan;TermChan)});!Int)
+((rec TermChan . +{Add: (TermChan;TermChan), Const: !Int, Mult: (TermChan;TermChan)});!Int)
 
 []
 (rec x . &{A: !Int ; x, B: Skip}) ; (rec x . &{A: !Int ; x, B: Skip}) ; ?Bool

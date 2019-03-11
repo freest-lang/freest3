@@ -69,7 +69,7 @@ synthetize (PairType _ t u) = do
 synthetize (Datatype _ m) = do
   ks <- mapM synthetize (Map.elems m)
   return $ Kind Functional $ multiplicity $ maximum ks
-synthetize (Rec _ (Bind x p _) t) = do
+synthetize (Rec _ (p,x) t) = do
   checkContractive t
   y <- freshVar
   addToKenv p y (Kind Session Un)
@@ -98,7 +98,8 @@ checkSessionKind t k
 
 -- Check whether a given type has a given kind
 checkAgainst :: Kind -> Type -> TypingState ()
-checkAgainst k (Rec _ (Bind x p _) t) = do
+-- checkAgainst k (Rec _ (Bind x p _) t) = do
+checkAgainst k (Rec _ (p, x) t) = do
   checkContractive t
   y <- freshVar
   addToKenv p y (Kind Session Un)

@@ -106,7 +106,7 @@ data Type =
   | Semi Pos Type Type
   | Message Pos Polarity BasicType
   | Choice Pos ChoiceView TypeMap
-  | Rec Pos Bind Type
+  | Rec Pos (Pos, TypeVar) Type
   -- Functional or Session
   | Var Pos TypeVar
   -- Type operators
@@ -120,7 +120,8 @@ instance Eq Type where
 equalTypes :: Map.Map TypeVar TypeVar -> Type -> Type -> Bool
 equalTypes s (Skip _)         (Skip _)         = True
 equalTypes s (Var _ x)        (Var _ y)        = equalVars (Map.lookup x s) x y
-equalTypes s (Rec _ b t)      (Rec _ c u)      = b == c && equalTypes (insertBind (b, c) s) t u
+-- equalTypes s (Rec _ b t)      (Rec _ c u)      = b == c && equalTypes (insertBind (b, c) s) t u
+equalTypes s (Rec _ b t)      (Rec _ c u)      = equalTypes (insertTypeVar (snd b, snd c) s) t u
 equalTypes s (Semi _ t1 t2)   (Semi _ u1 u2)   = equalTypes s t1 u1 && equalTypes s t2 u2
 equalTypes s (Basic _ x)      (Basic _ y)      = x == y
 equalTypes s (Message _ p x)  (Message _ q y)  = p == q && x == y
@@ -141,6 +142,9 @@ equalMaps s m1 m2 =
     Map.foldlWithKey(\b l t ->
       b && l `Map.member` m2 && equalTypes s t (m2 Map.! l)) True m1
 
+insertTypeVar :: (TypeVar, TypeVar) -> Map.Map TypeVar TypeVar -> Map.Map TypeVar TypeVar
+insertTypeVar (b, c) = Map.insert b c
+
 -- Showing a type
 instance Show Type where
   show (Basic _ b)      = show b
@@ -151,7 +155,7 @@ instance Show Type where
   show (PairType _ t u) = "(" ++ show t ++ ", " ++ show u ++ ")"
   show (Choice _ v m)   = show v ++ "{" ++ showMap m ++ "}"
   show (Datatype _ m)   = "["++ showMap m ++"]"
-  show (Rec _ b t)      = "(rec " ++ show b ++ " . " ++ show t ++ ")"
+  show (Rec _ b t)      = "(rec " ++ snd b ++ " . " ++ show t ++ ")"
   show (Var _ s)        = s
   show (Dualof _ s)     = "dualof " ++ show s
 
@@ -233,11 +237,12 @@ toList t = [t]
 
 unfold :: Type -> Type
 -- Assumes parameter is a Rec type
-unfold (Rec p b t) = subs (Rec p b t) (var b) t
+unfold (Rec p b t) = subs (Rec p b t) (snd b) t
 
 rename :: Type -> TypeVar -> Type
 -- Assumes parameter is a Rec type
-rename (Rec p (Bind x pb k) t) y = Rec p (Bind y pb k) (subs (Var p y) x t)
+-- rename (Rec p (Bind x pb k) t) y = Rec p (Bind y pb k) (subs (Var p y) x t)
+rename (Rec p (pb, x) t) y = Rec p (pb, y) (subs (Var p y) x t)
 
 -- [u/x]t, substitute u for x on t
 subs :: Type -> TypeVar -> Type -> Type 
@@ -248,7 +253,7 @@ subs t y (Semi p t1 t2)     = Semi p (subs t y t1) (subs t y t2)
 subs t y (PairType p t1 t2) = PairType p (subs t y t1) (subs t y t2)
 -- Assume y /= x
 subs t2 y (Rec p b t1)
-  | var b == y              = Rec p b t1
+  | snd b == y              = Rec p b t1
   | otherwise               = Rec p b (subs t2 y t1)
 subs t y (Choice p v m)     = Choice p v (Map.map(subs t y) m)
 subs t y (Fun p m t1 t2)    = Fun p m (subs t y t1) (subs t y t2)
@@ -270,6 +275,7 @@ isPreSession (Skip _) _        = True
 isPreSession (Semi _ _ _) _    = True
 isPreSession (Message _ _ _) _ = True
 isPreSession (Choice _ _ _) _ = True
-isPreSession (Rec _ Bind{kind=Kind Session _} _) _ = True
+--isPreSession (Rec _ Bind{kind=Kind Session _} _) _ = True
+isPreSession (Rec _ _ _) _ = True
 isPreSession (Var _ x) kenv    = Map.member x kenv
 isPreSession _ _ = False

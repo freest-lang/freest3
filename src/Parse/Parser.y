@@ -304,8 +304,9 @@ Bind :: { Bind }
   : VAR KindUn    {let (TokenVar p x) = $1 in Bind x (pos p) $2}
 
 
-Type :: { Type }
-  : rec VarCons KindUn '.' Type  { Rec (getPos $1) (Bind (snd $2) (fst $2) $3) $5 } -- TODO: rec VAR apenas?
+Type :: { Type } -- TODO: rec VAR apenas?
+--  : rec VarCons KindUn '.' Type  { Rec (getPos $1) (Bind (snd $2) (fst $2) $3) $4 } 
+  : rec VarCons '.' Type         { Rec (getPos $1) $2 $4 } 
   | Type ';' Type                { Semi (getPos $2) $1 $3 }
   | Type Multiplicity Type       { Fun (fst $2) (snd $2) $1 $3 }
   | '(' Type ',' Type ')'        { PairType (getPos $1) $2 $4 }
