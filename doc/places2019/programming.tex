@@ -1,6 +1,6 @@
 \section{\freest{} is for programming}
 \label{sec:programming}
-
+ 
 \freest{} is a basic implementation of the language introduced by
 Thiemann and Vasconcelos~\cite{DBLP:conf/icfp/ThiemannV16}.
 %
@@ -112,7 +112,7 @@ two subtrees (via recursive calls). Finally, it reads an integer
 the root and returns this tree together with the residual of the
 channel.
 %
-\begin{lstlisting}[numbers=left]
+\begin{lstlisting}[numbers=left, xleftmargin=\parindent]
 transform tree c =
   case tree of
     Leaf ->
@@ -163,7 +163,7 @@ on the channel the sum of the values in the subtree. It finally
 returns this exact sum, together with the residual channel.
 %
 \label{lst:treeSum}
-\begin{lstlisting}[numbers=left,firstnumber=12]
+\begin{lstlisting}[numbers=left,firstnumber=12, xleftmargin=\parindent]
 treeSum c =
   match c with
     Leaf c ->
@@ -202,7 +202,7 @@ residual of channel end \lstinline|w|, function \lstinline|transform|
 also returns a new tree \lstinline|t|, which becomes the result of the
 \lstinline|main| function.
 %
-\begin{lstlisting}[numbers=left,firstnumber=22]
+\begin{lstlisting}[numbers=left,firstnumber=22, xleftmargin=\parindent]
 main: Tree
 main =
   let w,r = new TreeC in
