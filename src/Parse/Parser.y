@@ -266,7 +266,6 @@ TypeList :: { [Type] }
   : Type                 {[$1]}
   | TypeList ',' Type    {$1 ++ [$3]}
 
-
 MatchMap :: { MatchMap } :
   MatchValue MatchNext  { Map.union $1 $2 }
 
@@ -293,8 +292,8 @@ CaseValue :: { CaseMap } :
 -- TYPES --
 -----------
 
-TypeScheme :: { TypeScheme } :
-  forall BindList '=>' Type {TypeScheme $2 $4}
+TypeScheme :: { TypeScheme }
+  : forall BindList '=>' Type {TypeScheme $2 $4}
 
 BindList :: { [Bind] }
   : Bind               { [$1] }
@@ -303,9 +302,7 @@ BindList :: { [Bind] }
 Bind :: { Bind }
   : VAR KindUn    {let (TokenVar p x) = $1 in Bind x (pos p) $2}
 
-
-Type :: { Type } -- TODO: rec VAR apenas?
---  : rec VarCons KindUn '.' Type  { Rec (getPos $1) (Bind (snd $2) (fst $2) $3) $4 } 
+Type :: { Type }
   : rec VarCons '.' Type         { Rec (getPos $1) $2 $4 } 
   | Type ';' Type                { Semi (getPos $2) $1 $3 }
   | Type Multiplicity Type       { Fun (fst $2) (snd $2) $1 $3 }
@@ -320,7 +317,6 @@ Type :: { Type } -- TODO: rec VAR apenas?
   | CONS                         { let (TokenCons p x) = $1 in Var (pos p) x }
   | '(' Type ')'                 { $2 }
 
-
 Polarity :: { (Pos, Polarity) }
   : '?' { (getPos $1, In) }
   | '!' { (getPos $1, Out) }
@@ -333,7 +329,7 @@ ChoiceView :: { (Pos, ChoiceView) }
   : '+' { (getPos $1, Internal) }
   | '&' { (getPos $1, External) }
   
--- Either a var or a constructor
+-- Either a var or a constructor -- TODO: Why needed?
 VarCons :: { (Pos,String) }
   : VAR  {let (TokenVar p x) = $1 in (pos p, x) }
   | CONS {let (TokenCons p x) = $1 in (pos p, x) }
