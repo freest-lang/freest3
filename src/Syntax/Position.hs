@@ -12,8 +12,9 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Syntax.Position
-  ( Pos
-  ) where 
+( Pos
+, Position(..)
+) where 
 
 type Pos = (Int, Int)
 

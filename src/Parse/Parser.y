@@ -1,5 +1,9 @@
 {
-module Parse.Parser (parseType, parseTypeScheme, parseDefs, parseProgram, getEPos) where
+module Parse.Parser
+(parseType,
+ parseTypeScheme,
+ parseDefs,
+ parseProgram) where
   
 import           Syntax.Programs
 import           Syntax.Exps
@@ -228,16 +232,16 @@ Expr :: { Expression }
 
 Form :: { Expression }
   : '-' Form %prec NEG {App (getPos $1) (Variable (getPos $1) "negate") $2}
-  | Form '+' Form      {App (getEPos $1) (App (getEPos $1) (Variable (getPos $2) "(+)") $1) $3}
-  | Form '-' Form      {App (getEPos $1) (App (getEPos $1) (Variable (getPos $2) "(-)") $1) $3}
-  | Form '*' Form      {App (getEPos $1) (App (getEPos $1) (Variable (getPos $2) "(*)") $1) $3}
+  | Form '+' Form      {App (position $1) (App (position $1) (Variable (getPos $2) "(+)") $1) $3}
+  | Form '-' Form      {App (position $1) (App (position $1) (Variable (getPos $2) "(-)") $1) $3}
+  | Form '*' Form      {App (position $1) (App (position $1) (Variable (getPos $2) "(*)") $1) $3}
   | Form OP Form       {let (TokenOp p s) = $2 in
-                          App (getEPos $1) (App (getEPos $1) (Variable (pos p) s) $1) $3}
+                          App (position $1) (App (position $1) (Variable (pos p) s) $1) $3}
   | Juxt               {$1}       
 
 
 Juxt :: { Expression }
-  : Juxt Atom            {App (getEPos $1) $1 $2}
+  : Juxt Atom            {App (position $1) $1 $2}
 
   | VAR '[' TypeList ']'  {let (TokenVar p x) = $1 in
                             TypeApp (pos p) x $3}  
@@ -368,9 +372,9 @@ checkLabelClash (p, (c,t)) m1 = -- TODO: map position?
   case m1 Map.!? c of
     Just x -> do
       file <- getFileName
-      addError $ styleError file (typePos x)
+      addError $ styleError file (position x)
                ["Conflicting definitions for label", styleRed $ "'" ++ c ++ "'\n\t",
-                "Bound at:", file ++ ":" ++ prettyPos (typePos x) ++ "\n\t",
+                "Bound at:", file ++ ":" ++ prettyPos (position x) ++ "\n\t",
                 "          " ++ file ++ ":" ++ prettyPos p]
       return m1
     Nothing ->
@@ -569,7 +573,7 @@ typesToFun p tv = foldl (\acc (k,(p,ts)) -> acc ++ [(k, (p, typeToFun p tv ts))]
   where
     typeToFun :: Pos -> TypeVar -> [Type] -> Type
     typeToFun p c [] = (Var p c)
-    typeToFun p c (x:xs) = Fun (typePos x) Un x (typeToFun p c xs)
+    typeToFun p c (x:xs) = Fun (position x) Un x (typeToFun p c xs)
 
 convertDT :: Pos -> [(TypeVar,(Pos, Type))] -> Type
 convertDT p ts = Datatype p $ Map.fromList $ removePos

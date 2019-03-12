@@ -27,7 +27,6 @@ module Syntax.Types
 , rename
 , subs
 , subL -- TODO: not quite sure this belongs here
-, typePos
 , isPreSession
 ) where
 
@@ -164,19 +163,18 @@ showMap :: TypeMap -> String
 showMap m = concat $ intersperse ", " (map showAssoc (Map.assocs m))
   where showAssoc (k, v) = k ++ ": " ++ show v
 
--- The position of a type
-typePos :: Type -> Pos
-typePos (Basic p _) = p
-typePos (Fun p _ _ _) = p
-typePos (PairType p _ _) = p
-typePos (Datatype p _) = p
-typePos (Skip p) = p
-typePos (Semi p _ _) = p
-typePos (Message p _ _) = p
-typePos (Choice p _ _) = p
-typePos (Rec p _ _) = p
-typePos (Var p _) = p
-typePos (Dualof p _) = p
+instance Position Type where
+  position (Basic p _) = p
+  position (Fun p _ _ _) = p
+  position (PairType p _ _) = p
+  position (Datatype p _) = p
+  position (Skip p) = p
+  position (Semi p _ _) = p
+  position (Message p _ _) = p
+  position (Choice p _ _) = p
+  position (Rec p _ _) = p
+  position (Var p _) = p
+  position (Dualof p _) = p
 
 -- TYPE SCHEMES
 

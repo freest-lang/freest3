@@ -306,7 +306,7 @@ checkExp (New p t) = do
 
 checkExp (Send p e1 e2) = do
   t1 <- checkExp e1
-  b1 <- extractBasic (getEPos e1) t1 -- TODO: remove pos
+  b1 <- extractBasic (position e1) t1 -- TODO: remove pos
   t2 <- checkExp e2
   (b2, u) <- extractOutput p t2
   checkEquivBasics p b1 b2
@@ -315,7 +315,7 @@ checkExp (Send p e1 e2) = do
 checkExp (Receive p e) = do
   venv <- getVenv
   t <- checkExp e
-  (b, TypeScheme _ t1) <- extractInput (getEPos e) t -- TODO : return a type
+  (b, TypeScheme _ t1) <- extractInput (position e) t -- TODO : return a type
   return $ TypeScheme [] (PairType p (Basic p b) t1)
 
 -- Branching
@@ -404,8 +404,8 @@ extractFun p (TypeScheme bs _)           = do
 
 extractScheme :: TypeScheme -> TypingState ([Bind], Type)
 extractScheme (TypeScheme [] t) = do
-  addError (typePos t) ["Expecting a type scheme; found", styleRed $ show t]
-  return ([], (Basic (typePos t) UnitType))
+  addError (position t) ["Expecting a type scheme; found", styleRed $ show t]
+  return ([], (Basic (position t) UnitType))
 extractScheme (TypeScheme bs t) = return (bs, t)
 
 extractPair :: Pos -> TypeScheme -> TypingState (TypeScheme, TypeScheme)

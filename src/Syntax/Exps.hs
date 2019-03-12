@@ -18,7 +18,7 @@ module Syntax.Exps
 , Param(..)
 , CaseMap
 , MatchMap
-, getEPos
+--, getEPos
 ) where
 
 import           Syntax.Position
@@ -81,23 +81,26 @@ data Expression =
   | Match Pos Expression MatchMap
    deriving (Eq, Ord, Show)
 
-getEPos :: Expression -> Pos
-getEPos (Unit p) = p
-getEPos (Integer p _) = p
-getEPos (Character p _) = p
-getEPos (Boolean p _) = p
-getEPos (Variable p _) = p
-getEPos (UnLet p _ _ _) = p
-getEPos (App p _ _) = p
-getEPos (TypeApp p _ _) = p
-getEPos (Conditional p _ _ _) = p
-getEPos (Pair p _ _) = p
-getEPos (BinLet p _ _ _ _) = p
-getEPos (New p _) = p
-getEPos (Send p _ _) = p
-getEPos (Receive p _ ) = p
-getEPos (Select p _ _) = p
-getEPos (Match p _ _) = p
-getEPos (Fork p _) = p
-getEPos (Constructor p _) = p
-getEPos (Case p _ _) = p
+instance Position Expression where
+  position (Unit p) = p
+  position (Integer p _) = p
+  position (Character p _) = p
+  position (Boolean p _) = p
+  position (Variable p _) = p
+  position (UnLet p _ _ _) = p
+  position (App p _ _) = p
+  position (TypeApp p _ _) = p
+  position (Conditional p _ _ _) = p
+  position (Pair p _ _) = p
+  position (BinLet p _ _ _ _) = p
+  position (New p _) = p
+  position (Send p _ _) = p
+  position (Receive p _ ) = p
+  position (Select p _ _) = p
+  position (Match p _ _) = p
+  position (Fork p _) = p
+  position (Constructor p _) = p
+  position (Case p _ _) = p
+
+getEPos :: Expression -> Pos -- TODO: remove
+getEPos = position
