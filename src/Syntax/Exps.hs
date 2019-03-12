@@ -18,12 +18,11 @@ module Syntax.Exps
 , Param(..)
 , CaseMap
 , MatchMap
---, getEPos
-) where
+ where
 
-import           Syntax.Position
-import           Syntax.Kinds
 import           Syntax.Types
+import           Syntax.Kinds
+import           Syntax.Position
 import qualified Data.Map.Strict as Map
 
 type TermVar = String
@@ -82,25 +81,22 @@ data Expression =
    deriving (Eq, Ord, Show)
 
 instance Position Expression where
-  position (Unit p) = p
-  position (Integer p _) = p
-  position (Character p _) = p
-  position (Boolean p _) = p
-  position (Variable p _) = p
-  position (UnLet p _ _ _) = p
-  position (App p _ _) = p
-  position (TypeApp p _ _) = p
+  position (Unit p)              = p
+  position (Integer p _)         = p
+  position (Character p _)       = p
+  position (Boolean p _)         = p
+  position (Variable p _)        = p
+  position (UnLet p _ _ _)       = p
+  position (App p _ _)           = p
+  position (TypeApp p _ _)       = p
   position (Conditional p _ _ _) = p
-  position (Pair p _ _) = p
-  position (BinLet p _ _ _ _) = p
-  position (New p _) = p
-  position (Send p _ _) = p
-  position (Receive p _ ) = p
-  position (Select p _ _) = p
-  position (Match p _ _) = p
-  position (Fork p _) = p
-  position (Constructor p _) = p
-  position (Case p _ _) = p
-
-getEPos :: Expression -> Pos -- TODO: remove
-getEPos = position
+  position (Pair p _ _)          = p
+  position (BinLet p _ _ _ _)    = p
+  position (New p _)             = p
+  position (Send p _ _)          = p
+  position (Receive p _ )        = p
+  position (Select p _ _)        = p
+  position (Match p _ _)         = p
+  position (Fork p _)            = p
+  position (Constructor p _)     = p
+  position (Case p _ _)          = p

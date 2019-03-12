@@ -17,8 +17,7 @@ module Syntax.Kinds
 , Kind (..)
 ) where
 
-import           Syntax.Position
-import qualified Data.Map.Strict as Map
+-- import Syntax.Position
 
 -- PREKINDS
 
@@ -30,7 +29,7 @@ instance Show PreKind where
 
 instance Ord PreKind where
    Session <= Functional = True
-   _          <= _       = False
+   _       <= _          = False
 
 -- MULTIPLICITIES
 
@@ -46,7 +45,8 @@ instance Ord Multiplicity where
 
 -- KINDS
 
-data Kind = Kind {prekind :: PreKind, multiplicity :: Multiplicity} -- TOPO: include position; use a triple.
+-- TODO: include position; use a triple.
+data Kind = Kind {prekind :: PreKind, multiplicity :: Multiplicity}
   deriving (Eq, Ord)
 
 instance Show Kind where

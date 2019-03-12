@@ -164,17 +164,17 @@ showMap m = concat $ intersperse ", " (map showAssoc (Map.assocs m))
   where showAssoc (k, v) = k ++ ": " ++ show v
 
 instance Position Type where
-  position (Basic p _) = p
-  position (Fun p _ _ _) = p
+  position (Basic p _)     = p
+  position (Fun p _ _ _)    = p
   position (PairType p _ _) = p
-  position (Datatype p _) = p
-  position (Skip p) = p
-  position (Semi p _ _) = p
-  position (Message p _ _) = p
-  position (Choice p _ _) = p
-  position (Rec p _ _) = p
-  position (Var p _) = p
-  position (Dualof p _) = p
+  position (Datatype p _)   = p
+  position (Skip p)         = p
+  position (Semi p _ _)     = p
+  position (Message p _ _)  = p
+  position (Choice p _ _)   = p
+  position (Rec p _ _)      = p
+  position (Var p _)        = p
+  position (Dualof p _)     = p
 
 -- TYPE SCHEMES
 
@@ -194,11 +194,8 @@ insertBind :: (Bind, Bind) -> Map.Map TypeVar TypeVar -> Map.Map TypeVar TypeVar
 insertBind (b, c) = Map.insert (var b) (var c)
 
 instance Show TypeScheme where
-  show (TypeScheme bs t) = showTypeScheme bs t
-
-showTypeScheme :: [Bind] -> Type -> String
-showTypeScheme [] t = show t
-showTypeScheme bs t = "forall " ++ showBindings bs ++ " => " ++ show t
+  show (TypeScheme [] t) = show t
+  show (TypeScheme bs t) = "forall " ++ showBindings bs ++ " => " ++ show t
 
 showBindings :: [Bind] -> String
 showBindings bs = concat $ intersperse ", " (map show bs)
