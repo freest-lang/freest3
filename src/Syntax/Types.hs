@@ -102,7 +102,7 @@ data Type =
   | Semi Pos Type Type
   | Message Pos Polarity BasicType
   | Choice Pos ChoiceView TypeMap
-  | Rec Pos (Pos, TypeVar) Type
+  | Rec Pos (Pos, TypeVar) Type -- TODO: Pos duplicated
   -- Functional or Session
   | Var Pos TypeVar
   -- Type operators

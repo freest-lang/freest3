@@ -73,9 +73,9 @@ checkDataDecl = do
   mapM_ (checkKinding . snd) cenv
 
 
-checkFunctionalKind :: (Pos, Kind) -> TypingState ()
+checkFunctionalKind :: (Pos, Kind) -> TypingState () -- TODO: remove Pos
 checkFunctionalKind (p, k)
-  | k >= (Kind Functional Un) = return ()
+  | k >= (Kind p Functional Un) = return ()
   | otherwise = 
      addError p ["Expecting a functional (TU or TL) type; found a",
                   styleRed (show k), "type."]
@@ -299,7 +299,7 @@ checkExp (BinLet p (px,x) (py,y) e1 e2) = do
 -- Session types
 
 checkExp (New p t) = do
-  K.checkAgainst (Kind Session Lin) t
+  K.checkAgainst (Kind p Session Lin) t
   -- m <- extractChoiceMap t
   -- Map.foldrWithKey (\c t _ -> addToVenv p c (TypeScheme [] t)) (return ()) m
   return $ TypeScheme [] (PairType p t (dual t))

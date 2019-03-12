@@ -17,7 +17,7 @@ module Syntax.Kinds
 , Kind (..)
 ) where
 
--- import Syntax.Position
+import Syntax.Position
 
 -- PREKINDS
 
@@ -45,9 +45,11 @@ instance Ord Multiplicity where
 
 -- KINDS
 
--- TODO: include position; use a triple.
-data Kind = Kind {prekind :: PreKind, multiplicity :: Multiplicity}
+data Kind = Kind Pos PreKind Multiplicity
   deriving (Eq, Ord)
 
 instance Show Kind where
-  show k = show (prekind k) ++ show (multiplicity k)
+  show (Kind _ p m) = show p ++ show m
+
+instance Position Kind where
+  position (Kind p _ _) = p

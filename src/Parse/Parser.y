@@ -125,7 +125,7 @@ TypeAbbrv :: { () } : -- TODO: the position is taken from $1
          venv <- getVenv
          checkNamesClash venv c
            ("Multiple declarations of " ++ styleRed c) (pos p)
-         addToKenv c (pos p, Kind Functional Un)
+	 addToKenv c (pos p, Kind (pos p) Functional Un)
          addToVenv c (pos p, TypeScheme [] $4)
     }
 
@@ -140,7 +140,7 @@ DataDecl :: { () } : -- TODO: the position is taken from $1
         kenv <- getKenv
         checkNamesClash kenv c
           ("Multiple declarations of '" ++ styleRed c ++ "'") (pos p)
-        addToKenv c (pos p, Kind Functional Un)
+	addToKenv c (pos p, Kind (pos p) Functional Un)
         let binds = typesToFun (pos p) c $4
         checkBindsClash binds
         mapM (\(cons, (p, t)) -> addToCenv cons p (TypeScheme [] t)) binds
@@ -293,7 +293,7 @@ BindList :: { [Bind] }
 
 Bind :: { Bind }
   : VAR ':' Kind { let (TokenVar p x) = $1 in Bind (pos p) x $3 }
-  | VAR		 { let (TokenVar p x) = $1 in Bind (pos p) x (Kind Session Lin) }
+| VAR		 { let (TokenVar p x) = $1 in Bind (pos p) x (Kind (pos p) Session Lin) }
 
 -----------
 -- TYPES --
@@ -349,10 +349,10 @@ BasicType :: { (Pos, BasicType) }
 -----------
 
 Kind :: { Kind } :
-    SU   {Kind Session Un}
-  | SL   {Kind Session Lin}
-  | TU   {Kind Functional Un}
-  | TL   {Kind Functional Lin}
+    SU   {Kind (getPos $1) Session Un}
+  | SL   {Kind (getPos $1) Session Lin}
+  | TU   {Kind (getPos $1) Functional Un}
+  | TL   {Kind (getPos $1) Functional Lin}
 
 {
 checkParamClash :: Params   -> Param  -> ParserState Params
@@ -469,10 +469,10 @@ instance Read TypeScheme where
 -- TODO: move to kinds ??
 instance Read Kind where
   readsPrec _ s = -- [(parseKind s, "")]    
-    tryParse [("SL", Kind Session Lin),
-              ("SU", Kind Session Un),
-              ("TL", Kind Functional Lin),
-              ("TU", Kind Functional Un)]
+    tryParse [("SL", Kind (-1,-1) Session Lin),
+              ("SU", Kind (-1,-1) Session Un),
+              ("TL", Kind (-1,-1) Functional Lin),
+              ("TU", Kind (-1,-1) Functional Un)]
     where tryParse [] = []
           tryParse ((attempt,result):xs) =
             if (take (length attempt) (trim s)) == attempt

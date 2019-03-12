@@ -18,7 +18,7 @@ module Syntax.Exps
 , Param(..)
 , CaseMap
 , MatchMap
- where
+) where
 
 import           Syntax.Types
 import           Syntax.Kinds

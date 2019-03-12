@@ -43,37 +43,38 @@ kinding (TypeScheme bs t) = do
 -- Returns the kind of a given type
 synthetize :: Type -> TypingState Kind
 -- Session types
-synthetize (Skip _) =
-  return $ Kind Session Un
-synthetize (Message _ _ _) =
-  return $ Kind Session Lin
-synthetize (Choice _ _ m) = do
-  mapM_ (checkAgainst (Kind Session Lin)) (Map.elems m)
-  return $ Kind Session Lin
-synthetize (Semi _ t u) = do
+synthetize (Skip p) =
+  return $ Kind p Session Un
+synthetize (Message p _ _) =
+  return $ Kind p Session Lin
+synthetize (Choice p _ m) = do
+  mapM_ (checkAgainst (Kind p Session Lin)) (Map.elems m)
+  return $ Kind p Session Lin
+synthetize (Semi p t u) = do
   kt <- synthetize t 
   ku <- synthetize u
   m <- checkSessionKind t kt
   n <- checkSessionKind u ku
-  return $ Kind Session (max m n)
+  return $ Kind p Session (max m n)
 -- Functional
-synthetize (Basic _ _) =
-  return $ Kind Functional Un
-synthetize (Fun _ m t u) = do
+synthetize (Basic p _) =
+  return $ Kind p Functional Un
+synthetize (Fun p m t u) = do
   synthetize t
   synthetize u
-  return $ Kind Functional m
+  return $ Kind p Functional m
 synthetize (PairType _ t u) = do
   kt <- synthetize t
   ku <- synthetize u
   return $ max kt ku
-synthetize (Datatype _ m) = do
+synthetize (Datatype p m) = do
   ks <- mapM synthetize (Map.elems m)
-  return $ Kind Functional $ multiplicity $ maximum ks
-synthetize (Rec _ (p,x) t) = do
+  let Kind _ _ n = maximum ks
+  return $ Kind p Functional n
+synthetize (Rec p (_,x) t) = do
   checkContractive t
   y <- freshVar
-  addToKenv p y (Kind Session Un)
+  addToKenv p y (Kind p Session Un)
   k <- synthetize $ subs (Var p y) x t -- On the fly α-conversion
   removeFromKenv y
   return k
@@ -84,26 +85,27 @@ synthetize (Var p v) = do
     getKind v
   else do
     addError p ["Variable not in scope: ", styleRed v]
-    addToKenv p v topKind
-    return topKind
+    let k = topKind p
+    addToKenv p v k
+    return k
 
 -- Check whether a given kind is session; issue an error if not. In
 -- either case return the multiplicity
 checkSessionKind :: Type -> Kind -> TypingState Multiplicity
-checkSessionKind t k
-  | prekind k == Session = return $ multiplicity k
-  | otherwise            = do
+checkSessionKind t k@(Kind _ p m)
+  | p == Session = return $ m
+  | otherwise    = do
       addError (position t) ["Expecting type", styleRed $ show t,
                   "to be a session type; found kind", styleRed $ show k]
-      return $ multiplicity k
+      return $ m
 
 -- Check whether a given type has a given kind
 checkAgainst :: Kind -> Type -> TypingState ()
 -- checkAgainst k (Rec _ (Bind x p _) t) = do
-checkAgainst k (Rec _ (p, x) t) = do
+checkAgainst k (Rec p (_, x) t) = do
   checkContractive t
   y <- freshVar
-  addToKenv p y (Kind Session Un)
+  addToKenv p y (Kind p Session Un)
   checkAgainst k$ subs (Var p y) x t -- On the fly α-conversion
   removeFromKenv y
 checkAgainst k t = do
@@ -121,8 +123,8 @@ checkSubkind p k1 k2
 -- Determines whether a given type is of a given multiplicity
 mult :: Multiplicity -> Type -> TypingState Bool
 mult m t = do
-  k <- synthetize t
-  return $ multiplicity k == m
+  (Kind _ _ m') <- synthetize t
+  return $ m' == m
       
 -- Determines whether a given type is linear or not
 lin :: Type -> TypingState Bool
@@ -133,8 +135,8 @@ un :: Type -> TypingState Bool
 un = mult Un
 
 -- Used to insert in the kinding environment when an error is found
-topKind :: Kind
-topKind = Kind Functional Lin
+topKind :: Pos -> Kind
+topKind p = Kind p Functional Lin
 
 -- For TESTS only, from here on
 
