@@ -46,6 +46,7 @@
 \newcommand\tEChoice[1]{\&{#1}}
 \newcommand{\tChoice}[1]{\star{#1}}
 \newcommand{\tData}[1]{[{#1}]}
+\newcommand\tFun[3][m]{{#2}\rightarrow_{#1}{#3}}
 \newcommand\tUnFun[2]{#1\tcFun#2}
 \newcommand\tLinFun[2]{#1\tcLolli#2}
 \newcommand\tPair[2]{(#1,\,#2)}
@@ -101,16 +102,15 @@
 \newcommand{\isType}[3][\Delta]{{#1} \vdash {#2} : {#3}}
 \newcommand{\algkindout}[3][\kindEnv]{{#1} \Alg {#2} \shortrightarrow{ #3}}
 \newcommand{\algkindin}[3][\kindEnv]{{#1} \Alg {#2} \shortleftarrow {#3}}
-\newcommand{\subkind}[2]{{#1} <: {#2}}
+\newcommand{\isSubkind}[2]{{#1} < {#2}}
 \newcommand{\algtypeout}[4][\kindEnv;\varEnv]{{#1} \Alg {#2} \shortrightarrow {#3};{#4}}
 %\newcommand{\algtypein}[4][\kindEnv;\varEnv]{{#1} \Alg {#2}\colon {#3}\shortrightarrow {#4}}
 \newcommand{\algtypein}[4][\kindEnv;\varEnv]{{#1} \Alg {#2}\shortleftarrow {#3}; {#4}}
 \newcommand{\ctxequiv}[3][\kindEnv]{{#1} \vdash \Equiv{#2}{#3}}
 \newcommand{\typeequiv}[3][\kindEnv]{{#1} \vdash \Equiv{#2}{#3}}
-\newcommand{\isqualifier}[3][\kindEnv]{{#1} \vdash {#2}\colon{#3}}
-\newcommand{\isLin}[2][\kindEnv]{\isqualifier[#1]{#2}\link}
-\newcommand{\isUn}[2][\kindEnv]{\isqualifier[#1]{#2}\unk}
-\newcommand{\contractive}[2][\kindEnv]{{#1} \vdash_{\textsf c} {#2}}
+\newcommand{\isLin}[2][\kindEnv]{\isType[#1]{#2}\link}
+\newcommand{\isUn}[2][\kindEnv]{\isType[#1]{#2}\unk}
+\newcommand{\isContractive}[2][\kindEnv]{{#1} \vdash_{\textsf c} {#2}}
 %\newcommand\Alg{\vdash_{\textsf a}}
 \newcommand\Alg{\vdash}
 
