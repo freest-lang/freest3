@@ -12,38 +12,36 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Syntax.Types
-( TypeVar
-, Bind(..)
-, BasicType(..)
-, Constructor
-, TypeMap(..)
-, ChoiceView(..)
-, Polarity(..)
-, Type(..)
-, TypeScheme(..)
-, dual
-, toList -- TODO: not quite sure this belongs here
-, unfold
-, rename
-, subs
-, subL -- TODO: not quite sure this belongs here
-, Pos
-, typePos
-, isPreSession
-) where
+  ( TypeVar
+  , Bind(..)
+  , BasicType(..)
+  , Constructor
+  , TypeMap(..)
+  , ChoiceView(..)
+  , Polarity(..)
+  , Type(..)
+  , TypeScheme(..)
+  , ConstructorEnv
+  , dual
+  , toList -- TODO: not quite sure this belongs here
+  , unfold
+  , rename
+  , subs
+  , subL -- TODO: not quite sure this belongs here
+  , typePos
+  , isPreSession
+  ) where
 
+import           Syntax.Programs
+import           Syntax.Kinds
 import           Data.List (intersperse)
 import qualified Data.Map.Strict as Map
-import           Syntax.Kinds
-
--- POSITION -- TODO: This should be common to all syntax
-type Pos = (Int, Int)
 
 -- TYPE VARIABLE BINDINGS
 
 type TypeVar = String
 
-data Bind = Bind {var :: TypeVar, bindPos :: Pos, kind :: Kind}
+data Bind = Bind {bindPos :: Pos, var :: TypeVar, kind :: Kind} -- TODO: Use a triple
   deriving (Ord)
 
 instance Eq Bind where
@@ -207,6 +205,8 @@ showTypeScheme bs t = "forall " ++ showBindings bs ++ " => " ++ show t
 
 showBindings :: [Bind] -> String
 showBindings bs = concat $ intersperse ", " (map show bs)
+
+type ConstructorEnv = Map.Map TypeVar (Pos, TypeScheme)
 
 -- DUALITY
 

@@ -24,7 +24,7 @@ import qualified Data.Sequence as Sequence
 import           Syntax.Kinds
 import           Syntax.Types
 import           Validation.Kinding
-import           Syntax.Programs (KindEnv)
+import           Syntax.Kinds (KindEnv)
 import           Equivalence.Grammar
 import           Equivalence.TypeToGrammar
 import           Equivalence.Norm

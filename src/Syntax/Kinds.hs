@@ -15,7 +15,11 @@ module Syntax.Kinds
 ( PreKind (..)
 , Multiplicity (..)
 , Kind (..)
+, KindEnv
 ) where
+
+import           Syntax.Programs
+import qualified Data.Map.Strict as Map
 
 -- PREKINDS
 
@@ -39,7 +43,7 @@ instance Show Multiplicity where
 
 instance Ord Multiplicity where
   Un <= Lin = True
-  _   <= _  = False
+  _  <= _  = False
 
 -- KINDS
 
@@ -48,3 +52,7 @@ data Kind = Kind {prekind :: PreKind, multiplicity :: Multiplicity}
 
 instance Show Kind where
   show k = show (prekind k) ++ show (multiplicity k)
+
+type KindVar = String
+
+type KindEnv = Map.Map KindVar (Pos, Kind)

@@ -4,13 +4,13 @@ forall a => Bool
   TU
 
 forall x => x
-  SU
+  SL
 
 forall a : TU, b => a
   TU
 
 forall a : SU, b => b
-  SU
+  SL
 
 -- Forall semi
 

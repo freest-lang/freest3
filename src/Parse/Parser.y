@@ -95,29 +95,25 @@ import           Utils.Errors
 %%
 
 ---------------
--- MAIN RULE --
+-- PROGRAM --
 ---------------
 
 Prog
-  : Defs         {}
-  | Defs NL Prog {}
+  : Decl      {}
+  | Decl Prog {}
 
-Defs
+Decl
   : DataDecl  {}
   | FunSig    {}
   | FunDecl   {}
   | TypeAbbrv {}
-
-
-NL : nl NL     {}
-   | nl        {}
 
 ------------------------
 -- TYPE ABBREVIATIONS --
 ------------------------
 
  -- TODO: review verifications & envs added & Kind
-TypeAbbrv :: { () } :
+TypeAbbrv :: { () } : -- TODO: the position is taken from $1
   type CONS '=' Type
     {% do
          let (TokenCons p c) = $2
@@ -132,7 +128,7 @@ TypeAbbrv :: { () } :
 -- DATATYPES --
 ---------------
 
-DataDecl :: { () } :
+DataDecl :: { () } : -- TODO: the position is taken from $1
   data CONS '=' DataCons
     {% do
         let (TokenCons p c) = $2
@@ -146,17 +142,16 @@ DataDecl :: { () } :
         addToVenv c (pos p, TypeScheme [] (convertDT (pos p) binds))
     }
 
-DataCons :: { [(Constructor, (Pos, [Type]))] }
-  : DataCon {[$1]}
-  | DataCons '|' DataCon {$1 ++ [$3]}
+DataCons :: { [(Constructor, (Pos, [Type]))] } -- TODO: why not a triple?
+  : DataCon              { [$1] }
+  | DataCon '|' DataCons { $1 : $3 }
 
 DataCon :: { (Constructor, (Pos, [Type])) } :
-  CONS TypeParams  {let (TokenCons p x) = $1 in (x,(pos p,$2))}
+  CONS TypeSeq  {let (TokenCons p x) = $1 in (x, (pos p, $2))}
 
-
-TypeParams :: { [Type] }
-  : {- empty -} { [] }
-  | TypeParams Type  { $1 ++ [$2] }
+TypeSeq :: { [Type] }
+  :              { [] }
+  | Type TypeSeq { $1 : $2 }
 
 ---------------------------
 -- FUN TYPE DECLARATIONS --
@@ -180,25 +175,23 @@ FunTypeScheme :: { TypeScheme }
 -- FUN DECLARATIONS --
 ----------------------
 
-FunDecl :: { () } :
-  VAR Params '=' Expr
+FunDecl :: { () }
+  : VAR VarSeq '=' Expr
     {% do
         let (TokenVar p x) = $1
         addToEenv x (pos p, $2, $4)
     }
 
-Params :: { Params }
-  : {- empty -}   {[]}
-  | Params VAR    {% do
-                      let (TokenVar p x) = $2
-                      checkParamClash $1 (Param{paramPos=pos p, param=x})
-                  }
-
+VarSeq :: { Params }
+  :            { [] }
+  | VAR VarSeq {% do
+                    let (TokenVar p x) = $1
+                    checkParamClash $2 (Param{paramPos=pos p, param=x})
+                }
 
 -----------------
 -- EXPRESSIONS --
 -----------------
-
 
 Expr :: { Expression }
   : let VAR '=' Expr in Expr         {let (TokenLet p) = $1 in
@@ -263,15 +256,12 @@ Atom :: { Expression }
 
 
 TypeList :: { [Type] }
-  : Type                 {[$1]}
-  | TypeList ',' Type    {$1 ++ [$3]}
+  : Type              { [$1] }
+  | Type ',' TypeList { $1 : $3 }
 
-MatchMap :: { MatchMap } :
-  MatchValue MatchNext  { Map.union $1 $2 }
-
-MatchNext :: { MatchMap }
-  : ';' MatchMap  { $2 }
-  | {- empty -}   { Map.empty }
+MatchMap :: { MatchMap }
+  : MatchValue              { $1 }
+  | MatchValue ';' MatchMap { Map.union $1 $3 } -- TODO: check duplicates
 
 MatchValue :: { MatchMap } :
   CONS VAR '->' Expr   {let (TokenCons _ c) = $1 in
@@ -279,28 +269,30 @@ MatchValue :: { MatchMap } :
                         Map.singleton c (Param{paramPos=pos p, param=x},$4)}
 
 CaseMap :: { CaseMap }
-  : CaseValue CaseNext  { Map.union $1 $2 }
+  : Case  { $1 }
+  | Case ';' CaseMap  { Map.union $1 $3 } -- TODO: check duplicates
 
-CaseNext  :: { CaseMap }
-  : ';' CaseMap         { $2 }
-  | {- empty -}         { Map.empty }
+Case :: { CaseMap }
+  : CONS VarSeq '->' Expr   {let (TokenCons _ c) = $1 in Map.singleton c ($2, $4)}
 
-CaseValue :: { CaseMap } : 
-  CONS Params '->' Expr   {let (TokenCons _ c) = $1 in Map.singleton c ($2,$4)}
+-----------
+-- TYPE SCHEMES --
+-----------
+
+TypeScheme :: { TypeScheme }
+  : forall BindList '=>' Type { TypeScheme $2 $4 }
+
+BindList :: { [Bind] }
+  : Bind               { [$1] }
+  | Bind ',' BindList  {% checkBindClash $1 $3 }
+
+Bind :: { Bind }
+  : VAR ':' Kind { let (TokenVar p x) = $1 in Bind (pos p) x $3 }
+  | VAR		 { let (TokenVar p x) = $1 in Bind (pos p) x (Kind Session Lin) }
 
 -----------
 -- TYPES --
 -----------
-
-TypeScheme :: { TypeScheme }
-  : forall BindList '=>' Type {TypeScheme $2 $4}
-
-BindList :: { [Bind] }
-  : Bind               { [$1] }
-  | BindList ',' Bind  {% checkBindClash $1 $3 }
-
-Bind :: { Bind }
-  : VAR KindUn    {let (TokenVar p x) = $1 in Bind x (pos p) $2}
 
 Type :: { Type }
   : rec VarCons '.' Type         { Rec (getPos $1) $2 $4 } 
@@ -331,12 +323,12 @@ ChoiceView :: { (Pos, ChoiceView) }
   
 -- Either a var or a constructor -- TODO: Why needed?
 VarCons :: { (Pos,String) }
-  : VAR  {let (TokenVar p x) = $1 in (pos p, x) }
-  | CONS {let (TokenCons p x) = $1 in (pos p, x) }
+  : VAR  { let (TokenVar p x) = $1 in (pos p, x) }
+  | CONS { let (TokenCons p x) = $1 in (pos p, x) }
 
 FieldList :: { TypeMap }
   : Field                { uncurry Map.singleton (snd $1) }
-  | FieldList ',' Field  {% checkLabelClash $1 $3 }
+  | Field ',' FieldList  {% checkLabelClash $1 $3 }
 
 Field :: { (Pos, (Constructor, Type)) }
   : CONS ':' Type { let (TokenCons p x) = $1 in (pos p, (x, $3)) }
@@ -347,19 +339,15 @@ BasicType :: { (Pos, BasicType) }
   | Bool { (getPos $1, BoolType) }
   | '()' { (getPos $1, UnitType) }
 
-KindUn :: { Kind } :
-    ':' SU   { Kind Session Un }
-  | ':' SL   { Kind Session Lin }
-  | ':' TU   { Kind Functional Un }
-  | ':' TL   { Kind Functional Lin }
-  |          { Kind Session Un }
+-----------
+-- KINDS --
+-----------
 
 Kind :: { Kind } :
     SU   {Kind Session Un}
   | SL   {Kind Session Lin}
   | TU   {Kind Functional Un}
   | TL   {Kind Functional Lin}
-
 
 {
 checkParamClash :: Params   -> Param  -> ParserState Params
@@ -374,8 +362,8 @@ checkParamClash ps p =
       return $ ps
     Nothing -> return $ ps ++ [p]
 
-checkLabelClash :: TypeMap -> (Pos, (Constructor, Type)) -> ParserState TypeMap
-checkLabelClash m1 (p, (c,t)) = -- TODO: map position?
+checkLabelClash :: (Pos, (Constructor, Type)) -> TypeMap -> ParserState TypeMap
+checkLabelClash (p, (c,t)) m1 = -- TODO: map position?
   case m1 Map.!? c of
     Just x -> do
       file <- getFileName
@@ -388,8 +376,8 @@ checkLabelClash m1 (p, (c,t)) = -- TODO: map position?
       return $ Map.insert c t m1  
 
 
-checkBindClash :: [Bind] -> Bind -> ParserState [Bind]
-checkBindClash bs b@Bind{var=x, bindPos=pb} =
+checkBindClash :: Bind -> [Bind] -> ParserState [Bind]
+checkBindClash b@Bind{var=x, bindPos=pb} bs =
   case find (\b1 -> var b1 == var b) bs of
     Just b1 -> do
       file <- getFileName
@@ -398,7 +386,7 @@ checkBindClash bs b@Bind{var=x, bindPos=pb} =
                 "Bound at:", file ++ ":" ++ prettyPos (bindPos b1) ++ "\n\t",
                 "          " ++ file ++ ":" ++ prettyPos pb]
       return bs      
-    Nothing -> return $ bs ++ [b]  
+    Nothing -> return $ b : bs
   
 ------------------------
 -- Handle Parse Monad --

@@ -8,11 +8,11 @@ module CodeGen.ExpressionGen
  ) where 
 
 
+import           Syntax.Exps
+import           Syntax.Kinds
 import           Control.Monad.State
 import           Data.List
 import qualified Data.Map.Strict as Map
-import           Syntax.Exps
-import           Syntax.Programs (ExpEnv)
 
 {- 1st passage:
 ----------------

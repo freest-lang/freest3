@@ -18,12 +18,15 @@ module Syntax.Exps
   , Param(..)
   , CaseMap
   , MatchMap
+  , ExpEnv
+  , VarEnv
   , getEPos
   ) where
 
-import qualified Data.Map.Strict as Map
+import           Syntax.Programs
 import           Syntax.Kinds
 import           Syntax.Types
+import qualified Data.Map.Strict as Map
 
 type TermVar = String
 
@@ -65,20 +68,23 @@ data Expression =
   | Constructor Pos TermVar
   | Case Pos Expression CaseMap
   -- Type application
-  | TypeApp Pos TermVar [Type] -- Expression -> TermVar
+  | TypeApp Pos TermVar [Type]
   -- Conditional
   | Conditional Pos Expression Expression Expression
   -- Let
-  | UnLet Pos VarDef Expression Expression -- Derived; eliminate?
+  | UnLet Pos VarDef Expression Expression -- TODO: Derived; eliminate?
   -- Fork
   | Fork Pos Expression
   -- Session types
   | New Pos Type
-  | Send Pos Expression Expression -- Omit the last Expression
+  | Send Pos Expression Expression -- TODO: Omit the last Expression
   | Receive Pos Expression 
   | Select Pos TermVar Expression
   | Match Pos Expression MatchMap
    deriving (Eq, Ord, Show)
+
+type ExpEnv = Map.Map TermVar (Pos, Params, Expression)
+type VarEnv = Map.Map TermVar (Pos, TypeScheme)
 
 getEPos :: Expression -> Pos
 getEPos (Unit p) = p

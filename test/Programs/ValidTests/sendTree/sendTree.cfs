@@ -1,56 +1,51 @@
 {- |
 Module      :  Send a tree on a channel
 Description :  As in "Context-Free Session Types"
-Copyright   :  (c) LaSIGE and University of Lisbon, Portugal
+Copyright   :  (c) LASIGE and University of Lisbon, Portugal
 Maintainer  :  balmeida@lasige.di.fc.ul.pt
 -}
 
 data Tree = Leaf | Node Int Tree Tree
 
 {-
-
 type TreeChannel = +{
-  LeafC : Skip,
-  NodeC : !Int ; TreeChannel ; TreeChannel
+  Leaf : Skip,
+  Node : !Int ; TreeChannel ; TreeChannel
 }
 
 type TreeChannel = rec x::Su. +{
-  LeafC : Skip,
-  NodeC : !Int ; x ; x
+  Leaf : Skip,
+  Node : !Int ; x ; x
 }
 -}
 
--- data A = LeafA | NodeA Int A A
--- Type-safe serialization of a binary tree
-
-sendTree : forall a => Tree -> (rec x . +{LeafC : Skip, NodeC: !Int;x;x}); a -> a
+sendTree : forall a => Tree -> (rec x . +{Leaf : Skip, Node: !Int;x;x}); a -> a
 sendTree t c =
   case t of
     Leaf ->
-      select LeafC c;
+      select Leaf c;
     Node x l r ->
-      let w1 = select NodeC c in
-      let w2 = send x w1 in
-      let w3 = sendTree[(rec x . +{LeafC : Skip, NodeC: !Int;x;x});a] l w2 in
-      let w4 = sendTree[a] r w3 in
-      w4
+      let w = select Node c in
+      let w = send x w in
+      let w = sendTree[(rec x . +{Leaf: Skip, Node: !Int;x;x});a] l w in
+      let w = sendTree[a] r w in
+      w
 
-receiveTree : forall a => (rec x.&{LeafC: Skip, NodeC: ?Int;x;x}); a -> (Tree, a)
+receiveTree : forall a => (rec x.&{Leaf: Skip, Node: ?Int;x;x}); a -> (Tree, a)
 receiveTree c =
   match c with
-    LeafC c1 ->
+    Leaf c1 -> -- Replace by c and it works :(
       (Leaf, c1);
-    NodeC c9 ->
-      let x, c2 = receive c9 in
-      let left, c3 = receiveTree [(rec x.&{LeafC: Skip, NodeC: ?Int;x;x});a] c2 in
-      let right, c4 = receiveTree [a] c3 in
-      (Node x left right, c4)
-
+    Node c ->
+      let x, c = receive c in
+      let left, c = receiveTree [(rec x.&{Leaf: Skip, Node: ?Int;x;x});a] c in
+      let right, c = receiveTree[a] c in
+      (Node x left right, c)
 
 start : Tree
 start =
   let inTree = Node 7 (Node 5 Leaf Leaf) (Node 9 (Node 11 Leaf Leaf) (Node 15 Leaf Leaf)) in
-  let writer,reader = new (rec x . +{LeafC: Skip, NodeC: !Int;x;x}) in
+  let writer, reader = new (rec x . +{Leaf: Skip, Node: !Int;x;x}) in
   let w = fork (sendTree[Skip] inTree writer) in
   let outTree, r = receiveTree[Skip] reader in
   outTree

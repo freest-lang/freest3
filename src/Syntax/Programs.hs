@@ -12,25 +12,10 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Syntax.Programs
-  ( KindEnv
-  , VarEnv
-  , ExpEnv
---  , TypeEnv
-  , ConstructorEnv
-  )where 
-
-import qualified Data.Map.Strict as Map
-import           Syntax.Exps
-import           Syntax.Types
-import           Syntax.Kinds
+  ( Pos
+  ) where 
 
 
-type KindEnv = Map.Map TypeVar (Pos, Kind)
+type Pos = (Int, Int)
 
-type VarEnv = Map.Map TermVar (Pos, TypeScheme)
-
-type ExpEnv = Map.Map TermVar (Pos, Params, Expression)
-
--- type TypeEnv = Map.Map TypeVar Type
-
-type ConstructorEnv = Map.Map TypeVar (Pos, TypeScheme)
+-- TODO : Pos as a type class

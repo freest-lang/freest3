@@ -4,14 +4,15 @@ module CodeGen.CodeGen
  , HaskellCode(..)
  ) where 
 
+import           Syntax.Programs
+import           Syntax.Exps
+import           Syntax.Types
+import           Syntax.Kinds
 import           CodeGen.DatatypeGen
 import           CodeGen.ExpressionGen
 import           Control.Monad.State
 import           Data.List
 import qualified Data.Map.Strict as Map
-import           Syntax.Exps
-import           Syntax.Programs
-import           Syntax.Types
 import           System.Directory
 import           Validation.Kinding
 
