@@ -12,18 +12,16 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Syntax.Exps
-  ( Expression(..)
-  , TermVar
-  , Params
-  , Param(..)
-  , CaseMap
-  , MatchMap
-  , ExpEnv
-  , VarEnv
-  , getEPos
-  ) where
+( Expression(..)
+, TermVar
+, Params
+, Param(..)
+, CaseMap
+, MatchMap
+, getEPos
+) where
 
-import           Syntax.Programs
+import           Syntax.Position
 import           Syntax.Kinds
 import           Syntax.Types
 import qualified Data.Map.Strict as Map
@@ -82,9 +80,6 @@ data Expression =
   | Select Pos TermVar Expression
   | Match Pos Expression MatchMap
    deriving (Eq, Ord, Show)
-
-type ExpEnv = Map.Map TermVar (Pos, Params, Expression)
-type VarEnv = Map.Map TermVar (Pos, TypeScheme)
 
 getEPos :: Expression -> Pos
 getEPos (Unit p) = p

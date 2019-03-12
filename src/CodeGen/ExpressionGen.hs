@@ -1,15 +1,15 @@
 module CodeGen.ExpressionGen
- (
-   HaskellCode  
- , translateExpEnv
- , annotateAST
- , monadicFuns  -- TMP...
- , translate
- ) where 
+( HaskellCode  
+, translateExpEnv
+, annotateAST
+, monadicFuns  -- TMP...
+, translate
+) where 
 
-
+import           Syntax.Programs
 import           Syntax.Exps
 import           Syntax.Kinds
+import           Syntax.Position
 import           Control.Monad.State
 import           Data.List
 import qualified Data.Map.Strict as Map

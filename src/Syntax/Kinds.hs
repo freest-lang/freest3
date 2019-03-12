@@ -15,10 +15,9 @@ module Syntax.Kinds
 ( PreKind (..)
 , Multiplicity (..)
 , Kind (..)
-, KindEnv
 ) where
 
-import           Syntax.Programs
+import           Syntax.Position
 import qualified Data.Map.Strict as Map
 
 -- PREKINDS
@@ -47,12 +46,8 @@ instance Ord Multiplicity where
 
 -- KINDS
 
-data Kind = Kind {prekind :: PreKind, multiplicity :: Multiplicity}
+data Kind = Kind {prekind :: PreKind, multiplicity :: Multiplicity} -- TOPO: include position; use a triple.
   deriving (Eq, Ord)
 
 instance Show Kind where
   show k = show (prekind k) ++ show (multiplicity k)
-
-type KindVar = String
-
-type KindEnv = Map.Map KindVar (Pos, Kind)

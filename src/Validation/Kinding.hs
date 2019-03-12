@@ -22,13 +22,14 @@ module Validation.Kinding
 , isWellFormed -- test
 ) where
 
+import           Syntax.Programs
+import           Syntax.Exps
+import           Syntax.Types
+import           Syntax.Kinds
+import           Syntax.Position
+import           Utils.Errors
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
-import           Syntax.Exps
-import           Syntax.Kinds
-import           Syntax.Programs
-import           Syntax.Types
-import           Utils.Errors
 import           Validation.Contractive
 import           Validation.TypingState
 

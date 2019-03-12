@@ -2,10 +2,11 @@ module Validation.TypingState  where
 
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
-import           Syntax.Kinds
+import           Syntax.Programs
 import           Syntax.Exps
 import           Syntax.Types
-import           Syntax.Programs
+import           Syntax.Kinds
+import           Syntax.Position
 import           Utils.Errors
 
 -- | The typing state

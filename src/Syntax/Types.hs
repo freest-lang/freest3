@@ -12,27 +12,26 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Syntax.Types
-  ( TypeVar
-  , Bind(..)
-  , BasicType(..)
-  , Constructor
-  , TypeMap(..)
-  , ChoiceView(..)
-  , Polarity(..)
-  , Type(..)
-  , TypeScheme(..)
-  , ConstructorEnv
-  , dual
-  , toList -- TODO: not quite sure this belongs here
-  , unfold
-  , rename
-  , subs
-  , subL -- TODO: not quite sure this belongs here
-  , typePos
-  , isPreSession
-  ) where
+( TypeVar
+, Bind(..)
+, BasicType(..)
+, Constructor
+, TypeMap(..)
+, ChoiceView(..)
+, Polarity(..)
+, Type(..)
+, TypeScheme(..)
+, dual
+, toList -- TODO: not quite sure this belongs here
+, unfold
+, rename
+, subs
+, subL -- TODO: not quite sure this belongs here
+, typePos
+, isPreSession
+) where
 
-import           Syntax.Programs
+import           Syntax.Position
 import           Syntax.Kinds
 import           Data.List (intersperse)
 import qualified Data.Map.Strict as Map
@@ -205,8 +204,6 @@ showTypeScheme bs t = "forall " ++ showBindings bs ++ " => " ++ show t
 
 showBindings :: [Bind] -> String
 showBindings bs = concat $ intersperse ", " (map show bs)
-
-type ConstructorEnv = Map.Map TypeVar (Pos, TypeScheme)
 
 -- DUALITY
 

@@ -11,23 +11,23 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-module Equivalence.TypeEquivalence(
-  equivalent
+module Equivalence.TypeEquivalence
+( equivalent
 ) where
 
+import           Syntax.Programs
+import           Syntax.Types
+import           Syntax.Kinds
+import           Syntax.Position
+import           Validation.Kinding
+import           Equivalence.Grammar
+import           Equivalence.TypeToGrammar
+import           Equivalence.Norm
 import           Control.Monad.State
 import           Data.List (isPrefixOf, union)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.Sequence as Sequence
--- import qualified Queue.Queue as Queue -- Use instead http://hackage.haskell.org/package/containers-0.6.0.1/docs/Data-Sequence.html
-import           Syntax.Kinds
-import           Syntax.Types
-import           Validation.Kinding
-import           Syntax.Kinds (KindEnv)
-import           Equivalence.Grammar
-import           Equivalence.TypeToGrammar
-import           Equivalence.Norm
 -- import           Text.Printf
 
 type Node = Set.Set ([TypeVar], [TypeVar])
