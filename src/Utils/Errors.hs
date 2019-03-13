@@ -14,7 +14,7 @@ This module provides tools to prettify & format errors with ANSI colors for term
 module Utils.Errors (styleError, styleRed, prettyPos) where 
 
 import System.Console.Pretty (Color (..), Style (..), color, style)
-import Syntax.Position (Pos)
+import Syntax.Position (Pos, AlexPosn(..))
 
 styleError :: String -> Pos -> [String] -> String
 styleError f p body = styleHeader f p ++ styleBody body
@@ -33,5 +33,5 @@ styleBold :: String -> String
 styleBold = style Bold
 
 prettyPos :: Pos -> String
-prettyPos (px,py) = ":" ++ show px ++ ":" ++ show py
+prettyPos (AlexPn _ px py) = ":" ++ show px ++ ":" ++ show py
 

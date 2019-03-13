@@ -8,7 +8,7 @@ import           Syntax.Programs
 import           Syntax.Exps
 import           Syntax.Types
 import           Syntax.Kinds
-import           Syntax.Position (Bind(..))
+import           Syntax.Position
 import           CodeGen.DatatypeGen
 import           CodeGen.ExpressionGen
 import           Control.Monad.State
@@ -24,8 +24,8 @@ genProgram :: VarEnv -> ExpEnv -> ConstructorEnv -> KindEnv -> FilePath -> IO ()
 genProgram venv eenv cenv kenv path = do
   genUtils path
   let
-    (_,st)          = venv Map.! (Bind (0,0) "start")
-    (_,_,stBody)   = eenv Map.! (Bind (0,0) "start")
+    (_,st)          = venv Map.! (Bind (AlexPn 0 0 0) "start")
+    (_,_,stBody)   = eenv Map.! (Bind (AlexPn 0 0 0) "start")
     dataTypes       = genDataTypes cenv
     file            = translateExpEnv eenv
   -- let (_,st)          = venv Map.! "start"
@@ -68,9 +68,9 @@ genMain eenv startExp t =  -- "main = putStrLn \"Hello CodeGen\"\n\n"
   let m = monadicFuns eenv
 --      b = (m Map.! "start")
 --      m2 = annotateAST' Map.empty m b startExp
-      m2 = annotateAST m (Bind (0,0) "start") startExp -- TODO: tmp start position
+      m2 = annotateAST m (Bind (AlexPn 0 0 0) "start") startExp -- TODO: tmp start position
       h = evalState (translate m m2 startExp) 0 in
-  if m Map.! (Bind (0,0) "start") then  -- TODO: tmp start position
+  if m Map.! (Bind (AlexPn 0 0 0) "start") then  -- TODO: tmp start position
     "main = start >>= \\res -> putStrLn (show (res :: " ++ show t ++ "))\n\n"
   else
     "main = putStrLn (show start)\n\n"

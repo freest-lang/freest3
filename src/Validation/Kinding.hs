@@ -37,7 +37,7 @@ import           Validation.TypingState
 kinding :: TypeScheme -> TypingState Kind
 kinding (TypeScheme _ bs t) = do
   -- TODO: addToKenv -> addBindsLToKenv
-  foldM_ (\_ (KBind p x k) -> addToKenv (0,0) (Bind p x) k) () bs
+  foldM_ (\_ (KBind p x k) -> addToKenv (AlexPn 0 0 0) (Bind p x) k) () bs
   synthetize t
 
 -- Returns the kind of a given type

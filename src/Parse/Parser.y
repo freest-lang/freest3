@@ -129,9 +129,9 @@ TypeAbbrv :: { () } : -- TODO: the position is taken from $1
          let (TokenCons p c) = $2
          venv <- getVenv
          checkNamesClash venv c
-           ("Multiple declarations of " ++ styleRed c) (pos p)
-	 addToKenv c (pos p, Kind (pos p) Functional Un)
-	 addToVenv c (pos p, TypeScheme (pos p) [] $4) 
+           ("Multiple declarations of " ++ styleRed c) p
+	 addToKenv c (p, Kind p Functional Un)
+	 addToVenv c (p, TypeScheme p [] $4) 
     }
 
 ---------------
@@ -144,12 +144,12 @@ DataDecl :: { () } : -- TODO: the position is taken from $1
         let (TokenCons p c) = $2
         kenv <- getKenv
         checkNamesClash kenv c
-          ("Multiple declarations of '" ++ styleRed c ++ "'") (pos p)
-	addToKenv c (pos p, Kind (pos p) Functional Un)
-        let binds = typesToFun (pos p) c $4
+          ("Multiple declarations of '" ++ styleRed c ++ "'") p
+	addToKenv c (p, Kind p Functional Un)
+        let binds = typesToFun p c $4
 --        checkBindsClash binds
 	mapM (\(cons, (p, t)) -> addToCenv cons p (TypeScheme p [] t)) binds -- TODO: check the Pos of the type scheme
-        addToVenv c (pos p, TypeScheme (pos p) [] (convertDT (pos p) binds))
+        addToVenv c (p, TypeScheme p [] (convertDT p binds))
     }
 
 DataCons :: { [(Constructor, (Pos, [Type]))] } -- TODO: remove pos
@@ -157,7 +157,7 @@ DataCons :: { [(Constructor, (Pos, [Type]))] } -- TODO: remove pos
   | DataCon '|' DataCons { $1 : $3 } -- TODO: check duplicates
 
 DataCon :: { (Constructor, (Pos, [Type])) } : -- TODO: remove pos
-  CONS TypeSeq  {let (TokenCons p x) = $1 in (x, (pos p, $2))}
+  CONS TypeSeq  {let (TokenCons p x) = $1 in (x, (p, $2))}
 
 TypeSeq :: { [Type] }
   :              { [] }
@@ -173,8 +173,8 @@ FunSig :: { () } :
         let (TokenVar p f) = $1
         venv <- getVenv
         checkNamesClash venv f
-          ("Duplicate type signatures for " ++ styleRed f) (pos p)
-        addToVenv f (pos p, $3) 
+          ("Duplicate type signatures for " ++ styleRed f) p
+        addToVenv f (p, $3) 
     }
 
 FunTypeScheme :: { TypeScheme }
@@ -189,14 +189,14 @@ FunDecl :: { () }
   : VAR VarSeq '=' Expr
     {% do
         let (TokenVar p x) = $1
-        addToEenv x (pos p, $2, $4)
+        addToEenv x (p, $2, $4)
     }
 
 VarSeq :: { [Bind] }
   :            { [] }
   | VAR VarSeq {% do
                     let (TokenVar p x) = $1
-		    checkParamClash $2 (Bind (pos p) x)
+		    checkParamClash $2 (Bind p x)
                 }
 
 -----------------
@@ -206,18 +206,18 @@ VarSeq :: { [Bind] }
 Expr :: { Expression }
   : let VAR '=' Expr in Expr         {let (TokenLet p) = $1 in
                                       let (TokenVar px x) = $2 in
-				      UnLet (pos p) (Bind (pos px) x) $4 $6}    
+				      UnLet p (Bind (px) x) $4 $6}    
 
   | let VAR ',' VAR '=' Expr in Expr {let (TokenLet p) = $1 in
           		                 let (TokenVar px x) = $2 in
 					 let (TokenVar py y) = $4 in
-		          		 BinLet (pos p) (Bind (pos px) x) (Bind (pos py) y) $6 $8}
+		          		 BinLet p (Bind (px) x) (Bind (py) y) $6 $8}
 
   | '(' Expr ',' Expr ')'            {let (TokenLParen p) = $1 in
-                                         Pair (pos p) $2 $4}
+                                         Pair p $2 $4}
 
   | if Expr then Expr else Expr      {let (TokenIf p) = $1 in
-                                         Conditional (pos p) $2 $4 $6}
+                                         Conditional p $2 $4 $6}
 
   | new Type                        {New (getPos $1) $2}
      
@@ -241,7 +241,7 @@ Form :: { Expression }
   | Form '-' Form      {App (position $1) (App (position $1) (Variable (getPos $2) "(-)") $1) $3}
   | Form '*' Form      {App (position $1) (App (position $1) (Variable (getPos $2) "(*)") $1) $3}
   | Form OP Form       {let (TokenOp p s) = $2 in
-                          App (position $1) (App (position $1) (Variable (pos p) s) $1) $3}
+                          App (position $1) (App (position $1) (Variable p s) $1) $3}
   | Juxt               {$1}       
 
 
@@ -249,7 +249,7 @@ Juxt :: { Expression }
   : Juxt Atom            {App (position $1) $1 $2}
 
   | VAR '[' TypeList ']'  {let (TokenVar p x) = $1 in
-                            TypeApp (pos p) x $3}  
+                            TypeApp p x $3}  
 
   | send Atom Atom        {Send (getPos $1) $2 $3}
    
@@ -257,11 +257,11 @@ Juxt :: { Expression }
 
 Atom :: { Expression }
   : '()'            { Unit (getPos $1) } 
-  | NUM             { let (TokenInteger p x) = $1 in Integer (pos p) x }
-  | BOOL            { let (TokenBool p x) = $1 in Boolean (pos p) x }
-  | CHAR            { let (TokenChar p x) = $1 in Character (pos p) x }
-  | VAR             { let (TokenVar p x) = $1 in Variable (pos p) x }
-  | CONS            { let (TokenCons p x) = $1 in Constructor (pos p) x }
+  | NUM             { let (TokenInteger p x) = $1 in Integer p x }
+  | BOOL            { let (TokenBool p x) = $1 in Boolean p x }
+  | CHAR            { let (TokenChar p x) = $1 in Character p x }
+  | VAR             { let (TokenVar p x) = $1 in Variable p x }
+  | CONS            { let (TokenCons p x) = $1 in Constructor p x }
   | '(' Expr ')'    { $2 }
 
 
@@ -276,7 +276,7 @@ MatchMap :: { MatchMap }
 MatchValue :: { MatchMap } :
   CONS VAR '->' Expr   {let (TokenCons _ c) = $1 in
                         let (TokenVar p x) = $2 in
-                        Map.singleton c (Bind (pos p) x,$4)}
+                        Map.singleton c (Bind p x,$4)}
 
 CaseMap :: { CaseMap }
   : Case  { $1 }
@@ -297,8 +297,8 @@ BindList :: { [KBind] }
   | Bind ',' BindList {% checkBindClash $1 $3 }
 
 Bind :: { KBind }
-  : VAR ':' Kind { let (TokenVar p x) = $1 in KBind (pos p) x $3 }
-  | VAR		 { let (TokenVar p x) = $1 in KBind (pos p) x (Kind (pos p) Session Lin) }
+  : VAR ':' Kind { let (TokenVar p x) = $1 in KBind p x $3 }
+  | VAR		 { let (TokenVar p x) = $1 in KBind p x (Kind p Session Lin) }
 
 -----------
 -- TYPES --
@@ -315,8 +315,8 @@ Type :: { Type }
   | dualof Type                  { Dualof (getPos $1) $2 }
   | Skip                         { Skip (getPos $1) }
   | BasicType                    { uncurry Basic $1 }
-  | VAR                          { let (TokenVar p x) = $1 in Var (pos p) x }
-  | CONS                         { let (TokenCons p x) = $1 in Var (pos p) x }
+  | VAR                          { let (TokenVar p x) = $1 in Var p x }
+  | CONS                         { let (TokenCons p x) = $1 in Var p x }
   | '(' Type ')'                 { $2 }
 
 Polarity :: { (Pos, Polarity) }
@@ -336,7 +336,7 @@ FieldList :: { TypeMap }
   | Field ',' FieldList  {% checkLabelClash $1 $3 }
 
 Field :: { TypeMap }
-  : CONS ':' Type { let (TokenCons p x) = $1 in Map.singleton (Bind (pos p) x) $3 }
+  : CONS ':' Type { let (TokenCons p x) = $1 in Map.singleton (Bind p x) $3 }
 
 BasicType :: { (Pos, BasicType) }
   : Int  { (getPos $1, IntType) }
@@ -471,10 +471,10 @@ instance Read TypeScheme where
 -- TODO: move to kinds ??
 instance Read Kind where
   readsPrec _ s = -- [(parseKind s, "")]    
-    tryParse [("SL", Kind (-1,-1) Session Lin),
-              ("SU", Kind (-1,-1) Session Un),
-              ("TL", Kind (-1,-1) Functional Lin),
-              ("TU", Kind (-1,-1) Functional Un)]
+    tryParse [("SL", Kind (AlexPn (-1) (-1) (-1)) Session Lin),
+              ("SU", Kind (AlexPn (-1) (-1) (-1)) Session Un),
+              ("TL", Kind (AlexPn (-1) (-1) (-1)) Functional Lin),
+              ("TU", Kind (AlexPn (-1) (-1) (-1)) Functional Un)]
     where tryParse [] = []
           tryParse ((attempt,result):xs) =
             if (take (length attempt) (trim s)) == attempt
@@ -516,7 +516,7 @@ checkErrors (_,_,_,_,_,err) = die $ intercalate "\n" err
 parseError :: [Token] -> ParserState a
 parseError [] = do
   file <- getFileName
-  error $ styleError file (0,0)
+  error $ styleError file (AlexPn 0 0 0)
           ["Parse error:", styleRed "Premature end of file"]
 parseError xs = do  
   f <- getFileName
@@ -581,6 +581,6 @@ typesToFun p tv = foldl (\acc (k,(p,ts)) -> acc ++ [(k, (p, typeToFun p tv ts))]
 convertDT :: Pos -> [(TypeVar,(Pos, Type))] -> Type
 convertDT p ts = Datatype p $ Map.fromList $ removePos
   where
-    removePos = map (\(x,(_,t)) -> (Bind (0,0) x,t)) ts -- TODO: tmp pos
+    removePos = map (\(x,(_,t)) -> (Bind (AlexPn 0 0 0) x,t)) ts -- TODO: tmp pos
 
 }

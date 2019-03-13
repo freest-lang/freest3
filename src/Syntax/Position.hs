@@ -1,5 +1,5 @@
 {- |
-Module      :  Programs
+Module      :  Position
 Description :  <optional short text displayed on contents page>
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
@@ -16,14 +16,22 @@ module Syntax.Position
 , Var
 , Position(..)
 , Bind(..)
+, AlexPosn(..)
 ) where 
 
-type Pos = (Int, Int) -- TODO: use alex Pos
+import Parse.Lexer (AlexPosn(..)) -- Maybe not here
+
+type Pos = AlexPosn -- ... other type
+
+instance Ord AlexPosn where -- TODO: Others
+  (AlexPn x y z) `compare` (AlexPn k w v) = x `compare` k
 
 class Position t where
   position :: t -> Pos
 
 type Var = String
+
+-- Bindings
 
 data Bind = Bind Pos Var
 

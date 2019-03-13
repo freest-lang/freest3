@@ -1,5 +1,10 @@
 {
-module Parse.Lexer (Token(..),scanTokens, getPos, pos) where
+module Parse.Lexer
+( Token(..)
+, scanTokens
+, AlexPosn(..)
+, getPos)
+where
 
 -- import GHC.Generics
 }
@@ -98,7 +103,8 @@ tokens :-
 
   
 {
--- False      	      	 		{\p s -> TokenBool p False}
+
+
 data Token =
     TokenNL AlexPosn 
   | TokenIntT AlexPosn 
@@ -165,68 +171,68 @@ data Token =
 --  deriving Show
 
 instance Show Token where
-  show (TokenNL p) = show (pos p) ++ ": \\n"
-  show (TokenIntT p) = show (pos p) ++ ": Int"  
-  show (TokenCharT p) = show (pos p) ++ ": Char"  
-  show (TokenBoolT p) = show (pos p) ++ ": Bool"  
-  show (TokenUnitT p) = show (pos p) ++ ": ()"  
-  show (TokenUnArrow p) = show (pos p) ++ ": ->"  
-  show (TokenLinArrow p) = show (pos p) ++ ": -o"  
-  show (TokenLParen p) = show (pos p) ++ ": ("
-  show (TokenRParen p) = show (pos p) ++ ": )"  
-  show (TokenLBracket p) = show (pos p) ++ ": ["  
-  show (TokenRBracket p) = show (pos p) ++ ": ]"  
-  show (TokenComma p) = show (pos p) ++ ": ,"  
-  show (TokenSkip p) = show (pos p) ++ ": Skip" 
-  show (TokenColon p) = show (pos p) ++ ": :"  
-  show (TokenCons p c) = show (pos p) ++ ": " ++ c
-  show (TokenSemi p) = show (pos p) ++ ": ;"  
-  show (TokenMOut p) = show (pos p) ++ ": !"  
-  show (TokenMIn p) = show (pos p) ++ ": ?"  
-  show (TokenLBrace p) = show (pos p) ++ ": {"
-  show (TokenRBrace p) = show (pos p) ++ ": }"
-  show (TokenAmpersand p) = show (pos p) ++ ": &"
-  show (TokenPlus p) = show (pos p) ++ ": +"
-  show (TokenRec p) = show (pos p) ++ ": rec"
-  show (TokenDot p) = show (pos p) ++ ": ."
-  show (TokenVar p s) = show (pos p) ++ ": " ++ s
-  show (TokenSU p) = show (pos p) ++ ": SU" 
-  show (TokenSL p) = show (pos p) ++ ": SL"   
-  show (TokenTU p) = show (pos p) ++ ": TU"   
-  show (TokenTL p) = show (pos p) ++ ": TL"  
+  show (TokenNL p) = show p ++ ": \\n"
+  show (TokenIntT p) = show p ++ ": Int"  
+  show (TokenCharT p) = show p ++ ": Char"  
+  show (TokenBoolT p) = show p ++ ": Bool"  
+  show (TokenUnitT p) = show p ++ ": ()"  
+  show (TokenUnArrow p) = show p ++ ": ->"  
+  show (TokenLinArrow p) = show p ++ ": -o"  
+  show (TokenLParen p) = show p ++ ": ("
+  show (TokenRParen p) = show p ++ ": )"  
+  show (TokenLBracket p) = show p ++ ": ["  
+  show (TokenRBracket p) = show p ++ ": ]"  
+  show (TokenComma p) = show p ++ ": ,"  
+  show (TokenSkip p) = show p ++ ": Skip" 
+  show (TokenColon p) = show p ++ ": :"  
+  show (TokenCons p c) = show p ++ ": " ++ c
+  show (TokenSemi p) = show p ++ ": ;"  
+  show (TokenMOut p) = show p ++ ": !"  
+  show (TokenMIn p) = show p ++ ": ?"  
+  show (TokenLBrace p) = show p ++ ": {"
+  show (TokenRBrace p) = show p ++ ": }"
+  show (TokenAmpersand p) = show p ++ ": &"
+  show (TokenPlus p) = show p ++ ": +"
+  show (TokenRec p) = show p ++ ": rec"
+  show (TokenDot p) = show p ++ ": ."
+  show (TokenVar p s) = show p ++ ": " ++ s
+  show (TokenSU p) = show p ++ ": SU" 
+  show (TokenSL p) = show p ++ ": SL"   
+  show (TokenTU p) = show p ++ ": TU"   
+  show (TokenTL p) = show p ++ ": TL"  
 -- Expressions
   -- Basic expressions
   -- Unit already defined
-  show (TokenInteger p i) = show (pos p) ++ ": " ++ show i
-  show (TokenChar p c) = show (pos p) ++ ": " ++ show c
-  show (TokenBool p b) = show (pos p) ++ ": " ++ show b
-  show (TokenLet p) = show (pos p) ++ ": let"
-  show (TokenIn p) = show (pos p) ++ ": in"
-  show (TokenEq p) = show (pos p) ++ ": ="
-  show (TokenData p) = show (pos p) ++ ": data"  
-  show (TokenType p) = show (pos p) ++ ": type"  
-  show (TokenPipe p) = show (pos p) ++ ": |"  
-  show (TokenIf p) = show (pos p) ++ ": if"  
-  show (TokenThen p) = show (pos p) ++ ": then"  
-  show (TokenElse p) = show (pos p) ++ ": else"  
-  show (TokenNew p) = show (pos p) ++ ": new"  
-  show (TokenSend p) = show (pos p) ++ ": send"  
-  show (TokenReceive p) = show (pos p) ++ ": receive"  
-  show (TokenSelect p) = show (pos p) ++ ": select"  
-  show (TokenMatch p) = show (pos p) ++ ": match"  
-  show (TokenWith p) = show (pos p) ++ ": with"  
-  show (TokenFork p) = show (pos p) ++ ": fork"  
-  show (TokenCase p) = show (pos p) ++ ": case"  
-  show (TokenOf p) = show (pos p) ++ ": of"  
-  show (TokenForall p) = show (pos p) ++ ": forall"  
-  show (TokenDualof p) = show (pos p) ++ ": dualof"  
-  show (TokenFArrow p) = show (pos p) ++ ": =>"
+  show (TokenInteger p i) = show p ++ ": " ++ show i
+  show (TokenChar p c) = show p ++ ": " ++ show c
+  show (TokenBool p b) = show p ++ ": " ++ show b
+  show (TokenLet p) = show p ++ ": let"
+  show (TokenIn p) = show p ++ ": in"
+  show (TokenEq p) = show p ++ ": ="
+  show (TokenData p) = show p ++ ": data"  
+  show (TokenType p) = show p ++ ": type"  
+  show (TokenPipe p) = show p ++ ": |"  
+  show (TokenIf p) = show p ++ ": if"  
+  show (TokenThen p) = show p ++ ": then"  
+  show (TokenElse p) = show p ++ ": else"  
+  show (TokenNew p) = show p ++ ": new"  
+  show (TokenSend p) = show p ++ ": send"  
+  show (TokenReceive p) = show p ++ ": receive"  
+  show (TokenSelect p) = show p ++ ": select"  
+  show (TokenMatch p) = show p ++ ": match"  
+  show (TokenWith p) = show p ++ ": with"  
+  show (TokenFork p) = show p ++ ": fork"  
+  show (TokenCase p) = show p ++ ": case"  
+  show (TokenOf p) = show p ++ ": of"  
+  show (TokenForall p) = show p ++ ": forall"  
+  show (TokenDualof p) = show p ++ ": dualof"  
+  show (TokenFArrow p) = show p ++ ": =>"
 -- Operators
-  show (TokenMinus p) = show (pos p) ++ ": -"  
-  show (TokenTimes p) = show (pos p) ++ ": *"  
-  show (TokenOp p s) = show (pos p) ++ ": " ++ show s  
-  -- show (TokenLT p) = show (pos p) ++ ": <"  
-  -- show (TokenGT p) = show (pos p) ++ ": >"  
+  show (TokenMinus p) = show p ++ ": -"  
+  show (TokenTimes p) = show p ++ ": *"  
+  show (TokenOp p s) = show p ++ ": " ++ show s  
+  -- show (TokenLT p) = show p ++ ": <"  
+  -- show (TokenGT p) = show p ++ ": >"  
 
 -- TODO: instance show token for errors
 
@@ -241,62 +247,63 @@ trim = reverse . trim' . reverse . trim'
     trim' ts = ts
 
 
--- TMP -> change to generic
-getPos :: Token -> (Int, Int)
-getPos (TokenIntT p) = pos p 
-getPos (TokenCharT p) = pos p 
-getPos (TokenBoolT p) = pos p 
-getPos (TokenUnitT p) = pos p 
-getPos (TokenUnArrow p) = pos p 
-getPos (TokenLinArrow p) = pos p 
-getPos (TokenLParen p) = pos p
-getPos (TokenRParen p) = pos p 
-getPos (TokenLBracket p) = pos p 
-getPos (TokenRBracket p) = pos p 
-getPos (TokenComma p) = pos p 
-getPos (TokenSkip p) = pos p 
-getPos (TokenColon p) = pos p 
-getPos (TokenCons p _) = pos p
-getPos (TokenSemi p) = pos p 
-getPos (TokenMOut p) = pos p 
-getPos (TokenMIn p) = pos p 
-getPos (TokenLBrace p) = pos p
-getPos (TokenRBrace p) = pos p 
-getPos (TokenAmpersand p) = pos p 
-getPos (TokenPlus p) = pos p 
-getPos (TokenRec p) = pos p 
-getPos (TokenDot p) = pos p 
-getPos (TokenVar p _) = pos p 
-getPos (TokenSU p) = pos p 
-getPos (TokenSL p) = pos p 
-getPos (TokenTU p) = pos p 
-getPos (TokenTL p) = pos p
-getPos (TokenInteger p _) = pos p
-getPos (TokenBool p _) = pos p
-getPos (TokenChar p _) = pos p
-getPos (TokenLet p) = pos p 
-getPos (TokenIn p) = pos p
-getPos (TokenEq p) = pos p
-getPos (TokenData p) = pos p
-getPos (TokenType p) = pos p
-getPos (TokenPipe p) = pos p
-getPos (TokenNL p) = pos p
-getPos (TokenNew p) = pos p
-getPos (TokenSend p) = pos p
-getPos (TokenReceive p) = pos p
-getPos (TokenSelect p) = pos p
-getPos (TokenFork p) = pos p
-getPos (TokenMatch p) = pos p
-getPos (TokenCase p) = pos p
-getPos (TokenForall p) = pos p
-getPos (TokenDualof p) = pos p
-getPos (TokenMinus p) = pos p
-getPos (TokenTimes p) = pos p
-getPos (TokenLT p) = pos p
-getPos (TokenGT p) = pos p
-getPos (TokenOp p _) = pos p
+-- TODO: create class Token
+-- TODO: -> change to instance position 
+getPos :: Token -> AlexPosn
+getPos (TokenIntT p) = p 
+getPos (TokenCharT p) = p 
+getPos (TokenBoolT p) = p 
+getPos (TokenUnitT p) = p 
+getPos (TokenUnArrow p) = p 
+getPos (TokenLinArrow p) = p 
+getPos (TokenLParen p) = p
+getPos (TokenRParen p) = p 
+getPos (TokenLBracket p) = p 
+getPos (TokenRBracket p) = p 
+getPos (TokenComma p) = p 
+getPos (TokenSkip p) = p 
+getPos (TokenColon p) = p 
+getPos (TokenCons p _) = p
+getPos (TokenSemi p) = p 
+getPos (TokenMOut p) = p 
+getPos (TokenMIn p) = p 
+getPos (TokenLBrace p) = p
+getPos (TokenRBrace p) = p 
+getPos (TokenAmpersand p) = p 
+getPos (TokenPlus p) = p 
+getPos (TokenRec p) = p 
+getPos (TokenDot p) = p 
+getPos (TokenVar p _) = p 
+getPos (TokenSU p) = p 
+getPos (TokenSL p) = p 
+getPos (TokenTU p) = p 
+getPos (TokenTL p) = p
+getPos (TokenInteger p _) = p
+getPos (TokenBool p _) = p
+getPos (TokenChar p _) = p
+getPos (TokenLet p) = p 
+getPos (TokenIn p) = p
+getPos (TokenEq p) = p
+getPos (TokenData p) = p
+getPos (TokenType p) = p
+getPos (TokenPipe p) = p
+getPos (TokenNL p) = p
+getPos (TokenNew p) = p
+getPos (TokenSend p) = p
+getPos (TokenReceive p) = p
+getPos (TokenSelect p) = p
+getPos (TokenFork p) = p
+getPos (TokenMatch p) = p
+getPos (TokenCase p) = p
+getPos (TokenForall p) = p
+getPos (TokenDualof p) = p
+getPos (TokenMinus p) = p
+getPos (TokenTimes p) = p
+getPos (TokenLT p) = p
+getPos (TokenGT p) = p
+getPos (TokenOp p _) = p
 getPos t = error $ show t
 
-pos (AlexPn _ l c) = (l,c) 
+-- pos (AlexPn _ l c) = (l,c) 
 
 }

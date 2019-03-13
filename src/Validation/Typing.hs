@@ -549,11 +549,11 @@ checkMap acc venv tm x (p, e) = do
 --checkCons :: Bind -> TypeMap -> TypingState Type
 checkCons :: TermVar -> TypeMap -> TypingState Type
 checkCons c tm = do
-  case tm Map.!? (Bind (0,0) c) of
+  case tm Map.!? (Bind (AlexPn 0 0 0) c) of
     Just x  -> return x
     Nothing -> do
-      addError (0,0) [styleRed "Rewrite, label not in scope"]
-      return $ Skip (0,0)
+      addError (AlexPn 0 0 0) [styleRed "Rewrite, label not in scope"]
+      return $ Skip (AlexPn 0 0 0)
 
 
 -- | Equivalence functions
