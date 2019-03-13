@@ -1,8 +1,8 @@
-id' : forall a : SU => a -> a
+id' : forall a : TL => a -> a
 id' x = x
 
 f : Int -o Int
-f x = x
+f x = 2 * x
 
 start : Int
 start =

@@ -1,9 +1,9 @@
 module Utils.PreludeLoader (prelude) where
 
-import qualified Data.Map.Strict as Map
-import           Parse.Parser
 import           Syntax.Programs (VarEnv)
 import           Syntax.Types
+import           Parse.Parser
+import qualified Data.Map.Strict as Map
 
 typeList :: [(String, String)]
 typeList = [ ("(+)", "Int -> Int -> Int")

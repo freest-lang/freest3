@@ -12,25 +12,25 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Syntax.Programs
-  ( KindEnv
-  , VarEnv
-  , ExpEnv
---  , TypeEnv
-  , ConstructorEnv
-  )where 
+( KindEnv
+, ConstructorEnv
+, ExpEnv
+, VarEnv
+) where 
 
-import qualified Data.Map.Strict as Map
-import           Syntax.Exps
-import           Syntax.Types
+import           Syntax.Position
 import           Syntax.Kinds
+import           Syntax.Types
+import           Syntax.Exps
+import qualified Data.Map.Strict as Map
 
+type KindVar = String -- TODO: move elsewhere
 
-type KindEnv = Map.Map TypeVar (Pos, Kind)
+type KindEnv = Map.Map KindVar (Pos, Kind)
 
-type VarEnv = Map.Map TermVar (Pos, TypeScheme)
+type ConstructorEnv = Map.Map TypeVar (Pos, TypeScheme)
 
 type ExpEnv = Map.Map TermVar (Pos, Params, Expression)
 
--- type TypeEnv = Map.Map TypeVar Type
+type VarEnv = Map.Map TermVar (Pos, TypeScheme)
 
-type ConstructorEnv = Map.Map TypeVar (Pos, TypeScheme)

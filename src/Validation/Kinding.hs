@@ -22,13 +22,14 @@ module Validation.Kinding
 , isWellFormed -- test
 ) where
 
+import           Syntax.Programs
+import           Syntax.Exps
+import           Syntax.Types
+import           Syntax.Kinds
+import           Syntax.Position
+import           Utils.Errors
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
-import           Syntax.Exps
-import           Syntax.Kinds
-import           Syntax.Programs
-import           Syntax.Types
-import           Utils.Errors
 import           Validation.Contractive
 import           Validation.TypingState
 
@@ -92,7 +93,7 @@ checkSessionKind :: Type -> Kind -> TypingState Multiplicity
 checkSessionKind t k
   | prekind k == Session = return $ multiplicity k
   | otherwise            = do
-      addError (typePos t) ["Expecting type", styleRed $ show t,
+      addError (position t) ["Expecting type", styleRed $ show t,
                   "to be a session type; found kind", styleRed $ show k]
       return $ multiplicity k
 
@@ -107,7 +108,7 @@ checkAgainst k (Rec _ (p, x) t) = do
   removeFromKenv y
 checkAgainst k t = do
   k' <- synthetize t
-  checkSubkind (typePos t) k' k
+  checkSubkind (position t) k' k
 
 -- Checks whether a given kind is a sub kind of another;
 -- gives an error message if it isn't

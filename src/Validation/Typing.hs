@@ -16,19 +16,21 @@ module Validation.Typing
   typeCheck  
 ) where
 
+import           Syntax.Programs
+import           Syntax.Exps
+import           Syntax.Types
+import           Syntax.Kinds
+import           Syntax.Position
+import           Utils.Errors
+import           Equivalence.TypeEquivalence
+import qualified Validation.Kinding as K
+import           Validation.TypingState
+
 import           Control.Monad.State
 import           Data.List ((\\), nub, intercalate)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.Traversable as Trav
-import           Syntax.Kinds
-import           Syntax.Exps
-import           Syntax.Programs
-import           Syntax.Types
-import           Utils.Errors
-import           Equivalence.TypeEquivalence
-import qualified Validation.Kinding as K
-import           Validation.TypingState
 
 
 typeCheck :: TypingState ()
@@ -416,8 +418,8 @@ extractFun t           = do
 
 extractScheme :: TypeScheme -> TypingState ([Bind], Type)
 extractScheme (TypeScheme [] t) = do
-  addError (typePos t) ["Expecting a type scheme; found", styleRed $ show t]
-  return ([], (Basic (typePos t) UnitType))
+  addError (position t) ["Expecting a type scheme; found", styleRed $ show t]
+  return ([], (Basic (position t) UnitType))
 extractScheme (TypeScheme bs t) = return (bs, t)
 
 extractPair :: Type -> TypingState (Type, Type)

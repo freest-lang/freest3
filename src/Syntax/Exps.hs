@@ -12,19 +12,19 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Syntax.Exps
-  ( Expression(..)
-  , TermVar
-  , VarDef
-  , Params
-  , Param(..)
-  , CaseMap
-  , MatchMap
-  , getEPos
-  ) where
+( Expression(..)
+, TermVar
+, Params
+, Param(..)
+, CaseMap
+, MatchMap
+, VarDef
+ where
 
-import qualified Data.Map.Strict as Map
-import           Syntax.Kinds
 import           Syntax.Types
+import           Syntax.Kinds
+import           Syntax.Position
+import qualified Data.Map.Strict as Map
 
 type TermVar = String
 
@@ -42,7 +42,7 @@ instance Show Param where
 type Params = [Param] -- Params is a semantic notion, not syntatic - eliminate, use [TermVar]
 
 data TypeVarBind = TypeVar Kind
-
+ 
 -- TODO: Join
 type MatchMap = Map.Map TermVar (Param, Expression)
 type CaseMap  = Map.Map TermVar (Params, Expression)
@@ -66,38 +66,38 @@ data Expression =
   | Constructor Pos TermVar
   | Case Pos Expression CaseMap
   -- Type application
-  | TypeApp Pos TermVar [Type] -- Expression -> TermVar
+  | TypeApp Pos TermVar [Type]
   -- Conditional
   | Conditional Pos Expression Expression Expression
   -- Let
-  | UnLet Pos VarDef Expression Expression -- Derived; eliminate?
+  | UnLet Pos VarDef Expression Expression -- TODO: Derived; eliminate?
   -- Fork
   | Fork Pos Expression
   -- Session types
   | New Pos Type
-  | Send Pos Expression Expression -- Omit the last Expression
+  | Send Pos Expression Expression -- TODO: Omit the last Expression
   | Receive Pos Expression 
   | Select Pos TermVar Expression
   | Match Pos Expression MatchMap
    deriving (Eq, Ord, Show)
 
-getEPos :: Expression -> Pos
-getEPos (Unit p) = p
-getEPos (Integer p _) = p
-getEPos (Character p _) = p
-getEPos (Boolean p _) = p
-getEPos (Variable p _) = p
-getEPos (UnLet p _ _ _) = p
-getEPos (App p _ _) = p
-getEPos (TypeApp p _ _) = p
-getEPos (Conditional p _ _ _) = p
-getEPos (Pair p _ _) = p
-getEPos (BinLet p _ _ _ _) = p
-getEPos (New p _) = p
-getEPos (Send p _ _) = p
-getEPos (Receive p _ ) = p
-getEPos (Select p _ _) = p
-getEPos (Match p _ _) = p
-getEPos (Fork p _) = p
-getEPos (Constructor p _) = p
-getEPos (Case p _ _) = p
+instance Position Expression where
+  position (Unit p)              = p
+  position (Integer p _)         = p
+  position (Character p _)       = p
+  position (Boolean p _)         = p
+  position (Variable p _)        = p
+  position (UnLet p _ _ _)       = p
+  position (App p _ _)           = p
+  position (TypeApp p _ _)       = p
+  position (Conditional p _ _ _) = p
+  position (Pair p _ _)          = p
+  position (BinLet p _ _ _ _)    = p
+  position (New p _)             = p
+  position (Send p _ _)          = p
+  position (Receive p _ )        = p
+  position (Select p _ _)        = p
+  position (Match p _ _)         = p
+  position (Fork p _)            = p
+  position (Constructor p _)     = p
+  position (Case p _ _)          = p

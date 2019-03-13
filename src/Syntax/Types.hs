@@ -27,23 +27,19 @@ module Syntax.Types
 , rename
 , subs
 , subL -- TODO: not quite sure this belongs here
-, Pos
-, typePos
 , isPreSession
 ) where
 
+import           Syntax.Position
+import           Syntax.Kinds
 import           Data.List (intersperse)
 import qualified Data.Map.Strict as Map
-import           Syntax.Kinds
-
--- POSITION -- TODO: This should be common to all syntax
-type Pos = (Int, Int)
 
 -- TYPE VARIABLE BINDINGS
 
 type TypeVar = String
 
-data Bind = Bind {var :: TypeVar, bindPos :: Pos, kind :: Kind}
+data Bind = Bind {bindPos :: Pos, var :: TypeVar, kind :: Kind} -- TODO: Use a triple
   deriving (Ord)
 
 instance Eq Bind where
@@ -167,19 +163,18 @@ showMap :: TypeMap -> String
 showMap m = concat $ intersperse ", " (map showAssoc (Map.assocs m))
   where showAssoc (k, v) = k ++ ": " ++ show v
 
--- The position of a type
-typePos :: Type -> Pos
-typePos (Basic p _) = p
-typePos (Fun p _ _ _) = p
-typePos (PairType p _ _) = p
-typePos (Datatype p _) = p
-typePos (Skip p) = p
-typePos (Semi p _ _) = p
-typePos (Message p _ _) = p
-typePos (Choice p _ _) = p
-typePos (Rec p _ _) = p
-typePos (Var p _) = p
-typePos (Dualof p _) = p
+instance Position Type where
+  position (Basic p _)     = p
+  position (Fun p _ _ _)    = p
+  position (PairType p _ _) = p
+  position (Datatype p _)   = p
+  position (Skip p)         = p
+  position (Semi p _ _)     = p
+  position (Message p _ _)  = p
+  position (Choice p _ _)   = p
+  position (Rec p _ _)      = p
+  position (Var p _)        = p
+  position (Dualof p _)     = p
 
 -- TYPE SCHEMES
 
@@ -199,11 +194,8 @@ insertBind :: (Bind, Bind) -> Map.Map TypeVar TypeVar -> Map.Map TypeVar TypeVar
 insertBind (b, c) = Map.insert (var b) (var c)
 
 instance Show TypeScheme where
-  show (TypeScheme bs t) = showTypeScheme bs t
-
-showTypeScheme :: [Bind] -> Type -> String
-showTypeScheme [] t = show t
-showTypeScheme bs t = "forall " ++ showBindings bs ++ " => " ++ show t
+  show (TypeScheme [] t) = show t
+  show (TypeScheme bs t) = "forall " ++ showBindings bs ++ " => " ++ show t
 
 showBindings :: [Bind] -> String
 showBindings bs = concat $ intersperse ", " (map show bs)

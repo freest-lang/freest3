@@ -17,6 +17,8 @@ module Syntax.Kinds
 , Kind (..)
 ) where
 
+-- import Syntax.Position
+
 -- PREKINDS
 
 data PreKind = Session | Functional deriving Eq
@@ -27,7 +29,7 @@ instance Show PreKind where
 
 instance Ord PreKind where
    Session <= Functional = True
-   _          <= _       = False
+   _       <= _          = False
 
 -- MULTIPLICITIES
 
@@ -39,10 +41,11 @@ instance Show Multiplicity where
 
 instance Ord Multiplicity where
   Un <= Lin = True
-  _   <= _  = False
+  _  <= _  = False
 
 -- KINDS
 
+-- TODO: include position; use a triple.
 data Kind = Kind {prekind :: PreKind, multiplicity :: Multiplicity}
   deriving (Eq, Ord)
 

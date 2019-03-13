@@ -25,7 +25,7 @@ executable ContextFreeSession
   default-language:    Haskell2010
   build-tools:         alex, happy
   other-modules:       Compiler,
-                       Syntax.Exps, Syntax.Kinds, Syntax.Types, Syntax.Programs,
+                       Syntax.Position, Syntax.Kinds, Syntax.Types, Syntax.Exps, Syntax.Programs,
                        Parse.Parser, Parse.Lexer,
                        Utils.PreludeLoader, Utils.Errors,
                        Queue.Queue,
@@ -33,8 +33,6 @@ executable ContextFreeSession
                        Equivalence.TypeEquivalence, Equivalence.Grammar, Equivalence.TypeToGrammar, Equivalence.Norm,
                        CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen
                        
-
-
 test-suite unit-tests
   main-is:             UnitSpec.hs
   Type:                exitcode-stdio-1.0
@@ -45,7 +43,7 @@ test-suite unit-tests
                        pretty-terminal <= 0.1.0.0
   hs-source-dirs:      src, test/UnitTests
   default-language:    Haskell2010
-  other-modules:       Syntax.Kinds, Syntax.Types, Syntax.Exps,
+  other-modules:       Syntax.Position, Syntax.Kinds, Syntax.Types, Syntax.Exps,
                        Parse.Parser, Parse.Lexer,
                        Queue.Queue,
                        Validation.Kinding, Validation.Contractive,
@@ -61,8 +59,6 @@ test-suite unit-tests
                        Validation.TestTypeSchemeKindingSpec,
                        Equivalence.TestEquivalenceInvalidSpec, Equivalence.TestEquivalenceValidSpec
 
-
-
 test-suite program-tests
   main-is:             ProgSpec.hs
   Type:                exitcode-stdio-1.0
@@ -74,7 +70,7 @@ test-suite program-tests
   ghc-options:         -threaded
   default-language:    Haskell2010
   other-modules:       Compiler, CompilerSpec, 
-                       Syntax.Exps, Syntax.Kinds, Syntax.Types, Syntax.Programs,
+                       Syntax.Position, Syntax.Exps, Syntax.Kinds, Syntax.Types, Syntax.Programs,
                        Parse.Lexer, Parse.Parser,
                        Utils.PreludeLoader, Utils.Errors,
                        Queue.Queue,        
@@ -83,7 +79,6 @@ test-suite program-tests
                        Equivalence.TypeEquivalence, Equivalence.Grammar,
                        Equivalence.TypeToGrammar, Equivalence.Norm, 
                        CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen
-
 
 test-suite testEquiv
   main-is:             TestEquivalenceValidSpecMain.hs
@@ -98,7 +93,7 @@ test-suite testEquiv
   hs-source-dirs:      src, test/UnitTests
   default-language:    Haskell2010
   other-modules:       SpecHelper,
-                       Syntax.Kinds, Syntax.Types, Syntax.Exps, Syntax.Programs,
+                       Syntax.Position, Syntax.Kinds, Syntax.Types, Syntax.Exps, Syntax.Programs,
                        Parse.Parser, Parse.Lexer,
                        Queue.Queue, Utils.Errors,
                        Validation.Kinding,  Validation.TypingState, Validation.Contractive,

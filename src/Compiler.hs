@@ -1,15 +1,17 @@
 module Compiler (compile) where
 
+import Syntax.Programs
+import Syntax.Exps
+import Syntax.Types
+import Syntax.Kinds
 import CodeGen.CodeGen (HaskellCode, genProgram)
 import Control.Monad.State
 import Data.List (intercalate)
 import Parse.Parser (parseProgram)
-import Syntax.Programs
 import System.Exit
 import Utils.PreludeLoader (prelude)
 import Validation.Typing (typeCheck)
 import Validation.TypingState (Errors)
-
 
 compile :: String -> IO (Bool, String)
 compile arg = do

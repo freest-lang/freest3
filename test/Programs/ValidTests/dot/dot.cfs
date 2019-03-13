@@ -1,5 +1,4 @@
-
-dot : forall a : TU, b : SU, c : TU => (b -> c) -> (a -> b) -> a -> c
+dot : forall a : TU, b : TU, c : TU => (b -> c) -> (a -> b) -> a -> c
 dot f g x = f[b,c] (g[a,b] x)
 
 double : Int -> Int

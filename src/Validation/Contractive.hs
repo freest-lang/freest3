@@ -16,11 +16,13 @@ module Validation.Contractive
 )
 where
 
-import qualified Data.Map.Strict as Map
 import           Syntax.Programs
 import           Syntax.Types
+import           Syntax.Kinds
+import           Syntax.Position
 import           Utils.Errors
 import           Validation.TypingState
+import qualified Data.Map.Strict as Map
 
 -- Is a given type contractive?
 contractive :: KindEnv -> Type -> Bool
@@ -35,4 +37,4 @@ checkContractive t = do
   kenv <- getKenv
   if contractive kenv t
   then return ()
-  else addError (typePos t) ["Type", styleRed $ show t, "is not contractive"]
+  else addError (position t) ["Type", styleRed $ show t, "is not contractive"]
