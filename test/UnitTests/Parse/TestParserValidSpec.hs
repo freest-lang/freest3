@@ -3,7 +3,7 @@ module Parse.TestParserValidSpec(spec) where
 import           SpecHelper
 import           Control.Exception (evaluate)
 import           Syntax.Kinds
-import           Syntax.Position (Bind(..))
+import           Syntax.Position
 import qualified Data.Map.Strict as Map
 
 -- Just to be able to run it alone
@@ -13,7 +13,7 @@ main = hspec spec
 spec :: Spec
 spec = do
   
-  let p = (0,0)
+  let p = (AlexPn 0 0 0)
   let treeChannelRead = "rec treeChannel . +{Leaf:Skip,Node:!Int;treeChannel;treeChannel}"
   let treeChannelType =
         (Rec p "treeChannel"

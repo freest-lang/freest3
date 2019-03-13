@@ -4,7 +4,7 @@ import           SpecHelper
 import           Syntax.Exps
 import           Syntax.Types -- TODO REMOVE
 import           Syntax.Kinds
-import           Syntax.Position (Bind(..))
+import           Syntax.Position
 import qualified Data.Map.Strict as Map
 
 -- Just to be able to run it alone
@@ -14,7 +14,7 @@ main = hspec spec
 spec :: Spec
 spec = do  
 -- ("Node", (Semi (Message Out IntType) (Semi(Var "TreeChannel") (Var "TreeChannel"))))]))
-  let p = (0,0)
+  let p = (AlexPn 0 0 0)
   describe "Eq Expressions" $ do
     it "Unit" $ do
      (Unit p) == (Unit p) `shouldBe` True

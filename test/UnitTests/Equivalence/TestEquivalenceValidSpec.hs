@@ -4,7 +4,7 @@ import qualified Data.Map.Strict as Map
 import           Equivalence.TypeEquivalence
 import           SpecHelper
 import           Syntax.Kinds (Kind)
-import           Syntax.Position (Bind(..))
+import           Syntax.Position
 
 spec :: Spec
 spec = do
@@ -20,7 +20,7 @@ matchValidSpec [k, t, u] =
 
 --  :: [(String,Kind)]
 readKenv s =
-  map (\(x,k) -> (Bind (0,0) x, ((0,0), k))) xs
+  map (\(x,k) -> (Bind (AlexPn 0 0 0) x, ((AlexPn 0 0 0), k))) xs
   where xs = read s :: [(String,Kind)]
   
 main :: IO ()
