@@ -25,10 +25,16 @@ class Position t where
 
 type Var = String
 
-data Bind = Bind Pos Var deriving (Eq, Ord)
+data Bind = Bind Pos Var
 
 instance Position Bind where
   position (Bind p _) = p
 
 instance Show Bind where
   show (Bind _ x) = x
+
+instance Eq Bind where
+  (Bind _ x) == (Bind _ y) = x == y
+  
+instance Ord Bind where
+  (Bind _ x) `compare` (Bind _ y) = x `compare` y

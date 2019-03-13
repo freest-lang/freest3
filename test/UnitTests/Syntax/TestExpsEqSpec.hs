@@ -4,6 +4,7 @@ import           SpecHelper
 import           Syntax.Exps
 import           Syntax.Types -- TODO REMOVE
 import           Syntax.Kinds
+import           Syntax.Position (Bind(..))
 import qualified Data.Map.Strict as Map
 
 -- Just to be able to run it alone
@@ -28,8 +29,8 @@ spec = do
     it "Variable" $ do
       (Variable p "x") == (Variable p "x") `shouldBe` True
     it "UnLet" $ do
-      (UnLet p (p,"x") (Integer p 2) (Integer p 2)) ==
-        (UnLet p (p,"x") (Integer p 2) (Integer p 2)) `shouldBe` True      
+      (UnLet p (Bind p "x") (Integer p 2) (Integer p 2)) ==
+        (UnLet p (Bind p "x") (Integer p 2) (Integer p 2)) `shouldBe` True      
     it "App" $ do
       (App p (Variable p "x") (Integer p 2)) ==
         (App p (Variable p "x") (Integer p 2)) `shouldBe` True
@@ -44,8 +45,8 @@ spec = do
       (Pair p (Variable p "x") (Integer p 2)) ==
         (Pair p (Variable p "x") (Integer p 2)) `shouldBe` True
     it "BinLet" $ do
-        (BinLet p (p,"x") (p,"y") (Integer p 2) (Integer p 2)) ==
-          (BinLet p (p,"x") (p,"y") (Integer p 2) (Integer p 2)) `shouldBe` True    
+        (BinLet p (Bind p "x") (Bind p "y") (Integer p 2) (Integer p 2)) ==
+          (BinLet p (Bind p "x") (Bind p "y") (Integer p 2) (Integer p 2)) `shouldBe` True    
     it "New" $ do
       (New p (Basic p IntType)) ==
         (New p (Basic p IntType)) `shouldBe` True
@@ -59,8 +60,8 @@ spec = do
       (Select p "x" (Variable p "x")) ==
         (Select p "x" (Variable p "x")) `shouldBe` True
     it "Match" $ do
-      (Match p (Variable p "x") (Map.singleton "C" (Param {paramPos=p,param="w"}, (Integer p 2)))) ==
-        (Match p (Variable p "x") (Map.singleton "C" (Param {paramPos=p,param="w"}, (Integer p 2))))
+      (Match p (Variable p "x") (Map.singleton "C" (Bind p "w", (Integer p 2)))) ==
+        (Match p (Variable p "x") (Map.singleton "C" (Bind p "w", (Integer p 2))))
           `shouldBe` True
     it "Fork" $ do
       (Fork p (Variable p "x")) ==
@@ -69,8 +70,8 @@ spec = do
       (Constructor p "x") ==
         (Constructor p "x") `shouldBe` True
     it "Case" $ do
-      (Case p (Variable p "x") (Map.singleton "C" ([Param {paramPos=p,param="w"}], (Integer p 2)))) ==
-        (Case p (Variable p "x") (Map.singleton "C" ([Param {paramPos=p,param="w"}], (Integer p 2))))
+      (Case p (Variable p "x") (Map.singleton "C" ([Bind p "w"], (Integer p 2)))) ==
+        (Case p (Variable p "x") (Map.singleton "C" ([Bind p "w"], (Integer p 2))))
           `shouldBe` True  
 
     it "Ord prekinds" $ do

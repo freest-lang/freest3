@@ -89,7 +89,7 @@ data Type =
   | Semi Pos Type Type
   | Message Pos Polarity BasicType
   | Choice Pos ChoiceView TypeMap
-  | Rec Pos TypeVar Type
+  | Rec Pos TypeVar Type -- Bind?
   -- Functional or Session
   | Var Pos TypeVar
   -- Type operators
@@ -147,7 +147,7 @@ showFunOp Un  = " -> "
 
 showMap :: TypeMap -> String
 showMap m = concat $ intersperse ", " (map showAssoc (Map.assocs m))
-  where showAssoc (Bind _ k, v) = k ++ ": " ++ show v
+  where showAssoc (b, v) = show b ++ ": " ++ show v
 
 instance Position Type where
   position (Basic p _)     = p
