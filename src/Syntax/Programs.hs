@@ -26,11 +26,11 @@ import qualified Data.Map.Strict as Map
 
 type KindVar = String -- TODO: move elsewhere
 
-type KindEnv = Map.Map KindVar (Pos, Kind)
+type KindEnv = Map.Map KindVar (Pos, Kind) -- TODO remove Pos
 
-type ConstructorEnv = Map.Map TypeVar (Pos, TypeScheme)
+type ConstructorEnv = Map.Map TypeVar (Pos, TypeScheme) -- TODO remove Pos
 
-type ExpEnv = Map.Map TermVar (Pos, Params, Expression)
+type ExpEnv = Map.Map TermVar (Pos, Params, Expression) -- TODO remove Pos
 
-type VarEnv = Map.Map TermVar (Pos, TypeScheme)
+type VarEnv = Map.Map TermVar (Pos, TypeScheme) -- TODO remove Pos
 

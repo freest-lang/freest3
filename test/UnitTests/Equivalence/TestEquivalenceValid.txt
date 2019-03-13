@@ -482,8 +482,8 @@ rec x . &{Add: x;x;!Int, Const: ?Int;!Int, Mult: x;x;!Int}
 &{LeafC: (rec x . &{LeafC: Skip, NodeC: (?Int;(x;x))}), NodeC: ((?Int;((rec x . &{LeafC: Skip, NodeC: (?Int;(x;x))});(rec x . &{LeafC: Skip, NodeC: (?Int;(x;x))})));(rec x . &{LeafC: Skip, NodeC: (?Int;(x;x))}))}
 
 []
-((rec TermChan . +{Add: (TermChan;TermChan), Const: !Int, Mult: (TermChan;TermChan)});!Int)
-((rec TermChan . +{Add: (TermChan;TermChan), Const: !Int, Mult: (TermChan;TermChan)});!Int)
+((rec termChan . +{Add: (termChan;termChan), Const: !Int, Mult: (termChan;termChan)});!Int)
+((rec termChan . +{Add: (termChan;termChan), Const: !Int, Mult: (termChan;termChan)});!Int)
 
 []
 (rec x . &{A: !Int ; x, B: Skip}) ; (rec x . &{A: !Int ; x, B: Skip}) ; ?Bool

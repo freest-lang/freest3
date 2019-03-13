@@ -21,7 +21,6 @@ module Syntax.Exps
 , MatchMap
 ) where
 
-
 import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.Position

@@ -107,13 +107,13 @@ rec x . (?Bool -> !Int -> Bool)
 
 -- Complex tests
 
-rec alpha . (rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});alpha
-rec alpha . !Int;(rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});(rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});alpha
-rec alpha . (!Int;((rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});(rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel})));alpha
-rec alpha . !Int;(((rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});(rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel}));alpha)
-rec alpha . ((rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});(rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel}));alpha
-rec alpha .(rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});((rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});alpha)
+rec alpha . (rec treeChannel . +{Leaf:Skip,Node:!Int;treeChannel;treeChannel});alpha
+rec alpha . !Int;(rec treeChannel . +{Leaf:Skip,Node:!Int;treeChannel;treeChannel});(rec treeChannel . +{Leaf:Skip,Node:!Int;treeChannel;treeChannel});alpha
+rec alpha . (!Int;((rec treeChannel . +{Leaf:Skip,Node:!Int;treeChannel;treeChannel});(rec treeChannel . +{Leaf:Skip,Node:!Int;treeChannel;treeChannel})));alpha
+rec alpha . !Int;(((rec treeChannel . +{Leaf:Skip,Node:!Int;treeChannel;treeChannel});(rec treeChannel . +{Leaf:Skip,Node:!Int;treeChannel;treeChannel}));alpha)
+rec alpha . ((rec treeChannel . +{Leaf:Skip,Node:!Int;treeChannel;treeChannel});(rec treeChannel . +{Leaf:Skip,Node:!Int;treeChannel;treeChannel}));alpha
+rec alpha .(rec treeChannel . +{Leaf:Skip,Node:!Int;treeChannel;treeChannel});((rec treeChannel . +{Leaf:Skip,Node:!Int;treeChannel;treeChannel});alpha)
 
-(rec XploreNodeChan . +{Value:!Int;XploreNodeChan, Left:(rec XformChan . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int});XploreNodeChan, Right:(rec XformChan . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int});XploreNodeChan,Exit:Skip})
+(rec xploreNodeChan . +{Value:!Int;xploreNodeChan, Left:(rec xformChan . +{Leaf:Skip,Node:!Int;xformChan;xformChan;?Int});xploreNodeChan, Right:(rec xformChan . +{Leaf:Skip,Node:!Int;xformChan;xformChan;?Int});xploreNodeChan,Exit:Skip})
 
-rec alpha . Int -> (rec XformChan . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int})->(rec XformChan . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int})->((rec XformChan . +{Leaf:Skip,Node:!Int;XformChan;XformChan;?Int});alpha)->alpha
+rec alpha . Int -> (rec xformChan . +{Leaf:Skip,Node:!Int;xformChan;xformChan;?Int})->(rec xformChan . +{Leaf:Skip,Node:!Int;xformChan;xformChan;?Int})->((rec xformChan . +{Leaf:Skip,Node:!Int;xformChan;xformChan;?Int});alpha)->alpha

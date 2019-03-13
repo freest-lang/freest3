@@ -35,18 +35,17 @@ import           Syntax.Kinds
 import           Data.List (intersperse)
 import qualified Data.Map.Strict as Map
 
--- TYPE VARIABLE BINDINGS
+-- BIND
 
 type TypeVar = String
 
-data Bind = Bind {bindPos :: Pos, var :: TypeVar, kind :: Kind} -- TODO: Use a triple
-  deriving (Ord)
+data Bind = Bind Pos TypeVar Kind
 
-instance Eq Bind where
-  b == c = kind b == kind c
+-- instance Eq Bind where
+--   b == c = kind b == kind c
 
 instance Show Bind where
-  show b = var b ++ " : " ++ show (kind b)
+  show (Bind _ x k) = x ++ " : " ++ show k
 
 -- BASIC TYPES
 
@@ -102,7 +101,7 @@ data Type =
   | Semi Pos Type Type
   | Message Pos Polarity BasicType
   | Choice Pos ChoiceView TypeMap
-  | Rec Pos (Pos, TypeVar) Type
+  | Rec Pos TypeVar Type
   -- Functional or Session
   | Var Pos TypeVar
   -- Type operators
@@ -117,7 +116,7 @@ equalTypes :: Map.Map TypeVar TypeVar -> Type -> Type -> Bool
 equalTypes s (Skip _)         (Skip _)         = True
 equalTypes s (Var _ x)        (Var _ y)        = equalVars (Map.lookup x s) x y
 -- equalTypes s (Rec _ b t)      (Rec _ c u)      = b == c && equalTypes (insertBind (b, c) s) t u
-equalTypes s (Rec _ b t)      (Rec _ c u)      = equalTypes (insertTypeVar (snd b, snd c) s) t u
+equalTypes s (Rec _ x t)      (Rec _ y u)      = equalTypes (insertTypeVar (x, y) s) t u
 equalTypes s (Semi _ t1 t2)   (Semi _ u1 u2)   = equalTypes s t1 u1 && equalTypes s t2 u2
 equalTypes s (Basic _ x)      (Basic _ y)      = x == y
 equalTypes s (Message _ p x)  (Message _ q y)  = p == q && x == y
@@ -151,7 +150,7 @@ instance Show Type where
   show (PairType _ t u) = "(" ++ show t ++ ", " ++ show u ++ ")"
   show (Choice _ v m)   = show v ++ "{" ++ showMap m ++ "}"
   show (Datatype _ m)   = "["++ showMap m ++"]"
-  show (Rec _ b t)      = "(rec " ++ snd b ++ " . " ++ show t ++ ")"
+  show (Rec _ x t)      = "(rec " ++ x ++ " . " ++ show t ++ ")"
   show (Var _ s)        = s
   show (Dualof _ s)     = "dualof " ++ show s
 
@@ -178,27 +177,30 @@ instance Position Type where
 
 -- TYPE SCHEMES
 
-data TypeScheme = TypeScheme [Bind] Type deriving Ord
+data TypeScheme = TypeScheme Pos [Bind] Type
 
-instance Eq TypeScheme where
+instance Eq TypeScheme where -- TODO: Remove
   (==) = equalSchemes Map.empty
 
 equalSchemes :: Map.Map TypeVar TypeVar -> TypeScheme -> TypeScheme -> Bool
-equalSchemes s (TypeScheme bs t) (TypeScheme cs u) =
-  bs == cs && equalTypes (insertBinds bs cs s) t u
+equalSchemes s (TypeScheme _ bs t) (TypeScheme _ cs u) =
+{-  bs == cs && -} equalTypes (insertBinds bs cs s) t u
 
 insertBinds :: [Bind] -> [Bind] -> Map.Map TypeVar TypeVar -> Map.Map TypeVar TypeVar
 insertBinds bs cs s = foldr insertBind s (zip bs cs)
 
 insertBind :: (Bind, Bind) -> Map.Map TypeVar TypeVar -> Map.Map TypeVar TypeVar
-insertBind (b, c) = Map.insert (var b) (var c)
+insertBind (Bind _ x _, Bind _ y _) = Map.insert x y
 
 instance Show TypeScheme where
-  show (TypeScheme [] t) = show t
-  show (TypeScheme bs t) = "forall " ++ showBindings bs ++ " => " ++ show t
+  show (TypeScheme _ [] t) = show t
+  show (TypeScheme _ bs t) = "forall " ++ showBindings bs ++ " => " ++ show t
 
 showBindings :: [Bind] -> String
 showBindings bs = concat $ intersperse ", " (map show bs)
+
+instance Position TypeScheme where
+  position (TypeScheme p _ _) = p
 
 -- DUALITY
 
@@ -210,7 +212,7 @@ dual (Skip p)          = Skip p
 dual (Message pos p b) = Message pos (dualPolarity p) b
 dual (Choice pos p m)  = Choice pos (dualView p) (Map.map dual m)
 dual (Semi p t1 t2)    = Semi p (dual t1) (dual t2)
-dual (Rec p b t)       = Rec p b (dual t)
+dual (Rec p x t)       = Rec p x (dual t)
 dual (Dualof _ t)      = t
 
 dualPolarity :: Polarity -> Polarity
@@ -221,20 +223,20 @@ dualView :: ChoiceView -> ChoiceView
 dualView External = Internal
 dualView Internal = External
 
-toList :: TypeScheme -> [TypeScheme]
-toList (TypeScheme b (Fun _ _ t1 t2)) = (TypeScheme b t1) : toList (TypeScheme b t2)
+toList :: TypeScheme -> [TypeScheme] -- TODO: what for?
+toList (TypeScheme p b (Fun _ _ t1 t2)) = (TypeScheme p b t1) : toList (TypeScheme p b t2)
 toList t = [t]
 
 -- UNFOLDING, RENAMING, SUBSTITUTING
 
 unfold :: Type -> Type
 -- Assumes parameter is a Rec type
-unfold (Rec p b t) = subs (Rec p b t) (snd b) t
+unfold (Rec p x t) = subs (Rec p x t) x t
 
 rename :: Type -> TypeVar -> Type
 -- Assumes parameter is a Rec type
 -- rename (Rec p (Bind x pb k) t) y = Rec p (Bind y pb k) (subs (Var p y) x t)
-rename (Rec p (pb, x) t) y = Rec p (pb, y) (subs (Var p y) x t)
+rename (Rec p x t) y = Rec p y (subs (Var p y) x t)
 
 -- [u/x]t, substitute u for x on t
 subs :: Type -> TypeVar -> Type -> Type 
@@ -244,16 +246,16 @@ subs t y (Var p x)
 subs t y (Semi p t1 t2)     = Semi p (subs t y t1) (subs t y t2)
 subs t y (PairType p t1 t2) = PairType p (subs t y t1) (subs t y t2)
 -- Assume y /= x
-subs t2 y (Rec p b t1)
-  | snd b == y              = Rec p b t1
-  | otherwise               = Rec p b (subs t2 y t1)
+subs t2 y (Rec p x t1)
+  | x == y                  = Rec p x t1
+  | otherwise               = Rec p x (subs t2 y t1)
 subs t y (Choice p v m)     = Choice p v (Map.map(subs t y) m)
 subs t y (Fun p m t1 t2)    = Fun p m (subs t y t1) (subs t y t2)
 subs _ _ t                  = t
 
 subL :: Type -> [(Type,Bind)] -> Type
 subL t bs =
-  foldr (\(t', b) acc -> subs t' (var b) acc) t bs
+  foldr (\(u, (Bind _ x _)) acc -> subs u x acc) t bs
 
 -- SESSION TYPES
 

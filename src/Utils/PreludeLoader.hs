@@ -38,7 +38,7 @@ prelude =
 -- TODO: REF - ver pos
 preludeLoad :: VarEnv -> VarEnv
 preludeLoad map =
-  foldl (\acc (tv, t) -> Map.insert tv ((0,0),(TypeScheme [] (read t :: Type))) acc) map typeList
+  foldl (\acc (tv, t) -> Map.insert tv ((0,0),(TypeScheme (0,0) [] (read t :: Type))) acc) map typeList
 
 schemeLoad :: VarEnv -> VarEnv
 schemeLoad map =
