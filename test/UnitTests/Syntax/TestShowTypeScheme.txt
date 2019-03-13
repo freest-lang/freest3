@@ -12,9 +12,9 @@ forall b : TU => b
 forall a : TU, b : TU => a
 forall x : TU, y : TU => !Int;x;!Bool;y
 
-forall beta : TU => (rec TreeChannel  . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel})->((rec TreeChannel  . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});beta)->beta
+forall beta : TU => (rec treeChannel  . +{Leaf:Skip,Node:!Int;treeChannel;treeChannel})->((rec treeChannel  . +{Leaf:Skip,Node:!Int;treeChannel;treeChannel});beta)->beta
 
--- forall beta : TU => (rec TreeChannel  . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel}) -> (rec TreeChannel  . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel};beta)->beta
+-- forall beta : TU => (rec treeChannel  . +{Leaf:Skip,Node:!Int;treeChannel;treeChannel}) -> (rec treeChannel  . +{Leaf:Skip,Node:!Int;treeChannel;treeChannel};beta)->beta
 
 -- "Associativity"
 
@@ -27,13 +27,13 @@ forall a => Skip;Skip;Skip;a
 forall a : TU, b : TU => a -> b
 
 
--- TreeChannel
+-- treeChannel
 
-forall beta => (rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel})->(rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});beta->beta
+forall beta => (rec treeChannel . +{Leaf:Skip,Node:!Int;treeChannel;treeChannel})->(rec treeChannel . +{Leaf:Skip,Node:!Int;treeChannel;treeChannel});beta->beta
 
 -- Transform
 
-forall alpha => (rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel})->((rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel});alpha)->((rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel}),alpha)
+forall alpha => (rec treeChannel . +{Leaf:Skip,Node:!Int;treeChannel;treeChannel})->((rec treeChannel . +{Leaf:Skip,Node:!Int;treeChannel;treeChannel});alpha)->((rec treeChannel . +{Leaf:Skip,Node:!Int;treeChannel;treeChannel}),alpha)
 
 
 -- TreeSum
@@ -41,4 +41,4 @@ forall alpha => (rec TreeChannel . +{Leaf:Skip,Node:!Int;TreeChannel;TreeChannel
 forall alpha => ((rec xFormChan . &{Leaf:Skip,Node:?Int;xFormChan;xFormChan;!Int});alpha) -o (Int, alpha)
 
 -- ReceiveEval
-forall alpha => (rec TermChan . &{Const:?Int,Add:TermChan;TermChan,Mult:TermChan;TermChan};!Int)->(Int, alpha)
+forall alpha => (rec termChan . &{Const:?Int,Add:termChan;termChan,Mult:termChan;termChan};!Int)->(Int, alpha)

@@ -296,14 +296,14 @@ BindList :: { [Bind] }
 
 Bind :: { Bind }
   : VAR ':' Kind { let (TokenVar p x) = $1 in Bind (pos p) x $3 }
-| VAR		 { let (TokenVar p x) = $1 in Bind (pos p) x (Kind (pos p) Session Lin) }
+  | VAR		 { let (TokenVar p x) = $1 in Bind (pos p) x (Kind (pos p) Session Lin) }
 
 -----------
 -- TYPES --
 -----------
 
 Type :: { Type }
-  : rec VarCons '.' Type         { Rec (getPos $1) $2 $4 } 
+  : rec VAR '.' Type             { let (TokenVar _ x) = $2 in Rec (getPos $1) x $4 } 
   | Type ';' Type                { Semi (getPos $2) $1 $3 }
   | Type Multiplicity Type       { Fun (fst $2) (snd $2) $1 $3 }
   | '(' Type ',' Type ')'        { PairType (getPos $1) $2 $4 }

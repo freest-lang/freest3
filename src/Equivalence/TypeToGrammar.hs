@@ -98,7 +98,7 @@ toGrammar (Var _ x) = do
     y <- freshVar
     addProduction y (VarLabel x) []
     return [y]
-toGrammar u@(Rec _ (p,x) t)
+toGrammar u@(Rec p x t)
   | isChecked u Set.empty = return []
   | otherwise = do
     y <- freshVar
@@ -118,12 +118,11 @@ assocToGrammar y c (l, t) = do
   addProduction y (ChoiceLabel c l) xs
 
 isChecked :: Type -> Visited -> Bool
-isChecked (Skip _) _ = True
+isChecked (Skip _) _     = True
 isChecked (Semi _ s t) v = isChecked s v && isChecked t v
---isChecked (Rec _ Bind{var=x} t) v = isChecked t (Set.insert x v)
-isChecked (Rec _ (_,x) t) v = isChecked t (Set.insert x v)
-isChecked (Var _ x) v = Set.member x v -- Only bound variables are checked
-isChecked _ _ = False
+isChecked (Rec _ x t) v  = isChecked t (Set.insert x v)
+isChecked (Var _ x) v    = Set.member x v -- Only bound variables are checked
+isChecked _ _            = False
 
 -- Some tests
 p = (0,0)
@@ -144,7 +143,7 @@ s6 = Choice p External (Map.fromList
    ("Node", s3)])
 t6 = convertToGrammar [s6]
 -- yBind = Bind "y" p (Kind {prekind = Session, multiplicity = Lin})
-yBind = (p, "y")
+yBind = "y"
 treeSend = Rec p yBind (Choice p External (Map.fromList
   [("Leaf",Skip p),
    ("Node", Semi p (Message p Out IntType) (Semi p (Var p "y") (Var p "y")))]))
@@ -157,7 +156,7 @@ t10 = convertToGrammar [s10]
 s11 = Semi p (Rec p yBind (Semi p treeSend (Var p "y"))) treeSend
 t11 = convertToGrammar [s11]
 -- zBind = Bind "z" p (Kind {prekind = Session, multiplicity = Lin})
-zBind = (p, "z")
+zBind = "z"
 s12 = Semi p (Rec p zBind (Semi p treeSend (Var p "z"))) treeSend
 t12 = convertToGrammar [s12]
 s13 = Semi p treeSend (Skip p)

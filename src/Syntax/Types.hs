@@ -101,7 +101,7 @@ data Type =
   | Semi Pos Type Type
   | Message Pos Polarity BasicType
   | Choice Pos ChoiceView TypeMap
-  | Rec Pos (Pos, TypeVar) Type -- TODO: Pos duplicated
+  | Rec Pos TypeVar Type
   -- Functional or Session
   | Var Pos TypeVar
   -- Type operators
@@ -116,7 +116,7 @@ equalTypes :: Map.Map TypeVar TypeVar -> Type -> Type -> Bool
 equalTypes s (Skip _)         (Skip _)         = True
 equalTypes s (Var _ x)        (Var _ y)        = equalVars (Map.lookup x s) x y
 -- equalTypes s (Rec _ b t)      (Rec _ c u)      = b == c && equalTypes (insertBind (b, c) s) t u
-equalTypes s (Rec _ b t)      (Rec _ c u)      = equalTypes (insertTypeVar (snd b, snd c) s) t u
+equalTypes s (Rec _ x t)      (Rec _ y u)      = equalTypes (insertTypeVar (x, y) s) t u
 equalTypes s (Semi _ t1 t2)   (Semi _ u1 u2)   = equalTypes s t1 u1 && equalTypes s t2 u2
 equalTypes s (Basic _ x)      (Basic _ y)      = x == y
 equalTypes s (Message _ p x)  (Message _ q y)  = p == q && x == y
@@ -150,7 +150,7 @@ instance Show Type where
   show (PairType _ t u) = "(" ++ show t ++ ", " ++ show u ++ ")"
   show (Choice _ v m)   = show v ++ "{" ++ showMap m ++ "}"
   show (Datatype _ m)   = "["++ showMap m ++"]"
-  show (Rec _ b t)      = "(rec " ++ snd b ++ " . " ++ show t ++ ")"
+  show (Rec _ x t)      = "(rec " ++ x ++ " . " ++ show t ++ ")"
   show (Var _ s)        = s
   show (Dualof _ s)     = "dualof " ++ show s
 
@@ -177,7 +177,7 @@ instance Position Type where
 
 -- TYPE SCHEMES
 
-data TypeScheme = TypeScheme Pos [Bind] Type -- deriving Ord -- TODO: add Pos
+data TypeScheme = TypeScheme Pos [Bind] Type
 
 instance Eq TypeScheme where -- TODO: Remove
   (==) = equalSchemes Map.empty
@@ -212,7 +212,7 @@ dual (Skip p)          = Skip p
 dual (Message pos p b) = Message pos (dualPolarity p) b
 dual (Choice pos p m)  = Choice pos (dualView p) (Map.map dual m)
 dual (Semi p t1 t2)    = Semi p (dual t1) (dual t2)
-dual (Rec p b t)       = Rec p b (dual t)
+dual (Rec p x t)       = Rec p x (dual t)
 dual (Dualof _ t)      = t
 
 dualPolarity :: Polarity -> Polarity
@@ -231,12 +231,12 @@ toList t = [t]
 
 unfold :: Type -> Type
 -- Assumes parameter is a Rec type
-unfold (Rec p b t) = subs (Rec p b t) (snd b) t
+unfold (Rec p x t) = subs (Rec p x t) x t
 
 rename :: Type -> TypeVar -> Type
 -- Assumes parameter is a Rec type
 -- rename (Rec p (Bind x pb k) t) y = Rec p (Bind y pb k) (subs (Var p y) x t)
-rename (Rec p (pb, x) t) y = Rec p (pb, y) (subs (Var p y) x t)
+rename (Rec p x t) y = Rec p y (subs (Var p y) x t)
 
 -- [u/x]t, substitute u for x on t
 subs :: Type -> TypeVar -> Type -> Type 
@@ -246,9 +246,9 @@ subs t y (Var p x)
 subs t y (Semi p t1 t2)     = Semi p (subs t y t1) (subs t y t2)
 subs t y (PairType p t1 t2) = PairType p (subs t y t1) (subs t y t2)
 -- Assume y /= x
-subs t2 y (Rec p b t1)
-  | snd b == y              = Rec p b t1
-  | otherwise               = Rec p b (subs t2 y t1)
+subs t2 y (Rec p x t1)
+  | x == y                  = Rec p x t1
+  | otherwise               = Rec p x (subs t2 y t1)
 subs t y (Choice p v m)     = Choice p v (Map.map(subs t y) m)
 subs t y (Fun p m t1 t2)    = Fun p m (subs t y t1) (subs t y t2)
 subs _ _ t                  = t

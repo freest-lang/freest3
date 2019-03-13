@@ -71,7 +71,7 @@ synthetize (Datatype p m) = do
   ks <- mapM synthetize (Map.elems m)
   let Kind _ _ n = maximum ks
   return $ Kind p Functional n
-synthetize (Rec p (_,x) t) = do
+synthetize (Rec p x t) = do
   checkContractive t
   y <- freshVar
   addToKenv p y (Kind p Session Un)
@@ -101,8 +101,7 @@ checkSessionKind t k@(Kind _ p m)
 
 -- Check whether a given type has a given kind
 checkAgainst :: Kind -> Type -> TypingState ()
--- checkAgainst k (Rec _ (Bind x p _) t) = do
-checkAgainst k (Rec p (_, x) t) = do
+checkAgainst k (Rec p x t) = do
   checkContractive t
   y <- freshVar
   addToKenv p y (Kind p Session Un)
