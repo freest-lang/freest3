@@ -127,7 +127,6 @@ checkFD venv fname p exp = do
 
 
 {- | Checks the form of one function:
-   | - Checks the confliting definitions of arguments
    | - Checks if a function is applied to the correct number of arguments
    | - Adds each argument and its own type to the environment
 -}
@@ -199,7 +198,7 @@ checkAgainst e t = do
   if (equivalent kenv t u) then
     return ()
   else
-    addError (typePos t) ["Expecting type", styleRed (show u), 
+    addError (position t) ["Expecting type", styleRed (show u), 
                  "to be equivalent to type", styleRed (show t)]
 
 checkEquivTypes :: Type -> Type -> TypingState ()
@@ -208,7 +207,7 @@ checkEquivTypes t u = do
   if (equivalent kenv t u) then
     return ()
   else
-    addError (typePos t) ["Expecting type", styleRed (show u), 
+    addError (position t) ["Expecting type", styleRed (show u), 
                  "to be equivalent to type", styleRed (show t)]
 
 quotient :: VarDef -> TypingState ()
@@ -409,7 +408,7 @@ checkUnVar venv p x
 extractFun :: Type -> TypingState (Type, Type)
 extractFun (Fun _ _ t u) = return (t, u)
 extractFun t           = do
-  let p = typePos t
+  let p = position t
   addError p ["Expecting a function type; found:", styleRed $ show t]
   return (Basic p UnitType, Basic p UnitType)
 -- extractFun p (TypeScheme bs _)           = do
@@ -426,14 +425,14 @@ extractPair :: Type -> TypingState (Type, Type)
 extractPair (PairType _ t u) = do
   return (t, u)
 extractPair t                         = do
-  let p = typePos t
+  let p = position t
   addError p ["Expecting a pair type; found ", styleRed $ show t]
   return (Basic p IntType, Basic p IntType)
   
 extractBasic :: Type -> TypingState BasicType
 extractBasic (Basic _ t) = return t
 extractBasic t                         = do
-  addError (typePos t) ["Expecting a basic type; found", styleRed $ show t]
+  addError (position t) ["Expecting a basic type; found", styleRed $ show t]
   return UnitType
 
 
@@ -442,42 +441,41 @@ extractOutput (Semi _ (Skip _) t) = extractOutput t
 extractOutput (Semi _ (Message _ Out b) t) = return (b, t)
 extractOutput (Message p Out b) = return (b, Skip p)
 extractOutput (Rec p1 b t) = extractOutput (unfold (Rec p1 b t))
--- extractOutput (Semi p t u) = do -- TODO: Wrong?
---   (b, t1) <- extractOutput t
---   return (b, Semi p t1 u)
+extractOutput (Semi p t u) = do
+  (b, t1) <- extractOutput t
+  return (b, Semi p t1 u)
 extractOutput t = do
-  addError (typePos t) ["Expecting an output type; found", styleRed $ show t]
-  return (UnitType, Skip (typePos t))
+  addError (position t) ["Expecting an output type; found", styleRed $ show t]
+  return (UnitType, Skip (position t))
 
 extractInput :: Type -> TypingState (BasicType, Type)
 extractInput (Semi _ (Skip _) t) = extractInput t
 extractInput (Semi _ (Message _ In b) t) = return (b, t)
 extractInput (Message p In b) = return (b, Skip p)
 extractInput r@(Rec _ _ _) = extractInput (unfold r)
--- extractInput (Semi p t u) = do
---   (b, t1) <- extractInput t
---   return (b, Semi p t1 u)
+extractInput (Semi p t u) = do
+  (b, t1) <- extractInput t
+  return (b, Semi p t1 u)
 extractInput t = do
-  addError (typePos t) ["Expecting an input type; found", styleRed $ show t]
-  return (UnitType, Skip (typePos t))
+  addError (position t) ["Expecting an input type; found", styleRed $ show t]
+  return (UnitType, Skip (position t))
 
 
 extractInChoice :: Type -> TypingState Type
 extractInChoice (Semi _ (Skip _) t) = extractInChoice t
 extractInChoice c@(Choice _ Internal _) = return c
 extractInChoice (Semi p (Choice p1 Internal m) t) =
-  return $ Choice p1 Internal (Map.map (\t1 -> Semi (typePos t1) t1 t) m)
---  return $ TypeScheme bs (Choice Internal (Map.map (`Semi` t) m))
+  return $ Choice p1 Internal (Map.map (\t1 -> Semi (position t1) t1 t) m)
 extractInChoice r@(Rec _ _ _) =  extractInChoice (unfold r)
--- extractInChoice (Semi _ (Semi p t1 t2) t3) = do
---   t4 <- extractInChoice (Semi p t1 t2)
---   extractInChoice (Semi p t4 t3)
+extractInChoice (Semi _ (Semi p t1 t2) t3) = do
+  t4 <- extractInChoice (Semi p t1 t2)
+  extractInChoice (Semi p t4 t3)
 extractInChoice (Semi p t1 t2) = do
   t3 <- extractInChoice t1
   extractInChoice (Semi p t3 t2)
 extractInChoice t = do
-  addError (typePos t) ["Expecting an internal choice; found", styleRed $ show t]
-  return $ Skip (typePos t)
+  addError (position t) ["Expecting an internal choice; found", styleRed $ show t]
+  return $ Skip (position t)
 
 
 -- extractInChoice :: Pos -> TypeScheme -> TypingState TypeScheme
@@ -520,9 +518,11 @@ extractEChoiceMap (Choice _ External m) = return m
 extractEChoiceMap (Semi _ (Choice p External m) t) =
   return $ Map.map (\t1 -> Semi p t1 t) m
 extractEChoiceMap r@(Rec _ _ _) = extractEChoiceMap (unfold r)
--- TODO: removed on case: check
+extractEChoiceMap (Semi p t1 t2) = do
+  t3 <- extractEChoiceMap t1
+  return $ Map.map (\t -> Semi p t t2) t3
 extractEChoiceMap t = do
-  addError (typePos t) ["Expecting an external choice; found", styleRed $ show t]    
+  addError (position t) ["Expecting an external choice; found", styleRed $ show t]    
   return $ Map.empty
 
 -- 
@@ -533,10 +533,10 @@ extractDataTypeMap t@(Var px x) = do
   case venv Map.!? x of
     Just (_,TypeScheme _ dt) -> extractDataTypeMap dt
     Nothing                  -> do
-      addError px ["Expecting a datatype choice; found", styleRed $ show t]    
+      addError px ["Expecting a datatype; found", styleRed $ show t]    
       return $ Map.empty
 extractDataTypeMap t =  do
-  addError (typePos t) ["Expecting a datatype choice; found", styleRed $ show t]    
+  addError (position t) ["Expecting a datatype; found", styleRed $ show t]    
   return $ Map.empty
 
 -- extractExtChoice :: Pos -> TypeScheme -> Constructor -> TypingState TypeScheme

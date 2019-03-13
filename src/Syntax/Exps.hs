@@ -14,12 +14,13 @@ Portability :  portable | non-portable (<reason>)
 module Syntax.Exps
 ( Expression(..)
 , TermVar
+, VarDef  
 , Params
 , Param(..)
 , CaseMap
 , MatchMap
-, VarDef
- where
+) where
+
 
 import           Syntax.Types
 import           Syntax.Kinds

@@ -113,6 +113,7 @@ Decl
   | FunDecl   {}
   | TypeAbbrv {}
 
+
 ------------------------
 -- TYPE ABBREVIATIONS --
 ------------------------
@@ -365,7 +366,7 @@ checkParamClash ps p =
                   "Bound at:", file ++ ":" ++ prettyPos (paramPos x) ++ "\n\t",
                   "          " ++ file ++ ":" ++ prettyPos (paramPos p)]
       return $ ps
-    Nothing -> return $ ps ++ [p]
+    Nothing -> return $ p : ps
 
 checkLabelClash :: (Pos, (Constructor, Type)) -> TypeMap -> ParserState TypeMap
 checkLabelClash (p, (c,t)) m1 = -- TODO: map position?
