@@ -159,8 +159,8 @@ normalizeType' (TypeScheme p bs t) = (TypeScheme p binds t)
      binds = foldl (\acc b -> acc ++ (tcvar b t)) [] bs
      
      tcvar b (Fun _ _ t1 t2) = tcvar b t1 ++ tcvar b t2
-     tcvar (Bind p y k) (Var _ x)
-       | y == x = [Bind p x k]
+     tcvar (KBind p y k) (Var _ x)
+       | y == x = [KBind p x k]
        | otherwise = []       
      tcvar b (Semi _ t1 t2) = tcvar b t1 ++ tcvar b t2
      tcvar b (Rec _ _ t) = tcvar b t
@@ -242,7 +242,7 @@ synthetize (TypeApp p x ts) = do
 -- wellFormedCall p e ts binds
 
   let typeBind = zip ts bs
-  mapM (\(t, Bind _ _ k) -> K.checkAgainst k t) typeBind
+  mapM (\(t, KBind _ _ k) -> K.checkAgainst k t) typeBind
   -- well formed sub??
   return $ subL t typeBind
      
@@ -365,8 +365,8 @@ checkVar p x = do
     addToVenv p x (TypeScheme p [] (Basic p UnitType))
     return $ TypeScheme p [] (Basic p UnitType)
 
-addBindsToKenv :: Pos -> [Bind] -> TypingState ()
-addBindsToKenv p bs = foldM (\_ (Bind _ b k) -> addToKenv p b k) () bs
+addBindsToKenv :: Pos -> [KBind] -> TypingState ()
+addBindsToKenv p bs = foldM (\_ (KBind _ b k) -> addToKenv p b k) () bs
 
 removeLinVar :: KindEnv -> TermVar -> TypeScheme -> TypingState ()
 removeLinVar kenv x (TypeScheme _ _ t) = do
@@ -398,7 +398,7 @@ extractFun t           = do
 --   return (TypeScheme p [] (Basic p UnitType), TypeScheme p [] (Basic p UnitType))
 
 
-extractScheme :: TypeScheme -> TypingState ([Bind], Type)
+extractScheme :: TypeScheme -> TypingState ([KBind], Type)
 extractScheme (TypeScheme p [] t) = do
   addError (position t) ["Expecting a type scheme; found", styleRed $ show t]
   return ([], (Basic (position t) UnitType))
@@ -509,7 +509,7 @@ extractDataTypeMap t =  do
 -}
   
   -- TODO: TEST
-wellFormedCall :: Pos -> Expression -> [Type] -> [Bind] -> TypingState ()
+wellFormedCall :: Pos -> Expression -> [Type] -> [KBind] -> TypingState ()
 wellFormedCall p e ts binds = do
   mapM_ (\t -> K.kinding (TypeScheme p [] t)) ts
   sameNumber

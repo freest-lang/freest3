@@ -24,13 +24,14 @@ import           Syntax.Types
 import           Syntax.Exps
 import qualified Data.Map.Strict as Map
 
-type KindVar = String -- TODO: move elsewhere
-
-type KindEnv = Map.Map KindVar (Pos, Kind) -- TODO remove Pos
-
 type ConstructorEnv = Map.Map TypeVar (Pos, TypeScheme) -- TODO remove Pos
 
+-- The named functions in a program
 type ExpEnv = Map.Map TermVar (Pos, Params, Expression) -- TODO remove Pos
 
-type VarEnv = Map.Map TermVar (Pos, TypeScheme) -- TODO remove Pos
+type KindVar = String -- TODO: move to Kind
+
+type KindEnv = Map.Map KindVar (Pos, Kind) -- TODO remove Pos, move to Typing
+
+type VarEnv = Map.Map TermVar (Pos, TypeScheme) -- TODO remove Pos, move to Typing
 

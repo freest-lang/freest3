@@ -291,13 +291,13 @@ Case :: { CaseMap }
 TypeScheme :: { TypeScheme }
   : forall BindList '=>' Type { TypeScheme (getPos $1) $2 $4 }
 
-BindList :: { [Bind] }
+BindList :: { [KBind] }
   : Bind               { [$1] }
   | Bind ',' BindList  {% checkBindClash $1 $3 }
 
-Bind :: { Bind }
-  : VAR ':' Kind { let (TokenVar p x) = $1 in Bind (pos p) x $3 }
-  | VAR		 { let (TokenVar p x) = $1 in Bind (pos p) x (Kind (pos p) Session Lin) }
+Bind :: { KBind }
+  : VAR ':' Kind { let (TokenVar p x) = $1 in KBind (pos p) x $3 }
+  | VAR		 { let (TokenVar p x) = $1 in KBind (pos p) x (Kind (pos p) Session Lin) }
 
 -----------
 -- TYPES --
@@ -385,18 +385,18 @@ checkLabelClash (p, (c,t)) m1 = -- TODO: map position?
       return $ Map.insert c t m1  
 
 
-checkBindClash :: Bind -> [Bind] -> ParserState [Bind]
+checkBindClash :: KBind -> [KBind] -> ParserState [KBind]
 --checkBindClash b@Bind{var=x, bindPos=pb} bs =
-checkBindClash (Bind p x k) bs =
-  case find (\(Bind _ y _) -> y == x) bs of
-    Just (Bind p' _ _) -> do
+checkBindClash (KBind p x k) bs =
+  case find (\(KBind _ y _) -> y == x) bs of
+    Just (KBind p' _ _) -> do
       file <- getFileName
       addError $ styleError file p'
                ["Conflicting definitions for bind", styleRed $ "'" ++ x ++ "'\n\t",
                 "Bound at:", file ++ ":" ++ prettyPos p' ++ "\n\t",
                 "          " ++ file ++ ":" ++ prettyPos p]
       return bs      
-    Nothing -> return $ (Bind p x k) : bs
+    Nothing -> return $ (KBind p x k) : bs
   
 ------------------------
 -- Handle Parse Monad --

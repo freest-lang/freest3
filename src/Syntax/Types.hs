@@ -13,7 +13,7 @@ Portability :  portable | non-portable (<reason>)
 
 module Syntax.Types
 ( TypeVar
-, Bind(..)
+, KBind(..)
 , BasicType(..)
 , Constructor
 , TypeMap(..)
@@ -34,18 +34,6 @@ import           Syntax.Position
 import           Syntax.Kinds
 import           Data.List (intersperse)
 import qualified Data.Map.Strict as Map
-
--- BIND
-
-type TypeVar = String
-
-data Bind = Bind Pos TypeVar Kind
-
--- instance Eq Bind where
---   b == c = kind b == kind c
-
-instance Show Bind where
-  show (Bind _ x k) = x ++ " : " ++ show k
 
 -- BASIC TYPES
 
@@ -115,7 +103,6 @@ instance Eq Type where
 equalTypes :: Map.Map TypeVar TypeVar -> Type -> Type -> Bool
 equalTypes s (Skip _)         (Skip _)         = True
 equalTypes s (Var _ x)        (Var _ y)        = equalVars (Map.lookup x s) x y
--- equalTypes s (Rec _ b t)      (Rec _ c u)      = b == c && equalTypes (insertBind (b, c) s) t u
 equalTypes s (Rec _ x t)      (Rec _ y u)      = equalTypes (insertTypeVar (x, y) s) t u
 equalTypes s (Semi _ t1 t2)   (Semi _ u1 u2)   = equalTypes s t1 u1 && equalTypes s t2 u2
 equalTypes s (Basic _ x)      (Basic _ y)      = x == y
@@ -128,8 +115,8 @@ equalTypes s (Dualof _ t)     (Dualof _ u)     = t == u
 equalTypes _ _              _                  = False
 
 equalVars :: Maybe TypeVar -> TypeVar -> TypeVar -> Bool
-equalVars Nothing  x y = x == y
-equalVars (Just z) _ y = z == y
+equalVars Nothing  y z = y == z
+equalVars (Just x) _ z = x == z
 
 equalMaps :: Map.Map TypeVar TypeVar -> TypeMap -> TypeMap -> Bool
 equalMaps s m1 m2 =
@@ -175,10 +162,19 @@ instance Position Type where
   position (Var p _)        = p
   position (Dualof p _)     = p
 
+-- KINDED BIND
+
+type TypeVar = String
+
+data KBind = KBind Pos TypeVar Kind
+
+instance Show KBind where
+  show (KBind _ x k) = x ++ " : " ++ show k
+
 -- TYPE SCHEMES
 
-data TypeScheme = TypeScheme Pos [Bind] Type
-
+data TypeScheme = TypeScheme Pos [KBind] Type
+{-
 instance Eq TypeScheme where -- TODO: Remove
   (==) = equalSchemes Map.empty
 
@@ -191,12 +187,12 @@ insertBinds bs cs s = foldr insertBind s (zip bs cs)
 
 insertBind :: (Bind, Bind) -> Map.Map TypeVar TypeVar -> Map.Map TypeVar TypeVar
 insertBind (Bind _ x _, Bind _ y _) = Map.insert x y
-
+-}
 instance Show TypeScheme where
   show (TypeScheme _ [] t) = show t
   show (TypeScheme _ bs t) = "forall " ++ showBindings bs ++ " => " ++ show t
 
-showBindings :: [Bind] -> String
+showBindings :: [KBind] -> String
 showBindings bs = concat $ intersperse ", " (map show bs)
 
 instance Position TypeScheme where
@@ -253,23 +249,19 @@ subs t y (Choice p v m)     = Choice p v (Map.map(subs t y) m)
 subs t y (Fun p m t1 t2)    = Fun p m (subs t y t1) (subs t y t2)
 subs _ _ t                  = t
 
-subL :: Type -> [(Type,Bind)] -> Type
+subL :: Type -> [(Type,KBind)] -> Type
 subL t bs =
-  foldr (\(u, (Bind _ x _)) acc -> subs u x acc) t bs
+  foldr (\(u, (KBind _ x _)) acc -> subs u x acc) t bs
 
 -- SESSION TYPES
 
 -- Is this type a pre session type? (a session type that is
 -- syntactically correct, but not necessarilty well-kinded)
--- TODO:
--- Map.Map TypeVar (Pos,Kind) stands for KindEnv, can't import it
--- due to a cycle of imports error, some refactor needed.
 isPreSession :: Type -> Map.Map TypeVar (Pos,Kind) -> Bool
 isPreSession (Skip _) _        = True
 isPreSession (Semi _ _ _) _    = True
 isPreSession (Message _ _ _) _ = True
 isPreSession (Choice _ _ _) _ = True
---isPreSession (Rec _ Bind{kind=Kind Session _} _) _ = True
 isPreSession (Rec _ _ _) _ = True
 isPreSession (Var _ x) kenv    = Map.member x kenv
 isPreSession _ _ = False

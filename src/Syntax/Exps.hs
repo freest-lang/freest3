@@ -57,7 +57,7 @@ data Expression =
   -- Variable
   | Variable Pos TermVar
   -- Abstraction intro and elim
-  {- Lam Pos Multiplicity TermVar Exp -}
+  {- Lam Pos Multiplicity VarDef Exp -}
   | App Pos Expression Expression
   -- Pair intro and elim
   | Pair Pos {- Multiplicity -} Expression Expression
