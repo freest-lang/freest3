@@ -18,9 +18,9 @@ The following tools are required:
 
 Run ``` $ cabal build ```.
 
-To run the compiler just create a file (with ".cfs" extension) and then run ``` cabal run [filepath] ```
+To run the compiler just create a file (with ".fst" extension) and then run ``` cabal run [filepath] ```
 
-For example, to compile the file named "test.cfs" located in the directory "dir" you just have to run
+For example, to compile the file named "test.fst" located in the directory "dir" you just have to run
 ```
 $ cabal run dir/test.hs
 ```
