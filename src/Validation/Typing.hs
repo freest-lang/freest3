@@ -41,7 +41,7 @@ typeCheck = do
   -- Checks if all function types are well kinded and if
   -- all the declared functions have types (function signatures)
   eenv <- getEenv
-  mapWithKeyM (\fun (p,_,_) -> checkFunTypeDecl p fun) eenv
+  mapWithKeyM (\fun _ -> checkFunTypeDecl fun) eenv -- TODO: Map over keys
 
   --  3 - Function declaration
   venv1 <- getVenv
@@ -82,21 +82,21 @@ checkFunctionalKind (p, k)
 -- | AUXILIARY FUNCTIONS TO VERIFY FUNCTION TYPES
 
 -- | Verifies if a function exists and if it is well kinded
-checkFunTypeDecl :: Pos -> TermVar -> TypingState ()
-checkFunTypeDecl pos fname = do  
-  t <- checkFun pos fname
+checkFunTypeDecl :: Bind -> TypingState ()
+checkFunTypeDecl b = do  
+  t <- checkFun b
   K.kinding t
   return ()
 
-checkFun :: Pos -> TermVar -> TypingState TypeScheme
-checkFun pos x = do
-  member <- venvMember x
+checkFun :: Bind -> TypingState TypeScheme
+checkFun b@(Bind pos x) = do
+  member <- venvMember b
   if member then do
-    (_, (TypeScheme p bs t)) <- getFromVenv x
+    (_, (TypeScheme p bs t)) <- getFromVenv b
     return $ TypeScheme p bs t
   else do
     addError pos ["Function", styleRed ("'" ++ x ++ "'"), "not in scope"]
-    addToVenv pos x (TypeScheme pos [] (Basic pos UnitType))
+    addToVenv b (TypeScheme pos [] (Basic pos UnitType))
     return $ TypeScheme pos [] (Basic pos UnitType)
 
 
@@ -106,7 +106,7 @@ checkFun pos x = do
    |  - Checks the function form
    |  - Checks the function body (expression) against the declared type
 -}
-checkFD ::  VarEnv -> TermVar -> Params -> Expression -> TypingState ()
+checkFD ::  VarEnv -> Bind -> [Bind] -> Expression -> TypingState ()
 checkFD venv fname p exp = do
   checkFunForm venv fname p
   let (tp, t) = venv Map.! fname
@@ -125,16 +125,16 @@ checkFD venv fname p exp = do
    | - Adds each argument and its own type to the environment
 -}
 
-checkFunForm :: VarEnv -> TermVar -> Params -> TypingState ()
+checkFunForm :: VarEnv -> Bind -> [Bind] -> TypingState ()
 checkFunForm venv fun args = do
 --  checkArgsConflits fun args
   let (p,t) = venv Map.! fun
-  arguments <- checkArgs p fun args (normalizeType (init (toList t)))
-  foldM (\acc (arg, t) -> addToVenv (paramPos arg) (param arg) t) () arguments
+  arguments <- checkArgs fun args (normalizeType (init (toList t)))
+  foldM (\acc (b@(Bind p _), t) -> addToVenv b t) () arguments
   return ()
 
-checkArgs :: Pos -> TypeVar -> Params -> [TypeScheme] -> TypingState [(Param, TypeScheme)]
-checkArgs p c ps ts
+checkArgs :: Bind -> [Bind] -> [TypeScheme] -> TypingState [(Bind, TypeScheme)]
+checkArgs (Bind p c) ps ts
   | length ps == length ts = return $ zip ps ts
   | length ps > length ts = do
       addError p ["Function or constructor '", styleRed c ++ "'",
@@ -199,13 +199,13 @@ checkEquivTypes t u = do
     addError (position t) ["Expecting type", styleRed (show u), 
                  "to be equivalent to type", styleRed (show t)]
 
-quotient :: VarDef -> TypingState ()
-quotient (p, x) = do
+quotient :: Bind -> TypingState ()
+quotient b = do
   venv <- getVenv
-  case venv Map.!? x of
+  case venv Map.!? b of
     Just (_, TypeScheme _ _ t) -> checkUn t
     Nothing                 -> return ()
-  removeFromVenv x
+  removeFromVenv b
 
 -- | Typing rules for expressions
 
@@ -222,7 +222,8 @@ synthetize (Variable p x)   = do
 
 synthetize (UnLet _ x e1 e2) = do
   t1 <- synthetize e1
-  (uncurry addToVenv x) (TypeScheme (position t1) [] t1)
+--  (uncurry addToVenv x) (TypeScheme (position t1) [] t1)
+  addToVenv x (TypeScheme (position t1) [] t1)
   t2 <- synthetize e2
   quotient x 
   return t2
@@ -272,8 +273,8 @@ synthetize (Pair p {-m-} e1 e2) = do
 synthetize (BinLet _ x y e1 e2) = do
   t1 <- synthetize e1
   (u1,u2) <- extractPair t1  
-  (uncurry addToVenv x) (TypeScheme (position u1) [] u1) -- TODO: Move this kind of things to state??
-  (uncurry addToVenv y) (TypeScheme (position u2) [] u2)
+  addToVenv x (TypeScheme (position u1) [] u1) -- TODO: Move this kind of things to state??
+  addToVenv y (TypeScheme (position u2) [] u2)
   u <- synthetize e2
   venv <- getVenv
   quotient x
@@ -349,24 +350,25 @@ synthetize (Case _ e cm) = do -- SAME AS MATCH
 {- | Checks a variable and removes it from the environment if
      it is linear.
 -}
-checkVar :: Pos -> TermVar -> TypingState TypeScheme
+checkVar :: Pos -> TermVar -> TypingState TypeScheme -- TODO: Review
 checkVar p x = do
-  member <- venvMember x  
+  let b = Bind p x
+  member <- venvMember b
   if member then do
-    (_,t@(TypeScheme _ bs _)) <- getFromVenv x
+    (_,t@(TypeScheme _ bs _)) <- getFromVenv b
     addBindsToKenv p bs
     kenv <- getKenv
-    removeLinVar kenv x t
+    removeLinVar kenv b t
     return t
   else do
     addError p ["Variable or data constructor not in scope:", styleRed x]
-    addToVenv p x (TypeScheme p [] (Basic p UnitType))
+    addToVenv (Bind p x) (TypeScheme p [] (Basic p UnitType))
     return $ TypeScheme p [] (Basic p UnitType)
 
 addBindsToKenv :: Pos -> [KBind] -> TypingState ()
-addBindsToKenv p bs = foldM (\_ (KBind _ b k) -> addToKenv p b k) () bs
+addBindsToKenv p bs = foldM (\_ (KBind _ b k) -> addToKenv p (Bind p b) k) () bs
 
-removeLinVar :: KindEnv -> TermVar -> TypeScheme -> TypingState ()
+removeLinVar :: KindEnv -> Bind -> TypeScheme -> TypingState ()
 removeLinVar kenv x (TypeScheme _ _ t) = do
   isLin <- K.lin t
   if isLin
@@ -459,8 +461,9 @@ extractInChoice t = do
 
 extractCons :: Pos -> Constructor -> Type -> TypingState Type
 extractCons p c (Choice _ _ tm) =
-  if Map.member c tm then
-    return $ tm Map.! c 
+  let b = Bind p c in   
+  if Map.member b tm then
+    return $ tm Map.! b
   else do
     addError p ["Constructor", styleRed $ "'"++c++"'", "not in scope"]             
     return (Basic p UnitType)
@@ -488,7 +491,7 @@ extractDataTypeMap :: Type -> TypingState TypeMap
 extractDataTypeMap (Datatype _ m) = return m
 extractDataTypeMap t@(Var px x) = do
   venv <- getVenv -- TODO: change to Maybe
-  case venv Map.!? x of
+  case venv Map.!? (Bind px x) of
     Just (_,TypeScheme _ _ dt) -> extractDataTypeMap dt
     Nothing                  -> do
       addError px ["Expecting a datatype; found", styleRed $ show t]    
@@ -519,12 +522,14 @@ wellFormedCall p e ts binds = do
                       "type(s) on type app; found", show $ length ts]
 
 
+-- checkMap :: TypingState ([Type],[VarEnv]) -> VarEnv -> TypeMap -> Bind ->
+--             ([Bind], Expression) -> TypingState ([Type],[VarEnv])
 checkMap :: TypingState ([Type],[VarEnv]) -> VarEnv -> TypeMap -> TermVar ->
-            (Params, Expression) -> TypingState ([Type],[VarEnv])
+            ([Bind], Expression) -> TypingState ([Type],[VarEnv])
 checkMap acc venv tm x (p, e) = do
   setVenv venv
   t <- checkCons x tm
-  foldM (\_ (p, t') -> addToVenv (paramPos p) (param p) t') ()
+  foldM (\_ (x@(Bind p _), t') -> addToVenv x t') ()
      (zip p (init' $ toList $ TypeScheme (position t) [] t))
 
   t <- synthetize e 
@@ -541,9 +546,10 @@ checkMap acc venv tm x (p, e) = do
 
 
 -- TODO: Pos    
+--checkCons :: Bind -> TypeMap -> TypingState Type
 checkCons :: TermVar -> TypeMap -> TypingState Type
 checkCons c tm = do
-  case tm Map.!? c of
+  case tm Map.!? (Bind (0,0) c) of
     Just x  -> return x
     Nothing -> do
       addError (0,0) [styleRed "Rewrite, label not in scope"]
@@ -576,7 +582,7 @@ equivalentEnvs venv1 venv2 = do
   where
     f kenv (_,(TypeScheme _ _ t)) (_,(TypeScheme _ _ u)) = equivalent kenv t u
     
-    f1 :: TypingState VarEnv -> TermVar -> (Pos,TypeScheme) -> TypingState VarEnv
+    f1 :: TypingState VarEnv -> Bind -> (Pos,TypeScheme) -> TypingState VarEnv
     f1 m k t@(_,(TypeScheme _ _ t1)) = do
       isLin <- K.lin t1
 

@@ -59,10 +59,10 @@ removeFromVenv x =
   modify (\(f, venv, eenv, cenv, kenv, e, n) ->
             (f, Map.delete x venv, eenv, cenv, kenv, e, n))
   
-addToVenv :: Pos -> Bind -> TypeScheme -> TypingState ()
-addToVenv p x t =
+addToVenv :: Bind -> TypeScheme -> TypingState ()
+addToVenv b@(Bind p _) t =
   modify (\(f, venv, eenv, cenv, kenv, e, n) ->
-            (f, Map.insert x (p, t) venv, eenv, cenv, kenv, e, n))
+            (f, Map.insert b (p, t) venv, eenv, cenv, kenv, e, n))
 
 venvMember :: Bind -> TypingState Bool
 venvMember x = do

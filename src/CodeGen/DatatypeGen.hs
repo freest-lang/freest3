@@ -20,8 +20,8 @@ showDatatype dt xs = "data " ++ dt ++ " = " ++ intercalate " | " xs ++ " derivin
 getDataTypeMap :: ConstructorEnv -> DatatypeMap
 getDataTypeMap = Map.foldlWithKey fun Map.empty
   where
-    fun :: DatatypeMap -> TypeVar -> (Pos, TypeScheme) -> DatatypeMap
-    fun dtm cons (_, t)
+    fun :: DatatypeMap -> Bind -> (Pos, TypeScheme) -> DatatypeMap
+    fun dtm (Bind _ cons) (_, t)
       | Map.member (show (last (toList t))) dtm =
            let k = show (last (toList t)) in
            Map.insert k ((dtm Map.! k) ++ [getDataTypes cons t]) dtm

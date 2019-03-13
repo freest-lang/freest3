@@ -581,6 +581,6 @@ typesToFun p tv = foldl (\acc (k,(p,ts)) -> acc ++ [(k, (p, typeToFun p tv ts))]
 convertDT :: Pos -> [(TypeVar,(Pos, Type))] -> Type
 convertDT p ts = Datatype p $ Map.fromList $ removePos
   where
-    removePos = map (\(x,(_,t)) -> (x,t)) ts
+    removePos = map (\(x,(_,t)) -> (Bind (0,0) x,t)) ts -- TODO: tmp pos
 
 }

@@ -2,6 +2,7 @@ module Utils.PreludeLoader (prelude) where
 
 import           Syntax.Programs (VarEnv)
 import           Syntax.Types
+import           Syntax.Position (Bind(..))
 import           Parse.Parser
 import qualified Data.Map.Strict as Map
 
@@ -35,12 +36,12 @@ prelude =
   schemeLoad (preludeLoad Map.empty)
 
 
--- TODO: REF - ver pos
+-- TODO: what position fits here
 preludeLoad :: VarEnv -> VarEnv
 preludeLoad map =
-  foldl (\acc (tv, t) -> Map.insert tv ((0,0),(TypeScheme (0,0) [] (read t :: Type))) acc) map typeList
+  foldl (\acc (tv, t) -> Map.insert (Bind (0,0) tv) ((0,0),(TypeScheme (0,0) [] (read t :: Type))) acc) map typeList
 
 schemeLoad :: VarEnv -> VarEnv
 schemeLoad map =
-  foldl (\acc (tv, t) -> Map.insert tv ((0,0),(read t :: TypeScheme)) acc) map schemeList
+  foldl (\acc (tv, t) -> Map.insert (Bind (0,0) tv) ((0,0),(read t :: TypeScheme)) acc) map schemeList
 

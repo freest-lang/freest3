@@ -45,6 +45,7 @@ instance Show Param where
 -- data TypeVarBind = TypeVar Kind
  
 -- TODO: Join these two
+-- TODO: TermVar -> Bind
 type MatchMap = Map.Map TermVar (Bind, Expression)
 type CaseMap  = Map.Map TermVar ([Bind], Expression)
 --type VarDef   = (Pos, TermVar) -- TODO: porque é que este tem Pos e o Multiplicity e o PreKind não?
