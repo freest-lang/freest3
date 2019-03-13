@@ -45,7 +45,7 @@ testDir b dir curDir = parallel $ do
 getSource :: [String] -> String
 getSource [] = ""
 getSource (x:xs)
-  | takeExtension x == ".cfs" = x
+  | takeExtension x == ".fst" = x
   | otherwise = getSource xs
 
 testOne :: String -> String -> Spec    

@@ -17,13 +17,13 @@ main = do
 
 
 compileFile args
-  | takeExtension args == ".cfs" =
+  | takeExtension args == ".fst" =
     do
       res <- compile args 
 --      checkResult res (takeDirectory args)
       checkResult res (reverse $ dropWhile (/= '/') (reverse args))
   | otherwise = do
-      putStrLn $ "Error: File extension not recognized, provide a .cfs file: " ++ args
+      putStrLn $ "Error: File extension not recognized, provide a .fst file: " ++ args
 
 
 checkResult :: (Bool, String) -> String -> IO ()
