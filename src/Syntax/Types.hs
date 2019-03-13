@@ -177,13 +177,13 @@ instance Position Type where
 
 -- TYPE SCHEMES
 
-data TypeScheme = TypeScheme [Bind] Type -- deriving Ord -- TODO: add Pos
+data TypeScheme = TypeScheme Pos [Bind] Type -- deriving Ord -- TODO: add Pos
 
 instance Eq TypeScheme where -- TODO: Remove
   (==) = equalSchemes Map.empty
 
 equalSchemes :: Map.Map TypeVar TypeVar -> TypeScheme -> TypeScheme -> Bool
-equalSchemes s (TypeScheme bs t) (TypeScheme cs u) =
+equalSchemes s (TypeScheme _ bs t) (TypeScheme _ cs u) =
 {-  bs == cs && -} equalTypes (insertBinds bs cs s) t u
 
 insertBinds :: [Bind] -> [Bind] -> Map.Map TypeVar TypeVar -> Map.Map TypeVar TypeVar
@@ -193,11 +193,14 @@ insertBind :: (Bind, Bind) -> Map.Map TypeVar TypeVar -> Map.Map TypeVar TypeVar
 insertBind (Bind _ x _, Bind _ y _) = Map.insert x y
 
 instance Show TypeScheme where
-  show (TypeScheme [] t) = show t
-  show (TypeScheme bs t) = "forall " ++ showBindings bs ++ " => " ++ show t
+  show (TypeScheme _ [] t) = show t
+  show (TypeScheme _ bs t) = "forall " ++ showBindings bs ++ " => " ++ show t
 
 showBindings :: [Bind] -> String
 showBindings bs = concat $ intersperse ", " (map show bs)
+
+instance Position TypeScheme where
+  position (TypeScheme p _ _) = p
 
 -- DUALITY
 
@@ -220,8 +223,8 @@ dualView :: ChoiceView -> ChoiceView
 dualView External = Internal
 dualView Internal = External
 
-toList :: TypeScheme -> [TypeScheme]
-toList (TypeScheme b (Fun _ _ t1 t2)) = (TypeScheme b t1) : toList (TypeScheme b t2)
+toList :: TypeScheme -> [TypeScheme] -- TODO: what for?
+toList (TypeScheme p b (Fun _ _ t1 t2)) = (TypeScheme p b t1) : toList (TypeScheme p b t2)
 toList t = [t]
 
 -- UNFOLDING, RENAMING, SUBSTITUTING

@@ -35,7 +35,7 @@ import           Validation.TypingState
 
 -- Returns the kind of a given type scheme -- TODO: type schemes do not have kinds
 kinding :: TypeScheme -> TypingState Kind
-kinding (TypeScheme bs t) = do
+kinding (TypeScheme _ bs t) = do
   -- TODO: addToKenv -> addBindsLToKenv
   foldM_ (\_ (Bind _ x k) -> addToKenv (0,0) x k) () bs
   synthetize t

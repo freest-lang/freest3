@@ -129,7 +129,7 @@ TypeAbbrv :: { () } : -- TODO: the position is taken from $1
          checkNamesClash venv c
            ("Multiple declarations of " ++ styleRed c) (pos p)
 	 addToKenv c (pos p, Kind (pos p) Functional Un)
-         addToVenv c (pos p, TypeScheme [] $4)
+	 addToVenv c (pos p, TypeScheme (pos p) [] $4) 
     }
 
 ---------------
@@ -146,8 +146,8 @@ DataDecl :: { () } : -- TODO: the position is taken from $1
 	addToKenv c (pos p, Kind (pos p) Functional Un)
         let binds = typesToFun (pos p) c $4
         checkBindsClash binds
-        mapM (\(cons, (p, t)) -> addToCenv cons p (TypeScheme [] t)) binds
-        addToVenv c (pos p, TypeScheme [] (convertDT (pos p) binds))
+	mapM (\(cons, (p, t)) -> addToCenv cons p (TypeScheme p [] t)) binds -- TODO: check the Pos of the type scheme
+        addToVenv c (pos p, TypeScheme (pos p) [] (convertDT (pos p) binds))
     }
 
 DataCons :: { [(Constructor, (Pos, [Type]))] } -- TODO: why not a triple?
@@ -177,7 +177,7 @@ FunSig :: { () } :
 
 FunTypeScheme :: { TypeScheme }
   : TypeScheme { $1 }
-  | Type       { TypeScheme [] $1 }
+| Type       { TypeScheme (position $1) [] $1 }
 
 ----------------------
 -- FUN DECLARATIONS --
@@ -288,7 +288,7 @@ Case :: { CaseMap }
 -----------
 
 TypeScheme :: { TypeScheme }
-  : forall BindList '=>' Type { TypeScheme $2 $4 }
+  : forall BindList '=>' Type { TypeScheme (getPos $1) $2 $4 }
 
 BindList :: { [Bind] }
   : Bind               { [$1] }
