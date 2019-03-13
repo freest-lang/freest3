@@ -30,18 +30,18 @@ type FunsMap = Map.Map Bind Bool
 
 monadicFuns :: ExpEnv -> FunsMap
 monadicFuns eenv =
-  Map.foldrWithKey (\f (_, _, e) acc ->
+  Map.foldrWithKey (\f (_, e) acc ->
                      Map.insert f
                      (monadicFun eenv f e) acc) Map.empty eenv
   where 
     monadicFun :: ExpEnv -> Bind -> Expression -> Bool
     monadicFun eenv fun (Variable p x)
-      | Map.member (Bind p x) eenv && fun /= (Bind p x) = let (_,_,e) = eenv Map.! (Bind p x) in monadicFun eenv (Bind p x) e
+      | Map.member (Bind p x) eenv && fun /= (Bind p x) = let (_,e) = eenv Map.! (Bind p x) in monadicFun eenv (Bind p x) e
       | otherwise                     = False
     monadicFun eenv fun (UnLet _ _ e1 e2) = monadicFun eenv fun e1 || monadicFun eenv fun e2
     monadicFun eenv fun (App _ e1 e2) = monadicFun eenv fun e1 || monadicFun eenv fun e2
     monadicFun eenv fun (TypeApp p x _) -- TODO: Review      
-      | Map.member (Bind p x) eenv && fun /= (Bind p x) = let (_,_,e) = eenv Map.! (Bind p x) in monadicFun eenv (Bind p x) e
+      | Map.member (Bind p x) eenv && fun /= (Bind p x) = let (_,e) = eenv Map.! (Bind p x) in monadicFun eenv (Bind p x) e
       | otherwise                     = False
     monadicFun eenv fun (Conditional _ e1 e2 e3) = 
       monadicFun eenv fun e1 || monadicFun eenv fun e2 || monadicFun eenv fun e3
@@ -64,7 +64,7 @@ type MonadicMap = Map.Map Expression Bool
 -- annotateAST :: ExpEnv -> (FunsMap, MonadicMap)
 -- annotateAST eenv =
 --   let m = monadicFuns eenv in 
---   (m,Map.foldrWithKey (\f (_,_,e) acc -> fst $ annotateAST' acc m (m Map.! f) e) Map.empty eenv)
+--   (m,Map.foldrWithKey (\f (_,e) acc -> fst $ annotateAST' acc m (m Map.! f) e) Map.empty eenv)
 
 annotateAST :: FunsMap -> Bind -> Expression -> MonadicMap
 annotateAST fm f e = fst $ annotateAST' Map.empty fm (fm Map.! f) e
@@ -161,7 +161,7 @@ translateExpEnv :: ExpEnv -> HaskellCode
 translateExpEnv eenv =
   let fm  = monadicFuns eenv in
   --  error $ show fm ++ "\n\n" ++ show mm
-  Map.foldrWithKey (\f (_,ps,e) acc -> acc ++ genFun fm f ps e ++ "\n\n") "" eenv
+  Map.foldrWithKey (\f (ps,e) acc -> acc ++ genFun fm f ps e ++ "\n\n") "" eenv
 
   where
     genFun :: FunsMap -> Bind -> [Bind] -> Expression -> HaskellCode

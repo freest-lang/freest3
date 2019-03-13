@@ -258,7 +258,7 @@ subL t bs =
 -- Is this type a pre session type? (a session type that is
 -- syntactically correct, but not necessarilty well-kinded)
 -- isPreSession :: Type -> KindEnv -> Bool -- TODO: import loop
-isPreSession :: Type -> Map.Map Bind (Pos,Kind) -> Bool
+isPreSession :: Type -> Map.Map Bind Kind -> Bool
 isPreSession (Skip _) _        = True
 isPreSession (Semi _ _ _) _    = True
 isPreSession (Message _ _ _) _ = True

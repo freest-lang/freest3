@@ -25,12 +25,12 @@ import           Syntax.Exps
 import qualified Data.Map.Strict as Map
 
 -- The datatypes
-type ConstructorEnv = Map.Map Bind (Pos, TypeScheme) -- TODO remove Pos
+type ConstructorEnv = Map.Map Bind TypeScheme
 
 -- The signatures of the named functions in a program
-type VarEnv = Map.Map Bind (Pos, TypeScheme) -- TODO remove Pos
+type VarEnv = Map.Map Bind TypeScheme
 
 -- The named functions in a program
-type ExpEnv = Map.Map Bind (Pos, [Bind], Expression) -- TODO remove Pos
+type ExpEnv = Map.Map Bind ([Bind], Expression)
 
-type KindEnv = Map.Map Bind (Pos, Kind) -- TODO remove Pos
+type KindEnv = Map.Map Bind Kind

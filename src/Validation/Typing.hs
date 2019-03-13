@@ -50,10 +50,10 @@ typeCheck = do
   setVenv venv2
   
   -- TODO: added venv2 argument. Not sure if its ok
-  mapWithKeyM (\fun (_, a, e) -> checkFD venv2 fun a e) eenv
+  mapWithKeyM (\fun (a, e) -> checkFD venv2 fun a e) eenv
 
   venv <- getVenv
-  Trav.mapM (\(p, TypeScheme _ _ t) -> checkUn t) venv
+  Trav.mapM (\(TypeScheme _ _ t) -> checkUn t) venv
   return ()
 
 
@@ -67,15 +67,15 @@ checkDataDecl = do
   kenv <- getKenv
   mapM_ (\k -> checkFunctionalKind k) kenv
   cenv <- getCenv
---  mapM_ (\(_,t) -> checkKinding t) cenv
-  mapM_ (K.kinding . snd) cenv
+  mapM_ K.kinding cenv
 
 
-checkFunctionalKind :: (Pos, Kind) -> TypingState () -- TODO: remove Pos
-checkFunctionalKind (p, k)
-  | k >= (Kind p Functional Un) = return ()
+
+checkFunctionalKind :: Kind -> TypingState ()
+checkFunctionalKind k
+  | k >= (Kind (position k) Functional Un) = return ()
   | otherwise = 
-     addError p ["Expecting a functional (TU or TL) type; found a",
+     addError (position k) ["Expecting a functional (TU or TL) type; found a",
                   styleRed (show k), "type."]
 
 
@@ -92,7 +92,7 @@ checkFun :: Bind -> TypingState TypeScheme
 checkFun b@(Bind pos x) = do
   member <- venvMember b
   if member then do
-    (_, (TypeScheme p bs t)) <- getFromVenv b
+    (TypeScheme p bs t) <- getFromVenv b
     return $ TypeScheme p bs t
   else do
     addError pos ["Function", styleRed ("'" ++ x ++ "'"), "not in scope"]
@@ -109,7 +109,7 @@ checkFun b@(Bind pos x) = do
 checkFD ::  VarEnv -> Bind -> [Bind] -> Expression -> TypingState ()
 checkFD venv fname p exp = do
   checkFunForm venv fname p
-  let (tp, t) = venv Map.! fname
+  let t = venv Map.! fname
 --  let lt = last $ toList t
   let (TypeScheme _ _ lt) = last $ toList t
   checkAgainst exp lt
@@ -128,7 +128,7 @@ checkFD venv fname p exp = do
 checkFunForm :: VarEnv -> Bind -> [Bind] -> TypingState ()
 checkFunForm venv fun args = do
 --  checkArgsConflits fun args
-  let (p,t) = venv Map.! fun
+  let t = venv Map.! fun
   arguments <- checkArgs fun args (normalizeType (init (toList t)))
   foldM (\acc (b@(Bind p _), t) -> addToVenv b t) () arguments
   return ()
@@ -203,7 +203,7 @@ quotient :: Bind -> TypingState ()
 quotient b = do
   venv <- getVenv
   case venv Map.!? b of
-    Just (_, TypeScheme _ _ t) -> checkUn t
+    Just (TypeScheme _ _ t) -> checkUn t
     Nothing                 -> return ()
   removeFromVenv b
 
@@ -355,7 +355,7 @@ checkVar p x = do
   let b = Bind p x
   member <- venvMember b
   if member then do
-    (_,t@(TypeScheme _ bs _)) <- getFromVenv b
+    t@(TypeScheme _ bs _) <- getFromVenv b
     addBindsToKenv p bs
     kenv <- getKenv
     removeLinVar kenv b t
@@ -366,7 +366,7 @@ checkVar p x = do
     return $ TypeScheme p [] (Basic p UnitType)
 
 addBindsToKenv :: Pos -> [KBind] -> TypingState ()
-addBindsToKenv p bs = foldM (\_ (KBind _ b k) -> addToKenv p (Bind p b) k) () bs
+addBindsToKenv p bs = foldM (\_ (KBind _ b k) -> addToKenv (Bind p b) k) () bs
 
 removeLinVar :: KindEnv -> Bind -> TypeScheme -> TypingState ()
 removeLinVar kenv x (TypeScheme _ _ t) = do
@@ -492,7 +492,7 @@ extractDataTypeMap (Datatype _ m) = return m
 extractDataTypeMap t@(Var px x) = do
   venv <- getVenv -- TODO: change to Maybe
   case venv Map.!? (Bind px x) of
-    Just (_,TypeScheme _ _ dt) -> extractDataTypeMap dt
+    Just (TypeScheme _ _ dt) -> extractDataTypeMap dt
     Nothing                  -> do
       addError px ["Expecting a datatype; found", styleRed $ show t]    
       return $ Map.empty
@@ -567,8 +567,7 @@ checkEquivEnvs venv1 venv2 = do
   if equiv then
     return ()
   else
-    let (_,(tmp,_)) = Map.elemAt 0 venv1 in 
-      addError tmp ["Expecting environment", show venv1,
+      addError (AlexPn 0 0 0) ["Expecting environment", show venv1,
                     "to be equivalent to environment", show venv2]
 
  -- | TODO: position, diff, better error message, maybe with diff between maps
@@ -580,10 +579,11 @@ equivalentEnvs venv1 venv2 = do
   return $ Map.isSubmapOfBy (f kenv) venv3 venv4 && Map.isSubmapOfBy (f kenv) venv4 venv3
   return True
   where
-    f kenv (_,(TypeScheme _ _ t)) (_,(TypeScheme _ _ u)) = equivalent kenv t u
+    f :: KindEnv -> TypeScheme -> TypeScheme -> Bool
+    f kenv (TypeScheme _ _ t) (TypeScheme _ _ u) = equivalent kenv t u
     
-    f1 :: TypingState VarEnv -> Bind -> (Pos,TypeScheme) -> TypingState VarEnv
-    f1 m k t@(_,(TypeScheme _ _ t1)) = do
+    f1 :: TypingState VarEnv -> Bind -> TypeScheme -> TypingState VarEnv
+    f1 m k t@(TypeScheme _ _ t1) = do
       isLin <- K.lin t1
 
       if isLin then do

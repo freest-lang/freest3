@@ -39,9 +39,11 @@ prelude =
 -- TODO: what position fits here
 preludeLoad :: VarEnv -> VarEnv
 preludeLoad map =
-  foldl (\acc (tv, t) -> Map.insert (Bind (AlexPn 0 0 0) tv) ((AlexPn 0 0 0),(TypeScheme (AlexPn 0 0 0) [] (read t :: Type))) acc) map typeList
+  foldl (\acc (tv, t) ->
+     Map.insert (Bind (AlexPn 0 0 0) tv)
+                (TypeScheme (AlexPn 0 0 0) [] (read t :: Type)) acc) map typeList
 
 schemeLoad :: VarEnv -> VarEnv
 schemeLoad map =
-  foldl (\acc (tv, t) -> Map.insert (Bind (AlexPn 0 0 0) tv) ((AlexPn 0 0 0),(read t :: TypeScheme)) acc) map schemeList
+  foldl (\acc (tv, t) -> Map.insert (Bind (AlexPn 0 0 0) tv) (read t :: TypeScheme) acc) map schemeList
 

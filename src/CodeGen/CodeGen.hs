@@ -24,8 +24,8 @@ genProgram :: VarEnv -> ExpEnv -> ConstructorEnv -> KindEnv -> FilePath -> IO ()
 genProgram venv eenv cenv kenv path = do
   genUtils path
   let
-    (_,st)          = venv Map.! (Bind (AlexPn 0 0 0) "start")
-    (_,_,stBody)   = eenv Map.! (Bind (AlexPn 0 0 0) "start")
+    st             = venv Map.! (Bind (AlexPn 0 0 0) "start")
+    (_,stBody)   = eenv Map.! (Bind (AlexPn 0 0 0) "start")
     dataTypes       = genDataTypes cenv
     file            = translateExpEnv eenv
   -- let (_,st)          = venv Map.! "start"

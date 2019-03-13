@@ -20,7 +20,7 @@ matchValidSpec [k, t, u] =
 
 --  :: [(String,Kind)]
 readKenv s =
-  map (\(x,k) -> (Bind (AlexPn 0 0 0) x, ((AlexPn 0 0 0), k))) xs
+  map (\(x,k) -> (Bind (AlexPn 0 0 0) x, k)) xs
   where xs = read s :: [(String,Kind)]
   
 main :: IO ()

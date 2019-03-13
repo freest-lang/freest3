@@ -49,7 +49,7 @@ getVenv = do
   (_,venv,_,_,_,_,_) <- get
   return venv
 
-getFromVenv :: Bind -> TypingState (Pos, TypeScheme)
+getFromVenv :: Bind -> TypingState TypeScheme
 getFromVenv x = do
   venv <- getVenv
   return $ venv Map.! x
@@ -60,9 +60,9 @@ removeFromVenv x =
             (f, Map.delete x venv, eenv, cenv, kenv, e, n))
   
 addToVenv :: Bind -> TypeScheme -> TypingState ()
-addToVenv b@(Bind p _) t =
+addToVenv b t =
   modify (\(f, venv, eenv, cenv, kenv, e, n) ->
-            (f, Map.insert b (p, t) venv, eenv, cenv, kenv, e, n))
+            (f, Map.insert b t venv, eenv, cenv, kenv, e, n))
 
 venvMember :: Bind -> TypingState Bool
 venvMember x = do
@@ -81,7 +81,7 @@ getEenv = do
   return eenv
 
 -- Unsafe - must exist
-getFromEenv :: Bind -> TypingState (Pos, [Bind], Expression)
+getFromEenv :: Bind -> TypingState ([Bind], Expression)
 getFromEenv x = do
   eenv <- getEenv
   return $ eenv Map.! x
@@ -99,10 +99,10 @@ getKenv = do
   (_,_,_,_,kenv,_,_) <- get
   return kenv
 
-addToKenv :: Pos -> Bind -> Kind -> TypingState ()
-addToKenv p x k =
+addToKenv :: Bind -> Kind -> TypingState ()
+addToKenv x k =
   modify (\(f, venv, eenv, cenv, kenv, e, n) ->
-            (f, venv, eenv, cenv, Map.insert x (p,k) kenv, e, n))
+            (f, venv, eenv, cenv, Map.insert x k kenv, e, n))
 
 kenvMember :: Bind -> TypingState Bool
 kenvMember x = do
@@ -112,8 +112,7 @@ kenvMember x = do
 getKind :: Bind -> TypingState Kind
 getKind x = do
   kenv <- getKenv
-  let (_,k) = kenv Map.! x
-  return k 
+  return $ kenv Map.! x 
 
 removeFromKenv :: Bind -> TypingState ()
 removeFromKenv x = do
