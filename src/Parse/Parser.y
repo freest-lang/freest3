@@ -105,7 +105,10 @@ import           System.Exit (die)
 
 Prog
   : Decl      {}
-  | Decl Prog {}
+  | Decl NL Prog {}
+
+NL : nl NL     {} -- TODO: Remove
+   | nl        {}
 
 Decl
   : DataDecl  {}
@@ -382,16 +385,17 @@ checkLabelClash (p, (c,t)) m1 = -- TODO: map position?
 
 
 checkBindClash :: Bind -> [Bind] -> ParserState [Bind]
-checkBindClash b@Bind{var=x, bindPos=pb} bs =
-  case find (\b1 -> var b1 == var b) bs of
-    Just b1 -> do
+--checkBindClash b@Bind{var=x, bindPos=pb} bs =
+checkBindClash (Bind p x k) bs =
+  case find (\(Bind _ y _) -> y == x) bs of
+    Just (Bind p' _ _) -> do
       file <- getFileName
-      addError $ styleError file (bindPos b1)
+      addError $ styleError file p'
                ["Conflicting definitions for bind", styleRed $ "'" ++ x ++ "'\n\t",
-                "Bound at:", file ++ ":" ++ prettyPos (bindPos b1) ++ "\n\t",
-                "          " ++ file ++ ":" ++ prettyPos pb]
+                "Bound at:", file ++ ":" ++ prettyPos p' ++ "\n\t",
+                "          " ++ file ++ ":" ++ prettyPos p]
       return bs      
-    Nothing -> return $ b : bs
+    Nothing -> return $ (Bind p x k) : bs
   
 ------------------------
 -- Handle Parse Monad --

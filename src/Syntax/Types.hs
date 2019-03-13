@@ -35,18 +35,17 @@ import           Syntax.Kinds
 import           Data.List (intersperse)
 import qualified Data.Map.Strict as Map
 
--- TYPE VARIABLE BINDINGS
+-- BIND
 
 type TypeVar = String
 
-data Bind = Bind {bindPos :: Pos, var :: TypeVar, kind :: Kind} -- TODO: Use a triple
-  deriving (Ord)
+data Bind = Bind Pos TypeVar Kind
 
-instance Eq Bind where
-  b == c = kind b == kind c
+-- instance Eq Bind where
+--   b == c = kind b == kind c
 
 instance Show Bind where
-  show b = var b ++ " : " ++ show (kind b)
+  show (Bind _ x k) = x ++ " : " ++ show k
 
 -- BASIC TYPES
 
@@ -178,20 +177,20 @@ instance Position Type where
 
 -- TYPE SCHEMES
 
-data TypeScheme = TypeScheme [Bind] Type deriving Ord
+data TypeScheme = TypeScheme [Bind] Type -- deriving Ord -- TODO: add Pos
 
-instance Eq TypeScheme where
+instance Eq TypeScheme where -- TODO: Remove
   (==) = equalSchemes Map.empty
 
 equalSchemes :: Map.Map TypeVar TypeVar -> TypeScheme -> TypeScheme -> Bool
 equalSchemes s (TypeScheme bs t) (TypeScheme cs u) =
-  bs == cs && equalTypes (insertBinds bs cs s) t u
+{-  bs == cs && -} equalTypes (insertBinds bs cs s) t u
 
 insertBinds :: [Bind] -> [Bind] -> Map.Map TypeVar TypeVar -> Map.Map TypeVar TypeVar
 insertBinds bs cs s = foldr insertBind s (zip bs cs)
 
 insertBind :: (Bind, Bind) -> Map.Map TypeVar TypeVar -> Map.Map TypeVar TypeVar
-insertBind (b, c) = Map.insert (var b) (var c)
+insertBind (Bind _ x _, Bind _ y _) = Map.insert x y
 
 instance Show TypeScheme where
   show (TypeScheme [] t) = show t
@@ -253,7 +252,7 @@ subs _ _ t                  = t
 
 subL :: Type -> [(Type,Bind)] -> Type
 subL t bs =
-  foldr (\(t', b) acc -> subs t' (var b) acc) t bs
+  foldr (\(u, (Bind _ x _)) acc -> subs u x acc) t bs
 
 -- SESSION TYPES
 

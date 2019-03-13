@@ -33,11 +33,11 @@ import qualified Data.Map.Strict as Map
 import           Validation.Contractive
 import           Validation.TypingState
 
--- Returns the kind of a given type scheme
+-- Returns the kind of a given type scheme -- TODO: type schemes do not have kinds
 kinding :: TypeScheme -> TypingState Kind
 kinding (TypeScheme bs t) = do
   -- TODO: addToKenv -> addBindsLToKenv
-  foldM_ (\_ b -> addToKenv (0,0) (var b) (kind b)) () bs
+  foldM_ (\_ (Bind _ x k) -> addToKenv (0,0) x k) () bs
   synthetize t
 
 -- Returns the kind of a given type

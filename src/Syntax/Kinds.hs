@@ -46,7 +46,13 @@ instance Ord Multiplicity where
 -- KINDS
 
 data Kind = Kind Pos PreKind Multiplicity
-  deriving (Eq, Ord)
+
+instance Eq Kind where
+  (Kind _ p n) == (Kind _ q m) = (p, n) == (q, n)
+
+instance Ord Kind where
+  (Kind _ p n) >  (Kind _ q m) = (p, n) >  (q, n)
+  (Kind _ p n) <= (Kind _ q m) = (p, n) <= (q, n)
 
 instance Show Kind where
   show (Kind _ p m) = show p ++ show m

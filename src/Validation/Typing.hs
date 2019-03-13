@@ -175,8 +175,8 @@ normalizeType' (TypeScheme bs t) = (TypeScheme binds t)
      binds = foldl (\acc b -> acc ++ (tcvar b t)) [] bs
      
      tcvar b (Fun _ _ t1 t2) = tcvar b t1 ++ tcvar b t2
-     tcvar b (Var _ x)
-       | var b == x = [b]
+     tcvar (Bind p y k) (Var _ x)
+       | y == x = [Bind p x k]
        | otherwise = []       
      tcvar b (Semi _ t1 t2) = tcvar b t1 ++ tcvar b t2
      tcvar b (Rec _ _ t) = tcvar b t
@@ -244,7 +244,7 @@ checkExp (TypeApp p x ts) = do
 -- wellFormedCall p e ts binds
 
   let typeBind = zip ts bs
-  mapM (\(t,b) -> K.checkAgainst (kind b) t) typeBind
+  mapM (\(t, Bind _ _ k) -> K.checkAgainst k t) typeBind
   -- well formed sub??
   return $ TypeScheme [] (subL t typeBind)
  
@@ -376,7 +376,7 @@ checkVar p x = do
     return $ TypeScheme [] (Basic p UnitType)
 
 addBindsToKenv :: Pos -> [Bind] -> TypingState ()
-addBindsToKenv p bs = foldM (\_ b -> addToKenv p (var b) (kind b)) () bs
+addBindsToKenv p bs = foldM (\_ (Bind _ b k) -> addToKenv p b k) () bs
 
 removeLinVar :: KindEnv -> TermVar -> TypeScheme -> TypingState ()
 removeLinVar kenv x (TypeScheme _ t) = do
