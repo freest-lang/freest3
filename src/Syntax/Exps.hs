@@ -14,9 +14,9 @@ Portability :  portable | non-portable (<reason>)
 module Syntax.Exps
 ( Expression(..)
 , TermVar
-, VarDef  
-, Params
-, Param(..)
+-- , VarDef  
+-- , Params
+-- , Param(..)
 , CaseMap
 , MatchMap
 ) where
@@ -26,8 +26,9 @@ import           Syntax.Kinds
 import           Syntax.Position
 import qualified Data.Map.Strict as Map
 
-type TermVar = String
+type TermVar = Var -- = String
 
+{-
 data Param = Param {paramPos :: Pos, param :: TermVar}
 
 instance Eq Param where
@@ -38,15 +39,15 @@ instance Ord Param where
 
 instance Show Param where
   show p = param p
+-}
+--type Params = [Param] -- Params is a semantic notion, not syntatic - eliminate, use [TermVar]
 
-type Params = [Param] -- Params is a semantic notion, not syntatic - eliminate, use [TermVar]
-
-data TypeVarBind = TypeVar Kind
+-- data TypeVarBind = TypeVar Kind
  
--- TODO: Join
-type MatchMap = Map.Map TermVar (Param, Expression)
-type CaseMap  = Map.Map TermVar (Params, Expression)
-type VarDef   = (Pos, TermVar) -- TODO: porque é que este tem Pos e o Multiplicity e o PreKind não?
+-- TODO: Join these two
+type MatchMap = Map.Map TermVar (Bind, Expression)
+type CaseMap  = Map.Map TermVar ([Bind], Expression)
+--type VarDef   = (Pos, TermVar) -- TODO: porque é que este tem Pos e o Multiplicity e o PreKind não?
 
 data Expression =
   -- Basic values
@@ -57,11 +58,11 @@ data Expression =
   -- Variable
   | Variable Pos TermVar
   -- Abstraction intro and elim
-  {- Lam Pos Multiplicity VarDef Exp -}
+  {- Lam Pos Multiplicity Bind Exp -}
   | App Pos Expression Expression
   -- Pair intro and elim
   | Pair Pos {- Multiplicity -} Expression Expression
-  | BinLet Pos VarDef VarDef Expression Expression
+  | BinLet Pos Bind Bind Expression Expression
   -- Datatype intro and elim
   | Constructor Pos TermVar
   | Case Pos Expression CaseMap
@@ -70,7 +71,7 @@ data Expression =
   -- Conditional
   | Conditional Pos Expression Expression Expression
   -- Let
-  | UnLet Pos VarDef Expression Expression -- TODO: Derived; eliminate?
+  | UnLet Pos Bind Expression Expression -- TODO: Derived; eliminate?
   -- Fork
   | Fork Pos Expression
   -- Session types

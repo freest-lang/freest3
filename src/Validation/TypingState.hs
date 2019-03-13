@@ -1,12 +1,25 @@
-module Validation.TypingState  where
+{-|
+Module      :  Typing
+Description :  <optional short text displayed on contents page>
+Copyright   :  (c) <Authors or Affiliations>
+License     :  <license>
 
-import           Control.Monad.State
-import qualified Data.Map.Strict as Map
+Maintainer  :  <email>
+Stability   :  unstable | experimental | provisional | stable | frozen
+Portability :  portable | non-portable (<reason>)
+
+<module description starting at first column>
+-}
+
+module Validation.TypingState where
+
 import           Syntax.Programs
 import           Syntax.Exps
 import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.Position
+import           Control.Monad.State
+import qualified Data.Map.Strict as Map
 import           Utils.Errors
 
 -- | The typing state
@@ -36,22 +49,22 @@ getVenv = do
   (_,venv,_,_,_,_,_) <- get
   return venv
 
-getFromVenv :: TermVar -> TypingState (Pos, TypeScheme)
+getFromVenv :: Bind -> TypingState (Pos, TypeScheme)
 getFromVenv x = do
   venv <- getVenv
   return $ venv Map.! x
 
-removeFromVenv :: TermVar -> TypingState ()
+removeFromVenv :: Bind -> TypingState ()
 removeFromVenv x =
   modify (\(f, venv, eenv, cenv, kenv, e, n) ->
             (f, Map.delete x venv, eenv, cenv, kenv, e, n))
   
-addToVenv :: Pos -> TermVar -> TypeScheme -> TypingState ()
+addToVenv :: Pos -> Bind -> TypeScheme -> TypingState ()
 addToVenv p x t =
   modify (\(f, venv, eenv, cenv, kenv, e, n) ->
             (f, Map.insert x (p, t) venv, eenv, cenv, kenv, e, n))
 
-venvMember :: TermVar -> TypingState Bool
+venvMember :: Bind -> TypingState Bool
 venvMember x = do
   venv <- getVenv
   return $ Map.member x venv
@@ -68,7 +81,7 @@ getEenv = do
   return eenv
 
 -- Unsafe - must exist
-getFromEenv :: TermVar -> TypingState (Pos, Params, Expression)
+getFromEenv :: Bind -> TypingState (Pos, [Bind], Expression)
 getFromEenv x = do
   eenv <- getEenv
   return $ eenv Map.! x
@@ -86,23 +99,23 @@ getKenv = do
   (_,_,_,_,kenv,_,_) <- get
   return kenv
 
-addToKenv :: Pos -> TypeVar -> Kind -> TypingState ()
+addToKenv :: Pos -> Bind -> Kind -> TypingState ()
 addToKenv p x k =
   modify (\(f, venv, eenv, cenv, kenv, e, n) ->
             (f, venv, eenv, cenv, Map.insert x (p,k) kenv, e, n))
 
-kenvMember :: TypeVar -> TypingState Bool
+kenvMember :: Bind -> TypingState Bool
 kenvMember x = do
   kenv <- getKenv
   return $ Map.member x kenv
 
-getKind :: TypeVar -> TypingState Kind
+getKind :: Bind -> TypingState Kind
 getKind x = do
   kenv <- getKenv
   let (_,k) = kenv Map.! x
   return k 
 
-removeFromKenv :: TypeVar -> TypingState ()
+removeFromKenv :: Bind -> TypingState ()
 removeFromKenv x = do
   kenv <- getKenv
   if Map.member x kenv then

@@ -35,21 +35,6 @@ import           Syntax.Kinds
 import           Data.List (intersperse)
 import qualified Data.Map.Strict as Map
 
--- BASIC TYPES
-
-data BasicType = -- TODO: Add Pos
-    IntType
-  | CharType
-  | BoolType
-  | UnitType
-  deriving (Eq, Ord)
-
-instance Show BasicType where
-  show IntType = "Int"
-  show CharType = "Char"
-  show BoolType = "Bool"
-  show UnitType = "()"
-
 -- POLARITY
 
 data Polarity =
@@ -72,11 +57,26 @@ instance Show ChoiceView where
   show External = "&"
   show Internal = "+"
 
+-- BASIC TYPES
+
+data BasicType = -- TODO: Add Pos
+    IntType
+  | CharType
+  | BoolType
+  | UnitType
+  deriving (Eq, Ord)
+
+instance Show BasicType where
+  show IntType = "Int"
+  show CharType = "Char"
+  show BoolType = "Bool"
+  show UnitType = "()"
+
 -- TYPES
 
-type Constructor = String
+type Constructor = Var -- = String
 
-type TypeMap = Map.Map Constructor Type
+type TypeMap = Map.Map Bind Type
 
 data Type =
   -- Functional types
@@ -147,7 +147,7 @@ showFunOp Un  = " -> "
 
 showMap :: TypeMap -> String
 showMap m = concat $ intersperse ", " (map showAssoc (Map.assocs m))
-  where showAssoc (k, v) = k ++ ": " ++ show v
+  where showAssoc (Bind _ k, v) = k ++ ": " ++ show v
 
 instance Position Type where
   position (Basic p _)     = p
@@ -257,11 +257,12 @@ subL t bs =
 
 -- Is this type a pre session type? (a session type that is
 -- syntactically correct, but not necessarilty well-kinded)
-isPreSession :: Type -> Map.Map TypeVar (Pos,Kind) -> Bool
+-- isPreSession :: Type -> KindEnv -> Bool -- TODO: import loop
+isPreSession :: Type -> Map.Map Bind (Pos,Kind) -> Bool
 isPreSession (Skip _) _        = True
 isPreSession (Semi _ _ _) _    = True
 isPreSession (Message _ _ _) _ = True
 isPreSession (Choice _ _ _) _ = True
 isPreSession (Rec _ _ _) _ = True
-isPreSession (Var _ x) kenv    = Map.member x kenv
+isPreSession (Var p x) kenv    = Map.member (Bind p x) kenv
 isPreSession _ _ = False

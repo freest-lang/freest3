@@ -12,7 +12,8 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Syntax.Kinds
-( PreKind (..)
+( KindVar
+, PreKind (..)
 , Multiplicity (..)
 , Kind (..)
 ) where
@@ -59,3 +60,7 @@ instance Show Kind where
 
 instance Position Kind where
   position (Kind p _ _) = p
+
+-- KIND VAR
+
+type KindVar = Var -- = String

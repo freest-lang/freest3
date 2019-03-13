@@ -21,6 +21,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import           Syntax.Types
 import           Syntax.Kinds -- for testing
+import           Syntax.Position
 import           Equivalence.Grammar
 
 -- The state of the translation to grammars
@@ -112,8 +113,8 @@ toGrammar (Choice _ c m) = do
   mapM_ (assocToGrammar y c) (Map.assocs m)
   return [y]
 
-assocToGrammar :: TypeVar -> ChoiceView -> (Constructor, Type) -> TransState ()
-assocToGrammar y c (l, t) = do
+assocToGrammar :: TypeVar -> ChoiceView -> (Bind, Type) -> TransState ()
+assocToGrammar y c (Bind _ l, t) = do
   xs <- toGrammar t
   addProduction y (ChoiceLabel c l) xs
 
@@ -125,6 +126,7 @@ isChecked (Var _ x) v    = Set.member x v -- Only bound variables are checked
 isChecked _ _            = False
 
 -- Some tests
+{-
 p = (0,0)
 s1 = Message p Out CharType
 t1 = convertToGrammar [s1]
@@ -194,3 +196,4 @@ s29 = Semi p s5 (Message p In IntType)
 t29 = convertToGrammar [s29]
 s30 = Rec p yBind s29
 t30 = convertToGrammar [s24,s25,s26,s27,s28,s29,s30]
+-}

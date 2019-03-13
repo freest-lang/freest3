@@ -12,10 +12,10 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Syntax.Programs
-( KindEnv
-, ConstructorEnv
+( ConstructorEnv
 , ExpEnv
 , VarEnv
+, KindEnv
 ) where 
 
 import           Syntax.Position
@@ -24,14 +24,13 @@ import           Syntax.Types
 import           Syntax.Exps
 import qualified Data.Map.Strict as Map
 
-type ConstructorEnv = Map.Map TypeVar (Pos, TypeScheme) -- TODO remove Pos
+-- The datatypes
+type ConstructorEnv = Map.Map Bind (Pos, TypeScheme) -- TODO remove Pos
+
+-- The signatures of the named functions in a program
+type VarEnv = Map.Map Bind (Pos, TypeScheme) -- TODO remove Pos
 
 -- The named functions in a program
-type ExpEnv = Map.Map TermVar (Pos, Params, Expression) -- TODO remove Pos
+type ExpEnv = Map.Map Bind (Pos, [Bind], Expression) -- TODO remove Pos
 
-type KindVar = String -- TODO: move to Kind
-
-type KindEnv = Map.Map KindVar (Pos, Kind) -- TODO remove Pos, move to Typing
-
-type VarEnv = Map.Map TermVar (Pos, TypeScheme) -- TODO remove Pos, move to Typing
-
+type KindEnv = Map.Map Bind (Pos, Kind) -- TODO remove Pos

@@ -10,6 +10,7 @@ import           Syntax.Exps
 import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.Position
+import           Validation.Kinding
 import           Utils.Errors
 import           Parse.Lexer
 import           Control.Monad.State
@@ -146,21 +147,21 @@ DataDecl :: { () } : -- TODO: the position is taken from $1
           ("Multiple declarations of '" ++ styleRed c ++ "'") (pos p)
 	addToKenv c (pos p, Kind (pos p) Functional Un)
         let binds = typesToFun (pos p) c $4
-        checkBindsClash binds
+--        checkBindsClash binds
 	mapM (\(cons, (p, t)) -> addToCenv cons p (TypeScheme p [] t)) binds -- TODO: check the Pos of the type scheme
         addToVenv c (pos p, TypeScheme (pos p) [] (convertDT (pos p) binds))
     }
 
-DataCons :: { [(Constructor, (Pos, [Type]))] } -- TODO: why not a triple?
+DataCons :: { [(Constructor, (Pos, [Type]))] } -- TODO: remove pos
   : DataCon              { [$1] }
-  | DataCon '|' DataCons { $1 : $3 }
+  | DataCon '|' DataCons { $1 : $3 } -- TODO: check duplicates
 
-DataCon :: { (Constructor, (Pos, [Type])) } :
+DataCon :: { (Constructor, (Pos, [Type])) } : -- TODO: remove pos
   CONS TypeSeq  {let (TokenCons p x) = $1 in (x, (pos p, $2))}
 
 TypeSeq :: { [Type] }
   :              { [] }
-  | Type TypeSeq { $1 : $2 }
+  | Type TypeSeq { $1 : $2 } -- TODO: check duplicates
 
 ---------------------------
 -- FUN TYPE DECLARATIONS --
@@ -178,7 +179,7 @@ FunSig :: { () } :
 
 FunTypeScheme :: { TypeScheme }
   : TypeScheme { $1 }
-| Type       { TypeScheme (position $1) [] $1 }
+  | Type       { TypeScheme (position $1) [] $1 }
 
 ----------------------
 -- FUN DECLARATIONS --
@@ -191,11 +192,11 @@ FunDecl :: { () }
         addToEenv x (pos p, $2, $4)
     }
 
-VarSeq :: { Params }
+VarSeq :: { [Bind] }
   :            { [] }
   | VAR VarSeq {% do
                     let (TokenVar p x) = $1
-                    checkParamClash $2 (Param{paramPos=pos p, param=x})
+		    checkParamClash $2 (Bind (pos p) x)
                 }
 
 -----------------
@@ -205,12 +206,12 @@ VarSeq :: { Params }
 Expr :: { Expression }
   : let VAR '=' Expr in Expr         {let (TokenLet p) = $1 in
                                       let (TokenVar px x) = $2 in
-				      UnLet (pos p) (pos px,x) $4 $6}    
+				      UnLet (pos p) (Bind (pos px) x) $4 $6}    
 
   | let VAR ',' VAR '=' Expr in Expr {let (TokenLet p) = $1 in
           		                 let (TokenVar px x) = $2 in
 					 let (TokenVar py y) = $4 in
-		          		 BinLet (pos p) (pos px,x) (pos py,y) $6 $8}
+		          		 BinLet (pos p) (Bind (pos px) x) (Bind (pos py) y) $6 $8}
 
   | '(' Expr ',' Expr ')'            {let (TokenLParen p) = $1 in
                                          Pair (pos p) $2 $4}
@@ -275,14 +276,14 @@ MatchMap :: { MatchMap }
 MatchValue :: { MatchMap } :
   CONS VAR '->' Expr   {let (TokenCons _ c) = $1 in
                         let (TokenVar p x) = $2 in
-                        Map.singleton c (Param{paramPos=pos p, param=x},$4)}
+                        Map.singleton c (Bind (pos p) x,$4)}
 
 CaseMap :: { CaseMap }
   : Case  { $1 }
   | Case ';' CaseMap  { Map.union $1 $3 } -- TODO: check duplicates
 
 Case :: { CaseMap }
-  : CONS VarSeq '->' Expr   {let (TokenCons _ c) = $1 in Map.singleton c ($2, $4)}
+  : CONS VarSeq '->' Expr {let (TokenCons _ c) = $1 in Map.singleton c ($2, $4)}
 
 -----------
 -- TYPE SCHEMES --
@@ -292,8 +293,8 @@ TypeScheme :: { TypeScheme }
   : forall BindList '=>' Type { TypeScheme (getPos $1) $2 $4 }
 
 BindList :: { [KBind] }
-  : Bind               { [$1] }
-  | Bind ',' BindList  {% checkBindClash $1 $3 }
+  : Bind              { [$1] }
+  | Bind ',' BindList {% checkBindClash $1 $3 }
 
 Bind :: { KBind }
   : VAR ':' Kind { let (TokenVar p x) = $1 in KBind (pos p) x $3 }
@@ -330,17 +331,12 @@ ChoiceView :: { (Pos, ChoiceView) }
   : '+' { (getPos $1, Internal) }
   | '&' { (getPos $1, External) }
   
--- Either a var or a constructor -- TODO: Why needed?
-VarCons :: { (Pos,String) }
-  : VAR  { let (TokenVar p x) = $1 in (pos p, x) }
-  | CONS { let (TokenCons p x) = $1 in (pos p, x) }
-
 FieldList :: { TypeMap }
-  : Field                { uncurry Map.singleton (snd $1) }
+  : Field                { $1 }
   | Field ',' FieldList  {% checkLabelClash $1 $3 }
 
-Field :: { (Pos, (Constructor, Type)) }
-  : CONS ':' Type { let (TokenCons p x) = $1 in (pos p, (x, $3)) }
+Field :: { TypeMap }
+  : CONS ':' Type { let (TokenCons p x) = $1 in Map.singleton (Bind (pos p) x) $3 }
 
 BasicType :: { (Pos, BasicType) }
   : Int  { (getPos $1, IntType) }
@@ -353,36 +349,38 @@ BasicType :: { (Pos, BasicType) }
 -----------
 
 Kind :: { Kind } :
-    SU   {Kind (getPos $1) Session Un}
-  | SL   {Kind (getPos $1) Session Lin}
-  | TU   {Kind (getPos $1) Functional Un}
-  | TL   {Kind (getPos $1) Functional Lin}
+    SU {Kind (getPos $1) Session Un}
+  | SL {Kind (getPos $1) Session Lin}
+  | TU {Kind (getPos $1) Functional Un}
+  | TL {Kind (getPos $1) Functional Lin}
 
 {
-checkParamClash :: Params   -> Param  -> ParserState Params
+checkParamClash :: [Bind]   -> Bind  -> ParserState [Bind]
 checkParamClash ps p =
   case find (== p) ps of
     Just x -> do
       file <- getFileName
-      addError $ styleError file (paramPos x)
+      addError $ styleError file (position x)
                  ["Conflicting definitions for argument", styleRed $ "'" ++ show p ++ "'\n\t",
-                  "Bound at:", file ++ ":" ++ prettyPos (paramPos x) ++ "\n\t",
-                  "          " ++ file ++ ":" ++ prettyPos (paramPos p)]
+                  "Bound at:", file ++ ":" ++ prettyPos (position x) ++ "\n\t",
+                  "          " ++ file ++ ":" ++ prettyPos (position p)]
       return $ ps
     Nothing -> return $ p : ps
 
-checkLabelClash :: (Pos, (Constructor, Type)) -> TypeMap -> ParserState TypeMap
-checkLabelClash (p, (c,t)) m1 = -- TODO: map position?
-  case m1 Map.!? c of
-    Just x -> do
+-- Assume: m1 is a singleton map
+checkLabelClash :: TypeMap -> TypeMap -> ParserState TypeMap
+checkLabelClash m1 m2 = -- TODO: map position?
+  if not (null common)
+    then do
+      let ((Bind p c), _) = Map.elemAt 0 m1
       file <- getFileName
-      addError $ styleError file (position x)
-               ["Conflicting definitions for label", styleRed $ "'" ++ c ++ "'\n\t",
-                "Bound at:", file ++ ":" ++ prettyPos (position x) ++ "\n\t",
-                "          " ++ file ++ ":" ++ prettyPos p]
+      addError $ styleError file p
+               ["Conflicting definitions for constructor", styleRed $ c,
+                "Bound at:", file ++ ":" ++ prettyPos p]
       return m1
-    Nothing ->
-      return $ Map.insert c t m1  
+    else
+      return $ Map.union m1 m2
+    where common = Map.intersection m1 m2
 
 
 checkBindClash :: KBind -> [KBind] -> ParserState [KBind]
@@ -410,27 +408,26 @@ initialState s venv = (s,venv,Map.empty,Map.empty,Map.empty, [])
 
 addToKenv :: TypeVar -> (Pos, Kind) -> ParserState ()
 addToKenv x k = modify (\(f, venv, eenv, cenv, kenv, err) ->
-                          (f, venv, eenv, cenv, Map.insert x k kenv, err))
+                          (f, venv, eenv, cenv, Map.insert (Bind (fst k) x) k kenv, err))
 
 getKenv :: ParserState KindEnv
 getKenv = do
   (_,_,_,_,kenv,_) <- get
   return kenv
 
-
-addToVenv :: TermVar -> (Pos, TypeScheme) -> ParserState ()
+addToVenv :: Var -> (Pos, TypeScheme) -> ParserState ()
 addToVenv x p =
   modify (\(f, venv, eenv, cenv, kenv, err) ->
-            (f, Map.insert x p venv, eenv, cenv, kenv, err))
+            (f, Map.insert (Bind (fst p) x) p venv, eenv, cenv, kenv, err))
 
 getVenv :: ParserState VarEnv
 getVenv = do
   (_,venv,_,_,_,_) <- get
   return venv
   
-addToCenv :: TermVar -> Pos -> TypeScheme -> ParserState ()
+addToCenv :: Var -> Pos -> TypeScheme -> ParserState ()
 addToCenv x p t = modify (\(f, venv, eenv, cenv, kenv, err) ->
-                            (f, venv, eenv, Map.insert x (p, t) cenv, kenv, err))
+                            (f, venv, eenv, Map.insert (Bind p x) (p, t) cenv, kenv, err))
 
 getCenv :: ParserState ConstructorEnv
 getCenv = do
@@ -438,9 +435,9 @@ getCenv = do
   return cenv
 
 
-addToEenv :: TermVar -> (Pos, Params, Expression) -> ParserState ()
-addToEenv x t = modify (\(f, venv, eenv, cenv, kenv, err) ->
-                          (f, venv, Map.insert x t eenv, cenv, kenv, err))
+addToEenv :: Var -> (Pos, [Bind], Expression) -> ParserState ()
+addToEenv x t@(p, _, _) = modify (\(f, venv, eenv, cenv, kenv, err) ->
+                          (f, venv, Map.insert (Bind p x) t eenv, cenv, kenv, err))
 
 getFileName :: ParserState String
 getFileName = do
@@ -528,19 +525,20 @@ parseError xs = do
  where p = getPos (head xs)
 
 
-checkNamesClash :: Map.Map TermVar (Pos, a) -> TermVar -> String -> Pos -> ParserState ()
-checkNamesClash m t msg p = do
+checkNamesClash :: Map.Map Bind (Pos, a) -> Var -> String -> Pos -> ParserState ()
+checkNamesClash m x msg p = do
   file <- getFileName
-  if Map.member t m then
-    let (p1,_) = m Map.! t in
+  let b = Bind p x
+  if Map.member b m then
+    let (p1,_) = m Map.! b in
       addError $ styleError file p
                  [msg, "\n\t at " ++ file ++ prettyPos p1 ++ "\n\t    " ++ file ++ prettyPos p]
       
   else
     return ()
 
-
-checkBindsClash :: [(TermVar, (Pos, Type))] -> ParserState ()
+{-
+checkBindsClash :: [(Var, (Pos, Type))] -> ParserState ()
 checkBindsClash binds =
   let bs = bindClashes binds in
   if not $ null bs then
@@ -559,16 +557,16 @@ checkBindsClash binds =
       mapM (\(v,(p,_)) -> checkNamesClash cenv v (err v) p) binds
       return ()
   where
-    bindClashes :: [(TermVar, (Pos, Type))] -> [(TermVar, (Pos, Type))]
+    bindClashes :: [(Var, (Pos, Type))] -> [(Var, (Pos, Type))]
     bindClashes bs = deleteFirstsBy f bs (nubBy f bs)
 
     f = (\(x,_) (y,_) -> x == y)
 
-    err v = "Multiple declarations of " ++ (styleRed ("'" ++ v ++ "'"))
+    err v = "Multiple declarations of " ++ styleRed v
 
-   -- bindClashes :: [TermVar] -> [TermVar]
+   -- bindClashes :: [Bind] -> [Bind]
    --  bindClashes bs = bs \\ nub bs
-
+-}
 -------------------------
 -- Auxiliary functions -- TODO: all functions are auxiliar
 -------------------------

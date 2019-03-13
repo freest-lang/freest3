@@ -37,7 +37,7 @@ import           Validation.TypingState
 kinding :: TypeScheme -> TypingState Kind
 kinding (TypeScheme _ bs t) = do
   -- TODO: addToKenv -> addBindsLToKenv
-  foldM_ (\_ (KBind _ x k) -> addToKenv (0,0) x k) () bs
+  foldM_ (\_ (KBind p x k) -> addToKenv (0,0) (Bind p x) k) () bs
   synthetize t
 
 -- Returns the kind of a given type
@@ -74,19 +74,21 @@ synthetize (Datatype p m) = do
 synthetize (Rec p x t) = do
   checkContractive t
   y <- freshVar
-  addToKenv p y (Kind p Session Un)
+  let b = Bind p y
+  addToKenv p b (Kind p Session Un)
   k <- synthetize $ subs (Var p y) x t -- On the fly α-conversion
-  removeFromKenv y
+  removeFromKenv b
   return k
 -- Session or functional
 synthetize (Var p v) = do
-  b <- kenvMember v
+  let bind = Bind p v
+  b <- kenvMember bind
   if b then
-    getKind v
+    getKind bind
   else do
     addError p ["Variable not in scope: ", styleRed v]
     let k = topKind p
-    addToKenv p v k
+    addToKenv p bind k
     return k
 
 -- Check whether a given kind is session; issue an error if not. In
@@ -104,9 +106,10 @@ checkAgainst :: Kind -> Type -> TypingState ()
 checkAgainst k (Rec p x t) = do
   checkContractive t
   y <- freshVar
-  addToKenv p y (Kind p Session Un)
-  checkAgainst k$ subs (Var p y) x t -- On the fly α-conversion
-  removeFromKenv y
+  let b = Bind p y
+  addToKenv p b (Kind p Session Un)
+  checkAgainst k $ subs (Var p y) x t -- On the fly α-conversion
+  removeFromKenv b
 checkAgainst k t = do
   k' <- synthetize t
   checkSubkind (position t) k' k

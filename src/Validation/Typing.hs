@@ -12,8 +12,7 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Validation.Typing
-(
-  typeCheck  
+( typeCheck
 ) where
 
 import           Syntax.Programs
@@ -31,7 +30,6 @@ import           Data.List ((\\), nub, intercalate)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.Traversable as Trav
-
 
 typeCheck :: TypingState ()
 typeCheck = do
