@@ -142,17 +142,29 @@ topKind p = Kind p Functional Lin
 
 -- For TESTS only, from here on
 
+-- kindOfType :: KindEnv -> Type -> Kind
+-- kindOfType k t =
+--   let (f, venv, eenv, cenv, _, err, n) = (initialState  "") in
+--   evalState (synthetize t) (f, venv, eenv, cenv, k, err, n)
+
 kindOfType :: KindEnv -> Type -> Kind
 kindOfType k t =
-  let (f, venv, eenv, cenv, _, err, n) = (initialState  "") in
-  evalState (synthetize t) (f, venv, eenv, cenv, k, err, n)
+  let s = (initialState  "") in
+  evalState (synthetize t) (s {kindEnv=k})
+
 
 kindOfScheme :: TypeScheme -> Kind
 kindOfScheme t = evalState (kinding t) (initialState "")
 
+-- isWellFormed :: Type -> KindEnv -> Bool
+-- isWellFormed t k =
+--   let (f, venv, eenv, cenv, _, err, n) = initialState "" in
+--   let (_, _, _, _, _, errors, _) =
+--         execState (synthetize t) (f, venv, eenv, cenv, k, err, n) in
+--     null errors
+
 isWellFormed :: Type -> KindEnv -> Bool
 isWellFormed t k =
-  let (f, venv, eenv, cenv, _, err, n) = initialState "" in
-  let (_, _, _, _, _, errors, _) =
-        execState (synthetize t) (f, venv, eenv, cenv, k, err, n) in
-    null errors
+  let s = initialState "" in
+  let s1 = execState (synthetize t) (s {kindEnv=k}) in
+    null (errors s1)

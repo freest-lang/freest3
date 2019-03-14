@@ -11,13 +11,19 @@ import Parse.Parser (parseProgram)
 import System.Exit
 import Utils.PreludeLoader (prelude)
 import Validation.Typing (typeCheck)
-import Validation.TypingState (Errors)
+import Validation.TypingState
+
+-- compile :: String -> IO (Bool, String)
+-- compile arg = do
+--   bs@(f, venv, eenv, cenv, kenv, err) <- parseProgram arg prelude
+--   let (_,_,_,_,_,ers, _) = execState typeCheck (f, venv, eenv, cenv, kenv, err, 0)
+--   checkErr ers venv eenv cenv kenv arg
 
 compile :: String -> IO (Bool, String)
 compile arg = do
   bs@(f, venv, eenv, cenv, kenv, err) <- parseProgram arg prelude
-  let (_,_,_,_,_,ers, _) = execState typeCheck (f, venv, eenv, cenv, kenv, err, 0)
-  checkErr ers venv eenv cenv kenv arg
+  let s = execState typeCheck (TypingS {filename=f, varEnv=venv, expEnv=eenv, consEnv=cenv, kindEnv=kenv, errors=err, fv=0})
+  checkErr (errors s) venv eenv cenv kenv arg  
     
 -- CODE GEN
 
