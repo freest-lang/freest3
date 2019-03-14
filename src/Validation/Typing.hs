@@ -21,9 +21,9 @@ import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.Position
 import           Utils.Errors
+import           Utils.FreestState
 import           Equivalence.TypeEquivalence
 import qualified Validation.Kinding as K
-import           Validation.TypingState
 
 import           Control.Monad.State
 import           Data.List ((\\), nub, intercalate)
@@ -31,7 +31,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.Traversable as Trav
 
-typeCheck :: TypingState ()
+typeCheck :: FreestState ()
 typeCheck = do
   -- 1 - Data declaration
   -- Checks if the datatypes are well kinded
@@ -62,7 +62,7 @@ typeCheck = do
 {- | Checks all the datatypes definitions:
    |  - Checks if they are well kinded and if they have a functional kind
 -}
-checkDataDecl :: TypingState ()
+checkDataDecl :: FreestState ()
 checkDataDecl = do 
   kenv <- getKenv
   mapM_ (\k -> checkFunctionalKind k) kenv
@@ -71,7 +71,7 @@ checkDataDecl = do
 
 
 
-checkFunctionalKind :: Kind -> TypingState ()
+checkFunctionalKind :: Kind -> FreestState ()
 checkFunctionalKind k
   | k >= (Kind (position k) Functional Un) = return ()
   | otherwise = 
@@ -82,13 +82,13 @@ checkFunctionalKind k
 -- | AUXILIARY FUNCTIONS TO VERIFY FUNCTION TYPES
 
 -- | Verifies if a function exists and if it is well kinded
-checkFunTypeDecl :: Bind -> TypingState ()
+checkFunTypeDecl :: Bind -> FreestState ()
 checkFunTypeDecl b = do  
   t <- checkFun b
   K.kinding t
   return ()
 
-checkFun :: Bind -> TypingState TypeScheme
+checkFun :: Bind -> FreestState TypeScheme
 checkFun b@(Bind pos x) = do
   member <- venvMember b
   if member then do
@@ -106,7 +106,7 @@ checkFun b@(Bind pos x) = do
    |  - Checks the function form
    |  - Checks the function body (expression) against the declared type
 -}
-checkFD ::  VarEnv -> Bind -> [Bind] -> Expression -> TypingState ()
+checkFD ::  VarEnv -> Bind -> [Bind] -> Expression -> FreestState ()
 checkFD venv fname p exp = do
   checkFunForm venv fname p
   let t = venv Map.! fname
@@ -125,7 +125,7 @@ checkFD venv fname p exp = do
    | - Adds each argument and its own type to the environment
 -}
 
-checkFunForm :: VarEnv -> Bind -> [Bind] -> TypingState ()
+checkFunForm :: VarEnv -> Bind -> [Bind] -> FreestState ()
 checkFunForm venv fun args = do
 --  checkArgsConflits fun args
   let t = venv Map.! fun
@@ -133,7 +133,7 @@ checkFunForm venv fun args = do
   foldM (\acc (b@(Bind p _), t) -> addToVenv b t) () arguments
   return ()
 
-checkArgs :: Bind -> [Bind] -> [TypeScheme] -> TypingState [(Bind, TypeScheme)]
+checkArgs :: Bind -> [Bind] -> [TypeScheme] -> FreestState [(Bind, TypeScheme)]
 checkArgs (Bind p c) ps ts
   | length ps == length ts = return $ zip ps ts
   | length ps > length ts = do
@@ -171,7 +171,7 @@ normalizeType' (TypeScheme p bs t) = (TypeScheme p binds t)
      tcvar b t = error $ "INTERNAL ERROR: " ++ show b ++ " " ++ show t
 
 -- | Checks if a type is unrestricted
-checkUn :: Type -> TypingState ()
+checkUn :: Type -> FreestState ()
 checkUn t = do
   isUn <- K.un t
   if isUn then    
@@ -180,7 +180,7 @@ checkUn t = do
     addError (position t) ["Type", "'" ++ styleRed (show t) ++ "'", "is linear"]
 
 -- | Checks an expression against a given type
-checkAgainst :: Expression -> Type -> TypingState ()
+checkAgainst :: Expression -> Type -> FreestState ()
 checkAgainst e t = do
   u <- synthetize e
   kenv <- getKenv
@@ -190,7 +190,7 @@ checkAgainst e t = do
     addError (position t) ["Expecting type", styleRed (show u), 
                  "to be equivalent to type", styleRed (show t)]
 
-checkEquivTypes :: Type -> Type -> TypingState ()
+checkEquivTypes :: Type -> Type -> FreestState ()
 checkEquivTypes t u = do
   kenv <- getKenv
   if (equivalent kenv t u) then
@@ -199,7 +199,7 @@ checkEquivTypes t u = do
     addError (position t) ["Expecting type", styleRed (show u), 
                  "to be equivalent to type", styleRed (show t)]
 
-quotient :: Bind -> TypingState ()
+quotient :: Bind -> FreestState ()
 quotient b = do
   venv <- getVenv
   case venv Map.!? b of
@@ -209,7 +209,7 @@ quotient b = do
 
 -- | Typing rules for expressions
 
-synthetize :: Expression -> TypingState Type
+synthetize :: Expression -> FreestState Type
 -- Basic expressions
 synthetize (Unit p)         = return $ Basic p UnitType
 synthetize (Integer p _)    = return $ Basic p IntType
@@ -350,7 +350,7 @@ synthetize (Case _ e cm) = do -- SAME AS MATCH
 {- | Checks a variable and removes it from the environment if
      it is linear.
 -}
-checkVar :: Pos -> TermVar -> TypingState TypeScheme -- TODO: Review
+checkVar :: Pos -> TermVar -> FreestState TypeScheme -- TODO: Review
 checkVar p x = do
   let b = Bind p x
   member <- venvMember b
@@ -365,10 +365,10 @@ checkVar p x = do
     addToVenv (Bind p x) (TypeScheme p [] (Basic p UnitType))
     return $ TypeScheme p [] (Basic p UnitType)
 
-addBindsToKenv :: Pos -> [KBind] -> TypingState ()
+addBindsToKenv :: Pos -> [KBind] -> FreestState ()
 addBindsToKenv p bs = foldM (\_ (KBind _ b k) -> addToKenv (Bind p b) k) () bs
 
-removeLinVar :: KindEnv -> Bind -> TypeScheme -> TypingState ()
+removeLinVar :: KindEnv -> Bind -> TypeScheme -> FreestState ()
 removeLinVar kenv x (TypeScheme _ _ t) = do
   isLin <- K.lin t
   if isLin
@@ -378,7 +378,7 @@ removeLinVar kenv x (TypeScheme _ _ t) = do
 -- | The Extract Functions
 
 
-extractFun :: Type -> TypingState (Type, Type)
+extractFun :: Type -> FreestState (Type, Type)
 extractFun (Fun _ _ t u) = return (t, u)
 extractFun t           = do
   let p = position t
@@ -388,7 +388,7 @@ extractFun t           = do
 --   addError p ["Polymorphic functions cannot be applied; instantiate function prior to applying"]
 --   return (TypeScheme [] (Basic p UnitType), TypeScheme [] (Basic p UnitType))
 
--- extractFun :: Pos -> TypeScheme -> TypingState (TypeScheme, TypeScheme)
+-- extractFun :: Pos -> TypeScheme -> FreestState (TypeScheme, TypeScheme)
 -- extractFun _ (TypeScheme p [] (Fun _ _ t u)) = return (TypeScheme p [] t, TypeScheme p [] u)
 -- extractFun p (TypeScheme _ [] t)           = do
 --   addError p ["Expecting a function type; found:", styleRed $ show t]
@@ -398,13 +398,13 @@ extractFun t           = do
 --   return (TypeScheme p [] (Basic p UnitType), TypeScheme p [] (Basic p UnitType))
 
 
-extractScheme :: TypeScheme -> TypingState ([KBind], Type)
+extractScheme :: TypeScheme -> FreestState ([KBind], Type)
 extractScheme (TypeScheme p [] t) = do
   addError (position t) ["Expecting a type scheme; found", styleRed $ show t]
   return ([], (Basic (position t) UnitType))
 extractScheme (TypeScheme p bs t) = return (bs, t)
 
-extractPair :: Type -> TypingState (Type, Type)
+extractPair :: Type -> FreestState (Type, Type)
 extractPair (PairType _ t u) = do
   return (t, u)
 extractPair t                         = do
@@ -412,13 +412,13 @@ extractPair t                         = do
   addError p ["Expecting a pair type; found ", styleRed $ show t]
   return (Basic p IntType, Basic p IntType)
   
-extractBasic :: Type -> TypingState BasicType
+extractBasic :: Type -> FreestState BasicType
 extractBasic (Basic _ t) = return t
 extractBasic t                         = do
   addError (position t) ["Expecting a basic type; found", styleRed $ show t]
   return UnitType
 
-extractOutput :: Type -> TypingState (BasicType, Type)
+extractOutput :: Type -> FreestState (BasicType, Type)
 extractOutput (Semi _ (Skip _) t) = extractOutput t
 extractOutput (Semi _ (Message _ Out b) t) = return (b, t)
 extractOutput (Message p Out b) = return (b, Skip p)
@@ -430,7 +430,7 @@ extractOutput t = do
   addError (position t) ["Expecting an output type; found", styleRed $ show t]
   return (UnitType, Skip (position t))
 
-extractInput :: Type -> TypingState (BasicType, Type)
+extractInput :: Type -> FreestState (BasicType, Type)
 extractInput (Semi _ (Skip _) t) = extractInput t
 extractInput (Semi _ (Message _ In b) t) = return (b, t)
 extractInput (Message p In b) = return (b, Skip p)
@@ -443,7 +443,7 @@ extractInput t = do
   return (UnitType, Skip (position t))
 
 
-extractInChoice :: Type -> TypingState Type
+extractInChoice :: Type -> FreestState Type
 extractInChoice (Semi _ (Skip _) t) = extractInChoice t
 extractInChoice c@(Choice _ Internal _) = return c
 extractInChoice (Semi p (Choice p1 Internal m) t) =
@@ -459,7 +459,7 @@ extractInChoice t = do
   addError (position t) ["Expecting an internal choice; found", styleRed $ show t]
   return $ Skip (position t)
 
-extractCons :: Pos -> Constructor -> Type -> TypingState Type
+extractCons :: Pos -> Constructor -> Type -> FreestState Type
 extractCons p c (Choice _ _ tm) =
   let b = Bind p c in   
   if Map.member b tm then
@@ -473,7 +473,7 @@ extractCons p c t = do
 
 -- TODO: review this case (bindings)
 -- TODO: error on Map.!
-extractEChoiceMap :: Type -> TypingState TypeMap
+extractEChoiceMap :: Type -> FreestState TypeMap
 extractEChoiceMap (Semi _ (Skip _) t) = extractEChoiceMap t
 extractEChoiceMap (Choice _ External m) = return m
 extractEChoiceMap (Semi _ (Choice p External m) t) =
@@ -487,7 +487,7 @@ extractEChoiceMap t = do
   return $ Map.empty
 
 -- 
-extractDataTypeMap :: Type -> TypingState TypeMap
+extractDataTypeMap :: Type -> FreestState TypeMap
 extractDataTypeMap (Datatype _ m) = return m
 extractDataTypeMap t@(Var px x) = do
   venv <- getVenv -- TODO: change to Maybe
@@ -510,7 +510,7 @@ extractDataTypeMap t =  do
 -}
   
   -- TODO: TEST
-wellFormedCall :: Pos -> Expression -> [Type] -> [KBind] -> TypingState ()
+wellFormedCall :: Pos -> Expression -> [Type] -> [KBind] -> FreestState ()
 wellFormedCall p e ts binds = do
   mapM_ (\t -> K.kinding (TypeScheme p [] t)) ts
   sameNumber
@@ -522,10 +522,10 @@ wellFormedCall p e ts binds = do
                       "type(s) on type app; found", show $ length ts]
 
 
--- checkMap :: TypingState ([Type],[VarEnv]) -> VarEnv -> TypeMap -> Bind ->
---             ([Bind], Expression) -> TypingState ([Type],[VarEnv])
-checkMap :: TypingState ([Type],[VarEnv]) -> VarEnv -> TypeMap -> TermVar ->
-            ([Bind], Expression) -> TypingState ([Type],[VarEnv])
+-- checkMap :: FreestState ([Type],[VarEnv]) -> VarEnv -> TypeMap -> Bind ->
+--             ([Bind], Expression) -> FreestState ([Type],[VarEnv])
+checkMap :: FreestState ([Type],[VarEnv]) -> VarEnv -> TypeMap -> TermVar ->
+            ([Bind], Expression) -> FreestState ([Type],[VarEnv])
 checkMap acc venv tm x (p, e) = do
   setVenv venv
   t <- checkCons x tm
@@ -546,8 +546,8 @@ checkMap acc venv tm x (p, e) = do
 
 
 -- TODO: Pos    
---checkCons :: Bind -> TypeMap -> TypingState Type
-checkCons :: TermVar -> TypeMap -> TypingState Type
+--checkCons :: Bind -> TypeMap -> FreestState Type
+checkCons :: TermVar -> TypeMap -> FreestState Type
 checkCons c tm = do
   case tm Map.!? (Bind (AlexPn 0 0 0) c) of
     Just x  -> return x
@@ -561,7 +561,7 @@ checkCons c tm = do
 
 -- | TODO: position, diff, better error message, maybe with diff between maps
 -- and something else (only compares keys)
-checkEquivEnvs :: VarEnv -> VarEnv -> TypingState ()
+checkEquivEnvs :: VarEnv -> VarEnv -> FreestState ()
 checkEquivEnvs venv1 venv2 = do
   equiv <- equivalentEnvs venv1 venv2
   if equiv then
@@ -571,7 +571,7 @@ checkEquivEnvs venv1 venv2 = do
                     "to be equivalent to environment", show venv2]
 
  -- | TODO: position, diff, better error message, maybe with diff between maps
-equivalentEnvs :: VarEnv -> VarEnv -> TypingState Bool
+equivalentEnvs :: VarEnv -> VarEnv -> FreestState Bool
 equivalentEnvs venv1 venv2 = do
   venv3 <- Map.foldlWithKey f1 (return Map.empty) venv1
   venv4 <- Map.foldlWithKey f1 (return Map.empty) venv2
@@ -582,7 +582,7 @@ equivalentEnvs venv1 venv2 = do
     f :: KindEnv -> TypeScheme -> TypeScheme -> Bool
     f kenv (TypeScheme _ _ t) (TypeScheme _ _ u) = equivalent kenv t u
     
-    f1 :: TypingState VarEnv -> Bind -> TypeScheme -> TypingState VarEnv
+    f1 :: FreestState VarEnv -> Bind -> TypeScheme -> FreestState VarEnv
     f1 m k t@(TypeScheme _ _ t1) = do
       isLin <- K.lin t1
 
@@ -591,7 +591,7 @@ equivalentEnvs venv1 venv2 = do
         return $ Map.insert k t m1
       else m
 
-checkEquivBasics :: Pos -> BasicType -> BasicType -> TypingState ()
+checkEquivBasics :: Pos -> BasicType -> BasicType -> FreestState ()
 checkEquivBasics p b1 b2
   | b1 == b2  = return ()
   | otherwise =

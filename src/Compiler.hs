@@ -10,20 +10,18 @@ import Data.List (intercalate)
 import Parse.Parser (parseProgram)
 import System.Exit
 import Utils.PreludeLoader (prelude)
+import Utils.FreestState
 import Validation.Typing (typeCheck)
-import Validation.TypingState
 
--- compile :: String -> IO (Bool, String)
--- compile arg = do
---   bs@(f, venv, eenv, cenv, kenv, err) <- parseProgram arg prelude
---   let (_,_,_,_,_,ers, _) = execState typeCheck (f, venv, eenv, cenv, kenv, err, 0)
---   checkErr ers venv eenv cenv kenv arg
 
 compile :: String -> IO (Bool, String)
 compile arg = do
-  bs@(f, venv, eenv, cenv, kenv, err) <- parseProgram arg prelude
-  let s = execState typeCheck (TypingS {filename=f, varEnv=venv, expEnv=eenv, consEnv=cenv, kindEnv=kenv, errors=err, fv=0})
-  checkErr (errors s) venv eenv cenv kenv arg  
+--  bs@(f, venv, eenv, cenv, kenv, err) <- parseProgram arg prelude
+  ps <- parseProgram arg prelude
+  let s = execState typeCheck ps
+--  let s = execState typeCheck (ps {filename=f, varEnv=venv, expEnv=eenv, consEnv=cenv, kindEnv=kenv, errors=err, fv=0})
+--  checkErr (errors s) venv eenv cenv kenv arg  
+  checkErr (errors s) (varEnv s) (expEnv s) (consEnv s) (kindEnv s) arg  
     
 -- CODE GEN
 

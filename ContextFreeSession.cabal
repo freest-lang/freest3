@@ -27,9 +27,9 @@ executable ContextFreeSession
   other-modules:       Compiler,
                        Syntax.Position, Syntax.Kinds, Syntax.Types, Syntax.Exps, Syntax.Programs,
                        Parse.Parser, Parse.Lexer,
-                       Utils.PreludeLoader, Utils.Errors,
+                       Utils.PreludeLoader, Utils.Errors, Utils.FreestState,
                        Queue.Queue,
-                       Validation.Typing, Validation.Kinding, Validation.Contractive, Validation.TypingState,
+                       Validation.Typing, Validation.Kinding, Validation.Contractive, 
                        Equivalence.TypeEquivalence, Equivalence.Grammar, Equivalence.TypeToGrammar, Equivalence.Norm,
                        CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen
                        
@@ -47,10 +47,9 @@ test-suite unit-tests
                        Parse.Parser, Parse.Lexer,
                        Queue.Queue,
                        Validation.Kinding, Validation.Contractive,
-                       Validation.TypingState, Equivalence.TypeEquivalence,
-                       Equivalence.Grammar, Equivalence.TypeToGrammar,
+                       Equivalence.TypeEquivalence, Equivalence.Grammar, Equivalence.TypeToGrammar,
                        Equivalence.Norm,
-                       Utils.Errors,
+                       Utils.Errors, Utils.FreestState,
                        SpecHelper,
                        Syntax.TestShowValidSpec, Syntax.TestEqInvalidSpec, Syntax.TestEqValidSpec,
                        -- Syntax.TestEqTypeSchemeSpec,
@@ -73,12 +72,10 @@ test-suite program-tests
   other-modules:       Compiler, CompilerSpec, 
                        Syntax.Position, Syntax.Exps, Syntax.Kinds, Syntax.Types, Syntax.Programs,
                        Parse.Lexer, Parse.Parser,
-                       Utils.PreludeLoader, Utils.Errors,
+                       Utils.PreludeLoader, Utils.Errors, Utils.FreestState,
                        Queue.Queue,        
-                       Validation.Typing, Validation.Kinding,
-                       Validation.Contractive, Validation.TypingState,
-                       Equivalence.TypeEquivalence, Equivalence.Grammar,
-                       Equivalence.TypeToGrammar, Equivalence.Norm, 
+                       Validation.Typing, Validation.Kinding, Validation.Contractive,
+                       Equivalence.TypeEquivalence, Equivalence.Grammar, Equivalence.TypeToGrammar, Equivalence.Norm, 
                        CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen
 
 test-suite testEquiv
@@ -96,8 +93,8 @@ test-suite testEquiv
   other-modules:       SpecHelper,
                        Syntax.Position, Syntax.Kinds, Syntax.Types, Syntax.Exps, Syntax.Programs,
                        Parse.Parser, Parse.Lexer,
-                       Queue.Queue, Utils.Errors,
-                       Validation.Kinding,  Validation.TypingState, Validation.Contractive,
+                       Queue.Queue, Utils.Errors, Utils.FreestState,
+                       Validation.Kinding,  Validation.Contractive,
                        Equivalence.Grammar, Equivalence.TypeToGrammar,
                        Equivalence.Norm, Equivalence.TypeEquivalence,
                        Equivalence.TestEquivalenceValidSpec, Equivalence.TestEquivalenceInvalidSpec

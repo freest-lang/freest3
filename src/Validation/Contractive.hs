@@ -21,7 +21,7 @@ import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.Position
 import           Utils.Errors
-import           Validation.TypingState
+import           Utils.FreestState
 import qualified Data.Map.Strict as Map
 
 -- Is a given type contractive?
@@ -32,7 +32,7 @@ contractive kenv (Var p x)    = Map.member (Bind p x) kenv
 contractive _    _            = True
 
 -- Check the contractivity of a given type; issue an error if not
-checkContractive :: Type -> TypingState ()
+checkContractive :: Type -> FreestState ()
 checkContractive t = do
   kenv <- getKenv
   if contractive kenv t

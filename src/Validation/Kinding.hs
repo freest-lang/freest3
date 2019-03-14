@@ -28,20 +28,20 @@ import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.Position
 import           Utils.Errors
+import           Utils.FreestState
 import           Control.Monad.State
-import qualified Data.Map.Strict as Map
 import           Validation.Contractive
-import           Validation.TypingState
+import qualified Data.Map.Strict as Map
 
 -- Returns the kind of a given type scheme -- TODO: type schemes do not have kinds
-kinding :: TypeScheme -> TypingState Kind
+kinding :: TypeScheme -> FreestState Kind
 kinding (TypeScheme _ bs t) = do
   -- TODO: addToKenv -> addBindsLToKenv
   foldM_ (\_ (KBind p x k) -> addToKenv (Bind p x) k) () bs
   synthetize t
 
 -- Returns the kind of a given type
-synthetize :: Type -> TypingState Kind
+synthetize :: Type -> FreestState Kind
 -- Session types
 synthetize (Skip p) =
   return $ Kind p Session Un
@@ -93,7 +93,7 @@ synthetize (Var p v) = do
 
 -- Check whether a given kind is session; issue an error if not. In
 -- either case return the multiplicity
-checkSessionKind :: Type -> Kind -> TypingState Multiplicity
+checkSessionKind :: Type -> Kind -> FreestState Multiplicity
 checkSessionKind t k@(Kind _ p m)
   | p == Session = return $ m
   | otherwise    = do
@@ -102,7 +102,7 @@ checkSessionKind t k@(Kind _ p m)
       return $ m
 
 -- Check whether a given type has a given kind
-checkAgainst :: Kind -> Type -> TypingState ()
+checkAgainst :: Kind -> Type -> FreestState ()
 checkAgainst k (Rec p x t) = do
   checkContractive t
   y <- freshVar
@@ -116,24 +116,24 @@ checkAgainst k t = do
 
 -- Checks whether a given kind is a sub kind of another;
 -- gives an error message if it isn't
-checkSubkind :: Pos -> Kind -> Kind -> TypingState ()
+checkSubkind :: Pos -> Kind -> Kind -> FreestState ()
 checkSubkind p k1 k2
   | k1 <= k2  = return ()
   | otherwise =
       addError p ["Expecting kind", styleRed $ show k1, "to be a sub-kind of kind of kind", styleRed $ show k2]
 
 -- Determines whether a given type is of a given multiplicity
-mult :: Multiplicity -> Type -> TypingState Bool
+mult :: Multiplicity -> Type -> FreestState Bool
 mult m t = do
   (Kind _ _ m') <- synthetize t
   return $ m' == m
       
 -- Determines whether a given type is linear or not
-lin :: Type -> TypingState Bool
+lin :: Type -> FreestState Bool
 lin = mult Lin
 
 -- Determines whether a given type is unrestricted or not
-un :: Type -> TypingState Bool
+un :: Type -> FreestState Bool
 un = mult Un
 
 -- Used to insert in the kinding environment when an error is found
@@ -142,26 +142,13 @@ topKind p = Kind p Functional Lin
 
 -- For TESTS only, from here on
 
--- kindOfType :: KindEnv -> Type -> Kind
--- kindOfType k t =
---   let (f, venv, eenv, cenv, _, err, n) = (initialState  "") in
---   evalState (synthetize t) (f, venv, eenv, cenv, k, err, n)
-
 kindOfType :: KindEnv -> Type -> Kind
 kindOfType k t =
   let s = (initialState  "") in
   evalState (synthetize t) (s {kindEnv=k})
 
-
 kindOfScheme :: TypeScheme -> Kind
 kindOfScheme t = evalState (kinding t) (initialState "")
-
--- isWellFormed :: Type -> KindEnv -> Bool
--- isWellFormed t k =
---   let (f, venv, eenv, cenv, _, err, n) = initialState "" in
---   let (_, _, _, _, _, errors, _) =
---         execState (synthetize t) (f, venv, eenv, cenv, k, err, n) in
---     null errors
 
 isWellFormed :: Type -> KindEnv -> Bool
 isWellFormed t k =

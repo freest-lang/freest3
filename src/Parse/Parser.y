@@ -12,6 +12,7 @@ import           Syntax.Kinds
 import           Syntax.Position
 import           Validation.Kinding
 import           Utils.Errors
+import           Utils.FreestState
 import           Parse.Lexer
 import           Control.Monad.State
 import           Data.Char
@@ -28,7 +29,7 @@ import           System.Exit (die)
 %name expr Expr
 %tokentype { Token }
 %error { parseError }
-%monad { ParserState }
+%monad { FreestState }
 
 %token
   nl       {TokenNL _}
@@ -126,12 +127,12 @@ Decl
 TypeAbbrv :: { () } : -- TODO: the position is taken from $1
   type CONS '=' Type
     {% do
-         let (TokenCons p c) = $2
+         let (TokenCons p c) = $2 -- Non terminal that returns Bind??
          venv <- getVenv
-         checkNamesClash venv c
-           ("Multiple declarations of " ++ styleRed c) p
-	 addToKenv c (Kind p Functional Un)
-	 addToVenv c (TypeScheme p [] $4) 
+         checkNamesClash venv c ("Multiple declarations of " ++ styleRed c) p
+         let b = Bind p c
+	 addToKenv b (Kind p Functional Un)
+	 addToVenv b (TypeScheme p [] $4) 
     }
 
 ---------------
@@ -144,12 +145,13 @@ DataDecl :: { () } : -- TODO: the position is taken from $1
         let (TokenCons p c) = $2
         kenv <- getKenv
         -- should check on kenv???
-        checkNamesClash kenv c ("Multiple declarations of '" ++ styleRed c ++ "'") p 
-	addToKenv c (Kind p Functional Un)
+        checkNamesClash kenv c ("Multiple declarations of '" ++ styleRed c ++ "'") p
+        let b = Bind p c
+	addToKenv b (Kind p Functional Un)
         let binds = typesToFun p c $4
 --        checkBindsClash binds
-	mapM (\(cons, (p, t)) -> addToCenv cons p (TypeScheme p [] t)) binds -- TODO: check the Pos of the type scheme
-        addToVenv c (TypeScheme p [] (convertDT p binds))
+	mapM (\(cons, (p, t)) -> addToCenv (Bind p cons) (TypeScheme p [] t)) binds -- TODO: check the Pos of the type scheme
+        addToVenv b (TypeScheme p [] (convertDT p binds))
     }
 
 DataCons :: { [(Constructor, (Pos, [Type]))] } -- TODO: remove pos
@@ -174,7 +176,7 @@ FunSig :: { () } :
         venv <- getVenv
         checkNamesClash venv f
           ("Duplicate type signatures for " ++ styleRed f) p
-        addToVenv f $3
+        addToVenv (Bind p f) $3
     }
 
 FunTypeScheme :: { TypeScheme }
@@ -355,115 +357,60 @@ Kind :: { Kind } :
   | TL {Kind (getPos $1) Functional Lin}
 
 {
-checkParamClash :: [Bind]   -> Bind  -> ParserState [Bind]
+checkParamClash :: [Bind]   -> Bind  -> FreestState [Bind]
 checkParamClash ps p =
   case find (== p) ps of
     Just x -> do
-      file <- getFileName
-      addError $ styleError file (position x)
+      addError (position x)
                  ["Conflicting definitions for argument", styleRed $ "'" ++ show p ++ "'\n\t",
-                  "Bound at:", file ++ ":" ++ prettyPos (position x) ++ "\n\t",
-                  "          " ++ file ++ ":" ++ prettyPos (position p)]
+                  "Bound at:", prettyPos (position x) ++ "\n\t",
+                  "          " ++ prettyPos (position p)]
       return $ ps
     Nothing -> return $ p : ps
 
 -- Assume: m1 is a singleton map
-checkLabelClash :: TypeMap -> TypeMap -> ParserState TypeMap
+checkLabelClash :: TypeMap -> TypeMap -> FreestState TypeMap
 checkLabelClash m1 m2 = -- TODO: map position?
   if not (null common)
     then do
       let ((Bind p c), _) = Map.elemAt 0 m1
-      file <- getFileName
-      addError $ styleError file p
+      addError p
                ["Conflicting definitions for constructor", styleRed $ c,
-                "Bound at:", file ++ ":" ++ prettyPos p]
+                "Bound at:", prettyPos p]
       return m1
     else
       return $ Map.union m1 m2
     where common = Map.intersection m1 m2
 
 
-checkBindClash :: KBind -> [KBind] -> ParserState [KBind]
+checkBindClash :: KBind -> [KBind] -> FreestState [KBind]
 --checkBindClash b@Bind{var=x, bindPos=pb} bs =
 checkBindClash (KBind p x k) bs =
   case find (\(KBind _ y _) -> y == x) bs of
     Just (KBind p' _ _) -> do
-      file <- getFileName
-      addError $ styleError file p'
+      addError p'
                ["Conflicting definitions for bind", styleRed $ "'" ++ x ++ "'\n\t",
-                "Bound at:", file ++ ":" ++ prettyPos p' ++ "\n\t",
-                "          " ++ file ++ ":" ++ prettyPos p]
+                "Bound at:", prettyPos p' ++ "\n\t",
+                "          " ++ prettyPos p]
       return bs      
     Nothing -> return $ (KBind p x k) : bs
   
-------------------------
--- Handle Parse Monad --
-------------------------
-type Errors = [String]
-type ParserOut = (String, VarEnv, ExpEnv, ConstructorEnv, KindEnv, Errors)
-type ParserState = State ParserOut
-
-initialState :: String -> VarEnv -> ParserOut
-initialState s venv = (s,venv,Map.empty,Map.empty,Map.empty, [])
-
-addToKenv :: TypeVar -> Kind -> ParserState ()
-addToKenv x k = modify (\(f, venv, eenv, cenv, kenv, err) ->
-                          (f, venv, eenv, cenv, Map.insert (Bind (position k) x) k kenv, err))
-
-getKenv :: ParserState KindEnv
-getKenv = do
-  (_,_,_,_,kenv,_) <- get
-  return kenv
-
-addToVenv :: Var -> TypeScheme -> ParserState ()
-addToVenv x t = -- TODO: Is position t Ok?
-  modify (\(f, venv, eenv, cenv, kenv, err) ->
-            (f, Map.insert (Bind (position t) x) t venv, eenv, cenv, kenv, err))
-
-getVenv :: ParserState VarEnv
-getVenv = do
-  (_,venv,_,_,_,_) <- get
-  return venv
-  
-addToCenv :: Var -> Pos -> TypeScheme -> ParserState ()
-addToCenv x p t = modify (\(f, venv, eenv, cenv, kenv, err) ->
-                            (f, venv, eenv, Map.insert (Bind p x) t cenv, kenv, err))
-
-getCenv :: ParserState ConstructorEnv
-getCenv = do
-  (_,_,_,cenv,_,_) <- get
-  return cenv
-
-
--- fst bind was var
-addToEenv :: Bind -> ([Bind], Expression) -> ParserState ()
-addToEenv b t = modify (\(f, venv, eenv, cenv, kenv, err) ->
-                          (f, venv, Map.insert b t eenv, cenv, kenv, err))
-
-getFileName :: ParserState String
-getFileName = do
-  (f,_,_,_,_,_) <- get
-  return f
-
-addError :: String -> ParserState ()
-addError e = modify (\(f, venv, eenv, cenv, kenv, err) ->
-                          (f, venv, eenv, cenv, kenv, e : err))
 -----------------------
 -- Parsing functions --
 -----------------------
 parseKind :: String -> Kind
-parseKind  s = fst $ runState (parse s) (initialState "" Map.empty)
+parseKind  s = fst $ runState (parse s) (initialState "")
   where parse = kinds . scanTokens
 
 parseType :: String -> Type
-parseType s = fst $ runState (parse s) (initialState "" Map.empty)
+parseType s = fst $ runState (parse s) (initialState "")
   where parse = types . scanTokens
 
 instance Read Type where
   readsPrec _ s = [(parseType s, "")]
 
 parseTypeScheme :: String -> TypeScheme
-parseTypeScheme s = fst $ runState (parse s) (initialState "" Map.empty)
+parseTypeScheme s = fst $ runState (parse s) (initialState "")
   where parse = typeScheme . scanTokens
 
 instance Read TypeScheme where
@@ -485,7 +432,7 @@ instance Read Kind where
 
 
 parseExpr :: String -> Expression
-parseExpr s = fst $ runState (parse s) (initialState "" Map.empty)
+parseExpr s = fst $ runState (parse s) (initialState "")
   where parse = expr . scanTokens
   
 instance Read Expression where
@@ -493,7 +440,9 @@ instance Read Expression where
   
 -- parseDefs file str = p str 
 --  where p = scanTokens
-parseDefs file venv str = execState (parse str) (initialState file venv)
+parseDefs file venv str =
+  let s = initialState file in
+  execState (parse str) (s {varEnv=venv})
    where parse = terms . scanTokens
                
 parseProgram inputFile venv = do
@@ -506,40 +455,38 @@ parseProgram inputFile venv = do
   -- return (initialState "FILE")
 
 
-checkErrors (_,_,_,_,_,[]) = return ()
-checkErrors (_,_,_,_,_,err) = die $ intercalate "\n" err
+checkErrors (FreestS {errors=[]}) = return ()
+checkErrors s = die $ intercalate "\n" (errors s)
 
 -------------------
 -- Handle errors --
 -------------------
 
 -- TODO: Pos (0,0)
-parseError :: [Token] -> ParserState a
+parseError :: [Token] -> FreestState a
 parseError [] = do
   file <- getFileName
   error $ styleError file (AlexPn 0 0 0)
           ["Parse error:", styleRed "Premature end of file"]
 parseError xs = do  
   f <- getFileName
-  error $ styleError f p
-          [styleRed "error\n\t", "parse error on input", styleRed $ "'" ++ show (head xs) ++ "'"]
+  error $ styleError f p [styleRed "error\n\t", "parse error on input", styleRed $ "'" ++ show (head xs) ++ "'"]
  where p = getPos (head xs)
 
 
 -- change order of String Pos
-checkNamesClash :: Position a => Map.Map Bind a -> Var -> String -> Pos -> ParserState ()
+checkNamesClash :: Position a => Map.Map Bind a -> Var -> String -> Pos -> FreestState ()
 checkNamesClash m x msg p = do
-  file <- getFileName
   let b = Bind p x
   case m Map.!? b of
     Just a  ->
-      addError $ styleError file p
-               [msg, "\n\t at " ++ file ++ prettyPos (position a) ++ "\n\t    " ++ file ++ prettyPos p]
+      addError p [msg, "\n\t at", prettyPos (position a),
+                       "\n\t   ", prettyPos p]
     Nothing -> return ()
   
 
 {-
-checkNamesClash :: Map.Map Bind a -> Var -> String -> Pos -> ParserState ()
+checkNamesClash :: Map.Map Bind a -> Var -> String -> Pos -> FreestState ()
 checkNamesClash m x msg p = do
   file <- getFileName
   let b = Bind p x
@@ -553,7 +500,7 @@ checkNamesClash m x msg p = do
 -}
 
 {-
-checkBindsClash :: [(Var, (Pos, Type))] -> ParserState ()
+checkBindsClash :: [(Var, (Pos, Type))] -> FreestState ()
 checkBindsClash binds =
   let bs = bindClashes binds in
   if not $ null bs then
