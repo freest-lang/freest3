@@ -24,7 +24,7 @@ styleBody = foldl (\acc x -> acc ++ " " ++ styleBold x) ""
 
 styleHeader :: String -> Pos -> String
 styleHeader f p =
-  styleBold $ "\n" ++ f ++ prettyPos p ++ ": " ++ styleRed "error:\n\t"
+  styleBold $ "\n" ++ f ++ ":" ++ prettyPos p ++ ": " ++ styleRed "error:\n\t"
 
 styleRed :: String -> String
 styleRed = color Red
@@ -33,5 +33,5 @@ styleBold :: String -> String
 styleBold = style Bold
 
 prettyPos :: Pos -> String
-prettyPos (AlexPn _ px py) = ":" ++ show px ++ ":" ++ show py
+prettyPos (AlexPn _ px py) = show px ++ ":" ++ show py
 

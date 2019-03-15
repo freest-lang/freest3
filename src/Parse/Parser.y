@@ -14,9 +14,10 @@ import           Validation.Kinding
 import           Utils.Errors
 import           Utils.FreestState
 import           Parse.Lexer
+import           Parse.ParserUtils
 import           Control.Monad.State
 import           Data.Char
-import           Data.List (nubBy, deleteFirstsBy, intercalate, find)
+import           Data.List (nub, (\\), intercalate, find)
 import qualified Data.Map.Strict as Map
 import           System.Exit (die)
 
@@ -129,7 +130,7 @@ TypeAbbrv :: { () } : -- TODO: the position is taken from $1
     {% do
          let (TokenCons p c) = $2 -- Non terminal that returns Bind??
          venv <- getVenv
-         checkNamesClash venv c ("Multiple declarations of " ++ styleRed c) p
+         checkNamesClash venv c p ("Multiple declarations of " ++ styleRed c)
          let b = Bind p c
 	 addToKenv b (Kind p Functional Un)
 	 addToVenv b (TypeScheme p [] $4) 
@@ -142,28 +143,33 @@ TypeAbbrv :: { () } : -- TODO: the position is taken from $1
 DataDecl :: { () } : -- TODO: the position is taken from $1
   data CONS '=' DataCons
     {% do
-        let (TokenCons p c) = $2
-        kenv <- getKenv
-        -- should check on kenv???
-        checkNamesClash kenv c ("Multiple declarations of '" ++ styleRed c ++ "'") p
-        let b = Bind p c
-	addToKenv b (Kind p Functional Un)
-        let binds = typesToFun p c $4
---        checkBindsClash binds
-	mapM (\(cons, (p, t)) -> addToCenv (Bind p cons) (TypeScheme p [] t)) binds -- TODO: check the Pos of the type scheme
-        addToVenv b (TypeScheme p [] (convertDT p binds))
+         let (TokenCons p c) = $2
+         let b = Bind p c
+         let bs = typesToFun b $4
+         venv <- getVenv
+         checkNamesClash venv c p ("Multiple declarations of '" ++ styleRed c ++ "'")
+
+         addToVenv b (TypeScheme p [] (Datatype p (Map.fromList bs)))
+
+         checkClashes b bs
+
+         addToKenv b (Kind p Functional Un)
+       	 addListToCenv bs
+       	 addListToVenv bs
+         
+         return ()
     }
 
-DataCons :: { [(Constructor, (Pos, [Type]))] } -- TODO: remove pos
+DataCons :: { [(Bind, [Type])] }
   : DataCon              { [$1] }
-  | DataCon '|' DataCons { $1 : $3 } -- TODO: check duplicates
+  | DataCon '|' DataCons { $1 : $3 } 
 
-DataCon :: { (Constructor, (Pos, [Type])) } : -- TODO: remove pos
-  CONS TypeSeq  {let (TokenCons p x) = $1 in (x, (p, $2))}
+DataCon :: { (Bind, [Type]) } :
+  CONS TypeSeq  {let (TokenCons p x) = $1 in (Bind p x, $2)}
 
 TypeSeq :: { [Type] }
   :              { [] }
-  | Type TypeSeq { $1 : $2 } -- TODO: check duplicates
+  | Type TypeSeq { $1 : $2 }
 
 ---------------------------
 -- FUN TYPE DECLARATIONS --
@@ -171,13 +177,12 @@ TypeSeq :: { [Type] }
 
 FunSig :: { () } :
   VAR ':' FunTypeScheme
-    {% do
-        let (TokenVar p f) = $1
-        venv <- getVenv
-        checkNamesClash venv f
-          ("Duplicate type signatures for " ++ styleRed f) p
-        addToVenv (Bind p f) $3
-    }
+   {% do
+       let (TokenVar p f) = $1
+       venv <- getVenv
+       checkNamesClash venv f p ("Duplicate type signatures for " ++ styleRed f)
+       addToVenv (Bind p f) $3
+   }
 
 FunTypeScheme :: { TypeScheme }
   : TypeScheme { $1 }
@@ -296,7 +301,7 @@ TypeScheme :: { TypeScheme }
 
 BindList :: { [KBind] }
   : Bind              { [$1] }
-  | Bind ',' BindList {% checkBindClash $1 $3 }
+  | Bind ',' BindList {% checkKBindClash $1 $3 }
 
 Bind :: { KBind }
   : VAR ':' Kind { let (TokenVar p x) = $1 in KBind p x $3 }
@@ -357,43 +362,6 @@ Kind :: { Kind } :
   | TL {Kind (getPos $1) Functional Lin}
 
 {
-checkParamClash :: [Bind]   -> Bind  -> FreestState [Bind]
-checkParamClash ps p =
-  case find (== p) ps of
-    Just x -> do
-      addError (position x)
-                 ["Conflicting definitions for argument", styleRed $ "'" ++ show p ++ "'\n\t",
-                  "Bound at:", prettyPos (position x) ++ "\n\t",
-                  "          " ++ prettyPos (position p)]
-      return $ ps
-    Nothing -> return $ p : ps
-
--- Assume: m1 is a singleton map
-checkLabelClash :: TypeMap -> TypeMap -> FreestState TypeMap
-checkLabelClash m1 m2 = -- TODO: map position?
-  if not (null common)
-    then do
-      let ((Bind p c), _) = Map.elemAt 0 m1
-      addError p
-               ["Conflicting definitions for constructor", styleRed $ c,
-                "Bound at:", prettyPos p]
-      return m1
-    else
-      return $ Map.union m1 m2
-    where common = Map.intersection m1 m2
-
-
-checkBindClash :: KBind -> [KBind] -> FreestState [KBind]
---checkBindClash b@Bind{var=x, bindPos=pb} bs =
-checkBindClash (KBind p x k) bs =
-  case find (\(KBind _ y _) -> y == x) bs of
-    Just (KBind p' _ _) -> do
-      addError p'
-               ["Conflicting definitions for bind", styleRed $ "'" ++ x ++ "'\n\t",
-                "Bound at:", prettyPos p' ++ "\n\t",
-                "          " ++ prettyPos p]
-      return bs      
-    Nothing -> return $ (KBind p x k) : bs
   
 -----------------------
 -- Parsing functions --
@@ -414,7 +382,7 @@ parseTypeScheme s = fst $ runState (parse s) (initialState "")
   where parse = typeScheme . scanTokens
 
 instance Read TypeScheme where
-  readsPrec _ s = [(parseTypeScheme s, "")]
+  readsPrec _ s = [(parseTypeScheme s, "")] 
 
 -- TODO: move to kinds ??
 instance Read Kind where
@@ -437,23 +405,19 @@ parseExpr s = fst $ runState (parse s) (initialState "")
   
 instance Read Expression where
   readsPrec _ s = [(parseExpr s, "")]
-  
--- parseDefs file str = p str 
---  where p = scanTokens
-parseDefs file venv str =
-  let s = initialState file in
-  execState (parse str) (s {varEnv=venv})
-   where parse = terms . scanTokens
-               
+
+parseProgram :: FilePath -> Map.Map Bind TypeScheme -> IO FreestS
 parseProgram inputFile venv = do
   src <- readFile inputFile
   let p = parseDefs inputFile venv src
   checkErrors p
   return p
-  -- let p = parseDefs inputFile src
-  -- error $ show p
-  -- return (initialState "FILE")
 
+parseDefs :: FilePath -> VarEnv -> String -> FreestS
+parseDefs file venv str =
+  let s = initialState file in
+  execState (parse str) (s {varEnv=venv})
+   where parse = terms . scanTokens
 
 checkErrors (FreestS {errors=[]}) = return ()
 checkErrors s = die $ intercalate "\n" (errors s)
@@ -474,75 +438,31 @@ parseError xs = do
  where p = getPos (head xs)
 
 
--- change order of String Pos
-checkNamesClash :: Position a => Map.Map Bind a -> Var -> String -> Pos -> FreestState ()
-checkNamesClash m x msg p = do
-  let b = Bind p x
-  case m Map.!? b of
-    Just a  ->
-      addError p [msg, "\n\t at", prettyPos (position a),
-                       "\n\t   ", prettyPos p]
-    Nothing -> return ()
+-- tmp move to state
+-- maybe refactor addType & addTypeScheme and then use uncurry
+addListToCenv :: [(Bind,Type)] -> FreestState ()
+addListToCenv bs = do
+  mapM (\(b, t) -> addToCenv b (TypeScheme (position t) [] t)) bs
+  return ()
+
+addListToVenv :: [(Bind,Type)] -> FreestState ()
+addListToVenv bs = do
+  mapM (\(b, t) -> addToVenv b (TypeScheme (position t) [] t)) bs
+  return ()
+
+-- Converting a list of types 
   
-
-{-
-checkNamesClash :: Map.Map Bind a -> Var -> String -> Pos -> FreestState ()
-checkNamesClash m x msg p = do
-  file <- getFileName
-  let b = Bind p x
-  if Map.member b m then
-    let (p1,_) = m Map.! b in
-      addError $ styleError file p
-                 [msg, "\n\t at " ++ file ++ prettyPos p1 ++ "\n\t    " ++ file ++ prettyPos p]
-      
-  else
-    return ()
--}
-
-{-
-checkBindsClash :: [(Var, (Pos, Type))] -> FreestState ()
-checkBindsClash binds =
-  let bs = bindClashes binds in
-  if not $ null bs then
-    do 
-      -- TODO change this
-      -- fake map in reverse to get positions from the
-      -- first elements (fromList keeps the last one)
-      -- ... bs contains the last ones
-      let tmp = Map.fromList (reverse binds)
-      mapM (\(v,(p,_)) -> checkNamesClash tmp v (err v) p) bs
-
-      return ()
-  else
-    do
-      cenv <- getCenv
-      mapM (\(v,(p,_)) -> checkNamesClash cenv v (err v) p) binds
-      return ()
-  where
-    bindClashes :: [(Var, (Pos, Type))] -> [(Var, (Pos, Type))]
-    bindClashes bs = deleteFirstsBy f bs (nubBy f bs)
-
-    f = (\(x,_) (y,_) -> x == y)
-
-    err v = "Multiple declarations of " ++ styleRed v
-
-   -- bindClashes :: [Bind] -> [Bind]
-   --  bindClashes bs = bs \\ nub bs
--}
--------------------------
--- Auxiliary functions -- TODO: all functions are auxiliar
--------------------------
-  
-typesToFun :: Pos -> TypeVar -> [(TypeVar, (Pos, [Type]))] -> [(TypeVar, (Pos, Type))]
-typesToFun p tv = foldl (\acc (k,(p,ts)) -> acc ++ [(k, (p, typeToFun p tv ts))]) [] 
+typesToFun :: Bind -> [(Bind, [Type])] -> [(Bind, Type)]
+typesToFun (Bind p x) =
+  foldr (\(k,ts) acc -> (k, typeToFun p x ts) : acc) []
   where
     typeToFun :: Pos -> TypeVar -> [Type] -> Type
     typeToFun p c [] = (Var p c)
     typeToFun p c (x:xs) = Fun (position x) Un x (typeToFun p c xs)
 
-convertDT :: Pos -> [(TypeVar,(Pos, Type))] -> Type
-convertDT p ts = Datatype p $ Map.fromList $ removePos
-  where
-    removePos = map (\(x,(_,t)) -> (Bind (AlexPn 0 0 0) x,t)) ts -- TODO: tmp pos
+-- convertDT :: Pos -> [(TypeVar,(Pos, Type))] -> Type
+-- convertDT p ts = Datatype p $ Map.fromList $ removePos
+--   where
+--     removePos = map (\(x,(_,t)) -> (Bind (AlexPn 0 0 0) x,t)) ts -- TODO: tmp pos
 
 }

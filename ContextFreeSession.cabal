@@ -26,7 +26,7 @@ executable ContextFreeSession
   build-tools:         alex, happy
   other-modules:       Compiler,
                        Syntax.Position, Syntax.Kinds, Syntax.Types, Syntax.Exps, Syntax.Programs,
-                       Parse.Parser, Parse.Lexer,
+                       Parse.Parser, Parse.Lexer, Parse.ParserUtils,
                        Utils.PreludeLoader, Utils.Errors, Utils.FreestState,
                        Queue.Queue,
                        Validation.Typing, Validation.Kinding, Validation.Contractive, 
@@ -44,7 +44,7 @@ test-suite unit-tests
   hs-source-dirs:      src, test/UnitTests
   default-language:    Haskell2010
   other-modules:       Syntax.Position, Syntax.Kinds, Syntax.Types, Syntax.Exps,
-                       Parse.Parser, Parse.Lexer,
+                       Parse.Parser, Parse.Lexer, Parse.ParserUtils,
                        Queue.Queue,
                        Validation.Kinding, Validation.Contractive,
                        Equivalence.TypeEquivalence, Equivalence.Grammar, Equivalence.TypeToGrammar,
@@ -71,7 +71,7 @@ test-suite program-tests
   default-language:    Haskell2010
   other-modules:       Compiler, CompilerSpec, 
                        Syntax.Position, Syntax.Exps, Syntax.Kinds, Syntax.Types, Syntax.Programs,
-                       Parse.Lexer, Parse.Parser,
+                       Parse.Lexer, Parse.Parser, Parse.ParserUtils,
                        Utils.PreludeLoader, Utils.Errors, Utils.FreestState,
                        Queue.Queue,        
                        Validation.Typing, Validation.Kinding, Validation.Contractive,
@@ -92,7 +92,7 @@ test-suite testEquiv
   default-language:    Haskell2010
   other-modules:       SpecHelper,
                        Syntax.Position, Syntax.Kinds, Syntax.Types, Syntax.Exps, Syntax.Programs,
-                       Parse.Parser, Parse.Lexer,
+                       Parse.Parser, Parse.Lexer,  Parse.ParserUtils,
                        Queue.Queue, Utils.Errors, Utils.FreestState,
                        Validation.Kinding,  Validation.Contractive,
                        Equivalence.Grammar, Equivalence.TypeToGrammar,

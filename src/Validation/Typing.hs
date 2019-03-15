@@ -45,12 +45,12 @@ typeCheck = do
 
   --  3 - Function declaration
   venv1 <- getVenv
-  cenv <- getCenv
-  let venv2 = Map.union venv1 cenv
-  setVenv venv2
+  -- cenv <- getCenv
+  -- let venv2 = Map.union venv1 cenv
+  -- setVenv venv2
   
   -- TODO: added venv2 argument. Not sure if its ok
-  mapWithKeyM (\fun (a, e) -> checkFD venv2 fun a e) eenv
+  mapWithKeyM (\fun (a, e) -> checkFD venv1 fun a e) eenv
 
   venv <- getVenv
   Trav.mapM (\(TypeScheme _ _ t) -> checkUn t) venv
