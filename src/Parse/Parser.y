@@ -158,7 +158,7 @@ DataCons :: { [(Bind, [Type])] }
   | DataCon '|' DataCons { $1 : $3 }
 
 DataCon :: { (Bind, [Type]) } :
-  CONS TypeSeq  {let (TokenCons p x) = $1 in (Bind p x, $2)}
+  ConsBind TypeSeq  { ($1, $2) }
 
 ---------------------------
 -- FUN SIGNATURES --
