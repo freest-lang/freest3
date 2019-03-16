@@ -59,6 +59,7 @@ tokens :-
   [\+]					{\p s -> TokenPlus p}  
   [\-]					{\p s -> TokenMinus p}
   [\*]					{\p s -> TokenTimes p}
+  [\_]					{\p s -> TokenWild p}
   -- [\<]					{\p s -> TokenLT p}
   -- [\>]					{\p s -> TokenGT p}
   rec                                   {\p s -> TokenRec p}  
@@ -165,6 +166,7 @@ data Token =
 -- Operators
   | TokenMinus AlexPosn
   | TokenTimes AlexPosn
+  | TokenWild AlexPosn
   | TokenLT AlexPosn
   | TokenGT AlexPosn
   | TokenOp AlexPosn String
@@ -230,6 +232,7 @@ instance Show Token where
 -- Operators
   show (TokenMinus p) = show p ++ ": -"  
   show (TokenTimes p) = show p ++ ": *"  
+  show (TokenWild p) = show p ++ ": _"  
   show (TokenOp p s) = show p ++ ": " ++ show s  
   -- show (TokenLT p) = show p ++ ": <"  
   -- show (TokenGT p) = show p ++ ": >"  

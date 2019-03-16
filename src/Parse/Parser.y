@@ -57,6 +57,7 @@ import           System.Exit (die)
   '+'      {TokenPlus _}
   '-'      {TokenMinus _}
   '*'      {TokenTimes _}
+  '_'      {TokenWild _}
   OP       {TokenOp _ _}
   CONS     {TokenCons _ _}
   VAR      {TokenVar _ _}
