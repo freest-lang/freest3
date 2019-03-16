@@ -67,7 +67,7 @@ import           System.Exit (die)
   SL       {TokenSL _}
   TU       {TokenTU _}
   TL       {TokenTL _}
-  NUM      {TokenInteger _ _ }
+  INT      {TokenInteger _ _ }
   BOOL     {TokenBool _ _}
   CHAR     {TokenChar _ _}
   let      {TokenLet _}
@@ -116,11 +116,15 @@ NL : nl NL     {} -- TODO: Remove
 
 Decl
   : DataDecl  {}
-  | FunSig    {}
-  -- Function Declaration
-  | VarBind VarBindSeq '=' Expr {% addToEenv $1 ($2, $4) }
+  | VarBind ':' TypeScheme -- Function signature
+    {% checkNamesClash $1 ("Duplicate type signatures for " ++ styleRed (show $1)) >>
+       addToVenv $1 $3
+    }
+  | VarBind VarBindSeq '=' Expr -- Function declaration
+    {% -- TODO: check duplicates >>
+       addToEenv $1 ($2, $4)
+    }
   | TypeAbbrv {}
-
 
 ------------------------
 -- TYPE ABBREVIATIONS --
@@ -129,48 +133,33 @@ Decl
  -- TODO: review verifications & envs added & Kind
 TypeAbbrv :: { () } : -- TODO: the position is taken from $1
   type ConsBind '=' Type
-    {% do
-         venv <- getVenv
-         checkNamesClash venv $2 ("Multiple declarations of " ++ styleRed (show $2))
-	 addToKenv $2 (Kind (position $2) Functional Un)
-	 addToVenv $2 (TypeScheme (position $4) [] $4) 
+    {% checkNamesClash $2 ("Multiple declarations of " ++ styleRed (show $2)) >>
+       addToKenv $2 (Kind (position $2) Functional Un) >>
+       addToVenv $2 (TypeScheme (position $4) [] $4) 
     }
 
 ---------------
 -- DATATYPES --
 ---------------
 
-DataDecl :: { () } : -- TODO: check positions
-  data ConsBind '=' DataCons
+DataDecl :: { () } -- TODO: check positions
+  : data ConsBind '=' DataCons
     {% do
-         let bs = typesToFun $2 $4
-         venv <- getVenv
-         checkNamesClash venv $2 ("Multiple declarations of " ++ styleRed (show $2))
-         addToVenv $2 (TypeScheme (position $2) [] (Datatype (position $2) (Map.fromList bs)))
-         checkClashes $2 bs
-         addToKenv $2 (Kind (getPos $1) Functional Un)
-       	 addListToCenv bs
-       	 addListToVenv bs
+       let bs = typesToFun $2 $4
+       checkNamesClash $2 ("Multiple declarations of " ++ styleRed (show $2))
+       addToVenv $2 (TypeScheme (position $2) [] (Datatype (position $2) (Map.fromList bs)))
+       checkClashes $2 bs
+       addToKenv $2 (Kind (getPos $1) Functional Un)
+       addListToCenv bs
+       addListToVenv bs
     }
 
 DataCons :: { [(Bind, [Type])] }
   : DataCon              { [$1] }
   | DataCon '|' DataCons { $1 : $3 }
 
-DataCon :: { (Bind, [Type]) } :
-  ConsBind TypeSeq  { ($1, $2) }
-
----------------------------
--- FUN SIGNATURES --
----------------------------
-
-FunSig :: { () } :
-  VarBind ':' TypeScheme
-   {% do
-       venv <- getVenv
-       checkNamesClash venv $1 ("Duplicate type signatures for " ++ styleRed (show $1))
-       addToVenv $1 $3
-   }
+DataCon :: { (Bind, [Type]) }
+  : ConsBind TypeSeq  { ($1, $2) }
 
 -----------------
 -- EXPRESSIONS --
@@ -183,7 +172,7 @@ Expr :: { Expression }
   | if Expr then Expr else Expr              { Conditional (getPos $1) $2 $4 $6 }
   | new Type                                 { New (getPos $1) $2 }
   | receive Expr                             { Receive (getPos $1) $2 }
-  | select CONS Expr                         { let (TokenCons _ x) = $2 in Select (getPos $1) x $3 }
+  | select CONS Expr                         { Select (getPos $1) (getText $2) $3 }
   | match Expr with MatchMap                 { Match (getPos $1) $2 $4 }
   | fork Expr                                { Fork (getPos $1) $2 }
   | case Expr of CaseMap                     { Case (getPos $1) $2 $4 }
@@ -206,7 +195,7 @@ Juxt :: { Expression }
 
 Atom :: { Expression }
   : '()'            { Unit (getPos $1) } 
-  | NUM             { let (TokenInteger p x) = $1 in Integer p x }
+  | INT             { let (TokenInteger p x) = $1 in Integer p x }
   | BOOL            { let (TokenBool p x) = $1 in Boolean p x }
   | CHAR            { let (TokenChar p x) = $1 in Character p x }
   | VAR             { let (TokenVar p x) = $1 in Variable p x }
@@ -217,36 +206,15 @@ MatchMap :: { MatchMap }
   : MatchValue              { $1 }
   | MatchValue ';' MatchMap { Map.union $1 $3 } -- TODO: check duplicates
 
-MatchValue :: { MatchMap } :
-  CONS VarBind '->' Expr { let (TokenCons _ c) = $1 in Map.singleton c ($2, $4) }
+MatchValue :: { MatchMap }
+  : CONS VarBind '->' Expr { Map.singleton (getText $1) ($2, $4) }
 
 CaseMap :: { CaseMap }
   : Case  { $1 }
   | Case ';' CaseMap  { Map.union $1 $3 } -- TODO: check duplicates
 
 Case :: { CaseMap }
-  : CONS VarBindSeq '->' Expr { let (TokenCons _ c) = $1 in Map.singleton c ($2, $4) }
-
--- VARIABLES AND CONSTRUCTORS IN BINDING POSITIONS
-
-VarBind :: { Bind }
-  : VAR { let (TokenVar p x) = $1 in Bind p x }
-  | '_' { Bind (getPos $1) "_" } -- TODO: rename to unique Var
-
-ConsBind :: { Bind }
-  : CONS { let (TokenCons p x) = $1 in Bind p x }
-
-VarKBind :: { KBind }
-  : VAR ':' Kind { let (TokenVar p x) = $1 in KBind p x $3 }
-  | VAR		 { let (TokenVar p x) = $1 in KBind p x (Kind p Session Lin) } -- TODO: change to Functional Lin
-
-VarBindSeq :: { [Bind] }
-  :                    { [] }
-  | VarBind VarBindSeq {% checkParamClash $2 $1 } -- TODO: check duplicates
-
-VarKBindList :: { [KBind] }
-  : VarKBind                  { [$1] }
-  | VarKBind ',' VarKBindList {% checkKBindClash $1 $3 }
+  : CONS VarBindSeq '->' Expr { Map.singleton (getText $1) ($2, $4) }
 
 -----------
 -- TYPE SCHEMES --
@@ -261,7 +229,7 @@ TypeScheme :: { TypeScheme }
 -----------
 
 Type :: { Type }
-  : rec VAR '.' Type             { let (TokenVar _ x) = $2 in Rec (getPos $1) x $4 } 
+  : rec VAR '.' Type             { Rec (getPos $1) (getText $2) $4 } 
   | Type ';' Type                { Semi (getPos $2) $1 $3 }
   | Type Multiplicity Type       { uncurry Fun $2 $1 $3 }
   | '(' Type ',' Type ')'        { PairType (getPos $3) $2 $4 }
@@ -271,8 +239,8 @@ Type :: { Type }
   | dualof Type                  { Dualof (getPos $1) $2 }
   | Skip                         { Skip (getPos $1) }
   | BasicType                    { uncurry Basic $1 }
-  | VAR                          { let (TokenVar p x) = $1 in Var p x }
-  | CONS                         { let (TokenCons p x) = $1 in Var p x }
+  | VAR                          { Var (getPos $1) (getText $1) }
+  | CONS                         { Var (getPos $1) (getText $1) }
   | '(' Type ')'                 { $2 }
 
 Polarity :: { (Pos, Polarity) }
@@ -289,10 +257,10 @@ ChoiceView :: { (Pos, ChoiceView) }
   
 FieldList :: { TypeMap }
   : Field                { $1 }
-  | Field ',' FieldList  {% checkLabelClash $1 $3 }
+  | Field ',' FieldList  {% checkLabelClash $1 $3 >> return (Map.union $1 $3) }
 
 Field :: { TypeMap }
-  : CONS ':' Type { let (TokenCons p x) = $1 in Map.singleton (Bind p x) $3 }
+  : ConsBind ':' Type { Map.singleton $1 $3 }
 
 BasicType :: { (Pos, BasicType) }
   : Int  { (getPos $1, IntType) }
@@ -317,10 +285,31 @@ TypeSeq :: { [Type] }
 -----------
 
 Kind :: { Kind } :
-    SU {Kind (getPos $1) Session Un}
-  | SL {Kind (getPos $1) Session Lin}
-  | TU {Kind (getPos $1) Functional Un}
-  | TL {Kind (getPos $1) Functional Lin}
+    SU { Kind (getPos $1) Session Un }
+  | SL { Kind (getPos $1) Session Lin }
+  | TU { Kind (getPos $1) Functional Un }
+  | TL { Kind (getPos $1) Functional Lin }
+
+-- VARIABLES AND CONSTRUCTORS IN BINDING POSITIONS
+
+VarBind :: { Bind }
+  : VAR { Bind (getPos $1) (getText $1) }
+  | '_' { Bind (getPos $1) "_" } -- TODO: rename to unique Var
+
+ConsBind :: { Bind }
+  : CONS { Bind (getPos $1) (getText $1) }
+
+VarKBind :: { KBind }
+  : VAR ':' Kind { KBind (getPos $1) (getText $1) $3 }
+  | VAR		 { KBind (getPos $1) (getText $1) (Kind (getPos $1) Session Lin) } -- TODO: change to Functional Lin
+
+VarBindSeq :: { [Bind] }
+  :                    { [] }
+  | VarBind VarBindSeq {% checkVarClash $1 $2 >> return ($1 : $2) }
+
+VarKBindList :: { [KBind] }
+  : VarKBind                  { [$1] }
+  | VarKBind ',' VarKBindList {% checkKBindClash $1 $3 >> return ($1 : $3) }
 
 {
   

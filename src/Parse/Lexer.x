@@ -3,7 +3,9 @@ module Parse.Lexer
 ( Token(..)
 , scanTokens
 , AlexPosn(..)
-, getPos)
+, getPos
+, getText
+)
 where
 
 -- import GHC.Generics
@@ -249,7 +251,6 @@ trim = reverse . trim' . reverse . trim'
     trim' (TokenNL _ : ts) = trim' ts        
     trim' ts = ts
 
-
 -- TODO: create class Token
 -- TODO: -> change to instance position
 getPos :: Token -> AlexPosn
@@ -308,5 +309,9 @@ getPos (TokenOp p _) = p
 getPos t = error $ show t
 
 -- pos (AlexPn _ l c) = (l,c) 
+
+getText :: Token -> String
+getText (TokenCons _ x) = x
+getText (TokenVar _ x) = x
 
 }

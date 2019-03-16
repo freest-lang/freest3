@@ -1,13 +1,22 @@
 module FreeSTRuntime (_fork, _new, _send, _receive) where
 
 import Control.Concurrent (forkIO)
-import Control.Concurrent.Chan.Synchronous (newChan, writeChan, readChan)
-import Unsafe.Coerce (unsafeCoerce)
+import Control.Concurrent.Chan.Synchronous
+import Unsafe.Coerce
 
-_fork e = forkIO e >> return ()
+_fork e = do
+  forkIO e
+  return ()
 
-_new = newChan >>= \ch -> return (ch, ch)
+_new = do
+  ch1 <- newChan
+  ch2 <- newChan
+  return ((ch1,ch2), (ch2,ch1))
 
-_send x ch  = writeChan ch (unsafeCoerce x) >> return ch
+_send x ch  = do
+  writeChan (snd ch) (unsafeCoerce x)
+  return ch
 
-_receive ch = readChan ch >>= \a -> return (unsafeCoerce a, ch)
+_receive ch = do
+  a <- readChan (fst ch)
+  return (unsafeCoerce a, ch)

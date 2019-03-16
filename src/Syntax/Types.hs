@@ -59,7 +59,7 @@ instance Show ChoiceView where
 
 -- BASIC TYPES
 
-data BasicType = -- TODO: Add Pos
+data BasicType =
     IntType
   | CharType
   | BoolType
