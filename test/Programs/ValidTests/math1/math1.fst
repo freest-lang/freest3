@@ -14,8 +14,8 @@ mathServer c =
       ()
         
           
-start : Int
-start =
+main : Int
+main =
   let w,r = new +{Opp: !Int;?Int;Skip, Plus: !Int;!Int;?Int;Skip} in
   let x = fork (mathServer r) in
   let w1 = select Plus w in

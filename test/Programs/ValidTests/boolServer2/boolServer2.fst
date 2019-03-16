@@ -20,8 +20,8 @@ boolServer c =
       let x = send (not n1) c2 in
       ()
       
-start : Bool
-start = 
+main : Bool
+main = 
   let c1 = startClient client1 in
   let c2 = startClient client2 in
   c1 || c2

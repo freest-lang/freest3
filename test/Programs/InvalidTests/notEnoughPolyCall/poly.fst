@@ -1,6 +1,6 @@
 id' : forall x => x -> x
 id' c = c
 
-start : Int
-start =
+main : Int
+main =
   id' 5

@@ -40,8 +40,8 @@ treeSum c =
 aTree : Tree
 aTree = Node 1 (Node 2 Leaf (Node 3 Leaf (Node 4 Leaf (Node 5 Leaf Leaf)))) (Node 6 Leaf (Node 7 Leaf (Node 8 Leaf Leaf)))
 
-start : Tree
-start =
+main : Tree
+main =
   let w, r = new (rec x. +{LeafC: Skip, NodeC: !Int;x;x;?Int}) in
 --  let t, w = fork (transform[Skip] aTree w) in
 --  let n, r = treeSum[Skip] r in

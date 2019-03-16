@@ -21,8 +21,8 @@ boolServer c =
       ()
       
 
-start : Bool
-start = startClient client1
+main : Bool
+main = startClient client1
 
 client1 : +{And: !Bool;!Bool;?Bool;Skip, Or: !Bool;!Bool;?Bool;Skip, Not: !Bool;?Bool;Skip} -> Bool
 client1 w =

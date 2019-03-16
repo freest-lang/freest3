@@ -6,8 +6,8 @@ Maintainer  :  balmeida@lasige.di.fc.ul.pt
 -}
 
 
-start : Int
-start = precedence
+main : Int
+main = precedence
 
 precedence : Int
 precedence = div 6 2 * (1 + 2)

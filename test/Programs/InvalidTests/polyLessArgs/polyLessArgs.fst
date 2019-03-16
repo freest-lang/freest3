@@ -1,6 +1,6 @@
 
-start : Int
-start = fst' [Int] (2, True)
+main : Int
+main = fst' [Int] (2, True)
 
 
 fst' : forall a, b => (a, b) -> a

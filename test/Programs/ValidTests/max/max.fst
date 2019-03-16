@@ -6,8 +6,8 @@ Maintainer  :  balmeida@lasige.di.fc.ul.pt
 -}
 
 
-start : Int
-start = max' 17 23
+main : Int
+main = max' 17 23
 
 max' : Int -> Int -> Int
 max' x y = if x >= y then x else y

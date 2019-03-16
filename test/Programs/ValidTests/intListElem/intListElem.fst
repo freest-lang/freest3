@@ -7,6 +7,6 @@ elem' a l =
     Cons x y -> if a == x then True else elem' a y
 
 
-start : Bool
-start = elem' 23 (Cons 5 (Cons 7 Nil))
+main : Bool
+main = elem' 23 (Cons 5 (Cons 7 Nil))
 

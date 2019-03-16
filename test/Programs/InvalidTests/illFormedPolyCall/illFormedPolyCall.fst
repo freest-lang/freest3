@@ -12,5 +12,5 @@ sendTree t c =
       c
    
      
-start : Int
-start = 19
+main : Int
+main = 19

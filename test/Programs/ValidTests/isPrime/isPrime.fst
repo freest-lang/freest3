@@ -5,8 +5,8 @@ Copyright   :  (c) LaSIGE and University of Lisbon, Portugal
 Maintainer  :  balmeida@lasige.di.fc.ul.pt
 -}
 
-start : Bool
-start = isPrime 17
+main : Bool
+main = isPrime 17
 
 isPrime : Int -> Bool
 isPrime x = rem (fact (x-1)) x == x-1

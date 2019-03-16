@@ -7,7 +7,7 @@ null' l =
     Cons x y -> False
 
 
-start : Bool
-start = null' (Cons 5 (Cons 7 Nil))
+main : Bool
+main = null' (Cons 5 (Cons 7 Nil))
 
 

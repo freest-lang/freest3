@@ -6,8 +6,8 @@ Maintainer  :  balmeida@lasige.di.fc.ul.pt
 -}
 
 
-start : Int
-start = id' 23
+main : Int
+main = id' 23
 
 id' : Int -> Int
 id' x = x

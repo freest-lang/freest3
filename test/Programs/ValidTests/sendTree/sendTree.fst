@@ -42,8 +42,8 @@ receiveTree c =
       let right, c = receiveTree[a] c in
       (Node x left right, c)
 
-start : Tree
-start =
+main : Tree
+main =
   let inTree = Node 7 (Node 5 Leaf Leaf) (Node 9 (Node 11 Leaf Leaf) (Node 15 Leaf Leaf)) in
   let writer, reader = new (rec x . +{Leaf: Skip, Node: !Int;x;x}) in
   let w = fork (sendTree[Skip] inTree writer) in

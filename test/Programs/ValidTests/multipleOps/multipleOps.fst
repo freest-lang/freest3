@@ -6,8 +6,8 @@ Copyright   :  (c) LaSIGE and University of Lisbon, Portugal
 Maintainer  :  balmeida@lasige.di.fc.ul.pt
 -}
 
-start : Int
-start = a + b + c + d
+main : Int
+main = a + b + c + d
 
 a : Int
 a = -5 + 8 * 6

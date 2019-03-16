@@ -1,7 +1,7 @@
 
 -- It doesn't really matter, it should not throw an error here
-start : Int
-start = 10
+main : Int
+main = 10
 
 data Tree = Leaf | Node Int Tree Tree
 

@@ -1,5 +1,5 @@
-start : Int
-start =
+main : Int
+main =
   let w, r = new !Int;Skip in
   let w1 = fork (send 5 w) in
 -- Can't do this with synchronous channels because the writer blocks until it can synchronize with a reader.

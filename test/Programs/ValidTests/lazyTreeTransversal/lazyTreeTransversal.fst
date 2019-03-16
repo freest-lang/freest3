@@ -97,8 +97,8 @@ serverNode n c =
 aTree : Tree
 aTree = Node 7 (Node 5 Leaf Leaf) (Node 9 (Node 11 Leaf Leaf) (Node 15 Leaf Leaf))
 
-start : Int
-start =
+main : Int
+main =
   let writer, reader = new (rec x. +{LeafC: Skip, NodeC: rec y. &{Value: !Int;y, Left: x;y, Right: x;y, Exit: Skip}}) in
   let x = fork (exploreTree[Skip] aTree writer) in
   let n, r = server[Skip] 1 reader in

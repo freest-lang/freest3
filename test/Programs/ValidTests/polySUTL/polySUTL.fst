@@ -4,6 +4,6 @@ id' x = x
 f : Int -o Int
 f x = 2 * x
 
-start : Int
-start =
+main : Int
+main =
   (id'[Int -o Int] f) 5

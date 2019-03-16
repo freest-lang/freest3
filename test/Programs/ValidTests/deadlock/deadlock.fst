@@ -21,8 +21,8 @@ reader r1 r2 =
   let y, r1 = receive r1 in
   x
 
-start : Bool
-start =
+main : Bool
+main =
   let w1, r1 = new !Char;!Char in
   let w2, r2 = new !Bool;!Bool in
   let u = fork (writer w1 w2) in

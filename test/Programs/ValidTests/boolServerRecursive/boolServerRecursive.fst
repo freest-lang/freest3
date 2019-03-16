@@ -34,8 +34,8 @@ client1 c =
   let c = select End c in
   y
 
-start : Bool
-start =
+main : Bool
+main =
   let w, r = new rec x. +{And: !Bool;!Bool;?Bool;x, Or: !Bool;!Bool;?Bool;x, Not: !Bool;?Bool;x, End: Skip} in
   let x = fork (boolServer r) in
   client1 w

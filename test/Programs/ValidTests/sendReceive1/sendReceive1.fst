@@ -1,5 +1,5 @@
-start : Bool
-start =
+main : Bool
+main =
   let w, r = new ?Int;!Bool;Skip in
   let x = fork (client w) in
   let c1 = send (-5) r in

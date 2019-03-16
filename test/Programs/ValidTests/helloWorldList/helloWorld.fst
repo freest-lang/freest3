@@ -25,8 +25,8 @@ client l c =
 hello : List
 hello = Cons 'H' (Cons 'e' (Cons 'l' (Cons 'l' (Cons 'o' Nil))))
 
-start : List
-start = 
+main : List
+main = 
   let c, s = new (rec x.+{Done: Skip, More: !Char;x}) in
   let x = fork (client[Skip] hello c) in
   let res, c = server[Skip] s in 

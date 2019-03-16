@@ -6,8 +6,8 @@ Maintainer  :  balmeida@lasige.di.fc.ul.pt
 -}
 
 
-start : Int
-start = fact 12
+main : Int
+main = fact 12
 
 fact : Int -> Int
 fact n = if n == 0 then 1 else n * fact (n - 1)

@@ -20,8 +20,8 @@ boolServer c =
       let x = send (not n1) c2 in
       ()
       
-start : Bool
-start = 
+main : Bool
+main = 
   s1
 
 

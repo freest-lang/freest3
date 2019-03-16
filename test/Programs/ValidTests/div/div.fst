@@ -5,5 +5,5 @@ Copyright   :  (c) LaSIGE and University of Lisbon, Portugal
 Maintainer  :  balmeida@lasige.di.fc.ul.pt
 -}
 
-start : Int
-start = div 50 10
+main : Int
+main = div 50 10

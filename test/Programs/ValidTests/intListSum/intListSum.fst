@@ -7,6 +7,6 @@ sum' l =
     Cons x y -> x + sum' y
 
 
-start : Int
-start = sum' (Cons 5 (Cons 7 (Cons 2 (Cons 6 (Cons 3 Nil)))))
+main : Int
+main = sum' (Cons 5 (Cons 7 (Cons 2 (Cons 6 (Cons 3 Nil)))))
 

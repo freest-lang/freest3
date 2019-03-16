@@ -46,8 +46,8 @@ server' c =
     B c ->               -- α
       c
 
-start : ()
-start =
+main : ()
+main =
   let w, r = new +{A: rec x. +{A: x; +{B: Skip}, B: Skip}} in
   let t = fork (client 25 w) in
   let r = server r in

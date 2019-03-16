@@ -1,2 +1,2 @@
-start : Int -> Bool
-start x = True
+main : Int -> Bool
+main x = True

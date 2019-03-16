@@ -38,8 +38,8 @@ client c =
   let c8 = send 9 c7 in
   receive c8
 
-start : Int
-start =
+main : Int
+main =
   let w, r  = 
       new ((rec termChan . &{Const: ?Int, Add: termChan;termChan, Mult: termChan;termChan});!Int) in
 --      new ((rec TermChan . &{Const: ?Int, Add: TermChan;TermChan, Mult: TermChan;TermChan});!Int) in
