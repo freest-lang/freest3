@@ -14,7 +14,7 @@ ProgSpec
 dist/
 cfst.h*
 cfst
-CFSTUtils.hs
+FreeSTRuntime.hs
 Parser.hs
 Lexer.hs
 testEquiv.hp

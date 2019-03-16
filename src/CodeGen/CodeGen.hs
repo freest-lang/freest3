@@ -22,98 +22,75 @@ import           Validation.Kinding
 -- TODO : start may not exists 
 genProgram :: VarEnv -> ExpEnv -> ConstructorEnv -> KindEnv -> FilePath -> IO ()
 genProgram venv eenv cenv kenv path = do
-  genUtils path
+  genFreeSTRunTime path
   let
-    st             = venv Map.! (Bind (AlexPn 0 0 0) "start")
-    (_,stBody)   = eenv Map.! (Bind (AlexPn 0 0 0) "start")
+    venv1            = updateKey venv
+    eenv1            = updateKey eenv
     dataTypes       = genDataTypes cenv
-    file            = translateExpEnv eenv
-  -- let (_,st)          = venv Map.! "start"
---       startType       = last $ toList st
---       dataTypes       = genDataTypes cenv
---       file            = genFile eenv
---       (_,ps,mainBody) = eenv Map.! "start"
-    mainFun         = genMain eenv stBody st in
+    file            = translateExpEnv eenv1
+    mainFun         = genMain eenv1 venv1 in
     writeFile (path ++ "cfst.hs") (genPragmas ++ genImports ++ dataTypes ++ file ++ mainFun)
 
-
-
--- genFile :: ExpEnv -> HaskellCode
--- genFile eenv =
---   Map.foldrWithKey (\f (_,p, e) acc ->
---                       acc ++ f ++ " " ++ showBangParams p ++ " = " ++
---                       code f e p ++ "\n\n") "" eenv
---   where 
---     code f e p =
---       let m = monadicFuns eenv
---           --m1 = addParams p m
---           m2 = fst $ isMonadic m (m Map.! f) Map.empty e in
---       fst $ evalState (translate m m2 e) 0
-
---     addParams p m = foldr (\x acc -> Map.insert x False acc) m p
-
--- showBangParams :: Params -> String
--- showBangParams [] = ""
--- --showBangParams args = intercalate " " args
--- showBangParams args = "!" ++ intercalate " !" args
+updateKey :: Map.Map Bind a -> Map.Map Bind a
+updateKey m =
+  let b = Bind (AlexPn 0 0 0) "main" in
+  case m Map.!? b of
+   Nothing -> m
+   Just e  -> Map.insert (Bind (AlexPn 0 0 0) "_main") e (Map.delete b m)
 
 genImports :: String
-genImports = "import CFSTUtils\n\n"
+genImports = "import FreeSTRuntime\n\n"
 
 genPragmas :: String
-genPragmas = "{-# LANGUAGE BangPatterns #-}\n\n"
+genPragmas = "-- Target Haskell code\n{-# LANGUAGE BangPatterns #-}\n\n"
 
-genMain :: ExpEnv  -> Expression -> TypeScheme -> HaskellCode
-genMain eenv startExp t =  -- "main = putStrLn \"Hello CodeGen\"\n\n"
-  let m = monadicFuns eenv
---      b = (m Map.! "start")
---      m2 = annotateAST' Map.empty m b startExp
-      m2 = annotateAST m (Bind (AlexPn 0 0 0) "start") startExp -- TODO: tmp start position
-      h = evalState (translate m m2 startExp) 0 in
-  if m Map.! (Bind (AlexPn 0 0 0) "start") then  -- TODO: tmp start position
-    "main = start >>= \\res -> putStrLn (show (res :: " ++ show t ++ "))\n\n"
-  else
-    "main = putStrLn (show start)\n\n"
+genMain :: ExpEnv  -> VarEnv -> HaskellCode
+genMain eenv venv =
+  case venv Map.!? (Bind (AlexPn 0 0 0) "_main") of
+    Just t ->    
+      let
+        (_,e)    = eenv Map.! (Bind (AlexPn 0 0 0) "_main")
+        m        = monadicFuns eenv
+        m2       = annotateAST m (Bind (AlexPn 0 0 0) "_main") e
+        h        = evalState (translate m m2 e) 0 in
+      if m Map.! (Bind (AlexPn 0 0 0) "_main") then  -- TODO: tmp start position
+        "main = _main >>= \\res -> putStrLn (show (res :: " ++ show t ++ "))\n\n"
+      else
+        "main = putStrLn (show _main)\n\n"
+    Nothing -> ""
 
--- GENERATES THE COMMUNICATION AND THREAD CREATION MODULE
 
--- genUtils :: FilePath -> IO ()
--- genUtils path = do
---   b <- doesFileExist (path ++ "CFSTUtils.hs")
---   if b then return () else genUtilsFile (path ++ "CFSTUtils.hs")
-
--- genUtilsFile :: FilePath -> IO ()
-genUtils :: FilePath -> IO ()
-genUtils path =
-  writeFile (path ++ "CFSTUtils.hs")
-    ("module CFSTUtils (_fork, _new, _send, _receive) where\n\n" ++
-     genUtilsImports ++ "\n\n" ++
+-- Generates the FreeST runtime module
+genFreeSTRunTime :: FilePath -> IO ()
+genFreeSTRunTime path =
+  writeFile (path ++ "FreeSTRuntime.hs")
+    ("module FreeSTRuntime (_fork, _new, _send, _receive) where\n\n" ++
+     genFreeSTRunTimeImports ++ "\n\n" ++
      genFork ++ "\n\n" ++ genNew ++ "\n\n" ++
      genSend ++ "\n\n" ++ genReceive)
-
-{-
-genUtilsImports :: String
-genUtilsImports =
-  "import Control.Concurrent (forkIO, newEmptyMVar, putMVar, takeMVar)\nimport Unsafe.Coerce\n\n"
-
-
-genNew :: String
-genNew = "_new = do\n  m1 <- newEmptyMVar\n  m2 <- newEmptyMVar\n  return ((m1, m2), (m2, m1))"
-
-genSend :: String
-genSend = "_send x (m1, m2) = do\n  putMVar m2 (unsafeCoerce x)\n  return (m1, m2)"
-
-genReceive :: String
-genReceive = "_receive (m1, m2) = do\n  a <- takeMVar m1\n  return ((unsafeCoerce a), (m1, m2))"
--}
-
--- With channels
 
 genFork :: String
 genFork = "_fork e = do\n  forkIO e\n  return ()"
 
-genUtilsImports :: String
-genUtilsImports =
+-- With channels
+-- Two channels
+genFreeSTRunTimeImports :: String
+genFreeSTRunTimeImports =
+  "import Control.Concurrent (forkIO)\nimport Control.Concurrent.Chan.Synchronous\nimport Unsafe.Coerce"
+
+genNew :: String
+genNew = "_new = do\n  ch1 <- newChan\n  ch2 <- newChan\n  return ((ch1,ch2), (ch2,ch1))"
+
+genSend :: String
+genSend = "_send x ch  = do\n  writeChan (snd ch) (unsafeCoerce x)\n  return ch"
+
+genReceive :: String
+genReceive = "_receive ch = do\n  a <- readChan (fst ch)\n  return (unsafeCoerce a, ch)"
+
+{-
+-- one channel
+genFreeSTRunTimeImports :: String
+genFreeSTRunTimeImports =
   "import Control.Concurrent (forkIO)\nimport Control.Concurrent.Chan.Synchronous\nimport Unsafe.Coerce"
 
 genNew :: String
@@ -124,5 +101,21 @@ genSend = "_send x ch  = do\n  writeChan ch (unsafeCoerce x)\n  return ch"
 
 genReceive :: String
 genReceive = "_receive ch = do\n  a <- readChan ch\n  return (unsafeCoerce a, ch)"
-
+-}
   
+-- With MVar
+
+{-
+genFreeSTRunTimeImports :: String
+genFreeSTRunTimeImports =
+  "import Control.Concurrent (forkIO, newEmptyMVar, putMVar, takeMVar)\nimport Unsafe.Coerce\n\n"
+
+genNew :: String
+genNew = "_new = do\n  m1 <- newEmptyMVar\n  m2 <- newEmptyMVar\n  return ((m1, m2), (m2, m1))"
+
+genSend :: String
+genSend = "_send x (m1, m2) = do\n  putMVar m2 (unsafeCoerce x)\n  return (m1, m2)"
+
+genReceive :: String
+genReceive = "_receive (m1, m2) = do\n  a <- takeMVar m1\n  return ((unsafeCoerce a), (m1, m2))"
+-}
