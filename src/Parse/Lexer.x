@@ -251,7 +251,7 @@ trim = reverse . trim' . reverse . trim'
 
 
 -- TODO: create class Token
--- TODO: -> change to instance position 
+-- TODO: -> change to instance position
 getPos :: Token -> AlexPosn
 getPos (TokenIntT p) = p 
 getPos (TokenCharT p) = p 

@@ -45,6 +45,6 @@ main =
   let w, r = new (rec x. +{LeafC: Skip, NodeC: !Int;x;x;?Int}) in
 --  let t, w = fork (transform[Skip] aTree w) in
 --  let n, r = treeSum[Skip] r in
-  let u = fork (treeSum[Skip] r) in
-  let t, w = transform[Skip] aTree w in
+  let _ = fork (treeSum[Skip] r) in
+  let t, _ = transform[Skip] aTree w in
   t
