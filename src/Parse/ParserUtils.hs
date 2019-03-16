@@ -58,8 +58,8 @@ checkKBindClash (KBind p x k) bs =
       return bs      
     Nothing -> return $ (KBind p x k) : bs
 
-checkNamesClash :: VarEnv -> Var -> Pos -> String -> FreestState ()
-checkNamesClash m x p msg = do
+checkNamesClash :: VarEnv -> Bind -> String -> FreestState ()
+checkNamesClash m (Bind p x) msg = do
   let b = Bind p x
   case m Map.!? b of
     Just a  ->
@@ -71,7 +71,7 @@ checkNamesClash m x p msg = do
 checkClashes :: Bind -> [(Bind, Type)] -> FreestState ()
 checkClashes (Bind p c) bs = do
   venv <- getVenv
-  mapM_ (\(Bind p b, _)  -> checkNamesClash venv b p (err b)) bs
+  mapM_ (\(Bind p b, _)  -> checkNamesClash venv (Bind p b) (err b)) bs
 
   let clash = bs \\ nub bs
   if not (null clash) then
