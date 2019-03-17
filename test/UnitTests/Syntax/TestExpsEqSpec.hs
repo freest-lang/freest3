@@ -51,8 +51,8 @@ spec = do
       (New p (Basic p IntType)) ==
         (New p (Basic p IntType)) `shouldBe` True
     it "Send" $ do
-      (Send p (Variable p "x") (Variable p "c")) ==
-        (Send p (Variable p "x") (Variable p "c")) `shouldBe` True
+      (Send p (Variable p "x")) ==
+        (Send p (Variable p "x")) `shouldBe` True
     it "Receive" $ do
       (Receive p (Variable p "c")) ==
         (Receive p (Variable p "c")) `shouldBe` True

@@ -287,6 +287,11 @@ synthetize (New p t) = do
   K.checkAgainst (Kind p Session Lin) t
   return $ PairType p t (dual t)
 
+synthetize (Send p e) = do
+  t <- synthetize e
+  (u1, u2) <- extractOutput t
+  return (Fun p Lin (Basic p u1) u2)
+{-
 synthetize (Send p e1 e2) = do
   -- TODO: This one is not aligned with the journal rules (send e e -> send e)
   -- TODO: allow sending type instead of basic types only
@@ -296,7 +301,7 @@ synthetize (Send p e1 e2) = do
   (b2, u) <- extractOutput t2
   checkEquivBasics p b1 b2
   return u
-
+-}
 synthetize (Receive p e) = do
   -- TODO: as in send expression, allow receiving type instead of basic types only
   t <- synthetize e

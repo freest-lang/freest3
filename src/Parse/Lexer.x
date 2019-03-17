@@ -33,8 +33,8 @@ $digit = 0-9
 @blockComment = "{-" (\\.|[^\{\-]|\n|\-\-|[^$symbol].*)* "-}"
   
 tokens :-    
-  $white*$eol                           {\p s -> TokenNL p}
-  $eol+                                 {\p s -> TokenNL p}
+--  $white*$eol                           {\p s -> TokenNL p}
+--  $eol+                                 {\p s -> TokenNL p}
   $white+                                ;
   @lineComment                           ;
   @blockComment                          ;
@@ -109,8 +109,8 @@ tokens :-
 
 
 data Token =
-    TokenNL AlexPosn 
-  | TokenIntT AlexPosn 
+--    TokenNL AlexPosn 
+    TokenIntT AlexPosn 
   | TokenCharT AlexPosn 
   | TokenBoolT AlexPosn 
   | TokenUnitT AlexPosn 
@@ -175,7 +175,7 @@ data Token =
 --  deriving Show
 
 instance Show Token where
-  show (TokenNL p) = show p ++ ": \\n"
+--  show (TokenNL p) = show p ++ ": \\n"
   show (TokenIntT p) = show p ++ ": Int"  
   show (TokenCharT p) = show p ++ ": Char"  
   show (TokenBoolT p) = show p ++ ": Bool"  
@@ -248,7 +248,7 @@ trim = reverse . trim' . reverse . trim'
   where 
     trim' :: [Token] -> [Token]
     trim' [] = []
-    trim' (TokenNL _ : ts) = trim' ts        
+--    trim' (TokenNL _ : ts) = trim' ts        
     trim' ts = ts
 
 -- TODO: create class Token
@@ -291,7 +291,7 @@ getPos (TokenEq p) = p
 getPos (TokenData p) = p
 getPos (TokenType p) = p
 getPos (TokenPipe p) = p
-getPos (TokenNL p) = p
+-- getPos (TokenNL p) = p
 getPos (TokenNew p) = p
 getPos (TokenSend p) = p
 getPos (TokenReceive p) = p

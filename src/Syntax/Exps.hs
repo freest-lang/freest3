@@ -65,7 +65,7 @@ data Expression =
   | Fork Pos Expression
   -- Session types
   | New Pos Type
-  | Send Pos Expression Expression -- TODO: Omit the last Expression
+  | Send Pos Expression
   | Receive Pos Expression 
   | Select Pos TermVar Expression
   | Match Pos Expression MatchMap
@@ -84,7 +84,7 @@ instance Position Expression where
   position (Pair p _ _)          = p
   position (BinLet p _ _ _ _)    = p
   position (New p _)             = p
-  position (Send p _ _)          = p
+  position (Send p _)            = p
   position (Receive p _ )        = p
   position (Select p _ _)        = p
   position (Match p _ _)         = p
