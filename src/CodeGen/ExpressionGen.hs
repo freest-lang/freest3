@@ -47,7 +47,7 @@ monadicFuns eenv =
       monadicFun eenv fun e1 || monadicFun eenv fun e2 || monadicFun eenv fun e3
     monadicFun eenv fun (BinLet _ _ _ e1 e2) = monadicFun eenv fun e1 || monadicFun eenv fun e2
     monadicFun _ _ (New _ _) = True
-    monadicFun _ _ (Send _ _ _) = True
+    monadicFun _ _ (Send _ _) = True
     monadicFun _ _ (Receive _ _) = True
     monadicFun _ _ (Select _ _ _) = True
     monadicFun _ _ (Match _ _ _) = True
@@ -119,10 +119,9 @@ annotateAST' m fm b e@(BinLet _ _ _ e1 e2)  =
 annotateAST' m fm _ e@(New _ _) = (Map.insert e True m, True)
 
 
-annotateAST' m fm _ e@(Send _ e1 e2) =
-  let (m1, _) = annotateAST' m fm False e1
-      (m2, _) = annotateAST' m1 fm False e2 in
-      (Map.insert e True m2, True)
+annotateAST' m fm _ e@(Send _ e1) =
+  let (m1, _) = annotateAST' m fm False e1 in
+      (Map.insert e True m1, True)
       
 annotateAST' m fm _ e@(Receive _ e1) =  
   let (m1,_) = annotateAST' m fm False e1 in
@@ -296,10 +295,9 @@ translate fm m (BinLet _ (Bind _ x) (Bind _ y) e1 e2) = do
   
 translate fm m (New _ _) = return ("_new", True)
 
-translate fm m e@(Send _ e1 e2) = do
+translate fm m e@(Send _ e1) = do
   (h1, _) <- translate fm m e1
-  (h2, _) <- translate fm m e2
-  c <- translateExpr ("(_send " ++ h1 ++ " " ++ h2 ++ ")") (expected m e) True
+  c <- translateExpr ("(_send " ++ h1 ++ ")") (expected m e) True
   return (c, True)
 
 translate fm m (Receive _ e) = do
