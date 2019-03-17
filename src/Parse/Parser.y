@@ -1,9 +1,10 @@
 {
 module Parse.Parser
-(parseType,
- parseTypeScheme,
- parseDefs,
- parseProgram) where
+( parseType
+, parseTypeScheme
+, parseDefs
+, parseProgram
+) where
   
 import           Syntax.Programs
 import           Syntax.Exps
@@ -90,14 +91,23 @@ import           System.Exit (die)
   forall   {TokenForall _}
   dualof   {TokenDualof _}  
 
-%right in fork send receive select
-%nonassoc new OP -- '<' '>'
-%right '->' '-o' in
-%left ';'
-%left '+' '-'
-%left '*' '/' '%'
-%nonassoc '.'
-%left NEG
+-- Expr
+%right in else match case
+%left fork send receive select
+%nonassoc new
+%left '||'                      -- disjunction
+%left '&&'                      -- conjunction
+%left '==' '/='                 -- equality
+%nonassoc OP -- '<' '<=' '>' '>='     -- relational
+%left '+' '-'                   -- aditive
+%left '*' '/' '%'               -- multiplicative
+%left NEG not                   -- unary
+
+-- Type
+%right ';'       -- TODO: an Expr operator as well
+%right '->' '-o' -- TODO: an Expr operator as well
+%left rec
+%left dualof
 
 %%
 
@@ -115,7 +125,7 @@ Decl
     {% checkNamesClash $1 ("Duplicate type signatures for " ++ styleRed (show $1)) >>
        addToVenv $1 $3
     }
-  | VarBind VarBindSeq '=' ExprList -- Function declaration
+  | VarBind VarBindSeq '=' ExprSeq -- Function declaration
     {% -- TODO: check duplicates >>
        addToEenv $1 ($2, $4)
     }
@@ -160,23 +170,23 @@ DataCon :: { (Bind, [Type]) }
 -- EXPRESSIONS --
 -----------------
 
-ExprList :: { Expression }
-  : ExprList Expr { App (position $1) $1 $2 }
-  | Expr          { $1 }
+ExprSeq :: { Expression }
+  : ExprSeq Expr { App (position $1) $1 $2 }
+  | Expr         { $1 }
 
 Expr :: { Expression }
-  : let VarBind '=' ExprList in ExprList             { UnLet (getPos $1) $2 $4 $6 }
-  | let VarBind ',' VarBind '=' ExprList in ExprList { BinLet (getPos $1) $2 $4 $6 $8 }
-  | '(' ExprList ',' ExprList ')'                    { Pair (getPos $1) $2 $4 }
-  | if ExprList then ExprList else ExprList          { Conditional (getPos $1) $2 $4 $6 }
-  | new Type                                         { New (getPos $1) $2 }
-  | send ExprList                                    { Send (getPos $1) $2 }
-  | receive ExprList                                 { Receive (getPos $1) $2 }
-  | select CONS ExprList                             { Select (getPos $1) (getText $2) $3 }
-  | match ExprList with '{' MatchMap '}'             { Match (getPos $1) $2 $5 }
-  | fork ExprList                                    { Fork (getPos $1) $2 }
-  | case ExprList of '{' CaseMap '}'                 { Case (getPos $1) $2 $5 }
-  | VAR '[' TypeList ']'                             { TypeApp (getPos $1) (getText $1) $3 }
+  : let VarBind '=' ExprSeq in ExprSeq             { UnLet (getPos $1) $2 $4 $6 }
+  | let VarBind ',' VarBind '=' ExprSeq in ExprSeq { BinLet (getPos $1) $2 $4 $6 $8 }
+  | '(' ExprSeq ',' ExprSeq ')'                    { Pair (getPos $1) $2 $4 }
+  | if ExprSeq then ExprSeq else ExprSeq           { Conditional (getPos $1) $2 $4 $6 }
+  | new Type                                       { New (getPos $1) $2 }
+  | send Expr                                      { Send (getPos $1) $2 }
+  | receive Expr                                   { Receive (getPos $1) $2 }
+  | select CONS Expr                               { Select (getPos $1) (getText $2) $3 }
+  | match ExprSeq with '{' MatchMap '}'            { Match (getPos $1) $2 $5 }
+  | fork Expr                                      { Fork (getPos $1) $2 }
+  | case ExprSeq of '{' CaseMap '}'                { Case (getPos $1) $2 $5 }
+  | VAR '[' TypeList ']'                           { TypeApp (getPos $1) (getText $1) $3 }
   | Expr '+' Expr      {App (position $1) (App (position $1) (Variable (getPos $2) "(+)") $1) $3}
   | Expr '-' Expr      {App (position $1) (App (position $1) (Variable (getPos $2) "(-)") $1) $3}
   | Expr '*' Expr      {App (position $1) (App (position $1) (Variable (getPos $2) "(*)") $1) $3}
@@ -189,21 +199,21 @@ Expr :: { Expression }
   | '()'         { Unit (getPos $1) }
   | VAR          { let (TokenVar p x) = $1 in Variable p x }
   | CONS         { let (TokenCons p x) = $1 in Constructor p x }
-  | '(' ExprList ')' { $2 }
+  | '(' ExprSeq ')' { $2 }
 
 MatchMap :: { MatchMap }
   : MatchValue              { $1 }
   | MatchValue ';' MatchMap { Map.union $1 $3 } -- TODO: check duplicates
 
 MatchValue :: { MatchMap }
-  : CONS VarBind '->' Expr { Map.singleton (getText $1) ($2, $4) }
+  : CONS VarBind '->' ExprSeq { Map.singleton (getText $1) ($2, $4) }
 
 CaseMap :: { CaseMap }
   : Case  { $1 }
   | Case ';' CaseMap  { Map.union $1 $3 } -- TODO: check duplicates
 
 Case :: { CaseMap }
-  : CONS VarBindSeq '->' Expr { Map.singleton (getText $1) ($2, $4) }
+  : CONS VarBindSeq '->' ExprSeq { Map.singleton (getText $1) ($2, $4) }
 
 -----------
 -- TYPE SCHEMES --
