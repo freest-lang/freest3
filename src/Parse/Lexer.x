@@ -3,7 +3,7 @@ module Parse.Lexer
 ( Token(..)
 , scanTokens
 , getText
-, AlexPosn(..)
+, AlexPosn(..) -- TODO: remove
 , Position(..)
 , defaultPos -- Should not be needed
 , Pos
@@ -100,6 +100,7 @@ tokens :-
   (True|False) 	      	 	{ \p s -> TokenBool p $ read s }
   @char				{ \p s -> TokenChar p $ read s }
 -- Identifiers
+  "(+)" | "(-)" | "(*)"         { TokenVar }  -- TODO: add remaining operators
   $lower [$letter$digit\_\']*   { TokenVar }
   $upper [$letter$digit\_\']*	{ TokenCons }
 
