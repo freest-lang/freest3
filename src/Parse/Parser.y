@@ -100,7 +100,7 @@ import           System.Exit (die)
 %left '==' '/='                 -- equality
 %nonassoc OP -- '<' '<=' '>' '>='     -- relational
 %left '+' '-'                   -- aditive
-%left '*' '/' '%'               -- multiplicative
+%left '*' '/'                   -- multiplicative
 %left NEG not                   -- unary
 
 -- Type
@@ -136,26 +136,25 @@ Decl
 ------------------------
 
 -- TODO: review verifications & envs added & Kind
--- TODO: polymorphism
-TypeAbbrv :: { () } -- TODO: the position is taken from $1
-  : type ConsBind VarBindSeq '=' Type
+-- TODO: the position is taken from $1
+TypeAbbrv :: { () }
+  : type ConsBind VarKBindList '=' Type
     {% checkNamesClash $2 ("Multiple declarations of " ++ styleRed (show $2)) >>
        addToKenv $2 (Kind (position $2) Functional Un) >>
-       addToVenv $2 (TypeScheme (position $4) [] $5)
+       addToVenv $2 (TypeScheme (position $4) $3 $5)
     }
 
 ---------------
 -- DATATYPES --
 ---------------
 
--- TODO: polymorphism
 -- TODO: check positions
 DataDecl :: { () }
-  : data ConsBind VarBindSeq '=' DataCons
+  : data ConsBind VarKBindList '=' DataCons
     {% do
        let bs = typesToFun $2 $5
        checkNamesClash $2 ("Multiple declarations of " ++ styleRed (show $2))
-       addToVenv $2 (TypeScheme (position $2) [] (Datatype (position $2) (Map.fromList bs)))
+       addToVenv $2 (TypeScheme (position $2) $3 (Datatype (position $2) (Map.fromList bs)))
        checkClashes $2 bs
        addToKenv $2 (Kind (position $1) Functional Un)
        addListToCenv bs
