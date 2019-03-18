@@ -14,11 +14,10 @@ This module provides tools to prettify & format errors with ANSI colors for term
 module Utils.Errors
 ( styleError
 , styleRed
-, prettyPos
 ) where 
 
 import System.Console.Pretty (Color (..), Style (..), color, style)
-import Parse.Lexer (Pos, AlexPosn(..))
+import Parse.Lexer (Pos, showPos)
 
 styleError :: String -> Pos -> [String] -> String
 styleError f p body = styleHeader f p ++ styleBody body
@@ -28,14 +27,11 @@ styleBody = foldl (\acc x -> acc ++ " " ++ styleBold x) ""
 
 styleHeader :: String -> Pos -> String
 styleHeader f p =
-  styleBold $ "\n" ++ f ++ ":" ++ prettyPos p ++ ": " ++ styleRed "error:\n\t"
+  styleBold $ "\n" ++ f ++ ":" ++ showPos p ++ ": " ++ styleRed "error:\n\t"
 
 styleRed :: String -> String
 styleRed = color Red
 
 styleBold :: String -> String  
 styleBold = style Bold
-
-prettyPos :: Pos -> String
-prettyPos (AlexPn _ px py) = show px ++ ":" ++ show py
 

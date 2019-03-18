@@ -3,9 +3,9 @@ module Parse.Lexer
 ( Token(..)
 , scanTokens
 , getText
-, AlexPosn(..) -- TODO: remove
 , Position(..)
 , defaultPos -- Should not be needed
+, showPos
 , Pos
 ) where
 }
@@ -248,6 +248,9 @@ instance Ord AlexPosn where -- TODO: Others
 
 defaultPos :: Pos
 defaultPos = AlexPn 0 0 0
+
+showPos :: Pos -> String
+showPos (AlexPn _ px py) = show px ++ ":" ++ show py
 
 -- TODO: -> change to instance position
 

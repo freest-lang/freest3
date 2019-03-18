@@ -13,7 +13,7 @@ Portability :  portable | non-portable (<reason>)
 
 module Parse.ParserUtils where
 
-import           Parse.Lexer (Pos, position)
+import           Parse.Lexer (Pos, position, showPos)
 import           Syntax.Programs (VarEnv)
 import           Syntax.Exps (Expression(..))
 import           Syntax.Types (TypeMap, KBind(..), Type)
@@ -29,8 +29,8 @@ checkVarClash p ps =
     Just x -> do
       addError (position x)
                  ["Conflicting definitions for argument", styleRed $ "'" ++ show p ++ "'\n\t",
-                  "Bound at:", prettyPos (position x) ++ "\n\t",
-                  "          " ++ prettyPos (position p)]
+                  "Bound at:", showPos (position x) ++ "\n\t",
+                  "          " ++ showPos (position p)]
     Nothing -> return ()
 
 -- Assume: m1 is a singleton map
@@ -41,7 +41,7 @@ checkLabelClash m1 m2 = -- TODO: map position?
       let ((Bind p c), _) = Map.elemAt 0 m1
       addError p
                ["Conflicting definitions for constructor", styleRed c,
-                "Bound at:", prettyPos p]
+                "Bound at:", showPos p]
     else
       return ()
 
@@ -51,8 +51,8 @@ checkKBindClash b@(KBind p x k) bs =
     Just (KBind p' _ _) -> do
       addError p'
                ["Conflicting definitions for bind ", styleRed x ++ "\n\t",
-                "Bound at:", prettyPos p' ++ "\n\t",
-                "          " ++ prettyPos p]
+                "Bound at:", showPos p' ++ "\n\t",
+                "          " ++ showPos p]
     Nothing -> return ()
 
 checkNamesClash :: Bind -> String -> FreestState ()
@@ -61,8 +61,8 @@ checkNamesClash (Bind p x) msg = do
   let b = Bind p x
   case m Map.!? b of
     Just a  ->
-      addError p [msg, "\n\t at", prettyPos (position a),
-                       "and", prettyPos p]
+      addError p [msg, "\n\t at", showPos (position a),
+                       "and", showPos p]
     Nothing -> return ()
 
 -- Verifies collisions with other datatypes and within the same datatype 

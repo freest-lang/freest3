@@ -135,22 +135,25 @@ Decl
 -- TYPE ABBREVIATIONS --
 ------------------------
 
- -- TODO: review verifications & envs added & Kind
-TypeAbbrv :: { () } : -- TODO: the position is taken from $1
-  type ConsBind '=' Type
+-- TODO: review verifications & envs added & Kind
+-- TODO: polymorphism
+TypeAbbrv :: { () } -- TODO: the position is taken from $1
+  : type ConsBind VarBindSeq '=' Type
     {% checkNamesClash $2 ("Multiple declarations of " ++ styleRed (show $2)) >>
        addToKenv $2 (Kind (position $2) Functional Un) >>
-       addToVenv $2 (TypeScheme (position $4) [] $4) 
+       addToVenv $2 (TypeScheme (position $4) [] $5)
     }
 
 ---------------
 -- DATATYPES --
 ---------------
 
-DataDecl :: { () } -- TODO: check positions
-  : data ConsBind '=' DataCons
+-- TODO: polymorphism
+-- TODO: check positions
+DataDecl :: { () }
+  : data ConsBind VarBindSeq '=' DataCons
     {% do
-       let bs = typesToFun $2 $4
+       let bs = typesToFun $2 $5
        checkNamesClash $2 ("Multiple declarations of " ++ styleRed (show $2))
        addToVenv $2 (TypeScheme (position $2) [] (Datatype (position $2) (Map.fromList bs)))
        checkClashes $2 bs
@@ -334,11 +337,11 @@ instance Read TypeScheme where
 
 -- TODO: move to kinds ??
 instance Read Kind where
-  readsPrec _ s = -- [(parseKind s, "")]    
-    tryParse [("SL", Kind (AlexPn (-1) (-1) (-1)) Session Lin),
-              ("SU", Kind (AlexPn (-1) (-1) (-1)) Session Un),
-              ("TL", Kind (AlexPn (-1) (-1) (-1)) Functional Lin),
-              ("TU", Kind (AlexPn (-1) (-1) (-1)) Functional Un)]
+  readsPrec _ s = -- [(parseKind s, "")]
+    tryParse [("SL", Kind defaultPos Session Lin),
+              ("SU", Kind defaultPos Session Un),
+              ("TL", Kind defaultPos Functional Lin),
+              ("TU", Kind defaultPos Functional Un)]
     where tryParse [] = []
           tryParse ((attempt,result):xs) =
             if (take (length attempt) (trim s)) == attempt
