@@ -15,6 +15,7 @@ module Validation.Typing
 ( typeCheck
 ) where
 
+import           Parse.Lexer (Pos, position, defaultPos)
 import           Syntax.Programs
 import           Syntax.Exps
 import           Syntax.Types
@@ -554,11 +555,11 @@ checkMap acc venv tm x (p, e) = do
 --checkCons :: Bind -> TypeMap -> FreestState Type
 checkCons :: TermVar -> TypeMap -> FreestState Type
 checkCons c tm = do
-  case tm Map.!? (Bind (AlexPn 0 0 0) c) of
+  case tm Map.!? (Bind defaultPos c) of
     Just x  -> return x
     Nothing -> do
-      addError (AlexPn 0 0 0) [styleRed "Rewrite, label not in scope"]
-      return $ Skip (AlexPn 0 0 0)
+      addError defaultPos [styleRed "Rewrite, label not in scope"]
+      return $ Skip defaultPos
 
 
 -- | Equivalence functions
@@ -572,7 +573,7 @@ checkEquivEnvs venv1 venv2 = do
   if equiv then
     return ()
   else
-      addError (AlexPn 0 0 0) ["Expecting environment", show venv1,
+      addError defaultPos ["Expecting environment", show venv1,
                     "to be equivalent to environment", show venv2]
 
  -- | TODO: position, diff, better error message, maybe with diff between maps

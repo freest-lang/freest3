@@ -13,6 +13,7 @@ Portability :  portable | non-portable (<reason>)
 
 module Utils.FreestState where
 
+import           Parse.Lexer (Pos)
 import           Syntax.Programs
 import           Syntax.Exps
 import           Syntax.Types

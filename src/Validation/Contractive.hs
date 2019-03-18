@@ -16,6 +16,7 @@ module Validation.Contractive
 )
 where
 
+import           Parse.Lexer (Pos, position)
 import           Syntax.Programs
 import           Syntax.Types
 import           Syntax.Kinds

@@ -6,6 +6,7 @@ module Parse.Parser
 , parseProgram
 ) where
   
+import           Parse.Lexer
 import           Syntax.Programs
 import           Syntax.Exps
 import           Syntax.Types
@@ -14,7 +15,6 @@ import           Syntax.Position
 import           Validation.Kinding
 import           Utils.Errors
 import           Utils.FreestState
-import           Parse.Lexer
 import           Parse.ParserUtils
 import           Control.Monad.State
 import           Data.Char
@@ -37,7 +37,7 @@ import           System.Exit (die)
   Int      {TokenIntT _}
   Char     {TokenCharT _}
   Bool     {TokenBoolT _}
-  '()'     {TokenUnitT _}
+  '()'     {TokenUnit _}
   '->'     {TokenUnArrow _}
   '-o'     {TokenLinArrow _}
   Skip     {TokenSkip _}
@@ -154,7 +154,7 @@ DataDecl :: { () } -- TODO: check positions
        checkNamesClash $2 ("Multiple declarations of " ++ styleRed (show $2))
        addToVenv $2 (TypeScheme (position $2) [] (Datatype (position $2) (Map.fromList bs)))
        checkClashes $2 bs
-       addToKenv $2 (Kind (getPos $1) Functional Un)
+       addToKenv $2 (Kind (position $1) Functional Un)
        addListToCenv bs
        addListToVenv bs
     }
@@ -175,31 +175,30 @@ ExprSeq :: { Expression }
   | Expr         { $1 }
 
 Expr :: { Expression }
-  : let VarBind '=' ExprSeq in ExprSeq             { UnLet (getPos $1) $2 $4 $6 }
-  | let VarBind ',' VarBind '=' ExprSeq in ExprSeq { BinLet (getPos $1) $2 $4 $6 $8 }
-  | '(' ExprSeq ',' ExprSeq ')'                    { Pair (getPos $1) $2 $4 }
-  | if ExprSeq then ExprSeq else ExprSeq           { Conditional (getPos $1) $2 $4 $6 }
-  | new Type                                       { New (getPos $1) $2 }
-  | send Expr                                      { Send (getPos $1) $2 }
-  | receive Expr                                   { Receive (getPos $1) $2 }
-  | select CONS Expr                               { Select (getPos $1) (getText $2) $3 }
-  | match ExprSeq with '{' MatchMap '}'            { Match (getPos $1) $2 $5 }
-  | fork Expr                                      { Fork (getPos $1) $2 }
-  | case ExprSeq of '{' CaseMap '}'                { Case (getPos $1) $2 $5 }
-  | VAR '[' TypeList ']'                           { TypeApp (getPos $1) (getText $1) $3 }
-  | Expr '+' Expr      {App (position $1) (App (position $1) (Variable (getPos $2) "(+)") $1) $3}
-  | Expr '-' Expr      {App (position $1) (App (position $1) (Variable (getPos $2) "(-)") $1) $3}
-  | Expr '*' Expr      {App (position $1) (App (position $1) (Variable (getPos $2) "(*)") $1) $3}
-  | '-' Expr %prec NEG {App (getPos $1) (Variable (getPos $1) "negate") $2}
-  | Expr OP Expr       {let (TokenOp p s) = $2 in
-                          App (position $1) (App (position $1) (Variable p s) $1) $3}
-  | INT          { let (TokenInteger p x) = $1 in Integer p x }
-  | BOOL         { let (TokenBool p x) = $1 in Boolean p x }
-  | CHAR         { let (TokenChar p x) = $1 in Character p x }
-  | '()'         { Unit (getPos $1) }
-  | VAR          { let (TokenVar p x) = $1 in Variable p x }
-  | CONS         { let (TokenCons p x) = $1 in Constructor p x }
-  | '(' ExprSeq ')' { $2 }
+  : let VarBind '=' ExprSeq in ExprSeq             { UnLet (position $1) $2 $4 $6 }
+  | let VarBind ',' VarBind '=' ExprSeq in ExprSeq { BinLet (position $1) $2 $4 $6 $8 }
+  | '(' ExprSeq ',' ExprSeq ')'                    { Pair (position $1) $2 $4 }
+  | if ExprSeq then ExprSeq else ExprSeq           { Conditional (position $1) $2 $4 $6 }
+  | new Type                                       { New (position $1) $2 }
+  | send Expr                                      { Send (position $1) $2 }
+  | receive Expr                                   { Receive (position $1) $2 }
+  | select CONS Expr                               { Select (position $1) (getText $2) $3 }
+  | match ExprSeq with '{' MatchMap '}'            { Match (position $1) $2 $5 }
+  | fork Expr                                      { Fork (position $1) $2 }
+  | case ExprSeq of '{' CaseMap '}'                { Case (position $1) $2 $5 }
+  | VAR '[' TypeList ']'                           { TypeApp (position $1) (getText $1) $3 }
+  | Expr '+' Expr                                  { binOp $1 (position $2) "(+)" $3 }
+  | Expr '-' Expr                                  { binOp $1 (position $2) "(-)" $3 }
+  | Expr '*' Expr                                  { binOp $1 (position $2) "(*)" $3 }
+  | '-' Expr %prec NEG                             { unOp (position $1) "negate" $2}
+  | Expr OP Expr                                   { binOp $1 (position $2) (getText $2) $3 }
+  | INT                                            { let (TokenInteger p x) = $1 in Integer p x }
+  | BOOL                                           { let (TokenBool p x) = $1 in Boolean p x }
+  | CHAR                                           { let (TokenChar p x) = $1 in Character p x }
+  | '()'                                           { Unit (position $1) }
+  | VAR                                            { Variable (position $1) (getText $1) }
+  | CONS                                           { Constructor (position $1) (getText $1) }
+  | '(' ExprSeq ')'                                { $2 }
 
 MatchMap :: { MatchMap }
   : MatchValue              { $1 }
@@ -220,7 +219,7 @@ Case :: { CaseMap }
 -----------
 
 TypeScheme :: { TypeScheme }
-  : forall VarKBindList '=>' Type { TypeScheme (getPos $1) $2 $4 }
+  : forall VarKBindList '=>' Type { TypeScheme (position $1) $2 $4 }
   | Type                          { TypeScheme (position $1) [] $1 }
 
 -----------
@@ -228,31 +227,31 @@ TypeScheme :: { TypeScheme }
 -----------
 
 Type :: { Type }
-  : rec VAR '.' Type             { Rec (getPos $1) (getText $2) $4 } 
-  | Type ';' Type                { Semi (getPos $2) $1 $3 }
+  : rec VAR '.' Type             { Rec (position $1) (getText $2) $4 } 
+  | Type ';' Type                { Semi (position $2) $1 $3 }
   | Type Multiplicity Type       { uncurry Fun $2 $1 $3 }
-  | '(' Type ',' Type ')'        { PairType (getPos $3) $2 $4 }
+  | '(' Type ',' Type ')'        { PairType (position $3) $2 $4 }
   | Polarity BasicType           { uncurry Message $1 (snd $2) }
-  | '[' FieldList ']'            { Datatype (getPos $1) $2 }
+  | '[' FieldList ']'            { Datatype (position $1) $2 }
   | ChoiceView '{' FieldList '}' { uncurry Choice $1 $3 } 
-  | dualof Type                  { Dualof (getPos $1) $2 }
-  | Skip                         { Skip (getPos $1) }
+  | dualof Type                  { Dualof (position $1) $2 }
+  | Skip                         { Skip (position $1) }
   | BasicType                    { uncurry Basic $1 }
-  | VAR                          { Var (getPos $1) (getText $1) }
-  | CONS                         { Var (getPos $1) (getText $1) }
+  | VAR                          { Var (position $1) (getText $1) }
+  | CONS                         { Var (position $1) (getText $1) }
   | '(' Type ')'                 { $2 }
 
 Polarity :: { (Pos, Polarity) }
-  : '?' { (getPos $1, In) }
-  | '!' { (getPos $1, Out) }
+  : '?' { (position $1, In) }
+  | '!' { (position $1, Out) }
 
 Multiplicity :: { (Pos, Multiplicity) }
-  : '->' { (getPos $1, Un) }
-  | '-o' { (getPos $1, Lin) }
+  : '->' { (position $1, Un) }
+  | '-o' { (position $1, Lin) }
 
 ChoiceView :: { (Pos, ChoiceView) }
-  : '+' { (getPos $1, Internal) }
-  | '&' { (getPos $1, External) }
+  : '+' { (position $1, Internal) }
+  | '&' { (position $1, External) }
   
 FieldList :: { TypeMap }
   : Field                { $1 }
@@ -262,10 +261,10 @@ Field :: { TypeMap }
   : ConsBind ':' Type { Map.singleton $1 $3 }
 
 BasicType :: { (Pos, BasicType) }
-  : Int  { (getPos $1, IntType) }
-  | Char { (getPos $1, CharType) }
-  | Bool { (getPos $1, BoolType) }
-  | '()' { (getPos $1, UnitType) }
+  : Int  { (position $1, IntType) }
+  | Char { (position $1, CharType) }
+  | Bool { (position $1, BoolType) }
+  | '()' { (position $1, UnitType) }
 
 -----------
 -- TYPE LISTS AND SEQUENCES --
@@ -284,23 +283,23 @@ TypeSeq :: { [Type] }
 -----------
 
 Kind :: { Kind } :
-    SU { Kind (getPos $1) Session Un }
-  | SL { Kind (getPos $1) Session Lin }
-  | TU { Kind (getPos $1) Functional Un }
-  | TL { Kind (getPos $1) Functional Lin }
+    SU { Kind (position $1) Session Un }
+  | SL { Kind (position $1) Session Lin }
+  | TU { Kind (position $1) Functional Un }
+  | TL { Kind (position $1) Functional Lin }
 
 -- VARIABLES AND CONSTRUCTORS IN BINDING POSITIONS
 
 VarBind :: { Bind }
-  : VAR { Bind (getPos $1) (getText $1) }
-  | '_' { Bind (getPos $1) "_" } -- TODO: rename to unique Var
+  : VAR { Bind (position $1) (getText $1) }
+  | '_' { Bind (position $1) "_" } -- TODO: rename to unique Var
 
 ConsBind :: { Bind }
-  : CONS { Bind (getPos $1) (getText $1) }
+  : CONS { Bind (position $1) (getText $1) }
 
 VarKBind :: { KBind }
-  : VAR ':' Kind { KBind (getPos $1) (getText $1) $3 }
-  | VAR		 { KBind (getPos $1) (getText $1) (Kind (getPos $1) Session Lin) } -- TODO: change to Functional Lin
+  : VAR ':' Kind { KBind (position $1) (getText $1) $3 }
+  | VAR		 { KBind (position $1) (getText $1) (Kind (position $1) Session Lin) } -- TODO: change to Functional Lin
 
 VarBindSeq :: { [Bind] }
   :                    { [] }
@@ -375,16 +374,15 @@ checkErrors s = die $ intercalate "\n" (errors s)
 -- Handle errors --
 -------------------
 
--- TODO: Pos (0,0)
 parseError :: [Token] -> FreestState a
 parseError [] = do
   file <- getFileName
-  error $ styleError file (AlexPn 0 0 0)
+  error $ styleError file defaultPos
           ["Parse error:", styleRed "Premature end of file"]
 parseError xs = do  
   f <- getFileName
   error $ styleError f p [styleRed "error\n\t", "parse error on input", styleRed $ "'" ++ show (head xs) ++ "'"]
- where p = getPos (head xs)
+ where p = position (head xs)
 
 
 -- tmp move to state
@@ -412,6 +410,6 @@ typesToFun (Bind p x) =
 -- convertDT :: Pos -> [(TypeVar,(Pos, Type))] -> Type
 -- convertDT p ts = Datatype p $ Map.fromList $ removePos
 --   where
---     removePos = map (\(x,(_,t)) -> (Bind (AlexPn 0 0 0) x,t)) ts -- TODO: tmp pos
+--     removePos = map (\(x,(_,t)) -> (Bind defaultPos x,t)) ts -- TODO: tmp pos
 
 }

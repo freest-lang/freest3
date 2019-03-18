@@ -1,10 +1,11 @@
 module Equivalence.TestEquivalenceValidSpec(spec) where
 
-import qualified Data.Map.Strict as Map
+import           Parse.Lexer (defaultPos)
+import           Syntax.Position
 import           Equivalence.TypeEquivalence
 import           SpecHelper
 import           Syntax.Kinds (Kind)
-import           Syntax.Position
+import qualified Data.Map.Strict as Map
 
 spec :: Spec
 spec = do
@@ -20,7 +21,7 @@ matchValidSpec [k, t, u] =
 
 --  :: [(String,Kind)]
 readKenv s =
-  map (\(x,k) -> (Bind (AlexPn 0 0 0) x, k)) xs
+  map (\(x,k) -> (Bind defaultPos x, k)) xs
   where xs = read s :: [(String,Kind)]
   
 main :: IO ()

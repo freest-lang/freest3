@@ -1,9 +1,9 @@
 module CodeGen.CodeGen
- (
-   genProgram
- , HaskellCode(..)
- ) where 
+( genProgram
+, HaskellCode(..)
+) where 
 
+import           Parse.Lexer (defaultPos)
 import           Syntax.Programs
 import           Syntax.Exps
 import           Syntax.Types
@@ -33,10 +33,10 @@ genProgram venv eenv cenv kenv path = do
 
 updateKey :: Map.Map Bind a -> Map.Map Bind a
 updateKey m =
-  let b = Bind (AlexPn 0 0 0) "main" in
+  let b = Bind defaultPos "main" in
   case m Map.!? b of
    Nothing -> m
-   Just e  -> Map.insert (Bind (AlexPn 0 0 0) "_main") e (Map.delete b m)
+   Just e  -> Map.insert (Bind defaultPos "_main") e (Map.delete b m)
 
 genImports :: String
 genImports = "import FreeSTRuntime\n\n"
@@ -46,14 +46,14 @@ genPragmas = "-- Target Haskell code\n{-# LANGUAGE BangPatterns #-}\n\n"
 
 genMain :: ExpEnv  -> VarEnv -> HaskellCode
 genMain eenv venv =
-  case venv Map.!? (Bind (AlexPn 0 0 0) "_main") of
+  case venv Map.!? (Bind defaultPos "_main") of
     Just t ->    
       let
-        (_,e)    = eenv Map.! (Bind (AlexPn 0 0 0) "_main")
+        (_,e)    = eenv Map.! (Bind defaultPos "_main")
         m        = monadicFuns eenv
-        m2       = annotateAST m (Bind (AlexPn 0 0 0) "_main") e
+        m2       = annotateAST m (Bind defaultPos "_main") e
         h        = evalState (translate m m2 e) 0 in
-      if m Map.! (Bind (AlexPn 0 0 0) "_main") then  -- TODO: tmp start position
+      if m Map.! (Bind defaultPos "_main") then  -- TODO: tmp start position
         "main = _main >>= \\res -> putStrLn (show (res :: " ++ show t ++ "))\n\n"
       else
         "main = putStrLn (show _main)\n\n"

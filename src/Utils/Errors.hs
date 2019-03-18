@@ -11,10 +11,14 @@ Portability :  portable | non-portable (<reason>)
 This module provides tools to prettify & format errors with ANSI colors for terminals
 -}
 
-module Utils.Errors (styleError, styleRed, prettyPos) where 
+module Utils.Errors
+( styleError
+, styleRed
+, prettyPos
+) where 
 
 import System.Console.Pretty (Color (..), Style (..), color, style)
-import Syntax.Position (Pos, AlexPosn(..))
+import Parse.Lexer (Pos, AlexPosn(..))
 
 styleError :: String -> Pos -> [String] -> String
 styleError f p body = styleHeader f p ++ styleBody body

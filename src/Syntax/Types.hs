@@ -30,6 +30,7 @@ module Syntax.Types
 , isPreSession
 ) where
 
+import           Parse.Lexer (Position(..), Pos)
 import           Syntax.Position
 import           Syntax.Kinds
 import           Data.List (intersperse)

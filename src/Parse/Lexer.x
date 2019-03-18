@@ -2,13 +2,12 @@
 module Parse.Lexer
 ( Token(..)
 , scanTokens
-, AlexPosn(..)
-, getPos
 , getText
-)
-where
-
--- import GHC.Generics
+, AlexPosn(..)
+, Position(..)
+, defaultPos -- Should not be needed
+, Pos
+) where
 }
 
 %wrapper "posn"
@@ -17,103 +16,100 @@ $eol   = [\n]
 
 $lowerU = [\927-\982] 
 $lowerA = [a-z]
-$lower = [$lowerA $lowerU]
+$lower = [$lowerA$lowerU]
 
 $upperU = [\913-\937] -- TODO: ranges are wrong 
 $upperA = [A-Z]
-$upper = [$upperA $upperU]
+$upper = [$upperA$upperU]
 
-$var = [$lower$upper\_\=]
+$letter = [$lower$upper]
 $symbol = [\!\#\$\%\&\*\+\.\/\<\=\>\?\@\\\^\|\-\~]
 
 $digit = 0-9
--- @charL = \' [$var $digit \_] \
 @char = \' ([\\.] | . ) \'
 @lineComment  = $eol*"--".* 
 @blockComment = "{-" (\\.|[^\{\-]|\n|\-\-|[^$symbol].*)* "-}"
   
 tokens :-    
---  $white*$eol                           {\p s -> TokenNL p}
---  $eol+                                 {\p s -> TokenNL p}
-  $white+                                ;
-  @lineComment                           ;
-  @blockComment                          ;
-  Int					{\p s -> TokenIntT p}
-  Char					{\p s -> TokenCharT p}
-  Bool					{\p s -> TokenBoolT p}
-  \(\)					{\p s -> TokenUnitT p}
-  "->"					{\p s -> TokenUnArrow p}
-  "=>"					{\p s -> TokenFArrow p}
-  "-o"					{\p s -> TokenLinArrow p}
-  \(					{\p s -> TokenLParen p}
-  \)					{\p s -> TokenRParen p}
-  \[					{\p s -> TokenLBracket p}
-  \]			                {\p s -> TokenRBracket p}
-  \{					{\p s -> TokenLBrace p}
-  \}			                {\p s -> TokenRBrace p}
-  [\,]					{\p s -> TokenComma p}
-  Skip					{\p s -> TokenSkip p}
-  [\:]  			       	{\p s -> TokenColon p}  
-  [\;]	       	      	  		{\p s -> TokenSemi p}
-  [\!]					{\p s -> TokenMOut p}
-  [\?]					{\p s -> TokenMIn p}
-  [\&]					{\p s -> TokenAmpersand p}
-  [\+]					{\p s -> TokenPlus p}  
-  [\-]					{\p s -> TokenMinus p}
-  [\*]					{\p s -> TokenTimes p}
-  [\_]					{\p s -> TokenWild p}
-  -- [\<]					{\p s -> TokenLT p}
-  -- [\>]					{\p s -> TokenGT p}
-  rec                                   {\p s -> TokenRec p}  
-  [\.]                                  {\p s -> TokenDot p} 
-  SU                                    {\p s -> TokenSU p}
-  SL                                    {\p s -> TokenSL p}
-  TU                                    {\p s -> TokenTU p}
-  TL                                    {\p s -> TokenTL p}
-  $digit+      	      	 		{\p s -> TokenInteger p $ read s}
-  (True|False) 	      	 		{\p s -> TokenBool p $ read s}
-  let                                   {\p s -> TokenLet p}
-  \=                                    {\p s -> TokenEq p}
-  in                                    {\p s -> TokenIn p}
-  data                                  {\p s -> TokenData p}
-  type                                  {\p s -> TokenType p}
-  \|                                    {\p s -> TokenPipe p}
-  if					{\p s -> TokenIf p}
-  then					{\p s -> TokenThen p}
-  else					{\p s -> TokenElse p}
-  new					{\p s -> TokenNew p}
-  send					{\p s -> TokenSend p}
-  receive				{\p s -> TokenReceive p}
-  select				{\p s -> TokenSelect p}
-  match					{\p s -> TokenMatch p}
-  with					{\p s -> TokenWith p}
-  fork					{\p s -> TokenFork p}
-  case					{\p s -> TokenCase p}
-  of					{\p s -> TokenOf p}
-  forall				{\p s -> TokenForall p}
-  dualof				{\p s -> TokenDualof p}
-  -- Operators
-  [\>\<]  	          		{\p s -> TokenOp p ("(" ++ s ++ ")")}
-  \>\=  			        {\p s -> TokenOp p ("(>=)")}
-  \<\=  			        {\p s -> TokenOp p ("(<=)")}
-  \=\=  			        {\p s -> TokenOp p ("(==)")}
-  \&\&  			        {\p s -> TokenOp p ("(&&)")}
-  \|\|  			        {\p s -> TokenOp p ("(||)")}
-  -- Variables
-  $lower [$var $digit \_ \']*           {\p s -> TokenVar p s}
-  @char					{\p s -> TokenChar p $ read s}
-  $upper [$var $digit \_ \']* 		{\p s -> TokenCons p s}
+  $white+                       ;
+  @lineComment                  ;
+  @blockComment                 ;
+  "->"				{ \p s -> TokenUnArrow p }
+  "-o"				{ \p s -> TokenLinArrow p }
+  "=>"				{ \p s -> TokenFArrow p }
+  "("				{ \p s -> TokenLParen p }
+  ")"				{ \p s -> TokenRParen p }
+  "["				{ \p s -> TokenLBracket p }
+  "]"			        { \p s -> TokenRBracket p }
+  "{"				{ \p s -> TokenLBrace p }
+  "}"			        { \p s -> TokenRBrace p }
+  ","				{ \p s -> TokenComma p }
+  ":"                           { \p s -> TokenColon p}   
+  ";"	       	      	  	{ \p s -> TokenSemi p }
+  "!"				{ \p s -> TokenMOut p }
+  "?"				{ \p s -> TokenMIn p }
+  "&"				{ \p s -> TokenAmpersand p }
+  "."                           { \p s -> TokenDot p}  
+  "="                           { \p s -> TokenEq p }
+  "|"                           { \p s -> TokenPipe p }
+-- Operators
+  "+"				{ \p s -> TokenPlus p}   
+  "-"				{ \p s -> TokenMinus p }
+  "*"				{ \p s -> TokenTimes p }
+  "_"				{ \p s -> TokenWild p }
+  ">"  	          		{ \p s -> TokenOp p "(<)" }
+  "<"  	          		{ \p s -> TokenOp p "(>)" }
+  ">="  		        { \p s -> TokenOp p "(>=)" }
+  "<="  		        { \p s -> TokenOp p "(<=)" }
+  "=="  		        { \p s -> TokenOp p "(==)" }
+  "&&"  		        { \p s -> TokenOp p "(&&)" }
+  "||"  		        { \p s -> TokenOp p "(||)" }
+-- Kinds
+  SU                            { \p s -> TokenSU p }
+  SL                            { \p s -> TokenSL p }
+  TU                            { \p s -> TokenTU p }
+  TL                            { \p s -> TokenTL p }
+-- Types
+  Int				{ \p s -> TokenIntT p }
+  Char				{ \p s -> TokenCharT p }
+  Bool				{ \p s -> TokenBoolT p }
+  Skip				{ \p s -> TokenSkip p }
+-- Keywords
+  rec                           { \p s -> TokenRec p}   
+  let                           { \p s -> TokenLet p }
+  in                            { \p s -> TokenIn p }
+  data                          { \p s -> TokenData p }
+  type                          { \p s -> TokenType p }
+  if				{ \p s -> TokenIf p }
+  then				{ \p s -> TokenThen p }
+  else				{ \p s -> TokenElse p }
+  new				{ \p s -> TokenNew p }
+  send				{ \p s -> TokenSend p }
+  receive			{ \p s -> TokenReceive p }
+  select			{ \p s -> TokenSelect p }
+  match				{ \p s -> TokenMatch p }
+  with				{ \p s -> TokenWith p }
+  fork				{ \p s -> TokenFork p }
+  case				{ \p s -> TokenCase p }
+  of				{ \p s -> TokenOf p }
+  forall			{ \p s -> TokenForall p }
+  dualof			{ \p s -> TokenDualof p }
+-- Values
+  \(\)				{ \p s -> TokenUnit p }  
+  (0 | [1-9]$digit+)      	{ \p s -> TokenInteger p $ read s }
+  (True|False) 	      	 	{ \p s -> TokenBool p $ read s }
+  @char				{ \p s -> TokenChar p $ read s }
+-- Identifiers
+  $lower [$letter$digit\_\']*   { TokenVar }
+  $upper [$letter$digit\_\']*	{ TokenCons }
 
-  
 {
 
-
 data Token =
---    TokenNL AlexPosn 
     TokenIntT AlexPosn 
   | TokenCharT AlexPosn 
   | TokenBoolT AlexPosn 
-  | TokenUnitT AlexPosn 
+  | TokenUnit AlexPosn 
   | TokenUnArrow AlexPosn 
   | TokenLinArrow AlexPosn 
   | TokenLParen AlexPosn 
@@ -138,9 +134,6 @@ data Token =
   | TokenSL AlexPosn 
   | TokenTU AlexPosn 
   | TokenTL AlexPosn
--- Expressions
-  -- Basic expressions
-  -- Unit already defined
   | TokenInteger AlexPosn Int
   | TokenChar AlexPosn Char
   | TokenBool AlexPosn Bool
@@ -165,21 +158,18 @@ data Token =
   | TokenForall AlexPosn
   | TokenDualof AlexPosn 
   | TokenFArrow AlexPosn
--- Operators
   | TokenMinus AlexPosn
   | TokenTimes AlexPosn
   | TokenWild AlexPosn
   | TokenLT AlexPosn
   | TokenGT AlexPosn
   | TokenOp AlexPosn String
---  deriving Show
 
 instance Show Token where
---  show (TokenNL p) = show p ++ ": \\n"
   show (TokenIntT p) = show p ++ ": Int"  
   show (TokenCharT p) = show p ++ ": Char"  
   show (TokenBoolT p) = show p ++ ": Bool"  
-  show (TokenUnitT p) = show p ++ ": ()"  
+  show (TokenUnit p) = show p ++ ": ()"  
   show (TokenUnArrow p) = show p ++ ": ->"  
   show (TokenLinArrow p) = show p ++ ": -o"  
   show (TokenLParen p) = show p ++ ": ("
@@ -204,9 +194,6 @@ instance Show Token where
   show (TokenSL p) = show p ++ ": SL"   
   show (TokenTU p) = show p ++ ": TU"   
   show (TokenTL p) = show p ++ ": TL"  
--- Expressions
-  -- Basic expressions
-  -- Unit already defined
   show (TokenInteger p i) = show p ++ ": " ++ show i
   show (TokenChar p c) = show p ++ ": " ++ show c
   show (TokenBool p b) = show p ++ ": " ++ show b
@@ -231,13 +218,10 @@ instance Show Token where
   show (TokenForall p) = show p ++ ": forall"  
   show (TokenDualof p) = show p ++ ": dualof"  
   show (TokenFArrow p) = show p ++ ": =>"
--- Operators
   show (TokenMinus p) = show p ++ ": -"  
   show (TokenTimes p) = show p ++ ": *"  
   show (TokenWild p) = show p ++ ": _"  
   show (TokenOp p s) = show p ++ ": " ++ show s  
-  -- show (TokenLT p) = show p ++ ": <"  
-  -- show (TokenGT p) = show p ++ ": >"  
 
 -- TODO: instance show token for errors
 
@@ -251,64 +235,74 @@ trim = reverse . trim' . reverse . trim'
 --    trim' (TokenNL _ : ts) = trim' ts        
     trim' ts = ts
 
--- TODO: create class Token
--- TODO: -> change to instance position
-getPos :: Token -> AlexPosn
-getPos (TokenIntT p) = p 
-getPos (TokenCharT p) = p 
-getPos (TokenBoolT p) = p 
-getPos (TokenUnitT p) = p 
-getPos (TokenUnArrow p) = p 
-getPos (TokenLinArrow p) = p 
-getPos (TokenLParen p) = p
-getPos (TokenRParen p) = p 
-getPos (TokenLBracket p) = p 
-getPos (TokenRBracket p) = p 
-getPos (TokenComma p) = p 
-getPos (TokenSkip p) = p 
-getPos (TokenColon p) = p 
-getPos (TokenCons p _) = p
-getPos (TokenSemi p) = p 
-getPos (TokenMOut p) = p 
-getPos (TokenMIn p) = p 
-getPos (TokenLBrace p) = p
-getPos (TokenRBrace p) = p 
-getPos (TokenAmpersand p) = p 
-getPos (TokenPlus p) = p 
-getPos (TokenRec p) = p 
-getPos (TokenDot p) = p 
-getPos (TokenVar p _) = p 
-getPos (TokenSU p) = p 
-getPos (TokenSL p) = p 
-getPos (TokenTU p) = p 
-getPos (TokenTL p) = p
-getPos (TokenInteger p _) = p
-getPos (TokenBool p _) = p
-getPos (TokenChar p _) = p
-getPos (TokenLet p) = p 
-getPos (TokenIn p) = p
-getPos (TokenEq p) = p
-getPos (TokenData p) = p
-getPos (TokenType p) = p
-getPos (TokenPipe p) = p
--- getPos (TokenNL p) = p
-getPos (TokenNew p) = p
-getPos (TokenSend p) = p
-getPos (TokenReceive p) = p
-getPos (TokenSelect p) = p
-getPos (TokenFork p) = p
-getPos (TokenMatch p) = p
-getPos (TokenCase p) = p
-getPos (TokenForall p) = p
-getPos (TokenDualof p) = p
-getPos (TokenMinus p) = p
-getPos (TokenTimes p) = p
-getPos (TokenLT p) = p
-getPos (TokenGT p) = p
-getPos (TokenOp p _) = p
-getPos t = error $ show t
+-- POSITIONS
 
--- pos (AlexPn _ l c) = (l,c) 
+type Pos = AlexPosn
+
+class Position t where
+  position :: t -> Pos
+
+instance Ord AlexPosn where -- TODO: Others
+  (AlexPn x y z) `compare` (AlexPn k w v) = x `compare` k
+
+defaultPos :: Pos
+defaultPos = AlexPn 0 0 0
+
+-- TODO: -> change to instance position
+
+instance Position Token where
+  position (TokenIntT p) = p 
+  position (TokenCharT p) = p 
+  position (TokenBoolT p) = p 
+  position (TokenUnit p) = p 
+  position (TokenUnArrow p) = p 
+  position (TokenLinArrow p) = p 
+  position (TokenLParen p) = p
+  position (TokenRParen p) = p 
+  position (TokenLBracket p) = p 
+  position (TokenRBracket p) = p 
+  position (TokenComma p) = p 
+  position (TokenSkip p) = p 
+  position (TokenColon p) = p 
+  position (TokenCons p _) = p
+  position (TokenSemi p) = p 
+  position (TokenMOut p) = p 
+  position (TokenMIn p) = p 
+  position (TokenLBrace p) = p
+  position (TokenRBrace p) = p 
+  position (TokenAmpersand p) = p 
+  position (TokenPlus p) = p 
+  position (TokenRec p) = p 
+  position (TokenDot p) = p 
+  position (TokenVar p _) = p 
+  position (TokenSU p) = p 
+  position (TokenSL p) = p 
+  position (TokenTU p) = p 
+  position (TokenTL p) = p
+  position (TokenInteger p _) = p
+  position (TokenBool p _) = p
+  position (TokenChar p _) = p
+  position (TokenLet p) = p 
+  position (TokenIn p) = p
+  position (TokenEq p) = p
+  position (TokenData p) = p
+  position (TokenType p) = p
+  position (TokenPipe p) = p
+  position (TokenNew p) = p
+  position (TokenSend p) = p
+  position (TokenReceive p) = p
+  position (TokenSelect p) = p
+  position (TokenFork p) = p
+  position (TokenMatch p) = p
+  position (TokenCase p) = p
+  position (TokenForall p) = p
+  position (TokenDualof p) = p
+  position (TokenMinus p) = p
+  position (TokenTimes p) = p
+  position (TokenLT p) = p
+  position (TokenGT p) = p
+  position (TokenOp p _) = p
+  position t = error $ show t
 
 getText :: Token -> String
 getText (TokenCons _ x) = x

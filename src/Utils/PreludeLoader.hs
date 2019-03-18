@@ -1,5 +1,6 @@
 module Utils.PreludeLoader (prelude) where
 
+import           Parse.Lexer (defaultPos)
 import           Syntax.Programs (VarEnv)
 import           Syntax.Types
 import           Syntax.Position
@@ -40,10 +41,10 @@ prelude =
 preludeLoad :: VarEnv -> VarEnv
 preludeLoad map =
   foldl (\acc (tv, t) ->
-     Map.insert (Bind (AlexPn 0 0 0) tv)
-                (TypeScheme (AlexPn 0 0 0) [] (read t :: Type)) acc) map typeList
+     Map.insert (Bind defaultPos tv)
+                (TypeScheme defaultPos [] (read t :: Type)) acc) map typeList
 
 schemeLoad :: VarEnv -> VarEnv
 schemeLoad map =
-  foldl (\acc (tv, t) -> Map.insert (Bind (AlexPn 0 0 0) tv) (read t :: TypeScheme) acc) map schemeList
+  foldl (\acc (tv, t) -> Map.insert (Bind defaultPos tv) (read t :: TypeScheme) acc) map schemeList
 

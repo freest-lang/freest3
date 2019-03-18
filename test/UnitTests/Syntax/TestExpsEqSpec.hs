@@ -1,5 +1,6 @@
 module Syntax.TestExpsEqSpec(spec) where
 
+import           Parse.Lexer (defaultPos)
 import           SpecHelper
 import           Syntax.Exps
 import           Syntax.Types -- TODO REMOVE
@@ -14,7 +15,7 @@ main = hspec spec
 spec :: Spec
 spec = do  
 -- ("Node", (Semi (Message Out IntType) (Semi(Var "TreeChannel") (Var "TreeChannel"))))]))
-  let p = (AlexPn 0 0 0)
+  let p = defaultPos
   describe "Eq Expressions" $ do
     it "Unit" $ do
      (Unit p) == (Unit p) `shouldBe` True

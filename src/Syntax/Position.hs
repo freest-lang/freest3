@@ -12,22 +12,14 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Syntax.Position
-( Pos
-, Var
-, Position(..)
+( --Pos
+ Var
+--, Position(..)
 , Bind(..)
-, AlexPosn(..)
+-- , AlexPosn(..)
 ) where 
 
-import Parse.Lexer (AlexPosn(..)) -- Maybe not here
-
-type Pos = AlexPosn -- ... other type
-
-instance Ord AlexPosn where -- TODO: Others
-  (AlexPn x y z) `compare` (AlexPn k w v) = x `compare` k
-
-class Position t where
-  position :: t -> Pos
+import Parse.Lexer (Position(..),Pos)
 
 type Var = String
 

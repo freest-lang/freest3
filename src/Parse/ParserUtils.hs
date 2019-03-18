@@ -13,9 +13,11 @@ Portability :  portable | non-portable (<reason>)
 
 module Parse.ParserUtils where
 
+import           Parse.Lexer (Pos, position)
 import           Syntax.Programs (VarEnv)
+import           Syntax.Exps (Expression(..))
 import           Syntax.Types (TypeMap, KBind(..), Type)
-import           Syntax.Position (Pos, Var, Bind(..), position)
+import           Syntax.Position (Var, Bind(..))
 import           Utils.Errors
 import           Utils.FreestState (FreestState, addError, getVenv)
 import           Data.List (nub, (\\), intercalate, find)
@@ -75,3 +77,13 @@ checkClashes (Bind p c) bs = do
     return ()
   where
     err c = "Multiple declarations of '" ++ styleRed c ++ "'"    
+
+type Op = String
+
+binOp :: Expression -> Pos -> Op -> Expression -> Expression
+binOp left pos op right =
+  App (position left) (App (position left) (Variable pos op) left) right
+
+unOp :: Pos -> Op -> Expression -> Expression
+unOp pos op expr =
+  App (position expr) (Variable pos op) expr

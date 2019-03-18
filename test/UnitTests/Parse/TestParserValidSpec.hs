@@ -1,5 +1,6 @@
 module Parse.TestParserValidSpec(spec) where
 
+import           Parse.Lexer (defaultPos)
 import           SpecHelper
 import           Control.Exception (evaluate)
 import           Syntax.Kinds
@@ -13,7 +14,7 @@ main = hspec spec
 spec :: Spec
 spec = do
   
-  let p = (AlexPn 0 0 0)
+  let p = defaultPos
   let treeChannelRead = "rec treeChannel . +{Leaf:Skip,Node:!Int;treeChannel;treeChannel}"
   let treeChannelType =
         (Rec p "treeChannel"

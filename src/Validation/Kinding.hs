@@ -22,6 +22,7 @@ module Validation.Kinding
 , isWellFormed -- test
 ) where
 
+import           Parse.Lexer (Pos, position)
 import           Syntax.Programs
 import           Syntax.Exps
 import           Syntax.Types
