@@ -31,13 +31,13 @@ type TermVar = Var -- = String
 
 -- C x -> E where:
 -- C is a bind and the map key,
--- x is a bind (argument) and E an expression
-type MatchMap = Map.Map TermVar (Bind, Expression)
+-- x is a bind (parameter) and E an expression
+type MatchMap = Map.Map Constructor (Bind, Expression)
 
 -- C x1 ... xn -> E where:
 -- C is a bind and the map key,
--- x1 ... xn form a list of binds (arguments) and E an expression
-type CaseMap  = Map.Map TermVar ([Bind], Expression)
+-- x1 ... xn is a list of binds (parameters) and E an expression
+type CaseMap  = Map.Map Constructor ([Bind], Expression)
 
 data Expression =
   -- Basic values

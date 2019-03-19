@@ -203,18 +203,21 @@ Expr :: { Expression }
   | '(' ExprSeq ')'                                { $2 }
 
 MatchMap :: { MatchMap }
-  : MatchValue              { $1 }
-  | MatchValue ';' MatchMap { Map.union $1 $3 } -- TODO: check duplicates
+  : Match              { $1 }
+  | Match ';' MatchMap { Map.union $1 $3 } -- TODO: check duplicates
 
-MatchValue :: { MatchMap }
+Match :: { MatchMap }
   : CONS VarBind '->' ExprSeq { Map.singleton (getText $1) ($2, $4) }
 
 CaseMap :: { CaseMap }
-  : Case  { $1 }
-  | Case ';' CaseMap  { Map.union $1 $3 } -- TODO: check duplicates
+  : Case  { let (Bind _ c) = fst $1 in Map.singleton c (snd $1) } -- uncurry Map.singleton $1 }
+  | Case ';' CaseMap  {% -- checkDupCons $1 $3 >>
+                         -- return (uncurry Map.insert c $3)
+                         let (Bind _ c) = fst $1 in
+                         return (Map.insert c (snd $1) $3) }
 
-Case :: { CaseMap }
-  : CONS VarBindSeq '->' ExprSeq { Map.singleton (getText $1) ($2, $4) }
+Case :: { (Bind, ([Bind], Expression)) }
+  : ConsBind VarBindSeq '->' ExprSeq { ($1, ($2, $4)) }
 
 -----------
 -- TYPE SCHEMES --
@@ -256,11 +259,12 @@ ChoiceView :: { (Pos, ChoiceView) }
   | '&' { (position $1, External) }
   
 FieldList :: { TypeMap }
-  : Field                { $1 }
-  | Field ',' FieldList  {% checkLabelClash $1 $3 >> return (Map.union $1 $3) }
+  : Field                { uncurry Map.singleton $1 }
+  | Field ',' FieldList  {% checkDupCons (fst $1) $3 >>
+                            return (uncurry Map.insert $1 $3) }
 
-Field :: { TypeMap }
-  : ConsBind ':' Type { Map.singleton $1 $3 }
+Field :: { (Bind, Type) }
+  : ConsBind ':' Type { ($1, $3) }
 
 BasicType :: { (Pos, BasicType) }
   : Int  { (position $1, IntType) }
@@ -305,11 +309,11 @@ VarKBind :: { KBind }
 
 VarBindSeq :: { [Bind] }
   :                    { [] }
-  | VarBind VarBindSeq {% checkVarClash $1 $2 >> return ($1 : $2) }
+  | VarBind VarBindSeq {% checkDupBind $1 $2 >> return ($1 : $2) }
 
 VarKBindList :: { [KBind] }
   : VarKBind                  { [$1] }
-  | VarKBind ',' VarKBindList {% checkKBindClash $1 $3 >> return ($1 : $3) }
+  | VarKBind ',' VarKBindList {% checkDupKBind $1 $3 >> return ($1 : $3) }
 
 {
   
@@ -318,18 +322,18 @@ VarKBindList :: { [KBind] }
 -----------------------
 parseKind :: String -> Kind
 parseKind  s = fst $ runState (parse s) (initialState "")
-  where parse = kinds . scanTokens
+  where parse = kinds . alexScanTokens
 
 parseType :: String -> Type
 parseType s = fst $ runState (parse s) (initialState "")
-  where parse = types . scanTokens
+  where parse = types . alexScanTokens
 
 instance Read Type where
   readsPrec _ s = [(parseType s, "")]
 
 parseTypeScheme :: String -> TypeScheme
 parseTypeScheme s = fst $ runState (parse s) (initialState "")
-  where parse = typeScheme . scanTokens
+  where parse = typeScheme . alexScanTokens
 
 instance Read TypeScheme where
   readsPrec _ s = [(parseTypeScheme s, "")] 
@@ -348,10 +352,9 @@ instance Read Kind where
             else tryParse xs
           trim s = dropWhile isSpace s
 
-
 parseExpr :: String -> Expression
 parseExpr s = fst $ runState (parse s) (initialState "")
-  where parse = expr . scanTokens
+  where parse = expr . alexScanTokens
   
 instance Read Expression where
   readsPrec _ s = [(parseExpr s, "")]
@@ -367,7 +370,7 @@ parseDefs :: FilePath -> VarEnv -> String -> FreestS
 parseDefs file venv str =
   let s = initialState file in
   execState (parse str) (s {varEnv=venv})
-   where parse = terms . scanTokens
+   where parse = terms . alexScanTokens
 
 checkErrors (FreestS {errors=[]}) = return ()
 checkErrors s = die $ intercalate "\n" (errors s)

@@ -1,18 +1,16 @@
 {
 module Parse.Lexer
 ( Token(..)
-, scanTokens
+, alexScanTokens
 , getText
+, Pos
 , Position(..)
 , defaultPos -- Should not be needed
 , showPos
-, Pos
 ) where
 }
 
 %wrapper "posn"
-
-$eol   = [\n]
 
 $lowerU = [\927-\982] 
 $lowerA = [a-z]
@@ -27,7 +25,7 @@ $symbol = [\!\#\$\%\&\*\+\.\/\<\=\>\?\@\\\^\|\-\~]
 
 $digit = 0-9
 @char = \' ([\\.] | . ) \'
-@lineComment  = $eol*"--".* 
+@lineComment  = \n*"--".* 
 @blockComment = "{-" (\\.|[^\{\-]|\n|\-\-|[^$symbol].*)* "-}"
   
 tokens :-    
@@ -224,18 +222,6 @@ instance Show Token where
   show (TokenWild p) = show p ++ ": _"  
   show (TokenOp p s) = show p ++ ": " ++ show s  
 
--- TODO: instance show token for errors
-
-scanTokens = alexScanTokens >>= (return . trim)
-
-trim :: [Token] -> [Token]
-trim = reverse . trim' . reverse . trim'
-  where 
-    trim' :: [Token] -> [Token]
-    trim' [] = []
---    trim' (TokenNL _ : ts) = trim' ts        
-    trim' ts = ts
-
 -- POSITIONS
 
 type Pos = AlexPosn
@@ -243,16 +229,8 @@ type Pos = AlexPosn
 class Position t where
   position :: t -> Pos
 
-instance Ord AlexPosn where -- TODO: Others
-  (AlexPn x y z) `compare` (AlexPn k w v) = x `compare` k
-
-defaultPos :: Pos
-defaultPos = AlexPn 0 0 0
-
-showPos :: Pos -> String
-showPos (AlexPn _ px py) = show px ++ ":" ++ show py
-
--- TODO: -> change to instance position
+instance Ord AlexPosn where
+  (AlexPn x _ _) `compare` (AlexPn y _ _ ) = x `compare` y
 
 instance Position Token where
   position (TokenIntT p) = p 
@@ -307,6 +285,12 @@ instance Position Token where
   position (TokenGT p) = p
   position (TokenOp p _) = p
   position t = error $ show t
+
+defaultPos :: Pos
+defaultPos = AlexPn 0 0 0
+
+showPos :: Pos -> String
+showPos (AlexPn _ line column) = show line ++ ":" ++ show column
 
 getText :: Token -> String
 getText (TokenCons _ x) = x

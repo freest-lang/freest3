@@ -11,9 +11,17 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-module Parse.ParserUtils where
+module Parse.ParserUtils
+( checkNamesClash
+, checkClashes
+, checkDupCons
+, checkDupBind
+, checkDupKBind
+, binOp
+, unOp
+) where
 
-import           Parse.Lexer (Pos, position, showPos)
+import           Parse.Lexer (Position, Pos, position, defaultPos, showPos)
 import           Syntax.Programs (VarEnv)
 import           Syntax.Exps (Expression(..))
 import           Syntax.Types (TypeMap, KBind(..), Type)
@@ -23,36 +31,34 @@ import           Utils.FreestState (FreestState, addError, getVenv)
 import           Data.List (nub, (\\), intercalate, find)
 import qualified Data.Map.Strict as Map
 
-checkVarClash :: Bind -> [Bind] -> FreestState ()
-checkVarClash p ps =
-  case find (== p) ps of
-    Just x -> do
-      addError (position x)
-                 ["Conflicting definitions for argument", styleRed $ "'" ++ show p ++ "'\n\t",
-                  "Bound at:", showPos (position x) ++ "\n\t",
-                  "          " ++ showPos (position p)]
+checkDupBind :: Bind -> [Bind] -> FreestState ()
+checkDupBind b bs =
+  case find (== b) bs of
+    Just b' -> do
+      addError (position b')
+        ["Conflicting definitions for bind", styleRed (show b), "\n",
+         "\tBound at:", showPos (position b'), "\n",
+         "\t         ", showPos (position b)]
     Nothing -> return ()
 
--- Assume: m1 is a singleton map
-checkLabelClash :: TypeMap -> TypeMap -> FreestState ()
-checkLabelClash m1 m2 = -- TODO: map position?
-  if not (null (Map.intersection m1 m2))
-    then do
-      let ((Bind p c), _) = Map.elemAt 0 m1
-      addError p
-               ["Conflicting definitions for constructor", styleRed c,
-                "Bound at:", showPos p]
-    else
-      return ()
-
-checkKBindClash :: KBind -> [KBind] -> FreestState ()
-checkKBindClash b@(KBind p x k) bs =
+checkDupKBind :: KBind -> [KBind] -> FreestState ()
+checkDupKBind (KBind p x _) bs =
   case find (\(KBind _ y _) -> y == x) bs of
     Just (KBind p' _ _) -> do
       addError p'
-               ["Conflicting definitions for bind ", styleRed x ++ "\n\t",
-                "Bound at:", showPos p' ++ "\n\t",
-                "          " ++ showPos p]
+        ["Conflicting definitions for bind ", styleRed x, "\n",
+         "\tBound at:", showPos p', "\n",
+         "\t         ", showPos p]
+    Nothing -> return ()
+
+checkDupCons :: Position a => Bind -> Map.Map Bind a -> FreestState ()
+checkDupCons b m =
+  case Map.lookup b m of 
+    Just b' -> do
+      addError (position b')
+        ["Conflicting definitions for constructor", styleRed (show b),
+         "\tBound at:", showPos (position b'), "\n",
+         "\t         ", showPos (position b)]
     Nothing -> return ()
 
 checkNamesClash :: Bind -> String -> FreestState ()
