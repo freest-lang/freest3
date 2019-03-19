@@ -105,11 +105,10 @@ import           System.Exit (die)
 %left NEG not                   -- unary
 
 -- Type
-%left dualof
+%right dualof
 %right '->' '-o' -- TODO: an Expr operator as well
+%right rec
 %right ';'       -- TODO: an Expr operator as well
-%left rec
-
 
 %%
 
@@ -117,14 +116,15 @@ import           System.Exit (die)
 -- PROGRAM --
 ---------------
 
-Prog
+Prog :: { () }
   : Decl         {}
   | Decl NL Prog {}
 
-NL : nl NL     {} -- TODO: Remove
-   | nl        {}
+NL :: { () }
+  : nl NL {}
+  | nl    {}
 
-Decl
+Decl :: { () }
   : DataDecl  {}
   | VarBind ':' TypeScheme -- Function signature
     {% checkNamesClash $1 ("Duplicate type signatures for " ++ styleRed (show $1)) >>
