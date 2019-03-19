@@ -21,7 +21,7 @@ type TreeChannel = rec x::Su. +{
 
 sendTree : forall a => Tree -> (rec x . +{Leaf : Skip, Node: !Int;x;x}); a -> a
 sendTree t c =
-  case t of
+  case t of {
     Leaf ->
       select Leaf c;
     Node x l r ->
@@ -30,6 +30,7 @@ sendTree t c =
       let w = sendTree[(rec x . +{Leaf: Skip, Node: !Int;x;x});a] l w in
       let w = sendTree[a] r w in
       w
+  }
 
 receiveTree : forall a => (rec x.&{Leaf: Skip, Node: ?Int;x;x}); a -> (Tree, a)
 receiveTree c =

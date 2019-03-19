@@ -6,12 +6,12 @@ boolServer c =
     And c1 -> 
       let n1, c2 = receive c1 in
       let n2, c3 = receive c2 in
-      let x = send n3 (n1 && n2) in 
+      let x = send c3 (n1 && n2) in 
       ();
     Or c1 ->
       let n1, c2 = receive c1 in
       let n2, c3 = receive c2 in
-      let x = send n3 (n1 || n2) in
+      let x = send c3 (n1 || n2) in
       ();
     Not c1 -> 
       let n1, c2 = receive c1 in

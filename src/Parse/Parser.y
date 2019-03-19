@@ -34,6 +34,7 @@ import           System.Exit (die)
 %monad { FreestState }
 
 %token
+  nl      {TokenNL _}
   Int      {TokenIntT _}
   Char     {TokenCharT _}
   Bool     {TokenBoolT _}
@@ -104,10 +105,11 @@ import           System.Exit (die)
 %left NEG not                   -- unary
 
 -- Type
-%right ';'       -- TODO: an Expr operator as well
-%right '->' '-o' -- TODO: an Expr operator as well
-%left rec
 %left dualof
+%right '->' '-o' -- TODO: an Expr operator as well
+%right ';'       -- TODO: an Expr operator as well
+%left rec
+
 
 %%
 
@@ -116,8 +118,11 @@ import           System.Exit (die)
 ---------------
 
 Prog
-  : Decl      {}
-  | Decl Prog {}
+  : Decl         {}
+  | Decl NL Prog {}
+
+NL : nl NL     {} -- TODO: Remove
+   | nl        {}
 
 Decl
   : DataDecl  {}
@@ -138,7 +143,7 @@ Decl
 -- TODO: review verifications & envs added & Kind
 -- TODO: the position is taken from $1
 TypeAbbrv :: { () }
-  : type ConsBind VarKBindList '=' Type
+  : type ConsBind VarKBindEmptyList '=' Type
     {% checkNamesClash $2 ("Multiple declarations of " ++ styleRed (show $2)) >>
        addToKenv $2 (Kind (position $2) Functional Un) >>
        addToVenv $2 (TypeScheme (position $4) $3 $5)
@@ -150,7 +155,7 @@ TypeAbbrv :: { () }
 
 -- TODO: check positions
 DataDecl :: { () }
-  : data ConsBind VarKBindList '=' DataCons
+  : data ConsBind VarKBindEmptyList '=' DataCons
     {% do
        let bs = typesToFun $2 $5
        checkNamesClash $2 ("Multiple declarations of " ++ styleRed (show $2))
@@ -315,6 +320,10 @@ VarKBindList :: { [KBind] }
   : VarKBind                  { [$1] }
   | VarKBind ',' VarKBindList {% checkDupKBind $1 $3 >> return ($1 : $3) }
 
+VarKBindEmptyList :: { [KBind] }
+  :              { [] }
+  | VarKBindList { $1 }
+
 {
   
 -----------------------
@@ -322,18 +331,18 @@ VarKBindList :: { [KBind] }
 -----------------------
 parseKind :: String -> Kind
 parseKind  s = fst $ runState (parse s) (initialState "")
-  where parse = kinds . alexScanTokens
+  where parse = kinds . scanTokens
 
 parseType :: String -> Type
 parseType s = fst $ runState (parse s) (initialState "")
-  where parse = types . alexScanTokens
+  where parse = types . scanTokens
 
 instance Read Type where
   readsPrec _ s = [(parseType s, "")]
 
 parseTypeScheme :: String -> TypeScheme
 parseTypeScheme s = fst $ runState (parse s) (initialState "")
-  where parse = typeScheme . alexScanTokens
+  where parse = typeScheme . scanTokens
 
 instance Read TypeScheme where
   readsPrec _ s = [(parseTypeScheme s, "")] 
@@ -354,7 +363,7 @@ instance Read Kind where
 
 parseExpr :: String -> Expression
 parseExpr s = fst $ runState (parse s) (initialState "")
-  where parse = expr . alexScanTokens
+  where parse = expr . scanTokens
   
 instance Read Expression where
   readsPrec _ s = [(parseExpr s, "")]
@@ -370,7 +379,7 @@ parseDefs :: FilePath -> VarEnv -> String -> FreestS
 parseDefs file venv str =
   let s = initialState file in
   execState (parse str) (s {varEnv=venv})
-   where parse = terms . alexScanTokens
+   where parse = terms . scanTokens
 
 checkErrors (FreestS {errors=[]}) = return ()
 checkErrors s = die $ intercalate "\n" (errors s)

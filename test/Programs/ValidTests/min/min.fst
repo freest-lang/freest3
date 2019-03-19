@@ -1,12 +1,12 @@
 {- |
-Module      :  Max
+Module      :  Min
 Description :  Returns the max value of two integers
 Copyright   :  (c) LaSIGE and University of Lisbon, Portugal
 Maintainer  :  balmeida@lasige.di.fc.ul.pt
 -}
 
 main : Int
-main = max' 17 23
+main = min' 17 23
 
-max' : Int -> Int -> Int
-max' x y = if x < y then x else y
+min' : Int -> Int -> Int
+min' x y = if x < y then x else y

@@ -1,7 +1,7 @@
 {
 module Parse.Lexer
 ( Token(..)
-, alexScanTokens
+, scanTokens
 , getText
 , Pos
 , Position(..)
@@ -27,8 +27,12 @@ $digit = 0-9
 @char = \' ([\\.] | . ) \'
 @lineComment  = \n*"--".* 
 @blockComment = "{-" (\\.|[^\{\-]|\n|\-\-|[^$symbol].*)* "-}"
+
+$eol=[\n]
   
-tokens :-    
+tokens :-  
+  $white*$eol+                  { \p s -> TokenNL p }
+--  $eol+                         { \p s -> TokenNL p }
   $white+                       ;
   @lineComment                  ;
   @blockComment                 ;
@@ -55,8 +59,8 @@ tokens :-
   "-"				{ \p s -> TokenMinus p }
   "*"				{ \p s -> TokenTimes p }
   "_"				{ \p s -> TokenWild p }
-  ">"  	          		{ \p s -> TokenOp p "(<)" }
-  "<"  	          		{ \p s -> TokenOp p "(>)" }
+  ">"  	          		{ \p s -> TokenOp p "(>)" }
+  "<"  	          		{ \p s -> TokenOp p "(<)" }
   ">="  		        { \p s -> TokenOp p "(>=)" }
   "<="  		        { \p s -> TokenOp p "(<=)" }
   "=="  		        { \p s -> TokenOp p "(==)" }
@@ -94,7 +98,7 @@ tokens :-
   dualof			{ \p s -> TokenDualof p }
 -- Values
   \(\)				{ \p s -> TokenUnit p }  
-  (0 | [1-9]$digit+)      	{ \p s -> TokenInteger p $ read s }
+  (0|[1-9]$digit*)      	{ \p s -> TokenInteger p $ read s }
   (True|False) 	      	 	{ \p s -> TokenBool p $ read s }
   @char				{ \p s -> TokenChar p $ read s }
 -- Identifiers
@@ -105,7 +109,8 @@ tokens :-
 {
 
 data Token =
-    TokenIntT AlexPosn 
+    TokenNL AlexPosn 
+  | TokenIntT AlexPosn 
   | TokenCharT AlexPosn 
   | TokenBoolT AlexPosn 
   | TokenUnit AlexPosn 
@@ -165,6 +170,7 @@ data Token =
   | TokenOp AlexPosn String
 
 instance Show Token where
+  show (TokenNL p) = show p ++ ": NL"  
   show (TokenIntT p) = show p ++ ": Int"  
   show (TokenCharT p) = show p ++ ": Char"  
   show (TokenBoolT p) = show p ++ ": Bool"  
@@ -222,6 +228,18 @@ instance Show Token where
   show (TokenWild p) = show p ++ ": _"  
   show (TokenOp p s) = show p ++ ": " ++ show s  
 
+
+-- Trim newlines
+scanTokens = alexScanTokens >>= (return . trim)
+
+trim :: [Token] -> [Token]
+trim = reverse . trim' . reverse . trim'
+  where 
+    trim' :: [Token] -> [Token]
+    trim' [] = []
+    trim' (TokenNL _ : ts) = trim' ts        
+    trim' ts = ts
+
 -- POSITIONS
 
 type Pos = AlexPosn
@@ -233,6 +251,7 @@ instance Ord AlexPosn where
   (AlexPn x _ _) `compare` (AlexPn y _ _ ) = x `compare` y
 
 instance Position Token where
+  position (TokenNL p) = p 
   position (TokenIntT p) = p 
   position (TokenCharT p) = p 
   position (TokenBoolT p) = p 
@@ -295,5 +314,6 @@ showPos (AlexPn _ line column) = show line ++ ":" ++ show column
 getText :: Token -> String
 getText (TokenCons _ x) = x
 getText (TokenVar _ x) = x
+getText (TokenOp _ x) = x
 
 }
