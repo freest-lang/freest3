@@ -6,12 +6,12 @@
 computeService : (rec termChan . &{Const: ?Int, Add: termChan;termChan, Mult: termChan;termChan});!Int -> Skip
 computeService c =
   let n1, c1 = receiveEval[!Int;Skip] c in
-  send n1 c1
+  send c1 n1
 
 -- receiveEval : forall x => (rec TermChan . &{Const: ?Int, Add: TermChan;TermChan, Mult: TermChan;TermChan});x -> (Int, x)
 receiveEval : forall x : SL => (rec termChan . &{Const: ?Int, Add: termChan;termChan, Mult: termChan;termChan});x -> (Int, x)
 receiveEval c =
-  match c with
+  match c with {
     Const c1 ->
       receive c1;
     Add c1 ->
@@ -24,18 +24,19 @@ receiveEval c =
       let n1, c2 = receiveEval[(rec termChan . &{Const: ?Int, Add: termChan;termChan, Mult: termChan;termChan});x] c1 in
       let n2, c3 = receiveEval[x] c2 in
       (n1*n2, c3)
-
+  }
+  
 -- client : (rec TermChan . +{Const: !Int, Add: TermChan;TermChan, Mult: TermChan;TermChan});?Int -> (Int, Skip)
 client : (rec termChan . +{Const: !Int, Add: termChan;termChan, Mult: termChan;termChan});?Int -> (Int, Skip)
 client c =
   let c1 = select Add c in
   let c2 = select Const c1 in
-  let c3 = send 5 c2 in
+  let c3 = send c2 5 in
   let c4 = select Mult c3 in
   let c5 = select Const c4 in
-  let c6 = send 7 c5 in
+  let c6 = send c5 7 in
   let c7 = select Const c6 in
-  let c8 = send 9 c7 in
+  let c8 = send c7 9 in
   receive c8
 
 main : Int

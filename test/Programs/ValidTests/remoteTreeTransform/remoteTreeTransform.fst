@@ -10,17 +10,17 @@ data Tree = Leaf | Node Int Tree Tree
 -}
 transform : forall α => Tree -> (rec x. +{LeafC: Skip, NodeC: !Int;x;x;?Int});α -> (Tree, α)
 transform tree c =
-  case tree of
+  case tree of {
     Leaf ->
       (Leaf, select LeafC c);
     Node x l r ->
       let c = select NodeC c in
-      let c = send x c in
+      let c = send c x in
       let l, c = transform[(rec x. +{LeafC: Skip, NodeC: !Int;x;x;?Int});?Int;α] l c in
       let r, c = transform[?Int;α] r c in
       let y, c = receive c in
       (Node y l r, c)
-
+  }
 {-
   Reads a tree from a given channel;
   writes back on the channel the sum of the elements in the tree;
@@ -28,14 +28,15 @@ transform tree c =
 -}
 treeSum : forall α => (rec x. &{LeafC: Skip, NodeC: ?Int;x;x;!Int});α -> (Int, α)
 treeSum c =
-  match c with
+  match c with {
     LeafC c -> (0, c);
     NodeC c ->
       let x, c = receive c in
       let l, c = treeSum[(rec x. &{LeafC: Skip, NodeC: ?Int;x;x;!Int});!Int;α] c in
       let r, c = treeSum[!Int;α] c in
-      let c    = send (x + l + r) c in
+      let c    = send c (x + l + r) in
       (x + l + r, c)
+  }
 
 aTree : Tree
 aTree = Node 1 (Node 2 Leaf (Node 3 Leaf (Node 4 Leaf (Node 5 Leaf Leaf)))) (Node 6 Leaf (Node 7 Leaf (Node 8 Leaf Leaf)))

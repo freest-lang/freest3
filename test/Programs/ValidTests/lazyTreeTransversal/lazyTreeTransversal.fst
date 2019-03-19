@@ -34,12 +34,13 @@ exploreTree : forall α => Tree -> (
                            Right: x;y,
                            Exit: Skip}});α -> α
 exploreTree tree c =
-  case tree of
+  case tree of {
     Leaf ->
       select LeafC c;
     Node x l r ->
       let c = select NodeC c in
       exploreNode[α] x l r c
+    }
 
 exploreNode : forall α => Int -> Tree -> Tree -> (
   rec y. &{Value: !Int;y,
@@ -47,9 +48,9 @@ exploreNode : forall α => Int -> Tree -> Tree -> (
            Right: +{LeafC: Skip, NodeC: y};y,
            Exit: Skip});α -> α
 exploreNode x l r c =
-  match c with
+  match c with {
     Value c ->
-      let c = send x c in
+      let c = send c x in
       (exploreNode[α] x l r c);
     Left c ->
       let c = exploreTree[(rec y. &{Value: !Int;y, Left: +{LeafC: Skip, NodeC: y};y, Right: +{LeafC: Skip, NodeC: y};y, Exit: Skip});α] l c in
@@ -59,7 +60,7 @@ exploreNode x l r c =
       (exploreNode[α] x l r c);
     Exit c1 ->
       c1
-
+  }
 -- server: compute the product of the values in a tree; stop as soon a zero is received
 -- to be completed
 
@@ -70,11 +71,12 @@ server : forall α => Int -> (
                            Right: x;y,
                            Exit:  Skip}});α -> (Int, α)
 server n c =
-  match c with
+  match c with {
     LeafC c ->
       (n, c);
     NodeC c ->
       serverNode[α] n c
+  }
 
 serverNode : forall α => Int -> (
   rec y. +{Value: ?Int;y,

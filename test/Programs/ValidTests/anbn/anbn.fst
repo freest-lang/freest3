@@ -31,20 +31,22 @@ client' n c =
 
 server : &{A: rec x. &{A: x; &{B: Skip}, B: Skip}} -> Skip
 server c =
-  match c with
+  match c with {
     A c -> server'[Skip] c
-
+  }
 
 -- server' : forall α => (rec x. &{A: x; &{B: Skip}}); &{B: Skip}; α -> α
 server' : forall α => (rec x. &{A: x; &{B: Skip}, B: Skip}); α -> α
 server' c =
-  match c with
+  match c with {
     A c ->               -- (rec x. &{A: x; &{B: Skip}, B: Skip})) ; &{B: Skip}
       (let c = server'[&{B: Skip}; α] c in  -- &{B: Skip}; α
-       match c with
-         B c -> c);      -- α
+       match c with {
+         B c -> c
+       });      -- α
     B c ->               -- α
       c
+  }
 
 main : ()
 main =

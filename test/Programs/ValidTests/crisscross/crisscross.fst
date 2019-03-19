@@ -9,8 +9,8 @@ should deadlock.
 
 writer : !Char -> !Bool -> Skip
 writer w1 w2 =
-  let w1 = send 'c' w1 in
-  send False w2
+  let w1 = send w1 'c' in
+  send w2 False
 
 reader : ?Char -> ?Bool -> Bool
 reader r1 r2 =

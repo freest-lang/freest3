@@ -26,14 +26,14 @@ sendTree t c =
       select Leaf c;
     Node x l r ->
       let w = select Node c in
-      let w = send x w in
+      let w = send w x in
       let w = sendTree[(rec x . +{Leaf: Skip, Node: !Int;x;x});a] l w in
       let w = sendTree[a] r w in
       w
 
 receiveTree : forall a => (rec x.&{Leaf: Skip, Node: ?Int;x;x}); a -> (Tree, a)
 receiveTree c =
-  match c with
+  match c with {
     Leaf c1 -> -- Replace by c and it works :(
       (Leaf, c1);
     Node c ->
@@ -41,6 +41,7 @@ receiveTree c =
       let left, c = receiveTree [(rec x.&{Leaf: Skip, Node: ?Int;x;x});a] c in
       let right, c = receiveTree[a] c in
       (Node x left right, c)
+  }
 
 main : Tree
 main =
