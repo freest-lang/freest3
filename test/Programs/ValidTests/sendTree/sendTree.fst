@@ -35,8 +35,8 @@ sendTree t c =
 receiveTree : forall a => (rec x.&{Leaf: Skip, Node: ?Int;x;x}); a -> (Tree, a)
 receiveTree c =
   match c with {
-    Leaf c1 -> -- Replace by c and it works :(
-      (Leaf, c1);
+    Leaf c ->
+      (Leaf, c);
     Node c ->
       let x, c = receive c in
       let left, c = receiveTree [(rec x.&{Leaf: Skip, Node: ?Int;x;x});a] c in
