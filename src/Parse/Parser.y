@@ -107,7 +107,7 @@ import           System.Exit (die)
 -- Type
 %right dualof
 %right '->' '-o' -- TODO: an Expr operator as well
-%right rec
+%right '.'       -- Used in rec
 %right ';'       -- TODO: an Expr operator as well
 
 %%
