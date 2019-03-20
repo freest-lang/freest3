@@ -313,7 +313,7 @@ translate fm m (Receive _ e) = do
 
 translate fm m (Select _ x e) = do
   (h, _) <- translate fm m e
-  return ("_send \"" ++ x ++ "\" " ++ h, True)  
+  return ("_send " ++ h ++ " \"" ++ x ++ "\"", True)  
 
 translate fm m (Match _ e mm) = do
   (h1, b1) <- translate fm m e

@@ -82,7 +82,7 @@ genNew :: String
 genNew = "_new = do\n  ch1 <- newChan\n  ch2 <- newChan\n  return ((ch1,ch2), (ch2,ch1))"
 
 genSend :: String
-genSend = "_send x ch  = do\n  writeChan (snd ch) (unsafeCoerce x)\n  return ch"
+genSend = "_send ch x  = do\n  writeChan (snd ch) (unsafeCoerce x)\n  return ch"
 
 genReceive :: String
 genReceive = "_receive ch = do\n  a <- readChan (fst ch)\n  return (unsafeCoerce a, ch)"
