@@ -21,10 +21,10 @@ testKindingInvalid :
 	runhaskell -isrc -itest/UnitTests/  test/UnitTests/Validation/TestKindingInvalidSpec.hs
 
 testEquivalenceValid :
-	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Validation/TestEquivalenceValidSpec.hs
+	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Equivalence/TestEquivalenceValidSpec.hs
 
 testEquivalenceInvalid :
-	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Validation/TestEquivalenceInvalidSpec.hs
+	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Equivalence/TestEquivalenceInvalidSpec.hs
 
 clean :
 	rm `find ./ -name '*.o' -o -name '*.hi' -o -name '*.tix'` -r

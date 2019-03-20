@@ -31,7 +31,7 @@ sendTree t c =
       let w = sendTree[a] r w in
       w
   }
-
+  
 receiveTree : forall a => (rec x.&{Leaf: Skip, Node: ?Int;x;x}); a -> (Tree, a)
 receiveTree c =
   match c with {
