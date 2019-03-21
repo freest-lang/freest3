@@ -242,7 +242,7 @@ trim = reverse . trim' . reverse . trim'
 
 -- POSITIONS
 
-type Pos = AlexPosn
+newtype Pos = Pos AlexPosn
 
 class Position t where
   position :: t -> Pos
