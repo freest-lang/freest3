@@ -1,5 +1,5 @@
 dot : forall a : TU, b : TU, c : TU => (b -> c) -> (a -> b) -> a -> c
-dot f g x = f[b,c] (g[a,b] x)
+dot f g x = f[a,b,c] (g[a,b,c] x)
 
 double : Int -> Int
 double x = 2 * x
