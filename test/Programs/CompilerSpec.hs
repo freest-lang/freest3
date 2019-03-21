@@ -81,13 +81,15 @@ testOneInvalid test filename = do
 
 runAndCheckResult :: String -> String -> Spec
 runAndCheckResult testFile filename = do
-  
+  runIO $ putStrLn $ filename ++ " | " ++ testFile
+  -- multipleOps.fst | /home/balmeida/workspaces/ContextFreeSession/test/Programs/ValidTests/multipleOps/multipleOps.fst
   runIO $ setCurrentDirectory $ takeDirectory testFile
-  (exitcode, output, errors) <- runIO $ readProcessWithExitCode "ghc" ["-dynamic", "-XBangPatterns", "cfst.hs"] ""  
+  (exitcode, output, errors) <- runIO $ readProcessWithExitCode "ghc"
+                                         ["-dynamic", "-XBangPatterns", (replaceExtensions filename "hs")] ""  
   
   if (exitcode == ExitSuccess) then
     do     
-      (exitcode1, output1, errors1) <- runIO $ readProcessWithExitCode "./cfst" [] ""
+      (exitcode1, output1, errors1) <- runIO $ readProcessWithExitCode ("./" ++ dropExtension filename) [] ""
       if (exitcode1 /= ExitSuccess) then
          it ("Testing " ++ filename) $ do
            assertFailure errors1

@@ -16,24 +16,26 @@ main = do
     putStrLn "Error: Incorrect number of arguments, provide just one argument"
 
 
-compileFile args
-  | takeExtension args == ".fst" =
+compileFile args 
+--  | takeExtension args == ".fst" =
+  | "fst" `isExtensionOf` args =
     do
       res <- compile args 
---      checkResult res (takeDirectory args)
-      checkResult res (reverse $ dropWhile (/= '/') (reverse args))
+      checkResult res args -- (reverse $ dropWhile (/= '/') (reverse args))
   | otherwise = do
       putStrLn $ "Error: File extension not recognized, provide a .fst file: " ++ args
 
 
 checkResult :: (Bool, String) -> String -> IO ()
 checkResult res filepath = do
-  changeDir filepath   
+  let (path, filename) = splitFileName filepath
+  changeDir path
   case res of
     (True, _) -> do
-      (exitcode, _, errors) <- readProcessWithExitCode "ghc" ["cfst.hs"] ""
+      (exitcode, _, errors) <- readProcessWithExitCode "ghc" [targetFileName filename] ""
       checkGhcOut exitcode errors
-      (exitcode1, output1, errors1) <- readProcessWithExitCode "./cfst" [] ""
+
+      (exitcode1, output1, errors1) <- readProcessWithExitCode ("./" ++ dropExtension filename) [] ""
       checkGhcOut exitcode1 errors1
       putStr output1
       exitSuccess
@@ -45,7 +47,9 @@ checkResult res filepath = do
     changeDir d
       | not (null d) = setCurrentDirectory d
       | otherwise    = return ()
-    
+
+targetFileName :: String -> String
+targetFileName file = replaceExtensions file "hs"
   
 checkGhcOut exitcode errors =
   if (exitcode /= ExitSuccess) then

@@ -29,6 +29,12 @@ testEquivalenceInvalid :
 clean :
 	rm `find ./ -name '*.o' -o -name '*.hi' -o -name '*.tix'` -r
 
+cleanCompiled : 
+	find ./test/Programs/ValidTests/ -type f  ! -name "*.*" -delete
+
+cleanGen :
+	rm test/Programs/ValidTests/*/*.hs 	  
+
 cleanOuts :
 	rm test/outputs/*
 

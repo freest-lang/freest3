@@ -16,20 +16,26 @@ import           Data.List
 import qualified Data.Map.Strict as Map
 import           System.Directory
 import           Validation.Kinding
+import           System.FilePath
 
 
 -- TODO : PARAM BANG
--- TODO : start may not exists 
+-- TODO : start may not exist
 genProgram :: VarEnv -> ExpEnv -> ConstructorEnv -> KindEnv -> FilePath -> IO ()
-genProgram venv eenv cenv kenv path = do
-  genFreeSTRunTime path
+genProgram venv eenv cenv kenv filepath = do
+  genFreeSTRunTime filepath
   let
     venv1            = updateKey venv
     eenv1            = updateKey eenv
-    dataTypes       = genDataTypes cenv
-    file            = translateExpEnv eenv1
-    mainFun         = genMain eenv1 venv1 in
-    writeFile (path ++ "cfst.hs") (genPragmas ++ genImports ++ dataTypes ++ file ++ mainFun)
+    dataTypes        = genDataTypes cenv
+    file             = translateExpEnv eenv1
+    mainFun          = genMain eenv1 venv1 in
+    writeFile (targetFileName filepath) (genPragmas ++ genImports ++ dataTypes ++ file ++ mainFun)
+--    writeFile (filepath ++ "cfst.hs") (genPragmas ++ genImports ++ dataTypes ++ file ++ mainFun)
+
+-- TODO: export and remove from Main module
+targetFileName :: String -> String
+targetFileName file = replaceExtensions file "hs"
 
 updateKey :: Map.Map Bind a -> Map.Map Bind a
 updateKey m =
@@ -62,8 +68,9 @@ genMain eenv venv =
 
 -- Generates the FreeST runtime module
 genFreeSTRunTime :: FilePath -> IO ()
-genFreeSTRunTime path =
-  writeFile (path ++ "FreeSTRuntime.hs")
+genFreeSTRunTime filepath =
+  let path = takeDirectory filepath in
+  writeFile (path ++ "/FreeSTRuntime.hs")
     ("module FreeSTRuntime (_fork, _new, _send, _receive) where\n\n" ++
      genFreeSTRunTimeImports ++ "\n\n" ++
      genFork ++ "\n\n" ++ genNew ++ "\n\n" ++

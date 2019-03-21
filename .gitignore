@@ -22,6 +22,11 @@ testEquiv.prof
 Parser.hs
 Lexer.hs
 
+# Test files (gen)
+test/Programs/ValidTests/*/*
+!test/Programs/ValidTests/*/*.fst
+!test/Programs/ValidTests/*/*.expected
+
 #Latex
 *.aux
 *.log
