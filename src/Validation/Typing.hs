@@ -46,12 +46,12 @@ typeCheck = do
 
   --  3 - Function declaration
   venv1 <- getVenv
-  -- cenv <- getCenv
-  -- let venv2 = Map.union venv1 cenv
-  -- setVenv venv2
+  cenv <- getCenv
+  let venv2 = Map.union venv1 cenv
+  setVenv venv2
   
   -- TODO: added venv2 argument. Not sure if its ok
-  mapWithKeyM (\fun (a, e) -> checkFD venv1 fun a e) eenv
+  mapWithKeyM (\fun (a, e) -> checkFD venv2 fun a e) eenv
 
   venv <- getVenv
   Trav.mapM (\(TypeScheme _ _ t) -> checkUn t) venv
@@ -69,8 +69,6 @@ checkDataDecl = do
   mapM_ (\k -> checkFunctionalKind k) kenv
   cenv <- getCenv
   mapM_ K.kinding cenv
-
-
 
 checkFunctionalKind :: Kind -> FreestState ()
 checkFunctionalKind k
@@ -108,16 +106,11 @@ checkFun b@(Bind pos x) = do
    |  - Checks the function body (expression) against the declared type
 -}
 checkFD ::  VarEnv -> Bind -> [Bind] -> Expression -> FreestState ()
-checkFD venv fname p exp = do
-  checkFunForm venv fname p
+checkFD venv fname bs exp = do
+  checkFunForm venv fname bs
   let t = venv Map.! fname
---  let lt = last $ toList t
   let (TypeScheme _ _ lt) = last $ toList t
   checkAgainst exp lt
---  checkAgainst tp exp lt
-
---  venv <- getVenv
---  Trav.mapM (\(p, t) -> checkUn p t) venv
   return ()
 
 
@@ -128,9 +121,8 @@ checkFD venv fname p exp = do
 
 checkFunForm :: VarEnv -> Bind -> [Bind] -> FreestState ()
 checkFunForm venv fun args = do
---  checkArgsConflits fun args
   let t = venv Map.! fun
-  arguments <- checkArgs fun args (normalizeType (init (toList t)))
+  arguments <- checkArgs fun args (init (toList t))
   foldM (\acc (b@(Bind p _), t) -> addToVenv b t) () arguments
   return ()
 
@@ -147,29 +139,29 @@ checkArgs (Bind p c) ps ts
       return []
 
 
--- | TODO: check this ... Temporary... TESTING
+-- -- | TODO: check this ... Temporary... TESTING
 
-normalizeType :: [TypeScheme] -> [TypeScheme]
-normalizeType = map normalizeType' 
+-- normalizeType :: [TypeScheme] -> [TypeScheme]
+-- normalizeType = map normalizeType' 
 
-normalizeType' :: TypeScheme -> TypeScheme
-normalizeType' (TypeScheme p bs t) = (TypeScheme p binds t)
-  where
-     binds = foldl (\acc b -> acc ++ (tcvar b t)) [] bs
+-- normalizeType' :: TypeScheme -> TypeScheme
+-- normalizeType' (TypeScheme p bs t) = (TypeScheme p binds t)
+--   where
+--      binds = foldl (\acc b -> acc ++ (tcvar b t)) [] bs
      
-     tcvar b (Fun _ _ t1 t2) = tcvar b t1 ++ tcvar b t2
-     tcvar (KBind p y k) (Var _ x)
-       | y == x = [KBind p x k]
-       | otherwise = []       
-     tcvar b (Semi _ t1 t2) = tcvar b t1 ++ tcvar b t2
-     tcvar b (Rec _ _ t) = tcvar b t
-     tcvar b (Skip _) = []
-     tcvar b (Message _ _ _) = []
-     tcvar b (Basic _ _) = []
-     tcvar b (Choice _ _ m) = Map.foldl (\acc t -> acc ++ (tcvar b t)) [] m
-     tcvar b (PairType _ t1 t2) = tcvar b t1 ++ tcvar b t2
-     -- DataType
-     tcvar b t = error $ "INTERNAL ERROR: " ++ show b ++ " " ++ show t
+--      tcvar b (Fun _ _ t1 t2) = tcvar b t1 ++ tcvar b t2
+--      tcvar (KBind p y k) (Var _ x)
+--        | y == x = [KBind p x k]
+--        | otherwise = []       
+--      tcvar b (Semi _ t1 t2) = tcvar b t1 ++ tcvar b t2
+--      tcvar b (Rec _ _ t) = tcvar b t
+--      tcvar b (Skip _) = []
+--      tcvar b (Message _ _ _) = []
+--      tcvar b (Basic _ _) = []
+--      tcvar b (Choice _ _ m) = Map.foldl (\acc t -> acc ++ (tcvar b t)) [] m
+--      tcvar b (PairType _ t1 t2) = tcvar b t1 ++ tcvar b t2
+--      -- DataType
+--      tcvar b t = error $ "INTERNAL ERROR: " ++ show b ++ " " ++ show t
 
 -- | Checks if a type is unrestricted
 checkUn :: Type -> FreestState ()
@@ -187,7 +179,7 @@ checkAgainst e t = do
   kenv <- getKenv
   if (equivalent kenv t u) then
     return ()
-  else
+  else 
     addError (position t) ["Expecting type", styleRed (show u), 
                  "to be equivalent to type", styleRed (show t)]
 
@@ -240,7 +232,6 @@ synthetize (TypeApp p x ts) = do
   t' <- checkVar p x
   (bs, t) <- extractScheme t'
 -- wellFormedCall p e ts binds
-
   let typeBind = zip ts bs
   mapM (\(t, KBind _ _ k) -> K.checkAgainst k t) typeBind
   -- well formed sub??
@@ -292,17 +283,7 @@ synthetize (Send p e) = do
   t <- synthetize e
   (u1, u2) <- extractOutput t
   return (Fun p Lin (Basic p u1) u2)
-{-
-synthetize (Send p e1 e2) = do
-  -- TODO: This one is not aligned with the journal rules (send e e -> send e)
-  -- TODO: allow sending type instead of basic types only
-  t1 <- synthetize e1
-  b1 <- extractBasic t1
-  t2 <- synthetize e2
-  (b2, u) <- extractOutput t2
-  checkEquivBasics p b1 b2
-  return u
--}
+
 synthetize (Receive p e) = do
   -- TODO: as in send expression, allow receiving type instead of basic types only
   t <- synthetize e

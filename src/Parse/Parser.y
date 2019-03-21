@@ -180,15 +180,14 @@ DataCon :: { (Bind, [Type]) }
 Expr :: { Expression }
   : let VarBind '=' Expr in Expr             { UnLet (position $1) $2 $4 $6 }
   | let VarBind ',' VarBind '=' Expr in Expr { BinLet (position $1) $2 $4 $6 $8 }
-  | '(' Expr ',' Expr ')'                    { Pair (position $1) $2 $4 }
   | if Expr then Expr else Expr              { Conditional (position $1) $2 $4 $6 }
   | new Type                                 { New (position $1) $2 }
   | match Expr with '{' MatchMap '}'         { Match (position $1) $2 $5 }
   | case Expr of '{' CaseMap '}'             { Case (position $1) $2 $5 }
-  | Expr '+' App                             { binOp $1 (position $2) "(+)" $3 }
-  | Expr '-' App                             { binOp $1 (position $2) "(-)" $3 }
-  | Expr '*' App                             { binOp $1 (position $2) "(*)" $3 }
-  | Expr OP App                              { binOp $1 (position $2) (getText $2) $3 }
+  | Expr '*' Expr                             { binOp $1 (position $2) "(*)" $3 }
+  | Expr '+' Expr                             { binOp $1 (position $2) "(+)" $3 }
+  | Expr '-' Expr                             { binOp $1 (position $2) "(-)" $3 }
+  | Expr OP Expr                              { binOp $1 (position $2) (getText $2) $3 }
   | App                                      { $1 }
 
 App :: { Expression }
@@ -208,6 +207,7 @@ Primary :: { Expression }
   | '()'                                     { Unit (position $1) }
   | VAR                                      { Variable (position $1) (getText $1) }
   | CONS                                     { Constructor (position $1) (getText $1) }
+  | '(' Expr ',' Expr ')'                    { Pair (position $1) $2 $4 }
   | '(' Expr ')'                             { $2 }
 
 MatchMap :: { MatchMap }
