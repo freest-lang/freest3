@@ -215,14 +215,16 @@ MatchMap :: { MatchMap }
   | Match ';' MatchMap { Map.union $1 $3 } -- TODO: check duplicates
 
 Match :: { MatchMap }
-  : CONS VarBind '->' Expr { Map.singleton (getText $1) ($2, $4) }
+  : ConsBind VarBind '->' Expr { Map.singleton $1 ($2, $4) }
 
 CaseMap :: { CaseMap }
-  : Case  { let (Bind _ c) = fst $1 in Map.singleton c (snd $1) } -- uncurry Map.singleton $1 }
-  | Case ';' CaseMap  {% -- checkDupCons $1 $3 >>
-                         -- return (uncurry Map.insert c $3)
-                         let (Bind _ c) = fst $1 in
-                         return (Map.insert c (snd $1) $3) }
+  : Case  { uncurry Map.singleton $1 } --let (Bind _ c) = fst $1 in Map.singleton c (snd $1) }
+  | Case ';' CaseMap  {% return (uncurry Map.insert $1 $3) }
+
+-- checkDupCons (fst $1) $3 >>
+-- return (uncurry Map.insert $1 $3) }
+-- let (Bind _ c) = fst $1 in
+-- return (Map.insert c (snd $1) $3) }  
 
 Case :: { (Bind, ([Bind], Expression)) }
   : ConsBind VarBindSeq '->' Expr { ($1, ($2, $4)) }
