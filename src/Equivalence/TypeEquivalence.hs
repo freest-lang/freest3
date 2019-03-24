@@ -91,8 +91,8 @@ findFixedPoint ps nas
   | nas == nas' = nas
   | otherwise = findFixedPoint ps nas'
   where nas' = if allNormed ps
-                 then foldr (apply ps) nas [reflex, congruence, bpa2]
-                 else foldr (apply ps) nas [reflex, congruence, bpa1, bpa2]
+                 then foldr (apply ps) nas [reflex, congruence, bpa2, filtering]
+                 else foldr (apply ps) nas [reflex, congruence, bpa1, bpa2, filtering]
 
 normsMatch :: Productions -> Node -> Bool
 normsMatch ps n = and $ Set.map (\(xs,ys) -> sameNorm ps xs ys) n
