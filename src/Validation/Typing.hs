@@ -130,14 +130,14 @@ checkFunForm venv fun args = do
   return ()
 
 checkArgs :: Bind -> [Bind] -> [TypeScheme] -> FreestState [(Bind, TypeScheme)]
-checkArgs (Bind p c) ps ts
+checkArgs (Bind p c) ps ts 
   | length ps == length ts = return $ zip ps ts
   | length ps > length ts = do
-      addError p ["Function or constructor '", styleRed c ++ "'",
+      addError p ["Function or constructor", "'" ++ styleRed c ++ "'",
                   "is applied to too many arguments"]
       return []
   | length ps < length ts = do
-      addError p ["Function or constructor '", styleRed c ++ "'",
+      addError p ["Function or constructor", "'" ++ styleRed c ++ "'",
                   "is applied to too few arguments"]
       return []
 

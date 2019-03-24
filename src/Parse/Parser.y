@@ -154,6 +154,7 @@ TypeAbbrv :: { () }
 ---------------
 
 -- TODO: check positions
+-- TODO: not need to add to kind env
 DataDecl :: { () }
   : data ConsBind VarKBindEmptyList '=' DataCons
     {% do
@@ -312,6 +313,10 @@ VarBind :: { Bind }
 
 ConsBind :: { Bind }
   : CONS { Bind (position $1) (getText $1) }
+
+-- ConsKBind :: { KBind }
+--   : CONS ':' Kind { KBind (position $1) (getText $1) $3 }
+--   | CONS	  { KBind (position $1) (getText $1) (Kind (position $1) Functional Lin) } -- TODO: change to Functional Lin
 
 VarKBind :: { KBind }
   : VAR ':' Kind { KBind (position $1) (getText $1) $3 }

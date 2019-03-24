@@ -198,7 +198,6 @@ checkUn t = do
   else addError (position t) ["Type", "'" ++ styleRed (show t) ++ "'", "is linear"]
   
 -- | Checking Variables
-
 -- | Checks whether a variable exists and removes it if is a linear usage
 checkVar :: Pos -> TermVar -> FreestState TypeScheme -- TODO: Review
 checkVar p x = do
