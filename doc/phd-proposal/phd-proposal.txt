@@ -1,0 +1,27 @@
+
+This thesis builds on FreeST, a prototype concurrent functional programming language equipped with bidirectional communication channels governed by context-free session types [A2018,AV2018,AMV2019a]. It aims at proving the effectiveness of context-free session types as abstractions for concurrent programming.
+
+Research will unfold along two axes: the extension of the notion of types and its interplay with polymorphism, and the incorporation of context-free session types in existing programming languages.
+
+For the former, I plan to study an extension of types capable of exchanging arbitrary types ...
+
+For the latter, ...
+
+
+Adequacao da equipa (300 palavras)
+
+-- Pede texto LASIGE à Alexandra.
+
+
+References (max 30)
+
+[CW1985] Cardelli, Luca; Wegner, Peter (December 1985). "On Understanding Types, Data Abstraction, and Polymorphism" (PDF). ACM Computing Surveys. 17 (4): 471–523. CiteSeerX 10.1.1.117.695. doi:10.1145/6041.6042. ISSN 0360-0300.
+
+AMV2019a - Places
+
+AMV2019b - ICALP
+
+AV2018 - Inforum
+
+A2018 - MSc thesis
+
