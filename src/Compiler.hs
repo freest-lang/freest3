@@ -18,19 +18,19 @@ compile :: String -> IO (Bool, String)
 compile arg = do
   ps <- parseProgram arg prelude
   let s = execState typeCheck ps
-  checkErr (errors s) (varEnv s) (expEnv s) (consEnv s) (kindEnv s) arg  
+  genCode (errors s) (varEnv s) (expEnv s) (consEnv s) (kindEnv s) arg  
     
 -- CODE GEN
- 
--- TODO: change reverse ... here and Main
-checkErr :: Errors -> VarEnv -> ExpEnv -> ConstructorEnv -> KindEnv -> FilePath -> IO (Bool, String)
-checkErr err venv eenv cenv kenv arg
-  | null err  = codeGen venv eenv cenv kenv arg -- (reverse $ dropWhile (/= '/') (reverse arg))
-  | otherwise = return (False, intercalate "\n\n" err)
+genCode :: Errors -> VarEnv -> ExpEnv -> ConstructorEnv -> KindEnv -> FilePath -> IO (Bool, String)
+genCode err venv eenv cenv kenv path
+  | null err  = do
+      genProgram venv eenv cenv kenv path
+      return (True, "")
+  | otherwise =
+      return (False, intercalate "\n\n" err)
 
-codeGen :: VarEnv -> ExpEnv -> ConstructorEnv -> KindEnv ->
-           FilePath -> IO (Bool, HaskellCode)
-codeGen venv eenv cenv kenv path = do
-  -- let start = eenv Map.! "start"
-  genProgram venv eenv cenv kenv path
-  return (True, "")
+-- codeGen :: VarEnv -> ExpEnv -> ConstructorEnv -> KindEnv ->
+--            FilePath -> IO (Bool, HaskellCode)
+-- codeGen venv eenv cenv kenv path = do
+--   genProgram venv eenv cenv kenv path
+--   return (True, "")

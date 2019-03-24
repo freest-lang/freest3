@@ -341,7 +341,9 @@ translate fm m (Case _ e cm) = do
 translateMatchMap :: String -> FunsMap -> MonadicMap -> MatchMap -> TranslateMonad String
 translateMatchMap fresh fm m = Map.foldlWithKey (translateMatchMap' fresh) (return "")
   where
-    translateMatchMap' fresh acc v (Bind _ p, e) = do
+    translateMatchMap' :: String -> TranslateMonad String -> Bind ->
+                          (Bind, Expression) -> TranslateMonad String
+    translateMatchMap' fresh acc (Bind _ v) (Bind _ p, e) = do
       (h, b) <- translate fm m e
       acc' <- acc
       return $ acc' ++ "\n    \"" ++ v ++ "\" " ++
@@ -351,7 +353,8 @@ translateMatchMap fresh fm m = Map.foldlWithKey (translateMatchMap' fresh) (retu
 translateCaseMap :: FunsMap -> MonadicMap -> CaseMap -> TranslateMonad String
 translateCaseMap fm m = Map.foldlWithKey translateCaseMap' (return "")
   where
-    translateCaseMap' acc v (params, e) = do
+    translateCaseMap' :: TranslateMonad String -> Bind -> ([Bind], Expression) -> TranslateMonad String
+    translateCaseMap' acc (Bind _ v) (params, e) = do
       (h1, _) <- translate fm m e
       acc' <- acc
       return (acc' ++ "\n    " ++ v ++ showCaseParams params ++ " -> " ++ h1 ++ ";")

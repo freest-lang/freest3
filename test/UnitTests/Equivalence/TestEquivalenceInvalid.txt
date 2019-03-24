@@ -86,5 +86,8 @@ rec x  . &{N:x;x;!Int, L:!Int}
 rec x  . &{N:x;x;!Int, L:!Int}
 rec x  . &{N:x;x;!Int, L:Skip};!Int
 
+rec x  . &{N:x;x;!Int, L:!Int}
+rec x  . (&{N:x;x;!Int, L:Skip};!Int)
+
 (rec x. +{A: x; ?Char, B: ?Char}); ?Char
 (rec x. +{A: x; +{B: Skip}; +{B: Skip}; ?Char, B: +{B: Skip}; +{B: Skip}; ?Char}); +{B: Skip}; +{B: Skip}; ?Char

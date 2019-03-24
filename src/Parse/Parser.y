@@ -134,19 +134,10 @@ Decl :: { () }
     {% -- TODO: check duplicates >>
        addToEenv $1 ($2, $4)
     }
-  | TypeAbbrv {}
-
-------------------------
--- TYPE ABBREVIATIONS --
-------------------------
-
--- TODO: review verifications & envs added & Kind
--- TODO: the position is taken from $1
-TypeAbbrv :: { () }
-  : type ConsBind VarKBindEmptyList '=' Type
+  | type ConsBind VarKBindEmptyList '=' Type -- Type abbreviation
     {% checkNamesClash $2 ("Multiple declarations of " ++ styleRed (show $2)) >>
-       addToKenv $2 (Kind (position $2) Functional Un) >>
-       addToVenv $2 (TypeScheme (position $4) $3 $5)
+--       addToKenv $2 (Kind (position $2) Functional Un) >>
+       addToVenv $2 (TypeScheme (position $1) $3 $5)
     }
 
 ---------------
@@ -154,6 +145,7 @@ TypeAbbrv :: { () }
 ---------------
 
 -- TODO: check positions
+-- TODO: not need to add to kind env
 DataDecl :: { () }
   : data ConsBind VarKBindEmptyList '=' DataCons
     {% do
@@ -180,15 +172,14 @@ DataCon :: { (Bind, [Type]) }
 Expr :: { Expression }
   : let VarBind '=' Expr in Expr             { UnLet (position $1) $2 $4 $6 }
   | let VarBind ',' VarBind '=' Expr in Expr { BinLet (position $1) $2 $4 $6 $8 }
-  | '(' Expr ',' Expr ')'                    { Pair (position $1) $2 $4 }
   | if Expr then Expr else Expr              { Conditional (position $1) $2 $4 $6 }
   | new Type                                 { New (position $1) $2 }
   | match Expr with '{' MatchMap '}'         { Match (position $1) $2 $5 }
   | case Expr of '{' CaseMap '}'             { Case (position $1) $2 $5 }
-  | Expr '+' App                             { binOp $1 (position $2) "(+)" $3 }
-  | Expr '-' App                             { binOp $1 (position $2) "(-)" $3 }
-  | Expr '*' App                             { binOp $1 (position $2) "(*)" $3 }
-  | Expr OP App                              { binOp $1 (position $2) (getText $2) $3 }
+  | Expr '*' Expr                            { binOp $1 (position $2) "(*)" $3 }
+  | Expr '+' Expr                            { binOp $1 (position $2) "(+)" $3 }
+  | Expr '-' Expr                            { binOp $1 (position $2) "(-)" $3 }
+  | Expr OP Expr                             { binOp $1 (position $2) (getText $2) $3 }
   | App                                      { $1 }
 
 App :: { Expression }
@@ -208,21 +199,24 @@ Primary :: { Expression }
   | '()'                                     { Unit (position $1) }
   | VAR                                      { Variable (position $1) (getText $1) }
   | CONS                                     { Constructor (position $1) (getText $1) }
+  | '(' Expr ',' Expr ')'                    { Pair (position $1) $2 $4 }
   | '(' Expr ')'                             { $2 }
 
 MatchMap :: { MatchMap }
-  : Match              { $1 }
-  | Match ';' MatchMap { Map.union $1 $3 } -- TODO: check duplicates
+  : Match              { uncurry Map.singleton $1 }
+  | Match ';' MatchMap { uncurry Map.insert $1 $3 } -- TODO: check duplicates
 
-Match :: { MatchMap }
-  : CONS VarBind '->' Expr { Map.singleton (getText $1) ($2, $4) }
+Match :: { (Bind, (Bind, Expression)) }
+  : ConsBind VarBind '->' Expr { ($1, ($2, $4)) }
 
 CaseMap :: { CaseMap }
-  : Case  { let (Bind _ c) = fst $1 in Map.singleton c (snd $1) } -- uncurry Map.singleton $1 }
-  | Case ';' CaseMap  {% -- checkDupCons $1 $3 >>
-                         -- return (uncurry Map.insert c $3)
-                         let (Bind _ c) = fst $1 in
-                         return (Map.insert c (snd $1) $3) }
+  : Case             { uncurry Map.singleton $1 }
+  | Case ';' CaseMap {% {-checkDupCons (fst $1) $3 >>-} return (uncurry Map.insert $1 $3) } -- TODO: check duplicates
+
+-- checkDupCons (fst $1) $3 >>
+-- return (uncurry Map.insert $1 $3) }
+-- let (Bind _ c) = fst $1 in
+-- return (Map.insert c (snd $1) $3) }  
 
 Case :: { (Bind, ([Bind], Expression)) }
   : ConsBind VarBindSeq '->' Expr { ($1, ($2, $4)) }
@@ -310,6 +304,10 @@ VarBind :: { Bind }
 
 ConsBind :: { Bind }
   : CONS { Bind (position $1) (getText $1) }
+
+-- ConsKBind :: { KBind }
+--   : CONS ':' Kind { KBind (position $1) (getText $1) $3 }
+--   | CONS	  { KBind (position $1) (getText $1) (Kind (position $1) Functional Lin) } -- TODO: change to Functional Lin
 
 VarKBind :: { KBind }
   : VAR ':' Kind { KBind (position $1) (getText $1) $3 }

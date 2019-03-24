@@ -27,17 +27,16 @@ import qualified Data.Map.Strict as Map
 type TermVar = Var -- = String
  
 -- TODO: Join these two
--- TODO: TermVar -> Bind
 
 -- C x -> E where:
 -- C is a bind and the map key,
 -- x is a bind (parameter) and E an expression
-type MatchMap = Map.Map Constructor (Bind, Expression)
+type MatchMap = Map.Map Bind (Bind, Expression)
 
 -- C x1 ... xn -> E where:
 -- C is a bind and the map key,
 -- x1 ... xn is a list of binds (parameters) and E an expression
-type CaseMap  = Map.Map Constructor ([Bind], Expression)
+type CaseMap  = Map.Map Bind ([Bind], Expression)
 
 data Expression =
   -- Basic values

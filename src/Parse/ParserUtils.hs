@@ -54,10 +54,10 @@ checkDupKBind (KBind p x _) bs =
 checkDupCons :: Position a => Bind -> Map.Map Bind a -> FreestState ()
 checkDupCons b m =
   case Map.lookup b m of 
-    Just b' -> do
-      addError (position b')
+    Just v -> do
+      addError (position v)
         ["Conflicting definitions for constructor", styleRed (show b),
-         "\tBound at:", showPos (position b'), "\n",
+         "\tBound at:", showPos (position v), "\n",
          "\t         ", showPos (position b)]
     Nothing -> return ()
 

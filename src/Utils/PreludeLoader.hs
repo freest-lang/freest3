@@ -29,7 +29,8 @@ typeList = [ ("(+)", "Int -> Int -> Int")
 -- TODO: add more           
 schemeList :: [(String, String)]
 schemeList = [
--- ("fst", "forall a, b => (a, b) -> a") -- fst/snd applies only to un-pairs but our pairs are lin
+--   ("id", "forall a : TU => a -> a")
+  -- ("fst", "forall a, b => (a, b) -> a") -- fst/snd applies only to un-pairs but our pairs are lin
   ]
      
 prelude :: VarEnv

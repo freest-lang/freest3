@@ -71,10 +71,14 @@ genFreeSTRunTime :: FilePath -> IO ()
 genFreeSTRunTime filepath =
   let path = takeDirectory filepath in
   writeFile (path ++ "/FreeSTRuntime.hs")
+--    ("{-# LANGUAGE FlexibleInstances #-}\nmodule FreeSTRuntime (_fork, _new, _send, _receive, Skip) where\n\n" ++
     ("module FreeSTRuntime (_fork, _new, _send, _receive) where\n\n" ++
      genFreeSTRunTimeImports ++ "\n\n" ++
      genFork ++ "\n\n" ++ genNew ++ "\n\n" ++
-     genSend ++ "\n\n" ++ genReceive)
+     genSend ++ "\n\n" ++ genReceive) --  ++ "\n\n" ++ genSkip)
+
+-- genSkip :: String
+-- genSkip = "type Skip = (Chan (), Chan ())\n\ninstance {-# Overlaps #-} Show Skip where\n  show _ = \"Skip\""
 
 genFork :: String
 genFork = "_fork e = do\n  forkIO e\n  return ()"

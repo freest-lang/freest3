@@ -62,10 +62,10 @@ getVenv = do
   s <- get
   return $ varEnv s
 
-getFromVenv :: Bind -> FreestState TypeScheme
+getFromVenv :: Bind -> FreestState (Maybe TypeScheme)
 getFromVenv x = do
   venv <- getVenv
-  return $ venv Map.! x
+  return $ venv Map.!? x
 
 removeFromVenv :: Bind -> FreestState ()
 removeFromVenv x =
