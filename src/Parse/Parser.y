@@ -134,19 +134,10 @@ Decl :: { () }
     {% -- TODO: check duplicates >>
        addToEenv $1 ($2, $4)
     }
-  | TypeAbbrv {}
-
-------------------------
--- TYPE ABBREVIATIONS --
-------------------------
-
--- TODO: review verifications & envs added & Kind
--- TODO: the position is taken from $1
-TypeAbbrv :: { () }
-  : type ConsBind VarKBindEmptyList '=' Type
+  | type ConsBind VarKBindEmptyList '=' Type -- Type abbreviation
     {% checkNamesClash $2 ("Multiple declarations of " ++ styleRed (show $2)) >>
-       addToKenv $2 (Kind (position $2) Functional Un) >>
-       addToVenv $2 (TypeScheme (position $4) $3 $5)
+--       addToKenv $2 (Kind (position $2) Functional Un) >>
+       addToVenv $2 (TypeScheme (position $1) $3 $5)
     }
 
 ---------------
@@ -185,10 +176,10 @@ Expr :: { Expression }
   | new Type                                 { New (position $1) $2 }
   | match Expr with '{' MatchMap '}'         { Match (position $1) $2 $5 }
   | case Expr of '{' CaseMap '}'             { Case (position $1) $2 $5 }
-  | Expr '*' Expr                             { binOp $1 (position $2) "(*)" $3 }
-  | Expr '+' Expr                             { binOp $1 (position $2) "(+)" $3 }
-  | Expr '-' Expr                             { binOp $1 (position $2) "(-)" $3 }
-  | Expr OP Expr                              { binOp $1 (position $2) (getText $2) $3 }
+  | Expr '*' Expr                            { binOp $1 (position $2) "(*)" $3 }
+  | Expr '+' Expr                            { binOp $1 (position $2) "(+)" $3 }
+  | Expr '-' Expr                            { binOp $1 (position $2) "(-)" $3 }
+  | Expr OP Expr                             { binOp $1 (position $2) (getText $2) $3 }
   | App                                      { $1 }
 
 App :: { Expression }
@@ -212,15 +203,15 @@ Primary :: { Expression }
   | '(' Expr ')'                             { $2 }
 
 MatchMap :: { MatchMap }
-  : Match              { $1 }
-  | Match ';' MatchMap { Map.union $1 $3 } -- TODO: check duplicates
+  : Match              { uncurry Map.singleton $1 }
+  | Match ';' MatchMap { uncurry Map.insert $1 $3 } -- TODO: check duplicates
 
-Match :: { MatchMap }
-  : ConsBind VarBind '->' Expr { Map.singleton $1 ($2, $4) }
+Match :: { (Bind, (Bind, Expression)) }
+  : ConsBind VarBind '->' Expr { ($1, ($2, $4)) }
 
 CaseMap :: { CaseMap }
-  : Case  { uncurry Map.singleton $1 } --let (Bind _ c) = fst $1 in Map.singleton c (snd $1) }
-  | Case ';' CaseMap  {% return (uncurry Map.insert $1 $3) }
+  : Case             { uncurry Map.singleton $1 }
+  | Case ';' CaseMap {% {-checkDupCons (fst $1) $3 >>-} return (uncurry Map.insert $1 $3) } -- TODO: check duplicates
 
 -- checkDupCons (fst $1) $3 >>
 -- return (uncurry Map.insert $1 $3) }
