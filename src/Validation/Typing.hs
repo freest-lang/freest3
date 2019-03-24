@@ -49,8 +49,9 @@ typeCheck = do
   venv1 <- getVenv
   cenv <- getCenv
   let venv2 = Map.union venv1 cenv
-  setVenv venv2  
-  -- TODO: added venv2 argument. Not sure if its ok
+  setVenv venv2
+
+  -- new venv2 as arg
   mapWithKeyM (\fun (a, e) -> checkFD venv2 fun a e) eenv
 
   venv <- getVenv
