@@ -40,7 +40,7 @@ The findings along the axis of the generalisation of the notion of context-free 
 
 State of the art (500 words)
 
-TODO
+TODO [Tirar dos n/ 2 papers]
 
 
 Objectives (300 words)
@@ -56,7 +56,12 @@ For the latter, ...
 
 Adequacao da equipa (300 palavras)
 
--- Pede texto LASIGE à Alexandra.
+The research work leading to this thesis shall be conducted at LASIGE (http://lasige.di.fc.ul.pt), a research unit founded in 1998 that performs R&D in the area of Computer Science and Engineering. Counting with more than 140 members, of which more than 40 PhD holders, LASIGE's R&D is organized around several Research Lines of Excellence. Of particular interest to this proposal is the research line on Reliable Software Systems (http://www.lasige.di.fc.ul.pt/line_rss), currently composed of 14 PhD researchers and a number of PhD and MSc students. LASIGE shall provide physical workspace, computational support, and full access to the unit’s infrastructure.
+
+This thesis is supervised by leading researchers on the area. They regularly publish at top venues including TCS, I&C, J. Log. Comput, ESOP, POPL, ICFP, OOPSLA. Furthermore they have gathered a large experience in the development and implementation of compilers and tools for software development (http://rss.di.fc.ul.pt/tools/).
+
+Vasco T. Vasconcelos is one of the proposers of session types [HVK1998], and has dedicated most of his career to the development of the original idea into what has become to be known as behavioral types. Andreia Mordido is a young researcher with a strong background in logic that will prove crucial for the theoretical developments.
+
 
 
 References (max 30)
