@@ -42,6 +42,20 @@ State of the art (500 words)
 
 TODO [Tirar dos n/ 2 papers]
 
+There are some programming languages using session types and several proposals to incorporate session types in conventional languages (survey). The languages described below are of particular significance, they are SePi, Sill and Links. It is also described the only other implementation of context-free session types by Padovani [].
+
+Session types primary purpose is to enrich the expressiveness that the conventional types provide. The usage of these types allows to structure concurrent communications where a large number of messages are exchanged along heterogeneously typed channels. Honda et al. presented a variant of pi-calculus, in which linear and shared channels are syntactically distinguished. Later, Gay and Hole introduced the notion of subtyping for session types, this allowed richer descriptions of the interactions on channels.
+
+SePi [] is a programming language based on the core pi-calculus. The communication is accomplished via channels governed by regular session types refined with predicates [FV2013]. The syntax of SePi, alongside with the Haskell one, highly influenced FreeST.
+
+Sill [] is a concurrent functional language with session types, based on the Curry-Howard interpretation of linear logic and extended with recursive types and processes []. This interpretation imposes a the following form of programming: a process uses zero or more channels and provides exactly one. FreeST does not allow multiple threads to share a single channel, but it is, undoubtedly, a point that is worth exploring. 
+
+Links is a functional programming language for the web, later extended with session typing primitives []. Very much like SILL, the base language is deadlock-free and terminating. Links also includes recursion and shared channels. The kinding system of FreeST is quite similar to that of FST, proposed by Lindley and Morris [].
+
+The properties described above, are considered desirable for programming languages. With these, programmers do not have to put much effort on runtime checks in order to guarantee that communication errors do not occur. A well formed program is ensured and verified at compile-time. Thus, the confidence that programmers have on the produced code increases, as well as, it's reliability. 
+
+All the languages described above uses regular session types. The closest work to ours is that of Padovani [], which is the only other implementation of context-free session types. The language proposed by Padovani features equivalence, subtyping and, of particular interest, inference algorithms. However, it requires a structural alignment between the process code and the session types, enforced by a resumption process operator that explicitly breaks the sequential type S;T. The use of resumptions forces the programmers to use annotations on the source code, which is something that we wanted to avoid in FreeST.
+
 
 Objectives (300 words)
 
