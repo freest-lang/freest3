@@ -1,3 +1,49 @@
+Abstract (150 words)
+
+Long are the days where hard was complex, soft was simple. Disciplined coding and extensive testing did not deter two Boeing 737 Max from crashing. More than ever we face the urgent need for better programming abstractions, abstractions that directly lead to more reliable software.
+
+Typing systems constitute abstractions of the behaviour programs. They increase the confidence of programmers on the code produced, catch errors at early stages, and reduce the number of necessary runtime checks.
+
+Session types were proposed in the second half of the 90's to describe series of continuous interactions between two partners. In 2016 Thiemann and Vasconcelos proposed the notion of context-free session types [TV2016]. An effective algorithm to decide equivalence was later proposed by Almeida et al. [AMV2019b].
+
+Research will unfold along two axes: the extension of the notion of types and its interplay with polymorphism, and the incorporation of context-free session types in existing programming languages.
+
+
+Description (1000 words)
+
+Software reliability builds on adequate software development tools. At the basis of all these tools one finds, inevitably, programming languages. Programming languages have come a long way since their debut on the second half of the twentieth century. Huge strides on foundations of programming languages have empowered the most recently proposed languages with attributes that conduct to increasing software reliability.
+
+Among the various vectors that contributed to better programming languages, one finds types and typing systems.  Types provide for abstract descriptions of software artefacts. Simple types may talk about the input-output operation of a function. More recent notions of types encompass further aspects, including a more detailed account of behaviour.
+
+It is in this realm that session types materialise. Session types allow the description of continuous interactions between partners. In their simplest and original form, session types narrate the interactions between two partners [H95,HTK97,HVK98]. To describe systems composed of various interacting partners, multiparty session types were later developed [HYC2008].
+
+Session types were be incorporated in different flavours of programming languages. They were, for example, used to refine interfaces in object-oriented programming languages, governing access of objects to methods in the interface based on the state of the object. But were session types really shine is in the presence of concurrency. Here on usually finds session types governing the interaction of different threads communicating over shared channels. In conformity with the expectations of concurrent programs, session types are to describe infinite, or potential infinite, behaviour.
+
+For twenty years session types have been confined to regular languages (occurrences of recursion variables appear in tail positions), even if omega-regular. There are strong reasons for this state of affairs: the type equivalence problem is decidable, and furthermore, an algorithm is known that decides type equivalence in polynomial time [GH2000]. In 2016, Thiemann and Vasconcelos proposed allowing recursion variables to appear anywhere on types: the resulting theory goes by the name of context-free session types [TV2016].
+
+Context-free session types subsume traditional (regular) session types. They allow describing protocols hitherto forbidden by the shackles of tail recursion: protocols that escape list-like interactions, including for example the tree-shaped protocols. Richer typing system contribute directly to software reliability: they allow the compile-time verification of intended programming abstractions; they simplify coding by eschewing additional runtime checks, otherwise necessary to ensure the integrity of data-structures that fall outside the descriptive power of types.
+
+But context-free session types do not come without a price. Even if the original proposal shows that type equivalence is decidable, the existence of an effective algorithm was unaccounted for. The problem was solved recently by Almeida et al., were an algorithm was proposed that checked equivalence in a time compatible with its inclusion in a compiler [AMV2019b]. This work laid the ground for languages featuring session types. One such language is FreeST.
+
+Developed as a Master's Thesis and later published in the proceedings of a peer-reviewed international workshop, FreeST is a polymorphic functional language featuring multiple threads communicating over (bidirectional) channels [A2018,AV2018,AMV2019a]. Interaction on channels is governed by context-free session types. Polymorphic functions allow the same function to be called with channel-ends at different parts of their protocols.
+
+Almeida's MSc thesis and the type equivalence algorithm for context-free session types open promising avenues for the exploration of context-free languages and session types in the field of programming languages. The thesis shall follow two vectors: (a) the generalisation of the notion of context-free session types and its interplay with different forms of polymorphism and (b) the incorporation of context-free session types in current programming languages, notoriously languages that account for message-passing communication and/or substructural type systems.
+
+Context-free session types were designed in such a way that only basic data may be transmitted. The intention was that complex objects (even tree-like) would have to be serialised before marshalling. It turns out that transmitting complex objects on channels (including other channels) can be greatly simplify coding, and thus has an high impact on software quality. One of the goals of this thesis is to study the theory and the accompanying algorithms of generalised context-free session types where objects of arbitrary types may be transmitted.
+
+Polymorphism greatly simplifies coding, by allowing to reuse code with objects of different shapes. FreeST (and the original proposal of context-free session types) features predicative polymorphism (or Damas-Milner [DM1980] or let-polymorphism), whereby functions can be declared with a polymorphic type. Different notions of polymorphism were studied in programming languages, including rank-k polymorphism, where quantifiers appear to the left of k or more arrows), bounded polymorphism (where type parameters are subject to certain bounds) [CW1985], and type classes, supporting, in a principled form, ad hoc polymorphism. Another goal of this thesis is to study the interplay of polymorphism and context-free session types, and to include the findings in a programming language.
+
+Subtyping is a form of polymorphism that relates two types by a notion of substitutability. Regular session types come equipped a natural notion of subtype stemming from width polymorphism, whereby an object serving a collection of n operations may be safely replaced with one that serves the same n operations and possibly a few more. One of the objectives of this thesis is to replace type equality with subtyping, recovering if needed type equivalence as bi-directional subtyping, as usual.
+
+The findings along the axis of the generalisation of the notion of context-free session types and its interplay with polymorphism shall be incorporated in future releases of the FreeST language. In parallel, the thesis will explore the incorporation of context-free session types in existing languages. Promising in 2019 are Go and Rust, for different reasons. Go is a multithreaded, imperative, system, programming language featuring inter-thread communication via typed bi-directional channels. It looks as the perfect target to experiment with richer channel behaviours, was it not for the fact that its type system is not substructural, making it hard to implement linear type systems. Rust is concurrent programming language featuring an ownership type system, where mutable references are treated in an affine manner (at most one reference to one such object). Based on a substructural type system, Rust looks as the perfect target to incorporate context-free session types, was it not for the fact that interprocess communication happens on shared memory. A final goal of this thesis is to explore the incorporation of the new developments on context-free session types on languages such as Go or Rust.
+
+
+State of the art (500 words)
+
+TODO
+
+
+Objectives (300 words)
 
 This thesis builds on FreeST, a prototype concurrent functional programming language equipped with bidirectional communication channels governed by context-free session types [A2018,AV2018,AMV2019a]. It aims at proving the effectiveness of context-free session types as abstractions for concurrent programming.
 
