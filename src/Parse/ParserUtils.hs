@@ -12,11 +12,13 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Parse.ParserUtils
-( checkNamesClash
+( checkDupTypeSig
+, checkDupDecl 
 , checkClashes
-, checkDupCons
+, checkDupField
 , checkDupBind
 , checkDupKBind
+, checkDupMatch
 , binOp
 , unOp
 ) where
@@ -30,6 +32,22 @@ import           Utils.Errors
 import           Utils.FreestState (FreestState, addError, getVenv)
 import           Data.List (nub, (\\), intercalate, find)
 import qualified Data.Map.Strict as Map
+
+checkDupField :: Position a => Bind -> Map.Map Bind a -> FreestState ()
+checkDupField b m =
+  if b `Map.member` m
+  then addError (position b)
+        ["Duplicated field name", "\n",
+         "\t In a choice type:", styleRed (show b), ": ..."]
+  else return ()
+
+checkDupMatch :: Bind -> Map.Map Bind a -> FreestState () 
+checkDupMatch b m =
+  if b `Map.member` m
+  then addError (position b)
+        ["Pattern match is redundant", "\n",
+         "\t In a case alternative:", styleRed (show b), "-> ..."]
+  else return ()
 
 checkDupBind :: Bind -> [Bind] -> FreestState ()
 checkDupBind b bs =
@@ -51,30 +69,26 @@ checkDupKBind (KBind p x _) bs =
          "\t         ", showPos p]
     Nothing -> return ()
 
-checkDupCons :: Position a => Bind -> Map.Map Bind a -> FreestState ()
-checkDupCons b m =
-  case Map.lookup b m of 
-    Just v -> do
-      addError (position v)
-        ["Conflicting definitions for constructor", styleRed (show b),
-         "\tBound at:", showPos (position v), "\n",
-         "\t         ", showPos (position b)]
-    Nothing -> return ()
+checkDupTypeSig :: Bind -> FreestState ()  
+checkDupTypeSig b = checkDup b ("Duplicate type signatures for " ++ styleRed (show b))
 
-checkNamesClash :: Bind -> String -> FreestState ()
-checkNamesClash (Bind p x) msg = do
+checkDupDecl :: Bind -> FreestState ()  
+checkDupDecl b = checkDup b ("Multiple declarations of " ++ styleRed (show b))
+
+checkDup :: Bind -> String -> FreestState ()
+checkDup (Bind p x) msg = do
   m <- getVenv
   let b = Bind p x
   case m Map.!? b of
     Just a  ->
-      addError p [msg, "\n\t at", showPos (position a),
-                       "and", showPos p]
+      addError p [msg, "\n\t Declared at:", showPos (position a), "\n",
+                         "\t            :", showPos p]
     Nothing -> return ()
 
 -- Verifies collisions with other datatypes and within the same datatype 
 checkClashes :: Bind -> [(Bind, Type)] -> FreestState ()
 checkClashes (Bind p c) bs = do
-  mapM_ (\(Bind p b, _)  -> checkNamesClash (Bind p b) (err b)) bs
+  mapM_ (\(Bind p b, _)  -> checkDup (Bind p b) (err b)) bs
 
   let clash = bs \\ nub bs
   if not (null clash) then

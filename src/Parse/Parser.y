@@ -127,18 +127,11 @@ NL :: { () }
 Decl :: { () }
   : DataDecl  {}
   | VarBind ':' TypeScheme -- Function signature
-    {% checkNamesClash $1 ("Duplicate type signatures for " ++ styleRed (show $1)) >>
-       addToVenv $1 $3
-    }
+    {% checkDupTypeSig $1 >> addToVenv $1 $3 }
   | VarBind VarBindSeq '=' Expr -- Function declaration
-    {% -- TODO: check duplicates >>
-       addToEenv $1 ($2, $4)
-    }
+    {% checkDupDecl $1 >> addToEenv $1 ($2, $4) }
   | type ConsBind VarKBindEmptyList '=' Type -- Type abbreviation
-    {% checkNamesClash $2 ("Multiple declarations of " ++ styleRed (show $2)) >>
---       addToKenv $2 (Kind (position $2) Functional Un) >>
-       addToVenv $2 (TypeScheme (position $1) $3 $5)
-    }
+    {% checkDupDecl $2 >> addToVenv $2 (TypeScheme (position $1) $3 $5) }
 
 ---------------
 -- DATATYPES --
@@ -150,7 +143,7 @@ DataDecl :: { () }
   : data ConsBind VarKBindEmptyList '=' DataCons
     {% do
        let bs = typesToFun $2 $5
-       checkNamesClash $2 ("Multiple declarations of " ++ styleRed (show $2))
+       checkDupDecl $2
        addToVenv $2 (TypeScheme (position $2) $3 (Datatype (position $2) (Map.fromList bs)))
        checkClashes $2 bs
        addToKenv $2 (Kind (position $1) Functional Un)
@@ -204,20 +197,17 @@ Primary :: { Expression }
 
 MatchMap :: { MatchMap }
   : Match              { uncurry Map.singleton $1 }
-  | Match ';' MatchMap { uncurry Map.insert $1 $3 } -- TODO: check duplicates
+  | Match ';' MatchMap {% checkDupMatch (fst $1) $3 >>
+                          return (uncurry Map.insert $1 $3) }
 
 Match :: { (Bind, (Bind, Expression)) }
   : ConsBind VarBind '->' Expr { ($1, ($2, $4)) }
 
 CaseMap :: { CaseMap }
   : Case             { uncurry Map.singleton $1 }
-  | Case ';' CaseMap {% {-checkDupCons (fst $1) $3 >>-} return (uncurry Map.insert $1 $3) } -- TODO: check duplicates
-
--- checkDupCons (fst $1) $3 >>
--- return (uncurry Map.insert $1 $3) }
--- let (Bind _ c) = fst $1 in
--- return (Map.insert c (snd $1) $3) }  
-
+  | Case ';' CaseMap {% checkDupMatch (fst $1) $3 >>
+                        return (uncurry Map.insert $1 $3) }
+                        
 Case :: { (Bind, ([Bind], Expression)) }
   : ConsBind VarBindSeq '->' Expr { ($1, ($2, $4)) }
 
@@ -261,8 +251,8 @@ ChoiceView :: { (Pos, ChoiceView) }
   | '&' { (position $1, External) }
   
 FieldList :: { TypeMap }
-  : Field                { uncurry Map.singleton $1 }
-  | Field ',' FieldList  {% checkDupCons (fst $1) $3 >>
+  : Field               { uncurry Map.singleton $1 }
+  | Field ',' FieldList {% checkDupField (fst $1) $3 >>
                             return (uncurry Map.insert $1 $3) }
 
 Field :: { (Bind, Type) }
@@ -304,10 +294,6 @@ VarBind :: { Bind }
 
 ConsBind :: { Bind }
   : CONS { Bind (position $1) (getText $1) }
-
--- ConsKBind :: { KBind }
---   : CONS ':' Kind { KBind (position $1) (getText $1) $3 }
---   | CONS	  { KBind (position $1) (getText $1) (Kind (position $1) Functional Lin) } -- TODO: change to Functional Lin
 
 VarKBind :: { KBind }
   : VAR ':' Kind { KBind (position $1) (getText $1) $3 }
