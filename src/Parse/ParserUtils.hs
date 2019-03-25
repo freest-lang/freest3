@@ -13,12 +13,13 @@ Portability :  portable | non-portable (<reason>)
 
 module Parse.ParserUtils
 ( checkDupTypeSig
-, checkDupDecl 
-, checkClashes
+, checkDupTypeDecl
+, checkDupFunDecl
 , checkDupField
 , checkDupBind
 , checkDupKBind
 , checkDupMatch
+, checkClashes 
 , binOp
 , unOp
 ) where
@@ -29,7 +30,7 @@ import           Syntax.Exps (Expression(..))
 import           Syntax.Types (TypeMap, KBind(..), Type)
 import           Syntax.Position (Var, Bind(..))
 import           Utils.Errors
-import           Utils.FreestState (FreestState, addError, getVenv)
+import           Utils.FreestState (FreestState, addError, getVenv, getEenv)
 import           Data.List (nub, (\\), intercalate, find)
 import qualified Data.Map.Strict as Map
 
@@ -70,10 +71,10 @@ checkDupKBind (KBind p x _) bs =
     Nothing -> return ()
 
 checkDupTypeSig :: Bind -> FreestState ()  
-checkDupTypeSig b = checkDup b ("Duplicate type signatures for " ++ styleRed (show b))
+checkDupTypeSig b = checkDup b ("Duplicate type signatures for function" ++ styleRed (show b))
 
-checkDupDecl :: Bind -> FreestState ()  
-checkDupDecl b = checkDup b ("Multiple declarations of " ++ styleRed (show b))
+checkDupTypeDecl :: Bind -> FreestState ()  
+checkDupTypeDecl b = checkDup b ("Multiple declarations of type" ++ styleRed (show b))
 
 checkDup :: Bind -> String -> FreestState ()
 checkDup (Bind p x) msg = do
@@ -84,6 +85,13 @@ checkDup (Bind p x) msg = do
       addError p [msg, "\n\t Declared at:", showPos (position a), "\n",
                          "\t            :", showPos p]
     Nothing -> return ()
+
+checkDupFunDecl :: Bind -> FreestState ()
+checkDupFunDecl b = do
+  m <- getEenv
+  if b `Map.member` m
+  then addError (position b) ["Multiple declarations of", styleRed (show b)]
+  else return ()
 
 -- Verifies collisions with other datatypes and within the same datatype 
 checkClashes :: Bind -> [(Bind, Type)] -> FreestState ()
