@@ -40,7 +40,7 @@ The findings along the axis of the generalisation of the notion of context-free 
 
 State of the art (500 words)
 
-TODO [Tirar dos n/ 2 papers]
+TODO [Tirar dos n/ 2 papers] ??? Tirar ou juntar? (vv)
 
 There are some programming languages using session types and several proposals to incorporate session types in conventional languages (survey). The languages described below are of particular significance, they are SePi, Sill and Links. It is also described the only other implementation of context-free session types by Padovani [].
 
