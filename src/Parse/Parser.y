@@ -130,7 +130,7 @@ Decl :: { () }
     {% checkDupTypeSig $1 >> addToVenv $1 $3 }
   | VarBind VarBindSeq '=' Expr -- Function declaration
     {% checkDupFunDecl $1 >> addToEenv $1 ($2, $4) }
-  | type ConsBind VarKBindEmptyList '=' Type -- Type abbreviation
+  | type ConsBind VarKindEmptyList '=' Type -- Type abbreviation
     {% checkDupTypeDecl $2 >> addToVenv $2 (TypeScheme (position $1) $3 $5) }
 
 ---------------
@@ -140,7 +140,7 @@ Decl :: { () }
 -- TODO: check positions
 -- TODO: not need to add to kind env
 DataDecl :: { () }
-  : data ConsBind VarKBindEmptyList '=' DataCons
+  : data ConsBind VarKindEmptyList '=' DataCons
     {% do
        let bs = typesToFun $2 $5
        checkDupTypeDecl $2
@@ -216,7 +216,7 @@ Case :: { (Bind, ([Bind], Expression)) }
 -----------
 
 TypeScheme :: { TypeScheme }
-  : forall VarKBindList '=>' Type { TypeScheme (position $1) $2 $4 }
+  : forall VarKindList '=>' Type { TypeScheme (position $1) $2 $4 }
   | Type                          { TypeScheme (position $1) [] $1 }
 
 -----------
@@ -295,7 +295,7 @@ VarBind :: { Bind }
 ConsBind :: { Bind }
   : CONS { Bind (position $1) (getText $1) }
 
-VarKBind :: { KBind }
+VarKind :: { KBind }
   : VAR ':' Kind { KBind (position $1) (getText $1) $3 }
   | VAR		 { KBind (position $1) (getText $1) (top (position $1)) }
 
@@ -303,13 +303,13 @@ VarBindSeq :: { [Bind] }
   :                    { [] }
   | VarBind VarBindSeq {% checkDupBind $1 $2 >> return ($1 : $2) }
 
-VarKBindList :: { [KBind] }
-  : VarKBind                  { [$1] }
-  | VarKBind ',' VarKBindList {% checkDupKBind $1 $3 >> return ($1 : $3) }
+VarKindList :: { [KBind] }
+  : VarKind                  { [$1] }
+  | VarKind ',' VarKindList {% checkDupKBind $1 $3 >> return ($1 : $3) }
 
-VarKBindEmptyList :: { [KBind] }
+VarKindEmptyList :: { [KBind] }
   :              { [] }
-  | VarKBindList { $1 }
+  | VarKindList { $1 }
 
 {
   

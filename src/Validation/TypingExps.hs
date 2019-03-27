@@ -312,7 +312,7 @@ extractOutput t = normalizeType t >>= extractOutput'
 
 -- Extracts an input type from a general type; gives an error if it isn't an input
 extractInput :: Type -> FreestState (BasicType, Type)
-<<<<<<< HEAD
+
 extractInput t = normalizeType t >>= extractInput'
   where
     extractInput' :: Type -> FreestState (BasicType, Type)
@@ -336,17 +336,6 @@ extractInChoice t = normalizeType t >>= extractInChoice'
     extractInChoice' t = do
       addError (position t) ["Expecting an internal choice; found", styleRed $ show t]
       return $ Skip (position t)
-=======
-extractInput (Semi _ (Skip _) t) = extractInput t
-extractInput (Semi _ (Message _ In b) t) = return (b, t)
-extractInput (Message p In b) = return (b, Skip p)
-extractInput r@(Rec _ _ _) = extractInput (unfold r)
-extractInput (Semi p t u) = do
-  (b, t1) <- extractInput t
-  return (b, Semi p t1 u)
-extractInput t = do
-  addError (position t) ["Expecting an input type; found", styleRed $ show t]
-  return (UnitType, Skip (position t))
 
 -- Extracts an internal choice from a type; gives an error if it 
 extractOutChoice :: Type -> FreestState Type
@@ -364,7 +353,6 @@ extractOutChoice (Semi p t1 t2) = do
 extractOutChoice t = do
   addError (position t) ["Expecting an internal choice; found", styleRed $ show t]
   return $ Skip (position t)
->>>>>>> 2b5d0a6b4eab52d2753270b72e2da9cbfc90ec72
 
 -- Extracts a constructor from a choice map;
 -- gives an error if the constructor is not found
