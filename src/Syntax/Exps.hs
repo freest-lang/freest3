@@ -21,7 +21,7 @@ module Syntax.Exps
 import           Parse.Lexer (Position(..), Pos)
 import           Syntax.Types
 import           Syntax.Kinds
-import           Syntax.Position
+import           Syntax.Bind
 import qualified Data.Map.Strict as Map
 
 type TermVar = Var -- = String

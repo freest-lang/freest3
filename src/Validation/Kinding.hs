@@ -28,7 +28,7 @@ import           Syntax.Programs
 import           Syntax.Exps
 import           Syntax.Types
 import           Syntax.Kinds
-import           Syntax.Position
+import           Syntax.Bind
 import           Utils.Errors
 import           Utils.FreestState
 import           Control.Monad.State

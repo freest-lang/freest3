@@ -18,7 +18,7 @@ module Equivalence.TypeEquivalence
 import           Syntax.Programs
 import           Syntax.Types
 import           Syntax.Kinds
-import           Syntax.Position
+import           Syntax.Bind
 import           Validation.Kinding
 import           Equivalence.Grammar
 import           Equivalence.TypeToGrammar

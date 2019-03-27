@@ -28,7 +28,7 @@ import           Parse.Lexer (Position, Pos, position, defaultPos, showPos)
 import           Syntax.Programs (VarEnv)
 import           Syntax.Exps (Expression(..))
 import           Syntax.Types (TypeMap, KBind(..), Type)
-import           Syntax.Position (Var, Bind(..))
+import           Syntax.Bind (Var, Bind(..))
 import           Utils.Errors
 import           Utils.FreestState (FreestState, addError, getVenv, getEenv)
 import           Data.List (nub, (\\), intercalate, find)

@@ -8,7 +8,7 @@ import           Syntax.Programs
 import           Syntax.Exps
 import           Syntax.Types
 import           Syntax.Kinds
-import           Syntax.Position
+import           Syntax.Bind
 import           CodeGen.DatatypeGen
 import           CodeGen.ExpressionGen
 import           Control.Monad.State

@@ -5,7 +5,7 @@ import           SpecHelper
 import           Syntax.Exps
 import           Syntax.Types -- TODO REMOVE
 import           Syntax.Kinds
-import           Syntax.Position
+import           Syntax.Bind
 import qualified Data.Map.Strict as Map
 
 -- Just to be able to run it alone

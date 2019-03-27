@@ -26,7 +26,7 @@ executable ContextFreeSession
   default-language:    Haskell2010
   build-tools:         alex, happy
   other-modules:       Compiler,
-                       Syntax.Position, Syntax.Kinds, Syntax.Types, Syntax.Exps, Syntax.Programs,
+                       Syntax.Bind, Syntax.Kinds, Syntax.Types, Syntax.Exps, Syntax.Programs,
                        Parse.Parser, Parse.Lexer, Parse.ParserUtils,
                        Utils.PreludeLoader, Utils.Errors, Utils.FreestState,
                        Queue.Queue,
@@ -43,7 +43,7 @@ test-suite unit-tests
                        process >= 1.6.3.0, split >= 0.2.2, array <= 0.5.3.0, pretty-terminal >= 0.1.0.0
   hs-source-dirs:      src, test/UnitTests
   default-language:    Haskell2010
-  other-modules:       Syntax.Position, Syntax.Kinds, Syntax.Types, Syntax.Exps,
+  other-modules:       Syntax.Bind, Syntax.Kinds, Syntax.Types, Syntax.Exps,
                        Parse.Parser, Parse.Lexer, Parse.ParserUtils,
                        Queue.Queue,
                        Validation.Kinding, Validation.Contractive, 
@@ -70,7 +70,7 @@ test-suite program-tests
   ghc-options:         -threaded
   default-language:    Haskell2010
   other-modules:       Compiler, CompilerSpec, 
-                       Syntax.Position, Syntax.Exps, Syntax.Kinds, Syntax.Types, Syntax.Programs,
+                       Syntax.Bind, Syntax.Exps, Syntax.Kinds, Syntax.Types, Syntax.Programs,
                        Parse.Lexer, Parse.Parser, Parse.ParserUtils,
                        Utils.PreludeLoader, Utils.Errors, Utils.FreestState,
                        Queue.Queue,        
@@ -91,7 +91,7 @@ test-suite testEquiv
   hs-source-dirs:      src, test/UnitTests
   default-language:    Haskell2010
   other-modules:       SpecHelper,
-                       Syntax.Position, Syntax.Kinds, Syntax.Types, Syntax.Exps, Syntax.Programs,
+                       Syntax.Bind, Syntax.Kinds, Syntax.Types, Syntax.Exps, Syntax.Programs,
                        Parse.Parser, Parse.Lexer,  Parse.ParserUtils,
                        Queue.Queue, Utils.Errors, Utils.FreestState,
                        Validation.Kinding,  Validation.Contractive,

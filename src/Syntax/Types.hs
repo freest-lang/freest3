@@ -31,7 +31,7 @@ module Syntax.Types
 ) where
 
 import           Parse.Lexer (Position(..), Pos)
-import           Syntax.Position
+import           Syntax.Bind
 import           Syntax.Kinds
 import           Data.List (intersperse)
 import qualified Data.Map.Strict as Map
