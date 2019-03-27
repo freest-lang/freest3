@@ -174,6 +174,9 @@ instance Ord KBind where
 instance Show KBind where
   show (KBind _ x k) = x ++ " : " ++ show k
 
+instance Position KBind where
+  position (KBind p _ _) = p
+
 -- TYPE SCHEMES
 
 data TypeScheme = TypeScheme Pos [KBind] Type

@@ -63,11 +63,11 @@ synthetize (Datatype p m) = do
   ks <- mapM synthetize (Map.elems m)
   let Kind _ _ n = maximum ks
   return $ Kind p Functional n
-synthetize (Rec p x t) = do
+synthetize (Rec p x@(KBind _ _ k) t) = do
   checkContractive t
   y <- freshVar
   let b = Bind p y
-  addToKenv b (Kind p Session Un)
+  addToKenv b k
   k <- synthetize $ subs (Var p y) x t -- On the fly α-conversion
   removeFromKenv b
   return k

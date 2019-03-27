@@ -125,29 +125,20 @@ NL :: { () }
   | nl    {}
 
 Decl :: { () }
-  : DataDecl  {}
-  | VarBind ':' TypeScheme -- Function signature
+  : VarBind ':' TypeScheme -- Function signature
     {% checkDupTypeSig $1 >> addToVenv $1 $3 }
   | VarBind VarBindSeq '=' Expr -- Function declaration
     {% checkDupFunDecl $1 >> addToEenv $1 ($2, $4) }
-  | type ConsBind VarKindEmptyList '=' Type -- Type abbreviation
-    {% checkDupTypeDecl $2 >> addToVenv $2 (TypeScheme (position $1) $3 $5) }
-
----------------
--- DATATYPES --
----------------
-
--- TODO: check positions
--- TODO: not need to add to kind env
-DataDecl :: { () }
-  : data ConsBind VarKindEmptyList '=' DataCons
+  | type TypeBind KindVarEmptyList '=' Type -- Type abbreviation
+    {% checkDupTBind $2 >> addToTenv $2 (TypeScheme (position $1) $3 $5) }
+  | data TypeBind KindVarEmptyList '=' DataCons
     {% do
        let bs = typesToFun $2 $5
        checkDupTypeDecl $2
        addToVenv $2 (TypeScheme (position $2) $3 (Datatype (position $2) (Map.fromList bs)))
        checkClashes $2 bs
        addToKenv $2 (Kind (position $1) Functional Un)
-       addListToCenv bs
+--       addListToTenv bs
        addListToVenv bs
     }
 
@@ -216,7 +207,7 @@ Case :: { (Bind, ([Bind], Expression)) }
 -----------
 
 TypeScheme :: { TypeScheme }
-  : forall VarKindList '=>' Type { TypeScheme (position $1) $2 $4 }
+  : forall KindVarList '=>' Type { TypeScheme (position $1) $2 $4 }
   | Type                          { TypeScheme (position $1) [] $1 }
 
 -----------
@@ -292,28 +283,32 @@ VarBind :: { Bind }
   : VAR { Bind (position $1) (getText $1) }
   | '_' { Bind (position $1) "_" } -- TODO: rename to unique Var
 
-ConsBind :: { Bind }
-  : CONS { Bind (position $1) (getText $1) }
-
-VarKind :: { KBind }
-  : VAR ':' Kind { KBind (position $1) (getText $1) $3 }
-  | VAR		 { let p = position $1 in KBind p (getText $1) (Kind p Functional Lin) }
-
 RecVar :: { KBind }
   : VAR ':' Kind { KBind (position $1) (getText $1) $3 }
   | VAR		 { let p = position $1 in KBind p (getText $1) (Kind p Session Lin) }
+
+KindVar :: { KBind }
+  : VAR ':' Kind { KBind (position $1) (getText $1) $3 }
+  | VAR		 { let p = position $1 in KBind p (getText $1) (Kind p Functional Lin) }
+
+ConsBind :: { Bind }
+  : CONS { Bind (position $1) (getText $1) }
+
+TypeBind :: { KBind }
+  : CONS ':' Kind { KBind (position $1) (getText $1) $3 }
+  | CONS          { let p = position $1 in KBind p (getText $1) (Kind p Functional Lin) }
 
 VarBindSeq :: { [Bind] }
   :                    { [] }
   | VarBind VarBindSeq {% checkDupBind $1 $2 >> return ($1 : $2) }
 
-VarKindList :: { [KBind] }
-  : VarKind                  { [$1] }
-  | VarKind ',' VarKindList {% checkDupKBind $1 $3 >> return ($1 : $3) }
+KindVarList :: { [KBind] }
+  : KindVar                 { [$1] }
+  | KindVar ',' KindVarList {% checkDupKBind $1 $3 >> return ($1 : $3) }
 
-VarKindEmptyList :: { [KBind] }
-  :              { [] }
-  | VarKindList { $1 }
+KindVarEmptyList :: { [KBind] }
+  :             { [] }
+  | KindVarList { $1 }
 
 {
   
@@ -392,9 +387,9 @@ parseError xs = do
 
 -- tmp move to state
 -- maybe refactor addType & addTypeScheme and then use uncurry
-addListToCenv :: [(Bind,Type)] -> FreestState ()
-addListToCenv bs = do
-  mapM (\(b, t) -> addToCenv b (TypeScheme (position t) [] t)) bs
+addListToTenv :: [(KBind,Type)] -> FreestState ()
+addListToTenv bs = do
+  mapM (\(b, t) -> addToTenv b (TypeScheme (position t) [] t)) bs
   return ()
 
 addListToVenv :: [(Bind,Type)] -> FreestState ()

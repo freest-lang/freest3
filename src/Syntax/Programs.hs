@@ -23,7 +23,7 @@ import           Syntax.Exps
 import qualified Data.Map.Strict as Map
 
 -- The type definitions or abbreviations (data, type)
-type TypeEnv = Map.Map Bind TypeScheme
+type TypeEnv = Map.Map KBind TypeScheme
 
 -- The signatures of the named functions in a program
 type VarEnv = Map.Map Bind TypeScheme

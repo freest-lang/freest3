@@ -15,6 +15,7 @@ module Parse.ParserUtils
 ( checkDupTypeSig
 , checkDupTypeDecl
 , checkDupFunDecl
+, checkDupTBind
 , checkDupField
 , checkDupBind
 , checkDupKBind
@@ -30,7 +31,7 @@ import           Syntax.Exps (Expression(..))
 import           Syntax.Types (TypeMap, KBind(..), Type)
 import           Syntax.Bind (Var, Bind(..))
 import           Utils.Errors
-import           Utils.FreestState (FreestState, addError, getVenv, getEenv)
+import           Utils.FreestState (FreestState, addError, getVenv, getTenv, getEenv)
 import           Data.List (nub, (\\), intercalate, find)
 import qualified Data.Map.Strict as Map
 
@@ -92,6 +93,16 @@ checkDupFunDecl b = do
   if b `Map.member` m
   then addError (position b) ["Multiple declarations of", styleRed (show b)]
   else return ()
+
+checkDupTBind :: KBind -> FreestState ()
+checkDupTBind b = do
+  m <- getTenv
+  case m Map.!? b of
+    Just a  ->
+      addError (position a) ["Multiple declarations of type",
+                             "\n\t Declared at:", showPos (position a), "\n",
+                             "\t            :", showPos (position b)]
+    Nothing -> return ()  
 
 -- Verifies collisions with other datatypes and within the same datatype 
 checkClashes :: Bind -> [(Bind, Type)] -> FreestState ()

@@ -43,12 +43,13 @@ typeCheck = do
   mapWithKeyM (\fun _ -> checkFunSig fun) eenv -- TODO: Map over keys
 
   --  4 - Function declaration
-  venv1 <- getVenv
+{-  venv1 <- getVenv
   cenv <- getTenv
   let venv2 = Map.union venv1 cenv
   setVenv venv2
-
+-}
   -- new venv2 as arg
+  venv2 <- getVenv
   mapWithKeyM (\fun (a, e) -> checkFD venv2 fun a e) eenv
 
   venv <- getVenv

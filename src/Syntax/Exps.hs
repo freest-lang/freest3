@@ -18,7 +18,7 @@ module Syntax.Exps
 , MatchMap
 ) where
 
-import           Parse.Lexer (Position(..), Pos)
+import           Parse.Lexer (Position, Pos, position)
 import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.Bind
