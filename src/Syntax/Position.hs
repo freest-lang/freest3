@@ -12,14 +12,11 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Syntax.Position
-( --Pos
- Var
---, Position(..)
+( Var
 , Bind(..)
--- , AlexPosn(..)
 ) where 
 
-import Parse.Lexer (Position(..),Pos)
+import Parse.Lexer (Position, Pos, position)
 
 type Var = String
 

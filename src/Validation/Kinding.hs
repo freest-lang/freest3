@@ -16,7 +16,8 @@ module Validation.Kinding
 , checkAgainst
 , kinding
 , un
-, lin 
+, lin
+, top
 , kindOfType -- test
 , kindOfScheme -- test
 , isWellFormed -- test
@@ -88,7 +89,7 @@ synthetize (Var p v) = do
     getKind bind
   else do
     addError p ["Variable not in scope: ", styleRed v]
-    let k = topKind p
+    let k = top p
     addToKenv bind k
     return k
 
@@ -99,7 +100,7 @@ checkSessionKind t k@(Kind _ p m)
   | p == Session = return $ m
   | otherwise    = do
       addError (position t) ["Expecting type", styleRed $ show t,
-                  "to be a session type; found kind", styleRed $ show k]
+                             "to be a session type; found kind", styleRed $ show k]
       return $ m
 
 -- Check whether a given type has a given kind
@@ -111,17 +112,17 @@ checkAgainst k (Rec p x t) = do
   addToKenv b (Kind p Session Un)
   checkAgainst k $ subs (Var p y) x t -- On the fly α-conversion
   removeFromKenv b
-checkAgainst k t = do
-  k' <- synthetize t
-  checkSubkind (position t) k' k
+checkAgainst k1 t = do
+  k2 <- synthetize t
+  checkSubkind k2 k1
 
--- Checks whether a given kind is a sub kind of another;
--- gives an error message if it isn't
-checkSubkind :: Pos -> Kind -> Kind -> FreestState ()
-checkSubkind p k1 k2
+-- Check whether a given kind is a sub kind of another; issue an
+-- error message if not.
+checkSubkind :: Kind -> Kind -> FreestState ()
+checkSubkind k1 k2
   | k1 <= k2  = return ()
-  | otherwise =
-      addError p ["Expecting kind", styleRed $ show k1, "to be a sub-kind of kind of kind", styleRed $ show k2]
+  | otherwise = addError (position k1) ["Expecting kind", styleRed $ show k1,
+      "to be a sub-kind of kind of kind", styleRed $ show k2]
 
 -- Determines whether a given type is of a given multiplicity
 mult :: Multiplicity -> Type -> FreestState Bool
@@ -137,9 +138,9 @@ lin = mult Lin
 un :: Type -> FreestState Bool
 un = mult Un
 
--- Used to insert in the kinding environment when an error is found
-topKind :: Pos -> Kind
-topKind p = Kind p Functional Lin
+-- The kind that seats at the top of the hierarchy (use as a default value)
+top :: Pos -> Kind
+top p = Kind p Functional Lin
 
 -- For TESTS only, from here on
 
