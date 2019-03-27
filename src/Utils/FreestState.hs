@@ -30,7 +30,7 @@ data FreestS = FreestS {
   filename :: String,
   varEnv :: VarEnv,
   expEnv :: ExpEnv,
-  consEnv :: ConstructorEnv,
+  consEnv :: TypeEnv,
   kindEnv :: KindEnv,
   errors :: Errors,
   fv :: Int}
@@ -100,10 +100,10 @@ addToEenv :: Bind -> ([Bind], Expression) -> FreestState ()
 addToEenv k v =
   modify (\s -> s{expEnv=Map.insert k v (expEnv s)})    
      
--- | CONSTRUCTOR ENV
+-- | TYPE ENV
 
-getCenv :: FreestState ConstructorEnv
-getCenv = do
+getTenv :: FreestState TypeEnv
+getTenv = do
   s <- get
   return $ consEnv s
 

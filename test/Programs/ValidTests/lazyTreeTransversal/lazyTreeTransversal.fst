@@ -27,7 +27,7 @@ rec y . +{Value: !Int;y,
 -}
 
 
-exploreTree : forall α => Tree -> (
+exploreTree : forall α : SL => Tree -> (
   rec x. +{LeafC: Skip,
            NodeC: rec y. &{Value: !Int;y,
                            Left:  x;y,
@@ -42,7 +42,7 @@ exploreTree tree c =
       exploreNode[α] x l r c
     }
 
-exploreNode : forall α => Int -> Tree -> Tree -> (
+exploreNode : forall α : SL => Int -> Tree -> Tree -> (
   rec y. &{Value: !Int;y,
            Left:  +{LeafC: Skip, NodeC: y};y,
            Right: +{LeafC: Skip, NodeC: y};y,
@@ -64,7 +64,7 @@ exploreNode x l r c =
 -- server: compute the product of the values in a tree; stop as soon a zero is received
 -- to be completed
 
-server : forall α => Int -> (
+server : forall α : SL => Int -> (
   rec x. &{LeafC: Skip,
            NodeC: rec y. +{Value: ?Int;y,
                            Left:  x;y,
@@ -78,7 +78,7 @@ server n c =
       serverNode[α] n c
   }
 
-serverNode : forall α => Int -> (
+serverNode : forall α : SL => Int -> (
   rec y. +{Value: ?Int;y,
            Left:  &{LeafC: Skip, NodeC: y};y,
            Right: &{LeafC: Skip, NodeC: y};y,

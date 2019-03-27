@@ -12,25 +12,21 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Syntax.Programs
-( ConstructorEnv
+( TypeEnv
 , ExpEnv
 , VarEnv
-, KindEnv
 ) where 
 
 import           Syntax.Bind
-import           Syntax.Kinds
 import           Syntax.Types
 import           Syntax.Exps
 import qualified Data.Map.Strict as Map
 
--- The datatypes
-type ConstructorEnv = Map.Map Bind TypeScheme
+-- The type definitions or abbreviations (data, type)
+type TypeEnv = Map.Map Bind TypeScheme
 
 -- The signatures of the named functions in a program
 type VarEnv = Map.Map Bind TypeScheme
 
--- The named functions in a program
+-- The defintions of the named functions in a program
 type ExpEnv = Map.Map Bind ([Bind], Expression)
-
-type KindEnv = Map.Map Bind Kind

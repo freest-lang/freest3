@@ -16,10 +16,12 @@ module Syntax.Kinds
 , PreKind (..)
 , Multiplicity (..)
 , Kind (..)
+, KindEnv
 ) where
 
-import Parse.Lexer (Position, position, Pos)
-import Syntax.Bind (Var)
+import           Parse.Lexer (Position, Pos, position)
+import           Syntax.Bind (Var, Bind)
+import qualified Data.Map.Strict as Map
 
 -- PREKINDS
 
@@ -65,3 +67,8 @@ instance Position Kind where
 -- KIND VAR
 
 type KindVar = Var -- = String
+
+-- KIND ENVIRONMENT
+
+type KindEnv = Map.Map Bind Kind
+

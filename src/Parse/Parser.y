@@ -297,7 +297,7 @@ ConsBind :: { Bind }
 
 VarKBind :: { KBind }
   : VAR ':' Kind { KBind (position $1) (getText $1) $3 }
-  | VAR		 { KBind (position $1) (getText $1) (Kind (position $1) Session Lin) } -- TODO: change to Functional Lin
+  | VAR		 { KBind (position $1) (getText $1) (top (position $1)) }
 
 VarBindSeq :: { [Bind] }
   :                    { [] }

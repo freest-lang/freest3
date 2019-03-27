@@ -19,7 +19,7 @@ client n c =
   client'[Skip] (n - 1) c
 
 -- client' : Int -> S1;α -> α
-client' : forall α => Int -> (rec x. +{A: x; +{B: Skip}, B: Skip}); α -> α
+client' : forall α : SL => Int -> (rec x. +{A: x; +{B: Skip}, B: Skip}); α -> α
 client' n c =
   if n == 0
   then
@@ -35,8 +35,8 @@ server c =
     A c -> server'[Skip] c
   }
 
--- server' : forall α => (rec x. &{A: x; &{B: Skip}}); &{B: Skip}; α -> α
-server' : forall α => (rec x. &{A: x; &{B: Skip}, B: Skip}); α -> α
+-- server' : forall α : SL => (rec x. &{A: x; &{B: Skip}}); &{B: Skip}; α -> α
+server' : forall α : SL => (rec x. &{A: x; &{B: Skip}, B: Skip}); α -> α
 server' c =
   match c with {
     A c ->               -- (rec x. &{A: x; &{B: Skip}, B: Skip})) ; &{B: Skip}

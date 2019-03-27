@@ -32,9 +32,6 @@ import qualified Data.Traversable as Trav
 
 typeCheck :: FreestState ()
 typeCheck = do
-  -- 1 - Check main fun
-  checkMainFun
-  
   -- 2 - Data declaration
   -- Checks if the datatypes are well kinded
   checkDataDecl
@@ -47,7 +44,7 @@ typeCheck = do
 
   --  4 - Function declaration
   venv1 <- getVenv
-  cenv <- getCenv
+  cenv <- getTenv
   let venv2 = Map.union venv1 cenv
   setVenv venv2
 
@@ -56,18 +53,10 @@ typeCheck = do
 
   venv <- getVenv
   Trav.mapM (\(TypeScheme _ _ t) -> checkUn t) venv
-  return ()
+  -- 1 - Check main fun
+  checkMainFun
 
--- | FUNCTIONS TO VERIFY THAT THE MAIN FUNCTION EXISTS
 
-checkMainFun :: FreestState ()
-checkMainFun = do
-  venv <- getVenv
-  if (Bind defaultPos "main") `Map.notMember` venv then
-    addError (defaultPos) ["The IO action", styleRed "'main'", "is not defined"]    
-  else
-    return ()
-    
 -- | FUNCTIONS TO VERIFY DATATYPES
 {- | Checks all the datatypes definitions:
    |  - Checks if they are well kinded and if they have a functional kind
@@ -76,15 +65,14 @@ checkDataDecl :: FreestState ()
 checkDataDecl = do 
   kenv <- getKenv
   mapM_ checkFunctionalKind kenv
-  cenv <- getCenv
+  cenv <- getTenv
   mapM_ K.kinding cenv
 
 checkFunctionalKind :: Kind -> FreestState ()
-checkFunctionalKind k
-  | k >= (Kind (position k) Functional Un) = return ()
-  | otherwise = 
-     addError (position k) ["Expecting a functional (TU or TL) type; found a",
-                  styleRed (show k), "type."]
+checkFunctionalKind k =
+  when (k < Kind (position k) Functional Un) $
+    addError (position k) ["Expecting a functional (TU or TL) type; found a",
+                           styleRed (show k), "type."]
 
 -- | FUNCTIONS TO VERIFY FUNCTION SIGNATURES
 
@@ -144,3 +132,12 @@ checkArgs (Bind p c) ps ts
 
 mapWithKeyM :: Monad m => (k -> a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)
 mapWithKeyM f m = Trav.sequence (Map.mapWithKey f m)
+
+-- | FUNCTIONS TO VERIFY THAT THE MAIN FUNCTION EXISTS
+
+checkMainFun :: FreestState ()
+checkMainFun = do
+  venv <- getVenv
+  when ((Bind defaultPos "main") `Map.notMember` venv) $
+    addError (defaultPos) ["The IO action", styleRed "'main'", "is not defined"]    
+

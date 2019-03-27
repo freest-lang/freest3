@@ -21,7 +21,7 @@ compile arg = do
   genCode (errors s) (varEnv s) (expEnv s) (consEnv s) (kindEnv s) arg  
     
 -- CODE GEN
-genCode :: Errors -> VarEnv -> ExpEnv -> ConstructorEnv -> KindEnv -> FilePath -> IO (Bool, String)
+genCode :: Errors -> VarEnv -> ExpEnv -> TypeEnv -> KindEnv -> FilePath -> IO (Bool, String)
 genCode err venv eenv cenv kenv path
   | null err  = do
       genProgram venv eenv cenv kenv path
@@ -29,7 +29,7 @@ genCode err venv eenv cenv kenv path
   | otherwise =
       return (False, intercalate "\n\n" err)
 
--- codeGen :: VarEnv -> ExpEnv -> ConstructorEnv -> KindEnv ->
+-- codeGen :: VarEnv -> ExpEnv -> TypeEnv -> KindEnv ->
 --            FilePath -> IO (Bool, HaskellCode)
 -- codeGen venv eenv cenv kenv path = do
 --   genProgram venv eenv cenv kenv path

@@ -10,14 +10,14 @@ import qualified Data.Map.Strict as Map
 
 type DatatypeMap = Map.Map TypeVar [String]
 
-genDataTypes :: ConstructorEnv -> String
+genDataTypes :: TypeEnv -> String
 genDataTypes cenv =
   Map.foldlWithKey (\acc k v -> acc ++ showDatatype k v ++ "\n") "" (getDataTypeMap cenv)
 
 showDatatype :: TypeVar -> [String] -> String
 showDatatype dt xs = "data " ++ dt ++ " = " ++ intercalate " | " xs ++ " deriving Show\n"
 
-getDataTypeMap :: ConstructorEnv -> DatatypeMap
+getDataTypeMap :: TypeEnv -> DatatypeMap
 getDataTypeMap = Map.foldlWithKey fun Map.empty
   where
     fun :: DatatypeMap -> Bind -> TypeScheme -> DatatypeMap

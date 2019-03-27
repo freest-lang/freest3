@@ -21,7 +21,7 @@ import           System.FilePath
 
 -- TODO : PARAM BANG
 -- TODO : start may not exist
-genProgram :: VarEnv -> ExpEnv -> ConstructorEnv -> KindEnv -> FilePath -> IO ()
+genProgram :: VarEnv -> ExpEnv -> TypeEnv -> KindEnv -> FilePath -> IO ()
 genProgram venv eenv cenv kenv filepath = do
   genFreeSTRunTime filepath
   let

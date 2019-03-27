@@ -8,7 +8,7 @@ data Tree = Leaf | Node Int Tree Tree
   returns a tree isomorphic to the input where each integer in nodes
   is read from the channel.
 -}
-transform : forall α => Tree -> (rec x. +{LeafC: Skip, NodeC: !Int;x;x;?Int});α -> (Tree, α)
+transform : forall α : SL => Tree -> (rec x. +{LeafC: Skip, NodeC: !Int;x;x;?Int});α -> (Tree, α)
 transform tree c =
   case tree of {
     Leaf ->
@@ -26,7 +26,7 @@ transform tree c =
   writes back on the channel the sum of the elements in the tree;
   returns this sum.
 -}
-treeSum : forall α => (rec x. &{LeafC: Skip, NodeC: ?Int;x;x;!Int});α -> (Int, α)
+treeSum : forall α : SL => (rec x. &{LeafC: Skip, NodeC: ?Int;x;x;!Int});α -> (Int, α)
 treeSum c =
   match c with {
     LeafC c -> (0, c);
