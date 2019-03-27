@@ -12,9 +12,9 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Validation.Kinding
-( Kind (..)
-, checkAgainst
-, kinding
+( checkAgainst
+, synthetize
+, kinding -- deprecated, TODO: remove
 , un
 , lin
 , top
@@ -35,13 +35,6 @@ import           Control.Monad.State
 import           Validation.Contractive
 import qualified Data.Map.Strict as Map
 
--- Returns the kind of a given type scheme -- TODO: type schemes do not have kinds
-kinding :: TypeScheme -> FreestState Kind
-kinding (TypeScheme _ bs t) = do
-  -- TODO: addToKenv -> addBindsLToKenv
-  foldM_ (\_ (KBind p x k) -> addToKenv (Bind p x) k) () bs
-  synthetize t
-
 -- Returns the kind of a given type
 synthetize :: Type -> FreestState Kind
 -- Session types
@@ -53,10 +46,8 @@ synthetize (Choice p _ m) = do
   mapM_ (checkAgainst (Kind p Session Lin)) (Map.elems m)
   return $ Kind p Session Lin
 synthetize (Semi p t u) = do
-  kt <- synthetize t 
-  ku <- synthetize u
-  m <- checkSessionKind t kt
-  n <- checkSessionKind u ku
+  m <- checkAgainstSession t
+  n <- checkAgainstSession u
   return $ Kind p Session (max m n)
 -- Functional
 synthetize (Basic p _) =
@@ -93,15 +84,15 @@ synthetize (Var p v) = do
     addToKenv bind k
     return k
 
--- Check whether a given kind is session; issue an error if not. In
--- either case return the multiplicity
-checkSessionKind :: Type -> Kind -> FreestState Multiplicity
-checkSessionKind t k@(Kind _ p m)
-  | p == Session = return $ m
-  | otherwise    = do
-      addError (position t) ["Expecting type", styleRed $ show t,
-                             "to be a session type; found kind", styleRed $ show k]
-      return $ m
+-- Check whether a given type is of a session kind; issue an error if
+-- not. In either case return the multiplicity of the kind of the type
+checkAgainstSession :: Type -> FreestState Multiplicity
+checkAgainstSession t = do
+  (Kind _ k m) <- synthetize t
+  when (k /= Session) $
+    addError (position t) ["Expecting", styleRed $ show t,
+                           "to be a session type; found a type of kind", styleRed $ show k]
+  return m
 
 -- Check whether a given type has a given kind
 checkAgainst :: Kind -> Type -> FreestState ()
@@ -114,15 +105,16 @@ checkAgainst k (Rec p x t) = do
   removeFromKenv b
 checkAgainst k1 t = do
   k2 <- synthetize t
-  checkSubkind k2 k1
+  when (k2 > k1) $
+    addError (position k1) ["Expecting kind", styleRed $ show k1,
+                            "to be a sub-kind of", styleRed $ show k2]
 
--- Check whether a given kind is a sub kind of another; issue an
--- error message if not.
-checkSubkind :: Kind -> Kind -> FreestState ()
-checkSubkind k1 k2
-  | k1 <= k2  = return ()
-  | otherwise = addError (position k1) ["Expecting kind", styleRed $ show k1,
-      "to be a sub-kind of kind of kind", styleRed $ show k2]
+-- Returns the kind of a given type scheme -- TODO: type schemes do nota have kinds
+kinding :: TypeScheme -> FreestState Kind
+kinding (TypeScheme _ bs t) = do
+  -- TODO: addToKenv -> addBindsLToKenv
+  foldM_ (\_ (KBind p x k) -> addToKenv (Bind p x) k) () bs
+  synthetize t
 
 -- Determines whether a given type is of a given multiplicity
 mult :: Multiplicity -> Type -> FreestState Bool

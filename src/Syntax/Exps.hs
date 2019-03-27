@@ -53,7 +53,7 @@ data Expression =
   | Pair Pos {- Multiplicity -} Expression Expression
   | BinLet Pos Bind Bind Expression Expression
   -- Datatype intro and elim
-  | Constructor Pos TermVar
+  | Constructor Pos TermVar -- TODO: this could be a Variable
   | Case Pos Expression CaseMap
   -- Type application
   | TypeApp Pos TermVar [Type]

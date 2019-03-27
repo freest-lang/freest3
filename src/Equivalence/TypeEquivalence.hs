@@ -23,7 +23,6 @@ import           Validation.Kinding
 import           Equivalence.Grammar
 import           Equivalence.TypeToGrammar
 import           Equivalence.Norm
-import           Control.Monad.State
 import           Data.List (isPrefixOf, union)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
