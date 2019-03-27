@@ -30,7 +30,7 @@ module Syntax.Types
 , isPreSession
 ) where
 
-import           Parse.Lexer (Position(..), Pos)
+import           Parse.Lexer (Position, Pos, position)
 import           Syntax.Bind
 import           Syntax.Kinds
 import           Data.List (intersperse)
@@ -104,7 +104,7 @@ instance Eq Type where
 equalTypes :: Map.Map TypeVar TypeVar -> Type -> Type -> Bool
 equalTypes s (Skip _)         (Skip _)         = True
 equalTypes s (Var _ x)        (Var _ y)        = equalVars (Map.lookup x s) x y
-equalTypes s (Rec _ x t)      (Rec _ y u)      = equalTypes (insertTypeVar (x, y) s) t u
+equalTypes s (Rec _ x t)      (Rec _ y u)      = equalTypes (Map.insert x y s) t u
 equalTypes s (Semi _ t1 t2)   (Semi _ u1 u2)   = equalTypes s t1 u1 && equalTypes s t2 u2
 equalTypes s (Basic _ x)      (Basic _ y)      = x == y
 equalTypes s (Message _ p x)  (Message _ q y)  = p == q && x == y
@@ -125,10 +125,6 @@ equalMaps s m1 m2 =
     Map.foldlWithKey(\b l t ->
       b && l `Map.member` m2 && equalTypes s t (m2 Map.! l)) True m1
 
-insertTypeVar :: (TypeVar, TypeVar) -> Map.Map TypeVar TypeVar -> Map.Map TypeVar TypeVar
-insertTypeVar (b, c) = Map.insert b c
-
--- Showing a type
 instance Show Type where
   show (Basic _ b)      = show b
   show (Skip _)         = "Skip"
@@ -175,26 +171,11 @@ instance Show KBind where
 -- TYPE SCHEMES
 
 data TypeScheme = TypeScheme Pos [KBind] Type
-{-
-instance Eq TypeScheme where -- TODO: Remove
-  (==) = equalSchemes Map.empty
 
-equalSchemes :: Map.Map TypeVar TypeVar -> TypeScheme -> TypeScheme -> Bool
-equalSchemes s (TypeScheme _ bs t) (TypeScheme _ cs u) =
-{-  bs == cs && -} equalTypes (insertBinds bs cs s) t u
-
-insertBinds :: [Bind] -> [Bind] -> Map.Map TypeVar TypeVar -> Map.Map TypeVar TypeVar
-insertBinds bs cs s = foldr insertBind s (zip bs cs)
-
-insertBind :: (Bind, Bind) -> Map.Map TypeVar TypeVar -> Map.Map TypeVar TypeVar
-insertBind (Bind _ x _, Bind _ y _) = Map.insert x y
--}
 instance Show TypeScheme where
   show (TypeScheme _ [] t) = show t
-  show (TypeScheme _ bs t) = "forall " ++ showBindings bs ++ " => " ++ show t
-
-showBindings :: [KBind] -> String
-showBindings bs = concat $ intersperse ", " (map show bs)
+  show (TypeScheme _ bs t) = "forall " ++ bindings ++ " => " ++ show t
+    where bindings = concat $ intersperse ", " (map show bs)
 
 instance Position TypeScheme where
   position (TypeScheme p _ _) = p
