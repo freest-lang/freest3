@@ -90,7 +90,7 @@ data Type =
   | Semi Pos Type Type
   | Message Pos Polarity BasicType
   | Choice Pos ChoiceView TypeMap
-  | Rec Pos KBind Type -- Bind?
+  | Rec Pos KBind Type
   -- Functional or Session
   | Var Pos TypeVar
   -- Type operators
