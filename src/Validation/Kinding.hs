@@ -17,7 +17,6 @@ module Validation.Kinding
 , kinding -- deprecated, TODO: remove
 , un
 , lin
-, top
 , kindOfType -- test
 , kindOfScheme -- test
 , isWellFormed -- test
@@ -132,10 +131,6 @@ lin = mult Lin
 -- Determines whether a given type is unrestricted or not
 un :: Type -> FreestState Bool
 un = mult Un
-
--- The kind that seats at the top of the hierarchy (use as a default value)
-top :: Pos -> Kind
-top p = Kind p Functional Lin
 
 -- For TESTS only, from here on
 

@@ -121,7 +121,7 @@ assocToGrammar y c (Bind _ l, t) = do
 isChecked :: Type -> Visited -> Bool
 isChecked (Skip _) _     = True
 isChecked (Semi _ s t) v = isChecked s v && isChecked t v
-isChecked (Rec _ x t) v  = isChecked t (Set.insert x v)
+isChecked (Rec _ (KBind _ x _) t) v  = isChecked t (Set.insert x v)
 isChecked (Var _ x) v    = Set.member x v -- Only bound variables are checked
 isChecked _ _            = False
 

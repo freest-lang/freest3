@@ -17,6 +17,7 @@ module Syntax.Kinds
 , Multiplicity (..)
 , Kind (..)
 , KindEnv
+, top
 ) where
 
 import           Parse.Lexer (Position, Pos, position)
@@ -63,6 +64,10 @@ instance Show Kind where
 
 instance Position Kind where
   position (Kind p _ _) = p
+
+-- The kind that seats at the top of the hierarchy (use as a default value)
+top :: Pos -> Kind
+top p = Kind p Functional Lin
 
 -- KIND VAR
 

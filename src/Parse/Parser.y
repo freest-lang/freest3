@@ -224,7 +224,7 @@ TypeScheme :: { TypeScheme }
 -----------
 
 Type :: { Type }
-  : rec VAR '.' Type             { Rec (position $1) (getText $2) $4 } 
+  : rec RecVar '.' Type          { Rec (position $1)  $2 $4 } 
   | Type ';' Type                { Semi (position $2) $1 $3 }
   | Type Multiplicity Type       { uncurry Fun $2 $1 $3 }
   | '(' Type ',' Type ')'        { PairType (position $3) $2 $4 }
@@ -297,7 +297,11 @@ ConsBind :: { Bind }
 
 VarKind :: { KBind }
   : VAR ':' Kind { KBind (position $1) (getText $1) $3 }
-  | VAR		 { KBind (position $1) (getText $1) (top (position $1)) }
+  | VAR		 { let p = position $1 in KBind p (getText $1) (Kind p Functional Lin) }
+
+RecVar :: { KBind }
+  : VAR ':' Kind { KBind (position $1) (getText $1) $3 }
+  | VAR		 { let p = position $1 in KBind p (getText $1) (Kind p Session Lin) }
 
 VarBindSeq :: { [Bind] }
   :                    { [] }

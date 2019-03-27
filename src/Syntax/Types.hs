@@ -24,7 +24,7 @@ module Syntax.Types
 , dual
 , toList -- TODO: not quite sure this belongs here
 , unfold
-, rename
+--, rename
 , subs
 , subL -- TODO: not quite sure this belongs here
 , isPreSession
@@ -90,12 +90,12 @@ data Type =
   | Semi Pos Type Type
   | Message Pos Polarity BasicType
   | Choice Pos ChoiceView TypeMap
-  | Rec Pos TypeVar Type -- Bind?
+  | Rec Pos KBind Type -- Bind?
   -- Functional or Session
   | Var Pos TypeVar
   -- Type operators
   | Dualof Pos Type
-  deriving (Ord)
+  deriving Ord
 
 -- Type equality, up to alpha-conversion.
 instance Eq Type where
@@ -104,7 +104,7 @@ instance Eq Type where
 equalTypes :: Map.Map TypeVar TypeVar -> Type -> Type -> Bool
 equalTypes s (Skip _)         (Skip _)         = True
 equalTypes s (Var _ x)        (Var _ y)        = equalVars (Map.lookup x s) x y
-equalTypes s (Rec _ x t)      (Rec _ y u)      = equalTypes (Map.insert x y s) t u
+equalTypes s (Rec _ (KBind _ x _) t) (Rec _ (KBind _ y _) u) = equalTypes (Map.insert x y s) t u
 equalTypes s (Semi _ t1 t2)   (Semi _ u1 u2)   = equalTypes s t1 u1 && equalTypes s t2 u2
 equalTypes s (Basic _ x)      (Basic _ y)      = x == y
 equalTypes s (Message _ p x)  (Message _ q y)  = p == q && x == y
@@ -134,7 +134,7 @@ instance Show Type where
   show (PairType _ t u) = "(" ++ show t ++ ", " ++ show u ++ ")"
   show (Choice _ v m)   = show v ++ "{" ++ showMap m ++ "}"
   show (Datatype _ m)   = "["++ showMap m ++"]"
-  show (Rec _ x t)      = "(rec " ++ x ++ " . " ++ show t ++ ")"
+  show (Rec _ x t)      = "(rec " ++ show x ++ " . " ++ show t ++ ")"
   show (Var _ s)        = s
   show (Dualof _ s)     = "dualof " ++ show s
 
@@ -161,9 +161,15 @@ instance Position Type where
 
 -- KINDED BIND
 
-type TypeVar = String
+type TypeVar = Var -- = String
 
 data KBind = KBind Pos TypeVar Kind
+
+instance Eq KBind where
+  (KBind _ x _) == (KBind _ y _) = x == y
+
+instance Ord KBind where
+  (KBind _ x _) `compare` (KBind _ y _) = x `compare` y
 
 instance Show KBind where
   show (KBind _ x k) = x ++ " : " ++ show k
@@ -211,14 +217,16 @@ unfold :: Type -> Type
 -- Assumes parameter is a Rec type
 unfold (Rec p x t) = subs (Rec p x t) x t
 
-rename :: Type -> TypeVar -> Type
+{-
+rename :: Type -> KBind -> Type
 -- Assumes parameter is a Rec type
 -- rename (Rec p (Bind x pb k) t) y = Rec p (Bind y pb k) (subs (Var p y) x t)
 rename (Rec p x t) y = Rec p y (subs (Var p y) x t)
+-}
 
 -- [u/x]t, substitute u for x on t
-subs :: Type -> TypeVar -> Type -> Type 
-subs t y (Var p x)
+subs :: Type -> KBind -> Type -> Type 
+subs t (KBind _ y _) (Var p x)
     | x == y                = t
     | otherwise             = Var p x
 subs t y (Semi p t1 t2)     = Semi p (subs t y t1) (subs t y t2)
@@ -233,7 +241,7 @@ subs _ _ t                  = t
 
 subL :: Type -> [(Type,KBind)] -> Type
 subL t bs =
-  foldr (\(u, (KBind _ x _)) acc -> subs u x acc) t bs
+  foldr (\(u, x) acc -> subs u x acc) t bs
 
 -- SESSION TYPES
 
