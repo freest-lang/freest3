@@ -18,8 +18,8 @@ module Syntax.Kinds
 , Kind (..)
 ) where
 
-import Parse.Lexer (Position(..), Pos)
-import Syntax.Position
+import Parse.Lexer (Position, position, Pos)
+import Syntax.Bind (Var)
 
 -- PREKINDS
 

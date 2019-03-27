@@ -1,7 +1,7 @@
 module Equivalence.TestEquivalenceValidSpec(spec) where
 
 import           Parse.Lexer (defaultPos)
-import           Syntax.Position
+import           Syntax.Bind
 import           Equivalence.TypeEquivalence
 import           SpecHelper
 import           Syntax.Kinds (Kind)

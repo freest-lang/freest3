@@ -3,7 +3,7 @@ module Utils.PreludeLoader (prelude) where
 import           Parse.Lexer (defaultPos)
 import           Syntax.Programs (VarEnv)
 import           Syntax.Types
-import           Syntax.Position
+import           Syntax.Bind
 import           Parse.Parser
 import qualified Data.Map.Strict as Map
 

@@ -12,11 +12,12 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Validation.Kinding
-( Kind (..)
-, checkAgainst
-, kinding
+( checkAgainst
+, synthetize
+, kinding -- deprecated, TODO: remove
 , un
-, lin 
+, lin
+, top
 , kindOfType -- test
 , kindOfScheme -- test
 , isWellFormed -- test
@@ -27,19 +28,12 @@ import           Syntax.Programs
 import           Syntax.Exps
 import           Syntax.Types
 import           Syntax.Kinds
-import           Syntax.Position
+import           Syntax.Bind
 import           Utils.Errors
 import           Utils.FreestState
 import           Control.Monad.State
 import           Validation.Contractive
 import qualified Data.Map.Strict as Map
-
--- Returns the kind of a given type scheme -- TODO: type schemes do not have kinds
-kinding :: TypeScheme -> FreestState Kind
-kinding (TypeScheme _ bs t) = do
-  -- TODO: addToKenv -> addBindsLToKenv
-  foldM_ (\_ (KBind p x k) -> addToKenv (Bind p x) k) () bs
-  synthetize t
 
 -- Returns the kind of a given type
 synthetize :: Type -> FreestState Kind
@@ -52,10 +46,8 @@ synthetize (Choice p _ m) = do
   mapM_ (checkAgainst (Kind p Session Lin)) (Map.elems m)
   return $ Kind p Session Lin
 synthetize (Semi p t u) = do
-  kt <- synthetize t 
-  ku <- synthetize u
-  m <- checkSessionKind t kt
-  n <- checkSessionKind u ku
+  m <- checkAgainstSession t
+  n <- checkAgainstSession u
   return $ Kind p Session (max m n)
 -- Functional
 synthetize (Basic p _) =
@@ -88,19 +80,19 @@ synthetize (Var p v) = do
     getKind bind
   else do
     addError p ["Variable not in scope: ", styleRed v]
-    let k = topKind p
+    let k = top p
     addToKenv bind k
     return k
 
--- Check whether a given kind is session; issue an error if not. In
--- either case return the multiplicity
-checkSessionKind :: Type -> Kind -> FreestState Multiplicity
-checkSessionKind t k@(Kind _ p m)
-  | p == Session = return $ m
-  | otherwise    = do
-      addError (position t) ["Expecting type", styleRed $ show t,
-                  "to be a session type; found kind", styleRed $ show k]
-      return $ m
+-- Check whether a given type is of a session kind; issue an error if
+-- not. In either case return the multiplicity of the kind of the type
+checkAgainstSession :: Type -> FreestState Multiplicity
+checkAgainstSession t = do
+  (Kind _ k m) <- synthetize t
+  when (k /= Session) $
+    addError (position t) ["Expecting", styleRed $ show t,
+                           "to be a session type; found a type of kind", styleRed $ show k]
+  return m
 
 -- Check whether a given type has a given kind
 checkAgainst :: Kind -> Type -> FreestState ()
@@ -111,17 +103,18 @@ checkAgainst k (Rec p x t) = do
   addToKenv b (Kind p Session Un)
   checkAgainst k $ subs (Var p y) x t -- On the fly α-conversion
   removeFromKenv b
-checkAgainst k t = do
-  k' <- synthetize t
-  checkSubkind (position t) k' k
+checkAgainst k1 t = do
+  k2 <- synthetize t
+  when (k2 > k1) $
+    addError (position k1) ["Expecting kind", styleRed $ show k1,
+                            "to be a sub-kind of", styleRed $ show k2]
 
--- Checks whether a given kind is a sub kind of another;
--- gives an error message if it isn't
-checkSubkind :: Pos -> Kind -> Kind -> FreestState ()
-checkSubkind p k1 k2
-  | k1 <= k2  = return ()
-  | otherwise =
-      addError p ["Expecting kind", styleRed $ show k1, "to be a sub-kind of kind of kind", styleRed $ show k2]
+-- Returns the kind of a given type scheme -- TODO: type schemes do nota have kinds
+kinding :: TypeScheme -> FreestState Kind
+kinding (TypeScheme _ bs t) = do
+  -- TODO: addToKenv -> addBindsLToKenv
+  foldM_ (\_ (KBind p x k) -> addToKenv (Bind p x) k) () bs
+  synthetize t
 
 -- Determines whether a given type is of a given multiplicity
 mult :: Multiplicity -> Type -> FreestState Bool
@@ -137,9 +130,9 @@ lin = mult Lin
 un :: Type -> FreestState Bool
 un = mult Un
 
--- Used to insert in the kinding environment when an error is found
-topKind :: Pos -> Kind
-topKind p = Kind p Functional Lin
+-- The kind that seats at the top of the hierarchy (use as a default value)
+top :: Pos -> Kind
+top p = Kind p Functional Lin
 
 -- For TESTS only, from here on
 

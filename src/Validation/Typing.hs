@@ -21,7 +21,7 @@ import           Syntax.Programs (VarEnv)
 import           Syntax.Exps (Expression (..))
 import           Syntax.Types
 import           Syntax.Kinds
-import           Syntax.Position
+import           Syntax.Bind
 import           Utils.Errors
 import           Utils.FreestState
 import qualified Validation.Kinding as K

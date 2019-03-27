@@ -18,7 +18,7 @@ import           Syntax.Programs
 import           Syntax.Exps
 import           Syntax.Types
 import           Syntax.Kinds
-import           Syntax.Position
+import           Syntax.Bind
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
 import           Utils.Errors

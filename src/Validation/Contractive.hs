@@ -16,11 +16,11 @@ module Validation.Contractive
 )
 where
 
-import           Parse.Lexer (Pos, position)
+import           Parse.Lexer (position)
 import           Syntax.Programs
 import           Syntax.Types
 import           Syntax.Kinds
-import           Syntax.Position
+import           Syntax.Bind
 import           Utils.Errors
 import           Utils.FreestState
 import qualified Data.Map.Strict as Map

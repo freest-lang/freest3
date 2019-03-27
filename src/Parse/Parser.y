@@ -11,7 +11,7 @@ import           Syntax.Programs
 import           Syntax.Exps
 import           Syntax.Types
 import           Syntax.Kinds
-import           Syntax.Position
+import           Syntax.Bind
 import           Validation.Kinding
 import           Utils.Errors
 import           Utils.FreestState

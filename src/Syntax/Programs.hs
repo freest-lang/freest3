@@ -18,7 +18,7 @@ module Syntax.Programs
 , KindEnv
 ) where 
 
-import           Syntax.Position
+import           Syntax.Bind
 import           Syntax.Kinds
 import           Syntax.Types
 import           Syntax.Exps

@@ -9,7 +9,7 @@ module CodeGen.ExpressionGen
 import           Syntax.Programs
 import           Syntax.Exps
 import           Syntax.Kinds
-import           Syntax.Position
+import           Syntax.Bind
 import           Control.Monad.State
 import           Data.List
 import qualified Data.Map.Strict as Map

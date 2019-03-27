@@ -24,7 +24,7 @@ import           Syntax.Programs
 import           Syntax.Exps
 import           Syntax.Types
 import           Syntax.Kinds
-import           Syntax.Position
+import           Syntax.Bind
 import           Utils.Errors
 import           Utils.FreestState
 import           Equivalence.TypeEquivalence
@@ -42,26 +42,26 @@ synthetize (Unit p)         = return $ Basic p UnitType
 synthetize (Integer p _)    = return $ Basic p IntType
 synthetize (Character p _)  = return $ Basic p CharType
 synthetize (Boolean p _)    = return $ Basic p BoolType
--- Variables
+-- Variable
 synthetize (Variable p x)   = do
   (TypeScheme _ _ t) <- checkVar p x -- should be (TypeScheme [] t) but there's no instance for control monad fail
   return t
-
+-- Derived TODO: to be remove
 synthetize (UnLet _ x e1 e2) = do
   t1 <- synthetize e1
---  (uncurry addToVenv x) (TypeScheme (position t1) [] t1)
   addToVenv x (TypeScheme (position t1) [] t1)
   t2 <- synthetize e2
   quotient x 
   return t2
   
--- Applications
+-- Abstraction elimination
 synthetize (App _ e1 e2) = do
   t <- synthetize e1
   (u1, u2) <- extractFun t
   checkAgainst e2 u1
   return u2
 
+-- Type application
 synthetize (TypeApp p x ts) = do
   t' <- checkVar p x
   (bs, t) <- extractScheme t'
@@ -75,31 +75,25 @@ synthetize (TypeApp p x ts) = do
 synthetize (Conditional p e1 e2 e3) = do
   checkAgainst e1 (Basic p BoolType)
   venv2 <- getVenv
-  t2 <- synthetize e2  
+  t <- synthetize e2  
   venv3 <- getVenv
   setVenv venv2
-  checkAgainst e3 t2
+  checkAgainst e3 t
   venv4 <- getVenv
   checkEquivEnvs venv3 venv4
-  setVenv venv2 -- TODO: rule says venv3 but i'm not that sure
-  return t2
+  return t
 
--- Pairs
-synthetize (Pair p {-m-} e1 e2) = do
+-- Pair introduction
+synthetize (Pair p e1 e2) = do
   t1 <- synthetize e1 
   t2 <- synthetize e2
-  {-
-... mult fun on kinding
-  k1 <- kinding t1
-  k2 <- kinding t2
-  multiplicity k1 == multiplicity k2 == m -- Fun that compares this
-  -}
   return $ PairType p t1 t2
 
+-- Pair elimination
 synthetize (BinLet _ x y e1 e2) = do
-  t1 <- synthetize e1
-  (u1,u2) <- extractPair t1  
-  addToVenv x (TypeScheme (position u1) [] u1) -- TODO: Move this kind of things to state??
+  t <- synthetize e1
+  (u1,u2) <- extractPair t
+  addToVenv x (TypeScheme (position u1) [] u1)
   addToVenv y (TypeScheme (position u2) [] u2)
   u <- synthetize e2
   venv <- getVenv
@@ -110,7 +104,7 @@ synthetize (BinLet _ x y e1 e2) = do
 -- Session types
 synthetize (New p t) = do
   K.checkAgainst (Kind p Session Lin) t
-  return $ PairType p t (dual t)
+  return $ PairType p t (dual t) -- Could be Dualof t; perhaps better error messages
 
 synthetize (Send p e) = do
   t <- synthetize e
@@ -118,7 +112,6 @@ synthetize (Send p e) = do
   return (Fun p Lin (Basic p u1) u2)
 
 synthetize (Receive p e) = do
-  -- TODO: as in send expression, allow receiving type instead of basic types only
   t <- synthetize e
   (u1, u2) <- extractInput t
   return $ PairType p (Basic p u1) u2
@@ -126,22 +119,20 @@ synthetize (Receive p e) = do
 -- Branching
 synthetize (Select p c e) = do 
   t <- synthetize e
-  choice <- extractInChoice t
---  addError p [show choice]
-  s <- normalizeType choice -- TODO: check later - duplicated
-  extractCons p c s -- choice
-  
-synthetize (Match _ e mm) = do
+  choice <- extractOutChoice t -- TODO: merge these two functions
+  u <- extractCons p c choice  
+  return u
+
+synthetize (Match _ e m) = do
   t <- synthetize e
   tm <- extractEChoiceMap t
   venv <- getVenv
-  (ts, vs) <- Map.foldrWithKey (\k (p, e) acc ->
-                                  checkMap acc venv tm k ([p], e)) (return ([],[])) mm
-  kenv <- getKenv  
-  mapM_ (checkEquivTypes (head ts)) (tail ts)
-  mapM_ (checkEquivEnvs (head vs)) (tail vs)
-  setVenv $ head vs
-  return $ head ts
+  (t:ts, v:vs) <- Map.foldrWithKey (\k (p, e) acc ->
+                                  checkMap acc venv tm k ([p], e)) (return ([],[])) m
+  mapM_ (checkEquivTypes t) ts
+  mapM_ (checkEquivEnvs v) vs
+  setVenv v
+  return t
   
 synthetize (Constructor p c) = checkVar p c >>= \(TypeScheme _ _ t) -> return t
 
@@ -150,39 +141,44 @@ synthetize (Fork p e) = do
   checkUn t
   return $ Basic p UnitType
 
-synthetize (Case _ e cm) = do -- SAME AS MATCH
+synthetize (Case _ e m) = do -- SAME AS MATCH
   t <- synthetize e
   tm <- extractDataTypeMap t
   venv <- getVenv
-  (ts, vs) <- Map.foldrWithKey (\k v acc ->
-                                  checkMap acc venv tm k v) (return ([],[])) cm    
-  kenv <- getKenv  
-  mapM_ (checkEquivTypes (head ts)) (tail ts)
-  mapM_ (checkEquivEnvs (head vs)) (tail vs)
-  setVenv $ head vs
-  return $ head ts
+  (t:ts, v:vs) <- Map.foldrWithKey (\k v acc ->
+                                  checkMap acc venv tm k v) (return ([],[])) m    
+  mapM_ (checkEquivTypes t) ts
+  mapM_ (checkEquivEnvs v) vs
+  setVenv v
+  return t
 
-
--- | Checks an expression against a given type
+-- | Check an expression against a given type
 checkAgainst :: Expression -> Type -> FreestState ()
+-- Conditional
+checkAgainst (Conditional p e1 e2 e3) t = do
+  checkAgainst e1 (Basic p BoolType)
+  venv2 <- getVenv
+  checkAgainst e2 t
+  venv3 <- getVenv
+  setVenv venv2
+  checkAgainst e3 t
+  venv4 <- getVenv
+  checkEquivEnvs venv3 venv4
+-- Default
 checkAgainst e t = do
   u <- synthetize e
   kenv <- getKenv
-  if (equivalent kenv t u) then
-    return ()
-  else 
+  when (not $ equivalent kenv t u) $
     addError (position t) ["Expecting type", styleRed (show u), 
-                 "to be equivalent to type", styleRed (show t)]
+                           "to be equivalent to type", styleRed (show t)]
 
--- | Checks whether two given types are equivalent
+-- | Check whether two given types are equivalent
 checkEquivTypes :: Type -> Type -> FreestState ()
 checkEquivTypes t u = do
   kenv <- getKenv
-  if (equivalent kenv t u) then
-    return ()
-  else
+  when (not $ equivalent kenv t u) $
     addError (position t) ["Expecting type", styleRed (show u), 
-                 "to be equivalent to type", styleRed (show t)]
+                           "to be equivalent to type", styleRed (show t)]
 
 -- | The quotient operation
 -- removes a variable from the environment and gives an error if it is linear
@@ -197,8 +193,8 @@ quotient b = do
 checkUn :: Type -> FreestState ()
 checkUn t = do
   isUn <- K.un t
-  if isUn then return ()
-  else addError (position t) ["Type", "'" ++ styleRed (show t) ++ "'", "is linear"]
+  when (not isUn) $
+    addError (position t) ["Expecting an unrestricted type; found", styleRed (show t)]
   
 -- | Checking Variables
 -- | Checks whether a variable exists and removes it if is a linear usage
@@ -316,6 +312,7 @@ extractOutput t = normalizeType t >>= extractOutput'
 
 -- Extracts an input type from a general type; gives an error if it isn't an input
 extractInput :: Type -> FreestState (BasicType, Type)
+<<<<<<< HEAD
 extractInput t = normalizeType t >>= extractInput'
   where
     extractInput' :: Type -> FreestState (BasicType, Type)
@@ -339,6 +336,35 @@ extractInChoice t = normalizeType t >>= extractInChoice'
     extractInChoice' t = do
       addError (position t) ["Expecting an internal choice; found", styleRed $ show t]
       return $ Skip (position t)
+=======
+extractInput (Semi _ (Skip _) t) = extractInput t
+extractInput (Semi _ (Message _ In b) t) = return (b, t)
+extractInput (Message p In b) = return (b, Skip p)
+extractInput r@(Rec _ _ _) = extractInput (unfold r)
+extractInput (Semi p t u) = do
+  (b, t1) <- extractInput t
+  return (b, Semi p t1 u)
+extractInput t = do
+  addError (position t) ["Expecting an input type; found", styleRed $ show t]
+  return (UnitType, Skip (position t))
+
+-- Extracts an internal choice from a type; gives an error if it 
+extractOutChoice :: Type -> FreestState Type
+extractOutChoice (Semi _ (Skip _) t) = extractOutChoice t
+extractOutChoice c@(Choice _ Internal _) = return c
+extractOutChoice (Semi p (Choice p1 Internal m) t) =
+  return $ Choice p1 Internal (Map.map (\t1 -> Semi (position t1) t1 t) m)
+extractOutChoice r@(Rec _ _ _) =  extractOutChoice (unfold r)
+extractOutChoice (Semi _ (Semi p t1 t2) t3) = do
+  t4 <- extractOutChoice (Semi p t1 t2)
+  extractOutChoice (Semi p t4 t3)
+extractOutChoice (Semi p t1 t2) = do
+  t3 <- extractOutChoice t1
+  extractOutChoice (Semi p t3 t2)
+extractOutChoice t = do
+  addError (position t) ["Expecting an internal choice; found", styleRed $ show t]
+  return $ Skip (position t)
+>>>>>>> 2b5d0a6b4eab52d2753270b72e2da9cbfc90ec72
 
 -- Extracts a constructor from a choice map;
 -- gives an error if the constructor is not found
@@ -386,7 +412,7 @@ extractDataTypeMap t = normalizeType t >>= extractDataTypeMap'
   -- TODO: TEST
 wellFormedCall :: Pos -> Expression -> [Type] -> [KBind] -> FreestState ()
 wellFormedCall p e ts binds = do
-  mapM_ (\t -> K.kinding (TypeScheme p [] t)) ts
+  mapM_ (\t -> K.synthetize t) ts
   sameNumber
   where   
     sameNumber
