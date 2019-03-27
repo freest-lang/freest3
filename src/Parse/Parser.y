@@ -134,10 +134,10 @@ Decl :: { () }
   | data TypeBind KindVarEmptyList '=' DataCons
     {% do
        let bs = typesToFun $2 $5
-       checkDupTypeDecl $2
-       addToVenv $2 (TypeScheme (position $2) $3 (Datatype (position $2) (Map.fromList bs)))
-       checkClashes $2 bs
-       addToKenv $2 (Kind (position $1) Functional Un)
+--       checkDupTypeDecl $2
+       addToTenv $2 (TypeScheme (position $2) $3 (Datatype (position $2) (Map.fromList bs)))
+--       checkClashes $2 bs
+--       addToKenv $2 (Kind (position $1) Functional Un)
 --       addListToTenv bs
        addListToVenv bs
     }
@@ -399,8 +399,8 @@ addListToVenv bs = do
 
 -- Converting a list of types 
   
-typesToFun :: Bind -> [(Bind, [Type])] -> [(Bind, Type)]
-typesToFun (Bind p x) =
+typesToFun :: KBind -> [(Bind, [Type])] -> [(Bind, Type)]
+typesToFun (KBind p x _) =
   foldr (\(k,ts) acc -> (k, typeToFun p x ts) : acc) []
   where
     typeToFun :: Pos -> TypeVar -> [Type] -> Type

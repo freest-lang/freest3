@@ -28,5 +28,5 @@ type TypeEnv = Map.Map KBind TypeScheme
 -- The signatures of the named functions in a program
 type VarEnv = Map.Map Bind TypeScheme
 
--- The defintions of the named functions in a program
+-- The definitions of the named functions in a program
 type ExpEnv = Map.Map Bind ([Bind], Expression)

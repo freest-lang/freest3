@@ -13,14 +13,14 @@ Portability :  portable | non-portable (<reason>)
 
 module Parse.ParserUtils
 ( checkDupTypeSig
-, checkDupTypeDecl
+--, checkDupTypeDecl
 , checkDupFunDecl
 , checkDupTBind
 , checkDupField
 , checkDupBind
 , checkDupKBind
 , checkDupMatch
-, checkClashes 
+--, checkClashes 
 , binOp
 , unOp
 ) where
@@ -72,19 +72,23 @@ checkDupKBind (KBind p x _) bs =
     Nothing -> return ()
 
 checkDupTypeSig :: Bind -> FreestState ()  
-checkDupTypeSig b = checkDup b ("Duplicate type signatures for function" ++ styleRed (show b))
-
-checkDupTypeDecl :: Bind -> FreestState ()  
-checkDupTypeDecl b = checkDup b ("Multiple declarations of type" ++ styleRed (show b))
-
-checkDup :: Bind -> String -> FreestState ()
-checkDup (Bind p x) msg = do
+checkDupTypeSig b = do
   m <- getVenv
-  let b = Bind p x
   case m Map.!? b of
     Just a  ->
-      addError p [msg, "\n\t Declared at:", showPos (position a), "\n",
-                         "\t            :", showPos p]
+      addError (position a) ["Duplicate type signatures for function", styleRed (show b),
+                             "\n\t Declared at:", showPos (position a), "\n",
+                             "\t            :", showPos (position b)]
+    Nothing -> return ()
+
+checkDupTypeDecl :: KBind -> FreestState ()  
+checkDupTypeDecl b = do
+  m <- getTenv
+  case m Map.!? b of
+    Just a  ->
+      addError (position a) ["Multiple declarations of type", styleRed (show b),
+                             "\n\t Declared at:", showPos (position a), "\n",
+                             "\t            :", showPos (position b)]
     Nothing -> return ()
 
 checkDupFunDecl :: Bind -> FreestState ()
@@ -105,6 +109,7 @@ checkDupTBind b = do
     Nothing -> return ()  
 
 -- Verifies collisions with other datatypes and within the same datatype 
+{-
 checkClashes :: Bind -> [(Bind, Type)] -> FreestState ()
 checkClashes (Bind p c) bs = do
   mapM_ (\(Bind p b, _)  -> checkDup (Bind p b) (err b)) bs
@@ -116,7 +121,7 @@ checkClashes (Bind p c) bs = do
     return ()
   where
     err c = "Multiple declarations of '" ++ styleRed c ++ "'"    
-
+-}
 type Op = String
 
 binOp :: Expression -> Pos -> Op -> Expression -> Expression
