@@ -1,6 +1,6 @@
 Abstract (150 words)
 
-Long are the days where hard was complex, soft was simple. Disciplined coding and extensive testing did not deter two Boeing 737 Max from crashing. More than ever we face the urgent need for better programming abstractions, abstractions that directly lead to more reliable software.
+Long are the days where hard was complex, soft was simple. Disciplined coding and extensive testing did not deter two Boeing 737 Max from crashing [O2019]. More than ever we face the urgent need for better programming abstractions, abstractions that directly lead to more reliable software.
 
 Typing systems constitute abstractions of the behaviour programs. They increase the confidence of programmers on the code produced, catch errors at early stages, and reduce the number of necessary runtime checks.
 
@@ -8,6 +8,7 @@ Session types were proposed in the second half of the 90's to describe series of
 
 Research will unfold along two axes: the extension of the notion of types and its interplay with polymorphism, and the incorporation of context-free session types in existing programming languages.
 
+----------------------------
 
 Description (1000 words)
 
@@ -37,25 +38,25 @@ Subtyping is a form of polymorphism that relates two types by a notion of substi
 
 The findings along the axis of the generalisation of the notion of context-free session types and its interplay with polymorphism shall be incorporated in future releases of the FreeST language. In parallel, the thesis will explore the incorporation of context-free session types in existing languages. Promising in 2019 are Go and Rust, for different reasons. Go is a multithreaded, imperative, system, programming language featuring inter-thread communication via typed bi-directional channels. It looks as the perfect target to experiment with richer channel behaviours, was it not for the fact that its type system is not substructural, making it hard to implement linear type systems. Rust is concurrent programming language featuring an ownership type system, where mutable references are treated in an affine manner (at most one reference to one such object). Based on a substructural type system, Rust looks as the perfect target to incorporate context-free session types, was it not for the fact that interprocess communication happens on shared memory. A final goal of this thesis is to explore the incorporation of the new developments on context-free session types on languages such as Go or Rust.
 
+----------------------------
 
 State of the art (500 words)
 
-TODO [Tirar dos n/ 2 papers] ??? Tirar ou juntar? (vv)
-
-There are some programming languages using session types and several proposals to incorporate session types in conventional languages (survey). The languages described below are of particular significance, they are SePi, Sill and Links. It is also described the only other implementation of context-free session types by Padovani [].
+There are some programming languages using session types and several proposals to incorporate session types in conventional languages (survey). The languages described below are of particular significance, they are SePi, Sill and Links. It is also described the only other implementation of context-free session types by Padovani [P2017].
 
 Session types primary purpose is to enrich the expressiveness that the conventional types provide. The usage of these types allows to structure concurrent communications where a large number of messages are exchanged along heterogeneously typed channels. Honda et al. presented a variant of pi-calculus, in which linear and shared channels are syntactically distinguished. Later, Gay and Hole introduced the notion of subtyping for session types, this allowed richer descriptions of the interactions on channels.
 
-SePi [] is a programming language based on the core pi-calculus. The communication is accomplished via channels governed by regular session types refined with predicates [FV2013]. The syntax of SePi, alongside with the Haskell one, highly influenced FreeST.
+SePi is a programming language based on the core pi-calculus. The communication is accomplished via channels governed by regular session types refined with predicates [FV2013]. The syntax of SePi, alongside with the Haskell one, highly influenced FreeST.
 
-Sill [] is a concurrent functional language with session types, based on the Curry-Howard interpretation of linear logic and extended with recursive types and processes []. This interpretation imposes the following form of programming: a process uses zero or more channels and provides exactly one. FreeST does not allow multiple threads to share a single channel, but it is, undoubtedly, a point that is worth exploring.
+Sill [] is a concurrent functional language with session types, based on the Curry-Howard interpretation of linear logic [CP2010] and extended with recursive types and processes [T2015, TCP2013]. This interpretation imposes the following form of programming: a process uses zero or more channels and provides exactly one. FreeST does not allow multiple threads to share a single channel, but it is, undoubtedly, a point that is worth exploring.
 
-Links is a functional programming language for the web, later extended with session typing primitives []. Very much like SILL, the base language is deadlock-free and terminating. Links also includes recursion and shared channels. The kinding system of FreeST is quite similar to that of FST, proposed by Lindley and Morris [].
+Links is a functional programming language for the web, later extended with session typing primitives [CLWY2006, LM2015, LM2017]. Very much like SILL, the base language is deadlock-free and terminating. Links also includes recursion and shared channels. The kinding system of FreeST is quite similar to that of FST, proposed by Lindley and Morris [LM2017].
 
 The properties described above, are considered desirable for programming languages. With these, programmers do not have to put much effort on runtime checks in order to guarantee that communication errors do not occur. A well formed program is ensured and verified at compile-time. Thus, the confidence that programmers have on the produced code increases, as well as, it's reliability.
 
-All the languages described above uses regular session types. The closest work to ours is that of Padovani [], which is the only other implementation of context-free session types. The language proposed by Padovani features equivalence, subtyping and, of particular interest, inference algorithms. However, it requires a structural alignment between the process code and the session types, enforced by a resumption process operator that explicitly breaks the sequential type S;T. The use of resumptions forces the programmers to use annotations on the source code, which is something that we wanted to avoid in FreeST.
+All the languages described above uses regular session types. The closest work to ours is that of Padovani [P2017], which is the only other implementation of context-free session types. The language proposed by Padovani features equivalence, subtyping and, of particular interest, inference algorithms. However, it requires a structural alignment between the process code and the session types, enforced by a resumption process operator that explicitly breaks the sequential type S;T. The use of resumptions forces the programmers to use annotations on the source code, which is something that we wanted to avoid in FreeST [AV2018, AMV2019a].
 
+----------------------------
 
 Objectives (300 words)
 
@@ -63,10 +64,11 @@ This thesis builds on FreeST, a prototype concurrent functional programming lang
 
 Research will unfold along two axes: the extension of the notion of types and its interplay with polymorphism, and the incorporation of context-free session types in existing programming languages.
 
-For the former, I plan to study an extension of types capable of exchanging arbitrary types ...
+For the former, I plan to study an extension of types capable of exchanging arbitrary types instead of basic types. This will enhance the protocols and allow transmitting more complex objects including other channels. This objective consists in studying the theory and the algorithms of context-free session types where objects of arbitrary types may be transmitted.
 
-For the latter, ...
+For the latter, I plan to explore the incorporation in globally accepted languages like Go and/or Rust. In one hand, Go might be a perfect target to incorporate context-free session types due to the nature of it's communication. In Go, all the shared variables are exchanged in channels, as opposite of the large majority of the other languages, whose the primary mean of communication is shared memory. This will be a challenge since Go's type system does not have the notion of linearity and so, the resources can be used an arbitrary number of times. On the other hand Rust holds a notion similar to linearity called affine that controls the usage. The distinction between linear and affine types is that the linear ones must me used exactly once, and the affine ones can be used at most once. Studying these incorporations is challenging since even both languages are excellent targets for context-free session types, their type systems are not prepared to deal with them.
 
+----------------------------
 
 Adequacao da equipa (300 palavras)
 
@@ -76,16 +78,37 @@ This thesis is supervised by leading researchers on the area. They regularly pub
 
 Vasco T. Vasconcelos is one of the proposers of session types [HVK1998], and has dedicated most of his career to the development of the original idea into what has become to be known as behavioral types. Andreia Mordido is a young researcher with a strong background in logic that will prove crucial for the theoretical developments.
 
-
+----------------------------
 
 References (max 30)
 
 [CW1985] Cardelli, Luca; Wegner, Peter (December 1985). "On Understanding Types, Data Abstraction, and Polymorphism" (PDF). ACM Computing Surveys. 17 (4): 471–523. CiteSeerX 10.1.1.117.695. doi:10.1145/6041.6042. ISSN 0360-0300.
 
-AMV2019a - Places
+[AMV2019a] Almeida, Bernardo; Mordido, Andreia; Vasconcelos, Vasco T.. 2019. "FreeST: context-free session types in a functional language". PLACES - ETAPS, Praga, República Checa.
 
-AMV2019b - ICALP
+[AMV2019b] Almeida, Bernardo; Mordido, Andreia; Vasconcelos, Vasco T.. 2019. "Checking the equivalence of context-free session types". Submitted to 46th International Colloquium on Automata, Languages and Programming (ICALP 2019), Patras, Grécia.
 
-AV2018 - Inforum
+[AV2018] Almeida, Bernardo; Vasconcelos, Vasco T.. 2018. "Uma linguagem de programação com tipos de sessão independentes do contexto". In Atas do Décimo Simpósio de Informática: INForum 2018, Coimbra, Portugal.
 
-A2018 - MSc thesis
+[A2018] Almeida, Bernardo. 2018. "Uma linguagem de programação com tipos de sessão independentes do contexto". Master thesis, Faculdade de Ciências, Universidade de Lisboa.
+
+[O2019] Ostrower, J. (2019, March 13). The world pulls the Andon cord on the 737 Max. Retrieved from https://theaircurrent.com/aviation-safety/the-world-pulls-the-andon-cord-on-the-737-max/
+
+[FV2013] Juliana Franco & Vasco Thudichum Vasconcelos (2013): A Concurrent Programming Language with Refined Session Types. In: Software Engineering and Formal Methods - SEFM 2013 Collocated Workshops: BEAT2, WS-FMDS, FM-RAIL-Bok, MoKMaSD, and OpenCert, Madrid, Spain, September 23-24, 2013, Revised Selected Papers, Springer, pp. 15–28, doi:10.1007/978-3-319-05032-4_2.
+
+[CP2010] Luís Caires & Frank Pfenning (2010): Session Types as Intuitionistic Linear Propositions. In: CONCUR, LNCS 6269, Springer, pp. 222–236, doi:10.1007/978-3-642-15375-4_16.
+
+[CLWY2016] Ezra Cooper, Sam Lindley, Philip Wadler & Jeremy Yallop (2006): Links: Web Programming Without Tiers. In: Formal Methods for Components and Objects, 5th International Symposium, FMCO 2006, Amsterdam, The Netherlands, November 7-10, 2006, Revised Lectures, Springer, pp. 266–296, doi:10.1007/978-3-540-74792-5_12.
+
+[LM2015] Sam Lindley & J. Garrett Morris (2015): A Semantics for Propositions as Sessions. In: Programming Languages and Systems - 24th European Symposium on Programming, ESOP 2015, Held as Part of the European Joint Conferences on Theory and Practice of Software, ETAPS 2015, London, UK, April 11-18, 2015. Proceedings, Springer, pp. 560–584, doi:10.1007/978-3-662-46669-8_23.
+
+[LM2017] Sam Lindley & J. Garrett Morris (2017): Behavioural Types: from Theory to Tools, chapter Lightweight functional session types. River Publishers Series in Automation, Control and Robotics.
+
+[P2017] Luca Padovani (2017): Context-Free Session Type Inference. In: Programming Languages and Systems - 26th European Symposium on Programming, ESOP 2017, Held as Part of the European Joint Conferences on Theory and Practice of Software, ETAPS 2017, Uppsala, Sweden, April 22-29, 2017, Proceedings, Springer, pp. 804–830, doi:10.1007/978-3-662-54434-1_30.
+
+[T2015] Bernardo Toninho (2015): A Logical Foundation for Session-based Concurrent Computation. Ph.D. thesis, Carnegie Mellon University and Universidade Nova de Lisboa.
+
+[TCP2013] Bernardo Toninho, Luís Caires & Frank Pfenning (2013): Higher-Order Processes, Functions, and Sessions: A Monadic Integration. In: Programming Languages and Systems - 22nd European Symposium on Programming, ESOP 2013, Held as Part of the European Joint Conferences on Theory and Practice of Software, ETAPS 2013, Rome, Italy, March 16-24, 2013. Proceedings, Springer, pp. 350–369, doi:10.1007/978-3-642-37036-6_20.
+
+14
+

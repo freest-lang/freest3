@@ -16,6 +16,7 @@ module Validation.TypingExps
 ( synthetize
 , checkAgainst
 , checkUn
+  , normalizeType -- TMP
 ) where
 
 import           Parse.Lexer (Pos, position, defaultPos)
@@ -29,6 +30,7 @@ import           Utils.FreestState
 import           Equivalence.TypeEquivalence
 import qualified Validation.Kinding as K
 import           Control.Monad.State
+import           Control.Conditional ((<&&>))
 import qualified Data.Map.Strict as Map
 
 
@@ -223,26 +225,48 @@ removeLinVar x (TypeScheme _ _ t) = do
  
 -- | The Extract Functions
 
+-- Normalizes a type
+-- Ensures: The resultant type does not have a rec type, a variable, a dualof nor a
+-- skip at the left-most position of a type
+normalizeType :: Type -> FreestState Type
+normalizeType t@(Rec _ _ _) = normalizeType $ unfold t
+normalizeType (Dualof _ t) = normalizeType $ dual t
+normalizeType (Var px x) = do
+   getFromVenv (Bind px x) >>= \case
+    Just (TypeScheme _ _ t) -> normalizeType t
+    Nothing                 -> return $ Basic px UnitType
+-- Semi with leading skips
+normalizeType (Semi p (Skip _) u) = normalizeType u
+-- Semi with choice or datatype maps
+normalizeType (Semi _ (Choice p v m) u) =
+  return $ Choice p v (Map.map (\t -> Semi (position t) t u) m)
+normalizeType (Semi _ (Datatype p m) u) =
+  return $ Datatype p (Map.map (\t -> Semi (position t) t u) m)
+normalizeType (Semi p t@(Rec _ _ _) u) = normalizeType  (Semi p (unfold t) u)
+-- General semi
+normalizeType (Semi p t u) = do
+ t1 <- normalizeType t
+ return $ Semi p t1 u 
+normalizeType t = return t
+
 -- Extracts a function from a type; gives an error if there isn't a function
 extractFun :: Type -> FreestState (Type, Type)
-extractFun (Fun _ _ t u) = return (t, u)
-extractFun t           = do
-  let p = position t
-  addError p ["Expecting a function type; found:", styleRed $ show t]
-  return (Basic p UnitType, Basic p UnitType)
--- extractFun p (TypeScheme bs _)           = do
---   addError p ["Polymorphic functions cannot be applied; instantiate function prior to applying"]
---   return (TypeScheme [] (Basic p UnitType), TypeScheme [] (Basic p UnitType))
+extractFun t = normalizeType t >>= extractFun'
+  where 
+    extractFun' :: Type -> FreestState (Type, Type)
+    extractFun' (Fun _ _ t u) = return (t, u)
+    extractFun' t           = do
+      let p = position t
+      addError p ["Expecting a function type; found:", styleRed $ show t]
+      return (Basic p UnitType, Basic p UnitType)
 
--- extractFun :: Pos -> TypeScheme -> FreestState (TypeScheme, TypeScheme)
--- extractFun _ (TypeScheme p [] (Fun _ _ t u)) = return (TypeScheme p [] t, TypeScheme p [] u)
--- extractFun p (TypeScheme _ [] t)           = do
+-- extractFun :: Type -> FreestState (Type, Type)
+-- extractFun (Fun _ _ t u) = return (t, u)
+-- extractFun t           = do
+--   let p = position t
 --   addError p ["Expecting a function type; found:", styleRed $ show t]
---   return (TypeScheme p [] (Basic p UnitType), TypeScheme p [] (Basic p UnitType))
--- extractFun p (TypeScheme _ bs _)           = do
---   addError p ["Polymorphic functions cannot be applied; instantiate function prior to applying"]
---   return (TypeScheme p [] (Basic p UnitType), TypeScheme p [] (Basic p UnitType))
-
+--   return (Basic p UnitType, Basic p UnitType)
+  
 -- Extracts a typescheme; gives an error if it is on Ɐ ε ⇒ T form
 extractScheme :: TypeScheme -> FreestState ([KBind], Type)
 extractScheme (TypeScheme p [] t) = do
@@ -252,35 +276,67 @@ extractScheme (TypeScheme p bs t) = return (bs, t)
 
 -- Extracts a pair from a type; gives an error if there is no pair
 extractPair :: Type -> FreestState (Type, Type)
-extractPair (PairType _ t u) = do
-  return (t, u)
-extractPair t                         = do
-  let p = position t
-  addError p ["Expecting a pair type; found ", styleRed $ show t]
-  return (Basic p IntType, Basic p IntType)
+extractPair t = normalizeType t >>= extractPair'
+  where
+    extractPair' :: Type -> FreestState (Type, Type)
+    extractPair' (PairType _ t u) = return (t, u)
+    extractPair' t                = do
+      let p = position t
+      addError p ["Expecting a pair type; found ", styleRed $ show t]
+      return (Basic p IntType, Basic p IntType)
 
 -- Extracts a basic type from a general type; gives an error if it isn't a basic
 extractBasic :: Type -> FreestState BasicType
-extractBasic (Basic _ t) = return t
-extractBasic t                         = do
-  addError (position t) ["Expecting a basic type; found", styleRed $ show t]
-  return UnitType
+extractBasic t = normalizeType t >>= extractBasic'
+  where 
+    extractBasic' :: Type -> FreestState BasicType
+    extractBasic' (Basic _ t) = return t
+    extractBasic' t                         = do
+      addError (position t) ["Expecting a basic type; found", styleRed $ show t]
+      return UnitType
 
 -- Extracts an output type from a general type; gives an error if it isn't an output
+
 extractOutput :: Type -> FreestState (BasicType, Type)
-extractOutput (Semi _ (Skip _) t) = extractOutput t
-extractOutput (Semi _ (Message _ Out b) t) = return (b, t)
-extractOutput (Message p Out b) = return (b, Skip p)
-extractOutput (Rec p1 b t) = extractOutput (unfold (Rec p1 b t))
-extractOutput (Semi p t u) = do
-  (b, t1) <- extractOutput t
-  return (b, Semi p t1 u)
-extractOutput t = do
-  addError (position t) ["Expecting an output type; found", styleRed $ show t]
-  return (UnitType, Skip (position t))
+extractOutput t = normalizeType t >>= extractOutput'
+  where
+    extractOutput' ::  Type -> FreestState (BasicType, Type)
+    extractOutput' (Message p Out b) = return (b, Skip p)
+--    extractOutput' (Semi _ (Message _ Out b) t) = return (b, t)
+    extractOutput' (Semi p t u) = do
+      (b, t1) <- extractOutput' t
+      return (b, Semi p t1 u)
+    extractOutput' t = do
+      addError (position t) ["Expecting an output type; found", styleRed $ show t]
+      return (UnitType, Skip (position t))
 
 -- Extracts an input type from a general type; gives an error if it isn't an input
 extractInput :: Type -> FreestState (BasicType, Type)
+<<<<<<< HEAD
+extractInput t = normalizeType t >>= extractInput'
+  where
+    extractInput' :: Type -> FreestState (BasicType, Type)
+    extractInput' (Message p In b) = return (b, Skip p)
+    extractInput' (Semi p t u) = do
+      (b, t1) <- extractInput' t
+      return (b, Semi p t1 u)
+    extractInput' t = do
+      addError (position t) ["Expecting an input type; found", styleRed $ show t]
+      return (UnitType, Skip (position t))
+
+-- Extracts an internal choice from a type; gives an error if it
+extractInChoice :: Type -> FreestState Type
+extractInChoice t = normalizeType t >>= extractInChoice'
+  where
+    extractInChoice' :: Type -> FreestState Type
+    extractInChoice' c@(Choice _ Internal _) = return c
+    extractInChoice' (Semi p t u) = do
+      t1 <- extractInChoice' t
+      return (Semi p t1 u)
+    extractInChoice' t = do
+      addError (position t) ["Expecting an internal choice; found", styleRed $ show t]
+      return $ Skip (position t)
+=======
 extractInput (Semi _ (Skip _) t) = extractInput t
 extractInput (Semi _ (Message _ In b) t) = return (b, t)
 extractInput (Message p In b) = return (b, Skip p)
@@ -308,6 +364,7 @@ extractOutChoice (Semi p t1 t2) = do
 extractOutChoice t = do
   addError (position t) ["Expecting an internal choice; found", styleRed $ show t]
   return $ Skip (position t)
+>>>>>>> 2b5d0a6b4eab52d2753270b72e2da9cbfc90ec72
 
 -- Extracts a constructor from a choice map;
 -- gives an error if the constructor is not found
@@ -326,33 +383,26 @@ extractCons p c t = do
 -- Extracts an external choice map from a type;
 -- gives an error if an external choice is not found
 extractEChoiceMap :: Type -> FreestState TypeMap
-extractEChoiceMap (Semi _ (Skip _) t) = extractEChoiceMap t
-extractEChoiceMap (Choice _ External m) = return m
-extractEChoiceMap (Semi _ (Choice p External m) t) =
-  return $ Map.map (\t1 -> Semi p t1 t) m
-extractEChoiceMap r@(Rec _ _ _) = extractEChoiceMap (unfold r)
-extractEChoiceMap (Semi p t1 t2) = do
-  t3 <- extractEChoiceMap t1
-  return $ Map.map (\t -> Semi p t t2) t3
-extractEChoiceMap t = do
-  addError (position t) ["Expecting an external choice; found", styleRed $ show t]    
-  return $ Map.empty
+extractEChoiceMap t = normalizeType t >>= extractEChoiceMap'
+  where
+    extractEChoiceMap' :: Type -> FreestState TypeMap
+    extractEChoiceMap' (Choice _ External m) = return m
+    extractEChoiceMap' (Semi p t1 t2) = do
+      t3 <- extractEChoiceMap' t1
+      return $ Map.map (\t -> Semi p t t2) t3
+    extractEChoiceMap' t = do
+      addError (position t) ["Expecting an external choice; found", styleRed $ show t]    
+      return $ Map.empty
 
 -- Extracts a datatype from a type;
 -- gives an error if an external choice is not found
 extractDataTypeMap :: Type -> FreestState TypeMap
-extractDataTypeMap (Datatype _ m) = return m
-extractDataTypeMap t@(Var px x) = do
-  getFromVenv (Bind px x) >>= \case
-    Just (TypeScheme _ _ dt) -> extractDataTypeMap dt
-    Nothing                  -> do
-      addError px ["Expecting a datatype; found", styleRed $ show t]    
+extractDataTypeMap t = normalizeType t >>= extractDataTypeMap'
+  where
+    extractDataTypeMap' (Datatype _ m) = return m
+    extractDataTypeMap' t =  do
+      addError (position t) ["Expecting a datatype; found", styleRed $ show t]    
       return $ Map.empty
-extractDataTypeMap t =  do
-  addError (position t) ["Expecting a datatype; found", styleRed $ show t]    
-  return $ Map.empty
--- TODO: are there other cases
-
 
 {- | Verifies if x is well formed (e[x] based on the kind)
    | Checks if all x1,...,xn in e[x1,...,xn] are well kinded
@@ -417,22 +467,16 @@ checkEquivEnvs venv1 venv2 = do
 
  -- TODO: position, diff, better error message, maybe with diff between maps
 equivalentEnvs :: VarEnv -> VarEnv -> FreestState Bool
-equivalentEnvs venv1 venv2 = do
-  venv3 <- Map.foldlWithKey f1 (return Map.empty) venv1
-  venv4 <- Map.foldlWithKey f1 (return Map.empty) venv2
-  kenv <- getKenv
-  return $ Map.isSubmapOfBy (f kenv) venv3 venv4 && Map.isSubmapOfBy (f kenv) venv4 venv3
-  return True
+equivalentEnvs venv1 venv2 = Map.foldrWithKey (\b t acc -> acc <&&> f b t venv2) (return True) venv1
   where
-    f :: KindEnv -> TypeScheme -> TypeScheme -> Bool
-    f kenv (TypeScheme _ _ t) (TypeScheme _ _ u) = equivalent kenv t u
-    
-    f1 :: FreestState VarEnv -> Bind -> TypeScheme -> FreestState VarEnv
-    f1 m k t@(TypeScheme _ _ t1) = do
-      isLin <- K.lin t1
-      if isLin then do
-        m1 <- m        
-        return $ Map.insert k t m1
-      else m
-
-
+    f :: Bind -> TypeScheme -> VarEnv -> FreestState Bool
+    f b (TypeScheme _ _ t) venv = do
+      lt <- K.lin t
+      if lt then
+        case venv Map.!? b of
+          Nothing -> return False
+          Just (TypeScheme _ _ u) -> do
+            lu <- K.lin u
+            if lu then getKenv >>= \k -> return $ equivalent k t u
+            else return False
+       else return True
