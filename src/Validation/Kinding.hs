@@ -31,8 +31,8 @@ import           Syntax.Kinds
 import           Syntax.Bind
 import           Utils.Errors
 import           Utils.FreestState
-import           Control.Monad.State
 import           Validation.Contractive
+import           Control.Monad.State
 import qualified Data.Map.Strict as Map
 
 -- Returns the kind of a given type
@@ -83,6 +83,10 @@ synthetize (Var p v) = do
     let k = top p
     addToKenv bind k
     return k
+-- Type operators
+synthetize (Dualof p t) = do
+   m <- checkAgainstSession t
+   return $ Kind p Session m
 
 -- Check whether a given type is of a session kind; issue an error if
 -- not. In either case return the multiplicity of the kind of the type
@@ -90,8 +94,7 @@ checkAgainstSession :: Type -> FreestState Multiplicity
 checkAgainstSession t = do
   (Kind _ k m) <- synthetize t
   when (k /= Session) $
-    addError (position t) ["Expecting", styleRed $ show t,
-                           "to be a session type; found a type of kind", styleRed $ show k]
+    addError (position t) ["Expecting a session type; found", styleRed $ show t]
   return m
 
 -- Check whether a given type has a given kind

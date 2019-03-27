@@ -1,7 +1,7 @@
 data T = T
 
-main : Int
-main = case T of { T -> 5 }
+main : T
+main = case T of { T -> T }
 
 
 
