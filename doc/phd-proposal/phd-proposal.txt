@@ -42,13 +42,13 @@ The findings along the axis of the generalisation of the notion of context-free 
 
 State of the art (500 words)
 
-There are some programming languages using session types and several proposals to incorporate session types in conventional languages (survey). The languages described below are of particular significance, they are SePi, Sill and Links. It is also described the only other implementation of context-free session types by Padovani [P2017].
+There are some programming languages using session types and several proposals to incorporate session types in conventional languages as described on a 2016 survey on behavioural types in programming languages [SURVEY2016]. The languages described below are of particular significance, they are SePi, Sill and Links. It is also described the only other implementation of context-free session types by Padovani [P2017].
 
 Session types primary purpose is to enrich the expressiveness that the conventional types provide. The usage of these types allows to structure concurrent communications where a large number of messages are exchanged along heterogeneously typed channels. Honda et al. presented a variant of pi-calculus, in which linear and shared channels are syntactically distinguished. Later, Gay and Hole introduced the notion of subtyping for session types, this allowed richer descriptions of the interactions on channels.
 
 SePi is a programming language based on the core pi-calculus. The communication is accomplished via channels governed by regular session types refined with predicates [FV2013]. The syntax of SePi, alongside with the Haskell one, highly influenced FreeST.
 
-Sill [] is a concurrent functional language with session types, based on the Curry-Howard interpretation of linear logic [CP2010] and extended with recursive types and processes [T2015, TCP2013]. This interpretation imposes the following form of programming: a process uses zero or more channels and provides exactly one. FreeST does not allow multiple threads to share a single channel, but it is, undoubtedly, a point that is worth exploring.
+Sill is a concurrent functional language with session types, based on the Curry-Howard interpretation of linear logic [CP2010] and extended with recursive types and processes [T2015, TCP2013]. This interpretation imposes the following form of programming: a process uses zero or more channels and provides exactly one. FreeST does not allow multiple threads to share a single channel, but it is, undoubtedly, a point that is worth exploring.
 
 Links is a functional programming language for the web, later extended with session typing primitives [CLWY2006, LM2015, LM2017]. Very much like SILL, the base language is deadlock-free and terminating. Links also includes recursion and shared channels. The kinding system of FreeST is quite similar to that of FST, proposed by Lindley and Morris [LM2017].
 
@@ -110,5 +110,7 @@ References (max 30)
 
 [TCP2013] Bernardo Toninho, Luís Caires & Frank Pfenning (2013): Higher-Order Processes, Functions, and Sessions: A Monadic Integration. In: Programming Languages and Systems - 22nd European Symposium on Programming, ESOP 2013, Held as Part of the European Joint Conferences on Theory and Practice of Software, ETAPS 2013, Rome, Italy, March 16-24, 2013. Proceedings, Springer, pp. 350–369, doi:10.1007/978-3-642-37036-6_20.
 
-14
+[SURVEY2016] Davide Ancona, Viviana Bono, Mario Bravetti, Joana Campos, Giuseppe Castagna, Pierre-Malo Deniélou, Simon J. Gay, Nils Gesbert, Elena Giachino, Raymond Hu, Einar Broch Johnsen, Francisco Martins, Viviana Mascardi, Fabrizio Montesi, Rumyana Neykova, Nicholas Ng, Luca Padovani, Vasco T. Vasconcelos & Nobuko Yoshida (2016): Behavioral Types in Programming Languages. Foundations and Trends in Programming Languages 3(2-3), pp. 95–230, doi:10.1561/2500000031.
+
+15
 
