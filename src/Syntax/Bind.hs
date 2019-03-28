@@ -13,12 +13,15 @@ Portability :  portable | non-portable (<reason>)
 
 module Syntax.Bind
 ( Var
+, Constructor
 , Bind(..)
 ) where 
 
 import Parse.Lexer (Position, Pos, position)
 
 type Var = String
+
+type Constructor = String
 
 -- Bindings
 

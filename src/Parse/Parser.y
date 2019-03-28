@@ -147,7 +147,7 @@ DataCons :: { [(Bind, [Type])] }
   | DataCon '|' DataCons { $1 : $3 }
 
 DataCon :: { (Bind, [Type]) }
-  : ConsBind TypeSeq  { ($1, $2) }
+  : ConsBind TypeSeq {% checkDupFunSig $1 >> return ($1, $2) }
 
 -----------------
 -- EXPRESSIONS --
@@ -182,7 +182,7 @@ Primary :: { Expression }
   | CHAR                                     { let (TokenChar p x) = $1 in Character p x }
   | '()'                                     { Unit (position $1) }
   | VAR                                      { Variable (position $1) (getText $1) }
-  | CONS                                     { Constructor (position $1) (getText $1) }
+  | CONS                                     { Variable (position $1) (getText $1) }
   | '(' Expr ',' Expr ')'                    { Pair (position $1) $2 $4 }
   | '(' Expr ')'                             { $2 }
 
@@ -296,7 +296,7 @@ ConsBind :: { Bind }
 
 TypeBind :: { KBind }
   : CONS ':' Kind { KBind (position $1) (getText $1) $3 }
-  | CONS          { let p = position $1 in KBind p (getText $1) (Kind p Functional Lin) }
+  | CONS          { let p = position $1 in KBind p (getText $1) (Kind p Functional Un) }
 
 VarBindSeq :: { [Bind] }
   :                    { [] }

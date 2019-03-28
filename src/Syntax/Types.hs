@@ -15,7 +15,6 @@ module Syntax.Types
 ( TypeVar
 , KBind(..)
 , BasicType(..)
-, Constructor
 , TypeMap(..)
 , ChoiceView(..)
 , Polarity(..)
@@ -74,8 +73,6 @@ instance Show BasicType where
   show UnitType = "()"
 
 -- TYPES
-
-type Constructor = Var -- = String
 
 type TypeMap = Map.Map Bind Type
 
