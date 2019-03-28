@@ -63,7 +63,7 @@ typeCheck = do
    |  - Checks if they are well kinded and if they have a functional kind
 -}
 checkDataDecl :: FreestState ()
-checkDataDecl = do 
+checkDataDecl = do
   kenv <- getKenv
   mapM_ checkFunctionalKind kenv
   cenv <- getTenv
