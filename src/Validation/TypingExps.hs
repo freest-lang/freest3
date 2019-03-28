@@ -11,7 +11,8 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE LambdaCase, NoMonadFailDesugaring#-}
+-- TODO: remove NoMonadFailDesugaring and add an instance monad fail
 module Validation.TypingExps
 ( synthetize
 , checkAgainst
@@ -29,9 +30,23 @@ import           Utils.Errors
 import           Utils.FreestState
 import           Equivalence.TypeEquivalence
 import qualified Validation.Kinding as K
-import           Control.Monad.State
+import           Control.Monad.State{-|
+Module      :  TypingExps
+Description :  <optional short text displayed on contents page>
+Copyright   :  (c) <Authors or Affiliations>
+License     :  <license>
+
+Maintainer  :  <email>
+Stability   :  unstable | experimental | provisional | stable | frozen
+Portability :  portable | non-portable (<reason>)
+
+<module description starting at first column>
+-}
+
+{-# LANGUAGE LambdaCase #-}
 import           Control.Conditional ((<&&>))
 import qualified Data.Map.Strict as Map
+import           Validation.Extract
 
 
 -- | Typing rules for expressions
@@ -133,6 +148,7 @@ synthetize (Match _ e m) = do
   mapM_ (checkEquivEnvs v) vs
   setVenv v
   return t
+
   
 synthetize (Constructor p c) = checkVar p c >>= \(TypeScheme _ _ t) -> return t
 
@@ -223,10 +239,6 @@ removeLinVar x (TypeScheme _ _ t) = do
   if isLin then removeFromVenv x
   else return ()
  
--- | The Extract Functions
-
--- Normalizes a type
-
 {- | Verifies if x is well formed (e[x] based on the kind)
    | Checks if all x1,...,xn in e[x1,...,xn] are well kinded
    | Checks if the number of types (n) are admited by type
