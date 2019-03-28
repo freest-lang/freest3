@@ -26,6 +26,7 @@ import           Utils.Errors
 import           Utils.FreestState
 import qualified Validation.Kinding as K
 import           Validation.TypingExps
+import           Validation.Extract
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
 import qualified Data.Traversable as Trav
@@ -64,10 +65,15 @@ typeCheck = do
 -}
 checkDataDecl :: FreestState ()
 checkDataDecl = do 
-  kenv <- getKenv
-  mapM_ checkFunctionalKind kenv
-  cenv <- getTenv
-  mapM_ K.kinding cenv
+--  kenv <- getKenv
+--  mapM_ checkFunctionalKind kenv
+  tenv <- getTenv
+  -- addError defaultPos [show cenv]
+  -- mapM_ K.kinding cenv
+
+  -- tenv = Map.Map KBind TypeScheme
+  mapWithKeyM (\(KBind p x k) t -> addToKenv (Bind p x) k >> K.kinding t) tenv
+  return ()
 
 checkFunctionalKind :: Kind -> FreestState ()
 checkFunctionalKind k =
