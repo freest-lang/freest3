@@ -150,7 +150,7 @@ synthetize (Match _ e m) = do
   return t
 
   
-synthetize (Constructor p c) = checkVar p c >>= \(TypeScheme _ _ t) -> return t
+-- synthetize (Constructor p c) = checkVar p c >>= \(TypeScheme _ _ t) -> return t
 
 synthetize (Fork p e) = do
   t <- synthetize e

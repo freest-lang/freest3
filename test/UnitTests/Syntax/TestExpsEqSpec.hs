@@ -67,9 +67,9 @@ spec = do
     it "Fork" $ do
       (Fork p (Variable p "x")) ==
         (Fork p (Variable p "x")) `shouldBe` True
-    it "Constructor" $ do
-      (Constructor p "x") ==
-        (Constructor p "x") `shouldBe` True
+    -- it "Constructor" $ do
+    --   (Constructor p "x") ==
+    --     (Constructor p "x") `shouldBe` True
     it "Case" $ do
       (Case p (Variable p "x") (Map.singleton (Bind p "C") ([Bind p "w"], (Integer p 2)))) ==
         (Case p (Variable p "x") (Map.singleton (Bind p "C") ([Bind p "w"], (Integer p 2))))

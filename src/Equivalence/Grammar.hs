@@ -43,6 +43,7 @@ module Equivalence.Grammar
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import           Syntax.Types
+import           Syntax.Bind
 import           Data.List (union,delete)
 
 -- Terminal symbols are called labels
