@@ -126,15 +126,15 @@ NL :: { () }
 
 Decl :: { () }
   : VarBind ':' TypeScheme -- Function signature
-    {% checkDupTypeSig $1 >> addToVenv $1 $3 }
+    {% checkDupFunSig $1 >> addToVenv $1 $3 }
   | VarBind VarBindSeq '=' Expr -- Function declaration
     {% checkDupFunDecl $1 >> addToEenv $1 ($2, $4) }
   | type TypeBind KindVarEmptyList '=' Type -- Type abbreviation
-    {% checkDupTBind $2 >> addToTenv $2 (TypeScheme (position $1) $3 $5) }
+    {% checkDupTypeDecl $2 >> addToTenv $2 (TypeScheme (position $1) $3 $5) }
   | data TypeBind KindVarEmptyList '=' DataCons
     {% do
+       checkDupTypeDecl $2
        let bs = typesToFun $2 $5
---       checkDupTypeDecl $2
        addToTenv $2 (TypeScheme (position $2) $3 (Datatype (position $2) (Map.fromList bs)))
 --       checkClashes $2 bs
 --       addToKenv $2 (Kind (position $1) Functional Un)
@@ -244,7 +244,7 @@ ChoiceView :: { (Pos, ChoiceView) }
 FieldList :: { TypeMap }
   : Field               { uncurry Map.singleton $1 }
   | Field ',' FieldList {% checkDupField (fst $1) $3 >>
-                            return (uncurry Map.insert $1 $3) }
+                           return (uncurry Map.insert $1 $3) }
 
 Field :: { (Bind, Type) }
   : ConsBind ':' Type { ($1, $3) }

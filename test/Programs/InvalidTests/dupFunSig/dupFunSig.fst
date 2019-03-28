@@ -1,4 +1,4 @@
-f :: Int
+f : Int
 f = 5
-f :: Int
+f : Int
 

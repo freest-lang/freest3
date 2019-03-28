@@ -65,13 +65,10 @@ typeCheck = do
 -}
 checkDataDecl :: FreestState ()
 checkDataDecl = do 
---  kenv <- getKenv
---  mapM_ checkFunctionalKind kenv
+  kenv <- getKenv
+  mapM_ checkFunctionalKind kenv
   tenv <- getTenv
-  -- addError defaultPos [show cenv]
   -- mapM_ K.kinding cenv
-
-  -- tenv = Map.Map KBind TypeScheme
   mapWithKeyM (\(KBind p x k) t -> addToKenv (Bind p x) k >> K.kinding t) tenv
   return ()
 
