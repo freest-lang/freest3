@@ -37,8 +37,10 @@ executable ContextFreeSession
                        Parse.Parser, Parse.Lexer, Parse.ParserUtils,
                        Utils.PreludeLoader, Utils.Errors, Utils.FreestState,
                        Queue.Queue,
-                       Validation.Typing, Validation.TypingExps, Validation.Kinding, Validation.Contractive, 
-                       Equivalence.TypeEquivalence, Equivalence.Grammar, Equivalence.TypeToGrammar, Equivalence.Norm,
+                       Validation.Typing, Validation.TypingExps, Validation.Kinding,
+                       Validation.Contractive, Validation.Extract,
+                       Equivalence.TypeEquivalence, Equivalence.Grammar,
+                       Equivalence.TypeToGrammar, Equivalence.Norm,
                        CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen
                        
 test-suite unit-tests
@@ -101,8 +103,10 @@ test-suite program-tests
                        Parse.Lexer, Parse.Parser, Parse.ParserUtils,
                        Utils.PreludeLoader, Utils.Errors, Utils.FreestState,
                        Queue.Queue,        
-                       Validation.Typing, Validation.TypingExps, Validation.Kinding, Validation.Contractive,
-                       Equivalence.TypeEquivalence, Equivalence.Grammar, Equivalence.TypeToGrammar, Equivalence.Norm, 
+                       Validation.Typing, Validation.TypingExps, Validation.Kinding,
+                       Validation.Contractive, Validation.Extract,
+                       Equivalence.TypeEquivalence, Equivalence.Grammar,
+                       Equivalence.TypeToGrammar, Equivalence.Norm, 
                        CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen
 
 test-suite testEquiv
