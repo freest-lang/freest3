@@ -23,12 +23,14 @@ import           Syntax.Kinds
 import           Syntax.Bind
 import           Utils.Errors
 import           Utils.FreestState
+import           Control.Monad (when)
 import qualified Data.Map.Strict as Map
 
 -- Is a given type contractive?
 contractive :: KindEnv -> Type -> Bool
 contractive kenv (Semi _ t _) = contractive kenv t
 contractive kenv (Rec _ _ t)  = contractive kenv t
+contractive kenv (Dualof _ t) = contractive kenv t
 contractive kenv (Var p x)    = Map.member (Bind p x) kenv
 contractive _    _            = True
 
@@ -36,6 +38,5 @@ contractive _    _            = True
 checkContractive :: Type -> FreestState ()
 checkContractive t = do
   kenv <- getKenv
-  if contractive kenv t
-  then return ()
-  else addError (position t) ["Type", styleRed $ show t, "is not contractive"]
+  when (not (contractive kenv t)) $
+   addError (position t) ["Type", styleRed $ show t, "is not contractive"]

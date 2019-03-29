@@ -9,7 +9,9 @@
 &{ A: Unit, B: Int, A: Bool }
 &{ A: Unit, B: Int, B: Int, A: Bool }
 
-rec x. a;x
+rec x . x; !Int
 rec x . x
 
+rec x . dualof x
 
+rec x . Skip; dualof x
