@@ -237,6 +237,7 @@ subs t2 y (Rec p x t1)
   | otherwise               = Rec p x (subs t2 y t1)
 subs t y (Choice p v m)     = Choice p v (Map.map(subs t y) m)
 subs t y (Fun p m t1 t2)    = Fun p m (subs t y t1) (subs t y t2)
+subs t y (Dualof p t1)       = Dualof p (subs t y t1)
 subs _ _ t                  = t
 
 subL :: Type -> [(Type,KBind)] -> Type
