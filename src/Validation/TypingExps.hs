@@ -120,13 +120,13 @@ synthetize (Receive p e) = do
 -- Branching
 synthetize (Select p c e) = do 
   t <- synthetize e
-  choice <- extractOutChoice t -- TODO: merge these two functions
+  choice <- extractInChoice t -- TODO: merge these two functions
   u <- extractCons p c choice  
   return u
 
 synthetize (Match _ e m) = do
   t <- synthetize e
-  tm <- extractEChoiceMap t
+  tm <- extractExtChoiceMap t
   venv <- getVenv
   (t:ts, v:vs) <- Map.foldrWithKey (\k (p, e) acc ->
                                   checkMap acc venv tm k ([p], e)) (return ([],[])) m

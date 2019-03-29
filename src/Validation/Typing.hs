@@ -26,7 +26,6 @@ import           Utils.Errors
 import           Utils.FreestState
 import qualified Validation.Kinding as K
 import           Validation.TypingExps
-import           Validation.Extract
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
 import qualified Data.Traversable as Trav
