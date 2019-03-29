@@ -58,7 +58,7 @@ synthetize (Fun p m t u) = do
 synthetize (PairType _ t u) = do
   kt <- synthetize t
   ku <- synthetize u
-  return $ max kt ku
+  return $ lub kt ku
 synthetize (Datatype p m) = do
   ks <- mapM synthetize (Map.elems m)
   let Kind _ _ n = maximum ks

@@ -289,7 +289,7 @@ RecVar :: { KBind }
 
 KindVar :: { KBind }
   : VAR ':' Kind { KBind (position $1) (getText $1) $3 }
-  | VAR		 { let p = position $1 in KBind p (getText $1) (Kind p Functional Lin) }
+  | VAR		 { let p = position $1 in KBind p (getText $1) (top p) }
 
 ConsBind :: { Bind }
   : CONS { Bind (position $1) (getText $1) }

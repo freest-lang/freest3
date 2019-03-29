@@ -41,6 +41,9 @@ Skip;Skip
 Skip;+{S:Skip,I:!Int}
   SL
 
+(Bool -> Bool, !Int)
+  TL
+
 -- recursive types
 
 rec x . ?Bool
@@ -81,3 +84,94 @@ rec treeChannel . +{Leaf: Skip, Node: !Int;treeChannel;treeChannel}
   
 rec alpha . !Int;rec treeChannel . +{Leaf:Skip, Node:!Int;treeChannel;treeChannel};rec treeChannel . +{Leaf:Skip, Node:!Int;treeChannel;treeChannel};x
   SL
+
+-- explicitely typed recursive types
+
+rec x : SL . Skip
+  SU
+
+rec x : SU . Skip
+  SU
+
+rec x : TL . Skip
+  SU
+
+rec x : TU . Skip
+  SU
+
+rec x : SL . x -> x
+  TU
+  
+rec x : SU . x -> x
+  TU
+
+rec x : TL . x -> x 
+  TU
+
+rec x : TU . x -> x 
+  TU
+
+rec x : SL . x -o x
+  TL
+  
+rec x : SU . x -o x
+  TL
+
+rec x : TL . x -o x 
+  TL
+
+rec x : TU . x -o x 
+  TL
+
+rec x : SL . rec y : SL . x -> y
+  TU 
+
+rec x : SU . rec y : SU . x -> y
+  TU 
+
+rec x : TL . rec y : TU . x -> y
+  TU 
+
+rec x : TL . rec y : TL . x -> y
+  TU 
+
+rec x : SL . rec y : TL . x -> y
+  TU 
+
+rec x : SU . rec y : TU . x -> y
+  TU 
+
+rec x : TL . rec y : SU . x -> y
+  TU 
+
+rec x : SL . rec y : TL . x -> y
+  TU 
+
+rec x : SU . rec y : SU. x ; Skip ; Skip; y; Skip
+  SU
+
+rec x : SU . rec y : SU. x ; Skip ; Skip; y; Skip
+  SL
+
+rec x : SU . rec y : SU. x ; Skip ; Skip; y; Skip
+  TU
+
+rec a : TU . (a, !Int)
+  TL
+
+rec b : TU . (b, !Int)
+  TU
+
+-- dualof
+
+rec x . dualof !Int
+  SL
+
+rec x . dualof !Int
+  SU
+
+rec x . (dualof Skip) ; x
+  SU
+
+rec x . dualof (Skip ; x) 
+  SU

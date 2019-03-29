@@ -18,9 +18,10 @@ module Syntax.Kinds
 , Kind (..)
 , KindEnv
 , top
+, lub
 ) where
 
-import           Parse.Lexer (Position, Pos, position)
+import           Parse.Lexer (Position, Pos, position, defaultPos)
 import           Syntax.Bind (Var, Bind)
 import qualified Data.Map.Strict as Map
 
@@ -64,6 +65,11 @@ instance Show Kind where
 
 instance Position Kind where
   position (Kind p _ _) = p
+
+-- The least upper bound of two kinds
+lub :: Kind -> Kind -> Kind
+lub (Kind p Functional Un) (Kind _ Functional Lin) = (Kind p Functional Lin)
+lub k1 k2 = max k1 k2
 
 -- The kind that seats at the top of the hierarchy (use as a default value)
 top :: Pos -> Kind
