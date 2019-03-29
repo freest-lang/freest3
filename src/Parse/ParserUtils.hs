@@ -95,7 +95,7 @@ checkDupTypeDecl b = do
 checkDupFunDecl :: Bind -> FreestState ()
 checkDupFunDecl b = do
   m <- getEenv
-  when (b `Map.notMember` m) $
+  when (b `Map.member` m) $
     addError (position b) ["Multiple declarations of function", styleRed (show b)]
 
 checkDupTypeBind :: KBind -> FreestState ()

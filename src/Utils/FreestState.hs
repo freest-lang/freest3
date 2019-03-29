@@ -109,7 +109,12 @@ getTenv = do
 
 addToTenv :: KBind -> TypeScheme -> FreestState ()
 addToTenv b t =
-  modify (\s -> s{consEnv=Map.insert b t (consEnv s)})  
+  modify (\s -> s{consEnv=Map.insert b t (consEnv s)})
+
+getFromTenv :: KBind -> FreestState (Maybe TypeScheme)
+getFromTenv  b = do
+  tenv <- getTenv
+  return $ tenv Map.!? b
 
 -- | KIND ENV
 
@@ -127,10 +132,15 @@ kenvMember x = do
   kenv <- getKenv
   return $ Map.member x kenv
 
-getKind :: Bind -> FreestState Kind
+getKind :: Bind -> FreestState Kind -- Remove ?
 getKind x = do
   kenv <- getKenv
-  return $ kenv Map.! x 
+  return $ kenv Map.! x
+
+getFromKenv :: Bind -> FreestState (Maybe Kind)
+getFromKenv x = do
+  kenv <- getKenv
+  return $ kenv Map.!? x   
 
 removeFromKenv :: Bind -> FreestState ()
 removeFromKenv x =

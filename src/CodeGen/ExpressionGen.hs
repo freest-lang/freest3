@@ -139,7 +139,7 @@ annotateAST' m fm _ e@(Fork _ e1) =
   let (m1,_) = annotateAST' m fm True e1 in
       (Map.insert e True m1, True)
 
-annotateAST' m fm b e@(Constructor _ _) = (Map.insert e b m, b)
+-- annotateAST' m fm b e@(Constructor _ _) = (Map.insert e b m, b)
 
 annotateAST' m fm b e@(Case _ _ cm) =  -- TODO: False
   let m1 = annotateMap m fm b cm in
@@ -328,9 +328,9 @@ translate fm m e@(Fork _ e1) = do
   c1 <- translateExpr ("_fork (" ++ h1 ++ " >> return ())") (expected m e) True
   return (c1, True)
   
-translate fm m e@(Constructor _ x) = do
-  h <- translateExpr x (expected m e) False
-  return (h, False)
+-- translate fm m e@(Constructor _ x) = do
+--   h <- translateExpr x (expected m e) False
+--   return (h, False)
 
 translate fm m (Case _ e cm) = do
   (h1,_) <- translate fm m e 
