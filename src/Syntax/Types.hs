@@ -93,7 +93,7 @@ data Type =
 type TypeMap = Map.Map Bind Type
 
 instance Eq Type where -- Type equality, up to alpha-conversion
-  t == u = equalTypes Map.empty (normalize t) (normalize u) 
+  t == u = equalTypes Map.empty (normalise t) (normalise u) 
 
 equalTypes :: Map.Map TypeVar TypeVar -> Type -> Type -> Bool
   -- Functional types
@@ -266,32 +266,33 @@ free (Var _ x)        = Set.singleton x
 free (Dualof _ t)     = free t
 free (Name _ _)       = Set.empty
 
-normalize :: Type -> Type
+normalise :: Type -> Type
   -- Functional types
-normalize (Fun p q t u)    = Fun p q (normalize t) (normalize u)
-normalize (PairType p t u) = PairType p (normalize t) (normalize u)
-normalize (Datatype p m)   = Datatype p (Map.map normalize m)
+normalise (Fun p q t u)    = Fun p q (normalise t) (normalise u)
+normalise (PairType p t u) = PairType p (normalise t) (normalise u)
+normalise (Datatype p m)   = Datatype p (Map.map normalise m)
   -- Session types
-normalize (Semi p (Choice q v m) t) =
-  Choice q v (Map.map (\t -> append (normalize t) u) m)
-  where u = normalize t
-normalize (Semi p t u)     = append (normalize t) (normalize u)
-normalize (Choice p q m)   = Choice p q (Map.map normalize m)
-normalize (Rec p (KBind q x k) t)
+normalise (Semi p (Choice q v m) t) =
+  Choice q v (Map.map (\v -> append (normalise v) u) m)
+  where u = normalise t
+normalise (Semi p t u)     = append (normalise t) (normalise u)
+normalise (Choice p q m)   = Choice p q (Map.map normalise m)
+normalise (Rec p (KBind q x k) t)
   | x `Set.member` (free t) = Rec p (KBind q x k) u
   | otherwise               = u
-  where u = normalize t
+  where u = normalise t
   -- Functional or session
   -- Type operators
-normalize (Dualof _ t)     = normalize (dual t)
+normalise (Dualof _ t)     = normalise (dual t)
   -- Otherwise: Basic, Skip, Message, Var, Name
-normalize t                = t
+normalise t                = t
 -- Note: we could be more ambitious and go after the Name types, but we'd need a TypeEnv
 
 append :: Type -> Type -> Type
-append (Skip _) t = t
-append (Semi p t u) v = Semi p t (append u v)
-append t v = Semi (position t) t v
+append (Skip _)       t = t
+append (Choice q v m) t = Choice q v (Map.map (`append` t) m)
+append (Semi p t u)   v = Semi p t (append u v)
+append t              u = Semi (position t) t u
 
 -- SESSION TYPES
 
