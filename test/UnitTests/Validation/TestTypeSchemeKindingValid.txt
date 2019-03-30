@@ -1,49 +1,51 @@
--- Basic foralls
+-- Type schemes do not have kinds
 
-forall a => Bool
-  TU
-
-forall x => x
-  SL
-
-forall a : TU, b => a
-  TU
-
-forall a : SU, b => b
-  SL
-
--- Forall semi
-
-forall x => !Int ; x
-  SL
-
-forall x, y => !Int;x;!Bool;y
-  SL
-
--- Forall funs
-
-forall alpha => Int -> (!Int;alpha) -> alpha
-  TU
-
-forall x => Int -> x
-  TU
-
-forall x => Int -o x
-  TL
-
-forall f : TU => f -o f -> f
-  TL
-
-forall f : TU => (f -o f) -> f
-  TU
-
--- Forall with rec
-
-forall x  => rec y . rec z . x; y; z
-  SL
-  
-forall x : SL  => rec y . rec z . x; y; z
-  SL
-
-forall y : SU => rec x . x; y
-  SU
+-- -- Basic foralls
+-- 
+-- forall a => Bool
+--   TU
+-- 
+-- forall x => x
+--   SL
+-- 
+-- forall a : TU, b => a
+--   TU
+-- 
+-- forall a : SU, b => b
+--   SL
+-- 
+-- -- Forall semi
+-- 
+-- forall x => !Int ; x
+--   SL
+-- 
+-- forall x, y => !Int;x;!Bool;y
+--   SL
+-- 
+-- -- Forall funs
+-- 
+-- forall alpha => Int -> (!Int;alpha) -> alpha
+--   TU
+-- 
+-- forall x => Int -> x
+--   TU
+-- 
+-- forall x => Int -o x
+--   TL
+-- 
+-- forall f : TU => f -o f -> f
+--   TL
+-- 
+-- forall f : TU => (f -o f) -> f
+--   TU
+-- 
+-- -- Forall with rec
+-- 
+-- forall x  => rec y . rec z . x; y; z
+--   SL
+--   
+-- forall x : SL  => rec y . rec z . x; y; z
+--   SL
+-- 
+-- forall y : SU => rec x . x; y
+--   SU
