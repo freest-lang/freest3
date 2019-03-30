@@ -169,8 +169,8 @@ checkAgainst (Conditional p e1 e2 e3) t = do
 -- Default
 checkAgainst e t = do
   u <- synthetize e
-  u' <- normType u
-  t' <- normType t
+  -- let u' = normalize u
+  --     t' = normalize t
   -- addError (position t') [styleRed $ show t', "\n\t", styleRed $ show u']
   kenv <- getKenv
   -- when (not $ equivalent kenv t' u') $
