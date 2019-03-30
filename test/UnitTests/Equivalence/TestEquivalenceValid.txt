@@ -509,3 +509,6 @@ rec x . &{N: x;!Int;?Int, L: ?Int}
 rec x . &{N: x;!Int, L: x}
 rec x . &{N: x, L: x};!Int
 
+[]
+&{And: (?Bool;(?Bool;(!Bool;(rec x : SL . &{And: (?Bool;(?Bool;(!Bool;x))), End: Skip, Not: (?Bool;(!Bool;x)), Or: (?Bool;(?Bool;(!Bool;x)))})))), End: Skip, Not: (?Bool;(!Bool;(rec x : SL . &{And: (?Bool;(?Bool;(!Bool;x))), End: Skip, Not: (?Bool;(!Bool;x)), Or: (?Bool;(?Bool;(!Bool;x)))}))), Or: (?Bool;(?Bool;(!Bool;(rec x : SL . &{And: (?Bool;(?Bool;(!Bool;x))), End: Skip, Not: (?Bool;(!Bool;x)), Or: (?Bool;(?Bool;(!Bool;x)))}))))}
+&{And: (?Bool;(?Bool;(!Bool;(rec x : SL . &{And: (?Bool;(?Bool;(!Bool;x))), End: Skip, Not: (?Bool;(!Bool;x)), Or: (?Bool;(?Bool;(!Bool;x)))})))), End: Skip, Not: (?Bool;(!Bool;(rec x : SL . &{And: (?Bool;(?Bool;(!Bool;x))), End: Skip, Not: (?Bool;(!Bool;x)), Or: (?Bool;(?Bool;(!Bool;x)))}))), Or: (?Bool;(?Bool;(!Bool;(rec x : SL . &{And: (?Bool;(?Bool;(!Bool;x))), End: Skip, Not: (?Bool;(!Bool;x)), Or: (?Bool;(?Bool;(!Bool;x)))}))))}
