@@ -17,7 +17,9 @@ cabal-version:       >=1.10
 
 executable ContextFreeSession
   main-is:             Main.hs
---  ghc-options:         -prof -fprof-auto "-with-rtsopts=-xc"
+--  ghc-options:         -Wall -Wextra
+  -- ghc-options:         -fprof-auto-top
+  --             "-with-rtsopts=-N -p -s -h -i0.1"
   other-extensions:    FlexibleContexts
   build-depends:       array <= 0.5.3.0,
                        base >=4.8,
