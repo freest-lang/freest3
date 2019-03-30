@@ -290,8 +290,8 @@ normalise t                = t
 
 append :: Type -> Type -> Type
 append (Skip _)       t = t
-append (Choice q v m) t = Choice q v (Map.map (`append` t) m)
 append (Semi p t u)   v = Semi p t (append u v)
+append (Choice q v m) t = Choice q v (Map.map (`append` t) m)
 append t              u = Semi (position t) t u
 
 -- SESSION TYPES
