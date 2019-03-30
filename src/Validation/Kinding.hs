@@ -86,9 +86,11 @@ synthetize (Var p v) = do
 synthetize (Dualof p t) = do
   m <- checkAgainstSession t
   return $ Kind p Session m
---synthetize (Name p c) = do
+synthetize (Name p c) = do
+  tenv <- getTenv
+  -- TODO: get the kind of c from map tenv
+  return $ top p
   
-
 -- Check whether a given type is of a session kind; issue an error if
 -- not. In either case return the multiplicity of the kind of the type
 checkAgainstSession :: Type -> FreestState Multiplicity

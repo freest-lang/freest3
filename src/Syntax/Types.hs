@@ -182,7 +182,7 @@ instance Dual Type where
 
 -- KINDED BIND
 
-type TypeVar = Var -- = String
+type TypeVar = String
 
 data KBind = KBind Pos TypeVar Kind
 
