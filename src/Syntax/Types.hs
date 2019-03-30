@@ -25,7 +25,6 @@ module Syntax.Types
 , unfold
 --, rename
 , subs
-, subL -- TODO: not quite sure this belongs here
 , isPreSession
 ) where
 
@@ -188,16 +187,16 @@ instance Position TypeScheme where
 
 -- DUALITY
 
--- The dual of a session type
+-- The dual of a type
 -- Assume that the type is a Session Type
 dual :: Type -> Type
-dual (Var p v)         = Var p v
-dual (Skip p)          = Skip p
-dual (Message pos p b) = Message pos (dualPolarity p) b
-dual (Choice pos p m)  = Choice pos (dualView p) (Map.map dual m)
-dual (Semi p t1 t2)    = Semi p (dual t1) (dual t2)
-dual (Rec p x t)       = Rec p x (dual t)
-dual (Dualof _ t)      = t
+dual (Var p v)       = Var p v
+dual (Skip p)        = Skip p
+dual (Message p q b) = Message p (dualPolarity q) b
+dual (Choice p v m)  = Choice p (dualView v) (Map.map dual m)
+dual (Semi p t1 t2)  = Semi p (dual t1) (dual t2)
+dual (Rec p x t)     = Rec p x (dual t)
+dual (Dualof _ t)    = t
 
 dualPolarity :: Polarity -> Polarity
 dualPolarity In  = Out
@@ -211,38 +210,27 @@ toList :: TypeScheme -> [TypeScheme] -- TODO: what for?
 toList (TypeScheme p b (Fun _ _ t1 t2)) = (TypeScheme p b t1) : toList (TypeScheme p b t2)
 toList t = [t]
 
--- UNFOLDING, RENAMING, SUBSTITUTING
+-- UNFOLDING, SUBSTITUTING
 
 unfold :: Type -> Type
 -- Assumes parameter is a Rec type
 unfold (Rec p x t) = subs (Rec p x t) x t
 
-{-
-rename :: Type -> KBind -> Type
--- Assumes parameter is a Rec type
--- rename (Rec p (Bind x pb k) t) y = Rec p (Bind y pb k) (subs (Var p y) x t)
-rename (Rec p x t) y = Rec p y (subs (Var p y) x t)
--}
-
 -- [u/x]t, substitute u for x on t
 subs :: Type -> KBind -> Type -> Type 
+subs t y (Fun p m t1 t2)    = Fun p m (subs t y t1) (subs t y t2)
+subs t y (PairType p t1 t2) = PairType p (subs t y t1) (subs t y t2)
+subs t y (Datatype p m)     = Datatype p (Map.map(subs t y) m)
+subs t y (Semi p t1 t2)     = Semi p (subs t y t1) (subs t y t2)
+subs t y (Choice p v m)     = Choice p v (Map.map(subs t y) m)
+subs t2 y (Rec p x t1)      -- Assume y /= x
+  | x == y                  = Rec p x t1
+  | otherwise               = Rec p x (subs t2 y t1)
 subs t (KBind _ y _) (Var p x)
     | x == y                = t
     | otherwise             = Var p x
-subs t y (Semi p t1 t2)     = Semi p (subs t y t1) (subs t y t2)
-subs t y (PairType p t1 t2) = PairType p (subs t y t1) (subs t y t2)
--- Assume y /= x
-subs t2 y (Rec p x t1)
-  | x == y                  = Rec p x t1
-  | otherwise               = Rec p x (subs t2 y t1)
-subs t y (Choice p v m)     = Choice p v (Map.map(subs t y) m)
-subs t y (Fun p m t1 t2)    = Fun p m (subs t y t1) (subs t y t2)
-subs t y (Dualof p t1)       = Dualof p (subs t y t1)
+subs t y (Dualof p t1)      = Dualof p (subs t y t1)
 subs _ _ t                  = t
-
-subL :: Type -> [(Type,KBind)] -> Type
-subL t bs =
-  foldr (\(u, x) acc -> subs u x acc) t bs
 
 -- SESSION TYPES
 

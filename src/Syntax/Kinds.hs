@@ -54,15 +54,13 @@ instance Ord Multiplicity where
 data Kind = Kind Pos PreKind Multiplicity
 
 instance Eq Kind where
-  (Kind _ p n) == (Kind _ q m) = (p, n) == (q, n)
+  (Kind _ p n) == (Kind _ q m) = (p, n) == (q, m)
 
 instance Ord Kind where
   (Kind _ Session    Un)  <= _                       = True
-  (Kind _ Functional Un)  <= (Kind _ Functional Un)  = True
   (Kind _ Functional Un)  <= (Kind _ Functional Lin) = True
-  (Kind _ Session    Lin) <= (Kind _ Session    Lin) = True
   (Kind _ Session    Lin) <= (Kind _ Functional Lin) = True
-  (Kind _ Functional Lin) <= (Kind _ Functional Lin) = True
+  (Kind _ Functional Un)  <= (Kind _ Session    Lin) = False -- Needed. But why?
   _                       <= _                       = False  
 
 instance Show Kind where
@@ -73,18 +71,19 @@ instance Position Kind where
 
 -- The least upper bound of two kinds
 lub :: Kind -> Kind -> Kind
-lub (Kind p Functional Un) (Kind _ Functional Lin) = top p
-lub k1 k2 = max k1 k2
+lub (Kind p Functional Un) (Kind _ Session   Lin) = top p
+lub (Kind p Session   Lin) (Kind _ Functional Un) = top p
+lub k1                     k2                     = max k1 k2
 
 -- The kind that seats at the top of the hierarchy (use as a default value)
 top :: Pos -> Kind
 top p = Kind p Functional Lin
 
--- KIND VAR
+-- KINDED VARIABLES
 
 type KindVar = Var -- = String
 
--- KIND ENVIRONMENT
+-- KIND ENVIRONMENTS
 
 type KindEnv = Map.Map Bind Kind
 

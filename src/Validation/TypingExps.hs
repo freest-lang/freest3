@@ -70,7 +70,7 @@ synthetize (TypeApp p x ts) = do
   let typeBind = zip ts bs
   mapM (\(t, KBind _ _ k) -> K.checkAgainst k t) typeBind
   -- well formed sub??
-  return $ subL t typeBind
+  return $ foldr (uncurry subs) t typeBind
      
 -- Conditional
 synthetize (Conditional p e1 e2 e3) = do
