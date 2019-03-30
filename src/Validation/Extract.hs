@@ -19,8 +19,8 @@ module Validation.Extract
 , extractBasic
 , extractOutput
 , extractInput
-, extractInChoice
-, extractExtChoiceMap
+, extractOutChoiceMap
+, extractInChoiceMap
 , extractDataTypeMap
 , extractCons
 ) where
@@ -137,29 +137,22 @@ extractMessage pol msg t =
        addError (position u) ["Expecting an", msg, "type; found", styleRed $ show u] >>
        return (UnitType, Skip (position u))
 
--- Extracts an internal choice from a type; gives an error if it isn't an internal choice
-extractInChoice :: Type -> FreestState Type
-extractInChoice t =
+extractOutChoiceMap :: Pos -> Type -> FreestState TypeMap
+extractOutChoiceMap = extractChoiceMap Out "external"
+
+extractInChoiceMap :: Pos -> Type -> FreestState TypeMap
+extractInChoiceMap = extractChoiceMap In "internal"
+      
+extractChoiceMap :: Polarity -> String -> Pos -> Type -> FreestState TypeMap
+extractChoiceMap pol msg pos t =
   case normalize t of
-    c@(Choice _ Out _)          -> return c
-    (Semi _ (Choice p Out m) u) -> return $ Choice p Out (Map.map (\v -> Semi (position v) v u) m)
+    (Choice _ pol m)            -> return m
+    (Semi _ (Choice _ pol m) u) -> return $ Map.map (\v -> Semi (position v) v u) m
     u                           -> do
-      addError (position u) ["Expecting an internal choice; found", styleRed $ show u]
-      return $ Skip (position u)
+      addError pos ["Expecting an", msg, "choice; found", styleRed $ show u]
+      return Map.empty
 
--- Extracts an external choice map from a type;
--- gives an error if an external choice is not found
-extractExtChoiceMap :: Type -> FreestState TypeMap
-extractExtChoiceMap t =
-  case normalize t of
-    (Choice _ In m)            -> return m
-    (Semi _ (Choice _ In m) u) -> return $ Map.map (\v -> Semi (position v) v u) m
-    u                          -> do
-      addError (position u) ["Expecting an external choice; found", styleRed $ show u]
-      return $ Map.empty
-
--- Extracts a datatype from a type;
--- gives an error if a datatype is not found
+-- Extracts a datatype from a type; gives an error if a datatype is not found
 extractDataTypeMap :: Type -> FreestState TypeMap
 extractDataTypeMap t =
   case normalize t of
@@ -168,17 +161,14 @@ extractDataTypeMap t =
       addError (position u) ["Expecting a datatype; found", styleRed $ show u]
       return $ Map.empty
 
--- Extracts a constructor from a choice map; assumes the input is a
--- choice map; gives an error if the constructor is not in the map
-extractCons :: Pos -> Constructor -> Type -> FreestState Type
-extractCons p c (Choice _ _ tm) =
-  let b = Bind p c in
+-- Extracts a constructor from a choice map; gives an error if the
+-- constructor is not in the map
+extractCons :: Pos -> TypeMap -> Constructor -> FreestState Type
+extractCons pos tm c =
+  let b = Bind defaultPos c in
   case tm Map.!? b of
     Just t -> return t
     Nothing -> do
-      addError p ["Constructor", styleRed c, "not in scope"]             
-      return (Basic p UnitType)
--- extractCons p _ t = do
---   addError p ["Expecting a choice; found", styleRed $ show t]
---   return (Basic p UnitType)
+      addError pos ["Constructor", styleRed c, "not in scope"]             
+      return (Basic pos UnitType)
 
