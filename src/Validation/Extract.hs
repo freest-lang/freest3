@@ -83,10 +83,10 @@ append (Skip _) t = t
 append (Semi p t u) v = Semi p t (append u v)
 append t v = Semi (position t) t v
 
--- Extracts a typescheme; gives an error if it is on Ɐ ε ⇒ T form
+-- Extracts a typescheme; gives an error if it is of form Ɐ ε ⇒ T
 extractScheme :: TypeScheme -> FreestState ([KBind], Type)
 extractScheme (TypeScheme _ [] t) = do
-  addError (position t) ["Expecting a type scheme; found", styleRed $ show t]
+  addError (position t) ["Expecting a type scheme; found a type", styleRed $ show t]
   return ([], (Basic (position t) UnitType))
 extractScheme (TypeScheme _ bs t) = return (bs, t)
 

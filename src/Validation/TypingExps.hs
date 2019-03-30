@@ -47,7 +47,6 @@ synthetize (Boolean p _)    = return $ Basic p BoolType
 synthetize (Variable p x)   = do
   (TypeScheme _ _ t) <- checkVar p x -- should be (TypeScheme [] t) but there's no instance for control monad fail
   return t
--- Derived TODO: to be remove
 synthetize (UnLet _ x e1 e2) = do
   t1 <- synthetize e1
   addToVenv x (TypeScheme (position t1) [] t1)
@@ -64,13 +63,11 @@ synthetize (App _ e1 e2) = do
 
 -- Type application
 synthetize (TypeApp p x ts) = do
-  t' <- checkVar p x
-  (bs, t) <- extractScheme t'
--- wellFormedCall p e ts binds
-  let typeBind = zip ts bs
-  mapM (\(t, KBind _ _ k) -> K.checkAgainst k t) typeBind
-  -- well formed sub??
-  return $ foldr (uncurry subs) t typeBind
+  s <- checkVar p x
+  (bs, t) <- extractScheme s
+  let typeBinds = zip ts bs
+  mapM (\(t, KBind _ _ k) -> K.checkAgainst k t) typeBinds
+  return $ foldr (uncurry subs) t typeBinds
      
 -- Conditional
 synthetize (Conditional p e1 e2 e3) = do
