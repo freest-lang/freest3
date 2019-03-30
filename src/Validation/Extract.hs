@@ -79,7 +79,7 @@ normalize t = t
 --   nu <- normType u
 --   return $ append nt nu 
 
-append :: Type -> Type -> Type
+append :: Type -> Type -> Type -- TODO: also exits in Types.hs
 append (Skip _) t = t
 append (Semi p t u) v = Semi p t (append u v)
 append t v = Semi (position t) t v

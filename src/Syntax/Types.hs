@@ -20,10 +20,11 @@ module Syntax.Types
 , Polarity(..)
 , Type(..)
 , TypeScheme(..)
-, toList -- TODO: not quite sure this belongs here
-, unfold
+, free
 , subs
+, unfold
 , isPreSession
+, toList -- TODO: not quite sure this belongs here
 ) where
 
 import           Parse.Lexer (Position, Pos, position)
@@ -31,6 +32,7 @@ import           Syntax.Bind
 import           Syntax.Kinds
 import           Data.List (intersperse)
 import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
 
 -- DUALITY
 
@@ -91,7 +93,7 @@ data Type =
 type TypeMap = Map.Map Bind Type
 
 instance Eq Type where -- Type equality, up to alpha-conversion
-  (==) = equalTypes Map.empty
+  t == u = equalTypes Map.empty (normalize t) (normalize u) 
 
 equalTypes :: Map.Map TypeVar TypeVar -> Type -> Type -> Bool
   -- Functional types
@@ -179,7 +181,9 @@ instance Dual Type where
   dual (Choice p v m)  = Choice p (dual v) (Map.map (Dualof p) m) -- The lazy version, hopefully faster
 --  dual (Rec p x t)     = Rec p x (dual t)
   dual (Rec p x t)     = Rec p x (Dualof p t) -- The lazy version, hopefully faster
-  -- Skip, functional or session,  type operators
+  -- Type operators
+  dual (Dualof _ t)    = t
+  -- Functional types, Skip, Var, Name
   dual t               = t
 
 -- KINDED BIND
@@ -242,6 +246,52 @@ subs t (KBind _ y _) (Var p x)
 subs t y (Dualof p t1)      = Dualof p (subs t y t1)
   -- Otherwise: Basic, Skip, Message, Name
 subs _ _ t                  = t
+
+-- The set of free type variables in a type
+free :: Type -> Set.Set Var
+  -- Functional types
+free (Basic _ _)      = Set.empty
+free (Fun _ _ t u)    = Set.union (free t) (free u)
+free (PairType _ t u) = Set.union (free t) (free u)
+free (Datatype _ m)   = Map.foldr (Set.union . free) Set.empty m
+  -- Session types
+free (Skip _)         = Set.empty
+free (Semi _ t u)     = Set.union (free t) (free u)
+free (Message _ _ _)  = Set.empty
+free (Choice _ _ m)   = Map.foldr (Set.union . free) Set.empty m
+free (Rec _ (KBind _ x _) t) = Set.delete x (free t)
+  -- Functional or session
+free (Var _ x)        = Set.singleton x
+  -- Type operators
+free (Dualof _ t)     = free t
+free (Name _ _)       = Set.empty
+
+normalize :: Type -> Type
+  -- Functional types
+normalize (Fun p q t u)    = Fun p q (normalize t) (normalize u)
+normalize (PairType p t u) = PairType p (normalize t) (normalize u)
+normalize (Datatype p m)   = Datatype p (Map.map normalize m)
+  -- Session types
+normalize (Semi p (Choice q v m) t) =
+  Choice q v (Map.map (\t -> append (normalize t) u) m)
+  where u = normalize t
+normalize (Semi p t u)     = append (normalize t) (normalize u)
+normalize (Choice p q m)   = Choice p q (Map.map normalize m)
+normalize (Rec p (KBind q x k) t)
+  | x `Set.member` (free t) = Rec p (KBind q x k) u
+  | otherwise               = u
+  where u = normalize t
+  -- Functional or session
+  -- Type operators
+normalize (Dualof _ t)     = normalize (dual t)
+  -- Otherwise: Basic, Skip, Message, Var, Name
+normalize t                = t
+-- Note: we could be more ambitious and go after the Name types, but we'd need a TypeEnv
+
+append :: Type -> Type -> Type
+append (Skip _) t = t
+append (Semi p t u) v = Semi p t (append u v)
+append t v = Semi (position t) t v
 
 -- SESSION TYPES
 

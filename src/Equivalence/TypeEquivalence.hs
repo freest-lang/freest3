@@ -179,16 +179,23 @@ findInPair _ _ _       = Nothing
 -- TYPE EQUIVALENCE
 
 equivalent :: KindEnv -> Type -> Type -> Bool
-equivalent _ (Var _ x) (Var _ y) = x == y
-equivalent _ (Basic _ b) (Basic _ c) = b == c
-equivalent k (Fun _ m t1 t2) (Fun _ n u1 u2) =
-  m == n && equivalent k t1 u1 && equivalent k t2 u2
-equivalent k (PairType _ t1 t2) (PairType _ u1 u2) =
-  equivalent k t1 u1 && equivalent k t2 u2
-equivalent k (Datatype _ m1) (Datatype _ m2) =
+equivalent k t u = t == u || equiv k t u
+
+equiv :: KindEnv -> Type -> Type -> Bool
+  -- Functional types
+equiv _ (Basic _ b) (Basic _ c) = b == c
+equiv k (Fun _ m t1 t2) (Fun _ n u1 u2) =
+  m == n && equiv k t1 u1 && equiv k t2 u2
+equiv k (PairType _ t1 t2) (PairType _ u1 u2) =
+  equiv k t1 u1 && equiv k t2 u2
+equiv k (Datatype _ m1) (Datatype _ m2) =
   Map.size m1 == Map.size m2 &&
   Map.foldlWithKey (checkBinding k m2) True m1
-equivalent k t u =
+  -- Functional or session
+equiv _ (Var _ x) (Var _ y) = x == y
+  -- Type operators: TODO
+  -- Session types
+equiv k t u =
   isPreSession t k &&
   isPreSession u k &&
   expand (prune p) [x] [y]
@@ -196,7 +203,7 @@ equivalent k t u =
 
 checkBinding :: KindEnv -> TypeMap -> Bool -> Bind -> Type -> Bool
 checkBinding k m acc l t =
-  acc && l `Map.member` m && equivalent k (m Map.! l) t
+  acc && l `Map.member` m && equiv k (m Map.! l) t
 
 {- testing
 
