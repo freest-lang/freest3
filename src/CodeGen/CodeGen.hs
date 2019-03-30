@@ -5,7 +5,7 @@ module CodeGen.CodeGen
 
 import           Parse.Lexer (defaultPos)
 import           Syntax.Programs
-import           Syntax.Exps
+import           Syntax.Expression
 import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.Bind

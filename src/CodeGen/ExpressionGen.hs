@@ -7,7 +7,7 @@ module CodeGen.ExpressionGen
 ) where 
 
 import           Syntax.Programs
-import           Syntax.Exps
+import           Syntax.Expression
 import           Syntax.Kinds
 import           Syntax.Bind
 import           Control.Monad.State

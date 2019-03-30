@@ -19,7 +19,7 @@ module Syntax.Programs
 
 import           Syntax.Bind
 import           Syntax.Types
-import           Syntax.Exps
+import           Syntax.Expression
 import qualified Data.Map.Strict as Map
 
 -- The type definitions or abbreviations (data, type)
