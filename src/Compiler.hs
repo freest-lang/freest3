@@ -1,14 +1,11 @@
 module Compiler (compile) where
 
 import Syntax.Programs
-import Syntax.Exps
-import Syntax.Types
 import Syntax.Kinds
-import CodeGen.CodeGen (HaskellCode, genProgram)
+import CodeGen.CodeGen (genProgram)
 import Control.Monad.State
 import Data.List (intercalate)
 import Parse.Parser (parseProgram)
-import System.Exit
 import Utils.PreludeLoader (prelude)
 import Utils.FreestState
 import Validation.Typing (typeCheck)

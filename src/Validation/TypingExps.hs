@@ -169,10 +169,14 @@ checkAgainst (Conditional p e1 e2 e3) t = do
 -- Default
 checkAgainst e t = do
   u <- synthetize e
+  u' <- normType u
+  t' <- normType t
+  -- addError (position t') [styleRed $ show t', "\n\t", styleRed $ show u']
   kenv <- getKenv
-  when (not $ equivalent kenv t u) $
-    addError (position t) ["Expecting type", styleRed (show u), 
-                           "to be equivalent to type", styleRed (show t)]
+  -- when (not $ equivalent kenv t' u') $
+  --   addError (position t) ["Expecting type", styleRed (show u), 
+  --                          "to be equivalent to type", styleRed (show t')]
+  return ()
 
 -- | Check whether two given types are equivalent
 checkEquivTypes :: Type -> Type -> FreestState ()

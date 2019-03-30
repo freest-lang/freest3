@@ -25,7 +25,7 @@ module Validation.Extract
 , extractCons
 ) where
 
-import           Parse.Lexer (Pos, position)
+import           Parse.Lexer (Pos, position, defaultPos)
 import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.Bind
@@ -52,6 +52,31 @@ normalize (Rec _ _ t) = normalize (unfold t)
 normalize (Dualof _ t) = normalize (dual t)
   -- Functional types, Skip, Message, Choice, and Var
 normalize t = t
+
+-- normType :: Type -> FreestState Type
+-- normType t@(Basic _ _) = return t
+-- normType t@(Fun _ _ _ _) = return t
+-- normType t@(PairType _ _ _) = return t
+-- normType t@(Datatype _ _) = return t
+-- normType t@(Skip _) = return t
+-- normType t@(Message _ _ _) = return t
+-- normType t@(Choice _ _ _) = return t
+-- normType t@(Rec _ _ _) = (normType . unfold) t
+-- normType (Dualof _ t) = (normType . dual) t
+-- -- normType t@(Var p x) = do
+-- --   getFromKenv (Bind p x) >>= \case
+-- --     Just0_    -> addError defaultPos ["KENV MEMBER"]  >> return t
+-- --     Nothing -> do
+-- --       Just (TypeScheme _ _ u) <- getFromTenv (KBind p x (top p))
+-- --       return u
+-- normType t@(Var p x) = do
+--   getFromTenv (KBind p x (top p)) >>= \case
+--     Just (TypeScheme _ _ u) -> normType u -- return u
+--     Nothing                 -> return t
+-- normType (Semi _ t u) = do
+--   nt <- normType t
+--   nu <- normType u
+--   return $ append nt nu 
 
 append :: Type -> Type -> Type
 append (Skip _) t = t
