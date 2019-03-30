@@ -384,28 +384,20 @@ parseError xs = do
 -- tmp move to state
 -- maybe refactor addType & addTypeScheme and then use uncurry
 addListToTenv :: [(KBind,Type)] -> FreestState ()
-addListToTenv bs = do
-  mapM (\(b, t) -> addToTenv b (TypeScheme (position t) [] t)) bs
-  return ()
+addListToTenv = mapM_ (\(b, t) -> addToTenv b (TypeScheme (position t) [] t))
 
 addListToVenv :: [(Bind,Type)] -> FreestState ()
-addListToVenv bs = do
-  mapM (\(b, t) -> addToVenv b (TypeScheme (position t) [] t)) bs
-  return ()
+addListToVenv = mapM_ (\(b, t) -> addToVenv b (TypeScheme (position t) [] t))
 
 -- Converting a list of types 
   
 typesToFun :: KBind -> [(Bind, [Type])] -> [(Bind, Type)]
 typesToFun (KBind p x _) =
-  foldr (\(k,ts) acc -> (k, typeToFun p x ts) : acc) []
+  map (\(k,ts) -> (k, typeToFun p x ts))
   where
     typeToFun :: Pos -> TypeVar -> [Type] -> Type
-    typeToFun p c [] = (Var p c)
-    typeToFun p c (x:xs) = Fun (position x) Un x (typeToFun p c xs)
-
--- convertDT :: Pos -> [(TypeVar,(Pos, Type))] -> Type
--- convertDT p ts = Datatype p $ Map.fromList $ removePos
---   where
---     removePos = map (\(x,(_,t)) -> (Bind defaultPos x,t)) ts -- TODO: tmp pos
+    typeToFun p c = foldr (\acc t -> Fun (position t) Un t acc) (Var p c)
+    -- typeToFun p c [] = (Var p c)
+    -- typeToFun p c (x:xs) = Fun (position x) Un x (typeToFun p c xs)
 
 }
