@@ -175,8 +175,10 @@ instance Dual Type where
   -- Session types
   dual (Semi p t1 t2)  = Semi p (dual t1) (dual t2)
   dual (Message p v b) = Message p (dual v) b
-  dual (Choice p v m)  = Choice p (dual v) (Map.map dual m)
-  dual (Rec p x t)     = Rec p x (dual t)
+--  dual (Choice p v m)  = Choice p (dual v) (Map.map dual m)
+  dual (Choice p v m)  = Choice p (dual v) (Map.map (Dualof p) m) -- The lazy version, hopefully faster
+--  dual (Rec p x t)     = Rec p x (dual t)
+  dual (Rec p x t)     = Rec p x (Dualof p t) -- The lazy version, hopefully faster
   -- Skip, functional or session,  type operators
   dual t               = t
 

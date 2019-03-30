@@ -37,4 +37,4 @@ instance Eq Bind where
   (Bind _ x) == (Bind _ y) = x == y
   
 instance Ord Bind where
-  (Bind _ x) `compare` (Bind _ y) = x `compare` y
+  (Bind _ x) <= (Bind _ y) = x <= y

@@ -115,19 +115,13 @@ checkAgainst k1 t = do
     addError (position k1) ["Expecting kind", styleRed $ show k1,
                             "to be a sub-kind of", styleRed $ show k2]
 
--- Returns the kind of a given type scheme -- TODO: type schemes do nota have kinds
+-- Returns the kind of a given type scheme -- TODO: type schemes do not have kinds
 kinding :: TypeScheme -> FreestState Kind
 kinding (TypeScheme _ bs t) = do
   -- TODO: addToKenv -> addBindsLToKenv
   foldM_ (\_ (KBind p x k) -> addToKenv (Bind p x) k) () bs
   synthetize t
 
--- Determines whether a given type is of a given multiplicity
-mult :: Multiplicity -> Type -> FreestState Bool
-mult m t = do
-  (Kind _ _ m') <- synthetize t
-  return $ m' == m
-      
 -- Determines whether a given type is linear or not
 lin :: Type -> FreestState Bool
 lin = mult Lin
@@ -136,6 +130,12 @@ lin = mult Lin
 un :: Type -> FreestState Bool
 un = mult Un
 
+-- Determines whether a given type is of a given multiplicity
+mult :: Multiplicity -> Type -> FreestState Bool
+mult m1 t = do
+  (Kind _ _ m2) <- synthetize t
+  return $ m2 == m1
+      
 -- For TESTS only, from here on
 
 kindOfType :: KindEnv -> Type -> Kind
