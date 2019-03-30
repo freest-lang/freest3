@@ -2,7 +2,7 @@ module Syntax.TestExpsEqSpec(spec) where
 
 import           Parse.Lexer (defaultPos)
 import           SpecHelper
-import           Syntax.Exps
+import           Syntax.Expression
 import           Syntax.Types -- TODO REMOVE
 import           Syntax.Kinds
 import           Syntax.Bind
