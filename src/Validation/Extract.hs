@@ -14,7 +14,7 @@ Portability :  portable | non-portable (<reason>)
 {-# LANGUAGE LambdaCase, NoMonadFailDesugaring #-}
 module Validation.Extract where
 
-import           Parse.Lexer (Pos, position)
+import           Parse.Lexer (Pos, position, defaultPos)
 import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.Bind
@@ -32,14 +32,18 @@ normType t@(Datatype _ _) = return t
 normType t@(Skip _) = return t
 normType t@(Message _ _ _) = return t
 normType t@(Choice _ _ _) = return t
-normType (Rec _ _ t) = (normType . unfold) t
+normType t@(Rec _ _ _) = (normType . unfold) t
 normType (Dualof _ t) = (normType . dual) t
+-- normType t@(Var p x) = do
+--   getFromKenv (Bind p x) >>= \case
+--     Just0_    -> addError defaultPos ["KENV MEMBER"]  >> return t
+--     Nothing -> do
+--       Just (TypeScheme _ _ u) <- getFromTenv (KBind p x (top p))
+--       return u
 normType t@(Var p x) = do
-  getFromKenv (Bind p x) >>= \case
-    Just _    -> return t
-    Nothing -> do
-      Just (TypeScheme _ _ u) <- getFromTenv (KBind p x (top p))
-      return u
+  getFromTenv (KBind p x (top p)) >>= \case
+    Just (TypeScheme _ _ u) -> normType u -- return u
+    Nothing                 -> return t
 normType (Semi _ t u) = do
   nt <- normType t
   nu <- normType u
