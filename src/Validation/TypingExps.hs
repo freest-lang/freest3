@@ -117,7 +117,7 @@ synthetize (Receive p e) = do
 -- Branching
 synthetize (Select p c e) = do 
   t <- synthetize e
-  choice <- extractInChoice t -- TODO: merge these two functions
+  choice <- extractInChoice t
   u <- extractCons p c choice  
   return u
 
@@ -132,7 +132,6 @@ synthetize (Match _ e m) = do
   setVenv v
   return t
 
-  
 -- synthetize (Constructor p c) = checkVar p c >>= \(TypeScheme _ _ t) -> return t
 
 synthetize (Fork p e) = do
@@ -166,14 +165,14 @@ checkAgainst (Conditional p e1 e2 e3) t = do
 -- Default
 checkAgainst e t = do
   u <- synthetize e
+  checkEquivTypes t u
+  --  kenv <- getKenv
   -- let u' = normalize u
   --     t' = normalize t
   -- addError (position t') [styleRed $ show t', "\n\t", styleRed $ show u']
-  kenv <- getKenv
   -- when (not $ equivalent kenv t' u') $
   --   addError (position t) ["Expecting type", styleRed (show u), 
   --                          "to be equivalent to type", styleRed (show t')]
-  return ()
 
 -- | Check whether two given types are equivalent
 checkEquivTypes :: Type -> Type -> FreestState ()

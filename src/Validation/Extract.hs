@@ -35,8 +35,9 @@ import qualified Data.Map.Strict as Map
 
 -- | The Extract Functions
 
--- The output is a type different from Rec and from Unfold. If it is a
--- Var, then it represents a polymorphic variable.
+-- The output is a type equivalent from that in the input, but
+-- different from Rec and from Unfold. If it is a Var, then it must
+-- represent a polymorphic variable.
 normalize :: Type -> Type
   -- Session types
 normalize (Semi _ t u) = append (normalize t) (normalize u)
@@ -167,9 +168,8 @@ extractDataTypeMap t =
       addError (position u) ["Expecting a datatype; found", styleRed $ show u]
       return $ Map.empty
 
--- Extracts a constructor from a choice map;
--- gives an error if the constructor is not found
--- TODO: Join
+-- Extracts a constructor from a choice map; assumes the input is a
+-- choice map; gives an error if the constructor is not in the map
 extractCons :: Pos -> Constructor -> Type -> FreestState Type
 extractCons p c (Choice _ _ tm) =
   let b = Bind p c in
@@ -178,7 +178,7 @@ extractCons p c (Choice _ _ tm) =
     Nothing -> do
       addError p ["Constructor", styleRed c, "not in scope"]             
       return (Basic p UnitType)
-extractCons p _ t = do
-  addError p ["Expecting a choice; found", styleRed $ show t]
-  return (Basic p UnitType)
+-- extractCons p _ t = do
+--   addError p ["Expecting a choice; found", styleRed $ show t]
+--   return (Basic p UnitType)
 
