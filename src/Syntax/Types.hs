@@ -12,14 +12,14 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Syntax.Types
-( TypeVar
+( Dual(..)
+, TypeVar
 , KBind(..)
 , BasicType(..)
 , TypeMap(..)
 , Polarity(..)
 , Type(..)
 , TypeScheme(..)
-, dual
 , toList -- TODO: not quite sure this belongs here
 , unfold
 , subs
@@ -32,6 +32,11 @@ import           Syntax.Kinds
 import           Data.List (intersperse)
 import qualified Data.Map.Strict as Map
 
+-- DUALITY
+
+class Dual t where
+  dual :: t -> t
+
 -- POLARITY
 
 data Polarity =
@@ -40,8 +45,12 @@ data Polarity =
   deriving (Eq, Ord)
 
 instance Show Polarity where
-  show In = "?"
+  show In  = "?"
   show Out = "!"
+
+instance Dual Polarity where
+  dual In  = Out
+  dual Out = In
 
 -- BASIC TYPES
 
@@ -53,14 +62,12 @@ data BasicType =
   deriving (Eq, Ord)
 
 instance Show BasicType where
-  show IntType = "Int"
+  show IntType  = "Int"
   show CharType = "Char"
   show BoolType = "Bool"
   show UnitType = "()"
 
 -- TYPES
-
-type TypeMap = Map.Map Bind Type
 
 data Type =
   -- Functional types
@@ -80,8 +87,9 @@ data Type =
   | Dualof Pos Type
   deriving Ord
 
--- Type equality, up to alpha-conversion.
-instance Eq Type where
+type TypeMap = Map.Map Bind Type
+
+instance Eq Type where -- Type equality, up to alpha-conversion
   (==) = equalTypes Map.empty
 
 equalTypes :: Map.Map TypeVar TypeVar -> Type -> Type -> Bool
@@ -143,17 +151,33 @@ showMap m = concat $ intersperse ", " (map showAssoc (Map.assocs m))
   where showAssoc (b, v) = show b ++ ": " ++ show v
 
 instance Position Type where
+  -- Functional types
   position (Basic p _)     = p
   position (Fun p _ _ _)    = p
   position (PairType p _ _) = p
   position (Datatype p _)   = p
+  -- Session types
   position (Skip p)         = p
   position (Semi p _ _)     = p
   position (Message p _ _)  = p
   position (Choice p _ _)   = p
   position (Rec p _ _)      = p
+  -- Functional or session
   position (Var p _)        = p
+  -- Type operators
   position (Dualof p _)     = p
+
+instance Dual Type where -- Assume that the type is a session type
+  -- Session types
+  dual (Skip p)        = Skip p
+  dual (Semi p t1 t2)  = Semi p (dual t1) (dual t2)
+  dual (Message p v b) = Message p (dual v) b
+  dual (Choice p v m)  = Choice p (dual v) (Map.map dual m)
+  dual (Rec p x t)     = Rec p x (dual t)
+  -- Functional or session
+  dual (Var p v)       = Var p v
+  -- Type operators
+  dual (Dualof _ t)    = t
 
 -- KINDED BIND
 
@@ -184,27 +208,6 @@ instance Show TypeScheme where
 
 instance Position TypeScheme where
   position (TypeScheme p _ _) = p
-
--- DUALITY
-
--- The dual of a type
--- Assume that the type is a Session Type
-dual :: Type -> Type
-dual (Var p v)       = Var p v
-dual (Skip p)        = Skip p
-dual (Message p v b) = Message p (dualPolarity v) b
-dual (Choice p v m)  = Choice p (dualPolarity v) (Map.map dual m)
-dual (Semi p t1 t2)  = Semi p (dual t1) (dual t2)
-dual (Rec p x t)     = Rec p x (dual t)
-dual (Dualof _ t)    = t
-
-dualPolarity :: Polarity -> Polarity
-dualPolarity In  = Out
-dualPolarity Out = In
-
--- dualView :: ChoiceView -> ChoiceView
--- dualView External = Internal
--- dualView Internal = External
 
 toList :: TypeScheme -> [TypeScheme] -- TODO: what for?
 toList (TypeScheme p b (Fun _ _ t1 t2)) = (TypeScheme p b t1) : toList (TypeScheme p b t2)

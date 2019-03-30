@@ -125,20 +125,17 @@ NL :: { () }
   | nl    {}
 
 Decl :: { () }
-  : VarBind ':' TypeScheme -- Function signature
+  : VarBind ':' TypeScheme                      -- Function signature
     {% checkDupFunSig $1 >> addToVenv $1 $3 }
-  | VarBind VarBindSeq '=' Expr -- Function declaration
+  | VarBind VarBindSeq '=' Expr                 -- Function declaration
     {% checkDupFunDecl $1 >> addToEenv $1 ($2, $4) }
-  | type TypeBind KindVarEmptyList '=' Type -- Type abbreviation
+  | type TypeBind KindVarEmptyList '=' Type     -- Type abbreviation
     {% checkDupTypeDecl $2 >> addToTenv $2 (TypeScheme (position $1) $3 $5) }
-  | data TypeBind KindVarEmptyList '=' DataCons
+  | data TypeBind KindVarEmptyList '=' DataCons -- Datatype declaration
     {% do
        checkDupTypeDecl $2
        let bs = typesToFun $2 $5
        addToTenv $2 (TypeScheme (position $2) $3 (Datatype (position $2) (Map.fromList bs)))
---       checkClashes $2 bs
---       addToKenv $2 (Kind (position $1) Functional Un)
---       addListToTenv bs
        addListToVenv bs
     }
 
@@ -333,7 +330,6 @@ parseTypeScheme s = fst $ runState (parse s) (initialState "")
 instance Read TypeScheme where
   readsPrec _ s = [(parseTypeScheme s, "")] 
 
--- TODO: move to kinds ??
 instance Read Kind where
   readsPrec _ s = -- [(parseKind s, "")]
     tryParse [("SL", Kind defaultPos Session Lin),
