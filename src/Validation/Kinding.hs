@@ -84,8 +84,10 @@ synthetize (Var p v) = do
     return k
 -- Type operators
 synthetize (Dualof p t) = do
-   m <- checkAgainstSession t
-   return $ Kind p Session m
+  m <- checkAgainstSession t
+  return $ Kind p Session m
+synthetize (Name p c) = do
+  
 
 -- Check whether a given type is of a session kind; issue an error if
 -- not. In either case return the multiplicity of the kind of the type

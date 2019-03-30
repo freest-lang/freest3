@@ -19,16 +19,17 @@ module Parse.ParserUtils
 , checkDupKBind
 , checkDupField 
 , checkDupMatch
---, checkClashes 
 , binOp
 , unOp
+, typesToFun
 ) where
 
 import           Parse.Lexer (Position, Pos, position, defaultPos, showPos)
 import           Syntax.Programs (VarEnv)
 import           Syntax.Exps (Expression(..))
-import           Syntax.Types (TypeMap, KBind(..), Type)
+import           Syntax.Types (TypeMap, KBind(..), Type(..))
 import           Syntax.Bind (Var, Bind(..))
+import           Syntax.Kinds (Multiplicity(..))
 import           Utils.Errors
 import           Utils.FreestState (FreestState, addError, getVenv, getTenv, getEenv)
 import           Data.List (nub, (\\), intercalate, find)
@@ -126,3 +127,11 @@ binOp pos left op right =
 unOp :: Pos -> Op -> Expression -> Expression
 unOp pos op expr =
   App (position expr) (Variable pos op) expr
+
+-- Convert a list of types and a final type constructor to a type
+typesToFun :: KBind -> [(Bind, [Type])] -> [(Bind, Type)]
+typesToFun (KBind p x _) = map (\(k, ts) -> (k, typeToFun (Var p x) ts))
+  where
+    typeToFun :: Type -> [Type] -> Type
+    typeToFun = foldr (\acc t -> Fun (position t) Un t acc)
+

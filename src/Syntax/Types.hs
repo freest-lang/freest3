@@ -82,10 +82,10 @@ data Type =
   | Choice Pos Polarity TypeMap
   | Rec Pos KBind Type
   -- Functional or session
-  | Var Pos TypeVar -- a recursion variable if bound, polymorphic otherwise
+  | Var Pos TypeVar  -- a recursion variable if bound, polymorphic otherwise
   -- Type operators
-  | Dualof Pos Type
-  | Name Pos Cons
+  | Dualof Pos Type -- to be expanded
+  | Name Pos Cons   -- a named type, to be looked upon in a map of Cons to Type
   deriving Ord
 
 type TypeMap = Map.Map Bind Type
@@ -109,6 +109,7 @@ equalTypes s (Rec _ (KBind _ x _) t) (Rec _ (KBind _ y _) u) = equalTypes (Map.i
 equalTypes s (Var _ x)        (Var _ y)        = equalVars (Map.lookup x s) x y
   -- Type operators
 equalTypes s (Dualof _ t)     (Dualof _ u)     = t == u
+equalTypes s (Name _ x)       (Name _ y)       = x == y
   -- Otherwise
 equalTypes _ _              _                  = False
 
@@ -135,10 +136,11 @@ instance Show Type where
   show (Choice _ v m)   = show v ++ "{" ++ showMap m ++ "}"
   show (Rec _ x t)      = "(rec " ++ show x ++ " . " ++ show t ++ ")"
   -- Functional or session
-  show (Var _ s)        = s
+  show (Var _ x)        = x
   -- Type operators
   show (Dualof _ s)     = "(dualof " ++ show s ++ ")"
-
+  show (Name _ x)       = x
+  
 showFunOp :: Multiplicity -> String
 showFunOp Lin = " -o "
 showFunOp Un  = " -> "
@@ -167,18 +169,16 @@ instance Position Type where
   position (Var p _)        = p
   -- Type operators
   position (Dualof p _)     = p
+  position (Name p _)       = p
 
-instance Dual Type where -- Assume that the type is a session type
+instance Dual Type where
   -- Session types
-  dual (Skip p)        = Skip p
   dual (Semi p t1 t2)  = Semi p (dual t1) (dual t2)
   dual (Message p v b) = Message p (dual v) b
   dual (Choice p v m)  = Choice p (dual v) (Map.map dual m)
   dual (Rec p x t)     = Rec p x (dual t)
-  -- Functional or session
-  dual (Var p v)       = Var p v
-  -- Type operators
-  dual (Dualof _ t)    = t
+  -- Skip, functional or session,  type operators
+  dual t               = t
 
 -- KINDED BIND
 
@@ -222,30 +222,40 @@ unfold (Rec p x t) = subs (Rec p x t) x t
 
 -- [u/x]t, substitute u for x on t
 subs :: Type -> KBind -> Type -> Type 
+  -- Functional types
 subs t y (Fun p m t1 t2)    = Fun p m (subs t y t1) (subs t y t2)
 subs t y (PairType p t1 t2) = PairType p (subs t y t1) (subs t y t2)
 subs t y (Datatype p m)     = Datatype p (Map.map(subs t y) m)
+  -- Session types
 subs t y (Semi p t1 t2)     = Semi p (subs t y t1) (subs t y t2)
 subs t y (Choice p v m)     = Choice p v (Map.map(subs t y) m)
 subs t2 y (Rec p x t1)      -- Assume y /= x
   | x == y                  = Rec p x t1
   | otherwise               = Rec p x (subs t2 y t1)
+  -- Functional or session
 subs t (KBind _ y _) (Var p x)
-    | x == y                = t
-    | otherwise             = Var p x
+  | x == y                  = t
+  | otherwise               = Var p x
+  -- Type operators  
 subs t y (Dualof p t1)      = Dualof p (subs t y t1)
+  -- Otherwise: Basic, Skip, Message, Name
 subs _ _ t                  = t
 
 -- SESSION TYPES
 
 -- Is this type a pre session type? (a session type that is
 -- syntactically correct, but not necessarilty well-kinded)
--- isPreSession :: Type -> KindEnv -> Bool -- TODO: import loop
-isPreSession :: Type -> Map.Map Bind Kind -> Bool
+isPreSession :: Type -> KindEnv -> Bool
+  -- Session types
 isPreSession (Skip _) _        = True
 isPreSession (Semi _ _ _) _    = True
 isPreSession (Message _ _ _) _ = True
-isPreSession (Choice _ _ _) _ = True
-isPreSession (Rec _ _ _) _ = True
+isPreSession (Choice _ _ _) _  = True
+isPreSession (Rec _ _ _) _     = True
+  -- Functional or session
 isPreSession (Var p x) kenv    = Map.member (Bind p x) kenv
-isPreSession _ _ = False
+  -- Type operators
+isPreSession (Dualof _ _) _    = True
+-- isPreSession (Name _ c) = ... TODO: requires a TypeEnv
+  -- Otherwise: Functional types
+isPreSession _ _               = False

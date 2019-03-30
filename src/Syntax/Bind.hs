@@ -19,9 +19,9 @@ module Syntax.Bind
 
 import Parse.Lexer (Position, Pos, position)
 
-type Var = String -- lowercase
+type Var = String -- lowercase, a type or expr variable
 
-type Cons = String -- uppercase
+type Cons = String -- uppercase, a type constructor or a label in a record
 
 -- Bindings
 

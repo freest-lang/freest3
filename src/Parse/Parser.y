@@ -135,8 +135,8 @@ Decl :: { () }
     {% do
        checkDupTypeDecl $2
        let bs = typesToFun $2 $5
+       mapM_ (\(b, t) -> addToVenv b (TypeScheme (position t) [] t)) bs
        addToTenv $2 (TypeScheme (position $2) $3 (Datatype (position $2) (Map.fromList bs)))
-       addListToVenv bs
     }
 
 DataCons :: { [(Bind, [Type])] }
@@ -379,25 +379,5 @@ parseError xs = do
   f <- getFileName
   error $ styleError f p [styleRed "error\n\t", "parse error on input", styleRed $ "'" ++ show (head xs) ++ "'"]
  where p = position (head xs)
-
-
--- tmp move to state
--- maybe refactor addType & addTypeScheme and then use uncurry
-addListToTenv :: [(KBind,Type)] -> FreestState ()
-addListToTenv = mapM_ (\(b, t) -> addToTenv b (TypeScheme (position t) [] t))
-
-addListToVenv :: [(Bind,Type)] -> FreestState ()
-addListToVenv = mapM_ (\(b, t) -> addToVenv b (TypeScheme (position t) [] t))
-
--- Converting a list of types 
-  
-typesToFun :: KBind -> [(Bind, [Type])] -> [(Bind, Type)]
-typesToFun (KBind p x _) =
-  map (\(k,ts) -> (k, typeToFun p x ts))
-  where
-    typeToFun :: Pos -> TypeVar -> [Type] -> Type
-    typeToFun p c = foldr (\acc t -> Fun (position t) Un t acc) (Var p c)
-    -- typeToFun p c [] = (Var p c)
-    -- typeToFun p c (x:xs) = Fun (position x) Un x (typeToFun p c xs)
 
 }

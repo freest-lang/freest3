@@ -39,14 +39,14 @@ type FreestState = State FreestS
 
 -- | Initial State
 
-initialState :: String -> FreestS
-initialState f = FreestS {filename=f,
-                          varEnv=Map.empty,
-                          expEnv=Map.empty,
-                          consEnv=Map.empty,
-                          kindEnv=Map.empty,
-                          errors=[],
-                          fv=0}
+initialState :: String -> FreestSn
+initialState f = FreestS {filename = f,
+                          varEnv = Map.empty,
+                          expEnv = Map.empty,
+                          consEnv = Map.empty,
+                          kindEnv = Map.empty,
+                          errors = [],
+                          fv = 0}
 
 -- | FILE NAME
 
