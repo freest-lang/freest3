@@ -68,8 +68,8 @@ checkDataDecl = do
   mapM_ checkFunctionalKind kenv
   tenv <- getTenv
   -- mapM_ K.kinding tenv
-  mapWithKeyM (\(KBind p x k) t -> addToKenv (Bind p x) k) tenv
-  mapWithKeyM (\(KBind p x k) t -> K.kinding t) tenv
+  mapWithKeyM (\(Bind p x) (k,t) -> addToKenv (Bind p x) k) tenv
+  mapWithKeyM (\(Bind p x) (k,t) -> K.kinding t) tenv
   return ()
 
 checkFunctionalKind :: Kind -> FreestState ()

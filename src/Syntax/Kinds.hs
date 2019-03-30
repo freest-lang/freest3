@@ -71,9 +71,9 @@ instance Position Kind where
 
 -- The least upper bound of two kinds
 lub :: Kind -> Kind -> Kind
-lub (Kind p Functional Un) (Kind _ Session   Lin) = top p
-lub (Kind p Session   Lin) (Kind _ Functional Un) = top p
-lub k1                     k2                     = max k1 k2
+lub (Kind p Functional Un)  (Kind _ Session    Lin) = top p
+lub (Kind p Session    Lin) (Kind _ Functional Un)  = top p
+lub k1                      k2                       = max k1 k2
 
 -- The kind that seats at the top of the hierarchy (use as a default value)
 top :: Pos -> Kind

@@ -3,6 +3,8 @@ module CodeGen.DatatypeGen (genDataTypes) where
 
 import           Syntax.Programs
 import           Syntax.Types
+import           Syntax.Kinds
+import           Syntax.Bind
 import           Data.List
 import qualified Data.Map.Strict as Map
 
@@ -11,9 +13,9 @@ import qualified Data.Map.Strict as Map
 genDataTypes :: TypeEnv -> String
 genDataTypes = Map.foldlWithKey (\acc k v -> acc ++ showElem k v ++ "\n") ""
 
-showElem :: KBind -> TypeScheme -> String
-showElem (KBind _ x _) (TypeScheme _ _ (Datatype _ m)) = showDatatype x m
-showElem (KBind _ x _) (TypeScheme _ _ t)              = showTypeAbbr x t
+showElem :: Bind -> (Kind, TypeScheme) -> String
+showElem (Bind _ x) (_, (TypeScheme _ _ (Datatype _ m))) = showDatatype x m
+showElem (Bind _ x) (_, (TypeScheme _ _ t))              = showTypeAbbr x t
 
 
 showDatatype :: TypeVar -> TypeMap -> String

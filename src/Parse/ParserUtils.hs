@@ -73,19 +73,19 @@ checkDupFunSig b = do
   m <- getVenv
   case m Map.!? b of
     Just a  ->
-      addError (position a) ["Duplicate type signatures for function", styleRed (show b),
-                             "\n\t Declared at:", showPos (position a), "\n",
+      addError (position a) ["Duplicate type signatures for function", styleRed (show b), "\n",
+                             "\t Declared at:", showPos (position a), "\n",
                              "\t             ", showPos (position b)]
     Nothing -> return ()
 
-checkDupTypeDecl :: KBind -> FreestState ()  
+checkDupTypeDecl :: Bind -> FreestState ()  
 checkDupTypeDecl b = do
   m <- getTenv
   case m Map.!? b of
-    Just a  ->
-      addError (position a) ["Multiple declarations of type", styleRed (show b),
-                             "\n\t Declared at:", showPos (position a), "\n",
-                               "\t             ", showPos (position b)]
+    Just (a, _) ->
+      addError (position a) ["Multiple declarations of type", styleRed (show b), "\n",
+                             "\t Declared at:", showPos (position a), "\n",
+                             "\t             ", showPos (position b)]
     Nothing -> return ()
 
 checkDupFunDecl :: Bind -> FreestState ()
@@ -94,30 +94,18 @@ checkDupFunDecl b = do
   when (b `Map.member` m) $
     addError (position b) ["Multiple declarations of function", styleRed (show b)]
 
-checkDupTypeBind :: KBind -> FreestState ()
+checkDupTypeBind :: Bind -> FreestState ()
 checkDupTypeBind b = do
   m <- getTenv
   case m Map.!? b of
-    Just a  ->
-      addError (position a) ["Multiple declarations of type",
-                             "\n\t Declared at:", showPos (position a), "\n",
+    Just (a, _)  ->
+      addError (position a) ["Multiple declarations of type\n",
+                             "\t Declared at:", showPos (position a), "\n",
                              "\t             ", showPos (position b)]
     Nothing -> return ()  
 
--- Verifies collisions with other datatypes and within the same datatype 
-{-
-checkClashes :: Bind -> [(Bind, Type)] -> FreestState ()
-checkClashes (Bind p c) bs = do
-  mapM_ (\(Bind p b, _)  -> checkDup (Bind p b) (err b)) bs
+-- OPERATORS
 
-  let clash = bs \\ nub bs
-  if not (null clash) then
-     mapM_ (\(Bind p b, _) -> addError p [err b]) clash
-  else
-    return ()
-  where
-    err c = "Multiple declarations of '" ++ styleRed c ++ "'"    
--}
 type Op = String
 
 binOp :: Pos -> Expression -> Op -> Expression -> Expression
@@ -129,8 +117,8 @@ unOp pos op expr =
   App (position expr) (Variable pos op) expr
 
 -- Convert a list of types and a final type constructor to a type
-typesToFun :: KBind -> [(Bind, [Type])] -> [(Bind, Type)]
-typesToFun (KBind p x _) = map (\(k, ts) -> (k, typeToFun (Var p x) ts))
+typesToFun :: Bind -> [(Bind, [Type])] -> [(Bind, Type)]
+typesToFun (Bind p x) = map (\(k, ts) -> (k, typeToFun (Var p x) ts))
   where
     typeToFun :: Type -> [Type] -> Type
     typeToFun = foldr (\acc t -> Fun (position t) Un t acc)
