@@ -82,9 +82,10 @@ data Type =
   | Choice Pos Polarity TypeMap
   | Rec Pos KBind Type
   -- Functional or session
-  | Var Pos TypeVar
+  | Var Pos TypeVar -- a recursion variable if bound, polymorphic otherwise
   -- Type operators
   | Dualof Pos Type
+  | Name Pos Cons
   deriving Ord
 
 type TypeMap = Map.Map Bind Type

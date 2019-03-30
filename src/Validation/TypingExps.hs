@@ -131,7 +131,7 @@ synthetize (Match p e m) = do
   setVenv v
   return t
 
--- synthetize (Constructor p c) = checkVar p c >>= \(TypeScheme _ _ t) -> return t
+-- synthetize (Cons p c) = checkVar p c >>= \(TypeScheme _ _ t) -> return t
 
 synthetize (Fork p e) = do
   t <- synthetize e
