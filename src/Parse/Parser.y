@@ -160,10 +160,10 @@ Expr :: { Expression }
   | new Type                                 { New (position $1) $2 }
   | match Expr with '{' MatchMap '}'         { Match (position $1) $2 $5 }
   | case Expr of '{' CaseMap '}'             { Case (position $1) $2 $5 }
-  | Expr '*' Expr                            { binOp $1 (position $2) "(*)" $3 }
-  | Expr '+' Expr                            { binOp $1 (position $2) "(+)" $3 }
-  | Expr '-' Expr                            { binOp $1 (position $2) "(-)" $3 }
-  | Expr OP Expr                             { binOp $1 (position $2) (getText $2) $3 }
+  | Expr '*' Expr                            { binOp (position $2) $1 "(*)" $3 }
+  | Expr '+' Expr                            { binOp (position $2) $1 "(+)" $3 }
+  | Expr '-' Expr                            { binOp (position $2) $1 "(-)" $3 }
+  | Expr OP Expr                             { binOp (position $2) $1 (getText $2) $3 }
   | App                                      { $1 }
 
 App :: { Expression }
