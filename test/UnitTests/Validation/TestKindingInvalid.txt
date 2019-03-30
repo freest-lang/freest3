@@ -1,17 +1,33 @@
--- No duplicate labels in records
+-- Duplicate labels in records
 
-+{ A: Unit, A: Bool }
-+{ A: Unit, A: Bool, B: Int }
-+{ A: Unit, B: Int, A: Bool }
-+{ A: Unit, B: Int, B: Int, A: Bool }
-&{ A: Unit, A: Bool }
-&{ A: Unit, A: Bool, B: Int }
-&{ A: Unit, B: Int, A: Bool }
-&{ A: Unit, B: Int, B: Int, A: Bool }
++{ A: !(), A: !Bool }
++{ A: !(), A: !Bool, B: ?Int }
++{ A: !(), B: ?Int, A: ?Bool }
++{ A: !(), B: ?Int, B: ?Int, A: ?Bool }
+&{ A: !(), A: ?Bool }
+&{ A: !(), A: ?Bool, B: ?Int }
+&{ A: !(), B: ?Int, A: ?Bool }
+&{ A: !(), B: ?Int, B: ?Int, A: ?Bool }
+
+-- Rec stuff
 
 rec x . x; !Int
 rec x . x
-
 rec x . dualof x
+rec x . dualof dualof x  
+rec x . (dualof dualof x); &{ A: !(), B: ?Int }
+rec x .  dualof dualof  dualof dualof  dualof dualof  dualof dualof  dualof dualof x 
 
-rec x . Skip; dualof x
+-- Functional vs Session
+
+!Int ; Int -> Int
+!Int ; (Int, Bool)
+Int -> Int ; !Int
+(Int, Bool) ; !Int
+rec x : SL . Int -> Int ; x 
+rec x : SU . Int -> Int ; x 
+rec x : TU . !Int ; x 
+rec x : TL . !Int ; x 
++{ A: () }
++{ A: () -> Bool }
+

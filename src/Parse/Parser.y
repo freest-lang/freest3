@@ -125,20 +125,17 @@ NL :: { () }
   | nl    {}
 
 Decl :: { () }
-  : VarBind ':' TypeScheme -- Function signature
+  : VarBind ':' TypeScheme                      -- Function signature
     {% checkDupFunSig $1 >> addToVenv $1 $3 }
-  | VarBind VarBindSeq '=' Expr -- Function declaration
+  | VarBind VarBindSeq '=' Expr                 -- Function declaration
     {% checkDupFunDecl $1 >> addToEenv $1 ($2, $4) }
-  | type TypeBind KindVarEmptyList '=' Type -- Type abbreviation
+  | type TypeBind KindVarEmptyList '=' Type     -- Type abbreviation
     {% checkDupTypeDecl $2 >> addToTenv $2 (TypeScheme (position $1) $3 $5) }
-  | data TypeBind KindVarEmptyList '=' DataCons
+  | data TypeBind KindVarEmptyList '=' DataCons -- Datatype declaration
     {% do
        checkDupTypeDecl $2
        let bs = typesToFun $2 $5
        addToTenv $2 (TypeScheme (position $2) $3 (Datatype (position $2) (Map.fromList bs)))
---       checkClashes $2 bs
---       addToKenv $2 (Kind (position $1) Functional Un)
---       addListToTenv bs
        addListToVenv bs
     }
 
@@ -160,10 +157,10 @@ Expr :: { Expression }
   | new Type                                 { New (position $1) $2 }
   | match Expr with '{' MatchMap '}'         { Match (position $1) $2 $5 }
   | case Expr of '{' CaseMap '}'             { Case (position $1) $2 $5 }
-  | Expr '*' Expr                            { binOp $1 (position $2) "(*)" $3 }
-  | Expr '+' Expr                            { binOp $1 (position $2) "(+)" $3 }
-  | Expr '-' Expr                            { binOp $1 (position $2) "(-)" $3 }
-  | Expr OP Expr                             { binOp $1 (position $2) (getText $2) $3 }
+  | Expr '*' Expr                            { binOp (position $2) $1 "(*)" $3 }
+  | Expr '+' Expr                            { binOp (position $2) $1 "(+)" $3 }
+  | Expr '-' Expr                            { binOp (position $2) $1 "(-)" $3 }
+  | Expr OP Expr                             { binOp (position $2) $1 (getText $2) $3 }
   | App                                      { $1 }
 
 App :: { Expression }
@@ -237,9 +234,9 @@ Multiplicity :: { (Pos, Multiplicity) }
   : '->' { (position $1, Un) }
   | '-o' { (position $1, Lin) }
 
-ChoiceView :: { (Pos, ChoiceView) }
-  : '+' { (position $1, Internal) }
-  | '&' { (position $1, External) }
+ChoiceView :: { (Pos, Polarity) }
+  : '+' { (position $1, Out) }
+  | '&' { (position $1, In) }
   
 FieldList :: { TypeMap }
   : Field               { uncurry Map.singleton $1 }
@@ -333,7 +330,6 @@ parseTypeScheme s = fst $ runState (parse s) (initialState "")
 instance Read TypeScheme where
   readsPrec _ s = [(parseTypeScheme s, "")] 
 
--- TODO: move to kinds ??
 instance Read Kind where
   readsPrec _ s = -- [(parseKind s, "")]
     tryParse [("SL", Kind defaultPos Session Lin),

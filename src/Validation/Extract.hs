@@ -121,9 +121,9 @@ extractInput t =  do
 extractInChoice :: Type -> FreestState Type
 extractInChoice t = do
   normType t >>= \case
-    c@(Choice _ Internal _)   -> return c
-    (Semi _ (Choice p Internal m) u) -> 
-       return $ Choice p Internal (Map.map (\v -> Semi (position v) v u) m)
+    c@(Choice _ Out _)   -> return c
+    (Semi _ (Choice p Out m) u) -> 
+       return $ Choice p Out (Map.map (\v -> Semi (position v) v u) m)
     u                         -> do
       addError (position u) ["Expecting an internal choice; found", styleRed $ show u]
       return $ Skip (position u)
@@ -133,9 +133,9 @@ extractInChoice t = do
 extractExtChoice :: Type -> FreestState Type
 extractExtChoice t = do
   normType t >>= \case
-    c@(Choice _ External _)   -> return c
-    (Semi _ (Choice p External m) u) -> 
-       return $ Choice p External (Map.map (\v -> Semi (position v) v u) m)
+    c@(Choice _ In _)   -> return c
+    (Semi _ (Choice p In m) u) -> 
+       return $ Choice p In (Map.map (\v -> Semi (position v) v u) m)
     u                         -> do
       addError (position u) ["Expecting an external choice; found", styleRed $ show u]
       return $ Skip (position u)
@@ -146,8 +146,8 @@ extractExtChoice t = do
 extractExtChoiceMap :: Type -> FreestState TypeMap
 extractExtChoiceMap t = do
   normType t >>= \case
-    (Choice _ External m)            -> return m
-    (Semi _ (Choice _ External m) u) -> return $ Map.map (\v -> Semi (position v) v u) m
+    (Choice _ In m)            -> return m
+    (Semi _ (Choice _ In m) u) -> return $ Map.map (\v -> Semi (position v) v u) m
     u                                -> do
       addError (position u) ["Expecting an external choice; found", styleRed $ show u]
       return $ Map.empty

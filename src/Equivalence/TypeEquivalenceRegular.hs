@@ -25,7 +25,7 @@ import           Validation.Kinding
 
 data Label = OutLabel BasicType |
              InLabel BasicType |
-             ChoiceLabel ChoiceView TypeVar |
+             ChoiceLabel Polarity TypeVar |
              VarLabel TypeVar
              deriving (Eq, Ord, Show)
 

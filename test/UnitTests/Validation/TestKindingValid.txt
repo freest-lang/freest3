@@ -62,12 +62,12 @@ rec x . (Skip; (Skip; Skip); Skip)
   SU
   
 rec x . (Skip; x)
-  SU
-  
-rec x . (Skip; x)
   SL
   
-rec x . (Skip; ((Skip; x); Skip); Skip)
+rec x : SU . (Skip; x)
+  SU
+  
+rec x : SU . (Skip; ((Skip; x); Skip); Skip)
   SU
   
 rec x . (Skip; ((Skip; x); Skip); Skip)
@@ -167,11 +167,17 @@ rec b : TU . (b, !Int)
 rec x . dualof !Int
   SL
 
-rec x . dualof !Int
+rec x : SU . (dualof Skip) ; x 
   SU
 
-rec x . (dualof Skip) ; x
+rec x : SU . dualof (Skip ; x) 
   SU
+
+rec x : SU . dualof (Skip ; x) 
+  SL
+
+rec x  . (dualof Skip) ; x 
+  SL
 
 rec x . dualof (Skip ; x) 
-  SU
+  SL

@@ -35,22 +35,17 @@ import           Data.List (nub, (\\), intercalate, find)
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map 
 
-
-checkDupField :: Position a => Bind -> Map.Map Bind a -> FreestState ()
+checkDupField :: Bind -> TypeMap -> FreestState ()
 checkDupField b m =
-  if b `Map.member` m
-  then addError (position b)
-        ["Duplicated field name", "\n",
-         "\t In a choice type:", styleRed (show b), ": ..."]
-  else return ()
+  when (b `Map.member` m) $
+    addError (position b) ["Duplicated field name", "\n",
+                           "\t In a choice type:", styleRed (show b), ": ..."]
 
 checkDupMatch :: Bind -> Map.Map Bind a -> FreestState () 
 checkDupMatch b m =
-  if b `Map.member` m
-  then addError (position b)
-        ["Pattern match is redundant", "\n",
-         "\t In a case alternative:", styleRed (show b), "-> ..."]
-  else return ()
+  when (b `Map.member` m) $
+    addError (position b) ["Pattern match is redundant", "\n",
+                           "\t In a case alternative:", styleRed (show b), "-> ..."]
 
 checkDupBind :: Bind -> [Bind] -> FreestState ()
 checkDupBind b bs =
@@ -124,8 +119,8 @@ checkClashes (Bind p c) bs = do
 -}
 type Op = String
 
-binOp :: Expression -> Pos -> Op -> Expression -> Expression
-binOp left pos op right =
+binOp :: Pos -> Expression -> Op -> Expression -> Expression
+binOp pos left op right =
   App (position left) (App (position left) (Variable pos op) left) right
 
 unOp :: Pos -> Op -> Expression -> Expression

@@ -21,7 +21,7 @@ spec = do
   let treeChannelRead = "rec treeChannel . +{Leaf:Skip,Node:!Int;treeChannel;treeChannel}"
   let treeChannelType =
         (Rec p (kBind "treeChannel")
-          (Choice p Internal $ Map.fromList
+          (Choice p Out $ Map.fromList
            [(Bind p "Leaf", Skip p),
             (Bind p "Node", (Semi p (Semi p (Message p Out IntType) (Var p "treeChannel")) (Var p "treeChannel")))]))
 
@@ -50,9 +50,9 @@ spec = do
       (read "(Int,Int)" :: Type) `shouldBe` (PairType p (Basic p IntType) (Basic p IntType))
 
     it "&{A:?Int,A:!Bool}" $ do
-      (read "&{A:?Int,B:!Bool}" :: Type) `shouldBe` (Choice p External (Map.fromList [(Bind p "A",Message p In IntType),(Bind p "B",Message p Out BoolType)]))      
+      (read "&{A:?Int,B:!Bool}" :: Type) `shouldBe` (Choice p In (Map.fromList [(Bind p "A",Message p In IntType),(Bind p "B",Message p Out BoolType)]))      
     it "+{A:!Int,B:?Bool}" $ do
-      (read "+{A:!Int,B:?Bool}" :: Type) `shouldBe` (Choice p Internal (Map.fromList [(Bind p "A",Message p Out IntType),(Bind p "B",Message p In BoolType)]))
+      (read "+{A:!Int,B:?Bool}" :: Type) `shouldBe` (Choice p Out (Map.fromList [(Bind p "A",Message p Out IntType),(Bind p "B",Message p In BoolType)]))
     it "[A:Int,B:Bool]" $ do
       (read "[A:Int,B:Bool]" :: Type) `shouldBe` (Datatype p (Map.fromList [(Bind p "A",Basic p IntType),(Bind p "B",Basic p BoolType)]))
     it "rec a.Bool" $ do
@@ -87,7 +87,7 @@ spec = do
       (read "rec a . a" :: Type) `shouldBe` (Rec p (kBind "a") (Var p "a"))
 
     it "+{I : !Int, B : !Bool}" $ do
-      (read "+{I : !Int, B : !Bool}" :: Type) `shouldBe` (Choice p Internal (Map.fromList [(Bind p "I",Message p Out IntType),(Bind p "B",Message p Out BoolType)]))
+      (read "+{I : !Int, B : !Bool}" :: Type) `shouldBe` (Choice p Out (Map.fromList [(Bind p "I",Message p Out IntType),(Bind p "B",Message p Out BoolType)]))
     
   describe "Nested operators" $ do
     it "((Int,Bool),Char)" $ do
@@ -131,14 +131,14 @@ spec = do
   describe "Remote tree transformation (Listing 2)" $ do
     let xFormChanRead = "rec xFormChan . +{Leaf:Skip,Node:!Int;xFormChan;xFormChan;?Int}"
     let xFormChanType = (Rec p (kBind "xFormChan")
-                         (Choice p Internal $ Map.fromList
+                         (Choice p Out $ Map.fromList
                           ([(Bind p "Leaf",Skip p),
                             (Bind p "Node", (Semi p (Semi p (Semi p (Message p Out IntType)(Var p "xFormChan"))
                                             (Var p "xFormChan")) (Message p In IntType)))])))
 
     let xFormChanDualRead = "rec xFormChan . &{Leaf:Skip,Node:?Int;xFormChan;xFormChan;!Int}"
     let xFormChanDualType = (Rec p (kBind "xFormChan")
-                             (Choice p External $ Map.fromList
+                             (Choice p In $ Map.fromList
                               ([(Bind p "Leaf",Skip p),
                                 (Bind p "Node", (Semi p (Semi p (Semi p (Message p In IntType)(Var p "xFormChan"))
                                                 (Var p "xFormChan")) (Message p Out IntType)))])))
@@ -152,14 +152,14 @@ spec = do
   describe "Arithmetic expression server (Listing 3)" $ do
     let termChanRead = "rec termChan . +{Const:!Int,Add:termChan;termChan,Mult:termChan;termChan}"
     let termChanType = (Rec p (kBind "termChan")
-                        (Choice p Internal $ Map.fromList (
+                        (Choice p Out $ Map.fromList (
                             [(Bind p "Const",(Message p Out IntType)),
                              (Bind p "Add",(Semi p (Var p "termChan")(Var p "termChan"))),
                              (Bind p "Mult",(Semi p (Var p "termChan")(Var p "termChan")))])))
 
     let termChanDualRead = "rec termChan . &{Const:?Int,Add:termChan;termChan,Mult:termChan;termChan}"
     let termChanDualType = (Rec p (kBind "termChan")
-                            (Choice p External $ Map.fromList (
+                            (Choice p In $ Map.fromList (
                                 [(Bind p "Const",(Message p In IntType)),
                                  (Bind p "Add",(Semi p (Var p "termChan")(Var p "termChan"))),
                                  (Bind p "Mult",(Semi p (Var p "termChan")(Var p "termChan")))])))
@@ -182,7 +182,7 @@ spec = do
   describe "Lazy tree traversal (Listing 4)" $ do
     let xploreTreeChanRead = "rec xFormChan . +{Leaf:Skip,Node:!Int;xFormChan;xFormChan;?Int}"
     let xploreTreeChanType = (Rec p (kBind "xFormChan")
-                              (Choice p Internal $ Map.fromList
+                              (Choice p Out $ Map.fromList
                                ([(Bind p "Leaf", Skip p),
                                  (Bind p "Node", (Semi p (Semi p (Semi p (Message p Out IntType) (Var p "xFormChan")) (Var p "xFormChan")) (Message p In IntType)))])))
 
@@ -190,7 +190,7 @@ spec = do
 
     let xploreNodeChanType =
           (Rec p (kBind "xPloreNodeChan")
-           (Choice p Internal $ Map.fromList (
+           (Choice p Out $ Map.fromList (
                [(Bind p "Value", (Semi p (Message p Out IntType)(Var p "xPloreNodeChan"))),
                 (Bind p "Left", (Semi p (xploreTreeChanType)(Var p "xPloreNodeChan"))),
                 (Bind p "Right", (Semi p (xploreTreeChanType)(Var p "xPloreNodeChan"))),

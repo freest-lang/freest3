@@ -113,10 +113,10 @@ toGrammar (Choice _ c m) = do
   mapM_ (assocToGrammar y c) (Map.assocs m)
   return [y]
 
-assocToGrammar :: TypeVar -> ChoiceView -> (Bind, Type) -> TransState ()
-assocToGrammar y c (Bind _ l, t) = do
+assocToGrammar :: TypeVar -> Polarity -> (Bind, Type) -> TransState ()
+assocToGrammar y p (Bind _ l, t) = do
   xs <- toGrammar t
-  addProduction y (ChoiceLabel c l) xs
+  addProduction y (ChoiceLabel p l) xs
 
 isChecked :: Type -> Visited -> Bool
 isChecked (Skip _) _     = True
