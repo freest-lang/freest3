@@ -16,14 +16,12 @@ module Syntax.Types
 , KBind(..)
 , BasicType(..)
 , TypeMap(..)
-, ChoiceView(..)
 , Polarity(..)
 , Type(..)
 , TypeScheme(..)
 , dual
 , toList -- TODO: not quite sure this belongs here
 , unfold
---, rename
 , subs
 , isPreSession
 ) where
@@ -44,17 +42,6 @@ data Polarity =
 instance Show Polarity where
   show In = "?"
   show Out = "!"
-
--- CHOICE
-
-data ChoiceView =
-    External
-  | Internal
-  deriving (Eq, Ord)
-
-instance Show ChoiceView where
-  show External = "&"
-  show Internal = "+"
 
 -- BASIC TYPES
 
@@ -85,9 +72,9 @@ data Type =
   | Skip Pos
   | Semi Pos Type Type
   | Message Pos Polarity BasicType
-  | Choice Pos ChoiceView TypeMap
+  | Choice Pos Polarity TypeMap
   | Rec Pos KBind Type
-  -- Functional or Session
+  -- Functional or session
   | Var Pos TypeVar
   -- Type operators
   | Dualof Pos Type
@@ -98,17 +85,22 @@ instance Eq Type where
   (==) = equalTypes Map.empty
 
 equalTypes :: Map.Map TypeVar TypeVar -> Type -> Type -> Bool
-equalTypes s (Skip _)         (Skip _)         = True
-equalTypes s (Var _ x)        (Var _ y)        = equalVars (Map.lookup x s) x y
-equalTypes s (Rec _ (KBind _ x _) t) (Rec _ (KBind _ y _) u) = equalTypes (Map.insert x y s) t u
-equalTypes s (Semi _ t1 t2)   (Semi _ u1 u2)   = equalTypes s t1 u1 && equalTypes s t2 u2
+  -- Functional types
 equalTypes s (Basic _ x)      (Basic _ y)      = x == y
-equalTypes s (Message _ p x)  (Message _ q y)  = p == q && x == y
 equalTypes s (Fun _ m t u)    (Fun _ n v w)    = m == n && equalTypes s t v && equalTypes s u w
 equalTypes s (PairType _ t u) (PairType _ v w) = equalTypes s t v && equalTypes s u w
 equalTypes s (Datatype _ m1)  (Datatype _ m2)  = equalMaps s m1 m2
+  -- Session types
+equalTypes s (Skip _)         (Skip _)         = True
+equalTypes s (Semi _ t1 t2)   (Semi _ u1 u2)   = equalTypes s t1 u1 && equalTypes s t2 u2
+equalTypes s (Message _ p x)  (Message _ q y)  = p == q && x == y
 equalTypes s (Choice _ v1 m1) (Choice _ v2 m2) = v1 == v2 && equalMaps s m1 m2
+equalTypes s (Rec _ (KBind _ x _) t) (Rec _ (KBind _ y _) u) = equalTypes (Map.insert x y s) t u
+  -- Functional or session
+equalTypes s (Var _ x)        (Var _ y)        = equalVars (Map.lookup x s) x y
+  -- Type operators
 equalTypes s (Dualof _ t)     (Dualof _ u)     = t == u
+  -- Otherwise
 equalTypes _ _              _                  = False
 
 equalVars :: Maybe TypeVar -> TypeVar -> TypeVar -> Bool
@@ -122,21 +114,29 @@ equalMaps s m1 m2 =
       b && l `Map.member` m2 && equalTypes s t (m2 Map.! l)) True m1
 
 instance Show Type where
+  -- Functional types
   show (Basic _ b)      = show b
+  show (Fun _ m t u)    = "(" ++ show t ++ showFunOp m ++ show u ++ ")"
+  show (PairType _ t u) = "(" ++ show t ++ ", " ++ show u ++ ")"
+  show (Datatype _ m)   = "["++ showMap m ++"]"
+  -- Session types
   show (Skip _)         = "Skip"
   show (Semi _ t u)     = "(" ++ show t ++ ";" ++ show u ++ ")"
   show (Message _ p b)  = show p ++ show b
-  show (Fun _ m t u)    = "(" ++ show t ++ showFunOp m ++ show u ++ ")"
-  show (PairType _ t u) = "(" ++ show t ++ ", " ++ show u ++ ")"
   show (Choice _ v m)   = show v ++ "{" ++ showMap m ++ "}"
-  show (Datatype _ m)   = "["++ showMap m ++"]"
   show (Rec _ x t)      = "(rec " ++ show x ++ " . " ++ show t ++ ")"
+  -- Functional or session
   show (Var _ s)        = s
-  show (Dualof _ s)     = "dualof " ++ show s
+  -- Type operators
+  show (Dualof _ s)     = "(dualof " ++ show s ++ ")"
 
 showFunOp :: Multiplicity -> String
 showFunOp Lin = " -o "
 showFunOp Un  = " -> "
+
+showChoice :: Polarity -> String
+showChoice In  = "&"
+showChoice Out = "+"
 
 showMap :: TypeMap -> String
 showMap m = concat $ intersperse ", " (map showAssoc (Map.assocs m))
@@ -192,8 +192,8 @@ instance Position TypeScheme where
 dual :: Type -> Type
 dual (Var p v)       = Var p v
 dual (Skip p)        = Skip p
-dual (Message p q b) = Message p (dualPolarity q) b
-dual (Choice p v m)  = Choice p (dualView v) (Map.map dual m)
+dual (Message p v b) = Message p (dualPolarity v) b
+dual (Choice p v m)  = Choice p (dualPolarity v) (Map.map dual m)
 dual (Semi p t1 t2)  = Semi p (dual t1) (dual t2)
 dual (Rec p x t)     = Rec p x (dual t)
 dual (Dualof _ t)    = t
@@ -202,9 +202,9 @@ dualPolarity :: Polarity -> Polarity
 dualPolarity In  = Out
 dualPolarity Out = In
 
-dualView :: ChoiceView -> ChoiceView
-dualView External = Internal
-dualView Internal = External
+-- dualView :: ChoiceView -> ChoiceView
+-- dualView External = Internal
+-- dualView Internal = External
 
 toList :: TypeScheme -> [TypeScheme] -- TODO: what for?
 toList (TypeScheme p b (Fun _ _ t1 t2)) = (TypeScheme p b t1) : toList (TypeScheme p b t2)

@@ -237,9 +237,9 @@ Multiplicity :: { (Pos, Multiplicity) }
   : '->' { (position $1, Un) }
   | '-o' { (position $1, Lin) }
 
-ChoiceView :: { (Pos, ChoiceView) }
-  : '+' { (position $1, Internal) }
-  | '&' { (position $1, External) }
+ChoiceView :: { (Pos, Polarity) }
+  : '+' { (position $1, Out) }
+  | '&' { (position $1, In) }
   
 FieldList :: { TypeMap }
   : Field               { uncurry Map.singleton $1 }
