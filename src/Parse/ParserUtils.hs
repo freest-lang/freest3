@@ -26,7 +26,7 @@ module Parse.ParserUtils
 
 import           Parse.Lexer (Position, Pos, position, defaultPos, showPos)
 import           Syntax.Programs (VarEnv)
-import           Syntax.Exps (Expression(..))
+import           Syntax.Expression (Expression(..))
 import           Syntax.Types (TypeMap, KBind(..), Type(..))
 import           Syntax.Bind (Var, Bind(..))
 import           Syntax.Kinds (Multiplicity(..))

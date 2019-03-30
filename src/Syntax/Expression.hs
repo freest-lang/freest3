@@ -11,7 +11,7 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-module Syntax.Exps
+module Syntax.Expression
 ( Expression(..)
 , TermVar
 , CaseMap

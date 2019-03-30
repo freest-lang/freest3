@@ -15,7 +15,7 @@ module Utils.FreestState where
 
 import           Parse.Lexer (Pos)
 import           Syntax.Programs
-import           Syntax.Exps
+import           Syntax.Expression
 import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.Bind
@@ -39,7 +39,7 @@ type FreestState = State FreestS
 
 -- | Initial State
 
-initialState :: String -> FreestSn
+initialState :: String -> FreestS
 initialState f = FreestS {filename = f,
                           varEnv = Map.empty,
                           expEnv = Map.empty,

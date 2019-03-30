@@ -18,7 +18,7 @@ module Validation.Typing
 
 import           Parse.Lexer (position, defaultPos)
 import           Syntax.Programs (VarEnv)
-import           Syntax.Exps (Expression (..))
+import           Syntax.Expression (Expression (..))
 import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.Bind

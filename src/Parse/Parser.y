@@ -8,7 +8,7 @@ module Parse.Parser
   
 import           Parse.Lexer
 import           Syntax.Programs
-import           Syntax.Exps
+import           Syntax.Expression
 import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.Bind
