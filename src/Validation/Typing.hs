@@ -11,7 +11,6 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-{-# LANGUAGE LambdaCase #-}
 module Validation.Typing
 ( typeCheck
 ) where
@@ -60,21 +59,21 @@ checkFunDecl f (bs, exp) = do
   venv <- getVenv
   let t = venv Map.! f
       ts = toList t
-  params <- buildParams f bs (init ts)
+  params <- buildParams f t bs (init ts)
   mapM_ (\(b, t) -> addToVenv b t) params
   let (TypeScheme _ _ u) = last ts
   T.checkAgainst exp u
-  mapM_ (removeFromVenv .fst) params
+  mapM_ (removeFromVenv . fst) params
 
-buildParams :: Bind -> [Bind] -> [TypeScheme] -> FreestState [(Bind, TypeScheme)]
-buildParams (Bind p f) ps ts 
-  | length ps == length ts = return $ zip ps ts
-  | length ps > length ts = do
-      addError p ["Function", styleRed f, "has too many parameters"]
-      return []
+buildParams :: Bind -> TypeScheme ->  [Bind] -> [TypeScheme] -> FreestState [(Bind, TypeScheme)]
+buildParams (Bind p f) (TypeScheme _ _ t) ps ts 
+  | binds == params = return $ zip ps ts
   | otherwise = do
-      addError p ["Function ", styleRed f, "has too few parameter"]
+      addError p ["The equation for", styleRed f, "has", show binds, "parameter(s)\n",
+                  "\t but its type", styleRed (show t), "has", show params]
       return []
+  where binds  = length ps
+        params = length ts
 
 checkMainFunction :: FreestState ()
 checkMainFunction = do
