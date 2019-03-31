@@ -144,8 +144,10 @@ getFromKenv x = do
 
 removeFromKenv :: Bind -> FreestState ()
 removeFromKenv x =
-  modify (\s -> s {kindEnv=Map.delete x (kindEnv s)})
-  
+  modify (\s -> s {kindEnv = Map.delete x (kindEnv s)})
+
+resetKEnv ::  FreestState ()
+resetKEnv = modify (\s -> s {kindEnv = Map.empty})
 
 -- | ERRORS
 

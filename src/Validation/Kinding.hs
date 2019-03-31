@@ -14,11 +14,11 @@ Portability :  portable | non-portable (<reason>)
 module Validation.Kinding
 ( checkAgainst
 , synthetize
-, kinding -- deprecated, TODO: remove
+--, kinding -- deprecated, TODO: remove
 , un
 , lin
 , kindOfType -- test
-, kindOfScheme -- test
+--, kindOfScheme -- test
 , isWellFormed -- test
 ) where
 
@@ -88,8 +88,7 @@ synthetize (Dualof p t) = do
   return $ Kind p Session m
 synthetize (Name p c) = do
   tenv <- getTenv
-  -- TODO: get the kind of c from map tenv
-  return $ top p
+  return $ fst $ tenv Map.! (Bind p c)
   
 -- Check whether a given type is of a session kind; issue an error if
 -- not. In either case return the multiplicity of the kind of the type
@@ -115,12 +114,12 @@ checkAgainst k1 t = do
     addError (position k1) ["Expecting kind", styleRed $ show k1,
                             "to be a sub-kind of", styleRed $ show k2]
 
--- Returns the kind of a given type scheme -- TODO: type schemes do not have kinds
-kinding :: TypeScheme -> FreestState Kind
-kinding (TypeScheme _ bs t) = do
-  -- TODO: addToKenv -> addBindsLToKenv
-  foldM_ (\_ (KBind p x k) -> addToKenv (Bind p x) k) () bs
-  synthetize t
+-- -- Returns the kind of a given type scheme -- TODO: type schemes do not have kinds
+-- kinding :: TypeScheme -> FreestState Kind
+-- kinding (TypeScheme _ bs t) = do
+--   -- TODO: addToKenv -> addBindsLToKenv
+--   foldM_ (\_ (KBind p x k) -> addToKenv (Bind p x) k) () bs
+--   synthetize t
 
 -- Determines whether a given type is linear or not
 lin :: Type -> FreestState Bool
@@ -143,8 +142,8 @@ kindOfType k t =
   let s = (initialState  "") in
   evalState (synthetize t) (s {kindEnv=k})
 
-kindOfScheme :: TypeScheme -> Kind
-kindOfScheme t = evalState (kinding t) (initialState "")
+-- kindOfScheme :: TypeScheme -> Kind
+-- kindOfScheme t = evalState (kinding t) (initialState "")
 
 isWellFormed :: Type -> KindEnv -> Bool
 isWellFormed t k =

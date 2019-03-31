@@ -130,14 +130,13 @@ Decl :: { () }
   | VarBind VarBindSeq '=' Expr                 -- Function declaration
     {% checkDupFunDecl $1 >> addToEenv $1 ($2, $4) }
   | type TypeBind KindVarEmptyList '=' Type     -- Type abbreviation
-    {% checkDupTypeDecl (fst $2) >> addToTenv (fst $2) (snd $2) (TypeScheme (position $1) $3 $5) }
+    {% checkDupTypeDecl (fst $2) >> uncurry addToTenv $2 (TypeScheme (position $1) $3 $5) }
   | data TypeBind KindVarEmptyList '=' DataCons -- Datatype declaration
     {% do
-       let (b, k) = $2
-       checkDupTypeDecl b
-       let bs = typesToFun b $5
+       checkDupTypeDecl (fst $2)
+       let bs = typesToFun (fst $2) $5
        mapM_ (\(b, t) -> addToVenv b (TypeScheme (position t) [] t)) bs
-       addToTenv b k (TypeScheme (position $1) $3 (Datatype (position $1) (Map.fromList bs)))
+       uncurry addToTenv $2 (TypeScheme (position $1) $3 (Datatype (position $1) (Map.fromList bs)))
     }
 
 DataCons :: { [(Bind, [Type])] }

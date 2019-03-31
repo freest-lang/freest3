@@ -216,7 +216,7 @@ instance Show TypeScheme where
 instance Position TypeScheme where
   position (TypeScheme p _ _) = p
 
-toList :: TypeScheme -> [TypeScheme] -- TODO: what for?
+toList :: TypeScheme -> [TypeScheme] -- TODO: return [Type]
 toList (TypeScheme p b (Fun _ _ t1 t2)) = (TypeScheme p b t1) : toList (TypeScheme p b t2)
 toList t = [t]
 
@@ -290,6 +290,7 @@ normalise t                = t
 
 append :: Type -> Type -> Type
 append (Skip _)       t = t
+append t       (Skip _) = t
 append (Semi p t u)   v = Semi p t (append u v)
 append (Choice q v m) t = Choice q v (Map.map (`append` t) m)
 append t              u = Semi (position t) t u
