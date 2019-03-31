@@ -61,7 +61,7 @@ synthetize (PairType _ t u) = do
   return $ lub kt ku
 synthetize (Datatype p m) = do
   ks <- mapM synthetize (Map.elems m)
-  let Kind _ _ n = maximum ks
+  let Kind _ _ n = foldr1 lub ks
   return $ Kind p Functional n
 synthetize (Rec p x@(KBind _ _ k) t) = do
   checkContractive t
@@ -110,7 +110,7 @@ checkAgainst k (Rec p x t) = do
   removeFromKenv b
 checkAgainst k1 t = do
   k2 <- synthetize t
-  when (k2 > k1) $
+  when (not (k2 <: k1)) $
     addError (position k1) ["Expecting kind", styleRed $ show k1,
                             "to be a sub-kind of", styleRed $ show k2]
 

@@ -1,6 +1,7 @@
 module Validation.TestKindingValidSpec(spec) where
 
 import SpecHelper
+import Syntax.Kinds
 import Validation.Contractive
 import Validation.Kinding
 --
@@ -16,7 +17,7 @@ spec = do
 matchValidKindingSpec :: [String] -> Spec
 matchValidKindingSpec [a, b] =
   it a $
-    kindOfType Map.empty (read a) <= read b `shouldBe` True
+    kindOfType Map.empty (read a) <: read b `shouldBe` True
 
 -- INVALID:
 -- forall alpha . (rec Tree . &{Leaf:Skip, Node:?Int;Tree;Tree}) -> (rec TreeChannel . +{Leaf:Skip, Node:!Int;TreeChannel;TreeChannel});alpha->alpha

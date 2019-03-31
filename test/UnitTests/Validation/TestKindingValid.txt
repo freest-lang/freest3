@@ -160,7 +160,7 @@ rec a : TU . (a, !Int)
   TL
 
 rec b : TU . (b, !Int)
-  TU
+  TL
 
 -- dualof
 

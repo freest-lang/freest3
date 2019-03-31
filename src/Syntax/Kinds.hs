@@ -18,6 +18,7 @@ module Syntax.Kinds
 , Kind (..)
 , KindEnv
 , top
+, (<:)
 , lub
 ) where
 
@@ -56,28 +57,33 @@ data Kind = Kind Pos PreKind Multiplicity
 instance Eq Kind where
   (Kind _ p n) == (Kind _ q m) = (p, n) == (q, m)
 
-instance Ord Kind where
-  (Kind _ Session    Un)  <= _                       = True
-  (Kind _ Functional Un)  <= (Kind _ Functional Lin) = True
-  (Kind _ Session    Lin) <= (Kind _ Functional Lin) = True
-  (Kind _ Functional Un)  <= (Kind _ Session    Lin) = False -- Needed. But why?
-  _                       <= _                       = False  
+-- The subkinding relation. Note that Kind a partial order, hence cannot implement class Ord
+--    TL
+--   /  \
+-- TU    SL
+--   \  /
+--    SU
+(<:) :: Kind -> Kind -> Bool
+(Kind _ Session Un)    <: _                       = True
+(Kind _ Session Lin)   <: (Kind _ Functional Lin) = True
+(Kind _ Functional Un) <: (Kind _ Functional Lin) = True
+k1                     <: k2                      = k1 == k2
+
+-- The least upper bound of two kinds
+lub :: Kind -> Kind -> Kind
+lub (Kind p Functional Un)  (Kind _ Session    Lin) = top p
+lub (Kind p Session    Lin) (Kind _ Functional Un)  = top p
+lub k1                      k2                      = if k1 <: k2 then k2 else k1
+
+-- The kind that seats at the top of the hierarchy (use as a default value)
+top :: Pos -> Kind
+top p = Kind p Functional Lin
 
 instance Show Kind where
   show (Kind _ p m) = show p ++ show m
 
 instance Position Kind where
   position (Kind p _ _) = p
-
--- The least upper bound of two kinds
-lub :: Kind -> Kind -> Kind
-lub (Kind p Functional Un)  (Kind _ Session    Lin) = top p
-lub (Kind p Session    Lin) (Kind _ Functional Un)  = top p
-lub k1                      k2                       = max k1 k2
-
--- The kind that seats at the top of the hierarchy (use as a default value)
-top :: Pos -> Kind
-top p = Kind p Functional Lin
 
 -- KINDED VARIABLES
 
