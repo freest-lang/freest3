@@ -26,18 +26,17 @@ import           Validation.TypingExps as T
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
 import qualified Data.Traversable as Trav
-import qualified Data.Foldable as F
 
 typeCheck :: FreestState ()
 typeCheck = do
   -- Type/datatype declarations (TypeEnv)
   tenv <- getTenv
   mapWithKeyM (\b (k,_) -> addToKenv b k) tenv
-  F.mapM_ (checkTypeScheme . snd) tenv
+  mapM_ (K.synthetizeTS . snd) tenv
   mapWithKeyM (\b _ -> removeFromKenv b) tenv
   -- Function declarations (VarEnv)
   venv <- getVenv
-  F.mapM_ checkTypeScheme venv
+  mapM_ K.synthetizeTS venv
   -- Function definitions (ExpEnv)
   eenv <- getEenv
   mapWithKeyM checkFunDecl eenv
@@ -46,13 +45,6 @@ typeCheck = do
 
 mapWithKeyM :: Monad m => (k -> a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)
 mapWithKeyM f m = Trav.sequence (Map.mapWithKey f m)
-
-checkTypeScheme :: TypeScheme -> FreestState ()
-checkTypeScheme (TypeScheme _ ks t) = do
-  resetKEnv
-  mapM_ (\(KBind p x k) -> addToKenv (Bind p x) k) ks
-  K.synthetize t
-  return ()  
 
 checkFunDecl ::  Bind -> ([Bind], Expression) -> FreestState ()
 checkFunDecl f (bs, exp) = do
@@ -79,5 +71,5 @@ checkMainFunction :: FreestState ()
 checkMainFunction = do
   venv <- getVenv
   when ((Bind defaultPos "main") `Map.notMember` venv) $
-    addError (defaultPos) ["Function", styleRed "main", "is not defined"]    
+    addError (defaultPos) ["Function", styleRed "main", "is not defined"]  
 

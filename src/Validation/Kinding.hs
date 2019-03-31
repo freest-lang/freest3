@@ -14,11 +14,11 @@ Portability :  portable | non-portable (<reason>)
 module Validation.Kinding
 ( checkAgainst
 , synthetize
---, kinding -- deprecated, TODO: remove
+, synthetizeTS
 , un
 , lin
 , kindOfType -- test
---, kindOfScheme -- test
+, kindOfScheme -- test
 , isWellFormed -- test
 ) where
 
@@ -114,12 +114,11 @@ checkAgainst k1 t = do
     addError (position k1) ["Expecting kind", styleRed $ show k1,
                             "to be a sub-kind of", styleRed $ show k2]
 
--- -- Returns the kind of a given type scheme -- TODO: type schemes do not have kinds
--- kinding :: TypeScheme -> FreestState Kind
--- kinding (TypeScheme _ bs t) = do
---   -- TODO: addToKenv -> addBindsLToKenv
---   foldM_ (\_ (KBind p x k) -> addToKenv (Bind p x) k) () bs
---   synthetize t
+synthetizeTS :: TypeScheme -> FreestState Kind
+synthetizeTS (TypeScheme _ ks t) = do
+  resetKEnv
+  mapM_ (\(KBind p x k) -> addToKenv (Bind p x) k) ks
+  synthetize t
 
 -- Determines whether a given type is linear or not
 lin :: Type -> FreestState Bool
@@ -142,8 +141,8 @@ kindOfType k t =
   let s = (initialState  "") in
   evalState (synthetize t) (s {kindEnv=k})
 
--- kindOfScheme :: TypeScheme -> Kind
--- kindOfScheme t = evalState (kinding t) (initialState "")
+kindOfScheme :: TypeScheme -> Kind
+kindOfScheme t = evalState (synthetizeTS t) (initialState "")
 
 isWellFormed :: Type -> KindEnv -> Bool
 isWellFormed t k =

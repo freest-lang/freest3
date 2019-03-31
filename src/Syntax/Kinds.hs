@@ -57,7 +57,7 @@ data Kind = Kind Pos PreKind Multiplicity
 instance Eq Kind where
   (Kind _ p n) == (Kind _ q m) = (p, n) == (q, m)
 
--- The subkinding relation. Note that Kind a partial order, hence cannot implement class Ord
+-- The subkinding relation. Note that Kind is a partial order, hence should not implement class Ord
 --    TL
 --   /  \
 -- TU    SL
