@@ -36,6 +36,7 @@ import           Utils.FreestState
 import           Validation.Contractive
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
+import           Debug.Trace
 
 -- Returns the kind of a given type
 synthetize :: Type -> FreestState Kind
@@ -63,8 +64,10 @@ synthetize (PairType _ t u) = do
   ku <- synthetize u
   return $ lub kt ku
 synthetize (Datatype p m) = do
+  trace ("Datatype: " ++ show (Datatype p m)) (return ())
   ks <- mapM synthetize (Map.elems m)
   let Kind _ _ n = foldr1 lub ks
+  trace ("Kind: " ++ show n) (return ())
   return $ Kind p Functional n
 synthetize (Rec p x@(TBindK _ _ k) t) = do
   checkContractive t
@@ -125,41 +128,27 @@ checkAgainst k1 t = do
                             "to be a sub-kind of", styleRed $ show k2]
 
 synthetizeTS :: TypeScheme -> FreestState Kind
-synthetizeTS (TypeScheme _ ks t) = do
+synthetizeTS (TypeScheme p ks t) = do
   resetKEnv
   mapM_ (\(TBindK p x k) -> addToKenv (TBind p x) k) ks
-  synthetize t
+  trace ("Synthesing type scheme: " ++ show (TypeScheme p ks t)) (return ())
+  k <- synthetize t
+  trace ("Synthetised: " ++ show (TypeScheme p ks t) ++ ": " ++ show k) (return k)
 
 -- Determines whether a given type is linear or not
-lin :: Type -> FreestState Bool
+lin :: TypeScheme -> FreestState Bool
 lin = mult Lin
 
 -- Determines whether a given type is unrestricted or not
-un :: Type -> FreestState Bool
+un :: TypeScheme -> FreestState Bool
 un = mult Un
 
 -- Determines whether a given type is of a given multiplicity
-mult :: Multiplicity -> Type -> FreestState Bool
+mult :: Multiplicity -> TypeScheme -> FreestState Bool
 mult m1 t = do
-  (Kind _ _ m2) <- synthetize t
+  (Kind _ _ m2) <- synthetizeTS t
   return $ m2 == m1
       
--- For TESTS only, from here on
-
-kindOfType :: KindEnv -> Type -> Kind
-kindOfType k t =
-  let s = (initialState  "") in
-  evalState (synthetize t) (s {kindEnv=k})
-
-kindOfScheme :: TypeScheme -> Kind
-kindOfScheme t = evalState (synthetizeTS t) (initialState "")
-
-isWellFormed :: Type -> KindEnv -> Bool
-isWellFormed t k =
-  let s = initialState "" in
-  let s1 = execState (synthetize t) (s {kindEnv=k}) in
-    null (errors s1)
-
 -- Assumes the type is well formed
 isSessionType :: KindEnv -> TypeEnv -> Type -> Bool
   -- Session types
@@ -176,3 +165,19 @@ isSessionType kenv tenv (Name p c)  = isSessionType kenv tenv t
   where (_, TypeScheme _ [] t) = tenv Map.! (TBind p c) -- TODO: polymorphic type names
   -- Otherwise: Functional types
 isSessionType _ _ _                 = False
+
+-- For TESTS only, from here on
+
+kindOfType :: KindEnv -> Type -> Kind
+kindOfType k t =
+  let s = (initialState  "") in
+  evalState (synthetize t) (s {kindEnv=k})
+
+kindOfScheme :: TypeScheme -> Kind
+kindOfScheme t = evalState (synthetizeTS t) (initialState "")
+
+isWellFormed :: Type -> KindEnv -> Bool
+isWellFormed t k =
+  let s = initialState "" in
+  let s1 = execState (synthetize t) (s {kindEnv=k}) in
+    null (errors s1)

@@ -29,11 +29,15 @@ import           Control.Monad.State
 import           Validation.Extract
 import qualified Data.Map.Strict as Map
 import qualified Data.Traversable as Trav
+import           Debug.Trace
 
 typeCheck :: FreestState ()
 typeCheck = do
   -- Type/datatype declarations (TypeEnv)
+  venv <- getVenv
+  trace ("VarEnv: " ++ show venv) (return ())
   tenv <- getTenv
+  trace ("TypeEnv: " ++ show tenv) (return ())
   mapWithKeyM (\b (k,_) -> addToKenv b k) tenv
   tenv <- getTenv
   mapM_ (K.synthetizeTS . snd) tenv
@@ -42,10 +46,10 @@ typeCheck = do
   -- Function signatures (VarEnv)
   venv <- getVenv
   mapM_ K.synthetizeTS venv
-  -- Function bodies (ExpEnv)
-  eenv <- getEenv
-  mapWithKeyM checkFunBody eenv
-  -- Main function
+  -- -- Function bodies (ExpEnv)
+  -- eenv <- getEenv
+  -- mapWithKeyM checkFunBody eenv
+  -- -- Main function
   checkMainFunction
 
 mapWithKeyM :: Monad m => (k -> a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)
@@ -85,11 +89,13 @@ checkMainFunction = do
     let t = venv Map.! mBind
     mType <- normaliseTS t
     b <- isValidMainType mType
+    let (TypeScheme _ _ t') = t
+    k <- K.synthetize t'
     when (not b) $
       addError (position mType) ["The type for", styleRed "main", "must be an unrestricted, non-function type\n",
-                                 "\t found:", styleRed $ show t]
+                                 "\t found type", styleRed $ show t, ":", styleRed $ show k]
 
 isValidMainType :: TypeScheme -> FreestState Bool
 isValidMainType (TypeScheme _ _ (Fun _ _ _ _)) = return False
-isValidMainType (TypeScheme _ [] t)            = K.un t
+isValidMainType t@(TypeScheme _ [] _)          = K.un t
 isValidMainType _                              = return False

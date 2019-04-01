@@ -17,6 +17,7 @@ module Syntax.Kinds
 , Kind (..)
 , KindEnv
 , top
+, topUn
 , (<:)
 , lub
 ) where
@@ -78,6 +79,9 @@ lub k1                      k2                      = if k1 <: k2 then k2 else k
 -- The kind that seats at the top of the hierarchy (use as a default value)
 top :: Pos -> Kind
 top p = Kind p Functional Lin
+
+topUn :: Pos -> Kind
+topUn p = Kind p Functional Un
 
 instance Show Kind where
   show (Kind _ p m) = show p ++ show m

@@ -297,7 +297,7 @@ TConsBind :: { TBind }
 
 TypeBind :: { (TBind, Kind) }
   : TConsBind ':' Kind { ($1, $3) }
-  | TConsBind          { ($1, top (position $1)) }
+  | TConsBind          { ($1, topUn (position $1)) }
 
 VarBindSeq :: { [PBind] }
   :                    { [] }

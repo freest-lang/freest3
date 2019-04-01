@@ -96,7 +96,7 @@ synthetize (BinLet _ x y e1 e2) = do
 -- Fork
 synthetize (Fork p e) = do
   t <- synthetize e
-  checkUn t
+  checkUn (TypeScheme p [] t)
   return $ Basic p UnitType
 -- Session types
 synthetize (New p t) = do
@@ -169,22 +169,6 @@ checkEquivTypes t u = do
     addError (position t) ["Expecting type", styleRed (show u), 
                            "to be equivalent to type", styleRed (show t)]
 
--- | The quotient operation
--- removes a variable from the environment and gives an error if it is linear
-quotient :: PBind -> FreestState ()
-quotient b = do
-  getFromVenv b >>= \case -- venv Map.!? b of
-    Just (TypeScheme _ _ t) -> checkUn t
-    Nothing                 -> return ()
-  removeFromVenv b
-
--- | Checks whether a type is unrestricted
-checkUn :: Type -> FreestState ()
-checkUn t = do
-  isUn <- K.un t
-  when (not isUn) $
-    addError (position t) ["Expecting an unrestricted type; found", styleRed (show t)]
-  
 -- | Checking Variables
 -- | Checks whether a variable exists and removes it if is a linear usage
 checkVar :: Pos -> PVar -> FreestState TypeScheme -- TODO: Review
@@ -193,11 +177,11 @@ checkVar p x = do
   getFromVenv b >>= \case
     Just t@(TypeScheme _ bs _) -> do
       addBindsToKenv p bs    
-      removeLinVar b t
+      removeIfLin b t
       return t
     Nothing -> do
-      let t = (TypeScheme p [] (Basic p UnitType))
       addError p ["Variable or data constructor not in scope:", styleRed x]
+      let t = (TypeScheme p [] (Basic p UnitType))
       addToVenv b t
       return t
  
@@ -205,12 +189,27 @@ checkVar p x = do
 addBindsToKenv :: Pos -> [TBindK] -> FreestState ()
 addBindsToKenv p = mapM_ (\(TBindK _ b k) -> addToKenv (TBind p b) k)
 
+-- | The quotient operation
+-- removes a variable from the environment and gives an error if it is linear
+quotient :: PBind -> FreestState ()
+quotient b = do
+  getFromVenv b >>= \case
+    Just t  -> checkUn t
+    Nothing -> return ()
+  removeFromVenv b
+
+-- | Checks whether a type is unrestricted
+checkUn :: TypeScheme -> FreestState ()
+checkUn t = do
+  isUn <- K.un t
+  when (not isUn) $
+    addError (position t) ["Expecting an unrestricted type; found", styleRed (show t)]
+  
 -- | Removes a variable from venv if it is linear
-removeLinVar :: PBind -> TypeScheme -> FreestState ()
-removeLinVar x (TypeScheme _ _ t) = do
+removeIfLin :: PBind -> TypeScheme -> FreestState ()
+removeIfLin x t = do
   isLin <- K.lin t
-  if isLin then removeFromVenv x
-  else return ()
+  when isLin $ removeFromVenv x
  
 {- | Verifies if x is well formed (e[x] based on the kind)
    | Checks if all x1,...,xn in e[x1,...,xn] are well kinded
@@ -273,13 +272,18 @@ equivalentEnvs :: VarEnv -> VarEnv -> FreestState Bool
 equivalentEnvs venv1 venv2 = Map.foldrWithKey (\b t acc -> acc <&&> f b t venv2) (return True) venv1
   where
     f :: PBind -> TypeScheme -> VarEnv -> FreestState Bool
-    f b (TypeScheme _ _ t) venv = do
+    f b t venv = do
       lt <- K.lin t
       if lt then
         case venv Map.!? b of
           Nothing -> return False
-          Just (TypeScheme _ _ u) -> do
+          Just u -> do
             lu <- K.lin u
-            if lu then getKenv >>= \kenv -> getTenv >>= \tenv -> return $ equivalent kenv tenv t u
+            if lu
+            then do
+              let (TypeScheme _ _ t', TypeScheme _ _ u') = (t, u)
+              kenv <- getKenv
+              tenv <- getTenv
+              return $ equivalent kenv tenv t' u'
             else return False
        else return True
