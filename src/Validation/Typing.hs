@@ -43,6 +43,8 @@ typeCheck = do
   mapWithKeyM (\b _ -> removeFromKenv b) tenv
   -- Function signatures (VarEnv)
   venv <- getVenv
+  trace ("Var Env:  " ++ show venv) (return ())
+  trace ("Type Env: " ++ show tenv) (return ())
   mapM_ K.synthetizeTS venv
   mapWithKeyM hasBinding venv
   -- -- Function bodies (ExpEnv)
@@ -57,9 +59,17 @@ mapWithKeyM f m = Trav.sequence (Map.mapWithKey f m)
 hasBinding :: PBind -> a -> FreestState ()
 hasBinding f _ = do
   eenv <- getEenv
-  when (not (isBuiltin f) && f `Map.notMember` eenv) $
+  b <- isDatatypeContructor f
+  when (not b && not (isBuiltin f) && f `Map.notMember` eenv) $
     addError (position f) ["The type signature for", styleRed $ show f,
                            "lacks an accompanying binding"]
+
+isDatatypeContructor :: PBind -> FreestState Bool
+isDatatypeContructor c = do
+  tenv <- getTenv
+  return $ Map.foldl (\acc (_, (TypeScheme _ _ t)) -> acc || isDatatype t) False tenv
+  where isDatatype (Datatype _ m) = c `Map.member` m
+        isDatatype _              = False
 
 checkFunBody :: PBind -> ([PBind], Expression) -> FreestState ()
 checkFunBody f (bs, exp) =

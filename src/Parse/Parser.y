@@ -21,6 +21,7 @@ import           Data.Char
 import           Data.List (nub, (\\), intercalate, find)
 import qualified Data.Map.Strict as Map
 import           System.Exit (die)
+import           Debug.Trace
 
 }
 
@@ -135,6 +136,7 @@ Decl :: { () }
     {% do
        checkDupTypeDecl (fst $2)
        let bs = typesToFun (fst $2) $5
+       trace ("DataCons: " ++ show $5 ++ "\nFun: " ++ show bs) (return ())
        let p = position (fst $2)
        uncurry addToTenv $2 (TypeScheme p $3 (Datatype p (Map.fromList bs)))
        mapM_ (\(b, t) -> addToVenv b (TypeScheme (position b) [] t)) bs

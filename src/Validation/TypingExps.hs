@@ -155,12 +155,12 @@ checkAgainst e t = do
 
 -- | Check whether two given types are equivalent
 checkEquivTypes :: Type -> Type -> FreestState ()
-checkEquivTypes t u = do
+checkEquivTypes expected actual = do
   kenv <- getKenv
   tenv <- getTenv
-  when (not $ equivalent kenv tenv t u) $
-    addError (position t) ["Expecting type", styleRed (show u), 
-                           "to be equivalent to type", styleRed (show t)]
+  when (not $ equivalent kenv tenv expected actual) $
+    addError (position expected) ["Couldn't match expected type", styleRed (show expected), 
+                           "with actual type", styleRed (show actual)]
 
 -- | Checking Variables
 -- | Checks whether a variable exists and removes it if is a linear usage
