@@ -118,8 +118,7 @@ unOp pos op expr =
 
 -- Convert a list of types and a final type constructor to a type
 typesToFun :: TBind -> [(PBind, [Type])] -> [(PBind, Type)]
-typesToFun (TBind p x) = map (\(k, ts) -> (k, typeToFun (Name p x) ts))
-  where
-    typeToFun :: Type -> [Type] -> Type
-    typeToFun = foldr (\acc t -> Fun (position t) Un t acc)
+typesToFun (TBind p x) = map (\(k, ts) -> (k, typeToFun ts))
+  where typeToFun []       = (Name p x)
+        typeToFun (t : ts) = Fun (position t) Un t (typeToFun ts)
 
