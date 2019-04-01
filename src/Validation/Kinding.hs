@@ -36,7 +36,7 @@ import           Utils.FreestState
 import           Validation.Contractive
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
-import           Debug.Trace
+--import           Debug.Trace
 
 -- Returns the kind of a given type
 synthetize :: Type -> FreestState Kind
@@ -64,10 +64,8 @@ synthetize (PairType _ t u) = do
   ku <- synthetize u
   return $ lub kt ku
 synthetize (Datatype p m) = do
-  trace ("Datatype: " ++ show (Datatype p m)) (return ())
   ks <- mapM synthetize (Map.elems m)
   let Kind _ _ n = foldr1 lub ks
-  trace ("Kind: " ++ show n) (return ())
   return $ Kind p Functional n
 synthetize (Rec p x@(TBindK _ _ k) t) = do
   checkContractive t
@@ -131,9 +129,7 @@ synthetizeTS :: TypeScheme -> FreestState Kind
 synthetizeTS (TypeScheme p ks t) = do
   resetKEnv
   mapM_ (\(TBindK p x k) -> addToKenv (TBind p x) k) ks
-  trace ("Synthesing type scheme: " ++ show (TypeScheme p ks t)) (return ())
-  k <- synthetize t
-  trace ("Synthetised: " ++ show (TypeScheme p ks t) ++ ": " ++ show k) (return k)
+  synthetize t
 
 -- Determines whether a given type is linear or not
 lin :: TypeScheme -> FreestState Bool

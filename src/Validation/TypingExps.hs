@@ -33,7 +33,7 @@ import           Control.Monad.State
 import           Control.Conditional ((<&&>))
 import qualified Data.Map.Strict as Map
 import           Validation.Extract
-
+import           Debug.Trace
 
 -- | Typing rules for expressions
 
@@ -152,13 +152,6 @@ checkAgainst (Conditional p e1 e2 e3) t = do
 checkAgainst e t = do
   u <- synthetize e
   checkEquivTypes t u
-  --  kenv <- getKenv
-  -- let u' = normalize u
-  --     t' = normalize t
-  -- addError (position t') [styleRed $ show t', "\n\t", styleRed $ show u']
-  -- when (not $ equivalent kenv t' u') $
-  --   addError (position t) ["Expecting type", styleRed (show u), 
-  --                          "to be equivalent to type", styleRed (show t')]
 
 -- | Check whether two given types are equivalent
 checkEquivTypes :: Type -> Type -> FreestState ()

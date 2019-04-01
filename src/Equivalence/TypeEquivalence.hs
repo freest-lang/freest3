@@ -51,6 +51,7 @@ equiv _ _ (Var _ x) (Var _ y) = x == y
   -- Type operators
 equiv kenv tenv (Dualof _ t) u = equiv kenv tenv (dual t) u
 equiv kenv tenv t (Dualof _ u) = equiv kenv tenv t (dual u)
+-- TODO: THIS CAN EASILY LOOP
 equiv kenv tenv (Name p c) u = equiv kenv tenv t u
   where (_, TypeScheme _ [] t) = tenv Map.! (TBind p c) -- TODO: polymorphic type names
 equiv kenv tenv t (Name p c) = equiv kenv tenv t u

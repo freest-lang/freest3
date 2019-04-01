@@ -34,10 +34,7 @@ import           Debug.Trace
 typeCheck :: FreestState ()
 typeCheck = do
   -- Type/datatype declarations (TypeEnv)
-  venv <- getVenv
-  trace ("VarEnv: " ++ show venv) (return ())
   tenv <- getTenv
-  trace ("TypeEnv: " ++ show tenv) (return ())
   mapWithKeyM (\b (k,_) -> addToKenv b k) tenv
   tenv <- getTenv
   mapM_ (K.synthetizeTS . snd) tenv
@@ -47,8 +44,8 @@ typeCheck = do
   venv <- getVenv
   mapM_ K.synthetizeTS venv
   -- -- Function bodies (ExpEnv)
-  -- eenv <- getEenv
-  -- mapWithKeyM checkFunBody eenv
+  eenv <- getEenv
+  mapWithKeyM checkFunBody eenv
   -- -- Main function
   checkMainFunction
 

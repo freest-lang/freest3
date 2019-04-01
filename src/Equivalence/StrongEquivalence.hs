@@ -34,7 +34,7 @@ normalise :: TypeEnv -> Type -> Type
   -- Functional types
 normalise tenv (Fun p q t u)    = Fun p q (normalise tenv t) (normalise tenv u)
 normalise tenv (PairType p t u) = PairType p (normalise tenv t) (normalise tenv u)
-normalise tenv (Datatype p m)   = Datatype p (Map.map (normalise tenv) m)
+normalise tenv t@(Datatype p m) = t -- We do not normalise under Datatype or we'll loop until eternity
   -- Session types
 normalise tenv (Semi _ (Choice p q m) t) =
   Choice p q (Map.map (\u -> append (normalise tenv u) t') m)
