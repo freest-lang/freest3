@@ -10,7 +10,7 @@ Portability :  portable | non-portable (<reason>)
 
 Context-free grammars of a certain kind:
 
-- Non-terminal symbols are type variables (TypeVar)
+- Non-terminal symbols are type variables (TVar)
 
 - Terminal symbols are called labels (Label) for they come from the
 labelled transition system on types
@@ -27,7 +27,7 @@ map from labels to lists of type variables.
 
 module Equivalence.Grammar
 ( Label(..)
-, TypeVar -- aka non-terminal
+, TVar -- aka non-terminal
 , Transitions
 , Productions
 , Grammar(..)
@@ -50,42 +50,42 @@ import           Data.List (union, delete)
 data Label =
   ChoiceLabel Polarity PVar |
   MessageLabel Polarity BasicType |
-  VarLabel TypeVar
+  VarLabel TVar
   deriving (Eq, Ord)
 
--- Non-terminal symbols are type variables TypeVar
+-- Non-terminal symbols are type variables TVar
 
 -- The transitions from a given label
-type Transitions = Map.Map Label [TypeVar]
+type Transitions = Map.Map Label [TVar]
 
 -- The productions of a grammar
-type Productions = Map.Map TypeVar Transitions
+type Productions = Map.Map TVar Transitions
 
 -- The grammar, we have one initial non-terminal for each type that we
 -- convert together
-data Grammar = Grammar [TypeVar] Productions
+data Grammar = Grammar [TVar] Productions
 
 -- Operations on grammars
 
 -- The transitions from a word, as opposed to the transitions from a non-terminal
-transitions :: Productions -> [TypeVar] -> Transitions
+transitions :: Productions -> [TVar] -> Transitions
 transitions _ []     = Map.empty
 transitions p (x:xs) = Map.map (++ xs) (p Map.! x)
 
 -- Add a production from a non-terminal; the productions may already contain transitions for the given nonterminal (hence the insertWith and union)
-insertProduction :: Productions -> TypeVar -> Label -> [TypeVar] -> Productions
+insertProduction :: Productions -> TVar -> Label -> [TVar] -> Productions
 insertProduction p x l w = Map.insertWith Map.union x (Map.singleton l w) p
 
 -- Determine transitions from a word
-trans :: Productions -> [TypeVar] -> [[TypeVar]]
+trans :: Productions -> [TVar] -> [[TVar]]
 trans p xs = Map.elems (transitions p xs)
 
 -- only applicable on normed variables
-pathToSkip :: Productions -> TypeVar -> [Label]
+pathToSkip :: Productions -> TVar -> [Label]
 pathToSkip p x = fst . head $ filter ( null . snd ) ps
   where ps = pathToSkip' p ( Map.assocs $ (Map.mapKeys (\k -> [k]) (transitions p [x])) )
 
-pathToSkip' :: Productions -> [([Label],[TypeVar])] -> [([Label],[TypeVar])]
+pathToSkip' :: Productions -> [([Label],[TVar])] -> [([Label],[TVar])]
 pathToSkip' p ps
   | any (null . snd) ps = ps
   | otherwise           = pathToSkip' p ps'
@@ -93,7 +93,7 @@ pathToSkip' p ps
                     (map (\(l,ys) -> (ls++[l], ys)) $ Map.assocs $ transitions p xs)
                     ts ) [] ps
 
-throughPath :: Productions -> [Label] -> [TypeVar] -> Maybe [TypeVar]
+throughPath :: Productions -> [Label] -> [TVar] -> Maybe [TVar]
 throughPath p (l:ls) xs
   | not (Map.member l ts) = Nothing
   | otherwise = throughPath p ls xs'
@@ -116,8 +116,8 @@ instance Show Grammar where
 showProductions :: Productions -> String
 showProductions = Map.foldrWithKey showTransitions ""
 
-showTransitions :: TypeVar -> Transitions -> String -> String
+showTransitions :: TVar -> Transitions -> String -> String
 showTransitions x m s = s ++ Map.foldrWithKey (showTransition x) "" m
 
-showTransition :: TypeVar -> Label -> [TypeVar] -> String -> String
+showTransition :: TVar -> Label -> [TVar] -> String -> String
 showTransition x l xs s = s ++ "\n" ++ x ++ " -> " ++ show l ++ " " ++ concat xs

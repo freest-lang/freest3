@@ -13,8 +13,7 @@ Portability :  portable | non-portable (<reason>)
 
 module Syntax.Types
 ( Dual(..)
-, TypeVar
-, KBind(..)
+, TBindK(..)
 , BasicType(..)
 , TypeMap(..)
 , Polarity(..)
@@ -82,9 +81,9 @@ data Type =
   | Semi Pos Type Type
   | Message Pos Polarity BasicType
   | Choice Pos Polarity TypeMap
-  | Rec Pos KBind Type
+  | Rec Pos TBindK Type
   -- Functional or session
-  | Var Pos TypeVar -- a recursion variable if bound, polymorphic otherwise
+  | Var Pos TVar -- a recursion variable if bound, polymorphic otherwise
   -- Type operators
   | Dualof Pos Type -- to be expanded
   | Name Pos TVar   -- a named type, to be looked upon in a map of Cons to Type
@@ -95,7 +94,7 @@ type TypeMap = Map.Map PBind Type -- TODO: rename to FieldMap
 instance Eq Type where -- Type equality, up to alpha-conversion
   t == u = equalTypes Map.empty (normalise t) (normalise u) 
 
-equalTypes :: Map.Map TypeVar TypeVar -> Type -> Type -> Bool
+equalTypes :: Map.Map TVar TVar -> Type -> Type -> Bool
   -- Functional types
 equalTypes s (Basic _ x)      (Basic _ y)      = x == y
 equalTypes s (Fun _ m t u)    (Fun _ n v w)    = m == n && equalTypes s t v && equalTypes s u w
@@ -106,7 +105,7 @@ equalTypes s (Skip _)         (Skip _)         = True
 equalTypes s (Semi _ t1 t2)   (Semi _ u1 u2)   = equalTypes s t1 u1 && equalTypes s t2 u2
 equalTypes s (Message _ p x)  (Message _ q y)  = p == q && x == y
 equalTypes s (Choice _ v1 m1) (Choice _ v2 m2) = v1 == v2 && equalMaps s m1 m2
-equalTypes s (Rec _ (KBind _ x _) t) (Rec _ (KBind _ y _) u) = equalTypes (Map.insert x y s) t u
+equalTypes s (Rec _ (TBindK _ x _) t) (Rec _ (TBindK _ y _) u) = equalTypes (Map.insert x y s) t u
   -- Functional or session
 equalTypes s (Var _ x)        (Var _ y)        = equalVars (Map.lookup x s) x y
   -- Type operators
@@ -115,11 +114,11 @@ equalTypes s (Name _ x)       (Name _ y)       = x == y
   -- Otherwise
 equalTypes _ _              _                  = False
 
-equalVars :: Maybe TypeVar -> TypeVar -> TypeVar -> Bool
+equalVars :: Maybe TVar -> TVar -> TVar -> Bool
 equalVars Nothing  y z = y == z
 equalVars (Just x) _ z = x == z
 
-equalMaps :: Map.Map TypeVar TypeVar -> TypeMap -> TypeMap -> Bool
+equalMaps :: Map.Map TVar TVar -> TypeMap -> TypeMap -> Bool
 equalMaps s m1 m2 =
   Map.size m1 == Map.size m2 &&
     Map.foldlWithKey(\b l t ->
@@ -188,25 +187,23 @@ instance Dual Type where
 
 -- KINDED BIND
 
-type TypeVar = String
+data TBindK = TBindK Pos TVar Kind
 
-data KBind = KBind Pos TVar Kind
+instance Eq TBindK where
+  (TBindK _ x _) == (TBindK _ y _) = x == y
 
-instance Eq KBind where
-  (KBind _ x _) == (KBind _ y _) = x == y
+instance Ord TBindK where
+  (TBindK _ x _) `compare` (TBindK _ y _) = x `compare` y
 
-instance Ord KBind where
-  (KBind _ x _) `compare` (KBind _ y _) = x `compare` y
+instance Show TBindK where
+  show (TBindK _ x k) = x ++ " : " ++ show k
 
-instance Show KBind where
-  show (KBind _ x k) = x ++ " : " ++ show k
-
-instance Position KBind where
-  position (KBind p _ _) = p
+instance Position TBindK where
+  position (TBindK p _ _) = p
 
 -- TYPE SCHEMES
 
-data TypeScheme = TypeScheme Pos [KBind] Type
+data TypeScheme = TypeScheme Pos [TBindK] Type
 
 instance Show TypeScheme where
   show (TypeScheme _ [] t) = show t
@@ -227,7 +224,7 @@ unfold :: Type -> Type
 unfold (Rec p x t) = subs (Rec p x t) x t
 
 -- [u/x]t, substitute u for x on t
-subs :: Type -> KBind -> Type -> Type 
+subs :: Type -> TBindK -> Type -> Type 
   -- Functional types
 subs t y (Fun p m t1 t2)    = Fun p m (subs t y t1) (subs t y t2)
 subs t y (PairType p t1 t2) = PairType p (subs t y t1) (subs t y t2)
@@ -239,7 +236,7 @@ subs t2 y (Rec p x t1)      -- Assume y /= x
   | x == y                  = Rec p x t1
   | otherwise               = Rec p x (subs t2 y t1)
   -- Functional or session
-subs t (KBind _ y _) (Var p x)
+subs t (TBindK _ y _) (Var p x)
   | x == y                  = t
   | otherwise               = Var p x
   -- Type operators  
@@ -259,7 +256,7 @@ free (Skip _)         = Set.empty
 free (Semi _ t u)     = Set.union (free t) (free u)
 free (Message _ _ _)  = Set.empty
 free (Choice _ _ m)   = Map.foldr (Set.union . free) Set.empty m
-free (Rec _ (KBind _ x _) t) = Set.delete x (free t)
+free (Rec _ (TBindK _ x _) t) = Set.delete x (free t)
   -- Functional or session
 free (Var _ x)        = Set.singleton x
   -- Type operators
@@ -277,8 +274,8 @@ normalise (Semi p (Choice q v m) t) =
   where u = normalise t
 normalise (Semi p t u)     = append (normalise t) (normalise u)
 normalise (Choice p q m)   = Choice p q (Map.map normalise m)
-normalise (Rec p (KBind q x k) t)
-  | x `Set.member` (free t) = Rec p (KBind q x k) u
+normalise (Rec p (TBindK q x k) t)
+  | x `Set.member` (free t) = Rec p (TBindK q x k) u
   | otherwise               = u
   where u = normalise t
   -- Functional or session

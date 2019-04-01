@@ -16,7 +16,7 @@ module Parse.ParserUtils
 , checkDupFunDecl
 , checkDupTypeDecl
 , checkDupBind
-, checkDupKBind
+, checkDupTBindK
 , checkDupField 
 , checkDupMatch
 , binOp
@@ -27,7 +27,7 @@ module Parse.ParserUtils
 import           Parse.Lexer (Position, Pos, position, defaultPos, showPos)
 import           Syntax.Programs (VarEnv)
 import           Syntax.Expression (Expression(..))
-import           Syntax.Types (TypeMap, KBind(..), Type(..))
+import           Syntax.Types (TypeMap, TBindK(..), Type(..))
 import           Syntax.Bind (PBind(..), TBind(..))
 import           Syntax.Kinds (Multiplicity(..))
 import           Utils.Errors
@@ -58,10 +58,10 @@ checkDupBind b bs =
          "\t         ", showPos (position b)]
     Nothing -> return ()
 
-checkDupKBind :: KBind -> [KBind] -> FreestState ()
-checkDupKBind (KBind p x _) bs =
-  case find (\(KBind _ y _) -> y == x) bs of
-    Just (KBind p' _ _) -> do
+checkDupTBindK :: TBindK -> [TBindK] -> FreestState ()
+checkDupTBindK (TBindK p x _) bs =
+  case find (\(TBindK _ y _) -> y == x) bs of
+    Just (TBindK p' _ _) -> do
       addError p'
         ["Conflicting definitions for bind ", styleRed x, "\n",
          "\tBound at:", showPos p', "\n",

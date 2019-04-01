@@ -31,31 +31,31 @@ import           Equivalence.Grammar
 prune :: Productions -> Productions
 prune p = Map.map (Map.map (pruneWord p)) p
 
-pruneWord :: Productions -> [TypeVar] -> [TypeVar]
+pruneWord :: Productions -> [TVar] -> [TVar]
 pruneWord p = foldr (\x ys -> if normed p x then x:ys else [x]) []
 
-normed :: Productions -> TypeVar -> Bool
+normed :: Productions -> TVar -> Bool
 normed p x = normedWord p Set.empty [x]
 
-type Visited = Set.Set TypeVar
+type Visited = Set.Set TVar
 
-normedWord :: Productions -> Visited -> [TypeVar] -> Bool
+normedWord :: Productions -> Visited -> [TVar] -> Bool
 normedWord _ _ []     = True
 normedWord p v (x:xs) =
   x `Set.notMember` v &&
   any (normedWord p v') (Map.elems (transitions p (x:xs)))
   where v' = if any (x `elem`) (Map.elems (transitions p [x])) then Set.insert x v else v
 
-norm :: Productions -> [TypeVar] -> Int
+norm :: Productions -> [TVar] -> Int
 norm p xs = normList p [xs]
 
-normList :: Productions -> [[TypeVar]] -> Int
+normList :: Productions -> [[TVar]] -> Int
 normList p xss
   | [] `elem` m = 0
   | otherwise = 1 + normList p (foldr union [] m)
   where m = map (trans p) xss
 
-sameNorm :: Productions -> [TypeVar] -> [TypeVar] -> Bool
+sameNorm :: Productions -> [TVar] -> [TVar] -> Bool
 sameNorm p xs ys =
   not normedXs && not normedYs ||
   normedXs && normedYs && norm p xs == norm p ys

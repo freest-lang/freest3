@@ -280,13 +280,13 @@ VarBind :: { PBind }
   : VAR { PBind (position $1) (getText $1) }
   | '_' { PBind (position $1) "_" } -- TODO: rename to unique Var
 
-RecVar :: { KBind }
-  : VAR ':' Kind { KBind (position $1) (getText $1) $3 }
-  | VAR		 { let p = position $1 in KBind p (getText $1) (Kind p Session Lin) }
+RecVar :: { TBindK }
+  : VAR ':' Kind { TBindK (position $1) (getText $1) $3 }
+  | VAR		 { let p = position $1 in TBindK p (getText $1) (Kind p Session Lin) }
 
-KindVar :: { KBind }
-  : VAR ':' Kind { KBind (position $1) (getText $1) $3 }
-  | VAR		 { let p = position $1 in KBind p (getText $1) (top p) }
+KindVar :: { TBindK }
+  : VAR ':' Kind { TBindK (position $1) (getText $1) $3 }
+  | VAR		 { let p = position $1 in TBindK p (getText $1) (top p) }
 
 ConsBind :: { PBind }
   : CONS { PBind (position $1) (getText $1) }
@@ -302,11 +302,11 @@ VarBindSeq :: { [PBind] }
   :                    { [] }
   | VarBind VarBindSeq {% checkDupBind $1 $2 >> return ($1 : $2) }
 
-KindVarList :: { [KBind] }
+KindVarList :: { [TBindK] }
   : KindVar                 { [$1] }
-  | KindVar ',' KindVarList {% checkDupKBind $1 $3 >> return ($1 : $3) }
+  | KindVar ',' KindVarList {% checkDupTBindK $1 $3 >> return ($1 : $3) }
 
-KindVarEmptyList :: { [KBind] }
+KindVarEmptyList :: { [TBindK] }
   :             { [] }
   | KindVarList { $1 }
 

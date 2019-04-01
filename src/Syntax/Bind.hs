@@ -28,12 +28,13 @@ type PVar = String  -- Program Variables: Function names and function
                     -- choices (uppercase)
 type TVar = String  -- Type Variables: Recursion variables (in
                     -- rec-types) and polymorphic variables
-                    -- (lowercase) and The names of types introduced
-                    -- with data and type declarations (uppercase)
+                    -- (lowercase) and the names of types introduced
+                    -- with type and data declarations (uppercase)
 
--- Bindings: A pair of a position and a base syntactic category. These
--- are often used as keys in maps (for kinds, for type names, for
--- program variables, for function definitions)
+-- Bindings: A pair composed of a position and a base syntactic
+-- category. These are often used as keys in maps (for kinds, for type
+-- names, for program variables, for function definitions, for fields
+-- in types)
 
 data PBind = PBind Pos PVar
 

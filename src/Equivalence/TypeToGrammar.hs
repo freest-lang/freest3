@@ -26,7 +26,7 @@ import           Equivalence.Grammar
 
 -- The state of the translation to grammars
 
-type Visited = Set.Set TypeVar
+type Visited = Set.Set TVar
 
 type TState = (Productions, Visited, Int)
 
@@ -43,25 +43,25 @@ freshVar = do
   put (p, v, n + 1)
   return $ "_X" ++ show n
 
-memberVisited :: TypeVar -> TransState Bool
+memberVisited :: TVar -> TransState Bool
 memberVisited t = do
   (_, v, _) <- get
   return $ Set.member t v
 
-insertVisited :: TypeVar -> TransState ()
+insertVisited :: TVar -> TransState ()
 insertVisited x =
   modify $ \(p, v, n) -> (p, Set.insert x v, n)
 
-getTransitions :: TypeVar -> TransState Transitions
+getTransitions :: TVar -> TransState Transitions
 getTransitions x = do
   (p, _, _) <- get
   return $ p Map.! x
 
-addProductions :: TypeVar -> Transitions -> TransState ()
+addProductions :: TVar -> Transitions -> TransState ()
 addProductions x m =
   modify $ \(p, v, n) -> (Map.insert x m p, v, n)
 
-addProduction :: TypeVar -> Label -> [TypeVar] -> TransState ()
+addProduction :: TVar -> Label -> [TVar] -> TransState ()
 addProduction x l w =
   modify $ \(p, v, n) -> (insertProduction p x l w, v, n)
 --  addProductions x (Map.singleton l w) -- does not work; I wonder why
@@ -72,14 +72,14 @@ convertToGrammar :: [Type] -> Grammar
 convertToGrammar ts = Grammar xs p
   where (xs, (p, _, _)) = runState (mapM typeToGrammar ts) initial
 
-typeToGrammar :: Type -> TransState TypeVar
+typeToGrammar :: Type -> TransState TVar
 typeToGrammar t = do
   xs <- toGrammar t
   y <- freshVar
   addProduction y (MessageLabel In UnitType) xs
   return y
 
-toGrammar :: Type -> TransState [TypeVar]
+toGrammar :: Type -> TransState [TVar]
 toGrammar (Skip _) =
   return []
 toGrammar (Message _ p b) = do
@@ -121,7 +121,7 @@ assocToGrammar y p (PBind _ l, t) = do
 isChecked :: Type -> Visited -> Bool
 isChecked (Skip _) _     = True
 isChecked (Semi _ s t) v = isChecked s v && isChecked t v
-isChecked (Rec _ (KBind _ x _) t) v  = isChecked t (Set.insert x v)
+isChecked (Rec _ (TBindK _ x _) t) v  = isChecked t (Set.insert x v)
 isChecked (Var _ x) v    = Set.member x v -- Only bound variables are checked
 isChecked _ _            = False
 

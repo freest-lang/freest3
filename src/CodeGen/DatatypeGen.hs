@@ -1,5 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
-module CodeGen.DatatypeGen (genDataTypes) where
+module CodeGen.DatatypeGen
+( genDataTypes
+) where
 
 import           Syntax.Programs
 import           Syntax.Types
@@ -18,7 +20,7 @@ showElem (TBind _ x) (_, (TypeScheme _ _ (Datatype _ m))) = showDatatype x m
 showElem (TBind _ x) (_, (TypeScheme _ _ t))              = showTypeAbbr x t
 
 
-showDatatype :: TypeVar -> TypeMap -> String
+showDatatype :: TVar -> TypeMap -> String
 showDatatype x m = "data " ++ x ++ " = " ++ showDatatypeMap m ++ " deriving Show"
 
 showDatatypeMap :: TypeMap -> String
@@ -28,7 +30,7 @@ showDatatypeMap m =
 showTypes :: Type -> String
 showTypes = intercalate " " . map show . init . toListT
 
-showTypeAbbr :: TypeVar -> Type -> String
+showTypeAbbr :: TVar -> Type -> String
 showTypeAbbr x t = "type " ++ x ++ " = " ++ show t
 
 

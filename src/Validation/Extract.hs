@@ -47,7 +47,7 @@ normalize (Rec _ _ t) = normalize (unfold t)
 --   getFromKenv (Bind p x) >>= \case
 --     Just _    -> return t
 --     Nothing -> do
---       Just (TypeScheme _ _ u) <- getFromTenv (KBind p x (top p))
+--       Just (TypeScheme _ _ u) <- getFromTenv (TBindK p x (top p))
 --       return u
   -- Type operators
 normalize (Dualof _ t) = normalize (dual t)
@@ -68,10 +68,10 @@ normalize t = t
 -- --   getFromKenv (Bind p x) >>= \case
 -- --     Just0_    -> addError defaultPos ["KENV MEMBER"]  >> return t
 -- --     Nothing -> do
--- --       Just (TypeScheme _ _ u) <- getFromTenv (KBind p x (top p))
+-- --       Just (TypeScheme _ _ u) <- getFromTenv (TBindK p x (top p))
 -- --       return u
 -- normType t@(Var p x) = do
---   getFromTenv (KBind p x (top p)) >>= \case
+--   getFromTenv (TBindK p x (top p)) >>= \case
 --     Just (TypeScheme _ _ u) -> normType u -- return u
 --     Nothing                 -> return t
 -- normType (Semi _ t u) = do
@@ -85,7 +85,7 @@ append (Semi p t u) v = Semi p t (append u v)
 append t v = Semi (position t) t v
 
 -- Extracts a typescheme; gives an error if it is of form Ɐ ε ⇒ T
-extractScheme :: TypeScheme -> FreestState ([KBind], Type)
+extractScheme :: TypeScheme -> FreestState ([TBindK], Type)
 extractScheme (TypeScheme _ [] t) = do
   addError (position t) ["Expecting a type scheme; found a type", styleRed $ show t]
   return ([], (Basic (position t) UnitType))

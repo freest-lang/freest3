@@ -66,7 +66,7 @@ synthetize (TypeApp p x ts) = do
   s <- checkVar p x
   (bs, t) <- extractScheme s
   let typeBinds = zip ts bs
-  mapM (\(t, KBind _ _ k) -> K.checkAgainst k t) typeBinds
+  mapM (\(t, TBindK _ _ k) -> K.checkAgainst k t) typeBinds
   return $ foldr (uncurry subs) t typeBinds
      
 -- Conditional
@@ -214,8 +214,8 @@ checkVar p x = do
       return t
  
 -- | Adds a list of binds to KindEnv
-addBindsToKenv :: Pos -> [KBind] -> FreestState ()
-addBindsToKenv p = mapM_ (\(KBind _ b k) -> addToKenv (TBind p b) k)
+addBindsToKenv :: Pos -> [TBindK] -> FreestState ()
+addBindsToKenv p = mapM_ (\(TBindK _ b k) -> addToKenv (TBind p b) k)
 
 -- | Removes a variable from venv if it is linear
 removeLinVar :: PBind -> TypeScheme -> FreestState ()
@@ -230,7 +230,7 @@ removeLinVar x (TypeScheme _ _ t) = do
 -}
   
   -- TODO: TEST
-wellFormedCall :: Pos -> Expression -> [Type] -> [KBind] -> FreestState ()
+wellFormedCall :: Pos -> Expression -> [Type] -> [TBindK] -> FreestState ()
 wellFormedCall p e ts binds = do
   mapM_ (\t -> K.synthetize t) ts
   sameNumber

@@ -29,7 +29,7 @@ import qualified Data.Set as Set
 import qualified Data.Sequence as Sequence
 -- import           Text.Printf
 
-type Node = Set.Set ([TypeVar], [TypeVar])
+type Node = Set.Set ([TVar], [TVar])
 
 type Ancestors = Node
 
@@ -37,7 +37,7 @@ type NodeQueue = Sequence.Seq (Node, Ancestors)
 
 type NodeTransformation = Productions -> Ancestors -> Node -> Set.Set Node
 
-expand :: Productions -> [TypeVar] -> [TypeVar] -> Bool
+expand :: Productions -> [TVar] -> [TVar] -> Bool
 expand ps xs ys = expand' ps (Sequence.singleton (Set.singleton (xs, ys), Set.empty))
 
 expand' :: Productions -> NodeQueue -> Bool
@@ -56,7 +56,7 @@ expandNode ps =
       Nothing  -> Nothing
       Just n'' -> Just (Set.union n' n'')) (Just Set.empty)
 
-expandPair :: Productions -> ([TypeVar], [TypeVar]) -> Maybe Node
+expandPair :: Productions -> ([TVar], [TVar]) -> Maybe Node
 expandPair ps (xs, ys)
   | Map.keysSet m1 == Map.keysSet m2 = Just $ match m1 m2
   | otherwise                        = Nothing
@@ -116,10 +116,10 @@ filtering p _ n
   | normsMatch p n = Set.singleton(n)
   | otherwise      = Set.empty
 
-congruentToAncestors :: Ancestors -> ([TypeVar], [TypeVar]) -> Bool
+congruentToAncestors :: Ancestors -> ([TVar], [TVar]) -> Bool
 congruentToAncestors a p = or $ Set.map (congruentToPair a p) a
 
-congruentToPair :: Ancestors -> ([TypeVar], [TypeVar]) -> ([TypeVar], [TypeVar]) -> Bool
+congruentToPair :: Ancestors -> ([TVar], [TVar]) -> ([TVar], [TVar]) -> Bool
 congruentToPair a (xs, ys) (xs', ys') =
   not (null xs') && xs' `isPrefixOf` xs &&
   not (null ys') && ys' `isPrefixOf` ys &&
@@ -131,7 +131,7 @@ bpa1 :: NodeTransformation
 bpa1 g a n =
   Set.foldr (\p ps -> Set.union (Set.map (\v -> Set.union v (Set.delete p n)) (bpa1' g a p)) ps) (Set.singleton n) n
 
-bpa1' :: Productions -> Ancestors -> ([TypeVar],[TypeVar]) -> Set.Set Node
+bpa1' :: Productions -> Ancestors -> ([TVar],[TVar]) -> Set.Set Node
 bpa1' p a (x:xs,y:ys) = case findInAncestors a x y of
       Nothing         -> Set.empty
       Just (xs', ys') -> Set.union
@@ -145,7 +145,7 @@ bpa2 g a n =
                 Set.union (Set.map (\v -> Set.union v (Set.delete p n)) (bpa2' g a p))
                           ps) (Set.singleton n) n
 
-bpa2' :: Productions -> Ancestors -> ([TypeVar],[TypeVar]) -> Set.Set Node
+bpa2' :: Productions -> Ancestors -> ([TVar],[TVar]) -> Set.Set Node
 bpa2' p a (x:xs, y:ys)
   | not (normed p x && normed p y) = Set.empty
   | otherwise  = case gammaBPA2 p (x,y) of
@@ -153,24 +153,24 @@ bpa2' p a (x:xs, y:ys)
       Just gamma -> Set.singleton (pairsBPA2 p (x:xs, y:ys) gamma)
 bpa2' _ _ _ = Set.empty
 
-pairsBPA2 :: Productions -> ([TypeVar],[TypeVar]) -> [TypeVar] -> Node
+pairsBPA2 :: Productions -> ([TVar],[TVar]) -> [TVar] -> Node
 pairsBPA2 p (x:xs, y:ys) gamma = Set.fromList [p1, p2]
   where  p1 = if (norm p [x] >= norm p [y]) then ( [x], [y] ++ gamma ) else ( [x] ++ gamma, [y] )
          p2 = if (norm p [x] >= norm p [y]) then ( gamma ++ xs, ys ) else ( xs, gamma ++ ys )
 
-gammaBPA2 :: Productions -> (TypeVar,TypeVar) -> Maybe [TypeVar]
+gammaBPA2 :: Productions -> (TVar,TVar) -> Maybe [TVar]
 gammaBPA2 p (x,y) = throughPath p ls [x1]
  where x0 = if norm p [x] <= norm p [y] then x else y
        x1 = if norm p [x] <= norm p [y] then y else x
        ls = pathToSkip p x0
 
-findInAncestors :: Ancestors -> TypeVar -> TypeVar -> Maybe ([TypeVar], [TypeVar])
+findInAncestors :: Ancestors -> TVar -> TVar -> Maybe ([TVar], [TVar])
 findInAncestors a x y =
  Set.foldr (\p acc -> case acc of
    Just p  -> Just p
    Nothing -> findInPair p x y) Nothing a
 
-findInPair :: ([TypeVar], [TypeVar]) -> TypeVar -> TypeVar -> Maybe ([TypeVar], [TypeVar])
+findInPair :: ([TVar], [TVar]) -> TVar -> TVar -> Maybe ([TVar], [TVar])
 findInPair ((x':xs), (y':ys)) x y
   | x == x' && y == y' = Just (xs, ys)
   | otherwise          = Nothing

@@ -11,8 +11,8 @@ import qualified Data.Map.Strict as Map
 main :: IO ()
 main = hspec spec
 
-kBind :: String -> KBind
-kBind x = KBind defaultPos x (Kind defaultPos Session Lin)
+kBind :: String -> TBindK
+kBind x = TBindK defaultPos x (Kind defaultPos Session Lin)
 
 spec :: Spec
 spec = do

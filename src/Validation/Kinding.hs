@@ -63,7 +63,7 @@ synthetize (Datatype p m) = do
   ks <- mapM synthetize (Map.elems m)
   let Kind _ _ n = foldr1 lub ks
   return $ Kind p Functional n
-synthetize (Rec p x@(KBind _ _ k) t) = do
+synthetize (Rec p x@(TBindK _ _ k) t) = do
   checkContractive t
   y <- freshVar
   let b = TBind p y
@@ -117,7 +117,7 @@ checkAgainst k1 t = do
 synthetizeTS :: TypeScheme -> FreestState Kind
 synthetizeTS (TypeScheme _ ks t) = do
   resetKEnv
-  mapM_ (\(KBind p x k) -> addToKenv (TBind p x) k) ks
+  mapM_ (\(TBindK p x k) -> addToKenv (TBind p x) k) ks
   synthetize t
 
 -- Determines whether a given type is linear or not
