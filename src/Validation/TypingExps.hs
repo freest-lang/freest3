@@ -247,15 +247,14 @@ checkMap :: FreestState ([Type], [VarEnv]) -> VarEnv -> TypeMap -> PBind ->
 checkMap acc venv tm b (p, e) = do
   setVenv venv
   t <- checkCons b tm -- TODO: change Bind
-  foldM (\_ (x, t') -> addToVenv x t') ()
-     (zip p (init' $ toList $ TypeScheme (position t) [] t))
+  mapM_ (uncurry addToVenv) (zip p (init' $ toList $ TypeScheme (position t) [] t))
   t <- synthetize e 
   venv <- getVenv
   liftM (concatPair t venv) acc 
   where
     init' :: [a] -> [a]
-    init' (x:[]) = [x]
-    init' x      = init x
+    init' [x] = [x]
+    init' xs  = init xs
     concatPair :: a -> b -> ([a],[b]) -> ([a],[b])
     concatPair x y (xs, ys) = (x:xs, y:ys)
 
