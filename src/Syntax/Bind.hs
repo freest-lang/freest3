@@ -12,29 +12,54 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Syntax.Bind
-( Var
-, Cons
-, Bind(..)
+( PVar
+, TVar
+, PBind(..)
+, TBind(..)
 ) where 
 
 import Parse.Lexer (Position, Pos, position)
 
-type Var = String -- lowercase, a type or expr variable
+-- The base syntactic categories of FreeST
 
-type Cons = String -- uppercase, a type constructor or a label in a record
+type PVar = String  -- Program Variables: Function names and function
+                    -- parameters (lower case), but also datatype
+                    -- constructors and labels in session types
+                    -- choices (uppercase)
+type TVar = String  -- Type Variables: Recursion variables (in
+                    -- rec-types) and polymorphic variables
+                    -- (lowercase) and The names of types introduced
+                    -- with data and type declarations (uppercase)
 
--- Bindings
+-- Bindings: A pair of a position and a base syntactic category. These
+-- are often used as keys in maps (for kinds, for type names, for
+-- program variables, for function definitions)
 
-data Bind = Bind Pos Var
+data PBind = PBind Pos PVar
 
-instance Position Bind where
-  position (Bind p _) = p
+instance Position PBind where
+  position (PBind p _) = p
 
-instance Show Bind where
-  show (Bind _ x) = x
+instance Show PBind where
+  show (PBind _ x) = x
 
-instance Eq Bind where
-  (Bind _ x) == (Bind _ y) = x == y
+instance Eq PBind where
+  (PBind _ x) == (PBind _ y) = x == y
   
-instance Ord Bind where
-  (Bind _ x) <= (Bind _ y) = x <= y
+instance Ord PBind where
+  (PBind _ x) <= (PBind _ y) = x <= y
+
+
+data TBind = TBind Pos TVar
+
+instance Position TBind where
+  position (TBind p _) = p
+
+instance Show TBind where
+  show (TBind _ x) = x
+
+instance Eq TBind where
+  (TBind _ x) == (TBind _ y) = x == y
+  
+instance Ord TBind where
+  (TBind _ x) <= (TBind _ y) = x <= y

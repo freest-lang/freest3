@@ -66,14 +66,14 @@ synthetize (Datatype p m) = do
 synthetize (Rec p x@(KBind _ _ k) t) = do
   checkContractive t
   y <- freshVar
-  let b = Bind p y
+  let b = TBind p y
   addToKenv b k
   k <- synthetize $ subs (Var p y) x t -- On the fly α-conversion
   removeFromKenv b
   return k
 -- Session or functional
 synthetize (Var p v) = do
-  let bind = Bind p v
+  let bind = TBind p v
   b <- kenvMember bind
   if b then
     getKind bind
@@ -88,7 +88,7 @@ synthetize (Dualof p t) = do
   return $ Kind p Session m
 synthetize (Name p c) = do
   tenv <- getTenv
-  return $ fst $ tenv Map.! (Bind p c)
+  return $ fst $ tenv Map.! (TBind p c)
   
 -- Check whether a given type is of a session kind; issue an error if
 -- not. In either case return the multiplicity of the kind of the type
@@ -104,7 +104,7 @@ checkAgainst :: Kind -> Type -> FreestState ()
 checkAgainst k (Rec p x t) = do
   checkContractive t
   y <- freshVar
-  let b = Bind p y
+  let b = TBind p y
   addToKenv b (Kind p Session Un)
   checkAgainst k $ subs (Var p y) x t -- On the fly α-conversion
   removeFromKenv b
@@ -117,7 +117,7 @@ checkAgainst k1 t = do
 synthetizeTS :: TypeScheme -> FreestState Kind
 synthetizeTS (TypeScheme _ ks t) = do
   resetKEnv
-  mapM_ (\(KBind p x k) -> addToKenv (Bind p x) k) ks
+  mapM_ (\(KBind p x k) -> addToKenv (TBind p x) k) ks
   synthetize t
 
 -- Determines whether a given type is linear or not

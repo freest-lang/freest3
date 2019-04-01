@@ -21,7 +21,7 @@ matchValidSpec [k, t, u] =
 
 --  :: [(String,Kind)]
 readKenv s =
-  map (\(x,k) -> (Bind defaultPos x, k)) xs
+  map (\(x,k) -> (TBind defaultPos x, k)) xs
   where xs = read s :: [(String,Kind)]
   
 main :: IO ()

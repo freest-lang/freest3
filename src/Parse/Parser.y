@@ -139,11 +139,11 @@ Decl :: { () }
        uncurry addToTenv $2 (TypeScheme (position $1) $3 (Datatype (position $1) (Map.fromList bs)))
     }
 
-DataCons :: { [(Bind, [Type])] }
+DataCons :: { [(PBind, [Type])] }
   : DataCon              { [$1] }
   | DataCon '|' DataCons { $1 : $3 }
 
-DataCon :: { (Bind, [Type]) }
+DataCon :: { (PBind, [Type]) }
   : ConsBind TypeSeq {% checkDupFunSig $1 >> return ($1, $2) }
 
 -----------------
@@ -188,7 +188,7 @@ MatchMap :: { MatchMap }
   | Match ';' MatchMap {% checkDupMatch (fst $1) $3 >>
                           return (uncurry Map.insert $1 $3) }
 
-Match :: { (Bind, (Bind, Expression)) }
+Match :: { (PBind, (PBind, Expression)) }
   : ConsBind VarBind '->' Expr { ($1, ($2, $4)) }
 
 CaseMap :: { CaseMap }
@@ -196,7 +196,7 @@ CaseMap :: { CaseMap }
   | Case ';' CaseMap {% checkDupMatch (fst $1) $3 >>
                         return (uncurry Map.insert $1 $3) }
                         
-Case :: { (Bind, ([Bind], Expression)) }
+Case :: { (PBind, ([PBind], Expression)) }
   : ConsBind VarBindSeq '->' Expr { ($1, ($2, $4)) }
 
 -----------
@@ -243,7 +243,7 @@ FieldList :: { TypeMap }
   | Field ',' FieldList {% checkDupField (fst $1) $3 >>
                            return (uncurry Map.insert $1 $3) }
 
-Field :: { (Bind, Type) }
+Field :: { (PBind, Type) }
   : ConsBind ':' Type { ($1, $3) }
 
 BasicType :: { (Pos, BasicType) }
@@ -276,9 +276,9 @@ Kind :: { Kind } :
 
 -- VARIABLES AND CONSTRUCTORS IN BINDING POSITIONS
 
-VarBind :: { Bind }
-  : VAR { Bind (position $1) (getText $1) }
-  | '_' { Bind (position $1) "_" } -- TODO: rename to unique Var
+VarBind :: { PBind }
+  : VAR { PBind (position $1) (getText $1) }
+  | '_' { PBind (position $1) "_" } -- TODO: rename to unique Var
 
 RecVar :: { KBind }
   : VAR ':' Kind { KBind (position $1) (getText $1) $3 }
@@ -288,14 +288,17 @@ KindVar :: { KBind }
   : VAR ':' Kind { KBind (position $1) (getText $1) $3 }
   | VAR		 { let p = position $1 in KBind p (getText $1) (top p) }
 
-ConsBind :: { Bind }
-  : CONS { Bind (position $1) (getText $1) }
+ConsBind :: { PBind }
+  : CONS { PBind (position $1) (getText $1) }
 
-TypeBind :: { (Bind, Kind) }
-  : ConsBind ':' Kind { ($1, $3) }
-  | ConsBind          { ($1, top (position $1)) }
+TConsBind :: { TBind }
+  : CONS { TBind (position $1) (getText $1) }
 
-VarBindSeq :: { [Bind] }
+TypeBind :: { (TBind, Kind) }
+  : TConsBind ':' Kind { ($1, $3) }
+  | TConsBind          { ($1, top (position $1)) }
+
+VarBindSeq :: { [PBind] }
   :                    { [] }
   | VarBind VarBindSeq {% checkDupBind $1 $2 >> return ($1 : $2) }
 
@@ -350,7 +353,7 @@ parseExpr s = fst $ runState (parse s) (initialState "")
 instance Read Expression where
   readsPrec _ s = [(parseExpr s, "")]
 
-parseProgram :: FilePath -> Map.Map Bind TypeScheme -> IO FreestS
+parseProgram :: FilePath -> Map.Map PBind TypeScheme -> IO FreestS
 parseProgram inputFile venv = do
   src <- readFile inputFile
   let p = parseDefs inputFile venv src

@@ -42,10 +42,10 @@ prelude =
 preludeLoad :: VarEnv -> VarEnv
 preludeLoad map =
   foldl (\acc (tv, t) ->
-     Map.insert (Bind defaultPos tv)
+     Map.insert (PBind defaultPos tv)
                 (TypeScheme defaultPos [] (read t :: Type)) acc) map typeList
 
 schemeLoad :: VarEnv -> VarEnv
 schemeLoad map =
-  foldl (\acc (tv, t) -> Map.insert (Bind defaultPos tv) (read t :: TypeScheme) acc) map schemeList
+  foldl (\acc (tv, t) -> Map.insert (PBind defaultPos tv) (read t :: TypeScheme) acc) map schemeList
 

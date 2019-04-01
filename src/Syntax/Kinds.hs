@@ -12,8 +12,7 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Syntax.Kinds
-( KindVar
-, PreKind (..)
+( PreKind (..)
 , Multiplicity (..)
 , Kind (..)
 , KindEnv
@@ -22,8 +21,8 @@ module Syntax.Kinds
 , lub
 ) where
 
-import           Parse.Lexer (Position, Pos, position, defaultPos)
-import           Syntax.Bind (Var, Bind)
+import           Parse.Lexer (Position, Pos, position)
+import           Syntax.Bind
 import qualified Data.Map.Strict as Map
 
 -- PREKINDS
@@ -85,11 +84,7 @@ instance Show Kind where
 instance Position Kind where
   position (Kind p _ _) = p
 
--- KINDED VARIABLES
-
-type KindVar = Var -- = String
-
 -- KIND ENVIRONMENTS
 
-type KindEnv = Map.Map Bind Kind
+type KindEnv = Map.Map TBind Kind
 

@@ -113,8 +113,8 @@ toGrammar (Choice _ c m) = do
   mapM_ (assocToGrammar y c) (Map.assocs m)
   return [y]
 
-assocToGrammar :: TypeVar -> Polarity -> (Bind, Type) -> TransState ()
-assocToGrammar y p (Bind _ l, t) = do
+assocToGrammar :: TVar -> Polarity -> (PBind, Type) -> TransState ()
+assocToGrammar y p (PBind _ l, t) = do
   xs <- toGrammar t
   addProduction y (ChoiceLabel p l) xs
 

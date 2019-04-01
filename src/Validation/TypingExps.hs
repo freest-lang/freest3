@@ -183,7 +183,7 @@ checkEquivTypes t u = do
 
 -- | The quotient operation
 -- removes a variable from the environment and gives an error if it is linear
-quotient :: Bind -> FreestState ()
+quotient :: PBind -> FreestState ()
 quotient b = do
   getFromVenv b >>= \case -- venv Map.!? b of
     Just (TypeScheme _ _ t) -> checkUn t
@@ -199,9 +199,9 @@ checkUn t = do
   
 -- | Checking Variables
 -- | Checks whether a variable exists and removes it if is a linear usage
-checkVar :: Pos -> TermVar -> FreestState TypeScheme -- TODO: Review
+checkVar :: Pos -> PVar -> FreestState TypeScheme -- TODO: Review
 checkVar p x = do
-  let b = (Bind p x)
+  let b = PBind p x
   getFromVenv b >>= \case
     Just t@(TypeScheme _ bs _) -> do
       addBindsToKenv p bs    
@@ -215,10 +215,10 @@ checkVar p x = do
  
 -- | Adds a list of binds to KindEnv
 addBindsToKenv :: Pos -> [KBind] -> FreestState ()
-addBindsToKenv p bs = foldM (\_ (KBind _ b k) -> addToKenv (Bind p b) k) () bs
+addBindsToKenv p = mapM_ (\(KBind _ b k) -> addToKenv (TBind p b) k)
 
 -- | Removes a variable from venv if it is linear
-removeLinVar :: Bind -> TypeScheme -> FreestState ()
+removeLinVar :: PBind -> TypeScheme -> FreestState ()
 removeLinVar x (TypeScheme _ _ t) = do
   isLin <- K.lin t
   if isLin then removeFromVenv x
@@ -242,35 +242,31 @@ wellFormedCall p e ts binds = do
                       "type(s) on type app; found", show $ length ts]
 
 -- Checks either the case map and the match map (all the expressions)
-checkMap :: FreestState ([Type],[VarEnv]) -> VarEnv -> TypeMap -> Bind ->
-            ([Bind], Expression) -> FreestState ([Type],[VarEnv])
+checkMap :: FreestState ([Type], [VarEnv]) -> VarEnv -> TypeMap -> PBind ->
+            ([PBind], Expression) -> FreestState ([Type], [VarEnv])
 checkMap acc venv tm b (p, e) = do
   setVenv venv
   t <- checkCons b tm -- TODO: change Bind
-  foldM (\_ (x@(Bind p _), t') -> addToVenv x t') ()
+  foldM (\_ (x, t') -> addToVenv x t') ()
      (zip p (init' $ toList $ TypeScheme (position t) [] t))
-
   t <- synthetize e 
   venv <- getVenv
   liftM (concatPair t venv) acc 
-  
   where
     init' :: [a] -> [a]
     init' (x:[]) = [x]
     init' x      = init x
-
     concatPair :: a -> b -> ([a],[b]) -> ([a],[b])
     concatPair x y (xs, ys) = (x:xs, y:ys)
 
 -- Checks whether a constructor exists in a map
-checkCons :: Bind -> TypeMap -> FreestState Type
-checkCons b@(Bind p c) tm = do
+checkCons :: PBind -> TypeMap -> FreestState Type
+checkCons b@(PBind p c) tm = do
   case tm Map.!? b of
     Just x  -> return x
     Nothing -> do
       addError p ["Constructor", styleRed c, "not in scope"]
       return $ Skip p
-
 
 -- | Equivalence functions
 
@@ -289,7 +285,7 @@ checkEquivEnvs venv1 venv2 = do
 equivalentEnvs :: VarEnv -> VarEnv -> FreestState Bool
 equivalentEnvs venv1 venv2 = Map.foldrWithKey (\b t acc -> acc <&&> f b t venv2) (return True) venv1
   where
-    f :: Bind -> TypeScheme -> VarEnv -> FreestState Bool
+    f :: PBind -> TypeScheme -> VarEnv -> FreestState Bool
     f b (TypeScheme _ _ t) venv = do
       lt <- K.lin t
       if lt then

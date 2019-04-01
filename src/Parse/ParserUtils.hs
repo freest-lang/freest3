@@ -28,7 +28,7 @@ import           Parse.Lexer (Position, Pos, position, defaultPos, showPos)
 import           Syntax.Programs (VarEnv)
 import           Syntax.Expression (Expression(..))
 import           Syntax.Types (TypeMap, KBind(..), Type(..))
-import           Syntax.Bind (Var, Bind(..))
+import           Syntax.Bind (PBind(..), TBind(..))
 import           Syntax.Kinds (Multiplicity(..))
 import           Utils.Errors
 import           Utils.FreestState (FreestState, addError, getVenv, getTenv, getEenv)
@@ -36,19 +36,19 @@ import           Data.List (nub, (\\), intercalate, find)
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map 
 
-checkDupField :: Bind -> TypeMap -> FreestState ()
+checkDupField :: PBind -> TypeMap -> FreestState ()
 checkDupField b m =
   when (b `Map.member` m) $
     addError (position b) ["Duplicated field name", "\n",
                            "\t In a choice type:", styleRed (show b), ": ..."]
 
-checkDupMatch :: Bind -> Map.Map Bind a -> FreestState () 
+checkDupMatch :: PBind -> Map.Map PBind a -> FreestState () 
 checkDupMatch b m =
   when (b `Map.member` m) $
     addError (position b) ["Pattern match is redundant", "\n",
                            "\t In a case alternative:", styleRed (show b), "-> ..."]
 
-checkDupBind :: Bind -> [Bind] -> FreestState ()
+checkDupBind :: PBind -> [PBind] -> FreestState ()
 checkDupBind b bs =
   case find (== b) bs of
     Just b' -> do
@@ -68,7 +68,7 @@ checkDupKBind (KBind p x _) bs =
          "\t         ", showPos p]
     Nothing -> return ()
 
-checkDupFunSig :: Bind -> FreestState ()  
+checkDupFunSig :: PBind -> FreestState ()  
 checkDupFunSig b = do
   m <- getVenv
   case m Map.!? b of
@@ -78,7 +78,7 @@ checkDupFunSig b = do
                              "\t             ", showPos (position b)]
     Nothing -> return ()
 
-checkDupTypeDecl :: Bind -> FreestState ()  
+checkDupTypeDecl :: TBind -> FreestState ()  
 checkDupTypeDecl b = do
   m <- getTenv
   case m Map.!? b of
@@ -88,13 +88,13 @@ checkDupTypeDecl b = do
                              "\t             ", showPos (position b)]
     Nothing -> return ()
 
-checkDupFunDecl :: Bind -> FreestState ()
+checkDupFunDecl :: PBind -> FreestState ()
 checkDupFunDecl b = do
   m <- getEenv
   when (b `Map.member` m) $
     addError (position b) ["Multiple declarations of function", styleRed (show b)]
 
-checkDupTypeBind :: Bind -> FreestState ()
+checkDupTypeBind :: TBind -> FreestState ()
 checkDupTypeBind b = do
   m <- getTenv
   case m Map.!? b of
@@ -117,8 +117,8 @@ unOp pos op expr =
   App (position expr) (Variable pos op) expr
 
 -- Convert a list of types and a final type constructor to a type
-typesToFun :: Bind -> [(Bind, [Type])] -> [(Bind, Type)]
-typesToFun (Bind p x) = map (\(k, ts) -> (k, typeToFun (Var p x) ts))
+typesToFun :: TBind -> [(PBind, [Type])] -> [(PBind, Type)]
+typesToFun (TBind p x) = map (\(k, ts) -> (k, typeToFun (Var p x) ts))
   where
     typeToFun :: Type -> [Type] -> Type
     typeToFun = foldr (\acc t -> Fun (position t) Un t acc)

@@ -26,7 +26,7 @@ information if it is IO or not.
 TODO: Adapt
 -}
 
-type FunsMap = Map.Map Bind Bool
+type FunsMap = Map.Map PBind Bool
 
 monadicFuns :: ExpEnv -> FunsMap
 monadicFuns eenv =
@@ -34,14 +34,14 @@ monadicFuns eenv =
                      Map.insert f
                      (monadicFun eenv f e) acc) Map.empty eenv
   where 
-    monadicFun :: ExpEnv -> Bind -> Expression -> Bool
+    monadicFun :: ExpEnv -> PBind -> Expression -> Bool
     monadicFun eenv fun (Variable p x)
-      | Map.member (Bind p x) eenv && fun /= (Bind p x) = let (_,e) = eenv Map.! (Bind p x) in monadicFun eenv (Bind p x) e
+      | Map.member (PBind p x) eenv && fun /= (PBind p x) = let (_,e) = eenv Map.! (PBind p x) in monadicFun eenv (PBind p x) e
       | otherwise                     = False
     monadicFun eenv fun (UnLet _ _ e1 e2) = monadicFun eenv fun e1 || monadicFun eenv fun e2
     monadicFun eenv fun (App _ e1 e2) = monadicFun eenv fun e1 || monadicFun eenv fun e2
     monadicFun eenv fun (TypeApp p x _) -- TODO: Review      
-      | Map.member (Bind p x) eenv && fun /= (Bind p x) = let (_,e) = eenv Map.! (Bind p x) in monadicFun eenv (Bind p x) e
+      | Map.member (PBind p x) eenv && fun /= (PBind p x) = let (_,e) = eenv Map.! (PBind p x) in monadicFun eenv (PBind p x) e
       | otherwise                     = False
     monadicFun eenv fun (Conditional _ e1 e2 e3) = 
       monadicFun eenv fun e1 || monadicFun eenv fun e2 || monadicFun eenv fun e3
@@ -55,7 +55,7 @@ monadicFuns eenv =
     monadicFun eenv fun (Case _ e cm) = monadicFun eenv fun e || monadicCase eenv fun cm
     monadicFun _ _ _ = False
 
-    monadicCase :: ExpEnv -> Bind -> CaseMap -> Bool
+    monadicCase :: ExpEnv -> PBind -> CaseMap -> Bool
     monadicCase eenv x = Map.foldr (\(_, e) acc -> acc || monadicFun eenv x e) False
 
 
@@ -66,7 +66,7 @@ type MonadicMap = Map.Map Expression Bool
 --   let m = monadicFuns eenv in 
 --   (m,Map.foldrWithKey (\f (_,e) acc -> fst $ annotateAST' acc m (m Map.! f) e) Map.empty eenv)
 
-annotateAST :: FunsMap -> Bind -> Expression -> MonadicMap
+annotateAST :: FunsMap -> PBind -> Expression -> MonadicMap
 annotateAST fm f e = fst $ annotateAST' Map.empty fm (fm Map.! f) e
 
 annotateAST' :: MonadicMap -> FunsMap -> Bool -> Expression -> (MonadicMap, Bool)
@@ -75,7 +75,7 @@ annotateAST' m fm b e@(Integer _ _)   = (Map.insert e b m, b)
 annotateAST' m fm b e@(Character _ _) = (Map.insert e b m, b)
 annotateAST' m fm b e@(Boolean _ _)   = (Map.insert e b m, b)
 annotateAST' m fm b e@(Variable p x)  =
-  case fm Map.!? (Bind p x) of
+  case fm Map.!? (PBind p x) of
     Just b1 -> (Map.insert e b1 m, b1)
     Nothing -> (Map.insert e b m, b)
     
@@ -91,7 +91,7 @@ annotateAST' m fm b e@(App _ e1 e2) =
       (Map.insert e (b1 || b2 || b3) m2, b1 || b2)
  
 annotateAST' m fm b e@(TypeApp p x _) = -- TODO: Was: b = False
-    case fm Map.!? (Bind p x) of
+    case fm Map.!? (PBind p x) of
       Just b1 -> (Map.insert e (b || b1) m, b || b1)
       Nothing -> (Map.insert e b m, b)
   
@@ -150,7 +150,7 @@ annotateMap m fm b = Map.foldr (\x acc -> fst $ annotateAST' acc fm b (snd x)) m
 
 monadicVar :: FunsMap -> Expression -> Bool
 monadicVar fm (Variable p x) =
-  case fm Map.!? (Bind p x) of
+  case fm Map.!? (PBind p x) of
     Just x  -> x
     Nothing -> False
 monadicVar _ _ = True
@@ -163,13 +163,13 @@ translateExpEnv eenv =
   Map.foldrWithKey (\f (ps,e) acc -> acc ++ genFun fm f ps e ++ "\n\n") "" eenv
 
   where
-    genFun :: FunsMap -> Bind -> [Bind] -> Expression -> HaskellCode
+    genFun :: FunsMap -> PBind -> [PBind] -> Expression -> HaskellCode
     genFun fm f ps e =
       let mm = annotateAST fm f e in
        show f ++ showBangParams ps ++ " = " ++
         (fst (evalState (translate fm mm e) 0))
 
-    showBangParams :: [Bind] -> String
+    showBangParams :: [PBind] -> String
     showBangParams [] = "" 
     showBangParams args = foldl (\acc a -> acc ++ " !" ++ show a) "" args
 --    showBangParams args = " !" ++ intercalate " !" (words (show args))
@@ -227,16 +227,16 @@ translate fm m e@(Boolean _ b) = do
 
 translate fm m e@(Variable p x) = do
   let b = expected m e
-  if Map.member (Bind p x) fm then
+  if Map.member (PBind p x) fm then
     do      
-      h <- translateExpr x b (fm Map.! (Bind p x))
+      h <- translateExpr x b (fm Map.! (PBind p x))
       return (h, b) -- fm Map.! x)
   else
     do
       h <- translateExpr x b False
       return (h, b)
   
-translate fm m e@(UnLet _ (Bind _ x) e1 e2) = do
+translate fm m e@(UnLet _ (PBind _ x) e1 e2) = do
   (h1, b1) <- translate fm m e1
   (h2, b2) <- translate fm m e2
 
@@ -261,9 +261,9 @@ translate fm m e@(App _ e1 e2) = do
 
 translate fm m e@(TypeApp p x _) = do -- translate fm m e
   let b = expected m e
-  if Map.member (Bind p x) fm then
+  if Map.member (PBind p x) fm then
     do      
-      h <- translateExpr x b (fm Map.! (Bind p x))
+      h <- translateExpr x b (fm Map.! (PBind p x))
       return (h, b) -- fm Map.! x)
   else
     do
@@ -284,7 +284,7 @@ translate fm m e@(Pair _ e1 e2) = do
   c <- translateExpr hc2 (expected m e) False
   return (hc1 ++ c, False)
 
-translate fm m (BinLet _ (Bind _ x) (Bind _ y) e1 e2) = do
+translate fm m (BinLet _ (PBind _ x) (PBind _ y) e1 e2) = do
   (h1, b1) <- translate fm m e1
   (h2, b2) <- translate fm m e2
   
@@ -341,9 +341,9 @@ translate fm m (Case _ e cm) = do
 translateMatchMap :: String -> FunsMap -> MonadicMap -> MatchMap -> TranslateMonad String
 translateMatchMap fresh fm m = Map.foldlWithKey (translateMatchMap' fresh) (return "")
   where
-    translateMatchMap' :: String -> TranslateMonad String -> Bind ->
-                          (Bind, Expression) -> TranslateMonad String
-    translateMatchMap' fresh acc (Bind _ v) (Bind _ p, e) = do
+    translateMatchMap' :: String -> TranslateMonad String -> PBind ->
+                          (PBind, Expression) -> TranslateMonad String
+    translateMatchMap' fresh acc (PBind _ v) (PBind _ p, e) = do
       (h, b) <- translate fm m e
       acc' <- acc
       return $ acc' ++ "\n    \"" ++ v ++ "\" " ++
@@ -353,13 +353,13 @@ translateMatchMap fresh fm m = Map.foldlWithKey (translateMatchMap' fresh) (retu
 translateCaseMap :: FunsMap -> MonadicMap -> CaseMap -> TranslateMonad String
 translateCaseMap fm m = Map.foldlWithKey translateCaseMap' (return "")
   where
-    translateCaseMap' :: TranslateMonad String -> Bind -> ([Bind], Expression) -> TranslateMonad String
-    translateCaseMap' acc (Bind _ v) (params, e) = do
+    translateCaseMap' :: TranslateMonad String -> PBind -> ([PBind], Expression) -> TranslateMonad String
+    translateCaseMap' acc (PBind _ v) (params, e) = do
       (h1, _) <- translate fm m e
       acc' <- acc
       return (acc' ++ "\n    " ++ v ++ showCaseParams params ++ " -> " ++ h1 ++ ";")
 
-    showCaseParams :: [Bind] -> String
+    showCaseParams :: [PBind] -> String
     showCaseParams [] = ""
     showCaseParams args = foldl (\acc a -> acc ++ " " ++ show a) "" args
 --    showCaseParams args = " " ++ unwords (words $ show args)

@@ -163,12 +163,12 @@ extractDataTypeMap t =
 
 -- Extracts a constructor from a choice map; gives an error if the
 -- constructor is not in the map
-extractCons :: Pos -> TypeMap -> Cons -> FreestState Type
+extractCons :: Pos -> TypeMap -> PVar -> FreestState Type
 extractCons pos tm c =
-  let b = Bind defaultPos c in
+  let b = PBind defaultPos c in
   case tm Map.!? b of
     Just t -> return t
     Nothing -> do
-      addError pos ["Cons", styleRed c, "not in scope"]             
-      return (Basic pos UnitType)
+      addError pos ["Constructor", styleRed c, "not in scope"]             
+      return $ Basic pos UnitType
 

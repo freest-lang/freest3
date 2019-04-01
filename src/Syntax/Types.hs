@@ -84,13 +84,13 @@ data Type =
   | Choice Pos Polarity TypeMap
   | Rec Pos KBind Type
   -- Functional or session
-  | Var Pos TypeVar  -- a recursion variable if bound, polymorphic otherwise
+  | Var Pos TypeVar -- a recursion variable if bound, polymorphic otherwise
   -- Type operators
   | Dualof Pos Type -- to be expanded
-  | Name Pos Cons   -- a named type, to be looked upon in a map of Cons to Type
+  | Name Pos TVar   -- a named type, to be looked upon in a map of Cons to Type
   deriving Ord
 
-type TypeMap = Map.Map Bind Type
+type TypeMap = Map.Map PBind Type -- TODO: rename to FieldMap
 
 instance Eq Type where -- Type equality, up to alpha-conversion
   t == u = equalTypes Map.empty (normalise t) (normalise u) 
@@ -190,7 +190,7 @@ instance Dual Type where
 
 type TypeVar = String
 
-data KBind = KBind Pos TypeVar Kind
+data KBind = KBind Pos TVar Kind
 
 instance Eq KBind where
   (KBind _ x _) == (KBind _ y _) = x == y
@@ -248,7 +248,7 @@ subs t y (Dualof p t1)      = Dualof p (subs t y t1)
 subs _ _ t                  = t
 
 -- The set of free type variables in a type
-free :: Type -> Set.Set Var
+free :: Type -> Set.Set TVar
   -- Functional types
 free (Basic _ _)      = Set.empty
 free (Fun _ _ t u)    = Set.union (free t) (free u)
@@ -307,7 +307,7 @@ isPreSession (Message _ _ _) _ = True
 isPreSession (Choice _ _ _) _  = True
 isPreSession (Rec _ _ _) _     = True
   -- Functional or session
-isPreSession (Var p x) kenv    = Map.member (Bind p x) kenv
+isPreSession (Var p x) kenv    = Map.member (TBind p x) kenv
   -- Type operators
 isPreSession (Dualof _ _) _    = True
 -- isPreSession (Name _ c) = ... TODO: requires a TypeEnv

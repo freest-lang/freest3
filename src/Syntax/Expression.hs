@@ -13,7 +13,7 @@ Portability :  portable | non-portable (<reason>)
 
 module Syntax.Expression
 ( Expression(..)
-, TermVar
+, PVar
 , CaseMap
 , MatchMap
 ) where
@@ -24,19 +24,17 @@ import           Syntax.Kinds
 import           Syntax.Bind
 import qualified Data.Map.Strict as Map
 
-type TermVar = Var -- = String
- 
 -- TODO: Join these two
 
 -- C x -> E where:
 -- C is a bind and the map key,
 -- x is a bind (parameter) and E an expression
-type MatchMap = Map.Map Bind (Bind, Expression)
+type MatchMap = Map.Map PBind (PBind, Expression)
 
 -- C x1 ... xn -> E where:
 -- C is a bind and the map key,
 -- x1 ... xn is a list of binds (parameters) and E an expression
-type CaseMap  = Map.Map Bind ([Bind], Expression)
+type CaseMap  = Map.Map PBind ([PBind], Expression)
 
 data Expression =
   -- Basic values
@@ -45,29 +43,29 @@ data Expression =
   | Character Pos Char
   | Boolean Pos Bool
   -- Variable
-  | Variable Pos TermVar
+  | Variable Pos PVar
   -- Abstraction intro and elim
-  {- Lam Pos Multiplicity Bind Exp -}
+  {- Lam Pos Multiplicity PBind Exp -}
   | App Pos Expression Expression
   -- Pair intro and elim
   | Pair Pos {- Multiplicity -} Expression Expression
-  | BinLet Pos Bind Bind Expression Expression
+  | BinLet Pos PBind PBind Expression Expression
   -- Datatype intro and elim
---  | Cons Pos TermVar -- TODO: this could be a Variable
+--  | Cons Pos PVar -- TODO: this could be a Variable
   | Case Pos Expression CaseMap
   -- Type application
-  | TypeApp Pos TermVar [Type]
+  | TypeApp Pos PVar [Type]
   -- Conditional
   | Conditional Pos Expression Expression Expression
   -- Let
-  | UnLet Pos Bind Expression Expression -- TODO: Derived; eliminate?
+  | UnLet Pos PBind Expression Expression -- TODO: Derived; eliminate?
   -- Fork
   | Fork Pos Expression
   -- Session types
   | New Pos Type
   | Send Pos Expression
   | Receive Pos Expression 
-  | Select Pos TermVar Expression
+  | Select Pos PVar Expression
   | Match Pos Expression MatchMap
    deriving (Eq, Ord, Show)
 

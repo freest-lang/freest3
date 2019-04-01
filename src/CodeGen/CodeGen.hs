@@ -37,12 +37,12 @@ genProgram venv eenv cenv kenv filepath = do
 targetFileName :: String -> String
 targetFileName file = replaceExtensions file "hs"
 
-updateKey :: Map.Map Bind a -> Map.Map Bind a
+updateKey :: Map.Map PBind a -> Map.Map PBind a
 updateKey m =
-  let b = Bind defaultPos "main" in
+  let b = PBind defaultPos "main" in
   case m Map.!? b of
    Nothing -> m
-   Just e  -> Map.insert (Bind defaultPos "_main") e (Map.delete b m)
+   Just e  -> Map.insert (PBind defaultPos "_main") e (Map.delete b m)
 
 genImports :: String
 genImports = "import FreeSTRuntime\n\n"
@@ -52,14 +52,14 @@ genPragmas = "-- Target Haskell code\n{-# LANGUAGE BangPatterns #-}\n\n"
 
 genMain :: ExpEnv  -> VarEnv -> HaskellCode
 genMain eenv venv =
-  case venv Map.!? (Bind defaultPos "_main") of
+  case venv Map.!? (PBind defaultPos "_main") of
     Just t ->    
       let
-        (_,e)    = eenv Map.! (Bind defaultPos "_main")
+        (_,e)    = eenv Map.! (PBind defaultPos "_main")
         m        = monadicFuns eenv
-        m2       = annotateAST m (Bind defaultPos "_main") e
+        m2       = annotateAST m (PBind defaultPos "_main") e
         h        = evalState (translate m m2 e) 0 in
-      if m Map.! (Bind defaultPos "_main") then  -- TODO: tmp start position
+      if m Map.! (PBind defaultPos "_main") then  -- TODO: tmp start position
         "main = _main >>= \\res -> putStrLn (show (res :: " ++ show t ++ "))\n\n"
       else
         "main = putStrLn (show _main)\n\n"

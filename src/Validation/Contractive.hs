@@ -31,7 +31,7 @@ contractive :: KindEnv -> Type -> Bool
 contractive kenv (Semi _ t _) = contractive kenv t
 contractive kenv (Rec _ _ t)  = contractive kenv t
 contractive kenv (Dualof _ t) = contractive kenv t
-contractive kenv (Var p x)    = Map.member (Bind p x) kenv
+contractive kenv (Var p x)    = Map.member (TBind p x) kenv
 contractive _    _            = True
 
 -- Check the contractivity of a given type; issue an error if not

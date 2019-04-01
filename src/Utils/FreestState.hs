@@ -27,26 +27,27 @@ import           Utils.Errors
 type Errors = [String]
 
 data FreestS = FreestS {
-  filename :: String,
-  varEnv :: VarEnv,
-  expEnv :: ExpEnv,
-  consEnv :: TypeEnv,
-  kindEnv :: KindEnv,
-  errors :: Errors,
-  fv :: Int}
+  filename :: String
+, varEnv   :: VarEnv
+, expEnv   :: ExpEnv
+, consEnv  :: TypeEnv
+, kindEnv  :: KindEnv
+, errors   :: Errors
+, fv       :: Int }
 
 type FreestState = State FreestS
 
 -- | Initial State
 
 initialState :: String -> FreestS
-initialState f = FreestS {filename = f,
-                          varEnv = Map.empty,
-                          expEnv = Map.empty,
-                          consEnv = Map.empty,
-                          kindEnv = Map.empty,
-                          errors = [],
-                          fv = 0}
+initialState f = FreestS {
+  filename = f
+, varEnv   = Map.empty
+, expEnv   = Map.empty
+, consEnv  = Map.empty
+, kindEnv  = Map.empty
+, errors   = []
+, fv        = 0}
 
 -- | FILE NAME
 
@@ -62,26 +63,26 @@ getVenv = do
   s <- get
   return $ varEnv s
 
-getFromVenv :: Bind -> FreestState (Maybe TypeScheme)
+getFromVenv :: PBind -> FreestState (Maybe TypeScheme)
 getFromVenv x = do
   venv <- getVenv
   return $ venv Map.!? x
 
-removeFromVenv :: Bind -> FreestState ()
+removeFromVenv :: PBind -> FreestState ()
 removeFromVenv x =
   modify (\s -> s {varEnv= Map.delete x (varEnv s)})  
 
-addToVenv :: Bind -> TypeScheme -> FreestState ()
+addToVenv :: PBind -> TypeScheme -> FreestState ()
 addToVenv b t =
   modify (\s -> s{varEnv=Map.insert b t (varEnv s)})
 
-venvMember :: Bind -> FreestState Bool
+venvMember :: PBind -> FreestState Bool
 venvMember x = do
   venv <- getVenv
   return $ Map.member x venv
 
 setVenv :: VarEnv -> FreestState ()
-setVenv venv = modify (\s -> s{varEnv=venv})
+setVenv venv = modify (\s -> s{varEnv = venv})
 
 -- | EXP ENV
 
@@ -91,15 +92,15 @@ getEenv = do
   return $ expEnv s
 
 -- Unsafe - must exist
-getFromEenv :: Bind -> FreestState ([Bind], Expression)
+getFromEenv :: PBind -> FreestState ([PBind], Expression)
 getFromEenv x = do
   eenv <- getEenv
   return $ eenv Map.! x
 
-addToEenv :: Bind -> ([Bind], Expression) -> FreestState ()
+addToEenv :: PBind -> ([PBind], Expression) -> FreestState ()
 addToEenv k v =
-  modify (\s -> s{expEnv=Map.insert k v (expEnv s)})    
-     
+  modify (\s -> s{expEnv = Map.insert k v (expEnv s)})    
+
 -- | TYPE ENV
 
 getTenv :: FreestState TypeEnv
@@ -107,11 +108,11 @@ getTenv = do
   s <- get
   return $ consEnv s
 
-addToTenv :: Bind -> Kind -> TypeScheme -> FreestState ()
+addToTenv :: TBind -> Kind -> TypeScheme -> FreestState ()
 addToTenv b k t =
   modify (\s -> s{consEnv = Map.insert b (k, t) (consEnv s)})
 
-getFromTenv :: Bind -> FreestState (Maybe (Kind, TypeScheme))
+getFromTenv :: TBind -> FreestState (Maybe (Kind, TypeScheme))
 getFromTenv  b = do
   tenv <- getTenv
   return $ tenv Map.!? b
@@ -123,26 +124,26 @@ getKenv = do
   s <- get
   return $ kindEnv s
 
-addToKenv :: Bind -> Kind -> FreestState ()
+addToKenv :: TBind -> Kind -> FreestState ()
 addToKenv x k =
   modify (\s -> s {kindEnv=Map.insert x k (kindEnv s)})
 
-kenvMember :: Bind -> FreestState Bool
+kenvMember :: TBind -> FreestState Bool
 kenvMember x = do
   kenv <- getKenv
   return $ Map.member x kenv
 
-getKind :: Bind -> FreestState Kind -- Remove ?
+getKind :: TBind -> FreestState Kind -- Remove ?
 getKind x = do
   kenv <- getKenv
   return $ kenv Map.! x
 
-getFromKenv :: Bind -> FreestState (Maybe Kind)
+getFromKenv :: TBind -> FreestState (Maybe Kind)
 getFromKenv x = do
   kenv <- getKenv
   return $ kenv Map.!? x   
 
-removeFromKenv :: Bind -> FreestState ()
+removeFromKenv :: TBind -> FreestState ()
 removeFromKenv x =
   modify (\s -> s {kindEnv = Map.delete x (kindEnv s)})
 

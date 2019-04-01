@@ -48,7 +48,7 @@ import           Data.List (union, delete)
 
 -- Terminal symbols are called labels
 data Label =
-  ChoiceLabel Polarity Cons |
+  ChoiceLabel Polarity PVar |
   MessageLabel Polarity BasicType |
   VarLabel TypeVar
   deriving (Eq, Ord)

@@ -201,7 +201,7 @@ equiv k t u =
   expand (prune p) [x] [y]
   where Grammar [x, y] p = convertToGrammar [t, u]
 
-checkBinding :: KindEnv -> TypeMap -> Bool -> Bind -> Type -> Bool
+checkBinding :: KindEnv -> TypeMap -> Bool -> PBind -> Type -> Bool
 checkBinding k m acc l t =
   acc && l `Map.member` m && equiv k (m Map.! l) t
 

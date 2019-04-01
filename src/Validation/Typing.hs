@@ -46,7 +46,7 @@ typeCheck = do
 mapWithKeyM :: Monad m => (k -> a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)
 mapWithKeyM f m = Trav.sequence (Map.mapWithKey f m)
 
-checkFunDecl ::  Bind -> ([Bind], Expression) -> FreestState ()
+checkFunDecl :: PBind -> ([PBind], Expression) -> FreestState ()
 checkFunDecl f (bs, exp) = do
   venv <- getVenv
   let t = venv Map.! f
@@ -57,8 +57,8 @@ checkFunDecl f (bs, exp) = do
   T.checkAgainst exp u
   mapM_ (removeFromVenv . fst) params
 
-buildParams :: Bind -> TypeScheme ->  [Bind] -> [TypeScheme] -> FreestState [(Bind, TypeScheme)]
-buildParams (Bind p f) (TypeScheme _ _ t) ps ts 
+buildParams :: PBind -> TypeScheme -> [PBind] -> [TypeScheme] -> FreestState [(PBind, TypeScheme)]
+buildParams (PBind p f) (TypeScheme _ _ t) ps ts 
   | binds == params = return $ zip ps ts
   | otherwise = do
       addError p ["The equation for", styleRed f, "has", show binds, "parameter(s)\n",
@@ -70,6 +70,5 @@ buildParams (Bind p f) (TypeScheme _ _ t) ps ts
 checkMainFunction :: FreestState ()
 checkMainFunction = do
   venv <- getVenv
-  when ((Bind defaultPos "main") `Map.notMember` venv) $
+  when ((PBind defaultPos "main") `Map.notMember` venv) $
     addError (defaultPos) ["Function", styleRed "main", "is not defined"]  
-

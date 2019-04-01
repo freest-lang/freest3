@@ -13,9 +13,9 @@ import qualified Data.Map.Strict as Map
 genDataTypes :: TypeEnv -> String
 genDataTypes = Map.foldlWithKey (\acc k v -> acc ++ showElem k v ++ "\n") ""
 
-showElem :: Bind -> (Kind, TypeScheme) -> String
-showElem (Bind _ x) (_, (TypeScheme _ _ (Datatype _ m))) = showDatatype x m
-showElem (Bind _ x) (_, (TypeScheme _ _ t))              = showTypeAbbr x t
+showElem :: TBind -> (Kind, TypeScheme) -> String
+showElem (TBind _ x) (_, (TypeScheme _ _ (Datatype _ m))) = showDatatype x m
+showElem (TBind _ x) (_, (TypeScheme _ _ t))              = showTypeAbbr x t
 
 
 showDatatype :: TypeVar -> TypeMap -> String
