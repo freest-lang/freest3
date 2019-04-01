@@ -1,4 +1,4 @@
-id' : forall a : TU => a -> a
+id' : forall a : TL => a -> a
 id' x = x
 
 main : Int

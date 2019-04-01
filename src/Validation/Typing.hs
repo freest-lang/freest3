@@ -70,5 +70,16 @@ buildParams (PBind p f) (TypeScheme _ _ t) ps ts
 checkMainFunction :: FreestState ()
 checkMainFunction = do
   venv <- getVenv
-  when ((PBind defaultPos "main") `Map.notMember` venv) $
-    addError (defaultPos) ["Function", styleRed "main", "is not defined"]  
+  let mBind = PBind defaultPos "main"
+  when (mBind `Map.notMember` venv)
+    (addError (defaultPos) [styleRed "main", "is not defined"])
+  let mType = venv Map.! mBind
+  b <- isValidMainType mType
+  when (not b) $
+    addError (defaultPos) ["The type for", styleRed "main", "must be a unrestricted, non-functional type\n",
+                           "\t found:", styleRed $ show mType]
+
+isValidMainType :: TypeScheme -> FreestState Bool
+isValidMainType (TypeScheme _ _ (Fun _ _ _ _)) = return False
+isValidMainType (TypeScheme _ [] t)            = K.un t
+isValidMainType _                              = return False

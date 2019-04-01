@@ -35,20 +35,14 @@ import qualified Data.Map.Strict as Map
 
 -- | The Extract Functions
 
--- The output is a type equivalent from that in the input, but
--- different from Rec and from Unfold. If it is a Var, then it must
--- represent a polymorphic variable.
+-- The output type is equivalent to the input type, but different from
+-- Rec and from Unfold. If it is a Var, then it must represent a
+-- polymorphic variable.
 normalize :: Type -> Type
   -- Session types
 normalize (Semi _ t u) = append (normalize t) (normalize u)
-normalize (Rec _ _ t) = normalize (unfold t)
+normalize t@(Rec _ _ _) = normalize (unfold t)
   -- Functional or session
--- normalize t@(Var p x) = do
---   getFromKenv (Bind p x) >>= \case
---     Just _    -> return t
---     Nothing -> do
---       Just (TypeScheme _ _ u) <- getFromTenv (TBindK p x (top p))
---       return u
   -- Type operators
 normalize (Dualof _ t) = normalize (dual t)
   -- Functional types, Skip, Message, Choice, and Var
