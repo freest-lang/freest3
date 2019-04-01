@@ -60,8 +60,8 @@ import           System.Exit (die)
   '*'      {TokenTimes _}
   '_'      {TokenWild _}
   OP       {TokenOp _ _}
-  CONS     {TokenCons _ _}
-  VAR      {TokenVar _ _}
+  UPPER_ID {TokenUpperId _ _}
+  LOWER_ID {TokenLowerId _ _}
   rec      {TokenRec _}
   '.'      {TokenDot _}
   SU       {TokenSU _}
@@ -165,10 +165,10 @@ Expr :: { Expression }
 
 App :: { Expression }
   : App Primary                              { App (position $1) $1 $2 }
-  | VAR '[' TypeList ']'                     { TypeApp (position $1) (getText $1) $3 }
+  | LOWER_ID '[' TypeList ']'                     { TypeApp (position $1) (getText $1) $3 }
   | send Primary                             { Send (position $1) $2 }
   | receive Primary                          { Receive (position $1) $2 }
-  | select CONS Primary                      { Select (position $1) (getText $2) $3 }
+  | select UPPER_ID Primary                      { Select (position $1) (getText $2) $3 }
   | fork Primary                             { Fork (position $1) $2 }
   | '-' App %prec NEG                        { unOp (position $1) "negate" $2}
   | Primary                                  { $1 }
@@ -178,8 +178,8 @@ Primary :: { Expression }
   | BOOL                                     { let (TokenBool p x) = $1 in Boolean p x }
   | CHAR                                     { let (TokenChar p x) = $1 in Character p x }
   | '()'                                     { Unit (position $1) }
-  | VAR                                      { Variable (position $1) (getText $1) }
-  | CONS                                     { Variable (position $1) (getText $1) }
+  | LOWER_ID                                      { Variable (position $1) (getText $1) }
+  | UPPER_ID                                     { Variable (position $1) (getText $1) }
   | '(' Expr ',' Expr ')'                    { Pair (position $1) $2 $4 }
   | '(' Expr ')'                             { $2 }
 
@@ -205,7 +205,7 @@ Case :: { (PBind, ([PBind], Expression)) }
 
 TypeScheme :: { TypeScheme }
   : forall KindVarList '=>' Type { TypeScheme (position $1) $2 $4 }
-  | Type                          { TypeScheme (position $1) [] $1 }
+  | Type                         { TypeScheme (position $1) [] $1 }
 
 -----------
 -- TYPES --
@@ -222,8 +222,8 @@ Type :: { Type }
   | dualof Type                  { Dualof (position $1) $2 }
   | Skip                         { Skip (position $1) }
   | BasicType                    { uncurry Basic $1 }
-  | VAR                          { Var (position $1) (getText $1) }
-  | CONS                         { Name (position $1) (getText $1) }
+  | LOWER_ID                     { Var (position $1) (getText $1) }
+  | UPPER_ID                     { Name (position $1) (getText $1) }
   | '(' Type ')'                 { $2 }
 
 Polarity :: { (Pos, Polarity) }
@@ -277,22 +277,22 @@ Kind :: { Kind } :
 -- VARIABLES AND CONSTRUCTORS IN BINDING POSITIONS
 
 VarBind :: { PBind }
-  : VAR { PBind (position $1) (getText $1) }
+  : LOWER_ID { PBind (position $1) (getText $1) }
   | '_' { PBind (position $1) "_" } -- TODO: rename to unique Var
 
 RecVar :: { TBindK }
-  : VAR ':' Kind { TBindK (position $1) (getText $1) $3 }
-  | VAR		 { let p = position $1 in TBindK p (getText $1) (Kind p Session Lin) }
+  : LOWER_ID ':' Kind { TBindK (position $1) (getText $1) $3 }
+  | LOWER_ID	      { let p = position $1 in TBindK p (getText $1) (Kind p Session Lin) }
 
 KindVar :: { TBindK }
-  : VAR ':' Kind { TBindK (position $1) (getText $1) $3 }
-  | VAR		 { let p = position $1 in TBindK p (getText $1) (top p) }
+  : LOWER_ID ':' Kind { TBindK (position $1) (getText $1) $3 }
+  | LOWER_ID	      { let p = position $1 in TBindK p (getText $1) (top p) }
 
 ConsBind :: { PBind }
-  : CONS { PBind (position $1) (getText $1) }
+  : UPPER_ID { PBind (position $1) (getText $1) }
 
 TConsBind :: { TBind }
-  : CONS { TBind (position $1) (getText $1) }
+  : UPPER_ID { TBind (position $1) (getText $1) }
 
 TypeBind :: { (TBind, Kind) }
   : TConsBind ':' Kind { ($1, $3) }

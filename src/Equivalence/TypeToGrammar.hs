@@ -80,25 +80,21 @@ typeToGrammar t = do
   return y
 
 toGrammar :: Type -> TransState [TVar]
+-- Session types
 toGrammar (Skip _) =
   return []
-toGrammar (Message _ p b) = do
-  y <- freshVar
-  addProduction y (MessageLabel p b) []
-  return [y]
 toGrammar (Semi _ t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
   return $ xs ++ ys
-toGrammar (Var _ x) = do
-  b <- memberVisited x
-  if b
-  then    -- This is a recursion variable
-    return [x]
-  else do -- This is a polymorphic variable
-    y <- freshVar
-    addProduction y (VarLabel x) []
-    return [y]
+toGrammar (Message _ p b) = do
+  y <- freshVar
+  addProduction y (MessageLabel p b) []
+  return [y]
+toGrammar (Choice _ c m) = do
+  y <- freshVar
+  mapM_ (assocToGrammar y c) (Map.assocs m)
+  return [y]
 toGrammar u@(Rec p x t)
   | isChecked u Set.empty = return []
   | otherwise = do
@@ -108,11 +104,17 @@ toGrammar u@(Rec p x t)
     m <- getTransitions $ head zs
     addProductions y (Map.map (++ tail zs) m)
     return [y]
-toGrammar (Choice _ c m) = do
-  y <- freshVar
-  mapM_ (assocToGrammar y c) (Map.assocs m)
-  return [y]
-
+-- Functional or session (session in this case)
+toGrammar (Var _ x) = do
+  b <- memberVisited x
+  if b
+  then    -- This is a recursion variable
+    return [x]
+  else do -- This is a polymorphic variable
+    y <- freshVar
+    addProduction y (VarLabel x) []
+    return [y]
+  
 assocToGrammar :: TVar -> Polarity -> (PBind, Type) -> TransState ()
 assocToGrammar y p (PBind _ l, t) = do
   xs <- toGrammar t

@@ -85,8 +85,8 @@ data Type =
   -- Functional or session
   | Var Pos TVar -- a recursion variable if bound, polymorphic otherwise
   -- Type operators
-  | Dualof Pos Type -- to be expanded
   | Name Pos TVar   -- a named type, to be looked upon in a map of Cons to Type
+  | Dualof Pos Type -- to be expanded
   deriving Ord
 
 type TypeMap = Map.Map PBind Type -- TODO: rename to FieldMap

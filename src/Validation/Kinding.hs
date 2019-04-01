@@ -83,12 +83,12 @@ synthetize (Var p v) = do
     addToKenv bind k
     return k
 -- Type operators
-synthetize (Dualof p t) = do
-  m <- checkAgainstSession t
-  return $ Kind p Session m
 synthetize (Name p c) = do
   tenv <- getTenv
   return $ fst $ tenv Map.! (TBind p c)
+synthetize (Dualof p t) = do
+  m <- checkAgainstSession t
+  return $ Kind p Session m
   
 -- Check whether a given type is of a session kind; issue an error if
 -- not. In either case return the multiplicity of the kind of the type

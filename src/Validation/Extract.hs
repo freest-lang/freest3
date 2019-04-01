@@ -36,17 +36,24 @@ import qualified Data.Map.Strict as Map
 -- | The Extract Functions
 
 -- The output type is equivalent to the input type, but different from
--- Rec and from Unfold. If it is a Var, then it must represent a
--- polymorphic variable.
-normalize :: Type -> Type
+-- Rec, Unfold, and Name. If it is a Var, then it must represent a
+-- polymorphic variable (because recursion variables are bound)
+normalise :: Type -> FreestState Type
   -- Session types
-normalize (Semi _ t u) = append (normalize t) (normalize u)
-normalize t@(Rec _ _ _) = normalize (unfold t)
+normalise (Semi _ t u) = do
+  t' <- normalise t
+  u' <- normalise u
+  return $ append t' u'
+normalise t@(Rec _ _ _) = normalise (unfold t)
   -- Functional or session
   -- Type operators
-normalize (Dualof _ t) = normalize (dual t)
+normalise (Name p x) = do
+  tenv <- getTenv
+  let (_, (TypeScheme _ [] t)) = tenv Map.! (TBind p x) -- TODO: cater for polymorphic type definitions
+  normalise t
+normalise (Dualof _ t) = normalise (dual t)
   -- Functional types, Skip, Message, Choice, and Var
-normalize t = t
+normalise t = return t
 
 -- normType :: Type -> FreestState Type
 -- normType t@(Basic _ _) = return t
@@ -87,8 +94,9 @@ extractScheme (TypeScheme _ bs t) = return (bs, t)
 
 -- Extracts a function from a type; gives an error if there isn't a function
 extractFun :: Type -> FreestState (Type, Type)
-extractFun t =
-  case normalize t of
+extractFun t = do
+  t' <- normalise t
+  case t' of
     (Fun _ _ u v) -> return (u, v)
     u             ->
       let p = position u in
@@ -97,8 +105,9 @@ extractFun t =
 
 -- Extracts a pair from a type; gives an error if there is no pair
 extractPair :: Type -> FreestState (Type, Type)
-extractPair t =
-  case normalize t of
+extractPair t = do
+  t' <- normalise t
+  case t' of
     (PairType _ u v) -> return (u, v)
     u                ->
       let p = position u in
@@ -107,8 +116,9 @@ extractPair t =
       
 -- Extracts a basic type from a general type; gives an error if it isn't a basic
 extractBasic :: Type -> FreestState BasicType
-extractBasic t =
-  case normalize t of
+extractBasic t = do
+  t' <- normalise t
+  case t' of
     (Basic _ b) -> return b
     u           ->
       addError (position u) ["Expecting a basic type; found", styleRed $ show u] >>
@@ -123,8 +133,9 @@ extractInput :: Type -> FreestState (BasicType, Type)
 extractInput = extractMessage Out "input"
 
 extractMessage :: Polarity -> String -> Type -> FreestState (BasicType, Type)
-extractMessage pol msg t =
-  case normalize t of
+extractMessage pol msg t = do
+  t' <- normalise t
+  case t' of
      (Message p pol b)            -> return (b, Skip p)
      (Semi _ (Message _ pol b) u) -> return (b, u)
      u                            ->
@@ -138,8 +149,9 @@ extractInChoiceMap :: Pos -> Type -> FreestState TypeMap
 extractInChoiceMap = extractChoiceMap In "internal"
       
 extractChoiceMap :: Polarity -> String -> Pos -> Type -> FreestState TypeMap
-extractChoiceMap pol msg pos t =
-  case normalize t of
+extractChoiceMap pol msg pos t = do
+  t' <- normalise t
+  case t' of
     (Choice _ pol m)            -> return m
     (Semi _ (Choice _ pol m) u) -> return $ Map.map (\v -> Semi (position v) v u) m
     u                           -> do
@@ -148,8 +160,9 @@ extractChoiceMap pol msg pos t =
 
 -- Extracts a datatype from a type; gives an error if a datatype is not found
 extractDataTypeMap :: Type -> FreestState TypeMap
-extractDataTypeMap t =
-  case normalize t of
+extractDataTypeMap t = do
+  t' <- normalise t
+  case t' of
     (Datatype _ m) -> return m
     u              -> do
       addError (position u) ["Expecting a datatype; found", styleRed $ show u]

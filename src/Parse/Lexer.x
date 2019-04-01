@@ -102,9 +102,9 @@ tokens :-
   (True|False) 	      	 	{ \p s -> TokenBool p $ read s }
   @char				{ \p s -> TokenChar p $ read s }
 -- Identifiers
-  "(+)" | "(-)" | "(*)"         { TokenVar }  -- TODO: add remaining operators
-  $lower [$letter$digit\_\']*   { TokenVar }
-  $upper [$letter$digit\_\']*	{ TokenCons }
+  "(+)" | "(-)" | "(*)"         { TokenLowerId }  -- TODO: add remaining operators
+  $lower [$letter$digit\_\']*   { TokenLowerId }
+  $upper [$letter$digit\_\']*	{ TokenUpperId }
 
 {
 
@@ -123,7 +123,7 @@ data Token =
   | TokenComma AlexPosn 
   | TokenSkip AlexPosn 
   | TokenColon AlexPosn 
-  | TokenCons AlexPosn String
+  | TokenUpperId AlexPosn String
   | TokenSemi AlexPosn 
   | TokenMOut AlexPosn 
   | TokenMIn AlexPosn 
@@ -133,7 +133,7 @@ data Token =
   | TokenPlus AlexPosn 
   | TokenRec AlexPosn 
   | TokenDot AlexPosn 
-  | TokenVar AlexPosn String  
+  | TokenLowerId AlexPosn String  
   | TokenSU AlexPosn 
   | TokenSL AlexPosn 
   | TokenTU AlexPosn 
@@ -184,7 +184,7 @@ instance Show Token where
   show (TokenComma p) = show p ++ ": ,"  
   show (TokenSkip p) = show p ++ ": Skip" 
   show (TokenColon p) = show p ++ ": :"  
-  show (TokenCons p c) = show p ++ ": " ++ c
+  show (TokenUpperId p c) = show p ++ ": " ++ c
   show (TokenSemi p) = show p ++ ": ;"  
   show (TokenMOut p) = show p ++ ": !"  
   show (TokenMIn p) = show p ++ ": ?"  
@@ -194,7 +194,7 @@ instance Show Token where
   show (TokenPlus p) = show p ++ ": +"
   show (TokenRec p) = show p ++ ": rec"
   show (TokenDot p) = show p ++ ": ."
-  show (TokenVar p s) = show p ++ ": " ++ s
+  show (TokenLowerId p s) = show p ++ ": " ++ s
   show (TokenSU p) = show p ++ ": SU" 
   show (TokenSL p) = show p ++ ": SL"   
   show (TokenTU p) = show p ++ ": TU"   
@@ -265,7 +265,7 @@ instance Position Token where
   position (TokenComma p) = p 
   position (TokenSkip p) = p 
   position (TokenColon p) = p 
-  position (TokenCons p _) = p
+  position (TokenUpperId p _) = p
   position (TokenSemi p) = p 
   position (TokenMOut p) = p 
   position (TokenMIn p) = p 
@@ -275,7 +275,7 @@ instance Position Token where
   position (TokenPlus p) = p 
   position (TokenRec p) = p 
   position (TokenDot p) = p 
-  position (TokenVar p _) = p 
+  position (TokenLowerId p _) = p 
   position (TokenSU p) = p 
   position (TokenSL p) = p 
   position (TokenTU p) = p 
@@ -312,8 +312,8 @@ showPos :: Pos -> String
 showPos (AlexPn _ line column) = show line ++ ":" ++ show column
 
 getText :: Token -> String
-getText (TokenCons _ x) = x
-getText (TokenVar _ x) = x
+getText (TokenUpperId _ x) = x
+getText (TokenLowerId _ x) = x
 getText (TokenOp _ x) = x
 
 }

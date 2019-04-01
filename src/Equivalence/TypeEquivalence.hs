@@ -193,7 +193,11 @@ equiv k (Datatype _ m1) (Datatype _ m2) =
   Map.foldlWithKey (checkBinding k m2) True m1
   -- Functional or session
 equiv _ (Var _ x) (Var _ y) = x == y
-  -- Type operators: TODO
+  -- Type operators
+equiv k (Dualof _ t) u = equiv k (dual t) u
+equiv k t (Dualof _ u) = equiv k (dual t) u
+-- equiv k (Name _ t) u = TODO: complete me!
+-- equiv k t (Name _ u) =
   -- Session types
 equiv k t u =
   isPreSession t k &&
