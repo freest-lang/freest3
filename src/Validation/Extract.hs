@@ -51,7 +51,7 @@ normalise t@(Rec _ _ _) = normalise (unfold t)
   -- Type operators
 normalise (Name p x) = do
   tenv <- getTenv
-  let (_, (TypeScheme _ [] t)) = tenv Map.! (TBind p x) -- TODO: cater for polymorphic type definitions
+  let (_, (TypeScheme _ [] t)) = tenv Map.! (TBind p x) -- TODO: polymorphic type names
   normalise t
 normalise (Dualof _ t) = normalise (dual t)
   -- Functional types, Skip, Message, Choice, and Var

@@ -12,7 +12,7 @@ spec = do
 matchInvalidSpec :: [String] -> Spec
 matchInvalidSpec [a, b] =
   it (a ++ " `equivalent` " ++  b) $
-    equivalent Map.empty (read a) (read b) `shouldBe` False
+    equivalent Map.empty Map.empty (read a) (read b) `shouldBe` False
 
 main :: IO ()
 main = hspec spec

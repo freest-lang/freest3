@@ -11,10 +11,13 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
+{-# LANGUAGE LambdaCase #-}
+
 module Validation.Kinding
 ( checkAgainst
 , synthetize
 , synthetizeTS
+, isSessionType
 , un
 , lin
 , kindOfType -- test
@@ -72,26 +75,33 @@ synthetize (Rec p x@(TBindK _ _ k) t) = do
   removeFromKenv b
   return k
 -- Session or functional
-synthetize (Var p v) = do
-  let bind = TBind p v
-  b <- kenvMember bind
-  if b then
-    getKind bind
-  else do
-    addError p ["Variable not in scope: ", styleRed v]
-    let k = top p
-    addToKenv bind k
-    return k
+synthetize (Var p x) =
+  let bind = TBind p x in
+  getFromKenv bind >>= \case
+    Just k ->
+      return k
+    Nothing -> do
+      addError p ["Type variable not in scope:", styleRed x]
+      let k = top p
+      addToKenv bind k
+      return k
 -- Type operators
-synthetize (Name p c) = do
-  tenv <- getTenv
-  return $ fst $ tenv Map.! (TBind p c)
+synthetize (Name p c) =
+  let bind = TBind p c in
+  getFromTenv bind >>= \case
+    Just (k, _) ->
+      return k
+    Nothing -> do
+      addError p ["Type name not in scope:", styleRed c]
+      let k = top p
+      addToTenv bind k (TypeScheme p [] (Basic p UnitType))
+      return k
 synthetize (Dualof p t) = do
   m <- checkAgainstSession t
   return $ Kind p Session m
   
--- Check whether a given type is of a session kind; issue an error if
--- not. In either case return the multiplicity of the kind of the type
+-- Check whether a given type is of a session kind. In either case
+-- return the multiplicity of the kind of the type
 checkAgainstSession :: Type -> FreestState Multiplicity
 checkAgainstSession t = do
   (Kind _ k m) <- synthetize t
@@ -99,7 +109,7 @@ checkAgainstSession t = do
     addError (position t) ["Expecting a session type; found", styleRed $ show t]
   return m
 
--- Check whether a given type has a given kind
+-- Checks a type against a given kind
 checkAgainst :: Kind -> Type -> FreestState ()
 checkAgainst k (Rec p x t) = do
   checkContractive t
@@ -149,3 +159,20 @@ isWellFormed t k =
   let s = initialState "" in
   let s1 = execState (synthetize t) (s {kindEnv=k}) in
     null (errors s1)
+
+-- Assumes the type is well formed
+isSessionType :: KindEnv -> TypeEnv -> Type -> Bool
+  -- Session types
+isSessionType _ _ (Skip _)          = True
+isSessionType _ _ (Semi _ _ _)      = True
+isSessionType _ _ (Message _ _ _)   = True
+isSessionType _ _ (Choice _ _ _)    = True
+isSessionType kenv tenv (Rec _ _ t) = isSessionType kenv tenv t
+  -- Functional or session
+isSessionType kenv _ (Var p x)      = Map.member (TBind p x) kenv
+  -- Type operators
+isSessionType _ _ (Dualof _ _)      = True
+isSessionType kenv tenv (Name p c)  = isSessionType kenv tenv t
+  where (_, TypeScheme _ [] t) = tenv Map.! (TBind p c) -- TODO: polymorphic type names
+  -- Otherwise: Functional types
+isSessionType _ _ _                 = False

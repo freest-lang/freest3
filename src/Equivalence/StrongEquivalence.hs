@@ -4,11 +4,15 @@ Description :  <optional short text displayed on contents page>
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
 
-Maintainer  :  <email>
+Maintainer  :  vmvasconcelos@ciencias.ulisboa.pot
 Stability   :  unstable | experimental | provisional | stable | frozen
 Portability :  portable | non-portable (<reason>)
 
-<module description starting at first column>
+A notion of equivalence stronger than the bisimulation on session
+types. This relation is strictly included in equivalence. Use it to
+check whether two types are equivalent, prior to trying the
+equivalence algorithm, which takes significantly more time.
+
 -}
 
 module Equivalence.StrongEquivalence
@@ -32,22 +36,22 @@ normalise tenv (Fun p q t u)    = Fun p q (normalise tenv t) (normalise tenv u)
 normalise tenv (PairType p t u) = PairType p (normalise tenv t) (normalise tenv u)
 normalise tenv (Datatype p m)   = Datatype p (Map.map (normalise tenv) m)
   -- Session types
-normalise tenv  (Semi p (Choice q v m) t) =
-  Choice q v (Map.map (\v -> append (normalise tenv v) u) m)
-  where u = normalise tenv t
-normalise tenv  (Semi p t u)    = append (normalise tenv t) (normalise tenv u)
-normalise tenv  (Choice p q m)  = Choice p q (Map.map (normalise tenv) m)
-normalise tenv  (Rec p (TBindK q x k) t)
-  | x `Set.member` (free t) = Rec p (TBindK q x k) u
-  | otherwise               = u
-  where u = normalise tenv t
+normalise tenv (Semi _ (Choice p q m) t) =
+  Choice p q (Map.map (\u -> append (normalise tenv u) t') m)
+  where t' = normalise tenv t
+normalise tenv (Semi p t u)     = append (normalise tenv t) (normalise tenv u)
+normalise tenv (Choice p q m)   = Choice p q (Map.map (normalise tenv) m)
+normalise tenv (Rec p (TBindK q x k) t)
+  | x `Set.member` (free t)     = Rec p (TBindK q x k) t'
+  | otherwise                   = t'
+  where t' = normalise tenv t
   -- Functional or session
   -- Type operators
-normalise tenv  (Dualof _ t)    = normalise tenv (dual t)
-normalise tenv (Name p x) = normalise tenv t
-  where (_, TypeScheme _ [] t) = tenv Map.! (TBind p x) -- TODO: polymorphic type names
+normalise tenv (Dualof _ t)     = normalise tenv (dual t)
+normalise tenv (Name p c)       = normalise tenv t
+  where (_, TypeScheme _ [] t) = tenv Map.! (TBind p c) -- TODO: polymorphic type names
   -- Otherwise: Basic, Skip, Message, Var
-normalise tenv  t               = t
+normalise tenv t                = t
 
 append :: Type -> Type -> Type
 append (Skip _)       t = t

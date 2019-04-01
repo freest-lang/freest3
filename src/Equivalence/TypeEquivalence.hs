@@ -31,6 +31,41 @@ import qualified Data.Set as Set
 import qualified Data.Sequence as Sequence
 -- import           Text.Printf
 
+-- TYPE EQUIVALENCE
+
+equivalent :: KindEnv -> TypeEnv -> Type -> Type -> Bool
+equivalent kenv tenv t u = strongEquiv tenv t u || equiv kenv tenv t u
+
+equiv :: KindEnv -> TypeEnv -> Type -> Type -> Bool
+  -- Functional types
+equiv _ _ (Basic _ b) (Basic _ c) = b == c
+equiv kenv tenv (Fun _ m t1 t2) (Fun _ n u1 u2) =
+  m == n && equiv kenv tenv t1 u1 && equiv kenv tenv t2 u2
+equiv kenv tenv (PairType _ t1 t2) (PairType _ u1 u2) =
+  equiv kenv tenv t1 u1 && equiv kenv tenv t2 u2
+equiv kenv tenv (Datatype _ m1) (Datatype _ m2) =
+  Map.size m1 == Map.size m2 &&
+  Map.foldlWithKey (checkConstructor kenv tenv m2) True m1
+  -- Functional or session
+equiv _ _ (Var _ x) (Var _ y) = x == y
+  -- Type operators
+equiv kenv tenv (Dualof _ t) u = equiv kenv tenv (dual t) u
+equiv kenv tenv t (Dualof _ u) = equiv kenv tenv t (dual u)
+equiv kenv tenv (Name p c) u = equiv kenv tenv t u
+  where (_, TypeScheme _ [] t) = tenv Map.! (TBind p c) -- TODO: polymorphic type names
+equiv kenv tenv t (Name p c) = equiv kenv tenv t u
+  where (_, TypeScheme _ [] u) = tenv Map.! (TBind p c) -- TODO: polymorphic type names
+  -- Session types
+equiv kenv tenv t u =
+  isSessionType kenv tenv t &&
+  isSessionType kenv tenv u &&
+  expand (prune p) [x] [y]
+  where Grammar [x, y] p = convertToGrammar [t, u]
+
+checkConstructor :: KindEnv -> TypeEnv -> TypeMap -> Bool -> PBind -> Type -> Bool
+checkConstructor kenv tenv m acc l t =
+  acc && l `Map.member` m && equiv kenv tenv (m Map.! l) t
+
 type Node = Set.Set ([TVar], [TVar])
 
 type Ancestors = Node
@@ -177,58 +212,3 @@ findInPair ((x':xs), (y':ys)) x y
   | x == x' && y == y' = Just (xs, ys)
   | otherwise          = Nothing
 findInPair _ _ _       = Nothing
-
--- TYPE EQUIVALENCE
-
-equivalent :: KindEnv -> TypeEnv -> Type -> Type -> Bool -- TODO: delete KindEnv
-equivalent kenv tenv t u = strongEquiv tenv t u || equiv kenv t u
-
-equiv :: KindEnv -> Type -> Type -> Bool
-  -- Functional types
-equiv _ (Basic _ b) (Basic _ c) = b == c
-equiv k (Fun _ m t1 t2) (Fun _ n u1 u2) =
-  m == n && equiv k t1 u1 && equiv k t2 u2
-equiv k (PairType _ t1 t2) (PairType _ u1 u2) =
-  equiv k t1 u1 && equiv k t2 u2
-equiv k (Datatype _ m1) (Datatype _ m2) =
-  Map.size m1 == Map.size m2 &&
-  Map.foldlWithKey (checkBinding k m2) True m1
-  -- Functional or session
-equiv _ (Var _ x) (Var _ y) = x == y
-  -- Type operators
-equiv k (Dualof _ t) u = equiv k (dual t) u
-equiv k t (Dualof _ u) = equiv k (dual t) u
--- equiv k (Name _ t) u = TODO: complete me!
--- equiv k t (Name _ u) =
-  -- Session types
-equiv k t u =
-  isPreSession t k &&
-  isPreSession u k &&
-  expand (prune p) [x] [y]
-  where Grammar [x, y] p = convertToGrammar [t, u]
-
-checkBinding :: KindEnv -> TypeMap -> Bool -> PBind -> Type -> Bool
-checkBinding k m acc l t =
-  acc && l `Map.member` m && equiv k (m Map.! l) t
-
-{- testing
-
-alphaKinding = Map.singleton "α" (Kind Session Lin)
-
-e1 = equivalent alphaKinding s1 s1
-e2 = equivalent alphaKinding s1 s2 -- False
-e3 = equivalent alphaKinding s1 s3 -- False
-e4 = equivalent alphaKinding s3 s3
-e5 = equivalent alphaKinding s3 s4 -- False
-e6 = equivalent alphaKinding s1 s5 -- False
-e7 = equivalent alphaKinding s4 s5 -- False
-e8 = equivalent alphaKinding s5 s6 -- False
-e9 = equivalent alphaKinding s9 s9
-e10 = equivalent alphaKinding treeSend treeSend
-e11 = equivalent alphaKinding s21 s22
-e12 = equivalent alphaKinding s1 s23
-e13 = equivalent alphaKinding s24 s24
-e14 = equivalent alphaKinding s24 s25
-e15 = equivalent alphaKinding s26 s27
-
--}

@@ -22,7 +22,6 @@ module Syntax.Types
 -- , free
 , subs
 , unfold
-, isPreSession
 , toList -- TODO: not quite sure this belongs here
 ) where
 
@@ -124,7 +123,6 @@ equalMaps s m1 m2 =
     Map.foldlWithKey(\b l t ->
       b && l `Map.member` m2 && equalTypes s t (m2 Map.! l)) True m1
 
-
 instance Show Type where
   -- Functional types
   show (Basic _ b)      = show b
@@ -186,7 +184,7 @@ instance Dual Type where
   -- Functional types, Skip, Var, Name
   dual t               = t
 
--- KINDED BIND
+-- KINDED TYPE BIND
 
 data TBindK = TBindK Pos TVar Kind
 
@@ -244,22 +242,3 @@ subs t (TBindK _ y _) (Var p x)
 subs t y (Dualof p t1)      = Dualof p (subs t y t1)
   -- Otherwise: Basic, Skip, Message, Name
 subs _ _ t                  = t
-
--- SESSION TYPES
-
--- Is this type a pre session type? (a session type that is
--- syntactically correct, but not necessarilty well-kinded)
-isPreSession :: Type -> KindEnv -> Bool
-  -- Session types
-isPreSession (Skip _) _        = True
-isPreSession (Semi _ _ _) _    = True
-isPreSession (Message _ _ _) _ = True
-isPreSession (Choice _ _ _) _  = True
-isPreSession (Rec _ _ _) _     = True
-  -- Functional or session
-isPreSession (Var p x) kenv    = Map.member (TBind p x) kenv
-  -- Type operators
-isPreSession (Dualof _ _) _    = True
--- isPreSession (Name _ c) = ... TODO: requires a TypeEnv
-  -- Otherwise: Functional types
-isPreSession _ _               = False

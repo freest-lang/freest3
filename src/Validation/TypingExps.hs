@@ -11,7 +11,7 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-{-# LANGUAGE LambdaCase, NoMonadFailDesugaring#-}
+{-# LANGUAGE LambdaCase #-}
 -- TODO: remove NoMonadFailDesugaring and add an instance monad fail
 module Validation.TypingExps
 ( synthetize
@@ -39,12 +39,12 @@ import           Validation.Extract
 
 synthetize :: Expression -> FreestState Type
 -- Basic expressions
-synthetize (Unit p)         = return $ Basic p UnitType
-synthetize (Integer p _)    = return $ Basic p IntType
-synthetize (Character p _)  = return $ Basic p CharType
-synthetize (Boolean p _)    = return $ Basic p BoolType
+synthetize (Unit p)        = return $ Basic p UnitType
+synthetize (Integer p _)   = return $ Basic p IntType
+synthetize (Character p _) = return $ Basic p CharType
+synthetize (Boolean p _)   = return $ Basic p BoolType
 -- Variable
-synthetize (Variable p x)   = do
+synthetize (Variable p x) = do
   (TypeScheme _ _ t) <- checkVar p x -- should be (TypeScheme [] t) but there's no instance for control monad fail
   return t
 synthetize (UnLet _ x e1 e2) = do
@@ -53,14 +53,12 @@ synthetize (UnLet _ x e1 e2) = do
   t2 <- synthetize e2
   quotient x 
   return t2
-  
 -- Abstraction elimination
 synthetize (App _ e1 e2) = do
   t <- synthetize e1
   (u1, u2) <- extractFun t
   checkAgainst e2 u1
   return u2
-
 -- Type application
 synthetize (TypeApp p x ts) = do
   s <- checkVar p x
@@ -68,7 +66,6 @@ synthetize (TypeApp p x ts) = do
   let typeBinds = zip ts bs
   mapM (\(t, TBindK _ _ k) -> K.checkAgainst k t) typeBinds
   return $ foldr (uncurry subs) t typeBinds
-     
 -- Conditional
 synthetize (Conditional p e1 e2 e3) = do
   checkAgainst e1 (Basic p BoolType)
@@ -80,13 +77,11 @@ synthetize (Conditional p e1 e2 e3) = do
   venv4 <- getVenv
   checkEquivEnvs venv3 venv4
   return t
-
 -- Pair introduction
 synthetize (Pair p e1 e2) = do
   t1 <- synthetize e1 
   t2 <- synthetize e2
   return $ PairType p t1 t2
-
 -- Pair elimination
 synthetize (BinLet _ x y e1 e2) = do
   t <- synthetize e1
@@ -98,28 +93,27 @@ synthetize (BinLet _ x y e1 e2) = do
   quotient x
   quotient y
   return u
-
+-- Fork
+synthetize (Fork p e) = do
+  t <- synthetize e
+  checkUn t
+  return $ Basic p UnitType
 -- Session types
 synthetize (New p t) = do
   K.checkAgainst (Kind p Session Lin) t
-  return $ PairType p t (dual t) -- Could be Dualof t; perhaps better error messages
-
+  return $ PairType p t (Dualof p t)
 synthetize (Send p e) = do
   t <- synthetize e
   (u1, u2) <- extractOutput t
   return (Fun p Lin (Basic p u1) u2)
-
 synthetize (Receive p e) = do
   t <- synthetize e
   (u1, u2) <- extractInput t
   return $ PairType p (Basic p u1) u2
-
--- Branching
 synthetize (Select p c e) = do 
   t <- synthetize e
   m <- extractOutChoiceMap p t
   extractCons p m c
-
 synthetize (Match p e m) = do
   t <- synthetize e
   tm <- extractInChoiceMap p t
@@ -130,15 +124,8 @@ synthetize (Match p e m) = do
   mapM_ (checkEquivEnvs v) vs
   setVenv v
   return t
-
--- synthetize (Cons p c) = checkVar p c >>= \(TypeScheme _ _ t) -> return t
-
-synthetize (Fork p e) = do
-  t <- synthetize e
-  checkUn t
-  return $ Basic p UnitType
-
-synthetize (Case _ e m) = do -- SAME AS MATCH
+-- Datatype elimination
+synthetize (Case _ e m) = do
   t <- synthetize e
   tm <- extractDataTypeMap t
   venv <- getVenv

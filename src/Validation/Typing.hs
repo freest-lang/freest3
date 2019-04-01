@@ -11,11 +11,13 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
+{-# LANGUAGE LambdaCase #-}
+
 module Validation.Typing
 ( typeCheck
 ) where
 
-import           Parse.Lexer (defaultPos)
+import           Parse.Lexer (position, defaultPos)
 import           Syntax.Expression (Expression)
 import           Syntax.Types
 import           Syntax.Bind
@@ -33,30 +35,34 @@ typeCheck = do
   -- Type/datatype declarations (TypeEnv)
   tenv <- getTenv
   mapWithKeyM (\b (k,_) -> addToKenv b k) tenv
+  tenv <- getTenv
   mapM_ (K.synthetizeTS . snd) tenv
+  tenv <- getTenv
   mapWithKeyM (\b _ -> removeFromKenv b) tenv
-  -- Function declarations (VarEnv)
+  -- Function signatures (VarEnv)
   venv <- getVenv
   mapM_ K.synthetizeTS venv
-  -- Function definitions (ExpEnv)
+  -- Function bodies (ExpEnv)
   eenv <- getEenv
-  mapWithKeyM checkFunDecl eenv
+  mapWithKeyM checkFunBody eenv
   -- Main function
   checkMainFunction
 
 mapWithKeyM :: Monad m => (k -> a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)
 mapWithKeyM f m = Trav.sequence (Map.mapWithKey f m)
 
-checkFunDecl :: PBind -> ([PBind], Expression) -> FreestState ()
-checkFunDecl f (bs, exp) = do
-  venv <- getVenv
-  let t = venv Map.! f
-      ts = toList t
-  params <- buildParams f t bs (init ts)
-  mapM_ (\(b, t) -> addToVenv b t) params
-  let (TypeScheme _ _ u) = last ts
-  T.checkAgainst exp u
-  mapM_ (removeFromVenv . fst) params
+checkFunBody :: PBind -> ([PBind], Expression) -> FreestState ()
+checkFunBody f (bs, exp) =
+  getFromVenv f >>= \case
+    Just t -> do
+      let ts = toList t
+      params <- buildParams f t bs (init ts)
+      mapM_ (uncurry addToVenv) params
+      let (TypeScheme _ _ u) = last ts
+      T.checkAgainst exp u
+      mapM_ (removeFromVenv . fst) params
+    Nothing ->
+      addError (position f) ["Did not find the signature of function", styleRed $ show f]
 
 buildParams :: PBind -> TypeScheme -> [PBind] -> [TypeScheme] -> FreestState [(PBind, TypeScheme)]
 buildParams (PBind p f) (TypeScheme _ _ t) ps ts 
@@ -72,13 +78,16 @@ checkMainFunction :: FreestState ()
 checkMainFunction = do
   venv <- getVenv
   let mBind = PBind defaultPos "main"
-  when (mBind `Map.notMember` venv)
-    (addError defaultPos [styleRed "main", "is not defined"])
-  mType <- normaliseTS (venv Map.! mBind)
-  b <- isValidMainType mType
-  when (not b) $
-    addError defaultPos ["The type for", styleRed "main", "must be an unrestricted, non-function type\n",
-                         "\t found:", styleRed $ show $ venv Map.! mBind]
+  if mBind `Map.notMember` venv
+  then
+    addError defaultPos [styleRed "main", "is not defined"]
+  else do
+    let t = venv Map.! mBind
+    mType <- normaliseTS t
+    b <- isValidMainType mType
+    when (not b) $
+      addError (position mType) ["The type for", styleRed "main", "must be an unrestricted, non-function type\n",
+                                 "\t found:", styleRed $ show t]
 
 isValidMainType :: TypeScheme -> FreestState Bool
 isValidMainType (TypeScheme _ _ (Fun _ _ _ _)) = return False
