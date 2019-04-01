@@ -23,10 +23,10 @@ import           Syntax.Types
 import           Syntax.Expression
 import qualified Data.Map.Strict as Map
 
--- The type definitions for Named datatypes or type
+-- The definitions of the datatypes and types declared in a program
 type TypeEnv = Map.Map TBind (Kind, TypeScheme)
 
--- The signatures of the functions and other variables in a Program
+-- The signatures of the functions and other variables in a program
 type VarEnv = Map.Map PBind TypeScheme
 
 -- The definitions of the named functions in a program

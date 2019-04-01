@@ -76,7 +76,7 @@ checkMainFunction = do
   let mType = venv Map.! mBind
   b <- isValidMainType mType
   when (not b) $
-    addError (defaultPos) ["The type for", styleRed "main", "must be a unrestricted, non-functional type\n",
+    addError (defaultPos) ["The type for", styleRed "main", "must be an unrestricted, non-function type\n",
                            "\t found:", styleRed $ show mType]
 
 isValidMainType :: TypeScheme -> FreestState Bool

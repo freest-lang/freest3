@@ -130,13 +130,13 @@ Decl :: { () }
   | VarBind VarBindSeq '=' Expr                 -- Function declaration
     {% checkDupFunDecl $1 >> addToEenv $1 ($2, $4) }
   | type TypeBind KindVarEmptyList '=' Type     -- Type abbreviation
-    {% checkDupTypeDecl (fst $2) >> uncurry addToTenv $2 (TypeScheme (position $1) $3 $5) }
+    {% checkDupTypeDecl (fst $2) >> uncurry addToTenv $2 (TypeScheme (position $4) $3 $5) }
   | data TypeBind KindVarEmptyList '=' DataCons -- Datatype declaration
     {% do
        checkDupTypeDecl (fst $2)
        let bs = typesToFun (fst $2) $5
-       mapM_ (\(b, t) -> addToVenv b (TypeScheme (position t) [] t)) bs
-       uncurry addToTenv $2 (TypeScheme (position $1) $3 (Datatype (position $1) (Map.fromList bs)))
+       uncurry addToTenv $2 (TypeScheme (position $4) $3 (Datatype (position $1) (Map.fromList bs)))
+       mapM_ (\(b, t) -> addToVenv b (TypeScheme (position b) [] t)) bs
     }
 
 DataCons :: { [(PBind, [Type])] }
@@ -223,7 +223,7 @@ Type :: { Type }
   | Skip                         { Skip (position $1) }
   | BasicType                    { uncurry Basic $1 }
   | VAR                          { Var (position $1) (getText $1) }
-  | CONS                         { Var (position $1) (getText $1) }
+  | CONS                         { Name (position $1) (getText $1) }
   | '(' Type ')'                 { $2 }
 
 Polarity :: { (Pos, Polarity) }
