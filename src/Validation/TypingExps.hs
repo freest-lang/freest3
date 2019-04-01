@@ -11,7 +11,8 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE LambdaCase, NoMonadFailDesugaring #-}
+
 -- TODO: remove NoMonadFailDesugaring and add an instance monad fail
 module Validation.TypingExps
 ( synthetize
@@ -51,7 +52,7 @@ synthetize (UnLet _ x e1 e2) = do
   t1 <- synthetize e1
   addToVenv x (TypeScheme (position t1) [] t1)
   t2 <- synthetize e2
-  quotient x 
+  quotient x
   return t2
 -- Abstraction elimination
 synthetize (App _ e1 e2) = do
@@ -70,7 +71,7 @@ synthetize (TypeApp p x ts) = do
 synthetize (Conditional p e1 e2 e3) = do
   checkAgainst e1 (Basic p BoolType)
   venv2 <- getVenv
-  t <- synthetize e2  
+  t <- synthetize e2
   venv3 <- getVenv
   setVenv venv2
   checkAgainst e3 t
@@ -79,7 +80,7 @@ synthetize (Conditional p e1 e2 e3) = do
   return t
 -- Pair introduction
 synthetize (Pair p e1 e2) = do
-  t1 <- synthetize e1 
+  t1 <- synthetize e1
   t2 <- synthetize e2
   return $ PairType p t1 t2
 -- Pair elimination
@@ -110,7 +111,7 @@ synthetize (Receive p e) = do
   t <- synthetize e
   (u1, u2) <- extractInput t
   return $ PairType p (Basic p u1) u2
-synthetize (Select p c e) = do 
+synthetize (Select p c e) = do
   t <- synthetize e
   m <- extractOutChoiceMap p t
   extractCons p m c
@@ -130,7 +131,7 @@ synthetize (Case _ e m) = do
   tm <- extractDataTypeMap t
   venv <- getVenv
   (t:ts, v:vs) <- Map.foldrWithKey (\k v acc ->
-                                  checkMap acc venv tm k v) (return ([],[])) m    
+                                  checkMap acc venv tm k v) (return ([],[])) m
   mapM_ (checkEquivTypes t) ts
   mapM_ (checkEquivEnvs v) vs
   setVenv v
@@ -159,7 +160,7 @@ checkEquivTypes expected actual = do
   kenv <- getKenv
   tenv <- getTenv
   when (not $ equivalent kenv tenv expected actual) $
-    addError (position expected) ["Couldn't match expected type", styleRed (show expected), 
+    addError (position expected) ["Couldn't match expected type", styleRed (show expected),
                            "with actual type", styleRed (show actual)]
 
 -- | Checking Variables
@@ -169,7 +170,7 @@ checkVar p x = do
   let b = PBind p x
   getFromVenv b >>= \case
     Just t@(TypeScheme _ bs _) -> do
-      addBindsToKenv p bs    
+      addBindsToKenv p bs
       removeIfLin b t
       return t
     Nothing -> do
@@ -177,7 +178,7 @@ checkVar p x = do
       let t = (TypeScheme p [] (Basic p UnitType))
       addToVenv b t
       return t
- 
+
 -- | Adds a list of binds to KindEnv
 addBindsToKenv :: Pos -> [TBindK] -> FreestState ()
 addBindsToKenv p = mapM_ (\(TBindK _ b k) -> addToKenv (TBind p b) k)
@@ -197,27 +198,27 @@ checkUn t = do
   isUn <- K.un t
   when (not isUn) $
     addError (position t) ["Expecting an unrestricted type; found", styleRed (show t)]
-  
+
 -- | Removes a variable from venv if it is linear
 removeIfLin :: PBind -> TypeScheme -> FreestState ()
 removeIfLin x t = do
   isLin <- K.lin t
   when isLin $ removeFromVenv x
- 
+
 {- | Verifies if x is well formed (e[x] based on the kind)
    | Checks if all x1,...,xn in e[x1,...,xn] are well kinded
    | Checks if the number of types (n) are admited by type
 -}
-  
+
   -- TODO: TEST
 wellFormedCall :: Pos -> Expression -> [Type] -> [TBindK] -> FreestState ()
 wellFormedCall p e ts binds = do
   mapM_ (\t -> K.synthetize t) ts
   sameNumber
-  where   
+  where
     sameNumber
       | length binds == length ts = return ()
-      | otherwise                 =          
+      | otherwise                 =
           addError p ["Expecting", show $ length binds,
                       "type(s) on type app; found", show $ length ts]
 
@@ -228,9 +229,9 @@ checkMap acc venv tm b (p, e) = do
   setVenv venv
   t <- checkCons b tm -- TODO: change Bind
   mapM_ (uncurry addToVenv) (zip p (init' $ toList $ TypeScheme (position t) [] t))
-  t <- synthetize e 
+  t <- synthetize e
   venv <- getVenv
-  liftM (concatPair t venv) acc 
+  liftM (concatPair t venv) acc
   where
     init' :: [a] -> [a]
     init' [x] = [x]

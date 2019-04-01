@@ -11,7 +11,7 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE LambdaCase, NoMonadFailDesugaring #-}
 
 module Validation.Typing
 ( typeCheck
@@ -85,7 +85,7 @@ checkFunBody f (bs, exp) =
       addError (position f) ["Did not find the signature of function", styleRed $ show f]
 
 buildParams :: PBind -> TypeScheme -> [PBind] -> [TypeScheme] -> FreestState [(PBind, TypeScheme)]
-buildParams (PBind p f) (TypeScheme _ _ t) ps ts 
+buildParams (PBind p f) (TypeScheme _ _ t) ps ts
   | binds == params = return $ zip ps ts
   | otherwise = do
       addError p ["The equation for", styleRed f, "has", show binds, "parameter(s)\n",

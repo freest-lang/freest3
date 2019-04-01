@@ -11,7 +11,7 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE LambdaCase, NoMonadFailDesugaring #-}
 
 module Validation.Kinding
 ( checkAgainst
@@ -100,7 +100,7 @@ synthetize (Name p c) =
 synthetize (Dualof p t) = do
   m <- checkAgainstSession t
   return $ Kind p Session m
-  
+
 -- Check whether a given type is of a session kind. In either case
 -- return the multiplicity of the kind of the type
 checkAgainstSession :: Type -> FreestState Multiplicity
@@ -144,7 +144,7 @@ mult :: Multiplicity -> TypeScheme -> FreestState Bool
 mult m1 t = do
   (Kind _ _ m2) <- synthetizeTS t
   return $ m2 == m1
-      
+
 -- Assumes the type is well formed
 isSessionType :: KindEnv -> TypeEnv -> Type -> Bool
   -- Session types
