@@ -25,6 +25,7 @@ import           Utils.Errors
 import           Utils.FreestState
 import qualified Validation.Kinding as K
 import           Validation.TypingExps as T
+import           Utils.PreludeLoader (isBuiltin)
 import           Control.Monad.State
 import           Validation.Extract
 import qualified Data.Map.Strict as Map
@@ -43,6 +44,7 @@ typeCheck = do
   -- Function signatures (VarEnv)
   venv <- getVenv
   mapM_ K.synthetizeTS venv
+  mapWithKeyM hasBinding venv
   -- -- Function bodies (ExpEnv)
   eenv <- getEenv
   mapWithKeyM checkFunBody eenv
@@ -51,6 +53,13 @@ typeCheck = do
 
 mapWithKeyM :: Monad m => (k -> a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)
 mapWithKeyM f m = Trav.sequence (Map.mapWithKey f m)
+
+hasBinding :: PBind -> a -> FreestState ()
+hasBinding f _ = do
+  eenv <- getEenv
+  when (not (isBuiltin f) && f `Map.notMember` eenv) $
+    addError (position f) ["The type signature for", styleRed $ show f,
+                           "lacks an accompanying binding"]
 
 checkFunBody :: PBind -> ([PBind], Expression) -> FreestState ()
 checkFunBody f (bs, exp) =
