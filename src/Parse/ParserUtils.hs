@@ -121,5 +121,5 @@ typesToFun :: TBind -> [(PBind, [Type])] -> [(PBind, Type)]
 typesToFun (TBind p x) = map (\(k, ts) -> (k, typeToFun (Name p x) ts))
   where
     typeToFun :: Type -> [Type] -> Type
-    typeToFun = foldl (\t acc -> Fun (position t) Un t acc)
+    typeToFun = foldr (\acc t -> Fun (position t) Un t acc)
 
