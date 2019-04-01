@@ -23,6 +23,8 @@ import           Validation.Kinding
 import           Equivalence.Grammar
 import           Equivalence.TypeToGrammar
 import           Equivalence.Norm
+import           Equivalence.StrongEquivalence
+import           Utils.FreestState
 import           Data.List (isPrefixOf, union)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
@@ -178,8 +180,8 @@ findInPair _ _ _       = Nothing
 
 -- TYPE EQUIVALENCE
 
-equivalent :: KindEnv -> Type -> Type -> Bool
-equivalent k t u = t == u || equiv k t u
+equivalent :: KindEnv -> TypeEnv -> Type -> Type -> Bool -- TODO: delete KindEnv
+equivalent kenv tenv t u = strongEquiv tenv t u || equiv kenv t u
 
 equiv :: KindEnv -> Type -> Type -> Bool
   -- Functional types

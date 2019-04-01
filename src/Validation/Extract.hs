@@ -23,6 +23,8 @@ module Validation.Extract
 , extractInChoiceMap
 , extractDataTypeMap
 , extractCons
+, normalise
+, normaliseTS
 ) where
 
 import           Parse.Lexer (Pos, position, defaultPos)
@@ -55,30 +57,8 @@ normalise (Dualof _ t) = normalise (dual t)
   -- Functional types, Skip, Message, Choice, and Var
 normalise t = return t
 
--- normType :: Type -> FreestState Type
--- normType t@(Basic _ _) = return t
--- normType t@(Fun _ _ _ _) = return t
--- normType t@(PairType _ _ _) = return t
--- normType t@(Datatype _ _) = return t
--- normType t@(Skip _) = return t
--- normType t@(Message _ _ _) = return t
--- normType t@(Choice _ _ _) = return t
--- normType t@(Rec _ _ _) = (normType . unfold) t
--- normType (Dualof _ t) = (normType . dual) t
--- -- normType t@(Var p x) = do
--- --   getFromKenv (Bind p x) >>= \case
--- --     Just0_    -> addError defaultPos ["KENV MEMBER"]  >> return t
--- --     Nothing -> do
--- --       Just (TypeScheme _ _ u) <- getFromTenv (TBindK p x (top p))
--- --       return u
--- normType t@(Var p x) = do
---   getFromTenv (TBindK p x (top p)) >>= \case
---     Just (TypeScheme _ _ u) -> normType u -- return u
---     Nothing                 -> return t
--- normType (Semi _ t u) = do
---   nt <- normType t
---   nu <- normType u
---   return $ append nt nu 
+normaliseTS :: TypeScheme -> FreestState TypeScheme
+normaliseTS (TypeScheme p bs t) = normalise t >>= \t' -> return $ TypeScheme p bs t'
 
 append :: Type -> Type -> Type -- TODO: also exits in Types.hs
 append (Skip _) t = t

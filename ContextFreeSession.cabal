@@ -43,6 +43,7 @@ executable ContextFreeSession
                        Validation.Contractive, Validation.Extract,
                        Equivalence.TypeEquivalence, Equivalence.Grammar,
                        Equivalence.TypeToGrammar, Equivalence.Norm,
+		       Equivalence.StrongEquivalence,
                        CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen
                        
 test-suite unit-tests
@@ -69,7 +70,7 @@ test-suite unit-tests
                        Queue.Queue,
                        Validation.Kinding, Validation.Contractive, 
                        Equivalence.TypeEquivalence, Equivalence.Grammar, Equivalence.TypeToGrammar,
-                       Equivalence.Norm,
+                       Equivalence.Norm, Equivalence.StrongEquivalence,
                        Utils.Errors, Utils.FreestState,
                        SpecHelper,
                        Syntax.TestShowValidSpec, Syntax.TestEqInvalidSpec, Syntax.TestEqValidSpec,
@@ -108,7 +109,8 @@ test-suite program-tests
                        Validation.Typing, Validation.TypingExps, Validation.Kinding,
                        Validation.Contractive, Validation.Extract,
                        Equivalence.TypeEquivalence, Equivalence.Grammar,
-                       Equivalence.TypeToGrammar, Equivalence.Norm, 
+                       Equivalence.TypeToGrammar, Equivalence.Norm,
+		       Equivalence.StrongEquivalence,
                        CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen
 
 test-suite testEquiv
@@ -140,4 +142,5 @@ test-suite testEquiv
                        Validation.Kinding,  Validation.Contractive,
                        Equivalence.Grammar, Equivalence.TypeToGrammar,
                        Equivalence.Norm, Equivalence.TypeEquivalence,
+		       Equivalence.StrongEquivalence,
                        Equivalence.TestEquivalenceValidSpec, Equivalence.TestEquivalenceInvalidSpec

@@ -24,6 +24,7 @@ import           Utils.FreestState
 import qualified Validation.Kinding as K
 import           Validation.TypingExps as T
 import           Control.Monad.State
+import           Validation.Extract
 import qualified Data.Map.Strict as Map
 import qualified Data.Traversable as Trav
 
@@ -72,12 +73,12 @@ checkMainFunction = do
   venv <- getVenv
   let mBind = PBind defaultPos "main"
   when (mBind `Map.notMember` venv)
-    (addError (defaultPos) [styleRed "main", "is not defined"])
-  let mType = venv Map.! mBind
+    (addError defaultPos [styleRed "main", "is not defined"])
+  mType <- normaliseTS (venv Map.! mBind)
   b <- isValidMainType mType
   when (not b) $
-    addError (defaultPos) ["The type for", styleRed "main", "must be an unrestricted, non-function type\n",
-                           "\t found:", styleRed $ show mType]
+    addError defaultPos ["The type for", styleRed "main", "must be an unrestricted, non-function type\n",
+                         "\t found:", styleRed $ show $ venv Map.! mBind]
 
 isValidMainType :: TypeScheme -> FreestState Bool
 isValidMainType (TypeScheme _ _ (Fun _ _ _ _)) = return False

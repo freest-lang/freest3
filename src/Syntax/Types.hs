@@ -19,7 +19,7 @@ module Syntax.Types
 , Polarity(..)
 , Type(..)
 , TypeScheme(..)
-, free
+-- , free
 , subs
 , unfold
 , isPreSession
@@ -86,13 +86,13 @@ data Type =
   | Var Pos TVar -- a recursion variable if bound, polymorphic otherwise
   -- Type operators
   | Name Pos TVar   -- a named type, to be looked upon in a map of Cons to Type
-  | Dualof Pos Type -- to be expanded
+  | Dualof Pos Type -- to be expanded into a session type
   deriving Ord
 
 type TypeMap = Map.Map PBind Type -- TODO: rename to FieldMap
 
 instance Eq Type where -- Type equality, up to alpha-conversion
-  t == u = equalTypes Map.empty (normalise t) (normalise u) 
+  t == u = equalTypes Map.empty t u 
 
 equalTypes :: Map.Map TVar TVar -> Type -> Type -> Bool
   -- Functional types
@@ -123,6 +123,7 @@ equalMaps s m1 m2 =
   Map.size m1 == Map.size m2 &&
     Map.foldlWithKey(\b l t ->
       b && l `Map.member` m2 && equalTypes s t (m2 Map.! l)) True m1
+
 
 instance Show Type where
   -- Functional types
@@ -243,54 +244,6 @@ subs t (TBindK _ y _) (Var p x)
 subs t y (Dualof p t1)      = Dualof p (subs t y t1)
   -- Otherwise: Basic, Skip, Message, Name
 subs _ _ t                  = t
-
--- The set of free type variables in a type
-free :: Type -> Set.Set TVar
-  -- Functional types
-free (Basic _ _)      = Set.empty
-free (Fun _ _ t u)    = Set.union (free t) (free u)
-free (PairType _ t u) = Set.union (free t) (free u)
-free (Datatype _ m)   = Map.foldr (Set.union . free) Set.empty m
-  -- Session types
-free (Skip _)         = Set.empty
-free (Semi _ t u)     = Set.union (free t) (free u)
-free (Message _ _ _)  = Set.empty
-free (Choice _ _ m)   = Map.foldr (Set.union . free) Set.empty m
-free (Rec _ (TBindK _ x _) t) = Set.delete x (free t)
-  -- Functional or session
-free (Var _ x)        = Set.singleton x
-  -- Type operators
-free (Dualof _ t)     = free t
-free (Name _ _)       = Set.empty
-
-normalise :: Type -> Type
-  -- Functional types
-normalise (Fun p q t u)    = Fun p q (normalise t) (normalise u)
-normalise (PairType p t u) = PairType p (normalise t) (normalise u)
-normalise (Datatype p m)   = Datatype p (Map.map normalise m)
-  -- Session types
-normalise (Semi p (Choice q v m) t) =
-  Choice q v (Map.map (\v -> append (normalise v) u) m)
-  where u = normalise t
-normalise (Semi p t u)     = append (normalise t) (normalise u)
-normalise (Choice p q m)   = Choice p q (Map.map normalise m)
-normalise (Rec p (TBindK q x k) t)
-  | x `Set.member` (free t) = Rec p (TBindK q x k) u
-  | otherwise               = u
-  where u = normalise t
-  -- Functional or session
-  -- Type operators
-normalise (Dualof _ t)     = normalise (dual t)
-  -- Otherwise: Basic, Skip, Message, Var, Name
-normalise t                = t
--- Note: we could be more ambitious and go after the Name types, but we'd need a TypeEnv
-
-append :: Type -> Type -> Type
-append (Skip _)       t = t
-append t       (Skip _) = t
-append (Semi p t u)   v = Semi p t (append u v)
-append (Choice q v m) t = Choice q v (Map.map (`append` t) m)
-append t              u = Semi (position t) t u
 
 -- SESSION TYPES
 

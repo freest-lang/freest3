@@ -177,7 +177,8 @@ checkAgainst e t = do
 checkEquivTypes :: Type -> Type -> FreestState ()
 checkEquivTypes t u = do
   kenv <- getKenv
-  when (not $ equivalent kenv t u) $
+  tenv <- getTenv
+  when (not $ equivalent kenv tenv t u) $
     addError (position t) ["Expecting type", styleRed (show u), 
                            "to be equivalent to type", styleRed (show t)]
 
@@ -292,6 +293,6 @@ equivalentEnvs venv1 venv2 = Map.foldrWithKey (\b t acc -> acc <&&> f b t venv2)
           Nothing -> return False
           Just (TypeScheme _ _ u) -> do
             lu <- K.lin u
-            if lu then getKenv >>= \k -> return $ equivalent k t u
+            if lu then getKenv >>= \kenv -> getTenv >>= \tenv -> return $ equivalent kenv tenv t u
             else return False
        else return True
