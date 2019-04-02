@@ -71,6 +71,7 @@ isDatatypeContructor c = do
   where isDatatype (Datatype _ m) = c `Map.member` m
         isDatatype _              = False
 
+-- TODO: this is a complete hack.
 checkFunBody :: PBind -> ([PBind], Expression) -> FreestState ()
 checkFunBody f (bs, exp) =
   getFromVenv f >>= \case

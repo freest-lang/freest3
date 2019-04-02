@@ -47,7 +47,10 @@ synthetize (Character p _) = return $ Basic p CharType
 synthetize (Boolean p _)   = return $ Basic p BoolType
 -- Variable
 synthetize (ProgVar p x) = do
-  (TypeScheme _ _ t) <- checkVar p x -- should be (TypeScheme [] t) but there's no instance for control monad fail
+  s@(TypeScheme _ bs t) <- synthetiseVar p x
+  when (not $ null bs) 
+    (addError p ["Variable", styleRed x, "of a polymorphic type used in a monomorphic context\n",
+                "\t type scheme:", styleRed $ show s])
   return t
 synthetize (UnLet _ x e1 e2) = do
   t1 <- synthetize e1
@@ -63,8 +66,11 @@ synthetize (App _ e1 e2) = do
   return u2
 -- Type application
 synthetize (TypeApp p x ts) = do
-  s <- checkVar p x
-  (bs, t) <- extractScheme s
+  (TypeScheme _ bs t) <- synthetiseVar p x
+  when (length ts /= length bs) 
+    (addError p ["Wrong number of arguments to type application\n",
+                "\t parameters:", styleRed $ show bs, "\n",
+                "\t arguments: ", styleRed $ show ts])  
   let typeBinds = zip ts bs
   mapM (\(t, TBindK _ _ k) -> K.checkAgainst k t) typeBinds
   return $ foldr (uncurry subs) t typeBinds
@@ -170,21 +176,19 @@ checkEquivTypes expected actual = do
     addError (position expected) ["Couldn't match expected type", styleRed (show expected),
                            "with actual type", styleRed (show actual)]
 
--- | Checking Variables
--- | Checks whether a variable exists and removes it if is a linear usage
-checkVar :: Pos -> PVar -> FreestState TypeScheme -- TODO: Review
-checkVar p x = do
+-- | Returns the type scheme for a variable; removes it from venv 
+synthetiseVar :: Pos -> PVar -> FreestState TypeScheme -- TODO: Review
+synthetiseVar p x = do
   let b = PBind p x
   getFromVenv b >>= \case
-    Just t@(TypeScheme _ bs _) -> do
-      addBindsToKenv p bs
-      removeIfLin b t
-      return t
+    Just ts -> do
+      removeIfLin b ts
+      return ts
     Nothing -> do
       addError p ["Variable or data constructor not in scope:", styleRed x]
-      let t = (TypeScheme p [] (Basic p UnitType))
-      addToVenv b t
-      return t
+      let ts = TypeScheme p [] (Basic p UnitType)
+      addToVenv b ts
+      return ts
 
 -- | Adds a list of binds to KindEnv
 addBindsToKenv :: Pos -> [TBindK] -> FreestState ()

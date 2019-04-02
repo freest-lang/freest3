@@ -13,8 +13,8 @@ Portability :  portable | non-portable (<reason>)
 
 {-# LANGUAGE LambdaCase, NoMonadFailDesugaring #-}
 module Validation.Extract
-( extractScheme
-, extractFun
+( {-extractScheme
+,-} extractFun
 , extractPair
 , extractBasic
 , extractOutput
@@ -65,12 +65,14 @@ append (Skip _) t = t
 append (Semi p t u) v = Semi p t (append u v)
 append t v = Semi (position t) t v
 
+{-
 -- Extracts a typescheme; gives an error if it is of form Ɐ ε ⇒ T
 extractScheme :: TypeScheme -> FreestState ([TBindK], Type)
 extractScheme (TypeScheme _ [] t) = do
   addError (position t) ["Expecting a type scheme; found a type", styleRed $ show t]
   return ([], (Basic (position t) UnitType))
 extractScheme (TypeScheme _ bs t) = return (bs, t)
+-}
 
 -- Extracts a function from a type; gives an error if there isn't a function
 extractFun :: Type -> FreestState (Type, Type)
