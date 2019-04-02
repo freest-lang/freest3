@@ -23,7 +23,7 @@ spec = do
         (Rec p (kBind "treeChannel")
           (Choice p Out $ Map.fromList
            [(PBind p "Leaf", Skip p),
-            (PBind p "Node", (Semi p (Semi p (Message p Out IntType) (Var p "treeChannel")) (Var p "treeChannel")))]))
+            (PBind p "Node", (Semi p (Semi p (Message p Out IntType) (TypeVar p "treeChannel")) (TypeVar p "treeChannel")))]))
 
   describe "Simple tests" $ do
     it "Int" $ do
@@ -84,7 +84,7 @@ spec = do
     it "( Int , Int )" $ do
       (read "( Int , Int )" :: Type) `shouldBe` (PairType p (Basic p IntType) (Basic p IntType))
     it "rec a . a" $ do
-      (read "rec a . a" :: Type) `shouldBe` (Rec p (kBind "a") (Var p "a"))
+      (read "rec a . a" :: Type) `shouldBe` (Rec p (kBind "a") (TypeVar p "a"))
 
     it "+{I : !Int, B : !Bool}" $ do
       (read "+{I : !Int, B : !Bool}" :: Type) `shouldBe` (Choice p Out (Map.fromList [(PBind p "I",Message p Out IntType),(PBind p "B",Message p Out BoolType)]))
@@ -103,45 +103,45 @@ spec = do
 
     it "TreeChannel;alpha" $ do
         (read ("rec alpha . ("++treeChannelRead++";alpha)") :: Type) `shouldBe`
-          (Rec p (kBind "alpha") (Semi p (treeChannelType) (Var p "alpha")))
+          (Rec p (kBind "alpha") (Semi p (treeChannelType) (TypeVar p "alpha")))
 
     it "rec alpha . !int;TreeChannel;TreeChannel;alpha" $ do
       (read ("rec alpha . (!Int;" ++ treeChannelRead ++ ";" ++ treeChannelRead ++ ";alpha)") :: Type) `shouldBe`
-        (Rec p (kBind "alpha") (Semi p (Semi p (Semi p (Message p Out IntType) treeChannelType) treeChannelType) (Var p "alpha")))
+        (Rec p (kBind "alpha") (Semi p (Semi p (Semi p (Message p Out IntType) treeChannelType) treeChannelType) (TypeVar p "alpha")))
 
     it "rec alpha . ((!int;(TreeChannel;TreeChannel));alpha)" $ do
       (read ("rec alpha . (!Int;("++treeChannelRead++";"++treeChannelRead++");alpha)") :: Type)
         `shouldBe`
          (Rec p (kBind "alpha")
                 (Semi p (Semi p (Message p Out IntType) (Semi p treeChannelType treeChannelType))
-                       (Var p "alpha")))
+                       (TypeVar p "alpha")))
 
     it "rec alpha . (!int;((TreeChannel;TreeChannel);alpha))" $ do
       (read ("rec alpha . (!Int;(("++treeChannelRead++";"++treeChannelRead++");alpha))") :: Type) `shouldBe`
-        (Rec p (kBind "alpha") (Semi p (Message p Out IntType) (Semi p (Semi p treeChannelType treeChannelType) (Var p "alpha"))))
+        (Rec p (kBind "alpha") (Semi p (Message p Out IntType) (Semi p (Semi p treeChannelType treeChannelType) (TypeVar p "alpha"))))
 
     it "rec alpha . ((TreeChannel;TreeChannel);alpha))" $ do
       (read ("rec alpha . (("++treeChannelRead++";"++treeChannelRead++");alpha)") :: Type) `shouldBe`
-        (Rec p (kBind "alpha") (Semi p (Semi p treeChannelType treeChannelType) (Var p "alpha")))
+        (Rec p (kBind "alpha") (Semi p (Semi p treeChannelType treeChannelType) (TypeVar p "alpha")))
 
     it "rec alpha . (TreeChannel;(TreeChannel;alpha))" $ do
       (read ("rec alpha . ("++treeChannelRead++";("++treeChannelRead++";alpha))") :: Type) `shouldBe`
-        (Rec p (kBind "alpha") (Semi p treeChannelType (Semi p  treeChannelType (Var p "alpha"))))
+        (Rec p (kBind "alpha") (Semi p treeChannelType (Semi p  treeChannelType (TypeVar p "alpha"))))
 
   describe "Remote tree transformation (Listing 2)" $ do
     let xFormChanRead = "rec xFormChan . +{Leaf:Skip,Node:!Int;xFormChan;xFormChan;?Int}"
     let xFormChanType = (Rec p (kBind "xFormChan")
                          (Choice p Out $ Map.fromList
                           ([(PBind p "Leaf",Skip p),
-                            (PBind p "Node", (Semi p (Semi p (Semi p (Message p Out IntType)(Var p "xFormChan"))
-                                            (Var p "xFormChan")) (Message p In IntType)))])))
+                            (PBind p "Node", (Semi p (Semi p (Semi p (Message p Out IntType)(TypeVar p "xFormChan"))
+                                            (TypeVar p "xFormChan")) (Message p In IntType)))])))
 
     let xFormChanDualRead = "rec xFormChan . &{Leaf:Skip,Node:?Int;xFormChan;xFormChan;!Int}"
     let xFormChanDualType = (Rec p (kBind "xFormChan")
                              (Choice p In $ Map.fromList
                               ([(PBind p "Leaf",Skip p),
-                                (PBind p "Node", (Semi p (Semi p (Semi p (Message p In IntType)(Var p "xFormChan"))
-                                                (Var p "xFormChan")) (Message p Out IntType)))])))
+                                (PBind p "Node", (Semi p (Semi p (Semi p (Message p In IntType)(TypeVar p "xFormChan"))
+                                                (TypeVar p "xFormChan")) (Message p Out IntType)))])))
     it "xFormChan Type" $ do
       (read (xFormChanRead) :: Type) `shouldBe` xFormChanType
       
@@ -154,15 +154,15 @@ spec = do
     let termChanType = (Rec p (kBind "termChan")
                         (Choice p Out $ Map.fromList (
                             [(PBind p "Const",(Message p Out IntType)),
-                             (PBind p "Add",(Semi p (Var p "termChan")(Var p "termChan"))),
-                             (PBind p "Mult",(Semi p (Var p "termChan")(Var p "termChan")))])))
+                             (PBind p "Add",(Semi p (TypeVar p "termChan")(TypeVar p "termChan"))),
+                             (PBind p "Mult",(Semi p (TypeVar p "termChan")(TypeVar p "termChan")))])))
 
     let termChanDualRead = "rec termChan . &{Const:?Int,Add:termChan;termChan,Mult:termChan;termChan}"
     let termChanDualType = (Rec p (kBind "termChan")
                             (Choice p In $ Map.fromList (
                                 [(PBind p "Const",(Message p In IntType)),
-                                 (PBind p "Add",(Semi p (Var p "termChan")(Var p "termChan"))),
-                                 (PBind p "Mult",(Semi p (Var p "termChan")(Var p "termChan")))])))
+                                 (PBind p "Add",(Semi p (TypeVar p "termChan")(TypeVar p "termChan"))),
+                                 (PBind p "Mult",(Semi p (TypeVar p "termChan")(TypeVar p "termChan")))])))
 
     it "TermChan Type" $ do
       (read (termChanRead) :: Type) `shouldBe` termChanType
@@ -184,16 +184,16 @@ spec = do
     let xploreTreeChanType = (Rec p (kBind "xFormChan")
                               (Choice p Out $ Map.fromList
                                ([(PBind p "Leaf", Skip p),
-                                 (PBind p "Node", (Semi p (Semi p (Semi p (Message p Out IntType) (Var p "xFormChan")) (Var p "xFormChan")) (Message p In IntType)))])))
+                                 (PBind p "Node", (Semi p (Semi p (Semi p (Message p Out IntType) (TypeVar p "xFormChan")) (TypeVar p "xFormChan")) (Message p In IntType)))])))
 
     let xploreNodeChanRead = "rec xPloreNodeChan . +{Value:!Int;xPloreNodeChan, Left:"++xploreTreeChanRead++";xPloreNodeChan,Right:"++xploreTreeChanRead++";xPloreNodeChan,Exit:Skip}"
 
     let xploreNodeChanType =
           (Rec p (kBind "xPloreNodeChan")
            (Choice p Out $ Map.fromList (
-               [(PBind p "Value", (Semi p (Message p Out IntType)(Var p "xPloreNodeChan"))),
-                (PBind p "Left", (Semi p (xploreTreeChanType)(Var p "xPloreNodeChan"))),
-                (PBind p "Right", (Semi p (xploreTreeChanType)(Var p "xPloreNodeChan"))),
+               [(PBind p "Value", (Semi p (Message p Out IntType)(TypeVar p "xPloreNodeChan"))),
+                (PBind p "Left", (Semi p (xploreTreeChanType)(TypeVar p "xPloreNodeChan"))),
+                (PBind p "Right", (Semi p (xploreTreeChanType)(TypeVar p "xPloreNodeChan"))),
                 (PBind p "Exit", Skip p)])))
     
     it "xploreTreeChan" $ do
@@ -204,4 +204,4 @@ spec = do
 
     it "exploreTree" $ do
       (read ("rec alpha . (Int -> "++ treeChannelRead ++"->"++ treeChannelRead ++"->(" ++ xploreNodeChanRead ++ ";alpha)->alpha)") :: Type)  `shouldBe`
-          (Rec p (kBind "alpha") (Fun p Un (Basic p IntType) (Fun p Un treeChannelType (Fun p Un treeChannelType (Fun p Un (Semi p xploreNodeChanType (Var p "alpha")) (Var p "alpha"))))))
+          (Rec p (kBind "alpha") (Fun p Un (Basic p IntType) (Fun p Un treeChannelType (Fun p Un treeChannelType (Fun p Un (Semi p xploreNodeChanType (TypeVar p "alpha")) (TypeVar p "alpha"))))))

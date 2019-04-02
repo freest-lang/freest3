@@ -29,7 +29,8 @@ TODO: Adapt
 type FunsMap = Map.Map PBind Bool
 
 monadicFuns :: ExpEnv -> FunsMap
-monadicFuns eenv =
+monadicFuns eenv = Map.empty            --LAMBDA
+{-
   Map.foldrWithKey (\f (_, e) acc ->
                      Map.insert f
                      (monadicFun eenv f e) acc) Map.empty eenv
@@ -57,7 +58,7 @@ monadicFuns eenv =
 
     monadicCase :: ExpEnv -> PBind -> CaseMap -> Bool
     monadicCase eenv x = Map.foldr (\(_, e) acc -> acc || monadicFun eenv x e) False
-
+-}
 
 type MonadicMap = Map.Map Expression Bool
 
@@ -160,7 +161,8 @@ translateExpEnv :: ExpEnv -> HaskellCode
 translateExpEnv eenv =
   let fm  = monadicFuns eenv in
   --  error $ show fm ++ "\n\n" ++ show mm
-  Map.foldrWithKey (\f (ps,e) acc -> acc ++ genFun fm f ps e ++ "\n\n") "" eenv
+  Map.foldrWithKey (\f (ps,e) acc -> acc ++ genFun fm f ps e ++ "\n\n") "" Map.empty
+  -- Map.foldrWithKey (\f (ps,e) acc -> acc ++ genFun fm f ps e ++ "\n\n") "" eenv LAMBDA
 
   where
     genFun :: FunsMap -> PBind -> [PBind] -> Expression -> HaskellCode

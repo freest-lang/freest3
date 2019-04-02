@@ -13,28 +13,16 @@ Portability :  portable | non-portable (<reason>)
 
 module Syntax.Expression
 ( Expression(..)
-, PVar
-, CaseMap
+--, FieldMap
 , MatchMap
+, CaseMap
 ) where
 
 import           Parse.Lexer (Position, Pos, position)
-import           Syntax.Types
-import           Syntax.Kinds
-import           Syntax.Bind
+import           Syntax.Types (Type)
+import           Syntax.Kinds (Multiplicity)
+import           Syntax.Bind (PVar, PBind)
 import qualified Data.Map.Strict as Map
-
--- TODO: Join these two
-
--- C x -> E where:
--- C is a bind and the map key,
--- x is a bind (parameter) and E an expression
-type MatchMap = Map.Map PBind (PBind, Expression)
-
--- C x1 ... xn -> E where:
--- C is a bind and the map key,
--- x1 ... xn is a list of binds (parameters) and E an expression
-type CaseMap  = Map.Map PBind ([PBind], Expression)
 
 data Expression =
   -- Basic values
@@ -45,17 +33,16 @@ data Expression =
   -- Variable
   | ProgVar Pos PVar
   -- Abstraction intro and elim
-  {- Lam Pos Multiplicity PBind Exp -}
+  | Lambda Pos Multiplicity PBind Expression
   | App Pos Expression Expression
   -- Pair intro and elim
   | Pair Pos {- Multiplicity -} Expression Expression
   | BinLet Pos PBind PBind Expression Expression
   -- Datatype intro and elim
---  | Cons Pos PVar -- TODO: this could be a ProgVar
   | Case Pos Expression CaseMap
   -- Type application
   | TypeApp Pos PVar [Type]
-  -- Conditional
+  -- Boolean elimination
   | Conditional Pos Expression Expression Expression
   -- Let
   | UnLet Pos PBind Expression Expression -- TODO: Derived; eliminate?
@@ -69,12 +56,17 @@ data Expression =
   | Match Pos Expression MatchMap
    deriving (Eq, Ord, Show)
 
+-- type FieldMap = Map.Map PBind Expression
+type MatchMap = Map.Map PBind (PBind, Expression)
+type CaseMap  = Map.Map PBind ([PBind], Expression)
+
 instance Position Expression where
   position (Unit p)              = p
   position (Integer p _)         = p
   position (Character p _)       = p
   position (Boolean p _)         = p
   position (ProgVar p _)         = p
+  position (Lambda p _ _ _)      = p
   position (UnLet p _ _ _)       = p
   position (App p _ _)           = p
   position (TypeApp p _ _)       = p
@@ -87,5 +79,4 @@ instance Position Expression where
   position (Select p _ _)        = p
   position (Match p _ _)         = p
   position (Fork p _)            = p
---  position (Cons p _)     = p
   position (Case p _ _)          = p

@@ -55,7 +55,8 @@ genMain eenv venv =
   case venv Map.!? (PBind defaultPos "_main") of
     Just t ->    
       let
-        (_,e)    = eenv Map.! (PBind defaultPos "_main")
+--        (_,e)    = eenv Map.! (PBind defaultPos "_main")      LAMBDA
+        e        = Unit defaultPos
         m        = monadicFuns eenv
         m2       = annotateAST m (PBind defaultPos "_main") e
         h        = evalState (translate m m2 e) 0 in

@@ -129,7 +129,7 @@ Decl :: { () }
   : VarBind ':' TypeScheme                      -- Function signature
     {% checkDupFunSig $1 >> addToVenv $1 $3 }
   | VarBind VarBindSeq '=' Expr                 -- Function declaration
-    {% checkDupFunDecl $1 >> addToEenv $1 ($2, $4) }
+    {% checkDupFunDecl $1 >> addToEenv $1 (funDeclToExp $2 $4) }
   | type TypeBind KindVarEmptyList '=' Type     -- Type abbreviation
     {% checkDupTypeDecl (fst $2) >> uncurry addToTenv $2 (TypeScheme (position $4) $3 $5) }
   | data TypeBind KindVarEmptyList '=' DataCons -- Datatype declaration

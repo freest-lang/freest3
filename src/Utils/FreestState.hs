@@ -30,7 +30,7 @@ data FreestS = FreestS {
   filename :: String
 , varEnv   :: VarEnv
 , expEnv   :: ExpEnv
-, consEnv  :: TypeEnv
+, typeEnv  :: TypeEnv
 , kindEnv  :: KindEnv
 , errors   :: Errors
 , fv       :: Int }
@@ -44,7 +44,7 @@ initialState f = FreestS {
   filename = f
 , varEnv   = Map.empty
 , expEnv   = Map.empty
-, consEnv  = Map.empty
+, typeEnv  = Map.empty
 , kindEnv  = Map.empty
 , errors   = []
 , fv        = 0}
@@ -92,12 +92,12 @@ getEenv = do
   return $ expEnv s
 
 -- Unsafe - must exist
-getFromEenv :: PBind -> FreestState ([PBind], Expression)
+getFromEenv :: PBind -> FreestState Expression
 getFromEenv x = do
   eenv <- getEenv
   return $ eenv Map.! x
 
-addToEenv :: PBind -> ([PBind], Expression) -> FreestState ()
+addToEenv :: PBind -> Expression -> FreestState ()
 addToEenv k v =
   modify (\s -> s{expEnv=Map.insert k v (expEnv s)})    
      
@@ -106,11 +106,11 @@ addToEenv k v =
 getTenv :: FreestState TypeEnv
 getTenv = do
   s <- get
-  return $ consEnv s
+  return $ typeEnv s
 
 addToTenv :: TBind -> Kind -> TypeScheme -> FreestState ()
 addToTenv b k t =
-  modify (\s -> s{consEnv = Map.insert b (k, t) (consEnv s)})
+  modify (\s -> s{typeEnv = Map.insert b (k, t) (typeEnv s)})
 
 getFromTenv :: TBind -> FreestState (Maybe (Kind, TypeScheme))
 getFromTenv  b = do

@@ -71,8 +71,16 @@ isDatatypeContructor c = do
   where isDatatype (Datatype _ m) = c `Map.member` m
         isDatatype _              = False
 
+checkFunBody :: PBind -> Expression -> FreestState ()
+checkFunBody f e =
+  getFromVenv f >>= \case
+    Just t -> do
+      T.checkAgainstST e t
+    Nothing ->
+      addError (position f) ["Did not find the signature of function", styleRed $ show f]
+{-
 -- TODO: this is a complete hack.
-checkFunBody :: PBind -> ([PBind], Expression) -> FreestState ()
+checkFunBody :: PBind -> Expression -> FreestState ()
 checkFunBody f (bs, exp) =
   getFromVenv f >>= \case
     Just t -> do
@@ -95,7 +103,7 @@ buildParams (PBind p f) (TypeScheme _ _ t) ps ts
       return []
   where binds  = length ps
         params = length ts
-
+-}
 checkMainFunction :: FreestState ()
 checkMainFunction = do
   venv <- getVenv

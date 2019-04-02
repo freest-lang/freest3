@@ -22,6 +22,7 @@ module Parse.ParserUtils
 , binOp
 , unOp
 , typesToFun
+,funDeclToExp
 ) where
 
 import           Parse.Lexer (Position, Pos, position, defaultPos, showPos)
@@ -122,3 +123,6 @@ typesToFun (TBind p x) = map (\(k, ts) -> (k, typeToFun ts))
   where typeToFun []       = (Name p x)
         typeToFun (t : ts) = Fun (position t) Un t (typeToFun ts)
 
+funDeclToExp :: [PBind] -> Expression -> Expression
+funDeclToExp [] e  = e
+funDeclToExp (b:bs) e = Lambda (position b) Lin b (funDeclToExp bs e)

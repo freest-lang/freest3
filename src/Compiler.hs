@@ -15,7 +15,7 @@ compile :: String -> IO (Bool, String)
 compile arg = do
   ps <- parseProgram arg prelude
   let s = execState typeCheck ps
-  genCode (errors s) (varEnv s) (expEnv s) (consEnv s) (kindEnv s) arg  
+  genCode (errors s) (varEnv s) (expEnv s) (typeEnv s) (kindEnv s) arg  
     
 -- CODE GEN
 genCode :: Errors -> VarEnv -> ExpEnv -> TypeEnv -> KindEnv -> FilePath -> IO (Bool, String)

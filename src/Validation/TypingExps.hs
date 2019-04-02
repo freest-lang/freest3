@@ -146,7 +146,7 @@ synthetize (Case _ e m) = do
 
 -- | Check an expression against a given type
 checkAgainst :: Expression -> Type -> FreestState ()
--- Conditional
+-- Boolean elimination
 checkAgainst (Conditional p e1 e2 e3) t = do
   checkAgainst e1 (Basic p BoolType)
   venv2 <- getVenv
@@ -156,6 +156,8 @@ checkAgainst (Conditional p e1 e2 e3) t = do
   checkAgainst e3 t
   venv4 <- getVenv
   checkEquivEnvs venv3 venv4
+-- Pair elimination
+  -- TODO
 -- Default
 checkAgainst e t = do
   u <- synthetize e

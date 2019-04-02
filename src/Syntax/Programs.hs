@@ -30,4 +30,4 @@ type TypeEnv = Map.Map TBind (Kind, TypeScheme)
 type VarEnv = Map.Map PBind TypeScheme
 
 -- The definitions of the named functions in a program
-type ExpEnv = Map.Map PBind ([PBind], Expression)
+type ExpEnv = Map.Map PBind Expression

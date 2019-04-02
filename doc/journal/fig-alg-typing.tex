@@ -3,41 +3,51 @@
   \begin{gather*}
     % Variables
     \frac{
-      \isLin T
+      x\colon \tForall \Empty T \in \varEnv
+      \quad
+      \isLin{\tForall \Empty T}
     }{
-      \algtypeout[\kindEnv;\varEnv, x\colon \tForall \Empty T] x T \varEnv
+      \algtypeout x T {\varEnv\setminus x}
     }
     \quad
     \frac{
-      \isUn T
+      x\colon \tForall \Empty T \in \varEnv
+      \quad
+      \isUn{\tForall \Empty T}
     }{
-      \algtypeout[\kindEnv;\varEnv, x\colon \tForall \Empty T] x T {\kindEnv;\varEnv, x\colon T}
+      \algtypeout x T \varEnv
     }
     \\
     % Type application
     \frac{
-      % \algtypeout[\kindEnv;\varEnv_1]{e}{U}{\varEnv_2}
-      % \quad
-      % U \Extract{} (\forall x\colon\kind.V)
-      \isLin T
+      x\colon\tForall{\vec y\colon\vec\kind}{T} \in \varEnv
       \quad
-      \algkindout U {\kind'}
+      \isLin{\tForall{\vec y\colon\vec\kind}{T}}
       \quad
-      \isSubkind{\kind'}{\kind}
+      \algkindin{\vec U}{\vec\kind}
     }{
-      \algtypeout[\kindEnv;\varEnv,x\colon\tForall{y\colon\kind}{T}]{x[U]}{\subs U x T}{\varEnv}
+      \algtypeout{x[U]}{\subs{\vec U}{\vec y}T}{\varEnv\setminus x}
     }
     \\
     \frac{
-      \isUn T
+      x\colon\tForall{\vec y\colon\vec\kind}{T} \in \varEnv
       \quad
-      \algkindout U {\kind'}
+      \isUn{\tForall{\vec y\colon\vec\kind}{T}}
       \quad
-      \isSubkind{\kind'}{\kind}
+      \algkindin{\vec U}{\vec\kind}
     }{
-      \algtypeout[\kindEnv;\varEnv,x\colon\tForall{y\colon\kind}{T}]{x[U]}{\subs
-        U x T}{\varEnv,x\colon\tForall{y\colon\kind}{T}}
-      }
+      \algtypeout{x[U]}{\subs{\vec U}{\vec y}T}{\varEnv}
+    }
+    % \frac{
+    %   \isUn T
+    %   \quad
+    %   \algkindout U {\kind'}
+    %   \quad
+    %   \isSubkind{\kind'}{\kind}
+    % }{
+    %   \algtypeout[\kindEnv;\varEnv,x\colon\tForall{y\colon\kind}{T}]{x[U]}{\subs
+    %     U x T}{\varEnv,x\colon\tForall{y\colon\kind}{T}}
+    %   }
     \\
     % Abstraction
     \frac{
@@ -67,7 +77,7 @@
       \quad
       \algtypeout[\kindEnv;\varEnv_2,x\colon T_1]{e_2}{T_2}{\Gamma_3}
     }{
-      \algtypeout[\kindEnv;\varEnv_1]{\unlete{x}{e_1}{e_2}}{T_2}{\varEnv_3}
+      \algtypeout[\kindEnv;\varEnv_1]{\unlete{x}{e_1}{e_2}}{T_2}{\varEnv_3 \div (x\colon T_1)}
     }
     \\
     % Conditional
