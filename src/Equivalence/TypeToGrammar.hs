@@ -100,12 +100,12 @@ toGrammar u@(Rec p x t)
   | otherwise = do
     y <- freshVar
     insertVisited y
-    zs <- toGrammar $ subs (Var p y) x t -- On the fly α-conversion
+    zs <- toGrammar $ subs (TypeVar p y) x t -- On the fly α-conversion
     m <- getTransitions $ head zs
     addProductions y (Map.map (++ tail zs) m)
     return [y]
 -- Functional or session (session in this case)
-toGrammar (Var _ x) = do
+toGrammar (TypeVar _ x) = do
   b <- memberVisited x
   if b
   then    -- This is a recursion variable
@@ -124,7 +124,7 @@ isChecked :: Type -> Visited -> Bool
 isChecked (Skip _) _     = True
 isChecked (Semi _ s t) v = isChecked s v && isChecked t v
 isChecked (Rec _ (TBindK _ x _) t) v  = isChecked t (Set.insert x v)
-isChecked (Var _ x) v    = Set.member x v -- Only bound variables are checked
+isChecked (TypeVar _ x) v    = Set.member x v -- Only bound variables are checked
 isChecked _ _            = False
 
 -- Some tests
@@ -132,7 +132,7 @@ isChecked _ _            = False
 p = (0,0)
 s1 = Message p Out CharType
 t1 = convertToGrammar [s1]
-s2 = Var p "α"
+s2 = TypeVar p "α"
 t2 = convertToGrammar [s2]
 s3 = Semi p (Message p Out IntType) (Message p In BoolType)
 t3 = convertToGrammar [s3]
@@ -150,18 +150,18 @@ t6 = convertToGrammar [s6]
 yBind = "y"
 treeSend = Rec p yBind (Choice p External (Map.fromList
   [("Leaf",Skip p),
-   ("Node", Semi p (Message p Out IntType) (Semi p (Var p "y") (Var p "y")))]))
+   ("Node", Semi p (Message p Out IntType) (Semi p (TypeVar p "y") (TypeVar p "y")))]))
 t7 = convertToGrammar [treeSend]
-t8 = convertToGrammar [Semi p treeSend (Var p "α")]
-s9 = Rec p yBind (Semi p s1 (Var p "y"))
+t8 = convertToGrammar [Semi p treeSend (TypeVar p "α")]
+s9 = Rec p yBind (Semi p s1 (TypeVar p "y"))
 t9 = convertToGrammar [s9]
 s10 = Semi p s4 (Semi p (Semi p s3 s1) s4)
 t10 = convertToGrammar [s10]
-s11 = Semi p (Rec p yBind (Semi p treeSend (Var p "y"))) treeSend
+s11 = Semi p (Rec p yBind (Semi p treeSend (TypeVar p "y"))) treeSend
 t11 = convertToGrammar [s11]
 -- zBind = Bind "z" p (Kind {prekind = Session, multiplicity = Lin})
 zBind = "z"
-s12 = Semi p (Rec p zBind (Semi p treeSend (Var p "z"))) treeSend
+s12 = Semi p (Rec p zBind (Semi p treeSend (TypeVar p "z"))) treeSend
 t12 = convertToGrammar [s12]
 s13 = Semi p treeSend (Skip p)
 t13 = convertToGrammar [s13]
@@ -171,28 +171,28 @@ s15 = Semi p treeSend treeSend
 t15 = convertToGrammar [s15]
 treeSend1 = Rec p zBind (Choice p External (Map.fromList
   [("Leaf",Skip p),
-   ("Node", Semi p (Message p Out IntType) (Semi p (Var p "z") (Var p "z")))]))
+   ("Node", Semi p (Message p Out IntType) (Semi p (TypeVar p "z") (TypeVar p "z")))]))
 s16 = Semi p treeSend treeSend1
 t16 = convertToGrammar [s16]
-s17 = Rec p zBind (Semi p s1 (Var p "z"))
+s17 = Rec p zBind (Semi p s1 (TypeVar p "z"))
 t17 = convertToGrammar [s17]
-s18 = Rec p zBind (Semi p s1 (Semi p (Var p "z") (Var p "z")))
+s18 = Rec p zBind (Semi p s1 (Semi p (TypeVar p "z") (TypeVar p "z")))
 t18 = convertToGrammar [s18]
-s19 = Rec p zBind (Semi p (Semi p s1 (Var p "z")) (Var p "z"))
+s19 = Rec p zBind (Semi p (Semi p s1 (TypeVar p "z")) (TypeVar p "z"))
 t19 = convertToGrammar [s19]
 s20 = Message p In IntType
 s21 = Semi p s1 (Semi p s2 s20)
 s22 = Semi p (Semi p s1 s2) s20
 s23 = Semi p s1 (Skip p)
-s24 = Rec p yBind (Rec p zBind (Semi p (Semi p s1 (Var p "y")) (Var p "z")))
+s24 = Rec p yBind (Rec p zBind (Semi p (Semi p s1 (TypeVar p "y")) (TypeVar p "z")))
 t24 = convertToGrammar [s24]
-s25 = Rec p yBind (Rec p zBind (Semi p (Semi p s1 (Var p "z")) (Var p "y")))
+s25 = Rec p yBind (Rec p zBind (Semi p (Semi p s1 (TypeVar p "z")) (TypeVar p "y")))
 t25 = convertToGrammar [s25]
-s26 = Semi p (Choice p External (Map.fromList [("Leaf", Skip p)])) (Var p "α")
+s26 = Semi p (Choice p External (Map.fromList [("Leaf", Skip p)])) (TypeVar p "α")
 t26 = convertToGrammar [s26]
-s27 = Choice p External (Map.fromList [("Leaf", (Var p "α"))])
+s27 = Choice p External (Map.fromList [("Leaf", (TypeVar p "α"))])
 t27 = convertToGrammar [s27]
-s28 = Rec p yBind (Choice p External (Map.fromList [("Add", Semi p (Semi p (Var p "y") (Var p "y")) (Message p Out IntType)), ("Const", Skip p)]))
+s28 = Rec p yBind (Choice p External (Map.fromList [("Add", Semi p (Semi p (TypeVar p "y") (TypeVar p "y")) (Message p Out IntType)), ("Const", Skip p)]))
 t28 = convertToGrammar [s28]
 s29 = Semi p s5 (Message p In IntType)
 t29 = convertToGrammar [s29]

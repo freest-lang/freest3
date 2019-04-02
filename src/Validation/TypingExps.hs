@@ -17,6 +17,7 @@ Portability :  portable | non-portable (<reason>)
 module Validation.TypingExps
 ( synthetize
 , checkAgainst
+, checkAgainstST
 , checkUn
 ) where
 
@@ -45,7 +46,7 @@ synthetize (Integer p _)   = return $ Basic p IntType
 synthetize (Character p _) = return $ Basic p CharType
 synthetize (Boolean p _)   = return $ Basic p BoolType
 -- Variable
-synthetize (Variable p x) = do
+synthetize (ProgVar p x) = do
   (TypeScheme _ _ t) <- checkVar p x -- should be (TypeScheme [] t) but there's no instance for control monad fail
   return t
 synthetize (UnLet _ x e1 e2) = do
@@ -154,6 +155,12 @@ checkAgainst e t = do
   u <- synthetize e
   checkEquivTypes t u
 
+-- | Check an expression against a given type scheme
+checkAgainstST :: Expression -> TypeScheme -> FreestState ()
+checkAgainstST e (TypeScheme _ bs t) = do
+  mapM_ (\(TBindK p x k) -> addToKenv (TBind p x) k) bs
+  checkAgainst e t
+  
 -- | Check whether two given types are equivalent
 checkEquivTypes :: Type -> Type -> FreestState ()
 checkEquivTypes expected actual = do
@@ -208,8 +215,6 @@ removeIfLin x t = do
 {- | Verifies if x is well formed (e[x] based on the kind)
    | Checks if all x1,...,xn in e[x1,...,xn] are well kinded
    | Checks if the number of types (n) are admited by type
--}
-
   -- TODO: TEST
 wellFormedCall :: Pos -> Expression -> [Type] -> [TBindK] -> FreestState ()
 wellFormedCall p e ts binds = do
@@ -221,6 +226,7 @@ wellFormedCall p e ts binds = do
       | otherwise                 =
           addError p ["Expecting", show $ length binds,
                       "type(s) on type app; found", show $ length ts]
+-}
 
 -- Checks either the case map and the match map (all the expressions)
 checkMap :: FreestState ([Type], [VarEnv]) -> VarEnv -> TypeMap -> PBind ->

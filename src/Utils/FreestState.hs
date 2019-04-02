@@ -19,9 +19,9 @@ import           Syntax.Expression
 import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.Bind
+import           Utils.Errors
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
-import           Utils.Errors
 
 -- | The typing state
 type Errors = [String]
@@ -99,8 +99,8 @@ getFromEenv x = do
 
 addToEenv :: PBind -> ([PBind], Expression) -> FreestState ()
 addToEenv k v =
-  modify (\s -> s{expEnv = Map.insert k v (expEnv s)})    
-
+  modify (\s -> s{expEnv=Map.insert k v (expEnv s)})    
+     
 -- | TYPE ENV
 
 getTenv :: FreestState TypeEnv

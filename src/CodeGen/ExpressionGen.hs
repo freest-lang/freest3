@@ -35,7 +35,7 @@ monadicFuns eenv =
                      (monadicFun eenv f e) acc) Map.empty eenv
   where 
     monadicFun :: ExpEnv -> PBind -> Expression -> Bool
-    monadicFun eenv fun (Variable p x)
+    monadicFun eenv fun (ProgVar p x)
       | Map.member (PBind p x) eenv && fun /= (PBind p x) = let (_,e) = eenv Map.! (PBind p x) in monadicFun eenv (PBind p x) e
       | otherwise                     = False
     monadicFun eenv fun (UnLet _ _ e1 e2) = monadicFun eenv fun e1 || monadicFun eenv fun e2
@@ -74,7 +74,7 @@ annotateAST' m fm b e@(Unit _)        = (Map.insert e b m, b)
 annotateAST' m fm b e@(Integer _ _)   = (Map.insert e b m, b)
 annotateAST' m fm b e@(Character _ _) = (Map.insert e b m, b)
 annotateAST' m fm b e@(Boolean _ _)   = (Map.insert e b m, b)
-annotateAST' m fm b e@(Variable p x)  =
+annotateAST' m fm b e@(ProgVar p x)  =
   case fm Map.!? (PBind p x) of
     Just b1 -> (Map.insert e b1 m, b1)
     Nothing -> (Map.insert e b m, b)
@@ -149,7 +149,7 @@ annotateMap :: MonadicMap -> FunsMap -> Bool -> Map.Map a (b, Expression) -> Mon
 annotateMap m fm b = Map.foldr (\x acc -> fst $ annotateAST' acc fm b (snd x)) m
 
 monadicVar :: FunsMap -> Expression -> Bool
-monadicVar fm (Variable p x) =
+monadicVar fm (ProgVar p x) =
   case fm Map.!? (PBind p x) of
     Just x  -> x
     Nothing -> False
@@ -225,7 +225,7 @@ translate fm m e@(Boolean _ b) = do
   h <- translateExpr (show b) b1 False
   return (h, b1)
 
-translate fm m e@(Variable p x) = do
+translate fm m e@(ProgVar p x) = do
   let b = expected m e
   if Map.member (PBind p x) fm then
     do      

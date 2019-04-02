@@ -47,7 +47,7 @@ equiv kenv tenv (Datatype _ m1) (Datatype _ m2) =
   Map.size m1 == Map.size m2 &&
   Map.foldlWithKey (checkConstructor kenv tenv m2) True m1
   -- Functional or session
-equiv _ _ (Var _ x) (Var _ y) = x == y
+equiv _ _ (TypeVar _ x) (TypeVar _ y) = x == y
   -- Type operators
 equiv kenv tenv (Dualof _ t) u = equiv kenv tenv (dual t) u
 equiv kenv tenv t (Dualof _ u) = equiv kenv tenv t (dual u)

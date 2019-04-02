@@ -18,11 +18,12 @@ module Syntax.Kinds
 , KindEnv
 , top
 , topUn
+, isSession
 , (<:)
 , lub
 ) where
 
-import           Parse.Lexer (Position, Pos, position)
+import           Parse.Lexer (Position, Pos, position, defaultPos)
 import           Syntax.Bind
 import qualified Data.Map.Strict as Map
 
@@ -82,6 +83,9 @@ top p = Kind p Functional Lin
 
 topUn :: Pos -> Kind
 topUn p = Kind p Functional Un
+
+isSession :: Kind -> Bool
+isSession = (<: (Kind defaultPos Session Lin))
 
 instance Show Kind where
   show (Kind _ p m) = show p ++ show m

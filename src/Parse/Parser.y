@@ -181,8 +181,8 @@ Primary :: { Expression }
   | BOOL                                     { let (TokenBool p x) = $1 in Boolean p x }
   | CHAR                                     { let (TokenChar p x) = $1 in Character p x }
   | '()'                                     { Unit (position $1) }
-  | LOWER_ID                                      { Variable (position $1) (getText $1) }
-  | UPPER_ID                                     { Variable (position $1) (getText $1) }
+  | LOWER_ID                                 { ProgVar (position $1) (getText $1) }
+  | UPPER_ID                                 { ProgVar (position $1) (getText $1) }
   | '(' Expr ',' Expr ')'                    { Pair (position $1) $2 $4 }
   | '(' Expr ')'                             { $2 }
 
@@ -225,7 +225,7 @@ Type :: { Type }
   | dualof Type                  { Dualof (position $1) $2 }
   | Skip                         { Skip (position $1) }
   | BasicType                    { uncurry Basic $1 }
-  | LOWER_ID                     { Var (position $1) (getText $1) }
+  | LOWER_ID                     { TypeVar (position $1) (getText $1) }
   | UPPER_ID                     { Name (position $1) (getText $1) }
   | '(' Type ')'                 { $2 }
 

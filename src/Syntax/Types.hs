@@ -82,7 +82,7 @@ data Type =
   | Choice Pos Polarity TypeMap
   | Rec Pos TBindK Type
   -- Functional or session
-  | Var Pos TVar -- a recursion variable if bound, polymorphic otherwise
+  | TypeVar Pos TVar -- a recursion variable if bound, polymorphic otherwise
   -- Type operators
   | Name Pos TVar   -- a named type, to be looked upon in a map of Cons to Type
   | Dualof Pos Type -- to be expanded into a session type
@@ -106,7 +106,7 @@ equalTypes s (Message _ p x)  (Message _ q y)  = p == q && x == y
 equalTypes s (Choice _ v1 m1) (Choice _ v2 m2) = v1 == v2 && equalMaps s m1 m2
 equalTypes s (Rec _ (TBindK _ x _) t) (Rec _ (TBindK _ y _) u) = equalTypes (Map.insert x y s) t u
   -- Functional or session
-equalTypes s (Var _ x)        (Var _ y)        = equalVars (Map.lookup x s) x y
+equalTypes s (TypeVar _ x)    (TypeVar _ y)    = equalVars (Map.lookup x s) x y
   -- Type operators
 equalTypes s (Dualof _ t)     (Dualof _ u)     = t == u
 equalTypes s (Name _ x)       (Name _ y)       = x == y
@@ -136,7 +136,7 @@ instance Show Type where
   show (Choice _ v m)   = show v ++ "{" ++ showMap m ++ "}"
   show (Rec _ x t)      = "(rec " ++ show x ++ " . " ++ show t ++ ")"
   -- Functional or session
-  show (Var _ x)        = x
+  show (TypeVar _ x)    = x
   -- Type operators
   show (Dualof _ s)     = "(dualof " ++ show s ++ ")"
   show (Name _ x)       = x
@@ -166,7 +166,7 @@ instance Position Type where
   position (Choice p _ _)   = p
   position (Rec p _ _)      = p
   -- Functional or session
-  position (Var p _)        = p
+  position (TypeVar p _)    = p
   -- Type operators
   position (Dualof p _)     = p
   position (Name p _)       = p
@@ -181,7 +181,7 @@ instance Dual Type where
   dual (Rec p x t)     = Rec p x (Dualof p t) -- The lazy version, hopefully faster
   -- Type operators
   dual (Dualof _ t)    = t
-  -- Functional types, Skip, Var, Name
+  -- Functional types, Skip, TypeVar, Name
   dual t               = t
 
 -- KINDED TYPE BIND
@@ -235,9 +235,9 @@ subs t2 y (Rec p x t1)      -- Assume y /= x
   | x == y                  = Rec p x t1
   | otherwise               = Rec p x (subs t2 y t1)
   -- Functional or session
-subs t (TBindK _ y _) (Var p x)
+subs t (TBindK _ y _) (TypeVar p x)
   | x == y                  = t
-  | otherwise               = Var p x
+  | otherwise               = TypeVar p x
   -- Type operators  
 subs t y (Dualof p t1)      = Dualof p (subs t y t1)
   -- Otherwise: Basic, Skip, Message, Name

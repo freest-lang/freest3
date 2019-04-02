@@ -50,7 +50,7 @@ normalise tenv (Rec p (TBindK q x k) t)
 normalise tenv (Dualof _ t)     = normalise tenv (dual t)
 normalise tenv (Name p c)       = normalise tenv t
   where (_, TypeScheme _ [] t) = tenv Map.! (TBind p c) -- TODO: polymorphic type names
-  -- Otherwise: Basic, Skip, Message, Var
+  -- Otherwise: Basic, Skip, Message, TypeVar
 normalise tenv t                = t
 
 append :: Type -> Type -> Type
@@ -74,7 +74,7 @@ free (Message _ _ _)  = Set.empty
 free (Choice _ _ m)   = Map.foldr (Set.union . free) Set.empty m
 free (Rec _ (TBindK _ x _) t) = Set.delete x (free t)
   -- Functional or session
-free (Var _ x)        = Set.singleton x
+free (TypeVar _ x)    = Set.singleton x
   -- Type operators
 free (Dualof _ t)     = free t
 free (Name _ _)       = Set.empty

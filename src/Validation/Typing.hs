@@ -32,6 +32,9 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Traversable as Trav
 import           Debug.Trace
 
+mapWithKeyM :: Monad m => (k -> a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)
+mapWithKeyM f m = Trav.sequence (Map.mapWithKey f m)
+
 typeCheck :: FreestState ()
 typeCheck = do
   -- Type/datatype declarations (TypeEnv)
@@ -40,7 +43,7 @@ typeCheck = do
   tenv <- getTenv
   mapM_ (K.synthetizeTS . snd) tenv
   tenv <- getTenv
-  mapWithKeyM (\b _ -> removeFromKenv b) tenv
+  mapWithKeyM (\b _ -> removeFromKenv b) tenv -- TODO: only works if all vars in the prog are distinct
   -- Function signatures (VarEnv)
   venv <- getVenv
   trace ("Var Env:  " ++ show venv) (return ())
@@ -52,9 +55,6 @@ typeCheck = do
   mapWithKeyM checkFunBody eenv
   -- -- Main function
   checkMainFunction
-
-mapWithKeyM :: Monad m => (k -> a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)
-mapWithKeyM f m = Trav.sequence (Map.mapWithKey f m)
 
 hasBinding :: PBind -> a -> FreestState ()
 hasBinding f _ = do
@@ -75,11 +75,12 @@ checkFunBody :: PBind -> ([PBind], Expression) -> FreestState ()
 checkFunBody f (bs, exp) =
   getFromVenv f >>= \case
     Just t -> do
+      let (TypeScheme _ bs' _) = t
+      mapM_ (\(TBindK p x k) -> addToKenv (TBind p x) k) bs'
       let ts = toList t
       params <- buildParams f t bs (init ts)
       mapM_ (uncurry addToVenv) params
-      let (TypeScheme _ _ u) = last ts
-      T.checkAgainst exp u
+      T.checkAgainstST exp (last ts)
       mapM_ (removeFromVenv . fst) params
     Nothing ->
       addError (position f) ["Did not find the signature of function", styleRed $ show f]

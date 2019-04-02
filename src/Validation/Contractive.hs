@@ -28,11 +28,11 @@ import qualified Data.Map.Strict as Map
 
 -- Is a given type contractive?
 contractive :: KindEnv -> Type -> Bool
-contractive kenv (Semi _ t _) = contractive kenv t
-contractive kenv (Rec _ _ t)  = contractive kenv t
-contractive kenv (Dualof _ t) = contractive kenv t
-contractive kenv (Var p x)    = Map.member (TBind p x) kenv
-contractive _    _            = True
+contractive kenv (Semi _ t _)  = contractive kenv t
+contractive kenv (Rec _ _ t)   = contractive kenv t
+contractive kenv (Dualof _ t)  = contractive kenv t
+contractive kenv (TypeVar p x) = Map.member (TBind p x) kenv
+contractive _    _             = True
 
 -- Check the contractivity of a given type; issue an error if not
 checkContractive :: Type -> FreestState ()

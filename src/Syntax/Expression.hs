@@ -43,7 +43,7 @@ data Expression =
   | Character Pos Char
   | Boolean Pos Bool
   -- Variable
-  | Variable Pos PVar
+  | ProgVar Pos PVar
   -- Abstraction intro and elim
   {- Lam Pos Multiplicity PBind Exp -}
   | App Pos Expression Expression
@@ -51,7 +51,7 @@ data Expression =
   | Pair Pos {- Multiplicity -} Expression Expression
   | BinLet Pos PBind PBind Expression Expression
   -- Datatype intro and elim
---  | Cons Pos PVar -- TODO: this could be a Variable
+--  | Cons Pos PVar -- TODO: this could be a ProgVar
   | Case Pos Expression CaseMap
   -- Type application
   | TypeApp Pos PVar [Type]
@@ -74,7 +74,7 @@ instance Position Expression where
   position (Integer p _)         = p
   position (Character p _)       = p
   position (Boolean p _)         = p
-  position (Variable p _)        = p
+  position (ProgVar p _)         = p
   position (UnLet p _ _ _)       = p
   position (App p _ _)           = p
   position (TypeApp p _ _)       = p

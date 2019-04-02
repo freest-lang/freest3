@@ -72,11 +72,11 @@ synthetize (Rec p x@(TBindK _ _ k) t) = do
   y <- freshVar
   let b = TBind p y
   addToKenv b k
-  k <- synthetize $ subs (Var p y) x t -- On the fly α-conversion
+  k <- synthetize $ subs (TypeVar p y) x t -- On the fly α-conversion
   removeFromKenv b
   return k
 -- Session or functional
-synthetize (Var p x) =
+synthetize (TypeVar p x) =
   let bind = TBind p x in
   getFromKenv bind >>= \case
     Just k ->
@@ -117,7 +117,7 @@ checkAgainst k (Rec p x t) = do
   y <- freshVar
   let b = TBind p y
   addToKenv b (Kind p Session Un)
-  checkAgainst k $ subs (Var p y) x t -- On the fly α-conversion
+  checkAgainst k $ subs (TypeVar p y) x t -- On the fly α-conversion
   removeFromKenv b
 checkAgainst k1 t = do
   k2 <- synthetize t
@@ -154,11 +154,10 @@ isSessionType _ _ (Message _ _ _)   = True
 isSessionType _ _ (Choice _ _ _)    = True
 isSessionType kenv tenv (Rec _ _ t) = isSessionType kenv tenv t
   -- Functional or session
-isSessionType kenv _ (Var p x)      = Map.member (TBind p x) kenv
+isSessionType kenv _ (TypeVar p x)      = Map.member (TBind p x) kenv
   -- Type operators
 isSessionType _ _ (Dualof _ _)      = True
-isSessionType kenv tenv (Name p c)  = isSessionType kenv tenv t
-  where (_, TypeScheme _ [] t) = tenv Map.! (TBind p c) -- TODO: polymorphic type names
+isSessionType kenv tenv (Name p c)  = isSession $ fst $ tenv Map.! (TBind p c)
   -- Otherwise: Functional types
 isSessionType _ _ _                 = False
 
