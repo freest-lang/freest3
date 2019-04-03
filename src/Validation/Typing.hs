@@ -67,28 +67,35 @@ hasBinding f _ = do
     addError (position f) ["The type signature for", styleRed $ show f,
                            "lacks an accompanying binding"]
 
+-- To determine whether a given constructor (a program variable) is a
+-- datatype constructor we have to look in the type environment for a
+-- type name associated to a datatype that defines the constructor
+-- (rather indirect)
 isDatatypeContructor :: PBind -> FreestState Bool
 isDatatypeContructor c = do
   tenv <- getTenv
-  return $ Map.foldl (\acc (_, (TypeScheme _ _ t)) -> acc || isDatatype t) False tenv
-  where isDatatype (Datatype _ m) = c `Map.member` m
+  return $ Map.foldr (\(_, (TypeScheme _ _ t)) acc -> acc || isDatatype t) False tenv
+  where isDatatype :: Type -> Bool
+        isDatatype (Datatype _ m) = c `Map.member` m
         isDatatype _              = False
 
 checkFunBody :: PBind -> Expression -> FreestState ()
 checkFunBody f e =
   getFromVenv f >>= \case
     Just ts -> do
-      trace ("checkFunBody: checkAgainstST before: " ++ show e ++ "\n") (return ())
       e' <- fillFunType f e ts
-      addToEenv f e'
-      trace ("checkFunBody: checkAgainstST after: " ++ show e ++ "\n") (return ())
-      tenv <- getTenv
-      T.checkAgainstST e ts
+      T.checkAgainstST e' ts
     Nothing ->
       addError (position f) ["Did not find the signature of function", styleRed $ show f]
 
+-- At parsing time all lambda variables are associated to type
+-- Unit. Here we amend the situation by replacing these types with
+-- those declared in the type scheme for the function.
 fillFunType :: PBind -> Expression -> TypeScheme -> FreestState Expression
-fillFunType (PBind p f) e (TypeScheme _ _ t) = fill e t
+fillFunType b@(PBind p f) e (TypeScheme _ _ t) = do
+  e' <- fill e t
+  addToEenv b e'
+  return e'
   where
   fill :: Expression -> Type -> FreestState Expression
   fill (Lambda p _ x _ e) (Fun _ m t1 t2) = do
@@ -101,32 +108,6 @@ fillFunType (PBind p f) e (TypeScheme _ _ t) = fill e t
     return e
   fill e _ = return e
 
-{-
--- TODO: this is a complete hack.
-checkFunBody :: PBind -> Expression -> FreestState ()
-checkFunBody f (bs, exp) =
-  getFromVenv f >>= \case
-    Just t -> do
-      let (TypeScheme _ bs' _) = t
-      mapM_ (\(TBindK p x k) -> addToKenv (TBind p x) k) bs'
-      let ts = toList t
-      params <- buildParams f t bs (init ts)
-      mapM_ (uncurry addToVenv) params
-      T.checkAgainstST exp (last ts)
-      mapM_ (removeFromVenv . fst) params
-    Nothing ->
-      addError (position f) ["Did not find the signature of function", styleRed $ show f]
-
-buildParams :: PBind -> TypeScheme -> [PBind] -> [TypeScheme] -> FreestState [(PBind, TypeScheme)]
-buildParams (PBind p f) (TypeScheme _ _ t) ps ts
-  | binds == params = return $ zip ps ts
-  | otherwise = do
-      addError p ["The equation for", styleRed f, "has", show binds, "parameter(s)\n",
-                  "\t but its type", styleRed (show t), "has", show params]
-      return []
-  where binds  = length ps
-        params = length ts
--}
 checkMainFunction :: FreestState ()
 checkMainFunction = do
   venv <- getVenv

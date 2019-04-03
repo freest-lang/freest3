@@ -1,10 +1,12 @@
 module Validation.TestTypeSchemeKindingSpec(spec) where
 
-import qualified Data.Map as Map
 import           Parse.Parser
-import           SpecHelper
 import           Validation.Kinding
 import           Syntax.Kinds
+import           Utils.FreestState
+import           SpecHelper
+import           Control.Monad.State
+import qualified Data.Map as Map
 
 spec :: Spec
 spec = do 
@@ -16,6 +18,9 @@ matchKindingValidSpec :: [String] -> Spec
 matchKindingValidSpec [ts, k] =
   it ts $ do
     (kindOfScheme (read ts :: TypeScheme)) `shouldBe` (read k :: Kind)
+
+kindOfScheme :: TypeScheme -> Kind
+kindOfScheme t = evalState (synthetiseTS t) (initialState "")
 
 main :: IO ()
 main = hspec spec

@@ -1,7 +1,10 @@
 module Validation.TestKindingInvalidSpec(spec) where
 
-import SpecHelper
-import Validation.Kinding
+import           Validation.Kinding
+import           Syntax.Kinds
+import           Utils.FreestState
+import           SpecHelper
+import           Control.Monad.State
 import qualified Data.Map.Strict as Map
 
 spec :: Spec
@@ -14,6 +17,12 @@ matchInvalidKindingSpec :: String -> Spec
 matchInvalidKindingSpec str =
   it str $ do
     (read str `isWellFormed` Map.empty) `shouldBe` False
+
+isWellFormed :: Type -> KindEnv -> Bool
+isWellFormed t k =
+  let s = initialState "" in
+  let s1 = execState (synthetise t) (s {kindEnv=k}) in
+    null (errors s1)
 
 -- INVALID:
 -- forall alpha . (rec Tree . &{Leaf:Skip, Node:?Int;Tree;Tree}) -> (rec TreeChannel . +{Leaf:Skip, Node:!Int;TreeChannel;TreeChannel});alpha->alpha

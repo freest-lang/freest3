@@ -1,11 +1,17 @@
 module Validation.TestKindingValidSpec(spec) where
 
-import SpecHelper
-import Syntax.Kinds
-import Validation.Contractive
-import Validation.Kinding
---
+import           Syntax.Kinds
+import           Validation.Contractive
+import           Validation.Kinding
+import           Utils.FreestState
+import           SpecHelper
+import           Control.Monad.State
 import qualified Data.Map.Strict as Map
+
+kindOfType :: KindEnv -> Type -> Kind
+kindOfType k t =
+  let s = (initialState  "") in
+  evalState (synthetise t) (s {kindEnv = k})
 
 spec :: Spec
 spec = do

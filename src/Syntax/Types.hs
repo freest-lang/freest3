@@ -20,6 +20,7 @@ module Syntax.Types
 , Type(..)
 , TypeScheme(..)
 , toTypeScheme
+, defaultTypeScheme
 , subs
 , unfold
 , toList -- TODO: not quite sure this belongs here
@@ -214,6 +215,9 @@ instance Position TypeScheme where
 
 toTypeScheme :: Type -> TypeScheme
 toTypeScheme t = TypeScheme (position t) [] t
+
+defaultTypeScheme :: Pos -> TypeScheme
+defaultTypeScheme p = TypeScheme p [] (Basic p UnitType)
 
 toList :: TypeScheme -> [TypeScheme] -- TODO: return [Type]
 toList (TypeScheme p b (Fun _ _ t1 t2)) = (TypeScheme p b t1) : toList (TypeScheme p b t2)

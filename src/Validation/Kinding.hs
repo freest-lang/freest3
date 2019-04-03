@@ -20,9 +20,6 @@ module Validation.Kinding
 , isSessionType
 , un
 , lin
-, kindOfType -- test
-, kindOfScheme -- test
-, isWellFormed -- test
 ) where
 
 import           Parse.Lexer (Pos, position)
@@ -37,6 +34,12 @@ import           Validation.Contractive
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
 --import           Debug.Trace
+
+{-
+class Kinding a where
+  synthetise :: a -> FreestState Kind
+  checkAgains :: Kind -> a -> FreestState ()
+-}
 
 -- Returns the kind of a given type
 synthetise :: Type -> FreestState Kind
@@ -95,7 +98,7 @@ synthetise (Name p c) =
     Nothing -> do
       addError p ["Type name not in scope:", styleRed c]
       let k = top p
-      addToTenv bind k (TypeScheme p [] (Basic p UnitType))
+      addToTenv bind k $ defaultTypeScheme p
       return k
 synthetise (Dualof p t) = do
   m <- checkAgainstSession t
@@ -110,7 +113,7 @@ checkAgainstSession t = do
     addError (position t) ["Expecting a session type; found", styleRed $ show t]
   return m
 
--- Checks a type against a given kind
+-- Check a type against a given kind
 checkAgainst :: Kind -> Type -> FreestState ()
 checkAgainst k (Rec p x t) = do
   checkContractive t
@@ -126,20 +129,20 @@ checkAgainst k1 t = do
                             "to be a sub-kind of", styleRed $ show k2]
 
 synthetiseTS :: TypeScheme -> FreestState Kind
-synthetiseTS (TypeScheme p ks t) = do
-  resetKEnv
-  mapM_ (\(TBindK p x k) -> addToKenv (TBind p x) k) ks
+synthetiseTS (TypeScheme p bs t) = do
+  resetKEnv -- TODO: really?
+  mapM_ (\(TBindK p x k) -> addToKenv (TBind p x) k) bs
   synthetise t
 
--- Determines whether a given type is linear or not
+-- Determine whether a given type is linear
 lin :: TypeScheme -> FreestState Bool
 lin = mult Lin
 
--- Determines whether a given type is unrestricted or not
+-- Determine whether a given type is unrestricted
 un :: TypeScheme -> FreestState Bool
 un = mult Un
 
--- Determines whether a given type is of a given multiplicity
+-- Determine whether a given type is of a given multiplicity
 mult :: Multiplicity -> TypeScheme -> FreestState Bool
 mult m1 t = do
   (Kind _ _ m2) <- synthetiseTS t
@@ -154,25 +157,9 @@ isSessionType _ _ (Message _ _ _)   = True
 isSessionType _ _ (Choice _ _ _)    = True
 isSessionType kenv tenv (Rec _ _ t) = isSessionType kenv tenv t
   -- Functional or session
-isSessionType kenv _ (TypeVar p x)      = Map.member (TBind p x) kenv
+isSessionType kenv _ (TypeVar p x)  = Map.member (TBind p x) kenv
   -- Type operators
 isSessionType _ _ (Dualof _ _)      = True
 isSessionType kenv tenv (Name p c)  = isSession $ fst $ tenv Map.! (TBind p c)
   -- Otherwise: Functional types
 isSessionType _ _ _                 = False
-
--- For TESTS only, from here on
-
-kindOfType :: KindEnv -> Type -> Kind
-kindOfType k t =
-  let s = (initialState  "") in
-  evalState (synthetise t) (s {kindEnv=k})
-
-kindOfScheme :: TypeScheme -> Kind
-kindOfScheme t = evalState (synthetiseTS t) (initialState "")
-
-isWellFormed :: Type -> KindEnv -> Bool
-isWellFormed t k =
-  let s = initialState "" in
-  let s1 = execState (synthetise t) (s {kindEnv=k}) in
-    null (errors s1)
