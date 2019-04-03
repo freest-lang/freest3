@@ -26,7 +26,8 @@ import qualified Data.Map.Strict as Map
 -- The definitions of the datatypes and types declared in a program
 type TypeEnv = Map.Map TBind (Kind, TypeScheme)
 
--- The signatures of the functions and other variables in a program
+-- The signatures of the functions names (including the primitive
+-- operators) and parameters, and the datatype constructors
 type VarEnv = Map.Map PBind TypeScheme
 
 -- The definitions of the named functions in a program

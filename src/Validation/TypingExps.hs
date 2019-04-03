@@ -29,6 +29,7 @@ import           Syntax.Kinds
 import           Syntax.Bind
 import           Utils.Errors
 import           Utils.FreestState
+import           Utils.PreludeLoader (isBuiltin)
 import           Equivalence.TypeEquivalence
 import qualified Validation.Kinding as K
 import           Control.Monad.State
@@ -63,14 +64,10 @@ synthetise (Lambda p m x t1 e) = do
   venv1 <- getVenv
   K.synthetise t1
   addToVenv x (toTypeScheme t1)
-  trace ("Ready to synthetise: " ++ show e ++ "\n\n") (return ())
   t2 <- synthetise e
   quotient x
   venv2 <- getVenv
---  trace ("checkEquivEnvs\nvenv1: " ++ show venv1 ++ "\nvenv2: " ++ show venv2) (return ())
-  when (m == Un) (checkEquivEnvs venv1 venv2)
---  trace ("Done with checkEquivEnvs\nvenv1: " ++ show venv1 ++ "\nvenv2: " ++ show venv2) (return ())
-  trace ("synthetising type: " ++ show (Fun p m t1 t2)) (return ())
+  when (m == Un) (checkEquivEnvs p venv1 venv2)
   return $ Fun p m t1 t2
 -- Abstraction elimination
 synthetise (App _ e1 e2) = do
@@ -97,7 +94,7 @@ synthetise (Conditional p e1 e2 e3) = do
   setVenv venv2
   checkAgainst e3 t
   venv4 <- getVenv
-  checkEquivEnvs venv3 venv4
+  checkEquivEnvs p venv3 venv4
   return t
 -- Pair introduction
 synthetise (Pair p e1 e2) = do
@@ -141,20 +138,20 @@ synthetise (Match p e m) = do
   tm <- extractInChoiceMap p t
   venv <- getVenv
   (t:ts, v:vs) <- Map.foldrWithKey (\k (p, e) acc ->
-                                  checkMap acc venv tm k ([p], e)) (return ([],[])) m
+                                   checkMap acc venv tm k ([p], e)) (return ([],[])) m
   mapM_ (checkEquivTypes t) ts
-  mapM_ (checkEquivEnvs v) vs
+  mapM_ (checkEquivEnvs p v) vs
   setVenv v
   return t
 -- Datatype elimination
-synthetise (Case _ e m) = do
+synthetise (Case p e m) = do
   t <- synthetise e
   tm <- extractDataTypeMap t
   venv <- getVenv
   (t:ts, v:vs) <- Map.foldrWithKey (\k v acc ->
-                                  checkMap acc venv tm k v) (return ([],[])) m
+                                   checkMap acc venv tm k v) (return ([],[])) m
   mapM_ (checkEquivTypes t) ts
-  mapM_ (checkEquivEnvs v) vs
+  mapM_ (checkEquivEnvs p v) vs
   setVenv v
   return t
 
@@ -169,7 +166,7 @@ checkAgainst (Conditional p e1 e2 e3) t = do
   setVenv venv2
   checkAgainst e3 t
   venv4 <- getVenv
-  checkEquivEnvs venv3 venv4
+  checkEquivEnvs p venv3 venv4
 -- Pair elimination
   -- TODO
 -- Default
@@ -190,7 +187,7 @@ checkEquivTypes expected actual = do
   tenv <- getTenv
   when (not $ equivalent kenv tenv expected actual) $
     addError (position expected) ["Couldn't match expected type", styleRed (show expected),
-                           "with actual type", styleRed (show actual)]
+                                  "with actual type", styleRed (show actual)]
 
 -- | Returns the type scheme for a variable; removes it from venv 
 synthetiseVar :: Pos -> PVar -> FreestState TypeScheme -- TODO: Review
@@ -260,14 +257,16 @@ checkCons b@(PBind p c) tm = do
 
 -- | Equivalence functions
 
--- TODO: position, diff, better error message, maybe with diff between maps
--- and something else (only compares keys)
-checkEquivEnvs :: VarEnv -> VarEnv -> FreestState ()
-checkEquivEnvs venv1 venv2 = do
+checkEquivEnvs :: Pos -> VarEnv -> VarEnv -> FreestState ()
+checkEquivEnvs p venv1 venv2 = do
   equiv <- equivalentEnvs venv1 venv2
-  when (not equiv) $
-    addError defaultPos ["Expecting environment", show venv1,
-                         "to be equivalent to environment", show venv2]
+  when (not equiv) $ do
+    tenv <- getTenv
+    addError p ["Expecting environment", styleRed $ show $ funsOnly venv1, "\n",
+                "\t to be equivalent to  ", styleRed $ show $ funsOnly venv2]
+  where
+  funsOnly :: VarEnv -> VarEnv
+  funsOnly = Map.filterWithKey (\x _ -> not (isBuiltin x))
 
 equivalentEnvs :: VarEnv -> VarEnv -> FreestState Bool
 equivalentEnvs m1 m2 = do
@@ -275,24 +274,3 @@ equivalentEnvs m1 m2 = do
   return (Map.size m1 == Map.size m2) <&&>
     Map.foldlWithKey (\b x s ->
       b <&&> return (x `Map.member` m2) <&&> return (equivalentTS tenv s (m2 Map.! x))) (return True) m1
-{-
-equivalentEnvs :: VarEnv -> VarEnv -> FreestState Bool
-equivalentEnvs venv1 venv2 = Map.foldrWithKey (\b t acc -> acc <&&> f b t venv2) (return True) venv1
-  where
-    f :: PBind -> TypeScheme -> VarEnv -> FreestState Bool
-    f b t venv = do
-      lt <- K.lin t
-      if lt then
-        case venv Map.!? b of
-          Nothing -> return False
-          Just u -> do
-            lu <- K.lin u
-            if lu
-            then do
-              let (TypeScheme _ _ t', TypeScheme _ _ u') = (t, u)
-              kenv <- getKenv
-              tenv <- getTenv
-              return $ equivalent kenv tenv t' u'
-            else return False
-       else return True
--}

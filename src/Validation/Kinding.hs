@@ -33,7 +33,7 @@ import           Utils.FreestState
 import           Validation.Contractive
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
---import           Debug.Trace
+import           Debug.Trace
 
 {-
 class Kinding a where
@@ -130,7 +130,7 @@ checkAgainst k1 t = do
 
 synthetiseTS :: TypeScheme -> FreestState Kind
 synthetiseTS (TypeScheme p bs t) = do
-  resetKEnv -- TODO: really?
+--  resetKEnv -- TODO: really?
   mapM_ (\(TBindK p x k) -> addToKenv (TBind p x) k) bs
   synthetise t
 

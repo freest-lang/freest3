@@ -28,7 +28,7 @@ import           Parse.Lexer (position)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
--- The class
+-- The class, good for types and for type schemes (at least)
 
 class StrongEquiv t where
   strongEquiv :: TypeEnv -> t -> t -> Bool
@@ -36,8 +36,7 @@ class StrongEquiv t where
 -- Strong equivalence for types
 
 instance StrongEquiv Type where
---strongEquiv :: TypeEnv -> Type -> Type -> Bool
-  strongEquiv tenv t u = normalise tenv t == normalise tenv u
+  strongEquiv tenv t u = t == u -- normalise tenv t == normalise tenv u
 
 normalise :: TypeEnv -> Type -> Type
   -- Functional types
@@ -102,7 +101,8 @@ instantiate (TypeScheme _ bs1 t1) (TypeScheme _ bs2 t2) = inst bs1 bs2 t1 t2
   inst :: [TBindK] -> [TBindK] -> Type -> Type -> Maybe (KindEnv, Type, Type)
   inst ((TBindK p1 x1 k1):bs1) (tk2@(TBindK _ x2 k2):bs2) t1 t2
     | k1 /= k2  = Nothing
-    | otherwise =
+    | x1 == x2 = inst bs1 bs2 t1 (subs (TypeVar p1 x1) tk2 t2)
+    | otherwise = -- substitute x1 for x2
         case inst bs1 bs2 t1 (subs (TypeVar p1 x1) tk2 t2) of
           Nothing -> Nothing
           Just (m, t1, t2) -> Just (Map.insert (TBind p1 x1) k1 m, t1, t2)
