@@ -60,7 +60,8 @@ synthetise (UnLet _ x e1 e2) = do
   quotient x
   return t2
 -- Abstraction introduction
-synthetise (Lambda p m x t1 e) = do
+synthetise l@(Lambda p m x t1 e) = do
+  trace ("synthetise :" ++ show l) (return ())
   venv1 <- getVenv
   K.synthetise t1
   addToVenv x (toTypeScheme t1)
