@@ -33,7 +33,7 @@ data Expression =
   -- Variable
   | ProgVar Pos PVar
   -- Abstraction intro and elim
-  | Lambda Pos Multiplicity PBind Expression
+  | Lambda Pos Multiplicity PBind Type Expression
   | App Pos Expression Expression
   -- Pair intro and elim
   | Pair Pos {- Multiplicity -} Expression Expression
@@ -42,7 +42,7 @@ data Expression =
   | Case Pos Expression CaseMap
   -- Type application
   | TypeApp Pos PVar [Type]
-  -- Boolean elimination
+  -- Boolean elim
   | Conditional Pos Expression Expression Expression
   -- Let
   | UnLet Pos PBind Expression Expression -- TODO: Derived; eliminate?
@@ -54,7 +54,7 @@ data Expression =
   | Receive Pos Expression 
   | Select Pos PVar Expression
   | Match Pos Expression MatchMap
-   deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show)
 
 -- type FieldMap = Map.Map PBind Expression
 type MatchMap = Map.Map PBind (PBind, Expression)
@@ -66,7 +66,7 @@ instance Position Expression where
   position (Character p _)       = p
   position (Boolean p _)         = p
   position (ProgVar p _)         = p
-  position (Lambda p _ _ _)      = p
+  position (Lambda p _ _ _ _)    = p
   position (UnLet p _ _ _)       = p
   position (App p _ _)           = p
   position (TypeApp p _ _)       = p

@@ -136,7 +136,6 @@ Decl :: { () }
     {% do
        checkDupTypeDecl (fst $2)
        let bs = typesToFun (fst $2) $5
-       trace ("DataCons: " ++ show $5 ++ "\nFun: " ++ show bs) (return ())
        let p = position (fst $2)
        uncurry addToTenv $2 (TypeScheme p $3 (Datatype p (Map.fromList bs)))
        mapM_ (\(b, t) -> addToVenv b (TypeScheme (position b) [] t)) bs

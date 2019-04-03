@@ -13,6 +13,7 @@ Portability :  portable | non-portable (<reason>)
 
 module Equivalence.TypeEquivalence
 ( equivalent
+, equivalentTS
 ) where
 
 import           Syntax.Programs
@@ -31,7 +32,15 @@ import qualified Data.Set as Set
 import qualified Data.Sequence as Sequence
 -- import           Text.Printf
 
--- TYPE EQUIVALENCE
+-- Type scheme equivalence
+
+equivalentTS :: TypeEnv -> TypeScheme -> TypeScheme -> Bool
+equivalentTS tenv ts1 ts2 =
+  case instantiate ts1 ts2 of
+    Nothing             -> False
+    Just (kenv, t1, t2) -> strongEquiv tenv t1 t2 || equiv kenv tenv t1 t2
+
+-- Type equivalence
 
 equivalent :: KindEnv -> TypeEnv -> Type -> Type -> Bool
 equivalent kenv tenv t u = strongEquiv tenv t u || equiv kenv tenv t u

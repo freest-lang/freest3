@@ -8,15 +8,16 @@ Maintainer  :  vmvasconcelos@ciencias.ulisboa.pot
 Stability   :  unstable | experimental | provisional | stable | frozen
 Portability :  portable | non-portable (<reason>)
 
-A notion of equivalence stronger than the bisimulation on session
-types. This relation is strictly included in equivalence. Use it to
-check whether two types are equivalent, prior to trying the
-equivalence algorithm, which takes significantly more time.
+A notion of equivalence stronger than the bisimulation on context-free
+session types. This relation is strictly included in equivalence. Use
+it to check whether two types are equivalent, prior to trying the
+equivalence algorithm, which takes significantly longer.
 
 -}
 
 module Equivalence.StrongEquivalence
-( strongEquiv
+( StrongEquiv(..)
+, instantiate
 ) where
 
 import           Syntax.Bind
@@ -27,8 +28,16 @@ import           Parse.Lexer (position)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
-strongEquiv :: TypeEnv -> Type -> Type -> Bool
-strongEquiv tenv t u = (normalise tenv t) == (normalise tenv u)
+-- The class
+
+class StrongEquiv t where
+  strongEquiv :: TypeEnv -> t -> t -> Bool
+
+-- Strong equivalence for types
+
+instance StrongEquiv Type where
+--strongEquiv :: TypeEnv -> Type -> Type -> Bool
+  strongEquiv tenv t u = normalise tenv t == normalise tenv u
 
 normalise :: TypeEnv -> Type -> Type
   -- Functional types
@@ -78,3 +87,24 @@ free (TypeVar _ x)    = Set.singleton x
   -- Type operators
 free (Dualof _ t)     = free t
 free (Name _ _)       = Set.empty
+
+-- Strong equivalence for type schemes
+
+instance StrongEquiv TypeScheme where
+  strongEquiv tenv ts1 ts2 =
+    case instantiate ts1 ts2 of
+      Nothing          -> False
+      Just (_, t1, t2) -> strongEquiv tenv t1 t2
+
+instantiate :: TypeScheme -> TypeScheme -> Maybe (KindEnv, Type, Type)
+instantiate (TypeScheme _ bs1 t1) (TypeScheme _ bs2 t2) = inst bs1 bs2 t1 t2
+  where
+  inst :: [TBindK] -> [TBindK] -> Type -> Type -> Maybe (KindEnv, Type, Type)
+  inst ((TBindK p1 x1 k1):bs1) (tk2@(TBindK _ x2 k2):bs2) t1 t2
+    | k1 /= k2  = Nothing
+    | otherwise =
+        case inst bs1 bs2 t1 (subs (TypeVar p1 x1) tk2 t2) of
+          Nothing -> Nothing
+          Just (m, t1, t2) -> Just (Map.insert (TBind p1 x1) k1 m, t1, t2)
+  inst [] [] t1 t2 = Just (Map.empty, t1, t2)
+  inst _ _ _ _ = Nothing

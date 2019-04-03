@@ -28,7 +28,7 @@ module Parse.ParserUtils
 import           Parse.Lexer (Position, Pos, position, defaultPos, showPos)
 import           Syntax.Programs (VarEnv)
 import           Syntax.Expression (Expression(..))
-import           Syntax.Types (TypeMap, TBindK(..), Type(..))
+import           Syntax.Types (TypeMap, TBindK(..), Type(..), BasicType(..))
 import           Syntax.Bind (PBind(..), TBind(..))
 import           Syntax.Kinds (Multiplicity(..))
 import           Utils.Errors
@@ -123,6 +123,9 @@ typesToFun (TBind p x) = map (\(k, ts) -> (k, typeToFun ts))
   where typeToFun []       = (Name p x)
         typeToFun (t : ts) = Fun (position t) Un t (typeToFun ts)
 
+-- At parsing time we may not konw the signature for the function, so
+-- we type each parameter as ()
 funDeclToExp :: [PBind] -> Expression -> Expression
-funDeclToExp [] e  = e
-funDeclToExp (b:bs) e = Lambda (position b) Lin b (funDeclToExp bs e)
+funDeclToExp []     e = e
+funDeclToExp (b:bs) e = Lambda p Lin b (Basic p UnitType) (funDeclToExp bs e)
+  where p = position b

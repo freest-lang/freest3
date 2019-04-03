@@ -15,8 +15,8 @@ Portability :  portable | non-portable (<reason>)
 
 module Validation.Kinding
 ( checkAgainst
-, synthetize
-, synthetizeTS
+, synthetise
+, synthetiseTS
 , isSessionType
 , un
 , lin
@@ -39,44 +39,44 @@ import qualified Data.Map.Strict as Map
 --import           Debug.Trace
 
 -- Returns the kind of a given type
-synthetize :: Type -> FreestState Kind
+synthetise :: Type -> FreestState Kind
 -- Session types
-synthetize (Skip p) =
+synthetise (Skip p) =
   return $ Kind p Session Un
-synthetize (Message p _ _) =
+synthetise (Message p _ _) =
   return $ Kind p Session Lin
-synthetize (Choice p _ m) = do
+synthetise (Choice p _ m) = do
   mapM_ (checkAgainst (Kind p Session Lin)) (Map.elems m)
   return $ Kind p Session Lin
-synthetize (Semi p t u) = do
+synthetise (Semi p t u) = do
   m <- checkAgainstSession t
   n <- checkAgainstSession u
   return $ Kind p Session (max m n)
 -- Functional
-synthetize (Basic p _) =
+synthetise (Basic p _) =
   return $ Kind p Functional Un
-synthetize (Fun p m t u) = do
-  synthetize t
-  synthetize u
+synthetise (Fun p m t u) = do
+  synthetise t
+  synthetise u
   return $ Kind p Functional m
-synthetize (PairType _ t u) = do
-  kt <- synthetize t
-  ku <- synthetize u
+synthetise (PairType _ t u) = do
+  kt <- synthetise t
+  ku <- synthetise u
   return $ lub kt ku
-synthetize (Datatype p m) = do
-  ks <- mapM synthetize (Map.elems m)
+synthetise (Datatype p m) = do
+  ks <- mapM synthetise (Map.elems m)
   let Kind _ _ n = foldr1 lub ks
   return $ Kind p Functional n
-synthetize (Rec p x@(TBindK _ _ k) t) = do
+synthetise (Rec p x@(TBindK _ _ k) t) = do
   checkContractive t
   y <- freshVar
   let b = TBind p y
   addToKenv b k
-  k <- synthetize $ subs (TypeVar p y) x t -- On the fly α-conversion
+  k <- synthetise $ subs (TypeVar p y) x t -- On the fly α-conversion
   removeFromKenv b
   return k
 -- Session or functional
-synthetize (TypeVar p x) =
+synthetise (TypeVar p x) =
   let bind = TBind p x in
   getFromKenv bind >>= \case
     Just k ->
@@ -87,7 +87,7 @@ synthetize (TypeVar p x) =
       addToKenv bind k
       return k
 -- Type operators
-synthetize (Name p c) =
+synthetise (Name p c) =
   let bind = TBind p c in
   getFromTenv bind >>= \case
     Just (k, _) ->
@@ -97,7 +97,7 @@ synthetize (Name p c) =
       let k = top p
       addToTenv bind k (TypeScheme p [] (Basic p UnitType))
       return k
-synthetize (Dualof p t) = do
+synthetise (Dualof p t) = do
   m <- checkAgainstSession t
   return $ Kind p Session m
 
@@ -105,7 +105,7 @@ synthetize (Dualof p t) = do
 -- return the multiplicity of the kind of the type
 checkAgainstSession :: Type -> FreestState Multiplicity
 checkAgainstSession t = do
-  (Kind _ k m) <- synthetize t
+  (Kind _ k m) <- synthetise t
   when (k /= Session) $
     addError (position t) ["Expecting a session type; found", styleRed $ show t]
   return m
@@ -120,16 +120,16 @@ checkAgainst k (Rec p x t) = do
   checkAgainst k $ subs (TypeVar p y) x t -- On the fly α-conversion
   removeFromKenv b
 checkAgainst k1 t = do
-  k2 <- synthetize t
+  k2 <- synthetise t
   when (not (k2 <: k1)) $
     addError (position k1) ["Expecting kind", styleRed $ show k1,
                             "to be a sub-kind of", styleRed $ show k2]
 
-synthetizeTS :: TypeScheme -> FreestState Kind
-synthetizeTS (TypeScheme p ks t) = do
+synthetiseTS :: TypeScheme -> FreestState Kind
+synthetiseTS (TypeScheme p ks t) = do
   resetKEnv
   mapM_ (\(TBindK p x k) -> addToKenv (TBind p x) k) ks
-  synthetize t
+  synthetise t
 
 -- Determines whether a given type is linear or not
 lin :: TypeScheme -> FreestState Bool
@@ -142,7 +142,7 @@ un = mult Un
 -- Determines whether a given type is of a given multiplicity
 mult :: Multiplicity -> TypeScheme -> FreestState Bool
 mult m1 t = do
-  (Kind _ _ m2) <- synthetizeTS t
+  (Kind _ _ m2) <- synthetiseTS t
   return $ m2 == m1
 
 -- Assumes the type is well formed
@@ -166,13 +166,13 @@ isSessionType _ _ _                 = False
 kindOfType :: KindEnv -> Type -> Kind
 kindOfType k t =
   let s = (initialState  "") in
-  evalState (synthetize t) (s {kindEnv=k})
+  evalState (synthetise t) (s {kindEnv=k})
 
 kindOfScheme :: TypeScheme -> Kind
-kindOfScheme t = evalState (synthetizeTS t) (initialState "")
+kindOfScheme t = evalState (synthetiseTS t) (initialState "")
 
 isWellFormed :: Type -> KindEnv -> Bool
 isWellFormed t k =
   let s = initialState "" in
-  let s1 = execState (synthetize t) (s {kindEnv=k}) in
+  let s1 = execState (synthetise t) (s {kindEnv=k}) in
     null (errors s1)

@@ -18,7 +18,7 @@ module Validation.Typing
 ) where
 
 import           Parse.Lexer (position, defaultPos)
-import           Syntax.Expression (Expression)
+import           Syntax.Expression (Expression(..))
 import           Syntax.Types
 import           Syntax.Bind
 import           Utils.Errors
@@ -41,19 +41,22 @@ typeCheck = do
   tenv <- getTenv
   mapWithKeyM (\b (k,_) -> addToKenv b k) tenv
   tenv <- getTenv
-  mapM_ (K.synthetizeTS . snd) tenv
+  mapM_ (K.synthetiseTS . snd) tenv
   tenv <- getTenv
   mapWithKeyM (\b _ -> removeFromKenv b) tenv -- TODO: only works if all vars in the prog are distinct
   -- Function signatures (VarEnv)
   venv <- getVenv
   trace ("Var Env:  " ++ show venv) (return ())
   trace ("Type Env: " ++ show tenv) (return ())
-  mapM_ K.synthetizeTS venv
+  mapM_ K.synthetiseTS venv
   mapWithKeyM hasBinding venv
   -- -- Function bodies (ExpEnv)
   eenv <- getEenv
+  trace ("checkFunBodies before: " ++ show eenv ++ "\n\n") (return ())
   mapWithKeyM checkFunBody eenv
-  -- -- Main function
+  eenv <- getEenv
+  trace ("Fun bodies after: " ++ show eenv) (return ())
+  -- Main function
   checkMainFunction
 
 hasBinding :: PBind -> a -> FreestState ()
@@ -74,10 +77,30 @@ isDatatypeContructor c = do
 checkFunBody :: PBind -> Expression -> FreestState ()
 checkFunBody f e =
   getFromVenv f >>= \case
-    Just t -> do
-      T.checkAgainstST e t
+    Just ts -> do
+      trace ("checkFunBody: checkAgainstST before: " ++ show e ++ "\n") (return ())
+      e' <- fillFunType f e ts
+      addToEenv f e'
+      trace ("checkFunBody: checkAgainstST after: " ++ show e ++ "\n") (return ())
+      tenv <- getTenv
+      T.checkAgainstST e ts
     Nothing ->
       addError (position f) ["Did not find the signature of function", styleRed $ show f]
+
+fillFunType :: PBind -> Expression -> TypeScheme -> FreestState Expression
+fillFunType (PBind p f) e (TypeScheme _ _ t) = fill e t
+  where
+  fill :: Expression -> Type -> FreestState Expression
+  fill (Lambda p _ x _ e) (Fun _ m t1 t2) = do
+    e' <- fill e t2
+    return $ Lambda p m x t1 e'
+  fill e@(Lambda p _ _ _ _) t = do
+    addError p ["Couldn't match expected type", styleRed $ show t, "\n",
+                "\t The equation for", styleRed f, "has one or more arguments,\t",
+                "\t but its type", show t, "has none"]
+    return e
+  fill e _ = return e
+
 {-
 -- TODO: this is a complete hack.
 checkFunBody :: PBind -> Expression -> FreestState ()
@@ -115,8 +138,7 @@ checkMainFunction = do
     let t = venv Map.! mBind
     mType <- normaliseTS t
     b <- isValidMainType mType
-    let (TypeScheme _ _ t') = t
-    k <- K.synthetize t'
+    k <- K.synthetiseTS t
     when (not b) $
       addError (position mType) ["The type for", styleRed "main", "must be an unrestricted, non-function type\n",
                                  "\t found type", styleRed $ show t, ":", styleRed $ show k]

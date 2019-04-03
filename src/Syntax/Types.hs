@@ -19,7 +19,7 @@ module Syntax.Types
 , Polarity(..)
 , Type(..)
 , TypeScheme(..)
--- , free
+, toTypeScheme
 , subs
 , unfold
 , toList -- TODO: not quite sure this belongs here
@@ -211,6 +211,9 @@ instance Show TypeScheme where
 
 instance Position TypeScheme where
   position (TypeScheme p _ _) = p
+
+toTypeScheme :: Type -> TypeScheme
+toTypeScheme t = TypeScheme (position t) [] t
 
 toList :: TypeScheme -> [TypeScheme] -- TODO: return [Type]
 toList (TypeScheme p b (Fun _ _ t1 t2)) = (TypeScheme p b t1) : toList (TypeScheme p b t2)
