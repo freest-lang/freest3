@@ -61,7 +61,7 @@
   }
   \quad
   \frac{
-    \algkindin{T}{\kinds^\Lin}
+    \algkindout{T}{\kinds^\Lin}
   }{
     \algkindout{\tChoice{\{l_i\colon T_i\}}_{i\in I}}{\kinds^\Lin}
   }
@@ -115,6 +115,32 @@
     }
   \end{equation*}
   % 
+  Context difference \hfill\fbox{$\ctxdiff \Gamma x \Gamma$}
+  %
+  \begin{equation*}
+    % \Gamma\div\Empty=\Gamma
+    % \quad
+    \frac{
+      % \Gamma_1\div\Gamma_3=\Gamma_3
+      % \quad
+      \isLin T
+      \quad
+      x\notin\Gamma
+    }{
+      \ctxdiff \Gamma x \Gamma
+    }
+    \quad
+    \frac{
+      % \Gamma_1\div\Gamma_3=\Gamma_3
+      % \quad
+      \isUn T
+      % \quad
+      % x\colon T\notin\Gamma_3
+    }{
+      \ctxdiff {(\Gamma_1,x\colon T,\Gamma_2)} x {\Gamma_1,\Gamma_2}
+    }
+  \end{equation*}
+  %
   The is-contractive predicate \hfill\fbox{$\isContractive T$}
   %
   \begin{equation*}

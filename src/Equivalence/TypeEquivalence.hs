@@ -38,7 +38,7 @@ equivalentTS :: TypeEnv -> TypeScheme -> TypeScheme -> Bool
 equivalentTS tenv ts1 ts2 =
   case instantiate ts1 ts2 of
     Nothing             -> False
-    Just (kenv, t1, t2) -> strongEquiv tenv t1 t2 || equiv kenv tenv t1 t2
+    Just (kenv, t1, t2) -> equivalent kenv tenv t1 t2
 
 -- Type equivalence
 

@@ -51,7 +51,7 @@ synthetise (ProgVar p x) = do
   s@(TypeScheme _ bs t) <- synthetiseVar p x
   when (not $ null bs) 
     (addError p ["Variable", styleRed x, "of a polymorphic type used in a monomorphic context\n",
-                "\t type scheme:", styleRed $ show s])
+                 "\t type scheme:", styleRed $ show s])
   return t
 synthetise (UnLet _ x e1 e2) = do
   t1 <- synthetise e1
@@ -60,15 +60,14 @@ synthetise (UnLet _ x e1 e2) = do
   quotient x
   return t2
 -- Abstraction introduction
-synthetise l@(Lambda p m x t1 e) = do
-  trace ("synthetise :" ++ show l) (return ())
+synthetise (Lambda p m x t1 e) = do
   venv1 <- getVenv
   K.synthetise t1
   addToVenv x (toTypeScheme t1)
   t2 <- synthetise e
   quotient x
   venv2 <- getVenv
-  when (m == Un) (checkEquivEnvs p venv1 venv2)
+  when (m == Un) (checkEqualEnvs p venv1 venv2)
   return $ Fun p m t1 t2
 -- Abstraction elimination
 synthetise (App _ e1 e2) = do
@@ -190,8 +189,8 @@ checkEquivTypes expected actual = do
     addError (position expected) ["Couldn't match expected type", styleRed (show expected),
                                   "with actual type", styleRed (show actual)]
 
--- | Returns the type scheme for a variable; removes it from venv 
-synthetiseVar :: Pos -> PVar -> FreestState TypeScheme -- TODO: Review
+-- | Returns the type scheme for a variable; removes it from venv if lin
+synthetiseVar :: Pos -> PVar -> FreestState TypeScheme
 synthetiseVar p x = do
   let b = PBind p x
   getFromVenv b >>= \case
@@ -200,7 +199,7 @@ synthetiseVar p x = do
       return ts
     Nothing -> do
       addError p ["Variable or data constructor not in scope:", styleRed x]
-      let ts = TypeScheme p [] (Basic p UnitType)
+      let ts = defaultTypeScheme p
       addToVenv b ts
       return ts
 
@@ -211,24 +210,24 @@ addBindsToKenv p = mapM_ (\(TBindK _ b k) -> addToKenv (TBind p b) k)
 -- | The quotient operation
 -- removes a variable from the environment and gives an error if it is linear
 quotient :: PBind -> FreestState ()
-quotient b = do
+quotient b =
   getFromVenv b >>= \case
-    Just t  -> checkUn t
+    Just t  -> checkUn t >> removeFromVenv b
     Nothing -> return ()
-  removeFromVenv b
 
--- | Checks whether a type is unrestricted
+-- | Check whether a type is unrestricted
 checkUn :: TypeScheme -> FreestState ()
-checkUn t = do
-  isUn <- K.un t
-  when (not isUn) $
-    addError (position t) ["Expecting an unrestricted type; found", styleRed (show t)]
+checkUn ts = do
+  k <- K.synthetiseTS ts
+  when (isLin k) $
+    addError (position ts) ["Linear variable at the end of its scope",
+                            styleRed (show ts), ":", styleRed (show k)]
 
--- | Removes a variable from venv if it is linear
+-- | Remove a variable from venv if it is linear
 removeIfLin :: PBind -> TypeScheme -> FreestState ()
-removeIfLin x t = do
-  isLin <- K.lin t
-  when isLin $ removeFromVenv x
+removeIfLin x ts = do
+  k <- K.synthetiseTS ts
+  when (isLin k) $ removeFromVenv x
 
 -- Checks either the case map and the match map (all the expressions)
 checkMap :: FreestState ([Type], [VarEnv]) -> VarEnv -> TypeMap -> PBind ->
@@ -258,16 +257,22 @@ checkCons b@(PBind p c) tm = do
 
 -- | Equivalence functions
 
+checkEqualEnvs :: Pos -> VarEnv -> VarEnv -> FreestState ()
+checkEqualEnvs p venv1 venv2 =
+  when (not $ Map.null diff)
+    (addError p ["Final environment differs from initial in", styleRed $ show diff])
+  where diff = Map.difference venv2 venv1
+
 checkEquivEnvs :: Pos -> VarEnv -> VarEnv -> FreestState ()
 checkEquivEnvs p venv1 venv2 = do
   equiv <- equivalentEnvs venv1 venv2
   when (not equiv) $ do
     tenv <- getTenv
     addError p ["Expecting environment", styleRed $ show $ funsOnly venv1, "\n",
-                "\t to be equivalent to  ", styleRed $ show $ funsOnly venv2]
-  where
-  funsOnly :: VarEnv -> VarEnv
-  funsOnly = Map.filterWithKey (\x _ -> not (isBuiltin x))
+             "\t to be equivalent to  ", styleRed $ show $ funsOnly venv2]
+
+funsOnly :: VarEnv -> VarEnv
+funsOnly = Map.filterWithKey (\x _ -> not (isBuiltin x))
 
 equivalentEnvs :: VarEnv -> VarEnv -> FreestState Bool
 equivalentEnvs m1 m2 = do

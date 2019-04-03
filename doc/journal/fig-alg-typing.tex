@@ -55,9 +55,9 @@
       \quad
       \algtypeout[\kindEnv;\varEnv_1,x\colon T_1]{e}{T_2}{\varEnv_2}
       \quad
-      \text{if } m=\unk \text{ then } \varEnv_1 = \varEnv_2 \div (x\colon T)
+      m=\unk \text{ implies } \varEnv_1 = \varEnv_2 \div x
     }{
-      \algtypeout[\kindEnv;\varEnv_1]{(\abs x{T_1}e)}{(\tFun{T_1}{T_2})}{\varEnv_2 \div (x\colon T)}
+      \algtypeout[\kindEnv;\varEnv_1]{(\abs x{T_1}e)}{(\tFun{T_1}{T_2})}{\varEnv_2 \div x}
     }
     \\
     % Application
@@ -77,7 +77,7 @@
       \quad
       \algtypeout[\kindEnv;\varEnv_2,x\colon T_1]{e_2}{T_2}{\Gamma_3}
     }{
-      \algtypeout[\kindEnv;\varEnv_1]{\unlete{x}{e_1}{e_2}}{T_2}{\varEnv_3 \div (x\colon T_1)}
+      \algtypeout[\kindEnv;\varEnv_1]{\unlete{x}{e_1}{e_2}}{T_2}{\varEnv_3 \div x}
     }
     \\
     % Conditional
@@ -113,7 +113,7 @@
       \algtypeout[\kindEnv; \varEnv_2, x\colon U_1, y\colon U_2]{e_2}{U}{\varEnv_3}
     }{
       \algtypeout[\kindEnv;
-      \varEnv_1]{\binlete{x}{y}{e_1}{e_2}}{U}{\varEnv_3} \div (x\colon U_1, y\colon U_2)
+      \varEnv_1]{\binlete{x}{y}{e_1}{e_2}}{U}{\varEnv_3} \div x \div y
     }
     \\
     % Channel creation
@@ -209,7 +209,7 @@
       \algtypein[\kindEnv; \varEnv_2, x\colon U_1, y\colon U_2]{e_2}{U}{\varEnv_3}
     }{
       \algtypein[\kindEnv;
-      \varEnv_1]{\binlete{x}{y}{e_1}{e_2}}{U}{\varEnv_3} \div (x\colon U_1, y\colon U_2)
+      \varEnv_1]{\binlete{x}{y}{e_1}{e_2}}{U}{\varEnv_3} \div x \div y
     }
     \\
     % Conditional

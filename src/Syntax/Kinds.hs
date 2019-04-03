@@ -21,6 +21,8 @@ module Syntax.Kinds
 , isSession
 , (<:)
 , lub
+, isLin
+, isUn
 ) where
 
 import           Parse.Lexer (Position, Pos, position, defaultPos)
@@ -86,6 +88,13 @@ topUn p = Kind p Functional Un
 
 isSession :: Kind -> Bool
 isSession = (<: (Kind defaultPos Session Lin))
+
+isLin :: Kind -> Bool
+isLin (Kind _ _ Lin) = True
+isLin _              = False
+
+isUn :: Kind -> Bool
+isUn = not . isLin
 
 instance Show Kind where
   show (Kind _ p m) = show p ++ show m
