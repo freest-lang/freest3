@@ -137,8 +137,8 @@ synthetise (Match p e m) = do
   t <- synthetise e
   tm <- extractInChoiceMap p t
   venv <- getVenv
-  (t:ts, v:vs) <- Map.foldrWithKey (\k (p, e) acc ->
-                                   checkMap acc venv tm k ([p], e)) (return ([],[])) m
+  (t:ts, v:vs) <- Map.foldrWithKey (\c (b, e) acc ->
+                                   checkMap acc venv tm c ([b], e)) (return ([],[])) m
   mapM_ (checkEquivTypes t) ts
   mapM_ (checkEquivEnvs p v) vs
   setVenv v
@@ -148,8 +148,8 @@ synthetise (Case p e m) = do
   t <- synthetise e
   tm <- extractDataTypeMap t
   venv <- getVenv
-  (t:ts, v:vs) <- Map.foldrWithKey (\k v acc ->
-                                   checkMap acc venv tm k v) (return ([],[])) m
+  (t:ts, v:vs) <- Map.foldrWithKey (\c v acc ->
+                                   checkMap acc venv tm c v) (return ([],[])) m
   mapM_ (checkEquivTypes t) ts
   mapM_ (checkEquivEnvs p v) vs
   setVenv v
