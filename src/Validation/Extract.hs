@@ -21,7 +21,7 @@ module Validation.Extract
 , extractInput
 , extractOutChoiceMap
 , extractInChoiceMap
-, extractDataTypeMap
+, extractDatatypeMap
 , extractCons
 , normalise
 , normaliseTS
@@ -134,20 +134,20 @@ extractChoiceMap :: Polarity -> String -> Pos -> Type -> FreestState TypeMap
 extractChoiceMap pol msg pos t = do
   t' <- normalise t
   case t' of
-    (Choice _ pol m)            -> return m
+    (Choice _ _ m)              -> return m
     (Semi _ (Choice _ pol m) u) -> return $ Map.map (\v -> Semi (position v) v u) m
     u                           -> do
       addError pos ["Expecting an", msg, "choice; found", styleRed $ show u]
       return Map.empty
 
 -- Extracts a datatype from a type; gives an error if a datatype is not found
-extractDataTypeMap :: Type -> FreestState TypeMap
-extractDataTypeMap t = do
+extractDatatypeMap :: Pos -> Type -> FreestState TypeMap
+extractDatatypeMap pos t = do
   t' <- normalise t
   case t' of
     (Datatype _ m) -> return m
     u              -> do
-      addError (position u) ["Expecting a datatype; found", styleRed $ show u]
+      addError pos ["Expecting a datatype; found", styleRed $ show u]
       return $ Map.empty
 
 -- Extracts a constructor from a choice map; gives an error if the

@@ -134,11 +134,12 @@ Decl :: { () }
     {% checkDupTypeDecl (fst $2) >> uncurry addToTenv $2 (TypeScheme (position $4) $3 $5) }
   | data TypeBind KindVarEmptyList '=' DataCons -- Datatype declaration
     {% do
-       checkDupTypeDecl (fst $2)
-       let bs = typesToFun (fst $2) $5
-       let p = position (fst $2)
+       let b = fst $2
+       checkDupTypeDecl b
+       let bs = typeListToType b $5
+       let p = position b
        uncurry addToTenv $2 (TypeScheme p $3 (Datatype p (Map.fromList bs)))
-       mapM_ (\(b, t) -> addToVenv b (TypeScheme (position b) [] t)) bs
+       mapM_ (\(b, t) -> addToVenv b (toTypeScheme t)) bs
     }
 
 DataCons :: { [(PBind, [Type])] }
@@ -167,10 +168,10 @@ Expr :: { Expression }
 
 App :: { Expression }
   : App Primary                              { App (position $1) $1 $2 }
-  | LOWER_ID '[' TypeList ']'                     { TypeApp (position $1) (getText $1) $3 }
+  | LOWER_ID '[' TypeList ']'                { TypeApp (position $1) (getText $1) $3 }
   | send Primary                             { Send (position $1) $2 }
   | receive Primary                          { Receive (position $1) $2 }
-  | select UPPER_ID Primary                      { Select (position $1) (getText $2) $3 }
+  | select UPPER_ID Primary                  { Select (position $1) (getText $2) $3 }
   | fork Primary                             { Fork (position $1) $2 }
   | '-' App %prec NEG                        { unOp (position $1) "negate" $2}
   | Primary                                  { $1 }
@@ -185,21 +186,20 @@ Primary :: { Expression }
   | '(' Expr ',' Expr ')'                    { Pair (position $1) $2 $4 }
   | '(' Expr ')'                             { $2 }
 
-MatchMap :: { MatchMap }
+MatchMap :: { FieldMap }
   : Match              { uncurry Map.singleton $1 }
   | Match ';' MatchMap {% checkDupMatch (fst $1) $3 >>
                           return (uncurry Map.insert $1 $3) }
 
-Match :: { (PBind, (PBind, Expression)) }
-  : ConsBind VarBind '->' Expr { ($1, ($2, $4)) }
+Match :: { (PBind, Expression) }
+  : ConsBind VarBind '->' Expr { ($1, funDeclToExp [$2] $4) }
 
-CaseMap :: { CaseMap }
+CaseMap :: { FieldMap }
   : Case             { uncurry Map.singleton $1 }
-  | Case ';' CaseMap {% checkDupMatch (fst $1) $3 >>
-                        return (uncurry Map.insert $1 $3) }
+  | Case ';' CaseMap {% checkDupMatch (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
                         
-Case :: { (PBind, ([PBind], Expression)) }
-  : ConsBind VarBindSeq '->' Expr { ($1, ($2, $4)) }
+Case :: { (PBind, Expression) }
+  : ConsBind VarBindSeq '->' Expr { ($1, funDeclToExp $2 $4) }
 
 -----------
 -- TYPE SCHEMES --

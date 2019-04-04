@@ -19,6 +19,8 @@ module Validation.TypingExps
 , checkAgainst
 , checkAgainstST
 , checkUn
+, fillFunType
+, funSigsOnly
 ) where
 
 import           Parse.Lexer (Pos, position, defaultPos)
@@ -38,7 +40,7 @@ import qualified Data.Map.Strict as Map
 import           Validation.Extract
 import           Debug.Trace
 
--- | Typing rules for expressions
+-- SYNTHESIS
 
 synthetise :: Expression -> FreestState Type
 -- Basic expressions
@@ -115,7 +117,7 @@ synthetise (BinLet _ x y e1 e2) = do
 -- Fork
 synthetise (Fork p e) = do
   t <- synthetise e
-  checkUn (TypeScheme p [] t)
+  checkUn (toTypeScheme t)
   return $ Basic p UnitType
 -- Session types
 synthetise (New p t) = do
@@ -133,27 +135,82 @@ synthetise (Select p c e) = do
   t <- synthetise e
   m <- extractOutChoiceMap p t
   extractCons p m c
-synthetise (Match p e m) = do
-  t <- synthetise e
-  tm <- extractInChoiceMap p t
-  venv <- getVenv
-  (t:ts, v:vs) <- Map.foldrWithKey (\c (b, e) acc ->
-                                   checkMap acc venv tm c ([b], e)) (return ([],[])) m
-  mapM_ (checkEquivTypes t) ts
-  mapM_ (checkEquivEnvs p v) vs
-  setVenv v
-  return t
+synthetise (Match p e fm) = synthetiseFieldMap p e fm extractInChoiceMap
 -- Datatype elimination
-synthetise (Case p e m) = do
+synthetise (Case p e fm) = synthetiseFieldMap p e fm extractDatatypeMap
+
+-- | Returns the type scheme for a variable; removes it from venv if lin
+synthetiseVar :: Pos -> PVar -> FreestState TypeScheme
+synthetiseVar p x = do
+  let b = PBind p x
+  getFromVenv b >>= \case
+    Just ts -> do
+      k <- K.synthetiseTS ts
+      when (isLin k) $ removeFromVenv b
+      return ts
+    Nothing -> do
+      addError p ["Variable or data constructor not in scope:", styleRed x]
+      let ts = omission p
+      addToVenv b ts
+      return ts
+
+synthetiseFieldMap :: Pos -> Expression -> FieldMap ->
+  (Pos -> Type -> FreestState TypeMap) -> FreestState Type
+synthetiseFieldMap p e fm extract = do
   t <- synthetise e
-  tm <- extractDataTypeMap t
+  tm <- extract p t
   venv <- getVenv
-  (t:ts, v:vs) <- Map.foldrWithKey (\c v acc ->
-                                   checkMap acc venv tm c v) (return ([],[])) m
-  mapM_ (checkEquivTypes t) ts
-  mapM_ (checkEquivEnvs p v) vs
-  setVenv v
+--  (t:ts, v:vs) <- Map.foldrWithKey (synthetiseField venv tm) (return ([],[])) fm
+  trace ("A _ synthetiseFieldMap for " ++ show e) (return ())
+--  mapM_ (checkEquivTypes p t) ts
+  trace ("B _ synthetiseFieldMap for " ++ show e) (return ())
+--  mapM_ (checkEquivEnvs p v) vs
+  trace ("C _ synthetiseFieldMap for " ++ show e) (return ())
+--  setVenv v
   return t
+
+-- Checks either the case map and the match map (all the expressions)
+synthetiseField :: VarEnv -> TypeMap -> PBind -> Expression ->
+  FreestState ([Type], [VarEnv]) -> FreestState ([Type], [VarEnv])
+synthetiseField venv1 tm b e state = do
+  (ts, venvs) <- state
+  setVenv venv1
+  t <- synthetiseCons b tm
+  e' <- fillFunType b e (toTypeScheme t)
+  checkAgainstST e' (toTypeScheme (returnType t))
+  venv2 <- getVenv
+  return (t:ts, venv2:venvs)
+
+-- Check whether a constructor exists in a type map
+synthetiseCons :: PBind -> TypeMap -> FreestState Type
+synthetiseCons b@(PBind p c) tm = do
+  case tm Map.!? b of
+    Just t  -> return t
+    Nothing -> do
+      addError p ["Data constructor or choice field", styleRed c, "not in scope"]
+      return $ Skip p
+
+-- | Adds a list of binds to KindEnv
+-- addBindsToKenv :: Pos -> [TBindK] -> FreestState ()
+-- addBindsToKenv p = mapM_ (\(TBindK _ b k) -> addToKenv (TBind p b) k)
+
+-- | The quotient operation
+-- removes a variable from the environment and gives an error if it is linear
+quotient :: PBind -> FreestState ()
+quotient b =
+  getFromVenv b >>= \case
+    Just t  -> checkUn t >> removeFromVenv b
+    Nothing -> return ()
+
+-- | Check whether a type is unrestricted
+checkUn :: TypeScheme -> FreestState ()
+checkUn ts = do
+  k <- K.synthetiseTS ts
+  when (isLin k) $
+    addError (position ts) ["Linear variable at the end of its scope",
+                            styleRed (show ts), ":", styleRed (show k)]
+
+-- CHECKING AGAINST A GIVEN TYPE
 
 -- | Check an expression against a given type
 checkAgainst :: Expression -> Type -> FreestState ()
@@ -172,7 +229,7 @@ checkAgainst (Conditional p e1 e2 e3) t = do
 -- Default
 checkAgainst e t = do
   u <- synthetise e
-  checkEquivTypes t u
+  checkEquivTypes (position e) t u
 
 -- | Check an expression against a given type scheme
 checkAgainstST :: Expression -> TypeScheme -> FreestState ()
@@ -180,82 +237,17 @@ checkAgainstST e (TypeScheme _ bs t) = do
   mapM_ (\(TBindK p x k) -> addToKenv (TBind p x) k) bs
   checkAgainst e t
   
--- | Check whether two given types are equivalent
-checkEquivTypes :: Type -> Type -> FreestState ()
-checkEquivTypes expected actual = do
+-- EQUIVALENCE
+
+checkEquivTypes :: Pos -> Type -> Type -> FreestState ()
+checkEquivTypes p expected actual = do
   kenv <- getKenv
   tenv <- getTenv
-  when (not $ equivalent kenv tenv expected actual) $
-    addError (position expected) ["Couldn't match expected type", styleRed (show expected),
-                                  "with actual type", styleRed (show actual)]
-
--- | Returns the type scheme for a variable; removes it from venv if lin
-synthetiseVar :: Pos -> PVar -> FreestState TypeScheme
-synthetiseVar p x = do
-  let b = PBind p x
-  getFromVenv b >>= \case
-    Just ts -> do
-      removeIfLin b ts
-      return ts
-    Nothing -> do
-      addError p ["Variable or data constructor not in scope:", styleRed x]
-      let ts = defaultTypeScheme p
-      addToVenv b ts
-      return ts
-
--- | Adds a list of binds to KindEnv
-addBindsToKenv :: Pos -> [TBindK] -> FreestState ()
-addBindsToKenv p = mapM_ (\(TBindK _ b k) -> addToKenv (TBind p b) k)
-
--- | The quotient operation
--- removes a variable from the environment and gives an error if it is linear
-quotient :: PBind -> FreestState ()
-quotient b =
-  getFromVenv b >>= \case
-    Just t  -> checkUn t >> removeFromVenv b
-    Nothing -> return ()
-
--- | Check whether a type is unrestricted
-checkUn :: TypeScheme -> FreestState ()
-checkUn ts = do
-  k <- K.synthetiseTS ts
-  when (isLin k) $
-    addError (position ts) ["Linear variable at the end of its scope",
-                            styleRed (show ts), ":", styleRed (show k)]
-
--- | Remove a variable from venv if it is linear
-removeIfLin :: PBind -> TypeScheme -> FreestState ()
-removeIfLin x ts = do
-  k <- K.synthetiseTS ts
-  when (isLin k) $ removeFromVenv x
-
--- Checks either the case map and the match map (all the expressions)
-checkMap :: FreestState ([Type], [VarEnv]) -> VarEnv -> TypeMap -> PBind ->
-            ([PBind], Expression) -> FreestState ([Type], [VarEnv])
-checkMap acc venv tm b (p, e) = do
-  setVenv venv
-  t <- checkCons b tm -- TODO: change Bind
-  mapM_ (uncurry addToVenv) (zip p (init' $ toList $ TypeScheme (position t) [] t))
-  t <- synthetise e
   venv <- getVenv
-  liftM (concatPair t venv) acc
-  where
-    init' :: [a] -> [a]
-    init' [x] = [x]
-    init' xs  = init xs
-    concatPair :: a -> b -> ([a],[b]) -> ([a],[b])
-    concatPair x y (xs, ys) = (x:xs, y:ys)
-
--- Checks whether a constructor exists in a map
-checkCons :: PBind -> TypeMap -> FreestState Type
-checkCons b@(PBind p c) tm = do
-  case tm Map.!? b of
-    Just x  -> return x
-    Nothing -> do
-      addError p ["Constructor", styleRed c, "not in scope"]
-      return $ Skip p
-
--- | Equivalence functions
+  trace ("venv: " ++ show (funSigsOnly tenv venv) ++ "\ntenv: " ++ show tenv) (return ())
+  when (not $ equivalent kenv tenv expected actual) $
+    addError p ["Couldn't match expected type", styleRed (show expected), "\n",
+              "\t with actual type", styleRed (show actual)]
 
 checkEqualEnvs :: Pos -> VarEnv -> VarEnv -> FreestState ()
 checkEqualEnvs p venv1 venv2 =
@@ -265,14 +257,31 @@ checkEqualEnvs p venv1 venv2 =
 
 checkEquivEnvs :: Pos -> VarEnv -> VarEnv -> FreestState ()
 checkEquivEnvs p venv1 venv2 = do
-  equiv <- equivalentEnvs venv1 venv2
-  when (not equiv) $ do
-    tenv <- getTenv
-    addError p ["Expecting environment", styleRed $ show $ funsOnly venv1, "\n",
-             "\t to be equivalent to  ", styleRed $ show $ funsOnly venv2]
+  tenv <- getTenv
+  let venv1' = funSigsOnly tenv venv1
+      venv2' = funSigsOnly tenv venv2
+  equiv <- equivalentEnvs venv1' venv2'
+  when (not equiv) $
+    addError p ["Expecting environment", styleRed $ show venv1', "\n",
+             "\t to be equivalent to  ", styleRed $ show venv2']
 
-funsOnly :: VarEnv -> VarEnv
-funsOnly = Map.filterWithKey (\x _ -> not (isBuiltin x))
+funSigsOnly :: TypeEnv -> VarEnv -> VarEnv
+funSigsOnly tenv =
+  Map.filterWithKey (\x _ -> not (isBuiltin x) && not (isDatatypeContructor tenv x))
+
+-- funDeclsOnly :: TypeEnv -> TypeEnv
+-- funDeclsOnly = Map.filterWithKey (\(TBind p x) _ -> not (isBuiltin (PBind p x)))
+
+-- To determine whether a given constructor (a program variable) is a
+-- datatype constructor we have to look in the type environment for a
+-- type name associated to a datatype that defines the constructor
+-- (rather indirect)
+isDatatypeContructor :: TypeEnv -> PBind -> Bool
+isDatatypeContructor tenv c =
+  not $ Map.null $ Map.filter (\(_, (TypeScheme _ _ t)) -> isDatatype t) tenv
+  where isDatatype :: Type -> Bool
+        isDatatype (Datatype _ m) = c `Map.member` m
+        isDatatype _              = False
 
 equivalentEnvs :: VarEnv -> VarEnv -> FreestState Bool
 equivalentEnvs m1 m2 = do
@@ -280,3 +289,24 @@ equivalentEnvs m1 m2 = do
   return (Map.size m1 == Map.size m2) <&&>
     Map.foldlWithKey (\b x s ->
       b <&&> return (x `Map.member` m2) <&&> return (equivalentTS tenv s (m2 Map.! x))) (return True) m1
+
+-- At parsing time all lambda variables in function definitions are
+-- associated to type Unit. Here we amend the situation by replacing
+-- these types with those declared in the type scheme for the
+-- function.
+fillFunType :: PBind -> Expression -> TypeScheme -> FreestState Expression
+fillFunType b@(PBind p f) e (TypeScheme _ _ t) = do -- fill e t
+  e' <- fill e t
+  addToEenv b e'
+  return e'
+  where
+  fill :: Expression -> Type -> FreestState Expression
+  fill (Lambda p _ x _ e) (Fun _ m t1 t2) = do
+    e' <- fill e t2
+    return $ Lambda p m x t1 e'
+  fill e@(Lambda p _ _ _ _) t = do
+    addError p ["Couldn't match expected type", styleRed $ show t, "\n",
+                "\t The equation for", styleRed f, "has one or more arguments,\n",
+                "\t but its type", show t, "has none"]
+    return e
+  fill e _ = return e

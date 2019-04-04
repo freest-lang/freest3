@@ -98,7 +98,7 @@ synthetise (Name p c) =
     Nothing -> do
       addError p ["Type name not in scope:", styleRed c]
       let k = top p
-      addToTenv bind k $ defaultTypeScheme p
+      addToTenv bind k $ omission p
       return k
 synthetise (Dualof p t) = do
   m <- checkAgainstSession t

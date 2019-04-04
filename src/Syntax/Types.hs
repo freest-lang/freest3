@@ -19,8 +19,9 @@ module Syntax.Types
 , Polarity(..)
 , Type(..)
 , TypeScheme(..)
+, Default(..)
+, returnType
 , toTypeScheme
-, defaultTypeScheme
 , subs
 , unfold
 , toList -- TODO: not quite sure this belongs here
@@ -33,6 +34,9 @@ import           Data.List (intersperse)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
+class Default t where
+  omission :: Pos -> t
+  
 -- DUALITY
 
 class Dual t where
@@ -89,7 +93,7 @@ data Type =
   | Dualof Pos Type -- to be expanded into a session type
   deriving Ord
 
-type TypeMap = Map.Map PBind Type -- TODO: rename to FieldMap
+type TypeMap = Map.Map PBind Type
 
 instance Eq Type where -- Type equality, up to alpha-conversion
   t == u = equalTypes Map.empty t u 
@@ -185,6 +189,13 @@ instance Dual Type where
   -- Functional types, Skip, TypeVar, Name
   dual t               = t
 
+instance Default Type where
+  omission p = Basic p UnitType
+
+returnType :: Type -> Type
+returnType (Fun _ _ _ t) = returnType t
+returnType t             = t
+
 -- KINDED TYPE BIND
 
 data TBindK = TBindK Pos TVar Kind
@@ -216,8 +227,8 @@ instance Position TypeScheme where
 toTypeScheme :: Type -> TypeScheme
 toTypeScheme t = TypeScheme (position t) [] t
 
-defaultTypeScheme :: Pos -> TypeScheme
-defaultTypeScheme p = TypeScheme p [] (Basic p UnitType)
+instance Default TypeScheme where
+ omission p = TypeScheme p [] (omission p)
 
 toList :: TypeScheme -> [TypeScheme] -- TODO: return [Type]
 toList (TypeScheme p b (Fun _ _ t1 t2)) = (TypeScheme p b t1) : toList (TypeScheme p b t2)

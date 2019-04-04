@@ -25,10 +25,10 @@ import           Syntax.Programs
 import           Utils.Errors
 import           Utils.FreestState
 import qualified Validation.Kinding as K
-import           Validation.TypingExps as T
-import           Control.Monad.State
+import qualified Validation.TypingExps as T
 import           Validation.Extract
 import           Utils.PreludeLoader (isBuiltin)
+import           Control.Monad.State
 import qualified Data.Map.Strict as Map
 import qualified Data.Traversable as Trav
 import           Debug.Trace
@@ -38,11 +38,12 @@ mapWithKeyM f m = Trav.sequence (Map.mapWithKey f m)
 
 typeCheck :: FreestState ()
 typeCheck = do
-  -- Type/datatype declarations (TypeEnv)
+  -- Type/datatype declarations: check TypeEnv for type or datatype
+  -- declarations, VarEnv for each datatype constructor
   tenv <- getTenv
-  mapWithKeyM (\b (k,_) -> addToKenv b k) tenv
+  mapWithKeyM (\b (k,_) -> addToKenv b k) tenv -- add all kinds
   tenv <- getTenv
-  mapM_ (K.synthetiseTS . snd) tenv
+  mapM_ (K.synthetiseTS . snd) tenv -- check the formation of all type schemes
   tenv <- getTenv
   mapWithKeyM (\b _ -> removeFromKenv b) tenv -- TODO: only works if all vars in the prog are distinct
   -- Function signatures (VarEnv)
@@ -61,52 +62,25 @@ hasBinding :: PBind -> a -> FreestState ()
 hasBinding f _ = do
   eenv <- getEenv
   venv <- getVenv
-  when (not (isDatatypeContructor venv f) && not (isBuiltin f) && f `Map.notMember` eenv) $
+  tenv <- getTenv
+  -- trace ("venv: " ++ show (T.funSigsOnly tenv venv)) (return ())
+  -- trace ("veenv: " ++ show eenv) (return ())
+  when (f `Map.member` (T.funSigsOnly tenv venv) && f `Map.notMember` eenv) $
     addError (position f) ["The type signature for", styleRed $ show f,
                            "lacks an accompanying binding"]
 
--- To determine whether a given constructor (a program variable) is a
--- datatype constructor we have to look in the type environment for a
--- type name associated to a datatype that defines the constructor
--- (rather indirect)
-isDatatypeContructor :: VarEnv -> PBind -> Bool
-isDatatypeContructor venv c = do
-  Map.foldr (\(TypeScheme _ _ t) acc -> acc || isDatatype t) False venv
-  where isDatatype :: Type -> Bool
-        isDatatype (Datatype _ m) = c `Map.member` m
-        isDatatype _              = False
-
--- Check whether there is a signature for a given function. Take the
--- chance to replace the dummy Unit types in the bodies of functions.
+-- Check whether there is a signature for a given function. But first,
+-- and for type checking purposes only, replace the dummy Unit types
+-- in the bodies of functions.
 checkFunBody :: PBind -> Expression -> FreestState ()
 checkFunBody f e =
   getFromVenv f >>= \case
     Just ts -> do
-      e' <- fillFunType f e ts
+      trace ("checkFunBody for " ++ show e) (return ())
+      e' <- T.fillFunType f e ts
       T.checkAgainstST e' ts
     Nothing ->
       addError (position f) ["Did not find the signature of function", styleRed $ show f]
-
--- At parsing time all lambda variables in function definitions are
--- associated to type Unit. Here we amend the situation by replacing
--- these types with those declared in the type scheme for the
--- function.
-fillFunType :: PBind -> Expression -> TypeScheme -> FreestState Expression
-fillFunType b@(PBind p f) e (TypeScheme _ _ t) = do
-  e' <- fill e t
-  addToEenv b e'
-  return e'
-  where
-  fill :: Expression -> Type -> FreestState Expression
-  fill (Lambda p _ x _ e) (Fun _ m t1 t2) = do
-    e' <- fill e t2
-    return $ Lambda p m x t1 e'
-  fill e@(Lambda p _ _ _ _) t = do
-    addError p ["Couldn't match expected type", styleRed $ show t, "\n",
-                "\t The equation for", styleRed f, "has one or more arguments,\t",
-                "\t but its type", show t, "has none"]
-    return e
-  fill e _ = return e
 
 checkMainFunction :: FreestState ()
 checkMainFunction = do

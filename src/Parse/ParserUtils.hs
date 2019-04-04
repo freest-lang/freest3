@@ -21,14 +21,14 @@ module Parse.ParserUtils
 , checkDupMatch
 , binOp
 , unOp
-, typesToFun
-,funDeclToExp
+, typeListToType
+, funDeclToExp
 ) where
 
 import           Parse.Lexer (Position, Pos, position, defaultPos, showPos)
 import           Syntax.Programs (VarEnv)
 import           Syntax.Expression (Expression(..))
-import           Syntax.Types (TypeMap, TBindK(..), Type(..), BasicType(..))
+import           Syntax.Types (TypeMap, TBindK(..), Type(..), BasicType(..), Default(..))
 import           Syntax.Bind (PBind(..), TBind(..))
 import           Syntax.Kinds (Multiplicity(..))
 import           Utils.Errors
@@ -118,8 +118,8 @@ unOp pos op expr =
   App (position expr) (ProgVar pos op) expr
 
 -- Convert a list of types and a final type constructor to a type
-typesToFun :: TBind -> [(PBind, [Type])] -> [(PBind, Type)]
-typesToFun (TBind p x) = map (\(k, ts) -> (k, typeToFun ts))
+typeListToType:: TBind -> [(PBind, [Type])] -> [(PBind, Type)]
+typeListToType (TBind p x) = map (\(b, ts) -> (b, typeToFun ts))
   where typeToFun []       = (Name p x)
         typeToFun (t : ts) = Fun (position t) Un t (typeToFun ts)
 
@@ -127,5 +127,5 @@ typesToFun (TBind p x) = map (\(k, ts) -> (k, typeToFun ts))
 -- we type each parameter as ()
 funDeclToExp :: [PBind] -> Expression -> Expression
 funDeclToExp []     e = e
-funDeclToExp (b:bs) e = Lambda p Lin b (Basic p UnitType) (funDeclToExp bs e)
+funDeclToExp (b:bs) e = Lambda p Lin b (omission p) (funDeclToExp bs e)
   where p = position b

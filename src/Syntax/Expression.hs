@@ -13,9 +13,7 @@ Portability :  portable | non-portable (<reason>)
 
 module Syntax.Expression
 ( Expression(..)
---, FieldMap
-, MatchMap
-, CaseMap
+, FieldMap
 ) where
 
 import           Parse.Lexer (Position, Pos, position)
@@ -39,7 +37,7 @@ data Expression =
   | Pair Pos {- Multiplicity -} Expression Expression
   | BinLet Pos PBind PBind Expression Expression
   -- Datatype intro and elim
-  | Case Pos Expression CaseMap
+  | Case Pos Expression FieldMap
   -- Type application
   | TypeApp Pos PVar [Type]
   -- Boolean elim
@@ -53,12 +51,12 @@ data Expression =
   | Send Pos Expression
   | Receive Pos Expression 
   | Select Pos PVar Expression
-  | Match Pos Expression MatchMap
+  | Match Pos Expression FieldMap
   deriving (Eq, Ord, Show)
 
--- type FieldMap = Map.Map PBind Expression
-type MatchMap = Map.Map PBind (PBind, Expression)
-type CaseMap  = Map.Map PBind ([PBind], Expression)
+type FieldMap = Map.Map PBind Expression
+-- type FieldMap = Map.Map PBind (PBind, Expression)
+-- type FieldMap  = Map.Map PBind ([PBind], Expression)
 
 instance Position Expression where
   position (Unit p)              = p

@@ -56,7 +56,7 @@ monadicFuns eenv = Map.empty            --LAMBDA
     monadicFun eenv fun (Case _ e cm) = monadicFun eenv fun e || monadicCase eenv fun cm
     monadicFun _ _ _ = False
 
-    monadicCase :: ExpEnv -> PBind -> CaseMap -> Bool
+    monadicCase :: ExpEnv -> PBind -> FieldMap -> Bool
     monadicCase eenv x = Map.foldr (\(_, e) acc -> acc || monadicFun eenv x e) False
 -}
 
@@ -133,7 +133,8 @@ annotateAST' m fm _ e@(Select _ _ e1) =
       (Map.insert e True m1, True)
       
 annotateAST' m fm _ e@(Match _ _ mmap) =
-  let m1 = annotateMap m fm True mmap in
+--  let m1 = annotateMap m fm True mmap in
+  let m1 = annotateMap m fm True Map.empty in -- FIELDMAP
       (Map.insert e True m1, True)
 
 annotateAST' m fm _ e@(Fork _ e1) =
@@ -143,7 +144,8 @@ annotateAST' m fm _ e@(Fork _ e1) =
 -- annotateAST' m fm b e@(Constructor _ _) = (Map.insert e b m, b)
 
 annotateAST' m fm b e@(Case _ _ cm) =  -- TODO: False
-  let m1 = annotateMap m fm b cm in
+--  let m1 = annotateMap m fm b cm in
+  let m1 = annotateMap m fm b Map.empty in -- FIELDMAP
       (Map.insert e False m1, False)
 
 annotateMap :: MonadicMap -> FunsMap -> Bool -> Map.Map a (b, Expression) -> MonadicMap
@@ -340,8 +342,9 @@ translate fm m (Case _ e cm) = do
   return ("case " ++ h1 ++ " of {" ++ hcase ++ "}", False) -- TODO: Can be monadic
   
 -- TODO: Join with case
-translateMatchMap :: String -> FunsMap -> MonadicMap -> MatchMap -> TranslateMonad String
-translateMatchMap fresh fm m = Map.foldlWithKey (translateMatchMap' fresh) (return "")
+translateMatchMap :: String -> FunsMap -> MonadicMap -> FieldMap -> TranslateMonad String
+--translateMatchMap fresh fm m = Map.foldlWithKey (translateMatchMap' fresh) (return "")
+translateMatchMap fresh fm m _ = Map.foldlWithKey (translateMatchMap' fresh) (return "") Map.empty -- FIELDMAP
   where
     translateMatchMap' :: String -> TranslateMonad String -> PBind ->
                           (PBind, Expression) -> TranslateMonad String
@@ -352,8 +355,9 @@ translateMatchMap fresh fm m = Map.foldlWithKey (translateMatchMap' fresh) (retu
         " -> let " ++ p ++ " = " ++ fresh ++ " in " ++ h ++ ";"
              
 
-translateCaseMap :: FunsMap -> MonadicMap -> CaseMap -> TranslateMonad String
-translateCaseMap fm m = Map.foldlWithKey translateCaseMap' (return "")
+translateCaseMap :: FunsMap -> MonadicMap -> FieldMap -> TranslateMonad String
+-- translateCaseMap fm m = Map.foldlWithKey translateCaseMap' (return "")
+translateCaseMap fm m _ = Map.foldlWithKey translateCaseMap' (return "") Map.empty -- FieldMap
   where
     translateCaseMap' :: TranslateMonad String -> PBind -> ([PBind], Expression) -> TranslateMonad String
     translateCaseMap' acc (PBind _ v) (params, e) = do
