@@ -57,10 +57,10 @@ equiv kenv tenv (Datatype _ m1) (Datatype _ m2) =
   Map.foldlWithKey (checkConstructor kenv tenv m2) True m1
   -- Functional or session
 equiv _ _ (TypeVar _ x) (TypeVar _ y) = x == y
-  -- Type operators
+  -- Type operatorstre  
 equiv kenv tenv (Dualof _ t) u = equiv kenv tenv (dual t) u
 equiv kenv tenv t (Dualof _ u) = equiv kenv tenv t (dual u)
-equiv _ _ (Name _ c1) (Name _ c2) = c1 == c2 -- TODO: this works for datatypes but not for session types, where one has to expand the definition(s) for c1 (c2) and continue
+equiv _ _ (Name _ c1) (Name _ c2) = c1 == c2 -- TODO: this works for datatypes but not for type declarations, where one has to expand the definition(s) for c1 (c2) and continue
 -- TODO: THIS CAN EASILY LOOP
 equiv kenv tenv (Name p c) u = equiv kenv tenv t u
   where (_, TypeScheme _ [] t) = tenv Map.! (TBind p c) -- TODO: polymorphic type names
