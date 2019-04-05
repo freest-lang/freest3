@@ -110,11 +110,12 @@ checkAgainst kenv k (Rec p x t) = do
   checkContractive kenv t
   y <- freshVar
   checkAgainst (Map.insert (TBind p y) (Kind p Session Un) kenv) k $ subs (TypeVar p y) x t -- On the fly α-conversion
-checkAgainst kenv k1 t = do
-  k2 <- synthetise kenv t
-  when (not (k2 <: k1)) $
-    addError (position k1) ["Expecting kind", styleRed $ show k1,
-                            "to be a sub-kind of", styleRed $ show k2]
+checkAgainst kenv expected t = do
+  actual <- synthetise kenv t
+  when (not (actual <: expected)) $
+    addError (position t) ["Couldn't match expected kind", styleRed $ show expected, "\n",
+                            "\t with actual kind", styleRed $ show actual, "\n",
+                            "\t for type", styleRed $ show t]
 
 synthetiseTS :: TypeScheme -> FreestState Kind
 synthetiseTS (TypeScheme _ bs t) = synthetise (toKindEnv bs) t

@@ -78,7 +78,7 @@ checkMainFunction = do
   let mBind = PBind defaultPos "main"
   if mBind `Map.notMember` venv
   then
-    addError defaultPos [styleRed "main", "is not defined"]
+    addError defaultPos ["Function", styleRed "main", "is not defined"]
   else do
     let t = venv Map.! mBind
     mType <- normaliseTS t
