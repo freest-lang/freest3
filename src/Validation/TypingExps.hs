@@ -174,9 +174,9 @@ synthetiseField venv1 tm b e state = do
   setVenv venv1
   t1 <- synthetiseCons b tm
   trace ("A synthetiseField: " ++ show e) (return ())
-  e' <- fillFunType b e (toTypeScheme t1)
+  t2 <- fillFunType b e (toTypeScheme t1)
 --  trace ("B synthetiseField: " ++ show e' ++ ": " ++ show (returnType t)) (return ())
-  t2 <- synthetise e'
+--  t2 <- synthetise e'
   venv2 <- getVenv
   return (t2:ts, venv2:venvs)
 
@@ -292,19 +292,18 @@ equivalentEnvs m1 m2 = do
 -- associated to type Unit. Here we amend the situation by replacing
 -- these types with those declared in the type scheme for the
 -- function.
-fillFunType :: PBind -> Expression -> TypeScheme -> FreestState Expression
-fillFunType b@(PBind p f) e (TypeScheme _ _ t) = fill e t
-  -- e' <- fill e t
-  -- addToEenv b e'
-  -- return e'
+fillFunType :: PBind -> Expression -> TypeScheme -> FreestState Type
+fillFunType b@(PBind p f) e (TypeScheme _ _ t) = fill e t -- TODO: move type scheme bindings to kenv
   where
-  fill :: Expression -> Type -> FreestState Expression
-  fill (Lambda p _ x _ e) (Fun _ m t1 t2) = do
-    e' <- fill e t2
-    return $ Lambda p m x t1 e'
+  fill :: Expression -> Type -> FreestState Type
+  fill (Lambda _ _ b _ e) (Fun _ _ t1 t2) = do
+    addToVenv b (toTypeScheme t1)
+    t3 <- fill e t2
+    removeFromVenv b
+    return t3
   fill e@(Lambda p _ _ _ _) t = do
     addError p ["Couldn't match expected type", styleRed $ show t, "\n",
                 "\t The equation for", styleRed f, "has one or more arguments,\n",
-                "\t but its type", show t, "has none"]
-    return e
-  fill e _ = return e
+                "\t but its type", styleRed $ show t, "has none"]
+    return t
+  fill e _ = synthetise e

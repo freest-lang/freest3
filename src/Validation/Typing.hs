@@ -74,8 +74,9 @@ checkFunBody :: PBind -> Expression -> FreestState ()
 checkFunBody f e =
   getFromVenv f >>= \case
     Just ts -> do
-      e' <- T.fillFunType f e ts
-      T.checkAgainstST e' ts
+      t <- T.fillFunType f e ts -- TODO: what to do with t?
+--      T.checkAgainstST e' ts
+      return ()
     Nothing ->
       addError (position f) ["Did not find the signature of function", styleRed $ show f]
 
