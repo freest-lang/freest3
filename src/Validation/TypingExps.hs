@@ -160,13 +160,10 @@ synthetiseFieldMap p e fm extract = do
   t <- synthetise e
   tm <- extract p t
   venv <- getVenv
---  (t:ts, v:vs) <- Map.foldrWithKey (synthetiseField venv tm) (return ([],[])) fm
-  trace ("A _ synthetiseFieldMap for " ++ show e) (return ())
---  mapM_ (checkEquivTypes p t) ts
-  trace ("B _ synthetiseFieldMap for " ++ show e) (return ())
---  mapM_ (checkEquivEnvs p v) vs
-  trace ("C _ synthetiseFieldMap for " ++ show e) (return ())
---  setVenv v
+  (t:ts, v:vs) <- Map.foldrWithKey (synthetiseField venv tm) (return ([],[])) fm
+  mapM_ (checkEquivTypes p t) ts
+  mapM_ (checkEquivEnvs p v) vs
+  setVenv v
   return t
 
 -- Checks either the case map and the match map (all the expressions)
@@ -175,11 +172,13 @@ synthetiseField :: VarEnv -> TypeMap -> PBind -> Expression ->
 synthetiseField venv1 tm b e state = do
   (ts, venvs) <- state
   setVenv venv1
-  t <- synthetiseCons b tm
-  e' <- fillFunType b e (toTypeScheme t)
-  checkAgainstST e' (toTypeScheme (returnType t))
+  t1 <- synthetiseCons b tm
+  trace ("A synthetiseField: " ++ show e) (return ())
+  t2 <- fillFunType b e (toTypeScheme t1)
+--  trace ("B synthetiseField: " ++ show e' ++ ": " ++ show (returnType t)) (return ())
+--  t2 <- synthetise e'
   venv2 <- getVenv
-  return (t:ts, venv2:venvs)
+  return (t2:ts, venv2:venvs)
 
 -- Check whether a constructor exists in a type map
 synthetiseCons :: PBind -> TypeMap -> FreestState Type
@@ -244,7 +243,6 @@ checkEquivTypes p expected actual = do
   kenv <- getKenv
   tenv <- getTenv
   venv <- getVenv
-  trace ("venv: " ++ show (funSigsOnly tenv venv) ++ "\ntenv: " ++ show tenv) (return ())
   when (not $ equivalent kenv tenv expected actual) $
     addError p ["Couldn't match expected type", styleRed (show expected), "\n",
               "\t with actual type", styleRed (show actual)]
@@ -294,19 +292,18 @@ equivalentEnvs m1 m2 = do
 -- associated to type Unit. Here we amend the situation by replacing
 -- these types with those declared in the type scheme for the
 -- function.
-fillFunType :: PBind -> Expression -> TypeScheme -> FreestState Expression
-fillFunType b@(PBind p f) e (TypeScheme _ _ t) = do -- fill e t
-  e' <- fill e t
-  addToEenv b e'
-  return e'
+fillFunType :: PBind -> Expression -> TypeScheme -> FreestState Type
+fillFunType b@(PBind p f) e (TypeScheme _ _ t) = fill e t -- TODO: move type scheme bindings to kenv
   where
-  fill :: Expression -> Type -> FreestState Expression
-  fill (Lambda p _ x _ e) (Fun _ m t1 t2) = do
-    e' <- fill e t2
-    return $ Lambda p m x t1 e'
+  fill :: Expression -> Type -> FreestState Type
+  fill (Lambda _ _ b _ e) (Fun _ _ t1 t2) = do
+    addToVenv b (toTypeScheme t1)
+    t3 <- fill e t2
+    removeFromVenv b
+    return t3
   fill e@(Lambda p _ _ _ _) t = do
     addError p ["Couldn't match expected type", styleRed $ show t, "\n",
                 "\t The equation for", styleRed f, "has one or more arguments,\n",
-                "\t but its type", show t, "has none"]
-    return e
-  fill e _ = return e
+                "\t but its type", styleRed $ show t, "has none"]
+    return t
+  fill e _ = synthetise e

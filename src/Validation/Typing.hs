@@ -63,8 +63,6 @@ hasBinding f _ = do
   eenv <- getEenv
   venv <- getVenv
   tenv <- getTenv
-  -- trace ("venv: " ++ show (T.funSigsOnly tenv venv)) (return ())
-  -- trace ("veenv: " ++ show eenv) (return ())
   when (f `Map.member` (T.funSigsOnly tenv venv) && f `Map.notMember` eenv) $
     addError (position f) ["The type signature for", styleRed $ show f,
                            "lacks an accompanying binding"]
@@ -76,9 +74,9 @@ checkFunBody :: PBind -> Expression -> FreestState ()
 checkFunBody f e =
   getFromVenv f >>= \case
     Just ts -> do
-      trace ("checkFunBody for " ++ show e) (return ())
-      e' <- T.fillFunType f e ts
-      T.checkAgainstST e' ts
+      t <- T.fillFunType f e ts -- TODO: what to do with t?
+--      T.checkAgainstST e' ts
+      return ()
     Nothing ->
       addError (position f) ["Did not find the signature of function", styleRed $ show f]
 
