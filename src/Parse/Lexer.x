@@ -303,6 +303,9 @@ instance Position Token where
   position (TokenLT p) = p
   position (TokenGT p) = p
   position (TokenOp p _) = p
+  position (TokenIf p) = p
+  position (TokenThen p) = p
+  position (TokenElse p) = p
   position t = error $ show t
 
 defaultPos :: Pos
