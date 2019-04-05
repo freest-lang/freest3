@@ -9,9 +9,9 @@ import           Control.Monad.State
 import qualified Data.Map.Strict as Map
 
 kindOfType :: KindEnv -> Type -> Kind
-kindOfType k t =
-  let s = (initialState  "") in
-  evalState (synthetise t) (s {kindEnv = k})
+kindOfType kenv t = evalState (synthetise kenv t) (initialState  "")
+  -- let s = (initialState  "") in
+  -- evalState (synthetise kenv t) (s {kindEnv = k})
 
 spec :: Spec
 spec = do

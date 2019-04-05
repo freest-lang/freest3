@@ -21,7 +21,7 @@ matchInvalidKindingSpec str =
 isWellFormed :: Type -> KindEnv -> Bool
 isWellFormed t k =
   let s = initialState "" in
-  let s1 = execState (synthetise t) (s {kindEnv=k}) in
+  let s1 = execState (synthetise Map.empty t) s in -- (s {kindEnv=k}) in
     null (errors s1)
 
 -- INVALID:

@@ -13,7 +13,6 @@ Portability :  portable | non-portable (<reason>)
 
 module Equivalence.TypeEquivalence
 ( equivalent
-, equivalentTS
 ) where
 
 import           Syntax.Programs
@@ -25,57 +24,17 @@ import           Validation.Kinding
 import           Equivalence.Grammar
 import           Equivalence.TypeToGrammar
 import           Equivalence.Norm
-import           Equivalence.StrongEquivalence
-import           Data.List (isPrefixOf, union)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.Sequence as Sequence
+import           Data.List (isPrefixOf)
 -- import           Text.Printf
 
--- Type scheme equivalence
+-- TODO: This module needs a new name
 
-equivalentTS :: TypeEnv -> TypeScheme -> TypeScheme -> Bool
-equivalentTS tenv ts1 ts2 =
-  case instantiate ts1 ts2 of
-    Nothing             -> False
-    Just (kenv, t1, t2) -> equivalent kenv tenv t1 t2
-
--- Type equivalence
-
-equivalent :: KindEnv -> TypeEnv -> Type -> Type -> Bool
-equivalent kenv tenv t u = strongEquiv tenv t u || equiv kenv tenv t u
-
-equiv :: KindEnv -> TypeEnv -> Type -> Type -> Bool
-  -- Functional types
-equiv _ _ (Basic _ b) (Basic _ c) = b == c
-equiv kenv tenv (Fun _ m t1 t2) (Fun _ n u1 u2) =
-  m == n && equiv kenv tenv t1 u1 && equiv kenv tenv t2 u2
-equiv kenv tenv (PairType _ t1 t2) (PairType _ u1 u2) =
-  equiv kenv tenv t1 u1 && equiv kenv tenv t2 u2
-equiv kenv tenv (Datatype _ m1) (Datatype _ m2) =
-  Map.size m1 == Map.size m2 &&
-  Map.foldlWithKey (checkConstructor kenv tenv m2) True m1
-  -- Functional or session
-equiv _ _ (TypeVar _ x) (TypeVar _ y) = x == y
-  -- Type operatorstre  
-equiv kenv tenv (Dualof _ t) u = equiv kenv tenv (dual t) u
-equiv kenv tenv t (Dualof _ u) = equiv kenv tenv t (dual u)
-equiv _ _ (Name _ c1) (Name _ c2) = c1 == c2 -- TODO: this works for datatypes but not for type declarations, where one has to expand the definition(s) for c1 (c2) and continue
--- TODO: THIS CAN EASILY LOOP
-equiv kenv tenv (Name p c) u = equiv kenv tenv t u
-  where (_, TypeScheme _ [] t) = tenv Map.! (TBind p c) -- TODO: polymorphic type names
-equiv kenv tenv t (Name p c) = equiv kenv tenv t u
-  where (_, TypeScheme _ [] u) = tenv Map.! (TBind p c) -- TODO: polymorphic type names
-  -- Session types
-equiv kenv tenv t u =
-  isSessionType kenv tenv t &&
-  isSessionType kenv tenv u &&
-  expand (prune p) [x] [y]
+equivalent :: Type -> Type -> Bool
+equivalent t u = expand (prune p) [x] [y]
   where Grammar [x, y] p = convertToGrammar [t, u]
-
-checkConstructor :: KindEnv -> TypeEnv -> TypeMap -> Bool -> PBind -> Type -> Bool
-checkConstructor kenv tenv m acc l t =
-  acc && l `Map.member` m && equiv kenv tenv (m Map.! l) t
 
 type Node = Set.Set ([TVar], [TVar])
 

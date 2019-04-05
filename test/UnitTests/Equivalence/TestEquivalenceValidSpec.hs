@@ -1,10 +1,11 @@
 module Equivalence.TestEquivalenceValidSpec(spec) where
 
-import           Parse.Lexer (defaultPos)
 import           Syntax.Bind
-import           Equivalence.TypeEquivalence
-import           SpecHelper
 import           Syntax.Kinds (Kind)
+import           Syntax.Types
+import           Equivalence.Equivalence
+import           SpecHelper
+import           Parse.Lexer (defaultPos)
 import qualified Data.Map.Strict as Map
 
 spec :: Spec
@@ -17,7 +18,7 @@ spec = do
 matchValidSpec :: [String] -> Spec
 matchValidSpec [k, t, u] =
   it (k ++ "  |-  " ++ t ++ " ~ " ++  u) $
-    {-# SCC "EQUIVALENT_TEST_CALL" #-}equivalent (Map.fromList (readKenv k)) Map.empty (read t) (read u) `shouldBe` True
+    {-# SCC "EQUIVALENT_TEST_CALL" #-}equivalent  Map.empty (Map.fromList (readKenv k)) (read t :: Type) (read u :: Type) `shouldBe` True
 
 --  :: [(String,Kind)]
 readKenv s =

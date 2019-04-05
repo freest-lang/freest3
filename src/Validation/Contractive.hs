@@ -35,8 +35,7 @@ contractive kenv (TypeVar p x) = Map.member (TBind p x) kenv
 contractive _    _             = True
 
 -- Check the contractivity of a given type; issue an error if not
-checkContractive :: Type -> FreestState ()
-checkContractive t = do
-  kenv <- getKenv
+checkContractive :: KindEnv -> Type -> FreestState ()
+checkContractive kenv t = do
   when (not (contractive kenv t)) $
    addError (position t) ["Type", styleRed $ show t, "is not contractive"]

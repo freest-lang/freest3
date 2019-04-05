@@ -23,13 +23,13 @@ import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Bind
 import           Syntax.Programs
-import           Utils.Errors
-import           Utils.FreestState
 import qualified Validation.Kinding as K
 import qualified Validation.TypingExps as T
+import           Utils.Errors
+import           Utils.FreestState
 import           Validation.Extract
 import           Utils.PreludeLoader (isBuiltin)
-import           Control.Monad.State
+import           Control.Monad.State (when)
 import qualified Data.Map.Strict as Map
 import           Debug.Trace
 
@@ -38,11 +38,11 @@ typeCheck = do
   -- Type/datatype declarations: check TypeEnv for type or datatype
   -- declarations, VarEnv for each datatype constructor
   tenv <- getTenv
-  tMapWithKeyM (\b (k,_) -> addToKenv b k) tenv -- add all kinds
-  tenv <- getTenv
+  -- tMapWithKeyM (\b (k,_) -> addToKenv b k) tenv -- add all kinds
+  -- tenv <- getTenv
   mapM_ (K.synthetiseTS . snd) tenv -- check the formation of all type schemes
-  tenv <- getTenv
-  tMapWithKeyM (\b _ -> removeFromKenv b) tenv -- TODO: only works if all vars in the prog are distinct
+  -- tenv <- getTenv
+  -- tMapWithKeyM (\b _ -> removeFromKenv b) tenv
   -- Function signatures (VarEnv)
   venv <- getVenv
   mapM_ K.synthetiseTS venv
@@ -71,7 +71,7 @@ checkFunBody :: PBind -> Expression -> FreestState ()
 checkFunBody f e =
   getFromVenv f >>= \case
     Just ts -> do
-      t <- T.fillFunType f e ts -- TODO: what to do with t?
+      t <- T.fillFunType Map.empty f e ts -- TODO: what to do with t?
 --      T.checkAgainstST e' ts
       return ()
     Nothing ->

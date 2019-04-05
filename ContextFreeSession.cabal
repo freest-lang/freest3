@@ -41,7 +41,7 @@ executable ContextFreeSession
                        Queue.Queue,
                        Validation.Typing, Validation.TypingExps, Validation.Kinding,
                        Validation.Contractive, Validation.Extract,
-                       Equivalence.TypeEquivalence, Equivalence.Grammar,
+                       Equivalence.Equivalence, Equivalence.TypeEquivalence, Equivalence.Grammar,
                        Equivalence.TypeToGrammar, Equivalence.Norm,
 		       Equivalence.StrongEquivalence,
                        CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen
@@ -69,7 +69,7 @@ test-suite unit-tests
                        Parse.Parser, Parse.Lexer, Parse.ParserUtils,
                        Queue.Queue,
                        Validation.Kinding, Validation.Contractive, 
-                       Equivalence.TypeEquivalence, Equivalence.Grammar, Equivalence.TypeToGrammar,
+                       Equivalence.Equivalence, Equivalence.TypeEquivalence, Equivalence.Grammar, Equivalence.TypeToGrammar,
                        Equivalence.Norm, Equivalence.StrongEquivalence,
                        Utils.Errors, Utils.FreestState,
                        SpecHelper,
@@ -108,7 +108,7 @@ test-suite program-tests
                        Queue.Queue,        
                        Validation.Typing, Validation.TypingExps, Validation.Kinding,
                        Validation.Contractive, Validation.Extract,
-                       Equivalence.TypeEquivalence, Equivalence.Grammar,
+                       Equivalence.Equivalence, Equivalence.TypeEquivalence, Equivalence.Grammar,
                        Equivalence.TypeToGrammar, Equivalence.Norm,
 		       Equivalence.StrongEquivalence,
                        CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen
@@ -141,6 +141,6 @@ test-suite testEquiv
                        Queue.Queue, Utils.Errors, Utils.FreestState,
                        Validation.Kinding,  Validation.Contractive,
                        Equivalence.Grammar, Equivalence.TypeToGrammar,
-                       Equivalence.Norm, Equivalence.TypeEquivalence,
+                       Equivalence.Norm, Equivalence.Equivalence, Equivalence.TypeEquivalence,
 		       Equivalence.StrongEquivalence,
                        Equivalence.TestEquivalenceValidSpec, Equivalence.TestEquivalenceInvalidSpec

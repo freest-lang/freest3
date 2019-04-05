@@ -33,7 +33,7 @@ data FreestS = FreestS {
 , varEnv   :: VarEnv
 , expEnv   :: ExpEnv
 , typeEnv  :: TypeEnv
-, kindEnv  :: KindEnv
+--, kindEnv  :: KindEnv
 , errors   :: Errors
 , fv       :: Int }
 
@@ -47,7 +47,7 @@ initialState f = FreestS {
 , varEnv   = Map.empty
 , expEnv   = Map.empty
 , typeEnv  = Map.empty
-, kindEnv  = Map.empty
+--, kindEnv  = Map.empty
 , errors   = []
 , fv        = 0}
 
@@ -119,6 +119,8 @@ getFromTenv  b = do
   tenv <- getTenv
   return $ tenv Map.!? b
 
+{- Kind environments are now passed as parameter
+
 -- | KIND ENV
 
 getKenv :: FreestState KindEnv
@@ -151,6 +153,7 @@ removeFromKenv x =
 
 resetKEnv ::  FreestState ()
 resetKEnv = modify (\s -> s {kindEnv = Map.empty})
+-}
 
 -- | ERRORS
 

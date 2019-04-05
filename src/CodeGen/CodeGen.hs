@@ -7,7 +7,6 @@ import           Parse.Lexer (defaultPos)
 import           Syntax.Programs
 import           Syntax.Expression
 import           Syntax.Types
-import           Syntax.Kinds
 import           Syntax.Bind
 import           CodeGen.DatatypeGen
 import           CodeGen.ExpressionGen
@@ -21,8 +20,8 @@ import           System.FilePath
 
 -- TODO : PARAM BANG
 -- TODO : start may not exist
-genProgram :: VarEnv -> ExpEnv -> TypeEnv -> KindEnv -> FilePath -> IO ()
-genProgram venv eenv cenv kenv filepath = do
+genProgram :: VarEnv -> ExpEnv -> TypeEnv -> FilePath -> IO ()
+genProgram venv eenv cenv filepath = do
   genFreeSTRunTime filepath
   let
     venv1            = updateKey venv

@@ -1,7 +1,8 @@
 module Equivalence.TestEquivalenceInvalidSpec(spec) where
 
+import           Equivalence.Equivalence
+import           Syntax.Types
 import qualified Data.Map.Strict as Map
-import           Equivalence.TypeEquivalence
 import           SpecHelper
 
 spec :: Spec
@@ -12,7 +13,7 @@ spec = do
 matchInvalidSpec :: [String] -> Spec
 matchInvalidSpec [a, b] =
   it (a ++ " `equivalent` " ++  b) $
-    equivalent Map.empty Map.empty (read a) (read b) `shouldBe` False
+    equivalent Map.empty Map.empty (read a :: Type) (read b :: Type) `shouldBe` False
 
 main :: IO ()
 main = hspec spec

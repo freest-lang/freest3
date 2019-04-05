@@ -22,16 +22,16 @@ module Validation.Kinding
 , lin
 ) where
 
-import           Parse.Lexer (Pos, position)
 import           Syntax.Programs
 import           Syntax.Expression
 import           Syntax.Types
 import           Syntax.Schemes
 import           Syntax.Kinds
 import           Syntax.Bind
-import           Utils.Errors
-import           Utils.FreestState
 import           Validation.Contractive
+import           Parse.Lexer (Pos, position)
+import           Utils.FreestState
+import           Utils.Errors
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
 import           Debug.Trace
@@ -43,55 +43,55 @@ class Kinding a where
 -}
 
 -- Returns the kind of a given type
-synthetise :: Type -> FreestState Kind
--- Session types
-synthetise (Skip p) =
+synthetise :: KindEnv -> Type -> FreestState Kind
+  -- Session types
+synthetise _ (Skip p) =
   return $ Kind p Session Un
-synthetise (Message p _ _) =
+synthetise _ (Message p _ _) =
   return $ Kind p Session Lin
-synthetise (Choice p _ m) = do
-  tMapM (checkAgainst (Kind p Session Lin)) m
+synthetise kenv (Choice p _ m) = do
+  tMapM (checkAgainst kenv (Kind p Session Lin)) m
   return $ Kind p Session Lin
-synthetise (Semi p t u) = do
-  m <- checkAgainstSession t
-  n <- checkAgainstSession u
+synthetise kenv (Semi p t u) = do
+  m <- checkAgainstSession kenv t
+  n <- checkAgainstSession kenv u
   return $ Kind p Session (max m n)
 -- Functional
-synthetise (Basic p _) =
+synthetise _ (Basic p _) =
   return $ Kind p Functional Un
-synthetise (Fun p m t u) = do
-  synthetise t
-  synthetise u
+synthetise kenv (Fun p m t u) = do
+  synthetise kenv t
+  synthetise kenv u
   return $ Kind p Functional m
-synthetise (PairType _ t u) = do
-  kt <- synthetise t
-  ku <- synthetise u
+synthetise kenv (PairType _ t u) = do
+  kt <- synthetise kenv t
+  ku <- synthetise kenv u
   return $ lub kt ku
-synthetise (Datatype p m) = do
-  ks <- tMapM synthetise m
+synthetise kenv (Datatype p m) = do
+  ks <- tMapM (synthetise kenv) m
   let Kind _ _ n = foldr1 lub ks
   return $ Kind p Functional n
-synthetise (Rec p x@(TBindK _ _ k) t) = do
-  checkContractive t
+synthetise kenv (Rec p x@(TBindK _ _ k) t) = do
+  checkContractive kenv t
   y <- freshVar
   let b = TBind p y
-  addToKenv b k
-  k <- synthetise $ subs (TypeVar p y) x t -- On the fly α-conversion
-  removeFromKenv b
+--    addToKenv b k
+  k <- synthetise (Map.insert b k kenv) $ subs (TypeVar p y) x t -- On the fly α-conversion
+--    removeFromKenv b
   return k
 -- Session or functional
-synthetise (TypeVar p x) =
+synthetise kenv (TypeVar p x) =
   let bind = TBind p x in
-  getFromKenv bind >>= \case
+  case kenv Map.!? bind of -- getFromKenv bind >>= \case
     Just k ->
       return k
     Nothing -> do
       addError p ["Type variable not in scope:", styleRed x]
-      let k = top p
-      addToKenv bind k
-      return k
+        -- let k = top p
+        -- addToKenv bind k
+      return (top p)
 -- Type operators
-synthetise (Name p c) =
+synthetise kenv (Name p c) =
   let bind = TBind p c in
   getFromTenv bind >>= \case
     Just (k, _) ->
@@ -101,39 +101,41 @@ synthetise (Name p c) =
       let k = top p
       addToTenv bind k $ omission p
       return k
-synthetise (Dualof p t) = do
-  m <- checkAgainstSession t
+synthetise kenv (Dualof p t) = do
+  m <- checkAgainstSession kenv t
   return $ Kind p Session m
 
 -- Check whether a given type is of a session kind. In any case return
 -- the multiplicity of the kind of the type
-checkAgainstSession :: Type -> FreestState Multiplicity
-checkAgainstSession t = do
-  (Kind _ k m) <- synthetise t
+checkAgainstSession :: KindEnv -> Type -> FreestState Multiplicity
+checkAgainstSession kenv t = do
+  (Kind _ k m) <- synthetise kenv t
   when (k /= Session) $
     addError (position t) ["Expecting a session type; found", styleRed $ show t]
   return m
 
 -- Check a type against a given kind
-checkAgainst :: Kind -> Type -> FreestState ()
-checkAgainst k (Rec p x t) = do
-  checkContractive t
+checkAgainst :: KindEnv -> Kind -> Type -> FreestState ()
+checkAgainst kenv k (Rec p x t) = do
+  checkContractive kenv t
   y <- freshVar
-  let b = TBind p y
-  addToKenv b (Kind p Session Un)
-  checkAgainst k $ subs (TypeVar p y) x t -- On the fly α-conversion
-  removeFromKenv b
-checkAgainst k1 t = do
-  k2 <- synthetise t
+--  let b = TBind p y
+--  addToKenv b (Kind p Session Un)
+  checkAgainst (Map.insert (TBind p y) (Kind p Session Un) kenv) k $ subs (TypeVar p y) x t -- On the fly α-conversion
+--  removeFromKenv b
+checkAgainst kenv k1 t = do
+  k2 <- synthetise kenv t
   when (not (k2 <: k1)) $
     addError (position k1) ["Expecting kind", styleRed $ show k1,
                             "to be a sub-kind of", styleRed $ show k2]
 
 synthetiseTS :: TypeScheme -> FreestState Kind
-synthetiseTS (TypeScheme p bs t) = do
---  resetKEnv -- TODO: really?
-  mapM_ (\(TBindK p x k) -> addToKenv (TBind p x) k) bs
-  synthetise t
+synthetiseTS (TypeScheme _ bs t) = do
+--  mapM_ (\(TBindK p x k) -> addToKenv (TBind p x) k) bs
+  synthetise (toKindEnv bs) t
+
+toKindEnv :: [TBindK] -> KindEnv
+toKindEnv bs = Map.fromList $ map (\(TBindK p x k) -> ((TBind p x), k)) bs
 
 -- Determine whether a given type is linear
 lin :: TypeScheme -> FreestState Bool
@@ -145,22 +147,22 @@ un = mult Un
 
 -- Determine whether a given type is of a given multiplicity
 mult :: Multiplicity -> TypeScheme -> FreestState Bool
-mult m1 t = do
-  (Kind _ _ m2) <- synthetiseTS t
+mult m1 ts = do
+  (Kind _ _ m2) <- synthetiseTS ts
   return $ m2 == m1
 
 -- Assumes the type is well formed
-isSessionType :: KindEnv -> TypeEnv -> Type -> Bool
+isSessionType :: TypeEnv -> KindEnv -> Type -> Bool
   -- Session types
 isSessionType _ _ (Skip _)          = True
 isSessionType _ _ (Semi _ _ _)      = True
 isSessionType _ _ (Message _ _ _)   = True
 isSessionType _ _ (Choice _ _ _)    = True
-isSessionType kenv tenv (Rec _ _ t) = isSessionType kenv tenv t
+isSessionType tenv kenv (Rec _ _ t) = isSessionType tenv kenv t
   -- Functional or session
-isSessionType kenv _ (TypeVar p x)  = Map.member (TBind p x) kenv
+isSessionType _ kenv (TypeVar p x)  = Map.member (TBind p x) kenv
   -- Type operators
 isSessionType _ _ (Dualof _ _)      = True
-isSessionType kenv tenv (Name p c)  = isSession $ fst $ tenv Map.! (TBind p c)
+isSessionType tenv kenv (Name p c)  = isSession $ fst $ tenv Map.! (TBind p c)
   -- Otherwise: Functional types
 isSessionType _ _ _                 = False
