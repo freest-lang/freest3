@@ -37,7 +37,7 @@ class StrongEquiv t where
 -- Strong equivalence for types
 
 instance StrongEquiv Type where
-  strongEquiv tenv t u = t == u -- normalise tenv t == normalise tenv u
+  strongEquiv tenv t u = normalise tenv t == normalise tenv u
 
 normalise :: TypeEnv -> Type -> Type
   -- Functional types

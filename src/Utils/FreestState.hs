@@ -23,6 +23,7 @@ import           Syntax.Bind
 import           Utils.Errors
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
+import qualified Data.Traversable as Traversable
 
 -- | The typing state
 type Errors = [String]
@@ -161,11 +162,19 @@ addErrorList :: [String] -> FreestState ()
 addErrorList es =
   modify (\s -> s {errors=(errors s) ++ es})   
 
-
 -- | FRESH VARS
 
 freshVar :: FreestState String
 freshVar = do
   s <- get
-  put $ s {fv=(fv s) +1}
-  return $ "_x" ++ (show (fv s))
+  put $ s {fv = fv s + 1}
+  return $ "_x" ++ show (fv s)
+
+-- | Traversing Map.map over FreestStates
+
+tMapM :: Monad m => (a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)
+tMapM f m = Traversable.sequence (Map.map f m)
+
+tMapWithKeyM :: Monad m => (k -> a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)
+tMapWithKeyM f m = Traversable.sequence (Map.mapWithKey f m)
+

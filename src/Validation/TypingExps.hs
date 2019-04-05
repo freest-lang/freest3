@@ -246,7 +246,7 @@ checkEquivTypes p expected actual = do
   venv <- getVenv
   when (not $ equivalent kenv tenv expected actual) $
     addError p ["Couldn't match expected type", styleRed (show expected), "\n",
-              "\t with actual type", styleRed (show actual)]
+             "\t with actual type", styleRed (show actual)]
 
 checkEqualEnvs :: Pos -> VarEnv -> VarEnv -> FreestState ()
 checkEqualEnvs p venv1 venv2 =
@@ -267,9 +267,6 @@ checkEquivEnvs p venv1 venv2 = do
 funSigsOnly :: TypeEnv -> VarEnv -> VarEnv
 funSigsOnly tenv =
   Map.filterWithKey (\x _ -> not (isBuiltin x) && not (isDatatypeContructor tenv x))
-
--- funDeclsOnly :: TypeEnv -> TypeEnv
--- funDeclsOnly = Map.filterWithKey (\(TBind p x) _ -> not (isBuiltin (PBind p x)))
 
 -- To determine whether a given constructor (a program variable) is a
 -- datatype constructor we have to look in the type environment for a

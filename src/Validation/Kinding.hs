@@ -39,7 +39,7 @@ import           Debug.Trace
 {-
 class Kinding a where
   synthetise :: a -> FreestState Kind
-  checkAgains :: Kind -> a -> FreestState ()
+  checkAgainst :: Kind -> a -> FreestState ()
 -}
 
 -- Returns the kind of a given type
@@ -50,7 +50,7 @@ synthetise (Skip p) =
 synthetise (Message p _ _) =
   return $ Kind p Session Lin
 synthetise (Choice p _ m) = do
-  mapM_ (checkAgainst (Kind p Session Lin)) (Map.elems m)
+  tMapM (checkAgainst (Kind p Session Lin)) m
   return $ Kind p Session Lin
 synthetise (Semi p t u) = do
   m <- checkAgainstSession t
@@ -68,7 +68,7 @@ synthetise (PairType _ t u) = do
   ku <- synthetise u
   return $ lub kt ku
 synthetise (Datatype p m) = do
-  ks <- mapM synthetise (Map.elems m)
+  ks <- tMapM synthetise m
   let Kind _ _ n = foldr1 lub ks
   return $ Kind p Functional n
 synthetise (Rec p x@(TBindK _ _ k) t) = do
@@ -105,8 +105,8 @@ synthetise (Dualof p t) = do
   m <- checkAgainstSession t
   return $ Kind p Session m
 
--- Check whether a given type is of a session kind. In either case
--- return the multiplicity of the kind of the type
+-- Check whether a given type is of a session kind. In any case return
+-- the multiplicity of the kind of the type
 checkAgainstSession :: Type -> FreestState Multiplicity
 checkAgainstSession t = do
   (Kind _ k m) <- synthetise t

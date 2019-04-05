@@ -12,25 +12,25 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Syntax.Types
-( Dual(..)
-, TBindK(..)
+( TBindK(..)
 , BasicType(..)
 , TypeMap(..)
 , Polarity(..)
 , Type(..)
+, Dual(..)
 , Default(..)
 , subs
 , unfold
 ) where
 
-import           Parse.Lexer (Position, Pos, position)
 import           Syntax.Bind
 import           Syntax.Kinds
+import           Parse.Lexer (Position, Pos, position)
 import           Data.List (intersperse)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
--- Default types and type schemes, used when the compiler needs of to
+-- Default types and type schemes, used when the compiler needs to
 -- fill an error
 class Default t where
   omission :: Pos -> t

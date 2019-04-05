@@ -31,29 +31,25 @@ import           Validation.Extract
 import           Utils.PreludeLoader (isBuiltin)
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
-import qualified Data.Traversable as Trav
 import           Debug.Trace
-
-mapWithKeyM :: Monad m => (k -> a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)
-mapWithKeyM f m = Trav.sequence (Map.mapWithKey f m)
 
 typeCheck :: FreestState ()
 typeCheck = do
   -- Type/datatype declarations: check TypeEnv for type or datatype
   -- declarations, VarEnv for each datatype constructor
   tenv <- getTenv
-  mapWithKeyM (\b (k,_) -> addToKenv b k) tenv -- add all kinds
+  tMapWithKeyM (\b (k,_) -> addToKenv b k) tenv -- add all kinds
   tenv <- getTenv
   mapM_ (K.synthetiseTS . snd) tenv -- check the formation of all type schemes
   tenv <- getTenv
-  mapWithKeyM (\b _ -> removeFromKenv b) tenv -- TODO: only works if all vars in the prog are distinct
+  tMapWithKeyM (\b _ -> removeFromKenv b) tenv -- TODO: only works if all vars in the prog are distinct
   -- Function signatures (VarEnv)
   venv <- getVenv
   mapM_ K.synthetiseTS venv
-  mapWithKeyM hasBinding venv
+  tMapWithKeyM hasBinding venv
   -- Function bodies (ExpEnv)
   eenv <- getEenv
-  mapWithKeyM checkFunBody eenv
+  tMapWithKeyM checkFunBody eenv
   -- Main function
   checkMainFunction
 
