@@ -17,7 +17,7 @@ Portability :  portable | non-portable (<reason>)
 module Validation.TypingExps
 ( synthetise
 , checkAgainst
---s, checkAgainstST
+, checkAgainstST
 , checkUn
 , fillFunType
 , funSigsOnly
@@ -62,12 +62,12 @@ synthetise kenv (UnLet _ b e1 e2) = do
   quotient kenv b
   return t2
 -- Abstraction introduction
-synthetise kenv (Lambda p m x t1 e) = do
+synthetise kenv (Lambda p m b t1 e) = do
   venv1 <- getVenv
   K.synthetise kenv t1
-  addToVenv x (toTypeScheme t1)
+  addToVenv b (toTypeScheme t1)
   t2 <- synthetise kenv e
-  quotient kenv x
+  quotient kenv b
   venv2 <- getVenv
   when (m == Un) (checkEqualEnvs p venv1 venv2)
   return $ Fun p m t1 t2
@@ -224,10 +224,10 @@ checkAgainst kenv e t = do
   checkEquivTypes (position e) kenv t u
 
 -- | Check an expression against a given type scheme
--- checkAgainstST :: Expression -> TypeScheme -> FreestState ()
--- checkAgainstST e (TypeScheme _ bs t) = do
---   mapM_ (\(TBindK p x k) -> addToKenv (TBind p x) k) bs
---   checkAgainst e t
+checkAgainstST :: Expression -> TypeScheme -> FreestState ()
+checkAgainstST e s@(TypeScheme _ bs t) = do
+  trace ("checkAgainstST " ++ show e ++ "\n" ++ show s ++ "\n" ++ show (K.toKindEnv bs)) (return ())
+  checkAgainst (K.toKindEnv bs) e t
   
 -- EQUALITY AND EQUIVALENCE CHECKING
 

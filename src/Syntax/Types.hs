@@ -18,7 +18,6 @@ module Syntax.Types
 , Polarity(..)
 , Type(..)
 , Dual(..)
-, Default(..)
 , subs
 , unfold
 ) where
@@ -30,11 +29,6 @@ import           Data.List (intersperse)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
--- Default types and type schemes, used when the compiler needs to
--- fill an error
-class Default t where
-  omission :: Pos -> t
-  
 -- The dual function on types, etc
 class Dual t where
   dual :: t -> t

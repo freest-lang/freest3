@@ -16,6 +16,7 @@ module Syntax.Schemes
 , toTypeScheme
 ) where
 
+import           Syntax.Bind
 import           Syntax.Types
 import           Parse.Lexer (Position, Pos, position)
 import           Data.List (intersperse)

@@ -45,6 +45,7 @@ typeCheck = do
   tMapWithKeyM hasBinding venv
   -- Function bodies (ExpEnv)
   eenv <- getEenv
+--  trace ("checkFunBodies " ++ show eenv) (return ())
   tMapWithKeyM checkFunBody eenv
   -- Main function
   checkMainFunction
@@ -60,17 +61,13 @@ hasBinding f _ = do
     addError (position f) ["The type signature for", styleRed $ show f,
                            "lacks an accompanying binding"]
 
--- Check whether there is a signature for a given function. But first,
--- and for type checking purposes only, replace the dummy Unit types
--- in the bodies of functions.
 checkFunBody :: PBind -> Expression -> FreestState ()
 checkFunBody f e =
   getFromVenv f >>= \case
-    Just ts -> do
-      t <- T.fillFunType Map.empty f e ts -- TODO: what to do with t?
-      return ()
+    Just s ->
+      T.checkAgainstST e s
     Nothing ->
-      addError (position f) ["Did not find the signature of function", styleRed $ show f]
+      return () -- We've issued this error at parsing time
 
 checkMainFunction :: FreestState ()
 checkMainFunction = do

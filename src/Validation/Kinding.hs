@@ -19,7 +19,8 @@ module Validation.Kinding
 , synthetiseTS
 , isSessionType
 , un
-, lin
+--, lin
+, toKindEnv
 ) where
 
 import           Syntax.Programs
@@ -65,21 +66,19 @@ synthetise kenv (Datatype p m) = do
   ks <- tMapM (synthetise kenv) m
   let Kind _ _ n = foldr1 lub ks
   return $ Kind p Functional n
-synthetise kenv (Rec p x@(TBindK _ _ k) t) = do
+synthetise kenv (Rec p b@(TBindK _ _ k) t) = do
   checkContractive kenv t
   y <- freshVar
-  let b = TBind p y
-  k <- synthetise (Map.insert b k kenv) $ subs (TypeVar p y) x t -- On the fly α-conversion
-  return k
+  k' <- synthetise (Map.insert (TBind p y) k kenv) $ subs (TypeVar p y) b t -- On the fly α-conversion
+  return k'
 -- Session or functional
 synthetise kenv (TypeVar p x) =
-  let bind = TBind p x in
-  case kenv Map.!? bind of
+  case kenv Map.!? (TBind p x) of
     Just k ->
       return k
     Nothing -> do
       addError p ["Type variable not in scope:", styleRed x]
-      return (top p)
+      return (omission p)
 -- Type operators
 synthetise kenv (Name p c) =
   let bind = TBind p c in
@@ -88,7 +87,7 @@ synthetise kenv (Name p c) =
       return k
     Nothing -> do
       addError p ["Type name not in scope:", styleRed c]
-      let k = top p
+      let k = omission p
       addToTenv bind k $ omission p
       return k
 synthetise kenv (Dualof p t) = do
@@ -121,11 +120,12 @@ synthetiseTS :: TypeScheme -> FreestState Kind
 synthetiseTS (TypeScheme _ bs t) = synthetise (toKindEnv bs) t
 
 toKindEnv :: [TBindK] -> KindEnv
-toKindEnv bs = Map.fromList $ map (\(TBindK p x k) -> ((TBind p x), k)) bs
+toKindEnv = foldr (\(TBindK p x k) env -> Map.insert (TBind p x) k env) Map.empty
+--Map.fromList $ map (\(TBindK p x k) -> ((TBind p x), k)) bsol
 
 -- Determine whether a given type is linear
-lin :: TypeScheme -> FreestState Bool
-lin = mult Lin
+-- lin :: TypeScheme -> FreestState Bool
+-- lin = mult Lin
 
 -- Determine whether a given type is unrestricted
 un :: TypeScheme -> FreestState Bool

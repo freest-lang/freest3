@@ -16,7 +16,6 @@ module Syntax.Kinds
 , Multiplicity (..)
 , Kind (..)
 , KindEnv
-, top
 , topUn
 , isSession
 , (<:)
@@ -75,13 +74,13 @@ k1                     <: k2                      = k1 == k2
 
 -- The least upper bound of two kinds
 lub :: Kind -> Kind -> Kind
-lub (Kind p Functional Un)  (Kind _ Session    Lin) = top p
-lub (Kind p Session    Lin) (Kind _ Functional Un)  = top p
+lub (Kind p Functional Un)  (Kind _ Session    Lin) = omission p
+lub (Kind p Session    Lin) (Kind _ Functional Un)  = omission p
 lub k1                      k2                      = if k1 <: k2 then k2 else k1
 
 -- The kind that seats at the top of the hierarchy (use as a default value)
-top :: Pos -> Kind
-top p = Kind p Functional Lin
+instance Default Kind where
+  omission p = Kind p Functional Lin
 
 topUn :: Pos -> Kind
 topUn p = Kind p Functional Un

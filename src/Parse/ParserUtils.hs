@@ -11,6 +11,8 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
+{-# LANGUAGE LambdaCase, NoMonadFailDesugaring #-}
+
 module Parse.ParserUtils
 ( checkDupFunSig
 , checkDupFunDecl
@@ -21,18 +23,20 @@ module Parse.ParserUtils
 , checkDupMatch
 , binOp
 , unOp
+, buildFunBody
 , typeListToType
 , funDeclToExp
 ) where
 
-import           Parse.Lexer (Position, Pos, position, defaultPos, showPos)
 import           Syntax.Programs (VarEnv)
 import           Syntax.Expression (Expression(..))
-import           Syntax.Types (TypeMap, TBindK(..), Type(..), BasicType(..), Default(..))
-import           Syntax.Bind (PBind(..), TBind(..))
+import           Syntax.Schemes (TypeScheme(..))
+import           Syntax.Types
+import           Syntax.Bind
 import           Syntax.Kinds (Multiplicity(..))
+import           Parse.Lexer (Position, Pos, position, defaultPos, showPos)
 import           Utils.Errors
-import           Utils.FreestState (FreestState, addError, getVenv, getTenv, getEenv)
+import           Utils.FreestState
 import           Data.List (nub, (\\), intercalate, find)
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map 
@@ -122,6 +126,23 @@ typeListToType:: TBind -> [(PBind, [Type])] -> [(PBind, Type)]
 typeListToType (TBind p x) = map (\(b, ts) -> (b, typeToFun ts))
   where typeToFun []       = (Name p x)
         typeToFun (t : ts) = Fun (position t) Un t (typeToFun ts)
+
+-- At parsing time we may not konw the signature for the function, so
+-- we type each parameter as ()
+buildFunBody :: PBind -> [PBind] -> Expression -> FreestState Expression
+buildFunBody f bs e =
+  getFromVenv f >>= \case
+    Just s -> do
+      let (TypeScheme _ _ t) = s
+      return $ buildExp bs t
+    Nothing -> do
+      addError (position f) ["Did not find the signature of function", styleRed $ show f]
+      return e
+  where
+    buildExp :: [PBind] -> Type -> Expression
+    buildExp []     _               = e
+    buildExp (b:bs) (Fun _ _ t1 t2) = Lambda (position b) Lin b t1 (buildExp bs t2)
+    buildExp (b:bs) t               = Lambda (position b) Lin b (omission (position b)) (buildExp bs t)
 
 -- At parsing time we may not konw the signature for the function, so
 -- we type each parameter as ()
