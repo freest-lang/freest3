@@ -5,6 +5,7 @@ module Utils.PreludeLoader
 
 import           Parse.Lexer (defaultPos)
 import           Syntax.Programs (VarEnv)
+import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Bind
 import           Parse.Parser

@@ -5,6 +5,7 @@ module CodeGen.DatatypeGen
 
 import           Syntax.Programs
 import           Syntax.Types
+import           Syntax.Schemes
 import           Syntax.Kinds
 import           Syntax.Bind
 import           Data.List

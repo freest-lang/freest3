@@ -3,6 +3,7 @@ module Validation.TestTypeSchemeKindingSpec(spec) where
 import           Parse.Parser
 import           Validation.Kinding
 import           Syntax.Kinds
+import           Syntax.Schemes
 import           Utils.FreestState
 import           SpecHelper
 import           Control.Monad.State

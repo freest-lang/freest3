@@ -28,6 +28,7 @@ module Validation.Extract
 ) where
 
 import           Parse.Lexer (Pos, position, defaultPos)
+import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.Bind

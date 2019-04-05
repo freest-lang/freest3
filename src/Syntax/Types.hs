@@ -18,13 +18,9 @@ module Syntax.Types
 , TypeMap(..)
 , Polarity(..)
 , Type(..)
-, TypeScheme(..)
 , Default(..)
-, returnType
-, toTypeScheme
 , subs
 , unfold
-, toList -- TODO: not quite sure this belongs here
 ) where
 
 import           Parse.Lexer (Position, Pos, position)
@@ -34,11 +30,12 @@ import           Data.List (intersperse)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
+-- Default types and type schemes, used when the compiler needs of to
+-- fill an error
 class Default t where
   omission :: Pos -> t
   
--- DUALITY
-
+-- The dual function on types, etc
 class Dual t where
   dual :: t -> t
 
@@ -192,10 +189,6 @@ instance Dual Type where
 instance Default Type where
   omission p = Basic p UnitType
 
-returnType :: Type -> Type
-returnType (Fun _ _ _ t) = returnType t
-returnType t             = t
-
 -- KINDED TYPE BIND
 
 data TBindK = TBindK Pos TVar Kind
@@ -211,28 +204,6 @@ instance Show TBindK where
 
 instance Position TBindK where
   position (TBindK p _ _) = p
-
--- TYPE SCHEMES
-
-data TypeScheme = TypeScheme Pos [TBindK] Type
-
-instance Show TypeScheme where
-  show (TypeScheme _ [] t) = show t
-  show (TypeScheme _ bs t) = "forall " ++ bindings ++ " => " ++ show t
-    where bindings = concat $ intersperse ", " (map show bs)
-
-instance Position TypeScheme where
-  position (TypeScheme p _ _) = p
-
-toTypeScheme :: Type -> TypeScheme
-toTypeScheme t = TypeScheme (position t) [] t
-
-instance Default TypeScheme where
- omission p = TypeScheme p [] (omission p)
-
-toList :: TypeScheme -> [TypeScheme] -- TODO: return [Type]
-toList (TypeScheme p b (Fun _ _ t1 t2)) = (TypeScheme p b t1) : toList (TypeScheme p b t2)
-toList t = [t]
 
 -- UNFOLDING, SUBSTITUTING
 

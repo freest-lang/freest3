@@ -16,8 +16,5 @@ main =
   let _ = fork (mathServer r) in
   let x, _ = receive (send (select Opposite w) 5) in
   x
-
-
-  
  
         

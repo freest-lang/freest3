@@ -10,6 +10,7 @@ import           Parse.Lexer
 import           Syntax.Programs
 import           Syntax.Expression
 import           Syntax.Types
+import           Syntax.Schemes
 import           Syntax.Kinds
 import           Syntax.Bind
 import           Validation.Kinding

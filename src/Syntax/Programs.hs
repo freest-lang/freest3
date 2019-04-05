@@ -20,6 +20,7 @@ module Syntax.Programs
 import           Syntax.Bind
 import           Syntax.Kinds
 import           Syntax.Types
+import           Syntax.Schemes
 import           Syntax.Expression
 import qualified Data.Map.Strict as Map
 

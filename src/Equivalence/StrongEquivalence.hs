@@ -23,6 +23,7 @@ module Equivalence.StrongEquivalence
 import           Syntax.Bind
 import           Syntax.Kinds
 import           Syntax.Types
+import           Syntax.Schemes
 import           Syntax.Programs
 import           Parse.Lexer (position)
 import qualified Data.Map.Strict as Map

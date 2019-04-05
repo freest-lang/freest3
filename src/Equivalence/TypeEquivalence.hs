@@ -17,6 +17,7 @@ module Equivalence.TypeEquivalence
 ) where
 
 import           Syntax.Programs
+import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.Bind
