@@ -36,12 +36,6 @@ import           Control.Monad.State
 import qualified Data.Map.Strict as Map
 import           Debug.Trace
 
-{-
-class Kinding a where
-  synthetise :: a -> FreestState Kind
-  checkAgainst :: Kind -> a -> FreestState ()
--}
-
 -- Returns the kind of a given type
 synthetise :: KindEnv -> Type -> FreestState Kind
   -- Session types
@@ -75,20 +69,16 @@ synthetise kenv (Rec p x@(TBindK _ _ k) t) = do
   checkContractive kenv t
   y <- freshVar
   let b = TBind p y
---    addToKenv b k
   k <- synthetise (Map.insert b k kenv) $ subs (TypeVar p y) x t -- On the fly α-conversion
---    removeFromKenv b
   return k
 -- Session or functional
 synthetise kenv (TypeVar p x) =
   let bind = TBind p x in
-  case kenv Map.!? bind of -- getFromKenv bind >>= \case
+  case kenv Map.!? bind of
     Just k ->
       return k
     Nothing -> do
       addError p ["Type variable not in scope:", styleRed x]
-        -- let k = top p
-        -- addToKenv bind k
       return (top p)
 -- Type operators
 synthetise kenv (Name p c) =
@@ -119,10 +109,7 @@ checkAgainst :: KindEnv -> Kind -> Type -> FreestState ()
 checkAgainst kenv k (Rec p x t) = do
   checkContractive kenv t
   y <- freshVar
---  let b = TBind p y
---  addToKenv b (Kind p Session Un)
   checkAgainst (Map.insert (TBind p y) (Kind p Session Un) kenv) k $ subs (TypeVar p y) x t -- On the fly α-conversion
---  removeFromKenv b
 checkAgainst kenv k1 t = do
   k2 <- synthetise kenv t
   when (not (k2 <: k1)) $
@@ -130,9 +117,7 @@ checkAgainst kenv k1 t = do
                             "to be a sub-kind of", styleRed $ show k2]
 
 synthetiseTS :: TypeScheme -> FreestState Kind
-synthetiseTS (TypeScheme _ bs t) = do
---  mapM_ (\(TBindK p x k) -> addToKenv (TBind p x) k) bs
-  synthetise (toKindEnv bs) t
+synthetiseTS (TypeScheme _ bs t) = synthetise (toKindEnv bs) t
 
 toKindEnv :: [TBindK] -> KindEnv
 toKindEnv bs = Map.fromList $ map (\(TBindK p x k) -> ((TBind p x), k)) bs

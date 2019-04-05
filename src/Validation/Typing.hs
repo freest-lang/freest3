@@ -38,11 +38,7 @@ typeCheck = do
   -- Type/datatype declarations: check TypeEnv for type or datatype
   -- declarations, VarEnv for each datatype constructor
   tenv <- getTenv
-  -- tMapWithKeyM (\b (k,_) -> addToKenv b k) tenv -- add all kinds
-  -- tenv <- getTenv
   mapM_ (K.synthetiseTS . snd) tenv -- check the formation of all type schemes
-  -- tenv <- getTenv
-  -- tMapWithKeyM (\b _ -> removeFromKenv b) tenv
   -- Function signatures (VarEnv)
   venv <- getVenv
   mapM_ K.synthetiseTS venv
@@ -72,7 +68,6 @@ checkFunBody f e =
   getFromVenv f >>= \case
     Just ts -> do
       t <- T.fillFunType Map.empty f e ts -- TODO: what to do with t?
---      T.checkAgainstST e' ts
       return ()
     Nothing ->
       addError (position f) ["Did not find the signature of function", styleRed $ show f]

@@ -173,10 +173,7 @@ synthetiseField venv1 kenv tm b e state = do
   (ts, venvs) <- state
   setVenv venv1
   t1 <- synthetiseCons b tm
---  trace ("A synthetiseField: " ++ show e) (return ())
   t2 <- fillFunType kenv b e (toTypeScheme t1)
---  trace ("B synthetiseField: " ++ show e' ++ ": " ++ show (returnType t)) (return ())
---  t2 <- synthetise e'
   venv2 <- getVenv
   return (t2:ts, venv2:venvs)
 
@@ -280,7 +277,7 @@ isDatatypeContructor tenv c =
 -- these types with those declared in the type scheme for the
 -- function.
 fillFunType :: KindEnv -> PBind -> Expression -> TypeScheme -> FreestState Type
-fillFunType kenv b@(PBind p f) e (TypeScheme _ _ t) = fill e t -- TODO: move type scheme bindings to kenv
+fillFunType kenv b@(PBind p f) e (TypeScheme _ _ t) = fill e t
   where
   fill :: Expression -> Type -> FreestState Type
   fill (Lambda _ _ b _ e) (Fun _ _ t1 t2) = do
