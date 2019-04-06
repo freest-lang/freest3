@@ -336,7 +336,7 @@ $$ \textbf{Kind} = [\textbf{Prekind}][\textbf{Multiplicity}] $$
 
 \end{frame}
 
-\begin{frame}{Kinding validates Types}
+\begin{frame}{Kinding validates types}
 \freest{} features as functional types the following:
 \begin{itemize}
 \item \underline{Basic types}, \lstinline|B : TU|, that is, \lstinline|Int|,
@@ -344,10 +344,10 @@ $$ \textbf{Kind} = [\textbf{Prekind}][\textbf{Multiplicity}] $$
 \item \underline{Unrestricted and linear functions}, \lstinline|T1 -> T2 : TU| and
   \lstinline|T1 -o T2 : TL|
 \item \underline{Pairs} \lstinline|(T1, T2)| of kind
-  depending on the kinds of
+  supremum of those for
   \lstinline|T1| and \lstinline|T2|, and
 \item \underline{Datatypes}, \lstinline|[l1: T1, ..., ln: Tn]| of kind
-  \lstinline|TU| or \lstinline|TL| depending on the kinds of the
+  \lstinline|TU| or \lstinline|TL|, the max of the kinds for the
   various types \lstinline|Ti|.
 \end{itemize}
 \pause

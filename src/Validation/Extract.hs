@@ -23,7 +23,7 @@ module Validation.Extract
 , extractInChoiceMap
 , extractDatatypeMap
 , extractCons
-, normalise
+-- , normalise
 , normaliseTS
 ) where
 

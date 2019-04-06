@@ -20,7 +20,7 @@ module Validation.Kinding
 , isSessionType
 , un
 --, lin
-, toKindEnv
+, fromTBindKs
 ) where
 
 import           Syntax.Programs
@@ -72,7 +72,8 @@ synthetise kenv (Rec p b@(TBindK _ _ k) t) = do
   k' <- synthetise (Map.insert (TBind p y) k kenv) $ subs (TypeVar p y) b t -- On the fly α-conversion
   return k'
 -- Session or functional
-synthetise kenv (TypeVar p x) =
+synthetise kenv (TypeVar p x) = do
+  trace ("4_K.synthetise " ++ show x ++ "\nKind Env: " ++ show kenv ) (return ())
   case kenv Map.!? (TBind p x) of
     Just k ->
       return k
@@ -117,10 +118,10 @@ checkAgainst kenv expected t = do
                             "\t for type", styleRed $ show t]
 
 synthetiseTS :: TypeScheme -> FreestState Kind
-synthetiseTS (TypeScheme _ bs t) = synthetise (toKindEnv bs) t
+synthetiseTS (TypeScheme _ bs t) = synthetise (fromTBindKs bs) t
 
-toKindEnv :: [TBindK] -> KindEnv
-toKindEnv = foldr (\(TBindK p x k) env -> Map.insert (TBind p x) k env) Map.empty
+fromTBindKs :: [TBindK] -> KindEnv
+fromTBindKs = foldr (\(TBindK p x k) env -> Map.insert (TBind p x) k env) Map.empty
 --Map.fromList $ map (\(TBindK p x k) -> ((TBind p x), k)) bsol
 
 -- Determine whether a given type is linear
