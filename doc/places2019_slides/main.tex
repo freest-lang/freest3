@@ -486,12 +486,14 @@ The session types are the following:
 \begin{frame}[fragile]{One function, many forms}
 	Polymorphic variables are introduced solely with the \lstinline|forall| construct.
 	
-	Function \lstinline|transform| spells out the kind for the
-        polymorphic type variable \lstinline|alpha|, as:
-        \lstinline|forall alpha:SL => Tree -> TreeC;alpha -> (Tree,alpha)|
-
+	Function \lstinline|transform| introduces the kind for the
+        polymorphic type variable~\lstinline|alpha|:
+        
+        \begin{center}
+          \lstinline|forall alpha:SL => Tree -> TreeC;alpha -> (Tree,alpha)|
+        \end{center}
 \pause
-\begin{lstlisting}[numbers=left, xleftmargin=0.7cm, escapeinside=\`\`]
+\begin{lstlisting}[numbers=left, xleftmargin=0.7cm, escapeinside=\`\`, basicstyle=\sffamily\scriptsize]
 transform tree c =
   case tree of
     Leaf ->
@@ -506,7 +508,7 @@ transform tree c =
 \end{lstlisting}
 
 \pause
-In line 8, \lstinline|transform| calls the function at type:
+In line 8, \lstinline|transform| calls the function at (monomorphic) type:
 \begin{lstlisting}
 Tree -> TreeC;TreeC;?Int;alpha -> (Tree, TreeC;?Int;alpha)
 \end{lstlisting}
@@ -527,9 +529,9 @@ Tree -> TreeC;TreeC;?Int;alpha -> (Tree, TreeC;?Int;alpha)
 \item \underline{Lambda elimination}, \lstinline|e1 e2|
 \item \underline{Pair introduction}, \lstinline|(e1,e2)| 
 \item \underline{Pair elimination},
-  \lstinline|let x, y = e1 in e2| (linear versions only)
+  \lstinline|let x, y = e1 in e2| %(linear versions only)
 \item \underline{Datatype elimination},
-  \lstinline|case e of l1 x11...x1k -> e1, ..., ln xn1...xnk -> en|
+  \lstinline|case e of \{l1 x11...x1k -> e1; ...; ln xn1...xnk -> en\}|
 \item \underline{Conditional}, \lstinline|if e1 then e2 else e3|
 \item \underline{Type application}, \lstinline|x[T1,...Tn]|
 \item \underline{Thread creation}, \lstinline|fork e|.
@@ -544,7 +546,7 @@ The session-type related expressions are:
   \lstinline|receive e|
 \item \underline{Branch selection}, \lstinline|select l e|
 \item \underline{Branch match},
-  \lstinline|match e with l1 x -> e1,...,ln x -> en|.
+  \lstinline|match e with \{l1 x -> e1;...;ln x -> en\}|.
 \end{itemize}
 \end{frame}
 
@@ -573,7 +575,7 @@ Programs are composed by
    		\end{tikzpicture}
   	\end{center}
   	\begin{tcolorbox}
-  		The algorithm to check type equivalence is sound and complete.	
+  		The algorithm to check type equivalence is sound and complete!
   	\end{tcolorbox}
 
 \end{frame}
@@ -620,7 +622,7 @@ The three possible runtimes:
 % \end{tcolorbox}
 % \end{frame}
 
-\begin{frame}[fragile]{Code generation}
+\begin{frame}[fragile]{Runtime}
 
 Each channel is implemented with a pair of \lstinline|MVar|s:
 \begin{lstlisting}
@@ -640,7 +642,7 @@ new = do
 \end{lstlisting}
 \end{frame}
 
-\begin{frame}[fragile]{Code generation \hfill {\color{mLightBrown} write on a channel end}}
+\begin{frame}[fragile]{Runtime \hfill {\color{mLightBrown} write on a channel end}}
 
 \begin{tcolorbox}
 \begin{itemize}
@@ -663,7 +665,7 @@ new = do
 
 \end{frame}
 
-%\begin{frame}[fragile]{Code generation \hfill {\color{mLightBrown} read from a channel end}}
+%\begin{frame}[fragile]{Runtime \hfill {\color{mLightBrown} read from a channel end}}
 
 % \begin{tcolorbox}
 % \begin{itemize}
@@ -688,7 +690,7 @@ new = do
 
 %\end{frame}
 
-\begin{frame}[fragile]{Code generation}
+\begin{frame}[fragile]{Runtime}
 We use
 \lstinline|MVar|s to implement \emph{asynchronous} communication with
 buffers of size one. \pause
