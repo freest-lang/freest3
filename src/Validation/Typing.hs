@@ -38,17 +38,14 @@ typeCheck = do
   -- Type/datatype declarations: check TypeEnv for type or datatype
   -- declarations, VarEnv for each datatype constructor
   tenv <- getTenv
-  -- tMapWithKeyM (\b (k,_) -> addToKenv b k) tenv -- add all kinds
-  -- tenv <- getTenv
   mapM_ (K.synthetiseTS . snd) tenv -- check the formation of all type schemes
-  -- tenv <- getTenv
-  -- tMapWithKeyM (\b _ -> removeFromKenv b) tenv
   -- Function signatures (VarEnv)
   venv <- getVenv
   mapM_ K.synthetiseTS venv
   tMapWithKeyM hasBinding venv
   -- Function bodies (ExpEnv)
   eenv <- getEenv
+--  trace ("checkFunBodies " ++ show eenv) (return ())
   tMapWithKeyM checkFunBody eenv
   -- Main function
   checkMainFunction
@@ -64,18 +61,13 @@ hasBinding f _ = do
     addError (position f) ["The type signature for", styleRed $ show f,
                            "lacks an accompanying binding"]
 
--- Check whether there is a signature for a given function. But first,
--- and for type checking purposes only, replace the dummy Unit types
--- in the bodies of functions.
 checkFunBody :: PBind -> Expression -> FreestState ()
 checkFunBody f e =
   getFromVenv f >>= \case
-    Just ts -> do
-      t <- T.fillFunType Map.empty f e ts -- TODO: what to do with t?
---      T.checkAgainstST e' ts
-      return ()
+    Just s ->
+      T.checkAgainstST e s
     Nothing ->
-      addError (position f) ["Did not find the signature of function", styleRed $ show f]
+      return () -- We've issued this error at parsing time
 
 checkMainFunction :: FreestState ()
 checkMainFunction = do
@@ -83,7 +75,7 @@ checkMainFunction = do
   let mBind = PBind defaultPos "main"
   if mBind `Map.notMember` venv
   then
-    addError defaultPos [styleRed "main", "is not defined"]
+    addError defaultPos ["Function", styleRed "main", "is not defined"]
   else do
     let t = venv Map.! mBind
     mType <- normaliseTS t

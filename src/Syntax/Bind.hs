@@ -16,6 +16,7 @@ module Syntax.Bind
 , TVar
 , PBind(..)
 , TBind(..)
+, Default (..)
 ) where 
 
 import Parse.Lexer (Position, Pos, position)
@@ -64,3 +65,10 @@ instance Eq TBind where
   
 instance Ord TBind where
   (TBind _ x) <= (TBind _ y) = x <= y
+
+
+-- Default kinds, types, and type schemes. Used when the compiler
+-- needs to fill an error
+class Default t where
+  omission :: Pos -> t
+  

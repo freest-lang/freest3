@@ -19,7 +19,8 @@ module Validation.Kinding
 , synthetiseTS
 , isSessionType
 , un
-, lin
+--, lin
+, toKindEnv
 ) where
 
 import           Syntax.Programs
@@ -35,12 +36,6 @@ import           Utils.Errors
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
 import           Debug.Trace
-
-{-
-class Kinding a where
-  synthetise :: a -> FreestState Kind
-  checkAgainst :: Kind -> a -> FreestState ()
--}
 
 -- Returns the kind of a given type
 synthetise :: KindEnv -> Type -> FreestState Kind
@@ -71,25 +66,19 @@ synthetise kenv (Datatype p m) = do
   ks <- tMapM (synthetise kenv) m
   let Kind _ _ n = foldr1 lub ks
   return $ Kind p Functional n
-synthetise kenv (Rec p x@(TBindK _ _ k) t) = do
+synthetise kenv (Rec p b@(TBindK _ _ k) t) = do
   checkContractive kenv t
   y <- freshVar
-  let b = TBind p y
---    addToKenv b k
-  k <- synthetise (Map.insert b k kenv) $ subs (TypeVar p y) x t -- On the fly α-conversion
---    removeFromKenv b
-  return k
+  k' <- synthetise (Map.insert (TBind p y) k kenv) $ subs (TypeVar p y) b t -- On the fly α-conversion
+  return k'
 -- Session or functional
 synthetise kenv (TypeVar p x) =
-  let bind = TBind p x in
-  case kenv Map.!? bind of -- getFromKenv bind >>= \case
+  case kenv Map.!? (TBind p x) of
     Just k ->
       return k
     Nothing -> do
       addError p ["Type variable not in scope:", styleRed x]
-        -- let k = top p
-        -- addToKenv bind k
-      return (top p)
+      return (omission p)
 -- Type operators
 synthetise kenv (Name p c) =
   let bind = TBind p c in
@@ -98,7 +87,7 @@ synthetise kenv (Name p c) =
       return k
     Nothing -> do
       addError p ["Type name not in scope:", styleRed c]
-      let k = top p
+      let k = omission p
       addToTenv bind k $ omission p
       return k
 synthetise kenv (Dualof p t) = do
@@ -119,27 +108,24 @@ checkAgainst :: KindEnv -> Kind -> Type -> FreestState ()
 checkAgainst kenv k (Rec p x t) = do
   checkContractive kenv t
   y <- freshVar
---  let b = TBind p y
---  addToKenv b (Kind p Session Un)
   checkAgainst (Map.insert (TBind p y) (Kind p Session Un) kenv) k $ subs (TypeVar p y) x t -- On the fly α-conversion
---  removeFromKenv b
-checkAgainst kenv k1 t = do
-  k2 <- synthetise kenv t
-  when (not (k2 <: k1)) $
-    addError (position k1) ["Expecting kind", styleRed $ show k1,
-                            "to be a sub-kind of", styleRed $ show k2]
+checkAgainst kenv expected t = do
+  actual <- synthetise kenv t
+  when (not (actual <: expected)) $
+    addError (position t) ["Couldn't match expected kind", styleRed $ show expected, "\n",
+                            "\t with actual kind", styleRed $ show actual, "\n",
+                            "\t for type", styleRed $ show t]
 
 synthetiseTS :: TypeScheme -> FreestState Kind
-synthetiseTS (TypeScheme _ bs t) = do
---  mapM_ (\(TBindK p x k) -> addToKenv (TBind p x) k) bs
-  synthetise (toKindEnv bs) t
+synthetiseTS (TypeScheme _ bs t) = synthetise (toKindEnv bs) t
 
 toKindEnv :: [TBindK] -> KindEnv
-toKindEnv bs = Map.fromList $ map (\(TBindK p x k) -> ((TBind p x), k)) bs
+toKindEnv = foldr (\(TBindK p x k) env -> Map.insert (TBind p x) k env) Map.empty
+--Map.fromList $ map (\(TBindK p x k) -> ((TBind p x), k)) bsol
 
 -- Determine whether a given type is linear
-lin :: TypeScheme -> FreestState Bool
-lin = mult Lin
+-- lin :: TypeScheme -> FreestState Bool
+-- lin = mult Lin
 
 -- Determine whether a given type is unrestricted
 un :: TypeScheme -> FreestState Bool

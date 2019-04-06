@@ -17,7 +17,7 @@ Portability :  portable | non-portable (<reason>)
 module Validation.TypingExps
 ( synthetise
 , checkAgainst
---s, checkAgainstST
+, checkAgainstST
 , checkUn
 , fillFunType
 , funSigsOnly
@@ -62,12 +62,12 @@ synthetise kenv (UnLet _ b e1 e2) = do
   quotient kenv b
   return t2
 -- Abstraction introduction
-synthetise kenv (Lambda p m x t1 e) = do
+synthetise kenv (Lambda p m b t1 e) = do
   venv1 <- getVenv
   K.synthetise kenv t1
-  addToVenv x (toTypeScheme t1)
+  addToVenv b (toTypeScheme t1)
   t2 <- synthetise kenv e
-  quotient kenv x
+  quotient kenv b
   venv2 <- getVenv
   when (m == Un) (checkEqualEnvs p venv1 venv2)
   return $ Fun p m t1 t2
@@ -117,7 +117,7 @@ synthetise kenv (BinLet _ x y e1 e2) = do
 -- Fork
 synthetise kenv (Fork p e) = do
   t <- synthetise kenv e
-  checkUn (toTypeScheme t)
+  checkUn e (toTypeScheme t)
   return $ Basic p UnitType
 -- Session types
 synthetise kenv (New p t) = do
@@ -173,10 +173,7 @@ synthetiseField venv1 kenv tm b e state = do
   (ts, venvs) <- state
   setVenv venv1
   t1 <- synthetiseCons b tm
---  trace ("A synthetiseField: " ++ show e) (return ())
   t2 <- fillFunType kenv b e (toTypeScheme t1)
---  trace ("B synthetiseField: " ++ show e' ++ ": " ++ show (returnType t)) (return ())
---  t2 <- synthetise e'
   venv2 <- getVenv
   return (t2:ts, venv2:venvs)
 
@@ -192,18 +189,18 @@ synthetiseCons b@(PBind p c) tm = do
 -- | The quotient operation
 -- removes a variable from the environment and gives an error if it is linear
 quotient :: KindEnv -> PBind -> FreestState ()
-quotient kenv b =
+quotient kenv b@(PBind p x) =
   getFromVenv b >>= \case
-    Just t  -> checkUn t >> removeFromVenv b
+    Just t  -> checkUn (ProgVar p x) t >> removeFromVenv b
     Nothing -> return ()
 
--- | Check whether a type is unrestricted
-checkUn :: TypeScheme -> FreestState ()
-checkUn ts = do
+-- | Check whether a type scheme is unrestricted
+checkUn :: Expression -> TypeScheme -> FreestState ()
+checkUn e ts = do
   k <- K.synthetiseTS ts
   when (isLin k) $
-    addError (position ts) ["Linear variable at the end of its scope",
-                            styleRed (show ts), ":", styleRed (show k)]
+    addError (position e) ["Linear program variable at the end of its scope", styleRed (show e), "\n",
+                       "\t of type", styleRed (show ts), "of kind", styleRed (show k)]
 
 -- CHECKING AGAINST A GIVEN TYPE
 
@@ -227,10 +224,10 @@ checkAgainst kenv e t = do
   checkEquivTypes (position e) kenv t u
 
 -- | Check an expression against a given type scheme
--- checkAgainstST :: Expression -> TypeScheme -> FreestState ()
--- checkAgainstST e (TypeScheme _ bs t) = do
---   mapM_ (\(TBindK p x k) -> addToKenv (TBind p x) k) bs
---   checkAgainst e t
+checkAgainstST :: Expression -> TypeScheme -> FreestState ()
+checkAgainstST e s@(TypeScheme _ bs t) = do
+  trace ("checkAgainstST " ++ show e ++ "\n" ++ show s ++ "\n" ++ show (K.toKindEnv bs)) (return ())
+  checkAgainst (K.toKindEnv bs) e t
   
 -- EQUALITY AND EQUIVALENCE CHECKING
 
@@ -280,7 +277,7 @@ isDatatypeContructor tenv c =
 -- these types with those declared in the type scheme for the
 -- function.
 fillFunType :: KindEnv -> PBind -> Expression -> TypeScheme -> FreestState Type
-fillFunType kenv b@(PBind p f) e (TypeScheme _ _ t) = fill e t -- TODO: move type scheme bindings to kenv
+fillFunType kenv b@(PBind p f) e (TypeScheme _ _ t) = fill e t
   where
   fill :: Expression -> Type -> FreestState Type
   fill (Lambda _ _ b _ e) (Fun _ _ t1 t2) = do

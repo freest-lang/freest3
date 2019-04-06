@@ -215,19 +215,19 @@ instance Show Token where
   show (TokenSend p) = show p ++ ": send"  
   show (TokenReceive p) = show p ++ ": receive"  
   show (TokenSelect p) = show p ++ ": select"  
-  show (TokenMatch p) = show p ++ ": match"  
-  show (TokenWith p) = show p ++ ": with"  
   show (TokenFork p) = show p ++ ": fork"  
+  show (TokenMatch p) = show p ++ ": match"  
   show (TokenCase p) = show p ++ ": case"  
-  show (TokenOf p) = show p ++ ": of"  
   show (TokenForall p) = show p ++ ": forall"  
-  show (TokenDualof p) = show p ++ ": dualof"  
-  show (TokenFArrow p) = show p ++ ": =>"
   show (TokenMinus p) = show p ++ ": -"  
   show (TokenTimes p) = show p ++ ": *"  
+  show (TokenLT p) = show p ++ ": <"
+  show (TokenGT p) = show p ++ ": >"
   show (TokenWild p) = show p ++ ": _"  
-  show (TokenOp p s) = show p ++ ": " ++ show s  
-
+  show (TokenOp p s) = show p ++ ": " ++ show s
+  show (TokenOf p) = show p ++ ": of"  
+  show (TokenDualof p) = show p ++ ": dualof"  
+  show (TokenFArrow p) = show p ++ ": =>"
 
 -- Trim newlines
 scanTokens = alexScanTokens >>= (return . trim)
@@ -281,8 +281,8 @@ instance Position Token where
   position (TokenTU p) = p 
   position (TokenTL p) = p
   position (TokenInteger p _) = p
-  position (TokenBool p _) = p
   position (TokenChar p _) = p
+  position (TokenBool p _) = p
   position (TokenLet p) = p 
   position (TokenIn p) = p
   position (TokenEq p) = p
@@ -297,16 +297,20 @@ instance Position Token where
   position (TokenMatch p) = p
   position (TokenCase p) = p
   position (TokenForall p) = p
-  position (TokenDualof p) = p
   position (TokenMinus p) = p
   position (TokenTimes p) = p
   position (TokenLT p) = p
   position (TokenGT p) = p
+  position (TokenWild p) = p
   position (TokenOp p _) = p
   position (TokenIf p) = p
   position (TokenThen p) = p
   position (TokenElse p) = p
-  position t = error $ show t
+  position (TokenWith p) = p
+  position (TokenOf p) = p
+  position (TokenDualof p) = p
+  position (TokenFArrow p) = p
+--  position t = error $ show t
 
 defaultPos :: Pos
 defaultPos = AlexPn 0 0 0

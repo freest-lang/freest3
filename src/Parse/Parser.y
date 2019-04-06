@@ -127,13 +127,21 @@ NL :: { () }
   | nl    {}
 
 Decl :: { () }
-  : VarBind ':' TypeScheme                      -- Function signature
-    {% checkDupFunSig $1 >> addToVenv $1 $3 }
-  | VarBind VarBindSeq '=' Expr                 -- Function declaration
-    {% checkDupFunDecl $1 >> addToEenv $1 (funDeclToExp $2 $4) }
-  | type TypeBind KindVarEmptyList '=' Type     -- Type abbreviation
-    {% checkDupTypeDecl (fst $2) >> uncurry addToTenv $2 (TypeScheme (position $4) $3 $5) }
-  | data TypeBind KindVarEmptyList '=' DataCons -- Datatype declaration
+  -- Function signature
+  : VarBind ':' TypeScheme
+    {% checkDupFunSig $1 >>
+       addToVenv $1 $3 }
+  | VarBind VarBindSeq '=' Expr
+  -- Function declaration
+    {% checkDupFunDecl $1 >>
+       buildFunBody $1 $2 $4 >>= \e ->
+       addToEenv $1 e }
+  | type TypeBind KindVarEmptyList '=' Type
+  -- Type abbreviation
+    {% checkDupTypeDecl (fst $2) >>
+       uncurry addToTenv $2 (TypeScheme (position $4) $3 $5) }
+  | data TypeBind KindVarEmptyList '=' DataCons
+  -- Datatype declaration
     {% do
        let b = fst $2
        checkDupTypeDecl b
@@ -289,7 +297,7 @@ RecVar :: { TBindK }
 
 KindVar :: { TBindK }
   : LOWER_ID ':' Kind { TBindK (position $1) (getText $1) $3 }
-  | LOWER_ID	      { let p = position $1 in TBindK p (getText $1) (top p) }
+  | LOWER_ID	      { let p = position $1 in TBindK p (getText $1) (omission p) }
 
 ConsBind :: { PBind }
   : UPPER_ID { PBind (position $1) (getText $1) }
