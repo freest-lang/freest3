@@ -47,7 +47,7 @@
 %\titlegraphic{\hfill\includegraphics[height=1.5cm]{logo.png}}
 
 \begin{document}
-\lstset{language=freest}
+\lstset{language=freest, numbers=none}
 
 \maketitle
 
@@ -135,10 +135,10 @@ that is \textbf{not} tail-recursive.
 	\textbf{Writer process}, writes a tree on a given channel:
 	
 \begin{lstlisting}
-transform: forall alpha => Tree -> TreeC;alpha -> (Tree, alpha)
+type TreeC = +{Leaf: Skip, Node: !Int;TreeC;TreeC;?Int}
 \end{lstlisting}
-
 \begin{lstlisting}[numbers=left, xleftmargin=0.7cm, escapeinside=\`\`]
+transform: forall alpha => Tree -> TreeC;alpha -> (Tree, alpha)
 transform tree c =
   case tree of
     Leaf ->
@@ -151,8 +151,124 @@ transform tree c =
       let y,c = receive c in
       (Node y l r, c)
 \end{lstlisting}
-
 \end{frame}
+
+% select highlight
+\begin{frame}[fragile]{Example:  serialize a tree object on a channel \hfill{\color{mLightBrown}writer}}
+	\textbf{Writer process}, writes a tree on a given channel:
+	
+\begin{lstlisting}[escapeinside=\`\`]
+type TreeC = +{Leaf: Skip,`\colorbox{yellow}{Node}`: !Int;TreeC;TreeC;?Int}
+\end{lstlisting}
+\begin{lstlisting}[numbers=left, xleftmargin=0.7cm, escapeinside=\`\`]
+transform: forall alpha => Tree -> TreeC;alpha -> (Tree, alpha)
+transform tree c =
+  case tree of
+    Leaf ->
+      (Leaf, select Leaf c)
+    Node x l r ->
+      let c   = `\colorbox{yellow}{select}` Node c in
+      let c   = send x c in 
+      let l,c = transform[TreeC;?Int;alpha] l c in
+      let r,c = transform[?Int;alpha] r c in
+      let y,c = receive c in
+      (Node y l r, c)
+\end{lstlisting}
+\end{frame}
+
+% send highlight
+\begin{frame}[fragile]{Example:  serialize a tree object on a channel \hfill{\color{mLightBrown}writer}}
+	\textbf{Writer process}, writes a tree on a given channel:
+	
+\begin{lstlisting}[escapeinside=\`\`]
+type TreeC = +{Leaf: Skip, Node: `\colorbox{yellow}{!Int}`;TreeC;TreeC;?Int}
+\end{lstlisting}
+\begin{lstlisting}[numbers=left, xleftmargin=0.7cm, escapeinside=\`\`]
+transform: forall alpha => Tree -> TreeC;alpha -> (Tree, alpha)
+transform tree c =
+  case tree of
+    Leaf ->
+      (Leaf, select Leaf c)
+    Node x l r ->
+      let c   =  select Node c in
+      let c   = `\colorbox{yellow}{send}` x c in 
+      let l,c = transform[TreeC;?Int;alpha] l c in
+      let r,c = transform[?Int;alpha] r c in
+      let y,c = receive c in
+      (Node y l r, c)
+\end{lstlisting}
+\end{frame}
+
+% transform1 highlight
+\begin{frame}[fragile]{Example:  serialize a tree object on a channel \hfill{\color{mLightBrown}writer}}
+	\textbf{Writer process}, writes a tree on a given channel:
+	
+\begin{lstlisting}[escapeinside=\`\`]
+type TreeC = +{Leaf: Skip, Node: !Int;`\colorbox{yellow}{TreeC}`;TreeC;?Int}
+\end{lstlisting}
+\begin{lstlisting}[numbers=left, xleftmargin=0.7cm, escapeinside=\`\`]
+transform: forall alpha => Tree -> TreeC;alpha -> (Tree, alpha)
+transform tree c =
+  case tree of
+    Leaf ->
+      (Leaf, select Leaf c)
+    Node x l r ->
+      let c   = select Node c in
+      let c   = send x c in 
+      let l,c = `\colorbox{yellow}{transform}`[TreeC;?Int;alpha] l c in
+      let r,c = transform[?Int;alpha] r c in
+      let y,c = receive c in
+      (Node y l r, c)
+\end{lstlisting}
+\end{frame}
+
+% transform2 highlight
+\begin{frame}[fragile]{Example:  serialize a tree object on a channel \hfill{\color{mLightBrown}writer}}
+	\textbf{Writer process}, writes a tree on a given channel:
+	
+\begin{lstlisting}[escapeinside=\`\`]
+type TreeC = +{Leaf: Skip, Node: !Int;TreeC;`\colorbox{yellow}{TreeC}`;?Int}
+\end{lstlisting}
+\begin{lstlisting}[numbers=left, xleftmargin=0.7cm, escapeinside=\`\`]
+transform: forall alpha => Tree -> TreeC;alpha -> (Tree, alpha)
+transform tree c =
+  case tree of
+    Leaf ->
+      (Leaf, select Leaf c)
+    Node x l r ->
+      let c   = select Node c in
+      let c   = send x c in 
+      let l,c = transform [TreeC;?Int;alpha] l c in
+      let r,c = `\colorbox{yellow}{transform}`[?Int;alpha] r c in
+      let y,c = receive c in
+      (Node y l r, c)
+\end{lstlisting}
+\end{frame}
+
+% receive highlight
+\begin{frame}[fragile]{Example:  serialize a tree object on a channel \hfill{\color{mLightBrown}writer}}
+	\textbf{Writer process}, writes a tree on a given channel:
+	
+\begin{lstlisting}[escapeinside=\`\`]
+type TreeC = +{Leaf: Skip, Node: !Int;TreeC;TreeC;`\colorbox{yellow}{?Int}`}
+\end{lstlisting}
+\begin{lstlisting}[numbers=left, xleftmargin=0.7cm, escapeinside=\`\`]
+transform: forall alpha => Tree -> TreeC;alpha -> (Tree, alpha)
+transform tree c =
+  case tree of
+    Leaf ->
+      (Leaf, select Leaf c)
+    Node x l r ->
+      let c   = select Node c in
+      let c   = send x c in 
+      let l,c = transform [TreeC;?Int;alpha] l c in
+      let r,c = transform[?Int;alpha] r c in
+      let y,c = `\colorbox{yellow}{receive}` c in
+      (Node y l r, c)
+\end{lstlisting}
+\end{frame}
+
+
 
 \begin{frame}[fragile]{Example:  serialize a tree object on a channel\hfill{\color{mLightBrown}writer}}
 	\textbf{Writer process}, writes a tree on a given channel:
@@ -180,8 +296,8 @@ transform tree c =
 \begin{frame}[fragile]{Example:  serialize a tree object on a channel\hfill{\color{mLightBrown}writer}}
 	\textbf{Writer process}, writes a tree on a given channel:
 	
-\begin{lstlisting}
-transform: forall alpha => Tree -> TreeC;alpha -> (Tree, alpha)
+\begin{lstlisting}[escapeinside=\`\`]
+transform: forall `\colorbox{yellow}{$\alpha$}` => Tree -> TreeC;alpha -> (Tree, alpha)
 \end{lstlisting}
 
 \begin{lstlisting}[numbers=left, xleftmargin=0.7cm, escapeinside=\`\`]
@@ -192,8 +308,8 @@ transform tree c =
     Node x l r ->
       let c  = select Node c in
       let c   = send x c in 
-      let l,c = `\colorbox{yellow}{transform}`[TreeC;?Int;alpha] l c in
-      let r,c = `\colorbox{yellow}{transform}`[?Int;alpha] r c in
+      let l,c = transform [`\colorbox{yellow}{TreeC;?Int;$\alpha$}`] l c in
+      let r,c = transform [`\colorbox{yellow}{?Int;$\alpha$}`] r c in
       let y,c = receive c in
       (Node y l r, c)
 \end{lstlisting}
