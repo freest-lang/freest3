@@ -657,6 +657,9 @@ new = do
 \end{itemize}
 \end{tcolorbox}
 
+\lstinline|MVar|s  implement \emph{asynchronous} channels with
+buffers of size one. 
+
 % \pause
 % \begin{lstlisting}[language=Haskell, literate={<-}{{$\leftarrow$}}1]
 % send :: b -> ChannelEnd a b -> IO (ChannelEnd a b)
@@ -690,14 +693,11 @@ new = do
 
 %\end{frame}
 
-\begin{frame}[fragile]{Runtime}
-We use
-\lstinline|MVar|s to implement \emph{asynchronous} communication with
-buffers of size one. \pause
+\begin{frame}[fragile]{Example}
 
 In the following program
 \lstinline|w1|-\lstinline|r1| and \lstinline|w2|-\lstinline|r2| are
-two channels:
+two channels.
 %
 \begin{lstlisting}
 writer :: !Char -> !Bool -> Skip
@@ -706,29 +706,30 @@ writer w1 w2 =
   send False w2
 reader :: ?Char -> ?Bool -> Bool
 reader r1 r2 =
-  let x, r2 = receive r2 in
-  let _, r1 = receive r1 in
+  let x, _ = receive r2 in
+  let _, _ = receive r1 in
   x
 \end{lstlisting}
 %
-The program does not deadlock in our current implementation but does
-so in a synchronous semantics.	
+The program deadlocks with synchronous channels but not with MVars or
+asynchronous channels.	
 \end{frame}
 
 \begin{frame}[fragile]{The bright future of FreeST}
 Possible extensions to the language:
 \begin{itemize}
-	\item Extend the expressivity of \freest\ by allowing messages \lstinline|!S| rather than only \lstinline|!B|.
+	\item Allow messages of arbitrary types, rather than basic
+          types alone %\lstinline|!S| rather than only \lstinline|!B|.
 	\item Incorporate type inference on type applications.
 	\item Support for linear pairs, linear datatypes, and polymorphic datatypes.
-	\item Instead of a buffered semantics with a buffer of size 1, we plan to have buffered channels of arbitrary size.
-	\item We plan to experiment call-by-need rather than call-by-value operational semantics.
+%	\item Instead of a buffered semantics with a buffer of size 1, we plan to have buffered channels of arbitrary size.
+	\item Play with call-by-need (rather than call-by-value) operational semantics.
 \end{itemize}
 
-Already done:
-\begin{itemize}
-	\item Incorporation of the \lstinline|dualof| type operator.
-\end{itemize}
+% Already done:
+% \begin{itemize}
+% 	\item Incorporation of the \lstinline|dualof| type operator.
+% \end{itemize}
 	
 \end{frame}
 
