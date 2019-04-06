@@ -276,7 +276,6 @@ transform tree c =
 \begin{lstlisting}
 transform: forall alpha => Tree -> TreeC;alpha -> (Tree, alpha)
 \end{lstlisting}
-
 \begin{lstlisting}[numbers=left, xleftmargin=0.7cm, escapeinside=\`\`]
 transform tree c =
   case tree of
@@ -299,7 +298,6 @@ transform tree c =
 \begin{lstlisting}[escapeinside=\`\`]
 transform: forall `\colorbox{yellow}{$\alpha$}` => Tree -> TreeC;alpha -> (Tree, alpha)
 \end{lstlisting}
-
 \begin{lstlisting}[numbers=left, xleftmargin=0.7cm, escapeinside=\`\`]
 transform tree c =
   case tree of
@@ -322,7 +320,7 @@ transform tree c =
 \pause
 
 \begin{lstlisting}
-type TreeS = &{Leaf: Skip, Node: ?Int;TreeC;TreeC;!Int}
+type TreeS = &{Leaf: Skip, Node: ?Int;TreeS;TreeS;!Int}
 \end{lstlisting}
 Abbreviates the recursive type:
 \begin{lstlisting}
@@ -362,8 +360,6 @@ treeSum c =
 \end{lstlisting}
 \end{frame}
 
-
-
 \begin{frame}[fragile]{Example:  serialize a tree object on a channel\hfill{\color{mLightBrown}reader}}
 	\textbf{Reader process}, reads a tree on a given channel:
 	
@@ -391,11 +387,33 @@ treeSum c =
 
 Function \textbf{main} completes the program:
 
-\begin{lstlisting}[numbers=left,firstnumber=22, xleftmargin=0.7cm]
+\begin{lstlisting}[escapeinside=\`\`]
+treeSum: forall `\colorbox{yellow}{$\alpha$}` => TreeS;alpha -> (Int, alpha)
+transform: forall alpha => Tree -> TreeC;alpha -> (Tree, alpha)
+\end{lstlisting}
+\begin{lstlisting}[numbers=left,firstnumber=22, xleftmargin=0.7cm, escapeinside=\`\`]
 main: Tree
 main =
   let w,r = new TreeC in
-  let _   = fork (treeSum[Skip] r) in
+  let _   = fork (treeSum[`\colorbox{yellow}{Skip}`] r) in
+  let t,_ = transform[Skip] aTree w in
+  t
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Example:  serialize a tree object on a channel}
+
+Function \textbf{main} completes the program:
+
+\begin{lstlisting}[escapeinside=\`\`]
+treeSum: forall alpha => TreeS;alpha -> (Int, `\colorbox{yellow}{$\alpha$}`)
+transform: forall alpha => Tree -> TreeC;alpha -> (Tree, alpha)
+\end{lstlisting}
+\begin{lstlisting}[numbers=left,firstnumber=22, xleftmargin=0.7cm, escapeinside=\`\`]
+main: Tree
+main =
+  let w,r = new TreeC in
+  let `\colorbox{yellow}{$\_$}`  = fork (treeSum[Skip] r) in
   let t,_ = transform[Skip] aTree w in
   t
 \end{lstlisting}
@@ -452,7 +470,7 @@ $$ \textbf{Kind} = [\textbf{Prekind}][\textbf{Multiplicity}] $$
 
 \end{frame}
 
-\begin{frame}{Kinding validates types}
+\begin{frame}{Kinding validates Types}
 \freest{} features as functional types the following:
 \begin{itemize}
 \item \underline{Basic types}, \lstinline|B : TU|, that is, \lstinline|Int|,
@@ -460,10 +478,10 @@ $$ \textbf{Kind} = [\textbf{Prekind}][\textbf{Multiplicity}] $$
 \item \underline{Unrestricted and linear functions}, \lstinline|T1 -> T2 : TU| and
   \lstinline|T1 -o T2 : TL|
 \item \underline{Pairs} \lstinline|(T1, T2)| of kind
-  supremum of those for
+  depending on the kinds of
   \lstinline|T1| and \lstinline|T2|, and
 \item \underline{Datatypes}, \lstinline|[l1: T1, ..., ln: Tn]| of kind
-  \lstinline|TU| or \lstinline|TL|, the max of the kinds for the
+  \lstinline|TU| or \lstinline|TL| depending on the kinds of the
   various types \lstinline|Ti|.
 \end{itemize}
 \pause
@@ -486,9 +504,8 @@ The session types are the following:
 \begin{frame}[fragile]{One function, many forms}
 	Polymorphic variables are introduced solely with the \lstinline|forall| construct.
 	
-	Function \lstinline|transform| spells out the kind for the
-        polymorphic type variable \lstinline|alpha|, as:
-        \lstinline|forall alpha:SL => Tree -> TreeC;alpha -> (Tree,alpha)|
+	\lstinline|transform| spells out the kind for the polymorphic type variable \lstinline|alpha|, as:
+	\lstinline|forall alpha:SL => Tree -> TreeC;alpha -> (Tree,alpha)|
 
 \pause
 \begin{lstlisting}[numbers=left, xleftmargin=0.7cm, escapeinside=\`\`]
