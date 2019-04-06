@@ -388,6 +388,25 @@ treeSum c =
 Function \textbf{main} completes the program:
 
 \begin{lstlisting}[escapeinside=\`\`]
+treeSum: forall alpha => TreeS;alpha -> (Int, alpha)
+transform: forall alpha => Tree -> TreeC;alpha -> (Tree, alpha)
+\end{lstlisting}
+\begin{lstlisting}[numbers=left,firstnumber=22, xleftmargin=0.7cm, escapeinside=\`\`]
+main: Tree
+main =
+  let w,r = new TreeC in
+  let _   = fork (treeSum[Skip] r) in
+  let t,_ = transform[Skip] aTree w in
+  t
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]{Example:  serialize a tree object on a channel}
+
+Function \textbf{main} completes the program:
+
+\begin{lstlisting}[escapeinside=\`\`]
 treeSum: forall `\colorbox{yellow}{$\alpha$}` => TreeS;alpha -> (Int, alpha)
 transform: forall alpha => Tree -> TreeC;alpha -> (Tree, alpha)
 \end{lstlisting}
@@ -415,6 +434,42 @@ main =
   let w,r = new TreeC in
   let `\colorbox{yellow}{$\_$}`  = fork (treeSum[Skip] r) in
   let t,_ = transform[Skip] aTree w in
+  t
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Example:  serialize a tree object on a channel}
+
+Function \textbf{main} completes the program:
+
+\begin{lstlisting}[escapeinside=\`\`]
+treeSum: forall alpha => TreeS;alpha -> (Int, alpha)
+transform: forall `\colorbox{yellow}{$\alpha$}` => Tree -> TreeC;alpha -> (Tree, alpha)
+\end{lstlisting}
+\begin{lstlisting}[numbers=left,firstnumber=22, xleftmargin=0.7cm, escapeinside=\`\`]
+main: Tree
+main =
+  let w,r = new TreeC in
+  let _   = fork (treeSum[Skip] r) in
+  let t,_ = transform[`\colorbox{yellow}{Skip}`] aTree w in
+  t
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Example:  serialize a tree object on a channel}
+
+Function \textbf{main} completes the program:
+
+\begin{lstlisting}[escapeinside=\`\`]
+treeSum: forall alpha => TreeS;alpha -> (Int, alpha)
+transform: forall alpha => Tree -> TreeC;alpha -> (Tree, `\colorbox{yellow}{$\alpha$}`)
+\end{lstlisting}
+\begin{lstlisting}[numbers=left,firstnumber=22, xleftmargin=0.7cm, escapeinside=\`\`]
+main: Tree
+main =
+  let w,r = new TreeC in
+  let _   = fork (treeSum[Skip] r) in
+  let t,`\colorbox{yellow}{$\_$} = transform[Skip] aTree w in
   t
 \end{lstlisting}
 \end{frame}
@@ -510,7 +565,6 @@ The session types are the following:
         \begin{center}
           \lstinline|forall alpha:SL => Tree -> TreeC;alpha -> (Tree,alpha)|
         \end{center}
-
 \pause
 \begin{lstlisting}[numbers=left, xleftmargin=0.7cm, escapeinside=\`\`, basicstyle=\sffamily\scriptsize]
 transform tree c =
@@ -525,7 +579,6 @@ transform tree c =
       let y,c = receive c in
       (Node y l r, c)
 \end{lstlisting}
-
 \pause
 In line 8, \lstinline|transform| calls the function at type:
 \begin{lstlisting}
