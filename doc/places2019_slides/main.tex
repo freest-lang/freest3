@@ -469,7 +469,7 @@ main: Tree
 main =
   let w,r = new TreeC in
   let _   = fork (treeSum[Skip] r) in
-  let t,`\colorbox{yellow}{$\_$} = transform[Skip] aTree w in
+  let t,`\colorbox{yellow}{$\_$}` = transform[Skip] aTree w in
   t
 \end{lstlisting}
 \end{frame}
