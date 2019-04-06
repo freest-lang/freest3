@@ -521,13 +521,13 @@ transform tree c =
       let c   = select Node c in
       let c   = send x c in 
       let l,c = transform[`\colorbox{yellow!60}{TreeC;?Int;$\alpha$}`] l c in
-      let r,c = transform[`\colorbox{yellow!60}{?Int;$\alpha$}`] r c in
+      let r,c = transform[?Int;alpha] r c in
       let y,c = receive c in
       (Node y l r, c)
 \end{lstlisting}
 
 \pause
-In line 8, \lstinline|transform| calls the function at (monomorphic) type:
+In line 8, \lstinline|transform| calls the function at type:
 \begin{lstlisting}
 Tree -> TreeC;TreeC;?Int;alpha -> (Tree, TreeC;?Int;alpha)
 \end{lstlisting}
@@ -761,6 +761,18 @@ Possible extensions to the language:
 
 \begin{frame}{Algorithmic kinding system}
 	\hspace*{-8mm}\includegraphics[width=12cm]{img/kinding}	
+\end{frame}
+
+\begin{frame}{Algorithmic typing system (synthesis 1/2)}
+	\hspace*{-8mm}\includegraphics[width=12cm]{img/type-synth1}	
+\end{frame}
+
+\begin{frame}{Algorithmic typing system (synthesis 2/2)}
+	\hspace*{-8mm}\includegraphics[width=12cm]{img/type-synth2}	
+\end{frame}
+
+\begin{frame}{Algorithmic typing system (check against)}
+	\hspace*{-8mm}\includegraphics[width=12cm]{img/type-check-against}	
 \end{frame}
 
 
