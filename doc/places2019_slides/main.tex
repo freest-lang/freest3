@@ -370,8 +370,9 @@ The session types are the following:
 \begin{frame}[fragile]{One function, many forms}
 	Polymorphic variables are introduced solely with the \lstinline|forall| construct.
 	
-	\lstinline|transform| spells out the kind for the polymorphic type variable \lstinline|alpha|, as:
-	\lstinline|forall alpha:SL => Tree -> TreeC;alpha -> (Tree,alpha)|
+	Function \lstinline|transform| spells out the kind for the
+        polymorphic type variable \lstinline|alpha|, as:
+        \lstinline|forall alpha:SL => Tree -> TreeC;alpha -> (Tree,alpha)|
 
 \pause
 \begin{lstlisting}[numbers=left, xleftmargin=0.7cm, escapeinside=\`\`]
