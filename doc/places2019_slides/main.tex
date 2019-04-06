@@ -565,7 +565,6 @@ The session types are the following:
         \begin{center}
           \lstinline|forall alpha:SL => Tree -> TreeC;alpha -> (Tree,alpha)|
         \end{center}
-
 \pause
 \begin{lstlisting}[numbers=left, xleftmargin=0.7cm, escapeinside=\`\`, basicstyle=\sffamily\scriptsize]
 transform tree c =
@@ -580,7 +579,6 @@ transform tree c =
       let y,c = receive c in
       (Node y l r, c)
 \end{lstlisting}
-
 \pause
 In line 8, \lstinline|transform| calls the function at (monomorphic) type:
 \begin{lstlisting}
