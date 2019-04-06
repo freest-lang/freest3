@@ -141,8 +141,8 @@ buildFunBody f bs e =
   where
     buildExp :: [PBind] -> Type -> Expression
     buildExp []     _               = e
-    buildExp (b:bs) (Fun _ _ t1 t2) = Lambda (position b) Lin b t1 (buildExp bs t2)
-    buildExp (b:bs) t               = Lambda (position b) Lin b (omission (position b)) (buildExp bs t)
+    buildExp (b:bs) (Fun _ m t1 t2) = Lambda (position b) m b t1 (buildExp bs t2)
+    buildExp (b:bs) t               = Lambda (position b) Un b (omission (position b)) (buildExp bs t)
 
 -- At parsing time we may not konw the signature for the function, so
 -- we type each parameter as ()

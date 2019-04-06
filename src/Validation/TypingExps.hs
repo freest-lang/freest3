@@ -117,7 +117,7 @@ synthetise kenv (BinLet _ x y e1 e2) = do
 -- Fork
 synthetise kenv (Fork p e) = do
   t <- synthetise kenv e
-  checkUn (toTypeScheme t)
+  checkUn e (toTypeScheme t)
   return $ Basic p UnitType
 -- Session types
 synthetise kenv (New p t) = do
@@ -189,18 +189,18 @@ synthetiseCons b@(PBind p c) tm = do
 -- | The quotient operation
 -- removes a variable from the environment and gives an error if it is linear
 quotient :: KindEnv -> PBind -> FreestState ()
-quotient kenv b =
+quotient kenv b@(PBind p x) =
   getFromVenv b >>= \case
-    Just t  -> checkUn t >> removeFromVenv b
+    Just t  -> checkUn (ProgVar p x) t >> removeFromVenv b
     Nothing -> return ()
 
--- | Check whether a type is unrestricted
-checkUn :: TypeScheme -> FreestState ()
-checkUn ts = do
+-- | Check whether a type scheme is unrestricted
+checkUn :: Expression -> TypeScheme -> FreestState ()
+checkUn e ts = do
   k <- K.synthetiseTS ts
   when (isLin k) $
-    addError (position ts) ["Linear variable at the end of its scope",
-                            styleRed (show ts), ":", styleRed (show k)]
+    addError (position e) ["Linear program variable at the end of its scope", styleRed (show e), "\n",
+                       "\t of type", styleRed (show ts), "of kind", styleRed (show k)]
 
 -- CHECKING AGAINST A GIVEN TYPE
 
