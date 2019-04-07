@@ -33,7 +33,9 @@ class Equivalence t where
 -- Types
 
 instance Equivalence Type where
-  equivalent tenv kenv t u = StrongEquivalence.equivalent tenv t u || equiv kenv t u
+   equivalent tenv kenv t u = StrongEquivalence.equivalent tenv t u || equiv kenv t u
+  -- equivalent tenv kenv t u = t == u || equiv kenv t u
+  -- equivalent tenv kenv t u = equiv kenv t u
     where
     equiv :: KindEnv -> Type -> Type -> Bool
       -- Functional types
