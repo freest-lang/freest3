@@ -55,7 +55,7 @@ data Expression =
   deriving (Eq, Ord, Show)
 
 type FieldMap = Map.Map PBind Expression
--- type FieldMap  = Map.Map PBind ([PBind], Expression)
+-- type ExpMap  = Map.Map PBind ([PBind], Expression)
 
 instance Position Expression where
   position (Unit p)              = p

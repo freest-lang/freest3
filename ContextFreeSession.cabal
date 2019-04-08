@@ -42,7 +42,7 @@ executable ContextFreeSession
                        Validation.TypeChecking, Validation.Typing, Validation.Kinding,
                        Validation.Contractive, Validation.Extract,
                        Equivalence.Equivalence, Equivalence.Bisimulation, Equivalence.Grammar,
-                       Equivalence.TypeToGrammar, Equivalence.Norm, Equivalence.Normalise,
+                       Equivalence.TypeToGrammar, Equivalence.Norm, Equivalence.Normalisation,
 		       Equivalence.StrongEquivalence,
                        CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen
                        
@@ -70,7 +70,7 @@ test-suite unit-tests
                        Queue.Queue,
                        Validation.Kinding, Validation.Contractive, 
                        Equivalence.Equivalence, Equivalence.Bisimulation, Equivalence.Grammar, Equivalence.TypeToGrammar,
-                       Equivalence.Norm, Equivalence.Normalise, Equivalence.StrongEquivalence,
+                       Equivalence.Norm, Equivalence.Normalisation, Equivalence.StrongEquivalence,
                        Utils.Errors, Utils.FreestState,
                        SpecHelper,
                        Syntax.TestShowValidSpec, Syntax.TestEqInvalidSpec, Syntax.TestEqValidSpec,
@@ -109,7 +109,7 @@ test-suite program-tests
                        Validation.TypeChecking, Validation.Typing, Validation.Kinding,
                        Validation.Contractive, Validation.Extract,
                        Equivalence.Equivalence, Equivalence.Bisimulation, Equivalence.Grammar,
-                       Equivalence.TypeToGrammar, Equivalence.Norm, Equivalence.Normalise,
+                       Equivalence.TypeToGrammar, Equivalence.Norm, Equivalence.Normalisation,
 		       Equivalence.StrongEquivalence,
                        CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen
 
@@ -141,6 +141,6 @@ test-suite testEquiv
                        Queue.Queue, Utils.Errors, Utils.FreestState,
                        Validation.Kinding,  Validation.Contractive,
                        Equivalence.Grammar, Equivalence.TypeToGrammar,
-                       Equivalence.Norm, Equivalence.Normalise, Equivalence.Equivalence, Equivalence.Bisimulation,
+                       Equivalence.Norm, Equivalence.Normalisation, Equivalence.Equivalence, Equivalence.Bisimulation,
 		       Equivalence.StrongEquivalence,
                        Equivalence.TestEquivalenceValidSpec, Equivalence.TestEquivalenceInvalidSpec

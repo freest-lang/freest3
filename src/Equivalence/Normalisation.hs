@@ -8,11 +8,6 @@ Maintainer  :  vmvasconcelos@ciencias.ulisboa.pot
 Stability   :  unstable | experimental | provisional | stable | frozen
 Portability :  portable | non-portable (<reason>)
 
-A notion of equivalence stronger than the bisimulation on context-free
-session types. This relation is strictly included in equivalence. Use
-it to check whether two types are equivalent, prior to trying the
-equivalence algorithm, which takes significantly longer.
-
 -}
 
 module Equivalence.Normalisation

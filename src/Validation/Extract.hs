@@ -12,6 +12,7 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 {-# LANGUAGE LambdaCase, NoMonadFailDesugaring #-}
+
 module Validation.Extract
 ( extractFun
 , extractPair
@@ -127,31 +128,3 @@ extractCons pos tm c =
     Nothing -> do
       addError pos ["Constructor", styleRed c, "not in scope"]             
       return $ Basic pos UnitType
-
-{-
--- The output type is equivalent to the input type, but different from
--- Rec, Unfold, and Name. If it is a Var, then it must represent a
--- polymorphic variable (because recursion variables are bound)
-normalise :: Type -> FreestState Type
-  -- Session types
-normalise (Semi _ t u) = do
-  t' <- normalise t
-  u' <- normalise u
-  return $ append t' u'
-normalise t@(Rec _ _ _) = normalise (unfold t)
-  -- Functional or session
-  -- Type operators
-normalise (Name p x) = do
-  tenv <- getTenv
-  let (_, (TypeScheme _ [] t)) = tenv Map.! (TBind p x) -- TODO: polymorphic type names
-  normalise t
-normalise (Dualof _ t) = normalise (dual t)
-  -- Functional types, Skip, Message, Choice, and Var
-normalise t = return t
-
-
-append :: Type -> Type -> Type -- TODO: also exits in Types.hs
-append (Skip _) t = t
-append (Semi p t u) v = Semi p t (append u v)
-append t v = Semi (position t) t v
--}
