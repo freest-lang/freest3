@@ -21,7 +21,7 @@ matchKindingValidSpec [ts, k] =
     (kindOfScheme (read ts :: TypeScheme)) `shouldBe` (read k :: Kind)
 
 kindOfScheme :: TypeScheme -> Kind
-kindOfScheme t = evalState (synthetiseTS t) (initialState "")
+kindOfScheme t = evalState (synthetiseTS Map.empty t) (initialState "")
 
 main :: IO ()
 main = hspec spec

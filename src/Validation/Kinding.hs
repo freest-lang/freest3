@@ -14,8 +14,8 @@ Portability :  portable | non-portable (<reason>)
 {-# LANGUAGE LambdaCase, NoMonadFailDesugaring #-}
 
 module Validation.Kinding
-( checkAgainst
-, synthetise
+( synthetise
+, checkAgainst
 , synthetiseTS
 , isSessionType
 , un
@@ -55,10 +55,8 @@ synthetise kenv (Semi p t u) = do
 synthetise _ (Basic p _) =
   return $ Kind p Functional Un
 synthetise kenv v@(Fun p m t u) = do
---  trace ("5_K.synthetise " ++ show  v ++ "\nKind Env: " ++ show kenv) (return ())
   synthetise kenv t
   synthetise kenv u
---  trace ("6_K.synthetise " ++ show  v ++ "\nKind Env: " ++ show kenv) (return ())
   return $ Kind p Functional m
 synthetise kenv (PairType _ t u) = do
   kt <- synthetise kenv t
@@ -74,10 +72,9 @@ synthetise kenv (Rec p b@(TBindK _ _ k) t) = do
   k' <- synthetise (Map.insert (TBind p y) k kenv) $ subs (TypeVar p y) b t -- On the fly α-conversion
   return k'
 -- Session or functional
-synthetise kenv (TypeVar p x) = do
---  trace ("4_K.synthetise " ++ show x ++ "\nKind Env: " ++ show kenv ) (return ())
+synthetise kenv (TypeVar p x) =
   case kenv Map.!? (TBind p x) of
-    Just k ->
+    Just k -> do
       return k
     Nothing -> do
       addError p ["Type variable not in scope:", styleRed x]
@@ -119,12 +116,12 @@ checkAgainst kenv expected t = do
                             "\t with actual kind", styleRed $ show actual, "\n",
                             "\t for type", styleRed $ show t]
 
-synthetiseTS :: TypeScheme -> FreestState Kind
-synthetiseTS (TypeScheme _ bs t) = synthetise (fromTBindKs bs) t
+synthetiseTS :: KindEnv -> TypeScheme -> FreestState Kind
+synthetiseTS kenv (TypeScheme _ bs t) = synthetise insertBinds t
+  where insertBinds = foldr (\(TBindK p x k) env -> Map.insert (TBind p x) k env) kenv bs
 
 fromTBindKs :: [TBindK] -> KindEnv
 fromTBindKs = foldr (\(TBindK p x k) env -> Map.insert (TBind p x) k env) Map.empty
---Map.fromList $ map (\(TBindK p x k) -> ((TBind p x), k)) bsol
 
 -- Determine whether a given type is linear
 -- lin :: TypeScheme -> FreestState Bool
@@ -136,8 +133,8 @@ un = mult Un
 
 -- Determine whether a given type is of a given multiplicity
 mult :: Multiplicity -> TypeScheme -> FreestState Bool
-mult m1 ts = do
-  (Kind _ _ m2) <- synthetiseTS ts
+mult m1 s = do
+  (Kind _ _ m2) <- synthetiseTS Map.empty s
   return $ m2 == m1
 
 -- Assumes the type is well formed

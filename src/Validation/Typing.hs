@@ -38,14 +38,13 @@ typeCheck = do
   -- Type/datatype declarations: check TypeEnv for type or datatype
   -- declarations, VarEnv for each datatype constructor
   tenv <- getTenv
-  mapM_ (K.synthetiseTS . snd) tenv -- check the formation of all type schemes
+  mapM_ (K.synthetiseTS Map.empty . snd) tenv -- check the formation of all type schemes
   -- Function signatures (VarEnv)
   venv <- getVenv
-  mapM_ K.synthetiseTS venv
+  mapM_ (K.synthetiseTS Map.empty) venv
   tMapWithKeyM hasBinding venv
   -- Function bodies (ExpEnv)
   eenv <- getEenv
---  trace ("checkFunBodies " ++ show eenv) (return ())
   tMapWithKeyM checkFunBody eenv
   -- Main function
   checkMainFunction
@@ -65,7 +64,7 @@ checkFunBody :: PBind -> Expression -> FreestState ()
 checkFunBody f e =
   getFromVenv f >>= \case
     Just s ->
-      T.checkAgainstST e s
+      T.checkAgainstTS e s
     Nothing ->
       return () -- We've issued this error at parsing time
 
@@ -80,10 +79,10 @@ checkMainFunction = do
     let t = venv Map.! mBind
     mType <- normaliseTS t
     b <- isValidMainType mType
-    k <- K.synthetiseTS t
+    k <- K.synthetiseTS Map.empty t
     when (not b) $
       addError (position mType) ["The type for", styleRed "main", "must be an unrestricted, non-function type\n",
-                                 "\t found type", styleRed $ show t, ":", styleRed $ show k]
+                                 "\t found type", styleRed $ show t, "of kind", styleRed $ show k]
 
 isValidMainType :: TypeScheme -> FreestState Bool
 isValidMainType (TypeScheme _ _ (Fun _ _ _ _)) = return False
