@@ -18,7 +18,6 @@ module Validation.TypingExps
 ( synthetise
 , checkAgainst
 , checkAgainstST
-, checkUn
 , fillFunType
 , funSigsOnly
 ) where
@@ -49,8 +48,8 @@ synthetise _ (Integer p _)   = return $ Basic p IntType
 synthetise _ (Character p _) = return $ Basic p CharType
 synthetise _ (Boolean p _)   = return $ Basic p BoolType
 -- Variable
-synthetise _ (ProgVar p x) = do
-  s@(TypeScheme _ bs t) <- synthetiseVar p (PBind p x)
+synthetise kenv (ProgVar p x) = do
+  s@(TypeScheme _ bs t) <- synthetiseVar kenv (PBind p x)
   when (not $ null bs) 
     (addError p ["Variable", styleRed x, "of a polymorphic type used in a monomorphic context\n",
               "\t type scheme:", styleRed $ show s])
@@ -64,7 +63,6 @@ synthetise kenv (UnLet _ b e1 e2) = do
   return t2
 -- Abstraction introduction
 synthetise kenv e'@(Lambda p m b t1 e) = do
-  trace ("3_synthetise " ++ show e' ++ "\nKind Env: " ++ show kenv ) (return ())
   K.synthetise kenv t1
   venv1 <- getVenv
   addToVenv b (toTypeScheme t1)
@@ -81,7 +79,7 @@ synthetise kenv (App _ e1 e2) = do
   return u2
 -- Type application
 synthetise kenv (TypeApp p x ts) = do
-  s@(TypeScheme _ bs t) <- synthetiseVar p (PBind p x)
+  (TypeScheme _ bs t) <- synthetiseVar kenv (PBind p x)
   when (length ts /= length bs) 
     (addError p ["Wrong number of arguments to type application\n",
                 "\t parameters:", styleRed $ show bs, "\n",
@@ -120,7 +118,11 @@ synthetise kenv (BinLet _ x y e1 e2) = do
 -- Fork
 synthetise kenv (Fork p e) = do
   t <- synthetise kenv e
-  checkUn kenv e (toTypeScheme t)
+  k <- K.synthetise kenv t
+  when (isLin k) $ addError p
+    ["Unexpected linear expression", styleRed (show e), "in fork\n",
+     "\texpression", styleRed (show e), "is of type", styleRed (show t),
+     "of kind", styleRed (show k)]
   return $ Basic p UnitType
 -- Session types
 synthetise kenv (New p t) = do
@@ -143,18 +145,20 @@ synthetise kenv (Match p e fm) = synthetiseFieldMap p kenv e fm extractInChoiceM
 synthetise kenv (Case p e fm) = synthetiseFieldMap p kenv e fm extractDatatypeMap
 
 -- | Returns the type scheme for a variable; removes it from venv if lin
-synthetiseVar :: Pos -> PBind -> FreestState TypeScheme
-synthetiseVar p b = do
+synthetiseVar :: KindEnv -> PBind -> FreestState TypeScheme
+synthetiseVar kenv b = do
   getFromVenv b >>= \case
-    Just ts -> do
-      k <- K.synthetiseTS ts
+    Just s -> do
+      let (TypeScheme _ bs t) = s
+      k <- K.synthetise (kenv `Map.union` K.fromTBindKs bs) t
       when (isLin k) $ removeFromVenv b
-      return ts
+      return s
     Nothing -> do
+      let p = position b
       addError p ["Variable or data constructor not in scope:", styleRed $ show b]
-      let ts = omission p
-      addToVenv b ts
-      return ts
+      let s = omission p
+      addToVenv b s
+      return s
 
 synthetiseFieldMap :: Pos -> KindEnv -> Expression -> FieldMap ->
   (Pos -> Type -> FreestState TypeMap) -> FreestState Type
@@ -189,22 +193,19 @@ synthetiseCons b@(PBind p c) tm = do
       return $ Skip p
 
 -- | The quotient operation
--- removes a variable from the environment and gives an error if it is linear
+-- Removes a variable from the environment and gives an error if it is linear
 quotient :: KindEnv -> PBind -> FreestState ()
 quotient kenv b@(PBind p x) =
   getFromVenv b >>= \case
-    Just t  -> checkUn kenv (ProgVar p x) t >> removeFromVenv b
-    Nothing -> return ()
-
--- | Check whether a type scheme is unrestricted
-checkUn :: KindEnv -> Expression -> TypeScheme -> FreestState ()
-checkUn kenv e (TypeScheme _ [] t) = do
-  k <- K.synthetise kenv t
-  when (isLin k) $
-    addError (position e) ["Program variable", styleRed (show e),
-                           "is linear at the end of its scope\n",
-                           "\t", styleRed (show e), "is of type", styleRed (show t),
-                           "of kind", styleRed (show k)]
+    Just s  -> do
+      let (TypeScheme _ [] t) = s
+      k <- K.synthetise kenv t
+      when (isLin k) $ addError p ["Program variable", styleRed x, "is linear at the end of its scope\n",
+                        "\t", "variable", styleRed x, "is of type", styleRed (show t),
+                        "of kind", styleRed (show k)]
+      removeFromVenv b
+    Nothing ->
+      return ()
 
 -- CHECKING AGAINST A GIVEN TYPE
 
@@ -225,22 +226,13 @@ checkAgainst kenv (Conditional p e1 e2 e3) t = do
 -- Default
 checkAgainst kenv e t = do
   u <- synthetise kenv e
-  trace ("2_checkAgainstST " ++ show e ++ "\nagainst " ++ show t ++ "\nKind Env: " ++ show kenv ++ "\nsynthetised " ++ show u) (return ())
   checkEquivTypes (position e) kenv t u
 
 -- | Check an expression against a given type scheme
 checkAgainstST :: Expression -> TypeScheme -> FreestState ()
-checkAgainstST e s@(TypeScheme _ bs t) = do
-  trace ("1_checkAgainstST " ++ show e ++ "\nagainst " ++ show s ++ "\nKind Env: " ++ show (K.fromTBindKs bs)) (return ())
-  checkAgainst (K.fromTBindKs bs) e t
+checkAgainstST e (TypeScheme _ bs t) = checkAgainst (K.fromTBindKs bs) e t
   
 -- EQUALITY AND EQUIVALENCE CHECKING
-
-checkEqualEnvs :: Pos -> VarEnv -> VarEnv -> FreestState ()
-checkEqualEnvs p venv1 venv2 =
-  when (not $ Map.null diff)
-    (addError p ["Final environment differs from initial in", styleRed $ show diff])
-  where diff = Map.difference venv2 venv1
 
 checkEquivTypes :: Pos -> KindEnv -> Type -> Type -> FreestState ()
 checkEquivTypes p kenv expected actual = do
@@ -250,13 +242,17 @@ checkEquivTypes p kenv expected actual = do
     addError p ["Couldn't match expected type", styleRed (show expected), "\n",
              "\t with actual type", styleRed (show actual)]
 
+checkEqualEnvs :: Pos -> VarEnv -> VarEnv -> FreestState ()
+checkEqualEnvs p venv1 venv2 =
+  when (not $ Map.null diff)
+    (addError p ["Final environment differs from initial in", styleRed $ show diff])
+  where diff = Map.difference venv2 venv1
+
 checkEquivEnvs :: Pos -> KindEnv -> VarEnv -> VarEnv -> FreestState ()
 checkEquivEnvs p kenv venv1 venv2 = do
   tenv <- getTenv
   let venv1' = funSigsOnly tenv venv1
       venv2' = funSigsOnly tenv venv2
-  tenv <- getTenv
---  kenv <- getKenv
   when (not (equivalent tenv kenv venv1' venv2')) $
     addError p ["Expecting environment", styleRed (show venv1'), "\n",
              "\t to be equivalent to  ", styleRed (show venv2')]

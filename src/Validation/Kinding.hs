@@ -54,9 +54,11 @@ synthetise kenv (Semi p t u) = do
 -- Functional
 synthetise _ (Basic p _) =
   return $ Kind p Functional Un
-synthetise kenv (Fun p m t u) = do
+synthetise kenv v@(Fun p m t u) = do
+--  trace ("5_K.synthetise " ++ show  v ++ "\nKind Env: " ++ show kenv) (return ())
   synthetise kenv t
   synthetise kenv u
+--  trace ("6_K.synthetise " ++ show  v ++ "\nKind Env: " ++ show kenv) (return ())
   return $ Kind p Functional m
 synthetise kenv (PairType _ t u) = do
   kt <- synthetise kenv t
@@ -73,7 +75,7 @@ synthetise kenv (Rec p b@(TBindK _ _ k) t) = do
   return k'
 -- Session or functional
 synthetise kenv (TypeVar p x) = do
-  trace ("4_K.synthetise " ++ show x ++ "\nKind Env: " ++ show kenv ) (return ())
+--  trace ("4_K.synthetise " ++ show x ++ "\nKind Env: " ++ show kenv ) (return ())
   case kenv Map.!? (TBind p x) of
     Just k ->
       return k
@@ -153,3 +155,4 @@ isSessionType _ _ (Dualof _ _)      = True
 isSessionType tenv kenv (Name p c)  = isSession $ fst $ tenv Map.! (TBind p c)
   -- Otherwise: Functional types
 isSessionType _ _ _                 = False
+

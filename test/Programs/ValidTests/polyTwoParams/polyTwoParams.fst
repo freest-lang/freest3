@@ -1,5 +1,5 @@
 mkPair : forall a : TL, b : TL => a -> b -> (a, b)
-mkPair x y = x
+mkPair x y = (x, y)
 
 main : (Int, Bool)
 main =
