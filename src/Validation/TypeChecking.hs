@@ -24,7 +24,7 @@ import           Syntax.Types
 import           Syntax.Bind
 import           Syntax.Programs
 import qualified Validation.Kinding as K
-import qualified Validation.TypingExps as T
+import qualified Validation.Typing as T
 import           Utils.Errors
 import           Utils.FreestState
 import           Validation.Extract
