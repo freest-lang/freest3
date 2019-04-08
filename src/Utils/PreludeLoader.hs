@@ -28,30 +28,30 @@ typeList = [ ("(+)", "Int -> Int -> Int")
            , ("(>)", "Int -> Int -> Bool")
            , ("(<=)", "Int -> Int -> Bool")
            , ("(>=)", "Int -> Int -> Bool")
+           , ("id", "forall a : SU => a -> a")
            ]
 
--- TODO: add more           
-schemeList :: [(String, String)]
-schemeList = [
---   ("id", "forall a : TU => a -> a")
-  -- ("fst", "forall a, b => (a, b) -> a") -- fst/snd applies only to un-pairs but our pairs are lin
-  ]
-     
 prelude :: VarEnv
 prelude =
-  schemeLoad (preludeLoad Map.empty)
+  foldl (\acc (v, t) ->
+     Map.insert (PBind defaultPos v) (read t) acc) Map.empty typeList
 
+isBuiltin :: PBind -> Bool
+isBuiltin (PBind _ x) = x `elem` (map fst typeList)
 
--- TODO: what position fits here
+{-
 preludeLoad :: VarEnv -> VarEnv
 preludeLoad map =
   foldl (\acc (tv, t) ->
      Map.insert (PBind defaultPos tv)
-                (TypeScheme defaultPos [] (read t :: Type)) acc) map typeList
+                (read t :: TypeScheme) acc) map typeList
 
+schemeList :: [(String, String)]
+schemeList = [
+--  ("id", "forall a : SU => a -> a")
+  -- ("fst", "forall a, b => (a, b) -> a") -- fst/snd applies only to un-pairs but our pairs are lin
+  ]
 schemeLoad :: VarEnv -> VarEnv
 schemeLoad map =
   foldl (\acc (tv, t) -> Map.insert (PBind defaultPos tv) (read t :: TypeScheme) acc) map schemeList
-
-isBuiltin :: PBind -> Bool
-isBuiltin (PBind _ x) = x `elem` (map fst typeList)
+-}     

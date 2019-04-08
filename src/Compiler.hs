@@ -7,7 +7,7 @@ import Data.List (intercalate)
 import Parse.Parser (parseProgram)
 import Utils.PreludeLoader (prelude)
 import Utils.FreestState
-import Validation.Typing (typeCheck)
+import Validation.TypeChecking (typeCheck)
 
 
 compile :: String -> IO (Bool, String)
