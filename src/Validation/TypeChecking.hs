@@ -17,14 +17,15 @@ module Validation.TypeChecking
 ( typeCheck
 ) where
 
-import           Parse.Lexer (position, defaultPos)
-import           Syntax.Expression (Expression(..))
+import           Syntax.Programs
+import           Syntax.Expression
 import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Bind
-import           Syntax.Programs
+import           Equivalence.Normalisation
 import qualified Validation.Kinding as K
 import qualified Validation.Typing as T
+import           Parse.Lexer (position, defaultPos)
 import           Utils.Errors
 import           Utils.FreestState
 import           Validation.Extract
@@ -76,13 +77,14 @@ checkMainFunction = do
   then
     addError defaultPos ["Function", styleRed "main", "is not defined"]
   else do
-    let t = venv Map.! mBind
-    mType <- normaliseTS t
+    let s = venv Map.! mBind
+    tenv <- getTenv
+    let mType = normalise tenv s
     b <- isValidMainType mType
-    k <- K.synthetiseTS Map.empty t
+    k <- K.synthetiseTS Map.empty s
     when (not b) $
       addError (position mType) ["The type for", styleRed "main", "must be an unrestricted, non-function type\n",
-                                 "\t found type", styleRed $ show t, "of kind", styleRed $ show k]
+                                 "\t found type (scheme)", styleRed $ show s, "of kind", styleRed $ show k]
 
 isValidMainType :: TypeScheme -> FreestState Bool
 isValidMainType (TypeScheme _ _ (Fun _ _ _ _)) = return False

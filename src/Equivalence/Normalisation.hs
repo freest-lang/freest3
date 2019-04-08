@@ -15,8 +15,8 @@ equivalence algorithm, which takes significantly longer.
 
 -}
 
-module Equivalence.StrongEquivalence
-( equivalent
+module Equivalence.Normalisation
+( Normalise(..)
 ) where
 
 import           Syntax.Bind
@@ -28,30 +28,34 @@ import           Parse.Lexer (position)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
-equivalent tenv t u = normalise tenv t == normalise tenv u
+class Normalise t where
+  normalise :: TypeEnv -> t -> t
 
-normalise :: TypeEnv -> Type -> Type
-  -- Functional types
-normalise tenv (Fun p q t u)    = Fun p q (normalise tenv t) (normalise tenv u)
-normalise tenv (PairType p t u) = PairType p (normalise tenv t) (normalise tenv u)
-normalise tenv t@(Datatype p m) = t -- We do not normalise under Datatype or we'll loop until eternity
-  -- Session types
-normalise tenv (Semi _ (Choice p q m) t) =
-  Choice p q (Map.map (\u -> append (normalise tenv u) t') m)
-  where t' = normalise tenv t
-normalise tenv (Semi p t u)     = append (normalise tenv t) (normalise tenv u)
-normalise tenv (Choice p q m)   = Choice p q (Map.map (normalise tenv) m)
-normalise tenv (Rec p (TBindK q x k) t)
-  | x `Set.member` (free t)     = Rec p (TBindK q x k) t'
-  | otherwise                   = t'
-  where t' = normalise tenv t
-  -- Functional or session
-  -- Type operators
-normalise tenv (Dualof _ t)     = normalise tenv (dual t)
-normalise tenv (Name p c)       = normalise tenv t
-  where (_, TypeScheme _ [] t) = tenv Map.! (TBind p c) -- TODO: polymorphic type names
-  -- Otherwise: Basic, Skip, Message, TypeVar
-normalise tenv t                = t
+instance Normalise TypeScheme where
+  normalise tenv (TypeScheme p bs t) = TypeScheme p bs (normalise tenv t)
+
+instance Normalise Type where
+    -- Functional types
+  normalise tenv (Fun p q t u)    = Fun p q (normalise tenv t) (normalise tenv u)
+  normalise tenv (PairType p t u) = PairType p (normalise tenv t) (normalise tenv u)
+  normalise tenv t@(Datatype p m) = t -- We do not normalise under Datatype or we'll loop until eternity
+    -- Session types
+  normalise tenv (Semi _ (Choice p q m) t) =
+    Choice p q (Map.map (\u -> append (normalise tenv u) t') m)
+    where t' = normalise tenv t
+  normalise tenv (Semi p t u)     = append (normalise tenv t) (normalise tenv u)
+  normalise tenv (Choice p q m)   = Choice p q (Map.map (normalise tenv) m)
+  normalise tenv (Rec p (TBindK q x k) t)
+    | x `Set.member` (free t)     = Rec p (TBindK q x k) t'
+    | otherwise                   = t'
+    where t' = normalise tenv t
+    -- Functional or session
+    -- Type operators
+  normalise tenv (Dualof _ t)     = normalise tenv (dual t)
+  normalise tenv (Name p c)       = normalise tenv t
+    where (_, TypeScheme _ [] t) = tenv Map.! (TBind p c) -- TODO: polymorphic type names
+    -- Otherwise: Basic, Skip, Message, TypeVar
+  normalise tenv t                = t
 
 append :: Type -> Type -> Type
 append (Skip _)       t = t
