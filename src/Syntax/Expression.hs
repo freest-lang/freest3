@@ -56,10 +56,10 @@ data Expression =
   deriving (Eq, Ord)
 
 type FieldMap = Map.Map PBind Expression
--- type ExpMap  = Map.Map PBind ([PBind], Expression)
+-- type FieldMap  = Map.Map PBind ([PBind], Expression)
 
 instance Show Expression where
-  show e = showAux e 2
+  show e = showAux e 3
 
 showAux :: Expression -> Int -> String
 showAux _ 0 = " ... "
@@ -78,7 +78,7 @@ showAux (App _ e1 e2) i = (showAux e1 (i-1)) ++ (showAux e2 (i-1))
 showAux (Pair _ e1 e2) i = " (" ++ (showAux e1 (i-1)) ++ ", " ++ (showAux e1 (i-1)) ++ ")"
 showAux (BinLet _ b1 b2 e1 e2) i = " let " ++ show b1 ++ ", " ++ show b2 ++ " = " ++ (showAux e1 (i-1)) ++ " in " ++ (showAux e2 (i-1))
   -- Datatype elim
-showAux (Case _ e m) i = " case " ++ (showAux e (i-1)) ++ " of " ++ (showMap m (i-1))
+showAux (Case _ e m) i = " case " ++ (showAux e (i-1)) ++ " of " ++ " {" ++ (showMap m i) ++ "}"
   -- Type application
 showAux (TypeApp _ x [t]) _ = x ++ show t
   -- Boolean elim
@@ -92,7 +92,7 @@ showAux (New _ t) _ = " new " ++ show t
 showAux (Send _ e) _ = " send " ++ show e
 showAux (Receive _ e) _ = " receive " ++ show e
 showAux (Select _ l e) i = " select " ++ show l ++ (showAux e (i-1))
-showAux (Match _ e m) i = " match " ++ show e ++ " with " ++ (showMap m (i-1))
+showAux (Match _ e m) i = " match " ++ show e ++ " with " ++ " {" ++ (showMap m i) ++ "}"
 
 showMap :: FieldMap -> Int -> String
 showMap m i = concat $ intersperse ", " (map showAssoc (Map.toList m))
