@@ -291,8 +291,9 @@ Kind :: { Kind } :
 -- VARIABLES AND CONSTRUCTORS IN BINDING POSITIONS
 
 VarBind :: { PBind }
-  : LOWER_ID { PBind (position $1) (PVar (getText $1)) }
-  | '_' { PBind (position $1) (PVar "_") } -- TODO: rename to unique Var
+  : LOWER_ID {% getPvar (getText $1) >>= \x -> return $ PBind (position $1) x }
+  | '_'      {% getPvar "_"          >>= \x -> return $ PBind (position $1) x }
+--  | '_'      { PBind (position $1) (PVar "_") } -- TODO: rename to unique Var
 
 RecVar :: { TBindK }
   : LOWER_ID ':' Kind { TBindK (position $1) (getText $1) $3 }

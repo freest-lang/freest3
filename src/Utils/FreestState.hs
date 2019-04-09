@@ -29,7 +29,10 @@ module Utils.FreestState
 , getFromTenv
 , getFileName
 , initialState
-, freshVar
+--, newVar
+, getPvar
+, newPVar
+, rmPVar
 , addError
 ) where
 
@@ -54,7 +57,9 @@ data FreestS = FreestS {
 , expEnv   :: ExpEnv
 , typeEnv  :: TypeEnv
 , errors   :: Errors
-, lastVar  :: Int }
+, lastVar  :: Int
+, varsInScope :: Map.Map String [PVar]
+}
 
 type FreestState = State FreestS
 
@@ -67,7 +72,8 @@ initialState f = FreestS {
 , expEnv   = Map.empty
 , typeEnv  = Map.empty
 , errors   = []
-, lastVar       = 0
+, lastVar  = 0
+, varsInScope = Map.empty
 }
 
 -- | FILE NAME
@@ -182,15 +188,28 @@ addError p e = do
   
 addErrorList :: [String] -> FreestState ()
 addErrorList es =
-  modify (\s -> s {errors=(errors s) ++ es})   
+  modify (\s -> s {errors = (errors s) ++ es})   
 
 -- | FRESH VARS
 
-freshVar :: FreestState String
-freshVar = do
+newPVar :: String -> FreestState PVar
+newPVar x = do
   s <- get
-  put $ s {lastVar = lastVar s + 1}
-  return $ "_x" ++ show (lastVar s)
+  let y = PVar $ show (lastVar s) ++ ('_' : x)
+  put $ s {lastVar = lastVar s + 1, varsInScope = Map.insertWith (++) x [y] (varsInScope s)}
+  return y
+
+getPvar :: String -> FreestState PVar
+getPvar x = do
+  s <- get
+  return $ head $ (varsInScope s) Map.! x
+
+rmPVar :: String -> FreestState ()
+rmPVar x = do
+  s <- get
+  put $ s {varsInScope = Map.update tailMaybe x (varsInScope s)}
+  where tailMaybe []    = Nothing
+        tailMaybe (_:xs) = Just xs
 
 -- | Traversing Map.map over FreestStates
 

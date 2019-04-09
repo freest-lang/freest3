@@ -66,11 +66,12 @@ synthetise kenv (Datatype p m) = do
   ks <- tMapM (synthetise kenv) m
   let Kind _ _ n = foldr1 lub ks
   return $ Kind p Functional n
-synthetise kenv (Rec p b@(TBindK _ _ k) t) = do
+synthetise kenv (Rec p (TBindK _ x k) t) = do
   checkContractive kenv t
-  y <- freshVar
-  k' <- synthetise (Map.insert (TBind p y) k kenv) $ subs (TypeVar p y) b t -- On the fly α-conversion
-  return k'
+  synthetise (Map.insert (TBind p x) k kenv) t
+--  y <- freshVar
+--  k' <- synthetise (Map.insert (TBind p y) k kenv) $ subs (TypeVar p y) b t -- On the fly α-conversion
+  -- return k'
 -- Session or functional
 synthetise kenv (TypeVar p x) =
   case kenv Map.!? (TBind p x) of
@@ -105,10 +106,10 @@ checkAgainstSession kenv t = do
 
 -- Check a type against a given kind
 checkAgainst :: KindEnv -> Kind -> Type -> FreestState ()
-checkAgainst kenv k (Rec p x t) = do
+checkAgainst kenv k (Rec _ (TBindK p x _) t) = do
   checkContractive kenv t
-  y <- freshVar
-  checkAgainst (Map.insert (TBind p y) (Kind p Session Un) kenv) k $ subs (TypeVar p y) x t -- On the fly α-conversion
+  checkAgainst (Map.insert (TBind p x) (Kind p Session Un) kenv) k t
+  -- checkAgainst (Map.insert (TBind p y) (Kind p Session Un) kenv) k $ subs (TypeVar p y) x t -- On the fly α-conversion
 checkAgainst kenv expected t = do
   actual <- synthetise kenv t
   when (not (actual <: expected)) $

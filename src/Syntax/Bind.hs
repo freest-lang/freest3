@@ -24,19 +24,18 @@ import Data.Char (isDigit)
 
 -- The base syntactic categories of FreeST
 
+-- Program Variables: Function names and function parameters (lower
+-- case), but also datatype constructors and labels in session types
+-- choices (uppercase)
 newtype PVar = PVar { getPVar :: String } deriving (Eq, Ord)
 
-instance Show PVar where
- show v = dropWhile (isDigit) (getPVar v)
+-- Type Variables: Recursion variables (in rec-types) and polymorphic
+-- variables (lowercase) and the names of types introduced with type
+-- and data declarations (uppercase)
+type TVar = String
 
---type PVar = String  -- Program Variables: Function names and function
-                    -- parameters (lower case), but also datatype
-                    -- constructors and labels in session types
-                    -- choices (uppercase)
-type TVar = String  -- Type Variables: Recursion variables (in
-                    -- rec-types) and polymorphic variables
-                    -- (lowercase) and the names of types introduced
-                    -- with type and data declarations (uppercase)
+instance Show PVar where
+ show v = tail $ dropWhile (isDigit) (getPVar v)
 
 -- Bindings: A pair composed of a position and a base syntactic
 -- category. These are often used as keys in maps (for kinds, for type

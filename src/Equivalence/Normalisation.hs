@@ -41,8 +41,8 @@ instance Normalise Type where
   normalise tenv (Semi p t u)     = append (normalise tenv t) (normalise tenv u)
   normalise tenv (Choice p q m)   = Choice p q (Map.map (normalise tenv) m)
   normalise tenv (Rec p (TBindK q x k) t)
-    | x `Set.member` (free t)     = Rec p (TBindK q x k) t'
-    | otherwise                   = t'
+    | x `Set.member` (free t) = normalise tenv $ unfold $ Rec p (TBindK q x k) t'
+    | otherwise               = t'
     where t' = normalise tenv t
     -- Functional or session
     -- Type operators
