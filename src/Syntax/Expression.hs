@@ -20,7 +20,7 @@ import           Parse.Lexer (Position, Pos, position, showPos)
 import           Syntax.Types (Type)
 import           Syntax.Kinds (Multiplicity(..))
 import           Syntax.Bind (PVar, PBind)
-import           Data.List (intersperse)
+import           Data.List (intersperse, intercalate)
 import qualified Data.Map.Strict as Map
 
 data Expression =
@@ -95,7 +95,7 @@ showAux (Match _ e m) i = " match " ++ show e ++ " with " ++ " {" ++ (showMap m 
 
 showMap :: ExpMap -> Int -> String
 showMap m i = concat $ intersperse ", " (map showAssoc (Map.toList m))
-  where showAssoc (b, (a,v)) = (show b) ++ " " ++ (showAux v (i-1))
+  where showAssoc (b, (a,v)) = (show b) ++ intercalate " " (map show a) ++ " " ++  (showAux v (i-1))
 
 instance Position Expression where
   position (Unit p)              = p
