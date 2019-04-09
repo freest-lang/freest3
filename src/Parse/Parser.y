@@ -148,6 +148,7 @@ Decl :: { () }
        let bs = typeListToType b $5
        let p = position b
        uncurry addToTenv $2 (TypeScheme p $3 (Datatype p (Map.fromList bs)))
+--       uncurry addToTenv $2 (Datatype p (uncurry Map.fromList $5)))
        mapM_ (\(b, t) -> addToVenv b (toTypeScheme t)) bs
     }
 

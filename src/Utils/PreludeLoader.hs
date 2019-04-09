@@ -15,16 +15,16 @@ import           Parse.Parser
 import qualified Data.Map.Strict as Map
 
 
-binInt = Fun defaultPos Un (Basic defaultPos IntType) (Fun defaultPos Un (Basic defaultPos IntType) (Basic defaultPos IntType))
-binBool = Fun defaultPos Un (Basic defaultPos BoolType) (Fun defaultPos Un (Basic defaultPos BoolType) (Basic defaultPos BoolType))
-relationalOps = Fun defaultPos Un (Basic defaultPos IntType) (Fun defaultPos Un (Basic defaultPos IntType) (Basic defaultPos BoolType))
-unIntBool = Fun defaultPos Un (Basic defaultPos IntType) (Basic defaultPos BoolType)
-unIntInt = Fun defaultPos Un (Basic defaultPos IntType)  (Basic defaultPos IntType)
-unBoolBool = Fun defaultPos Un (Basic defaultPos BoolType) (Basic defaultPos BoolType)
+binInt = toTypeScheme (Fun defaultPos Un (Basic defaultPos IntType) (Fun defaultPos Un (Basic defaultPos IntType) (Basic defaultPos IntType)))
+binBool = toTypeScheme (Fun defaultPos Un (Basic defaultPos BoolType) (Fun defaultPos Un (Basic defaultPos BoolType) (Basic defaultPos BoolType)))
+relationalOps = toTypeScheme(Fun defaultPos Un (Basic defaultPos IntType) (Fun defaultPos Un (Basic defaultPos IntType) (Basic defaultPos BoolType)))
+unIntBool = toTypeScheme (Fun defaultPos Un (Basic defaultPos IntType) (Basic defaultPos BoolType))
+unIntInt = toTypeScheme (Fun defaultPos Un (Basic defaultPos IntType)  (Basic defaultPos IntType))
+unBoolBool = toTypeScheme (Fun defaultPos Un (Basic defaultPos BoolType) (Basic defaultPos BoolType))
 
 
-typeList :: [(String, Type)]
-typeList = [ ("(+)", binInt)
+typeList :: [(String, TypeScheme)]
+typeList = [ ("(+)",  binInt)
            , ("(-)", binInt)
            , ("(/)", binInt)
            , ("(*)", binInt)
@@ -40,15 +40,9 @@ typeList = [ ("(+)", binInt)
            , ("(>)", relationalOps)
            , ("(<=)", relationalOps)
            , ("(>=)", relationalOps)
+           , ("id", TypeScheme [TBindK defaultPos "a" (Kind defaultPos Session Un)] (Fun defaultPos Un (Var defautPos "a") (Var defautPos "a")))
            ]
 
--- TODO: add more           
-schemeList :: [(String, String)]
-schemeList = [
---   ("id", "forall a : TU => a -> a")
-  -- ("fst", "forall a, b => (a, b) -> a") -- fst/snd applies only to un-pairs but our pairs are lin
-  ]
-     
 prelude :: VarEnv
 prelude = preludeLoad Map.empty
   -- schemeLoad (preludeLoad Map.empty)
@@ -57,13 +51,22 @@ preludeLoad :: VarEnv -> VarEnv
 preludeLoad venv = 
   foldl (\acc (tv, t) -> Map.insert (PBind defaultPos tv) (TypeScheme defaultPos [] t) acc) venv typeList
 
-  -- foldl (\acc (tv, t) ->
-  --    Map.insert (PBind defaultPos tv)
-  --               (TypeScheme defaultPos [] (read t :: Type)) acc) map typeList
+{-
+preludeLoad :: VarEnv -> VarEnv
+preludeLoad map =
+  foldl (\acc (tv, t) ->
+     Map.insert (PBind defaultPos tv)
+                (read t :: TypeScheme) acc) map typeList
 
--- schemeLoad :: VarEnv -> VarEnv
--- schemeLoad map =
---   foldl (\acc (tv, t) -> Map.insert (PBind defaultPos tv) (read t :: TypeScheme) acc) map schemeList
+schemeList :: [(String, String)]
+schemeList = [
+--  ("id", "forall a : SU => a -> a")
+  -- ("fst", "forall a, b => (a, b) -> a") -- fst/snd applies only to un-pairs but our pairs are lin
+  ]
+schemeLoad :: VarEnv -> VarEnv
+schemeLoad map =
+  foldl (\acc (tv, t) -> Map.insert (PBind defaultPos tv) (read t :: TypeScheme) acc) map schemeList
+-}     
 
 isBuiltin :: PBind -> Bool
 isBuiltin (PBind _ x) = x `elem` (map fst typeList)
@@ -84,3 +87,5 @@ isBinOp (PBind _ x) =
 toListT :: Type -> [Type]
 toListT (Fun _ _ t1 t2) = t1 : toListT t2
 toListT t = [t]
+
+

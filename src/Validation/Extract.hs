@@ -12,9 +12,9 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 {-# LANGUAGE LambdaCase, NoMonadFailDesugaring #-}
+
 module Validation.Extract
-( {-extractScheme
-,-} extractFun
+( extractFun
 , extractPair
 , extractBasic
 , extractOutput
@@ -23,62 +23,29 @@ module Validation.Extract
 , extractInChoiceMap
 , extractDatatypeMap
 , extractCons
--- , normalise
-, normaliseTS
 ) where
 
-import           Parse.Lexer (Pos, position, defaultPos)
 import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.Bind
+import           Equivalence.Normalisation
+import           Parse.Lexer (Pos, position, defaultPos)
 import           Utils.Errors
 import           Utils.FreestState
 import qualified Data.Map.Strict as Map
 
 -- | The Extract Functions
 
--- The output type is equivalent to the input type, but different from
--- Rec, Unfold, and Name. If it is a Var, then it must represent a
--- polymorphic variable (because recursion variables are bound)
-normalise :: Type -> FreestState Type
-  -- Session types
-normalise (Semi _ t u) = do
-  t' <- normalise t
-  u' <- normalise u
-  return $ append t' u'
-normalise t@(Rec _ _ _) = normalise (unfold t)
-  -- Functional or session
-  -- Type operators
-normalise (Name p x) = do
+norm :: Type -> FreestState Type
+norm t = do
   tenv <- getTenv
-  let (_, (TypeScheme _ [] t)) = tenv Map.! (TBind p x) -- TODO: polymorphic type names
-  normalise t
-normalise (Dualof _ t) = normalise (dual t)
-  -- Functional types, Skip, Message, Choice, and Var
-normalise t = return t
-
-normaliseTS :: TypeScheme -> FreestState TypeScheme
-normaliseTS (TypeScheme p bs t) = normalise t >>= \t' -> return $ TypeScheme p bs t'
-
-append :: Type -> Type -> Type -- TODO: also exits in Types.hs
-append (Skip _) t = t
-append (Semi p t u) v = Semi p t (append u v)
-append t v = Semi (position t) t v
-
-{-
--- Extracts a typescheme; gives an error if it is of form Ɐ ε ⇒ T
-extractScheme :: TypeScheme -> FreestState ([TBindK], Type)
-extractScheme (TypeScheme _ [] t) = do
-  addError (position t) ["Expecting a type scheme; found a type", styleRed $ show t]
-  return ([], (Basic (position t) UnitType))
-extractScheme (TypeScheme _ bs t) = return (bs, t)
--}
+  return $ normalise tenv t
 
 -- Extracts a function from a type; gives an error if there isn't a function
 extractFun :: Type -> FreestState (Type, Type)
 extractFun t = do
-  t' <- normalise t
+  t' <- norm t
   case t' of
     (Fun _ _ u v) -> return (u, v)
     u             ->
@@ -89,7 +56,7 @@ extractFun t = do
 -- Extracts a pair from a type; gives an error if there is no pair
 extractPair :: Type -> FreestState (Type, Type)
 extractPair t = do
-  t' <- normalise t
+  t' <- norm t
   case t' of
     (PairType _ u v) -> return (u, v)
     u                ->
@@ -100,7 +67,7 @@ extractPair t = do
 -- Extracts a basic type from a general type; gives an error if it isn't a basic
 extractBasic :: Type -> FreestState BasicType
 extractBasic t = do
-  t' <- normalise t
+  t' <- norm t
   case t' of
     (Basic _ b) -> return b
     u           ->
@@ -117,7 +84,7 @@ extractInput = extractMessage Out "input"
 
 extractMessage :: Polarity -> String -> Type -> FreestState (BasicType, Type)
 extractMessage pol msg t = do
-  t' <- normalise t
+  t' <- norm t
   case t' of
      (Message p pol b)            -> return (b, Skip p)
      (Semi _ (Message _ pol b) u) -> return (b, u)
@@ -133,7 +100,7 @@ extractInChoiceMap = extractChoiceMap In "internal"
       
 extractChoiceMap :: Polarity -> String -> Pos -> Type -> FreestState TypeMap
 extractChoiceMap pol msg pos t = do
-  t' <- normalise t
+  t' <- norm t
   case t' of
     (Choice _ _ m)              -> return m
     (Semi _ (Choice _ pol m) u) -> return $ Map.map (\v -> Semi (position v) v u) m
@@ -144,7 +111,7 @@ extractChoiceMap pol msg pos t = do
 -- Extracts a datatype from a type; gives an error if a datatype is not found
 extractDatatypeMap :: Pos -> Type -> FreestState TypeMap
 extractDatatypeMap pos t = do
-  t' <- normalise t
+  t' <- norm t
   case t' of
     (Datatype _ m) -> return m
     u              -> do
@@ -161,4 +128,3 @@ extractCons pos tm c =
     Nothing -> do
       addError pos ["Constructor", styleRed c, "not in scope"]             
       return $ Basic pos UnitType
-

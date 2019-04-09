@@ -24,7 +24,7 @@ import           Syntax.Kinds
 import           Syntax.Bind
 import           Validation.Kinding
 import qualified Equivalence.StrongEquivalence as StrongEquivalence
-import qualified Equivalence.TypeEquivalence as TypeEquivalence
+import qualified Equivalence.Bisimulation as Bisimulation
 import qualified Data.Map.Strict as Map
 
 class Equivalence t where
@@ -62,7 +62,7 @@ instance Equivalence Type where
     equiv kenv t u =
       isSessionType tenv kenv t &&
       isSessionType tenv kenv u &&
-      TypeEquivalence.equivalent t u
+      Bisimulation.equivalent t u
     
     checkConstructor :: KindEnv -> TypeMap -> Bool -> PBind -> Type -> Bool
     checkConstructor kenv m acc l t =

@@ -17,7 +17,7 @@ Portability :  portable | non-portable (<reason>)
 module Validation.TypingExps
 ( synthetise
 , checkAgainst
-, checkAgainstST
+, checkAgainstTS
 , fillFunType
 , funSigsOnly
 ) where
@@ -52,8 +52,7 @@ synthetise kenv (ProgVar p x) = do
   s@(TypeScheme _ bs t) <- synthetiseVar kenv (PBind p x)
   when (not $ null bs) 
     (addError p ["Variable", styleRed x, "of a polymorphic type used in a monomorphic context\n",
-              "\t type scheme:", styleRed $ show s])
---  TODO removeIfLin x s
+              "\t the type scheme for variable", styleRed x, "is", styleRed $ show s])
   return t
 synthetise kenv (UnLet _ b e1 e2) = do
   t1 <- synthetise kenv e1
@@ -86,7 +85,6 @@ synthetise kenv (TypeApp p x ts) = do
                 "\t arguments: ", styleRed $ show ts])  
   let typeKinds = zip ts bs :: [(Type, TBindK)]
   mapM (\(t, TBindK _ _ k) -> K.checkAgainst kenv k t) typeKinds
---  TODO removeIfLin x s
   return $ foldr (uncurry subs) t typeKinds
 -- Boolean elimination
 synthetise kenv (Conditional p e1 e2 e3) = do
@@ -121,7 +119,7 @@ synthetise kenv (Fork p e) = do
   k <- K.synthetise kenv t
   when (isLin k) $ addError p
     ["Unexpected linear expression", styleRed (show e), "in fork\n",
-     "\texpression", styleRed (show e), "is of type", styleRed (show t),
+     "\t expression", styleRed (show e), "is of type", styleRed (show t),
      "of kind", styleRed (show k)]
   return $ Basic p UnitType
 -- Session types
@@ -149,8 +147,7 @@ synthetiseVar :: KindEnv -> PBind -> FreestState TypeScheme
 synthetiseVar kenv b = do
   getFromVenv b >>= \case
     Just s -> do
-      let (TypeScheme _ bs t) = s
-      k <- K.synthetise (kenv `Map.union` K.fromTBindKs bs) t
+      k <- K.synthetiseTS kenv s
       when (isLin k) $ removeFromVenv b
       return s
     Nothing -> do
@@ -217,7 +214,7 @@ quotient kenv b@(PBind p x) =
     Nothing ->
       return ()
 
--- CHECKING AGAINST A GIVEN TYPE
+-- CHECKING AGAINST A GIVEN TYPE OR TYPE SCHEME
 
 -- | Check an expression against a given type
 checkAgainst :: KindEnv -> Expression -> Type -> FreestState ()
@@ -239,8 +236,8 @@ checkAgainst kenv e t = do
   checkEquivTypes (position e) kenv t u
 
 -- | Check an expression against a given type scheme
-checkAgainstST :: Expression -> TypeScheme -> FreestState ()
-checkAgainstST e (TypeScheme _ bs t) = checkAgainst (K.fromTBindKs bs) e t
+checkAgainstTS :: Expression -> TypeScheme -> FreestState ()
+checkAgainstTS e (TypeScheme _ bs t) = checkAgainst (K.fromTBindKs bs) e t
   
 -- EQUALITY AND EQUIVALENCE CHECKING
 
