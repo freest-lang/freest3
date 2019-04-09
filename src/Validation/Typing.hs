@@ -104,15 +104,14 @@ synthetise kenv (Pair p e1 e2) = do
   return $ PairType p t1 t2
 -- Pair elimination
 synthetise kenv (BinLet _ x y e1 e2) = do
-  t <- synthetise kenv e1
-  (u1, u2) <- extractPair t
+  t1 <- synthetise kenv e1
+  (u1, u2) <- extractPair t1
   addToVenv x (toTypeScheme u1)
   addToVenv y (toTypeScheme u2)
-  u <- synthetise kenv e2
-  venv <- getVenv
+  t2 <- synthetise kenv e2
   quotient kenv x
   quotient kenv y
-  return u
+  return t2
 -- Fork
 synthetise kenv (Fork p e) = do
   t <- synthetise kenv e
@@ -219,7 +218,14 @@ checkAgainst kenv (Conditional p e1 e2 e3) t = do
   venv4 <- getVenv
   checkEquivEnvs p kenv venv3 venv4
 -- Pair elimination
-  -- TODO
+checkAgainst kenv (BinLet _ x y e1 e2) t2 = do
+  t1 <- synthetise kenv e1
+  (u1, u2) <- extractPair t1
+  addToVenv x (toTypeScheme u1)
+  addToVenv y (toTypeScheme u2)
+  checkAgainst kenv e2 t2
+  quotient kenv x
+  quotient kenv y
 -- Default
 checkAgainst kenv e t = do
   u <- synthetise kenv e
