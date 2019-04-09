@@ -1,4 +1,4 @@
-\begin{figure}[h!]
+\begin{figure}[t]
   The \emph{synthesise} relation\hfill\fbox{$\algtypeout e T \varEnv$}
   \begin{gather*}
     % Variables
@@ -72,14 +72,14 @@
     }
     \\
     % Let, a derived constructor
-    \frac{
-      \algtypeout[\kindEnv;\varEnv_1]{e_1}{T_1}{\varEnv_2}
-      \quad
-      \algtypeout[\kindEnv;\varEnv_2,x\colon T_1]{e_2}{T_2}{\Gamma_3}
-    }{
-      \algtypeout[\kindEnv;\varEnv_1]{\unlete{x}{e_1}{e_2}}{T_2}{\varEnv_3 \div x}
-    }
-    \\
+    % \frac{
+    %   \algtypeout[\kindEnv;\varEnv_1]{e_1}{T_1}{\varEnv_2}
+    %   \quad
+    %   \algtypeout[\kindEnv;\varEnv_2,x\colon T_1]{e_2}{T_2}{\Gamma_3}
+    % }{
+    %   \algtypeout[\kindEnv;\varEnv_1]{\unlete{x}{e_1}{e_2}}{T_2}{\varEnv_3 \div x}
+    % }
+    % \\
     % Conditional
     \frac{
       \algtypein[\kindEnv;\varEnv_1]{e_1}{\boole}{\varEnv_2}
@@ -106,14 +106,14 @@
     \\
     % Pair destructor
     \frac{
-      \algtypeout[\kindEnv ; \varEnv_1]{e_1}{T}{\varEnv_2}
+      \algtypeout[\kindEnv ; \varEnv_1]{e_1}{T_1}{\varEnv_2}
       \quad
-      T \Extract{} q(U_1, U_2)
+      T_1 \Extract{} q(U_1, U_2)
       \quad
-      \algtypeout[\kindEnv; \varEnv_2, x\colon U_1, y\colon U_2]{e_2}{U}{\varEnv_3}
+      \algtypeout[\kindEnv; \varEnv_2, x\colon U_1, y\colon U_2]{e_2}{T_2}{\varEnv_3}
     }{
       \algtypeout[\kindEnv;
-      \varEnv_1]{\binlete{x}{y}{e_1}{e_2}}{U}{\varEnv_3} \div x \div y
+      \varEnv_1]{\binlete{x}{y}{e_1}{e_2}}{T_2}{\varEnv_3} \div x \div y
     }
     \\
     % Channel creation
@@ -154,62 +154,76 @@
     \\
     % Match 
     \frac{
+      \begin{array}{c}
       \algtypeout[\kindEnv;\varEnv_1]{e}{T}{\varEnv_2}
       \quad
       T \Extract{} \&\{C_i\colon T_i\}
       \quad 
-      \algtypeout[\kindEnv;\varEnv_2, x_i\colon T_i]{e_i}{U_i}{\Sigma_i}
-      \quad 
+        (T_i;x_i) \Extract{}{\vec V_i}
+    \quad
+      \algtypeout[\kindEnv;\varEnv_2, x_i\colon V_i]{e_i}{U_i}{\Sigma_i}
+      \\
       \typeequiv{U_1}{U_i}
       \quad
-      \ctxequiv{\Sigma_1}{\Sigma_i} 
+      \ctxequiv{\Sigma_1 \div (x_1\colon T_1)}{\Sigma_i \div (x_i\colon T_i)} 
+      \end{array}
     }{
-      \algtypeout[\kindEnv;\varEnv_1]{\matche{e}{\{C_i\,x_i \rightarrow e_i\}}}{U_1}{\Sigma_1}
+      \algtypeout[\kindEnv;\varEnv_1]{\matche{e}{\{C_i\,x_i
+          \rightarrow e_i\}}}{U_1}{\Sigma_1 \div (x_1\colon T_1)}
     }
   \\
   \frac{
+    \begin{array}{c}
     \algtypeout[\kindEnv;\varEnv_1]{e}{T}{\varEnv_2}
     \quad
-    T \Extract{}[C_i\colon\vec T_i]
+    T \Extract{}[C_i\colon T_i]
     \quad
-    \algtypeout[\kindEnv;\varEnv_2, \vec x_i\colon\vec T_i]{e_i}{U_i}{\Sigma_i}
+    (T_i;\vec x_i) \Extract{}{\vec V_i}
     \quad
+    \algtypeout[\kindEnv;\varEnv_2, \vec x_i\colon\vec V_i]{e_i}{U_i}{\Sigma_i}
+    \\
     \typeequiv{U_1}{U_i}    
     \quad
-    \ctxequiv{\Sigma_1}{\Sigma_i} 
+    \ctxequiv{\Sigma_1 \div (\vec x_1\colon\vec V_1)}{\Sigma_i \div (\vec x_i\colon\vec V_i)} 
+    \end{array}
   }{
-    \algtypeout[\kindEnv;\varEnv_1]{\casee{e}{\{C_i\,\vec x\rightarrow e_i\}}}{U}{\Sigma_1}
+    \algtypeout[\kindEnv;\varEnv_1]{\casee{e}{\{C_i\,\vec x_i\rightarrow e_i\}}}{U}{\Sigma_1 \div (\vec x_1\colon\vec V_1)}
   }
-  \\ % Fork
-  \frac{
-    \algtypeout[\kindEnv;\varEnv_1]{e}{T}{\varEnv_2}
-    \quad
-    \isUn T
-  }{
-    \algtypeout[\kindEnv;\varEnv_1]{\forke{e}}{\unite}{\varEnv_2}
-  }
+  % \\ % Fork -- Fork is now a program variable in context
+  % \frac{
+  %   \algtypeout[\kindEnv;\varEnv_1]{e}{T}{\varEnv_2}
+  %   \quad
+  %   \isUn T
+  % }{
+  %   \algtypeout[\kindEnv;\varEnv_1]{\forke{e}}{\unite}{\varEnv_2}
+  % }
   \end{gather*}
-  % 
-  % 
+\end{figure}
+
+
+
+\begin{figure}[t]
   The \emph{check against} relation\hfill\fbox{$\algtypein e T \varEnv$}
   \begin{gather*}
-    % Let, a derived constructor
-    \frac{
-      \algtypeout[\kindEnv;\varEnv_1]{e_1}{T_1}{\varEnv_2}
-      \quad
-      \algtypein[\kindEnv;\varEnv_2,x\colon T_1]{e_2}{T_2}{\Gamma_3}
-    }{
-      \algtypein[\kindEnv;\varEnv_1]{\unlete{x}{e_1}{e_2}}{T_2}{\varEnv_3}
-    }
-    \\
+    % Let, a derived constructor (this rule is wrong)
+    % \frac{
+    %   \algtypeout[\kindEnv;\varEnv_1]{e_1}{T_1}{\varEnv_2}
+    %   \quad
+    %   \algtypein[\kindEnv;\varEnv_2,x\colon T_1]{e_2}{T_2}{\Gamma_3}
+    % }{
+    %   \algtypein[\kindEnv;\varEnv_1]{\unlete{x}{e_1}{e_2}}{T_2}{\varEnv_3}
+    % }
+    % \\
     % Pair destructor
     \frac{
-      \algtypeout[\kindEnv ; \varEnv_1]{e_1}{T}{\varEnv_2}
+      \algtypeout[\kindEnv ; \varEnv_1]{e_1}{T_1}{\varEnv_2}
       \quad
-      \algtypein[\kindEnv; \varEnv_2, x\colon U_1, y\colon U_2]{e_2}{U}{\varEnv_3}
+      T_1 \Extract{} q(U_1, U_2)
+      \quad
+      \algtypein[\kindEnv; \varEnv_2, x\colon U_1, y\colon U_2]{e_2}{T_2}{\varEnv_3}
     }{
       \algtypein[\kindEnv;
-      \varEnv_1]{\binlete{x}{y}{e_1}{e_2}}{U}{\varEnv_3} \div x \div y
+      \varEnv_1]{\binlete{x}{y}{e_1}{e_2}}{T_2}{\varEnv_3} \div x \div y
     }
     \\
     % Conditional
@@ -232,6 +246,40 @@
     }{
       \algtypein e T \varEnv
     }
+    \\
+    % Match 
+    \frac{
+      \begin{array}{c}
+      \algtypeout[\kindEnv;\varEnv_1]{e}{T}{\varEnv_2}
+      \quad
+      T \Extract{} \&\{C_i\colon T_i\}
+      \quad 
+        (T_i; x_i) \Extract{}{\vec V_i}
+      \\
+      \algtypein[\kindEnv;\varEnv_2, x_i\colon V_i]{e_i}{U}{\Sigma_i}
+      \quad
+      \ctxequiv{\Sigma_1 \div (x_1\colon T_1)}{\Sigma_i \div (x_i\colon T_i)} 
+      \end{array}
+    }{
+      \algtypein[\kindEnv;\varEnv_1]{\matche{e}{\{C_i\,x_i
+          \rightarrow e_i\}}}{U_1}{\Sigma_1 \div (x_1\colon T_1)}
+    }
+  \\
+  \frac{
+    \begin{array}{c}
+    \algtypeout[\kindEnv;\varEnv_1]{e}{T}{\varEnv_2}
+    \quad
+    T \Extract{}[C_i\colon T_i]
+    \quad
+    (T_i;\vec x_i) \Extract{}{\vec V_i}
+    \\
+    \algtypein[\kindEnv;\varEnv_2, \vec x_i\colon\vec V_i]{e_i}{U}{\Sigma_i}
+    \quad
+    \ctxequiv{\Sigma_1 \div (\vec x_1\colon\vec V_1)}{\Sigma_i \div (\vec x_i\colon\vec V_i)} 
+    \end{array}
+  }{
+    \algtypein[\kindEnv;\varEnv_1]{\casee{e}{\{C_i\,\vec x_i\rightarrow e_i\}}}{U}{\Sigma_1 \div (\vec x_1\colon\vec V_1)}
+  }
   \end{gather*}
   \caption{Algorithmic type checking}
   \label{fig:alg-typing}

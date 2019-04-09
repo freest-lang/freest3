@@ -11,7 +11,27 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-module Utils.FreestState where
+module Utils.FreestState
+( FreestState
+, FreestS(..)
+, Errors (..)
+, tMapM
+, tMapWithKeyM
+, getFromVenv
+, getTenv
+, getVenv
+, getEenv
+, setVenv
+, addToTenv
+, addToVenv
+, addToEenv
+, removeFromVenv
+, getFromTenv
+, getFileName
+, initialState
+, freshVar
+, addError
+) where
 
 import           Parse.Lexer (Pos)
 import           Syntax.Programs
@@ -33,7 +53,6 @@ data FreestS = FreestS {
 , varEnv   :: VarEnv
 , expEnv   :: ExpEnv
 , typeEnv  :: TypeEnv
---, kindEnv  :: KindEnv
 , errors   :: Errors
 , fv       :: Int }
 
@@ -47,7 +66,6 @@ initialState f = FreestS {
 , varEnv   = Map.empty
 , expEnv   = Map.empty
 , typeEnv  = Map.empty
---, kindEnv  = Map.empty
 , errors   = []
 , fv        = 0}
 

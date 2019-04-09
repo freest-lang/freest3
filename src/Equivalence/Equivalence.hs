@@ -23,7 +23,7 @@ import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.Bind
 import           Validation.Kinding
-import qualified Equivalence.StrongEquivalence as StrongEquivalence
+import           Equivalence.Normalisation
 import qualified Equivalence.Bisimulation as Bisimulation
 import qualified Data.Map.Strict as Map
 
@@ -33,7 +33,7 @@ class Equivalence t where
 -- Types
 
 instance Equivalence Type where
-   equivalent tenv kenv t u = StrongEquivalence.equivalent tenv t u || equiv kenv t u
+   equivalent tenv kenv t u = normalise tenv t == normalise tenv u || equiv kenv t u
   -- equivalent tenv kenv t u = t == u || equiv kenv t u
   -- equivalent tenv kenv t u = equiv kenv t u
     where
@@ -73,7 +73,7 @@ instance Equivalence Type where
 instance Equivalence TypeScheme where
   equivalent tenv kenv1 ts1 ts2 =
     case instantiate ts1 ts2 of
-      Nothing             -> False
+      Nothing              -> False
       Just (kenv2, t1, t2) -> equivalent tenv (kenv1 `Map.union` kenv2) t1 t2
 
 instantiate :: TypeScheme -> TypeScheme -> Maybe (KindEnv, Type, Type)
@@ -95,4 +95,5 @@ instantiate (TypeScheme _ bs1 t1) (TypeScheme _ bs2 t2) = inst bs1 bs2 t1 t2
 instance Equivalence VarEnv where
   equivalent tenv kenv env1 env2 =
     Map.size env1 == Map.size env2 &&
-    Map.foldlWithKey (\acc b s -> acc && b `Map.member` env2 && equivalent tenv kenv s (env2 Map.! b)) True env1
+    Map.foldlWithKey (\acc b s -> acc && b `Map.member` env2 &&
+    equivalent tenv kenv s (env2 Map.! b)) True env1
