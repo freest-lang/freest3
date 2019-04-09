@@ -23,7 +23,7 @@ import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.Bind
 import           Validation.Kinding
-import qualified Equivalence.StrongEquivalence as StrongEquivalence
+import           Equivalence.Normalisation
 import qualified Equivalence.Bisimulation as Bisimulation
 import qualified Data.Map.Strict as Map
 
@@ -33,7 +33,7 @@ class Equivalence t where
 -- Types
 
 instance Equivalence Type where
-   equivalent tenv kenv t u = StrongEquivalence.equivalent tenv t u || equiv kenv t u
+   equivalent tenv kenv t u = normalise tenv t == normalise tenv u || equiv kenv t u
   -- equivalent tenv kenv t u = t == u || equiv kenv t u
   -- equivalent tenv kenv t u = equiv kenv t u
     where
