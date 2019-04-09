@@ -51,8 +51,8 @@ synthetise _ (Boolean p _)   = return $ Basic p BoolType
 synthetise kenv (ProgVar p x) = do
   s@(TypeScheme _ bs t) <- synthetiseVar kenv (PBind p x)
   when (not $ null bs) 
-    (addError p ["Variable", styleRed x, "of a polymorphic type used in a monomorphic context\n",
-              "\t the type scheme for variable", styleRed x, "is", styleRed $ show s])
+    (addError p ["Variable", styleRed $ show x, "of a polymorphic type used in a monomorphic context\n",
+              "\t the type scheme for variable", styleRed $ show x, "is", styleRed $ show s])
   return t
 synthetise kenv (UnLet _ b e1 e2) = do
   t1 <- synthetise kenv e1
@@ -156,7 +156,7 @@ synthetiseVar kenv b = do
       addToVenv b s
       return s
 
-synthetiseFieldMap :: Pos -> KindEnv -> Expression -> FieldMap ->
+synthetiseFieldMap :: Pos -> KindEnv -> Expression -> ExpMap ->
   (Pos -> Type -> FreestState TypeMap) -> FreestState Type
 synthetiseFieldMap p kenv e fm extract = do
   t <- synthetise kenv e
@@ -169,15 +169,38 @@ synthetiseFieldMap p kenv e fm extract = do
   return t
 
 -- Checks either the case map and the match map (all the expressions)
-synthetiseField :: VarEnv -> KindEnv -> TypeMap -> PBind -> Expression ->
+synthetiseField :: VarEnv -> KindEnv -> TypeMap -> PBind -> ([PBind], Expression) ->
   FreestState ([Type], [VarEnv]) -> FreestState ([Type], [VarEnv])
-synthetiseField venv1 kenv tm b e state = do
+synthetiseField venv1 kenv tm b (bs, e) state = do
   (ts, venvs) <- state
   setVenv venv1
   t1 <- synthetiseCons b tm
+  paramsToVenv b bs t1
   t2 <- fillFunType kenv b e (toTypeScheme t1)
+  mapM_ (quotient kenv) bs  
   venv2 <- getVenv
   return (t2:ts, venv2:venvs)
+
+  -- TODO: still need to remove arguments from var env in the end
+paramsToVenv :: PBind -> [PBind] -> Type -> FreestState ()
+paramsToVenv c bs t = do
+  let ts = zipPBindLType bs t
+  mapM_ (uncurry addToVenv) ts 
+  let lbs = length bs
+      num = numberOfArgs t
+  when (lbs /= num) $
+    addError (position c) ["The constructor", styleRed (show c) , "should have",
+                         show num, "arguments, but has been given", show lbs]  
+
+zipPBindLType :: [PBind] -> Type -> [(PBind, TypeScheme)]
+zipPBindLType [] _ = []
+zipPBindLType (_:[]) _ = []
+zipPBindLType (b:bs) (Fun _ _ t1 t2) = (b, toTypeScheme t1) : zipPBindLType bs t2
+zipPBindLType (b:bs) t = [(b, toTypeScheme t)]
+
+numberOfArgs :: Type -> Int
+numberOfArgs (Fun _ _ _ t2) = 1 + numberOfArgs t2
+numberOfArgs t              = 0
 
 -- Check whether a constructor exists in a type map
 synthetiseCons :: PBind -> TypeMap -> FreestState Type
@@ -185,7 +208,7 @@ synthetiseCons b@(PBind p c) tm = do
   case tm Map.!? b of
     Just t  -> return t
     Nothing -> do
-      addError p ["Data constructor or choice field", styleRed c, "not in scope"]
+      addError p ["Data constructor or choice field", styleRed $ show c, "not in scope"]
       return $ Skip p
 
 -- | The quotient operation
@@ -196,8 +219,8 @@ quotient kenv b@(PBind p x) =
     Just s  -> do
       let (TypeScheme _ [] t) = s
       k <- K.synthetise kenv t
-      when (isLin k) $ addError p ["Program variable", styleRed x, "is linear at the end of its scope\n",
-                        "\t", "variable", styleRed x, "is of type", styleRed (show t),
+      when (isLin k) $ addError p ["Program variable", styleRed $ show x, "is linear at the end of its scope\n",
+                        "\t", "variable", styleRed $ show x, "is of type", styleRed $ show t,
                         "of kind", styleRed (show k)]
       removeFromVenv b
     Nothing ->
@@ -294,7 +317,7 @@ fillFunType kenv b@(PBind p f) e (TypeScheme _ _ t) = fill e t
     return t3
   fill e@(Lambda p _ _ _ _) t = do
     addError p ["Couldn't match expected type", styleRed $ show t, "\n",
-                "\t The equation for", styleRed f, "has one or more arguments,\n",
+                "\t The equation for", styleRed $ show f, "has one or more arguments,\n",
                 "\t but its type", styleRed $ show t, "has none"]
     return t
   fill e _ = synthetise kenv e

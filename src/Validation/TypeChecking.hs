@@ -72,7 +72,7 @@ checkFunBody f e =
 checkMainFunction :: FreestState ()
 checkMainFunction = do
   venv <- getVenv
-  let mBind = PBind defaultPos "main"
+  let mBind = PBind defaultPos $ PVar "main"
   if mBind `Map.notMember` venv
   then
     addError defaultPos ["Function", styleRed "main", "is not defined"]

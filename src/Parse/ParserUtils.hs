@@ -115,11 +115,11 @@ type Op = String
 
 binOp :: Pos -> Expression -> Op -> Expression -> Expression
 binOp pos left op right =
-  App (position left) (App (position left) (ProgVar pos op) left) right
+  App (position left) (App (position left) (ProgVar pos (PVar op)) left) right
 
 unOp :: Pos -> Op -> Expression -> Expression
 unOp pos op expr =
-  App (position expr) (ProgVar pos op) expr
+  App (position expr) (ProgVar pos (PVar op)) expr
 
 -- Convert a list of types and a final type constructor to a type
 typeListToType:: TBind -> [(PBind, [Type])] -> [(PBind, Type)]

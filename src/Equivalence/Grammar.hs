@@ -104,7 +104,7 @@ throughPath p _ xs = Just xs
 -- Showing a grammar
 
 instance Show Label where
-  show (ChoiceLabel v l) = show v ++ l
+  show (ChoiceLabel v l) = show v ++ show l
   show (MessageLabel p t) = show p ++ show t
   show (VarLabel l) = l
 

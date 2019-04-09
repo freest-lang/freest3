@@ -126,5 +126,5 @@ extractCons pos tm c =
   case tm Map.!? b of
     Just t -> return t
     Nothing -> do
-      addError pos ["Constructor", styleRed c, "not in scope"]             
+      addError pos ["Constructor", styleRed (show c), "not in scope"]             
       return $ Basic pos UnitType

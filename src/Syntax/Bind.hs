@@ -12,7 +12,7 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Syntax.Bind
-( PVar
+( PVar(..)
 , TVar
 , PBind(..)
 , TBind(..)
@@ -20,10 +20,16 @@ module Syntax.Bind
 ) where 
 
 import Parse.Lexer (Position, Pos, position)
+import Data.Char (isDigit)
 
 -- The base syntactic categories of FreeST
 
-type PVar = String  -- Program Variables: Function names and function
+newtype PVar = PVar { getPVar :: String } deriving (Eq, Ord)
+
+instance Show PVar where
+ show v = dropWhile (isDigit) (getPVar v)
+
+--type PVar = String  -- Program Variables: Function names and function
                     -- parameters (lower case), but also datatype
                     -- constructors and labels in session types
                     -- choices (uppercase)
@@ -43,14 +49,13 @@ instance Position PBind where
   position (PBind p _) = p
 
 instance Show PBind where
-  show (PBind _ x) = x
+  show (PBind _ x) = show x
 
 instance Eq PBind where
   (PBind _ x) == (PBind _ y) = x == y
   
 instance Ord PBind where
   (PBind _ x) <= (PBind _ y) = x <= y
-
 
 data TBind = TBind Pos TVar
 

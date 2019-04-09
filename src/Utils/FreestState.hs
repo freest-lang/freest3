@@ -11,7 +11,27 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-module Utils.FreestState where
+module Utils.FreestState
+( FreestState
+, FreestS(..)
+, Errors (..)
+, tMapM
+, tMapWithKeyM
+, getFromVenv
+, getTenv
+, getVenv
+, getEenv
+, setVenv
+, addToTenv
+, addToVenv
+, addToEenv
+, removeFromVenv
+, getFromTenv
+, getFileName
+, initialState
+, freshVar
+, addError
+) where
 
 import           Parse.Lexer (Pos)
 import           Syntax.Programs
@@ -33,9 +53,8 @@ data FreestS = FreestS {
 , varEnv   :: VarEnv
 , expEnv   :: ExpEnv
 , typeEnv  :: TypeEnv
---, kindEnv  :: KindEnv
 , errors   :: Errors
-, fv       :: Int }
+, lastVar  :: Int }
 
 type FreestState = State FreestS
 
@@ -47,9 +66,9 @@ initialState f = FreestS {
 , varEnv   = Map.empty
 , expEnv   = Map.empty
 , typeEnv  = Map.empty
---, kindEnv  = Map.empty
 , errors   = []
-, fv        = 0}
+, lastVar       = 0
+}
 
 -- | FILE NAME
 
@@ -170,8 +189,8 @@ addErrorList es =
 freshVar :: FreestState String
 freshVar = do
   s <- get
-  put $ s {fv = fv s + 1}
-  return $ "_x" ++ show (fv s)
+  put $ s {lastVar = lastVar s + 1}
+  return $ "_x" ++ show (lastVar s)
 
 -- | Traversing Map.map over FreestStates
 
