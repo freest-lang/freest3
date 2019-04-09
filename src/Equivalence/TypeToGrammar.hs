@@ -66,6 +66,20 @@ addProduction x l w =
   modify $ \(p, v, n) -> (insertProduction p x l w, v, n)
 --  addProductions x (Map.singleton l w) -- does not work; I wonder why
 
+-- Add or update production from a (basic) non-terminal; the productions may already contain transitions for the given nonterminal (hence the insertWith and union)
+addBasicProd :: Label -> TransState TVar
+addBasicProd l = do
+  (p, _, _) <- get
+  let p' = Map.filter (Map.member l) p
+  if Map.null p'
+    then do
+      y <- freshVar
+      addProduction y l []
+      return y
+    else do
+      let (y,_) = Map.elemAt 0 p'
+      return y
+
 -- Conversion to context-free grammars
 
 convertToGrammar :: [Type] -> Grammar
@@ -88,8 +102,9 @@ toGrammar (Semi _ t u) = do
   ys <- toGrammar u
   return $ xs ++ ys
 toGrammar (Message _ p b) = do
-  y <- freshVar
-  addProduction y (MessageLabel p b) []
+  -- y <- freshVar
+  -- addProduction y (MessageLabel p b) []
+  y <- addBasicProd (MessageLabel p b)
   return [y]
 toGrammar (Choice _ c m) = do
   y <- freshVar
@@ -111,10 +126,11 @@ toGrammar (TypeVar _ x) = do
   then    -- This is a recursion variable
     return [x]
   else do -- This is a polymorphic variable
-    y <- freshVar
-    addProduction y (VarLabel x) []
+    -- y <- freshVar
+    -- addProduction y (VarLabel x) []
+    y <- addBasicProd (VarLabel x)
     return [y]
-  
+
 assocToGrammar :: TVar -> Polarity -> (PBind, Type) -> TransState ()
 assocToGrammar y p (PBind _ l, t) = do
   xs <- toGrammar t
