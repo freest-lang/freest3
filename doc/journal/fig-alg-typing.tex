@@ -174,16 +174,18 @@
     \begin{array}{c}
     \algtypeout[\kindEnv;\varEnv_1]{e}{T}{\varEnv_2}
     \quad
-    T \Extract{}[C_i\colon\vec T_i]
+    T \Extract{}[C_i\colon T_i]
     \quad
-    \algtypeout[\kindEnv;\varEnv_2, \vec x_i\colon\vec T_i]{e_i}{U_i}{\Sigma_i}
+    (T_i;\vec x_i) \Extract{}{\vec V_i}
+    \quad
+    \algtypeout[\kindEnv;\varEnv_2, \vec x_i\colon\vec V_i]{e_i}{U_i}{\Sigma_i}
     \\
     \typeequiv{U_1}{U_i}    
     \quad
-    \ctxequiv{\Sigma_1 \div (\vec x_i\colon\vec T_i)}{\Sigma_i \div (\vec x_i\colon\vec T_i)} 
+    \ctxequiv{\Sigma_1 \div (\vec x_1\colon\vec V_1)}{\Sigma_i \div (\vec x_i\colon\vec V_i)} 
     \end{array}
   }{
-    \algtypeout[\kindEnv;\varEnv_1]{\casee{e}{\{C_i\,\vec x\rightarrow e_i\}}}{U}{\Sigma_1 \div (\vec x_1\colon\vec T_1)}
+    \algtypeout[\kindEnv;\varEnv_1]{\casee{e}{\{C_i\,\vec x_i\rightarrow e_i\}}}{U}{\Sigma_1 \div (\vec x_1\colon\vec V_1)}
   }
   % \\ % Fork -- Fork is now a program variable in context
   % \frac{
