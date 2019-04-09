@@ -154,40 +154,45 @@
     \\
     % Match 
     \frac{
+      \begin{array}{c}
       \algtypeout[\kindEnv;\varEnv_1]{e}{T}{\varEnv_2}
       \quad
       T \Extract{} \&\{C_i\colon T_i\}
       \quad 
       \algtypeout[\kindEnv;\varEnv_2, x_i\colon T_i]{e_i}{U_i}{\Sigma_i}
-      \quad 
+      \\
       \typeequiv{U_1}{U_i}
       \quad
-      \ctxequiv{\Sigma_1}{\Sigma_i} 
+      \ctxequiv{\Sigma_1 \div (x_1\colon T_1)}{\Sigma_i \div (x_i\colon T_i)} 
+      \end{array}
     }{
-      \algtypeout[\kindEnv;\varEnv_1]{\matche{e}{\{C_i\,x_i \rightarrow e_i\}}}{U_1}{\Sigma_1}
+      \algtypeout[\kindEnv;\varEnv_1]{\matche{e}{\{C_i\,x_i
+          \rightarrow e_i\}}}{U_1}{\Sigma_1 \div (x_1\colon T_1)}
     }
   \\
   \frac{
+    \begin{array}{c}
     \algtypeout[\kindEnv;\varEnv_1]{e}{T}{\varEnv_2}
     \quad
     T \Extract{}[C_i\colon\vec T_i]
     \quad
     \algtypeout[\kindEnv;\varEnv_2, \vec x_i\colon\vec T_i]{e_i}{U_i}{\Sigma_i}
-    \quad
+    \\
     \typeequiv{U_1}{U_i}    
     \quad
-    \ctxequiv{\Sigma_1}{\Sigma_i} 
+    \ctxequiv{\Sigma_1 \div (\vec x_i\colon\vec T_i)}{\Sigma_i \div (\vec x_i\colon\vec T_i)} 
+    \end{array}
   }{
-    \algtypeout[\kindEnv;\varEnv_1]{\casee{e}{\{C_i\,\vec x\rightarrow e_i\}}}{U}{\Sigma_1}
+    \algtypeout[\kindEnv;\varEnv_1]{\casee{e}{\{C_i\,\vec x\rightarrow e_i\}}}{U}{\Sigma_1 \div (\vec x_1\colon\vec T_1)}
   }
-  \\ % Fork
-  \frac{
-    \algtypeout[\kindEnv;\varEnv_1]{e}{T}{\varEnv_2}
-    \quad
-    \isUn T
-  }{
-    \algtypeout[\kindEnv;\varEnv_1]{\forke{e}}{\unite}{\varEnv_2}
-  }
+  % \\ % Fork -- Fork is now a program variable in context
+  % \frac{
+  %   \algtypeout[\kindEnv;\varEnv_1]{e}{T}{\varEnv_2}
+  %   \quad
+  %   \isUn T
+  % }{
+  %   \algtypeout[\kindEnv;\varEnv_1]{\forke{e}}{\unite}{\varEnv_2}
+  % }
   \end{gather*}
   % 
   % 
