@@ -20,6 +20,7 @@ import           Parse.Lexer (Position, Pos, position, showPos)
 import           Syntax.Types (Type)
 import           Syntax.Kinds (Multiplicity(..))
 import           Syntax.Bind (PVar, PBind)
+import           Data.List (intersperse)
 import qualified Data.Map.Strict as Map
 
 data Expression =
@@ -70,20 +71,20 @@ showAux (Boolean _ b) _  = show b
 -- Variable
 showAux (ProgVar _ x) _  = show x
   -- Abstraction intro and elim
-showAux (Lambda _ Un b t e) i = show Un ++ "(" ++ "\\" ++ show b ++ " : " ++ show t ++ " -> " ++ (showAux e (i-1)) ++ ")"
-showAux (Lambda _ Lin b t e) i = show Lin ++ "(" ++ "\\" ++ show b ++ " : " ++ show t ++ "-o" ++ (showAux e (i-1)) ++ ")"
+showAux (Lambda _ Un b t e) i = "(" ++ "\\" ++ show b ++ " : " ++ show t ++ " -> " ++ (showAux e (i-1)) ++ ")"
+showAux (Lambda _ Lin b t e) i = "(" ++ "\\" ++ show b ++ " : " ++ show t ++ "-o" ++ (showAux e (i-1)) ++ ")"
 showAux (App _ e1 e2) i = (showAux e1 (i-1)) ++ (showAux e2 (i-1))
   -- Pair intro and elim
 showAux (Pair _ e1 e2) i = " (" ++ (showAux e1 (i-1)) ++ ", " ++ (showAux e1 (i-1)) ++ ")"
 showAux (BinLet _ b1 b2 e1 e2) i = " let " ++ show b1 ++ ", " ++ show b2 ++ " = " ++ (showAux e1 (i-1)) ++ " in " ++ (showAux e2 (i-1))
   -- Datatype elim
-showAux (Case _ e _) i = " case " ++ (showAux e (i-1)) ++ " of " ++ " ..."
+showAux (Case _ e m) i = " case " ++ (showAux e (i-1)) ++ " of " ++ (showMap m (i-1))
   -- Type application
 showAux (TypeApp _ x [t]) _ = x ++ show t
   -- Boolean elim
 showAux (Conditional _ e e1 e2) i = " if " ++ show e ++ " then " ++ (showAux e1 (i-1)) ++ " else " ++ (showAux e2 (i-1))
   -- Let
-showAux (UnLet _ b1 e1 e2) i = " let " ++ show b1 ++ " = " ++ (showAux e1 (i-1)) ++ " in " ++ (showAux e2 (i-1))
+showAux (UnLet _ b1 e1 e2) i = " let " ++ show b1 ++ " = " ++ (showAux e1 i) ++ " in " ++ (showAux e2 (i-1))
 -- Fork
 showAux (Fork _ e) i = " fork " ++ (showAux e (i-1))
   -- Session types
@@ -91,7 +92,11 @@ showAux (New _ t) _ = " new " ++ show t
 showAux (Send _ e) _ = " send " ++ show e
 showAux (Receive _ e) _ = " receive " ++ show e
 showAux (Select _ l e) i = " select " ++ show l ++ (showAux e (i-1))
-showAux (Match _ e _) i = " match " ++ show e ++ " with " ++ " ..."
+showAux (Match _ e m) i = " match " ++ show e ++ " with " ++ (showMap m (i-1))
+
+showMap :: FieldMap -> Int -> String
+showMap m i = concat $ intersperse ", " (map showAssoc (Map.toList m))
+  where showAssoc (b, v) = (show b) ++ " " ++ (showAux v (i-1))
 
 instance Position Expression where
   position (Unit p)              = p
