@@ -1,7 +1,7 @@
 module Utils.PreludeLoader
 ( prelude
 , isBuiltin
-, isBinOpApp
+-- , isBinOpApp
 ) where
 
 import           Parse.Lexer (defaultPos)
@@ -9,7 +9,7 @@ import           Syntax.Programs (VarEnv)
 import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Bind
-import           Syntax.Kinds (Multiplicity(..))
+import           Syntax.Kinds
 import           Syntax.Expression
 import           Parse.Parser
 import qualified Data.Map.Strict as Map
@@ -40,7 +40,7 @@ typeList = [ ("(+)",  binInt)
            , ("(>)", relationalOps)
            , ("(<=)", relationalOps)
            , ("(>=)", relationalOps)
-           , ("id", TypeScheme [TBindK defaultPos "a" (Kind defaultPos Session Un)] (Fun defaultPos Un (Var defautPos "a") (Var defautPos "a")))
+           , ("id", TypeScheme defaultPos [TBindK defaultPos "a" (Kind defaultPos Session Un)] (Fun defaultPos Un (TypeVar defaultPos "a") (TypeVar defaultPos "a")))
            ]
 
 prelude :: VarEnv
@@ -49,7 +49,7 @@ prelude = preludeLoad Map.empty
 
 preludeLoad :: VarEnv -> VarEnv
 preludeLoad venv = 
-  foldl (\acc (tv, t) -> Map.insert (PBind defaultPos tv) (TypeScheme defaultPos [] t) acc) venv typeList
+  foldl (\acc (tv, t) -> Map.insert (PBind defaultPos tv) t acc) venv typeList
 
 {-
 preludeLoad :: VarEnv -> VarEnv
@@ -72,16 +72,16 @@ isBuiltin :: PBind -> Bool
 isBuiltin (PBind _ x) = x `elem` (map fst typeList)
 
 
-isBinOpApp :: Expression -> Bool
-isBinOpApp (App _ e1 e2) = isBinOpApp e1 || isBinOpApp e2
-isBinOpApp (ProgVar p x) = isBinOp (PBind p x)
-isBinOpApp _             = False
+-- isBinOpApp :: Expression -> Bool
+-- isBinOpApp (App _ e1 e2) = isBinOpApp e1 || isBinOpApp e2
+-- isBinOpApp (ProgVar p x) = isBinOp (PBind p x)
+-- isBinOpApp _             = False
 
-isBinOp :: PBind -> Bool
-isBinOp (PBind _ x) =
-  case x `lookup` typeList of
-    Just t -> 3 == (length (toListT  t))
-    Nothing -> False
+-- isBinOp :: PBind -> Bool
+-- isBinOp (PBind _ x) =
+--   case x `lookup` typeList of
+--     Just t -> 3 == (length (toListT  t))
+--     Nothing -> False
 
 
 toListT :: Type -> [Type]

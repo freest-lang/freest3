@@ -53,12 +53,9 @@ data Expression =
   | Receive Pos Expression
   | Select Pos PVar Expression
   | Match Pos Expression ExpMap
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord)
 
--- type FieldMap = Map.Map PBind Expression
 type ExpMap  = Map.Map PBind ([PBind], Expression)
-type FieldMap = Map.Map PBind Expression
--- type FieldMap  = Map.Map PBind ([PBind], Expression)
 
 instance Show Expression where
   show e = showAux e 3
@@ -96,10 +93,9 @@ showAux (Receive _ e) _ = " receive " ++ show e
 showAux (Select _ l e) i = " select " ++ show l ++ (showAux e (i-1))
 showAux (Match _ e m) i = " match " ++ show e ++ " with " ++ " {" ++ (showMap m i) ++ "}"
 
-showMap :: FieldMap -> Int -> String
+showMap :: ExpMap -> Int -> String
 showMap m i = concat $ intersperse ", " (map showAssoc (Map.toList m))
-  where showAssoc (b, v) = (show b) ++ " " ++ (showAux v (i-1))
->>>>>>> 47f64c1aa8b97964158dbbb6d1394fa8a55a471a
+  where showAssoc (b, (a,v)) = (show b) ++ " " ++ (showAux v (i-1))
 
 instance Position Expression where
   position (Unit p)              = p

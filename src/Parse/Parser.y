@@ -196,7 +196,7 @@ Primary :: { Expression }
   | '(' Expr ',' Expr ')'                    { Pair (position $1) $2 $4 }
   | '(' Expr ')'                             { $2 }
 
-MatchMap :: { FieldMap }
+MatchMap :: { ExpMap }
   : Match              { uncurry Map.singleton $1 }
   | Match ';' MatchMap {% checkDupMatch (fst $1) $3 >>
                           return (uncurry Map.insert $1 $3) }
@@ -205,7 +205,7 @@ Match :: { (PBind, ([PBind], Expression)) }
   : ConsBind VarBind '->' Expr { ($1, ([$2], $4)) }
 --  : ConsBind VarBind '->' Expr { ($1, funDeclToExp [$2] $4) }
 
-CaseMap :: { FieldMap }
+CaseMap :: { ExpMap }
   : Case             { uncurry Map.singleton $1 }
   | Case ';' CaseMap {% checkDupMatch (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
                         
