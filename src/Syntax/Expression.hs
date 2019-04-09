@@ -80,7 +80,7 @@ showAux (BinLet _ b1 b2 e1 e2) i = " let " ++ show b1 ++ ", " ++ show b2 ++ " = 
   -- Datatype elim
 showAux (Case _ e m) i = " case " ++ (showAux e (i-1)) ++ " of " ++ " {" ++ (showMap m i) ++ "}"
   -- Type application
-showAux (TypeApp _ x [t]) _ = x ++ show t
+showAux (TypeApp _ x [t]) _ = show x ++ show t
   -- Boolean elim
 showAux (Conditional _ e e1 e2) i = " if " ++ show e ++ " then " ++ (showAux e1 (i-1)) ++ " else " ++ (showAux e2 (i-1))
   -- Let

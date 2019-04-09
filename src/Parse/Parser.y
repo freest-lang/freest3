@@ -178,10 +178,10 @@ Expr :: { Expression }
 
 App :: { Expression }
   : App Primary                              { App (position $1) $1 $2 }
-  | LOWER_ID '[' TypeList ']'                { TypeApp (position $1) (getText $1) $3 }
+  | LOWER_ID '[' TypeList ']'                { TypeApp (position $1) (PVar (getText $1)) $3 }
   | send Primary                             { Send (position $1) $2 }
   | receive Primary                          { Receive (position $1) $2 }
-  | select UPPER_ID Primary                  { Select (position $1) (getText $2) $3 }
+  | select UPPER_ID Primary                  { Select (position $1) (PVar (getText $2)) $3 }
   | fork Primary                             { Fork (position $1) $2 }
   | '-' App %prec NEG                        { unOp (position $1) "negate" $2}
   | Primary                                  { $1 }
@@ -191,8 +191,8 @@ Primary :: { Expression }
   | BOOL                                     { let (TokenBool p x) = $1 in Boolean p x }
   | CHAR                                     { let (TokenChar p x) = $1 in Character p x }
   | '()'                                     { Unit (position $1) }
-  | LOWER_ID                                 { ProgVar (position $1) (getText $1) }
-  | UPPER_ID                                 { ProgVar (position $1) (getText $1) }
+  | LOWER_ID                                 { ProgVar (position $1) (PVar (getText $1)) }
+  | UPPER_ID                                 { ProgVar (position $1) (PVar (getText $1)) }
   | '(' Expr ',' Expr ')'                    { Pair (position $1) $2 $4 }
   | '(' Expr ')'                             { $2 }
 
@@ -289,8 +289,8 @@ Kind :: { Kind } :
 -- VARIABLES AND CONSTRUCTORS IN BINDING POSITIONS
 
 VarBind :: { PBind }
-  : LOWER_ID { PBind (position $1) (getText $1) }
-  | '_' { PBind (position $1) "_" } -- TODO: rename to unique Var
+  : LOWER_ID { PBind (position $1) (PVar (getText $1)) }
+  | '_' { PBind (position $1) (PVar "_") } -- TODO: rename to unique Var
 
 RecVar :: { TBindK }
   : LOWER_ID ':' Kind { TBindK (position $1) (getText $1) $3 }
@@ -301,7 +301,7 @@ KindVar :: { TBindK }
   | LOWER_ID	      { let p = position $1 in TBindK p (getText $1) (omission p) }
 
 ConsBind :: { PBind }
-  : UPPER_ID { PBind (position $1) (getText $1) }
+  : UPPER_ID { PBind (position $1) (PVar (getText $1)) }
 
 TConsBind :: { TBind }
   : UPPER_ID { TBind (position $1) (getText $1) }

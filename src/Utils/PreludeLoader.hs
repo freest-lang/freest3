@@ -11,24 +11,24 @@ import           Syntax.Bind
 import           Parse.Parser
 import qualified Data.Map.Strict as Map
 
-typeList :: [(String, String)]
-typeList = [ ("(+)", "Int -> Int -> Int")
-           , ("(-)", "Int -> Int -> Int")
-           , ("(/)", "Int -> Int -> Int")
-           , ("(*)", "Int -> Int -> Int")
-           , ("mod", "Int -> Int -> Int")
-           , ("rem", "Int -> Int -> Int")
-           , ("div", "Int -> Int -> Int")
-           , ("negate", "Int -> Int")
-           , ("not", "Bool -> Bool")
-           , ("(&&)", "Bool -> Bool -> Bool")
-           , ("(||)", "Bool -> Bool -> Bool")
-           , ("(==)", "Int -> Int -> Bool")
-           , ("(<)", "Int -> Int -> Bool")
-           , ("(>)", "Int -> Int -> Bool")
-           , ("(<=)", "Int -> Int -> Bool")
-           , ("(>=)", "Int -> Int -> Bool")
-           , ("id", "forall a : SU => a -> a")
+typeList :: [(PVar, String)]
+typeList = [ (PVar "(+)", "Int -> Int -> Int")
+           , (PVar "(-)", "Int -> Int -> Int")
+           , (PVar "(/)", "Int -> Int -> Int")
+           , (PVar "(*)", "Int -> Int -> Int")
+           , (PVar "mod", "Int -> Int -> Int")
+           , (PVar "rem", "Int -> Int -> Int")
+           , (PVar "div", "Int -> Int -> Int")
+           , (PVar "negate", "Int -> Int")
+           , (PVar "not", "Bool -> Bool")
+           , (PVar "(&&)", "Bool -> Bool -> Bool")
+           , (PVar "(||)", "Bool -> Bool -> Bool")
+           , (PVar "(==)", "Int -> Int -> Bool")
+           , (PVar "(<)", "Int -> Int -> Bool")
+           , (PVar "(>)", "Int -> Int -> Bool")
+           , (PVar "(<=)", "Int -> Int -> Bool")
+           , (PVar "(>=)", "Int -> Int -> Bool")
+           , (PVar "id", "forall a : SU => a -> a")
            ]
 
 prelude :: VarEnv

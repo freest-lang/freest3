@@ -233,11 +233,11 @@ translate fm m e@(ProgVar p x) = do
   let b = expected m e
   if Map.member (PBind p x) fm then
     do      
-      h <- translateExpr x b (fm Map.! (PBind p x))
+      h <- translateExpr (show x) b (fm Map.! (PBind p x))
       return (h, b) -- fm Map.! x)
   else
     do
-      h <- translateExpr x b False
+      h <- translateExpr (show x) b False
       return (h, b)
   
 translate fm m e@(UnLet _ (PBind _ x) e1 e2) = do
@@ -245,9 +245,9 @@ translate fm m e@(UnLet _ (PBind _ x) e1 e2) = do
   (h2, b2) <- translate fm m e2
 
   if b1 || b2 then
-    return (h1 ++ " >>= \\" ++ x ++ " -> " ++ h2, True) 
+    return (h1 ++ " >>= \\" ++ show x ++ " -> " ++ h2, True) 
   else
-    return ("let " ++ x ++ " = " ++ h1 ++ " in " ++ h2, b2)
+    return ("let " ++ show x ++ " = " ++ h1 ++ " in " ++ h2, b2)
 
 translate fm m e@(App _ e1 e2) = do
   (h1, b1) <- translate fm m e1
@@ -267,11 +267,11 @@ translate fm m e@(TypeApp p x _) = do -- translate fm m e
   let b = expected m e
   if Map.member (PBind p x) fm then
     do      
-      h <- translateExpr x b (fm Map.! (PBind p x))
+      h <- translateExpr (show x) b (fm Map.! (PBind p x))
       return (h, b) -- fm Map.! x)
   else
     do
-      h <- translateExpr x b False
+      h <- translateExpr (show x) b False
       return (h, b)
 
 translate fm m (Conditional _ c e1 e2) = do
@@ -293,9 +293,9 @@ translate fm m (BinLet _ (PBind _ x) (PBind _ y) e1 e2) = do
   (h2, b2) <- translate fm m e2
   
   if b1 || b2 then
-    return (h1  ++ " >>= \\(" ++ x ++ ", " ++ y ++ ")" ++ " -> " ++ h2, True) 
+    return (h1  ++ " >>= \\(" ++ show x ++ ", " ++ show y ++ ")" ++ " -> " ++ h2, True) 
   else
-    return ("let (" ++ x ++ ", " ++ y ++ ")" ++ " = " ++ h1 ++ " in " ++ h2, b2)
+    return ("let (" ++ show x ++ ", " ++ show y ++ ")" ++ " = " ++ h1 ++ " in " ++ h2, b2)
   
 translate fm m (New _ _) = return ("_new", True)
 
@@ -317,7 +317,7 @@ translate fm m (Receive _ e) = do
 
 translate fm m (Select _ x e) = do
   (h, _) <- translate fm m e
-  return ("_send " ++ h ++ " \"" ++ x ++ "\"", True)  
+  return ("_send " ++ h ++ " \"" ++ show x ++ "\"", True)  
 
 translate fm m (Match _ e mm) = do
   (h1, b1) <- translate fm m e
@@ -333,7 +333,7 @@ translate fm m e@(Fork _ e1) = do
   return (c1, True)
   
 -- translate fm m e@(Constructor _ x) = do
---   h <- translateExpr x (expected m e) False
+--   h <- translateExpr (show x) (expected m e) False
 --   return (h, False)
 
 translate fm m (Case _ e cm) = do
@@ -351,8 +351,8 @@ translateMatchMap fresh fm m _ = Map.foldlWithKey (translateMatchMap' fresh) (re
     translateMatchMap' fresh acc (PBind _ v) (PBind _ p, e) = do
       (h, b) <- translate fm m e
       acc' <- acc
-      return $ acc' ++ "\n    \"" ++ v ++ "\" " ++
-        " -> let " ++ p ++ " = " ++ fresh ++ " in " ++ h ++ ";"
+      return $ acc' ++ "\n    \"" ++ show v ++ "\" " ++
+        " -> let " ++ show p ++ " = " ++ fresh ++ " in " ++ h ++ ";"
              
 
 translateCaseMap :: FunsMap -> MonadicMap -> FieldMap -> TranslateMonad String
@@ -363,7 +363,7 @@ translateCaseMap fm m _ = Map.foldlWithKey translateCaseMap' (return "") Map.emp
     translateCaseMap' acc (PBind _ v) (params, e) = do
       (h1, _) <- translate fm m e
       acc' <- acc
-      return (acc' ++ "\n    " ++ v ++ showCaseParams params ++ " -> " ++ h1 ++ ";")
+      return (acc' ++ "\n    " ++ show v ++ showCaseParams params ++ " -> " ++ h1 ++ ";")
 
     showCaseParams :: [PBind] -> String
     showCaseParams [] = ""

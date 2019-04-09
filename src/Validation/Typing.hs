@@ -51,8 +51,8 @@ synthetise _ (Boolean p _)   = return $ Basic p BoolType
 synthetise kenv (ProgVar p x) = do
   s@(TypeScheme _ bs t) <- synthetiseVar kenv (PBind p x)
   when (not $ null bs) 
-    (addError p ["Variable", styleRed x, "of a polymorphic type used in a monomorphic context\n",
-              "\t the type scheme for variable", styleRed x, "is", styleRed $ show s])
+    (addError p ["Variable", styleRed $ show x, "of a polymorphic type used in a monomorphic context\n",
+              "\t the type scheme for variable", styleRed $ show x, "is", styleRed $ show s])
   return t
 synthetise kenv (UnLet _ b e1 e2) = do
   t1 <- synthetise kenv e1
@@ -185,7 +185,7 @@ synthetiseCons b@(PBind p c) tm = do
   case tm Map.!? b of
     Just t  -> return t
     Nothing -> do
-      addError p ["Data constructor or choice field", styleRed c, "not in scope"]
+      addError p ["Data constructor or choice field", styleRed $ show c, "not in scope"]
       return $ Skip p
 
 -- | The quotient operation
@@ -196,8 +196,8 @@ quotient kenv b@(PBind p x) =
     Just s  -> do
       let (TypeScheme _ [] t) = s
       k <- K.synthetise kenv t
-      when (isLin k) $ addError p ["Program variable", styleRed x, "is linear at the end of its scope\n",
-                        "\t", "variable", styleRed x, "is of type", styleRed (show t),
+      when (isLin k) $ addError p ["Program variable", styleRed $ show x, "is linear at the end of its scope\n",
+                        "\t", "variable", styleRed $ show x, "is of type", styleRed $ show t,
                         "of kind", styleRed (show k)]
       removeFromVenv b
     Nothing ->
@@ -294,7 +294,7 @@ fillFunType kenv b@(PBind p f) e (TypeScheme _ _ t) = fill e t
     return t3
   fill e@(Lambda p _ _ _ _) t = do
     addError p ["Couldn't match expected type", styleRed $ show t, "\n",
-                "\t The equation for", styleRed f, "has one or more arguments,\n",
+                "\t The equation for", styleRed $ show f, "has one or more arguments,\n",
                 "\t but its type", styleRed $ show t, "has none"]
     return t
   fill e _ = synthetise kenv e

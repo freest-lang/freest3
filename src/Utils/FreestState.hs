@@ -54,7 +54,7 @@ data FreestS = FreestS {
 , expEnv   :: ExpEnv
 , typeEnv  :: TypeEnv
 , errors   :: Errors
-, fv       :: Int }
+, lastVar  :: Int }
 
 type FreestState = State FreestS
 
@@ -67,7 +67,8 @@ initialState f = FreestS {
 , expEnv   = Map.empty
 , typeEnv  = Map.empty
 , errors   = []
-, fv        = 0}
+, lastVar       = 0
+}
 
 -- | FILE NAME
 
@@ -188,8 +189,8 @@ addErrorList es =
 freshVar :: FreestState String
 freshVar = do
   s <- get
-  put $ s {fv = fv s + 1}
-  return $ "_x" ++ show (fv s)
+  put $ s {lastVar = lastVar s + 1}
+  return $ "_x" ++ show (lastVar s)
 
 -- | Traversing Map.map over FreestStates
 
