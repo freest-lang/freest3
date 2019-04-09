@@ -157,7 +157,7 @@ synthetiseVar kenv b = do
       addToVenv b s
       return s
 
-synthetiseFieldMap :: Pos -> KindEnv -> Expression -> FieldMap ->
+synthetiseFieldMap :: Pos -> KindEnv -> Expression -> ExpMap ->
   (Pos -> Type -> FreestState TypeMap) -> FreestState Type
 synthetiseFieldMap p kenv e fm extract = do
   t <- synthetise kenv e
@@ -170,15 +170,38 @@ synthetiseFieldMap p kenv e fm extract = do
   return t
 
 -- Checks either the case map and the match map (all the expressions)
-synthetiseField :: VarEnv -> KindEnv -> TypeMap -> PBind -> Expression ->
+synthetiseField :: VarEnv -> KindEnv -> TypeMap -> PBind -> ([PBind], Expression) ->
   FreestState ([Type], [VarEnv]) -> FreestState ([Type], [VarEnv])
-synthetiseField venv1 kenv tm b e state = do
+synthetiseField venv1 kenv tm b (bs, e) state = do
   (ts, venvs) <- state
   setVenv venv1
   t1 <- synthetiseCons b tm
+  paramsToVenv b bs t1
   t2 <- fillFunType kenv b e (toTypeScheme t1)
+  mapM_ (quotient kenv) bs  
   venv2 <- getVenv
   return (t2:ts, venv2:venvs)
+
+  -- TODO: still need to remove arguments from var env in the end
+paramsToVenv :: PBind -> [PBind] -> Type -> FreestState ()
+paramsToVenv c bs t = do
+  let ts = zipPBindLType bs t
+  mapM_ (uncurry addToVenv) ts 
+  let lbs = length bs
+      num = numberOfArgs t
+  when (lbs /= num) $
+    addError (position c) ["The constructor", styleRed (show c) , "should have",
+                         show num, "arguments, but has been given", show lbs]  
+
+zipPBindLType :: [PBind] -> Type -> [(PBind, TypeScheme)]
+zipPBindLType [] _ = []
+zipPBindLType (_:[]) _ = []
+zipPBindLType (b:bs) (Fun _ _ t1 t2) = (b, toTypeScheme t1) : zipPBindLType bs t2
+zipPBindLType (b:bs) t = [(b, toTypeScheme t)]
+
+numberOfArgs :: Type -> Int
+numberOfArgs (Fun _ _ _ t2) = 1 + numberOfArgs t2
+numberOfArgs t              = 0
 
 -- Check whether a constructor exists in a type map
 synthetiseCons :: PBind -> TypeMap -> FreestState Type
