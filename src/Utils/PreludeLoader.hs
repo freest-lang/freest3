@@ -1,6 +1,7 @@
 module Utils.PreludeLoader
 ( prelude
 , isBuiltin
+-- , isBinOpApp
 ) where
 
 import           Parse.Lexer (defaultPos)
@@ -8,36 +9,46 @@ import           Syntax.Programs (VarEnv)
 import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Bind
+import           Syntax.Kinds
+import           Syntax.Expression
 import           Parse.Parser
 import qualified Data.Map.Strict as Map
 
-typeList :: [(PVar, String)]
-typeList = [ (PVar "(+)", "Int -> Int -> Int")
-           , (PVar "(-)", "Int -> Int -> Int")
-           , (PVar "(/)", "Int -> Int -> Int")
-           , (PVar "(*)", "Int -> Int -> Int")
-           , (PVar "mod", "Int -> Int -> Int")
-           , (PVar "rem", "Int -> Int -> Int")
-           , (PVar "div", "Int -> Int -> Int")
-           , (PVar "negate", "Int -> Int")
-           , (PVar "not", "Bool -> Bool")
-           , (PVar "(&&)", "Bool -> Bool -> Bool")
-           , (PVar "(||)", "Bool -> Bool -> Bool")
-           , (PVar "(==)", "Int -> Int -> Bool")
-           , (PVar "(<)", "Int -> Int -> Bool")
-           , (PVar "(>)", "Int -> Int -> Bool")
-           , (PVar "(<=)", "Int -> Int -> Bool")
-           , (PVar "(>=)", "Int -> Int -> Bool")
-           , (PVar "id", "forall a : SU => a -> a")
+binInt = toTypeScheme (Fun defaultPos Un (Basic defaultPos IntType) (Fun defaultPos Un (Basic defaultPos IntType) (Basic defaultPos IntType)))
+binBool = toTypeScheme (Fun defaultPos Un (Basic defaultPos BoolType) (Fun defaultPos Un (Basic defaultPos BoolType) (Basic defaultPos BoolType)))
+relationalOps = toTypeScheme(Fun defaultPos Un (Basic defaultPos IntType) (Fun defaultPos Un (Basic defaultPos IntType) (Basic defaultPos BoolType)))
+unIntBool = toTypeScheme (Fun defaultPos Un (Basic defaultPos IntType) (Basic defaultPos BoolType))
+unIntInt = toTypeScheme (Fun defaultPos Un (Basic defaultPos IntType)  (Basic defaultPos IntType))
+unBoolBool = toTypeScheme (Fun defaultPos Un (Basic defaultPos BoolType) (Basic defaultPos BoolType))
+
+
+typeList :: [(PVar, TypeScheme)]
+typeList = [ (PVar "(+)",  binInt)
+           , (PVar "(-)", binInt)
+           , (PVar "(/)", binInt)
+           , (PVar "(*)", binInt)
+           , (PVar "mod", binInt)
+           , (PVar "rem", binInt)
+           , (PVar "div", binInt)
+           , (PVar "negate", unIntInt)
+           , (PVar "not", unBoolBool)
+           , (PVar "(&&)", binBool)
+           , (PVar "(||)", binBool)
+           , (PVar "(==)", relationalOps)
+           , (PVar "(<)", relationalOps)
+           , (PVar "(>)", relationalOps)
+           , (PVar "(<=)", relationalOps)
+           , (PVar "(>=)", relationalOps)
+           , (PVar "id", TypeScheme defaultPos [TBindK defaultPos "a" (Kind defaultPos Session Un)] (Fun defaultPos Un (TypeVar defaultPos "a") (TypeVar defaultPos "a")))
            ]
 
 prelude :: VarEnv
-prelude =
-  foldl (\acc (v, t) ->
-     Map.insert (PBind defaultPos v) (read t) acc) Map.empty typeList
+prelude = preludeLoad Map.empty
+  -- schemeLoad (preludeLoad Map.empty)
 
-isBuiltin :: PBind -> Bool
-isBuiltin (PBind _ x) = x `elem` (map fst typeList)
+preludeLoad :: VarEnv -> VarEnv
+preludeLoad venv = 
+  foldl (\acc (tv, t) -> Map.insert (PBind defaultPos tv) t acc) venv typeList
 
 {-
 preludeLoad :: VarEnv -> VarEnv
@@ -55,3 +66,25 @@ schemeLoad :: VarEnv -> VarEnv
 schemeLoad map =
   foldl (\acc (tv, t) -> Map.insert (PBind defaultPos tv) (read t :: TypeScheme) acc) map schemeList
 -}     
+
+isBuiltin :: PBind -> Bool
+isBuiltin (PBind _ x) = x `elem` (map fst typeList)
+
+
+-- isBinOpApp :: Expression -> Bool
+-- isBinOpApp (App _ e1 e2) = isBinOpApp e1 || isBinOpApp e2
+-- isBinOpApp (ProgVar p x) = isBinOp (PBind p x)
+-- isBinOpApp _             = False
+
+-- isBinOp :: PBind -> Bool
+-- isBinOp (PBind _ x) =
+--   case x `lookup` typeList of
+--     Just t -> 3 == (length (toListT  t))
+--     Nothing -> False
+
+
+toListT :: Type -> [Type]
+toListT (Fun _ _ t1 t2) = t1 : toListT t2
+toListT t = [t]
+
+

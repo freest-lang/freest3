@@ -342,7 +342,7 @@ translate fm m (Case _ e cm) = do
   return ("case " ++ h1 ++ " of {" ++ hcase ++ "}", False) -- TODO: Can be monadic
   
 -- TODO: Join with case
-translateMatchMap :: String -> FunsMap -> MonadicMap -> FieldMap -> TranslateMonad String
+translateMatchMap :: String -> FunsMap -> MonadicMap -> ExpMap -> TranslateMonad String
 --translateMatchMap fresh fm m = Map.foldlWithKey (translateMatchMap' fresh) (return "")
 translateMatchMap fresh fm m _ = Map.foldlWithKey (translateMatchMap' fresh) (return "") Map.empty -- FIELDMAP
   where
@@ -355,7 +355,7 @@ translateMatchMap fresh fm m _ = Map.foldlWithKey (translateMatchMap' fresh) (re
         " -> let " ++ show p ++ " = " ++ fresh ++ " in " ++ h ++ ";"
              
 
-translateCaseMap :: FunsMap -> MonadicMap -> FieldMap -> TranslateMonad String
+translateCaseMap :: FunsMap -> MonadicMap -> ExpMap -> TranslateMonad String
 -- translateCaseMap fm m = Map.foldlWithKey translateCaseMap' (return "")
 translateCaseMap fm m _ = Map.foldlWithKey translateCaseMap' (return "") Map.empty -- FieldMap
   where

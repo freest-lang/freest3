@@ -13,14 +13,14 @@ Portability :  portable | non-portable (<reason>)
 
 module Syntax.Expression
 ( Expression(..)
-, FieldMap
+, ExpMap
 ) where
 
 import           Parse.Lexer (Position, Pos, position, showPos)
 import           Syntax.Types (Type)
 import           Syntax.Kinds (Multiplicity(..))
 import           Syntax.Bind (PVar, PBind)
-import           Data.List (intersperse)
+import           Data.List (intersperse, intercalate)
 import qualified Data.Map.Strict as Map
 
 data Expression =
@@ -38,7 +38,7 @@ data Expression =
   | Pair Pos {- Multiplicity -} Expression Expression
   | BinLet Pos PBind PBind Expression Expression
   -- Datatype intro and elim
-  | Case Pos Expression FieldMap
+  | Case Pos Expression ExpMap
   -- Type application
   | TypeApp Pos PVar [Type]
   -- Boolean elim
@@ -52,11 +52,10 @@ data Expression =
   | Send Pos Expression
   | Receive Pos Expression
   | Select Pos PVar Expression
-  | Match Pos Expression FieldMap
+  | Match Pos Expression ExpMap
   deriving (Eq, Ord)
 
-type FieldMap = Map.Map PBind Expression
--- type FieldMap  = Map.Map PBind ([PBind], Expression)
+type ExpMap  = Map.Map PBind ([PBind], Expression)
 
 instance Show Expression where
   show e = showAux e 3
@@ -94,9 +93,9 @@ showAux (Receive _ e) _ = " receive " ++ show e
 showAux (Select _ l e) i = " select " ++ show l ++ (showAux e (i-1))
 showAux (Match _ e m) i = " match " ++ show e ++ " with " ++ " {" ++ (showMap m i) ++ "}"
 
-showMap :: FieldMap -> Int -> String
+showMap :: ExpMap -> Int -> String
 showMap m i = concat $ intersperse ", " (map showAssoc (Map.toList m))
-  where showAssoc (b, v) = (show b) ++ " " ++ (showAux v (i-1))
+  where showAssoc (b, (a,v)) = (show b) ++ intercalate " " (map show a) ++ " " ++  (showAux v (i-1))
 
 instance Position Expression where
   position (Unit p)              = p

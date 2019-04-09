@@ -7,6 +7,7 @@ import           Parse.Lexer (defaultPos)
 import           Syntax.Programs
 import           Syntax.Expression
 import           Syntax.Types
+import           Syntax.Kinds
 import           Syntax.Bind
 import           CodeGen.DatatypeGen
 import           CodeGen.ExpressionGen
@@ -26,9 +27,8 @@ genProgram venv eenv cenv filepath = do
     venv1            = updateKey venv
     eenv1            = updateKey eenv
     dataTypes        = genDataTypes cenv
-    file             = translateExpEnv eenv1
-    mainFun          = genMain eenv1 venv1 in
-    writeFile (targetFileName filepath) (genPragmas ++ genImports ++ dataTypes ++ file ++ mainFun)
+    file             = "" in -- translateExpEnv eenv1 venv1 in
+    writeFile (targetFileName filepath) (genPragmas ++ genImports ++ dataTypes ++ file)
 --    writeFile (filepath ++ "cfst.hs") (genPragmas ++ genImports ++ dataTypes ++ file ++ mainFun)
 
 -- TODO: export and remove from Main module
@@ -43,7 +43,7 @@ updateKey m =
    Just e  -> Map.insert (PBind defaultPos $ PVar "_main") e (Map.delete b m)
 
 genImports :: String
-genImports = "import FreeSTRuntime\n\n"
+genImports = "import FreeSTRuntime\nimport Control.Monad (liftM, liftM2)\n\n"
 
 genPragmas :: String
 genPragmas = "-- Target Haskell code\n{-# LANGUAGE BangPatterns #-}\n\n"
@@ -64,15 +64,16 @@ genMain eenv venv =
         "main = putStrLn (show _main)\n\n"
     Nothing -> ""
 
-
 -- Generates the FreeST runtime module
 genFreeSTRunTime :: FilePath -> IO ()
 genFreeSTRunTime filepath =
   let path = takeDirectory filepath in
   writeFile (path ++ "/FreeSTRuntime.hs")
 --    ("{-# LANGUAGE FlexibleInstances #-}\nmodule FreeSTRuntime (_fork, _new, _send, _receive, Skip) where\n\n" ++
-    ("module FreeSTRuntime (_fork, _new, _send, _receive) where\n\n" ++
-     genFreeSTRunTimeImports ++ "\n\n" ++
+    ("module FreeSTRuntime (_fork, _new, _send, _receive, return') where\n\n" ++
+     genFreeSTRunTimeImports ++ "\n\n" ++ 
+     genChannelEnd ++ "\n\n" ++  
+     genFreeSTRunTimeUtils ++ "\n\n" ++
      genFork ++ "\n\n" ++ genNew ++ "\n\n" ++
      genSend ++ "\n\n" ++ genReceive) --  ++ "\n\n" ++ genSkip)
 
@@ -82,20 +83,28 @@ genFreeSTRunTime filepath =
 genFork :: String
 genFork = "_fork e = do\n  forkIO e\n  return ()"
 
+genFreeSTRunTimeUtils :: String
+genFreeSTRunTimeUtils = "return' :: a -> IO a\nreturn' = return"
+
 -- With channels
 -- Two channels
 genFreeSTRunTimeImports :: String
 genFreeSTRunTimeImports =
   "import Control.Concurrent (forkIO)\nimport Control.Concurrent.Chan.Synchronous\nimport Unsafe.Coerce"
 
+genChannelEnd = "type ChannelEnd a b = IO (Chan a, Chan b)"
+
 genNew :: String
-genNew = "_new = do\n  ch1 <- newChan\n  ch2 <- newChan\n  return ((ch1,ch2), (ch2,ch1))"
+genNew = "_new :: IO (ChannelEnd a b, ChannelEnd b a)\n_new = do\n  ch1 <- newChan\n  ch2 <- newChan\n  return (return (ch1,ch2), return(ch2,ch1))"
 
 genSend :: String
-genSend = "_send ch x  = do\n  writeChan (snd ch) (unsafeCoerce x)\n  return ch"
+genSend =
+  "_send :: ChannelEnd a b -> IO c -> IO (ChannelEnd a b)\n_send ch x  = do\n    ch1 <- ch\n    y <- x\n    writeChan (snd ch1) (unsafeCoerce y)\n    return ch"
+
 
 genReceive :: String
-genReceive = "_receive ch = do\n  a <- readChan (fst ch)\n  return (unsafeCoerce a, ch)"
+genReceive = "_receive :: ChannelEnd a b -> IO (IO c, ChannelEnd a b)\n_receive ch = do\n  ch1 <- ch\n  a <- readChan (fst ch1)\n  return (return $ unsafeCoerce a, ch)\n"
+
 
 {-
 -- one channel

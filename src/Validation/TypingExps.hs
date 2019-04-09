@@ -170,15 +170,25 @@ synthetiseFieldMap p kenv e fm extract = do
   return t
 
 -- Checks either the case map and the match map (all the expressions)
-synthetiseField :: VarEnv -> KindEnv -> TypeMap -> PBind -> Expression ->
+synthetiseField :: VarEnv -> KindEnv -> TypeMap -> PBind -> ([PBind], Expression) ->
   FreestState ([Type], [VarEnv]) -> FreestState ([Type], [VarEnv])
-synthetiseField venv1 kenv tm b e state = do
+synthetiseField venv1 kenv tm b (pbs, e) state = do
   (ts, venvs) <- state
   setVenv venv1
   t1 <- synthetiseCons b tm
+--  mapM_ addToVenv b (toTypeScheme t1)
+  mapM_ (uncurry addToVenv) (zip pbs (init' $ toList $ toTypeScheme t1))
+
   t2 <- fillFunType kenv b e (toTypeScheme t1)
   venv2 <- getVenv
   return (t2:ts, venv2:venvs)
+  where
+    init' :: [a] -> [a]
+    init' [x] = [x]
+    init' xs  = init xs
+
+    
+
 
 -- Check whether a constructor exists in a type map
 synthetiseCons :: PBind -> TypeMap -> FreestState Type
