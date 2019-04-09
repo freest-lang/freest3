@@ -85,6 +85,7 @@ data Type =
   deriving Ord
 
 type TypeMap = Map.Map PBind Type
+-- type TypeMap = Map.Map PBind [Type]
 
 instance Eq Type where -- Type equality, up to alpha-conversion
   t == u = equalTypes Map.empty t u 

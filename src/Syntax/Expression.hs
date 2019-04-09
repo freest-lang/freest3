@@ -56,7 +56,7 @@ data Expression =
   deriving (Eq, Ord)
 
 type FieldMap = Map.Map PBind Expression
--- type FieldMap  = Map.Map PBind ([PBind], Expression)
+-- type ExpMap  = Map.Map PBind ([PBind], Expression)
 
 instance Show Expression where
   show e = showAux e 2
