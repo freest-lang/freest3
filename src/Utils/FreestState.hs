@@ -29,9 +29,8 @@ module Utils.FreestState
 , getFromTenv
 , getFileName
 , initialState
---, newVar
-, getPvar
 , newPVar
+, fetchPVar
 , rmPVar
 , addError
 ) where
@@ -192,23 +191,34 @@ addErrorList es =
 
 -- | FRESH VARS
 
+{-
+fetchPVar :: String -> FreestState PVar
+fetchPVar x = do
+  s <- get
+  case (varsInScope s) Map.!? x of
+    Just pvar -> return $ head pvar
+    Nothing -> do
+      let pvar = PVar $ show (lastVar s) ++ ('_' : x)
+      put $ s {lastVar = lastVar s + 1, varsInScope = Map.insertWith (++) x [pvar] (varsInScope s)}
+      return pvar
+-}
 newPVar :: String -> FreestState PVar
-newPVar x = do
+newPVar id = do
   s <- get
-  let y = PVar $ show (lastVar s) ++ ('_' : x)
-  put $ s {lastVar = lastVar s + 1, varsInScope = Map.insertWith (++) x [y] (varsInScope s)}
-  return y
+  let pvar = mkPVar (lastVar s) id
+  put $ s {lastVar = lastVar s + 1, varsInScope = Map.insertWith (++) id [pvar] (varsInScope s)}
+  return pvar
 
-getPvar :: String -> FreestState PVar
-getPvar x = do
+fetchPVar :: String -> FreestState PVar
+fetchPVar id = do
   s <- get
-  return $ head $ (varsInScope s) Map.! x
+  return $ head $ (varsInScope s) Map.! id
 
-rmPVar :: String -> FreestState ()
-rmPVar x = do
+rmPVar :: PBind -> FreestState ()
+rmPVar (PBind _ pvar) = do
   s <- get
-  put $ s {varsInScope = Map.update tailMaybe x (varsInScope s)}
-  where tailMaybe []    = Nothing
+  put $ s {varsInScope = Map.update tailMaybe (getPVar pvar) (varsInScope s)}
+  where tailMaybe []     = Nothing
         tailMaybe (_:xs) = Just xs
 
 -- | Traversing Map.map over FreestStates

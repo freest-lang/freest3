@@ -48,7 +48,7 @@ typeCheck = do
   eenv <- getEenv
   tMapWithKeyM checkFunBody eenv
   -- Main function
-  checkMainFunction
+  trace ("Functions " ++ show venv) checkMainFunction
 
 -- Check whether all functions signatures have a binding. Exclude the
 -- builtin functions and the datatype constructors.
@@ -64,15 +64,15 @@ hasBinding f _ = do
 checkFunBody :: PBind -> Expression -> FreestState ()
 checkFunBody f e =
   getFromVenv f >>= \case
-    Just s ->
-      T.checkAgainstTS e s
-    Nothing ->
-      return () -- We've issued this error at parsing time
+    Just s  -> T.checkAgainstTS e s
+    Nothing -> return () -- We've issued this error at parsing time
 
 checkMainFunction :: FreestState ()
 checkMainFunction = do
   venv <- getVenv
-  let mBind = PBind defaultPos $ PVar "main"
+--  let mBind = PBind defaultPos $ PVar "main"
+  main <- fetchPVar "main"
+  let mBind = PBind defaultPos main
   if mBind `Map.notMember` venv
   then
     addError defaultPos ["Function", styleRed "main", "is not defined"]

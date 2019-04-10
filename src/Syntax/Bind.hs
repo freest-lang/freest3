@@ -12,15 +12,19 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Syntax.Bind
-( PVar(..)
+( PVar
+, getPVar
+, mkPVar
+, mkPVarNonBindable
 , TVar
 , PBind(..)
 , TBind(..)
 , Default (..)
 ) where 
 
-import Parse.Lexer (Position, Pos, position)
-import Data.Char (isDigit)
+import           Parse.Lexer (Position, Pos, position)
+import           Data.Char (isDigit)
+import qualified Data.Map.Strict as Map
 
 -- The base syntactic categories of FreeST
 
@@ -29,13 +33,29 @@ import Data.Char (isDigit)
 -- choices (uppercase)
 newtype PVar = PVar { getPVar :: String } deriving (Eq, Ord)
 
+instance Show PVar where
+ show v = tail $ dropWhile (isDigit) (getPVar v)
+
+mkPVar :: Int -> String -> PVar
+mkPVar next id = PVar (show next ++ '_' : id)
+
+mkPVarNonBindable :: String -> PVar
+mkPVarNonBindable = PVar
+
+{-
+type VarsInScope =  Map.Map String [String] 
+
+mkPVar :: VarsInScope -> Int -> String -> (VarsInScope, Int, PVar)
+mkPVar map next id =
+  case map Map.!? id of
+    Just (internal:_) -> (map, next, PVar internal)
+    Nothing           -> (Map.insertWith (++) id [newInternal] map, next + 1, PVar newInternal)
+      where newInternal = show next ++ ('_' : id)
+-}
 -- Type Variables: Recursion variables (in rec-types) and polymorphic
 -- variables (lowercase) and the names of types introduced with type
 -- and data declarations (uppercase)
 type TVar = String
-
-instance Show PVar where
- show v = tail $ dropWhile (isDigit) (getPVar v)
 
 -- Bindings: A pair composed of a position and a base syntactic
 -- category. These are often used as keys in maps (for kinds, for type

@@ -158,10 +158,8 @@
       \algtypeout[\kindEnv;\varEnv_1]{e}{T}{\varEnv_2}
       \quad
       T \Extract{} \&\{C_i\colon T_i\}
-      \quad 
-        (T_i;x_i) \Extract{}{\vec V_i}
     \quad
-      \algtypeout[\kindEnv;\varEnv_2, x_i\colon V_i]{e_i}{U_i}{\Sigma_i}
+      \algtypeout[\kindEnv;\varEnv_2, x_i\colon T_i]{e_i}{U_i}{\Sigma_i}
       \\
       \typeequiv{U_1}{U_i}
       \quad
@@ -253,10 +251,8 @@
       \algtypeout[\kindEnv;\varEnv_1]{e}{T}{\varEnv_2}
       \quad
       T \Extract{} \&\{C_i\colon T_i\}
-      \quad 
-        (T_i; x_i) \Extract{}{\vec V_i}
       \\
-      \algtypein[\kindEnv;\varEnv_2, x_i\colon V_i]{e_i}{U}{\Sigma_i}
+      \algtypein[\kindEnv;\varEnv_2, x_i\colon T_i]{e_i}{U}{\Sigma_i}
       \quad
       \ctxequiv{\Sigma_1 \div (x_1\colon T_1)}{\Sigma_i \div (x_i\colon T_i)} 
       \end{array}

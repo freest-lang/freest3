@@ -131,11 +131,13 @@ Decl :: { () }
   : VarBind ':' TypeScheme
     {% checkDupFunSig $1 >>
        addToVenv $1 $3 }
-  | VarBind VarBindSeq '=' Expr
   -- Function declaration
-    {% checkDupFunDecl $1 >>
-       buildFunBody $1 $2 $4 >>= \e ->
-       addToEenv $1 e }
+  | LOWER_ID VarBindSeq '=' Expr {% do
+      x <- fetchPVar (getText $1)
+      let pbind = PBind (position $1) x
+      e <- buildFunBody pbind $2 $4
+      checkDupFunDecl pbind
+      addToEenv pbind e }
   | type TypeBind KindVarEmptyList '=' Type
   -- Type abbreviation
     {% checkDupTypeDecl (fst $2) >>
@@ -164,26 +166,27 @@ DataCon :: { (PBind, [Type]) }
 -----------------
 
 Expr :: { Expression }
-  : let VarBind '=' Expr in Expr             { UnLet (position $1) $2 $4 $6 }
+  : let VarBind '=' Expr in Expr             {% rmPVar $2 >> return (UnLet (position $1) $2 $4 $6) }
   | let VarBind ',' VarBind '=' Expr in Expr { BinLet (position $1) $2 $4 $6 $8 }
   | if Expr then Expr else Expr              { Conditional (position $1) $2 $4 $6 }
   | new Type                                 { New (position $1) $2 }
   | match Expr with '{' MatchMap '}'         { Match (position $1) $2 $5 }
   | case Expr of '{' CaseMap '}'             { Case (position $1) $2 $5 }
-  | Expr '*' Expr                            { binOp (position $2) $1 "(*)" $3 }
-  | Expr '+' Expr                            { binOp (position $2) $1 "(+)" $3 }
-  | Expr '-' Expr                            { binOp (position $2) $1 "(-)" $3 }
-  | Expr OP Expr                             { binOp (position $2) $1 (getText $2) $3 }
+  | Expr '*' Expr                            { binOp (position $2) $1 (mkPVarNonBindable "(*)") $3 }
+  | Expr '+' Expr                            { binOp (position $2) $1 (mkPVarNonBindable "(+)") $3 }
+  | Expr '-' Expr                            { binOp (position $2) $1 (mkPVarNonBindable "(-)") $3 }
+  | Expr OP Expr                             { binOp (position $2) $1 (mkPVarNonBindable (getText $2)) $3 }
   | App                                      { $1 }
 
 App :: { Expression }
   : App Primary                              { App (position $1) $1 $2 }
-  | LOWER_ID '[' TypeList ']'                { TypeApp (position $1) (PVar (getText $1)) $3 }
+  -- | LOWER_ID '[' TypeList ']'                { TypeApp (position $1) (PVar (getText $1)) $3 }
+  | ProgVar '[' TypeList ']'                 { TypeApp (position $2) $1 $3 }
   | send Primary                             { Send (position $1) $2 }
   | receive Primary                          { Receive (position $1) $2 }
-  | select UPPER_ID Primary                  { Select (position $1) (PVar (getText $2)) $3 }
+  | select Constructor Primary               { Select (position $1) $2 $3 }
   | fork Primary                             { Fork (position $1) $2 }
-  | '-' App %prec NEG                        { unOp (position $1) "negate" $2}
+  | '-' App %prec NEG                        { unOp (position $1) (mkPVarNonBindable "negate") $2}
   | Primary                                  { $1 }
 
 Primary :: { Expression }
@@ -191,8 +194,8 @@ Primary :: { Expression }
   | BOOL                                     { let (TokenBool p x) = $1 in Boolean p x }
   | CHAR                                     { let (TokenChar p x) = $1 in Character p x }
   | '()'                                     { Unit (position $1) }
-  | LOWER_ID                                 { ProgVar (position $1) (PVar (getText $1)) }
-  | UPPER_ID                                 { ProgVar (position $1) (PVar (getText $1)) }
+  | ProgVar                                  { ProgVar defaultPos $1 } -- TODO defaultPos
+  | Constructor                              { ProgVar defaultPos $1 } -- TODO defaultPos
   | '(' Expr ',' Expr ')'                    { Pair (position $1) $2 $4 }
   | '(' Expr ')'                             { $2 }
 
@@ -288,11 +291,19 @@ Kind :: { Kind } :
   | TU { Kind (position $1) Functional Un }
   | TL { Kind (position $1) Functional Lin }
 
+-- VARIABLES (PROGRAM AND TYPE)
+
+ProgVar :: { PVar }
+  : LOWER_ID {% fetchPVar (getText $1) }
+
+Constructor :: { PVar }
+  : UPPER_ID { mkPVarNonBindable (getText $1) }
+
 -- VARIABLES AND CONSTRUCTORS IN BINDING POSITIONS
 
 VarBind :: { PBind }
-  : LOWER_ID {% getPvar (getText $1) >>= \x -> return $ PBind (position $1) x }
-  | '_'      {% getPvar "_"          >>= \x -> return $ PBind (position $1) x }
+  : LOWER_ID {% newPVar (getText $1) >>= \x -> return $ PBind (position $1) x }
+  | '_'      {% newPVar "_"          >>= \x -> return $ PBind (position $1) x }
 --  | '_'      { PBind (position $1) (PVar "_") } -- TODO: rename to unique Var
 
 RecVar :: { TBindK }
@@ -304,7 +315,7 @@ KindVar :: { TBindK }
   | LOWER_ID	      { let p = position $1 in TBindK p (getText $1) (omission p) }
 
 ConsBind :: { PBind }
-  : UPPER_ID { PBind (position $1) (PVar (getText $1)) }
+  : UPPER_ID { PBind (position $1) (mkPVarNonBindable (getText $1)) } -- (PVar (getText $1)) }
 
 TConsBind :: { TBind }
   : UPPER_ID { TBind (position $1) (getText $1) }
