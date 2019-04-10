@@ -137,9 +137,9 @@ synthetise kenv (Select p c e) = do
   t <- synthetise kenv e
   m <- extractOutChoiceMap p t
   extractCons p m c
-synthetise kenv (Match p e fm) = synthetiseFieldMap p kenv e fm extractInChoiceMap
+synthetise kenv (Match p e fm) = synthetiseFieldMap p kenv e fm extractInChoiceMap paramsToVenvMM
 -- Datatype elimination
-synthetise kenv (Case p e fm) = synthetiseFieldMap p kenv e fm extractDatatypeMap
+synthetise kenv (Case p e fm) = synthetiseFieldMap p kenv e fm extractDatatypeMap paramsToVenvCM
 
 -- | Returns the type scheme for a variable; removes it from venv if lin
 synthetiseVar :: KindEnv -> PBind -> FreestState TypeScheme
@@ -157,35 +157,45 @@ synthetiseVar kenv b = do
       return s
 
 synthetiseFieldMap :: Pos -> KindEnv -> Expression -> ExpMap ->
-  (Pos -> Type -> FreestState TypeMap) -> FreestState Type
-synthetiseFieldMap p kenv e fm extract = do
+  (Pos -> Type -> FreestState TypeMap) ->
+  (PBind -> [PBind] -> Type -> FreestState ()) -> FreestState Type
+synthetiseFieldMap p kenv e fm extract params = do
   t <- synthetise kenv e
   tm <- extract p t
   venv <- getVenv
-  (t:ts, v:vs) <- Map.foldrWithKey (synthetiseField venv kenv tm) (return ([],[])) fm
+  (t:ts, v:vs) <- Map.foldrWithKey (synthetiseField venv kenv params tm) (return ([],[])) fm
   mapM_ (checkEquivTypes p kenv t) ts
   mapM_ (checkEquivEnvs p kenv v) vs
   setVenv v
   return t
 
 -- Checks either the case map and the match map (all the expressions)
-synthetiseField :: VarEnv -> KindEnv -> TypeMap -> PBind -> ([PBind], Expression) ->
+synthetiseField :: VarEnv -> KindEnv -> (PBind -> [PBind] -> Type -> FreestState ()) ->
+  TypeMap -> PBind -> ([PBind], Expression) ->
   FreestState ([Type], [VarEnv]) -> FreestState ([Type], [VarEnv])
-synthetiseField venv1 kenv tm b (bs, e) state = do
+synthetiseField venv1 kenv params tm b (bs, e) state = do
   (ts, venvs) <- state
   setVenv venv1
   t1 <- synthetiseCons b tm
-  paramsToVenv b bs t1
+  params b bs t1
   t2 <- fillFunType kenv b e (toTypeScheme t1)
   mapM_ (quotient kenv) bs  
   venv2 <- getVenv
   return (t2:ts, venv2:venvs)
 
-  -- TODO: still need to remove arguments from var env in the end
-paramsToVenv :: PBind -> [PBind] -> Type -> FreestState ()
-paramsToVenv c bs t = do
-  let ts =  zipPBindLType bs t -- toListType t
-  mapM_ (uncurry addToVenv) ts -- (zip bs ts) 
+-- match map
+paramsToVenvMM :: PBind -> [PBind] -> Type -> FreestState ()
+paramsToVenvMM c bs t = do
+  addToVenv (head bs) (toTypeScheme t)
+  let lbs = length bs
+  when (lbs /= 1) $
+    addError (position c) ["The label", styleRed (show c) , "should have 1",
+                           "argument, but has been given", show lbs]  
+
+paramsToVenvCM :: PBind -> [PBind] -> Type -> FreestState ()
+paramsToVenvCM c bs t = do
+  let ts =  zipPBindLType bs t
+  mapM_ (uncurry addToVenv) ts
   let lbs = length bs
       lts = numArgs t
   when (lbs /= lts) $
@@ -200,6 +210,7 @@ zipPBindLType (b:_) t = [(b, toTypeScheme t)]
 numArgs :: Type -> Int
 numArgs (Fun _ _ _ t2) = 1 + numArgs t2
 numArgs _              = 0
+
   
 -- Check whether a constructor exists in a type map
 synthetiseCons :: PBind -> TypeMap -> FreestState Type
