@@ -68,7 +68,7 @@ checkDupTBindK (TBindK p x _) bs =
   case find (\(TBindK _ y _) -> y == x) bs of
     Just (TBindK p' _ _) -> do
       addError p'
-        ["Conflicting definitions for bind ", styleRed x, "\n",
+        ["Conflicting definitions for bind ", styleRed $ show x, "\n",
          "\tBound at:", showPos p', "\n",
          "\t         ", showPos p]
     Nothing -> return ()
@@ -93,9 +93,10 @@ checkDupTypeDecl b = do
                              "\t             ", showPos (position b)]
     Nothing -> return ()
 
-checkDupFunDecl :: PBind -> FreestState ()
-checkDupFunDecl b = do
+checkDupFunDecl :: Pos -> PVar -> FreestState ()
+checkDupFunDecl p x = do
   m <- getEenv
+  let b = PBind p x
   when (b `Map.member` m) $
     addError (position b) ["Multiple declarations of function", styleRed (show b)]
 
@@ -122,7 +123,7 @@ unOp pos op expr =
 -- Convert a list of types and a final type constructor to a type
 typeListToType:: TBind -> [(PBind, [Type])] -> [(PBind, Type)]
 typeListToType (TBind p x) = map (\(b, ts) -> (b, typeToFun ts))
-  where typeToFun []       = (Name p x)
+  where typeToFun []       = (TypeName p x)
         typeToFun (t : ts) = Fun (position t) Un t (typeToFun ts)
 
 -- At parsing time we may not konw the signature for the function, so

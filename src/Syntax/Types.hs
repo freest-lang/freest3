@@ -80,12 +80,12 @@ data Type =
   -- Functional or session
   | TypeVar Pos TVar -- a recursion variable if bound, polymorphic otherwise
   -- Type operators
-  | Name Pos TVar   -- a named type, to be looked upon in a map of Cons to Type
+  | TypeName Pos TVar   -- a named type, to be looked upon in a map of Cons to Type
   | Dualof Pos Type -- to be expanded into a session type
   deriving Ord
 
 type TypeMap = Map.Map PBind Type
-
+--type TypeMap = Map.Map PBind [Type]
 
 instance Eq Type where -- Type equality, up to alpha-conversion
   t == u = equalTypes Map.empty t u 
@@ -106,7 +106,7 @@ equalTypes s (Rec _ (TBindK _ x _) t) (Rec _ (TBindK _ y _) u) = equalTypes (Map
 equalTypes s (TypeVar _ x)    (TypeVar _ y)    = equalVars (Map.lookup x s) x y
   -- Type operators
 equalTypes s (Dualof _ t)     (Dualof _ u)     = t == u
-equalTypes s (Name _ x)       (Name _ y)       = x == y
+equalTypes s (TypeName _ x)       (TypeName _ y)       = x == y
   -- Otherwise
 equalTypes _ _              _                  = False
 
@@ -133,10 +133,10 @@ instance Show Type where
   show (Choice _ v m)   = show v ++ "{" ++ showMap m ++ "}"
   show (Rec _ x t)      = "(rec " ++ show x ++ " . " ++ show t ++ ")"
   -- Functional or session
-  show (TypeVar _ x)    = x
+  show (TypeVar _ x)    = show x
   -- Type operators
   show (Dualof _ s)     = "(dualof " ++ show s ++ ")"
-  show (Name _ x)       = x
+  show (TypeName _ x)       = show x
   
 showFunOp :: Multiplicity -> String
 showFunOp Lin = " -o "
@@ -166,7 +166,7 @@ instance Position Type where
   position (TypeVar p _)    = p
   -- Type operators
   position (Dualof p _)     = p
-  position (Name p _)       = p
+  position (TypeName p _)       = p
 
 instance Dual Type where
   -- Session types
@@ -178,7 +178,7 @@ instance Dual Type where
   dual (Rec p x t)     = Rec p x (Dualof p t) -- The lazy version, hopefully faster
   -- Type operators
   dual (Dualof _ t)    = t
-  -- Functional types, Skip, TypeVar, Name
+  -- Functional types, Skip, TypeVar, TypeName
   dual t               = t
 
 instance Default Type where
@@ -195,7 +195,7 @@ instance Ord TBindK where
   (TBindK _ x _) `compare` (TBindK _ y _) = x `compare` y
 
 instance Show TBindK where
-  show (TBindK _ x k) = x ++ " : " ++ show k
+  show (TBindK _ x k) = show x ++ " : " ++ show k
 
 instance Position TBindK where
   position (TBindK p _ _) = p
@@ -224,5 +224,5 @@ subs t (TBindK _ y _) (TypeVar p x)
   | otherwise               = TypeVar p x
   -- Type operators  
 subs t y (Dualof p t1)      = Dualof p (subs t y t1)
-  -- Otherwise: Basic, Skip, Message, Name
+  -- Otherwise: Basic, Skip, Message, TypeName
 subs _ _ t                  = t

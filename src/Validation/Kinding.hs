@@ -78,16 +78,16 @@ synthetise kenv (TypeVar p x) =
     Just k -> do
       return k
     Nothing -> do
-      addError p ["Type variable not in scope:", styleRed x]
+      addError p ["Type variable not in scope:", styleRed $ show x]
       return (omission p)
 -- Type operators
-synthetise kenv (Name p c) =
+synthetise kenv (TypeName p c) =
   let bind = TBind p c in
   getFromTenv bind >>= \case
     Just (k, _) ->
       return k
     Nothing -> do
-      addError p ["Type name not in scope:", styleRed c]
+      addError p ["Type name not in scope:", styleRed $ show c]
       let k = omission p
       addToTenv bind k $ omission p
       return k
@@ -150,7 +150,7 @@ isSessionType tenv kenv (Rec _ _ t) = isSessionType tenv kenv t
 isSessionType _ kenv (TypeVar p x)  = Map.member (TBind p x) kenv
   -- Type operators
 isSessionType _ _ (Dualof _ _)      = True
-isSessionType tenv kenv (Name p c)  = isSession $ fst $ tenv Map.! (TBind p c)
+isSessionType tenv kenv (TypeName p c)  = isSession $ fst $ tenv Map.! (TBind p c)
   -- Otherwise: Functional types
 isSessionType _ _ _                 = False
 

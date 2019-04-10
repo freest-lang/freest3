@@ -39,7 +39,7 @@ typeList = [ (mkNonBindablePVar "(+)",  binInt)
            , (mkNonBindablePVar "(>)", relationalOps)
            , (mkNonBindablePVar "(<=)", relationalOps)
            , (mkNonBindablePVar "(>=)", relationalOps)
-           , (mkNonBindablePVar "id", TypeScheme defaultPos [TBindK defaultPos "a" (Kind defaultPos Session Un)] (Fun defaultPos Un (TypeVar defaultPos "a") (TypeVar defaultPos "a")))
+--           , (mkNonBindablePVar "id", TypeScheme defaultPos [TBindK defaultPos "a" (Kind defaultPos Session Un)] (Fun defaultPos Un (TypeVar defaultPos "a") (TypeVar defaultPos "a")))
            ]
 
 prelude :: VarEnv

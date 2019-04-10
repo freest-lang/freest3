@@ -52,11 +52,11 @@ instance Equivalence Type where
       -- Type operatorstre  
     equiv kenv (Dualof _ t) u = equiv kenv (dual t) u
     equiv kenv t (Dualof _ u) = equiv kenv t (dual u)
-    equiv _ (Name _ c1) (Name _ c2) = c1 == c2 -- TODO: this works for datatypes but not for type declarations, where one has to expand the definition(s) for c1 (c2) and continue
+    equiv _ (TypeName _ c1) (TypeName _ c2) = c1 == c2 -- TODO: this works for datatypes but not for type declarations, where one has to expand the definition(s) for c1 (c2) and continue
     -- TODO: THIS CAN EASILY LOOP
-    equiv kenv (Name p c) u = equiv kenv t u
+    equiv kenv (TypeName p c) u = equiv kenv t u
       where (_, TypeScheme _ [] t) = tenv Map.! (TBind p c) -- TODO: polymorphic type names
-    equiv kenv t (Name p c) = equiv kenv t u
+    equiv kenv t (TypeName p c) = equiv kenv t u
       where (_, TypeScheme _ [] u) = tenv Map.! (TBind p c) -- TODO: polymorphic type names
       -- Session types
     equiv kenv t u =

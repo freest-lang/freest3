@@ -12,12 +12,18 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Syntax.Bind
-( PVar
+(
+-- Program variables
+  PVar
 , mkPVar
 , mkNonBindablePVar
+-- Type variables
 , TVar
-, PBind(..)
-, TBind(..)
+, mkTVar
+, mkNonBindableTVar
+-- Binds
+, PBind (..)
+, TBind (..)
 , Default (..)
 ) where 
 
@@ -33,25 +39,48 @@ import           Data.Char (isDigit)
 newtype PVar = PVar { getPVar :: String } deriving (Eq, Ord)
 
 instance Show PVar where
- show v
-   | isDigit (head id) = tail $ dropWhile (isDigit) id
-   | otherwise         = id
-     where id = getPVar v
+ show = showVar . getPVar
 
 -- Use this for function names and function parameters (lower case)
 mkPVar :: Int -> String -> PVar
-mkPVar next id = PVar (show next ++ '_' : id)
+mkPVar next id = PVar (mkVar next id)
 
 -- Use this for datatype constructors and labels in session types
 -- choices (uppercase)
 mkNonBindablePVar :: String -> PVar
 mkNonBindablePVar = PVar
 
+instance Default PVar where
+  omission _= mkPVar 9999 "#"
+
 -- Type Variables: Recursion variables (in rec-types) and polymorphic
 -- variables (lowercase) and the names of types introduced with type
 -- and data declarations (uppercase)
 
-type TVar = String
+-- type TVar = String
+
+newtype TVar = TVar { getTVar :: String } deriving (Eq, Ord)
+
+instance Show TVar where
+ show = showVar . getTVar
+
+-- Use this for recursion variables (in rec-types) and polymorphic
+-- variables (lowercase)
+mkTVar :: Int -> String -> TVar
+mkTVar next id = TVar (mkVar next id)
+
+-- Use this for the names of types introduced with type and data
+-- declarations (uppercase)
+mkNonBindableTVar :: String -> TVar
+mkNonBindableTVar = TVar
+
+showVar :: String -> String
+showVar id
+   | isDigit (head id) = tail $ dropWhile (isDigit) id
+   | otherwise         = id
+
+mkVar :: Int -> String -> String
+mkVar next id = show next ++ '_' : id
 
 -- Bindings: A pair composed of a position and a base syntactic
 -- category. These are often used as keys in maps (for kinds, for type
@@ -78,7 +107,7 @@ instance Position TBind where
   position (TBind p _) = p
 
 instance Show TBind where
-  show (TBind _ x) = x
+  show (TBind _ x) = show x
 
 instance Eq TBind where
   (TBind _ x) == (TBind _ y) = x == y

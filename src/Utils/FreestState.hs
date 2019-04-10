@@ -32,18 +32,22 @@ module Utils.FreestState
 , newPVar
 , getPVar
 , rmPVar
+-- Type variables
+, newTVar
+, getTVar
+, rmTVar
 -- Errors
 , Errors (..)
 , addError
 ) where
 
-import           Parse.Lexer (Pos)
 import           Syntax.Programs
 import           Syntax.Expression
 import           Syntax.Types
 import           Syntax.Schemes
 import           Syntax.Kinds
 import           Syntax.Bind
+import           Parse.Lexer (Pos,defaultPos)
 import           Utils.Errors
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
@@ -59,7 +63,8 @@ data FreestS = FreestS {
 , typeEnv  :: TypeEnv
 , errors   :: Errors
 , lastVar  :: Int
-, varsInScope :: Map.Map String [PVar]
+, pVarsInScope :: Map.Map String [PVar]
+, tVarsInScope :: Map.Map String [TVar] -- TODO: merge
 }
 
 type FreestState = State FreestS
@@ -74,7 +79,8 @@ initialState f = FreestS {
 , typeEnv  = Map.empty
 , errors   = []
 , lastVar  = 0
-, varsInScope = Map.empty
+, pVarsInScope = Map.empty
+, tVarsInScope = Map.empty
 }
 
 -- | FILE NAME
@@ -145,42 +151,6 @@ getFromTenv  b = do
   tenv <- getTenv
   return $ tenv Map.!? b
 
-{- Kind environments are now passed as parameter
-
--- | KIND ENV
-
-getKenv :: FreestState KindEnv
-getKenv = do
-  s <- get
-  return $ kindEnv s
-
-addToKenv :: TBind -> Kind -> FreestState ()
-addToKenv x k =
-  modify (\s -> s {kindEnv=Map.insert x k (kindEnv s)})
-
-kenvMember :: TBind -> FreestState Bool
-kenvMember x = do
-  kenv <- getKenv
-  return $ Map.member x kenv
-
-getKind :: TBind -> FreestState Kind -- Remove ?
-getKind x = do
-  kenv <- getKenv
-  return $ kenv Map.! x
-
-getFromKenv :: TBind -> FreestState (Maybe Kind)
-getFromKenv x = do
-  kenv <- getKenv
-  return $ kenv Map.!? x   
-
-removeFromKenv :: TBind -> FreestState ()
-removeFromKenv x =
-  modify (\s -> s {kindEnv = Map.delete x (kindEnv s)})
-
-resetKEnv ::  FreestState ()
-resetKEnv = modify (\s -> s {kindEnv = Map.empty})
--}
-
 -- | ERRORS
 
 addError :: Pos -> [String] -> FreestState ()
@@ -193,33 +163,43 @@ addErrorList es =
 
 -- | FRESH VARS
 
-{-
-getPVar :: String -> FreestState PVar
-getPVar x = do
-  s <- get
-  case (varsInScope s) Map.!? x of
-    Just pvar -> return $ head pvar
-    Nothing -> do
-      let pvar = PVar $ show (lastVar s) ++ ('_' : x)
-      put $ s {lastVar = lastVar s + 1, varsInScope = Map.insertWith (++) x [pvar] (varsInScope s)}
-      return pvar
--}
 newPVar :: String -> FreestState PVar
 newPVar id = do
   s <- get
   let pvar = mkPVar (lastVar s) id
-  put $ s {lastVar = lastVar s + 1, varsInScope = Map.insertWith (++) id [pvar] (varsInScope s)}
+  put $ s {lastVar = lastVar s + 1, pVarsInScope = Map.insertWith (++) id [pvar] (pVarsInScope s)}
   return pvar
 
 getPVar :: String -> FreestState PVar
 getPVar id = do
   s <- get
-  return $ head $ (varsInScope s) Map.! id
+  case (pVarsInScope s) Map.!? id of
+    Just pvar -> return $ head $ pvar
+    Nothing   -> return $ omission defaultPos -- TODO
 
 rmPVar :: PBind -> FreestState ()
 rmPVar (PBind _ pvar) = do
   s <- get
-  put $ s {varsInScope = Map.update tailMaybe (show pvar) (varsInScope s)}
+  put $ s {pVarsInScope = Map.update tailMaybe (show pvar) (pVarsInScope s)}
+  where tailMaybe []     = Nothing
+        tailMaybe (_:xs) = Just xs
+
+newTVar :: String -> FreestState TVar
+newTVar id = do
+  s <- get
+  let pvar = mkTVar (lastVar s) id
+  put $ s {lastVar = lastVar s + 1, tVarsInScope = Map.insertWith (++) id [pvar] (tVarsInScope s)}
+  return pvar
+
+getTVar :: String -> FreestState TVar
+getTVar id = do
+  s <- get
+  return $ head $ (tVarsInScope s) Map.! id
+
+rmTVar :: PBind -> FreestState ()
+rmTVar (PBind _ pvar) = do
+  s <- get
+  put $ s {tVarsInScope = Map.update tailMaybe (show pvar) (tVarsInScope s)}
   where tailMaybe []     = Nothing
         tailMaybe (_:xs) = Just xs
 

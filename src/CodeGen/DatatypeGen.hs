@@ -22,7 +22,7 @@ showElem (TBind _ x) (_, (TypeScheme _ _ t))              = showTypeAbbr x t
 
 
 showDatatype :: TVar -> TypeMap -> String
-showDatatype x m = "data " ++ x ++ " = " ++ showDatatypeMap m ++ " deriving Show"
+showDatatype x m = "data " ++ show x ++ " = " ++ showDatatypeMap m ++ " deriving Show"
 
 showDatatypeMap :: TypeMap -> String
 showDatatypeMap m =
@@ -32,7 +32,7 @@ showTypes :: Type -> String
 showTypes = intercalate " " . map show . init . toListT
 
 showTypeAbbr :: TVar -> Type -> String
-showTypeAbbr x t = "type " ++ x ++ " = " ++ show t
+showTypeAbbr x t = "type " ++ show x ++ " = " ++ show t
 
 
 -- TODO: Remove, do I need toList over schemes or only types

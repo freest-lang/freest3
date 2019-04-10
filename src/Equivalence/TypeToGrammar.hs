@@ -37,11 +37,11 @@ type TransState = State TState
 initial :: TState
 initial = (Map.empty, Set.empty, 1)
 
-freshVar :: TransState String
+freshVar :: TransState TVar
 freshVar = do
   (p, v, n) <- get
   put (p, v, n + 1)
-  return $ "_X" ++ show n
+  return $ mkTVar n "_X" -- ++ show n
 
 memberVisited :: TVar -> TransState Bool
 memberVisited t = do

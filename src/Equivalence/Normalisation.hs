@@ -46,11 +46,11 @@ instance Normalise Type where
     where t' = normalise tenv t
     -- Functional or session
     -- Type operators
-  normalise tenv (Dualof _ t)     = normalise tenv (dual t)
-  normalise tenv (Name p c)       = normalise tenv t
+  normalise tenv (Dualof _ t)    = normalise tenv (dual t)
+  normalise tenv (TypeName p c)  = normalise tenv t
     where (_, TypeScheme _ [] t) = tenv Map.! (TBind p c) -- TODO: polymorphic type names
     -- Otherwise: Basic, Skip, Message, TypeVar
-  normalise tenv t                = t
+  normalise tenv t               = t
 
 append :: Type -> Type -> Type
 append (Skip _)       t = t
@@ -76,4 +76,4 @@ free (Rec _ (TBindK _ x _) t) = Set.delete x (free t)
 free (TypeVar _ x)    = Set.singleton x
   -- Type operators
 free (Dualof _ t)     = free t
-free (Name _ _)       = Set.empty
+free (TypeName _ _)   = Set.empty

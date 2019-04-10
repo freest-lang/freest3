@@ -46,7 +46,7 @@ data Expression =
   -- Let
   | UnLet Pos PBind Expression Expression -- TODO: Derived; eliminate?
   -- Fork
-  | Fork Pos Expression
+--   | Fork Pos Expression -- Fork is now a prog var in the initial env
   -- Session types
   | New Pos Type
   | Send Pos Expression
@@ -85,7 +85,7 @@ showAux (Conditional _ e e1 e2) i = " if " ++ show e ++ " then " ++ (showAux e1 
   -- Let
 showAux (UnLet _ b1 e1 e2) i = " let " ++ show b1 ++ " = " ++ (showAux e1 i) ++ " in " ++ (showAux e2 (i-1))
 -- Fork
-showAux (Fork _ e) i = " fork " ++ (showAux e (i-1))
+-- showAux (Fork _ e) i = " fork " ++ (showAux e (i-1))
   -- Session types
 showAux (New _ t) _ = " new " ++ show t
 showAux (Send _ e) _ = " send " ++ show e
@@ -115,5 +115,5 @@ instance Position Expression where
   position (Receive p _ )        = p
   position (Select p _ _)        = p
   position (Match p _ _)         = p
-  position (Fork p _)            = p
+--  position (Fork p _)            = p
   position (Case p _ _)          = p

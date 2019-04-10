@@ -106,11 +106,11 @@ throughPath p _ xs = Just xs
 instance Show Label where
   show (ChoiceLabel v l) = show v ++ show l
   show (MessageLabel p t) = show p ++ show t
-  show (VarLabel l) = l
+  show (VarLabel l) = show l
 
 instance Show Grammar where
   show (Grammar xs p) =
-    "start symbols: " ++ concat xs ++
+    "start symbols: " ++ concat (map show xs) ++
     "\nproductions: " ++ showProductions p
 
 showProductions :: Productions -> String
@@ -120,4 +120,4 @@ showTransitions :: TVar -> Transitions -> String -> String
 showTransitions x m s = s ++ Map.foldrWithKey (showTransition x) "" m
 
 showTransition :: TVar -> Label -> [TVar] -> String -> String
-showTransition x l xs s = s ++ "\n" ++ x ++ " -> " ++ show l ++ " " ++ concat xs
+showTransition x l xs s = show s ++ "\n" ++ show x ++ " -> " ++ show l ++ " " ++ concat (map show xs)

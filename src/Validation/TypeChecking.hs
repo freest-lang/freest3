@@ -70,7 +70,6 @@ checkFunBody f e =
 checkMainFunction :: FreestState ()
 checkMainFunction = do
   venv <- getVenv
---  let mBind = PBind defaultPos $ PVar "main"
   main <- getPVar "main"
   let mBind = PBind defaultPos main
   if mBind `Map.notMember` venv

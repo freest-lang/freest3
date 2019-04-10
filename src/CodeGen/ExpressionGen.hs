@@ -137,9 +137,9 @@ annotateAST' m fm _ e@(Match _ _ mmap) =
   let m1 = annotateMap m fm True Map.empty in -- FIELDMAP
       (Map.insert e True m1, True)
 
-annotateAST' m fm _ e@(Fork _ e1) =
-  let (m1,_) = annotateAST' m fm True e1 in
-      (Map.insert e True m1, True)
+-- annotateAST' m fm _ e@(Fork _ e1) =
+--   let (m1,_) = annotateAST' m fm True e1 in
+--       (Map.insert e True m1, True)
 
 -- annotateAST' m fm b e@(Constructor _ _) = (Map.insert e b m, b)
 
@@ -327,10 +327,10 @@ translate fm m (Match _ e mm) = do
   return ("_receive " ++ h1 ++ " >>= \\(" ++ v ++  ", " ++ fresh ++
           ") -> (case " ++ v ++ " of {" ++ h2 ++ "})", False)
 
-translate fm m e@(Fork _ e1) = do
-  (h1, b1) <- translate fm m e1
-  c1 <- translateExpr ("_fork (" ++ h1 ++ " >> return ())") (expected m e) True
-  return (c1, True)
+-- translate fm m e@(Fork _ e1) = do
+--   (h1, b1) <- translate fm m e1
+--   c1 <- translateExpr ("_fork (" ++ h1 ++ " >> return ())") (expected m e) True
+--   return (c1, True)
   
 -- translate fm m e@(Constructor _ x) = do
 --   h <- translateExpr (show x) (expected m e) False

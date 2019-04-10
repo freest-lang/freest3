@@ -113,14 +113,14 @@ synthetise kenv (BinLet _ x y e1 e2) = do
   quotient kenv y
   return t2
 -- Fork
-synthetise kenv (Fork p e) = do
-  t <- synthetise kenv e
-  k <- K.synthetise kenv t
-  when (isLin k) $ addError p
-    ["Unexpected linear expression", styleRed (show e), "in fork\n",
-     "\t expression", styleRed (show e), "is of type", styleRed (show t),
-     "of kind", styleRed (show k)]
-  return $ Basic p UnitType
+-- synthetise kenv (Fork p e) = do
+--   t <- synthetise kenv e
+--   k <- K.synthetise kenv t
+--   when (isLin k) $ addError p
+--     ["Unexpected linear expression", styleRed (show e), "in fork\n",
+--      "\t expression", styleRed (show e), "is of type", styleRed (show t),
+--      "of kind", styleRed (show k)]
+--   return $ Basic p UnitType
 -- Session types
 synthetise kenv (New p t) = do
   K.checkAgainst kenv (Kind p Session Lin) t
