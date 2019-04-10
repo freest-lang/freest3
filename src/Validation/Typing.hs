@@ -156,6 +156,17 @@ synthetiseVar kenv b = do
       addToVenv b s
       return s
 
+synthetiseFieldMap :: Pos -> KindEnv -> Expression -> ExpMap ->
+  (Pos -> Type -> FreestState TypeMap) -> FreestState Type
+synthetiseFieldMap p kenv e fm extract = do
+  t <- synthetise kenv e
+  tm <- extract p t
+  venv <- getVenv
+  (t:ts, v:vs) <- Map.foldrWithKey (synthetiseField venv kenv tm) (return ([],[])) fm
+  mapM_ (checkEquivTypes p kenv t) ts
+  mapM_ (checkEquivEnvs p kenv v) vs
+  setVenv v
+  return t
 
 -- Checks either the case map and the match map (all the expressions)
 synthetiseField :: VarEnv -> KindEnv -> TypeMap -> PBind -> ([PBind], Expression) ->
