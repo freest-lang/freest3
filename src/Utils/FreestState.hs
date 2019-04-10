@@ -95,8 +95,8 @@ getFromVenv x = do
   return $ venv Map.!? x
 
 removeFromVenv :: PBind -> FreestState ()
-removeFromVenv x =
-  modify (\s -> s {varEnv= Map.delete x (varEnv s)})  
+removeFromVenv = rmPVar
+--  modify (\s -> s {varEnv= Map.delete x (varEnv s)})  
 
 addToVenv :: PBind -> TypeScheme -> FreestState ()
 addToVenv b t =
@@ -217,7 +217,7 @@ fetchPVar id = do
 rmPVar :: PBind -> FreestState ()
 rmPVar (PBind _ pvar) = do
   s <- get
-  put $ s {varsInScope = Map.update tailMaybe (getPVar pvar) (varsInScope s)}
+  put $ s {varsInScope = Map.update tailMaybe (show pvar) (varsInScope s)}
   where tailMaybe []     = Nothing
         tailMaybe (_:xs) = Just xs
 

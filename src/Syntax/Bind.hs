@@ -13,7 +13,6 @@ Portability :  portable | non-portable (<reason>)
 
 module Syntax.Bind
 ( PVar
-, getPVar
 , mkPVar
 , mkPVarNonBindable
 , TVar
@@ -34,7 +33,10 @@ import qualified Data.Map.Strict as Map
 newtype PVar = PVar { getPVar :: String } deriving (Eq, Ord)
 
 instance Show PVar where
- show v = tail $ dropWhile (isDigit) (getPVar v)
+ show v
+   | isDigit (head id) = tail $ dropWhile (isDigit) id
+   | otherwise         = id
+     where id = getPVar v
 
 mkPVar :: Int -> String -> PVar
 mkPVar next id = PVar (show next ++ '_' : id)
@@ -42,16 +44,6 @@ mkPVar next id = PVar (show next ++ '_' : id)
 mkPVarNonBindable :: String -> PVar
 mkPVarNonBindable = PVar
 
-{-
-type VarsInScope =  Map.Map String [String] 
-
-mkPVar :: VarsInScope -> Int -> String -> (VarsInScope, Int, PVar)
-mkPVar map next id =
-  case map Map.!? id of
-    Just (internal:_) -> (map, next, PVar internal)
-    Nothing           -> (Map.insertWith (++) id [newInternal] map, next + 1, PVar newInternal)
-      where newInternal = show next ++ ('_' : id)
--}
 -- Type Variables: Recursion variables (in rec-types) and polymorphic
 -- variables (lowercase) and the names of types introduced with type
 -- and data declarations (uppercase)
