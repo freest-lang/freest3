@@ -278,6 +278,7 @@ checkEquivTypes :: Pos -> KindEnv -> Type -> Type -> FreestState ()
 checkEquivTypes p kenv expected actual = do
   tenv <- getTenv
   venv <- getVenv
+  trace ("checkEquivTypes :" ++ show (funSigsOnly tenv venv)) (return ())
   when (not $ equivalent tenv kenv expected actual) $
     addError p ["Couldn't match expected type", styleRed (show expected), "\n",
              "\t with actual type", styleRed (show actual)]

@@ -14,7 +14,6 @@ Portability :  portable | non-portable (<reason>)
 module Utils.FreestState
 ( FreestState
 , FreestS(..)
-, Errors (..)
 , tMapM
 , tMapWithKeyM
 , getFromVenv
@@ -29,9 +28,12 @@ module Utils.FreestState
 , getFromTenv
 , getFileName
 , initialState
+-- Program variables
 , newPVar
-, fetchPVar
+, getPVar
 , rmPVar
+-- Errors
+, Errors (..)
 , addError
 ) where
 
@@ -95,8 +97,8 @@ getFromVenv x = do
   return $ venv Map.!? x
 
 removeFromVenv :: PBind -> FreestState ()
-removeFromVenv x =
-  modify (\s -> s {varEnv= Map.delete x (varEnv s)})  
+removeFromVenv = rmPVar
+--  modify (\s -> s {varEnv= Map.delete x (varEnv s)})  
 
 addToVenv :: PBind -> TypeScheme -> FreestState ()
 addToVenv b t =
@@ -192,8 +194,8 @@ addErrorList es =
 -- | FRESH VARS
 
 {-
-fetchPVar :: String -> FreestState PVar
-fetchPVar x = do
+getPVar :: String -> FreestState PVar
+getPVar x = do
   s <- get
   case (varsInScope s) Map.!? x of
     Just pvar -> return $ head pvar
@@ -209,15 +211,15 @@ newPVar id = do
   put $ s {lastVar = lastVar s + 1, varsInScope = Map.insertWith (++) id [pvar] (varsInScope s)}
   return pvar
 
-fetchPVar :: String -> FreestState PVar
-fetchPVar id = do
+getPVar :: String -> FreestState PVar
+getPVar id = do
   s <- get
   return $ head $ (varsInScope s) Map.! id
 
 rmPVar :: PBind -> FreestState ()
 rmPVar (PBind _ pvar) = do
   s <- get
-  put $ s {varsInScope = Map.update tailMaybe (getPVar pvar) (varsInScope s)}
+  put $ s {varsInScope = Map.update tailMaybe (show pvar) (varsInScope s)}
   where tailMaybe []     = Nothing
         tailMaybe (_:xs) = Just xs
 

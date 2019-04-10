@@ -132,9 +132,8 @@ Decl :: { () }
     {% checkDupFunSig $1 >>
        addToVenv $1 $3 }
   -- Function declaration
-  | LOWER_ID VarBindSeq '=' Expr {% do
-      x <- fetchPVar (getText $1)
-      let pbind = PBind (position $1) x
+  | ProgVar VarBindSeq '=' Expr {% do
+      let pbind = PBind (position $3) $1
       e <- buildFunBody pbind $2 $4
       checkDupFunDecl pbind
       addToEenv pbind e }
@@ -150,7 +149,6 @@ Decl :: { () }
        let bs = typeListToType b $5
        let p = position b
        uncurry addToTenv $2 (TypeScheme p $3 (Datatype p (Map.fromList bs)))
---       uncurry addToTenv $2 (Datatype p (uncurry Map.fromList $5)))
        mapM_ (\(b, t) -> addToVenv b (toTypeScheme t)) bs
     }
 
@@ -172,10 +170,10 @@ Expr :: { Expression }
   | new Type                                 { New (position $1) $2 }
   | match Expr with '{' MatchMap '}'         { Match (position $1) $2 $5 }
   | case Expr of '{' CaseMap '}'             { Case (position $1) $2 $5 }
-  | Expr '*' Expr                            { binOp (position $2) $1 (mkPVarNonBindable "(*)") $3 }
-  | Expr '+' Expr                            { binOp (position $2) $1 (mkPVarNonBindable "(+)") $3 }
-  | Expr '-' Expr                            { binOp (position $2) $1 (mkPVarNonBindable "(-)") $3 }
-  | Expr OP Expr                             { binOp (position $2) $1 (mkPVarNonBindable (getText $2)) $3 }
+  | Expr '*' Expr                            { binOp (position $2) $1 (mkNonBindablePVar "(*)") $3 }
+  | Expr '+' Expr                            { binOp (position $2) $1 (mkNonBindablePVar "(+)") $3 }
+  | Expr '-' Expr                            { binOp (position $2) $1 (mkNonBindablePVar "(-)") $3 }
+  | Expr OP Expr                             { binOp (position $2) $1 (mkNonBindablePVar (getText $2)) $3 }
   | App                                      { $1 }
 
 App :: { Expression }
@@ -186,7 +184,7 @@ App :: { Expression }
   | receive Primary                          { Receive (position $1) $2 }
   | select Constructor Primary               { Select (position $1) $2 $3 }
   | fork Primary                             { Fork (position $1) $2 }
-  | '-' App %prec NEG                        { unOp (position $1) (mkPVarNonBindable "negate") $2}
+  | '-' App %prec NEG                        { unOp (position $1) (mkNonBindablePVar "negate") $2}
   | Primary                                  { $1 }
 
 Primary :: { Expression }
@@ -206,7 +204,6 @@ MatchMap :: { ExpMap }
 
 Match :: { (PBind, ([PBind], Expression)) }
   : ConsBind VarBind '->' Expr { ($1, ([$2], $4)) }
---  : ConsBind VarBind '->' Expr { ($1, funDeclToExp [$2] $4) }
 
 CaseMap :: { ExpMap }
   : Case             { uncurry Map.singleton $1 }
@@ -214,7 +211,6 @@ CaseMap :: { ExpMap }
                         
 Case :: { (PBind, ([PBind], Expression)) }
   : ConsBind VarBindSeq '->' Expr { ($1, ($2, $4)) }
---  : ConsBind VarBindSeq '->' Expr { ($1, funDeclToExp $2 $4) }
 
 -----------
 -- TYPE SCHEMES --
@@ -294,17 +290,16 @@ Kind :: { Kind } :
 -- VARIABLES (PROGRAM AND TYPE)
 
 ProgVar :: { PVar }
-  : LOWER_ID {% fetchPVar (getText $1) }
+  : LOWER_ID {% getPVar (getText $1) }
 
 Constructor :: { PVar }
-  : UPPER_ID { mkPVarNonBindable (getText $1) }
+  : UPPER_ID { mkNonBindablePVar (getText $1) }
 
 -- VARIABLES AND CONSTRUCTORS IN BINDING POSITIONS
 
 VarBind :: { PBind }
   : LOWER_ID {% newPVar (getText $1) >>= \x -> return $ PBind (position $1) x }
   | '_'      {% newPVar "_"          >>= \x -> return $ PBind (position $1) x }
---  | '_'      { PBind (position $1) (PVar "_") } -- TODO: rename to unique Var
 
 RecVar :: { TBindK }
   : LOWER_ID ':' Kind { TBindK (position $1) (getText $1) $3 }
@@ -315,7 +310,7 @@ KindVar :: { TBindK }
   | LOWER_ID	      { let p = position $1 in TBindK p (getText $1) (omission p) }
 
 ConsBind :: { PBind }
-  : UPPER_ID { PBind (position $1) (mkPVarNonBindable (getText $1)) } -- (PVar (getText $1)) }
+  : UPPER_ID { PBind (position $1) (mkNonBindablePVar (getText $1)) } -- (PVar (getText $1)) }
 
 TConsBind :: { TBind }
   : UPPER_ID { TBind (position $1) (getText $1) }
