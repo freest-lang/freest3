@@ -14,7 +14,7 @@ Portability :  portable | non-portable (<reason>)
 module Syntax.Bind
 ( PVar
 , mkPVar
-, mkPVarNonBindable
+, mkNonBindablePVar
 , TVar
 , PBind(..)
 , TBind(..)
@@ -23,13 +23,13 @@ module Syntax.Bind
 
 import           Parse.Lexer (Position, Pos, position)
 import           Data.Char (isDigit)
-import qualified Data.Map.Strict as Map
 
 -- The base syntactic categories of FreeST
 
 -- Program Variables: Function names and function parameters (lower
 -- case), but also datatype constructors and labels in session types
 -- choices (uppercase)
+
 newtype PVar = PVar { getPVar :: String } deriving (Eq, Ord)
 
 instance Show PVar where
@@ -38,15 +38,19 @@ instance Show PVar where
    | otherwise         = id
      where id = getPVar v
 
+-- Use this for function names and function parameters (lower case)
 mkPVar :: Int -> String -> PVar
 mkPVar next id = PVar (show next ++ '_' : id)
 
-mkPVarNonBindable :: String -> PVar
-mkPVarNonBindable = PVar
+-- Use this for datatype constructors and labels in session types
+-- choices (uppercase)
+mkNonBindablePVar :: String -> PVar
+mkNonBindablePVar = PVar
 
 -- Type Variables: Recursion variables (in rec-types) and polymorphic
 -- variables (lowercase) and the names of types introduced with type
 -- and data declarations (uppercase)
+
 type TVar = String
 
 -- Bindings: A pair composed of a position and a base syntactic
