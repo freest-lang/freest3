@@ -184,24 +184,23 @@ synthetiseField venv1 kenv tm b (bs, e) state = do
   -- TODO: still need to remove arguments from var env in the end
 paramsToVenv :: PBind -> [PBind] -> Type -> FreestState ()
 paramsToVenv c bs t = do
-  let ts = zipPBindLType bs t
-  mapM_ (uncurry addToVenv) ts 
+  let ts =  zipPBindLType bs t -- toListType t
+  mapM_ (uncurry addToVenv) ts -- (zip bs ts) 
   let lbs = length bs
-      num = numberOfArgs t
-  when (lbs /= num) $
+      lts = numArgs t
+  when (lbs /= lts) $
     addError (position c) ["The constructor", styleRed (show c) , "should have",
-                         show num, "arguments, but has been given", show lbs]  
+                         show lts, "arguments, but has been given", show lbs]  
 
 zipPBindLType :: [PBind] -> Type -> [(PBind, TypeScheme)]
 zipPBindLType [] _ = []
-zipPBindLType (_:[]) _ = []
 zipPBindLType (b:bs) (Fun _ _ t1 t2) = (b, toTypeScheme t1) : zipPBindLType bs t2
-zipPBindLType (b:bs) t = [(b, toTypeScheme t)]
+zipPBindLType (b:_) t = [(b, toTypeScheme t)] 
 
-numberOfArgs :: Type -> Int
-numberOfArgs (Fun _ _ _ t2) = 1 + numberOfArgs t2
-numberOfArgs t              = 0
-
+numArgs :: Type -> Int
+numArgs (Fun _ _ _ t2) = 1 + numArgs t2
+numArgs _              = 0
+  
 -- Check whether a constructor exists in a type map
 synthetiseCons :: PBind -> TypeMap -> FreestState Type
 synthetiseCons b@(PBind p c) tm = do
