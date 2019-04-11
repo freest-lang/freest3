@@ -173,10 +173,10 @@ Expr :: { Expression }
   | new Type                                 { New (position $1) $2 }
   | match Expr with '{' MatchMap '}'         { Match (position $1) $2 $5 }
   | case Expr of '{' CaseMap '}'             { Case (position $1) $2 $5 }
-  | Expr '*' Expr                            { binOp (position $2) $1 (mkNonBindablePVar "(*)") $3 }
-  | Expr '+' Expr                            { binOp (position $2) $1 (mkNonBindablePVar "(+)") $3 }
-  | Expr '-' Expr                            { binOp (position $2) $1 (mkNonBindablePVar "(-)") $3 }
-  | Expr OP Expr                             { binOp (position $2) $1 (mkNonBindablePVar (getText $2)) $3 }
+  | Expr '*' Expr                            { binOp (position $2) $1 (mkConstantPVar "(*)") $3 }
+  | Expr '+' Expr                            { binOp (position $2) $1 (mkConstantPVar "(+)") $3 }
+  | Expr '-' Expr                            { binOp (position $2) $1 (mkConstantPVar "(-)") $3 }
+  | Expr OP Expr                             { binOp (position $2) $1 (mkConstantPVar (getText $2)) $3 }
   | App                                      { $1 }
 
 App :: { Expression }
@@ -186,7 +186,7 @@ App :: { Expression }
   | receive Primary                          { Receive (position $1) $2 }
   | select Constructor Primary               { uncurry Select $2 $3 }
 --  | fork Primary                             { Fork (position $1) $2 }
-  | '-' App %prec NEG                        { unOp (position $1) (mkNonBindablePVar "negate") $2}
+  | '-' App %prec NEG                        { unOp (position $1) (mkConstantPVar "negate") $2}
   | Primary                                  { $1 }
 
 Primary :: { Expression }
@@ -296,17 +296,21 @@ Kind :: { Kind } :
 -- PROGRAM VARIABLES
 
 ProgVar :: { (Pos, PVar) }
-  : LOWER_ID {% getPVar (getText $1) >>= \x -> return (position $1, x) }
+--  : LOWER_ID {% getPVar (getText $1) >>= \x -> return (position $1, x) }
+  : LOWER_ID { (position $1, mkConstantPVar (getText $1)) }
 
 Constructor :: { (Pos, PVar) }
-  : UPPER_ID { (position $1, mkNonBindablePVar (getText $1)) }
+  : UPPER_ID { (position $1, mkConstantPVar (getText $1)) }
 
 ProgVarBind :: { PBind }
-  : ProgVar { uncurry PBind $1 }
-  | '_'     {% newPVar "_"  >>= \x -> return $ PBind (position $1) x }
+--  : LOWER_ID {% newPVar (getText $1) >>= \x -> return $ PBind (position $1) x }
+  : LOWER_ID { PBind (position $1) (mkConstantPVar (getText $1)) }
+--  | '_'      {% newPVar "_"          >>= \x -> return $ PBind (position $1) x }
+  | '_'      { PBind (position $1) (mkConstantPVar "_") }
 
 ProgConsBind :: { PBind }
-  : Constructor { uncurry PBind $1 }
+--  : UPPER_ID {% newPVar (getText $1) >>= \x -> return $ PBind (position $1) x }
+  : UPPER_ID { PBind (position $1) (mkConstantPVar (getText $1)) }
 
 ProgVarBindSeq :: { [PBind] }
   :                            { [] }
@@ -315,10 +319,10 @@ ProgVarBindSeq :: { [PBind] }
 -- TYPE VARIABLES
 
 TypeVar :: { (Pos, TVar) }
-  : LOWER_ID {% getTVar (getText $1) >>= \x -> return (position $1, x) }
+  : LOWER_ID { (position $1, mkConstantTVar (getText $1)) }
 
 TypeName :: { (Pos, TVar) }
-  : UPPER_ID { (position $1,  mkNonBindableTVar (getText $1)) }
+  : UPPER_ID { (position $1,  mkConstantTVar (getText $1)) }
 
 TypeVarBind :: { TBind }
   : TypeName { uncurry TBind $1 }
@@ -328,11 +332,11 @@ TypeVarBindKind :: { TBindK }
   | TypeVar          { uncurry TBindK $1 (Kind (fst $1) Session Lin) }
 
 TypeVarBindKindList :: { [TBindK] }
-  : TypeVarBindKind                 { [$1] }
+  : TypeVarBindKind                         { [$1] }
   | TypeVarBindKind ',' TypeVarBindKindList {% checkDupTBindK $1 $3 >> return ($1 : $3) }
 
 TypeVarBindKindEmptyList :: { [TBindK] }
-  :             { [] }
+  :                     { [] }
   | TypeVarBindKindList { $1 }
 
 {

@@ -43,7 +43,7 @@ typeCheck = do
   -- Function signatures (VarEnv)
   venv <- getVenv
   mapM_ (K.synthetiseTS Map.empty) venv
-  tMapWithKeyM hasBinding venv
+  tMapWithKeyM checkHasBinding venv
   -- Function bodies (ExpEnv)
   eenv <- getEenv
   tMapWithKeyM checkFunBody eenv
@@ -52,8 +52,8 @@ typeCheck = do
 
 -- Check whether all functions signatures have a binding. Exclude the
 -- builtin functions and the datatype constructors.
-hasBinding :: PBind -> a -> FreestState ()
-hasBinding f _ = do
+checkHasBinding :: PBind -> a -> FreestState ()
+checkHasBinding f _ = do
   eenv <- getEenv
   venv <- getVenv
   tenv <- getTenv
@@ -87,5 +87,5 @@ checkMainFunction = do
 
 isValidMainType :: TypeScheme -> FreestState Bool
 isValidMainType (TypeScheme _ _ (Fun _ _ _ _)) = return False
-isValidMainType t@(TypeScheme _ [] _)          = K.un t
+isValidMainType s@(TypeScheme _ [] _)          = K.un s
 isValidMainType _                              = return False

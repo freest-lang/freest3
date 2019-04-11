@@ -12,33 +12,38 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Utils.FreestState
-( FreestState
+( -- State
+FreestState
 , FreestS(..)
+, initialState
+-- Monad & map
 , tMapM
 , tMapWithKeyM
-, getFromVenv
-, getTenv
+-- Variable environment
 , getVenv
-, getEenv
+, getFromVenv
 , setVenv
-, addToTenv
 , addToVenv
-, addToEenv
 , removeFromVenv
+-- Type environment
+, getTenv
+, addToTenv
 , getFromTenv
-, getFileName
-, initialState
--- Program variables
+-- Expression environment
+, getEenv
+, addToEenv
+-- Program variables (parsing only)
 , newPVar
 , getPVar
 , rmPVar
--- Type variables
+-- Type variables (parsing only)
 , newTVar
 , getTVar
 , rmTVar
 -- Errors
 , Errors (..)
 , addError
+, getFileName
 ) where
 
 import           Syntax.Programs
@@ -103,12 +108,11 @@ getFromVenv x = do
   return $ venv Map.!? x
 
 removeFromVenv :: PBind -> FreestState ()
-removeFromVenv = rmPVar
---  modify (\s -> s {varEnv= Map.delete x (varEnv s)})  
+removeFromVenv b = modify (\s -> s {varEnv= Map.delete b (varEnv s)})  
 
 addToVenv :: PBind -> TypeScheme -> FreestState ()
 addToVenv b t =
-  modify (\s -> s{varEnv=Map.insert b t (varEnv s)})
+  modify (\s -> s{varEnv = Map.insert b t (varEnv s)})
 
 venvMember :: PBind -> FreestState Bool
 venvMember x = do
@@ -175,7 +179,7 @@ getPVar id = do
   s <- get
   case (pVarsInScope s) Map.!? id of
     Just pvar -> return $ head $ pvar
-    Nothing   -> return $ omission defaultPos -- TODO
+    Nothing   -> newPVar id >>= \pvar -> return pvar
 
 rmPVar :: PBind -> FreestState ()
 rmPVar (PBind _ pvar) = do

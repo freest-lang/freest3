@@ -16,11 +16,11 @@ module Syntax.Bind
 -- Program variables
   PVar
 , mkPVar
-, mkNonBindablePVar
+, mkConstantPVar
 -- Type variables
 , TVar
 , mkTVar
-, mkNonBindableTVar
+, mkConstantTVar
 -- Binds
 , PBind (..)
 , TBind (..)
@@ -39,7 +39,8 @@ import           Data.Char (isDigit)
 newtype PVar = PVar { getPVar :: String } deriving (Eq, Ord)
 
 instance Show PVar where
- show = showVar . getPVar
+-- show = showVar . getPVar
+ show = show . getPVar
 
 -- Use this for function names and function parameters (lower case)
 mkPVar :: Int -> String -> PVar
@@ -47,17 +48,12 @@ mkPVar next id = PVar (mkVar next id)
 
 -- Use this for datatype constructors and labels in session types
 -- choices (uppercase)
-mkNonBindablePVar :: String -> PVar
-mkNonBindablePVar = PVar
-
-instance Default PVar where
-  omission _= mkPVar 9999 "#"
+mkConstantPVar :: String -> PVar -- TODO rename to mkConstantPVar
+mkConstantPVar = PVar
 
 -- Type Variables: Recursion variables (in rec-types) and polymorphic
 -- variables (lowercase) and the names of types introduced with type
 -- and data declarations (uppercase)
-
--- type TVar = String
 
 newtype TVar = TVar { getTVar :: String } deriving (Eq, Ord)
 
@@ -71,8 +67,8 @@ mkTVar next id = TVar (mkVar next id)
 
 -- Use this for the names of types introduced with type and data
 -- declarations (uppercase)
-mkNonBindableTVar :: String -> TVar
-mkNonBindableTVar = TVar
+mkConstantTVar :: String -> TVar -- TODO rename to mkConstantTVar
+mkConstantTVar = TVar
 
 showVar :: String -> String
 showVar id
@@ -115,9 +111,8 @@ instance Eq TBind where
 instance Ord TBind where
   (TBind _ x) <= (TBind _ y) = x <= y
 
-
 -- Default kinds, types, and type schemes. Used when the compiler
--- needs to fill an error
+-- needs an object in error situations
 class Default t where
   omission :: Pos -> t
   

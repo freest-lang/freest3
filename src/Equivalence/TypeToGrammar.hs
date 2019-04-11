@@ -115,7 +115,7 @@ toGrammar u@(Rec p x t)
   | otherwise = do
     y <- freshVar
     insertVisited y
-    zs <- toGrammar $ subs (TypeVar p y) x t -- On the fly α-conversion
+    zs <- toGrammar t -- $ subs (TypeVar p y) x t -- On the fly α-conversion
     m <- getTransitions $ head zs
     addProductions y (Map.map (++ tail zs) m)
     return [y]

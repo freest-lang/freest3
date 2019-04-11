@@ -61,7 +61,7 @@ synthetise kenv (UnLet _ b e1 e2) = do
   quotient kenv b
   return t2
 -- Abstraction introduction
-synthetise kenv e'@(Lambda p m b t1 e) = do
+synthetise kenv (Lambda p m b t1 e) = do
   K.synthetise kenv t1
   venv1 <- getVenv
   addToVenv b (toTypeScheme t1)
@@ -144,10 +144,12 @@ synthetise kenv (Case p e fm) = synthetiseFieldMap p kenv e fm extractDatatypeMa
 -- | Returns the type scheme for a variable; removes it from venv if lin
 synthetiseVar :: KindEnv -> PBind -> FreestState TypeScheme
 synthetiseVar kenv b = do
+  venv <- getVenv
+  trace ("synthetiseVar: " ++ show b ++ ", venv: " ++ show venv) (return ())
   getFromVenv b >>= \case
     Just s -> do
       k <- K.synthetiseTS kenv s
-      when (isLin k) $ removeFromVenv b
+      when (isLin k) $ rmPVar b
       return s
     Nothing -> do
       let p = position b
@@ -226,13 +228,13 @@ synthetiseCons b@(PBind p c) tm = do
 quotient :: KindEnv -> PBind -> FreestState ()
 quotient kenv b@(PBind p x) =
   getFromVenv b >>= \case
-    Just s  -> do
-      let (TypeScheme _ [] t) = s
+    Just (TypeScheme _ [] t)  -> do
       k <- K.synthetise kenv t
-      when (isLin k) $ addError p ["Program variable", styleRed $ show x, "is linear at the end of its scope\n",
-                        "\t", "variable", styleRed $ show x, "is of type", styleRed $ show t,
-                        "of kind", styleRed (show k)]
       removeFromVenv b
+      when (isLin k) $
+        addError p ["Program variable", styleRed $ show x, "is linear at the end of its scope\n",
+                    "\t", "variable", styleRed $ show x, "is of type", styleRed $ show t,
+                    "of kind", styleRed $ show k]
     Nothing ->
       return ()
 
@@ -278,7 +280,7 @@ checkEquivTypes :: Pos -> KindEnv -> Type -> Type -> FreestState ()
 checkEquivTypes p kenv expected actual = do
   tenv <- getTenv
   venv <- getVenv
-  trace ("checkEquivTypes :" ++ show (funSigsOnly tenv venv)) (return ())
+  -- trace ("checkEquivTypes :" ++ show (funSigsOnly tenv venv)) (return ())
   when (not $ equivalent tenv kenv expected actual) $
     addError p ["Couldn't match expected type", styleRed (show expected), "\n",
              "\t with actual type", styleRed (show actual)]
@@ -286,7 +288,8 @@ checkEquivTypes p kenv expected actual = do
 checkEqualEnvs :: Pos -> VarEnv -> VarEnv -> FreestState ()
 checkEqualEnvs p venv1 venv2 =
   when (not $ Map.null diff)
-    (addError p ["Final environment differs from initial in", styleRed $ show diff])
+    (addError p ["Final environment differs from initial\n",
+                "\t these extra entries are present in the final environment:", styleRed $ show diff])
   where diff = Map.difference venv2 venv1
 
 checkEquivEnvs :: Pos -> KindEnv -> VarEnv -> VarEnv -> FreestState ()
@@ -324,7 +327,7 @@ fillFunType kenv b@(PBind p f) e (TypeScheme _ _ t) = fill e t
   fill (Lambda _ _ b _ e) (Fun _ _ t1 t2) = do
     addToVenv b (toTypeScheme t1)
     t3 <- fill e t2
-    removeFromVenv b
+    rmPVar b
     return t3
   fill e@(Lambda p _ _ _ _) t = do
     addError p ["Couldn't match expected type", styleRed $ show t, "\n",

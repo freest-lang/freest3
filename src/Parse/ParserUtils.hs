@@ -78,7 +78,7 @@ checkDupFunSig b = do
   m <- getVenv
   case m Map.!? b of
     Just a  ->
-      addError (position a) ["Duplicate type signatures for function", styleRed (show b), "\n",
+      addError (position b) ["Duplicate signatures for function", styleRed (show b), "\n",
                              "\t Declared at:", showPos (position a), "\n",
                              "\t             ", showPos (position b)]
     Nothing -> return ()
