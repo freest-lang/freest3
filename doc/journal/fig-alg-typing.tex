@@ -237,45 +237,56 @@
       \algtypein[\kindEnv;\varEnv_1]{\conditionale{e_1}{e_2}{e_3}}{T}{\varEnv_3}
     }
     \\
-        \frac{
+    % Match 
+    \frac{
+      \begin{array}{c}
+        \algtypeout[\kindEnv;\varEnv_1]{e}{T}{\varEnv_2}
+        \quad
+        T \Extract{} \&\{C_i\colon T_i\}
+        \\
+        \algtypein[\kindEnv;\varEnv_2, x_i\colon T_i]{e_i}{U}{\Sigma_i}
+        \quad
+        \ctxequiv{\Sigma_1 \div (x_1\colon T_1)}{\Sigma_i \div (x_i\colon T_i)} 
+      \end{array}
+    }{
+      \algtypein[\kindEnv;\varEnv_1]{\matche{e}{\{C_i\,x_i
+          \rightarrow e_i\}}}{U_1}{\Sigma_1 \div (x_1\colon T_1)}
+    }
+    \\
+    % Case
+    \frac{
+      \begin{array}{c}
+        \algtypeout[\kindEnv;\varEnv_1]{e}{T}{\varEnv_2}
+        \quad
+        T \Extract{}[C_i\colon T_i]
+        \quad
+        (T_i;\vec x_i) \Extract{}{\vec V_i}
+        \\
+        \algtypein[\kindEnv;\varEnv_2, \vec x_i\colon\vec V_i]{e_i}{U}{\Sigma_i}
+        \quad
+        \ctxequiv{\Sigma_1 \div (\vec x_1\colon\vec V_1)}{\Sigma_i \div (\vec x_i\colon\vec V_i)} 
+      \end{array}
+    }{
+      \algtypein[\kindEnv;\varEnv_1]{\casee{e}{\{C_i\,\vec x_i\rightarrow e_i\}}}{U}{\Sigma_1 \div (\vec x_1\colon\vec V_1)}
+    }
+    \\
+    % Application
+    \frac{
+      \algtypeout[\kindEnv;\varEnv_1]{e_1}{T}{\varEnv_2}
+      \quad
+      \algtypein[\kindEnv;\varEnv_2]{e_2}{T\multimap U}{\varEnv_3}
+    }{
+      \algtypein[\kindEnv;\varEnv_1]{e_1e_2}{U}{\varEnv_3}
+    }
+    \quad
+    % Equivalence
+    \frac{
       \algtypeout e U \varEnv
       \quad
       \typeequiv T U
     }{
       \algtypein e T \varEnv
     }
-    \\
-    % Match 
-    \frac{
-      \begin{array}{c}
-      \algtypeout[\kindEnv;\varEnv_1]{e}{T}{\varEnv_2}
-      \quad
-      T \Extract{} \&\{C_i\colon T_i\}
-      \\
-      \algtypein[\kindEnv;\varEnv_2, x_i\colon T_i]{e_i}{U}{\Sigma_i}
-      \quad
-      \ctxequiv{\Sigma_1 \div (x_1\colon T_1)}{\Sigma_i \div (x_i\colon T_i)} 
-      \end{array}
-    }{
-      \algtypein[\kindEnv;\varEnv_1]{\matche{e}{\{C_i\,x_i
-          \rightarrow e_i\}}}{U_1}{\Sigma_1 \div (x_1\colon T_1)}
-    }
-  \\
-  \frac{
-    \begin{array}{c}
-    \algtypeout[\kindEnv;\varEnv_1]{e}{T}{\varEnv_2}
-    \quad
-    T \Extract{}[C_i\colon T_i]
-    \quad
-    (T_i;\vec x_i) \Extract{}{\vec V_i}
-    \\
-    \algtypein[\kindEnv;\varEnv_2, \vec x_i\colon\vec V_i]{e_i}{U}{\Sigma_i}
-    \quad
-    \ctxequiv{\Sigma_1 \div (\vec x_1\colon\vec V_1)}{\Sigma_i \div (\vec x_i\colon\vec V_i)} 
-    \end{array}
-  }{
-    \algtypein[\kindEnv;\varEnv_1]{\casee{e}{\{C_i\,\vec x_i\rightarrow e_i\}}}{U}{\Sigma_1 \div (\vec x_1\colon\vec V_1)}
-  }
   \end{gather*}
   \caption{Algorithmic type checking}
   \label{fig:alg-typing}

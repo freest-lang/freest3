@@ -261,10 +261,11 @@ checkAgainst kenv (BinLet _ x y e1 e2) t2 = do
   checkAgainst kenv e2 t2
   quotient kenv x
   quotient kenv y
--- Match TODO
+-- TODO Match
 -- checkAgainst kenv (Match p e fm) = checkAgainstFieldMap p kenv e fm extractInChoiceMap
--- Datatype elimination TODO
+-- TODO Datatype elimination
 -- checkAgainst kenv (Case p e fm) = checkAgainstFieldMap p kenv e fm extractDatatypeMap
+-- TODO Lambda elimination
 -- Default
 checkAgainst kenv e t = do
   u <- synthetise kenv e
