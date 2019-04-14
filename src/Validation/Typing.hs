@@ -112,14 +112,14 @@ synthetise kEnv (BinLet _ x y e1 e2) = do
   quotient kEnv y
   return t2
 -- Fork
--- synthetise kEnv (Fork p e) = do
---   t <- synthetise kEnv e
---   k <- K.synthetise kEnv t
---   when (isLin k) $ addError p
---     ["Unexpected linear expression", styleRed (show e), "in fork\n",
---      "\t expression", styleRed (show e), "is of type", styleRed (show t),
---      "of kind", styleRed (show k)]
---   return $ Basic p UnitType
+synthetise kEnv (Fork p e) = do
+  t <- synthetise kEnv e
+  k <- K.synthetise kEnv t
+  when (isLin k) $ addError p
+    ["Unexpected linear expression", styleRed (show e), "in fork\n",
+     "\t expression", styleRed (show e), "is of type", styleRed (show t),
+     "of kind", styleRed (show k)]
+  return $ Basic p UnitType
 -- Session types
 synthetise kEnv (New p t) = do
   K.checkAgainst kEnv (Kind p Session Lin) t
@@ -218,7 +218,7 @@ synthetiseCons b tm =
   case tm Map.!? b of
     Just t  -> return t
     Nothing -> do
-      addError (position b) ["Data constructor or choice field", styleRed $ show b, "not in scope"]
+      addError (position b) ["Data constructor or field name in choice type", styleRed $ show b, "not in scope"]
       return $ Skip (position b)
 
 -- | The quotient operation

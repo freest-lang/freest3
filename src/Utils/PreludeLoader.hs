@@ -7,6 +7,7 @@ import           Syntax.Expressions
 import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Kinds
+import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
 import           Syntax.Base
 import qualified Data.Map.Strict as Map
@@ -19,24 +20,29 @@ unIntInt = toTypeScheme (Fun defaultPos Un (Basic defaultPos IntType)  (Basic de
 unBoolBool = toTypeScheme (Fun defaultPos Un (Basic defaultPos BoolType) (Basic defaultPos BoolType))
 
 typeList :: [(ProgVar, TypeScheme)]
-typeList = [ (mkProgVar defaultPos "(+)", binIntOp)
-           , (mkProgVar defaultPos "(-)", binIntOp)
-           , (mkProgVar defaultPos "(/)", binIntOp)
-           , (mkProgVar defaultPos "(*)", binIntOp)
-           , (mkProgVar defaultPos "mod", binIntOp)
-           , (mkProgVar defaultPos "rem", binIntOp)
-           , (mkProgVar defaultPos "div", binIntOp)
-           , (mkProgVar defaultPos "negate", unIntInt)
-           , (mkProgVar defaultPos "not", unBoolBool)
-           , (mkProgVar defaultPos "(&&)", binBoolOp)
-           , (mkProgVar defaultPos "(||)", binBoolOp)
-           , (mkProgVar defaultPos "(==)", relationalOp)
-           , (mkProgVar defaultPos "(<)", relationalOp)
-           , (mkProgVar defaultPos "(>)", relationalOp)
-           , (mkProgVar defaultPos "(<=)", relationalOp)
-           , (mkProgVar defaultPos "(>=)", relationalOp)
---           , (mkProgVar defaultPos "id", TypeScheme defaultPos [TBindK defaultPos "a" (Kind defaultPos Session Un)] (Fun defaultPos Un (TypeVar defaultPos "a") (TypeVar defaultPos "a")))
-           ]
+typeList =
+  [ (mkProgVar p "(+)", binIntOp)
+  , (mkProgVar p "(-)", binIntOp)
+  , (mkProgVar p "(/)", binIntOp)
+  , (mkProgVar p "(*)", binIntOp)
+  , (mkProgVar p "mod", binIntOp)
+  , (mkProgVar p "rem", binIntOp)
+  , (mkProgVar p "div", binIntOp)
+  , (mkProgVar p "negate", unIntInt)
+  , (mkProgVar p "not", unBoolBool)
+  , (mkProgVar p "(&&)", binBoolOp)
+  , (mkProgVar p "(||)", binBoolOp)
+  , (mkProgVar p "(==)", relationalOp)
+  , (mkProgVar p "(<)", relationalOp)
+  , (mkProgVar p "(>)", relationalOp)
+  , (mkProgVar p "(<=)", relationalOp)
+  , (mkProgVar p "(>=)", relationalOp)
+-- If introduce fork here, programs must instantiate ths poly var. E.g., 'fork [()] (boolServer r)'
+--  , (mkProgVar p "fork", TypeScheme p [TypeVarBind p a (Kind p Functional Lin)] (Fun p Lin (TypeVar p a) (Basic p UnitType))) 
+--           , (mkProgVar p "id", TypeScheme p [TBindK p "a" (Kind p Session Un)] (Fun p Un (TypeVar p "a") (TypeVar p "a")))
+  ]
+  where p = defaultPos
+        a = mkTypeVar p "9999_a"
 
 prelude :: VarEnv
 prelude = foldl (\acc (x, s) -> Map.insert x s acc) Map.empty typeList

@@ -38,16 +38,30 @@ typeCheck = do
   -- Type/datatype declarations: check TypeEnv for type or datatype
   -- declarations, VarEnv for each datatype constructor
   tEnv <- getTEnv
-  mapM_ (K.synthetiseTS Map.empty . snd) tEnv -- check the formation of all type schemes
+  trace ("TEnv " ++ show tEnv)
+    mapM_ (K.synthetiseTS Map.empty . snd) tEnv -- check the formation of all type schemes
   -- Function signatures (VarEnv)
   vEnv <- getVEnv
-  mapM_ (K.synthetiseTS Map.empty) vEnv
+  trace ("VEnv " ++ show (funSigsOnly tEnv vEnv))
+    mapM_ (K.synthetiseTS Map.empty) vEnv
   tMapWithKeyM checkHasBinding vEnv
   -- Function bodies (ExpEnv)
   eEnv <- getEEnv
-  tMapWithKeyM checkFunBody eEnv
+  trace ("EEnv " ++ show eEnv)
+    tMapWithKeyM checkFunBody eEnv
   -- Main function
-  trace ("Functions " ++ show vEnv) checkMainFunction
+  checkMainFunction
+
+funSigsOnly :: TypeEnv -> VarEnv -> VarEnv -- TODO: also in Typing.hs
+funSigsOnly tEnv =
+  Map.filterWithKey (\x _ -> not (isBuiltin x) && not (isDatatypeContructor tEnv x))
+
+isDatatypeContructor :: TypeEnv -> ProgVar -> Bool -- TODO: also in Typing.hs
+isDatatypeContructor tEnv c =
+  not $ Map.null $ Map.filter (\(_, (TypeScheme _ _ t)) -> isDatatype t) tEnv
+  where isDatatype :: Type -> Bool
+        isDatatype (Datatype _ m) = c `Map.member` m
+        isDatatype _              = False
 
 -- Check whether all functions signatures have a binding. Exclude the
 -- builtin functions and the datatype constructors.
@@ -76,14 +90,12 @@ checkMainFunction = do
   else do
     let s = vEnv Map.! main
     tEnv <- getTEnv
-    let mType = normalise tEnv s
-    b <- isValidMainType mType
-    k <- K.synthetiseTS Map.empty s
-    when (not b) $
-      addError (position mType) ["The type for", styleRed "main", "must be an unrestricted, non-function type\n",
+    when (not (isValidMainType s)) $
+      K.synthetiseTS Map.empty s >>= \k ->
+      addError defaultPos ["The type of", styleRed "main", "must be non-function, non-polymorphic\n",
                                  "\t found type (scheme)", styleRed $ show s, "of kind", styleRed $ show k]
 
-isValidMainType :: TypeScheme -> FreestState Bool
-isValidMainType (TypeScheme _ _ (Fun _ _ _ _)) = return False
-isValidMainType s@(TypeScheme _ [] _)          = K.un s
-isValidMainType _                              = return False
+isValidMainType :: TypeScheme -> Bool
+isValidMainType (TypeScheme _ _ (Fun _ _ _ _)) = False
+isValidMainType (TypeScheme _ [] _)            = True
+isValidMainType (_)                            = False

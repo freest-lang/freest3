@@ -37,19 +37,19 @@ instance Normalise Type where
   normalise tenv (Semi _ (Choice p q m) t) =
     Choice p q (Map.map (\u -> append (normalise tenv u) t') m)
     where t' = normalise tenv t
-  normalise tenv (Semi p t u)     = append (normalise tenv t) (normalise tenv u)
-  normalise tenv (Choice p q m)   = Choice p q (Map.map (normalise tenv) m)
+  normalise tenv (Semi p t u) = append (normalise tenv t) (normalise tenv u)
+  normalise tenv (Choice p q m) = Choice p q (Map.map (normalise tenv) m)
   normalise tenv (Rec p (TypeVarBind q x k) t)
     | x `Set.member` (free t) = normalise tenv $ unfold $ Rec p (TypeVarBind q x k) t'
     | otherwise               = t'
     where t' = normalise tenv t
     -- Functional or session
     -- Type operators
-  normalise tenv (Dualof _ t)    = normalise tenv (dual t)
-  -- normalise tenv (TypeName p c)  = normalise tenv t -- TODO
-  --   where (_, TypeScheme _ [] t) = tenv Map.! (TypeVar p c) 
+  normalise tenv (Dualof _ t) = normalise tenv (dual t)
+  normalise tenv (TypeName _ a) = normalise tenv t
+    where (_, TypeScheme _ [] t) = tenv Map.! a
     -- Otherwise: Basic, Skip, Message, TypeVar
-  normalise tenv t               = t
+  normalise tenv t = t
 
 append :: Type -> Type -> Type
 append (Skip _)       t = t

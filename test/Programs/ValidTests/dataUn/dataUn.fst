@@ -4,4 +4,4 @@ f : Int -> Int
 f x = x
 
 main : Int
-main = case C f of { g -> g (g 5) } 
+main = case C f of { C g -> g (g 5) } 

@@ -96,7 +96,7 @@ import           Debug.Trace
 
 -- Expr
 %right in else match case
-%left fork send receive select
+%left send receive select
 %nonassoc new
 %left '||'                      -- disjunction
 %left '&&'                      -- conjunction
@@ -142,7 +142,7 @@ Decl :: { () }
       checkDupTypeDecl x
       addToTEnv x k (TypeScheme p $3 $5) }
   -- Datatype declaration
-  | data TypeVarBind TypeVarBindEmptyList '=' DataCons {% do
+  | data TypeNameBind TypeVarBindEmptyList '=' DataCons {% do
       let (TypeVarBind p x k) = $2
       checkDupTypeDecl x
       let bs = typeListToType x $5 :: [(ProgVar, Type)]
@@ -180,7 +180,7 @@ App :: { Expression }
   | send Primary                             { Send (position $1) $2 }
   | receive Primary                          { Receive (position $1) $2 }
   | select Constructor Primary               { Select (position $1) $2 $3 }
---  | fork Primary                             { Fork (position $1) $2 }
+  | fork Primary                             { Fork (position $1) $2 }
   | '-' App %prec NEG                        { unOp (mkProgVar (position $1) "negate") $2}
   | Primary                                  { $1 }
 
@@ -320,6 +320,10 @@ TypeName :: { TypeVar }
 TypeVarBind :: { TypeVarBind }
   : TypeVar ':' Kind { TypeVarBind (position $1) $1 $3 }
   | TypeVar          { TypeVarBind (position $1) $1 (omission (position $1)) } -- or should it be (Kind (fst $1) Session Lin)?
+
+TypeNameBind :: { TypeVarBind }
+  : TypeName ':' Kind { TypeVarBind (position $1) $1 $3 }
+  | TypeName          { TypeVarBind (position $1) $1 (omission (position $1)) } -- or should it be (Kind (fst $1) Session Lin)?
 
 TypeVarBindList :: { [TypeVarBind] }
   : TypeVarBind                     { [$1] }

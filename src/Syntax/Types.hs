@@ -132,13 +132,13 @@ instance Show Type where
   show (Skip _)         = "Skip"
   show (Semi _ t u)     = "(" ++ show t ++ ";" ++ show u ++ ")"
   show (Message _ p b)  = show p ++ show b
-  show (Choice _ v m)   = show v ++ "{" ++ showMap m ++ "}"
-  show (Rec _ x t)      = "(rec " ++ show x ++ " . " ++ show t ++ ")"
+  show (Choice _ v m)   = showChoice v ++ "{" ++ showMap m ++ "}"
+  show (Rec _ x t)      = "(rec " ++ show x ++ ". " ++ show t ++ ")"
   -- Functional or session
   show (TypeVar _ x)    = show x
   -- Type operators
   show (Dualof _ s)     = "(dualof " ++ show s ++ ")"
-  show (TypeName _ x)       = show x
+  show (TypeName _ x)   = show x
   
 showFunOp :: Multiplicity -> String
 showFunOp Lin = " -o "

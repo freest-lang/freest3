@@ -1,9 +1,4 @@
-data T = T
+data T = C
 
 main : T
-main = case T of { T -> T }
-
-
-
-
-
+main = case C of { C -> C }
