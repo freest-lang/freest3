@@ -25,8 +25,11 @@ data TypeVar = TypeVar Pos String
 mkTypeVar :: Pos -> String -> TypeVar
 mkTypeVar = TypeVar
 
-newTypeVar :: Int -> TypeVar -> TypeVar
-newTypeVar next (TypeVar pos id) = TypeVar pos (show next ++ '_' : id)
+newTypeVar :: Pos -> Int -> String -> TypeVar
+newTypeVar pos next id = TypeVar pos (show next ++ '_' : id)
+
+-- newTypeVar :: Int -> TypeVar -> TypeVar
+-- newTypeVar next (TypeVar pos id) = TypeVar pos (show next ++ '_' : id)
 
 instance Eq TypeVar where
   (TypeVar _ x) == (TypeVar _ y) = x == y

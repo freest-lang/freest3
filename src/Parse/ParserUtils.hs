@@ -25,7 +25,7 @@ module Parse.ParserUtils
 , unOp
 , buildFunBody
 , typeListToType
-, funDeclToExp
+, mkTypeVarBind
 ) where
 
 import           Syntax.Expressions
@@ -141,9 +141,9 @@ buildFunBody f bs e =
     buildExp (b:bs) (Fun _ m t1 t2) = Lambda (position b) m b t1 (buildExp bs t2)
     buildExp (b:bs) t               = Lambda (position b) Un b (omission (position b)) (buildExp bs t)
 
--- At parsing time we may not konw the signature for the function, so
--- we type each parameter as ()
-funDeclToExp :: [ProgVar] -> Expression -> Expression
-funDeclToExp []     e = e
-funDeclToExp (b:bs) e = Lambda p Lin b (omission p) (funDeclToExp bs e)
-  where p = position b
+-- Building TypeVarBind
+
+mkTypeVarBind :: Pos -> String -> Kind -> FreestState TypeVarBind
+mkTypeVarBind p id k = do
+  x <- newTVar p id
+  return $ TypeVarBind p x k

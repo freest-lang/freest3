@@ -16,7 +16,10 @@ module Syntax.Kinds
 , TypeVarBind(..)
 , Kind (..)
 , KindEnv
-, topUn
+, kindTL
+, kindTU
+, kindSL
+, kindSU
 , isSession
 , (<:)
 , join
@@ -66,12 +69,15 @@ join (Kind p Functional Un)  (Kind _ Session    Lin) = omission p
 join (Kind p Session    Lin) (Kind _ Functional Un)  = omission p
 join k1                      k2                      = if k1 <: k2 then k2 else k1
 
+-- The four kinds
+kindTL = Kind defaultPos Functional Lin
+kindTU = Kind defaultPos Functional Un
+kindSL = Kind defaultPos Session Lin
+kindSU = Kind defaultPos Session Un
+
 -- The kind that sits at the top of the hierarchy (use as a default value)
 instance Default Kind where
   omission p = Kind p Functional Lin
-
-topUn :: Pos -> Kind
-topUn p = Kind p Functional Un
 
 isSession :: Kind -> Bool
 isSession = (<: (Kind defaultPos Session Lin))

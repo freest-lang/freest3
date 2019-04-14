@@ -38,6 +38,13 @@ typeCheck = do
   -- Type/datatype declarations: check TypeEnv for type or datatype
   -- declarations, VarEnv for each datatype constructor
   tEnv <- getTEnv
+  vEnv <- getVEnv
+  eEnv <- getEEnv
+  trace ("TEnv " ++ show tEnv)
+    trace ("VEnv " ++ show (funSigsOnly tEnv vEnv))
+      trace ("EEnv " ++ show eEnv)
+        return ()
+  tEnv <- getTEnv
   mapM_ (K.synthetiseTS Map.empty . snd) tEnv -- check the formation of all type schemes
   -- Function signatures (VarEnv)
   vEnv <- getVEnv
@@ -45,16 +52,14 @@ typeCheck = do
   tMapWithKeyM checkHasBinding vEnv
   -- Function bodies (ExpEnv)
   eEnv <- getEEnv
-  trace ("TEnv " ++ show tEnv)
-    trace ("VEnv " ++ show (funSigsOnly tEnv vEnv))
-      trace ("EEnv " ++ show eEnv)
-        tMapWithKeyM checkFunBody eEnv
+  tMapWithKeyM checkFunBody eEnv
   -- Main function
   checkMainFunction
 
 funSigsOnly :: TypeEnv -> VarEnv -> VarEnv -- TODO: also in Typing.hs
 funSigsOnly tEnv =
-  Map.filterWithKey (\x _ -> not (isBuiltin x) && not (isDatatypeContructor tEnv x))
+--  Map.filterWithKey (\x _ -> not (isBuiltin x) && not (isDatatypeContructor tEnv x))
+  Map.filterWithKey (\x _ -> not (isBuiltin x))
 
 isDatatypeContructor :: TypeEnv -> ProgVar -> Bool -- TODO: also in Typing.hs
 isDatatypeContructor tEnv c =

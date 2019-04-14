@@ -64,17 +64,17 @@ instance Show Expression where
   show e = showExp e 4
 
 showExp :: Expression -> Int -> String
-showExp _ 0 = " .. "
--- Basic values
+  -- Basic values
 showExp (Unit _) _  = "()"
 showExp (Integer _ i) _ = show i
 showExp (Character _ c) _ = show c
 showExp (Boolean _ b) _  = show b
--- Variable
+  -- Variable
 showExp (ProgVar _ x) _  = show x
+  -- Depth reached
+showExp _ 0 = " .. "
   -- Abstraction intro and elim
-showExp (Lambda _ Un b t e) i = "(\\" ++ show b ++ " : " ++ show t ++ " -> " ++ (showExp e (i-1)) ++ ")"
-showExp (Lambda _ Lin b t e) i = "(\\" ++ show b ++ " : " ++ show t ++ " -o " ++ (showExp e (i-1)) ++ ")"
+showExp (Lambda _ m b t e) i = "(\\" ++ show b ++ " : " ++ show t ++ showArrow m ++ (showExp e (i-1)) ++ ")"
 showExp (App _ e1 e2) i = showExp e1 (i-1) ++ " " ++ showExp e2 (i-1)
   -- Pair intro and elim
 showExp (Pair _ e1 e2) i = " (" ++ (showExp e1 (i-1)) ++ ", " ++ (showExp e1 (i-1)) ++ ")"

@@ -65,8 +65,8 @@ synthetise kEnv (Datatype p m) = do
 synthetise kEnv (Rec p (TypeVarBind _ x k) t) = do
   checkContractive kEnv t
   synthetise (Map.insert x k kEnv) t
---  y <- freshVar
---  k' <- synthetise (Map.insert (TypeVarBind p y) k kEnv) $ subs (TypeVar p y) b t -- On the fly α-conversion
+  -- y <- freshVar
+  -- k' <- synthetise (Map.insert (TypeVarBind p y) k kEnv) $ subs (TypeVar p y) b t -- On the fly α-conversion
   -- return k'
 -- Session or functional
 synthetise kEnv (TypeVar p x) =

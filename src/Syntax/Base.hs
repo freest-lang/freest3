@@ -14,6 +14,7 @@ Portability :  portable | non-portable (<reason>)
 module Syntax.Base
 ( Default(..)
 , Multiplicity(..)
+, showArrow
 , Pos           -- Relayed from Lexer
 , Position(..)  -- Relayed from Lexer
 , defaultPos    -- Relayed from Lexer
@@ -33,6 +34,10 @@ data Multiplicity = Un | Lin deriving Eq
 instance Show Multiplicity where
   show Un  = "U"
   show Lin = "L"
+
+showArrow :: Multiplicity -> String
+showArrow Lin = " -o "
+showArrow Un  = " -> "
 
 instance Ord Multiplicity where
   Un <= Lin = True

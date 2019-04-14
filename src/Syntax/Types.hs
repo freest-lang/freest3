@@ -125,7 +125,7 @@ equalMaps s m1 m2 =
 instance Show Type where
   -- Functional types
   show (Basic _ b)      = show b
-  show (Fun _ m t u)    = "(" ++ show t ++ showFunOp m ++ show u ++ ")"
+  show (Fun _ m t u)    = "(" ++ show t ++ showArrow m ++ show u ++ ")"
   show (PairType _ t u) = "(" ++ show t ++ ", " ++ show u ++ ")"
   show (Datatype _ m)   = "["++ showMap m ++"]"
   -- Session types
@@ -140,10 +140,6 @@ instance Show Type where
   show (Dualof _ s)     = "(dualof " ++ show s ++ ")"
   show (TypeName _ x)   = show x
   
-showFunOp :: Multiplicity -> String
-showFunOp Lin = " -o "
-showFunOp Un  = " -> "
-
 showChoice :: Polarity -> String
 showChoice In  = "&"
 showChoice Out = "+"

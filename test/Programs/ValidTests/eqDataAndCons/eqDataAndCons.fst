@@ -1,4 +1,4 @@
-data T = C Int
+data T = C
 
 main : T
-main = case C 5 of { C x -> C x }
+main = case C of { C -> C }

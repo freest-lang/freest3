@@ -136,17 +136,18 @@ Decl :: { () }
       e <- buildFunBody $1 $2 $4
       addToEEnv $1 e }
   -- Type abbreviation
-  | type TypeVarBind TypeVarBindEmptyList '=' Type {% do
-      let (TypeVarBind p x k) = $2
-      checkDupTypeDecl x
-      addToTEnv x k (TypeScheme p $3 $5) }
+  | type TypeNameKind BeginScope TypeVarBindEmptyList '=' Type EndScope {% do
+      checkDupTypeDecl (fst $2)
+      uncurry addToTEnv $2 (TypeScheme (position $5) $4 $6) }
   -- Datatype declaration
-  | data TypeNameBind TypeVarBindEmptyList '=' DataCons {% do
-      let (TypeVarBind p a k) = $2
+  | data TypeNameKind BeginScope TypeVarBindEmptyList '=' DataCons EndScope {% do
+      let a = fst $2
+      let p = position a
       checkDupTypeDecl a
-      let bs = typeListToType a $5 :: [(ProgVar, Type)]
-      mapM_ (\(a, t) -> addToVEnv a (toTypeScheme t)) bs
-      addToTEnv a k (TypeScheme p $3 (Datatype p (Map.fromList bs)))
+      let bs = typeListToType a $6 :: [(ProgVar, Type)]
+      mapM_ (\(c, t) -> addToVEnv c (toTypeScheme t)) bs
+      vEnv <- getVEnv
+      uncurry addToTEnv $2 (TypeScheme p $4 (Datatype p (Map.fromList bs)))
     }
 
 DataCons :: { [(ProgVar, [Type])] }
@@ -155,6 +156,15 @@ DataCons :: { [(ProgVar, [Type])] }
 
 DataCon :: { (ProgVar, [Type]) }
   : Constructor TypeSeq {% checkDupFunSig $1 >> return ($1, $2) }
+
+-- SCOPE
+
+BeginScope :: { () }
+  : {% beginScope }
+
+EndScope :: { () }
+  : {% endScope }
+
 
 -----------------
 -- EXPRESSIONS --
@@ -212,7 +222,7 @@ Case :: { (ProgVar, ([ProgVar], Expression)) }
 -----------
 
 TypeScheme :: { TypeScheme }
-  : forall TypeVarBindList '=>' Type { TypeScheme (position $1) $2 $4 }
+  : forall BeginScope TypeVarBindList '=>' Type EndScope { TypeScheme (position $1) $3 $5 }
   | Type                             { TypeScheme (position $1) [] $1 }
 
 -----------
@@ -230,7 +240,7 @@ Type :: { Type }
   | Type ';' Type                { Semi (position $2) $1 $3 }
   | Polarity BasicType           { uncurry Message $1 (snd $2) }
   | ChoiceView '{' FieldList '}' { uncurry Choice $1 $3 } 
-  | rec TypeVarBind '.' Type     { Rec (position $1) $2 $4 }
+  | rec BeginScope TypeVarBind '.' Type EndScope    { Rec (position $1) $3 $5 }
   -- Functional or session
   | TypeVar                      { TypeVar (position $1) $1 }
   -- Type operators
@@ -305,18 +315,18 @@ ProgVarWildSeq :: { [ProgVar] }
 -- TYPE VARIABLES
 
 TypeVar :: { TypeVar }
-  : LOWER_ID { mkTypeVar (position $1) (getText $1) }
+  : LOWER_ID {% getTVar (position $1) (getText $1) }
 
 TypeName :: { TypeVar }
   : UPPER_ID { mkTypeVar (position $1) (getText $1) }
 
-TypeVarBind :: { TypeVarBind }
-  : TypeVar ':' Kind { TypeVarBind (position $1) $1 $3 }
-  | TypeVar          { TypeVarBind (position $1) $1 (omission (position $1)) } -- or should it be (Kind (fst $1) Session Lin)?
+TypeVarBind :: { TypeVarBind } -- Rename these type vars
+  : LOWER_ID ':' Kind {% mkTypeVarBind (position $1) (getText $1) $3 }
+  | LOWER_ID          {% mkTypeVarBind (position $1) (getText $1) kindTU }
 
-TypeNameBind :: { TypeVarBind }
-  : TypeName ':' Kind { TypeVarBind (position $1) $1 $3 }
-  | TypeName          { TypeVarBind (position $1) $1 (omission (position $1)) } -- or should it be (Kind (fst $1) Session Lin)?
+TypeNameKind :: { (TypeVar, Kind) }    -- for type and data declarations
+  : TypeName ':' Kind { ($1, $3) }
+  | TypeName          { ($1, kindTU) }
 
 TypeVarBindList :: { [TypeVarBind] }
   : TypeVarBind                     { [$1] }
