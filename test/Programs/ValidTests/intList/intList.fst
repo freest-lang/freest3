@@ -10,4 +10,3 @@ null' l =
 main : Bool
 main = null' (Cons 5 (Cons 7 Nil))
 
-

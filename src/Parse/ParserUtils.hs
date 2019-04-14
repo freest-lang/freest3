@@ -59,9 +59,9 @@ checkDupBind b bs =
   case find (== b) bs of
     Just b' -> do
       addError (position b')
-        ["Conflicting definitions for bind", styleRed (show b), "\n",
-         "\tBound at:", showPos (position b'), "\n",
-         "\t         ", showPos (position b)]
+        ["Conflicting definitions for program variable", styleRed (show b), "\n",
+         "\t Bound at:", showPos (position b'), "\n",
+         "\t          ", showPos (position b)]
     Nothing -> return ()
 
 checkDupTypeVarBind :: TypeVarBind -> [TypeVarBind] -> FreestState ()
@@ -69,7 +69,7 @@ checkDupTypeVarBind (TypeVarBind p x _) bs =
   case find (\(TypeVarBind _ y _) -> y == x) bs of
     Just (TypeVarBind p' _ _) -> do
       addError p'
-        ["Conflicting definitions for type variable bind ", styleRed $ show x, "\n",
+        ["Conflicting definitions for type variable", styleRed $ show x, "\n",
          "\t Bound at:", showPos p', "\n",
          "\t          ", showPos p]
     Nothing -> return ()

@@ -78,7 +78,7 @@ showExp (Lambda _ m b t e) i = "(\\" ++ show b ++ " : " ++ show t ++ showArrow m
 showExp (App _ e1 e2) i = showExp e1 (i-1) ++ " " ++ showExp e2 (i-1)
   -- Pair intro and elim
 showExp (Pair _ e1 e2) i = " (" ++ (showExp e1 (i-1)) ++ ", " ++ (showExp e1 (i-1)) ++ ")"
-showExp (BinLet _ b1 b2 e1 e2) i = "let " ++ show b1 ++ ", " ++ show b2 ++ " = " ++ showExp e1 (i-1) ++ " in " ++ showExp e2 (i-1)
+showExp (BinLet _ b1 b2 e1 e2) i = "(let " ++ show b1 ++ ", " ++ show b2 ++ " = " ++ showExp e1 (i-1) ++ " in " ++ showExp e2 (i-1) ++ ")"
   -- Datatype elim
 showExp (Case _ e m) i = "case " ++ showExp e (i-1) ++ " of {" ++ showMap m (i-1) ++ "}"
   -- Type application
@@ -86,7 +86,7 @@ showExp (TypeApp _ x ts) _ = show x ++ " [" ++ (intercalate " " (map show ts)) +
   -- Boolean elim
 showExp (Conditional _ e e1 e2) i = "if " ++ show e ++ " then " ++ showExp e1 (i-1) ++ " else " ++ showExp e2 (i-1)
   -- Let
-showExp (UnLet _ b1 e1 e2) i = "let " ++ show b1 ++ " = " ++ showExp e1 (i-1) ++ " in " ++ showExp e2 (i-1)
+showExp (UnLet _ b1 e1 e2) i = "(let " ++ show b1 ++ " = " ++ showExp e1 (i-1) ++ " in " ++ showExp e2 (i-1) ++ ")"
   -- Fork
 showExp (Fork _ e) i = " fork " ++ (showExp e (i-1))
   -- Session types
