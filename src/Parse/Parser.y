@@ -6,24 +6,24 @@ module Parse.Parser
 , parseProgram
 ) where
   
-import           Parse.Lexer
-import           Syntax.Programs
-import           Syntax.Expression
-import           Syntax.Types
+import           Syntax.Expressions
 import           Syntax.Schemes
+import           Syntax.Types
 import           Syntax.Kinds
-import           Syntax.Bind
-import           Validation.Kinding
+import           Syntax.ProgramVariables
+import           Syntax.TypeVariables
+import           Syntax.Base
+--import           Validation.Kinding
+import           Parse.ParserUtils
+import           Parse.Lexer
 import           Utils.Errors
 import           Utils.FreestState
-import           Parse.ParserUtils
+import qualified Data.Map.Strict as Map
 import           Control.Monad.State
 import           Data.Char
 import           Data.List (nub, (\\), intercalate, find)
-import qualified Data.Map.Strict as Map
 import           System.Exit (die)
 import           Debug.Trace
-
 }
 
 %name types Type
@@ -128,65 +128,60 @@ NL :: { () }
 
 Decl :: { () }
   -- Function signature
-  : ProgVarBind ':' TypeScheme
-    {% checkDupFunSig $1 >>
-       addToVenv $1 $3 }
+  : ProgVar ':' TypeScheme {% do
+      checkDupFunSig $1
+      addToVEnv $1 $3 }
   -- Function declaration
-  | ProgVar ProgVarBindSeq '=' Expr {% do
-      uncurry checkDupFunDecl $1
-      let (p, x) = $1
-      e <- buildFunBody (PBind p x) $2 $4
-      addToEenv (PBind p x) e }
+  | ProgVar ProgVarSeq '=' Expr {% do
+      checkDupFunDecl $1
+      e <- buildFunBody $1 $2 $4
+      addToEEnv $1 e }
   -- Type abbreviation
-{-
-  | type TypeName TypeVarBindKindEmptyList '=' Type
-    {% do
-      let (p, x) = $2
-      let tbind = TBind p x
-      checkDupTypeDecl tbind
-      addToTenv tbind (TypeScheme (position $4) $3 $5) }
--}
-  | data TypeVarBind TypeVarBindKindEmptyList '=' DataCons
+  | type TypeVarBind TypeVarBindEmptyList '=' Type {% do
+      let (TypeVarBind p x k) = $2
+      checkDupTypeDecl x
+      addToTEnv x k (TypeScheme p $3 $5) }
   -- Datatype declaration
-    {% do
-       checkDupTypeDecl $2
-       let bs = typeListToType $2 $5
-       addToTenv $2 (omission (position $2)) (TypeScheme (position $2) $3 (Datatype (position $4) (Map.fromList bs))) -- TODO: kind
-       mapM_ (\(b, t) -> addToVenv b (toTypeScheme t)) bs
+  | data TypeVarBind TypeVarBindEmptyList '=' DataCons {% do
+      let (TypeVarBind p x k) = $2
+      checkDupTypeDecl x
+      let bs = typeListToType x $5 :: [(ProgVar, Type)]
+      addToTEnv x k (TypeScheme p $3 (Datatype p (Map.fromList bs)))
+      mapM_ (\(x, t) -> addToVEnv x (toTypeScheme t)) bs
     }
 
-DataCons :: { [(PBind, [Type])] }
+DataCons :: { [(ProgVar, [Type])] }
   : DataCon              { [$1] }
   | DataCon '|' DataCons { $1 : $3 }
 
-DataCon :: { (PBind, [Type]) }
-  : ProgConsBind TypeSeq {% checkDupFunSig $1 >> return ($1, $2) }
+DataCon :: { (ProgVar, [Type]) }
+  : Constructor TypeSeq {% checkDupFunSig $1 >> return ($1, $2) }
 
 -----------------
 -- EXPRESSIONS --
 -----------------
 
 Expr :: { Expression }
-  : let ProgVarBind '=' Expr in Expr         {% rmPVar $2 >> return (UnLet (position $1) $2 $4 $6) }
-  | let ProgVarBind ',' ProgVarBind '=' Expr in Expr { BinLet (position $1) $2 $4 $6 $8 }
+  : let ProgVar '=' Expr in Expr         { UnLet (position $1) $2 $4 $6 }
+  | let ProgVar ',' ProgVar '=' Expr in Expr { BinLet (position $1) $2 $4 $6 $8 }
   | if Expr then Expr else Expr              { Conditional (position $1) $2 $4 $6 }
   | new Type                                 { New (position $1) $2 }
   | match Expr with '{' MatchMap '}'         { Match (position $1) $2 $5 }
   | case Expr of '{' CaseMap '}'             { Case (position $1) $2 $5 }
-  | Expr '*' Expr                            { binOp (position $2) $1 (mkConstantPVar "(*)") $3 }
-  | Expr '+' Expr                            { binOp (position $2) $1 (mkConstantPVar "(+)") $3 }
-  | Expr '-' Expr                            { binOp (position $2) $1 (mkConstantPVar "(-)") $3 }
-  | Expr OP Expr                             { binOp (position $2) $1 (mkConstantPVar (getText $2)) $3 }
+  | Expr '*' Expr                            { binOp $1 (mkProgVar (position $2) "(*)") $3 }
+  | Expr '+' Expr                            { binOp $1 (mkProgVar (position $2) "(+)") $3 }
+  | Expr '-' Expr                            { binOp $1 (mkProgVar (position $2) "(-)") $3 }
+  | Expr OP Expr                             { binOp $1 (mkProgVar (position $2) (getText $2)) $3 }
   | App                                      { $1 }
 
 App :: { Expression }
   : App Primary                              { App (position $1) $1 $2 }
-  | ProgVar '[' TypeList ']'                 { uncurry TypeApp $1 $3 }
+  | ProgVar '[' TypeList ']'                 { TypeApp (position $1) $1 $3 }
   | send Primary                             { Send (position $1) $2 }
   | receive Primary                          { Receive (position $1) $2 }
-  | select Constructor Primary               { uncurry Select $2 $3 }
+  | select Constructor Primary               { Select (position $1) $2 $3 }
 --  | fork Primary                             { Fork (position $1) $2 }
-  | '-' App %prec NEG                        { unOp (position $1) (mkConstantPVar "negate") $2}
+  | '-' App %prec NEG                        { unOp (mkProgVar (position $1) "negate") $2}
   | Primary                                  { $1 }
 
 Primary :: { Expression }
@@ -194,33 +189,32 @@ Primary :: { Expression }
   | BOOL                                     { let (TokenBool p x) = $1 in Boolean p x }
   | CHAR                                     { let (TokenChar p x) = $1 in Character p x }
   | '()'                                     { Unit (position $1) }
-  | ProgVar                                  { uncurry ProgVar $1 }
-  | Constructor                              { uncurry ProgVar $1 }
+  | ProgVar                                  { ProgVar (position $1) $1 }
+  | Constructor                              { ProgVar (position $1) $1 }
   | '(' Expr ',' Expr ')'                    { Pair (position $1) $2 $4 }
   | '(' Expr ')'                             { $2 }
 
-MatchMap :: { ExpMap }
+MatchMap :: { FieldMap }
   : Match              { uncurry Map.singleton $1 }
-  | Match ';' MatchMap {% checkDupMatch (fst $1) $3 >>
-                          return (uncurry Map.insert $1 $3) }
+  | Match ';' MatchMap {% checkDupMatch (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
 
-Match :: { (PBind, ([PBind], Expression)) }
-  : ProgConsBind ProgVarBind '->' Expr { ($1, ([$2], $4)) }
+Match :: { (ProgVar, ([ProgVar], Expression)) }
+  : Constructor ProgVar '->' Expr { ($1, ([$2], $4)) }
 
-CaseMap :: { ExpMap }
+CaseMap :: { FieldMap }
   : Case             { uncurry Map.singleton $1 }
   | Case ';' CaseMap {% checkDupMatch (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
                         
-Case :: { (PBind, ([PBind], Expression)) }
-  : ProgConsBind ProgVarBindSeq '->' Expr { ($1, ($2, $4)) }
+Case :: { (ProgVar, ([ProgVar], Expression)) }
+  : Constructor ProgVarSeq '->' Expr { ($1, ($2, $4)) }
 
 -----------
 -- TYPE SCHEMES --
 -----------
 
 TypeScheme :: { TypeScheme }
-  : forall TypeVarBindKindList '=>' Type { TypeScheme (position $1) $2 $4 }
-  | Type                         { TypeScheme (position $1) [] $1 }
+  : forall TypeVarBindList '=>' Type { TypeScheme (position $1) $2 $4 }
+  | Type                             { TypeScheme (position $1) [] $1 }
 
 -----------
 -- TYPES --
@@ -237,12 +231,12 @@ Type :: { Type }
   | Type ';' Type                { Semi (position $2) $1 $3 }
   | Polarity BasicType           { uncurry Message $1 (snd $2) }
   | ChoiceView '{' FieldList '}' { uncurry Choice $1 $3 } 
-  | rec TypeVarBindKind '.' Type          { Rec (position $1) $2 $4 }
+  | rec TypeVarBind '.' Type     { Rec (position $1) $2 $4 }
   -- Functional or session
-  | TypeVar                      { uncurry TypeVar $1 }
+  | TypeVar                      { TypeVar (position $1) $1 }
   -- Type operators
   | dualof Type                  { Dualof (position $1) $2 }
-  | TypeName                     { uncurry TypeName $1 }
+  | TypeName                     { TypeName (position $1) $1 }
   | '(' Type ')'                 { $2 }
 
 BasicType :: { (Pos, BasicType) }
@@ -268,8 +262,8 @@ FieldList :: { TypeMap }
   | Field ',' FieldList {% checkDupField (fst $1) $3 >>
                            return (uncurry Map.insert $1 $3) }
 
-Field :: { (PBind, Type) }
-  : ProgConsBind ':' Type { ($1, $3) }
+Field :: { (ProgVar, Type) }
+  : Constructor ':' Type { ($1, $3) }
 
 -----------
 -- TYPE LISTS AND SEQUENCES --
@@ -295,49 +289,45 @@ Kind :: { Kind } :
 
 -- PROGRAM VARIABLES
 
-ProgVar :: { (Pos, PVar) }
---  : LOWER_ID {% getPVar (getText $1) >>= \x -> return (position $1, x) }
-  : LOWER_ID { (position $1, mkConstantPVar (getText $1)) }
+ProgVar :: { ProgVar }
+  : LOWER_ID { mkProgVar (position $1) (getText $1) }
 
-Constructor :: { (Pos, PVar) }
-  : UPPER_ID { (position $1, mkConstantPVar (getText $1)) }
+Constructor :: { ProgVar }
+  : UPPER_ID { mkProgVar (position $1) (getText $1) }
+{-
+ProgVar :: { ProgVar }
+--  : LOWER_ID {% newPVar (getText $1) >>= \x -> return $ ProgVar (position $1) x }
+  : LOWER_ID { ProgVar (position $1) (mkProgVar (getText $1)) }
+--  | '_'      {% newPVar "_"          >>= \x -> return $ ProgVar (position $1) x }
+  | '_'      { ProgVar (position $1) (mkProgVar "_") }
 
-ProgVarBind :: { PBind }
---  : LOWER_ID {% newPVar (getText $1) >>= \x -> return $ PBind (position $1) x }
-  : LOWER_ID { PBind (position $1) (mkConstantPVar (getText $1)) }
---  | '_'      {% newPVar "_"          >>= \x -> return $ PBind (position $1) x }
-  | '_'      { PBind (position $1) (mkConstantPVar "_") }
-
-ProgConsBind :: { PBind }
---  : UPPER_ID {% newPVar (getText $1) >>= \x -> return $ PBind (position $1) x }
-  : UPPER_ID { PBind (position $1) (mkConstantPVar (getText $1)) }
-
-ProgVarBindSeq :: { [PBind] }
-  :                            { [] }
-  | ProgVarBind ProgVarBindSeq {% checkDupBind $1 $2 >> return ($1 : $2) }
+Constructor :: { ProgVar }
+--  : UPPER_ID {% newPVar (getText $1) >>= \x -> return $ ProgVar (position $1) x }
+  : UPPER_ID { ProgVar (position $1) (mkProgVar (getText $1)) }
+-}
+ProgVarSeq :: { [ProgVar] }
+  :                    { [] }
+  | ProgVar ProgVarSeq {% checkDupBind $1 $2 >> return ($1 : $2) }
 
 -- TYPE VARIABLES
 
-TypeVar :: { (Pos, TVar) }
-  : LOWER_ID { (position $1, mkConstantTVar (getText $1)) }
+TypeVar :: { TypeVar }
+  : LOWER_ID { mkTypeVar (position $1) (getText $1) }
 
-TypeName :: { (Pos, TVar) }
-  : UPPER_ID { (position $1,  mkConstantTVar (getText $1)) }
+TypeName :: { TypeVar }
+  : UPPER_ID { mkTypeVar (position $1) (getText $1) }
 
-TypeVarBind :: { TBind }
-  : TypeName { uncurry TBind $1 }
+TypeVarBind :: { TypeVarBind }
+  : TypeVar ':' Kind { TypeVarBind (position $1) $1 $3 }
+  | TypeVar          { TypeVarBind (position $1) $1 (omission (position $1)) } -- or should it be (Kind (fst $1) Session Lin)?
 
-TypeVarBindKind :: { TBindK }
-  : TypeVar ':' Kind { uncurry TBindK $1 $3 }
-  | TypeVar          { uncurry TBindK $1 (Kind (fst $1) Session Lin) }
+TypeVarBindList :: { [TypeVarBind] }
+  : TypeVarBind                     { [$1] }
+  | TypeVarBind ',' TypeVarBindList {% checkDupTypeVarBind $1 $3 >> return ($1 : $3) }
 
-TypeVarBindKindList :: { [TBindK] }
-  : TypeVarBindKind                         { [$1] }
-  | TypeVarBindKind ',' TypeVarBindKindList {% checkDupTBindK $1 $3 >> return ($1 : $3) }
-
-TypeVarBindKindEmptyList :: { [TBindK] }
-  :                     { [] }
-  | TypeVarBindKindList { $1 }
+TypeVarBindEmptyList :: { [TypeVarBind] }
+  :                 { [] }
+  | TypeVarBindList { $1 }
 
 {
   
@@ -382,17 +372,17 @@ parseExpr s = fst $ runState (parse s) (initialState "")
 instance Read Expression where
   readsPrec _ s = [(parseExpr s, "")]
 
-parseProgram :: FilePath -> Map.Map PBind TypeScheme -> IO FreestS
-parseProgram inputFile venv = do
+parseProgram :: FilePath -> Map.Map ProgVar TypeScheme -> IO FreestS
+parseProgram inputFile vEnv = do
   src <- readFile inputFile
-  let p = parseDefs inputFile venv src
+  let p = parseDefs inputFile vEnv src
   checkErrors p
   return p
 
 parseDefs :: FilePath -> VarEnv -> String -> FreestS
-parseDefs file venv str =
+parseDefs file vEnv str =
   let s = initialState file in
-  execState (parse str) (s {varEnv=venv})
+  execState (parse str) (s {varEnv = vEnv})
    where parse = terms . scanTokens
 
 checkErrors (FreestS {errors=[]}) = return ()

@@ -14,12 +14,11 @@ module Equivalence.Normalisation
 ( Normalise(..)
 ) where
 
-import           Syntax.Bind
-import           Syntax.Kinds
-import           Syntax.Types
 import           Syntax.Schemes
-import           Syntax.Programs
-import           Parse.Lexer (position)
+import           Syntax.Types
+import           Syntax.Kinds
+import           Syntax.TypeVariables
+import           Syntax.Base
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
@@ -40,15 +39,15 @@ instance Normalise Type where
     where t' = normalise tenv t
   normalise tenv (Semi p t u)     = append (normalise tenv t) (normalise tenv u)
   normalise tenv (Choice p q m)   = Choice p q (Map.map (normalise tenv) m)
-  normalise tenv (Rec p (TBindK q x k) t)
-    | x `Set.member` (free t) = normalise tenv $ unfold $ Rec p (TBindK q x k) t'
+  normalise tenv (Rec p (TypeVarBind q x k) t)
+    | x `Set.member` (free t) = normalise tenv $ unfold $ Rec p (TypeVarBind q x k) t'
     | otherwise               = t'
     where t' = normalise tenv t
     -- Functional or session
     -- Type operators
   normalise tenv (Dualof _ t)    = normalise tenv (dual t)
-  normalise tenv (TypeName p c)  = normalise tenv t
-    where (_, TypeScheme _ [] t) = tenv Map.! (TBind p c) -- TODO: polymorphic type names
+  -- normalise tenv (TypeName p c)  = normalise tenv t -- TODO
+  --   where (_, TypeScheme _ [] t) = tenv Map.! (TypeVar p c) 
     -- Otherwise: Basic, Skip, Message, TypeVar
   normalise tenv t               = t
 
@@ -60,7 +59,7 @@ append (Choice q v m) t = Choice q v (Map.map (`append` t) m)
 append t              u = Semi (position t) t u
 
 -- The set of free type variables in a type
-free :: Type -> Set.Set TVar
+free :: Type -> Set.Set TypeVar
   -- Functional types
 free (Basic _ _)      = Set.empty
 free (Fun _ _ t u)    = Set.union (free t) (free u)
@@ -71,7 +70,7 @@ free (Skip _)         = Set.empty
 free (Semi _ t u)     = Set.union (free t) (free u)
 free (Message _ _ _)  = Set.empty
 free (Choice _ _ m)   = Map.foldr (Set.union . free) Set.empty m
-free (Rec _ (TBindK _ x _) t) = Set.delete x (free t)
+free (Rec _ (TypeVarBind _ x _) t) = Set.delete x (free t)
   -- Functional or session
 free (TypeVar _ x)    = Set.singleton x
   -- Type operators

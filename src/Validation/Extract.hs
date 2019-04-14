@@ -28,7 +28,7 @@ module Validation.Extract
 import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Kinds
-import           Syntax.Bind
+import           Syntax.ProgramVariables
 import           Equivalence.Normalisation
 import           Parse.Lexer (Pos, position, defaultPos)
 import           Utils.Errors
@@ -39,8 +39,8 @@ import qualified Data.Map.Strict as Map
 
 norm :: Type -> FreestState Type
 norm t = do
-  tenv <- getTenv
-  return $ normalise tenv t
+  tEnv <- getTEnv
+  return $ normalise tEnv t
 
 -- Extracts a function from a type; gives an error if there isn't a function
 extractFun :: Type -> FreestState (Type, Type)
@@ -120,11 +120,10 @@ extractDatatypeMap pos t = do
 
 -- Extracts a constructor from a choice map; gives an error if the
 -- constructor is not in the map
-extractCons :: Pos -> TypeMap -> PVar -> FreestState Type
-extractCons pos tm c =
-  let b = PBind defaultPos c in
-  case tm Map.!? b of
+extractCons :: Pos -> TypeMap -> ProgVar -> FreestState Type
+extractCons p tm x =
+  case tm Map.!? x of
     Just t -> return t
     Nothing -> do
-      addError pos ["Constructor", styleRed (show c), "not in scope"]             
-      return $ Basic pos UnitType
+      addError p ["Constructor", styleRed (show x), "not in scope"]             
+      return $ Basic p UnitType

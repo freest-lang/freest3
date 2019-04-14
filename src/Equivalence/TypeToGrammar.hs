@@ -16,17 +16,19 @@ module Equivalence.TypeToGrammar
 ( convertToGrammar
 ) where
 
+import           Equivalence.Grammar
+import           Syntax.Types
+import           Syntax.Kinds
+import           Syntax.TypeVariables
+import           Syntax.ProgramVariables
+import           Syntax.Base
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import           Syntax.Types
-import           Syntax.Kinds -- for testing
-import           Syntax.Bind
-import           Equivalence.Grammar
 
 -- The state of the translation to grammars
 
-type Visited = Set.Set TVar
+type Visited = Set.Set TypeVar
 
 type TState = (Productions, Visited, Int)
 
@@ -37,37 +39,38 @@ type TransState = State TState
 initial :: TState
 initial = (Map.empty, Set.empty, 1)
 
-freshVar :: TransState TVar
+freshVar :: TransState TypeVar
 freshVar = do
   (p, v, n) <- get
   put (p, v, n + 1)
-  return $ mkTVar n "_X" -- ++ show n
+  return $ mkTypeVar defaultPos (show n ++ "__X") -- TODO: use newTypeVar
+  -- Using __ rather than _ to avoid colisions with type variables renamed after parsing
 
-memberVisited :: TVar -> TransState Bool
+memberVisited :: TypeVar -> TransState Bool
 memberVisited t = do
   (_, v, _) <- get
   return $ Set.member t v
 
-insertVisited :: TVar -> TransState ()
+insertVisited :: TypeVar -> TransState ()
 insertVisited x =
   modify $ \(p, v, n) -> (p, Set.insert x v, n)
 
-getTransitions :: TVar -> TransState Transitions
+getTransitions :: TypeVar -> TransState Transitions
 getTransitions x = do
   (p, _, _) <- get
   return $ p Map.! x
 
-addProductions :: TVar -> Transitions -> TransState ()
+addProductions :: TypeVar -> Transitions -> TransState ()
 addProductions x m =
   modify $ \(p, v, n) -> (Map.insert x m p, v, n)
 
-addProduction :: TVar -> Label -> [TVar] -> TransState ()
+addProduction :: TypeVar -> Label -> [TypeVar] -> TransState ()
 addProduction x l w =
   modify $ \(p, v, n) -> (insertProduction p x l w, v, n)
 --  addProductions x (Map.singleton l w) -- does not work; I wonder why
 
 -- Add or update production from a (basic) non-terminal; the productions may already contain transitions for the given nonterminal (hence the insertWith and union)
-addBasicProd :: Label -> TransState TVar
+addBasicProd :: Label -> TransState TypeVar
 addBasicProd l = do
   (p, _, _) <- get
   let p' = Map.filter (Map.member l) p
@@ -86,14 +89,14 @@ convertToGrammar :: [Type] -> Grammar
 convertToGrammar ts = Grammar xs p
   where (xs, (p, _, _)) = runState (mapM typeToGrammar ts) initial
 
-typeToGrammar :: Type -> TransState TVar
+typeToGrammar :: Type -> TransState TypeVar
 typeToGrammar t = do
   xs <- toGrammar t
   y <- freshVar
   addProduction y (MessageLabel In UnitType) xs
   return y
 
-toGrammar :: Type -> TransState [TVar]
+toGrammar :: Type -> TransState [TypeVar]
 -- Session types
 toGrammar (Skip _) =
   return []
@@ -106,9 +109,9 @@ toGrammar (Message _ p b) = do
   -- addProduction y (MessageLabel p b) []
   y <- addBasicProd (MessageLabel p b)
   return [y]
-toGrammar (Choice _ c m) = do
+toGrammar (Choice _ p m) = do
   y <- freshVar
-  mapM_ (assocToGrammar y c) (Map.assocs m)
+  mapM_ (assocToGrammar y p) (Map.assocs m) -- TODO: avoid Map.assocs; run map through the monad
   return [y]
 toGrammar u@(Rec p x t)
   | isChecked u Set.empty = return []
@@ -131,15 +134,15 @@ toGrammar (TypeVar _ x) = do
     y <- addBasicProd (VarLabel x)
     return [y]
 
-assocToGrammar :: TVar -> Polarity -> (PBind, Type) -> TransState ()
-assocToGrammar y p (PBind _ l, t) = do
+assocToGrammar :: TypeVar -> Polarity -> (ProgVar, Type) -> TransState ()
+assocToGrammar y p (x, t) = do
   xs <- toGrammar t
-  addProduction y (ChoiceLabel p l) xs
+  addProduction y (ChoiceLabel p x) xs
 
 isChecked :: Type -> Visited -> Bool
 isChecked (Skip _) _     = True
 isChecked (Semi _ s t) v = isChecked s v && isChecked t v
-isChecked (Rec _ (TBindK _ x _) t) v  = isChecked t (Set.insert x v)
+isChecked (Rec _ (TypeVarBind _ x _) t) v  = isChecked t (Set.insert x v)
 isChecked (TypeVar _ x) v    = Set.member x v -- Only bound variables are checked
 isChecked _ _            = False
 

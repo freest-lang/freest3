@@ -17,12 +17,14 @@ module Equivalence.Equivalence
 ( Equivalence(..)
 ) where
 
-import           Syntax.Programs
+--import           Syntax.Programs
 import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Kinds
-import           Syntax.Bind
-import           Validation.Kinding
+import           Syntax.ProgramVariables
+import           Syntax.TypeVariables
+--import           Syntax.Bind
+--import           Validation.Kinding
 import           Equivalence.Normalisation
 import qualified Equivalence.Bisimulation as Bisimulation
 import qualified Data.Map.Strict as Map
@@ -54,17 +56,17 @@ instance Equivalence Type where
     equiv kenv t (Dualof _ u) = equiv kenv t (dual u)
     equiv _ (TypeName _ c1) (TypeName _ c2) = c1 == c2 -- TODO: this works for datatypes but not for type declarations, where one has to expand the definition(s) for c1 (c2) and continue
     -- TODO: THIS CAN EASILY LOOP
-    equiv kenv (TypeName p c) u = equiv kenv t u
-      where (_, TypeScheme _ [] t) = tenv Map.! (TBind p c) -- TODO: polymorphic type names
-    equiv kenv t (TypeName p c) = equiv kenv t u
-      where (_, TypeScheme _ [] u) = tenv Map.! (TBind p c) -- TODO: polymorphic type names
+    equiv kenv (TypeName p x) u = equiv kenv t u
+      where (_, TypeScheme _ [] t) = tenv Map.! x -- TODO: polymorphic type names
+    equiv kenv t (TypeName p x) = equiv kenv t u
+      where (_, TypeScheme _ [] u) = tenv Map.! x -- TODO: polymorphic type names
       -- Session types
     equiv kenv t u =
       isSessionType tenv kenv t &&
       isSessionType tenv kenv u &&
       Bisimulation.equivalent t u
     
-    checkConstructor :: KindEnv -> TypeMap -> Bool -> PBind -> Type -> Bool
+    checkConstructor :: KindEnv -> TypeMap -> Bool -> ProgVar -> Type -> Bool
     checkConstructor kenv m acc l t =
       acc && l `Map.member` m && equiv kenv (m Map.! l) t
 
@@ -79,14 +81,14 @@ instance Equivalence TypeScheme where
 instantiate :: TypeScheme -> TypeScheme -> Maybe (KindEnv, Type, Type)
 instantiate (TypeScheme _ bs1 t1) (TypeScheme _ bs2 t2) = inst bs1 bs2 t1 t2
   where
-  inst :: [TBindK] -> [TBindK] -> Type -> Type -> Maybe (KindEnv, Type, Type)
-  inst ((TBindK p1 x1 k1):bs1) (tk2@(TBindK _ x2 k2):bs2) t1 t2
+  inst :: [TypeVarBind] -> [TypeVarBind] -> Type -> Type -> Maybe (KindEnv, Type, Type)
+  inst ((TypeVarBind p1 x1 k1):bs1) ((TypeVarBind _ x2 k2):bs2) t1 t2
     | k1 /= k2  = Nothing
-    | x1 == x2 = inst bs1 bs2 t1 (subs (TypeVar p1 x1) tk2 t2)
+--    | x1 == x2 = inst bs1 bs2 t1 (subs (TypeVar p1 x1) x2 t2) -- This should not happen if all variables are renamed.
     | otherwise = -- substitute x1 for x2
-        case inst bs1 bs2 t1 (subs (TypeVar p1 x1) tk2 t2) of
+        case inst bs1 bs2 t1 (subs (TypeVar p1 x1) x2 t2) of
           Nothing -> Nothing
-          Just (m, t1, t2) -> Just (Map.insert (TBind p1 x1) k1 m, t1, t2)
+          Just (m, t1, t2) -> Just (Map.insert x1 k1 m, t1, t2)
   inst [] [] t1 t2 = Just (Map.empty, t1, t2)
   inst _ _ _ _ = Nothing
 

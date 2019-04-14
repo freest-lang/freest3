@@ -12,8 +12,7 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Syntax.Types
-( TBindK(..)
-, BasicType(..)
+( BasicType(..)
 , TypeMap(..)
 , Polarity(..)
 , Type(..)
@@ -22,9 +21,13 @@ module Syntax.Types
 , unfold
 ) where
 
-import           Syntax.Bind
 import           Syntax.Kinds
-import           Parse.Lexer (Position, Pos, position)
+import           Syntax.TypeVariables
+import           Syntax.ProgramVariables (ProgVar)
+import           Syntax.Base
+-- import           Syntax.Bind
+-- import           Syntax.Kinds
+-- import           Parse.Lexer (Position, Pos, position)
 import           Data.List (intersperse)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
@@ -76,21 +79,20 @@ data Type =
   | Semi Pos Type Type
   | Message Pos Polarity BasicType
   | Choice Pos Polarity TypeMap
-  | Rec Pos TBindK Type
+  | Rec Pos TypeVarBind Type
   -- Functional or session
-  | TypeVar Pos TVar -- a recursion variable if bound, polymorphic otherwise
+  | TypeVar Pos TypeVar  -- a recursion variable if bound, polymorphic otherwise
   -- Type operators
-  | TypeName Pos TVar   -- a named type, to be looked upon in a map of Cons to Type
-  | Dualof Pos Type -- to be expanded into a session type
-  deriving Ord
+  | TypeName Pos TypeVar -- a named type, to be looked upon in a map of type names to types
+  | Dualof Pos Type      -- to be expanded into a session type
+--  deriving Ord -- Why needeed?
 
-type TypeMap = Map.Map PBind Type
---type TypeMap = Map.Map PBind [Type]
+type TypeMap = Map.Map ProgVar Type
 
 instance Eq Type where -- Type equality, up to alpha-conversion
   t == u = equalTypes Map.empty t u 
 
-equalTypes :: Map.Map TVar TVar -> Type -> Type -> Bool
+equalTypes :: Map.Map TypeVar TypeVar -> Type -> Type -> Bool
   -- Functional types
 equalTypes s (Basic _ x)      (Basic _ y)      = x == y
 equalTypes s (Fun _ m t u)    (Fun _ n v w)    = m == n && equalTypes s t v && equalTypes s u w
@@ -101,7 +103,7 @@ equalTypes s (Skip _)         (Skip _)         = True
 equalTypes s (Semi _ t1 t2)   (Semi _ u1 u2)   = equalTypes s t1 u1 && equalTypes s t2 u2
 equalTypes s (Message _ p x)  (Message _ q y)  = p == q && x == y
 equalTypes s (Choice _ v1 m1) (Choice _ v2 m2) = v1 == v2 && equalMaps s m1 m2
-equalTypes s (Rec _ (TBindK _ x _) t) (Rec _ (TBindK _ y _) u) = equalTypes (Map.insert x y s) t u
+equalTypes s (Rec _ (TypeVarBind _ x _) t) (Rec _ (TypeVarBind _ y _) u) = equalTypes (Map.insert x y s) t u
   -- Functional or session
 equalTypes s (TypeVar _ x)    (TypeVar _ y)    = equalVars (Map.lookup x s) x y
   -- Type operators
@@ -110,11 +112,11 @@ equalTypes s (TypeName _ x)       (TypeName _ y)       = x == y
   -- Otherwise
 equalTypes _ _              _                  = False
 
-equalVars :: Maybe TVar -> TVar -> TVar -> Bool
+equalVars :: Maybe TypeVar -> TypeVar -> TypeVar -> Bool
 equalVars Nothing  y z = y == z
 equalVars (Just x) _ z = x == z
 
-equalMaps :: Map.Map TVar TVar -> TypeMap -> TypeMap -> Bool
+equalMaps :: Map.Map TypeVar TypeVar -> TypeMap -> TypeMap -> Bool
 equalMaps s m1 m2 =
   Map.size m1 == Map.size m2 &&
     Map.foldlWithKey(\b l t ->
@@ -166,7 +168,7 @@ instance Position Type where
   position (TypeVar p _)    = p
   -- Type operators
   position (Dualof p _)     = p
-  position (TypeName p _)       = p
+  position (TypeName p _)   = p
 
 instance Dual Type where
   -- Session types
@@ -184,45 +186,29 @@ instance Dual Type where
 instance Default Type where
   omission p = Basic p UnitType
 
--- KINDED TYPE BIND
-
-data TBindK = TBindK Pos TVar Kind
-
-instance Eq TBindK where
-  (TBindK _ x _) == (TBindK _ y _) = x == y
-
-instance Ord TBindK where
-  (TBindK _ x _) `compare` (TBindK _ y _) = x `compare` y
-
-instance Show TBindK where
-  show (TBindK _ x k) = show x ++ " : " ++ show k
-
-instance Position TBindK where
-  position (TBindK p _ _) = p
-
--- UNFOLDING, SUBSTITUTING
+-- Unfolding, Substituting
 
 unfold :: Type -> Type
 -- Assumes parameter is a Rec type
-unfold (Rec p x t) = subs (Rec p x t) x t
+unfold t@(Rec p (TypeVarBind _ b _) u) = subs t b u
 
 -- [u/x]t, substitute u for x on t
-subs :: Type -> TBindK -> Type -> Type 
+subs :: Type -> TypeVar -> Type -> Type 
   -- Functional types
-subs t y (Fun p m t1 t2)    = Fun p m (subs t y t1) (subs t y t2)
-subs t y (PairType p t1 t2) = PairType p (subs t y t1) (subs t y t2)
-subs t y (Datatype p m)     = Datatype p (Map.map(subs t y) m)
+subs t x (Fun p m t1 t2)    = Fun p m (subs t x t1) (subs t x t2)
+subs t x (PairType p t1 t2) = PairType p (subs t x t1) (subs t x t2)
+subs t x (Datatype p m)     = Datatype p (Map.map(subs t x) m)
   -- Session types
-subs t y (Semi p t1 t2)     = Semi p (subs t y t1) (subs t y t2)
-subs t y (Choice p v m)     = Choice p v (Map.map(subs t y) m)
-subs t2 y (Rec p x t1)      -- Assume y /= x
-  | x == y                  = Rec p x t1
-  | otherwise               = Rec p x (subs t2 y t1)
+subs t x (Semi p t1 t2)     = Semi p (subs t x t1) (subs t x t2)
+subs t x (Choice p v m)     = Choice p v (Map.map(subs t x) m)
+subs t1 x (Rec p b t2)      = Rec p b (subs t1 x t2) -- Assume types were renamed
+  -- | y == x                  = u
+  -- | otherwise               = Rec p y (subs t1 x t2)
   -- Functional or session
-subs t (TBindK _ y _) (TypeVar p x)
-  | x == y                  = t
-  | otherwise               = TypeVar p x
+subs t x u@(TypeVar _ y)
+  | y == x                  = t
+  | otherwise               = u
   -- Type operators  
-subs t y (Dualof p t1)      = Dualof p (subs t y t1)
+subs t x (Dualof p t1)      = Dualof p (subs t x t1)
   -- Otherwise: Basic, Skip, Message, TypeName
 subs _ _ t                  = t

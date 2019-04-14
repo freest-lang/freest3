@@ -1,27 +1,28 @@
 module CodeGen.CodeGen
 ( genProgram
-, HaskellCode(..)
+-- , HaskellCode(..)
 ) where 
 
-import           Parse.Lexer (defaultPos)
-import           Syntax.Programs
-import           Syntax.Expression
+import           Syntax.Expressions
+import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Kinds
-import           Syntax.Bind
+import           Parse.Lexer (defaultPos)
+import           Validation.Kinding
 import           CodeGen.DatatypeGen
 import           CodeGen.ExpressionGen
 import           Control.Monad.State
 import           Data.List
 import qualified Data.Map.Strict as Map
 import           System.Directory
-import           Validation.Kinding
 import           System.FilePath
 
 -- TODO : PARAM BANG
 -- TODO : start may not exist
 genProgram :: VarEnv -> ExpEnv -> TypeEnv -> FilePath -> IO ()
-genProgram venv eenv cenv filepath = do
+genProgram venv eenv cenv filepath = return ()
+{-
+do
   genFreeSTRunTime filepath
   let
     venv1            = updateKey venv
@@ -137,4 +138,5 @@ genSend = "_send x (m1, m2) = do\n  putMVar m2 (unsafeCoerce x)\n  return (m1, m
 
 genReceive :: String
 genReceive = "_receive (m1, m2) = do\n  a <- takeMVar m1\n  return ((unsafeCoerce a), (m1, m2))"
+-}
 -}

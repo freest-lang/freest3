@@ -13,22 +13,22 @@ Portability :  portable | non-portable (<reason>)
 
 module Syntax.Kinds
 ( PreKind (..)
-, Multiplicity (..)
+, TypeVarBind(..)
 , Kind (..)
 , KindEnv
 , topUn
 , isSession
 , (<:)
-, lub
+, join
 , isLin
 , isUn
 ) where
 
-import           Parse.Lexer (Position, Pos, position, defaultPos)
-import           Syntax.Bind
+import           Syntax.TypeVariables
+import           Syntax.Base
 import qualified Data.Map.Strict as Map
 
--- PREKINDS
+-- prekinds
 
 data PreKind = Session | Functional deriving Eq
 
@@ -40,19 +40,7 @@ instance Ord PreKind where
    Session <= Functional = True
    _       <= _          = False
 
--- MULTIPLICITIES
-
-data Multiplicity = Un | Lin deriving Eq
-
-instance Show Multiplicity where
-  show Un  = "U"
-  show Lin = "L"
-
-instance Ord Multiplicity where
-  Un <= Lin = True
-  _  <= _  = False
-
--- KINDS
+-- Kinds
 
 data Kind = Kind Pos PreKind Multiplicity
 
@@ -73,12 +61,12 @@ instance Eq Kind where
 k1                     <: k2                      = k1 == k2
 
 -- The least upper bound of two kinds
-lub :: Kind -> Kind -> Kind
-lub (Kind p Functional Un)  (Kind _ Session    Lin) = omission p
-lub (Kind p Session    Lin) (Kind _ Functional Un)  = omission p
-lub k1                      k2                      = if k1 <: k2 then k2 else k1
+join :: Kind -> Kind -> Kind
+join (Kind p Functional Un)  (Kind _ Session    Lin) = omission p
+join (Kind p Session    Lin) (Kind _ Functional Un)  = omission p
+join k1                      k2                      = if k1 <: k2 then k2 else k1
 
--- The kind that seats at the top of the hierarchy (use as a default value)
+-- The kind that sits at the top of the hierarchy (use as a default value)
 instance Default Kind where
   omission p = Kind p Functional Lin
 
@@ -101,7 +89,23 @@ instance Show Kind where
 instance Position Kind where
   position (Kind p _ _) = p
 
--- KIND ENVIRONMENTS
+-- Kind environments
 
-type KindEnv = Map.Map TBind Kind
+type KindEnv = Map.Map TypeVar Kind
 
+-- Binding type variables to kinds
+
+data TypeVarBind = TypeVarBind Pos TypeVar Kind
+
+instance Position TypeVarBind where
+  position (TypeVarBind p _ _) = p
+
+instance Show TypeVarBind where
+  show (TypeVarBind _ a k) = show a ++ ":" ++ show k
+{-
+instance Eq TypeVarBind where
+  (TypeVarBind _ x) == (TypeVarBind _ y) = x == y
+  
+instance Ord TypeVarBind where
+  (TypeVarBind _ x) <= (TypeVarBind _ y) = x <= y
+-}

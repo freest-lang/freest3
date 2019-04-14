@@ -21,41 +21,42 @@ module Equivalence.Norm
 , normedWord
 ) where
 
-import           Data.List (union)
+import           Syntax.TypeVariables
+import           Equivalence.Grammar
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import           Equivalence.Grammar
+import           Data.List (union)
 
 -- Normalisation
 
 prune :: Productions -> Productions
 prune p = Map.map (Map.map (pruneWord p)) p
 
-pruneWord :: Productions -> [TVar] -> [TVar]
+pruneWord :: Productions -> [TypeVar] -> [TypeVar]
 pruneWord p = foldr (\x ys -> if normed p x then x:ys else [x]) []
 
-normed :: Productions -> TVar -> Bool
+normed :: Productions -> TypeVar -> Bool
 normed p x = normedWord p Set.empty [x]
 
-type Visited = Set.Set TVar
+type Visited = Set.Set TypeVar
 
-normedWord :: Productions -> Visited -> [TVar] -> Bool
+normedWord :: Productions -> Visited -> [TypeVar] -> Bool
 normedWord _ _ []     = True
 normedWord p v (x:xs) =
   x `Set.notMember` v &&
   any (normedWord p v') (Map.elems (transitions p (x:xs)))
   where v' = if any (x `elem`) (Map.elems (transitions p [x])) then Set.insert x v else v
 
-norm :: Productions -> [TVar] -> Int
+norm :: Productions -> [TypeVar] -> Int
 norm p xs = normList p [xs]
 
-normList :: Productions -> [[TVar]] -> Int
+normList :: Productions -> [[TypeVar]] -> Int
 normList p xss
   | [] `elem` m = 0
   | otherwise = 1 + normList p (foldr union [] m)
   where m = map (trans p) xss
 
-sameNorm :: Productions -> [TVar] -> [TVar] -> Bool
+sameNorm :: Productions -> [TypeVar] -> [TypeVar] -> Bool
 sameNorm p xs ys =
   not normedXs && not normedYs ||
   normedXs && normedYs && norm p xs == norm p ys

@@ -1,5 +1,5 @@
 {- |
-Module      :  Programs
+Module      :  Type Schemes
 Description :  <optional short text displayed on contents page>
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
@@ -13,16 +13,31 @@ Portability :  portable | non-portable (<reason>)
 
 module Syntax.Schemes
 ( TypeScheme(..)
+, TypeEnv
+, VarEnv
 , toTypeScheme
+, isSessionType
 ) where
 
-import           Syntax.Bind
 import           Syntax.Types
-import           Parse.Lexer (Position, Pos, position)
-import           Data.List (intersperse)
+import           Syntax.Kinds (Kind, TypeVarBind, KindEnv, isSession)
+import           Syntax.ProgramVariables (ProgVar)
+import           Syntax.TypeVariables (TypeVar)
+import           Syntax.Base
 import qualified Data.Map.Strict as Map
+import           Data.List (intersperse)
 
-data TypeScheme = TypeScheme Pos [TBindK] Type
+data TypeScheme = TypeScheme Pos [TypeVarBind] Type
+
+-- The definitions of the datatypes and types declared in a program
+type TypeEnv = Map.Map TypeVar (Kind, TypeScheme)
+
+-- The signatures of the functions names (including the primitive
+-- operators) and parameters, and the datatype constructors
+type VarEnv = Map.Map ProgVar TypeScheme
+
+toTypeScheme :: Type -> TypeScheme
+toTypeScheme t = TypeScheme (position t) [] t
 
 instance Show TypeScheme where
   show (TypeScheme _ [] t) = show t
@@ -35,5 +50,19 @@ instance Position TypeScheme where
 instance Default TypeScheme where
  omission p = TypeScheme p [] (omission p)
 
-toTypeScheme :: Type -> TypeScheme
-toTypeScheme t = TypeScheme (position t) [] t
+-- Assumes the type is well formed
+isSessionType :: TypeEnv -> KindEnv -> Type -> Bool
+  -- Session types
+isSessionType _    _    (Skip _)        = True
+isSessionType _    _    (Semi _ _ _)    = True
+isSessionType _    _    (Message _ _ _) = True
+isSessionType _    _    (Choice _ _ _)  = True
+isSessionType tenv kenv (Rec _ _ t)     = isSessionType tenv kenv t
+  -- Functional or session
+isSessionType _    kenv (TypeVar _ x)   = Map.member x kenv
+  -- Type operators
+isSessionType _    _    (Dualof _ _)    = True
+isSessionType tenv kenv (TypeName p x)  = isSession $ fst $ tenv Map.! x
+  -- Otherwise: Functional types
+isSessionType _    _    _               = False
+

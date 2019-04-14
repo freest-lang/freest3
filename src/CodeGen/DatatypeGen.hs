@@ -1,16 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 module CodeGen.DatatypeGen
-( genDataTypes
+( -- genDataTypes
 ) where
 
-import           Syntax.Programs
 import           Syntax.Types
 import           Syntax.Schemes
 import           Syntax.Kinds
-import           Syntax.Bind
 import           Data.List
 import qualified Data.Map.Strict as Map
 
+{-
 -- GEN DATATYPES
 
 genDataTypes :: TypeEnv -> String
@@ -39,3 +38,4 @@ showTypeAbbr x t = "type " ++ show x ++ " = " ++ show t
 toListT :: Type -> [Type]
 toListT (Fun _ _ t1 t2) = t1 : toListT t2
 toListT t = [t]
+-}

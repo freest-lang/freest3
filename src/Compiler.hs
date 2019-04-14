@@ -1,13 +1,14 @@
 module Compiler (compile) where
 
-import Syntax.Programs
-import CodeGen.CodeGen (genProgram)
-import Control.Monad.State
-import Data.List (intercalate)
+import Syntax.Schemes (TypeEnv, VarEnv)
+import Syntax.Expressions (ExpEnv)
 import Parse.Parser (parseProgram)
+import CodeGen.CodeGen (genProgram)
+import Validation.TypeChecking (typeCheck)
 import Utils.PreludeLoader (prelude)
 import Utils.FreestState
-import Validation.TypeChecking (typeCheck)
+import Control.Monad.State
+import Data.List (intercalate)
 
 
 compile :: String -> IO (Bool, String)

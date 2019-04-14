@@ -22,21 +22,20 @@ module Validation.Typing
 , funSigsOnly
 ) where
 
-import           Parse.Lexer (Pos, position, defaultPos)
-import           Syntax.Programs
-import           Syntax.Expression
+import           Syntax.Expressions
 import           Syntax.Schemes
 import           Syntax.Types
+import           Syntax.ProgramVariables
 import           Syntax.Kinds
-import           Syntax.Bind
+import           Syntax.Base
 import qualified Validation.Kinding as K
+import           Validation.Extract
 import           Equivalence.Equivalence
 import           Utils.Errors
 import           Utils.FreestState
 import           Utils.PreludeLoader (isBuiltin)
 import           Control.Monad.State (when)
 import qualified Data.Map.Strict as Map
-import           Validation.Extract
 import           Debug.Trace
 
 -- SYNTHESISING A TYPE
@@ -48,193 +47,193 @@ synthetise _ (Integer p _)   = return $ Basic p IntType
 synthetise _ (Character p _) = return $ Basic p CharType
 synthetise _ (Boolean p _)   = return $ Basic p BoolType
 -- Variable
-synthetise kenv (ProgVar p x) = do
-  s@(TypeScheme _ bs t) <- synthetiseVar kenv (PBind p x)
+synthetise kEnv (ProgVar p x) = do
+  s@(TypeScheme _ bs t) <- synthetiseVar kEnv x
   when (not $ null bs) 
     (addError p ["Variable", styleRed $ show x, "of a polymorphic type used in a monomorphic context\n",
               "\t the type scheme for variable", styleRed $ show x, "is", styleRed $ show s])
   return t
-synthetise kenv (UnLet _ b e1 e2) = do
-  t1 <- synthetise kenv e1
-  addToVenv b (toTypeScheme t1)
-  t2 <- synthetise kenv e2
-  quotient kenv b
+synthetise kEnv (UnLet _ b e1 e2) = do
+  t1 <- synthetise kEnv e1
+  addToVEnv b (toTypeScheme t1)
+  t2 <- synthetise kEnv e2
+  quotient kEnv b
   return t2
 -- Abstraction introduction
-synthetise kenv (Lambda p m b t1 e) = do
-  K.synthetise kenv t1
-  venv1 <- getVenv
-  addToVenv b (toTypeScheme t1)
-  t2 <- synthetise kenv e
-  quotient kenv b
-  venv2 <- getVenv
-  when (m == Un) (checkEqualEnvs p venv1 venv2)
+synthetise kEnv (Lambda p m b t1 e) = do
+  K.synthetise kEnv t1
+  vEnv1 <- getVEnv
+  addToVEnv b (toTypeScheme t1)
+  t2 <- synthetise kEnv e
+  quotient kEnv b
+  vEnv2 <- getVEnv
+  when (m == Un) (checkEqualEnvs p vEnv1 vEnv2)
   return $ Fun p m t1 t2
 -- Abstraction elimination
-synthetise kenv (App _ e1 e2) = do
-  t <- synthetise kenv e1
+synthetise kEnv (App _ e1 e2) = do
+  t <- synthetise kEnv e1
   (u1, u2) <- extractFun t
-  checkAgainst kenv e2 u1
+  checkAgainst kEnv e2 u1
   return u2
 -- Type application
-synthetise kenv (TypeApp p x ts) = do
-  (TypeScheme _ bs t) <- synthetiseVar kenv (PBind p x)
+synthetise kEnv (TypeApp p x ts) = do
+  (TypeScheme _ bs t) <- synthetiseVar kEnv x
   when (length ts /= length bs) 
     (addError p ["Wrong number of arguments to type application\n",
                 "\t parameters:", styleRed $ show bs, "\n",
                 "\t arguments: ", styleRed $ show ts])  
-  let typeKinds = zip ts bs :: [(Type, TBindK)]
-  mapM (\(t, TBindK _ _ k) -> K.checkAgainst kenv k t) typeKinds
-  return $ foldr (uncurry subs) t typeKinds
+  let typeKinds = zip ts bs :: [(Type, TypeVarBind)]
+  mapM (\(t, TypeVarBind _ _ k) -> K.checkAgainst kEnv k t) typeKinds
+  return $ foldr (\(u, TypeVarBind _ x _) acc -> subs u x acc) t typeKinds
 -- Boolean elimination
-synthetise kenv (Conditional p e1 e2 e3) = do
-  checkAgainst kenv e1 (Basic p BoolType)
-  venv2 <- getVenv
-  t <- synthetise kenv e2
-  venv3 <- getVenv
-  setVenv venv2
-  checkAgainst kenv e3 t
-  venv4 <- getVenv
-  checkEquivEnvs p kenv venv3 venv4
+synthetise kEnv (Conditional p e1 e2 e3) = do
+  checkAgainst kEnv e1 (Basic p BoolType)
+  vEnv2 <- getVEnv
+  t <- synthetise kEnv e2
+  vEnv3 <- getVEnv
+  setVEnv vEnv2
+  checkAgainst kEnv e3 t
+  vEnv4 <- getVEnv
+  checkEquivEnvs p kEnv vEnv3 vEnv4
   return t
 -- Pair introduction
-synthetise kenv (Pair p e1 e2) = do
-  t1 <- synthetise kenv e1
-  t2 <- synthetise kenv e2
+synthetise kEnv (Pair p e1 e2) = do
+  t1 <- synthetise kEnv e1
+  t2 <- synthetise kEnv e2
   return $ PairType p t1 t2
 -- Pair elimination
-synthetise kenv (BinLet _ x y e1 e2) = do
-  t1 <- synthetise kenv e1
+synthetise kEnv (BinLet _ x y e1 e2) = do
+  t1 <- synthetise kEnv e1
   (u1, u2) <- extractPair t1
-  addToVenv x (toTypeScheme u1)
-  addToVenv y (toTypeScheme u2)
-  t2 <- synthetise kenv e2
-  quotient kenv x
-  quotient kenv y
+  addToVEnv x (toTypeScheme u1)
+  addToVEnv y (toTypeScheme u2)
+  t2 <- synthetise kEnv e2
+  quotient kEnv x
+  quotient kEnv y
   return t2
 -- Fork
--- synthetise kenv (Fork p e) = do
---   t <- synthetise kenv e
---   k <- K.synthetise kenv t
+-- synthetise kEnv (Fork p e) = do
+--   t <- synthetise kEnv e
+--   k <- K.synthetise kEnv t
 --   when (isLin k) $ addError p
 --     ["Unexpected linear expression", styleRed (show e), "in fork\n",
 --      "\t expression", styleRed (show e), "is of type", styleRed (show t),
 --      "of kind", styleRed (show k)]
 --   return $ Basic p UnitType
 -- Session types
-synthetise kenv (New p t) = do
-  K.checkAgainst kenv (Kind p Session Lin) t
+synthetise kEnv (New p t) = do
+  K.checkAgainst kEnv (Kind p Session Lin) t
   return $ PairType p t (Dualof p t)
-synthetise kenv (Send p e) = do
-  t <- synthetise kenv e
+synthetise kEnv (Send p e) = do
+  t <- synthetise kEnv e
   (u1, u2) <- extractOutput t
   return (Fun p Lin (Basic p u1) u2)
-synthetise kenv (Receive p e) = do
-  t <- synthetise kenv e
+synthetise kEnv (Receive p e) = do
+  t <- synthetise kEnv e
   (u1, u2) <- extractInput t
   return $ PairType p (Basic p u1) u2
-synthetise kenv (Select p c e) = do
-  t <- synthetise kenv e
+synthetise kEnv (Select p c e) = do
+  t <- synthetise kEnv e
   m <- extractOutChoiceMap p t
   extractCons p m c
-synthetise kenv (Match p e fm) = synthetiseFieldMap p kenv e fm extractInChoiceMap paramsToVenvMM
+synthetise kEnv (Match p e fm) = synthetiseFieldMap p kEnv e fm extractInChoiceMap paramsToVEnvMM
 -- Datatype elimination
-synthetise kenv (Case p e fm) = synthetiseFieldMap p kenv e fm extractDatatypeMap paramsToVenvCM
+synthetise kEnv (Case p e fm) = synthetiseFieldMap p kEnv e fm extractDatatypeMap paramsToVEnvCM
 
--- | Returns the type scheme for a variable; removes it from venv if lin
-synthetiseVar :: KindEnv -> PBind -> FreestState TypeScheme
-synthetiseVar kenv b = do
-  venv <- getVenv
-  trace ("synthetiseVar: " ++ show b ++ ", venv: " ++ show venv) (return ())
-  getFromVenv b >>= \case
+-- | Returns the type scheme for a variable; removes it from vEnv if lin
+synthetiseVar :: KindEnv -> ProgVar -> FreestState TypeScheme
+synthetiseVar kEnv b = -- do
+--  vEnv <- getVEnv
+--  trace ("synthetiseVar: " ++ show b ++ ", vEnv: " ++ show vEnv) (return ())
+  getFromVEnv b >>= \case
     Just s -> do
-      k <- K.synthetiseTS kenv s
-      when (isLin k) $ rmPVar b
+      k <- K.synthetiseTS kEnv s
+      when (isLin k) $ removeFromVEnv b
       return s
     Nothing -> do
       let p = position b
       addError p ["Variable or data constructor not in scope:", styleRed $ show b]
       let s = omission p
-      addToVenv b s
+      addToVEnv b s
       return s
 
-synthetiseFieldMap :: Pos -> KindEnv -> Expression -> ExpMap ->
+synthetiseFieldMap :: Pos -> KindEnv -> Expression -> FieldMap ->
   (Pos -> Type -> FreestState TypeMap) ->
-  (PBind -> [PBind] -> Type -> FreestState ()) -> FreestState Type
-synthetiseFieldMap p kenv e fm extract params = do
-  t <- synthetise kenv e
+  (ProgVar -> [ProgVar] -> Type -> FreestState ()) -> FreestState Type
+synthetiseFieldMap p kEnv e fm extract params = do
+  t <- synthetise kEnv e
   tm <- extract p t
-  venv <- getVenv
-  (t:ts, v:vs) <- Map.foldrWithKey (synthetiseField venv kenv params tm) (return ([],[])) fm
-  mapM_ (checkEquivTypes p kenv t) ts
-  mapM_ (checkEquivEnvs p kenv v) vs
-  setVenv v
+  vEnv <- getVEnv
+  (t:ts, v:vs) <- Map.foldrWithKey (synthetiseField vEnv kEnv params tm) (return ([],[])) fm
+  mapM_ (checkEquivTypes p kEnv t) ts
+  mapM_ (checkEquivEnvs p kEnv v) vs
+  setVEnv v
   return t
 
 -- Checks either the case map and the match map (all the expressions)
-synthetiseField :: VarEnv -> KindEnv -> (PBind -> [PBind] -> Type -> FreestState ()) ->
-  TypeMap -> PBind -> ([PBind], Expression) ->
+synthetiseField :: VarEnv -> KindEnv -> (ProgVar -> [ProgVar] -> Type -> FreestState ()) ->
+  TypeMap -> ProgVar -> ([ProgVar], Expression) ->
   FreestState ([Type], [VarEnv]) -> FreestState ([Type], [VarEnv])
-synthetiseField venv1 kenv params tm b (bs, e) state = do
-  (ts, venvs) <- state
-  setVenv venv1
+synthetiseField vEnv1 kEnv params tm b (bs, e) state = do
+  (ts, vEnvs) <- state
+  setVEnv vEnv1
   t1 <- synthetiseCons b tm
   params b bs t1
-  t2 <- fillFunType kenv b e (toTypeScheme t1)
-  mapM_ (quotient kenv) bs  
-  venv2 <- getVenv
-  return (t2:ts, venv2:venvs)
+  t2 <- fillFunType kEnv b e (toTypeScheme t1)
+  mapM_ (quotient kEnv) bs  
+  vEnv2 <- getVEnv
+  return (t2:ts, vEnv2:vEnvs)
 
 -- match map
-paramsToVenvMM :: PBind -> [PBind] -> Type -> FreestState ()
-paramsToVenvMM c bs t = do
-  addToVenv (head bs) (toTypeScheme t)
+paramsToVEnvMM :: ProgVar -> [ProgVar] -> Type -> FreestState ()
+paramsToVEnvMM c bs t = do
+  addToVEnv (head bs) (toTypeScheme t)
   let lbs = length bs
   when (lbs /= 1) $
     addError (position c) ["The label", styleRed (show c) , "should have 1",
                            "argument, but has been given", show lbs]  
 
-paramsToVenvCM :: PBind -> [PBind] -> Type -> FreestState ()
-paramsToVenvCM c bs t = do
-  let ts =  zipPBindLType bs t
-  mapM_ (uncurry addToVenv) ts
+paramsToVEnvCM :: ProgVar -> [ProgVar] -> Type -> FreestState ()
+paramsToVEnvCM c bs t = do
+  let ts =  zipProgVarLType bs t
+  mapM_ (uncurry addToVEnv) ts
   let lbs = length bs
       lts = numArgs t
   when (lbs /= lts) $
     addError (position c) ["The constructor", styleRed (show c) , "should have",
                          show lts, "arguments, but has been given", show lbs]  
 
-zipPBindLType :: [PBind] -> Type -> [(PBind, TypeScheme)]
-zipPBindLType [] _ = []
-zipPBindLType (b:bs) (Fun _ _ t1 t2) = (b, toTypeScheme t1) : zipPBindLType bs t2
-zipPBindLType (b:_) t = [(b, toTypeScheme t)] 
+zipProgVarLType :: [ProgVar] -> Type -> [(ProgVar, TypeScheme)]
+zipProgVarLType [] _ = []
+zipProgVarLType (b:bs) (Fun _ _ t1 t2) = (b, toTypeScheme t1) : zipProgVarLType bs t2
+zipProgVarLType (b:_) t = [(b, toTypeScheme t)] 
 
 numArgs :: Type -> Int
 numArgs (Fun _ _ _ t2) = 1 + numArgs t2
 numArgs _              = 0
 
-  
 -- Check whether a constructor exists in a type map
-synthetiseCons :: PBind -> TypeMap -> FreestState Type
-synthetiseCons b@(PBind p c) tm = do
+synthetiseCons :: ProgVar -> TypeMap -> FreestState Type
+synthetiseCons b tm =
   case tm Map.!? b of
     Just t  -> return t
     Nothing -> do
-      addError p ["Data constructor or choice field", styleRed $ show c, "not in scope"]
-      return $ Skip p
+      addError (position b) ["Data constructor or choice field", styleRed $ show b, "not in scope"]
+      return $ Skip (position b)
 
 -- | The quotient operation
--- Removes a variable from the environment and gives an error if it is linear
-quotient :: KindEnv -> PBind -> FreestState ()
-quotient kenv b@(PBind p x) =
-  getFromVenv b >>= \case
+-- Removes a variable from the Environment and gives an error if it is linear
+quotient :: KindEnv -> ProgVar -> FreestState ()
+quotient kEnv b =
+  getFromVEnv b >>= \case
     Just (TypeScheme _ [] t)  -> do
-      k <- K.synthetise kenv t
-      removeFromVenv b
+      k <- K.synthetise kEnv t
+      removeFromVEnv b
       when (isLin k) $
-        addError p ["Program variable", styleRed $ show x, "is linear at the end of its scope\n",
-                    "\t", "variable", styleRed $ show x, "is of type", styleRed $ show t,
-                    "of kind", styleRed $ show k]
+        addError (position b)
+          ["Program variable", styleRed $ show b, "is linear at the end of its scope\n",
+           "\t variable", styleRed $ show b, "is of type", styleRed $ show t,
+           "of kind", styleRed $ show k]
     Nothing ->
       return ()
 
@@ -243,76 +242,76 @@ quotient kenv b@(PBind p x) =
 -- | Check an expression against a given type
 checkAgainst :: KindEnv -> Expression -> Type -> FreestState ()
 -- Boolean elimination
-checkAgainst kenv (Conditional p e1 e2 e3) t = do
-  checkAgainst kenv e1 (Basic p BoolType)
-  venv2 <- getVenv
-  checkAgainst kenv e2 t
-  venv3 <- getVenv
-  setVenv venv2
-  checkAgainst kenv e3 t
-  venv4 <- getVenv
-  checkEquivEnvs p kenv venv3 venv4
+checkAgainst kEnv (Conditional p e1 e2 e3) t = do
+  checkAgainst kEnv e1 (Basic p BoolType)
+  vEnv2 <- getVEnv
+  checkAgainst kEnv e2 t
+  vEnv3 <- getVEnv
+  setVEnv vEnv2
+  checkAgainst kEnv e3 t
+  vEnv4 <- getVEnv
+  checkEquivEnvs p kEnv vEnv3 vEnv4
 -- Pair elimination
-checkAgainst kenv (BinLet _ x y e1 e2) t2 = do
-  t1 <- synthetise kenv e1
+checkAgainst kEnv (BinLet _ x y e1 e2) t2 = do
+  t1 <- synthetise kEnv e1
   (u1, u2) <- extractPair t1
-  addToVenv x (toTypeScheme u1)
-  addToVenv y (toTypeScheme u2)
-  checkAgainst kenv e2 t2
-  quotient kenv x
-  quotient kenv y
+  addToVEnv x (toTypeScheme u1)
+  addToVEnv y (toTypeScheme u2)
+  checkAgainst kEnv e2 t2
+  quotient kEnv x
+  quotient kEnv y
 -- TODO Match
--- checkAgainst kenv (Match p e fm) = checkAgainstFieldMap p kenv e fm extractInChoiceMap
+-- checkAgainst kEnv (Match p e fm) = checkAgainstFieldMap p kEnv e fm extractInChoiceMap
 -- TODO Datatype elimination
--- checkAgainst kenv (Case p e fm) = checkAgainstFieldMap p kenv e fm extractDatatypeMap
+-- checkAgainst kEnv (Case p e fm) = checkAgainstFieldMap p kEnv e fm extractDatatypeMap
 -- TODO Lambda elimination
 -- Default
-checkAgainst kenv e t = do
-  u <- synthetise kenv e
-  checkEquivTypes (position e) kenv t u
+checkAgainst kEnv e t = do
+  u <- synthetise kEnv e
+  checkEquivTypes (position e) kEnv t u
 
 -- | Check an expression against a given type scheme
 checkAgainstTS :: Expression -> TypeScheme -> FreestState ()
-checkAgainstTS e (TypeScheme _ bs t) = checkAgainst (K.fromTBindKs bs) e t
+checkAgainstTS e (TypeScheme _ bs t) = checkAgainst (K.fromTypeVarBinds bs) e t
   
 -- EQUALITY AND EQUIVALENCE CHECKING
 
 checkEquivTypes :: Pos -> KindEnv -> Type -> Type -> FreestState ()
-checkEquivTypes p kenv expected actual = do
-  tenv <- getTenv
-  venv <- getVenv
-  -- trace ("checkEquivTypes :" ++ show (funSigsOnly tenv venv)) (return ())
-  when (not $ equivalent tenv kenv expected actual) $
+checkEquivTypes p kEnv expected actual = do
+  tEnv <- getTEnv
+  vEnv <- getVEnv
+  -- trace ("checkEquivTypes :" ++ show (funSigsOnly tEnv vEnv)) (return ())
+  when (not $ equivalent tEnv kEnv expected actual) $
     addError p ["Couldn't match expected type", styleRed (show expected), "\n",
              "\t with actual type", styleRed (show actual)]
 
 checkEqualEnvs :: Pos -> VarEnv -> VarEnv -> FreestState ()
-checkEqualEnvs p venv1 venv2 =
+checkEqualEnvs p vEnv1 vEnv2 =
   when (not $ Map.null diff)
-    (addError p ["Final environment differs from initial\n",
-                "\t these extra entries are present in the final environment:", styleRed $ show diff])
-  where diff = Map.difference venv2 venv1
+    (addError p ["Final Environment differs from initial\n",
+                "\t these extra entries are present in the final Environment:", styleRed $ show diff])
+  where diff = Map.difference vEnv2 vEnv1
 
 checkEquivEnvs :: Pos -> KindEnv -> VarEnv -> VarEnv -> FreestState ()
-checkEquivEnvs p kenv venv1 venv2 = do
-  tenv <- getTenv
-  let venv1' = funSigsOnly tenv venv1
-      venv2' = funSigsOnly tenv venv2
-  when (not (equivalent tenv kenv venv1' venv2')) $
-    addError p ["Expecting environment", styleRed (show venv1'), "\n",
-             "\t to be equivalent to  ", styleRed (show venv2')]
+checkEquivEnvs p kEnv vEnv1 vEnv2 = do
+  tEnv <- getTEnv
+  let vEnv1' = funSigsOnly tEnv vEnv1
+      vEnv2' = funSigsOnly tEnv vEnv2
+  when (not (equivalent tEnv kEnv vEnv1' vEnv2')) $
+    addError p ["Expecting Environment", styleRed (show vEnv1'), "\n",
+             "\t to be equivalent to  ", styleRed (show vEnv2')]
 
 funSigsOnly :: TypeEnv -> VarEnv -> VarEnv
-funSigsOnly tenv =
-  Map.filterWithKey (\x _ -> not (isBuiltin x) && not (isDatatypeContructor tenv x))
+funSigsOnly tEnv =
+  Map.filterWithKey (\x _ -> not (isBuiltin x) && not (isDatatypeContructor tEnv x))
 
 -- To determine whether a given constructor (a program variable) is a
--- datatype constructor we have to look in the type environment for a
+-- datatype constructor we have to look in the type Environment for a
 -- type name associated to a datatype that defines the constructor
 -- (rather indirect)
-isDatatypeContructor :: TypeEnv -> PBind -> Bool
-isDatatypeContructor tenv c =
-  not $ Map.null $ Map.filter (\(_, (TypeScheme _ _ t)) -> isDatatype t) tenv
+isDatatypeContructor :: TypeEnv -> ProgVar -> Bool
+isDatatypeContructor tEnv c =
+  not $ Map.null $ Map.filter (\(_, (TypeScheme _ _ t)) -> isDatatype t) tEnv
   where isDatatype :: Type -> Bool
         isDatatype (Datatype _ m) = c `Map.member` m
         isDatatype _              = False
@@ -321,18 +320,19 @@ isDatatypeContructor tenv c =
 -- associated to type Unit. Here we amend the situation by replacing
 -- these types with those declared in the type scheme for the
 -- function.
-fillFunType :: KindEnv -> PBind -> Expression -> TypeScheme -> FreestState Type
-fillFunType kenv b@(PBind p f) e (TypeScheme _ _ t) = fill e t
+fillFunType :: KindEnv -> ProgVar -> Expression -> TypeScheme -> FreestState Type
+fillFunType kEnv b e (TypeScheme _ _ t) = fill e t
   where
   fill :: Expression -> Type -> FreestState Type
   fill (Lambda _ _ b _ e) (Fun _ _ t1 t2) = do
-    addToVenv b (toTypeScheme t1)
+    addToVEnv b (toTypeScheme t1)
     t3 <- fill e t2
-    rmPVar b
+    removeFromVEnv b
     return t3
   fill e@(Lambda p _ _ _ _) t = do
-    addError p ["Couldn't match expected type", styleRed $ show t, "\n",
-                "\t The equation for", styleRed $ show f, "has one or more arguments,\n",
-                "\t but its type", styleRed $ show t, "has none"]
+    addError (position b)
+      ["Couldn't match expected type", styleRed $ show t, "\n",
+       "\t The equation for", styleRed $ show b, "has one or more arguments,\n",
+       "\t but its type", styleRed $ show t, "has none"]
     return t
-  fill e _ = synthetise kenv e
+  fill e _ = synthetise kEnv e

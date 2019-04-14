@@ -1,18 +1,21 @@
 module CodeGen.ExpressionGen
-( HaskellCode  
+( {-
+HaskellCode  
 , translateExpEnv
 , annotateAST
 , monadicFuns  -- TMP...
 , translate
+-} 
 ) where 
 
-import           Syntax.Programs
-import           Syntax.Expression
+import           Syntax.Expressions
 import           Syntax.Kinds
-import           Syntax.Bind
+import           Syntax.ProgramVariables
 import           Control.Monad.State
 import           Data.List
 import qualified Data.Map.Strict as Map
+
+{-
 
 {- 1st passage:
 ----------------
@@ -26,7 +29,7 @@ information if it is IO or not.
 TODO: Adapt
 -}
 
-type FunsMap = Map.Map PBind Bool
+type FunsMap = Map.Map ProgVar Bool
 
 monadicFuns :: ExpEnv -> FunsMap
 monadicFuns eenv = Map.empty            --LAMBDA
@@ -35,14 +38,14 @@ monadicFuns eenv = Map.empty            --LAMBDA
                      Map.insert f
                      (monadicFun eenv f e) acc) Map.empty eenv
   where 
-    monadicFun :: ExpEnv -> PBind -> Expression -> Bool
+    monadicFun :: ExpEnv -> ProgVar -> Expression -> Bool
     monadicFun eenv fun (ProgVar p x)
-      | Map.member (PBind p x) eenv && fun /= (PBind p x) = let (_,e) = eenv Map.! (PBind p x) in monadicFun eenv (PBind p x) e
+      | Map.member (ProgVar p x) eenv && fun /= (ProgVar p x) = let (_,e) = eenv Map.! (ProgVar p x) in monadicFun eenv (ProgVar p x) e
       | otherwise                     = False
     monadicFun eenv fun (UnLet _ _ e1 e2) = monadicFun eenv fun e1 || monadicFun eenv fun e2
     monadicFun eenv fun (App _ e1 e2) = monadicFun eenv fun e1 || monadicFun eenv fun e2
     monadicFun eenv fun (TypeApp p x _) -- TODO: Review      
-      | Map.member (PBind p x) eenv && fun /= (PBind p x) = let (_,e) = eenv Map.! (PBind p x) in monadicFun eenv (PBind p x) e
+      | Map.member (ProgVar p x) eenv && fun /= (ProgVar p x) = let (_,e) = eenv Map.! (ProgVar p x) in monadicFun eenv (ProgVar p x) e
       | otherwise                     = False
     monadicFun eenv fun (Conditional _ e1 e2 e3) = 
       monadicFun eenv fun e1 || monadicFun eenv fun e2 || monadicFun eenv fun e3
@@ -56,7 +59,7 @@ monadicFuns eenv = Map.empty            --LAMBDA
     monadicFun eenv fun (Case _ e cm) = monadicFun eenv fun e || monadicCase eenv fun cm
     monadicFun _ _ _ = False
 
-    monadicCase :: ExpEnv -> PBind -> FieldMap -> Bool
+    monadicCase :: ExpEnv -> ProgVar -> FieldMap -> Bool
     monadicCase eenv x = Map.foldr (\(_, e) acc -> acc || monadicFun eenv x e) False
 -}
 
@@ -67,7 +70,7 @@ type MonadicMap = Map.Map Expression Bool
 --   let m = monadicFuns eenv in 
 --   (m,Map.foldrWithKey (\f (_,e) acc -> fst $ annotateAST' acc m (m Map.! f) e) Map.empty eenv)
 
-annotateAST :: FunsMap -> PBind -> Expression -> MonadicMap
+annotateAST :: FunsMap -> ProgVar -> Expression -> MonadicMap
 annotateAST fm f e = fst $ annotateAST' Map.empty fm (fm Map.! f) e
 
 annotateAST' :: MonadicMap -> FunsMap -> Bool -> Expression -> (MonadicMap, Bool)
@@ -76,7 +79,7 @@ annotateAST' m fm b e@(Integer _ _)   = (Map.insert e b m, b)
 annotateAST' m fm b e@(Character _ _) = (Map.insert e b m, b)
 annotateAST' m fm b e@(Boolean _ _)   = (Map.insert e b m, b)
 annotateAST' m fm b e@(ProgVar p x)  =
-  case fm Map.!? (PBind p x) of
+  case fm Map.!? (ProgVar p x) of
     Just b1 -> (Map.insert e b1 m, b1)
     Nothing -> (Map.insert e b m, b)
     
@@ -92,7 +95,7 @@ annotateAST' m fm b e@(App _ e1 e2) =
       (Map.insert e (b1 || b2 || b3) m2, b1 || b2)
  
 annotateAST' m fm b e@(TypeApp p x _) = -- TODO: Was: b = False
-    case fm Map.!? (PBind p x) of
+    case fm Map.!? (ProgVar p x) of
       Just b1 -> (Map.insert e (b || b1) m, b || b1)
       Nothing -> (Map.insert e b m, b)
   
@@ -153,7 +156,7 @@ annotateMap m fm b = Map.foldr (\x acc -> fst $ annotateAST' acc fm b (snd x)) m
 
 monadicVar :: FunsMap -> Expression -> Bool
 monadicVar fm (ProgVar p x) =
-  case fm Map.!? (PBind p x) of
+  case fm Map.!? (ProgVar p x) of
     Just x  -> x
     Nothing -> False
 monadicVar _ _ = True
@@ -167,13 +170,13 @@ translateExpEnv eenv =
   -- Map.foldrWithKey (\f (ps,e) acc -> acc ++ genFun fm f ps e ++ "\n\n") "" eenv LAMBDA
 
   where
-    genFun :: FunsMap -> PBind -> [PBind] -> Expression -> HaskellCode
+    genFun :: FunsMap -> ProgVar -> [ProgVar] -> Expression -> HaskellCode
     genFun fm f ps e =
       let mm = annotateAST fm f e in
        show f ++ showBangParams ps ++ " = " ++
         (fst (evalState (translate fm mm e) 0))
 
-    showBangParams :: [PBind] -> String
+    showBangParams :: [ProgVar] -> String
     showBangParams [] = "" 
     showBangParams args = foldl (\acc a -> acc ++ " !" ++ show a) "" args
 --    showBangParams args = " !" ++ intercalate " !" (words (show args))
@@ -231,16 +234,16 @@ translate fm m e@(Boolean _ b) = do
 
 translate fm m e@(ProgVar p x) = do
   let b = expected m e
-  if Map.member (PBind p x) fm then
+  if Map.member (ProgVar p x) fm then
     do      
-      h <- translateExpr (show x) b (fm Map.! (PBind p x))
+      h <- translateExpr (show x) b (fm Map.! (ProgVar p x))
       return (h, b) -- fm Map.! x)
   else
     do
       h <- translateExpr (show x) b False
       return (h, b)
   
-translate fm m e@(UnLet _ (PBind _ x) e1 e2) = do
+translate fm m e@(UnLet _ (ProgVar _ x) e1 e2) = do
   (h1, b1) <- translate fm m e1
   (h2, b2) <- translate fm m e2
 
@@ -265,9 +268,9 @@ translate fm m e@(App _ e1 e2) = do
 
 translate fm m e@(TypeApp p x _) = do -- translate fm m e
   let b = expected m e
-  if Map.member (PBind p x) fm then
+  if Map.member (ProgVar p x) fm then
     do      
-      h <- translateExpr (show x) b (fm Map.! (PBind p x))
+      h <- translateExpr (show x) b (fm Map.! (ProgVar p x))
       return (h, b) -- fm Map.! x)
   else
     do
@@ -288,7 +291,7 @@ translate fm m e@(Pair _ e1 e2) = do
   c <- translateExpr hc2 (expected m e) False
   return (hc1 ++ c, False)
 
-translate fm m (BinLet _ (PBind _ x) (PBind _ y) e1 e2) = do
+translate fm m (BinLet _ (ProgVar _ x) (ProgVar _ y) e1 e2) = do
   (h1, b1) <- translate fm m e1
   (h2, b2) <- translate fm m e2
   
@@ -342,30 +345,30 @@ translate fm m (Case _ e cm) = do
   return ("case " ++ h1 ++ " of {" ++ hcase ++ "}", False) -- TODO: Can be monadic
   
 -- TODO: Join with case
-translateMatchMap :: String -> FunsMap -> MonadicMap -> ExpMap -> TranslateMonad String
+translateMatchMap :: String -> FunsMap -> MonadicMap -> FieldMap -> TranslateMonad String
 --translateMatchMap fresh fm m = Map.foldlWithKey (translateMatchMap' fresh) (return "")
 translateMatchMap fresh fm m _ = Map.foldlWithKey (translateMatchMap' fresh) (return "") Map.empty -- FIELDMAP
   where
-    translateMatchMap' :: String -> TranslateMonad String -> PBind ->
-                          (PBind, Expression) -> TranslateMonad String
-    translateMatchMap' fresh acc (PBind _ v) (PBind _ p, e) = do
+    translateMatchMap' :: String -> TranslateMonad String -> ProgVar ->
+                          (ProgVar, Expression) -> TranslateMonad String
+    translateMatchMap' fresh acc (ProgVar _ v) (ProgVar _ p, e) = do
       (h, b) <- translate fm m e
       acc' <- acc
       return $ acc' ++ "\n    \"" ++ show v ++ "\" " ++
         " -> let " ++ show p ++ " = " ++ fresh ++ " in " ++ h ++ ";"
              
 
-translateCaseMap :: FunsMap -> MonadicMap -> ExpMap -> TranslateMonad String
+translateCaseMap :: FunsMap -> MonadicMap -> FieldMap -> TranslateMonad String
 -- translateCaseMap fm m = Map.foldlWithKey translateCaseMap' (return "")
 translateCaseMap fm m _ = Map.foldlWithKey translateCaseMap' (return "") Map.empty -- FieldMap
   where
-    translateCaseMap' :: TranslateMonad String -> PBind -> ([PBind], Expression) -> TranslateMonad String
-    translateCaseMap' acc (PBind _ v) (params, e) = do
+    translateCaseMap' :: TranslateMonad String -> ProgVar -> ([ProgVar], Expression) -> TranslateMonad String
+    translateCaseMap' acc (ProgVar _ v) (params, e) = do
       (h1, _) <- translate fm m e
       acc' <- acc
       return (acc' ++ "\n    " ++ show v ++ showCaseParams params ++ " -> " ++ h1 ++ ";")
 
-    showCaseParams :: [PBind] -> String
+    showCaseParams :: [ProgVar] -> String
     showCaseParams [] = ""
     showCaseParams args = foldl (\acc a -> acc ++ " " ++ show a) "" args
 --    showCaseParams args = " " ++ unwords (words $ show args)
@@ -387,3 +390,5 @@ genPair h1 True h2 True =  do
   v2 <- nextFresh
   return (h1 ++ " >>= \\" ++ v1 ++ " -> " ++ h2 ++ " >>= \\" ++ v2 ++ " -> ",
           "(" ++ v1 ++ ", " ++ v2 ++ ")")
+
+-}

@@ -16,11 +16,9 @@ module Validation.Contractive
 )
 where
 
-import           Parse.Lexer (position)
-import           Syntax.Programs
 import           Syntax.Types
 import           Syntax.Kinds
-import           Syntax.Bind
+import           Syntax.Base
 import           Utils.Errors
 import           Utils.FreestState
 import           Control.Monad (when)
@@ -31,7 +29,7 @@ contractive :: KindEnv -> Type -> Bool
 contractive kenv (Semi _ t _)  = contractive kenv t
 contractive kenv (Rec _ _ t)   = contractive kenv t
 contractive kenv (Dualof _ t)  = contractive kenv t
-contractive kenv (TypeVar p x) = Map.member (TBind p x) kenv
+contractive kenv (TypeVar p x) = Map.member x kenv
 contractive _    _             = True
 
 -- Check the contractivity of a given type; issue an error if not

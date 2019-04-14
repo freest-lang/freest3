@@ -20,18 +20,19 @@ FreestState
 , tMapM
 , tMapWithKeyM
 -- Variable environment
-, getVenv
-, getFromVenv
-, setVenv
-, addToVenv
-, removeFromVenv
+, getVEnv
+, getFromVEnv
+, setVEnv
+, addToVEnv
+, removeFromVEnv
 -- Type environment
-, getTenv
-, addToTenv
-, getFromTenv
+, getTEnv
+, addToTEnv
+, getFromTEnv
 -- Expression environment
-, getEenv
-, addToEenv
+, getEEnv
+, addToEEnv
+{-
 -- Program variables (parsing only)
 , newPVar
 , getPVar
@@ -40,19 +41,20 @@ FreestState
 , newTVar
 , getTVar
 , rmTVar
+-}
 -- Errors
 , Errors (..)
 , addError
 , getFileName
 ) where
 
-import           Syntax.Programs
-import           Syntax.Expression
+import           Syntax.Expressions
 import           Syntax.Types
 import           Syntax.Schemes
 import           Syntax.Kinds
-import           Syntax.Bind
-import           Parse.Lexer (Pos,defaultPos)
+import           Syntax.TypeVariables
+import           Syntax.ProgramVariables
+import           Syntax.Base
 import           Utils.Errors
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
@@ -68,8 +70,8 @@ data FreestS = FreestS {
 , typeEnv  :: TypeEnv
 , errors   :: Errors
 , lastVar  :: Int
-, pVarsInScope :: Map.Map String [PVar]
-, tVarsInScope :: Map.Map String [TVar] -- TODO: merge
+-- , pVarsInScope :: Map.Map String [PVar]
+-- , tVarsInScope :: Map.Map String [TVar] -- TODO: merge
 }
 
 type FreestState = State FreestS
@@ -84,8 +86,8 @@ initialState f = FreestS {
 , typeEnv  = Map.empty
 , errors   = []
 , lastVar  = 0
-, pVarsInScope = Map.empty
-, tVarsInScope = Map.empty
+-- , pVarsInScope = Map.empty
+-- , tVarsInScope = Map.empty
 }
 
 -- | FILE NAME
@@ -97,63 +99,62 @@ getFileName = do
 
 -- | VAR ENV
 
-getVenv :: FreestState VarEnv
-getVenv = do
+getVEnv :: FreestState VarEnv
+getVEnv = do
   s <- get
   return $ varEnv s
 
-getFromVenv :: PBind -> FreestState (Maybe TypeScheme)
-getFromVenv x = do
-  venv <- getVenv
-  return $ venv Map.!? x
+getFromVEnv :: ProgVar -> FreestState (Maybe TypeScheme)
+getFromVEnv x = do
+  vEnv <- getVEnv
+  return $ vEnv Map.!? x
 
-removeFromVenv :: PBind -> FreestState ()
-removeFromVenv b = modify (\s -> s {varEnv= Map.delete b (varEnv s)})  
+removeFromVEnv :: ProgVar -> FreestState ()
+removeFromVEnv b = modify (\s -> s {varEnv= Map.delete b (varEnv s)})  
 
-addToVenv :: PBind -> TypeScheme -> FreestState ()
-addToVenv b t =
+addToVEnv :: ProgVar -> TypeScheme -> FreestState ()
+addToVEnv b t =
   modify (\s -> s{varEnv = Map.insert b t (varEnv s)})
 
-venvMember :: PBind -> FreestState Bool
-venvMember x = do
-  venv <- getVenv
-  return $ Map.member x venv
+vEnvMember :: ProgVar -> FreestState Bool
+vEnvMember x = do
+  vEnv <- getVEnv
+  return $ Map.member x vEnv
 
-setVenv :: VarEnv -> FreestState ()
-setVenv venv = modify (\s -> s{varEnv = venv})
+setVEnv :: VarEnv -> FreestState ()
+setVEnv vEnv = modify (\s -> s{varEnv = vEnv})
 
 -- | EXP ENV
 
-getEenv :: FreestState ExpEnv
-getEenv = do
+getEEnv :: FreestState ExpEnv
+getEEnv = do
   s <- get
   return $ expEnv s
 
--- Unsafe - must exist
-getFromEenv :: PBind -> FreestState Expression
-getFromEenv x = do
-  eenv <- getEenv
-  return $ eenv Map.! x
+getFromEEnv :: ProgVar -> FreestState Expression
+getFromEEnv x = do
+  eEnv <- getEEnv
+  return $ eEnv Map.! x
 
-addToEenv :: PBind -> Expression -> FreestState ()
-addToEenv k v =
+addToEEnv :: ProgVar -> Expression -> FreestState ()
+addToEEnv k v =
   modify (\s -> s{expEnv=Map.insert k v (expEnv s)})    
      
 -- | TYPE ENV
 
-getTenv :: FreestState TypeEnv
-getTenv = do
+getTEnv :: FreestState TypeEnv
+getTEnv = do
   s <- get
   return $ typeEnv s
 
-addToTenv :: TBind -> Kind -> TypeScheme -> FreestState ()
-addToTenv b k t =
+addToTEnv :: TypeVar -> Kind -> TypeScheme -> FreestState ()
+addToTEnv b k t =
   modify (\s -> s{typeEnv = Map.insert b (k, t) (typeEnv s)})
 
-getFromTenv :: TBind -> FreestState (Maybe (Kind, TypeScheme))
-getFromTenv  b = do
-  tenv <- getTenv
-  return $ tenv Map.!? b
+getFromTEnv :: TypeVar -> FreestState (Maybe (Kind, TypeScheme))
+getFromTEnv  b = do
+  tEnv <- getTEnv
+  return $ tEnv Map.!? b
 
 -- | ERRORS
 
@@ -166,7 +167,7 @@ addErrorList es =
   modify (\s -> s {errors = (errors s) ++ es})   
 
 -- | FRESH VARS
-
+{-
 newPVar :: String -> FreestState PVar
 newPVar id = do
   s <- get
@@ -181,8 +182,8 @@ getPVar id = do
     Just pvar -> return $ head $ pvar
     Nothing   -> newPVar id >>= \pvar -> return pvar
 
-rmPVar :: PBind -> FreestState ()
-rmPVar (PBind _ pvar) = do
+rmPVar :: ProgVar -> FreestState ()
+rmPVar (ProgVar _ pvar) = do
   s <- get
   put $ s {pVarsInScope = Map.update tailMaybe (show pvar) (pVarsInScope s)}
   where tailMaybe []     = Nothing
@@ -200,13 +201,13 @@ getTVar id = do
   s <- get
   return $ head $ (tVarsInScope s) Map.! id
 
-rmTVar :: PBind -> FreestState ()
-rmTVar (PBind _ pvar) = do
+rmTVar :: ProgVar -> FreestState ()
+rmTVar (ProgVar _ pvar) = do
   s <- get
   put $ s {tVarsInScope = Map.update tailMaybe (show pvar) (tVarsInScope s)}
   where tailMaybe []     = Nothing
         tailMaybe (_:xs) = Just xs
-
+-}
 -- | Traversing Map.map over FreestStates
 
 tMapM :: Monad m => (a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)

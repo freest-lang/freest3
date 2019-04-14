@@ -17,18 +17,17 @@ module Validation.TypeChecking
 ( typeCheck
 ) where
 
-import           Syntax.Programs
-import           Syntax.Expression
+import           Syntax.Expressions
 import           Syntax.Schemes
 import           Syntax.Types
-import           Syntax.Bind
+import           Syntax.ProgramVariables
+import           Syntax.Base
 import           Equivalence.Normalisation
+import           Validation.Extract
 import qualified Validation.Kinding as K
 import qualified Validation.Typing as T
-import           Parse.Lexer (position, defaultPos)
 import           Utils.Errors
 import           Utils.FreestState
-import           Validation.Extract
 import           Utils.PreludeLoader (isBuiltin)
 import           Control.Monad.State (when)
 import qualified Data.Map.Strict as Map
@@ -38,47 +37,46 @@ typeCheck :: FreestState ()
 typeCheck = do
   -- Type/datatype declarations: check TypeEnv for type or datatype
   -- declarations, VarEnv for each datatype constructor
-  tenv <- getTenv
-  mapM_ (K.synthetiseTS Map.empty . snd) tenv -- check the formation of all type schemes
+  tEnv <- getTEnv
+  mapM_ (K.synthetiseTS Map.empty . snd) tEnv -- check the formation of all type schemes
   -- Function signatures (VarEnv)
-  venv <- getVenv
-  mapM_ (K.synthetiseTS Map.empty) venv
-  tMapWithKeyM checkHasBinding venv
+  vEnv <- getVEnv
+  mapM_ (K.synthetiseTS Map.empty) vEnv
+  tMapWithKeyM checkHasBinding vEnv
   -- Function bodies (ExpEnv)
-  eenv <- getEenv
-  tMapWithKeyM checkFunBody eenv
+  eEnv <- getEEnv
+  tMapWithKeyM checkFunBody eEnv
   -- Main function
-  trace ("Functions " ++ show venv) checkMainFunction
+  trace ("Functions " ++ show vEnv) checkMainFunction
 
 -- Check whether all functions signatures have a binding. Exclude the
 -- builtin functions and the datatype constructors.
-checkHasBinding :: PBind -> a -> FreestState ()
+checkHasBinding :: ProgVar -> a -> FreestState ()
 checkHasBinding f _ = do
-  eenv <- getEenv
-  venv <- getVenv
-  tenv <- getTenv
-  when (f `Map.member` (T.funSigsOnly tenv venv) && f `Map.notMember` eenv) $
+  eEnv <- getEEnv
+  vEnv <- getVEnv
+  tEnv <- getTEnv
+  when (f `Map.member` (T.funSigsOnly tEnv vEnv) && f `Map.notMember` eEnv) $
     addError (position f) ["The type signature for", styleRed $ show f,
                            "lacks an accompanying binding"]
 
-checkFunBody :: PBind -> Expression -> FreestState ()
+checkFunBody :: ProgVar -> Expression -> FreestState ()
 checkFunBody f e =
-  getFromVenv f >>= \case
+  getFromVEnv f >>= \case
     Just s  -> T.checkAgainstTS e s
     Nothing -> return () -- We've issued this error at parsing time
 
 checkMainFunction :: FreestState ()
 checkMainFunction = do
-  venv <- getVenv
-  main <- getPVar "main"
-  let mBind = PBind defaultPos main
-  if mBind `Map.notMember` venv
+  let main = mkProgVar defaultPos "main"
+  vEnv <- getVEnv
+  if main `Map.notMember` vEnv
   then
     addError defaultPos ["Function", styleRed "main", "is not defined"]
   else do
-    let s = venv Map.! mBind
-    tenv <- getTenv
-    let mType = normalise tenv s
+    let s = vEnv Map.! main
+    tEnv <- getTEnv
+    let mType = normalise tEnv s
     b <- isValidMainType mType
     k <- K.synthetiseTS Map.empty s
     when (not b) $
