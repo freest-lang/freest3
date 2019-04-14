@@ -61,33 +61,33 @@ type FieldMap  = Map.Map ProgVar ([ProgVar], Expression)
 type ExpEnv = Map.Map ProgVar Expression
 
 instance Show Expression where
-  show e = showExp e 3
+  show e = showExp e 4
 
 showExp :: Expression -> Int -> String
-showExp _ 0 = " ... "
+showExp _ 0 = " .. "
 -- Basic values
-showExp (Unit _) _  = " ()"
+showExp (Unit _) _  = "()"
 showExp (Integer _ i) _ = show i
 showExp (Character _ c) _ = show c
 showExp (Boolean _ b) _  = show b
 -- Variable
 showExp (ProgVar _ x) _  = show x
   -- Abstraction intro and elim
-showExp (Lambda _ Un b t e) i = "(" ++ "\\" ++ show b ++ " : " ++ show t ++ " -> " ++ (showExp e (i-1)) ++ ")"
-showExp (Lambda _ Lin b t e) i = "(" ++ "\\" ++ show b ++ " : " ++ show t ++ "-o" ++ (showExp e (i-1)) ++ ")"
-showExp (App _ e1 e2) i = (showExp e1 (i-1)) ++ (showExp e2 (i-1))
+showExp (Lambda _ Un b t e) i = "(\\" ++ show b ++ " : " ++ show t ++ " -> " ++ (showExp e (i-1)) ++ ")"
+showExp (Lambda _ Lin b t e) i = "(\\" ++ show b ++ " : " ++ show t ++ " -o " ++ (showExp e (i-1)) ++ ")"
+showExp (App _ e1 e2) i = showExp e1 (i-1) ++ " " ++ showExp e2 (i-1)
   -- Pair intro and elim
 showExp (Pair _ e1 e2) i = " (" ++ (showExp e1 (i-1)) ++ ", " ++ (showExp e1 (i-1)) ++ ")"
 showExp (BinLet _ b1 b2 e1 e2) i = "let " ++ show b1 ++ ", " ++ show b2 ++ " = " ++ showExp e1 (i-1) ++ " in " ++ showExp e2 (i-1)
   -- Datatype elim
 showExp (Case _ e m) i = "case " ++ showExp e (i-1) ++ " of {" ++ showMap m (i-1) ++ "}"
   -- Type application
-showExp (TypeApp _ x [t]) _ = show x ++ show t
+showExp (TypeApp _ x ts) _ = show x ++ " [" ++ (intercalate " " (map show ts)) ++ "]"
   -- Boolean elim
 showExp (Conditional _ e e1 e2) i = "if " ++ show e ++ " then " ++ showExp e1 (i-1) ++ " else " ++ showExp e2 (i-1)
   -- Let
 showExp (UnLet _ b1 e1 e2) i = "let " ++ show b1 ++ " = " ++ showExp e1 (i-1) ++ " in " ++ showExp e2 (i-1)
--- Fork
+  -- Fork
 showExp (Fork _ e) i = " fork " ++ (showExp e (i-1))
   -- Session types
 showExp (New _ t) _ = "new " ++ show t

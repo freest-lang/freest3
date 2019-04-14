@@ -13,7 +13,6 @@ import           Syntax.Kinds
 import           Syntax.ProgramVariables
 import           Syntax.TypeVariables
 import           Syntax.Base
---import           Validation.Kinding
 import           Parse.ParserUtils
 import           Parse.Lexer
 import           Utils.Errors
@@ -132,7 +131,7 @@ Decl :: { () }
       checkDupFunSig $1
       addToVEnv $1 $3 }
   -- Function declaration
-  | ProgVar ProgVarSeq '=' Expr {% do
+  | ProgVar ProgVarWildSeq '=' Expr {% do
       checkDupFunDecl $1
       e <- buildFunBody $1 $2 $4
       addToEEnv $1 e }
@@ -143,10 +142,10 @@ Decl :: { () }
       addToTEnv x k (TypeScheme p $3 $5) }
   -- Datatype declaration
   | data TypeNameBind TypeVarBindEmptyList '=' DataCons {% do
-      let (TypeVarBind p x k) = $2
-      checkDupTypeDecl x
-      let bs = typeListToType x $5 :: [(ProgVar, Type)]
-      addToTEnv x k (TypeScheme p $3 (Datatype p (Map.fromList bs)))
+      let (TypeVarBind p a k) = $2
+      checkDupTypeDecl a
+      let bs = typeListToType a $5 :: [(ProgVar, Type)]
+      addToTEnv a k (TypeScheme p $3 (Datatype p (Map.fromList bs)))
       mapM_ (\(x, t) -> addToVEnv x (toTypeScheme t)) bs
     }
 
@@ -162,8 +161,8 @@ DataCon :: { (ProgVar, [Type]) }
 -----------------
 
 Expr :: { Expression }
-  : let ProgVar '=' Expr in Expr         { UnLet (position $1) $2 $4 $6 }
-  | let ProgVar ',' ProgVar '=' Expr in Expr { BinLet (position $1) $2 $4 $6 $8 }
+  : let ProgVarWild '=' Expr in Expr         { UnLet (position $1) $2 $4 $6 }
+  | let ProgVarWild ',' ProgVarWild '=' Expr in Expr { BinLet (position $1) $2 $4 $6 $8 }
   | if Expr then Expr else Expr              { Conditional (position $1) $2 $4 $6 }
   | new Type                                 { New (position $1) $2 }
   | match Expr with '{' MatchMap '}'         { Match (position $1) $2 $5 }
@@ -199,14 +198,14 @@ MatchMap :: { FieldMap }
   | Match ';' MatchMap {% checkDupMatch (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
 
 Match :: { (ProgVar, ([ProgVar], Expression)) }
-  : Constructor ProgVar '->' Expr { ($1, ([$2], $4)) }
+  : Constructor ProgVarWild '->' Expr { ($1, ([$2], $4)) }
 
 CaseMap :: { FieldMap }
   : Case             { uncurry Map.singleton $1 }
   | Case ';' CaseMap {% checkDupMatch (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
                         
 Case :: { (ProgVar, ([ProgVar], Expression)) }
-  : Constructor ProgVarSeq '->' Expr { ($1, ($2, $4)) }
+  : Constructor ProgVarWildSeq '->' Expr { ($1, ($2, $4)) }
 
 -----------
 -- TYPE SCHEMES --
@@ -294,20 +293,14 @@ ProgVar :: { ProgVar }
 
 Constructor :: { ProgVar }
   : UPPER_ID { mkProgVar (position $1) (getText $1) }
-{-
-ProgVar :: { ProgVar }
---  : LOWER_ID {% newPVar (getText $1) >>= \x -> return $ ProgVar (position $1) x }
-  : LOWER_ID { ProgVar (position $1) (mkProgVar (getText $1)) }
---  | '_'      {% newPVar "_"          >>= \x -> return $ ProgVar (position $1) x }
-  | '_'      { ProgVar (position $1) (mkProgVar "_") }
 
-Constructor :: { ProgVar }
---  : UPPER_ID {% newPVar (getText $1) >>= \x -> return $ ProgVar (position $1) x }
-  : UPPER_ID { ProgVar (position $1) (mkProgVar (getText $1)) }
--}
-ProgVarSeq :: { [ProgVar] }
-  :                    { [] }
-  | ProgVar ProgVarSeq {% checkDupBind $1 $2 >> return ($1 : $2) }
+ProgVarWild :: { ProgVar }
+  : ProgVar { $1 }
+  | '_'     { mkProgVar (position $1) "_" }
+
+ProgVarWildSeq :: { [ProgVar] }
+  :                            { [] }
+  | ProgVarWild ProgVarWildSeq {% checkDupBind $1 $2 >> return ($1 : $2) }
 
 -- TYPE VARIABLES
 

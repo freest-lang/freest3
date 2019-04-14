@@ -25,6 +25,7 @@ module Validation.Extract
 , extractCons
 ) where
 
+import           Syntax.Expressions
 import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Kinds
@@ -43,14 +44,15 @@ norm t = do
   return $ normalise tEnv t
 
 -- Extracts a function from a type; gives an error if there isn't a function
-extractFun :: Type -> FreestState (Type, Type)
-extractFun t = do
+extractFun :: Expression -> Type -> FreestState (Type, Type)
+extractFun e t = do
   t' <- norm t
   case t' of
     (Fun _ _ u v) -> return (u, v)
     u             ->
       let p = position u in
-      addError p ["Expecting a function type; found:", styleRed $ show u] >>
+      addError (position e) ["Expecting a function type for expression", styleRed $ show e, "\n",
+                            "\t found type", styleRed $ show u] >>
       return (Basic p UnitType, Basic p UnitType)
 
 -- Extracts a pair from a type; gives an error if there is no pair
@@ -61,7 +63,7 @@ extractPair t = do
     (PairType _ u v) -> return (u, v)
     u                ->
       let p = position u in
-      addError p ["Expecting a pair type; found ", styleRed $ show u] >>
+      addError p ["Expecting a pair type; found type", styleRed $ show u] >>
       return (Basic p IntType, Basic p IntType)
       
 -- Extracts a basic type from a general type; gives an error if it isn't a basic
@@ -71,7 +73,7 @@ extractBasic t = do
   case t' of
     (Basic _ b) -> return b
     u           ->
-      addError (position u) ["Expecting a basic type; found", styleRed $ show u] >>
+      addError (position u) ["Expecting a basic type; found type", styleRed $ show u] >>
       return UnitType
 
 -- Extracts an output type from a general type; gives an error if it isn't an output
@@ -89,33 +91,35 @@ extractMessage pol msg t = do
      (Message p pol b)            -> return (b, Skip p)
      (Semi _ (Message _ pol b) u) -> return (b, u)
      u                            ->
-       addError (position u) ["Expecting an", msg, "type; found", styleRed $ show u] >>
+       addError (position u) ["Expecting an", msg, "type; found type", styleRed $ show u] >>
        return (UnitType, Skip (position u))
 
-extractOutChoiceMap :: Pos -> Type -> FreestState TypeMap
+extractOutChoiceMap :: Expression -> Type -> FreestState TypeMap
 extractOutChoiceMap = extractChoiceMap Out "external"
 
-extractInChoiceMap :: Pos -> Type -> FreestState TypeMap
+extractInChoiceMap :: Expression -> Type -> FreestState TypeMap
 extractInChoiceMap = extractChoiceMap In "internal"
       
-extractChoiceMap :: Polarity -> String -> Pos -> Type -> FreestState TypeMap
-extractChoiceMap pol msg pos t = do
+extractChoiceMap :: Polarity -> String -> Expression -> Type -> FreestState TypeMap
+extractChoiceMap pol msg e t = do
   t' <- norm t
   case t' of
     (Choice _ _ m)              -> return m
     (Semi _ (Choice _ pol m) u) -> return $ Map.map (\v -> Semi (position v) v u) m
     u                           -> do
-      addError pos ["Expecting an", msg, "choice; found", styleRed $ show u]
+      addError (position e) ["Expecting an", msg, "choice type for expression", styleRed $ show e, "\n",
+                            "\t found type", styleRed $ show u]
       return Map.empty
 
 -- Extracts a datatype from a type; gives an error if a datatype is not found
-extractDatatypeMap :: Pos -> Type -> FreestState TypeMap
-extractDatatypeMap pos t = do
+extractDatatypeMap :: Expression -> Type -> FreestState TypeMap
+extractDatatypeMap e t = do
   t' <- norm t
   case t' of
     (Datatype _ m) -> return m
     u              -> do
-      addError pos ["Expecting a datatype; found", styleRed $ show u]
+      addError (position e) ["Expecting a datatype for expression", styleRed $ show e, "\n",
+                             "\t found type", styleRed $ show u]
       return $ Map.empty
 
 -- Extracts a constructor from a choice map; gives an error if the

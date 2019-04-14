@@ -72,7 +72,7 @@ synthetise kEnv (Lambda p m b t1 e) = do
 -- Abstraction elimination
 synthetise kEnv (App _ e1 e2) = do
   t <- synthetise kEnv e1
-  (u1, u2) <- extractFun t
+  (u1, u2) <- extractFun e1 t
   checkAgainst kEnv e2 u1
   return u2
 -- Type application
@@ -134,7 +134,7 @@ synthetise kEnv (Receive p e) = do
   return $ PairType p (Basic p u1) u2
 synthetise kEnv (Select p c e) = do
   t <- synthetise kEnv e
-  m <- extractOutChoiceMap p t
+  m <- extractOutChoiceMap e t
   extractCons p m c
 synthetise kEnv (Match p e fm) = synthetiseFieldMap p kEnv e fm extractInChoiceMap paramsToVEnvMM
 -- Datatype elimination
@@ -158,11 +158,11 @@ synthetiseVar kEnv b = -- do
       return s
 
 synthetiseFieldMap :: Pos -> KindEnv -> Expression -> FieldMap ->
-  (Pos -> Type -> FreestState TypeMap) ->
+  (Expression -> Type -> FreestState TypeMap) ->
   (ProgVar -> [ProgVar] -> Type -> FreestState ()) -> FreestState Type
 synthetiseFieldMap p kEnv e fm extract params = do
   t <- synthetise kEnv e
-  tm <- extract p t
+  tm <- extract e t
   vEnv <- getVEnv
   (t:ts, v:vs) <- Map.foldrWithKey (synthetiseField vEnv kEnv params tm) (return ([],[])) fm
   mapM_ (checkEquivTypes p kEnv t) ts

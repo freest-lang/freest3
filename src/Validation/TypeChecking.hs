@@ -38,17 +38,17 @@ typeCheck = do
   -- Type/datatype declarations: check TypeEnv for type or datatype
   -- declarations, VarEnv for each datatype constructor
   tEnv <- getTEnv
-  trace ("TEnv " ++ show tEnv)
-    mapM_ (K.synthetiseTS Map.empty . snd) tEnv -- check the formation of all type schemes
+  mapM_ (K.synthetiseTS Map.empty . snd) tEnv -- check the formation of all type schemes
   -- Function signatures (VarEnv)
   vEnv <- getVEnv
-  trace ("VEnv " ++ show (funSigsOnly tEnv vEnv))
-    mapM_ (K.synthetiseTS Map.empty) vEnv
+  mapM_ (K.synthetiseTS Map.empty) vEnv
   tMapWithKeyM checkHasBinding vEnv
   -- Function bodies (ExpEnv)
   eEnv <- getEEnv
-  trace ("EEnv " ++ show eEnv)
-    tMapWithKeyM checkFunBody eEnv
+  trace ("TEnv " ++ show tEnv)
+    trace ("VEnv " ++ show (funSigsOnly tEnv vEnv))
+      trace ("EEnv " ++ show eEnv)
+        tMapWithKeyM checkFunBody eEnv
   -- Main function
   checkMainFunction
 

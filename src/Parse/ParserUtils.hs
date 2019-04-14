@@ -120,9 +120,9 @@ unOp :: ProgVar -> Expression -> Expression
 unOp op expr =
   App (position expr) (ProgVar (position op) op) expr
 
--- Convert a list of types and a final type constructor to a type
 typeListToType:: TypeVar -> [(ProgVar, [Type])] -> [(ProgVar, Type)]
 typeListToType a = map (\(x, ts) -> (x, typeToFun ts))
+  -- Convert a list of types and a final type constructor to a type
   where typeToFun []       = TypeName (position a) a
         typeToFun (t : ts) = Fun (position t) Un t (typeToFun ts)
 
