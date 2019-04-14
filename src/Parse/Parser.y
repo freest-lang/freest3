@@ -145,8 +145,8 @@ Decl :: { () }
       let (TypeVarBind p a k) = $2
       checkDupTypeDecl a
       let bs = typeListToType a $5 :: [(ProgVar, Type)]
+      mapM_ (\(a, t) -> addToVEnv a (toTypeScheme t)) bs
       addToTEnv a k (TypeScheme p $3 (Datatype p (Map.fromList bs)))
-      mapM_ (\(x, t) -> addToVEnv x (toTypeScheme t)) bs
     }
 
 DataCons :: { [(ProgVar, [Type])] }
