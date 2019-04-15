@@ -18,7 +18,7 @@ module Syntax.TypeVariables
 import Syntax.Base
 import Data.Char (isDigit)
 
-data TypeVar = TypeVar Pos String deriving Show
+data TypeVar = TypeVar Pos String
 
 instance MkVar TypeVar where
   mkVar = TypeVar
@@ -35,13 +35,13 @@ instance Eq TypeVar where
 instance Ord TypeVar where
   (TypeVar _ x) <= (TypeVar _ y) = x <= y
 
--- instance Show TypeVar where
---   show (TypeVar _ x) = showVar x
---     where
---       showVar :: String -> String
---       showVar id
---         | isDigit (head id) = tail $ dropWhile (isDigit) id
---         | otherwise         = id
+instance Show TypeVar where
+  show (TypeVar _ x) = x -- showVar x
+    where
+      showVar :: String -> String
+      showVar id
+        | isDigit (head id) = tail $ dropWhile (isDigit) id
+        | otherwise         = id
 
 instance Position TypeVar where
   position (TypeVar p _) = p

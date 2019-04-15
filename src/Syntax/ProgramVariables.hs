@@ -37,7 +37,7 @@ instance Ord ProgVar where
   (ProgVar _ x) <= (ProgVar _ y) = x <= y
 
 instance Show ProgVar where
-  show (ProgVar _ x) = showVar x
+  show (ProgVar _ x) = x -- showVar x
     where
       showVar :: String -> String
       showVar id

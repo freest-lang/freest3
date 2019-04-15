@@ -61,7 +61,7 @@ type FieldMap  = Map.Map ProgVar ([ProgVar], Expression)
 type ExpEnv = Map.Map ProgVar Expression
 
 instance Show Expression where
-  show e = showExp e 4
+  show e = showExp e 44
 
 showExp :: Expression -> Int -> String
   -- Basic values
