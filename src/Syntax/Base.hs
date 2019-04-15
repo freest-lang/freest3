@@ -14,6 +14,9 @@ Portability :  portable | non-portable (<reason>)
 module Syntax.Base
 ( Default(..)
 , Multiplicity(..)
+, MkVar(..)
+, MkNewVar(..)
+, Intern(..)
 , showArrow
 , Pos           -- Relayed from Lexer
 , Position(..)  -- Relayed from Lexer
@@ -42,3 +45,19 @@ showArrow Un  = " -> "
 instance Ord Multiplicity where
   Un <= Lin = True
   _  <= _  = False
+
+-- The string, internal representation of a variable
+
+class Intern t where
+  intern :: t -> String
+
+-- Making a variable from a string, type or program
+
+class MkVar t where
+  mkVar :: Pos -> String -> t
+
+-- Making a new variable from a given variable. The variable is unique
+-- up to the point where the integer is
+
+class MkNewVar t where
+  mkNewVar :: Int -> t -> t

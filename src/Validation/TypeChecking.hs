@@ -28,7 +28,7 @@ import qualified Validation.Kinding as K
 import qualified Validation.Typing as T
 import           Utils.Errors
 import           Utils.FreestState
-import           Utils.PreludeLoader (isBuiltin)
+import           Utils.PreludeLoader (userDefined)
 import           Control.Monad.State (when)
 import qualified Data.Map.Strict as Map
 import           Debug.Trace
@@ -41,7 +41,7 @@ typeCheck = do
   vEnv <- getVEnv
   eEnv <- getEEnv
   trace ("TEnv " ++ show tEnv)
-    trace ("VEnv " ++ show (funSigsOnly tEnv vEnv))
+    trace ("VEnv " ++ show (userDefined vEnv))
       trace ("EEnv " ++ show eEnv)
         return ()
   tEnv <- getTEnv
@@ -56,8 +56,9 @@ typeCheck = do
   -- Main function
   checkMainFunction
 
-funSigsOnly :: TypeEnv -> VarEnv -> VarEnv -- TODO: also in Typing.hs
-funSigsOnly tEnv =
+{-
+userDefined :: TypeEnv -> VarEnv -> VarEnv -- TODO: also in Typing.hs
+userDefined tEnv =
 --  Map.filterWithKey (\x _ -> not (isBuiltin x) && not (isDatatypeContructor tEnv x))
   Map.filterWithKey (\x _ -> not (isBuiltin x))
 
@@ -67,7 +68,7 @@ isDatatypeContructor tEnv c =
   where isDatatype :: Type -> Bool
         isDatatype (Datatype _ m) = c `Map.member` m
         isDatatype _              = False
-
+-}
 -- Check whether all functions signatures have a binding. Exclude the
 -- builtin functions and the datatype constructors.
 checkHasBinding :: ProgVar -> a -> FreestState ()
@@ -87,7 +88,7 @@ checkFunBody f e =
 
 checkMainFunction :: FreestState ()
 checkMainFunction = do
-  let main = mkProgVar defaultPos "main"
+  let main = mkVar defaultPos "main"
   vEnv <- getVEnv
   if main `Map.notMember` vEnv
   then

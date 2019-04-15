@@ -2,10 +2,9 @@ module Syntax.TestExpsEqSpec(spec) where
 
 import           Parse.Lexer (defaultPos)
 import           SpecHelper
-import           Syntax.Expression
+import           Syntax.Expressions
 import           Syntax.Types -- TODO REMOVE
 import           Syntax.Kinds
-import           Syntax.Bind
 import qualified Data.Map.Strict as Map
 
 -- Just to be able to run it alone

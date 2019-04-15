@@ -72,10 +72,10 @@ showExp (Boolean _ b) _  = show b
   -- Variable
 showExp (ProgVar _ x) _  = show x
   -- Depth reached
-showExp _ 0 = " .. "
+showExp _ 0 = ".."
   -- Abstraction intro and elim
 showExp (Lambda _ m b t e) i = "(\\" ++ show b ++ " : " ++ show t ++ showArrow m ++ (showExp e (i-1)) ++ ")"
-showExp (App _ e1 e2) i = showExp e1 (i-1) ++ " " ++ showExp e2 (i-1)
+showExp (App _ e1 e2) i = "(" ++ showExp e1 (i-1) ++ " " ++ showExp e2 (i-1) ++ ")"
   -- Pair intro and elim
 showExp (Pair _ e1 e2) i = " (" ++ (showExp e1 (i-1)) ++ ", " ++ (showExp e1 (i-1)) ++ ")"
 showExp (BinLet _ b1 b2 e1 e2) i = "(let " ++ show b1 ++ ", " ++ show b2 ++ " = " ++ showExp e1 (i-1) ++ " in " ++ showExp e2 (i-1) ++ ")"
@@ -88,7 +88,7 @@ showExp (Conditional _ e e1 e2) i = "if " ++ show e ++ " then " ++ showExp e1 (i
   -- Let
 showExp (UnLet _ b1 e1 e2) i = "(let " ++ show b1 ++ " = " ++ showExp e1 (i-1) ++ " in " ++ showExp e2 (i-1) ++ ")"
   -- Fork
-showExp (Fork _ e) i = " fork " ++ (showExp e (i-1))
+showExp (Fork _ e) i = "fork " ++ (showExp e (i-1))
   -- Session types
 showExp (New _ t) _ = "new " ++ show t
 showExp (Send _ e) _ = "send " ++ show e

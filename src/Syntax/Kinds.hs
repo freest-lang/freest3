@@ -70,14 +70,14 @@ join (Kind p Session    Lin) (Kind _ Functional Un)  = omission p
 join k1                      k2                      = if k1 <: k2 then k2 else k1
 
 -- The four kinds
-kindTL = Kind defaultPos Functional Lin
-kindTU = Kind defaultPos Functional Un
-kindSL = Kind defaultPos Session Lin
-kindSU = Kind defaultPos Session Un
+kindTL p = Kind p Functional Lin
+kindTU p = Kind p Functional Un
+kindSL p = Kind p Session Lin
+kindSU p = Kind p Session Un
 
 -- The kind that sits at the top of the hierarchy (use as a default value)
 instance Default Kind where
-  omission p = Kind p Functional Lin
+  omission = kindTL
 
 isSession :: Kind -> Bool
 isSession = (<: (Kind defaultPos Session Lin))
@@ -110,8 +110,8 @@ instance Show TypeVarBind where
   show (TypeVarBind _ a k) = show a ++ ":" ++ show k
 {-
 instance Eq TypeVarBind where
-  (TypeVarBind _ x) == (TypeVarBind _ y) = x == y
-  
+  (TypeVarBind _ x _) == (TypeVarBind _ y _) = x == y
+
 instance Ord TypeVarBind where
   (TypeVarBind _ x) <= (TypeVarBind _ y) = x <= y
 -}

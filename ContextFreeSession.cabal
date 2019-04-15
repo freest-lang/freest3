@@ -40,7 +40,7 @@ executable ContextFreeSession
                        Parse.Parser, Parse.Lexer, Parse.ParserUtils,
                        Utils.PreludeLoader, Utils.Errors, Utils.FreestState,
                        Validation.TypeChecking, Validation.Typing, Validation.Kinding,
-                       Validation.Contractive, Validation.Extract,
+                       Validation.Contractive, Validation.Extract, Validation.Rename,
                        Equivalence.Equivalence, Equivalence.Bisimulation, Equivalence.Grammar,
                        Equivalence.TypeToGrammar, Equivalence.Norm, Equivalence.Normalisation,
                        CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen
@@ -74,8 +74,8 @@ test-suite unit-tests
                        Utils.Errors, Utils.FreestState,
                        SpecHelper,
                        Syntax.TestShowValidSpec, Syntax.TestEqInvalidSpec, Syntax.TestEqValidSpec,
-                       -- Syntax.TestEqTypeSchemeSpec,
-                       Syntax.TestExpsEqSpec, Syntax.Programs,
+                       Syntax.TestEqTypeSchemeSpec,
+                       Syntax.TestExpsEqSpec,
                        Parse.TestParserInvalidSpec, Parse.TestParserValidSpec,
                        Validation.TestKindingValidSpec, Validation.TestKindingInvalidSpec,
                        Validation.TestTypeSchemeKindingSpec,
@@ -108,7 +108,7 @@ test-suite program-tests
                        Utils.PreludeLoader, Utils.Errors, Utils.FreestState,
                        Queue.Queue,        
                        Validation.TypeChecking, Validation.Typing, Validation.Kinding,
-                       Validation.Contractive, Validation.Extract,
+                       Validation.Contractive, Validation.Extract, Validation.Rename,
                        Equivalence.Equivalence, Equivalence.Bisimulation, Equivalence.Grammar,
                        Equivalence.TypeToGrammar, Equivalence.Norm, Equivalence.Normalisation,
                        CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen

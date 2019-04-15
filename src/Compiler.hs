@@ -2,9 +2,10 @@ module Compiler (compile) where
 
 import Syntax.Schemes (TypeEnv, VarEnv)
 import Syntax.Expressions (ExpEnv)
-import Parse.Parser (parseProgram)
-import CodeGen.CodeGen (genProgram)
+import Validation.Rename (renameState)
 import Validation.TypeChecking (typeCheck)
+import CodeGen.CodeGen (genProgram)
+import Parse.Parser (parseProgram)
 import Utils.PreludeLoader (prelude)
 import Utils.FreestState
 import Control.Monad.State
@@ -12,10 +13,11 @@ import Data.List (intercalate)
 
 
 compile :: String -> IO (Bool, String)
-compile arg = do
-  ps <- parseProgram arg prelude
-  let s = execState typeCheck ps
-  genCode (errors s) (varEnv s) (expEnv s) (typeEnv s) arg  
+compile sourceFile = do
+  state <- parseProgram sourceFile prelude
+  let s' = execState renameState state
+  let s = execState typeCheck s'
+  genCode (errors s) (varEnv s) (expEnv s) (typeEnv s) sourceFile  
     
 -- CODE GEN
 genCode :: Errors -> VarEnv -> ExpEnv -> TypeEnv -> FilePath -> IO (Bool, String)

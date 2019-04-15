@@ -13,8 +13,6 @@ Portability :  portable | non-portable (<reason>)
 
 module Syntax.ProgramVariables
 ( ProgVar
-, mkProgVar
-, newProgVar
 ) where
 
 import Syntax.Base
@@ -23,11 +21,14 @@ import Data.Char (isDigit)
 -- Note: isomorphic to TypeVariables: Type <-> Prog
 data ProgVar = ProgVar Pos String
 
-mkProgVar :: Pos -> String -> ProgVar
-mkProgVar = ProgVar
+instance MkVar ProgVar where
+  mkVar = ProgVar
 
-newProgVar :: Int -> ProgVar -> ProgVar
-newProgVar next (ProgVar pos id) = ProgVar pos (show next ++ '_' : id)
+instance MkNewVar ProgVar where
+  mkNewVar next (ProgVar pos id) = ProgVar pos (show next ++ '_' : id)
+
+instance Intern ProgVar where
+  intern (ProgVar _ x) = x
 
 instance Eq ProgVar where
   (ProgVar _ x) == (ProgVar _ y) = x == y

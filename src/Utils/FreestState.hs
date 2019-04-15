@@ -19,6 +19,8 @@ FreestState
 -- Monad & map
 , tMapM
 , tMapWithKeyM
+-- Next index
+, getNextIndex
 -- Variable environment
 , getVEnv
 , getFromVEnv
@@ -29,20 +31,22 @@ FreestState
 , getTEnv
 , addToTEnv
 , getFromTEnv
+, setTEnv
 -- Expression environment
 , getEEnv
 , addToEEnv
+, setEEnv
 {-
 -- Program variables (parsing only)
 , newPVar
 , getPVar
 , rmPVar
--}
 -- Type variables (parsing only)
 , newTVar
 , getTVar
 , beginScope
 , endScope
+-}
 -- Errors
 , Errors (..)
 , addError
@@ -70,10 +74,10 @@ data FreestS = FreestS {
 , expEnv   :: ExpEnv
 , typeEnv  :: TypeEnv
 , errors   :: Errors
-, lastVar  :: Int
+, nextIndex  :: Int
 -- , pVarsInScope :: Map.Map String [PVar]
-, tTable :: Map.Map String [TypeVar]
-, tStack   :: [String]
+-- , tTable :: Map.Map String [TypeVar]
+-- , tStack   :: [String]
 }
 
 type FreestState = State FreestS
@@ -87,11 +91,20 @@ initialState f = FreestS {
 , expEnv   = Map.empty
 , typeEnv  = Map.empty
 , errors   = []
-, lastVar  = 0
+, nextIndex  = 0
 -- , pVarsInScope = Map.empty
-, tTable = Map.empty
-, tStack   = []
+-- , tTable = Map.empty
+-- , tStack   = []
 }
+
+-- | NEXT VAR
+
+getNextIndex :: FreestState Int
+getNextIndex = do
+  s <- get
+  let next = nextIndex s
+  modify (\s -> s{nextIndex = next + 1})
+  return next
 
 -- | FILE NAME
 
@@ -141,8 +154,11 @@ getFromEEnv x = do
 
 addToEEnv :: ProgVar -> Expression -> FreestState ()
 addToEEnv k v =
-  modify (\s -> s{expEnv=Map.insert k v (expEnv s)})    
-     
+  modify (\s -> s{expEnv=Map.insert k v (expEnv s)})
+
+setEEnv :: ExpEnv -> FreestState ()
+setEEnv eEnv = modify (\s -> s{expEnv = eEnv})
+
 -- | TYPE ENV
 
 getTEnv :: FreestState TypeEnv
@@ -159,6 +175,9 @@ getFromTEnv  b = do
   tEnv <- getTEnv
   return $ tEnv Map.!? b
 
+setTEnv :: TypeEnv -> FreestState ()
+setTEnv tEnv = modify (\s -> s{typeEnv = tEnv})
+
 -- | ERRORS
 
 addError :: Pos -> [String] -> FreestState ()
@@ -174,8 +193,8 @@ addErrorList es =
 newPVar :: String -> FreestState PVar
 newPVar id = do
   s <- get
-  let pvar = mkPVar (lastVar s) id
-  put $ s {lastVar = lastVar s + 1, pVarsInScope = Map.insertWith (++) id [pvar] (pVarsInScope s)}
+  let pvar = mkPVar (nextIndex s) id
+  put $ s {nextIndex = nextIndex s + 1, pVarsInScope = Map.insertWith (++) id [pvar] (pVarsInScope s)}
   return pvar
 
 getPVar :: String -> FreestState PVar
@@ -191,13 +210,12 @@ rmPVar (ProgVar _ pvar) = do
   put $ s {pVarsInScope = Map.update tailMaybe (show pvar) (pVarsInScope s)}
   where tailMaybe []     = Nothing
         tailMaybe (_:xs) = Just xs
--}
 
 newTVar :: Pos -> String -> FreestState TypeVar
 newTVar p id = do
   s <- get
-  let x = newTypeVar p (lastVar s) id
-  put s {lastVar      = lastVar s + 1,
+  let x = newTypeVar p (nextIndex s) id
+  put s {nextIndex      = nextIndex s + 1,
          tTable = Map.insertWith (++) id [x] (tTable s),
          tStack       = id : tStack s}
   return x
@@ -225,12 +243,11 @@ endScope = do
   tailMaybe []     = Nothing
   tailMaybe (_:xs) = Just xs
 
-{-
 newTVar :: String -> FreestState TVar
 newTVar id = do
   s <- get
-  let pvar = mkTVar (lastVar s) id
-  put $ s {lastVar = lastVar s + 1, tTable = Map.insertWith (++) id [pvar] (tTable s)}
+  let pvar = mkTVar (nextIndex s) id
+  put $ s {nextIndex = nextIndex s + 1, tTable = Map.insertWith (++) id [pvar] (tTable s)}
   return pvar
 
 getTVar :: String -> FreestState TVar

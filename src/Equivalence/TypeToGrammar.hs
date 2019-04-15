@@ -43,7 +43,7 @@ freshVar :: TransState TypeVar
 freshVar = do
   (p, v, n) <- get
   put (p, v, n + 1)
-  return $ mkTypeVar defaultPos (show n ++ "__X") -- TODO: use newTypeVar
+  return $ mkVar defaultPos (show n ++ "__X") -- TODO: use newTypeVar
   -- Using __ rather than _ to avoid colisions with type variables renamed after parsing
 
 memberVisited :: TypeVar -> TransState Bool

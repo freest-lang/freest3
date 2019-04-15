@@ -78,7 +78,6 @@ synthetise kEnv (TypeVar p x) =
       return (omission p)
 -- Type operators
 synthetise kEnv (TypeName p a) =
---  let bind = TypeVarBind p c in
   getFromTEnv a >>= \case
     Just (k, _) ->
       return k

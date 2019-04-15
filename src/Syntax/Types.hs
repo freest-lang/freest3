@@ -79,8 +79,8 @@ data Type =
   | Semi Pos Type Type
   | Message Pos Polarity BasicType
   | Choice Pos Polarity TypeMap
-  | Rec Pos TypeVarBind Type
   -- Functional or session
+  | Rec Pos TypeVarBind Type
   | TypeVar Pos TypeVar  -- a recursion variable if bound, polymorphic otherwise
   -- Type operators
   | TypeName Pos TypeVar -- a named type, to be looked upon in a map of type names to types
@@ -197,7 +197,7 @@ subs t x (Datatype p m)     = Datatype p (Map.map(subs t x) m)
   -- Session types
 subs t x (Semi p t1 t2)     = Semi p (subs t x t1) (subs t x t2)
 subs t x (Choice p v m)     = Choice p v (Map.map(subs t x) m)
-subs t1 x (Rec p b t2)      = Rec p b (subs t1 x t2) -- Assume types were renamed
+subs t x (Rec p b u)        = Rec p b (subs t x u) -- Assume types were renamed (hence, no on-the-fly renaming needed)
   -- | y == x                  = u
   -- | otherwise               = Rec p y (subs t1 x t2)
   -- Functional or session
@@ -205,6 +205,6 @@ subs t x u@(TypeVar _ y)
   | y == x                  = t
   | otherwise               = u
   -- Type operators  
-subs t x (Dualof p t1)      = Dualof p (subs t x t1)
+subs t x (Dualof p u)       = Dualof p (subs t x u)
   -- Otherwise: Basic, Skip, Message, TypeName
 subs _ _ t                  = t
