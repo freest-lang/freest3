@@ -41,7 +41,7 @@ typeCheck = do
   tEnv <- getTEnv
   vEnv <- getVEnv
   eEnv <- getEEnv
-  trace ("TEnv " ++ show tEnv)
+  trace ("Entering type checking\nTEnv " ++ show tEnv)
     trace ("VEnv " ++ show (userDefined vEnv))
       trace ("EEnv " ++ show eEnv)
         return ()
@@ -59,14 +59,27 @@ typeCheck = do
 
 -- Check whether all functions signatures have a binding. Exclude the
 -- builtin functions and the datatype constructors.
-checkHasBinding :: ProgVar -> a -> FreestState ()
+checkHasBinding :: ProgVar -> TypeScheme -> FreestState ()
 checkHasBinding f _ = do
   eEnv <- getEEnv
   vEnv <- getVEnv
   tEnv <- getTEnv
-  when (f `Map.member` (userDefined vEnv) && f `Map.notMember` eEnv) $
+  when (f `Map.member` (userDefined vEnv) &&
+        not (f `isDatatypeContructor` tEnv) &&
+        f `Map.notMember` eEnv) $
     addError (position f) ["The type signature for", styleRed $ show f,
                            "lacks an accompanying binding"]
+
+-- To determine whether a given constructor (a program variable) is a
+-- datatype constructor we have to look in the type Environment for a
+-- type name associated to a datatype that defines the constructor
+-- (rather indirect)
+isDatatypeContructor :: ProgVar -> TypeEnv -> Bool
+isDatatypeContructor c tEnv =
+  not $ Map.null $ Map.filter (\(_, (TypeScheme _ _ t)) -> isDatatype t) tEnv
+  where isDatatype :: Type -> Bool
+        isDatatype (Datatype _ m) = c `Map.member` m
+        isDatatype _              = False
 
 checkFunBody :: ProgVar -> Expression -> FreestState ()
 checkFunBody f e =

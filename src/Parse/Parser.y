@@ -128,7 +128,7 @@ NL :: { () }
 Decl :: { () }
   -- Function signature
   : ProgVar ':' TypeScheme {% do
-      checkDupFunSig $1
+      checkDupTypeVarDecl $1
       addToVEnv $1 $3 }
   -- Function declaration
   | ProgVar ProgVarWildSeq '=' Expr {% do
@@ -155,7 +155,7 @@ DataCons :: { [(ProgVar, [Type])] }
   | DataCon '|' DataCons { $1 : $3 }
 
 DataCon :: { (ProgVar, [Type]) }
-  : Constructor TypeSeq {% checkDupFunSig $1 >> return ($1, $2) }
+  : Constructor TypeSeq {% checkDupTypeVarDecl $1 >> return ($1, $2) }
 
 -----------------
 -- EXPRESSIONS --

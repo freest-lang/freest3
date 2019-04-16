@@ -30,18 +30,22 @@ import           Debug.Trace -- debugging
 
 renameState :: FreestState ()
 renameState = do
-  -- VarEnv
-  vEnv <- getVEnv
-  vEnv' <- tMapM (rename Map.empty) vEnv
-  setVEnv vEnv'
   -- TypeVenv
   tEnv <- getTEnv
   tEnv' <- tMapM (\(k, s) -> rename Map.empty s >>= \s' -> return (k, s')) tEnv
   setTEnv tEnv'
+  -- VarEnv & ExpEnv
+  vEnv <- getVEnv
+  tMapWithKeyM renameFun vEnv
+  return ()
+  -- VarEnv
+  -- vEnv <- getVEnv
+  -- vEnv' <- tMapM (rename Map.empty) vEnv
+  -- setVEnv vEnv'
   -- ExpEnv
-  eEnv <- getEEnv
-  eEnv' <- tMapM (rename Map.empty) eEnv
-  setEEnv eEnv'
+  -- eEnv <- getEEnv
+  -- eEnv' <- tMapM (rename Map.empty) eEnv
+  -- setEEnv eEnv'
   -- trace ("vEnv before: " ++ show (userDefined vEnv)) $ return ()
   -- trace ("vEnv after:  " ++ show (userDefined vEnv')) $ return ()
   -- trace ("tEnv before: " ++ show tEnv) $ return ()
@@ -49,6 +53,18 @@ renameState = do
   -- trace ("eEnv before: " ++ show eEnv) $ return ()
   -- trace ("eEnv after:  " ++ show eEnv') $ return ()
 
+renameFun :: ProgVar -> TypeScheme -> FreestState ()
+renameFun f (TypeScheme p xks t) = do
+  -- The function signature
+  xks' <- mapM (rename Map.empty) xks
+  let bs = insertBindings xks xks' Map.empty
+  t' <- rename bs t
+  addToVEnv f (TypeScheme p xks' t')
+  -- The function body
+  e <- getFromEEnv f
+  e' <- rename bs e
+  addToEEnv f e'
+  
 -- Renaming the various syntactic categories
 
 type Bindings = Map.Map String String
@@ -61,10 +77,11 @@ class Rename t where
 instance Rename TypeScheme where
   rename bs (TypeScheme p xks t) = do
     xks' <- mapM (rename bs) xks
-    t' <- rename (insertBindings xks') t
+    t' <- rename (insertBindings xks xks' bs ) t
     return $ TypeScheme p xks' t'
-    where
-      insertBindings xks' = foldr (\(TypeVarBind _ x _, TypeVarBind _ y _) bs' -> insertVar x y bs') bs (zip xks xks')
+
+insertBindings :: [TypeVarBind] -> [TypeVarBind] -> Bindings -> Bindings
+insertBindings xks xks' bs = foldr (\(TypeVarBind _ x _, TypeVarBind _ y _) bs' -> insertVar x y bs') bs (zip xks xks')
 
 -- Types
 

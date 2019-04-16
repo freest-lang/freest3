@@ -38,18 +38,20 @@ showArrow Un  = " -> "
 -- of new variables; see Syntax.ProgramVariables
 
 instance Show ProgVar where
-  show x = showVar $ intern x
+  show = showVar
 
 -- Type Variables. Note: show should be aligned with the creation
 -- of new variables; see Syntax.TypeVariables
 
 instance Show TypeVar where
-  show x = showVar $ intern x
+  show = showVar
 
-showVar :: String -> String
-showVar id
-  | isDigit (head id) = tail $ dropWhile (isDigit) id
-  | otherwise         = id
+showVar :: Variable v => v -> String
+showVar v
+  -- | isDigit (head s) = tail $ dropWhile (isDigit) s
+  -- | otherwise         = s
+  -- where s = intern v
+  = intern v -- Debug
 
 -- Kinds
 
@@ -68,6 +70,10 @@ instance Show TypeVarBind where
 instance Show Polarity where
   show In  = "?"
   show Out = "!"
+
+showChoice :: Polarity -> String
+showChoice In  = "&"
+showChoice Out = "+"
 
 instance Show BasicType where
   show IntType  = "Int"
@@ -93,10 +99,6 @@ instance Show Type where
   show (Dualof _ s)     = "(dualof " ++ show s ++ ")"
   show (TypeName _ x)   = show x
   
-showChoice :: Polarity -> String
-showChoice In  = "&"
-showChoice Out = "+"
-
 showTypeMap :: TypeMap -> String
 showTypeMap m = concat $ intersperse ", " (map showAssoc (Map.assocs m))
   where showAssoc (b, v) = show b ++ ": " ++ show v
@@ -111,7 +113,7 @@ instance Show TypeScheme where
 -- Expressions
 
 instance Show Expression where
-  show e = showExp e 4
+  show e = showExp e 44
 
 showExp :: Expression -> Int -> String
   -- Basic values
@@ -127,7 +129,7 @@ showExp _ 0 = ".."
 showExp (Lambda _ m b t e) i = "(\\" ++ show b ++ " : " ++ show t ++ showArrow m ++ (showExp e (i-1)) ++ ")"
 showExp (App _ e1 e2) i = "(" ++ showExp e1 (i-1) ++ " " ++ showExp e2 (i-1) ++ ")"
   -- Pair intro and elim
-showExp (Pair _ e1 e2) i = " (" ++ (showExp e1 (i-1)) ++ ", " ++ (showExp e1 (i-1)) ++ ")"
+showExp (Pair _ e1 e2) i = "(" ++ (showExp e1 (i-1)) ++ ", " ++ (showExp e1 (i-1)) ++ ")"
 showExp (BinLet _ b1 b2 e1 e2) i = "(let " ++ show b1 ++ ", " ++ show b2 ++ " = " ++ showExp e1 (i-1) ++ " in " ++ showExp e2 (i-1) ++ ")"
   -- Datatype elim
 showExp (Case _ e m) i = "case " ++ showExp e (i-1) ++ " of {" ++ showFieldMap m (i-1) ++ "}"

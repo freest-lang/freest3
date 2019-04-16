@@ -14,7 +14,7 @@ Portability :  portable | non-portable (<reason>)
 {-# LANGUAGE LambdaCase, NoMonadFailDesugaring #-}
 
 module Parse.ParseUtils
-( checkDupFunSig
+( checkDupTypeVarDecl
 , checkDupFunDecl
 , checkDupTypeDecl
 , checkDupBind
@@ -45,8 +45,8 @@ import           Control.Monad.State
 checkDupField :: ProgVar -> TypeMap -> FreestState ()
 checkDupField b m =
   when (b `Map.member` m) $
-    addError (position b) ["Duplicated field name", "\n",
-                           "\t In a choice type:", styleRed (show b), ": ..."]
+    addError (position b) ["Multiple declarations of field", "\n",
+                           "\t In a choice type:", styleRed (show b)]
 
 checkDupMatch :: ProgVar -> Map.Map ProgVar a -> FreestState () 
 checkDupMatch b m =
@@ -74,12 +74,12 @@ checkDupTypeVarBind (TypeVarBind p x _) bs =
          "\t          ", showPos p]
     Nothing -> return ()
 
-checkDupFunSig :: ProgVar -> FreestState ()  
-checkDupFunSig b = do
+checkDupTypeVarDecl :: ProgVar -> FreestState ()
+checkDupTypeVarDecl b = do
   m <- getVEnv
   case m Map.!? b of
     Just a  ->
-      addError (position b) ["Duplicate signatures for function", styleRed (show b), "\n",
+      addError (position b) ["Multiple declarations of", styleRed (show b), "\n",
                              "\t Declared at:", showPos (position a), "\n",
                              "\t             ", showPos (position b)]
     Nothing -> return ()
@@ -88,10 +88,10 @@ checkDupTypeDecl :: TypeVar -> FreestState ()
 checkDupTypeDecl a = do
   m <- getTEnv
   case m Map.!? a of
-    Just (b, _) ->
-      addError (position a) ["Multiple declarations of type", styleRed (show b), "\n",
+    Just (_, s) ->
+      addError (position a) ["Multiple declarations of type", styleRed (show a), "\n",
                              "\t Declared at:", showPos (position a), "\n",
-                             "\t             ", showPos (position b)]
+                             "\t             ", showPos (position s)]
     Nothing -> return ()
 
 checkDupFunDecl :: ProgVar -> FreestState ()
@@ -99,16 +99,6 @@ checkDupFunDecl x = do
   eEnv <- getEEnv
   when (x `Map.member` eEnv) $
     addError (position x) ["Multiple declarations of function", styleRed (show x)]
-
-checkDupTypeBind :: TypeVar -> FreestState ()
-checkDupTypeBind b = do
-  m <- getTEnv
-  case m Map.!? b of
-    Just (a, _)  ->
-      addError (position a) ["Multiple declarations of type\n",
-                             "\t Declared at:", showPos (position a), "\n",
-                             "\t             ", showPos (position b)]
-    Nothing -> return ()  
 
 -- OPERATORS
 
@@ -133,7 +123,8 @@ buildFunBody f bs e =
       let (TypeScheme _ _ t) = s
       return $ buildExp bs t
     Nothing -> do
-      addError (position f) ["Did not find the signature of function", styleRed $ show f]
+      addError (position f) ["The binding for function", styleRed $ show f,
+                             "lacks an accompanying type signature"]
       return e
   where
     buildExp :: [ProgVar] -> Type -> Expression

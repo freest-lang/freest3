@@ -24,16 +24,17 @@ FreestState
 -- Variable environment
 , getVEnv
 , getFromVEnv
-, setVEnv
 , addToVEnv
+, setVEnv
 , removeFromVEnv
 -- Type environment
 , getTEnv
-, addToTEnv
 , getFromTEnv
+, addToTEnv
 , setTEnv
 -- Expression environment
 , getEEnv
+, getFromEEnv
 , addToEEnv
 , setEEnv
 -- Errors

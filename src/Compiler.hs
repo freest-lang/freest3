@@ -11,7 +11,6 @@ import Utils.FreestState
 import Control.Monad.State
 import Data.List (intercalate)
 
-
 compile :: String -> IO (Bool, String)
 compile sourceFile = do
   s1 <- parseProgram sourceFile prelude

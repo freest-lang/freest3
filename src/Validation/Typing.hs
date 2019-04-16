@@ -320,19 +320,3 @@ fillFunType kEnv b e (TypeScheme _ _ t) = fill e t
        "\t but its type", styleRed $ show t, "has none"]
     return t
   fill e _ = synthetise kEnv e
-{-
-funSigsOnly :: TypeEnv -> VarEnv -> VarEnv
-funSigsOnly tEnv =
-  Map.filterWithKey (\x _ -> not (isBuiltin x) && not (isDatatypeContructor tEnv x))
-
--- To determine whether a given constructor (a program variable) is a
--- datatype constructor we have to look in the type Environment for a
--- type name associated to a datatype that defines the constructor
--- (rather indirect)
-isDatatypeContructor :: TypeEnv -> ProgVar -> Bool
-isDatatypeContructor tEnv c =
-  not $ Map.null $ Map.filter (\(_, (TypeScheme _ _ t)) -> isDatatype t) tEnv
-  where isDatatype :: Type -> Bool
-        isDatatype (Datatype _ m) = c `Map.member` m
-        isDatatype _              = False
--}
