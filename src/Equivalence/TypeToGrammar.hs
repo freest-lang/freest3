@@ -17,6 +17,7 @@ module Equivalence.TypeToGrammar
 ) where
 
 import           Equivalence.Grammar
+import           Equivalence.Normalisation (isChecked)
 import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.TypeVariables
@@ -114,7 +115,7 @@ toGrammar (Choice _ p m) = do
   mapM_ (assocToGrammar y p) (Map.assocs m) -- TODO: avoid Map.assocs; run map through the monad
   return [y]
 toGrammar u@(Rec p (TypeVarBind _ x _) t)
-  | isChecked u Set.empty = return []
+  | isChecked u = return []
   | otherwise = do
     y <- freshVar
     insertVisited y
@@ -139,13 +140,6 @@ assocToGrammar :: TypeVar -> Polarity -> (ProgVar, Type) -> TransState ()
 assocToGrammar y p (x, t) = do
   xs <- toGrammar t
   addProduction y (ChoiceLabel p x) xs
-
-isChecked :: Type -> Visited -> Bool
-isChecked (Skip _) _     = True
-isChecked (Semi _ s t) v = isChecked s v && isChecked t v
-isChecked (Rec _ (TypeVarBind _ x _) t) v  = isChecked t (Set.insert x v)
-isChecked (TypeVar _ x) v    = Set.member x v -- Only bound variables are checked
-isChecked _ _            = False
 
 -- Some tests
 {-

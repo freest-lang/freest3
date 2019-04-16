@@ -1,5 +1,5 @@
 {- |
-Module      :  Position
+Module      :  Show
 Description :  <optional short text displayed on contents page>
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
@@ -11,22 +11,20 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-module Syntax.Show
-( 
-) where
+module Syntax.Show () where
 
 import           Syntax.Expressions
 import           Syntax.Schemes
 import           Syntax.Types
+import           Syntax.Kinds
 import           Syntax.ProgramVariables
 import           Syntax.TypeVariables
-import           Syntax.Kinds
 import           Syntax.Base
 import qualified Data.Map.Strict as Map
 import           Data.List (intersperse, intercalate)
 import           Data.Char (isDigit)
 
--- Base
+-- Multiplicities (Base)
 
 instance Show Multiplicity where
   show Un  = "U"
@@ -36,25 +34,22 @@ showArrow :: Multiplicity -> String
 showArrow Lin = " -o "
 showArrow Un  = " -> "
 
--- Program Variables, see Syntax.ProgramVariables
+-- Program Variables. Note: show should be aligned with the creation
+-- of new variables; see Syntax.ProgramVariables
 
 instance Show ProgVar where
   show x = showVar $ intern x
-    where
-      showVar :: String -> String
-      showVar id
-        | isDigit (head id) = tail $ dropWhile (isDigit) id
-        | otherwise         = id
 
--- Type Variables, see Syntax.TypeVariables
+-- Type Variables. Note: show should be aligned with the creation
+-- of new variables; see Syntax.TypeVariables
 
 instance Show TypeVar where
   show x = showVar $ intern x
-    where
-      showVar :: String -> String
-      showVar id
-        | isDigit (head id) = tail $ dropWhile (isDigit) id
-        | otherwise         = id
+
+showVar :: String -> String
+showVar id
+  | isDigit (head id) = tail $ dropWhile (isDigit) id
+  | otherwise         = id
 
 -- Kinds
 

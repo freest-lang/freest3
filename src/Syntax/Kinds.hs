@@ -20,7 +20,7 @@ module Syntax.Kinds
 , kindTU
 , kindSL
 , kindSU
-, isSession
+-- , isSession
 , (<:)
 , join
 , isLin
@@ -79,8 +79,8 @@ kindSU p = Kind p Session Un
 instance Default Kind where
   omission = kindTL
 
-isSession :: Kind -> Bool
-isSession = (<: (Kind defaultPos Session Lin))
+-- isSession :: Kind -> Bool
+-- isSession = (<: (Kind defaultPos Session Lin))
 
 isLin :: Kind -> Bool
 isLin (Kind _ _ Lin) = True

@@ -12,6 +12,7 @@ Portability :  portable | non-portable (<reason>)
 
 module Equivalence.Normalisation
 ( Normalise(..)
+, isChecked
 ) where
 
 import           Syntax.Schemes
@@ -37,17 +38,21 @@ instance Normalise Type where
   normalise tenv (Semi _ (Choice p q m) t) =
     Choice p q (Map.map (\u -> append (normalise tenv u) t') m)
     where t' = normalise tenv t
-  normalise tenv (Semi p t u) = append (normalise tenv t) (normalise tenv u)
+  normalise tenv (Semi p t u) -- = append (normalise tenv t) (normalise tenv u)
+    | isChecked t = normalise tenv u
+    | otherwise = append (normalise tenv t) u
   normalise tenv (Choice p q m) = Choice p q (Map.map (normalise tenv) m)
-  normalise tenv (Rec p (TypeVarBind q x k) t)
-    | x `Set.member` (free t) = normalise tenv $ unfold $ Rec p (TypeVarBind q x k) t'
-    | otherwise               = t'
-    where t' = normalise tenv t
+  normalise tenv t@(Rec _ _ _) = normalise tenv (unfold t)
+  -- normalise tenv u@(Rec _ (TypeVarBind _ x _) t)
+  --   | x `Set.member` (free t) = normalise tenv $ unfold u
+  --   | otherwise               = t'
+  --   where t' = normalise tenv t
     -- Functional or session
     -- Type operators
   normalise tenv (Dualof _ t) = normalise tenv (dual t)
-  normalise tenv (TypeName _ a) = normalise tenv t
-    where (_, TypeScheme _ [] t) = tenv Map.! a
+  normalise tenv t@(TypeName _ a) = t
+  -- normalise tenv (TypeName _ a) = normalise tenv t
+  --   where (_, TypeScheme _ [] t) = tenv Map.! a
     -- Otherwise: Basic, Skip, Message, TypeVar
   normalise tenv t = t
 
@@ -76,3 +81,13 @@ free (TypeVar _ x)    = Set.singleton x
   -- Type operators
 free (Dualof _ t)     = free t
 free (TypeName _ _)   = Set.empty
+
+isChecked :: Type ->  Bool
+isChecked = isCheck Set.empty
+  where
+  isCheck _ (Skip _)                       = True
+  isCheck v (Semi _ s t)                   = isCheck v s && isCheck v t
+  isCheck v (Rec _ (TypeVarBind _ x _) t)  = isCheck (Set.insert x v) t
+  isCheck v (TypeVar _ x)                  = Set.member x v -- Only bound variables are checked
+  isCheck _ _                              = False
+

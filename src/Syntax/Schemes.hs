@@ -20,7 +20,7 @@ module Syntax.Schemes
 ) where
 
 import           Syntax.Types
-import           Syntax.Kinds (Kind, TypeVarBind, KindEnv, isSession)
+import           Syntax.Kinds (Kind, TypeVarBind, KindEnv)
 import           Syntax.ProgramVariables (ProgVar)
 import           Syntax.TypeVariables (TypeVar)
 import           Syntax.Base
@@ -62,7 +62,7 @@ isSessionType tenv kenv (Rec _ _ t)     = isSessionType tenv kenv t
 isSessionType _    kenv (TypeVar _ x)   = Map.member x kenv
   -- Type operators
 isSessionType _    _    (Dualof _ _)    = True
-isSessionType tenv kenv (TypeName p x)  = isSession $ fst $ tenv Map.! x
+isSessionType tenv kenv (TypeName p x)  = False -- isSession $ fst $ tenv Map.! x
   -- Otherwise: Functional types
 isSessionType _    _    _               = False
 

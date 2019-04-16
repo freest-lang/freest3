@@ -57,19 +57,6 @@ typeCheck = do
   -- Main function
   checkMainFunction
 
-{-
-userDefined :: TypeEnv -> VarEnv -> VarEnv -- TODO: also in Typing.hs
-userDefined tEnv =
---  Map.filterWithKey (\x _ -> not (isBuiltin x) && not (isDatatypeContructor tEnv x))
-  Map.filterWithKey (\x _ -> not (isBuiltin x))
-
-isDatatypeContructor :: TypeEnv -> ProgVar -> Bool -- TODO: also in Typing.hs
-isDatatypeContructor tEnv c =
-  not $ Map.null $ Map.filter (\(_, (TypeScheme _ _ t)) -> isDatatype t) tEnv
-  where isDatatype :: Type -> Bool
-        isDatatype (Datatype _ m) = c `Map.member` m
-        isDatatype _              = False
--}
 -- Check whether all functions signatures have a binding. Exclude the
 -- builtin functions and the datatype constructors.
 checkHasBinding :: ProgVar -> a -> FreestState ()
@@ -100,9 +87,9 @@ checkMainFunction = do
     when (not (isValidMainType s)) $
       K.synthetiseTS Map.empty s >>= \k ->
       addError defaultPos ["The type of", styleRed "main", "must be non-function, non-polymorphic\n",
-                                 "\t found type (scheme)", styleRed $ show s, "of kind", styleRed $ show k]
+                           "\t found type (scheme)", styleRed $ show s, "of kind", styleRed $ show k]
 
 isValidMainType :: TypeScheme -> Bool
 isValidMainType (TypeScheme _ _ (Fun _ _ _ _)) = False
 isValidMainType (TypeScheme _ [] _)            = True
-isValidMainType (_)                            = False
+isValidMainType _                              = False

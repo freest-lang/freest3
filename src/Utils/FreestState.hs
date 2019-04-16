@@ -167,8 +167,8 @@ getTEnv = do
   return $ typeEnv s
 
 addToTEnv :: TypeVar -> Kind -> TypeScheme -> FreestState ()
-addToTEnv b k t =
-  modify (\s -> s{typeEnv = Map.insert b (k, t) (typeEnv s)})
+addToTEnv x k t =
+  modify (\s -> s{typeEnv = Map.insert x (k, t) (typeEnv s)})
 
 getFromTEnv :: TypeVar -> FreestState (Maybe (Kind, TypeScheme))
 getFromTEnv  b = do

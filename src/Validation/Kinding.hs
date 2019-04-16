@@ -16,14 +16,15 @@ Portability :  portable | non-portable (<reason>)
 module Validation.Kinding
 ( synthetise
 , checkAgainst
+, checkAgainstSession
 , synthetiseTS
 , un
+, lin
 , fromTypeVarBinds
 ) where
 
-import           Syntax.Expressions
-import           Syntax.Types
 import           Syntax.Schemes
+import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.Base
 import           Syntax.Show
@@ -36,22 +37,10 @@ import           Debug.Trace
 
 -- Returns the kind of a given type
 synthetise :: KindEnv -> Type -> FreestState Kind
-  -- Session types
-synthetise _ (Skip p) =
-  return $ Kind p Session Un
-synthetise _ (Message p _ _) =
-  return $ Kind p Session Lin
-synthetise kEnv (Choice p _ m) = do
-  tMapM (checkAgainst kEnv (Kind p Session Lin)) m
-  return $ Kind p Session Lin
-synthetise kEnv (Semi p t u) = do
-  m <- checkAgainstSession kEnv t
-  n <- checkAgainstSession kEnv u
-  return $ Kind p Session (max m n)
--- Functional
+-- Functional types
 synthetise _ (Basic p _) =
   return $ Kind p Functional Un
-synthetise kEnv v@(Fun p m t u) = do
+synthetise kEnv (Fun p m t u) = do
   synthetise kEnv t
   synthetise kEnv u
   return $ Kind p Functional m
@@ -63,21 +52,33 @@ synthetise kEnv (Datatype p m) = do
   ks <- tMapM (synthetise kEnv) m
   let Kind _ _ n = foldr1 join ks
   return $ Kind p Functional n
+  -- Session types
+synthetise _ (Skip p) =
+  return $ Kind p Session Un
+synthetise kEnv (Semi p t u) = do
+  m <- checkAgainstSession kEnv t
+  n <- checkAgainstSession kEnv u
+  return $ Kind p Session (max m n)
+synthetise _ (Message p _ _) =
+  return $ Kind p Session Lin
+synthetise kEnv (Choice p _ m) = do
+  tMapM (checkAgainst kEnv (Kind p Session Lin)) m
+  return $ Kind p Session Lin
+-- Session or functional
 synthetise kEnv (Rec _ (TypeVarBind p x k) t) = do
   checkContractive kEnv t
-  -- synthetise (Map.insert x k kEnv) t
-  n <- getNextIndex
-  let y = mkNewVar n x
-  k' <- synthetise (Map.insert y k kEnv) $ subs (TypeVar p y) x t -- On the fly α-conversion
-  return k'
--- Session or functional
+  synthetise (Map.insert x k kEnv) t
+  -- n <- getNextIndex
+  -- let y = mkNewVar n x
+  -- k' <- synthetise (Map.insert y k kEnv) $ subs (TypeVar p y) x t -- On the fly α-conversion
+  -- return k'
 synthetise kEnv (TypeVar p x) =
   case kEnv Map.!? x of
     Just k -> do
       return k
     Nothing -> do
       addError p ["Type variable not in scope:", styleRed $ show x]
-      return (omission p)
+      return $ omission p
 -- Type operators
 synthetise kEnv (TypeName p a) =
   getFromTEnv a >>= \case
@@ -85,9 +86,8 @@ synthetise kEnv (TypeName p a) =
       return k
     Nothing -> do
       addError p ["Type name not in scope:", styleRed $ show a]
-      let k = omission p
-      addToTEnv a k $ omission p
-      return k
+      addToTEnv a (omission p) (omission p)
+      return $ omission p
 synthetise kEnv (Dualof p t) = do
   m <- checkAgainstSession kEnv t
   return $ Kind p Session m
@@ -96,23 +96,24 @@ synthetise kEnv (Dualof p t) = do
 -- the multiplicity of the kind of the type
 checkAgainstSession :: KindEnv -> Type -> FreestState Multiplicity
 checkAgainstSession kEnv t = do
-  (Kind _ k m) <- synthetise kEnv t
-  S.when (k /= Session) $
-    addError (position t) ["Expecting a session type; found", styleRed $ show t]
+  k@(Kind _ p m) <- synthetise kEnv t
+  S.when (p /= Session) $
+    addError (position t) ["Expecting a session type\n",
+                           "\t found type", styleRed $ show t, "of kind", styleRed $ show k]
   return m
 
 -- Check a type against a given kind
 checkAgainst :: KindEnv -> Kind -> Type -> FreestState ()
-checkAgainst kEnv k (Rec _ (TypeVarBind p x _) t) = do
-  checkContractive kEnv t
-  checkAgainst (Map.insert x (Kind p Session Un) kEnv) k t
-  -- checkAgainst (Map.insert (TypeVarBind p y) (Kind p Session Un) kEnv) k $ subs (TypeVar p y) x t -- On the fly α-conversion
+-- checkAgainst kEnv k (Rec _ (TypeVarBind p x _) t) = do
+--   checkContractive kEnv t
+--   checkAgainst (Map.insert x (Kind p Session Un) kEnv) k t
+--   -- checkAgainst (Map.insert (TypeVarBind p y) (Kind p Session Un) kEnv) k $ subs (TypeVar p y) x t -- On the fly α-conversion
 checkAgainst kEnv expected t = do
   actual <- synthetise kEnv t
   S.when (not (actual <: expected)) $
     addError (position t) ["Couldn't match expected kind", styleRed $ show expected, "\n",
-                            "\t with actual kind", styleRed $ show actual, "\n",
-                            "\t for type", styleRed $ show t]
+                           "\t with actual kind", styleRed $ show actual, "\n",
+                           "\t for type", styleRed $ show t]
 
 synthetiseTS :: KindEnv -> TypeScheme -> FreestState Kind
 synthetiseTS kEnv (TypeScheme _ bs t) = synthetise insertBinds t
@@ -124,6 +125,10 @@ fromTypeVarBinds = foldr (\(TypeVarBind _ x k) env -> Map.insert x k env) Map.em
 -- Determine whether a given type is unrestricted
 un :: TypeScheme -> FreestState Bool
 un = mult Un
+
+-- Determine whether a given type is linear
+lin :: TypeScheme -> FreestState Bool
+lin = mult Lin
 
 -- Determine whether a given type is of a given multiplicity
 mult :: Multiplicity -> TypeScheme -> FreestState Bool

@@ -172,8 +172,8 @@ instance Dual Type where
   dual (Message p v b) = Message p (dual v) b
 --  dual (Choice p v m)  = Choice p (dual v) (Map.map dual m)
   dual (Choice p v m)  = Choice p (dual v) (Map.map (Dualof p) m) -- The lazy version, hopefully faster
---  dual (Rec p x t)     = Rec p x (dual t)
-  dual (Rec p x t)     = Rec p x (Dualof p t) -- The lazy version, hopefully faster
+  dual (Rec p x t)     = Rec p x (dual t)
+--  dual (Rec p x t)     = Rec p x (Dualof p t) -- The lazy version, hopefully faster
   -- Type operators
   dual (Dualof _ t)    = t
   -- Functional types, Skip, TypeVar, TypeName
@@ -186,7 +186,7 @@ instance Default Type where
 
 unfold :: Type -> Type
 -- Assumes parameter is a Rec type
-unfold t@(Rec p (TypeVarBind _ b _) u) = subs t b u
+unfold t@(Rec _ (TypeVarBind _ x _) u) = subs t x u
 
 -- [u/x]t, substitute u for x on t
 subs :: Type -> TypeVar -> Type -> Type 
@@ -198,8 +198,9 @@ subs t x (Datatype p m)     = Datatype p (Map.map(subs t x) m)
 subs t x (Semi p t1 t2)     = Semi p (subs t x t1) (subs t x t2)
 subs t x (Choice p v m)     = Choice p v (Map.map(subs t x) m)
 subs t x (Rec p b u)        = Rec p b (subs t x u) -- Assume types were renamed (hence, no on-the-fly renaming needed)
-  -- | y == x                  = u
-  -- | otherwise               = Rec p y (subs t1 x t2)
+-- subs t x (Rec p b@(TypeVarBind _ y _) u)
+--   | y == x                  = u
+--   | otherwise               = Rec p b (subs t x u)
   -- Functional or session
 subs t x u@(TypeVar _ y)
   | y == x                  = t

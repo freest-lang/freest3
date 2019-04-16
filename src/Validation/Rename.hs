@@ -23,11 +23,10 @@ import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
 import           Syntax.Base
 import           Utils.FreestState
-import           Utils.PreludeLoader (userDefined) -- debugging
 import qualified Data.Map.Strict as Map
 import           Control.Monad.State
-import qualified Data.Traversable as Traversable
-import           Debug.Trace
+import           Utils.PreludeLoader (userDefined) -- debugging
+import           Debug.Trace -- debugging
 
 renameState :: FreestState ()
 renameState = do
@@ -103,13 +102,6 @@ instance Rename Type where
     return $ Dualof p t'
     -- Otherwise: Basic, Skip, Message, TypeName
   rename _ t = return t
-
--- Type variables
-
-instance Rename TypeVar where
-  rename _ x =  do
-    n <- getNextIndex
-    return $ mkNewVar n x
 
 -- Type-kind binds
 
@@ -200,11 +192,19 @@ renameField bs (xs, e) = do
 -- Program variables
 
 instance Rename ProgVar where
-  rename _ x =  do
-    n <- getNextIndex
-    return $ mkNewVar n x
+  rename _ = renameVar
+
+-- Type variables
+
+instance Rename TypeVar where
+  rename _ = renameVar
 
 -- Managing variables
+
+renameVar :: Variable v => v -> FreestState v
+renameVar x =  do
+    n <- getNextIndex
+    return $ mkNewVar n x
 
 insertVar :: Variable a => a -> a -> Bindings -> Bindings
 insertVar x y = Map.insert (intern x) (intern y)

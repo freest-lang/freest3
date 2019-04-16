@@ -17,14 +17,11 @@ module Equivalence.Equivalence
 ( Equivalence(..)
 ) where
 
---import           Syntax.Programs
 import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.ProgramVariables
 import           Syntax.TypeVariables
---import           Syntax.Bind
---import           Validation.Kinding
 import           Equivalence.Normalisation
 import qualified Equivalence.Bisimulation as Bisimulation
 import qualified Data.Map.Strict as Map
@@ -35,8 +32,8 @@ class Equivalence t where
 -- Types
 
 instance Equivalence Type where
-   -- equivalent tenv kenv t u = normalise tenv t == normalise tenv u || equiv kenv t u
-  equivalent tenv kenv t u = t == u || equiv kenv t u
+  equivalent tenv kenv t u = True -- normalise tenv t == normalise tenv u || equiv kenv t u
+  -- equivalent tenv kenv t u = t == u || equiv kenv t u
   -- equivalent tenv kenv t u = equiv kenv t u
     where
     equiv :: KindEnv -> Type -> Type -> Bool

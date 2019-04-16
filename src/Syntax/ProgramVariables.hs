@@ -16,7 +16,6 @@ module Syntax.ProgramVariables
 ) where
 
 import Syntax.Base
-import Data.Char (isDigit)
 
 -- Note: isomorphic to TypeVariables: Type <-> Prog
 data ProgVar = ProgVar Pos String
@@ -31,14 +30,6 @@ instance Eq ProgVar where
   
 instance Ord ProgVar where
   (ProgVar _ x) <= (ProgVar _ y) = x <= y
-
--- instance Show ProgVar where
---   show (ProgVar _ x) = x -- showVar x
---     where
---       showVar :: String -> String
---       showVar id
---         | isDigit (head id) = tail $ dropWhile (isDigit) id
---         | otherwise         = id
 
 instance Position ProgVar where
   position (ProgVar p _) = p
