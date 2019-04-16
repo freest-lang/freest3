@@ -28,6 +28,7 @@ import           Syntax.Types
 import           Syntax.ProgramVariables
 import           Syntax.Kinds
 import           Syntax.Base
+import           Syntax.Show
 import qualified Validation.Kinding as K
 import           Validation.Extract
 import           Equivalence.Equivalence

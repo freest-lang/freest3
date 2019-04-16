@@ -13,7 +13,7 @@ import           Syntax.Kinds
 import           Syntax.ProgramVariables
 import           Syntax.TypeVariables
 import           Syntax.Base
-import           Parse.ParserUtils
+import           Parse.ParseUtils
 import           Parse.Lexer
 import           Utils.Errors
 import           Utils.FreestState

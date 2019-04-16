@@ -26,6 +26,7 @@ import           Syntax.Types
 import           Syntax.Schemes
 import           Syntax.Kinds
 import           Syntax.Base
+import           Syntax.Show
 import           Validation.Contractive
 import           Utils.FreestState
 import           Utils.Errors
@@ -62,12 +63,13 @@ synthetise kEnv (Datatype p m) = do
   ks <- tMapM (synthetise kEnv) m
   let Kind _ _ n = foldr1 join ks
   return $ Kind p Functional n
-synthetise kEnv (Rec p (TypeVarBind _ x k) t) = do
+synthetise kEnv (Rec _ (TypeVarBind p x k) t) = do
   checkContractive kEnv t
-  synthetise (Map.insert x k kEnv) t
-  -- y <- freshVar
-  -- k' <- synthetise (Map.insert (TypeVarBind p y) k kEnv) $ subs (TypeVar p y) b t -- On the fly α-conversion
-  -- return k'
+  -- synthetise (Map.insert x k kEnv) t
+  n <- getNextIndex
+  let y = mkNewVar n x
+  k' <- synthetise (Map.insert y k kEnv) $ subs (TypeVar p y) x t -- On the fly α-conversion
+  return k'
 -- Session or functional
 synthetise kEnv (TypeVar p x) =
   case kEnv Map.!? x of

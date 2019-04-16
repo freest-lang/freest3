@@ -60,45 +60,45 @@ type FieldMap  = Map.Map ProgVar ([ProgVar], Expression)
 -- The definitions of the named functions in a program
 type ExpEnv = Map.Map ProgVar Expression
 
-instance Show Expression where
-  show e = showExp e 44
+-- instance Show Expression where
+--   show e = showExp e 44
 
-showExp :: Expression -> Int -> String
-  -- Basic values
-showExp (Unit _) _  = "()"
-showExp (Integer _ i) _ = show i
-showExp (Character _ c) _ = show c
-showExp (Boolean _ b) _  = show b
-  -- Variable
-showExp (ProgVar _ x) _  = show x
-  -- Depth reached
-showExp _ 0 = ".."
-  -- Abstraction intro and elim
-showExp (Lambda _ m b t e) i = "(\\" ++ show b ++ " : " ++ show t ++ showArrow m ++ (showExp e (i-1)) ++ ")"
-showExp (App _ e1 e2) i = "(" ++ showExp e1 (i-1) ++ " " ++ showExp e2 (i-1) ++ ")"
-  -- Pair intro and elim
-showExp (Pair _ e1 e2) i = " (" ++ (showExp e1 (i-1)) ++ ", " ++ (showExp e1 (i-1)) ++ ")"
-showExp (BinLet _ b1 b2 e1 e2) i = "(let " ++ show b1 ++ ", " ++ show b2 ++ " = " ++ showExp e1 (i-1) ++ " in " ++ showExp e2 (i-1) ++ ")"
-  -- Datatype elim
-showExp (Case _ e m) i = "case " ++ showExp e (i-1) ++ " of {" ++ showMap m (i-1) ++ "}"
-  -- Type application
-showExp (TypeApp _ x ts) _ = show x ++ " [" ++ (intercalate " " (map show ts)) ++ "]"
-  -- Boolean elim
-showExp (Conditional _ e e1 e2) i = "if " ++ show e ++ " then " ++ showExp e1 (i-1) ++ " else " ++ showExp e2 (i-1)
-  -- Let
-showExp (UnLet _ b1 e1 e2) i = "(let " ++ show b1 ++ " = " ++ showExp e1 (i-1) ++ " in " ++ showExp e2 (i-1) ++ ")"
-  -- Fork
-showExp (Fork _ e) i = "fork " ++ (showExp e (i-1))
-  -- Session types
-showExp (New _ t) _ = "new " ++ show t
-showExp (Send _ e) _ = "send " ++ show e
-showExp (Receive _ e) _ = "receive " ++ show e
-showExp (Select _ l e) i = "select " ++ show l ++ showExp e (i-1)
-showExp (Match _ e m) i = "match " ++ show e ++ " with {" ++ showMap m i ++ "}"
+-- showExp :: Expression -> Int -> String
+--   -- Basic values
+-- showExp (Unit _) _  = "()"
+-- showExp (Integer _ i) _ = show i
+-- showExp (Character _ c) _ = show c
+-- showExp (Boolean _ b) _  = show b
+--   -- Variable
+-- showExp (ProgVar _ x) _  = show x
+--   -- Depth reached
+-- showExp _ 0 = ".."
+--   -- Abstraction intro and elim
+-- showExp (Lambda _ m b t e) i = "(\\" ++ show b ++ " : " ++ show t ++ showArrow m ++ (showExp e (i-1)) ++ ")"
+-- showExp (App _ e1 e2) i = "(" ++ showExp e1 (i-1) ++ " " ++ showExp e2 (i-1) ++ ")"
+--   -- Pair intro and elim
+-- showExp (Pair _ e1 e2) i = " (" ++ (showExp e1 (i-1)) ++ ", " ++ (showExp e1 (i-1)) ++ ")"
+-- showExp (BinLet _ b1 b2 e1 e2) i = "(let " ++ show b1 ++ ", " ++ show b2 ++ " = " ++ showExp e1 (i-1) ++ " in " ++ showExp e2 (i-1) ++ ")"
+--   -- Datatype elim
+-- showExp (Case _ e m) i = "case " ++ showExp e (i-1) ++ " of {" ++ showMap m (i-1) ++ "}"
+--   -- Type application
+-- showExp (TypeApp _ x ts) _ = show x ++ " [" ++ (intercalate " " (map show ts)) ++ "]"
+--   -- Boolean elim
+-- showExp (Conditional _ e e1 e2) i = "if " ++ show e ++ " then " ++ showExp e1 (i-1) ++ " else " ++ showExp e2 (i-1)
+--   -- Let
+-- showExp (UnLet _ b1 e1 e2) i = "(let " ++ show b1 ++ " = " ++ showExp e1 (i-1) ++ " in " ++ showExp e2 (i-1) ++ ")"
+--   -- Fork
+-- showExp (Fork _ e) i = "fork " ++ (showExp e (i-1))
+--   -- Session types
+-- showExp (New _ t) _ = "new " ++ show t
+-- showExp (Send _ e) _ = "send " ++ show e
+-- showExp (Receive _ e) _ = "receive " ++ show e
+-- showExp (Select _ l e) i = "select " ++ show l ++ showExp e (i-1)
+-- showExp (Match _ e m) i = "match " ++ show e ++ " with {" ++ showMap m i ++ "}"
 
-showMap :: FieldMap -> Int -> String
-showMap m i = concat $ intersperse "; " (map showAssoc (Map.toList m))
-  where showAssoc (b, (a,v)) = show b ++ " " ++ intercalate " " (map show a) ++ " -> " ++  (showExp v (i-1))
+-- showMap :: FieldMap -> Int -> String
+-- showMap m i = concat $ intersperse "; " (map showAssoc (Map.toList m))
+--   where showAssoc (b, (a,v)) = show b ++ " " ++ intercalate " " (map show a) ++ " -> " ++  (showExp v (i-1))
 
 instance Position Expression where
   position (Unit p)              = p

@@ -13,7 +13,7 @@ Portability :  portable | non-portable (<reason>)
 
 {-# LANGUAGE LambdaCase, NoMonadFailDesugaring #-}
 
-module Parse.ParserUtils
+module Parse.ParseUtils
 ( checkDupFunSig
 , checkDupFunDecl
 , checkDupTypeDecl
@@ -35,6 +35,7 @@ import           Syntax.Kinds
 import           Syntax.ProgramVariables
 import           Syntax.TypeVariables
 import           Syntax.Base
+import           Syntax.Show
 import           Utils.FreestState
 import           Utils.Errors
 import           Parse.Lexer (showPos)

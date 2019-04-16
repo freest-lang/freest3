@@ -31,6 +31,7 @@ import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.ProgramVariables
 import           Equivalence.Normalisation
+import           Syntax.Show
 import           Parse.Lexer (Pos, position, defaultPos)
 import           Utils.Errors
 import           Utils.FreestState

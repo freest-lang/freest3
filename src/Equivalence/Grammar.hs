@@ -43,6 +43,7 @@ module Equivalence.Grammar
 import           Syntax.Types
 import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
+import           Syntax.Show
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import           Data.List (union, delete)

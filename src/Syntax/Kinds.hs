@@ -31,13 +31,13 @@ import           Syntax.TypeVariables
 import           Syntax.Base
 import qualified Data.Map.Strict as Map
 
--- prekinds
+-- Prekinds
 
 data PreKind = Session | Functional deriving Eq
 
-instance Show PreKind where
-  show Session    = "S"
-  show Functional = "T"
+-- instance Show PreKind where
+--   show Session    = "S"
+--   show Functional = "T"
 
 instance Ord PreKind where
    Session <= Functional = True
@@ -89,8 +89,8 @@ isLin _              = False
 isUn :: Kind -> Bool
 isUn = not . isLin
 
-instance Show Kind where
-  show (Kind _ p m) = show p ++ show m
+-- instance Show Kind where
+--   show (Kind _ p m) = show p ++ show m
 
 instance Position Kind where
   position (Kind p _ _) = p
@@ -106,12 +106,5 @@ data TypeVarBind = TypeVarBind Pos TypeVar Kind
 instance Position TypeVarBind where
   position (TypeVarBind p _ _) = p
 
-instance Show TypeVarBind where
-  show (TypeVarBind _ a k) = show a ++ ":" ++ show k
-{-
-instance Eq TypeVarBind where
-  (TypeVarBind _ x _) == (TypeVarBind _ y _) = x == y
-
-instance Ord TypeVarBind where
-  (TypeVarBind _ x) <= (TypeVarBind _ y) = x <= y
--}
+-- instance Show TypeVarBind where
+--   show (TypeVarBind _ a k) = show a ++ ":" ++ show k

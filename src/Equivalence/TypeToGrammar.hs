@@ -113,12 +113,13 @@ toGrammar (Choice _ p m) = do
   y <- freshVar
   mapM_ (assocToGrammar y p) (Map.assocs m) -- TODO: avoid Map.assocs; run map through the monad
   return [y]
-toGrammar u@(Rec p x t)
+toGrammar u@(Rec p (TypeVarBind _ x _) t)
   | isChecked u Set.empty = return []
   | otherwise = do
     y <- freshVar
     insertVisited y
-    zs <- toGrammar t -- $ subs (TypeVar p y) x t -- On the fly α-conversion
+    -- zs <- toGrammar t
+    zs <- toGrammar $ subs (TypeVar p y) x t -- On the fly α-conversion
     m <- getTransitions $ head zs
     addProductions y (Map.map (++ tail zs) m)
     return [y]

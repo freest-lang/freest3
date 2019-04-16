@@ -14,10 +14,8 @@ Portability :  portable | non-portable (<reason>)
 module Syntax.Base
 ( Default(..)
 , Multiplicity(..)
-, MkVar(..)
-, MkNewVar(..)
-, Intern(..)
-, showArrow
+, Variable(..)
+--, showArrow
 , Pos           -- Relayed from Lexer
 , Position(..)  -- Relayed from Lexer
 , defaultPos    -- Relayed from Lexer
@@ -34,30 +32,25 @@ class Default t where
 
 data Multiplicity = Un | Lin deriving Eq
 
-instance Show Multiplicity where
-  show Un  = "U"
-  show Lin = "L"
+-- instance Show Multiplicity where
+--   show Un  = "U"
+--   show Lin = "L"
 
-showArrow :: Multiplicity -> String
-showArrow Lin = " -o "
-showArrow Un  = " -> "
+-- showArrow :: Multiplicity -> String
+-- showArrow Lin = " -o "
+-- showArrow Un  = " -> "
 
 instance Ord Multiplicity where
   Un <= Lin = True
   _  <= _  = False
 
--- The string, internal representation of a variable
+-- Variables, type and program
 
-class Intern t where
+class Position t => Variable t where
+  -- The string, internal representation of a variable
   intern :: t -> String
-
--- Making a variable from a string, type or program
-
-class MkVar t where
+  -- Making a variable from a string, type or program
   mkVar :: Pos -> String -> t
-
--- Making a new variable from a given variable. The variable is unique
--- up to the point where the integer is
-
-class MkNewVar t where
+  -- Making a new variable from a given variable. The variable is
+  -- unique up to the point where the integer is
   mkNewVar :: Int -> t -> t

@@ -35,8 +35,8 @@ class Equivalence t where
 -- Types
 
 instance Equivalence Type where
-   equivalent tenv kenv t u = normalise tenv t == normalise tenv u || equiv kenv t u
-  -- equivalent tenv kenv t u = t == u || equiv kenv t u
+   -- equivalent tenv kenv t u = normalise tenv t == normalise tenv u || equiv kenv t u
+  equivalent tenv kenv t u = t == u || equiv kenv t u
   -- equivalent tenv kenv t u = equiv kenv t u
     where
     equiv :: KindEnv -> Type -> Type -> Bool

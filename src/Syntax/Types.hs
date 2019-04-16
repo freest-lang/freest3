@@ -43,9 +43,9 @@ data Polarity =
   | Out
   deriving (Eq, Ord)
 
-instance Show Polarity where
-  show In  = "?"
-  show Out = "!"
+-- instance Show Polarity where
+--   show In  = "?"
+--   show Out = "!"
 
 instance Dual Polarity where
   dual In  = Out
@@ -60,11 +60,11 @@ data BasicType =
   | UnitType
   deriving (Eq, Ord)
 
-instance Show BasicType where
-  show IntType  = "Int"
-  show CharType = "Char"
-  show BoolType = "Bool"
-  show UnitType = "()"
+-- instance Show BasicType where
+--   show IntType  = "Int"
+--   show CharType = "Char"
+--   show BoolType = "Bool"
+--   show UnitType = "()"
 
 -- TYPES
 
@@ -122,31 +122,31 @@ equalMaps s m1 m2 =
     Map.foldlWithKey(\b l t ->
       b && l `Map.member` m2 && equalTypes s t (m2 Map.! l)) True m1
 
-instance Show Type where
-  -- Functional types
-  show (Basic _ b)      = show b
-  show (Fun _ m t u)    = "(" ++ show t ++ showArrow m ++ show u ++ ")"
-  show (PairType _ t u) = "(" ++ show t ++ ", " ++ show u ++ ")"
-  show (Datatype _ m)   = "["++ showMap m ++"]"
-  -- Session types
-  show (Skip _)         = "Skip"
-  show (Semi _ t u)     = "(" ++ show t ++ ";" ++ show u ++ ")"
-  show (Message _ p b)  = show p ++ show b
-  show (Choice _ v m)   = showChoice v ++ "{" ++ showMap m ++ "}"
-  show (Rec _ x t)      = "(rec " ++ show x ++ ". " ++ show t ++ ")"
-  -- Functional or session
-  show (TypeVar _ x)    = show x
-  -- Type operators
-  show (Dualof _ s)     = "(dualof " ++ show s ++ ")"
-  show (TypeName _ x)   = show x
+-- instance Show Type where
+--   -- Functional types
+--   show (Basic _ b)      = show b
+--   show (Fun _ m t u)    = "(" ++ show t ++ showArrow m ++ show u ++ ")"
+--   show (PairType _ t u) = "(" ++ show t ++ ", " ++ show u ++ ")"
+--   show (Datatype _ m)   = "["++ showMap m ++"]"
+--   -- Session types
+--   show (Skip _)         = "Skip"
+--   show (Semi _ t u)     = "(" ++ show t ++ ";" ++ show u ++ ")"
+--   show (Message _ p b)  = show p ++ show b
+--   show (Choice _ v m)   = showChoice v ++ "{" ++ showMap m ++ "}"
+--   show (Rec _ x t)      = "(rec " ++ show x ++ ". " ++ show t ++ ")"
+--   -- Functional or session
+--   show (TypeVar _ x)    = show x
+--   -- Type operators
+--   show (Dualof _ s)     = "(dualof " ++ show s ++ ")"
+--   show (TypeName _ x)   = show x
   
-showChoice :: Polarity -> String
-showChoice In  = "&"
-showChoice Out = "+"
+-- showChoice :: Polarity -> String
+-- showChoice In  = "&"
+-- showChoice Out = "+"
 
-showMap :: TypeMap -> String
-showMap m = concat $ intersperse ", " (map showAssoc (Map.assocs m))
-  where showAssoc (b, v) = show b ++ ": " ++ show v
+-- showMap :: TypeMap -> String
+-- showMap m = concat $ intersperse ", " (map showAssoc (Map.assocs m))
+--   where showAssoc (b, v) = show b ++ ": " ++ show v
 
 instance Position Type where
   -- Functional types

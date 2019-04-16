@@ -22,6 +22,7 @@ import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.ProgramVariables
 import           Syntax.Base
+import           Syntax.Show
 import           Equivalence.Normalisation
 import           Validation.Extract
 import qualified Validation.Kinding as K

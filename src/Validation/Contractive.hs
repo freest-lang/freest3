@@ -19,6 +19,7 @@ where
 import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.Base
+import           Syntax.Show
 import           Utils.Errors
 import           Utils.FreestState
 import           Control.Monad (when)
