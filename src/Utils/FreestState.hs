@@ -36,17 +36,6 @@ FreestState
 , getEEnv
 , addToEEnv
 , setEEnv
-{-
--- Program variables (parsing only)
-, newPVar
-, getPVar
-, rmPVar
--- Type variables (parsing only)
-, newTVar
-, getTVar
-, beginScope
-, endScope
--}
 -- Errors
 , Errors (..)
 , addError
@@ -75,9 +64,6 @@ data FreestS = FreestS {
 , typeEnv  :: TypeEnv
 , errors   :: Errors
 , nextIndex  :: Int
--- , pVarsInScope :: Map.Map String [PVar]
--- , tTable :: Map.Map String [TypeVar]
--- , tStack   :: [String]
 }
 
 type FreestState = State FreestS
@@ -92,9 +78,6 @@ initialState f = FreestS {
 , typeEnv  = Map.empty
 , errors   = []
 , nextIndex  = 0
--- , pVarsInScope = Map.empty
--- , tTable = Map.empty
--- , tStack   = []
 }
 
 -- | NEXT VAR
@@ -188,8 +171,16 @@ addErrorList :: [String] -> FreestState ()
 addErrorList es =
   modify (\s -> s {errors = (errors s) ++ es})
 
--- | FRESH VARS
-{-
+-- | Traversing Map.map over FreestStates
+
+tMapM :: Monad m => (a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)
+tMapM f m = Traversable.sequence (Map.map f m)
+
+tMapWithKeyM :: Monad m => (k -> a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)
+tMapWithKeyM f m = Traversable.sequence (Map.mapWithKey f m)
+
+{- An attempt to rename at parsing time
+
 newPVar :: String -> FreestState PVar
 newPVar id = do
   s <- get
@@ -262,11 +253,3 @@ rmTVar (ProgVar _ pvar) = do
   where tailMaybe []     = Nothing
         tailMaybe (_:xs) = Just xs
 -}
--- | Traversing Map.map over FreestStates
-
-tMapM :: Monad m => (a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)
-tMapM f m = Traversable.sequence (Map.map f m)
-
-tMapWithKeyM :: Monad m => (k -> a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)
-tMapWithKeyM f m = Traversable.sequence (Map.mapWithKey f m)
-

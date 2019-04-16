@@ -35,9 +35,9 @@ renameState = do
   vEnv' <- tMapM (rename Map.empty) vEnv
   setVEnv vEnv'
   -- TypeVenv
-  -- tEnv <- getTEnv
-  -- tEnv' <- tMapM (\(k, s) -> rename Map.empty s >>= \s' -> return (k, s')) tEnv
-  -- setTEnv tEnv'
+  tEnv <- getTEnv
+  tEnv' <- tMapM (\(k, s) -> rename Map.empty s >>= \s' -> return (k, s')) tEnv
+  setTEnv tEnv'
   -- ExpEnv
   eEnv <- getEEnv
   eEnv' <- tMapM (rename Map.empty) eEnv

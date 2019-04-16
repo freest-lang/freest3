@@ -27,7 +27,6 @@ map from labels to lists of type variables.
 
 module Equivalence.Grammar
 ( Label(..)
--- , TVar -- aka non-terminal
 , Transitions
 , Productions
 , Grammar(..)

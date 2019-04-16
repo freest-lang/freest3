@@ -36,6 +36,7 @@ import           Parse.Lexer (Pos, position, defaultPos)
 import           Utils.Errors
 import           Utils.FreestState
 import qualified Data.Map.Strict as Map
+import           Debug.Trace
 
 -- | The Extract Functions
 
@@ -43,6 +44,10 @@ norm :: Type -> FreestState Type
 norm t = do
   tEnv <- getTEnv
   return $ normalise tEnv t
+  -- trace ("BinLet before: " ++ show t ++ "\n" ++ show tEnv) (return ())
+  -- let u = normalise tEnv t
+  -- trace ("BinLet after:  " ++ show u) (return ())
+  -- return u
 
 -- Extracts a function from a type; gives an error if there isn't a function
 extractFun :: Expression -> Type -> FreestState (Type, Type)

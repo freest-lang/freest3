@@ -15,7 +15,7 @@ import Data.List (intercalate)
 compile :: String -> IO (Bool, String)
 compile sourceFile = do
   s1 <- parseProgram sourceFile prelude
-  let s2 = s1 -- execState renameState s1
+  let s2 = execState renameState s1
   let s3 = execState typeCheck s2
   genCode (errors s3) (varEnv s3) (expEnv s3) (typeEnv s3) sourceFile  
     

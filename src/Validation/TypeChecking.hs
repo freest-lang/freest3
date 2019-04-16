@@ -64,7 +64,7 @@ checkHasBinding f _ = do
   eEnv <- getEEnv
   vEnv <- getVEnv
   tEnv <- getTEnv
-  when (f `Map.member` (T.funSigsOnly tEnv vEnv) && f `Map.notMember` eEnv) $
+  when (f `Map.member` (userDefined vEnv) && f `Map.notMember` eEnv) $
     addError (position f) ["The type signature for", styleRed $ show f,
                            "lacks an accompanying binding"]
 

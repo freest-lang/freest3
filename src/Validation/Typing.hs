@@ -19,7 +19,6 @@ module Validation.Typing
 , checkAgainst
 , checkAgainstTS
 , fillFunType
-, funSigsOnly
 ) where
 
 import           Syntax.Expressions
@@ -34,6 +33,7 @@ import           Validation.Extract
 import           Equivalence.Equivalence
 import           Utils.Errors
 import           Utils.FreestState
+import           Utils.PreludeLoader (userDefined)
 import           Control.Monad.State (when)
 import qualified Data.Map.Strict as Map
 import           Utils.PreludeLoader (isBuiltin) -- debug
@@ -77,16 +77,15 @@ synthetise kEnv (App _ e1 e2) = do
   checkAgainst kEnv e2 u1
   return u2
 -- Type application
-synthetise kEnv (TypeApp p x ts) = return $ omission p
--- do
---   (TypeScheme _ bs t) <- synthetiseVar kEnv x
---   when (length ts /= length bs) 
---     (addError p ["Wrong number of arguments to type application\n",
---                 "\t parameters:", styleRed $ show bs, "\n",
---                 "\t arguments: ", styleRed $ show ts])  
---   let typeKinds = zip ts bs :: [(Type, TypeVarBind)]
---   mapM (\(t, TypeVarBind _ _ k) -> K.checkAgainst kEnv k t) typeKinds
---   return $ foldr (\(u, TypeVarBind _ x _) acc -> subs u x acc) t typeKinds
+synthetise kEnv (TypeApp p x ts) = do
+  (TypeScheme _ bs t) <- synthetiseVar kEnv x
+  when (length ts /= length bs) 
+    (addError p ["Wrong number of arguments to type application\n",
+                "\t parameters:", styleRed $ show bs, "\n",
+                "\t arguments: ", styleRed $ show ts])  
+  let typeKinds = zip ts bs :: [(Type, TypeVarBind)]
+  mapM (\(t, TypeVarBind _ _ k) -> K.checkAgainst kEnv k t) typeKinds
+  return $ foldr (\(u, TypeVarBind _ x _) acc -> subs u x acc) t typeKinds
 -- Boolean elimination
 synthetise kEnv (Conditional p e1 e2 e3) = do
   checkAgainst kEnv e1 (Basic p BoolType)
@@ -106,16 +105,13 @@ synthetise kEnv (Pair p e1 e2) = do
 -- Pair elimination
 synthetise kEnv (BinLet _ x y e1 e2) = do
   t1 <- synthetise kEnv e1
-  trace ("BinLet type :" ++ show t1) (return ())
   (u1, u2) <- extractPair t1
   addToVEnv x (toTypeScheme u1)
   addToVEnv y (toTypeScheme u2)
   vEnv <- getVEnv
-  trace ("BinLet vEnv :" ++ show vEnv) (return ())
   t2 <- synthetise kEnv e2
   quotient kEnv x
   quotient kEnv y
-  trace ("BinLet ret type :" ++ show t2) (return ())
   return t2
 -- Fork
 synthetise kEnv (Fork p e) = do
@@ -128,7 +124,7 @@ synthetise kEnv (Fork p e) = do
   return $ Basic p UnitType
 -- Session types
 synthetise kEnv (New p t) = do
---  K.checkAgainstSession kEnv t
+  K.checkAgainstSession kEnv t
   return $ PairType p t (Dualof p t)
 synthetise kEnv (Send p e) = do
   t <- synthetise kEnv e
@@ -142,9 +138,11 @@ synthetise kEnv (Select p c e) = do
   t <- synthetise kEnv e
   m <- extractOutChoiceMap e t
   extractCons p m c
-synthetise kEnv (Match p e fm) = return $ omission p -- synthetiseFieldMap p kEnv e fm extractInChoiceMap paramsToVEnvMM
+synthetise kEnv (Match p e fm) =
+  synthetiseFieldMap p kEnv e fm extractInChoiceMap paramsToVEnvMM
 -- Datatype elimination
-synthetise kEnv (Case p e fm) = return $ omission p -- synthetiseFieldMap p kEnv e fm extractDatatypeMap paramsToVEnvCM
+synthetise kEnv (Case p e fm) =
+  synthetiseFieldMap p kEnv e fm extractDatatypeMap paramsToVEnvCM
 
 -- | Returns the type scheme for a variable; removes it from vEnv if lin
 synthetiseVar :: KindEnv -> ProgVar -> FreestState TypeScheme
@@ -169,7 +167,7 @@ synthetiseFieldMap p kEnv e fm extract params = do
   tm <- extract e t
   vEnv <- getVEnv
   (t:ts, v:vs) <- Map.foldrWithKey (synthetiseField vEnv kEnv params tm) (return ([],[])) fm
-  mapM_ (checkEquivTypes p kEnv t) ts
+  mapM_ (checkEquivTypes e kEnv t) ts
   mapM_ (checkEquivEnvs p kEnv v) vs
   setVEnv v
   return t
@@ -218,12 +216,12 @@ numArgs _              = 0
 
 -- Check whether a constructor exists in a type map
 synthetiseCons :: ProgVar -> TypeMap -> FreestState Type
-synthetiseCons b tm =
-  case tm Map.!? b of
+synthetiseCons x tm =
+  case tm Map.!? x of
     Just t  -> return t
     Nothing -> do
-      addError (position b) ["Data constructor or field name in choice type", styleRed $ show b, "not in scope"]
-      return $ Skip (position b)
+      addError (position x) ["Data constructor or field name in choice type", styleRed $ show x, "not in scope"]
+      return $ Skip (position x)
 
 -- | The quotient operation
 -- Removes a variable from the Environment and gives an error if it is linear
@@ -245,7 +243,6 @@ quotient kEnv x = do
 
 -- | Check an expression against a given type
 checkAgainst :: KindEnv -> Expression -> Type -> FreestState ()
-{-
 -- Boolean elimination
 checkAgainst kEnv (Conditional p e1 e2 e3) t = do
   checkAgainst kEnv e1 (Basic p BoolType)
@@ -270,11 +267,10 @@ checkAgainst kEnv (BinLet _ x y e1 e2) t2 = do
 -- TODO Datatype elimination
 -- checkAgainst kEnv (Case p e fm) = checkAgainstFieldMap p kEnv e fm extractDatatypeMap
 -- TODO Lambda elimination
--}
 -- Default
 checkAgainst kEnv e t = do
   u <- synthetise kEnv e
-  checkEquivTypes (position e) kEnv t u
+  checkEquivTypes e kEnv t u
 
 -- | Check an expression against a given type scheme
 checkAgainstTS :: Expression -> TypeScheme -> FreestState ()
@@ -282,15 +278,15 @@ checkAgainstTS e (TypeScheme _ bs t) = checkAgainst (K.fromTypeVarBinds bs) e t
   
 -- EQUALITY AND EQUIVALENCE CHECKING
 
-checkEquivTypes :: Pos -> KindEnv -> Type -> Type -> FreestState ()
-checkEquivTypes p kEnv expected actual = return ()
--- do
---   tEnv <- getTEnv
---   vEnv <- getVEnv
---   -- trace ("checkEquivTypes :" ++ show (funSigsOnly tEnv vEnv)) (return ())
---   when (not $ equivalent tEnv kEnv expected actual) $
---     addError p ["Couldn't match expected type", styleRed (show expected), "\n",
---              "\t with actual type", styleRed (show actual)]
+checkEquivTypes :: Expression -> KindEnv -> Type -> Type -> FreestState ()
+checkEquivTypes exp kEnv expected actual = do
+  tEnv <- getTEnv
+  vEnv <- getVEnv
+  -- trace ("checkEquivTypes :" ++ show (funSigsOnly tEnv vEnv)) (return ())
+  when (not $ equivalent tEnv kEnv expected actual) $
+    addError (position exp) ["Couldn't match expected type", styleRed (show expected), "\n",
+             "\t with actual type", styleRed (show actual), "\n",
+             "\t for expression",  styleRed (show exp)]
 
 checkEqualEnvs :: Pos -> VarEnv -> VarEnv -> FreestState ()
 checkEqualEnvs p vEnv1 vEnv2 =
@@ -300,30 +296,13 @@ checkEqualEnvs p vEnv1 vEnv2 =
   where diff = Map.difference vEnv2 vEnv1
 
 checkEquivEnvs :: Pos -> KindEnv -> VarEnv -> VarEnv -> FreestState ()
-checkEquivEnvs p kEnv vEnv1 vEnv2 = return ()
--- do
---   tEnv <- getTEnv
---   let vEnv1' = funSigsOnly tEnv vEnv1
---       vEnv2' = funSigsOnly tEnv vEnv2
---   when (not (equivalent tEnv kEnv vEnv1' vEnv2')) $
---     addError p ["Expecting Environment", styleRed (show vEnv1'), "\n",
---              "\t to be equivalent to  ", styleRed (show vEnv2')]
-
-
-funSigsOnly :: TypeEnv -> VarEnv -> VarEnv
-funSigsOnly tEnv =
-  Map.filterWithKey (\x _ -> not (isBuiltin x) && not (isDatatypeContructor tEnv x))
-
--- To determine whether a given constructor (a program variable) is a
--- datatype constructor we have to look in the type Environment for a
--- type name associated to a datatype that defines the constructor
--- (rather indirect)
-isDatatypeContructor :: TypeEnv -> ProgVar -> Bool
-isDatatypeContructor tEnv c =
-  not $ Map.null $ Map.filter (\(_, (TypeScheme _ _ t)) -> isDatatype t) tEnv
-  where isDatatype :: Type -> Bool
-        isDatatype (Datatype _ m) = c `Map.member` m
-        isDatatype _              = False
+checkEquivEnvs p kEnv vEnv1 vEnv2 = do
+  tEnv <- getTEnv
+  let vEnv1' = userDefined vEnv1
+      vEnv2' = userDefined vEnv2
+  when (not (equivalent tEnv kEnv vEnv1' vEnv2')) $
+    addError p ["Expecting Environment", styleRed (show vEnv1'), "\n",
+             "\t to be equivalent to  ", styleRed (show vEnv2')]
 
 fillFunType :: KindEnv -> ProgVar -> Expression -> TypeScheme -> FreestState Type
 fillFunType kEnv b e (TypeScheme _ _ t) = fill e t
@@ -341,3 +320,19 @@ fillFunType kEnv b e (TypeScheme _ _ t) = fill e t
        "\t but its type", styleRed $ show t, "has none"]
     return t
   fill e _ = synthetise kEnv e
+{-
+funSigsOnly :: TypeEnv -> VarEnv -> VarEnv
+funSigsOnly tEnv =
+  Map.filterWithKey (\x _ -> not (isBuiltin x) && not (isDatatypeContructor tEnv x))
+
+-- To determine whether a given constructor (a program variable) is a
+-- datatype constructor we have to look in the type Environment for a
+-- type name associated to a datatype that defines the constructor
+-- (rather indirect)
+isDatatypeContructor :: TypeEnv -> ProgVar -> Bool
+isDatatypeContructor tEnv c =
+  not $ Map.null $ Map.filter (\(_, (TypeScheme _ _ t)) -> isDatatype t) tEnv
+  where isDatatype :: Type -> Bool
+        isDatatype (Datatype _ m) = c `Map.member` m
+        isDatatype _              = False
+-}

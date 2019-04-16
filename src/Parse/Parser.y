@@ -157,14 +157,6 @@ DataCons :: { [(ProgVar, [Type])] }
 DataCon :: { (ProgVar, [Type]) }
   : Constructor TypeSeq {% checkDupFunSig $1 >> return ($1, $2) }
 
--- SCOPE
-
--- BeginScope :: { () }
---   : {% beginScope }
-
--- EndScope :: { () }
---   : {% endScope }
-
 -----------------
 -- EXPRESSIONS --
 -----------------
@@ -319,7 +311,7 @@ TypeVar :: { TypeVar }
 TypeName :: { TypeVar }
   : UPPER_ID { mkVar (position $1) (getText $1) }
 
-TypeVarBind :: { TypeVarBind } -- Rename these type vars
+TypeVarBind :: { TypeVarBind }
   : TypeVar ':' Kind { TypeVarBind (position $1) $1 $3 }
   | TypeVar          { TypeVarBind (position $1) $1 (kindTU (position $1)) }
 

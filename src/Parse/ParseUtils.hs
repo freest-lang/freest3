@@ -25,7 +25,6 @@ module Parse.ParseUtils
 , unOp
 , buildFunBody
 , typeListToType
--- , mkTypeVarBind
 ) where
 
 import           Syntax.Expressions
@@ -141,11 +140,3 @@ buildFunBody f bs e =
     buildExp []     _               = e
     buildExp (b:bs) (Fun _ m t1 t2) = Lambda (position b) m b t1 (buildExp bs t2)
     buildExp (b:bs) t               = Lambda (position b) Un b (omission (position b)) (buildExp bs t)
-
--- Building TypeVarBind
-{-
-mkTypeVarBind :: Pos -> String -> Kind -> FreestState TypeVarBind
-mkTypeVarBind p id k = do
-  x <- newTypeVar p id
-  return $ TypeVarBind p x k
--}

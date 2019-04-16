@@ -1,5 +1,5 @@
 {- |
-Module      :  Types
+Module      :  Equivalence.Normalisation
 Description :  <optional short text displayed on contents page>
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
@@ -29,6 +29,43 @@ class Normalise t where
 instance Normalise TypeScheme where
   normalise tenv (TypeScheme p bs t) = TypeScheme p bs (normalise tenv t)
 
+-- normalise t = u implies
+--   t is equivalent to u and
+--   u is not a rec type and
+--   if u is u1;u2, then u1 is no checked
+instance Normalise Type where
+    -- Session types
+  normalise tenv (Semi _ t u)
+    | isChecked t = normalise tenv u
+    | otherwise   = append (normalise tenv t) u
+    -- Functional or session
+  normalise tenv t@(Rec _ _ _) = normalise tenv (unfold t)
+    -- Type operators
+  normalise tenv (Dualof _ t) = normalise tenv (dual t)
+--  normalise tenv t@(TypeName _ a) = t
+  normalise tenv (TypeName _ a) = normalise tenv t
+    where (_, TypeScheme _ [] t) = tenv Map.! a
+    -- Otherwise: Basic, Fun, PairType, Datatype, Skip, Message, Choice, TypeVar
+  normalise tenv t = t
+
+append :: Type -> Type -> Type
+append (Skip _)       t = t
+append t       (Skip _) = t
+append (Semi p t u)   v = Semi p t (append u v)
+append (Choice q v m) t = Choice q v (Map.map (`append` t) m)
+append t              u = Semi (position t) t u
+
+isChecked :: Type ->  Bool
+isChecked = isCheck Set.empty
+  where
+  isCheck _ (Skip _)                       = True
+  isCheck v (Semi _ s t)                   = isCheck v s && isCheck v t
+  isCheck v (Rec _ (TypeVarBind _ x _) t)  = isCheck (Set.insert x v) t
+  isCheck v (TypeVar _ x)                  = Set.member x v -- Only bound variables are checked
+  isCheck _ _                              = False
+
+{- An attempt of a "full" normalisation, useful for determining type equality without running the bisimulation game
+
 instance Normalise Type where
     -- Functional types
   normalise tenv (Fun p q t u)    = Fun p q (normalise tenv t) (normalise tenv u)
@@ -38,16 +75,16 @@ instance Normalise Type where
   normalise tenv (Semi _ (Choice p q m) t) =
     Choice p q (Map.map (\u -> append (normalise tenv u) t') m)
     where t' = normalise tenv t
-  normalise tenv (Semi p t u) -- = append (normalise tenv t) (normalise tenv u)
+  normalise tenv (Semi _ t u) -- = append (normalise tenv t) (normalise tenv u)
     | isChecked t = normalise tenv u
-    | otherwise = append (normalise tenv t) u
+    | otherwise   = append (normalise tenv t) u
   normalise tenv (Choice p q m) = Choice p q (Map.map (normalise tenv) m)
+    -- Functional or session
   normalise tenv t@(Rec _ _ _) = normalise tenv (unfold t)
   -- normalise tenv u@(Rec _ (TypeVarBind _ x _) t)
   --   | x `Set.member` (free t) = normalise tenv $ unfold u
   --   | otherwise               = t'
   --   where t' = normalise tenv t
-    -- Functional or session
     -- Type operators
   normalise tenv (Dualof _ t) = normalise tenv (dual t)
   normalise tenv t@(TypeName _ a) = t
@@ -55,13 +92,6 @@ instance Normalise Type where
   --   where (_, TypeScheme _ [] t) = tenv Map.! a
     -- Otherwise: Basic, Skip, Message, TypeVar
   normalise tenv t = t
-
-append :: Type -> Type -> Type
-append (Skip _)       t = t
-append t       (Skip _) = t
-append (Semi p t u)   v = Semi p t (append u v)
-append (Choice q v m) t = Choice q v (Map.map (`append` t) m)
-append t              u = Semi (position t) t u
 
 -- The set of free type variables in a type
 free :: Type -> Set.Set TypeVar
@@ -81,13 +111,4 @@ free (TypeVar _ x)    = Set.singleton x
   -- Type operators
 free (Dualof _ t)     = free t
 free (TypeName _ _)   = Set.empty
-
-isChecked :: Type ->  Bool
-isChecked = isCheck Set.empty
-  where
-  isCheck _ (Skip _)                       = True
-  isCheck v (Semi _ s t)                   = isCheck v s && isCheck v t
-  isCheck v (Rec _ (TypeVarBind _ x _) t)  = isCheck (Set.insert x v) t
-  isCheck v (TypeVar _ x)                  = Set.member x v -- Only bound variables are checked
-  isCheck _ _                              = False
-
+-}

@@ -104,10 +104,10 @@ checkAgainstSession kEnv t = do
 
 -- Check a type against a given kind
 checkAgainst :: KindEnv -> Kind -> Type -> FreestState ()
--- checkAgainst kEnv k (Rec _ (TypeVarBind p x _) t) = do
---   checkContractive kEnv t
---   checkAgainst (Map.insert x (Kind p Session Un) kEnv) k t
---   -- checkAgainst (Map.insert (TypeVarBind p y) (Kind p Session Un) kEnv) k $ subs (TypeVar p y) x t -- On the fly α-conversion
+checkAgainst kEnv k (Rec _ (TypeVarBind p x _) t) = do
+  checkContractive kEnv t
+  checkAgainst (Map.insert x (Kind p Session Un) kEnv) k t
+  -- checkAgainst (Map.insert (TypeVarBind p y) (Kind p Session Un) kEnv) k $ subs (TypeVar p y) x t -- On the fly α-conversion
 checkAgainst kEnv expected t = do
   actual <- synthetise kEnv t
   S.when (not (actual <: expected)) $
