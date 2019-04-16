@@ -39,11 +39,6 @@ type VarEnv = Map.Map ProgVar TypeScheme
 toTypeScheme :: Type -> TypeScheme
 toTypeScheme t = TypeScheme (position t) [] t
 
--- instance Show TypeScheme where
---   show (TypeScheme _ [] t) = show t
---   show (TypeScheme _ bs t) = "forall " ++ bindings ++ " => " ++ show t
---     where bindings = concat $ intersperse ", " (map show bs)
-
 instance Position TypeScheme where
   position (TypeScheme p _ _) = p
 

@@ -15,7 +15,6 @@ module Syntax.Base
 ( Default(..)
 , Multiplicity(..)
 , Variable(..)
---, showArrow
 , Pos           -- Relayed from Lexer
 , Position(..)  -- Relayed from Lexer
 , defaultPos    -- Relayed from Lexer
@@ -31,14 +30,6 @@ class Default t where
 -- Multiplicities for kinds, types, and expressions
 
 data Multiplicity = Un | Lin deriving Eq
-
--- instance Show Multiplicity where
---   show Un  = "U"
---   show Lin = "L"
-
--- showArrow :: Multiplicity -> String
--- showArrow Lin = " -o "
--- showArrow Un  = " -> "
 
 instance Ord Multiplicity where
   Un <= Lin = True

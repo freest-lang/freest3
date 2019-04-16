@@ -55,13 +55,14 @@ checkDupMatch b m =
                            "\t In a case alternative:", styleRed (show b), "-> ..."]
 
 checkDupBind :: ProgVar -> [ProgVar] -> FreestState ()
-checkDupBind b bs =
-  case find (== b) bs of
-    Just b' -> do
-      addError (position b')
-        ["Conflicting definitions for program variable", styleRed (show b), "\n",
-         "\t Bound at:", showPos (position b'), "\n",
-         "\t          ", showPos (position b)]
+checkDupBind x xs
+  | intern x == "_" = return ()
+  | otherwise       = case find (== x) xs of
+    Just y -> do
+      addError (position y)
+        ["Conflicting definitions for program variable", styleRed (show x), "\n",
+         "\t Bound at:", showPos (position y), "\n",
+         "\t          ", showPos (position x)]
     Nothing -> return ()
 
 checkDupTypeVarBind :: TypeVarBind -> [TypeVarBind] -> FreestState ()
