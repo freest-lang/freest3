@@ -8,7 +8,7 @@ data Tree = Leaf | Node Int Tree Tree
   returns a tree isomorphic to the input where each integer in nodes
   is read from the channel.
 -}
-transform : forall α : SL => Tree -> (rec x. +{LeafC: Skip, NodeC: !Int;x;x;?Int});α -> (Tree, α)
+transform : forall α : SL => Tree -> (rec x:SL. +{LeafC: Skip, NodeC: !Int;x;x;?Int});α -> (Tree, α)
 transform tree c =
   case tree of {
     Leaf ->
@@ -16,7 +16,7 @@ transform tree c =
     Node x l r ->
       let c = select NodeC c in
       let c = send c x in
-      let l, c = transform[(rec x. +{LeafC: Skip, NodeC: !Int;x;x;?Int});?Int;α] l c in
+      let l, c = transform[(rec x:SL. +{LeafC: Skip, NodeC: !Int;x;x;?Int});?Int;α] l c in
       let r, c = transform[?Int;α] r c in
       let y, c = receive c in
       (Node y l r, c)
@@ -26,13 +26,13 @@ transform tree c =
   writes back on the channel the sum of the elements in the tree;
   returns this sum.
 -}
-treeSum : forall α : SL => (rec x. &{LeafC: Skip, NodeC: ?Int;x;x;!Int});α -> (Int, α)
+treeSum : forall α : SL => (rec x:SL. &{LeafC: Skip, NodeC: ?Int;x;x;!Int});α -> (Int, α)
 treeSum c =
   match c with {
     LeafC c -> (0, c);
     NodeC c ->
       let x, c = receive c in
-      let l, c = treeSum[(rec x. &{LeafC: Skip, NodeC: ?Int;x;x;!Int});!Int;α] c in
+      let l, c = treeSum[(rec x:SL. &{LeafC: Skip, NodeC: ?Int;x;x;!Int});!Int;α] c in
       let r, c = treeSum[!Int;α] c in
       let c    = send c (x + l + r) in
       (x + l + r, c)
@@ -43,7 +43,7 @@ aTree = Node 1 (Node 2 Leaf (Node 3 Leaf (Node 4 Leaf (Node 5 Leaf Leaf)))) (Nod
 
 main : Tree
 main =
-  let w, r = new (rec x. +{LeafC: Skip, NodeC: !Int;x;x;?Int}) in
+  let w, r = new (rec x:SL. +{LeafC: Skip, NodeC: !Int;x;x;?Int}) in
 --  let t, w = fork (transform[Skip] aTree w) in
 --  let n, r = treeSum[Skip] r in
   let _ = fork (treeSum[Skip] r) in

@@ -93,12 +93,13 @@ equalTypes s (Skip _)         (Skip _)         = True
 equalTypes s (Semi _ t1 t2)   (Semi _ u1 u2)   = equalTypes s t1 u1 && equalTypes s t2 u2
 equalTypes s (Message _ p x)  (Message _ q y)  = p == q && x == y
 equalTypes s (Choice _ v1 m1) (Choice _ v2 m2) = v1 == v2 && equalMaps s m1 m2
-equalTypes s (Rec _ (TypeVarBind _ x _) t) (Rec _ (TypeVarBind _ y _) u) = equalTypes (Map.insert x y s) t u
+equalTypes s (Rec _ (TypeVarBind _ x k) t) (Rec _ (TypeVarBind _ y l) u) =
+  k ==l && equalTypes (Map.insert x y s) t u
   -- Functional or session
 equalTypes s (TypeVar _ x)    (TypeVar _ y)    = equalVars (Map.lookup x s) x y
   -- Type operators
 equalTypes s (Dualof _ t)     (Dualof _ u)     = t == u
-equalTypes s (TypeName _ x)       (TypeName _ y)       = x == y
+equalTypes s (TypeName _ x)   (TypeName _ y)   = x == y
   -- Otherwise
 equalTypes _ _              _                  = False
 

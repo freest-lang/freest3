@@ -18,6 +18,7 @@ import           Parse.Lexer
 import           Utils.Errors
 import           Utils.FreestState
 import qualified Data.Map.Strict as Map
+-- import qualified Data.Set as Set
 import           Control.Monad.State
 import           Data.Char
 import           Data.List (nub, (\\), intercalate, find)
@@ -152,10 +153,10 @@ Decl :: { () }
 
 DataCons :: { [(ProgVar, [Type])] }
   : DataCon              { [$1] }
-  | DataCon '|' DataCons { $1 : $3 } -- TODO: move the checkDupProgVarDecl below here
+  | DataCon '|' DataCons {% checkDupCons $1 $3 >> return ($1 : $3) }
 
 DataCon :: { (ProgVar, [Type]) }
-  : Constructor TypeSeq {% checkDupProgVarDecl $1 >> return ($1, $2) }
+  : Constructor TypeSeq { ($1, $2) }
 
 -----------------
 -- EXPRESSIONS --
@@ -383,8 +384,12 @@ parseDefs file vEnv str =
   execState (parse str) (s {varEnv = vEnv})
    where parse = terms . scanTokens
 
+checkErrors :: FreestS -> IO ()
 checkErrors (FreestS {errors=[]}) = return ()
-checkErrors s = die $ intercalate "\n" (errors s)
+checkErrors s                     = die $ intercalate "\n" (errors s)
+-- checkErrors (FreestS {errors = errors})
+--   | Set.null errors = return ()
+--   | otherwise  = die $ show errors
 
 -------------------
 -- Handle errors --

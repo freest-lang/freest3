@@ -35,24 +35,10 @@ renameState = do
   tEnv <- getTEnv
   tEnv' <- tMapM (\(k, s) -> rename Map.empty s >>= \s' -> return (k, s')) tEnv
   setTEnv tEnv'
-  -- VarEnv & ExpEnv
+  -- VarEnv + ExpEnv, together
   vEnv <- getVEnv
   tMapWithKeyM renameFun (userDefined (noConstructors tEnv vEnv))
   return ()
-  -- VarEnv
-  -- vEnv <- getVEnv
-  -- vEnv' <- tMapM (rename Map.empty) vEnv
-  -- setVEnv vEnv'
-  -- ExpEnv
-  -- eEnv <- getEEnv
-  -- eEnv' <- tMapM (rename Map.empty) eEnv
-  -- setEEnv eEnv'
-  -- trace ("vEnv before: " ++ show (userDefined vEnv)) $ return ()
-  -- trace ("vEnv after:  " ++ show (userDefined vEnv')) $ return ()
-  -- trace ("tEnv before: " ++ show tEnv) $ return ()
-  -- trace ("tEnv after:  " ++ show tEnv') $ return ()
-  -- trace ("eEnv before: " ++ show eEnv) $ return ()
-  -- trace ("eEnv after:  " ++ show eEnv') $ return ()
 
 renameFun :: ProgVar -> TypeScheme -> FreestState ()
 renameFun f (TypeScheme p xks t) = do
@@ -63,7 +49,6 @@ renameFun f (TypeScheme p xks t) = do
   addToVEnv f (TypeScheme p xks' t')
   -- The function body
   eEnv <- getEEnv
-  trace ("getFromEEnv: " ++ show f ++ ", env: " ++ show eEnv) (return ())
   e <- getFromEEnv f
   e' <- rename bs e
   addToEEnv f e'

@@ -53,10 +53,13 @@ import           Syntax.Base
 import           Utils.Errors
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
+-- import qualified Data.Set as Set
 import qualified Data.Traversable as Traversable
 
 -- | The typing state
+
 type Errors = [String]
+-- type Errors = Set.Set String
 
 data FreestS = FreestS {
   filename :: String
@@ -166,11 +169,12 @@ setTEnv tEnv = modify (\s -> s{typeEnv = tEnv})
 
 addError :: Pos -> [String] -> FreestState ()
 addError p e = do
-  modify (\s -> s {errors=(errors s) ++ [styleError (filename s) p e]})  
+  modify (\s -> s{errors=(errors s) ++ [styleError (filename s) p e]})  
+  -- modify (\s -> s{errors = Set.insert (styleError (filename s) p e) (errors s)})
   
-addErrorList :: [String] -> FreestState ()
-addErrorList es =
-  modify (\s -> s {errors = (errors s) ++ es})
+-- addErrorList :: [String] -> FreestState ()
+-- addErrorList es =
+--   modify (\s -> s {errors = (errors s) ++ es})
 
 -- | Traversing Map.map over FreestStates
 

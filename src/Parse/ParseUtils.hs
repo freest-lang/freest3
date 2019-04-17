@@ -21,6 +21,7 @@ module Parse.ParseUtils
 , checkDupTypeVarBind
 , checkDupField
 , checkDupCase
+, checkDupCons
 , binOp
 , unOp
 , buildFunBody
@@ -77,10 +78,16 @@ checkDupTypeVarBind (TypeVarBind p x _) bs =
          "\t          ", showPos p]
     Nothing -> return ()
 
+checkDupCons :: (ProgVar, [Type]) -> [(ProgVar, [Type])] -> FreestState ()
+checkDupCons (x, _) xts
+  | any (\(y, _) -> y == x) xts = 
+      addError (position x) ["Multiple declarations of", styleRed (show x)]-- , "\n",
+                             -- "\t Declared at:", showPos (position x)]
+  | otherwise   = return ()
+
 checkDupProgVarDecl :: ProgVar -> FreestState ()
 checkDupProgVarDecl x = do
   m <- getVEnv
-  trace ("checkDupProgVarDecl: " ++ show x ++ ", VEnv: " ++ show (userDefined m)) (return ())
   case m Map.!? x of
     Just a  ->
       addError (position x) ["Multiple declarations of", styleRed (show x), "\n",
