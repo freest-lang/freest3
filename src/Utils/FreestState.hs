@@ -134,10 +134,10 @@ getEEnv = do
   s <- get
   return $ expEnv s
 
-getFromEEnv :: ProgVar -> FreestState Expression
+getFromEEnv :: ProgVar -> FreestState (Maybe Expression)
 getFromEEnv x = do
   eEnv <- getEEnv
-  return $ eEnv Map.! x
+  return $ eEnv Map.!? x
 
 addToEEnv :: ProgVar -> Expression -> FreestState ()
 addToEEnv k v =

@@ -63,14 +63,15 @@ extractFun e t = do
       return (omission p, omission p)
 
 -- Extracts a pair from a type; gives an error if there is no pair
-extractPair :: Type -> FreestState (Type, Type)
-extractPair t = do
+extractPair :: Expression -> Type -> FreestState (Type, Type)
+extractPair e t = do
   t' <- norm t
   case t' of
     (PairType _ u v) -> return (u, v)
-    u                ->
-      let p = position u in
-      addError p ["Expecting a pair type; found type", styleRed $ show u] >>
+    u                -> do
+      let p = position u
+      addError p ["Expecting a pair type for expression", styleRed $ show e, "\n",
+                  "\t found type", styleRed $ show u]
       return (omission p, omission p)
       
 -- Extracts a basic type from a general type; gives an error if it isn't a basic
@@ -84,21 +85,22 @@ extractBasic t = do
       return IntType
 
 -- Extracts an output type from a general type; gives an error if it isn't an output
-extractOutput :: Type -> FreestState (BasicType, Type)
+extractOutput :: Expression -> Type -> FreestState (BasicType, Type)
 extractOutput = extractMessage Out "output"
 
 -- Extracts an input type from a general type; gives an error if it isn't an input
-extractInput :: Type -> FreestState (BasicType, Type)
+extractInput :: Expression -> Type -> FreestState (BasicType, Type)
 extractInput = extractMessage Out "input"
 
-extractMessage :: Polarity -> String -> Type -> FreestState (BasicType, Type)
-extractMessage pol msg t = do
+extractMessage :: Polarity -> String -> Expression -> Type -> FreestState (BasicType, Type)
+extractMessage pol msg e t = do
   t' <- norm t
   case t' of
      (Message p pol b)            -> return (b, Skip p)
      (Semi _ (Message _ pol b) u) -> return (b, u)
-     u                            ->
-       addError (position u) ["Expecting an", msg, "type; found type", styleRed $ show u] >>
+     u                            -> do
+       addError (position e) ["Expecting an", msg, "for expression",  styleRed $ show e, "\n",
+                              "\t found type", styleRed $ show u]
        return (UnitType, Skip (position u))
 
 extractOutChoiceMap :: Expression -> Type -> FreestState TypeMap

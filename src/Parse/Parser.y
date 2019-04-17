@@ -144,16 +144,16 @@ Decl :: { () }
   -- Datatype declaration
   | data TypeNameKind TypeVarBindEmptyList '=' DataCons {% do
       let a = fst $2
-      let p = position a
       checkDupTypeDecl a
       let bs = typeListToType a $5 :: [(ProgVar, Type)]
       mapM_ (\(c, t) -> addToVEnv c (toTypeScheme t)) bs
       vEnv <- getVEnv
+      let p = position a
       uncurry addToTEnv $2 (TypeScheme p $3 (Datatype p (Map.fromList bs)))
     }
 
 DataCons :: { [(ProgVar, [Type])] }
-  : DataCon              { [$1] }
+  : DataCon              {% checkDupCons $1 [] >> return [$1] }
   | DataCon '|' DataCons {% checkDupCons $1 $3 >> return ($1 : $3) }
 
 DataCon :: { (ProgVar, [Type]) }

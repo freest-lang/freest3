@@ -49,8 +49,8 @@ import           Utils.PreludeLoader -- debug
 checkDupField :: ProgVar -> TypeMap -> FreestState ()
 checkDupField x m =
   when (x `Map.member` m) $
-    addError (position x) ["Multiple declarations of field", "\n",
-                           "\t In a choice type:", styleRed (show x)]
+    addError (position x) ["Multiple declarations of field", styleRed (show x), "\n",
+                           "\t in a choice type"]
 
 checkDupCase :: ProgVar -> FieldMap -> FreestState () 
 checkDupCase x m =
@@ -82,14 +82,21 @@ checkDupTypeVarBind (TypeVarBind p x _) bs =
 checkDupCons :: (ProgVar, [Type]) -> [(ProgVar, [Type])] -> FreestState ()
 checkDupCons (x, _) xts
   | any (\(y, _) -> y == x) xts = 
-      addError (position x) ["Multiple declarations of", styleRed (show x)]-- , "\n",
-                             -- "\t Declared at:", showPos (position x)]
-  | otherwise   = return ()
+      addError (position x) ["Multiple declarations of", styleRed (show x), "\n",
+                             "\t in a datatype declaration"]
+  | otherwise = do
+      getFromVEnv x >>= \case
+        Just s  ->
+          addError (position x) ["Multiple declarations of", styleRed (show x), "\n",
+                                 "\t Declared at:", showPos (position x), "\n",
+                                 "\t             ", showPos (position s)]
+        Nothing ->      
+          return ()
 
 checkDupProgVarDecl :: ProgVar -> FreestState ()
 checkDupProgVarDecl x = do
-  m <- getVEnv
-  case m Map.!? x of
+  vEnv <- getVEnv
+  case vEnv Map.!? x of
     Just a  ->
       addError (position x) ["Multiple declarations of", styleRed (show x), "\n",
                              "\t Declared at:", showPos (position a), "\n",
@@ -98,8 +105,8 @@ checkDupProgVarDecl x = do
 
 checkDupTypeDecl :: TypeVar -> FreestState ()  
 checkDupTypeDecl a = do
-  m <- getTEnv
-  case m Map.!? a of
+  tEnv <- getTEnv
+  case tEnv Map.!? a of
     Just (_, s) ->
       addError (position a) ["Multiple declarations of type", styleRed (show a), "\n",
                              "\t Declared at:", showPos (position a), "\n",
@@ -109,8 +116,12 @@ checkDupTypeDecl a = do
 checkDupFunDecl :: ProgVar -> FreestState ()
 checkDupFunDecl x = do
   eEnv <- getEEnv
-  when (x `Map.member` eEnv) $
-    addError (position x) ["Multiple declarations of function", styleRed (show x)]
+  case eEnv Map.!? x of
+    Just e ->
+      addError (position x) ["Multiple bindings for function", styleRed (show x), "\n",
+                             "\t Declared at:", showPos (position x), "\n",
+                             "\t             ", showPos (position e)]
+    Nothing -> return ()
 
 -- OPERATORS
 

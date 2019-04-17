@@ -99,7 +99,7 @@ instance Show Type where
   show (Dualof _ s)     = "(dualof " ++ show s ++ ")"
   show (TypeName _ x)   = show x
   
-showTypeMap :: TypeMap -> String
+showTypeMap :: TypeMap -> String -- TODO: Do this properly
 showTypeMap m = concat $ intersperse ", " (map showAssoc (Map.assocs m))
   where showAssoc (b, v) = show b ++ ": " ++ show v
 

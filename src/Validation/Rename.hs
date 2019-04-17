@@ -11,6 +11,8 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
+{-# LANGUAGE LambdaCase, NoMonadFailDesugaring #-}
+
 module Validation.Rename
 ( renameState
 ) where
@@ -49,9 +51,12 @@ renameFun f (TypeScheme p xks t) = do
   addToVEnv f (TypeScheme p xks' t')
   -- The function body
   eEnv <- getEEnv
-  e <- getFromEEnv f
-  e' <- rename bs e
-  addToEEnv f e'
+  getFromEEnv f >>= \case
+    Just e -> do
+      e' <- rename bs e
+      addToEEnv f e'
+    Nothing ->
+      return ()
   
 -- Renaming the various syntactic categories
 
@@ -158,7 +163,7 @@ instance Rename Expression where
     e1' <- rename bs e1
     e2' <- rename bs e2
     e3' <- rename bs e3
-    return $ Conditional p e1' e2' e2'
+    return $ Conditional p e1' e2' e3'
   -- Let
   rename bs (UnLet p x e1 e2) = do
     x' <- rename bs x

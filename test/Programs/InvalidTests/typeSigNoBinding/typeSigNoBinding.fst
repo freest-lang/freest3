@@ -1,1 +1,1 @@
-f :: Int -> Int
+f : Int -> Int

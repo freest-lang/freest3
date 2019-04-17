@@ -36,7 +36,7 @@ import           Utils.FreestState
 import           Utils.PreludeLoader (userDefined)
 import           Control.Monad.State (when)
 import qualified Data.Map.Strict as Map
-import           Utils.PreludeLoader (isBuiltin) -- debug
+import           Utils.PreludeLoader (isBuiltin, userDefined) -- debug
 import           Debug.Trace                     -- debug
 
 -- SYNTHESISING A TYPE
@@ -52,7 +52,7 @@ synthetise kEnv (ProgVar p x) = do
   s@(TypeScheme _ bs t) <- synthetiseVar kEnv x
   when (not $ null bs) 
     (addError p ["Variable", styleRed $ show x, "of a polymorphic type used in a monomorphic context\n",
-              "\t the type scheme for variable", styleRed $ show x, "is", styleRed $ show s])
+              "\t The type scheme for variable", styleRed $ show x, "is", styleRed $ show s])
   return t
 synthetise kEnv (UnLet _ x e1 e2) = do
   t1 <- synthetise kEnv e1
@@ -60,17 +60,17 @@ synthetise kEnv (UnLet _ x e1 e2) = do
   t2 <- synthetise kEnv e2
   quotient kEnv x
   return t2
--- Abstraction introduction
+-- Lambda introduction
 synthetise kEnv e'@(Lambda p m x t1 e) = do
   K.synthetise kEnv t1
-  addToVEnv x (toTypeScheme t1)
   vEnv1 <- getVEnv
+  addToVEnv x (toTypeScheme t1)
   t2 <- synthetise kEnv e
   quotient kEnv x
   vEnv2 <- getVEnv
   when (m == Un) (checkEqualEnvs e' vEnv1 vEnv2)
   return $ Fun p m t1 t2
--- Abstraction elimination
+-- Lambda elimination
 synthetise kEnv (App _ e1 e2) = do
   t <- synthetise kEnv e1
   (u1, u2) <- extractFun e1 t
@@ -105,7 +105,7 @@ synthetise kEnv (Pair p e1 e2) = do
 -- Pair elimination
 synthetise kEnv (BinLet _ x y e1 e2) = do
   t1 <- synthetise kEnv e1
-  (u1, u2) <- extractPair t1
+  (u1, u2) <- extractPair e1 t1
   addToVEnv x (toTypeScheme u1)
   addToVEnv y (toTypeScheme u2)
   vEnv <- getVEnv
@@ -128,11 +128,11 @@ synthetise kEnv (New p t) = do
   return $ PairType p t (Dualof p t)
 synthetise kEnv (Send p e) = do
   t <- synthetise kEnv e
-  (u1, u2) <- extractOutput t
+  (u1, u2) <- extractOutput e t
   return (Fun p Lin (Basic p u1) u2)
 synthetise kEnv (Receive p e) = do
   t <- synthetise kEnv e
-  (u1, u2) <- extractInput t
+  (u1, u2) <- extractInput e t
   return $ PairType p (Basic p u1) u2
 synthetise kEnv (Select p c e) = do
   t <- synthetise kEnv e
@@ -228,7 +228,9 @@ synthetiseCons x tm =
 -- Removes a variable from the Environment and gives an error if it is linear
 quotient :: KindEnv -> ProgVar -> FreestState ()
 quotient kEnv x = do
-  removeFromVEnv x
+  vEnv <- getVEnv
+  tEnv <- getTEnv
+  trace (show x ++ " -:- " ++ show (userDefined (noConstructors tEnv vEnv))) (return ())
   getFromVEnv x >>= \case
     Just (TypeScheme _ [] t) -> do
       k <- K.synthetise kEnv t
@@ -239,6 +241,7 @@ quotient kEnv x = do
            "of kind", styleRed $ show k]
     Nothing ->
       return ()
+  removeFromVEnv x
 
 -- CHECKING AGAINST A GIVEN TYPE OR TYPE SCHEME
 
@@ -257,7 +260,7 @@ checkAgainst kEnv (Conditional p e1 e2 e3) t = do
 -- Pair elimination
 checkAgainst kEnv (BinLet _ x y e1 e2) t2 = do
   t1 <- synthetise kEnv e1
-  (u1, u2) <- extractPair t1
+  (u1, u2) <- extractPair e1 t1
   addToVEnv x (toTypeScheme u1)
   addToVEnv y (toTypeScheme u2)
   checkAgainst kEnv e2 t2
@@ -268,6 +271,9 @@ checkAgainst kEnv (BinLet _ x y e1 e2) t2 = do
 -- TODO Datatype elimination
 -- checkAgainst kEnv (Case p e fm) = checkAgainstFieldMap p kEnv e fm extractDatatypeMap
 -- TODO Lambda elimination
+checkAgainst kEnv (App p e1 e2) u = do
+  t <- synthetise kEnv e1
+  checkAgainst kEnv e2 (Fun p Lin t u)
 -- Default
 checkAgainst kEnv e t = do
   u <- synthetise kEnv e
@@ -291,12 +297,13 @@ checkEquivTypes exp kEnv expected actual = do
 
 checkEqualEnvs :: Expression -> VarEnv -> VarEnv -> FreestState ()
 checkEqualEnvs e vEnv1 vEnv2 = do
-  trace ("Initial vEnv: " ++ show vEnv1 ++ "\nFinal vEnv " ++ show vEnv2) (return ())
+  tEnv <- getTEnv
+  trace ("Initial vEnv: " ++ show (userDefined (noConstructors tEnv vEnv1)) ++ "\n  Final vEnv: " ++ show (userDefined (noConstructors tEnv vEnv2)) ++ "\n  Expression: " ++ show e) (return ())
   when (not $ Map.null diff)
     (addError (position e) ["Final environment differs from initial in an unrestricted function\n",
-      "\t these extra entries are present in the final environment:", styleRed $ show diff, "\n",
-      "\t in lambda abstraction", styleRed $ show e])
-  where diff = Map.difference vEnv1 vEnv2
+      "\t These extra entries are present in the final environment:", styleRed $ show diff, "\n",
+      "\t for lambda abstraction", styleRed $ show e])
+  where diff = Map.difference vEnv2 vEnv1
 
 checkEquivEnvs :: Pos -> KindEnv -> VarEnv -> VarEnv -> FreestState ()
 checkEquivEnvs p kEnv vEnv1 vEnv2 = do
