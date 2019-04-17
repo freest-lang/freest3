@@ -88,7 +88,6 @@ checkDupCons (x, _) xts
 checkDupProgVarDecl :: ProgVar -> FreestState ()
 checkDupProgVarDecl x = do
   m <- getVEnv
-  trace ("checkDupProgVarDecl: " ++ show x ++ ", VEnv: " ++ show (userDefined m)) (return ())
   case m Map.!? x of
     Just a  ->
       addError (position x) ["Multiple declarations of", styleRed (show x), "\n",

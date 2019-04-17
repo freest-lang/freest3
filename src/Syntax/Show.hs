@@ -48,10 +48,10 @@ instance Show TypeVar where
 
 showVar :: Variable v => v -> String
 showVar v
-  -- | isDigit (head s) = tail $ dropWhile (isDigit) s
-  -- | otherwise         = s
-  -- where s = intern v
-  = intern v -- Debug
+  | isDigit (head s) = tail $ dropWhile (isDigit) s
+  | otherwise         = s
+  where s = intern v
+  -- = intern v -- Debug
 
 -- Kinds
 

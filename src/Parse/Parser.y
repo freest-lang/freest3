@@ -18,6 +18,7 @@ import           Parse.Lexer
 import           Utils.Errors
 import           Utils.FreestState
 import qualified Data.Map.Strict as Map
+-- import qualified Data.Set as Set
 import           Control.Monad.State
 import           Data.Char
 import           Data.List (nub, (\\), intercalate, find)
@@ -383,8 +384,12 @@ parseDefs file vEnv str =
   execState (parse str) (s {varEnv = vEnv})
    where parse = terms . scanTokens
 
+checkErrors :: FreestS -> IO ()
 checkErrors (FreestS {errors=[]}) = return ()
-checkErrors s = die $ intercalate "\n" (errors s)
+checkErrors s                     = die $ intercalate "\n" (errors s)
+-- checkErrors (FreestS {errors = errors})
+--   | Set.null errors = return ()
+--   | otherwise  = die $ show errors
 
 -------------------
 -- Handle errors --

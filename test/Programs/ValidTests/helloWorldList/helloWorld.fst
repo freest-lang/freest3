@@ -1,6 +1,6 @@
 data List = Nil | Cons Char List
 
-server : forall α : SL => (rec x.&{Done: Skip, More: ?Char;x});α -> (List, α)
+server : forall α : SL => (rec x:SL.&{Done: Skip, More: ?Char;x});α -> (List, α)
 server c =
   match c with {
     More c -> 
@@ -11,7 +11,7 @@ server c =
       (Nil, c)
   }
 
-client : forall α :SL => List -> (rec x.+{Done: Skip, More: !Char;x});α -> α
+client : forall α :SL => List -> (rec x:SL.+{Done: Skip, More: !Char;x});α -> α
 client l c =
   case l of {
     Nil ->
@@ -29,7 +29,7 @@ hello = Cons 'H' (Cons 'e' (Cons 'l' (Cons 'l' (Cons 'o' Nil))))
 
 main : List
 main = 
-  let c, s = new (rec x.+{Done: Skip, More: !Char;x}) in
+  let c, s = new (rec x:SL.+{Done: Skip, More: !Char;x}) in
   let x = fork (client[Skip] hello c) in
   let res, c = server[Skip] s in 
   res

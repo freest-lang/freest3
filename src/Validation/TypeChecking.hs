@@ -41,9 +41,9 @@ typeCheck = do
   tEnv <- getTEnv
   vEnv <- getVEnv
   eEnv <- getEEnv
-  trace ("Entering type checking\nTEnv " ++ show tEnv)
-    trace ("VEnv " ++ show (userDefined vEnv))
-      trace ("EEnv " ++ show eEnv)
+  trace ("Entering type checking\n  TEnv " ++ show tEnv)
+    trace ("  VEnv " ++ show (userDefined vEnv))
+      trace ("  EEnv " ++ show eEnv)
         return ()
   tEnv <- getTEnv
   mapM_ (K.synthetiseTS Map.empty . snd) tEnv -- check the formation of all type schemes
