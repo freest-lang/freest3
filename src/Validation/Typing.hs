@@ -285,7 +285,7 @@ checkEquivTypes exp kEnv expected actual = do
   -- trace ("checkEquivTypes :" ++ show (funSigsOnly tEnv vEnv)) (return ())
   when (not $ equivalent tEnv kEnv expected actual) $
     addError (position exp) ["Couldn't match expected type", styleRed (show expected), "\n",
-             "\t with actual type", styleRed (show actual), "\n",
+                          "\t             with actual type", styleRed (show actual), "\n",
              "\t for expression",  styleRed (show exp)]
 
 checkEqualEnvs :: Pos -> VarEnv -> VarEnv -> FreestState ()

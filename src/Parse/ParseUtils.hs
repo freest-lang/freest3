@@ -36,6 +36,7 @@ import           Syntax.ProgramVariables
 import           Syntax.TypeVariables
 import           Syntax.Base
 import           Syntax.Show
+import           Equivalence.Normalisation
 import           Utils.FreestState
 import           Utils.Errors
 import           Parse.Lexer (showPos)
@@ -132,7 +133,8 @@ buildFunBody f bs e =
   getFromVEnv f >>= \case
     Just s -> do
       let (TypeScheme _ _ t) = s
-      return $ buildExp bs t
+      tEnv <- getTEnv
+      return $ buildExp bs (normalise tEnv t) -- Normalisation allows type names in signatures
     Nothing -> do
       addError (position f) ["The binding for function", styleRed $ show f,
                              "lacks an accompanying type signature"]

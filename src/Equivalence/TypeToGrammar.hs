@@ -119,13 +119,18 @@ toGrammar (Choice _ p m) = do
 toGrammar u@(Rec p (TypeVarBind _ x _) t)
   | isChecked u = return []
   | otherwise = do
-    y <- freshVar
-    insertVisited y
-    -- zs <- toGrammar t
-    zs <- toGrammar $ subs (TypeVar p y) x t -- On the fly α-conversion
+    insertVisited x
+    zs <- toGrammar t
     m <- getTransitions $ head zs
-    addProductions y (Map.map (++ tail zs) m)
-    return [y]
+    addProductions x (Map.map (++ tail zs) m)
+    return [x]
+    -- On the fly α-conversion
+    -- y <- freshVar
+    -- insertVisited y
+    -- zs <- toGrammar $ subs (TypeVar p y) x t
+    -- m <- getTransitions $ head zs
+    -- addProductions y (Map.map (++ tail zs) m)
+    -- return [y]
 toGrammar (TypeVar _ x) = do
   b <- memberVisited x
   if b
