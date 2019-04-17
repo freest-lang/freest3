@@ -44,8 +44,8 @@ executable ContextFreeSession
                        Validation.Contractive, Validation.Extract, Validation.Rename,
                        Equivalence.Equivalence, Equivalence.Bisimulation, Equivalence.Grammar,
                        Equivalence.TypeToGrammar, Equivalence.Norm, Equivalence.Normalisation,
-                       CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen
-                       
+                       CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen, Utils.PreludeLoader
+
 test-suite unit-tests
   main-is:             UnitSpec.hs
   Type:                exitcode-stdio-1.0
@@ -70,18 +70,18 @@ test-suite unit-tests
 		       Syntax.Show,
                        Parse.Parser, Parse.Lexer, Parse.ParseUtils,
                        Queue.Queue,
-                       Validation.Kinding, Validation.Contractive, 
+                       Validation.Kinding, Validation.Contractive,
                        Equivalence.Equivalence, Equivalence.Bisimulation, Equivalence.Grammar, Equivalence.TypeToGrammar,
                        Equivalence.Norm, Equivalence.Normalisation,
                        Utils.Errors, Utils.FreestState,
                        SpecHelper,
                        Syntax.TestShowValidSpec, Syntax.TestEqInvalidSpec, Syntax.TestEqValidSpec,
-                       Syntax.TestEqTypeSchemeSpec,
+                       -- Syntax.TestEqTypeSchemeSpec,
                        Syntax.TestExpsEqSpec,
                        Parse.TestParserInvalidSpec, Parse.TestParserValidSpec,
                        Validation.TestKindingValidSpec, Validation.TestKindingInvalidSpec,
                        Validation.TestTypeSchemeKindingSpec,
-                       Equivalence.TestEquivalenceInvalidSpec, Equivalence.TestEquivalenceValidSpec
+                       Equivalence.TestEquivalenceInvalidSpec, Equivalence.TestEquivalenceValidSpec, Utils.PreludeLoader
 
 test-suite program-tests
   main-is:             ProgSpec.hs
@@ -103,18 +103,18 @@ test-suite program-tests
   hs-source-dirs:      src, test/Programs
   ghc-options:         -threaded
   default-language:    Haskell2010
-  other-modules:       Compiler, CompilerSpec, 
+  other-modules:       Compiler, CompilerSpec,
                        Syntax.Base, Syntax.ProgramVariables, Syntax.TypeVariables,
 		       Syntax.Kinds, Syntax.Types, Syntax.Schemes, Syntax.Expressions,
 		       Syntax.Show,
                        Parse.Lexer, Parse.Parser, Parse.ParseUtils,
                        Utils.PreludeLoader, Utils.Errors, Utils.FreestState,
-                       Queue.Queue,        
+                       Queue.Queue,
                        Validation.TypeChecking, Validation.Typing, Validation.Kinding,
                        Validation.Contractive, Validation.Extract, Validation.Rename,
                        Equivalence.Equivalence, Equivalence.Bisimulation, Equivalence.Grammar,
                        Equivalence.TypeToGrammar, Equivalence.Norm, Equivalence.Normalisation,
-                       CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen
+                       CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen, Utils.PreludeLoader
 
 test-suite testEquiv
   main-is:             TestEquivalenceValidSpecMain.hs
@@ -147,4 +147,4 @@ test-suite testEquiv
                        Validation.Kinding,  Validation.Contractive,
                        Equivalence.Grammar, Equivalence.TypeToGrammar,
                        Equivalence.Norm, Equivalence.Normalisation, Equivalence.Equivalence, Equivalence.Bisimulation,
-                       Equivalence.TestEquivalenceValidSpec, Equivalence.TestEquivalenceInvalidSpec
+                       Equivalence.TestEquivalenceValidSpec, Equivalence.TestEquivalenceInvalidSpec, Utils.PreludeLoader
