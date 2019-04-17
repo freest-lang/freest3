@@ -128,7 +128,7 @@ NL :: { () }
 Decl :: { () }
   -- Function signature
   : ProgVar ':' TypeScheme {% do
-      checkDupTypeVarDecl $1
+      checkDupProgVarDecl $1
       addToVEnv $1 $3 }
   -- Function declaration
   | ProgVar ProgVarWildSeq '=' Expr {% do
@@ -152,10 +152,10 @@ Decl :: { () }
 
 DataCons :: { [(ProgVar, [Type])] }
   : DataCon              { [$1] }
-  | DataCon '|' DataCons { $1 : $3 }
+  | DataCon '|' DataCons { $1 : $3 } -- TODO: move the checkDupProgVarDecl below here
 
 DataCon :: { (ProgVar, [Type]) }
-  : Constructor TypeSeq {% checkDupTypeVarDecl $1 >> return ($1, $2) }
+  : Constructor TypeSeq {% checkDupProgVarDecl $1 >> return ($1, $2) }
 
 -----------------
 -- EXPRESSIONS --
@@ -196,14 +196,14 @@ Primary :: { Expression }
 
 MatchMap :: { FieldMap }
   : Match              { uncurry Map.singleton $1 }
-  | Match ';' MatchMap {% checkDupMatch (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
+  | Match ';' MatchMap {% checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
 
 Match :: { (ProgVar, ([ProgVar], Expression)) }
   : Constructor ProgVarWild '->' Expr { ($1, ([$2], $4)) }
 
 CaseMap :: { FieldMap }
   : Case             { uncurry Map.singleton $1 }
-  | Case ';' CaseMap {% checkDupMatch (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
+  | Case ';' CaseMap {% checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
                         
 Case :: { (ProgVar, ([ProgVar], Expression)) }
   : Constructor ProgVarWildSeq '->' Expr { ($1, ($2, $4)) }

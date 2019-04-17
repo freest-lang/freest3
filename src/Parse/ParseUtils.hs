@@ -14,13 +14,13 @@ Portability :  portable | non-portable (<reason>)
 {-# LANGUAGE LambdaCase, NoMonadFailDesugaring #-}
 
 module Parse.ParseUtils
-( checkDupTypeVarDecl
+( checkDupProgVarDecl
 , checkDupFunDecl
 , checkDupTypeDecl
 , checkDupBind
 , checkDupTypeVarBind
-, checkDupField 
-, checkDupMatch
+, checkDupField
+, checkDupCase
 , binOp
 , unOp
 , buildFunBody
@@ -41,18 +41,20 @@ import           Parse.Lexer (showPos)
 import qualified Data.Map.Strict as Map
 import           Data.List (nub, (\\), intercalate, find)
 import           Control.Monad.State
+import           Debug.Trace -- debug
+import           Utils.PreludeLoader -- debug
 
 checkDupField :: ProgVar -> TypeMap -> FreestState ()
-checkDupField b m =
-  when (b `Map.member` m) $
-    addError (position b) ["Multiple declarations of field", "\n",
-                           "\t In a choice type:", styleRed (show b)]
+checkDupField x m =
+  when (x `Map.member` m) $
+    addError (position x) ["Multiple declarations of field", "\n",
+                           "\t In a choice type:", styleRed (show x)]
 
-checkDupMatch :: ProgVar -> Map.Map ProgVar a -> FreestState () 
-checkDupMatch b m =
-  when (b `Map.member` m) $
-    addError (position b) ["Pattern match is redundant", "\n",
-                           "\t In a case alternative:", styleRed (show b), "-> ..."]
+checkDupCase :: ProgVar -> FieldMap -> FreestState () 
+checkDupCase x m =
+  when (x `Map.member` m) $
+    addError (position x) ["Pattern match is redundant", "\n",
+                           "\t In a case alternative:", styleRed (show x)]
 
 checkDupBind :: ProgVar -> [ProgVar] -> FreestState ()
 checkDupBind x xs
@@ -75,14 +77,15 @@ checkDupTypeVarBind (TypeVarBind p x _) bs =
          "\t          ", showPos p]
     Nothing -> return ()
 
-checkDupTypeVarDecl :: ProgVar -> FreestState ()
-checkDupTypeVarDecl b = do
+checkDupProgVarDecl :: ProgVar -> FreestState ()
+checkDupProgVarDecl x = do
   m <- getVEnv
-  case m Map.!? b of
+  trace ("checkDupProgVarDecl: " ++ show x ++ ", VEnv: " ++ show (userDefined m)) (return ())
+  case m Map.!? x of
     Just a  ->
-      addError (position b) ["Multiple declarations of", styleRed (show b), "\n",
+      addError (position x) ["Multiple declarations of", styleRed (show x), "\n",
                              "\t Declared at:", showPos (position a), "\n",
-                             "\t             ", showPos (position b)]
+                             "\t             ", showPos (position x)]
     Nothing -> return ()
 
 checkDupTypeDecl :: TypeVar -> FreestState ()  
