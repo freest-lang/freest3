@@ -152,10 +152,10 @@ Decl :: { () }
 
 DataCons :: { [(ProgVar, [Type])] }
   : DataCon              { [$1] }
-  | DataCon '|' DataCons { $1 : $3 } -- TODO: move the checkDupProgVarDecl below here
+  | DataCon '|' DataCons {% checkDupCons $1 $3 >> return ($1 : $3) }
 
 DataCon :: { (ProgVar, [Type]) }
-  : Constructor TypeSeq {% checkDupProgVarDecl $1 >> return ($1, $2) }
+  : Constructor TypeSeq { ($1, $2) }
 
 -----------------
 -- EXPRESSIONS --
