@@ -38,6 +38,7 @@ tokens :-
   @blockComment                 ;
   "->"				{ \p s -> TokenUnArrow p }
   "-o"				{ \p s -> TokenLinArrow p }
+  "\\"				{ \p s -> TokenLambda p }
   "=>"				{ \p s -> TokenFArrow p }
   "("				{ \p s -> TokenLParen p }
   ")"				{ \p s -> TokenRParen p }
@@ -116,6 +117,7 @@ data Token =
   | TokenUnit AlexPosn 
   | TokenUnArrow AlexPosn 
   | TokenLinArrow AlexPosn 
+  | TokenLambda AlexPosn 
   | TokenLParen AlexPosn 
   | TokenRParen AlexPosn 
   | TokenLBracket AlexPosn 
@@ -177,6 +179,7 @@ instance Show Token where
   show (TokenUnit p) = show p ++ ": ()"  
   show (TokenUnArrow p) = show p ++ ": ->"  
   show (TokenLinArrow p) = show p ++ ": -o"  
+  show (TokenLambda p) = show p ++ ": \\"  
   show (TokenLParen p) = show p ++ ": ("
   show (TokenRParen p) = show p ++ ": )"  
   show (TokenLBracket p) = show p ++ ": ["  
@@ -258,6 +261,7 @@ instance Position Token where
   position (TokenUnit p) = p 
   position (TokenUnArrow p) = p 
   position (TokenLinArrow p) = p 
+  position (TokenLambda p) = p 
   position (TokenLParen p) = p
   position (TokenRParen p) = p 
   position (TokenLBracket p) = p 

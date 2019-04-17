@@ -146,17 +146,18 @@ synthetise kEnv (Case p e fm) =
 
 -- | Returns the type scheme for a variable; removes it from vEnv if lin
 synthetiseVar :: KindEnv -> ProgVar -> FreestState TypeScheme
-synthetiseVar kEnv b = -- do
-  getFromVEnv b >>= \case
+synthetiseVar kEnv x =
+  getFromVEnv x >>= \case
     Just s -> do
       k <- K.synthetiseTS kEnv s
-      when (isLin k) $ removeFromVEnv b
+      when (isLin k) $ removeFromVEnv x
       return s
     Nothing -> do
-      let p = position b
-      addError p ["Variable or data constructor not in scope:", styleRed $ show b]
+      let p = position x
+      addError p ["Variable or data constructor not in scope:", styleRed $ show x, "\n",
+               "\t (is", styleRed $ show x, "a linear variable?)"]
       let s = omission p
-      addToVEnv b s
+      addToVEnv x s
       return s
 
 synthetiseFieldMap :: Pos -> KindEnv -> Expression -> FieldMap ->

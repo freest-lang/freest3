@@ -145,7 +145,7 @@ instance Dual Type where
   dual t               = t
 
 instance Default Type where
-  omission p = Basic p UnitType
+  omission p = Basic p IntType
 
 -- Unfolding, Substituting
 

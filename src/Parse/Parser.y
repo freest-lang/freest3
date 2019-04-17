@@ -43,6 +43,7 @@ import           Debug.Trace
   '()'     {TokenUnit _}
   '->'     {TokenUnArrow _}
   '-o'     {TokenLinArrow _}
+  '\\'     {TokenLambda _}
   Skip     {TokenSkip _}
   '('      {TokenLParen _}
   ')'      {TokenRParen _}
@@ -192,6 +193,7 @@ Primary :: { Expression }
   | '()'                                     { Unit (position $1) }
   | ProgVar                                  { ProgVar (position $1) $1 }
   | Constructor                              { ProgVar (position $1) $1 }
+--  | '(' '\\' ProgVarWild ':' Type Arrow Expr ')' { Lambda (position $2) (snd $6) $3 $5 $7 }
   | '(' Expr ',' Expr ')'                    { Pair (position $1) $2 $4 }
   | '(' Expr ')'                             { $2 }
 

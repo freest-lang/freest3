@@ -30,6 +30,7 @@ import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.ProgramVariables
+import           Syntax.Base
 import           Equivalence.Normalisation
 import           Syntax.Show
 import           Parse.Lexer (Pos, position, defaultPos)
@@ -55,11 +56,11 @@ extractFun e t = do
   t' <- norm t
   case t' of
     (Fun _ _ u v) -> return (u, v)
-    u             ->
-      let p = position u in
-      addError (position e) ["Expecting a function type for expression", styleRed $ show e, "\n",
-                            "\t found type", styleRed $ show u] >>
-      return (Basic p UnitType, Basic p UnitType)
+    u             -> do
+      let p = position e
+      addError p ["Expecting a function type for expression", styleRed $ show e, "\n",
+                  "\t found type", styleRed $ show u]
+      return (omission p, omission p)
 
 -- Extracts a pair from a type; gives an error if there is no pair
 extractPair :: Type -> FreestState (Type, Type)
