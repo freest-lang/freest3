@@ -291,8 +291,8 @@ checkEquivTypes exp kEnv expected actual = do
 checkEqualEnvs :: Pos -> VarEnv -> VarEnv -> FreestState ()
 checkEqualEnvs p vEnv1 vEnv2 =
   when (not $ Map.null diff)
-    (addError p ["Final Environment differs from initial\n",
-                "\t these extra entries are present in the final Environment:", styleRed $ show diff])
+    (addError p ["Final environment differs from initial\n",
+                "\t these extra entries are present in the final environment:", styleRed $ show diff])
   where diff = Map.difference vEnv2 vEnv1
 
 checkEquivEnvs :: Pos -> KindEnv -> VarEnv -> VarEnv -> FreestState ()
@@ -301,7 +301,7 @@ checkEquivEnvs p kEnv vEnv1 vEnv2 = do
   let vEnv1' = userDefined vEnv1
       vEnv2' = userDefined vEnv2
   when (not (equivalent tEnv kEnv vEnv1' vEnv2')) $
-    addError p ["Expecting Environment", styleRed (show vEnv1'), "\n",
+    addError p ["Expecting environment", styleRed (show vEnv1'), "\n",
              "\t to be equivalent to  ", styleRed (show vEnv2')]
 
 fillFunType :: KindEnv -> ProgVar -> Expression -> TypeScheme -> FreestState Type

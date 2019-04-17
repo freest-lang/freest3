@@ -17,6 +17,7 @@ module Syntax.Schemes
 , VarEnv
 , toTypeScheme
 , isSessionType
+, noConstructors
 ) where
 
 import           Syntax.Types
@@ -60,4 +61,18 @@ isSessionType _    _    (Dualof _ _)    = True
 isSessionType tenv kenv (TypeName p x)  = False -- isSession $ fst $ tenv Map.! x
   -- Otherwise: Functional types
 isSessionType _    _    _               = False
+
+noConstructors :: TypeEnv -> VarEnv -> VarEnv
+noConstructors tEnv = Map.filterWithKey (\x _ -> not (x `isDatatypeContructor` tEnv))
+
+-- To determine whether a given constructor (a program variable) is a
+-- datatype constructor we have to look in the type Environment for a
+-- type name associated to a datatype that defines the constructor
+-- (rather indirect)
+isDatatypeContructor :: ProgVar -> TypeEnv -> Bool
+isDatatypeContructor c tEnv =
+  not $ Map.null $ Map.filter (\(_, (TypeScheme _ _ t)) -> isDatatype t) tEnv
+  where isDatatype :: Type -> Bool
+        isDatatype (Datatype _ m) = c `Map.member` m
+        isDatatype _              = False
 

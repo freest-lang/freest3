@@ -22,6 +22,7 @@ import           Syntax.Kinds
 import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
 import           Syntax.Base
+import           Syntax.Show
 import           Utils.FreestState
 import qualified Data.Map.Strict as Map
 import           Control.Monad.State
@@ -36,7 +37,7 @@ renameState = do
   setTEnv tEnv'
   -- VarEnv & ExpEnv
   vEnv <- getVEnv
-  tMapWithKeyM renameFun vEnv
+  tMapWithKeyM renameFun (userDefined (noConstructors tEnv vEnv))
   return ()
   -- VarEnv
   -- vEnv <- getVEnv
@@ -61,6 +62,8 @@ renameFun f (TypeScheme p xks t) = do
   t' <- rename bs t
   addToVEnv f (TypeScheme p xks' t')
   -- The function body
+  eEnv <- getEEnv
+  trace ("getFromEEnv: " ++ show f ++ ", env: " ++ show eEnv) (return ())
   e <- getFromEEnv f
   e' <- rename bs e
   addToEEnv f e'
@@ -77,11 +80,12 @@ class Rename t where
 instance Rename TypeScheme where
   rename bs (TypeScheme p xks t) = do
     xks' <- mapM (rename bs) xks
-    t' <- rename (insertBindings xks xks' bs ) t
+    t' <- rename (insertBindings xks xks' bs) t
     return $ TypeScheme p xks' t'
 
 insertBindings :: [TypeVarBind] -> [TypeVarBind] -> Bindings -> Bindings
-insertBindings xks xks' bs = foldr (\(TypeVarBind _ x _, TypeVarBind _ y _) bs' -> insertVar x y bs') bs (zip xks xks')
+insertBindings xks xks' bs =
+  foldr (\(TypeVarBind _ x _, TypeVarBind _ y _) -> insertVar x y) bs (zip xks xks')
 
 -- Types
 
@@ -203,8 +207,11 @@ instance Rename Expression where
 renameField :: Bindings -> ([ProgVar], Expression) -> FreestState ([ProgVar], Expression)
 renameField bs (xs, e) = do
   xs' <- mapM (rename bs) xs
-  e' <- rename bs e
+  e' <- rename (insertProgVars xs xs' bs) e
   return $ (xs', e')
+
+insertProgVars :: [ProgVar] -> [ProgVar] -> Bindings -> Bindings
+insertProgVars xs xs' bs = foldr(\(x, x') bs -> insertVar x x' bs) bs (zip xs xs')
 
 -- Program variables
 
