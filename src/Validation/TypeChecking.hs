@@ -36,8 +36,6 @@ import           Debug.Trace
 
 typeCheck :: FreestState ()
 typeCheck = do
-  -- Type/datatype declarations: check TypeEnv for type or datatype
-  -- declarations, VarEnv for each datatype constructor
   tEnv <- getTEnv
   vEnv <- getVEnv
   eEnv <- getEEnv
@@ -45,6 +43,8 @@ typeCheck = do
     trace ("  VEnv " ++ show (userDefined vEnv))
       trace ("  EEnv " ++ show eEnv)
         return ()
+  -- Type/datatype declarations: check TypeEnv for type or datatype
+  -- declarations, VarEnv for each datatype constructor
   tEnv <- getTEnv
   mapM_ (K.synthetiseTS Map.empty . snd) tEnv -- check the formation of all type schemes
   -- Function signatures (VarEnv)
@@ -57,8 +57,9 @@ typeCheck = do
   -- Main function
   checkMainFunction
 
--- Check whether all functions signatures have a binding. Exclude the
--- builtin functions and the datatype constructors.
+-- Check whether a given function signature has a corresponding
+-- binding. Exclude the builtin functions and the datatype
+-- constructors.
 checkHasBinding :: ProgVar -> TypeScheme -> FreestState ()
 checkHasBinding f _ = do
   eEnv <- getEEnv
@@ -69,6 +70,8 @@ checkHasBinding f _ = do
     addError (position f) ["The type signature for", styleRed $ show f,
                            "lacks an accompanying binding"]
 
+-- Check a given function body against its type; make sure all linear
+-- variables are used.
 checkFunBody :: ProgVar -> Expression -> FreestState ()
 checkFunBody f e =
   getFromVEnv f >>= \case

@@ -61,14 +61,14 @@ synthetise kEnv (UnLet _ x e1 e2) = do
   quotient kEnv x
   return t2
 -- Abstraction introduction
-synthetise kEnv (Lambda p m x t1 e) = do
+synthetise kEnv e'@(Lambda p m x t1 e) = do
   K.synthetise kEnv t1
-  vEnv1 <- getVEnv
   addToVEnv x (toTypeScheme t1)
+  vEnv1 <- getVEnv
   t2 <- synthetise kEnv e
   quotient kEnv x
   vEnv2 <- getVEnv
-  when (m == Un) (checkEqualEnvs p vEnv1 vEnv2)
+  when (m == Un) (checkEqualEnvs e' vEnv1 vEnv2)
   return $ Fun p m t1 t2
 -- Abstraction elimination
 synthetise kEnv (App _ e1 e2) = do
@@ -289,12 +289,14 @@ checkEquivTypes exp kEnv expected actual = do
                           "\t             with actual type", styleRed (show actual), "\n",
              "\t for expression",  styleRed (show exp)]
 
-checkEqualEnvs :: Pos -> VarEnv -> VarEnv -> FreestState ()
-checkEqualEnvs p vEnv1 vEnv2 =
+checkEqualEnvs :: Expression -> VarEnv -> VarEnv -> FreestState ()
+checkEqualEnvs e vEnv1 vEnv2 = do
+  trace ("Initial vEnv: " ++ show vEnv1 ++ "\nFinal vEnv " ++ show vEnv2) (return ())
   when (not $ Map.null diff)
-    (addError p ["Final environment differs from initial\n",
-                "\t these extra entries are present in the final environment:", styleRed $ show diff])
-  where diff = Map.difference vEnv2 vEnv1
+    (addError (position e) ["Final environment differs from initial in an unrestricted function\n",
+      "\t these extra entries are present in the final environment:", styleRed $ show diff, "\n",
+      "\t in lambda abstraction", styleRed $ show e])
+  where diff = Map.difference vEnv1 vEnv2
 
 checkEquivEnvs :: Pos -> KindEnv -> VarEnv -> VarEnv -> FreestState ()
 checkEquivEnvs p kEnv vEnv1 vEnv2 = do

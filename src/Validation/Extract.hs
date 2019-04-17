@@ -71,7 +71,7 @@ extractPair t = do
     u                ->
       let p = position u in
       addError p ["Expecting a pair type; found type", styleRed $ show u] >>
-      return (Basic p IntType, Basic p IntType)
+      return (omission p, omission p)
       
 -- Extracts a basic type from a general type; gives an error if it isn't a basic
 extractBasic :: Type -> FreestState BasicType
@@ -81,7 +81,7 @@ extractBasic t = do
     (Basic _ b) -> return b
     u           ->
       addError (position u) ["Expecting a basic type; found type", styleRed $ show u] >>
-      return UnitType
+      return IntType
 
 -- Extracts an output type from a general type; gives an error if it isn't an output
 extractOutput :: Type -> FreestState (BasicType, Type)
@@ -127,7 +127,7 @@ extractDatatypeMap e t = do
     u              -> do
       addError (position e) ["Expecting a datatype for expression", styleRed $ show e, "\n",
                              "\t found type", styleRed $ show u]
-      return $ Map.empty
+      return Map.empty
 
 -- Extracts a constructor from a choice map; gives an error if the
 -- constructor is not in the map
@@ -137,4 +137,4 @@ extractCons p tm x =
     Just t -> return t
     Nothing -> do
       addError p ["Constructor", styleRed (show x), "not in scope"]             
-      return $ Basic p UnitType
+      return $ omission p
