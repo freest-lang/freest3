@@ -90,11 +90,12 @@ toGrammar (Dualof _ t) = toGrammar (dual t)
 toGrammar (TypeName p x) = do
   b <- memberVisited x
   if b
-  then    -- We have visited this type name befor
+  then    -- We have visited this type name before
     return [x]
   else do -- This is the first visit
-    (k, TypeScheme _ [] u) <- getFromVEnv x
-    toGrammar (Rec p (TypeVarBind p x k) u)
+    (k, TypeScheme q [] t) <- getFromVEnv x
+    trace ("TypeName: " ++ show (Rec p (TypeVarBind q x k) t))
+      toGrammar (Rec p (TypeVarBind q x k) t)
   -- Should not happen
 toGrammar t = trace ("toGrammar: " ++ show t) (return [mkVar (position t) "error"])
 

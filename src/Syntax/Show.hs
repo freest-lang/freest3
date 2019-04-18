@@ -154,9 +154,9 @@ showExp i (UnLet _ x e1 e2) = "(let " ++ show x ++ " = " ++ showExp (i-1) e1 ++ 
 showExp i (Fork _ e) = "fork " ++ showExp (i-1) e
   -- Session types
 showExp _ (New _ t) = "new " ++ show t
-showExp i (Send _ e) = "send " ++ showExp (i-1) e
-showExp i (Receive _ e) = "receive " ++ showExp (i-1) e
-showExp i (Select _ l e) = "select " ++ show l ++ showExp (i-1) e
+showExp i (Send _ e) = "(send " ++ showExp (i-1) e ++ ")"
+showExp i (Receive _ e) = "(receive " ++ showExp (i-1) e ++ ")"
+showExp i (Select _ l e) = "(select " ++ show l ++ " " ++ showExp (i-1) e ++ ")"
 showExp i (Match _ e m) = "match " ++ showExp (i-1) e ++ " with {" ++ showFieldMap (i-1) m ++ "}"
 
 showFieldMap :: Int -> FieldMap -> String
