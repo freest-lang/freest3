@@ -96,10 +96,10 @@ extractMessage :: Polarity -> String -> Expression -> Type -> FreestState (Basic
 extractMessage pol msg e t = do
   t' <- norm t
   case t' of
-     (Message p pol b)            -> return (b, Skip p)
-     (Semi _ (Message _ pol b) u) -> return (b, u)
-     u                            -> do
-       addError (position e) ["Expecting an", msg, "for expression",  styleRed $ show e, "\n",
+     (Message p _ b)            -> return (b, Skip p)
+     (Semi _ (Message _ _ b) u) -> return (b, u)
+     u                          -> do
+       addError (position e) ["Expecting an", msg, "type for expression", styleRed $ show e, "\n",
                               "\t found type", styleRed $ show u]
        return (UnitType, Skip (position u))
 
