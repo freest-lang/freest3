@@ -69,7 +69,8 @@ checkHasBinding f _ = do
   when (f `Map.member` (userDefined (noConstructors tEnv vEnv)) &&
         f `Map.notMember` eEnv) $
     addError (position f) ["The type signature for", styleRed $ show f,
-                           "lacks an accompanying binding"]
+                           "lacks an accompanying binding\n",
+                           "\t Type signature:", styleRed $ show $ vEnv Map.! f]
 
 -- Check a given function body against its type; make sure all linear
 -- variables are used.

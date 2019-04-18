@@ -61,11 +61,27 @@ instance Equivalence Type where
     equiv kenv t u =
       isSessionType tenv kenv t &&
       isSessionType tenv kenv u &&
-      Bisimulation.equivalent t u
+      Bisimulation.equivalent tenv t u
     
     checkConstructor :: KindEnv -> TypeMap -> Bool -> ProgVar -> Type -> Bool
     checkConstructor kenv m acc l t =
       acc && l `Map.member` m && equiv kenv (m Map.! l) t
+
+-- Assumes the type is well formed
+isSessionType :: TypeEnv -> KindEnv -> Type -> Bool  
+  -- Session types
+isSessionType _    _    (Skip _)        = True
+isSessionType _    _    (Semi _ _ _)    = True
+isSessionType _    _    (Message _ _ _) = True
+isSessionType _    _    (Choice _ _ _)  = True
+  -- Functional or session
+isSessionType tenv kenv (Rec _ _ t)     = isSessionType tenv kenv t
+isSessionType _    kenv (TypeVar _ x)   = Map.member x kenv
+  -- Type operators
+isSessionType _    _    (Dualof _ _)    = True
+isSessionType tenv kenv (TypeName p x)  = isSession $ fst $ tenv Map.! x
+  -- Otherwise: Functional types
+isSessionType _    _    _               = False
 
 -- Type schemes
 

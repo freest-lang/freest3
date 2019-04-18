@@ -16,17 +16,15 @@ module Syntax.Schemes
 , TypeEnv
 , VarEnv
 , toTypeScheme
-, isSessionType
 , noConstructors
 ) where
 
 import           Syntax.Types
 import           Syntax.Kinds (Kind, TypeVarBind, KindEnv)
-import           Syntax.ProgramVariables (ProgVar)
-import           Syntax.TypeVariables (TypeVar)
+import           Syntax.ProgramVariables
+import           Syntax.TypeVariables
 import           Syntax.Base
 import qualified Data.Map.Strict as Map
-import           Data.List (intersperse)
 
 data TypeScheme = TypeScheme Pos [TypeVarBind] Type
 
@@ -37,6 +35,7 @@ type TypeEnv = Map.Map TypeVar (Kind, TypeScheme)
 -- operators) and parameters, and the datatype constructors
 type VarEnv = Map.Map ProgVar TypeScheme
 
+-- Create a type scheme from a type
 toTypeScheme :: Type -> TypeScheme
 toTypeScheme t = TypeScheme (position t) [] t
 
@@ -46,22 +45,7 @@ instance Position TypeScheme where
 instance Default TypeScheme where
  omission p = TypeScheme p [] (omission p)
 
--- Assumes the type is well formed
-isSessionType :: TypeEnv -> KindEnv -> Type -> Bool
-  -- Session types
-isSessionType _    _    (Skip _)        = True
-isSessionType _    _    (Semi _ _ _)    = True
-isSessionType _    _    (Message _ _ _) = True
-isSessionType _    _    (Choice _ _ _)  = True
-isSessionType tenv kenv (Rec _ _ t)     = isSessionType tenv kenv t
-  -- Functional or session
-isSessionType _    kenv (TypeVar _ x)   = Map.member x kenv
-  -- Type operators
-isSessionType _    _    (Dualof _ _)    = True
-isSessionType tenv kenv (TypeName p x)  = False -- isSession $ fst $ tenv Map.! x
-  -- Otherwise: Functional types
-isSessionType _    _    _               = False
-
+-- A given type environment without constructors
 noConstructors :: TypeEnv -> VarEnv -> VarEnv
 noConstructors tEnv = Map.filterWithKey (\x _ -> not (x `isDatatypeContructor` tEnv))
 

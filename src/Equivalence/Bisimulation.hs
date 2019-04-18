@@ -27,9 +27,9 @@ import qualified Data.Set as Set
 import qualified Data.Sequence as Sequence
 import           Data.List (isPrefixOf)
 
-equivalent :: Type -> Type -> Bool
-equivalent t u = expand (prune p) [x] [y]
-  where Grammar [x, y] p = convertToGrammar [t, u]
+equivalent :: TypeEnv -> Type -> Type -> Bool
+equivalent tEnv t u = expand (prune p) [x] [y]
+  where Grammar [x, y] p = convertToGrammar tEnv [t, u]
 
 type Node = Set.Set ([TypeVar], [TypeVar])
 
