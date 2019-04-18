@@ -32,6 +32,7 @@ instance Normalise TypeScheme where
 -- normalise t = u implies
 --   t is equivalent to u and
 --   u is not a rec type and
+--   u is not a name type and
 --   if u is u1;u2, then u1 is no checked
 instance Normalise Type where
     -- Session types
@@ -44,7 +45,7 @@ instance Normalise Type where
   normalise tenv (Dualof _ t) = normalise tenv (dual t)
 --  normalise tenv t@(TypeName _ a) = t
   normalise tenv (TypeName _ a) = normalise tenv t
-    where (_, TypeScheme _ [] t) = tenv Map.! a
+    where (_, TypeScheme _ [] t) = tenv Map.! a -- TODO: type/data may be polymorphic
     -- Otherwise: Basic, Fun, PairType, Datatype, Skip, Message, Choice, TypeVar
   normalise tenv t = t
 
