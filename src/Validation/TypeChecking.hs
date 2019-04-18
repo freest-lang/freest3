@@ -39,7 +39,7 @@ typeCheck = do
   tEnv <- getTEnv
   vEnv <- getVEnv
   eEnv <- getEEnv
-  trace ("Entering type checking\n  TEnv " ++ show tEnv)
+  trace ("Entering type checking with\n  TEnv " ++ show tEnv)
     trace ("  VEnv " ++ show (userDefined vEnv))
       trace ("  EEnv " ++ show eEnv)
         return ()

@@ -228,9 +228,9 @@ synthetiseCons x tm =
 -- Removes a variable from the Environment and gives an error if it is linear
 quotient :: KindEnv -> ProgVar -> FreestState ()
 quotient kEnv x = do
-  vEnv <- getVEnv
-  tEnv <- getTEnv
-  trace (show x ++ " -:- " ++ show (userDefined (noConstructors tEnv vEnv))) (return ())
+  -- vEnv <- getVEnv
+  -- tEnv <- getTEnv
+  -- trace (show x ++ " -:- " ++ show (userDefined (noConstructors tEnv vEnv))) (return ())
   getFromVEnv x >>= \case
     Just (TypeScheme _ [] t) -> do
       k <- K.synthetise kEnv t
@@ -270,10 +270,13 @@ checkAgainst kEnv (BinLet _ x y e1 e2) t2 = do
 -- checkAgainst kEnv (Match p e fm) = checkAgainstFieldMap p kEnv e fm extractInChoiceMap
 -- TODO Datatype elimination
 -- checkAgainst kEnv (Case p e fm) = checkAgainstFieldMap p kEnv e fm extractDatatypeMap
--- TODO Lambda elimination
-checkAgainst kEnv (App p e1 e2) u = do
-  t <- synthetise kEnv e1
-  checkAgainst kEnv e2 (Fun p Lin t u)
+-- Lambda elimination. It seems that we cannot do checkAgainst for we
+-- cannot decide whether to use a Lin or a Un function. See
+-- counterexamples: polySUTL.fst when using Lin, and mult.fst when
+-- using Un
+-- checkAgainst kEnv (App p e1 e2) u = do
+--   t <- synthetise kEnv e2
+--   checkAgainst kEnv e1 (Fun p Un/Lin t u)
 -- Default
 checkAgainst kEnv e t = do
   u <- synthetise kEnv e
@@ -293,12 +296,12 @@ checkEquivTypes exp kEnv expected actual = do
   when (not $ equivalent tEnv kEnv expected actual) $
     addError (position exp) ["Couldn't match expected type", styleRed (show expected), "\n",
                           "\t             with actual type", styleRed (show actual), "\n",
-             "\t for expression",  styleRed (show exp)]
+                          "\t               for expression",  styleRed (show exp)]
 
 checkEqualEnvs :: Expression -> VarEnv -> VarEnv -> FreestState ()
 checkEqualEnvs e vEnv1 vEnv2 = do
-  tEnv <- getTEnv
-  trace ("Initial vEnv: " ++ show (userDefined (noConstructors tEnv vEnv1)) ++ "\n  Final vEnv: " ++ show (userDefined (noConstructors tEnv vEnv2)) ++ "\n  Expression: " ++ show e) (return ())
+  -- tEnv <- getTEnv
+  -- trace ("Initial vEnv: " ++ show (userDefined (noConstructors tEnv vEnv1)) ++ "\n  Final vEnv: " ++ show (userDefined (noConstructors tEnv vEnv2)) ++ "\n  Expression: " ++ show e) (return ())
   when (not $ Map.null diff)
     (addError (position e) ["Final environment differs from initial in an unrestricted function\n",
       "\t These extra entries are present in the final environment:", styleRed $ show diff, "\n",

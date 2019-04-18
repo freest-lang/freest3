@@ -270,15 +270,18 @@
       \algtypein[\kindEnv;\varEnv_1]{\casee{e}{\{C_i\,\vec x_i\rightarrow e_i\}}}{U}{\Sigma_1 \div (\vec x_1\colon\vec V_1)}
     }
     \\
-    % Application
-    \frac{
-      \algtypeout[\kindEnv;\varEnv_1]{e_1}{T}{\varEnv_2}
-      \quad
-      \algtypein[\kindEnv;\varEnv_2]{e_2}{T\multimap U}{\varEnv_3}
-    }{
-      \algtypein[\kindEnv;\varEnv_1]{e_1e_2}{U}{\varEnv_3}
-    }
-    \quad
+    % Application _ It seems that we cannot do checkAgainst for we
+    % cannot decide whether to use a Lin or a Un function. See
+    % counterexamples: polySUTL.fst when using Lin, and mult.fst when
+    % using Un
+    % \frac{
+    %   \algtypeout[\kindEnv;\varEnv_1]{e_2}{T}{\varEnv_2}
+    %   \quad
+    %   \algtypein[\kindEnv;\varEnv_2]{e_1}{T\multimap U}{\varEnv_3}
+    % }{
+    %   \algtypein[\kindEnv;\varEnv_1]{e_1e_2}{U}{\varEnv_3}
+    % }
+    % \quad
     % Equivalence
     \frac{
       \algtypeout e U \varEnv
