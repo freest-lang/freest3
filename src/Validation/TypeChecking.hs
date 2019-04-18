@@ -25,6 +25,7 @@ import           Syntax.Base
 import           Syntax.Show
 import           Equivalence.Normalisation
 import           Validation.Extract
+import           Validation.Contractive
 import qualified Validation.Kinding as K
 import qualified Validation.Typing as T
 import           Utils.Errors
@@ -43,10 +44,10 @@ typeCheck = do
     trace ("  VEnv " ++ show (userDefined vEnv))
       trace ("  EEnv " ++ show eEnv)
         return ()
-  -- Type/datatype declarations: check TypeEnv for type or datatype
-  -- declarations, VarEnv for each datatype constructor
+  -- Type/datatype declarations
   tEnv <- getTEnv
-  mapM_ (K.synthetiseTS Map.empty . snd) tEnv -- check the formation of all type schemes
+  mapM_ (checkContractive Map.empty . snd) tEnv -- check contractivity of all type decls
+  mapM_ (K.synthetiseTS Map.empty . snd) tEnv -- check the formation of all type decls
   -- Function signatures (VarEnv)
   vEnv <- getVEnv
   mapM_ (K.synthetiseTS Map.empty) vEnv

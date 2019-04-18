@@ -108,10 +108,10 @@ import           Debug.Trace
 %left NEG not                   -- unary
 
 -- Type
-%right dualof
 %right '->' '-o' -- TODO: an Expr operator as well
 %right '.'       -- Used in rec
 %right ';'       -- TODO: an Expr operator as well
+%right dualof
 
 %%
 

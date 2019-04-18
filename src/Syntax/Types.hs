@@ -25,9 +25,6 @@ import           Syntax.Kinds
 import           Syntax.TypeVariables
 import           Syntax.ProgramVariables (ProgVar)
 import           Syntax.Base
--- import           Syntax.Bind
--- import           Syntax.Kinds
--- import           Parse.Lexer (Position, Pos, position)
 import           Data.List (intersperse)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
