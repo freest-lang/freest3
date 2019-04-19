@@ -53,17 +53,17 @@ append :: Type -> Type -> Type
 append (Skip _)       t = t
 append t       (Skip _) = t
 append (Semi p t u)   v = Semi p t (append u v)
-append (Choice q v m) t = Choice q v (Map.map (`append` t) m)
+-- append (Choice q v m) t = Choice q v (Map.map (`append` t) m) -- This is only needed in a "full" normalisation
 append t              u = Semi (position t) t u
 
 isChecked :: Type ->  Bool
 isChecked = isCheck Set.empty
   where
-  isCheck _ (Skip _)                       = True
-  isCheck v (Semi _ s t)                   = isCheck v s && isCheck v t
-  isCheck v (Rec _ (TypeVarBind _ x _) t)  = isCheck (Set.insert x v) t
-  isCheck v (TypeVar _ x)                  = Set.member x v -- Only bound variables are checked
-  isCheck _ _                              = False
+  isCheck _ (Skip _)                      = True
+  isCheck v (Semi _ s t)                  = isCheck v s && isCheck v t
+  isCheck v (Rec _ (TypeVarBind _ x _) t) = isCheck (Set.insert x v) t
+  isCheck v (TypeVar _ x)                 = Set.member x v -- Only bound variables are checked
+  isCheck _ _                             = False
 
 {- An attempt of a "full" normalisation, useful for determining type equality without running the bisimulation game
 
