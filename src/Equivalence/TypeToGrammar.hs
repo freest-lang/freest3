@@ -74,9 +74,9 @@ toGrammar u@(Rec _ (TypeVarBind _ x _) t)
   | isChecked u = return []
   | otherwise = do
     insertVisited x
-    zs <- toGrammar t
-    m <- getTransitions $ head zs
-    addProductions x (Map.map (++ tail zs) m)
+    (z:zs) <- toGrammar t
+    m <- getTransitions z
+    addProductions x (Map.map (++ zs) m)
     return [x]
     -- On the fly α-conversion
     -- y <- freshVar
