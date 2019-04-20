@@ -2,6 +2,8 @@ module Equivalence.TestEquivalenceValidSpec(spec) where
 
 import           Syntax.Kinds (Kind)
 import           Syntax.Types
+import           Syntax.TypeVariables
+import           Syntax.Base
 import           Equivalence.Equivalence
 import           SpecHelper
 import           Parse.Lexer (defaultPos)
@@ -21,7 +23,7 @@ matchValidSpec [k, t, u] =
 
 --  :: [(String,Kind)]
 readKenv s =
-  map (\(x,k) -> (TypeVar defaultPos x, k)) xs
+  map (\(x,k) -> (mkVar defaultPos x, k)) xs
   where xs = read s :: [(String,Kind)]
   
 main :: IO ()
