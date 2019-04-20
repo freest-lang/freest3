@@ -46,16 +46,22 @@ typeCheck = do
         return ()
   -- Type/datatype declarations
   tEnv <- getTEnv
-  mapM_ (checkContractive Map.empty . snd) tEnv -- check contractivity of all type decls
-  mapM_ (K.synthetiseTS Map.empty . snd) tEnv -- check the formation of all type decls
+  trace "checking contractiveness of all type decls" (return ())
+  mapM_ (checkContractive Map.empty . snd) tEnv -- check contractiveness of all type decls
+  trace "checking the formation of all type decls" (return ())
+  mapM_ (K.synthetiseTS Map.empty . snd) tEnv -- check 
   -- Function signatures (VarEnv)
   vEnv <- getVEnv
+  trace "checking the formation of all type signatures (kinding)" (return ())
   mapM_ (K.synthetiseTS Map.empty) vEnv
+  trace "checking whether all function signatures have a binding" (return ())
   tMapWithKeyM checkHasBinding vEnv
   -- Function bodies (ExpEnv)
   eEnv <- getEEnv
   tMapWithKeyM checkFunBody eEnv
+  trace "checking the formation of all functions (typing)" (return ())
   -- Main function
+  trace "checking the main function" (return ())
   checkMainFunction
 
 -- Check whether a given function signature has a corresponding
