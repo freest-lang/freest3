@@ -1,6 +1,5 @@
 import           Test.QuickCheck (arbitrary, elements, sized, listOf, Arbitrary, Gen, maxSuccess, quickCheckWith, stdArgs, oneof)
 import           Syntax.Types
-import           Parse.Parser
 import           Syntax.Kinds
 import           Control.Monad
 import           Syntax.Expressions
@@ -10,6 +9,9 @@ import           Utils.PreludeLoader (prelude)
 import           Control.Monad.State
 import           Utils.FreestState
 import           Syntax.Base
+import           Equivalence.Equivalence
+import           Syntax.ProgramVariables
+import           Syntax.TypeVariables
 import qualified Data.Map.Strict as Map
 
 main = quickCheckWith stdArgs { maxSuccess = 100 } prop_show
@@ -27,32 +29,52 @@ instance Arbitrary Type where
     arbitrary = sized arbitraryType
     -- arbitrary = sized arbitrarySession
 
-arbitraryType :: Int -> Gen Type
-arbitraryType 0 = return (Skip defaultPos)
-arbitraryType n = do
-  t <- oneof [liftM Basic arbitrary,
-              -- Skip,
-              liftM2 Semi (arbitraryType (n `div` 4)) (arbitraryType (n `div` 4)),
-              liftM Choice Out arbitrary,
-              liftM Choice In arbitrary,
-              liftM2 Fun Un (arbitraryType (n `div` 4)) (arbitraryType (n `div` 4)),
-              liftM2 Fun Lin (arbitraryType (n `div` 4)) (arbitraryType (n `div` 4)),
-              liftM2 Pair (arbitraryType (n `div` 4)) (arbitraryType (n `div` 4)),
-              liftM Choice Out (arbitraryTypeMap (n `div` 4)),
-              liftM Choice In (arbitraryTypeMap (n `div` 4)),
-              liftM Datatype(arbitraryDatatypeTypeMap (n `div` 4)),
-              liftM2 Rec (arbitraryId) (arbitraryType (n `div` 4)),
-              -- liftM2 Forall (arbitraryId) (arbitraryType (n `div` 4)),
-              liftM ProgVar arbitraryId
-             ]
-  if (isType t) then
-    return t
-  else
-    arbitraryType (n `div` 4)
+instance Arbitrary Multiplicity where
+  arbitrary = elements [Un, Lin]
+
+instance Arbitrary Polarity where
+  arbitrary = elements [In, Out]
+
+-- instance Arbitrary Pos where
+--   arbitrary = elements [defaultPos]
+
+instance Arbitrary TypeVar where
+  arbitrary = elements [mkVar arbitrary "x", mkVar arbitrary "y", mkVar arbitrary "z"]
+
+instance Arbitrary TypeVarBind where
+  arbitrary = elements [TypeVarBind arbitrary (mkVar arbitrary "x") (kindTL arbitrary),
+                        TypeVarBind arbitrary (mkVar arbitrary "y") (kindTL arbitrary),
+                        TypeVarBind arbitrary (mkVar arbitrary "z") (kindTL arbitrary)]
+
+instance Arbitrary ProgVar where
+  arbitrary = elements [liftM2 mkVar arbitrary "A",
+                        liftM2 mkVar arbitrary "B",
+                        liftM2 mkVar arbitrary "C"]
+
+-- arbitraryType :: Int -> Gen Type
+-- arbitraryType 0 = return (Skip arbitrary)
+-- arbitraryType n = do
+--   t <- oneof [liftM Basic arbitrary,
+--               -- Skip,
+--               liftM3 Semi arbitrary (arbitraryType (n `div` 4)) (arbitraryType (n `div` 4)),
+--               -- liftM3 Fun arbitrary arbitrary (arbitraryType (n `div` 4)) (arbitraryType (n `div` 4)),
+--               -- liftM3 Fun arbitrary arbitrary (arbitraryType (n `div` 4)) (arbitraryType (n `div` 4)),
+--               -- liftM3 Pair arbitrary (arbitraryType (n `div` 4)) (arbitraryType (n `div` 4)),
+--               liftM2 Choice arbitrary arbitrary (arbitraryTypeMap (n `div` 4)),
+--               liftM2 Choice arbitrary arbitrary (arbitraryTypeMap (n `div` 4)),
+--               -- liftM2 Datatype arbitrary (arbitraryDatatypeTypeMap (n `div` 4)),
+--               liftM2 Rec arbitrary arbitrary (arbitraryType (n `div` 4)),
+--               -- liftM2 Forall (arbitraryId) (arbitraryType (n `div` 4)),
+--               liftM2 ProgVar arbitrary arbitrary
+--              ]
+--   if (isType t) then
+--     return t
+--   else
+--     arbitraryType (n `div` 4)
 
 arbitraryId :: Gen TypeVarBind
 arbitraryId = do
-  ts <- listOf $ elements (['A'..'Z'] ++ ['a'..'z'])
+  ts <- listOf $ elements (['A','B','C'])
   if isValidId ts then
     return ts
   else
@@ -69,7 +91,7 @@ isValidId _ = True
 arbitraryTypeMap :: Int -> Gen TypeMap
 arbitraryTypeMap n = do
     m <- listOf $ (arbitraryBinding (n `div` 4))
-    if m == [] then
+    if null m then
       arbitraryTypeMap (n `div` 4)
     else
       return $ Map.fromList m
@@ -84,15 +106,13 @@ arbitrarySession :: Int -> Gen Type
 arbitrarySession 0 = return (Skip defaultPos)
 arbitrarySession n = do
   t <- oneof [
-              liftM2 Semi (arbitrarySession (n `div` 4)) (arbitrarySession (n `div` 4))
-              ,liftM Choice Out arbitrary
-              ,liftM Choice In arbitrary
-              ,liftM Choice Out (arbitraryTypeMap (n `div` 4))
-              ,liftM Choice In (arbitraryTypeMap (n `div` 4))
-              ,liftM2 Rec (arbitraryId) (arbitraryType (n `div` 4))
+              liftM3 Semi arbitrary (arbitrarySession (n `div` 4)) (arbitrarySession (n `div` 4))
+              ,liftM3 Choice arbitrary arbitrary (arbitraryTypeMap (n `div` 4))
+              ,liftM3 Choice arbitrary arbitrary (arbitraryTypeMap (n `div` 4))
+              ,liftM3 Rec arbitrary arbitrary (arbitraryType (n `div` 4))
              ]
 
-  if (isSessionType Map.empty Map.empty t) then
+  if (isSessionType t) then
     return t
   else
     arbitrarySession (n `div` 4)
@@ -131,7 +151,9 @@ isType kEnv t = do
 
 isSchemeType :: Type -> Bool
 isSchemeType t = isType kEnv t
-  where kEnv = Map.fromList [(mkVar defaultPos "α", kindTL), (mkVar  defaultPos "β", kindTL),
-                             (mkVar defaultPos "γ", kindTU), (mkVar  defaultPos "δ", kindTU),
-                             (mkVar defaultPos "ρ", kindSL), (mkVar  defaultPos "τ", kindSL),
-                             (mkVar defaultPos "φ", kindSU), (mkVar  defaultPos "ψ", kindSU)]
+  where kEnv = Map.fromList [(mkVar defaultPos "α", kindTL), (mkVar defaultPos "β", kindTL),
+                             (mkVar defaultPos "x", kindTL), (mkVar defaultPos "y", kindTL),
+                             (mkVar defaultPos "z", kindTL),
+                             (mkVar defaultPos "γ", kindTU), (mkVar defaultPos "δ", kindTU),
+                             (mkVar defaultPos "ρ", kindSL), (mkVar defaultPos "τ", kindSL),
+                             (mkVar defaultPos "φ", kindSU), (mkVar defaultPos "ψ", kindSU)]

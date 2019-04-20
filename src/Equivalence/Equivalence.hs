@@ -15,6 +15,7 @@ Portability :  portable | non-portable (<reason>)
 
 module Equivalence.Equivalence
 ( Equivalence(..)
+, isSessionType
 ) where
 
 import           Syntax.Schemes
@@ -62,13 +63,13 @@ instance Equivalence Type where
       isSessionType tenv kenv t &&
       isSessionType tenv kenv u &&
       Bisimulation.equivalent tenv t u
-    
+
     checkConstructor :: KindEnv -> TypeMap -> Bool -> ProgVar -> Type -> Bool
     checkConstructor kenv m acc l t =
       acc && l `Map.member` m && equiv kenv (m Map.! l) t
 
 -- Assumes the type is well formed
-isSessionType :: TypeEnv -> KindEnv -> Type -> Bool  
+isSessionType :: TypeEnv -> KindEnv -> Type -> Bool
   -- Session types
 isSessionType _    _    (Skip _)        = True
 isSessionType _    _    (Semi _ _ _)    = True
