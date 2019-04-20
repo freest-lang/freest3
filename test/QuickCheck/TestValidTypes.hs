@@ -1,11 +1,13 @@
-import           Test.QuickCheck (arbitrary, elements, sized, listOf, Arbitrary, Gen, maxSuccess, quickCheckWith, stdArgs, oneof)
+{-# LANGUAGE TypeSynonymInstances #-}
+
+import           Test.QuickCheck -- (arbitrary, elements, sized, listOf, Arbitrary, Gen, maxSuccess, quickCheckWith, stdArgs, oneof)
 import           Syntax.Types
 import           Syntax.Kinds
 import           Control.Monad
 import           Syntax.Expressions
 import           Syntax.Schemes
 import           Validation.Kinding (synthetise)
-import           Utils.PreludeLoader (prelude)
+-- import           Utils.PreludeLoader (prelude)
 import           Control.Monad.State
 import           Utils.FreestState
 import           Syntax.Base
@@ -14,20 +16,13 @@ import           Syntax.ProgramVariables
 import           Syntax.TypeVariables
 import qualified Data.Map.Strict as Map
 
-main = quickCheckWith stdArgs { maxSuccess = 100 } prop_show
+main = quickCheckWith stdArgs { maxSuccess = 100 } prop_dual
 
-prop_show :: Type -> Bool
-prop_show t = show (read (show t) :: Type) == show t
+-- prop_show :: Type -> Bool
+-- prop_show t = show (read (show t) :: Type) == show t
 
 prop_dual :: Type -> Bool
 prop_dual t = dual (dual t) == t
-
-instance Arbitrary BasicType where
-  arbitrary = elements [IntType, CharType, BoolType, UnitType]
-
-instance Arbitrary Type where
-    arbitrary = sized arbitrarySession
-    -- arbitrary = sized arbitrarySession
 
 instance Arbitrary Multiplicity where
   arbitrary = elements [Un, Lin]
@@ -36,20 +31,57 @@ instance Arbitrary Polarity where
   arbitrary = elements [In, Out]
 
 instance Arbitrary Pos where
-  arbitrary = elements [defaultPos]
+  arbitrary = elements [defaultPos]
+
+ids :: [String]
+ids = ["x", "y", "z"]
 
 instance Arbitrary TypeVar where
-  arbitrary = elements [mkVar arbitrary "x", mkVar arbitrary "y", mkVar arbitrary "z"]
+  arbitrary = arbitraryVar ids
 
-instance Arbitrary TypeVarBind where
-  arbitrary = elements [TypeVarBind arbitrary (mkVar arbitrary "x") (kindTL arbitrary),
-                        TypeVarBind arbitrary (mkVar arbitrary "y") (kindTL arbitrary),
-                        TypeVarBind arbitrary (mkVar arbitrary "z") (kindTL arbitrary)]
+choices :: [String]
+choices = ["A", "B", "C"]
 
 instance Arbitrary ProgVar where
-  arbitrary = elements [liftM2 mkVar arbitrary "A",
-                        liftM2 mkVar arbitrary "B",
-                        liftM2 mkVar arbitrary "C"]
+  arbitrary = arbitraryVar choices
+
+arbitraryVar :: Variable b => [String] -> Gen b
+arbitraryVar ids = do
+  id <- elements ids
+  return $ mkVar defaultPos id
+
+instance Arbitrary Kind where
+  arbitrary = elements [kindTL defaultPos]
+
+instance Arbitrary TypeVarBind where
+  arbitrary = liftM3 TypeVarBind arbitrary arbitrary arbitrary
+
+instance Arbitrary BasicType where
+  arbitrary = elements [IntType, CharType, BoolType, UnitType]
+
+instance Arbitrary Type where
+  arbitrary = sized arbitrarySession
+
+arbitrarySession :: Int -> Gen Type
+arbitrarySession 0 = return (Skip defaultPos)
+arbitrarySession n = oneof
+  [ liftM3 Semi arbitrary (arbitrarySession (n `div` 4)) (arbitrarySession (n `div` 4))
+  , liftM3 Choice arbitrary arbitrary (arbitraryTypeMap (n `div` 4))
+  , liftM3 Rec arbitrary arbitrary (arbitrarySession (n `div` 4))
+  ]
+
+arbitraryTypeMap :: Int -> Gen TypeMap
+arbitraryTypeMap n = do
+  m <- listOf1 $ arbitraryField (n `div` 4)
+  return $ Map.fromList m
+
+arbitraryField :: Int -> Gen (ProgVar,Type)
+arbitraryField n = do
+    k <- arbitrary
+    t <- arbitrarySession (n `div` 4)
+    return (k, t)
+
+{-
 
 arbitraryType :: Int -> Gen Type
 arbitraryType 0 = return (Skip arbitrary)
@@ -88,14 +120,14 @@ isValidId _ = True
 -- TypeMap of session types for
 arbitraryTypeMap :: Int -> Gen TypeMap
 arbitraryTypeMap n = do
-    m <- listOf $ (arbitraryBinding (n `div` 4))
+    m <- listOf $ (arbitraryField (n `div` 4))
     if null m then
       arbitraryTypeMap (n `div` 4)
     else
       return $ Map.fromList m
 
-arbitraryBinding :: Int -> Gen (TypeVarBind,Type)
-arbitraryBinding n = do
+arbitraryField :: Int -> Gen (TypeVarBind,Type)
+arbitraryField n = do
     f <- arbitraryId
     t <- (arbitrarySession (n `div` 4))
     return (f,t)
@@ -155,3 +187,5 @@ isSchemeType t = isType kEnv t
                              (mkVar defaultPos "γ", kindTU), (mkVar defaultPos "δ", kindTU),
                              (mkVar defaultPos "ρ", kindSL), (mkVar defaultPos "τ", kindSL),
                              (mkVar defaultPos "φ", kindSU), (mkVar defaultPos "ψ", kindSU)]
+
+-}

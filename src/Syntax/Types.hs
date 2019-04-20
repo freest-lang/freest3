@@ -137,6 +137,7 @@ instance Dual Type where
   dual (Rec p x t)     = Rec p x (dual t)
 --  dual (Rec p x t)     = Rec p x (Dualof p t) -- The lazy version, hopefully faster
   -- Type operators
+  dual (Dualof _ (Dualof _ t)) = t
   dual (Dualof _ t)    = t
   -- Functional types, Skip, TypeVar, TypeName
   dual t               = t
