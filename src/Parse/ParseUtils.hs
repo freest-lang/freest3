@@ -1,5 +1,5 @@
 {- |
-Module      :  Parse.ParserUtils
+Module      :  Parse.ParseUtils
 Description :  <optional short text displayed on contents page>
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>

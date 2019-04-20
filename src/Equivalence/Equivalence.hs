@@ -48,11 +48,11 @@ instance Equivalence Type where
       Map.foldlWithKey (checkConstructor kenv m2) True m1
       -- Functional or session
     equiv _ (TypeVar _ x) (TypeVar _ y) = x == y
-      -- Type operatorstre  
+      -- Type operators
     equiv kenv (Dualof _ t) u = equiv kenv (dual t) u
     equiv kenv t (Dualof _ u) = equiv kenv t (dual u)
-    equiv _ (TypeName _ c1) (TypeName _ c2) = c1 == c2 -- TODO: this works for datatypes but not for type declarations, where one has to expand the definition(s) for c1 (c2) and continue
-    -- TODO: THIS CAN EASILY LOOP
+    equiv _ (TypeName _ x) (TypeName _ y) = x == y -- TODO: this works for datatypes but not for type declarations, where one has to expand the definition(s) for x (y) and continue
+    -- TODO: THIS CAN EASILY LOOP. Why?
     equiv kenv (TypeName p x) u = equiv kenv t u
       where (_, TypeScheme _ [] t) = tenv Map.! x -- TODO: polymorphic type names
     equiv kenv t (TypeName p x) = equiv kenv t u
@@ -61,11 +61,27 @@ instance Equivalence Type where
     equiv kenv t u =
       isSessionType tenv kenv t &&
       isSessionType tenv kenv u &&
-      Bisimulation.equivalent t u
+      Bisimulation.equivalent tenv t u
     
     checkConstructor :: KindEnv -> TypeMap -> Bool -> ProgVar -> Type -> Bool
     checkConstructor kenv m acc l t =
       acc && l `Map.member` m && equiv kenv (m Map.! l) t
+
+-- Assumes the type is well formed
+isSessionType :: TypeEnv -> KindEnv -> Type -> Bool  
+  -- Session types
+isSessionType _    _    (Skip _)        = True
+isSessionType _    _    (Semi _ _ _)    = True
+isSessionType _    _    (Message _ _ _) = True
+isSessionType _    _    (Choice _ _ _)  = True
+  -- Functional or session
+isSessionType tenv kenv (Rec _ _ t)     = isSessionType tenv kenv t
+isSessionType _    kenv (TypeVar _ x)   = Map.member x kenv
+  -- Type operators
+isSessionType _    _    (Dualof _ _)    = True
+isSessionType tenv kenv (TypeName _ x)  = isSession $ fst $ tenv Map.! x
+  -- Otherwise: Functional types
+isSessionType _    _    _               = False
 
 -- Type schemes
 

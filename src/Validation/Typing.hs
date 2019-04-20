@@ -155,7 +155,7 @@ synthetiseVar kEnv x =
     Nothing -> do
       let p = position x
       addError p ["Variable or data constructor not in scope:", styleRed $ show x, "\n",
-               "\t (is", styleRed $ show x, "a linear variable?)"]
+               "\t (is", styleRed $ show x, "a linear variable that has been consumed?)"]
       let s = omission p
       addToVEnv x s
       return s

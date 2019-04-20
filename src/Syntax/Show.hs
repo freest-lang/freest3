@@ -71,9 +71,9 @@ instance Show Polarity where
   show In  = "?"
   show Out = "!"
 
-showChoice :: Polarity -> String
-showChoice In  = "&"
-showChoice Out = "+"
+showChoiceView :: Polarity -> String
+showChoiceView In  = "&"
+showChoiceView Out = "+"
 
 instance Show BasicType where
   show IntType  = "Int"
@@ -86,12 +86,12 @@ instance Show Type where
   show (Basic _ b)      = show b
   show (Fun _ m t u)    = "(" ++ show t ++ showArrow m ++ show u ++ ")"
   show (PairType _ t u) = "(" ++ show t ++ ", " ++ show u ++ ")"
-  show (Datatype _ m)   = "["++ showTypeMap m ++"]"
+  show (Datatype _ m)   = "["++ showDatatype m ++"]"
   -- Session types
   show (Skip _)         = "Skip"
   show (Semi _ t u)     = "(" ++ show t ++ ";" ++ show u ++ ")"
   show (Message _ p b)  = show p ++ show b
-  show (Choice _ v m)   = showChoice v ++ "{" ++ showTypeMap m ++ "}"
+  show (Choice _ v m)   = showChoiceView v ++ "{" ++ showChoice m ++ "}"
   show (Rec _ x t)      = "(rec " ++ show x ++ ". " ++ show t ++ ")"
   -- Functional or session
   show (TypeVar _ x)    = show x
@@ -99,14 +99,20 @@ instance Show Type where
   show (Dualof _ s)     = "(dualof " ++ show s ++ ")"
   show (TypeName _ x)   = show x
   
-showTypeMap :: TypeMap -> String
-showTypeMap m = concat $ intersperse " | " (map showAssoc (Map.assocs m))
+showDatatype :: TypeMap -> String
+showDatatype m = concat $ intersperse " | " (map showAssoc (Map.assocs m))
   where
   showAssoc :: (ProgVar, Type) -> String
   showAssoc (c, t) = show c ++ showAsSequence t
   showAsSequence :: Type -> String
   showAsSequence (Fun _ _ t u) = " " ++ show t ++ showAsSequence u
   showAsSequence _ = ""
+
+showChoice :: TypeMap -> String
+showChoice m = concat $ intersperse ", " (map showAssoc (Map.assocs m))
+  where
+  showAssoc :: (ProgVar, Type) -> String
+  showAssoc (c, t) = show c ++ ": " ++ show t
 
 -- Type Schemes
 
@@ -148,9 +154,9 @@ showExp i (UnLet _ x e1 e2) = "(let " ++ show x ++ " = " ++ showExp (i-1) e1 ++ 
 showExp i (Fork _ e) = "fork " ++ showExp (i-1) e
   -- Session types
 showExp _ (New _ t) = "new " ++ show t
-showExp i (Send _ e) = "send " ++ showExp (i-1) e
-showExp i (Receive _ e) = "receive " ++ showExp (i-1) e
-showExp i (Select _ l e) = "select " ++ show l ++ showExp (i-1) e
+showExp i (Send _ e) = "(send " ++ showExp (i-1) e ++ ")"
+showExp i (Receive _ e) = "(receive " ++ showExp (i-1) e ++ ")"
+showExp i (Select _ l e) = "(select " ++ show l ++ " " ++ showExp (i-1) e ++ ")"
 showExp i (Match _ e m) = "match " ++ showExp (i-1) e ++ " with {" ++ showFieldMap (i-1) m ++ "}"
 
 showFieldMap :: Int -> FieldMap -> String
