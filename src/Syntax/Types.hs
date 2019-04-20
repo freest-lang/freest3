@@ -72,7 +72,6 @@ data Type =
   -- Type operators
   | TypeName Pos TypeVar -- a named type, to be looked upon in a map of type names to types
   | Dualof Pos Type      -- to be expanded into a session type
---  deriving Ord -- Why needeed?
 
 type TypeMap = Map.Map ProgVar Type
 
@@ -121,8 +120,8 @@ instance Position Type where
   position (Semi p _ _)     = p
   position (Message p _ _)  = p
   position (Choice p _ _)   = p
-  position (Rec p _ _)      = p
   -- Functional or session
+  position (Rec p _ _)      = p
   position (TypeVar p _)    = p
   -- Type operators
   position (Dualof p _)     = p
@@ -132,12 +131,11 @@ instance Dual Type where
   -- Session types
   dual (Semi p t1 t2)  = Semi p (dual t1) (dual t2)
   dual (Message p v b) = Message p (dual v) b
---  dual (Choice p v m)  = Choice p (dual v) (Map.map dual m)
-  dual (Choice p v m)  = Choice p (dual v) (Map.map (Dualof p) m) -- The lazy version, hopefully faster
+  dual (Choice p v m)  = Choice p (dual v) (Map.map dual m)
+  -- dual (Choice p v m)  = Choice p (dual v) (Map.map (Dualof p) m) -- The lazy version, hopefully fa
   dual (Rec p x t)     = Rec p x (dual t)
 --  dual (Rec p x t)     = Rec p x (Dualof p t) -- The lazy version, hopefully faster
   -- Type operators
-  dual (Dualof _ (Dualof _ t)) = t
   dual (Dualof _ t)    = t
   -- Functional types, Skip, TypeVar, TypeName
   dual t               = t

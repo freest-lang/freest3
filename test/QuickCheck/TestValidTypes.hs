@@ -1,28 +1,42 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 
-import           Test.QuickCheck -- (arbitrary, elements, sized, listOf, Arbitrary, Gen, maxSuccess, quickCheckWith, stdArgs, oneof)
+import           Test.QuickCheck
+import           Equivalence.Equivalence
+import           Validation.Kinding (synthetise)
 import           Syntax.Types
 import           Syntax.Kinds
-import           Control.Monad
-import           Syntax.Expressions
-import           Syntax.Schemes
-import           Validation.Kinding (synthetise)
--- import           Utils.PreludeLoader (prelude)
-import           Control.Monad.State
-import           Utils.FreestState
-import           Syntax.Base
-import           Equivalence.Equivalence
 import           Syntax.ProgramVariables
 import           Syntax.TypeVariables
+import           Syntax.Base
+import           Control.Monad.State
+import           Utils.FreestState
+import           Control.Monad
 import qualified Data.Map.Strict as Map
 
-main = quickCheckWith stdArgs { maxSuccess = 100 } prop_dual
+main = quickCheckWith stdArgs { maxSuccess = 1000 } prop_same_equivs -- prop_distribution -- prop_dual
+
+-- Properties
 
 -- prop_show :: Type -> Bool
 -- prop_show t = show (read (show t) :: Type) == show t
 
+prop_same_equivs :: Type -> Bool
+prop_same_equivs t = equivalent Map.empty Map.empty t t
+
 prop_dual :: Type -> Bool
 prop_dual t = dual (dual t) == t
+
+prop_distribution d = collect (nodes d) True
+
+-- The number of nodes in a type
+nodes :: Type -> Int
+nodes (Semi _ t u)   = 1 + nodes t + nodes u
+nodes (Choice _ _ m) = 1 + Map.foldr (\t acc -> nodes t + acc) 0 m
+nodes (Rec _ _ t)    = 1 + nodes t
+-- Skip, Message, TypeVar
+nodes _              = 1
+
+-- Arbitrary
 
 instance Arbitrary Multiplicity where
   arbitrary = elements [Un, Lin]
@@ -66,8 +80,10 @@ arbitrarySession :: Int -> Gen Type
 arbitrarySession 0 = return (Skip defaultPos)
 arbitrarySession n = oneof
   [ liftM3 Semi arbitrary (arbitrarySession (n `div` 4)) (arbitrarySession (n `div` 4))
+  , liftM3 Message arbitrary arbitrary arbitrary
   , liftM3 Choice arbitrary arbitrary (arbitraryTypeMap (n `div` 4))
   , liftM3 Rec arbitrary arbitrary (arbitrarySession (n `div` 4))
+  , liftM2 TypeVar arbitrary arbitrary
   ]
 
 arbitraryTypeMap :: Int -> Gen TypeMap
@@ -87,7 +103,7 @@ arbitraryType :: Int -> Gen Type
 arbitraryType 0 = return (Skip arbitrary)
 arbitraryType n = do
   t <- oneof [liftM Basic arbitrary,
-              -- Skip,
+                -- Skip,
               liftM3 Semi arbitrary (arbitraryType (n `div` 4)) (arbitraryType (n `div` 4)),
               liftM3 Fun arbitrary arbitrary (arbitraryType (n `div` 4)) (arbitraryType (n `div` 4)),
               liftM3 Pair arbitrary (arbitraryType (n `div` 4)) (arbitraryType (n `div` 4)),
