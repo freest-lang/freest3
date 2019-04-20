@@ -41,7 +41,6 @@ monadic context.
   % cases. The proof then follows by a simple induction on this
   % characterization for the ``if'' direction, and induction on
   % \lstinline|toGrammar| for the ``only if'' direction
-  ]=[p-;0ol9k aq1§
 \end{proof}
 
 To conclude that the bisimulations on context-free session types and
@@ -483,6 +482,52 @@ to at least one child node and, reciprocally, that bisimulation on a
 child node implies the bisimulation of its parent node, thus proving
 the safeness property.
 
+While the safeness property will be instrumental in proving
+soundness, the \emph{finite witness property} is of
+utmost importance to prove completeness. This result follows
+immediately from the analysis by Jan{\v{c}}ar and
+Moller~\cite{janvcar1999techniques}, which capitalizes on results by
+Caucal~\cite{caucal1986decidabilite}, and Christensen, H{\"{u}}ttel, and
+Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}:
+
+\begin{proposition} [Finite Witness Property]
+\label{finite_witness}
+	If $\vec X \ProdEquiv \vec Y$, then the expansion tree rooted at
+	$\{(\vec X, \vec Y)\}$ has a finite successful branch.
+\end{proposition}
+
+We refer to Caucal, Christensen, H{\"{u}}ttel, and Stirling for
+details on the proof of existence of a finite witness, as stated in
+Proposition~\ref{finite_witness}. This proof is particularly
+interesting in that it highlights the importance of BPA rules and of
+pruning productions on reaching such (finite) witness. The results in
+these two papers also allow us to unravel the reason for the
+distinction of the simplification phase in the case where all the
+symbols in the grammar are normed from the case where they are not, as
+presented in Listing~\ref{lst:algorithm}.
+
+These properties ensure the termination of the algorithm, its soundness
+and completeness.
+
+\begin{lemma}
+\label{lemma:terminates}
+	The computation of $\bisimf S T$ always terminates.
+\end{lemma}
+
+\begin{proof}
+	If $S\TypeEquiv T$ then, by Theorem~\ref{thm:cfst_vs_grammar},
+	we have $X_S\ProdEquiv X_T$ and thus the existence of a finite
+	successful branch is ensured by the finite witness property. 
+	Hence, breadth-first search eventually terminates. 
+	
+	Case $S\not\TypeEquiv T$, we easily conclude that all branches 
+	in the expansion tree are finite and thence $\bisimf S T$ terminates: 
+	to conclude that all branches are finite, observe that 
+	any infinite branch is successful by definition and thus the 
+	safeness property would imply $X_S\ProdEquiv X_T$ and
+	we would have $S\TypeEquiv T$.
+\end{proof}
+
 %\begin{proof}
 %	On the other hand, as observed in~\cite{janvcar1999techniques},
 %	the union of nodes along a successful branch is a relation $R$
@@ -518,44 +563,29 @@ session types (Listing~\ref{lst:algorithm}) is sound with respect to
 the meta-theory of context-free session types.
 
 \begin{theorem}
+\label{thm:soundness}
   If $\bisimf ST$ returns \upshape{\lstinline|True|} then $S\TypeEquiv T$.
 \end{theorem}
 
 \begin{proof}
-  From Theorem~\ref{thm:cfst_vs_grammar} and
-  Lemma~\ref{lem:bisimilar-to-prod}.
+  From theorem~\ref{thm:cfst_vs_grammar} and
+  lemma~\ref{lem:bisimilar-to-prod}.
 \end{proof}
 
-Having observed that the safeness property was paramount for
-soundness, we now notice that the \emph{finite witness property} is of
-utmost importance to prove completeness. This result follows
-immediately from the analysis by Jan{\v{c}}ar and
-Moller~\cite{janvcar1999techniques}, which capitalizes on results by
-Caucal~\cite{caucal1986decidabilite}, and Christensen, H{\"{u}}ttel, and
-Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}:
+\begin{corollary}
+	If $S\not\TypeEquiv T$ then $\bisimf ST$ returns \upshape{\lstinline|False|}.
+\end{corollary}
 
-\begin{proposition} [Finite Witness Property]
-\label{finite_witness}
-	If $\vec X \ProdEquiv \vec Y$, then the expansion tree rooted at
-	$\{(\vec X, \vec Y)\}$ has a finite successful branch.
-\end{proposition}
-
-We refer to Caucal, Christensen, H{\"{u}}ttel, and Stirling for
-details on the proof of existence of a finite witness, as stated in
-Proposition~\ref{finite_witness}. This proof is particularly
-interesting in that it highlights the importance of BPA rules and of
-pruning productions on reaching such (finite) witness. The results in
-these two papers also allow us to unravel the reason for the
-distinction of the simplification phase in the case where all the
-symbols in the grammar are normed from the case where they are not, as
-presented in Listing~\ref{lst:algorithm}.
-
-Proposition~\ref{finite_witness} paved the way to obtain the completeness result. 
+\begin{proof}
+	From theorem~\ref{thm:soundness} and lemma~\ref{lemma:terminates}.
+\end{proof}
+ 
 We now prove that the algorithm to check the bisimulation of context-free session 
 types is complete with respect to the meta-theory of context-free session
-types.
+types. The finite witness property is paramount to achieve this result.
 
 \begin{theorem}
+\label{thm:completeness}
   If $S \TypeEquiv T$ then $\bisimf S T$ returns
   \upshape{\lstinline|True|}.
 \end{theorem}
@@ -568,6 +598,14 @@ types.
   terminating in an empty node.  Since our algorithm traverses the
   expansion tree using breadth-first search it will, eventually, reach
   the empty node and conclude the bisimulation positively.
+\end{proof}
+
+\begin{corollary}
+	If $\bisimf ST$ returns \upshape{\lstinline|False|} then $S\not\TypeEquiv T$.
+\end{corollary}
+
+\begin{proof}
+	From theorem~\ref{thm:completeness}.
 \end{proof}
 
 %%% Local Variables:
