@@ -13,7 +13,7 @@ import           Utils.FreestState
 import           Control.Monad
 import qualified Data.Map.Strict as Map
 
-main = quickCheckWith stdArgs { maxSuccess = 1000 } prop_same_equivs -- prop_distribution -- prop_dual
+main = quickCheckWith stdArgs {maxSuccess = 1000, chatty = True} prop_same_equivs -- prop_distribution -- prop_dual
 
 -- Properties
 
