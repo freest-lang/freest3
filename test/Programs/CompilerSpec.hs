@@ -24,10 +24,10 @@ spec = do
     mapM_ (\dir -> testDir True dir curDir) dirs
   runIO $ setCurrentDirectory curDir
 
---  dirs <- runIO $ listDirectory (invalidTestDir curDir)
---  describe "Invalid Tests" $ do
---    mapM_ (\dir -> testDir False dir curDir) dirs
---  runIO $ setCurrentDirectory curDir  
+  dirs <- runIO $ listDirectory (invalidTestDir curDir)
+  describe "Invalid Tests" $ do
+    mapM_ (\dir -> testDir False dir curDir) dirs
+  runIO $ setCurrentDirectory curDir  
   
 testDir :: Bool -> String -> String -> Spec
 testDir b dir curDir = parallel $ do
