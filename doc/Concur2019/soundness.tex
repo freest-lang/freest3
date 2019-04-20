@@ -18,21 +18,29 @@ our algorithm is sound and complete.
 For the purpose of providing a bisimulation between context-free
 session types and their corresponding symbols in the grammar, we start
 with a lemma that relates terminated types~$S$ to the result of
-$\toGrammarf S$.
+$\toGrammarf S$.  Given a $\transStatek$ state $T$, expression
+$\evalStatek (\toGrammarf S)\: T$ runs function $\toGrammark$ on
+input~$S$ and state~$T$ and extracts the resulting value from the
+monadic context.
 
 \begin{lemma}
   \label{lem:terminated-togrammar}
-  %% replaced P by \emptyset
-  \DONE S if and only if $\varepsilon, \emptyset = \toGrammarf S$.
+  If $\DONE S$, then $\evalStatek (\toGrammarf S)\: T=\varepsilon$.
 \end{lemma}
 
-\begin{proof} Given that all variables in a type are under some
-  $\mu$-binder, there is a simple inductive characterization of
-  $\DONE S$, namely, $\DONE \skipk$, $\DONE{(S;T)}$ if $\DONE S$ and
-  $\DONE T$, $\DONE{(\mu X.S)}$ if $\DONE S$, $\DONE X$, and false in
-  all other cases. The proof then follows by a simple induction on
-  this characterization for the ``if'' direction, and induction on
-  \lstinline|toGrammar| for the ``only if'' direction.
+\begin{proof}
+  By rule induction on the definition of $\DONE S$. Cases $\skipk$ and
+  $\reck$ follow directly from the respective cases in function
+  $\toGrammark$ in Listing~\ref{lst:toGrammar}. The case for
+  sequential composition follows by induction and the fact that
+  $\varepsilon+\!\!+\varepsilon=\varepsilon$.
+  % Given that all variables in a type are under some $\mu$-binder,
+  % there is a simple inductive characterization of $\DONE S$, namely,
+  % $\DONE \skipk$, $\DONE{(S;T)}$ if $\DONE S$ and $\DONE T$,
+  % $\DONE{(\mu X.S)}$ if $\DONE S$, $\DONE X$, and false in all other
+  % cases. The proof then follows by a simple induction on this
+  % characterization for the ``if'' direction, and induction on
+  % \lstinline|toGrammar| for the ``only if'' direction.
 \end{proof}
 
 To conclude that the bisimulations on context-free session types and

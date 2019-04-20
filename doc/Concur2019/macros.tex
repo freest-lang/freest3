@@ -94,6 +94,7 @@
 % Keywords
 \newcommand{\keyword}[1]{\mathsf{#1}}
 \newcommand{\skipk}{\keyword{skip}}
+\newcommand{\reck}{\keyword{rec}}
 \newcommand{\intk}{\keyword{int}}
 \newcommand{\boolk}{\keyword{bool}}
 \newcommand{\unitk}{\keyword{unit}}
@@ -153,8 +154,10 @@
 \newcommand{\textlstinline}[1]{\text{\upshape{\lstinline|#1|}}}
 % The k is for keyword 
 \newcommand{\toGrammark}{\textlstinline{toGrammar}}
+\newcommand{\transStatek}{\textlstinline{TransState}}
+\newcommand{\evalStatek}{\textlstinline{evalState}}
 \newcommand{\bisimk}{\textlstinline{bisimilar}}
-\newcommand{\isCheckedk}{\textlstinline{isChecked}}
+\newcommand{\isCheckedk}{\textlstinline{terminated}}
 % The f is for function
 \newcommand{\toGrammarf}[1]{\toGrammark\:{#1}}
 \newcommand{\bisimf}[2]{\bisimk{#1}\:{#2}}
