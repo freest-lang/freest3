@@ -13,6 +13,7 @@ Portability :  portable | non-portable (<reason>)
 
 module Validation.Contractive
 ( Contractive(..)
+, contractive
 )
 where
 

@@ -2,7 +2,7 @@
 
 import           Test.QuickCheck
 import           Equivalence.Equivalence
-import           Validation.Kinding (synthetise)
+import           Validation.Contractive
 import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.ProgramVariables
@@ -12,16 +12,17 @@ import           Control.Monad.State
 import           Utils.FreestState
 import           Control.Monad
 import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
 
-main = quickCheckWith stdArgs {maxSuccess = 1000, chatty = True} prop_same_equivs -- prop_distribution -- prop_dual
+main = quickCheckWith stdArgs {maxSuccess = 1000} prop_same_equivs -- prop_distribution -- prop_dual
 
 -- Properties
 
 -- prop_show :: Type -> Bool
 -- prop_show t = show (read (show t) :: Type) == show t
 
-prop_same_equivs :: Type -> Bool
-prop_same_equivs t = equivalent Map.empty Map.empty t t
+prop_same_equivs :: Type -> Property
+prop_same_equivs t = contractive Set.empty Map.empty Map.empty t ==> equivalent Map.empty Map.empty t t
 
 prop_dual :: Type -> Bool
 prop_dual t = dual (dual t) == t
