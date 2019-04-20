@@ -2,8 +2,8 @@
 \label{sec:introduction}
 
 Session types enhance the expressivity of traditional types for
-programming languages by enabling describing structured communication
-on heterogeneously typed
+programming languages by allowing the description of structured
+communication on heterogeneously typed
 channels~\cite{DBLP:conf/concur/Honda93,DBLP:conf/esop/HondaVK98,DBLP:conf/parle/TakeuchiHK94}.
 %
 Traditional session types are \emph{regular} in the sense that the
@@ -16,13 +16,48 @@ liberate traditional session types from the shackles of tail
 recursion, allowing for example, the safe serialization of arbitrary
 recursive datatypes~\cite{thiemann2016context}.
 
+Session types are often used to discipline interactions in concurrent
+programs. When associated to (bidirectional, heterogeneous) channels,
+session types describe the permitted patterns of interaction. For
+example, a type of the form
+%
+\begin{lstlisting}
+  rec x. +{Leaf: Skip, Node: !Int;x;x}
+\end{lstlisting}
+%
+which we abbreviate to \lstinline|TreeChannel|, may describe one end
+of a channel. A process holding such a channel end must first
+\emph{select} between choices \lstinline|Leaf| and
+\lstinline|Node|. If \lstinline|Leaf| is chosen, then interaction is
+terminated, as indicated by \lstinline|Skip|. Otherwise, the process
+must send and integer (\lstinline|!Int|) followed by two whole trees,
+witnessed by the recursive calls to \lstinline|TreeChannel|.
+
+A concurrent process holding the other end interacts with the channel
+via a \emph{dual} type:
+%
+\begin{lstlisting}
+  rec y. &{Leaf: Skip, Node: ?Int;y;y}
+\end{lstlisting}
+%
+In this case the process must be ready to offer both choices,
+\lstinline|Leaf| and \lstinline|Node|. For the latter option, the
+process must further receive an integer (\lstinline|?Int|), followed
+by two whole trees.
+
+Regular languages cannot capture such a behaviour. The best one can do
+with regular session types (and without resorting to channel passing)
+is to come up with a regular type that allows transmitting trees, as
+well as many other non tree-like structures. Tree behaviour would need
+to be checked at runtime~\cite{almeida.etal_freest-functional-language,thiemann2016context}.
+
 If the algorithmic aspects of type equivalence for regular session
 types are well known (Gay and Hole authored an algorithm to decide
 subtyting~\cite{DBLP:journals/acta/GayH05}, from which type
 equivalence can be derived), the same does not apply to context-free
 session types.
 %
-In the aforementioned work, Thiemann and Vasconcelos showed that the
+In the aforementioned work, Thiemann and Vasconcelos show that the
 equivalence of context-free session types is decidable, by reducing
 the problem to the verification of bisimulation for Basic Process
 Algebra (BPA) which, in turn, was proved decidable by Christensen,
@@ -33,10 +68,11 @@ known to be decidable, the only implementation of context-free session
 types we are aware of is that of
 Padovani~\cite{DBLP:conf/esop/Padovani17}, included in a programming
 language that requires a structural alignment between code and types
-(enforced by an explicit resumption process operator that explicitly
-breaks a type $S;T$), thus sidestepping checking type equivalence.
+(enforced by an explicit resumption process operator that breaks
+sequential composition), thus sidestepping the problem central to this
+paper: that of checking type equivalence.
 
-After the breakthrough by Christensen, H\"uttel, and Stirling--- a
+After the breakthrough by Christensen, H\"uttel, and Stirling---a
 result that provides no immediate practical algorithm---the problem of
 deciding the equivalence of BPA terms has been addressed by several
 researchers~\cite{DBLP:conf/mfcs/BurkartCS95,DBLP:journals/iandc/ChristensenHS95,janvcar1999techniques},
@@ -45,18 +81,18 @@ these papers.
 %
 Furthermore, context-free session types are not necessarily normed,
 which precludes using the original result by Baeten, Bergstra, and
-Klop~\cite{baeten1993decidability}, as well as improvements by Hirshfeld,
-Janc\v ar, and
+Klop~\cite{baeten1993decidability}, as well as improvements by
+Hirshfeld, Jerrum, and
 Moller~\cite{DBLP:journals/tcs/HirshfeldJM96,DBLP:conf/concur/HirshfeldM94}.
 
-In its turn, the decidability of deterministic pushdown automata 
-has also been a subject of much 
-study~\cite{janvcar2008selected,senizergues1997equivalence,stirling2001decidability}. 
-Several techniques have been proposed to solve the problem, 
-however no immediate practical algorithm had been proposed until
-Henry and S{\'e}nizergues provide an implementation of a correct algorithm 
-for this problem~\cite{henry2013lalblc}. Its poor performance
-precludes its incorporation in a compiler.
+In its turn, the decidability of deterministic pushdown automata has
+also been a subject of much
+study~\cite{janvcar2008selected,senizergues1997equivalence,stirling2001decidability}.
+Several techniques have been proposed to solve the problem, however no
+immediate practical algorithm was available until Henry and
+S{\'e}nizergues provide an implementation of a correct algorithm for
+this problem~\cite{henry2013lalblc}. Its poor performance precludes
+the incorporation in a compiler.
 
 Our algorithm to decide the equivalence of context-free session types
 can also be seen as an algorithm to decide the equivalence of simple
@@ -77,24 +113,25 @@ Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}.
 %
 The \emph{third stage} constructs an expansion tree, by alternating
 between expansion and simplification steps.  This last stage uses
-ideas on the expansion operations proposed by Janc\v ar, Moller, and
+ideas on the expansion operations proposed by Jan\v car, Moller, and
 Hirshfeld~\cite{hirshfeld1996bisimulation,janvcar1999techniques}, and
 ideas on the simplification rules proposed by Caucal, Christensen,
-H\"uttel, Stirling, Janc\v ar, and Moller
+H\"uttel, Stirling, Jan\v car, and Moller
 ~\cite{caucal1986decidabilite,
   DBLP:journals/iandc/ChristensenHS95,janvcar1999techniques}.  The
 finite representation of bisimulations of \BPA\ transition
 graphs~\cite{caucal1986decidabilite,
   DBLP:journals/iandc/ChristensenHS95} is paramount for our results of
 soundness and completeness. The branching nature of the expansion tree
-confers an exponential complexity to the algorithm, however we propose
-heuristics that allow constructing the relation in a reasonable time.
+confers (at least) an exponential complexity to the algorithm, however
+we propose heuristics that allow constructing the relation in a
+reasonable time.
 
 % Contributions
 We present an algorithm to decide the equivalence of context-free
 session types, practical to the point that it may be readily included
 in any compiler, an exercise that we conducted in
-parallel~\cite{freeST}.
+parallel~\cite{almeida.etal_freest-functional-language}.
 %
 The main contributions of this work are:
 %
@@ -112,34 +149,14 @@ The main contributions of this work are:
 % Outline
 
 The rest of the paper is organized as follows: context-free session
-types in Section~\ref{sec:contextfreesession}, the algorithm in
-Section~\ref{sec:algorithm}, the main results in
+types can be found in Section~\ref{sec:contextfreesession}, the
+algorithm in Section~\ref{sec:algorithm}, the main results in
 Section~\ref{sec:soundness}, optimizations in
 Section~\ref{sec:optimisations}, evaluation in
 Section~\ref{sec:evaluation}, and conclusions in
 Section~\ref{sec:conclusion}.
-
-% Thiemann and
-% Vasconcelos~\cite{thiemann2016context} proposed {\it context-free
-%   session types} as an extension of session types by allowing nested
-% protocols that are not restricted to tail recursion. Context-free
-% session types capture the type-safe serialization of recursive
-% datatypes and enable the type-safe implementation of remote operations
-% on recursive datatypes.
-
-% Inspired by the context-free session types' framework, Almeida and
-% Vasconcelos~\cite{bernardo} proposed a functional programming language
-% equipped with context-free session types.  Such a programming language
-% is highly dependent on an algorithm to decide type equivalence. We
-% have developed and implemented an algorithm to decide type
-% equivalence. Our work capitalizes on the metatheory of context-free
-% session types proposed by Thiemann and
-% Vasconcelos~\cite{thiemann2016context}, where type equivalence was
-% proved to be decidable. Although the decidability of equivalence on
-% context-free session types has been addressed in the
-% literature~\cite{DBLP:journals/iandc/ChristensenHS95,janvcar1999techniques,thiemann2016context},
-% to the best of our knowledge, no algorithm was ever implemented.
-% % and a possible implementation was not obvious.
+%
+The source code for the Haskell implementation is available at XXX.
 
 %%% Local Variables:
 %%% mode: latex
