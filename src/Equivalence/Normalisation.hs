@@ -29,18 +29,19 @@ class Normalise t where
 instance Normalise TypeScheme where
   normalise tenv (TypeScheme p bs t) = TypeScheme p bs (normalise tenv t)
 
+-- Requires: t is contrative (well-kinded as well?)
 -- normalise t = u implies
 --   t is equivalent to u and
 --   u is not a rec type and
 --   u is not a name type and
---   if u is u1;u2, then u1 is no checked
+--   if u is u1;u2, then u1 is not checked
 instance Normalise Type where
     -- Session types
   normalise tenv (Semi _ t u)
     | terminated t = normalise tenv u
     | otherwise   = append (normalise tenv t) u
     -- Functional or session
-  normalise tenv t@(Rec _ _ _) = normalise tenv (unfold t)
+  normalise tenv t@(Rec _ _ _) = normalise tenv (unfold t) -- DANGER
     -- Type operators
   normalise tenv (Dualof _ t) = normalise tenv (dual t)
 --  normalise tenv t@(TypeName _ a) = t

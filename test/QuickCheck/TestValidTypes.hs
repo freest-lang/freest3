@@ -2,6 +2,7 @@
 
 import           Test.QuickCheck
 import           Equivalence.Equivalence
+import           Equivalence.Normalisation
 import           Validation.Contractive
 import           Syntax.Types
 import           Syntax.Kinds
@@ -14,15 +15,29 @@ import           Control.Monad
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
-main = quickCheckWith stdArgs {maxSuccess = 1000} prop_same_equivs -- prop_distribution -- prop_dual
+main = quickCheckWith stdArgs {maxSuccess = 1000} prop_equivalent
+-- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_eq_type
+-- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_normal_eq_type
+-- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_same_equivs
+
+-- Convenience
+
+equiv = equivalent Map.empty Map.empty
+contr = contractive Map.empty Map.empty
 
 -- Properties
 
--- prop_show :: Type -> Bool
--- prop_show t = show (read (show t) :: Type) == show t
+prop_equivalent :: EquivPair -> Property
+prop_equivalent (EquivPair t u) = contr t && contr t ==> equiv t u
 
 prop_same_equivs :: Type -> Property
-prop_same_equivs t = contractive Set.empty Map.empty Map.empty t ==> equivalent Map.empty Map.empty t t
+prop_same_equivs t = contr t ==> equiv t t
+
+prop_eq_type :: Type -> Property
+prop_eq_type t = contr t ==> t == t
+
+prop_normal_eq_type :: Type -> Property
+prop_normal_eq_type t = contr t ==> normalise Map.empty t == normalise Map.empty t
 
 prop_dual :: Type -> Bool
 prop_dual t = dual (dual t) == t
@@ -37,7 +52,10 @@ nodes (Rec _ _ t)    = 1 + nodes t
 -- Skip, Message, TypeVar
 nodes _              = 1
 
--- Arbitrary
+-- prop_show :: Type -> Bool
+-- prop_show t = show (read (show t) :: Type) == show t
+
+-- Arbitrary Types
 
 instance Arbitrary Multiplicity where
   arbitrary = elements [Un, Lin]
@@ -45,8 +63,11 @@ instance Arbitrary Multiplicity where
 instance Arbitrary Polarity where
   arbitrary = elements [In, Out]
 
+pos :: Pos
+pos = defaultPos
+
 instance Arbitrary Pos where
-  arbitrary = elements [defaultPos]
+  arbitrary = return pos
 
 ids :: [String]
 ids = ["x", "y", "z"]
@@ -63,10 +84,10 @@ instance Arbitrary ProgVar where
 arbitraryVar :: Variable b => [String] -> Gen b
 arbitraryVar ids = do
   id <- elements ids
-  return $ mkVar defaultPos id
+  return $ mkVar pos id
 
 instance Arbitrary Kind where
-  arbitrary = elements [kindTL defaultPos]
+  arbitrary = elements [kindTL pos]
 
 instance Arbitrary TypeVarBind where
   arbitrary = liftM3 TypeVarBind arbitrary arbitrary arbitrary
@@ -78,7 +99,7 @@ instance Arbitrary Type where
   arbitrary = sized arbitrarySession
 
 arbitrarySession :: Int -> Gen Type
-arbitrarySession 0 = return (Skip defaultPos)
+arbitrarySession 0 = return (Skip pos)
 arbitrarySession n = oneof
   [ liftM3 Semi arbitrary (arbitrarySession (n `div` 4)) (arbitrarySession (n `div` 4))
   , liftM3 Message arbitrary arbitrary arbitrary
@@ -97,6 +118,25 @@ arbitraryField n = do
     k <- arbitrary
     t <- arbitrarySession (n `div` 4)
     return (k, t)
+
+-- Arbitrary Pairs of Equivalent Types
+
+data EquivPair = EquivPair Type Type
+
+instance Show EquivPair where
+  show (EquivPair t u) = show t ++ " equivalent-to " ++ show u
+
+instance Arbitrary EquivPair where
+  arbitrary = oneof
+    [ assoc
+    ]
+
+assoc :: Gen EquivPair
+assoc = do
+  (t, u, v) <- arbitrary
+  return $EquivPair (Semi pos t (Semi pos u v))
+                    (Semi pos (Semi pos t u) v)
+
 
 {-
 
@@ -150,7 +190,7 @@ arbitraryField n = do
     return (f,t)
 
 arbitrarySession :: Int -> Gen Type
-arbitrarySession 0 = return (Skip defaultPos)
+arbitrarySession 0 = return (Skip pos)
 arbitrarySession n = do
   t <- oneof [
               liftM3 Semi arbitrary (arbitrarySession (n `div` 4)) (arbitrarySession (n `div` 4))
@@ -198,11 +238,11 @@ isType kEnv t = do
 
 isSchemeType :: Type -> Bool
 isSchemeType t = isType kEnv t
-  where kEnv = Map.fromList [(mkVar defaultPos "α", kindTL), (mkVar defaultPos "β", kindTL),
-                             (mkVar defaultPos "x", kindTL), (mkVar defaultPos "y", kindTL),
-                             (mkVar defaultPos "z", kindTL),
-                             (mkVar defaultPos "γ", kindTU), (mkVar defaultPos "δ", kindTU),
-                             (mkVar defaultPos "ρ", kindSL), (mkVar defaultPos "τ", kindSL),
-                             (mkVar defaultPos "φ", kindSU), (mkVar defaultPos "ψ", kindSU)]
+  where kEnv = Map.fromList [(mkVar pos "α", kindTL), (mkVar pos "β", kindTL),
+                             (mkVar pos "x", kindTL), (mkVar pos "y", kindTL),
+                             (mkVar pos "z", kindTL),
+                             (mkVar pos "γ", kindTU), (mkVar pos "δ", kindTU),
+                             (mkVar pos "ρ", kindSL), (mkVar pos "τ", kindSL),
+                             (mkVar pos "φ", kindSU), (mkVar pos "ψ", kindSU)]
 
 -}
