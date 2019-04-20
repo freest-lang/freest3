@@ -39,7 +39,6 @@ import           Syntax.Show
 import           Equivalence.Normalisation
 import           Utils.FreestState
 import           Utils.Errors
-import           Parse.Lexer (showPos)
 import qualified Data.Map.Strict as Map
 import           Data.List (nub, (\\), intercalate, find)
 import           Control.Monad.State
@@ -65,8 +64,8 @@ checkDupBind x xs
     Just y -> do
       addError (position y)
         ["Conflicting definitions for program variable", styleRed (show x), "\n",
-         "\t Bound at:", showPos (position y), "\n",
-         "\t          ", showPos (position x)]
+         "\t Bound at:", show (position y), "\n",
+         "\t          ", show (position x)]
     Nothing -> return ()
 
 checkDupTypeVarBind :: TypeVarBind -> [TypeVarBind] -> FreestState ()
@@ -75,8 +74,8 @@ checkDupTypeVarBind (TypeVarBind p x _) bs =
     Just (TypeVarBind p' _ _) -> do
       addError p'
         ["Conflicting definitions for type variable", styleRed $ show x, "\n",
-         "\t Bound at:", showPos p', "\n",
-         "\t          ", showPos p]
+         "\t Bound at:", show p', "\n",
+         "\t          ", show p]
     Nothing -> return ()
 
 checkDupCons :: (ProgVar, [Type]) -> [(ProgVar, [Type])] -> FreestState ()
@@ -88,8 +87,8 @@ checkDupCons (x, _) xts
       getFromVEnv x >>= \case
         Just s  ->
           addError (position x) ["Multiple declarations of", styleRed (show x), "\n",
-                                 "\t Declared at:", showPos (position x), "\n",
-                                 "\t             ", showPos (position s)]
+                                 "\t Declared at:", show (position x), "\n",
+                                 "\t             ", show (position s)]
         Nothing ->      
           return ()
 
@@ -99,8 +98,8 @@ checkDupProgVarDecl x = do
   case vEnv Map.!? x of
     Just a  ->
       addError (position x) ["Multiple declarations of", styleRed (show x), "\n",
-                             "\t Declared at:", showPos (position a), "\n",
-                             "\t             ", showPos (position x)]
+                             "\t Declared at:", show (position a), "\n",
+                             "\t             ", show (position x)]
     Nothing -> return ()
 
 checkDupTypeDecl :: TypeVar -> FreestState ()  
@@ -109,8 +108,8 @@ checkDupTypeDecl a = do
   case tEnv Map.!? a of
     Just (_, s) ->
       addError (position a) ["Multiple declarations of type", styleRed (show a), "\n",
-                             "\t Declared at:", showPos (position a), "\n",
-                             "\t             ", showPos (position s)]
+                             "\t Declared at:", show (position a), "\n",
+                             "\t             ", show (position s)]
     Nothing -> return ()
 
 checkDupFunDecl :: ProgVar -> FreestState ()
@@ -119,8 +118,8 @@ checkDupFunDecl x = do
   case eEnv Map.!? x of
     Just e ->
       addError (position x) ["Multiple bindings for function", styleRed (show x), "\n",
-                             "\t Declared at:", showPos (position x), "\n",
-                             "\t             ", showPos (position e)]
+                             "\t Declared at:", show (position x), "\n",
+                             "\t             ", show (position e)]
     Nothing -> return ()
 
 -- OPERATORS
@@ -133,7 +132,7 @@ unOp :: ProgVar -> Expression -> Expression
 unOp op expr =
   App (position expr) (ProgVar (position op) op) expr
 
-typeListToType:: TypeVar -> [(ProgVar, [Type])] -> [(ProgVar, Type)]
+typeListToType :: TypeVar -> [(ProgVar, [Type])] -> [(ProgVar, Type)]
 typeListToType a = map (\(x, ts) -> (x, typeToFun ts))
   -- Convert a list of types and a final type constructor to a type
   where typeToFun []       = TypeName (position a) a

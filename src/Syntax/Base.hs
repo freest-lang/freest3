@@ -15,17 +15,26 @@ module Syntax.Base
 ( Default(..)
 , Multiplicity(..)
 , Variable(..)
-, Pos           -- Relayed from Lexer
-, Position(..)  -- Relayed from Lexer
-, defaultPos    -- Relayed from Lexer
+, Pos(..) 
+, Position(..)
+, defaultPos
 ) where
-
-import Parse.Lexer
 
 -- Defaults for the various syntactic categories
 
 class Default t where
   omission :: Pos -> t
+
+-- POSITIONS
+
+-- type Pos = AlexPosn -- TODO: Make Pos a newtype so that we may redefine Show
+data Pos = Pos Int Int
+
+class Position t where
+  position :: t -> Pos  
+
+defaultPos :: Pos
+defaultPos = Pos 0 0
 
 -- Multiplicities for kinds, types, and expressions
 

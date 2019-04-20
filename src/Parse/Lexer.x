@@ -3,11 +3,10 @@ module Parse.Lexer
 ( Token(..)
 , scanTokens
 , getText
-, Pos
-, Position(..)
-, defaultPos -- Should not be needed
-, showPos
 ) where
+
+import Syntax.Base
+import Syntax.Show
 }
 
 %wrapper "posn"
@@ -31,145 +30,145 @@ $digit = 0-9
 $eol=[\n]
   
 tokens :-  
-  $white*$eol+                  { \p s -> TokenNL p }
---  $eol+                         { \p s -> TokenNL p }
+  $white*$eol+                  { \p s -> TokenNL (internalPos p) }
+--  $eol+                         { \p s -> TokenNL (internalPos p) }
   $white+                       ;
   @lineComment                  ;
   @blockComment                 ;
-  "->"				{ \p s -> TokenUnArrow p }
-  "-o"				{ \p s -> TokenLinArrow p }
-  "\\"				{ \p s -> TokenLambda p }
-  "=>"				{ \p s -> TokenFArrow p }
-  "("				{ \p s -> TokenLParen p }
-  ")"				{ \p s -> TokenRParen p }
-  "["				{ \p s -> TokenLBracket p }
-  "]"			        { \p s -> TokenRBracket p }
-  "{"				{ \p s -> TokenLBrace p }
-  "}"			        { \p s -> TokenRBrace p }
-  ","				{ \p s -> TokenComma p }
-  ":"                           { \p s -> TokenColon p}   
-  ";"	       	      	  	{ \p s -> TokenSemi p }
-  "!"				{ \p s -> TokenMOut p }
-  "?"				{ \p s -> TokenMIn p }
-  "&"				{ \p s -> TokenAmpersand p }
-  "."                           { \p s -> TokenDot p}  
-  "="                           { \p s -> TokenEq p }
-  "|"                           { \p s -> TokenPipe p }
+  "->"				{ \p s -> TokenUnArrow (internalPos p) }
+  "-o"				{ \p s -> TokenLinArrow (internalPos p) }
+  "\\"				{ \p s -> TokenLambda (internalPos p) }
+  "=>"				{ \p s -> TokenFArrow (internalPos p) }
+  "("				{ \p s -> TokenLParen (internalPos p) }
+  ")"				{ \p s -> TokenRParen (internalPos p) }
+  "["				{ \p s -> TokenLBracket (internalPos p) }
+  "]"			        { \p s -> TokenRBracket (internalPos p) }
+  "{"				{ \p s -> TokenLBrace (internalPos p) }
+  "}"			        { \p s -> TokenRBrace (internalPos p) }
+  ","				{ \p s -> TokenComma (internalPos p) }
+  ":"                           { \p s -> TokenColon (internalPos p) }   
+  ";"	       	      	  	{ \p s -> TokenSemi (internalPos p) }
+  "!"				{ \p s -> TokenMOut (internalPos p) }
+  "?"				{ \p s -> TokenMIn (internalPos p) }
+  "&"				{ \p s -> TokenAmpersand (internalPos p) }
+  "."                           { \p s -> TokenDot (internalPos p) }  
+  "="                           { \p s -> TokenEq (internalPos p) }
+  "|"                           { \p s -> TokenPipe (internalPos p) }
 -- Operators
-  "+"				{ \p s -> TokenPlus p}   
-  "-"				{ \p s -> TokenMinus p }
-  "*"				{ \p s -> TokenTimes p }
-  "_"				{ \p s -> TokenWild p }
-  ">"  	          		{ \p s -> TokenOp p "(>)" }
-  "<"  	          		{ \p s -> TokenOp p "(<)" }
-  ">="  		        { \p s -> TokenOp p "(>=)" }
-  "<="  		        { \p s -> TokenOp p "(<=)" }
-  "=="  		        { \p s -> TokenOp p "(==)" }
-  "&&"  		        { \p s -> TokenOp p "(&&)" }
-  "||"  		        { \p s -> TokenOp p "(||)" }
+  "+"				{ \p s -> TokenPlus (internalPos p) }   
+  "-"				{ \p s -> TokenMinus (internalPos p) }
+  "*"				{ \p s -> TokenTimes (internalPos p) }
+  "_"				{ \p s -> TokenWild (internalPos p) }
+  ">"  	          		{ \p s -> TokenOp (internalPos p) "(>)" }
+  "<"  	          		{ \p s -> TokenOp (internalPos p) "(<)" }
+  ">="  		        { \p s -> TokenOp (internalPos p) "(>=)" }
+  "<="  		        { \p s -> TokenOp (internalPos p) "(<=)" }
+  "=="  		        { \p s -> TokenOp (internalPos p) "(==)" }
+  "&&"  		        { \p s -> TokenOp (internalPos p) "(&&)" }
+  "||"  		        { \p s -> TokenOp (internalPos p) "(||)" }
 -- Kinds
-  SU                            { \p s -> TokenSU p }
-  SL                            { \p s -> TokenSL p }
-  TU                            { \p s -> TokenTU p }
-  TL                            { \p s -> TokenTL p }
+  SU                            { \p s -> TokenSU (internalPos p) }
+  SL                            { \p s -> TokenSL (internalPos p) }
+  TU                            { \p s -> TokenTU (internalPos p) }
+  TL                            { \p s -> TokenTL (internalPos p) }
 -- Types
-  Int				{ \p s -> TokenIntT p }
-  Char				{ \p s -> TokenCharT p }
-  Bool				{ \p s -> TokenBoolT p }
-  Skip				{ \p s -> TokenSkip p }
+  Int				{ \p s -> TokenIntT (internalPos p) }
+  Char				{ \p s -> TokenCharT (internalPos p) }
+  Bool				{ \p s -> TokenBoolT (internalPos p) }
+  Skip				{ \p s -> TokenSkip (internalPos p) }
 -- Keywords
-  rec                           { \p s -> TokenRec p}   
-  let                           { \p s -> TokenLet p }
-  in                            { \p s -> TokenIn p }
-  data                          { \p s -> TokenData p }
-  type                          { \p s -> TokenType p }
-  if				{ \p s -> TokenIf p }
-  then				{ \p s -> TokenThen p }
-  else				{ \p s -> TokenElse p }
-  new				{ \p s -> TokenNew p }
-  send				{ \p s -> TokenSend p }
-  receive			{ \p s -> TokenReceive p }
-  select			{ \p s -> TokenSelect p }
-  match				{ \p s -> TokenMatch p }
-  with				{ \p s -> TokenWith p }
-  fork				{ \p s -> TokenFork p }
-  case				{ \p s -> TokenCase p }
-  of				{ \p s -> TokenOf p }
-  forall			{ \p s -> TokenForall p }
-  dualof			{ \p s -> TokenDualof p }
+  rec                           { \p s -> TokenRec (internalPos p) }   
+  let                           { \p s -> TokenLet (internalPos p) }
+  in                            { \p s -> TokenIn (internalPos p) }
+  data                          { \p s -> TokenData (internalPos p) }
+  type                          { \p s -> TokenType (internalPos p) }
+  if				{ \p s -> TokenIf (internalPos p) }
+  then				{ \p s -> TokenThen (internalPos p) }
+  else				{ \p s -> TokenElse (internalPos p) }
+  new				{ \p s -> TokenNew (internalPos p) }
+  send				{ \p s -> TokenSend (internalPos p) }
+  receive			{ \p s -> TokenReceive (internalPos p) }
+  select			{ \p s -> TokenSelect (internalPos p) }
+  match				{ \p s -> TokenMatch (internalPos p) }
+  with				{ \p s -> TokenWith (internalPos p) }
+  fork				{ \p s -> TokenFork (internalPos p) }
+  case				{ \p s -> TokenCase (internalPos p) }
+  of				{ \p s -> TokenOf (internalPos p) }
+  forall			{ \p s -> TokenForall (internalPos p) }
+  dualof			{ \p s -> TokenDualof (internalPos p) }
 -- Values
-  \(\)				{ \p s -> TokenUnit p }  
-  (0|[1-9]$digit*)      	{ \p s -> TokenInteger p $ read s }
-  (True|False) 	      	 	{ \p s -> TokenBool p $ read s }
-  @char				{ \p s -> TokenChar p $ read s }
+  \(\)				{ \p s -> TokenUnit (internalPos p) }  
+  (0|[1-9]$digit*)      	{ \p s -> TokenInteger (internalPos p) (read s) }
+  (True|False) 	      	 	{ \p s -> TokenBool (internalPos p) (read s) }
+  @char				{ \p s -> TokenChar (internalPos p) (read s) }
 -- Identifiers
-  "(+)" | "(-)" | "(*)"         { TokenLowerId }  -- TODO: add remaining operators
-  $lower [$letter$digit\_\']*   { TokenLowerId }
-  $upper [$letter$digit\_\']*	{ TokenUpperId }
+  "(+)" | "(-)" | "(*)"         { \p s -> TokenLowerId (internalPos p) s }  -- TODO: add remaining operators
+  $lower [$letter$digit\_\']*   { \p s -> TokenLowerId (internalPos p) s }
+  $upper [$letter$digit\_\']*	{ \p s -> TokenUpperId (internalPos p) s }
 
 {
 
 data Token =
-    TokenNL AlexPosn 
-  | TokenIntT AlexPosn 
-  | TokenCharT AlexPosn 
-  | TokenBoolT AlexPosn 
-  | TokenUnit AlexPosn 
-  | TokenUnArrow AlexPosn 
-  | TokenLinArrow AlexPosn 
-  | TokenLambda AlexPosn 
-  | TokenLParen AlexPosn 
-  | TokenRParen AlexPosn 
-  | TokenLBracket AlexPosn 
-  | TokenRBracket AlexPosn 
-  | TokenComma AlexPosn 
-  | TokenSkip AlexPosn 
-  | TokenColon AlexPosn 
-  | TokenUpperId AlexPosn String
-  | TokenSemi AlexPosn 
-  | TokenMOut AlexPosn 
-  | TokenMIn AlexPosn 
-  | TokenLBrace AlexPosn 
-  | TokenRBrace AlexPosn 
-  | TokenAmpersand AlexPosn 
-  | TokenPlus AlexPosn 
-  | TokenRec AlexPosn 
-  | TokenDot AlexPosn 
-  | TokenLowerId AlexPosn String  
-  | TokenSU AlexPosn 
-  | TokenSL AlexPosn 
-  | TokenTU AlexPosn 
-  | TokenTL AlexPosn
-  | TokenInteger AlexPosn Int
-  | TokenChar AlexPosn Char
-  | TokenBool AlexPosn Bool
-  | TokenLet AlexPosn
-  | TokenIn AlexPosn
-  | TokenEq AlexPosn
-  | TokenData AlexPosn
-  | TokenType AlexPosn
-  | TokenPipe AlexPosn
-  | TokenIf AlexPosn
-  | TokenThen AlexPosn
-  | TokenElse AlexPosn
-  | TokenNew AlexPosn
-  | TokenSend AlexPosn
-  | TokenReceive AlexPosn
-  | TokenSelect AlexPosn
-  | TokenMatch AlexPosn
-  | TokenWith AlexPosn
-  | TokenFork AlexPosn
-  | TokenCase AlexPosn
-  | TokenOf AlexPosn
-  | TokenForall AlexPosn
-  | TokenDualof AlexPosn 
-  | TokenFArrow AlexPosn
-  | TokenMinus AlexPosn
-  | TokenTimes AlexPosn
-  | TokenWild AlexPosn
-  | TokenLT AlexPosn
-  | TokenGT AlexPosn
-  | TokenOp AlexPosn String
+    TokenNL Pos 
+  | TokenIntT Pos 
+  | TokenCharT Pos 
+  | TokenBoolT Pos 
+  | TokenUnit Pos 
+  | TokenUnArrow Pos 
+  | TokenLinArrow Pos 
+  | TokenLambda Pos 
+  | TokenLParen Pos 
+  | TokenRParen Pos 
+  | TokenLBracket Pos 
+  | TokenRBracket Pos 
+  | TokenComma Pos 
+  | TokenSkip Pos 
+  | TokenColon Pos 
+  | TokenUpperId Pos String
+  | TokenSemi Pos 
+  | TokenMOut Pos 
+  | TokenMIn Pos 
+  | TokenLBrace Pos 
+  | TokenRBrace Pos 
+  | TokenAmpersand Pos 
+  | TokenPlus Pos 
+  | TokenRec Pos 
+  | TokenDot Pos 
+  | TokenLowerId Pos String  
+  | TokenSU Pos 
+  | TokenSL Pos 
+  | TokenTU Pos 
+  | TokenTL Pos
+  | TokenInteger Pos Int
+  | TokenChar Pos Char
+  | TokenBool Pos Bool
+  | TokenLet Pos
+  | TokenIn Pos
+  | TokenEq Pos
+  | TokenData Pos
+  | TokenType Pos
+  | TokenPipe Pos
+  | TokenIf Pos
+  | TokenThen Pos
+  | TokenElse Pos
+  | TokenNew Pos
+  | TokenSend Pos
+  | TokenReceive Pos
+  | TokenSelect Pos
+  | TokenMatch Pos
+  | TokenWith Pos
+  | TokenFork Pos
+  | TokenCase Pos
+  | TokenOf Pos
+  | TokenForall Pos
+  | TokenDualof Pos 
+  | TokenFArrow Pos
+  | TokenMinus Pos
+  | TokenTimes Pos
+  | TokenWild Pos
+  | TokenLT Pos
+  | TokenGT Pos
+  | TokenOp Pos String
 
 instance Show Token where
   show (TokenNL p) = show p ++ ": NL"  
@@ -245,13 +244,8 @@ trim = reverse . trim' . reverse . trim'
 
 -- POSITIONS
 
-type Pos = AlexPosn -- TODO: Make Pos a newtype so that we may redefine Show
-
-class Position t where
-  position :: t -> Pos
-
--- instance Ord AlexPosn where
---   (AlexPn x _ _) `compare` (AlexPn y _ _ ) = x `compare` y
+internalPos :: AlexPosn -> Pos
+internalPos (AlexPn _ l c) = Pos l c
 
 instance Position Token where
   position (TokenNL p) = p 
@@ -315,12 +309,6 @@ instance Position Token where
   position (TokenDualof p) = p
   position (TokenFArrow p) = p
 --  position t = error $ show t
-
-defaultPos :: Pos
-defaultPos = AlexPn 0 0 0
-
-showPos :: Pos -> String
-showPos (AlexPn _ line column) = show line ++ ":" ++ show column
 
 getText :: Token -> String
 getText (TokenUpperId _ x) = x

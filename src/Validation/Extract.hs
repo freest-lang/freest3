@@ -33,7 +33,7 @@ import           Syntax.ProgramVariables
 import           Syntax.Base
 import           Equivalence.Normalisation
 import           Syntax.Show
-import           Parse.Lexer (Pos, position, defaultPos)
+-- import           Parse.Lexer (Pos, position, defaultPos)
 import           Utils.Errors
 import           Utils.FreestState
 import qualified Data.Map.Strict as Map

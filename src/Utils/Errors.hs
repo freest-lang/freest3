@@ -17,7 +17,8 @@ module Utils.Errors
 ) where 
 
 import System.Console.Pretty (Color (..), Style (..), color, style)
-import Parse.Lexer (Pos, showPos)
+import Syntax.Base (Pos)
+import Syntax.Show
 
 styleError :: String -> Pos -> [String] -> String
 styleError f p body = styleHeader f p ++ styleBody body
@@ -27,7 +28,7 @@ styleBody = foldl (\acc x -> acc ++ " " ++ styleBold x) ""
 
 styleHeader :: String -> Pos -> String
 styleHeader f p =
-  styleBold $ "\n" ++ f ++ ":" ++ showPos p ++ ": " ++ styleRed "error:\n\t"
+  styleBold $ "\n" ++ f ++ ":" ++ show p ++ ": " ++ styleRed "error:\n\t"
 
 styleRed :: String -> String
 styleRed = color Red

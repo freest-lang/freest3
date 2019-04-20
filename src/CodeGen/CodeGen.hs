@@ -7,7 +7,6 @@ import           Syntax.Expressions
 import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Kinds
-import           Parse.Lexer (defaultPos)
 import           Validation.Kinding
 import           CodeGen.DatatypeGen
 import           CodeGen.ExpressionGen

@@ -24,6 +24,11 @@ import qualified Data.Map.Strict as Map
 import           Data.List (intersperse, intercalate)
 import           Data.Char (isDigit)
 
+-- Positions (Base)
+
+instance Show Pos where
+  show (Pos l c) = show l ++ ":" ++ show c
+
 -- Multiplicities (Base)
 
 instance Show Multiplicity where

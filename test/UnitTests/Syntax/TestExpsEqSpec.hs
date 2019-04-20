@@ -1,6 +1,6 @@
 module Syntax.TestExpsEqSpec(spec) where
 
-import           Parse.Lexer (defaultPos)
+import           Syntax.Base (defaultPos)
 import           SpecHelper
 import           Syntax.Expressions
 import           Syntax.Types -- TODO REMOVE

@@ -1,6 +1,5 @@
 module Parse.TestParserValidSpec(spec) where
 
-import           Parse.Lexer (defaultPos)
 import           SpecHelper
 import           Control.Exception (evaluate)
 import           Syntax.Kinds

@@ -6,7 +6,6 @@ import           Syntax.TypeVariables
 import           Syntax.Base
 import           Equivalence.Equivalence
 import           SpecHelper
-import           Parse.Lexer (defaultPos)
 import qualified Data.Map.Strict as Map
 
 spec :: Spec
