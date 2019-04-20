@@ -1,0 +1,46 @@
+
+\paragraph{The conventional check-against rule for lambda-elimination
+  does not work without subtyping}
+
+Here is the  conventional rule ($\kindEnv$ omitted):xscc
+%
+\begin{equation*}
+    \frac{
+      \algtypeout[\varEnv_1]{e_2}{T}{\varEnv_2}
+      \quad
+      \algtypein[\varEnv_2]{e_1}{T\multimap U}{\varEnv_3}
+    }{
+      \algtypein[\varEnv_1]{e_1e_2}{U}{\varEnv_3}
+    }  
+\end{equation*}
+
+Take $f: \intt\rightarrow\boolt$ for environment $\varEnv_0$. We can
+easily show that $\algtypein[\varEnv_0]{f\:5}{U}{\varEnv_0}$, because
+%
+\begin{equation*}
+  \frac{
+    \algtypein[\varEnv_0]{f}{\intt\rightarrow\boolt}{\varEnv_0}
+    \quad
+    \intt\rightarrow\boolt \subt \intt\multimap\boolt
+  }{
+    \algtypein[\varEnv_0]{f}{\intt\multimap\boolt}{\varEnv_0}
+  }
+\end{equation*}
+%
+Similarly we can show the exact same result this time starting with
+$f: \intt\multimap\boolt$ for $\varEnv_0$.
+
+The flexibility of the lambda-elimination check-against rule relies on
+subtyping and the subtyping check-against rule. The variant of the
+former rule with premise $\algtypein[\varEnv_2]{e_1}{T\rightarrow
+  U}{\varEnv_3}$ does not allow typing $f\:5$ under environment $f:
+\intt\multimap\boolt$.
+
+At the time of this writing \freest does not incorporate subtyping,
+hence the incorporation of the above  lambda-elimination check-against
+rule would lead to incompleteness of algorithmic type system.
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

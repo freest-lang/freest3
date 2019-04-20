@@ -250,8 +250,8 @@ type Pos = AlexPosn -- TODO: Make Pos a newtype so that we may redefine Show
 class Position t where
   position :: t -> Pos
 
-instance Ord AlexPosn where
-  (AlexPn x _ _) `compare` (AlexPn y _ _ ) = x `compare` y
+-- instance Ord AlexPosn where
+--   (AlexPn x _ _) `compare` (AlexPn y _ _ ) = x `compare` y
 
 instance Position Token where
   position (TokenNL p) = p 

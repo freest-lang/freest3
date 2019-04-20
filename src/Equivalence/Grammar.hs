@@ -10,7 +10,7 @@ Portability :  portable | non-portable (<reason>)
 
 Context-free grammars of a certain kind:
 
-- Non-terminal symbols are type variables (TVar)
+- Non-terminal symbols are type variables (TypeVar)
 
 - Terminal symbols are called labels (Label) for they come from the
 labelled transition system on types
@@ -35,8 +35,6 @@ module Equivalence.Grammar
 , trans
 , pathToSkip
 , throughPath
---, reachable
---, backwards
 ) where
 
 import           Syntax.Types
@@ -81,10 +79,10 @@ insertProduction p x l w = Map.insertWith Map.union x (Map.singleton l w) p
 trans :: Productions -> [TypeVar] -> [[TypeVar]]
 trans p xs = Map.elems (transitions p xs)
 
--- only applicable on normed variables
+-- only applicable to normed variables
 pathToSkip :: Productions -> TypeVar -> [Label]
-pathToSkip p x = fst . head $ filter ( null . snd ) ps
-  where ps = pathToSkip' p ( Map.assocs $ (Map.mapKeys (\k -> [k]) (transitions p [x])) )
+pathToSkip p x = fst . head $ filter (null . snd) ps
+  where ps = pathToSkip' p (Map.assocs $ (Map.mapKeys (:[]) (transitions p [x])))
 
 pathToSkip' :: Productions -> [([Label],[TypeVar])] -> [([Label],[TypeVar])]
 pathToSkip' p ps

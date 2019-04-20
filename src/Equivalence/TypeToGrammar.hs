@@ -53,8 +53,6 @@ toGrammar (Semi _ t u) = do
   ys <- toGrammar u
   return $ xs ++ ys
 toGrammar (Message _ p b) = do
-  -- y <- freshVar
-  -- addProduction y (MessageLabel p b) []
   y <- addBasicProd (MessageLabel p b)
   return [y]
 toGrammar (Choice _ p m) = do
@@ -68,8 +66,6 @@ toGrammar (TypeVar _ x) = do
   then    -- This is a recursion variable
     return [x]
   else do -- This is a polymorphic variable
-    -- y <- freshVar
-    -- addProduction y (VarLabel x) []
     y <- addBasicProd (VarLabel x)
     return [y]
 toGrammar u@(Rec _ (TypeVarBind _ x _) t)
@@ -80,13 +76,6 @@ toGrammar u@(Rec _ (TypeVarBind _ x _) t)
     m <- getTransitions z
     addProductions x (Map.map (++ zs) m)
     return [x]
-    -- On the fly α-conversion
-    -- y <- freshVar
-    -- insertVisited y
-    -- zs <- toGrammar $ subs (TypeVar p y) x t
-    -- m <- getTransitions $ head zs
-    -- addProductions y (Map.map (++ tail zs) m)
-    -- return [y]
   -- Type operators
 toGrammar (Dualof _ t) = toGrammar (dual t)
 toGrammar (TypeName p x) = do
@@ -147,7 +136,6 @@ addProductions x m =
 addProduction :: TypeVar -> Label -> [TypeVar] -> TransState ()
 addProduction x l w =
   modify $ \(p, v, n, tEnv) -> (insertProduction p x l w, v, n, tEnv)
---  addProductions x (Map.singleton l w) -- does not work; I wonder why
 
 -- Add or update production from a (basic) non-terminal; the productions may already contain transitions for the given nonterminal (hence the insertWith and union)
 addBasicProd :: Label -> TransState TypeVar

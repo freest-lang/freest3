@@ -1,5 +1,5 @@
 {- |
-Module      :  Types
+Module      :  Bisimulation
 Description :  <optional short text displayed on contents page>
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
@@ -24,7 +24,7 @@ import           Equivalence.TypeToGrammar
 import           Equivalence.Norm
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import qualified Data.Sequence as Sequence
+import qualified Data.Sequence as Queue
 import           Data.List (isPrefixOf)
 
 equivalent :: TypeEnv -> Type -> Type -> Bool
@@ -35,20 +35,18 @@ type Node = Set.Set ([TypeVar], [TypeVar])
 
 type Ancestors = Node
 
-type NodeQueue = Sequence.Seq (Node, Ancestors)
-
-type NodeTransformation = Productions -> Ancestors -> Node -> Set.Set Node
+type NodeQueue = Queue.Seq (Node, Ancestors)
 
 expand :: Productions -> [TypeVar] -> [TypeVar] -> Bool
-expand ps xs ys = expand' ps (Sequence.singleton (Set.singleton (xs, ys), Set.empty))
+expand ps xs ys = expandNodeQueue ps (Queue.singleton (Set.singleton (xs, ys), Set.empty))
 
-expand' :: Productions -> NodeQueue -> Bool
-expand' ps ((n, a) Sequence.:<| q')
+expandNodeQueue :: Productions -> NodeQueue -> Bool
+expandNodeQueue ps ((n, a) Queue.:<| q')
   | Set.null n      = True
   | otherwise       = case expandNode ps n of
-      Nothing -> expand' ps q'
-      Just n' -> expand' ps (simplify ps n' (Set.union a n) q')
-expand' ps Sequence.Empty = False
+      Nothing -> expandNodeQueue ps q'
+      Just n' -> expandNodeQueue ps (simplify ps n' (Set.union a n) q')
+expandNodeQueue _ Queue.Empty = False
 
 expandNode :: Productions -> Node -> Maybe Node
 expandNode ps =
@@ -81,16 +79,19 @@ simplify ps n a q =
 
 enqueueNode :: (Node,Ancestors) -> NodeQueue -> NodeQueue
 enqueueNode (n,a) q
- | maxLength n <= 1 = (n,a) Sequence.<| q
- | otherwise        = q Sequence.|> (n,a)
+ | maxLength n <= 1 = (n,a) Queue.<| q
+ | otherwise        = q Queue.|> (n,a)
+
+type NodeTransformation = Productions -> Ancestors -> Node -> Set.Set Node
 
 apply :: Productions -> NodeTransformation -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
-apply ps trans ns = Set.fold (\(n,a) ns -> Set.union (Set.map (\s -> (s,a)) (trans ps a n)) ns) Set.empty ns
+apply ps trans ns =
+  Set.fold (\(n,a) ns -> Set.union (Set.map (\s -> (s,a)) (trans ps a n)) ns) Set.empty ns
 
 findFixedPoint :: Productions -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
 findFixedPoint ps nas
   | nas == nas' = nas
-  | otherwise = findFixedPoint ps nas'
+  | otherwise   = findFixedPoint ps nas'
   where nas' = if allNormed ps
                  then foldr (apply ps) nas [reflex, congruence, bpa2, filtering]
                  else foldr (apply ps) nas [reflex, congruence, bpa1, bpa2, filtering]
@@ -113,11 +114,6 @@ reflex _ _ = Set.singleton . Set.filter (uncurry (/=))
 congruence :: NodeTransformation
 congruence _ a = Set.singleton . Set.filter (not . congruentToAncestors a)
 
-filtering :: NodeTransformation
-filtering p _ n
-  | normsMatch p n = Set.singleton(n)
-  | otherwise      = Set.empty
-
 congruentToAncestors :: Ancestors -> ([TypeVar], [TypeVar]) -> Bool
 congruentToAncestors a p = or $ Set.map (congruentToPair a p) a
 
@@ -129,6 +125,11 @@ congruentToPair a (xs, ys) (xs', ys') =
   where xs'' = drop (length xs') xs
         ys'' = drop (length ys') ys
 
+filtering :: NodeTransformation
+filtering p _ n
+  | normsMatch p n = Set.singleton n
+  | otherwise      = Set.empty
+
 bpa1 :: NodeTransformation
 bpa1 g a n =
   Set.foldr (\p ps -> Set.union (Set.map (\v -> Set.union v (Set.delete p n)) (bpa1' g a p)) ps) (Set.singleton n) n
@@ -139,32 +140,7 @@ bpa1' p a (x:xs,y:ys) = case findInAncestors a x y of
       Just (xs', ys') -> Set.union
                             (Set.singleton (Set.fromList [(xs,xs'), (ys,ys')]))
                             (bpa1' p (Set.delete (x:xs', y:ys') a) (x:xs, y:ys))
-bpa1' _ _ p = Set.empty
-
-bpa2 :: NodeTransformation
-bpa2 g a n =
-  Set.foldr (\p ps ->
-                Set.union (Set.map (\v -> Set.union v (Set.delete p n)) (bpa2' g a p))
-                          ps) (Set.singleton n) n
-
-bpa2' :: Productions -> Ancestors -> ([TypeVar],[TypeVar]) -> Set.Set Node
-bpa2' p a (x:xs, y:ys)
-  | not (normed p x && normed p y) = Set.empty
-  | otherwise  = case gammaBPA2 p (x,y) of
-      Nothing    -> Set.empty
-      Just gamma -> Set.singleton (pairsBPA2 p (x:xs, y:ys) gamma)
-bpa2' _ _ _ = Set.empty
-
-pairsBPA2 :: Productions -> ([TypeVar],[TypeVar]) -> [TypeVar] -> Node
-pairsBPA2 p (x:xs, y:ys) gamma = Set.fromList [p1, p2]
-  where  p1 = if (norm p [x] >= norm p [y]) then ( [x], [y] ++ gamma ) else ( [x] ++ gamma, [y] )
-         p2 = if (norm p [x] >= norm p [y]) then ( gamma ++ xs, ys ) else ( xs, gamma ++ ys )
-
-gammaBPA2 :: Productions -> (TypeVar,TypeVar) -> Maybe [TypeVar]
-gammaBPA2 p (x,y) = throughPath p ls [x1]
- where x0 = if norm p [x] <= norm p [y] then x else y
-       x1 = if norm p [x] <= norm p [y] then y else x
-       ls = pathToSkip p x0
+bpa1' _ _ _ = Set.empty
 
 findInAncestors :: Ancestors -> TypeVar -> TypeVar -> Maybe ([TypeVar], [TypeVar])
 findInAncestors a x y =
@@ -177,3 +153,28 @@ findInPair ((x':xs), (y':ys)) x y
   | x == x' && y == y' = Just (xs, ys)
   | otherwise          = Nothing
 findInPair _ _ _       = Nothing
+
+bpa2 :: NodeTransformation
+bpa2 g a n =
+  Set.foldr (\p ps ->
+                Set.union (Set.map (\v -> Set.union v (Set.delete p n)) (bpa2' g a p))
+                          ps) (Set.singleton n) n
+
+bpa2' :: Productions -> Ancestors -> ([TypeVar],[TypeVar]) -> Set.Set Node
+bpa2' p a (x:xs, y:ys)
+  | not (normed p x && normed p y) = Set.empty
+  | otherwise  = case gammaBPA2 p x y  of
+      Nothing    -> Set.empty
+      Just gamma -> Set.singleton (pairsBPA2 p (x:xs) (y:ys) gamma)
+bpa2' _ _ _ = Set.empty
+
+gammaBPA2 :: Productions -> TypeVar -> TypeVar -> Maybe [TypeVar]
+gammaBPA2 p x y = throughPath p ls [x1]
+ where x0 = if norm p [x] <= norm p [y] then x else y
+       x1 = if norm p [x] <= norm p [y] then y else x
+       ls = pathToSkip p x0
+
+pairsBPA2 :: Productions -> [TypeVar] -> [TypeVar] -> [TypeVar] -> Node
+pairsBPA2 p (x:xs) (y:ys) gamma = Set.fromList [p1, p2]
+  where  p1 = if norm p [x] >= norm p [y] then ([x], y : gamma) else (x : gamma, [y])
+         p2 = if norm p [x] >= norm p [y] then (gamma ++ xs, ys) else (xs, gamma ++ ys)
