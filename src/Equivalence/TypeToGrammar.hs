@@ -12,6 +12,8 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
+{-# LANGUAGE NoMonadFailDesugaring #-}
+
 module Equivalence.TypeToGrammar
 ( convertToGrammar
 ) where
@@ -85,7 +87,7 @@ toGrammar u@(Rec _ (TypeVarBind _ x _) t)
     -- m <- getTransitions $ head zs
     -- addProductions y (Map.map (++ tail zs) m)
     -- return [y]
-  -- Type operators  
+  -- Type operators
 toGrammar (Dualof _ t) = toGrammar (dual t)
 toGrammar (TypeName p x) = do
   b <- memberVisited x
