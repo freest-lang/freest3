@@ -26,7 +26,7 @@ instance Arbitrary BasicType where
   arbitrary = elements [IntType, CharType, BoolType, UnitType]
 
 instance Arbitrary Type where
-    arbitrary = sized arbitraryType
+    arbitrary = sized arbitrarySession
     -- arbitrary = sized arbitrarySession
 
 instance Arbitrary Multiplicity where
@@ -35,8 +35,8 @@ instance Arbitrary Multiplicity where
 instance Arbitrary Polarity where
   arbitrary = elements [In, Out]
 
--- instance Arbitrary Pos where
---   arbitrary = elements [defaultPos]
+instance Arbitrary Pos where
+  arbitrary = elements [defaultPos]
 
 instance Arbitrary TypeVar where
   arbitrary = elements [mkVar arbitrary "x", mkVar arbitrary "y", mkVar arbitrary "z"]
@@ -51,26 +51,24 @@ instance Arbitrary ProgVar where
                         liftM2 mkVar arbitrary "B",
                         liftM2 mkVar arbitrary "C"]
 
--- arbitraryType :: Int -> Gen Type
--- arbitraryType 0 = return (Skip arbitrary)
--- arbitraryType n = do
---   t <- oneof [liftM Basic arbitrary,
---               -- Skip,
---               liftM3 Semi arbitrary (arbitraryType (n `div` 4)) (arbitraryType (n `div` 4)),
---               -- liftM3 Fun arbitrary arbitrary (arbitraryType (n `div` 4)) (arbitraryType (n `div` 4)),
---               -- liftM3 Fun arbitrary arbitrary (arbitraryType (n `div` 4)) (arbitraryType (n `div` 4)),
---               -- liftM3 Pair arbitrary (arbitraryType (n `div` 4)) (arbitraryType (n `div` 4)),
---               liftM2 Choice arbitrary arbitrary (arbitraryTypeMap (n `div` 4)),
---               liftM2 Choice arbitrary arbitrary (arbitraryTypeMap (n `div` 4)),
---               -- liftM2 Datatype arbitrary (arbitraryDatatypeTypeMap (n `div` 4)),
---               liftM2 Rec arbitrary arbitrary (arbitraryType (n `div` 4)),
---               -- liftM2 Forall (arbitraryId) (arbitraryType (n `div` 4)),
---               liftM2 ProgVar arbitrary arbitrary
---              ]
---   if (isType t) then
---     return t
---   else
---     arbitraryType (n `div` 4)
+arbitraryType :: Int -> Gen Type
+arbitraryType 0 = return (Skip arbitrary)
+arbitraryType n = do
+  t <- oneof [liftM Basic arbitrary,
+              -- Skip,
+              liftM3 Semi arbitrary (arbitraryType (n `div` 4)) (arbitraryType (n `div` 4)),
+              liftM3 Fun arbitrary arbitrary (arbitraryType (n `div` 4)) (arbitraryType (n `div` 4)),
+              liftM3 Pair arbitrary (arbitraryType (n `div` 4)) (arbitraryType (n `div` 4)),
+              liftM2 Choice arbitrary arbitrary (arbitraryTypeMap (n `div` 4)),
+              liftM2 Datatype arbitrary (arbitraryDatatypeTypeMap (n `div` 4)),
+              liftM2 Rec arbitrary arbitrary (arbitraryType (n `div` 4)),
+              liftM2 Forall (arbitraryId) (arbitraryType (n `div` 4)),
+              liftM2 ProgVar arbitrary arbitrary
+             ]
+  if (isType t) then
+    return t
+  else
+    arbitraryType (n `div` 4)
 
 arbitraryId :: Gen TypeVarBind
 arbitraryId = do
