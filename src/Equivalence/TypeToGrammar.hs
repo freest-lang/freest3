@@ -1,6 +1,6 @@
 
 {- |
-Module      :  Types
+Module      :  TypeToGrammar
 Description :  <optional short text displayed on contents page>
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
@@ -19,7 +19,7 @@ module Equivalence.TypeToGrammar
 ) where
 
 import           Equivalence.Grammar
-import           Equivalence.Normalisation (isChecked)
+import           Equivalence.Normalisation (terminated)
 import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Kinds
@@ -73,7 +73,7 @@ toGrammar (TypeVar _ x) = do
     y <- addBasicProd (VarLabel x)
     return [y]
 toGrammar u@(Rec _ (TypeVarBind _ x _) t)
-  | isChecked u = return []
+  | terminated u = return []
   | otherwise = do
     insertVisited x
     (z:zs) <- toGrammar t

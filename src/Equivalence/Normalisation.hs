@@ -12,7 +12,7 @@ Portability :  portable | non-portable (<reason>)
 
 module Equivalence.Normalisation
 ( Normalise(..)
-, isChecked
+, terminated
 ) where
 
 import           Syntax.Schemes
@@ -37,7 +37,7 @@ instance Normalise TypeScheme where
 instance Normalise Type where
     -- Session types
   normalise tenv (Semi _ t u)
-    | isChecked t = normalise tenv u
+    | terminated t = normalise tenv u
     | otherwise   = append (normalise tenv t) u
     -- Functional or session
   normalise tenv t@(Rec _ _ _) = normalise tenv (unfold t)
@@ -53,17 +53,22 @@ append :: Type -> Type -> Type
 append (Skip _)       t = t
 append t       (Skip _) = t
 append (Semi p t u)   v = Semi p t (append u v)
--- append (Choice q v m) t = Choice q v (Map.map (`append` t) m) -- This is only needed in a "full" normalisation
 append t              u = Semi (position t) t u
 
-isChecked :: Type ->  Bool
-isChecked = isCheck Set.empty
-  where
-  isCheck _ (Skip _)                      = True
-  isCheck v (Semi _ s t)                  = isCheck v s && isCheck v t
-  isCheck v (Rec _ (TypeVarBind _ x _) t) = isCheck (Set.insert x v) t
-  isCheck v (TypeVar _ x)                 = Set.member x v -- Only bound variables are checked
-  isCheck _ _                             = False
+terminated :: Type -> Bool
+terminated (Skip _)     = True
+terminated (Semi _ s t) = terminated s && terminated t
+terminated (Rec _ _ t)  = terminated t
+terminated _            = False
+
+-- terminated :: Type ->  Bool
+-- terminated = isCheck Set.empty
+--   where
+--   isCheck _ (Skip _)                      = True
+--   isCheck v (Semi _ s t)                  = isCheck v s && isCheck v t
+--   isCheck v (Rec _ (TypeVarBind _ x _) t) = isCheck (Set.insert x v) t
+--   isCheck v (TypeVar _ x)                 = Set.member x v -- Only bound variables are checked
+--   isCheck _ _                             = False
 
 {- An attempt of a "full" normalisation, useful for determining type equality without running the bisimulation game
 
@@ -77,7 +82,7 @@ instance Normalise Type where
     Choice p q (Map.map (\u -> append (normalise tenv u) t') m)
     where t' = normalise tenv t
   normalise tenv (Semi _ t u) -- = append (normalise tenv t) (normalise tenv u)
-    | isChecked t = normalise tenv u
+    | terminated t = normalise tenv u
     | otherwise   = append (normalise tenv t) u
   normalise tenv (Choice p q m) = Choice p q (Map.map (normalise tenv) m)
     -- Functional or session
