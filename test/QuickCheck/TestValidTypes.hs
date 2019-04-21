@@ -3,6 +3,7 @@
 import           Test.QuickCheck
 import           Equivalence.Equivalence
 import           Equivalence.Normalisation
+import           Validation.Kinding
 import           Validation.Contractive
 import           Syntax.Types
 import           Syntax.Kinds
@@ -15,7 +16,8 @@ import           Control.Monad
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
-main = quickCheckWith stdArgs {maxSuccess = 1000} prop_equivalent
+main = quickCheckWith stdArgs {maxSuccess = 1000} prop_kinded
+-- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_equivalent
 -- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_eq_type
 -- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_normal_eq_type
 -- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_same_equivs
@@ -24,12 +26,21 @@ main = quickCheckWith stdArgs {maxSuccess = 1000} prop_equivalent
 
 equiv = equivalent Map.empty Map.empty
 contr = contractive Map.empty Map.empty
+norm = normalise Map.empty
 
 -- Properties
 
 prop_equivalent :: EquivPair -> Property
 prop_equivalent (EquivPair t u) = contr t && contr t ==> equiv t u
 
+prop_kinded :: Type -> Property
+prop_kinded t = contr t ==> wellFormed t
+
+wellFormed :: Type -> Bool
+wellFormed t = null (errors s)
+  where s = execState (synthetise kindEnv t) (initialState "Quick Checking")
+        kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (kindTL pos)))
+  
 prop_same_equivs :: Type -> Property
 prop_same_equivs t = contr t ==> equiv t t
 
@@ -37,11 +48,12 @@ prop_eq_type :: Type -> Property
 prop_eq_type t = contr t ==> t == t
 
 prop_normal_eq_type :: Type -> Property
-prop_normal_eq_type t = contr t ==> normalise Map.empty t == normalise Map.empty t
+prop_normal_eq_type t = contr t ==> norm t == norm t
 
 prop_dual :: Type -> Bool
 prop_dual t = dual (dual t) == t
 
+prop_distribution :: Type -> Property
 prop_distribution d = collect (nodes d) True
 
 -- The number of nodes in a type
@@ -69,13 +81,13 @@ pos = defaultPos
 instance Arbitrary Pos where
   arbitrary = return pos
 
-ids :: [String]
+ids :: [String]      -- Type Variables
 ids = ["x", "y", "z"]
 
 instance Arbitrary TypeVar where
   arbitrary = arbitraryVar ids
 
-choices :: [String]
+choices :: [String]        -- Program Types
 choices = ["A", "B", "C"]
 
 instance Arbitrary ProgVar where

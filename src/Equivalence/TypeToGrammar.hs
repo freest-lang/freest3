@@ -112,8 +112,8 @@ freshVar :: TransState TypeVar
 freshVar = do
   (p, v, n, tEnv) <- get
   put (p, v, n + 1, tEnv)
-  return $ mkVar defaultPos (show n ++ "__X") -- TODO: use newTypeVar
-  -- Using __ rather than _ to avoid colisions with type variables renamed after parsing
+  return $ mkVar defaultPos ("X" ++ show n)
+  -- Hope there are no colisions with type variables renamed after parsing
 
 memberVisited :: TypeVar -> TransState Bool
 memberVisited t = do

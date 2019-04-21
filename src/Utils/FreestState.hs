@@ -76,12 +76,12 @@ type FreestState = State FreestS
 
 initialState :: String -> FreestS
 initialState f = FreestS {
-  filename = f
-, varEnv   = Map.empty
-, expEnv   = Map.empty
-, typeEnv  = Map.empty
-, errors   = []
-, nextIndex  = 0
+  filename  = f
+, varEnv    = Map.empty
+, expEnv    = Map.empty
+, typeEnv   = Map.empty
+, errors    = []
+, nextIndex = 0
 }
 
 -- | NEXT VAR
