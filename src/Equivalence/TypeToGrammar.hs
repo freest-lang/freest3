@@ -72,14 +72,17 @@ toGrammar u@(Rec _ (TypeVarBind _ x _) t)
   | terminated u = return []
   | otherwise = do
     insertVisited x
-    (z:zs) <- toGrammar t
-    m <- getTransitions z
-    if Map.null m
-    then
+    ws <- toGrammar t
+    if null ws then
       return []
     else do
-      addProductions x (Map.map (++ zs) m)
-      return [x]
+      m <- getTransitions (head ws)
+      if Map.null m
+      then
+        return []
+      else do
+        addProductions x (Map.map (++ (tail ws)) m)
+        return [x]
   -- Type operators
 toGrammar (Dualof _ t) = toGrammar (dual t)
 toGrammar (TypeName p x) = do
