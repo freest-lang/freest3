@@ -74,8 +74,12 @@ toGrammar u@(Rec _ (TypeVarBind _ x _) t)
     insertVisited x
     (z:zs) <- toGrammar t
     m <- getTransitions z
-    addProductions x (Map.map (++ zs) m)
-    return [x]
+    if Map.null m
+    then
+      return []
+    else do
+      addProductions x (Map.map (++ zs) m)
+      return [x]
   -- Type operators
 toGrammar (Dualof _ t) = toGrammar (dual t)
 toGrammar (TypeName p x) = do
@@ -127,7 +131,10 @@ insertVisited x =
 getTransitions :: TypeVar -> TransState Transitions
 getTransitions x = do
   (p, _, _, _) <- get
-  return $ p Map.! x
+  if Map.member x p then
+    return $ p Map.! x
+  else
+    return Map.empty
 
 addProductions :: TypeVar -> Transitions -> TransState ()
 addProductions x m =
