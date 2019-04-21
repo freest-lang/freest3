@@ -16,8 +16,8 @@ import           Control.Monad
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
-main = quickCheckWith stdArgs {maxSuccess = 1000} prop_kinded
--- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_equivalent
+-- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_kinded
+main = quickCheckWith stdArgs {maxSuccess = 1000} prop_equivalent
 -- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_eq_type
 -- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_normal_eq_type
 -- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_same_equivs
@@ -37,9 +37,9 @@ prop_kinded :: Type -> Property
 prop_kinded t = contr t ==> wellFormed t
 
 wellFormed :: Type -> Bool
-wellFormed t = null (errors s)
-  where s = execState (synthetise kindEnv t) (initialState "Quick Checking")
-        kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (kindTL pos)))
+wellFormed t = null (errors state)
+  where state = execState (synthetise kindEnv t) (initialState "Quick Checking")
+        kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (kindSL pos)))
   
 prop_same_equivs :: Type -> Property
 prop_same_equivs t = contr t ==> equiv t t
@@ -99,7 +99,7 @@ arbitraryVar ids = do
   return $ mkVar pos id
 
 instance Arbitrary Kind where
-  arbitrary = elements [kindTL pos]
+  arbitrary = elements [kindSL pos]
 
 instance Arbitrary TypeVarBind where
   arbitrary = liftM3 TypeVarBind arbitrary arbitrary arbitrary
