@@ -20,11 +20,11 @@ Char
 
 -- Maps
 
-[A: Int, B: Bool]
-[C: Char, D: Bool]
+-- [A: Int, B: Bool]  -- datatypes are no longer readable types (only available for data declarations)
+-- [C: Char, D: Bool]
 
-[A: Int, B: Bool]
-[A: Int, B: Bool, C: Char]
+-- [A: Int, B: Bool]
+-- [A: Int, B: Bool, C: Char]
 
 +{C: !Int}
 +{C: !Int, B: ?Bool}
