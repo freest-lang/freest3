@@ -30,8 +30,6 @@ Char -o Skip
   TL
 (!Int, Skip)
   TL
-[A:Int,B:Bool]
-  TU
 !Int;?Bool
   SL
 Skip;Skip
