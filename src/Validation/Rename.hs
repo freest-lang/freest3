@@ -15,6 +15,7 @@ Portability :  portable | non-portable (<reason>)
 
 module Validation.Rename
 ( renameState
+, Rename(..) -- for testing only
 ) where
 
 import           Syntax.Expressions

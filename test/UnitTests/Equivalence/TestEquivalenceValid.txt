@@ -16,12 +16,6 @@ Bool
 ()
 ()
 
--- Functional
-
-[]
-[A:Bool, B:Char]
-[B:Char, A:Bool]
-
 -- Session types
 
 []
@@ -163,10 +157,6 @@ Skip;!Int -> Bool
 (!Int;Skip , Bool)
 
 []
-[A: Bool, B: Skip;!Char]
-[B: Skip;!Char ,A: Bool]
-
-[]
 +{A: !Bool, B: ?Char}
 +{B: ?Char, A: !Bool}
 
@@ -263,7 +253,7 @@ rec z. (!Int; z)
 
 []
 rec x.( Skip; x)
-rec x.( Skip; x)
+rec y.( Skip; y)
 
 []
 rec x.( Skip; x; Skip)

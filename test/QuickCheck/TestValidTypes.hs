@@ -27,6 +27,7 @@ main = quickCheckWith stdArgs {maxSuccess = 1000} prop_equivalent
 equiv = equivalent Map.empty Map.empty
 contr = contractive Map.empty Map.empty
 norm = normalise Map.empty
+pos = defaultPos
 
 -- Properties
 
@@ -75,9 +76,6 @@ instance Arbitrary Multiplicity where
 instance Arbitrary Polarity where
   arbitrary = elements [In, Out]
 
-pos :: Pos
-pos = defaultPos
-
 instance Arbitrary Pos where
   arbitrary = return pos
 
@@ -87,7 +85,7 @@ ids = ["x", "y", "z"]
 instance Arbitrary TypeVar where
   arbitrary = arbitraryVar ids
 
-choices :: [String]        -- Program Types
+choices :: [String]        -- Program Variables
 choices = ["A", "B", "C"]
 
 instance Arbitrary ProgVar where
@@ -99,25 +97,28 @@ arbitraryVar ids = do
   return $ mkVar pos id
 
 instance Arbitrary Kind where
-  arbitrary = elements [kindSL pos]
+  arbitrary = return $ kindSL pos
 
 instance Arbitrary TypeVarBind where
   arbitrary = liftM3 TypeVarBind arbitrary arbitrary arbitrary
 
 instance Arbitrary BasicType where
-  arbitrary = elements [IntType, CharType, BoolType, UnitType]
+--  arbitrary = elements [IntType, CharType, BoolType, UnitType]
+  arbitrary = elements [IntType, CharType, BoolType] -- Three are enough
 
 instance Arbitrary Type where
   arbitrary = sized arbitrarySession
 
 arbitrarySession :: Int -> Gen Type
-arbitrarySession 0 = return (Skip pos)
+arbitrarySession 0 = oneof
+  [ liftM Skip arbitrary
+  , liftM2 TypeVar arbitrary arbitrary
+  ]
 arbitrarySession n = oneof
   [ liftM3 Semi arbitrary (arbitrarySession (n `div` 4)) (arbitrarySession (n `div` 4))
   , liftM3 Message arbitrary arbitrary arbitrary
   , liftM3 Choice arbitrary arbitrary (arbitraryTypeMap (n `div` 4))
 --  , liftM3 Rec arbitrary arbitrary (arbitrarySession (n `div` 4))
-  , liftM2 TypeVar arbitrary arbitrary
   ]
 
 arbitraryTypeMap :: Int -> Gen TypeMap
