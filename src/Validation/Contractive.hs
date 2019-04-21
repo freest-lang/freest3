@@ -55,9 +55,9 @@ contractive = contr Set.empty
   contr v tEnv kEnv (Dualof _ t)  = contr v tEnv kEnv t
   contr v tEnv kEnv (TypeVar _ x) = Map.member x kEnv
   contr v tEnv kEnv (TypeName p x)
-    | x `Set.member` v                  = False
-    | x `Map.member` tEnv               = contr (Set.insert x v) tEnv kEnv (getType (tEnv Map.! x))
-    | otherwise                         = True
+    | x `Set.member` v            = False
+    | x `Map.member` tEnv         = contr (Set.insert x v) tEnv kEnv (getType (tEnv Map.! x))
+    | otherwise                   = True
   contr _ _    _    _             = True -- Freest will issue an error later (I hope)
 
 getType :: (Kind, TypeScheme) -> Type

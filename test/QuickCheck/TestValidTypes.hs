@@ -31,7 +31,7 @@ norm = normalise Map.empty
 -- Properties
 
 prop_equivalent :: EquivPair -> Property
-prop_equivalent (EquivPair t u) = contr t && contr t ==> equiv t u
+prop_equivalent (EquivPair t u) = contr t ==> equiv t u
 
 prop_kinded :: Type -> Property
 prop_kinded t = contr t ==> wellFormed t
@@ -116,7 +116,7 @@ arbitrarySession n = oneof
   [ liftM3 Semi arbitrary (arbitrarySession (n `div` 4)) (arbitrarySession (n `div` 4))
   , liftM3 Message arbitrary arbitrary arbitrary
   , liftM3 Choice arbitrary arbitrary (arbitraryTypeMap (n `div` 4))
-  , liftM3 Rec arbitrary arbitrary (arbitrarySession (n `div` 4))
+--  , liftM3 Rec arbitrary arbitrary (arbitrarySession (n `div` 4))
   , liftM2 TypeVar arbitrary arbitrary
   ]
 
