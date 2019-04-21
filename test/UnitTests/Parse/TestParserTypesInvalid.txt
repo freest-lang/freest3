@@ -24,14 +24,14 @@ Char (->) Char
 &{}
 +{}
 
--- Syntatically invalid datatypes, conflicting 
+-- Syntatically invalid datatypes, conflicting - removed these because they are not readable types anymore (only available for data declarations)
 
-[ A: Char, A: Bool ]
-[ A: Char, A: Bool, B: Int ]
-[ A: Char, B: Int, A: Bool ]
-[ A: Char, B: Int, B: Int, A: Bool ]
-[ A: Char, A: Bool ]
-[ A: Char, A: Bool, B: Int ]
-[ A: Char, B: Int, A: Bool ]
-[ A: Char, B: Int, B: Int, A: Bool ]
-[]
+-- [ A: Char, A: Bool ]
+-- [ A: Char, A: Bool, B: Int ]
+-- [ A: Char, B: Int, A: Bool ]
+-- [ A: Char, B: Int, B: Int, A: Bool ]
+-- [ A: Char, A: Bool ]
+-- [ A: Char, A: Bool, B: Int ]
+-- [ A: Char, B: Int, A: Bool ]
+-- [ A: Char, B: Int, B: Int, A: Bool ]
+-- []
