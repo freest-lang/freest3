@@ -11,7 +11,9 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-module Syntax.Show () where
+module Syntax.Show
+( showChoiceView
+) where
 
 import           Syntax.Expressions
 import           Syntax.Schemes
@@ -53,8 +55,8 @@ instance Show TypeVar where
 
 showVar :: Variable v => v -> String
 showVar v
-  | isDigit (head s) = tail $ dropWhile (isDigit) s
-  | otherwise         = s
+  | isDigit (head s) = tail $ dropWhile isDigit s
+  | otherwise        = s
   where s = intern v
   -- = intern v -- Debug
 

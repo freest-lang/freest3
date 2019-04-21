@@ -40,10 +40,12 @@ module Equivalence.Grammar
 import           Syntax.Types
 import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
+import           Syntax.Base
 import           Syntax.Show
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import           Data.List (union, delete)
+import           Data.List (intersperse)
 
 -- Terminal symbols are called labels
 data Label =
@@ -103,13 +105,13 @@ throughPath p _ xs = Just xs
 -- Showing a grammar
 
 instance Show Label where
-  show (ChoiceLabel v l) = show v ++ show l
+  show (ChoiceLabel v l)  = showChoiceView v ++ intern l
   show (MessageLabel p t) = show p ++ show t
-  show (VarLabel l) = show l
+  show (VarLabel l)       = intern l
 
 instance Show Grammar where
   show (Grammar xs p) =
-    "start symbols: " ++ concat (map show xs) ++
+    "start symbols: " ++ concat (map intern xs) ++
     "\nproductions: " ++ showProductions p
 
 showProductions :: Productions -> String
@@ -119,4 +121,4 @@ showTransitions :: TypeVar -> Transitions -> String -> String
 showTransitions x m s = s ++ Map.foldrWithKey (showTransition x) "" m
 
 showTransition :: TypeVar -> Label -> [TypeVar] -> String -> String
-showTransition x l xs s = show s ++ "\n" ++ show x ++ " -> " ++ show l ++ " " ++ concat (map show xs)
+showTransition x l xs s = s ++ "\n" ++ intern x ++ " -> " ++ show l ++ " " ++ concat (intersperse " " (map intern xs))

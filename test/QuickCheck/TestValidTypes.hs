@@ -134,8 +134,8 @@ instance Arbitrary EquivPair where
 assoc :: Gen EquivPair
 assoc = do
   (t, u, v) <- arbitrary
-  return $EquivPair (Semi pos t (Semi pos u v))
-                    (Semi pos (Semi pos t u) v)
+  return $ EquivPair (Semi pos t (Semi pos u v))
+                     (Semi pos (Semi pos t u) v)
 
 
 {-
