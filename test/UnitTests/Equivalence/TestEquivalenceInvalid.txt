@@ -6,12 +6,6 @@ Bool
 Int -> Int
 Int -o Int
 
-[A: Bool]
-[B: Bool]
-
-[A: Bool, B: Char]
-[B: Char, A: Bool, C: Int]
-
 -- Regular Session Types
 
 !Int
