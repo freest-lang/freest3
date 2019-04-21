@@ -4,7 +4,7 @@
 % \vv{estes testes incluem o tempo de parsing? nao deveriam. deveriam só
 %   contar o tempo da chamada à funcao bisimilar/equivalent.}
 
-We implemented the algorithm skteched in Listings~\ref{lst:toGrammar}
+We implemented the algorithm sketched in Listings~\ref{lst:toGrammar}
 to~\ref{lst:enhanced} in 300 lines of Haskell and used the Glasgow
 Haskell Compiler, GHC version 8.6.3, from which we have obtained the
 results we present in this section.  Evaluation was conducted on a Mac
@@ -41,11 +41,11 @@ the running time to 110.35 seconds and the memory allocated to 164,745
 Mb, whereas the implementation of the double-ended queue allowed to
 reduce the running time to 18.45 seconds and the allocated memory to
 29,298. The combination of both exhibit an improvement on more than
-12,000,000\% from the base case, achieving an average of 0.04
+11,000,000\% from the base case, achieving an average of 0.04
 seconds for the running time and 62 Mb of allocated memory.
 
 We should also highlight that, we run example~\eqref{ex:chaotic}
-with the improved algorithm, in a battery os 100 runs, and obtained an
+with the improved algorithm, in a battery of 100 runs, and obtained an
 average running time of 0.008 seconds.
 
 The heuristic we proposed actually circumvents the exponential complexity 

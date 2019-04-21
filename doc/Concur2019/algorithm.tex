@@ -29,8 +29,9 @@ where~$X$ is the \emph{start symbol} and~$P$ a \emph{set of
   productions} of the form $Y \rightarrow a\vec Z$ (we do not allow
 productions of the form $X \rightarrow\varepsilon$). Type variables
 are the \emph{non-terminal symbols} and LTS labels the \emph{terminal
-  symbols}. We call \emph{words} to sequences of type
-variables~$\vec X$, and denote by~$\varepsilon$ the empty word.
+  symbols}. Sequences of type
+variables~$\vec X$ are called \emph{words}, and~$\varepsilon$ 
+denotes the empty word.
 %
 The grammars we are interested in are \emph{simple}: for each
 non-terminal symbol~$X$ and each terminal symbol~$a$, there is at most
@@ -111,7 +112,7 @@ Consider the following context-free session types:
 \begin{equation*}
 \begin{array}{lll}
     S & \triangleq & (\mu x . \&\{n: x;x;?\intk, \ell: ?\intk\});(\mu z . !\intk ; z;z)\\
-    T & \triangleq & (\mu y . \&\{n: y;y, \ell: ?\skipk\};?\intk);(\mu w. !\intk ; w)
+    T & \triangleq & (\mu y . \&\{n: y;y, \ell: \skipk\};?\intk);(\mu w. !\intk ; w)
 \end{array}
 \end{equation*}
 %
@@ -248,9 +249,10 @@ normedWord p v (x:xs) =
 
 We base the third stage of the algorithm on the notion of
 \emph{expansion tree} proposed by Jan{\v{c}}ar and
-Moller~\cite{janvcar1999techniques}, an adaption of an idea by
-Hirshfeld~\cite{hirshfeld1996bisimulation}. We say a set $N'$ of pairs
-of words is an \emph{expansion} of $N$ if $N'$ is a minimal set such
+Moller~\cite{janvcar1999techniques}, an adaptation of an idea by
+Hirshfeld~\cite{hirshfeld1996bisimulation}. We say that a node $N'$,
+composed by a set of pairs
+of words, is an \emph{expansion} of $N$ if $N'$ is a minimal set such
 that: for every pair $(\vec X, \vec Y) \in N$,
 \begin{itemize}
 \item if $\vec X \rightarrow a\vec X'$ then
@@ -282,7 +284,7 @@ finishes in an empty node, otherwise it is said to be
 \emph{unsuccessful}.
 
 %\paragraph*{Expansion step}
-In the \emph{expansion step}, each node $N$ derives a single children
+In the \emph{expansion step}, each node $N$ derives a single child
 node, obtained as an expansion of $N$. As we are dealing with simple
 grammars, no branching is expected in the expansion tree at this
 step.
