@@ -45,7 +45,7 @@ typeToGrammar t = do
   addProduction y (MessageLabel In UnitType) xs
   return y
 
-`toGrammar :: Type -> TransState [TypeVar]
+toGrammar :: Type -> TransState [TypeVar]
 -- Session types
 toGrammar (Skip _) =
   return []
@@ -69,14 +69,26 @@ toGrammar (TypeVar _ x) = do
   else do -- This is a polymorphic variable
     y <- addBasicProd (VarLabel x)
     return [y]
-toGrammar (Rec _ (TypeVarBind _ x _) t)
-  | terminated t = return []
-  | otherwise = do
-    insertVisited x
-    (z:zs) <- toGrammar t
-    m <- getTransitions z
-    addProductions x (Map.map (++ zs) m)
-    return [x]
+toGrammar (Rec _ (TypeVarBind _ x _) t) = do
+  insertVisited x
+  toGrammar t >>= \case
+    []     ->
+      return []
+    (z:zs) ->
+      getTransitions z >>= \case
+        Just m -> do
+          addProductions x (Map.map (++ zs) m)
+          return [x]
+        Nothing ->
+          return []
+-- toGrammar (Rec _ (TypeVarBind _ x _) t)
+--   | terminated t = return []
+--   | otherwise = do
+--     insertVisited x
+--     (z:zs) <- toGrammar t
+--     m <- getTransitions z
+--     addProductions x (Map.map (++ zs) m)
+--     return [x]
     -- Type operators
 toGrammar (Dualof _ t) = toGrammar (dual t)
 toGrammar (TypeName p x) = do
@@ -136,15 +148,15 @@ insertVisited :: TypeVar -> TransState ()
 insertVisited x =
   modify $ \s -> s{visited=Set.insert x (visited s)}
 
-getTransitions :: TypeVar -> TransState Transitions
-getTransitions x = do
-  s <- get
-  return $ (productions s) Map.! x
-
--- getTransitions :: TypeVar -> TransState (Maybe Transitions)
+-- getTransitions :: TypeVar -> TransState Transitions
 -- getTransitions x = do
 --   s <- get
---   return $ (productions s) Map.!? x
+--   return $ (productions s) Map.! x
+
+getTransitions :: TypeVar -> TransState (Maybe Transitions)
+getTransitions x = do
+  s <- get
+  return $ (productions s) Map.!? x
 
 addProductions :: TypeVar -> Transitions -> TransState ()
 addProductions x m =

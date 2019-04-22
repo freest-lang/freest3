@@ -357,14 +357,13 @@ rec x . &{Add: x;x;!Int}
 
 -- Terminated types
 
--- These rec types are not contractive
--- []
--- rec x. (Skip; x)
--- rec x. (Skip; x)
+[]
+rec x. (Skip; x)
+rec x. (Skip; x)
 
--- []
--- rec x. (Skip; x); rec x. (Skip; x)  
--- rec x. (Skip; x)
+[]
+rec x. ((Skip; x); rec y. (Skip; y))
+rec x. (Skip; x)
 
 -- []
 -- rec x. (Skip; x); rec x. (Skip; x)  
@@ -374,22 +373,21 @@ rec x . &{Add: x;x;!Int}
 Skip
 Skip; Skip
 
--- The types below are non contractive
--- []
--- rec x. (Skip; x)
--- Skip
+[]
+rec x. (Skip; x)
+Skip
 
--- []
--- rec x. (Skip; x)
--- Skip; Skip
+[]
+rec x. (Skip; x)
+Skip; Skip
 
--- []
--- rec x. (Skip; x; (rec x. (Skip; x)))
--- rec x. (Skip; x); rec x. (Skip; x)  
+[]
+rec x. (Skip; x; (rec x. (Skip; x)))
+rec x. (Skip; x); rec x. (Skip; x)  
 
--- []
--- rec x. ((rec x. (Skip; x)); (rec x. (Skip; x)))
--- rec x. (Skip; x); rec x. (Skip; x)  
+[]
+rec x. ((rec x. (Skip; x)); (rec x. (Skip; x)))
+rec x. (Skip; x); rec x. (Skip; x)  
 
 -- Context-free Recursive Types, normed
 
@@ -519,3 +517,10 @@ rec z:SL. x
 (+{C: Skip};((rec x_0:SL. (Skip;Skip));(rec z_1:SL. (x;y))))
 ((+{C: Skip};(rec x_2:SL. (Skip;Skip)));(rec z_3:SL. (x;y)))
 
+[]
+(((rec x_0:SL. !Int);!Int);((rec z_1:SL. ((Skip;z_1);+{A: z_1, B: z_1, C: z_1}));!Int)) 
+((((rec x_2:SL. !Int);!Int);(rec z_3:SL. ((Skip;z_3);+{A: z_3, B: z_3,C: z_3})));!Int)
+
+[]
+((rec z_0:SL. (((Skip;z_0);?Char);&{A: y, B: y, C: z_0}));((?Bool;(rec x_1:SL. +{A: x_1, B: Skip, C: y}));+{A: (rec y_2:SL. Skip), B: ?Int, C: !Bool}))
+(((rec z_3:SL. (((Skip;z_3);?Char);&{A: y, B: y, C: z_3}));(?Bool;(rec x_4:SL. +{A: x_4, B: Skip, C: y})));+{A: (rec y_5:SL. Skip), B: ?Int, C: !Bool})

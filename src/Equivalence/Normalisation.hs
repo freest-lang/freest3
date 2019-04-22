@@ -63,7 +63,7 @@ terminated = isChecked Set.empty
   isChecked v (Semi _ s t)                  = isChecked v s && isChecked v t
   isChecked v (Rec _ (TypeVarBind _ x _) t) = isChecked (Set.insert x v) t
   -- Only free variables are terminated.
-  -- TODO: only free variables of kind SL are terminated
+  -- TODO: only free variables *of kind SU* are terminated
   isChecked v (TypeVar _ x)                 = Set.notMember x v
   isChecked _ _                             = False
 
