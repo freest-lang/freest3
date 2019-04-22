@@ -82,8 +82,8 @@ toGrammar (TypeVar _ x) = do
 toGrammar (Rec _ (TypeVarBind _ x _) t)
   | terminated t = return []
   | otherwise = do
+    insertVisited x
     y <- freshVar
-    insertVisited y
     (z:zs) <- toGrammar t
     m <- getTransitions z
     addProductions y (Map.map (++ zs) m)
