@@ -19,8 +19,8 @@ Function $\toGrammark$ runs under a monadic context,
 \lstinline|TransState|, suitably initialised.
 %
 The monadic state comprises the productions, the set of visited nodes,
-and an integer to generate the fresh variables. At the end of the run,
-we are interested on the productions $P$ only.
+and an integer to generate fresh variables. At the end of the run, we
+are interested on the productions $P$ only.
 %
 We hence allow ourselves a slight abuse of notation and write
 $\vec Y,P = \toGrammarf S$ to denote the result of running function
@@ -66,13 +66,12 @@ those on productions coincide, we present a bisimilarity between
 context-free session types and the result of \lstinline|toGrammar|.
 %
 As the implementation of \isCheckedf is not shown, we assume that
-$\isCheckedf S$ always terminates and that it returns \lstinline|True|
-if and only if $\DONE S$.
+$\isCheckedf S$ returns \lstinline|True| if and only if $\DONE S$.
 %
 %% new from here
 Consider the relation $\mathcal{R}$ given by:
 \[\begin{array}{lll}
-	\mathcal{R} = & \{ (\skipk, (\varepsilon, \emptyset))\} \,\cup\\
+	& \{ (\skipk, (\varepsilon, \emptyset))\} \,\cup\\
 	& \{(\sharp B,(X,\{X \rightarrow \sharp B\})) \mid \text{$B$ is any base type}\} 
 	   \,\cup\\
 	& \{ (\star\{l_i\colon S_i\}_{i\in I}, (X, \{X \rightarrow \star l_i
@@ -85,24 +84,25 @@ Consider the relation $\mathcal{R}$ given by:
     &\{(S_1;S_2, (\vec X_1\vec X_2,  P_1 \cup  P_2)) \mid
     \text{$S_i$ is any type, $\vec X_i, P_i = \toGrammarf{S_i}, i = 1,2$ } \}\,\cup\\
     & \{(\mu X.S, (\varepsilon, \emptyset)) \mid 
-    \text{$S$ is any type and $\isCheckedf \mu X.S$}\}\,\cup\\
+    \text{$S$ is any $\isCheckedk$ type}\}\,\cup\\
     & \{(\mu X.S, (X, \{X \rightarrow a_j \vec {Z_j}\vec Y\}_{j\in J} \cup  P)) \mid 
     \begin{array}[t]{l}
-      \!\!\text{$S$ is any type, not } \isCheckedf \mu X.S,\\
+      \!\!\text{$S$ is any non $\isCheckedk$ type},\\
       \!\! Y\vec Y, P = \toGrammarf{S}, \text{ $X$ does not}\\
-      \!\!\text{occur in $P$ }\text{ and } \{Y \rightarrow a_j \vec {Z_j}\}_{j\in J} 
+      \!\!\text{occur in $P$, and } \{Y \rightarrow a_j \vec {Z_j}\}_{j\in J} 
       \subseteq  P\\
       \!\!\text{are all the transitions from $Y$}\}
     \end{array}\\
 \end{array}\]
 
 \begin{lemma}
-\label{lemma:bisim_unr}
-	For any type $S$, if not $\isCheckedf \mu X.S$ and 
-	$(\mu X.S, (X, \{X \rightarrow a_j \vec {Z_j}\vec Y\}_{j\in J} \cup  P))\in \mathcal{R}$
-	with $\{Y \rightarrow a_j \vec {Z_j}\}_{j\in J}\subseteq P$, then
-	$(\Unravel(\mu X.S), (X, \{X \rightarrow a_j \vec {Z_j}\vec Y\}_{j\in J} \cup  P))
-	\in \mathcal{R}$.
+  \label{lemma:bisim_unr}
+  For any type $S$, if not $\isCheckedf S$ and
+  $(\mu X.S, (X, \{X \rightarrow a_j \vec {Z_j}\vec Y\}_{j\in J} \cup
+  P))\in \mathcal{R}$ with
+  $\{Y \rightarrow a_j \vec {Z_j}\}_{j\in J}\subseteq P$, then
+  $(\Unravel(\mu X.S), (X, \{X \rightarrow a_j \vec {Z_j}\vec
+  Y\}_{j\in J} \cup P)) \in \mathcal{R}$.
 \end{lemma}
 
 \begin{proof}
@@ -284,28 +284,28 @@ these two papers also allows unravelling the reason for the
 distinction, in the simplification phase, between the cases where all
 the symbols in the grammar are and are not normed, as shown in
 Listing~\ref{lst:algorithm}.
-
+%
 These properties ensure the termination of the algorithm, its soundness
 and completeness.
 
-\begin{lemma}
-\label{lemma:terminates}
+\begin{theorem}[Termination]
+\label{thm:termination}
 	The computation of $\bisimf S T$ always terminates.
 \end{lemma}
-
+%
 \begin{proof}
 	If $S\TypeEquiv T$ then, by Theorem~\ref{thm:cfst_vs_grammar},
 	we have $X_S\ProdEquiv X_T$ and thus the existence of a finite
 	successful branch is ensured by the finite witness property. 
 	Hence, breadth-first search eventually terminates. 
 	
-	Case $S\not\TypeEquiv T$, we easily conclude that all branches 
-	in the expansion tree are finite and thence $\bisimf S T$ terminates. 
-	To conclude that all branches are finite, observe that 
-	any infinite branch is successful by definition and thus the 
-	safeness property would imply $X_S\ProdEquiv X_T$ and
-	we would have $S\TypeEquiv T$.
-\end{proof}
+	When $S\not\TypeEquiv T$, we easily conclude that all branches
+        in the expansion tree are finite and thence $\bisimf S T$
+        terminates.  To conclude that all branches are finite, observe
+        that any infinite branch is successful by definition and thus
+        the safeness property would imply $X_S\ProdEquiv X_T$ and we
+        would have $S\TypeEquiv T$.
+\end{theorem}
 
 %\begin{proof}
 %	On the other hand, as observed in~\cite{janvcar1999techniques},
@@ -341,34 +341,34 @@ immediate: the algorithm to check the bisimulation of context-free
 session types (Listing~\ref{lst:algorithm}) is sound with respect to
 the meta-theory of context-free session types.
 
-\begin{theorem}
+\begin{theorem}[Soundness]
 \label{thm:soundness}
   If $\bisimf ST$ returns \upshape{\lstinline|True|} then $S\TypeEquiv T$.
 \end{theorem}
-
+%
 \begin{proof}
   From Theorem~\ref{thm:cfst_vs_grammar} and
   Lemma~\ref{lem:bisimilar-to-prod}.
 \end{proof}
 
-\begin{corollary}
-	If $S\not\TypeEquiv T$ then $\bisimf ST$ returns \upshape{\lstinline|False|}.
-\end{corollary}
-
-\begin{proof}
-	From Theorem~\ref{thm:soundness} and Lemma~\ref{lemma:terminates}.
-\end{proof}
+% \begin{corollary}
+% 	If $S\not\TypeEquiv T$ then $\bisimf ST$ returns \upshape{\lstinline|False|}.
+% \end{corollary}
+% %
+% \begin{proof}
+% 	From Theorem~\ref{thm:soundness} and Lemma~\ref{lemma:terminates}.
+% \end{proof}
  
 We now prove that the algorithm to check the bisimulation of context-free session 
 types is complete with respect to the meta-theory of context-free session
 types. The finite witness property is paramount to achieve this result.
 
-\begin{theorem}
+\begin{theorem}[Completeness]
 \label{thm:completeness}
   If $S \TypeEquiv T$ then $\bisimf S T$ returns
   \upshape{\lstinline|True|}.
 \end{theorem}
-
+%
 \begin{proof}
   Assuming that $S \TypeEquiv T$, by Theorem~\ref{thm:cfst_vs_grammar}
   we have $X_{S} \ProdEquiv X_{T}$.  Hence, the Proposition~\ref{finite_witness}
@@ -379,12 +379,23 @@ types. The finite witness property is paramount to achieve this result.
   the empty node and conclude the bisimulation positively.
 \end{proof}
 
-\begin{corollary}
-	If $\bisimf ST$ returns \upshape{\lstinline|False|} then $S\not\TypeEquiv T$.
-\end{corollary}
+% \begin{corollary}
+% 	If $\bisimf ST$ returns \upshape{\lstinline|False|} then $S\not\TypeEquiv T$.
+% \end{corollary}
+% %
+% \begin{proof}
+% 	From Theorem~\ref{thm:completeness}.
+% \end{proof}
 
+\begin{corollary}[Correctness]
+  $\bisimf ST$ returns \upshape{\lstinline|True|} if and only if
+  $S\TypeEquiv T$.
+\end{corollary}
+%
 \begin{proof}
-	From Theorem~\ref{thm:completeness}.
+  From soundness (Theorem~\ref{thm:soundness}), completeness
+  (Theorem~\ref{thm:completeness}), and termination
+  (Theorem~\ref{thm:termination}).
 \end{proof}
 
 %%% Local Variables:

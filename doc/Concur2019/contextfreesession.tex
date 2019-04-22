@@ -2,11 +2,11 @@
 \label{sec:contextfreesession}
 
 The types we consider build upon a denumerable set of \emph{type
-  variables} denoted by $X,Y,Z$, and a set \emph{type labels} denoted
-by $\ell$. We assume given a set of base types $B$ that include the
-$\unitk$ type. Further base types could include the integer and
-boolean types, functions, and pairs. The syntax of types is derived
-from the grammar below.
+  variables} denoted by $X,Y,Z$, and a set \emph{choice labels}
+denoted by $\ell$. We assume given a set of base types $B$ that
+include the $\unitk$ type. Further base types could include integer
+and boolean types, or any type for which equality is decidable. The
+syntax of types is given by the grammar below.
 %
 \begin{gather*}
   S,T \grmeq \skipk \grmor \sharp B \grmor 
@@ -31,7 +31,7 @@ $\mu X_1.\mu X_2 \dots \mu
 X_n. X_1$)~\cite{DBLP:journals/tcs/Courcelle83,thiemann2016context}.
 %
 For simplicity we removed polymorphic type variables (not bound by
-$\mu$) from the grammar; they can be treated as $\sharp B$.
+$\mu$) from the grammar; they can be treated similarly to $\sharp B$.
 
 The labelled transition system (LTS) for context-free session types is
 given by the set of types as \emph{states}, the set of \emph{actions}
