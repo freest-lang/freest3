@@ -22,11 +22,12 @@ on which function \lstinline|bisimilar| took 4379.98 seconds (that is
 one hour and forty minutes) to terminate. This is certainly not a
 reasonable running time for an algorithm to be included in a
 compiler. Hence we looked into ways to improve the running time. Among
-the different optimisations that we tried, two stand out:
+the different optimisations that we tried, three stand out:
 \begin{enumerate}
 \item Iterate the simplification stage until a fixed point is reached;
 \item Use a double-ended queue where promising children are prepended
-  rather than appended.
+  rather than appended;
+\item Clean redundant terminal symbols in the grammar.
 \end{enumerate}
 
 If, on the one hand, we believed that the computation of the expansion
@@ -157,12 +158,12 @@ Having proved that the fixed point exists, we can now adapt the
 simplification phase to, on the one hand, iterate the simplification
 rules until reaching a fixed point and, on the other hand, identify
 and prepend promising nodes. An improved version of the
-\lstinline|simplify| function (Listing~\ref{lst:algorithm}) is in
-Listing~\ref{lst:enhanced}.
+\lstinline|simplify| function (listing~\ref{lst:algorithm}) is in
+listing~\ref{lst:enhanced}.
 
 \begin{lstlisting}[
   caption={Haskell code for the improved simplification step (replaces
-    function \lstinline|simplify| in Listing~\ref{lst:algorithm})},
+    function \lstinline|simplify| in listing~\ref{lst:algorithm})},
   label={lst:enhanced},
   captionpos=b]
 simplify :: Productions -> Node -> Ancestors -> NodeQueue -> NodeQueue
@@ -182,6 +183,32 @@ findFixedPoint ps nas
   where nas' = if allNormed ps
                then foldr (apply ps) nas [reflex,congruence,bpa2]
                else foldr (apply ps) nas [reflex,congruence,bpa1,bpa2]
+\end{lstlisting}
+
+Recalling that the size of the expansion tree (also) depends on the 
+number of productions in the grammar, the generation of grammars cleaned
+of redundant terminal symbols is paramount to reduce the size of the
+expansion tree and thus to enhance the performance. Function
+\lstinline|addBasicProd| replaces the blind creation of fresh variables
+in \lstinline|toGrammar (Message p b)| (at listing~\ref{lst:toGrammar}).
+
+\begin{lstlisting}[
+caption={Haskell code for a clean grammar generation, to be used
+    in \lstinline|toGrammar (Message p b)| in listing~\ref{lst:toGrammar}.},
+  label={lst:addProd},
+  captionpos=b]
+addBasicProd :: Label -> TransState TypeVar
+addBasicProd l = do
+  s <- get
+  let p' = Map.filter (Map.member l) (productions s)
+  if Map.null p'
+    then do
+      y <- freshVar
+      addProduction y l []
+      return y
+    else do
+      let (y,_) = Map.elemAt 0 p'
+      return y
 \end{lstlisting}
 
 The optimisations we propose aim at improving the performance of the
