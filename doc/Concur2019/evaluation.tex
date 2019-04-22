@@ -13,7 +13,7 @@ MacOS 10.14.3.
 
 Once the improvement proposals were established, we benchmarked the
 algorithm on a test suite of carefully crafted pair of types. These
-tests comprise valid and invalid equivalences, for a total of 138
+tests comprise valid and invalid equivalences, for a total of 154
 tests. We have profiled our program for the time and memory allocated
 during the tests. For this purpose, we have used GHC's profiling
 feature, that maintains a cost-centre stack to keep track of the
@@ -41,7 +41,7 @@ the running time to 110.35 seconds and the memory allocated to 164,745
 Mb, whereas the implementation of the double-ended queue allowed to
 reduce the running time to 18.45 seconds and the allocated memory to
 29,298. The combination of both exhibit an improvement on more than
-11,000,000\% from the base case, achieving an average of 0.04
+1,000,000\% from the base case, achieving an average of 0.04
 seconds for the running time and 62 Mb of allocated memory.
 
 We should also highlight that, we run example~\eqref{ex:chaotic}

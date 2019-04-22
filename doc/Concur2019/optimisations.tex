@@ -188,28 +188,11 @@ findFixedPoint ps nas
 Recalling that the size of the expansion tree (also) depends on the 
 number of productions in the grammar, the generation of grammars cleaned
 of redundant terminal symbols is paramount to reduce the size of the
-expansion tree and thus to enhance the performance. Function
-\lstinline|addBasicProd| replaces the blind creation of fresh variables
-in \lstinline|toGrammar (Message p b)| (at listing~\ref{lst:toGrammar}).
-
-\begin{lstlisting}[
-caption={Haskell code for a clean grammar generation, to be used
-    in \lstinline|toGrammar (Message p b)| in listing~\ref{lst:toGrammar}.},
-  label={lst:addProd},
-  captionpos=b]
-addBasicProd :: Label -> TransState TypeVar
-addBasicProd l = do
-  s <- get
-  let p' = Map.filter (Map.member l) (productions s)
-  if Map.null p'
-    then do
-      y <- freshVar
-      addProduction y l []
-      return y
-    else do
-      let (y,_) = Map.elemAt 0 p'
-      return y
-\end{lstlisting}
+expansion tree and thus to enhance the performance. We define a 
+function \lstinline|addBasicProd| that avoids the blind creation of 
+fresh variables in \lstinline|toGrammar (Message p b)| 
+(at listing~\ref{lst:toGrammar}) by a prior search for existing productions
+with the respective terminal symbols.
 
 The optimisations we propose aim at improving the performance of the
 algorithm, however the branching nature of the expansion tree promotes
