@@ -2,6 +2,7 @@
 
 import           Test.QuickCheck
 import           Equivalence.Bisimulation
+import           Equivalence.Equivalence
 import           Equivalence.Normalisation
 import           Validation.Rename
 import           Validation.Kinding
@@ -16,24 +17,37 @@ import           Control.Monad.State
 import           Control.Monad
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
+import           Debug.Trace
 
 -- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_kinded
-main = quickCheckWith stdArgs {maxSuccess = 10000} prop_equivalent
+main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
+-- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_equivalent
 -- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_eq_type
 -- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_normal_eq_type
 -- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_same_equivs
 
 -- Convenience
 
-equiv = Equivalence.Bisimulation.equivalent Map.empty
+bisim = bisimilar Map.empty
+equiv = equivalent Map.empty Map.empty
 contr = contractive Map.empty Map.empty
 norm = normalise Map.empty
 pos = defaultPos
 
 -- Properties
 
-prop_equivalent :: EquivPair -> Property
-prop_equivalent (EquivPair t u) = contr t ==> equiv t u
+prop_bisimilar :: BisimPair -> Property
+prop_bisimilar (BisimPair t u) = contr t ==> bisimi t u
+
+bisimi t u = evalState (trace (show t ++ " bisim " ++ show u) (return $ bisim t u)) ()
+
+prop_self_bisimilar :: Type -> Property
+prop_self_bisimilar t = contr t ==> self_bisim t
+
+self_bisim t = evalState (trace (show t) (return $ bisim t t)) ()
+
+prop_equivalent :: BisimPair -> Property
+prop_equivalent (BisimPair t u) = contr t ==> equiv t u
 
 prop_kinded :: Type -> Property
 prop_kinded t = contr t ==> wellFormed t
@@ -43,8 +57,8 @@ wellFormed t = null (errors state)
   where state = execState (synthetise kindEnv t) (initialState "Quick Checking")
         kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (kindSL pos))) -- TODO: only the free vars should go into this environment
   
-prop_same_equivs :: Type -> Property
-prop_same_equivs t = contr t ==> equiv t t
+prop_same_bisims :: Type -> Property
+prop_same_bisims t = contr t ==> bisim t t
 
 prop_eq_type :: Type -> Property
 prop_eq_type t = contr t ==> t == t
@@ -132,24 +146,24 @@ arbitraryField n = do
     t <- arbitrarySession (n `div` 4)
     return (k, t)
 
--- Arbitrary Pairs of Equivalent Types
+-- Arbitrary Pairs of Bisimilar Types
 
-data EquivPair = EquivPair Type Type
+data BisimPair = BisimPair Type Type
 
-instance Show EquivPair where
-  show (EquivPair t u) = show t ++ " equivalent-to " ++ show u
+instance Show BisimPair where
+  show (BisimPair t u) = show t ++ " bisimilar-to " ++ show u
 
-instance Arbitrary EquivPair where
+instance Arbitrary BisimPair where
   arbitrary = oneof
     [ assoc
     ]
 
-assoc :: Gen EquivPair
+assoc :: Gen BisimPair
 assoc = do
   (t, u, v) <- arbitrary
   let [a,b,c,d,e,f] = renameList [t,u,v,t,u,v]
   -- let (PairType _ t' (PairType pos u' v')) = evalState (rename Map.empty (PairType pos t (PairType pos u v))) (initialState "Renaming for QuickCheck")
-  return $ EquivPair (Semi pos a (Semi pos b c))
+  return $ BisimPair (Semi pos a (Semi pos b c))
                      (Semi pos (Semi pos d e) f)
                      
 renameList ts =

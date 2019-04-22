@@ -31,7 +31,7 @@ $\mu X_1.\mu X_2 \dots \mu
 X_n. X_1$~\cite{DBLP:journals/tcs/Courcelle83,thiemann2016context}.
 %
 For simplicity we removed polymorphic type variables (not bound by
-$\mu$) from the grammar.
+$\mu$) from the grammar of session types.
 % they can be treated similarly to $\sharp B$ -- This is not true:
 % poly vars of un type are terminated; the others not.
 
@@ -39,10 +39,11 @@ The labelled transition system (LTS) for context-free session types is
 given by the set of types as \emph{states}, the set of \emph{actions}
 ranged over by $a$, and the \emph{transition relation} $\LTSderives$
 defined by the rules below, taken from Thiemann and
-Vasconcelos~\cite{thiemann2016context}.  The transition relation makes
-use of an auxiliary judgment $\DONE{S}$ that characterizes terminated
-states: session types that exhibit no further
-action~\cite{DBLP:journals/jacm/AcetoH92} .
+Vasconcelos~\cite{thiemann2016context}.  Notation $\subs{T}{X}S$
+denotes the resulting of substituting the (free) occurrences of $X$ by
+$T$ in $S$. The transition relation makes use of an auxiliary judgment
+$\DONE{S}$ that characterizes terminated states: session types that
+exhibit no further action~\cite{DBLP:journals/jacm/AcetoH92} .
 %
 \begin{gather*}
   \DONE{\skipk}
