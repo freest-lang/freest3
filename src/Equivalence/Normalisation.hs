@@ -56,21 +56,16 @@ append t       (Skip _) = t
 append (Semi p t u)   v = Semi p t (append u v)
 append t              u = Semi (position t) t u
 
-terminated :: Type -> Bool
-terminated (Skip _)      = True
-terminated (Semi _ s t)  = terminated s && terminated t
-terminated (Rec _ _ t)   = terminated t
-terminated (TypeVar _ _) = True
-terminated _             = False
-
--- terminated :: Type ->  Bool
--- terminated = isCheck Set.empty
---   where
---   isCheck _ (Skip _)                      = True
---   isCheck v (Semi _ s t)                  = isCheck v s && isCheck v t
---   isCheck v (Rec _ (TypeVarBind _ x _) t) = isCheck (Set.insert x v) t
---   isCheck v (TypeVar _ x)                 = Set.member x v -- Only bound variables are checked
---   isCheck _ _                             = False
+terminated :: Type ->  Bool
+terminated = isChecked Set.empty
+  where
+  isChecked _ (Skip _)                      = True
+  isChecked v (Semi _ s t)                  = isChecked v s && isChecked v t
+  isChecked v (Rec _ (TypeVarBind _ x _) t) = isChecked (Set.insert x v) t
+  -- Only free variables are terminated.
+  -- TODO: only free variables of kind SL are terminated
+  isChecked v (TypeVar _ x)                 = Set.notMember x v
+  isChecked _ _                             = False
 
 {- An attempt of a "full" normalisation, useful for determining type equality without running the bisimulation game
 

@@ -45,7 +45,7 @@ typeToGrammar t = do
   addProduction y (MessageLabel In UnitType) xs
   return y
 
-toGrammar :: Type -> TransState [TypeVar]
+`toGrammar :: Type -> TransState [TypeVar]
 -- Session types
 toGrammar (Skip _) =
   return []
@@ -69,25 +69,14 @@ toGrammar (TypeVar _ x) = do
   else do -- This is a polymorphic variable
     y <- addBasicProd (VarLabel x)
     return [y]
--- toGrammar (Rec _ (TypeVarBind _ x _) t)
---   | terminated t = return []
---   | otherwise = do
---     insertVisited x
---     (z:zs) <- toGrammar t
---     getTransitions z >>= \case
---         Just m -> do
---           addProductions x (Map.map (++ zs) m)
---           return [x]
---         Nothing -> return []
 toGrammar (Rec _ (TypeVarBind _ x _) t)
   | terminated t = return []
   | otherwise = do
     insertVisited x
-    y <- freshVar
     (z:zs) <- toGrammar t
     m <- getTransitions z
-    addProductions y (Map.map (++ zs) m)
-    return [y]
+    addProductions x (Map.map (++ zs) m)
+    return [x]
     -- Type operators
 toGrammar (Dualof _ t) = toGrammar (dual t)
 toGrammar (TypeName p x) = do
