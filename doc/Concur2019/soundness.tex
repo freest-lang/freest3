@@ -18,9 +18,9 @@ our algorithm is sound and complete.
 Function $\toGrammark$ runs under a monadic context,
 \lstinline|TransState|, suitably initialised.
 %
-The monadic state comprises the productions, the set of visited nodes,
-and an integer to generate fresh variables. At the end of the run, we
-are interested on the productions $P$ only.
+The monadic state comprises the productions and an integer to generate
+fresh variables. At the end of the run, we are interested on the
+productions $P$ only.
 %
 We hence allow ourselves a slight abuse of notation and write
 $\vec Y,P = \toGrammarf S$ to denote the result of running function
