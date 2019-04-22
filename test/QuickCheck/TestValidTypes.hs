@@ -41,7 +41,7 @@ prop_kinded t = contr t ==> wellFormed t
 wellFormed :: Type -> Bool
 wellFormed t = null (errors state)
   where state = execState (synthetise kindEnv t) (initialState "Quick Checking")
-        kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (kindSL pos)))
+        kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (kindSL pos))) -- TODO: only the free vars should go into this environment
   
 prop_same_equivs :: Type -> Property
 prop_same_equivs t = contr t ==> equiv t t

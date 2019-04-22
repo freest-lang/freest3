@@ -508,3 +508,7 @@ rec x . &{N: x, L: x};!Int
 [("x", SL), ("z", SL)]
 (!Char;(+{A: z, B: z, C: z};(rec z_0:SL. ((rec y_1:SL. x);(Skip;x)))))
 ((!Char;+{A: z, B: z, C: z});(rec z_2:SL. ((rec y_3:SL. x);(Skip;x))))
+
+[("x", SL)]
+rec y:SL. x
+rec z:SL. x

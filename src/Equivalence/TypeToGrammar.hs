@@ -140,7 +140,7 @@ freshVar = do
   s <- get
   let n = nextIndex s
   modify (\s -> s{nextIndex = n + 1})
-  return $ mkVar defaultPos ("X" ++ show n)
+  return $ mkVar defaultPos ("#X" ++ show n)
   -- Hope there are no colisions with type variables renamed after parsing
 
 memberVisited :: TypeVar -> TransState Bool
