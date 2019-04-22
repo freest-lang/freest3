@@ -502,3 +502,9 @@ rec x . &{N: x, L: x};!Int
 []
 &{And: (?Bool;(?Bool;(!Bool;(rec x : SL . &{And: (?Bool;(?Bool;(!Bool;x))), End: Skip, Not: (?Bool;(!Bool;x)), Or: (?Bool;(?Bool;(!Bool;x)))})))), End: Skip, Not: (?Bool;(!Bool;(rec x : SL . &{And: (?Bool;(?Bool;(!Bool;x))), End: Skip, Not: (?Bool;(!Bool;x)), Or: (?Bool;(?Bool;(!Bool;x)))}))), Or: (?Bool;(?Bool;(!Bool;(rec x : SL . &{And: (?Bool;(?Bool;(!Bool;x))), End: Skip, Not: (?Bool;(!Bool;x)), Or: (?Bool;(?Bool;(!Bool;x)))}))))}
 &{And: (?Bool;(?Bool;(!Bool;(rec x : SL . &{And: (?Bool;(?Bool;(!Bool;x))), End: Skip, Not: (?Bool;(!Bool;x)), Or: (?Bool;(?Bool;(!Bool;x)))})))), End: Skip, Not: (?Bool;(!Bool;(rec x : SL . &{And: (?Bool;(?Bool;(!Bool;x))), End: Skip, Not: (?Bool;(!Bool;x)), Or: (?Bool;(?Bool;(!Bool;x)))}))), Or: (?Bool;(?Bool;(!Bool;(rec x : SL . &{And: (?Bool;(?Bool;(!Bool;x))), End: Skip, Not: (?Bool;(!Bool;x)), Or: (?Bool;(?Bool;(!Bool;x)))}))))}
+
+-- Examples from QuickCheck
+
+[("x", SL), ("z", SL)]
+(!Char;(+{A: z, B: z, C: z};(rec z_0:SL. ((rec y_1:SL. x);(Skip;x)))))
+((!Char;+{A: z, B: z, C: z});(rec z_2:SL. ((rec y_3:SL. x);(Skip;x))))

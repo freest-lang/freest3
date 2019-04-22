@@ -18,7 +18,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
 -- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_kinded
-main = quickCheckWith stdArgs {maxSuccess = 1000} prop_equivalent
+main = quickCheckWith stdArgs {maxSuccess = 10000} prop_equivalent
 -- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_eq_type
 -- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_normal_eq_type
 -- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_same_equivs
