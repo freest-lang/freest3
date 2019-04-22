@@ -12,7 +12,7 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-{-# LANGUAGE NoMonadFailDesugaring #-}
+{-# LANGUAGE LambdaCase, NoMonadFailDesugaring #-}
 
 module Equivalence.TypeToGrammar
 ( convertToGrammar
@@ -69,21 +69,17 @@ toGrammar (TypeVar _ x) = do
   else do -- This is a polymorphic variable
     y <- addBasicProd (VarLabel x)
     return [y]
-toGrammar u@(Rec _ (TypeVarBind _ x _) t)
-  | terminated u = return []
+toGrammar (Rec _ (TypeVarBind _ x _) t)
+  | terminated t = return []
   | otherwise = do
     insertVisited x
-    ws <- toGrammar t
-    if null ws then
-      return []
-    else do
-      m <- getTransitions (head ws)
-      if Map.null m
-      then
-        return []
-      else do
-        addProductions x (Map.map (++ (tail ws)) m)
-        return [x]
+    toGrammar t >>= \case
+      []     -> return []
+      (z:zs) -> getTransitions z >>= \case
+        Just m -> do
+          addProductions x (Map.map (++ zs) m)
+          return [x]
+        Nothing -> return []
 -- toGrammar u@(Rec Bind{var=x} t)
 --   | isChecked u Set.empty = return []
 --   | otherwise = do
@@ -141,7 +137,6 @@ freshVar = do
   let n = nextIndex s
   modify (\s -> s{nextIndex = n + 1})
   return $ mkVar defaultPos ("#X" ++ show n)
-  -- Hope there are no colisions with type variables renamed after parsing
 
 memberVisited :: TypeVar -> TransState Bool
 memberVisited t = do
@@ -152,16 +147,13 @@ insertVisited :: TypeVar -> TransState ()
 insertVisited x =
   modify $ \s -> s{visited=Set.insert x (visited s)}
 
-getTransitions :: TypeVar -> TransState Transitions
+getTransitions :: TypeVar -> TransState (Maybe Transitions)
 getTransitions x = do
   s <- get
-  case (productions s) Map.!? x of
-    Just t  -> return t
-    Nothing -> return $ Map.empty
-  -- if Map.member x p then
-  --   return $ p Map.! x
-  -- else
-  --   return Map.empty
+  return $ (productions s) Map.!? x
+  -- case (productions s) Map.!? x of
+  --   Just t  -> return t
+  --   Nothing -> return $ Map.empty
 
 addProductions :: TypeVar -> Transitions -> TransState ()
 addProductions x m =

@@ -71,7 +71,8 @@ data Grammar = Grammar [TypeVar] Productions
 -- The transitions from a word, as opposed to the transitions from a non-terminal
 transitions :: Productions -> [TypeVar] -> Transitions
 transitions _ []     = Map.empty
-transitions p (x:xs) = Map.map (++ xs) (p Map.! x)
+transitions p (x:xs) = Map.map (++ xs) (Map.findWithDefault Map.empty x p)
+-- transitions p (x:xs) = Map.map (++ xs) (p Map.! x)
 
 -- Add a production from a non-terminal; the productions may already contain transitions for the given nonterminal (hence the insertWith and union)
 insertProduction :: Productions -> TypeVar -> Label -> [TypeVar] -> Productions
