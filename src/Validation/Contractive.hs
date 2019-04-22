@@ -50,14 +50,18 @@ contractive :: TypeEnv -> KindEnv -> Type -> Bool
 contractive = contr Set.empty
   where
   contr :: Visited -> TypeEnv -> KindEnv -> Type -> Bool
+  -- Session types
   contr v tEnv kEnv (Semi _ t _)  = contr v tEnv kEnv t
+  -- Functional or session
   contr v tEnv kEnv (Rec _ _ t)   = contr v tEnv kEnv t
-  contr v tEnv kEnv (Dualof _ t)  = contr v tEnv kEnv t
   contr v tEnv kEnv (TypeVar _ x) = Map.member x kEnv
+  -- Type operators
+  contr v tEnv kEnv (Dualof _ t)  = contr v tEnv kEnv t
   contr v tEnv kEnv (TypeName p x)
     | x `Set.member` v            = False
     | x `Map.member` tEnv         = contr (Set.insert x v) tEnv kEnv (getType (tEnv Map.! x))
     | otherwise                   = True
+  -- Functional types; Session Basic + Message + Choice
   contr _ _    _    _             = True -- Freest will issue an error later (I hope)
 
 getType :: (Kind, TypeScheme) -> Type
