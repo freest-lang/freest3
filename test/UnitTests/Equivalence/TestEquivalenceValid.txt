@@ -512,3 +512,9 @@ rec x . &{N: x, L: x};!Int
 [("x", SL)]
 rec y:SL. x
 rec z:SL. x
+
+[]
+((rec 0_z:SL. (((Skip;0_z);?Char);&{A: y, B: y, C: 0_z}));((?Bool;(rec
+1_x:SL. +{A: 1_x, B: Skip, C: y}));+{A: (rec 2_y:SL. Skip), B: ?Int,
+C: !Bool}))
+(((rec 3_z:SL. (((Skip;3_z);?Char);&{A: y, B: y, C: 3_z}));(?Bool;(rec 4_x:SL. +{A: 4_x, B: Skip, C: y})));+{A: (rec 5_y:SL. Skip), B: ?Int, C: !Bool})
