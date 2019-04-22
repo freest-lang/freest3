@@ -1,7 +1,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 
 import           Test.QuickCheck
-import           Equivalence.Equivalence
+import           Equivalence.Bisimulation
 import           Equivalence.Normalisation
 import           Validation.Rename
 import           Validation.Kinding
@@ -25,7 +25,7 @@ main = quickCheckWith stdArgs {maxSuccess = 1000} prop_equivalent
 
 -- Convenience
 
-equiv = equivalent Map.empty Map.empty
+equiv = Equivalence.Bisimulation.equivalent Map.empty
 contr = contractive Map.empty Map.empty
 norm = normalise Map.empty
 pos = defaultPos
