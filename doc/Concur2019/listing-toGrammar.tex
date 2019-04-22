@@ -27,8 +27,8 @@ toGrammar (Rec x t) = do
   case ys of
     [] -> return []
     (z:zs) -> do
-      mm <- getTransitions z
-      case mm of
+      ts <- getTransitions z
+      case ts of
         Just m -> do
           addProductions x (Map.map (++ zs) m)
           return [x]
