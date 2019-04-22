@@ -1,9 +1,13 @@
 module Equivalence.TestEquivalenceInvalidSpec(spec) where
 
 import           Equivalence.Equivalence
+import           Validation.Rename
 import           Syntax.Types
-import qualified Data.Map.Strict as Map
+import           Syntax.Base
+import           Utils.FreestState
 import           SpecHelper
+import qualified Data.Map.Strict as Map
+import           Control.Monad.State
 
 spec :: Spec
 spec = do
@@ -12,8 +16,9 @@ spec = do
 
 matchInvalidSpec :: [String] -> Spec
 matchInvalidSpec [a, b] =
-  it (a ++ " `equivalent` " ++  b) $
-    equivalent Map.empty Map.empty (read a :: Type) (read b :: Type) `shouldBe` False
+  it (a ++ " `~/~` " ++  b) $
+    equivalent Map.empty Map.empty t u `shouldBe` False
+          where (PairType _ t u) = evalState (rename Map.empty (PairType defaultPos (read a) (read b))) (initialState "Testing Type Equivalence")
 
 main :: IO ()
 main = hspec spec

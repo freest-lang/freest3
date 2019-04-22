@@ -84,7 +84,15 @@ toGrammar u@(Rec _ (TypeVarBind _ x _) t)
       else do
         addProductions x (Map.map (++ (tail ws)) m)
         return [x]
-  -- Type operators
+-- toGrammar u@(Rec Bind{var=x} t)
+--   | isChecked u Set.empty = return []
+--   | otherwise = do
+--     y <- freshVar
+--     insertVisited y
+--     zs <- toGrammar $ subs (Var y) x t -- On the fly α-conversion
+--     m <- getTransitions $ head zs
+--     addProductions y (Map.map (++ tail zs) m)
+--     return [y]  -- Type operators
 toGrammar (Dualof _ t) = toGrammar (dual t)
 toGrammar (TypeName p x) = do
   b <- memberVisited x

@@ -6,10 +6,10 @@ import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.TypeVariables
 import           Syntax.Base
+import           Utils.FreestState
 import           SpecHelper
 import qualified Data.Map.Strict as Map
 import           Control.Monad.State
-import           Utils.FreestState
 
 spec :: Spec
 spec = do
@@ -23,10 +23,8 @@ matchValidSpec [k, t, u] =
     {-# SCC "EQUIVALENT_TEST_CALL" #-} equivalent Map.empty (Map.fromList (readKenv k)) t' u' `shouldBe` True)
       where (PairType _ t' u') = evalState (rename Map.empty (PairType defaultPos (read t) (read u))) (initialState "Testing Type Equivalence")
 
---  :: [(String,Kind)]
-readKenv s =
-  map (\(x,k) -> (mkVar defaultPos x, k)) xs
-  where xs = read s :: [(String,Kind)]
+readKenv :: String -> [(TypeVar, Kind)]
+readKenv s = map (\(x,k) -> (mkVar defaultPos x, k)) (read s)
   
 main :: IO ()
 main = hspec spec

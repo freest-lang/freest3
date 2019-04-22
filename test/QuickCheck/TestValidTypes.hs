@@ -1,8 +1,9 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 
 import           Test.QuickCheck
-import           Equivalence.Equivalence
+import           Equivalence.Bisimulation
 import           Equivalence.Normalisation
+import           Validation.Rename
 import           Validation.Kinding
 import           Validation.Contractive
 import           Syntax.Types
@@ -10,8 +11,8 @@ import           Syntax.Kinds
 import           Syntax.ProgramVariables
 import           Syntax.TypeVariables
 import           Syntax.Base
-import           Control.Monad.State
 import           Utils.FreestState
+import           Control.Monad.State
 import           Control.Monad
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
@@ -24,7 +25,7 @@ main = quickCheckWith stdArgs {maxSuccess = 1000} prop_equivalent
 
 -- Convenience
 
-equiv = equivalent Map.empty Map.empty
+equiv = Equivalence.Bisimulation.equivalent Map.empty
 contr = contractive Map.empty Map.empty
 norm = normalise Map.empty
 pos = defaultPos
@@ -103,8 +104,7 @@ instance Arbitrary TypeVarBind where
   arbitrary = liftM3 TypeVarBind arbitrary arbitrary arbitrary
 
 instance Arbitrary BasicType where
---  arbitrary = elements [IntType, CharType, BoolType, UnitType]
-  arbitrary = elements [IntType, CharType, BoolType] -- Three are enough
+  arbitrary = elements [IntType, CharType, BoolType{-, UnitType-}]
 
 instance Arbitrary Type where
   arbitrary = sized arbitrarySession
@@ -118,7 +118,7 @@ arbitrarySession n = oneof
   [ liftM3 Semi arbitrary (arbitrarySession (n `div` 4)) (arbitrarySession (n `div` 4))
   , liftM3 Message arbitrary arbitrary arbitrary
   , liftM3 Choice arbitrary arbitrary (arbitraryTypeMap (n `div` 4))
---  , liftM3 Rec arbitrary arbitrary (arbitrarySession (n `div` 4))
+  , liftM3 Rec arbitrary arbitrary (arbitrarySession (n `div` 4))
   ]
 
 arbitraryTypeMap :: Int -> Gen TypeMap
@@ -147,9 +147,13 @@ instance Arbitrary EquivPair where
 assoc :: Gen EquivPair
 assoc = do
   (t, u, v) <- arbitrary
-  return $ EquivPair (Semi pos t (Semi pos u v))
-                     (Semi pos (Semi pos t u) v)
-
+  let [a,b,c,d,e,f] = renameList [t,u,v,t,u,v]
+  -- let (PairType _ t' (PairType pos u' v')) = evalState (rename Map.empty (PairType pos t (PairType pos u v))) (initialState "Renaming for QuickCheck")
+  return $ EquivPair (Semi pos a (Semi pos b c))
+                     (Semi pos (Semi pos d e) f)
+                     
+renameList ts =
+  evalState (mapM (rename Map.empty) ts) (initialState "Renaming for QuickCheck")
 
 {-
 
