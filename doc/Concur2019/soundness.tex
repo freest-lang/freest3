@@ -15,17 +15,35 @@ our algorithm is sound and complete.
 
 \subsection{The two bisimulations coincide}
 
+Function $\toGrammark$ runs under a monadic context,
+\lstinline|TransState|, suitably initialised.
+%
+The monadic state comprises the productions, the set of visited nodes,
+and an integer to generate the fresh variables. At the end of the run,
+we are interested on the productions $P$ only.
+%
+We hence allow ourselves a slight abuse of notation and write
+$\vec Y,P = \toGrammarf S$ to denote the result of running function
+$\toGrammark$ on input~$S$, under a suitable monadic context.
+%
+Empty lists are denoted in Haskell by \lstinline|[]|;
+in formal languages symbol $\varepsilon$ is used to denote the empty
+word; we use both symbols interchangeably.
+
+% Given a $\transStatek$ state $T$, expression $\evalStatek (\toGrammarf
+% S)\: T$ runs function function $\toGrammark$ on input~$S$ and
+% state~$T$, returns the result of the call (and discards the state).
+% In the sequel, we write $\toGrammarf S$ to mean the result of running
+% function $\toGrammarf$ on input $S$ under an appropriate state.
+
 For the purpose of providing a bisimulation between context-free
 session types and their corresponding symbols in the grammar, we start
-with a lemma that relates terminated types~$S$ to the result of
-$\toGrammarf S$.  Given a $\transStatek$ state $T$, expression
-$\evalStatek (\toGrammarf S)\: T$ runs function $\toGrammark$ on
-input~$S$ and state~$T$ and extracts the resulting value from the
-monadic context.
+with a lemma that relates terminated types~$S$ to the result of a call
+to $\toGrammarf S$.
 
 \begin{lemma}
   \label{lem:terminated-togrammar}
-  If $\DONE S$, then $\evalStatek (\toGrammarf S)\: T=\varepsilon$.
+  If $\DONE S$, then $\varepsilon,P=\toGrammarf S$.
 \end{lemma}
 
 \begin{proof}
@@ -33,7 +51,7 @@ monadic context.
   $\reck$ follow directly from the respective cases in function
   $\toGrammark$ in Listing~\ref{lst:toGrammar}. The case for
   sequential composition follows by induction and the fact that
-  $\varepsilon+\!\!+\varepsilon=\varepsilon$.
+  $\varepsilon+\!\!+\,\varepsilon=\varepsilon$.
   % Given that all variables in a type are under some $\mu$-binder,
   % there is a simple inductive characterization of $\DONE S$, namely,
   % $\DONE \skipk$, $\DONE{(S;T)}$ if $\DONE S$ and $\DONE T$,
@@ -48,7 +66,8 @@ those on productions coincide, we present a bisimilarity between
 context-free session types and the result of \lstinline|toGrammar|.
 %
 As the implementation of \isCheckedf is not shown, we assume that
-$\isCheckedf S$ returns \lstinline|True| if and only if $\DONE S$.
+$\isCheckedf S$ always terminates and that it returns \lstinline|True|
+if and only if $\DONE S$.
 %
 %% new from here
 Consider the relation $\mathcal{R}$ given by:
@@ -59,9 +78,9 @@ Consider the relation $\mathcal{R}$ given by:
 	& \{ (\star\{l_i\colon S_i\}_{i\in I}, (X, \{X \rightarrow \star l_i
     \vec Y_i\}_{i\in I} \cup (\cup  P_i)_{i\in I})) \mid 
     \begin{array}[t]{l}
-    	\text{$S_i$ is any type, $l_i$ is any label,}\\
-    	\text{$\vec Y_i, P_i = \toGrammarf{S_i}$, $i \in I$ }\\
-    	\text{and $X$ does not occur in $P_i$}\} \,\cup\\
+    	\!\!\text{$S_i$ is any type, $l_i$ is any label,}\\
+    	\!\!\text{$\vec Y_i, P_i = \toGrammarf{S_i}$, $i \in I$ }\\
+    	\!\!\text{and $X$ does not occur in $P_i$}\} \,\cup\\
     \end{array}\\
     &\{(S_1;S_2, (\vec X_1\vec X_2,  P_1 \cup  P_2)) \mid
     \text{$S_i$ is any type, $\vec X_i, P_i = \toGrammarf{S_i}, i = 1,2$ } \}\,\cup\\
@@ -69,11 +88,11 @@ Consider the relation $\mathcal{R}$ given by:
     \text{$S$ is any type and $\isCheckedf \mu X.S$}\}\,\cup\\
     & \{(\mu X.S, (X, \{X \rightarrow a_j \vec {Z_j}\vec Y\}_{j\in J} \cup  P)) \mid 
     \begin{array}[t]{l}
-      \text{$S$ is any type, not } \isCheckedf \mu X.S,\\
-      Y\vec Y, P = \toGrammarf{S}, \text{ $X$ does not}\\
-      \text{occur in $P$ }\text{ and } \{Y \rightarrow a_j \vec {Z_j}\}_{j\in J} 
+      \!\!\text{$S$ is any type, not } \isCheckedf \mu X.S,\\
+      \!\! Y\vec Y, P = \toGrammarf{S}, \text{ $X$ does not}\\
+      \!\!\text{occur in $P$ }\text{ and } \{Y \rightarrow a_j \vec {Z_j}\}_{j\in J} 
       \subseteq  P\\
-      \text{are all the transitions from $Y$}\}
+      \!\!\text{are all the transitions from $Y$}\}
     \end{array}\\
 \end{array}\]
 
@@ -167,10 +186,10 @@ transitions from $\mu X.S$.
     	\vec Y_i\}_{i\in I} \cup (\cup  P_i)_{i\in I}))$: 
     	$\star\{l_i\colon S_i\}_{i\in I}\LTSderives[l_i] S_i$ and 
     	$X \rightarrow \star l_i \vec Y_i$ for each $i\in I$. By 
-    	lemma~\ref{lemma:bisim_choice}, $(S_i, (\vec Y_i,  P_i))\in\mathcal{R}$
+    	Lemma~\ref{lemma:bisim_choice}, $(S_i, (\vec Y_i,  P_i))\in\mathcal{R}$
     	for each $i\in I$. 
     	\item $(S_1;S_2, (\vec X_1\vec X_2,  P_1 \cup  P_2))$: start noting
-    	that, by lemma~\ref{lemma:bisim_semi}, 
+    	that, by Lemma~\ref{lemma:bisim_semi}, 
     	$(S_i, (\vec X_i, P_i))\in \mathcal{R}$ for $i=1,2$. 
     	\begin{itemize}
     	\item if 
@@ -180,11 +199,11 @@ transitions from $\mu X.S$.
     	Since $(S_1,(\vec X_1, P_1))\in\mathcal{R}$, we have
     	$(\Unravel(S_1), (\vec X_1, P_1))\in \mathcal{R}$ 
     	(if $S_1$ is not a recursive type, $\Unravel(S_1)$ 
-    	coincides with $S_1$, otherwise apply lemma~\ref{lemma:bisim_unr}).
+    	coincides with $S_1$, otherwise apply Lemma~\ref{lemma:bisim_unr}).
     	Hence, by induction hypothesis on $\Unravel(S_1)$, we know that 
     	$\vec X_1 \rightarrow a \vec Y_1$ and 
     	$(S_1', (\vec Y_1,P_1'))\in \mathcal{R}$. 
-    	By lemma~\ref{lemma:bisim_semi}, we conclude that 
+    	By Lemma~\ref{lemma:bisim_semi}, we conclude that 
     	$(S_1';S_2, (\vec Y_1 \vec X_2,P_1'\cup P_2))\in \mathcal{R}$. 
     	\item if $S_1;S_2\LTSderives[a] S_2'$, where $\DONE{S_1}$ and 
     	$S_2\LTSderives[a] S_2'$, it follows that 
@@ -192,19 +211,19 @@ transitions from $\mu X.S$.
     	Since $(S_2, (\vec X_2, P_2))\in \mathcal{R}$ we have 
     	$(\Unravel(S_2), (\vec X_2, P_2))\in \mathcal{R}$ (again, 
     	if $S_2$ is not a recursive type $\Unravel(S_2)=S_2$, 
-    	otherwise use lemma~\ref{lemma:bisim_unr}). 
+    	otherwise use Lemma~\ref{lemma:bisim_unr}). 
     	By induction hypothesis on $\Unravel(S_2)$, we thus have
     	$\vec X_2 \rightarrow a \vec Y_2$ where 
     	$(S_2', (\vec Y_2,P_2'))\in \mathcal{R}$. Since $\DONE{S_1}$, by
-    	lemma~\ref{lem:terminated-togrammar} we have $\vec X_1 = \varepsilon$, 
+    	Lemma~\ref{lem:terminated-togrammar} we have $\vec X_1 = \varepsilon$, 
     	hence $\vec X_1 \vec X_2 = \vec X_2 \rightarrow a \vec Y_2$.
     	\end{itemize}
     	\item $(\mu X.S, (\varepsilon, \emptyset))$: in this case, 
     	$\isCheckedf \mu X.S$, thus
-    	we do not have any transition (lemma~\ref{lem:terminated-togrammar}).
+    	we do not have any transition (Lemma~\ref{lem:terminated-togrammar}).
     	\item $(\mu X.S, (X, \{X \rightarrow a_j \vec {Z_j}\vec Y\}_{j\in J} \cup  P))$: 
     	if $\mu X.S\LTSderives[b] T$, then $\Unravel(\mu X.S)\LTSderives[b] T$.
-    	Furthermore, by lemma~\ref{lemma:bisim_unr} we know that 
+    	Furthermore, by Lemma~\ref{lemma:bisim_unr} we know that 
     	$(\Unravel(\mu X.S), (X, \{X \rightarrow a_j \vec {Z_j}\vec Y\}_{j\in J} \cup  P))
     	\in\mathcal{R}$. By induction hypothesis on $\Unravel(\mu X.S)$, 
     	and since $X$ does not occur in $P$, it follows 
@@ -217,246 +236,6 @@ transitions from $\mu X.S$.
 	the transitions from $X$ are simply the ones explicitly detailed in each 
 	pair from $\mathcal{R}$.
 \end{proof}
-
-
-%% new until here
-
-%% old proof here
-%\begin{theorem}
-%\label{thm:cfst_vs_grammar}
-%  $S$ is bisimilar to $\toGrammarf{S}$.
-%\end{theorem}
-%
-%\begin{proof}
-%  Let $\mathcal R$ be the binary relation on types $\times$ (words
-%  $\times$ productions) that contains the following sets of pairs
-%  $(S, (\vec X, P))$ built in such a way that $\vec X, P = \toGrammarf S$.
-%  %
-%  \begin{gather*}
-%    (\skipk, (\varepsilon, \emptyset))
-%    \\
-%    (\sharp B, (X, \{X \rightarrow \sharp B\}))
-%    \\
-%    (\star\{l_i\colon S_i\}_{i\in I}, (X, \{X \rightarrow \star l_i
-%    \vec Y_i\}_{i\in I} \cup (\cup  P_i)_{i\in I}))
-%    %
-%    \text{ when } \vec Y_i, P_i = \toGrammarf{S_i}, i \in I
-%    % \\
-%    % (S_i, (\vec Y_i, \{X \LTSderivesP[\star l_i]
-%    % \vec Y_i\}_{i\in I} \cup (\cup  P_i)_{i\in I}))
-%    % %
-%    % \text{ when } \vec Y_i, P_i = \toGrammarf{S_i}, i \in I
-%    \\
-%    (S_1;S_2, (\vec X_1\vec X_2,  P_1 \cup  P_2))
-%    %
-%    \text{ when } \vec X_i, P_i = \toGrammarf{S_i}, i = 1,2
-%    % \\
-%    % (S'_1;S_2, (\vec Y,  P_1 \cup  P_2))
-%    % %
-%    % \text{ and, in addition, } S_1 \LTSderives S_1' 
-%    % \text{ and } \vec X_1\vec X_2 \rightarrow a \vec Y
-%    % \\
-%    % (S_2', (\vec Y,  P_1 \cup  P_2))
-%    % %
-%    % \text{ and, in addition, } \DONE{S_1}
-%    % \text{ and } S_2 \LTSderives S_2' 
-%    % \text{ and } \vec X_1\vec X_2 \rightarrow a \vec Y
-%    \\
-%    (\mu X.S, (\varepsilon, \emptyset))
-%    \text{ when } \isCheckedf \mu X.S
-%    \\
-%    (\mu X.S, (X, \{X \rightarrow a \vec Z\vec Y\} \cup  P))
-%    %
-%    \text{ when not }  \isCheckedf \mu X.S \text{ and }
-%    \\\quad
-%    Y\vec Y, P = \toGrammarf{S}
-%    \text{ and }
-%    Y \rightarrow a \vec Z \in  P
-%   %  \\
-%   %  (T, (\vec Z\vec Y, \{X \LTSderivesP \vec Z\vec Y\} \cup  P))
-%   %  %
-%   %  \text{ and, in addition, } Y \LTSderivesP \vec Z
-%   % \text{ and } \subs{\mu X.S}{X} S \LTSderives T
-%  \end{gather*}
-%  %
-%  That $\mathcal R$ is a bisimulation follows by co-induction, using
-%  Lemma~\ref{lem:terminated-togrammar}. % and the fact that
-%  % $S \bisim \subs{\mu X.S}{X} S$~\cite{thiemann2016context}.
-%\end{proof}
-
-% We start by showing that the initial (dummy) production does not
-% affect bisimulation checking.
-% %
-% \begin{lemma}
-%   \label{lem:dummy}
-%   $X_S \ProdEquiv X_T$ if and only if
-%   $\toGrammarf S \ProdEquiv \toGrammarf T$.
-% \end{lemma}
-
-% \begin{proof}
-%   We have $X_S \rightarrow\, \initialProd\,(\toGrammarf S)$ and
-%   $X_T \rightarrow\, \initialProd\,(\toGrammarf T)$.
-%   Hence, $X_S \TypeEquiv X_T$ if and only if
-%   $\toGrammarf S \ProdEquiv \toGrammarf T$. \vv{prove both directions separately}
-% \end{proof}
-
-% Terminated session types do not originate new productions.
-
-% \begin{lemma}
-%   \label{lemma:terminated_session}
-%   If \DONE{S}, then \upshape{\lstinline|toGrammar |}$S$ adds no
-%   productions and returns \upshape{\lstinline|[]|}.
-% \end{lemma}
-
-% \begin{itemizeproof}
-%   By rule induction  on the hypothesis.
-%   \begin{itemize}
-%   \item If $S\triangleq \skipk$, then \lstinline{toGrammar} adds no
-%     productions and returns \lstinline{[]}.
-%   \item If $S\triangleq S;T$, then \DONE S and \DONE T. By induction,
-%     the recursive calls add no productions and return
-%     \lstinline|[]|. Then, function \lstinline|toGrammar| returns
-%     \lstinline|[]++[]|, which evaluates to \lstinline|[]|.
-%   \item If $S\triangleq \mu X. T$, then
-%     $\subs{S}{X}T \checkmark$.
-%     %
-%     Function \lstinline|toGrammar |$S$ adds the productions from
-%     \lstinline|toGrammar (subs (Var y) X t)|. But $\subs{S}{X} T$ is a
-%     terminated session, thus \lstinline{toGrammar }$T$ adds no
-%     productions and returns \lstinline{[]}. \vv{co-induction?}.
-%   \end{itemize}
-% \end{itemizeproof}
-
-% Now we prove that any transition in the \LTS\ has a
-% corresponding transition derived from the set of productions.
-
-% \begin{lemma}
-%   \label{lem:type-to-prod}
-%   If $S \LTSderives T$, then \upshape{\lstinline|toGrammar|}
-%   $S \LTSderivesP \vec X$ and \upshape{\lstinline|toGrammar|} $T$ is a
-%   prefix of~$\vec X$.
-% \end{lemma}
-
-% \begin{itemizeproof}
-% By rule induction on the hypothesis.
-% \begin{itemize}
-% \item If $S\triangleq \sharp B$, then
-%   $S \LTSderives[\sharp B] \skipk$. The call $\toGrammarf S$
-%   returns a fresh variable $Y$ and inserts a production
-%   $Y\rightarrow \sharp B$. Then $S \LTSderivesP \varepsilon$ and
-%   $\toGrammarf\,\skipk =$ \lstinline{[]}, that is, $\varepsilon$.
-% \item If $S\triangleq \star\{l_i``\colon S_i\}_{i\in I}$ then,
-%   $S \LTSderives[\star l_j] S_j$, for each $j\in I$. Function
-%   $\toGrammarf S$ returns a fresh variable $Y$ and, recursively,
-%   inserts a production $Y\rightarrow \star l_j (\toGrammarf{S_j})$,
-%   for each $j\in I$, hence
-%   $Y \LTSderivesP[\star l_j] \toGrammarf{S_j}$.
-% \item If $S\triangleq T;U$ and $T \LTSderives[a] T'$, then
-%   $S \LTSderives[a] T';U$.  By induction hypothesis, $\toGrammarf T$
-%   adds the production $Y\rightarrow a (\toGrammarf{T'})$, where $Y$
-%   is a fresh variable.  We notice that $\toGrammarf T$
-%   $= Y \vec Y_T$ for some sequence of non-terminal symbols
-%   $\vec Y_T$. By congruence, we have:
-%   \[\toGrammarf S = Y\vec Y_T(\toGrammarf U)
-%     \rightarrow a(\toGrammarf T')\vec Y_T(\toGrammarf U)
-%     .\]
-% \item If $S\triangleq \mu x.T$, then $\subs SXT \LTSderives T'$.
-%   By induction, the corresponding production in
-%   %
-%   \lstinline{toGrammar (subs (Var y) x t)} is recursively added by
-%   $\toGrammarf S$ in the form $Y \rightarrow a (\toGrammarf{T'})$,
-%   where $Y$ is a fresh variable that is, then, returned by
-%   $\toGrammarf S$.
-% \item If $S\triangleq T;U$, $T$ is a terminated session, with no further
-%   action, and $U \LTSderives[a] U'$ then, using the \LTS\ we have
-%   $T;U \LTSderives[a] U'$. On the other hand, by induction hypothesis and
-%   using Lemma~\ref{lemma:terminated_session}:
-%   \begin{itemize}
-%   \item $\toGrammarf T$  returns \lstinline{[]},
-%   \item $\toGrammarf U$ adds a production
-%     $Y \rightarrow a (\toGrammarf U')$, where $Y$ is a fresh
-%     variable.
-%   \end{itemize}
-%   We notice that $\toGrammarf U = Y\vec Y_U$ for some sequence of
-%   non-terminal symbols $\vec Y_U$. Hence, by congruence, we have a
-%   transition
-%   \[\toGrammarf S = \text{\lstinline{[]}} Y
-%     \vec Y_U \rightarrow a (\toGrammarf{U')} \vec Y_U.\]
-% \end{itemize}
-% \end{itemizeproof}
-
-% Conversely, we prove that any transition derived from the productions
-% has a corresponding labelled transition in the \LTS.
-
-% \begin{lemma}
-%   \label{lem:prod-to-type}
-%   If $\toGrammarf S \LTSderivesP \vec Y$, then $S\LTSderives
-%   T$.\\ \vv{and there must be some relation on $\vec Y$ and $T$, for
-%     induction purposes}
-% \end{lemma}
-
-% \begin{itemizeproof}
-%   By induction on the structure of $S$: \vv{redo}
-%   \begin{itemize}
-%   \item If $S \triangleq \sharp B$, then $\toGrammarf S$ adds the
-%     production $Y\rightarrow \sharp B$ and we know that
-%     $S \LTSderivesP[\sharp B] \skipk$.
-%   \item If $S\triangleq \star \{\ell_i : S_i\}_{i\in I}$, then
-%     $\toGrammarf S$ recursively adds
-%     $\toGrammarf S \rightarrow \star \ell_j(\toGrammarf{Sj})$ for each
-%     $j\in I$. In the \LTS\ for productions we also have
-%     $S \LTSderivesP[\star\ell_j] S_j$ for each $j\in I$.
-%   \item If $S \triangleq T;U$, then $\toGrammarf S$ recursively adds
-%     all productions from $\toGrammarf T$ and from $\toGrammarf
-%     U$. Hence, if $\toGrammarf S \LTSderivesP \vec Y$ then, either:
-%     \begin{itemize}
-%     \item $\toGrammarf T \LTSderivesP \vec Y$ and, in this case, by
-%       induction we know that $T \LTSderives T'$ and from the \LTS\ for
-%       productions we obtain $S \LTSderivesP T';U$;
-%     \item \DONE{T} and $\toGrammarf U \rightarrow a\vec Y$ and, by
-%       induction we know that $U \LTSderives[a] U'$ and from the \LTS\
-%       for productions we obtain $S \LTSderives U'$.
-%     \end{itemize}
-%   \item If $S\triangleq \mu x.T$, then $\toGrammarf S$ adds,
-%     recursively, all productions from
-%     %
-%     \lstinline|toGrammar (subs (Var y) x t)|.  Analogously, in the
-%     \LTS\ for productions, any transition $\subs SXT \LTSderives T'$
-%     leads to a transition $S \LTSderives T'$. \vv{Why?}
-%   \end{itemize}
-% \end{itemizeproof}
-
-% Having proved that any labelled transition in the LTS has a corresponding
-% transition in the grammar and vice-versa, the following theorem is now
-% immediate.
-
-% \begin{theorem}
-%   \label{thm:cfst_vs_grammar}
-%   $S\TypeEquiv T$  if and only if $ X_S \ProdEquiv X_T$.
-% \end{theorem}
-
-% \begin{proof}
-%   From lemmas~\ref{lem:dummy}, \ref{lem:type-to-prod}, and~\ref{lem:prod-to-type}.
-% \end{proof}
-
-% \subsection{Unnormedness is preserved by pruning} % Not needed?
-
-% To prove that the pruning stage is in accordance with the results from
-% Christensen et al.~\cite{DBLP:journals/iandc/ChristensenHS95}, we
-% observe that unnormed non-terminal symbols corresponding to (un)normed
-% types are (un)normed. These results follow immediately from the
-% previous results. \vv{from which results, exactly?}
-
-% \begin{corollary}
-%   Given a context-free session type $S$, $|S| = |\toGrammarf S|$.
-% \end{corollary}
-
-% \begin{corollary}
-%   A context-free session type $S$ is unnormed if and only if $X_S$ is
-%   unnormed.
-% \end{corollary}
-
-% \vv{these notions are not defined on session types}
 
 \subsection{Correctness of the algorithm}
 
@@ -501,10 +280,10 @@ details on the proof of existence of a finite witness, as stated in
 Proposition~\ref{finite_witness}. This proof is particularly
 interesting in that it highlights the importance of BPA rules and of
 pruning productions on reaching such (finite) witness. The results in
-these two papers also allow us to unravel the reason for the
-distinction of the simplification phase in the case where all the
-symbols in the grammar are normed from the case where they are not, as
-presented in Listing~\ref{lst:algorithm}.
+these two papers also allows unravelling the reason for the
+distinction, in the simplification phase, between the cases where all
+the symbols in the grammar are and are not normed, as shown in
+Listing~\ref{lst:algorithm}.
 
 These properties ensure the termination of the algorithm, its soundness
 and completeness.
@@ -521,8 +300,8 @@ and completeness.
 	Hence, breadth-first search eventually terminates. 
 	
 	Case $S\not\TypeEquiv T$, we easily conclude that all branches 
-	in the expansion tree are finite and thence $\bisimf S T$ terminates: 
-	to conclude that all branches are finite, observe that 
+	in the expansion tree are finite and thence $\bisimf S T$ terminates. 
+	To conclude that all branches are finite, observe that 
 	any infinite branch is successful by definition and thus the 
 	safeness property would imply $X_S\ProdEquiv X_T$ and
 	we would have $S\TypeEquiv T$.
@@ -568,8 +347,8 @@ the meta-theory of context-free session types.
 \end{theorem}
 
 \begin{proof}
-  From theorem~\ref{thm:cfst_vs_grammar} and
-  lemma~\ref{lem:bisimilar-to-prod}.
+  From Theorem~\ref{thm:cfst_vs_grammar} and
+  Lemma~\ref{lem:bisimilar-to-prod}.
 \end{proof}
 
 \begin{corollary}
@@ -577,7 +356,7 @@ the meta-theory of context-free session types.
 \end{corollary}
 
 \begin{proof}
-	From theorem~\ref{thm:soundness} and lemma~\ref{lemma:terminates}.
+	From Theorem~\ref{thm:soundness} and Lemma~\ref{lemma:terminates}.
 \end{proof}
  
 We now prove that the algorithm to check the bisimulation of context-free session 
@@ -605,7 +384,7 @@ types. The finite witness property is paramount to achieve this result.
 \end{corollary}
 
 \begin{proof}
-	From theorem~\ref{thm:completeness}.
+	From Theorem~\ref{thm:completeness}.
 \end{proof}
 
 %%% Local Variables:
