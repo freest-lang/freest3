@@ -22,23 +22,36 @@ toGrammar (Semi t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
   return (xs ++ ys)
-toGrammar (Rec x t) =
-  | isChecked (Rec x t) = return []
-  | otherwise = do
-    zs <- toGrammar t
-    m <- getTransitions (head zs)
-    addProductions x (Map.map (++ tail zs) m)
-    return [x]
+toGrammar (Rec x t) = do
+  ys <- toGrammar t
+  case ys of
+    [] -> return []
+    (z:zs) -> do
+      mm <- getTransitions z
+      case mm of
+        Just m -> do
+          addProductions x (Map.map (++ zs) m)
+          return [x]
+        Nothing -> return []
 toGrammar (Var x) =
   return [x]
 
-assocsToGrm :: TypeVar -> ChoiceView -> (TypeLabel,Type) -> TransState ()
-assocsToGrm y c (l, t) = do
-  xs <- toGrammar t
-  addProduction y (ChoiceLabel c l) xs
+assocsToGrm :: TypeVar -> Polarity -> (ChoiceLabel,Type) -> TransState ()
+assocsToGrm x p (l, t) = do
+  ys <- toGrammar t
+  addProduction x (ChoiceLabel p l) ys
 \end{lstlisting}
 
 %%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "main"
 %%% End:
+
+% Old version:
+% toGrammar (Rec x t) =
+%   | isChecked (Rec x t) = return []
+%   | otherwise = do
+%     zs <- toGrammar t
+%     m <- getTransitions (head zs)
+%     addProductions x (Map.map (++ tail zs) m)
+%     return [x]

@@ -5,8 +5,8 @@ The types we consider build upon a denumerable set of \emph{type
   variables} denoted by $X,Y,Z$, and a set \emph{choice labels}
 denoted by $\ell$. We assume given a set of base types $B$ that
 include the $\unitk$ type. Further base types could include integer
-and boolean types, or any type for which equality is decidable. The
-syntax of types is given by the grammar below.
+and boolean types, or any other type for which equality is
+decidable. The syntax of types is given by the grammar below.
 %
 \begin{gather*}
   S,T \grmeq \skipk \grmor \sharp B \grmor 
@@ -20,18 +20,20 @@ syntax of types is given by the grammar below.
 \end{gather*}
 
 We assume that all occurrences of variables in a type are introduced
-by some $\mu$-binder (thus precluding free variables in types).
+by some $\mu$-binder, thus precluding free variables in types.
 %
 We further assume that types are renamed so that all variables
 introduced by~$\mu$ are distinct.
 %
-Finally, we require types to be contractive (thus forbidding subterms
+Finally, we require types to be contractive, thus forbidding subterms
 of the form
 $\mu X_1.\mu X_2 \dots \mu
-X_n. X_1$)~\cite{DBLP:journals/tcs/Courcelle83,thiemann2016context}.
+X_n. X_1$~\cite{DBLP:journals/tcs/Courcelle83,thiemann2016context}.
 %
 For simplicity we removed polymorphic type variables (not bound by
-$\mu$) from the grammar; they can be treated similarly to $\sharp B$.
+$\mu$) from the grammar.
+% they can be treated similarly to $\sharp B$ -- This is not true:
+% poly vars of un type are terminated; the others not.
 
 The labelled transition system (LTS) for context-free session types is
 given by the set of types as \emph{states}, the set of \emph{actions}
@@ -47,7 +49,7 @@ action~\cite{DBLP:journals/jacm/AcetoH92} .
   \quad
   \frac{\DONE{S} \quad \DONE{T}}{\DONE{S; T}}
   \quad
-  \frac{\DONE{\subs{\mu X.S}{X} S}}{\DONE{\mu X.S}}
+  \frac{\DONE S}{\DONE{\mu X.S}}
   \qquad \qquad \qquad
   % \alpha \LTSderives[\alpha] \skipk
   \sharp B \LTSderives[\sharp B] \skipk
