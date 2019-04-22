@@ -512,3 +512,11 @@ rec x . &{N: x, L: x};!Int
 [("x", SL)]
 rec y:SL. x
 rec z:SL. x
+
+[]
+(+{C: Skip};((rec x_0:SL. (Skip;Skip));(rec z_1:SL. (x;y))))
+((+{C: Skip};(rec x_2:SL. (Skip;Skip)));(rec z_3:SL. (x;y)))
+
+[]
+(((rec x_0:SL. !Int);!Int);((rec z_1:SL. ((z_1;Skip);+{A: z_1, B: z_1, C: z_1}));!Int)) 
+((((rec x_2:SL. !Int);!Int);(rec z_3:SL. ((z_3;Skip);+{A: z_3, B: z_3, C: z_3})));!Int)
