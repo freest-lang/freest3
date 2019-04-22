@@ -76,23 +76,23 @@ After the breakthrough by Christensen, H\"uttel, and Stirling---a
 result that provides no immediate practical algorithm---the problem of
 deciding the equivalence of BPA terms has been addressed by several
 researchers~\cite{DBLP:conf/mfcs/BurkartCS95,DBLP:journals/iandc/ChristensenHS95,czerwinski2010fast,janvcar1999techniques}.
-Most of these papers provide no actual practical algorithm that
-can be readily extracted, except the one by Czerwinski and Lasota where 
-they provide a polynomial time 
-algorithm that decides the bisimilarity of normed context-free processes
-in $\mathcal{O}(n^5)$~\cite{czerwinski2010fast}.
+Most of these papers provide no practical algorithm that can be
+readily extracted, except the one by Czerwinski and Lasota where a
+polynomial time algorithm is presented that decides the bisimilarity
+of normed context-free processes in
+$\mathcal{O}(n^5)$~\cite{czerwinski2010fast}.
 %
-However, context-free session types are not necessarily normed,
-which precludes reducing to this algorithm, or using
-the original result by Baeten, Bergstra, and
-Klop~\cite{baeten1993decidability}, as well as improvements by
-Hirshfeld, Jerrum, and
+However, context-free session types are not necessarily normed, which
+precludes reducing to this algorithm, or using the original result by
+Baeten, Bergstra, and Klop~\cite{baeten1993decidability}, as well as
+improvements by Hirshfeld, Jerrum, and
 Moller~\cite{DBLP:journals/tcs/HirshfeldJM96,DBLP:conf/concur/HirshfeldM94}.
-On the other hand, the complexity estimates for bisimilarity in
-BPA process are not promising. Kiefer have provided an EXPTIME lower bound for 
-BPA bisimilarity by proving this problem is EXPTIME-hard~\cite{kiefer2013bpa}, 
-whereas Jan\v car have provided a double exponential upper bound for this
-problem and proved that its complexity is 
+On the other hand, the complexity estimates for deciding bisimilarity
+in BPA process are not promising. Kiefer provided an EXPTIME lower
+bound for BPA bisimilarity by proving this problem is
+EXPTIME-hard~\cite{kiefer2013bpa}, whereas Jan\v car have provided a
+double exponential upper bound for this problem and proved that its
+complexity is
 $\mathcal{O}(2^{2^{\mathsf{pol}(n)}})$~\cite{jancar2012bisimilarity}.
 
 In its turn, the decidability of deterministic pushdown automata has
@@ -167,7 +167,8 @@ Section~\ref{sec:optimisations}, evaluation in
 Section~\ref{sec:evaluation}, and conclusions in
 Section~\ref{sec:conclusion}.
 %
-The source code for the Haskell implementation is available at XXX.
+The source code for the Haskell implementation is available at
+\url{http://rss.di.fc.ul.pt/tools/freest/}.
 
 %%% Local Variables:
 %%% mode: latex
