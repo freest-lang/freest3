@@ -20,7 +20,7 @@ import qualified Data.Set as Set
 import           Debug.Trace
 
 -- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_kinded
-main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
+main = quickCheckWith stdArgs {maxSuccess = 10000} prop_self_bisimilar
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_equivalent
 -- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_eq_type
 -- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_normal_eq_type
@@ -44,7 +44,8 @@ bisimi t u = evalState (trace (show t ++ " bisim " ++ show u) (return $ bisim t 
 prop_self_bisimilar :: Type -> Property
 prop_self_bisimilar t = contr t ==> self_bisim t
 
-self_bisim t = evalState (trace (show t) (return $ bisim t t)) ()
+self_bisim t = evalState (trace (show t) (return $ bisim u v)) ()
+  where [u, v] = renameList [t, t]
 
 prop_equivalent :: BisimPair -> Property
 prop_equivalent (BisimPair t u) = contr t ==> equiv t u
@@ -121,7 +122,9 @@ instance Arbitrary BasicType where
   arbitrary = elements [IntType, CharType, BoolType{-, UnitType-}]
 
 instance Arbitrary Type where
-  arbitrary = sized arbitrarySession
+  arbitrary = do
+    t <- sized arbitrarySession
+    return $ renameType t
 
 arbitrarySession :: Int -> Gen Type
 arbitrarySession 0 = oneof
@@ -154,20 +157,21 @@ instance Show BisimPair where
   show (BisimPair t u) = show t ++ " bisimilar-to " ++ show u
 
 instance Arbitrary BisimPair where
-  arbitrary = oneof
-    [ assoc
-    ]
+  arbitrary = do
+    (t, u) <- oneof
+      [ assoc
+      ]
+    let [t', u'] = renameList [t, u]
+    return $ BisimPair t' u'
 
-assoc :: Gen BisimPair
+assoc :: Gen (Type, Type)
 assoc = do
   (t, u, v) <- arbitrary
-  let [a,b,c,d,e,f] = renameList [t,u,v,t,u,v]
-  -- let (PairType _ t' (PairType pos u' v')) = evalState (rename Map.empty (PairType pos t (PairType pos u v))) (initialState "Renaming for QuickCheck")
-  return $ BisimPair (Semi pos a (Semi pos b c))
-                     (Semi pos (Semi pos d e) f)
-                     
-renameList ts =
-  evalState (mapM (rename Map.empty) ts) (initialState "Renaming for QuickCheck")
+  return (Semi pos t (Semi pos u v), Semi pos (Semi pos t u) v)
+
+renameType t = evalState (rename Map.empty t) (initialState "Renaming for QuickCheck")
+
+renameList ts = evalState (mapM (rename Map.empty) ts) (initialState "Renaming for QuickCheck")
 
 {-
 
