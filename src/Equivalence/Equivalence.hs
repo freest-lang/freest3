@@ -24,7 +24,7 @@ import           Syntax.Kinds
 import           Syntax.ProgramVariables
 import           Syntax.TypeVariables
 import           Equivalence.Normalisation
-import qualified Equivalence.Bisimulation as Bisimulation
+import           Equivalence.Bisimulation
 import qualified Data.Map.Strict as Map
 
 class Equivalence t where
@@ -62,7 +62,7 @@ instance Equivalence Type where
     equiv kenv t u =
       isSessionType tenv kenv t &&
       isSessionType tenv kenv u &&
-      Bisimulation.equivalent tenv t u
+      bisimilar tenv t u
 
     checkConstructor :: KindEnv -> TypeMap -> Bool -> ProgVar -> Type -> Bool
     checkConstructor kenv m acc l t =

@@ -73,18 +73,8 @@ state.
 % \item \lstinline{subst} $X\,T\,S$ replaces the occurrences of~$X$
 %   by~$T$ in~$S$;
 \item \lstinline|getTransitions|$\,X$ retrives the transitions
-  from~$X$ (a map from non-terminal symbols~$a$ to sequences~$\vec Y$
-  of type variables).
+  from~$X$ (a map from terminal symbols~$a$ to words~$\vec Y$).
 \end{itemize}
-
-% In Listing~\ref{lst:toGrammar}, type $\skipk$ is represented by
-% \lstinline{Skip}, \lstinline{Message p b} stands for types of the form
-% $\sharp B$,
-% %\lstinline{VarLabel} stands for variables,
-% \lstinline{Semi} represents sequential composition,
-% \lstinline{Rec} represents recursive types, and
-% \lstinline{Choice} stands for the choice operators $\oplus$ and
-% $\&$. \vv{cut? looks obvious, and there is many more related things to say}
 
 \input{listing-toGrammar}
 
@@ -95,14 +85,8 @@ always on subterms.
 Furthermore, due to the deterministic nature of the LTS,
 \lstinline|toGrammar| returns a simple grammar.
 %
-% , context-free session types are always converted into \emph{simple
-%   grammars}~\cite{baeten1993decidability}, i.e., context-free grammars
-% in Greibach normal form such that, for each non-terminal symbol $X$
-% and terminal symbol $a$, there is at most one production of the form
-% $X\rightarrow a \enspace \vec Y$.
-%
-One can obtain a unique set of productions for two types by
-ensuring that fresh variables do not overlap.
+One can obtain a unique set of productions for two types by ensuring
+that fresh variables do not overlap when converting both types.
 
 \begin{example}
 \label{ex:productions}
@@ -193,6 +177,8 @@ code is in Listing~\ref{lst:prune}.
   label={lst:prune},
   captionpos=b
   ]
+type Visited = Set.Set TypeVar  
+
 prune :: Productions -> Productions
 prune p = Map.map (Map.map (pruneWord p)) p
 
@@ -213,12 +199,10 @@ normedWord p v (x:xs) =
 
 \begin{example}
   \label{ex:prune}
-  Recall Example~\ref{ex:productions} and notice that both
-  $X_S$ and
-  $Y_T$ are unnormed. We can easily see that the last occurrence of
-  $X_4$ in the last production for
-  $S$ is unreachable. Hence, by pruning the productions for
-  $S$ we get:
+  Recall Example~\ref{ex:productions} and notice that $X_S$ and $Y_T$
+  are both unnormed. We can easily see that the last occurrence of
+  $X_4$ in the last production for $S$ is unreachable. Hence, by
+  pruning the productions for $S$ we get:
   %
   \begin{center}
     \begin{tabular}{l l l}
@@ -249,10 +233,11 @@ normedWord p v (x:xs) =
 We base the third stage of the algorithm on the notion of
 \emph{expansion tree} proposed by Jan{\v{c}}ar and
 Moller~\cite{janvcar1999techniques}, an adaptation of an idea by
-Hirshfeld~\cite{hirshfeld1996bisimulation}. We say that a node $N'$,
-composed by a set of pairs
-of words, is an \emph{expansion} of $N$ if $N'$ is a minimal set such
-that: for every pair $(\vec X, \vec Y) \in N$,
+Hirshfeld~\cite{hirshfeld1996bisimulation}. The \emph{nodes} in trees
+are sets of pairs of words.
+%
+We say that a node $N'$ is an \emph{expansion} of $N$ if $N'$ is a
+minimal set such that: for every pair $(\vec X, \vec Y) \in N$,
 \begin{itemize}
 \item if $\vec X \rightarrow a\vec X'$ then
   $\vec Y \rightarrow a\vec Y'$ with $(\vec X',\vec Y')\in N'$;
@@ -260,13 +245,14 @@ that: for every pair $(\vec X, \vec Y) \in N$,
   $\vec X \rightarrow a \vec X'$ with $(\vec X',\vec Y')\in N'$.
 \end{itemize}
 
-An \emph{expansion tree} is built from nodes. Children nodes are
-obtained by expansion from its parent node. Jan{\v{c}}ar and Moller
-observed that expansion alone often leads to infinite trees. We then
-alternate between expansion and simplification operations, until
-either finding an empty node---case in which we decide equivalence
-positively---or failing to expand a node---case in which we decide
-equivalence negatively.
+An \emph{expansion tree} is built from a root node: the singleton set
+containing of the words obtained by translating the pair of types
+into a grammar. Children nodes are obtained by expansion from its
+parent node. Jan{\v{c}}ar and Moller observed that expansion alone
+often leads to infinite trees. We then alternate between expansion and
+simplification operations, until either finding an empty node---case
+in which we decide equivalence positively---or failing to expand a
+node---case in which we decide equivalence negatively.
 %
 % The na\"ive proposal for an expansion tree considers that any
 % children node is obtained by expansion from its parent
@@ -308,12 +294,12 @@ following rules:
   and $X_0$ and $Y_0$ are normed, then:
   \begin{description}
   \item[Case] $|X_0| \leq |Y_0|$: Let $\vec a$ be a minimal path
-    for $X_0$ and $\vec Z$ a word such that
+    for $X_0$ and $\vec Z$ the word such that
     $ Y_0 \LTSderivesP[\vec a] \vec Z$. Add a sibling node for
     $N$ including the pairs $(X_0 \vec Z, Y_0)$ and
     $(\vec X, \vec Z \vec Y)$ in place of $(X_0 \vec X, Y_0 \vec Y)$;
   \item[Case] $|X_0| > |Y_0|$: Let $\vec a$ be a minimal path for
-    $Y_0$ and $\vec Z$ a word such that
+    $Y_0$ and $\vec Z$ the word such that
     $ X_0 \LTSderivesP[\vec a] \vec Z$. Add a sibling node for $N$
     including the pairs $(X_0 , Y_0 \vec Z )$ and
     $(\vec Z\vec X, \vec Y)$ in place of $(X_0 \vec X, Y_0 \vec Y)$.
@@ -340,7 +326,7 @@ Given two context-free session types, function \lstinline|bisimilar|
 (in Listing~\ref{lst:algorithm}) starts by converting the two session
 types into a grammar, which is then pruned. Function
 \lstinline|convertToGrammar| (not shown) builds the initial monadic
-state, and runs the algorithm of section~\ref{subsec:typeToGrammar} to
+state, and runs the algorithm in Listing~\ref{lst:toGrammar} to
 convert the session types given as parameters.
 %
 An expansion tree is computed afterwards, through an alternation of
@@ -369,20 +355,22 @@ algorithm returns \lstinline|True|.
 type Node = Set.Set ([TypeVar], [TypeVar])
 type Ancestors = Node
 type NodeQueue = Queue.Queue (Node, Ancestors)
-type NodeTransformation = Productions -> Ancestors -> Node -> Set.Set
 
 bisimilar :: Type -> Type -> Bool
-bisimilar t u = expand (prune p) [x] [y]
+bisimilar t u = expand ([x], [y]) (prune p)
   where Grammar [x, y] p = convertToGrammar [t, u]
-
-expand :: Productions -> NodeQueue -> Bool
-expand ps q
-  | Queue.null q = False 
-  | Set.null n   = True
-  | otherwise    = case expandNode ps n of
-      Nothing -> expand ps (Queue.dequeue q)
-      Just n' -> expand ps (simplify ps n' (Set.union a n) q)
-  where (n,a) = Queue.front q
+        
+expand :: ([TypeVar], [TypeVar]) -> Productions -> Bool
+expand p = expand' (Queue.singleton (Set.singleton p, Set.empty))
+  where
+  expand' :: NodeQueue -> Productions -> Bool
+  expand' q ps
+    | Queue.null q = False 
+    | Set.null n   = True
+    | otherwise   = case expandNode ps n of
+        Nothing -> expand (Queue.dequeue q) ps
+        Just n' -> expand (simplify ps n' (Set.union a n) q) ps
+    where (n, a) = Queue.front q
 
 simplify :: Productions -> Node -> Ancestors -> NodeQueue -> NodeQueue
 simplify ps n a q = foldr Queue.append (Queue.dequeue q) nas'
@@ -391,6 +379,7 @@ simplify ps n a q = foldr Queue.append (Queue.dequeue q) nas'
                then foldr (apply ps) nas [reflex,congruence,bpa2]
                else foldr (apply ps) nas [reflex,congruence,bpa1,bpa2]
 \end{lstlisting}
+% type NodeTransformation = Productions -> Ancestors -> Node -> Set.Set Node 
 
 \begin{example}
   The expansion tree for our running example is

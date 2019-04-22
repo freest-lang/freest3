@@ -72,8 +72,7 @@ toGrammar (TypeVar _ x) = do
 toGrammar (Rec _ (TypeVarBind _ x _) t) = do
   insertVisited x
   toGrammar t >>= \case
-    []     ->
-      return []
+    []     -> return []
     (z:zs) ->
       getTransitions z >>= \case
         Just m -> do

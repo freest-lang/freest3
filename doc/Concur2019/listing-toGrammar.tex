@@ -4,7 +4,6 @@
   captionpos=b]
 type Transitions = Map.Map LTSLabel [TypeVar]
 type Productions = Map.Map TypeVar Transitions
-type Visited = Set.Set TypeVar
 type TransState = State (Productions, Int)
 
 toGrammar :: Type -> TransState [TypeVar]
@@ -14,9 +13,9 @@ toGrammar (Message p b) = do
   y <- freshVar
   addProduction y (MessageLabel p b) []
   return [y]
-toGrammar (Choice c m) = do
+toGrammar (Choice p m) = do
   y <- freshVar
-  mapM_ (assocsToGrm y c) (Map.assocs m)
+  mapM_ (assocsToGrm y p) (Map.assocs m)
   return [y]
 toGrammar (Semi t u) = do
   xs <- toGrammar t

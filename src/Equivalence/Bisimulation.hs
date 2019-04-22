@@ -12,7 +12,7 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Equivalence.Bisimulation
-( equivalent
+( bisimilar
 ) where
 
 import           Syntax.Schemes
@@ -27,8 +27,8 @@ import qualified Data.Set as Set
 import qualified Data.Sequence as Queue
 import           Data.List (isPrefixOf)
 
-equivalent :: TypeEnv -> Type -> Type -> Bool
-equivalent tEnv t u = expand (prune p) [x] [y]
+bisimilar :: TypeEnv -> Type -> Type -> Bool
+bisimilar tEnv t u = expand ([x], [y]) (prune p)
   where Grammar [x, y] p = convertToGrammar tEnv [t, u]
 
 type Node = Set.Set ([TypeVar], [TypeVar])
@@ -37,16 +37,16 @@ type Ancestors = Node
 
 type NodeQueue = Queue.Seq (Node, Ancestors)
 
-expand :: Productions -> [TypeVar] -> [TypeVar] -> Bool
-expand ps xs ys = expandNodeQueue ps (Queue.singleton (Set.singleton (xs, ys), Set.empty))
-
-expandNodeQueue :: Productions -> NodeQueue -> Bool
-expandNodeQueue ps ((n, a) Queue.:<| q')
-  | Set.null n      = True
-  | otherwise       = case expandNode ps n of
-      Nothing -> expandNodeQueue ps q'
-      Just n' -> expandNodeQueue ps (simplify ps n' (Set.union a n) q')
-expandNodeQueue _ Queue.Empty = False
+expand :: ([TypeVar], [TypeVar]) -> Productions -> Bool
+expand p = expand' (Queue.singleton (Set.singleton p, Set.empty))
+  where
+  expand' :: NodeQueue -> Productions -> Bool
+  expand' ((n, a) Queue.:<| q') ps
+    | Set.null n      = True
+    | otherwise       = case expandNode ps n of
+        Nothing -> expand' q' ps
+        Just n' -> expand' (simplify ps n' (Set.union a n) q') ps
+  expand' Queue.Empty _ = False
 
 expandNode :: Productions -> Node -> Maybe Node
 expandNode ps =
