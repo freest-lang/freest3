@@ -34,8 +34,9 @@ import           Debug.Trace
 -- Conversion to context-free grammars
 
 convertToGrammar :: TypeEnv -> [Type] -> Grammar
-convertToGrammar tEnv ts = Grammar xs p
-  where (xs, (p, _, _, _)) = runState (mapM typeToGrammar ts) (initial tEnv)
+convertToGrammar tEnv ts = Grammar xs (productions s)
+  where (xs, s) = runState (mapM typeToGrammar ts) (initial tEnv)
+--  where (xs, (p, _, _, _)) = runState (mapM typeToGrammar ts) (initial tEnv)
 
 typeToGrammar :: Type -> TransState TypeVar
 typeToGrammar t = do
@@ -114,52 +115,69 @@ assocToGrammar y p (x, t) = do
 
 type Visited = Set.Set TypeVar
 
-type TState = (Productions, Visited, Int, TypeEnv)
+data TState = TState {
+  productions :: Productions
+, visited     :: Visited
+, nextIndex   :: Int
+, typeEnv     :: TypeEnv  
+} -- (Productions, Visited, Int, TypeEnv)
 
 type TransState = State TState
 
 -- State manipulating functions
 
 initial :: TypeEnv -> TState
-initial tEnv = (Map.empty, Set.empty, 1, tEnv)
+-- initial tEnv = (Map.empty, Set.empty, 1, tEnv)
+initial tEnv = TState {
+  productions = Map.empty
+, visited     = Set.empty
+, nextIndex   = 1
+, typeEnv     = tEnv
+}
 
 freshVar :: TransState TypeVar
 freshVar = do
-  (p, v, n, tEnv) <- get
-  put (p, v, n + 1, tEnv)
+  s <- get
+  let n = nextIndex s
+  modify (\s -> s{nextIndex = n + 1})
   return $ mkVar defaultPos ("X" ++ show n)
   -- Hope there are no colisions with type variables renamed after parsing
 
 memberVisited :: TypeVar -> TransState Bool
 memberVisited t = do
-  (_, v, _, _) <- get
-  return $ Set.member t v
+  s <- get
+  return $ Set.member t (visited s)
 
 insertVisited :: TypeVar -> TransState ()
 insertVisited x =
-  modify $ \(p, v, n, tEnv) -> (p, Set.insert x v, n, tEnv)
+  modify $ \s -> s{visited=Set.insert x (visited s)}
 
 getTransitions :: TypeVar -> TransState Transitions
 getTransitions x = do
-  (p, _, _, _) <- get
-  if Map.member x p then
-    return $ p Map.! x
-  else
-    return Map.empty
+  s <- get
+  case (productions s) Map.!? x of
+    Just t  -> return t
+    Nothing -> return $ Map.empty
+  -- if Map.member x p then
+  --   return $ p Map.! x
+  -- else
+  --   return Map.empty
 
 addProductions :: TypeVar -> Transitions -> TransState ()
 addProductions x m =
-  modify $ \(p, v, n, tEnv) -> (Map.insert x m p, v, n, tEnv)
+  modify $ \s -> s {productions = Map.insert x m (productions s)}-- (Map.insert x m p, v, n, tEnv)
+--  modify $ \(p, v, n, tEnv) -> (Map.insert x m p, v, n, tEnv)
 
 addProduction :: TypeVar -> Label -> [TypeVar] -> TransState ()
 addProduction x l w =
-  modify $ \(p, v, n, tEnv) -> (insertProduction p x l w, v, n, tEnv)
+  modify $ \s -> s{productions=insertProduction (productions s) x l w}
+--  modify $ \(p, v, n, tEnv) -> (insertProduction p x l w, v, n, tEnv)
 
 -- Add or update production from a (basic) non-terminal; the productions may already contain transitions for the given nonterminal (hence the insertWith and union)
 addBasicProd :: Label -> TransState TypeVar
 addBasicProd l = do
-  (p, _, _, _) <- get
-  let p' = Map.filter (Map.member l) p
+  s <- get
+  let p' = Map.filter (Map.member l) (productions s)
   if Map.null p'
     then do
       y <- freshVar
@@ -171,8 +189,8 @@ addBasicProd l = do
 
 getFromVEnv :: TypeVar -> TransState (Kind, TypeScheme)
 getFromVEnv x = do
-  (_, _, _, vEnv) <- get
-  return $ vEnv Map.! x
+  s <- get
+  return $ (typeEnv s) Map.! x
 
 -- Some tests
 {-
