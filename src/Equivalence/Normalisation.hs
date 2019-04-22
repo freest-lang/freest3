@@ -57,10 +57,11 @@ append (Semi p t u)   v = Semi p t (append u v)
 append t              u = Semi (position t) t u
 
 terminated :: Type -> Bool
-terminated (Skip _)     = True
-terminated (Semi _ s t) = terminated s && terminated t
-terminated (Rec _ _ t)  = terminated t
-terminated _            = False
+terminated (Skip _)      = True
+terminated (Semi _ s t)  = terminated s && terminated t
+terminated (Rec _ _ t)   = terminated t
+terminated (TypeVar _ _) = True
+terminated _             = False
 
 -- terminated :: Type ->  Bool
 -- terminated = isCheck Set.empty

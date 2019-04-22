@@ -69,26 +69,26 @@ toGrammar (TypeVar _ x) = do
   else do -- This is a polymorphic variable
     y <- addBasicProd (VarLabel x)
     return [y]
+-- toGrammar (Rec _ (TypeVarBind _ x _) t)
+--   | terminated t = return []
+--   | otherwise = do
+--     insertVisited x
+--     (z:zs) <- toGrammar t
+--     getTransitions z >>= \case
+--         Just m -> do
+--           addProductions x (Map.map (++ zs) m)
+--           return [x]
+--         Nothing -> return []
 toGrammar (Rec _ (TypeVarBind _ x _) t)
   | terminated t = return []
   | otherwise = do
-    insertVisited x
-    toGrammar t >>= \case
-      []     -> return []
-      (z:zs) -> getTransitions z >>= \case
-        Just m -> do
-          addProductions x (Map.map (++ zs) m)
-          return [x]
-        Nothing -> return []
--- toGrammar u@(Rec Bind{var=x} t)
---   | isChecked u Set.empty = return []
---   | otherwise = do
---     y <- freshVar
---     insertVisited y
---     zs <- toGrammar $ subs (Var y) x t -- On the fly α-conversion
---     m <- getTransitions $ head zs
---     addProductions y (Map.map (++ tail zs) m)
---     return [y]  -- Type operators
+    y <- freshVar
+    insertVisited y
+    (z:zs) <- toGrammar t
+    m <- getTransitions z
+    addProductions y (Map.map (++ zs) m)
+    return [y]
+    -- Type operators
 toGrammar (Dualof _ t) = toGrammar (dual t)
 toGrammar (TypeName p x) = do
   b <- memberVisited x
@@ -147,13 +147,15 @@ insertVisited :: TypeVar -> TransState ()
 insertVisited x =
   modify $ \s -> s{visited=Set.insert x (visited s)}
 
-getTransitions :: TypeVar -> TransState (Maybe Transitions)
+getTransitions :: TypeVar -> TransState Transitions
 getTransitions x = do
   s <- get
-  return $ (productions s) Map.!? x
-  -- case (productions s) Map.!? x of
-  --   Just t  -> return t
-  --   Nothing -> return $ Map.empty
+  return $ (productions s) Map.! x
+
+-- getTransitions :: TypeVar -> TransState (Maybe Transitions)
+-- getTransitions x = do
+--   s <- get
+--   return $ (productions s) Map.!? x
 
 addProductions :: TypeVar -> Transitions -> TransState ()
 addProductions x m =

@@ -288,10 +288,10 @@ Listing~\ref{lst:algorithm}.
 These properties ensure the termination of the algorithm, its soundness
 and completeness.
 
-\begin{theorem}[Termination]
-\label{thm:termination}
+\begin{lemma}[Termination]
+\label{lem:termination}
 	The computation of $\bisimf S T$ always terminates.
-\end{theorem}
+\end{lemma}
 %
 \begin{proof}
 	If $S\TypeEquiv T$ then, by Theorem~\ref{thm:cfst_vs_grammar},
@@ -395,7 +395,7 @@ types. The finite witness property is paramount to achieve this result.
 \begin{proof}
   From soundness (Theorem~\ref{thm:soundness}), completeness
   (Theorem~\ref{thm:completeness}), and termination
-  (Theorem~\ref{thm:termination}).
+  (Lemma~\ref{lem:termination}).
 \end{proof}
 
 %%% Local Variables:
