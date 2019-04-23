@@ -525,10 +525,12 @@ rec z:SL. x
 ((rec z_0:SL. (((Skip;z_0);?Char);&{A: y, B: y, C: z_0}));((?Bool;(rec x_1:SL. +{A: x_1, B: Skip, C: y}));+{A: (rec y_2:SL. Skip), B: ?Int, C: !Bool}))
 (((rec z_3:SL. (((Skip;z_3);?Char);&{A: y, B: y, C: z_3}));(?Bool;(rec x_4:SL. +{A: x_4, B: Skip, C: y})));+{A: (rec y_5:SL. Skip), B: ?Int, C: !Bool})
 
+-- this one hangs 
 -- []
 --  (rec y_0:SL. (!Bool;+{A: y_0, B: y_0, C: x})) ; (?Int ; (?Int;&{A: Skip, B: z, C: z}))
 -- ((rec y_1:SL. (!Bool;+{A: y_1, B: y_1, C: x})) ; ?Int) ; (?Int;&{A: Skip, B: z, C: z})
 
+-- this one hangs 
 []
 rec y_0:SL. !Bool; +{A: y_0}
 rec y_1:SL. !Bool; +{A: y_1}

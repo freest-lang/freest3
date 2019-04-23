@@ -37,14 +37,11 @@ pos = defaultPos
 -- Properties
 
 prop_bisimilar :: BisimPair -> Property
-prop_bisimilar (BisimPair t u) = contr t ==> bisimi t u
-
-bisimi t u = evalState (trace (show t ++ " bisim " ++ show u) (return $ bisim t u)) ()
+prop_bisimilar (BisimPair t u) = contr t ==>
+  evalState (trace (show t ++ " bisim " ++ show u) (return $ bisim t u)) ()
 
 prop_self_bisimilar :: Type -> Property
-prop_self_bisimilar t = contr t ==> self_bisim t
-
-self_bisim t = evalState (trace (show t) (return $ bisim u v)) ()
+prop_self_bisimilar t = contr t ==> evalState (trace (show t) (return $ bisim u v)) ()
   where [u, v] = renameList [t, t]
 
 prop_equivalent :: BisimPair -> Property
@@ -58,9 +55,6 @@ wellFormed t = null (errors state)
   where state = execState (synthetise kindEnv t) (initialState "Quick Checking")
         kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (kindSL pos))) -- TODO: only the free vars should go into this environment
   
-prop_same_bisims :: Type -> Property
-prop_same_bisims t = contr t ==> bisim t t
-
 prop_eq_type :: Type -> Property
 prop_eq_type t = contr t ==> t == t
 

@@ -18,9 +18,9 @@ our algorithm is sound and complete.
 Function $\toGrammark$ runs under a monadic context,
 \lstinline|TransState|, suitably initialised.
 %
-The monadic state comprises the productions, the set of visited nodes,
-and an integer to generate fresh variables. At the end of the run, we
-are interested on the productions $P$ only.
+The monadic state comprises the productions and an integer to generate
+fresh variables. At the end of the run, we are interested on the
+productions $P$ only.
 %
 We hence allow ourselves a slight abuse of notation and write
 $\vec Y,P = \toGrammarf S$ to denote the result of running function
@@ -94,9 +94,9 @@ Consider the relation $\mathcal{R}$ given by:
 %      \!\!\text{are all the transitions from $Y$}\}
 %    \end{array}\\
 	& \{(\mu X.S, \tau(\vec Y, P))\mid
-    \text{$S$ is any type and $\vec Y, P = \toGrammarf{S}$ }\},\\
+    \text{$S$ is any type and $\vec Y, P = \toGrammarf{S}$}\},\\
 \end{array}\]
-where $\tau(\vec Y, P)$ is defined as bellow and $\pi (Z)$
+where $\tau(\vec Y, P)$ is defined as below and $\pi (Z)$
 denotes the set of all productions from a symbol $Z$ in the set $P$, 
 $\pi (Z) = \{Z \rightarrow a \vec {W}\mid a \text{ is terminal
 symbol}, \vec W \text{ is a word}\}\subseteq P$:
@@ -166,7 +166,7 @@ The same argument applies to the proof of the following lemma.
 	$(S_i, (\vec Y_i,  P_i))\in\mathcal{R}$, $i \in I$.
 \end{lemma}
 
-Now we prove that the relation $\mathcal{R}$ is a bisimilarity. We do it
+Now we show that the relation $\mathcal{R}$ is a bisimilarity. We do it
 by induction. For that, we use the unravelling function proposed 
 by Thiemann and Vasconcelos~\cite{thiemann2016context}:
 
@@ -190,7 +190,7 @@ transitions from $\mu X.S$.
 \end{theorem}
 
 \begin{proof}
-	We prove that for each $(S, (\vec X, P))\in \mathcal{R}$	, if
+	We show that for each $(S, (\vec X, P))\in \mathcal{R}$	, if
 	$S \LTSderives[a] T$ then $\vec X \rightarrow a \vec Y\in P$
 	and $(T, (\vec Y, P'))\in \mathcal{R}$ for some $P'$. The proof is by
 	induction on the structure of $S$. With this purpose, whenever $S$ is a 
