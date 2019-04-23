@@ -403,7 +403,11 @@ the meta-theory of context-free session types.
 % 	From Theorem~\ref{thm:soundness} and Lemma~\ref{lemma:terminates}.
 % \end{proof}
  
-We now prove that the algorithm to check the bisimulation of context-free session 
+Given that the algorithm terminates (Lemma~\ref{lem:termination}), we
+know that if $S\not\TypeEquiv T$, then $\bisimf ST$ returns
+\lstinline|False|.
+%
+We now show that the algorithm to check the bisimulation of context-free session 
 types is complete with respect to the meta-theory of context-free session
 types. The finite witness property is paramount to achieve this result.
 
@@ -423,6 +427,9 @@ types. The finite witness property is paramount to achieve this result.
   the empty node and conclude the bisimulation positively.
 \end{proof}
 
+Given that the algorithm terminates, $\bisimf S T$ returns
+  \lstinline|False| when $S \not\TypeEquiv T$.
+
 % \begin{corollary}
 % 	If $\bisimf ST$ returns \upshape{\lstinline|False|} then $S\not\TypeEquiv T$.
 % \end{corollary}
@@ -430,17 +437,6 @@ types. The finite witness property is paramount to achieve this result.
 % \begin{proof}
 % 	From Theorem~\ref{thm:completeness}.
 % \end{proof}
-
-\begin{corollary}[Correctness]
-  $\bisimf ST$ returns \upshape{\lstinline|True|} if and only if
-  $S\TypeEquiv T$.
-\end{corollary}
-%
-\begin{proof}
-  From soundness (Theorem~\ref{thm:soundness}), completeness
-  (Theorem~\ref{thm:completeness}), and termination
-  (Lemma~\ref{lem:termination}).
-\end{proof}
 
 %%% Local Variables:
 %%% mode: latex

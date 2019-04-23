@@ -47,10 +47,10 @@ are such that $|\vec X|\leq 1$ and $|\vec Y| \leq 1$.
 The revised \lstinline|simplify| function is in Listing~\ref
 {lst:enhanced}.
 
-The next theorem shows that the simplification function that consists
-in applying the reflexive, congruence and \BPA\ rules has a fixed
-point.  The result applies regardless of whether all nonterminal
-symbols symbols are normed or not.
+% The next theorem shows that the simplification function that consists
+% in applying the reflexive, congruence and \BPA\ rules has a fixed
+% point.  The result applies regardless of whether all nonterminal
+% symbols symbols are normed or not.
 
 \begin{theorem}
   \label{thm:fixed_point}
@@ -65,7 +65,8 @@ symbols symbols are normed or not.
   See appendix.
 \end{proof}
 
-Having proved that the fixed point exists, we can now adapt the
+% Having proved that the fixed point exists, 
+We can now adapt the
 simplification phase to, on the one hand, iterate the simplification
 rules until reaching a fixed point and, on the other hand, identify
 and prepend promising nodes. An improved version of the
