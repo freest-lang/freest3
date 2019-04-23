@@ -1,12 +1,12 @@
 {- |
 Module      :  Equivalence.Normalisation
-Description :  <optional short text displayed on contents page>
-Copyright   :  (c) <Authors or Affiliations>
-License     :  <license>
+Description :  The normalisation of a type (and type scheme)
+Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of Lisbon
+                   Andreia Mordido, LASIGE, Faculty of Sciences, University of Lisbon
+                   Vasco Vasconcelos, LASIGE, Faculty of Sciences, University of Lisbon
+Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc.ul.pt
 
-Maintainer  :  vmvasconcelos@ciencias.ulisboa.pot
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
+The normalisations instances for Types and type schemes.
 
 -}
 
@@ -41,12 +41,11 @@ instance Normalise Type where
     | terminated t = normalise tenv u
     | otherwise   = append (normalise tenv t) u
     -- Functional or session
-  normalise tenv t@(Rec _ _ _) = normalise tenv (unfold t) -- DANGER
+  normalise tenv t@(Rec _ _ _) = normalise tenv (unfold t)
     -- Type operators
   normalise tenv (Dualof _ t) = normalise tenv (dual t)
---  normalise tenv t@(TypeName _ a) = t
   normalise tenv (TypeName _ a) = normalise tenv t
-    where (_, TypeScheme _ [] t) = tenv Map.! a -- TODO: type/data may be polymorphic
+    where (_, TypeScheme _ [] t) = tenv Map.! a
     -- Otherwise: Basic, Fun, PairType, Datatype, Skip, Message, Choice, TypeVar
   normalise tenv t = t
 
@@ -63,55 +62,5 @@ terminated = isChecked Set.empty
   isChecked v (Semi _ s t)                  = isChecked v s && isChecked v t
   isChecked v (Rec _ (TypeVarBind _ x _) t) = isChecked (Set.insert x v) t
   -- Only free variables are terminated.
-  -- TODO: only free variables *of kind SU* are terminated
   isChecked v (TypeVar _ x)                 = Set.notMember x v
   isChecked _ _                             = False
-
-{- An attempt of a "full" normalisation, useful for determining type equality without running the bisimulation game
-
-instance Normalise Type where
-    -- Functional types
-  normalise tenv (Fun p q t u)    = Fun p q (normalise tenv t) (normalise tenv u)
-  normalise tenv (PairType p t u) = PairType p (normalise tenv t) (normalise tenv u)
-  normalise tenv t@(Datatype p m) = t -- We do not normalise under Datatype or we'll loop until eternity
-    -- Session types
-  normalise tenv (Semi _ (Choice p q m) t) =
-    Choice p q (Map.map (\u -> append (normalise tenv u) t') m)
-    where t' = normalise tenv t
-  normalise tenv (Semi _ t u) -- = append (normalise tenv t) (normalise tenv u)
-    | terminated t = normalise tenv u
-    | otherwise   = append (normalise tenv t) u
-  normalise tenv (Choice p q m) = Choice p q (Map.map (normalise tenv) m)
-    -- Functional or session
-  normalise tenv t@(Rec _ _ _) = normalise tenv (unfold t)
-  -- normalise tenv u@(Rec _ (TypeVarBind _ x _) t)
-  --   | x `Set.member` (free t) = normalise tenv $ unfold u
-  --   | otherwise               = t'
-  --   where t' = normalise tenv t
-    -- Type operators
-  normalise tenv (Dualof _ t) = normalise tenv (dual t)
-  normalise tenv t@(TypeName _ a) = t
-  -- normalise tenv (TypeName _ a) = normalise tenv t
-  --   where (_, TypeScheme _ [] t) = tenv Map.! a
-    -- Otherwise: Basic, Skip, Message, TypeVar
-  normalise tenv t = t
-
--- The set of free type variables in a type
-free :: Type -> Set.Set TypeVar
-  -- Functional types
-free (Basic _ _)      = Set.empty
-free (Fun _ _ t u)    = Set.union (free t) (free u)
-free (PairType _ t u) = Set.union (free t) (free u)
-free (Datatype _ m)   = Map.foldr (Set.union . free) Set.empty m
-  -- Session types
-free (Skip _)         = Set.empty
-free (Semi _ t u)     = Set.union (free t) (free u)
-free (Message _ _ _)  = Set.empty
-free (Choice _ _ m)   = Map.foldr (Set.union . free) Set.empty m
-free (Rec _ (TypeVarBind _ x _) t) = Set.delete x (free t)
-  -- Functional or session
-free (TypeVar _ x)    = Set.singleton x
-  -- Type operators
-free (Dualof _ t)     = free t
-free (TypeName _ _)   = Set.empty
--}

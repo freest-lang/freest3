@@ -1,14 +1,13 @@
 {- |
-Module      :  Types
-Description :  <optional short text displayed on contents page>
-Copyright   :  (c) <Authors or Affiliations>
-License     :  <license>
+Module      :  Syntax.Types
+Description :  The language types.
+Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of Lisbon
+                   Andreia Mordido, LASIGE, Faculty of Sciences, University of Lisbon
+                   Vasco Vasconcelos, LASIGE, Faculty of Sciences, University of Lisbon
+Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc.ul.pt
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
-
-<module description starting at first column>
+In this module we provide the definition of a type with the definitions of type duality and
+equality. The unfolding and substitution operations are also defined in this module.
 -}
 
 module Syntax.Types
@@ -90,7 +89,7 @@ equalTypes s (Semi _ t1 t2)   (Semi _ u1 u2)   = equalTypes s t1 u1 && equalType
 equalTypes s (Message _ p x)  (Message _ q y)  = p == q && x == y
 equalTypes s (Choice _ v1 m1) (Choice _ v2 m2) = v1 == v2 && equalMaps s m1 m2
 equalTypes s (Rec _ (TypeVarBind _ x k) t) (Rec _ (TypeVarBind _ y l) u) =
-  k ==l && equalTypes (Map.insert x y s) t u
+  k == l && equalTypes (Map.insert x y s) t u
   -- Functional or session
 equalTypes s (TypeVar _ x)    (TypeVar _ y)    = equalVars (Map.lookup x s) x y
   -- Type operators
@@ -132,9 +131,7 @@ instance Dual Type where
   dual (Semi p t1 t2)  = Semi p (dual t1) (dual t2)
   dual (Message p v b) = Message p (dual v) b
   dual (Choice p v m)  = Choice p (dual v) (Map.map dual m)
-  -- dual (Choice p v m)  = Choice p (dual v) (Map.map (Dualof p) m) -- The lazy version, hopefully fa
   dual (Rec p x t)     = Rec p x (dual t)
---  dual (Rec p x t)     = Rec p x (Dualof p t) -- The lazy version, hopefully faster
   -- Type operators
   dual (Dualof _ t)    = t
   -- Functional types, Skip, TypeVar, TypeName
@@ -151,18 +148,15 @@ unfold t@(Rec _ (TypeVarBind _ x _) u) = subs t x u
 
 -- [u/x]t, substitute u for x on t
 subs :: Type -> TypeVar -> Type -> Type 
-  -- Functional types
+-- Functional types
 subs t x (Fun p m t1 t2)    = Fun p m (subs t x t1) (subs t x t2)
 subs t x (PairType p t1 t2) = PairType p (subs t x t1) (subs t x t2)
 subs t x (Datatype p m)     = Datatype p (Map.map(subs t x) m)
-  -- Session types
+-- Session types
 subs t x (Semi p t1 t2)     = Semi p (subs t x t1) (subs t x t2)
 subs t x (Choice p v m)     = Choice p v (Map.map(subs t x) m)
 subs t x (Rec p b u)        = Rec p b (subs t x u) -- Assume types were renamed (hence, no on-the-fly renaming needed)
--- subs t x (Rec p b@(TypeVarBind _ y _) u)
---   | y == x                  = u
---   | otherwise               = Rec p b (subs t x u)
-  -- Functional or session
+-- Functional or session
 subs t x u@(TypeVar _ y)
   | y == x                  = t
   | otherwise               = u

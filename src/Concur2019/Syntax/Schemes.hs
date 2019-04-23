@@ -1,14 +1,15 @@
 {- |
-Module      :  Type Schemes
-Description :  <optional short text displayed on contents page>
-Copyright   :  (c) <Authors or Affiliations>
-License     :  <license>
+Module      :  Syntax.Schemes
+Description :  The language type schemes
+Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of Lisbon
+                   Andreia Mordido, LASIGE, Faculty of Sciences, University of Lisbon
+                   Vasco Vasconcelos, LASIGE, Faculty of Sciences, University of Lisbon
+Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc.ul.pt
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
-
-<module description starting at first column>
+The definition of a type scheme. In this module we also define the type environment that
+contains the definitons of the datatypes and type abbreviantions declared in a program
+and the variable environment, which is composed of the signatures of the functions names
+(including the primitive operators) and parameters, and the datatype constructors.
 -}
 
 module Syntax.Schemes

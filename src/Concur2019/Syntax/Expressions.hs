@@ -1,14 +1,13 @@
 {- |
-Module      :  Types
-Description :  <optional short text displayed on contents page>
-Copyright   :  (c) <Authors or Affiliations>
-License     :  <license>
+Module      :  Syntax.Expressions
+Description :  The language expressions
+Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of Lisbon
+                   Andreia Mordido, LASIGE, Faculty of Sciences, University of Lisbon
+                   Vasco Vasconcelos, LASIGE, Faculty of Sciences, University of Lisbon
+Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc.ul.pt
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
-
-<module description starting at first column>
+In this module we provide the language expressions. We also define the expression
+environment which contains the named functions in a program.
 -}
 
 module Syntax.Expressions
@@ -35,7 +34,7 @@ data Expression =
   | Lambda Pos Multiplicity ProgVar Type Expression
   | App Pos Expression Expression
   -- Pair intro and elim
-  | Pair Pos {- Multiplicity -} Expression Expression
+  | Pair Pos Expression Expression
   | BinLet Pos ProgVar ProgVar Expression Expression
   -- Datatype elim
   | Case Pos Expression FieldMap
@@ -44,7 +43,7 @@ data Expression =
   -- Boolean elim
   | Conditional Pos Expression Expression Expression
   -- Let
-  | UnLet Pos ProgVar Expression Expression -- TODO: Derived; eliminate?
+  | UnLet Pos ProgVar Expression Expression
   -- Fork
   | Fork Pos Expression
   -- Session types
@@ -53,7 +52,6 @@ data Expression =
   | Receive Pos Expression
   | Select Pos ProgVar Expression
   | Match Pos Expression FieldMap
---  deriving (Eq, Ord)
 
 type FieldMap  = Map.Map ProgVar ([ProgVar], Expression)
 

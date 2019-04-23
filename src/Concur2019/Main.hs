@@ -4,9 +4,6 @@ import           Syntax.Kinds
 import Equivalence.Equivalence
 import qualified Data.Map.Strict as Map
 
--- t1 = Skip defaultPos
--- t2 = Skip defaultPos
-
 -- Example 1
 
 -- t1 = (μx.&{n : x; x; ?int, l :?int}); (μz.!int; z; z)
