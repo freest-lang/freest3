@@ -38,12 +38,11 @@ pos = defaultPos
 
 prop_bisimilar :: BisimPair -> Property
 prop_bisimilar (BisimPair t u) = contr t ==>
-  evalState (trace (show t' ++ " bisim " ++ show u') (return $ bisim t u)) ()
-  where [t', u'] = renameList [t, u]
+  evalState (trace (show t ++ " bisim " ++ show u) (return $ bisim t u)) ()
 
 prop_self_bisimilar :: Type -> Property
 prop_self_bisimilar t = contr t ==>
-  evalState (trace (show t++ " self-bisimilar") (return $ bisim u v)) ()
+  evalState (trace (show u ++ " self-bisimilar-to " ++ show v) (return $ bisim u v)) ()
   where [u, v] = renameList [t, t]
 
 prop_equivalent :: BisimPair -> Property
@@ -115,12 +114,10 @@ instance Arbitrary TypeVarBind where
   arbitrary = liftM3 TypeVarBind arbitrary arbitrary arbitrary
 
 instance Arbitrary BasicType where
-  arbitrary = elements [IntType, CharType, BoolType, UnitType]
+  arbitrary = elements [IntType, CharType, BoolType{-, UnitType-}]
 
 instance Arbitrary Type where
-  arbitrary = do
-    t <- sized arbitrarySession
-    return $ renameType t
+  arbitrary = sized arbitrarySession -- Not renamed
 
 arbitrarySession :: Int -> Gen Type
 arbitrarySession 0 = oneof
@@ -130,20 +127,14 @@ arbitrarySession 0 = oneof
 arbitrarySession n = oneof
   [ liftM3 Semi arbitrary (arbitrarySession (n `div` 4)) (arbitrarySession (n `div` 4))
   , liftM3 Message arbitrary arbitrary arbitrary
-  , liftM3 Choice arbitrary arbitrary (arbitraryTypeMap (n `div` 4))
+  , liftM3 Choice arbitrary arbitrary arbitraryTypeMap
 --  , liftM3 Rec arbitrary arbitrary (arbitrarySession (n `div` 4))
   ]
 
-arbitraryTypeMap :: Int -> Gen TypeMap
-arbitraryTypeMap n = do
-  m <- listOf1 $ arbitraryField (n `div` 4)
+arbitraryTypeMap :: Gen TypeMap
+arbitraryTypeMap = do
+  m <- listOf1 arbitrary
   return $ Map.fromList m
-
-arbitraryField :: Int -> Gen (ProgVar,Type)
-arbitraryField n = do
-    k <- arbitrary
-    t <- arbitrarySession (n `div` 4)
-    return (k, t)
 
 -- Arbitrary Pairs of Bisimilar Types
 
@@ -165,117 +156,15 @@ assoc = do
   (t, u, v) <- arbitrary
   return (Semi pos t (Semi pos u v), Semi pos (Semi pos t u) v)
 
+{-
+distrib :: Gen (Type, Type)
+distrib = do
+  (t, p) <- arbitrary
+  m <- arbitraryTypeMap
+  return (
+-}
 -- Renaming
 
 renameType t = evalState (rename Map.empty t) (initialState "Renaming for QuickCheck")
 
 renameList ts = evalState (mapM (rename Map.empty) ts) (initialState "Renaming for QuickCheck")
-
-{-
-
-arbitraryType :: Int -> Gen Type
-arbitraryType 0 = return (Skip arbitrary)
-arbitraryType n = do
-  t <- oneof [liftM Basic arbitrary,
-                -- Skip,
-              liftM3 Semi arbitrary (arbitraryType (n `div` 4)) (arbitraryType (n `div` 4)),
-              liftM3 Fun arbitrary arbitrary (arbitraryType (n `div` 4)) (arbitraryType (n `div` 4)),
-              liftM3 Pair arbitrary (arbitraryType (n `div` 4)) (arbitraryType (n `div` 4)),
-              liftM2 Choice arbitrary arbitrary (arbitraryTypeMap (n `div` 4)),
-              liftM2 Datatype arbitrary (arbitraryDatatypeTypeMap (n `div` 4)),
-              liftM2 Rec arbitrary arbitrary (arbitraryType (n `div` 4)),
-              liftM2 Forall (arbitraryId) (arbitraryType (n `div` 4)),
-              liftM2 ProgVar arbitrary arbitrary
-             ]
-  if (isType t) then
-    return t
-  else
-    arbitraryType (n `div` 4)
-
-arbitraryId :: Gen TypeVarBind
-arbitraryId = do
-  ts <- listOf $ elements (['A','B','C'])
-  if isValidId ts then
-    return ts
-  else
-    arbitraryId
-
-isValidId :: [Char] -> Bool
-isValidId [] = False
-isValidId "rec" = False
-isValidId  "Skip" = False
-isValidId  "Forall" = False
-isValidId _ = True
-
--- TypeMap of session types for
-arbitraryTypeMap :: Int -> Gen TypeMap
-arbitraryTypeMap n = do
-    m <- listOf $ (arbitraryField (n `div` 4))
-    if null m then
-      arbitraryTypeMap (n `div` 4)
-    else
-      return $ Map.fromList m
-
-arbitraryField :: Int -> Gen (TypeVarBind,Type)
-arbitraryField n = do
-    f <- arbitraryId
-    t <- (arbitrarySession (n `div` 4))
-    return (f,t)
-
-arbitrarySession :: Int -> Gen Type
-arbitrarySession 0 = return (Skip pos)
-arbitrarySession n = do
-  t <- oneof [
-              liftM3 Semi arbitrary (arbitrarySession (n `div` 4)) (arbitrarySession (n `div` 4))
-              ,liftM3 Choice arbitrary arbitrary (arbitraryTypeMap (n `div` 4))
-              ,liftM3 Choice arbitrary arbitrary (arbitraryTypeMap (n `div` 4))
-              ,liftM3 Rec arbitrary arbitrary (arbitraryType (n `div` 4))
-             ]
-
-  if (isSessionType t) then
-    return t
-  else
-    arbitrarySession (n `div` 4)
-
-
--- Datatype
-arbitraryDatatypeTypeMap :: Int -> Gen TypeMap
-arbitraryDatatypeTypeMap n = do
-    m <- listOf $ (arbitraryDatatypeBinding (n `div` 4))
-    if m == [] then
-      arbitraryDatatypeTypeMap (n `div` 4)
-    else
-      return $ Map.fromList m
-
-arbitraryDatatypeBinding :: Int -> Gen (TypeVarBind,Type)
-arbitraryDatatypeBinding n = do
-    f <- arbitraryId
-    t <- (arbitraryTypeArbitrary (n `div` 4))
-    return (f,t)
-
-arbitraryTypeArbitrary :: Int -> Gen Type
-arbitraryTypeArbitrary n = do
-  t <- (arbitraryType (n `div` 4))
-
-  if (not (isSchemeType t)) then
-    return t
-  else
-    arbitraryTypeArbitrary (n `div` 4)
-
-isType :: KindEnv -> Type -> Bool
-isType kEnv t = do
-  s1 <- parseProgram initialState prelude
-  let s2 k = execState (synthetise kEnv t) s1
-  s <- get
-  return null (errors s)
-
-isSchemeType :: Type -> Bool
-isSchemeType t = isType kEnv t
-  where kEnv = Map.fromList [(mkVar pos "α", kindTL), (mkVar pos "β", kindTL),
-                             (mkVar pos "x", kindTL), (mkVar pos "y", kindTL),
-                             (mkVar pos "z", kindTL),
-                             (mkVar pos "γ", kindTU), (mkVar pos "δ", kindTU),
-                             (mkVar pos "ρ", kindSL), (mkVar pos "τ", kindSL),
-                             (mkVar pos "φ", kindSU), (mkVar pos "ψ", kindSU)]
-
--}
