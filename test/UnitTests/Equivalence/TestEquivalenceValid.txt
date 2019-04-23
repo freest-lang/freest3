@@ -531,6 +531,6 @@ rec z:SL. x
 -- ((rec y_1:SL. (!Bool;+{A: y_1, B: y_1, C: x})) ; ?Int) ; (?Int;&{A: Skip, B: z, C: z})
 
 -- this one hangs 
-[]
-rec y_0:SL. !Bool; +{A: y_0}
-rec y_1:SL. !Bool; +{A: y_1}
+-- []
+-- rec y_0:SL. !Bool; +{A: y_0}
+-- rec y_1:SL. !Bool; +{A: y_1}
