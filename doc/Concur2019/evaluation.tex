@@ -38,9 +38,9 @@ optimizations the results improved remarkably:
 implementing a double-ended queue we reduced the running time to 1788 
 seconds and the allocated memory to 1,997,841 Mb, by also
 iterating the
-simplification phase in the search for a fixed point we obtained a 
-running time of 1625 seconds and 
-allocated memory of 1,044,240 Mb. The 
+simplification phase in the search for a fixed point we decreased these values
+to a running time of 1172 seconds and 
+allocated memory of 1,103,397 Mb. The 
 combination of these enhancements with the clean grammar generation
 exhibit an improvement in more than 1,000,000\% from the base case,
 achieving a running time of 0.4 seconds and 306 Mb 
@@ -61,15 +61,10 @@ average running time of 0.008 seconds.
 
 The heuristic we proposed actually circumvents the exponential complexity 
 inherent to the expansion tree, thus allowing to obtain running times that 
-are manifestly small, thus allowing the use of this algorithm as an integral 
+are manifestly small and to use this algorithm as an integral 
 part of a compiler, as we had intended from the beginning. 
 %
-With the purpose of integrating this algorithm into a compiler and, subsequently,
-with the major purpose of reducing the running time,
-we have enabled the verification of the syntactic equality of two types 
-before running the type equivalence checker on them. 
-With this, we got a running time of 0.03 seconds 
-for the entire test suite.
+
 
 %%% Local Variables:
 %%% mode: latex

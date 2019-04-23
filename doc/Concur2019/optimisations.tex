@@ -70,12 +70,12 @@ We can now adapt the
 simplification phase to, on the one hand, iterate the simplification
 rules until reaching a fixed point and, on the other hand, identify
 and prepend promising nodes. An improved version of the
-\lstinline|simplify| function (listing~\ref{lst:algorithm}) is in
-listing~\ref{lst:enhanced}.
+\lstinline|simplify| function (Listing~\ref{lst:algorithm}) is in
+Listing~\ref{lst:enhanced}.
 
 \begin{lstlisting}[
   caption={Haskell code for the improved simplification step (replaces
-    function \lstinline|simplify| in listing~\ref{lst:algorithm})},
+    function \lstinline|simplify| in Listing~\ref{lst:algorithm})},
   label={lst:enhanced},
   captionpos=b]
 simplify :: Productions -> Node -> Ancestors -> NodeQueue -> NodeQueue
