@@ -427,8 +427,8 @@ types. The finite witness property is paramount to achieve this result.
   the empty node and conclude the bisimulation positively.
 \end{proof}
 
-Given that the algorithm terminates, $\bisimf S T$ returns
-  \lstinline|False| when $S \not\TypeEquiv T$.
+Given that the algorithm terminates, if $\bisimf S T$ returns
+  \lstinline|False| then we know that $S \not\TypeEquiv T$.
 
 % \begin{corollary}
 % 	If $\bisimf ST$ returns \upshape{\lstinline|False|} then $S\not\TypeEquiv T$.
