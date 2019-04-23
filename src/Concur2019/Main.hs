@@ -1,7 +1,7 @@
 import           Syntax.Types
 import           Syntax.Base
 import           Syntax.Kinds
-import Equivalence.Equivalence
+import           Equivalence.Bisimulation
 import qualified Data.Map.Strict as Map
 
 {-
@@ -12,7 +12,7 @@ Types must be
 * contractive, and
 * renamed, so that all bound variables are distinct.
 
-Failing to that the behaviour of function equivalent is undefined.
+Failing to that the behaviour of function bisimulation is undefined.
 -}
 
 -- The types in Example 1, page 5
@@ -42,5 +42,5 @@ putEquiv t u =
   putStrLn $ "Type\n\t" ++ show t ++ "\n" ++
              "is " ++ yesNo ++ "equivalent to type\n" ++
              "\t" ++ show u ++ "\n"
-    where yesNo = if equivalent Map.empty Map.empty t u then "" else "not "
+    where yesNo = if bisimilar Map.empty t u then "" else "not "
   
