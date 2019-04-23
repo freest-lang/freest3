@@ -19,9 +19,9 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import           Debug.Trace
 
--- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_kinded
 main = quickCheckWith stdArgs {maxSuccess = 10000} prop_self_bisimilar
--- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_equivalent
+-- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
+-- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_kinded
 -- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_eq_type
 -- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_normal_eq_type
 -- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_same_equivs
@@ -38,10 +38,12 @@ pos = defaultPos
 
 prop_bisimilar :: BisimPair -> Property
 prop_bisimilar (BisimPair t u) = contr t ==>
-  evalState (trace (show t ++ " bisim " ++ show u) (return $ bisim t u)) ()
+  evalState (trace (show t' ++ " bisim " ++ show u') (return $ bisim t u)) ()
+  where [t', u'] = renameList [t, u]
 
 prop_self_bisimilar :: Type -> Property
-prop_self_bisimilar t = contr t ==> evalState (trace (show t) (return $ bisim u v)) ()
+prop_self_bisimilar t = contr t ==>
+  evalState (trace (show t++ " self-bisimilar") (return $ bisim u v)) ()
   where [u, v] = renameList [t, t]
 
 prop_equivalent :: BisimPair -> Property
@@ -113,7 +115,7 @@ instance Arbitrary TypeVarBind where
   arbitrary = liftM3 TypeVarBind arbitrary arbitrary arbitrary
 
 instance Arbitrary BasicType where
-  arbitrary = elements [IntType, CharType, BoolType{-, UnitType-}]
+  arbitrary = elements [IntType, CharType, BoolType, UnitType]
 
 instance Arbitrary Type where
   arbitrary = do
@@ -129,7 +131,7 @@ arbitrarySession n = oneof
   [ liftM3 Semi arbitrary (arbitrarySession (n `div` 4)) (arbitrarySession (n `div` 4))
   , liftM3 Message arbitrary arbitrary arbitrary
   , liftM3 Choice arbitrary arbitrary (arbitraryTypeMap (n `div` 4))
-  , liftM3 Rec arbitrary arbitrary (arbitrarySession (n `div` 4))
+--  , liftM3 Rec arbitrary arbitrary (arbitrarySession (n `div` 4))
   ]
 
 arbitraryTypeMap :: Int -> Gen TypeMap
@@ -162,6 +164,8 @@ assoc :: Gen (Type, Type)
 assoc = do
   (t, u, v) <- arbitrary
   return (Semi pos t (Semi pos u v), Semi pos (Semi pos t u) v)
+
+-- Renaming
 
 renameType t = evalState (rename Map.empty t) (initialState "Renaming for QuickCheck")
 
