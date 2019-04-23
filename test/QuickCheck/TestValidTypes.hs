@@ -19,8 +19,8 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import           Debug.Trace
 
-main = quickCheckWith stdArgs {maxSuccess = 10000} prop_self_bisimilar
--- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
+-- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_self_bisimilar
+main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
 -- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_kinded
 -- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_eq_type
 -- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_normal_eq_type
@@ -127,14 +127,20 @@ arbitrarySession 0 = oneof
 arbitrarySession n = oneof
   [ liftM3 Semi arbitrary (arbitrarySession (n `div` 4)) (arbitrarySession (n `div` 4))
   , liftM3 Message arbitrary arbitrary arbitrary
-  , liftM3 Choice arbitrary arbitrary arbitraryTypeMap
+  , liftM3 Choice arbitrary arbitrary (arbitraryTypeMap (n `div` 4))
 --  , liftM3 Rec arbitrary arbitrary (arbitrarySession (n `div` 4))
   ]
 
-arbitraryTypeMap :: Gen TypeMap
-arbitraryTypeMap = do
-  m <- listOf1 arbitrary
+arbitraryTypeMap :: Int -> Gen TypeMap
+arbitraryTypeMap n = do
+  m <- listOf1 $ arbitraryField (n `div` 4)
   return $ Map.fromList m
+
+arbitraryField :: Int -> Gen (ProgVar,Type)
+arbitraryField n = do
+    k <- arbitrary
+    t <- arbitrarySession (n `div` 4)
+    return (k, t)
 
 -- Arbitrary Pairs of Bisimilar Types
 
@@ -146,7 +152,10 @@ instance Show BisimPair where
 instance Arbitrary BisimPair where
   arbitrary = do
     (t, u) <- oneof
-      [ assoc
+      [ -- assoc
+      -- , distrib
+      -- ,
+      unfoldt
       ]
     let [t', u'] = renameList [t, u]
     return $ BisimPair t' u'
@@ -156,13 +165,18 @@ assoc = do
   (t, u, v) <- arbitrary
   return (Semi pos t (Semi pos u v), Semi pos (Semi pos t u) v)
 
-{-
 distrib :: Gen (Type, Type)
 distrib = do
   (t, p) <- arbitrary
-  m <- arbitraryTypeMap
-  return (
--}
+  m <- sized arbitraryTypeMap
+  return (Semi pos (Choice pos p m) t, Choice pos p (Map.map (\u -> Semi pos u t) m))
+
+unfoldt :: Gen (Type, Type)
+unfoldt = do
+  (t, xk) <- arbitrary
+  let u = Rec pos xk t
+  return (u, unfold u)
+
 -- Renaming
 
 renameType t = evalState (rename Map.empty t) (initialState "Renaming for QuickCheck")
