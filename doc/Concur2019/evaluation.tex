@@ -12,7 +12,9 @@ mini equipped with a 3.6 GHz Intel Core i3, 8 GB of memory, running
 MacOS 10.14.3.
 
 Once the improvement proposals were established, we benchmarked the
-algorithm on a test suite of carefully crafted pair of types. These
+algorithm on a test suite of carefully crafted pairs of types
+based on cases observed when using the compiler where the algorithm is 
+used~\cite{almeida.etal_freest-functional-language}. These
 tests comprise valid and invalid equivalences, for a total of 154
 tests. We have profiled our program for the time and memory allocated
 during the tests. For this purpose, we have used GHC's profiling
@@ -32,10 +34,13 @@ Figure~\ref{fig:results}.
 For the base algorithm, proposed in Listing~\ref{lst:algorithm}, we
 obtained a running time of about 4624 seconds and
 8,660,309 Mb memory allocated. From the moment we introduced the
-optimizations the results improved remarkably: iterating the
-simplification phase in the search for a fixed point and implementing
-a double-ended queue, we reduced the running time to 1625 and the 
-allocated memory to 1,044,240 Mb. The 
+optimizations the results improved remarkably: 
+implementing a double-ended queue we reduced the running time to 1788 
+seconds and the allocated memory to 1,997,841 Mb, by also
+iterating the
+simplification phase in the search for a fixed point we obtained a 
+running time of 1625 seconds and 
+allocated memory of 1,044,240 Mb. The 
 combination of these enhancements with the clean grammar generation
 exhibit an improvement in more than 1,000,000\% from the base case,
 achieving a running time of 0.4 seconds and 306 Mb 

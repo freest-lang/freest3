@@ -47,15 +47,16 @@ The associated bisimulation is denoted by $\ProdEquiv$.
 
 Given a context-free session type $S$, the algorithm starts by
 inserting an initial production of the form
-$X_S \rightarrow \,\initialProd\,(\toGrammarf\,S)$ in the set of
-productions.
+$X_S \rightarrow \,\initialProd\,\vec Y$ in the set of
+productions, where $\vec Y$ is the word obtained by running 
+\lstinline|toGrammar S|.
 %
 Function \lstinline|toGrammar| (Listing~\ref{lst:toGrammar}) returns a
 sequence of non-terminal symbols, while computing the remaining
 productions.
 %
-It uses a predicate \lstinline|isChecked| $S$ to determine whether $S$
-is terminated, that is whether \DONE S.
+%It uses a predicate \lstinline|isChecked| $S$ to determine whether $S$
+%is terminated, that is whether \DONE S.
 %
 The algorithm keeps the set of productions and an integer (to generate
 fresh non-terminal symbols) in the monadic state
@@ -155,9 +156,9 @@ the length of~$\vec a$.
 
 As observed by Christensen H\"uttel, and
 Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}, any unnormed
-words $\vec Y$ is bisimilar to its concatenation with any other
-nonterminal symbols, that is, if $\vec Y$ is unnormed, then
-$\vec Y \ProdEquiv \vec YX$.
+word $\vec Y$ is bisimilar to its concatenation with any other
+word, that is, if $\vec Y$ is unnormed, then
+$\vec Y \ProdEquiv \vec Y \vec X$.
 %
 % \begin{equation}
 %\label{unnormed}
@@ -246,7 +247,7 @@ minimal set such that: for every pair $(\vec X, \vec Y) \in N$,
 \end{itemize}
 
 An \emph{expansion tree} is built from a root node: the singleton set
-containing of the words obtained by translating the pair of types
+containing the pair of words obtained by translating the two types
 into a grammar. Children nodes are obtained by expansion from its
 parent node. Jan{\v{c}}ar and Moller observed that expansion alone
 often leads to infinite trees. We then alternate between expansion and
@@ -325,7 +326,7 @@ branch resulting from successive expansions.
 Given two context-free session types, function \lstinline|bisimilar|
 (in Listing~\ref{lst:algorithm}) starts by converting the two session
 types into a grammar, which is then pruned. Function
-\lstinline|convertToGrammar| (not shown) builds the initial monadic
+\lstinline|convertToGrammar| (in Appendix) builds the initial monadic
 state, and runs the algorithm in Listing~\ref{lst:toGrammar} to
 convert the session types given as parameters.
 %

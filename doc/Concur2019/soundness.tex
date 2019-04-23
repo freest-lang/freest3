@@ -47,9 +47,10 @@ to $\toGrammarf S$.
 \end{lemma}
 
 \begin{proof}
-  By rule induction on the definition of $\DONE S$. Cases $\skipk$ and
-  $\reck$ follow directly from the respective cases in function
-  $\toGrammark$ in Listing~\ref{lst:toGrammar}. The case for
+  By rule induction on the definition of $\DONE S$. Case $\skipk$ 
+  follows directly from the case in function
+  $\toGrammark$ in Listing~\ref{lst:toGrammar}. The cases for
+  $\reck$  and for
   sequential composition follows by induction and the fact that
   $\varepsilon+\!\!+\,\varepsilon=\varepsilon$.
   % Given that all variables in a type are under some $\mu$-binder,
@@ -62,7 +63,7 @@ to $\toGrammarf S$.
 \end{proof}
 
 To prove that the bisimulations on context-free session types and
-those on productions coincide, we present a bisimilarity between
+on grammars coincide, we present a bisimilarity between
 context-free session types and the result of \lstinline|toGrammar|.
 %
 %As the implementation of \isCheckedf is not shown, we assume that
@@ -110,6 +111,23 @@ symbol}, \vec W \text{ is a word}\}\subseteq P$:
 	\{Z \rightarrow a_j \vec {W_j}\}_{j\in J}\subseteq P
 \end{cases}
 \]
+
+To show that $\mathcal{R}$ is a bisimilarity, we use
+the unravelling function proposed 
+by Thiemann and Vasconcelos~\cite{thiemann2016context}:
+\[\begin{aligned}
+\Unravel(\mu x . S) &= \Unravel(\subs{\mu X.S}{X} S)\\
+\Unravel(S_1;S_2) &= 
+\begin{cases}
+	\Unravel(S_2) & \Unravel(S_1)=\skipk\\
+	\Unravel(S_1);S_2 & \Unravel(S_1)\neq\skipk\\
+\end{cases} \\
+\Unravel(S)&= S \text{  for all other cases}
+\end{aligned}\]
+%
+Notice that for any recursive type 
+$\mu X.S$, $\Unravel(\mu X.S)$ is not a recursive type and preserves the 
+transitions from $\mu X.S$.
 
 \begin{lemma}
   \label{lemma:bisim_unr}
@@ -167,22 +185,7 @@ The same argument applies to the proof of the following lemma.
 \end{lemma}
 
 Now we show that the relation $\mathcal{R}$ is a bisimilarity. We do it
-by induction. For that, we use the unravelling function proposed 
-by Thiemann and Vasconcelos~\cite{thiemann2016context}:
-
-\[\begin{aligned}
-\Unravel(\mu x . S) &= \Unravel(\subs{\mu X.S}{X} S)\\
-\Unravel(S_1;S_2) &= 
-\begin{cases}
-	\Unravel(S_2) & \Unravel(S_1)=\skipk\\
-	\Unravel(S_1);S_2 & \Unravel(S_1)\neq\skipk\\
-\end{cases} \\
-\Unravel(S)&= S \text{  for all other cases}
-\end{aligned}\]
-%
-Notice that for any recursive type 
-$\mu X.S$, $\Unravel(\mu X.S)$ is not a recursive type and preserves the 
-transitions from $\mu X.S$.
+by induction, using the unravelling function. 
 
 \begin{theorem}
 \label{thm:cfst_vs_grammar}
@@ -193,7 +196,7 @@ transitions from $\mu X.S$.
 	We show that for each $(S, (\vec X, P))\in \mathcal{R}$	, if
 	$S \LTSderives[a] T$ then $\vec X \rightarrow a \vec Y\in P$
 	and $(T, (\vec Y, P'))\in \mathcal{R}$ for some $P'$. The proof is by
-	induction on the structure of $S$. With this purpose, whenever $S$ is a 
+	induction on the structure of $S$. Whenever $S$ is a 
 	recursive type, we reduce the analysis to $\Unravel(S)$, that
 	is not recursive. Indeed, without loss of generality, 
 	we can always reduce the analysis of $S$
@@ -242,8 +245,15 @@ transitions from $\mu X.S$.
     	Lemma~\ref{lem:terminated-togrammar} we have $\vec X_1 = \varepsilon$, 
     	hence $\vec X_1 \vec X_2 = \vec X_2 \rightarrow a \vec Y_2$.
     	\end{itemize}
-    	\item $(\mu X.S, (\varepsilon, \emptyset))$ and $Z\vec Z, P = \toGrammarf{S}$: 
-    	by corollary~\ref{corol:bisim_unr}, we have 
+		\item $(\mu X.S, (\varepsilon, \emptyset))$ and $\varepsilon, \emptyset = \toGrammarf{S}$: 
+    	assume that there exists $\mu X.S  \LTSderives[a] T$. This
+    	implies that $\Unravel(\mu X.S)  \LTSderives[a] T$. Observe that
+    	by definition of the unravel and since $S$ is contractive, we should
+    	also have a transition $S  \LTSderives[a] T'$, and hence $S$ would derive a 
+    	production, which is a contradiction with
+    	the assumption that $\varepsilon, \emptyset = \toGrammarf{S}$.
+    	\item $(\mu X.S, (\varepsilon, \emptyset))$, $Z\vec Z, P = \toGrammarf{S}$, and $\pi(Z)=\emptyset$: 
+    	by corollary~\ref{corol:bisim_unr}, we know that 
     	$(\Unravel(\mu X.S), (\varepsilon, \emptyset)) \in \mathcal{R}$ and thence
     	\begin{equation}
     	\label{eq:unr}
@@ -252,31 +262,27 @@ transitions from $\mu X.S$.
     	Now assume that
     	exists $\mu X.S  \LTSderives[a] T$. This means that 
     	$\Unravel(\mu X.S) \LTSderives[a] T$. By induction hypothesis on 
-    	$\Unravel(\mu X.S)$, we would have $(\Unravel(\mu X.S), (\vec X, P))$
+    	$\Unravel(\mu X.S)$, we would have $(\Unravel(\mu X.S), (\vec X, P))
+    	\in \mathcal{R}$
     	where $\vec X, P = \toGrammarf{(\Unravel(\mu X.S))}$ and with
     	$\vec X \rightarrow a \vec Y \in P$, which is a contradiction 
     	with~\eqref{eq:unr} and so $\mu X.S$ does not have any transition.
 %    	in this case, $\isCheckedf \mu X.S$, thus
 %    	we do not have any transition (Lemma~\ref{lem:terminated-togrammar}).
-		\item $(\mu X.S, (\varepsilon, \emptyset))$ and $\varepsilon, \emptyset = \toGrammarf{S}$: 
-    	assume that there exists $\mu X.S  \LTSderives[a] T$. This
-    	implies that $\Unravel(\mu X.S)  \LTSderives[a] T$. Observe that
-    	by definition of the unravel and since $S$ is contractive, we should
-    	also have $S  \LTSderives[a] T'$, and hence $S$ would derive a 
-    	production, which is a contradiction with
-    	the assumption that $\varepsilon, \emptyset = \toGrammarf{S}$.
     	\item $(\mu X.S, (X, \{X \rightarrow a_j \vec {W_j}\vec Z\}_{j\in J} \cup  P))$: 
     	if $\mu X.S\LTSderives[b] T$, then $\Unravel(\mu X.S)\LTSderives[b] T$.
     	Furthermore, by Lemma~\ref{lemma:bisim_unr} we know that 
-    	$(\Unravel(\mu X.S), (X, \{X \rightarrow a_j \vec {Z_j}\vec Y\}_{j\in J} \cup  P))
+    	$(\Unravel(\mu X.S), (X, \{X \rightarrow a_j \vec {W_j}\vec Z\}_{j\in J} \cup  P))
     	\in\mathcal{R}$. By induction hypothesis on $\Unravel(\mu X.S)$, 
     	and since $X$ does not occur in $P$, it follows 
-    	that $b=a_j$ for some $j\in J$ and $(T, (\vec Z_j \vec Y, P'))\in \mathcal{R}$.
+    	that $b=a_j$ for some $j\in J$ and $(T, (\vec W_j \vec Z, P'))\in \mathcal{R}$.
 	\end{itemize} 
 	The proof that any transition in the productions leads to a transition in 
 	the corresponding type is very similar and is also done by induction. 
 	For that,
-	we only need to recall that the variable $X$ is a fresh variable and, thus, 
+	we only need to recall that the variable $X$ is either 
+	a fresh variable or a recursion variable, that is unique due to the
+	renaming assumption, and thus
 	the transitions from $X$ are simply the ones explicitly detailed in each 
 	pair from $\mathcal{R}$.
 \end{proof}
@@ -305,7 +311,7 @@ to at least one child node and, reciprocally, that bisimulation on a
 child node implies the bisimulation of its parent node, thus proving
 the safeness property.
 
-While the safeness property will be instrumental in proving
+While the safeness property is instrumental in proving
 soundness, the \emph{finite witness property} is of
 utmost importance to prove completeness. This result follows
 immediately from the analysis by Jan{\v{c}}ar and
@@ -324,7 +330,7 @@ details on the proof of existence of a finite witness, as stated in
 Proposition~\ref{finite_witness}. This proof is particularly
 interesting in that it highlights the importance of BPA rules and of
 pruning productions on reaching such (finite) witness. The results in
-these two papers also allows unravelling the reason for the
+these two papers also allow unravelling the reason for the
 distinction, in the simplification phase, between the cases where all
 the symbols in the grammar are and are not normed, as shown in
 Listing~\ref{lst:algorithm}.
@@ -348,7 +354,7 @@ and completeness.
         terminates.  To conclude that all branches are finite, observe
         that any infinite branch is successful by definition and thus
         the safeness property would imply $X_S\ProdEquiv X_T$ and we
-        would have $S\TypeEquiv T$.
+        would have $S\TypeEquiv T$, by Theorem~\ref{thm:cfst_vs_grammar}.
 \end{proof}
 
 %\begin{proof}
@@ -419,7 +425,7 @@ types. The finite witness property is paramount to achieve this result.
 %
 \begin{proof}
   Assuming that $S \TypeEquiv T$, by Theorem~\ref{thm:cfst_vs_grammar}
-  we have $X_{S} \ProdEquiv X_{T}$.  Hence, the Proposition~\ref{finite_witness}
+  we have $X_{S} \ProdEquiv X_{T}$.  Hence, Proposition~\ref{finite_witness}
   ensures the existence of a finite successful branch on the
   expansion tree rooted at $\{(X_{S},X_{T})\}$, i.e., a branch
   terminating in an empty node.  Since our algorithm traverses the
@@ -427,8 +433,8 @@ types. The finite witness property is paramount to achieve this result.
   the empty node and conclude the bisimulation positively.
 \end{proof}
 
-Given that the algorithm terminates, if $\bisimf S T$ returns
-  \lstinline|False| then we know that $S \not\TypeEquiv T$.
+Theorem~\ref{thm:completeness} ensures that if $\bisimf S T$ returns
+  \lstinline|False| then $S \not\TypeEquiv T$.
 
 % \begin{corollary}
 % 	If $\bisimf ST$ returns \upshape{\lstinline|False|} then $S\not\TypeEquiv T$.

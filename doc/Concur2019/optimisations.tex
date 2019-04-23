@@ -101,9 +101,11 @@ Recalling that the size of the expansion tree (also) depends on the
 number of productions in the grammar, the generation of grammars cleaned
 of redundant terminal symbols is paramount to reduce the size of the
 expansion tree and thus to enhance the performance. We define a 
-function \lstinline|addBasicProd| that avoids the blind creation of 
-fresh variables in \lstinline|toGrammar (Message p b)| 
-(in listing~\ref{lst:toGrammar}) by a prior search for existing productions
+function \lstinline|addBasicProd| (see Appendix) that avoids the 
+blind creation of 
+fresh variables in function \lstinline|toGrammar| case 
+\lstinline|Message p b| 
+(in Listing~\ref{lst:toGrammar}) by a prior search for existing productions
 with the respective terminal symbols.
 
 The optimisations we propose aim at improving the performance of the

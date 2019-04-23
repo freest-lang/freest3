@@ -30,11 +30,11 @@ of a channel. A process holding such a channel end must first
 \emph{select} between choices \lstinline|Leaf| and
 \lstinline|Node|. If \lstinline|Leaf| is chosen, then interaction is
 terminated, as indicated by \lstinline|Skip|. Otherwise, the process
-must send and integer (\lstinline|!Int|) followed by two whole trees,
-witnessed by the recursive calls to \lstinline|TreeChannel|.
+must send an integer (\lstinline|!Int|) followed by two complete trees,
+as witnessed by the recursive calls to \lstinline|TreeChannel|.
 
-A concurrent process holding the other end interacts with the channel
-via a \emph{dual} type:
+A concurrent process holding the other end of the channel 
+interacts via a \emph{dual} type:
 %
 \begin{lstlisting}
   rec y. &{Leaf: Skip, Node: ?Int;y;y}
@@ -43,7 +43,7 @@ via a \emph{dual} type:
 In this case the process must be ready to offer both choices,
 \lstinline|Leaf| and \lstinline|Node|. For the latter option, the
 process must further receive an integer (\lstinline|?Int|), followed
-by two whole trees.
+by two complete trees.
 
 Regular languages cannot capture such a behaviour. The best one can do
 with regular session types (and without resorting to channel passing)
@@ -64,8 +64,7 @@ Algebra (BPA) which, in turn, was proved decidable by Christensen,
 H{\"{u}}ttel, and Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}.
 %
 Even if the equivalence problem for context-free session types is
-known to be decidable, the only implementation of context-free session
-types we are aware of is that of
+known to be decidable, the only implementation we are aware of is that of
 Padovani~\cite{DBLP:conf/esop/Padovani17}, included in a programming
 language that requires a structural alignment between code and types
 (enforced by an explicit resumption process operator that breaks
@@ -77,7 +76,7 @@ result that provides no immediate practical algorithm---the problem of
 deciding the equivalence of BPA terms has been addressed by several
 researchers~\cite{DBLP:conf/mfcs/BurkartCS95,DBLP:journals/iandc/ChristensenHS95,czerwinski2010fast,janvcar1999techniques}.
 Most of these papers provide no practical algorithm that can be
-readily extracted, except the one by Czerwinski and Lasota where a
+readily used, except the one by Czerwinski and Lasota where a
 polynomial time algorithm is presented that decides the bisimilarity
 of normed context-free processes in
 $\mathcal{O}(n^5)$~\cite{czerwinski2010fast}.
@@ -134,7 +133,7 @@ graphs~\cite{caucal1986decidabilite,
   DBLP:journals/iandc/ChristensenHS95} is paramount for our results of
 soundness and completeness. The branching nature of the expansion tree
 confers (at least) an exponential complexity to the 
-algorithm, however
+algorithm. However,
 we propose heuristics that allow constructing the relation in a
 reasonable time.
 
