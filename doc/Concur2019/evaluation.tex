@@ -17,10 +17,7 @@ tests comprise valid and invalid equivalences, for a total of 154
 tests. We have profiled our program for the time and memory allocated
 during the tests. For this purpose, we have used GHC's profiling
 feature, that maintains a cost-centre stack to keep track of the
-incurred costs. We ran the tests 10 times, kept a record of the run
-time and memory allocated for each run, discarded the best and worst
-values obtained and, then, we have measured the average of the
-remaining values. The results are depicted in
+incurred costs. The results are depicted in
 Figure~\ref{fig:results}.
 
 \begin{figure}[h]
@@ -33,16 +30,25 @@ Figure~\ref{fig:results}.
 \end{figure}
 
 For the base algorithm, proposed in Listing~\ref{lst:algorithm}, we
-obtained an average running time of about 4445.38 seconds and
-8,259,115 Mb memory allocated. From the moment we introduced the
+obtained a running time of about 4624 seconds and
+8,660,309 Mb memory allocated. From the moment we introduced the
 optimizations the results improved remarkably: iterating the
-simplification phase in the search for a fixed point allowed to reduce
-the running time to 110.35 seconds and the memory allocated to 164,745
-Mb, whereas the implementation of the double-ended queue allowed to
-reduce the running time to 18.45 seconds and the allocated memory to
-29,298. The combination of both exhibit an improvement on more than
-1,000,000\% from the base case, achieving an average of 0.04
-seconds for the running time and 62 Mb of allocated memory.
+simplification phase in the search for a fixed point and implementing
+a double-ended queue, we reduced the running time to 1625 and the 
+allocated memory to 1,044,240 Mb. The 
+combination of these enhancements with the clean grammar generation
+exhibit an improvement in more than 1,000,000\% from the base case,
+achieving a running time of 0.4 seconds and 306 Mb 
+of memory allocated.
+
+%iterating the
+%simplification phase in the search for a fixed point allowed to reduce
+%the running time to 110.35 seconds and the memory allocated to 164,745
+%Mb, whereas the implementation of the double-ended queue allowed to
+%reduce the running time to 18.45 seconds and the allocated memory to
+%29,298. The combination of both exhibit an improvement on more than
+%1,000,000\% from the base case, achieving an average of 0.04
+%seconds for the running time and 62 Mb of allocated memory.
 
 We should also highlight that, we run example~\eqref{ex:chaotic}
 with the improved algorithm, in a battery of 100 runs, and obtained an
@@ -51,7 +57,14 @@ average running time of 0.008 seconds.
 The heuristic we proposed actually circumvents the exponential complexity 
 inherent to the expansion tree, thus allowing to obtain running times that 
 are manifestly small, thus allowing the use of this algorithm as an integral 
-part of a compiler, as we had intended from the beginning.
+part of a compiler, as we had intended from the beginning. 
+%
+With the purpose of integrating this algorithm into a compiler and, subsequently,
+with the major purpose of reducing the running time,
+we have enabled the verification of the syntactic equality of two types 
+before running the type equivalence checker on them. 
+With this, we got a running time of 0.03 seconds 
+in the entire test suite.
 
 %%% Local Variables:
 %%% mode: latex
