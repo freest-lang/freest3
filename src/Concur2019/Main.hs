@@ -27,8 +27,8 @@ main = do
 
 printEquiv :: Type -> Type -> IO ()
 printEquiv t u =
-  putStrLn $ "Type\n\t" ++ show t ++
-           "\n" ++ "is " ++ yesNo ++ " equivalent to type\n\t" ++
-           show u ++ "\n"
-    where yesNo = if equivalent Map.empty Map.empty t u then "" else "not"
+  putStrLn $ "Type\n\t" ++ show t ++ "\n" ++
+             "is " ++ yesNo ++ "equivalent to type\n" ++
+             "\t" ++ show u ++ "\n"
+    where yesNo = if equivalent Map.empty Map.empty t u then "" else "not "
   
