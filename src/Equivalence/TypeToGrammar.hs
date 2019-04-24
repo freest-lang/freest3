@@ -35,7 +35,6 @@ import           Debug.Trace
 convertToGrammar :: TypeEnv -> [Type] -> Grammar
 convertToGrammar tEnv ts = Grammar xs (productions s)
   where (xs, s) = runState (mapM typeToGrammar ts) (initial tEnv)
---  where (xs, (p, _, _, _)) = runState (mapM typeToGrammar ts) (initial tEnv)
 
 typeToGrammar :: Type -> TransState TypeVar
 typeToGrammar t = do
@@ -139,11 +138,6 @@ insertVisited :: TypeVar -> TransState ()
 insertVisited x =
   modify $ \s -> s{visited=Set.insert x (visited s)}
 
--- getTransitions :: TypeVar -> TransState Transitions
--- getTransitions x = do
---   s <- get
---   return $ (productions s) Map.! x
-
 getTransitions :: TypeVar -> TransState (Maybe Transitions)
 getTransitions x = do
   s <- get
@@ -151,27 +145,24 @@ getTransitions x = do
 
 addProductions :: TypeVar -> Transitions -> TransState ()
 addProductions x m =
-  modify $ \s -> s {productions = Map.insert x m (productions s)}-- (Map.insert x m p, v, n, tEnv)
---  modify $ \(p, v, n, tEnv) -> (Map.insert x m p, v, n, tEnv)
+  modify $ \s -> s {productions = Map.insert x m (productions s)}
 
 addProduction :: TypeVar -> Label -> [TypeVar] -> TransState ()
 addProduction x l w =
-  modify $ \s -> s{productions=insertProduction (productions s) x l w}
---  modify $ \(p, v, n, tEnv) -> (insertProduction p x l w, v, n, tEnv)
+  modify $ \s -> s {productions = insertProduction (productions s) x l w}
 
 -- Add or update production from a (basic) non-terminal; the productions may already contain transitions for the given nonterminal (hence the insertWith and union)
 addBasicProd :: Label -> TransState TypeVar
 addBasicProd l = do
   s <- get
-  let p' = Map.foldrWithKey (\x m acc -> if (Map.member l m) && null (m Map.! l)
-                                         then [x] else acc) [] (productions s)
-  if null p'
-    then do
+  case Map.foldrWithKey fold Nothing (productions s) of
+    Nothing -> do
       y <- freshVar
       addProduction y l []
       return y
-    else do
-      return $ head p'
+    Just p ->
+      return p
+  where fold x ts acc = if l `Map.member` ts && null (ts Map.! l) then Just x else acc
 
 getFromVEnv :: TypeVar -> TransState (Kind, TypeScheme)
 getFromVEnv x = do
