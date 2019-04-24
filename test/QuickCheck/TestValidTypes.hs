@@ -1,5 +1,3 @@
-{-# LANGUAGE TypeSynonymInstances #-}
-
 import           Test.QuickCheck
 import           Equivalence.Bisimulation
 import           Equivalence.Equivalence
@@ -131,6 +129,10 @@ arbitrarySession n = oneof
 --  , liftM3 Rec arbitrary arbitrary (arbitrarySession (n `div` 4))
   ]
 
+-- instance Arbitrary TypeMap where
+--   arbitrary = return Map.empty
+
+-- TODO: TypeMap is already an instance of Arbitrary. Use it! In sized mode
 arbitraryTypeMap :: Int -> Gen TypeMap
 arbitraryTypeMap n = do
   m <- listOf1 $ arbitraryField (n `div` 4)
@@ -154,11 +156,18 @@ instance Arbitrary BisimPair where
     (t, u) <- oneof
       [ -- assoc
       -- , distrib
-      -- ,
-      unfoldt
+      -- unfoldt,
+      -- recrec
+      -- skipt
+      -- tskip
+      -- subsOnBoth
+        -- self
+        voidRec
       ]
     let [t', u'] = renameList [t, u]
     return $ BisimPair t' u'
+
+-- The various axioms
 
 assoc :: Gen (Type, Type)
 assoc = do
@@ -173,10 +182,44 @@ distrib = do
 
 unfoldt :: Gen (Type, Type)
 unfoldt = do
-  (t, xk) <- arbitrary
+  (xk, t) <- arbitrary
   let u = Rec pos xk t
   return (u, unfold u)
 
+recrec :: Gen (Type, Type)
+recrec = do
+  (xk@(TypeVarBind _ x _), yk@(TypeVarBind _ y _), t) <- arbitrary
+  return (Rec pos xk (Rec pos yk t), Rec pos xk (subs (TypeVar pos x) y t))
+
+voidRec :: Gen (Type, Type)
+voidRec = do
+  t <- arbitrary
+  return (Rec pos (TypeVarBind pos (mkVar pos "∂") (kindSL pos)) t, t)
+  -- Note: the rec-var must be distinct from the variables on t
+
+skipt :: Gen (Type, Type)
+skipt = do
+  t <- arbitrary
+  return (Semi pos (Skip pos) t, t)
+
+tskip :: Gen (Type, Type)
+tskip = do
+  t <- arbitrary
+  return (Semi pos t (Skip pos), t)
+
+{-
+-- TODO: to be used in sized mode
+subsOnBoth :: Gen (Type, Type)
+subsOnBoth = do
+  (BisimPair t u, v, x) <- arbitrary
+  return (subs t x v, subs u x v)
+-}
+
+self :: Gen (Type, Type)
+self = do
+  t <- arbitrary
+  return (t, t)
+  
 -- Renaming
 
 renameType t = evalState (rename Map.empty t) (initialState "Renaming for QuickCheck")
