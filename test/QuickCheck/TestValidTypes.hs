@@ -115,7 +115,7 @@ instance Arbitrary TypeVarBind where
   arbitrary = liftM3 TypeVarBind arbitrary arbitrary arbitrary
 
 instance Arbitrary BasicType where
-  arbitrary = elements [IntType, CharType, BoolType{-, UnitType-}]
+  arbitrary = elements [IntType, CharType, BoolType, UnitType]
 
 instance Arbitrary Type where
   arbitrary = sized arbitrarySession -- Not renamed

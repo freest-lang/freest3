@@ -46,30 +46,33 @@ instance Contractive TypeScheme where
 
 type Visited = Set.Set TypeVar
 
+-- Revised version wrt to ICFP'16
 contractive :: TypeEnv -> KindEnv -> Type -> Bool
 contractive = contr Set.empty
   where
   contr :: Visited -> TypeEnv -> KindEnv -> Type -> Bool
   -- Session types
+  contr _ _ _ (Skip _) = False
   contr v tEnv kEnv (Semi _ t u)
     | terminated t = contr v tEnv kEnv u
     | otherwise    = contr v tEnv kEnv t
   -- Functional or session
---  contr v tEnv kEnv (Rec _ _ t)   = contr v tEnv kEnv t
-  contr v tEnv kEnv (TypeVar _ x) = Map.member x kEnv
+  contr v tEnv kEnv (Rec _ _ t)   = contr v tEnv kEnv t
+  contr v tEnv kEnv (TypeVar p x) =
+    Map.findWithDefault (kindSU p) x kEnv == kindSL p
   -- Type operators
-  contr v tEnv kEnv (Dualof _ t)  = contr v tEnv kEnv t
-  contr v tEnv kEnv (TypeName p x)
-    | x `Set.member` v            = False
-    | x `Map.member` tEnv         = contr (Set.insert x v) tEnv kEnv (getType (tEnv Map.! x))
-    | otherwise                   = True
+  contr v tEnv kEnv (Dualof _ t) = contr v tEnv kEnv t
+  contr v tEnv kEnv (TypeName p x)  -- TODO: not quite sure of this
+    | x `Set.member` v    = False
+    | x `Map.member` tEnv = contr (Set.insert x v) tEnv kEnv (getType (tEnv Map.! x))
+    | otherwise           = True
   -- Functional types; Session Basic + Message + Choice
-  contr _ _    _    _             = True -- Freest will issue an error later (I hope)
+  contr _ _ _ _ = True
 
 getType :: (Kind, TypeScheme) -> Type
 getType (_, TypeScheme _ _ t) = t
 
--- As in the ICFP'16 paper
+-- As in the ICFP'16 paper, except that no substitution is applied on Rec
 terminated :: Type ->  Bool
 terminated (Skip _)     = True
 terminated (Semi _ t u) = terminated t && terminated u

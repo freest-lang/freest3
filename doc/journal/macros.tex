@@ -10,116 +10,123 @@
 \newcommand{\unk}{\keyword{un}}
 
 % Kinds
-\newcommand\prekind{\upsilon}
-\newcommand{\stypes}{\mathcal S}
-\newcommand\kinds{\stypes}
-\newcommand{\types}{\mathcal T}
-\newcommand\kindt{\types}
-\newcommand\kindsch{\mathcal C}
-\newcommand\kind{\kappa}
+\newcommand{\prekind}{\upsilon}
+\newcommand{\kind}{\kappa}
+\newcommand{\kinds}{\mathcal S}
+\newcommand{\kindt}{\mathcal T}
+\newcommand{\kindsch}{\mathcal C}
+\newcommand{\kindk}[2]{{#1}^{#2}}
 
 % Multiplicity
-\newcommand\Un{\ensuremath{\mathbf{u}}} % \infty
-\newcommand\Lin{\ensuremath{\mathbf{l}}} % 1 
+\newcommand{\un}{\unk}
+\newcommand{\lin}{\link}
 
 % Grammars
 \newcommand{\grmeq}{\; ::= \;}
 \newcommand{\grmor}{\;\mid\;}
 
 % type constructors
-\newcommand\tcBase{B}
-\newcommand\tcLolli\multimap
-\newcommand\tcFun\to
-\newcommand\tcBang{\mathop!}
+% \newcommand\tcBase{B}
+% \newcommand\tcLolli\multimap
+% \newcommand\tcFun\to
+% \newcommand\tcBang{\mathop!}
 
-% Keywords for types
-\newcommand\kRec{\keyword{rec}}
-%\newcommand\kForall{\keyword{forall}}
-\newcommand\kDualof{\keyword{dualof}}
-\newcommand\kSkip{\keyword{skip}}
+% Keywords
+\newcommand{\reck}{\keyword{rec}}
+\newcommand{\dualofk}{\keyword{dualof}}
+\newcommand{\skipk}{\keyword{skip}}
+\newcommand{\ifk}{\keyword{in}}
+\newcommand{\thenk}{\keyword{then}}
+\newcommand{\elsek}{\keyword{else}}
+\newcommand{\letk}{\keyword{let}}
+\newcommand{\ink}{\keyword{in}}
+\newcommand{\newk}{\keyword{new}}
+\newcommand{\sendk}{\keyword{send}}
+\newcommand{\sendck}{\keyword{send}}
+\newcommand{\receivek}{\keyword{receive}}
+\newcommand{\selectk}{\keyword{select}}
+\newcommand{\matchk}{\keyword{match}}
+\newcommand{\withk}{\keyword{with}}
+\newcommand{\forkk}{\keyword{fork}}
+\newcommand{\casek}{\keyword{case}}
+\newcommand{\ofk}{\keyword{of}}
 
 % Types
-\newcommand{\tSkip}{\kSkip}
-\newcommand\tSemi[2]{#1;#2}
-\newcommand\tOut[1]{\tcBang#1}
-\newcommand\tIn[1]{?#1}
-\newcommand{\tMsg}[1]{\sharp{#1}}
-\newcommand\tIChoice[1]{\oplus{#1}}
-\newcommand\tEChoice[1]{\&{#1}}
-\newcommand{\tChoice}[1]{\star{#1}}
-\newcommand{\tData}[1]{[{#1}]}
-\newcommand\tFun[3][m]{{#2}\rightarrow_{#1}{#3}}
-\newcommand\tUnFun[2]{#1\tcFun#2}
-\newcommand\tLinFun[2]{#1\tcLolli#2}
-\newcommand\tPair[2]{(#1,\,#2)}
-\newcommand\tDatatype[1]{{[#1]}}
-\newcommand\tRec[2]{\kRec\,#1\,.\,#2}
-%\newcommand\tForall[2]{\forall\,#1\,.\,#2}
-%\newcommand\tForall[2]{\kForall\,#1\,=>\,#2}
-\newcommand\tForall[2]{\forall\,#1\Rightarrow#2}
-\newcommand\tDualof[1]{\kDualof\,#1}
-% Basic Types
+\newcommand{\skipt}{\skipk}
+\newcommand{\semit}[2]{#1;#2}
+\newcommand{\sout}[1]{\mathop!#1}
+\newcommand{\sint}[1]{\mathop?#1}
+\newcommand{\msgt}[1]{\sharp{#1}}
+\newcommand{\choicet}[1]{\star{#1}}
+\newcommand{\ichoicet}[1]{\oplus{#1}}
+\newcommand{\echoicet}[1]{\&{#1}}
+\newcommand{\datat}[1]{[{#1}]}
+\newcommand{\funt}[3][m]{{#2}\rightarrow_{#1}{#3}}
+\newcommand{\unfunt}[2]{#1\rightarrow#2}
+\newcommand{\linfunt}[2]{#1\multimap#2}
+\newcommand{\pairt}[2]{(#1,\,#2)}
+\newcommand{\rect}[2]{\mu{#1}.{#2}}
+\newcommand{\forallt}[2]{\forall\,#1\Rightarrow#2}
+\newcommand{\dualoft}[1]{\dualofk\,#1}
 \newcommand{\unitt}{()}
 \newcommand{\intt}{\keyword{Int}}
 \newcommand{\chart}{\keyword{Char}}
 \newcommand{\boolt}{\keyword{Bool}}
 
-\newcommand\tRecK[2]{\kRec\,#1\,.\,#2}
 % Environments
 \newcommand{\Empty}{\varepsilon}
-\newcommand\emptyEnv{\Empty}
-\newcommand\kindEnv{\Delta}
-\newcommand\varEnv{\Gamma}
+% \newcommand\Delta{\Delta}
+% \newcommand\Gamma{\Gamma}
 
 % Expressions
-\newcommand\vare[1]{#1}
-\newcommand\unlete[3]{\keyword{let} \; #1 = #2 \; \keyword{in} \; #3} 
-\newcommand{\abs}[4][m]{\lambda{#2}\colon{#3}\rightarrow_{#1}{#4}}
-\newcommand\appe[2]{#1#2}
-\newcommand\tappe[2]{#1[#2]}
-\newcommand\conditionale[3]{\keyword{if}\;#1\;\keyword{then}\;#2\;\keyword{else} \; #3}
-\newcommand\paire[2]{(#1,#2)}
-\newcommand\binlete[4]{\keyword{let}\;#1, #2 = #3\;\keyword{in}\;#4}
-\newcommand\newe[1]{\keyword{new}\;#1}
-\newcommand\sende[2]{\keyword{send}\;#1\; #2}
-\newcommand\sendce[1]{\keyword{send}\;#1}
-\newcommand\recve[1]{\keyword{receive}\;#1}
-\newcommand\selecte[2]{\keyword{select}\;#1\;{#2}}
-\newcommand\matche[2]{\keyword{match}\;#1\;\keyword{with}\;#2}
-\newcommand\forke[1]{\keyword{fork}\;#1}
-
-% Datatypes
-\newcommand{\ctrcte}{C}
-\newcommand\casee[2]{\keyword{case}\;#1\;\keyword{of}\;#2}
+% \newcommand{\vare}[1]{#1}
+\newcommand{\unlete}[3]{\letk \; #1 = #2 \; \ink \; #3} 
+\newcommand{{\abs}}[4][m]{\lambda{#2}\colon{#3}\rightarrow_{#1}{#4}}
+% \newcommand{\appe}[2]{#1#2}
+\newcommand{\tappe}[2]{#1[#2]}
+\newcommand{\conde}[3]{\ifk\;#1\;\thenk\;#2\;\elsek \; #3}
+\newcommand{\paire}[2]{(#1,#2)}
+\newcommand{\binlete}[4]{\letk\;#1, #2 = #3\;\ink\;#4}
+\newcommand{\newe}[1]{\newk\;#1}
+\newcommand{\sende}[2]{\sendk\;#1\; #2}
+\newcommand{\sendce}[1]{\sendk\;#1}
+\newcommand{\recve}[1]{\receivek\;#1}
+\newcommand{\selecte}[2]{\selectk\;#1\;{#2}}
+\newcommand{\matche}[2]{\matchk\;#1\;\withk\;#2}
+\newcommand{\forke}[1]{\forkk\;#1}
+\newcommand{\casee}[2]{\casek\;#1\;\ofk\;#2}
 
 % Sequents
 \newcommand{\synthetise}{\Rightarrow}
 \newcommand{\checkagainst}{\Leftarrow}
 \newcommand{\isType}[3][\Delta]{{#1} \vdash {#2} : {#3}}
-\newcommand{\algkindout}[3][\kindEnv]{{#1} \Alg {#2} \synthetise{ #3}}
-\newcommand{\algkindin}[3][\kindEnv]{{#1} \Alg {#2} \checkagainst {#3}}
+\newcommand{\algkindout}[3][\Delta]{{#1} \Alg {#2} \synthetise{ #3}}
+\newcommand{\algkindin}[3][\Delta]{{#1} \Alg {#2} \checkagainst {#3}}
 \newcommand{\isSubkind}[2]{{#1} < {#2}}
-\newcommand{\algtypeout}[4][\kindEnv;\varEnv]{{#1} \Alg {#2} \synthetise {#3};{#4}}
-%\newcommand{\algtypein}[4][\kindEnv;\varEnv]{{#1} \Alg {#2}\colon {#3}\synthetise {#4}}
-\newcommand{\algtypein}[4][\kindEnv;\varEnv]{{#1} \Alg {#2}\checkagainst {#3}; {#4}}
-\newcommand{\ctxequiv}[3][\kindEnv]{{#1} \vdash \Equiv{#2}{#3}}
-\newcommand{\typeequiv}[3][\kindEnv]{{#1} \vdash \Equiv{#2}{#3}}
-\newcommand{\isLin}[2][\kindEnv]{\isType[#1]{#2}\link}
-\newcommand{\isUn}[2][\kindEnv]{\isType[#1]{#2}\unk}
-\newcommand{\isContractive}[2][\kindEnv]{{#1} \vdash_{\textsf c} {#2}}
-%\newcommand\Alg{\vdash_{\textsf a}}
+\newcommand{\algtypeout}[4][\Delta;\Gamma]{{#1} \Alg {#2} \synthetise {#3};{#4}}
+\newcommand{\algtypein}[4][\Delta;\Gamma]{{#1} \Alg {#2}\checkagainst {#3}; {#4}}
+\newcommand{\ctxequiv}[3][\Delta]{{#1} \vdash \Equiv{#2}{#3}}
+\newcommand{\typeequiv}[3][\Delta]{{#1} \vdash \Equiv{#2}{#3}}
+\newcommand{\isLin}[2][\Delta]{\isType[#1]{#2}\link}
+\newcommand{\isUn}[2][\Delta]{\isType[#1]{#2}\unk}
 \newcommand\Alg{\vdash}
 \newcommand{\subt}{<:}
+\newcommand{\isContr}[2][\Delta]{{#1}\vdash_{\!\!\mathsf c}{#2}}
+\newcommand{\isDone}[1]{{#1}\checkmark}
 
 % Operators
-\newcommand\Extract[1]{\leadsto_{#1}}% \rightlsquigarrow}
+\newcommand\extract[1]{\leadsto_{#1}}% \rightlsquigarrow}
 \newcommand{\subs}[3]{[{#1}/{#2}]{#3}}
-\newcommand\dual[1]{\overline{#1}}
-\newcommand{\lub}{\sqcup}
+\newcommand{\dual}[1]{\overline{#1}}
+\newcommand{\join}{\sqcup}
 \newcommand{\ctxdiff}[4][\Delta]{{#1}\vdash{#2}\div{#3}={#4}}
-% Predicates
-%\newcommand\Equiv[2]{#1\,\thicksim\,#2}
 \newcommand\Equiv[2]{#1\,\sim\,#2}
+\newcommand\done[1]{#1 \checkmark}
+\newcommand{\unfoldk}{\keyword{unfold}}
+
+% Theorems
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
 
 % Colour
 
