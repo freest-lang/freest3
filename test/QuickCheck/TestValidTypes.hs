@@ -19,20 +19,22 @@ import           Debug.Trace
 
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_self_bisimilar
 main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
--- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_kinded
--- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_eq_type
--- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_normal_eq_type
--- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_same_equivs
+-- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_kinded
+-- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_norm_equiv
+-- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_dual
+-- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_same_equivs
 
 -- Convenience
 
 bisim = bisimilar Map.empty
+equiv :: Type -> Type -> Bool
 equiv = equivalent Map.empty Map.empty
 contr = contractive Map.empty Map.empty
+norm :: Type -> Type
 norm = normalise Map.empty
 pos = defaultPos
 
--- Properties
+-- Bisimilarity
 
 prop_bisimilar :: BisimPair -> Property
 prop_bisimilar (BisimPair t u) = contr t ==>
@@ -43,25 +45,26 @@ prop_self_bisimilar t = contr t ==>
   evalState (trace (show u ++ " self-bisimilar-to " ++ show v) (return $ bisim u v)) ()
   where [u, v] = renameList [t, t]
 
-prop_equivalent :: BisimPair -> Property
-prop_equivalent (BisimPair t u) = contr t ==> equiv t u
+-- Kinding
 
 prop_kinded :: Type -> Property
-prop_kinded t = contr t ==> wellFormed t
-
-wellFormed :: Type -> Bool
-wellFormed t = null (errors state)
+prop_kinded t = contr t ==> null (errors state)
   where state = execState (synthetise kindEnv t) (initialState "Quick Checking")
         kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (kindSL pos))) -- TODO: only the free vars should go into this environment
   
-prop_eq_type :: Type -> Property
-prop_eq_type t = contr t ==> t == t
+-- Normalisation
 
-prop_normal_eq_type :: Type -> Property
-prop_normal_eq_type t = contr t ==> norm t == norm t
+prop_norm_equiv :: Type -> Property
+prop_norm_equiv t = contr t ==>
+  evalState (trace (show u ++ " equiv-to-normalised " ++ show v) (return $ bisim u v)) ()
+  where [u, v] = renameList [t, normalise Map.empty t]
+
+-- Duality
 
 prop_dual :: Type -> Bool
 prop_dual t = dual (dual t) == t
+
+-- Distribution
 
 prop_distribution :: Type -> Property
 prop_distribution d = collect (nodes d) True
