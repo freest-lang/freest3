@@ -19,7 +19,6 @@ module Equivalence.TypeToGrammar
 ) where
 
 import           Equivalence.Grammar
-import           Equivalence.Normalisation (terminated)
 import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Kinds
@@ -80,15 +79,7 @@ toGrammar (Rec _ (TypeVarBind _ x _) t) = do
           return [x]
         Nothing ->
           return []
--- toGrammar (Rec _ (TypeVarBind _ x _) t)
---   | terminated t = return []
---   | otherwise = do
---     insertVisited x
---     (z:zs) <- toGrammar t
---     m <- getTransitions z
---     addProductions x (Map.map (++ zs) m)
---     return [x]
-    -- Type operators
+  -- Type operators
 toGrammar (Dualof _ t) = toGrammar (dual t)
 toGrammar (TypeName p x) = do
   b <- memberVisited x
@@ -100,7 +91,8 @@ toGrammar (TypeName p x) = do
     trace ("TypeName: " ++ show (Rec p (TypeVarBind q x k) t))
       toGrammar (Rec p (TypeVarBind q x k) t)
   -- Should not happen
-toGrammar t = trace ("toGrammar: " ++ show t) (return [mkVar (position t) "error"])
+toGrammar t =
+  trace ("toGrammar: " ++ show t) (return [mkVar (position t) "error"])
 
 assocToGrammar :: TypeVar -> Polarity -> (ProgVar, Type) -> TransState ()
 assocToGrammar y p (x, t) = do

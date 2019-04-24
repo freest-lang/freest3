@@ -18,7 +18,6 @@ module Equivalence.TypeToGrammar
 ) where
 
 import           Equivalence.Grammar
-import           Equivalence.Normalisation (terminated)
 import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Kinds
@@ -56,7 +55,7 @@ toGrammar (Message _ p b) = do
   return [y]
 toGrammar (Choice _ p m) = do
   y <- freshVar
-  mapM_ (assocToGrammar y p) (Map.assocs m) -- TODO: avoid Map.assocs; run map through the monad
+  mapM_ (assocToGrammar y p) (Map.assocs m)
   return [y]
 -- Functional or session (session in this case)
 toGrammar (TypeVar _ x) = do
@@ -78,15 +77,6 @@ toGrammar (Rec _ (TypeVarBind _ x _) t) = do
           return [x]
         Nothing ->
           return []
--- toGrammar (Rec _ (TypeVarBind _ x _) t)
---   | terminated t = return []
---   | otherwise = do
---     insertVisited x
---     (z:zs) <- toGrammar t
---     m <- getTransitions z
---     addProductions x (Map.map (++ zs) m)
---     return [x]
-    -- Type operators
 toGrammar (Dualof _ t) = toGrammar (dual t)
 toGrammar (TypeName p x) = do
   b <- memberVisited x
@@ -114,14 +104,13 @@ data TState = TState {
 , visited     :: Visited
 , nextIndex   :: Int
 , typeEnv     :: TypeEnv  
-} -- (Productions, Visited, Int, TypeEnv)
+}
 
 type TransState = State TState
 
 -- State manipulating functions
 
 initial :: TypeEnv -> TState
--- initial tEnv = (Map.empty, Set.empty, 1, tEnv)
 initial tEnv = TState {
   productions = Map.empty
 , visited     = Set.empty
@@ -145,11 +134,6 @@ insertVisited :: TypeVar -> TransState ()
 insertVisited x =
   modify $ \s -> s{visited=Set.insert x (visited s)}
 
--- getTransitions :: TypeVar -> TransState Transitions
--- getTransitions x = do
---   s <- get
---   return $ (productions s) Map.! x
-
 getTransitions :: TypeVar -> TransState (Maybe Transitions)
 getTransitions x = do
   s <- get
@@ -157,15 +141,15 @@ getTransitions x = do
 
 addProductions :: TypeVar -> Transitions -> TransState ()
 addProductions x m =
-  modify $ \s -> s {productions = Map.insert x m (productions s)}-- (Map.insert x m p, v, n, tEnv)
---  modify $ \(p, v, n, tEnv) -> (Map.insert x m p, v, n, tEnv)
+  modify $ \s -> s {productions = Map.insert x m (productions s)}
 
 addProduction :: TypeVar -> Label -> [TypeVar] -> TransState ()
 addProduction x l w =
   modify $ \s -> s{productions=insertProduction (productions s) x l w}
---  modify $ \(p, v, n, tEnv) -> (insertProduction p x l w, v, n, tEnv)
 
--- Add or update production from a (basic) non-terminal; the productions may already contain transitions for the given nonterminal (hence the insertWith and union)
+-- Add or update production from a (basic) non-terminal; the
+-- productions may already contain transitions for the given
+-- nonterminal (hence the insertWith and union)
 addBasicProd :: Label -> TransState TypeVar
 addBasicProd l = do
   s <- get
@@ -183,76 +167,3 @@ getFromVEnv :: TypeVar -> TransState (Kind, TypeScheme)
 getFromVEnv x = do
   s <- get
   return $ (typeEnv s) Map.! x
-
--- Some tests
-{-
-p = (0,0)
-s1 = Message p Out CharType
-t1 = convertToGrammar [s1]
-s2 = TypeVar p "α"
-t2 = convertToGrammar [s2]
-s3 = Semi p (Message p Out IntType) (Message p In BoolType)
-t3 = convertToGrammar [s3]
-s4 = Semi p s3 s1
-t4 = convertToGrammar [s4]
-s5 = Choice p External (Map.fromList
-  [("Leaf", Skip p),
-   ("Node", s1)])
-t5 = convertToGrammar [s5]
-s6 = Choice p External (Map.fromList
-  [("Leaf", Skip p),
-   ("Node", s3)])
-t6 = convertToGrammar [s6]
--- yBind = Bind "y" p (Kind {prekind = Session, multiplicity = Lin})
-yBind = "y"
-treeSend = Rec p yBind (Choice p External (Map.fromList
-  [("Leaf",Skip p),
-   ("Node", Semi p (Message p Out IntType) (Semi p (TypeVar p "y") (TypeVar p "y")))]))
-t7 = convertToGrammar [treeSend]
-t8 = convertToGrammar [Semi p treeSend (TypeVar p "α")]
-s9 = Rec p yBind (Semi p s1 (TypeVar p "y"))
-t9 = convertToGrammar [s9]
-s10 = Semi p s4 (Semi p (Semi p s3 s1) s4)
-t10 = convertToGrammar [s10]
-s11 = Semi p (Rec p yBind (Semi p treeSend (TypeVar p "y"))) treeSend
-t11 = convertToGrammar [s11]
--- zBind = Bind "z" p (Kind {prekind = Session, multiplicity = Lin})
-zBind = "z"
-s12 = Semi p (Rec p zBind (Semi p treeSend (TypeVar p "z"))) treeSend
-t12 = convertToGrammar [s12]
-s13 = Semi p treeSend (Skip p)
-t13 = convertToGrammar [s13]
-s14 = Semi p (Skip p) treeSend
-t14 = convertToGrammar [s14]
-s15 = Semi p treeSend treeSend
-t15 = convertToGrammar [s15]
-treeSend1 = Rec p zBind (Choice p External (Map.fromList
-  [("Leaf",Skip p),
-   ("Node", Semi p (Message p Out IntType) (Semi p (TypeVar p "z") (TypeVar p "z")))]))
-s16 = Semi p treeSend treeSend1
-t16 = convertToGrammar [s16]
-s17 = Rec p zBind (Semi p s1 (TypeVar p "z"))
-t17 = convertToGrammar [s17]
-s18 = Rec p zBind (Semi p s1 (Semi p (TypeVar p "z") (TypeVar p "z")))
-t18 = convertToGrammar [s18]
-s19 = Rec p zBind (Semi p (Semi p s1 (TypeVar p "z")) (TypeVar p "z"))
-t19 = convertToGrammar [s19]
-s20 = Message p In IntType
-s21 = Semi p s1 (Semi p s2 s20)
-s22 = Semi p (Semi p s1 s2) s20
-s23 = Semi p s1 (Skip p)
-s24 = Rec p yBind (Rec p zBind (Semi p (Semi p s1 (TypeVar p "y")) (TypeVar p "z")))
-t24 = convertToGrammar [s24]
-s25 = Rec p yBind (Rec p zBind (Semi p (Semi p s1 (TypeVar p "z")) (TypeVar p "y")))
-t25 = convertToGrammar [s25]
-s26 = Semi p (Choice p External (Map.fromList [("Leaf", Skip p)])) (TypeVar p "α")
-t26 = convertToGrammar [s26]
-s27 = Choice p External (Map.fromList [("Leaf", (TypeVar p "α"))])
-t27 = convertToGrammar [s27]
-s28 = Rec p yBind (Choice p External (Map.fromList [("Add", Semi p (Semi p (TypeVar p "y") (TypeVar p "y")) (Message p Out IntType)), ("Const", Skip p)]))
-t28 = convertToGrammar [s28]
-s29 = Semi p s5 (Message p In IntType)
-t29 = convertToGrammar [s29]
-s30 = Rec p yBind s29
-t30 = convertToGrammar [s24,s25,s26,s27,s28,s29,s30]
--}
