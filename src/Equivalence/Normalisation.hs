@@ -12,7 +12,7 @@ Portability :  portable | non-portable (<reason>)
 
 module Equivalence.Normalisation
 ( Normalise(..)
-, terminated
+-- , terminated -- Used nowhere now
 ) where
 
 import           Syntax.Schemes
@@ -58,17 +58,17 @@ terminated _            = False
 
 {- A "better" terminated predicate should be such that only free variables *of kind SU* are terminated
 
-terminated :: Type ->  Bool
-terminated = isChecked Set.empty
+terminated :: KindEnv -> Type ->  Bool
+terminated kEnv t = term t
   where
-  isChecked _ (Skip _)                      = True
-  isChecked v (Semi _ s t)                  = isChecked v s && isChecked v t
-  isChecked v (Rec _ (TypeVarBind _ x _) t) = isChecked (Set.insert x v) t
---  isChecked v (TypeVar _ x)                 = Set.notMember x v
-  isChecked _ _                             = False
+  term (Skip _)      = True
+  term (Semi _ s t)  = term s && term t
+  term (Rec _ _ t)   = term t
+  term (TypeVar _ x) = isUn (kEnv Map.! x)
+  term _             = False
 -}
 
-{- This is part of a mor ambitious normalisation procedure
+{- This is part of a more ambitious normalisation procedure
 
 append :: Type -> Type -> Type
 append (Skip _)       t = t

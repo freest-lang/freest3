@@ -51,9 +51,11 @@ contractive = contr Set.empty
   where
   contr :: Visited -> TypeEnv -> KindEnv -> Type -> Bool
   -- Session types
-  contr v tEnv kEnv (Semi _ t _)  = contr v tEnv kEnv t
+  contr v tEnv kEnv (Semi _ t u)
+    | terminated t = contr v tEnv kEnv u
+    | otherwise    = contr v tEnv kEnv t
   -- Functional or session
-  contr v tEnv kEnv (Rec _ _ t)   = contr v tEnv kEnv t
+--  contr v tEnv kEnv (Rec _ _ t)   = contr v tEnv kEnv t
   contr v tEnv kEnv (TypeVar _ x) = Map.member x kEnv
   -- Type operators
   contr v tEnv kEnv (Dualof _ t)  = contr v tEnv kEnv t
@@ -66,3 +68,10 @@ contractive = contr Set.empty
 
 getType :: (Kind, TypeScheme) -> Type
 getType (_, TypeScheme _ _ t) = t
+
+-- As in the ICFP'16 paper
+terminated :: Type ->  Bool
+terminated (Skip _)     = True
+terminated (Semi _ t u) = terminated t && terminated u
+terminated (Rec _ _ t)  = terminated t
+terminated _            = False
