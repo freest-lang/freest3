@@ -545,7 +545,7 @@ rec z:SL. x
 !Char ; !Int ; &{A: x, B: z} ; &{A: Skip} ; ?() ; &{B: y}
 !Char ; !Int ; &{A: x, B: z} ; &{A: Skip} ; ?() ; &{B: y}
 
--- This one is deemed non bisimilar 
-[]
-rec z_0:SL. (Skip ; z_0 ; ?Int)
-Skip ; (rec z_1:SL. Skip ; z_1 ; ?Int) ; ?Int
+-- This one is non-contractive (new version, April 24, 2019)
+-- []
+-- rec z_0:SL. (Skip ; z_0 ; ?Int)
+-- Skip ; (rec z_1:SL. Skip ; z_1 ; ?Int) ; ?Int
