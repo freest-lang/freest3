@@ -163,16 +163,15 @@ addProduction x l w =
 addBasicProd :: Label -> TransState TypeVar
 addBasicProd l = do
   s <- get
-  let ip = Map.map (Map.filter null) (productions s)
-  let p' = Map.filter (\b -> not (Map.null b) && Map.member l b) ip
-  if Map.null p'
+  let p' = Map.foldrWithKey (\x m acc -> if (Map.member l m) && null (m Map.! l)
+                                         then [x] else acc) [] (productions s)
+  if null p'
     then do
       y <- freshVar
       addProduction y l []
       return y
     else do
-      let (y,_) = Map.elemAt 0 p'
-      return y
+      return $ head p'
 
 getFromVEnv :: TypeVar -> TransState (Kind, TypeScheme)
 getFromVEnv x = do
