@@ -164,8 +164,8 @@ instance Arbitrary BisimPair where
       -- skipt
       -- tskip
       -- subsOnBoth
-        -- self
-        voidRec
+        self
+        -- voidRec
       ]
     let [t', u'] = renameList [t, u]
     return $ BisimPair t' u'
