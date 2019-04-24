@@ -23,6 +23,7 @@ import           Syntax.Kinds
 import           Syntax.TypeVariables
 import           Syntax.Base
 import           Syntax.Show
+import           Equivalence.Normalisation (terminated)
 import           Utils.Errors
 import           Utils.FreestState
 import           Control.Monad (when)
@@ -71,10 +72,3 @@ contractive = contr Set.empty
 
 getType :: (Kind, TypeScheme) -> Type
 getType (_, TypeScheme _ _ t) = t
-
--- As in the ICFP'16 paper, except that no substitution is applied on Rec
-terminated :: Type ->  Bool
-terminated (Skip _)     = True
-terminated (Semi _ t u) = terminated t && terminated u
-terminated (Rec _ _ t)  = terminated t
-terminated _            = False
