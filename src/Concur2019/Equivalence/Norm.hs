@@ -6,7 +6,7 @@ Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of 
                    Vasco Vasconcelos, LASIGE, Faculty of Sciences, University of Lisbon
 Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc.ul.pt
 
-This module is resposible for pruning unreachable symbols in unnormed sequences of symbols
+This module is responsible for pruning unreachable symbols in unnormed sequences of symbols
 -}
 
 module Equivalence.Norm

@@ -9,7 +9,7 @@ Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc
 The definition of type variables
 -}
 
-module Syntax.
+module Syntax.TypeVariables
 ( TypeVar
 ) where
 

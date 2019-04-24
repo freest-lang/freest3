@@ -1,6 +1,6 @@
 {- |
 Module      :  Grammar
-Description :  <optional short text displayed on contents page>
+Description :  Context-free grammars
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
 
@@ -43,9 +43,7 @@ import           Syntax.ProgramVariables
 import           Syntax.Base
 import           Syntax.Show
 import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
-import           Data.List (union, delete)
-import           Data.List (intersperse)
+import           Data.List (intersperse, union)
 
 -- Terminal symbols are called labels
 data Label =

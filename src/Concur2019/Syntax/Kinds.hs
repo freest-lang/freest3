@@ -6,9 +6,9 @@ Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of 
                    Vasco Vasconcelos, LASIGE, Faculty of Sciences, University of Lisbon
 Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc.ul.pt
 
-In this module we define what is a kind and the relational order between them. It is also
-defined the subkinding relation, the least upper bound of two kinds and other functions to
-query about prekinds and multiplicities
+This module defines a kind and the relational order between kinds. It also defines the
+subkinding relation, the least upper bound of two kinds and other functions to
+manipulate prekinds and multiplicities.
 -}
 
 module Syntax.Kinds

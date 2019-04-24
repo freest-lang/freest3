@@ -6,7 +6,7 @@ Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of 
                    Vasco Vasconcelos, LASIGE, Faculty of Sciences, University of Lisbon
 Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc.ul.pt
 
-In this module we define the basic structures (classes and datatypes) such as Positions and
+This module defines the basic structures (classes and datatypes) such as Positions and
 Multiplicity, that will be used the remaining Compiler.
 -}
 

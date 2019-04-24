@@ -6,8 +6,9 @@ Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of 
                    Vasco Vasconcelos, LASIGE, Faculty of Sciences, University of Lisbon
 Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc.ul.pt
 
-In this module we provide the definition of a type with the definitions of type duality and
-equality. The unfolding and substitution operations are also defined in this module.
+This module defines a type with the definitions of type duality and equality.
+The unfolding of recursive types and substitution ([u/x]t, substitute u for x on t)
+operations are also defined.
 -}
 
 module Syntax.Types
@@ -24,9 +25,7 @@ import           Syntax.Kinds
 import           Syntax.TypeVariables
 import           Syntax.ProgramVariables (ProgVar)
 import           Syntax.Base
-import           Data.List (intersperse)
 import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
 
 -- The dual function on types, etc
 class Dual t where

@@ -13,15 +13,14 @@ module Syntax.Show
 ( showChoiceView
 ) where
 
-import           Syntax.Expressions
-import           Syntax.Schemes
 import           Syntax.Types
+import           Syntax.Schemes
 import           Syntax.Kinds
 import           Syntax.ProgramVariables
 import           Syntax.TypeVariables
 import           Syntax.Base
 import qualified Data.Map.Strict as Map
-import           Data.List (intersperse, intercalate)
+import           Data.List (intersperse)
 import           Data.Char (isDigit)
 
 -- Positions (Base)
@@ -125,44 +124,44 @@ instance Show TypeScheme where
   show (TypeScheme _ bs t) = "forall " ++ bindings ++ " => " ++ show t
     where bindings = concat $ intersperse ", " (map show bs)
 
--- Expressions
+-- -- Expressions
 
-instance Show Expression where
-  show = showExp 4
+-- instance Show Expression where
+--   show = showExp 4
 
-showExp :: Int -> Expression -> String
-  -- Basic values
-showExp _ (Unit _) = "()"
-showExp _ (Integer _ i) = show i
-showExp _ (Character _ c) = show c
-showExp _ (Boolean _ b) = show b
-  -- Variable
-showExp _ (ProgVar _ x) = show x
-  -- Depth reached
-showExp 0 _ = ".."
-  -- Abstraction intro and elim
-showExp i (Lambda _ m b t e) = "(\\" ++ show b ++ " : " ++ show t ++ showArrow m ++ (showExp (i-1) e) ++ ")"
-showExp i (App _ e1 e2) = "(" ++ showExp (i-1) e1 ++ " " ++ showExp (i-1) e2 ++ ")"
-  -- Pair intro and elim
-showExp i (Pair _ e1 e2) = "(" ++ showExp (i-1) e1 ++ ", " ++ showExp (i-1) e2 ++ ")"
-showExp i (BinLet _ x y e1 e2) = "(let " ++ show x ++ ", " ++ show y ++ " = " ++ showExp (i-1) e1 ++ " in " ++ showExp (i-1) e2 ++ ")"
-  -- Datatype elim
-showExp i (Case _ e m) = "case " ++ showExp (i-1) e ++ " of {" ++ showFieldMap (i-1) m ++ "}"
-  -- Type application
-showExp _ (TypeApp _ x ts) = show x ++ " [" ++ (intercalate " " (map show ts)) ++ "]"
-  -- Boolean elim
-showExp i (Conditional _ e e1 e2) = "if " ++ show e ++ " then " ++ showExp (i-1) e1 ++ " else " ++ showExp (i-1) e2
-  -- Let
-showExp i (UnLet _ x e1 e2) = "(let " ++ show x ++ " = " ++ showExp (i-1) e1 ++ " in " ++ showExp (i-1) e2 ++ ")"
-  -- Fork
-showExp i (Fork _ e) = "fork " ++ showExp (i-1) e
-  -- Session types
-showExp _ (New _ t) = "new " ++ show t
-showExp i (Send _ e) = "(send " ++ showExp (i-1) e ++ ")"
-showExp i (Receive _ e) = "(receive " ++ showExp (i-1) e ++ ")"
-showExp i (Select _ l e) = "(select " ++ show l ++ " " ++ showExp (i-1) e ++ ")"
-showExp i (Match _ e m) = "match " ++ showExp (i-1) e ++ " with {" ++ showFieldMap (i-1) m ++ "}"
+-- showExp :: Int -> Expression -> String
+--   -- Basic values
+-- showExp _ (Unit _) = "()"
+-- showExp _ (Integer _ i) = show i
+-- showExp _ (Character _ c) = show c
+-- showExp _ (Boolean _ b) = show b
+--   -- Variable
+-- showExp _ (ProgVar _ x) = show x
+--   -- Depth reached
+-- showExp 0 _ = ".."
+--   -- Abstraction intro and elim
+-- showExp i (Lambda _ m b t e) = "(\\" ++ show b ++ " : " ++ show t ++ showArrow m ++ (showExp (i-1) e) ++ ")"
+-- showExp i (App _ e1 e2) = "(" ++ showExp (i-1) e1 ++ " " ++ showExp (i-1) e2 ++ ")"
+--   -- Pair intro and elim
+-- showExp i (Pair _ e1 e2) = "(" ++ showExp (i-1) e1 ++ ", " ++ showExp (i-1) e2 ++ ")"
+-- showExp i (BinLet _ x y e1 e2) = "(let " ++ show x ++ ", " ++ show y ++ " = " ++ showExp (i-1) e1 ++ " in " ++ showExp (i-1) e2 ++ ")"
+--   -- Datatype elim
+-- showExp i (Case _ e m) = "case " ++ showExp (i-1) e ++ " of {" ++ showFieldMap (i-1) m ++ "}"
+--   -- Type application
+-- showExp _ (TypeApp _ x ts) = show x ++ " [" ++ (intercalate " " (map show ts)) ++ "]"
+--   -- Boolean elim
+-- showExp i (Conditional _ e e1 e2) = "if " ++ show e ++ " then " ++ showExp (i-1) e1 ++ " else " ++ showExp (i-1) e2
+--   -- Let
+-- showExp i (UnLet _ x e1 e2) = "(let " ++ show x ++ " = " ++ showExp (i-1) e1 ++ " in " ++ showExp (i-1) e2 ++ ")"
+--   -- Fork
+-- showExp i (Fork _ e) = "fork " ++ showExp (i-1) e
+--   -- Session types
+-- showExp _ (New _ t) = "new " ++ show t
+-- showExp i (Send _ e) = "(send " ++ showExp (i-1) e ++ ")"
+-- showExp i (Receive _ e) = "(receive " ++ showExp (i-1) e ++ ")"
+-- showExp i (Select _ l e) = "(select " ++ show l ++ " " ++ showExp (i-1) e ++ ")"
+-- showExp i (Match _ e m) = "match " ++ showExp (i-1) e ++ " with {" ++ showFieldMap (i-1) m ++ "}"
 
-showFieldMap :: Int -> FieldMap -> String
-showFieldMap i m = concat $ intersperse "; " (map showAssoc (Map.toList m))
-  where showAssoc (b, (a,v)) = show b ++ " " ++ intercalate " " (map show a) ++ " -> " ++  (showExp (i-1) v)
+-- showFieldMap :: Int -> FieldMap -> String
+-- showFieldMap i m = concat $ intersperse "; " (map showAssoc (Map.toList m))
+--   where showAssoc (b, (a,v)) = show b ++ " " ++ intercalate " " (map show a) ++ " -> " ++  (showExp (i-1) v)
