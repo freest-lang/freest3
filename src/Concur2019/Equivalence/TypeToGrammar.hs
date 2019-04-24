@@ -153,7 +153,8 @@ addProduction x l w =
 addBasicProd :: Label -> TransState TypeVar
 addBasicProd l = do
   s <- get
-  let p' = Map.filter (Map.member l) (productions s)
+  let ip = Map.map (Map.filter null) (productions s)
+  let p' = Map.filter (\b -> not (Map.null b) && Map.member l b) ip
   if Map.null p'
     then do
       y <- freshVar
