@@ -107,14 +107,13 @@ data TState = TState {
 , visited     :: Visited
 , nextIndex   :: Int
 , typeEnv     :: TypeEnv
-} -- (Productions, Visited, Int, TypeEnv)
+}
 
 type TransState = State TState
 
 -- State manipulating functions
 
 initial :: TypeEnv -> TState
--- initial tEnv = (Map.empty, Set.empty, 1, tEnv)
 initial tEnv = TState {
   productions = Map.empty
 , visited     = Set.empty
@@ -126,17 +125,17 @@ freshVar :: TransState TypeVar
 freshVar = do
   s <- get
   let n = nextIndex s
-  modify (\s -> s{nextIndex = n + 1})
+  modify (\s -> s {nextIndex = n + 1})
   return $ mkVar defaultPos ("#X" ++ show n)
 
 memberVisited :: TypeVar -> TransState Bool
-memberVisited t = do
+memberVisited x = do
   s <- get
-  return $ Set.member t (visited s)
+  return $ x `Set.member` (visited s)
 
 insertVisited :: TypeVar -> TransState ()
 insertVisited x =
-  modify $ \s -> s{visited=Set.insert x (visited s)}
+  modify $ \s -> s {visited = Set.insert x (visited s)}
 
 getTransitions :: TypeVar -> TransState (Maybe Transitions)
 getTransitions x = do
@@ -151,7 +150,9 @@ addProduction :: TypeVar -> Label -> [TypeVar] -> TransState ()
 addProduction x l w =
   modify $ \s -> s {productions = insertProduction (productions s) x l w}
 
--- Add or update production from a (basic) non-terminal; the productions may already contain transitions for the given nonterminal (hence the insertWith and union)
+-- Add or update production from a (basic) non-terminal; the
+-- productions may already contain transitions for the given
+-- nonterminal (hence the insertWith and union)
 addBasicProd :: Label -> TransState TypeVar
 addBasicProd l = do
   s <- get
@@ -162,7 +163,7 @@ addBasicProd l = do
       return y
     Just p ->
       return p
-  where fold x ts acc = if l `Map.member` ts && null (ts Map.! l) then Just x else acc
+  where fold x m acc = if l `Map.member` m && null (m Map.! l) then Just x else acc
 
 getFromVEnv :: TypeVar -> TransState (Kind, TypeScheme)
 getFromVEnv x = do
