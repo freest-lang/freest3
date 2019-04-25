@@ -60,8 +60,8 @@ expandPair :: Productions -> ([TypeVar], [TypeVar]) -> Maybe Node
 expandPair ps (xs, ys)
   | Map.keysSet m1 == Map.keysSet m2 = Just $ match m1 m2
   | otherwise                        = Nothing
-  where m1 = transitions ps xs
-        m2 = transitions ps ys
+  where m1 = transitions xs ps
+        m2 = transitions ys ps
 
 match :: Transitions -> Transitions -> Node
 match m1 m2 =

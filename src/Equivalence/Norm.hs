@@ -44,8 +44,8 @@ normedWord = normedW Set.empty
   normedW _ _ []     = True
   normedW v p (x:xs) =
     x `Set.notMember` v &&
-   any (normedW v' p) (Map.elems (transitions p (x:xs)))
-   where v' = if any (x `elem`) (Map.elems (transitions p [x])) then Set.insert x v else v
+   any (normedW v' p) (Map.elems (transitions (x:xs) p))
+   where v' = if any (x `elem`) (Map.elems (transitions x p)) then Set.insert x v else v
 
 norm :: Productions -> [TypeVar] -> Int
 norm p xs = normList p [xs]
