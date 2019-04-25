@@ -551,8 +551,8 @@ rec y_0:SL. !Char ; +{A: y_0, B: Skip, C: Skip}
 
 -- Unfold _ This one fails
 []
-(rec 0_y:SL. (&{A: x, B: y_0};(rec z_1:SL. ?())))
-(&{A: x, B: (rec y_0_2:SL. (&{A: x, B: y_0_2};(rec z_1_3:SL. ?())))};(rec z_1_4:SL. ?()))
+rec x. !Bool ; !Bool
+!Bool ; !Bool
 
 -- This one is non-contractive (as of version April 24, 2019)
 -- []

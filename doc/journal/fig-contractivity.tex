@@ -20,15 +20,17 @@
   \end{equation*}
   The is-contractive predicate \hfill\fbox{$\isContr S$}
   %
-  \begin{equation*}
+  \begin{gather*}
     \frac{
-      \isContr{S_1}
+      \isDone{S_1}
+      \quad
+      \isContr{S_2}
     }{
       \isContr{S_1;S_2}
     }
     \quad
     \frac{
-      \isDone{S_1}
+      \isContr{S_1}
       \quad
       \isContr{S_2}
     }{
@@ -45,12 +47,42 @@
       \isContr[\Delta,x\colon\kindk\kinds\link] x
     }
     \quad
-    \frac{
-      S\neq\skipt
-    }{
-      \isContr S
+    \frac{}{
+      \isContr{\msgt B}
     }
-  \end{equation*}
+    \\
+    \frac{
+      \isContr{T_i}
+    }{
+      \isContr{\choicet{l_i\colon T_i}}
+    }
+    \quad
+    \frac{}{
+      \isContr{B}
+    }
+    \quad
+    \frac{
+      \isContr{T_1}
+      \quad
+      \isContr{T_2}      
+    }{
+      \isContr{\funt{T_1}{T_2}}
+    }
+    \quad
+    \frac{
+      \isContr{T_1}
+      \quad
+      \isContr{T_2}      
+    }{
+      \isContr{\pairt{T_1}{T_2}}
+    }
+    \quad
+    \frac{
+      \isContr{T_i}
+    }{
+      \isContr{\datat{l_i\colon T_i}}
+    }
+  \end{gather*}
   \caption{Contractivity}
   \label{fig:contractivity}
 \end{figure}

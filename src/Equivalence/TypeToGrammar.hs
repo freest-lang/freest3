@@ -40,7 +40,7 @@ typeToGrammar :: Type -> TransState TypeVar
 typeToGrammar t = do
   xs <- toGrammar t
   y <- freshVar
-  addProduction y (MessageLabel In UnitType) xs
+  addProduction y (MessageLabel Out UnitType) xs
   return y
 
 toGrammar :: Type -> TransState [TypeVar]
@@ -155,15 +155,18 @@ addProduction x l w =
 -- nonterminal (hence the insertWith and union)
 addBasicProd :: Label -> TransState TypeVar
 addBasicProd l = do
-  s <- get
-  case Map.foldrWithKey fold Nothing (productions s) of
-    Nothing -> do
-      y <- freshVar
-      addProduction y l []
-      return y
-    Just p ->
-      return p
-  where fold x m acc = if l `Map.member` m && null (m Map.! l) then Just x else acc
+--   s <- get
+--   case Map.foldrWithKey fold Nothing (productions s) of
+--     Nothing -> do
+--       y <- freshVar
+--       addProduction y l []
+--       return y
+--     Just p ->
+--       return p
+--   where fold x m acc = if l `Map.member` m && null (m Map.! l) then Just x else acc
+  y <- freshVar
+  addProduction y l []
+  return y
 
 getFromVEnv :: TypeVar -> TransState (Kind, TypeScheme)
 getFromVEnv x = do

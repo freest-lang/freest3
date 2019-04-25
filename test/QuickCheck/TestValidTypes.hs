@@ -4,7 +4,6 @@ import           Equivalence.Equivalence
 import           Equivalence.Normalisation
 import           Validation.Rename
 import           Validation.Kinding
-import           Validation.Contractive
 import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.ProgramVariables
@@ -18,7 +17,7 @@ import qualified Data.Set as Set
 import           Debug.Trace
 
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_self_bisimilar
-main = quickCheckWith stdArgs {maxSuccess = 1000} prop_bisimilar_trace
+main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_kinded
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_norm_equiv
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_dual
@@ -29,37 +28,44 @@ main = quickCheckWith stdArgs {maxSuccess = 1000} prop_bisimilar_trace
 bisim = bisimilar Map.empty
 equiv :: Type -> Type -> Bool
 equiv = equivalent Map.empty Map.empty
-contr = contractive Map.empty Map.empty
 norm :: Type -> Type
 norm = normalise Map.empty
 pos = defaultPos
 
+kinded :: Type -> Bool
+kinded t = null (errors state)
+  where
+  state = execState (synthetise kindEnv t) (initialState "Quick Checking")
+  kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (kindSL pos)))
+        -- This env contains the free vars only for bound vars should
+        -- have been renamed
+  
 -- Bisimilarity
 
 prop_bisimilar :: BisimPair -> Property
-prop_bisimilar (BisimPair t u) = contr t ==>
+prop_bisimilar (BisimPair t u) = kinded t ==>
   evalState (return $ bisim t u) ()
 
 prop_bisimilar_trace :: BisimPair -> Property
-prop_bisimilar_trace (BisimPair t u) = contr t ==>
+prop_bisimilar_trace (BisimPair t u) = kinded t ==>
   evalState (trace (show t ++ " bisim " ++ show u) (return $ bisim t u)) ()
 
 prop_self_bisimilar :: Type -> Property
-prop_self_bisimilar t = contr t ==>
+prop_self_bisimilar t = kinded t ==>
   evalState (trace (show u ++ " self-bisimilar-to " ++ show v) (return $ bisim u v)) ()
   where [u, v] = renameList [t, t]
 
--- Kinding
+-- Kinding -- Test cases are not necessarily kinded
 
-prop_kinded :: Type -> Property
-prop_kinded t = contr t ==> null (errors state)
-  where state = execState (synthetise kindEnv t) (initialState "Quick Checking")
-        kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (kindSL pos))) -- TODO: only the free vars should go into this environment
-  
+-- prop_kinded :: Type -> Property
+-- prop_kinded t = contr t ==> null (errors state)
+--   where state = execState (synthetise kindEnv t) (initialState "Quick Checking")
+--         kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (kindSL pos)))
+
 -- Normalisation
 
 prop_norm_equiv :: Type -> Property
-prop_norm_equiv t = contr t ==>
+prop_norm_equiv t = kinded t ==>
   evalState (trace (show u ++ " equiv-to-normalised " ++ show v) (return $ bisim u v)) ()
   where [u, v] = renameList [t, normalise Map.empty t]
 
@@ -161,15 +167,15 @@ instance Show BisimPair where
 instance Arbitrary BisimPair where
   arbitrary = do
     (t, u) <- oneof
-      [ -- assoc
-      -- distrib -- *
-      unfoldt  -- *
-      -- recrec
-      -- skipt
-      -- tskip
+      [ assoc
+      , distrib -- *
+      , unfoldt
+      , recrec
+      , skipt
+      , tskip
       -- subsOnBoth -- *
-      -- self
-      -- voidRec
+      , self
+      , voidRec
       ]
     let [t', u'] = renameList [t, u]
     return $ BisimPair t' u'
