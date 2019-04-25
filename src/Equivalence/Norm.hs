@@ -12,12 +12,10 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Equivalence.Norm
-( prune
-, pruneWord
-, normed
-, sameNorm
+( normed
 , norm
 , allNormed
+, sameNorm -- TODO: remove and replace by ==
 ) where
 
 import           Syntax.TypeVariables
@@ -25,41 +23,53 @@ import           Equivalence.Grammar
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.List as List
-
-prune :: Productions -> Productions
-prune p = Map.map (Map.map (pruneWord p)) p
-
-pruneWord :: Productions -> [TypeVar] -> [TypeVar]
-pruneWord p = foldr (\x ys -> if normed p x then x:ys else [x]) []
+import           Data.Maybe
 
 normed :: Productions -> TypeVar -> Bool
-normed p x = normedWord p [x]
+normed p x = isJust $ nor p [x]
+-- normed p x = normedWord p [x]
 
-type Visited = Set.Set TypeVar
-
-normedWord :: Productions -> [TypeVar] -> Bool
-normedWord = normedW Set.empty
-  where
-  normedW :: Visited -> Productions -> [TypeVar] -> Bool
-  normedW _ _ []     = True
-  normedW v p (x:xs) =
-    x `Set.notMember` v &&
-   any (normedW v' p) (Map.elems (transitions (x:xs) p))
-   where v' = if any (x `elem`) (Map.elems (transitions x p)) then Set.insert x v else v
+-- normedWord :: Productions -> [TypeVar] -> Bool
+-- normedWord = normedW Set.empty
+--   where
+--   normedW :: Visited -> Productions -> [TypeVar] -> Bool
+--   normedW _ _ []     = True
+--   normedW v p (x:xs) =
+--     x `Set.notMember` v &&
+--    any (normedW v' p) (Map.elems (transitions (x:xs) p))
+--    where v' = if any (x `elem`) (Map.elems (transitions x p)) then Set.insert x v else v
 
 norm :: Productions -> [TypeVar] -> Int
-norm p xs = normList p [xs]
+norm p xs = fromJust $ nor p xs
+-- norm p xs = normList p [xs]
 
-normList :: Productions -> [[TypeVar]] -> Int
-normList p xss
-  | [] `elem` m = 0
-  | otherwise = 1 + normList p (foldr List.union [] m)
-  where m = map (trans p) xss
+-- normList :: Productions -> [[TypeVar]] -> Int
+-- normList p xss
+--   | [] `elem` m = 0
+--   | otherwise = 1 + normList p (foldr List.union [] m)
+--   where m = map (trans p) xss
 
 sameNorm :: Productions -> [TypeVar] -> [TypeVar] -> Bool
-sameNorm p xs ys =
-  not (normedWord p xs) || not (normedWord p ys) || norm p xs == norm p ys
+sameNorm p xs ys = nor p xs == nor p ys
+  -- not (normedWord p xs) || not (normedWord p ys) || norm p xs == norm p ys
 
 -- Identify the existence of unnormed symbols
 allNormed :: Productions -> Bool
 allNormed p = all (normed p) (Map.keys p)
+
+type Visited = Set.Set TypeVar
+
+nor :: Productions -> [TypeVar] -> Maybe Int
+nor p = norm' Set.empty
+  where
+  norm' :: Visited -> [TypeVar] -> Maybe Int
+  norm' _ [] = Just 0
+  norm' v xs
+    | (head xs) `Set.member` v = Nothing
+    | otherwise                = fmap (+1) (Map.foldr min' Nothing (norms v xs))
+  norms :: Visited -> [TypeVar] ->  Map.Map Label (Maybe Int)
+  norms v xs = Map.map (norm' (Set.insert (head xs) v)) (transitions xs p)
+  min' :: Maybe Int -> Maybe Int -> Maybe Int
+  min' Nothing  m        = m
+  min' m        Nothing  = m
+  min' (Just n) (Just k) = Just (min n k)

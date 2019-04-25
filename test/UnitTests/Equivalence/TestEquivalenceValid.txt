@@ -526,26 +526,35 @@ rec z:SL. x
 (((rec z_3:SL. (((Skip;z_3);?Char);&{A: y, B: y, C: z_3}));(?Bool;(rec x_4:SL. +{A: x_4, B: Skip, C: y})));+{A: (rec y_5:SL. Skip), B: ?Int, C: !Bool})
 
 -- this one hangs 
--- []
---  (rec y_0:SL. (!Bool;+{A: y_0, B: y_0, C: x})) ; (?Int ; (?Int;&{A: Skip, B: z, C: z}))
--- ((rec y_1:SL. (!Bool;+{A: y_1, B: y_1, C: x})) ; ?Int) ; (?Int;&{A: Skip, B: z, C: z})
+[]
+ (rec y_0:SL. (!Bool;+{A: y_0, B: y_0, C: x})) ; (?Int ; (?Int;&{A: Skip, B: z, C: z}))
+((rec y_1:SL. (!Bool;+{A: y_1, B: y_1, C: x})) ; ?Int) ; (?Int;&{A: Skip, B: z, C: z})
 
 -- this one hangs 
--- []
--- rec y_0:SL. !Bool; +{A: y_0}
--- rec y_1:SL. !Bool; +{A: y_1}
+[]
+rec y_0:SL. !Bool; +{A: y_0}
+rec y_1:SL. !Bool; +{A: y_1}
 
--- this one hangs 
--- []
--- rec y_0:SL. !Char ; +{A: y_0, B: Skip, C: Skip}
--- !Char; +{A: (rec y_1:SL. (!Char;+{A: y_1, B: Skip, C: Skip})), B: Skip, C: Skip}
+-- this one used to hang
+[]
+rec y_0:SL. !Char ; +{A: y_0, B: Skip, C: Skip}
+!Char; +{A: (rec y_1:SL. (!Char;+{A: y_1, B: Skip, C: Skip})), B: Skip, C: Skip}
 
--- This one is deemed non bisimilar 
 []
 !Char ; !Int ; &{A: x, B: z} ; &{A: Skip} ; ?() ; &{B: y}
 !Char ; !Int ; &{A: x, B: z} ; &{A: Skip} ; ?() ; &{B: y}
 
--- This one is non-contractive (new version, April 24, 2019)
+-- Distributivity _ This one fails
+-- []
+-- &{B: y ; y} ; ?Bool
+-- &{B: y ; y ; ?Bool}
+
+-- Unfold _ This one fails
+[]
+(rec 0_y:SL. (&{A: x, B: y_0};(rec z_1:SL. ?())))
+(&{A: x, B: (rec y_0_2:SL. (&{A: x, B: y_0_2};(rec z_1_3:SL. ?())))};(rec z_1_4:SL. ?()))
+
+-- This one is non-contractive (as of version April 24, 2019)
 -- []
 -- rec z_0:SL. (Skip ; z_0 ; ?Int)
 -- Skip ; (rec z_1:SL. Skip ; z_1 ; ?Int) ; ?Int

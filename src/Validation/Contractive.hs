@@ -56,7 +56,7 @@ contractive = contr Set.empty
   contr _ _ _ (Skip _) = False
   contr v tEnv kEnv (Semi _ t u)
     | terminated t = contr v tEnv kEnv u
-    | otherwise    = contr v tEnv kEnv t
+    | otherwise    = contr v tEnv kEnv t && contr v tEnv kEnv u
   -- Functional or session
   contr v tEnv kEnv (Rec _ _ t)   = contr v tEnv kEnv t
   contr v tEnv kEnv (TypeVar p x) =

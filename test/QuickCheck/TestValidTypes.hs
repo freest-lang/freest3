@@ -18,7 +18,7 @@ import qualified Data.Set as Set
 import           Debug.Trace
 
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_self_bisimilar
-main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
+main = quickCheckWith stdArgs {maxSuccess = 1000} prop_bisimilar_trace
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_kinded
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_norm_equiv
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_dual
@@ -38,6 +38,10 @@ pos = defaultPos
 
 prop_bisimilar :: BisimPair -> Property
 prop_bisimilar (BisimPair t u) = contr t ==>
+  evalState (return $ bisim t u) ()
+
+prop_bisimilar_trace :: BisimPair -> Property
+prop_bisimilar_trace (BisimPair t u) = contr t ==>
   evalState (trace (show t ++ " bisim " ++ show u) (return $ bisim t u)) ()
 
 prop_self_bisimilar :: Type -> Property
@@ -129,7 +133,7 @@ arbitrarySession n = oneof
   [ liftM3 Semi arbitrary (arbitrarySession (n `div` 4)) (arbitrarySession (n `div` 4))
   , liftM3 Message arbitrary arbitrary arbitrary
   , liftM3 Choice arbitrary arbitrary (arbitraryTypeMap (n `div` 4))
---  , liftM3 Rec arbitrary arbitrary (arbitrarySession (n `div` 4))
+  , liftM3 Rec arbitrary arbitrary (arbitrarySession (n `div` 4))
   ]
 
 -- instance Arbitrary TypeMap where
@@ -158,14 +162,14 @@ instance Arbitrary BisimPair where
   arbitrary = do
     (t, u) <- oneof
       [ -- assoc
-      -- , distrib
-      -- unfoldt,
+      -- distrib -- *
+      unfoldt  -- *
       -- recrec
       -- skipt
       -- tskip
-      -- subsOnBoth
-        self
-        -- voidRec
+      -- subsOnBoth -- *
+      -- self
+      -- voidRec
       ]
     let [t', u'] = renameList [t, u]
     return $ BisimPair t' u'
@@ -187,12 +191,12 @@ unfoldt :: Gen (Type, Type)
 unfoldt = do
   (xk, t) <- arbitrary
   let u = Rec pos xk t
-  return (u, unfold u)
+  return (u, unfold (renameType u))
 
 recrec :: Gen (Type, Type)
 recrec = do
   (xk@(TypeVarBind _ x _), yk@(TypeVarBind _ y _), t) <- arbitrary
-  return (Rec pos xk (Rec pos yk t), Rec pos xk (subs (TypeVar pos x) y t))
+  return (Rec pos xk (Rec pos yk t), Rec pos xk (subs (TypeVar pos x) y (renameType t)))
 
 voidRec :: Gen (Type, Type)
 voidRec = do

@@ -49,7 +49,7 @@ instance Normalise Type where
 instance Normalise TypeScheme where
   normalise tenv (TypeScheme p bs t) = TypeScheme p bs (normalise tenv t)
 
--- As in the ICFP'16 paper, except that no substitution is applied on Rec
+-- As in the ICFP'16 paper, except that no substitution is applied to Rec types
 terminated :: Type ->  Bool
 terminated (Skip _)     = True
 terminated (Semi _ t u) = terminated t && terminated u

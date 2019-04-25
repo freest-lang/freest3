@@ -71,6 +71,12 @@ match m1 m2 =
 pruneNode :: Productions -> Node ->  Node
 pruneNode ps = Set.map (\(xs,ys) -> (pruneWord ps xs, pruneWord ps ys))
 
+prune :: Productions -> Productions
+prune p = Map.map (Map.map (pruneWord p)) p
+
+pruneWord :: Productions -> [TypeVar] -> [TypeVar]
+pruneWord p = foldr (\x ys -> if normed p x then x:ys else [x]) []
+
 -- Apply the different node transformations
 
 simplify :: Productions -> Node -> Ancestors -> NodeQueue -> NodeQueue
