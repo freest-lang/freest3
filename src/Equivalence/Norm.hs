@@ -65,7 +65,8 @@ nor p = norm' Set.empty
   norm' :: Visited -> [TypeVar] -> Maybe Int
   norm' _ [] = Just 0
   norm' v xs
-    | (head xs) `Set.member` v = Nothing
+    | (head xs) `Set.member` v &&
+        not (Map.null (Map.filter (not . null) (transitions (head xs) p))) = Nothing
     | otherwise                = fmap (+1) (Map.foldr min' Nothing (norms v xs))
   norms :: Visited -> [TypeVar] ->  Map.Map Label (Maybe Int)
   norms v xs = Map.map (norm' (Set.insert (head xs) v)) (transitions xs p)
