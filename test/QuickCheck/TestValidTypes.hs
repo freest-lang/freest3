@@ -16,8 +16,9 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import           Debug.Trace
 
-main = verboseCheckWith stdArgs {maxSuccess = 1000} prop_bisimilar
--- main = quickCheckWith stdArgs {maxSuccess = 100} prop_bisimilar_trace
+-- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_bisimilar
+-- main = verboseCheckWith stdArgs {maxSuccess = 1000} prop_bisimilar
+main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar_trace
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_subs_kind_preservation1
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_norm_preserves_bisim
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_distribution
@@ -141,6 +142,9 @@ instance Arbitrary Pos where
 ids :: [String]            -- Type Variables
 ids = ["x", "y", "z"]
 
+freeTypeVar :: TypeVar
+freeTypeVar = mkVar pos "∂"
+
 choices :: [String]        -- Program Variables
 choices = ["A", "B", "C"]
 
@@ -165,7 +169,7 @@ instance Arbitrary BasicType where
   arbitrary = elements [IntType, CharType, BoolType, UnitType]
 
 instance Arbitrary Type where
-  arbitrary = sized arbitrarySession -- Not renamed
+  arbitrary = sized arbitrarySession -- Warning: not renamed
 
 arbitrarySession :: Int -> Gen Type
 arbitrarySession 0 = oneof
@@ -198,9 +202,33 @@ data BisimPair = BisimPair Type Type
 instance Show BisimPair where
   show (BisimPair t u) = show t ++ " bisimilar-to " ++ show u
 
+{-
 instance Arbitrary BisimPair where
   arbitrary = do
-    (n, t) <- arbitrary
+    t <- arbitrary
+    (u, v) <- oneof $ map (\axiom -> axiom t t)
+      [
+    -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
+        skipt
+      , tskip
+      , assoc
+      , distrib
+    -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
+      , recrec
+      , recFree
+      , alphaConvert
+      , subsOnBoth
+      , unfoldt
+      ]
+    let [u', v'] = renameList [u, v]
+    return $ BisimPair u' v'
+-}
+
+instance Arbitrary BisimPair where
+  arbitrary = do
+    n <- arbitrary
+    -- n <- choose (0, 6)
+    t <- arbitrary
     (u, v) <- arbitraryBisimPair (abs n) t t
     let [u', v'] = renameList [u, v]
     return $ BisimPair u' v'
@@ -215,18 +243,18 @@ arbitraryBisimPair n t u = do
       skipt
     , tskip
     , assoc
-    -- , distrib
+    , distrib
     -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
-    -- , recrec
-    -- , recFree
-    -- , alphaConvert
-    -- , subsOnBoth
-    -- , unfoldt
+    , recrec
+    , recFree
+    , alphaConvert
+    , subsOnBoth
+    , unfoldt
     -- Commutativity
     , commut
     ]
 
--- The various axioms all share signature GenBisimPair
+-- The various axioms all share this signature
 type GenBisimPair = Type -> Type -> Gen (Type, Type)
 
 -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
@@ -258,13 +286,15 @@ recrec t u = do
 recFree :: GenBisimPair
 recFree t u = do
   k <- arbitrary
-  return (Rec pos (TypeVarBind pos (mkVar pos "∂") k) t, u)
+  return (Rec pos (TypeVarBind pos freeTypeVar k) t, u)
   -- Note: the rec-var must be distinct from the free variables of t
 
 alphaConvert :: GenBisimPair
 alphaConvert t u = do
-  (xk@(TypeVarBind _ x _), y) <- arbitrary
-  return (Rec pos xk t, subs (TypeVar pos y) x (renameType u))
+  (x, k) <- arbitrary
+  let y = freeTypeVar
+  return (Rec pos (TypeVarBind pos x k) t,
+          Rec pos (TypeVarBind pos y k) (subs (TypeVar pos y) x u))
 
 subsOnBoth :: GenBisimPair
 subsOnBoth t u = do
@@ -281,4 +311,3 @@ unfoldt t u = do
 
 commut :: GenBisimPair
 commut t u = return (u, t)
-
