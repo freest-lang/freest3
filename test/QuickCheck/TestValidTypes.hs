@@ -1,6 +1,5 @@
 import           Test.QuickCheck
 import           Equivalence.Bisimulation
-import           Equivalence.Equivalence
 import           Equivalence.Normalisation
 import           Validation.Rename
 import           Validation.Kinding
@@ -17,31 +16,43 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import           Debug.Trace
 
--- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_self_bisimilar
-main = quickCheckWith stdArgs {maxSuccess = 10000} prop_subs_kind_preservation1
--- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_kinded
--- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_norm_equiv
--- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_dual
--- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_same_equivs
+main = verboseCheckWith stdArgs {maxSuccess = 1000} prop_bisimilar
+-- main = quickCheckWith stdArgs {maxSuccess = 100} prop_bisimilar_trace
+-- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_subs_kind_preservation1
+-- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_norm_preserves_bisim
+-- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_distribution
+-- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_dual_convolution
 
 -- Convenience
 
+bisim :: Type -> Type -> Bool
 bisim = bisimilar Map.empty
-equiv :: Type -> Type -> Bool
-equiv = equivalent Map.empty Map.empty
 norm :: Type -> Type
 norm = normalise Map.empty
 pos = defaultPos
 
+renameType :: Type -> Type
+renameType t = head (renameList [t])
+
+renameList :: [Type] -> [Type]
+renameList ts = evalState (mapM (rename Map.empty) ts) (initialState "Renaming for QuickCheck")
+
+kindEnv :: KindEnv
+kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (kindSL pos)))
+        -- TODO: This env should only contain the free vars of t; its
+        -- kind may be SU
+        
 kinded :: Type -> Bool
 kinded t = null (errors state)
-  where
-  state = execState (synthetise kindEnv t) (initialState "Quick Checking")
-  kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (kindSL pos)))
-        -- This env contains the free vars only for bound vars should
-        -- have been renamed
+  where state = execState (synthetise kindEnv t) (initialState "Quick Checking")
   
--- Bisimilarity
+kindOf :: Type -> Maybe Kind
+kindOf t
+  | null (errors s) = Just k
+  | otherwise       = Nothing
+  where (k, s) = runState (synthetise kindEnv t) (initialState "Kind syntesis")
+
+-- Bisimilar types are bisimilar
 
 prop_bisimilar :: BisimPair -> Property
 prop_bisimilar (BisimPair t u) = kinded t ==>
@@ -49,39 +60,23 @@ prop_bisimilar (BisimPair t u) = kinded t ==>
 
 prop_bisimilar_trace :: BisimPair -> Property
 prop_bisimilar_trace (BisimPair t u) = kinded t ==>
-  evalState (trace (show t ++ " bisim " ++ show u) (return $ bisim t u)) ()
+  evalState (trace ("=> " ++ show t ++ " bisim " ++ show u) (return $ bisim t u)) ()
 
 prop_self_bisimilar :: Type -> Property
 prop_self_bisimilar t = kinded t ==>
   evalState (trace (show u ++ " self-bisimilar-to " ++ show v) (return $ bisim u v)) ()
   where [u, v] = renameList [t, t]
 
--- Kinding -- Test cases are not necessarily kinded
+-- Normalisation preserves bisimilarity
+prop_norm_preserves_bisim :: Type -> Property
+prop_norm_preserves_bisim t = kinded t' ==> bisim u v
+  -- evalState (trace (show u ++ " norm_preserves_bisim " ++ show v) (return $ bisim u v)) ()
+  where t' = renameType t
+        [u, v] = renameList [t, normalise Map.empty t']
 
--- prop_kinded :: Type -> Property
--- prop_kinded t = contr t ==> null (errors state)
---   where state = execState (synthetise kindEnv t) (initialState "Quick Checking")
---         kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (kindSL pos)))
-
-kindOf :: Type -> Maybe Kind
-kindOf t
-  | null (errors s) = Just k
-  | otherwise       = Nothing
-  where (k, s) = runState (synthetise kindEnv t) (initialState "Kind syntesis")
-        kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (kindSL pos)))
-        -- This env should only contain the free vars of t; its kind may be SU
-
--- Normalisation
-
-prop_norm_equiv :: Type -> Property
-prop_norm_equiv t = kinded t ==>
-  evalState (trace (show u ++ " equiv-to-normalised " ++ show v) (return $ bisim u v)) ()
-  where [u, v] = renameList [t, normalise Map.empty t]
-
--- Duality
-
-prop_dual :: Type -> Property
-prop_dual t = kinded t ==> dual (dual t) == t
+-- Duality is a convolution
+prop_dual_convolution :: Type -> Property
+prop_dual_convolution t = kinded t ==> dual (dual t) == t
 
 -- Lemma 3.1(ii) _ Substitution and kind preservation (ICFP'16)
 prop_subs_kind_preservation2 :: TypeVar -> Kind -> Type -> Property
@@ -104,7 +99,10 @@ prop_terminated2 t =
 -- Distribution
 
 prop_distribution :: Type -> Property
-prop_distribution t = kinded t ==> collect (nodes t) True
+prop_distribution t = kinded t ==>
+  collect (nodes t) $
+  tabulate "Type constructors" [constr t] $
+  True
 
 -- The number of nodes in a type
 nodes :: Type -> Int
@@ -114,8 +112,20 @@ nodes (Rec _ _ t)    = 1 + nodes t
 -- Skip, Message, TypeVar
 nodes _              = 1
 
--- prop_show :: Type -> Bool
--- prop_show t = show (read (show t) :: Type) == show t
+-- The constructor of a type
+constr :: Type -> String
+constr (Basic _ _) = "Basic"
+constr (Syntax.Types.Fun _ _ _ _) = "Fun"
+constr (PairType _ _ _) = "PairType"
+constr (Datatype _ _) = "Datatype"
+constr (Skip _) = "Skip"
+constr (Semi _ _ _) = "Semi"
+constr (Message _ _ _) = "Message"
+constr (Choice _ _ _) = "Choice"
+constr (Rec _ _ _) = "Rec"
+constr (TypeVar _ _) = "TypeVar"
+constr (TypeName _ _) = "TypeName"
+constr (Dualof _ _) = "Dualof"
 
 -- Arbitrary Types
 
@@ -161,10 +171,10 @@ arbitrarySession :: Int -> Gen Type
 arbitrarySession 0 = oneof
   [ liftM Skip arbitrary
   , liftM2 TypeVar arbitrary arbitrary
+  , liftM3 Message arbitrary arbitrary arbitrary
   ]
 arbitrarySession n = oneof
   [ liftM3 Semi arbitrary (arbitrarySession (n `div` 4)) (arbitrarySession (n `div` 4))
-  , liftM3 Message arbitrary arbitrary arbitrary
   , liftM3 Choice arbitrary arbitrary (arbitraryTypeMap (n `div` 4))
   , liftM3 Rec arbitrary arbitrary (arbitrarySession (n `div` 4))
   ]
@@ -190,94 +200,85 @@ instance Show BisimPair where
 
 instance Arbitrary BisimPair where
   arbitrary = do
-    (t, u) <- oneof
-      [
-      -- Lemma 3.4 _ Laws for sequential compositions (ICFP'16)
-        skipt
-      , tskip
-      , assoc
-      , distrib      
-      -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
-      , recrec
-      , recFree
-      , alphaConvert
-      , subsOnBoth
-      , unfoldt
-      -- Self
-      , self
-      ]
-    let [t', u'] = renameList [t, u]
-    return $ BisimPair t' u'
+    (n, t) <- arbitrary
+    (u, v) <- arbitraryBisimPair (abs n) t t
+    let [u', v'] = renameList [u, v]
+    return $ BisimPair u' v'
 
--- The various axioms
+arbitraryBisimPair :: Int -> Type -> Type -> Gen (Type, Type)
+arbitraryBisimPair 0 t u = return (t, u)
+arbitraryBisimPair n t u = do
+  (t', u') <- arbitraryBisimPair (n - 1) t u
+  oneof $ map (\axiom -> axiom t' u')
+    [
+    -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
+      skipt
+    , tskip
+    , assoc
+    -- , distrib
+    -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
+    -- , recrec
+    -- , recFree
+    -- , alphaConvert
+    -- , subsOnBoth
+    -- , unfoldt
+    -- Commutativity
+    , commut
+    ]
 
--- Lemma 3.4 _ Laws for sequential compositions (ICFP'16)
+-- The various axioms all share signature GenBisimPair
+type GenBisimPair = Type -> Type -> Gen (Type, Type)
 
-skipt :: Gen (Type, Type)
-skipt = do
-  t <- arbitrary
-  return (Semi pos (Skip pos) t, t)
+-- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
 
-tskip :: Gen (Type, Type)
-tskip = do
-  t <- arbitrary
-  return (Semi pos t (Skip pos), t)
+skipt :: GenBisimPair
+skipt t u = return (Semi pos (Skip pos) t, u)
 
-assoc :: Gen (Type, Type)
-assoc = do
-  (t, u, v) <- arbitrary
-  return (Semi pos t (Semi pos u v), Semi pos (Semi pos t u) v)
+tskip :: GenBisimPair
+tskip t u = return (Semi pos t (Skip pos), t)
 
-distrib :: Gen (Type, Type)
-distrib = do
-  (t, p) <- arbitrary
+assoc :: GenBisimPair
+assoc t u = do
+  (v , w) <- arbitrary
+  return (Semi pos t (Semi pos v w), Semi pos (Semi pos u v) w)
+
+distrib :: GenBisimPair
+distrib t u = do
+  p <- arbitrary
   m <- sized arbitraryTypeMap
-  return (Semi pos (Choice pos p m) t, Choice pos p (Map.map (\u -> Semi pos u t) m))
+  return (Semi pos (Choice pos p m) t, Choice pos p (Map.map (\v -> Semi pos v u) m))
 
 -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
 
-recrec :: Gen (Type, Type)
-recrec = do
-  (xk@(TypeVarBind _ x _), yk@(TypeVarBind _ y _), t) <- arbitrary
-  return (Rec pos xk (Rec pos yk t), Rec pos xk (subs (TypeVar pos x) y (renameType t)))
+recrec :: GenBisimPair
+recrec t u = do
+  (xk@(TypeVarBind _ x _), yk@(TypeVarBind _ y _)) <- arbitrary
+  return (Rec pos xk (Rec pos yk t), Rec pos xk (subs (TypeVar pos x) y (renameType u)))
 
-recFree :: Gen (Type, Type)
-recFree = do
-  t <- arbitrary
-  return (Rec pos (TypeVarBind pos (mkVar pos "∂") (kindSL pos)) t, t)
-  -- Note: the rec-var must be distinct from the variables on t
+recFree :: GenBisimPair
+recFree t u = do
+  k <- arbitrary
+  return (Rec pos (TypeVarBind pos (mkVar pos "∂") k) t, u)
+  -- Note: the rec-var must be distinct from the free variables of t
 
-alphaConvert ::  Gen (Type, Type)
-alphaConvert = do
-  (t, xk@(TypeVarBind _ x _), y) <-arbitrary
-  return (Rec pos xk t, subs (TypeVar pos y) x (renameType t))
+alphaConvert :: GenBisimPair
+alphaConvert t u = do
+  (xk@(TypeVarBind _ x _), y) <- arbitrary
+  return (Rec pos xk t, subs (TypeVar pos y) x (renameType u))
 
-subsOnBoth :: Gen (Type, Type)
-subsOnBoth = do
-  (BisimPair t u, v, x) <- arbitrary
-  return (subs t x v, subs u x v)
+subsOnBoth :: GenBisimPair
+subsOnBoth t u = do
+  (v, x) <- arbitrary
+  return (subs t x (renameType v), subs u x (renameType v))
 
-unfoldt :: Gen (Type, Type)
-unfoldt = do
-  (xk, t) <- arbitrary
-  let u = Rec pos xk t
-  return (u, unfold (renameType u))
+unfoldt :: GenBisimPair
+unfoldt t u = do
+  xk <- arbitrary
+  let v = Rec pos xk t
+  return (v, unfold (renameType v))
 
-{-
--- TODO: to be used in sized mode
-subsOnBoth :: Gen (Type, Type)
-subsOnBoth = do
-  (BisimPair t u, v, x) <- arbitrary
-  return (subs t x v, subs u x v)
--}
+-- Commutativity
 
-self :: Gen (Type, Type)
-self = do
-  t <- arbitrary
-  return (t, t)
-  
--- Renaming
+commut :: GenBisimPair
+commut t u = return (u, t)
 
-renameType t = evalState (rename Map.empty t) (initialState "Renaming for QuickCheck")
-
-renameList ts = evalState (mapM (rename Map.empty) ts) (initialState "Renaming for QuickCheck")

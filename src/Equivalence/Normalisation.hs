@@ -26,7 +26,7 @@ import qualified Data.Set as Set
 class Normalise t where
   normalise :: TypeEnv -> t -> t
 
--- Requires: t is contrative (well-kinded as well?)
+-- Requires: t well-kinded
 -- normalise t = u implies
 --   t is equivalent to u and
 --   u is not a rec type and
