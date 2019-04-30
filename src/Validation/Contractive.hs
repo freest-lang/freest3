@@ -41,7 +41,7 @@ instance Contractive Type where
      addError (position t) ["Type", styleRed $ show t, "is not contractive"]
 
 instance Contractive TypeScheme where
-  checkContractive kEnv (TypeScheme _ _ t) = checkContractive kEnv t
+  checkContractive kEnv (TypeScheme _ xks t) = checkContractive (insert kEnv xks) t
 
 -- Is a given type contractive?
 
@@ -49,30 +49,25 @@ type Visited = Set.Set TypeVar
 
 -- Revised version wrt to ICFP'16
 contractive :: TypeEnv -> KindEnv -> Type -> Bool
-contractive = contr Set.empty
+contractive tEnv kEnv= contr Set.empty
   where
-  contr :: Visited -> TypeEnv -> KindEnv -> Type -> Bool
-  -- Functional types
-  contr _ _    _    (Basic _ _) = True
-  contr v tEnv kEnv (Fun _ _ t u) = contr v tEnv kEnv t && contr v tEnv kEnv u
-  contr v tEnv kEnv (PairType _ t u) = contr v tEnv kEnv t && contr v tEnv kEnv u
-  contr v tEnv kEnv (Datatype _ m) = all (contr v tEnv kEnv) m
+  contr :: Visited -> Type -> Bool
   -- Session types
-  contr _ _    _    (Skip _) = False
-  contr v tEnv kEnv (Semi _ t u)
-    | terminated t = contr v tEnv kEnv u
-    | otherwise    = contr v tEnv kEnv t && contr v tEnv kEnv u
-  contr v tEnv kEnv (Message _ _ _) = True
-  contr v tEnv kEnv (Choice _ _ m) = all (contr v tEnv kEnv) m
+  contr _ (Skip _) = False
+  contr v (Semi _ t u)
+    | terminated t = contr v u
+    | otherwise    = contr v t && contr v u
   -- Functional or session
-  contr v tEnv kEnv (Rec _ _ t)   = contr v tEnv kEnv t
-  contr v tEnv kEnv (TypeVar p x) = Map.findWithDefault (kindSU p) x kEnv == kindSL p
+  contr v (Rec _ _ t) = contr v t
+  contr v (TypeVar p x) = Map.findWithDefault (kindSU p) x kEnv == kindSL p
   -- Type operators
-  contr v tEnv kEnv (Dualof _ t) = contr v tEnv kEnv t
-  contr v tEnv kEnv (TypeName p x)  -- TODO: not quite sure of this
+  contr v (Dualof _ t) = contr v t
+  contr v (TypeName p x)  -- TODO: not quite sure of this
     | x `Set.member` v    = False
-    | x `Map.member` tEnv = contr (Set.insert x v) tEnv kEnv (getType (tEnv Map.! x))
+    | x `Map.member` tEnv = contr (Set.insert x v) (getType (tEnv Map.! x))
     | otherwise           = True
+  -- Otherwise: functional types, Message, Choice
+  contr _ _ = True
 
 getType :: (Kind, TypeScheme) -> Type
 getType (_, TypeScheme _ _ t) = t

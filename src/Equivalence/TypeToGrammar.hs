@@ -79,16 +79,20 @@ toGrammar (Rec _ (TypeVarBind _ x _) t) = do
         Nothing ->
           return []
   -- Type operators
+toGrammar (Dualof _ (TypeName _ x)) = do
+  (k, TypeScheme _ [] t) <- getFromVEnv x
+  trace ("Type " ++ show x ++ " = " ++ show t)
+    toGrammar (dual t)
 toGrammar (Dualof _ t) = toGrammar (dual t)
-toGrammar (TypeName p x) = do
+toGrammar (TypeName _ x) = do
   b <- memberVisited x
   if b
   then    -- We have visited this type name before
     return [x]
   else do -- This is the first visit
-    (k, TypeScheme q [] t) <- getFromVEnv x
-    trace ("TypeName: " ++ show (Rec p (TypeVarBind q x k) t))
-      toGrammar (Rec p (TypeVarBind q x k) t)
+    insertVisited x
+    (k, TypeScheme _ [] t) <- getFromVEnv x
+    toGrammar t -- (Rec p (TypeVarBind q x k) t)
   -- Should not happen
 toGrammar t =
   trace ("toGrammar: " ++ show t) (return [mkVar (position t) "error"])
