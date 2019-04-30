@@ -203,6 +203,10 @@ instance Show BisimPair where
   show (BisimPair t u) = show t ++ " bisimilar-to " ++ show u
 
 {-
+
+This is a fully functional version that only applies one axiom to a
+seed type
+
 instance Arbitrary BisimPair where
   arbitrary = do
     t <- arbitrary
@@ -226,9 +230,8 @@ instance Arbitrary BisimPair where
 
 instance Arbitrary BisimPair where
   arbitrary = do
-    n <- arbitrary
-    -- n <- choose (0, 6)
-    t <- arbitrary
+    t <- arbitrary -- The seed type
+    n <- arbitrary -- The number of axioms to apply
     (u, v) <- arbitraryBisimPair (abs n) t t
     let [u', v'] = renameList [u, v]
     return $ BisimPair u' v'
@@ -289,7 +292,7 @@ recFree t u = do
   return (Rec pos (TypeVarBind pos freeTypeVar k) t, u)
   -- Note: the rec-var must be distinct from the free variables of t
 
-alphaConvert :: GenBisimPair
+alphaConvert :: GenBisimPair -- (fixed wrt to ICFP'16)
 alphaConvert t u = do
   (x, k) <- arbitrary
   let y = freeTypeVar
@@ -304,8 +307,7 @@ subsOnBoth t u = do
 unfoldt :: GenBisimPair
 unfoldt t u = do
   xk <- arbitrary
-  let v = Rec pos xk t
-  return (v, unfold (renameType v))
+  return (Rec pos xk t, unfold (Rec pos xk (renameType u)))
 
 -- Commutativity
 

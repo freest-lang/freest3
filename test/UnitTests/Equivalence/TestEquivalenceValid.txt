@@ -521,12 +521,11 @@ rec z:SL. x
 (((rec x_0:SL. !Int);!Int);((rec z_1:SL. ((Skip;z_1);+{A: z_1, B: z_1, C: z_1}));!Int)) 
 ((((rec x_2:SL. !Int);!Int);(rec z_3:SL. ((Skip;z_3);+{A: z_3, B: z_3,C: z_3})));!Int)
 
--- This one is non-contractive (as of version April 24, 2019)
+-- This one is non-kinded (as of version April 24, 2019)
 --[]
 --((rec z_0:SL. (((Skip;z_0);?Char);&{A: y, B: y, C: z_0}));((?Bool;(rec x_1:SL. +{A: x_1, B: Skip, C: y}));+{A: (rec y_2:SL. Skip), B: ?Int, C: !Bool}))
 --(((rec z_3:SL. (((Skip;z_3);?Char);&{A: y, B: y, C: z_3}));(?Bool;(rec x_4:SL. +{A: x_4, B: Skip, C: y})));+{A: (rec y_5:SL. Skip), B: ?Int, C: !Bool})
 
--- this one hangs 
 []
  (rec y_0:SL. (!Bool;+{A: y_0, B: y_0, C: x})) ; (?Int ; (?Int;&{A: Skip, B: z, C: z}))
 ((rec y_1:SL. (!Bool;+{A: y_1, B: y_1, C: x})) ; ?Int) ; (?Int;&{A: Skip, B: z, C: z})
@@ -545,21 +544,20 @@ rec y_0:SL. !Char ; +{A: y_0, B: Skip, C: Skip}
 !Char ; !Int ; &{A: x, B: z} ; &{A: Skip} ; ?() ; &{B: y}
 !Char ; !Int ; &{A: x, B: z} ; &{A: Skip} ; ?() ; &{B: y}
 
--- Distributivity _ This one fails
+-- Distributivity
 []
 &{B: y ; y} ; ?Bool
 &{B: y ; y ; ?Bool}
 
--- Unfold _ This one fails
+-- Unfold
 []
 rec x. !Bool ; !Bool
 !Bool ; !Bool
 
--- This one is non-contractive (as of version April 24, 2019)
--- []
--- rec z_0:SL. (Skip ; z_0 ; ?Int)
--- Skip ; (rec z_1:SL. Skip ; z_1 ; ?Int) ; ?Int
-
 []
 rec x:SL. (((z;z);(Skip;y));?Bool)
 ((z;z);(Skip;y));?Bool
+
+[]
+((rec x:SL. (rec y:SL. z)) ; &{B: ?Int, C: ?Char}) ; +{A: Skip, B: !Char, C: Skip}
+((rec u:SL. (rec v:SL. z)) ; &{B: ?Int, C: ?Char}) ; +{A: Skip, B: !Char, C: Skip}
