@@ -31,5 +31,3 @@ instance Ord ProgVar where
 
 instance Position ProgVar where
   position (ProgVar p _) = p
-
-

@@ -1,4 +1,3 @@
-
 {- |
 Module      :  Equivalence.TypeToGrammar
 Description :  Conversion from types to grammars
@@ -27,7 +26,6 @@ import           Syntax.Base
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import           Debug.Trace
 
 -- Conversion to context-free grammars
 
@@ -39,7 +37,7 @@ typeToGrammar :: Type -> TransState TypeVar
 typeToGrammar t = do
   xs <- toGrammar t
   y <- freshVar
-  addProduction y (MessageLabel In UnitType) xs
+  addProduction y (MessageLabel Out UnitType) xs
   return y
 
 toGrammar :: Type -> TransState [TypeVar]
@@ -77,6 +75,7 @@ toGrammar (Rec _ (TypeVarBind _ x _) t) = do
           return [x]
         Nothing ->
           return []
+  -- Type operators
 toGrammar (Dualof _ t) = toGrammar (dual t)
 toGrammar (TypeName p x) = do
   b <- memberVisited x
@@ -85,10 +84,8 @@ toGrammar (TypeName p x) = do
     return [x]
   else do -- This is the first visit
     (k, TypeScheme q [] t) <- getFromVEnv x
-    trace ("TypeName: " ++ show (Rec p (TypeVarBind q x k) t))
-      toGrammar (Rec p (TypeVarBind q x k) t)
-  -- Should not happen
-toGrammar t = trace ("toGrammar: " ++ show t) (return [mkVar (position t) "error"])
+    toGrammar (Rec p (TypeVarBind q x k) t)
+
 
 assocToGrammar :: TypeVar -> Polarity -> (ProgVar, Type) -> TransState ()
 assocToGrammar y p (x, t) = do
@@ -103,7 +100,7 @@ data TState = TState {
   productions :: Productions
 , visited     :: Visited
 , nextIndex   :: Int
-, typeEnv     :: TypeEnv  
+, typeEnv     :: TypeEnv
 }
 
 type TransState = State TState
@@ -122,17 +119,17 @@ freshVar :: TransState TypeVar
 freshVar = do
   s <- get
   let n = nextIndex s
-  modify (\s -> s{nextIndex = n + 1})
+  modify (\s -> s {nextIndex = n + 1})
   return $ mkVar defaultPos ("#X" ++ show n)
 
 memberVisited :: TypeVar -> TransState Bool
-memberVisited t = do
+memberVisited x = do
   s <- get
-  return $ Set.member t (visited s)
+  return $ x `Set.member` (visited s)
 
 insertVisited :: TypeVar -> TransState ()
 insertVisited x =
-  modify $ \s -> s{visited=Set.insert x (visited s)}
+  modify $ \s -> s {visited = Set.insert x (visited s)}
 
 getTransitions :: TypeVar -> TransState (Maybe Transitions)
 getTransitions x = do
@@ -145,7 +142,7 @@ addProductions x m =
 
 addProduction :: TypeVar -> Label -> [TypeVar] -> TransState ()
 addProduction x l w =
-  modify $ \s -> s{productions=insertProduction (productions s) x l w}
+  modify $ \s -> s {productions = insertProduction (productions s) x l w}
 
 -- Add or update production from a (basic) non-terminal; the
 -- productions may already contain transitions for the given
@@ -153,16 +150,14 @@ addProduction x l w =
 addBasicProd :: Label -> TransState TypeVar
 addBasicProd l = do
   s <- get
-  let ip = Map.map (Map.filter null) (productions s)
-  let p' = Map.filter (\b -> not (Map.null b) && Map.member l b) ip
-  if Map.null p'
-    then do
+  case Map.foldrWithKey fold Nothing (productions s) of
+    Nothing -> do
       y <- freshVar
       addProduction y l []
       return y
-    else do
-      let (y,_) = Map.elemAt 0 p'
-      return y
+    Just p ->
+      return p
+  where fold x m acc = if l `Map.member` m && null (m Map.! l) then Just x else acc
 
 getFromVEnv :: TypeVar -> TransState (Kind, TypeScheme)
 getFromVEnv x = do

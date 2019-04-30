@@ -1,6 +1,6 @@
 {- |
 Module      :  Grammar
-Description :  Context-free grammars
+Description :  <optional short text displayed on contents page>
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
 
@@ -25,6 +25,8 @@ map from labels to lists of type variables.
 
 -}
 
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
+
 module Equivalence.Grammar
 ( Label(..)
 , Transitions
@@ -43,7 +45,7 @@ import           Syntax.ProgramVariables
 import           Syntax.Base
 import           Syntax.Show
 import qualified Data.Map.Strict as Map
-import           Data.List (intersperse, union)
+import           Data.List (union, intersperse)
 
 -- Terminal symbols are called labels
 data Label =
@@ -66,38 +68,46 @@ data Grammar = Grammar [TypeVar] Productions
 
 -- Operations on grammars
 
--- The transitions from a word, as opposed to the transitions from a non-terminal
-transitions :: Productions -> [TypeVar] -> Transitions
-transitions _ []     = Map.empty
-transitions p (x:xs) = Map.map (++ xs) (Map.findWithDefault Map.empty x p)
--- transitions p (x:xs) = Map.map (++ xs) (p Map.! x)
+class TransitionsFrom t where
+  transitions :: t -> Productions -> Transitions
 
--- Add a production from a non-terminal; the productions may already contain transitions for the given nonterminal (hence the insertWith and union)
+-- The transitions from a non-terminal
+instance TransitionsFrom TypeVar where
+  transitions = Map.findWithDefault Map.empty
+  
+-- The transitions from a word
+instance TransitionsFrom [TypeVar] where
+  transitions []     _ = Map.empty
+  transitions (x:xs) p = Map.map (++ xs) (transitions x p)
+
+-- Add a production from a non-terminal; the productions may already
+-- contain transitions for the given nonterminal (hence the insertWith
+-- and union)
 insertProduction :: Productions -> TypeVar -> Label -> [TypeVar] -> Productions
 insertProduction p x l w = Map.insertWith Map.union x (Map.singleton l w) p
 
 -- Determine transitions from a word
 trans :: Productions -> [TypeVar] -> [[TypeVar]]
-trans p xs = Map.elems (transitions p xs)
+trans p xs = Map.elems (transitions xs p)
 
 -- only applicable to normed variables
 pathToSkip :: Productions -> TypeVar -> [Label]
 pathToSkip p x = fst . head $ filter (null . snd) ps
-  where ps = pathToSkip' p (Map.assocs $ (Map.mapKeys (:[]) (transitions p [x])))
+  where ps = pathToSkip' p (Map.assocs $ (Map.mapKeys (:[]) (transitions x p)))
 
 pathToSkip' :: Productions -> [([Label],[TypeVar])] -> [([Label],[TypeVar])]
 pathToSkip' p ps
   | any (null . snd) ps = ps
   | otherwise           = pathToSkip' p ps'
   where ps' = foldr (\(ls,xs) ts -> union
-                    (map (\(l,ys) -> (ls++[l], ys)) $ Map.assocs $ transitions p xs)
+                    (map (\(l,ys) -> (ls++[l], ys)) $ Map.assocs $ transitions xs p)
                     ts ) [] ps
 
 throughPath :: Productions -> [Label] -> [TypeVar] -> Maybe [TypeVar]
 throughPath p (l:ls) xs
   | not (Map.member l ts) = Nothing
   | otherwise = throughPath p ls xs'
-  where ts  = (transitions p xs)
+  where ts  = transitions xs p
         xs' = ts Map.! l
 throughPath p _ xs = Just xs
 
