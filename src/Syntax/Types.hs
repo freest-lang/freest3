@@ -1,14 +1,14 @@
 {- |
-Module      :  Types
-Description :  <optional short text displayed on contents page>
-Copyright   :  (c) <Authors or Affiliations>
-License     :  <license>
+Module      :  Syntax.Types
+Description :  The language types.
+Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of Lisbon
+                   Andreia Mordido, LASIGE, Faculty of Sciences, University of Lisbon
+                   Vasco Vasconcelos, LASIGE, Faculty of Sciences, University of Lisbon
+Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc.ul.pt
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
-
-<module description starting at first column>
+This module defines a type with the definitions of type duality and equality.
+The unfolding of recursive types and substitution ([u/x]t, substitute u for x on t)
+operations are also defined.
 -}
 
 module Syntax.Types
@@ -25,9 +25,8 @@ import           Syntax.Kinds
 import           Syntax.TypeVariables
 import           Syntax.ProgramVariables (ProgVar)
 import           Syntax.Base
-import           Data.List (intersperse)
 import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
+
 
 -- The dual function on types, etc
 class Dual t where

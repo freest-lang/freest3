@@ -344,7 +344,13 @@ parseType s = fst $ runState (parse s) (initialState "")
   where parse = types . scanTokens
 
 instance Read Type where
-  readsPrec _ s = [(parseType s, "")]
+  readsPrec _ str =
+    let (t, state) = runState (parse str) (initialState "") in
+    if null (errors state)
+    then [(t, "")]
+    else error $ intercalate "\n" (errors state)
+   where parse = types . scanTokens
+
 
 parseTypeScheme :: String -> TypeScheme
 parseTypeScheme s = fst $ runState (parse s) (initialState "")
