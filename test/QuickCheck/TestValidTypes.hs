@@ -18,7 +18,7 @@ import           Debug.Trace
 
 -- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_bisimilar
 -- main = verboseCheckWith stdArgs {maxSuccess = 1000} prop_bisimilar
-main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar_trace
+main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_subs_kind_preservation1
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_norm_preserves_bisim
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_distribution
@@ -174,12 +174,12 @@ instance Arbitrary Type where
 arbitrarySession :: Int -> Gen Type
 arbitrarySession 0 = oneof
   [ liftM Skip arbitrary
-  , liftM2 TypeVar arbitrary arbitrary
   , liftM3 Message arbitrary arbitrary arbitrary
   ]
 arbitrarySession n = oneof
   [ liftM3 Semi arbitrary (arbitrarySession (n `div` 4)) (arbitrarySession (n `div` 4))
   , liftM3 Choice arbitrary arbitrary (arbitraryTypeMap (n `div` 4))
+  , liftM2 TypeVar arbitrary arbitrary
   , liftM3 Rec arbitrary arbitrary (arbitrarySession (n `div` 4))
   ]
 
@@ -231,7 +231,8 @@ instance Arbitrary BisimPair where
 instance Arbitrary BisimPair where
   arbitrary = do
     t <- arbitrary -- The seed type
-    n <- arbitrary -- The number of axioms to apply
+    -- n <- arbitrary -- The number of axioms to apply
+    n <- choose (0, 3)
     (u, v) <- arbitraryBisimPair (abs n) t t
     let [u', v'] = renameList [u, v]
     return $ BisimPair u' v'
@@ -251,7 +252,7 @@ arbitraryBisimPair n t u = do
     , recrec
     , recFree
     , alphaConvert
-    , subsOnBoth
+    -- , subsOnBoth
     , unfoldt
     -- Commutativity
     , commut
@@ -271,20 +272,23 @@ tskip t u = return (Semi pos t (Skip pos), t)
 assoc :: GenBisimPair
 assoc t u = do
   (v , w) <- arbitrary
-  return (Semi pos t (Semi pos v w), Semi pos (Semi pos u v) w)
+  return (Semi pos t (Semi pos v w),
+          Semi pos (Semi pos u v) w)
 
 distrib :: GenBisimPair
 distrib t u = do
   p <- arbitrary
   m <- sized arbitraryTypeMap
-  return (Semi pos (Choice pos p m) t, Choice pos p (Map.map (\v -> Semi pos v u) m))
+  return (Semi pos (Choice pos p m) t,
+          Choice pos p (Map.map (\v -> Semi pos v u) m))
 
 -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
 
 recrec :: GenBisimPair
 recrec t u = do
   (xk@(TypeVarBind _ x _), yk@(TypeVarBind _ y _)) <- arbitrary
-  return (Rec pos xk (Rec pos yk t), Rec pos xk (subs (TypeVar pos x) y (renameType u)))
+  return (Rec pos xk (Rec pos yk t),
+          Rec pos xk (subs (TypeVar pos x) y (renameType u)))
 
 recFree :: GenBisimPair
 recFree t u = do
@@ -301,13 +305,15 @@ alphaConvert t u = do
 
 subsOnBoth :: GenBisimPair
 subsOnBoth t u = do
-  (v, x) <- arbitrary
-  return (subs t x (renameType v), subs u x (renameType v))
+  ((BisimPair t' u'), x) <- arbitrary
+  return (subs t x t',
+          subs u x u')
 
 unfoldt :: GenBisimPair
 unfoldt t u = do
   xk <- arbitrary
-  return (Rec pos xk t, unfold (Rec pos xk (renameType u)))
+  return (Rec pos xk t,
+          unfold (Rec pos xk (renameType u)))
 
 -- Commutativity
 
