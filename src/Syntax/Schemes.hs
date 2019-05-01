@@ -71,9 +71,6 @@ isDatatypeContructor c tEnv =
   where isDatatype :: Type -> Bool
         isDatatype (Datatype _ m) = c `Map.member` m
         isDatatype _              = False
-<<<<<<< HEAD
-=======
 
 insert :: KindEnv -> [TypeVarBind] -> KindEnv
 insert = foldr (\(TypeVarBind _ x k) env -> Map.insert x k env)
->>>>>>> 9a7a76b79bb4b42b2bbc6b64f916ebe3b2a265bb
