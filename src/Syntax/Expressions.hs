@@ -20,7 +20,6 @@ module Syntax.Expressions
 import           Syntax.Types (Type)
 import           Syntax.ProgramVariables
 import           Syntax.Base
-import           Data.List (intersperse, intercalate)
 import qualified Data.Map.Strict as Map
 
 data Expression =

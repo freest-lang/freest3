@@ -1,14 +1,14 @@
 {- |
-Module      :  Types
-Description :  <optional short text displayed on contents page>
-Copyright   :  (c) <Authors or Affiliations>
-License     :  <license>
+Module      :  Syntax.Kinds
+Description :  The kind of a type
+Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of Lisbon
+                   Andreia Mordido, LASIGE, Faculty of Sciences, University of Lisbon
+                   Vasco Vasconcelos, LASIGE, Faculty of Sciences, University of Lisbon
+Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc.ul.pt
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
-
-<module description starting at first column>
+This module defines a kind and the relational order between kinds. It also defines the
+subkinding relation, the least upper bound of two kinds and other functions to
+manipulate prekinds and multiplicities.
 -}
 
 module Syntax.Kinds

@@ -1,5 +1,5 @@
 {- |
-Module      :  Schemes
+Module      :  Syntax.Schemes
 Description :  The language types schemes.
 Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of Lisbon
                    Andreia Mordido, LASIGE, Faculty of Sciences, University of Lisbon
@@ -65,4 +65,3 @@ isDatatypeContructor c tEnv =
   where isDatatype :: Type -> Bool
         isDatatype (Datatype _ m) = c `Map.member` m
         isDatatype _              = False
-

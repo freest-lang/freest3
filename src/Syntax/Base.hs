@@ -1,14 +1,13 @@
 {- |
-Module      :  Types
-Description :  <optional short text displayed on contents page>
-Copyright   :  (c) <Authors or Affiliations>
-License     :  <license>
+Module      :  Syntax.Base
+Description :  The Base module.
+Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of Lisbon
+                   Andreia Mordido, LASIGE, Faculty of Sciences, University of Lisbon
+                   Vasco Vasconcelos, LASIGE, Faculty of Sciences, University of Lisbon
+Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc.ul.pt
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
-
-<module description starting at first column>
+This module defines the basic structures (classes and datatypes) such as Positions and
+Multiplicity, that will be used the remaining Compiler.
 -}
 
 module Syntax.Base
@@ -27,7 +26,6 @@ class Default t where
 
 -- POSITIONS
 
--- type Pos = AlexPosn -- TODO: Make Pos a newtype so that we may redefine Show
 data Pos = Pos Int Int
 
 class Position t where

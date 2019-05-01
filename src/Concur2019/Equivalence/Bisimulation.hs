@@ -60,8 +60,8 @@ expandPair :: Productions -> ([TypeVar], [TypeVar]) -> Maybe Node
 expandPair ps (xs, ys)
   | Map.keysSet m1 == Map.keysSet m2 = Just $ match m1 m2
   | otherwise                        = Nothing
-  where m1 = transitions ps xs
-        m2 = transitions ps ys
+  where m1 = transitions xs ps
+        m2 = transitions ys ps
 
 match :: Transitions -> Transitions -> Node
 match m1 m2 =
@@ -70,6 +70,12 @@ match m1 m2 =
 -- Prune nodes once expanded
 pruneNode :: Productions -> Node ->  Node
 pruneNode ps = Set.map (\(xs,ys) -> (pruneWord ps xs, pruneWord ps ys))
+
+prune :: Productions -> Productions
+prune p = Map.map (Map.map (pruneWord p)) p
+
+pruneWord :: Productions -> [TypeVar] -> [TypeVar]
+pruneWord p = foldr (\x ys -> if normed p x then x:ys else [x]) []
 
 -- Apply the different node transformations
 
