@@ -47,6 +47,36 @@ Note: The above result does not hold in ICFP16.
 \end{lemma}
 \input{checkAgainst}
 
+\begin{lemma}[Laws for sequential composition]
+  \label{lemma:seq-laws}
+  Suppose that $S_i \TypeEquiv S'_i$, $i=1,2,3$.
+  \begin{align*}
+    \skipk;S_1 \TypeEquiv&\; S'_1
+    \\
+    S_1;\skipk \TypeEquiv&\; S_1'
+    \\
+    (S_1;S_2);S_3 \TypeEquiv&\; S'_1;(S'_2;S'_3)
+    \\
+    \star\{l_i\colon S_1\};S_2 \TypeEquiv&\; \star\{l_i\colon S'_1;S'_2\}
+  \end{align*}
+\end{lemma}
+
+\begin{lemma}[Laws for $\mu$-types]
+\label{lemma:mu-laws}
+  Suppose that $S_i \TypeEquiv S'_i$, $i=1,2,3$.
+  \begin{align*}
+    \mu x. \mu y. S_1 \TypeEquiv&\; \mu x. \subs xy{S_1'}
+    \\
+    \mu x.S_1 \TypeEquiv&\; S'_1 &\text{if } x \notin \free (S_1)
+    \\
+    \mu x.S_1 \TypeEquiv&\; \mu y.\subs yx{S_1'} &\text{if } y \notin \free (S'_1)
+    \\
+    \subs{S_1}{x}{S_2} \TypeEquiv&\; \subs{S_1'}{x}{S_2'}
+    \\
+    \mu x.S_1 \TypeEquiv&\; \subs{\mu x.S_1'}{x}{S_1'}
+  \end{align*}
+\end{lemma}
+
 % \bibliography{biblio}
 % \bibliographystyle{plain}
 

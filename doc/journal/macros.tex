@@ -116,17 +116,22 @@
 
 % Operators
 \newcommand\extract[1]{\leadsto_{#1}}% \rightlsquigarrow}
-\newcommand{\subs}[3]{[{#1}/{#2}]{#3}}
+\newcommand{\subs}[3]{[{#1}/{#2}]{#3}} % subs #1 for #2 in #3
 \newcommand{\dual}[1]{\overline{#1}}
 \newcommand{\join}{\sqcup}
 \newcommand{\ctxdiff}[4][\Delta]{{#1}\vdash{#2}\div{#3}={#4}}
 \newcommand\Equiv[2]{#1\,\sim\,#2}
 \newcommand\done[1]{#1 \checkmark}
 \newcommand{\unfoldk}{\keyword{unfold}}
+\newcommand\TypeEquiv{\sim}
 
 % Theorems
 \newtheorem{theorem}{Theorem}
 \newtheorem{lemma}{Lemma}
+
+%metafunctions
+\newcommand\dom{\mathsf{dom}}
+\newcommand\free{\mathsf{free}}
 
 % Colour
 
