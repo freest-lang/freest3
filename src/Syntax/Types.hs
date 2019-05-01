@@ -128,16 +128,18 @@ instance Position Type where
 
 instance Dual Type where
   -- Session types
-  dual (Semi p t1 t2)  = Semi p (dual t1) (dual t2)
-  dual (Message p v b) = Message p (dual v) b
-  dual (Choice p v m)  = Choice p (dual v) (Map.map dual m)
-  -- dual (Choice p v m)  = Choice p (dual v) (Map.map (Dualof p) m) -- The lazy version, hopefully fa
-  dual (Rec p x t)     = Rec p x (dual t)
---  dual (Rec p x t)     = Rec p x (Dualof p t) -- The lazy version, hopefully faster
+  dual (Semi p t1 t2)   = Semi p (dual t1) (dual t2)
+  -- dual (Semi p t1 t2)  = Semi p (Dualof p t1) (Dualof p t2) -- The lazy version loops
+  dual (Message p v b)  = Message p (dual v) b
+  dual (Choice p v m)   = Choice p (dual v) (Map.map dual m)
+  -- dual (Choice p v m)  = Choice p (dual v) (Map.map (Dualof p) m) -- The lazy version loops
+  dual (Rec p x t)      = Rec p x (dual t)
+  -- dual (Rec p x t)     = Rec p x (Dualof p t) -- The lazy version loops
   -- Type operators
-  dual (Dualof _ t)    = t
-  -- Functional types, Skip, TypeVar, TypeName
-  dual t               = t
+  dual (Dualof _ t)     = t
+  dual t@(TypeName _ x) = t -- TODO: This can't be right
+  -- Functional types, Skip, TypeVar
+  dual t                = t
 
 instance Default Type where
   omission p = Basic p IntType

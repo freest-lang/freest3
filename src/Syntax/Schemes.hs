@@ -21,12 +21,14 @@ module Syntax.Schemes
 ( TypeScheme(..)
 , TypeEnv
 , VarEnv
-, toTypeScheme
+, fromType
+, toType
+, insert
 , noConstructors
 ) where
 
 import           Syntax.Types
-import           Syntax.Kinds (Kind, TypeVarBind)
+import           Syntax.Kinds
 import           Syntax.ProgramVariables
 import           Syntax.TypeVariables
 import           Syntax.Base
@@ -42,8 +44,12 @@ type TypeEnv = Map.Map TypeVar (Kind, TypeScheme)
 type VarEnv = Map.Map ProgVar TypeScheme
 
 -- Create a type scheme from a type
-toTypeScheme :: Type -> TypeScheme
-toTypeScheme t = TypeScheme (position t) [] t
+fromType :: Type -> TypeScheme
+fromType t = TypeScheme (position t) [] t
+
+-- Extract a type from a type scheme
+toType :: TypeScheme -> Type
+toType (TypeScheme _ [] t) = t
 
 instance Position TypeScheme where
   position (TypeScheme p _ _) = p
@@ -65,3 +71,9 @@ isDatatypeContructor c tEnv =
   where isDatatype :: Type -> Bool
         isDatatype (Datatype _ m) = c `Map.member` m
         isDatatype _              = False
+<<<<<<< HEAD
+=======
+
+insert :: KindEnv -> [TypeVarBind] -> KindEnv
+insert = foldr (\(TypeVarBind _ x k) env -> Map.insert x k env)
+>>>>>>> 9a7a76b79bb4b42b2bbc6b64f916ebe3b2a265bb

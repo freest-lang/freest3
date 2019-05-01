@@ -56,7 +56,7 @@ synthetise kEnv (ProgVar p x) = do
   return t
 synthetise kEnv (UnLet _ x e1 e2) = do
   t1 <- synthetise kEnv e1
-  addToVEnv x (toTypeScheme t1)
+  addToVEnv x (fromType t1)
   t2 <- synthetise kEnv e2
   quotient kEnv x
   return t2
@@ -64,7 +64,7 @@ synthetise kEnv (UnLet _ x e1 e2) = do
 synthetise kEnv e'@(Lambda p m x t1 e) = do
   K.synthetise kEnv t1
   vEnv1 <- getVEnv
-  addToVEnv x (toTypeScheme t1)
+  addToVEnv x (fromType t1)
   t2 <- synthetise kEnv e
   quotient kEnv x
   vEnv2 <- getVEnv
@@ -106,8 +106,8 @@ synthetise kEnv (Pair p e1 e2) = do
 synthetise kEnv (BinLet _ x y e1 e2) = do
   t1 <- synthetise kEnv e1
   (u1, u2) <- extractPair e1 t1
-  addToVEnv x (toTypeScheme u1)
-  addToVEnv y (toTypeScheme u2)
+  addToVEnv x (fromType u1)
+  addToVEnv y (fromType u2)
   vEnv <- getVEnv
   t2 <- synthetise kEnv e2
   quotient kEnv x
@@ -182,7 +182,7 @@ synthetiseField vEnv1 kEnv params tm b (bs, e) state = do
   setVEnv vEnv1
   t1 <- synthetiseCons b tm
   params b bs t1
-  t2 <- fillFunType kEnv b e (toTypeScheme t1)
+  t2 <- fillFunType kEnv b e (fromType t1)
   mapM_ (quotient kEnv) bs  
   vEnv2 <- getVEnv
   return (t2:ts, vEnv2:vEnvs)
@@ -190,7 +190,7 @@ synthetiseField vEnv1 kEnv params tm b (bs, e) state = do
 -- match map
 paramsToVEnvMM :: ProgVar -> [ProgVar] -> Type -> FreestState ()
 paramsToVEnvMM c bs t = do
-  addToVEnv (head bs) (toTypeScheme t)
+  addToVEnv (head bs) (fromType t)
   let lbs = length bs
   when (lbs /= 1) $
     addError (position c) ["The label", styleRed (show c) , "should have 1",
@@ -208,8 +208,8 @@ paramsToVEnvCM c bs t = do
 
 zipProgVarLType :: [ProgVar] -> Type -> [(ProgVar, TypeScheme)]
 zipProgVarLType [] _ = []
-zipProgVarLType (b:bs) (Fun _ _ t1 t2) = (b, toTypeScheme t1) : zipProgVarLType bs t2
-zipProgVarLType (b:_) t = [(b, toTypeScheme t)] 
+zipProgVarLType (b:bs) (Fun _ _ t1 t2) = (b, fromType t1) : zipProgVarLType bs t2
+zipProgVarLType (b:_) t = [(b, fromType t)] 
 
 numArgs :: Type -> Int
 numArgs (Fun _ _ _ t2) = 1 + numArgs t2
@@ -261,8 +261,8 @@ checkAgainst kEnv (Conditional p e1 e2 e3) t = do
 checkAgainst kEnv (BinLet _ x y e1 e2) t2 = do
   t1 <- synthetise kEnv e1
   (u1, u2) <- extractPair e1 t1
-  addToVEnv x (toTypeScheme u1)
-  addToVEnv y (toTypeScheme u2)
+  addToVEnv x (fromType u1)
+  addToVEnv y (fromType u2)
   checkAgainst kEnv e2 t2
   quotient kEnv x
   quotient kEnv y
@@ -322,7 +322,7 @@ fillFunType kEnv b e (TypeScheme _ _ t) = fill e t
   where
   fill :: Expression -> Type -> FreestState Type
   fill (Lambda _ _ b _ e) (Fun _ _ t1 t2) = do
-    addToVEnv b (toTypeScheme t1)
+    addToVEnv b (fromType t1)
     t3 <- fill e t2
     removeFromVEnv b
     return t3

@@ -13,12 +13,12 @@ import           Syntax.ProgramVariables
 import           Syntax.Base
 import qualified Data.Map.Strict as Map
 
-binIntOp = toTypeScheme (Fun defaultPos Un (Basic defaultPos IntType) (Fun defaultPos Un (Basic defaultPos IntType) (Basic defaultPos IntType)))
-binBoolOp = toTypeScheme (Fun defaultPos Un (Basic defaultPos BoolType) (Fun defaultPos Un (Basic defaultPos BoolType) (Basic defaultPos BoolType)))
-relationalOp = toTypeScheme(Fun defaultPos Un (Basic defaultPos IntType) (Fun defaultPos Un (Basic defaultPos IntType) (Basic defaultPos BoolType)))
-unIntBool = toTypeScheme (Fun defaultPos Un (Basic defaultPos IntType) (Basic defaultPos BoolType))
-unIntInt = toTypeScheme (Fun defaultPos Un (Basic defaultPos IntType)  (Basic defaultPos IntType))
-unBoolBool = toTypeScheme (Fun defaultPos Un (Basic defaultPos BoolType) (Basic defaultPos BoolType))
+binIntOp = fromType (Fun defaultPos Un (Basic defaultPos IntType) (Fun defaultPos Un (Basic defaultPos IntType) (Basic defaultPos IntType)))
+binBoolOp = fromType (Fun defaultPos Un (Basic defaultPos BoolType) (Fun defaultPos Un (Basic defaultPos BoolType) (Basic defaultPos BoolType)))
+relationalOp = fromType(Fun defaultPos Un (Basic defaultPos IntType) (Fun defaultPos Un (Basic defaultPos IntType) (Basic defaultPos BoolType)))
+unIntBool = fromType (Fun defaultPos Un (Basic defaultPos IntType) (Basic defaultPos BoolType))
+unIntInt = fromType (Fun defaultPos Un (Basic defaultPos IntType)  (Basic defaultPos IntType))
+unBoolBool = fromType (Fun defaultPos Un (Basic defaultPos BoolType) (Basic defaultPos BoolType))
 
 typeList :: [(ProgVar, TypeScheme)]
 typeList =

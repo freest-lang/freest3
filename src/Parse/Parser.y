@@ -146,7 +146,7 @@ Decl :: { () }
       let a = fst $2
       checkDupTypeDecl a
       let bs = typeListToType a $5 :: [(ProgVar, Type)]
-      mapM_ (\(c, t) -> addToVEnv c (toTypeScheme t)) bs
+      mapM_ (\(c, t) -> addToVEnv c (fromType t)) bs
       vEnv <- getVEnv
       let p = position a
       uncurry addToTEnv $2 (TypeScheme p $3 (Datatype p (Map.fromList bs)))

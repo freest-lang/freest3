@@ -33,40 +33,43 @@ class Equivalence t where
 -- Types
 
 instance Equivalence Type where
-  -- equivalent tenv kenv t u = normalise tenv t == normalise tenv u || equiv kenv t u
-  -- equivalent tenv kenv t u = t == u || equiv kenv t u
-  equivalent tenv kenv t u = equiv kenv t u
+  -- equivalent tenv kenv t u = normalise tenv t == normalise tenv u || equiv t u
+  equivalent tenv kenv t u = t == u || equiv t u
+  -- equivalent tenv kenv t u = equiv t u
     where
-    equiv :: KindEnv -> Type -> Type -> Bool
+    equiv :: Type -> Type -> Bool
       -- Functional types
-    equiv _ (Basic _ b) (Basic _ c) = b == c
-    equiv kenv (Fun _ m t1 t2) (Fun _ n u1 u2) =
-      m == n && equiv kenv t1 u1 && equiv kenv t2 u2
-    equiv kenv (PairType _ t1 t2) (PairType _ u1 u2) =
-      equiv kenv t1 u1 && equiv kenv t2 u2
-    equiv kenv (Datatype _ m1) (Datatype _ m2) =
+    equiv (Basic _ b) (Basic _ c) = b == c
+    equiv (Fun _ m t1 t2) (Fun _ n u1 u2) =
+      m == n && equiv t1 u1 && equiv t2 u2
+    equiv (PairType _ t1 t2) (PairType _ u1 u2) =
+      equiv t1 u1 && equiv t2 u2
+    equiv (Datatype _ m1) (Datatype _ m2) =
       Map.size m1 == Map.size m2 &&
-      Map.foldlWithKey (checkConstructor kenv m2) True m1
+      Map.foldlWithKey (equivField m2) True m1
       -- Functional or session
-    equiv _ (TypeVar _ x) (TypeVar _ y) = x == y
+    equiv (TypeVar _ x) (TypeVar _ y) = x == y -- A free type var
+    equiv t@(Rec _ _ _) u = equiv (unfold t) u -- TODO: recipe for looping?
+    equiv t u@(Rec _ _ _) = equiv t (unfold u) -- TODO: recipe for looping? s
       -- Type operators
-    equiv kenv (Dualof _ t) u = equiv kenv (dual t) u
-    equiv kenv t (Dualof _ u) = equiv kenv t (dual u)
-    equiv _ (TypeName _ x) (TypeName _ y) = x == y -- TODO: this works for datatypes but not for type declarations, where one has to expand the definition(s) for x (y) and continue
-    -- TODO: THIS CAN EASILY LOOP. Why?
-    equiv kenv (TypeName p x) u = equiv kenv t u
-      where (_, TypeScheme _ [] t) = tenv Map.! x -- TODO: polymorphic type names
-    equiv kenv t (TypeName p x) = equiv kenv t u
-      where (_, TypeScheme _ [] u) = tenv Map.! x -- TODO: polymorphic type names
+    -- equiv (Dualof _ (TypeName _ x)) u = equiv (dual (getType x)) u -- These are session types
+    -- equiv t (Dualof _ (TypeName _ y)) = equiv t (dual (getType y))
+    -- equiv (Dualof _ t) u = equiv (dual t) u
+    -- equiv t (Dualof _ u) = equiv t (dual u)
+    equiv (TypeName _ x) (TypeName _ y) = x == y -- TODO: x may be diff from y and yet the types be equiv
+    equiv (TypeName _ x) u = equiv (getType x) u
+    equiv t (TypeName _ y) = equiv t (getType y)
       -- Session types
-    equiv kenv t u =
+    equiv t u =
       isSessionType tenv kenv t &&
       isSessionType tenv kenv u &&
       bisimilar tenv t u
 
-    checkConstructor :: KindEnv -> TypeMap -> Bool -> ProgVar -> Type -> Bool
-    checkConstructor kenv m acc l t =
-      acc && l `Map.member` m && equiv kenv (m Map.! l) t
+    equivField :: TypeMap -> Bool -> ProgVar -> Type -> Bool
+    equivField m acc l t = acc && l `Map.member` m && equiv (m Map.! l) t
+
+    getType :: TypeVar -> Type
+    getType x = toType (snd (tenv Map.! x))
 
 -- Assumes the type is well formed
 isSessionType :: TypeEnv -> KindEnv -> Type -> Bool
