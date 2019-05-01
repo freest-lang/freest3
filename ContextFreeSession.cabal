@@ -17,6 +17,7 @@ cabal-version:       >=1.10
 
 executable ContextFreeSession
   main-is:             Main.hs
+  ghc-options:         -fwarn-unused-imports
 --  ghc-options:         -Wall -Wextra
   -- ghc-options:         -fprof-auto-top
   --             "-with-rtsopts=-N -p -s -h -i0.1"
