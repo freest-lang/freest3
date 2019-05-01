@@ -50,7 +50,7 @@ instance Equivalence Type where
       -- Functional or session
     equiv (TypeVar _ x) (TypeVar _ y) = x == y -- A free type var
     equiv t@(Rec _ _ _) u = equiv (unfold t) u -- TODO: recipe for looping?
-    equiv t u@(Rec _ _ _) = equiv t (unfold u) -- TODO: recipe for looping? s
+    equiv t u@(Rec _ _ _) = equiv t (unfold u) -- TODO: recipe for looping?
       -- Type operators
     -- equiv (Dualof _ (TypeName _ x)) u = equiv (dual (getType x)) u -- These are session types
     -- equiv t (Dualof _ (TypeName _ y)) = equiv t (dual (getType y))

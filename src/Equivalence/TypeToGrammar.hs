@@ -79,10 +79,11 @@ toGrammar (Rec _ (TypeVarBind _ x _) t) = do
         Nothing ->
           return []
   -- Type operators
-toGrammar (Dualof _ (TypeName _ x)) = do
+toGrammar (Dualof p (TypeName _ x)) = do
+  insertVisited x
   (k, TypeScheme _ [] t) <- getFromVEnv x
   trace ("Type " ++ show x ++ " = " ++ show t)
-    toGrammar (dual t)
+    toGrammar (Dualof p t)
 toGrammar (Dualof _ t) = toGrammar (dual t)
 toGrammar (TypeName _ x) = do
   b <- memberVisited x
@@ -94,8 +95,7 @@ toGrammar (TypeName _ x) = do
     (k, TypeScheme _ [] t) <- getFromVEnv x
     toGrammar t -- (Rec p (TypeVarBind q x k) t)
   -- Should not happen
-toGrammar t =
-  trace ("toGrammar: " ++ show t) (return [mkVar (position t) "error"])
+toGrammar t = error ("toGrammar: " ++ show t)
 
 assocToGrammar :: TypeVar -> Polarity -> (ProgVar, Type) -> TransState ()
 assocToGrammar y p (x, t) = do
