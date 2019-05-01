@@ -563,5 +563,5 @@ rec x:SL. (((z;z);(Skip;y));?Bool)
 ((rec u:SL. (rec v:SL. z)) ; &{B: ?Int, C: ?Char}) ; +{A: Skip, B: !Char, C: Skip}
 
 []
-(rec x. &{A: Skip, B: x}) ; !Bool
-rec y. &{A: !Bool, B: y ; !Bool}
+rec x:SL. &{B:Skip, C: x} ;+{D: ?Char}
+rec y:SL. &{B:+{D: ?Char}, C: y ;+{D: ?Char}}

@@ -101,11 +101,9 @@ instantiate (TypeScheme _ bs1 t1) (TypeScheme _ bs2 t2) = inst bs1 bs2 t1 t2
   inst :: [TypeVarBind] -> [TypeVarBind] -> Type -> Type -> Maybe (KindEnv, Type, Type)
   inst ((TypeVarBind p1 x1 k1):bs1) ((TypeVarBind _ x2 k2):bs2) t1 t2
     | k1 /= k2  = Nothing
---    | x1 == x2 = inst bs1 bs2 t1 (subs (TypeVar p1 x1) x2 t2) -- This should not happen if all variables are renamed.
-    | otherwise = -- substitute x1 for x2
-        case inst bs1 bs2 t1 (subs (TypeVar p1 x1) x2 t2) of
-          Nothing -> Nothing
-          Just (m, t1, t2) -> Just (Map.insert x1 k1 m, t1, t2)
+    | otherwise = -- substitute x1 for x2 in t2
+        fmap (\(m, t1', t2') -> (Map.insert x1 k1 m, t1', t2'))
+             (inst bs1 bs2 t1 (subs (TypeVar p1 x1) x2 t2))
   inst [] [] t1 t2 = Just (Map.empty, t1, t2)
   inst _ _ _ _ = Nothing
 
@@ -114,5 +112,6 @@ instantiate (TypeScheme _ bs1 t1) (TypeScheme _ bs2 t2) = inst bs1 bs2 t1 t2
 instance Equivalence VarEnv where
   equivalent tenv kenv env1 env2 =
     Map.size env1 == Map.size env2 &&
-    Map.foldlWithKey (\acc b s -> acc && b `Map.member` env2 &&
-    equivalent tenv kenv s (env2 Map.! b)) True env1
+    Map.foldlWithKey (\acc b s -> acc &&
+                                  b `Map.member` env2 &&
+                                  equivalent tenv kenv s (env2 Map.! b)) True env1

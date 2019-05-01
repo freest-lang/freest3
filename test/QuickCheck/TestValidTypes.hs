@@ -18,7 +18,7 @@ import           Debug.Trace
 
 -- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_bisimilar
 -- main = verboseCheckWith stdArgs {maxSuccess = 1000} prop_bisimilar
-main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
+main = quickCheckWith stdArgs {maxSuccess = 1000} prop_bisimilar
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_subs_kind_preservation1
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_norm_preserves_bisim
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_distribution
@@ -244,18 +244,18 @@ arbitraryBisimPair n t u = do
   oneof $ map (\axiom -> axiom t' u')
     [
     -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
-      skipt
-    , tskip
-    , assoc
-    , distrib
+    --   skipt
+    -- , tskip
+    -- , assoc
+    distrib
     -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
     , recrec
-    , recFree
-    , alphaConvert
+    -- , recFree
+    -- , alphaConvert
     -- , subsOnBoth
-    , unfoldt
-    -- Commutativity
-    , commut
+    -- , unfoldt
+    -- -- Commutativity
+    -- , commut
     ]
 
 -- The various axioms all share this signature

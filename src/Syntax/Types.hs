@@ -144,13 +144,12 @@ instance Dual Type where
 instance Default Type where
   omission p = Basic p IntType
 
--- Unfolding, Substituting
+-- Unfold, Substitution
 
 unfold :: Type -> Type
--- Assumes parameter is a Rec type
 unfold t@(Rec _ (TypeVarBind _ x _) u) = subs t x u
 
--- [u/x]t, substitute u for x on t
+-- [u/x]t, substitute u for x in t
 subs :: Type -> TypeVar -> Type -> Type 
   -- Functional types
 subs t x (Fun p m t1 t2)    = Fun p m (subs t x t1) (subs t x t2)
@@ -166,7 +165,7 @@ subs t x (Rec p b u)        = Rec p b (subs t x u) -- Assume types were renamed 
   -- Functional or session
 subs t x u@(TypeVar _ y)
   | y == x                  = t
-  | otherwise               = u
+  | otherwise               = u -- TODO: this u must be renamed
   -- Type operators  
 subs t x (Dualof p u)       = Dualof p (subs t x u)
   -- Otherwise: Basic, Skip, Message, TypeName

@@ -36,7 +36,7 @@ instance Normalise Type where
     -- Session types
   normalise tenv (Semi p t u)
     | terminated t = normalise tenv u
-    | otherwise    = Semi p (normalise tenv t) u
+    | otherwise    = append (normalise tenv t) u
     -- Functional or session
   normalise tenv t@(Rec _ _ _) = normalise tenv (unfold t)
     -- Type operators
@@ -46,8 +46,11 @@ instance Normalise Type where
     -- Otherwise: Basic, Fun, PairType, Datatype, Skip, Message, Choice, TypeVar
   normalise tenv t = t
 
-instance Normalise TypeScheme where
-  normalise tenv (TypeScheme p bs t) = TypeScheme p bs (normalise tenv t)
+append :: Type -> Type -> Type
+append (Skip _)       t = t
+append t       (Skip _) = t
+append (Semi p t u)   v = Semi p t (append u v)
+append t              u = Semi (position t) t u
 
 -- As in the ICFP'16 paper, except that no substitution is applied to Rec types
 terminated :: Type ->  Bool
@@ -55,6 +58,10 @@ terminated (Skip _)     = True
 terminated (Semi _ t u) = terminated t && terminated u
 terminated (Rec _ _ t)  = terminated t
 terminated _            = False
+
+instance Normalise TypeScheme where
+  normalise tenv (TypeScheme p bs t) = TypeScheme p bs (normalise tenv t)
+
 
 {- A "better" terminated predicate should be such that only free variables *of kind SU* are terminated
 
@@ -70,9 +77,4 @@ terminated kEnv t = term t
 
 {- This is part of a more ambitious normalisation procedure
 
-append :: Type -> Type -> Type
-append (Skip _)       t = t
-append t       (Skip _) = t
-append (Semi p t u)   v = Semi p t (append u v)
-append t              u = Semi (position t) t u
 -}
