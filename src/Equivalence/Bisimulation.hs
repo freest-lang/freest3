@@ -1,14 +1,15 @@
 {- |
-Module      :  Bisimulation
-Description :  <optional short text displayed on contents page>
-Copyright   :  (c) <Authors or Affiliations>
-License     :  <license>
+Module      :  Equivalence.Bisimulation
+Description :  A bisimulation
+Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of Lisbon
+                   Andreia Mordido, LASIGE, Faculty of Sciences, University of Lisbon
+                   Vasco Vasconcelos, LASIGE, Faculty of Sciences, University of Lisbon
+Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc.ul.pt
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
-
-<module description starting at first column>
+This module defines a bisimulation. Function bisimilar first converts two context-free
+session types into a grammar, which is pruned. An expansion tree is computed afterwards,
+through an alternation of expansion of children nodes and their simplification, using the
+reflexive, congruence, and BPA rules.
 -}
 
 module Equivalence.Bisimulation
