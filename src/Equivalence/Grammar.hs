@@ -45,8 +45,7 @@ import           Syntax.ProgramVariables
 import           Syntax.Base
 import           Syntax.Show
 import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
-import           Data.List (union, delete)
+import           Data.List (union)
 import           Data.List (intersperse)
 
 -- Terminal symbols are called labels

@@ -40,8 +40,9 @@ import           Equivalence.Normalisation
 import           Utils.FreestState
 import           Utils.Errors
 import qualified Data.Map.Strict as Map
-import           Data.List (nub, (\\), intercalate, find)
+import           Data.List (find)
 import           Control.Monad.State
+import           Syntax.Show -- debug
 import           Debug.Trace -- debug
 import           Utils.PreludeLoader -- debug
 

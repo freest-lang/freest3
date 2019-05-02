@@ -18,7 +18,6 @@ module Equivalence.Bisimulation
 
 import           Syntax.Schemes
 import           Syntax.Types
-import           Syntax.Kinds
 import           Syntax.TypeVariables
 import           Equivalence.Grammar
 import           Equivalence.TypeToGrammar

@@ -32,12 +32,6 @@ norm :: Type -> Type
 norm = normalise Map.empty
 pos = defaultPos
 
-renameType :: Type -> Type
-renameType t = head (renameList [t])
-
-renameList :: [Type] -> [Type]
-renameList ts = evalState (mapM (rename Map.empty) ts) (initialState "Renaming for QuickCheck")
-
 kindEnv :: KindEnv
 kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (kindSL pos)))
         -- TODO: This env should only contain the free vars of t; its
@@ -247,7 +241,7 @@ arbitraryBisimPair n t u = do
     --   skipt
     -- , tskip
     -- , assoc
-    distrib
+    , distrib
     -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
     , recrec
     -- , recFree

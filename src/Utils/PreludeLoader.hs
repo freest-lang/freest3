@@ -4,11 +4,8 @@ module Utils.PreludeLoader
 , userDefined
 ) where
 
-import           Syntax.Expressions
 import           Syntax.Schemes
 import           Syntax.Types
-import           Syntax.Kinds
-import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
 import           Syntax.Base
 import qualified Data.Map.Strict as Map

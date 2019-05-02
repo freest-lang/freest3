@@ -17,11 +17,9 @@ module Equivalence.Normalisation
 
 import           Syntax.Schemes
 import           Syntax.Types
-import           Syntax.Kinds
-import           Syntax.TypeVariables
 import           Syntax.Base
+import           Validation.Substitution
 import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
 
 class Normalise t where
   normalise :: TypeEnv -> t -> t

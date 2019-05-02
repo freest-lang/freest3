@@ -27,15 +27,16 @@ import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.Base
 import           Syntax.ProgramVariables
-import           Syntax.Show
 import qualified Validation.Kinding as K
 import           Validation.Extract
+import           Validation.Substitution
 import           Equivalence.Equivalence
 import           Utils.Errors
 import           Utils.FreestState
 import           Utils.PreludeLoader (userDefined)
 import           Control.Monad.State (when)
 import qualified Data.Map.Strict as Map
+import           Syntax.Show -- debug
 import           Utils.PreludeLoader (isBuiltin, userDefined) -- debug
 import           Debug.Trace                     -- debug
 

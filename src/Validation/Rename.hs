@@ -1,5 +1,5 @@
 {- |
-Module      :  Position
+Module      :  Validation.Rename
 Description :  <optional short text displayed on contents page>
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
@@ -15,6 +15,8 @@ Portability :  portable | non-portable (<reason>)
 
 module Validation.Rename
 ( renameState
+, renameType
+, renameList
 , Rename(..) -- for testing only
 ) where
 
@@ -25,7 +27,6 @@ import           Syntax.Kinds
 import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
 import           Syntax.Base
-import           Syntax.Show
 import           Utils.FreestState
 import qualified Data.Map.Strict as Map
 import           Control.Monad.State
@@ -226,4 +227,12 @@ insertVar x y = Map.insert (intern x) (intern y)
 
 findWithDefaultVar :: Variable a => a -> Bindings -> a
 findWithDefaultVar x bs = mkVar (position x) (Map.findWithDefault (intern x) (intern x) bs)
+
+-- Stand alone
+
+renameType :: Type -> Type
+renameType t = head (renameList [t])
+
+renameList :: [Type] -> [Type]
+renameList ts = evalState (mapM (rename Map.empty) ts) (initialState "Renaming for QuickCheck")
 

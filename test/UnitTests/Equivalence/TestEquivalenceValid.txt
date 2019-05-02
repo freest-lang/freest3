@@ -562,6 +562,10 @@ rec x:SL. (((z;z);(Skip;y));?Bool)
 ((rec x:SL. (rec y:SL. z)) ; &{B: ?Int, C: ?Char}) ; +{A: Skip, B: !Char, C: Skip}
 ((rec u:SL. (rec v:SL. z)) ; &{B: ?Int, C: ?Char}) ; +{A: Skip, B: !Char, C: Skip}
 
+-- []
+-- rec x:SL. &{B:Skip, C: x} ;+{D: ?Char}
+-- rec y:SL. &{B:+{D: ?Char}, C: y ;+{D: ?Char}}
+
 []
-rec x:SL. &{B:Skip, C: x} ;+{D: ?Char}
-rec y:SL. &{B:+{D: ?Char}, C: y ;+{D: ?Char}}
+(rec x. +{LeafC: Skip, NodeC: x ; x}) ; Skip
+ rec y. +{LeafC: Skip, NodeC: y ; y}

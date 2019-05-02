@@ -22,9 +22,6 @@ import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.ProgramVariables
 import           Syntax.Base
-import           Syntax.Show
-import           Equivalence.Normalisation
-import           Validation.Extract
 import           Validation.Contractive
 import qualified Validation.Kinding as K
 import qualified Validation.Typing as T
@@ -33,7 +30,8 @@ import           Utils.FreestState
 import           Utils.PreludeLoader (userDefined)
 import           Control.Monad.State (when)
 import qualified Data.Map.Strict as Map
-import           Debug.Trace
+import           Syntax.Show -- debug
+import           Debug.Trace -- debug
 
 typeCheck :: FreestState ()
 typeCheck = do

@@ -6,9 +6,7 @@ Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of 
                    Vasco Vasconcelos, LASIGE, Faculty of Sciences, University of Lisbon
 Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc.ul.pt
 
-This module defines a type with the definitions of type duality and equality.
-The unfolding of recursive types and substitution ([u/x]t, substitute u for x on t)
-operations are also defined.
+This module defines a types, duality and equality.
 -}
 
 module Syntax.Types
@@ -17,8 +15,6 @@ module Syntax.Types
 , Polarity(..)
 , Type(..)
 , Dual(..)
-, subs
-, unfold
 ) where
 
 import           Syntax.Kinds
@@ -143,30 +139,3 @@ instance Dual Type where
 
 instance Default Type where
   omission p = Basic p IntType
-
--- Unfold, Substitution
-
-unfold :: Type -> Type
-unfold t@(Rec _ (TypeVarBind _ x _) u) = subs t x u
-
--- [u/x]t, substitute u for x in t
-subs :: Type -> TypeVar -> Type -> Type 
-  -- Functional types
-subs t x (Fun p m t1 t2)    = Fun p m (subs t x t1) (subs t x t2)
-subs t x (PairType p t1 t2) = PairType p (subs t x t1) (subs t x t2)
-subs t x (Datatype p m)     = Datatype p (Map.map(subs t x) m)
-  -- Session types
-subs t x (Semi p t1 t2)     = Semi p (subs t x t1) (subs t x t2)
-subs t x (Choice p v m)     = Choice p v (Map.map(subs t x) m)
-subs t x (Rec p b u)        = Rec p b (subs t x u) -- Assume types were renamed (hence, no on-the-fly renaming needed)
--- subs t x (Rec p b@(TypeVarBind _ y _) u)
---   | y == x                  = u
---   | otherwise               = Rec p b (subs t x u)
-  -- Functional or session
-subs t x u@(TypeVar _ y)
-  | y == x                  = t
-  | otherwise               = u -- TODO: this u must be renamed
-  -- Type operators  
-subs t x (Dualof p u)       = Dualof p (subs t x u)
-  -- Otherwise: Basic, Skip, Message, TypeName
-subs _ _ t                  = t

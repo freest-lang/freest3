@@ -23,6 +23,7 @@ import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.ProgramVariables
 import           Syntax.TypeVariables
+import           Validation.Substitution
 import           Equivalence.Normalisation
 import           Equivalence.Bisimulation
 import qualified Data.Map.Strict as Map

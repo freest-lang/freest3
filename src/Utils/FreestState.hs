@@ -44,7 +44,6 @@ FreestState
 ) where
 
 import           Syntax.Expressions
-import           Syntax.Types
 import           Syntax.Schemes
 import           Syntax.Kinds
 import           Syntax.TypeVariables

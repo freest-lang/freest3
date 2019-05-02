@@ -26,18 +26,16 @@ module Validation.Extract
 ) where
 
 import           Syntax.Expressions
-import           Syntax.Schemes
 import           Syntax.Types
-import           Syntax.Kinds
 import           Syntax.ProgramVariables
 import           Syntax.Base
 import           Equivalence.Normalisation
-import           Syntax.Show
 -- import           Parse.Lexer (Pos, position, defaultPos)
 import           Utils.Errors
 import           Utils.FreestState
 import qualified Data.Map.Strict as Map
-import           Debug.Trace
+import           Syntax.Show -- debug
+import           Debug.Trace -- debug
 
 -- | The Extract Functions
 

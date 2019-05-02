@@ -20,7 +20,6 @@ import           Syntax.TypeVariables
 import           Equivalence.Grammar
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import qualified Data.List as List
 import           Data.Maybe
 
 normed :: Productions -> TypeVar -> Bool
