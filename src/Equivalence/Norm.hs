@@ -71,3 +71,20 @@ nor p = norm' Set.empty
   min' Nothing  m        = m
   min' m        Nothing  = m
   min' (Just n) (Just k) = Just (min n k)
+{-
+nor :: Productions -> [TypeVar] -> Maybe Int
+nor p xs = norm' 0 xs
+  where
+  norm' :: Visited -> [TypeVar] -> Maybe Int
+  norm' n [] = Just (n + 1)
+  norm' n xs
+    | n > m+1     = Nothing
+    | otherwise = fmap (+1) (Map.foldr min' Nothing (norms v xs))
+  norms :: Visited -> [TypeVar] ->  Map.Map Label (Maybe Int)
+  norms v xs = Map.map (norm' n+1) (transitions xs p)
+  min' :: Maybe Int -> Maybe Int -> Maybe Int
+  min' Nothing  m        = m
+  min' m        Nothing  = m
+  min' (Just n) (Just k) = Just (min n k)
+  m = symbols Set.empty (head xs)
+-}
