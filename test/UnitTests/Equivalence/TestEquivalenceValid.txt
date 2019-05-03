@@ -70,6 +70,10 @@ Skip;!Int
 Skip
 Skip;Skip
 
+[("α", SL), ("β",SL)]
+Skip
+Skip
+
 -- Functional and session
 
 []
@@ -569,3 +573,11 @@ rec x:SL. (((z;z);(Skip;y));?Bool)
 []
 (rec x. +{LeafC: Skip, NodeC: x ; x}) ; Skip
  rec y. +{LeafC: Skip, NodeC: y ; y}
+
+[("α", SL)]
+rec x:SL. α
+rec y:SL. α
+
+[("x":SL)]
+rec y_0:SL. (rec y_1:SL. (rec y_2:SL. x))
+rec z:SL. (rec y_4:SL. x)

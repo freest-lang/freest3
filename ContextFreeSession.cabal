@@ -17,7 +17,8 @@ cabal-version:       >=1.10
 
 executable ContextFreeSession
   main-is:             Main.hs
-  ghc-options:         -fwarn-unused-imports
+--  ghc-options:         -fwarn-unused-imports
+--   ghc-options:         -Wunused-top-binds
 --  ghc-options:         -Wall -Wextra
   -- ghc-options:         -fprof-auto-top
   --             "-with-rtsopts=-N -p -s -h -i0.1"
@@ -43,7 +44,7 @@ executable ContextFreeSession
                        Utils.PreludeLoader, Utils.Errors, Utils.FreestState,
                        Validation.TypeChecking, Validation.Typing, Validation.Kinding,
                        Validation.Contractive, Validation.Extract, Validation.Rename,
-		       Validation.Substitution,
+                       Validation.Substitution,
                        Equivalence.Equivalence, Equivalence.Bisimulation, Equivalence.Grammar,
                        Equivalence.TypeToGrammar, Equivalence.Norm, Equivalence.Normalisation,
                        CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen, Utils.PreludeLoader
@@ -72,7 +73,7 @@ test-suite unit-tests
                        Syntax.Show,
                        Parse.Parser, Parse.Lexer, Parse.ParseUtils,
                        Validation.Kinding, Validation.Contractive, Validation.Rename,
-		       Validation.Substitution,
+                       Validation.Substitution,
                        Equivalence.Equivalence, Equivalence.Bisimulation, Equivalence.Grammar,
                        Equivalence.TypeToGrammar,
                        Equivalence.Norm, Equivalence.Normalisation,
@@ -114,7 +115,7 @@ test-suite program-tests
                        Utils.PreludeLoader, Utils.Errors, Utils.FreestState,
                        Validation.TypeChecking, Validation.Typing, Validation.Kinding,
                        Validation.Contractive, Validation.Extract, Validation.Rename,
-		       Validation.Substitution,
+                       Validation.Substitution,
                        Equivalence.Equivalence, Equivalence.Bisimulation, Equivalence.Grammar,
                        Equivalence.TypeToGrammar, Equivalence.Norm, Equivalence.Normalisation,
                        CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen, Utils.PreludeLoader
@@ -148,6 +149,7 @@ test-suite testEquiv
                        Parse.Parser, Parse.Lexer, Parse.ParseUtils,
                        Queue.Queue, Utils.Errors, Utils.FreestState,
                        Validation.Kinding,  Validation.Contractive, Validation.Rename,
+                       Validation.Substitution,
                        Equivalence.Grammar, Equivalence.TypeToGrammar,
                        Equivalence.Norm, Equivalence.Normalisation, Equivalence.Equivalence, Equivalence.Bisimulation,
                        Equivalence.TestEquivalenceValidSpec, Equivalence.TestEquivalenceInvalidSpec, Utils.PreludeLoader

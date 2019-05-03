@@ -1,6 +1,7 @@
 import           Test.QuickCheck
 import           Equivalence.Bisimulation
 import           Equivalence.Normalisation
+import           Validation.Substitution
 import           Validation.Rename
 import           Validation.Kinding
 import           Syntax.Types
@@ -16,9 +17,8 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import           Debug.Trace
 
--- main = quickCheckWith stdArgs {maxSuccess = 1000} prop_bisimilar
+main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar_trace
 -- main = verboseCheckWith stdArgs {maxSuccess = 1000} prop_bisimilar
-main = quickCheckWith stdArgs {maxSuccess = 1000} prop_bisimilar
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_subs_kind_preservation1
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_norm_preserves_bisim
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_distribution
@@ -34,8 +34,8 @@ pos = defaultPos
 
 kindEnv :: KindEnv
 kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (kindSL pos)))
-        -- TODO: This env should only contain the free vars of t; its
-        -- kind may be SU
+        -- TODO: This env should only contain the free vars of t; plus
+        -- its kind may be SU
         
 kinded :: Type -> Bool
 kinded t = null (errors state)
@@ -68,6 +68,7 @@ prop_norm_preserves_bisim t = kinded t' ==> bisim u v
   -- evalState (trace (show u ++ " norm_preserves_bisim " ++ show v) (return $ bisim u v)) ()
   where t' = renameType t
         [u, v] = renameList [t, normalise Map.empty t']
+        -- Normalisation requires a renamed type
 
 -- Duality is a convolution
 prop_dual_convolution :: Type -> Property
@@ -225,8 +226,8 @@ instance Arbitrary BisimPair where
 instance Arbitrary BisimPair where
   arbitrary = do
     t <- arbitrary -- The seed type
-    -- n <- arbitrary -- The number of axioms to apply
-    n <- choose (0, 3)
+    n <- arbitrary -- The number of axioms to apply
+    -- n <- choose (0, 3)
     (u, v) <- arbitraryBisimPair (abs n) t t
     let [u', v'] = renameList [u, v]
     return $ BisimPair u' v'
@@ -238,18 +239,18 @@ arbitraryBisimPair n t u = do
   oneof $ map (\axiom -> axiom t' u')
     [
     -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
-    --   skipt
-    -- , tskip
+      skipt
+    , tskip
     -- , assoc
-    , distrib
+    -- distrib
     -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
     , recrec
-    -- , recFree
-    -- , alphaConvert
-    -- , subsOnBoth
-    -- , unfoldt
-    -- -- Commutativity
-    -- , commut
+    , recFree
+    , alphaConvert
+    , subsOnBoth
+    , unfoldt
+    -- Commutativity
+    , commut
     ]
 
 -- The various axioms all share this signature
@@ -265,7 +266,7 @@ tskip t u = return (Semi pos t (Skip pos), t)
 
 assoc :: GenBisimPair
 assoc t u = do
-  (v , w) <- arbitrary
+  (v, w) <- arbitrary
   return (Semi pos t (Semi pos v w),
           Semi pos (Semi pos u v) w)
 
@@ -282,7 +283,8 @@ recrec :: GenBisimPair
 recrec t u = do
   (xk@(TypeVarBind _ x _), yk@(TypeVarBind _ y _)) <- arbitrary
   return (Rec pos xk (Rec pos yk t),
-          Rec pos xk (subs (TypeVar pos x) y (renameType u)))
+          Rec pos xk (subs (TypeVar pos x) y u))
+          -- Rec pos xk (subs (TypeVar pos x) y (renameType u)))
 
 recFree :: GenBisimPair
 recFree t u = do
@@ -299,7 +301,7 @@ alphaConvert t u = do
 
 subsOnBoth :: GenBisimPair
 subsOnBoth t u = do
-  ((BisimPair t' u'), x) <- arbitrary
+  (BisimPair t' u', x) <- arbitrary
   return (subs t x t',
           subs u x u')
 
@@ -307,7 +309,8 @@ unfoldt :: GenBisimPair
 unfoldt t u = do
   xk <- arbitrary
   return (Rec pos xk t,
-          unfold (Rec pos xk (renameType u)))
+          unfold (Rec pos xk u))
+          -- unfold (Rec pos xk (renameType u)))
 
 -- Commutativity
 
