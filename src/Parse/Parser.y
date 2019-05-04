@@ -18,7 +18,7 @@ import           Parse.Lexer
 import           Utils.Errors
 import           Utils.FreestState
 import qualified Data.Map.Strict as Map
--- import qualified Data.Set as Set
+import qualified Data.Set as Set
 import           Control.Monad.State
 import           Data.Char
 import           Data.List (nub, (\\), intercalate, find)
@@ -346,9 +346,9 @@ parseType s = fst $ runState (parse s) (initialState "")
 instance Read Type where
   readsPrec _ str =
     let (t, state) = runState (parse str) (initialState "") in
-    if null (errors state)
+    if Set.null (errors state)
     then [(t, "")]
-    else error $ intercalate "\n" (errors state)
+    else error $ getErrors (errors state)
    where parse = types . scanTokens
 
 
@@ -393,11 +393,11 @@ parseDefs file vEnv str =
    where parse = terms . scanTokens
 
 checkErrors :: FreestS -> IO ()
-checkErrors (FreestS {errors=[]}) = return ()
-checkErrors s                     = die $ intercalate "\n" (errors s)
--- checkErrors (FreestS {errors = errors})
---   | Set.null errors = return ()
---   | otherwise  = die $ show errors
+-- checkErrors (FreestS {errors=Set.null}) = return ()
+-- checkErrors s                     = die $ intercalate "\n" (errors s) 
+checkErrors (FreestS {errors = errors})
+  | Set.null errors = return ()
+  | otherwise  = die $ getErrors errors
 
 -------------------
 -- Handle errors --
