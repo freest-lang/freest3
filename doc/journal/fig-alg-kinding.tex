@@ -27,16 +27,18 @@
   \frac{
     \isContr T
     \qquad
-    \algkindout[\Delta, x\colon \kind'] T \kind
+    \algkindout[\Delta, y\colon \kind'] {\subs yxT} \kind
+    \quad
+    y\text{ fresh}
   }{
     \algkindout{\rect {x\colon \kind'} T}{\kind}
   }
     % Session types
   \quad
   \frac{}{\Delta \Alg \skipt \rightarrow \kinds^\un}
-  \quad 
-  \frac{}{\algkindout{\msgt T}{\kinds^\lin}}
   \\
+  \frac{}{\algkindout{\msgt T}{\kinds^\lin}}
+  \quad
   \frac{
     \algkindout{T_1}{\kinds^m}
     \quad
@@ -70,7 +72,9 @@
     \frac{
       \isContr T
       \qquad
-      \algkindin[\Delta, x\colon \kinds^\un] T \kind
+      \algkindin[\Delta, y\colon \kinds^\un] {\subs yxT} \kind
+      \quad
+      y\text{ fresh}
     }{
       \algkindin{\rect xT}{\kind}
     }
