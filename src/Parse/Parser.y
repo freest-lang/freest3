@@ -95,6 +95,8 @@ import           Debug.Trace
   forall   {TokenForall _}
   dualof   {TokenDualof _}  
 
+%nonassoc LOWER_ID UPPER_ID
+
 -- Expr
 %right in else match case
 %left send receive select
@@ -112,6 +114,10 @@ import           Debug.Trace
 %right '.'       -- Used in rec
 %right ';'       -- TODO: an Expr operator as well
 %right dualof
+
+-- Precedence of lambda over functions (both have arrows ->, -o)
+%nonassoc ArrowType
+%nonassoc ProgVarWildTBind
 
 %%
 
@@ -194,8 +200,16 @@ Primary :: { Expression }
   | ProgVar                                  { ProgVar (position $1) $1 }
   | Constructor                              { ProgVar (position $1) $1 }
 --  | '(' '\\' ProgVarWild ':' Type Arrow Expr ')' { Lambda (position $2) (snd $6) $3 $5 $7 }
+--  | '(' '\\' ProgVarWild ':' Type Arrow Expr ')' { Lambda (position $2) (snd $6) $3 $5 $7 }
+  | '(' '\\' ProgVarWildTBind Arrow Expr ')'   { Lambda (position $2) (snd $4) (fst $3) (snd $3) $5 }
   | '(' Expr ',' Expr ')'                    { Pair (position $1) $2 $4 }
   | '(' Expr ')'                             { $2 }
+
+ProgVarWildTBind :: { (ProgVar, Type) }
+ : ProgVarWild ':' Type  %prec ProgVarWildTBind { ($1, $3) }
+
+-- LambdaTypeBind :: { (ProgVar, Type, Multiplicity) }
+--  : ProgVarWild ':' Type  %prec B { ($1, $3, snd $4) }
 
 MatchMap :: { FieldMap }
   : Match              { uncurry Map.singleton $1 }
@@ -225,22 +239,22 @@ TypeScheme :: { TypeScheme }
 
 Type :: { Type }
   -- Functional types
-  : BasicType                    { uncurry Basic $1 }
-  | Type Arrow Type              { uncurry Fun $2 $1 $3 }
-  | '(' Type ',' Type ')'        { PairType (position $1) $2 $4 }
+  : BasicType                        { uncurry Basic $1 }
+  | Type Arrow Type %prec ArrowType  { uncurry Fun $2 $1 $3 }
+  | '(' Type ',' Type ')'            { PairType (position $1) $2 $4 }
 --  | '[' FieldList ']'            { Datatype (position $1) $2 }
   -- Session types
-  | Skip                         { Skip (position $1) }
-  | Type ';' Type                { Semi (position $2) $1 $3 }
-  | Polarity BasicType           { uncurry Message $1 (snd $2) }
-  | ChoiceView '{' FieldList '}' { uncurry Choice $1 $3 } 
-  | rec TypeVarBind '.' Type     { Rec (position $1) $2 $4 }
+  | Skip                             { Skip (position $1) }
+  | Type ';' Type                    { Semi (position $2) $1 $3 }
+  | Polarity BasicType               { uncurry Message $1 (snd $2) }
+  | ChoiceView '{' FieldList '}'     { uncurry Choice $1 $3 } 
+  | rec TypeVarBind '.' Type         { Rec (position $1) $2 $4 }
   -- Functional or session
-  | TypeVar                      { TypeVar (position $1) $1 }
+  | TypeVar                          { TypeVar (position $1) $1 }
   -- Type operators
-  | dualof Type                  { Dualof (position $1) $2 }
-  | TypeName                     { TypeName (position $1) $1 }
-  | '(' Type ')'                 { $2 }
+  | dualof Type                      { Dualof (position $1) $2 }
+  | TypeName                         { TypeName (position $1) $1 }
+  | '(' Type ')'                     { $2 }
 
 BasicType :: { (Pos, BasicType) }
   : Int  { (position $1, IntType) }

@@ -37,7 +37,7 @@ tokens :-
   @blockComment                 ;
   "->"				{ \p s -> TokenUnArrow (internalPos p) }
   "-o"				{ \p s -> TokenLinArrow (internalPos p) }
-  "\\"				{ \p s -> TokenLambda (internalPos p) }
+  "\"				{ \p s -> TokenLambda (internalPos p) }
   "=>"				{ \p s -> TokenFArrow (internalPos p) }
   "("				{ \p s -> TokenLParen (internalPos p) }
   ")"				{ \p s -> TokenRParen (internalPos p) }
