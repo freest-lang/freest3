@@ -115,6 +115,9 @@ import           Debug.Trace
 %right ';'       -- TODO: an Expr operator as well
 %right dualof
 
+
+%nonassoc '('
+%nonassoc '()'
 -- Precedence of lambda over functions (both have arrows ->, -o)
 %nonassoc ArrowType
 %nonassoc ProgVarWildTBind
@@ -207,9 +210,6 @@ Primary :: { Expression }
 
 ProgVarWildTBind :: { (ProgVar, Type) }
  : ProgVarWild ':' Type  %prec ProgVarWildTBind { ($1, $3) }
-
--- LambdaTypeBind :: { (ProgVar, Type, Multiplicity) }
---  : ProgVarWild ':' Type  %prec B { ($1, $3, snd $4) }
 
 MatchMap :: { FieldMap }
   : Match              { uncurry Map.singleton $1 }
