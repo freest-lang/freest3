@@ -46,7 +46,7 @@ maybeNorm p = norm Set.empty
   norm v xs
     | any (flip isSubsequenceOf xs) v = Nothing
     | otherwise = fmap (+1) (Map.foldr (compose min) Nothing (norms v xs))
-  norms :: Visited -> [TypeVar] ->  Map.Map Label (Maybe Int)
+  norms :: Visited -> [TypeVar] -> Map.Map Label (Maybe Int)
   norms v xs = Map.map (norm (Set.insert xs v)) (transitions xs p)
 
 compose :: (a -> a -> a) -> Maybe a -> Maybe a -> Maybe a
