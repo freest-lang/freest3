@@ -578,10 +578,22 @@ rec y:SL. &{B:+{D: ?Char}, C: y ;+{D: ?Char}}
 rec x:SL. α
 rec y:SL. α
 
-[("x":SL)]
+[("x":SL)] 
 rec y_0:SL. (rec y_1:SL. (rec y_2:SL. x))
 rec z:SL. (rec y_4:SL. x)
 
 []
 &{A: !Char, B: ?Int}
 &{A: !Char, B: ?Int}
+
+[("x":SL)]
+x
+x ; Skip
+
+[]
+(+{A: z};(rec d:SU. +{A: Skip, B: !Char}))
++{A: (z;(rec x_1:SU. +{A: Skip, B: !Char}))}
+
+[]
+(&{A: (Skip;Skip), B: y};(Skip;&{A: ?Int, B: Skip}))
+&{A: ((Skip;Skip);&{A: ?Int, B: Skip}), B: (y;&{A: ?Int, B: Skip})}

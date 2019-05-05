@@ -18,8 +18,8 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import           Debug.Trace
 
--- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_equivalent_trace
-main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar_trace
+main = quickCheckWith stdArgs {maxSuccess = 10000} prop_equivalent_trace
+-- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar_trace
 -- main = verboseCheckWith stdArgs {maxSuccess = 1000} prop_bisimilar
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_subs_kind_preservation1
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_norm_preserves_bisim
@@ -42,9 +42,8 @@ kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (kindSL pos)))
         -- its kind may be SU
         
 kinded :: Type -> Bool
-kinded t = null (errors state)
-  where state = execState (synthetise kindEnv t) (initialState "Quick Checking")
-  
+kinded t = isJust $ kindOf t
+
 kindOf :: Type -> Maybe Kind
 kindOf t
   | null (errors s) = Just k
@@ -54,27 +53,25 @@ kindOf t
 -- Bisimilar types are bisimilar
 
 prop_bisimilar :: BisimPair -> Property
-prop_bisimilar (BisimPair t u) = kinded t ==>
-  evalState (return $ bisim t u) ()
+prop_bisimilar (BisimPair t u) = kinded t ==> t `bisim` u
 
 prop_bisimilar_trace :: BisimPair -> Property
 prop_bisimilar_trace (BisimPair t u) = kinded t ==>
-  evalState (trace ("=> " ++ show t ++ " bisim " ++ show u) (return $ bisim t u)) ()
+  trace ("=> " ++ show t ++ " bisim " ++ show u) (t `bisim` u)
 
 prop_self_bisimilar :: Type -> Property
-prop_self_bisimilar t = kinded t ==>
-  evalState (trace (show u ++ " self-bisimilar-to " ++ show v) (return $ bisim u v)) ()
+prop_self_bisimilar t = kinded u ==>
+  trace (show u ++ " self-bisimilar-to " ++ show v) (u `bisim` v)
   where [u, v] = renameList [t, t]
 
 -- Equivalence
 
 prop_equivalent :: BisimPair -> Property
-prop_equivalent (BisimPair t u) = kinded t ==>
-  evalState (return $ equiv t u) ()
+prop_equivalent (BisimPair t u) = kinded t ==> equiv t u
 
 prop_equivalent_trace :: BisimPair -> Property
 prop_equivalent_trace (BisimPair t u) = kinded t ==>
-  evalState (trace ("=> " ++ show t ++ " equiv " ++ show u) (return $ equiv t u)) ()
+  trace ("=> " ++ show t ++ " equiv " ++ show u) (t `equiv` u)
 
 -- Normalisation preserves bisimilarity
 prop_norm_preserves_bisim :: Type -> Property
@@ -152,7 +149,7 @@ ids :: [String]            -- Type Variables
 ids = ["x", "y", "z"]
 
 freeTypeVar :: TypeVar
-freeTypeVar = mkVar pos "∂"
+freeTypeVar = mkVar pos "d"
 
 choices :: [String]        -- Program Variables
 choices = ["A", "B", "C"]
