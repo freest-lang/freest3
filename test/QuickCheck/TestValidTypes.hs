@@ -1,4 +1,5 @@
 import           Test.QuickCheck
+import           Equivalence.Equivalence
 import           Equivalence.Bisimulation
 import           Equivalence.Normalisation
 import           Validation.Substitution
@@ -17,6 +18,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import           Debug.Trace
 
+-- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_equivalent_trace
 main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar_trace
 -- main = verboseCheckWith stdArgs {maxSuccess = 1000} prop_bisimilar
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_subs_kind_preservation1
@@ -28,6 +30,8 @@ main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar_trace
 
 bisim :: Type -> Type -> Bool
 bisim = bisimilar Map.empty
+equiv :: Type -> Type -> Bool
+equiv = equivalent Map.empty Map.empty
 norm :: Type -> Type
 norm = normalise Map.empty
 pos = defaultPos
@@ -61,6 +65,16 @@ prop_self_bisimilar :: Type -> Property
 prop_self_bisimilar t = kinded t ==>
   evalState (trace (show u ++ " self-bisimilar-to " ++ show v) (return $ bisim u v)) ()
   where [u, v] = renameList [t, t]
+
+-- Equivalence
+
+prop_equivalent :: BisimPair -> Property
+prop_equivalent (BisimPair t u) = kinded t ==>
+  evalState (return $ equiv t u) ()
+
+prop_equivalent_trace :: BisimPair -> Property
+prop_equivalent_trace (BisimPair t u) = kinded t ==>
+  evalState (trace ("=> " ++ show t ++ " equiv " ++ show u) (return $ equiv t u)) ()
 
 -- Normalisation preserves bisimilarity
 prop_norm_preserves_bisim :: Type -> Property
@@ -241,8 +255,8 @@ arbitraryBisimPair n t u = do
     -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
       skipt
     , tskip
-    -- , assoc
-    -- distrib
+    , assoc
+    , distrib
     -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
     , recrec
     , recFree
