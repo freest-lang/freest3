@@ -202,9 +202,7 @@ Primary :: { Expression }
   | '()'                                     { Unit (position $1) }
   | ProgVar                                  { ProgVar (position $1) $1 }
   | Constructor                              { ProgVar (position $1) $1 }
---  | '(' '\\' ProgVarWild ':' Type Arrow Expr ')' { Lambda (position $2) (snd $6) $3 $5 $7 }
---  | '(' '\\' ProgVarWild ':' Type Arrow Expr ')' { Lambda (position $2) (snd $6) $3 $5 $7 }
-  | '(' '\\' ProgVarWildTBind Arrow Expr ')'   { Lambda (position $2) (snd $4) (fst $3) (snd $3) $5 }
+  | '(' '\\' ProgVarWildTBind Arrow Expr ')' { Lambda (position $2) (snd $4) (fst $3) (snd $3) $5 }
   | '(' Expr ',' Expr ')'                    { Pair (position $1) $2 $4 }
   | '(' Expr ')'                             { $2 }
 
