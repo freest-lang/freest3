@@ -96,6 +96,8 @@ import           Debug.Trace
   dualof   {TokenDualof _}  
 
 %nonassoc LOWER_ID UPPER_ID
+%nonassoc '('
+%nonassoc '()'
 
 -- Expr
 %right in else match case
@@ -115,11 +117,7 @@ import           Debug.Trace
 %right ';'       -- TODO: an Expr operator as well
 %right dualof
 
-
-%nonassoc '('
-%nonassoc '()'
--- Precedence of lambda over functions (both have arrows ->, -o)
-%nonassoc ArrowType
+-- Precedence of lambda expressions
 %nonassoc ProgVarWildTBind
 
 %%
@@ -238,7 +236,7 @@ TypeScheme :: { TypeScheme }
 Type :: { Type }
   -- Functional types
   : BasicType                        { uncurry Basic $1 }
-  | Type Arrow Type %prec ArrowType  { uncurry Fun $2 $1 $3 }
+  | Type Arrow Type                  { uncurry Fun $2 $1 $3 }
   | '(' Type ',' Type ')'            { PairType (position $1) $2 $4 }
 --  | '[' FieldList ']'            { Datatype (position $1) $2 }
   -- Session types
