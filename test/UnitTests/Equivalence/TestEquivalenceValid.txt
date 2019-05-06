@@ -586,7 +586,7 @@ rec z:SL. (rec y_4:SL. x)
 &{A: !Char, B: ?Int}
 &{A: !Char, B: ?Int}
 
-[("x":SL)]
+[("x", SL)]
 x
 x ; Skip
 
