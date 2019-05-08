@@ -52,7 +52,7 @@ kindOf t
 
 -- Bisimilar types are bisimilar
 prop_bisimilar :: BisimPair -> Property
-prop_bisimilar (BisimPair t u) = kinded t ==> t `bisim` u
+prop_bisimilar (BisimPair t u) = kinded t && kinded u ==> t `bisim` u
 
 -- Equivalence
 prop_equivalent :: BisimPair -> Property
@@ -187,7 +187,7 @@ bisimPair n =
     -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
     ++ [recrec n       | n > 0]
     ++ [recFree n      | n > 0]
-    ++ [alphaConvert n | n > 0]
+    -- ++ [alphaConvert n | n > 0]
     ++ [subsOnBoth n   | n > 0]
     ++ [unfoldt n      | n > 0]
     -- Commutativity
@@ -196,25 +196,29 @@ bisimPair n =
 -- The various session type constructors
 
 skipPair :: Gen (Type, Type)
-skipPair = return (Skip pos, Skip pos)
+skipPair = return (Skip pos,
+                   Skip pos)
 
 semiPair :: Int -> Gen (Type, Type)
 semiPair n = do
   (t, u) <- bisimPair (n `div` 2)
   (v, w) <- bisimPair (n `div` 2)
-  return (Semi pos t v, Semi pos u w)
+  return (Semi pos t v,
+          Semi pos u w)
 
 messagePair :: Gen (Type, Type)
 messagePair = do
   (p, b) <- arbitrary
-  return (Message pos p b, Message pos p b)
+  return (Message pos p b,
+          Message pos p b)
 
 choicePair :: Int -> Gen (Type, Type)
 choicePair n = do
   p <- arbitrary
   pairs <- fieldPairs n
   let (f1, f2) = unzip pairs
-  return (Choice pos p (Map.fromList f1), Choice pos p (Map.fromList f2))
+  return (Choice pos p (Map.fromList f1),
+          Choice pos p (Map.fromList f2))
 
 fieldPairs :: Int -> Gen [((ProgVar, Type), (ProgVar, Type))]
 fieldPairs n = do
@@ -223,8 +227,8 @@ fieldPairs n = do
   where
   field :: Int -> Gen ((ProgVar, Type), (ProgVar, Type))
   field n = do
+      (t, u) <- bisimPair n
       x <- arbitrary
-      (t, u) <- bisimPair (n `div` 4)
       return ((x, t), (x, u))
 
 recPair :: Int -> Gen (Type, Type)
@@ -260,9 +264,9 @@ assoc n = do
 
 distrib :: Int -> Gen (Type, Type)
 distrib n = do
-  p <- arbitrary
   (t, u) <- bisimPair (n `div` 2)
   pairs <- fieldPairs (n `div` 2)
+  p <- arbitrary
   let (f1, f2) = unzip pairs
   return (Semi pos (Choice pos p (Map.fromList f1)) t,
           Choice pos p (Map.map (\v -> Semi pos v u) (Map.fromList f2)))
@@ -283,13 +287,13 @@ recFree n = do
   return (Rec pos (TypeVarBind pos freeTypeVar k) t, u)
   -- Note: the rec-var must be distinct from the free variables of t
 
-alphaConvert :: Int -> Gen (Type, Type) -- (fixed wrt to ICFP'16)
-alphaConvert n = do
-  (t, u) <- bisimPair n
-  (x, k) <- arbitrary
-  let y = freeTypeVar
-  return (Rec pos (TypeVarBind pos x k) t,
-          Rec pos (TypeVarBind pos y k) (subs (TypeVar pos y) x u))
+-- alphaConvert :: Int -> Gen (Type, Type) -- (fixed wrt to ICFP'16)
+-- alphaConvert n = do
+--   (t, u) <- bisimPair n
+--   (x, k) <- arbitrary
+--   let y = freeTypeVar -- TODO: Here we need a genunine free var
+--   return (Rec pos (TypeVarBind pos x k) t,
+--           Rec pos (TypeVarBind pos y k) (subs (TypeVar pos y) x u))
 
 subsOnBoth :: Int -> Gen (Type, Type)
 subsOnBoth n = do

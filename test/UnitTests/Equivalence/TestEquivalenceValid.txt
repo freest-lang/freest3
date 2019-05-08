@@ -601,3 +601,7 @@ x ; Skip
 []
 rec x. +{A: rec z. x}
 rec y. +{A: y}
+
+[]
+rec x. &{A: rec z. x}
+&{A: rec y. &{A: y}}
