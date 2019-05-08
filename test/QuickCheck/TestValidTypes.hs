@@ -16,11 +16,8 @@ import           Control.Monad
 import           Data.Maybe
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import           Debug.Trace
 
-main = quickCheckWith stdArgs {maxSuccess = 10000} prop_equivalent_trace
--- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar_trace
--- main = verboseCheckWith stdArgs {maxSuccess = 1000} prop_bisimilar
+main = verboseCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_subs_kind_preservation1
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_norm_preserves_bisim
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_distribution
@@ -42,7 +39,7 @@ kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (kindSL pos)))
         -- its kind may be SU
         
 kinded :: Type -> Bool
-kinded t = isJust $ kindOf t
+kinded = isJust . kindOf
 
 kindOf :: Type -> Maybe Kind
 kindOf t
@@ -51,32 +48,16 @@ kindOf t
   where (k, s) = runState (synthetise kindEnv t) (initialState "Kind syntesis")
 
 -- Bisimilar types are bisimilar
-
 prop_bisimilar :: BisimPair -> Property
-prop_bisimilar (BisimPair t u) = kinded t ==> t `bisim` u
-
-prop_bisimilar_trace :: BisimPair -> Property
-prop_bisimilar_trace (BisimPair t u) = kinded t ==>
-  trace ("=> " ++ show t ++ " bisim " ++ show u) (t `bisim` u)
-
-prop_self_bisimilar :: Type -> Property
-prop_self_bisimilar t = kinded u ==>
-  trace (show u ++ " self-bisimilar-to " ++ show v) (u `bisim` v)
-  where [u, v] = renameList [t, t]
+prop_bisimilar (BisimPair t u) = kinded t && kinded u ==> t `bisim` u
 
 -- Equivalence
-
 prop_equivalent :: BisimPair -> Property
 prop_equivalent (BisimPair t u) = kinded t ==> equiv t u
-
-prop_equivalent_trace :: BisimPair -> Property
-prop_equivalent_trace (BisimPair t u) = kinded t ==>
-  trace ("=> " ++ show t ++ " equiv " ++ show u) (t `equiv` u)
 
 -- Normalisation preserves bisimilarity
 prop_norm_preserves_bisim :: Type -> Property
 prop_norm_preserves_bisim t = kinded t' ==> bisim u v
-  -- evalState (trace (show u ++ " norm_preserves_bisim " ++ show v) (return $ bisim u v)) ()
   where t' = renameType t
         [u, v] = renameList [t, normalise Map.empty t']
         -- Normalisation requires a renamed type
@@ -134,16 +115,13 @@ constr (TypeVar _ _) = "TypeVar"
 constr (TypeName _ _) = "TypeName"
 constr (Dualof _ _) = "Dualof"
 
--- Arbitrary Types
+-- Arbitrary
 
 instance Arbitrary Multiplicity where
   arbitrary = elements [Un, Lin]
 
 instance Arbitrary Polarity where
   arbitrary = elements [In, Out]
-
-instance Arbitrary Pos where
-  arbitrary = return pos
 
 ids :: [String]            -- Type Variables
 ids = ["x", "y", "z"]
@@ -169,17 +147,17 @@ instance Arbitrary Kind where
   arbitrary = elements [kindSL pos, kindSU pos] -- Session types only
 
 instance Arbitrary TypeVarBind where
-  arbitrary = liftM3 TypeVarBind arbitrary arbitrary arbitrary
+  arbitrary = liftM3 TypeVarBind (return pos) arbitrary arbitrary
 
 instance Arbitrary BasicType where
   arbitrary = elements [IntType, CharType, BoolType, UnitType]
-
+{-
 instance Arbitrary Type where
   arbitrary = sized arbitrarySession -- Warning: not renamed
 
 arbitrarySession :: Int -> Gen Type
 arbitrarySession 0 = oneof
-  [ liftM Skip arbitrary
+  [ return $ Skip pos
   , liftM3 Message arbitrary arbitrary arbitrary
   ]
 arbitrarySession n = oneof
@@ -200,60 +178,35 @@ arbitraryField n = do
     x <- arbitrary
     t <- arbitrarySession (n `div` 4)
     return (x, t)
+-}
 
--- Arbitrary Pairs of Bisimilar Types
+-- Arbitrary pairs of bisimilar types
 
 data BisimPair = BisimPair Type Type
 
 instance Show BisimPair where
   show (BisimPair t u) = show t ++ " bisimilar-to " ++ show u
 
-{-
-
-This is a fully functional version that only applies one axiom to a
-seed type
-
 instance Arbitrary BisimPair where
   arbitrary = do
-    t <- arbitrary
-    (u, v) <- oneof $ map (\axiom -> axiom t t)
-      [
-    -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
-        skipt
-      , tskip
-      , assoc
-      , distrib
-    -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
-      , recrec
-      , recFree
-      , alphaConvert
-      , subsOnBoth
-      , unfoldt
-      ]
-    let [u', v'] = renameList [u, v]
-    return $ BisimPair u' v'
--}
+    (t, u) <- bisimPair
+    let [t', u'] = renameList [t, u]
+    return $ BisimPair t' u'
 
-instance Arbitrary BisimPair where
-  arbitrary = do
-    t <- arbitrary -- The seed type
-    n <- arbitrary -- The number of axioms to apply
-    -- n <- choose (0, 3)
-    (u, v) <- arbitraryBisimPair (abs n) t t
-    let [u', v'] = renameList [u, v]
-    return $ BisimPair u' v'
-
-arbitraryBisimPair :: Int -> Type -> Type -> Gen (Type, Type)
-arbitraryBisimPair 0 t u = return (t, u)
-arbitraryBisimPair n t u = do
-  (t', u') <- arbitraryBisimPair (n - 1) t u
-  oneof $ map (\axiom -> axiom t' u')
-    [
+bisimPair :: Gen (Type, Type)
+bisimPair =
+  oneof
+    [ skipPair
+    , semiPair
+    , messagePair
+    -- , choicePair
+    , recPair
+    , varPair
     -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
-      skipt
+    , skipt
     , tskip
-    , assoc
-    , distrib
+    -- , assoc
+    -- , distrib
     -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
     , recrec
     , recFree
@@ -264,60 +217,102 @@ arbitraryBisimPair n t u = do
     , commut
     ]
 
--- The various axioms all share this signature
-type GenBisimPair = Type -> Type -> Gen (Type, Type)
+-- The various session type constructors
+
+skipPair :: Gen (Type, Type)
+skipPair = return (Skip pos, Skip pos)
+
+semiPair :: Gen (Type, Type)
+semiPair = do
+  (t, u) <- bisimPair
+  (v, w) <- bisimPair
+  return (Semi pos t v, Semi pos u w)
+
+messagePair :: Gen (Type, Type)
+messagePair = do
+  (p, b) <- arbitrary
+  return (Message pos p b, Message pos p b)
+
+-- choicePair :: Gen (Type, Type)
+-- choicePair = do
+--   p <- arbitrary
+--   m <- arbitraryTypeMap
+--   return (Choice pos p m, Choice pos p m) -- TODO: use two equivalent maps
+
+recPair :: Gen (Type, Type)
+recPair = do
+  (t, u) <- bisimPair
+  xk <- arbitrary
+  return (Rec pos xk t, Rec pos xk u)
+
+varPair :: Gen (Type, Type)
+varPair = do
+  x <- arbitrary
+  return (TypeVar pos x, TypeVar pos x)
 
 -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
 
-skipt :: GenBisimPair
-skipt t u = return (Semi pos (Skip pos) t, u)
+skipt :: Gen (Type, Type)
+skipt = do
+  (t, u) <- bisimPair
+  return (Semi pos (Skip pos) t, u)
 
-tskip :: GenBisimPair
-tskip t u = return (Semi pos t (Skip pos), t)
+tskip :: Gen (Type, Type)
+tskip = do
+  (t, u) <- bisimPair
+  return (Semi pos t (Skip pos), u)
 
-assoc :: GenBisimPair
-assoc t u = do
-  (v, w) <- arbitrary
-  return (Semi pos t (Semi pos v w),
-          Semi pos (Semi pos u v) w)
-
+assoc :: Gen (Type, Type)
+assoc = do
+  (t, u) <- bisimPair
+  (v, w) <- bisimPair
+  (x, y) <- bisimPair
+  return (Semi pos t (Semi pos v x),
+          Semi pos (Semi pos u w) y)
+{-
 distrib :: GenBisimPair
 distrib t u = do
   p <- arbitrary
   m <- sized arbitraryTypeMap
   return (Semi pos (Choice pos p m) t,
           Choice pos p (Map.map (\v -> Semi pos v u) m))
-
+-}
 -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
 
-recrec :: GenBisimPair
-recrec t u = do
+recrec :: Gen (Type, Type)
+recrec = do
+  (t, u) <- bisimPair
   (xk@(TypeVarBind _ x _), yk@(TypeVarBind _ y _)) <- arbitrary
   return (Rec pos xk (Rec pos yk t),
           Rec pos xk (subs (TypeVar pos x) y u))
           -- Rec pos xk (subs (TypeVar pos x) y (renameType u)))
 
-recFree :: GenBisimPair
-recFree t u = do
+recFree :: Gen (Type, Type)
+recFree = do
+  (t, u) <- bisimPair
   k <- arbitrary
   return (Rec pos (TypeVarBind pos freeTypeVar k) t, u)
   -- Note: the rec-var must be distinct from the free variables of t
 
-alphaConvert :: GenBisimPair -- (fixed wrt to ICFP'16)
-alphaConvert t u = do
+alphaConvert :: Gen (Type, Type) -- (fixed wrt to ICFP'16)
+alphaConvert = do
+  (t, u) <- bisimPair
   (x, k) <- arbitrary
   let y = freeTypeVar
   return (Rec pos (TypeVarBind pos x k) t,
           Rec pos (TypeVarBind pos y k) (subs (TypeVar pos y) x u))
 
-subsOnBoth :: GenBisimPair
-subsOnBoth t u = do
-  (BisimPair t' u', x) <- arbitrary
-  return (subs t x t',
-          subs u x u')
+subsOnBoth :: Gen (Type, Type)
+subsOnBoth = do
+  (t, u) <- bisimPair
+  (v, w) <- bisimPair
+  x <- arbitrary
+  return (subs t x v,
+          subs u x w)
 
-unfoldt :: GenBisimPair
-unfoldt t u = do
+unfoldt :: Gen (Type, Type)
+unfoldt = do
+  (t, u) <- bisimPair
   xk <- arbitrary
   return (Rec pos xk t,
           unfold (Rec pos xk u))
@@ -325,5 +320,8 @@ unfoldt t u = do
 
 -- Commutativity
 
-commut :: GenBisimPair
-commut t u = return (u, t)
+commut :: Gen (Type, Type)
+commut = do
+  (t, u) <- bisimPair
+  return (u, t)
+
