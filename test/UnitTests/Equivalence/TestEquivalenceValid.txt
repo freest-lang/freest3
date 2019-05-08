@@ -597,3 +597,7 @@ x ; Skip
 []
 (&{A: (Skip;Skip), B: y};(Skip;&{A: ?Int, B: Skip}))
 &{A: ((Skip;Skip);&{A: ?Int, B: Skip}), B: (y;&{A: ?Int, B: Skip})}
+
+[]
+rec x. +{A: rec z. x}
+rec y. +{A: y}

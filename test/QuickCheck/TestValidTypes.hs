@@ -1,4 +1,5 @@
 import           Test.QuickCheck
+import           Test.QuickCheck.Random
 import           Equivalence.Equivalence
 import           Equivalence.Bisimulation
 import           Equivalence.Normalisation
@@ -17,7 +18,9 @@ import           Data.Maybe
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
-main = verboseCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
+main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
+-- main = quickCheckWith stdArgs {maxSuccess = 10000, replay = Just (mkQCGen 42, 0)} prop_bisimilar
+-- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_subs_kind_preservation1
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_norm_preserves_bisim
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_distribution
@@ -49,7 +52,7 @@ kindOf t
 
 -- Bisimilar types are bisimilar
 prop_bisimilar :: BisimPair -> Property
-prop_bisimilar (BisimPair t u) = kinded t && kinded u ==> t `bisim` u
+prop_bisimilar (BisimPair t u) = kinded t ==> t `bisim` u
 
 -- Equivalence
 prop_equivalent :: BisimPair -> Property
@@ -86,8 +89,8 @@ prop_terminated2 t =
 
 -- Distribution
 
-prop_distribution :: Type -> Property
-prop_distribution t = kinded t ==>
+prop_distribution :: BisimPair -> Property
+prop_distribution (BisimPair t _) = kinded t ==>
   collect (nodes t) $
   tabulate "Type constructors" [constr t] $
   True
@@ -127,7 +130,7 @@ ids :: [String]            -- Type Variables
 ids = ["x", "y", "z"]
 
 freeTypeVar :: TypeVar
-freeTypeVar = mkVar pos "d"
+freeTypeVar = mkVar pos "δ"
 
 choices :: [String]        -- Program Variables
 choices = ["A", "B", "C"]
@@ -151,34 +154,6 @@ instance Arbitrary TypeVarBind where
 
 instance Arbitrary BasicType where
   arbitrary = elements [IntType, CharType, BoolType, UnitType]
-{-
-instance Arbitrary Type where
-  arbitrary = sized arbitrarySession -- Warning: not renamed
-
-arbitrarySession :: Int -> Gen Type
-arbitrarySession 0 = oneof
-  [ return $ Skip pos
-  , liftM3 Message arbitrary arbitrary arbitrary
-  ]
-arbitrarySession n = oneof
-  [ liftM3 Semi arbitrary (arbitrarySession (n `div` 4)) (arbitrarySession (n `div` 4))
-  , liftM3 Choice arbitrary arbitrary (arbitraryTypeMap (n `div` 4))
-  , liftM2 TypeVar arbitrary arbitrary
-  , liftM3 Rec arbitrary arbitrary (arbitrarySession (n `div` 4))
-  ]
-
-arbitraryTypeMap :: Int -> Gen TypeMap
-arbitraryTypeMap n = do
-  k <- choose (1, length choices)
-  m <- vectorOf k $ arbitraryField (n `div` 4)
-  return $ Map.fromList m
-
-arbitraryField :: Int -> Gen (ProgVar, Type)
-arbitraryField n = do
-    x <- arbitrary
-    t <- arbitrarySession (n `div` 4)
-    return (x, t)
--}
 
 -- Arbitrary pairs of bisimilar types
 
@@ -189,43 +164,44 @@ instance Show BisimPair where
 
 instance Arbitrary BisimPair where
   arbitrary = do
-    (t, u) <- bisimPair
+    (t, u) <- sized bisimPair
     let [t', u'] = renameList [t, u]
     return $ BisimPair t' u'
 
-bisimPair :: Gen (Type, Type)
-bisimPair =
-  oneof
+bisimPair :: Int -> Gen (Type, Type)
+bisimPair n =
+  oneof $
+    -- The various type constructors
     [ skipPair
-    , semiPair
     , messagePair
-    -- , choicePair
-    , recPair
     , varPair
-    -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
-    , skipt
-    , tskip
-    -- , assoc
-    -- , distrib
-    -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
-    , recrec
-    , recFree
-    , alphaConvert
-    , subsOnBoth
-    , unfoldt
-    -- Commutativity
-    , commut
     ]
+    ++ [choicePair n   | n > 0]
+    ++ [recPair n      | n > 0]
+    ++ [semiPair n     | n > 0]
+    -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
+    ++ [skipt n        | n > 0]
+    ++ [tskip n        | n > 0]
+    ++ [assoc n        | n > 0]
+    ++ [distrib n      | n > 0]
+    -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
+    ++ [recrec n       | n > 0]
+    ++ [recFree n      | n > 0]
+    ++ [alphaConvert n | n > 0]
+    ++ [subsOnBoth n   | n > 0]
+    ++ [unfoldt n      | n > 0]
+    -- Commutativity
+    ++ [commut n       | n > 0]
 
 -- The various session type constructors
 
 skipPair :: Gen (Type, Type)
 skipPair = return (Skip pos, Skip pos)
 
-semiPair :: Gen (Type, Type)
-semiPair = do
-  (t, u) <- bisimPair
-  (v, w) <- bisimPair
+semiPair :: Int -> Gen (Type, Type)
+semiPair n = do
+  (t, u) <- bisimPair (n `div` 2)
+  (v, w) <- bisimPair (n `div` 2)
   return (Semi pos t v, Semi pos u w)
 
 messagePair :: Gen (Type, Type)
@@ -233,15 +209,27 @@ messagePair = do
   (p, b) <- arbitrary
   return (Message pos p b, Message pos p b)
 
--- choicePair :: Gen (Type, Type)
--- choicePair = do
---   p <- arbitrary
---   m <- arbitraryTypeMap
---   return (Choice pos p m, Choice pos p m) -- TODO: use two equivalent maps
+choicePair :: Int -> Gen (Type, Type)
+choicePair n = do
+  p <- arbitrary
+  pairs <- fieldPairs n
+  let (f1, f2) = unzip pairs
+  return (Choice pos p (Map.fromList f1), Choice pos p (Map.fromList f2))
 
-recPair :: Gen (Type, Type)
-recPair = do
-  (t, u) <- bisimPair
+fieldPairs :: Int -> Gen [((ProgVar, Type), (ProgVar, Type))]
+fieldPairs n = do
+  k <- choose (1, length choices)
+  vectorOf k $ field (n `div` k)
+  where
+  field :: Int -> Gen ((ProgVar, Type), (ProgVar, Type))
+  field n = do
+      x <- arbitrary
+      (t, u) <- bisimPair (n `div` 4)
+      return ((x, t), (x, u))
+
+recPair :: Int -> Gen (Type, Type)
+recPair n = do
+  (t, u) <- bisimPair n
   xk <- arbitrary
   return (Rec pos xk t, Rec pos xk u)
 
@@ -252,76 +240,76 @@ varPair = do
 
 -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
 
-skipt :: Gen (Type, Type)
-skipt = do
-  (t, u) <- bisimPair
+skipt :: Int -> Gen (Type, Type)
+skipt n = do
+  (t, u) <- bisimPair n
   return (Semi pos (Skip pos) t, u)
 
-tskip :: Gen (Type, Type)
-tskip = do
-  (t, u) <- bisimPair
+tskip :: Int -> Gen (Type, Type)
+tskip n = do
+  (t, u) <- bisimPair n
   return (Semi pos t (Skip pos), u)
 
-assoc :: Gen (Type, Type)
-assoc = do
-  (t, u) <- bisimPair
-  (v, w) <- bisimPair
-  (x, y) <- bisimPair
+assoc :: Int -> Gen (Type, Type)
+assoc n = do
+  (t, u) <- bisimPair (n `div` 3)
+  (v, w) <- bisimPair (n `div` 3)
+  (x, y) <- bisimPair (n `div` 3)
   return (Semi pos t (Semi pos v x),
           Semi pos (Semi pos u w) y)
-{-
-distrib :: GenBisimPair
-distrib t u = do
+
+distrib :: Int -> Gen (Type, Type)
+distrib n = do
   p <- arbitrary
-  m <- sized arbitraryTypeMap
-  return (Semi pos (Choice pos p m) t,
-          Choice pos p (Map.map (\v -> Semi pos v u) m))
--}
+  (t, u) <- bisimPair (n `div` 2)
+  pairs <- fieldPairs (n `div` 2)
+  let (f1, f2) = unzip pairs
+  return (Semi pos (Choice pos p (Map.fromList f1)) t,
+          Choice pos p (Map.map (\v -> Semi pos v u) (Map.fromList f2)))
+          -- Choice pos p (Map.fromList (map (\(x,v) -> (x, Semi pos v u)) f2))) 
 -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
 
-recrec :: Gen (Type, Type)
-recrec = do
-  (t, u) <- bisimPair
+recrec :: Int -> Gen (Type, Type)
+recrec n = do
+  (t, u) <- bisimPair n
   (xk@(TypeVarBind _ x _), yk@(TypeVarBind _ y _)) <- arbitrary
   return (Rec pos xk (Rec pos yk t),
           Rec pos xk (subs (TypeVar pos x) y u))
-          -- Rec pos xk (subs (TypeVar pos x) y (renameType u)))
 
-recFree :: Gen (Type, Type)
-recFree = do
-  (t, u) <- bisimPair
+recFree :: Int -> Gen (Type, Type)
+recFree n = do
+  (t, u) <- bisimPair n
   k <- arbitrary
   return (Rec pos (TypeVarBind pos freeTypeVar k) t, u)
   -- Note: the rec-var must be distinct from the free variables of t
 
-alphaConvert :: Gen (Type, Type) -- (fixed wrt to ICFP'16)
-alphaConvert = do
-  (t, u) <- bisimPair
+alphaConvert :: Int -> Gen (Type, Type) -- (fixed wrt to ICFP'16)
+alphaConvert n = do
+  (t, u) <- bisimPair n
   (x, k) <- arbitrary
   let y = freeTypeVar
   return (Rec pos (TypeVarBind pos x k) t,
           Rec pos (TypeVarBind pos y k) (subs (TypeVar pos y) x u))
 
-subsOnBoth :: Gen (Type, Type)
-subsOnBoth = do
-  (t, u) <- bisimPair
-  (v, w) <- bisimPair
+subsOnBoth :: Int -> Gen (Type, Type)
+subsOnBoth n = do
+  (t, u) <- bisimPair (n `div` 2)
+  (v, w) <- bisimPair (n `div` 2)
   x <- arbitrary
   return (subs t x v,
           subs u x w)
 
-unfoldt :: Gen (Type, Type)
-unfoldt = do
-  (t, u) <- bisimPair
+unfoldt :: Int -> Gen (Type, Type)
+unfoldt n = do
+  (t, u) <- bisimPair n
   xk <- arbitrary
   return (Rec pos xk t,
           unfold (Rec pos xk u))
-          -- unfold (Rec pos xk (renameType u)))
 
--- Commutativity
+-- -- Commutativity
 
-commut :: Gen (Type, Type)
-commut = do
-  (t, u) <- bisimPair
+commut :: Int -> Gen (Type, Type)
+commut n = do
+  (t, u) <- bisimPair n
   return (u, t)
 
