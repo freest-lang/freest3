@@ -75,8 +75,12 @@ toGrammar (Rec _ (TypeVarBind _ x _) t) = do
         Just m -> do
           addProductions x (Map.map (++ zs) m)
           return [x]
-        Nothing ->
-          return []
+        Nothing -> do
+          b <- memberVisited z
+          if b && z/=x then
+            return [z]
+          else
+            return []
   -- Type operators
 toGrammar (Dualof p (TypeName _ x)) = do
   insertVisited x
