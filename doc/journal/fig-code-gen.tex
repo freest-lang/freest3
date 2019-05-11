@@ -1,0 +1,58 @@
+\begin{figure}[t]
+  AST annotation - \emph{CodeGen} \hfill\fbox{$\codeGen b e b$}
+  \begin{gather*}
+    % Basic expressions
+    \frac{}{\codeGen b {()} b} \quad
+    \frac{}{\codeGen b {i} b} \quad
+    \frac{}{\codeGen b {c} b} \quad
+    \frac{}{\codeGen b {b_1} b}\\
+    % Variables
+    \frac{x : b_1 \in \varphi}
+    {\codeGen b x {\orTwo b b_1}} \quad
+    % UnLet
+    \frac{\codeGen{b}{e_1}{b_1} \quad \codeGen{b}{e_2}{b_2}}
+    {\codeGen b {\unlete x e_1 e_2} {\orThree b {b_1}{b_2}}}\\
+    % Application introduction
+    \frac{\codeGen{b}{e_1}{b_1} \quad \codeGen{b}{e_2}{b_2}}
+    {\codeGen b {e_1 e_2} {\orThree b {b_1}{b_2}}}\quad
+    % Lambda introduction
+    % TODO
+    % Type application
+    \frac{\codeGen{b}{e}{b_1}}
+    {\codeGen b {\tappe e T} {\orTwo b b_1}}\\
+    % Conditional
+    \frac{\codeGen{b}{e_1}{b_1} \quad \codeGen{b}{e_2}{b_2} \quad \codeGen{b}{e_3}{b_3}}
+    {\codeGen b {\conde{e_1}{e_2}{e_3}} {\orFour b {b_1}{b_2}{b_3}}}\\
+    % Pair introduction
+    \frac{\codeGen{b}{e_1}{b_1} \quad \codeGen{b}{e_2}{b_2}}
+    {\codeGen b {\paire{e_1}{e_2}} {\orThree b {b_1}{b_2}}}\quad
+    % Pair elimination
+    \frac{\codeGen{b}{e_1}{b_1} \quad \codeGen{b}{e_2}{b_2}}
+    {\codeGen b {\binlete x y e_1 e_2} {\orThree b {b_1}{b_2}}}\\
+    % Datatype elimination
+    \frac{\codeGen{b}{e}{b_1} \quad \varphi(C_i) = b_i}
+    {\codeGen b {\casee{e}{\{C_i\,x_i\rightarrow e_i\}}} {\orThree{b}{b_1}{b_i}}} \\
+    % Session Types
+    % NEW
+    \frac{}{\codeGen b {\newe T} {\True}} \quad
+    % SEND
+    \frac{\codeGen{\true}{e}{\True}} {\codeGen b {\sende e} {\True}} \quad
+    % RECEIVE
+    \frac{\codeGen{\true}{e}{\True}} {\codeGen b {\recve e} {\True}}\\
+    % SELECT    
+    \frac{\codeGen{\true}{e}{\True}} {\codeGen b {\selecte l e} {\True}} \quad
+    % MATCH    
+    \frac{\codeGen{\true}{e}{\True} \quad \varphi(C_i) = \True}
+    {\codeGen b {\matche{e}{\{C_i\,x_i\rightarrow e_i\}}} {\True}} \\
+    % THREAD CREATION - FORK
+    \frac{\codeGen{\true}{e}{\True}}
+    {\codeGen b {\forke e} {\True}}    
+  \end{gather*}
+  \caption{AST annotation}
+  \label{fig:AST-annotation}
+\end{figure}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:
