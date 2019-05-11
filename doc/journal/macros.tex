@@ -88,7 +88,7 @@
 \newcommand{\paire}[2]{(#1,#2)}
 \newcommand{\binlete}[4]{\letk\;#1, #2 = #3\;\ink\;#4}
 \newcommand{\newe}[1]{\newk\;#1}
-\newcommand{\sende}[2]{\sendk\;#1\; #2}
+\newcommand{\sende}[1]{\sendk\;#1}
 \newcommand{\sendce}[1]{\sendk\;#1}
 \newcommand{\recve}[1]{\receivek\;#1}
 \newcommand{\selecte}[2]{\selectk\;#1\;{#2}}
@@ -113,6 +113,13 @@
 \newcommand{\subt}{<:}
 \newcommand{\isContr}[2][\Delta]{{#1}\vdash_{\!\!\mathsf c}{#2}}
 \newcommand{\isDone}[1]{{#1}\checkmark}
+
+\newcommand{\codeGen}[4][\varphi]{{#1} \Alg_{#2} {#3} \Rightarrow {#4}}
+\newcommand{\orTwo}[2]{{#1}\,||\,{#2}}
+\newcommand{\orThree}[3]{{#1}\,||\,{#2}\,||\,{#3}}
+\newcommand{\orFour}[4]{{#1}\,||\,{#2}\,||\,{#3}\,||\,{#4}}
+\newcommand{\true}{\mbox{\scriptsize True}}
+\newcommand{\True}{\mbox{True}}
 
 % Operators
 \newcommand\extract[1]{\leadsto_{#1}}% \rightlsquigarrow}
