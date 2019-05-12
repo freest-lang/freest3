@@ -77,8 +77,8 @@ toGrammar (Rec _ (TypeVarBind _ x _) t) = do
           return [x]
         Nothing -> do
           b <- memberVisited z
-          if b && z/=x then
-            return [z]
+          if b && z/=x then -- case in which the productions for z are not yet completed
+            return (z:zs)
           else
             return []
   -- Type operators
