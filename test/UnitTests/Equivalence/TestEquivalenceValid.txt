@@ -602,10 +602,17 @@ x ; Skip
 (Skip;(rec x_0:SL. (rec x_1:SL. y)))
 (rec x_2:SL. y)
 
-<<<<<<< HEAD
 []
 rec x. &{A: rec z. x}
 &{A: rec y. &{A: y}}
+
+[("y", SL)]
+(Skip;(rec x_0:SL. (rec x_1:SL. y)))
+(rec x_2:SL. y)
+
+[("y", SL)]
+((rec d_0:SL. y);Skip)
+(rec d_1:SL. y)
 
 []
 (&{A: ?Bool, C: (rec b:SL. ?Char)};(rec a:SU. &{B: (((rec c:SL. (&{A: y};(?Int;!Char)));y);x)}))
@@ -626,27 +633,3 @@ rec e:SL. (&{B: Skip, C: e;!Bool})
 -- []
 -- ((rec w:SL. &{B: ((+{A: &{B: x, C: Skip}};(+{A: ?Bool, B: w, C: (?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w))};Skip));+{A: (!Char;(((?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w));?Char);(?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w))))}), C: Skip});(x;((&{B: !Bool, C: Skip};((rec δ:SU. ?());y));(?Int;(+{B: x, C: ?Int};(!Int;Skip))))))  
 -- ((rec z:SL. (Skip;&{B: (+{A: (&{B: x, C: Skip};+{A: (?Bool;Skip), B: (z;Skip), C: (((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z);Skip)})};(+{A: !Char};(((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z);(?Char;((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z))))), C: Skip}));((x;&{B: (!Bool;(?();y)), C: (Skip;(?();y))});((?Int;+{B: x, C: ?Int});!Int)))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-=======
-[("y", SL)]
-((rec d_0:SL. y);Skip)
-(rec d_1:SL. y)
->>>>>>> 8267e84bb86893af61efcf50d66dd7c6d827ce92
