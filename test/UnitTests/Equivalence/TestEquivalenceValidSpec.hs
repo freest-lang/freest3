@@ -10,6 +10,10 @@ import           Utils.FreestState
 import           SpecHelper
 import qualified Data.Map.Strict as Map
 import           Control.Monad.State
+import Debug.Trace
+
+import           Data.Maybe
+import           Validation.Kinding
 
 spec :: Spec
 spec = do
@@ -20,12 +24,14 @@ spec = do
 matchValidSpec :: [String] -> Spec
 matchValidSpec [k, t, u] =
   it (k ++ "  |-  " ++ t ++ " ~ " ++  u) (
-    {-# SCC "EQUIVALENT_TEST_CALL" #-} equivalent Map.empty (Map.fromList (readKenv k)) t' u' `shouldBe` True)
+    let kenv = Map.fromList (readKenv k) in
+      {-# SCC "EQUIVALENT_TEST_CALL" #-}
+      equivalent Map.empty kenv t' u' `shouldBe` True)
       where (PairType _ t' u') = evalState (rename Map.empty (PairType defaultPos (read t) (read u))) (initialState "Testing Type Equivalence")
 
 readKenv :: String -> [(TypeVar, Kind)]
 readKenv s = map (\(x,k) -> (mkVar defaultPos x, k)) (read s)
-  
+
 main :: IO ()
 main = hspec spec
 

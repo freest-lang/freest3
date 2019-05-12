@@ -31,7 +31,7 @@ main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
 bisim :: Type -> Type -> Bool
 bisim = bisimilar Map.empty
 equiv :: Type -> Type -> Bool
-equiv = equivalent Map.empty Map.empty
+equiv = equivalent Map.empty kindEnv
 norm :: Type -> Type
 norm = normalise Map.empty
 pos = defaultPos
@@ -57,6 +57,11 @@ prop_bisimilar (BisimPair t u) = kinded t && kinded u ==> t `bisim` u
 -- Equivalence
 prop_equivalent :: BisimPair -> Property
 prop_equivalent (BisimPair t u) = kinded t ==> equiv t u
+
+
+prop_equivalent_trace :: BisimPair -> Property
+prop_equivalent_trace (BisimPair t u) = kinded t  ==>
+  trace ("=> " ++ show t ++ " equiv " ++ show u) (t `equiv` u)
 
 -- Normalisation preserves bisimilarity
 prop_norm_preserves_bisim :: Type -> Property
