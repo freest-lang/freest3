@@ -17,13 +17,14 @@ module Equivalence.TypeToGrammar
 ( convertToGrammar
 ) where
 
-import           Equivalence.Grammar
 import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
 import           Syntax.Base
+import           Validation.Substitution
+import           Equivalence.Grammar
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
@@ -66,18 +67,20 @@ toGrammar (TypeVar _ x) = do
   else do -- This is a polymorphic variable
     y <- addBasicProd (VarLabel x)
     return [y]
-toGrammar (Rec _ (TypeVarBind _ x _) t) = do
-  insertVisited x
-  toGrammar t >>= \case
+toGrammar (Rec _ (TypeVarBind p x _) t) = do
+  let y = mkNewVar 0 x
+  let u = subs (TypeVar p y) x t -- On the fly α-conversion
+  insertVisited y
+  toGrammar u >>= \case
     []     -> return []
     (z:zs) ->
       getTransitions z >>= \case
         Just m -> do
-          addProductions x (Map.map (++ zs) m)
-          return [x]
+          addProductions y (Map.map (++ zs) m)
+          return [y]
         Nothing -> do
           b <- memberVisited z
-          if b && z/=x then -- case in which the productions for z are not yet completed
+          if b && z /= y then -- case in which the productions for z are not yet completed
             return (z:zs)
           else
             return []
@@ -171,84 +174,8 @@ addBasicProd l = do
     Just p ->
       return p
   where fold x m acc = if l `Map.member` m && null (m Map.! l) then Just x else acc
-  -- y <- freshVar
-  -- addProduction y l []
-  -- return y
 
 getFromVEnv :: TypeVar -> TransState (Kind, TypeScheme)
 getFromVEnv x = do
   s <- get
   return $ (typeEnv s) Map.! x
-
--- Some tests
-{-
-p = (0,0)
-s1 = Message p Out CharType
-t1 = convertToGrammar [s1]
-s2 = TypeVar p "α"
-t2 = convertToGrammar [s2]
-s3 = Semi p (Message p Out IntType) (Message p In BoolType)
-t3 = convertToGrammar [s3]
-s4 = Semi p s3 s1
-t4 = convertToGrammar [s4]
-s5 = Choice p External (Map.fromList
-  [("Leaf", Skip p),
-   ("Node", s1)])
-t5 = convertToGrammar [s5]
-s6 = Choice p External (Map.fromList
-  [("Leaf", Skip p),
-   ("Node", s3)])
-t6 = convertToGrammar [s6]
--- yBind = Bind "y" p (Kind {prekind = Session, multiplicity = Lin})
-yBind = "y"
-treeSend = Rec p yBind (Choice p External (Map.fromList
-  [("Leaf",Skip p),
-   ("Node", Semi p (Message p Out IntType) (Semi p (TypeVar p "y") (TypeVar p "y")))]))
-t7 = convertToGrammar [treeSend]
-t8 = convertToGrammar [Semi p treeSend (TypeVar p "α")]
-s9 = Rec p yBind (Semi p s1 (TypeVar p "y"))
-t9 = convertToGrammar [s9]
-s10 = Semi p s4 (Semi p (Semi p s3 s1) s4)
-t10 = convertToGrammar [s10]
-s11 = Semi p (Rec p yBind (Semi p treeSend (TypeVar p "y"))) treeSend
-t11 = convertToGrammar [s11]
--- zBind = Bind "z" p (Kind {prekind = Session, multiplicity = Lin})
-zBind = "z"
-s12 = Semi p (Rec p zBind (Semi p treeSend (TypeVar p "z"))) treeSend
-t12 = convertToGrammar [s12]
-s13 = Semi p treeSend (Skip p)
-t13 = convertToGrammar [s13]
-s14 = Semi p (Skip p) treeSend
-t14 = convertToGrammar [s14]
-s15 = Semi p treeSend treeSend
-t15 = convertToGrammar [s15]
-treeSend1 = Rec p zBind (Choice p External (Map.fromList
-  [("Leaf",Skip p),
-   ("Node", Semi p (Message p Out IntType) (Semi p (TypeVar p "z") (TypeVar p "z")))]))
-s16 = Semi p treeSend treeSend1
-t16 = convertToGrammar [s16]
-s17 = Rec p zBind (Semi p s1 (TypeVar p "z"))
-t17 = convertToGrammar [s17]
-s18 = Rec p zBind (Semi p s1 (Semi p (TypeVar p "z") (TypeVar p "z")))
-t18 = convertToGrammar [s18]
-s19 = Rec p zBind (Semi p (Semi p s1 (TypeVar p "z")) (TypeVar p "z"))
-t19 = convertToGrammar [s19]
-s20 = Message p In IntType
-s21 = Semi p s1 (Semi p s2 s20)
-s22 = Semi p (Semi p s1 s2) s20
-s23 = Semi p s1 (Skip p)
-s24 = Rec p yBind (Rec p zBind (Semi p (Semi p s1 (TypeVar p "y")) (TypeVar p "z")))
-t24 = convertToGrammar [s24]
-s25 = Rec p yBind (Rec p zBind (Semi p (Semi p s1 (TypeVar p "z")) (TypeVar p "y")))
-t25 = convertToGrammar [s25]
-s26 = Semi p (Choice p External (Map.fromList [("Leaf", Skip p)])) (TypeVar p "α")
-t26 = convertToGrammar [s26]
-s27 = Choice p External (Map.fromList [("Leaf", (TypeVar p "α"))])
-t27 = convertToGrammar [s27]
-s28 = Rec p yBind (Choice p External (Map.fromList [("Add", Semi p (Semi p (TypeVar p "y") (TypeVar p "y")) (Message p Out IntType)), ("Const", Skip p)]))
-t28 = convertToGrammar [s28]
-s29 = Semi p s5 (Message p In IntType)
-t29 = convertToGrammar [s29]
-s30 = Rec p yBind s29
-t30 = convertToGrammar [s24,s25,s26,s27,s28,s29,s30]
--}

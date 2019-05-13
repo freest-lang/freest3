@@ -29,6 +29,7 @@ import           Syntax.Kinds
 import           Syntax.Base
 import           Syntax.Show
 import           Validation.Contractive
+import           Validation.Substitution
 import           Utils.FreestState
 import           Utils.Errors
 import qualified Control.Monad.State as S
@@ -66,12 +67,10 @@ synthetise kEnv (Choice p _ m) = do
   return $ Kind p Session Lin
 -- Session or functional
 synthetise kEnv (Rec _ (TypeVarBind p x k) t) = do
-  checkContractive kEnv t
-  synthetise (Map.insert x k kEnv) t
-  -- n <- getNextIndex
-  -- let y = mkNewVar n x
-  -- k' <- synthetise (Map.insert y k kEnv) $ subs (TypeVar p y) x t -- On the fly α-conversion
-  -- return k'
+  let y = mkNewVar 0 x
+  let u = subs (TypeVar p y) x t -- On the fly α-conversion
+  checkContractive kEnv u
+  synthetise (Map.insert y k kEnv) u
 synthetise kEnv (TypeVar p x) =
   case kEnv Map.!? x of
     Just k -> do

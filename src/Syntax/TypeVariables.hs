@@ -19,7 +19,8 @@ data TypeVar = TypeVar Pos String
 
 instance Variable TypeVar where
   mkVar = TypeVar
-  mkNewVar next (TypeVar pos id) = TypeVar pos (show next ++ '_' : id)
+  mkNewVar next (TypeVar pos id) = TypeVar pos (show next ++ id)
+  -- mkNewVar next (TypeVar pos id) = TypeVar pos (show next ++ '_' : id)
   intern (TypeVar _ x) = x
 
 instance Eq TypeVar where

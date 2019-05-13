@@ -58,11 +58,6 @@ prop_bisimilar (BisimPair t u) = kinded t && kinded u ==> t `bisim` u
 prop_equivalent :: BisimPair -> Property
 prop_equivalent (BisimPair t u) = kinded t ==> equiv t u
 
-
-prop_equivalent_trace :: BisimPair -> Property
-prop_equivalent_trace (BisimPair t u) = kinded t  ==>
-  trace ("=> " ++ show t ++ " equiv " ++ show u) (t `equiv` u)
-
 -- Normalisation preserves bisimilarity
 prop_norm_preserves_bisim :: Type -> Property
 prop_norm_preserves_bisim t = kinded t' ==> bisim u v
@@ -170,7 +165,7 @@ instance Show BisimPair where
 instance Arbitrary BisimPair where
   arbitrary = do
     (t, u) <- sized bisimPair
-    let [t', u'] = renameList [t, u]
+    let [t', u'] = {- renameList -} [t, u]
     return $ BisimPair t' u'
 
 bisimPair :: Int -> Gen (Type, Type)
