@@ -26,7 +26,7 @@ matchValidSpec [k, t, u] =
       {-# SCC "EQUIVALENT_TEST_CALL" #-}
       -- equivalent Map.empty kenv (read t :: Type) (read u :: Type) `shouldBe` True)
       equivalent Map.empty kenv t' u' `shouldBe` True)
-      where (PairType _ t' u') = evalState (rename Map.empty (PairType defaultPos (read t) (read u))) (initialState "Testing Type Equivalence")
+      where [t', u'] = evalState (renameList Map.empty [read t, read u]) (initialState "Testing Type Equivalence")
 
 readKenv :: String -> [(TypeVar, Kind)]
 readKenv s = map (\(x,k) -> (mkVar defaultPos x, k)) (read s)
