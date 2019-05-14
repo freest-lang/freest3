@@ -14,7 +14,8 @@ import           Data.Maybe
 import qualified Data.Map.Strict as Map
 import           QuickCheck.ArbitraryTypes
 
-main = verboseCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
+main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
+-- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_distribution
 -- main = quickCheckWith stdArgs {maxSuccess = 10000, replay = Just (mkQCGen 42, 0)} prop_bisimilar
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_subs_kind_preservation1
@@ -82,3 +83,34 @@ prop_dual_convolution t = kinded t ==> dual (dual t) == t
 -- prop_terminated2 t =
 --   kinded t' ==> terminated t' == bisim t' (Skip pos)
 --   where t' = renameType t
+
+-- Distribution
+
+prop_distribution :: BisimPair -> Property
+prop_distribution (BisimPair t _) = kinded t ==>
+  collect (nodes t) $
+  tabulate "Type constructors" [constr t] $
+  True
+
+-- The number of nodes in a type
+nodes :: Type -> Int
+nodes (Semi _ t u)   = 1 + nodes t + nodes u
+nodes (Choice _ _ m) = 1 + Map.foldr (\t acc -> nodes t + acc) 0 m
+nodes (Rec _ _ t)    = 1 + nodes t
+-- Skip, Message, TypeVar
+nodes _              = 1
+
+-- The constructor of a type
+constr :: Type -> String
+constr (Basic _ _) = "Basic"
+constr (Syntax.Types.Fun _ _ _ _) = "Fun"
+constr (PairType _ _ _) = "PairType"
+constr (Datatype _ _) = "Datatype"
+constr (Skip _) = "Skip"
+constr (Semi _ _ _) = "Semi"
+constr (Message _ _ _) = "Message"
+constr (Choice _ _ _) = "Choice"
+constr (Rec _ _ _) = "Rec"
+constr (TypeVar _ _) = "TypeVar"
+constr (TypeName _ _) = "TypeName"
+constr (Dualof _ _) = "Dualof"

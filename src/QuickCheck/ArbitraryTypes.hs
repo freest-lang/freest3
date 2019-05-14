@@ -87,13 +87,13 @@ bisimPair n =
     , skipT n
     , tSkip n
     , assoc n
-    -- , distrib n
+    , distrib n
     -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
-    , recRecL n
-    , recRecR n
+    , recRecL
+    , recRecR
     , recFree n
     -- , alphaConvert n
-    , subsOnBoth n
+    , subsOnBoth
     , unfoldt n
     -- Commutativity
     , commut n
@@ -107,8 +107,8 @@ skipPair = return (Skip pos,
 
 semiPair :: Int -> Gen (Type, Type)
 semiPair n = do
-  (t, u) <- bisimPair (n `div` 2)
-  (v, w) <- bisimPair (n `div` 2)
+  (t, u) <- bisimPair (n `div` 8)
+  (v, w) <- bisimPair (n `div` 8)
   return (Semi pos t v,
           Semi pos u w)
 
@@ -129,17 +129,17 @@ choicePair n = do
 fieldPairs :: Int -> Gen [((ProgVar, Type), (ProgVar, Type))]
 fieldPairs n = do
   k <- choose (1, length choices)
-  vectorOf k $ field (n `div` (k + k))  -- TODO: why k + k?
+  vectorOf k $ field (n `div` (length choices)) -- Why?
   where
   field :: Int -> Gen ((ProgVar, Type), (ProgVar, Type))
   field n = do
-      (t, u) <- bisimPair n
+      (t, u) <- bisimPair (n `div` 4)
       x <- arbitrary
       return ((x, t), (x, u))
 
 recPair :: Int -> Gen (Type, Type)
 recPair n = do
-  (t, u) <- bisimPair n
+  (t, u) <- bisimPair (n `div` 4)
   xk <- arbitrary
   return (Rec pos xk t, Rec pos xk u)
 
@@ -152,54 +152,54 @@ varPair = do
 
 skipT :: Int -> Gen (Type, Type)
 skipT n = do
-  (t, u) <- bisimPair n
+  (t, u) <- bisimPair (n `div` 4)
   return (Semi pos (Skip pos) t, u)
 
 tSkip :: Int -> Gen (Type, Type)
 tSkip n = do
-  (t, u) <- bisimPair n
+  (t, u) <- bisimPair (n `div` 4)
   return (Semi pos t (Skip pos), u)
 
 assoc :: Int -> Gen (Type, Type)
 assoc n = do
-  (t, u) <- bisimPair (n `div` 6)
-  (v, w) <- bisimPair (n `div` 6)
-  (x, y) <- bisimPair (n `div` 6)
+  (t, u) <- bisimPair (n `div` 12)
+  (v, w) <- bisimPair (n `div` 12)
+  (x, y) <- bisimPair (n `div` 12)
   return (Semi pos t (Semi pos v x),
           Semi pos (Semi pos u w) y)
 
 distrib :: Int -> Gen (Type, Type)
 distrib n = do
-  (t, u) <- bisimPair (n `div` 2)
-  pairs <- fieldPairs (n `div` 2)
+  (t, u) <- bisimPair (n `div` 4)
+  pairs <- fieldPairs (n `div` 4)
   p <- arbitrary
   let (f1, f2) = unzip pairs
   return (Semi pos (Choice pos p (Map.fromList f1)) t,
           Choice pos p (Map.map (\v -> Semi pos v u) (Map.fromList f2)))
-          -- Choice pos p (Map.fromList (map (\(x,v) -> (x, Semi pos v u)) f2)))
           
 -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
 
-recRecL :: Int -> Gen (Type, Type)
-recRecL n = do
+recRecL :: Gen (Type, Type)
+recRecL = do
   (BisimPair t u) <- arbitrary
-  (xk@(TypeVarBind _ x _), yk@(TypeVarBind _ y _)) <- arbitrary
+  xk@(TypeVarBind _ x _) <- arbitrary
+  yk@(TypeVarBind _ y _) <- arbitrary
   return (Rec pos xk (Rec pos yk t),
           Rec pos xk (subs (TypeVar pos x) y u))
 
-recRecR :: Int -> Gen (Type, Type)
-recRecR n = do
+recRecR :: Gen (Type, Type)
+recRecR = do
   (BisimPair t u) <- arbitrary
-  (xk@(TypeVarBind _ x _), yk@(TypeVarBind _ y _)) <- arbitrary
+  xk@(TypeVarBind _ x _) <- arbitrary
+  yk@(TypeVarBind _ y _) <- arbitrary
   return (Rec pos xk (Rec pos yk t),
           Rec pos yk (subs (TypeVar pos y) x u))
 
 recFree :: Int -> Gen (Type, Type)
 recFree n = do
-  (t, u) <- bisimPair n
+  (t, u) <- bisimPair (n `div` 4)
   k <- arbitrary
   return (Rec pos (TypeVarBind pos freeTypeVar k) t, u)
-  -- Note: the rec-var must be distinct from the free variables of t and u
 
 -- alphaConvert :: Int -> Gen (Type, Type) -- (fixed wrt to ICFP'16)
 -- alphaConvert n = do
@@ -209,8 +209,8 @@ recFree n = do
 --   return (Rec pos (TypeVarBind pos x k) t,
 --           Rec pos (TypeVarBind pos y k) (subs (TypeVar pos y) x u))
 
-subsOnBoth :: Int -> Gen (Type, Type)
-subsOnBoth n = do
+subsOnBoth :: Gen (Type, Type)
+subsOnBoth = do
   (BisimPair t u) <- arbitrary
   (BisimPair v w) <- arbitrary
   x <- arbitrary
@@ -219,7 +219,7 @@ subsOnBoth n = do
 
 unfoldt :: Int -> Gen (Type, Type)
 unfoldt n = do
-  (t, u) <- bisimPair n
+  (t, u) <- bisimPair (n `div` 4)
   xk <- arbitrary
   return (Rec pos xk t,
           unfold (Rec pos xk u))
@@ -228,5 +228,5 @@ unfoldt n = do
 
 commut :: Int -> Gen (Type, Type)
 commut n = do
-  (t, u) <- bisimPair n
+  (t, u) <- bisimPair (n `div` 4)
   return (u, t)
