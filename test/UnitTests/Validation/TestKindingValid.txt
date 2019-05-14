@@ -1,195 +1,199 @@
+[]
 Int
-  TU
-Bool
-  TU
-Char
-  TU
-()
-  TU
-Skip
-  SU
-!Int
-  SL
-!Char
-  SL
-?Bool
-  SL
-?Char
-  SL
-Int -> Bool
-  TU
-Int -o Bool
-  TL
-Char -> Skip
-  TU
-Char -o Skip
-  TL
-(Int,Bool)
-  TL
-(!Char,())
-  TL
-(!Int, Skip)
-  TL
-!Int;?Bool
-  SL
-Skip;Skip
-  SU
-!Int;Skip
-  SL
-Skip;+{S:Skip,I:!Int}
-  SL
+TU
 
+[]
+Bool
+TU
+
+[]
+Char
+TU
+
+[]
+()
+TU
+
+[]
+Skip
+SU
+
+[]
+!Int
+SL
+
+[]
+!Char
+SL
+
+[]
+?Bool
+SL
+
+[]
+?Char
+SL
+
+[]
+Int -> Bool
+TU
+
+[]
+Int -o Bool
+TL
+
+[]
+Char -> Skip
+TU
+
+[]
+Char -o Skip
+TL
+
+[]
+(Int,Bool)
+TL
+
+[]
+(!Char,())
+TL
+
+[]
+(!Int, Skip)
+TL
+
+[]
+!Int;?Bool
+SL
+
+[]
+Skip;Skip
+SU
+
+[]
+!Int;Skip
+SL
+
+[]
+Skip;+{S:Skip,I:!Int}
+SL
+
+[]
 (Bool -> Bool, !Int)
-  TL
+TL
 
 -- recursive types
 
+[]
 rec x . ?Bool
-  SL
-  
-rec x . Skip
-  SU
-  
-rec x . Skip
-  SL
-  
-rec x . (Skip; Skip)
-  SU
-  
-rec x . (Skip; (Skip; Skip); Skip)
-  SU
-  
-rec x . (Skip; x)
-  SL
-  
-rec x : SU . (Skip; x)
-  SU
-  
-rec x : SU . (Skip; ((Skip; x); Skip); Skip)
-  SU
-  
-rec x . (Skip; ((Skip; x); Skip); Skip)
-  SL
-  
+SL
+
+[]
 rec x . (!Int; Skip; ?Int)
-  SL
+SL
   
+[]
 rec tree . &{Leaf: Skip, Node: ?Int;tree;tree}
-  SL
+SL
   
+[]
 rec treeChannel . +{Leaf: Skip, Node: !Int;treeChannel;treeChannel}
-  SL
+SL
   
+[]
 rec alpha . !Int;rec treeChannel . +{Leaf:Skip, Node:!Int;treeChannel;treeChannel};rec treeChannel . +{Leaf:Skip, Node:!Int;treeChannel;treeChannel};x
-  SL
+SL
 
 -- explicitely typed recursive types
 
-rec x : SL . Skip
-  SU
-
-rec x : SU . Skip
-  SU
-
-rec x : TL . Skip
-  SU
-
-rec x : TU . Skip
-  SU
-
+[]
 rec x : SL . x -> x
-  TU
+TU
   
+[]
 rec x : SU . x -> x
-  TU
+TU
 
+[]
 rec x : TL . x -> x 
-  TU
+TU
 
+[]
 rec x : TU . x -> x 
-  TU
+TU
 
+[]
 rec x : SL . x -o x
-  TL
+TL
   
+[]
 rec x : SU . x -o x
-  TL
+TL
 
+[]
 rec x : TL . x -o x 
-  TL
+TL
 
+[]
 rec x : TU . x -o x 
-  TL
+TL
 
+[]
 rec x : SL . rec y : SL . x -> y
-  TU 
+TU 
 
+[]
 rec x : SU . rec y : SU . x -> y
-  TU 
+TU 
 
+[]
 rec x : TL . rec y : TU . x -> y
-  TU 
+TU 
 
+[]
 rec x : TL . rec y : TL . x -> y
-  TU 
+TU 
 
+[]
 rec x : SL . rec y : TL . x -> y
-  TU 
+TU 
 
+[]
 rec x : SU . rec y : TU . x -> y
-  TU 
+TU 
 
+[]
 rec x : TL . rec y : SU . x -> y
-  TU 
+TU 
 
+[]
 rec x : SL . rec y : TL . x -> y
-  TU 
+TU 
 
-rec x : SU . rec y : SU. x ; Skip ; Skip; y; Skip
-  SU
-
-rec x : SU . rec y : SU. x ; Skip ; Skip; y; Skip
-  SL
-
-rec x : SU . rec y : SU. x ; Skip ; Skip; y; Skip
-  TU
-
+[]
 rec a : TU . (a, !Int)
-  TL
+TL
 
+[]
 rec b : TU . (b, !Int)
-  TL
+TL
 
 -- dualof
 
+[]
 rec x . dualof !Int
-  SL
-
-rec x : SU . (dualof Skip) ; x 
-  SU
-
-rec x : SU . dualof (Skip ; x) 
-  SU
-
-rec x : SU . dualof (Skip ; x) 
-  SL
-
-rec x  . (dualof Skip) ; x 
-  SL
-
-rec x . dualof (Skip ; x) 
-  SL
+SL
 
 -- Quick Check
 
-(!Bool;(((!Int;Skip);(Skip;+{A: y, B: Skip}));(Skip;(rec y_0:SU. (&{A: ((?Char;(Skip;x));Skip), C: !Bool};Skip))))) 
-  SL
+[("x", SL) , ("y", SL) , ("z", SL)]
+!Bool;(((!Int;Skip);(Skip;+{A: y, B: Skip}));(Skip;(rec y_0:SU. (&{A: ((?Char;(Skip;x));Skip), C: !Bool};Skip))))
+SL
 
-(!Bool;((!Int;+{A: y, B: Skip});(rec y_1:SU. &{A: ((?Char;Skip);x), C: !Bool})))
-  SL
+[("x", SL) , ("y", SL) , ("z", SL)]
+Bool;((!Int;+{A: y, B: Skip});(rec y_1:SU. &{A: ((?Char;Skip);x), C: !Bool}))
+SL
 
-&{B: ((Skip;&{C: (rec x_0:SL. (Skip;(rec x_1:SU. ((+{A: y, C: z};(Skip;(Skip;?Bool)));(+{B: Skip, C: ?Bool};+{A: (rec x_2:SU. (rec y_3:SU. (((rec y_4:SL. (!();Skip));Skip);Skip))), C: (Skip;Skip)})))))});((Skip;(rec z_5:SL. +{B: (Skip;(Skip;(((Skip;x);?Bool);((?Bool;Skip);!()))))}));((rec y_6:SU. (!();Skip));(?Bool;Skip)))), C: (Skip;((?Char;(rec y_7:SU. (((Skip;z);((y_7;x);x));(Skip;!()))));+{A: ((?Int;&{B: Skip});(y;Skip))}))}
-  SL
-
+[("x", SL) , ("y", SL) , ("z", SL)]
 &{B: (&{C: (rec x_8:SL. (rec x_9:SU. (((+{A: y, C: z};?Bool);+{B: Skip, C: ?Bool});+{A: (rec x_10:SU. (rec y_11:SU. (rec y_12:SL. !()))), C: (Skip;Skip)})))};(((rec z_13:SL. +{B: ((Skip;(Skip;(Skip;(x;?Bool))));(?Bool;(Skip;!())))});(rec y_14:SU. !()));?Bool)), C: (?Char;(((rec y_15:SU. (Skip;((Skip;z);((y_15;(x;x));(Skip;(Skip;!()))))));Skip);+{A: (?Int;(&{B: Skip};(y;Skip)))}))}
-  SL
+SL

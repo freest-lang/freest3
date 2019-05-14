@@ -1,6 +1,8 @@
-module Validation.TestKindingValidSpec(spec) where
+module Validation.TestKindingValidSpec (spec) where
 
 import           Syntax.Kinds
+import           Syntax.ProgramVariables
+import           Syntax.Base
 import           Validation.Contractive
 import           Validation.Kinding
 import           Utils.FreestState
@@ -8,22 +10,31 @@ import           SpecHelper
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
 
-kindOfType :: KindEnv -> Type -> Kind
-kindOfType kenv t = evalState (synthetise kenv t) (initialState  "")
-  -- let s = (initialState  "") in
-  -- evalState (synthetise kenv t) (s {kindEnv = k})
-
 spec :: Spec
 spec = do
   t <- runIO $ readFromFile "test/UnitTests/Validation/TestContractivityValid.txt"
   describe "Valid kinding tests" $ do
     t <- runIO $ readFromFile "test/UnitTests/Validation/TestKindingValid.txt"
-    mapM_ matchValidKindingSpec (chunksOf 2 t)
+    mapM_ matchValidKindingSpec (chunksOf 3 t)
 
 matchValidKindingSpec :: [String] -> Spec
-matchValidKindingSpec [a, b] =
-  it a $
-    kindOfType Map.empty (read a) <: read b `shouldBe` True
+matchValidKindingSpec [kEnv, t, k] =
+  it t $ hasKind (readKenv kEnv) (read t) (read k) `shouldBe` True
+  where
+    readKenv :: String -> KindEnv
+    readKenv s = Map.fromList $ map (\(x,k) -> (mkVar defaultPos x, k)) (read s)
+
+-- code from QuickCheck
+kindOf ::  KindEnv -> Type -> Maybe Kind
+kindOf kEnv t
+  | null (errors s) = Just k
+  | otherwise       = Nothing
+  where (k, s) = runState (synthetise kEnv t) (initialState "Kind syntesis")
+
+hasKind :: KindEnv -> Type -> Kind -> Bool
+hasKind kEnv t k = case kindOf kEnv t of
+  Nothing -> False
+  Just k' -> k' <: k
 
 -- INVALID:
 -- forall alpha . (rec Tree . &{Leaf:Skip, Node:?Int;Tree;Tree}) -> (rec TreeChannel . +{Leaf:Skip, Node:!Int;TreeChannel;TreeChannel});alpha->alpha
