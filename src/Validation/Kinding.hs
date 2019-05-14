@@ -66,11 +66,10 @@ synthetise kEnv (Choice p _ m) = do
   tMapM (checkAgainst kEnv (Kind p Session Lin)) m
   return $ Kind p Session Lin
 -- Session or functional
-synthetise kEnv (Rec _ (TypeVarBind p x k) t) = do
-  let y = mkNewVar 0 x
-  let u = subs (TypeVar p y) x t -- On the fly α-conversion
+synthetise kEnv t@(Rec _ _ _) = do
+  let (Rec _ (TypeVarBind _ x k) u) = rename t -- On the fly α-conversion
   checkContractive kEnv u
-  synthetise (Map.insert y k kEnv) u
+  synthetise (Map.insert x k kEnv) u
 synthetise kEnv (TypeVar p x) =
   case kEnv Map.!? x of
     Just k -> do

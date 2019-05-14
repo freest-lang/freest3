@@ -1,124 +1,21 @@
+module QuickCheck.ArbitraryTypes
+( BisimPair(..)
+, ids
+) where
+
 import           Test.QuickCheck
-import           Test.QuickCheck.Random
-import           Equivalence.Equivalence
-import           Equivalence.Bisimulation
-import           Equivalence.Normalisation
-import           Validation.Substitution
-import           Validation.Rename
-import           Validation.Kinding
 import           Syntax.Types
 import           Syntax.Kinds
-import           Syntax.ProgramVariables
 import           Syntax.TypeVariables
+import           Syntax.ProgramVariables
 import           Syntax.Base
-import           Utils.FreestState
-import           Control.Monad.State
-import           Control.Monad
-import           Data.Maybe
+import           Syntax.Show
+import           Validation.Substitution
 import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
+import           Control.Monad
 
-main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
--- main = quickCheckWith stdArgs {maxSuccess = 10000, replay = Just (mkQCGen 42, 0)} prop_bisimilar
--- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
--- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_subs_kind_preservation1
--- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_norm_preserves_bisim
--- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_distribution
--- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_dual_convolution
-
--- Convenience
-
-bisim :: Type -> Type -> Bool
-bisim = bisimilar Map.empty
-equiv :: Type -> Type -> Bool
-equiv = equivalent Map.empty kindEnv
-norm :: Type -> Type
-norm = normalise Map.empty
+pos :: Pos
 pos = defaultPos
-
-kindEnv :: KindEnv
-kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (kindSL pos)))
-        -- TODO: This env should only contain the free vars of t; plus
-        -- its kind may be SU
-        
-kinded :: Type -> Bool
-kinded = isJust . kindOf
-
-kindOf :: Type -> Maybe Kind
-kindOf t
-  | null (errors s) = Just k
-  | otherwise       = Nothing
-  where (k, s) = runState (synthetise kindEnv t) (initialState "Kind syntesis")
-
--- Bisimilar types are bisimilar
-prop_bisimilar :: BisimPair -> Property
-prop_bisimilar (BisimPair t u) = kinded t && kinded u ==> t `bisim` u
-
--- Equivalence
-prop_equivalent :: BisimPair -> Property
-prop_equivalent (BisimPair t u) = kinded t ==> equiv t u
-
--- Normalisation preserves bisimilarity
-prop_norm_preserves_bisim :: Type -> Property
-prop_norm_preserves_bisim t = kinded t' ==> bisim u v
-  where t' = renameType t
-        [u, v] = renameList [t, normalise Map.empty t']
-        -- Normalisation requires a renamed type
-
--- Duality is a convolution
-prop_dual_convolution :: Type -> Property
-prop_dual_convolution t = kinded t ==> dual (dual t) == t
-
--- Lemma 3.1(ii) _ Substitution and kind preservation (ICFP'16)
-prop_subs_kind_preservation2 :: TypeVar -> Kind -> Type -> Property
-prop_subs_kind_preservation2 x k t =
-  isJust k1 ==> k1 == kindOf (unfold u)
-  where u = renameType $ Rec pos (TypeVarBind pos x k) t
-        k1 = kindOf u
-
--- Lemma 3.3 _ Laws for terminated communication (ICFP'16)
-prop_terminated1 :: Type -> Type -> Property
-prop_terminated1 t u =
-  kinded t ==> not (terminated t && terminated u) || bisim t u
-
--- Laws for terminated communication (bonus)
-prop_terminated2 :: Type -> Property
-prop_terminated2 t =
-  kinded t' ==> terminated t' == bisim t' (Skip pos)
-  where t' = renameType t
-
--- Distribution
-
-prop_distribution :: BisimPair -> Property
-prop_distribution (BisimPair t _) = kinded t ==>
-  collect (nodes t) $
-  tabulate "Type constructors" [constr t] $
-  True
-
--- The number of nodes in a type
-nodes :: Type -> Int
-nodes (Semi _ t u)   = 1 + nodes t + nodes u
-nodes (Choice _ _ m) = 1 + Map.foldr (\t acc -> nodes t + acc) 0 m
-nodes (Rec _ _ t)    = 1 + nodes t
--- Skip, Message, TypeVar
-nodes _              = 1
-
--- The constructor of a type
-constr :: Type -> String
-constr (Basic _ _) = "Basic"
-constr (Syntax.Types.Fun _ _ _ _) = "Fun"
-constr (PairType _ _ _) = "PairType"
-constr (Datatype _ _) = "Datatype"
-constr (Skip _) = "Skip"
-constr (Semi _ _ _) = "Semi"
-constr (Message _ _ _) = "Message"
-constr (Choice _ _ _) = "Choice"
-constr (Rec _ _ _) = "Rec"
-constr (TypeVar _ _) = "TypeVar"
-constr (TypeName _ _) = "TypeName"
-constr (Dualof _ _) = "Dualof"
-
--- Arbitrary
 
 instance Arbitrary Multiplicity where
   arbitrary = elements [Un, Lin]
@@ -169,30 +66,34 @@ instance Arbitrary BisimPair where
     return $ BisimPair t' u'
 
 bisimPair :: Int -> Gen (Type, Type)
-bisimPair n =
-  oneof $
+bisimPair 0 =
+  oneof
     -- The various type constructors
     [ skipPair
     , messagePair
     , varPair
     ]
-    ++ [choicePair n   | n > 0]
-    ++ [recPair n      | n > 0]
-    ++ [semiPair n     | n > 0]
+bisimPair n =
+  oneof
+    -- The various type constructors
+    [ choicePair n
+    , recPair n
+    , semiPair n
     -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
-    ++ [skipt n        | n > 0]
-    ++ [tskip n        | n > 0]
-    ++ [assoc n        | n > 0]
-    ++ [distrib n      | n > 0]
+    , skipT n
+    , tSkip n
+    , assoc n
+    , distrib n
     -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
-    ++ [recrec n       | n > 0]
-    ++ [recFree n      | n > 0]
-    -- ++ [alphaConvert n | n > 0]
-    ++ [subsOnBoth n   | n > 0]
-    ++ [unfoldt n      | n > 0]
+    , recRecL n
+    , recRecR n
+    , recFree n
+    -- , alphaConvert n
+    , subsOnBoth n
+    , unfoldt n
     -- Commutativity
-    ++ [commut n       | n > 0]
-
+    , commut n
+    ]
 -- The various session type constructors
 
 skipPair :: Gen (Type, Type)
@@ -244,13 +145,13 @@ varPair = do
 
 -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
 
-skipt :: Int -> Gen (Type, Type)
-skipt n = do
+skipT :: Int -> Gen (Type, Type)
+skipT n = do
   (t, u) <- bisimPair n
   return (Semi pos (Skip pos) t, u)
 
-tskip :: Int -> Gen (Type, Type)
-tskip n = do
+tSkip :: Int -> Gen (Type, Type)
+tSkip n = do
   (t, u) <- bisimPair n
   return (Semi pos t (Skip pos), u)
 
@@ -273,12 +174,19 @@ distrib n = do
           -- Choice pos p (Map.fromList (map (\(x,v) -> (x, Semi pos v u)) f2))) 
 -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
 
-recrec :: Int -> Gen (Type, Type)
-recrec n = do
+recRecL :: Int -> Gen (Type, Type)
+recRecL n = do
   (t, u) <- bisimPair n
   (xk@(TypeVarBind _ x _), yk@(TypeVarBind _ y _)) <- arbitrary
   return (Rec pos xk (Rec pos yk t),
           Rec pos xk (subs (TypeVar pos x) y u))
+
+recRecR :: Int -> Gen (Type, Type)
+recRecR n = do
+  (t, u) <- bisimPair n
+  (xk@(TypeVarBind _ x _), yk@(TypeVarBind _ y _)) <- arbitrary
+  return (Rec pos xk (Rec pos yk t),
+          Rec pos yk (subs (TypeVar pos y) x u))
 
 recFree :: Int -> Gen (Type, Type)
 recFree n = do
@@ -316,4 +224,3 @@ commut :: Int -> Gen (Type, Type)
 commut n = do
   (t, u) <- bisimPair n
   return (u, t)
-

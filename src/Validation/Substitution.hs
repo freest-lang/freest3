@@ -19,20 +19,19 @@ occurrence of x in u, and changing bound variables to avoid clashes
 module Validation.Substitution
 ( subs
 , unfold
-, free
+, rename
+-- , free
 ) where
 
 import           Syntax.Base
 import           Syntax.TypeVariables
 import           Syntax.Kinds
 import           Syntax.Types
--- import           Validation.Rename
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
 -- [t/x]u, substitute t for for every free occurrence of x in u
 subs :: Type -> TypeVar -> Type -> Type
--- subs t1 x t2 = renameType $ sub t1 x t2
   -- Functional types
 subs t x (Fun p m u v)    = Fun p m (subs t x u) (subs t x v)
 subs t x (PairType p u v) = PairType p (subs t x u) (subs t x v)
@@ -42,7 +41,7 @@ subs t x (Semi p u v)     = Semi p (subs t x u) (subs t x v)
 subs t x (Choice p v m)   = Choice p v (Map.map (subs t x) m)
 subs t x u@(Rec p yk@(TypeVarBind q y k) v)
   | y == x                = u
-  | y `Set.notMember` (free t) || x `Set.notMember` (free v) = Rec p yk (subs t x v)
+  -- | y `Set.notMember` (free t) || x `Set.notMember` (free v) = Rec p yk (subs t x v)
   | otherwise             = Rec p (TypeVarBind q z k) (subs t x (subs (TypeVar q z) y v))
     where z = mkNewVar 0 y
   -- Functional or session
@@ -54,12 +53,15 @@ subs t x (Dualof p u)     = Dualof p (subs t x u)
   -- Otherwise: Basic, Skip, Message, TypeName
 subs _ _ t                = t
 
--- Assume types were renamed (hence, x/=y and no on-the-fly renaming needed)
--- subs t x (Rec p yk u)       = Rec p yk (subs t x u)
-
+-- Unfold a recursive type (one step only)
 unfold :: Type -> Type
 unfold t@(Rec _ (TypeVarBind _ x _) u) = subs t x u
 
+-- Change of bound variable [Hindley&Seldin 1986, Definition 1.16]
+rename :: Type -> Type
+rename t@(Rec _ (TypeVarBind p x _) u) = subs (TypeVar p (mkNewVar 0 x)) x t
+
+-- The set of free type variables in a type
 free :: Type -> Set.Set TypeVar
   -- Functional types
 free (Fun _ _ t u) = Set.union (free t) (free u)

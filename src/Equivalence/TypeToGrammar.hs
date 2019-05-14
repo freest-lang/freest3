@@ -67,20 +67,19 @@ toGrammar (TypeVar _ x) = do
   else do -- This is a polymorphic variable
     y <- addBasicProd (VarLabel x)
     return [y]
-toGrammar (Rec _ (TypeVarBind p x _) t) = do
-  let y = mkNewVar 0 x
-  let u = subs (TypeVar p y) x t -- On the fly α-conversion
-  insertVisited y
+toGrammar t@(Rec _ _ _) = do
+  let (Rec _ (TypeVarBind _ x _) u) = rename t -- On the fly α-conversion
+  insertVisited x
   toGrammar u >>= \case
     []     -> return []
     (z:zs) ->
       getTransitions z >>= \case
         Just m -> do
-          addProductions y (Map.map (++ zs) m)
-          return [y]
+          addProductions x (Map.map (++ zs) m)
+          return [x]
         Nothing -> do
           b <- memberVisited z
-          if b && z /= y then -- case in which the productions for z are not yet completed
+          if b && z /= x then -- case in which the productions for z are not yet completed
             return (z:zs)
           else
             return []

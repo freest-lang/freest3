@@ -1,0 +1,84 @@
+import           Test.QuickCheck
+import           Equivalence.Equivalence
+import           Equivalence.Bisimulation
+import           Equivalence.Normalisation
+import           Validation.Substitution
+import           Validation.Kinding
+import           Syntax.Types
+import           Syntax.Kinds
+import           Syntax.TypeVariables
+import           Syntax.Base
+import           Utils.FreestState
+import           Control.Monad.State
+import           Data.Maybe
+import qualified Data.Map.Strict as Map
+import           QuickCheck.ArbitraryTypes
+
+main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
+-- main = quickCheckWith stdArgs {maxSuccess = 10000, replay = Just (mkQCGen 42, 0)} prop_bisimilar
+-- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
+-- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_subs_kind_preservation1
+-- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_norm_preserves_bisim
+-- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_distribution
+-- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_dual_convolution
+
+-- Convenience
+
+bisim :: Type -> Type -> Bool
+bisim = bisimilar Map.empty
+equiv :: Type -> Type -> Bool
+equiv = equivalent Map.empty kindEnv
+norm :: Type -> Type
+norm = normalise Map.empty
+pos :: Pos
+pos = defaultPos
+
+kindEnv :: KindEnv
+kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (kindSL pos)))
+        -- TODO: This env should only contain the free vars of t; plus
+        -- its kind may be SU
+        
+kinded :: Type -> Bool
+kinded = isJust . kindOf
+
+kindOf :: Type -> Maybe Kind
+kindOf t
+  | null (errors s) = Just k
+  | otherwise       = Nothing
+  where (k, s) = runState (synthetise kindEnv t) (initialState "Kind syntesis")
+
+-- Bisimilar types are bisimilar
+prop_bisimilar :: BisimPair -> Property
+prop_bisimilar (BisimPair t u) = kinded t && kinded u ==> t `bisim` u
+
+-- Equivalence
+prop_equivalent :: BisimPair -> Property
+prop_equivalent (BisimPair t u) = kinded t ==> equiv t u
+
+-- Normalisation preserves bisimilarity
+-- prop_norm_preserves_bisim :: Type -> Property
+-- prop_norm_preserves_bisim t = kinded t ==> bisim u v
+--   where t' = renameType t
+--         [u, v] = renameList [t, normalise Map.empty t']
+
+-- Duality is a convolution
+prop_dual_convolution :: Type -> Property
+prop_dual_convolution t = kinded t ==> dual (dual t) == t
+
+-- Lemma 3.1(ii) _ Substitution and kind preservation (ICFP'16)
+-- prop_subs_kind_preservation2 :: TypeVar -> Kind -> Type -> Property
+-- prop_subs_kind_preservation2 x k t =
+--   isJust k1 ==> k1 == kindOf (unfold u)
+--   where u = renameType $ Rec pos (TypeVarBind pos x k) t
+--         k1 = kindOf u
+
+-- Lemma 3.3 _ Laws for terminated communication (ICFP'16)
+-- prop_terminated1 :: Type -> Type -> Property
+-- prop_terminated1 t u =
+--   kinded t ==> not (terminated t && terminated u) || bisim t u
+
+-- Laws for terminated communication (bonus)
+-- prop_terminated2 :: Type -> Property
+-- prop_terminated2 t =
+--   kinded t' ==> terminated t' == bisim t' (Skip pos)
+--   where t' = renameType t
