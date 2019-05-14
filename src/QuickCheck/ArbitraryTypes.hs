@@ -77,7 +77,9 @@ bisimPair 0 =
 bisimPair n =
   oneof
     -- The various type constructors
-    [ messagePair
+    [ skipPair
+    , messagePair
+    , varPair
     , choicePair n
     , recPair n
     , semiPair n
@@ -94,7 +96,7 @@ bisimPair n =
     -- , subsOnBoth n
     -- , unfoldt n
     -- Commutativity
-    , commut n
+    -- , commut n
     ]
     
 -- The various session type constructors
@@ -127,7 +129,7 @@ choicePair n = do
 fieldPairs :: Int -> Gen [((ProgVar, Type), (ProgVar, Type))]
 fieldPairs n = do
   k <- choose (1, length choices)
-  vectorOf k $ field (n `div` k)
+  vectorOf k $ field (n `div` (k * k))  -- TODO: why k * k?
   where
   field :: Int -> Gen ((ProgVar, Type), (ProgVar, Type))
   field n = do

@@ -10,16 +10,12 @@ Portability :  portable | non-portable (<reason>)
 
 Unfolding of recursive types and substitution
 
-Define [t/x]u to be the result of substituting t for every free
-occurrence of x in u, and changing bound variables to avoid clashes
-[Hindley&Seldin 1986, Definition 1.11]
-
 -}
 
 module Validation.Substitution
 ( subs
 , unfold
-, rename
+-- , rename
 -- , free
 ) where
 
@@ -27,31 +23,28 @@ import           Syntax.Base
 import           Syntax.TypeVariables
 import           Syntax.Kinds
 import           Syntax.Types
+import           Validation.Rename
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
 -- [t/x]u, substitute t for for every free occurrence of x in u
 subs :: Type -> TypeVar -> Type -> Type
+subs t1 x t2 = renameType $ sub t1 x t2
+  where
   -- Functional types
-subs t x (Fun p m u v)    = Fun p m (subs t x u) (subs t x v)
-subs t x (PairType p u v) = PairType p (subs t x u) (subs t x v)
-subs t x (Datatype p m)   = Datatype p (Map.map (subs t x) m)
+  sub t x (Fun p m t1 t2)    = Fun p m (sub t x t1) (sub t x t2)
+  sub t x (PairType p t1 t2) = PairType p (sub t x t1) (sub t x t2)
+  sub t x (Datatype p m)     = Datatype p (Map.map(sub t x) m)
   -- Session types
-subs t x (Semi p u v)     = Semi p (subs t x u) (subs t x v)
-subs t x (Choice p v m)   = Choice p v (Map.map (subs t x) m)
-subs t x u@(Rec p yk@(TypeVarBind q y k) v)
-  | y == x                = u
-  -- | y `Set.notMember` (free t) || x `Set.notMember` (free v) = Rec p yk (subs t x v)
-  | otherwise             = Rec p (TypeVarBind q z k) (subs t x (subs (TypeVar q z) y v))
-    where z = mkNewVar 0 y
+  sub t x (Semi p t1 t2)     = Semi p (sub t x t1) (sub t x t2)
+  sub t x (Choice p v m)     = Choice p v (Map.map(sub t x) m)
+  sub t x (Rec p yk u)       = Rec p yk (sub t x u) -- Assume types were renamed (hence, x/=y and no on-the-fly renaming needed)
   -- Functional or session
-subs t x u@(TypeVar _ y)
-  | y == x                = t
-  | otherwise             = u
-  -- Type operators  
-subs t x (Dualof p u)     = Dualof p (subs t x u)
-  -- Otherwise: Basic, Skip, Message, TypeName
-subs _ _ t                = t
+  sub t x u@(TypeVar _ y)
+    | y == x                 = t
+    | otherwise              = u
+  sub t x (Dualof p u)       = Dualof p (sub t x u)
+  sub _ _ t                  = t
 
 -- Unfold a recursive type (one step only)
 unfold :: Type -> Type
@@ -81,3 +74,36 @@ free _ = Set.empty
 
 freeMap :: TypeMap -> Set.Set TypeVar
 freeMap = Map.foldr (\t acc -> (free t) `Set.union` acc) Set.empty
+
+{-
+
+Define [t/x]u to be the result of substituting t for every free
+occurrence of x in u, and changing bound variables to avoid clashes
+[Hindley&Seldin 1986, Definition 1.11]
+
+Does not work with bisimilarity, for substitution does not preserve
+the is-renamed predicate.
+
+subs :: Type -> TypeVar -> Type -> Type
+  -- Functional types
+subs t x (Fun p m u v)    = Fun p m (subs t x u) (subs t x v)
+subs t x (PairType p u v) = PairType p (subs t x u) (subs t x v)
+subs t x (Datatype p m)   = Datatype p (Map.map (subs t x) m)
+  -- Session types
+subs t x (Semi p u v)     = Semi p (subs t x u) (subs t x v)
+subs t x (Choice p v m)   = Choice p v (Map.map (subs t x) m)
+subs t x u@(Rec p yk@(TypeVarBind q y k) v)
+  | y == x                = u
+  -- | y `Set.notMember` (free t) || x `Set.notMember` (free v) = Rec p yk (subs t x v)
+  | otherwise             = Rec p (TypeVarBind q z k) (subs t x (subs (TypeVar q z) y v))
+    where z = mkNewVar 0 y
+  -- Functional or session
+subs t x u@(TypeVar _ y)
+  | y == x                = t
+  | otherwise             = u
+  -- Type operators  
+subs t x (Dualof p u)     = Dualof p (subs t x u)
+  -- Otherwise: Basic, Skip, Message, TypeName
+subs _ _ t                = t
+
+-}

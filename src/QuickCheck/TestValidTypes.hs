@@ -53,7 +53,7 @@ prop_bisimilar (BisimPair t u) = kinded t && kinded u ==> t `bisim` u
 
 -- Equivalence
 prop_equivalent :: BisimPair -> Property
-prop_equivalent (BisimPair t u) = kinded t ==> equiv t u
+prop_equivalent (BisimPair t u) = kinded t && kinded u ==> t `equiv` u
 
 -- Normalisation preserves bisimilarity
 -- prop_norm_preserves_bisim :: Type -> Property
