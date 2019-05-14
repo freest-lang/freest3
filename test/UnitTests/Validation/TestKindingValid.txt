@@ -179,3 +179,17 @@ rec x  . (dualof Skip) ; x
 
 rec x . dualof (Skip ; x) 
   SL
+
+-- Quick Check
+
+(!Bool;(((!Int;Skip);(Skip;+{A: y, B: Skip}));(Skip;(rec y_0:SU. (&{A: ((?Char;(Skip;x));Skip), C: !Bool};Skip))))) 
+  SL
+
+(!Bool;((!Int;+{A: y, B: Skip});(rec y_1:SU. &{A: ((?Char;Skip);x), C: !Bool})))
+  SL
+
+&{B: ((Skip;&{C: (rec x_0:SL. (Skip;(rec x_1:SU. ((+{A: y, C: z};(Skip;(Skip;?Bool)));(+{B: Skip, C: ?Bool};+{A: (rec x_2:SU. (rec y_3:SU. (((rec y_4:SL. (!();Skip));Skip);Skip))), C: (Skip;Skip)})))))});((Skip;(rec z_5:SL. +{B: (Skip;(Skip;(((Skip;x);?Bool);((?Bool;Skip);!()))))}));((rec y_6:SU. (!();Skip));(?Bool;Skip)))), C: (Skip;((?Char;(rec y_7:SU. (((Skip;z);((y_7;x);x));(Skip;!()))));+{A: ((?Int;&{B: Skip});(y;Skip))}))}
+  SL
+
+&{B: (&{C: (rec x_8:SL. (rec x_9:SU. (((+{A: y, C: z};?Bool);+{B: Skip, C: ?Bool});+{A: (rec x_10:SU. (rec y_11:SU. (rec y_12:SL. !()))), C: (Skip;Skip)})))};(((rec z_13:SL. +{B: ((Skip;(Skip;(Skip;(x;?Bool))));(?Bool;(Skip;!())))});(rec y_14:SU. !()));?Bool)), C: (?Char;(((rec y_15:SU. (Skip;((Skip;z);((y_15;(x;x));(Skip;(Skip;!()))))));Skip);+{A: (?Int;(&{B: Skip};(y;Skip)))}))}
+  SL

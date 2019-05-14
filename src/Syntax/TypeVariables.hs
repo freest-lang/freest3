@@ -5,8 +5,6 @@ Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of 
                    Andreia Mordido, LASIGE, Faculty of Sciences, University of Lisbon
                    Vasco Vasconcelos, LASIGE, Faculty of Sciences, University of Lisbon
 Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc.ul.pt
-
-The definition of type variables
 -}
 
 module Syntax.TypeVariables
@@ -19,8 +17,7 @@ data TypeVar = TypeVar Pos String
 
 instance Variable TypeVar where
   mkVar = TypeVar
-  mkNewVar next (TypeVar pos id) = TypeVar pos (show next ++ id)
-  -- mkNewVar next (TypeVar pos id) = TypeVar pos (show next ++ '_' : id)
+  mkNewVar next (TypeVar pos id) = TypeVar pos (show next ++ '_' : id)
   intern (TypeVar _ x) = x
 
 instance Eq TypeVar where

@@ -77,21 +77,22 @@ bisimPair 0 =
 bisimPair n =
   oneof
     -- The various type constructors
-    [ choicePair n
+    [ messagePair
+    , choicePair n
     , recPair n
     , semiPair n
     -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
     , skipT n
     , tSkip n
     , assoc n
-    , distrib n
+    -- , distrib n
     -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
-    , recRecL n
-    , recRecR n
-    , recFree n
+    -- , recRecL n
+    -- , recRecR n
+    -- , recFree n
     -- , alphaConvert n
-    , subsOnBoth n
-    , unfoldt n
+    -- , subsOnBoth n
+    -- , unfoldt n
     -- Commutativity
     , commut n
     ]
@@ -182,6 +183,8 @@ recRecL n = do
   (xk@(TypeVarBind _ x _), yk@(TypeVarBind _ y _)) <- arbitrary
   return (Rec pos xk (Rec pos yk t),
           Rec pos xk (subs (TypeVar pos x) y u))
+  -- Note: No need to rename for the type that we are substituting is
+  -- a variable, hence contains no bound (rec) vars
 
 recRecR :: Int -> Gen (Type, Type)
 recRecR n = do
@@ -189,13 +192,15 @@ recRecR n = do
   (xk@(TypeVarBind _ x _), yk@(TypeVarBind _ y _)) <- arbitrary
   return (Rec pos xk (Rec pos yk t),
           Rec pos yk (subs (TypeVar pos y) x u))
+  -- Note: No need to rename for the type that we are substituting is
+  -- a variable, hence contains no bound (rec) vars
 
 recFree :: Int -> Gen (Type, Type)
 recFree n = do
   (t, u) <- bisimPair n
   k <- arbitrary
   return (Rec pos (TypeVarBind pos freeTypeVar k) t, u)
-  -- Note: the rec-var must be distinct from the free variables of t
+  -- Note: the rec-var must be distinct from the free variables of t and u
 
 -- alphaConvert :: Int -> Gen (Type, Type) -- (fixed wrt to ICFP'16)
 -- alphaConvert n = do
