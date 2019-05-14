@@ -48,11 +48,7 @@ subs t1 x t2 = renameType $ sub t1 x t2
 
 -- Unfold a recursive type (one step only)
 unfold :: Type -> Type
-unfold t@(Rec _ (TypeVarBind _ x _) u) = subs t x u
-
--- Change of bound variable [Hindley&Seldin 1986, Definition 1.16]
-rename :: Type -> Type
-rename t@(Rec _ (TypeVarBind p x _) u) = subs (TypeVar p (mkNewVar 0 x)) x t
+unfold t@(Rec _ (TypeVarBind _ x _) u) = subs t x (renameType u)
 
 -- The set of free type variables in a type
 free :: Type -> Set.Set TypeVar

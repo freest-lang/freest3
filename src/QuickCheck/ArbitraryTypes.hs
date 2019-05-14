@@ -89,14 +89,14 @@ bisimPair n =
     , assoc n
     -- , distrib n
     -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
-    -- , recRecL n
-    -- , recRecR n
-    -- , recFree n
+    , recRecL n
+    , recRecR n
+    , recFree n
     -- , alphaConvert n
-    -- , subsOnBoth n
-    -- , unfoldt n
+    , subsOnBoth n
+    , unfoldt n
     -- Commutativity
-    -- , commut n
+    , commut n
     ]
     
 -- The various session type constructors
@@ -129,7 +129,7 @@ choicePair n = do
 fieldPairs :: Int -> Gen [((ProgVar, Type), (ProgVar, Type))]
 fieldPairs n = do
   k <- choose (1, length choices)
-  vectorOf k $ field (n `div` (k * k))  -- TODO: why k * k?
+  vectorOf k $ field (n `div` (k + k))  -- TODO: why k + k?
   where
   field :: Int -> Gen ((ProgVar, Type), (ProgVar, Type))
   field n = do
@@ -162,9 +162,9 @@ tSkip n = do
 
 assoc :: Int -> Gen (Type, Type)
 assoc n = do
-  (t, u) <- bisimPair (n `div` 3)
-  (v, w) <- bisimPair (n `div` 3)
-  (x, y) <- bisimPair (n `div` 3)
+  (t, u) <- bisimPair (n `div` 6)
+  (v, w) <- bisimPair (n `div` 6)
+  (x, y) <- bisimPair (n `div` 6)
   return (Semi pos t (Semi pos v x),
           Semi pos (Semi pos u w) y)
 
@@ -176,26 +176,23 @@ distrib n = do
   let (f1, f2) = unzip pairs
   return (Semi pos (Choice pos p (Map.fromList f1)) t,
           Choice pos p (Map.map (\v -> Semi pos v u) (Map.fromList f2)))
-          -- Choice pos p (Map.fromList (map (\(x,v) -> (x, Semi pos v u)) f2))) 
+          -- Choice pos p (Map.fromList (map (\(x,v) -> (x, Semi pos v u)) f2)))
+          
 -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
 
 recRecL :: Int -> Gen (Type, Type)
 recRecL n = do
-  (t, u) <- bisimPair n
+  (BisimPair t u) <- arbitrary
   (xk@(TypeVarBind _ x _), yk@(TypeVarBind _ y _)) <- arbitrary
   return (Rec pos xk (Rec pos yk t),
           Rec pos xk (subs (TypeVar pos x) y u))
-  -- Note: No need to rename for the type that we are substituting is
-  -- a variable, hence contains no bound (rec) vars
 
 recRecR :: Int -> Gen (Type, Type)
 recRecR n = do
-  (t, u) <- bisimPair n
+  (BisimPair t u) <- arbitrary
   (xk@(TypeVarBind _ x _), yk@(TypeVarBind _ y _)) <- arbitrary
   return (Rec pos xk (Rec pos yk t),
           Rec pos yk (subs (TypeVar pos y) x u))
-  -- Note: No need to rename for the type that we are substituting is
-  -- a variable, hence contains no bound (rec) vars
 
 recFree :: Int -> Gen (Type, Type)
 recFree n = do
@@ -214,8 +211,8 @@ recFree n = do
 
 subsOnBoth :: Int -> Gen (Type, Type)
 subsOnBoth n = do
-  (t, u) <- bisimPair (n `div` 2)
-  (v, w) <- bisimPair (n `div` 2)
+  (BisimPair t u) <- arbitrary
+  (BisimPair v w) <- arbitrary
   x <- arbitrary
   return (subs t x v,
           subs u x w)
