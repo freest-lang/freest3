@@ -93,82 +93,18 @@ rec x . (!Int; Skip; ?Int)
 SL
   
 []
-rec tree . &{Leaf: Skip, Node: ?Int;tree;tree}
+rec tree : SL . &{Leaf: Skip, Node: ?Int;tree;tree}
 SL
   
 []
-rec treeChannel . +{Leaf: Skip, Node: !Int;treeChannel;treeChannel}
+rec treeChannel : SL . +{Leaf: Skip, Node: !Int;treeChannel;treeChannel}
 SL
   
-[]
-rec alpha . !Int;rec treeChannel . +{Leaf:Skip, Node:!Int;treeChannel;treeChannel};rec treeChannel . +{Leaf:Skip, Node:!Int;treeChannel;treeChannel};x
+[("x", SL)]
+rec alpha : SL . !Int ; rec treeChannel1 : SL . +{Leaf:Skip, Node:!Int;treeChannel1;treeChannel1} ; rec treeChannel2 : SL . +{Leaf:Skip, Node:!Int;treeChannel2;treeChannel2};x
 SL
 
 -- explicitely typed recursive types
-
-[]
-rec x : SL . x -> x
-TU
-  
-[]
-rec x : SU . x -> x
-TU
-
-[]
-rec x : TL . x -> x 
-TU
-
-[]
-rec x : TU . x -> x 
-TU
-
-[]
-rec x : SL . x -o x
-TL
-  
-[]
-rec x : SU . x -o x
-TL
-
-[]
-rec x : TL . x -o x 
-TL
-
-[]
-rec x : TU . x -o x 
-TL
-
-[]
-rec x : SL . rec y : SL . x -> y
-TU 
-
-[]
-rec x : SU . rec y : SU . x -> y
-TU 
-
-[]
-rec x : TL . rec y : TU . x -> y
-TU 
-
-[]
-rec x : TL . rec y : TL . x -> y
-TU 
-
-[]
-rec x : SL . rec y : TL . x -> y
-TU 
-
-[]
-rec x : SU . rec y : TU . x -> y
-TU 
-
-[]
-rec x : TL . rec y : SU . x -> y
-TU 
-
-[]
-rec x : SL . rec y : TL . x -> y
-TU 
 
 []
 rec a : TU . (a, !Int)
@@ -191,9 +127,14 @@ SL
 SL
 
 [("x", SL) , ("y", SL) , ("z", SL)]
-Bool;((!Int;+{A: y, B: Skip});(rec y_1:SU. &{A: ((?Char;Skip);x), C: !Bool}))
+!Bool;((!Int;+{A: y, B: Skip});(rec y_1:SU. &{A: ((?Char;Skip);x), C: !Bool}))
 SL
 
 [("x", SL) , ("y", SL) , ("z", SL)]
 &{B: (&{C: (rec x_8:SL. (rec x_9:SU. (((+{A: y, C: z};?Bool);+{B: Skip, C: ?Bool});+{A: (rec x_10:SU. (rec y_11:SU. (rec y_12:SL. !()))), C: (Skip;Skip)})))};(((rec z_13:SL. +{B: ((Skip;(Skip;(Skip;(x;?Bool))));(?Bool;(Skip;!())))});(rec y_14:SU. !()));?Bool)), C: (?Char;(((rec y_15:SU. (Skip;((Skip;z);((y_15;(x;x));(Skip;(Skip;!()))))));Skip);+{A: (?Int;(&{B: Skip};(y;Skip)))}))}
 SL
+
+[]
+rec y:SU. (!Bool;Skip)
+SL
+

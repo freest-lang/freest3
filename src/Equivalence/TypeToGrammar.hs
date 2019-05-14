@@ -67,10 +67,10 @@ toGrammar (TypeVar _ x) = do
   else do -- This is a polymorphic variable
     y <- addBasicProd (VarLabel x)
     return [y]
-toGrammar t@(Rec _ _ _) = do
-  let (Rec _ (TypeVarBind _ x _) u) = rename t -- On the fly α-conversion
+toGrammar (Rec _ (TypeVarBind _ x _) t) = do
+  -- let (Rec _ (TypeVarBind _ x _) u) = rename t -- On the fly α-conversion
   insertVisited x
-  toGrammar u >>= \case
+  toGrammar t >>= \case
     []     -> return []
     (z:zs) ->
       getTransitions z >>= \case

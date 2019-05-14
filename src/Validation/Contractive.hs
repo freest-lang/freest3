@@ -56,7 +56,7 @@ contractive tEnv kEnv= contr Set.empty
   contr _ (Skip _) = False
   contr v (Semi _ t u)
     | terminated t = contr v u
-    | otherwise    = contr v t && contr v u
+    | otherwise    = contr v t
   -- Functional or session
   contr v (Rec _ _ t) = contr v t
   contr v (TypeVar p x) = Map.findWithDefault (kindSU p) x kEnv == kindSL p
