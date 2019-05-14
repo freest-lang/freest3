@@ -11,6 +11,7 @@ import           Syntax.ProgramVariables
 import           Syntax.Base
 import           Syntax.Show
 import           Validation.Substitution
+import           Validation.Rename
 import qualified Data.Map.Strict as Map
 import           Control.Monad
 
@@ -62,7 +63,7 @@ instance Show BisimPair where
 instance Arbitrary BisimPair where
   arbitrary = do
     (t, u) <- sized bisimPair
-    let [t', u'] = {- renameList -} [t, u]
+    let [t', u'] = renameList [t, u]
     return $ BisimPair t' u'
 
 bisimPair :: Int -> Gen (Type, Type)
@@ -94,6 +95,7 @@ bisimPair n =
     -- Commutativity
     , commut n
     ]
+    
 -- The various session type constructors
 
 skipPair :: Gen (Type, Type)
