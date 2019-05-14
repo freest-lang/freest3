@@ -22,11 +22,9 @@ spec = do
 matchValidSpec :: [String] -> Spec
 matchValidSpec [k, t, u] =
   it (k ++ "  |-  " ++ t ++ " ~ " ++  u) (
-    let kenv = Map.fromList (readKenv k) in
       {-# SCC "EQUIVALENT_TEST_CALL" #-}
-      -- equivalent Map.empty kenv (read t :: Type) (read u :: Type) `shouldBe` True)
-      equivalent Map.empty kenv t' u' `shouldBe` True)
-      where [t', u'] = evalState (renameList Map.empty [read t, read u]) (initialState "Testing Type Equivalence")
+      equivalent Map.empty (Map.fromList (readKenv k)) t' u' `shouldBe` True)
+      where [t', u'] = renameList [read t, read u]
 
 readKenv :: String -> [(TypeVar, Kind)]
 readKenv s = map (\(x,k) -> (mkVar defaultPos x, k)) (read s)
