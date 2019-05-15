@@ -12,6 +12,7 @@ The show instances.
 
 module Syntax.Show
 ( showChoiceView
+, showArrow
 ) where
 
 import           Syntax.Expressions
