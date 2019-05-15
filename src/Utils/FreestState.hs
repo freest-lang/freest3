@@ -174,7 +174,7 @@ addError p e = do
   modify (\s -> s{errors = Set.insert (styleError (filename s) p e) (errors s)})
   
 getErrors :: Errors -> String
-getErrors = Set.fold (\err acc -> acc ++ err ++ "\n") ""
+getErrors = Set.fold (\err acc -> err ++ "\n" ++ acc) ""
   
 
 -- | Traversing Map.map over FreestStates
