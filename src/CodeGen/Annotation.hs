@@ -34,8 +34,8 @@ instance Ord NodeState where
 -- type TypeEnv = Map.Map TypeVar (Kind, TypeScheme)
 
 annotateVenv :: TypeEnv -> VarEnv -> AVarEnv
-annotateVenv tenv venv =
-  Map.foldrWithKey (\k t avenv -> Map.insert k (typeAnnotation tenv t) avenv) Map.empty venv
+annotateVenv tenv =
+  Map.foldrWithKey (\k t avenv -> Map.insert k (typeAnnotation tenv t) avenv) Map.empty
 
  
 -- annotates each type with information about it's state (NodeState)
@@ -107,97 +107,96 @@ nextFresh = do
   modify (+1)
   return $ "_x" ++ show fresh
 
-translateEEnv :: ExpEnv -> TypeEnv -> VarEnv -> HaskellCode
-translateEEnv eenv tenv venv =
-  let m = top eenv tenv venv in
-    Map.foldrWithKey (\f e acc -> acc ++ "\n\n" ++ show f ++ " = "
-                       ++ (fst $ evalState(translate m (isIO (m Map.! f)) e) 0)) "" eenv
+-- translateEEnv :: ExpEnv -> TypeEnv -> VarEnv -> HaskellCode
+-- translateEEnv eenv tenv venv =
+--   let m = top eenv tenv venv in
+--     Map.foldrWithKey (\f e acc -> acc ++ "\n\n" ++ show f ++ " = "
+--                        ++ (fst $ evalState(translate m (isIO (m Map.! f)) e) 0)) "" eenv
 
 
---translateExpr :: Code to translate -> Expected -> Found -> Translated code
-translateExpr :: HaskellCode -> Bool -> Bool -> HaskellCode -- TODO: check other cases
-translateExpr code True False = "return1 " ++ code
-translateExpr code _ _ = code
+-- --translateExpr :: Code to translate -> Expected -> Found -> Translated code
+-- translateExpr :: HaskellCode -> Bool -> Bool -> HaskellCode -- TODO: check other cases
+-- translateExpr code True False = "return1 " ++ code
+-- translateExpr code _ _ = code
 
-translate :: AVarEnv -> Bool -> Expression -> TranslateMonad (HaskellCode, Bool)
-translate _ b (Unit _) = return $ (translateExpr "()" b False, b)
-translate _ b (Integer _ i) = return $ (translateExpr (show i) b False, b)
-translate _ b (Boolean _ b1) = return $ (translateExpr (show b1) b False, b)
-translate avenv b (ProgVar _ x) =
---  error $ show avenv
-  case avenv Map.!? x of
-    Just s -> do
-      let io = isIO s
-      return $ (translateExpr (show x) io b, io)
-    Nothing ->
-      if b
-      then return $ ("return2 " ++ show x, True) -- TODO: ??
-      else return $ (translateExpr (show x) False False, False) -- TODO: False False ?? 
+-- translate :: AVarEnv -> Bool -> Expression -> TranslateMonad (HaskellCode, Bool)
+-- translate _ b (Unit _) = return $ (translateExpr "()" b False, b)
+-- translate _ b (Integer _ i) = return $ (translateExpr (show i) b False, b)
+-- translate _ b (Boolean _ b1) = return $ (translateExpr (show b1) b False, b)
+-- translate avenv b (ProgVar _ x) =
+-- --  error $ show avenv
+--   case avenv Map.!? x of
+--     Just s -> do
+--       let io = isIO s
+--       return $ (translateExpr (show x) io b, io)
+--     Nothing ->
+--       if b
+--       then return $ ("return2 " ++ show x, True) -- TODO: ??
+--       else return $ (translateExpr (show x) False False, False) -- TODO: False False ?? 
 
-translate avenv b (Lambda _ m x t e) = do -- PARAMS HERE
-  -- TODO: typeEnv -> Map.empty
-  -- TODO: should not run typeAnnotation again
-  h1 <- translate (Map.insert x (typeAnnotation Map.empty (fromType t)) avenv) b e
---  let h1 = translate avenv b e in
-  return $ ("\\" ++ show x ++ showArrow m ++ (fst h1), b)
+-- translate avenv b (Lambda _ m x t e) = do -- PARAMS HERE
+--   -- TODO: typeEnv -> Map.empty
+--   -- TODO: should not run typeAnnotation again
+--   h1 <- translate (Map.insert x (typeAnnotation Map.empty (fromType t)) avenv) b e
+-- --  let h1 = translate avenv b e in
+--   return $ ("\\" ++ show x ++ showArrow m ++ (fst h1), b)
   
-  -- TODO: pensar args e lets (intro de vars)
-translate avenv b (UnLet _ x e1 e2) = do
---  let avenv1 = (Map.insert x PureState avenv) -- TODO: Pure?
-  (h1, b1) <- translate avenv b e1
-  (h2, b2) <- translate avenv b e2
-  -- TODO: Are there other cases??  
-  if b then
-    return $ (h1 ++ " >>= \\" ++ show x ++ " -> " ++ h2, b) -- TODO: b1 || b2 ??
-  else
-    return $ ("let " ++ show x ++ " = " ++ h1 ++ " in " ++ h2, False)
+--   -- TODO: pensar args e lets (intro de vars)
+-- translate avenv b (UnLet _ x e1 e2) = do
+-- --  let avenv1 = (Map.insert x PureState avenv) -- TODO: Pure?
+--   (h1, b1) <- translate avenv b e1
+--   (h2, b2) <- translate avenv b e2
+--   -- TODO: Are there other cases??  
+--   if b then
+--     return $ (h1 ++ " >>= \\" ++ show x ++ " -> " ++ h2, b) -- TODO: b1 || b2 ??
+--   else
+--     return $ ("let " ++ show x ++ " = " ++ h1 ++ " in " ++ h2, False)
 
-translate avenv b (Conditional _ e1 e2 e3) = do -- TODO: if b1, tirar do monad
-  (h1, b1) <- translate avenv False e1
-  (h2, b2) <- translate avenv b e2
-  (h3, b3) <- translate avenv b e3
-  return ("if " ++ h1 ++ " then " ++ h2 ++ " else " ++ h3, b1 || b2 || b3)
+-- translate avenv b (Conditional _ e1 e2 e3) = do -- TODO: if b1, tirar do monad
+--   (h1, b1) <- translate avenv False e1
+--   (h2, b2) <- translate avenv b e2
+--   (h3, b3) <- translate avenv b e3
+--   return ("if " ++ h1 ++ " then " ++ h2 ++ " else " ++ h3, b1 || b2 || b3)
   
-translate avenv b (BinLet _ x y e1 e2) = do
+-- translate avenv b (BinLet _ x y e1 e2) = do
 
-  -- let avenv1 = (Map.insert x PureState avenv)
-  --     avenv2 = (Map.insert y PureState avenv1)
-  (h1, b1) <- translate avenv b e1
-  (h2, b2) <-  translate avenv b e2
-  -- TODO: Are there other cases??  
-  if b then
-    return $ (h1 ++ " >>= \\(" ++ show x ++ "," ++ show y ++ ") -> " ++ h2, b) -- TODO: b1 || b2 ??
-  else
-    return $ ("let (" ++ show x ++ "," ++ show y ++ ") = " ++ h1 ++ " in " ++ h2, False)
+--   -- let avenv1 = (Map.insert x PureState avenv)
+--   --     avenv2 = (Map.insert y PureState avenv1)
+--   (h1, b1) <- translate avenv b e1
+--   (h2, b2) <-  translate avenv b e2
+--   -- TODO: Are there other cases??  
+--   if b then
+--     return $ (h1 ++ " >>= \\(" ++ show x ++ "," ++ show y ++ ") -> " ++ h2, b) -- TODO: b1 || b2 ??
+--   else
+--     return $ ("let (" ++ show x ++ "," ++ show y ++ ") = " ++ h1 ++ " in " ++ h2, False)
         
-translate avenv _ (Fork _ e) = do
-  h <- translate avenv True e
-  return $ ("_fork (" ++ (fst h) ++ ")", True) -- " >> return ())"
+-- translate avenv _ (Fork _ e) = do
+--   h <- translate avenv True e
+--   return $ ("_fork (" ++ (fst h) ++ ")", True) -- " >> return ())"
 
-translate _ _ (New _ _) = return $ ("_new", True)
+-- translate _ _ (New _ _) = return $ ("_new", True)
 
-translate avenv _ (Receive _ e) = do -- TODO: not ok, argument cant be IO
-  (h, b) <- translate avenv False e  
-  if b then do
-    v <- nextFresh
-    return (h ++ " >>= \\" ++ v ++ " -> " ++ "_receive " ++ v, True)
-  else
-    return ("_receive " ++ h, True)
+-- translate avenv _ (Receive _ e) = do -- TODO: not ok, argument cant be IO
+--   (h, b) <- translate avenv False e  
+--   if b then do
+--     v <- nextFresh
+--     return (h ++ " >>= \\" ++ v ++ " -> " ++ "_receive " ++ v, True)
+--   else
+--     return ("_receive " ++ h, True)
 
-translate avenv _ (Send _ e1) = do -- ver arg
-  (h1, _) <- translate avenv False e1
-  return ("(_send " ++ h1 ++ ")", True)
+-- translate avenv _ (Send _ e1) = do -- ver arg
+--   (h1, _) <- translate avenv False e1
+--   return ("(_send " ++ h1 ++ ")", True)
 
-translate avenv b e@(App _ e1 e2) = do
-  (h1, b1) <- translate avenv b e1 -- aqui nao pode ser b/False, tem de ser o param...
-  (h2, _)  <- translate avenv False e2 -- aqui nao pode ser b/False, tem de ser o param...
-  if b && not b1 then
-    return $ ("return (" ++ h1 ++ " " ++ h2 ++ ")", True)
-  else
-    return $ ("(" ++ h1 ++ " " ++ h2 ++ ")", b)
+-- translate avenv b e@(App _ e1 e2) = do
+--   (h1, b1) <- translate avenv b e1 -- aqui nao pode ser b/False, tem de ser o param...
+--   (h2, _)  <- translate avenv False e2 -- aqui nao pode ser b/False, tem de ser o param...
+--   if b && not b1 then
+--     return $ ("return (" ++ h1 ++ " " ++ h2 ++ ")", True)
+--   else
+--     return $ ("(" ++ h1 ++ " " ++ h2 ++ ")", b)
 
-
-translate _ _ e = return $ ("ERR: |" ++ show e ++ "|", False)
+-- translate _ _ e = return $ ("ERR: |" ++ show e ++ "|", False)
 
 
 
