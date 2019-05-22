@@ -128,7 +128,9 @@ typeTransitions (Semi p t u)
 typeTransitions (Message p q b) = return $ Map.singleton (MessageLabel q b) (Skip p)
 typeTransitions (Choice _ p m)  = return $ Map.mapKeys (ChoiceLabel p) m
   -- Functional or session
-typeTransitions (Rec _ _ t)     = typeTransitions t
+typeTransitions (Rec _ (TypeVarBind _ x _) t) = do
+  insertVisited x
+  typeTransitions t
 typeTransitions (TypeVar p x)   = 
   getTransitions x >>= \case
     Just m  -> return $ Map.map (\[x] -> TypeVar p x) m
@@ -170,8 +172,8 @@ freshVar = do
 wasVisited :: TypeVar -> TransState Bool
 wasVisited x = do
   s <- get
---  return $ x `Set.member` (visited s)
-  return $ x `Map.member` (productions s)
+  return $ x `Set.member` (visited s)
+  -- return $ x `Map.member` (productions s)
 
 insertVisited :: TypeVar -> TransState ()
 insertVisited x =
