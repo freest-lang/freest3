@@ -73,7 +73,7 @@ toGrammar (Rec _ (TypeVarBind _ x _) t) = do
   transFromX <- tMapWithKeyM (\l _ -> freshVar >>= \y -> addProduction x l [y] >> return y) m
   transFromT <- tMapM toGrammar m
   let subs = Map.foldrWithKey (\l y -> Map.insert y (transFromT Map.! l)) Map.empty transFromX
-  subsOnProductions subs
+  subsProductions subs
   return [x]
 {-
 toGrammar (Rec _ (TypeVarBind _ x _) t) = do
@@ -192,15 +192,23 @@ addProduction :: TypeVar -> Label -> [TypeVar] -> TransState ()
 addProduction x l w =
   modify $ \s -> s {productions = insertProduction (productions s) x l w}
 
-subsOnProductions :: (Map.Map TypeVar [TypeVar]) -> TransState ()
-subsOnProductions m = do
+subsProductions :: (Map.Map TypeVar [TypeVar]) -> TransState ()
+subsProductions m = do
   s <- get
-  (tMapM . tMapM) (\xs -> return ((Map.mapWithKey (\y ys -> listSubs ys y xs) m))) (productions s)
-  return ()
+  modify $ \s -> s {productions = (Map.map . Map.map) (applyToWord m) (productions s)}
 
--- [ys/y]xs
+-- σ xs
+applyToWord :: (Map.Map TypeVar [TypeVar]) -> [TypeVar] -> [TypeVar]
+applyToWord m = concat . map (\x -> applyToVar m x)
+
+-- σ x = ys
+applyToVar ::  (Map.Map TypeVar [TypeVar]) -> TypeVar -> [TypeVar]
+applyToVar m x = Map.foldrWithKey (\y ys acc -> listSubs ys y acc) [x] m
+
+-- [ys/y]x = ys
 listSubs :: Eq a => [a] -> a -> [a] -> [a]
-listSubs ys y = foldr (\x zs-> if x == y then ys ++ zs else x:zs) []
+listSubs ys y [x] = if x == y then ys else [x]
+listSubs _  _ xs  = xs
 
 -- Add or update production from a (basic) non-terminal; the
 -- productions may already contain transitions for the given
