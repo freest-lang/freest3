@@ -53,11 +53,10 @@ toGrammar (Semi _ t u) = do
   ys <- toGrammar u
   return $ xs ++ ys
 toGrammar (Message _ p b) = do
-  y <- addBasicProd (MessageLabel p b)
-  return [y]
+  getBasicProd (MessageLabel p b)
 toGrammar (Choice _ p m) = do
   y <- freshVar
-  mapM_ (assocToGrammar y p) (Map.assocs m) -- TODO: avoid Map.assocs; run map through the monad
+  tMapWithKeyM (fieldToGrammar y p) m
   return [y]
 -- Functional or session (session in this case)
 toGrammar (TypeVar _ x) = do
@@ -65,9 +64,8 @@ toGrammar (TypeVar _ x) = do
   if b
   then    -- This is a recursion variable
     return [x]
-  else do -- This is a polymorphic variable
-    y <- addBasicProd (VarLabel x)
-    return [y]
+  else    -- This is a polymorphic variable
+    getBasicProd (VarLabel x)
 toGrammar (Rec _ (TypeVarBind _ x _) t) = do
   insertVisited x
   m <- typeTransitions t
@@ -113,8 +111,8 @@ toGrammar (TypeName _ x) = do
   -- Should not happen
 toGrammar t = error ("toGrammar: " ++ show t)
 
-assocToGrammar :: TypeVar -> Polarity -> (ProgVar, Type) -> TransState ()
-assocToGrammar y p (x, t) = do
+fieldToGrammar :: TypeVar -> Polarity -> ProgVar -> Type -> TransState ()
+fieldToGrammar y p x t = do
   xs <- toGrammar t
   addProduction y (ChoiceLabel p x) xs
 
@@ -139,7 +137,8 @@ typeTransitions (Dualof _ t)    = typeTransitions t
 typeTransitions (TypeName _ _)  = error "Not implemented: typeTransitions TypeName"
 
 fromWord :: Pos -> [TypeVar] -> Type
-fromWord p = foldr (\x t -> Semi p (TypeVar p x) t) (Skip p)
+--fromWord p = foldr (\x t -> Semi p (TypeVar p x) t) (Skip p)
+fromWord p [x] = TypeVar p x
 
 -- The state of the translation to grammars
 
@@ -196,34 +195,41 @@ addProduction x l w =
 subsProductions :: (Map.Map TypeVar [TypeVar]) -> TransState ()
 subsProductions m = do
   s <- get
-  modify $ \s -> s {productions = (Map.map . Map.map) (applyToWord m) (productions s)}
+  modify $ \s -> s {productions = (Map.map . Map.map) (applyAllToWord m) (productions s)}
 
 -- σ xs = ys, where σ is a n-substitution [ys1/y1, ..., ysn/yn]
-applyToWord :: (Map.Map TypeVar [TypeVar]) -> [TypeVar] -> [TypeVar]
-applyToWord m = concat . map (applyToVar m)
+applyAllToWord :: Eq a => Map.Map a [a] -> [a] -> [a]
+applyAllToWord m = concat . map (applyAllToVar (Map.assocs m))
 
 -- σ x = ys
-applyToVar :: (Map.Map TypeVar [TypeVar]) -> TypeVar -> [TypeVar]
-applyToVar m x = Map.foldrWithKey (\y ys acc -> listSubs ys y acc) [x] m
+applyAllToVar :: Eq a => [(a, [a])] -> a -> [a]
+applyAllToVar [] x = [x]
+applyAllToVar ((y,ys):assocs) x
+  | x == y         = ys
+  | otherwise      = applyAllToVar assocs x
+
+-- σ x = ys
+-- applyAllToVar :: Eq a => Map.Map a [a] -> a -> [a]
+-- applyAllToVar m x = Map.foldrWithKey applyToVar [x] m
 
 -- [ys/y]x = ys
-listSubs :: Eq a => [a] -> a -> [a] -> [a]
-listSubs ys y [x] = if x == y then ys else [x]
-listSubs _  _ xs  = xs
+applyToVar :: Eq a => a -> [a] -> [a] -> [a]
+applyToVar y ys [x] = if x == y then ys else [x]
+applyToVar _  _ xs  = xs
 
 -- Add or update production from a (basic) non-terminal; the
 -- productions may already contain transitions for the given
 -- nonterminal (hence the insertWith and union)
-addBasicProd :: Label -> TransState TypeVar
-addBasicProd l = do
+getBasicProd :: Label -> TransState [TypeVar]
+getBasicProd l = do
   s <- get
   case Map.foldrWithKey fold Nothing (productions s) of
     Nothing -> do
       y <- freshVar
       addProduction y l []
-      return y
+      return [y]
     Just p ->
-      return p
+      return [p]
   where fold x m acc = if l `Map.member` m && null (m Map.! l) then Just x else acc
 
 getFromVEnv :: TypeVar -> TransState (Kind, TypeScheme)
