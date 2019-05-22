@@ -70,6 +70,7 @@ toGrammar (Rec _ (TypeVarBind _ x _) t) = do
   insertVisited x
   m <- typeTransitions t
   transFromX <- tMapWithKeyM (\l _ -> freshVar >>= \y -> addProduction x l [y] >> return y) m
+  tMapM insertVisited transFromX
   transFromT <- tMapM toGrammar m
   let subs = Map.foldrWithKey (\l y -> Map.insert y (transFromT Map.! l)) Map.empty transFromX
   subsProductions subs
