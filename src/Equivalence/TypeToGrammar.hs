@@ -69,6 +69,7 @@ toGrammar (TypeVar _ x) = do
     y <- addBasicProd (VarLabel x)
     return [y]
 toGrammar (Rec _ (TypeVarBind _ x _) t) = do
+  insertVisited x
   m <- typeTransitions t
   transFromX <- tMapWithKeyM (\l _ -> freshVar >>= \y -> addProduction x l [y] >> return y) m
   transFromT <- tMapM toGrammar m
@@ -197,12 +198,12 @@ subsProductions m = do
   s <- get
   modify $ \s -> s {productions = (Map.map . Map.map) (applyToWord m) (productions s)}
 
--- σ xs
+-- σ xs = ys, where σ is a n-substitution [ys1/y1, ..., ysn/yn]
 applyToWord :: (Map.Map TypeVar [TypeVar]) -> [TypeVar] -> [TypeVar]
-applyToWord m = concat . map (\x -> applyToVar m x)
+applyToWord m = concat . map (applyToVar m)
 
 -- σ x = ys
-applyToVar ::  (Map.Map TypeVar [TypeVar]) -> TypeVar -> [TypeVar]
+applyToVar :: (Map.Map TypeVar [TypeVar]) -> TypeVar -> [TypeVar]
 applyToVar m x = Map.foldrWithKey (\y ys acc -> listSubs ys y acc) [x] m
 
 -- [ys/y]x = ys
