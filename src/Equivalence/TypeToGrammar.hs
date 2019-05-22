@@ -66,7 +66,11 @@ toGrammar (TypeVar _ x) = do
     return [x]
   else    -- This is a polymorphic variable
     getBasicProd (VarLabel x)
-toGrammar (Rec _ (TypeVarBind _ x _) t) = do
+toGrammar (Rec _ (TypeVarBind _ x _) t) =
+  if x `Set.notMember` (free t)
+  then toGrammar t
+  else
+  do
   insertVisited x
   m <- typeTransitions t
   transFromX <- tMapWithKeyM (\l _ -> freshVar >>= \y -> addProduction x l [y] >> return y) m

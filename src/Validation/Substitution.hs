@@ -16,7 +16,7 @@ module Validation.Substitution
 ( subs
 , unfold
 -- , rename
--- , free
+, free
 ) where
 
 import           Syntax.Base
