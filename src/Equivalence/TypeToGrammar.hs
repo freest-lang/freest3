@@ -25,6 +25,7 @@ import           Syntax.Base
 import           Validation.Substitution
 import           Equivalence.Grammar
 import           Equivalence.Normalisation
+import           Utils.FreestState (tMapWithKeyM, tMapM)
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
@@ -68,6 +69,14 @@ toGrammar (TypeVar _ x) = do
     y <- addBasicProd (VarLabel x)
     return [y]
 toGrammar (Rec _ (TypeVarBind _ x _) t) = do
+  m <- typeTransitions t
+  transFromX <- tMapWithKeyM (\l _ -> freshVar >>= \y -> addProduction x l [y] >> return y) m
+  transFromT <- tMapM toGrammar m
+  let subs = Map.foldrWithKey (\l y -> Map.insert y (transFromT Map.! l)) Map.empty transFromX
+  subsOnProductions subs
+  return [x]
+{-
+toGrammar (Rec _ (TypeVarBind _ x _) t) = do
   -- let (Rec _ (TypeVarBind _ x _) u) = rename t -- On the fly α-conversion
   insertVisited x
   toGrammar t >>= \case
@@ -83,6 +92,7 @@ toGrammar (Rec _ (TypeVarBind _ x _) t) = do
             return (z:zs)
           else
             return []
+-}
   -- Type operators
 toGrammar (Dualof p (TypeName _ x)) = do
   insertVisited x
@@ -119,13 +129,13 @@ typeTransitions (Message p q b) = return $ Map.singleton (MessageLabel q b) (Ski
 typeTransitions (Choice _ p m)  = return $ Map.mapKeys (ChoiceLabel p) m
   -- Functional or session
 typeTransitions (Rec _ _ t)     = typeTransitions t
-typeTransitions (TypeVar p x) = 
+typeTransitions (TypeVar p x)   = 
   getTransitions x >>= \case
     Just m  -> return $ Map.map (fromWord p) m
     Nothing -> return $ Map.singleton (VarLabel x) (Skip p)
   -- Type operators
 typeTransitions (Dualof _ t)    = typeTransitions t
-typeTransitions t@(TypeName _ _)  = error $ "Not implemented: typeTransitions " ++ show t
+typeTransitions (TypeName _ _)  = error "Not implemented: typeTransitions TypeName"
 
 fromWord :: Pos -> [TypeVar] -> Type
 fromWord p = foldr (\x t -> Semi p (TypeVar p x) t) (Skip p)
@@ -181,6 +191,16 @@ addProductions x m =
 addProduction :: TypeVar -> Label -> [TypeVar] -> TransState ()
 addProduction x l w =
   modify $ \s -> s {productions = insertProduction (productions s) x l w}
+
+subsOnProductions :: (Map.Map TypeVar [TypeVar]) -> TransState ()
+subsOnProductions m = do
+  s <- get
+  (tMapM . tMapM) (\xs -> return ((Map.mapWithKey (\y ys -> listSubs ys y xs) m))) (productions s)
+  return ()
+
+-- [ys/y]xs
+listSubs :: Eq a => [a] -> a -> [a] -> [a]
+listSubs ys y = foldr (\x zs-> if x == y then ys ++ zs else x:zs) []
 
 -- Add or update production from a (basic) non-terminal; the
 -- productions may already contain transitions for the given
