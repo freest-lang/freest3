@@ -1,4 +1,3 @@
-
 {- |
 Module      :  Equivalence.TypeToGrammar
 Description :  Conversion from types to grammars
@@ -25,6 +24,7 @@ import           Syntax.ProgramVariables
 import           Syntax.Base
 import           Validation.Substitution
 import           Equivalence.Grammar
+import           Equivalence.Normalisation
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
@@ -60,7 +60,7 @@ toGrammar (Choice _ p m) = do
   return [y]
 -- Functional or session (session in this case)
 toGrammar (TypeVar _ x) = do
-  b <- memberVisited x
+  b <- wasVisited x
   if b
   then    -- This is a recursion variable
     return [x]
@@ -78,7 +78,7 @@ toGrammar (Rec _ (TypeVarBind _ x _) t) = do
           addProductions x (Map.map (++ zs) m)
           return [x]
         Nothing -> do
-          b <- memberVisited z
+          b <- wasVisited z
           if b && z /= x then -- case in which the productions for z are not yet completed
             return (z:zs)
           else
@@ -91,7 +91,7 @@ toGrammar (Dualof p (TypeName _ x)) = do
     toGrammar (Dualof p t)
 toGrammar (Dualof _ t) = toGrammar (dual t)
 toGrammar (TypeName _ x) = do
-  b <- memberVisited x
+  b <- wasVisited x
   if b
   then    -- We have visited this type name before
     return [x]
@@ -106,6 +106,29 @@ assocToGrammar :: TypeVar -> Polarity -> (ProgVar, Type) -> TransState ()
 assocToGrammar y p (x, t) = do
   xs <- toGrammar t
   addProduction y (ChoiceLabel p x) xs
+
+typeTransitions :: Type -> TransState (Map.Map Label Type)
+  -- Session types
+typeTransitions (Skip _)        = return Map.empty
+typeTransitions (Semi p t u)
+  | terminated t                = typeTransitions u
+  | otherwise                   = do
+  m <- typeTransitions t
+  return $ Map.map (\t' -> Semi p t' u) m
+typeTransitions (Message p q b) = return $ Map.singleton (MessageLabel q b) (Skip p)
+typeTransitions (Choice _ p m)  = return $ Map.mapKeys (ChoiceLabel p) m
+  -- Functional or session
+typeTransitions (Rec _ _ t)     = typeTransitions t
+typeTransitions (TypeVar p x) = 
+  getTransitions x >>= \case
+    Just m  -> return $ Map.map (fromWord p) m
+    Nothing -> return $ Map.singleton (VarLabel x) (Skip p)
+  -- Type operators
+typeTransitions (Dualof _ t)    = typeTransitions t
+typeTransitions t@(TypeName _ _)  = error $ "Not implemented: typeTransitions " ++ show t
+
+fromWord :: Pos -> [TypeVar] -> Type
+fromWord p = foldr (\x t -> Semi p (TypeVar p x) t) (Skip p)
 
 -- The state of the translation to grammars
 
@@ -137,8 +160,8 @@ freshVar = do
   modify (\s -> s {nextIndex = n + 1})
   return $ mkVar defaultPos ("#X" ++ show n)
 
-memberVisited :: TypeVar -> TransState Bool
-memberVisited x = do
+wasVisited :: TypeVar -> TransState Bool
+wasVisited x = do
   s <- get
   return $ x `Set.member` (visited s)
 
