@@ -131,15 +131,11 @@ typeTransitions (Choice _ p m)  = return $ Map.mapKeys (ChoiceLabel p) m
 typeTransitions (Rec _ _ t)     = typeTransitions t
 typeTransitions (TypeVar p x)   = 
   getTransitions x >>= \case
-    Just m  -> return $ Map.map (fromWord p) m
+    Just m  -> return $ Map.map (\[x] -> TypeVar p x) m
     Nothing -> return $ Map.singleton (VarLabel x) (Skip p)
   -- Type operators
 typeTransitions (Dualof _ t)    = typeTransitions t
 typeTransitions (TypeName _ _)  = error "Not implemented: typeTransitions TypeName"
-
-fromWord :: Pos -> [TypeVar] -> Type
---fromWord p = foldr (\x t -> Semi p (TypeVar p x) t) (Skip p)
-fromWord p [x] = TypeVar p x
 
 -- The state of the translation to grammars
 
@@ -174,7 +170,8 @@ freshVar = do
 wasVisited :: TypeVar -> TransState Bool
 wasVisited x = do
   s <- get
-  return $ x `Set.member` (visited s)
+--  return $ x `Set.member` (visited s)
+  return $ x `Map.member` (productions s)
 
 insertVisited :: TypeVar -> TransState ()
 insertVisited x =
@@ -196,27 +193,29 @@ addProduction x l w =
 subsProductions :: (Map.Map TypeVar [TypeVar]) -> TransState ()
 subsProductions m = do
   s <- get
-  modify $ \s -> s {productions = (Map.map . Map.map) (applyAllToWord m) (productions s)}
+  modify $ \s -> s {productions = (Map.map . Map.map) (subsWord m) (productions s)}
 
 -- σ xs = ys, where σ is a n-substitution [ys1/y1, ..., ysn/yn]
-applyAllToWord :: Eq a => Map.Map a [a] -> [a] -> [a]
-applyAllToWord m = concat . map (applyAllToVar (Map.assocs m))
+subsWord :: Eq a => Map.Map a [a] -> [a] -> [a]
+subsWord m = concat . map (subsVar (Map.assocs m))
 
 -- σ x = ys
-applyAllToVar :: Eq a => [(a, [a])] -> a -> [a]
-applyAllToVar [] x = [x]
-applyAllToVar ((y,ys):assocs) x
-  | x == y         = ys
-  | otherwise      = applyAllToVar assocs x
+subsVar :: Eq a => [(a, [a])] -> a -> [a]
+subsVar [] x  = [x]
+subsVar ((y,ys):assocs) x
+  | y == x    = ys
+  | otherwise = subsVar assocs x
 
+{-
 -- σ x = ys
--- applyAllToVar :: Eq a => Map.Map a [a] -> a -> [a]
--- applyAllToVar m x = Map.foldrWithKey applyToVar [x] m
+applyAllToVar :: Eq a => Map.Map a [a] -> a -> [a]
+applyAllToVar m x = Map.foldrWithKey applyToVar [x] m
 
 -- [ys/y]x = ys
 applyToVar :: Eq a => a -> [a] -> [a] -> [a]
 applyToVar y ys [x] = if x == y then ys else [x]
 applyToVar _  _ xs  = xs
+-}
 
 -- Add or update production from a (basic) non-terminal; the
 -- productions may already contain transitions for the given
