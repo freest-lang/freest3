@@ -219,25 +219,30 @@ Skip;!Int -> Bool
 
 -- Degenerated Recursive Types
 
-[]
-rec x. Skip
-Skip
+-- non contractive
+-- []
+-- rec x. Skip
+-- Skip
 
-[]
-Skip
-rec x. Skip
+-- non contractive
+-- []
+-- Skip
+-- rec x. Skip
 
-[]
-rec x. (Skip; Skip)
-Skip
+-- non contractive
+-- []
+-- rec x. (Skip; Skip)
+-- Skip
 
-[]
-rec x. rec y. Skip
-Skip
+-- non contractive
+-- []
+-- rec x. rec y. Skip
+-- Skip
 
-[]
-rec x. (Skip; rec y. Skip)
-Skip
+-- non contractive
+-- []
+-- rec x. (Skip; rec y. Skip)
+-- Skip
 
 []
 rec x. rec y. (Skip; rec z. Skip; ?Int; Skip)
@@ -255,25 +260,30 @@ rec z. (!Int; z)
 rec x. rec y. rec z. (!Int; y)
 rec w. (!Int; w)
 
-[]
-rec x.( Skip; x)
-rec y.( Skip; y)
+-- non contractive
+-- []
+-- rec x.( Skip; x)
+-- rec y.( Skip; y)
 
-[]
-rec x.( Skip; x; Skip)
-rec x.( Skip; x)
+-- non contractive
+-- []
+-- rec x.( Skip; x; Skip)
+-- rec x.( Skip; x)
 
-[]
-rec x.( Skip; x; Skip)
-rec x.( Skip; x; Skip)
+-- non contractive
+-- []
+-- rec x.( Skip; x; Skip)
+-- rec x.( Skip; x; Skip)
 
-[]
-rec x.( Skip; x)
-Skip
+-- non contractive
+-- []
+-- rec x.( Skip; x)
+-- Skip
 
-[]
-rec x.( Skip; x; Skip)
-Skip
+-- non contractive
+-- []
+-- rec x.( Skip; x; Skip)
+-- Skip
 
 -- Regular Recursive Types
 
@@ -361,37 +371,44 @@ rec x . &{Add: x;x;!Int}
 
 -- Terminated types
 
-[]
-rec x. (Skip; x)
-rec x. (Skip; x)
-
-[]
-rec x. ((Skip; x); rec y. (Skip; y))
-rec x. (Skip; x)
-
+-- non contractive
 -- []
--- rec x. (Skip; x); rec x. (Skip; x)  
--- rec x. (Skip; x); rec x. (Skip; x)  
+-- rec x. (Skip; x)
+-- rec x. (Skip; x)
+
+-- non contractive
+-- []
+-- rec x. ((Skip; x); rec y. (Skip; y))
+-- rec x. (Skip; x)
+
+-- non contractive
+-- []
+-- rec x. (Skip; x); rec x. (Skip; x)
+-- rec x. (Skip; x); rec x. (Skip; x)
 
 []
 Skip
 Skip; Skip
 
-[]
-rec x. (Skip; x)
-Skip
+-- non contractive
+-- []
+-- rec x. (Skip; x)
+-- Skip
 
-[]
-rec x. (Skip; x)
-Skip; Skip
+-- non contractive
+-- []
+-- rec x. (Skip; x)
+-- Skip; Skip
 
-[]
-rec x. (Skip; x; (rec x. (Skip; x)))
-rec x. (Skip; x); rec x. (Skip; x)  
+-- non contractive
+-- []
+-- rec x. (Skip; x; (rec x. (Skip; x)))
+-- rec x. (Skip; x); rec x. (Skip; x)
 
-[]
-rec x. ((rec x. (Skip; x)); (rec x. (Skip; x)))
-rec x. (Skip; x); rec x. (Skip; x)  
+-- non contractive
+-- []
+-- rec x. ((rec x. (Skip; x)); (rec x. (Skip; x)))
+-- rec x. (Skip; x); rec x. (Skip; x)
 
 -- Context-free Recursive Types, normed
 
@@ -522,7 +539,7 @@ rec z:SL. x
 ((+{C: Skip};(rec x_2:SL. (Skip;Skip)));(rec z_3:SL. (x;y)))
 
 []
-(((rec x_0:SL. !Int);!Int);((rec z_1:SL. ((Skip;z_1);+{A: z_1, B: z_1, C: z_1}));!Int)) 
+(((rec x_0:SL. !Int);!Int);((rec z_1:SL. ((Skip;z_1);+{A: z_1, B: z_1, C: z_1}));!Int))
 ((((rec x_2:SL. !Int);!Int);(rec z_3:SL. ((Skip;z_3);+{A: z_3, B: z_3,C: z_3})));!Int)
 
 -- This one is non-kinded (as of version April 24, 2019)
@@ -534,7 +551,7 @@ rec z:SL. x
  (rec y_0:SL. (!Bool;+{A: y_0, B: y_0, C: x})) ; (?Int ; (?Int;&{A: Skip, B: z, C: z}))
 ((rec y_1:SL. (!Bool;+{A: y_1, B: y_1, C: x})) ; ?Int) ; (?Int;&{A: Skip, B: z, C: z})
 
--- this one hangs 
+-- this one hangs
 []
 rec y_0:SL. !Bool; +{A: y_0}
 rec y_1:SL. !Bool; +{A: y_1}
@@ -578,7 +595,7 @@ rec y:SL. &{B:+{D: ?Char}, C: y ;+{D: ?Char}}
 rec x:SL. α
 rec y:SL. α
 
-[("x", SL)] 
+[("x", SL)]
 rec y_0:SL. (rec y_1:SL. (rec y_2:SL. x))
 rec z:SL. (rec y_4:SL. x)
 
@@ -625,13 +642,13 @@ rec e:SL. (&{B: Skip, C: e;!Bool})
 -- this test takes a while
 
 -- []
--- ((&{B: (((+{B: (Skip;x), C: (z;x)};&{A: x, B: Skip});Skip);+{A: (((Skip;!());((Skip;!Bool);x));(rec w:SU. ?Char)), B: (+{A: (z;+{A: (y;(Skip;y)), C: (Skip;(Skip;y))}), C: (z;+{A: (y;(Skip;y)), C: (Skip;(Skip;y))})};(rec o:SU. ?Char)), C: (x;(rec r:SU. ?Char))})};Skip);Skip) 
+-- ((&{B: (((+{B: (Skip;x), C: (z;x)};&{A: x, B: Skip});Skip);+{A: (((Skip;!());((Skip;!Bool);x));(rec w:SU. ?Char)), B: (+{A: (z;+{A: (y;(Skip;y)), C: (Skip;(Skip;y))}), C: (z;+{A: (y;(Skip;y)), C: (Skip;(Skip;y))})};(rec o:SU. ?Char)), C: (x;(rec r:SU. ?Char))})};Skip);Skip)
 -- ((Skip;(&{B: ((rec h:SU. (rec l:SU. (rec p:SL. (+{B: Skip, C: z};x))));((Skip;&{A: x, B: Skip});Skip))};(+{A: (Skip;(!();(Skip;(!Bool;x)))), B: (+{A: z, C: z};(+{A: y, C: Skip};(Skip;y))), C: x};(rec q:SU. ?Char))));(Skip;Skip))
 
 -- this one takes loooonger!
 
 -- []
--- ((rec w:SL. &{B: ((+{A: &{B: x, C: Skip}};(+{A: ?Bool, B: w, C: (?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w))};Skip));+{A: (!Char;(((?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w));?Char);(?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w))))}), C: Skip});(x;((&{B: !Bool, C: Skip};((rec δ:SU. ?());y));(?Int;(+{B: x, C: ?Int};(!Int;Skip))))))  
+-- ((rec w:SL. &{B: ((+{A: &{B: x, C: Skip}};(+{A: ?Bool, B: w, C: (?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w))};Skip));+{A: (!Char;(((?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w));?Char);(?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w))))}), C: Skip});(x;((&{B: !Bool, C: Skip};((rec δ:SU. ?());y));(?Int;(+{B: x, C: ?Int};(!Int;Skip))))))
 -- ((rec z:SL. (Skip;&{B: (+{A: (&{B: x, C: Skip};+{A: (?Bool;Skip), B: (z;Skip), C: (((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z);Skip)})};(+{A: !Char};(((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z);(?Char;((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z))))), C: Skip}));((x;&{B: (!Bool;(?();y)), C: (Skip;(?();y))});((?Int;+{B: x, C: ?Int});!Int)))
 
 []
@@ -639,7 +656,7 @@ rec z_0:SL. &{B: &{B: ?()}, C: (rec y_0:SU. (z_0;y_0))}
 &{B: &{B: ?()}, C: (rec y_1:SU. ((rec z_1:SL. &{B: &{B: ?()}, C: (rec y_3:SU. ((z_1;Skip);y_3))});y_1))}
 
 --[]
---(rec z_0:SU. (rec x_1:SL. ( (+{B: (rec w_1:SL. +{A: Skip, C: w_1}), C:   (rec w_3:SL. +{A: (!Bool;w_3), B: !Char, C: !Char})});(+{B: !Bool, C: z_0};x_1)))) 
+--(rec z_0:SU. (rec x_1:SL. ( (+{B: (rec w_1:SL. +{A: Skip, C: w_1}), C:   (rec w_3:SL. +{A: (!Bool;w_3), B: !Char, C: !Char})});(+{B: !Bool, C: z_0};x_1))))
 --(rec w_7:SL. ( +{B: +{A: Skip, C: (rec w_10:SL. +{A: Skip, C: w_10})}, C: rec w_12:SU. +{A: !Bool;w_12, B: !Char, C: !Char}};+{B: (!Bool;w_7), C: (w_7;w_7)}))
 
 --fails?
@@ -649,5 +666,5 @@ rec y_8:SL. +{B: &{B: !Int};!Char, C: (y_8;?());(rec w_0:SU. ((y_8;?());w_0))}
 
 --fails?
 --[]
---((rec x_0:SL. (rec y_1:SL. +{B: ((rec w_0:SU. &{B: !Int});(rec w_1:SU. (rec w_2:SL. (rec w_3:SU. (rec w_4:SL. !Char))))), C: (rec w_5:SU. (x_0;(?();w_5)))}));Skip) 
+--((rec x_0:SL. (rec y_1:SL. +{B: ((rec w_0:SU. &{B: !Int});(rec w_1:SU. (rec w_2:SL. (rec w_3:SU. (rec w_4:SL. !Char))))), C: (rec w_5:SU. (x_0;(?();w_5)))}));Skip)
 --(rec y_8:SL. +{B: ((rec r_1:SU. &{B: !Int});(rec r_2:SL. (rec r_3:SL. (rec r_4:SU. !Char)))), C: ((y_8;?());(rec r_5:SU. ((y_8;?());r_5)))})
