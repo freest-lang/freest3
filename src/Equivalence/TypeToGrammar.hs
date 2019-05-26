@@ -65,10 +65,13 @@ toGrammar (TypeVar _ x) = do
   wasVisited x >>= \case
     True  -> return [x]                  -- x is a recursion variable
     False -> getBasicProd (VarLabel x)   -- x is a polymorphic variable
-toGrammar t@(Rec _ (TypeVarBind _ x _) _) = do
-  insertEquation t
-  insertVisited x
-  return [x]
+toGrammar t@(Rec _ (TypeVarBind _ x _) u) =
+  if x `Set.notMember` (free u)
+    then toGrammar u
+  else do
+    insertEquation t
+    insertVisited x
+    return [x]
 {-
 toGrammar (Rec _ (TypeVarBind _ x _) t) =
   if x `Set.notMember` (free t)
@@ -154,7 +157,7 @@ typeTransitions (Choice _ p m)  = return $ Map.mapKeys (ChoiceLabel p) m
 typeTransitions (Rec _ (TypeVarBind _ x _) t) = do
   insertVisited x
   typeTransitions t
-typeTransitions (TypeVar p x)   = 
+typeTransitions (TypeVar p x)   =
   getTransitions x >>= \case
     Just m  -> return $ Map.map (\[x] -> TypeVar p x) m
     Nothing -> return $ Map.singleton (VarLabel x) (Skip p)
@@ -230,7 +233,7 @@ getEquation = do
 insertEquation :: Type -> TransState ()
 insertEquation t = do
   modify $ \s -> s {equations = (equations s) Queue.|> t}
-  
+
 {-
 subsProductions :: (Map.Map TypeVar [TypeVar]) -> TransState ()
 subsProductions m = do
