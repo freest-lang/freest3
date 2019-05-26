@@ -22,6 +22,7 @@ import           Syntax.TypeVariables
 import           Equivalence.Grammar
 import           Equivalence.TypeToGrammar
 import           Equivalence.Norm
+import           Equivalence.Normalisation
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.Sequence as Queue

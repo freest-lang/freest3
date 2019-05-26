@@ -29,6 +29,7 @@ import           Utils.FreestState (tMapWithKeyM, tMapM)
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
+import qualified Data.Sequence as Queue
 import           Debug.Trace
 
 -- Conversion to context-free grammars
@@ -40,6 +41,7 @@ convertToGrammar tEnv ts = Grammar xs (productions s)
 typeToGrammar :: Type -> TransState TypeVar
 typeToGrammar t = do
   xs <- toGrammar t
+  eqsToGrammar
   y <- freshVar
   addProduction y (MessageLabel Out UnitType) xs
   return y
@@ -60,12 +62,14 @@ toGrammar (Choice _ p m) = do
   return [y]
 -- Functional or session (session in this case)
 toGrammar (TypeVar _ x) = do
-  b <- wasVisited x
-  if b
-  then    -- This is a recursion variable
-    return [x]
-  else    -- This is a polymorphic variable
-    getBasicProd (VarLabel x)
+  wasVisited x >>= \case
+    True  -> return [x]                  -- x is a recursion variable
+    False -> getBasicProd (VarLabel x)   -- x is a polymorphic variable
+toGrammar t@(Rec _ (TypeVarBind _ x _) _) = do
+  insertEquation t
+  insertVisited x
+  return [x]
+{-
 toGrammar (Rec _ (TypeVarBind _ x _) t) =
   if x `Set.notMember` (free t)
   then toGrammar t
@@ -79,6 +83,7 @@ toGrammar (Rec _ (TypeVarBind _ x _) t) =
   let subs = Map.foldrWithKey (\l y -> Map.insert y (transFromT Map.! l)) Map.empty transFromX
   subsProductions subs
   return [x]
+-}
 {-
 toGrammar (Rec _ (TypeVarBind _ x _) t) = do
   -- let (Rec _ (TypeVarBind _ x _) u) = rename t -- On the fly α-conversion
@@ -121,6 +126,20 @@ fieldToGrammar y p x t = do
   xs <- toGrammar t
   addProduction y (ChoiceLabel p x) xs
 
+eqsToGrammar :: TransState ()
+eqsToGrammar = do
+  getEquation >>= \case
+    (Just (Rec _ (TypeVarBind _ x _) t)) -> do
+      (z:zs) <- toGrammar t
+      getTransitions z >>= \case
+        Just m -> do
+          addProductions x (Map.map (++ zs) m)
+          eqsToGrammar
+        Nothing ->
+          eqsToGrammar
+    Nothing ->
+      return ()
+{-
 typeTransitions :: Type -> TransState (Map.Map Label Type)
   -- Session types
 typeTransitions (Skip _)        = return Map.empty
@@ -142,13 +161,14 @@ typeTransitions (TypeVar p x)   =
   -- Type operators
 typeTransitions (Dualof _ t)    = typeTransitions t
 typeTransitions (TypeName _ _)  = error "Not implemented: typeTransitions TypeName"
-
+-}
 -- The state of the translation to grammars
 
 type Visited = Set.Set TypeVar
 
 data TState = TState {
   productions :: Productions
+, equations   :: Queue.Seq Type
 , visited     :: Visited
 , nextIndex   :: Int
 , typeEnv     :: TypeEnv
@@ -161,6 +181,7 @@ type TransState = State TState
 initial :: TypeEnv -> TState
 initial tEnv = TState {
   productions = Map.empty
+, equations   = Queue.empty
 , visited     = Set.empty
 , nextIndex   = 1
 , typeEnv     = tEnv
@@ -196,6 +217,21 @@ addProduction :: TypeVar -> Label -> [TypeVar] -> TransState ()
 addProduction x l w =
   modify $ \s -> s {productions = insertProduction (productions s) x l w}
 
+getEquation :: TransState (Maybe Type)
+getEquation = do
+  s <- get
+  case equations s of
+    (t Queue.:<| eqs) -> do
+      modify $ \s -> s {equations = eqs}
+      return $ Just t
+    Queue.Empty ->
+      return Nothing
+
+insertEquation :: Type -> TransState ()
+insertEquation t = do
+  modify $ \s -> s {equations = (equations s) Queue.|> t}
+  
+{-
 subsProductions :: (Map.Map TypeVar [TypeVar]) -> TransState ()
 subsProductions m = do
   s <- get
@@ -211,18 +247,7 @@ subsVar [] x  = [x]
 subsVar ((y,ys):assocs) x
   | y == x    = ys
   | otherwise = subsVar assocs x
-
-{-
--- σ x = ys
-applyAllToVar :: Eq a => Map.Map a [a] -> a -> [a]
-applyAllToVar m x = Map.foldrWithKey applyToVar [x] m
-
--- [ys/y]x = ys
-applyToVar :: Eq a => a -> [a] -> [a] -> [a]
-applyToVar y ys [x] = if x == y then ys else [x]
-applyToVar _  _ xs  = xs
 -}
-
 -- Add or update production from a (basic) non-terminal; the
 -- productions may already contain transitions for the given
 -- nonterminal (hence the insertWith and union)
