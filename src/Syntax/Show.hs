@@ -54,11 +54,11 @@ instance Show TypeVar where
   show = showVar
 
 showVar :: Variable v => v -> String
-showVar v
-  -- | isDigit (head s) = tail $ dropWhile isDigit s
-  -- | otherwise        = s
-  -- where s = intern v
-  = intern v -- Debug
+showVar v  -- TODO: 0_4_x is shown as 4_x
+  | isDigit (head s) = tail $ dropWhile isDigit s
+  | otherwise        = s
+  where s = intern v
+-- showVar = intern
 
 -- Kinds
 
@@ -70,7 +70,8 @@ instance Show Kind where
   show (Kind _ p m) = show p ++ show m
 
 instance Show TypeVarBind where
-  show (TypeVarBind _ a k) = show a ++ ":" ++ show k
+  show (TypeVarBind _ a k) = show a
+  -- show (TypeVarBind _ a k) = show a ++ ":" ++ show k
 
 -- Types
 
