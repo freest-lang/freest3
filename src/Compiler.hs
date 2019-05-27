@@ -21,9 +21,9 @@ compileFile args
       let s3 = execState typeCheck s2
       if hasErrors s3
       then
-        genCode (varEnv s3) (expEnv s3) (typeEnv s3) args
-      else
         die $ getErrors s3
+      else
+        genCode (varEnv s3) (expEnv s3) (typeEnv s3) args
   | otherwise = die $ "Error: File extension not recognized, provide a .fst file: " ++ args
 
 -- CODE GEN

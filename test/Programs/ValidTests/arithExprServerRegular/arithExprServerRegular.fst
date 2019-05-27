@@ -36,7 +36,7 @@ client c =
   represent a well formed arithmetic expression.
 -}
 
-size : rec x: SL. &{Add: x, Mult: x, Const: ?Int;x, EOS: !Int} -> Int
+size : Int -> rec x: SL. &{Add: x, Mult: x, Const: ?Int;x, EOS: !Int} -> Skip
 size n s =
   match s with {
     Add s   -> size (n + 1) s;
@@ -52,4 +52,3 @@ main =
   let c, s = new rec x: SL. +{Add: x, Mult: x, Const: !Int;x, EOS: ?Int} in
   let _ = fork (size 0 s) in
   client c
-  
