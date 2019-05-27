@@ -31,16 +31,15 @@ client c =
   x
 
 {-|
-  An easy consumer: counts the number of nodes in the stream.  Copes
-  with any stream, independent of the fact that it may or may not
-  represent a well formed arithmetic expression.
+  An arithmetic stream evaluator.
+  The evaluator reads from a stream and return the result.
 -}
 
-size : rec x: SL. &{Add: x, Mult: x, Const: ?Int;x, EOS: !Int} -> Int
-size n s =
+eval : Int -> rec x: SL. &{Add: x, Mult: x, Const: ?Int;x, EOS: !Int} -> Skip
+eval n s =
   match s with {
-    Add s   -> size (n + 1) s;
-    Mult s  -> size (n + 1) s;
+    Add s   -> eval (n + 1) s;
+    Mult s  -> eval (n + 1) s;
     Const s -> let _, s = receive s in size (n + 1) s;
     EOS s   -> send s n
   }

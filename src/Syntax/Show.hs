@@ -54,8 +54,8 @@ instance Show TypeVar where
   show = showVar
 
 showVar :: Variable v => v -> String
-showVar v  -- TODO: 0_4_x is shown as 4_x
-  | isDigit (head s) = tail $ dropWhile (\x -> isDigit x || x == ':') s
+showVar v
+  | isDigit (head s) = dropWhile (\x -> isDigit x || x == ':') s
   | otherwise        = s
   where s = intern v
 -- showVar = intern

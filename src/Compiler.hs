@@ -13,7 +13,6 @@ import           Utils.PreludeLoader (prelude)
 import           Validation.Rename (renameState)
 import           Validation.TypeChecking (typeCheck)
 
-
 compileFile :: FilePath -> IO ()
 compileFile args 
   | "fst" `isExtensionOf` args = do
@@ -27,12 +26,12 @@ compileFile args
 -- CODE GEN
 genCode :: Errors -> VarEnv -> ExpEnv -> TypeEnv -> FilePath -> IO ()
 genCode err venv eenv cenv path
-  | Set.null err  = do
+  | null err  = do
       genProgram venv eenv cenv path
       -- TODO: codeGen is turned off for now
       -- compileAndRun path
       exitSuccess -- remove 
-  | otherwise = die $ getErrors err
+  | otherwise = die $ show err
     -- printErrors err >> exitFailure
     -- putStrLn ("\n\n" ++ show err ++ "\n\n" ) >> exitFailure
   -- TODO: pretty print errors
