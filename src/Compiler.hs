@@ -19,19 +19,21 @@ compileFile args
       s1 <- parseProgram args prelude
       let s2 = execState renameState s1
       let s3 = execState typeCheck s2
-      genCode (errors s3) (varEnv s3) (expEnv s3) (typeEnv s3) args
+      if hasErrors s3
+      then
+        genCode (varEnv s3) (expEnv s3) (typeEnv s3) args
+      else
+        die $ getErrors s3
   | otherwise = die $ "Error: File extension not recognized, provide a .fst file: " ++ args
 
-
 -- CODE GEN
-genCode :: Errors -> VarEnv -> ExpEnv -> TypeEnv -> FilePath -> IO ()
-genCode err venv eenv cenv path
-  | null err  = do
+genCode :: VarEnv -> ExpEnv -> TypeEnv -> FilePath -> IO ()
+genCode venv eenv cenv path = do
       genProgram venv eenv cenv path
       -- TODO: codeGen is turned off for now
       -- compileAndRun path
       exitSuccess -- remove 
-  | otherwise = die $ show err
+  -- | otherwise = die $ show err
     -- printErrors err >> exitFailure
     -- putStrLn ("\n\n" ++ show err ++ "\n\n" ) >> exitFailure
   -- TODO: pretty print errors

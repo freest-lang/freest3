@@ -35,13 +35,13 @@ client c =
   The evaluator reads from a stream and return the result.
 -}
 
-eval : Int -> rec x: SL. &{Add: x, Mult: x, Const: ?Int;x, EOS: !Int} -> Skip
-eval n s =
+size : rec x: SL. &{Add: x, Mult: x, Const: ?Int;x, EOS: !Int} -> (Int, rec x: SL. &{Add: x, Mult: x, Const: ?Int;x, EOS: !Int} -> Skip)
+size s =
   match s with {
-    Add s   -> eval (n + 1) s;
-    Mult s  -> eval (n + 1) s;
-    Const s -> let _, s = receive s in size (n + 1) s;
-    EOS s   -> send s n
+    Add s   -> let n, s = size s in (n + 1, s);
+    Mult s  -> let n, s = size s in (n + 1, s);
+    Const s -> let _, s = receive s in let n, s = size s in (n + 1, s);
+    EOS s   -> let _ = send s in 5
   }
 
 -- A sample interaction: counting the number of nodes in a stream;

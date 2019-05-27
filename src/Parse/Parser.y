@@ -357,8 +357,8 @@ instance Read Type where
   readsPrec _ str =
     let (t, state) = runState (parse str) (initialState "") in
     if hasErrors state
-    then [(t, "")]
-    else error $ getErrors state
+    then error $ getErrors state
+    else [(t, "")]
    where parse = types . scanTokens
 
 parseTypeScheme :: String -> TypeScheme
@@ -405,8 +405,8 @@ checkErrors :: FreestS -> IO ()
 -- checkErrors (FreestS {errors=Set.null}) = return ()
 -- checkErrors s                     = die $ intercalate "\n" (errors s) 
 checkErrors s
-  | hasErrors s = return ()
-  | otherwise  = die $ getErrors s
+  | hasErrors s = die $ getErrors s
+  | otherwise   = return ()
 
 -------------------
 -- Handle errors --

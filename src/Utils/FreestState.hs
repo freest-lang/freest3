@@ -54,6 +54,7 @@ import           Syntax.Base
 import           Utils.Errors
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
+import           Data.List (intercalate)
 -- import qualified Data.Set as Set
 import qualified Data.Traversable as Traversable
 
@@ -171,14 +172,14 @@ setTEnv tEnv = modify (\s -> s{typeEnv = tEnv})
 
 addError :: Pos -> [String] -> FreestState ()
 addError p e = do
-  modify (\s -> s{errors=(errors s) ++ [styleError (filename s) p e]})  
+  modify (\s -> s{errors = errors s ++ [styleError (filename s) p e]})  
   -- modify (\s -> s{errors = Set.insert (styleError (filename s) p e) (errors s)})
   
 getErrors :: FreestS -> String
-getErrors s = show $ errors s -- Set.fold (\err acc -> err ++ "\n" ++ acc) ""
+getErrors = (intercalate "\n") . errors
   
 hasErrors :: FreestS -> Bool
-hasErrors s = not $ null $ errors s
+hasErrors = not . null . errors
 
 -- | Traversing Map.map over FreestStates
 
