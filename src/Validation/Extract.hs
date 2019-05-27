@@ -117,12 +117,17 @@ extractChoiceMap :: Polarity -> String -> Expression -> Type -> FreestState Type
 extractChoiceMap pol msg e t = do
   t' <- norm t
   case t' of
-    (Choice _ _ m)              -> return m
-    (Semi _ (Choice _ pol m) u) -> return $ Map.map (\v -> Semi (position v) v u) m
-    u                           -> do
-      addError (position e) ["Expecting an", msg, "choice type for expression", styleRed $ show e, "\n",
-                            "\t found type", styleRed $ show u]
-      return Map.empty
+    (Choice _ pol' m)            ->
+      if pol == pol' then return m else extractChoiceErr msg e t
+    (Semi _ (Choice _ pol' m) u) ->
+      if pol == pol' then return $ Map.map (\v -> Semi (position v) v u) m else extractChoiceErr msg e t
+    u                            -> extractChoiceErr msg e t
+
+extractChoiceErr :: String -> Expression -> Type -> FreestState TypeMap
+extractChoiceErr msg e u = do
+  addError (position e) ["Expecting an", msg, "choice type for expression", styleRed $ show e, "\n",
+                         "\t found type", styleRed $ show u]
+  return Map.empty
 
 -- Extracts a datatype from a type; gives an error if a datatype is not found
 extractDatatypeMap :: Expression -> Type -> FreestState TypeMap
