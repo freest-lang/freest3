@@ -88,18 +88,24 @@ extractOutput = extractMessage Out "output"
 
 -- Extracts an input type from a general type; gives an error if it isn't an input
 extractInput :: Expression -> Type -> FreestState (BasicType, Type)
-extractInput = extractMessage Out "input"
+extractInput = extractMessage In "input"
 
 extractMessage :: Polarity -> String -> Expression -> Type -> FreestState (BasicType, Type)
 extractMessage pol msg e t = do
   t' <- norm t
   case t' of
-     (Message p _ b)            -> return (b, Skip p)
-     (Semi _ (Message _ _ b) u) -> return (b, u)
-     u                          -> do
-       addError (position e) ["Expecting an", msg, "type for expression", styleRed $ show e, "\n",
-                              "\t found type", styleRed $ show u]
-       return (UnitType, Skip (position u))
+    u@(Message p pol' b)            ->
+      if pol == pol' then return (b, Skip p) else extractMessageErr msg e u
+    u@(Semi _ (Message _ pol' b) v) ->
+      if pol == pol' then return (b, v) else extractMessageErr msg e u
+    u                               ->
+      extractMessageErr msg e u
+
+extractMessageErr :: String -> Expression -> Type -> FreestState (BasicType, Type)
+extractMessageErr msg e u = do
+  addError (position e) ["Expecting an", msg, "type for expression", styleRed $ show e, "\n",
+                         "\t found type", styleRed $ show u]
+  return (UnitType, Skip (position u))
 
 extractOutChoiceMap :: Expression -> Type -> FreestState TypeMap
 extractOutChoiceMap = extractChoiceMap Out "external"
