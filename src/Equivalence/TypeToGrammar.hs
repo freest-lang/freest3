@@ -40,8 +40,8 @@ convertToGrammar tEnv ts = Grammar xs (productions s)
 
 typeToGrammar :: Type -> TransState TypeVar
 typeToGrammar t = do
+  mapM_ eqToGrammar (collect t [])
   xs <- toGrammar t
-  eqsToGrammar
   y <- freshVar
   addProduction y (MessageLabel Out UnitType) xs
   return y
@@ -61,50 +61,16 @@ toGrammar (Choice _ p m) = do
   tMapWithKeyM (fieldToGrammar y p) m
   return [y]
 -- Functional or session (session in this case)
-toGrammar (TypeVar _ x) = do
-  wasVisited x >>= \case
-    True  -> return [x]                  -- x is a recursion variable
-    False -> getBasicProd (VarLabel x)   -- x is a polymorphic variable
+toGrammar (TypeVar _ x) = -- do
+  -- wasVisited x >>= \case
+  --   True  -> return [x]                  -- x is a recursion variable
+  --   False -> 
+    getBasicProd (VarLabel x)   -- x is a polymorphic variable
 toGrammar t@(Rec _ (TypeVarBind _ x _) u) =
-  if x `Set.notMember` (free u)
-    then toGrammar u
-  else do
-    insertEquation t
-    insertVisited x
+  -- do
+  --   insertEquation t
+  --   insertVisited x
     return [x]
-{-
-toGrammar (Rec _ (TypeVarBind _ x _) t) =
-  if x `Set.notMember` (free t)
-  then toGrammar t
-  else
-  do
-  insertVisited x
-  m <- typeTransitions t
-  transFromX <- tMapWithKeyM (\l _ -> freshVar >>= \y -> addProduction x l [y] >> return y) m
-  tMapM insertVisited transFromX
-  transFromT <- tMapM toGrammar m
-  let subs = Map.foldrWithKey (\l y -> Map.insert y (transFromT Map.! l)) Map.empty transFromX
-  subsProductions subs
-  return [x]
--}
-{-
-toGrammar (Rec _ (TypeVarBind _ x _) t) = do
-  -- let (Rec _ (TypeVarBind _ x _) u) = rename t -- On the fly α-conversion
-  insertVisited x
-  toGrammar t >>= \case
-    []     -> return []
-    (z:zs) ->
-      getTransitions z >>= \case
-        Just m -> do
-          addProductions x (Map.map (++ zs) m)
-          return [x]
-        Nothing -> do
-          b <- wasVisited z
-          if b && z /= x then -- case in which the productions for z are not yet completed
-            return (z:zs)
-          else
-            return []
--}
   -- Type operators
 toGrammar (Dualof p (TypeName _ x)) = do
   insertVisited x
@@ -129,19 +95,45 @@ fieldToGrammar y p x t = do
   xs <- toGrammar t
   addProduction y (ChoiceLabel p x) xs
 
+type Substitution = (Type, TypeVar)
+type Equation = (TypeVar, Type)
+
+collect :: Type -> [Substitution] -> [Equation]
+collect (Semi _ t u) σ = collect t σ ++ collect u σ
+collect (Choice _ _ m) σ = Map.foldl (\eqs t -> collect t σ ++ eqs) [] m
+collect t@(Rec _ (TypeVarBind _ x _) s) σ = (x, subsAll σ' s) : collect s σ'
+  where σ' = (t, x) : σ
+collect _ _ = []
+
+eqToGrammar :: Equation -> TransState ()
+eqToGrammar (x, t) =
+  toGrammar (normalise Map.empty t) >>= \case
+    [] ->
+      return ()
+    (z:zs) ->
+      getTransitions z >>= \case
+        Just m -> do
+          addProductions x (Map.map (++ zs) m)
+        Nothing ->
+          error $ "No production for " ++ show z ++ " when translating rec " ++ show x
+
+{-
 eqsToGrammar :: TransState ()
 eqsToGrammar = do
   getEquation >>= \case
-    (Just (Rec _ (TypeVarBind _ x _) t)) -> do
+    (Just u@(Rec _ (TypeVarBind _ x _) t)) -> do
       (z:zs) <- toGrammar t
       eqsToGrammar
       getTransitions z >>= \case
         Just m -> do
           addProductions x (Map.map (++ zs) m)
         Nothing ->
-          error $ "No productiond for " ++ show z ++ " when translating rec " ++ show x -- return ()
+          -- insertEquation u
+          error $ "No production for " ++ show z ++ " when translating rec " ++ show x
+          -- return ()
     Nothing ->
       return ()
+-}
 {-
 typeTransitions :: Type -> TransState (Map.Map Label Type)
   -- Session types

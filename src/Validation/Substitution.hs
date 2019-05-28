@@ -14,6 +14,7 @@ Unfolding of recursive types and substitution
 
 module Validation.Substitution
 ( subs
+, subsAll
 , unfold
 -- , rename
 , free
@@ -45,6 +46,9 @@ subs t1 x t2 = renameType $ sub t1 x t2
     | otherwise              = u
   sub t x (Dualof p u)       = Dualof p (sub t x u)
   sub _ _ t                  = t
+
+subsAll :: [(Type, TypeVar)] -> Type -> Type
+subsAll sigma s = foldl (\t (u, x) -> subs u x t) s sigma
 
 -- Unfold a recursive type (one step only)
 unfold :: Type -> Type
