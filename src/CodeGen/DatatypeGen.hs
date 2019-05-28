@@ -1,26 +1,31 @@
 {-# LANGUAGE OverloadedStrings #-}
 module CodeGen.DatatypeGen
-( -- genDataTypes
+( genDataTypes
 ) where
 
 import           Syntax.Types
 import           Syntax.Schemes
 import           Syntax.Kinds
+import           Syntax.TypeVariables
+import           Syntax.Show
 import           Data.List
 import qualified Data.Map.Strict as Map
 
-{-
+-- genDataTypes :: TypeEnv -> String
+-- genDataTypes tenv = "" --Map.foldlWithKey (\acc k v -> acc ++ showElem k v ++ "\n") ""
+
+
 -- GEN DATATYPES
 
 genDataTypes :: TypeEnv -> String
-genDataTypes = Map.foldlWithKey (\acc k v -> acc ++ showElem k v ++ "\n") ""
+genDataTypes = Map.foldlWithKey (\acc k v -> acc ++ showElem k (snd v) ++ "\n") ""
 
-showElem :: TBind -> (Kind, TypeScheme) -> String
-showElem (TBind _ x) (_, (TypeScheme _ _ (Datatype _ m))) = showDatatype x m
-showElem (TBind _ x) (_, (TypeScheme _ _ t))              = showTypeAbbr x t
+showElem :: TypeVar -> TypeScheme -> String
+showElem x (TypeScheme _ _ (Datatype _ m)) = showDatatype x m
+showElem x (TypeScheme _ _ t)              = showTypeAbbr x t
 
 
-showDatatype :: TVar -> TypeMap -> String
+showDatatype :: TypeVar -> TypeMap -> String
 showDatatype x m = "data " ++ show x ++ " = " ++ showDatatypeMap m ++ " deriving Show"
 
 showDatatypeMap :: TypeMap -> String
@@ -30,7 +35,7 @@ showDatatypeMap m =
 showTypes :: Type -> String
 showTypes = intercalate " " . map show . init . toListT
 
-showTypeAbbr :: TVar -> Type -> String
+showTypeAbbr :: TypeVar -> Type -> String
 showTypeAbbr x t = "type " ++ show x ++ " = " ++ show t
 
 
@@ -38,4 +43,4 @@ showTypeAbbr x t = "type " ++ show x ++ " = " ++ show t
 toListT :: Type -> [Type]
 toListT (Fun _ _ t1 t2) = t1 : toListT t2
 toListT t = [t]
--}
+

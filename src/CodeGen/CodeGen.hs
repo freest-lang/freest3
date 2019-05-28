@@ -16,66 +16,79 @@ import qualified Data.Map.Strict as Map
 import           System.Directory
 import           System.FilePath
 
+import           CodeGen.Annotation
+import Syntax.Base
+import Syntax.ProgramVariables
+
 -- TODO : PARAM BANG
 -- TODO : start may not exist
 genProgram :: VarEnv -> ExpEnv -> TypeEnv -> FilePath -> IO ()
-genProgram venv eenv cenv filepath = return ()
-{-
-do
+genProgram venv eenv tenv filepath = do -- return ()
   genFreeSTRunTime filepath
   let
     venv1            = updateKey venv
-    eenv1            = updateKey eenv
-    dataTypes        = genDataTypes cenv
-    file             = "" in -- translateExpEnv eenv1 venv1 in
-    writeFile (targetFileName filepath) (genPragmas ++ genImports ++ dataTypes ++ file)
---    writeFile (filepath ++ "cfst.hs") (genPragmas ++ genImports ++ dataTypes ++ file ++ mainFun)
+    eenv1            = updateKey (updateEEnv eenv) -- remove updateEenv
+    dataTypes        = genDataTypes tenv
+    mainFun          = genMain eenv1 venv1 tenv
+    file             = translateEnv eenv1 tenv venv1  in
+    writeFile (targetFileName filepath) (genPragmas ++ genImports ++ dataTypes ++ file ++ "\n\n" ++ mainFun)
+
 
 -- TODO: export and remove from Main module
 targetFileName :: String -> String
 targetFileName file = replaceExtensions file "hs"
 
-updateKey :: Map.Map PBind a -> Map.Map PBind a
+updateKey :: Map.Map ProgVar a -> Map.Map ProgVar a
 updateKey m =
-  let b = PBind defaultPos $ (mkPVar 99999 "main") in
+  let b = (mkVar (Pos 99999 99999) "main") in
   case m Map.!? b of
    Nothing -> m
-   Just e  -> Map.insert (PBind defaultPos $ (mkPVar 999999 "_main")) e (Map.delete b m)
+   Just e  -> Map.insert ((mkVar (Pos 99999 99999) "_main")) e (Map.delete b m)
 
 genImports :: String
-genImports = "import FreeSTRuntime\nimport Control.Monad (liftM, liftM2)\n\n"
+genImports = "import FreeSTRuntime\n\n"
 
 genPragmas :: String
 genPragmas = "-- Target Haskell code\n{-# LANGUAGE BangPatterns #-}\n\n"
 
-genMain :: ExpEnv  -> VarEnv -> HaskellCode
-genMain eenv venv =
-  case venv Map.!? (PBind defaultPos $ (mkPVar 999999 "_main")) of
-    Just t ->    
-      let
---        (_,e)    = eenv Map.! (PBind defaultPos "_main")      LAMBDA
-        e        = Unit defaultPos
-        m        = monadicFuns eenv
-        m2       = annotateAST m (PBind defaultPos $ (mkPVar 999999 "_main")) e
-        h        = evalState (translate m m2 e) 0 in
-      if m Map.! (PBind defaultPos $ (mkPVar 999999 "_main")) then  -- TODO: tmp start position
+genMain :: ExpEnv  -> VarEnv -> TypeEnv -> HaskellCode
+genMain eenv venv tenv =
+  let fm = top eenv tenv venv
+      mainVar = (mkVar (Pos 99999 99999) "_main")
+      t    = venv Map.! mainVar
+      ioT  = fm Map.! mainVar in
+      if isIO ioT then
         "main = _main >>= \\res -> putStrLn (show (res :: " ++ show t ++ "))\n\n"
       else
         "main = putStrLn (show _main)\n\n"
-    Nothing -> ""
+
+-- genMain :: ExpEnv  -> VarEnv -> HaskellCode
+-- genMain eenv venv =
+--   case venv Map.!? (mkVar 999999 "_main") of
+--     Just t ->    
+--       let
+-- --        (_,e)    = eenv Map.! (PBind defaultPos "_main")      LAMBDA
+--         e        = Unit defaultPos
+--         m        = monadicFuns eenv
+--         m2       = annotateAST m (PBind defaultPos $ (mkPVar 999999 "_main")) e
+--         h        = evalState (translate m m2 e) 0 in
+--       if m Map.! (PBind defaultPos $ (mkPVar 999999 "_main")) then  -- TODO: tmp start position
+--         "main = _main >>= \\res -> putStrLn (show (res :: " ++ show t ++ "))\n\n"
+--       else
+--         "main = putStrLn (show _main)\n\n"
+--     Nothing -> ""
 
 -- Generates the FreeST runtime module
 genFreeSTRunTime :: FilePath -> IO ()
 genFreeSTRunTime filepath =
   let path = takeDirectory filepath in
   writeFile (path ++ "/FreeSTRuntime.hs")
---    ("{-# LANGUAGE FlexibleInstances #-}\nmodule FreeSTRuntime (_fork, _new, _send, _receive, Skip) where\n\n" ++
-    ("module FreeSTRuntime (_fork, _new, _send, _receive, return') where\n\n" ++
+    ("{-# LANGUAGE FlexibleInstances #-}\nmodule FreeSTRuntime (_fork, _new, _send, _receive, Skip) where\n\n" ++
+--    ("module FreeSTRuntime (_fork, _new, _send, _receive) where\n\n" ++
      genFreeSTRunTimeImports ++ "\n\n" ++ 
      genChannelEnd ++ "\n\n" ++  
-     genFreeSTRunTimeUtils ++ "\n\n" ++
      genFork ++ "\n\n" ++ genNew ++ "\n\n" ++
-     genSend ++ "\n\n" ++ genReceive) --  ++ "\n\n" ++ genSkip)
+     genSend ++ "\n\n" ++ genReceive ++ "\n\n" ++ genSkip)
 
 -- genSkip :: String
 -- genSkip = "type Skip = (Chan (), Chan ())\n\ninstance {-# Overlaps #-} Show Skip where\n  show _ = \"Skip\""
@@ -83,30 +96,25 @@ genFreeSTRunTime filepath =
 genFork :: String
 genFork = "_fork e = do\n  forkIO e\n  return ()"
 
-genFreeSTRunTimeUtils :: String
-genFreeSTRunTimeUtils = "return' :: a -> IO a\nreturn' = return"
+-- -- With channels
+-- -- Two channels
+-- genFreeSTRunTimeImports :: String
+-- genFreeSTRunTimeImports =
+--   "import Control.Concurrent (forkIO)\nimport Control.Concurrent.Chan.Synchronous\nimport Unsafe.Coerce"
 
--- With channels
--- Two channels
-genFreeSTRunTimeImports :: String
-genFreeSTRunTimeImports =
-  "import Control.Concurrent (forkIO)\nimport Control.Concurrent.Chan.Synchronous\nimport Unsafe.Coerce"
+genChannelEnd = "type ChannelEnd a b = (Chan a, Chan b)"
 
-genChannelEnd = "type ChannelEnd a b = IO (Chan a, Chan b)"
+-- genNew :: String
+-- genNew = "_new :: IO (ChannelEnd a b, ChannelEnd b a)\n_new = do\n  ch1 <- newChan\n  ch2 <- newChan\n  return (return (ch1,ch2), return(ch2,ch1))"
 
-genNew :: String
-genNew = "_new :: IO (ChannelEnd a b, ChannelEnd b a)\n_new = do\n  ch1 <- newChan\n  ch2 <- newChan\n  return (return (ch1,ch2), return(ch2,ch1))"
-
-genSend :: String
-genSend =
-  "_send :: ChannelEnd a b -> IO c -> IO (ChannelEnd a b)\n_send ch x  = do\n    ch1 <- ch\n    y <- x\n    writeChan (snd ch1) (unsafeCoerce y)\n    return ch"
+-- genSend :: String
+-- genSend =
+--   "_send :: ChannelEnd a b -> IO c -> IO (ChannelEnd a b)\n_send ch x  = do\n    ch1 <- ch\n    y <- x\n    writeChan (snd ch1) (unsafeCoerce y)\n    return ch"
 
 
-genReceive :: String
-genReceive = "_receive :: ChannelEnd a b -> IO (IO c, ChannelEnd a b)\n_receive ch = do\n  ch1 <- ch\n  a <- readChan (fst ch1)\n  return (return $ unsafeCoerce a, ch)\n"
+-- genReceive :: String
+-- genReceive = "_receive :: ChannelEnd a b -> IO (IO c, ChannelEnd a b)\n_receive ch = do\n  ch1 <- ch\n  a <- readChan (fst ch1)\n  return (return $ unsafeCoerce a, ch)\n"
 
-
-{-
 -- one channel
 genFreeSTRunTimeImports :: String
 genFreeSTRunTimeImports =
@@ -116,26 +124,27 @@ genNew :: String
 genNew = "_new = do\n  ch <- newChan\n  return (ch, ch)"
 
 genSend :: String
-genSend = "_send x ch  = do\n  writeChan ch (unsafeCoerce x)\n  return ch"
+genSend = "_send ch x  = do\n  writeChan ch (unsafeCoerce x)\n  return ch"
 
 genReceive :: String
 genReceive = "_receive ch = do\n  a <- readChan ch\n  return (unsafeCoerce a, ch)"
--}
+
+genSkip :: String
+genSkip = "type Skip = Chan ()\n\ninstance {-# Overlaps #-} Show Skip where\n  show _ = \"Skip\""
   
--- With MVar
+-- -- With MVar
 
-{-
-genFreeSTRunTimeImports :: String
-genFreeSTRunTimeImports =
-  "import Control.Concurrent (forkIO, newEmptyMVar, putMVar, takeMVar)\nimport Unsafe.Coerce\n\n"
+-- {-
+-- genFreeSTRunTimeImports :: String
+-- genFreeSTRunTimeImports =
+--   "import Control.Concurrent (forkIO, newEmptyMVar, putMVar, takeMVar)\nimport Unsafe.Coerce\n\n"
 
-genNew :: String
-genNew = "_new = do\n  m1 <- newEmptyMVar\n  m2 <- newEmptyMVar\n  return ((m1, m2), (m2, m1))"
+-- genNew :: String
+-- genNew = "_new = do\n  m1 <- newEmptyMVar\n  m2 <- newEmptyMVar\n  return ((m1, m2), (m2, m1))"
 
-genSend :: String
-genSend = "_send x (m1, m2) = do\n  putMVar m2 (unsafeCoerce x)\n  return (m1, m2)"
+-- genSend :: String
+-- genSend = "_send x (m1, m2) = do\n  putMVar m2 (unsafeCoerce x)\n  return (m1, m2)"
 
-genReceive :: String
-genReceive = "_receive (m1, m2) = do\n  a <- takeMVar m1\n  return ((unsafeCoerce a), (m1, m2))"
--}
--}
+-- genReceive :: String
+-- genReceive = "_receive (m1, m2) = do\n  a <- takeMVar m1\n  return ((unsafeCoerce a), (m1, m2))"
+-- -}

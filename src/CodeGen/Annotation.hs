@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiWayIf #-}
 module CodeGen.Annotation where
 
 import           Syntax.Expressions
@@ -10,245 +11,579 @@ import           Syntax.ProgramVariables
 import           Control.Monad.State
 import           Data.List
 import qualified Data.Map.Strict as Map
-
+import Debug.Trace -- DEbug
+import  Utils.FreestState (tMapWithKeyM)
 import qualified Data.Traversable as Traversable
 
 import Utils.PreludeLoader
--- type AST = Map.Map Expression Bool
+type AST = Map.Map Expression NodeType
+type AnnFunMap = Map.Map ProgVar NodeType
 
--- IOType
-data NodeState =
-    IOState
-  | PureState
-  | ArrowState NodeState NodeState
-  deriving (Eq, Show) -- Show debug
+data NodeType =
+    IOType
+  | PureType
+  | ArrowType NodeType NodeType
+  deriving Eq
 
-type AVarEnv = Map.Map ProgVar NodeState -- TODO: change name
+--  -- Show debug
+-- instance Show NodeType where
+--   show IOType = "IOType"
+--   show PureType = "PureType"
+-- --  show (ArrowType t1 t2) = show t1 ++ " -> " ++ show t2
+--   show (ArrowType t1 t2) = "(" ++ show t1 ++ " -> " ++ show t2 ++ ")"
 
-instance Ord NodeState where
-  IOState   <= (ArrowState _ _) = True  
-  PureState <= IOState          = True  
-  _         <= _                = False
-
--- type VarEnv = Map.Map ProgVar TypeScheme
--- type TypeEnv = Map.Map TypeVar (Kind, TypeScheme)
-
-annotateVenv :: TypeEnv -> VarEnv -> AVarEnv
-annotateVenv tenv =
-  Map.foldrWithKey (\k t avenv -> Map.insert k (typeAnnotation tenv t) avenv) Map.empty
-
+-- Show fun create
+instance Show NodeType where
+  show IOType = "io"
+  show PureType = "p"
+  show (ArrowType t1 t2) = show t1 ++ "_" ++ show t2
  
--- annotates each type with information about it's state (NodeState)
-typeAnnotation :: TypeEnv -> TypeScheme -> NodeState
-typeAnnotation _ (TypeScheme _ _ (Basic _ _)) = PureState
-typeAnnotation _ (TypeScheme _ _ (TypeVar _ _)) = PureState -- ??
-typeAnnotation tenv (TypeScheme _ _ (Fun _ _ t1 t2)) =
-  ArrowState (typeAnnotation tenv (fromType t1)) (typeAnnotation tenv (fromType t2))
-typeAnnotation tenv (TypeScheme _ _ (PairType _ t1 t2)) =
-  max (typeAnnotation tenv (fromType t1)) (typeAnnotation tenv (fromType t2))
-typeAnnotation _ (TypeScheme _ _ (Datatype _ _)) = PureState -- TODO
-typeAnnotation tenv (TypeScheme _ _ (TypeName _ x)) =
-  typeAnnotation tenv $ snd $ tenv Map.! x
-typeAnnotation _ _ = IOState
+instance Ord NodeType where
+  IOType   <= (ArrowType _ _) = True  
+  PureType <= IOType          = True  
+  _        <= _               = False
+
+isIO :: NodeType -> Bool
+isIO (ArrowType _ s2) = isIO s2
+isIO IOType           = True
+isIO _                = False
+
+-- Annotation of the variable environment
 
 -- TODO: CHANGE NAME
-top :: ExpEnv -> TypeEnv -> VarEnv -> AVarEnv
-top eenv tenv venv = findFixedPoint eenv (annotateVenv tenv venv)
 
-findFixedPoint :: ExpEnv -> AVarEnv -> AVarEnv
+initialEnv :: VarEnv -> AnnFunMap
+initialEnv = Map.foldrWithKey (\k t m -> Map.insert k (funToArrow t) m) Map.empty
+
+funToArrow :: TypeScheme -> NodeType
+funToArrow (TypeScheme _ _ (Fun _ _ t1 t2)) =
+  ArrowType (funToArrow (fromType t1)) (funToArrow (fromType t2))
+funToArrow _ = PureType
+
+top :: ExpEnv -> TypeEnv -> VarEnv -> AnnFunMap
+top eenv tenv venv = findFixedPoint eenv (initialEnv venv) -- (annotateVenv tenv venv)
+
+findFixedPoint :: ExpEnv -> AnnFunMap -> AnnFunMap
 findFixedPoint eenv avenv
   | avenv == avenv' = avenv
   | otherwise = findFixedPoint eenv avenv'
   where avenv' = annotateFunction avenv eenv
 
-annotateFunction :: AVarEnv -> ExpEnv -> AVarEnv
-annotateFunction = Map.foldrWithKey (\f e m -> insert f e m)
-  where insert f e m = Map.adjust (updateRetType (annFun m e)) f m
-          
-updateRetType :: NodeState -> NodeState -> NodeState
-updateRetType upState (ArrowState s1 s2)  =
-  ArrowState s1 $ updateRetType upState s2
-updateRetType upState _ = upState
 
-toList :: NodeState -> [NodeState]
-toList (ArrowState s1 s2) = s1 : toList s2
-toList s                  = [s]
 
-annFun :: AVarEnv -> Expression -> NodeState
-annFun _ (Unit _) = PureState
-annFun _ (Integer _ _) = PureState
-annFun _ (Character _ _) = PureState
-annFun _ (Boolean _ _) = PureState
+annotateFunction :: AnnFunMap -> ExpEnv -> AnnFunMap
+annotateFunction = Map.foldrWithKey insert -- (\f t m -> insert f t m)
+  where insert f t m = Map.adjust (updateLastType (annFun m t)) f m
+--          Map.insert f (annFun m e) m
+          -- let (t, m1) = annFun m e in
+          -- Map.insert f (normIO t) m1 -- f m
+
+updateLastType :: NodeType -> NodeType -> NodeType
+updateLastType exp a@(ArrowType t1 t2)  = 
+  ArrowType t1 (updateLastType exp t2)
+updateLastType exp t = max exp t
+
+
+
+annFun :: AnnFunMap -> Expression -> NodeType
+annFun _ (Unit _) = PureType
+annFun _ (Integer _ _) = PureType
+annFun _ (Character _ _) = PureType
+annFun _ (Boolean _ _) = PureType
 annFun m (ProgVar _ x) = annVar m x
-annFun m (Lambda _ _ _ _ e) = annFun m e
+annFun m l@(Lambda _ _ _ _ e) =
+  annFun m e
 annFun m (App _ e1 e2) = max (annFun m e1) (annFun m e2)
+annFun m (TypeApp _ x _) = annVar m x
 annFun m (Pair _ e1 e2) = max (annFun m e1) (annFun m e2)
 annFun m (BinLet _ _ _ e1 e2) = max (annFun m e1) (annFun m e2)
-annFun m (Case _ e cm) = PureState -- TODO: TMP
-annFun m (TypeApp _ x _) = annVar m x
-annFun m (Conditional _ e1 e2 e3) = max (max (annFun m e1) (annFun m e2)) (annFun m e3)
 annFun m (UnLet _ _ e1 e2) = max (annFun m e1) (annFun m e2)
+annFun m (Conditional _ e1 e2 e3) =
+  max (annFun m e1) (max (annFun m e2) (annFun m e3))
+annFun m (Case _ e cm) =
+  Map.foldr (\ce acc -> max acc (annFun m (snd ce))) (annFun m e) cm
 -- Session types & Fork
-annFun _ _ = IOState
+annFun m _ = IOType 
 
-annVar :: AVarEnv -> ProgVar -> NodeState
-annVar m x
-  | Map.member x m = last $ toList $ m Map.! x
-  | otherwise      = PureState
+annVar :: AnnFunMap -> ProgVar -> NodeType
+annVar m x =
+  case m Map.!? x of
+    Just t  -> lastType t
+    Nothing -> PureType
+
+
+lastType :: NodeType -> NodeType
+lastType (ArrowType _ s) = lastType s
+lastType s = s
+
+topExps :: ExpEnv -> TypeEnv -> VarEnv -> (AnnFunMap, AST)
+topExps eenv tenv venv =
+    let funMap = fm in (funMap, findExpFixedPoint funMap eenv Map.empty)
+  where fm = top eenv tenv venv
+  
+-- type ExpEnv = Map.Map ProgVar Expression
+findExpFixedPoint :: AnnFunMap -> ExpEnv -> AST -> AST
+findExpFixedPoint m eenv ast
+  | ast == ast' = ast
+  | otherwise = findExpFixedPoint m eenv ast'
+  where ast' = annotateAST m ast eenv
+
+-- annotateAST m = Map.foldrWithKey (\f e ast -> fst $ annExp m ast (nodeType f)  e)
+annotateAST :: AnnFunMap -> AST -> ExpEnv -> AST
+annotateAST m = Map.foldrWithKey (\f e ast -> fst $ annExp m ast (nodeType f)  e)
+   where nodeType f = -- lastType (m Map.! f)
+            case m Map.!? f of
+              Just t -> lastType t
+              Nothing -> PureType
+
+annPVar :: AnnFunMap -> ProgVar -> NodeType
+annPVar m x =
+  case m Map.!? x of
+    Just t  -> t
+    Nothing -> PureType
+
+updateParam :: NodeType -> NodeType -> NodeType
+updateParam IOType (ArrowType _ t2) = ArrowType IOType (updateLastType IOType t2)
+updateParam _ t                     = t
+
+annExp :: AnnFunMap -> AST -> NodeType -> Expression -> (AST, NodeType)
+-- Basic values
+annExp _ ast t e@(Unit _)                  = (Map.insert e PureType ast, PureType)
+annExp _ ast t e@(Integer _ _)             = (Map.insert e PureType ast, PureType)
+annExp _ ast t e@(Character _ _)           = (Map.insert e PureType ast, PureType)
+annExp _ ast t e@(Boolean _ _)             = (Map.insert e PureType ast, PureType)
+-- Variable
+annExp fm ast t e@(ProgVar _ x)            =
+  let t1 = annPVar fm x
+      maxt = lastType t1 in --updateLastType t t1 in
+      (Map.insert e t1 ast, t1)
+-- Abstraction intro and elim  
+annExp fm ast t e@(Lambda _ _ x _ e1) =
+  let (ast1, t1) = annExp fm ast t e1
+      maxt       = ArrowType PureType (max t t1) in
+    (Map.insert e maxt ast1, maxt) -- TODO: max??
+
+annExp fm ast t e@(App _ e1 e2) =
+  let (ast1, t1) = annExp fm ast t e1
+      (ast2, t2) = annExp fm ast1 PureType e2
+      lt2 = (lastType t2)
+      t3 = (updateLastType (max t lt2) (updateParam lt2 t1))
+    --  t3 = (updateParam lt2 t1)
+--      t4 = (updateLastType (max t t2) (updateParam t2 t1))
+      ast3 = Map.insert e1 t3 ast2 in -- This is tricky (2nd insert) 
+    (Map.insert e (lastType t3) ast3, lastType t3)
+      
+-- Pair intro and elim    
+annExp fm ast t e@(Pair _ e1 e2) =
+  let (ast1, t1) = annExp fm ast t e1
+      (ast2, t2) = annExp fm ast1 t e2
+      maxt1      = max t (max t1 t2) in
+      (Map.insert e maxt1 ast2, maxt1)
+      
+annExp fm ast t e@(BinLet _ _ _ e1 e2) =
+  let (ast1, t1) = annExp fm ast t e1
+      maxt1      = max t t1
+      (ast2, t2) = annExp fm ast1 maxt1 e2
+      maxt2       = max maxt1 t2 in
+    (Map.insert e maxt2 ast2, maxt2)    
+-- Datatype elim  
+annExp fm ast t e@(Case _ e1 cm) =
+  let (ast1, t1) = annExp fm ast t e1
+      (ast2, t2) =
+        Map.foldr (\ce (acc, t1) -> let (x,y) = annExp fm acc t (snd ce) in
+                      (x, max y t1)) (ast1, PureType) cm
+      maxT = max t1 t2
+  in (Map.insert e maxT ast2, maxT)               
+          
+-- Type application
+annExp fm ast t e@(TypeApp _ x _) =
+  let t1 = annPVar fm x
+      maxt = lastType t1 in --updateLastType t t1 in
+      (Map.insert e t1 ast, t1)
+  
+-- Boolean elim
+annExp fm ast t e@(Conditional _ e1 e2 e3) =
+  let (ast1, t1) = annExp fm ast t e1
+      (ast2, t2) = annExp fm ast1 t e2
+      (ast3, t3) = annExp fm ast2 t e3
+      maxT       = max t1 (max t2 t3) in
+      (Map.insert e maxT ast3, maxT)
+
+-- Let  
+annExp fm ast t e@(UnLet (Pos p _) _ e1 e2) =
+  let (ast1, t1) = annExp fm ast t e1
+      maxt1      = max t t1
+      (ast2, t2) = annExp fm ast1 maxt1 e2
+      maxt2       = max maxt1 t2 in
+    (Map.insert e maxt2 ast2, maxt2)  
+  
+-- Fork
+annExp fm ast t e@(Fork _ e1) = 
+  let ast1 = annExp fm ast IOType e1 in
+    (Map.insert e IOType (fst ast1), IOType)  
+
+-- Session Types
+annExp _ ast _ e@(New _ _) = (Map.insert e IOType ast, IOType)
+annExp fm ast _ e@(Receive _ e1) =
+  let (ast1,_) = annExp fm ast PureType e1 in
+    (Map.insert e IOType ast1, IOType)
+annExp fm ast _ e@(Send _ e1) =
+  let (ast1,_) = annExp fm ast PureType e1 in
+    (Map.insert e IOType ast1, PureType)    
+annExp fm ast t e@(Match _ e1 cm) =
+  let (ast1, t1) = annExp fm ast PureType e1
+      (ast2, t2) =
+        Map.foldr (\ce (acc, t1) -> let (x,y) = annExp fm acc t (snd ce) in
+                      (x, max y t1)) (ast1, PureType) cm
+      maxT = max t1 t2
+  in (Map.insert e maxT ast2, maxT)
+  
+annExp fm ast t e@(Select _ x e1) =
+  let (ast1,_) = annExp fm ast PureType e1 in
+    (Map.insert e IOType ast1, IOType)
+ 
+
 
 type HaskellCode = String
+type GenFunsMap = Map.Map String HaskellCode
 
-type TranslateMonad = State Int
+data TranslateState = TranslateState {
+  nextIndex  :: Int
+, genFunsMap :: GenFunsMap
+, haskellCode :: HaskellCode
+, annFunMap :: AnnFunMap
+, ast :: AST
+}
 
+type TranslateM = State TranslateState
+
+initialState :: AnnFunMap -> AST -> TranslateState
+initialState m ast = TranslateState {
+  nextIndex  = 0
+, genFunsMap = Map.empty
+, haskellCode = ""
+, annFunMap = m
+, ast = ast
+}
+  
 -- Gets the next fresh var based on the state
-nextFresh :: TranslateMonad String
+nextFresh :: TranslateM String
 nextFresh = do
-  fresh <- get
-  modify (+1)
-  return $ "_x" ++ show fresh
+  s <- get
+  let next = nextIndex s
+  modify (\s -> s{nextIndex = next + 1})
+  return $ "_x" ++ show next
 
--- translateEEnv :: ExpEnv -> TypeEnv -> VarEnv -> HaskellCode
--- translateEEnv eenv tenv venv =
---   let m = top eenv tenv venv in
---     Map.foldrWithKey (\f e acc -> acc ++ "\n\n" ++ show f ++ " = "
---                        ++ (fst $ evalState(translate m (isIO (m Map.! f)) e) 0)) "" eenv
+-- Adds an element to the map
+addFun :: String -> HaskellCode -> TranslateM ()
+addFun k v = do
+  modify (\s -> s{genFunsMap = Map.insert k v (genFunsMap s)})
 
+funMember :: String -> TranslateM Bool
+funMember f = do
+  m <- getGenFunsMap
+  return $ Map.member f m
 
--- --translateExpr :: Code to translate -> Expected -> Found -> Translated code
--- translateExpr :: HaskellCode -> Bool -> Bool -> HaskellCode -- TODO: check other cases
--- translateExpr code True False = "return1 " ++ code
--- translateExpr code _ _ = code
+getGenFunsMap :: TranslateM GenFunsMap
+getGenFunsMap = do 
+  s <- get
+  return $ genFunsMap s
 
--- translate :: AVarEnv -> Bool -> Expression -> TranslateMonad (HaskellCode, Bool)
--- translate _ b (Unit _) = return $ (translateExpr "()" b False, b)
--- translate _ b (Integer _ i) = return $ (translateExpr (show i) b False, b)
--- translate _ b (Boolean _ b1) = return $ (translateExpr (show b1) b False, b)
--- translate avenv b (ProgVar _ x) =
--- --  error $ show avenv
---   case avenv Map.!? x of
---     Just s -> do
---       let io = isIO s
---       return $ (translateExpr (show x) io b, io)
---     Nothing ->
---       if b
---       then return $ ("return2 " ++ show x, True) -- TODO: ??
---       else return $ (translateExpr (show x) False False, False) -- TODO: False False ?? 
+getAnnFunMap :: TranslateM AnnFunMap
+getAnnFunMap = do 
+  s <- get
+  return $ annFunMap s
 
--- translate avenv b (Lambda _ m x t e) = do -- PARAMS HERE
---   -- TODO: typeEnv -> Map.empty
---   -- TODO: should not run typeAnnotation again
---   h1 <- translate (Map.insert x (typeAnnotation Map.empty (fromType t)) avenv) b e
--- --  let h1 = translate avenv b e in
---   return $ ("\\" ++ show x ++ showArrow m ++ (fst h1), b)
+getAST :: TranslateM AST
+getAST = do 
+  s <- get
+  return $ ast s  
+
+getHaskellCode :: TranslateM HaskellCode
+getHaskellCode = do
+  s <- get
+  return $ haskellCode s
   
---   -- TODO: pensar args e lets (intro de vars)
--- translate avenv b (UnLet _ x e1 e2) = do
--- --  let avenv1 = (Map.insert x PureState avenv) -- TODO: Pure?
---   (h1, b1) <- translate avenv b e1
---   (h2, b2) <- translate avenv b e2
---   -- TODO: Are there other cases??  
---   if b then
---     return $ (h1 ++ " >>= \\" ++ show x ++ " -> " ++ h2, b) -- TODO: b1 || b2 ??
---   else
---     return $ ("let " ++ show x ++ " = " ++ h1 ++ " in " ++ h2, False)
-
--- translate avenv b (Conditional _ e1 e2 e3) = do -- TODO: if b1, tirar do monad
---   (h1, b1) <- translate avenv False e1
---   (h2, b2) <- translate avenv b e2
---   (h3, b3) <- translate avenv b e3
---   return ("if " ++ h1 ++ " then " ++ h2 ++ " else " ++ h3, b1 || b2 || b3)
+addHaskellCode :: ProgVar -> HaskellCode -> TranslateM ()
+addHaskellCode fname c =  
+  modify (\s -> s{haskellCode = (haskellCode s) ++ "\n\n" ++
+                   show fname ++ " = " ++ c})
   
--- translate avenv b (BinLet _ x y e1 e2) = do
 
---   -- let avenv1 = (Map.insert x PureState avenv)
---   --     avenv2 = (Map.insert y PureState avenv1)
---   (h1, b1) <- translate avenv b e1
---   (h2, b2) <-  translate avenv b e2
---   -- TODO: Are there other cases??  
---   if b then
---     return $ (h1 ++ " >>= \\(" ++ show x ++ "," ++ show y ++ ") -> " ++ h2, b) -- TODO: b1 || b2 ??
---   else
---     return $ ("let (" ++ show x ++ "," ++ show y ++ ") = " ++ h1 ++ " in " ++ h2, False)
-        
--- translate avenv _ (Fork _ e) = do
---   h <- translate avenv True e
---   return $ ("_fork (" ++ (fst h) ++ ")", True) -- " >> return ())"
+-- Creates a new function based on the types
+-- createNewFun :: Function name -> function to call ->
+--                 [(Expected type, actual type)] -> haskell code
+createNewFun :: String -> ProgVar -> [(NodeType, NodeType)] -> TranslateM ()
+createNewFun s x xs = do
+  m <- getGenFunsMap
+  if s `Map.member` m
+    then return ()
+    else do
+      params <- sequence $ take (length xs-1) (repeat (nextFresh))
+      c <- genFunCode x xs params []
+      let ps = foldl (\acc a -> acc ++ "\\" ++ a ++ " -> ") "" params
+      addFun s (ps ++ c)
+      
+genFunCode :: ProgVar -> [(NodeType, NodeType)] -> [String] -> [String] -> TranslateM HaskellCode
+genFunCode pv ((x,y):[]) _ ys
+  | x /= y = return $ "return (" ++ foldl (\acc a -> acc ++ " " ++ a) (show pv) ys ++ ")"
+  | otherwise = return $ foldl (\acc a -> acc ++ " " ++ a) (show pv) ys
+genFunCode pv ((x1,x2):xs) (y:ys) acc
+  | x1 /= x2 = do
+      f <- nextFresh   
+      let c1 = y ++ " >>= \\" ++ f ++ " -> "
+      c2 <- genFunCode pv xs ys (acc ++ [f])
+      return $ c1 ++ c2
+  | otherwise = genFunCode pv xs ys (acc ++ [y])
+genFunCode pv xs ys acc = error $ show acc
 
--- translate _ _ (New _ _) = return $ ("_new", True)
+zipNodeTypes :: NodeType -> NodeType -> [(NodeType, NodeType)]
+zipNodeTypes (ArrowType s1 s2) (ArrowType s3 s4) = (s1, s3) : zipNodeTypes s2 s4
+zipNodeTypes t1 t2 = [(t1, t2)]
 
--- translate avenv _ (Receive _ e) = do -- TODO: not ok, argument cant be IO
---   (h, b) <- translate avenv False e  
---   if b then do
---     v <- nextFresh
---     return (h ++ " >>= \\" ++ v ++ " -> " ++ "_receive " ++ v, True)
---   else
---     return ("_receive " ++ h, True)
+showGenFunMap :: GenFunsMap -> String
+showGenFunMap = Map.foldlWithKey (\acc h b -> acc ++ "\n\n" ++ h ++ " = " ++ b) ""
 
--- translate avenv _ (Send _ e1) = do -- ver arg
---   (h1, _) <- translate avenv False e1
---   return ("(_send " ++ h1 ++ ")", True)
+funName :: ProgVar -> NodeType -> String
+funName p t =
+  show t ++ "_" ++ show p
 
--- translate avenv b e@(App _ e1 e2) = do
---   (h1, b1) <- translate avenv b e1 -- aqui nao pode ser b/False, tem de ser o param...
---   (h2, _)  <- translate avenv False e2 -- aqui nao pode ser b/False, tem de ser o param...
---   if b && not b1 then
---     return $ ("return (" ++ h1 ++ " " ++ h2 ++ ")", True)
---   else
---     return $ ("(" ++ h1 ++ " " ++ h2 ++ ")", b)
+translateEnv :: ExpEnv -> TypeEnv -> VarEnv -> HaskellCode
+translateEnv eenv tenv venv =
+  let (m, ast) = topExps eenv tenv venv
+      s = execState (tMapWithKeyM addCode eenv) (initialState m ast) in
+     haskellCode s ++ "\n\n" ++ showGenFunMap (genFunsMap s)
 
--- translate _ _ e = return $ ("ERR: |" ++ show e ++ "|", False)
+addCode :: ProgVar -> Expression -> TranslateM ()
+addCode f e = do
+  m <- getAnnFunMap
+  ast <- getAST
+  (c,_) <- translate m ast (nodeType f m) e
+  addHaskellCode f c
+  where
+    nodeType f m =
+        case m Map.!? f of
+              Just t -> lastType t
+              Nothing-> PureType
+              
+isFunction :: ProgVar -> AnnFunMap -> Bool
+isFunction = Map.member 
 
+translateExpr :: NodeType -> NodeType -> HaskellCode -> TranslateM HaskellCode
+translateExpr IOType PureType h = return $ "return " ++ h
+translateExpr _ _ h = return h
+              
+translate :: AnnFunMap -> AST -> NodeType -> Expression -> TranslateM (HaskellCode, NodeType)
+-- Basic values
+-- I will not get from the map because a basic type is always pure
+translate _ _ t (Unit _) = do 
+  c <- translateExpr t PureType "()"
+  return (c, t)
+translate _ _ t (Integer _ i) = do
+  c <- translateExpr t PureType (show i)
+  return (c, t)
+translate _ _ t (Character _ c) = do
+  c <- translateExpr t PureType (show c)
+  return (c, t)
+translate _ _ t (Boolean _ b) = do
+  c <- translateExpr t PureType (show b)
+  return (c, t)
 
-
--- sender s 10
--- App (App sender s) 10
-
-isIO :: NodeState -> Bool
-isIO (ArrowState _ s2) = isIO s2
-isIO IOState           = True
-isIO _                 = False
-
-
-
-
-
-
--- TESTING
-
+-- Variable
+translate m ast t e@(ProgVar _ x) = do
+  if not (isFunction x m) then do
+     let t1 = ast Map.! e
+     c <- translateExpr t PureType (show x)
+     return (c, t)
+  else do -- magic
+    let t = (m Map.! x)
+    let mat = typeMatch t (ast Map.! e)
+    if t /= mat then do -- magic
+      let types = zipNodeTypes t mat 
+      let fname = funName x mat
+      createNewFun fname x types 
+      return (fname, IOType)
+    else do
+      let t1 = ast Map.! e
+      return (show x, t1)
+-- Abstraction intro and elim
+translate m ast t (Lambda _ _ x _ e) = do
+  (h1,nt) <- translate m ast t e
+  return ("(\\" ++ show x ++ " -> " ++ h1 ++ ")", nt)
   
--- Simple mutually recursive test
-mutRecVenv :: VarEnv
-mutRecVenv = Map.union prelude (Map.fromList [(mkVar (Pos 21 1) "a",TypeScheme (Pos 21 5) [] (Basic (Pos 21 5) IntType)),(mkVar (Pos 17 1) "g",TypeScheme (Pos 17 5) [] (Basic (Pos 17 5) IntType)),(mkVar (Pos 25 1) "main",TypeScheme (Pos 25 8) [] (Basic (Pos 25 8) IntType))])
-mutRecEenv :: ExpEnv
-mutRecEenv = Map.fromList [(mkVar (Pos 21 1) "a",UnLet (Pos 23 3) (mkVar (Pos 23 7) "0_x") (ProgVar (Pos 23 11) (mkVar (Pos 23 11) "g")) (ProgVar (Pos 23 16) (mkVar (Pos 23 16) "0_x"))),(mkVar (Pos 17 1) "g",UnLet (Pos 19 3) (mkVar (Pos 19 7) "1__") (Fork (Pos 19 11) (Unit (Pos 19 16))) (ProgVar (Pos 19 22) (mkVar (Pos 19 22) "a"))),(mkVar (Pos 25 1) "main",ProgVar (Pos 26 8) (mkVar (Pos 26 8) "g"))]
+translate m ast nt e@(App _ e1 e2) = do
+  (h1,t1) <- translate m ast PureType e1 -- TODO: nt?? PureType??
+  (h2,t2) <- translate m ast PureType e2
+  return ("(" ++ h1 ++ " " ++ h2 ++ ")", max nt (max t1 t2)) -- TODO: max???
 
 
--- is double program
+-- Pair intro and elim
+translate m ast nt e@(Pair _ e1 e2) = do
+  let t = ast Map.! e
+  (h1,t1) <- translate m ast PureType e1
+  (h2,t2) <- translate m ast PureType e2
 
-isDoubleVenv :: VarEnv
-isDoubleVenv = Map.union prelude (Map.fromList [(mkVar (Pos 10 1) "f",TypeScheme (Pos 10 10) [] (Fun (Pos 10 10) Un (Message (Pos 10 5) In IntType) (Basic (Pos 10 13) IntType))),(mkVar (Pos 1 1) "main", TypeScheme (Pos 1 8) [] (Basic (Pos 1 8) BoolType)),(mkVar (Pos 13 1) "sender", TypeScheme (Pos 13 15) [] (Fun (Pos 13 15) Un (Message (Pos 13 10) Out IntType) (Fun (Pos 13 22) Un (Basic (Pos 13 18) IntType) (Skip (Pos 13 25)))))])
+  if | isIO t1 && isIO t2 -> do
+        f1 <- nextFresh
+        f2 <- nextFresh
+        return (h1 ++ " >>= \\" ++ f1 ++ " -> " ++
+                h2 ++ " >>= \\" ++ f2 ++
+                " -> return (" ++ f1 ++ ", " ++ h2 ++ ")"
+               , IOType)
+     | isIO t1 -> do
+        f <- nextFresh
+        return (h1 ++ " >>= \\" ++ f ++ " -> return (" ++ f ++ ", " ++ h2 ++ ")"
+               , IOType)
+     | isIO t2 -> do
+        f <- nextFresh
+        return (h2 ++ " >>= \\" ++ f ++ " -> return (" ++ h1 ++ ", " ++ f ++ ")"
+               , IOType)
+     | isIO nt ->
+         return ("return (" ++ h1 ++ ", " ++ h2 ++ ")", PureType)
+     | otherwise ->
+         return ("(" ++ h1 ++ ", " ++ h2 ++ ")", PureType)
+         
+translate m ast t e@(BinLet _ x y e1 e2) = do
+  (h1, nt1) <- translate m ast t e1
+  (h2, nt2) <- translate m ast t e2
+  if isIO nt1 then
+    return (h1 ++ " >>= \\(" ++ show x ++ ", " ++ show y ++ ") -> " ++ h2, IOType)
+  else
+    return ("(let (" ++ show x ++ ", " ++ show y ++ ") = " ++ h1 ++ " in " ++ h2 ++ ")", max nt1 nt2)
+-- Datatype elim
+translate m ast nt (Case _ e cm) =  do
+  (h1,t1) <- translate m ast PureType e 
+  (hcase, t2) <- translateCaseMap m ast nt cm
+  return ("case " ++ h1 ++ " of {" ++ hcase ++ "}", max t1 t2) -- TODO: Can be monadic
 
-isDoubleEenv :: ExpEnv
-isDoubleEenv = Map.fromList [(mkVar (Pos 10 1) "f",Lambda (Pos 11 3) Un (mkVar (Pos 11 3) "0_c") (Message (Pos 10 5) In IntType) (BinLet (Pos 11 7) (mkVar (Pos 11 11) "1_x") (mkVar (Pos 11 14) "2_c") (Receive (Pos 11 18) (ProgVar (Pos 11 26) (mkVar (Pos 11 26) "0_c"))) (ProgVar (Pos 11 31) (mkVar (Pos 11 31) "1_x")))),(mkVar (Pos 1 1) "main",BinLet (Pos 3 3) (mkVar (Pos 3 7) "3_s") (mkVar (Pos 3 10) "4_r") (New (Pos 3 14) (Message (Pos 3 18) Out IntType)) (UnLet (Pos 4 3) (mkVar (Pos 4 7) "5__") (Fork (Pos 4 11) (App (Pos 4 17) (App (Pos 4 17) (ProgVar (Pos 4 17) (mkVar (Pos 4 17) "sender")) (ProgVar (Pos 4 24) (mkVar (Pos 4 24) "3_s"))) (Integer (Pos 4 26) 10))) (Conditional (Pos 5 3) (App (Pos 5 7) (App (Pos 5 7) (ProgVar (Pos 5 20) (mkVar (Pos 5 20) "(==)")) (App (Pos 5 7) (App (Pos 5 7) (ProgVar (Pos 5 7) (mkVar (Pos 5 7) "div")) (App (Pos 5 12) (ProgVar (Pos 5 12) (mkVar (Pos 5 12) "f")) (ProgVar (Pos 5 14) (mkVar (Pos 5 14) "4_r")))) (Integer (Pos 5 17) 2))) (Integer (Pos 5 23) 5)) (Boolean (Pos 6 5) True) (Boolean (Pos 8 5) False)))),(mkVar (Pos 13 1) "sender",Lambda (Pos 14 8) Un (mkVar (Pos 14 8) "6_c") (Message (Pos 13 10) Out IntType) (Lambda (Pos 14 10) Un (mkVar (Pos 14 10) "7_i") (Basic (Pos 13 18) IntType) (App (Pos 14 14) (Send (Pos 14 14) (ProgVar (Pos 14 19) (mkVar (Pos 14 19) "6_c"))) (App (Pos 14 22) (App (Pos 14 22) (ProgVar (Pos 14 24) (mkVar (Pos 14 24) "(*)")) (ProgVar (Pos 14 22) (mkVar (Pos 14 22) "7_i"))) (Integer (Pos 14 26) 2)))))]
+-- Type application
+translate m ast t e@(TypeApp _ x _) = do -- EQUAL TO ProgVar ????
+    let t = (m Map.! x)
+    let mat = typeMatch t (ast Map.! e)
+    if t /= mat then do -- magic
+      let types = zipNodeTypes t mat
+      let fname = funName x mat
+      createNewFun fname x types 
+      return (fname, IOType)
+    else do
+      let t1 = ast Map.! e
+      return (show x, t1)  
+
+-- Boolean elim
+translate m ast t (Conditional _ e1 e2 e3) = do
+  (h1, t1) <- translate m ast PureType e1
+  let maxTT1 = max t t1
+  (h2, t2) <- translate m ast maxTT1 e2
+  let maxT1T2 = max maxTT1 t2
+  (h3, t3) <- translate m ast maxT1T2 e3
+  let maxT = max maxT1T2 t3
+  if isIO t1 then do
+    fresh <- nextFresh
+    return (h1 ++ " >>= \\" ++ fresh ++ " -> "
+            ++ "if " ++ fresh ++ " then "
+            ++ h2 ++ " else " ++ h3, IOType)
+  else
+    return ("if " ++ h1 ++ " then "
+            ++ h2 ++ " else " ++ h3, maxT)
+
+-- Let
+translate m ast t e@(UnLet _ x e1 e2) = do
+  (h1, nt1) <- translate m ast t e1
+  (h2, nt2) <- translate m ast t e2
+  if isIO nt1 then
+    return (h1 ++ " >>= \\" ++ show x ++ " -> " ++ h2, IOType)
+  else
+    return ("(let " ++ show x ++ " = " ++ h1 ++ " in " ++ h2 ++ ")", max nt1 nt2)
+
+-- Fork
+translate m ast _ (Fork _ e) = do
+  (h1, _) <- translate m ast IOType e
+  return ("_fork (" ++ h1 ++ " >> return ())", IOType)
+
+-- Session types
+translate _ _ _ (New _ _) = return ("_new", IOType)
+translate m ast t (Send _ e) = do
+  (h1, t1) <- translate m ast PureType e
+  if isIO t1 then do
+    f <- nextFresh
+    return (h1 ++ " >>= \\" ++ f ++ " -> (_send " ++ f ++ ")", IOType) 
+  else  
+    return ("(_send " ++ h1 ++ ")", IOType)
+
+translate m ast t (Receive _ e) = do
+  (h1, t1) <- translate m ast PureType e
+  if isIO t1 then do
+    f <- nextFresh
+    return (h1 ++ " >>= \\" ++ f ++ " -> (_receive " ++ f ++ ")", IOType) 
+  else  
+    return ("(_receive " ++ h1 ++ ")", IOType)
+
+translate m ast nt e@(Select _ x e1) = do
+  (h, _) <- translate m ast PureType e1 -- PureType or nt??
+  return ("(_send " ++ h ++ " \"" ++ show x ++ "\")", IOType)
+  
+translate m ast nt (Match _ e mm) = do
+  (h1, t1) <- translate m ast PureType e 
+  v <- nextFresh
+  fresh <- nextFresh
+  (h2, t2) <- translateMatchMap fresh m ast nt mm  
+  return ("_receive " ++ h1 ++ " >>= \\(" ++ v ++  ", " ++ fresh ++
+          ") -> (case " ++ v ++ " of {" ++ h2 ++ "})", max t1 t2)   
+  
+typeMatch :: NodeType -> NodeType -> NodeType
+typeMatch (ArrowType s1 s2) (ArrowType s3 s4) = ArrowType (max s1 s3) (typeMatch s2 s4)
+typeMatch t1 t2 = max t1 t2
+
+translateCaseMap :: AnnFunMap -> AST -> NodeType -> FieldMap -> TranslateM (String, NodeType)
+translateCaseMap m ast nt =
+  Map.foldlWithKey translateCaseMap' (return ("", PureType))
+  where
+    translateCaseMap' :: TranslateM (String, NodeType) -> ProgVar ->
+                         ([ProgVar], Expression) -> TranslateM (String, NodeType)
+    translateCaseMap' acc cons (ps, e) = do
+      (h, n1) <- translate m ast nt e
+      (acc', n2) <- acc
+      return (acc' ++ "\n    " ++ show cons ++ showCaseParams ps ++ " -> " ++ h ++ ";",
+              max n1 n2)
+
+    showCaseParams :: [ProgVar] -> String
+    showCaseParams [] = ""
+    showCaseParams args = foldl (\acc a -> acc ++ " " ++ show a) "" args
 
 
+translateMatchMap :: String -> AnnFunMap -> AST -> NodeType -> FieldMap -> TranslateM (String, NodeType)
+translateMatchMap fresh m ast nt =
+  Map.foldlWithKey (translateMatchMap' fresh) (return ("", PureType))
+  where
+    translateMatchMap' :: String -> TranslateM (String, NodeType) -> ProgVar ->
+                         ([ProgVar], Expression) -> TranslateM (String, NodeType)
+    translateMatchMap' fresh acc v (p:_, e) = do
+      (h, n1) <- translate m ast nt e
+      (acc', n2) <- acc
+      return (acc' ++ "\n    \"" ++ show v ++ "\" " ++
+        " -> let " ++ show p ++ " = " ++ fresh ++ " in " ++ h ++ ";", max n1 n2)
+             
 
--- -- venv tests
--- anbnVenv :: VarEnv
--- anbnVenv = Map.fromList [(mkVar (Pos 16 1) "client",TypeScheme (Pos 16 14) [] (Fun (Pos 16 14) Un (Basic (Pos 16 10) IntType) (Fun (Pos 16 62) Un (Choice (Pos 16 17) Out (Map.fromList [(mkVar (Pos 16 19) "A",Rec (Pos 16 22) (TypeVarBind (Pos 16 26) (mkVar (Pos 16 26) "0_x") (Kind (Pos 16 28) Session Lin)) (Choice (Pos 16 32) Out (Map.fromList [(mkVar (Pos 16 34) "A",Semi (Pos 16 38) (TypeVar (Pos 16 37) (mkVar (Pos 16 37) "0_x")) (Choice (Pos 16 40) Out (Map.fromList [(mkVar (Pos 16 42) "B",Skip (Pos 16 45))]))),(mkVar (Pos 16 52) "B",Skip (Pos 16 55))])))])) (Skip (Pos 16 65))))),(mkVar (Pos 22 1) "client'",TypeScheme (Pos 22 11) [TypeVarBind (Pos 22 18) (mkVar (Pos 22 18) "5_\945") (Kind (Pos 22 22) Session Lin)] (Fun (Pos 22 32) Un (Basic (Pos 22 28) IntType) (Fun (Pos 22 79) Un (Semi (Pos 22 75) (Rec (Pos 22 36) (TypeVarBind (Pos 22 40) (mkVar (Pos 22 40) "6_x") (Kind (Pos 22 42) Session Lin)) (Choice (Pos 22 46) Out (Map.fromList [(mkVar (Pos 22 48) "A",Semi (Pos 22 52) (TypeVar (Pos 22 51) (mkVar (Pos 22 51) "6_x")) (Choice (Pos 22 54) Out (Map.fromList [(mkVar (Pos 22 56) "B",Skip (Pos 22 59))]))),(mkVar (Pos 22 66) "B",Skip (Pos 22 69))]))) (TypeVar (Pos 22 77) (mkVar (Pos 22 77) "5_\945"))) (TypeVar (Pos 22 82) (mkVar (Pos 22 82) "5_\945"))))),(mkVar (Pos 51 1) "main",TypeScheme (Pos 51 8) [] (Basic (Pos 51 8) UnitType)),(mkVar (Pos 32 1) "server",TypeScheme (Pos 32 55) [] (Fun (Pos 32 55) Un (Choice (Pos 32 10) In (Map.fromList [(mkVar (Pos 32 12) "A",Rec (Pos 32 15) (TypeVarBind (Pos 32 19) (mkVar (Pos 32 19) "17_x") (Kind (Pos 32 21) Session Lin)) (Choice (Pos 32 25) In (Map.fromList [(mkVar (Pos 32 27) "A",Semi (Pos 32 31) (TypeVar (Pos 32 30) (mkVar (Pos 32 30) "17_x")) (Choice (Pos 32 33) In (Map.fromList [(mkVar (Pos 32 35) "B",Skip (Pos 32 38))]))),(mkVar (Pos 32 45) "B",Skip (Pos 32 48))])))])) (Skip (Pos 32 58)))),(mkVar (Pos 39 1) "server'",TypeScheme (Pos 39 11) [TypeVarBind (Pos 39 18) (mkVar (Pos 39 18) "21_\945") (Kind (Pos 39 22) Session Lin)] (Fun (Pos 39 72) Un (Semi (Pos 39 68) (Rec (Pos 39 29) (TypeVarBind (Pos 39 33) (mkVar (Pos 39 33) "22_x") (Kind (Pos 39 35) Session Lin)) (Choice (Pos 39 39) In (Map.fromList [(mkVar (Pos 39 41) "A",Semi (Pos 39 45) (TypeVar (Pos 39 44) (mkVar (Pos 39 44) "22_x")) (Choice (Pos 39 47) In (Map.fromList [(mkVar (Pos 39 49) "B",Skip (Pos 39 52))]))),(mkVar (Pos 39 59) "B",Skip (Pos 39 62))]))) (TypeVar (Pos 39 70) (mkVar (Pos 39 70) "21_\945"))) (TypeVar (Pos 39 75) (mkVar (Pos 39 75) "21_\945"))))]
+-- TODO: Think about alternatives to this problem
+updateEEnv :: ExpEnv -> ExpEnv
+updateEEnv = Map.foldrWithKey (\f e acc -> Map.insert f (updateEEnv' e) acc) Map.empty
 
+updateEEnv' :: Expression -> Expression
+updateEEnv' e@(ProgVar p x) =
+  if show x == "main" then (ProgVar p (mkVar p "_main"))
+  else e
 
--- idProg :: ExpEnv
--- idProg = Map.fromList [(mkVar (Pos 1 1) "id", Lambda (Pos 2 4) Un (mkVar (Pos 2 4) "1_x") (TypeVar (Pos 1 23) (mkVar (Pos 1 23) "0_a")) (ProgVar (Pos 2 8) (mkVar (Pos 2 8) "1_x"))), (mkVar (Pos 4 1) "main",App (Pos 5 8) (TypeApp (Pos 5 8) (mkVar (Pos 5 8) "id") [Basic (Pos 5 11) IntType]) (Integer (Pos 5 16) 5))]
+updateEEnv' (Lambda p m x t e) = Lambda p m x t (updateEEnv' e)
+updateEEnv' (App p e1 e2) = (App p (updateEEnv' e1) (updateEEnv' e2))
+updateEEnv' (Pair p e1 e2) = (Pair p (updateEEnv' e1) (updateEEnv' e2))
+updateEEnv' (BinLet p x y e1 e2) = (BinLet p x y (updateEEnv' e1) (updateEEnv' e2))
+-- updateEEnv' (Case Pos Expression FieldMap
 
--- sendRcvProg :: ExpEnv
--- sendRcvProg = Map.fromList [(mkVar (Pos 11 1) "client",Lambda (Pos 12 8) Un (mkVar (Pos 12 8) "0_c") (Semi (Pos 11 14) (Message (Pos 11 10) Out IntType) (Semi (Pos 11 20) (Message (Pos 11 15) In BoolType) (Skip (Pos 11 21)))) (UnLet (Pos 13 3) (mkVar (Pos 13 7) "1_c1") (App (Pos 13 12) (Send (Pos 13 12) (ProgVar (Pos 13 17) (mkVar (Pos 13 17) "0_c"))) (Integer (Pos 13 19) 5)) (BinLet (Pos 14 3) (mkVar (Pos 14 7) "2_b") (mkVar (Pos 14 10) "3_c2") (Receive (Pos 14 15) (ProgVar (Pos 14 23) (mkVar (Pos 14 23) "1_c1"))) (Unit (Pos 15 6))))),(mkVar (Pos 1 1) "main",BinLet (Pos 3 3) (mkVar (Pos 3 7) "4_w") (mkVar (Pos 3 10) "5_r") (New (Pos 3 14) (Semi (Pos 3 22) (Message (Pos 3 18) Out IntType) (Semi (Pos 3 28) (Message (Pos 3 23) In BoolType) (Skip (Pos 3 29))))) (UnLet (Pos 4 3) (mkVar (Pos 4 7) "6_x") (Fork (Pos 4 11) (App (Pos 4 17) (ProgVar (Pos 4 17) (mkVar (Pos 4 17) "client")) (ProgVar (Pos 4 24) (mkVar (Pos 4 24) "4_w")))) (BinLet (Pos 5 3) (mkVar (Pos 5 7) "7_n") (mkVar (Pos 5 10) "8_r1") (Receive (Pos 5 15) (ProgVar (Pos 5 23) (mkVar (Pos 5 23) "5_r"))) (UnLet (Pos 6 3) (mkVar (Pos 6 7) "9_r2") (App (Pos 6 12) (Send (Pos 6 12) (ProgVar (Pos 6 17) (mkVar (Pos 6 17) "8_r1"))) (App (Pos 6 21) (App (Pos 6 21) (ProgVar (Pos 6 23) (mkVar (Pos 6 23) "(>=)")) (ProgVar (Pos 6 21) (mkVar (Pos 6 21) "7_n"))) (Integer (Pos 6 26) 0))) (Unit (Pos 7 3))))))]
-
--- intListSizeProg :: ExpEnv
--- intListSizeProg = Map.fromList [(mkVar (Pos 3 1) "length'",Lambda (Pos 4 9) Un (mkVar (Pos 4 9) "0_l") (TypeName (Pos 3 11) (mkVar (Pos 3 11) "IntList")) (Case (Pos 5 3) (ProgVar (Pos 5 8) (mkVar (Pos 5 8) "0_l")) (Map.fromList [(mkVar (Pos 7 5) "Cons",([mkVar (Pos 7 10) "1_x",mkVar (Pos 7 12) "2_y"],App (Pos 7 17) (App (Pos 7 17) (ProgVar (Pos 7 19) (mkVar (Pos 7 19) "(+)")) (Integer (Pos 7 17) 1)) (App (Pos 7 21) (ProgVar (Pos 7 21) (mkVar (Pos 7 21) "length'")) (ProgVar (Pos 7 29) (mkVar (Pos 7 29) "2_y"))))),(mkVar (Pos 6 5) "Nil",([],Integer (Pos 6 12) 0))]))),(mkVar (Pos 10 1) "main",App (Pos 11 8) (ProgVar (Pos 11 8) (mkVar (Pos 11 8) "length'")) (App (Pos 11 17) (App (Pos 11 17) (ProgVar (Pos 11 17) (mkVar (Pos 11 17) "Cons")) (Integer (Pos 11 22) 5)) (App (Pos 11 25) (App (Pos 11 25) (ProgVar (Pos 11 25) (mkVar (Pos 11 25) "Cons")) (Integer (Pos 11 30) 7)) (App (Pos 11 33) (App (Pos 11 33) (ProgVar (Pos 11 33) (mkVar (Pos 11 33) "Cons")) (Integer (Pos 11 38) 23)) (App (Pos 11 42) (App (Pos 11 42) (ProgVar (Pos 11 42) (mkVar (Pos 11 42) "Cons")) (Integer (Pos 11 47) 4)) (ProgVar (Pos 11 49) (mkVar (Pos 11 49) "Nil")))))))]
-
-
--- anbnProg :: ExpEnv
--- anbnProg = Map.fromList [(mkVar (Pos 16 1) "client",Lambda (Pos 17 8) Un (mkVar (Pos 17 8) "1_n") (Basic (Pos 16 10) IntType) (Lambda (Pos 17 10) Un (mkVar (Pos 17 10) "2_c") (Choice (Pos 16 17) Out (Map.fromList [(mkVar (Pos 16 19) "A",Rec (Pos 16 22) (TypeVarBind (Pos 16 26) (mkVar (Pos 16 26) "3_x") (Kind (Pos 16 28) Session Lin)) (Choice (Pos 16 32) Out (Map.fromList [(mkVar (Pos 16 34) "A",Semi (Pos 16 38) (TypeVar (Pos 16 37) (mkVar (Pos 16 37) "3_x")) (Choice (Pos 16 40) Out (Map.fromList [(mkVar (Pos 16 42) "B",Skip (Pos 16 45))]))),(mkVar (Pos 16 52) "B",Skip (Pos 16 55))])))])) (UnLet (Pos 18 3) (mkVar (Pos 18 7) "4_c") (Select (Pos 18 11) (mkVar (Pos 18 18) "A") (ProgVar (Pos 18 20) (mkVar (Pos 18 20) "2_c"))) (App (Pos 19 3) (App (Pos 19 3) (TypeApp (Pos 19 3) (mkVar (Pos 19 3) "client'") [Skip (Pos 19 11)]) (App (Pos 19 18) (App (Pos 19 18) (ProgVar (Pos 19 20) (mkVar (Pos 19 20) "(-)")) (ProgVar (Pos 19 18) (mkVar (Pos 19 18) "1_n"))) (Integer (Pos 19 22) 1))) (ProgVar (Pos 19 25) (mkVar (Pos 19 25) "4_c")))))),(mkVar (Pos 22 1) "client'",Lambda (Pos 23 9) Un (mkVar (Pos 23 9) "7_n") (Basic (Pos 22 28) IntType) (Lambda (Pos 23 11) Un (mkVar (Pos 23 11) "8_c") (Semi (Pos 22 75) (Rec (Pos 22 36) (TypeVarBind (Pos 22 40) (mkVar (Pos 22 40) "9_x") (Kind (Pos 22 42) Session Lin)) (Choice (Pos 22 46) Out (Map.fromList [(mkVar (Pos 22 48) "A",Semi (Pos 22 52) (TypeVar (Pos 22 51) (mkVar (Pos 22 51) "9_x")) (Choice (Pos 22 54) Out (Map.fromList [(mkVar (Pos 22 56) "B",Skip (Pos 22 59))]))),(mkVar (Pos 22 66) "B",Skip (Pos 22 69))]))) (TypeVar (Pos 22 77) (mkVar (Pos 22 77) "5_\945"))) (Conditional (Pos 24 3) (App (Pos 24 6) (App (Pos 24 6) (ProgVar (Pos 24 8) (mkVar (Pos 24 8) "(==)")) (ProgVar (Pos 24 6) (mkVar (Pos 24 6) "7_n"))) (Integer (Pos 24 11) 0)) (Select (Pos 26 5) (mkVar (Pos 26 12) "B") (ProgVar (Pos 26 14) (mkVar (Pos 26 14) "8_c"))) (UnLet (Pos 28 5) (mkVar (Pos 28 9) "10_c") (Select (Pos 28 13) (mkVar (Pos 28 20) "A") (ProgVar (Pos 28 22) (mkVar (Pos 28 22) "8_c"))) (UnLet (Pos 29 5) (mkVar (Pos 29 9) "11_c") (App (Pos 29 13) (App (Pos 29 13) (TypeApp (Pos 29 13) (mkVar (Pos 29 13) "client'") [Semi (Pos 29 31) (Choice (Pos 29 21) Out (Map.fromList [(mkVar (Pos 29 23) "B",Skip (Pos 29 26))])) (TypeVar (Pos 29 33) (mkVar (Pos 29 33) "5_\945"))]) (App (Pos 29 37) (App (Pos 29 37) (ProgVar (Pos 29 39) (mkVar (Pos 29 39) "(-)")) (ProgVar (Pos 29 37) (mkVar (Pos 29 37) "7_n"))) (Integer (Pos 29 41) 1))) (ProgVar (Pos 29 44) (mkVar (Pos 29 44) "10_c"))) (Select (Pos 30 5) (mkVar (Pos 30 12) "B") (ProgVar (Pos 30 14) (mkVar (Pos 30 14) "11_c")))))))),(mkVar (Pos 51 1) "main",BinLet (Pos 53 3) (mkVar (Pos 53 7) "12_w") (mkVar (Pos 53 10) "13_r") (New (Pos 53 14) (Choice (Pos 53 18) Out (Map.fromList [(mkVar (Pos 53 20) "A",Rec (Pos 53 23) (TypeVarBind (Pos 53 27) (mkVar (Pos 53 27) "14_x") (Kind (Pos 53 29) Session Lin)) (Choice (Pos 53 33) Out (Map.fromList [(mkVar (Pos 53 35) "A",Semi (Pos 53 39) (TypeVar (Pos 53 38) (mkVar (Pos 53 38) "14_x")) (Choice (Pos 53 41) Out (Map.fromList [(mkVar (Pos 53 43) "B",Skip (Pos 53 46))]))),(mkVar (Pos 53 53) "B",Skip (Pos 53 56))])))]))) (UnLet (Pos 54 3) (mkVar (Pos 54 7) "15_t") (Fork (Pos 54 11) (App (Pos 54 17) (App (Pos 54 17) (ProgVar (Pos 54 17) (mkVar (Pos 54 17) "client")) (Integer (Pos 54 24) 25)) (ProgVar (Pos 54 27) (mkVar (Pos 54 27) "12_w")))) (UnLet (Pos 55 3) (mkVar (Pos 55 7) "16_r") (App (Pos 55 11) (ProgVar (Pos 55 11) (mkVar (Pos 55 11) "server")) (ProgVar (Pos 55 18) (mkVar (Pos 55 18) "13_r"))) (Unit (Pos 56 3))))),(mkVar (Pos 32 1) "server",Lambda (Pos 33 8) Un (mkVar (Pos 33 8) "18_c") (Choice (Pos 32 10) In (Map.fromList [(mkVar (Pos 32 12) "A",Rec (Pos 32 15) (TypeVarBind (Pos 32 19) (mkVar (Pos 32 19) "19_x") (Kind (Pos 32 21) Session Lin)) (Choice (Pos 32 25) In (Map.fromList [(mkVar (Pos 32 27) "A",Semi (Pos 32 31) (TypeVar (Pos 32 30) (mkVar (Pos 32 30) "19_x")) (Choice (Pos 32 33) In (Map.fromList [(mkVar (Pos 32 35) "B",Skip (Pos 32 38))]))),(mkVar (Pos 32 45) "B",Skip (Pos 32 48))])))])) (Match (Pos 34 3) (ProgVar (Pos 34 9) (mkVar (Pos 34 9) "18_c")) (Map.fromList [(mkVar (Pos 35 5) "A",([mkVar (Pos 35 7) "20_c"],App (Pos 35 12) (TypeApp (Pos 35 12) (mkVar (Pos 35 12) "server'") [Skip (Pos 35 20)]) (ProgVar (Pos 35 26) (mkVar (Pos 35 26) "20_c"))))]))),(mkVar (Pos 39 1) "server'",Lambda (Pos 40 9) Un (mkVar (Pos 40 9) "23_c") (Semi (Pos 39 68) (Rec (Pos 39 29) (TypeVarBind (Pos 39 33) (mkVar (Pos 39 33) "24_x") (Kind (Pos 39 35) Session Lin)) (Choice (Pos 39 39) In (Map.fromList [(mkVar (Pos 39 41) "A",Semi (Pos 39 45) (TypeVar (Pos 39 44) (mkVar (Pos 39 44) "24_x")) (Choice (Pos 39 47) In (Map.fromList [(mkVar (Pos 39 49) "B",Skip (Pos 39 52))]))),(mkVar (Pos 39 59) "B",Skip (Pos 39 62))]))) (TypeVar (Pos 39 70) (mkVar (Pos 39 70) "21_\945"))) (Match (Pos 41 3) (ProgVar (Pos 41 9) (mkVar (Pos 41 9) "23_c")) (Map.fromList [(mkVar (Pos 42 5) "A",([mkVar (Pos 42 7) "25_c"],UnLet (Pos 43 8) (mkVar (Pos 43 12) "26_c") (App (Pos 43 16) (TypeApp (Pos 43 16) (mkVar (Pos 43 16) "server'") [Semi (Pos 43 34) (Choice (Pos 43 24) In (Map.fromList [(mkVar (Pos 43 26) "B",Skip (Pos 43 29))])) (TypeVar (Pos 43 36) (mkVar (Pos 43 36) "21_\945"))]) (ProgVar (Pos 43 39) (mkVar (Pos 43 39) "25_c"))) (Match (Pos 44 8) (ProgVar (Pos 44 14) (mkVar (Pos 44 14) "26_c")) (Map.fromList [(mkVar (Pos 45 10) "B",([mkVar (Pos 45 12) "27_c"],ProgVar (Pos 45 17) (mkVar (Pos 45 17) "27_c")))])))),(mkVar (Pos 47 5) "B",([mkVar (Pos 47 7) "28_c"],ProgVar (Pos 48 7) (mkVar (Pos 48 7) "28_c")))])))]
-
-
+updateEEnv' (Conditional p e1 e2 e3) = (Conditional p (updateEEnv' e1) (updateEEnv' e2) (updateEEnv' e3))
+updateEEnv' (UnLet p x e1 e2) = (UnLet p x (updateEEnv' e1) (updateEEnv' e2))
+updateEEnv' (Fork p e) = (Fork p (updateEEnv' e))
+updateEEnv' (Send p e) = (Send p (updateEEnv' e))
+updateEEnv' (Receive p e) = (Receive p (updateEEnv' e))
+updateEEnv' (Select p x e) = (Select p x (updateEEnv' e))
+-- updateEEnv' (Match Pos Expression FieldMap
+updateEEnv' e = e

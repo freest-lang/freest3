@@ -12,7 +12,6 @@ The show instances.
 
 module Syntax.Show
 ( showChoiceView
-, showArrow
 ) where
 
 import           Syntax.Expressions
@@ -60,7 +59,7 @@ showVar v
   -- where s = intern v
   = intern v -- Debug
 
--- Kinds
+-- -- Kinds
 
 instance Show PreKind where
   show Session    = "S"

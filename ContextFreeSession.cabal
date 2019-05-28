@@ -47,7 +47,8 @@ executable ContextFreeSession
                        Validation.Substitution,
                        Equivalence.Equivalence, Equivalence.Bisimulation, Equivalence.Grammar,
                        Equivalence.TypeToGrammar, Equivalence.Norm, Equivalence.Normalisation,
-                       CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen, Utils.PreludeLoader
+                       CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen, CodeGen.Annotation, 
+                       Utils.PreludeLoader
 
 test-suite unit-tests
   main-is:             UnitSpec.hs
@@ -118,7 +119,8 @@ test-suite program-tests
                        Validation.Substitution,
                        Equivalence.Equivalence, Equivalence.Bisimulation, Equivalence.Grammar,
                        Equivalence.TypeToGrammar, Equivalence.Norm, Equivalence.Normalisation,
-                       CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen, Utils.PreludeLoader
+                       CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.ExpressionGen,
+                       CodeGen.Annotation, Utils.PreludeLoader
 
 test-suite testEquiv
   main-is:             TestEquivalenceValidSpecMain.hs

@@ -67,6 +67,8 @@ data Type =
   -- Type operators
   | TypeName Pos TypeVar -- a named type, to be looked upon in a map of type names to types
   | Dualof Pos Type      -- to be expanded into a session type
+  deriving Ord
+
 
 type TypeMap = Map.Map ProgVar Type
 

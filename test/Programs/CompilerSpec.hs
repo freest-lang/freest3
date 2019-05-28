@@ -29,10 +29,10 @@ spec = do
     mapM_ (\dir -> testDir True dir curDir) dirs
   runIO $ setCurrentDirectory curDir
 
-  dirs <- runIO $ listDirectory (invalidTestDir curDir)
-  describe "Invalid Tests" $ do
-    mapM_ (\dir -> testDir False dir curDir) dirs
-  runIO $ setCurrentDirectory curDir  
+  -- dirs <- runIO $ listDirectory (invalidTestDir curDir)
+  -- describe "Invalid Tests" $ do
+  --   mapM_ (\dir -> testDir False dir curDir) dirs
+  -- runIO $ setCurrentDirectory curDir  
   
 testDir :: Bool -> String -> String -> Spec
 testDir b dir curDir = parallel $ do
@@ -67,10 +67,10 @@ testOne test filename = do
 
  -- Removed code gen
   if b then
-    -- runAndCheckResult test filename   
-    it ("Testing " ++ filename) $ do
-      assertEqual "Passed... without code gen" 1 1
-      return ()
+    runAndCheckResult test filename   
+    -- it ("Testing " ++ filename) $ do
+    --   assertEqual "Passed... without code gen" 1 1
+    --   return ()
   else
     it ("Testing " ++ filename) $ do
       assertFailure ("The compiler terminated with errors (check above)\n")
@@ -90,27 +90,27 @@ testOneInvalid test filename = do
         (assertEqual "OK. Passed!" 1 1)
 
 -- Review - code gen
--- runAndCheckResult :: String -> String -> Spec
--- runAndCheckResult testFile filename = do
---   runIO $ setCurrentDirectory $ takeDirectory testFile
---   (exitcode, output, errors) <- runIO $ readProcessWithExitCode "ghc"
---                                          ["-dynamic", "-XBangPatterns", (replaceExtensions filename "hs")] ""  
+runAndCheckResult :: String -> String -> Spec
+runAndCheckResult testFile filename = do
+  runIO $ setCurrentDirectory $ takeDirectory testFile
+  (exitcode, output, errors) <- runIO $ readProcessWithExitCode "ghc"
+                                         ["-dynamic", "-XBangPatterns", (replaceExtensions filename "hs")] ""  
   
---   if (exitcode == ExitSuccess) then
---     do     
---       (exitcode1, output1, errors1) <- runIO $ readProcessWithExitCode ("./" ++ dropExtension filename) [] ""
---       if (exitcode1 /= ExitSuccess) then
---          it ("Testing " ++ filename) $ do
---            assertFailure errors1
---            return ()
---       else do  
---          cont <- runIO $ readFile ((takeWhile (/= '.') testFile) ++ ".expected")
---          it ("Testing " ++ filename) $ do
---            (filter (/= '\n') output1) `shouldBe` (filter (/= '\n') cont)
---   else
---     it ("Testing " ++ filename) $ do
---       assertFailure errors
---       return ()
+  if (exitcode == ExitSuccess) then
+    do     
+      (exitcode1, output1, errors1) <- runIO $ readProcessWithExitCode ("./" ++ dropExtension filename) [] ""
+      if (exitcode1 /= ExitSuccess) then
+         it ("Testing " ++ filename) $ do
+           assertFailure errors1
+           return ()
+      else do  
+         cont <- runIO $ readFile ((takeWhile (/= '.') testFile) ++ ".expected")
+         it ("Testing " ++ filename) $ do
+           (filter (/= '\n') output1) `shouldBe` (filter (/= '\n') cont)
+  else
+    it ("Testing " ++ filename) $ do
+      assertFailure errors
+      return ()
 
   
 

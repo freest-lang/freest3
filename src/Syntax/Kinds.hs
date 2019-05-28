@@ -41,7 +41,7 @@ instance Ord PreKind where
 
 -- Kinds
 
-data Kind = Kind Pos PreKind Multiplicity
+data Kind = Kind Pos PreKind Multiplicity deriving Ord
 
 instance Eq Kind where
   (Kind _ p n) == (Kind _ q m) = (p, n) == (q, m)
@@ -94,7 +94,7 @@ type KindEnv = Map.Map TypeVar Kind
 
 -- Binding type variables to kinds
 
-data TypeVarBind = TypeVarBind Pos TypeVar Kind
+data TypeVarBind = TypeVarBind Pos TypeVar Kind deriving (Eq, Ord)
 
 instance Position TypeVarBind where
   position (TypeVarBind p _ _) = p

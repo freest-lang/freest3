@@ -38,28 +38,28 @@ typeCheck = do
   tEnv <- getTEnv
   vEnv <- getVEnv
   eEnv <- getEEnv
-  trace ("Entering type checking with\n  TEnv " ++ show tEnv)
-    trace ("  VEnv " ++ show (userDefined vEnv))
-      trace ("  EEnv " ++ show eEnv)
-        return ()
+  -- trace ("Entering type checking with\n  TEnv " ++ show tEnv)
+  --   trace ("  VEnv " ++ show (userDefined vEnv))
+  --     trace ("  EEnv " ++ show eEnv)
+  --       return ()
   -- Type/datatype declarations
   tEnv <- getTEnv
-  trace "checking contractiveness of all type decls" (return ())
+ -- trace "checking contractiveness of all type decls" (return ())
   mapM_ (checkContractive Map.empty . snd) tEnv -- check contractiveness of all type decls
-  trace "checking the formation of all type decls" (return ())
+--  trace "checking the formation of all type decls" (return ())
   mapM_ (K.synthetiseTS Map.empty . snd) tEnv -- check 
   -- Function signatures (VarEnv)
   vEnv <- getVEnv
-  trace "checking the formation of all type signatures (kinding)" (return ())
+--  trace "checking the formation of all type signatures (kinding)" (return ())
   mapM_ (K.synthetiseTS Map.empty) vEnv
-  trace "checking whether all function signatures have a binding" (return ())
+--  trace "checking whether all function signatures have a binding" (return ())
   tMapWithKeyM checkHasBinding vEnv
   -- Function bodies (ExpEnv)
   eEnv <- getEEnv
   tMapWithKeyM checkFunBody eEnv
-  trace "checking the formation of all functions (typing)" (return ())
+--  trace "checking the formation of all functions (typing)" (return ())
   -- Main function
-  trace "checking the main function" (return ())
+--  trace "checking the main function" (return ())
   checkMainFunction
 
 -- Check whether a given function signature has a corresponding

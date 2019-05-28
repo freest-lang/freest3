@@ -1,7 +1,7 @@
-id : forall a : TU => a -> a
-id x = x
+id' : forall a : TU => a -> a
+id' x = x
 
 main : Int
-main = id[Int] 5
+main = id'[Int] 5
 
 
