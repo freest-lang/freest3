@@ -21,7 +21,7 @@ executable ContextFreeSession
 --   ghc-options:         -Wunused-top-binds
 --  ghc-options:         -Wall -Wextra
   -- ghc-options:         -fprof-auto-top
-  --             "-with-rtsopts=-N -p -s -h -i0.1"
+--             "-with-rtsopts=-N -p -s -h -i0.1"
   other-extensions:    FlexibleContexts
   build-depends:       array <= 0.5.3.0,
                        base >=4.8,
@@ -126,7 +126,7 @@ test-suite testEquiv
   main-is:             TestEquivalenceValidSpecMain.hs
   ghc-options:
               -fprof-auto-top
-              "-with-rtsopts=-N -p -s -h -i0.1"
+--              "-with-rtsopts=-N -p -s -h -i0.1"
 --              "-with-rtsopts=-s -h -i0.1"
   Type:                exitcode-stdio-1.0
   other-extensions:    FlexibleContexts

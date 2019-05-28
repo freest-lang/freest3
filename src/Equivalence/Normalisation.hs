@@ -35,8 +35,11 @@ instance Normalise Type where
   normalise tenv (Semi p t u)
     | terminated t = normalise tenv u
     | otherwise    = append (normalise tenv t) u
+    -- case normalise tenv t of
+    --   (Skip _)  -> normalise tenv u
+    --   otherwise -> Semi p (normalise tenv t) u
     -- Functional or session
-  normalise tenv t@(Rec _ _ _) = normalise tenv (unfold t)
+  normalise tenv t@(Rec _ _ _) = normalise tenv (unfold t) -- diverges, obviously
     -- Type operators
   normalise tenv (Dualof _ t) = normalise tenv (dual t)
   normalise tenv (TypeName _ a) = normalise tenv t

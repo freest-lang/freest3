@@ -167,12 +167,20 @@ synthetiseFieldMap :: Pos -> KindEnv -> Expression -> FieldMap ->
 synthetiseFieldMap p kEnv e fm extract params = do
   t <- synthetise kEnv e
   tm <- extract e t
-  vEnv <- getVEnv
-  (t:ts, v:vs) <- Map.foldrWithKey (synthetiseField vEnv kEnv params tm) (return ([],[])) fm
-  mapM_ (checkEquivTypes e kEnv t) ts
-  mapM_ (checkEquivEnvs p kEnv v) vs
-  setVEnv v
-  return t
+  if Map.size fm /= Map.size tm
+  then do
+    addError p ["Wrong number of constructors\n",
+                "\t The expression has", styleRed $ show (Map.size fm), "constructor(s)\n",
+                "\t but type has", styleRed $ show (Map.size tm), "constructor(s)\n",
+                "\t in case/match", styleRed $ show fm]
+    return $ Skip p
+  else do
+    vEnv <- getVEnv
+    (t:ts, v:vs) <- Map.foldrWithKey (synthetiseField vEnv kEnv params tm) (return ([],[])) fm
+    mapM_ (checkEquivTypes e kEnv t) ts
+    mapM_ (checkEquivEnvs p kEnv v) vs
+    setVEnv v
+    return t
 
 -- Checks either the case map and the match map (all the expressions)
 synthetiseField :: VarEnv -> KindEnv -> (ProgVar -> [ProgVar] -> Type -> FreestState ()) ->

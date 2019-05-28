@@ -41,6 +41,7 @@ FreestState
 , Errors (..)
 , getErrors
 , addError
+, hasErrors
 , getFileName
 ) where
 
@@ -53,13 +54,14 @@ import           Syntax.Base
 import           Utils.Errors
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
+import           Data.List (intercalate)
+-- import qualified Data.Set as Set
 import qualified Data.Traversable as Traversable
 
 -- | The typing state
 
---type Errors = [String]
-type Errors = Set.Set String
+type Errors = [String]
+-- type Errors = Set.Set String
 
 data FreestS = FreestS {
   filename :: String
@@ -80,8 +82,8 @@ initialState f = FreestS {
 , varEnv    = Map.empty
 , expEnv    = Map.empty
 , typeEnv   = Map.empty
---, errors    = []
-, errors    = Set.empty
+, errors    = []
+-- , errors    = Set.empty
 , nextIndex = 0
 }
 
@@ -170,12 +172,14 @@ setTEnv tEnv = modify (\s -> s{typeEnv = tEnv})
 
 addError :: Pos -> [String] -> FreestState ()
 addError p e = do
---  modify (\s -> s{errors=(errors s) ++ [styleError (filename s) p e]})  
-  modify (\s -> s{errors = Set.insert (styleError (filename s) p e) (errors s)})
+  modify (\s -> s{errors = errors s ++ [styleError (filename s) p e]})  
+  -- modify (\s -> s{errors = Set.insert (styleError (filename s) p e) (errors s)})
   
-getErrors :: Errors -> String
-getErrors = Set.fold (\err acc -> err ++ "\n" ++ acc) ""
+getErrors :: FreestS -> String
+getErrors = (intercalate "\n") . errors
   
+hasErrors :: FreestS -> Bool
+hasErrors = not . null . errors
 
 -- | Traversing Map.map over FreestStates
 

@@ -356,11 +356,10 @@ parseType s = fst $ runState (parse s) (initialState "")
 instance Read Type where
   readsPrec _ str =
     let (t, state) = runState (parse str) (initialState "") in
-    if Set.null (errors state)
-    then [(t, "")]
-    else error $ getErrors (errors state)
+    if hasErrors state
+    then error $ getErrors state
+    else [(t, "")]
    where parse = types . scanTokens
-
 
 parseTypeScheme :: String -> TypeScheme
 parseTypeScheme s = fst $ runState (parse s) (initialState "")
@@ -405,9 +404,9 @@ parseDefs file vEnv str =
 checkErrors :: FreestS -> IO ()
 -- checkErrors (FreestS {errors=Set.null}) = return ()
 -- checkErrors s                     = die $ intercalate "\n" (errors s) 
-checkErrors (FreestS {errors = errors})
-  | Set.null errors = return ()
-  | otherwise  = die $ getErrors errors
+checkErrors s
+  | hasErrors s = die $ getErrors s
+  | otherwise   = return ()
 
 -------------------
 -- Handle errors --

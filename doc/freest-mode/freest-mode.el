@@ -1,5 +1,5 @@
 (defvar freest-mode-font-lock-keywords
-  '(("\\<receive\\>\\|\\<send\\>\\|\\<match\\>\\|\\<with\\>\\|\\<select\\>\\|\\<fork\\>\\|\\<new\\>" . font-lock-keyword-face))
+  '(("\\<receive\\>\\|\\<send\\>\\|\\<match\\>\\|\\<with\\>\\|\\<select\\>\\|\\<fork\\>\\|\\<new\\>\\|\\<rec\\>\\|\\<dualof\\>" . font-lock-keyword-face))
 ;\\<packet\\>
   )
 ;\\>|match\\|send\\|select\\|fork
