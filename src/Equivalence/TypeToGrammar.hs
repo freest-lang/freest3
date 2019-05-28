@@ -134,12 +134,12 @@ eqsToGrammar = do
   getEquation >>= \case
     (Just (Rec _ (TypeVarBind _ x _) t)) -> do
       (z:zs) <- toGrammar t
+      eqsToGrammar
       getTransitions z >>= \case
         Just m -> do
           addProductions x (Map.map (++ zs) m)
-          eqsToGrammar
         Nothing ->
-          eqsToGrammar
+          return ()
     Nothing ->
       return ()
 {-
