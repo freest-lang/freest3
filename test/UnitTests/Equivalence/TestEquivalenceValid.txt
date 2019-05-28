@@ -669,3 +669,7 @@ rec y_8:SL. +{B: &{B: !Int};!Char, C: (y_8;?());(rec w_0:SU. ((y_8;?());w_0))}
 --[]
 --((rec x_0:SL. (rec y_1:SL. +{B: ((rec w_0:SU. &{B: !Int});(rec w_1:SU. (rec w_2:SL. (rec w_3:SU. (rec w_4:SL. !Char))))), C: (rec w_5:SU. (x_0;(?();w_5)))}));Skip)
 --(rec y_8:SL. +{B: ((rec r_1:SU. &{B: !Int});(rec r_2:SL. (rec r_3:SL. (rec r_4:SU. !Char)))), C: ((y_8;?());(rec r_5:SU. ((y_8;?());r_5)))})
+
+[]
+rec x:SL. !Int; rec y. x;y
+rec z:SL. !Int; rec w. z;w

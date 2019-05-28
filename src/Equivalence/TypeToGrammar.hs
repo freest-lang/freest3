@@ -139,7 +139,7 @@ eqsToGrammar = do
         Just m -> do
           addProductions x (Map.map (++ zs) m)
         Nothing ->
-          return ()
+          error $ "No productiond for " ++ show z ++ " when translating rec " ++ show x -- return ()
     Nothing ->
       return ()
 {-
