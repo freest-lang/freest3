@@ -20,7 +20,7 @@ data ProgVar = ProgVar Pos String
 
 instance Variable ProgVar where
   mkVar = ProgVar
-  mkNewVar next (ProgVar pos id) = ProgVar pos (show next ++ ':' : id)
+  mkNewVar next (ProgVar pos id) = ProgVar pos (show next ++ '#' : id)
   intern (ProgVar _ x) = x
 
 instance Eq ProgVar where
