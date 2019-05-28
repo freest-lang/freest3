@@ -40,10 +40,10 @@ convertToGrammar tEnv ts = Grammar xs (productions s)
 
 typeToGrammar :: Type -> TransState TypeVar
 typeToGrammar t = do
-  mapM_ eqToGrammar (collect t [])
-  xs <- toGrammar t
   y <- freshVar
+  xs <- toGrammar t
   addProduction y (MessageLabel Out UnitType) xs
+  mapM_ eqToGrammar (collect t [])
   return y
 
 toGrammar :: Type -> TransState [TypeVar]

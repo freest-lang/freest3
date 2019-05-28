@@ -30,7 +30,7 @@ import qualified Data.Set as Set
 
 -- [t/x]u, substitute t for for every free occurrence of x in u
 subs :: Type -> TypeVar -> Type -> Type
-subs t1 x t2 = renameType $ sub t1 x t2
+subs t x u = renameType $ sub t x u
   where
   -- Functional types
   sub t x (Fun p m t1 t2)    = Fun p m (sub t x t1) (sub t x t2)
@@ -48,7 +48,7 @@ subs t1 x t2 = renameType $ sub t1 x t2
   sub _ _ t                  = t
 
 subsAll :: [(Type, TypeVar)] -> Type -> Type
-subsAll sigma s = foldl (\t (u, x) -> subs u x t) s sigma
+subsAll sigma s = foldl (\u (t, x) -> subs t x u) s sigma
 
 -- Unfold a recursive type (one step only)
 unfold :: Type -> Type
