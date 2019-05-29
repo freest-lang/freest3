@@ -28,8 +28,6 @@ import           Equivalence.Normalisation
 import           Utils.FreestState (tMapWithKeyM, tMapM)
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
-import qualified Data.Sequence as Queue
 import           Debug.Trace
 
 -- Conversion to context-free grammars
@@ -43,7 +41,7 @@ typeToGrammar t = do
   y <- freshVar
   xs <- toGrammar t
   addProduction y (MessageLabel Out UnitType) xs
-  mapM_ eqToGrammar (collect t [])
+  collect t []
   return y
 
 toGrammar :: Type -> TransState [TypeVar]
@@ -61,32 +59,26 @@ toGrammar (Choice _ p m) = do
   tMapWithKeyM (fieldToGrammar y p) m
   return [y]
 -- Functional or session (session in this case)
-toGrammar (TypeVar _ x) = -- do
-  -- wasVisited x >>= \case
-  --   True  -> return [x]                  -- x is a recursion variable
-  --   False -> 
-    getBasicProd (VarLabel x)   -- x is a polymorphic variable
+toGrammar (TypeVar _ x) =
+  getBasicProd (VarLabel x)   -- x is a polymorphic variable
 toGrammar t@(Rec _ (TypeVarBind _ x _) u) =
-  -- do
-  --   insertEquation t
-  --   insertVisited x
-    return [x]
+  return [x]
   -- Type operators
-toGrammar (Dualof p (TypeName _ x)) = do
-  insertVisited x
-  (k, TypeScheme _ [] t) <- getFromVEnv x
-  trace ("Type " ++ show x ++ " = " ++ show t)
-    toGrammar (Dualof p t)
-toGrammar (Dualof _ t) = toGrammar (dual t)
-toGrammar (TypeName _ x) = do
-  b <- wasVisited x
-  if b
-  then    -- We have visited this type name before
-    return [x]
-  else do -- This is the first visit
-    insertVisited x
-    (k, TypeScheme _ [] t) <- getFromVEnv x
-    toGrammar t -- (Rec p (TypeVarBind q x k) t)
+-- toGrammar (Dualof p (TypeName _ x)) = do
+--   insertVisited x
+--   (k, TypeScheme _ [] t) <- getFromVEnv x
+--   trace ("Type " ++ show x ++ " = " ++ show t)
+--     toGrammar (Dualof p t)
+-- toGrammar (Dualof _ t) = toGrammar (dual t)
+-- toGrammar (TypeName _ x) = do
+--   b <- wasVisited x
+--   if b
+--   then    -- We have visited this type name before
+--     return [x]
+--   else do -- This is the first visit
+--     insertVisited x
+--     (k, TypeScheme _ [] t) <- getFromVEnv x
+--     toGrammar t
   -- Should not happen
 toGrammar t = error ("toGrammar: " ++ show t)
 
@@ -96,76 +88,23 @@ fieldToGrammar y p x t = do
   addProduction y (ChoiceLabel p x) xs
 
 type Substitution = (Type, TypeVar)
-type Equation = (TypeVar, Type)
 
-collect :: Type -> [Substitution] -> [Equation]
-collect (Semi _ t u) σ = collect t σ ++ collect u σ
-collect (Choice _ _ m) σ = Map.foldl (\eqs t -> collect t σ ++ eqs) [] m
-collect t@(Rec _ (TypeVarBind _ x _) s) σ = (x, subsAll σ' s) : collect s σ'
-  where σ' = (t, x) : σ
--- collect (Dualof _ t) σ = collect t σ
-collect _ _ = []
+collect :: Type -> [Substitution] -> TransState ()
+collect (Semi _ t u) σ = collect t σ >> collect u σ
+collect (Choice _ _ m) σ = tMapM (\t -> collect t σ) m >> return ()
+collect t@(Rec _ (TypeVarBind _ x _) s) σ = do
+  let σ' = (t, x) : σ
+  let t' = subsAll σ' s
+  (z:zs) <- toGrammar (normalise Map.empty t')
+  m <- getTransitions z
+  addProductions x (Map.map (++ zs) m)
+  collect s σ'
+collect _ _ = return ()
 
-eqToGrammar :: Equation -> TransState ()
-eqToGrammar (x, t) =
-  toGrammar (normalise Map.empty t) >>= \case
-    [] ->
-      error $ "Empty word for " ++ show x ++ " = " ++ show t -- return ()
-    (z:zs) ->
-      getTransitions z >>= \case
-        Just m -> do
-          addProductions x (Map.map (++ zs) m)
-        Nothing ->
-          error $ "No production for " ++ show z ++ " when translating rec " ++ show x
-
-{-
-eqsToGrammar :: TransState ()
-eqsToGrammar = do
-  getEquation >>= \case
-    (Just u@(Rec _ (TypeVarBind _ x _) t)) -> do
-      (z:zs) <- toGrammar t
-      eqsToGrammar
-      getTransitions z >>= \case
-        Just m -> do
-          addProductions x (Map.map (++ zs) m)
-        Nothing ->
-          -- insertEquation u
-          error $ "No production for " ++ show z ++ " when translating rec " ++ show x
-          -- return ()
-    Nothing ->
-      return ()
--}
-{-
-typeTransitions :: Type -> TransState (Map.Map Label Type)
-  -- Session types
-typeTransitions (Skip _)        = return Map.empty
-typeTransitions (Semi p t u)
-  | terminated t                = typeTransitions u
-  | otherwise                   = do
-  m <- typeTransitions t
-  return $ Map.map (\t' -> Semi p t' u) m
-typeTransitions (Message p q b) = return $ Map.singleton (MessageLabel q b) (Skip p)
-typeTransitions (Choice _ p m)  = return $ Map.mapKeys (ChoiceLabel p) m
-  -- Functional or session
-typeTransitions (Rec _ (TypeVarBind _ x _) t) = do
-  insertVisited x
-  typeTransitions t
-typeTransitions (TypeVar p x)   =
-  getTransitions x >>= \case
-    Just m  -> return $ Map.map (\[x] -> TypeVar p x) m
-    Nothing -> return $ Map.singleton (VarLabel x) (Skip p)
-  -- Type operators
-typeTransitions (Dualof _ t)    = typeTransitions t
-typeTransitions (TypeName _ _)  = error "Not implemented: typeTransitions TypeName"
--}
 -- The state of the translation to grammars
-
-type Visited = Set.Set TypeVar
 
 data TState = TState {
   productions :: Productions
-, equations   :: Queue.Seq Type
-, visited     :: Visited
 , nextIndex   :: Int
 , typeEnv     :: TypeEnv
 }
@@ -177,8 +116,6 @@ type TransState = State TState
 initial :: TypeEnv -> TState
 initial tEnv = TState {
   productions = Map.empty
-, equations   = Queue.empty
-, visited     = Set.empty
 , nextIndex   = 1
 , typeEnv     = tEnv
 }
@@ -190,20 +127,10 @@ freshVar = do
   modify (\s -> s {nextIndex = n + 1})
   return $ mkVar defaultPos ("#X" ++ show n)
 
-wasVisited :: TypeVar -> TransState Bool
-wasVisited x = do
-  s <- get
-  return $ x `Set.member` (visited s)
-  -- return $ x `Map.member` (productions s)
-
-insertVisited :: TypeVar -> TransState ()
-insertVisited x =
-  modify $ \s -> s {visited = Set.insert x (visited s)}
-
-getTransitions :: TypeVar -> TransState (Maybe Transitions)
+getTransitions :: TypeVar -> TransState Transitions
 getTransitions x = do
   s <- get
-  return $ (productions s) Map.!? x
+  return $ (productions s) Map.! x
 
 addProductions :: TypeVar -> Transitions -> TransState ()
 addProductions x m =
@@ -213,37 +140,6 @@ addProduction :: TypeVar -> Label -> [TypeVar] -> TransState ()
 addProduction x l w =
   modify $ \s -> s {productions = insertProduction (productions s) x l w}
 
-getEquation :: TransState (Maybe Type)
-getEquation = do
-  s <- get
-  case equations s of
-    (t Queue.:<| eqs) -> do
-      modify $ \s -> s {equations = eqs}
-      return $ Just t
-    Queue.Empty ->
-      return Nothing
-
-insertEquation :: Type -> TransState ()
-insertEquation t = do
-  modify $ \s -> s {equations = (equations s) Queue.|> t}
-
-{-
-subsProductions :: (Map.Map TypeVar [TypeVar]) -> TransState ()
-subsProductions m = do
-  s <- get
-  modify $ \s -> s {productions = (Map.map . Map.map) (subsWord m) (productions s)}
-
--- σ xs = ys, where σ is a n-substitution [ys1/y1, ..., ysn/yn]
-subsWord :: Eq a => Map.Map a [a] -> [a] -> [a]
-subsWord m = concat . map (subsVar (Map.assocs m))
-
--- σ x = ys
-subsVar :: Eq a => [(a, [a])] -> a -> [a]
-subsVar [] x  = [x]
-subsVar ((y,ys):assocs) x
-  | y == x    = ys
-  | otherwise = subsVar assocs x
--}
 -- Add or update production from a (basic) non-terminal; the
 -- productions may already contain transitions for the given
 -- nonterminal (hence the insertWith and union)
