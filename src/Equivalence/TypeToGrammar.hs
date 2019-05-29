@@ -103,14 +103,14 @@ collect (Semi _ t u) σ = collect t σ ++ collect u σ
 collect (Choice _ _ m) σ = Map.foldl (\eqs t -> collect t σ ++ eqs) [] m
 collect t@(Rec _ (TypeVarBind _ x _) s) σ = (x, subsAll σ' s) : collect s σ'
   where σ' = (t, x) : σ
-collect (Dualof _ t) σ = collect t σ
+-- collect (Dualof _ t) σ = collect t σ
 collect _ _ = []
 
 eqToGrammar :: Equation -> TransState ()
 eqToGrammar (x, t) =
   toGrammar (normalise Map.empty t) >>= \case
     [] ->
-      error $ "Empty word for " ++ show x -- return ()
+      error $ "Empty word for " ++ show x ++ " = " ++ show t -- return ()
     (z:zs) ->
       getTransitions z >>= \case
         Just m -> do
