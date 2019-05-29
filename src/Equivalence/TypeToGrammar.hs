@@ -92,13 +92,13 @@ type Substitution = (Type, TypeVar)
 collect :: Type -> [Substitution] -> TransState ()
 collect (Semi _ t u) σ = collect t σ >> collect u σ
 collect (Choice _ _ m) σ = tMapM (\t -> collect t σ) m >> return ()
-collect t@(Rec _ (TypeVarBind _ x _) s) σ = do
+collect t@(Rec _ (TypeVarBind _ x _) t) σ = do
   let σ' = (t, x) : σ
-  let s' = subsAll σ' s
-  (z:zs) <- toGrammar (normalise Map.empty s')
+  let t' = subsAll σ' t
+  (z:zs) <- toGrammar (normalise Map.empty t')
   m <- getTransitions z
   addProductions x (Map.map (++ zs) m)
-  collect s σ'
+  collect t σ'
 collect _ _ = return ()
 
 -- The state of the translation to grammars
