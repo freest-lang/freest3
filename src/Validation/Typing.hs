@@ -126,7 +126,8 @@ synthetise kEnv (Fork p e) = do
 -- Session types
 synthetise kEnv (New p t) = do
   K.checkAgainstSession kEnv t
-  return $ PairType p t (Dualof p t)
+  return $ PairType p t (dual t)
+  -- return $ PairType p t (Dualof p t)
 synthetise kEnv (Send p e) = do
   t <- synthetise kEnv e
   (u1, u2) <- extractOutput e t

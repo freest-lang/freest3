@@ -534,9 +534,10 @@ rec y . &{N: y, L: y};!Int
 rec y:SL. x
 rec z:SL. x
 
-[]
-(+{C: Skip};((rec x_0:SL. (Skip;Skip));(rec z_1:SL. (x;y))))
-((+{C: Skip};(rec x_2:SL. (Skip;Skip)));(rec z_3:SL. (x;y)))
+-- This one is not kinded: (rec x_2:SL. (Skip;Skip))
+-- []
+-- (+{C: Skip};((rec x_0:SL. (Skip;Skip));(rec z_1:SL. (x;y))))
+-- ((+{C: Skip};(rec x_2:SL. (Skip;Skip)));(rec z_3:SL. (x;y)))
 
 -- non-kinded
 -- []

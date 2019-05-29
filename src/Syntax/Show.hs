@@ -54,7 +54,7 @@ instance Show TypeVar where
 
 showVar :: Variable v => v -> String
 showVar v
-  | isDigit (head s) = dropWhile (\x -> isDigit x || x == ':') s
+  | isDigit (head s) = dropWhile (\x -> isDigit x || x == '#') s
   | otherwise        = s
   where s = intern v
 -- showVar = intern
