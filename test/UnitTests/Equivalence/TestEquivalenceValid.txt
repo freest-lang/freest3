@@ -674,3 +674,7 @@ rec y_8:SL. +{B: &{B: !Int};!Char, C: (y_8;?());(rec w_0:SU. ((y_8;?());w_0))}
 []
 rec x:SL. !Int; rec y. x;y
 rec z:SL. !Int; rec w. z;w
+
+[]
+(rec #y. +{A: (rec #y. (rec #x. (+{A: (Skip;(?Int;!())), B: (Skip;?Char)};#x)))})
++{A: (rec #y. +{A: (((Skip;?Int);!());(rec #y. +{A: (rec #y. +{A: (((Skip;?Int);!());#y), B: (?Char;#y)})})), B: (?Char;(rec #y. +{A: (rec #y. +{A: (((Skip;?Int);!());#y), B: (?Char;#y)})}))})}
