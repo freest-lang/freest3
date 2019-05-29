@@ -657,9 +657,9 @@ rec e:SL. (&{B: Skip, C: e;!Bool})
 rec z_0:SL. &{B: &{B: ?()}, C: (rec y_0:SU. (z_0;y_0))}
 &{B: &{B: ?()}, C: (rec y_1:SU. ((rec z_1:SL. &{B: &{B: ?()}, C: (rec y_3:SU. ((z_1;Skip);y_3))});y_1))}
 
-[]
-(rec z_0:SU. (rec x_1:SL. ( (+{B: (rec w_1:SL. +{A: Skip, C: w_1}), C:   (rec w_3:SL. +{A: (!Bool;w_3), B: !Char, C: !Char})});(+{B: !Bool, C: z_0};x_1))))
-(rec w_7:SL. ( +{B: +{A: Skip, C: (rec w_10:SL. +{A: Skip, C: w_10})}, C: rec w_12:SU. +{A: !Bool;w_12, B: !Char, C: !Char}};+{B: (!Bool;w_7), C: (w_7;w_7)}))
+-- []
+-- (rec z_0:SU. (rec x_1:SL. ( (+{B: (rec w_1:SL. +{A: Skip, C: w_1}), C:   (rec w_3:SL. +{A: (!Bool;w_3), B: !Char, C: !Char})});(+{B: !Bool, C: z_0};x_1))))
+-- (rec w_7:SL. ( +{B: +{A: Skip, C: (rec w_10:SL. +{A: Skip, C: w_10})}, C: rec w_12:SU. +{A: !Bool;w_12, B: !Char, C: !Char}};+{B: (!Bool;w_7), C: (w_7;w_7)}))
 
 []
 rec x_0:SL. +{B: &{B: !Int};!Char, C: rec w_1:SU. (x_0;(?();w_1))}
