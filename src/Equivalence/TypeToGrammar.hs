@@ -61,7 +61,7 @@ toGrammar (Choice _ p m) = do
 -- Functional or session (session in this case)
 toGrammar (TypeVar _ x) =
   getBasicProd (VarLabel x)   -- x is a polymorphic variable
-toGrammar t@(Rec _ (TypeVarBind _ x _) u) =
+toGrammar (Rec _ (TypeVarBind _ x _) _) =
   return [x]
   -- Type operators
 -- toGrammar (Dualof p (TypeName _ x)) = do
@@ -94,8 +94,8 @@ collect (Semi _ t u) σ = collect t σ >> collect u σ
 collect (Choice _ _ m) σ = tMapM (\t -> collect t σ) m >> return ()
 collect t@(Rec _ (TypeVarBind _ x _) s) σ = do
   let σ' = (t, x) : σ
-  let t' = subsAll σ' s
-  (z:zs) <- toGrammar (normalise Map.empty t')
+  let s' = subsAll σ' s
+  (z:zs) <- toGrammar (normalise Map.empty s')
   m <- getTransitions z
   addProductions x (Map.map (++ zs) m)
   collect s σ'
