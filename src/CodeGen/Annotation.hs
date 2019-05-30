@@ -147,6 +147,8 @@ updateParam :: NodeType -> NodeType -> NodeType
 updateParam IOType (ArrowType _ t2) = ArrowType IOType (updateLastType IOType t2)
 updateParam _ t                     = t
 
+
+-- TODO: Use state
 annExp :: AnnFunMap -> AST -> NodeType -> Expression -> (AST, NodeType)
 -- Basic values
 annExp _ ast t e@(Unit _)                  = (Map.insert e PureType ast, PureType)
@@ -168,7 +170,7 @@ annExp fm ast t e@(App _ e1 e2) =
      -- trace ("Expression " ++ show e ++ " current state " ++ show t ++ " -> updating param " ++ show t1 ++ " with type (t2) " ++ show lt2 ++ " result " ++ show t3)
   let (ast1, t1) = annExp fm ast t e1
       (ast2, t2) = annExp fm ast1 PureType e2
-      t3         = applyNodeType (max t2 t1) (min t2 t1) -- max and min ... should not be like this
+      t3         = applyNodeType (max t2 t1) (min t2 t1) -- max and min ... should be like this?
       ast3       = updateProgVar ast2 e1 (updateLastType (max t (lastType t3)) t3) in
 --      trace ("Expression: " ++ show e ++ " has the updated type of " ++ show t3)
       -- trace ("Expression (e1): " ++ show e1 ++ " has type " ++ show t1 ++ "\n" ++
