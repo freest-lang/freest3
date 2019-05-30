@@ -57,7 +57,8 @@ initialEnv = Map.foldrWithKey (\k t m -> Map.insert k (funToArrow t) m) Map.empt
 
 funToArrow :: TypeScheme -> NodeType
 funToArrow (TypeScheme _ _ (Fun _ _ t1 t2)) =
-  ArrowType (funToArrow (fromType t1)) (funToArrow (fromType t2))
+ ArrowType (funToArrow (fromType t1)) (funToArrow (fromType t2))
+--  ArrowType PureType (funToArrow (fromType t2))
 funToArrow _ = PureType
 
 top :: ExpEnv -> TypeEnv -> VarEnv -> AnnFunMap
@@ -118,15 +119,15 @@ lastType s = s
 
 topExps :: ExpEnv -> TypeEnv -> VarEnv -> (AnnFunMap, AST)
 topExps eenv tenv venv =
-    let funMap = fm in (funMap, findExpFixedPoint funMap eenv Map.empty)
+    let funMap = fm in (funMap, annotateAST funMap Map.empty eenv)-- findExpFixedPoint funMap eenv Map.empty)
   where fm = top eenv tenv venv
   
--- type ExpEnv = Map.Map ProgVar Expression
-findExpFixedPoint :: AnnFunMap -> ExpEnv -> AST -> AST
-findExpFixedPoint m eenv ast
-  | ast == ast' = ast
-  | otherwise = findExpFixedPoint m eenv ast'
-  where ast' = annotateAST m ast eenv
+-- -- type ExpEnv = Map.Map ProgVar Expression
+-- findExpFixedPoint :: AnnFunMap -> ExpEnv -> AST -> AST
+-- findExpFixedPoint m eenv ast
+--   | ast == ast' = ast
+--   | otherwise = findExpFixedPoint m eenv ast'
+--   where ast' = annotateAST m ast eenv
 
 -- annotateAST m = Map.foldrWithKey (\f e ast -> fst $ annExp m ast (nodeType f)  e)
 annotateAST :: AnnFunMap -> AST -> ExpEnv -> AST
@@ -139,7 +140,7 @@ annotateAST m = Map.foldrWithKey (\f e ast -> fst $ annExp m ast (nodeType f)  e
 annPVar :: AnnFunMap -> ProgVar -> NodeType
 annPVar m x =
   case m Map.!? x of
-    Just t  -> t
+    Just t  -> {-trace ("function "++ show x ++ " at " ++ show (position x) ++ " -> " ++ show t  )-} t
     Nothing -> PureType
 
 updateParam :: NodeType -> NodeType -> NodeType
@@ -154,8 +155,8 @@ annExp _ ast t e@(Character _ _)           = (Map.insert e PureType ast, PureTyp
 annExp _ ast t e@(Boolean _ _)             = (Map.insert e PureType ast, PureType)
 -- Variable
 annExp fm ast t e@(ProgVar _ x)            =
-  let t1 = annPVar fm x
-      maxt = lastType t1 in --updateLastType t t1 in
+  let t1 = annPVar fm x in
+--      maxt = lastType t1 in --updateLastType t t1 in
       (Map.insert e t1 ast, t1)
 -- Abstraction intro and elim  
 annExp fm ast t e@(Lambda _ _ x _ e1) =
@@ -164,14 +165,18 @@ annExp fm ast t e@(Lambda _ _ x _ e1) =
     (Map.insert e maxt ast1, maxt) -- TODO: max??
 
 annExp fm ast t e@(App _ e1 e2) =
+     -- trace ("Expression " ++ show e ++ " current state " ++ show t ++ " -> updating param " ++ show t1 ++ " with type (t2) " ++ show lt2 ++ " result " ++ show t3)
   let (ast1, t1) = annExp fm ast t e1
       (ast2, t2) = annExp fm ast1 PureType e2
-      lt2 = (lastType t2)
-      t3 = (updateLastType (max t lt2) (updateParam lt2 t1))
-    --  t3 = (updateParam lt2 t1)
---      t4 = (updateLastType (max t t2) (updateParam t2 t1))
-      ast3 = Map.insert e1 t3 ast2 in -- This is tricky (2nd insert) 
-    (Map.insert e (lastType t3) ast3, lastType t3)
+      t3         = applyNodeType (max t2 t1) (min t2 t1) -- max and min ... should not be like this
+      ast3       = updateProgVar ast2 e1 (updateLastType (max t (lastType t3)) t3) in
+--      trace ("Expression: " ++ show e ++ " has the updated type of " ++ show t3)
+      -- trace ("Expression (e1): " ++ show e1 ++ " has type " ++ show t1 ++ "\n" ++
+      --       "Expression (e2): " ++ show e2 ++ " has type " ++ show t2 ++ "\n" ++
+      --       "the t value is " ++ show t ++ "\n" ++
+      --       "the final type is " ++ show t3 ++ "\n" 
+      --       )
+      (Map.insert e (lastType t3) ast3, lType t3)
       
 -- Pair intro and elim    
 annExp fm ast t e@(Pair _ e1 e2) =
@@ -197,8 +202,9 @@ annExp fm ast t e@(Case _ e1 cm) =
           
 -- Type application
 annExp fm ast t e@(TypeApp _ x _) =
-  let t1 = annPVar fm x
-      maxt = lastType t1 in --updateLastType t t1 in
+  let t1 = annPVar fm x in
+--      maxt = lastType t1 in --updateLastType t t1 in
+--    trace ("TYPEAPP " ++ show x ++ " has type: " ++ show t1)
       (Map.insert e t1 ast, t1)
   
 -- Boolean elim
@@ -276,7 +282,7 @@ nextFresh = do
 
 -- Adds an element to the map
 addFun :: String -> HaskellCode -> TranslateM ()
-addFun k v = do
+addFun k v =
   modify (\s -> s{genFunsMap = Map.insert k v (genFunsMap s)})
 
 funMember :: String -> TranslateM Bool
@@ -297,7 +303,16 @@ getAnnFunMap = do
 getAST :: TranslateM AST
 getAST = do 
   s <- get
-  return $ ast s  
+  return $ ast s
+
+getFromAST :: Expression -> TranslateM NodeType
+getFromAST e = do 
+  m <- getAST
+  return $ m Map.! e
+
+insertAST :: Expression -> NodeType -> TranslateM ()
+insertAST k v = 
+  modify (\s -> s{ast = Map.insert k v (ast s)})
 
 getHaskellCode :: TranslateM HaskellCode
 getHaskellCode = do
@@ -350,9 +365,15 @@ funName p t =
 
 translateEnv :: ExpEnv -> TypeEnv -> VarEnv -> HaskellCode
 translateEnv eenv tenv venv =
-  let (m, ast) = topExps eenv tenv venv
-      s = execState (tMapWithKeyM addCode eenv) (initialState m ast) in
+  let (m, ast1) = topExps eenv tenv venv
+      s = execState (tMapWithKeyM addCode eenv) (initialState m ast1) in
+--     trace (showAST (ast s) ++ "\n\n")
+--     trace (show (annFunMap s) ++ "\n\n")
      haskellCode s ++ "\n\n" ++ showGenFunMap (genFunsMap s)
+
+-- TMP:
+showAST :: AST -> String
+showAST = Map.foldlWithKey (\acc e t -> acc ++ "(" ++ show (position e) ++ " ~ " ++ show e ++ ", " ++ show t ++ ") " ) "< "
 
 addCode :: ProgVar -> Expression -> TranslateM ()
 addCode f e = do
@@ -563,6 +584,67 @@ translateMatchMap fresh m ast nt =
       return (acc' ++ "\n    \"" ++ show v ++ "\" " ++
         " -> let " ++ show p ++ " = " ++ fresh ++ " in " ++ h ++ ";", max n1 n2)
              
+
+
+-- TODO: change name
+applyNodeType :: NodeType -> NodeType -> NodeType
+applyNodeType t1 t2 = normaliseType (applyNodeType' t1 t2)
+
+applyNodeType' :: NodeType -> NodeType -> NodeType
+applyNodeType' a@(ArrowType _ _) (ArrowType b@(ArrowType _ _) s4) =
+  ArrowType (applyNodeType' a b) s4
+applyNodeType' (ArrowType s1 s2) (ArrowType s3 s4) = ArrowType (applyNodeType' s1 s3) (applyNodeType' s2 s4)
+applyNodeType' (ArrowType _ s2)  t                 = ArrowType t s2 --(applyNodeType' t s2)
+--applyNodeType' t                 (ArrowType s1 s2)  = ArrowType (applyNodeType' t s1) s2 --(applyNodeType' t s2)
+applyNodeType' t                 u                 = max t u
+
+normaliseType :: NodeType -> NodeType
+normaliseType t
+  | anyIO t    = updateLastType IOType t 
+  | otherwise = t
+
+anyIO :: NodeType -> Bool
+anyIO (ArrowType s1 s2) = anyIO s1 || anyIO s2
+anyIO IOType           = True
+anyIO _                = False
+
+zipFromEnd :: NodeType -> NodeType -> NodeType
+zipFromEnd t1 t2 = 
+  foldr (\t acc -> ArrowType t acc) t2
+    (nodeTypeTake (nodeTypeLength t1 - nodeTypeLength t2) t1)
+
+nodeTypeLength :: NodeType -> Int
+nodeTypeLength (ArrowType t1 t2) = nodeTypeLength t1 + nodeTypeLength t2
+--nodeTypeLength (ArrowType t1 t2) = 1 + nodeTypeLength t2
+nodeTypeLength t                 = 1
+
+nodeTypeTake :: Int -> NodeType -> [NodeType]
+nodeTypeTake 0 _ = []
+nodeTypeTake n (ArrowType t1 t2) = t1 : nodeTypeTake (n-1) t2
+nodeTypeTake _ t = [t]
+
+-- TODO: Monad version, uncomment when annExps turns monad
+-- updateProgVar :: Expression -> NodeType -> TranslateM ()
+-- updateProgVar (App _ e _) t = updateProgVar e t
+-- updateProgVar e@(ProgVar _ _) t1 = do
+--    t2 <- getFromAST e
+--    insertAST e (zipFromEnd t2 t1)
+
+updateProgVar :: AST -> Expression -> NodeType -> AST
+updateProgVar m (App _ e _) t = updateProgVar m e t
+updateProgVar m e@(ProgVar _ _) t1 =
+   let t2 = m Map.! e in
+   Map.insert e (zipFromEnd t2 t1) m 
+updateProgVar m e@(TypeApp _ _ _) t1 =
+   let t2 = m Map.! e in
+   Map.insert e (zipFromEnd t2 t1) m
+updateProgVar m _ _ = m
+  
+-- TODO: Check if need to remove the other last type, is makes sense?
+-- if so, rename this into lastType
+lType :: NodeType -> NodeType
+lType (ArrowType _ t) = t
+lType t               = t
 
 -- TODO: Think about alternatives to this problem
 updateEEnv :: ExpEnv -> ExpEnv
