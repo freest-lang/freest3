@@ -9,7 +9,6 @@ import           Syntax.Types
 import           Syntax.Kinds
 import           Validation.Kinding
 import           CodeGen.DatatypeGen
-import           CodeGen.ExpressionGen
 import           Control.Monad.State
 import           Data.List
 import qualified Data.Map.Strict as Map
@@ -21,7 +20,6 @@ import Syntax.Base
 import Syntax.ProgramVariables
 
 -- TODO : PARAM BANG
--- TODO : start may not exist
 genProgram :: VarEnv -> ExpEnv -> TypeEnv -> FilePath -> IO ()
 genProgram venv eenv tenv filepath = do -- return ()
   genFreeSTRunTime filepath
@@ -49,7 +47,8 @@ genImports :: String
 genImports = "import FreeSTRuntime\n\n"
 
 genPragmas :: String
-genPragmas = "-- Target Haskell code\n{-# LANGUAGE BangPatterns #-}\n\n"
+genPragmas = "-- Target Haskell code\n\n"
+-- genPragmas = "-- Target Haskell code\n{-# LANGUAGE BangPatterns #-}\n\n"
 
 genMain :: ExpEnv  -> VarEnv -> TypeEnv -> HaskellCode
 genMain eenv venv tenv =

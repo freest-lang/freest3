@@ -40,9 +40,6 @@ genCode venv eenv tenv path = do
   genProgram venv eenv tenv path
   compileAndRun path
 
--- showAST :: AST -> String
--- showAST = Map.foldlWithKey (\acc e t -> acc ++ "(" ++ show (position e) ++ " ~ " ++ show e ++ ", " ++ show t ++ ") " ) "< "
-
 compileAndRun :: String -> IO ()
 compileAndRun filepath = do
   let (path, filename) = splitFileName filepath
