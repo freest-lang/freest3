@@ -54,10 +54,12 @@ toGrammar (Semi _ t u) = do
   return $ xs ++ ys
 toGrammar (Message _ p b) = do
   getBasicProd (MessageLabel p b)
-toGrammar (Choice _ p m) = do
-  y <- freshVar
-  tMapWithKeyM (fieldToGrammar y p) m
-  return [y]
+toGrammar t@(Choice _ p m) = do
+  ms <- tMapWithKeyM (\_ t -> toGrammar t) m
+  getProd t ms
+  -- y <- freshVar
+  -- tMapWithKeyM (fieldToGrammar y p) m
+  -- return [y]
 -- Functional or session (session in this case)
 toGrammar (TypeVar _ x) =
   getBasicProd (VarLabel x)   -- x is a polymorphic variable
@@ -86,6 +88,7 @@ fieldToGrammar :: TypeVar -> Polarity -> ProgVar -> Type -> TransState ()
 fieldToGrammar y p x t = do
   xs <- toGrammar t
   addProduction y (ChoiceLabel p x) xs
+
 
 type Substitution = (Type, TypeVar)
 
@@ -154,6 +157,27 @@ getBasicProd l = do
     Just p ->
       return [p]
   where fold x m acc = if l `Map.member` m && null (m Map.! l) then Just x else acc
+
+getProd :: Type -> Map.Map ProgVar [TypeVar] -> TransState [TypeVar]
+getProd (Choice _ p m) ms = do
+  s <- get
+  case Map.foldrWithKey fold Nothing (productions s) of
+    Nothing -> do
+      y <- freshVar
+      tMapWithKeyM (fieldToGrammar y p) m
+      return [y]
+    Just p ->
+      return [p]
+  where fold x ts acc = if coincide ts p ms then Just x else acc
+getProd _ _ = return []
+
+coincide :: Transitions -> Polarity -> Map.Map ProgVar [TypeVar] -> Bool
+coincide ts p m = Map.foldrWithKey (\v xs vs -> if contains v xs p ts
+                                     then True && vs else False && vs) True m
+
+contains :: ProgVar -> [TypeVar] -> Polarity -> Transitions -> Bool
+contains v xs p ts = ((ChoiceLabel p v) `Map.member` ts &&
+            xs == (ts Map.! (ChoiceLabel p v)))
 
 getFromVEnv :: TypeVar -> TransState (Kind, TypeScheme)
 getFromVEnv x = do
