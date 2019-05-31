@@ -168,16 +168,16 @@ getProd (Choice _ p m) ms = do
       return [y]
     Just p ->
       return [p]
-  where fold x ts acc = if coincide ts p ms then Just x else acc
+  where fold x ts acc = if prodExists ts p ms then Just x else acc
 getProd _ _ = return []
 
-coincide :: Transitions -> Polarity -> Map.Map ProgVar [TypeVar] -> Bool
-coincide ts p m = Map.foldrWithKey (\v xs vs -> if contains v xs p ts
-                                     then True && vs else False && vs) True m
+prodExists :: Transitions -> Polarity -> Map.Map ProgVar [TypeVar] -> Bool
+prodExists ts p m = Map.foldrWithKey (\v xs vs -> if contains v xs p ts
+                                     then True && vs else False && vs) (length ts == Map.size m) m
 
 contains :: ProgVar -> [TypeVar] -> Polarity -> Transitions -> Bool
-contains v xs p ts = ((ChoiceLabel p v) `Map.member` ts &&
-            xs == (ts Map.! (ChoiceLabel p v)))
+contains v xs p ts = (ChoiceLabel p v) `Map.member` ts &&
+            xs == (ts Map.! (ChoiceLabel p v))
 
 getFromVEnv :: TypeVar -> TransState (Kind, TypeScheme)
 getFromVEnv x = do
