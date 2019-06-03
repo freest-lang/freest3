@@ -25,11 +25,10 @@ sendTree t c =
     Leaf ->
       select Leaf c;
     Node x l r ->
-      let w = select Node c in
-      let w = send w x in
-      let w = sendTree[(rec x:SL. +{Leaf: Skip, Node: !Int;x;x});a] l w in
-      let w = sendTree[a] r w in
-      w
+      let c = select Node c in
+      let c = send c x in
+      let c = sendTree[(rec x:SL. +{Leaf: Skip, Node: !Int;x;x});a] l c in
+      sendTree[a] r c
   }
   
 receiveTree : forall a : SL => (rec x:SL. &{Leaf: Skip, Node: ?Int;x;x}); a -> (Tree, a)
