@@ -32,6 +32,20 @@ data NodeType =
 -- --  show (ArrowType t1 t2) = show t1 ++ " -> " ++ show t2
 --   show (ArrowType t1 t2) = "(" ++ show t1 ++ " -> " ++ show t2 ++ ")"
 
+class ShowD t where
+  showD :: t -> String
+  
+instance ShowD NodeType where
+  showD IOType = "IOType"
+  showD PureType = "PureType"
+  showD (ArrowType t1 t2) = "(ArrowType " ++ showD t1 ++ " " ++ showD t2 ++ ")"
+
+-- instance ShowD NodeType where
+--   showD IOType = "IOType"
+--   showD PureType = "PureType"
+-- --  showD (ArrowType t1 t2) = showD t1 ++ " -> " ++ showD t2
+--   showD (ArrowType t1 t2) = "(" ++ showD t1 ++ " -> " ++ showD t2 ++ ")"
+
 -- Show fun create
 instance Show NodeType where
   show IOType = "io"
@@ -39,7 +53,9 @@ instance Show NodeType where
   show (ArrowType t1 t2) = show t1 ++ "_" ++ show t2
  
 instance Ord NodeType where
+  a1@(ArrowType _ _)   <= a2@(ArrowType _ _) = nodeTypeLength a1 <= nodeTypeLength a2
   IOType   <= (ArrowType _ _) = True  
+  PureType   <= (ArrowType _ _) = True  
   PureType <= IOType          = True  
   _        <= _               = False
 
@@ -172,11 +188,12 @@ annExp fm ast t e@(App _ e1 e2) =
       (ast2, t2) = annExp fm ast1 PureType e2
       t3         = applyNodeType (max t2 t1) (min t2 t1) -- max and min ... should be like this?
       ast3       = updateProgVar ast2 e1 (updateLastType (max t (lastType t3)) t3) in
---      trace ("Expression: " ++ show e ++ " has the updated type of " ++ show t3)
-      -- trace ("Expression (e1): " ++ show e1 ++ " has type " ++ show t1 ++ "\n" ++
-      --       "Expression (e2): " ++ show e2 ++ " has type " ++ show t2 ++ "\n" ++
-      --       "the t value is " ++ show t ++ "\n" ++
-      --       "the final type is " ++ show t3 ++ "\n" 
+      -- trace ("Expression (e1): " ++ show e1 ++ " has type " ++ showD t1 ++ "\n" ++
+      --       "Expression (e2): " ++ show e2 ++ " has type " ++ showD t2 ++ "\n" ++
+      --       "max (max t2 t1): " ++ showD (max t2 t1) ++ "\n" ++
+      --       "min (min t2 t1): " ++ showD (min t2 t1) ++ "\n" ++
+      --       "the t value is " ++ showD t ++ "\n" ++
+      --       "the final type is " ++ showD t3 ++ "\n" 
       --       )
       (Map.insert e (lastType t3) ast3, lType t3)
       
@@ -369,8 +386,8 @@ translateEnv :: ExpEnv -> TypeEnv -> VarEnv -> HaskellCode
 translateEnv eenv tenv venv =
   let (m, ast1) = topExps eenv tenv venv
       s = execState (tMapWithKeyM addCode eenv) (initialState m ast1) in
---     trace (showAST (ast s) ++ "\n\n")
---     trace (show (annFunMap s) ++ "\n\n")
+    -- trace (showAST (ast s) ++ "\n\n")
+    -- trace (show (annFunMap s) ++ "\n\n")
      haskellCode s ++ "\n\n" ++ showGenFunMap (genFunsMap s)
 
 -- TMP:
@@ -413,14 +430,15 @@ translate _ _ t (Boolean _ b) = do
   return (c, t)
 
 -- Variable
-translate m ast t e@(ProgVar _ x) = do
+translate m ast nt e@(ProgVar _ x) = do
   if not (isFunction x m) then do
      let t1 = ast Map.! e
-     c <- translateExpr t PureType (show x)
-     return (c, t)
-  else do -- magic
+     c <- translateExpr nt PureType (show x)
+     return (c, nt)
+  else do -- magic    
     let t = (m Map.! x)
-    let mat = typeMatch t (ast Map.! e)
+    let mat = typeMatch (max t nt) (ast Map.! e)
+--    traceM ("Function " ++ show x ++": t value " ++ show t ++ " ast value " ++ show (ast Map.! e) ++ " mat value " ++ show mat) 
     if t /= mat then do -- magic
       let types = zipNodeTypes t mat 
       let fname = funName x mat
@@ -437,7 +455,13 @@ translate m ast t (Lambda _ _ x _ e) = do
 translate m ast nt e@(App _ e1 e2) = do
   (h1,t1) <- translate m ast PureType e1 -- TODO: nt?? PureType??
   (h2,t2) <- translate m ast PureType e2
-  return ("(" ++ h1 ++ " " ++ h2 ++ ")", max nt (max t1 t2)) -- TODO: max???
+  -- traceM ("\nnt: " ++ show nt ++ "\n" ++
+  --        "t1 " ++ show t1 ++ "\n" ++
+  --        "t2 " ++ show t2 ++ "\n" ++
+  --        "max t1 t2 " ++ show (max t1 t2) ++ "\n" ++
+  --        "max nt (max t1 t2) " ++ show (max nt (max t1 t2)) ++ "\n"
+  --        )
+  return ("(" ++ h1 ++ " " ++ h2 ++ ")", lastType $ max nt (max t1 t2)) -- TODO: max???
 
 
 -- Pair intro and elim
@@ -549,6 +573,7 @@ translate m ast nt (Match _ e mm) = do
   (h1, t1) <- translate m ast PureType e 
   v <- nextFresh
   fresh <- nextFresh
+--  traceM ("NT:" ++ show nt)
   (h2, t2) <- translateMatchMap fresh m ast nt mm  
   return ("_receive " ++ h1 ++ " >>= \\(" ++ v ++  ", " ++ fresh ++
           ") -> (case " ++ v ++ " of {" ++ h2 ++ "})", max t1 t2)   
@@ -593,11 +618,10 @@ applyNodeType :: NodeType -> NodeType -> NodeType
 applyNodeType t1 t2 = normaliseType (applyNodeType' t1 t2)
 
 applyNodeType' :: NodeType -> NodeType -> NodeType
-applyNodeType' a@(ArrowType _ _) (ArrowType b@(ArrowType _ _) s4) =
-  ArrowType (applyNodeType' a b) s4
+applyNodeType' a@(ArrowType _ _) (ArrowType b@(ArrowType _ _) s4) = ArrowType (applyNodeType' a b) s4
+--applyNodeType' (ArrowType  a@(ArrowType _ _) s1) b@(ArrowType _ _) = ArrowType (applyNodeType' b a) s1
 applyNodeType' (ArrowType s1 s2) (ArrowType s3 s4) = ArrowType (applyNodeType' s1 s3) (applyNodeType' s2 s4)
-applyNodeType' (ArrowType _ s2)  t                 = ArrowType t s2 --(applyNodeType' t s2)
---applyNodeType' t                 (ArrowType s1 s2)  = ArrowType (applyNodeType' t s1) s2 --(applyNodeType' t s2)
+applyNodeType' (ArrowType _ s2)  t                 = ArrowType t s2
 applyNodeType' t                 u                 = max t u
 
 normaliseType :: NodeType -> NodeType
