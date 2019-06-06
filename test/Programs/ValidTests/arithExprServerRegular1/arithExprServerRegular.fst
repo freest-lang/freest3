@@ -38,9 +38,9 @@ client c =
 size : rec x: SL. &{Add: x, Mult: x, Const: ?Int;x, EOS: !Int} -> (Int, rec x: SL. &{Add: x, Mult: x, Const: ?Int;x, EOS: !Int} -> Skip)
 size s =
   match s with {
-    Add s   -> let n, s = size s in (n + 1, s);
-    Mult s  -> let n, s = size s in (n + 1, s);
-    Const s -> let _, s = receive s in let n, s = size s in (n + 1, s);
+    Add s   -> let n, s = size s in (n + 1, s),
+    Mult s  -> let n, s = size s in (n + 1, s),
+    Const s -> let _, s = receive s in let n, s = size s in (n + 1, s),
     EOS s   -> let _ = send s n in 5
   }
 

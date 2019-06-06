@@ -36,7 +36,7 @@ exploreTree : forall α : SL => Tree -> (
 exploreTree tree c =
   case tree of {
     Leaf ->
-      select LeafC c;
+      select LeafC c,
     Node x l r ->
       let c = select NodeC c in
       exploreNode[α] x l r c
@@ -51,13 +51,13 @@ exploreNode x l r c =
   match c with {
     Value c ->
       let c = send c x in
-      (exploreNode[α] x l r c);
+      (exploreNode[α] x l r c),
     Left c ->
       let c = exploreTree[(rec y:SL. &{Value: !Int;y, Left: +{LeafC: Skip, NodeC: y};y, Right: +{LeafC: Skip, NodeC: y};y, Exit: Skip});α] l c in
-      (exploreNode[α] x l r c);
+      (exploreNode[α] x l r c),
     Right c ->
       let c = exploreTree[(rec y:SL. &{Value: !Int;y, Left: +{LeafC: Skip, NodeC: y};y, Right: +{LeafC: Skip, NodeC: y};y, Exit: Skip});α] r c in
-      (exploreNode[α] x l r c);
+      (exploreNode[α] x l r c),
     Exit c1 ->
       c1
   }
@@ -73,7 +73,7 @@ server : forall α : SL => Int -> (
 server n c =
   match c with {
     LeafC c ->
-      (n, c);
+      (n, c),
     NodeC c ->
       serverNode[α] n c
   }

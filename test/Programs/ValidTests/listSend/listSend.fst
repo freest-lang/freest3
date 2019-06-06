@@ -3,7 +3,7 @@ data List = Nil | Cons Int List
 flatten : List -> rec x: SL. +{Nil: Skip, Cons: !Int;x} -> Skip
 flatten l c =
   case l of {
-    Nil -> select Nil c;
+    Nil -> select Nil c,
     Cons h t ->
       let c = select Cons c in
       let c = send c h in
@@ -13,7 +13,7 @@ flatten l c =
 reconstruct : rec x: SL. &{Nil: Skip, Cons: ?Int;x} -> List
 reconstruct c =
   match c with {
-    Nil c -> Nil;
+    Nil c -> Nil,
     Cons c ->
       let h, c = receive c in
       let t = reconstruct c in

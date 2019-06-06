@@ -13,12 +13,12 @@ receiveEval : forall x : SL => (rec termChan:SL . &{Const: ?Int, Add: termChan;t
 receiveEval c =
   match c with {
     Const c1 ->
-      receive c1;
+      receive c1,
     Add c1 ->
 --      let n1, c2 = receiveEval[(rec TermChan . &{Const: ?Int, Add: TermChan;TermChan, Mult: TermChan;TermChan});x] c1 in
       let n1, c2 = receiveEval[(rec termChan:SL . &{Const: ?Int, Add: termChan;termChan, Mult: termChan;termChan});x] c1 in
       let n2, c3 = receiveEval[x] c2 in
-      (n1+n2, c3);
+      (n1+n2, c3),
     Mult c1 ->
 --      let n1, c2 = receiveEval[(rec TermChan . &{Const: ?Int, Add: TermChan;TermChan, Mult: TermChan;TermChan});x] c1 in
       let n1, c2 = receiveEval[(rec termChan:SL . &{Const: ?Int, Add: termChan;termChan, Mult: termChan;termChan});x] c1 in

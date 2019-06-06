@@ -3,7 +3,7 @@ mathServer c =
   match c with {
     Opposite c1 ->
       let n, c = receive c1 in
-      send c (-n);
+      send c (-n),
     Plus c1 ->
       let n1, c2 = receive c1 in
       let n2, c3 = receive c2 in

@@ -4,7 +4,7 @@ sendTree : forall α => Tree -> (rec x . +{NodeC: !Int;x;x, LeafC: Skip}); α ->
 sendTree t c =
   case t of {
     Leaf ->
-      select LeafC c;
+      select LeafC c,
     Node x l r ->
       let c = select NodeC c in
       let c = send x c in

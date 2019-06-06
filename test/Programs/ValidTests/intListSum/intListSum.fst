@@ -3,7 +3,7 @@ data IntList = Nil | Cons Int IntList
 sum' : IntList -> Int
 sum' l =
   case l of {
-    Nil -> 0;
+    Nil -> 0,
     Cons x y -> x + sum' y
   }
 

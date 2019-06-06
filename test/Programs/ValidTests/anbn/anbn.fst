@@ -43,7 +43,7 @@ server' c =
       (let c = server'[&{B: Skip}; α] c in  -- &{B: Skip}; α
        match c with {
          B c -> c
-       });      -- α
+       }),      -- α
     B c ->               -- α
       c
   }

@@ -10,7 +10,7 @@ sumFives : dualof Chan -> Int
 sumFives c =
   match c with {
     Done _ ->
-      0;
+      0,
     More c ->
      let n, c = receive c in
      n + sumFives c

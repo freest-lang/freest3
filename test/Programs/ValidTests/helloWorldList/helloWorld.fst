@@ -6,7 +6,7 @@ server c =
     More c -> 
       let h, c = receive c in
       let t, c = server[α] c in
-      (Cons h t, c);
+      (Cons h t, c),
     Done c ->
       (Nil, c)
   }
@@ -15,7 +15,7 @@ client : forall α :SL => List -> (rec x:SL.+{Done: Skip, More: !Char;x});α -> 
 client l c =
   case l of {
     Nil ->
-      select Done c;
+      select Done c,
     Cons h t ->
 --      client[α] l (send cons (select More c))
       let c = select More c in
