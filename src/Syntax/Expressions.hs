@@ -50,7 +50,7 @@ data Expression =
   | New Pos Type
   | Send Pos Expression
   | Receive Pos Expression
-  | Select Pos ProgVar Expression
+  | Select Pos Expression ProgVar
   | Match Pos Expression FieldMap
   deriving (Eq, Ord)
 

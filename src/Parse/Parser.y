@@ -188,7 +188,7 @@ App :: { Expression }
   | ProgVar '[' TypeList ']'                 { TypeApp (position $1) $1 $3 }
   | send Primary                             { Send (position $1) $2 }
   | receive Primary                          { Receive (position $1) $2 }
-  | select Constructor Primary               { Select (position $1) $2 $3 }
+  | select Primary Constructor               { Select (position $1) $2 $3 }
   | fork Primary                             { Fork (position $1) $2 }
   | '-' App %prec NEG                        { unOp (mkVar (position $1) "negate") $2}
   | Primary                                  { $1 }

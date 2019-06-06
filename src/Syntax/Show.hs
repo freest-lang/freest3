@@ -57,7 +57,7 @@ showVar v
   | isDigit (head s) = dropWhile (\x -> isDigit x || x == '#') s
   | otherwise        = s
   where s = intern v
--- showVar = intern
+--showVar = intern
 
 -- -- Kinds
 
@@ -163,7 +163,7 @@ showExp i (Fork _ e) = "fork " ++ showExp (i-1) e
 showExp _ (New _ t) = "new " ++ show t
 showExp i (Send _ e) = "(send " ++ showExp (i-1) e ++ ")"
 showExp i (Receive _ e) = "(receive " ++ showExp (i-1) e ++ ")"
-showExp i (Select _ l e) = "(select " ++ show l ++ " " ++ showExp (i-1) e ++ ")"
+showExp i (Select _ e l) = "(select " ++ showExp (i-1) e ++ " " ++ show l ++ ")"
 showExp i (Match _ e m) = "match " ++ showExp (i-1) e ++ " with {" ++ showFieldMap (i-1) m ++ "}"
 
 showFieldMap :: Int -> FieldMap -> String
