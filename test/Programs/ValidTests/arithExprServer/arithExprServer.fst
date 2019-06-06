@@ -29,13 +29,13 @@ receiveEval c =
 -- client : (rec TermChan . +{Const: !Int, Add: TermChan;TermChan, Mult: TermChan;TermChan});?Int -> (Int, Skip)
 client : (rec termChan:SL . +{Const: !Int, Add: termChan;termChan, Mult: termChan;termChan});?Int -> (Int, Skip)
 client c =
-  let c1 = select Add c in
-  let c2 = select Const c1 in
+  let c1 = select c Add in
+  let c2 = select c1 Const in
   let c3 = send c2 5 in
-  let c4 = select Mult c3 in
-  let c5 = select Const c4 in
+  let c4 = select c3 Mult in
+  let c5 = select c4 Const in
   let c6 = send c5 7 in
-  let c7 = select Const c6 in
+  let c7 = select c6 Const in
   let c8 = send c7 9 in
   receive c8
 

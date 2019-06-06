@@ -36,9 +36,9 @@ exploreTree : forall α : SL => Tree -> (
 exploreTree tree c =
   case tree of {
     Leaf ->
-      select LeafC c,
+      select c LeafC,
     Node x l r ->
-      let c = select NodeC c in
+      let c = select c NodeC in
       exploreNode[α] x l r c
     }
 
@@ -84,14 +84,14 @@ serverNode : forall α : SL => Int -> (
            Right: &{LeafC: Skip, NodeC: y};y,
            Exit:  Skip});α -> (Int, α)
 serverNode n c =
-  let c = select Value c in
+  let c = select c Value in
   let m, c = receive c in
   if m == 0
-  then let c = select Exit c in (0, c)
+  then let c = select c Exit in (0, c)
   else
-    let c = select Left c in
+    let c = select c Left in
     let c, m = server[α] (m * n) c in
-    let c = select Right c in
+    let c = select c Right in
     server[α] m c
 
 -- main

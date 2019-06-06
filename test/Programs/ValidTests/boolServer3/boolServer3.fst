@@ -34,7 +34,7 @@ s1 =
   
 client1 : +{And: !Bool;!Bool;?Bool;Skip, Or: !Bool;!Bool;?Bool;Skip, Not: !Bool;?Bool;Skip} -> Bool
 client1 w =
-  let w1 = select And w in
+  let w1 = select w And in
   let w2 = send w1 True in
   let r1 = send w2 False in
   let x, r2 = receive r1 in
@@ -42,7 +42,7 @@ client1 w =
 
 client2 : +{And: !Bool;!Bool;?Bool;Skip, Or: !Bool;!Bool;?Bool;Skip, Not: !Bool;?Bool;Skip} -> Bool
 client2 w =
-  let w1 = select Not w in
+  let w1 = select w Not in
   let r1 = send w1 True in
   let x, r2 = receive r1 in
   x

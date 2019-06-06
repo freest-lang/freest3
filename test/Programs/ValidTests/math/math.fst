@@ -14,7 +14,7 @@ main : Int
 main =
   let r,w = new &{Opposite: ?Int;!Int, Plus: ?Int;?Int;!Int} in
   let _ = fork (mathServer r) in
-  let x, _ = receive (send (select Opposite w) 5) in
+  let x, _ = receive (send (select w Opposite) 5) in
   x
  
         

@@ -14,7 +14,7 @@ main : Int
 main =
   let w,r = new +{Opposite: !Int;?Int, Plus: !Int;!Int;?Int} in
   let x = fork (mathServer r) in
-  let w = select Plus w in
+  let w = select w Plus in
   let w = send w 5 in
   let w = send w 18 in
   let x, _ = receive w in

@@ -4,13 +4,13 @@ flatten : Tree -> rec x:SL. +{Root: !Int;x, Node: x, EOS: Skip} -> rec x:SL. +{R
 flatten tree c =
   case tree of {
     Leaf ->
-      select EOS c,
+      select c EOS,
     Node x l r ->
-      let c = select Root c in
+      let c = select c Root in
       let c = send c x      in
-      let c = select Node c in
+      let c = select c Node in
       let c = flatten l c   in
-      let c = select Node c in
+      let c = select c Node in
               flatten r c
   }
 

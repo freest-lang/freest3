@@ -23,9 +23,9 @@ sendTree : forall a:SL => Tree -> (rec x:SL. +{Leaf : Skip, Node: !Int;x;x}); a 
 sendTree t c =
   case t of {
     Leaf ->
-      select Leaf c,
+      select c Leaf,
     Node x l r ->
-      let c = select Node c in
+      let c = select c Node in
       let c = send c x in
       let c = sendTree[(rec x:SL. +{Leaf: Skip, Node: !Int;x;x});a] l c in
       sendTree[a] r c

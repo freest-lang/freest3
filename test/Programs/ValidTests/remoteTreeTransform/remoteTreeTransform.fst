@@ -12,9 +12,9 @@ transform : forall α : SL => Tree -> (rec x:SL. +{LeafC: Skip, NodeC: !Int;x;x;
 transform tree c =
   case tree of {
     Leaf ->
-      (Leaf, select LeafC c),
+      (Leaf, select c LeafC),
     Node x l r ->
-      let c = select NodeC c in
+      let c = select c NodeC in
       let c = send c x in
       let l, c = transform[(rec x:SL. +{LeafC: Skip, NodeC: !Int;x;x;?Int});?Int;α] l c in
       let r, c = transform[?Int;α] r c in
