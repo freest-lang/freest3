@@ -13,18 +13,18 @@ type Stream = +{
 client : rec x: SL. +{Add: x, Mult: x, Const: !Int;x, EOS: ?Int} -> Int
 client c =
   -- stream the arithmetic operation
-  let c = select Const c in
+  let c = select c Const in
   let c = send c 5 in
-  let c = select Const c in
+  let c = select c Const in
   let c = send c 4 in
-  let c = select Mult c in
-  let c = select Const c in
+  let c = select c Mult in
+  let c = select c Const in
   let c = send c 2 in
-  let c = select Const c in
+  let c = select c Const in
   let c = send c 3 in
-  let c = select Mult c in
-  let c = select Add c in
-  let c = select EOS c in
+  let c = select c Mult in
+  let c = select c Add in
+  let c = select c EOS in
   -- read the result
   let x, c = receive c in
   -- and return it
@@ -39,9 +39,9 @@ client c =
 size : Int -> rec x: SL. &{Add: x, Mult: x, Const: ?Int;x, EOS: !Int} -> Skip
 size n s =
   match s with {
-    Add s   -> size (n + 1) s;
-    Mult s  -> size (n + 1) s;
-    Const s -> let _, s = receive s in size (n + 1) s;
+    Add s   -> size (n + 1) s,
+    Mult s  -> size (n + 1) s,
+    Const s -> let _, s = receive s in size (n + 1) s,
     EOS s   -> send s n
   }
 

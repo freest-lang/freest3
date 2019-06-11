@@ -12,9 +12,9 @@ transformTree : Tree -> (rec x:SL. +{LeafC: Skip, NodeC: !Int;x;x;?Int}) -> (Tre
 transformTree tree c =
   case tree of {
     Leaf ->
-      (Leaf, select LeafC c);
+      (Leaf, select c LeafC),
     Node x l r ->
-      let c = select NodeC c in
+      let c = select c NodeC in
       let c = send c x in
       let l, c = transformNode l c in
       let r, c = transformTreeInt r c in
@@ -30,9 +30,9 @@ transformNode : Tree ->
 transformNode tree c =
   case tree of {
     Leaf ->
-      (Leaf, select LeafC c);
+      (Leaf, select c LeafC),
     Node x l r ->
-      let c = select NodeC c in
+      let c = select c NodeC in
       let c = send c x in
       let l, c = transformNode l c in
       let r, c = transformTreeInt r c in
@@ -47,9 +47,9 @@ transformTreeInt : Tree ->
 transformTreeInt tree c =
   case tree of {
     Leaf ->
-      (Leaf, select LeafC c);
+      (Leaf, select c LeafC),
     Node x l r ->
-      let c = select NodeC c in
+      let c = select c NodeC in
       let c = send c x in
       let l, c = transformNode l c in
       let r, c = transformTreeInt r c in
@@ -65,7 +65,7 @@ transformTreeInt tree c =
 treeSum : forall α : SL => (rec x:SL. &{LeafC: Skip, NodeC: ?Int;x;x;!Int});α -> (Int, α)
 treeSum c =
   match c with {
-    LeafC c -> (0, c);
+    LeafC c -> (0, c),
     NodeC c ->
       let x, c = receive c in
       let l, c = treeSum[(rec x:SL. &{LeafC: Skip, NodeC: ?Int;x;x;!Int});!Int;α] c in

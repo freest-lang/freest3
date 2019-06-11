@@ -186,9 +186,9 @@ instance Rename Expression where
   rename bs (Receive p e) = do
     e' <- rename bs e
     return $ Receive p e'
-  rename bs (Select p l e) = do
+  rename bs (Select p e l) = do
     e' <- rename bs e
-    return $ Select p l e'
+    return $ Select p e' l
   rename bs (Match p e fm) = do
     e' <- rename bs e
     fm' <- tMapM (renameField bs) fm

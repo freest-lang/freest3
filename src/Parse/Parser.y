@@ -188,7 +188,7 @@ App :: { Expression }
   | ProgVar '[' TypeList ']'                 { TypeApp (position $1) $1 $3 }
   | send Primary                             { Send (position $1) $2 }
   | receive Primary                          { Receive (position $1) $2 }
-  | select Constructor Primary               { Select (position $1) $2 $3 }
+  | select Primary Constructor               { Select (position $1) $2 $3 }
   | fork Primary                             { Fork (position $1) $2 }
   | '-' App %prec NEG                        { unOp (mkVar (position $1) "negate") $2}
   | Primary                                  { $1 }
@@ -209,14 +209,14 @@ ProgVarWildTBind :: { (ProgVar, Type) }
 
 MatchMap :: { FieldMap }
   : Match              { uncurry Map.singleton $1 }
-  | Match ';' MatchMap {% checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
+  | Match ',' MatchMap {% checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
 
 Match :: { (ProgVar, ([ProgVar], Expression)) }
   : Constructor ProgVarWild '->' Expr { ($1, ([$2], $4)) }
 
 CaseMap :: { FieldMap }
   : Case             { uncurry Map.singleton $1 }
-  | Case ';' CaseMap {% checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
+  | Case ',' CaseMap {% checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
                         
 Case :: { (ProgVar, ([ProgVar], Expression)) }
   : Constructor ProgVarWildSeq '->' Expr { ($1, ($2, $4)) }

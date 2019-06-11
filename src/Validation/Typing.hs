@@ -50,6 +50,8 @@ synthetise _ (Character p _) = return $ Basic p CharType
 synthetise _ (Boolean p _)   = return $ Basic p BoolType
 -- Variable
 synthetise kEnv (ProgVar p x) = do
+  -- venv <- getVEnv
+  -- traceM ("PROG: " ++ show x ++ " - " ++ show (x `Map.member` venv) ++ "\n" ++ show venv ++ "\n\n")
   s@(TypeScheme _ bs t) <- synthetiseVar kEnv x
   when (not $ null bs) 
     (addError p ["Variable", styleRed $ show x, "of a polymorphic type used in a monomorphic context\n",
@@ -136,7 +138,7 @@ synthetise kEnv (Receive p e) = do
   t <- synthetise kEnv e
   (u1, u2) <- extractInput e t
   return $ PairType p (Basic p u1) u2
-synthetise kEnv (Select p c e) = do
+synthetise kEnv (Select p e c) = do
   t <- synthetise kEnv e
   m <- extractOutChoiceMap e t
   extractCons p m c

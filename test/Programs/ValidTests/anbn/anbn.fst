@@ -15,7 +15,7 @@ type S1 = (rec x:SL. +{A: x; +{B: Skip}, B: Skip})
 -- client : Int -> S0 -> Skip
 client : Int -> +{A: rec x:SL. +{A: x; +{B: Skip}, B: Skip}} -> Skip
 client n c =
-  let c = select A c in
+  let c = select c A in
   client'[Skip] (n - 1) c
 
 -- client' : Int -> S1;α -> α
@@ -23,11 +23,11 @@ client' : forall α : SL => Int -> (rec x:SL. +{A: x; +{B: Skip}, B: Skip}); α 
 client' n c =
   if n == 0
   then
-    select B c                                  -- α
+    select c B                                  -- α
   else
-    let c = select A c in                       -- S1; +{B: Skip}; α
+    let c = select c A in                       -- S1; +{B: Skip}; α
     let c = client'[+{B: Skip}; α] (n - 1) c in -- +{B: Skip}; α
-    select B c                                  -- α
+    select c B                                  -- α
 
 server : &{A: rec x:SL. &{A: x; &{B: Skip}, B: Skip}} -> Skip
 server c =
@@ -43,7 +43,7 @@ server' c =
       (let c = server'[&{B: Skip}; α] c in  -- &{B: Skip}; α
        match c with {
          B c -> c
-       });      -- α
+       }),      -- α
     B c ->               -- α
       c
   }

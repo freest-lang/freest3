@@ -263,7 +263,7 @@ annExp fm ast t e@(Match _ e1 cm) =
       maxT = max t1 t2
   in (Map.insert e maxT ast2, maxT)
   
-annExp fm ast t e@(Select _ x e1) =
+annExp fm ast t e@(Select _ e1 x) =
   let (ast1,_) = annExp fm ast PureType e1 in
     (Map.insert e IOType ast1, IOType)
  
@@ -565,7 +565,7 @@ translate m ast t (Receive _ e) = do
   else  
     return ("(_receive " ++ h1 ++ ")", IOType)
 
-translate m ast nt e@(Select _ x e1) = do
+translate m ast nt e@(Select _ e1 x) = do
   (h, _) <- translate m ast PureType e1 -- PureType or nt??
   return ("(_send " ++ h ++ " \"" ++ show x ++ "\")", IOType)
   
@@ -692,6 +692,6 @@ updateEEnv' (UnLet p x e1 e2) = (UnLet p x (updateEEnv' e1) (updateEEnv' e2))
 updateEEnv' (Fork p e) = (Fork p (updateEEnv' e))
 updateEEnv' (Send p e) = (Send p (updateEEnv' e))
 updateEEnv' (Receive p e) = (Receive p (updateEEnv' e))
-updateEEnv' (Select p x e) = (Select p x (updateEEnv' e))
+updateEEnv' (Select p e x) = (Select p (updateEEnv' e) x)
 -- updateEEnv' (Match Pos Expression FieldMap
 updateEEnv' e = e
