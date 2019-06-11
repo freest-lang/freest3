@@ -21,6 +21,7 @@ import           Syntax.Kinds
 import           Syntax.ProgramVariables
 import           Syntax.TypeVariables
 import           Syntax.Base
+import           Validation.Substitution
 import qualified Data.Map.Strict as Map
 import           Data.List (intersperse, intercalate)
 import           Data.Char (isDigit)
@@ -89,37 +90,42 @@ instance Show BasicType where
   show UnitType = "()"
 
 instance Show Type where
+  show = showType 4
+
+showType :: Int -> Type -> String
+  -- Non-recursive cases
+showType _ (Basic _ b)      = show b
+showType _ (Skip _)         = "Skip"
+showType _ (TypeVar _ x)    = show x
+showType _ (Message _ p b)  = show p ++ show b
+showType _ (TypeName _ x)   = show x
+  -- Depth reached
+showType 0 _ = ".."
   -- Functional types
-  show (Basic _ b)      = show b
-  show (Fun _ m t u)    = "(" ++ show t ++ showArrow m ++ show u ++ ")"
-  show (PairType _ t u) = "(" ++ show t ++ ", " ++ show u ++ ")"
-  show (Datatype _ m)   = "["++ showDatatype m ++"]"
+showType i (Fun _ m t u)    = "(" ++ showType (i-1) t ++ showArrow m ++ showType (i-1) u ++ ")"
+showType i (PairType _ t u) = "(" ++ showType (i-1) t ++ ", " ++ showType (i-1) u ++ ")"
+showType i (Datatype _ m)   = "["++ showDatatype (i-1) m ++"]"
   -- Session types
-  show (Skip _)         = "Skip"
-  show (Semi _ t u)     = "(" ++ show t ++ ";" ++ show u ++ ")"
-  show (Message _ p b)  = show p ++ show b
-  show (Choice _ v m)   = showChoiceView v ++ "{" ++ showChoice m ++ "}"
-  show (Rec _ x t)      = "(rec " ++ show x ++ ". " ++ show t ++ ")"
-  -- Functional or session
-  show (TypeVar _ x)    = show x
+showType i (Semi _ t u)     = "(" ++ showType (i-1) t ++ ";" ++ showType (i-1) u ++ ")"
+showType i (Choice _ v m)   = showChoiceView v ++ "{" ++ showChoice (i-1) m ++ "}"
+showType i (Rec _ x t)      = showType i (unfold t)
   -- Type operators
-  show (Dualof _ s)     = "(dualof " ++ show s ++ ")"
-  show (TypeName _ x)   = show x
+showType i (Dualof _ s)     = "(dualof " ++ showType (i-1) s ++ ")"
   
-showDatatype :: TypeMap -> String
-showDatatype m = concat $ intersperse " | " (map showAssoc (Map.assocs m))
+showDatatype :: Int -> TypeMap -> String
+showDatatype i m = concat $ intersperse " | " (map showAssoc (Map.assocs m))
   where
   showAssoc :: (ProgVar, Type) -> String
   showAssoc (c, t) = show c ++ showAsSequence t
   showAsSequence :: Type -> String
-  showAsSequence (Fun _ _ t u) = " " ++ show t ++ showAsSequence u
+  showAsSequence (Fun _ _ t u) = " " ++ showType (i-1) t ++ showAsSequence u
   showAsSequence _ = ""
 
-showChoice :: TypeMap -> String
-showChoice m = concat $ intersperse ", " (map showAssoc (Map.assocs m))
+showChoice :: Int -> TypeMap -> String
+showChoice i m = concat $ intersperse ", " (map showAssoc (Map.assocs m))
   where
   showAssoc :: (ProgVar, Type) -> String
-  showAssoc (c, t) = show c ++ ": " ++ show t
+  showAssoc (c, t) = show c ++ ": " ++ showType (i-1) t
 
 -- Type Schemes
 
