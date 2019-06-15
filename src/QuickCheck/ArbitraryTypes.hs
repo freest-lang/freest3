@@ -10,8 +10,8 @@ import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
 import           Syntax.Base
 import           Syntax.Show
-import           Validation.Substitution
-import           Validation.Rename
+-- import           Validation.Substitution
+import qualified Validation.Rename as Rename
 import qualified Data.Map.Strict as Map
 import           Control.Monad
 
@@ -63,7 +63,7 @@ instance Show BisimPair where
 instance Arbitrary BisimPair where
   arbitrary = do
     (t, u) <- sized bisimPair
-    let [t', u'] = renameList [t, u]
+    let [t', u'] = Rename.renameTypes [t, u]
     return $ BisimPair t' u'
 
 bisimPair :: Int -> Gen (Type, Type)
@@ -185,7 +185,7 @@ recRecL = do
   xk@(TypeVarBind _ x _) <- arbitrary
   yk@(TypeVarBind _ y _) <- arbitrary
   return (Rec pos xk (Rec pos yk t),
-          Rec pos xk (subs (TypeVar pos x) y u))
+          Rec pos xk (Rename.subs (TypeVar pos x) y u))
 
 recRecR :: Gen (Type, Type)
 recRecR = do
@@ -193,7 +193,7 @@ recRecR = do
   xk@(TypeVarBind _ x _) <- arbitrary
   yk@(TypeVarBind _ y _) <- arbitrary
   return (Rec pos xk (Rec pos yk t),
-          Rec pos yk (subs (TypeVar pos y) x u))
+          Rec pos yk (Rename.subs (TypeVar pos y) x u))
 
 recFree :: Int -> Gen (Type, Type)
 recFree n = do
@@ -207,22 +207,22 @@ recFree n = do
 --   (x, k) <- arbitrary
 --   let y = freeTypeVar -- TODO: Here we need a genunine free var
 --   return (Rec pos (TypeVarBind pos x k) t,
---           Rec pos (TypeVarBind pos y k) (subs (TypeVar pos y) x u))
+--           Rec pos (TypeVarBind pos y k) (Rename.subs (TypeVar pos y) x u))
 
 subsOnBoth :: Gen (Type, Type)
 subsOnBoth = do
   (BisimPair t u) <- arbitrary
   (BisimPair v w) <- arbitrary
   x <- arbitrary
-  return (subs t x v,
-          subs u x w)
+  return (Rename.subs t x v,
+          Rename.subs u x w)
 
 unfoldt :: Int -> Gen (Type, Type)
 unfoldt n = do
   (t, u) <- bisimPair (n `div` 4)
   xk <- arbitrary
   return (Rec pos xk t,
-          unfold (Rec pos xk u))
+          Rename.unfold (Rec pos xk u))
 
 -- -- Commutativity
 

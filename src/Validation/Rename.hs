@@ -16,7 +16,9 @@ Portability :  portable | non-portable (<reason>)
 module Validation.Rename
 ( renameState
 , renameType
-, renameList
+, renameTypes
+, subs
+, unfold
 , Rename(..) -- for testing only
 ) where
 
@@ -27,6 +29,7 @@ import           Syntax.Kinds
 import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
 import           Syntax.Base
+import qualified Validation.Substitution as Subs (subs, unfold)
 import           Utils.FreestState
 import qualified Data.Map.Strict as Map
 import           Control.Monad.State
@@ -228,11 +231,22 @@ insertVar x y = Map.insert (intern x) (intern y)
 findWithDefaultVar :: Variable a => a -> Bindings -> a
 findWithDefaultVar x bs = mkVar (position x) (Map.findWithDefault (intern x) (intern x) bs)
 
+-- Substitution and unfold, the renamed versions
+
+-- [t/x]u, substitute t for for every free occurrence of x in u
+subs :: Type -> TypeVar -> Type -> Type
+subs t x u = renameType $ Subs.subs t x u
+
+-- Unfold a recursive type (one step only)
+unfold :: Type -> Type
+unfold = renameType . Subs.unfold
+-- unfold t@(Rec _ (TypeVarBind _ x _) u) = Subs.subs t x (renameType u)
+
 -- Stand alone
 
 renameType :: Type -> Type
-renameType t = head (renameList [t])
+renameType = head . renameTypes . (:[])
 
-renameList :: [Type] -> [Type]
-renameList ts = evalState (mapM (rename Map.empty) ts) (initialState "Renaming for QuickCheck")
+renameTypes :: [Type] -> [Type]
+renameTypes ts = evalState (mapM (rename Map.empty) ts) (initialState "Renaming for QuickCheck")
 

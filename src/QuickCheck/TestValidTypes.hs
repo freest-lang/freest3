@@ -60,7 +60,7 @@ prop_equivalent (BisimPair t u) = kinded t && kinded u ==> t `equiv` u
 -- prop_norm_preserves_bisim :: Type -> Property
 -- prop_norm_preserves_bisim t = kinded t ==> bisim u v
 --   where t' = renameType t
---         [u, v] = renameList [t, normalise Map.empty t']
+--         [u, v] = renameTypes [t, normalise Map.empty t']
 
 -- Duality is a convolution
 prop_dual_convolution :: Type -> Property

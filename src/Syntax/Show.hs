@@ -6,9 +6,8 @@ Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of 
                    Vasco Vasconcelos, LASIGE, Faculty of Sciences, University of Lisbon
 Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc.ul.pt
 
-The show instances.
+Converting AST terms to strings.
 -}
-
 
 module Syntax.Show
 ( showChoiceView
@@ -21,7 +20,7 @@ import           Syntax.Kinds
 import           Syntax.ProgramVariables
 import           Syntax.TypeVariables
 import           Syntax.Base
---import           Validation.Substitution
+import qualified Validation.Substitution as Subs (unfold) -- no renaming
 import qualified Data.Map.Strict as Map
 import           Data.List (intersperse, intercalate)
 import           Data.Char (isDigit)
@@ -104,28 +103,25 @@ showType 0 _ = ".."
   -- Functional types
 showType i (Fun _ m t u)    = "(" ++ showType (i-1) t ++ showArrow m ++ showType (i-1) u ++ ")"
 showType i (PairType _ t u) = "(" ++ showType (i-1) t ++ ", " ++ showType (i-1) u ++ ")"
-showType i (Datatype _ m)   = "["++ showDatatype (i-1) m ++"]"
+showType i (Datatype _ m)   = "["++ showDatatype i m ++"]"
   -- Session types
 showType i (Semi _ t u)     = "(" ++ showType (i-1) t ++ ";" ++ showType (i-1) u ++ ")"
-showType i (Choice _ v m)   = showChoiceView v ++ "{" ++ showChoice (i-1) m ++ "}"
-showType i (Rec _ x t)      = showType i t -- (unfold t)
+showType i (Choice _ v m)   = showChoiceView v ++ "{" ++ showChoice i m ++ "}"
+showType i t@(Rec _ _ _)    = showType (i-1) (Subs.unfold t)
   -- Type operators
-showType i (Dualof _ s)     = "(dualof " ++ showType (i-1) s ++ ")"
+showType i (Dualof _ t)     = "(dualof " ++ showType (i-1) t ++ ")"
   
 showDatatype :: Int -> TypeMap -> String
-showDatatype i m = concat $ intersperse " | " (map showAssoc (Map.assocs m))
+showDatatype i m = concat $ intersperse " | " $
+  Map.foldrWithKey (\c t acc -> (show c ++ showAsSequence t) : acc ) [] m
   where
-  showAssoc :: (ProgVar, Type) -> String
-  showAssoc (c, t) = show c ++ showAsSequence t
   showAsSequence :: Type -> String
   showAsSequence (Fun _ _ t u) = " " ++ showType (i-1) t ++ showAsSequence u
   showAsSequence _ = ""
 
 showChoice :: Int -> TypeMap -> String
-showChoice i m = concat $ intersperse ", " (map showAssoc (Map.assocs m))
-  where
-  showAssoc :: (ProgVar, Type) -> String
-  showAssoc (c, t) = show c ++ ": " ++ showType (i-1) t
+showChoice i m = concat $ intersperse ", " $
+  Map.foldrWithKey (\c t acc -> (show c ++ ": " ++ showType (i-1) t) : acc) [] m
 
 -- Type Schemes
 

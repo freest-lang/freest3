@@ -22,7 +22,7 @@ import           Syntax.Kinds
 import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
 import           Syntax.Base
-import           Validation.Substitution
+import           Validation.Substitution (subsAll) -- no renaming
 import           Equivalence.Grammar
 import           Equivalence.Normalisation
 import           Utils.FreestState (tMapWithKeyM, tMapM)

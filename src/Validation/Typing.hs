@@ -29,7 +29,7 @@ import           Syntax.Base
 import           Syntax.ProgramVariables
 import qualified Validation.Kinding as K
 import           Validation.Extract
-import           Validation.Substitution
+import qualified Validation.Rename as Rename (subs)
 import           Equivalence.Equivalence
 import           Utils.Errors
 import           Utils.FreestState
@@ -88,7 +88,7 @@ synthetise kEnv (TypeApp p x ts) = do
                 "\t arguments: ", styleRed $ show ts])  
   let typeKinds = zip ts bs :: [(Type, TypeVarBind)]
   mapM (\(t, TypeVarBind _ _ k) -> K.checkAgainst kEnv k t) typeKinds
-  return $ foldr (\(u, TypeVarBind _ x _) acc -> subs u x acc) t typeKinds
+  return $ foldr (\(u, TypeVarBind _ x _) acc -> Rename.subs u x acc) t typeKinds
 -- Boolean elimination
 synthetise kEnv (Conditional p e1 e2 e3) = do
   checkAgainst kEnv e1 (Basic p BoolType)

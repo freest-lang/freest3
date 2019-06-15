@@ -23,7 +23,7 @@ import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.ProgramVariables
 import           Syntax.TypeVariables
-import           Validation.Substitution
+import qualified Validation.Rename as Rename (subs)
 import           Equivalence.Normalisation
 import           Equivalence.Bisimulation
 import qualified Data.Map.Strict as Map
@@ -47,11 +47,11 @@ instance Equivalence Type where
       equiv t1 u1 && equiv t2 u2
     equiv (Datatype _ m1) (Datatype _ m2) =
       Map.size m1 == Map.size m2 &&
-      Map.foldlWithKey (equivField m2) True m1
+      Map.foldlWithKey (equivField m2) True m1 -- TODO: Use all
       -- Functional or session
     equiv (TypeVar _ x) (TypeVar _ y) = x == y -- A free type var
-    equiv t@(Rec _ _ _) u = equiv (unfold t) u -- TODO: recipe for looping?
-    equiv t u@(Rec _ _ _) = equiv t (unfold u) -- TODO: recipe for looping?
+    -- equiv t@(Rec _ _ _) u = equiv (unfold t) u -- TODO: recipe for looping?
+    -- equiv t u@(Rec _ _ _) = equiv t (unfold u) -- TODO: recipe for looping?
       -- Type operators
     -- equiv (Dualof _ (TypeName _ x)) u = equiv (dual (getType x)) u -- These are session types
     -- equiv t (Dualof _ (TypeName _ y)) = equiv t (dual (getType y))
@@ -104,7 +104,7 @@ instantiate (TypeScheme _ bs1 t1) (TypeScheme _ bs2 t2) = inst bs1 bs2 t1 t2
     | k1 /= k2  = Nothing
     | otherwise = -- substitute x1 for x2 in t2
         fmap (\(m, t1', t2') -> (Map.insert x1 k1 m, t1', t2'))
-             (inst bs1 bs2 t1 (subs (TypeVar p1 x1) x2 t2))
+             (inst bs1 bs2 t1 (Rename.subs (TypeVar p1 x1) x2 t2))
   inst [] [] t1 t2 = Just (Map.empty, t1, t2)
   inst _ _ _ _ = Nothing
 
