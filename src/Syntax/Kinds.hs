@@ -25,6 +25,7 @@ module Syntax.Kinds
 , join
 , isLin
 , isUn
+, fromTypeVarBinds
 ) where
 
 import           Syntax.TypeVariables
@@ -79,8 +80,7 @@ isSession :: Kind -> Bool
 isSession = (<: (Kind defaultPos Session Lin))
 
 isLin :: Kind -> Bool
-isLin (Kind _ _ Lin) = True
-isLin _              = False
+isLin (Kind _ _ m) = m == Lin
 
 isUn :: Kind -> Bool
 isUn = not . isLin
@@ -98,3 +98,6 @@ data TypeVarBind = TypeVarBind Pos TypeVar Kind deriving (Eq, Ord)
 
 instance Position TypeVarBind where
   position (TypeVarBind p _ _) = p
+
+fromTypeVarBinds :: [TypeVarBind] -> KindEnv
+fromTypeVarBinds = foldr (\(TypeVarBind _ x k) env -> Map.insert x k env) Map.empty

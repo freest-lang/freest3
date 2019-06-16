@@ -53,13 +53,13 @@ instance Show TypeVar where
   show = showVar
 
 showVar :: Variable v => v -> String
--- showVar v
---   | isDigit (head s) = dropWhile (\x -> isDigit x || x == '#') s
---   | otherwise        = s
---   where s = intern
-showVar = intern -- for testing purposes
+showVar v
+  | isDigit (head s) = dropWhile (\x -> isDigit x || x == '#') s
+  | otherwise        = s
+  where s = intern v
+-- showVar = intern -- for testing purposes
 
--- -- Kinds
+-- Kinds
 
 instance Show PreKind where
   show Session    = "S"

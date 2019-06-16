@@ -296,7 +296,7 @@ checkAgainst kEnv e t = do
 
 -- | Check an expression against a given type scheme
 checkAgainstTS :: Expression -> TypeScheme -> FreestState ()
-checkAgainstTS e (TypeScheme _ bs t) = checkAgainst (K.fromTypeVarBinds bs) e t
+checkAgainstTS e (TypeScheme _ bs t) = checkAgainst (fromTypeVarBinds bs) e t
   
 -- EQUALITY AND EQUIVALENCE CHECKING
 

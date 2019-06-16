@@ -20,7 +20,6 @@ module Validation.Kinding
 , synthetiseTS
 , un
 , lin
-, fromTypeVarBinds
 ) where
 
 import           Syntax.Schemes
@@ -114,9 +113,6 @@ checkAgainst kEnv expected t = do
 synthetiseTS :: KindEnv -> TypeScheme -> FreestState Kind
 synthetiseTS kEnv (TypeScheme _ bs t) = synthetise insertBinds t
   where insertBinds = foldr (\(TypeVarBind _ x k) env -> Map.insert x k env) kEnv bs
-
-fromTypeVarBinds :: [TypeVarBind] -> KindEnv
-fromTypeVarBinds = foldr (\(TypeVarBind _ x k) env -> Map.insert x k env) Map.empty
 
 -- Determine whether a given type is unrestricted
 un :: TypeScheme -> FreestState Bool
