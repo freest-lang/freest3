@@ -42,11 +42,11 @@ expand :: ([TypeVar], [TypeVar]) -> Productions -> Bool
 expand p = expand' (Queue.singleton (Set.singleton p, Set.empty))
   where
   expand' :: NodeQueue -> Productions -> Bool
-  expand' ((n, a) Queue.:<| q') ps
+  expand' ((n, a) Queue.:<| q) ps
     | Set.null n      = True
     | otherwise       = case expandNode ps n of
-        Nothing -> expand' q' ps
-        Just n' -> expand' (simplify ps n' (Set.union a n) q') ps
+        Nothing -> expand' q ps
+        Just n' -> expand' (simplify ps n' (Set.union a n) q) ps
   expand' Queue.Empty _ = False
 
 expandNode :: Productions -> Node -> Maybe Node

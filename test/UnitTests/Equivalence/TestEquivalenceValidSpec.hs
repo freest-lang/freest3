@@ -18,7 +18,7 @@ matchValidSpec [k, t, u] =
       {-# SCC "EQUIVALENT_TEST_CALL" #-}
       equivalent Map.empty (readKenv k) t' u' `shouldBe` True)
     where
-      [t', u'] = renameList [read t, read u]
+      [t', u'] = renameTypes [read t, read u]
       readKenv :: String -> KindEnv
       readKenv s = Map.fromList $ map (\(x,k) -> (mkVar defaultPos x, k)) (read s)
 

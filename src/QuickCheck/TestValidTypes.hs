@@ -27,10 +27,13 @@ main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
 
 bisim :: Type -> Type -> Bool
 bisim = bisimilar Map.empty
+
 equiv :: Type -> Type -> Bool
 equiv = equivalent Map.empty kindEnv
+
 norm :: Type -> Type
 norm = normalise Map.empty
+
 pos :: Pos
 pos = defaultPos
 
@@ -40,13 +43,8 @@ kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (kindSL pos)))
         -- its kind may be SU
         
 kinded :: Type -> Bool
-kinded = isJust . kindOf
-
-kindOf :: Type -> Maybe Kind
-kindOf t
-  | null (errors s) = Just k
-  | otherwise       = Nothing
-  where (k, s) = runState (synthetise kindEnv t) (initialState "Kind syntesis")
+kinded t = null (errors s)
+  where (_, s) = runState (synthetise kindEnv t) (initialState "Kind synthesis")
 
 -- Bisimilar types are bisimilar
 prop_bisimilar :: BisimPair -> Property
