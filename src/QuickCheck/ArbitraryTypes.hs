@@ -184,16 +184,20 @@ recRecL = do
   (BisimPair t u) <- arbitrary
   xk@(TypeVarBind _ x _) <- arbitrary
   yk@(TypeVarBind _ y _) <- arbitrary
-  return (Rec pos xk (Rec pos yk t),
-          Rec pos xk (Rename.subs (TypeVar pos x) y u))
+  if x == y
+  then return (t, u)
+  else return (Rec pos xk (Rec pos yk t),
+               Rec pos xk (Rename.subs (TypeVar pos x) y u))
 
 recRecR :: Gen (Type, Type)
 recRecR = do
   (BisimPair t u) <- arbitrary
   xk@(TypeVarBind _ x _) <- arbitrary
   yk@(TypeVarBind _ y _) <- arbitrary
-  return (Rec pos xk (Rec pos yk t),
-          Rec pos yk (Rename.subs (TypeVar pos y) x u))
+  if x == y
+  then return (t, u)
+  else return (Rec pos xk (Rec pos yk t),
+               Rec pos yk (Rename.subs (TypeVar pos y) x u))
 
 recFree :: Int -> Gen (Type, Type)
 recFree n = do
