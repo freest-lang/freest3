@@ -22,10 +22,10 @@ import           Syntax.Kinds
 import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
 import           Syntax.Base
-import           Validation.Substitution (subsAll) -- no renaming
+import qualified Validation.Substitution as Substitution (subsAll) -- no renaming
 import           Equivalence.Grammar
 import           Equivalence.Normalisation
-import           Utils.FreestState (tMapWithKeyM, tMapM)
+import           Utils.FreestState (tMapWithKeyM, tMapM, tMapM_)
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
 import           Debug.Trace
@@ -41,7 +41,7 @@ typeToGrammar t = do
   y <- freshVar
   xs <- toGrammar t
   addProduction y (MessageLabel Out UnitType) xs
-  collect t []
+  collect [] t
   return y
 
 toGrammar :: Type -> TransState [TypeVar]
@@ -54,12 +54,9 @@ toGrammar (Semi _ t u) = do
   return $ xs ++ ys
 toGrammar (Message _ p b) = do
   getBasicProd (MessageLabel p b)
-toGrammar t@(Choice _ p m) = do
-  ms <- tMapWithKeyM (\_ t -> toGrammar t) m
+toGrammar t@(Choice _ _ m) = do
+  ms <- tMapM toGrammar m
   getProd t ms
-  -- y <- freshVar
-  -- tMapWithKeyM (fieldToGrammar y p) m
-  -- return [y]
 -- Functional or session (session in this case)
 toGrammar (TypeVar _ x) =
   getBasicProd (VarLabel x)   -- x is a polymorphic variable
@@ -84,24 +81,18 @@ toGrammar (Rec _ (TypeVarBind _ x _) _) =
   -- Should not happen
 toGrammar t = error ("toGrammar: " ++ show t)
 
-fieldToGrammar :: TypeVar -> Polarity -> ProgVar -> Type -> TransState ()
-fieldToGrammar y p x t = do
-  xs <- toGrammar t
-  addProduction y (ChoiceLabel p x) xs
-
-
 type Substitution = (Type, TypeVar)
 
-collect :: Type -> [Substitution] -> TransState ()
-collect (Semi _ t u) σ = collect t σ >> collect u σ
-collect (Choice _ _ m) σ = tMapM (\t -> collect t σ) m >> return ()
-collect t@(Rec _ (TypeVarBind _ x _) u) σ = do
+collect :: [Substitution] -> Type -> TransState ()
+collect σ (Semi _ t u) = collect σ t >> collect σ u
+collect σ (Choice _ _ m) = tMapM_ (collect σ) m
+collect σ t@(Rec _ (TypeVarBind _ x _) u) = do
   let σ' = (t, x) : σ
-  let u' = subsAll σ' u
+  let u' = Substitution.subsAll σ' u
   (z:zs) <- toGrammar (normalise Map.empty u')
   m <- getTransitions z
   addProductions x (Map.map (++ zs) m)
-  collect u σ'
+  collect σ' u
 collect _ _ = return ()
 
 -- The state of the translation to grammars
@@ -170,6 +161,11 @@ getProd (Choice _ p m) ms = do
       return [p]
   where fold x ts acc = if prodExists ts p ms then Just x else acc
 getProd _ _ = return []
+
+fieldToGrammar :: TypeVar -> Polarity -> ProgVar -> Type -> TransState ()
+fieldToGrammar y p x t = do
+  xs <- toGrammar t
+  addProduction y (ChoiceLabel p x) xs
 
 prodExists :: Transitions -> Polarity -> Map.Map ProgVar [TypeVar] -> Bool
 prodExists ts p m = Map.foldrWithKey (\v xs vs -> if contains v xs p ts

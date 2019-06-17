@@ -18,6 +18,7 @@ FreestState
 , initialState
 -- Monad & map
 , tMapM
+, tMapM_
 , tMapWithKeyM
 -- Next index
 , getNextIndex
@@ -185,6 +186,9 @@ hasErrors = not . null . errors
 
 tMapM :: Monad m => (a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)
 tMapM f m = Traversable.sequence (Map.map f m)
+
+tMapM_ :: Monad m => (a1 -> m a2) -> Map.Map k a1 -> m ()
+tMapM_ f m = tMapM f m >> return ()
 
 tMapWithKeyM :: Monad m => (k -> a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)
 tMapWithKeyM f m = Traversable.sequence (Map.mapWithKey f m)

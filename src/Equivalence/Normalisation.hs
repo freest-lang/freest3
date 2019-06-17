@@ -18,13 +18,13 @@ module Equivalence.Normalisation
 import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Base
-import qualified Validation.Rename as Rename (unfold)
+import qualified Validation.Substitution as Substitution (unfold)
 import qualified Data.Map.Strict as Map
 
 class Normalise t where
   normalise :: TypeEnv -> t -> t
 
--- Requires: t well-kinded
+-- Requires: t well-formed
 -- normalise t = u implies
 --   t is equivalent to u and
 --   u is not a rec type and
@@ -36,19 +36,19 @@ instance Normalise Type where
     | terminated t = normalise tenv u
     | otherwise    = append (normalise tenv t) u
     -- Functional or session
-  normalise tenv t@(Rec _ _ _) = normalise tenv (Rename.unfold t) -- TODO: diverges?
+  normalise tenv t@(Rec _ _ _) = normalise tenv (Substitution.unfold t)
     -- Type operators
   normalise tenv (Dualof _ t) = normalise tenv (dual t)
   normalise tenv (TypeName _ a) = normalise tenv t
     where (_, TypeScheme _ [] t) = tenv Map.! a -- TODO: type/data may be polymorphic
     -- Otherwise: Basic, Fun, PairType, Datatype, Skip, Message, Choice, TypeVar
-  normalise tenv t = t
+  normalise _ t = t
 
 append :: Type -> Type -> Type
-append (Skip _)       t = t
-append t       (Skip _) = t
-append (Semi p t u)   v = Semi p t (append u v)
-append t              u = Semi (position t) t u
+append (Skip _)     t = t
+append t     (Skip _) = t
+append (Semi p t u) v = Semi p t (append u v)
+append t            u = Semi (position t) t u
 
 -- As in the ICFP'16 paper, except that no substitution is applied to Rec types
 terminated :: Type ->  Bool
