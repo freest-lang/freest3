@@ -18,7 +18,7 @@ module Equivalence.Normalisation
 import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Base
-import qualified Validation.Rename as Rename (unfold)
+import qualified Validation.Substitution as Subs (unfold)
 import qualified Data.Map.Strict as Map
 
 class Normalise t where
@@ -36,7 +36,7 @@ instance Normalise Type where
     | terminated t = normalise tenv u
     | otherwise    = append (normalise tenv t) u
     -- Functional or session
-  normalise tenv t@(Rec _ _ _) = normalise tenv (Rename.unfold t) -- TODO: diverges?
+  normalise tenv t@(Rec _ _ _) = normalise tenv (Subs.unfold t) -- TODO: diverges?
     -- Type operators
   normalise tenv (Dualof _ t) = normalise tenv (dual t)
   normalise tenv (TypeName _ a) = normalise tenv t
