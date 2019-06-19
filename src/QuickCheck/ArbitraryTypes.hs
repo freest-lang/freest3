@@ -184,9 +184,10 @@ recRecL n = do
   (t, u) <- bisimPair (n `div` 4)
   xk@(TypeVarBind _ x _) <- arbitrary
   yk@(TypeVarBind _ y _) <- arbitrary
-  if x == y
-  then return (t, u)
-  else return (Rec pos xk (Rec pos yk t),
+  -- if x == y
+  -- then return (t, u)
+  -- else
+  return (Rec pos xk (Rec pos yk t),
                Rec pos xk (Rename.subs (TypeVar pos x) y u))
 
 recRecR :: Int -> Gen (Type, Type)
@@ -194,9 +195,10 @@ recRecR n = do
   (t, u) <- bisimPair (n `div` 4)
   xk@(TypeVarBind _ x _) <- arbitrary
   yk@(TypeVarBind _ y _) <- arbitrary
-  if x == y
-  then return (t, u)
-  else return (Rec pos xk (Rec pos yk t),
+  -- if x == y
+  -- then return (t, u)
+  -- else
+  return (Rec pos xk (Rec pos yk t),
                Rec pos yk (Rename.subs (TypeVar pos y) x u))
 
 recFree :: Int -> Gen (Type, Type)
@@ -217,16 +219,18 @@ subsOnBoth :: Int -> Gen (Type, Type)
 subsOnBoth n = do
   (t, u) <- bisimPair (n `div` 4)
   (v, w) <- bisimPair (n `div` 4)
+  let [t',u',v',w'] = Rename.renameTypes [t,u,v,w] -- these types will be on a substitution
   x <- arbitrary
-  return (Rename.subs t x v,
-          Rename.subs u x w)
+  return (Rename.subs t' x v',
+          Rename.subs u' x w')
 
 unfoldt :: Int -> Gen (Type, Type)
 unfoldt n = do
   (t, u) <- bisimPair (n `div` 4)
+  let u' = Rename.renameType u -- this type will be unfolded
   xk <- arbitrary
   return (Rec pos xk t,
-          Rename.unfold (Rec pos xk u))
+          Rename.unfold (Rec pos xk u'))
 
 -- -- Commutativity
 
