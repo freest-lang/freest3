@@ -170,8 +170,8 @@ assoc n = do
 
 distrib :: Int -> Gen (Type, Type)
 distrib n = do
-  (t, u) <- bisimPair (n `div` 4)
-  pairs <- fieldPairs (n `div` 4)
+  (t, u) <- bisimPair (n `div` 8)
+  pairs <- fieldPairs (n `div` 8)
   p <- arbitrary
   let (f1, f2) = unzip pairs
   return (Semi pos (Choice pos p (Map.fromList f1)) t,
