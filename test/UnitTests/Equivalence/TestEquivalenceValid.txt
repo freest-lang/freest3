@@ -678,3 +678,7 @@ rec z:SL. !Int; rec w. z;w
 -- (rec y. +{A: (rec y. (rec x. (+{A: (Skip;(?Int;!())), B: (Skip;?Char)};x)))})
 -- +{A: (rec y. +{A: (((Skip;?Int);!());(rec y. +{A: (rec y. +{A: (((Skip;?Int);!());y), B: (?Char;y)})})), B: (?Char;(rec y. +{A: (rec y. +{A: (((Skip;?Int);!());y), B: (?Char;y)})}))})}
 
+[]
+(rec x0.&{A: (rec z1.(rec x2.((rec x3.!Char);(rec y4.&{B: z1}))))}) 
+
+&{A: (rec x5.(!Char;&{B: (rec x6.&{A: (rec x7.(!Char;&{B: x7}))})}))}
