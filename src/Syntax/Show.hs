@@ -53,11 +53,11 @@ instance Show TypeVar where
   show = showVar
 
 showVar :: Variable v => v -> String
-showVar v
-  | isDigit (head s) = dropWhile (\x -> isDigit x || x == '#') s
-  | otherwise        = s
-  where s = intern v
--- showVar = intern -- for testing purposes
+-- showVar v
+--   | isDigit (head s) = dropWhile (\x -> isDigit x || x == '#') s
+--   | otherwise        = s
+--   where s = intern v
+showVar = intern -- for testing purposes
 
 -- Kinds
 
@@ -89,8 +89,8 @@ instance Show BasicType where
   show UnitType = "()"
 
 instance Show Type where
-  show = showType 4
-  -- show = showType 44 -- for testing purposes
+  -- show = showType 4
+  show = showType 44 -- for testing purposes
 
 showType :: Int -> Type -> String
   -- Non-recursive cases
@@ -108,8 +108,8 @@ showType i (Datatype _ m)   = "[" ++ showDatatype i m ++ "]"
   -- Session types
 showType i (Semi _ t u)     = "(" ++ showType (i-1) t ++ ";" ++ showType (i-1) u ++ ")"
 showType i (Choice _ v m)   = showChoiceView v ++ "{" ++ showChoice i m ++ "}"
-showType i t@(Rec _ _ _)    = showType (i-1) (Subs.unfold t)
--- showType i (Rec _ xk t)     = "(rec " ++ show xk ++ "." ++ showType (i-1) t ++ ")" -- for testing purposes
+-- showType i t@(Rec _ _ _)    = showType (i-1) (Subs.unfold t)
+showType i (Rec _ xk t)     = "(rec " ++ show xk ++ "." ++ showType (i-1) t ++ ")" -- for testing purposes
   -- Type operators
 showType i (Dualof _ t)     = "(dualof " ++ showType (i-1) t ++ ")"
   

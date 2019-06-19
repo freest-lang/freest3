@@ -89,11 +89,11 @@ bisimPair n =
     , assoc n
     , distrib n
     -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
-    , recRecL
-    , recRecR
+    , recRecL n
+    , recRecR n
     , recFree n
     -- , alphaConvert n
-    , subsOnBoth
+    , subsOnBoth n
     , unfoldt n
     -- Commutativity
     , commut n
@@ -179,9 +179,9 @@ distrib n = do
           
 -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
 
-recRecL :: Gen (Type, Type)
-recRecL = do
-  (BisimPair t u) <- arbitrary
+recRecL :: Int -> Gen (Type, Type)
+recRecL n = do
+  (t, u) <- bisimPair (n `div` 4)
   xk@(TypeVarBind _ x _) <- arbitrary
   yk@(TypeVarBind _ y _) <- arbitrary
   if x == y
@@ -189,9 +189,9 @@ recRecL = do
   else return (Rec pos xk (Rec pos yk t),
                Rec pos xk (Rename.subs (TypeVar pos x) y u))
 
-recRecR :: Gen (Type, Type)
-recRecR = do
-  (BisimPair t u) <- arbitrary
+recRecR :: Int -> Gen (Type, Type)
+recRecR n = do
+  (t, u) <- bisimPair (n `div` 4)
   xk@(TypeVarBind _ x _) <- arbitrary
   yk@(TypeVarBind _ y _) <- arbitrary
   if x == y
@@ -213,10 +213,10 @@ recFree n = do
 --   return (Rec pos (TypeVarBind pos x k) t,
 --           Rec pos (TypeVarBind pos y k) (Rename.subs (TypeVar pos y) x u))
 
-subsOnBoth :: Gen (Type, Type)
-subsOnBoth = do
-  (BisimPair t u) <- arbitrary
-  (BisimPair v w) <- arbitrary
+subsOnBoth :: Int -> Gen (Type, Type)
+subsOnBoth n = do
+  (t, u) <- bisimPair (n `div` 4)
+  (v, w) <- bisimPair (n `div` 4)
   x <- arbitrary
   return (Rename.subs t x v,
           Rename.subs u x w)
