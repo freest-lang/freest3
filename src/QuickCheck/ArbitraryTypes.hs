@@ -128,7 +128,7 @@ choicePair n = do
 fieldPairs :: Int -> Gen [((ProgVar, Type), (ProgVar, Type))]
 fieldPairs n = do
   k <- choose (1, length choices)
-  vectorOf k $ field (n `div` length choices) -- TODO: why?
+  vectorOf k $ field (n `div` (2 * k))
   where
   field :: Int -> Gen ((ProgVar, Type), (ProgVar, Type))
   field n = do
