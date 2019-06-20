@@ -10,7 +10,6 @@ import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
 import           Syntax.Base
 import           Syntax.Show
--- import           Validation.Substitution
 import qualified Validation.Rename as Rename
 import qualified Data.Map.Strict as Map
 import           Control.Monad
@@ -129,13 +128,13 @@ choicePair n = do
 fieldPairs :: Int -> Gen [((ProgVar, Type), (ProgVar, Type))]
 fieldPairs n = do
   k <- choose (1, length choices)
-  vectorOf k $ field (n `div` (length choices)) -- Why?
+  vectorOf k $ field (n `div` length choices) -- TODO: why?
   where
   field :: Int -> Gen ((ProgVar, Type), (ProgVar, Type))
   field n = do
-      (t, u) <- bisimPair (n `div` 4)
-      x <- arbitrary
-      return ((x, t), (x, u))
+    (t, u) <- bisimPair (n `div` 4)
+    x <- arbitrary
+    return ((x, t), (x, u))
 
 recPair :: Int -> Gen (Type, Type)
 recPair n = do
@@ -184,22 +183,18 @@ recRecL n = do
   (t, u) <- bisimPair (n `div` 4)
   xk@(TypeVarBind _ x _) <- arbitrary
   yk@(TypeVarBind _ y _) <- arbitrary
-  -- if x == y
-  -- then return (t, u)
-  -- else
+  let u' = Rename.renameType u -- this type will be on a substitution
   return (Rec pos xk (Rec pos yk t),
-               Rec pos xk (Rename.subs (TypeVar pos x) y u))
+          Rec pos xk (Rename.subs (TypeVar pos x) y u'))
 
 recRecR :: Int -> Gen (Type, Type)
 recRecR n = do
   (t, u) <- bisimPair (n `div` 4)
   xk@(TypeVarBind _ x _) <- arbitrary
   yk@(TypeVarBind _ y _) <- arbitrary
-  -- if x == y
-  -- then return (t, u)
-  -- else
+  let u' = Rename.renameType u -- this type will be on a substitution
   return (Rec pos xk (Rec pos yk t),
-               Rec pos yk (Rename.subs (TypeVar pos y) x u))
+          Rec pos yk (Rename.subs (TypeVar pos y) x u'))
 
 recFree :: Int -> Gen (Type, Type)
 recFree n = do
@@ -217,8 +212,8 @@ recFree n = do
 
 subsOnBoth :: Int -> Gen (Type, Type)
 subsOnBoth n = do
-  (t, u) <- bisimPair (n `div` 4)
-  (v, w) <- bisimPair (n `div` 4)
+  (t, u) <- bisimPair (n `div` 8)
+  (v, w) <- bisimPair (n `div` 8)
   let [t',u',v',w'] = Rename.renameTypes [t,u,v,w] -- these types will be on a substitution
   x <- arbitrary
   return (Rename.subs t' x v',
@@ -232,7 +227,7 @@ unfoldt n = do
   return (Rec pos xk t,
           Rename.unfold (Rec pos xk u'))
 
--- -- Commutativity
+-- Commutativity
 
 commut :: Int -> Gen (Type, Type)
 commut n = do
