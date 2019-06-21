@@ -168,8 +168,8 @@ fieldToGrammar y p x t = do
   addProduction y (ChoiceLabel p x) xs
 
 prodExists :: Transitions -> Polarity -> Map.Map ProgVar [TypeVar] -> Bool
-prodExists ts p m = Map.foldrWithKey (\v xs vs -> if contains v xs p ts
-                                     then True && vs else False && vs) (length ts == Map.size m) m
+prodExists ts p m = Map.foldrWithKey (\v xs vs -> (contains v xs p ts) && vs)
+                                                  (length ts == Map.size m) m
 
 contains :: ProgVar -> [TypeVar] -> Polarity -> Transitions -> Bool
 contains v xs p ts = (ChoiceLabel p v) `Map.member` ts &&
