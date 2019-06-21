@@ -155,17 +155,17 @@ getProd (Choice _ p m) ms = do
   case Map.foldrWithKey fold Nothing (productions s) of
     Nothing -> do
       y <- freshVar
-      tMapWithKeyM (fieldToGrammar y p) m
+      let ms' = Map.mapKeys (ChoiceLabel p) ms
+      addProductions y ms'
       return [y]
     Just p ->
       return [p]
   where fold x ts acc = if prodExists ts p ms then Just x else acc
-getProd _ _ = return []
 
-fieldToGrammar :: TypeVar -> Polarity -> ProgVar -> Type -> TransState ()
-fieldToGrammar y p x t = do
-  xs <- toGrammar t
-  addProduction y (ChoiceLabel p x) xs
+-- fieldToGrammar :: TypeVar -> Polarity -> ProgVar -> Type -> TransState ()
+-- fieldToGrammar y p x t = do
+--   xs <- toGrammar t
+--   addProduction y (ChoiceLabel p x) xs
 
 prodExists :: Transitions -> Polarity -> Map.Map ProgVar [TypeVar] -> Bool
 prodExists ts p m = Map.foldrWithKey (\v xs vs -> (contains v xs p ts) && vs)
