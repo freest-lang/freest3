@@ -24,7 +24,6 @@ showElem :: TypeVar -> TypeScheme -> String
 showElem x (TypeScheme _ _ (Datatype _ m)) = showDatatype x m
 showElem x (TypeScheme _ _ t)              = showTypeAbbr x t
 
-
 showDatatype :: TypeVar -> TypeMap -> String
 showDatatype x m = "data " ++ show x ++ " = " ++ showDatatypeMap m ++ " deriving Show"
 
@@ -37,7 +36,6 @@ showTypes = intercalate " " . map show . init . toListT
 
 showTypeAbbr :: TypeVar -> Type -> String
 showTypeAbbr x t = "type " ++ show x ++ " = " ++ show t
-
 
 -- TODO: Remove, do I need toList over schemes or only types
 toListT :: Type -> [Type]

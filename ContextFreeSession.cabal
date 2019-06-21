@@ -48,7 +48,8 @@ executable ContextFreeSession
                        Validation.Substitution,
                        Equivalence.Equivalence, Equivalence.Bisimulation, Equivalence.Grammar,
                        Equivalence.TypeToGrammar, Equivalence.Norm, Equivalence.Normalisation,
-                       CodeGen.CodeGen, CodeGen.DatatypeGen,  CodeGen.Annotation, 
+                       CodeGen.CodeGen, CodeGen.DatatypeGen,  CodeGen.Annotation,
+                       CodeGen.CodeGenState, CodeGen.Translate,
                        Utils.PreludeLoader
 
 test-suite unit-tests
@@ -120,7 +121,7 @@ test-suite program-tests
                        Validation.Substitution,
                        Equivalence.Equivalence, Equivalence.Bisimulation, Equivalence.Grammar,
                        Equivalence.TypeToGrammar, Equivalence.Norm, Equivalence.Normalisation,
-                       CodeGen.CodeGen, CodeGen.DatatypeGen, 
+                       CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.CodeGenState, CodeGen.Translate,
                        CodeGen.Annotation, Utils.PreludeLoader
 
 test-suite testEquiv
