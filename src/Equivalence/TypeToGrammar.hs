@@ -53,13 +53,19 @@ toGrammar (Semi _ t u) = do
   ys <- toGrammar u
   return $ xs ++ ys
 toGrammar (Message _ p b) = do
-  getBasicProd (MessageLabel p b)
-toGrammar t@(Choice _ _ m) = do
+  let ms = Map.singleton (MessageLabel p b) []
+  y <- getProd ms
+  return [y]
+toGrammar (Choice _ p m) = do
   ms <- tMapM toGrammar m
-  getProd t ms
+  let ms' = Map.mapKeys (ChoiceLabel p) ms
+  y <- getProd ms'
+  return [y]
 -- Functional or session (session in this case)
-toGrammar (TypeVar _ x) =
-  getBasicProd (VarLabel x)   -- x is a polymorphic variable
+toGrammar (TypeVar _ x) = do
+  let ms = Map.singleton (VarLabel x) []
+  y <- getProd ms   -- x is a polymorphic variable
+  return [y]
 toGrammar (Rec _ (TypeVarBind _ x _) _) =
   return [x]
   -- Type operators
@@ -137,43 +143,41 @@ addProduction x l w =
 -- Add or update production from a (basic) non-terminal; the
 -- productions may already contain transitions for the given
 -- nonterminal (hence the insertWith and union)
-getBasicProd :: Label -> TransState [TypeVar]
-getBasicProd l = do
-  s <- get
-  case Map.foldrWithKey fold Nothing (productions s) of
-    Nothing -> do
-      y <- freshVar
-      addProduction y l []
-      return [y]
-    Just p ->
-      return [p]
-  where fold x m acc = if l `Map.member` m && null (m Map.! l) then Just x else acc
+-- getBasicProd :: Label -> TransState [TypeVar]
+-- getBasicProd l = do
+--   s <- get
+--   case Map.foldrWithKey fold Nothing (productions s) of
+--     Nothing -> do
+--       y <- freshVar
+--       addProduction y l []
+--       return [y]
+--     Just p ->
+--       return [p]
+--   where fold x m acc = if l `Map.member` m && null (m Map.! l) then Just x else acc
 
-getProd :: Type -> Map.Map ProgVar [TypeVar] -> TransState [TypeVar]
-getProd (Choice _ p m) ms = do
+getProd :: Transitions -> TransState TypeVar
+getProd ms = do
   s <- get
   case Map.foldrWithKey fold Nothing (productions s) of
     Nothing -> do
       y <- freshVar
-      let ms' = Map.mapKeys (ChoiceLabel p) ms
-      addProductions y ms'
-      return [y]
+      addProductions y ms
+      return y
     Just p ->
-      return [p]
-  where fold x ts acc = if prodExists ts p ms then Just x else acc
+      return p
+  where fold x ts acc = if prodExists ts ms then Just x else acc
 
 -- fieldToGrammar :: TypeVar -> Polarity -> ProgVar -> Type -> TransState ()
 -- fieldToGrammar y p x t = do
 --   xs <- toGrammar t
 --   addProduction y (ChoiceLabel p x) xs
 
-prodExists :: Transitions -> Polarity -> Map.Map ProgVar [TypeVar] -> Bool
-prodExists ts p m = Map.foldrWithKey (\v xs vs -> (contains v xs p ts) && vs)
-                                                  (length ts == Map.size m) m
+prodExists :: Transitions -> Transitions -> Bool
+prodExists ts ms = Map.foldrWithKey (\l xs ys -> (contains l xs ts) && ys)
+                                             (length ts == Map.size ms) ms
 
-contains :: ProgVar -> [TypeVar] -> Polarity -> Transitions -> Bool
-contains v xs p ts = (ChoiceLabel p v) `Map.member` ts &&
-            xs == (ts Map.! (ChoiceLabel p v))
+contains :: Label -> [TypeVar] -> Transitions -> Bool
+contains l xs ts = l `Map.member` ts && xs == (ts Map.! l)
 
 getFromVEnv :: TypeVar -> TransState (Kind, TypeScheme)
 getFromVEnv x = do
