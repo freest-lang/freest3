@@ -104,6 +104,18 @@ skipPair :: Gen (Type, Type)
 skipPair = return (Skip pos,
                    Skip pos)
 
+messagePair :: Gen (Type, Type)
+messagePair = do
+  (p, b) <- arbitrary
+  return (Message pos p b,
+          Message pos p b)
+
+varPair :: Gen (Type, Type)
+varPair = do
+  x <- arbitrary
+  return (TypeVar pos x,
+          TypeVar pos x)
+
 semiPair :: Int -> Gen (Type, Type)
 semiPair n = do
   (t, u) <- bisimPair (n `div` 8)
@@ -111,27 +123,22 @@ semiPair n = do
   return (Semi pos t v,
           Semi pos u w)
 
-messagePair :: Gen (Type, Type)
-messagePair = do
-  (p, b) <- arbitrary
-  return (Message pos p b,
-          Message pos p b)
-
 choicePair :: Int -> Gen (Type, Type)
 choicePair n = do
   p <- arbitrary
-  pairs <- fieldPairs n
-  let (f1, f2) = unzip pairs
-  return (Choice pos p (Map.fromList f1),
-          Choice pos p (Map.fromList f2))
+  (m1, m2) <- typeMapPair n
+  return (Choice pos p m1,
+          Choice pos p m2)
 
-fieldPairs :: Int -> Gen [((ProgVar, Type), (ProgVar, Type))]
-fieldPairs n = do
+typeMapPair :: Int -> Gen (TypeMap, TypeMap)
+typeMapPair n = do
   k <- choose (1, length choices)
-  vectorOf k $ field (n `div` (2 * k))
+  pairs <- vectorOf k $ fieldPair (n `div` k)
+  let (f1, f2) = unzip pairs
+  return (Map.fromList f1, Map.fromList f2)
   where
-  field :: Int -> Gen ((ProgVar, Type), (ProgVar, Type))
-  field n = do
+  fieldPair :: Int -> Gen ((ProgVar, Type), (ProgVar, Type))
+  fieldPair n = do
     (t, u) <- bisimPair (n `div` 4)
     x <- arbitrary
     return ((x, t), (x, u))
@@ -141,11 +148,6 @@ recPair n = do
   (t, u) <- bisimPair (n `div` 4)
   xk <- arbitrary
   return (Rec pos xk t, Rec pos xk u)
-
-varPair :: Gen (Type, Type)
-varPair = do
-  x <- arbitrary
-  return (TypeVar pos x, TypeVar pos x)
 
 -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
 
@@ -169,12 +171,11 @@ assoc n = do
 
 distrib :: Int -> Gen (Type, Type)
 distrib n = do
-  (t, u) <- bisimPair (n `div` 8)
-  pairs <- fieldPairs (n `div` 8)
+  (t, u) <- bisimPair (n `div` 4)
+  (m1, m2) <- typeMapPair (n `div` 4)
   p <- arbitrary
-  let (f1, f2) = unzip pairs
-  return (Semi pos (Choice pos p (Map.fromList f1)) t,
-          Choice pos p (Map.map (\v -> Semi pos v u) (Map.fromList f2)))
+  return (Semi pos (Choice pos p m1) t,
+          Semi pos (Choice pos p m2) u) -- Choice pos p (Map.map (\v -> Semi pos v u) m2))
           
 -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
 
@@ -183,7 +184,7 @@ recRecL n = do
   (t, u) <- bisimPair (n `div` 4)
   xk@(TypeVarBind _ x _) <- arbitrary
   yk@(TypeVarBind _ y _) <- arbitrary
-  let u' = Rename.renameType u -- this type will be on a substitution
+  let u' = Rename.renameType u -- this type will be in a substitution
   return (Rec pos xk (Rec pos yk t),
           Rec pos xk (Rename.subs (TypeVar pos x) y u'))
 
@@ -192,7 +193,7 @@ recRecR n = do
   (t, u) <- bisimPair (n `div` 4)
   xk@(TypeVarBind _ x _) <- arbitrary
   yk@(TypeVarBind _ y _) <- arbitrary
-  let u' = Rename.renameType u -- this type will be on a substitution
+  let u' = Rename.renameType u -- this type will be in a substitution
   return (Rec pos xk (Rec pos yk t),
           Rec pos yk (Rename.subs (TypeVar pos y) x u'))
 
@@ -214,7 +215,7 @@ subsOnBoth :: Int -> Gen (Type, Type)
 subsOnBoth n = do
   (t, u) <- bisimPair (n `div` 8)
   (v, w) <- bisimPair (n `div` 8)
-  let [t',u',v',w'] = Rename.renameTypes [t,u,v,w] -- these types will be on a substitution
+  let [t',u',v',w'] = Rename.renameTypes [t,u,v,w] -- these types will be in a substitution
   x <- arbitrary
   return (Rename.subs t' x v',
           Rename.subs u' x w')
