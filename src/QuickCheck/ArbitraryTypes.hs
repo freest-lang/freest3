@@ -175,7 +175,8 @@ distrib n = do
   (m1, m2) <- typeMapPair (n `div` 4)
   p <- arbitrary
   return (Semi pos (Choice pos p m1) t,
-          Semi pos (Choice pos p m2) u) -- Choice pos p (Map.map (\v -> Semi pos v u) m2))
+          Choice pos p (Map.map (\v -> Semi pos v u) m2))
+          -- Semi pos (Choice pos p m2) u)
           
 -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
 
