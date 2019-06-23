@@ -9,7 +9,7 @@ type Stream = +{
 }
 -}
 
--- A sample client: (2*3)+(4*5)
+-- A sample client: (5*4)+(2*3)
 client : rec x: SL. +{Add: x, Mult: x, Const: !Int;x, EOS: ?Int} -> Int
 client c =
   -- stream the arithmetic operation
@@ -35,13 +35,12 @@ client c =
   with any stream, independent of the fact that it may or may not
   represent a well formed arithmetic expression.
 -}
-
-size : Int -> rec x: SL. &{Add: x, Mult: x, Const: ?Int;x, EOS: !Int} -> Skip
-size n s =
+size : rec x: SL. &{Add: x, Mult: x, Const: ?Int;x, EOS: !Int} -> Int -> Skip
+size s n =
   match s with {
-    Add s   -> size (n + 1) s,
-    Mult s  -> size (n + 1) s,
-    Const s -> let _, s = receive s in size (n + 1) s,
+    Add s   -> size s (n + 1),
+    Mult s  -> size s (n + 1),
+    Const s -> let _, s = receive s in size s (n + 1),
     EOS s   -> send s n
   }
 
@@ -50,5 +49,5 @@ size n s =
 main : Int
 main =
   let c, s = new rec x: SL. +{Add: x, Mult: x, Const: !Int;x, EOS: ?Int} in
-  let _ = fork (size 0 s) in
+  let _ = fork (size s 0) in
   client c
