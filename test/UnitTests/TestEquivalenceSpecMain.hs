@@ -7,5 +7,5 @@ main = hspec spec
 
 spec :: Spec
 spec = do
-  describe "Validation"  Equiv.spec
-  describe "Invalid"  InvEquiv.spec
+  describe "Valid tests"  Equiv.spec
+  describe "Invalid tests"  InvEquiv.spec
