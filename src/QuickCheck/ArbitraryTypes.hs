@@ -87,6 +87,7 @@ bisimPair n =
     , tSkip n
     , assoc n
     , distrib n
+    , distrib n
     -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
     , recRecL n
     , recRecR n
@@ -176,7 +177,6 @@ distrib n = do
   p <- arbitrary
   return (Semi pos (Choice pos p m1) t,
           Choice pos p (Map.map (\v -> Semi pos v u) m2))
-          -- Semi pos (Choice pos p m2) u)
           
 -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
 

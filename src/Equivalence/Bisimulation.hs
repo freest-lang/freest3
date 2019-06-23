@@ -27,10 +27,11 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.Sequence as Queue
 import           Data.List (isPrefixOf)
+import           Debug.Trace
 
 bisimilar :: TypeEnv -> Type -> Type -> Bool
 bisimilar tEnv t u = expand ([x], [y]) (prune p)
-  where Grammar [x, y] p = convertToGrammar tEnv [t, u]
+  where Grammar [x, y] p = trace (show t ++ "\nbisim\n" ++ show u) $ convertToGrammar tEnv [t, u]
 
 type Node = Set.Set ([TypeVar], [TypeVar])
 
