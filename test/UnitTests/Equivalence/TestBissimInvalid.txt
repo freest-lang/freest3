@@ -10,7 +10,6 @@ Skip
 (rec x.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))})
 (Skip;?Int)
 
-
 (rec x.+{EOS: Skip, Node: x, Root: (!Int;x)})
 Skip
 
@@ -37,3 +36,34 @@ Skip
 
 !Bool
 !Int
+
+a
+Skip
+
+((rec x.+{Leaf: Skip, Node: (!Int;(x;x))});((rec x.+{Leaf: Skip, Node: (!Int;(x;x))});(a;!Int)))
+((rec x.+{Leaf: Skip, Node: (!Int;(x;x))});((rec x.+{Leaf: Skip, Node: (!Int;(x;x))});a))
+
+((rec x.+{Leaf: Skip, Node: (!Int;(x;x))});(a;!Char))
+((rec x.+{Leaf: Skip, Node: (!Int;(x;x))});(a;!Int))
+
+(Skip;a)
+(a;!Char)
+
+((rec x.+{Leaf: Skip, Node: (!Int;(x;x))});Skip)
+(rec x.+{Leaf: Skip, Node: (!Int;(x;(x;(Skip;?Char))))})
+
+((rec x.&{Leaf: Skip, Node: (?Int;(x;x))});Skip)
+(rec x.&{Leaf: Skip, Node: (?Int;(x;(x;(Skip;!Char))))})
+
+((rec x.&{Leaf: Skip, Node: (?Int;(x;x))});(rec x.&{Leaf: Skip, Node: (?Int;(x;x))}))
+((rec x.&{Leaf: Skip, Node: (?Int;(x;x))});((rec x.&{Leaf: Skip, Node: (?Int;(x;x))});a))
+
+((rec x.&{Leaf: Skip, Node: (?Int;(x;x))});a)
+(rec x.&{Leaf: Skip, Node: (?Int;(x;x))})
+
+((rec x.+{Leaf: Skip, Node: (!Int;(x;x))});?Bool)
+(rec x.+{Leaf: Skip, Node: (!Int;(x;x))})
+
+((rec x.+{Leaf: Skip, Node: (!Int;(x;x))});?Bool)
+(rec x.+{Leaf: Skip, Node: (!Int;(x;(x;(Skip;?Char))))})
+
