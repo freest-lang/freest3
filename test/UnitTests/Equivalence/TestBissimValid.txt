@@ -1,1 +1,173 @@
+((rec termChan.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)});(!Int;Skip))
+((rec termChan.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)});!Int)
 
+((rec termChan.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)});((rec termChan.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)});x))
+(((rec termChan.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)});(rec termChan.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)}));x)
+
+((rec termChan.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)});((rec termChan.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)});x))
+(((rec termChan.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)});(rec termChan.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)}));x)
+
+((rec x.+{A: (x;+{B: Skip}), B: Skip});Skip)
+(rec x.+{A: (x;+{B: Skip}), B: Skip})
+
+((rec x.+{A: (x;+{B: Skip}), B: Skip});α)
+((rec x.+{A: (x;+{B: Skip}), B: Skip});α)
+
+α
+(Skip;α)
+
+((rec x.+{A: (x;+{B: Skip}), B: Skip});(+{B: Skip};α))
+(((rec x.+{A: (x;+{B: Skip}), B: Skip});+{B: Skip});α)
+
+((rec x.&{A: (x;&{B: Skip}), B: Skip});Skip)
+(rec x.&{A: (x;&{B: Skip}), B: Skip})
+
+((rec x.&{A: (x;&{B: Skip}), B: Skip});(&{B: Skip};α))
+(((rec x.&{A: (x;&{B: Skip}), B: Skip});&{B: Skip});α)
+
+((rec x.&{A: (x;&{B: Skip}), B: Skip});α)
+((rec x.&{A: (x;&{B: Skip}), B: Skip});α)
+
+α
+(Skip;α)
+
+&{And: (Skip;(?Bool;(?Bool;(!Bool;Skip)))), Not: (Skip;(?Bool;(!Bool;Skip))), Or: (Skip;(?Bool;(?Bool;(!Bool;Skip))))}
+&{And: (?Bool;(?Bool;(!Bool;Skip))), Not: (?Bool;(!Bool;Skip)), Or: (?Bool;(?Bool;(!Bool;Skip)))}
+
+((rec x.&{LeafC: Skip, NodeC: (?Int;(x;(x;!Int)))});Skip)
+(rec x.&{LeafC: Skip, NodeC: (?Int;(x;(x;!Int)))})
+
+((rec x.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))});Skip)
+(rec x.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))})
+
+((rec x.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))});α)
+((rec x.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))});α)
+
+α
+(Skip;α)
+
+(Skip;α)
+α
+
+((rec x.&{LeafC: Skip, NodeC: (?Int;(x;(x;!Int)))});α)
+((rec x.&{LeafC: Skip, NodeC: (?Int;(x;(x;!Int)))});α)
+
+α
+(Skip;α)
+
+(Skip;α)
+α
+
+(Skip;(Skip;!Int))
+!Int
+
+((rec x.+{Leaf: Skip, Node: (rec y.&{Exit: Skip, Left: (x;y), Right: (x;y), Root: (!Int;y)})});((rec y.&{Exit: Skip, Left: (+{Leaf: Skip, Node: y};y), Right: (+{Leaf: Skip, Node: y};y), Root: (!Int;y)});α))
+(((rec x.+{Leaf: Skip, Node: (rec y.&{Exit: Skip, Left: (x;y), Right: (x;y), Root: (!Int;y)})});(rec y.&{Exit: Skip, Left: ((rec x.+{Leaf: Skip, Node: (rec y.&{Exit: Skip, Left: (x;y), Right: (x;y), Root: (!Int;y)})});y), Right: ((rec x.+{Leaf: Skip, Node: (rec y.&{Exit: Skip, Left: (x;y), Right: (x;y), Root: (!Int;y)})});y), Root: (!Int;y)}));α)
+
+((rec y.&{Exit: Skip, Left: ((rec x.+{Leaf: Skip, Node: (rec y.&{Exit: Skip, Left: (x;y), Right: (x;y), Root: (!Int;y)})});y), Right: ((rec x.+{Leaf: Skip, Node: (rec y.&{Exit: Skip, Left: (x;y), Right: (x;y), Root: (!Int;y)})});y), Root: (!Int;y)});α)
+((rec y.&{Exit: Skip, Left: (+{Leaf: Skip, Node: y};y), Right: (+{Leaf: Skip, Node: y};y), Root: (!Int;y)});α)
+
+((rec x.+{Leaf: Skip, Node: (rec y.&{Exit: Skip, Left: (x;y), Right: (x;y), Root: (!Int;y)})});((rec y.&{Exit: Skip, Left: (+{Leaf: Skip, Node: y};y), Right: (+{Leaf: Skip, Node: y};y), Root: (!Int;y)});α))
+(((rec x.+{Leaf: Skip, Node: (rec y.&{Exit: Skip, Left: (x;y), Right: (x;y), Root: (!Int;y)})});(rec y.&{Exit: Skip, Left: ((rec x.+{Leaf: Skip, Node: (rec y.&{Exit: Skip, Left: (x;y), Right: (x;y), Root: (!Int;y)})});y), Right: ((rec x.+{Leaf: Skip, Node: (rec y.&{Exit: Skip, Left: (x;y), Right: (x;y), Root: (!Int;y)})});y), Root: (!Int;y)}));α)
+
+((rec y.&{Exit: Skip, Left: ((rec x.+{Leaf: Skip, Node: (rec y.&{Exit: Skip, Left: (x;y), Right: (x;y), Root: (!Int;y)})});y), Right: ((rec x.+{Leaf: Skip, Node: (rec y.&{Exit: Skip, Left: (x;y), Right: (x;y), Root: (!Int;y)})});y), Root: (!Int;y)});α)
+((rec y.&{Exit: Skip, Left: (+{Leaf: Skip, Node: y};y), Right: (+{Leaf: Skip, Node: y};y), Root: (!Int;y)});α)
+
+((rec y.&{Exit: Skip, Left: ((rec x.+{Leaf: Skip, Node: (rec y.&{Exit: Skip, Left: (x;y), Right: (x;y), Root: (!Int;y)})});y), Right: ((rec x.+{Leaf: Skip, Node: (rec y.&{Exit: Skip, Left: (x;y), Right: (x;y), Root: (!Int;y)})});y), Root: (!Int;y)});α)
+((rec y.&{Exit: Skip, Left: ((rec x.+{Leaf: Skip, Node: (rec y.&{Exit: Skip, Left: (x;y), Right: (x;y), Root: (!Int;y)})});y), Right: ((rec x.+{Leaf: Skip, Node: (rec y.&{Exit: Skip, Left: (x;y), Right: (x;y), Root: (!Int;y)})});y), Root: (!Int;y)});α)
+
+α
+(Skip;α)
+
+(Skip;α)
+α
+
+(Skip;α)
+α
+
+(Skip;α)
+α
+
+((rec x.+{Leaf: Skip, Node: (rec y.&{Exit: Skip, Left: (x;y), Right: (x;y), Root: (!Int;y)})});α)
+((rec x.+{Leaf: Skip, Node: (rec y.&{Exit: Skip, Left: (x;y), Right: (x;y), Root: (!Int;y)})});α)
+
+α
+(Skip;α)
+
+(Skip;α)
+α
+
+((rec x.+{Leaf: Skip, Node: (rec y.&{Exit: Skip, Left: (x;y), Right: (x;y), Root: (!Int;y)})});Skip)
+(rec x.+{Leaf: Skip, Node: (rec y.&{Exit: Skip, Left: (x;y), Right: (x;y), Root: (!Int;y)})})
+
+((rec x.&{Leaf: Skip, Node: (rec y.+{Exit: Skip, Left: (x;y), Right: (x;y), Root: (?Int;y)})});Skip)
+(rec x.&{Leaf: Skip, Node: (rec y.+{Exit: Skip, Left: (x;y), Right: (x;y), Root: (?Int;y)})})
+
+((rec x.&{Leaf: Skip, Node: (rec y.+{Exit: Skip, Left: (x;y), Right: (x;y), Root: (?Int;y)})});α)
+((rec x.&{Leaf: Skip, Node: (rec y.+{Exit: Skip, Left: (x;y), Right: (x;y), Root: (?Int;y)})});α)
+
+α
+(Skip;α)
+
+(Skip;α)
+α
+
+((rec y.+{Exit: Skip, Left: ((rec x.&{Leaf: Skip, Node: (rec y.+{Exit: Skip, Left: (x;y), Right: (x;y), Root: (?Int;y)})});y), Right: ((rec x.&{Leaf: Skip, Node: (rec y.+{Exit: Skip, Left: (x;y), Right: (x;y), Root: (?Int;y)})});y), Root: (?Int;y)});α)
+((rec y.+{Exit: Skip, Left: ((rec x.&{Leaf: Skip, Node: (rec y.+{Exit: Skip, Left: (x;y), Right: (x;y), Root: (?Int;y)})});y), Right: ((rec x.&{Leaf: Skip, Node: (rec y.+{Exit: Skip, Left: (x;y), Right: (x;y), Root: (?Int;y)})});y), Root: (?Int;y)});α)
+
+α
+(Skip;α)
+
+((rec x.&{Leaf: Skip, Node: (rec y.+{Exit: Skip, Left: (x;y), Right: (x;y), Root: (?Int;y)})});((rec y.+{Exit: Skip, Left: ((rec x.&{Leaf: Skip, Node: (rec y.+{Exit: Skip, Left: (x;y), Right: (x;y), Root: (?Int;y)})});y), Right: ((rec x.&{Leaf: Skip, Node: (rec y.+{Exit: Skip, Left: (x;y), Right: (x;y), Root: (?Int;y)})});y), Root: (?Int;y)});α))
+(((rec x.&{Leaf: Skip, Node: (rec y.+{Exit: Skip, Left: (x;y), Right: (x;y), Root: (?Int;y)})});(rec y.+{Exit: Skip, Left: ((rec x.&{Leaf: Skip, Node: (rec y.+{Exit: Skip, Left: (x;y), Right: (x;y), Root: (?Int;y)})});y), Right: ((rec x.&{Leaf: Skip, Node: (rec y.+{Exit: Skip, Left: (x;y), Right: (x;y), Root: (?Int;y)})});y), Root: (?Int;y)}));α)
+
+((rec x.&{Leaf: Skip, Node: (rec y.+{Exit: Skip, Left: (x;y), Right: (x;y), Root: (?Int;y)})});((rec y.+{Exit: Skip, Left: ((rec x.&{Leaf: Skip, Node: (rec y.+{Exit: Skip, Left: (x;y), Right: (x;y), Root: (?Int;y)})});y), Right: ((rec x.&{Leaf: Skip, Node: (rec y.+{Exit: Skip, Left: (x;y), Right: (x;y), Root: (?Int;y)})});y), Root: (?Int;y)});α))
+(((rec x.&{Leaf: Skip, Node: (rec y.+{Exit: Skip, Left: (x;y), Right: (x;y), Root: (?Int;y)})});(rec y.+{Exit: Skip, Left: ((rec x.&{Leaf: Skip, Node: (rec y.+{Exit: Skip, Left: (x;y), Right: (x;y), Root: (?Int;y)})});y), Right: ((rec x.&{Leaf: Skip, Node: (rec y.+{Exit: Skip, Left: (x;y), Right: (x;y), Root: (?Int;y)})});y), Root: (?Int;y)}));α)
+
+&{And: (Skip;(?Bool;(?Bool;(!Bool;Skip)))), Not: (Skip;(?Bool;(!Bool;Skip))), Or: (Skip;(?Bool;(?Bool;(!Bool;Skip))))}
+&{And: (?Bool;(?Bool;(!Bool;Skip))), Not: (?Bool;(!Bool;Skip)), Or: (?Bool;(?Bool;(!Bool;Skip)))}
+
+α
+(Skip;α)
+
+((rec x.+{Done: Skip, More: (!Char;x)});Skip)
+(rec x.+{Done: Skip, More: (!Char;x)})
+
+((rec x.&{Done: Skip, More: (?Char;x)});Skip)
+(rec x.&{Done: Skip, More: (?Char;x)})
+
+((rec x.&{Done: Skip, More: (?Char;x)});α)
+((rec x.&{Done: Skip, More: (?Char;x)});α)
+
+α
+(Skip;α)
+
+(Skip;α)
+α
+
+((rec x.+{Leaf: Skip, Node: (!Int;(x;x))});Skip)
+(rec x.+{Leaf: Skip, Node: (!Int;(x;x))})
+
+((rec x.&{Leaf: Skip, Node: (?Int;(x;x))});Skip)
+(rec x.&{Leaf: Skip, Node: (?Int;(x;x))})
+
+((rec x.&{Leaf: Skip, Node: (?Int;(x;x))});a)
+((rec x.&{Leaf: Skip, Node: (?Int;(x;x))});a)
+
+a
+(Skip;a)
+
+(Skip;a)
+a
+
+((rec x.+{Leaf: Skip, Node: (!Int;(x;x))});a)
+((rec x.+{Leaf: Skip, Node: (!Int;(x;x))});a)
+
+a
+(Skip;a)
+
+(Skip;a)
+a
+
+&{And: (Skip;(?Bool;(?Bool;(!Bool;Skip)))), Not: (Skip;(?Bool;(!Bool;Skip))), Or: (Skip;(?Bool;(?Bool;(!Bool;Skip))))}
+&{And: (?Bool;(?Bool;(!Bool;Skip))), Not: (?Bool;(!Bool;Skip)), Or: (?Bool;(?Bool;(!Bool;Skip)))}

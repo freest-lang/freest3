@@ -8,6 +8,6 @@ for i in $( seq 1 $N )
 do
    echo "---------------------------------" >> testSuiteProf.prof
    #cabal test testEquiv
-   cabal test bissimEquiv
+   cabal test testBissim
    cat testEquiv.prof | grep "total" >> testSuiteProf.prof
 done

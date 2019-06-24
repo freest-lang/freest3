@@ -160,7 +160,7 @@ test-suite testEquiv
                        Equivalence.Norm, Equivalence.Normalisation, Equivalence.Equivalence, Equivalence.Bisimulation,
                        Equivalence.TestEquivalenceValidSpec, Equivalence.TestEquivalenceInvalidSpec, Utils.PreludeLoader
 
-test-suite bissimEquiv
+test-suite testBissim
   main-is:             TestBissimSpecMain.hs
   ghc-options:
               -fprof-auto-top
