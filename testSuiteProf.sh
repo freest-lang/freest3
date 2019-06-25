@@ -1,13 +1,19 @@
 #!/bin/bash
 
-echo "Run times and memory allocated" > testSuiteProf.prof
+commandName=$1
+fileNum=`ls Profiling | grep $commandName | wc -l`
+fileName=$commandName"_"$fileNum$".prof"
+
+echo "Run times and memory allocated" > $fileName
 declare -r N=10
-echo "Number of runs: $N" >> testSuiteProf.prof
+echo "Number of runs: $N" >> $fileName
 
 for i in $( seq 1 $N )
 do
-   echo "---------------------------------" >> testSuiteProf.prof
-   #cabal test testEquiv
-   cabal test testBissim
-   cat testEquiv.prof | grep "total" >> testSuiteProf.prof
+   echo "---------------------------------" >> $fileName
+     #cabal test testEquiv
+   cabal test $commandName
+   cat $commandName".prof" | grep "total" >> $fileName
 done
+
+mv $fileName Profiling/

@@ -38,11 +38,9 @@ convertToGrammar tEnv ts = Grammar xs (productions s)
 
 typeToGrammar :: Type -> TransState TypeVar
 typeToGrammar t = do
-  y <- freshVar
   xs <- toGrammar t
-  addProduction y (MessageLabel Out UnitType) xs
   collect [] t
-  return y
+  getProd $ Map.singleton (MessageLabel Out UnitType) xs
 
 toGrammar :: Type -> TransState [TypeVar]
 -- Session types

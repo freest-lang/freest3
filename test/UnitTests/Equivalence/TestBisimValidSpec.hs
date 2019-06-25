@@ -1,4 +1,4 @@
-module Equivalence.TestBissimValidSpec (spec) where
+module Equivalence.TestBisimValidSpec (spec) where
 
 import           Syntax.Types
 import           Syntax.Kinds
@@ -24,7 +24,7 @@ matchValidSpec [t, u] =
 
 spec :: Spec
 spec = do
-  t <- runIO $ readFromFile "test/UnitTests/Equivalence/TestBissimValid.txt"
+  t <- runIO $ readFromFile "test/UnitTests/Equivalence/TestBisimValid.txt"
   describe "Valid Bissim Test" $ mapM_ matchValidSpec (chunksOf 2 t)
 
 main :: IO ()

@@ -1,3 +1,7 @@
+module TestValidTypes (
+  prop_bisimilar
+)  where
+
 import           Test.QuickCheck
 import           Equivalence.Equivalence
 import           Equivalence.Bisimulation
@@ -12,9 +16,9 @@ import           Utils.FreestState
 import           Control.Monad.State
 import           Data.Maybe
 import qualified Data.Map.Strict as Map
-import           QuickCheck.ArbitraryTypes
+import           ArbitraryTypes
 
-main = quickCheckWith stdArgs {maxSuccess = 1000000} prop_bisimilar -- prop_equivalent
+main = quickCheckWith stdArgs {maxSuccess = 90000} prop_bisimilar -- prop_equivalent
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_distribution
 -- main = quickCheckWith stdArgs {maxSuccess = 10000, replay = Just (mkQCGen 42, 0)} prop_bisimilar
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
@@ -65,7 +69,7 @@ prop_dual_convolution :: Type -> Property
 prop_dual_convolution t = kinded t ==> dual (dual t) == t
 
 -- Lemma 3.1(ii) _ Substitution and kind preservation (ICFP'16)
--- prop_subs_kind_preservation2 :: TypeVar -> Kind -> Type -> Property
+-- prop_subs_kind_preservation2 :: TypeVar ->Kind -> Type -> Property
 -- prop_subs_kind_preservation2 x k t =
 --   isJust k1 ==> k1 == kindOf (unfold u)
 --   where u = renameType $ Rec pos (TypeVarBind pos x k) t

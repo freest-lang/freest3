@@ -1,10 +1,10 @@
-module Equivalence.TestBissimInvalidSpec (spec) where
+module Equivalence.TestBisimInvalidSpec (spec) where
 
 import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.TypeVariables
 import           Syntax.Base
-import           Equivalence.Equivalence
+import           Equivalence.Bisimulation (bisimilar)
 import           Validation.Rename
 import           Utils.FreestState
 import qualified Data.Map.Strict as Map
@@ -16,7 +16,7 @@ matchInvalidSpec :: [String] -> Spec
 matchInvalidSpec [t, u] =
   it (t ++ " ~ " ++  u) (
       {-# SCC "BISIM_TEST_CALL" #-}
-      equivalent Map.empty Map.empty t' u' `shouldBe` False)
+      bisimilar Map.empty t' u' `shouldBe` False)
     where
       [t', u'] = renameTypes [read t, read u]
       -- readKenv :: String -> KindEnv
@@ -24,7 +24,7 @@ matchInvalidSpec [t, u] =
 
 spec :: Spec
 spec = do
-  t <- runIO $ readFromFile "test/UnitTests/Equivalence/TestBissimInvalid.txt"
+  t <- runIO $ readFromFile "test/UnitTests/Equivalence/TestBisimInvalid.txt"
   describe "Invalid Bissim Test" $ mapM_ matchInvalidSpec (chunksOf 2 t)
 
 main :: IO ()

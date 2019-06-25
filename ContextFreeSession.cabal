@@ -88,7 +88,7 @@ test-suite unit-tests
                        Parse.TestParserInvalidSpec, Parse.TestParserValidSpec,
                        Validation.TestKindingValidSpec, Validation.TestKindingInvalidSpec,
                        Validation.TestTypeSchemeKindingSpec,
-                       Equivalence.TestEquivalenceInvalidSpec, Equivalence.TestEquivalenceValidSpec, Utils.PreludeLoader, Equivalence.TestBissimValidSpec
+                       Equivalence.TestEquivalenceInvalidSpec, Equivalence.TestEquivalenceValidSpec, Utils.PreludeLoader, Equivalence.TestBisimValidSpec, Equivalence.TestBisimInvalidSpec
 
 test-suite program-tests
   main-is:             ProgSpec.hs
@@ -160,8 +160,8 @@ test-suite testEquiv
                        Equivalence.Norm, Equivalence.Normalisation, Equivalence.Equivalence, Equivalence.Bisimulation,
                        Equivalence.TestEquivalenceValidSpec, Equivalence.TestEquivalenceInvalidSpec, Utils.PreludeLoader
 
-test-suite testBissim
-  main-is:             TestBissimSpecMain.hs
+test-suite testBisim
+  main-is:             TestBisimSpecMain.hs
   ghc-options:
               -fprof-auto-top
               "-with-rtsopts=-p -s -h"
@@ -184,4 +184,29 @@ test-suite testBissim
                        Validation.Substitution,
                        Equivalence.Grammar, Equivalence.TypeToGrammar,
                        Equivalence.Norm, Equivalence.Normalisation, Equivalence.Equivalence, Equivalence.Bisimulation,
-                       Equivalence.TestEquivalenceValidSpec, Equivalence.TestEquivalenceInvalidSpec, Utils.PreludeLoader, Equivalence.TestBissimValidSpec, Equivalence.TestBissimInvalidSpec
+                       Equivalence.TestEquivalenceValidSpec, Equivalence.TestEquivalenceInvalidSpec, Utils.PreludeLoader, Equivalence.TestBisimValidSpec, Equivalence.TestBisimInvalidSpec
+
+
+test-suite testQuickCheck
+  main-is:             QuickCheckSpec.hs
+  ghc-options:
+              -fprof-auto-top
+              "-with-rtsopts=-p -s -h"
+--              "-with-rtsopts=-N -p -s -h -i0.1"
+  Type:                exitcode-stdio-1.0
+  other-extensions:    FlexibleContexts
+  build-depends:       HUnit >= 1.3.0.0, QuickCheck >=2.8, array <= 0.5.3.0, base >=4.8,
+                       cond >= 0.4.1.1, containers >=0.5, directory >= 1.3.2.0,
+                       hspec >=2.4, hspec-expectations >=0.8, mtl >= 2.2.1,
+                       pretty-terminal >= 0.1.0.0, process >= 1.6.3.0, split >= 0.2.2
+  hs-source-dirs:      test/QuickCheck, src
+  default-language:    Haskell2010
+  other-modules:       Syntax.Base, Syntax.ProgramVariables, Syntax.TypeVariables,
+                       Syntax.Kinds, Syntax.Types, Syntax.Schemes, Syntax.Expressions,
+                       Syntax.Show,
+                       Parse.Parser, Parse.Lexer, Parse.ParseUtils,
+                       Utils.Errors, Utils.FreestState,
+                       Validation.Kinding,  Validation.Contractive, Validation.Rename,
+                       Validation.Substitution,
+                       Equivalence.Grammar, Equivalence.TypeToGrammar,
+                       Equivalence.Norm, Equivalence.Normalisation, Equivalence.Equivalence, Equivalence.Bisimulation, Utils.PreludeLoader, ArbitraryTypes, TestValidTypes
