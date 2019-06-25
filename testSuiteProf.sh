@@ -5,7 +5,7 @@ fileNum=`ls Profiling | grep $commandName | wc -l`
 fileName=$commandName"_"$fileNum$".prof"
 
 echo "Run times and memory allocated" > $fileName
-declare -r N=10
+declare -r N=1
 echo "Number of runs: $N" >> $fileName
 
 for i in $( seq 1 $N )
@@ -16,4 +16,7 @@ do
    cat $commandName".prof" | grep "total" >> $fileName
 done
 
+mkdir -p Profiling/
 mv $fileName Profiling/
+
+
