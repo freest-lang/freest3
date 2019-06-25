@@ -1,3 +1,0 @@
-type TreeChannel = oplus{
-  Leaf: skip,
-  Node: !int;TreeChannel;TreeChannel}

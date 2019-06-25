@@ -1,2 +1,0 @@
-main : dualof (Int -> Int)
-
