@@ -1,0 +1,497 @@
+\section{Correctness of the algorithm}
+\label{sec:soundness}
+
+In this section we prove that our algorithm is sound and complete
+with respect to the meta-theory of context-free session types proposed
+by Thiemann and Vasconcelos~\cite{thiemann2016context}.
+
+We start by showing that the bisimulation relation on context-free
+session types, $\TypeEquiv$, is equivalent to the bisimulation
+relation obtained from the productions, $\ProdEquiv$.  Then, based on
+results from Caucal~\cite{caucal1986decidabilite}, Christensen,
+H{\"{u}}ttel, and Stirling~\cite{DBLP:journals/iandc/ChristensenHS95},
+Jan{\v{c}}ar and Moller~\cite{janvcar1999techniques}, we conclude that
+our algorithm is sound and complete.
+
+\subsection{The two bisimulations are bisimilar}
+
+We have defined a bisimulation relation on types 
+$\TypeEquiv \enspace\subseteq \enspace\LTSTypes \times \LTSTypes$
+and a bisimulation relation on productions 
+$\ProdEquiv \enspace\subseteq \enspace\LTSProds \times \LTSProds$.
+Our intent in this subsection if to prove that these bisimulations
+are bisimilar and, thus, the bisimulation over types coincide with 
+the bisimulation over non-terminal symbols in the grammar.
+
+Recall from Section~\ref{sec:algorithm} that the function $\toGrammark$ 
+runs under a monadic context
+\lstinline|TransState|, suitably initialised.
+%
+The monadic state comprises the productions and an integer to generate
+fresh variables. At the end of the run, we are interested on the
+productions $P$ only.
+%
+We hence allow ourselves a slight abuse of notation and write
+$\vec Y,P = \toGrammarf S$ to denote the result of running function
+$\toGrammark$ on input~$S$, under a suitable monadic context.
+%
+Empty lists are denoted in Haskell by \lstinline|[]|;
+in formal languages symbol $\varepsilon$ is used to denote the empty
+word; we use both symbols interchangeably.
+
+% Given a $\transStatek$ state $T$, expression $\evalStatek (\toGrammarf
+% S)\: T$ runs function function $\toGrammark$ on input~$S$ and
+% state~$T$, returns the result of the call (and discards the state).
+% In the sequel, we write $\toGrammarf S$ to mean the result of running
+% function $\toGrammarf$ on input $S$ under an appropriate state.
+
+For the purpose of proposing a bisimilarity between the bisimulations over
+context-free session types and over non-terminal symbols in the grammar, 
+we start with a lemma that relates terminated types~$S$ to the result 
+of a call to $\toGrammarf S$.
+
+\begin{lemma}
+  \label{lem:terminated-togrammar}
+  If $\DONE S$, then $\varepsilon,P=\toGrammarf S$.
+\end{lemma}
+
+\begin{proof}
+  By rule induction on the definition of $\DONE S$. Case $\skipk$ 
+  follows directly from the case in function
+  $\toGrammark$ in Listing~\ref{lst:toGrammar}. The cases for
+  $\reck$  and for
+  sequential composition follow by induction and the fact that
+  $\varepsilon+\!\!+\,\varepsilon=\varepsilon$.
+  % Given that all variables in a type are under some $\mu$-binder,
+  % there is a simple inductive characterization of $\DONE S$, namely,
+  % $\DONE \skipk$, $\DONE{(S;T)}$ if $\DONE S$ and $\DONE T$,
+  % $\DONE{(\mu X.S)}$ if $\DONE S$, $\DONE X$, and false in all other
+  % cases. The proof then follows by a simple induction on this
+  % characterization for the ``if'' direction, and induction on
+  % \lstinline|toGrammar| for the ``only if'' direction
+\end{proof}
+
+To prove that the bisimulations $\TypeEquiv$ and $\ProdEquiv$ are 
+bisimilar, consider the {\it bridge bisimilarity} 
+$\BridgeEquiv \subseteq (\LTSTypes \cup \LTSProds) \times
+						(\LTSTypes \cup \LTSProds)$
+as the greatest equivalence relation such that:
+\begin{equation}
+	S \BridgeEquiv X \text{ if } (S, (X,P))\in \mathcal{R}
+	\text{ for some productions $P$},
+\end{equation}
+and where $\mathcal{R}$ is the relation given by:
+%on context-free session types and
+%on grammars coincide, we present a bisimilarity between
+%context-free session types and the result of \lstinline|toGrammar|.
+%
+%As the implementation of \isCheckedf is not shown, we assume that
+%$\isCheckedf S$ returns \lstinline|True| if and only if $\DONE S$.
+%
+%% new from here
+%Consider the relation $\mathcal{R}$ given by:
+\[\begin{array}{lll}
+	& \{ (\skipk, (\varepsilon, \emptyset))\} \,\cup\\
+	& \{(\sharp B,(X,\{X \rightarrow \sharp B\})) \mid \text{$B$ is any base type}\} 
+	   \,\cup\\
+	& \{ (\star\{l_i\colon S_i\}_{i\in I}, (X, \{X \rightarrow \star l_i
+    \vec Y_i\}_{i\in I} \cup (\cup  P_i)_{i\in I})) \mid 
+    \begin{array}[t]{l}
+    	\!\!\text{$S_i$ is any type, $l_i$ is any label,}\\
+    	\!\!\text{$\vec Y_i, P_i = \toGrammarf{S_i}$, $i \in I$ }\\
+    	\!\!\text{and $X$ does not occur in $P_i$}\} \,\cup\\
+    \end{array}\\
+    &\{(S_1;S_2, (\vec X_1\vec X_2,  P_1 \cup  P_2)) \mid
+    \text{$S_i$ is any type, $\vec X_i, P_i = \toGrammarf{S_i}, i = 1,2$ } \}\,\cup\\
+%    & \{(\mu X.S, (\varepsilon, \emptyset)) \mid 
+%    \text{$S$ is any $\isCheckedk$ type}\}\,\cup\\
+%    & \{(\mu X.S, (X, \{X \rightarrow a_j \vec {Z_j}\vec Y\}_{j\in J} \cup  P)) \mid 
+%    \begin{array}[t]{l}
+%      \!\!\text{$S$ is any non $\isCheckedk$ type},\\
+%      \!\! Y\vec Y, P = \toGrammarf{S}, \text{ $X$ does not}\\
+%      \!\!\text{occur in $P$, and } \{Y \rightarrow a_j \vec {Z_j}\}_{j\in J} 
+%      \subseteq  P\\
+%      \!\!\text{are all the transitions from $Y$}\}
+%    \end{array}\\
+	& \{(\mu X.S, \tau(\vec Y, P))\mid
+    \text{$S$ is any type and $\vec Y, P = \toGrammarf{S}$}\},\\
+\end{array}\]
+where $\tau(\vec Y, P)$ is defined as below and $\pi (Z)$
+denotes the set of all productions from a symbol $Z$ in the set $P$, 
+$\pi (Z) = \{Z \rightarrow a \vec {W}\mid a \text{ is terminal
+symbol}, \vec W \text{ is a word}\}\subseteq P$:
+\[
+\tau (\vec Y, P ) = 
+\begin{cases}
+	(\varepsilon, \emptyset) & \text{if } \vec Y =[]\\
+	(\varepsilon, \emptyset) & \text{if } \vec Y = Z\vec Z \text{ and } \pi(Z) = \emptyset \\	
+	(X, \{X \rightarrow a_j \vec {W_j}\vec Z\}_{j\in J} \cup  P) &
+	\vec Y = Z\vec Z \text{ and } \emptyset \neq \pi(Z) = 
+	\{Z \rightarrow a_j \vec {W_j}\}_{j\in J}\subseteq P
+\end{cases}
+\]
+
+To show that $\mathcal{R}$ is a bisimilarity, we use
+the unravelling function proposed 
+by Thiemann and Vasconcelos~\cite{thiemann2016context}:
+\[\begin{aligned}
+\Unravel(\mu x . S) &= \Unravel(\subs{\mu X.S}{X} S)\\
+\Unravel(S_1;S_2) &= 
+\begin{cases}
+	\Unravel(S_2) & \Unravel(S_1)=\skipk\\
+	\Unravel(S_1);S_2 & \Unravel(S_1)\neq\skipk\\
+\end{cases} \\
+\Unravel(S)&= S \text{  for all other cases}
+\end{aligned}\]
+%
+Notice that for any recursive type 
+$\mu X.S$, $\Unravel(\mu X.S)$ is not a recursive type and preserves the 
+transitions from $\mu X.S$.
+
+\begin{lemma}
+  \label{lemma:bisim_unr}
+  For any type $S$ with $Z\vec Z, P = \toGrammarf{S}$
+  and $\pi(Z) = \{Z \rightarrow a_j \vec {W_j}\}_{j\in J}\subseteq P$, if
+  $(\mu X.S, (X, \{X \rightarrow a_j \vec {W_j}\vec Z\}_{j\in J} \cup
+  P))\in \mathcal{R}$ then
+  $(\Unravel(\mu X.S), (X, \{X \rightarrow a_j \vec {W_j}\vec
+  Z\}_{j\in J} \cup P)) \in \mathcal{R}$.
+\end{lemma}
+
+\begin{proof}
+	Notice that $\{Z \rightarrow a_j \vec {W_j}\}_{j\in J}\subseteq P$ are 
+	precisely the first 
+	transitions from $\Unravel(\mu X.S)$. Furthermore, since 
+	$\subs{\mu X.S}{X} S$ is obtained from $S$ by 
+	replacing the occurrences of $X$ by $\mu X.S$, all the productions for
+	$\subs{\mu X.S}{X} S$ 
+	are given by the productions of $S$, as using $\mu X.S$
+	instead of $X$ does not contribute with any new production on $S$.
+\end{proof}
+
+The following result is an immediate consequence of Lemma~\ref{lemma:bisim_unr}.
+\begin{corollary}
+\label{corol:bisim_unr}
+	For any type $S$ with $Z\vec Z, P = \toGrammarf{S}$ and $\pi(Z) =\emptyset$,
+	if  $(\mu X.S, (\varepsilon, \emptyset))\in \mathcal{R}$ then
+  $(\Unravel(\mu X.S), (\varepsilon, \emptyset)) \in \mathcal{R}$.
+\end{corollary}
+
+%We remark that whenever a type $S$ has a transition, then $\isCheckedf S$
+%does not hold.
+
+\begin{lemma}
+\label{lemma:bisim_semi}
+	$(S_1;S_2, (\vec X_1\vec X_2,  P_1 \cup  P_2))\in\mathcal{R}$ iff 
+	$(S_i, (\vec X_i,  P_i))\in\mathcal{R}$, for $i=1,2$.
+\end{lemma}
+\begin{proof}
+	Assume that $(S_1;S_2, (\vec X_1\vec X_2,  P_1 \cup  P_2))\in\mathcal{R}$,
+	where $ \vec X_i, P_i = \toGrammarf{S_i}$.
+	By construction, $(S_i, (\vec Y_i,  Q_i))\in\mathcal{R}$ for any
+	$\vec Y_i$ and $Q_i$ such that $ \vec Y_i, Q_i = \toGrammarf{S_i}$.
+	Hence, $(S_i, (\vec X_i,  P_i))\in\mathcal{R}$. With a similar reasoning 
+	we prove the reciprocal implication.
+\end{proof}
+
+The same argument applies to the proof of the following lemma.
+
+\begin{lemma}
+\label{lemma:bisim_choice}
+	$(\star\{l_i\colon S_i\}_{i\in I}, (X, \{X \rightarrow \star l_i
+    \vec Y_i\}_{i\in I} \cup (\cup  P_i)_{i\in I}))\in\mathcal{R}$ iff 
+	$(S_i, (\vec Y_i,  P_i))\in\mathcal{R}$, $i \in I$.
+\end{lemma}
+
+Now we show that the relation $\mathcal{R}$ is a bisimilarity. We do it
+by induction, using the unravelling function. 
+
+\begin{theorem}
+\label{thm:cfst_vs_grammar}
+	$S \BridgeEquiv \vec X_S$, for all $S$ and where 
+	$ \vec X_S, P_S = \toGrammarf{S}$.
+\end{theorem}
+
+\begin{proof}
+	To prove this theorem, we only need to prove that
+	$\mathcal{R}$ is a bisimulation.\\
+	%
+	We show that for each $(S, (\vec X, P))\in \mathcal{R}$	, if
+	$S \LTSderives[a] T$ then $\vec X \rightarrow a \vec Y\in P$
+	and $(T, (\vec Y, P'))\in \mathcal{R}$ for some $P'$. The proof is by
+	induction on the structure of $S$. Whenever $S$ is a 
+	recursive type, we reduce the analysis to $\Unravel(S)$, that
+	is not recursive. Indeed, without loss of generality, 
+	we can always reduce the analysis of $S$
+	to the analysis of $\Unravel(S)$
+	because when $S$ is not recursive we have
+	$\Unravel(S)=S$.
+	\begin{itemize}
+		\item $(\skipk, (\varepsilon, \emptyset))$: $\skipk$ does not have any
+		transition.
+		\item $(\sharp B,(X,\{X \rightarrow \sharp B\}))$: we have
+		$\sharp B\LTSderives[\sharp B] \skipk$ and $X\rightarrow \sharp B$ with
+		$(\skipk, (\varepsilon, \emptyset))\in \mathcal{R}$.
+		\item $(\star\{l_i\colon S_i\}_{i\in I}, (X, \{X \rightarrow \star l_i
+    	\vec Y_i\}_{i\in I} \cup (\cup  P_i)_{i\in I}))$: 
+    	$\star\{l_i\colon S_i\}_{i\in I}\LTSderives[l_i] S_i$ and 
+    	$X \rightarrow \star l_i \vec Y_i$ for each $i\in I$. By 
+    	Lemma~\ref{lemma:bisim_choice}, $(S_i, (\vec Y_i,  P_i))\in\mathcal{R}$
+    	for each $i\in I$. 
+    	\item $(S_1;S_2, (\vec X_1\vec X_2,  P_1 \cup  P_2))$: start noting
+    	that, by Lemma~\ref{lemma:bisim_semi}, 
+    	$(S_i, (\vec X_i, P_i))\in \mathcal{R}$ for $i=1,2$. 
+    	\begin{itemize}
+    	\item if 
+    	$S_1;S_2\LTSderives[a] S_1'; S_2$ with $S_1\LTSderives[a] S_1'$, then 
+    	$\Unravel(S_1)\LTSderives[a] S_1'$ (recall that $\Unravel(S_1)=S_1$ when
+    	$S_1$ is not recursive). 
+    	Since $(S_1,(\vec X_1, P_1))\in\mathcal{R}$, we have
+    	$(\Unravel(S_1), (\vec X_1, P_1))\in \mathcal{R}$ 
+    	(if $S_1$ is not a recursive type, $\Unravel(S_1)$ 
+    	coincides with $S_1$, otherwise apply Lemma~\ref{lemma:bisim_unr}).
+    	Hence, by induction hypothesis on $\Unravel(S_1)$, we know that 
+    	$\vec X_1 \rightarrow a \vec Y_1$ and 
+    	$(S_1', (\vec Y_1,P_1'))\in \mathcal{R}$. 
+    	By Lemma~\ref{lemma:bisim_semi}, we conclude that 
+    	$(S_1';S_2, (\vec Y_1 \vec X_2,P_1'\cup P_2))\in \mathcal{R}$. 
+    	\item if $S_1;S_2\LTSderives[a] S_2'$, where $\DONE{S_1}$ and 
+    	$S_2\LTSderives[a] S_2'$, it follows that 
+    	$\Unravel(S_2)\LTSderives[a] S_2'$. 
+    	Since $(S_2, (\vec X_2, P_2))\in \mathcal{R}$ we have 
+    	$(\Unravel(S_2), (\vec X_2, P_2))\in \mathcal{R}$ (again, 
+    	if $S_2$ is not a recursive type $\Unravel(S_2)=S_2$, 
+    	otherwise use Lemma~\ref{lemma:bisim_unr}). 
+    	By induction hypothesis on $\Unravel(S_2)$, we thus have
+    	$\vec X_2 \rightarrow a \vec Y_2$ where 
+    	$(S_2', (\vec Y_2,P_2'))\in \mathcal{R}$. Since $\DONE{S_1}$, by
+    	Lemma~\ref{lem:terminated-togrammar} we have $\vec X_1 = \varepsilon$, 
+    	hence $\vec X_1 \vec X_2 = \vec X_2 \rightarrow a \vec Y_2$.
+    	\end{itemize}
+		\item $(\mu X.S, (\varepsilon, \emptyset))$ and $\varepsilon, \emptyset = \toGrammarf{S}$: 
+    	assume that there exists $\mu X.S  \LTSderives[a] T$. This
+    	implies that $\Unravel(\mu X.S)  \LTSderives[a] T$. Observe that
+    	by definition of the unravel and since $S$ is contractive, we should
+    	also have a transition $S  \LTSderives[a] T'$, and hence $S$ would derive a 
+    	production, which is a contradiction with
+    	the assumption that $\varepsilon, \emptyset = \toGrammarf{S}$.
+    	\item $(\mu X.S, (\varepsilon, \emptyset))$, $Z\vec Z, P = \toGrammarf{S}$, and $\pi(Z)=\emptyset$: 
+    	by Corollary~\ref{corol:bisim_unr}, we know that 
+    	$(\Unravel(\mu X.S), (\varepsilon, \emptyset)) \in \mathcal{R}$ and thence
+    	\begin{equation}
+    	\label{eq:unr}
+    		\varepsilon, \emptyset = \toGrammarf{(\Unravel(\mu X.S))}	
+    	\end{equation}
+    	Now assume that
+    	exists $\mu X.S  \LTSderives[a] T$. This means that 
+    	$\Unravel(\mu X.S) \LTSderives[a] T$. By induction hypothesis on 
+    	$\Unravel(\mu X.S)$, we would have $(\Unravel(\mu X.S), (\vec X, P'))
+    	\in \mathcal{R}$
+    	where $\vec X, P' = \toGrammarf{(\Unravel(\mu X.S))}$ and with
+    	$\vec X \rightarrow a \vec Y \in P'$, which is a contradiction 
+    	with~\eqref{eq:unr} and so $\mu X.S$ does not have any transition.
+%    	in this case, $\isCheckedf \mu X.S$, thus
+%    	we do not have any transition (Lemma~\ref{lem:terminated-togrammar}).
+    	\item $(\mu X.S, (X, \{X \rightarrow a_j \vec {W_j}\vec Z\}_{j\in J} \cup  P))$: 
+    	if $\mu X.S\LTSderives[b] T$, then $\Unravel(\mu X.S)\LTSderives[b] T$.
+    	Furthermore, by Lemma~\ref{lemma:bisim_unr} we know that 
+    	$(\Unravel(\mu X.S), (X, \{X \rightarrow a_j \vec {W_j}\vec Z\}_{j\in J} \cup  P))
+    	\in\mathcal{R}$. By induction hypothesis on $\Unravel(\mu X.S)$, 
+    	and since $X$ does not occur in $P$, it follows 
+    	that $b=a_j$ for some $j\in J$ and $(T, (\vec W_j \vec Z, P'))\in \mathcal{R}$.
+	\end{itemize} 
+	The proof that any transition in the productions leads to a transition in 
+	the corresponding type is very similar and is also done by induction. 
+	For that,
+	we only need to recall that the variable $X$ is either 
+	a fresh variable or a recursion variable, that is unique due to the
+	renaming assumption, and thus
+	the transitions from $X$ are simply the ones explicitly detailed in each 
+	pair from $\mathcal{R}$.
+\end{proof}
+
+\begin{corollary}
+\label{corol:composing_with_bridge}
+	We have:
+	\begin{itemize}
+		\item $\left.(\BridgeEquiv^{-1} \cdot \TypeEquiv \cdot \BridgeEquiv)
+			\right|_{\LTSProds} \subseteq \enspace \ProdEquiv$
+		\item $\left.(\BridgeEquiv \cdot \ProdEquiv \cdot \BridgeEquiv^{-1})
+			\right|_{\LTSTypes} \subseteq \enspace \TypeEquiv$
+	\end{itemize}
+\end{corollary}
+\begin{proof}
+	\am{TODO}
+\end{proof}
+
+\begin{corollary}
+	$S \TypeEquiv T$ if and only if $X_S \ProdEquiv X_T$.
+\end{corollary}
+\begin{proof}
+	Use Theorem~\ref{thm:cfst_vs_grammar} and 
+	Corollary~\ref{corol:composing_with_bridge}.
+\end{proof}
+
+
+\subsection{Correctness of the algorithm}
+
+We now focus on the correctness of the algorithm in
+Listing~\ref{lst:algorithm}.  Before proceeding to soundness, we
+recall the \emph{safeness property} presented by Jan{\v{c}}ar and
+Moller.
+
+\begin{proposition} [Safeness Property \cite{janvcar1999techniques}]
+  \label{prop:safeness}
+  $\vec X \ProdEquiv \vec Y$ if and only if the expansion tree rooted
+  at $\{(\vec X, \vec Y)\}$ has a successful branch.
+\end{proposition}
+
+Notice that function \lstinline|bisimilar|
+(Listing~\ref{lst:algorithm}) builds an expansion tree by alternating
+between expansion and simplification operations (reflexive,
+congruence and \BPA\ rules), as proposed by Jan{\v{c}}ar and Moller.
+%
+These simplification rules are \emph{safe}~\cite{janvcar1999techniques}, in the sense that the
+application of any rule preserves the bisimulation from a parent node
+to at least one child node and, reciprocally, that bisimulation on a
+child node implies the bisimulation of its parent node, thus proving
+the safeness property.
+
+While the safeness property is instrumental in proving
+soundness, the \emph{finite witness property} is of
+utmost importance to prove completeness. This result follows
+immediately from the analysis by Jan{\v{c}}ar and
+Moller~\cite{janvcar1999techniques}, which capitalizes on results by
+Caucal~\cite{caucal1986decidabilite}, and Christensen, H{\"{u}}ttel, and
+Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}:
+
+\begin{proposition} [Finite Witness Property]
+\label{finite_witness}
+	If $\vec X \ProdEquiv \vec Y$, then the expansion tree rooted at
+	$\{(\vec X, \vec Y)\}$ has a finite successful branch.
+\end{proposition}
+
+We refer to Caucal, Christensen, H{\"{u}}ttel, and Stirling for
+details on the proof of existence of a finite witness, as stated in
+Proposition~\ref{finite_witness}. This proof is particularly
+interesting in that it highlights the importance of BPA rules and of
+pruning productions on reaching such (finite) witness. The results in
+these two papers also allow unravelling the reason for the
+distinction, in the simplification phase, between the cases where all
+the symbols in the grammar are and are not normed, as shown in
+Listing~\ref{lst:algorithm}.
+%
+These properties ensure the termination of the algorithm, its soundness
+and completeness.
+
+\begin{lemma}[Termination]
+\label{lem:termination}
+	The computation of $\bisimf S T$ always terminates.
+\end{lemma}
+%
+\begin{proof}
+	If $S\TypeEquiv T$ then, by Corollary~\ref{corol:composing_with_bridge},
+	we have $X_S\ProdEquiv X_T$ and thus the existence of a finite
+	successful branch is ensured by the finite witness property. 
+	Hence, breadth-first search eventually terminates. 
+	
+	When $S\not\TypeEquiv T$, we easily conclude that all branches
+        in the expansion tree are finite and thence $\bisimf S T$
+        terminates.  To conclude that all branches are finite, observe
+        that any infinite branch is successful by definition and thus
+        the safeness property would imply $X_S\ProdEquiv X_T$ and we
+        would have $S\TypeEquiv T$, by 
+        Corollary~\ref{corol:composing_with_bridge}.
+\end{proof}
+
+%\begin{proof}
+%	On the other hand, as observed in~\cite{janvcar1999techniques},
+%	the union of nodes along a successful branch is a relation $R$
+%	such that $R\subseteq \ProdEquiv$. Hence, any pair $(\vec X, \vec Y)$
+%	occurring along a successful branch is such that $\vec X \ProdEquiv \vec Y$,
+%	which, by Lemma~\ref{lemma:filtering}, means that $|\vec X|=|\vec Y|$.
+%	So, the filtering rule would node exclude any node in the successful branch
+%	and, then, also preserved the safeness property.
+%\end{proof}
+
+\begin{lemma}
+  \label{lem:bisimilar-to-prod}
+  If $\bisimf S T$ returns \upshape{\lstinline|True|}, then
+  $X_{S} \ProdEquiv X_{T}$.
+	% Given two context-free session types $S$ and $T$, if the function
+	% \lstinline|equivalent|, presented in Listing~\ref{lst:algorithm},
+	% returns \lstinline|true|, then $X_{S} \ProdEquiv X_{T}$.
+\end{lemma}
+
+\begin{proof}
+  Function \lstinline|bisimilar| returns \lstinline|True| for $S$ and
+  $T$ whenever it reaches a (finite) successful branch in the expansion
+  tree rooted at $\{(X_{S}, X_{T})\}$. Conclude with the safeness property,
+  Proposition~\ref{prop:safeness}.
+  % , whenever the expansion tree rooted
+  % at $\{(X_{S}, X_{T})\}$ has a (finite) successful branch, we
+  % kn that $X_{S} \ProdEquiv X_{T}$.
+\end{proof}
+
+From the previous results, the soundness of our algorithm is now
+immediate: the algorithm to check the bisimulation of context-free
+session types (Listing~\ref{lst:algorithm}) is sound with respect to
+the meta-theory of context-free session types.
+
+\begin{theorem}[Soundness]
+\label{thm:soundness}
+  If $\bisimf ST$ returns \upshape{\lstinline|True|} then $S\TypeEquiv T$.
+\end{theorem}
+%
+\begin{proof}
+  From Corollary~\ref{corol:composing_with_bridge} and
+  Lemma~\ref{lem:bisimilar-to-prod}.
+\end{proof}
+
+% \begin{corollary}
+% 	If $S\not\TypeEquiv T$ then $\bisimf ST$ returns \upshape{\lstinline|False|}.
+% \end{corollary}
+% %
+% \begin{proof}
+% 	From Theorem~\ref{thm:soundness} and Lemma~\ref{lemma:terminates}.
+% \end{proof}
+ 
+Given that the algorithm terminates (Lemma~\ref{lem:termination}), we
+know that if $S\not\TypeEquiv T$, then $\bisimf ST$ returns
+\lstinline|False|.
+%
+We now show that the algorithm to check the bisimulation of context-free session 
+types is complete with respect to the meta-theory of context-free session
+types. The finite witness property is paramount to achieve this result.
+
+\begin{theorem}[Completeness]
+\label{thm:completeness}
+  If $S \TypeEquiv T$ then $\bisimf S T$ returns
+  \upshape{\lstinline|True|}.
+\end{theorem}
+%
+\begin{proof}
+  Assuming that $S \TypeEquiv T$, by Corollary~\ref{corol:composing_with_bridge}
+  we have $X_{S} \ProdEquiv X_{T}$.  Hence, Proposition~\ref{finite_witness}
+  ensures the existence of a finite successful branch on the
+  expansion tree rooted at $\{(X_{S},X_{T})\}$, i.e., a branch
+  terminating in an empty node.  Since our algorithm traverses the
+  expansion tree using breadth-first search it will, eventually, reach
+  the empty node and conclude the bisimulation positively.
+\end{proof}
+
+Theorem~\ref{thm:completeness} ensures that if $\bisimf S T$ returns
+  \lstinline|False| then $S \not\TypeEquiv T$.
+
+% \begin{corollary}
+% 	If $\bisimf ST$ returns \upshape{\lstinline|False|} then $S\not\TypeEquiv T$.
+% \end{corollary}
+% %
+% \begin{proof}
+% 	From Theorem~\ref{thm:completeness}.
+% \end{proof}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:
