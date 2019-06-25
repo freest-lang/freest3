@@ -18,36 +18,18 @@ cabal-version:       >=1.10
 executable ContextFreeSession
   main-is:             Main.hs
   ghc-options:         -threaded
---  ghc-options:         -fwarn-unused-imports
---   ghc-options:         -Wunused-top-binds
---  ghc-options:         -Wall -Wextra
-  -- ghc-options:         -fprof-auto-top
---             "-with-rtsopts=-N -p -s -h -i0.1"
   other-extensions:    FlexibleContexts
-  build-depends:       array <= 0.5.3.0,
-                       base >=4.8,
-                       cond >= 0.4.1.1,
-                       containers >=0.5,
-                       directory >= 1.3.2.0,
-                       filepath >= 1.4.2,
-                       mtl >= 2.2.1,
-                       pretty-terminal >= 0.1.0.0,
-                       process >= 1.6.3.0,
-                       synchronous-channels >= 0.2
+  build-depends:       array <= 0.5.3.0, base >=4.8, cond >= 0.4.1.1, containers >=0.5,
+                       directory >= 1.3.2.0, filepath >= 1.4.2, mtl >= 2.2.1,
+                       pretty-terminal >= 0.1.0.0, process >= 1.6.3.0, synchronous-channels >= 0.2
   hs-source-dirs:      src
   default-language:    Haskell2010
   build-tools:         alex, happy
   other-modules:       Compiler,
                        Syntax.Base, Syntax.ProgramVariables, Syntax.TypeVariables,
-                       Syntax.Kinds, Syntax.Types, Syntax.Schemes, Syntax.Expressions,
-                       Syntax.Show,
-                       Parse.Parser, Parse.Lexer, Parse.ParseUtils,
-                       Utils.PreludeLoader, Utils.Errors, Utils.FreestState,
-                       Validation.TypeChecking, Validation.Typing, Validation.Kinding,
-                       Validation.Contractive, Validation.Extract, Validation.Rename,
-                       Validation.Substitution,
+                       Syntax.Kinds, Syntax.Types, Syntax.Schemes, Syntax.Show,
+                       Validation.Kinding, Validation.Contractive, Validation.Extract,
+                       Validation.Rename, Validation.Substitution,
+                       Utils.Errors, Utils.FreestState, Utils.PreludeLoader,
                        Equivalence.Equivalence, Equivalence.Bisimulation, Equivalence.Grammar,
-                       Equivalence.TypeToGrammar, Equivalence.Norm, Equivalence.Normalisation,
-                       CodeGen.CodeGen, CodeGen.DatatypeGen,  CodeGen.Annotation,
-                       CodeGen.CodeGenState, CodeGen.Translate,
-                       Utils.PreludeLoader
+                       Equivalence.TypeToGrammar, Equivalence.Norm, Equivalence.Normalisation

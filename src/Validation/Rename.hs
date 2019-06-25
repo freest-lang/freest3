@@ -22,7 +22,7 @@ module Validation.Rename
 , Rename(..) -- for testing only
 ) where
 
-import           Syntax.Expressions
+-- import           Syntax.Expressions
 import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Kinds
@@ -44,24 +44,25 @@ renameState = do
   setTEnv tEnv'
   -- VarEnv + ExpEnv, together
   vEnv <- getVEnv
-  tMapWithKeyM renameFun (userDefined (noConstructors tEnv vEnv))
+-- TODO: maybe add renameFun  
+--  tMapWithKeyM renameFun (userDefined (noConstructors tEnv vEnv))
   return ()
 
-renameFun :: ProgVar -> TypeScheme -> FreestState ()
-renameFun f (TypeScheme p xks t) = do
-  -- The function signature
-  xks' <- mapM (rename Map.empty) xks
-  let bs = insertBindings xks xks' Map.empty
-  t' <- rename bs t
-  addToVEnv f (TypeScheme p xks' t')
-  -- The function body
-  eEnv <- getEEnv
-  getFromEEnv f >>= \case
-    Just e -> do
-      e' <- rename bs e
-      addToEEnv f e'
-    Nothing ->
-      return ()
+-- renameFun :: ProgVar -> TypeScheme -> FreestState ()
+-- renameFun f (TypeScheme p xks t) = do
+--   -- The function signature
+--   xks' <- mapM (rename Map.empty) xks
+--   let bs = insertBindings xks xks' Map.empty
+--   t' <- rename bs t
+--   addToVEnv f (TypeScheme p xks' t')
+--   -- The function body
+--   eEnv <- getEEnv
+--   getFromEEnv f >>= \case
+--     Just e -> do
+--       e' <- rename bs e
+--       addToEEnv f e'
+--     Nothing ->
+--       return ()
   
 -- Renaming the various syntactic categories
 
@@ -127,86 +128,6 @@ instance Rename TypeVarBind where
     return $ TypeVarBind p y k
 
 -- Expressions
-
-instance Rename Expression where
-  -- Variable
-  rename bs (ProgVar p x) =
-    return $ ProgVar p (findWithDefaultVar x bs)
-  -- Abstraction intro and elim
-  rename bs (Lambda p m x t e) = do
-    x' <- rename bs x
-    t' <- rename bs t
-    e' <- rename (insertVar x x' bs) e
-    return $ Lambda p m x' t' e'
-  rename bs (App p e1 e2) = do
-    e1' <- rename bs e1
-    e2' <- rename bs e2
-    return $ App p e1' e2'
-  -- Pair intro and elim
-  rename bs (Pair p e1 e2) =  do
-    e1' <- rename bs e1
-    e2' <- rename bs e2
-    return $ Pair p e1' e2'
-  rename bs (BinLet p x y e1 e2) =  do
-    x' <- rename bs x
-    y' <- rename bs y
-    e1' <- rename bs e1
-    e2' <- rename (insertVar y y' (insertVar x x' bs)) e2
-    return $ BinLet p x' y' e1' e2'
-  -- Datatype elim
-  rename bs (Case p e fm) = do
-    e' <- rename bs e
-    fm' <- tMapM (renameField bs) fm
-    return $ Case p e' fm'
-  -- Type application
-  rename bs (TypeApp p x ts) = do
-    let x' = findWithDefaultVar x bs
-    ts' <- mapM (rename bs) ts
-    return $ TypeApp p x' ts'
-  -- Boolean elim
-  rename bs (Conditional p e1 e2 e3) =  do
-    e1' <- rename bs e1
-    e2' <- rename bs e2
-    e3' <- rename bs e3
-    return $ Conditional p e1' e2' e3'
-  -- Let
-  rename bs (UnLet p x e1 e2) = do
-    x' <- rename bs x
-    e1' <- rename bs e1
-    e2' <- rename (insertVar x x' bs) e2
-    return $ UnLet p x' e1' e2'
-  -- Fork
-  rename bs (Fork p e) = do
-    e' <- rename bs e
-    return $ Fork p e'
-  -- Session types
-  rename bs (New p t) = do
-    t' <- rename bs t
-    return $ New p t'
-  rename bs (Send p e) = do
-    e' <- rename bs e
-    return $ Send p e'
-  rename bs (Receive p e) = do
-    e' <- rename bs e
-    return $ Receive p e'
-  rename bs (Select p e l) = do
-    e' <- rename bs e
-    return $ Select p e' l
-  rename bs (Match p e fm) = do
-    e' <- rename bs e
-    fm' <- tMapM (renameField bs) fm
-    return $ Match p e' fm'
-  -- Otherwise: Unit, Integer, Character, Boolean
-  rename _ e = return e
-
-renameField :: Bindings -> ([ProgVar], Expression) -> FreestState ([ProgVar], Expression)
-renameField bs (xs, e) = do
-  xs' <- mapM (rename bs) xs
-  e' <- rename (insertProgVars xs xs' bs) e
-  return $ (xs', e')
-
-insertProgVars :: [ProgVar] -> [ProgVar] -> Bindings -> Bindings
-insertProgVars xs xs' bs = foldr(\(x, x') bs -> insertVar x x' bs) bs (zip xs xs')
 
 -- Program variables
 

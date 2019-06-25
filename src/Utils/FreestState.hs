@@ -34,10 +34,10 @@ FreestState
 , addToTEnv
 , setTEnv
 -- Expression environment
-, getEEnv
-, getFromEEnv
-, addToEEnv
-, setEEnv
+-- , getEEnv
+-- , getFromEEnv
+-- , addToEEnv
+-- , setEEnv
 -- Errors
 , Errors (..)
 , getErrors
@@ -46,7 +46,6 @@ FreestState
 , getFileName
 ) where
 
-import           Syntax.Expressions
 import           Syntax.Schemes
 import           Syntax.Kinds
 import           Syntax.TypeVariables
@@ -67,7 +66,7 @@ type Errors = [String]
 data FreestS = FreestS {
   filename :: String
 , varEnv   :: VarEnv
-, expEnv   :: ExpEnv
+-- , expEnv   :: ExpEnv
 , typeEnv  :: TypeEnv
 , errors   :: Errors
 , nextIndex  :: Int
@@ -81,7 +80,7 @@ initialState :: String -> FreestS
 initialState f = FreestS {
   filename  = f
 , varEnv    = Map.empty
-, expEnv    = Map.empty
+--, expEnv    = Map.empty
 , typeEnv   = Map.empty
 , errors    = []
 -- , errors    = Set.empty
@@ -131,24 +130,24 @@ vEnvMember x = do
 setVEnv :: VarEnv -> FreestState ()
 setVEnv vEnv = modify (\s -> s{varEnv = vEnv})
 
--- | EXP ENV
+-- -- | EXP ENV
 
-getEEnv :: FreestState ExpEnv
-getEEnv = do
-  s <- get
-  return $ expEnv s
+-- getEEnv :: FreestState ExpEnv
+-- getEEnv = do
+--   s <- get
+--   return $ expEnv s
 
-getFromEEnv :: ProgVar -> FreestState (Maybe Expression)
-getFromEEnv x = do
-  eEnv <- getEEnv
-  return $ eEnv Map.!? x
+-- getFromEEnv :: ProgVar -> FreestState (Maybe Expression)
+-- getFromEEnv x = do
+--   eEnv <- getEEnv
+--   return $ eEnv Map.!? x
 
-addToEEnv :: ProgVar -> Expression -> FreestState ()
-addToEEnv k v =
-  modify (\s -> s{expEnv=Map.insert k v (expEnv s)})
+-- addToEEnv :: ProgVar -> Expression -> FreestState ()
+-- addToEEnv k v =
+--   modify (\s -> s{expEnv=Map.insert k v (expEnv s)})
 
-setEEnv :: ExpEnv -> FreestState ()
-setEEnv eEnv = modify (\s -> s{expEnv = eEnv})
+-- setEEnv :: ExpEnv -> FreestState ()
+-- setEEnv eEnv = modify (\s -> s{expEnv = eEnv})
 
 -- | TYPE ENV
 
