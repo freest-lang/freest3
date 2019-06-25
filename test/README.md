@@ -34,7 +34,20 @@ After building the compiler you can choose one of the following options:
     ```
     $ cabal test program-tests
     ```
-
+  * To run only the equivalence tests:
+    ```
+    $ cabal test testEquiv
+    ```
+  * To run only the QuickCheck tests:
+    ```
+    $ cabal test testQuickCheck
+    ```
+	or, to run quickcheck alone:
+    ```
+    $ ghci -isrc -itest/QuickCheck test/QuickCheck/TestValidTypes.hs
+	*TestValidTypes> main
+    ```
+	
 There are also available options to run valid and invalid tests separately for all the units:
 
 By running one of the following:
@@ -53,7 +66,7 @@ Or, by running:
   $ cabal build && cabal exec -- runhaskell -isrc -itest/UnitTests/ test/UnitTests/Types/[TESTNAME]
   ```
 
-It's absolutely necessary to have installed the ghc, parsec, hspec and hspec-discover packages.
+It's absolutely necessary to have installed the ghc, hspec and hspec-discover packages.
 
 ### Viewing test results
 

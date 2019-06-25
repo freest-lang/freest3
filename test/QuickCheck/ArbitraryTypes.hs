@@ -1,4 +1,4 @@
-module QuickCheck.ArbitraryTypes
+module ArbitraryTypes
 ( BisimPair(..)
 , ids
 ) where
