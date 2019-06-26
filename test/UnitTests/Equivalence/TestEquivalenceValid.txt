@@ -696,9 +696,9 @@ rec z:SL. !Int; rec w. z;w
 -- &{A: (z;&{A: (!Int;(rec y1.&{A: (z;&{A: (!Int;y1), B: (!Bool;y1), C: (Skip;y1)}), C: (?Char;&{A: (!Int;y1), B: (!Bool;y1), C: (Skip;y1)})})), B: (!Bool;(rec y2.&{A: (z;&{A: (!Int;y2), B: (!Bool;y2), C: (Skip;y2)}), C: (?Char;&{A: (!Int;y2), B: (!Bool;y2), C: (Skip;y2)})})), C: (Skip;(rec y3.&{A: (z;&{A: (!Int;y3), B: (!Bool;y3), C: (Skip;y3)}), C: (?Char;&{A: (!Int;y3), B: (!Bool;y3), C: (Skip;y3)})}))}), C: (?Char;&{A: (!Int;(rec y4.&{A: (z;&{A: (!Int;y4), B: (!Bool;y4), C: (Skip;y4)}), C:(?Char;&{A: (!Int;y4), B: (!Bool;y4), C: (Skip;y4)})})), B: (!Bool;(rec y5.&{A: (z;&{A: (!Int;y5), B: (!Bool;y5), C: (Skip;y5)}), C: (?Char;&{A: (!Int;y5), B: (!Bool;y5), C: (Skip;y5)})})), C: (Skip;(rec y6.&{A: (z;&{A: (!Int;y6), B: (!Bool;y6), C: (Skip;y6)}), C: (?Char;&{A: (!Int;y6), B: (!Bool;y6), C: (Skip;y6)})}))})}
 
 -- This one hangs
-[]
-((rec y0.(+{A: z, C: ?Int};(&{B: y0, C: z};y0)));Skip)
-+{A: (z;&{B: ((rec y10.+{A: (z;&{B: (y10;y10), C: (z;y10)}), C: (?Int;&{B: (y10;y10), C: (z;y10)})});(rec y21.+{A: (z;&{B: (y21;y21), C: (z;y21)}), C: (?Int;&{B: (y21;y21), C: (z;y21)})})), C: (z;(rec y32.+{A: (z;&{B: (y32;y32), C: (z;y32)}), C: (?Int;&{B: (y32;y32), C: (z;y32)})}))}), C: (?Int;&{B: ((rec y43.+{A: (z;&{B: (y43;y43), C: (z;y43)}), C: (?Int;&{B: (y43;y43), C: (z;y43)})});(rec y54.+{A: (z;&{B: (y54;y54), C: (z;y54)}), C: (?Int;&{B: (y54;y54), C: (z;y54)})})), C: (z;(rec y65.+{A: (z;&{B: (y65;y65), C: (z;y65)}), C: (?Int;&{B: (y65;y65), C: (z;y65)})}))})}
+-- []
+-- ((rec y0.(+{A: z, C: ?Int};(&{B: y0, C: z};y0)));Skip)
+-- +{A: (z;&{B: ((rec y10.+{A: (z;&{B: (y10;y10), C: (z;y10)}), C: (?Int;&{B: (y10;y10), C: (z;y10)})});(rec y21.+{A: (z;&{B: (y21;y21), C: (z;y21)}), C: (?Int;&{B: (y21;y21), C: (z;y21)})})), C: (z;(rec y32.+{A: (z;&{B: (y32;y32), C: (z;y32)}), C: (?Int;&{B: (y32;y32), C: (z;y32)})}))}), C: (?Int;&{B: ((rec y43.+{A: (z;&{B: (y43;y43), C: (z;y43)}), C: (?Int;&{B: (y43;y43), C: (z;y43)})});(rec y54.+{A: (z;&{B: (y54;y54), C: (z;y54)}), C: (?Int;&{B: (y54;y54), C: (z;y54)})})), C: (z;(rec y65.+{A: (z;&{B: (y65;y65), C: (z;y65)}), C: (?Int;&{B: (y65;y65), C: (z;y65)})}))})}
 
 -- This one takes long
 -- []

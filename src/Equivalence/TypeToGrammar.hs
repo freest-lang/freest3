@@ -29,20 +29,18 @@ import           Utils.FreestState (tMapWithKeyM, tMapM, tMapM_)
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
 import           Debug.Trace
+import           Prelude hiding (Word) -- Word is (re)defined in module Equivalence.Grammar
 
 -- Conversion to context-free grammars
 
 convertToGrammar :: TypeEnv -> [Type] -> Grammar
-convertToGrammar tEnv ts = Grammar xs (productions s)
-  where (xs, s) = runState (mapM typeToGrammar ts) (initial tEnv)
+convertToGrammar tEnv ts = Grammar xs (productions state)
+  where (xs, state) = runState (mapM typeToGrammar ts) (initial tEnv)
 
-typeToGrammar :: Type -> TransState TypeVar
-typeToGrammar t = do
-  xs <- toGrammar t
-  collect [] t
-  getProd $ Map.singleton (MessageLabel Out UnitType) xs
+typeToGrammar :: Type -> TransState Word
+typeToGrammar t = collect [] t >> toGrammar t
 
-toGrammar :: Type -> TransState [TypeVar]
+toGrammar :: Type -> TransState Word
 -- Session types
 toGrammar (Skip _) =
   return []
@@ -58,8 +56,8 @@ toGrammar (Choice _ p m) = do
   y <- getProd $ Map.mapKeys (ChoiceLabel p) ms
   return [y]
 -- Functional or session (session in this case)
-toGrammar (TypeVar _ x) = do
-  y <- getProd $ Map.singleton (VarLabel x) []   -- x is a polymorphic variable
+toGrammar (TypeVar _ x) = do      -- x is a polymorphic variable
+  y <- getProd $ Map.singleton (VarLabel x) []
   return [y]
 toGrammar (Rec _ (TypeVarBind _ x _) _) =
   return [x]
@@ -136,7 +134,7 @@ addProductions :: TypeVar -> Transitions -> TransState ()
 addProductions x m =
   modify $ \s -> s {productions = Map.insert x m (productions s)}
 
-addProduction :: TypeVar -> Label -> [TypeVar] -> TransState ()
+addProduction :: TypeVar -> Label -> Word -> TransState ()
 addProduction x l w =
   modify $ \s -> s {productions = insertProduction (productions s) x l w}
 
@@ -162,5 +160,5 @@ prodExists :: Transitions -> Transitions -> Bool
 prodExists ts ts' =
   Map.foldrWithKey (\l xs acc -> acc && contains l xs ts) (length ts == Map.size ts') ts'
   where
-  contains :: Label -> [TypeVar] -> Transitions -> Bool
+  contains :: Label -> Word -> Transitions -> Bool
   contains l xs ts = Map.lookup l ts == Just xs
