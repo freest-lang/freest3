@@ -34,7 +34,7 @@ subs t x (PairType p t1 t2) = PairType p (subs t x t1) (subs t x t2)
 subs t x (Datatype p m)     = Datatype p (Map.map(subs t x) m)
 -- Session types
 subs t x (Semi p t1 t2)     = Semi p (subs t x t1) (subs t x t2)
-subs t x (Choice p v m)     = Choice p v (Map.map(subs t x) m)
+-- subs t x (Choice p v m)     = Choice p v (Map.map(subs t x) m) -- TODO: Choice add
 subs t x (Rec p yk u)       = Rec p yk (subs t x u) -- Assume types were renamed (hence, x/=y and no -the-fly renaming needed)
 -- Functional or session
 subs t x u@(TypeVar _ y)
@@ -59,7 +59,7 @@ free (PairType _ t u) = Set.union (free t) (free u)
 free (Datatype _ m) = freeMap m
   -- Session types
 free (Semi _ t u) = Set.union (free t) (free u)
-free (Choice _ _ m) = freeMap m
+free (Choice _ m) = freeMap m
   -- Functional or session
 free (Rec _ (TypeVarBind _ x _) t) = Set.delete x (free t)
 free (TypeVar _ x) = Set.singleton x
@@ -69,8 +69,9 @@ free (Dualof _ t) = free t
   -- Otherwise: Basic, Skip, Message
 free _ = Set.empty
 
-freeMap :: TypeMap -> Set.Set TypeVar
+freeMap :: Map.Map a Type -> Set.Set TypeVar
 freeMap = Map.foldr (\t acc -> (free t) `Set.union` acc) Set.empty
+
 
 {-
 

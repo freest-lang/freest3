@@ -77,7 +77,7 @@ isSessionType :: TypeEnv -> KindEnv -> Type -> Bool
 isSessionType _    _    (Skip _)        = True
 isSessionType _    _    (Semi _ _ _)    = True
 isSessionType _    _    (Message _ _ _) = True
-isSessionType _    _    (Choice _ _ _)  = True
+isSessionType _    _    (Choice _ _)  = True
   -- Functional or session
 isSessionType tenv kenv (Rec _ _ t)     = isSessionType tenv kenv t
 isSessionType _    kenv (TypeVar _ x)   = Map.member x kenv

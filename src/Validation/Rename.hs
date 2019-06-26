@@ -103,9 +103,9 @@ instance Rename Type where
     t' <- rename bs t
     u' <- rename bs u
     return $ Semi p t' u'
-  rename bs (Choice p pol tm) = do
+  rename bs (Choice p tm) = do
     tm' <- tMapM (rename bs) tm
-    return $ Choice p pol tm'
+    return $ Choice p tm'
     -- Functional or session
   rename bs (Rec p (TypeVarBind p' x k) t) = do
     x' <- rename bs x

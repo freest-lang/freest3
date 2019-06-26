@@ -15,6 +15,7 @@ module Syntax.Types
 , Polarity(..)
 , Type(..)
 , Dual(..)
+, Label(..) -- TODO: was in grammar; the import here causes a cycle; remove from here/refactor
 ) where
 
 import           Syntax.Kinds
@@ -22,6 +23,13 @@ import           Syntax.TypeVariables
 import           Syntax.ProgramVariables (ProgVar)
 import           Syntax.Base
 import qualified Data.Map.Strict as Map
+
+-- Terminal symbols are called labels
+data Label =
+  ChoiceLabel Polarity ProgVar |
+  MessageLabel Polarity BasicType |
+  VarLabel TypeVar
+  deriving (Eq, Ord)
 
 
 -- The dual function on types, etc
@@ -60,7 +68,7 @@ data Type =
   | Skip Pos
   | Semi Pos Type Type
   | Message Pos Polarity BasicType
-  | Choice Pos Polarity TypeMap
+  | Choice Pos ChoiceMap
   -- Functional or session
   | Rec Pos TypeVarBind Type
   | TypeVar Pos TypeVar  -- a recursion variable if bound, polymorphic otherwise
@@ -69,7 +77,7 @@ data Type =
   | Dualof Pos Type      -- to be expanded into a session type
   deriving Ord
 
-
+type ChoiceMap = Map.Map Label Type -- TODO: temporary
 type TypeMap = Map.Map ProgVar Type
 
 instance Eq Type where -- Type equality, up to alpha-conversion
@@ -85,7 +93,7 @@ equalTypes s (Datatype _ m1)  (Datatype _ m2)  = equalMaps s m1 m2
 equalTypes s (Skip _)         (Skip _)         = True
 equalTypes s (Semi _ t1 t2)   (Semi _ u1 u2)   = equalTypes s t1 u1 && equalTypes s t2 u2
 equalTypes s (Message _ p x)  (Message _ q y)  = p == q && x == y
-equalTypes s (Choice _ v1 m1) (Choice _ v2 m2) = v1 == v2 && equalMaps s m1 m2
+-- equalTypes s (Choice _ v1 m1) (Choice _ v2 m2) = v1 == v2 && equalMaps s m1 m2 -- TODO: Choice add
 equalTypes s (Rec _ (TypeVarBind _ x k) t) (Rec _ (TypeVarBind _ y l) u) =
   k ==l && equalTypes (Map.insert x y s) t u
   -- Functional or session
@@ -116,7 +124,7 @@ instance Position Type where
   position (Skip p)         = p
   position (Semi p _ _)     = p
   position (Message p _ _)  = p
-  position (Choice p _ _)   = p
+  position (Choice p  _)    = p
   -- Functional or session
   position (Rec p _ _)      = p
   position (TypeVar p _)    = p
@@ -129,7 +137,7 @@ instance Dual Type where
   dual (Semi p t1 t2)   = Semi p (dual t1) (dual t2)
   -- dual (Semi p t1 t2)  = Semi p (Dualof p t1) (Dualof p t2) -- The lazy version loops
   dual (Message p v b)  = Message p (dual v) b
-  dual (Choice p v m)   = Choice p (dual v) (Map.map dual m)
+--  dual (Choice p v m)   = Choice p (dual v) (Map.map dual m) -- TODO: removed; test this
   -- dual (Choice p v m)  = Choice p (dual v) (Map.map (Dualof p) m) -- The lazy version loops
   dual (Rec p x t)      = Rec p x (dual t)
   -- dual (Rec p x t)     = Rec p x (Dualof p t) -- The lazy version loops

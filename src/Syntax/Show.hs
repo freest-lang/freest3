@@ -106,7 +106,7 @@ showType i (PairType _ t u) = "(" ++ showType (i-1) t ++ ", " ++ showType (i-1) 
 showType i (Datatype _ m)   = "[" ++ showDatatype i m ++ "]"
   -- Session types
 showType i (Semi _ t u)     = "(" ++ showType (i-1) t ++ ";" ++ showType (i-1) u ++ ")"
-showType i (Choice _ v m)   = showChoiceView v ++ "{" ++ showChoice i m ++ "}"
+-- showType i (Choice _ v m)   = showChoiceView v ++ "{" ++ showChoice i m ++ "}" -- TODO: Removed Choice
 -- showType i t@(Rec _ _ _)    = showType (i-1) (Subs.unfold t)
 showType i (Rec _ xk t)     = "(rec " ++ show xk ++ "." ++ showType (i-1) t ++ ")" -- for testing purposes
   -- Type operators

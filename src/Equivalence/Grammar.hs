@@ -28,8 +28,7 @@ map from labels to lists of type variables.
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 
 module Equivalence.Grammar
-( Label(..)
-, Transitions
+( Transitions
 , Productions
 , Grammar(..)
 , transitions
@@ -47,13 +46,6 @@ import           Syntax.Show
 import qualified Data.Map.Strict as Map
 import           Data.List (union)
 import           Data.List (intersperse)
-
--- Terminal symbols are called labels
-data Label =
-  ChoiceLabel Polarity ProgVar |
-  MessageLabel Polarity BasicType |
-  VarLabel TypeVar
-  deriving (Eq, Ord)
 
 -- Non-terminal symbols are type variables TypeVar
 

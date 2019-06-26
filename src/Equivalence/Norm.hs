@@ -17,6 +17,7 @@ module Equivalence.Norm
 ) where
 
 import           Syntax.TypeVariables
+import           Syntax.Types (Label(..))
 import           Equivalence.Grammar
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set

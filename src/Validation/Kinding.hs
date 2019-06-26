@@ -60,7 +60,7 @@ synthetise kEnv (Semi p t u) = do
   return $ Kind p Session (max m n)
 synthetise _ (Message p _ _) =
   return $ Kind p Session Lin
-synthetise kEnv (Choice p _ m) = do
+synthetise kEnv (Choice p m) = do
   tMapM (checkAgainst kEnv (Kind p Session Lin)) m
   return $ Kind p Session Lin
 -- Session or functional
