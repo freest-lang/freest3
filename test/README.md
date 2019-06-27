@@ -42,12 +42,15 @@ After building the compiler you can choose one of the following options:
     ```
     $ cabal test testQuickCheck
     ```
-	or, to run quickcheck alone:
+	or, to run quickcheck alone (interpreter):
     ```
     $ ghci -isrc -itest/QuickCheck test/QuickCheck/TestValidTypes.hs
 	*TestValidTypes> main
     ```
-	
+	or from the command line:
+	```
+	$ time runhaskell -isrc -itest/QuickCheck test/QuickCheck/TestValidTypes.hs
+	```
 There are also available options to run valid and invalid tests separately for all the units:
 
 By running one of the following:
