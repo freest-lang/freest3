@@ -16,6 +16,7 @@ module Syntax.Types
 , Type(..)
 , Dual(..)
 , Label(..) -- TODO: was in grammar; the import here causes a cycle; remove from here/refactor
+, ChoiceMap
 ) where
 
 import           Syntax.Kinds

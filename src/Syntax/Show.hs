@@ -106,7 +106,7 @@ showType i (PairType _ t u) = "(" ++ showType (i-1) t ++ ", " ++ showType (i-1) 
 showType i (Datatype _ m)   = "[" ++ showDatatype i m ++ "]"
   -- Session types
 showType i (Semi _ t u)     = "(" ++ showType (i-1) t ++ ";" ++ showType (i-1) u ++ ")"
--- showType i (Choice _ v m)   = showChoiceView v ++ "{" ++ showChoice i m ++ "}" -- TODO: Removed Choice
+showType i (Choice _ m)     = "{" ++ showChoice i m ++ "}" -- TODO: Removed Choice
 -- showType i t@(Rec _ _ _)    = showType (i-1) (Subs.unfold t)
 showType i (Rec _ xk t)     = "(rec " ++ show xk ++ "." ++ showType (i-1) t ++ ")" -- for testing purposes
   -- Type operators
@@ -120,9 +120,14 @@ showDatatype i m = concat $ intersperse " | " $
   showAsSequence (Fun _ _ t u) = " " ++ showType (i-1) t ++ showAsSequence u
   showAsSequence _ = ""
 
-showChoice :: Int -> TypeMap -> String
+showChoice :: Int -> ChoiceMap -> String
 showChoice i m = concat $ intersperse ", " $
   Map.foldrWithKey (\c t acc -> (show c ++ ": " ++ showType (i-1) t) : acc) [] m
+
+instance Show Label where
+  show (ChoiceLabel p x) = show p ++ show x
+  show (MessageLabel p b) = show p ++ show b
+  show (VarLabel x) = show x
 
 -- Type Schemes
 
