@@ -126,23 +126,43 @@ semiPair n = do
 
 choicePair :: Int -> Gen (Type, Type)
 choicePair n = do
-  p <- arbitrary
+--  p <- arbitrary
   (m1, m2) <- typeMapPair n
-  return (Choice pos p m1,
-          Choice pos p m2)
+  return (Choice pos m1,
+          Choice pos m2)
 
-typeMapPair :: Int -> Gen (TypeMap, TypeMap)
+typeMapPair :: Int -> Gen (ChoiceMap, ChoiceMap)
 typeMapPair n = do
   k <- choose (1, length choices)
   pairs <- vectorOf k $ fieldPair (n `div` k)
   let (f1, f2) = unzip pairs
   return (Map.fromList f1, Map.fromList f2)
   where
-  fieldPair :: Int -> Gen ((ProgVar, Type), (ProgVar, Type))
+  fieldPair :: Int -> Gen ((Label, Type), (Label, Type))
   fieldPair n = do
     (t, u) <- bisimPair (n `div` 4)
     x <- arbitrary
     return ((x, t), (x, u))
+
+instance Arbitrary Label where -- TODO: Test only; define the right one
+  arbitrary = do
+    p <- arbitrary
+    m <- arbitrary
+    return $ ChoiceLabel p m
+
+-- typeMapPair :: Int -> Gen (TypeMap, TypeMap)
+-- typeMapPair n = do
+--   k <- choose (1, length choices)
+--   pairs <- vectorOf k $ fieldPair (n `div` k)
+--   let (f1, f2) = unzip pairs
+--   return (Map.fromList f1, Map.fromList f2)
+--   where
+--   fieldPair :: Int -> Gen ((ProgVar, Type), (ProgVar, Type))
+--   fieldPair n = do
+--     (t, u) <- bisimPair (n `div` 4)
+--     x <- arbitrary
+--     return ((x, t), (x, u))
+
 
 recPair :: Int -> Gen (Type, Type)
 recPair n = do
@@ -174,9 +194,8 @@ distrib :: Int -> Gen (Type, Type)
 distrib n = do
   (t, u) <- bisimPair (n `div` 4)
   (m1, m2) <- typeMapPair (n `div` 4)
-  p <- arbitrary
-  return (Semi pos (Choice pos p m1) t,
-          Choice pos p (Map.map (\v -> Semi pos v u) m2))
+  return (Semi pos (Choice pos m1) t,
+          Choice pos (Map.map (\v -> Semi pos v u) m2))
           
 -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
 

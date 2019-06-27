@@ -18,7 +18,8 @@ import           Data.Maybe
 import qualified Data.Map.Strict as Map
 import           ArbitraryTypes
 
-main = quickCheckWith stdArgs {maxSuccess = 90000} prop_bisimilar -- prop_equivalent
+
+main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar -- prop_equivalent
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_distribution
 -- main = quickCheckWith stdArgs {maxSuccess = 10000, replay = Just (mkQCGen 42, 0)} prop_bisimilar
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
@@ -97,7 +98,7 @@ prop_distribution (BisimPair t _) = kinded t ==>
 -- The number of nodes in a type
 nodes :: Type -> Int
 nodes (Semi _ t u)   = 1 + nodes t + nodes u
-nodes (Choice _ _ m) = 1 + Map.foldr (\t acc -> nodes t + acc) 0 m
+nodes (Choice _ m) = 1 + Map.foldr (\t acc -> nodes t + acc) 0 m
 nodes (Rec _ _ t)    = 1 + nodes t
 -- Skip, Message, TypeVar
 nodes _              = 1
@@ -111,7 +112,7 @@ constr (Datatype _ _) = "Datatype"
 constr (Skip _) = "Skip"
 constr (Semi _ _ _) = "Semi"
 constr (Message _ _ _) = "Message"
-constr (Choice _ _ _) = "Choice"
+constr (Choice _ _) = "Choice"
 constr (Rec _ _ _) = "Rec"
 constr (TypeVar _ _) = "TypeVar"
 constr (TypeName _ _) = "TypeName"

@@ -11,7 +11,7 @@ spec :: Spec
 spec = do
     describe "QuickCheck" $ do
         prop "prop_bisimilar" $
-          quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
+          quickCheckWith stdArgs {maxSuccess = 40000} prop_bisimilar
 
 
 main = hspec spec

@@ -106,15 +106,15 @@ throughPath p _ xs = Just xs
 
 -- Showing a grammar
 
-instance Show Label where
-  show (ChoiceLabel v l)  = showChoiceView v ++ intern l
-  show (MessageLabel p t) = show p ++ show t
-  show (VarLabel l)       = intern l
+-- instance Show Label where
+--   show (ChoiceLabel v l)  = showChoiceView v ++ intern l
+--   show (MessageLabel p t) = show p ++ show t
+--   show (VarLabel l)       = intern l
 
-instance Show Grammar where
-  show (Grammar xs p) =
-    "start symbols: " ++ concat (map intern xs) ++
-    "\nproductions: " ++ showProductions p
+-- instance Show Grammar where
+--   show (Grammar xs p) =
+--     "start symbols: " ++ concat (map intern xs) ++
+--     "\nproductions: " ++ showProductions p
 
 showProductions :: Productions -> String
 showProductions = Map.foldrWithKey showTransitions ""
