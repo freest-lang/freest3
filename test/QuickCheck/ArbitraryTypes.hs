@@ -145,10 +145,29 @@ typeMapPair n = do
     return ((x, t), (x, u))
 
 instance Arbitrary Label where -- TODO: Test only; define the right one
-  arbitrary = do
-    p <- arbitrary
-    m <- arbitrary
-    return $ ChoiceLabel p m
+  arbitrary =
+    oneof
+    [ arbitraryChoiceLabel
+    , arbitraryMessageLabel
+    , arbitraryVarLabel
+    ]
+    
+arbitraryChoiceLabel :: Gen Label
+arbitraryChoiceLabel = do
+  p <- arbitrary
+  m <- arbitrary
+  return $ ChoiceLabel p m
+
+arbitraryMessageLabel :: Gen Label
+arbitraryMessageLabel = do
+  p <- arbitrary
+  b <- arbitrary
+  return $ MessageLabel p b
+  
+arbitraryVarLabel :: Gen Label
+arbitraryVarLabel = do
+  x <- arbitrary
+  return $ VarLabel x
 
 -- typeMapPair :: Int -> Gen (TypeMap, TypeMap)
 -- typeMapPair n = do
