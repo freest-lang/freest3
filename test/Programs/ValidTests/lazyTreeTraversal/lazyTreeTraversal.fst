@@ -38,8 +38,9 @@ exploreNode : forall α:SL =>
 exploreNode c x l r =
   match c with {
     Root c ->
-      let c = send c x in
-      exploreNode[α] c x l r,
+      -- let c = send c x in
+      -- exploreNode[α] c x l r,
+      exploreNode[α] (send c x) x l r,
     Left c ->
       let c = exploreTree[(rec y:SL.
         &{Root: !Int;y,
@@ -68,12 +69,12 @@ server : forall α:SL =>
                                  Exit:  Skip}});α ->
   Int ->
   (α, Int)
-server c n =
-  match c with {
-    Leaf c ->
-      (c, n),
-    Node c ->
-      serverNode[α] c n
+server c1 n =
+  match c1 with {
+    Leaf c1 ->
+      (c1, n),
+    Node c1 ->
+      serverNode[α] c1 n
   }
 
 serverNode : forall α:SL =>

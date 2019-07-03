@@ -227,7 +227,7 @@ annExp fm ast _ e@(Receive _ e1) =
     (Map.insert e IOType ast1, IOType)
 annExp fm ast _ e@(Send _ e1) =
   let (ast1,_) = annExp fm ast PureType e1 in
-    (Map.insert e IOType ast1, PureType)    
+    (Map.insert e IOType ast1, IOType)    
 annExp fm ast t e@(Match _ e1 cm) =
   let (ast1, t1) = annExp fm ast PureType e1
       (ast2, t2) =
