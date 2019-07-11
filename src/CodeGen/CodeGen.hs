@@ -81,7 +81,8 @@ genFreeSTRunTime filepath =
 genFork :: String
 genFork = "_fork e = do\n  forkIO e\n  return ()"
 
--- one synchronous channel
+-- ONE SYNCHRONOUS CHANNEL
+
 -- genChannelEnd :: String
 -- genChannelEnd = "type ChannelEnd a b = (Chan a, Chan b)"
 
@@ -92,7 +93,7 @@ genFork = "_fork e = do\n  forkIO e\n  return ()"
 -- genNew :: String
 -- genNew = "_new = do\n  ch <- newChan\n  return (ch, ch)"
 
--- genSend :: String
+-- genSend :: String  
 -- genSend = "_send ch x  = do\n  writeChan ch (unsafeCoerce x)\n  return ch"
 
 -- genReceive :: String
@@ -101,7 +102,7 @@ genFork = "_fork e = do\n  forkIO e\n  return ()"
 -- genSkip :: String
 -- genSkip = "type Skip = Chan ()\n\ninstance {-# Overlaps #-} Show Skip where\n  show _ = \"Skip\""
 
--- Two asynchronous channels
+-- TWO ASYNCHRONOUS CHANNELS
 
 genChannelEnd :: String
 genChannelEnd = "type ChannelEnd a b = ((Chan a, Chan b), (Chan b, Chan a))"
@@ -122,10 +123,12 @@ genReceive = "_receive ch = do\n  a <- readChan (fst ch)\n  return (unsafeCoerce
 genSkip :: String
 genSkip = "type Skip = (Chan (), Chan ())\n\ninstance {-# Overlaps #-} Show Skip where\n  show _ = \"Skip\""
 
+
+
 -- genShowTypeable :: String
 -- genShowTypeable = "instance (Typeable a, Typeable b) => Show (a->b) where\n  show _ = show $ typeOf (undefined :: a -> b)"
   
--- With MVars
+-- WITH MVARS
 
 -- {-
 -- genFreeSTRunTimeImports :: String
