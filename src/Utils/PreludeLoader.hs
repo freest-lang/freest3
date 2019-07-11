@@ -9,6 +9,8 @@ import           Syntax.Types
 import           Syntax.ProgramVariables
 import           Syntax.Base
 import qualified Data.Map.Strict as Map
+import Syntax.Kinds
+
 
 binIntOp = fromType (Fun defaultPos Un (Basic defaultPos IntType) (Fun defaultPos Un (Basic defaultPos IntType) (Basic defaultPos IntType)))
 binBoolOp = fromType (Fun defaultPos Un (Basic defaultPos BoolType) (Fun defaultPos Un (Basic defaultPos BoolType) (Basic defaultPos BoolType)))
@@ -38,7 +40,9 @@ typeList =
 -- If introduce fork here, programs must instantiate ths poly var. E.g., 'fork [()] (boolServer r)'
 --  , (mkVar p "fork", TypeScheme p [TypeVarBind p a (Kind p Functional Lin)] (Fun p Lin (TypeVar p a) (Basic p UnitType))) 
 --           , (mkVar p "id", TypeScheme p [TBindK p "a" (Kind p Session Un)] (Fun p Un (TypeVar p "a") (TypeVar p "a")))
+  , (mkVar p "printValue", TypeScheme p [TypeVarBind p (mkVar p "a") (omission p)] (Fun p Un (TypeVar p (mkVar p "a")) (Basic p UnitType))) 
   ]
+  
   where p = defaultPos
 
 prelude :: VarEnv

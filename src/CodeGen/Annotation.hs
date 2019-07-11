@@ -30,8 +30,10 @@ instance ShowD NodeType where
 -- TODO: CHANGE NAME
 
 initialEnv :: VarEnv -> AnnFunMap
-initialEnv = Map.foldrWithKey (\k t m -> Map.insert k (funToArrow t) m) Map.empty
-
+initialEnv venv = Map.foldrWithKey (\k t m -> Map.insert k (funToArrow t) m) initialAcc varEnv
+  where initialAcc = Map.singleton (mkVar defaultPos "printValue") (ArrowType PureType IOType)          
+        varEnv = Map.delete (mkVar defaultPos "printValue") venv
+        
 funToArrow :: TypeScheme -> NodeType
 funToArrow (TypeScheme _ _ (Fun _ _ t1 t2)) =
  ArrowType (funToArrow (fromType t1)) (funToArrow (fromType t2))
@@ -57,7 +59,8 @@ annotateFunction venv = Map.foldrWithKey insert -- (\f t m -> insert f t m)
 
 updateLT :: TypeScheme -> NodeType -> NodeType -> NodeType
 updateLT (TypeScheme _ _ f@(Fun _ _ _ _)) exp (ArrowType a@(ArrowType _ _) t2)  =
-  ArrowType (updateLastType (checkType f) a) (updateLastType exp t2)            
+  ArrowType (updateLastType exp a) (updateLastType exp t2)            
+--  ArrowType (updateLastType (checkType f) a) (updateLastType exp t2)            
 updateLT _ exp (ArrowType t1 t2)  = 
   ArrowType t1 (updateLastType exp t2)
 updateLT _ exp t = max exp t
@@ -65,17 +68,7 @@ updateLT _ exp t = max exp t
 updateLastType :: NodeType -> NodeType -> NodeType
 updateLastType exp (ArrowType t1 t2)  = 
   ArrowType t1 (updateLastType exp t2)
-updateLastType exp t = max exp t
-
-
-checkType :: Type -> NodeType
-checkType (Skip _) = IOType
-checkType (Semi _ _ _) = IOType
-checkType (Message _ _ _) = IOType
-checkType (Choice _ _ _) = IOType
-checkType (Fun _ _ t1 t2) = max (checkType t1) (checkType t2) -- Think
-checkType _ = PureType
-            
+updateLastType exp t = max exp t        
 
 annFun :: AnnFunMap -> Expression -> NodeType
 annFun _ (Unit _) = PureType
