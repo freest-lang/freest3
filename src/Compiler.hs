@@ -48,7 +48,7 @@ compileAndRun filepath = do
   (exitcode, _, errors) <- readProcessWithExitCode "ghc" [targetFileName filename] ""
   checkGhcOut exitcode errors    
   -- (exitcode1, output1, errors1) <- readProcessWithExitCode ("./" ++ dropExtension filename) [] ""
-  (_, _, _, handle) <- createProcess (proc "./crisscross" []){ std_out = UseHandle stdout }  
+  (_, _, _, handle) <- createProcess (proc ("./" ++ dropExtension filename) []){ std_out = UseHandle stdout }  
   exitcode1 <- waitForProcess handle
   checkGhcOut exitcode1 ""
 --  putStr output1
