@@ -1,0 +1,28 @@
+
+ex01-1b
+    Not possible to do (expression) and (expression) and (expression)   example:
+        (x > 1) && (x > 2) && (x > 3)
+    Should do ((expression) and (expression)) and (expression)          example:
+        ((x > 1) && (x > 2)) && (x > 3)
+
+ex01-3
+    Two consecutive zeros work as two diferent zeros                    example:
+        00 = 0 0
+
+ex01-5
+    Impossible to create, as example, (:) or (^) functions              example:
+        (^) : Int -> Int -> Int
+
+ex01-6a
+    Not possible to apply equals to Char Types                          example:
+        'a' == 'b' or (==) 'a' 'b'
+
+ex_01-8c
+    Not possible to apply equals to Char Types, 
+    ord method (Char -> Int, char's ordinal) inexistent                 example:
+        'a' == 'b' or (ord a) == (ord b)
+
+ex_01-8d
+    No not equals impemented besides not a == b                         example:
+        inexistent '/=' or '!='
+
