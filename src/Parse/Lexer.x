@@ -98,7 +98,7 @@ tokens :-
   dualof			{ \p s -> TokenDualof (internalPos p) }
 -- Values
   \(\)				{ \p s -> TokenUnit (internalPos p) }  
-  (0|[1-9]$digit*)      	{ \p s -> TokenInteger (internalPos p) (read s) }
+  (0+|[1-9]$digit*)      	{ \p s -> TokenInteger (internalPos p) (read s) }
   (True|False) 	      	 	{ \p s -> TokenBool (internalPos p) (read s) }
   @char				{ \p s -> TokenChar (internalPos p) (read s) }
 -- Identifiers
