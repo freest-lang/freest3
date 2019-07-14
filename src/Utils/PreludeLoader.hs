@@ -40,10 +40,18 @@ typeList =
 -- If introduce fork here, programs must instantiate ths poly var. E.g., 'fork [()] (boolServer r)'
 --  , (mkVar p "fork", TypeScheme p [TypeVarBind p a (Kind p Functional Lin)] (Fun p Lin (TypeVar p a) (Basic p UnitType))) 
 --           , (mkVar p "id", TypeScheme p [TBindK p "a" (Kind p Session Un)] (Fun p Un (TypeVar p "a") (TypeVar p "a")))
-  , (mkVar p "printValue", TypeScheme p [TypeVarBind p (mkVar p "a") (omission p)] (Fun p Un (TypeVar p (mkVar p "a")) (Basic p UnitType))) 
-  ]
-  
+  , (mkVar p "printInt", fromType (Fun p Un (Basic p IntType) (Basic p UnitType)))
+  , (mkVar p "printBool", fromType (Fun p Un (Basic p BoolType) (Basic p UnitType)))
+  , (mkVar p "printChar", fromType (Fun p Un (Basic p CharType) (Basic p UnitType)))
+  , (mkVar p "printUnit", fromType (Fun p Un (Basic p UnitType) (Basic p UnitType)))
+  ] 
   where p = defaultPos
+
+-- printInt
+-- printBool
+-- printChar
+-- printUnit
+--   , (mkVar p "printValue", TypeScheme p [TypeVarBind p (mkVar p "a") (omission p)] (Fun p Un (TypeVar p (mkVar p "a")) (Basic p UnitType)))
 
 prelude :: VarEnv
 prelude = foldl (\acc (x, s) -> Map.insert x s acc) Map.empty typeList

@@ -31,8 +31,18 @@ instance ShowD NodeType where
 
 initialEnv :: VarEnv -> AnnFunMap
 initialEnv venv = Map.foldrWithKey (\k t m -> Map.insert k (funToArrow t) m) initialAcc varEnv
-  where initialAcc = Map.singleton (mkVar defaultPos "printValue") (ArrowType PureType IOType)          
-        varEnv = Map.delete (mkVar defaultPos "printValue") venv
+  where initialAcc =
+          Map.fromList [ (mkVar defaultPos "printInt", ArrowType PureType IOType)
+                       , (mkVar defaultPos "printBool", ArrowType PureType IOType)
+                       , (mkVar defaultPos "printChar", ArrowType PureType IOType)
+                       , (mkVar defaultPos "printUnit", ArrowType PureType IOType)
+                       ] 
+        varEnv = foldr (\k acc -> Map.delete k acc) venv 
+                      [(mkVar defaultPos "printInt"),
+                       (mkVar defaultPos "printBool"),
+                       (mkVar defaultPos "printChar"),
+                       (mkVar defaultPos "printUnit")] 
+                           -- (mkVar defaultPos "printValue") venv
         
 funToArrow :: TypeScheme -> NodeType
 funToArrow (TypeScheme _ _ (Fun _ _ t1 t2)) =

@@ -8,6 +8,7 @@ client n c =
 server : rec x:SU.(?Int;x;!Char;?Bool) -> Char
 server c =
   let n, c = receive c in
+  let _ = printInt n in 
   server c
 
 main : Char
@@ -15,4 +16,3 @@ main =
   let w, r = new rec x:SU.(!Int;x) in
   let t = fork (client 0 w) in
   server r
-

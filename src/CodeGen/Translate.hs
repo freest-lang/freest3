@@ -180,20 +180,16 @@ translate m ast nt (Case _ e cm) =  do
 
 -- Type application
 translate m ast nt e@(TypeApp _ x _) = do -- EQUAL TO ProgVar ????
-    let t = (m Map.! x)
-    let mat = typeMatch t (ast Map.! e)
---        let mat = typeMatch (max t nt) (ast Map.! e)
-    -- traceM ("\nTypeApp: " ++ show x ++ "\nt value " ++ show t ++
-    --         "\nAST value: " ++ show (ast Map.! e) ++ "\n" ++
-    --         "\nmatch value " ++ show mat ++ "\n")
-    if t /= mat then do -- magic
-      let types = zipNodeTypes t mat
-      let fname = funName x mat
-      createNewFun fname x types 
-      return (fname, IOType)
-    else do
-      let t1 = ast Map.! e
-      return (show x, t1)  
+  let t = (m Map.! x)
+  let mat = typeMatch t (ast Map.! e)
+  if t /= mat then do -- magic
+    let types = zipNodeTypes t mat
+    let fname = funName x mat
+    createNewFun fname x types 
+    return (fname, IOType)
+  else do
+    let t1 = ast Map.! e
+    return (show x, t1)  
 
 -- Boolean elim
 translate m ast t (Conditional _ e1 e2 e3) = do
