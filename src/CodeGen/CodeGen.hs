@@ -68,12 +68,12 @@ genFreeSTRunTime :: FilePath -> IO ()
 genFreeSTRunTime filepath =
   let path = takeDirectory filepath in
   writeFile (path ++ "/FreeSTRuntime.hs")
-    ("{-# LANGUAGE FlexibleInstances #-}\n{-# LANGUAGE ScopedTypeVariables #-}\nmodule FreeSTRuntime (_fork, _new, _send, _receive, Skip, printValue) where\n\n" ++
+    ("{-# LANGUAGE FlexibleInstances #-}\n{-# LANGUAGE ScopedTypeVariables #-}\nmodule FreeSTRuntime (_fork, _new, _send, _receive, Skip, printInt, printBool, printChar, printUnit) where\n\n" ++
      genFreeSTRunTimeImports ++ "\n\n" ++ 
      genChannelEnd ++ "\n\n" ++  
      genFork ++ "\n\n" ++ genNew ++ "\n\n" ++
      genSend ++ "\n\n" ++ genReceive ++ "\n\n" ++ genSkip ++ -- "\n\n" ++ genShowTypeable ++
-     "\n\n" ++ printValue)
+     "\n\n" ++ prints)
 
 -- genSkip :: String
 -- genSkip = "type Skip = (Chan (), Chan ())\n\ninstance {-# Overlaps #-} Show Skip where\n  show _ = \"Skip\""
@@ -106,6 +106,7 @@ genFork = "_fork e = do\n  forkIO e\n  return ()"
 
 genChannelEnd :: String
 genChannelEnd = "type ChannelEnd a b = ((Chan a, Chan b), (Chan b, Chan a))"
+--genChannelEnd = "type ChannelEnd a b = ((Chan (Any a), Chan (Any b)), (Chan (Any b), Chan (Any a)))"
 
 genFreeSTRunTimeImports :: String
 genFreeSTRunTimeImports =
@@ -148,9 +149,12 @@ genSkip = "type Skip = (Chan (), Chan ())\n\ninstance {-# Overlaps #-} Show Skip
 -- Gen prints
 --  "printInt :: Show a => a -> IO ()\nprintValue = putStrLn . show"
   
-printValue :: String
-printValue =
-  "printValue :: Show a => a -> IO ()\nprintValue = putStrLn . show"
+prints :: String
+prints =
+  "printInt :: Int -> IO ()\nprintInt x = putStrLn (show (x :: Int))\n" ++
+  "printBool :: Bool -> IO ()\nprintBool x = putStrLn (show (x :: Bool))\n" ++
+  "printChar :: Char -> IO ()\nprintChar x = putStrLn (show (x :: Char))\n" ++
+  "printUnit :: () -> IO ()\nprintUnit x = putStrLn (show (x :: ()))"
 
 -- printValue :: Show a => a -> IO ()
 -- printValue = putStrLn . show
