@@ -24,7 +24,7 @@ ex_01-8c
         'a' == 'b' or (ord a) == (ord b)
 
 ex_01-8d
-    No not equals impemented besides not a == b                         example:
+    No not equals implemented besides not a == b                        example:
         inexistent '/=' or '!='
 
 ex_01-11a
@@ -32,7 +32,7 @@ ex_01-11a
         "/" or ":"
 
 ex_01-12
-    Overflow on integers beyond 2^62 (should it warns us when it does?) example:
+    Overflow on integers beyond 2^62 (should it warn us when it does?) example:
         2^63 = -9223372036854775808
         2^62 = 0
         2^63 = 0
