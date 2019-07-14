@@ -18,8 +18,9 @@ pow e n = if e <= 0
 listTo : Int -> IntList -> IntList
 listTo x list = if x <= 1
                     then List x list
-                    else listTo (x-1) (List x list )
+                    else listTo (x-1) (List x list)
 -- only positive integers
 
 main : Int
 main = powList 2 (listTo 100 End)
+-- result = 338350
