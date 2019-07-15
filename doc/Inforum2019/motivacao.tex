@@ -68,7 +68,7 @@ produtor c i = choice {
 }
 
 consumidor : dualof CanalInt -> Int -> Int -> Int -> Int
-consumidor c s n k = if n >= n
+consumidor c s n k = if n >= k
   then choice { c = send EOS -> n--1 }
   else choice { (c, m) = receive c -> produtor c (s+m) (n+1) k}
 
