@@ -35,16 +35,17 @@
 \maketitle
 
 \begin{abstract}
-
-A abstração e formalização da comunicação inerente a 
-sistemas de software é fundamental para a confiabilidade dos 
-sistemas.
-Neste trabalho propomos um sistema de tipos que enriquece
-os tipos de sessão, permitindo uma 
-\emph{escolha mista} de trocas de mensagens em cada operação.
-No formalismo que propomos, um servidor deverá ser capaz de escolher se
-pretende continuar a receber mensagens do cliente ou se pretende
-enviar uma determinado valor. Este trabalho está a decorrer.
+  A abstração e formalização da comunicação inerente a sistemas de
+  software é fundamental para a confiabilidade de sistemas
+  concorrentes.  Neste trabalho propomos um sistema de tipos que
+  enriquece os tipos de sessão, permitindo \emph{escolha mistas} entre
+  \textit{input} e \textit{output}.
+  %
+  Na linguagem propomos, os processos podem, a cada momento, decidir
+  entre ler e escrever num dado canal.
+  %
+  Um sistema tipos de sessão garante ainda assim que os processos
+  seguem o protocolo.
 
 %  Sistemas de software distribuídos apresentam por vezes padrões de
 %  comunicação intensivos cuja complexidade dificulta a sua
