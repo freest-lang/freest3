@@ -1,0 +1,31 @@
+\section{A linguagem de programação}
+
+Esta secção introduz a linguagem apresentando a sua sintaxe, 
+semântica e sistema de tipos. 
+
+A linguagem que propomos é funcional apresentando uma sintaxe 
+bastante semelhante à do Haskell acrescida de primitivas para 
+criação de canais e de envio e receção de dados nos mesmos. 
+Esta linguagem é caracterizada pela existência da
+primitiva \lstinline|choice|, que permite
+enumerar as operações de trocas de mensagens 
+que poderão ser escolhidas.
+
+A troca de mensagens dá-se em canais de comunicação síncronos e 
+bidirecionais. Cada canal pode ser descrito pelas suas duas 
+extremidades (\textit{endpoints}) e são caracterizados por tipos 
+que descrevem a sequência de mensagens que passam no canal.
+Os processos podem escrever numa das extremidades do canal ou ler na outra.
+
+\input{fig-types}
+
+A figura \ref{fig:types} apresenta os tipos da linguagem.
+Os tipos básicos formam um subconjunto daqueles existentes no Haskell, 
+inteiros, caracteres, booleanos, e ainda o \lstinline"Unit" e as etiquetas
+das escolhas, $l$.
+Os restantes tipos são compostos pelo 
+operador de escolha $\tChoice{\_}{\_}$,
+pelo operador de sequenciação 
+$\tSemi{\_}{\_}$, pela sua unidade $\tskip$, pelos tipos que representam o envio $\tOut{B}$, 
+a receção $\tIn{B}$, 
+pelos tipos recursivos $\tRecK{x}{T}$ e pelas variáveis \textit{x}.
