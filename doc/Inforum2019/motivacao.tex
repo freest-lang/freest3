@@ -1,44 +1,44 @@
-\section{Introdução}
+\section{Motivação}
 
-Os tipos de sessão foram propostos para responder à necessidade
-de formalização de trocas de mensagens, permitindo definir protocolos 
-na forma de tipos que representam interações corretas do sistema e que 
-garantem propriedades tais como a inexistência de erros na comunicação 
-e de situações de impasse. Contudo, a expressividade dos tipos de sessão
-está ainda aquém de todos os desafios de comunicação que encontramos nos 
-sistemas.
+Os tipos de sessão foram propostos para responder à necessidade de
+formalização de trocas de mensagens, permitindo definir protocolos na
+forma de tipos que representam interações corretas do sistema e que
+garantem propriedades tais como a inexistência de erros na comunicação
+e de situações de impasse~\cite{ref-lang-primitives}. Contudo, a
+expressividade dos tipos de sessão está ainda aquém de todos os
+desafios de comunicação que encontramos nos sistemas: não permitem em
+particular misturar \textit{input} e \textit{output} na mesma escolha.
 
-Considere-se que temos um processo que consegue gerar sequências de números
-inteiros mas não tem capacidade de os somar. Por outro lado, temos um
-segundo processo que é capaz de somar números inteiros, mas não consegue
-gerá-los. Ambos os processos estão aptos para a utilização de comunicação
-por canais. Considere-se então o seguinte problema:
-
-\begin{quote}
+Considere-se o seguinte problema.
+%
+\begin{quotation}
 	Dado $k\in\mathbb{Z}$, qual o maior inteiro $n$ tal que
 	$\sum_{i=1}^n i < k$?
-\end{quote}
+\end{quotation}
 
+Imagine-se um processador capaz de gerar sequências de números
+inteiros mas sem a capacidade de os somar. Imagine-se a um
+segundo processador capaz de somar números inteiros, mas incapaz de os
+gerar. Ambos os processadores estão aptos para a utilização de
+comunicação por canais.
+%
 Este exemplo simplista retrata o caso em que a interação entre
 os processos se dá necessariamente nos dois sentidos e ambos 
 os processos deverão
 estar aptos, leia-se \emph{corretamente tipados}, para responder 
 às necessidades da comunicação.
 
-% Neste trabalho propomos uma linguagem de programação
-% com tipos capazes de modelar um cenário como o descrito acima.
-
 Tirando partido das restrições computacionais dos nossos dois
-processos, podemos tentar resolver o problema dos seguinte modo:
+processadores, podemos tentar resolver o problema dos seguinte modo:
 %
 \begin{itemize}
 \item Um dos processos, \lstinline|produtor|, gera a sequência de
-  números: 1,2,3,\dots e envia-os num canal, até receber no mesmo
+  números: 1,2,3,\dots e envia-a num canal, até receber no mesmo
   canal uma notificação para terminar o envio. A notificação vem na
   forma de uma marca \lstinline|EOS| (\textit{end-of-stream});
-\item O outro processo, \lstinline|consumidor|, vai somando os recebe
-  os números que recebe enquanto a soma for menor do que $n$. Neste
-  ponto envia a marca \lstinline|EOS|.
+\item O outro processo, \lstinline|consumidor|, vai somando os números
+  que recebe os números que recebe enquanto a soma for menor do que
+  $n$. Neste ponto envia a marca \lstinline|EOS|.
 \item O programa principal cria o canal e lança os dois processos.
 \end{itemize}
 
