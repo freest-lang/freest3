@@ -11,7 +11,13 @@ A fase de validação é, também, composta por dois sistemas bidirecionais:
 A introdução de escolhas mistas não invalida nenhuma das duas relações.
 Uma escolha necessita que todos os seus componentes sejam tipos de sessão lineares e a verificação de tipos garante que os padrões de uma \lstinline|choice| respeitam o tipo do canal.
 
-O ambiente de execução (\textit{runtime system}) é bastante compacto e é, essencialmente, composto pelas primitivas de criação de novos fios de execução (\lstinline|fork|) e primitivas para a manipulação de canais (\lstinline|send|, \lstinline|receive|, \lstinline|choice|). O compilador gera código Haskell que posteriormente será compilado através do GHC, o compilador convencional do Haskell.
+O ambiente de execução (\textit{runtime system}) é bastante compacto e é, essencialmente, composto pelas primitivas de criação de novos fios de execução (\lstinline|fork|) e primitivas para a manipulação de canais (\lstinline|send|, \lstinline|receive|, \lstinline|choice|).
+
+% A primitiva \lstinline|choice| é implementada com recurso a canais síncronos. 
+% tryReadChan :: Chan a -> IO (TryResult a)
+% evita situações de impasse uma vez que é uma alternativa não bloqueante que tenta ler um valor de um canal e sucede se um ``escritor'' do canal estiver pronto para sincronizar a comunicação.
+
+O compilador gera código Haskell que posteriormente será compilado através do GHC, o compilador convencional do Haskell.
 
 %%% Local Variables:
 %%% mode: latex
