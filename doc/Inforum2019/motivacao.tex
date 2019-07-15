@@ -25,6 +25,9 @@ os processos deverão
 estar aptos, leia-se \emph{corretamente tipados}, para responder 
 às necessidades da comunicação.
 
+% Neste trabalho propomos uma linguagem de programação
+% com tipos capazes de modelar um cenário como o descrito acima.
+
 Tirando partido das restrições computacionais dos nossos dois
 processos, podemos tentar resolver o problema dos seguinte modo:
 %
@@ -71,12 +74,8 @@ main = let
   (r, w) = new CanalInt in
   fork produtor r 1;
   consumidor w 0 0 k
-
 \end{lstlisting}
 
-
-Neste trabalho propomos uma linguagem de programação
-com tipos capazes de modelar um cenário como o descrito acima.
 
 
 
