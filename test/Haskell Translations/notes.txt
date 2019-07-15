@@ -25,7 +25,7 @@ ex_01-8c
 
 ex_01-8d
     No not equals implemented besides not a == b                        example:
-        inexistent '/=' or '!='
+        inexistent '/='
 
 ex_01-11a
     No other method besides "div" to divide numbers                     example:
