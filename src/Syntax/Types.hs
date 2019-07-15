@@ -78,7 +78,7 @@ data Type =
   | Dualof Pos Type      -- to be expanded into a session type
   deriving Ord
 
-type ChoiceMap = Map.Map Label Type -- TODO: temporary
+type ChoiceMap = Map.Map Label Type
 type TypeMap = Map.Map ProgVar Type
 
 instance Eq Type where -- Type equality, up to alpha-conversion
