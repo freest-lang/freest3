@@ -14,10 +14,10 @@ segundo processo que é capaz de somar números inteiros, mas não consegue
 gerá-los. Ambos os processos estão aptos para a utilização de comunicação
 por canais. Considere-se então o seguinte problema:
 
-\begin{example}
+\begin{quote}
 	Dado $k\in\mathbb{Z}$, qual o maior inteiro $n$ tal que
 	$\sum_{i=1}^n i < k$?
-\end{example}
+\end{quote}
 
 Este exemplo simplista retrata o caso em que a interação entre
 os processos se dá necessariamente nos dois sentidos e ambos 
@@ -25,8 +25,60 @@ os processos deverão
 estar aptos, leia-se \emph{corretamente tipados}, para responder 
 às necessidades da comunicação.
 
+Tirando partido das restrições computacionais dos nossos dois
+processos, podemos tentar resolver o problema dos seguinte modo:
+%
+\begin{itemize}
+\item Um dos processos, \lstinline|produtor|, gera a sequência de
+  números: 1,2,3,\dots e envia-os num canal, até receber no mesmo
+  canal uma notificação para terminar o envio. A notificação vem na
+  forma de uma marca \lstinline|EOS| (\textit{end-of-stream});
+\item O outro processo, \lstinline|consumidor|, vai somando os recebe
+  os números que recebe enquanto a soma for menor do que $n$. Neste
+  ponto envia a marca \lstinline|EOS|.
+\item O programa principal cria o canal e lança os dois processos.
+\end{itemize}
+
+O canal de comunicação segue o  protocolo delineado acima. Quando
+visto do lado do \lstinline|produtor| o canal toma o tipo
+%
+\begin{lstlisting}
+  type CanalInt = ?EOS + !Int;CanalInt
+\end{lstlisting}
+%
+permitindo a cada momento a leitura (\lstinline|?|) da marca
+\lstinline|EOS| ou a escrita (\lstinline|!|) de um inteiro. No caso da
+leitura o protocolo volta ``ao início''.
+%
+Quando visto do lado do \lstinline|consumidor| o canal toma o tipo
+obtido do acima trocando as operações de leitura pelas de escrita, e
+vice-versa. Abreviamos esse tipo com \lstinline|dualof CanalInt|.
+
+\begin{lstlisting}
+produtor : CanalInt -> Int -> ()
+produtor c i = choice {
+  (c, EOS) =receive -> (),
+  c = send c n -> consumidor c (i+1)
+
+consumidor : dualof CanalInt -> Int -> Int -> Int -> Int
+consumidor c s n k = if n >= n
+then choice { c = send EOS -> n--1
+else choice { (c, m) = receive c -> produtor c (s+m) (n+1) k
+
+main : Int
+main = let
+  k = 1000
+  (r, w) = new CanalInt in
+  fork produtor r 1;
+  consumidor w 0 0 k
+
+\end{lstlisting}
+
+
 Neste trabalho propomos uma linguagem de programação
 com tipos capazes de modelar um cenário como o descrito acima.
+
+
 
 %%% Local Variables:
 %%% mode: latex
