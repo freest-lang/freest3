@@ -1,7 +1,7 @@
 \section{A implementação}
 
 A implementação de um compilador com escolhas mistas, que estendem os tipos de sessão
-independentes do contexto, deverá seguir a mesma linha de ideias do compilador da linguagem FreeST\cite{2019freest,2019freest-inforum}.
+independentes do contexto, deverá seguir as mesmas diretrizes do compilador da linguagem FreeST\cite{2019freest,2019freest-inforum}.
 
 A fase de validação é, também, composta por dois sistemas bidirecionais:
 \begin{itemize}
@@ -9,7 +9,7 @@ A fase de validação é, também, composta por dois sistemas bidirecionais:
 \item \textbf{Um sistema de verificação de tipos} cujas relações permitem, sintetizar o tipo de uma expressão e verificar se uma expressão tem o tipo esperado. 
 \end{itemize}
 A introdução de escolhas mistas não invalida nenhuma das duas relações.
-Uma escolha (mista) necessita que os todos os seus componentes sejam tipos de sessão lineares. A verificação de tipos garante que os padrões de uma \lstinline|choice| respeitam os padrões do tipo do canal.
+Uma escolha necessita que todos os seus componentes sejam tipos de sessão lineares e a verificação de tipos garante que os padrões de uma \lstinline|choice| respeitam o tipo do canal.
 
 O ambiente de execução (\textit{runtime system}) é bastante compacto e é, essencialmente, composto pelas primitivas de criação de novos fios de execução (\lstinline|fork|) e primitivas para a manipulação de canais (\lstinline|send|, \lstinline|receive|, \lstinline|choice|). O compilador gera código Haskell que posteriormente será compilado através do GHC, o compilador convencional do Haskell.
 
