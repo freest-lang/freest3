@@ -1,0 +1,34 @@
+\section{Introdução}
+
+Os tipos de sessão foram propostos para responder à necessidade
+de formalização de trocas de mensagens, permitindo definir protocolos 
+na forma de tipos que representam interações corretas do sistema e que 
+garantem propriedades tais como a inexistência de erros na comunicação 
+e de situações de impasse. Contudo, a expressividade dos tipos de sessão
+está ainda aquém de todos os desafios de comunicação que encontramos nos 
+sistemas.
+
+Considere-se que temos um processo que consegue gerar sequências de números
+inteiros mas não tem capacidade de os somar. Por outro lado, temos um
+segundo processo que é capaz de somar números inteiros, mas não consegue
+gerá-los. Ambos os processos estão aptos para a utilização de comunicação
+por canais. Considere-se então o seguinte problema:
+
+\begin{example}
+	Dado $k\in\mathbb{Z}$, qual o maior inteiro $n$ tal que
+	$\sum_{i=1}^n i < k$?
+\end{example}
+
+Este exemplo simplista retrata o caso em que a interação entre
+os processos se dá necessariamente nos dois sentidos e ambos 
+os processos deverão
+estar aptos, leia-se \emph{corretamente tipados}, para responder 
+às necessidades da comunicação.
+
+Neste trabalho propomos uma linguagem de programação
+com tipos capazes de modelar um cenário como o descrito acima.
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:
