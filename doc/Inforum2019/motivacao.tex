@@ -6,8 +6,9 @@ forma de tipos que representam interações corretas do sistema e que
 garantem propriedades tais como a inexistência de erros na comunicação
 e de situações de impasse~\cite{ref-lang-primitives}. Contudo, a
 expressividade dos tipos de sessão está ainda aquém de todos os
-desafios de comunicação que encontramos nos sistemas: não permitem em
-particular misturar \textit{input} e \textit{output} na mesma escolha.
+desafios de comunicação que encontramos em sistemas concorrentes: não
+permitem em particular misturar \textit{input} e \textit{output} na
+mesma escolha.
 
 Considere-se o seguinte problema.
 %
@@ -17,10 +18,10 @@ Considere-se o seguinte problema.
 \end{quotation}
 
 Imagine-se um processador capaz de gerar sequências de números
-inteiros mas sem a capacidade de os somar. Imagine-se a um
-segundo processador capaz de somar números inteiros, mas incapaz de os
-gerar. Ambos os processadores estão aptos para a utilização de
-comunicação por canais.
+inteiros mas sem a capacidade de os somar. Imagine-se um segundo
+processador capaz de somar números inteiros, mas incapaz de os
+gerar. Ambos os processadores estão aptos para comunicar através de
+canais.
 %
 Este exemplo simplista retrata o caso em que a interação entre
 os processos se dá necessariamente nos dois sentidos e ambos 
@@ -37,9 +38,11 @@ processadores, podemos tentar resolver o problema dos seguinte modo:
   canal uma notificação para terminar o envio. A notificação vem na
   forma de uma marca \lstinline|EOS| (\textit{end-of-stream});
 \item O outro processo, \lstinline|consumidor|, vai somando os números
-  que recebe os números que recebe enquanto a soma for menor do que
-  $n$. Neste ponto envia a marca \lstinline|EOS|.
-\item O programa principal cria o canal e lança os dois processos.
+  que recebe enquanto a soma for menor do que $n$. Neste ponto envia a
+  marca \lstinline|EOS|.
+\item O programa principal cria o canal de comunicação
+  \lstinline|consumidor|$\leftrightarrow$\lstinline|consumidor| e
+  lança os dois processos.
 \end{itemize}
 
 O canal de comunicação segue o  protocolo delineado acima. Quando
@@ -55,18 +58,19 @@ leitura o protocolo volta ``ao início''.
 %
 Quando visto do lado do \lstinline|consumidor| o canal toma o tipo
 obtido do acima trocando as operações de leitura pelas de escrita, e
-vice-versa. Abreviamos esse tipo com \lstinline|dualof CanalInt|.
+vice-versa. Abreviamos esse tipo para \lstinline|dualof CanalInt|.
 
 \begin{lstlisting}
 produtor : CanalInt -> Int -> ()
 produtor c i = choice {
   (c, EOS) = receive -> (),
   c = send c n -> consumidor c (i+1)
+}
 
 consumidor : dualof CanalInt -> Int -> Int -> Int -> Int
 consumidor c s n k = if n >= n
-then choice { c = send EOS -> n--1 }
-else choice { (c, m) = receive c -> produtor c (s+m) (n+1) k }
+  then choice { c = send EOS -> n--1 }
+  else choice { (c, m) = receive c -> produtor c (s+m) (n+1) k}
 
 main : Int
 main = let
@@ -81,14 +85,14 @@ entre as chavetas encontramos \emph{um ou mais} padrões. Os padrões de
 \textit{output} levam a palavra reservada \lstinline|send| e os de
 \textit{input} \lstinline|receive|. Todas estas primitivas devolvem o
 canal (\lstinline|c| no exemplo) onde a interação deve continuar. No
-caso da receção, a operação \lstinline|receive| um segundo elemento: o
-valor lido. Finalmente, no caso de receção de marcas,
-(\lstinline|EOS|, por exemplo), permitimo-nos usar
-\textit{pattern-matching}.
+caso da receção, a operação recebe um segundo elemento: o valor
+lido. Finalmente, no caso de receção de marcas, (\lstinline|EOS|, por
+exemplo), permitimo-nos usar \textit{pattern-matching}.
 %
-A escolha do \lstinline|consumidor| é degenerada, quer no ramo
-\lstinline|then| como no ramo \lstinline|else|. Poderiamos neste caso
-eliminar a palavra reservada \lstinline|choice|.
+A escolha do \lstinline|consumidor| é degenerada: é constituída por
+uma única componente, quer no ramo \lstinline|then| como no ramo
+\lstinline|else|. Poderiamos neste caso eliminar a palavra reservada
+\lstinline|choice|.
 
 O programa principal cria um novo canal através da primitiva
 \lstinline|new|. O resultado é um par descrevendo as duas extremidades
