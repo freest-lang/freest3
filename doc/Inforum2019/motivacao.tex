@@ -81,11 +81,23 @@ entre as chavetas encontramos \emph{um ou mais} padrões. Os padrões de
 \textit{output} levam a palavra reservada \lstinline|send| e os de
 \textit{input} \lstinline|receive|. Todas estas primitivas devolvem o
 canal (\lstinline|c| no exemplo) onde a interação deve continuar. No
-caso da receção, a operação \lstinline|receive| devolve um par: o
-canal continuação e o valor lido. Finalmente, no caso de receção de
-marcas, (\lstinline|EOS|, por exemplo), permitimo-nos usar
+caso da receção, a operação \lstinline|receive| um segundo elemento: o
+valor lido. Finalmente, no caso de receção de marcas,
+(\lstinline|EOS|, por exemplo), permitimo-nos usar
 \textit{pattern-matching}.
+%
+A escolha do \lstinline|consumidor| é degenerada, quer no ramo
+\lstinline|then| como no ramo \lstinline|else|. Poderiamos neste caso
+eliminar a palavra reservada \lstinline|choice|.
 
+O programa principal cria um novo canal através da primitiva
+\lstinline|new|. O resultado é um par descrevendo as duas extremidades
+do canal, \lstinline|p| e \lstinline|c|, destinado a cada um dos
+processos.
+%
+A primitiva \lstinline|fork| lança uma nova \textit{thread} destinada
+a correr o processo produtor. O resultado do programa principal é o
+resultado do processo \lstinline|consumidor|.
 
 %%% Local Variables:
 %%% mode: latex
