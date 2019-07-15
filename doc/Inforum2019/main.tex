@@ -1,0 +1,108 @@
+% This is samplepaper.tex, a sample chapter demonstrating the
+% LLNCS macro package for Springer Computer Science proceedings;
+% Version 2.20 of 2017/10/04
+%
+\documentclass[runningheads]{llncs}
+
+\usepackage[portuguese]{babel}
+\usepackage[utf8]{inputenc}  % for proper diacritics
+\usepackage[T1]{fontenc}
+\usepackage{color}
+\usepackage {listings}
+\usepackage{tikz}
+\usepackage{wrapfig}
+\usepackage{hyperref}
+\usepackage{amsmath,amssymb}
+\usepackage{alltt}
+\usepackage{flushend}
+\usepackage{graphicx}
+
+% If you use the hyperref package, please uncomment the following line
+% to display URLs in blue roman font according to Springer's eBook style:
+\renewcommand\UrlFont{\color{blue}\rmfamily}
+
+\input{macros}
+
+\title{Uma linguagem de programação com escolhas mistas em tipos de sessão}
+\titlerunning{Uma linguagem de programação com escolhas mistas em tipos de sessão}
+\author{Bernardo Almeida, Andreia Mordido e Vasco T. Vasconcelos}
+%\authorrunning{F. Author et al.}
+
+\institute{LASIGE, Faculdade de Ciências, Universidade de Lisboa, Portugal}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+
+A abstração e formalização da comunicação inerente a 
+sistemas de software é fundamental para a confiabilidade dos 
+sistemas.
+Neste trabalho propomos um sistema de tipos que enriquece
+os tipos de sessão, permitindo uma 
+\emph{escolha mista} de trocas de mensagens em cada operação.
+No formalismo que propomos, um servidor deverá ser capaz de escolher se
+pretende continuar a receber mensagens do cliente ou se pretende
+enviar uma determinado valor. Este trabalho está a decorrer.
+
+%  Sistemas de software distribuídos apresentam por vezes padrões de
+%  comunicação intensivos cuja complexidade dificulta a sua
+%  codificação.  
+%  Os tipos de sessão foram propostos para responder a esta
+%  necessidade, permitindo definir protocolos na forma de tipos que
+%  representam interações corretas do sistema e que garantem
+%  propriedades tais como a inexistência de erros na comunicação e de
+%  situações de impasse.  
+%  Os tipos de sessão tradicionais são descritos por linguagens
+%  regulares, permitindo, por exemplo, a definição de protocolos com
+%  a estrutura de uma lista mas não em forma de árvore.
+%  Neste artigo apresenta-se uma linguagem de programação concorrente,
+%  explicitamente tipificada, onde os processos comunicam
+%  exclusivamente por troca de mensagens e cujos protocolos são definidos
+%  por tipos de sessão livres do contexto.
+
+\keywords{Concorrência \and Troca de mensagens \and Tipos de sessão \and Escolhas mistas}
+\end{abstract}
+
+\section{Introdução}
+
+Os tipos de sessão foram propostos para responder à necessidade
+de formalização de trocas de mensagens, permitindo definir protocolos 
+na forma de tipos que representam interações corretas do sistema e que 
+garantem propriedades tais como a inexistência de erros na comunicação 
+e de situações de impasse. Contudo, a expressividade dos tipos de sessão
+está ainda aquém de todos os desafios de comunicação que encontramos nos 
+sistemas.
+
+Considere-se que temos um processo que consegue gerar sequências de números
+inteiros mas não tem capacidade de os somar. Por outro lado, temos um
+segundo processo que é capaz de somar números inteiros, mas não consegue
+gerá-los. Ambos os processos estão aptos para a utilização de comunicação
+por canais. Considere-se então o seguinte problema:
+
+\begin{example}
+	Dado $k\in\mathbb{Z}$, qual o maior inteiro $n$ tal que
+	$\sum_{i=1}^n i < k$?
+\end{example}
+
+Este exemplo simplista retrata o caso em que a interação entre
+os processos se dá necessariamente nos dois sentidos e ambos 
+os processos deverão
+estar aptos, leia-se \emph{corretamente tipados}, para responder 
+às necessidades da comunicação.
+
+Neste trabalho propomos uma linguagem de programação
+com tipos capazes de modelar um cenário como o descrito acima.
+
+
+\paragraph{Agradecimentos.}
+
+Este trabalho foi apoiado em parte pela FCT através do projeto
+Confident, PTDC/EEI-CTP/4503/2014, e da Unidade de Investigação LASIGE,
+UID/CEC/00408/2019.
+
+\bibliographystyle{splncs04}
+\bibliography{bibliography}
+
+\end{document}
