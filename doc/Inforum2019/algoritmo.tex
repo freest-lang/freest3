@@ -1,0 +1,40 @@
+\section{Equivalência de tipos}
+
+Um compilador para uma linguagem de programação com
+tipos de sessão com escolhas mistas,
+como os que propomos, deverá basear-se num algoritmo de 
+verificação de equivalência de tipos. 
+
+Os tipos de sessão que estendemos
+neste trabalho não são só tipos de sessão regulares.
+Note-se que a sintaxe que propomos estende também
+tipos de sessão livres do contexto.
+Assim, o algoritmo de verificação de equivalência de tipos 
+não é óbvio e deverá basear-se em \emph{Basic Process Algebras}
+(BPA), como provado por Thiemann e Vasconcelos em~\cite{ref-cfst}.
+Neste trabalho pretendemos tirar partido do algoritmo de verificação
+de tipos livres de contexto que propomos em~\cite{type-equiv}.
+Este algoritmo começa por traduzir tipos livres de contexto
+em gramáticas simples (i.e.\ gramáticas determinísticas
+em Greibach Normal Form) e, depois de simplificar as 
+gramáticas, decide a existência de uma bisimulação entre as gramáticas
+através de uma árvore de expansão. 
+A árvore de expansão consiste numa
+sucessão de passos de expansão e de simplificação 
+sobre os símbolos da gramática, de acordo com 
+as produções da gramática e com algumas regras de simplificação
+propostas por Caucal, Christensen,
+H\"uttel, Stirling, Jan\v car, and Moller
+~\cite{caucal1986decidabilite,
+  DBLP:journals/iandc/ChristensenHS95,janvcar1999techniques}
+
+Os tipos de sessão com escolhas mistas têm
+uma expressividade idêntica à expressividade das gramáticas
+simples. Assim, a redução do algoritmo a estas gramáticas
+permite a sua incorporação num compilador
+para uma linguagem de programação com estes tipos mais expressivos.
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:
