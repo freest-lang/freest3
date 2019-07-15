@@ -60,23 +60,31 @@ vice-versa. Abreviamos esse tipo com \lstinline|dualof CanalInt|.
 \begin{lstlisting}
 produtor : CanalInt -> Int -> ()
 produtor c i = choice {
-  (c, EOS) =receive -> (),
+  (c, EOS) = receive -> (),
   c = send c n -> consumidor c (i+1)
 
 consumidor : dualof CanalInt -> Int -> Int -> Int -> Int
 consumidor c s n k = if n >= n
-then choice { c = send EOS -> n--1
-else choice { (c, m) = receive c -> produtor c (s+m) (n+1) k
+then choice { c = send EOS -> n--1 }
+else choice { (c, m) = receive c -> produtor c (s+m) (n+1) k }
 
 main : Int
 main = let
   k = 1000
-  (r, w) = new CanalInt in
-  fork produtor r 1;
-  consumidor w 0 0 k
+  (p, c) = new CanalInt in
+  fork produtor p 1;
+  consumidor c 0 0 k
 \end{lstlisting}
 
-
+O construtor linguístico que manipula escolhas é \lstinline|choice|:
+entre as chavetas encontramos \emph{um ou mais} padrões. Os padrões de
+\textit{output} levam a palavra reservada \lstinline|send| e os de
+\textit{input} \lstinline|receive|. Todas estas primitivas devolvem o
+canal (\lstinline|c| no exemplo) onde a interação deve continuar. No
+caso da receção, a operação \lstinline|receive| devolve um par: o
+canal continuação e o valor lido. Finalmente, no caso de receção de
+marcas, (\lstinline|EOS|, por exemplo), permitimo-nos usar
+\textit{pattern-matching}.
 
 
 %%% Local Variables:
