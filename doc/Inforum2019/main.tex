@@ -1,0 +1,71 @@
+% This is samplepaper.tex, a sample chapter demonstrating the
+% LLNCS macro package for Springer Computer Science proceedings;
+% Version 2.20 of 2017/10/04
+%
+\documentclass[runningheads]{llncs}
+
+\usepackage[portuguese]{babel}
+\usepackage[utf8]{inputenc}  % for proper diacritics
+\usepackage[T1]{fontenc}
+\usepackage{color}
+\usepackage {listings}
+\usepackage{tikz}
+\usepackage{wrapfig}
+\usepackage{hyperref}
+\usepackage{amsmath,amssymb}
+\usepackage{alltt}
+\usepackage{flushend}
+\usepackage{graphicx}
+
+% If you use the hyperref package, please uncomment the following line
+% to display URLs in blue roman font according to Springer's eBook style:
+\renewcommand\UrlFont{\color{blue}\rmfamily}
+
+\input{macros}
+
+\title{Uma linguagem de programação com escolhas mistas em tipos de sessão}
+\titlerunning{Uma linguagem de programação com escolhas mistas em tipos de sessão}
+\author{Bernardo Almeida, Andreia Mordido e Vasco T. Vasconcelos}
+%\authorrunning{F. Author et al.}
+
+\institute{LASIGE, Faculdade de Ciências, Universidade de Lisboa, Portugal}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+  A abstração e formalização da comunicação inerente a sistemas de
+  software é fundamental para a confiabilidade de sistemas
+  concorrentes.  Neste trabalho propomos um sistema de tipos que
+  enriquece os tipos de sessão, permitindo \emph{escolha mistas} entre
+  \textit{input} e \textit{output}.
+  %
+  Na linguagem propomos, \mixedchoice, os processos podem, a cada
+  momento, decidir entre ler e escrever num dado canal.
+  %
+  Um sistema tipos de sessão garante ainda assim que os processos
+  seguem o protocolo.
+
+  \keywords{Concorrência \and Troca de mensagens \and Tipos de sessão \and Escolhas mistas}
+\end{abstract}
+
+\input{motivacao}
+\input{language}
+\input{algoritmo}
+\input{implementation}
+
+\paragraph{Agradecimentos.}
+
+Este trabalho foi apoiado em parte pela FCT através do projeto
+Confident, PTDC/EEI-CTP/4503/2014, e da Unidade de Investigação LASIGE,
+UID/CEC/00408/2019.
+
+\bibliographystyle{splncs04}
+\bibliography{bibliography}
+
+\end{document}
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:

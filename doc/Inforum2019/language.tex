@@ -1,0 +1,38 @@
+\section{A linguagem de programação \mixedchoice}
+
+% Esta secção introduz a linguagem apresentando a sua sintaxe, 
+% semântica e sistema de tipos. 
+
+A linguagem que propomos é funcional apresentando uma sintaxe bastante
+semelhante à do Haskell acrescida de primitivas para criação de canais
+e de envio e receção de dados nos mesmos.  Construída sobre a
+linguagem \freest~\cite{2019freest}, esta linguagem é caracterizada
+pela primitiva \lstinline|choice|, primitiva essa que permite enumerar
+as operações de trocas de mensagens que poderão ser escolhidas.
+
+A troca de mensagens dá-se em canais de comunicação síncronos e
+bidirecionais. Cada canal pode ser descrito pelas suas duas
+extremidades (\textit{endpoints}) e é caracterizado por tipos que
+descrevem a sequência de mensagens que passam no canal. %  Os processos
+% podem escrever numa das extremidades do canal ou ler na outra.
+% %
+A figura abaixo apresenta os tipos para canais (tipos de sessão) da
+linguagem.
+%
+\input{fig-types}
+
+Os tipos básicos formam um subconjunto daqueles existentes no Haskell,
+inteiros, caracteres, booleanos, e ainda o tipo \textit{unit}
+\lstinline|()| e as etiquetas (marcas) $l$ das escolhas.  Os tipos de
+sessão são compostos pelo operador de escolha $\tChoice{\_}{\_}$, pelo
+operador de sequenciação $\tSemi{\_}{\_}$, pela sua unidade $\tskip$,
+pelos tipos que representam o envio $\tOut{B}$, a receção $\tIn{B}$,
+pelos tipos recursivos $\tRecK{x}{T}$ e pelas variáveis de tipo
+\textit{x}. Nesta sintaxe, o tipo \lstinline|CanalInt| escreve-se
+%
+\lstinline|rec x. ?EOS + !Int;x|.
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:
