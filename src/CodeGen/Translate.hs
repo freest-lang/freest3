@@ -11,6 +11,7 @@ import           CodeGen.Annotation
 import           Utils.FreestState (tMapWithKeyM)
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
+import Debug.Trace
 
 isIO :: NodeType -> Bool
 isIO (ArrowType _ s2) = isIO s2
@@ -36,7 +37,7 @@ genFunCode pv ((x,y):[]) _ ys
   | x /= y = return $ "return (" ++ foldl (\acc a -> acc ++ " " ++ a) (show pv) ys ++ ")"
   | otherwise = return $ foldl (\acc a -> acc ++ " " ++ a) (show pv) ys
 genFunCode pv ((x1,x2):xs) (y:ys) acc
-  | x1 /= x2 = do
+  | x1 /= x2 && (isIO x1 || isIO x2) = do
       f <- nextFresh   
       let c1 = y ++ " >>= \\" ++ f ++ " -> "
       c2 <- genFunCode pv xs ys (acc ++ [f])
@@ -60,7 +61,7 @@ translateEnv eenv tenv venv =
   let (m, ast1) = topExps eenv tenv venv
       s = execState (tMapWithKeyM addCode eenv) (initialState m ast1) in
     -- trace (showAST (ast s) ++ "\n\n")
---    trace (show (annFunMap s) ++ "\n\n")
+     -- trace ("Checking FunsMap\n" ++ show (annFunMap s) ++ "\n\n")
      haskellCode s ++ "\n\n" ++ showGenFunMap (genFunsMap s)
 
 -- TMP:
@@ -179,20 +180,16 @@ translate m ast nt (Case _ e cm) =  do
 
 -- Type application
 translate m ast nt e@(TypeApp _ x _) = do -- EQUAL TO ProgVar ????
-    let t = (m Map.! x)
-    let mat = typeMatch t (ast Map.! e)
---        let mat = typeMatch (max t nt) (ast Map.! e)
-    -- traceM ("\nTypeApp: " ++ show x ++ "\nt value " ++ show t ++
-    --         "\nAST value: " ++ show (ast Map.! e) ++ "\n" ++
-    --         "\nmatch value " ++ show mat ++ "\n")
-    if t /= mat then do -- magic
-      let types = zipNodeTypes t mat
-      let fname = funName x mat
-      createNewFun fname x types 
-      return (fname, IOType)
-    else do
-      let t1 = ast Map.! e
-      return (show x, t1)  
+  let t = (m Map.! x)
+  let mat = typeMatch t (ast Map.! e)
+  if t /= mat then do -- magic
+    let types = zipNodeTypes t mat
+    let fname = funName x mat
+    createNewFun fname x types 
+    return (fname, IOType)
+  else do
+    let t1 = ast Map.! e
+    return (show x, t1)  
 
 -- Boolean elim
 translate m ast t (Conditional _ e1 e2 e3) = do

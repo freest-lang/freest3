@@ -26,7 +26,7 @@ example, a type of the form
 \end{lstlisting}
 %
 which we abbreviate to \lstinline|TreeChannel|, may describe one end
-of a channel. A process holding such a channel end must first
+of a session channel. A process holding such a channel end must first
 \emph{select} between choices \lstinline|Leaf| and
 \lstinline|Node|. If \lstinline|Leaf| is chosen, then interaction is
 terminated, as indicated by \lstinline|Skip|. Otherwise, the process
@@ -57,7 +57,7 @@ subtyting~\cite{DBLP:journals/acta/GayH05}, from which type
 equivalence can be derived), the same does not apply to context-free
 session types.
 %
-In the aforementioned work, Thiemann and Vasconcelos show that the
+In~\cite{thiemann2016context}, Thiemann and Vasconcelos show that the
 equivalence of context-free session types is decidable, by reducing
 the problem to the verification of bisimulation for Basic Process
 Algebra (BPA) which, in turn, was proved decidable by Christensen,
@@ -105,7 +105,8 @@ the incorporation in a compiler.
 
 Our algorithm to decide the equivalence of context-free session types
 can also be seen as an algorithm to decide the equivalence of simple
-grammars (i.e. deterministic). It follows three distinct stages.
+grammars (i.e. deterministic grammars in Greibach Normal Formal). 
+It follows three distinct stages.
 %
 The \emph{first stage} builds a context-free grammar in Greibach
 Normal Formal (GNF)---in fact a simple grammar---from a context-free

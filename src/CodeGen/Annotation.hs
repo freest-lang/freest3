@@ -30,8 +30,20 @@ instance ShowD NodeType where
 -- TODO: CHANGE NAME
 
 initialEnv :: VarEnv -> AnnFunMap
-initialEnv = Map.foldrWithKey (\k t m -> Map.insert k (funToArrow t) m) Map.empty
-
+initialEnv venv = Map.foldrWithKey (\k t m -> Map.insert k (funToArrow t) m) initialAcc varEnv
+  where initialAcc =
+          Map.fromList [ (mkVar defaultPos "printInt", ArrowType PureType IOType)
+                       , (mkVar defaultPos "printBool", ArrowType PureType IOType)
+                       , (mkVar defaultPos "printChar", ArrowType PureType IOType)
+                       , (mkVar defaultPos "printUnit", ArrowType PureType IOType)
+                       ] 
+        varEnv = foldr (\k acc -> Map.delete k acc) venv 
+                      [(mkVar defaultPos "printInt"),
+                       (mkVar defaultPos "printBool"),
+                       (mkVar defaultPos "printChar"),
+                       (mkVar defaultPos "printUnit")] 
+                           -- (mkVar defaultPos "printValue") venv
+        
 funToArrow :: TypeScheme -> NodeType
 funToArrow (TypeScheme _ _ (Fun _ _ t1 t2)) =
  ArrowType (funToArrow (fromType t1)) (funToArrow (fromType t2))
@@ -57,7 +69,8 @@ annotateFunction venv = Map.foldrWithKey insert -- (\f t m -> insert f t m)
 
 updateLT :: TypeScheme -> NodeType -> NodeType -> NodeType
 updateLT (TypeScheme _ _ f@(Fun _ _ _ _)) exp (ArrowType a@(ArrowType _ _) t2)  =
-  ArrowType (updateLastType (checkType f) a) (updateLastType exp t2)            
+  ArrowType (updateLastType exp a) (updateLastType exp t2)            
+--  ArrowType (updateLastType (checkType f) a) (updateLastType exp t2)            
 updateLT _ exp (ArrowType t1 t2)  = 
   ArrowType t1 (updateLastType exp t2)
 updateLT _ exp t = max exp t
@@ -65,17 +78,7 @@ updateLT _ exp t = max exp t
 updateLastType :: NodeType -> NodeType -> NodeType
 updateLastType exp (ArrowType t1 t2)  = 
   ArrowType t1 (updateLastType exp t2)
-updateLastType exp t = max exp t
-
-
-checkType :: Type -> NodeType
-checkType (Skip _) = IOType
-checkType (Semi _ _ _) = IOType
-checkType (Message _ _ _) = IOType
-checkType (Choice _ _ _) = IOType
-checkType (Fun _ _ t1 t2) = max (checkType t1) (checkType t2) -- Think
-checkType _ = PureType
-            
+updateLastType exp t = max exp t        
 
 annFun :: AnnFunMap -> Expression -> NodeType
 annFun _ (Unit _) = PureType
@@ -227,7 +230,7 @@ annExp fm ast _ e@(Receive _ e1) =
     (Map.insert e IOType ast1, IOType)
 annExp fm ast _ e@(Send _ e1) =
   let (ast1,_) = annExp fm ast PureType e1 in
-    (Map.insert e IOType ast1, PureType)    
+    (Map.insert e IOType ast1, IOType)    
 annExp fm ast t e@(Match _ e1 cm) =
   let (ast1, t1) = annExp fm ast PureType e1
       (ast2, t2) =

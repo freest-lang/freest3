@@ -1,0 +1,38 @@
+
+ex01-1b
+    Not possible to do (expression) and (expression) and (expression)   example:
+        (x > 1) && (x > 2) && (x > 3)
+    Should do ((expression) and (expression)) and (expression)          example:
+        ((x > 1) && (x > 2)) && (x > 3)
+
+ex01-3
+    Two consecutive zeros work as two diferent zeros                    example:
+        00 = 0 0
+    FIXED
+
+ex01-5
+    Impossible to create, as example, (:) or (^) functions              example:
+        (^) : Int -> Int -> Int
+
+ex01-6a
+    Not possible to apply equals to Char Types                          example:
+        'a' == 'b' or (==) 'a' 'b'
+
+ex_01-8c
+    Not possible to apply equals to Char Types, 
+    ord method (Char -> Int, char's ordinal) inexistent                 example:
+        'a' == 'b' or (ord a) == (ord b)
+
+ex_01-8d
+    No not equals implemented besides not a == b                        example:
+        inexistent '/='
+
+ex_01-11a
+    No other method besides "div" to divide numbers                     example:
+        "/" or ":"
+
+ex_01-12
+    Overflow on integers beyond 2^62 (should it warn us when it does?) example:
+        2^63 = -9223372036854775808
+        2^62 = 0
+        2^63 = 0

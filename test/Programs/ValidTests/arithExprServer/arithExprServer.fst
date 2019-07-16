@@ -1,49 +1,54 @@
--- type TermChan = +{Const: !Int, Add: TermChan;TermChan, Mult: TermChan;TermChan}
--- &{Const: ?Int, Add: TermChan;TermChan, Mult: TermChan;TermChan}
+{-
 
+type TermChannel = +{
+  Const: !Int,
+  Add: TermChannel;TermChannel,
+  Mult: TermChannel;TermChan
+}
 
--- computeService : (rec TermChan . &{Const: ?Int, Add: TermChan;TermChan, Mult: TermChan;TermChan});!Int -> Skip
-computeService : (rec termChan:SL . &{Const: ?Int, Add: termChan;termChan, Mult: termChan;termChan});!Int -> Skip
+-}
+
+-- Read an arithmetic expression from a channel; compute its value;
+-- return the value on the same channel.
+computeService : (rec x:SL. &{Const: ?Int, Add: x;x, Mult: x;x});!Int -> Skip
 computeService c =
   let n1, c1 = receiveEval[!Int;Skip] c in
   send c1 n1
 
--- receiveEval : forall x => (rec TermChan . &{Const: ?Int, Add: TermChan;TermChan, Mult: TermChan;TermChan});x -> (Int, x)
-receiveEval : forall x : SL => (rec termChan:SL . &{Const: ?Int, Add: termChan;termChan, Mult: termChan;termChan});x -> (Int, x)
+-- Read an arithmetic expression in the front of a channel; compute
+-- its value; return the pair composed of this value and the channel
+-- residual.
+receiveEval : forall α:SL => (rec x:SL. &{Const: ?Int, Add: x;x, Mult: x;x});α -> (Int, α)
 receiveEval c =
   match c with {
-    Const c1 ->
-      receive c1,
-    Add c1 ->
---      let n1, c2 = receiveEval[(rec TermChan . &{Const: ?Int, Add: TermChan;TermChan, Mult: TermChan;TermChan});x] c1 in
-      let n1, c2 = receiveEval[(rec termChan:SL . &{Const: ?Int, Add: termChan;termChan, Mult: termChan;termChan});x] c1 in
-      let n2, c3 = receiveEval[x] c2 in
-      (n1+n2, c3),
-    Mult c1 ->
---      let n1, c2 = receiveEval[(rec TermChan . &{Const: ?Int, Add: TermChan;TermChan, Mult: TermChan;TermChan});x] c1 in
-      let n1, c2 = receiveEval[(rec termChan:SL . &{Const: ?Int, Add: termChan;termChan, Mult: termChan;termChan});x] c1 in
-      let n2, c3 = receiveEval[x] c2 in
-      (n1*n2, c3)
+    Const c ->
+      receive c,
+    Add c ->
+      let n1, c = receiveEval[(rec termChan:SL. &{Const: ?Int, Add: termChan;termChan, Mult: termChan;termChan});α] c in
+      let n2, c = receiveEval[α] c in
+      (n1 + n2, c),
+    Mult c ->
+      let n1, c = receiveEval[(rec termChan:SL. &{Const: ?Int, Add: termChan;termChan, Mult: termChan;termChan});α] c in
+      let n2, c = receiveEval[α] c in
+      (n1 * n2, c)
   }
-  
--- client : (rec TermChan . +{Const: !Int, Add: TermChan;TermChan, Mult: TermChan;TermChan});?Int -> (Int, Skip)
-client : (rec termChan:SL . +{Const: !Int, Add: termChan;termChan, Mult: termChan;termChan});?Int -> (Int, Skip)
+
+-- Compute 5 + (7 * 9); return the result
+client : (rec x:SL. +{Const: !Int, Add: x;x, Mult: x;x});?Int -> Int
 client c =
-  let c1 = select c Add in
-  let c2 = select c1 Const in
-  let c3 = send c2 5 in
-  let c4 = select c3 Mult in
-  let c5 = select c4 Const in
-  let c6 = send c5 7 in
-  let c7 = select c6 Const in
-  let c8 = send c7 9 in
-  receive c8
+  let c = select c Add in
+  let c = select c Const in
+  let c = send c 5 in
+  let c = select c Mult in
+  let c = select c Const in
+  let c = send c 7 in
+  let c = select c Const in
+  let c = send c 9 in
+  let n, _ = receive c in
+  n
 
 main : Int
 main =
-  let w, r  = 
-      new ((rec termChan:SL . &{Const: ?Int, Add: termChan;termChan, Mult: termChan;termChan});!Int) in
---      new ((rec TermChan . &{Const: ?Int, Add: TermChan;TermChan, Mult: TermChan;TermChan});!Int) in
-  let x = fork (computeService w) in
-  let v, s = client r in
-  v
+  let w, r  = new (rec x:SL . &{Const: ?Int, Add: x;x, Mult: x;x});!Int in
+  let _ = fork (computeService w) in
+  client r

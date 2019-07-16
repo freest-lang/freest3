@@ -8,6 +8,7 @@ import           Syntax.Expressions (ExpEnv)
 import           Syntax.Schemes (TypeEnv, VarEnv)
 import           System.Exit
 import           System.Process
+import           System.IO (stdout)
 import           System.Directory
 import           System.FilePath
 import           Utils.FreestState
@@ -46,9 +47,11 @@ compileAndRun filepath = do
   changeDir path
   (exitcode, _, errors) <- readProcessWithExitCode "ghc" [targetFileName filename] ""
   checkGhcOut exitcode errors    
-  (exitcode1, output1, errors1) <- readProcessWithExitCode ("./" ++ dropExtension filename) [] ""
-  checkGhcOut exitcode1 errors1
-  putStr output1
+  -- (exitcode1, output1, errors1) <- readProcessWithExitCode ("./" ++ dropExtension filename) [] ""
+  (_, _, _, handle) <- createProcess (proc ("./" ++ dropExtension filename) []){ std_out = UseHandle stdout }  
+  exitcode1 <- waitForProcess handle
+  checkGhcOut exitcode1 ""
+--  putStr output1
   exitSuccess
 
 changeDir :: String -> IO ()

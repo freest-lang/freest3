@@ -24,8 +24,8 @@ which it decides negatively.
 \subsection{Converting types to grammars}
 \label{subsec:typeToGrammar}
 
-A context-free grammar in Greibach normal form is a pair $(X,P)$
-where~$X$ is the \emph{start symbol} and~$P$ a \emph{set of
+A context-free grammar in Greibach normal form is a pair $(\vec X,P)$
+where~$\vec X$ is the \emph{start word} and~$P$ a \emph{set of
   productions} of the form $Y \rightarrow a\vec Z$ (context-free
 session types do not require productions of the form
 $X \rightarrow\varepsilon$). Type variables~$X$ are the
@@ -33,19 +33,21 @@ $X \rightarrow\varepsilon$). Type variables~$X$ are the
   symbols}. Sequences of type variables~$\vec X$ are called
 \emph{words}; $\varepsilon$ denotes the empty word.
 %
+We denote by $\mathcal{P}$ the set of context-free grammars in 
+Greibach normal form.
+%
 Due to the deterministic nature of context-free session types, the
 grammars we are interested in are \emph{simple}: for each
 non-terminal symbol~$X$ and each terminal symbol~$a$, there is at most
 one production of the form $X \rightarrow a\vec Y$.
 
 Grammars in Greibach Normal Form naturally induce a labelled transition
-system $\LTSProds$ by taking
-sequences of non-terminal symbols~$\vec X$ as states, terminal
+system by taking words~$\vec X$ as states, terminal
 symbols~$a$ as actions, and the transition relation as $\LTSderivesP$,
 defined as $X\vec Y\LTSderivesP \vec Z\vec Y$ when
 $X \rightarrow a\vec Z \in P$.
 % \vv{reference here}
-The associated bisimulation is denoted by $\ProdEquiv$.
+The associated bisimilarity is denoted by $\ProdEquiv$.
 
 Given a context-free session type $S$, the algorithm starts by
 inserting an initial production of the form
@@ -387,8 +389,10 @@ simplify ps n a q = foldr Queue.append (Queue.dequeue q) nas'
 \begin{example}
   The expansion tree for our running example is
   in the diagram below. Once a successful
-  branch is reached (the $\checkmark$ in the figure), the algorithm in
-  Listing~\ref{lst:algorithm} decides that $S\TypeEquiv T$.
+  branch is reached (the $\checkmark$ in the figure), 
+  \lstinline|bisimilar S T| returns \lstinline|true|.
+  %the algorithm in
+  %Listing~\ref{lst:algorithm} decides that $S\TypeEquiv T$.
 \end{example}
 
 \begin{center}

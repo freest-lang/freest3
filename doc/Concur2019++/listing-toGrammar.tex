@@ -6,39 +6,25 @@ type Transitions = Map.Map LTSLabel [TypeVar]
 type Productions = Map.Map TypeVar Transitions
 type TransState = State (Productions, Int)
 
-toGrammar :: Type -> TransState [TypeVar]
-toGrammar Skip =
+toGrammar :: Type -> TransState Word
+toGrammar (Skip _) =
   return []
-toGrammar (Message p b) = do
-  y <- freshVar
-  addProduction y (MessageLabel p b) []
-  return [y]
-toGrammar (Choice p m) = do
-  y <- freshVar
-  mapM_ (assocsToGrm y p) (Map.assocs m)
-  return [y]
-toGrammar (Semi t u) = do
+toGrammar (Semi _ t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
-  return (xs ++ ys)
-toGrammar (Rec x t) = do
-  ys <- toGrammar t
-  case ys of
-    [] -> return []
-    (z:zs) -> do
-      ts <- getTransitions z
-      case ts of
-        Just m -> do
-          addProductions x (Map.map (++ zs) m)
-          return [x]
-        Nothing -> return []
-toGrammar (Var x) =
+  return $ xs ++ ys
+toGrammar (Message _ p b) = do
+  y <- getProd $ Map.singleton (MessageLabel p b) []
+  return [y]
+toGrammar (Choice _ p m) = do
+  ms <- tMapM toGrammar m
+  y <- getProd $ Map.mapKeys (ChoiceLabel p) ms
+  return [y]
+toGrammar (TypeVar _ x) = do      
+  y <- getProd $ Map.singleton (VarLabel x) []
+  return [y]
+toGrammar (Rec _ (TypeVarBind _ x _) _) =
   return [x]
-
-assocsToGrm :: TypeVar -> Polarity -> (ChoiceLabel,Type) -> TransState ()
-assocsToGrm x p (l, t) = do
-  ys <- toGrammar t
-  addProduction x (ChoiceLabel p l) ys
 \end{lstlisting}
 
 %%% Local Variables:

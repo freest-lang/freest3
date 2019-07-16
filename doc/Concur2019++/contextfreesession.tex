@@ -19,6 +19,7 @@ decidable. The syntax of types is given by the grammar below.
   a \grmeq \sharp B \grmor \star l %\grmor \alpha
 \end{gather*}
 
+Let us denote by $\mathcal{T}$ the set of types.
 We assume that all occurrences of variables in a type are introduced
 by some $\mu$-binder, thus precluding free variables in types.
 %
@@ -35,7 +36,7 @@ $\mu$) from the grammar of session types.
 % they can be treated similarly to $\sharp B$ -- This is not true:
 % poly vars of un type are terminated; the others not.
 
-The labelled transition system $\LTSTypes$ for context-free session types is
+The labelled transition system (LTS) for context-free session types is
 given by the set of types as \emph{states}, the set of \emph{actions}
 ranged over by $a$, and the \emph{transition relation} $\LTSderives$
 defined by the rules below, taken from Thiemann and

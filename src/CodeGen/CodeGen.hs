@@ -68,11 +68,12 @@ genFreeSTRunTime :: FilePath -> IO ()
 genFreeSTRunTime filepath =
   let path = takeDirectory filepath in
   writeFile (path ++ "/FreeSTRuntime.hs")
-    ("{-# LANGUAGE FlexibleInstances #-}\n{-# LANGUAGE ScopedTypeVariables #-}\nmodule FreeSTRuntime (_fork, _new, _send, _receive, Skip) where\n\n" ++
+    ("{-# LANGUAGE FlexibleInstances #-}\n{-# LANGUAGE ScopedTypeVariables #-}\nmodule FreeSTRuntime (_fork, _new, _send, _receive, Skip, printInt, printBool, printChar, printUnit) where\n\n" ++
      genFreeSTRunTimeImports ++ "\n\n" ++ 
      genChannelEnd ++ "\n\n" ++  
      genFork ++ "\n\n" ++ genNew ++ "\n\n" ++
-     genSend ++ "\n\n" ++ genReceive ++ "\n\n" ++ genSkip ++ "\n\n" ++ genShowTypeable)
+     genSend ++ "\n\n" ++ genReceive ++ "\n\n" ++ genSkip ++ -- "\n\n" ++ genShowTypeable ++
+     "\n\n" ++ prints)
 
 -- genSkip :: String
 -- genSkip = "type Skip = (Chan (), Chan ())\n\ninstance {-# Overlaps #-} Show Skip where\n  show _ = \"Skip\""
@@ -80,7 +81,8 @@ genFreeSTRunTime filepath =
 genFork :: String
 genFork = "_fork e = do\n  forkIO e\n  return ()"
 
--- one synchronous channel
+-- ONE SYNCHRONOUS CHANNEL
+
 -- genChannelEnd :: String
 -- genChannelEnd = "type ChannelEnd a b = (Chan a, Chan b)"
 
@@ -91,7 +93,7 @@ genFork = "_fork e = do\n  forkIO e\n  return ()"
 -- genNew :: String
 -- genNew = "_new = do\n  ch <- newChan\n  return (ch, ch)"
 
--- genSend :: String
+-- genSend :: String  
 -- genSend = "_send ch x  = do\n  writeChan ch (unsafeCoerce x)\n  return ch"
 
 -- genReceive :: String
@@ -100,14 +102,15 @@ genFork = "_fork e = do\n  forkIO e\n  return ()"
 -- genSkip :: String
 -- genSkip = "type Skip = Chan ()\n\ninstance {-# Overlaps #-} Show Skip where\n  show _ = \"Skip\""
 
--- Two asynchronous channels
+-- TWO ASYNCHRONOUS CHANNELS
 
 genChannelEnd :: String
 genChannelEnd = "type ChannelEnd a b = ((Chan a, Chan b), (Chan b, Chan a))"
+--genChannelEnd = "type ChannelEnd a b = ((Chan (Any a), Chan (Any b)), (Chan (Any b), Chan (Any a)))"
 
 genFreeSTRunTimeImports :: String
 genFreeSTRunTimeImports =
-  "import Data.Typeable\nimport Control.Concurrent (forkIO)\nimport Control.Concurrent.Chan\nimport Unsafe.Coerce"
+  "import Data.Typeable\nimport Control.Concurrent (forkIO)\nimport Control.Concurrent.Chan\nimport Unsafe.Coerce\nimport Text.Show.Functions"
 
 genNew :: String
 genNew = "_new = do\n  ch1 <- newChan\n  ch2 <- newChan\n  return ((ch1, ch2), (ch2, ch1))"
@@ -121,10 +124,12 @@ genReceive = "_receive ch = do\n  a <- readChan (fst ch)\n  return (unsafeCoerce
 genSkip :: String
 genSkip = "type Skip = (Chan (), Chan ())\n\ninstance {-# Overlaps #-} Show Skip where\n  show _ = \"Skip\""
 
-genShowTypeable :: String
-genShowTypeable = "instance (Typeable a, Typeable b) => Show (a->b) where\n  show _ = show $ typeOf (undefined :: a -> b)"
+
+
+-- genShowTypeable :: String
+-- genShowTypeable = "instance (Typeable a, Typeable b) => Show (a->b) where\n  show _ = show $ typeOf (undefined :: a -> b)"
   
--- With MVars
+-- WITH MVARS
 
 -- {-
 -- genFreeSTRunTimeImports :: String
@@ -140,3 +145,16 @@ genShowTypeable = "instance (Typeable a, Typeable b) => Show (a->b) where\n  sho
 -- genReceive :: String
 -- genReceive = "_receive (m1, m2) = do\n  a <- takeMVar m1\n  return ((unsafeCoerce a), (m1, m2))"
 -- -}
+
+-- Gen prints
+--  "printInt :: Show a => a -> IO ()\nprintValue = putStrLn . show"
+  
+prints :: String
+prints =
+  "printInt :: Int -> IO ()\nprintInt x = putStrLn (show (x :: Int))\n" ++
+  "printBool :: Bool -> IO ()\nprintBool x = putStrLn (show (x :: Bool))\n" ++
+  "printChar :: Char -> IO ()\nprintChar x = putStrLn (show (x :: Char))\n" ++
+  "printUnit :: () -> IO ()\nprintUnit x = putStrLn (show (x :: ()))"
+
+-- printValue :: Show a => a -> IO ()
+-- printValue = putStrLn . show

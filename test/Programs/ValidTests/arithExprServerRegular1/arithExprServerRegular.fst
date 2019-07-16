@@ -1,5 +1,5 @@
 {-|
- The (linear) protocol for an arithmetic stream
+ The (regular) protocol for an arithmetic stream
 
 type Stream = +{
 	Add: Stream,
