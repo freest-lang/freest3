@@ -5,6 +5,14 @@
 type Transitions = Map.Map LTSLabel [TypeVar]
 type Productions = Map.Map TypeVar Transitions
 type TransState = State (Productions, Int)
+type Substitution = (Type, TypeVar)
+
+convertToGrammar :: TypeEnv -> [Type] -> Grammar
+convertToGrammar tEnv ts = Grammar xs (productions state)
+  where (xs, state) = runState (mapM typeToGrammar ts) (initial tEnv)
+
+typeToGrammar :: Type -> TransState Word
+typeToGrammar t = collect [] t >> toGrammar t
 
 toGrammar :: Type -> TransState Word
 toGrammar (Skip _) =
@@ -25,6 +33,34 @@ toGrammar (TypeVar _ x) = do
   return [y]
 toGrammar (Rec _ (TypeVarBind _ x _) _) =
   return [x]
+  
+collect :: [Substitution] -> Type -> TransState ()
+collect s (Semi _ t u) = collect s t >> collect s u
+collect s (Choice _ _ m) = tMapM_ (collect s) m
+collect s t@(Rec _ (TypeVarBind _ x _) u) = do
+  let s' = (t, x) : s
+  let u' = Substitution.subsAll s' u
+  (z:zs) <- toGrammar (normalise Map.empty u')
+  m <- getTransitions z
+  addProductions x (Map.map (++ zs) m)
+  collect s' u
+collect _ _ = return ()
+
+addProductions :: TypeVar -> Transitions -> TransState ()
+addProductions x m =
+  modify $ \s -> s {productions = Map.insert x m (productions s)}
+
+getProd :: Transitions -> TransState TypeVar
+getProd ts = do
+  ps <- getProductions
+  case reverseLookup ts ps of
+    Nothing -> do
+      y <- freshVar
+      addProductions y ts
+      return y
+    Just x ->
+      return x
+  where fold x ts' acc = if prodExists ts' ts then Just x else acc
 \end{lstlisting}
 
 %%% Local Variables:

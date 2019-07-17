@@ -45,7 +45,7 @@ In this case the process must be ready to offer both choices,
 process must further receive an integer (\lstinline|?Int|), followed
 by two complete trees.
 
-Regular languages cannot capture such a behaviour. The best one can do
+Regular languages cannot capture such behaviour. The best one can do
 with regular session types (and without resorting to channel passing)
 is to come up with a regular type that allows transmitting trees, as
 well as many other non tree-like structures. Tree behaviour would need
@@ -152,8 +152,8 @@ The main contributions of this work are:
   grammars (in 300 lines of Haskell code),
 \item A proof of its soundness and completeness against the
   declarative definition,
-\item The exploration of several optimizations that cut the running
-  time by 1,000,000\%.
+\item The exploration of several optimizations that make the running
+  time 10,000 times faster.
 %\item validation of the algorithm on several meaningful examples.
 \end{itemize}
 
@@ -168,8 +168,8 @@ Section~\ref{sec:evaluation}, and conclusions in
 Section~\ref{sec:conclusion}.
 %
 The complete source code for the Haskell implementation is available
-at \url{http://rss.di.fc.ul.pt/tools/freest/} (and partially in the
-Appendix).
+at \url{http://rss.di.fc.ul.pt/tools/freest/} 
+%(and partially in the Appendix).
 
 %%% Local Variables:
 %%% mode: latex
