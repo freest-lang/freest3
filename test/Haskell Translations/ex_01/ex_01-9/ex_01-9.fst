@@ -2,11 +2,11 @@
 
 data IntList = End | List Int IntList
 
-powList : Int -> IntList -> Int
-powList e list = 
+sumPowList : Int -> IntList -> Int
+sumPowList e list = 
     case list of {
         End -> 0,
-        List x rest -> pow e x + (powList e rest)
+        List x rest -> pow e x + (sumPowList e rest)
     }
 
 pow : Int -> Int -> Int
@@ -22,5 +22,5 @@ listTo x list = if x <= 1
 -- only positive integers
 
 main : Int
-main = powList 2 (listTo 100 End)
+main = sumPowList 2 (listTo 100 End)
 -- result = 338350

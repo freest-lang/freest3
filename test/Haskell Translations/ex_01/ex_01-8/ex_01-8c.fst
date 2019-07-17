@@ -27,4 +27,4 @@ getDigits list =
 
 main : CharList
 main = getDigits (List 'a' (List 'b' (List '0' (List '1' End))))
--- expected result = List '0' End
+-- expected result = List '0' (List '1' End)
