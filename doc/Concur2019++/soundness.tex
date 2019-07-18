@@ -22,11 +22,11 @@ $\ProdEquiv \enspace\subseteq \enspace\mathcal{P} \times \mathcal{P}$.
 Our ultimate goal in this subsection is to prove that we can 
 faithfully analyze the bisimilarity of types 
 by analyzing the bisimilarity of their corresponding
-grammars. For this purpose, we prove that the function $\toGrammark$ 
+grammar. For this purpose, we prove that the function $\toGrammark$ 
 is a {\it fully abstract encoding}, i.e., it preserves the 
-bisimilarity relation.
+bisimilarity relation~\cite{gorla2016full}.
 
-Recall from Section~\ref{sec:algorithm} that the function $\toGrammark$ 
+Recall from Section~\ref{sec:algorithm} that function $\toGrammark$ 
 runs under a monadic context
 \lstinline|TransState|, suitably initialised.
 %
@@ -50,24 +50,43 @@ of a call to $\toGrammarf S$.
 \end{lemma}
 
 \begin{proof}
-\todo{AM}{proof}	
+	The direct implication follows by induction on the terminated predicate:
+	\begin{itemize}
+		\item If $S \triangleq \skipk$, then $\toGrammarf{S} = \varepsilon$.
+		\item If $S\triangleq T;U$ with $\DONE{T}$ and $\DONE{U}$, then,
+		by induction hypothesis, $\toGrammarf{T} = \varepsilon$,
+		$\toGrammarf{U} = \varepsilon$ and, thus, $\toGrammarf{T;U} = \varepsilon$.
+		\item If $S\triangleq \mu X.T$ is well-formed, 
+		by the type formation rules and 
+		Lemma~\ref{lemma:contr_has_transition}, $\DONE{S}$
+		does not hold.
+	\end{itemize}	
+	Conversely, if $\toGrammarf{S} = \varepsilon$, then 
+	by definition of \toGrammark, either:
+	\begin{itemize}
+		\item $S\triangleq \skipk$ and we would have $\DONE{S}$, or
+		\item $S\triangleq T;U$ with $\toGrammarf{T} = \varepsilon$,
+		$\toGrammarf{U} = \varepsilon$ and thus, by induction, we would have
+		$\DONE{T}$ and $\DONE{U}$.
+	\end{itemize}
 \end{proof}
 
 To be able to use induction in the proof of 
-Proposition~\ref{prop:transitions_mimic}, we use
+the key result of this section
+(Proposition~\ref{prop:transitions_mimic}), we use
 the unravelling function proposed 
 by Thiemann and Vasconcelos~\cite{thiemann2016context}:
 \[\begin{aligned}
-\Unravel(\mu x . S) &= \Unravel(\subs{\mu X.S}{X} S)\\
+\Unravel(\mu X . S) &= \Unravel(\subs{\mu X.S}{X} S)\\
 \Unravel(S_1;S_2) &= 
 \begin{cases}
-	\Unravel(S_2) & \Unravel(S_1)=\skipk\\
-	\Unravel(S_1);S_2 & \Unravel(S_1)\neq\skipk\\
+	\Unravel(S_2) & \text{if }\Unravel(S_1)=\skipk\\
+	\Unravel(S_1);S_2 & \text{otherwise}\\
 \end{cases} \\
 \Unravel(S)&= S \text{  for all other cases}
 \end{aligned}\]
 %
-Notice that for any recursive type 
+Notice that for any recursive (well-formed) ttype 
 $\mu X.S$, $\Unravel(\mu X.S)$ is not a recursive type.
 The following lemma states that $\Unravel(\mu X.S)$ preserves 
 the transitions from $\mu X.S$.
@@ -77,21 +96,21 @@ the transitions from $\mu X.S$.
 $\mu X. S \LTSderives[a] S'$ if and only if $\Unravel (\mu X. S) \LTSderives[a] S'$.
 \end{lemma}
 \begin{proof}
-\todo{AM}{proof}	
+	By Lemma 3.5 of~\cite{thiemann2016context}, we have
+	$\mu X.S \TypeEquiv S[\mu X. S / X]$. We thus have
+	$\mu X.S \TypeEquiv \Unravel (\mu X. S)$ and the 
+	result follows immediately.
 \end{proof}
 
-Furthermore, we need an analogous result on the
-grammars.
+Furthermore, the analogous result for grammars follows
+by definition of \toGrammark\ and \lstinline|collect|.
 
 \begin{lemma}
 \label{lemma:unravelling_preserves_grammars}
 	$\toGrammarf{(\mu X.S)} = \toGrammarf{(\Unravel (\mu X. S))}$.
 \end{lemma}
-\begin{proof}
-\todo{AM}{proof}	
-\end{proof}
 
-The following result states that the grammars in the image of
+The following result states that grammars in the image of
 $\toGrammark$ mimic the transitions of the corresponding types
 and vice-versa.
 
@@ -109,20 +128,20 @@ and vice-versa.
 	
 	\begin{itemize}
 		\item $S=\skipk$ does not have any transition. And
-		and neither does $\toGrammarf{\skipk} = \varepsilon$.
+		neither does $\toGrammarf{\skipk} = \varepsilon$.
 		\item $S=\sharp B$ is such that $S \LTSderives[\sharp B] \skipk$.
 		Similarly, $\toGrammarf{S} = \sharp B \LTSderivesP[\sharp B] \varepsilon$.
 		\item $S=\star\{l_i\colon S_i\}_{i\in I}$ is such that, for each $i\in I$,
-		$S_i \LTSderives[\star l_i] S_i$. By definition of $\toGrammark$, for each $i$, 
+		$S \LTSderives[\star l_i] S_i$. By definition of $\toGrammark$, for each $i$, 
 		$\toGrammarf{S} \LTSderivesP[\star l_i] \toGrammarf{S_i}$.
 		\item $S=S_1;S_2$:
 		\begin{itemize}
 			\item if $S_1;S_2\LTSderives S_1';S_2$ with $S_1\LTSderives S_1'$,
 			by induction hypothesis, $\toGrammarf{ S_1} \LTSderivesP \toGrammarf{S_1'}$.
-			Furthermore, 
+			Furthermore, for any types $S$ and $T$ we have
 			\begin{equation}
 			\label{eq:grammar_sequential_composition}
-				\toGrammarf{(S_1;S_2)} = \toGrammarf{S_1}\enspace\toGrammarf{S_2}.	
+				\toGrammarf{(S;T)} = \toGrammarf{S}\enspace\toGrammarf{T}.	
 			\end{equation}
 			Hence, we have $\toGrammarf{(S_1;S_2)} \LTSderivesP \toGrammarf{(S_1';S_2)}$.
 			\item assume $S_1;S_2\LTSderives S_2'$ where 
@@ -144,15 +163,17 @@ and vice-versa.
 		$\toGrammarf{S}\LTSderivesP \toGrammarf{S'}$.\smallskip
 	\end{itemize}
 	For the reverse implication, we prove that any transition in the
-	grammars leads to a transition in the corresponding types.
+	grammar leads to a transition in the corresponding types.
 	\begin{itemize}
 		\item if $\toGrammarf{S}\LTSderivesP[\sharp B] \vec X$, then
 		$\toGrammarf{S} = Y \vec X$, where $Y\LTSderives[\sharp B] \varepsilon$,
 		and so $\Unravel(S) = \sharp B; T$ and we have $S\LTSderives[\sharp B] T$.
 		\item if $\toGrammarf{S} \LTSderivesP[\star l_i] \vec X_1 \vec X_2$, then
-		$\toGrammarf{(\Unravel(S))} = Y \vec X_2$, where $Y\LTSderives[\star l_i] \vec X_1$.
-		Hence, $S$ is of the form $\star\{l_j' :U_j\}_{j\in J};T$ with $l_i = l_j'$ and
-		$\vec X_1 = \toGrammarf{U_j}$, for some $j\in J$.
+		$\toGrammarf{\Unravel(S)} = Y \vec X_2$, where $Y\LTSderivesP[\star l_i] \vec X_1$.
+		Hence, $\Unravel (S)$ is of the form $\star\{l_j' :U_j\}_{j\in J};T$ with $l_i = l_j'$ and
+		$\vec X_1 = \toGrammarf{U_j}$, for some $j\in J$. Using 
+		Lemma~\ref{lemma:unravelling} we conclude that 
+		$S \LTSderives[\star l_i] U_j ; T$.
 	\end{itemize}
 \end{proof}
 
@@ -161,6 +182,7 @@ The main result of this subsection follows as a corollary
 of Proposition~\ref{prop:transitions_mimic}.
 
 \begin{theorem}
+\label{thm:equiv_coincide}
 	$\toGrammark$ is a full abstract encoding, i.e.,
 	$$S \TypeEquiv T \text{ if and only if } 
 	\toGrammarf{S} \ProdEquiv \toGrammarf{T}.$$
@@ -491,7 +513,7 @@ of Proposition~\ref{prop:transitions_mimic}.
 
 \subsection{Correctness of the algorithm}
 
-We now focus on the correctness of the algorithm in
+We now focus on the correctness of function \lstinline|bisimilar| in
 Listing~\ref{lst:algorithm}.  Before proceeding to soundness, we
 recall the \emph{safeness property} presented by Jan{\v{c}}ar and
 Moller.
@@ -546,8 +568,8 @@ and completeness.
 \end{lemma}
 %
 \begin{proof}
-	If $S\TypeEquiv T$ then, by Corollary~\ref{corol:composing_with_bridge},
-	we have $X_S\ProdEquiv X_T$ and thus the existence of a finite
+	If $S\TypeEquiv T$ then, by Theorem~\ref{thm:equiv_coincide},
+	we have $\toGrammarf{S} \ProdEquiv \toGrammarf{T} $ and thus the existence of a finite
 	successful branch is ensured by the finite witness property. 
 	Hence, breadth-first search eventually terminates. 
 	
@@ -555,9 +577,9 @@ and completeness.
         in the expansion tree are finite and thence $\bisimf S T$
         terminates.  To conclude that all branches are finite, observe
         that any infinite branch is successful by definition and thus
-        the safeness property would imply $X_S\ProdEquiv X_T$ and we
+        the safeness property would imply $\toGrammarf{S}\ProdEquiv \toGrammarf{T}$ and we
         would have $S\TypeEquiv T$, by 
-        Corollary~\ref{corol:composing_with_bridge}.
+        Theorem~\ref{thm:equiv_coincide}.
 \end{proof}
 
 %\begin{proof}
@@ -573,7 +595,7 @@ and completeness.
 \begin{lemma}
   \label{lem:bisimilar-to-prod}
   If $\bisimf S T$ returns \upshape{\lstinline|True|}, then
-  $X_{S} \ProdEquiv X_{T}$.
+  $\toGrammarf{S}\ProdEquiv \toGrammarf{T}$.
 	% Given two context-free session types $S$ and $T$, if the function
 	% \lstinline|equivalent|, presented in Listing~\ref{lst:algorithm},
 	% returns \lstinline|true|, then $X_{S} \ProdEquiv X_{T}$.
@@ -582,7 +604,7 @@ and completeness.
 \begin{proof}
   Function \lstinline|bisimilar| returns \lstinline|True| for $S$ and
   $T$ whenever it reaches a (finite) successful branch in the expansion
-  tree rooted at $\{(X_{S}, X_{T})\}$. Conclude with the safeness property,
+  tree rooted at $\{(\toGrammarf{S},\toGrammarf{T})\}$. Conclude with the safeness property,
   Proposition~\ref{prop:safeness}.
   % , whenever the expansion tree rooted
   % at $\{(X_{S}, X_{T})\}$ has a (finite) successful branch, we
@@ -600,7 +622,7 @@ the meta-theory of context-free session types.
 \end{theorem}
 %
 \begin{proof}
-  From Corollary~\ref{corol:composing_with_bridge} and
+  From Theorem~\ref{thm:equiv_coincide} and
   Lemma~\ref{lem:bisimilar-to-prod}.
 \end{proof}
 
@@ -627,10 +649,10 @@ types. The finite witness property is paramount to achieve this result.
 \end{theorem}
 %
 \begin{proof}
-  Assuming that $S \TypeEquiv T$, by Corollary~\ref{corol:composing_with_bridge}
-  we have $X_{S} \ProdEquiv X_{T}$.  Hence, Proposition~\ref{finite_witness}
+  Assuming that $S \TypeEquiv T$, by Theorem~\ref{thm:equiv_coincide}
+  we have $\toGrammarf{S} \ProdEquiv \toGrammarf{T} $.  Hence, Proposition~\ref{finite_witness}
   ensures the existence of a finite successful branch on the
-  expansion tree rooted at $\{(X_{S},X_{T})\}$, i.e., a branch
+  expansion tree rooted at $\{(\toGrammarf{S},\toGrammarf{T})\}$, i.e., a branch
   terminating in an empty node.  Since our algorithm traverses the
   expansion tree using breadth-first search it will, eventually, reach
   the empty node and conclude the bisimulation positively.

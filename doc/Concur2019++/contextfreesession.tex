@@ -23,13 +23,13 @@ Let us denote by $\mathcal{T}$ the set of types.
 We assume that all occurrences of variables in a type are introduced
 by some $\mu$-binder, thus precluding free variables in types.
 %
-We further assume that types are renamed so that all variables
-introduced by~$\mu$ are distinct.
-%
-Finally, we require types to be contractive, thus forbidding subterms
-of the form
-$\mu X_1.\mu X_2 \dots \mu
-X_n. X_1$~\cite{DBLP:journals/tcs/Courcelle83,thiemann2016context}.
+%We further assume that types are renamed so that all variables
+%introduced by~$\mu$ are distinct.
+%%
+%Finally, we require types to be contractive, thus forbidding subterms
+%of the form
+%$\mu X_1.\mu X_2 \dots \mu
+%X_n. X_1$~\cite{DBLP:journals/tcs/Courcelle83,thiemann2016context}.
 %
 For simplicity we removed polymorphic type variables (not bound by
 $\mu$) from the grammar of session types.
@@ -67,6 +67,26 @@ exhibit no further action~\cite{DBLP:journals/jacm/AcetoH92} .
 
 \emph{Type bisimulation}, $\TypeEquiv$, is defined in the usual way from the
 labelled transition system~\cite{sangiorgi2014introduction}.
+%
+
+To define the type formation rules, we need the notion of contractivity, 
+forbidding subterms of the form 
+$\mu X_1.\mu X_2 \dots \mu X_n. X_1$. The contractivity and type
+formation
+rules are given in Figure~\ref{fig:contractivity_type_form_rules}.
+
+\input{contractivity}
+
+
+\begin{lemma}
+\label{lemma:contr_has_transition}
+If $\isContr S$, then $S \LTSderives T$ for some action $a$  and type $T$. 
+\end{lemma}
+
+\begin{lemma}
+	If $\isType S$, then $\isContr S$.
+\end{lemma}
+The converse does not hold, take: $S = (\mu X. \skipk); !\boolk$.
 \
 %%% Local Variables:
 %%% mode: latex

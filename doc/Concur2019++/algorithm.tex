@@ -29,17 +29,19 @@ where~$\vec X$ is the \emph{start word} and~$P$ a \emph{set of
   productions} of the form $Y \rightarrow a\vec Z$ (context-free
 session types do not require productions of the form
 $X \rightarrow\varepsilon$). Type variables~$X$ are the
-\emph{non-terminal symbols} and LTS labels~$a$ the \emph{terminal
+\emph{non-terminal symbols} and LTS labels~$a$ are the \emph{terminal
   symbols}. Sequences of type variables~$\vec X$ are called
 \emph{words}; $\varepsilon$ denotes the empty word.
 %
-We denote by $\mathcal{P}$ the set of context-free grammars in 
+We denote by $\mathcal{P}$ the context-free grammar in 
 Greibach normal form.
 %
 Due to the deterministic nature of context-free session types, the
 grammars we are interested in are \emph{simple}: for each
 non-terminal symbol~$X$ and each terminal symbol~$a$, there is at most
 one production of the form $X \rightarrow a\vec Y$.
+Sometimes we abuse notation and let $\mathcal{P}$ denote the
+set of words composed by symbols in the grammar.
 
 Grammars in Greibach Normal Form naturally induce a labelled transition
 system by taking words~$\vec X$ as states, terminal
@@ -49,13 +51,8 @@ $X \rightarrow a\vec Z \in P$.
 % \vv{reference here}
 The associated bisimilarity is denoted by $\ProdEquiv$.
 
-Given a context-free session type $S$, the algorithm starts by
-inserting an initial production of the form
-$X_S \rightarrow \,\initialProd\,\vec Y$ in the set of
-productions, where $\vec Y$ is the word obtained by running 
-\lstinline|toGrammar S|.
-%
-Function \lstinline|toGrammar| (Listing~\ref{lst:toGrammar}) returns a
+Given a context-free session type $S$, 
+function \lstinline|toGrammar| (Listing~\ref{lst:toGrammar}) returns a
 sequence of non-terminal symbols, while computing the remaining
 productions.
 %
@@ -78,7 +75,8 @@ state.
 % \item \lstinline{subst} $X\,T\,S$ replaces the occurrences of~$X$
 %   by~$T$ in~$S$;
 \item \lstinline|getTransitions|$\,X$ retrieves the transitions
-  from~$X$ (a map from terminal symbols~$a$ to words~$\vec Y$).
+  from~$X$ (a map from terminal symbols~$a$ to words~$\vec Y$):
+\item \lstinline|reverseLookup| lookup a key for a value in the map.
 \end{itemize}
 
 \input{listing-toGrammar}
@@ -90,8 +88,10 @@ always on subterms.
 Furthermore, due to the deterministic nature of the LTS,
 \lstinline|toGrammar| returns a simple grammar.
 %
-One can obtain a unique set of productions for two types by ensuring
-that fresh variables do not overlap when converting both types.
+%One can obtain a unique set of productions for two types by ensuring
+%that fresh variables do not overlap when converting both types.
+Function \lstinline|convertToGrammar| converts the two types
+in their corresponding grammar.
 
 \begin{example}
 \label{ex:productions}
@@ -109,15 +109,16 @@ the following productions.
 \begin{center}
   \begin{tabular}{l l}
     \multicolumn{2}{c}{Productions for type $S$}\\ \hline
-    $X_S \rightarrow \,\initialProd\, X_1 X_4$ &$X_2 \rightarrow \,? \intk$\\
-    $X_1 \rightarrow \& n\, X_1 X_1 X_2$&$X_3 \rightarrow \,? \intk$\\
+    \multicolumn{2}{c}{Start word: $X_1X_4$}\\
+     $X_1 \rightarrow \& n\, X_1 X_1 X_2$ &$X_3 \rightarrow \,? \intk$\\
     $X_1 \rightarrow \& \ell\, X_3$ &$X_4 \rightarrow \,!\intk\, X_4 X_4$\\
+     $X_2 \rightarrow \,? \intk$ &\\
   \end{tabular} \qquad
   \begin{tabular}{l l}
     \multicolumn{2}{c}{Productions for type $T$}\\ \hline
-    $Y_T \rightarrow \,\initialProd\, Y_1 Y_3 $&$Y_2 \rightarrow \,? \intk$\\
-    $Y_1 \rightarrow \& n\, Y_1 Y_1 Y_2 $&$Y_3 \rightarrow \,!\intk\, Y_3$\\
-    $Y_1 \rightarrow \& \ell \,Y_2 $ &
+    \multicolumn{2}{c}{Start word: $Y_1Y_3$}\\
+    $Y_1 \rightarrow \& n\, Y_1 Y_1 Y_2 $&$Y_2 \rightarrow \,? \intk$\\
+    $Y_1 \rightarrow \& \ell \,Y_2 $&$Y_3 \rightarrow \,!\intk\, Y_3$\\
   \end{tabular}
 \end{center}
 \end{example}
@@ -182,29 +183,32 @@ code is in Listing~\ref{lst:prune}.
   label={lst:prune},
   captionpos=b
   ]
-type Visited = Set.Set TypeVar  
+type Visited = Set.Set [TypeVar]
 
 prune :: Productions -> Productions
 prune p = Map.map (Map.map (pruneWord p)) p
 
-pruneWord :: Productions -> [TypeVar] -> [TypeVar]
+pruneWord :: Productions -> Word -> Word
 pruneWord p = foldr (\x ys -> if normed p x then x:ys else [x]) []
 
 normed :: Productions -> TypeVar -> Bool
-normed p x = normedWord p Set.empty [x]
+normed p x = isJust $ maybeNorm p [x]
 
-normedWord :: Productions -> Visited -> [TypeVar] -> Bool
-normedWord _ _ []     = True
-normedWord p v (x:xs) =
-  x `Set.notMember` v &&
-  any (normedWord p v') (Map.elems (transitions p (x:xs)))
-  where v' = if any (x `elem`) (Map.elems (transitions p [x]))
-               then Set.insert x v else v
+maybeNorm :: Productions -> [TypeVar] -> Maybe Int
+maybeNorm p = norm Set.empty
+  where
+  norm :: Visited -> [TypeVar] -> Maybe Int
+  norm _ [] = Just 0
+  norm v xs
+   | any (flip isSubsequenceOf xs) v = Nothing
+   | otherwise = fmap (+1) (Map.foldr (compose min) Nothing (norms v xs))
+  norms :: Visited -> [TypeVar] -> Map.Map Label (Maybe Int)
+  norms v xs = Map.map (norm (Set.insert xs v)) (transitions xs p)
 \end{lstlisting}
 
 \begin{example}
   \label{ex:prune}
-  Recall Example~\ref{ex:productions} and notice that $X_S$ and $Y_T$
+  Recall Example~\ref{ex:productions} and notice that $X_1 X_4$ and $Y_1 Y_3$
   are both unnormed. We can easily see that the last occurrence of
   $X_4$ in the last production for $S$ is unreachable, hence we can
   simplify it and obtain the pruned productions for $S$ as:
@@ -212,11 +216,11 @@ normedWord p v (x:xs) =
   \begin{center}
     \begin{tabular}{l l l}
       \multicolumn{3}{c}{Pruned productions for type $S$}\\ \hline
-      $X_S \rightarrow \,\initialProd\, X_1 X_4$ &
+      \multicolumn{3}{c}{Start word: $X_1X_4$}\\
       $X_1 \rightarrow \& \ell\, X_3$  &
-      $X_1 \rightarrow \& n\, X_1 X_1 X_2$
+      $X_1 \rightarrow \& n\, X_1 X_1 X_2$ &
+      $X_2 \rightarrow \,? \intk$ 
       \\
-      $X_2 \rightarrow \,? \intk$ &
       $X_3 \rightarrow \,? \intk$ &
       $X_4 \rightarrow \,!\intk\, X_4$
     \end{tabular}
@@ -252,7 +256,7 @@ minimal set such that: for every pair $(\vec X, \vec Y) \in N$,
 
 An \emph{expansion tree} is built from a root node: the singleton set
 containing the pair of words obtained by translating the two types
-into a grammar. Children nodes are obtained by expansion from its
+into a grammar. Children nodes are obtained by expansion from their
 parent node. Jan{\v{c}}ar and Moller observed that expansion alone
 often leads to infinite trees. We then alternate between expansion and
 simplification operations, until either finding an empty node---case
@@ -284,7 +288,7 @@ The \emph{simplification step} consists on the application of the
 following rules:
 %
 \begin{description}
-\item[Reflexive rule:] Omit from a node any reflexive pair;
+\item[Reflexive rule:] Omit from a node any pair of the form $(\vec X,\vec x)$;
 \item[Congruence rule:] Omit from a node $N$ any pair that belongs to
   the least congruence containing the ancestors of $N$;
   % \item {\bf Basic Process Algebra rules:} create sibling nodes for $N$
@@ -357,32 +361,34 @@ algorithm returns \lstinline|True|.
   label={lst:algorithm},
   captionpos=b
   ]
-type Node = Set.Set ([TypeVar], [TypeVar])
+type Node = Set.Set (Word, Word)
 type Ancestors = Node
-type NodeQueue = Queue.Queue (Node, Ancestors)
+type NodeQueue = Queue.Seq (Node, Ancestors)
 
-bisimilar :: Type -> Type -> Bool
-bisimilar t u = expand ([x], [y]) (prune p)
-  where Grammar [x, y] p = convertToGrammar [t, u]
+bisimilar :: TypeEnv -> Type -> Type -> Bool
+bisimilar tEnv t u = expand (xs, ys) (prune p)
+  where Grammar [xs, ys] p = trace (show t ++ "\nbisim\n" ++ show u) $ convertToGrammar tEnv [t, u]
         
-expand :: ([TypeVar], [TypeVar]) -> Productions -> Bool
-expand p = expand' (Queue.singleton (Set.singleton p, Set.empty))
+expand :: (Word, Word) -> Productions -> Bool
+expand p = expand' 1 (Queue.singleton (Set.singleton p, Set.empty))
   where
-  expand' :: NodeQueue -> Productions -> Bool
-  expand' q ps
-    | Queue.null q = False 
-    | Set.null n   = True
-    | otherwise   = case expandNode ps n of
-        Nothing -> expand (Queue.dequeue q) ps
-        Just n' -> expand (simplify ps n' (Set.union a n) q) ps
-    where (n, a) = Queue.front q
+  expand' :: Int -> NodeQueue -> Productions -> Bool
+  expand' i ((n, a) Queue.:<| q) ps
+    | Set.null n      = True
+    | otherwise       = case expandNode ps n of
+        Nothing -> expand' (i+1) q ps
+        Just n' -> expand' (i+1) (simplify i ps n' (Set.union a n) q) ps
+  expand' _ Queue.Empty _ = False
 
-simplify :: Productions -> Node -> Ancestors -> NodeQueue -> NodeQueue
-simplify ps n a q = foldr Queue.append (Queue.dequeue q) nas'
-  where nas  = Set.singleton (n,a)
-        nas' = if allNormed ps
+simplify :: Int -> Productions -> Node -> Ancestors -> NodeQueue -> NodeQueue
+simplify i ps n a q =
+  foldr enqueueNode q nas'
+  where nas' = if allNormed ps
                then foldr (apply ps) nas [reflex,congruence,bpa2]
                else foldr (apply ps) nas [reflex,congruence,bpa1,bpa2]
+
+enqueueNode :: (Node,Ancestors) -> NodeQueue -> NodeQueue
+enqueueNode (n,a) q = q Queue.|> (n,a)
 \end{lstlisting}
 % type NodeTransformation = Productions -> Ancestors -> Node -> Set.Set Node 
 
@@ -396,7 +402,7 @@ simplify ps n a q = foldr Queue.append (Queue.dequeue q) nas'
 \end{example}
 
 \begin{center}
-	\includegraphics[width=8.5cm]{expansionTree}
+	\includegraphics[width=8.5cm]{img/expansionTree}
 	%\caption{Expansion tree for the context-free session types $S$ and $T$
 	%introduced in Example~\ref{ex:productions}}
 \end{center}

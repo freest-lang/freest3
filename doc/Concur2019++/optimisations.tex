@@ -27,7 +27,8 @@ the different optimisations that we tried, three stand out:
 \item Iterate the simplification stage until a fixed point is reached;
 \item Use a double-ended queue where promising children are prepended
   rather than appended;
-\item Clean redundant terminal symbols in the grammar.
+\item Clean redundant terminal symbols in the grammar;
+\item Filtering hopeless pairs from nodes.
 \end{enumerate}
 
 If, on the one hand, we believed that the computation of the expansion
@@ -78,23 +79,23 @@ Listing~\ref{lst:enhanced}.
     function \lstinline|simplify| in Listing~\ref{lst:algorithm})},
   label={lst:enhanced},
   captionpos=b]
-simplify :: Productions -> Node -> Ancestors -> NodeQueue -> NodeQueue
-simplify ps n a q = foldr enqueueNode (Queue.dequeue q) nas
-  where nas = findFixedPoint ps (Set.singleton (n,a))
+simplify :: Int -> Productions -> Node -> Ancestors -> NodeQueue -> NodeQueue
+simplify i ps n a q =
+  Queue.sortOn (lengthP i) (foldr enqueueNode q (findFixedPoint ps (Set.singleton (n, a))))
 
 enqueueNode :: (Node,Ancestors) -> NodeQueue -> NodeQueue
-enqueueNode (n,a) q
- | maxLength n <= 1 = Queue.prepend (n,a) q
- | otherwise        = Queue.append (n,a) q
+enqueueNode (n,a) q 
+ | maxLength n <= 1 = (n,a) Queue.<| q
+ | otherwise        = q Queue.|> (n,a)
 
-findFixedPoint :: Productions -> Set.Set (Node,Ancestors) -> 
-                    Set.Set (Node,Ancestors)
+findFixedPoint :: Productions -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
 findFixedPoint ps nas
   | nas == nas' = nas
   | otherwise   = findFixedPoint ps nas'
   where nas' = if allNormed ps
-               then foldr (apply ps) nas [reflex,congruence,bpa2]
-               else foldr (apply ps) nas [reflex,congruence,bpa1,bpa2]
+     then foldr (apply ps) nas [reflex,congruence,bpa2,filtering]
+     else foldr (apply ps) nas [reflex,congruence,bpa1,bpa2,filtering]
+
 \end{lstlisting}
 
 Recalling that the size of the expansion tree (also) depends on the 
