@@ -1,20 +1,24 @@
 
-ex01-1b
+ex_01-1b
     Not possible to do (expression) and (expression) and (expression)   example:
         (x > 1) && (x > 2) && (x > 3)
     Should do ((expression) and (expression)) and (expression)          example:
         ((x > 1) && (x > 2)) && (x > 3)
 
-ex01-3
+ex_01-3
     Two consecutive zeros work as two diferent zeros                    example:
         00 = 0 0
     FIXED
 
-ex01-5
+ex_01-5
     Impossible to create, as example, (:) or (^) functions              example:
         (^) : Int -> Int -> Int
 
-ex01-6a
+ex_01-5
+    Impossible to import files/methods from different classes           example:
+        import "ex_01-5"
+
+ex_01-6a
     Not possible to apply equals to Char Types                          example:
         'a' == 'b' or (==) 'a' 'b'
 
@@ -36,3 +40,15 @@ ex_01-12
         2^63 = -9223372036854775808
         2^62 = 0
         2^63 = 0
+
+ex_03-10
+    Double or Long types inexistent                                     example:
+        data DL = D Double | L Long
+        x = 1.1
+        x = 2.2
+
+ex_03-10
+    Cannot calculate actual square roots,
+    because there's no decimal numbers                                  example:
+        sqrt 4
+        sqrt 2
