@@ -2,7 +2,7 @@
   The terminated predicate \hfill\fbox{$\isDone S$}
   %
   \begin{equation*}
-    \frac{}{\skipt}
+    \frac{}{\isDone \skipt}
     \quad
     \frac{
       \isDone{S_1}
@@ -20,13 +20,13 @@
   \end{equation*}
   The is-contractive predicate \hfill\fbox{$\isContr S$}
   %
-  \begin{equation*}
+  \begin{gather*}
     \frac{
       \isContr{S_1}
     }{
       \isContr{S_1;S_2}
     }
-    \quad
+    \qquad
     \frac{
       \isDone{S_1}
       \quad
@@ -34,26 +34,32 @@
     }{
       \isContr{S_1;S_2}
     }
-    \quad
+    \qquad
     \frac{
       \isContr S
     }{
       \isContr{\rect{x\colon\kind}S}
     }
-    \quad
+    \qquad
     \frac{}{
       \isContr[\Delta,x\colon\kindk\kinds\link] x
     }
-    \quad
-    \frac{
-      S\neq\skipt, \reck, ;
-    }{
-      \isContr S
+    \\\\
+    \frac{}
+    {
+      \isContr {\sharp B}
     }
-  \end{equation*}
+    \qquad
+    \frac{}
+    {
+      \isContr {\star \{ l_i \colon T_i\}_{i\in I}}
+    }
+  \end{gather*}
   \caption{Contractivity}
   \label{fig:contractivity}
 \end{figure}
+
+
 
 %%% Local Variables: 
 %%% mode: latex

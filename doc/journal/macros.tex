@@ -50,6 +50,7 @@
 \newcommand{\forkk}{\keyword{fork}}
 \newcommand{\casek}{\keyword{case}}
 \newcommand{\ofk}{\keyword{of}}
+\newcommand{\typek}{\keyword{type}}
 
 % Types
 \newcommand{\skipt}{\skipk}
@@ -97,6 +98,7 @@
 \newcommand{\casee}[2]{\casek\;#1\;\ofk\;#2}
 
 % Sequents
+\newcommand{\isTypeNoKind}[2][\Delta]{{#1} \vdash {#2}\;\typek}
 \newcommand{\synthetise}{\Rightarrow}
 \newcommand{\checkagainst}{\Leftarrow}
 \newcommand{\isType}[3][\Delta]{{#1} \vdash {#2} : {#3}}
@@ -120,6 +122,9 @@
 \newcommand{\orFour}[4]{{#1}\,||\,{#2}\,||\,{#3}\,||\,{#4}}
 \newcommand{\true}{\mbox{\scriptsize True}}
 \newcommand{\True}{\mbox{True}}
+
+% Labelled transition system
+\newcommand{\LTSderives}[1][a]{\stackrel{#1}{\longrightarrow}}
 
 % Operators
 \newcommand\extract[1]{\leadsto_{#1}}% \rightlsquigarrow}
