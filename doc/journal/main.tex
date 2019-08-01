@@ -20,9 +20,9 @@
 % }
 
 \begin{document}
-%\maketitle
 
 \input{fig-contractivity}
+\input{type-form}
 
 \begin{lemma}[Properties of termination]
   If $\done S$, then $\done{\unfoldk(S)}$.  
@@ -35,8 +35,15 @@ Note: The above result does not hold in ICFP16.
   \item If $\isContr S$, then $\isContr{\unfoldk(S)}$
   \item If $\isContr[\Delta,x\colon\kind]{S_1}$ and $\algkindin {S_2} \kind$,
     then $\isContr{\subs{S_2}{x}{S_1}}$.
+  \item If $\isContr S$, then $S \LTSderives T$ for some $a,T$. (converse holds?)
   \end{enumerate}
 \end{lemma}
+
+\begin{lemma}
+	If $\isTypeNoKind S$, then $\isContr S$.
+\end{lemma}
+
+The converse does not hold, take: $S = (\rect{x\colon\kind} x); !\boolt$.
 
 \input{fig-alg-kinding}
 \input{fig-alg-typing}

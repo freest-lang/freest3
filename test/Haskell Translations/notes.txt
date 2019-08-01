@@ -1,4 +1,3 @@
-
 ex_01-1b
     Not possible to do (expression) and (expression) and (expression)   example:
         (x > 1) && (x > 2) && (x > 3)
@@ -6,7 +5,7 @@ ex_01-1b
         ((x > 1) && (x > 2)) && (x > 3)
 
 ex_01-3
-    Two consecutive zeros work as two diferent zeros                    example:
+    Two consecutive zeros work as two different zeros                    example:
         00 = 0 0
     FIXED
 
@@ -38,8 +37,8 @@ ex_01-11a
 ex_01-12
     Overflow on integers beyond 2^62 (should it warn us when it does?) example:
         2^63 = -9223372036854775808
-        2^62 = 0
-        2^63 = 0
+        2^64 = 0
+        2^65 = 0
 
 ex_03-10
     Double or Long types inexistent                                     example:
