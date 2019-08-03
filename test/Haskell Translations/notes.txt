@@ -51,3 +51,7 @@ ex_03-10
     because there's no decimal numbers                                  example:
         sqrt 4
         sqrt 2
+
+ex_05-1f
+    There's no breakline character                                      example:
+        '\n'
