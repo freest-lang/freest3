@@ -21,6 +21,19 @@ map'' f list =
         List x rest -> List (f x) (map'' f rest)
     }
 
+{-
+map : forall a,b => (a -> a) -> b -> b
+map f list =
+    case list of {
+        LEnd -> LEnd,
+        LList x rest -> LList (f x) (map1 f rest)
+    }
+
+    In this case we have define LEnd and LList, making it impossible to abstract,
+    There's also the problem that we cannot say that b is made of multiple a's
+
+-}
+
 list1 : IntList
 list1 = List 1 (List 2 End)
 list2 : IntList

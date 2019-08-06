@@ -55,3 +55,13 @@ ex_03-10
 ex_05-1f
     There's no breakline character                                      example:
         '\n'
+
+ex_05-3e
+    We cannot say that an element is made of another                    example:
+        data IntList = End | List Int IntList
+        data IntListList = LEnd | LList IntList IntListList
+
+        something [IntListList,IntList]
+        something : forall a,b => a -> b *
+        something : forall a => [a] -> a
+        *we can't securelly fo through 'a' thinking it is made of 'b'
