@@ -18,4 +18,4 @@ existsIn c list =
 
 main : Bool
 main = isNonBlanck (' ')
--- result = 
+-- expected result = False
