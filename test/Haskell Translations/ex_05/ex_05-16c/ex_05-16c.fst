@@ -28,5 +28,5 @@ list : IntList
 list = List 2 (List 3 (List 4 (List 5 End)))
 
 main : Int
-main = foldr' function list 0
+main = foldr' (\x :Int -> (\y :Int -> x*x + y)) list 0
 --result = 54

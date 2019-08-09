@@ -1,10 +1,7 @@
 -- V exercise 10e
 
-add : Int -> Int -> Int
-add x y = x + y
-
 addTo7 : (Int -> Int)
-addTo7 = add 7
+addTo7 = (\x : Int -> (\y : Int -> x + y)) 7
 
 main : Int
 main = addTo7 10

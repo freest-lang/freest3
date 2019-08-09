@@ -21,12 +21,9 @@ foldl' f list acc =
         List x rest -> foldl' f rest (f x acc)
     }
 
-function : Int -> Int -> Int
-function x y = x * y
-
 list : IntList
 list = List (-3) (List (-2) (List (-1) End))
 
 main : Int
-main = foldr' function list 1
+main = foldr' (*) list 1
 --result = -6

@@ -21,12 +21,9 @@ foldl' f list acc =
         List x rest -> foldl' f rest (f x acc)
     }
 
-function : Int -> Int -> Int
-function y z = y*3 + z
-
 list : IntList
 list = List 1 (List 2 (List 3 (List 4 End)))
 
 main : Int
-main = foldr' function list 0
+main = foldr' (\y :Int -> (\z :Int -> y*3 + z)) list 0
 --result = 30
