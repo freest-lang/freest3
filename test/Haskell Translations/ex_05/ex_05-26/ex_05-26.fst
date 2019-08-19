@@ -1,9 +1,10 @@
--- V exercise 16a
+-- V exercise 26
 
 data IntList = End | List Int IntList
+data Tuple = T Int Int
 
 --foldr' : (x -> acc -> acc) -> xs -> acc -> acc 
-foldr' : (Int -> Int -> Int) -> IntList -> Int -> Int
+foldr' : (Int -> Tuple -> Tuple) -> IntList -> Tuple -> Tuple
 foldr' f list acc = foldl' f (reverseIntList list End) acc
 
 reverseIntList : IntList -> IntList -> IntList
@@ -14,16 +15,25 @@ reverseIntList list acc =
     }
 
 --foldl' : (x -> acc -> acc) -> xs -> acc -> acc 
-foldl' : (Int -> Int -> Int) -> IntList -> Int -> Int
+foldl' : (Int -> Tuple -> Tuple) -> IntList -> Tuple -> Tuple
 foldl' f list acc = 
     case list of {
         End -> acc,
         List x rest -> foldl' f rest (f x acc)
     }
 
+sumlen : IntList -> Tuple
+sumlen list = foldr' sumlen' list (T 0 0)
+
+sumlen' : Int -> Tuple -> Tuple
+sumlen' x tuple =
+    case tuple of {
+        T a b -> T (a+x) (b+1)
+    }
+
 list : IntList
 list = List 1 (List 2 (List 3 (List 4 End)))
 
-main : Int
-main = foldr' (\y :Int -> (\z :Int -> y*3 + z)) list 0
---result = 30
+main : Tuple
+main = sumlen list
+--result = T 10 4

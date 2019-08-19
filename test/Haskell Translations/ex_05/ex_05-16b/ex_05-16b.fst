@@ -21,12 +21,9 @@ foldl' f list acc =
         List x rest -> foldl' f rest (f x acc)
     }
 
-function : Int -> Int -> Int
-function x y = if x > 0 then x + y else y 
-
 list : IntList
 list = List 4 (List (-3) (List 2 (List (-1) End)))
 
 main : Int
-main = foldr' function list 0
+main = foldr' (\x : Int -> (\y : Int -> if x > 0 then x + y else y)) list 0
 --result = 6
