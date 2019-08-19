@@ -64,8 +64,8 @@ tokens :-
   ">="  		        { \p s -> TokenOp (internalPos p) "(>=)" }
   "<="  		        { \p s -> TokenOp (internalPos p) "(<=)" }
   "=="  		        { \p s -> TokenOp (internalPos p) "(==)" }
-  "&&"  		        { \p s -> TokenOp (internalPos p) "(&&)" }
-  "||"  		        { \p s -> TokenOp (internalPos p) "(||)" }
+  "&&"  		        { \p s -> TokenConjunction (internalPos p) }
+  "||"  		        { \p s -> TokenDisjunction (internalPos p) }
 -- Kinds
   SU                            { \p s -> TokenSU (internalPos p) }
   SL                            { \p s -> TokenSL (internalPos p) }
@@ -169,6 +169,9 @@ data Token =
   | TokenLT Pos
   | TokenGT Pos
   | TokenOp Pos String
+  | TokenConjunction Pos
+  | TokenDisjunction Pos
+
 
 instance Show Token where
   show (TokenNL p) = show p ++ ": NL"  
@@ -230,7 +233,8 @@ instance Show Token where
   show (TokenOf p) = show p ++ ": of"  
   show (TokenDualof p) = show p ++ ": dualof"  
   show (TokenFArrow p) = show p ++ ": =>"
-
+  show (TokenConjunction p) = show p ++ ": (&&)"
+  show (TokenDisjunction p) = show p ++ ": (||)"
 -- Trim newlines
 scanTokens = alexScanTokens >>= (return . trim)
 
@@ -308,6 +312,8 @@ instance Position Token where
   position (TokenOf p) = p
   position (TokenDualof p) = p
   position (TokenFArrow p) = p
+  position (TokenConjunction p) = p
+  position (TokenDisjunction p) = p
 --  position t = error $ show t
 
 getText :: Token -> String
