@@ -64,6 +64,7 @@ tokens :-
   ">="  		        { \p s -> TokenOp (internalPos p) "(>=)" }
   "<="  		        { \p s -> TokenOp (internalPos p) "(<=)" }
   "=="  		        { \p s -> TokenOp (internalPos p) "(==)" }
+  "/="  		        { \p s -> TokenOp (internalPos p) "(/=)" }
   "&&"  		        { \p s -> TokenConjunction (internalPos p) }
   "||"  		        { \p s -> TokenDisjunction (internalPos p) }
 -- Kinds

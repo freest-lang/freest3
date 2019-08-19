@@ -33,6 +33,7 @@ typeList =
   , (mkVar p "(&&)", binBoolOp)
   , (mkVar p "(||)", binBoolOp)
   , (mkVar p "(==)", relationalOp)
+  , (mkVar p "(/=)", relationalOp)
   , (mkVar p "(<)", relationalOp)
   , (mkVar p "(>)", relationalOp)
   , (mkVar p "(<=)", relationalOp)
