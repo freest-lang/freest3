@@ -10,7 +10,8 @@ Converting AST terms to strings.
 -}
 
 module Syntax.Show
-( showChoiceView
+( showChoiceView,
+  showFieldMap
 ) where
 
 import           Syntax.Expressions
