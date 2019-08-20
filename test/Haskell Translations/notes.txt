@@ -65,3 +65,13 @@ ex_05-3e
         something : forall a,b => a -> b *
         something : forall a => [a] -> a
         *we can't securelly fo through 'a' thinking it is made of 'b'
+
+ex_06-1
+    Cannot create lambda function when main return Type is a data 
+    Type created by user                                                example:
+
+        data Tuple = Tuple Int Int 
+        main : Tuple
+        main =
+            let f = (\x : Int -> x) in
+            Tuple 0 0

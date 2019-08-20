@@ -1,10 +1,10 @@
 import System.Directory
 
 foldersName :: String
-foldersName = "14 15 16a 16b 16c 16d 16e 17 18 19 20 21 22 23 24 25 26"
+foldersName = "1 2a 2b 2c 2d 2e 2f 2g 2h 2i 2j 3 4 5a 5b 5c 5d 5e 5f 5g 5h 5i 6 7 8 9 10 11 12 13 14 15"
 
 exN :: String
-exN = "05"
+exN = "07"
 
 main :: IO ()
 main = createFiles $ words foldersName
@@ -27,4 +27,4 @@ filePath :: String -> String
 filePath number = (folderPath number)++"/ex_"++exN++"-"++number
 
 form :: String -> String
-form number = "-- V exercise "++number++"\n\nmain : \nmain = \n--result = "
+form number = "-- VII exercise "++number++"\n\nmain : \nmain = \n--result = "
