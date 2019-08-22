@@ -84,7 +84,7 @@ initialState f = FreestS {
 , expEnv    = Map.empty
 , typeEnv   = Map.empty
 , errors    = []
--- , errors    = Set.empty
+--, errors    = Set.empty
 , nextIndex = 0
 }
 
@@ -172,12 +172,19 @@ setTEnv tEnv = modify (\s -> s{typeEnv = tEnv})
 -- | ERRORS
 
 addError :: Pos -> [String] -> FreestState ()
-addError p e = do
-  modify (\s -> s{errors = errors s ++ [styleError (filename s) p e]})  
-  -- modify (\s -> s{errors = Set.insert (styleError (filename s) p e) (errors s)})
-  
+addError p e = --do
+  modify (\s -> s{errors = insertError (errors s) (filename s)})  
+--  modify (\s -> s{errors = errors s ++ [styleError (filename s) p e]})  
+--   modify (\s -> s{errors = Set.insert (styleError (filename s) p e) (errors s)})
+  where
+    insertError :: [String] -> String -> [String]
+    insertError es f =
+          let err = styleError f p e in
+          if err `elem` es then es else es ++ [err]
+          
 getErrors :: FreestS -> String
 getErrors = (intercalate "\n") . errors
+  --Set.foldl (\s acc -> acc ++ "\n" ++ s) "" (errors s)
   
 hasErrors :: FreestS -> Bool
 hasErrors = not . null . errors
