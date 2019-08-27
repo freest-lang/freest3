@@ -192,7 +192,7 @@ App :: { Expression }
   | ProgVar '[' TypeList ']'                 { TypeApp (position $1) $1 $3 }
   | send Primary                             { Send (position $1) $2 }
   | receive Primary                          { Receive (position $1) $2 }
-  | select Primary Constructor               { Select (position $1) $2 $3 }
+  | select Primary ArbitraryProgVar          { Select (position $1) $2 $3 }
   | fork Primary                             { Fork (position $1) $2 }
   | '-' App %prec NEG                        { unOp (mkVar (position $1) "negate") $2}
   | Primary                                  { $1 }
@@ -202,8 +202,9 @@ Primary :: { Expression }
   | BOOL                                     { let (TokenBool p x) = $1 in Boolean p x }
   | CHAR                                     { let (TokenChar p x) = $1 in Character p x }
   | '()'                                     { Unit (position $1) }
-  | ProgVar                                  { ProgVar (position $1) $1 }
-  | Constructor                              { ProgVar (position $1) $1 }
+  | ArbitraryProgVar                         { ProgVar (position $1) $1 }
+  -- | ProgVar                                  { ProgVar (position $1) $1 }
+  -- | Constructor                              { ProgVar (position $1) $1 }
   | '(' '\\' ProgVarWildTBind Arrow Expr ')' { Lambda (position $2) (snd $4) (fst $3) (snd $3) $5 }
   | '(' Expr ',' Expr ')'                    { Pair (position $1) $2 $4 }
   | '(' Expr ')'                             { $2 }
@@ -216,7 +217,7 @@ MatchMap :: { FieldMap }
   | Match ',' MatchMap {% checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
 
 Match :: { (ProgVar, ([ProgVar], Expression)) }
-  : Constructor ProgVarWild '->' Expr { ($1, ([$2], $4)) }
+  : ArbitraryProgVar ProgVarWild '->' Expr { ($1, ([$2], $4)) }
 
 CaseMap :: { FieldMap }
   : Case             { uncurry Map.singleton $1 }
@@ -280,7 +281,7 @@ FieldList :: { TypeMap }
                            return (uncurry Map.insert $1 $3) }
 
 Field :: { (ProgVar, Type) }
-  : Constructor ':' Type { ($1, $3) }
+  : ArbitraryProgVar ':' Type { ($1, $3) }
 
 -----------
 -- TYPE LISTS AND SEQUENCES --
@@ -306,11 +307,16 @@ Kind :: { Kind } :
 
 -- PROGRAM VARIABLES
 
+ArbitraryProgVar :: { ProgVar }
+ : ProgVar     { $1 }
+ | Constructor { $1 }
+
 ProgVar :: { ProgVar }
   : LOWER_ID { mkVar (position $1) (getText $1) }
 
 Constructor :: { ProgVar }
   : UPPER_ID { mkVar (position $1) (getText $1) }
+--  | LOWER_ID { mkVar (position $1) (getText $1) }
 
 ProgVarWild :: { ProgVar }
   : ProgVar { $1 }
