@@ -3,6 +3,7 @@ ex_01-1b
         (x > 1) && (x > 2) && (x > 3)
     Should do ((expression) and (expression)) and (expression)          example:
         ((x > 1) && (x > 2)) && (x > 3)
+    FIXED
 
 ex_01-3
     Two consecutive zeros work as two different zeros                    example:
@@ -29,6 +30,7 @@ ex_01-8c
 ex_01-8d
     No not equals implemented besides not a == b                        example:
         inexistent '/='
+    FIXED
 
 ex_01-11a
     No other method besides "div" to divide numbers                     example:
@@ -55,6 +57,7 @@ ex_03-10
 ex_05-1f
     There's no breakline character                                      example:
         '\n'
+    FIXED
 
 ex_05-3e
     We cannot say that an element is made of another                    example:
@@ -75,3 +78,9 @@ ex_06-1
         main =
             let f = (\x : Int -> x) in
             Tuple 0 0
+    FIXED
+
+ex_07-4
+    Cannot test Boolean equality                                       example:
+        True /= False
+        True == (not False)
