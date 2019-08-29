@@ -1,0 +1,98 @@
+\lstset{language=freest, numbers=none, escapeinside=||}
+
+\begin{frame}[fragile]{Motivação}
+%\vspace*{5mm}
+
+  Os tipos de sessão:
+  \begin{itemize}
+  \item Foram propostos para responder à necessidade de formalização de trocas de mensagens.
+  \item Permitem definir protocolos na forma de tipos que representam interações corretas do sistema e que garantem propriedades tais como a inexistência de erros na comunicação e de situações de impasse.
+  \end{itemize}
+  Contudo, a expressividade dos tipos de sessão está ainda aquém de todos os desafios de comunicação que encontramos em sistemas concorrentes:
+  \begin{itemize}
+  \item Não permitem em particular misturar \textit{input} e \textit{output} na mesma escolha.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Exemplo - Introdução}
+%\vspace*{5mm}
+
+  Considere-se o seguinte problema:
+  
+  Dado $k \in \mathbb{Z}$, qual o maior inteiro $n$ tal que, $\sum_{i=1}^{n} i < k$?
+
+  Imaginem-se dois processadores:
+  \begin{itemize}
+  \item Um processador capaz de gerar sequências de números inteiros mas sem a capacidade de os somar.
+  \item Um segundo processador capaz de somar números inteiros, mas incapaz de os gerar.
+  \end{itemize}  
+\end{frame}
+
+\begin{frame}{Exemplo - Considerações}
+  \begin{itemize}
+  \item Ambos os processadores estão aptos para comunicar através de canais.
+    \vspace*{2mm}
+  \item Este exemplo simplista retrata o caso em que a interação entre os processos se dá necessariamente nos dois sentidos
+    \vspace*{5mm}
+  \item Os dois processos deverão estar aptos, leia-se corretamente tipados, para responder às necessidades da comunicação.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Exemplo - Solução \hfill \color{mLightBrown}Produtor}
+
+  Tirando partido das restrições computacionais dos nossos dois processadores, podemos tentar resolver o problema dos seguinte modo:
+ Um dos processos, digamos \textbf{produtor}:
+  \begin{enumerate}
+  \item Gera a sequência de números: 1,2,3,...
+  \item Envia-a num canal de comunicação.
+  \item Pára quando receber, no mesmo canal, uma notificação para terminar o envio.
+  \item A notificação vem na forma de uma marca ou \textit{label}: \textbf{EOS} (\textit{end-of-stream})
+  \end{enumerate}
+
+\end{frame}
+
+
+\begin{frame}{Exemplo - Solução \hfill \color{mLightBrown}Consumidor}
+
+  O outro processo, \textbf{consumidor}:
+  \begin{enumerate}
+  \item Vai somando os números que recebe enquanto a sua soma for menor do que $n$.
+  \item Neste ponto, envia a marca \textbf{EOS}.
+  \end{enumerate}
+\end{frame}
+
+\begin{frame}[fragile]{Exemplo - Implementação}
+%  \vspace*{-1cm}
+  O canal de comunicação, quando visto do lado do produtor o canal tem o tipo:
+  \vspace*{4mm}
+  \begin{lstlisting}
+        type CanalInt = |\tikzmark{eos}|?EOS + |\tikzmark{sendInt}|!Int;CanalInt|\tikzmark{recCall}|
+\end{lstlisting} 
+
+\input{tikz-example-type}
+
+\onslide<5-> Quando visto do lado do consumidor o canal toma o tipo obtido do acima trocando as operações de leitura pelas de escrita, e vice-versa.
+\vspace*{4mm}
+\onslide<6->
+\begin{lstlisting}
+|\hspace{0.3\linewidth}\tikzmark{out}|!EOS + |\tikzmark{in}|?Int;CanalInt
+\end{lstlisting}
+\input{tikz-example-type-dual}
+
+\onslide<9->
+\centering
+\begin{tcolorbox}
+  O canal descrito pelo tipo acima é o canal \textbf{dual} de \lstinline|CanalInt|. Abreviamos esse tipo para \lstinline|dualof CanalInt|.
+\end{tcolorbox}
+
+\end{frame}
+
+% <- 0
+% v 90
+% -> 180
+% ^ 270
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:
