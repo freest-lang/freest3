@@ -1,0 +1,38 @@
+\begin{tikzpicture}[
+  remember picture,
+  overlay,
+  expl/.style={draw=orange,fill=orange!30,rounded corners},
+  arrow/.style={red!80!black,ultra thick,->,>=latex}
+  ]
+
+  \node<2-2>[expl] (choiceExpl) at (3,-0.5cm) {Manipulação de escolhas};
+
+  \node<3-3>[expl] (receiveExpl) at (8,-1cm) {Receção da marca \textbf{EOS}};  
+
+  \node<4-4>[expl] (patternExpl) at (5,-1cm)
+  {\makecell[c]{A receção das marcas\\permite \textit{pattern-matching}}};
+
+  \node<5-5>[expl] (sendExpl) at (5,-1cm) {Envio do inteiro \lstinline|n|};  
+
+  \draw<2-2>[arrow, draw=orange,ultra thick] (choiceExpl)
+  to ([xshift=3ex,yshift=-1ex]pic cs:choice);
+
+  \draw<3-3>[arrow, draw=orange,ultra thick] (receiveExpl)
+  to ([xshift=3ex,yshift=-1ex]pic cs:receive);
+
+  \draw<4-4>[draw=orange,ultra thick] (pic cs:pattern) [xshift=0.8cm,yshift=.1cm]
+  ellipse (1.1cm and 0.4cm);
+   
+  \draw<4-4>[arrow, draw=orange,ultra thick] (patternExpl)
+  to ([xshift=3ex,yshift=-1ex]pic cs:send);
+
+  \draw<5-5>[arrow, draw=orange,ultra thick] (sendExpl)
+  to ([xshift=3ex,yshift=-1ex]pic cs:send);
+\end{tikzpicture}  
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

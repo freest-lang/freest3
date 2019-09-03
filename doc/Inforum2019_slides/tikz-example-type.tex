@@ -17,16 +17,16 @@
 \node<4-4>[expl] 
   (recCallExpl) 
   at (7.83,-1cm)
-  {O protocolo volta ``ao início''};    
+  {Regresso ``ao início''};    
 
-\draw<2-2>[arrow]
+\draw<2-2>[arrow, draw=orange,ultra thick]
   (eosExpl) to[out=70,in=250] ([xshift=3ex,yshift=-1ex]pic cs:eos);  
 
-\draw<3-4>[arrow]
+\draw<3-4>[arrow, draw=orange,ultra thick]
 (sendIntExpl) to[out=80,in=255] ([xshift=3ex,yshift=-1ex]pic cs:sendInt);
 
-\draw<4-4>[arrow]
-  (recCallExpl) to[out=90,in=270] ([xshift=-4.8ex,yshift=-1ex]pic cs:recCall);    
+\draw<4-4>[arrow, draw=orange,ultra thick]
+  (recCallExpl) to ([xshift=-4.8ex,yshift=-1ex]pic cs:recCall);    
     
 \end{tikzpicture}
 

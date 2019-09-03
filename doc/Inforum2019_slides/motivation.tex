@@ -14,7 +14,7 @@
   \end{itemize}
 \end{frame}
 
-\begin{frame}[fragile]{Exemplo - Introdução}
+\begin{frame}[fragile]{Exemplo -- Introdução}
 %\vspace*{5mm}
 
   Considere-se o seguinte problema:
@@ -28,7 +28,7 @@
   \end{itemize}  
 \end{frame}
 
-\begin{frame}{Exemplo - Considerações}
+\begin{frame}{Exemplo -- Considerações}
   \begin{itemize}
   \item Ambos os processadores estão aptos para comunicar através de canais.
     \vspace*{2mm}
@@ -38,7 +38,7 @@
   \end{itemize}
 \end{frame}
 
-\begin{frame}{Exemplo - Solução \hfill \color{mLightBrown}Produtor}
+\begin{frame}{Exemplo -- Solução \hfill \color{mLightBrown}Produtor}
 
   Tirando partido das restrições computacionais dos nossos dois processadores, podemos tentar resolver o problema dos seguinte modo:
  Um dos processos, digamos \textbf{produtor}:
@@ -52,7 +52,7 @@
 \end{frame}
 
 
-\begin{frame}{Exemplo - Solução \hfill \color{mLightBrown}Consumidor}
+\begin{frame}{Exemplo -- Solução \hfill \color{mLightBrown}Consumidor}
 
   O outro processo, \textbf{consumidor}:
   \begin{enumerate}
@@ -61,7 +61,7 @@
   \end{enumerate}
 \end{frame}
 
-\begin{frame}[fragile]{Exemplo - Implementação}
+\begin{frame}[fragile]{Exemplo -- Implementação}
 %  \vspace*{-1cm}
   O canal de comunicação, quando visto do lado do produtor o canal tem o tipo:
   \vspace*{4mm}
@@ -69,7 +69,7 @@
         type CanalInt = |\tikzmark{eos}|?EOS + |\tikzmark{sendInt}|!Int;CanalInt|\tikzmark{recCall}|
 \end{lstlisting} 
 
-\input{tikz-example-type}
+\input{tikz-example-type} 
 
 \onslide<5-> Quando visto do lado do consumidor o canal toma o tipo obtido do acima trocando as operações de leitura pelas de escrita, e vice-versa.
 \vspace*{4mm}
@@ -86,6 +86,88 @@
 \end{tcolorbox}
 
 \end{frame}
+
+\begin{frame}[fragile]{Exemplo -- Implementação  \hfill \color{mLightBrown}Produtor}
+  % \vspace*{-1cm}
+  \begin{lstlisting}[xleftmargin=.15\textwidth, xrightmargin=.15\textwidth]
+type CanalInt = ?EOS + !Int;CanalInt
+
+    
+produtor : CanalInt -> Int -> ()
+produtor c i = |\tikzmark{choice}|choice {
+  |\tikzmark{pattern}|(c, EOS) = |\tikzmark{receive}|receive -> (),
+  c = |\tikzmark{send}|send c n -> produtor c (i+1)
+}
+  \end{lstlisting}
+
+\input{tikz-example-produtor}
+  
+\end{frame}
+
+
+\begin{frame}[fragile]{Exemplo -- Implementação  \hfill \color{mLightBrown}Consumidor}
+  % \vspace*{-1cm}
+  \begin{lstlisting}[xleftmargin=-.04\textwidth]
+
+dualof CanalInt = !EOS + ?Int;CanalInt
+    
+consumidor : dualof CanalInt -> Int -> Int -> Int -> Int
+consumidor c s n k = if n >= k
+  then choice { c = |\tikzmark{eos}|send EOS -> n|$-$|1 }
+  else choice { (c, m) = |\tikzmark{rcv}|receive c -> consumidor c (s+m) (n+1) k}
+\end{lstlisting}
+
+\begin{tikzpicture}[
+  remember picture,
+  overlay,
+  expl/.style={draw=orange,fill=orange!30,rounded corners},
+  arrow/.style={red!80!black,ultra thick,->,>=latex}
+]
+  \node<2-2>[expl] (eosExpl) at (3,-0.5cm) {Envio da marca \textbf{EOS}};
+  \draw<2-2>[arrow, draw=orange,ultra thick] (eosExpl) to ([xshift=3ex,yshift=-1ex] pic cs:eos);
+
+  \node<3-3>[expl] (rcvExpl) at (3,-0.5cm) {Receção do número inteiro};
+  \draw<3-3>[arrow, draw=orange,ultra thick] (rcvExpl) to ([xshift=3ex,yshift=-1ex] pic cs:rcv);
+\end{tikzpicture}
+ 
+\onslide<4-4>
+% %\centering
+\begin{tcolorbox}
+  As escolhas dos ramos \lstinline|then| e \lstinline|else| são degeneradas (constituídas apenas por um componente).\\
+  Poderiamos neste caso eliminar a palavra reservada \lstinline|choice|.
+\end{tcolorbox}
+
+\end{frame}
+
+\begin{frame}[fragile]{Exemplo -- Implementação  \hfill \color{mLightBrown}Programa principal}
+  % \vspace*{-1cm}
+  \begin{lstlisting}
+main : Int
+main = let
+  k = 1000
+  (p, c) = |\tikzmark{new}|new CanalInt in
+  fork produtor p 1;|\tikzmark{fork}|
+  consumidor c 0 0 k|\tikzmark{consumer}|
+\end{lstlisting}
+
+
+\begin{tikzpicture}[
+  remember picture,
+  overlay,
+  expl/.style={draw=orange,fill=orange!30,rounded corners},
+  arrow/.style={red!80!black,ultra thick,->,>=latex}
+  ]
+
+  \node<2-2>[expl] (newExpl) at (9,1.9cm) {Criação de um novo canal};
+  \draw<2-2>[arrow, draw=orange,ultra thick] (newExpl)
+   to[bend right] ([xshift=2.5ex,yshift=1.5ex]pic cs:new);
+  
+\end{tikzpicture}  
+
+
+\end{frame}
+
+
 
 % <- 0
 % v 90
