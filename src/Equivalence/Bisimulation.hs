@@ -13,7 +13,8 @@ reflexive, congruence, and BPA rules.
 -}
 
 module Equivalence.Bisimulation
-( bisimilar
+( bisimilar,
+  bisimilarGrammar -- Test only
 ) where
 
 import           Syntax.Schemes
@@ -29,6 +30,9 @@ import qualified Data.Sequence as Queue
 import           Data.List (isPrefixOf)
 import           Prelude hiding (Word) -- Word is (re)defined in module Equivalence.Grammar
 import           Debug.Trace
+
+bisimilarGrammar :: Grammar -> Bool
+bisimilarGrammar (Grammar [xs, ys] p) = expand (xs, ys) (prune p)
 
 bisimilar :: TypeEnv -> Type -> Type -> Bool
 bisimilar tEnv t u = expand (xs, ys) (prune p)

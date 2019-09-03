@@ -1,0 +1,24 @@
+{
+(S1,S2)
+S1 -> +A L L1 R1
+L1 -> +A L L1
+L1 -> +N
+R1 -> +B R1 R
+R1 -> +N
+S2 -> +A L L2
+L2 -> +A L L2 R2
+L2 -> +N
+R2 -> +B R2 R
+R2 -> +N
+R -> !Int
+L -> !Int
+}
+
+-- +{a:!Int, b:!Bool} ~ +{a:!Int, b:!Bool} 
+{
+(X,X)
+X -> !Int
+Y -> +a X
+Y -> +b W
+W -> !Bool
+}
