@@ -23,7 +23,7 @@ $letter = [$lower$upper]
 $symbol = [\!\#\$\%\&\*\+\.\/\<\=\>\?\@\\\^\|\-\~]
 
 $digit = 0-9
-@char = \' (\n | [\\.] | . ) \'
+@char = \'(\\n|[\\.]|.) \'
 @lineComment  = \n*"--".* 
 @blockComment = "{-" (\\.|[^\{\-]|\n|\-\-|[^$symbol].*)* "-}"
 
