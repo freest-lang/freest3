@@ -222,12 +222,12 @@ test-suite testGrammars
                        pretty-terminal >= 0.1.0.0, process >= 1.6.3.0, split >= 0.2.2
   hs-source-dirs:      test/UnitTests, src
   default-language:    Haskell2010
-  other-modules: Equivalence.Bisimulation Equivalence.Grammar Equivalence.GrammarLexer
-        Equivalence.GrammarParser Equivalence.Norm Equivalence.Normalisation
-        Equivalence.TypeToGrammar Parse.Lexer Parse.ParseUtils Parse.Parser
-        SpecHelper Syntax.Base Syntax.Expressions Syntax.Kinds
-        Syntax.ProgramVariables Syntax.Schemes Syntax.Show Syntax.TypeVariables
-        Syntax.Types Utils.Errors Utils.FreestState Utils.PreludeLoader
-        Validation.Rename Validation.Substitution
+  other-modules: Equivalence.Bisimulation, Equivalence.Grammar, Equivalence.GrammarLexer,
+        Equivalence.GrammarParser, Equivalence.Norm, Equivalence.Normalisation,
+        Equivalence.TypeToGrammar, Parse.Lexer, Parse.ParseUtils, Parse.Parser,
+        SpecHelper, Syntax.Base, Syntax.Expressions, Syntax.Kinds,
+        Syntax.ProgramVariables, Syntax.Schemes, Syntax.Show, Syntax.TypeVariables,
+        Syntax.Types, Utils.Errors, Utils.FreestState, Utils.PreludeLoader,
+        Validation.Rename, Validation.Substitution
 
 
