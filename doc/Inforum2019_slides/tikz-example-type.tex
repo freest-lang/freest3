@@ -2,31 +2,16 @@
   remember picture,
   overlay,
   expl/.style={draw=orange,fill=orange!30,rounded corners, text width=4cm},
-  arrow/.style={red!80!black,ultra thick,->,>=latex}
+  arrow/.style={draw=orange,ultra thick,->,>=latex}
 ]
-\node<2-2>[expl] 
-  (eosExpl) 
-  at (3,-1cm)
-  {Leitura (?) da marca \textbf{EOS}};
+\node<2-2>[expl] (eosExpl) at (3,-1cm) {Leitura (?) da marca \textbf{EOS}};
+\draw<2-2>[arrow] (eosExpl) to[out=70,in=250] ([xshift=3ex,yshift=-1ex]pic cs:ineos);  
+  
+\node<3-3>[expl] (sendIntExpl) at (2.5,-1cm) {Escrita (!) de um inteiro};
+\draw<3-3>[arrow] (sendIntExpl) to[out=80,in=255] ([xshift=3ex,yshift=-1ex]pic cs:sendInt);
 
-\node<3-4>[expl] 
-  (sendIntExpl) 
-  at (2.5,-1cm)
-  {Escrita (!) de um inteiro};
-
-\node<4-4>[expl] 
-  (recCallExpl) 
-  at (7.83,-1cm)
-  {Regresso ``ao início''};    
-
-\draw<2-2>[arrow, draw=orange,ultra thick]
-  (eosExpl) to[out=70,in=250] ([xshift=3ex,yshift=-1ex]pic cs:eos);  
-
-\draw<3-4>[arrow, draw=orange,ultra thick]
-(sendIntExpl) to[out=80,in=255] ([xshift=3ex,yshift=-1ex]pic cs:sendInt);
-
-\draw<4-4>[arrow, draw=orange,ultra thick]
-  (recCallExpl) to ([xshift=-4.8ex,yshift=-1ex]pic cs:recCall);    
+\node<4-4>[expl] (recCallExpl) at (7.83,-1cm) {Regresso ``ao início''};    
+\draw<4-4>[arrow] (recCallExpl) to ([xshift=-4.8ex,yshift=-1ex]pic cs:recCall);    
     
 \end{tikzpicture}
 

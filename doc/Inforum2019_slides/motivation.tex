@@ -6,11 +6,18 @@
   Os tipos de sessão:
   \begin{itemize}
   \item Foram propostos para responder à necessidade de formalização de trocas de mensagens.
-  \item Permitem definir protocolos na forma de tipos que representam interações corretas do sistema e que garantem propriedades tais como a inexistência de erros na comunicação e de situações de impasse.
+    \pause
+  \item Permitem definir protocolos na forma de tipos que representam interações corretas do sistema.
+    \pause
+  \item Garantem propriedades tais como a inexistência de erros na comunicação e de situações de impasse.
   \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Motivação}
   Contudo, a expressividade dos tipos de sessão está ainda aquém de todos os desafios de comunicação que encontramos em sistemas concorrentes:
+  \vspace{3mm}
   \begin{itemize}
-  \item Não permitem em particular misturar \textit{input} e \textit{output} na mesma escolha.
+  \item Não permitem, em particular, misturar \textit{input} e \textit{output} na mesma escolha.
   \end{itemize}
 \end{frame}
 
@@ -20,11 +27,14 @@
   Considere-se o seguinte problema:
   
   Dado $k \in \mathbb{Z}$, qual o maior inteiro $n$ tal que, $\sum_{i=1}^{n} i < k$?
-
+  \pause
+  
   Imaginem-se dois processadores:
   \begin{itemize}
-  \item Um processador capaz de gerar sequências de números inteiros mas sem a capacidade de os somar.
-  \item Um segundo processador capaz de somar números inteiros, mas incapaz de os gerar.
+  \item Um capaz de gerar sequências de números inteiros, mas sem a capacidade de os somar.
+    \pause
+  \item Outro capaz de somar números inteiros, mas incapaz de os gerar.
+    \pause
   \end{itemize}  
 \end{frame}
 
@@ -32,20 +42,27 @@
   \begin{itemize}
   \item Ambos os processadores estão aptos para comunicar através de canais.
     \vspace*{2mm}
+    \pause
   \item Este exemplo simplista retrata o caso em que a interação entre os processos se dá necessariamente nos dois sentidos
     \vspace*{5mm}
-  \item Os dois processos deverão estar aptos, leia-se corretamente tipados, para responder às necessidades da comunicação.
+    \pause
+  \item Os dois processos deverão estar corretamente tipados e responder às necessidades da comunicação.
   \end{itemize}
 \end{frame}
 
 \begin{frame}{Exemplo -- Solução \hfill \color{mLightBrown}Produtor}
 
-  Tirando partido das restrições computacionais dos nossos dois processadores, podemos tentar resolver o problema dos seguinte modo:
- Um dos processos, digamos \textbf{produtor}:
+  Tirando partido das restrições computacionais dos dois processadores, podemos tentar resolver o problema dos seguinte modo:\\
+  \pause
+  \vspace*{3mm}
+ O processo \textbf{produtor}:
   \begin{enumerate}
   \item Gera a sequência de números: 1,2,3,...
+    \pause
   \item Envia-a num canal de comunicação.
+    \pause
   \item Pára quando receber, no mesmo canal, uma notificação para terminar o envio.
+    \pause
   \item A notificação vem na forma de uma marca ou \textit{label}: \textbf{EOS} (\textit{end-of-stream})
   \end{enumerate}
 
@@ -54,25 +71,28 @@
 
 \begin{frame}{Exemplo -- Solução \hfill \color{mLightBrown}Consumidor}
 
-  O outro processo, \textbf{consumidor}:
+  O outro processo, o \textbf{consumidor}:
+  \vspace{2mm}
   \begin{enumerate}
   \item Vai somando os números que recebe enquanto a sua soma for menor do que $n$.
+    \pause
+    \vspace{5mm}
   \item Neste ponto, envia a marca \textbf{EOS}.
   \end{enumerate}
 \end{frame}
 
 \begin{frame}[fragile]{Exemplo -- Implementação}
 %  \vspace*{-1cm}
-  O canal de comunicação, quando visto do lado do produtor o canal tem o tipo:
+  O canal de comunicação, do lado do \textbf{produtor}, tem o tipo:
   \vspace*{4mm}
   \begin{lstlisting}
-        type CanalInt = |\tikzmark{eos}|?EOS + |\tikzmark{sendInt}|!Int;CanalInt|\tikzmark{recCall}|
+        type CanalInt = |\tikzmark{ineos}|?EOS + |\tikzmark{sendInt}|!Int;CanalInt|\tikzmark{recCall}|
 \end{lstlisting} 
-
+ 
 \input{tikz-example-type} 
 
-\onslide<5-> Quando visto do lado do consumidor o canal toma o tipo obtido do acima trocando as operações de leitura pelas de escrita, e vice-versa.
-\vspace*{4mm}
+\onslide<5-> Do lado do \textbf{consumidor} o canal tem o tipo acima, trocando as operações de leitura pelas de escrita, e vice-versa.
+\vspace*{4mm} 
 \onslide<6->
 \begin{lstlisting}
 |\hspace{0.3\linewidth}\tikzmark{out}|!EOS + |\tikzmark{in}|?Int;CanalInt
@@ -82,7 +102,9 @@
 \onslide<9->
 \centering
 \begin{tcolorbox}
-  O canal descrito pelo tipo acima é o canal \textbf{dual} de \lstinline|CanalInt|. Abreviamos esse tipo para \lstinline|dualof CanalInt|.
+  O tipo acima é \textbf{dual} de \lstinline|CanalInt|.
+
+  Abreviamos esse tipo para \lstinline|dualof CanalInt|.
 \end{tcolorbox}
 
 \end{frame}
@@ -117,57 +139,31 @@ consumidor c s n k = if n >= k
   else choice { (c, m) = |\tikzmark{rcv}|receive c -> consumidor c (s+m) (n+1) k}
 \end{lstlisting}
 
-\begin{tikzpicture}[
-  remember picture,
-  overlay,
-  expl/.style={draw=orange,fill=orange!30,rounded corners},
-  arrow/.style={red!80!black,ultra thick,->,>=latex}
-]
-  \node<2-2>[expl] (eosExpl) at (3,-0.5cm) {Envio da marca \textbf{EOS}};
-  \draw<2-2>[arrow, draw=orange,ultra thick] (eosExpl) to ([xshift=3ex,yshift=-1ex] pic cs:eos);
-
-  \node<3-3>[expl] (rcvExpl) at (3,-0.5cm) {Receção do número inteiro};
-  \draw<3-3>[arrow, draw=orange,ultra thick] (rcvExpl) to ([xshift=3ex,yshift=-1ex] pic cs:rcv);
-\end{tikzpicture}
+\input{tikz-example-consumidor}
  
 \onslide<4-4>
 % %\centering
 \begin{tcolorbox}
   As escolhas dos ramos \lstinline|then| e \lstinline|else| são degeneradas (constituídas apenas por um componente).\\
-  Poderiamos neste caso eliminar a palavra reservada \lstinline|choice|.
+  Poderíamos, neste caso, eliminar a palavra reservada \lstinline|choice|.
 \end{tcolorbox}
 
 \end{frame}
 
 \begin{frame}[fragile]{Exemplo -- Implementação  \hfill \color{mLightBrown}Programa principal}
   % \vspace*{-1cm}
-  \begin{lstlisting}
+  \begin{lstlisting}[xleftmargin=.2\textwidth, xrightmargin=.15\textwidth]
 main : Int
 main = let
   k = 1000
   (p, c) = |\tikzmark{new}|new CanalInt in
-  fork produtor p 1;|\tikzmark{fork}|
+  |\tikzmark{fork}|fork produtor p 1;
   consumidor c 0 0 k|\tikzmark{consumer}|
 \end{lstlisting}
 
-
-\begin{tikzpicture}[
-  remember picture,
-  overlay,
-  expl/.style={draw=orange,fill=orange!30,rounded corners},
-  arrow/.style={red!80!black,ultra thick,->,>=latex}
-  ]
-
-  \node<2-2>[expl] (newExpl) at (9,1.9cm) {Criação de um novo canal};
-  \draw<2-2>[arrow, draw=orange,ultra thick] (newExpl)
-   to[bend right] ([xshift=2.5ex,yshift=1.5ex]pic cs:new);
-  
-\end{tikzpicture}  
-
+\input{tikz-example-main}
 
 \end{frame}
-
-
 
 % <- 0
 % v 90
@@ -178,3 +174,4 @@ main = let
 %%% mode: latex
 %%% TeX-master: "main"
 %%% End:
+ 
