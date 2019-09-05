@@ -24,6 +24,7 @@ Permite enumerar as operações de trocas de mensagens que poderão ser escolhid
 type CanalInt = ?EOS + !Int;CanalInt
 \end{lstlisting}
 \pause
+escreve-se:
 \begin{lstlisting}
 rec x . ?EOS + !Int;x|
 \end{lstlisting}
@@ -49,16 +50,16 @@ rec x . ?EOS + !Int;x|
 \end{itemize}
 \end{frame}
 
-\begin{frame}[fragile]{Equivalência de tipos}
-  \begin{itemize}
-  \item Os tipos de sessão com escolhas mistas, presentes em \mixedchoice,
-    tem uma expressividade idêntica à das gramáticas simples;
-    \pause
-    \vspace{1cm}
-  \item Assim, é possível utilizar o algoritmo desenvolvido para \freest$\,$
-    para determinar se dois tipos, incluindo as escolhas mistas, são equivalentes.
-\end{itemize}
-\end{frame}
+% \begin{frame}[fragile]{Equivalência de tipos}
+%   \begin{itemize}
+%   \item Os tipos de sessão com escolhas mistas, presentes em \mixedchoice,
+%     tem uma expressividade idêntica à das gramáticas simples;
+%     \pause
+%     \vspace{1cm}
+%   \item Assim, é possível utilizar o algoritmo desenvolvido para \freest$\,$
+%     para determinar se dois tipos são equivalentes.
+% \end{itemize}
+% \end{frame}
 
 \begin{frame}[fragile]{Implementação}
   \begin{itemize}

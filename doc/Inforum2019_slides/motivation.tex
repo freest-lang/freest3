@@ -34,7 +34,6 @@
   \item Um capaz de gerar sequências de números inteiros, mas sem a capacidade de os somar.
     \pause
   \item Outro capaz de somar números inteiros, mas incapaz de os gerar.
-    \pause
   \end{itemize}  
 \end{frame}
 
@@ -43,7 +42,7 @@
   \item Ambos os processadores estão aptos para comunicar através de canais.
     \vspace*{2mm}
     \pause
-  \item Este exemplo simplista retrata o caso em que a interação entre os processos se dá necessariamente nos dois sentidos
+  \item Este exemplo simplista retrata o caso em que a interação entre os processos se dá necessariamente nos dois sentidos.
     \vspace*{5mm}
     \pause
   \item Os dois processos deverão estar corretamente tipados e responder às necessidades da comunicação.
@@ -52,7 +51,7 @@
 
 \begin{frame}{Exemplo -- Solução \hfill \color{mLightBrown}Produtor}
 
-  Tirando partido das restrições computacionais dos dois processadores, podemos tentar resolver o problema dos seguinte modo:\\
+  Tirando partido das restrições computacionais dos dois processadores, podemos tentar resolver o problema do seguinte modo:\\
   \pause
   \vspace*{3mm}
  O processo \textbf{produtor}:
@@ -63,7 +62,7 @@
     \pause
   \item Pára quando receber, no mesmo canal, uma notificação para terminar o envio.
     \pause
-  \item A notificação vem na forma de uma marca ou \textit{label}: \textbf{EOS} (\textit{end-of-stream})
+  \item A notificação vem na forma de uma marca: \textbf{EOS} (\textit{end-of-stream})
   \end{enumerate}
 
 \end{frame}
@@ -91,11 +90,11 @@
  
 \input{tikz-example-type} 
 
-\onslide<5-> Do lado do \textbf{consumidor} o canal tem o tipo acima, trocando as operações de leitura pelas de escrita, e vice-versa.
+\onslide<5-> Do lado do \textbf{consumidor} o canal tem o tipo obtido por troca das operações de leitura pelas de escrita, e vice-versa.
 \vspace*{4mm} 
 \onslide<6->
 \begin{lstlisting}
-|\hspace{0.3\linewidth}\tikzmark{out}|!EOS + |\tikzmark{in}|?Int;CanalInt
+|\hspace{0.1\linewidth}|type CanalIntDual = |\tikzmark{out}|!EOS + |\tikzmark{in}|?Int;CanalIntDual
 \end{lstlisting}
 \input{tikz-example-type-dual}
 
@@ -118,7 +117,7 @@ type CanalInt = ?EOS + !Int;CanalInt
 produtor : CanalInt -> Int -> ()
 produtor c i = |\tikzmark{choice}|choice {
   |\tikzmark{pattern}|(c, EOS) = |\tikzmark{receive}|receive -> (),
-  c = |\tikzmark{send}|send c n -> produtor c (i+1)
+  c = |\tikzmark{send}|send c i -> produtor c (i+1)
 }
   \end{lstlisting}
 
@@ -134,7 +133,7 @@ produtor c i = |\tikzmark{choice}|choice {
 dualof CanalInt = !EOS + ?Int;CanalInt
     
 consumidor : dualof CanalInt -> Int -> Int -> Int -> Int
-consumidor c s n k = if n >= k
+consumidor c s n k = if n >= s
   then choice { c = |\tikzmark{eos}|send EOS -> n|$-$|1 }
   else choice { (c, m) = |\tikzmark{rcv}|receive c -> consumidor c (s+m) (n+1) k}
 \end{lstlisting}
