@@ -116,9 +116,9 @@ type CanalInt = ?EOS + !Int;CanalInt
 
     
 produtor : CanalInt -> Int -> ()
-produtor c i = |\tikzmark{choice}|choice {
+produtor c n = |\tikzmark{choice}|choice {
   |\tikzmark{pattern}|(c, EOS) = |\tikzmark{receive}|receive -> (),
-  c = |\tikzmark{send}|send c n -> produtor c (i+1)
+         c = |\tikzmark{send}|send c n -> produtor c (n+1)
 }
   \end{lstlisting}
 
