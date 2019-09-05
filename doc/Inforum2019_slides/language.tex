@@ -16,39 +16,21 @@ Permite enumerar as operações de trocas de mensagens que poderão ser escolhid
 \end{frame}
 
 \begin{frame}[fragile]{A linguagem \mixedchoice  \hfill \color{mLightBrown}Tipos}
+\textbf{Tipos:}
   \input{fig-types}
-%  \pause
-  %\lstinline|type CanalInt = ?EOS + !Int;CanalInt| 
-%  Nesta sintaxe, o tipo do canal \lstinline|CanalInt|:
-%   \begin{lstlisting}
-% type CanalInt = ?EOS + !Int;CanalInt
-% \end{lstlisting}
-% \pause
-% escreve-se:
-% \begin{lstlisting}
-% rec x . ?EOS + !Int;x|
-% \end{lstlisting}
-\end{frame}
-
-\begin{frame}[fragile]{Equivalência de tipos}
+  \pause
+\textbf{Equivalência de tipos:}
   \begin{itemize}
   \item Os tipos de sessão da linguagem \mixedchoice{} são independentes do contexto.
     \pause
   \item A noção de equivalência mais apropriada é a bisimulação.
     \pause
   \item O algoritmo de equivalência de tipos para a linguagem \freest{} (sem escolhas mistas) foi facilmente adaptado.
-    % \begin{itemize}
-    % \item Traduz os tipos em gramáticas;
-    %   \pause
-    % \item Simplifica as gramáticas (limpa as produções \textit{unnormed});
-    %   \pause
-    % \item Decide a existência de uma bisimulação através de uma árvore de expansão;
-    %   \pause
-    % \item Alterna entre expansões ou simplificações sobre os símbolos da gramática
-    %   até encontrar um ramo que seja bem sucedido, ou concluir que todos os ramos são mal sucedidos.
-    % \end{itemize}
 \end{itemize}
+
 \end{frame}
+
+%\begin{frame}[fragile]{Equivalência de tipos}
 
 \begin{frame}{\textit{Runtime}}
   A primitiva \lstinline|choice|:

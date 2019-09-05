@@ -31,7 +31,7 @@
 \usepackage{wrapfig}
 \usepackage[underline=false]{pgf-umlsd}
 \usepackage{makecell}
-
+\usepackage{eso-pic}
 \input{macros}
 
 \title[FreeSTMC]{\hfill \includegraphics[width=3cm]{img/normal} \\\vspace*{4mm} 
@@ -47,6 +47,12 @@
 \institute[LASIGE, Faculdade de Ci\^encias, ULisboa]{LASIGE, Faculdade de Ci\^encias, Universidade de Lisboa \\\\
 }
 %\titlegraphic{\hfill\includegraphics[height=1.5cm]{logo.png}}
+%\logo{\includegraphics[width=.2\textwidth]{img/normal}}
+\newcommand\AtPagemyUpperLeft[1]{\AtPageLowerLeft{%
+\put(\LenToUnit{0.77\paperwidth},\LenToUnit{0.8\paperheight}){#1}}}
+\AddToShipoutPictureFG{
+  \AtPagemyUpperLeft{{\includegraphics[width=3cm,keepaspectratio]{img/normal}}}
+}%
 
 \begin{document}
 \lstset{language=freest, numbers=none}
