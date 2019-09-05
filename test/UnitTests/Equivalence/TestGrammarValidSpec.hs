@@ -1,4 +1,4 @@
--- module Equivalence.TestGrammarBisimValidSpec (spec) where
+module Equivalence.TestGrammarValidSpec (spec) where
 
 import           Syntax.Types
 import           Syntax.Kinds

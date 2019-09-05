@@ -213,7 +213,7 @@ test-suite testQuickCheck
 
 
 test-suite testGrammars
-  main-is:             Equivalence/TestGrammarBisimValidSpec.hs
+  main-is:             TestGrammarSpecMain.hs
   Type:                exitcode-stdio-1.0
   other-extensions:    FlexibleContexts
   build-depends:       HUnit >= 1.3.0.0, QuickCheck >=2.8, array <= 0.5.3.0, base >=4.8,
@@ -228,6 +228,6 @@ test-suite testGrammars
         SpecHelper, Syntax.Base, Syntax.Expressions, Syntax.Kinds,
         Syntax.ProgramVariables, Syntax.Schemes, Syntax.Show, Syntax.TypeVariables,
         Syntax.Types, Utils.Errors, Utils.FreestState, Utils.PreludeLoader,
-        Validation.Rename, Validation.Substitution
+        Validation.Rename, Validation.Substitution, Equivalence.TestGrammarValidSpec
 
 
