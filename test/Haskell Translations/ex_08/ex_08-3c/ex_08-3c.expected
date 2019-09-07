@@ -1,0 +1,1 @@
+StrL (Str 'I' (Str 'm' (Str 'p' (Str 'a' (Str 'r' End))))) (StrL (Str 'P' (Str 'a' (Str 'r' End))) (StrL (Str 'I' (Str 'm' (Str 'p' (Str 'a' (Str 'r' End))))) (StrL (Str 'P' (Str 'a' (Str 'r' End))) (StrL (Str 'I' (Str 'm' (Str 'p' (Str 'a' (Str 'r' End))))) StrE))))
