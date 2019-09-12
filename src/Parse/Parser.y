@@ -59,6 +59,7 @@ import           Debug.Trace
   '=>'     {TokenFArrow _}
   '&&'     {TokenConjunction _} 
   '||'     {TokenDisjunction _} 
+  '/'      {TokenDiv _} 
   '&'      {TokenAmpersand _} 
   '+'      {TokenPlus _}
   '-'      {TokenMinus _}
@@ -184,6 +185,7 @@ Expr :: { Expression }
   | Expr '-' Expr                            { binOp $1 (mkVar (position $2) "(-)") $3 }
   | Expr '&&' Expr                           { binOp $1 (mkVar (position $2) "(&&)") $3 }
   | Expr '||' Expr                           { binOp $1 (mkVar (position $2) "(||)") $3 }
+  | Expr '/' Expr                            { binOp $1 (mkVar (position $2) "div") $3 }
   | Expr OP Expr                             { binOp $1 (mkVar (position $2) (getText $2)) $3 }
   | App                                      { $1 }
 
@@ -402,7 +404,6 @@ parseProgram :: FilePath -> Map.Map ProgVar TypeScheme -> IO FreestS
 parseProgram inputFile vEnv = do
   src <- readFile inputFile
   let p = parseDefs inputFile vEnv src
-  checkErrors p
   return p
 
 parseDefs :: FilePath -> VarEnv -> String -> FreestS
