@@ -87,8 +87,12 @@ test-suite unit-tests
                        Syntax.TestExpsEqSpec,
                        Parse.TestParserInvalidSpec, Parse.TestParserValidSpec,
                        Validation.TestKindingValidSpec, Validation.TestKindingInvalidSpec,
-                       Validation.TestTypeSchemeKindingSpec,
-                       Equivalence.TestEquivalenceInvalidSpec, Equivalence.TestEquivalenceValidSpec, Utils.PreludeLoader, Equivalence.TestBisimValidSpec, Equivalence.TestBisimInvalidSpec
+                       Validation.TestTypeSchemeKindingSpec, Equivalence.TestEquivalenceInvalidSpec,
+                       Equivalence.TestEquivalenceValidSpec, Utils.PreludeLoader,
+                       Equivalence.TestBisimValidSpec, Equivalence.TestBisimInvalidSpec,
+                       Equivalence.GrammarLexer, Equivalence.GrammarParser,
+                       Equivalence.TestGrammarValidSpec
+
 
 test-suite program-tests
   main-is:             ProgSpec.hs
