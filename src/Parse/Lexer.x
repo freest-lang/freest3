@@ -67,6 +67,7 @@ tokens :-
   "/="  		        { \p s -> TokenOp (internalPos p) "(/=)" }
   "&&"  		        { \p s -> TokenConjunction (internalPos p) }
   "||"  		        { \p s -> TokenDisjunction (internalPos p) }
+  "/"  		                { \p s -> TokenDiv (internalPos p) }
 -- Kinds
   SU                            { \p s -> TokenSU (internalPos p) }
   SL                            { \p s -> TokenSL (internalPos p) }
@@ -172,6 +173,7 @@ data Token =
   | TokenOp Pos String
   | TokenConjunction Pos
   | TokenDisjunction Pos
+  | TokenDiv Pos
 
 
 instance Show Token where
@@ -236,6 +238,7 @@ instance Show Token where
   show (TokenFArrow p) = show p ++ ": =>"
   show (TokenConjunction p) = show p ++ ": (&&)"
   show (TokenDisjunction p) = show p ++ ": (||)"
+  show (TokenDiv p) = show p ++ ": (/)"
 -- Trim newlines
 scanTokens = alexScanTokens >>= (return . trim)
 
@@ -315,6 +318,7 @@ instance Position Token where
   position (TokenFArrow p) = p
   position (TokenConjunction p) = p
   position (TokenDisjunction p) = p
+  position (TokenDiv p) = p
 --  position t = error $ show t
 
 getText :: Token -> String

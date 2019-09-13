@@ -1,0 +1,131 @@
+\documentclass{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{color}
+\usepackage{listings}
+\usepackage{tikz}
+\usepackage{wrapfig}
+\usepackage{amsmath,amssymb,stmaryrd,amsthm}
+
+
+\input{macros}
+
+\title{Mixed choices on session types}
+
+\begin{document}
+% \maketitle
+\input{processes}
+\input{reduction}
+\input{congruence}
+\input{types}
+
+\noindent
+Subtyping:
+\begin{itemize}
+\item Equi-recursive
+\item Up-to $V$ permutations
+\item Width subtyping
+\end{itemize}
+
+\input{typing-processes}
+\input{typing-choices}
+\input{typing-names}
+\input{duality}
+\input{embeddingST}
+
+\newpage
+\noindent
+Type formation:
+\begin{itemize}
+\item Contractive
+\end{itemize}
+\newpage
+\section{Examples}
+\lstset{language=freestMC}
+\subsection{Producer--Consumer -- asymmetric version}
+  \vspace{2cm}
+\begin{lstlisting}
+  type RWC = Msg!RWC + Msg?RWC + Done!end
+  
+  producer : Int -> RWC -> ()
+  producer 0 c = choice c { c = send Done -> ()}
+  producer n c =
+    choice { c = send Msg -> producer (n|-|1) c,
+             c, Msg = receive -> producer (n|-|1) c
+           }
+
+  consumer : dualof RWC -> Int
+  consumer c = choice c {
+    c, Done = receive -> 0,
+    c       = send Msg -> consumer c
+    c, Msg  = receive Msg -> 1 + consumer c
+  }
+
+  main : Int
+  main =
+    let p, c = new RWC in 
+    fork producer 1000 c;
+    consumer p -- The number of messages received by this process, out of n    
+  \end{lstlisting}
+  \newpage
+  \subsection{Producer--Consumer -- symmetric version}
+    \vspace{2cm}
+\begin{lstlisting}
+    type RWC = Msg!RWC + Msg?RWC
+  
+    -- The number of messages sent by this function out of n
+    readWrite : Int -> Int -> RWC -> Int
+    readWrite 0 m c = fork consume c ; m
+    readWrite n m c = choice c {
+      c      = send Msg -> readWrite (n|-|1) (m+1) c,
+      c, Msg = receive -> readWrite (n|-|1) m c,
+    }
+
+    consume : RWC -> () -- Consumes c ad eternum
+    consume c = choice c {
+      c      = send Msg -> consume c,
+      c, Msg = receive -> consume c
+    }
+
+    main : Int
+    main =
+      let c1, c2 = new RWC
+              msgs = 1000 in
+      fork readWrite msgs 0 c1;
+      readWrite msgs 0 c2
+      -- This one leaves two threads running forever
+  \end{lstlisting}
+  \newpage
+  \subsection{Random binary number generator}
+  \vspace{2cm}
+  \begin{lstlisting}
+    type RandC = Done!.end + More!.RandC
+    type Bits  = Int
+
+    producer : Bits -> RandC -> ()
+    producer 0 c = choice c { c = send Done -> () }
+    producer n c = choice c { c = producer (n|-|1) c }
+
+    -- We have non determinism on the consumer side
+    consumer : Int -> dualof RandC -> Int
+    consumer n c =
+      choice c {
+        c, Done = receive -> n    
+        c, More = receive -> consumer (10*n) c    
+        c, More = receive -> consumer (10*n + 1) c    
+
+    -- Random number generator of a given number of bits
+    main : Bits
+    main =
+      let p, c = new RandC
+          msgs = 1000 in
+      fork producer msgs p;
+      consumer 0 c
+  \end{lstlisting}
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:

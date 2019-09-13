@@ -1,0 +1,254 @@
+% The language
+\newcommand{\freest}{\textsc{FreeST}}
+
+% notes
+\newcommand{\todo}[1]{[{\color{blue}\textbf{#1}}]}
+
+% Keywords
+\newcommand{\keyword}[1]{\mathsf{#1}}
+\newcommand{\link}{\keyword{lin}}
+\newcommand{\unk}{\keyword{un}}
+
+% Kinds
+\newcommand{\prekind}{\upsilon}
+\newcommand{\kind}{\kappa}
+\newcommand{\kinds}{\mathcal S}
+\newcommand{\kindt}{\mathcal T}
+\newcommand{\kindsch}{\mathcal C}
+\newcommand{\kindk}[2]{{#1}^{#2}}
+
+% Multiplicity
+\newcommand{\un}{\unk}
+\newcommand{\lin}{\link}
+
+% Grammars
+\newcommand{\grmeq}{\; ::= \;}
+\newcommand{\grmor}{\;\mid\;}
+
+% type constructors
+% \newcommand\tcBase{B}
+% \newcommand\tcLolli\multimap
+% \newcommand\tcFun\to
+% \newcommand\tcBang{\mathop!}
+
+% Keywords
+\newcommand{\reck}{\keyword{rec}}
+\newcommand{\dualofk}{\keyword{dualof}}
+\newcommand{\skipk}{\keyword{skip}}
+\newcommand{\ifk}{\keyword{if}}
+\newcommand{\thenk}{\keyword{then}}
+\newcommand{\elsek}{\keyword{else}}
+\newcommand{\letk}{\keyword{let}}
+\newcommand{\ink}{\keyword{in}}
+\newcommand{\newk}{\keyword{new}}
+\newcommand{\sendk}{\keyword{send}}
+\newcommand{\sendck}{\keyword{send}}
+\newcommand{\receivek}{\keyword{receive}}
+\newcommand{\selectk}{\keyword{select}}
+\newcommand{\matchk}{\keyword{match}}
+\newcommand{\withk}{\keyword{with}}
+\newcommand{\forkk}{\keyword{fork}}
+\newcommand{\casek}{\keyword{case}}
+\newcommand{\ofk}{\keyword{of}}
+\newcommand{\typek}{\keyword{type}}
+\newcommand{\tend}{\keyword{end}}
+
+% Types
+\newcommand{\skipt}{\skipk}
+\newcommand{\semit}[2]{#1;#2}
+\newcommand{\sout}[1]{\mathop!#1}
+\newcommand{\sint}[1]{\mathop?#1}
+\newcommand{\msgt}[1]{\sharp{#1}}
+\newcommand{\choicet}[1]{\star\{#1\}}
+\newcommand{\ichoicet}[1]{\oplus{#1}}
+\newcommand{\echoicet}[1]{\&{#1}}
+\newcommand{\datat}[1]{[{#1}]}
+\newcommand{\funt}[3][m]{{#2}\rightarrow_{#1}{#3}}
+\newcommand{\unfunt}[2]{#1\rightarrow#2}
+\newcommand{\linfunt}[2]{#1\multimap#2}
+\newcommand{\pairt}[2]{(#1,\,#2)}
+\newcommand{\rect}[2]{\mu{#1}.{#2}}
+\newcommand{\forallt}[2]{\forall\,#1\Rightarrow#2}
+\newcommand{\dualoft}[1]{\dualofk\,#1}
+\newcommand{\unitt}{()}
+\newcommand{\intt}{\keyword{Int}}
+\newcommand{\chart}{\keyword{Char}}
+\newcommand{\boolt}{\keyword{Bool}}
+
+
+% Environments
+\newcommand{\Empty}{\varepsilon}
+\newcommand{\splitContext}[2]{#1 \circ #2}
+
+% \newcommand\Delta{\Delta}
+% \newcommand\Gamma{\Gamma}
+
+% Expressions
+% \newcommand{\vare}[1]{#1}
+\newcommand{\unlete}[3]{\letk \; #1 = #2 \; \ink \; #3} 
+\newcommand{{\abs}}[4][m]{\lambda{#2}\colon{#3}\rightarrow_{#1}{#4}}
+% \newcommand{\appe}[2]{#1#2}
+\newcommand{\tappe}[2]{#1[#2]}
+\newcommand{\conde}[3]{\ifk\;#1\;\thenk\;#2\;\elsek \; #3}
+\newcommand{\paire}[2]{(#1,#2)}
+\newcommand{\binlete}[4]{\letk\;#1, #2 = #3\;\ink\;#4}
+\newcommand{\newe}[1]{\newk\;#1}
+\newcommand{\sende}[1]{\sendk\;#1}
+\newcommand{\sendce}[1]{\sendk\;#1}
+\newcommand{\recve}[1]{\receivek\;#1}
+\newcommand{\selecte}[2]{\selectk\;#1\;{#2}}
+\newcommand{\matche}[2]{\matchk\;#1\;\withk\;#2}
+\newcommand{\forke}[1]{\forkk\;#1}
+\newcommand{\casee}[2]{\casek\;#1\;\ofk\;#2}
+
+% Sequents
+\newcommand{\isTypeNoKind}[2][\Delta]{{#1} \vdash {#2}\;\typek}
+\newcommand{\synthetise}{\Rightarrow}
+\newcommand{\checkagainst}{\Leftarrow}
+\newcommand{\isType}[3][\Delta]{{#1} \vdash {#2} : {#3}}
+\newcommand{\algkindout}[3][\Delta]{{#1} \Alg {#2} \synthetise{ #3}}
+\newcommand{\algkindin}[3][\Delta]{{#1} \Alg {#2} \checkagainst {#3}}
+\newcommand{\isSubkind}[2]{{#1} < {#2}}
+\newcommand{\isSubType}[2]{{#1} <: {#2}}
+\newcommand{\algtypeout}[4][\Delta;\Gamma]{{#1} \Alg {#2} \synthetise {#3};{#4}}
+\newcommand{\algtypein}[4][\Delta;\Gamma]{{#1} \Alg {#2}\checkagainst {#3}; {#4}}
+\newcommand{\ctxequiv}[3][\Delta]{{#1} \vdash \Equiv{#2}{#3}}
+\newcommand{\typeequiv}[3][\Delta]{{#1} \vdash \Equiv{#2}{#3}}
+\newcommand{\isLin}[2][\Delta]{\isType[#1]{#2}\link}
+\newcommand{\isUn}[2][\Delta]{\isType[#1]{#2}\unk}
+\newcommand\Alg{\vdash}
+\newcommand{\subt}{<:}
+\newcommand{\isContr}[2][\Delta]{{#1}\vdash_{\!\!\mathsf c}{#2}}
+\newcommand{\isDone}[1]{{#1}\checkmark}
+
+\newcommand{\codeGen}[4][\varphi]{{#1} \Alg_{#2} {#3} \Rightarrow {#4}}
+\newcommand{\orTwo}[2]{{#1}\,||\,{#2}}
+\newcommand{\orThree}[3]{{#1}\,||\,{#2}\,||\,{#3}}
+\newcommand{\orFour}[4]{{#1}\,||\,{#2}\,||\,{#3}\,||\,{#4}}
+\newcommand{\true}{\mbox{\scriptsize True}}
+\newcommand{\True}{\mbox{True}}
+
+\newcommand{\algprocin}[2]{{#1} \Alg {#2}}
+\newcommand{\translates}[1]{ \llbracket {#1} \rrbracket}
+
+% Labelled transition system
+\newcommand{\LTSderives}[1][a]{\stackrel{#1}{\longrightarrow}}
+
+% Operators
+\newcommand\extract[1]{\leadsto_{#1}}% \rightlsquigarrow}
+\newcommand{\subs}[3]{{#1}[{#2}/{#3}]} % subs #2 for #3 in #1
+\newcommand{\dual}[1]{\overline{#1}}
+\newcommand{\join}{\sqcup}
+\newcommand{\ctxdiff}[4][\Delta]{{#1}\vdash{#2}\div{#3}={#4}}
+\newcommand\Equiv[2]{#1\,\sim\,#2}
+\newcommand\done[1]{#1 \checkmark}
+\newcommand{\unfoldk}{\keyword{unfold}}
+\newcommand\TypeEquiv{\sim}
+
+% Theorems
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+
+%metafunctions
+\newcommand\dom{\mathsf{dom}}
+\newcommand\free{\mathsf{free}}
+
+% Processes
+\newcommand\prock{\mathsf{proc}}
+\newcommand\proc[1]{\mathcal{#1}}
+
+% choice
+\newcommand\choice{\mathcal{M}}
+\newcommand\choiceSign{\mathop +}
+\newcommand\lbl{l}
+
+
+% Colour
+
+\newcommand{\Blue}[1]{\textcolor{blue}{#1}}
+\newcommand{\Red}[1]{\textcolor{red}{#1}}
+\newcommand{\Brown}[1]{\textcolor{brown}{#1}}
+\newcommand{\highlight}[1]{\Blue{#1}}
+
+% ECLIPSE LOOK
+
+\newcommand\Small{\small}
+%\newcommand\Small{\fontsize{7.5}{8}\selectfont} 
+
+\definecolor{darkviolet}{rgb}{0.5,0,0.4}
+\definecolor{darkgreen}{rgb}{0,0.4,0.2} 
+\definecolor{darkblue}{rgb}{0.1,0.1,0.9}
+\definecolor{darkgrey}{rgb}{0.5,0.5,0.5}
+\definecolor{lightblue}{rgb}{0.4,0.4,1}
+
+\lstdefinestyle{eclipse}{
+  breaklines=true,
+  basicstyle=\sffamily\Small,
+  emphstyle=\color{red}\bfseries, 
+  keywordstyle=\color{darkviolet}\bfseries,
+  commentstyle=\color{darkgreen},
+  stringstyle=\color{darkblue},
+  numberstyle=\color{darkgrey},%\lstfontfamily,
+  emphstyle=\color{red},
+  % get also javadoc style comments
+  morecomment=[s][\color{lightblue}]{/**}{*/},
+  %columns=fullflexible, %spaceflexible, %flexible, fullflexible             
+  %  escapeinside=`',
+  %  escapechar=@,
+  showstringspaces=false,
+  numbers=left,
+  tabsize=2
+}
+
+\lstdefinestyle{eclipse-Haskell}{
+  breaklines=true,
+  basicstyle=\sffamily\Small,
+  emphstyle=\color{red}\bfseries, 
+  keywordstyle=\color{darkviolet}\bfseries,
+  commentstyle=\color{darkgreen},
+  stringstyle=\color{darkblue},
+  emphstyle=\color{red},
+  % get also javadoc style comments
+  morecomment=[s][\color{lightblue}]{/**}{*/},
+  %columns=fullflexible, %spaceflexible, %flexible, fullflexible             
+  %  escapeinside=`',
+  %  escapechar=@,
+  showstringspaces=false,
+  numbers=none,
+  tabsize=2
+}
+
+\lstdefinelanguage{freest}{
+  style=eclipse,
+  morekeywords=[1]{Int, Char, Bool, Skip, type, dualof, forall, rec, let, in, if, then, else, new, send, receive, select, fork, case, of, data, match, with, True, False},
+  sensitive=true,
+  literate=
+  {->}{$\rightarrow$}2
+  {-o}{$\multimap$}2
+  {=>}{$\Rightarrow$}2
+  {alpha}{$\alpha$}1,
+  breaklines=true,
+  morecomment=[l]{--},%
+  morecomment=[s]{{-}{-}},%
+  morestring=[b]',%
+  morestring=[b]",%
+  morestring=[s]{`}{`},%
+}
+
+\lstdefinelanguage{freestMC}{
+  style=eclipse,
+  language=freest,
+  morekeywords=[1]{choice, end},
+  escapeinside=||,
+  morecomment=[l]--,%
+}
+
+\lstset{
+  language=freestMC,
+  numbers=none
+}
+ 
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:
