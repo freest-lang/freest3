@@ -175,7 +175,9 @@ DataCon :: { (ProgVar, [Type]) }
 
 Expr :: { Expression }
   : let ProgVarWild '=' Expr in Expr         { UnLet (position $1) $2 $4 $6 }
-  | let ProgVarWild ',' ProgVarWild '=' Expr in Expr { BinLet (position $1) $2 $4 $6 $8 }
+
+  | let '(' ProgVarWild ',' ProgVarWild ')' '=' Expr in Expr
+                                             { BinLet (position $1) $3 $5 $8 $10 }
   | if Expr then Expr else Expr              { Conditional (position $1) $2 $4 $6 }
   | new Type                                 { New (position $1) $2 }
   | match Expr with '{' MatchMap '}'         { Match (position $1) $2 $5 }
