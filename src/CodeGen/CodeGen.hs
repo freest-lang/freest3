@@ -46,7 +46,7 @@ updateKey m =
    Just e  -> Map.insert ((mkVar (Pos 99999 99999) "_main")) e (Map.delete b m)
 
 genImports :: String
-genImports = "import FreeSTRuntime\n\n"
+genImports = "import FreeSTRuntime\nimport Data.Char(ord, chr)\n\n"
 
 genPragmas :: String
 genPragmas = "-- Target Haskell code\n\n"
