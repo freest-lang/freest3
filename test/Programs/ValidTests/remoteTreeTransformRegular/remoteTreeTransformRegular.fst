@@ -19,9 +19,9 @@ raise c =
   match c with {
     EOS c -> (Leaf, c),
     Root c ->
-      let x, c = receive c in
-      let l, c = raise c in
-      let r, c = raise c in
+      let (x, c) = receive c in
+      let (l, c) = raise c in
+      let (r, c) = raise c in
       (Node x l r, c)
   }
 

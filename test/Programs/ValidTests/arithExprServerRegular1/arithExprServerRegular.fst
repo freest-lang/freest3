@@ -26,7 +26,7 @@ client c =
   let c = select c Add in
   let c = select c EOS in
   -- read the result
-  let x, _ = receive c in
+  let (x, _) = receive c in
   -- and return it
   x
 
@@ -42,9 +42,9 @@ evaluate : rec x: SL. &{Add: x, Mult: x, Const: ?Int;x, EOS: !Int} ->
            Skip
 evaluate s l =
   match s with {
-    Const s -> let n, s = receive s in evaluate s (Cons n l),
-    Add s   -> let p, l = head2 l in let x, y = p in evaluate s (Cons (x + y) l),
-    Mult s  -> let p, l = head2 l in let x, y = p in evaluate s (Cons (x * y) l),
+    Const s -> let (n, s) = receive s in evaluate s (Cons n l),
+    Add s   -> let (p, l) = head2 l in let (x, y) = p in evaluate s (Cons (x + y) l),
+    Mult s  -> let (p, l) = head2 l in let (x, y) = p in evaluate s (Cons (x * y) l),
     EOS s   -> send s (headSingleton l)
   }
 
@@ -75,7 +75,7 @@ err = -1
 -- expect 26 on the console.
 main : Int
 main =
-  let c, s = new rec x: SL. +{Add: x, Mult: x, Const: !Int;x, EOS: ?Int} in
+  let (c, s) = new rec x: SL. +{Add: x, Mult: x, Const: !Int;x, EOS: ?Int} in
   let _ = fork (evaluate s Nil) in
   client c
   

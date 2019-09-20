@@ -12,12 +12,12 @@ sumFives c =
     Done _ ->
       0,
     More c ->
-     let n, c = receive c in
+     let (n, c) = receive c in
      n + sumFives c
   }
 
 main : Int
 main =
-  let w, r = new Chan in
+  let (w, r) = new Chan in
   let _ = fork (fives 32 w) in
   sumFives r

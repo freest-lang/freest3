@@ -26,7 +26,7 @@ client c =
   let c = select c Add in
   let c = select c EOS in
   -- read the result
-  let x, c = receive c in
+  let (x, c) = receive c in
   -- and return it
   x
 
@@ -40,7 +40,7 @@ size s n =
   match s with {
     Add s   -> size s (n + 1),
     Mult s  -> size s (n + 1),
-    Const s -> let _, s = receive s in size s (n + 1),
+    Const s -> let (_, s) = receive s in size s (n + 1),
     EOS s   -> send s n
   }
 
@@ -48,6 +48,6 @@ size s n =
 -- expect 7 on the console.
 main : Int
 main =
-  let c, s = new rec x: SL. +{Add: x, Mult: x, Const: !Int;x, EOS: ?Int} in
+  let (c, s) = new rec x: SL. +{Add: x, Mult: x, Const: !Int;x, EOS: ?Int} in
   let _ = fork (size s 0) in
   client c

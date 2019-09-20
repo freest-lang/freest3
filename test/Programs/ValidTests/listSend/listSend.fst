@@ -15,7 +15,7 @@ reconstruct c =
   match c with {
     Nil c -> Nil,
     Cons c ->
-      let h, c = receive c in
+      let (h, c) = receive c in
       let t = reconstruct c in
       Cons h t
   }
@@ -25,7 +25,7 @@ aList = Cons 5 (Cons 7 (Cons 2 (Cons 6 (Cons 3 Nil))))
 
 main : List
 main =
-  let w, r = new rec x: SL. +{Nil: Skip, Cons: !Int;x} in
+  let (w, r) = new rec x: SL. +{Nil: Skip, Cons: !Int;x} in
   let _ = fork (flatten aList w) in
   reconstruct r
 

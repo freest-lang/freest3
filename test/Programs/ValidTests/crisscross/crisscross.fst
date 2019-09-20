@@ -14,13 +14,13 @@ writer w1 w2 =
 
 reader : ?Char -> ?Bool -> Bool
 reader r1 r2 =
-  let x, r2 = receive r2 in
-  let y, r1 = receive r1 in
+  let (x, r2) = receive r2 in
+  let (y, r1) = receive r1 in
   x
 
 main : Bool
 main =
-  let w1, r1 = new !Char in
-  let w2, r2 = new !Bool in
+  let (w1, r1) = new !Char in
+  let (w2, r2) = new !Bool in
   let u = fork (writer w1 w2) in
   reader r1 r2

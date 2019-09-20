@@ -93,35 +93,35 @@ serverNode : forall α:SL =>
   Int ->
   (α, Int)
 serverNode c n =
-  let m, c = receive (select c Root) in
+  let (m, c) = receive (select c Root) in
   if m == 0
   then (select c Exit, 0)
   else
     let c = select c Left in
-    let c, m = server[(rec y:SL. +{Root: ?Int;y,
-               Left:  (rec x:SL. &{Leaf: Skip,
-                                   Node: rec y:SL. +{Root: ?Int;y,
-                                                     Left:  x;y,
-                                                     Right: x;y,
-                                                     Exit:  Skip}});y,
-               Right: (rec x:SL. &{Leaf: Skip,
-                                   Node: rec y:SL. +{Root: ?Int;y,
-                                                     Left:  x;y,
-                                                     Right: x;y,
-                                                     Exit:  Skip}});y,
-               Exit:  Skip});α] c (m * n) in
-    let c, k = server[(rec y:SL. +{Root: ?Int;y,
-               Left:  (rec x:SL. &{Leaf: Skip,
-                                   Node: rec y:SL. +{Root: ?Int;y,
-                                                     Left:  x;y,
-                                                     Right: x;y,
-                                                     Exit:  Skip}});y,
-               Right: (rec x:SL. &{Leaf: Skip,
-                                   Node: rec y:SL. +{Root: ?Int;y,
-                                                     Left:  x;y,
-                                                     Right: x;y,
-                                                     Exit:  Skip}});y,
-               Exit:  Skip});α] (select c Right) m in
+    let (c, m) = server[(rec y:SL. +{Root: ?Int;y,
+                 Left:  (rec x:SL. &{Leaf: Skip,
+                                     Node: rec y:SL. +{Root: ?Int;y,
+                                                       Left:  x;y,
+                                                       Right: x;y,
+                                                       Exit:  Skip}});y,
+                 Right: (rec x:SL. &{Leaf: Skip,
+                                     Node: rec y:SL. +{Root: ?Int;y,
+                                                       Left:  x;y,
+                                                       Right: x;y,
+                                                       Exit:  Skip}});y,
+                 Exit:  Skip});α] c (m * n) in
+    let (c, k) = server[(rec y:SL. +{Root: ?Int;y,
+                 Left:  (rec x:SL. &{Leaf: Skip,
+                                     Node: rec y:SL. +{Root: ?Int;y,
+                                                       Left:  x;y,
+                                                       Right: x;y,
+                                                       Exit:  Skip}});y,
+                 Right: (rec x:SL. &{Leaf: Skip,
+                                     Node: rec y:SL. +{Root: ?Int;y,
+                                                       Left:  x;y,
+                                                       Right: x;y,
+                                                       Exit:  Skip}});y,
+                 Exit:  Skip});α] (select c Right) m in
     (select c Exit, k)
 
 aTree : Tree
@@ -129,7 +129,7 @@ aTree = Node 7 (Node 5 Leaf Leaf) (Node 9 (Node 11 Leaf Leaf) (Node 15 Leaf Leaf
 
 main : Int
 main =
-  let writer, reader = new (rec x:SL. +{Leaf: Skip, Node: rec y:SL. &{Root: !Int;y, Left: x;y, Right: x;y, Exit: Skip}}) in
+  let (writer, reader) = new (rec x:SL. +{Leaf: Skip, Node: rec y:SL. &{Root: !Int;y, Left: x;y, Right: x;y, Exit: Skip}}) in
   let _ = fork (exploreTree[Skip] writer aTree) in
-  let _, n = server[Skip] reader 1 in
+  let (_, n) = server[Skip] reader 1 in
   n

@@ -50,7 +50,7 @@ server' c =
 
 main : ()
 main =
-  let w, r = new +{A: rec x:SL. +{A: x; +{B: Skip}, B: Skip}} in
+  let (w, r) = new +{A: rec x:SL. +{A: x; +{B: Skip}, B: Skip}} in
   let t = fork (client 25 w) in
   let r = server r in
   ()

@@ -16,9 +16,9 @@ transform tree c =
     Node x l r ->
       let c = select c NodeC in
       let c = send c x in
-      let l, c = transform[(rec x:SL. +{LeafC: Skip, NodeC: !Int;x;x;?Int});?Int;α] l c in
-      let r, c = transform[?Int;α] r c in
-      let y, c = receive c in
+      let (l, c) = transform[(rec x:SL. +{LeafC: Skip, NodeC: !Int;x;x;?Int});?Int;α] l c in
+      let (r, c) = transform[?Int;α] r c in
+      let (y, c) = receive c in
       (Node y l r, c)
   }
 {-
@@ -31,9 +31,9 @@ treeSum c =
   match c with {
     LeafC c -> (0, c),
     NodeC c ->
-      let x, c = receive c in
-      let l, c = treeSum[(rec x:SL. &{LeafC: Skip, NodeC: ?Int;x;x;!Int});!Int;α] c in
-      let r, c = treeSum[!Int;α] c in
+      let (x, c) = receive c in
+      let (l, c) = treeSum[(rec x:SL. &{LeafC: Skip, NodeC: ?Int;x;x;!Int});!Int;α] c in
+      let (r, c) = treeSum[!Int;α] c in
       let c    = send c (x + l + r) in
       (x + l + r, c)
   }
@@ -43,9 +43,9 @@ aTree = Node 1 (Node 2 Leaf (Node 3 Leaf (Node 4 Leaf (Node 5 Leaf Leaf)))) (Nod
 
 main : Tree
 main =
-  let w, r = new (rec x:SL. +{LeafC: Skip, NodeC: !Int;x;x;?Int}) in
+  let (w, r) = new (rec x:SL. +{LeafC: Skip, NodeC: !Int;x;x;?Int}) in
 --  let t, w = fork (transform[Skip] aTree w) in
 --  let n, r = treeSum[Skip] r in
   let _ = fork (treeSum[Skip] r) in
-  let t, _ = transform[Skip] aTree w in
+  let (t, _) = transform[Skip] aTree w in
   t

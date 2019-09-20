@@ -7,7 +7,7 @@ aList1 = (Cons 2 (Cons 3 (Cons 4 (Cons 5 Nil))))
 
 -- A list: [1,2,3,5]
 aList3 : List
-aList3 = (Cons 1 (Cons 2 (Cons 3 (Cons 5 Nil)))))
+aList3 = (Cons 1 (Cons 2 (Cons 3 (Cons 5 Nil))))
 
 
 equalList : List -> List -> Bool

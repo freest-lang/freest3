@@ -12,7 +12,7 @@ type TermChannel = +{
 -- return the value on the same channel.
 computeService : (rec x:SL. &{Const: ?Int, Add: x;x, Mult: x;x});!Int -> Skip
 computeService c =
-  let n1, c1 = receiveEval[!Int;Skip] c in
+  let (n1, c1) = receiveEval[!Int;Skip] c in
   send c1 n1
 
 -- Read an arithmetic expression in the front of a channel; compute
@@ -24,12 +24,12 @@ receiveEval c =
     Const c ->
       receive c,
     Add c ->
-      let n1, c = receiveEval[(rec termChan:SL. &{Const: ?Int, Add: termChan;termChan, Mult: termChan;termChan});α] c in
-      let n2, c = receiveEval[α] c in
+      let (n1, c) = receiveEval[(rec termChan:SL. &{Const: ?Int, Add: termChan;termChan, Mult: termChan;termChan});α] c in
+      let (n2, c) = receiveEval[α] c in
       (n1 + n2, c),
     Mult c ->
-      let n1, c = receiveEval[(rec termChan:SL. &{Const: ?Int, Add: termChan;termChan, Mult: termChan;termChan});α] c in
-      let n2, c = receiveEval[α] c in
+      let (n1, c) = receiveEval[(rec termChan:SL. &{Const: ?Int, Add: termChan;termChan, Mult: termChan;termChan});α] c in
+      let (n2, c) = receiveEval[α] c in
       (n1 * n2, c)
   }
 
@@ -44,11 +44,11 @@ client c =
   let c = send c 7 in
   let c = select c Const in
   let c = send c 9 in
-  let n, _ = receive c in
+  let (n, _) = receive c in
   n
 
 main : Int
 main =
-  let w, r  = new (rec x:SL . &{Const: ?Int, Add: x;x, Mult: x;x});!Int in
+  let (w, r)  = new (rec x:SL . &{Const: ?Int, Add: x;x, Mult: x;x});!Int in
   let _ = fork (computeService w) in
   client r

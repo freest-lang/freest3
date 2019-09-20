@@ -37,16 +37,16 @@ receiveTree c =
     Leaf c ->
       (Leaf, c),
     Node c ->
-      let x, c = receive c in
-      let left, c = receiveTree [(rec x:SL. &{Leaf: Skip, Node: ?Int;x;x});a] c in
-      let right, c = receiveTree[a] c in
+      let (x, c) = receive c in
+      let (left, c) = receiveTree [(rec x:SL. &{Leaf: Skip, Node: ?Int;x;x});a] c in
+      let (right, c) = receiveTree[a] c in
       (Node x left right, c)
   }
 
 main : Tree
 main =
   let inTree = Node 7 (Node 5 Leaf Leaf) (Node 9 (Node 11 Leaf Leaf) (Node 15 Leaf Leaf)) in
-  let writer, reader = new (rec x:SL . +{Leaf: Skip, Node: !Int;x;x}) in
+  let (writer, reader) = new (rec x:SL . +{Leaf: Skip, Node: !Int;x;x}) in
   let w = fork (sendTree[Skip] inTree writer) in
-  let outTree, r = receiveTree[Skip] reader in
+  let (outTree, r) = receiveTree[Skip] reader in
   outTree
