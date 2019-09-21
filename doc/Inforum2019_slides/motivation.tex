@@ -34,24 +34,25 @@
   \item Um capaz de gerar sequências de números inteiros, mas sem a capacidade de os somar.
     \pause
   \item Outro capaz de somar números inteiros, mas incapaz de os gerar.
+    \pause
   \end{itemize}  
 \end{frame}
 
-% \begin{frame}{Exemplo -- Considerações}
-%   \begin{itemize}
-%   \item Ambos os processadores estão aptos para comunicar através de canais.
-%     \vspace*{2mm}
-%     \pause
-%   \item Este exemplo simplista retrata o caso em que a interação entre os processos se dá necessariamente nos dois sentidos.
-%     \vspace*{5mm}
-%     \pause
-%   \item Os dois processos deverão estar corretamente tipados e responder às necessidades da comunicação.
-%   \end{itemize}
-% \end{frame}
+\begin{frame}{Exemplo -- Considerações}
+  \begin{itemize}
+  \item Ambos os processadores estão aptos para comunicar através de canais.
+    \vspace*{2mm}
+    \pause
+  \item Este exemplo simplista retrata o caso em que a interação entre os processos se dá necessariamente nos dois sentidos
+    \vspace*{5mm}
+    \pause
+  \item Os dois processos deverão estar corretamente tipados e responder às necessidades da comunicação.
+  \end{itemize}
+\end{frame}
 
 \begin{frame}{Exemplo -- Solução \hfill \color{mLightBrown}Produtor}
 
-  Tirando partido das restrições computacionais dos dois processadores, podemos tentar resolver o problema do seguinte modo:\\
+  Tirando partido das restrições computacionais dos dois processadores, podemos tentar resolver o problema dos seguinte modo:\\
   \pause
   \vspace*{3mm}
  O processo \textbf{produtor}:
@@ -62,7 +63,7 @@
     \pause
   \item Pára quando receber, no mesmo canal, uma notificação para terminar o envio.
     \pause
-  \item A notificação vem na forma de uma marca: \textbf{EOS} (\textit{end-of-stream})
+  \item A notificação vem na forma de uma marca ou \textit{label}: \textbf{EOS} (\textit{end-of-stream})
   \end{enumerate}
 
 \end{frame}
@@ -77,9 +78,6 @@
     \pause
     \vspace{5mm}
   \item Neste ponto, envia a marca \textbf{EOS}.
-        \pause
-    \vspace{5mm}
-  \item Devolve $n-1$.
   \end{enumerate}
 \end{frame}
 
@@ -93,11 +91,11 @@
  
 \input{tikz-example-type} 
 
-\onslide<5-> Do lado do \textbf{consumidor} o canal tem o tipo obtido por troca das operações de leitura pelas de escrita, e vice-versa.
+\onslide<5-> Do lado do \textbf{consumidor} o canal tem o tipo acima, trocando as operações de leitura pelas de escrita, e vice-versa.
 \vspace*{4mm} 
 \onslide<6->
 \begin{lstlisting}
-|\hspace{0.1\linewidth}|type CanalIntDual = |\tikzmark{out}|!EOS + |\tikzmark{in}|?Int;CanalIntDual
+|\hspace{0.3\linewidth}\tikzmark{out}|!EOS + |\tikzmark{in}|?Int;CanalInt
 \end{lstlisting}
 \input{tikz-example-type-dual}
 
@@ -113,34 +111,34 @@
 
 \begin{frame}[fragile]{Exemplo -- Implementação  \hfill \color{mLightBrown}Produtor}
   % \vspace*{-1cm}
-  \begin{lstlisting}[xrightmargin=.15\textwidth]
+  \begin{lstlisting}[xleftmargin=.15\textwidth, xrightmargin=.15\textwidth]
 type CanalInt = ?EOS + !Int;CanalInt
 
     
 produtor : CanalInt -> Int -> ()
 produtor c n = |\tikzmark{choice}|choice {
-  |\tikzmark{chan}|(c, |\tikzmark{pattern}|EOS) = |\tikzmark{receive}|receive -> (),
-         c = |\tikzmark{send}|send c n -> produtor c (n+1)
+  |\tikzmark{pattern}|(c, EOS:_) = |\tikzmark{receive}|receive -> (),
+         c = |\tikzmark{send}|send c More:n -> produtor c (n+1)
 }
   \end{lstlisting}
 
 \input{tikz-example-produtor}
-
+  
 \end{frame}
 
 
 \begin{frame}[fragile]{Exemplo -- Implementação  \hfill \color{mLightBrown}Consumidor}
   % \vspace*{-1cm}
   \begin{lstlisting}[xleftmargin=-.04\textwidth]
+
+dualof CanalInt = !EOS + ?Int;CanalInt
+    
 consumidor : dualof CanalInt -> Int -> Int -> Int -> Int
-consumidor c s n k =
-  if n >= s
-  then choice {
-    c = |\tikzmark{eos}|send EOS -> n|$-$|1
-  }
-  else choice {
-    (c, m) = |\tikzmark{rcv}|receive c -> consumidor c (s+m) (n+1) k
-  }
+consumidor c s n k = if n >= k
+  then choice
+    { c = |\tikzmark{eos}|send EOS:() -> n|$-$|1 }
+  else choice
+    { (c, More:m) = |\tikzmark{rcv}|receive c -> consumidor c (s+m) (n+1) k}
 \end{lstlisting}
 
 \input{tikz-example-consumidor}
@@ -164,14 +162,8 @@ main = let
   |\tikzmark{fork}|fork produtor p 1;
   consumidor c 0 0 k|\tikzmark{consumer}|
 \end{lstlisting}
-\input{tikz-example-main}
-\onslide<5->
-\begin{verbatim}
-$ freestMC example.mc
-$ runhaskell example.hs
-44
-\end{verbatim}
 
+\input{tikz-example-main}
 
 \end{frame}
 

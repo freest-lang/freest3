@@ -43,85 +43,86 @@ Type formation:
 \newpage
 \section{Examples}
 \lstset{language=freestMC}
-\subsection{Producer--Consumer -- asymmetric version}
+\subsection{Producer--Consumer --- asymmetric version}
   \vspace{2cm}
 \begin{lstlisting}
-  type RWC = Msg!RWC + Msg?RWC + Done!end
+type RWC = !Msg.RWC + ?Msg.RWC + !Done.end
   
-  producer : Int -> RWC -> ()
-  producer 0 c = choice c { c = send Done -> ()}
-  producer n c =
-    choice { c = send Msg -> producer (n|-|1) c,
-             c, Msg = receive -> producer (n|-|1) c
-           }
-
-  consumer : dualof RWC -> Int
-  consumer c = choice c {
-    c, Done = receive -> 0,
-    c       = send Msg -> consumer c
-    c, Msg  = receive Msg -> 1 + consumer c
+producer : int -> RWC -> ()
+producer 0 c = choice c { _ = send c Done -> () }
+producer n c = choice c {
+    c      = send c Msg -> producer (n|-|1) c
+    c, Msg = receive c  -> producer (n|-|1) c
   }
 
-  main : Int
-  main =
-    let p, c = new RWC in 
-    fork producer 1000 c;
-    consumer p -- The number of messages received by this process, out of n    
-  \end{lstlisting}
-  \newpage
-  \subsection{Producer--Consumer -- symmetric version}
-    \vspace{2cm}
+consumer : dualof RWC -> int
+consumer c = choice c {
+    c       = send c Msg -> consumer c
+    c, Msg  = receive c  -> 1 + consumer c
+    _, Done = receive c  -> 0
+  }
+
+main : int
+main =
+  let p, c = new RWC in 
+  fork producer 1000 c;
+  consumer p -- The number of messages received by this process, max 1000
+\end{lstlisting}
+\newpage
+\subsection{Producer--Consumer --- symmetric version}
+\vspace{2cm}
 \begin{lstlisting}
-    type RWC = Msg!RWC + Msg?RWC
+type RWC = !Msg.RWC + ?Msg.RWC
   
-    -- The number of messages sent by this function out of n
-    readWrite : Int -> Int -> RWC -> Int
-    readWrite 0 m c = fork consume c ; m
-    readWrite n m c = choice c {
-      c      = send Msg -> readWrite (n|-|1) (m+1) c,
-      c, Msg = receive -> readWrite (n|-|1) m c,
-    }
+-- The number of messages sent by this function out of n
+readWrite : int -> int -> RWC -> int
+readWrite 0 m c = fork consume c ; m
+readWrite n m c = choice c {
+    c      = send c Msg -> readWrite (n|-|1) (m+1) c
+    c, Msg = receive    -> readWrite (n|-|1) m c
+  }
 
-    consume : RWC -> () -- Consumes c ad eternum
-    consume c = choice c {
-      c      = send Msg -> consume c,
-      c, Msg = receive -> consume c
-    }
+-- Consume c ad eternum
+consume : RWC -> () 
+consume c = choice c {
+    c      = send c Msg -> consume c
+    c, Msg = receive    -> consume c
+  }
 
-    main : Int
-    main =
-      let c1, c2 = new RWC
-              msgs = 1000 in
-      fork readWrite msgs 0 c1;
-      readWrite msgs 0 c2
-      -- This one leaves two threads running forever
+main : int
+main =
+  let c1, c2 = new RWC
+      msgs = 1000 in
+  fork readWrite msgs 0 c1;
+  readWrite msgs 0 c2
+  -- This one leaves two threads running forever
   \end{lstlisting}
   \newpage
   \subsection{Random binary number generator}
   \vspace{2cm}
   \begin{lstlisting}
-    type RandC = Done!.end + More!.RandC
-    type Bits  = Int
+type RandC = !More.RandC + !Done.end
+type Bits  = int
 
-    producer : Bits -> RandC -> ()
-    producer 0 c = choice c { c = send Done -> () }
-    producer n c = choice c { c = producer (n|-|1) c }
+producer : Bits -> RandC -> ()
+producer 0 c = choice c { _ = send c Done -> () }
+producer n c = choice c { c = send c More -> producer (n|-|1) c}
 
-    -- We have non determinism on the consumer side
-    consumer : Int -> dualof RandC -> Int
-    consumer n c =
-      choice c {
-        c, Done = receive -> n    
-        c, More = receive -> consumer (10*n) c    
-        c, More = receive -> consumer (10*n + 1) c    
+-- Non determinism at message reception
+consumer : int -> dualof RandC -> int
+consumer n c =
+  choice c {
+    c, More = receive -> consumer (10*n) c
+    c, More = receive -> consumer (10*n + 1) c
+    _, Done = receive -> n
+  }
 
-    -- Random number generator of a given number of bits
-    main : Bits
-    main =
-      let p, c = new RandC
-          msgs = 1000 in
-      fork producer msgs p;
-      consumer 0 c
+-- Random number generator of a given number of bits
+main : int
+main =
+  let p, c = new RandC in
+  fork producer 128 p;
+  consumer 0 c
   \end{lstlisting}
 \end{document}
 
