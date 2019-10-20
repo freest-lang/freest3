@@ -18,7 +18,7 @@ import           Data.Maybe
 import qualified Data.Map.Strict as Map
 import           ArbitraryTypes
 
-main = quickCheckWith stdArgs {maxSuccess = 90000} prop_bisimilar -- prop_equivalent
+main = quickCheckWith stdArgs {maxSuccess = 20000} prop_bisimilar -- prop_equivalent
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_distribution
 -- main = quickCheckWith stdArgs {maxSuccess = 10000, replay = Just (mkQCGen 42, 0)} prop_bisimilar
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
