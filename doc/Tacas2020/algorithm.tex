@@ -201,7 +201,7 @@ shortest~$\vec a$ such that $\vec Y \LTSderivesP[\vec a]
 %
 In this case, the \emph{norm} of $\vec Y$, denoted by $|\vec Y|$, is
 the length of~$\vec a$.
-
+%
 % Using the same approach as~\cite{DBLP:journals/iandc/ChristensenHS95} on
 % the definition of (un)normed processes, we say that a sequence of symbols
 % $\vec Y$ is \emph{normed} if there are labels $a_1,\ldots, a_n$
@@ -219,7 +219,7 @@ the length of~$\vec a$.
 % labels $\vec a = a_1,\ldots,a_n$ as in~\eqref{eq:path} such that
 % $n = | \vec Y |$. To ease notation, we will also represent~\eqref{eq:path} as
 % $\vec Y \xrightarrow{\vec a} \varepsilon$.
-
+%
 As observed by Christensen H\"uttel, and
 Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}, any unnormed word
 $\vec Y$ is bisimilar to its concatenation with any other word, that
@@ -258,10 +258,9 @@ We use this fact to prune out unreachable symbols in unnormed words.
 
 \begin{example}
   \label{ex:prune}
-  Recall Example~\ref{ex:productions} and notice that $X_1 X_2$ and
-  $Y_1 Y_2$ are both unnormed. We can easily see that the last
-  occurrence of $X_2$ in production
-  $X_2 \rightarrow \,!\intk\, X_2 X_2$ is unreachable, hence we can
+  Recall Example~\ref{ex:productions} and notice that $X_2$ and $Y_2$
+  are both unnormed. Then, the last occurrence of $X_2$ in production
+  $X_2 \rightarrow \,!\intk\, X_2 X_2$ is unreachable, hence we
   simplify the production to obtain $X_2 \rightarrow \,!\intk\, X_2$.
   % \begin{center}
   %   \begin{tabular}{l l l}
@@ -377,7 +376,7 @@ finite~\cite{DBLP:journals/iandc/ChristensenHS95}.
 Notice that the sibling nodes do not exclude the (often) infinite
 branch resulting from successive expansions.
 
-\subsection{Checking the bisimilarity of context-free session types}
+\paragraph{Checking the bisimilarity of context-free session types}
 
 % The algorithm to decide the equivalence of context-free session
 % types capitalizes on the previous algorithms.
