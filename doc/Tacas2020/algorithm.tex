@@ -260,14 +260,9 @@ We use this fact to prune out unreachable symbols in unnormed words.
   \label{ex:prune}
   Recall Example~\ref{ex:productions} and notice that $X_1 X_2$ and
   $Y_1 Y_2$ are both unnormed. We can easily see that the last
-  occurrence of $X_2$ in the last production for $S$ is unreachable \vv{qual?},
-  hence we can simplify it and obtain the pruned productions for $S$
-  \vv{e para T?}
-  as:
-  %
-  \begin{align*}
-    todo
-  \end{align*}
+  occurrence of $X_2$ in production
+  $X_2 \rightarrow \,!\intk\, X_2 X_2$ is unreachable, hence we can
+  simplify the production to obtain $X_2 \rightarrow \,!\intk\, X_2$.
   % \begin{center}
   %   \begin{tabular}{l l l}
   %     \multicolumn{3}{c}{Pruned productions for type $S$}\\ \hline
@@ -282,7 +277,7 @@ We use this fact to prune out unreachable symbols in unnormed words.
   % \end{center}
 \end{example}
 
-\paragraph{Building expansion trees}
+\paragraph{Building an expansion tree}
 
 % We recall that, given two context-free session types $S$ and $T$, our main goal
 % is to decide whether these types are equivalent or not. For this purpose,
@@ -303,19 +298,19 @@ We say that a node $N'$ is an \emph{expansion} of $N$ if $N'$ is a
 minimal set such that: for every pair $(\vec X, \vec Y) \in N$,
 \begin{itemize}
 \item if $\vec X \rightarrow a\vec X'$ then
-  $\vec Y \rightarrow a\vec Y'$ with $(\vec X',\vec Y')\in N'$;
+  $\vec Y \rightarrow a\vec Y'$ with $(\vec X',\vec Y')\in N'$, and
 \item if $\vec Y \rightarrow a\vec Y'$ then
   $\vec X \rightarrow a \vec X'$ with $(\vec X',\vec Y')\in N'$.
 \end{itemize}
 
 An \emph{expansion tree} is built from a root node: the singleton set
-containing the pair of words obtained by translating the two types
-into a grammar. Children nodes are obtained by expansion from their
-parent node. Jan{\v{c}}ar and Moller observed that expansion alone
-often leads to infinite trees. We then alternate between expansion and
-simplification operations, until either finding an empty node---case
-in which we decide equivalence positively---or failing to expand a
-node---case in which we decide equivalence negatively.
+containing the pair of start words obtained by translating the two
+types into a grammar. Children nodes are obtained from their parent
+node by expansion. Jan{\v{c}}ar and Moller observed that expansion
+alone often leads to infinite trees. We then alternate between
+expansion and simplification operations, until either finding an empty
+node---case in which we decide equivalence positively---or failing to
+expand a node---case in which we decide equivalence negatively.
 %
 % The na\"ive proposal for an expansion tree considers that any
 % children node is obtained by expansion from its parent
@@ -342,7 +337,8 @@ The \emph{simplification step} consists on the application of the
 following rules:
 %
 \begin{description}
-\item[Reflexive rule:] Omit from a node any pair of the form $(\vec X,\vec x)$;
+\item[Reflexive rule:] Omit from a node any pair of the form
+  $(\vec X,\vec X)$;
 \item[Congruence rule:] Omit from a node $N$ any pair that belongs to
   the least congruence containing the ancestors of $N$;
   % \item {\bf Basic Process Algebra rules:} create sibling nodes for $N$
@@ -356,12 +352,13 @@ following rules:
 \item[BPA2 rule:] If $(X_0 \vec X, Y_0 \vec Y)$ is in $N$
   and $X_0$ and $Y_0$ are normed, then:
   \begin{description}
-  \item[Case] $|X_0| \leq |Y_0|$: Let $\vec a$ be a minimal path
+  \item[Case $|X_0| \leq |Y_0|$:] Let $\vec a$ be a minimal path
     for $X_0$ and $\vec Z$ the word such that
     $ Y_0 \LTSderivesP[\vec a] \vec Z$. Add a sibling node for
     $N$ including the pairs $(X_0 \vec Z, Y_0)$ and
     $(\vec X, \vec Z \vec Y)$ in place of $(X_0 \vec X, Y_0 \vec Y)$;
-  \item[Case] $|X_0| > |Y_0|$: Let $\vec a$ be a minimal path for
+%  \item[Case] $|X_0| > |Y_0|$: Let $\vec a$ be a minimal path for 
+  \item[Otherwise:] Let $\vec a$ be a minimal path for 
     $Y_0$ and $\vec Z$ the word such that
     $ X_0 \LTSderivesP[\vec a] \vec Z$. Add a sibling node for $N$
     including the pairs $(X_0 , Y_0 \vec Z )$ and
