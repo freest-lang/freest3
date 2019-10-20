@@ -5,6 +5,15 @@ In this section we prove that our algorithm is sound and complete
 with respect to the meta-theory of context-free session types proposed
 by Thiemann and Vasconcelos~\cite{thiemann2016context}.
 
+% GRAMMAR LTS
+
+Grammars in Greibach normal form naturally induce a labelled
+transition system by taking words~$\vec X$ as states, terminal
+symbols~$a$ as actions, and the transition relation $\LTSderivesP$,
+defined as $X\vec Y\LTSderivesP \vec Z\vec Y$ when
+$X \rightarrow a\vec Z \in \mathcal P$.  The associated bisimilarity
+is denoted by $\ProdEquiv$.
+
 We start by showing that the bisimulation relation on context-free
 session types, $\TypeEquiv$, is equivalent to the bisimulation
 relation obtained from the productions, $\ProdEquiv$.  Then, based on

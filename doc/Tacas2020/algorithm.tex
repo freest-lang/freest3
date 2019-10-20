@@ -50,87 +50,144 @@ one production of the form $X \rightarrow a\vec Y$.
 % Sometimes we abuse notation and let $\mathcal{P}$ denote the
 % set of words composed by symbols in the grammar. \vv{fix me!}
 
-% GRAMMAR LTS
-
-Grammars in Greibach normal form naturally induce a labelled
-transition system by taking words~$\vec X$ as states, terminal
-symbols~$a$ as actions, and the transition relation $\LTSderivesP$,
-defined as $X\vec Y\LTSderivesP \vec Z\vec Y$ when
-$X \rightarrow a\vec Z \in \mathcal P$.  The associated bisimilarity
-is denoted by $\ProdEquiv$. \vv{Move forward?}
-
 % ALGORITHM
 
 Given a well-formed context-free session type, function
 \lstinline|toGrammar| returns the start word while computing the
 productions in the grammar.
 
-The algorithm keeps the set of productions and an integer (to generate
-fresh non-terminal symbols) in the monadic state
-\lstinline{TransState}. It uses the following functions to manipulate
-state.
-%
-\begin{itemize}
-\item \lstinline{freshVar} returns a fresh non-terminal symbol (a type
-  variable);
-\item \lstinline{addProduction}$\,X\,a\,\vec Y$ updates the state by inserting
-  the production $X\rightarrow a\vec Y$;
-% \item \lstinline{insertVisited} marks a non-terminal symbol as visited;
-% \item \lstinline{isVisited} identifies whether the given non-terminal symbol
-%   was previously visited;
-% \item \lstinline{subst} $X\,T\,S$ replaces the occurrences of~$X$
-%   by~$T$ in~$S$;
-\item \lstinline|getTransitions|$\,X$ retrieves the transitions
-  from~$X$ (a map from terminal symbols~$a$ to words~$\vec Y$):
-\item \lstinline|reverseLookup| lookup a key for a value in the map.
-\end{itemize}
+% UNRAVEL
 
-\input{listing-toGrammar}
-
-Notice that function \lstinline|toGrammar| terminates on all inputs and
-that the resulting set of productions is finite, because recursion is
-always on subterms.
+The \emph{unravelling} function on well-formed context-free session
+types is defined as follows.
 %
-Furthermore, due to the deterministic nature of the LTS,
-\lstinline|toGrammar| returns a simple grammar.
+\begin{align*}
+  \Unravel(\mu X.T) & = \Unravel\subs{\mu X.T}XT])
+  \\
+  \Unravel (S;T) &= \left\{%
+  \begin{array}{ll}
+    \Unravel(T) & \Unravel(S) = \skipk
+    \\
+    (\Unravel(S); T) & \Unravel(S) \ne \skipk
+  \end{array}
+                        \right.
+  \\
+  \Unravel (T) &= T \qquad \text{in all other cases}
+\end{align*}
 %
-%One can obtain a unique set of productions for two types by ensuring
-%that fresh variables do not overlap when converting both types.
-Function \lstinline|convertToGrammar| converts the two types
-in their corresponding grammar.
+The function terminates by the assumption that types are well
+formed. Thiemann and Vasconcelos~\cite{thiemann2016context} show that
+$\Unravel$ yields a guarded type: $\skipk$, $\sharp B$,
+$\star\{\ell_i\colon S_i\}$, or a $;$-type starts with one the these.
 
-\begin{example}
-\label{ex:productions}
-Consider the following context-free session types:
+% TO GRAMMAR
+
+Function $\word$ builds a word from a type. In the process it updates a
+set $\productions$ of grammar productions.
+%
+\begin{align*}
+  \word(\skipk) &= \Empty
+  \\
+  \word(S;T) &= \word(S) \cdot \word(T)
+  \\
+  \word(\sharp B) &= \productions := \productions \cup (Y \rightarrow \sharp B); Y \quad
+                   (Y\text{ fresh})
+  \\
+  \word(\star\{\ell_i\colon T_i\}_{i\in I}) &= \productions := \productions \cup (Y \rightarrow
+                                             \star l_i\cdot \word(T_i)); Y \quad
+                                             (Y\text{ fresh}; \forall i\in I)
+  \\
+  \word(X) &= X
+  \\
+  \word(\mu X.T) &= X
+\end{align*}
+
+% COLLECT
+
+Assume that $\{\mu X_1.T_1,\dots,\mu X_n.T_n\}$ is the set of all
+$\mu$-subterms in a given type~$T$. Further assume that $i<j$ whenever
+$X_i \in \free(\mu X_j.S_j)$. That is, the $\mu$-subterms are
+topologically sorted with respect to their lexical nesting.
+%
+Now we identify unrolled versions of the $\mu$-subterms. Clearly, each
+type $T_i$ is closed (has no free variables).
+%
+\begin{align*}
+  T_1' &= \subs{\mu X_1.T_1}{X_1}{T_1} \\
+  T_2' &= \subs{\mu X_2.T_2}{X_2}{ \subs{\mu X_1.T_1}{X_1}{T_2} }\\
+       &\;\;\vdots \\
+  T_n' &= \subs{\mu X_n.T_n}{X_n}{ \cdots \subs{\mu X_1.T_1}{X_1}{T_n} }
+\end{align*}
+
+% THE TRANSLATION
+
+Finally, a given an initial set of productions $\productions$,
+function $\grm$ translates a given type $T$ into a grammar composed of
+a start word $\word(T)$ and set of productions:
 %
 \begin{equation*}
-\begin{array}{lll}
-    S & \triangleq & (\mu x . \&\{n: x;x;?\intk, \ell: ?\intk\});(\mu z . !\intk ; z;z)\\
-    T & \triangleq & (\mu y . \&\{n: y;y, \ell: \skipk\};?\intk);(\mu w. !\intk ; w)
-\end{array}
+  \productions \cup \{\word(\Unravel(T_1')), \dots \word(\Unravel(T_n'))\}
 \end{equation*}
+
+% The algorithm keeps the set of productions and an integer (to generate
+% fresh non-terminal symbols) in the monadic state
+% \lstinline{TransState}. It uses the following functions to manipulate
+% state.
+% %
+% \begin{itemize}
+% \item \lstinline{freshVar} returns a fresh non-terminal symbol (a type
+%   variable);
+% \item \lstinline{addProduction}$\,X\,a\,\vec Y$ updates the state by inserting
+%   the production $X\rightarrow a\vec Y$;
+% % \item \lstinline{insertVisited} marks a non-terminal symbol as visited;
+% % \item \lstinline{isVisited} identifies whether the given non-terminal symbol
+% %   was previously visited;
+% % \item \lstinline{subst} $X\,T\,S$ replaces the occurrences of~$X$
+% %   by~$T$ in~$S$;
+% \item \lstinline|getTransitions|$\,X$ retrieves the transitions
+%   from~$X$ (a map from terminal symbols~$a$ to words~$\vec Y$):
+% \item \lstinline|reverseLookup| lookup a key for a value in the map.
+% \end{itemize}
+
+%\input{listing-toGrammar}
+
+Notice that $\grm$ terminates on all inputs (because recursion is
+always on subterms) and adds a finite number of productions to the
+original set. Furthermore, due to the deterministic nature of session
+types, the function returns a simple grammar.
 %
-Function \lstinline{toGrammar}, when applied to $S$ and $T$, produces
-the following productions.
-\begin{center}
-  \begin{tabular}{l l}
-    \multicolumn{2}{c}{Productions for type $S$}\\ \hline
-    \multicolumn{2}{c}{Start word: $X_1X_4$}\\
-     $X_1 \rightarrow \& n\, X_1 X_1 X_2$ &$X_3 \rightarrow \,? \intk$\\
-    $X_1 \rightarrow \& \ell\, X_3$ &$X_4 \rightarrow \,!\intk\, X_4 X_4$\\
-     $X_2 \rightarrow \,? \intk$ &\\
-  \end{tabular} \qquad
-  \begin{tabular}{l l}
-    \multicolumn{2}{c}{Productions for type $T$}\\ \hline
-    \multicolumn{2}{c}{Start word: $Y_1Y_3$}\\
-    $Y_1 \rightarrow \& n\, Y_1 Y_1 Y_2 $&$Y_2 \rightarrow \,? \intk$\\
-    $Y_1 \rightarrow \& \ell \,Y_2 $&$Y_3 \rightarrow \,!\intk\, Y_3$\\
-  \end{tabular}
-\end{center}
+To run $\grm$ on two well-formed types proceed as follows: rename the
+second type so that bound variables do not overlap with those of the
+first; start with an empty set of productions; run the algorithm
+consecutively on the two types to obtain two initial words and a
+single set of productions.
+
+\begin{example}
+  \label{ex:productions}
+  Consider the following pair of context-free session types.
+  % 
+  \begin{align*}
+    S & \triangleq (\mu X_1. \&\{n: X_1;X_1;?\intk, \ell: ?\intk\});(\mu X_2. !\intk ; X_2;X_2)\\
+    T & \triangleq (\mu Y_1. \&\{n: Y_1;Y_1, \ell: \skipk\};?\intk);(\mu Y_2. !\intk ; Y_2)
+  \end{align*}
+  % 
+  Running $\grm$ on $S$ and $T$ as explained above produces
+  the following productions
+  %
+  \begin{align*}
+    X_1 &\rightarrow \& n\, X_1 X_1 X_3 & X_3 &\rightarrow \,? \intk &
+    Y_1 &\rightarrow \& n\, Y_1 Y_1 Y_3 & Y_2 &\rightarrow \,!\intk\, Y_2 
+    \\
+    X_1 &\rightarrow \& \ell\, X_4           & X_4 &\rightarrow \,? \intk &
+    Y_1 &\rightarrow \& \ell \,Y_3           & Y_3 &\rightarrow \,? \intk
+    \\
+    X_2 &\rightarrow \,!\intk\, X_4 X_4
+  \end{align*}
+  %
+  and two start words $X_1X_2$ and $Y_1Y_2$.
 \end{example}
 
-\subsection{Pruning unnormed productions}
-\label{subsec:prune}
+\paragraph{Pruning unnormed productions}
 
 For $\vec a$ a sequence of non-terminal symbols $a_1,\ldots, a_k$
 ($k\ge1$), write $\vec Y \LTSderivesP[\vec a] \vec Z$ when
