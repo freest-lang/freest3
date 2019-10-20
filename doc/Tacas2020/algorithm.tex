@@ -10,55 +10,61 @@
 % \end{quote}
 
 This section presents an algorithm to decide whether two types are in
-a bisimulation relation. In the process we also provide an algorithm
-to decide the equivalence of simple context-free languages.
+a type bisimulation. In the process we also provide an algorithm to
+decide the equivalence of simple context-free languages.
 %
-The algorithm comprises three stages. It
-starts by converting types into grammars and then streamlines the
-grammar by pruning unreachable symbols in productions. The last stage
-explores an expansion tree, alternating between simplification and
-expansion operations, until either finding an empty node---case in
-which it decides positively---or failing to expand a node---case in
-which it decides negatively.
-
-\subsection{Converting types to grammars}
-\label{subsec:typeToGrammar}
-
-A context-free grammar in Greibach normal form is a pair $(\vec X,P)$
-where~$\vec X$ is the \emph{start word} and~$P$ a \emph{set of
-  productions} of the form $Y \rightarrow a\vec Z$ (context-free
-session types do not require productions of the form
-$X \rightarrow\varepsilon$). Type variables~$X$ are the
-\emph{non-terminal symbols} and LTS labels~$a$ are the \emph{terminal
-  symbols}. Sequences of type variables~$\vec X$ are called
-\emph{words}; $\varepsilon$ denotes the empty word.
+The algorithm comprises three stages:
 %
-We denote by $\mathcal{P}$ the context-free grammar in 
-Greibach normal form.
+\begin{enumerate}
+\item Translate the two types into a context-free grammar,
+\item Prune unreachable symbols in productions, and
+\item Explore an expansion tree, alternating between simplification
+  and expansion operations, until either finding an empty node---case
+  in which it decides positively---or failing to expand a node---case
+  in which it decides negatively.
+\end{enumerate}
+
+\paragraph{Translating types to grammars}
+
+% GREIBACH NORMAL FORMS
+
+Type variables~$X$ are the \emph{non-terminal symbols} and LTS
+labels~$a$ are the \emph{terminal symbols}. Sequences of type
+variables~$\vec X$ are called \emph{words}; $\varepsilon$ denotes the
+empty word.
+%
+A context-free grammar in Greibach normal form is a pair
+$(\vec X,\mathcal P)$ where~$\vec X$ is the \emph{start word}
+and~$\mathcal P$ a \emph{set of productions} of the form
+$Y \rightarrow a\vec Z$ (context-free session types do not require
+productions of the form $X \rightarrow\varepsilon$).
 %
 Due to the deterministic nature of context-free session types, the
 grammars we are interested in are \emph{simple}: for each
 non-terminal symbol~$X$ and each terminal symbol~$a$, there is at most
 one production of the form $X \rightarrow a\vec Y$.
-Sometimes we abuse notation and let $\mathcal{P}$ denote the
-set of words composed by symbols in the grammar.
 
-Grammars in Greibach Normal Form naturally induce a labelled transition
-system by taking words~$\vec X$ as states, terminal
-symbols~$a$ as actions, and the transition relation as $\LTSderivesP$,
+% We denote by $\mathcal{P}$ the context-free grammar in 
+% Greibach normal form.
+%
+% Sometimes we abuse notation and let $\mathcal{P}$ denote the
+% set of words composed by symbols in the grammar. \vv{fix me!}
+
+% GRAMMAR LTS
+
+Grammars in Greibach normal form naturally induce a labelled
+transition system by taking words~$\vec X$ as states, terminal
+symbols~$a$ as actions, and the transition relation $\LTSderivesP$,
 defined as $X\vec Y\LTSderivesP \vec Z\vec Y$ when
-$X \rightarrow a\vec Z \in P$.
-% \vv{reference here}
-The associated bisimilarity is denoted by $\ProdEquiv$.
+$X \rightarrow a\vec Z \in \mathcal P$.  The associated bisimilarity
+is denoted by $\ProdEquiv$. \vv{Move forward?}
 
-Given a context-free session type $S$, 
-function \lstinline|toGrammar| (Listing~\ref{lst:toGrammar}) returns a
-sequence of non-terminal symbols, while computing the remaining
-productions.
-%
-%It uses a predicate \lstinline|isChecked| $S$ to determine whether $S$
-%is terminated, that is whether \DONE S.
-%
+% ALGORITHM
+
+Given a well-formed context-free session type, function
+\lstinline|toGrammar| returns the start word while computing the
+productions in the grammar.
+
 The algorithm keeps the set of productions and an integer (to generate
 fresh non-terminal symbols) in the monadic state
 \lstinline{TransState}. It uses the following functions to manipulate
