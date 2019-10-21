@@ -32,7 +32,7 @@ optimisations that we tried, four stand out:
 \item Iterate the simplification stage until a fixed point is reached.
 \end{enumerate}
 
-% ELIMINATE REDUNDANT PRODUCTIONS IN THE GRAMMAR
+% 1 _ ELIMINATE REDUNDANT PRODUCTIONS IN THE GRAMMAR
 
 Realising that the size of the expansion tree depends, among other
 things, on the number of productions in the grammar, we looked into
@@ -53,6 +53,17 @@ find~$W$, we look for the least fixed-point \dots
 % \lstinline|toGrammar| case \lstinline|Message p b| (in
 % Listing~\ref{lst:toGrammar}) by a prior search for existing
 % productions with the respective terminal symbols.
+
+% 2 _ DOUBLE-ENDED QUEUE
+
+A double-ended queue would allow prioritizing nodes with potential to
+reach an empty node faster.
+
+
+% 3 _ FILTER
+
+\vv{filter}
+
 
 If, on the one hand, we believed that the computation of the expansion
 tree could be speeded up by extending the simplification phase, on the
