@@ -52,7 +52,11 @@ expand p = expand' (Queue.singleton (Set.singleton p, Set.empty))
     | Set.null n      = True
     | otherwise       = case expandNode ps n of
         Nothing -> expand' q ps
-        Just n' -> expand' (simplify ps n' (Set.union a n) q) ps
+        Just n' -> expand' (simplify ps ls n' (Set.union a n) q) ps
+    where ls = if allNormed ps
+                 then [reflex, congruence, bpa2, filtering]
+                 else [reflex, congruence, bpa1, bpa2, filtering]
+
   expand' Queue.Empty _ = False
 
 expandNode :: Productions -> Node -> Maybe Node
@@ -86,9 +90,9 @@ pruneWord p = foldr (\x ys -> if normed p x then x:ys else [x]) []
 
 -- Apply the different node transformations
 
-simplify :: Productions -> Node -> Ancestors -> NodeQueue -> NodeQueue
-simplify ps n a q =
-  foldr enqueueNode q (findFixedPoint ps (Set.singleton (n, a)))
+simplify :: Productions -> [NodeTransformation] -> Node -> Ancestors -> NodeQueue -> NodeQueue
+simplify ps ls n a q =
+  foldr enqueueNode q (findFixedPoint ps ls (Set.singleton (n, a)))
 
 enqueueNode :: (Node,Ancestors) -> NodeQueue -> NodeQueue
 enqueueNode (n,a) q
@@ -101,13 +105,11 @@ apply :: Productions -> NodeTransformation -> Set.Set (Node,Ancestors) -> Set.Se
 apply ps trans ns =
   Set.fold (\(n,a) ns -> Set.union (Set.map (\s -> (s,a)) (trans ps a n)) ns) Set.empty ns
 
-findFixedPoint :: Productions -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
-findFixedPoint ps nas
+findFixedPoint :: Productions -> [NodeTransformation] -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
+findFixedPoint ps ls nas
   | nas == nas' = nas
-  | otherwise   = findFixedPoint ps nas'
-  where nas' = if allNormed ps
-                 then foldr (apply ps) nas [reflex, congruence, bpa2, filtering]
-                 else foldr (apply ps) nas [reflex, congruence, bpa1, bpa2, filtering]
+  | otherwise   = findFixedPoint ps ls nas'
+    where nas' = foldr (apply ps) nas ls
 
 normsMatch :: Productions -> Node -> Bool
 normsMatch ps n = and $ Set.map (\(xs,ys) -> sameNorm ps xs ys) n
