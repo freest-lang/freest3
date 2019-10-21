@@ -224,7 +224,8 @@ As observed by Christensen H\"uttel, and
 Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}, any unnormed word
 $\vec Y$ is bisimilar to its concatenation with any other word, that
 is, if $\vec Y$ is unnormed, then $\vec Y \ProdEquiv \vec Y \vec X$.
-We use this fact to prune out unreachable symbols in unnormed words.
+We use this fact to prune out unreachable symbols in unnormed
+words. And we do this in all productions, as well as in the two start words.
 
 %The code is in Listing~\ref{lst:prune}.
 
@@ -378,84 +379,113 @@ branch resulting from successive expansions.
 
 \paragraph{Checking the bisimilarity of context-free session types}
 
-% The algorithm to decide the equivalence of context-free session
-% types capitalizes on the previous algorithms.
-
-Given two context-free session types, function \lstinline|bisimilar|
-(in Listing~\ref{lst:algorithm}) starts by converting the two session
-types into a grammar, which is then pruned. Function
-\lstinline|convertToGrammar| (in Appendix) builds the initial monadic
-state, and runs the algorithm in Listing~\ref{lst:toGrammar} to
-convert the session types given as parameters.
-%
-An expansion tree is computed afterwards, through an alternation of
-expansion of children nodes and their simplification, using the
-reflexive, congruence, and \BPA\ rules.
+Given a set of productions and two start words $\vec X$ and $\vec Y$
+(all pruned), function $\Bisim$ alternates between simplification and
+expansion stages, starting with simplification.
 %
 To avoid getting stuck in an infinite branch of the expansion tree, we
-use a breadth-first search on the expansion tree. Nodes to be processed 
-are stored in a queue.
+use a breadth-first search on the expansion tree. Node-ancestors pairs
+to be processed are stored in a queue. The initial pair contains the
+initial node $\{(\vec X,\vec Y)\}$ and the empty set of ancestors.
 %
+\begin{equation*}
+  \Bisim(\vec X, \vec Y) = \simplify((\{(\vec X,\vec Y)\},\emptyset), \mathsf{emptyQueue})
+\end{equation*}
+
 The simplification stage distinguishes the case where all type
 variables are normed, in which case \BPA1 is not required to decide
 equivalence~\cite{caucal1986decidabilite,DBLP:journals/iandc/ChristensenHS95},
-from the case where some type variables might be unnormed. The
-recursive procedure terminates as soon as all nodes fail to expand
+from the case where some type variables might be unnormed.
+%
+\begin{align*}
+  \mathsf{rules} =\;& \If\ \mathsf{allProductionsNormed}\ \Then\
+  [\mathsf{reflex} ,\mathsf{congruence}, \mathsf{bpa2}]\\
+  &\Else\ [\mathsf{reflex} ,\mathsf{congruence}, \mathsf{bpa1} , \mathsf{bpa2}]
+\end{align*}
+
+Predicate $\simplify$ applies the various $\mathsf{rules}$ and then
+calls function $\expand$.
+%
+The application of each rule (function $\mathsf{apply}$) produces a
+set of node-ancestors pairs that are enqueued.
+%
+\begin{align*}
+  &\simplify(\mathit{na}, q) = \expand(\Fold(\mathsf{append}, q,
+    \Fold(\mathsf{apply}, \mathit{na}, \mathsf{rules})))
+\end{align*}
+
+Predicate $\expand$ terminates as soon as all nodes fail to expand
 and, thus, the queue is empty, case in which the algorithm returns
-\lstinline|False|, or an empty node is reached, case is which the
-algorithm returns \lstinline|True|.
+$\False$, or an empty node is reached, case is which the algorithm
+returns $\True$.
+%
+\begin{align*}
+  &\expand(q) =\\
+  &\quad \If\ \mathsf{empty}(q)\ \Then\ \False\\
+  &\quad \Else\ (n,a) = \mathsf{front}(q)\\
+  & \qquad\quad\; \If\ \mathsf{empty}(n)\ \Then\ \True\\
+  & \qquad\quad\; \Else\ \If\ \mathsf{hasChild}(n)\ \Then\
+    \simplify(\mathsf{child}(n), a \cup n, \mathsf{dequeue}(q))\\
+  & \qquad\qquad\quad\;\: \Else\ \expand(\mathsf{dequeue}(q))
+\end{align*}
 
-\begin{lstlisting}[
-  caption={Haskell code for checking the bisimilarity of context-free
-    session types},
-  label={lst:algorithm},
-  captionpos=b
-  ]
-type Node = Set.Set (Word, Word)
-type Ancestors = Node
-type NodeQueue = Queue.Seq (Node, Ancestors)
+% Given two context-free session types, function \lstinline|bisimilar|
+% (in Listing~\ref{lst:algorithm}) starts by converting the two session
+% types into a grammar, which is then pruned. Function
+% \lstinline|convertToGrammar| (in Appendix) builds the initial monadic
+% state, and runs the algorithm in Listing~\ref{lst:toGrammar} to
+% convert the session types given as parameters.
+% %
+% An expansion tree is computed afterwards, through an alternation of
+% expansion of children nodes and their simplification, using the
+% reflexive, congruence, and \BPA\ rules.
+% %
+% \begin{lstlisting}[
+%   caption={Haskell code for checking the bisimilarity of context-free
+%     session types},
+%   label={lst:algorithm},
+%   captionpos=b
+%   ]
+% type Node = Set.Set (Word, Word)
+% type Ancestors = Node
+% type NodeQueue = Queue.Seq (Node, Ancestors)
 
-bisimilar :: TypeEnv -> Type -> Type -> Bool
-bisimilar tEnv t u = expand (xs, ys) (prune p)
-  where Grammar [xs, ys] p = trace (show t ++ "\nbisim\n" ++ show u) $ convertToGrammar tEnv [t, u]
+% bisimilar :: TypeEnv -> Type -> Type -> Bool
+% bisimilar tEnv t u = expand (xs, ys) (prune p)
+%   where Grammar [xs, ys] p = trace (show t ++ "\nbisim\n" ++ show u) $ convertToGrammar tEnv [t, u]
         
-expand :: (Word, Word) -> Productions -> Bool
-expand p = expand' 1 (Queue.singleton (Set.singleton p, Set.empty))
-  where
-  expand' :: Int -> NodeQueue -> Productions -> Bool
-  expand' i ((n, a) Queue.:<| q) ps
-    | Set.null n      = True
-    | otherwise       = case expandNode ps n of
-        Nothing -> expand' (i+1) q ps
-        Just n' -> expand' (i+1) (simplify i ps n' (Set.union a n) q) ps
-  expand' _ Queue.Empty _ = False
+% expand :: (Word, Word) -> Productions -> Bool
+% expand p = expand' 1 (Queue.singleton (Set.singleton p, Set.empty))
+%   where
+%   expand' :: Int -> NodeQueue -> Productions -> Bool
+%   expand' i ((n, a) Queue.:<| q) ps
+%     | Set.null n      = True
+%     | otherwise       = case expandNode ps n of
+%         Nothing -> expand' (i+1) q ps
+%         Just n' -> expand' (i+1) (simplify i ps n' (Set.union a n) q) ps
+%   expand' _ Queue.Empty _ = False
 
-simplify :: Int -> Productions -> Node -> Ancestors -> NodeQueue -> NodeQueue
-simplify i ps n a q =
-  foldr enqueueNode q nas'
-  where nas' = if allNormed ps
-               then foldr (apply ps) nas [reflex,congruence,bpa2]
-               else foldr (apply ps) nas [reflex,congruence,bpa1,bpa2]
+% simplify :: Int -> Productions -> Node -> Ancestors -> NodeQueue -> NodeQueue
+% simplify i ps n a q =
+%   foldr enqueueNode q nas'
+%   where nas' = if allNormed ps
+%                then foldr (apply ps) nas [reflex,congruence,bpa2]
+%                else foldr (apply ps) nas [reflex,congruence,bpa1,bpa2]
 
-enqueueNode :: (Node,Ancestors) -> NodeQueue -> NodeQueue
-enqueueNode (n,a) q = q Queue.|> (n,a)
-\end{lstlisting}
+% enqueueNode :: (Node,Ancestors) -> NodeQueue -> NodeQueue
+% enqueueNode (n,a) q = q Queue.|> (n,a)
+% \end{lstlisting}
 % type NodeTransformation = Productions -> Ancestors -> Node -> Set.Set Node 
 
 \begin{example}
-  The expansion tree for our running example is
-  in the diagram below. Once a successful
-  branch is reached (the $\checkmark$ in the figure), 
-  \lstinline|bisimilar S T| returns \lstinline|true|.
-  %the algorithm in
-  %Listing~\ref{lst:algorithm} decides that $S\TypeEquiv T$.
+  The expansion tree for our running example is in the diagram
+  below. Once a successful branch is reached (the $\checkmark$ in the
+  figure), $\Bisim(\vec X, \vec Y)$ returns $\True$. \vv{adjust the
+    variables in the diagram according to new grammar in example 1}
+  \begin{center}
+    \includegraphics[width=7.5cm]{img/expansionTree}
+  \end{center}
 \end{example}
-
-\begin{center}
-	\includegraphics[width=7.5cm]{img/expansionTree}
-	%\caption{Expansion tree for the context-free session types $S$ and $T$
-	%introduced in Example~\ref{ex:productions}}
-\end{center}
 
 %%% Local Variables:
 %%% mode: latex
