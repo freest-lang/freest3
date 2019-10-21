@@ -6,23 +6,22 @@
 %for enabling cleveref support, use "cleveref"
 %for enabling cleveref support, use "autoref"
 
-\documentclass[runningheads,orivec]{llncs}
+\documentclass[orivec,runningheads]{llncs}
 
 %\graphicspath{{./img/}}%helpful if your graphic files are in another directory
 
+\usepackage[utf8]{inputenc} % for proper diacritics: Universität, Hüttel, Luís
+\usepackage[T1]{fontenc}
 \usepackage{amsmath,amssymb}
 \usepackage{stmaryrd}
 \usepackage{listings,color}
 \usepackage{alltt}
 \usepackage{flushend}
-\usepackage[utf8]{inputenc} % for proper diacritics: Universität, Hüttel, Luís
-\usepackage[T1]{fontenc}
-\usepackage{algorithm}
-\usepackage[noend]{algpseudocode}
+% \usepackage{algorithm}
+% \usepackage[noend]{algpseudocode}
 \usepackage{graphicx}
 \usepackage{tikz-cd}
-\usepackage{multicol, enumitem}
-\usepackage{wrapfig}
+\usepackage{multicol,enumitem}
 \usepackage{tikz}
 
 \input{macros}
@@ -60,12 +59,9 @@ Vasco T. Vasconcelos\inst{1}}
 
 %\acknowledgements{I want to thank \dots}%optional
 
-
-
 \maketitle
 
 \input{abstract}
-\keywords{Types, Type equivalence, Bisimulation, Algorithm}%TODO mandatory; please add comma-separated list of keywords
 
 \input{introduction}
 \input{contextfreesession}
@@ -75,6 +71,13 @@ Vasco T. Vasconcelos\inst{1}}
 \input{evaluation}
 \input{conclusion}
 
+\paragraph{Acknowledgements}
+\begin{sloppypar}
+  We thank Filipe Casal for comments and discussions.
+%
+  This work was supported by FCT through the LASIGE Research Unit,
+  ref.\ UID/CEC/00408/2019.
+\end{sloppypar}
 \bibliographystyle{plain}
 \bibliography{biblio}
 

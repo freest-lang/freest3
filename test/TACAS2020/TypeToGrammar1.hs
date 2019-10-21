@@ -12,7 +12,7 @@ given as parameter to context-free grammars
 
 {-# LANGUAGE LambdaCase, NoMonadFailDesugaring #-}
 
-module Equivalence.TypeToGrammar
+module TACAS2020.TypeToGrammar1
 ( convertToGrammar
 ) where
 
@@ -206,12 +206,12 @@ compareTrans x y ts1 ts2
       let s = Set.singleton (x,y)
       let res = Map.foldrWithKey (\l w acc -> acc `Set.union`
                                    (compareWords s w (ts2 Map.! l))) Set.empty ts1
-                
+
       b <- fixedPoint (Set.singleton (x,y)) res x ts1
-      
+
       if b && not (null res) -- TODO: new fun on where
         then addSubs (x,y) >> return True
-        else return False        
+        else return False
   | otherwise = return False
 
 -- Verifies if two transitions are equal.
@@ -226,8 +226,8 @@ fixedPoint visited goals w t
   | Set.null goals = return True
   | otherwise      = do
       let (x, y) = Set.elemAt 0 goals
-      ts1 <- safeGetTransitions x t   
-      ps <- getProductions      
+      ts1 <- safeGetTransitions x t
+      ps <- getProductions
       if (Map.member y ps)
       then do
         y1 <- applySubs y
@@ -239,7 +239,7 @@ fixedPoint visited goals w t
      -- Recursively calls fixedPoint when the transitions are equal
      fixedPoint' :: VisitedProds -> Goals -> Transitions -> Transitions ->
                     TypeVar -> TypeVar -> TransState Bool
-     fixedPoint' visited goals ts1 ts2 x y 
+     fixedPoint' visited goals ts1 ts2 x y
        | equalTrans ts1 ts2 = do
           let newG = newGoals ts1 ts2
           fixedPoint (Set.insert (x,y) visited) (updateGoals goals newG x y) w t
@@ -250,7 +250,7 @@ fixedPoint visited goals w t
        Map.foldrWithKey (\l w acc -> acc `Set.union`
                              compareWords visited (ts1 Map.! l) w) Set.empty ts2
 
--- Deletes the current goal and updates it with the new ones 
+-- Deletes the current goal and updates it with the new ones
 updateGoals :: Goals -> Goals -> TypeVar -> TypeVar -> Goals
 updateGoals goals newGoals x y = Set.union newGoals (Set.delete (x, y) goals)
 
@@ -268,7 +268,7 @@ safeGetTransitions x defaultTrans = do
   case ps Map.!? x of
     Just p -> return p
     Nothing -> return defaultTrans
-      
+
 -- Compares two words
 -- If they are on the Set of visited productions, there is no need
 -- to visit them. Otherwise, we add them to the set of productions
@@ -297,4 +297,3 @@ subWords xs = map (subsTypeVars xs)
 -- For each type var applies all the given substitutions (named subs)
 subsTypeVars :: Subs -> TypeVar -> TypeVar
 subsTypeVars subs v = Map.foldrWithKey (\x y w -> if x == w then y else w) v subs
-

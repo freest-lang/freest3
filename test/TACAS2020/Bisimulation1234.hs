@@ -12,7 +12,7 @@ through an alternation of expansion of children nodes and their simplification, 
 reflexive, congruence, and BPA rules.
 -}
 
-module Equivalence.Bisimulation
+module TACAS2020.Bisimulation1234
 ( bisimilar,
   bisimilarGrammar -- Test only
 ) where
@@ -21,7 +21,7 @@ import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.TypeVariables
 import           Equivalence.Grammar
-import           Equivalence.TypeToGrammar
+import           TACAS2020.TypeToGrammar1
 import           Equivalence.Norm
 import           Equivalence.Normalisation
 import qualified Data.Map.Strict as Map

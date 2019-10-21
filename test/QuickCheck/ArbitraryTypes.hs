@@ -1,4 +1,4 @@
-module ArbitraryTypes
+module QuickCheck.ArbitraryTypes
 ( BisimPair(..)
 , ids
 ) where
@@ -98,7 +98,7 @@ bisimPair n =
     -- Commutativity
     , commut n
     ]
-    
+
 -- The various session type constructors
 
 skipPair :: Gen (Type, Type)
@@ -177,7 +177,7 @@ distrib n = do
   p <- arbitrary
   return (Semi pos (Choice pos p m1) t,
           Choice pos p (Map.map (\v -> Semi pos v u) m2))
-          
+
 -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
 
 recRecL :: Int -> Gen (Type, Type)

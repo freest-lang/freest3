@@ -1,35 +1,69 @@
-\section{Optimizations}
+\section{Optimisations}
 \label{sec:optimisations}
 
-Armed with the results in Section~\ref{sec:algorithm}, we decided to
-benchmark the algorithm on a test suite of carefully crafted pair of
-types (more on this in Section~\ref{sec:evaluation}). During this 
-process we came across a pair of types,
-\begin{equation}
-\label{ex:chaotic}
-\begin{aligned}
-  S &\triangleq \mu x . \&\{ \mathsf{Add}\colon x;x; !\,\intk,
-  \mathsf{Const}\colon ?\,\intk;!\intk,
-  \mathsf{Mult}\colon x;x;!\,\intk\}
-  \\
-  T &\triangleq \mu x . \&\{ \mathsf{Add}\colon x;x,
-  \mathsf{Const}\colon ?\,\intk,
-  \mathsf{Mult}\colon x;x\}; !\,\intk
-\end{aligned}
-\end{equation}
+Armed with the results in Sections~\ref{sec:algorithm}
+and~\ref{sec:correctness}, we decided to benchmark the algorithm on a
+test suite of carefully crafted pair of types (more on this in
+Section~\ref{sec:evaluation}). During this process we came across a
+pair of types,
 %
-on which function \lstinline|bisimilar| took 4379.98 seconds (that is
-one hour and forty minutes) to terminate. This is certainly not a
-reasonable running time for an algorithm to be included in a
-compiler. Hence we looked into ways to improve the running time. Among
-the different optimisations that we tried, three stand out:
+\begin{gather*}
+    \mu X . \&\{ \mathsf{Add}\colon X;X; !\intk,
+    \mathsf{Const}\colon ?\intk;!\intk,
+    \mathsf{Mult}\colon X;X;!\intk \}
+    \\
+    \mu Y . \&\{ \mathsf{Add}\colon Y;Y,
+    \mathsf{Const}\colon ?\intk,
+    \mathsf{Mult}\colon Y;Y \}; !\intk
+\end{gather*}
+%
+on which our algorithm took 4379.98 seconds (that is one hour and
+forty minutes) to terminate. This is certainly not a reasonable
+running time for an algorithm to be included in a compiler. Hence we
+looked into ways of improving the running time. Among the different
+optimisations that we tried, four stand out:
+%
 \begin{enumerate}
-\item Iterate the simplification stage until a fixed point is reached;
+\item Eliminate redundant productions in the grammar;
 \item Use a double-ended queue where promising children are prepended
   rather than appended;
-\item Clean redundant terminal symbols in the grammar;
-\item Filtering hopeless pairs from nodes.
+\item Add a filter rule to simplification stage that removes hopeless
+  pairs from nodes;
+\item Iterate the simplification stage until a fixed point is reached.
 \end{enumerate}
+
+% 1 _ ELIMINATE REDUNDANT PRODUCTIONS IN THE GRAMMAR
+
+Realising that the size of the expansion tree depends, among other
+things, on the number of productions in the grammar, we looked into
+ways of generating smaller grammars. New productions are created in
+function $\word$, cases $\sharp B$ and $\star\{l_i\colon
+T_i\}$. Rather than blindly adding a new production
+$Y \rightarrow \vec Z$, we look, in the set of productions, for a
+production $W \rightarrow \vec X$ such that the language generated
+from $\vec Z$ coincides with that from $\vec X$ \vv{é isto?}. In this
+case, we add no new production and return non terminal~$W$ instead. To
+find~$W$, we look for the least fixed-point \dots
+
+% the generation of
+% grammars cleaned of redundant terminal symbols is paramount to reduce
+% the size of the expansion tree and thus to enhance the performance. We
+% define a function \lstinline|addBasicProd| (see Appendix) that avoids
+% the blind creation of fresh variables in function
+% \lstinline|toGrammar| case \lstinline|Message p b| (in
+% Listing~\ref{lst:toGrammar}) by a prior search for existing
+% productions with the respective terminal symbols.
+
+% 2 _ DOUBLE-ENDED QUEUE
+
+A double-ended queue would allow prioritizing nodes with potential to
+reach an empty node faster.
+
+
+% 3 _ FILTER
+
+\vv{filter}
+
 
 If, on the one hand, we believed that the computation of the expansion
 tree could be speeded up by extending the simplification phase, on the
@@ -56,58 +90,45 @@ The revised \lstinline|simplify| function is in Listing~\ref
 \begin{theorem}
   \label{thm:fixed_point}
   The simplification function that results from applying the
-  reflexive, congruence, and \BPA\ rules, has a fixed point in the
-  complete partial ordered set
-  {\upshape\lstinline|Set (Node, Ancestors)|}, where the set of
-  ancestors is supposed to be fixed. % and equal to $A$.
+  reflexive, congruence, \BPA, and filtering rules, has a fixed point
+  in the complete partial ordered set of pairs node-ancestors, where
+  the set of ancestors is supposed to be fixed.
 \end{theorem}
 %
 \begin{proof}
-  See appendix.
+  \vv{where do we place the proof? Also, added one more rule:
+    filtering. Do we still have a theorem?}
 \end{proof}
 
-% Having proved that the fixed point exists, 
-We can now adapt the
-simplification phase to, on the one hand, iterate the simplification
-rules until reaching a fixed point and, on the other hand, identify
-and prepend promising nodes. An improved version of the
-\lstinline|simplify| function (Listing~\ref{lst:algorithm}) is in
-Listing~\ref{lst:enhanced}.
+% We can now adapt the simplification phase to, on the one hand, iterate
+% the simplification rules until reaching a fixed point and, on the
+% other hand, identify and prepend promising nodes. An improved version
+% of the \lstinline|simplify| function (Listing~\ref{lst:algorithm}) is
+% in Listing~\ref{lst:enhanced}.
 
-\begin{lstlisting}[
-  caption={Haskell code for the improved simplification step (replaces
-    function \lstinline|simplify| in Listing~\ref{lst:algorithm})},
-  label={lst:enhanced},
-  captionpos=b]
-simplify :: Int -> Productions -> Node -> Ancestors -> NodeQueue -> NodeQueue
-simplify i ps n a q =
-  Queue.sortOn (lengthP i) (foldr enqueueNode q (findFixedPoint ps (Set.singleton (n, a))))
+% \begin{lstlisting}[
+%   caption={Haskell code for the improved simplification step (replaces
+%     function \lstinline|simplify| in Listing~\ref{lst:algorithm})},
+%   label={lst:enhanced},
+%   captionpos=b]
+% simplify :: Int -> Productions -> Node -> Ancestors -> NodeQueue -> NodeQueue
+% simplify i ps n a q =
+%   Queue.sortOn (lengthP i) (foldr enqueueNode q (findFixedPoint ps (Set.singleton (n, a))))
 
-enqueueNode :: (Node,Ancestors) -> NodeQueue -> NodeQueue
-enqueueNode (n,a) q 
- | maxLength n <= 1 = (n,a) Queue.<| q
- | otherwise        = q Queue.|> (n,a)
+% enqueueNode :: (Node,Ancestors) -> NodeQueue -> NodeQueue
+% enqueueNode (n,a) q 
+%  | maxLength n <= 1 = (n,a) Queue.<| q
+%  | otherwise        = q Queue.|> (n,a)
 
-findFixedPoint :: Productions -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
-findFixedPoint ps nas
-  | nas == nas' = nas
-  | otherwise   = findFixedPoint ps nas'
-  where nas' = if allNormed ps
-     then foldr (apply ps) nas [reflex,congruence,bpa2,filtering]
-     else foldr (apply ps) nas [reflex,congruence,bpa1,bpa2,filtering]
+% findFixedPoint :: Productions -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
+% findFixedPoint ps nas
+%   | nas == nas' = nas
+%   | otherwise   = findFixedPoint ps nas'
+%   where nas' = if allNormed ps
+%      then foldr (apply ps) nas [reflex,congruence,bpa2,filtering]
+%      else foldr (apply ps) nas [reflex,congruence,bpa1,bpa2,filtering]
 
-\end{lstlisting}
-
-Recalling that the size of the expansion tree (also) depends on the 
-number of productions in the grammar, the generation of grammars cleaned
-of redundant terminal symbols is paramount to reduce the size of the
-expansion tree and thus to enhance the performance. We define a 
-function \lstinline|addBasicProd| (see Appendix) that avoids the 
-blind creation of 
-fresh variables in function \lstinline|toGrammar| case 
-\lstinline|Message p b| 
-(in Listing~\ref{lst:toGrammar}) by a prior search for existing productions
-with the respective terminal symbols.
+% \end{lstlisting}
 
 The optimisations we propose aim at improving the performance of the
 algorithm, however the branching nature of the expansion tree promotes

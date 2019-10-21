@@ -8,4 +8,5 @@ main = hspec spec
 spec :: Spec
 spec = do
   describe "Bissim valid tests"  BisimValid.spec
-  describe "Bissim invalid tests"  BisimInvalid.spec
+--  describe "Bissim invalid tests"  BisimInvalid.spec
+

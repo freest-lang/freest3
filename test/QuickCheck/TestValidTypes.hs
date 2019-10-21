@@ -1,5 +1,6 @@
-module TestValidTypes (
-  prop_bisimilar
+module QuickCheck.TestValidTypes (
+    prop_bisimilar
+  , kinded
 )  where
 
 import           Test.QuickCheck
@@ -16,9 +17,9 @@ import           Utils.FreestState
 import           Control.Monad.State
 import           Data.Maybe
 import qualified Data.Map.Strict as Map
-import           ArbitraryTypes
+import           QuickCheck.ArbitraryTypes
 
-main = quickCheckWith stdArgs {maxSuccess = 90000} prop_bisimilar -- prop_equivalent
+main = quickCheckWith stdArgs {maxSuccess = 20000} prop_bisimilar -- prop_equivalent
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_distribution
 -- main = quickCheckWith stdArgs {maxSuccess = 10000, replay = Just (mkQCGen 42, 0)} prop_bisimilar
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
@@ -45,7 +46,7 @@ kindEnv :: KindEnv
 kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (kindSL pos)))
         -- TODO: This env should only contain the free vars of t; plus
         -- its kind may be SU
-        
+
 kinded :: Type -> Bool
 kinded t = null (errors s)
   where (_, s) = runState (synthetise kindEnv t) (initialState "Kind synthesis")
