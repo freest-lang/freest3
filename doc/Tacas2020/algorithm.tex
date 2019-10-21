@@ -96,12 +96,13 @@ denoted by $\vec X\cdot\vec Y$.
   \\
   \word(S;T) &= \word(S) \cdot \word(T)
   \\
-  \word(\sharp B) &= \productions := \productions \cup (Y \rightarrow \sharp B); Y \quad
-                   (Y\text{ fresh})
+  \word(\sharp B) &=
+    \productions := \productions \cup (Y \rightarrow \sharp B); Y
+    \quad (Y\text{ fresh})
   \\
-  \word(\star\{\ell_i\colon T_i\}_{i\in I}) &= \productions := \productions \cup (Y \rightarrow
-                                             \star l_i\cdot \word(T_i)); Y \quad
-                                             (Y\text{ fresh}; \forall i\in I)
+  \word(\star\{\ell_i\colon T_i\}_{i\in I}) &=
+    \productions := \productions \cup \{Y \rightarrow\star l_i\cdot \word(T_i) \mid i\in I\}; Y
+    \quad (Y\text{ fresh})
   \\
   \word(X) &= X
   \\
