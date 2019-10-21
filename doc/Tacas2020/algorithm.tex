@@ -37,7 +37,7 @@ A context-free grammar in Greibach normal form is a pair
 $(\vec X,\mathcal P)$ where~$\vec X$ is the \emph{start word}
 and~$\mathcal P$ a \emph{set of productions} of the form
 $Y \rightarrow a\vec Z$ (context-free session types do not require
-productions of the form $X \rightarrow\varepsilon$).
+productions of the form $Y \rightarrow\varepsilon$).
 %
 Due to the deterministic nature of context-free session types, the
 grammars we are interested in are \emph{simple}: for each
@@ -70,12 +70,20 @@ types is defined as follows.
                         \right.
   \\
   \Unravel (T) &= T \qquad \text{in all other cases}
+  % \Unravel(\mu X.T) & = \Unravel\subs{\mu X.T}XT])
+  % &
+  % \Unravel (S;T) &= \Unravel(T) \quad (\Unravel(S) = \skipk)
+  % \\
+  % \Unravel (T) &= T \quad (\text{all other cases})
+  % &
+  % \Unravel (S;T) &=  \Unravel(S); T \quad (\text{otherwise})
 \end{align*}
 %
-The function terminates by the assumption that types are well
+The function terminates under the assumption that types are well
 formed. Thiemann and Vasconcelos~\cite{thiemann2016context} show that
 $\Unravel$ yields a guarded type: $\skipk$, $\sharp B$,
-$\star\{\ell_i\colon S_i\}$, or a $;$-type starts with one the these.
+$\star\{\ell_i\colon S_i\}$, or a $;$-type that starts with one the
+these.
 
 % TO GRAMMAR
 
@@ -119,12 +127,12 @@ type $T_i$ is closed (has no free variables).
 
 % THE TRANSLATION
 
-Finally, a given an initial set of productions $\productions$,
-function $\grm$ translates a given type $T$ into a grammar composed of
-a start word $\word(T)$ and set of productions:
+Finally, given an initial set of productions $\productions$, function
+$\grm$ translates a type $T$ into a grammar composed of a start word
+and set of productions:
 %
 \begin{equation*}
-  \productions \cup \{\word(\Unravel(T_1')), \dots \word(\Unravel(T_n'))\}
+  \grm(T,\productions) = (\word(T),\; \productions \cup \{\word(\Unravel(T_1')), \dots \word(\Unravel(T_n'))\})
 \end{equation*}
 
 % The algorithm keeps the set of productions and an integer (to generate
@@ -169,8 +177,9 @@ single set of productions.
     T & \triangleq (\mu Y_1. \&\{n: Y_1;Y_1, \ell: \skipk\};?\intk);(\mu Y_2. !\intk ; Y_2)
   \end{align*}
   % 
-  Running $\grm$ on $S$ and $T$ as explained above produces
-  the following productions
+  Starting from the empty set of production, running $\grm$
+  consecutively on~$S$ and on~$T$ produces the following set of
+  productions
   %
   \begin{align*}
     X_1 &\rightarrow \& n\, X_1 X_1 X_3 & X_3 &\rightarrow \,? \intk &
@@ -224,8 +233,8 @@ As observed by Christensen H\"uttel, and
 Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}, any unnormed word
 $\vec Y$ is bisimilar to its concatenation with any other word, that
 is, if $\vec Y$ is unnormed, then $\vec Y \ProdEquiv \vec Y \vec X$.
-We use this fact to prune out unreachable symbols in unnormed
-words. And we do this in all productions, as well as in the two start words.
+We use this fact to prune unreachable symbols in unnormed words. And
+we do this in all productions as well as in the start words.
 
 %The code is in Listing~\ref{lst:prune}.
 
@@ -384,7 +393,7 @@ Given a set of productions and two start words $\vec X$ and $\vec Y$
 expansion stages, starting with simplification.
 %
 To avoid getting stuck in an infinite branch of the expansion tree, we
-use a breadth-first search on the expansion tree. Node-ancestors pairs
+use a breadth-first search on the expansion tree: node-ancestors pairs
 to be processed are stored in a queue. The initial pair contains the
 initial node $\{(\vec X,\vec Y)\}$ and the empty set of ancestors.
 %
