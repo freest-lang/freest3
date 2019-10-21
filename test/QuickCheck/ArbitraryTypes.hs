@@ -251,14 +251,12 @@ instance Arbitrary NonBisimPair where
     return $ NonBisimPair t' u'
 
 nonBisimPair :: Int -> Gen (Type, Type)
-nonBisimPair 0 =
+nonBisimPair n | n < 10 =
   oneof
     -- The various type constructors
-    [ skipPair
-    , messagePair
-    , varPair
+    [
     -- Anti-axioms
-    , skipMessage
+      skipMessage
     ]
 nonBisimPair n =
   oneof
