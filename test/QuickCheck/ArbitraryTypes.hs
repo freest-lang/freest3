@@ -1,5 +1,6 @@
 module QuickCheck.ArbitraryTypes
 ( BisimPair(..)
+, NonBisimPair(..)
 , ids
 ) where
 
@@ -235,3 +236,43 @@ commut :: Int -> Gen (Type, Type)
 commut n = do
   (t, u) <- bisimPair (n `div` 4)
   return (u, t)
+
+-- Arbitrary pairs of non-bisimilar types
+
+data NonBisimPair = NonBisimPair Type Type
+
+instance Show NonBisimPair where
+  show (NonBisimPair t u) = show t ++ " not-bisimilar-to " ++ show u
+
+instance Arbitrary NonBisimPair where
+  arbitrary = do
+    (t, u) <- sized nonBisimPair
+    let [t', u'] = Rename.renameTypes [t, u]
+    return $ NonBisimPair t' u'
+
+nonBisimPair :: Int -> Gen (Type, Type)
+nonBisimPair 0 =
+  oneof
+    -- The various type constructors
+    [ skipPair
+    , messagePair
+    , varPair
+    -- Anti-axioms
+    , skipMessage
+    ]
+nonBisimPair n =
+  oneof
+    -- The various type constructors
+    [ skipPair
+    , messagePair
+    , varPair
+    , choicePair n
+    , recPair n
+    , semiPair n
+    ]
+
+skipMessage :: Gen (Type, Type)
+skipMessage = do
+  (p, b) <- arbitrary
+  return (Skip pos,
+          Message pos p b)

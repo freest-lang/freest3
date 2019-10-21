@@ -49,7 +49,7 @@ After building the compiler you can choose one of the following options:
     ```
 	or from the command line:
 	```
-	$ time runhaskell -isrc -itest/QuickCheck test/QuickCheck/TestValidTypes.hs
+	$ time runhaskell -isrc -itest test/QuickCheck/TestValidTypes.hs
 	```
 There are also available options to run valid and invalid tests separately for all the units:
 

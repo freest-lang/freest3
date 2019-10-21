@@ -1,7 +1,7 @@
-module QuickCheck.TestValidTypes (
-    prop_bisimilar
-  , kinded
-)  where
+module QuickCheck.TestValidTypes
+( prop_bisimilar
+-- , kinded
+) where
 
 import           Test.QuickCheck
 import           Equivalence.Equivalence
@@ -19,8 +19,8 @@ import           Data.Maybe
 import qualified Data.Map.Strict as Map
 import           QuickCheck.ArbitraryTypes
 
-main = quickCheckWith stdArgs {maxSuccess = 20000} prop_bisimilar -- prop_equivalent
--- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_distribution
+-- main = quickCheckWith stdArgs {maxSuccess = 20000} prop_bisimilar -- prop_equivalent
+main = quickCheckWith stdArgs {maxSuccess = 10000} prop_distribution
 -- main = quickCheckWith stdArgs {maxSuccess = 10000, replay = Just (mkQCGen 42, 0)} prop_bisimilar
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_subs_kind_preservation1
