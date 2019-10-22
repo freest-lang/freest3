@@ -16,7 +16,7 @@ def uniform_time(v):
 
 def main():
     df = pd.read_csv("run.log", sep=";")
-    df.columns = ['Version', 'Nodes', 'Depth', 'Time']
+    df.columns = ['Version', 'Nodes T1', 'Nodes T2', 'Depth', 'Seed', 'Time']
 
     df['Time'] = df['Time'].map(uniform_time)
 
