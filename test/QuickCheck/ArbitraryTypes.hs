@@ -1,6 +1,7 @@
 module QuickCheck.ArbitraryTypes
 ( BisimPair(..)
 , ids
+, typeOf
 ) where
 
 import           Test.QuickCheck
@@ -235,3 +236,6 @@ commut :: Int -> Gen (Type, Type)
 commut n = do
   (t, u) <- bisimPair (n `div` 4)
   return (u, t)
+
+typeOf :: BisimPair -> Type
+typeOf (BisimPair p1 _) = p1

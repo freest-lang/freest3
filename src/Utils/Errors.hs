@@ -16,7 +16,7 @@ module Utils.Errors
 , styleRed
 ) where 
 
-import System.Console.Pretty (Color (..), Style (..), color, style)
+--import System.Console.Pretty (Color (..), Style (..), color, style)
 import Syntax.Base (Pos)
 import Syntax.Show
 
@@ -31,8 +31,8 @@ styleHeader f p =
   styleBold $ "\n" ++ f ++ ":" ++ show p ++ ": " ++ styleRed "error:\n\t"
 
 styleRed :: String -> String
-styleRed = color Red
+styleRed = id --color Red
 
 styleBold :: String -> String  
-styleBold = style Bold
+styleBold = id --style Bold
 

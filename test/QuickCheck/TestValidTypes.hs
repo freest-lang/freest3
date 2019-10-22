@@ -1,6 +1,7 @@
 module QuickCheck.TestValidTypes (
     prop_bisimilar
   , kinded
+  , nodes
 )  where
 
 import           Test.QuickCheck
