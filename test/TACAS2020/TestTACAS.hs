@@ -61,11 +61,15 @@ runTestVersion p f name = do
     -- putStrLn $ show p
     time <- clockSomething (test p f)
     return time
+    
+nodesOf :: BisimPair -> (String, String)
+nodesOf (BisimPair t1 t2) = (show $ nodes t1, show $nodes t2)
 
 runEach :: (BisimPair, Int) -> (String, BisimFunction) -> IO ()
 runEach (pair, d) (name, f) = do
     v <- timeout (60 * seconds_in_micro) $ runTestVersion pair f name
-    let base = name ++ ";"  ++ (show $ nodes $ typeOf pair) ++ ";" ++ (show d) ++ ";"
+    let (n1, n2) = nodesOf pair
+    let base = name ++ ";"  ++ n1 ++ ";" ++ n2 ++ ";" ++ (show d) ++ ";"
     case v of
         Nothing -> putStrLn $ base ++ "timeout"
         (Just time) -> putStrLn $ base ++ time

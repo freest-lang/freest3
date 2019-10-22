@@ -21,8 +21,11 @@ def main():
     df['Time'] = df['Time'].map(uniform_time)
 
     print(df)
-    print(df['Time'].max())
-    print(df['Time'].min())
+    print("Time max:", df['Time'].max())
+    print("Time min:", df['Time'].min())
+    
+    print("Nodes max:", df['Nodes'].max())
+    print("Depth max:", df['Depth'].max())
     
     sns.violinplot(x="Version", y="Time", hue="Version",
                    data=df)
