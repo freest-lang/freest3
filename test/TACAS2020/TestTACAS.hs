@@ -49,40 +49,36 @@ clockSomething something = do
   end <- getTime Monotonic
   return $ formatToString (timeSpecs) start end
 
-parseTestArgs :: [String] -> Int
-parseTestArgs [] = 0
-parseTestArgs (x:_) = read x
+parseTestArgs :: [String] -> (Int, Int, Int)
+parseTestArgs [] = (0, 0, 0)
+parseTestArgs (seed:version:depth:[]) = (read seed, read version, read depth)
 
 
 runTestVersion :: BisimPair -> BisimFunction -> String -> IO String
 runTestVersion p f name = do
+    -- putStrLn $ show p
     time <- clockSomething (test p f)
     return time
 
-runTest :: Int -> Int -> IO ()
-runTest size seed = do
-    let generator = mkQCGen $ seed
-    let pair = unGen (arbitrary :: Gen BisimPair) generator size
-    mapM_ (runEach pair) bisims
-
-runEach :: BisimPair -> (String, BisimFunction) -> IO ()
-runEach pair (name, f) = do
+runEach :: (BisimPair, Int) -> (String, BisimFunction) -> IO ()
+runEach (pair, d) (name, f) = do
     v <- timeout (60 * seconds_in_micro) $ runTestVersion pair f name
-    let base = name ++ ";" -- ++ (show $ nodes $ typeOf pair) ++ ";"
+    let base = name ++ ";"  ++ (show $ nodes $ typeOf pair) ++ ";" ++ (show d) ++ ";"
     case v of
         Nothing -> putStrLn $ base ++ "timeout"
         (Just time) -> putStrLn $ base ++ time
 
-runTests :: StdGen -> Int -> IO ()
-runTests _ 0 = return ()
-runTests g n = do
-    let (v, g2) = random g :: (Int, StdGen)
-    runTest v (n `mod` 5)
-    runTests g2 (n-1)
-
+mkPair :: Int -> Int -> BisimPair
+mkPair seed depth =
+    -- Disable because each run only generates one pair
+    -- let g = mkStdGen seed
+    -- let (v, _) = random g :: (Int, StdGen)
+    let generator = mkQCGen $ seed in
+    let pair = unGen (arbitrary :: Gen BisimPair) generator depth in
+    pair
 
 main :: IO ()
 main = do
     arguments <- getArgs
-    let seed = parseTestArgs arguments
-    runTests (mkStdGen seed) 100 
+    let (seed, version, depth) = parseTestArgs arguments
+    runEach (mkPair seed depth, depth) (bisims !! version)
