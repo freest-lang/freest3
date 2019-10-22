@@ -66,7 +66,9 @@ instance Arbitrary BisimPair where
     let [t', u'] = Rename.renameTypes [t, u]
     return $ BisimPair t' u'
 
-bisimPair :: Int -> Gen (Type, Type)
+type PairGen = Int -> Gen (Type, Type)
+
+bisimPair :: PairGen
 bisimPair 0 =
   oneof
     -- The various type constructors
@@ -80,9 +82,9 @@ bisimPair n =
     [ skipPair
     , messagePair
     , varPair
-    , choicePair n
-    , recPair n
-    , semiPair n
+    , choicePair bisimPair n
+    , recPair bisimPair n
+    , semiPair bisimPair n
     -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
     , skipT n
     , tSkip n
@@ -118,22 +120,22 @@ varPair = do
   return (TypeVar pos x,
           TypeVar pos x)
 
-semiPair :: Int -> Gen (Type, Type)
-semiPair n = do
-  (t, u) <- bisimPair (n `div` 8)
-  (v, w) <- bisimPair (n `div` 8)
+semiPair :: PairGen -> Int -> Gen (Type, Type)
+semiPair pairGen n = do
+  (t, u) <- pairGen (n `div` 8)
+  (v, w) <- pairGen (n `div` 8)
   return (Semi pos t v,
           Semi pos u w)
 
-choicePair :: Int -> Gen (Type, Type)
-choicePair n = do
+choicePair :: PairGen -> Int -> Gen (Type, Type)
+choicePair pairGen n = do
   p <- arbitrary
-  (m1, m2) <- typeMapPair n
+  (m1, m2) <- typeMapPair pairGen n
   return (Choice pos p m1,
           Choice pos p m2)
 
-typeMapPair :: Int -> Gen (TypeMap, TypeMap)
-typeMapPair n = do
+typeMapPair :: PairGen -> Int -> Gen (TypeMap, TypeMap)
+typeMapPair pairGen n = do
   k <- choose (1, length choices)
   pairs <- vectorOf k $ fieldPair (n `div` k)
   let (f1, f2) = unzip pairs
@@ -141,13 +143,13 @@ typeMapPair n = do
   where
   fieldPair :: Int -> Gen ((ProgVar, Type), (ProgVar, Type))
   fieldPair n = do
-    (t, u) <- bisimPair (n `div` 4)
+    (t, u) <- pairGen (n `div` 4)
     x <- arbitrary
     return ((x, t), (x, u))
 
-recPair :: Int -> Gen (Type, Type)
-recPair n = do
-  (t, u) <- bisimPair (n `div` 4)
+recPair :: PairGen -> Int -> Gen (Type, Type)
+recPair pairGen n = do
+  (t, u) <- pairGen (n `div` 4)
   xk <- arbitrary
   return (Rec pos xk t, Rec pos xk u)
 
@@ -174,7 +176,7 @@ assoc n = do
 distrib :: Int -> Gen (Type, Type)
 distrib n = do
   (t, u) <- bisimPair (n `div` 4)
-  (m1, m2) <- typeMapPair (n `div` 4)
+  (m1, m2) <- typeMapPair bisimPair (n `div` 4)
   p <- arbitrary
   return (Semi pos (Choice pos p m1) t,
           Choice pos p (Map.map (\v -> Semi pos v u) m2))
@@ -251,26 +253,45 @@ instance Arbitrary NonBisimPair where
     return $ NonBisimPair t' u'
 
 nonBisimPair :: Int -> Gen (Type, Type)
-nonBisimPair n | n < 10 =
+nonBisimPair 0 =
   oneof
-    -- The various type constructors
-    [
     -- Anti-axioms
+    [
       skipMessage
+    , varSkip
+    , messageVar
     ]
 nonBisimPair n =
   oneof
-    -- The various type constructors
-    [ skipPair
-    , messagePair
-    , varPair
-    , choicePair n
-    , recPair n
-    , semiPair n
+    -- The various type constructors, excluding the "atoms": skip, message, var
+    [
+      semiPair nonBisimPair n
+    , recPair nonBisimPair n
+    , choicePair nonBisimPair n
     ]
+
+-- A few anti-axioms
 
 skipMessage :: Gen (Type, Type)
 skipMessage = do
   (p, b) <- arbitrary
   return (Skip pos,
           Message pos p b)
+
+varSkip :: Gen (Type, Type)
+varSkip = do
+  x <- arbitrary
+  return (TypeVar pos x,
+          Skip pos)
+
+messageVar :: Gen (Type, Type)
+messageVar = do
+  (p, b, x) <- arbitrary
+  return (Message pos p b,
+          TypeVar pos x)
+
+messageInOut :: Gen (Type, Type)
+messageInOut = do
+  (p, b) <- arbitrary
+  return (Message pos p b,
+          Message pos (dual p) b)
