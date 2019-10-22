@@ -80,14 +80,13 @@ bisimPair n =
     [ skipPair
     , messagePair
     , varPair
-    , choicePair n
+    ,choicePair n
     , recPair n
     , semiPair n
     -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
     , skipT n
     , tSkip n
     , assoc n
-    , distrib n
     , distrib n
     -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
     , recRecL n
@@ -120,8 +119,8 @@ varPair = do
 
 semiPair :: Int -> Gen (Type, Type)
 semiPair n = do
-  (t, u) <- bisimPair (n `div` 8)
-  (v, w) <- bisimPair (n `div` 8)
+  (t, u) <- bisimPair (n `div` 4)
+  (v, w) <- bisimPair (n `div` 4)
   return (Semi pos t v,
           Semi pos u w)
 
@@ -141,13 +140,13 @@ typeMapPair n = do
   where
   fieldPair :: Int -> Gen ((ProgVar, Type), (ProgVar, Type))
   fieldPair n = do
-    (t, u) <- bisimPair (n `div` 4)
+    (t, u) <- bisimPair (n `div` 2)
     x <- arbitrary
     return ((x, t), (x, u))
 
 recPair :: Int -> Gen (Type, Type)
 recPair n = do
-  (t, u) <- bisimPair (n `div` 4)
+  (t, u) <- bisimPair (n `div` 2)
   xk <- arbitrary
   return (Rec pos xk t, Rec pos xk u)
 
@@ -155,26 +154,26 @@ recPair n = do
 
 skipT :: Int -> Gen (Type, Type)
 skipT n = do
-  (t, u) <- bisimPair (n `div` 4)
+  (t, u) <- bisimPair (n `div` 2)
   return (Semi pos (Skip pos) t, u)
 
 tSkip :: Int -> Gen (Type, Type)
 tSkip n = do
-  (t, u) <- bisimPair (n `div` 4)
+  (t, u) <- bisimPair (n `div` 2)
   return (Semi pos t (Skip pos), u)
 
 assoc :: Int -> Gen (Type, Type)
 assoc n = do
-  (t, u) <- bisimPair (n `div` 12)
-  (v, w) <- bisimPair (n `div` 12)
-  (x, y) <- bisimPair (n `div` 12)
+  (t, u) <- bisimPair (n `div` 6)
+  (v, w) <- bisimPair (n `div` 6)
+  (x, y) <- bisimPair (n `div` 6)
   return (Semi pos t (Semi pos v x),
           Semi pos (Semi pos u w) y)
 
 distrib :: Int -> Gen (Type, Type)
 distrib n = do
-  (t, u) <- bisimPair (n `div` 4)
-  (m1, m2) <- typeMapPair (n `div` 4)
+  (t, u) <- bisimPair (n `div` 2)
+  (m1, m2) <- typeMapPair (n `div` 2)
   p <- arbitrary
   return (Semi pos (Choice pos p m1) t,
           Choice pos p (Map.map (\v -> Semi pos v u) m2))
@@ -183,7 +182,7 @@ distrib n = do
 
 recRecL :: Int -> Gen (Type, Type)
 recRecL n = do
-  (t, u) <- bisimPair (n `div` 4)
+  (t, u) <- bisimPair (n `div` 2)
   xk@(TypeVarBind _ x _) <- arbitrary
   yk@(TypeVarBind _ y _) <- arbitrary
   let u' = Rename.renameType u -- this type will be in a substitution
@@ -192,7 +191,7 @@ recRecL n = do
 
 recRecR :: Int -> Gen (Type, Type)
 recRecR n = do
-  (t, u) <- bisimPair (n `div` 4)
+  (t, u) <- bisimPair (n `div` 2)
   xk@(TypeVarBind _ x _) <- arbitrary
   yk@(TypeVarBind _ y _) <- arbitrary
   let u' = Rename.renameType u -- this type will be in a substitution
@@ -201,7 +200,7 @@ recRecR n = do
 
 recFree :: Int -> Gen (Type, Type)
 recFree n = do
-  (t, u) <- bisimPair (n `div` 4)
+  (t, u) <- bisimPair (n `div` 2)
   k <- arbitrary
   return (Rec pos (TypeVarBind pos freeTypeVar k) t, u)
 
@@ -215,8 +214,8 @@ recFree n = do
 
 subsOnBoth :: Int -> Gen (Type, Type)
 subsOnBoth n = do
-  (t, u) <- bisimPair (n `div` 8)
-  (v, w) <- bisimPair (n `div` 8)
+  (t, u) <- bisimPair (n `div` 4)
+  (v, w) <- bisimPair (n `div` 4)
   let [t',u',v',w'] = Rename.renameTypes [t,u,v,w] -- these types will be in a substitution
   x <- arbitrary
   return (Rename.subs t' x v',
@@ -224,7 +223,7 @@ subsOnBoth n = do
 
 unfoldt :: Int -> Gen (Type, Type)
 unfoldt n = do
-  (t, u) <- bisimPair (n `div` 4)
+  (t, u) <- bisimPair (n `div` 2)
   let u' = Rename.renameType u -- this type will be unfolded
   xk <- arbitrary
   return (Rec pos xk t,
@@ -234,7 +233,7 @@ unfoldt n = do
 
 commut :: Int -> Gen (Type, Type)
 commut n = do
-  (t, u) <- bisimPair (n `div` 4)
+  (t, u) <- bisimPair (n `div` 2)
   return (u, t)
 
 typeOf :: BisimPair -> Type
