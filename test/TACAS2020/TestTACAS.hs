@@ -80,13 +80,13 @@ mkPair seed depth =
     -- let g = mkStdGen seed
     -- let (v, _) = random g :: (Int, StdGen)
     
-    let generator = mkQCGen $ seed in
-    let pair = unGen (arbitrary :: Gen BisimPair) generator depth in
-    pair
+    -- let generator = mkQCGen $ seed in
+    -- let pair = unGen (arbitrary :: Gen BisimPair) generator depth in
+    -- pair
     
-    --let t1 = read "((rec w:SL. &{B: ((+{A: &{B: x, C: Skip}};(+{A: ?Bool, B: w, C: (?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w))};Skip));+{A: (!Char;(((?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w));?Char);(?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w))))}), C: Skip});(x;((&{B: !Bool, C: Skip};((rec δ:SU. ?());y));(?Int;(+{B: x, C: ?Int};(!Int;Skip))))))" in
-    --let t2 = read "((rec z:SL. (Skip;&{B: (+{A: (&{B: x, C: Skip};+{A: (?Bool;Skip), B: (z;Skip), C: (((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z);Skip)})};(+{A: !Char};(((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z);(?Char;((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z))))), C: Skip}));((x;&{B: (!Bool;(?();y)), C: (Skip;(?();y))});((?Int;+{B: x, C: ?Int});!Int)))" in
-    --BisimPair t1 t2
+    let t1 = read "((rec w:SL. &{B: ((+{A: &{B: x, C: Skip}};(+{A: ?Bool, B: w, C: (?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w))};Skip));+{A: (!Char;(((?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w));?Char);(?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w))))}), C: Skip});(x;((&{B: !Bool, C: Skip};((rec δ:SU. ?());y));(?Int;(+{B: x, C: ?Int};(!Int;Skip))))))" in
+    let t2 = read "((rec z:SL. (Skip;&{B: (+{A: (&{B: x, C: Skip};+{A: (?Bool;Skip), B: (z;Skip), C: (((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z);Skip)})};(+{A: !Char};(((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z);(?Char;((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z))))), C: Skip}));((x;&{B: (!Bool;(?();y)), C: (Skip;(?();y))});((?Int;+{B: x, C: ?Int});!Int)))" in
+    BisimPair t1 t2
     
 
 main :: IO ()

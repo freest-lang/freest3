@@ -21,7 +21,7 @@ import qualified Data.Map.Strict as Map
 import           QuickCheck.ArbitraryTypes
 
 main = quickCheckWith stdArgs {maxSuccess = 20000} prop_bisimilar -- prop_equivalent
--- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_distribution
+-- main = quickCheckWith stdArgs {maxSuccess = 100000} prop_distribution
 -- main = quickCheckWith stdArgs {maxSuccess = 10000, replay = Just (mkQCGen 42, 0)} prop_bisimilar
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_subs_kind_preservation1
@@ -91,8 +91,8 @@ prop_dual_convolution t = kinded t ==> dual (dual t) == t
 -- Distribution
 
 prop_distribution :: BisimPair -> Property
-prop_distribution (BisimPair t _) = kinded t ==>
-  collect (nodes t) $
+prop_distribution (BisimPair t u) = kinded t ==>
+  collect (nodes t + nodes u) $
   tabulate "Type constructors" [constr t] $
   True
 
