@@ -41,8 +41,8 @@ bisims = [ ("B0", B0.bisimilar)
 
 type BisimFunction = (TypeEnv -> Type -> Type -> Bool)
 
-test :: BisimPair -> BisimFunction -> Property
-test (BisimPair t u) bisim = kinded t && kinded u ==> bisim Map.empty t u
+test :: BisimPair -> BisimFunction -> Bool
+test (BisimPair t u) bisim = bisim Map.empty t u
 
 clockSomething :: a -> IO String
 clockSomething something = do
@@ -69,19 +69,26 @@ runEach :: (BisimPair, Int) -> (String, BisimFunction) -> Int -> IO ()
 runEach (pair, d) (name, f) seed = do
     v <- timeout (60 * seconds_in_micro) $ runTestVersion pair f name
     let (n1, n2) = nodesOf pair
-    let base = name ++ ";"  ++ n1 ++ ";" ++ n2 ++ ";" ++ (show d) ++ ";" ++ (show seed) ++ ";"
+    let base = name ++ ";"  ++ n1 ++ ";" ++ n2 ++ ";" ++ (show d) ++ ";"++ (show seed) ++ ";"
     case v of
         Nothing -> putStrLn $ base ++ "timeout"
         (Just time) -> putStrLn $ base ++ time
 
-mkPair :: Int -> Int -> BisimPair
-mkPair seed depth =
+mkPair :: Int -> Int -> IO BisimPair
+mkPair seed depth = do
     -- Disable because each run only generates one pair
-    -- let g = mkStdGen seed
-    -- let (v, _) = random g :: (Int, StdGen)
-    let generator = mkQCGen $ seed in
-    let pair = unGen (arbitrary :: Gen BisimPair) generator depth in
-    pair
+    let g = mkStdGen seed
+    let (v, ng) = random g :: (Int, StdGen)
+    let generator1 = mkQCGen $ seed
+    let generator2 = mkQCGen $ v
+    let t1 = unGen (arbitrary :: Gen Type) generator1 depth
+    let t2 = unGen (arbitrary :: Gen Type) generator2 depth
+    let pair = BisimPair t1 t2
+    if kinded t1 && kinded t2 && not (test pair B0.bisimilar) then do
+      return pair
+    else do
+      let (v, _) = random ng :: (Int, StdGen)
+      mkPair v depth
     
     --let t1 = read "((rec w:SL. &{B: ((+{A: &{B: x, C: Skip}};(+{A: ?Bool, B: w, C: (?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w))};Skip));+{A: (!Char;(((?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w));?Char);(?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w))))}), C: Skip});(x;((&{B: !Bool, C: Skip};((rec δ:SU. ?());y));(?Int;(+{B: x, C: ?Int};(!Int;Skip))))))" in
     --let t2 = read "((rec z:SL. (Skip;&{B: (+{A: (&{B: x, C: Skip};+{A: (?Bool;Skip), B: (z;Skip), C: (((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z);Skip)})};(+{A: !Char};(((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z);(?Char;((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z))))), C: Skip}));((x;&{B: (!Bool;(?();y)), C: (Skip;(?();y))});((?Int;+{B: x, C: ?Int});!Int)))" in
@@ -92,4 +99,5 @@ main :: IO ()
 main = do
     arguments <- getArgs
     let (seed, version, depth) = parseTestArgs arguments
-    runEach (mkPair seed depth, depth) (bisims !! version) seed
+    pair <- mkPair seed depth
+    runEach (pair, depth) (bisims !! version) seed

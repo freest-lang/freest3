@@ -64,6 +64,11 @@ instance Arbitrary BisimPair where
     (t, u) <- sized bisimPair
     let [t', u'] = Rename.renameTypes [t, u]
     return $ BisimPair t' u'
+    
+instance Arbitrary Type where
+  arbitrary = do
+    (BisimPair _ t) <- arbitrary
+    return t
 
 bisimPair :: Int -> Gen (Type, Type)
 bisimPair 0 =
