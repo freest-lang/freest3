@@ -24,7 +24,7 @@ The algorithm comprises three stages:
   in which it decides negatively.
 \end{enumerate}
 
-\paragraph{Translating types to grammars}
+\subsection{Translating types to grammars}
 
 % GREIBACH NORMAL FORMS
 
@@ -112,11 +112,11 @@ denoted by $\vec X\cdot\vec Y$.
 \end{align*}
 
 \begin{lemma}
-\label{lemma:non_terminated_word}
-	Let $\vdash T$. If $\neg T \checkmark$, then $\word(\Unravel T) \neq \varepsilon$.
+  \label{lemma:non_terminated_word}
+  Let $\vdash T$. If $\neg T \checkmark$, then $\word(\Unravel T) \neq \varepsilon$.
 \end{lemma}
 \begin{proof}
-\todo{AM}{TODO}	
+  \todo{AM}{TODO}	
 \end{proof}
 
 
@@ -220,7 +220,7 @@ single set of productions.
   and two start words $X_1X_2$ and $Y_1Y_2$.
 \end{example}
 
-\paragraph{Pruning unnormed productions}
+\subsection{Pruning unnormed productions}
 
 For $\vec a$ a word $a_1,\dots, a_n$ ($n\ge1$), write
 $\vec Y \LTSderivesP[\vec a] \vec Z$ when
@@ -312,7 +312,7 @@ we do this in all productions as well as in the start words.
   % \end{center}
 \end{example}
 
-\paragraph{Building an expansion tree}
+\subsection{Building an expansion tree}
 
 % We recall that, given two context-free session types $S$ and $T$, our main goal
 % is to decide whether these types are equivalent or not. For this purpose,

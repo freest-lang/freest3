@@ -88,9 +88,9 @@ bisimPair n =
     -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
     , skipT n
     , tSkip n
+    , distrib n
     , assoc n
-    , distrib n
-    , distrib n
+    , commut n
     -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
     , recRecL n
     , recRecR n
@@ -98,8 +98,6 @@ bisimPair n =
     -- , alphaConvert n
     , subsOnBoth n
     , unfoldt n
-    -- Commutativity
-    , commut n
     ]
 
 -- The various session type constructors
@@ -165,14 +163,6 @@ tSkip n = do
   (t, u) <- bisimPair (n `div` 4)
   return (Semi pos t (Skip pos), u)
 
-assoc :: Int -> Gen (Type, Type)
-assoc n = do
-  (t, u) <- bisimPair (n `div` 12)
-  (v, w) <- bisimPair (n `div` 12)
-  (x, y) <- bisimPair (n `div` 12)
-  return (Semi pos t (Semi pos v x),
-          Semi pos (Semi pos u w) y)
-
 distrib :: Int -> Gen (Type, Type)
 distrib n = do
   (t, u) <- bisimPair (n `div` 4)
@@ -180,6 +170,19 @@ distrib n = do
   p <- arbitrary
   return (Semi pos (Choice pos p m1) t,
           Choice pos p (Map.map (\v -> Semi pos v u) m2))
+
+assoc :: Int -> Gen (Type, Type)
+assoc n = do
+  (t, u) <- bisimPair (n `div` 12)
+  (v, w) <- bisimPair (n `div` 12)
+  (x, y) <- bisimPair (n `div` 12)
+  return (Semi pos t (Semi pos v x),
+          Semi pos (Semi pos u w) y)
+          
+commut :: Int -> Gen (Type, Type)  -- TODO: this axiom be distributed among all others
+commut n = do
+  (t, u) <- bisimPair (n `div` 4)
+  return (u, t)
 
 -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
 
@@ -231,13 +234,6 @@ unfoldt n = do
   xk <- arbitrary
   return (Rec pos xk t,
           Rename.unfold (Rec pos xk u'))
-
--- Commutativity
-
-commut :: Int -> Gen (Type, Type)
-commut n = do
-  (t, u) <- bisimPair (n `div` 4)
-  return (u, t)
 
 -- Arbitrary pairs of non-bisimilar types
 

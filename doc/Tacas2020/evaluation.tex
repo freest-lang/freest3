@@ -1,33 +1,74 @@
 \section{Evaluation}
 \label{sec:evaluation}
 
-\begin{theorem}
+This section discusses the behaviour of our algorithm in the real
+world.
+
+Both for testing and for performance evaluation we require a test
+suit. We started with a carefully crafted, manually produced, suite of
+valid and invalid tests. The tests produced were, on the one hand,
+small, and, on the other hand, lacking diversity. We then turned our
+attention to the automatic generation of test cases. Generating pairs
+of arbitrary (well-formed) types that share no variables is
+simple. The difficulty lies in deciding whether two such types,
+independently generated, are bisimilar. Even if an oracle could be
+identified, the probability that a randomly generated pair of types
+turns out equivalent would be extremely low. Instead we proceed by
+generating arbitrary pairs of types that are bisimilar by
+construction. The following result naturally induces an algorithm:
+given a natural number $n$ (the size of the pair), arbitrarily select
+for the base case ($n=0$) one of the pairs in item 1 and for the
+recursive case ($n\ge1$) one of the pairs in 2--12 items.
+
+\begin{theorem}[Properties of type equivalence]
   \begin{enumerate}
-  \item $\skipk \TypeEquiv \skipk$,  $\sharp B \TypeEquiv \sharp B$,
+    % Congruence
+  \item $\skipk \TypeEquiv \skipk$,  $\sharp B \TypeEquiv \sharp B$, and
     $X \TypeEquiv X$;
-  \item $S;U \TypeEquiv T;V$ if $S \TypeEquiv T$ and $U \TypeEquiv V$; 
+  \item $S;T \TypeEquiv U;V$ if $S \TypeEquiv U$ and $T \TypeEquiv V$; 
   \item $\mu X.S \TypeEquiv \mu X.T$ if $S \TypeEquiv T$; 
   \item $\star\{\ell_i\colon S_i\}_{i\in I}\TypeEquiv
-    \star\{\ell_i\colon T_i\}_{i\in I}$ if $(S \TypeEquiv T)_{i\in I}$
+    \star\{\ell_i\colon T_i\}_{i\in I}$ if $(S \TypeEquiv T)_{i\in
+      I}$;
+    % Laws for sequential composition
   \item $S\TypeEquiv T;\skipk$ and $S\TypeEquiv \skipk;T$ if $S \TypeEquiv T$;
   \item $\star\{\ell_i\colon S_i\}_{i\in I};U\TypeEquiv
     \star\{\ell_i\colon T_i;V\}_{i\in I}$ if $(S \TypeEquiv T)_{i\in
-      I}$ and $U \TypeEquiv V$; 
+      I}$ and $U \TypeEquiv V$;
+  \item $T \TypeEquiv S$ if $S \TypeEquiv T$;
+  \item $R;(S;T) \TypeEquiv (U;V);W$ if $R \TypeEquiv U$, $S \TypeEquiv V$, and $T\TypeEquiv W$;
+    % Laws for mu-types
   \item
     $\mu x.\mu y.S \TypeEquiv \mu x.T\subs xy \TypeEquiv \mu y.T\subs
     yx$ if $S \TypeEquiv T$;
   \item $\mu x.S \TypeEquiv T$ if $S \TypeEquiv T$ and $x\notin\free(S)$;
   \item $S\subs Ux\TypeEquiv T\subs Vx$  if $S \TypeEquiv T$ and $U \TypeEquiv V$; 
-  \item $\mu X.S \TypeEquiv T$
+  \item $\mu X.S \TypeEquiv T\subs{\mu X.T}{X}$ if $S \TypeEquiv T$.
   \end{enumerate}
 \end{theorem}
+%
+\begin{proof}
+  1--3: Bisimulation is a congruence. 4--12: Thiemann and
+  Vasconcelos~\cite{thiemann2016context} exhibit the appropriate
+  bisimulations.
+\end{proof}
 
-We implemented the algorithm sketched in Listings~\ref{lst:toGrammar}
-to~\ref{lst:enhanced} in 300 lines of Haskell and used the Glasgow
-Haskell Compiler, GHC version 8.6.3, from which we have obtained the
-results we present in this section.  Evaluation was conducted on a Mac
-mini equipped with a 3.6 GHz Intel Core i3, 8 GB of memory, running
-MacOS 10.14.3.
+We used QuickCheck~\cite{DBLP:conf/icfp/ClaessenH00} to implement the
+generation of test suites. For evaluating the algorithm on
+non-bisimilar pairs we independently generate two types, run the
+algorithm, and discard the data collected in the rare event that the
+pair turns out to be bisimilar.
+%
+For testing, however, we rely on manually crafted tests, for,
+bisimulation for context-free session types has the nasty property
+that $\mu X. !\intk;X;X \TypeEquiv \mu X. !\intk;X$ even if
+$!\intk;X;X \not\TypeEquiv\: !\intk;X$.
+
+We implemented the algorithm described in Section~\ref{sec:algorithm}
+with 300 lines of Haskell and used the Glasgow Haskell Compiler, GHC
+version 8.6.3, from which we have obtained the results we present in
+this section.  Evaluation was conducted on a Mac mini equipped with a
+3.6 GHz Intel Core i3, 8 GB of memory, running MacOS 10.14.3. \vv{redo}
 
 Once the improvement proposals were established, we benchmarked the
 algorithm on a test suite of carefully crafted pairs of types
