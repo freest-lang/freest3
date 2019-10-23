@@ -41,40 +41,9 @@ relation~\cite{gorla2016full}.
 % in formal languages symbol $\varepsilon$ is used to denote the empty
 % word; we use both symbols interchangeably.
 
-We start with a lemma that relates terminated types~$T$ to the result 
-of a call to $\word(T)$. Throughout this section, we 
+We start proving that the transformation of types into grammars preserves
+the labelled transitions. Throughout this section, we 
 will abuse notation and denote by $\word(S)$ the start word for $S$.
-
-\begin{lemma}
-  \label{lemma:terminated-togrammar}
-  Let $\isType[] T$. Then, $\DONE T$ if and only if
-  $\word(T) = \varepsilon$.
-\end{lemma}
-%
-\begin{proof}
-  The direct implication follows by rule induction on
-  predicate~$\DONE$.
-  \begin{itemize}
-  \item If $T \triangleq \skipk$, then $\word(T) = \varepsilon$.
-  \item If $T\triangleq U;V$, then the premises of the rule read
-    $\DONE{U}$ and $\DONE{V}$. Then, by induction hypothesis,
-    $\word(U) = \varepsilon$ and $\word(V) = \varepsilon$. Hence,
-    $\word(T;U) = \varepsilon$.
-  \item If $T\triangleq \mu X.S$ then the premises of $\isType[]T$ and
-    $\DONE T$ are contradictory on~$S$.
-  \item If $T=X$, then $\neg \isType[]T$.
-  \end{itemize}
-  %
-  Conversely, if $\word(T) = \varepsilon$, then by definition of
-  $\word$:
-  \begin{itemize}
-  \item $T\triangleq \skipk$ and we have $\DONE T$;
-  \item $T\triangleq U;V$ and the inversion of the function reads
-    $\word(U) = \varepsilon$, $\word(V) = \varepsilon$.  Thus, by
-    induction, we have $\DONE U$ and $\DONE V$. Hence, $\DONE T$;
-  \item No other case in function $\word$ produces an empty word.
-  \end{itemize}
-\end{proof}
 
 % To be able to use induction in the proof of 
 % the key result of this section
@@ -152,13 +121,13 @@ and vice-versa.
 		\begin{itemize}
 			\item if $S_1;S_2\LTSderives S_1';S_2$ with $S_1\LTSderives S_1'$,
 			by induction hypothesis, we know that $\word(S_1) \LTSderivesP \word(S_1')$.
-			Furthermore, for any types $S$ and $T$ we have
+			Furthermore, we have
 			\begin{equation}
 			\label{eq:grammar_sequential_composition}
-				\word(S;T) = \word(S)\cdot\word(T).	
+				\word(S_1;S_2) = \word(S_1)\cdot\word(S_2).	
 			\end{equation}
 			Hence, we have $\word(S_1;S_2) \LTSderivesP \word(S_1';S_2)$.
-			\item assume $S_1;S_2\LTSderives S_2'$ where 
+			\item assume that $S_1;S_2\LTSderives S_2'$ where 
 				$\DONE{S_1}$ and $S_2\LTSderives S_2'$.
 			Since $\DONE{S_1}$, 
 			by~\eqref{eq:grammar_sequential_composition} and
@@ -168,9 +137,9 @@ and vice-versa.
 			$\word(S_1;S_2) \LTSderivesP \word(S_2').$
 		\end{itemize}
 		\item $S\triangleq\mu X.T$. If $S\LTSderives S'$, by Lemma~\ref{lemma:unravelling},
-		we have $\Unravel\ S \LTSderives S'$ and $\Unravel\ S$ is not a recursive
+		we have $\Unravel(S) \LTSderives S'$ and $\Unravel(S)$ is not a recursive
 		type, hence by induction hypothesis, we have
-		$\word(\Unravel\ S)\LTSderivesP \word(S')$.
+		$\word(\Unravel(S))\LTSderivesP \word(S')$.
 		By definition of $\grm(S,\emptyset)$, we thus have
 		$\word(S) = X \LTSderivesP \word(S')$. \smallskip
 	\end{itemize}
@@ -179,12 +148,11 @@ and vice-versa.
 	\begin{itemize}
 		\item if $\word(S)\LTSderivesP[\sharp B] \vec X$, then
 		$\word(S) = Y \vec X$, where $Y\LTSderivesP[\sharp B] \varepsilon$,
-		and so $\Unravel(S) = \sharp B; T$ where $S\LTSderives[\sharp B] T$.
+		and so $\Unravel(S) = \sharp B; T$ whence $S\LTSderives[\sharp B] T$.
 		\item if $\word(S) \LTSderivesP[\star l_i] \vec X $, then
-		$\word(\Unravel(S)) = Y $, where $Y\LTSderivesP[\star l_i] \vec Y'$
-		and $\vec X = \vec Y' \vec Z$.
+		$\word(\Unravel(S)) = Y $, where $Y\LTSderivesP[\star l_i] \vec X$.
 		Hence, $\Unravel (S)$ is of the form $\star\{l_j' :U_j\}_{j\in J};T$ with $l_i = l_j'$ and
-		$\vec Y' = \word(U_j)$, for some $j\in J$. Using 
+		$\vec X = \word(U_j) \cdot \vec Z$, for some $j\in J$. Using 
 		the LTS we conclude that 
 		$S \LTSderives[\star l_i] U_j ; T$.
 	\end{itemize}
@@ -230,7 +198,7 @@ We omit the details.
 
 \paragraph{Correctness of the algorithm}
 
-We now focus on the correctness of function $\bisim$.  Before
+We now focus on the correctness of the function $\Bisim$.  Before
 proceeding to soundness, we recall the \emph{safeness property}
 introduced by Jan{\v{c}}ar and Moller~\cite{janvcar1999techniques}.
 
@@ -295,7 +263,7 @@ the algorithm, its soundness and completeness.
   the expansion tree are finite and thence $\Bisim(\vec X,\vec Y)$
   terminates.  To conclude that all branches are finite, observe that
   any infinite branch is successful by definition and thus the
-  safeness property implies $\word(S) \ProdEquiv \word(T)$ and we have
+  safeness property would imply $\word(S) \ProdEquiv \word(T)$ and we would have
   $S\TypeEquiv T$, by Theorem~\ref{thm:equiv_coincide}.
 \end{proof}
 
@@ -312,13 +280,14 @@ the algorithm, its soundness and completeness.
 \begin{lemma}
   \label{lem:bisimilar-to-prod}
   Let \grmcontext.  If $\Bisim(\vec X,\vec Y)$ returns $\True$, then
-  $\word(S) \ProdEquiv \word(T)$.
+  $\vec X \ProdEquiv \vec Y$.
 \end{lemma}
 
 \begin{proof}
   Function $\Bisim$ returns $\True$ whenever it reaches a (finite)
   successful branch in the expansion tree rooted at
-  $\{(\vec X,\vec Y)\}$. Conclude with the safeness property,
+  $\{(\vec X,\vec Y)\}$, i.e., a branch terminating in an empty node. 
+  Conclude with the safeness property,
   Lemma~\ref{lem:safeness}.
   % , whenever the expansion tree rooted
   % at $\{(X_{S}, X_{T})\}$ has a (finite) successful branch, we
@@ -327,7 +296,7 @@ the algorithm, its soundness and completeness.
 
 From the previous results, the soundness of our algorithm is now
 immediate: the algorithm to check the bisimulation of context-free
-session types (Listing~\ref{lst:algorithm}) is sound with respect to
+session types is sound with respect to
 the meta-theory of context-free session types.
 
 \begin{theorem}[Soundness]
@@ -350,8 +319,8 @@ the meta-theory of context-free session types.
 % \end{proof}
  
 Given that the algorithm terminates (Lemma~\ref{lem:termination}), we
-know that if $S\not\TypeEquiv T$, then $\bisimf ST$ returns
-\lstinline|False|.
+know that if $S\not\TypeEquiv T$, then $\Bisim(\vec X, \vec Y)$ returns
+\lstinline|False|, where \grmcontext.
 %
 We now show that the algorithm to check the bisimulation of
 context-free session types is complete with respect to the meta-theory
@@ -360,8 +329,8 @@ paramount to achieve this result.
 
 \begin{theorem}[Completeness]
 \label{thm:completeness}
-  If $S \TypeEquiv T$ then $\bisimf S T$ returns
-  \upshape{\lstinline|True|}.
+  If $S \TypeEquiv T$ then $\Bisim(\vec X, \vec Y)$ returns
+  \upshape{\lstinline|True|}, where \grmcontext.
 \end{theorem}
 %
 \begin{proof}

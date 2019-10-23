@@ -60,7 +60,7 @@ types, taken from Thiemann and Vasconcelos~\cite{thiemann2016context},
 is defined as follows.
 %
 \begin{align*}
-  \Unravel(\mu X.T) & = \Unravel(\subs{\mu X.T}XT])
+  \Unravel(\mu X.T) & = \Unravel(\subs{\mu X.T}XT)
   \\
   \Unravel (S;T) &= \left\{%
   \begin{array}{ll}
@@ -111,18 +111,46 @@ denoted by $\vec X\cdot\vec Y$.
   \word(\mu X.T) &= X
 \end{align*}
 
+
+The following lemma relates terminated types~$T$ to the result 
+of a call to $\word(T)$. 
+
 \begin{lemma}
-  \label{lemma:non_terminated_word}
-  Let $\vdash T$. If $\neg T \checkmark$, then $\word(\Unravel T) \neq \varepsilon$.
+  \label{lemma:terminated-togrammar}
+  Let $\isType[] T$. Then, $\DONE T$ if and only if
+  $\word(T) = \varepsilon$.
 \end{lemma}
+%
 \begin{proof}
-  \todo{AM}{TODO}	
+  The direct implication follows by rule induction on
+  predicate~$\DONE$.
+  \begin{itemize}
+  \item If $T \triangleq \skipk$, then $\word(T) = \varepsilon$.
+  \item If $T\triangleq U;V$, then the premises of the rule read
+    $\DONE{U}$ and $\DONE{V}$. Then, by induction hypothesis,
+    $\word(U) = \varepsilon$ and $\word(V) = \varepsilon$. Hence,
+    $\word(T;U) = \varepsilon$.
+  \item If $T\triangleq \mu X.S$ then the premises of $\isType[]T$ and
+    $\DONE T$ are contradictory on~$S$.
+  \item If $T\triangleq X$, then $\neg \isType[]T$.
+  \end{itemize}
+  %
+  Conversely, if $\word(T) = \varepsilon$, then by definition of
+  $\word$:
+  \begin{itemize}
+  \item $T\triangleq \skipk$ and we have $\DONE T$;
+  \item $T\triangleq U;V$ and the inversion of the function reads
+    $\word(U) = \varepsilon$, $\word(V) = \varepsilon$.  Thus, by
+    induction, we have $\DONE U$ and $\DONE V$. Hence, $\DONE T$;
+  \item No other case in function $\word$ produces an empty word.
+  \end{itemize}
 \end{proof}
 
 
 % COLLECT
 
-Assume that $\{\mu X_1.T_1,\dots,\mu X_n.T_n\}$ is the set of all
+To define the translation of context-free session types to simple grammars,
+assume that $\{\mu X_1.T_1,\dots,\mu X_n.T_n\}$ is the set of all
 $\mu$-subterms in a given type~$T$. Further assume that $i<j$ whenever
 $X_j \in \free(\mu X_i.S_i)$. That is, the $\mu$-subterms are
 topologically sorted with respect to their lexical nesting.
@@ -181,7 +209,7 @@ and set of productions:
 %\input{listing-toGrammar}
 
 Notice that $\word(\Unravel(T_i'))$ is a non-empty word because of
-Lemma~\ref{lemma:non_terminated_word} and since $T_i'$ is 
+Lemma~\ref{lemma:terminated-togrammar} and since $T_i'$ is 
 non-terminated.
 The function $\grm$ terminates on all inputs (because recursion is
 always on subterms) and adds a finite number of productions to the
