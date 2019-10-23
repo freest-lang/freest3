@@ -124,16 +124,18 @@ denoted by $\vec X\cdot\vec Y$.
 
 Assume that $\{\mu X_1.T_1,\dots,\mu X_n.T_n\}$ is the set of all
 $\mu$-subterms in a given type~$T$. Further assume that $i<j$ whenever
-$X_i \in \free(\mu X_j.S_j)$. That is, the $\mu$-subterms are
+$X_j \in \free(\mu X_i.S_i)$. That is, the $\mu$-subterms are
 topologically sorted with respect to their lexical nesting.
 %
+Notice that if $T \triangleq \mu X. S$, then $\mu X_n. T_n$
+is T, itself.
 Now we identify unrolled versions of the $\mu$-subterms. 
 %
 \begin{align*}
-  T_1' &= \subs{\mu X_1.T_1}{X_1}{T_1} \\
-  T_2' &= \subs{\mu X_2.T_2}{X_2}{ \subs{\mu X_1.T_1}{X_1}{T_2} }\\
+  T_1' &= \subs{\mu X_n.T_n}{X_n}{ \cdots \subs{\mu X_2.T_2}{X_2}\subs{\mu X_1.T_1}{X_1}{T_1} }\\
+  T_2' &= \subs{\mu X_n.T_n}{X_n}{ \cdots \subs{\mu X_2.T_1}{X_2}{T_2} }\\
        &\;\;\vdots \\
-  T_n' &= \subs{\mu X_n.T_n}{X_n}{ \cdots \subs{\mu X_1.T_1}{X_1}{T_n} }
+  T_n' &= \subs{\mu X_n.T_n}{X_n}{T_n} 
 \end{align*}
 %
 Clearly, each type $T_i'$ is closed (has no free variables).\smallskip
@@ -145,15 +147,14 @@ and set of productions:
 %
 \begin{equation*}
   %\grm(T,\productions) = (\word(T),\; \productions \cup \{\word(\Unravel(T_1')), \dots \word(\Unravel(T_n'))\})
-  \grm(T,\productions) = (\word(T),\; \productions_1) \\
+  \grm(T,\productions) = (\word(T),\; \productions_n), \text{ where} \\
   %
 \end{equation*}
 \[
-  \text{ where }\left\{
+  \left\{
   \begin{array}{lll}
-  	\productions_{n+1} &= \productions\\
-  	\productions_i &= \productions_i' \cup \{X_i \rightarrow a_j\vec Y_j \vec Z\},
-  	\text{ with }(z \vec z, \productions_i')=\grm(\Unravel(T_i'), \productions_{i+1})
+  	\productions_{0} &= \productions\\
+  	\productions_i &= \productions_i' \cup \{X_i \rightarrow a_j\vec Y_j \vec Z \mid (z \rightarrow a_j \vec Y_j)\in \productions_i'\}, \text{with }(z \vec z, \productions_i')=\grm(\Unravel(T_i'), \productions_{i-1})
   \end{array}\right.\\\\
 \]
 
