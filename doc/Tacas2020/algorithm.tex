@@ -154,7 +154,7 @@ and set of productions:
   \left\{
   \begin{array}{lll}
   	\productions_{0} &= \productions\\
-  	\productions_i &= \productions_i' \cup \{X_i \rightarrow a_j\vec Y_j \vec Z \mid (z \rightarrow a_j \vec Y_j)\in \productions_i'\}, \text{with }(z \vec z, \productions_i')=\grm(\Unravel(T_i'), \productions_{i-1})
+  	\productions_i &= \productions_i' \cup \{X_i \rightarrow a_j\vec Y_j \vec Z \mid (Z \rightarrow a_j \vec Y_j)\in \productions_i'\}, \text{with }(Z \vec Z, \productions_i')=\grm(\Unravel(T_i'), \productions_{i-1})
   \end{array}\right.\\\\
 \]
 
