@@ -48,7 +48,7 @@ one production of the form $X \rightarrow a\vec Y$.
 
 Grammars in Greibach normal form naturally induce a labelled
 transition system by taking words~$\vec X$ as states, terminal
-symbols~$a$ as actions, and the transition relation $\LTSderivesP$,
+symbols~$a$ as actions, and the transition relation, $\LTSderivesP$,
 defined as $X\vec Y\LTSderivesP \vec Z\vec Y$ when
 $X \rightarrow a\vec Z \in \mathcal P$.  The associated bisimilarity
 is denoted by $\ProdEquiv$.
@@ -56,7 +56,8 @@ is denoted by $\ProdEquiv$.
 % UNRAVEL
 
 The \emph{unravelling} function on well-formed context-free session
-types is defined as follows.
+types, taken from Thiemann and Vasconcelos~\cite{thiemann2016context},
+is defined as follows.
 %
 \begin{align*}
   \Unravel(\mu X.T) & = \Unravel\subs{\mu X.T}XT])
@@ -81,7 +82,7 @@ types is defined as follows.
 %
 The function terminates under the assumption that types are well
 formed. Thiemann and Vasconcelos~\cite{thiemann2016context} show that
-$\Unravel$ yields a guarded type: $\skipk$, $\sharp B$,
+$\Unravel$ yields a guarded type of the form $\skipk$, $\sharp B$,
 $\star\{\ell_i\colon S_i\}$, or a $;$-type that starts with one the
 these.
 
@@ -178,7 +179,7 @@ single set of productions.
     T & \triangleq (\mu Y_1. \&\{n: Y_1;Y_1, \ell: \skipk\};?\intk);(\mu Y_2. !\intk ; Y_2)
   \end{align*}
   % 
-  Starting from the empty set of production, running $\grm$
+  Starting from the empty set of productions, running $\grm$
   consecutively on~$S$ and on~$T$ produces the following set of
   productions
   %
@@ -230,7 +231,7 @@ the length of~$\vec a$.
 % $n = | \vec Y |$. To ease notation, we will also represent~\eqref{eq:path} as
 % $\vec Y \xrightarrow{\vec a} \varepsilon$.
 %
-As observed by Christensen H\"uttel, and
+As observed by Christensen, H\"uttel, and
 Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}, any unnormed word
 $\vec Y$ is bisimilar to its concatenation with any other word, that
 is, if $\vec Y$ is unnormed, then $\vec Y \ProdEquiv \vec Y \vec X$.
