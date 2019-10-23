@@ -31,7 +31,9 @@ of a session channel. A process holding such a channel end must first
 \lstinline|Node|. If \lstinline|Leaf| is chosen, then interaction is
 terminated, as indicated by \lstinline|Skip|. Otherwise, the process
 must send an integer (\lstinline|!Int|) followed by two complete trees,
-as witnessed by the recursive calls to \lstinline|TreeChannel|.
+as witnessed by the recursive calls occurring after the choice of 
+\lstinline|Node|.
+%to \lstinline|TreeChannel|.
 
 A concurrent process holding the other end of the channel 
 interacts via a \emph{dual} type:
@@ -146,8 +148,8 @@ The main contributions of this work are:
 %
 \begin{itemize}
 \item The proposal and implementation of an algorithm to decide type
-  equivalence of context-free session types and that of simple
-  grammars (in 300 lines of Haskell code),
+  equivalence of context-free session types and the bisimilarity of 
+  simple grammars (in 300 lines of Haskell code),
 \item A proof of its soundness and completeness against the
   declarative definition,
 \item The exploration of several optimizations that make the running
