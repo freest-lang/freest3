@@ -1,8 +1,26 @@
 \section{Evaluation}
 \label{sec:evaluation}
 
-% \vv{estes testes incluem o tempo de parsing? nao deveriam. deveriam só
-%   contar o tempo da chamada à funcao bisimilar/equivalent.}
+\begin{theorem}
+  \begin{enumerate}
+  \item $\skipk \TypeEquiv \skipk$,  $\sharp B \TypeEquiv \sharp B$,
+    $X \TypeEquiv X$;
+  \item $S;U \TypeEquiv T;V$ if $S \TypeEquiv T$ and $U \TypeEquiv V$; 
+  \item $\mu X.S \TypeEquiv \mu X.T$ if $S \TypeEquiv T$; 
+  \item $\star\{\ell_i\colon S_i\}_{i\in I}\TypeEquiv
+    \star\{\ell_i\colon T_i\}_{i\in I}$ if $(S \TypeEquiv T)_{i\in I}$
+  \item $S\TypeEquiv T;\skipk$ and $S\TypeEquiv \skipk;T$ if $S \TypeEquiv T$;
+  \item $\star\{\ell_i\colon S_i\}_{i\in I};U\TypeEquiv
+    \star\{\ell_i\colon T_i;V\}_{i\in I}$ if $(S \TypeEquiv T)_{i\in
+      I}$ and $U \TypeEquiv V$; 
+  \item
+    $\mu x.\mu y.S \TypeEquiv \mu x.T\subs xy \TypeEquiv \mu y.T\subs
+    yx$ if $S \TypeEquiv T$;
+  \item $\mu x.S \TypeEquiv T$ if $S \TypeEquiv T$ and $x\notin\free(S)$;
+  \item $S\subs Ux\TypeEquiv T\subs Vx$  if $S \TypeEquiv T$ and $U \TypeEquiv V$; 
+  \item $\mu X.S \TypeEquiv T$
+  \end{enumerate}
+\end{theorem}
 
 We implemented the algorithm sketched in Listings~\ref{lst:toGrammar}
 to~\ref{lst:enhanced} in 300 lines of Haskell and used the Glasgow
