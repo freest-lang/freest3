@@ -16,11 +16,11 @@ decide the equivalence of simple context-free languages.
 The algorithm comprises three stages:
 %
 \begin{enumerate}
-\item Translate the two types into a context-free grammar,
+\item Translate the two types into a simple grammar,
 \item Prune unreachable symbols in productions, and
 \item Explore an expansion tree, alternating between simplification
   and expansion operations, until either finding an empty node---case
-  in which it decides positively---or failing to expand a node---case
+  in which it decides positively---or failing to expand all nodes---case
   in which it decides negatively.
 \end{enumerate}
 
@@ -41,8 +41,8 @@ productions of the form $Y \rightarrow\varepsilon$).
 %
 Due to the deterministic nature of context-free session types, the
 grammars we are interested in are \emph{simple}: for each
-non-terminal symbol~$X$ and each terminal symbol~$a$, there is at most
-one production of the form $X \rightarrow a\vec Y$.
+non-terminal symbol~$Y$ and each terminal symbol~$a$, there is at most
+one production of the form $Y \rightarrow a\vec Z$.
 
 % GRAMMAR LTS
 
@@ -60,7 +60,7 @@ types, taken from Thiemann and Vasconcelos~\cite{thiemann2016context},
 is defined as follows.
 %
 \begin{align*}
-  \Unravel(\mu X.T) & = \Unravel\subs{\mu X.T}XT])
+  \Unravel(\mu X.T) & = \Unravel(\subs{\mu X.T}XT])
   \\
   \Unravel (S;T) &= \left\{%
   \begin{array}{ll}
@@ -81,15 +81,16 @@ is defined as follows.
 \end{align*}
 %
 The function terminates under the assumption that types are well
-formed. Thiemann and Vasconcelos~\cite{thiemann2016context} show that
-$\Unravel$ yields a guarded type of the form $\skipk$, $\sharp B$,
-$\star\{\ell_i\colon S_i\}$, or a $;$-type that starts with one the
-these.
+formed. 
+%Thiemann and Vasconcelos~\cite{thiemann2016context} show that
+%$\Unravel$ yields a guarded type of the form $\skipk$, $\sharp B$,
+%$\star\{\ell_i\colon S_i\}$, or a $;$-type that starts with one the
+%these.
 
 % TO GRAMMAR
 
 Function $\word$ builds a word from a type. In the process it updates a
-set $\productions$ of grammar productions. Word concatenation is
+global set $\productions$ of grammar productions. Word concatenation is
 denoted by $\vec X\cdot\vec Y$.
 %
 \begin{align*}
@@ -110,6 +111,15 @@ denoted by $\vec X\cdot\vec Y$.
   \word(\mu X.T) &= X
 \end{align*}
 
+\begin{lemma}
+\label{lemma:non_terminated_word}
+	Let $\vdash T$. If $\neg T \checkmark$, then $\word(\Unravel T) \neq \varepsilon$.
+\end{lemma}
+\begin{proof}
+\todo{AM}{TODO}	
+\end{proof}
+
+
 % COLLECT
 
 Assume that $\{\mu X_1.T_1,\dots,\mu X_n.T_n\}$ is the set of all
@@ -117,8 +127,7 @@ $\mu$-subterms in a given type~$T$. Further assume that $i<j$ whenever
 $X_i \in \free(\mu X_j.S_j)$. That is, the $\mu$-subterms are
 topologically sorted with respect to their lexical nesting.
 %
-Now we identify unrolled versions of the $\mu$-subterms. Clearly, each
-type $T_i$ is closed (has no free variables).
+Now we identify unrolled versions of the $\mu$-subterms. 
 %
 \begin{align*}
   T_1' &= \subs{\mu X_1.T_1}{X_1}{T_1} \\
@@ -126,7 +135,8 @@ type $T_i$ is closed (has no free variables).
        &\;\;\vdots \\
   T_n' &= \subs{\mu X_n.T_n}{X_n}{ \cdots \subs{\mu X_1.T_1}{X_1}{T_n} }
 \end{align*}
-
+%
+Clearly, each type $T_i'$ is closed (has no free variables).\smallskip
 % THE TRANSLATION
 
 Finally, given an initial set of productions $\productions$, function
@@ -134,8 +144,18 @@ $\grm$ translates a type $T$ into a grammar composed of a start word
 and set of productions:
 %
 \begin{equation*}
-  \grm(T,\productions) = (\word(T),\; \productions \cup \{\word(\Unravel(T_1')), \dots \word(\Unravel(T_n'))\})
+  %\grm(T,\productions) = (\word(T),\; \productions \cup \{\word(\Unravel(T_1')), \dots \word(\Unravel(T_n'))\})
+  \grm(T,\productions) = (\word(T),\; \productions_1) \\
+  %
 \end{equation*}
+\[
+  \text{ where }\left\{
+  \begin{array}{lll}
+  	\productions_{n+1} &= \productions\\
+  	\productions_i &= \productions_i' \cup \{X_i \rightarrow a_j\vec Y_j \vec Z\},
+  	\text{ with }(z \vec z, \productions_i')=\grm(\Unravel(T_i'), \productions_{i+1})
+  \end{array}\right.\\\\
+\]
 
 % The algorithm keeps the set of productions and an integer (to generate
 % fresh non-terminal symbols) in the monadic state
@@ -159,7 +179,10 @@ and set of productions:
 
 %\input{listing-toGrammar}
 
-Notice that $\grm$ terminates on all inputs (because recursion is
+Notice that $\word(\Unravel(T_i'))$ is a non-empty word because of
+Lemma~\ref{lemma:non_terminated_word} and since $T_i'$ is 
+non-terminated.
+The function $\grm$ terminates on all inputs (because recursion is
 always on subterms) and adds a finite number of productions to the
 original set. Furthermore, due to the deterministic nature of session
 types, the function returns a simple grammar.
@@ -316,12 +339,12 @@ minimal set such that: for every pair $(\vec X, \vec Y) \in N$,
 
 An \emph{expansion tree} is built from a root node: the singleton set
 containing the pair of start words obtained by translating the two
-types into a grammar. Children nodes are obtained from their parent
-node by expansion. Jan{\v{c}}ar and Moller observed that expansion
-alone often leads to infinite trees. We then alternate between
+types into a grammar. A children node is obtained from its parent
+node by expansion. However, as Jan{\v{c}}ar and Moller observed, expansions
+alone often lead to infinite trees. We then alternate between
 expansion and simplification operations, until either finding an empty
 node---case in which we decide equivalence positively---or failing to
-expand a node---case in which we decide equivalence negatively.
+expand all nodes---case in which we decide equivalence negatively.
 %
 % The na\"ive proposal for an expansion tree considers that any
 % children node is obtained by expansion from its parent
@@ -343,6 +366,7 @@ node, obtained as an expansion of $N$. As we are dealing with simple
 grammars, no branching is expected in the expansion tree at this
 step.
 %
+
 % \paragraph*{Simplification step}
 The \emph{simplification step} consists on the application of the
 following rules:
@@ -395,9 +419,9 @@ Given a set of productions and two start words $\vec X$ and $\vec Y$
 expansion stages, starting with simplification.
 %
 To avoid getting stuck in an infinite branch of the expansion tree, we
-use a breadth-first search on the expansion tree: node-ancestors pairs
+use a breadth-first search on the expansion tree: node-ancestor pairs
 to be processed are stored in a queue. The initial pair contains the
-initial node $\{(\vec X,\vec Y)\}$ and the empty set of ancestors.
+initial node $\{(\vec X,\vec Y)\}$ and an empty set of ancestors.
 %
 \begin{equation*}
   \Bisim(\vec X, \vec Y) = \simplify((\{(\vec X,\vec Y)\},\emptyset), \mathsf{emptyQueue})
@@ -418,7 +442,9 @@ Predicate $\simplify$ applies the various $\mathsf{rules}$ and then
 calls function $\expand$.
 %
 The application of each rule (function $\mathsf{apply}$) produces a
-set of node-ancestors pairs that are enqueued.
+set of node pairs that are enqueued. At the simplification stage,
+all nodes are considered at the same level (of expansion), so the
+set of ancestors is preserved.
 %
 \begin{align*}
   &\simplify(\mathit{na}, q) = \expand(\Fold(\mathsf{append}, q,
@@ -436,7 +462,7 @@ returns $\True$.
   &\quad \Else\ (n,a) = \mathsf{front}(q)\\
   & \qquad\quad\; \If\ \mathsf{empty}(n)\ \Then\ \True\\
   & \qquad\quad\; \Else\ \If\ \mathsf{hasChild}(n)\ \Then\
-    \simplify(\mathsf{child}(n), a \cup n, \mathsf{dequeue}(q))\\
+    \simplify((\mathsf{child}(n), a \cup n), \mathsf{dequeue}(q))\\
   & \qquad\qquad\quad\;\: \Else\ \expand(\mathsf{dequeue}(q))
 \end{align*}
 

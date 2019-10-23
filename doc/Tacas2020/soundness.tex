@@ -42,7 +42,8 @@ relation~\cite{gorla2016full}.
 % word; we use both symbols interchangeably.
 
 We start with a lemma that relates terminated types~$T$ to the result 
-of a call to $\word(T)$.
+of a call to $\word(T)$. Throughout this section, we 
+will abuse notation and denote by $\word(S)$ the start word for $S$.
 
 \begin{lemma}
   \label{lemma:terminated-togrammar}
@@ -103,102 +104,129 @@ of a call to $\word(T)$.
 \end{lemma}
 %
 \begin{proof}
-  By Lemma 3.5 of~\cite{thiemann2016context}, we have
-  $\mu X.S \TypeEquiv S[\mu X. S / X]$. We thus have
-  $\mu X.S \TypeEquiv \Unravel (\mu X. S)$ and the result follows
-  immediately.
+%  By Lemma 3.5 of~\cite{thiemann2016context}, we have
+%  $\mu X.S \TypeEquiv S[\mu X. S / X]$. We thus have
+%  $\mu X.S \TypeEquiv \Unravel (\mu X. S)$ and the result follows
+%  immediately.
+	Observing that $\Unravel(\mu X. S) = \subs{\mu X.S}{X}{S}$,
+	it is immediate by the LTS.
 \end{proof}
 
-Furthermore, the analogous result for grammars follows
-by definition of \toGrammark\ and \lstinline|collect|.
-
-\begin{lemma}
-\label{lemma:unravelling_preserves_grammars}
-	$\toGrammarf{(\mu X.S)} = \toGrammarf{(\Unravel (\mu X. S))}$.
-\end{lemma}
-
-The following result states that grammars in the image of
-$\toGrammark$ mimic the transitions of the corresponding types
-and vice-versa.
-
-\begin{lemma}
-  \label{lem:transitions_mimic}
-  $S \LTSderives T$ if and only if 
-  $\toGrammarf{S} \LTSderivesP \toGrammarf T$.
-\end{lemma}
+%Furthermore, the analogous result for grammars follows
+%by definition of \toGrammark\ and \lstinline|collect|.
 %
-\begin{proof}
-	For the direct implication and, as observed before, 
-	using the unravelling
-	function on recursive types, we can proceed by induction
-	on the structure of the types.
-	
-	\begin{itemize}
-		\item $S=\skipk$ does not have any transition. And
-		neither does $\toGrammarf{\skipk} = \varepsilon$.
-		\item $S=\sharp B$ is such that $S \LTSderives[\sharp B] \skipk$.
-		Similarly, $\toGrammarf{S} = \sharp B \LTSderivesP[\sharp B] \varepsilon$.
-		\item $S=\star\{l_i\colon S_i\}_{i\in I}$ is such that, for each $i\in I$,
-		$S \LTSderives[\star l_i] S_i$. By definition of $\toGrammark$, for each $i$, 
-		$\toGrammarf{S} \LTSderivesP[\star l_i] \toGrammarf{S_i}$.
-		\item $S=S_1;S_2$:
-		\begin{itemize}
-			\item if $S_1;S_2\LTSderives S_1';S_2$ with $S_1\LTSderives S_1'$,
-			by induction hypothesis, $\toGrammarf{ S_1} \LTSderivesP \toGrammarf{S_1'}$.
-			Furthermore, for any types $S$ and $T$ we have
-			\begin{equation}
-			\label{eq:grammar_sequential_composition}
-				\toGrammarf{(S;T)} = \toGrammarf{S}\enspace\toGrammarf{T}.	
-			\end{equation}
-			Hence, we have $\toGrammarf{(S_1;S_2)} \LTSderivesP \toGrammarf{(S_1';S_2)}$.
-			\item assume $S_1;S_2\LTSderives S_2'$ where 
-				$\DONE{S_1}$ and
-				$S_2\LTSderives S_2'$.
-			Since $\DONE{S_1}$, 
-			using~\eqref{eq:grammar_sequential_composition} and
-			Lemma~\ref{lemma:terminated-togrammar}, 
-			we have $\toGrammarf{(S_1;S_2)} = \toGrammarf{S_2}$.
-			Thus, by induction hypothesis we have 
-			$\toGrammarf{(S_1;S_2)} \LTSderivesP \toGrammarf{S_2'}.$
-		\end{itemize}
-		\item $S=\mu X.T$. If $S\LTSderives S'$, by Lemma~\ref{lemma:unravelling},
-		we have $\Unravel\ S \LTSderives S'$ and $\Unravel\ S$ is not a recursive
-		types, hence by induction hypothesis, we have
-		$\toGrammarf{(\Unravel\ S)}\LTSderivesP \toGrammarf{S'}$.
-		By Lemma~\ref{lemma:unravelling_preserves_grammars},
-		it follows that
-		$\toGrammarf{S}\LTSderivesP \toGrammarf{S'}$.\smallskip
-	\end{itemize}
-	For the reverse implication, we prove that any transition in the
-	grammar leads to a transition in the corresponding types.
-	\begin{itemize}
-		\item if $\toGrammarf{S}\LTSderivesP[\sharp B] \vec X$, then
-		$\toGrammarf{S} = Y \vec X$, where $Y\LTSderives[\sharp B] \varepsilon$,
-		and so $\Unravel(S) = \sharp B; T$ and we have $S\LTSderives[\sharp B] T$.
-		\item if $\toGrammarf{S} \LTSderivesP[\star l_i] \vec X_1 \vec X_2$, then
-		$\toGrammarf{\Unravel(S)} = Y \vec X_2$, where $Y\LTSderivesP[\star l_i] \vec X_1$.
-		Hence, $\Unravel (S)$ is of the form $\star\{l_j' :U_j\}_{j\in J};T$ with $l_i = l_j'$ and
-		$\vec X_1 = \toGrammarf{U_j}$, for some $j\in J$. Using 
-		Lemma~\ref{lemma:unravelling} we conclude that 
-		$S \LTSderives[\star l_i] U_j ; T$.
-	\end{itemize}
-\end{proof}
+%\begin{lemma}
+%\label{lemma:unravelling_preserves_grammars}
+%	$\toGrammarf{(\mu X.S)} = \toGrammarf{(\Unravel (\mu X. S))}$.
+%\end{lemma}
 
-\vv{Redo (end)}
-
-The main result of this subsection follows as a corollary
-of Lemma~\ref{lem:transitions_mimic}.
+The following result states that grammars produced by
+$\word$ mimic the transitions of the corresponding types
+and vice-versa.
 
 \newcommand{\grmcontext}{
   $(\vec X, \productions') = \grm(S, \emptyset)$ and 
   $(\vec Y, \productions) = \grm(T, \productions')$%
 }
 
+\begin{lemma}
+  \label{lem:transitions_mimic}
+  $S \LTSderives T$ if and only if $\vec X \LTSderivesP \vec Y$, 
+  where \grmcontext.
+\end{lemma}
+%
+\begin{proof}
+	For the direct implication and using the unravelling
+	function on recursive types, we can proceed by induction
+	on the structure of the types. 
+	
+	\begin{itemize}
+		%\item $S\triangleq\skipk$ does not have any transition. And
+		%neither does $\toGrammarf{\skipk} = \varepsilon$.
+		\item $S\triangleq\sharp B$ is such that $S \LTSderives[\sharp B] \skipk$.
+		Similarly, $\word(S) \LTSderivesP[\sharp B] \varepsilon$.
+		\item $S\triangleq\star\{l_i\colon S_i\}_{i\in I}$ is such that, for each $i\in I$,
+		$S \LTSderives[\star l_i] S_i$. By definition of $\grm$, for each $i$, 
+		$\word(S) \LTSderivesP[\star l_i] \word(S_i)$.
+		\item $S\triangleq S_1;S_2$:
+		\begin{itemize}
+			\item if $S_1;S_2\LTSderives S_1';S_2$ with $S_1\LTSderives S_1'$,
+			by induction hypothesis, we know that $\word(S_1) \LTSderivesP \word(S_1')$.
+			Furthermore, for any types $S$ and $T$ we have
+			\begin{equation}
+			\label{eq:grammar_sequential_composition}
+				\word(S;T) = \word(S)\cdot\word(T).	
+			\end{equation}
+			Hence, we have $\word(S_1;S_2) \LTSderivesP \word(S_1';S_2)$.
+			\item assume $S_1;S_2\LTSderives S_2'$ where 
+				$\DONE{S_1}$ and $S_2\LTSderives S_2'$.
+			Since $\DONE{S_1}$, 
+			by~\eqref{eq:grammar_sequential_composition} and
+			Lemma~\ref{lemma:terminated-togrammar}, 
+			we have $\word(S_1;S_2) = \word(S_2)$.
+			Thus, by induction hypothesis we have 
+			$\word(S_1;S_2) \LTSderivesP \word(S_2').$
+		\end{itemize}
+		\item $S\triangleq\mu X.T$. If $S\LTSderives S'$, by Lemma~\ref{lemma:unravelling},
+		we have $\Unravel\ S \LTSderives S'$ and $\Unravel\ S$ is not a recursive
+		type, hence by induction hypothesis, we have
+		$\word(\Unravel\ S)\LTSderivesP \word(S')$.
+		By definition of $\grm(S,\emptyset)$, we thus have
+		$\word(S) = X \LTSderivesP \word(S')$. \smallskip
+	\end{itemize}
+	For the reverse implication, we prove that any transition in the
+	grammar leads to a transition in the corresponding types.
+	\begin{itemize}
+		\item if $\word(S)\LTSderivesP[\sharp B] \vec X$, then
+		$\word(S) = Y \vec X$, where $Y\LTSderivesP[\sharp B] \varepsilon$,
+		and so $\Unravel(S) = \sharp B; T$ where $S\LTSderives[\sharp B] T$.
+		\item if $\word(S) \LTSderivesP[\star l_i] \vec X $, then
+		$\word(\Unravel(S)) = Y $, where $Y\LTSderivesP[\star l_i] \vec Y'$
+		and $\vec X = \vec Y' \vec Z$.
+		Hence, $\Unravel (S)$ is of the form $\star\{l_j' :U_j\}_{j\in J};T$ with $l_i = l_j'$ and
+		$\vec Y' = \word(U_j)$, for some $j\in J$. Using 
+		the LTS we conclude that 
+		$S \LTSderives[\star l_i] U_j ; T$.
+	\end{itemize}
+\end{proof}
+
+The main result of this subsection follows from
+Lemma~\ref{lem:transitions_mimic}.
+
 \begin{theorem}
   \label{thm:equiv_coincide}
   Let \grmcontext. Then, $\grm$ is a full abstract encoding, i.e.,
   $S \TypeEquiv T$ if and only if $\vec X \ProdEquiv \vec Y$.
 \end{theorem}
+
+\begin{proof}
+For the direct implication, assume that $S \TypeEquiv T$ and let
+$\mathcal{B}$ be a bisimulation for $S$ and $T$. Then, consider 
+$ \mathcal{B}' = 
+\{(\word (S_0), \word(T_0))\mid (S_0,T_0)\in \mathcal{B} \}. $
+Obviously, $(\word(S), \word(T))\in \mathcal{B}'$. To prove that
+$\mathcal{B}'$ is a bisimulation, one assumes that 
+$\word (S_0)\LTSderivesP \vec X $ and proves that there exists
+$\vec Y$ such that $\word (T_0)\LTSderivesP \vec Y $
+with $(\vec X, \vec Y)\in \mathcal{B}'$. This proof follows 
+as usual by coinduction on the structure of $S_0$, uses 
+Lemmas~\ref{lemma:terminated-togrammar}
+and \ref{lem:transitions_mimic}, the definition of $\word$
+and the definition of $\mathcal{B}'$. \smallskip\\
+For the reverse implication, assume that 
+$\vec X \ProdEquiv \vec Y$, with $\vec X = \word (S)$ and
+$\vec Y = \word(T)$ and let $\mathcal{B}'$ be a bisimulation
+for $\vec X$ and $\vec Y$. Then, consider
+$\mathcal{B} = \{(S_0, T_0)\mid (\word(S_0),\word(T_0))\in \mathcal{B}'\}$.
+Notice that $(S,T)\in \mathcal{B}$.
+The proof that $\mathcal{B}$ is a bisimulation, consists in proving that:
+given $(S_0, T_0)\in \mathcal{B}$, such that $S_0\LTSderives S_0'$,
+there exists $T_0'$ such that $T_0\LTSderives T_0'$
+and $(S_0',T_0')\in \mathcal{B}$. Again, the proof
+follows by coinduction on the structure of $S_0$. 
+We omit the details. 
+\end{proof}
+
 
 \paragraph{Correctness of the algorithm}
 
