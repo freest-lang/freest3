@@ -2,8 +2,7 @@
 \label{sec:correctness}
 
 In this section we prove that our algorithm is sound and complete
-with respect to the meta-theory of context-free session types proposed
-by Thiemann and Vasconcelos~\cite{thiemann2016context}.
+with respect to the meta-theory of context-free session types.
 %
 We start by showing a full abstraction result between context-free
 session types and grammars in Greibach normal form.
@@ -14,7 +13,7 @@ Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}, Jan{\v{c}}ar and
 Moller~\cite{janvcar1999techniques}, we conclude that our algorithm is
 sound and complete.
 
-\paragraph{Type translation is fully abstract}
+\subsection{Type translation is fully abstract}
 
 Sections~\ref{sec:contextfreesession} and~\ref{sec:algorithm}
 introduce bisimulation relations on the set of $\mathcal T$ types
@@ -196,7 +195,7 @@ We omit the details.
 \end{proof}
 
 
-\paragraph{Correctness of the algorithm}
+\subsection{Correctness of the algorithm}
 
 We now focus on the correctness of the function $\Bisim$.  Before
 proceeding to soundness, we recall the \emph{safeness property}
