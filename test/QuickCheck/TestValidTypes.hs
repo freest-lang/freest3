@@ -1,6 +1,7 @@
 module QuickCheck.TestValidTypes
 ( prop_bisimilar
--- , kinded
+, kinded
+, nodes
 ) where
 
 import           Test.QuickCheck
@@ -90,8 +91,8 @@ prop_dual_convolution t = kinded t ==> dual (dual t) == t
 -- Distribution
 
 prop_distribution :: BisimPair -> Property
-prop_distribution (BisimPair t _) = kinded t ==>
-  collect (nodes t) $
+prop_distribution (BisimPair t u) = kinded t ==>
+  collect (nodes t + nodes u) $
   tabulate "Type constructors" [constr t] $
   True
 

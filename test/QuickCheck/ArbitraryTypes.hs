@@ -65,6 +65,11 @@ instance Arbitrary BisimPair where
     (t, u) <- sized bisimPair
     let [t', u'] = Rename.renameTypes [t, u]
     return $ BisimPair t' u'
+    
+instance Arbitrary Type where
+  arbitrary = do
+    (BisimPair _ t) <- arbitrary
+    return t
 
 type PairGen = Int -> Gen (Type, Type)
 
@@ -155,12 +160,12 @@ recPair pairGen n = do
 
 skipT :: Int -> Gen (Type, Type)
 skipT n = do
-  (t, u) <- bisimPair (n `div` 4)
+  (t, u) <- bisimPair (n `div` 2)
   return (Semi pos (Skip pos) t, u)
 
 tSkip :: Int -> Gen (Type, Type)
 tSkip n = do
-  (t, u) <- bisimPair (n `div` 4)
+  (t, u) <- bisimPair (n `div` 2)
   return (Semi pos t (Skip pos), u)
 
 distrib :: Int -> Gen (Type, Type)
@@ -173,9 +178,9 @@ distrib n = do
 
 assoc :: Int -> Gen (Type, Type)
 assoc n = do
-  (t, u) <- bisimPair (n `div` 12)
-  (v, w) <- bisimPair (n `div` 12)
-  (x, y) <- bisimPair (n `div` 12)
+  (t, u) <- bisimPair (n `div` 6)
+  (v, w) <- bisimPair (n `div` 6)
+  (x, y) <- bisimPair (n `div` 6)
   return (Semi pos t (Semi pos v x),
           Semi pos (Semi pos u w) y)
           
@@ -188,7 +193,7 @@ commut n = do
 
 recRecL :: Int -> Gen (Type, Type)
 recRecL n = do
-  (t, u) <- bisimPair (n `div` 4)
+  (t, u) <- bisimPair (n `div` 2)
   xk@(TypeVarBind _ x _) <- arbitrary
   yk@(TypeVarBind _ y _) <- arbitrary
   let u' = Rename.renameType u -- this type will be in a substitution
@@ -197,7 +202,7 @@ recRecL n = do
 
 recRecR :: Int -> Gen (Type, Type)
 recRecR n = do
-  (t, u) <- bisimPair (n `div` 4)
+  (t, u) <- bisimPair (n `div` 2)
   xk@(TypeVarBind _ x _) <- arbitrary
   yk@(TypeVarBind _ y _) <- arbitrary
   let u' = Rename.renameType u -- this type will be in a substitution
@@ -206,7 +211,7 @@ recRecR n = do
 
 recFree :: Int -> Gen (Type, Type)
 recFree n = do
-  (t, u) <- bisimPair (n `div` 4)
+  (t, u) <- bisimPair (n `div` 2)
   k <- arbitrary
   return (Rec pos (TypeVarBind pos freeTypeVar k) t, u)
 
@@ -220,8 +225,8 @@ recFree n = do
 
 subsOnBoth :: Int -> Gen (Type, Type)
 subsOnBoth n = do
-  (t, u) <- bisimPair (n `div` 8)
-  (v, w) <- bisimPair (n `div` 8)
+  (t, u) <- bisimPair (n `div` 4)
+  (v, w) <- bisimPair (n `div` 4)
   let [t',u',v',w'] = Rename.renameTypes [t,u,v,w] -- these types will be in a substitution
   x <- arbitrary
   return (Rename.subs t' x v',
@@ -229,7 +234,7 @@ subsOnBoth n = do
 
 unfoldt :: Int -> Gen (Type, Type)
 unfoldt n = do
-  (t, u) <- bisimPair (n `div` 4)
+  (t, u) <- bisimPair (n `div` 2)
   let u' = Rename.renameType u -- this type will be unfolded
   xk <- arbitrary
   return (Rec pos xk t,

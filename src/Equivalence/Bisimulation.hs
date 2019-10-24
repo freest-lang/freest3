@@ -54,8 +54,8 @@ expand p = expand' (Queue.singleton (Set.singleton p, Set.empty))
         Nothing -> expand' q ps
         Just n' -> expand' (simplify ps ls n' (Set.union a n) q) ps
     where ls = if allNormed ps
-                 then [reflex, congruence, bpa2, filtering]
-                 else [reflex, congruence, bpa1, bpa2, filtering]
+                 then [reflex, congruence, bpa2{--, filtering--}]
+                 else [reflex, congruence, bpa1, bpa2{--, filtering--}]
 
   expand' Queue.Empty _ = False
 
@@ -95,9 +95,9 @@ simplify ps ls n a q =
   foldr enqueueNode q (findFixedPoint ps ls (Set.singleton (n, a)))
 
 enqueueNode :: (Node,Ancestors) -> NodeQueue -> NodeQueue
-enqueueNode (n,a) q
- | maxLength n <= 1 = (n,a) Queue.<| q
- | otherwise        = q Queue.|> (n,a)
+enqueueNode (n,a) q = q Queue.|> (n,a)
+ -- | maxLength n <= 1 = (n,a) Queue.<| q
+ -- | otherwise        = q Queue.|> (n,a)
 
 type NodeTransformation = Productions -> Ancestors -> Node -> Set.Set Node
 
@@ -106,10 +106,10 @@ apply ps trans ns =
   Set.fold (\(n,a) ns -> Set.union (Set.map (\s -> (s,a)) (trans ps a n)) ns) Set.empty ns
 
 findFixedPoint :: Productions -> [NodeTransformation] -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
-findFixedPoint ps ls nas
-  | nas == nas' = nas
-  | otherwise   = findFixedPoint ps ls nas'
-    where nas' = foldr (apply ps) nas ls
+findFixedPoint ps ls nas = nas'
+  -- | nas == nas' = nas
+  -- | otherwise   = findFixedPoint ps ls nas'
+  where nas' = foldr (apply ps) nas ls
 
 normsMatch :: Productions -> Node -> Bool
 normsMatch ps n = and $ Set.map (\(xs,ys) -> sameNorm ps xs ys) n

@@ -33,7 +33,8 @@ executable freest
                        mtl >= 2.2.1,
                        pretty-terminal >= 0.1.0.0,
                        process >= 1.6.3.0,
-                       synchronous-channels >= 0.2
+                       synchronous-channels >= 0.2,
+                       formatting >= 6.3.7
   hs-source-dirs:      src
   default-language:    Haskell2010
   build-tools:         alex, happy
@@ -49,8 +50,7 @@ executable freest
                        Equivalence.Equivalence, Equivalence.Bisimulation, Equivalence.Grammar,
                        Equivalence.TypeToGrammar, Equivalence.Norm, Equivalence.Normalisation,
                        CodeGen.CodeGen, CodeGen.DatatypeGen,  CodeGen.Annotation,
-                       CodeGen.CodeGenState, CodeGen.Translate,
-                       Utils.PreludeLoader
+                       CodeGen.CodeGenState, CodeGen.Translate
 
 test-suite unit-tests
   main-is:             UnitSpec.hs
@@ -126,7 +126,7 @@ test-suite program-tests
                        Equivalence.Equivalence, Equivalence.Bisimulation, Equivalence.Grammar,
                        Equivalence.TypeToGrammar, Equivalence.Norm, Equivalence.Normalisation,
                        CodeGen.CodeGen, CodeGen.DatatypeGen, CodeGen.CodeGenState, CodeGen.Translate,
-                       CodeGen.Annotation, Utils.PreludeLoader
+                       CodeGen.Annotation
 
                        
 test-suite testEquiv
@@ -235,3 +235,26 @@ test-suite testGrammars
         Validation.Rename, Validation.Substitution, Equivalence.TestGrammarValidSpec
 
 
+test-suite testTACAS
+  main-is:             TestTACAS.hs
+  ghc-options:
+              -fprof-auto-top
+              "-with-rtsopts=-p -s -h"
+--              "-with-rtsopts=-N -p -s -h -i0.1"
+  Type:                exitcode-stdio-1.0
+  other-extensions:    FlexibleContexts
+  build-depends:       HUnit >= 1.3.0.0, QuickCheck >=2.8, array <= 0.5.3.0, base >=4.8,
+                       cond >= 0.4.1.1, containers >=0.5.9, directory >= 1.3.2.0,
+                       hspec >=2.4, hspec-expectations >=0.8, mtl >= 2.2.1,
+                       pretty-terminal >= 0.1.0.0, process >= 1.6.3.0, split >= 0.2.2
+  hs-source-dirs:      test/QuickCheck, src
+  default-language:    Haskell2010
+  other-modules:       Syntax.Base, Syntax.ProgramVariables, Syntax.TypeVariables,
+                       Syntax.Kinds, Syntax.Types, Syntax.Schemes, Syntax.Expressions,
+                       Syntax.Show,
+                       Parse.Parser, Parse.Lexer, Parse.ParseUtils,
+                       Utils.Errors, Utils.FreestState,
+                       Validation.Kinding,  Validation.Contractive, Validation.Rename,
+                       Validation.Substitution,
+                       Equivalence.Grammar, Equivalence.TypeToGrammar,
+                       Equivalence.Norm, Equivalence.Normalisation, Equivalence.Equivalence, Equivalence.Bisimulation, Utils.PreludeLoader, ArbitraryTypes, TestValidTypes
