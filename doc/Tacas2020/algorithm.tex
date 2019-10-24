@@ -11,7 +11,7 @@
 
 This section presents an algorithm to decide whether two types are in
 a type bisimulation. In the process we also provide an algorithm to
-decide the equivalence of simple context-free languages.
+decide the bisimilarity of simple context-free languages.
 %
 The algorithm comprises three stages:
 %
@@ -421,7 +421,7 @@ finite~\cite{DBLP:journals/iandc/ChristensenHS95}.
 Notice that the sibling nodes do not exclude the (often) infinite
 branch resulting from successive expansions.
 
-\subsection{Checking the bisimilarity of context-free session types}
+\subsection{Checking the bisimilarity of simple grammars}
 
 Given a set of productions and two start words $\vec X$ and $\vec Y$
 (all pruned), function $\Bisim$ alternates between simplification and
@@ -433,7 +433,8 @@ to be processed are stored in a queue. The initial pair contains the
 initial node $\{(\vec X,\vec Y)\}$ and an empty set of ancestors.
 %
 \begin{equation*}
-  \Bisim(\vec X, \vec Y) = \simplify((\{(\vec X,\vec Y)\},\emptyset), \mathsf{emptyQueue()})
+  \Bisim(\vec X, \vec Y, \productions) = \simplify((\{(\vec X,\vec Y)\},\emptyset), \mathsf{emptyQueue()}, 
+  \productions)
 \end{equation*}
 
 The simplification stage distinguishes the case where all type
@@ -442,7 +443,7 @@ equivalence~\cite{caucal1986decidabilite,DBLP:journals/iandc/ChristensenHS95},
 from the case where some type variables might be unnormed.
 %
 \begin{align*}
-  \mathsf{rules} =\;& \If\ \mathsf{allProductionsNormed()}\ \Then\
+  \mathsf{rules} =\;& \If\ \mathsf{allProductionsNormed(\productions)}\ \Then\
   [\mathsf{reflex} ,\mathsf{congruence}, \mathsf{bpa2}]\\
   &\Else\ [\mathsf{reflex} ,\mathsf{congruence}, \mathsf{bpa1} , \mathsf{bpa2}]
 \end{align*}
@@ -456,7 +457,7 @@ all nodes are considered at the same level (of expansion), so the
 set of ancestors is preserved.
 %
 \begin{align*}
-  &\simplify(\mathit{na}, q) = \expand(\Fold(\mathsf{append}, q,
+  &\simplify(\mathit{na}, q, \productions) = \expand(\Fold(\mathsf{append}, q,
     \Fold(\mathsf{apply}, \mathit{na}, \mathsf{rules})))
 \end{align*}
 
@@ -466,13 +467,13 @@ $\False$, or an empty node is reached, case is which the algorithm
 returns $\True$.
 %
 \begin{align*}
-  &\expand(q) =\\
+  &\expand(q, \productions) =\\
   &\quad \If\ \mathsf{empty}(q)\ \Then\ \False\\
   &\quad \Else\ (n,a) = \mathsf{front}(q)\\
   & \qquad\quad\; \If\ \mathsf{empty}(n)\ \Then\ \True\\
-  & \qquad\quad\; \Else\ \If\ \mathsf{hasChild}(n)\ \Then\
-    \simplify((\mathsf{child}(n), a \cup n), \mathsf{dequeue}(q))\\
-  & \qquad\qquad\quad\;\: \Else\ \expand(\mathsf{dequeue}(q))
+  & \qquad\quad\; \Else\ \If\ \mathsf{hasChild}(n, \productions)\ \Then\
+    \simplify((\mathsf{child}(n, \productions), a \cup n), \mathsf{dequeue}(q), \productions)\\
+  & \qquad\qquad\quad\;\: \Else\ \expand(\mathsf{dequeue}(q), \productions)
 \end{align*}
 
 % Given two context-free session types, function \lstinline|bisimilar|
@@ -531,6 +532,24 @@ returns $\True$.
     \includegraphics[width=7.5cm]{img/expansion_tree_example.png}
   \end{center}
 \end{example}
+
+\subsection{Checking the bisimilarity of context-free session types}
+
+Given two context-free session types $S$ and $T$, function $\BisimT$
+decides the equivalence of $S$ and $T$. This function determines the
+start words for $S$ and $T$ by first translating $S$ to a grammar
+and enriching the latter with productions for $T$. After pruning the productions 
+in the grammar (using function $\Prune$), the equivalence of the given types
+is decided using function $\Bisim$.
+
+\begin{align*}
+  &\BisimT(T, U) = \Bisim(\vec X, \vec Y, \productions'')\\
+    &\begin{array}{ll}
+  	\text{where: } & (\vec X, \productions) = \grm (S, \emptyset)\\
+  	& (\vec Y, \productions') = \grm (T, \productions)\\
+  	& \productions'' = \Prune (\productions')
+  \end{array}
+\end{align*}
 
 %%% Local Variables:
 %%% mode: latex

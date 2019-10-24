@@ -112,7 +112,7 @@ this problem~\cite{henry2013lalblc}. Its poor performance precludes
 the incorporation in a compiler.
 
 Our algorithm to decide the equivalence of context-free session types
-also allows deciding the equivalence of simple grammars
+also allows deciding the bisimilarity of simple grammars
 (i.e.\ deterministic grammars in Greibach normal formal).  It follows
 three well-defined stages.
 %
@@ -166,14 +166,15 @@ The main contributions of this work are:
 %
 \begin{itemize}
 \item The proposal and implementation of an algorithm to decide type
-  equivalence of context-free session types and the bisimilarity of 
-  simple grammars (in 300 lines of Haskell code),
+  equivalence of context-free session types (in 300 lines of Haskell code),
 \item A proof of its soundness and completeness against the
   declarative definition,
 % \item The exploration of several optimizations that make the running
 %   time 10,000 times faster.
 \item The empirical study of the runtime behaviour of an
-  implementation of the algorithm.
+  implementation of the algorithm,
+\item The proposal and implementation of an algorithm to decide
+  the bisimilarity of simple grammars.
 \end{itemize}
 
 % Outline
@@ -190,7 +191,7 @@ The complete source code for the Haskell implementation is available
 at \url{http://rss.di.fc.ul.pt/tools/freest/}.
 %
 Type bisimulation can be exercised from a browser at
-\url{http://rss.di.fc.ul.pt/tryit/CFSTEquiv} and the equivalence of
+\url{http://rss.di.fc.ul.pt/tryit/CFSTEquiv} and the bisimilarity of
 simple grammars at \url{http://rss.di.fc.ul.pt/tryit/SGEquiv}.
 
 %%% Local Variables:

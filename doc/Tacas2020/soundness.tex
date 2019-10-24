@@ -1,7 +1,7 @@
 \section{Correctness of the algorithm}
 \label{sec:correctness}
 
-In this section we prove that our algorithm is sound and complete
+In this section we prove that function $\BisimT$ is sound and complete
 with respect to the meta-theory of context-free session types.
 %
 We start by showing a full abstraction result between context-free
@@ -10,8 +10,8 @@ session types and grammars in Greibach normal form.
 Then, based on results from Caucal~\cite{caucal1986decidabilite},
 Christensen, H{\"{u}}ttel, and
 Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}, Jan{\v{c}}ar and
-Moller~\cite{janvcar1999techniques}, we conclude that our algorithm is
-sound and complete.
+Moller~\cite{janvcar1999techniques}, we conclude that the algorithm 
+we propose is sound and complete.
 
 \subsection{Type translation is fully abstract}
 
@@ -63,8 +63,6 @@ will abuse notation and denote by $\word(S)$ the start word for $S$.
 % $\mu X.S$, $\Unravel(\mu X.S)$ is not a recursive type.
 % The following lemma states that $\Unravel(\mu X.S)$ preserves 
 % the transitions from $\mu X.S$.
-
-\vv{Redo (start)}
 
 \begin{lemma}
   \label{lemma:unravelling}
