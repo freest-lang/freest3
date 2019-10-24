@@ -6,9 +6,7 @@ Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of 
                    Vasco Vasconcelos, LASIGE, Faculty of Sciences, University of Lisbon
 Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc.ul.pt
 
-This module defines a type with the definitions of type duality and equality.
-The unfolding of recursive types and substitution ([u/x]t, substitute u for x on t)
-operations are also defined.
+This module defines a types, duality and equality.
 -}
 
 module Syntax.Types
@@ -17,8 +15,6 @@ module Syntax.Types
 , Polarity(..)
 , Type(..)
 , Dual(..)
-, subs
-, unfold
 ) where
 
 import           Syntax.Kinds
@@ -26,6 +22,7 @@ import           Syntax.TypeVariables
 import           Syntax.ProgramVariables (ProgVar)
 import           Syntax.Base
 import qualified Data.Map.Strict as Map
+
 
 -- The dual function on types, etc
 class Dual t where
@@ -70,6 +67,8 @@ data Type =
   -- Type operators
   | TypeName Pos TypeVar -- a named type, to be looked upon in a map of type names to types
   | Dualof Pos Type      -- to be expanded into a session type
+  deriving Ord
+
 
 type TypeMap = Map.Map ProgVar Type
 
@@ -127,39 +126,18 @@ instance Position Type where
 
 instance Dual Type where
   -- Session types
-  dual (Semi p t1 t2)  = Semi p (dual t1) (dual t2)
-  dual (Message p v b) = Message p (dual v) b
-  dual (Choice p v m)  = Choice p (dual v) (Map.map dual m)
-  dual (Rec p x t)     = Rec p x (dual t)
+  dual (Semi p t1 t2)   = Semi p (dual t1) (dual t2)
+  -- dual (Semi p t1 t2)  = Semi p (Dualof p t1) (Dualof p t2) -- The lazy version loops
+  dual (Message p v b)  = Message p (dual v) b
+  dual (Choice p v m)   = Choice p (dual v) (Map.map dual m)
+  -- dual (Choice p v m)  = Choice p (dual v) (Map.map (Dualof p) m) -- The lazy version loops
+  dual (Rec p x t)      = Rec p x (dual t)
+  -- dual (Rec p x t)     = Rec p x (Dualof p t) -- The lazy version loops
   -- Type operators
-  dual (Dualof _ t)    = t
-  -- Functional types, Skip, TypeVar, TypeName
-  dual t               = t
+  dual (Dualof _ t)     = t
+  dual t@(TypeName _ x) = t -- TODO: This can't be right
+  -- Functional types, Skip, TypeVar
+  dual t                = t
 
 instance Default Type where
   omission p = Basic p IntType
-
--- Unfolding, Substituting
-
-unfold :: Type -> Type
--- Assumes parameter is a Rec type
-unfold t@(Rec _ (TypeVarBind _ x _) u) = subs t x u
-
--- [u/x]t, substitute u for x on t
-subs :: Type -> TypeVar -> Type -> Type 
-  -- Functional types
-subs t x (Fun p m t1 t2)    = Fun p m (subs t x t1) (subs t x t2)
-subs t x (PairType p t1 t2) = PairType p (subs t x t1) (subs t x t2)
-subs t x (Datatype p m)     = Datatype p (Map.map(subs t x) m)
-  -- Session types
-subs t x (Semi p t1 t2)     = Semi p (subs t x t1) (subs t x t2)
-subs t x (Choice p v m)     = Choice p v (Map.map(subs t x) m)
-subs t x (Rec p b u)        = Rec p b (subs t x u) -- Assume types were renamed (hence, no on-the-fly renaming needed)
-  -- Functional or session
-subs t x u@(TypeVar _ y)
-  | y == x                  = t
-  | otherwise               = u
-  -- Type operators  
-subs t x (Dualof p u)       = Dualof p (subs t x u)
-  -- Otherwise: Basic, Skip, Message, TypeName
-subs _ _ t                  = t

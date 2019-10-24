@@ -26,7 +26,7 @@ class Default t where
 
 -- POSITIONS
 
-data Pos = Pos Int Int
+data Pos = Pos Int Int deriving (Eq, Ord)
 
 class Position t where
   position :: t -> Pos  
