@@ -40,9 +40,9 @@ relation~\cite{gorla2016full}.
 % in formal languages symbol $\varepsilon$ is used to denote the empty
 % word; we use both symbols interchangeably.
 
-We start proving that the transformation of types into grammars preserves
+We start proving that the transformation of types to grammars preserves
 the labelled transitions. Throughout this section, we 
-will abuse notation and denote by $\word(S)$ the start word for $S$.
+abuse notation and denote by $\word(S)$ the start word for $S$.
 
 % To be able to use induction in the proof of 
 % the key result of this section
@@ -174,9 +174,9 @@ $\mathcal{B}'$ is a bisimulation, one assumes that
 $\word (S_0)\LTSderivesP \vec X $ and proves that there exists
 $\vec Y$ such that $\word (T_0)\LTSderivesP \vec Y $
 with $(\vec X, \vec Y)\in \mathcal{B}'$. This proof follows 
-as usual by coinduction on the structure of $S_0$, uses 
+as usual by coinduction on the definition of $\word$, uses 
 Lemmas~\ref{lemma:terminated-togrammar}
-and \ref{lem:transitions_mimic}, the definition of $\word$
+and \ref{lem:transitions_mimic},
 and the definition of $\mathcal{B}'$. \smallskip\\
 For the reverse implication, assume that 
 $\vec X \ProdEquiv \vec Y$, with $\vec X = \word (S)$ and
@@ -192,6 +192,25 @@ follows by coinduction on the structure of $S_0$.
 We omit the details. 
 \end{proof}
 
+Now we sketch the proof that pruning grammars also preserves bisimulation.
+We distinguish the grammars in the context through the subscript of $\sim$.
+
+\begin{theorem}
+	\label{thm:pruning_preserves_bisim}
+	$\vec X \bisimP \vec Y$ if and only if $\vec X \sim_{\Prune(\productions)} \vec Y$.
+\end{theorem}
+
+\begin{proof}
+For the direct implication, the bisimulation for $\vec X$ and $\vec Y$ over
+$\productions$ is also a bisimulation for $\vec X$ and $\vec Y$ over
+$\Prune(\productions)$. For the reverse implication, if $\mathcal{B}'$
+is a bisimulation for $\vec X$ and $\vec Y$ over $\Prune(\productions)$,
+then $\mathcal{B} = \mathcal{B}' \cup 
+\{(\vec V W, \vec V W \vec Z) \mid  (W\rightarrow \vec V W \vec Z) \in \productions, 
+\text{ $W$ unnormed} \}$ 
+is a bisimulation for $\vec X$ and $\vec Y$ over $\productions$.
+\end{proof}
+
 
 \subsection{Correctness of the algorithm}
 
@@ -201,6 +220,7 @@ introduced by Jan{\v{c}}ar and Moller~\cite{janvcar1999techniques}.
 
 \begin{lemma} [Safeness Property]
   \label{lem:safeness}
+  Given a set of productions $\productions$,
   $\vec X \ProdEquiv \vec Y$ if and only if the expansion tree rooted
   at $\{(\vec X, \vec Y)\}$ has a successful branch.
 \end{lemma}
@@ -226,7 +246,8 @@ Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}:
 
 \begin{lemma} [Finite Witness Property]
 \label{lem:finite_witness}
-	If $\vec X \ProdEquiv \vec Y$, then the expansion tree rooted at
+	Given a set of productions $\productions$,
+	if $\vec X \ProdEquiv \vec Y$ then the expansion tree rooted at
 	$\{(\vec X, \vec Y)\}$ has a finite successful branch.
 \end{lemma}
 
@@ -245,7 +266,7 @@ the algorithm, its soundness and completeness.
 
 \begin{lemma}[Termination]
   \label{lem:termination}
-  Let \grmcontext. Then, the computation of $\Bisim(\vec X,\vec Y)$
+  Let \grmcontext. Then, the computation of $\Bisim(\vec X,\vec Y, \Prune(\productions))$
   always terminates.
 \end{lemma}
 %
@@ -276,8 +297,11 @@ the algorithm, its soundness and completeness.
 
 \begin{lemma}
   \label{lem:bisimilar-to-prod}
-  Let \grmcontext.  If $\Bisim(\vec X,\vec Y)$ returns $\True$, then
-  $\vec X \ProdEquiv \vec Y$.
+  \begin{sloppypar}
+  	Let \grmcontext.  If 
+  $\Bisim(\vec X,\vec Y,$ $ \Prune(\productions))$ returns $\True$, then
+  $\vec X \sim_{\Prune(\productions)} \vec Y$.
+  \end{sloppypar}
 \end{lemma}
 
 \begin{proof}
@@ -303,8 +327,8 @@ the meta-theory of context-free session types.
 \end{theorem}
 %
 \begin{proof}
-  From Theorem~\ref{thm:equiv_coincide} and
-  Lemma~\ref{lem:bisimilar-to-prod}.
+  From Theorem~\ref{thm:equiv_coincide}, Theorem~\ref{thm:pruning_preserves_bisim}, 
+  and Lemma~\ref{lem:bisimilar-to-prod}.
 \end{proof}
 
 % \begin{corollary}
@@ -331,8 +355,9 @@ paramount to achieve this result.
 \end{theorem}
 %
 \begin{proof}
-  Assuming that $S \TypeEquiv T$, by Theorem~\ref{thm:equiv_coincide}
-  we have $\vec X \ProdEquiv \vec Y$.  Hence,
+  Assume $S \TypeEquiv T$. By Theorems~\ref{thm:equiv_coincide}
+  and \ref{thm:pruning_preserves_bisim},
+  we have $\vec X \sim_{\Prune(\productions)} \vec Y$.  Hence,
   Lemma~\ref{lem:finite_witness} ensures the existence of a finite
   successful branch on the expansion tree rooted at
   $\{(\vec X,\vec Y)\}$, i.e., a branch terminating in an empty
@@ -342,7 +367,7 @@ paramount to achieve this result.
 \end{proof}
 
 Theorem~\ref{thm:completeness} ensures that if $\Bisim(\vec X,\vec Y)$
-returns $\False$ then $S \not\TypeEquiv T$. \vv{porquê importante?}
+returns $\False$ then $S \not\TypeEquiv T$. 
 
 % \begin{corollary}
 % 	If $\bisimf ST$ returns \upshape{\lstinline|False|} then $S\not\TypeEquiv T$.
