@@ -47,11 +47,11 @@ one production of the form $Y \rightarrow a\vec Z$.
 % GRAMMAR LTS
 
 Grammars in Greibach normal form naturally induce a labelled
-transition system by taking words~$\vec X$ as states, terminal
-symbols~$a$ as actions, and the transition relation, $\LTSderivesP$,
-defined as $X\vec Y\LTSderivesP \vec Z\vec Y$ when
-$X \rightarrow a\vec Z \in \mathcal P$.  The associated bisimilarity
-is denoted by $\ProdEquiv$.
+transition system by taking words~$\vec X$ for states, terminal
+symbols~$a$ for actions, and $\LTSderivesP$, defined as
+$X\vec Y\LTSderivesP \vec Z\vec Y$ when
+$X \rightarrow a\vec Z \in \mathcal P$, for the transition relation.
+The associated bisimilarity is denoted by $\ProdEquiv$.
 
 % UNRAVEL
 
@@ -89,7 +89,7 @@ formed.
 
 % TO GRAMMAR
 
-Function $\word$ builds a word from a type. In the process it updates a
+Another function $\word$ builds a word from a type. In the process it updates a
 global set $\productions$ of grammar productions. Word concatenation is
 denoted by $\vec X\cdot\vec Y$.
 %
@@ -117,7 +117,7 @@ of a call to $\word(T)$.
 
 \begin{lemma}
   \label{lemma:terminated-togrammar}
-  Let $\isType[] T$. Then, $\DONE T$ if and only if
+  Let $\isType T$. Then, $\DONE T$ if and only if
   $\word(T) = \varepsilon$.
 \end{lemma}
 %
@@ -156,9 +156,8 @@ whenever $X_j \in \free(\mu X_i.S_i)$. That is, the $\mu$-subterms are
 topologically sorted with respect to their lexical nesting, innermost
 subterms first.
 %
-Notice that if $T \triangleq \mu X. S$, then $\mu X_n. T_n$
-is T itself.
-Now we identify unrolled versions of the $\mu$-subterms. 
+Notice that if $T$ is a $\mu$-type, then $\mu X_n. T_n$ is T itself.
+Now we identify unrolled versions of the $\mu$-subterms.
 %
 \begin{align*}
   T_1' &= \subs{\mu X_n.T_n}{X_n}{ \cdots \subs{\mu X_2.T_2}{X_2}\subs{\mu X_1.T_1}{X_1}{T_1} }\\
@@ -422,7 +421,7 @@ finite~\cite{DBLP:journals/iandc/ChristensenHS95}.
 Notice that the sibling nodes do not exclude the (often) infinite
 branch resulting from successive expansions.
 
-\paragraph{Checking the bisimilarity of context-free session types}
+\subsection{Checking the bisimilarity of context-free session types}
 
 Given a set of productions and two start words $\vec X$ and $\vec Y$
 (all pruned), function $\Bisim$ alternates between simplification and
@@ -434,7 +433,7 @@ to be processed are stored in a queue. The initial pair contains the
 initial node $\{(\vec X,\vec Y)\}$ and an empty set of ancestors.
 %
 \begin{equation*}
-  \Bisim(\vec X, \vec Y) = \simplify((\{(\vec X,\vec Y)\},\emptyset), \mathsf{emptyQueue})
+  \Bisim(\vec X, \vec Y) = \simplify((\{(\vec X,\vec Y)\},\emptyset), \mathsf{emptyQueue()})
 \end{equation*}
 
 The simplification stage distinguishes the case where all type
@@ -443,7 +442,7 @@ equivalence~\cite{caucal1986decidabilite,DBLP:journals/iandc/ChristensenHS95},
 from the case where some type variables might be unnormed.
 %
 \begin{align*}
-  \mathsf{rules} =\;& \If\ \mathsf{allProductionsNormed}\ \Then\
+  \mathsf{rules} =\;& \If\ \mathsf{allProductionsNormed()}\ \Then\
   [\mathsf{reflex} ,\mathsf{congruence}, \mathsf{bpa2}]\\
   &\Else\ [\mathsf{reflex} ,\mathsf{congruence}, \mathsf{bpa1} , \mathsf{bpa2}]
 \end{align*}
