@@ -44,6 +44,10 @@ def main():
     print("Depth max:", df['Depth'].max())
     
     
+    select = df[ df['Version'] == "B0" ]
+    select2 = select[ select['Nodes'] <= 500 ]
+    print("Mean:", select2['Time'].mean())
+    
     for v in df['Version'].unique():
     
         select = df[ df['Version'] == v ]
@@ -65,6 +69,7 @@ def main():
         plt.ylabel("Time (µs)")
         plt.xlabel("Total number of nodes of both types")
         plt.ylim(bottom=20, top=MAX_TIME * 1.1)
+        plt.tight_layout()
         plt.savefig("nodes_time_{}.pdf".format(v))    
 
     plt.figure(figsize=(5,5))
@@ -91,6 +96,7 @@ def main():
     ax.set_yscale("log")
     plt.ylabel("Time (µs)")
     sns.despine(left=True)
+    plt.tight_layout()
     plt.savefig("distribution_boxplot.pdf")    
     
     
