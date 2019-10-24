@@ -69,6 +69,7 @@ runEach :: (BisimPair, Int) -> (String, BisimFunction) -> Int -> IO ()
 runEach (pair, d) (name, f) seed = do
     v <- timeout (60 * seconds_in_micro) $ runTestVersion pair f name
     let (n1, n2) = nodesOf pair
+    putStrLn $ show pair
     let base = name ++ ";"  ++ n1 ++ ";" ++ n2 ++ ";" ++ (show d) ++ ";"++ (show seed) ++ ";"
     case v of
         Nothing -> putStrLn $ base ++ "timeout"
