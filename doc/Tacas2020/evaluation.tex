@@ -33,17 +33,17 @@ recursive case ($n\ge1$) one of the pairs in 2--12 items.
     % Laws for sequential composition
   \item $S\TypeEquiv T;\skipk$ and $S\TypeEquiv \skipk;T$ if $S \TypeEquiv T$;
   \item $\star\{\ell_i\colon S_i\}_{i\in I};U\TypeEquiv
-    \star\{\ell_i\colon T_i;V\}_{i\in I}$ if $(S \TypeEquiv T)_{i\in
+    \star\{\ell_i\colon T_i;V\}_{i\in I}$ if $(S_i \TypeEquiv T_i)_{i\in
       I}$ and $U \TypeEquiv V$;
   \item $T \TypeEquiv S$ if $S \TypeEquiv T$;
   \item $R;(S;T) \TypeEquiv (U;V);W$ if $R \TypeEquiv U$, $S \TypeEquiv V$, and $T\TypeEquiv W$;
     % Laws for mu-types
   \item
-    $\mu x.\mu y.S \TypeEquiv \mu x.T\subs xy \TypeEquiv \mu y.T\subs
-    yx$ if $S \TypeEquiv T$;
-  \item $\mu x.S \TypeEquiv T$ if $S \TypeEquiv T$ and $x\notin\free(S)$;
-  \item $S\subs Ux\TypeEquiv T\subs Vx$  if $S \TypeEquiv T$ and $U \TypeEquiv V$; 
-  \item $\mu X.S \TypeEquiv T\subs{\mu X.T}{X}$ if $S \TypeEquiv T$.
+    $\mu X.\mu Y.S \TypeEquiv \mu X.\subs XYT \TypeEquiv \mu Y.\subs
+    YXT$ if $S \TypeEquiv T$;
+  \item $\mu X.S \TypeEquiv T$ if $S \TypeEquiv T$ and $x\notin\free(S)$;
+  \item $\subs UXS\TypeEquiv \subs VXT$  if $S \TypeEquiv T$ and $U \TypeEquiv V$; 
+  \item $\mu X.S \TypeEquiv \subs{\mu X.T}{X}T$ if $S \TypeEquiv T$.
   \end{enumerate}
 \end{theorem}
 %
