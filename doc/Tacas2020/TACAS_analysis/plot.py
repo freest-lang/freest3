@@ -48,7 +48,7 @@ def main():
     
         select = df[ df['Version'] == v ]
     
-        plt.figure(figsize=(8,8))
+        plt.figure(figsize=(4,4))
         markers = {"Bisimilar": "s", "Not Bisimilar": "X"}
         ax = sns.scatterplot(x="Nodes", y="Time",
                         hue="Bisimilarity",
@@ -62,10 +62,12 @@ def main():
                         data=select)
         ax.set_yscale('log')
         ax.set_xscale('log')
+        plt.ylabel("Time (µs)")
+        plt.xlabel("Total number of nodes of both types")
         plt.ylim(bottom=20, top=MAX_TIME * 1.1)
         plt.savefig("nodes_time_{}.pdf".format(v))    
 
-    plt.figure(figsize=(8,8))
+    plt.figure(figsize=(5,5))
     markers = {"Bisimilar": "s", "Not Bisimilar": "X"}
     ax = sns.scatterplot(x="NodesDiff", y="Time",
                     hue="Bisimilarity",
@@ -81,10 +83,13 @@ def main():
     #plt.ylim(bottom=20, top=MAX_TIME * 1.1)
     plt.savefig("nodes_time_diff.pdf".format(v))
 
-    plt.figure(figsize=(8,8))    
-    ax = sns.boxenplot(x="Time", y="Bisimilarity",
-                   data=df)
-    ax.set_xscale("log")
+    select = df[ df['Version'] == "B0" ]
+
+    plt.figure(figsize=(4,4))    
+    ax = sns.boxenplot(x="Bisimilarity", y="Time",
+                   data=select)
+    ax.set_yscale("log")
+    plt.ylabel("Time (µs)")
     sns.despine(left=True)
     plt.savefig("distribution_boxplot.pdf")    
     
