@@ -189,11 +189,10 @@ where $\productions_n$ is computed by the following recurrence:
     \end{array}\right.
 \end{equation*}
 
-
 Notice that $\word(\Unravel(T_i'))$ is a non-empty word because of
-Lemma~\ref{lemma:terminated-togrammar} and since $T_i'$ is
-non-terminated by hypothesis.  The function $\grm$ terminates on all
-inputs (because recursion is always on subterms) and adds a finite
+Lemma~\ref{lemma:terminated-togrammar} and the fact that each $T_i'$
+is non-terminated by hypothesis.  The function $\grm$ terminates on
+all inputs (because recursion is always on subterms) and adds a finite
 number of productions to the original set. Furthermore, due to the
 deterministic nature of session types, the function returns a simple
 grammar.
