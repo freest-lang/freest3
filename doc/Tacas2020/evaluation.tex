@@ -4,43 +4,35 @@
 This section discusses the behaviour of our algorithm in the real
 world.
 
-We implemented the algorithm described by the function $\BisimT$
-in 300 lines of Haskell and used the Glasgow
-Haskell Compiler (version 8.6.5), provided by the docker image 
-\texttt{fpco/stack-build}. Evaluation was conducted on a machine with an Intel Xeon X5670 at 2.93GHz and 
-24 GB of RAM.
+Both for testing and for performance evaluation, we require a test
+suite. We started with a carefully crafted, manually produced, suite
+of valid and invalid tests. This test suite was constructed by
+gathering pairs of types that emerged from examples we have studied
+and from programs we have written in FreeST, the programming language
+for context-free session
+types~\cite{almeida.etal_freest-functional-language}.
+% This suite comprised of a total os 169 valid and invalid tests.  The
+% primary purpose of this preliminary evaluation step was to confirm
+% the algorithm would be able to handle manual examples that we knew
+% would emerge from real programs and examples. The algorithm
+% succeeded in evaluating all the tests in due time.
+The tests produced by this method are, on the one hand, small, and, on
+the other hand, lacking diversity.
 
-Both for testing and performance evaluation, we require a test
-suite. We started with a carefully crafted, manually produced, suite of
-valid and invalid tests. This test suite was constructed by gathering
-pairs of types that emerged from examples we have
-studied and from programs we have written in FreeST, the programming language
-for context-free session types that we
-proposed in~\cite{almeida.etal_freest-functional-language}.
-This suite comprised of a total os 169 valid and invalid tests.
-The primary purpose of this preliminary evaluation
-step was to confirm the algorithm would be able to handle
-manual examples that we knew would emerge from real programs and
-examples. The algorithm succeeded in evaluating all the tests in due time.
-The tests produced at this stage were, on the one hand,
-small, and, on the other hand, lacking diversity.
-
-We then turned our
-attention to the automatic generation of test cases. Generating pairs
-of arbitrary (well-formed) types that share no variables is
-simple. The difficulty lies in deciding whether two such types,
-independently generated, are bisimilar. Even if an oracle could be
-identified, the probability that a randomly generated pair of types
-turns out to be equivalent would be extremely low. Instead, we proceed by
-generating arbitrary pairs of types that are bisimilar by
-construction. The following result naturally induces an algorithm:
+We then turned our attention to the automatic generation of test
+cases. Generating pairs of arbitrary (well-formed) types that share no
+variables is simple. The difficulty lies in deciding whether two such
+types, independently generated, are bisimilar. Even if an oracle could
+be identified, the probability that a randomly generated pair of types
+turns out to be equivalent would be extremely low. Instead, we proceed
+by generating arbitrary pairs of types that are bisimilar by
+construction. Theorem~\ref{thm:axioms} naturally induces an algorithm:
 given a natural number $n$ (the size of the pair), arbitrarily select
-for the base case ($n=0$) one of the pairs in item 1 of
-Theorem~\ref{thm:properties_quickcheck} and for the
-recursive case ($n\ge1$) one of the pairs in 2--12 items.
+for the base case ($n=0$) one of the pairs in item 1 of the theorem
+and for the recursive case ($n\ge1$) one of the pairs in 2--12 items.
 
 \begin{theorem}[Properties of type equivalence]
-\label{thm:properties_quickcheck}
+\label{thm:axioms}
   \begin{enumerate}
     % Congruence
   \item $\skipk \TypeEquiv \skipk$,  $\sharp B \TypeEquiv \sharp B$, and
@@ -73,39 +65,35 @@ recursive case ($n\ge1$) one of the pairs in 2--12 items.
   bisimulations.
 \end{proof}
 
-For evaluating the algorithm on
-non-bisimilar pairs we independently generate two types, run
-function $\BisimT$ on them, and discard the data collected in the rare 
-event that the pair turns out to be bisimilar.
+For evaluating the algorithm on non-bisimilar pairs we independently
+generate two types, run function $\BisimT$ on them, and discard the
+data collected in the rare event that the pair turns out to be
+bisimilar.
 %
+For testing, however, we rely on manually crafted tests, for a
+solution based on anti-axioms does not work: bisimulation for
+context-free session types is such that there are types $S \not\bisim
+T$ such that $\mu X.S \bisim \mu X.T$ (just think of $!\intk;X;X$
+and $!\intk;X$).
 
-\am{??? não entendo esta frase}
-For testing, however, we rely on manually crafted tests, for
-bisimulation for context-free session types has the nasty property
-that $\mu X. !\intk;X;X \TypeEquiv \mu X. !\intk;X$ even if
-$!\intk;X;X \not\TypeEquiv\: !\intk;X$.
+We used QuickCheck~\cite{DBLP:conf/icfp/ClaessenH00} generate the test
+suite. That for bisimilar pairs (constructed based on
+Theorem~\ref{thm:axioms}) comprises 2000 pairs, featuring types with a
+number of nodes (in the syntax tree) ranging from 1 to 35751. The test
+suite for non-bisimilar pairs (constructed by independently generating
+two types and verifying they were not equivalent) includes 2000
+pairs with a number of nodes ranging from 1 to 387.
 
-We used QuickCheck~\cite{DBLP:conf/icfp/ClaessenH00} to implement the
-generation of test suites. The test suite for bisimilar pairs, constructed
-based on the properties presented in Theorem~\ref{thm:properties_quickcheck},
-has a total of 2000 pairs of bisimilar pairs. The test suite non-bisimilar
-pairs has also a total of 2000 pairs and was 
-constructed by independently generating two types and verifying they were
-not equivalent (using function $\BisimT$). In the sequel, the former test suite
-is represented with blue and the latter with orange.
-
-%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{figure}[h!]
+\begin{figure}[t]
     \centering
-    \subfloat[Distribution of execution time]{\includegraphics[height=6cm]{img/distribution_boxplot}}%
-    \subfloat[Execution time per number of nodes]{\includegraphics[height=6cm]{img/nodes_time_B0}}%
+    \subfloat[Distribution of the execution time]{\includegraphics[height=.5\textwidth]{img/distribution_boxplot}}%
+    \subfloat[Execution time per number of nodes]{\includegraphics[height=.5\textwidth]{img/nodes_time_B0}}%
     \caption{The test suite composed by equivalent pairs of types is represented with blue and the
-    test suite with non-equivalent pairs of types is represented with orange. Time is represented
-    in microseconds, $\mu s$. The scales are logarithmic.\\
+    test suite with non-equivalent pairs of types is represented with orange. Time 
+    in microseconds, $\mu s$. Both scales are logarithmic.\\
     (a) Distribution of execution time of function $\BisimT$ for both test suites.\\
     (b) Distribution of execution time of function $\BisimT$ per total number of nodes 
-    in the abstract syntax trees of the types whose equivalence is being tested.}%
+    in the abstract syntax trees of the types.}%
     \label{fig:results}%
 \end{figure}
 
@@ -127,10 +115,16 @@ is represented with blue and the latter with orange.
 %	\label{fig:nodes_vs_time}
 %\end{figure}
 
-Figure~\ref{fig:results} (a) depicts the distribution of execution times 
-(in $\mu s$) for both test suites. All tests finished in less
-than 1 minute. We see that the majority of the tests finish within 0.01s.
-And we also have evidences that deciding equivalence negatively is
+We implemented the algorithm described by the function $\BisimT$ in
+300 lines of Haskell and used the Glasgow Haskell Compiler (version
+8.6.5), provided by the docker image
+\texttt{fpco/stack-build}. Evaluation was conducted on a machine with
+an Intel Xeon X5670 at 2.93GHz and 24 GB of RAM.
+%
+Figure~\ref{fig:results} (a) depicts the distribution of the execution
+times (in $\mu s$) for both test suites. All tests completed in less
+than 1 minute. We see that the majority of the tests terminate within
+0.01s.  The figure also shows that deciding equivalence negatively is
 slightly faster than deciding it positively.
 
 %\begin{figure}[h]
@@ -142,28 +136,25 @@ slightly faster than deciding it positively.
 
 
 Figure~\ref{fig:results} (b) represents the distribution of execution
-time per total number of nodes in the abstract syntax trees of the types
-whose equivalence is being tested. For the positive tests, we observe a
-linear increase in the runtime, whereas for the negative tests
-we seem to have evidences that the execution time increases exponentially.
-We suspect that if we had carried out tests with higher number of nodes,
-we would also have had observed an exponential growth in 
-the execution time.
-
+time per total number of nodes in the abstract syntax trees of the
+types. For the positive tests, we observe a linear increase in the
+runtime, whereas for the negative tests what seems to be the execution
+time increases exponentially.  We suspect that if we had carried out
+tests with a larger number of nodes, we would also have had observed
+an exponential growth in the execution time.
 
 Although the runtime of the algorithm throughout the tests was
-satisfactory for a compiler, we identified a few optimisations 
-and analysed their impact on the execution time of the
-function $\BisimT$. We carried out the following optimisations:
-i) eliminating redundant productions in the grammar,
-ii) using a double-ended queue where promising children are prepended
-  rather than appended,
-iii) adding a filter rule to simplification stage that removes hopeless
-  pairs from nodes, and
-iv) iterating the simplification stage until a fixed point is reached.
+satisfactory for a compiler, we identified a few optimisations and
+analysed their impact on the execution time of the function
+$\BisimT$. We carried out the following optimisations: i) eliminating
+redundant productions in the grammar, ii) using a double-ended queue
+where promising children are prepended rather than appended, iii)
+adding a filter rule to simplification stage that removes hopeless
+pairs from nodes, and iv) iterating the simplification stage until a
+fixed point is reached.
 %
 Running the test suite discussed above in these variants, alone and
-in different combinations, we found that no decrease in the runtime.
+in different combinations, we found no decrease in the runtime.
 
 % Once the improvement proposals were established, we benchmarked the
 % algorithm on a test suite of carefully crafted pairs of types

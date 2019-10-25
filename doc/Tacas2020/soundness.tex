@@ -5,7 +5,7 @@ In this section we prove that function $\BisimT$ is sound and complete
 with respect to the meta-theory of context-free session types.
 %
 We start by showing a full abstraction result between context-free
-session types and grammars in Greibach normal form.
+session types and grammars in Greibach Normal Form.
 %
 Then, based on results from Caucal~\cite{caucal1986decidabilite},
 Christensen, H{\"{u}}ttel, and
@@ -25,48 +25,15 @@ that the translation proposed in Section~\ref{sec:algorithm} is a
 \emph{fully abstract encoding}, i.e., preserves the bisimilarity
 relation~\cite{gorla2016full}.
 
-% Recall from Section~\ref{sec:algorithm} that function $\toGrammark$ 
-% runs under a monadic context
-% \lstinline|TransState|, suitably initialised.
-% %
-% The monadic state comprises the productions and an integer to generate
-% fresh variables.
-% %
-% We allow ourselves a slight abuse of notation and write
-% $\vec Y = \toGrammarf S$ to denote the result of running function
-% $\toGrammark$ on input~$S$, under a suitable monadic context.
-% %
-% Empty lists are denoted in Haskell by \lstinline|[]|;
-% in formal languages symbol $\varepsilon$ is used to denote the empty
-% word; we use both symbols interchangeably.
-
 We start proving that the transformation of types to grammars preserves
-the labelled transitions. Throughout this section, we 
-abuse notation and denote by $\word(S)$ the start word for $S$.
-
-% To be able to use induction in the proof of 
-% the key result of this section
-% (Lemma~\ref{lem:transitions_mimic}), we use
-% the unravelling function proposed 
-% by Thiemann and Vasconcelos~\cite{thiemann2016context}:
-% \[\begin{aligned}
-% \Unravel(\mu X . S) &= \Unravel(\subs{\mu X.S}{X} S)\\
-% \Unravel(S_1;S_2) &= 
-% \begin{cases}
-% 	\Unravel(S_2) & \text{if }\Unravel(S_1)=\skipk\\
-% 	\Unravel(S_1);S_2 & \text{otherwise}\\
-% \end{cases} \\
-% \Unravel(S)&= S \text{  for all other cases}
-% \end{aligned}\]
-% %
-% Notice that for any recursive (well-formed) ttype 
-% $\mu X.S$, $\Unravel(\mu X.S)$ is not a recursive type.
-% The following lemma states that $\Unravel(\mu X.S)$ preserves 
-% the transitions from $\mu X.S$.
+the labelled transitions.
+% Throughout this section, we abuse notation and denote by $\word(S)$
+% the start word for $S$.
 
 \begin{lemma}
   \label{lemma:unravelling}
-  $\mu X. S \LTSderives[a] S'$ if and only if $\Unravel (\mu X. S) \LTSderives[a] S'$.
+  $\mu X. S \LTSderives[a] S'$ if and only if
+  $\Unravel (\mu X. S) \LTSderives[a] S'$.
 \end{lemma}
 %
 \begin{proof}
@@ -77,14 +44,6 @@ abuse notation and denote by $\word(S)$ the start word for $S$.
 	Observing that $\Unravel(\mu X. S) = \Unravel(\subs{\mu X.S}{X}{S}$),
 	it follows from the LTS.
 \end{proof}
-
-%Furthermore, the analogous result for grammars follows
-%by definition of \toGrammark\ and \lstinline|collect|.
-%
-%\begin{lemma}
-%\label{lemma:unravelling_preserves_grammars}
-%	$\toGrammarf{(\mu X.S)} = \toGrammarf{(\Unravel (\mu X. S))}$.
-%\end{lemma}
 
 The following result states that grammars produced by
 $\word$ mimic the transitions of the corresponding types
@@ -225,7 +184,7 @@ introduced by Jan{\v{c}}ar and Moller~\cite{janvcar1999techniques}.
   at $\{(\vec X, \vec Y)\}$ has a successful branch.
 \end{lemma}
 
-Notice that function $\bisim$ builds an expansion tree by alternating
+Notice that function $\Bisim$ builds an expansion tree by alternating
 between simplification---reflexive, congruence, and \BPA---and
 expansion operations, as proposed by Jan{\v{c}}ar and Moller.
 %
@@ -253,13 +212,13 @@ Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}:
 
 We refer to Caucal, Christensen, H{\"{u}}ttel, and Stirling for
 details on the proof of existence of a finite witness, as stated in
-Lemma~\ref{lem:finite_witness}. This proof is particularly interesting in
-that it highlights the importance of the BPA rules and of pruning
+Lemma~\ref{lem:finite_witness}. This proof is particularly interesting
+in that it highlights the importance of the BPA rules and of pruning
 productions on reaching such (finite) witness. The results in these
-two papers also allow elucidate the reason for the distinction, in
-the simplification phase, between the cases where all the symbols in
-the grammar are and are not normed (cf.~program variable
-$\mathsf{rules}$ in function $\expand$).
+two papers also elucidate the reason for the distinction, in the
+simplification phase, between the cases where all the symbols in the
+grammar are and are not normed (cf.~program variable $\mathsf{rules}$
+in function $\expand$).
 %
 The safeness and finite witness properties ensure the termination of
 the algorithm, its soundness and completeness.

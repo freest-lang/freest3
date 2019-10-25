@@ -117,7 +117,7 @@ of a call to $\word(T)$.
 
 \begin{lemma}
   \label{lemma:terminated-togrammar}
-  Let $\isType T$. Then, $\DONE T$ if and only if
+  Let $\isType[] T$. Then, $\DONE T$ if and only if
   $\word(T) = \varepsilon$.
 \end{lemma}
 %
@@ -524,31 +524,35 @@ returns $\True$.
 % \end{lstlisting}
 % type NodeTransformation = Productions -> Ancestors -> Node -> Set.Set Node 
 
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=7.5cm]{img/expansion_tree_example.png}  
+  \caption{An example of an expansion tree}
+  \label{fig:expansion-tree}
+\end{figure}
+
 \begin{example}
-  The expansion tree for our running example is in the diagram
-  below. Once a successful branch is reached (the $\checkmark$ in the
-  figure), $\Bisim(\vec X, \vec Y)$ returns $\True$.
-  \begin{center}
-    \includegraphics[width=7.5cm]{img/expansion_tree_example.png}
-  \end{center}
+  The expansion tree for our running example is
+  Figure~\ref{fig:expansion-tree}. Once a successful branch is reached
+  (depicted by the $\checkmark$ mark),
+  $\Bisim(\vec X, \vec Y, \productions)$ returns $\True$.
 \end{example}
 
 \subsection{Checking the bisimilarity of context-free session types}
 
-Given two context-free session types $S$ and $T$, function $\BisimT$
-decides the equivalence of $S$ and $T$. This function determines the
-start words for $S$ and $T$ by first translating $S$ to a grammar
-and enriching the latter with productions for $T$. After pruning the productions 
-in the grammar (using function $\Prune$), the equivalence of the given types
-is decided using function $\Bisim$.
-
+Function $\BisimT$ decides the equivalence of two types, $S$ and $T$.
+It starts by computing the start words for $S$ and $T$ by first
+translating $S$ to a grammar and enriching this with the productions
+for type $T$. After pruning the productions in the grammar (using
+function $\Prune$), the equivalence of $S$ and $T$ is decided using
+function $\Bisim$.
+%
 \begin{align*}
-  &\BisimT(T, U) = \Bisim(\vec X, \vec Y, \productions'')\\
-    &\begin{array}{ll}
-  	\text{where: } & (\vec X, \productions) = \grm (S, \emptyset)\\
-  	& (\vec Y, \productions') = \grm (T, \productions)\\
-  	& \productions'' = \Prune (\productions')
-  \end{array}
+  \BisimT(T, U) =&\ \Bisim(\vec X, \vec Y, \Prune (\productions'))
+  \\
+  \mathsf{where}\ (\vec X, \productions) =&\ \grm (S, \emptyset)
+  \\
+  (\vec Y, \productions') =&\ \grm (T, \productions)
 \end{align*}
 
 %%% Local Variables:
