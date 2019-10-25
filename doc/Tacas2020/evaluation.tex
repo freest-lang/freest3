@@ -83,13 +83,15 @@ number of nodes (in the syntax tree) ranging from 1 to 35751. The test
 suite for non-bisimilar pairs (constructed by independently generating
 two types and verifying they were not equivalent) includes 2000
 pairs with a number of nodes ranging from 1 to 387.
+%
+The slowest negative takes under 775Mb of RAM to execute.
 
 \begin{figure}[t]
     \centering
     \subfloat[Distribution of the execution time]{\includegraphics[height=.5\textwidth]{img/distribution_boxplot}}%
     \subfloat[Execution time per number of nodes]{\includegraphics[height=.5\textwidth]{img/nodes_time_B0}}%
-    \caption{The test suite composed by equivalent pairs of types is represented with blue and the
-    test suite with non-equivalent pairs of types is represented with orange. Time 
+    \caption{The test suite composed by equivalent pairs of types is represented in blue and the
+    test suite with non-equivalent pairs of types is represented in orange. Time 
     in microseconds, $\mu s$. Both scales are logarithmic.\\
     (a) Distribution of execution time of function $\BisimT$ for both test suites.\\
     (b) Distribution of execution time of function $\BisimT$ per total number of nodes 
