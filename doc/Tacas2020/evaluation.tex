@@ -35,8 +35,7 @@ and for the recursive case ($n\ge1$) one of the pairs in 2--12 items.
 \label{thm:axioms}
   \begin{enumerate}
     % Congruence
-  \item $\skipk \TypeEquiv \skipk$,  $\sharp B \TypeEquiv \sharp B$, and
-    $X \TypeEquiv X$;
+  \item $\skipk \TypeEquiv \skipk$ and $\sharp B \TypeEquiv \sharp B$;
   \item $S;T \TypeEquiv U;V$ if $S \TypeEquiv U$ and $T \TypeEquiv V$;
   \item $\mu X.S \TypeEquiv \mu X.T$ if $S \TypeEquiv T$;
   \item $\star\{\ell_i\colon S_i\}_{i\in I}\TypeEquiv
@@ -70,19 +69,19 @@ generate two types, run function $\BisimT$ on them, and discard the
 data collected in the rare event that the pair turns out to be
 bisimilar.
 %
-For testing, however, we rely on manually crafted tests, for a
+For testing, however, we rely on manually crafted tests, given that a
 solution based on anti-axioms does not work: bisimulation for
-context-free session types is such that there are types $S \not\bisim
-T$ such that $\mu X.S \bisim \mu X.T$ (just think of $!\intk;X;X$
-and $!\intk;X$).
+context-free session types is such that there are types
+$S \not\bisim T$ such that $\mu X.S \bisim \mu X.T$ (just think of
+$!\intk;X;X$ and $!\intk;X$).
 
-We used QuickCheck~\cite{DBLP:conf/icfp/ClaessenH00} generate the test
-suite. That for bisimilar pairs (constructed based on
-Theorem~\ref{thm:axioms}) comprises 2000 pairs, featuring types with a
-number of nodes (in the syntax tree) ranging from 1 to 35751. The test
-suite for non-bisimilar pairs (constructed by independently generating
-two types and verifying they were not equivalent) includes 2000
-pairs with a number of nodes ranging from 1 to 387.
+We used QuickCheck~\cite{DBLP:conf/icfp/ClaessenH00} generate two test
+suites. That for bisimilar pairs (constructed based on
+Theorem~\ref{thm:axioms}) comprises 2000 entries, featuring types with
+a number of nodes (in the syntax tree) ranging from 1 to 35751. The
+test suite for non-bisimilar pairs (constructed by independently
+generating two types and verifying they were not equivalent) includes
+2000 pairs with a number of nodes ranging from 1 to 387.
 %
 The slowest negative test takes under 775Mb of RAM to execute.
 
@@ -140,21 +139,22 @@ slightly faster than deciding it positively.
 Figure~\ref{fig:results} (b) represents the distribution of execution
 time per total number of nodes in the abstract syntax trees of the
 types. For the positive tests, we observe a linear increase in the
-runtime, whereas for the negative tests what seems to be the execution
-time increases exponentially.  We suspect that if we had carried out
-tests with a larger number of nodes, we would also have had observed
-an exponential growth in the execution time.
+runtime, whereas for the negative tests we observe what seems to be an
+exponential growth.
+% We suspect that if we had carried out tests with a larger number of
+% nodes, we would also have had observed an exponential growth in the
+% execution time.
 
-Although the runtime of the algorithm is good enough for a compiler,
-we identified a few potential optimisations and analysed their impact
-on the execution time of function $\BisimT$. We implemented the
-following variations: i) eliminating redundant productions in the
+Although the runtime of $\BisimT$ is good enough for justifying its
+inclusion in a compiler, we identified a few potential optimisations
+and analysed their impact on the execution time. We implemented the
+following variants: i) eliminating redundant productions in the
 grammar, ii) using a double-ended queue where promising children are
 prepended rather than appended, iii) adding a filter rule to
 simplification stage that removes hopeless pairs from nodes, and iv)
 iterating the simplification stage until a fixed point is reached.
 %
-Running the test suite discussed above in these variants, alone and
+Running the test suite discussed above on these variants, alone and
 in different combinations, we found no decrease in the runtime.
 
 % Once the improvement proposals were established, we benchmarked the

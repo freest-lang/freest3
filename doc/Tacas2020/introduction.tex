@@ -69,7 +69,7 @@ H{\"{u}}ttel, and Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}.
 Even if the equivalence problem for context-free session types is
 known to be decidable, no algorithm has been proposed.
 %
-Padovani~\cite{DBLP:conf/esop/Padovani17} introduces` a language with
+Padovani~\cite{DBLP:conf/esop/Padovani17} introduces a language with
 context-free session types that avoids the problem of checking the
 equivalence of types by requiring annotations in the source
 code. Annotations result in the structural alignment between code and
@@ -92,13 +92,13 @@ of normed context-free processes in
 $\mathcal{O}(n^5)$~\cite{czerwinski2010fast}.
 %
 However, context-free session types are not necessarily normed, which
-precludes reducing to this algorithm, or using the original result by
+precludes resorting to this algorithm, or using the original result by
 Baeten, Bergstra, and Klop~\cite{baeten1993decidability}, as well as
 improvements by Hirshfeld, Jerrum, and
 Moller~\cite{DBLP:journals/tcs/HirshfeldJM96,DBLP:conf/concur/HirshfeldM94}.
-On the other hand, the complexity estimates for deciding bisimilarity
-in BPA process are not promising. Kiefer provided an EXPTIME lower
-bound for BPA bisimilarity by proving this problem is
+Moreover, the complexity estimates for deciding bisimilarity in BPA
+process are not promising. Kiefer provided an EXPTIME lower bound for
+BPA bisimilarity by proving this problem is
 EXPTIME-hard~\cite{kiefer2013bpa}, whereas Jan\v car has provided a
 double exponential upper bound for this problem and proved that its
 complexity is
@@ -106,10 +106,10 @@ $\mathcal{O}(2^{2^{\mathsf{pol}(n)}})$~\cite{jancar2012bisimilarity}.
 
 % The three stages
 
-The decidability of deterministic pushdown automata has also been a
+The decidability of deterministic pushdown automata has also been
 subject of much
 study~\cite{janvcar2008selected,senizergues1997equivalence,stirling2001decidability}.
-Several techniques have been proposed to solve the problem, however no
+Several techniques have been proposed to solve the problem, but no
 immediate practical algorithm was available until Henry and
 Sénizergues provide an algorithm for this
 problem~\cite{henry2013lalblc}. Its poor performance however precludes
@@ -149,12 +149,12 @@ is paramount for our results of soundness and completeness.
 The branching nature of the expansion tree confers (at least) an
 exponential complexity to the algorithm.
 %
-However, our experiments with an implementation of the
-algorithm---both as a stand-alone tool and incorporated in a
+However, our experiments with a concrete implementation---both as a
+stand-alone tool and incorporated in a
 compiler~\cite{almeida.etal_freest-functional-language}---are very
 promising: deciding the bisimilarity of two types with a total of 132
-nodes in the abstract syntax trees of the two types takes on average
-3.30 milliseconds and uses less than 8 Mb in a conventional desktop
+nodes in their abstract syntax trees takes on average 3.3
+milliseconds and uses less than 8 Mb in a conventional desktop
 computer (see Section~\ref{sec:evaluation}).
 
 % However, we propose heuristics that allow constructing the relation

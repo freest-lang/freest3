@@ -17,7 +17,7 @@ The algorithm comprises three stages:
 %
 \begin{enumerate}
 \item Translate the two types into a simple grammar,
-\item Prune unreachable symbols in productions, and
+\item Prune unreachable symbols, and
 \item Explore an expansion tree, alternating between simplification
   and expansion operations, until either finding an empty node---case
   in which it decides positively---or failing to expand all nodes---case
@@ -33,7 +33,7 @@ labels~$a$ are the \emph{terminal symbols}. Sequences of type
 variables~$\vec X$ are called \emph{words}; $\varepsilon$ denotes the
 empty word.
 %
-A context-free grammar in Greibach normal form is a pair
+A context-free grammar in Greibach Normal Form is a pair
 $(\vec X,\mathcal P)$ where~$\vec X$ is the \emph{start word}
 and~$\mathcal P$ a \emph{set of productions} of the form
 $Y \rightarrow a\vec Z$ (context-free session types do not require
@@ -156,7 +156,6 @@ whenever $X_j \in \free(\mu X_i.S_i)$. That is, the $\mu$-subterms are
 topologically sorted with respect to their lexical nesting, innermost
 subterms first.
 %
-Notice that if $T$ is a $\mu$-type, then $\mu X_n. T_n$ is T itself.
 Now we identify unrolled versions of the $\mu$-subterms.
 %
 \begin{align*}
@@ -166,7 +165,8 @@ Now we identify unrolled versions of the $\mu$-subterms.
   T_n' &= \subs{\mu X_n.T_n}{X_n}{T_n} 
 \end{align*}
 %
-Clearly, each type $T_i'$ is closed (has no free variables) if $T$ is.
+Clearly each type $T_i'$ is closed (has no free variables).
+Notice that if $T$ is a $\mu$-type, then $\mu X_n. T_n$ is T itself.
 
 % THE TRANSLATION
 
@@ -268,7 +268,7 @@ Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}, any unnormed word
 $\vec Y$ is bisimilar to its concatenation with any other word, that
 is, if $\vec Y$ is unnormed, then $\vec Y \ProdEquiv \vec Y \vec X$.
 We use this fact to prune unreachable symbols in unnormed words. And
-we do this in all productions as well as in the start words.
+we do this in all productions.
 
 %The code is in Listing~\ref{lst:prune}.
 
@@ -451,10 +451,13 @@ from the case where some type variables might be unnormed.
 Predicate $\simplify$ applies the various $\mathsf{rules}$ and then
 calls function $\expand$.
 %
-The application of each rule (function $\mathsf{apply}$) produces a
-set of node pairs that are enqueued. At the simplification stage,
-all nodes are considered at the same level (of expansion), so the
-set of ancestors is preserved.
+The application of each rule (via function
+$\mathsf{apply}$)---rightmost $\Fold$---produces a set of nodes that
+are then enqueued---leftmost $\Fold$.
+%
+The simplification stage does not introduce new levels in the tree,
+hence the set of ancestors $\mathit{na}$ is passed to the $\Fold$ as
+is.
 %
 \begin{align*}
   &\simplify(\mathit{na}, q, \productions) = \expand(\Fold(\mathsf{append}, q,
@@ -540,12 +543,12 @@ returns $\True$.
 
 \subsection{Checking the bisimilarity of context-free session types}
 
-Function $\BisimT$ decides the equivalence of two types, $S$ and $T$.
-It starts by computing the start words for $S$ and $T$ by first
-translating $S$ to a grammar and enriching this with the productions
-for type $T$. After pruning the productions in the grammar (using
-function $\Prune$), the equivalence of $S$ and $T$ is decided using
-function $\Bisim$.
+Function $\BisimT$ decides the equivalence of two well-formed and
+renamed types, $S$ and $T$.  It starts by computing the start words
+for $S$ and $T$ by first translating $S$ to a grammar and enriching
+this with the productions for type $T$. After pruning the productions
+in the grammar (function $\Prune$), the equivalence of $S$ and
+$T$ is decided using function $\Bisim$.
 %
 \begin{align*}
   \BisimT(T, U) =&\ \Bisim(\vec X, \vec Y, \Prune (\productions'))

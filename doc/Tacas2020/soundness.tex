@@ -23,7 +23,7 @@ we can faithfully analyze the bisimilarity of types by analyzing the
 bisimilarity of the corresponding grammar. For this purpose, we prove
 that the translation proposed in Section~\ref{sec:algorithm} is a
 \emph{fully abstract encoding}, i.e., preserves the bisimilarity
-relation~\cite{gorla2016full}.
+relation. %~\cite{gorla2016full}.
 
 We start proving that the transformation of types to grammars preserves
 the labelled transitions.
@@ -47,7 +47,7 @@ the labelled transitions.
 \end{proof}
 
 The following result states that grammars produced by
-$\word$ mimic the transitions of the corresponding types
+$\grm$ mimic the transitions of the corresponding types
 and vice-versa.
 
 \newcommand{\grmcontext}{
@@ -64,7 +64,7 @@ and vice-versa.
 \begin{proof}
 	For the direct implication and using the unravelling
 	function on recursive types, we can proceed by induction
-	on the structure of the types. 
+	on the structure of $S$. 
 	
 	\begin{itemize}
 		%\item $S\triangleq\skipk$ does not have any transition. And
@@ -231,13 +231,15 @@ the algorithm, its soundness and completeness.
 \end{lemma}
 %
 \begin{proof}
-  If $S\TypeEquiv T$ then, by Theorems~\ref{thm:equiv_coincide} and
-  \ref{thm:pruning_preserves_bisim}, we
-  have $\word(S) \sim_{\Prune(\productions)} \word(T) $ and thus the 
-  existence of a
-  finite successful branch is ensured by the finite witness property
-  (Lemma~\ref{lem:finite_witness}).  Hence, breadth-first search
-  eventually terminates.
+  Start by noticing that $\Prune(\productions)$ always terminate.
+  %
+  For $\Bisim$ itself, if $S\TypeEquiv T$ then, by
+  Theorems~\ref{thm:equiv_coincide} and
+  \ref{thm:pruning_preserves_bisim}, we have
+  $\word(S) \sim_{\Prune(\productions)} \word(T) $ and thus the
+  existence of a finite successful branch is ensured by the finite
+  witness property (Lemma~\ref{lem:finite_witness}).  Hence,
+  breadth-first search eventually terminates.
   
   When $S\not\TypeEquiv T$, we easily conclude that all branches in
   the expansion tree are finite and thence $\Bisim(\vec X,\vec Y)$
@@ -331,8 +333,9 @@ paramount to achieve this result.
   conclude the bisimulation positively.
 \end{proof}
 
-Theorem~\ref{thm:completeness} ensures that if $\Bisim(\vec X,\vec Y)$
-returns $\False$ then $S \not\TypeEquiv T$. 
+Theorem~\ref{thm:completeness} ensures that if
+$\Bisim(\vec X,\vec Y, \productions)$ returns $\False$ then
+$S \not\TypeEquiv T$.
 
 % \begin{corollary}
 % 	If $\bisimf ST$ returns \upshape{\lstinline|False|} then $S\not\TypeEquiv T$.
