@@ -380,11 +380,11 @@ expand ps q
   | Set.null n   = True
   | otherwise    = case expandNode ps n of
       Nothing -> expand ps (Queue.dequeue q)
-      Just n' -> expand ps (simplify ps n' (Set.union a n) q)
+      Just n' -> expand ps (simplify ps n' (Set.union a n) (Queue.dequeue q))
   where (n,a) = Queue.front q
 
 simplify :: Productions -> Node -> Ancestors -> NodeQueue -> NodeQueue
-simplify ps n a q = foldr Queue.append (Queue.dequeue q) nas'
+simplify ps n a q = foldr Queue.append q nas'
   where nas  = Set.singleton (n,a)
         nas' = if allNormed ps
                then foldr (apply ps) nas [reflex,congruence,bpa2]

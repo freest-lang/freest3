@@ -84,7 +84,7 @@ suite for non-bisimilar pairs (constructed by independently generating
 two types and verifying they were not equivalent) includes 2000
 pairs with a number of nodes ranging from 1 to 387.
 %
-The slowest negative takes under 775Mb of RAM to execute.
+The slowest negative test takes under 775Mb of RAM to execute.
 
 \begin{figure}[t]
     \centering
@@ -145,15 +145,14 @@ time increases exponentially.  We suspect that if we had carried out
 tests with a larger number of nodes, we would also have had observed
 an exponential growth in the execution time.
 
-Although the runtime of the algorithm throughout the tests was
-satisfactory for a compiler, we identified a few optimisations and
-analysed their impact on the execution time of the function
-$\BisimT$. We carried out the following optimisations: i) eliminating
-redundant productions in the grammar, ii) using a double-ended queue
-where promising children are prepended rather than appended, iii)
-adding a filter rule to simplification stage that removes hopeless
-pairs from nodes, and iv) iterating the simplification stage until a
-fixed point is reached.
+Although the runtime of the algorithm is good enough for a compiler,
+we identified a few potential optimisations and analysed their impact
+on the execution time of function $\BisimT$. We implemented the
+following variations: i) eliminating redundant productions in the
+grammar, ii) using a double-ended queue where promising children are
+prepended rather than appended, iii) adding a filter rule to
+simplification stage that removes hopeless pairs from nodes, and iv)
+iterating the simplification stage until a fixed point is reached.
 %
 Running the test suite discussed above in these variants, alone and
 in different combinations, we found no decrease in the runtime.
