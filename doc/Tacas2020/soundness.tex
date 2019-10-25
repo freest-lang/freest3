@@ -231,8 +231,10 @@ the algorithm, its soundness and completeness.
 \end{lemma}
 %
 \begin{proof}
-  If $S\TypeEquiv T$ then, by Theorem~\ref{thm:equiv_coincide}, we
-  have $\word(S) \ProdEquiv \word(T) $ and thus the existence of a
+  If $S\TypeEquiv T$ then, by Theorems~\ref{thm:equiv_coincide} and
+  \ref{thm:pruning_preserves_bisim}, we
+  have $\word(S) \sim_{\Prune(\productions)} \word(T) $ and thus the 
+  existence of a
   finite successful branch is ensured by the finite witness property
   (Lemma~\ref{lem:finite_witness}).  Hence, breadth-first search
   eventually terminates.
@@ -241,7 +243,8 @@ the algorithm, its soundness and completeness.
   the expansion tree are finite and thence $\Bisim(\vec X,\vec Y)$
   terminates.  To conclude that all branches are finite, observe that
   any infinite branch is successful by definition and thus the
-  safeness property would imply $\word(S) \ProdEquiv \word(T)$ and we would have
+  safeness property would imply $\word(S) \sim_{\Prune(\productions)} \word(T)$ 
+  and we would have
   $S\TypeEquiv T$, by Theorem~\ref{thm:equiv_coincide}.
 \end{proof}
 
@@ -282,7 +285,7 @@ the meta-theory of context-free session types.
 
 \begin{theorem}[Soundness]
   \label{thm:soundness}
-  Let \grmcontext.  If $\Bisim(\vec X,\vec Y)$ returns $\True$ then
+  Let \grmcontext.  If $\Bisim(\vec X,\vec Y, \Prune(\productions))$ returns $\True$ then
   $S\TypeEquiv T$.
 \end{theorem}
 %
@@ -300,7 +303,8 @@ the meta-theory of context-free session types.
 % \end{proof}
  
 Given that the algorithm terminates (Lemma~\ref{lem:termination}), we
-know that if $S\not\TypeEquiv T$, then $\Bisim(\vec X, \vec Y)$ returns
+know that if $S\not\TypeEquiv T$, then $\Bisim(\vec X, \vec Y, 
+\Prune(\productions))$ returns
 \lstinline|False|, where \grmcontext.
 %
 We now show that the algorithm to check the bisimulation of
@@ -310,7 +314,8 @@ paramount to achieve this result.
 
 \begin{theorem}[Completeness]
 \label{thm:completeness}
-  If $S \TypeEquiv T$ then $\Bisim(\vec X, \vec Y)$ returns
+  If $S \TypeEquiv T$ then $\Bisim(\vec X, \vec Y, \Prune(\productions))$ 
+  returns
   \upshape{\lstinline|True|}, where \grmcontext.
 \end{theorem}
 %
