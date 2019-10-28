@@ -30,21 +30,21 @@ the labelled transitions.
 % Throughout this section, we abuse notation and denote by $\word(S)$
 % the start word for $S$.
 
-\begin{lemma}
-  \label{lemma:unravelling}
-  $\mu X. S \LTSderives[a] S'$ if and only if
-  $\Unravel (\mu X. S) \LTSderives[a] S'$.
-\end{lemma}
-%
-\begin{proof}
-%  By Lemma 3.5 of~\cite{thiemann2016context}, we have
-%  $\mu X.S \TypeEquiv S[\mu X. S / X]$. We thus have
-%  $\mu X.S \TypeEquiv \Unravel (\mu X. S)$ and the result follows
-%  immediately.
-  Observing that
-  $\Unravel(\mu X. S) = \Unravel(\subs{\mu X.S}{X}{S}$), the result
-  follows from the LTS.
-\end{proof}
+%\begin{lemma}
+%  \label{lemma:unravelling}
+%  $\mu X. S \LTSderives[a] S'$ if and only if
+%  $\Unravel (\mu X. S) \LTSderives[a] S'$.
+%\end{lemma}
+%%
+%\begin{proof}
+%%  By Lemma 3.5 of~\cite{thiemann2016context}, we have
+%%  $\mu X.S \TypeEquiv S[\mu X. S / X]$. We thus have
+%%  $\mu X.S \TypeEquiv \Unravel (\mu X. S)$ and the result follows
+%%  immediately.
+%  Observing that
+%  $\Unravel(\mu X. S) = \Unravel(\subs{\mu X.S}{X}{S}$), the result
+%  follows from the LTS.
+%\end{proof}
 
 The following result states that grammars produced by
 $\grm$ mimic the transitions of the corresponding types
@@ -64,19 +64,18 @@ and vice-versa.
 \begin{proof}
 	For the direct implication and using the unravelling
 	function on recursive types, we can proceed by induction
-	on the structure of $S$. 
+	on the structure of $\LTSderives$. 
 	
 	\begin{itemize}
 		%\item $S\triangleq\skipk$ does not have any transition. And
 		%neither does $\toGrammarf{\skipk} = \varepsilon$.
-		\item $S\triangleq\sharp B$ is such that $S \LTSderives[\sharp B] \skipk$.
-		Similarly, $\word(S) \LTSderivesP[\sharp B] \varepsilon$.
-		\item $S\triangleq\star\{l_i\colon S_i\}_{i\in I}$ is such that, for each $i\in I$,
-		$S \LTSderives[\star l_i] S_i$. By definition of $\grm$, for each $i$, 
+		\item If $\sharp B \LTSderives[\sharp B] \skipk$ then, by definition
+		of $\word$, $\word(S) \LTSderivesP[\sharp B] \varepsilon$.
+		\item If
+		$\star\{l_i\colon S_i\}_{i\in I} \LTSderives[\star l_i] S_i$ then, by 
+		definition of $\grm$, 
 		$\word(S) \LTSderivesP[\star l_i] \word(S_i)$.
-		\item $S\triangleq S_1;S_2$:
-		\begin{itemize}
-			\item if $S_1;S_2\LTSderives S_1';S_2$ with $S_1\LTSderives S_1'$,
+		\item If $S_1;S_2\LTSderives S_1';S_2$ with $S_1\LTSderives S_1'$,
 			by induction hypothesis, we know that $\word(S_1) \LTSderivesP \word(S_1')$.
 			Furthermore, we have
 			\begin{equation}
@@ -84,18 +83,17 @@ and vice-versa.
 				\word(S_1;S_2) = \word(S_1)\cdot\word(S_2).	
 			\end{equation}
 			Hence, we have $\word(S_1;S_2) \LTSderivesP \word(S_1';S_2)$.
-			\item assume that $S_1;S_2\LTSderives S_2'$ where 
-				$\DONE{S_1}$ and $S_2\LTSderives S_2'$.
-			Since $\DONE{S_1}$, 
-			by~\eqref{eq:grammar_sequential_composition} and
-			Lemma~\ref{lemma:terminated-togrammar}, 
+		\item In the case $S_1;S_2\LTSderives S_2'$, where
+			$\DONE{S_1}$ and $S_2\LTSderives S_2'$, 
+			by~\eqref{eq:grammar_sequential_composition},
+			Lemma~\ref{lemma:terminated-togrammar} and since $\DONE{S_1}$, 
 			we have $\word(S_1;S_2) = \word(S_2)$.
 			Thus, by induction hypothesis we have 
 			$\word(S_1;S_2) \LTSderivesP \word(S_2').$
-		\end{itemize}
-		\item $S\triangleq\mu X.T$. If $S\LTSderives S'$, by Lemma~\ref{lemma:unravelling},
-		we have $\Unravel(S) \LTSderives S'$ and $\Unravel(S)$ is not a recursive
-		type, hence by induction hypothesis, we have
+		\item If $\mu X.T\LTSderives S'$, then, by recursively going backward 
+		in the LTS rule for recursive types, we know that
+		$\Unravel(S) \LTSderives S'$ and $\Unravel(S)$ is not a recursive
+		type. Hence, by induction hypothesis, we have
 		$\word(\Unravel(S))\LTSderivesP \word(S')$.
 		By definition of $\grm(S,\emptyset)$, we thus have
 		$\word(S) = X \LTSderivesP \word(S')$. \smallskip
