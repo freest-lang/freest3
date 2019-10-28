@@ -9,7 +9,6 @@ Stability   :  unstable | experimental | provisional | stable | frozen
 Portability :  portable | non-portable (<reason>)
 
 Unfolding of recursive types and substitution
-
 -}
 
 module Validation.Substitution
@@ -25,8 +24,12 @@ import           Syntax.Kinds
 import           Syntax.Types
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
+import qualified Data.List as List
+import           Debug.Trace
+import           Syntax.Show
 
 -- [t/x]u, substitute t for for every free occurrence of x in u
+-- Notice that this operation does not preserve renaming
 subs :: Type -> TypeVar -> Type -> Type
 -- Functional types
 subs t x (Fun p m t1 t2)    = Fun p m (subs t x t1) (subs t x t2)
@@ -35,7 +38,7 @@ subs t x (Datatype p m)     = Datatype p (Map.map(subs t x) m)
 -- Session types
 subs t x (Semi p t1 t2)     = Semi p (subs t x t1) (subs t x t2)
 subs t x (Choice p v m)     = Choice p v (Map.map(subs t x) m)
-subs t x (Rec p yk u)       = Rec p yk (subs t x u) -- Assume types were renamed (hence, x/=y and no -the-fly renaming needed)
+subs t x (Rec p yk u)       = trace (show yk) $ Rec p yk (subs t x u) -- Assume types were renamed (hence, x/=y and no -the-fly renaming needed)
 -- Functional or session
 subs t x u@(TypeVar _ y)
   | y == x                 = t
@@ -44,10 +47,12 @@ subs t x (Dualof p u)      = Dualof p (subs t x u)
 subs _ _ t                 = t
 
 -- subsAll σ u, apply all substitutions in σ to u; no renaming
+-- Notice that this operation does not preserve renaming
 subsAll :: [(Type, TypeVar)] -> Type -> Type
-subsAll σ s = foldl (\u (t, x) -> subs t x u) s σ
+subsAll σ s = List.foldl' (\u (t, x) -> subs t x u) s σ
 
 -- Unfold a recursive type (one step only)
+-- Notice that this operation does not preserve renaming
 unfold :: Type -> Type
 unfold t@(Rec _ (TypeVarBind _ x _) u) = subs t x u
 
