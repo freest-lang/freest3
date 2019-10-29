@@ -41,8 +41,8 @@ bisims = [ ("B0", B0.bisimilar)
 
 type BisimFunction = (TypeEnv -> Type -> Type -> Bool)
 
-test :: BisimPair -> BisimFunction -> Property
-test (BisimPair t u) bisim = kinded t && kinded u ==> bisim Map.empty t u
+test :: BisimPair -> BisimFunction -> Bool
+test (BisimPair t u) bisim = bisim Map.empty t u
 
 clockSomething :: a -> IO String
 clockSomething something = do
