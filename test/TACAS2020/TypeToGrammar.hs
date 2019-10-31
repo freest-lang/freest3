@@ -22,8 +22,7 @@ import           Syntax.Kinds
 import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
 import           Syntax.Base
--- import qualified Validation.Substitution as Substitution (subsAll) -- no renaming
-import qualified Validation.Rename as Substitution (subsAll) -- with renaming
+import qualified Validation.Substitution as Substitution (subsAll) -- no renaming
 import           Equivalence.Grammar
 import           Equivalence.Normalisation
 import           Utils.FreestState (tMapWithKeyM, tMapM, tMapM_)
@@ -66,8 +65,25 @@ toGrammar (TypeVar _ x) = do      -- x is a polymorphic variable
   addProductions y $ Map.singleton (VarLabel x) []
   return [y]
 toGrammar (Rec _ (TypeVarBind _ x _) _) =
-  return [x]  
-toGrammar t = error ("toGrammar: " ++ show t) -- Should not happen
+  return [x]
+  -- Type operators
+-- toGrammar (Dualof p (TypeName _ x)) = do
+--   insertVisited x
+--   (k, TypeScheme _ [] t) <- getFromVEnv x
+--   trace ("Type " ++ show x ++ " = " ++ show t)
+--     toGrammar (Dualof p t)
+-- toGrammar (Dualof _ t) = toGrammar (dual t)
+-- toGrammar (TypeName _ x) = do
+--   b <- wasVisited x
+--   if b
+--   then    -- We have visited this type name before
+--     return [x]
+--   else do -- This is the first visit
+--     insertVisited x
+--     (k, TypeScheme _ [] t) <- getFromVEnv x
+--     toGrammar t
+  -- Should not happen
+toGrammar t = error ("toGrammar: " ++ show t)
 
 type Substitution = (Type, TypeVar)
 
@@ -75,7 +91,7 @@ collect :: [Substitution] -> Type -> TransState ()
 collect σ (Semi _ t u) = collect σ t >> collect σ u
 collect σ (Choice _ _ m) = tMapM_ (collect σ) m
 collect σ t@(Rec _ (TypeVarBind _ x _) u) = do
-  let σ' = σ ++ [(t, x)]
+  let σ' = (t, x) : σ
   let u' = Substitution.subsAll σ' u
   (z:zs) <- toGrammar (normalise Map.empty u')
   m <- getTransitions z
@@ -139,7 +155,7 @@ getSubs :: TransState Subs
 getSubs = do
   s <- get
   return $ subs s
-{-
+
 getProd :: Transitions -> TransState TypeVar
 getProd ts = do
   ps <- getProductions
@@ -265,7 +281,7 @@ compareWords s xs ys =
       foldl (\acc (x, y) -> if x == y || Set.member (x,y) s
                             then acc
                             else Set.insert (x, y) acc ) Set.empty (zip xs ys)
--}
+
 
 -- SUBSTITUTION
 

@@ -18,7 +18,6 @@ module Validation.Rename
 , renameType
 , renameTypes
 , subs
-, subsAll
 , unfold
 , Rename(..) -- for testing only
 ) where
@@ -30,7 +29,7 @@ import           Syntax.Kinds
 import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
 import           Syntax.Base
-import qualified Validation.Substitution as Subs (subs, subsAll, unfold)
+import qualified Validation.Substitution as Subs (subs, unfold)
 import           Utils.FreestState
 import qualified Data.Map.Strict as Map
 import           Control.Monad.State
@@ -234,17 +233,14 @@ findWithDefaultVar x bs = mkVar (position x) (Map.findWithDefault (intern x) (in
 
 -- Substitution and unfold, the renamed versions
 
--- [t/x]u, substitute t for for every free occurrence of x in u; with renaming
+-- [t/x]u, substitute t for for every free occurrence of x in u
 subs :: Type -> TypeVar -> Type -> Type
 subs t x u = renameType $ Subs.subs t x u
-
--- subsAll σ u, apply all substitutions in σ to u; with renaming
-subsAll :: [(Type, TypeVar)] -> Type -> Type
-subsAll σ s =  renameType $ Subs.subsAll σ s
 
 -- Unfold a recursive type (one step only)
 unfold :: Type -> Type
 unfold = renameType . Subs.unfold
+-- unfold t@(Rec _ (TypeVarBind _ x _) u) = Subs.subs t x (renameType u)
 
 -- Stand alone
 

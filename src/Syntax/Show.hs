@@ -21,6 +21,7 @@ import           Syntax.Kinds
 import           Syntax.ProgramVariables
 import           Syntax.TypeVariables
 import           Syntax.Base
+import qualified Validation.Substitution as Subs (unfold) -- no renaming
 import qualified Data.Map.Strict as Map
 import           Data.List (intersperse, intercalate)
 import           Data.Char (isDigit)
@@ -108,6 +109,7 @@ showType i (Datatype _ m)   = "[" ++ showDatatype i m ++ "]"
   -- Session types
 showType i (Semi _ t u)     = "(" ++ showType (i-1) t ++ ";" ++ showType (i-1) u ++ ")"
 showType i (Choice _ v m)   = showChoiceView v ++ "{" ++ showChoice i m ++ "}"
+-- showType i t@(Rec _ _ _)    = showType (i-1) (Subs.unfold t)
 showType i (Rec _ xk t)     = "(rec " ++ show xk ++ "." ++ showType (i-1) t ++ ")" -- for testing purposes
   -- Type operators
 showType i (Dualof _ t)     = "(dualof " ++ showType (i-1) t ++ ")"
