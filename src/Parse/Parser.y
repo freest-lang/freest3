@@ -4,7 +4,9 @@ module Parse.Parser
 , parseTypeScheme
 , parseDefs
 , parseProgram
+, parseSchemes
 ) where
+
   
 import           Syntax.Expressions
 import           Syntax.Schemes
@@ -31,6 +33,7 @@ import           Debug.Trace
 %name terms Prog
 %name kinds Kind
 %name expr Expr
+%name schemes Schemes
 %tokentype { Token }
 %error { parseError }
 %monad { FreestState }
@@ -340,11 +343,11 @@ TypeName :: { TypeVar }
 
 TypeVarBind :: { TypeVarBind }
   : TypeVar ':' Kind { TypeVarBind (position $1) $1 $3 }
-  | TypeVar          { TypeVarBind (position $1) $1 (kindTU (position $1)) }
+  | TypeVar          { TypeVarBind (position $1) $1 (kindSL (position $1)) }
 
 TypeNameKind :: { (TypeVar, Kind) }    -- for type and data declarations
   : TypeName ':' Kind { ($1, $3) }
-  | TypeName          { ($1, kindTU (position $1)) }
+  | TypeName          { ($1, kindSL (position $1)) }
 
 TypeVarBindList :: { [TypeVarBind] }
   : TypeVarBind                     { [$1] }
@@ -353,6 +356,14 @@ TypeVarBindList :: { [TypeVarBind] }
 TypeVarBindEmptyList :: { [TypeVarBind] }
   :                 { [] }
   | TypeVarBindList { $1 }
+
+
+--------------------
+-- SCHEMES PARSER --
+--------------------
+Schemes :: { (TypeScheme, TypeScheme) }
+  : TypeScheme NL TypeScheme { ($1, $3) }
+
 
 {
   
@@ -434,5 +445,13 @@ parseError xs = do
   f <- getFileName
   error $ styleError f p [styleRed "error\n\t", "parse error on input", styleRed $ "'" ++ show (head xs) ++ "'"]
  where p = position (head xs)
+
+
+--------------------
+-- SCHEMES PARSER --
+--------------------
+parseSchemes :: String -> (TypeScheme, TypeScheme)
+parseSchemes s = fst $ runState (parse s) (initialState "")
+  where parse = schemes . scanTokens
 
 }
