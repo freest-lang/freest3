@@ -109,4 +109,5 @@ main = do
     arguments <- getArgs
     let (seed, version, depth, pos) = parseTestArgs arguments
     let pairF = if pos then mkPairPositive else mkPairNegative
-    runEach (pairF seed depth, depth) (bisims !! version) seed pos
+    pair <- (pairF seed depth, depth)
+    runEach pair (bisims !! version) seed pos
