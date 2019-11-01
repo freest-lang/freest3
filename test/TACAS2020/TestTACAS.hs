@@ -44,16 +44,16 @@ type BisimFunction = (TypeEnv -> Type -> Type -> Bool)
 test :: BisimPair -> BisimFunction -> Bool
 test (BisimPair t u) bisim = bisim Map.empty t u
 
-clockSomething :: a -> IO String
+clockSomething :: a -> IO (String, a)
 clockSomething something = do
   start <- getTime Monotonic
-  void (evaluate $ something)
+  r = (evaluate $ something)
   end <- getTime Monotonic
-  return $ formatToString (timeSpecs) start end
+  return $ (formatToString (timeSpecs) start end, r)
 
-parseTestArgs :: [String] -> (Int, Int, Int)
-parseTestArgs [] = (0, 0, 0)
-parseTestArgs (seed:version:depth:[]) = (read seed, read version, read depth)
+parseTestArgs :: [String] -> (Int, Int, Int, Boolean)
+parseTestArgs [] = (0, 0, 0, True)
+parseTestArgs (seed:version:depth:pos:[]) = (read seed, read version, read depth, read:pos)
 
 
 runTestVersion :: BisimPair -> BisimFunction -> String -> IO String
@@ -65,31 +65,48 @@ runTestVersion p f name = do
 nodesOf :: BisimPair -> (String, String)
 nodesOf (BisimPair t1 t2) = (show $ nodes t1, show $nodes t2)
 
-runEach :: (BisimPair, Int) -> (String, BisimFunction) -> Int -> IO ()
-runEach (pair, d) (name, f) seed = do
-    v <- timeout (60 * seconds_in_micro) $ runTestVersion pair f name
+runEach :: (BisimPair, Int) -> (String, BisimFunction) -> Int -> Bool -> IO ()
+runEach (pair, d) (name, f) seed pos = do
+    (v,r) <- timeout (30 * 60 * seconds_in_micro) $ runTestVersion pair f name
     let (n1, n2) = nodesOf pair
-    let base = name ++ ";"  ++ n1 ++ ";" ++ n2 ++ ";" ++ (show d) ++ ";" ++ (show seed) ++ ";"
+    let base = name ++ ";"  ++ n1 ++ ";" ++ n2 ++ ";" ++ (show d) ++ ";" ++ (show seed) ++ ";" ++ (show pos) ++ ";" ++ (show r) ++ ";"
     case v of
         Nothing -> putStrLn $ base ++ "timeout"
         (Just time) -> putStrLn $ base ++ time
 
-mkPair :: Int -> Int -> BisimPair
-mkPair seed depth =
-    -- Disable because each run only generates one pair
-    -- let g = mkStdGen seed
-    -- let (v, _) = random g :: (Int, StdGen)
-    let generator = mkQCGen $ seed in
+mkPairPositive :: Int -> Int -> IO BisimPair
+mkPairPositive seed depth = do
+    let g = mkStdGen seed
+    let (v, ng) = random g :: (Int, StdGen)
+    
+    let generator = mkQCGen $ v in
     let pair = unGen (arbitrary :: Gen BisimPair) generator depth in
-    pair
     
-    --let t1 = read "((rec w:SL. &{B: ((+{A: &{B: x, C: Skip}};(+{A: ?Bool, B: w, C: (?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w))};Skip));+{A: (!Char;(((?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w));?Char);(?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w))))}), C: Skip});(x;((&{B: !Bool, C: Skip};((rec δ:SU. ?());y));(?Int;(+{B: x, C: ?Int};(!Int;Skip))))))" in
-    --let t2 = read "((rec z:SL. (Skip;&{B: (+{A: (&{B: x, C: Skip};+{A: (?Bool;Skip), B: (z;Skip), C: (((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z);Skip)})};(+{A: !Char};(((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z);(?Char;((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z))))), C: Skip}));((x;&{B: (!Bool;(?();y)), C: (Skip;(?();y))});((?Int;+{B: x, C: ?Int});!Int)))" in
-    --BisimPair t1 t2
+    if kinded t1 && kinded t2 then do
+      return pair
+    else do
+      let (v, _) = random ng :: (Int, StdGen)
+      mkPairPositive v depth
     
+mkPairNegative :: Int -> Int -> IO BisimPair
+mkPairNegative seed depth = do
+    -- Disable because each run only generates one pair
+    let g = mkStdGen seed
+    let (v, ng) = random g :: (Int, StdGen)
+    let generator1 = mkQCGen $ seed
+    let generator2 = mkQCGen $ v
+    let t1 = unGen (arbitrary :: Gen Type) generator1 depth
+    let t2 = unGen (arbitrary :: Gen Type) generator2 depth
+    let pair = BisimPair t1 t2
+    if kinded t1 && kinded t2 && not (test pair B0.bisimilar) then do
+      return pair
+    else do
+      let (v, _) = random ng :: (Int, StdGen)
+      mkPairNegative v depth
 
 main :: IO ()
 main = do
     arguments <- getArgs
-    let (seed, version, depth) = parseTestArgs arguments
-    runEach (mkPair seed depth, depth) (bisims !! version) seed
+    let (seed, version, depth, pos) = parseTestArgs arguments
+    let pairF = if pos then mkPairPositive else mkPairNegative in
+    runEach (pairF seed depth, depth) (bisims !! version) seed pos
