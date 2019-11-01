@@ -53,14 +53,14 @@ clockSomething something = do
 
 parseTestArgs :: [String] -> (Int, Int, Int, Bool)
 parseTestArgs [] = (0, 0, 0, True)
-parseTestArgs (seed:version:depth:pos:[]) = (read seed, read version, read depth, read:pos)
+parseTestArgs (seed:version:depth:pos:[]) = (read seed, read version, read depth, read pos)
 
 
-runTestVersion :: BisimPair -> BisimFunction -> String -> IO String
+runTestVersion :: BisimPair -> BisimFunction -> String -> IO (String, Bool)
 runTestVersion p f name = do
     -- putStrLn $ show p
-    time <- clockSomething (test p f)
-    return time
+    res <- clockSomething (test p f)
+    return res
     
 nodesOf :: BisimPair -> (String, String)
 nodesOf (BisimPair t1 t2) = (show $ nodes t1, show $nodes t2)
