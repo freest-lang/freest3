@@ -67,12 +67,12 @@ nodesOf (BisimPair t1 t2) = (show $ nodes t1, show $nodes t2)
 
 runEach :: (BisimPair, Int) -> (String, BisimFunction) -> Int -> Bool -> IO ()
 runEach (pair, d) (name, f) seed pos = do
-    (v,r) <- timeout (30 * 60 * seconds_in_micro) $ runTestVersion pair f name
+    v <- timeout (30 * 60 * seconds_in_micro) $ runTestVersion pair f name
     let (n1, n2) = nodesOf pair
-    let base = name ++ ";"  ++ n1 ++ ";" ++ n2 ++ ";" ++ (show d) ++ ";" ++ (show seed) ++ ";" ++ (show pos) ++ ";" ++ (show r) ++ ";"
+    let base = name ++ ";"  ++ n1 ++ ";" ++ n2 ++ ";" ++ (show d) ++ ";" ++ (show seed) ++ ";" ++ (show pos) ++ ";"
     case v of
         Nothing -> putStrLn $ base ++ "timeout"
-        (Just time) -> putStrLn $ base ++ time
+        (Just (time, r)) -> putStrLn $ base ++ (show r) ++ ";" ++ time
 
 mkPairPositive :: Int -> Int -> IO BisimPair
 mkPairPositive seed depth = do
