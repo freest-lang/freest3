@@ -79,8 +79,8 @@ mkPairPositive seed depth = do
     let g = mkStdGen seed
     let (v, ng) = random g :: (Int, StdGen)
     
-    let generator = mkQCGen $ v in
-    let pair = unGen (arbitrary :: Gen BisimPair) generator depth in
+    let generator = mkQCGen $ v
+    let pair = unGen (arbitrary :: Gen BisimPair) generator depth
     
     if kinded t1 && kinded t2 then do
       return pair
@@ -108,5 +108,5 @@ main :: IO ()
 main = do
     arguments <- getArgs
     let (seed, version, depth, pos) = parseTestArgs arguments
-    let pairF = if pos then mkPairPositive else mkPairNegative in
+    let pairF = if pos then mkPairPositive else mkPairNegative
     runEach (pairF seed depth, depth) (bisims !! version) seed pos
