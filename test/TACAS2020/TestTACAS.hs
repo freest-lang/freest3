@@ -47,7 +47,7 @@ test (BisimPair t u) bisim = bisim Map.empty t u
 clockSomething :: a -> IO (String, a)
 clockSomething something = do
   start <- getTime Monotonic
-  r = (evaluate $ something)
+  r <- (evaluate $ something)
   end <- getTime Monotonic
   return $ (formatToString (timeSpecs) start end, r)
 
