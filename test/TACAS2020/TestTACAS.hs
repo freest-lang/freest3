@@ -51,7 +51,7 @@ clockSomething something = do
   end <- getTime Monotonic
   return $ (formatToString (timeSpecs) start end, r)
 
-parseTestArgs :: [String] -> (Int, Int, Int, Boolean)
+parseTestArgs :: [String] -> (Int, Int, Int, Bool)
 parseTestArgs [] = (0, 0, 0, True)
 parseTestArgs (seed:version:depth:pos:[]) = (read seed, read version, read depth, read:pos)
 
