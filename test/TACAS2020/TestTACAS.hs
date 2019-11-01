@@ -80,10 +80,10 @@ mkPairPositive seed depth = do
     let (v, ng) = random g :: (Int, StdGen)
     
     let generator = mkQCGen $ v
-    let pair = unGen (arbitrary :: Gen BisimPair) generator depth
+    let (BisimPair t1 t2) = unGen (arbitrary :: Gen BisimPair) generator depth
     
     if kinded t1 && kinded t2 then do
-      return pair
+      return (BisimPair t1 t2)
     else do
       let (v, _) = random ng :: (Int, StdGen)
       mkPairPositive v depth
