@@ -31,7 +31,9 @@ def main():
                    load_dataframe("negatives", "Not Bisimilar")])
                    
     d = df[ df['Time'] == "timeout" ]
-    print(d)
+    print(d.groupby(["Version", "Bisimilarity"])["Time"].count())
+    import sys
+    sys.exit()
 
     df['Nodes'] = df['Nodes T1'] + df['Nodes T2']
     df['NodesDiff'] = np.abs(df['Nodes T1'] - df['Nodes T2'])
@@ -41,12 +43,16 @@ def main():
     print("Time min:", df['Time'].min())
     
     print("Nodes max:", df['Nodes'].max())
+    print("Nodes mean:", df['Nodes'].mean())
     print("Depth max:", df['Depth'].max())
     
+
     
     select = df[ df['Version'] == "B0" ]
-    select2 = select[ select['Nodes'] <= 500 ]
-    print("Mean:", select2['Time'].mean())
+    select2 = select[ select['Bisimilarity'] == "Not Bisimilar" ]
+    
+    print("Max Pair", select[ select['Nodes'] == 72 ])
+    print("Mean:", select2['Nodes'].max())
     
     for v in df['Version'].unique():
     
@@ -91,8 +97,8 @@ def main():
     select = df[ df['Version'] == "B0" ]
 
     plt.figure(figsize=(4,4))    
-    ax = sns.boxenplot(x="Bisimilarity", y="Time",
-                   data=select)
+    ax = sns.boxenplot(x="Version", y="Time", hue="Bisimilarity",
+                   data=df)
     ax.set_yscale("log")
     plt.ylabel("Time (µs)")
     sns.despine(left=True)
