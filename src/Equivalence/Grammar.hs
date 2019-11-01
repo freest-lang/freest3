@@ -51,11 +51,13 @@ import           Data.List (intersperse)
 import           Prelude hiding (Word) -- Word is (re)defined in module Equivalence.Grammar
 
 -- Terminal symbols are called labels
-data Label =
-  ChoiceLabel Polarity ProgVar |
-  MessageLabel Polarity BasicType |
-  VarLabel TypeVar
-  deriving (Eq, Ord)
+-- data Label =
+--   ChoiceLabel Polarity ProgVar |
+--   MessageLabel Polarity BasicType |
+--   VarLabel TypeVar
+--   deriving (Eq, Ord)
+
+type Label = String
 
 -- Non-terminal symbols are type variables TypeVar
 
@@ -119,10 +121,10 @@ throughPath p _ xs = Just xs
 
 -- Showing a grammar
 
-instance Show Label where
-  show (ChoiceLabel v l)  = showChoiceView v ++ intern l
-  show (MessageLabel p t) = show p ++ show t
-  show (VarLabel l)       = intern l
+-- instance Show Label where
+--   show (ChoiceLabel v l)  = showChoiceView v ++ intern l
+--   show (MessageLabel p t) = show p ++ show t
+--   show (VarLabel l)       = intern l
 
 instance Show Grammar where
   show (Grammar xss p) =

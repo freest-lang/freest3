@@ -22,6 +22,7 @@ import           Syntax.Kinds
 import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
 import           Syntax.Base
+import           Syntax.Show
 import qualified Validation.Substitution as Substitution (subsAll) -- no renaming
 import           Equivalence.Grammar
 import           Equivalence.Normalisation
@@ -50,16 +51,16 @@ toGrammar (Semi _ t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
   return $ xs ++ ys
-toGrammar (Message _ p b) = do
-  y <- getProd $ Map.singleton (MessageLabel p b) []
+toGrammar m@(Message _ _ _) = do
+  y <- getProd $ Map.singleton (show m)  []
   return [y]
 toGrammar (Choice _ p m) = do
   ms <- tMapM toGrammar m
-  y <- getProd $ Map.mapKeys (ChoiceLabel p) ms
+  y <- getProd $ Map.mapKeys (\k -> showChoiceView p ++ show k) ms
   return [y]
 -- Functional or session (session in this case)
-toGrammar (TypeVar _ x) = do      -- x is a polymorphic variable
-  y <- getProd $ Map.singleton (VarLabel x) []
+toGrammar x@(TypeVar _ _) = do      -- x is a polymorphic variable
+  y <- getProd $ Map.singleton (show x) []
   return [y]
 toGrammar (Rec _ (TypeVarBind _ x _) _) =
   return [x]
