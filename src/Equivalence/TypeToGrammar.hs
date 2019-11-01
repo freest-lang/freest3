@@ -51,18 +51,15 @@ toGrammar (Semi _ t u) = do
   ys <- toGrammar u
   return $ xs ++ ys
 toGrammar (Message _ p b) = do
-  y <- freshVar
-  addProductions y $ Map.singleton (MessageLabel p b) []
+  y <- getProd $ Map.singleton (MessageLabel p b) []
   return [y]
 toGrammar (Choice _ p m) = do
   ms <- tMapM toGrammar m
-  y <- freshVar
-  addProductions y $ Map.mapKeys (ChoiceLabel p) ms
+  y <- getProd $ Map.mapKeys (ChoiceLabel p) ms
   return [y]
 -- Functional or session (session in this case)
 toGrammar (TypeVar _ x) = do      -- x is a polymorphic variable
-  y <- freshVar
-  addProductions y $ Map.singleton (VarLabel x) []
+  y <- getProd $ Map.singleton (VarLabel x) []
   return [y]
 toGrammar (Rec _ (TypeVarBind _ x _) _) =
   return [x]
@@ -95,8 +92,8 @@ collect σ t@(Rec _ (TypeVarBind _ x _) u) = do
   let u' = Substitution.subsAll σ' u
   (z:zs) <- toGrammar (normalise Map.empty u')
   m <- getTransitions z
-  -- getProd' x (Map.map (++ zs) m)
-  addProductions x (Map.map (++ zs) m)
+  getProd' x (Map.map (++ zs) m)
+  -- addProductions x (Map.map (++ zs) m)
   collect σ' u
 collect _ _ = return ()
 
