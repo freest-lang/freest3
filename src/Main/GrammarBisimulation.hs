@@ -1,25 +1,19 @@
 module Main where
 
--- import System.Exit
 import Equivalence.Bisimulation
 import Parse.GrammarParser
 import Equivalence.Grammar
--- import Syntax.Types
--- import Syntax.Kinds
--- import Utils.FreestState
--- import Control.Monad.State
--- import Validation.Kinding
--- import qualified Data.Map.Strict as Map
 import System.Environment (getArgs)
 import           Prelude hiding (Word) -- Word is (re)defined in module Equivalence.Grammar
 
 
 main :: IO ()
 main = do
-  args <- getArgs
-  f <- readFile (head args)
-  let g = parseGrammars f
-  isBisimGrammar (head g)
+  -- args <- getArgs
+  -- f <- readFile (head args)
+  contents <- getContents
+  let g = parseGrammar contents
+  isBisimGrammar g
 
 isBisimGrammar :: Grammar -> IO ()
 isBisimGrammar g@(Grammar [xs, ys] _)
