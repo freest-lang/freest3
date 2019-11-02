@@ -1,13 +1,17 @@
+import math
+
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
+
 conversion = {
     'ns': 0.001,
     'us': 1,
     'ms': 1000,
-    's': 1000 * 1000
+    's': 1000 * 1000,
+    'm': 60 * 1000 * 1000
 } 
 
 MAX_TIME = 10*1000*1000
@@ -15,29 +19,28 @@ MAX_TIME = 10*1000*1000
 def uniform_time(v):
     if v == 'timeout':
         return MAX_TIME
-    ps = v.split(" ")
-    return float(ps[0]) * conversion[ps[1]]
+    else:
+        ps = v.split(" ")
+        return float(ps[0]) * conversion[ps[1]]
     
-columns_in_csv = ['Version', 'Nodes T1', 'Nodes T2', 'Depth', 'Seed', 'Time']
+columns_in_csv = ['Version', 'Nodes T1', 'Nodes T2', 'Depth', 'Seed', "Bisimilarity", "Bisimilarity2", 'Time']
 
-def load_dataframe(name, positive):
-    df = pd.read_csv("run_{}.log".format(name), sep=";")
-    df.columns = ['Version', 'Nodes T1', 'Nodes T2', 'Depth', 'Seed', 'Time']
-    df['Bisimilarity'] = positive
+def load_dataframe():
+    df = pd.read_csv("run.log", sep=";")
+    df.columns = columns_in_csv
     return df
     
 def main():
-    df = pd.concat([load_dataframe("positives", "Bisimilar"), 
-                   load_dataframe("negatives", "Not Bisimilar")])
-                   
+    df = load_dataframe()
+        
+    print("Timeouts:")
     d = df[ df['Time'] == "timeout" ]
     print(d.groupby(["Version", "Bisimilarity"])["Time"].count())
-    import sys
-    sys.exit()
 
     df['Nodes'] = df['Nodes T1'] + df['Nodes T2']
     df['NodesDiff'] = np.abs(df['Nodes T1'] - df['Nodes T2'])
-    df['Time'] = df['Time'].map(uniform_time)
+    df['Time'] = df['Time'].map(uniform_time) 
+    df['Bisimilarity'] = df['Bisimilarity'].map(lambda x: x and "Bisimilar" or "Not Bisimilar") 
 
     print("Time max:", df['Time'].max())
     print("Time min:", df['Time'].min())
