@@ -141,4 +141,4 @@ showProductions = Map.foldrWithKey showTransitions ""
   showTransitions x m s = s ++ Map.foldrWithKey (showTransition x) "" m
 
   showTransition :: TypeVar -> Label -> Word -> String -> String
-  showTransition x l xs s = s ++ "\n" ++ intern x ++ " -> " ++ show l ++ " " ++ concat (intersperse " " (map intern xs))
+  showTransition x l xs s = s ++ "\n" ++ intern x ++ " -> " ++ l ++ " " ++ concat (intersperse " " (map intern xs))

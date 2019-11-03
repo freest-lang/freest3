@@ -17,6 +17,8 @@ cfst
 FreeSTRuntime.hs
 Parser.hs
 Lexer.hs
+GrammarParser.hs
+GrammarLexer.hs
 testEquiv.hp
 testEquiv.prof
 Parser.hs

@@ -16,8 +16,12 @@ types~\cite{almeida.etal_freest-functional-language}.
 % the algorithm would be able to handle manual examples that we knew
 % would emerge from real programs and examples. The algorithm
 % succeeded in evaluating all the tests in due time.
-The tests produced by this method are, on the one hand, small, and, on
-the other hand, lacking diversity.
+The tests produced by this method, although small and lacking diversity
+have revealed run times longer then we would expect for a compiler, as discussed
+in Section~\ref{sec:optimisations}. 
+%The tests produced by this method are, on the one hand, small, and, on
+%the other hand, lacking diversity.
+
 
 We then turned our attention to the automatic generation of test
 cases. Generating pairs of arbitrary (well-formed) types that share no
@@ -75,25 +79,27 @@ context-free session types is such that there are types
 $S \not\bisim T$ such that $\mu X.S \bisim \mu X.T$ (just think of
 $!\intk;X;X$ and $!\intk;X$).
 
-We used QuickCheck~\cite{DBLP:conf/icfp/ClaessenH00} generate two test
+We used QuickCheck~\cite{DBLP:conf/icfp/ClaessenH00} to generate two test
 suites. That for bisimilar pairs (constructed based on
-Theorem~\ref{thm:axioms}) comprises 2000 entries, featuring types with
+Theorem~\ref{thm:axioms}) comprises 1000 entries, featuring types with
 a number of nodes (in the syntax tree) ranging from 1 to 35751. The
 test suite for non-bisimilar pairs (constructed by independently
 generating two types and verifying they were not equivalent) includes
-2000 pairs with a number of nodes ranging from 1 to 387.
+1000 pairs with a number of nodes ranging from 1 to 387.
 %
-The slowest negative test takes under 775Mb of RAM to execute.
+%The slowest negative test takes under 775Mb of RAM to execute.
 
 \begin{figure}[t]
     \centering
     \subfloat[Distribution of the execution time]{\includegraphics[height=.5\textwidth]{img/distribution_boxplot}}%
-    \subfloat[Execution time per number of nodes]{\includegraphics[height=.5\textwidth]{img/nodes_time_B0}}%
+    \subfloat[Execution time per number of nodes]{\includegraphics[height=.5\textwidth]{img/nodes_time_B1234}}%
     \caption{The test suite composed by equivalent pairs of types is represented in blue and the
     test suite with non-equivalent pairs of types is represented in orange. Time 
     in microseconds, $\mu s$. Both scales are logarithmic.\\
     (a) Distribution of execution time of function $\BisimT$ for both test suites.\\
-    (b) Distribution of execution time of function $\BisimT$ per total number of nodes 
+    (b) Distribution of execution time of function $\BisimT$ with all 
+    optimisations
+    per total number of nodes 
     in the abstract syntax trees of the types.}%
     \label{fig:results}%
 \end{figure}
@@ -116,17 +122,50 @@ The slowest negative test takes under 775Mb of RAM to execute.
 %	\label{fig:nodes_vs_time}
 %\end{figure}
 
-We implemented the algorithm described by the function $\BisimT$ in
-300 lines of Haskell and used the Glasgow Haskell Compiler (version
+We implemented the algorithm described by the function $\BisimT$ 
+in
+%300 lines of 
+Haskell and used the Glasgow Haskell Compiler (version
 8.6.5), provided by the docker image
-\texttt{fpco/stack-build}. Evaluation was conducted on a machine with
+\texttt{fpco/stack-build}. We also implemented the optimisations proposed
+in Section~\ref{sec:optimisations}.
+Evaluation was conducted on a machine with
 an Intel Xeon X5670 at 2.93GHz and 24 GB of RAM.
+
+We evaluated the algorithm for each optimisation individually, and for the 
+gradual inclusion of optimizations, by the order in which
+they were introduced in Section~\ref{sec:optimisations}.
+We ran the tests with a timeout of 30 minutes. Table~\ref{table:timeouts} 
+exhibits the number of timeouts for each version of the algorithm for both
+the positive and the negative test suites. The minimum number of bisimilar 
+of timeouts both on the positive case and on the global number of timeouts 
+stands for the case where all the optimisations are included.
+
+\begin{table}
+\centering
+	\begin{tabular}{ |c|c|c|c| }
+	 \hline
+ 		Version ID & Version description & Bisimilar test suite & Not bisimilar 
+ 		test suite \\ 
+ 		 \hline
+	 	B0 & \text { base case}& 5 & 0 \\  
+	 	B1 & \text { reuse productions}& 2 & 1 \\ 
+	 	B2 & \text { use double-ended queue}& 6 & 0 \\ 
+	 	B3 & \text { use filtering}& 12 & 0 \\
+	 	B4 & \text { iterate simplification}& 4 & 0 \\
+	 	B12 & \text {case B1 + case B2}& 3 & 1 \\   
+	 	B123 & \text {case B12 + case B3}& 7 & 1 \\
+	 	B1234 & \text {case B123 + case B4}& \bf{1} & \bf{1} \\ 
+	 	 \hline  
+	\end{tabular}
+	\caption{Number of timeouts for each optimisation.\label{table:timeouts}}
+\end{table}
+
 %
 Figure~\ref{fig:results} (a) depicts the distribution of the execution
-times (in $\mu s$) for both test suites. All tests completed in less
-than 1 minute. We see that the majority of the tests terminate within
-0.01s.  The figure also shows that deciding equivalence negatively is
-slightly faster than deciding it positively.
+times (in $\mu s$) for both test suites and for the all optimisations
+introduced in Table~\ref{table:timeouts}. The figure also shows that all the 
+analysed versions exhibit similar execution times.
 
 %\begin{figure}[h]
 %	\includegraphics[height=6cm]{img/distribution_boxplot}	\hspace*{2mm}
@@ -138,24 +177,24 @@ slightly faster than deciding it positively.
 
 Figure~\ref{fig:results} (b) represents the distribution of execution
 time per total number of nodes in the abstract syntax trees of the
-types. For the positive tests, we observe a linear increase in the
-runtime, whereas for the negative tests we observe what seems to be an
-exponential growth.
+types. We observe an exponential increase in the
+runtime with the number of nodes, as expected due to the nature of the
+expansion tree.
 % We suspect that if we had carried out tests with a larger number of
 % nodes, we would also have had observed an exponential growth in the
 % execution time.
 
-Although the runtime of $\BisimT$ is good enough for justifying its
-inclusion in a compiler, we identified a few potential optimisations
-and analysed their impact on the execution time. We implemented the
-following variants: i) eliminating redundant productions in the
-grammar, ii) using a double-ended queue where promising children are
-prepended rather than appended, iii) adding a filter rule to
-simplification stage that removes hopeless pairs from nodes, and iv)
-iterating the simplification stage until a fixed point is reached.
-%
-Running the test suite discussed above on these variants, alone and
-in different combinations, we found no decrease in the runtime.
+%Although the runtime of $\BisimT$ is good enough for justifying its
+%inclusion in a compiler, we identified a few potential optimisations
+%and analysed their impact on the execution time. We implemented the
+%following variants: i) eliminating redundant productions in the
+%grammar, ii) using a double-ended queue where promising children are
+%prepended rather than appended, iii) adding a filter rule to
+%simplification stage that removes hopeless pairs from nodes, and iv)
+%iterating the simplification stage until a fixed point is reached.
+%%
+%Running the test suite discussed above on these variants, alone and
+%in different combinations, we found no decrease in the runtime.
 
 % Once the improvement proposals were established, we benchmarked the
 % algorithm on a test suite of carefully crafted pairs of types
