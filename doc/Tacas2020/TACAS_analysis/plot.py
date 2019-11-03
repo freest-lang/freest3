@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import math
 
 import numpy as np
@@ -51,10 +54,10 @@ def main():
     
 
     
-    select = df[ df['Version'] == "B0" ]
+    select = df[ df['Version'] == "B1234" ]
     select2 = select[ select['Bisimilarity'] == "Not Bisimilar" ]
     
-    print("Max Pair", select[ select['Nodes'] == 72 ])
+    print(select[ select['Time'] == MAX_TIME ])
     print("Mean:", select2['Nodes'].max())
     
     for v in df['Version'].unique():
