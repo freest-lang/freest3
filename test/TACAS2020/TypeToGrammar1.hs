@@ -226,13 +226,13 @@ fixedPoint visited goals w t
   | Set.null goals = return True
   | otherwise      = do
       let (x, y) = Set.elemAt 0 goals
-      ts1 <- safeGetTransitions x t
       ps <- getProductions
       if (Map.member y ps)
       then do
         y1 <- applySubs y
+        ts1 <- safeGetTransitions x t
         ts2 <- getTransitions y1
-        fixedPoint' visited goals ts1 ts2 x y1
+        fixedPoint' (Set.insert (x,y) visited) (updateGoals goals (newGoals ts1 ts2) x y) ts1 ts2 x y1
       else return False
 
    where

@@ -2,10 +2,10 @@
 -- import           TACAS2020.Bisimulation1
 -- import           TACAS2020.Bisimulation2
 -- import           TACAS2020.Bisimulation3
--- import           TACAS2020.Bisimulation4
+import           TACAS2020.Bisimulation4
 -- import           TACAS2020.Bisimulation12
 -- import           TACAS2020.Bisimulation123 -- Loops?
-import           TACAS2020.Bisimulation1234
+-- import           TACAS2020.Bisimulation1234
 import           Parse.Parser
 import qualified Data.Map.Strict as Map
 

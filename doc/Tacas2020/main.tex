@@ -17,6 +17,7 @@
 \usepackage{listings,color}
 \usepackage{alltt}
 \usepackage{flushend}
+\usepackage[dvipsnames]{xcolor}
 % \usepackage{algorithm}
 % \usepackage[noend]{algpseudocode}
 \usepackage{graphicx}
@@ -24,6 +25,9 @@
 \usepackage{multicol,enumitem}
 \usepackage{tikz}
 \usepackage{subfig}
+\usepackage[font=small,labelfont=bf]{caption}
+
+
 
 \input{macros}
 
@@ -70,8 +74,9 @@ Vasco T. Vasconcelos\inst{1}}
 \input{contextfreesession}
 \input{algorithm}
 \input{soundness}
-\input{optimisations} 
+%\input{optimisations} 
 \input{evaluation}
+\newpage
 \input{conclusion}
 
 \paragraph{Acknowledgements}
@@ -85,9 +90,9 @@ UID/CEC/00408/2019 and by Cost Action CA15123 EUTypes.
 \bibliographystyle{plain}
 \bibliography{biblio}
 
-\newpage 
-\appendix
-\input{appendix}
+%\newpage 
+%\appendix
+%\input{appendix}
 %\newpage
 %\section{Haskell code (excerpt)}
 %\lstinputlisting{Bisimulation.hs}
