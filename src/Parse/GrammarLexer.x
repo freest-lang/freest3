@@ -10,19 +10,19 @@ module Parse.GrammarLexer
 $upper = [A-Z]
 $lower = [a-z]
 $digit = [0-9]
-$message = [\!\?]
-$symbol = [\+\&$message]
-$string = [$upper$lower$digit$symbol]
 $eol=[\n]
 
+-- except ( ) - ,
+$symbol = [\`\~\@\#\$\%\^\&\*\_\+\=\{\[\}\]\:\;\'\"\<\>\.\/\?\!]
+$string = [$upper$lower$digit$symbol]
+
+@lowerId = $lower$string*|$symbol+$string*
+@upperId = $upper$string*
 @lineComment  = \n*"--".* 
 @blockComment = "{-" (\\.|[^\{\-]|\n|\-\-|[^$symbol].*)* "-}"
-@lowerId = ($symbol)?$lower$string*
-@upperId = ($symbol)?$upper$string*
-@basicType = $message("Int"|"Bool"|"Char")
 
 tokens :-
-  $white*$eol+   { \_ -> TokenNL }
+  $white*$eol+   ; 
   $white+        ;
   @lineComment   ;
   @blockComment  ;
@@ -30,34 +30,34 @@ tokens :-
   "("            { \_ -> TokenLParen }
   ")"            { \_ -> TokenRParen }
   ","            { \_ -> TokenComma }
-  @basicType     { \s -> TokenLowerId s }
   @lowerId       { \s -> TokenLowerId s }
+  $symbol+       { \s -> TokenSymbol s }
   @upperId       { \s -> TokenUpperId s }
 
 {
 data Token =
     TokenArrow
-  | TokenNL
   | TokenLowerId String
   | TokenUpperId String
+  | TokenSymbol String
   | TokenLParen
   | TokenRParen
-  | TokenComma deriving Show
-
+  | TokenComma
   
-scanTokens = alexScanTokens >>= (return . trim)
+instance Show Token where
+  show TokenArrow = "->"
+  show (TokenLowerId x) = x
+  show (TokenUpperId x) = x
+  show (TokenSymbol x) = x
+  show TokenLParen = "("
+  show TokenRParen = ")"
+  show TokenComma = "," 
+
+
+scanTokens = alexScanTokens
 
 getText :: Token -> String
 getText (TokenLowerId x) = x
 getText (TokenUpperId x) = x
-
-trim :: [Token] -> [Token]
-trim = reverse . trim' . reverse . trim'
-  where 
-    trim' :: [Token] -> [Token]
-    trim' [] = []
-    trim' (TokenNL : ts) = trim' ts        
-    trim' ts = ts
-
-
+getText (TokenSymbol x) = x
 }
