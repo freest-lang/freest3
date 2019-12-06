@@ -37,8 +37,8 @@ kinded (TypeScheme _ xs t) = null (errors s)
   where (_, s) = runState (synthetise (fromTypeVarBinds xs) t) (initialState "Kind synthesis")
           
 equivTypes :: TypeScheme -> TypeScheme -> IO ()
-equivTypes (TypeScheme _ xs t1) (TypeScheme _ ys t2)
-  | equivalent Map.empty (Map.union (fromTypeVarBinds xs) (fromTypeVarBinds ys)) t1 t2 =
+equivTypes t1 t2
+  | equivalent Map.empty Map.empty t1 t2 =
       putStrLn "The two given types are equivalent"
-  | otherwise                                                                          =
+  | otherwise                            =
       putStrLn "The two given types are *not* equivalent"
