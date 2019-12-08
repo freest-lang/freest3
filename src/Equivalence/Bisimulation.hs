@@ -70,6 +70,9 @@ expandNode ps =
 
 expandPair :: Productions -> (Word, Word) -> Maybe Node
 expandPair ps (xs, ys)
+  -- simulation
+  -- | Map.keysSet m1 `Set.isSubsetOf` Map.keysSet m2 = Just $ match m1 m2
+  -- *bi*simulation
   | Map.keysSet m1 == Map.keysSet m2 = Just $ match m1 m2
   | otherwise                        = Nothing
   where m1 = transitions xs ps

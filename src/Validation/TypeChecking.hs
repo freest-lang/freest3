@@ -11,7 +11,7 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-{-# LANGUAGE LambdaCase, NoMonadFailDesugaring #-}
+{-# LANGUAGE LambdaCase, NoMonadFailDesugaring, BangPatterns #-}
 
 module Validation.TypeChecking
 ( typeCheck
@@ -35,30 +35,30 @@ import           Debug.Trace -- debug
 
 typeCheck :: FreestState ()
 typeCheck = do
-  tEnv <- getTEnv
-  vEnv <- getVEnv
-  eEnv <- getEEnv
+  tEnv <- getTEnv -- Type/datatype declarations
+  vEnv <- getVEnv -- Function signatures
+  eEnv <- getEEnv -- Function bodies
   -- trace ("Entering type checking with\n  TEnv " ++ show tEnv)
   --   trace ("  VEnv " ++ show (userDefined vEnv))
   --     trace ("  EEnv " ++ show eEnv)
   --       return ()
-  -- Type/datatype declarations
-  tEnv <- getTEnv
---  trace "checking contractiveness of all type decls" (return ())
-  mapM_ (checkContractive Map.empty . snd) tEnv -- check contractiveness of all type decls
---  trace "checking the formation of all type decls" (return ())
-  mapM_ (K.synthetiseTS Map.empty . snd) tEnv -- check 
-  -- Function signatures (VarEnv)
- -- trace "checking the formation of all type signatures (kinding)" (return ())
-  vEnv <- getVEnv
+  -- 1. Check the contractiveness of all type decls
+  -- trace "checking contractiveness of all type decls" (return ())
+  mapM_ (checkContractive Map.empty . snd) tEnv
+  -- 2. Check the formation of all type decls
+  -- trace "checking the formation of all type decls" (return ())
+  mapM_ (K.synthetiseTS Map.empty . snd) tEnv
+  -- 3. Check the formation of all function signatures
+  -- trace "checking the formation of all function signatures (kinding)" (return ())
   mapM_ (K.synthetiseTS Map.empty) vEnv
---  trace "checking whether all function signatures have a binding" (return ())
+  -- 4. Check whether all function signatures have a binding
+  -- trace "checking whether all function signatures have a binding" (return ())
   tMapWithKeyM checkHasBinding vEnv
-  -- Function bodies (ExpEnv)
---  trace "checking the formation of all functions (typing)" (return ())
-  eEnv <- getEEnv
+  -- 5. Checek function bodies
+  -- trace "checking the formation of all functions (typing)" (return ())
   tMapWithKeyM checkFunBody eEnv
-  -- Main function  trace "checking the main function" (return ())
+  -- 6. Check the main function
+  -- trace "checking the main function" (return ())
   checkMainFunction
 
 -- Check whether a given function signature has a corresponding

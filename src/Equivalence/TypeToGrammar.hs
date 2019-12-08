@@ -81,7 +81,7 @@ toGrammar (Rec _ (TypeVarBind _ x _) _) =
 --     (k, TypeScheme _ [] t) <- getFromVEnv x
 --     toGrammar t
   -- Should not happen
-toGrammar t = error ("toGrammar: " ++ show t)
+toGrammar t = error $ "Internal error. Attempting to convert type " ++ show t ++ " (a non session type) to grammar."
 
 type Substitution = (Type, TypeVar)
 

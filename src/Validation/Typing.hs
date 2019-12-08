@@ -174,7 +174,7 @@ synthetiseFieldMap p kEnv e fm extract params = do
   then do
     addError p ["Wrong number of constructors\n",
                 "\t The expression has", styleRed $ show (Map.size fm), "constructor(s)\n",
-                "\t but type has", styleRed $ show (Map.size tm), "constructor(s)\n",
+                "\t but the type has", styleRed $ show (Map.size tm), "constructor(s)\n",
                 "\t in case/match", styleRed $ showFieldMap 1 fm]
     return $ Skip p
   else do
