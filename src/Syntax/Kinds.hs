@@ -48,7 +48,7 @@ instance Eq Kind where
   (Kind _ p n) == (Kind _ q m) = (p, n) == (q, m)
 
 -- The subkinding relation. Note that Kind is a partial order, hence
--- should not implement class Ord.
+-- should *not* be an instance class Ord.
 --    TL
 --   /  \
 -- TU    SL
@@ -72,12 +72,14 @@ kindTU p = Kind p Functional Un
 kindSL p = Kind p Session Lin
 kindSU p = Kind p Session Un
 
--- The kind that sits at the top of the hierarchy (use as a default value)
+-- The kind of conventional (non linear, not sessions) functional
+-- programming languages (Alternative: the kind that sits at the top
+-- of the hierarchy)
 instance Default Kind where
-  omission = kindTL
+  omission = kindTU
 
 isSession :: Kind -> Bool
-isSession = (<: (Kind defaultPos Session Lin))
+isSession = (<: (kindSL defaultPos))
 
 isLin :: Kind -> Bool
 isLin (Kind _ _ m) = m == Lin

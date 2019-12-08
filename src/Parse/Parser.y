@@ -307,10 +307,10 @@ TypeSeq :: { [Type] }
 -----------
 
 Kind :: { Kind } :
-    SU { Kind (position $1) Session Un }
-  | SL { Kind (position $1) Session Lin }
-  | TU { Kind (position $1) Functional Un }
-  | TL { Kind (position $1) Functional Lin }
+    SU { kindSU (position $1) }
+  | SL { kindSL (position $1) }
+  | TU { kindTU (position $1) }
+  | TL { kindTL (position $1) }
 
 -- PROGRAM VARIABLES
 
@@ -343,11 +343,11 @@ TypeName :: { TypeVar }
 
 TypeVarBind :: { TypeVarBind }
   : TypeVar ':' Kind { TypeVarBind (position $1) $1 $3 }
-  | TypeVar          { TypeVarBind (position $1) $1 (kindSL (position $1)) }
+  | TypeVar          { TypeVarBind (position $1) $1 (omission (position $1)) }
 
 TypeNameKind :: { (TypeVar, Kind) }    -- for type and data declarations
   : TypeName ':' Kind { ($1, $3) }
-  | TypeName          { ($1, kindSL (position $1)) }
+  | TypeName          { ($1, omission (position $1)) }
 
 TypeVarBindList :: { [TypeVarBind] }
   : TypeVarBind                     { [$1] }

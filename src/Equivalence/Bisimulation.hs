@@ -36,7 +36,8 @@ bisimilarGrammar (Grammar [xs, ys] p) = expand (xs, ys) (prune p)
 
 bisimilar :: TypeEnv -> Type -> Type -> Bool
 bisimilar tEnv t u = expand (xs, ys) (prune p)
-  where Grammar [xs, ys] p = trace (show t ++ "\nbisim\n" ++ show u) $ convertToGrammar tEnv [t, u]
+  where Grammar [xs, ys] p = convertToGrammar tEnv [t, u]
+    -- trace (show t ++ "\nbisim\n" ++ show u) $ convertToGrammar tEnv [t, u]
 
 type Node = Set.Set (Word, Word)
 
