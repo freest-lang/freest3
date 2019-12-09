@@ -305,10 +305,10 @@ checkEquivTypes exp kEnv expected actual = do
   tEnv <- getTEnv
   vEnv <- getVEnv
   -- trace ("checkEquivTypes :" ++ show (funSigsOnly tEnv vEnv)) (return ())
-  when (not $ equivalent tEnv kEnv expected actual) $
+  when (not $ equivalent tEnv kEnv actual expected) $
     addError (position exp) ["Couldn't match expected type", styleRed (show expected), "\n",
                           "\t             with actual type", styleRed (show actual), "\n",
-                          "\t               for expression",  styleRed (show exp)]
+                          "\t               for expression", styleRed (show exp)]
 
 checkEqualEnvs :: Expression -> VarEnv -> VarEnv -> FreestState ()
 checkEqualEnvs e vEnv1 vEnv2 = do
