@@ -1,23 +1,23 @@
-(Reviewer1, Reviewer3) Concrete comparison of related algorithms
+(Review1, Review3) Concrete comparison of related algorithms
 
 (AM)
 
-(Reviewer2) On page 6, definition of word, item 4:  should * on the right hand side be there?
+(Review2) On page 6, definition of word, item 4:  should * on the right hand side be there?
 
 The *l notation is meant to denote a label obtained by concatenating + or & to the label itself. It is important to distinguish +l from &l labels. We will make this clear in the camera-ready.
 
-(Reviewer2) The goal of the simplification rules BPA1 and BPA2 is not clear
+(Review2) The goal of the simplification rules BPA1 and BPA2 is not clear
 
 (AM)
 
-(Reviewer3) The definition of bisimilarity is not given
+(Review3) The definition of bisimilarity is not given
 
 See bottom of page 4.
 
-(Reviewer3) Kripke structures
+(Review3) Kripke structures
 
 (AM)
 
-(Reviewer3) Bisimulation and the description of protocols in concurrent programs
+(Review3) Bisimulation and the description of protocols in concurrent programs
 
 Session types are used to describe protocols in concurrent programs. When incorporated in programming languages, the notion of type equivalence becomes of paramount importance. Due to the characteristics of session types (choice, recursion), bisimulation is a widely used tool to define type equivalence.
