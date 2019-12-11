@@ -461,7 +461,8 @@ is.
 %
 \begin{align*}
   &\simplify(\mathit{na}, q, \productions) = \expand(\Fold(\mathsf{append}, q,
-    \Fold(\mathsf{apply} \; \productions, \mathit{na}, \mathsf{rules})))
+    \Fold(\mathsf{apply} \; \productions, \mathit{na},
+    \mathsf{rules})), \productions)
 \end{align*}
 
 Predicate $\expand$ terminates as soon as all nodes fail to expand
