@@ -21,11 +21,8 @@ Please see bottom of page 4.
 
 (Review3) The algorithm is exactly the same as the bisimulation algorithm for, say, Kripke structures
 
-Two states in a Kripke structure are bisimilar, sRt, if:
-- their set of labels coincide
-- for every s' s.t. s -> s', there exists t' s.t. t -> t' and s'Rt'
-- for every t' s.t. t -> t', there exists s' s.t. s -> s' and s'Rt'
-This definition of bisimulation is not the same as the one presented at the bottom of page 4.
+The notion of bisimulation for labeled transition systems (LTS) does not coincide with that of Kripke structures. At the expansion stage, the proposed algorithm does not verify the labelling of nodes (a labeled transition system only has labels for transitions). It rather checks if the transition labels for both words in the current node coincide and, if so, it tests corresponding children for bisimilarity.
+We’ll clarify this in the final version of the paper.
 
 
 (Review3) The authors motivate this research by the need to describe protocols in concurrent programs. I am not entirely sure why bisimilation would help here concurrent programs.
