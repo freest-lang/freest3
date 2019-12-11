@@ -22,12 +22,12 @@ As discussed in [6,18], the goal of BPA rules is to decompose pairs and ensure t
 
 (Review3) The definition of bisimilarity is not given
 
-You are right in that we do not explicitely define bisimilarity. We nevertheless say when 2 types are bisimilar (page 5, line 3). The same applies to grammars.
+You are right in that we do not explicitly define bisimilarity. We nevertheless say when two types are bisimilar (page 5, line 3). The same applies to grammars.
 
 
 (Review3) The algorithm is exactly the same as the bisimulation algorithm for, say, Kripke structures
 
-The notion of bisimulation for labeled transition systems (LTS) does not coincide with that of Kripke structures. At the expansion stage, the proposed algorithm does not check node labelling (a LTS has labels for transitions only). It rather checks whether the transition labels for both words in the current node coincide and, if so, it tests corresponding children for bisimilarity.  We’ll clarify this in the final version of the paper.
+The notion of bisimulation for labeled transition systems (LTS) does not coincide with that of Kripke structures. At the expansion stage, the proposed algorithm does not check node labelling (a LTS has labels for transitions only). It rather checks whether the transition labels for both words in the current node coincide and, if so, it tests children obtained by the same label for bisimilarity.  We’ll clarify this in the final version of the paper.
 
 
 (Review3)  In context-free grammars, there is an additional complication of being stuck in an infinite path on the expansion tree, but the paper avoids it by performing BFS.
