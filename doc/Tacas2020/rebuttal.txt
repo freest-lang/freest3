@@ -17,11 +17,12 @@ The *l notation is meant to denote a label obtained by concatenating + or & to t
 
 (Review2) The goal of the simplification rules BPA1 and BPA2 is not clear
 
-As discussed by Christensen, Huttel, and Stirling in [6], and by Jancar and Moller in [18], the goal of BPA rules is to decompose pairs and ensure the existence of a finite branch whenever in presence of an infinite bisimulation.
+As discussed in [6,18], the goal of BPA rules is to decompose pairs and ensure the existence of a finite branch whenever in presence of an infinite bisimulation.
+
 
 (Review3) The definition of bisimilarity is not given
 
-You are right in that we do not explicitely define bisimilarity. We nevertheless say when 2 types are bisimilar (page 5, line 3). The omission will be fixed in the camera ready.
+You are right in that we do not explicitely define bisimilarity. We nevertheless say when 2 types are bisimilar (page 5, line 3). The same applies to grammars.
 
 
 (Review3) The algorithm is exactly the same as the bisimulation algorithm for, say, Kripke structures
