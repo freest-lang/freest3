@@ -1,4 +1,7 @@
-{
+-- Don't know if we should keep these tests
+-- Right now, I am using the pipe | character to separate two grammars
+-- Any comment should be preceded by two dashes --
+
 (S1,S2)
 S1 -> +A L L1 R1
 L1 -> +A L L1
@@ -12,13 +15,12 @@ R2 -> +B R2 R
 R2 -> +N
 R -> !Int
 L -> !Int
-}
 
+|
 -- +{a:!Int, b:!Bool} ~ +{a:!Int, b:!Bool} 
-{
+
 (X,X)
 X -> !Int
 Y -> +a X
 Y -> +b W
 W -> !Bool
-}
