@@ -87,8 +87,8 @@ synthetise kEnv (TypeApp p x ts) = do
                 "\t parameters:", styleRed $ show bs, "\n",
                 "\t arguments: ", styleRed $ show ts])  
   let typeKinds = zip ts bs :: [(Type, TypeVarBind)]
-  mapM (\(t, TypeVarBind _ _ k) -> K.checkAgainst kEnv k t) typeKinds
-  return $ foldr (\(u, TypeVarBind _ x _) acc -> Rename.subs u x acc) t typeKinds
+  mapM (\(u, TypeVarBind _ _ k) -> K.checkAgainst kEnv k u) typeKinds
+  return $ foldr (\(u, TypeVarBind _ y _) -> Rename.subs u y) t typeKinds
 -- Boolean elimination
 synthetise kEnv (Conditional p e1 e2 e3) = do
   checkAgainst kEnv e1 (Basic p BoolType)
@@ -125,28 +125,33 @@ synthetise kEnv (Fork p e) = do
      "\t expression", styleRed (show e), "is of type", styleRed (show t),
      "of kind", styleRed (show k)]
   return $ Basic p UnitType
+-- Datatype elimination
+synthetise kEnv (Case p e fm) =
+  synthetiseFieldMap p kEnv e fm extractDatatypeMap paramsToVEnvCM
 -- Session types
+-- New
 synthetise kEnv (New p t) = do
   K.checkAgainstSession kEnv t
   return $ PairType p t (dual t)
   -- return $ PairType p t (Dualof p t)
+-- Send
 synthetise kEnv (Send p e) = do
   t <- synthetise kEnv e
   (u1, u2) <- extractOutput e t
   return (Fun p Lin (Basic p u1) u2)
+-- Receive
 synthetise kEnv (Receive p e) = do
   t <- synthetise kEnv e
   (u1, u2) <- extractInput e t
   return $ PairType p (Basic p u1) u2
+-- Select
 synthetise kEnv (Select p e c) = do
   t <- synthetise kEnv e
   m <- extractOutChoiceMap e t
   extractCons p m c
+-- Match
 synthetise kEnv (Match p e fm) =
   synthetiseFieldMap p kEnv e fm extractInChoiceMap paramsToVEnvMM
--- Datatype elimination
-synthetise kEnv (Case p e fm) =
-  synthetiseFieldMap p kEnv e fm extractDatatypeMap paramsToVEnvCM
 
 -- | Returns the type scheme for a variable; removes it from vEnv if lin
 synthetiseVar :: KindEnv -> ProgVar -> FreestState TypeScheme
@@ -176,7 +181,7 @@ synthetiseFieldMap p kEnv e fm extract params = do
                 "\t The expression has", styleRed $ show (Map.size fm), "constructor(s)\n",
                 "\t but the type has", styleRed $ show (Map.size tm), "constructor(s)\n",
                 "\t in case/match", styleRed $ showFieldMap 1 fm]
-    return $ Skip p
+    return $ omission p
   else do
     vEnv <- getVEnv
     (t:ts, v:vs) <- Map.foldrWithKey (synthetiseField vEnv kEnv params tm) (return ([],[])) fm
@@ -236,8 +241,8 @@ synthetiseCons x tm =
       addError (position x) ["Data constructor or field name in choice type", styleRed $ show x, "not in scope"]
       return $ Skip (position x)
 
--- | The quotient operation
--- Removes a variable from the Environment and gives an error if it is linear
+-- The quotient operation. Removes a program variable from the
+-- variable environment and gives an error if it is linear
 quotient :: KindEnv -> ProgVar -> FreestState ()
 quotient kEnv x = do
   -- vEnv <- getVEnv
