@@ -41,6 +41,7 @@ tokens :-
   "=>"				{ \p s -> TokenFArrow (internalPos p) }
   "("				{ \p s -> TokenLParen (internalPos p) }
   "L("				{ \p s -> TokenLinParen (internalPos p) }
+  "U("				{ \p s -> TokenUnParen (internalPos p) }
   ")"				{ \p s -> TokenRParen (internalPos p) }
   "["				{ \p s -> TokenLBracket (internalPos p) }
   "]"			        { \p s -> TokenRBracket (internalPos p) }
@@ -122,6 +123,7 @@ data Token =
   | TokenLambda Pos 
   | TokenLParen Pos 
   | TokenLinParen Pos 
+  | TokenUnParen Pos 
   | TokenRParen Pos 
   | TokenLBracket Pos 
   | TokenRBracket Pos 
@@ -189,6 +191,7 @@ instance Show Token where
   show (TokenLambda p) = show p ++ ": \\"  
   show (TokenLParen p) = show p ++ ": ("
   show (TokenLinParen p) = show p ++ ": L("
+  show (TokenUnParen p) = show p ++ ": U("
   show (TokenRParen p) = show p ++ ": )"  
   show (TokenLBracket p) = show p ++ ": ["  
   show (TokenRBracket p) = show p ++ ": ]"  
@@ -269,6 +272,7 @@ instance Position Token where
   position (TokenLambda p) = p 
   position (TokenLParen p) = p
   position (TokenLinParen p) = p
+  position (TokenUnParen p) = p
   position (TokenRParen p) = p 
   position (TokenLBracket p) = p 
   position (TokenRBracket p) = p 
