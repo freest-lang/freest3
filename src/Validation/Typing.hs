@@ -101,10 +101,12 @@ synthetise kEnv (Conditional p e1 e2 e3) = do
   checkEquivEnvs p kEnv vEnv3 vEnv4
   return t
 -- Pair introduction
-synthetise kEnv (Pair p e1 e2) = do
+synthetise kEnv (Pair p m e1 e2) = do
   t1 <- synthetise kEnv e1
   t2 <- synthetise kEnv e2
-  return $ PairType p t1 t2
+  K.checkAgainst kEnv (Kind p Functional m) t1
+  K.checkAgainst kEnv (Kind p Functional m) t2
+  return $ PairType p m t1 t2
 -- Pair elimination
 synthetise kEnv (BinLet _ x y e1 e2) = do
   t1 <- synthetise kEnv e1
@@ -128,7 +130,7 @@ synthetise kEnv (Fork p e) = do
 -- Session types
 synthetise kEnv (New p t) = do
   K.checkAgainstSession kEnv t
-  return $ PairType p t (dual t)
+  return $ PairType p Lin t (dual t)
   -- return $ PairType p t (Dualof p t)
 synthetise kEnv (Send p e) = do
   t <- synthetise kEnv e
@@ -137,7 +139,7 @@ synthetise kEnv (Send p e) = do
 synthetise kEnv (Receive p e) = do
   t <- synthetise kEnv e
   (u1, u2) <- extractInput e t
-  return $ PairType p (Basic p u1) u2
+  return $ PairType p Lin (Basic p u1) u2
 synthetise kEnv (Select p e c) = do
   t <- synthetise kEnv e
   m <- extractOutChoiceMap e t

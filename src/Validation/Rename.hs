@@ -90,10 +90,10 @@ instance Rename Type where
     t' <- rename bs t
     u' <- rename bs u
     return $ Fun p m t' u'
-  rename bs (PairType p t u) = do
+  rename bs (PairType p m t u) = do
     t' <- rename bs t
     u' <- rename bs u
-    return $ PairType p t' u'
+    return $ PairType p m t' u'
   rename bs (Datatype p fm) = do
     fm' <- tMapM (rename bs) fm
     return $ Datatype p fm'
@@ -143,10 +143,10 @@ instance Rename Expression where
     e2' <- rename bs e2
     return $ App p e1' e2'
   -- Pair intro and elim
-  rename bs (Pair p e1 e2) =  do
+  rename bs (Pair p m e1 e2) =  do
     e1' <- rename bs e1
     e2' <- rename bs e2
-    return $ Pair p e1' e2'
+    return $ Pair p m e1' e2'
   rename bs (BinLet p x y e1 e2) =  do
     x' <- rename bs x
     y' <- rename bs y

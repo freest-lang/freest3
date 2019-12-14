@@ -89,7 +89,7 @@ annFun m (ProgVar _ x) = annVar m x
 annFun m (Lambda _ _ _ _ e) = annFun m e
 annFun m (App _ e1 e2) = max (annFun m e1) (annFun m e2)
 annFun m (TypeApp _ x _) = annVar m x
-annFun m (Pair _ e1 e2) = max (annFun m e1) (annFun m e2)
+annFun m (Pair _ _ e1 e2) = max (annFun m e1) (annFun m e2)
 annFun m (BinLet _ _ _ e1 e2) = max (annFun m e1) (annFun m e2)
 annFun m (UnLet _ _ e1 e2) = max (annFun m e1) (annFun m e2)
 annFun m (Conditional _ e1 e2 e3) =
@@ -165,7 +165,7 @@ annExp fm ast t e@(App _ e1 e2) =
       (Map.insert e (lastType t3) ast3, lType t3)
       
 -- Pair intro and elim    
-annExp fm ast t e@(Pair _ e1 e2) =
+annExp fm ast t e@(Pair _ _ e1 e2) =
   let (ast1, t1) = annExp fm ast t e1
       (ast2, t2) = annExp fm ast1 t e2
       maxt1      = max t (max t1 t2) in

@@ -42,10 +42,16 @@ instance Ord PreKind where
 
 -- Kinds
 
-data Kind = Kind Pos PreKind Multiplicity deriving Ord
+data Kind = Kind Pos PreKind Multiplicity deriving Ord -- TODO: I wish we do not need this
 
 instance Eq Kind where
   (Kind _ p n) == (Kind _ q m) = (p, n) == (q, m)
+
+-- Abbreviations for the four kinds
+kindTL p = Kind p Functional Lin
+kindTU p = Kind p Functional Un
+kindSL p = Kind p Session Lin
+kindSU p = Kind p Session Un
 
 -- The subkinding relation. Note that Kind is a partial order, hence
 -- should *not* be an instance class Ord.
@@ -62,15 +68,9 @@ k1                     <: k2                      = k1 == k2
 
 -- The least upper bound of two kinds
 join :: Kind -> Kind -> Kind
-join (Kind p Functional Un) (Kind _ Session   Lin) = (Kind p Functional Un)
-join (Kind _ Session   Lin) (Kind p Functional Un) = (Kind p Functional Un)
-join k1                      k2                    = max k1 k2
-
--- The four kinds
-kindTL p = Kind p Functional Lin
-kindTU p = Kind p Functional Un
-kindSL p = Kind p Session Lin
-kindSU p = Kind p Session Un
+join (Kind p Functional Un) (Kind _ Session   Lin) = kindTU p
+join (Kind _ Session   Lin) (Kind p Functional Un) = kindTU p
+join k1                      k2                    = if k1 <: k2 then k2 else k1
 
 -- The kind of conventional (non linear, not sessions) functional
 -- programming languages (Alternative: the kind that sits at the top

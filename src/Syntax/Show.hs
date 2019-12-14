@@ -41,6 +41,10 @@ showArrow :: Multiplicity -> String
 showArrow Lin = " -o "
 showArrow Un  = " -> "
 
+showTimes :: Multiplicity -> String
+showTimes Lin = " , " -- TODO: Should be *, codeGen fails otherwise
+showTimes Un  = " x "
+
 -- Program Variables. Note: show should be aligned with the creation
 -- of new variables; see Syntax.ProgramVariables
 
@@ -90,29 +94,29 @@ instance Show BasicType where
   show UnitType = "()"
 
 instance Show Type where
-  -- show = showType 4
-  show = showType 44 -- for testing purposes
+  show = showType 4
+  -- show = showType 44 -- for testing purposes
 
 showType :: Int -> Type -> String
   -- Non-recursive cases
-showType _ (Basic _ b)      = show b
-showType _ (Skip _)         = "Skip"
-showType _ (TypeVar _ x)    = show x
-showType _ (Message _ p b)  = show p ++ show b
-showType _ (TypeName _ x)   = show x
+showType _ (Basic _ b)        = show b
+showType _ (Skip _)           = "Skip"
+showType _ (TypeVar _ x)      = show x
+showType _ (Message _ p b)    = show p ++ show b
+showType _ (TypeName _ x)     = show x
   -- Depth reached
 showType 0 _ = ".."
   -- Functional types
-showType i (Fun _ m t u)    = "(" ++ showType (i-1) t ++ showArrow m ++ showType (i-1) u ++ ")"
-showType i (PairType _ t u) = "(" ++ showType (i-1) t ++ ", " ++ showType (i-1) u ++ ")"
-showType i (Datatype _ m)   = "[" ++ showDatatype i m ++ "]"
+showType i (Fun _ m t u)      = "(" ++ showType (i-1) t ++ showArrow m ++ showType (i-1) u ++ ")"
+showType i (PairType _ m t u) = "(" ++ showType (i-1) t ++ showTimes m ++ showType (i-1) u ++ ")"
+showType i (Datatype _ m)     = "[" ++ showDatatype i m ++ "]"
   -- Session types
-showType i (Semi _ t u)     = "(" ++ showType (i-1) t ++ ";" ++ showType (i-1) u ++ ")"
-showType i (Choice _ v m)   = showChoiceView v ++ "{" ++ showChoice i m ++ "}"
+showType i (Semi _ t u)       = "(" ++ showType (i-1) t ++ ";" ++ showType (i-1) u ++ ")"
+showType i (Choice _ v m)     = showChoiceView v ++ "{" ++ showChoice i m ++ "}"
 -- showType i t@(Rec _ _ _)    = showType (i-1) (Subs.unfold t)
-showType i (Rec _ xk t)     = "(rec " ++ show xk ++ "." ++ showType (i-1) t ++ ")" -- for testing purposes
+showType i (Rec _ xk t)       = "(rec " ++ show xk ++ "." ++ showType (i-1) t ++ ")" -- for testing purposes
   -- Type operators
-showType i (Dualof _ t)     = "(dualof " ++ showType (i-1) t ++ ")"
+showType i (Dualof _ t)       = "(dualof " ++ showType (i-1) t ++ ")"
   
 showDatatype :: Int -> TypeMap -> String
 showDatatype i m = concat $ intersperse " | " $
@@ -152,7 +156,8 @@ showExp 0 _ = ".."
 showExp i (Lambda _ m b t e) = "(\\" ++ show b ++ " : " ++ show t ++ showArrow m ++ (showExp (i-1) e) ++ ")"
 showExp i (App _ e1 e2) = "(" ++ showExp (i-1) e1 ++ " " ++ showExp (i-1) e2 ++ ")"
   -- Pair intro and elim
-showExp i (Pair _ e1 e2) = "(" ++ showExp (i-1) e1 ++ ", " ++ showExp (i-1) e2 ++ ")"
+showExp i (Pair _ Un e1 e2) = "(" ++ showExp (i-1) e1 ++ ", " ++ showExp (i-1) e2 ++ ")"
+showExp i (Pair _ Lin e1 e2) = "<" ++ showExp (i-1) e1 ++ ", " ++ showExp (i-1) e2 ++ ">"
 showExp i (BinLet _ x y e1 e2) = "(let " ++ show x ++ ", " ++ show y ++ " = " ++ showExp (i-1) e1 ++ " in " ++ showExp (i-1) e2 ++ ")"
   -- Datatype elim
 showExp i (Case _ e m) = "case " ++ showExp (i-1) e ++ " of {" ++ showFieldMap (i-1) m ++ "}"
