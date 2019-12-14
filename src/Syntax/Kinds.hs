@@ -62,9 +62,9 @@ k1                     <: k2                      = k1 == k2
 
 -- The least upper bound of two kinds
 join :: Kind -> Kind -> Kind
-join (Kind p Functional Un)  (Kind _ Session    Lin) = omission p
-join (Kind p Session    Lin) (Kind _ Functional Un)  = omission p
-join k1                      k2                      = if k1 <: k2 then k2 else k1
+join (Kind p Functional Un) (Kind _ Session   Lin) = (Kind p Functional Un)
+join (Kind _ Session   Lin) (Kind p Functional Un) = (Kind p Functional Un)
+join k1                      k2                    = max k1 k2
 
 -- The four kinds
 kindTL p = Kind p Functional Lin
