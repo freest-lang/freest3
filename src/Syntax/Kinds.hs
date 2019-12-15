@@ -68,9 +68,9 @@ k1                     <: k2                      = k1 == k2
 
 -- The least upper bound of two kinds
 join :: Kind -> Kind -> Kind
-join (Kind p Functional Un) (Kind _ Session   Lin) = kindTU p
-join (Kind _ Session   Lin) (Kind p Functional Un) = kindTU p
-join k1                      k2                    = if k1 <: k2 then k2 else k1
+join (Kind p Functional Un) (Kind _ Session   Lin) = kindTL p
+join (Kind p Session   Lin) (Kind _ Functional Un) = kindTL p
+join k1                     k2                     = if k1 <: k2 then k2 else k1
 
 -- The kind of conventional (non linear, not sessions) functional
 -- programming languages (Alternative: the kind that sits at the top

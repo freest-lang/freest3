@@ -139,41 +139,41 @@ TL
 
 -- (Lin, Lin)
 []
-L(!Bool, ?Int)
+(!Bool, ?Int)
 TL
 
 []
-L(!Bool, Int -o Char)
+(!Bool, Int -o Char)
 TL
 
 []
-L(!Bool -o Int -o Char, ?Int;&{A:Skip, B:!Bool})
+(!Bool -o Int -o Char, ?Int;&{A:Skip, B:!Bool})
 TL
 
 -- (Un, Lin)
 []
-L(Bool, ?Int)
+(Bool, ?Int)
 TL
 
 []
-L(Skip, Skip -o Skip)
+(Skip, Skip -o Skip)
 TL
 
 []
-L(Bool -> Char -> Int, ?Int -o Bool -> Int)
+(Bool -> Char -> Int, ?Int -o Bool -> Int)
 TL
 
 -- (Lin, Un)
 []
-L(!Bool, Int)
+(!Bool, Int)
 TL
 
 []
-L(!Bool, Skip)
+(!Bool, Skip)
 TL
 
 []
-L(Bool -o Char -> (Int -> ()), Int -> Skip -> ())
+(Bool -o Char -> (Int -> ()), Int -> Skip -> ())
 TL
 
 -- dualof

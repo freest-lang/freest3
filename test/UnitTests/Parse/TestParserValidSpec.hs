@@ -47,7 +47,7 @@ spec = do
     it "Int-oInt" $ do
       (read "Int-oInt" :: Type) `shouldBe` (Fun p Lin (Basic p IntType) (Basic p IntType))
     it "(Int,Int)" $ do
-      (read "(Int,Int)" :: Type) `shouldBe` (PairType p Un (Basic p IntType) (Basic p IntType))
+      (read "(Int,Int)" :: Type) `shouldBe` (PairType p (Basic p IntType) (Basic p IntType))
 
     it "&{A:?Int,A:!Bool}" $ do
       (read "&{A:?Int,B:!Bool}" :: Type) `shouldBe` (Choice p In (Map.fromList [(mkVar p "A",Message p In IntType),(mkVar p "B",Message p Out BoolType)]))      
@@ -68,7 +68,7 @@ spec = do
     it "(!Char)" $ do
       (read "(!Char)" :: Type) `shouldBe` (Message p Out CharType)
     it "((Int,Char))" $ do
-      (read "((Int,Char))" :: Type) `shouldBe` (PairType p Un (Basic p IntType) (Basic p CharType))
+      (read "((Int,Char))" :: Type) `shouldBe` (PairType p (Basic p IntType) (Basic p CharType))
 
   describe "Whitespaces" $ do
     it " Skip" $ do
@@ -82,7 +82,7 @@ spec = do
     it "Int -o Int" $ do
       (read " Int -o Int " :: Type) `shouldBe` (Fun p Lin (Basic p IntType) (Basic p IntType))
     it "( Int , Int )" $ do
-      (read "( Int , Int )" :: Type) `shouldBe` (PairType p Un (Basic p IntType) (Basic p IntType))
+      (read "( Int , Int )" :: Type) `shouldBe` (PairType p (Basic p IntType) (Basic p IntType))
     it "rec a . a" $ do
       (read "rec a . a" :: Type) `shouldBe` (Rec p (kBind "a") (TypeVar p (mkVar p "a")))
 
@@ -91,7 +91,7 @@ spec = do
     
   describe "Nested operators" $ do
     it "((Int,Bool),Char)" $ do
-      (read "((Int,Bool),Char)" :: Type) `shouldBe` (PairType p Un (PairType p Un (Basic p IntType)(Basic p BoolType)) (Basic p CharType))
+      (read "((Int,Bool),Char)" :: Type) `shouldBe` (PairType p (PairType p (Basic p IntType)(Basic p BoolType)) (Basic p CharType))
     it "rec a . (rec i . Int)" $ do
       (read "rec a . (rec i . Int)" :: Type) `shouldBe` (Rec p (kBind "a") (Rec p (kBind "i") (Basic p IntType)))
 
@@ -184,7 +184,7 @@ spec = do
 
   
     it "client" $ do
-      (read ("(" ++ termChanRead ++ ";?Int)->(Int,Skip)") :: Type) `shouldBe` (Fun p Un (Semi p termChanType (Message p In IntType))(PairType p Un (Basic p IntType) (Skip p)))
+      (read ("(" ++ termChanRead ++ ";?Int)->(Int,Skip)") :: Type) `shouldBe` (Fun p Un (Semi p termChanType (Message p In IntType))(PairType p (Basic p IntType) (Skip p)))
 
 
 

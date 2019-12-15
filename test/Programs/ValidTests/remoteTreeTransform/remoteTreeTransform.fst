@@ -26,13 +26,13 @@ transform tree c =
   writes back on the channel the sum of the elements in the tree;
   returns this sum.
 -}
-treeSum : forall α : SL => (rec x:SL. &{LeafC: Skip, NodeC: ?Int;x;x;!Int, Bud: Char});α -> (Int, α)
+treeSum : forall α : SL => (rec x:SL. &{LeafC: Skip, NodeC: ?Int;x;x;!Int});α -> (Int, α)
 treeSum c =
   match c with {
     LeafC c -> (0, c),
     NodeC c ->
       let (x, c) = receive c in
-      let (l, c) = treeSum[(rec x:SL. &{LeafC: Skip, NodeC: ?Int;x;x;!Int, Bud: Char});!Int;α] c in
+      let (l, c) = treeSum[(rec x:SL. &{LeafC: Skip, NodeC: ?Int;x;x;!Int});!Int;α] c in
       let (r, c) = treeSum[!Int;α] c in
       let c    = send c (x + l + r) in
       (x + l + r, c)

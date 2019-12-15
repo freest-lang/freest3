@@ -18,7 +18,7 @@ matchInvalidSpec :: [String] -> Spec
 matchInvalidSpec [a, b] =
   it (a ++ " `~/~` " ++  b) $
     equivalent Map.empty Map.empty t u `shouldBe` False
-          where (PairType p m t u) = evalState (rename Map.empty (PairType p m (read a) (read b))) (initialState "Testing Type Equivalence")
+          where (PairType p t u) = evalState (rename Map.empty (PairType p (read a) (read b))) (initialState "Testing Type Equivalence")
 
 main :: IO ()
 main = hspec spec

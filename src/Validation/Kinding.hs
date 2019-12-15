@@ -43,13 +43,10 @@ synthetise kEnv (Fun p m t u) = do
   synthetise kEnv t
   synthetise kEnv u
   return $ Kind p Functional m
-synthetise kEnv (PairType p m t u) = do
-  checkAgainst kEnv (Kind p Functional m) t
-  checkAgainst kEnv (Kind p Functional m) u
-  return $ Kind p Functional m
-  -- kt <- synthetise kEnv t
-  -- ku <- synthetise kEnv u
-  -- return $ join kt ku
+synthetise kEnv (PairType p t u) = do
+  kt <- synthetise kEnv t
+  ku <- synthetise kEnv u
+  return $ join kt ku
 synthetise kEnv (Datatype p m) = do
   ks <- tMapM (synthetise kEnv) m
   let Kind _ _ n = foldr1 join ks

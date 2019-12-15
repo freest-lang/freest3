@@ -54,7 +54,7 @@ data Type =
   -- Functional types
     Basic Pos BasicType
   | Fun Pos Multiplicity Type Type
-  | PairType Pos Multiplicity Type Type
+  | PairType Pos Type Type
   | Datatype Pos TypeMap
   -- Session types
   | Skip Pos
@@ -79,7 +79,7 @@ equalTypes :: Map.Map TypeVar TypeVar -> Type -> Type -> Bool
   -- Functional types
 equalTypes s (Basic _ x)      (Basic _ y)      = x == y
 equalTypes s (Fun _ m t u)    (Fun _ n v w)    = m == n && equalTypes s t v && equalTypes s u w
-equalTypes s (PairType _ m t u) (PairType _ n v w) = m == n && equalTypes s t v && equalTypes s u w
+equalTypes s (PairType _ t u) (PairType _ v w) = equalTypes s t v && equalTypes s u w
 equalTypes s (Datatype _ m1)  (Datatype _ m2)  = equalMaps s m1 m2
   -- Session types
 equalTypes s (Skip _)         (Skip _)         = True
@@ -108,15 +108,15 @@ equalMaps s m1 m2 =
 
 instance Position Type where
   -- Functional types
-  position (Basic p _)        = p
-  position (Fun p _ _ _)      = p
-  position (PairType p _ _ _) = p
-  position (Datatype p _)     = p
+  position (Basic p _)      = p
+  position (Fun p _ _ _)    = p
+  position (PairType p _ _) = p
+  position (Datatype p _)   = p
   -- Session types
-  position (Skip p)           = p
-  position (Semi p _ _)       = p
-  position (Message p _ _)    = p
-  position (Choice p _ _)     = p
+  position (Skip p)         = p
+  position (Semi p _ _)     = p
+  position (Message p _ _)  = p
+  position (Choice p _ _)   = p
   -- Functional or session
   position (Rec p _ _)        = p
   position (TypeVar p _)      = p

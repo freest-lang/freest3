@@ -104,8 +104,7 @@ showType _ (TypeName _ x)       = show x
 showType 0 _ = ".."
   -- Functional types
 showType i (Fun _ m t u)        = "(" ++ showType (i-1) t ++ showArrow m ++ showType (i-1) u ++ ")"
-showType i (PairType _ Un t u)  = "U(" ++ showType (i-1) t ++ ", " ++ showType (i-1) u ++ ")"
-showType i (PairType _ Lin t u) = "L(" ++ showType (i-1) t ++ ", " ++ showType (i-1) u ++ ")"
+showType i (PairType _ t u)  = "(" ++ showType (i-1) t ++ ", " ++ showType (i-1) u ++ ")"
 showType i (Datatype _ m)       = "[" ++ showDatatype i m ++ "]"
   -- Session types
 showType i (Semi _ t u)         = "(" ++ showType (i-1) t ++ ";" ++ showType (i-1) u ++ ")"
@@ -153,8 +152,7 @@ showExp 0 _ = ".."
 showExp i (Lambda _ m b t e) = "(\\" ++ show b ++ " : " ++ show t ++ showArrow m ++ (showExp (i-1) e) ++ ")"
 showExp i (App _ e1 e2) = "(" ++ showExp (i-1) e1 ++ " " ++ showExp (i-1) e2 ++ ")"
   -- Pair intro and elim
-showExp i (Pair _ Un e1 e2) = "U(" ++ showExp (i-1) e1 ++ ", " ++ showExp (i-1) e2 ++ ")"
-showExp i (Pair _ Lin e1 e2) = "L(" ++ showExp (i-1) e1 ++ ", " ++ showExp (i-1) e2 ++ ")"
+showExp i (Pair _ e1 e2) = "(" ++ showExp (i-1) e1 ++ ", " ++ showExp (i-1) e2 ++ ")"
 showExp i (BinLet _ x y e1 e2) = "(let " ++ show x ++ ", " ++ show y ++ " = " ++ showExp (i-1) e1 ++ " in " ++ showExp (i-1) e2 ++ ")"
   -- Datatype elim
 showExp i (Case _ e m) = "case " ++ showExp (i-1) e ++ " of {" ++ showFieldMap (i-1) m ++ "}"

@@ -65,7 +65,7 @@ extractPair :: Expression -> Type -> FreestState (Type, Type)
 extractPair e t = do
   t' <- norm t
   case t' of
-    (PairType _ _ u v) -> return (u, v)
+    (PairType _ u v) -> return (u, v)
     u                  -> do
       let p = position u
       addError p ["Expecting a pair type for expression", styleRed $ show e, "\n",

@@ -140,7 +140,7 @@ translate m ast nt e@(App _ e1 e2) = do
 
 
 -- Pair intro and elim
-translate m ast nt e@(Pair _ _ e1 e2) = do
+translate m ast nt e@(Pair _ e1 e2) = do
   let t = ast Map.! e
   (h1,t1) <- translate m ast PureType e1
   (h2,t2) <- translate m ast PureType e2
@@ -298,7 +298,7 @@ updateEEnv' e@(ProgVar p x) =
 
 updateEEnv' (Lambda p m x t e) = Lambda p m x t (updateEEnv' e)
 updateEEnv' (App p e1 e2) = (App p (updateEEnv' e1) (updateEEnv' e2))
-updateEEnv' (Pair p m e1 e2) = (Pair p m (updateEEnv' e1) (updateEEnv' e2))
+updateEEnv' (Pair p e1 e2) = (Pair p (updateEEnv' e1) (updateEEnv' e2))
 updateEEnv' (BinLet p x y e1 e2) = (BinLet p x y (updateEEnv' e1) (updateEEnv' e2))
 -- updateEEnv' (Case Pos Expression FieldMap
 

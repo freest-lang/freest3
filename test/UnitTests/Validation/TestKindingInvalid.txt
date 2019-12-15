@@ -31,14 +31,4 @@ rec x : TL . !Int ; x
 +{ A: () }
 +{ A: () -> Bool }
 
--- Pairs ( Lin components in Un pairs)
-
-(!Char, ())
-(Skip, !Int)
-(Bool -> Bool, !Int;?Char)  
-(Bool -o Bool, !Int;?Char)  
-(Int -> Bool, Char -o (Bool -> Char)) 
-rec a : TU . (a, !Int)
-
-
 

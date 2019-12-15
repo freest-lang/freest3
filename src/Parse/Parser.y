@@ -49,8 +49,6 @@ import           Debug.Trace
   '\\'     {TokenLambda _}
   Skip     {TokenSkip _}
   '('      {TokenLParen _}
-  'U('     {TokenUnParen _}
-  'L('     {TokenLinParen _}
   ')'      {TokenRParen _}
   ','      {TokenComma _}
   '['      {TokenLBracket _}
@@ -215,9 +213,7 @@ Primary :: { Expression }
   -- | ProgVar                                  { ProgVar (position $1) $1 }
   -- | Constructor                              { ProgVar (position $1) $1 }
   | '(' '\\' ProgVarWildTBind Arrow Expr ')' { Lambda (position $2) (snd $4) (fst $3) (snd $3) $5 }
-  | '(' Expr ',' Expr ')'                    { Pair (position $1) Un $2 $4 }
-  | 'U(' Expr ',' Expr ')'                   { Pair (position $1) Un $2 $4 }
-  | 'L(' Expr ',' Expr ')'                   { Pair (position $1) Lin $2 $4 }
+  | '(' Expr ',' Expr ')'                    { Pair (position $1)$2 $4 }
   | '(' Expr ')'                             { $2 }
 
 ProgVarWildTBind :: { (ProgVar, Type) }
@@ -253,10 +249,7 @@ Type :: { Type }
   -- Functional types
   : BasicType                        { uncurry Basic $1 }
   | Type Arrow Type                  { uncurry Fun $2 $1 $3 }
---  | '(' Type ',' Type ')'            { PairType (position $1) $2 $4 }
-  | '(' Type ',' Type ')'            { PairType (position $1) Un $2 $4 }
-  | 'U(' Type ',' Type ')'            { PairType (position $1) Un $2 $4 }
-  | 'L(' Type ',' Type ')'            { PairType (position $1) Lin $2 $4 }
+  | '(' Type ',' Type ')'            { PairType (position $1) $2 $4 }
   -- Session types
   | Skip                             { Skip (position $1) }
   | Type ';' Type                    { Semi (position $2) $1 $3 }
