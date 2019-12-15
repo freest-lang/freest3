@@ -42,8 +42,8 @@ instance Equivalence Type where
     equiv (Basic _ b) (Basic _ c) = b == c
     equiv (Fun _ m t1 t2) (Fun _ n u1 u2) =
       m == n && equiv t1 u1 && equiv t2 u2
-    equiv (PairType _ t1 t2) (PairType _ u1 u2) =
-      equiv t1 u1 && equiv t2 u2
+    equiv (PairType _ m t1 t2) (PairType _ n u1 u2) =
+      m == n && equiv t1 u1 && equiv t2 u2
     equiv (Datatype _ m1) (Datatype _ m2) =
       Map.size m1 == Map.size m2 &&
       Map.foldlWithKey (equivField m2) True m1 -- TODO: Use all

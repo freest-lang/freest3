@@ -52,15 +52,7 @@ TL
 
 []
 (Int,Bool)
-TL
-
-[]
-(!Char,())
-TL
-
-[]
-(!Int, Skip)
-TL
+TU
 
 []
 !Int;?Bool
@@ -77,10 +69,6 @@ SL
 []
 Skip;+{S:Skip,I:!Int}
 SL
-
-[]
-(Bool -> Bool, !Int)
-TL
 
 -- recursive types
 
@@ -107,11 +95,85 @@ SL
 -- explicitely typed recursive types
 
 []
-rec a : TU . (a, !Int)
+rec a : TU . (a, Int)
 TL
 
 []
-rec b : TU . (b, !Int)
+rec b : TU . (b, Int -> Char)
+TL
+
+-- Pairs
+
+-- (Un, Un)
+[]
+(Int, Bool) 
+TU
+
+[]
+(Int -> Bool, Char -> (Bool -> Char)) 
+TU
+
+[]
+(Skip, Bool) 
+TU
+
+[]
+(Bool, Skip) 
+TU
+
+[]
+(Int, Bool) 
+TL
+
+[]
+(Int -> Bool, Char -> (Bool -> Char)) 
+TL
+
+[]
+(Skip, Bool) 
+TL
+
+[]
+(Bool, Skip) 
+TL
+
+-- (Lin, Lin)
+[]
+L(!Bool, ?Int)
+TL
+
+[]
+L(!Bool, Int -o Char)
+TL
+
+[]
+L(!Bool -o Int -o Char, ?Int;&{A:Skip, B:!Bool})
+TL
+
+-- (Un, Lin)
+[]
+L(Bool, ?Int)
+TL
+
+[]
+L(Skip, Skip -o Skip)
+TL
+
+[]
+L(Bool -> Char -> Int, ?Int -o Bool -> Int)
+TL
+
+-- (Lin, Un)
+[]
+L(!Bool, Int)
+TL
+
+[]
+L(!Bool, Skip)
+TL
+
+[]
+L(Bool -o Char -> (Int -> ()), Int -> Skip -> ())
 TL
 
 -- dualof

@@ -34,7 +34,7 @@ data Expression =
   | Lambda Pos Multiplicity ProgVar Type Expression
   | App Pos Expression Expression
   -- Pair intro and elim
-  | Pair Pos {- Multiplicity -} Expression Expression
+  | Pair Pos Multiplicity Expression Expression
   | BinLet Pos ProgVar ProgVar Expression Expression
   -- Datatype elim
   | Case Pos Expression FieldMap
@@ -70,7 +70,7 @@ instance Position Expression where
   position (App p _ _)           = p
   position (TypeApp p _ _)       = p
   position (Conditional p _ _ _) = p
-  position (Pair p _ _)          = p
+  position (Pair p _ _ _)        = p
   position (BinLet p _ _ _ _)    = p
   position (New p _)             = p
   position (Send p _)            = p

@@ -29,19 +29,19 @@ import qualified Data.Set as Set
 -- [t/x]u, substitute t for for every free occurrence of x in u
 subs :: Type -> TypeVar -> Type -> Type
 -- Functional types
-subs t x (Fun p m t1 t2)    = Fun p m (subs t x t1) (subs t x t2)
-subs t x (PairType p t1 t2) = PairType p (subs t x t1) (subs t x t2)
-subs t x (Datatype p m)     = Datatype p (Map.map(subs t x) m)
+subs t x (Fun p m t1 t2)      = Fun p m (subs t x t1) (subs t x t2)
+subs t x (PairType p m t1 t2) = PairType p m (subs t x t1) (subs t x t2)
+subs t x (Datatype p m)       = Datatype p (Map.map(subs t x) m)
 -- Session types
-subs t x (Semi p t1 t2)     = Semi p (subs t x t1) (subs t x t2)
-subs t x (Choice p v m)     = Choice p v (Map.map(subs t x) m)
-subs t x (Rec p yk u)       = Rec p yk (subs t x u) -- Assume types were renamed (hence, x/=y and no -the-fly renaming needed)
+subs t x (Semi p t1 t2)       = Semi p (subs t x t1) (subs t x t2)
+subs t x (Choice p v m)       = Choice p v (Map.map(subs t x) m)
+subs t x (Rec p yk u)         = Rec p yk (subs t x u) -- Assume types were renamed (hence, x/=y and no -the-fly renaming needed)
 -- Functional or session
 subs t x u@(TypeVar _ y)
-  | y == x                 = t
-  | otherwise              = u
-subs t x (Dualof p u)      = Dualof p (subs t x u)
-subs _ _ t                 = t
+  | y == x                   = t
+  | otherwise                = u
+subs t x (Dualof p u)        = Dualof p (subs t x u)
+subs _ _ t                   = t
 
 -- subsAll σ u, apply all substitutions in σ to u; no renaming
 subsAll :: [(Type, TypeVar)] -> Type -> Type
@@ -55,7 +55,7 @@ unfold t@(Rec _ (TypeVarBind _ x _) u) = subs t x u
 free :: Type -> Set.Set TypeVar
   -- Functional types
 free (Fun _ _ t u) = Set.union (free t) (free u)
-free (PairType _ t u) = Set.union (free t) (free u)
+free (PairType _ _ t u) = Set.union (free t) (free u)
 free (Datatype _ m) = freeMap m
   -- Session types
 free (Semi _ t u) = Set.union (free t) (free u)
