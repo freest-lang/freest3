@@ -54,9 +54,9 @@ toGrammar (Semi _ t u) = do
 toGrammar m@(Message _ _ _) = do
   y <- getProd $ Map.singleton (show m)  []
   return [y]
-toGrammar (Choice _ p m) = do
+toGrammar (Choice _ v m) = do
   ms <- tMapM toGrammar m
-  y <- getProd $ Map.mapKeys (\k -> showChoiceView p ++ show k) ms
+  y <- getProd $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
   return [y]
 -- Functional or session (session in this case)
 toGrammar x@(TypeVar _ _) = do      -- x is a polymorphic variable (???)
@@ -66,9 +66,7 @@ toGrammar (Rec _ (TypeVarBind _ x _) _) =
   return [x]
   -- Type operators
 toGrammar (Dualof _ t) = toGrammar (dual t)
-toGrammar (TypeName _ x) =  do      -- see TypeVar, duplicated code!
-  y <- getProd $ Map.singleton (show x) []
-  return [y]
+toGrammar (TypeName p x) = toGrammar (TypeVar p x) -- TODO: can a TypeName be taken as a TypeVar?
 -- toGrammar (Dualof p (TypeName _ x)) = do
 --   insertVisited x
 --   (k, TypeScheme _ [] t) <- getFromVEnv x
@@ -101,8 +99,8 @@ collect σ t@(Rec _ (TypeVarBind _ x _) u) = do
   -- addProductions x (Map.map (++ zs) m)
   collect σ' u
 collect σ (TypeName _ x) = return ()
-  -- get def from vEnv
-  -- proceed as in Rec (don't duplicate code)
+  -- get the type definition t from vEnv
+  -- call collect with a Rec type built from x and from t
 collect _ _ = return ()
 
 -- The state of the translation to grammars
