@@ -59,12 +59,16 @@ toGrammar (Choice _ p m) = do
   y <- getProd $ Map.mapKeys (\k -> showChoiceView p ++ show k) ms
   return [y]
 -- Functional or session (session in this case)
-toGrammar x@(TypeVar _ _) = do      -- x is a polymorphic variable
+toGrammar x@(TypeVar _ _) = do      -- x is a polymorphic variable (???)
   y <- getProd $ Map.singleton (show x) []
   return [y]
 toGrammar (Rec _ (TypeVarBind _ x _) _) =
   return [x]
   -- Type operators
+toGrammar (Dualof _ t) = toGrammar (dual t)
+toGrammar (TypeName _ x) =  do      -- see TypeVar, duplicated code!
+  y <- getProd $ Map.singleton (show x) []
+  return [y]
 -- toGrammar (Dualof p (TypeName _ x)) = do
 --   insertVisited x
 --   (k, TypeScheme _ [] t) <- getFromVEnv x
@@ -96,6 +100,9 @@ collect σ t@(Rec _ (TypeVarBind _ x _) u) = do
   getProd' x (Map.map (++ zs) m)
   -- addProductions x (Map.map (++ zs) m)
   collect σ' u
+collect σ (TypeName _ x) = return ()
+  -- get def from vEnv
+  -- proceed as in Rec (don't duplicate code)
 collect _ _ = return ()
 
 -- The state of the translation to grammars

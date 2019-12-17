@@ -309,7 +309,7 @@ checkAgainstTS e (TypeScheme _ bs t) = checkAgainst (fromTypeVarBinds bs) e t
 checkEquivTypes :: Expression -> KindEnv -> Type -> Type -> FreestState ()
 checkEquivTypes exp kEnv expected actual = do
   tEnv <- getTEnv
-  vEnv <- getVEnv
+  -- vEnv <- getVEnv
   -- trace ("checkEquivTypes :" ++ show (funSigsOnly tEnv vEnv)) (return ())
   when (not $ equivalent tEnv kEnv actual expected) $
     addError (position exp) ["Couldn't match expected type", styleRed (show expected), "\n",

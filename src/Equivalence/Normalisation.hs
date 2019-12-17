@@ -32,7 +32,7 @@ class Normalise t where
 --   if u is u1;u2, then u1 is not terminated
 instance Normalise Type where
     -- Session types
-  normalise tenv (Semi p t u)
+  normalise tenv (Semi _ t u)
     | terminated t = normalise tenv u
     | otherwise    = append (normalise tenv t) u
     -- Functional or session

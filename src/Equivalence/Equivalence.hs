@@ -35,7 +35,7 @@ class Equivalence t where
 
 instance Equivalence Type where
   -- equivalent tenv kenv t u = normalise tenv t == normalise tenv u || equiv t u
-  equivalent tenv kenv t u = t == u || equiv t u
+  equivalent tenv kenv t u = {- t == u || -} equiv t u
     where
     equiv :: Type -> Type -> Bool
       -- Functional types
@@ -56,7 +56,7 @@ instance Equivalence Type where
     -- equiv t (Dualof _ (TypeName _ y)) = equiv t (dual (getType y))
     -- equiv (Dualof _ t) u = equiv (dual t) u
     -- equiv t (Dualof _ u) = equiv t (dual u)
-    equiv (TypeName _ x) (TypeName _ y) = x == y -- TODO: x may be diff from y and yet the types be equiv
+    equiv (TypeName _ x) (TypeName _ y) = x == y -- Admissible
     equiv (TypeName _ x) u = equiv (getType x) u
     equiv t (TypeName _ y) = equiv t (getType y)
       -- Session types
@@ -78,12 +78,12 @@ isSessionType _    _    (Skip _)        = True
 isSessionType _    _    (Semi _ _ _)    = True
 isSessionType _    _    (Message _ _ _) = True
 isSessionType _    _    (Choice _ _ _)  = True
+isSessionType _    _    (Rec _ _ _)     = True 
   -- Functional or session
-isSessionType tenv kenv (Rec _ _ t)     = isSessionType tenv kenv t
-isSessionType _    kenv (TypeVar _ x)   = Map.member x kenv
+isSessionType _    kenv (TypeVar _ x)   = True -- Map.member x kenv TODO: check, remove parameter kenv
   -- Type operators
 isSessionType _    _    (Dualof _ _)    = True
-isSessionType tenv kenv (TypeName _ x)  = isSession $ fst $ tenv Map.! x
+isSessionType tenv _    (TypeName _ x)  = isSession $ fst $ tenv Map.! x
   -- Otherwise: Functional types
 isSessionType _    _    _               = False
 
