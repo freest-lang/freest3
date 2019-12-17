@@ -1,2 +1,0 @@
-forall y : TU => rec x . x;y
-forall y : TU => rec x . y;x

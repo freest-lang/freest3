@@ -91,18 +91,10 @@ test-suite unit-tests
   main-is:             UnitSpec.hs
   Type:                exitcode-stdio-1.0
   other-extensions:    FlexibleContexts
-  build-depends:       HUnit >= 1.3.0.0,
-                       QuickCheck >=2.8,
-                       array <= 0.5.3.0,
-                       base >=4.8,
-                       cond >= 0.4.1.1,
-                       containers >=0.5.9,
-                       directory >= 1.3.2.0,
-                       hspec >=2.4,
-                       hspec-expectations >=0.8,
-                       mtl >= 2.2.1,
-                       pretty-terminal >= 0.1.0.0,
-                       process >= 1.6.3.0,
+  build-depends:       HUnit >= 1.3.0.0, QuickCheck >=2.8, array <= 0.5.3.0,
+                       base >=4.8, cond >= 0.4.1.1, containers >=0.5.9,
+                       directory >= 1.3.2.0, hspec >=2.4, hspec-expectations >=0.8,
+                       mtl >= 2.2.1, pretty-terminal >= 0.1.0.0, process >= 1.6.3.0,
                        split >= 0.2.2
   hs-source-dirs:      src, test/UnitTests
   default-language:    Haskell2010
@@ -116,17 +108,12 @@ test-suite unit-tests
                        Equivalence.TypeToGrammar,
                        Equivalence.Norm, Equivalence.Normalisation,
                        Utils.Errors, Utils.FreestState,
-                       SpecHelper,
-                       Syntax.TestShowValidSpec, Syntax.TestEqInvalidSpec, Syntax.TestEqValidSpec,
-                       -- Syntax.TestEqTypeSchemeSpec,
-                       Syntax.TestExpsEqSpec,
-                       Parse.TestParserInvalidSpec, Parse.TestParserValidSpec,
+                       SpecHelper, Parse.TestParserInvalidSpec
                        Validation.TestKindingValidSpec, Validation.TestKindingInvalidSpec,
                        Validation.TestTypeSchemeKindingSpec, Equivalence.TestEquivalenceInvalidSpec,
                        Equivalence.TestEquivalenceValidSpec, Utils.PreludeLoader,
                        Equivalence.TestBisimValidSpec, Equivalence.TestBisimInvalidSpec,
                        Equivalence.TestGrammarValidSpec, Parse.GrammarLexer, Parse.GrammarParser
-
 
 test-suite program-tests
   main-is:             ProgSpec.hs
