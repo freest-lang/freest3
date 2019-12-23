@@ -55,14 +55,15 @@ There are also available options to run valid and invalid tests separately for a
 
 By running one of the following:
 
-  * Parser valid tests: ```$ make testParserValid ```
-  * Parser invalid tests: ```$ make testParserInvalid ```
-  * Types valid tests:  ```$ make testTypesValid ```
-  * Types invalid tests: ```$ make testTypesInvalid ```
-  * Kinding valid tests: ```$ make testKindingValid ```
-  * Type Equivalence valid tests: ```$ make testEquivalenceValid ```
-  * Type Equivalence invalid tests: ```$ make testEquivalenceInvalid ```
-  * Test Show (only valid): ```$ make testShow ```
+  * Parser invalid tests: ```$ make testParserInvalid```
+  * Kinding valid tests: ```$ make testKindingValid```
+  * Kinding invalid tests: ```$ make testKindingInvalid```
+  * Type Equivalence valid tests: ```$ make testEquivalenceValid```
+  * Type Equivalence invalid tests: ```$ make testEquivalenceInvalid```
+  * Type Bisim valid tests: ```$ make testBisimValid```
+  * Type Bisim invalid tests: ```$ make testBisimInvalid```
+  * Type Grammar valid tests: ```$ make testGrammarValid```
+  * Type Grammar invalid tests: ```$ make testGrammarInvalid```
 
 Or, by running:
   ```

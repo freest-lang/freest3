@@ -1,16 +1,4 @@
 
-testEqValid :
-	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Syntax/TestEqValidSpec.hs
-
-testEqInvalid :
-	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Syntax/TestEqInvalidSpec.hs
-
-testShow :
-	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Syntax/TestShowValidSpec.hs
-
-testParserValid :
-	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Parse/TestParserValidSpec.hs
-
 testParserInvalid :
 	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Parse/TestParserInvalidSpec.hs
 
@@ -25,6 +13,18 @@ testEquivalenceValid :
 
 testEquivalenceInvalid :
 	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Equivalence/TestEquivalenceInvalidSpec.hs
+
+testBisimValid:
+	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Equivalence/TestBisimValidSpec.hs
+
+testBisimInvalid:
+	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Equivalence/TestBisimInvalidSpec.hs
+
+testGrammarValid:
+	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Equivalence/TestGrammarValidSpec.hs
+
+testGrammarInvalid:
+	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Equivalence/TestGrammarInvalidSpec.hs
 
 clean :
 	rm `find ./ -name '*.o' -o -name '*.hi' -o -name '*.tix'` -r

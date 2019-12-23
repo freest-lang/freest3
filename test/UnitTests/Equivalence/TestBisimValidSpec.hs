@@ -25,8 +25,8 @@ matchValidSpec [t, u] =
 
 spec :: Spec
 spec = do
---  t <- runIO $ readFromFile "test/UnitTests/Equivalence/TestBisimValid.txt"
-  t <- runIO $ readFromFile "test/UnitTests/Equivalence/TestQuickCheck.txt"
+  t <- runIO $ readFromFile "test/UnitTests/Equivalence/TestBisimValid.txt"
+--  t <- runIO $ readFromFile "test/UnitTests/Equivalence/TestQuickCheck.txt"
   describe "Valid Bissim Test" $ mapM_ matchValidSpec (chunksOf 2 t)
 
 main :: IO ()
