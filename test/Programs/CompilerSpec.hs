@@ -11,6 +11,9 @@ import System.FilePath
 import Control.Exception
 import GHC.IO.Handle   -- yes, it's GHC-specific
 import System.IO
+import System.Posix.Redirect
+import Data.Char (chr)
+import Data.ByteString (ByteString, unpack)
 
 validTestDir curDir = curDir ++ "/test/Programs/ValidTests/"
 invalidTestDir curDir = curDir ++ "/test/Programs/InvalidTests/"
@@ -53,48 +56,50 @@ getSource (x:xs)
   | takeExtension x == ".fst" = x
   | otherwise = getSource xs
   
+-- exitProgram :: ExitCode -> IO (Bool, String)
+-- exitProgram ExitSuccess = return (True, "")
+-- exitProgram e = return (False, show e)
 
-exitProgram :: ExitCode -> IO (Bool, String)
-exitProgram ExitSuccess = return (True, "")
-exitProgram e = return (False, show e) 
+exitProgram :: ExitCode -> IO Bool
+exitProgram ExitSuccess = return True
+exitProgram e = return False
+
 
 testOne :: String -> String -> Spec    
 testOne test filename = do
-  (b, err) <- runIO $
-    catches (compileFile test >> return (True, ""))
+  (_,(err, b)) <- runIO $ redirectStdout $ redirectStderr $
+    catches (compileFile test >> return True)
                   [Handler (\(e :: ExitCode) -> exitProgram e),
-                   Handler (\(e :: SomeException) -> return (False, show e))]                  
+                   Handler (\(e :: SomeException) -> return False)]                  
 
- -- Removed code gen
   if b then
     runAndCheckResult test filename   
-    -- it ("Testing " ++ filename) $ do
-    --   assertEqual "Passed... without code gen" 1 1
-    --   return ()
   else
     it ("Testing " ++ filename) $ do
-      assertFailure ("The compiler terminated with errors (check above)\n")
-      -- TODO: errors should appear here
+      assertFailure (bsToStr err) 
       return ()    
 
 testOneInvalid :: String -> String -> Spec    
 testOneInvalid test filename = do
-  (b, err) <- runIO $ catch (compileFile test >> return (True,""))
-                        (\e -> return  $ (False, show (e :: SomeException)))
+-- redirectStdout :: IO a -> IO (ByteString, a)
+  (_ , (b, err)) <- runIO $ redirectStderr $
+                        catch (compileFile test >> return (True,""))
+                         (\e -> return  $ (False, show (e :: SomeException)))
   if b then
     it ("Testing " ++ filename) $ do
-      assertFailure ("It was expected an error but it's ok")
+      assertFailure ("It was expected an error but none was thrown")
       return ()
   else
    it ("Testing " ++ filename) $ do
-        (assertEqual "OK. Passed!" 1 1)
+      (assertEqual "OK. Passed!" 1 1)
 
 -- Review - code gen
 runAndCheckResult :: String -> String -> Spec
 runAndCheckResult testFile filename = do
   runIO $ setCurrentDirectory $ takeDirectory testFile
-  (exitcode, output, errors) <- runIO $ readProcessWithExitCode "ghc"
-                                         ["-dynamic", "-XBangPatterns", (replaceExtensions filename "hs")] ""  
+  (exitcode, _, errors) <- runIO $
+                                 readProcessWithExitCode "ghc"
+                                   ["-dynamic", "-XBangPatterns", (replaceExtensions filename "hs")] ""  
   
   if (exitcode == ExitSuccess) then
     do     
@@ -104,13 +109,14 @@ runAndCheckResult testFile filename = do
            assertFailure errors1
            return ()
       else do  
-         cont <- runIO $ readFile ((takeWhile (/= '.') testFile) ++ ".expected")
+         exp <- runIO $ readFile ((takeWhile (/= '.') testFile) ++ ".expected")
          it ("Testing " ++ filename) $ do
-           (filter (/= '\n') output1) `shouldBe` (filter (/= '\n') cont)
+           (filter (/= '\n') output1) `shouldBe` (filter (/= '\n') exp)
   else
     it ("Testing " ++ filename) $ do
       assertFailure errors
       return ()
 
-  
 
+bsToStr :: ByteString -> String
+bsToStr = map (chr . fromEnum) . unpack
