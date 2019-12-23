@@ -24,6 +24,18 @@ Char (->) Char
 &{}
 +{}
 
+-- Duplicate labels in records
+
++{ A: !(), A: !Bool }
++{ A: !(), A: !Bool, B: ?Int }
++{ A: !(), B: ?Int, A: ?Bool }
++{ A: !(), B: ?Int, B: ?Int, A: ?Bool }
+&{ A: !(), A: ?Bool }
+&{ A: !(), A: ?Bool, B: ?Int }
+&{ A: !(), B: ?Int, A: ?Bool }
+&{ A: !(), B: ?Int, B: ?Int, A: ?Bool }
+
+
 -- Syntatically invalid datatypes, conflicting - removed these because they are not readable types anymore (only available for data declarations)
 
 -- [ A: Char, A: Bool ]

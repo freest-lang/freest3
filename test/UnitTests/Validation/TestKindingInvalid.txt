@@ -1,14 +1,3 @@
--- Duplicate labels in records
-
-+{ A: !(), A: !Bool }
-+{ A: !(), A: !Bool, B: ?Int }
-+{ A: !(), B: ?Int, A: ?Bool }
-+{ A: !(), B: ?Int, B: ?Int, A: ?Bool }
-&{ A: !(), A: ?Bool }
-&{ A: !(), A: ?Bool, B: ?Int }
-&{ A: !(), B: ?Int, A: ?Bool }
-&{ A: !(), B: ?Int, B: ?Int, A: ?Bool }
-
 -- Rec stuff
 
 rec x . x; !Int
