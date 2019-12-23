@@ -46,7 +46,12 @@ updateKey m =
    Just e  -> Map.insert ((mkVar (Pos 99999 99999) "_main")) e (Map.delete b m)
 
 genImports :: String
-genImports = "import FreeSTRuntime\nimport Data.Char(ord, chr)\n\n"
+genImports = genPrelude ++ "import FreeSTRuntime\nimport Data.Char(ord, chr)\n\n"
+
+genPrelude :: String
+genPrelude = "import Prelude(Bool(..), (&&), (||), not, Char(..), (==), (/=), (<)," ++
+             "(<=), (>), (>=), Int(..), (+), (-), (*), (/), negate, mod, rem, div, "++
+             "putStrLn, show, return, (>>=), (>>), Show(..))\n"
 
 genPragmas :: String
 genPragmas = "-- Target Haskell code\n\n"
