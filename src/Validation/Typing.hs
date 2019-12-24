@@ -24,6 +24,7 @@ module Validation.Typing
 import           Syntax.Expressions
 import           Syntax.Schemes
 import           Syntax.Types
+import           Syntax.Duality
 import           Syntax.Kinds
 import           Syntax.Base
 import           Syntax.ProgramVariables
