@@ -56,7 +56,8 @@ synthetise kEnv (ProgVar p x) = do
   s@(TypeScheme _ bs t) <- synthetiseVar kEnv x
   when (not $ null bs) 
     (addError p ["Variable", styleRed $ show x, "of a polymorphic type used in a monomorphic context\n",
-              "\t The type scheme for variable", styleRed $ show x, "is", styleRed $ show s])
+              "\t The type scheme for variable", styleRed $ show x, "is", styleRed $ show s, "\n",
+              "\t Consider instantiating variable", styleRed $ show x, "with appropriate types for the polymorphic variables"])
   return t
 synthetise kEnv (UnLet _ x e1 e2) = do
   t1 <- synthetise kEnv e1

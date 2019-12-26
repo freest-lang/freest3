@@ -118,8 +118,8 @@ import           Debug.Trace
 %left NEG not                   -- unary
 
 -- Type
+%right '.'       -- Used in rec 
 %right '->' '-o' -- TODO: an Expr operator as well
-%right '.'       -- Used in rec
 %right ';'       -- TODO: an Expr operator as well
 %right dualof
 
@@ -176,32 +176,32 @@ DataCon :: { (ProgVar, [Type]) }
 -----------------
 
 Expr :: { Expression }
-  : let ProgVarWild '=' Expr in Expr         { UnLet (position $1) $2 $4 $6 }
+  : let ProgVarWild '=' Expr in Expr { UnLet (position $1) $2 $4 $6 }
 
   | let '(' ProgVarWild ',' ProgVarWild ')' '=' Expr in Expr
-                                             { BinLet (position $1) $3 $5 $8 $10 }
-  | if Expr then Expr else Expr              { Conditional (position $1) $2 $4 $6 }
-  | new Type                                 { New (position $1) $2 }
-  | match Expr with '{' MatchMap '}'         { Match (position $1) $2 $5 }
-  | case Expr of '{' CaseMap '}'             { Case (position $1) $2 $5 }
-  | Expr '*' Expr                            { binOp $1 (mkVar (position $2) "(*)") $3 }
-  | Expr '+' Expr                            { binOp $1 (mkVar (position $2) "(+)") $3 }
-  | Expr '-' Expr                            { binOp $1 (mkVar (position $2) "(-)") $3 }
-  | Expr '&&' Expr                           { binOp $1 (mkVar (position $2) "(&&)") $3 }
-  | Expr '||' Expr                           { binOp $1 (mkVar (position $2) "(||)") $3 }
-  | Expr '/' Expr                            { binOp $1 (mkVar (position $2) "div") $3 }
-  | Expr OP Expr                             { binOp $1 (mkVar (position $2) (getText $2)) $3 }
-  | App                                      { $1 }
+                                     { BinLet (position $1) $3 $5 $8 $10 }
+  | if Expr then Expr else Expr      { Conditional (position $1) $2 $4 $6 }
+  | new Type                         { New (position $1) $2 }
+  | match Expr with '{' MatchMap '}' { Match (position $1) $2 $5 }
+  | case Expr of '{' CaseMap '}'     { Case (position $1) $2 $5 }
+  | Expr '||' Expr                   { binOp $1 (mkVar (position $2) "(||)") $3 }
+  | Expr '&&' Expr                   { binOp $1 (mkVar (position $2) "(&&)") $3 }
+  | Expr OP Expr                     { binOp $1 (mkVar (position $2) (getText $2)) $3 }
+  | Expr '+' Expr                    { binOp $1 (mkVar (position $2) "(+)") $3 }
+  | Expr '-' Expr                    { binOp $1 (mkVar (position $2) "(-)") $3 }
+  | Expr '*' Expr                    { binOp $1 (mkVar (position $2) "(*)") $3 }
+  | Expr '/' Expr                    { binOp $1 (mkVar (position $2) "div") $3 }
+  | App                              { $1 }
 
 App :: { Expression }
-  : App Primary                              { App (position $1) $1 $2 }
-  | ProgVar '[' TypeList ']'                 { TypeApp (position $1) $1 $3 }
-  | send Primary                             { Send (position $1) $2 }
-  | receive Primary                          { Receive (position $1) $2 }
-  | select Primary ArbitraryProgVar          { Select (position $1) $2 $3 }
-  | fork Primary                             { Fork (position $1) $2 }
-  | '-' App %prec NEG                        { unOp (mkVar (position $1) "negate") $2}
-  | Primary                                  { $1 }
+  : App Primary                     { App (position $1) $1 $2 }
+  | ProgVar '[' TypeList ']'        { TypeApp (position $1) $1 $3 }
+  | send Primary                    { Send (position $1) $2 }
+  | receive Primary                 { Receive (position $1) $2 }
+  | select Primary ArbitraryProgVar { Select (position $1) $2 $3 }
+  | fork Primary                    { Fork (position $1) $2 }
+  | '-' App %prec NEG               { unOp (mkVar (position $1) "negate") $2}
+  | Primary                         { $1 }
 
 Primary :: { Expression }
   : INT                                      { let (TokenInteger p x) = $1 in Integer p x }

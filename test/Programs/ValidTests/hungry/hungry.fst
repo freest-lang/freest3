@@ -5,7 +5,7 @@ Page 270
 -}
 
 -- type Hungry = rec a:TU. Int -> a
-type Hungry = rec a:TU. (Int -> a) 
+-- type Hungry = rec a:TU. (Int -> a) 
 
 -- f : Int -> rec a. Hungry  
 f : Int -> rec a:TU. (Int -> a)
