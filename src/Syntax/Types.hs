@@ -51,11 +51,11 @@ data Type =
   | Semi Pos Type Type
   | Message Pos Polarity BasicType
   | Choice Pos Polarity TypeMap
+  -- Functional or session 
   | Rec Pos TypeVarBind Type 
-  -- Functional or session
   | TypeVar Pos TypeVar  -- a recursion variable if bound, polymorphic otherwise
   -- Type operators
-  | TypeName Pos TypeVar -- a named type, to be looked upon in a map of type names to types
+  | TypeName Pos TypeVar -- a named type, to be looked upon in a map of type names to types, tEnv
   | Dualof Pos Type      -- to be expanded into a session type
   deriving (Eq, Ord)
 

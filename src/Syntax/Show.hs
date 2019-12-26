@@ -70,8 +70,8 @@ instance Show Kind where
   show (Kind _ p m) = show p ++ show m
 
 instance Show TypeVarBind where
-  show (TypeVarBind _ a k) = show a
-  -- show (TypeVarBind _ a k) = show a ++ ":" ++ show k
+--  show (TypeVarBind _ a k) = show a
+  show (TypeVarBind _ a k) = show a ++ ":" ++ show k
 
 -- Types
 

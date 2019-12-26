@@ -23,50 +23,53 @@ import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.ProgramVariables
 import           Syntax.TypeVariables
-import qualified Validation.Rename as Rename (subs)
+import qualified Validation.Rename as Rename (subs, unfold)  
+import qualified Validation.Substitution as Subs (subs, unfold)  
 import           Equivalence.Normalisation
 import           Equivalence.Bisimulation
 import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
 
 class Equivalence t where
   equivalent :: TypeEnv -> KindEnv -> t -> t -> Bool
 
 -- Types
 
-instance Equivalence Type where
-  -- equivalent tenv kenv t u = normalise tenv t == normalise tenv u || equiv t u
-  equivalent tenv kenv t u = {- t == u || -} equiv t u
-    where
-    equiv :: Type -> Type -> Bool
-      -- Functional types
-    equiv (Basic _ b) (Basic _ c) = b == c
-    equiv (Fun _ m t1 t2) (Fun _ n u1 u2) =
-      m == n && equiv t1 u1 && equiv t2 u2
-    equiv (PairType _ t1 t2) (PairType _ u1 u2) =
-      equiv t1 u1 && equiv t2 u2
-    equiv (Datatype _ m1) (Datatype _ m2) =
-      Map.size m1 == Map.size m2 &&
-      Map.foldlWithKey (equivField m2) True m1 -- TODO: Use all
-      -- Functional or session
-    equiv (TypeVar _ x) (TypeVar _ y) = x == y -- A free type var
-    -- equiv t@(Rec _ _ _) u = equiv (unfold t) u -- TODO: recipe for looping?
-    -- equiv t u@(Rec _ _ _) = equiv t (unfold u) -- TODO: recipe for looping?
-      -- Type operators
-    -- equiv (Dualof _ (TypeName _ x)) u = equiv (dual (getType x)) u -- These are session types
-    -- equiv t (Dualof _ (TypeName _ y)) = equiv t (dual (getType y))
-    -- equiv (Dualof _ t) u = equiv (dual t) u
-    -- equiv t (Dualof _ u) = equiv t (dual u)
-    equiv (TypeName _ x) (TypeName _ y) = x == y -- Admissible
-    equiv (TypeName _ x) u = equiv (getType x) u
-    equiv t (TypeName _ y) = equiv t (getType y)
-      -- Session types
-    equiv t u =
-      isSessionType tenv kenv t &&
-      isSessionType tenv kenv u &&
-      bisimilar tenv t u
+type Visited = Set.Set(Type, Type)
 
-    equivField :: TypeMap -> Bool -> ProgVar -> Type -> Bool
-    equivField m acc l t = acc && l `Map.member` m && equiv (m Map.! l) t
+instance Equivalence Type where
+  equivalent tenv kenv = equiv Set.empty
+    where
+    equiv :: Visited -> Type -> Type -> Bool
+    equiv v t u
+      | (t, u) `Set.member` v = True
+      | otherwise             = equiv' t u
+      where
+      equiv' :: Type -> Type -> Bool
+        -- Functional types
+      equiv' (Basic _ b) (Basic _ c) = b == c
+      equiv' (Fun _ m t1 t2) (Fun _ n u1 u2) =
+        m == n && equiv v t1 u1 && equiv v t2 u2
+      equiv' (PairType _ t1 t2) (PairType _ u1 u2) =
+        equiv v t1 u1 && equiv v t2 u2
+      equiv' (Datatype _ m1) (Datatype _ m2) =
+        Map.size m1 == Map.size m2 &&
+        Map.foldlWithKey (equivField v m2) True m1 -- TODO: Use all
+        -- Functional or session
+      equiv' (TypeVar _ x) (TypeVar _ y) = x == y -- A free type var
+      equiv' t@(Rec _ _ _)  u = equiv (Set.insert (t, u) v) (Subs.unfold t) u 
+      equiv' t u@(Rec _ _ _) = equiv (Set.insert (t, u) v) t (Subs.unfold u)
+      equiv' (TypeName _ x) (TypeName _ y) = x == y -- Admissible
+      equiv' (TypeName _ x) u = equiv v (getType x) u
+      equiv' t (TypeName _ y) = equiv v t (getType y)
+        -- Session types
+      equiv' t u =
+        isSessionType tenv kenv t &&
+        isSessionType tenv kenv u &&
+        bisimilar tenv t u
+
+    equivField :: Visited -> TypeMap -> Bool -> ProgVar -> Type -> Bool
+    equivField v m acc l t = acc && l `Map.member` m && equiv v (m Map.! l) t
 
     getType :: TypeVar -> Type
     getType x = toType (snd (tenv Map.! x))
@@ -74,18 +77,18 @@ instance Equivalence Type where
 -- Assumes the type is well formed
 isSessionType :: TypeEnv -> KindEnv -> Type -> Bool
   -- Session types
-isSessionType _    _    (Skip _)        = True
-isSessionType _    _    (Semi _ _ _)    = True
-isSessionType _    _    (Message _ _ _) = True
-isSessionType _    _    (Choice _ _ _)  = True
-isSessionType _    _    (Rec _ _ _)     = True 
+isSessionType _ _    (Skip _)        = True
+isSessionType _ _    (Semi _ _ _)    = True
+isSessionType _ _    (Message _ _ _) = True
+isSessionType _ _    (Choice _ _ _)  = True
   -- Functional or session
-isSessionType _    kenv (TypeVar _ x)   = True -- Map.member x kenv TODO: check, remove parameter kenv
+isSessionType _ _    (Rec _ (TypeVarBind _ _ k) _) = isSession k
+isSessionType _ kenv (TypeVar _ x)   = Map.member x kenv
   -- Type operators
-isSessionType _    _    (Dualof _ _)    = True
-isSessionType tenv _    (TypeName _ x)  = isSession $ fst $ tenv Map.! x
+isSessionType _ _    (Dualof _ _)    = True
+isSessionType tenv _ (TypeName _ x)  = isSession $ fst $ tenv Map.! x
   -- Otherwise: Functional types
-isSessionType _    _    _               = False
+isSessionType _ _    _               = False
 
 -- Type schemes
 
