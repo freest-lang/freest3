@@ -57,7 +57,7 @@ extractFun e t = do
     u             -> do
       let p = position e
       addError p ["Expecting a function type for expression", styleRed $ show e, "\n",
-                  "\t found type", styleRed $ show u]
+               "\t                               found type", styleRed $ show u]
       return (omission p, omission p)
 
 -- Extracts a pair from a type; gives an error if there is no pair

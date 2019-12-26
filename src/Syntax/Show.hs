@@ -90,8 +90,8 @@ instance Show BasicType where
   show UnitType = "()"
 
 instance Show Type where
-  show = showType 4
-  -- show = showType 44 -- for testing purposes
+--  show = showType 4
+  show = showType 44 -- for testing purposes
 
 showType :: Int -> Type -> String
   -- Non-recursive cases
@@ -136,7 +136,8 @@ instance Show TypeScheme where
 -- Expressions
 
 instance Show Expression where
-  show = showExp 4
+--  show = showExp 4 
+  show = showExp 44
 
 showExp :: Int -> Expression -> String
   -- Basic values
