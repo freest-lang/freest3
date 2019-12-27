@@ -1,5 +1,5 @@
-fst' : forall a: TU, b: TU => (a, b) -> a
-snd' : forall a: TU, b: TU => (a, b) -> b
+fst' : forall a: TL, b: TU => (a, b) -> a
+snd' : forall a: TU, b: TL => (a, b) -> b
 
 fst' p = let (x, _) = p in x
 snd' p = let (_, y) = p in y
