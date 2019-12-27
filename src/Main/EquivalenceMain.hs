@@ -1,4 +1,4 @@
-module Main where
+module Main.EquivalenceMain where
 
 import System.Exit
 import Equivalence.Equivalence

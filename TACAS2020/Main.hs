@@ -1,3 +1,5 @@
+module Main where
+
 import           Syntax.Types
 import           Syntax.Base
 import           Syntax.Kinds

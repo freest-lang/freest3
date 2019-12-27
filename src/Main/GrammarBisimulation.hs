@@ -1,4 +1,4 @@
-module Main where
+module Main.GrammarBisimulation where
 
 import Equivalence.Bisimulation
 import Parse.GrammarParser

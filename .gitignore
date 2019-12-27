@@ -11,7 +11,6 @@ TestParse
 .hspec-failures
 UnitSpec
 ProgSpec
-dist/
 cfst.h*
 cfst
 FreeSTRuntime.hs
@@ -23,6 +22,10 @@ testEquiv.hp
 testEquiv.prof
 Parser.hs
 Lexer.hs
+*.cabal
+dist
+dist-*
+.stack-work/
 
 # Test files (gen)
 test/Programs/*/*/*
