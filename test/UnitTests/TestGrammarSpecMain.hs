@@ -1,3 +1,5 @@
+module TestGrammarSpecMain where
+
 import           Test.Hspec
 import qualified Equivalence.TestGrammarValidSpec as BisimValid
 

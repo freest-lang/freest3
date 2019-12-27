@@ -1,3 +1,5 @@
+module TestEquivalenceSpecMain where
+
 import           Test.Hspec
 import qualified Equivalence.TestEquivalenceValidSpec as Equiv
 import qualified Equivalence.TestEquivalenceInvalidSpec as InvEquiv

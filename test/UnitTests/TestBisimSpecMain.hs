@@ -1,3 +1,5 @@
+module TestBisimSpecMain where
+
 import           Test.Hspec
 import qualified Equivalence.TestBisimValidSpec as BisimValid
 import qualified Equivalence.TestBisimInvalidSpec as BisimInvalid

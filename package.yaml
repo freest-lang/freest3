@@ -63,5 +63,5 @@ tests:
            dependencies: 
              - hspec       
              - HUnit
-             # - system-posix-redirect >= 1.1.0.1
-             # - bytestring >= 0.10.8.2
+             - system-posix-redirect
+             - bytestring
