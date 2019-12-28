@@ -28,10 +28,32 @@ dependencies:
 - pretty-terminal >= 0.1.0.0
 - process <= 1.6.5.0
 
-  #library:
-  #source-dirs: src
-  #exposed-modules:
-  #- Main
+library:
+  source-dirs: src
+  exposed-modules:
+  #  - Main
+     - Compiler
+     - Equivalence.Grammar
+     - Equivalence.Bisimulation
+     - Equivalence.Equivalence
+     - Syntax.TypeVariables
+     - Syntax.Base
+     - Syntax.Types
+     - Syntax.Show
+     - Syntax.Expressions
+     - Syntax.Schemes
+     - Syntax.Kinds
+     - Syntax.ProgramVariables
+     - Parse.ParseUtils
+     - Utils.Errors
+     - Utils.FreestState
+     - Parse.GrammarLexer 
+     - Parse.GrammarParser 
+     - Parse.Lexer 
+     - Parse.Parser
+     - Validation.Rename
+     - Validation.Kinding
+     - Validation.Contractive
 
 executables:
   freest:
@@ -50,8 +72,9 @@ tests:
            main: UnitSpec.hs
            source-dirs: 
              - test/UnitTests
-             - src
+               #  - src
            dependencies:
+             - FreeST
              - hspec 
              - hspec-expectations
              - split 
@@ -59,8 +82,9 @@ tests:
            main: ProgSpec.hs
            source-dirs: 
              - test/Programs
-             - src
-           dependencies: 
+             #             - src
+           dependencies:
+             - FreeST
              - hspec       
              - HUnit
              - system-posix-redirect
