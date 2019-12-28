@@ -44,7 +44,7 @@ typeCheck = do
   --       return ()
   -- 1. Check the contractiveness of all type decls
   -- trace "checking contractiveness of all type decls" (return ())
-  mapM_ (checkContractive Map.empty . snd) tEnv
+  -- mapM_ (checkContractive Map.empty . snd) tEnv
   -- 2. Check the formation of all type decls
   -- trace "checking the formation of all type decls" (return ())
   mapM_ (K.synthetiseTS Map.empty . snd) tEnv
