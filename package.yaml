@@ -27,6 +27,7 @@ dependencies:
 - mtl >= 2.2.1
 - pretty-terminal >= 0.1.0.0
 - process <= 1.6.5.0
+- silently >= 1.2.5.1
 
 library:
   source-dirs: src
@@ -87,5 +88,4 @@ tests:
              - FreeST
              - hspec       
              - HUnit
-             - system-posix-redirect
-             - bytestring
+             - silently

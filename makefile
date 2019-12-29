@@ -25,6 +25,12 @@ testGrammarValid:
 
 testGrammarInvalid:
 	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Equivalence/TestGrammarInvalidSpec.hs
+	
+testProgramsInvalid:
+	runhaskell -isrc -itest/Programs/ test/Programs/CompilerInvalidSpec.hs
+
+testProgramsValid:
+	runhaskell -isrc -itest/Programs/ test/Programs/CompilerValidSpec.hs
 
 clean :
 	rm `find ./ -name '*.o' -o -name '*.hi' -o -name '*.tix'` -r
