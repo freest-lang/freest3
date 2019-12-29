@@ -31,30 +31,33 @@ dependencies:
 
 library:
   source-dirs: src
+  build-tools:
+    - alex
+    - happy
   exposed-modules:
-  #  - Main
-     - Compiler
-     - Equivalence.Grammar
-     - Equivalence.Bisimulation
-     - Equivalence.Equivalence
-     - Syntax.TypeVariables
-     - Syntax.Base
-     - Syntax.Types
-     - Syntax.Show
-     - Syntax.Expressions
-     - Syntax.Schemes
-     - Syntax.Kinds
-     - Syntax.ProgramVariables
-     - Parse.ParseUtils
-     - Utils.Errors
-     - Utils.FreestState
-     - Parse.GrammarLexer 
-     - Parse.GrammarParser 
-     - Parse.Lexer 
-     - Parse.Parser
-     - Validation.Rename
-     - Validation.Kinding
-     - Validation.Contractive
+  # - Main
+    - Compiler
+    - Equivalence.Grammar
+    - Equivalence.Bisimulation
+    - Equivalence.Equivalence
+    - Syntax.TypeVariables
+    - Syntax.Base
+    - Syntax.Types
+    - Syntax.Show
+    - Syntax.Expressions
+    - Syntax.Schemes
+    - Syntax.Kinds
+    - Syntax.ProgramVariables
+    - Parse.ParseUtils
+    - Utils.Errors
+    - Utils.FreestState
+    - Parse.GrammarLexer 
+    - Parse.GrammarParser 
+    - Parse.Lexer 
+    - Parse.Parser
+    - Validation.Rename
+    - Validation.Kinding
+    - Validation.Contractive
 
 executables:
   freest:
