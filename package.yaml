@@ -40,6 +40,7 @@ library:
     - Equivalence.Grammar
     - Equivalence.Bisimulation
     - Equivalence.Equivalence
+    - Equivalence.Normalisation
     - Syntax.TypeVariables
     - Syntax.Base
     - Syntax.Types
@@ -48,6 +49,7 @@ library:
     - Syntax.Schemes
     - Syntax.Kinds
     - Syntax.ProgramVariables
+    - Syntax.Duality
     - Parse.ParseUtils
     - Utils.Errors
     - Utils.FreestState
@@ -57,7 +59,8 @@ library:
     - Parse.Parser
     - Validation.Rename
     - Validation.Kinding
-    - Validation.Contractive
+    - Validation.Contractive    
+    - Validation.Substitution
 
 executables:
   freest:
