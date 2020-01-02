@@ -1,4 +1,4 @@
-module QuickCheck.TestValidTypes
+module TestValidTypes
 ( prop_bisimilar
 , kinded
 , nodes
@@ -19,7 +19,7 @@ import           Utils.FreestState
 import           Control.Monad.State
 import           Data.Maybe
 import qualified Data.Map.Strict as Map
-import           QuickCheck.ArbitraryTypes
+import           ArbitraryTypes
 
 -- main = quickCheckWith stdArgs {maxSuccess = 20000} prop_bisimilar -- prop_equivalent
 main = quickCheckWith stdArgs {maxSuccess = 10000} prop_distribution

@@ -4,8 +4,8 @@
 import Test.Hspec
 import Test.Hspec.QuickCheck
 import Test.QuickCheck
-import QuickCheck.ArbitraryTypes
-import QuickCheck.TestValidTypes
+import ArbitraryTypes
+import TestValidTypes
 
 spec :: Spec
 spec = do

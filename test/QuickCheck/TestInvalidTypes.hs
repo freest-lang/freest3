@@ -1,6 +1,6 @@
 -- NOT WORKING!!!
 
-module QuickCheck.TestinValidTypes
+module TestInvalidTypes
 ( prop_not_bisimilar
 -- , kinded
 ) where
@@ -19,7 +19,7 @@ import           Utils.FreestState
 import           Control.Monad.State
 import           Data.Maybe
 import qualified Data.Map.Strict as Map
-import           QuickCheck.ArbitraryTypes
+import           ArbitraryTypes
 
 main = quickCheckWith stdArgs {maxSuccess = 1000} prop_not_bisimilar -- prop_equivalent
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_distribution
