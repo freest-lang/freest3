@@ -42,12 +42,15 @@ convertToGrammar tEnv ts = --trace ("subs: " ++ show (subs state))  $
   where (xs, state) = runState (mapM typeToGrammar ts) (initial tEnv)
 
 typeToGrammar :: Type -> TransState Word
-typeToGrammar t = collect [] (normalise Map.empty t) >> toGrammar (normalise Map.empty t)
+typeToGrammar t = do
+  collect [] u
+  toGrammar u
+  where u = normalise Map.empty t
 
 toGrammar :: Type -> TransState Word
 -- Session types
-toGrammar (Skip _) =
-  return []
+toGrammar t
+  | terminated t = return []
 toGrammar (Semi _ t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
@@ -63,7 +66,7 @@ toGrammar (Choice _ v m) = do
 toGrammar x@(TypeVar _ _) = do      -- x is a polymorphic variable (???)
   y <- getProd $ Map.singleton (show x) []
   return [y]
-toGrammar (Rec _ (TypeVarBind _ x _) _) =
+toGrammar t@(Rec _ (TypeVarBind _ x _) _) =
   return [x]
   -- Type operators
 toGrammar (Dualof _ t) = toGrammar (dual t)
@@ -89,6 +92,8 @@ toGrammar t = error $ "Internal error. Attempting to convert type " ++ show t ++
 type Substitution = (Type, TypeVar)
 
 collect :: [Substitution] -> Type -> TransState ()
+collect _ t
+  | terminated t = return ()
 collect σ (Semi _ t u) = collect σ t >> collect σ u
 collect σ (Choice _ _ m) = tMapM_ (collect σ) m
 collect σ t@(Rec _ (TypeVarBind _ x _) u) = do

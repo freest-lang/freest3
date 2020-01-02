@@ -1,10 +1,12 @@
 module QuickCheck.TestValidTypes
 ( prop_bisimilar
+, prop_distribution
 , kinded
 , nodes
 ) where
 
 import           Test.QuickCheck
+import           Test.QuickCheck.Random (mkQCGen)
 import           Equivalence.Equivalence
 import           Equivalence.Bisimulation
 import           Equivalence.Normalisation
@@ -21,8 +23,9 @@ import           Data.Maybe
 import qualified Data.Map.Strict as Map
 import           QuickCheck.ArbitraryTypes
 
+main = verboseCheckWith stdArgs {maxSuccess = 271, replay = Just (mkQCGen 1095646480, 0)} prop_bisimilar
 -- main = quickCheckWith stdArgs {maxSuccess = 20000} prop_bisimilar -- prop_equivalent
-main = quickCheckWith stdArgs {maxSuccess = 10000} prop_distribution
+-- main = verboseCheckWith stdArgs {maxSuccess = 10000} prop_distribution
 -- main = quickCheckWith stdArgs {maxSuccess = 10000, replay = Just (mkQCGen 42, 0)} prop_bisimilar
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
 -- main = quickCheckWith stdArgs {maxSuccess = 10000} prop_subs_kind_preservation1

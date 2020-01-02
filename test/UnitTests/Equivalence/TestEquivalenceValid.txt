@@ -74,7 +74,7 @@ Skip;Skip
 Skip
 Skip
 
--- Functional and session
+-- Functional and session, mixed
 
 []
 !Int -> Bool
@@ -217,73 +217,113 @@ Skip;!Int -> Bool
 +{Leaf: Skip, Node: !Int}; α
 +{Leaf: Skip; α, Node: !Int; α}
 
--- Degenerated Recursive Types
+-- Terminated Recursive Types
 
--- non contractive
--- []
--- rec x. Skip
--- Skip
+[]
+rec x:SU. Skip
+Skip
 
--- non contractive
--- []
--- Skip
--- rec x. Skip
+[]
+Skip
+rec x:SU. Skip
 
--- non contractive
--- []
--- rec x. (Skip; Skip)
--- Skip
+[]
+rec x:SU. (Skip; Skip)
+Skip
 
--- non contractive
--- []
--- rec x. rec y. Skip
--- Skip
+[]
+rec x:SU. rec y. Skip
+Skip
 
--- non contractive
--- []
--- rec x. (Skip; rec y. Skip)
--- Skip
+[]
+rec x:SU. (Skip; rec y. Skip)
+Skip
+
+[]
+rec x:SU. Skip; x
+rec y:SU. Skip; y
+
+[]
+rec x:SU.( Skip; x; Skip)
+rec x:SU.( Skip; x)
+
+[]
+rec x:SU.( Skip; x; Skip)
+rec x:SU.( Skip; x; Skip)
+
+[]
+rec x:SU.( Skip; x)
+Skip
+
+[]
+rec x:SU.( Skip; x; Skip)
+Skip
+
+[]
+rec x.Skip
+rec x. Skip
+
+[]
+rec x.Skip
+Skip; rec x.Skip
+
+[]
+rec x.Skip
+Skip
+
+[]
+rec x.Skip
+rec x.Skip
+
+[]
+rec x.Skip;x
+Skip
+
+[]
+rec x.Skip;x
+rec x.Skip
+
+[]
+rec x.Skip;x
+Skip; rec x.Skip
+
+[]
+rec x.Skip;x
+Skip; rec x.Skip;x
+
+[]
+rec x:SU. (((Skip ; x) ; x) ; x)
+Skip
+
+[]
+rec y:SU.(rec y:SL.Skip)
+rec y:SU.(rec z:SU.(rec x:SU.(rec y1:SL.(rec y2:SU.Skip))))
+
+-- Some rec types
 
 []
 rec x. rec y. (Skip; rec z. Skip; ?Int; Skip)
 ?Int
 
 []
-rec x. rec y. (!Int; y)
-rec z. (!Int; z)
+rec x:SL. rec y. (!Int; y)
+rec z:SL. (!Int; z)
 
 []
-rec x. (rec y. !Int; x)
-rec z. (!Int; z)
+rec x:SL. (rec y. !Int; x)
+rec z:SL. (!Int; z)
 
 []
-rec x. rec y. rec z. (!Int; y)
-rec w. (!Int; w)
+rec x. rec y:SL. rec z. (!Int; y)
+rec w:SL. (!Int; w)
 
--- non contractive
--- []
--- rec x.( Skip; x)
--- rec y.( Skip; y)
+[]
++{C: (rec x:SU.Skip)};(y;((rec x:SL.y);Skip))
++{C: (Skip;((y;(rec x:SL.(rec x:SL.y)));Skip))}
 
--- non contractive
--- []
--- rec x.( Skip; x; Skip)
--- rec x.( Skip; x)
-
--- non contractive
--- []
--- rec x.( Skip; x; Skip)
--- rec x.( Skip; x; Skip)
-
--- non contractive
--- []
--- rec x.( Skip; x)
--- Skip
-
--- non contractive
--- []
--- rec x.( Skip; x; Skip)
--- Skip
+[]
+rec z:SL.(rec z:SU.(Skip;(rec x:SU.(rec z:SL.&{B: (rec z:SL.(rec x:SL.(z;(Skip;y))))}))))
+rec z:SL.(rec x:SU.&{B: (rec z:SL.((z;Skip);y))})
 
 -- Regular Recursive Types
 
@@ -368,47 +408,6 @@ rec x. &{Node: ?Int;x}
 []
 rec x . &{Add: x;x;!Int}
 rec x . &{Add: x;x;!Int}
-
--- Terminated types
-
--- non contractive
--- []
--- rec x. (Skip; x)
--- rec x. (Skip; x)
-
--- non contractive
--- []
--- rec x. ((Skip; x); rec y. (Skip; y))
--- rec x. (Skip; x)
-
--- non contractive
--- []
--- rec x. (Skip; x); rec x. (Skip; x)
--- rec x. (Skip; x); rec x. (Skip; x)
-
---[]
---Skip
---Skip; Skip
-
--- non contractive
--- []
--- rec x. (Skip; x)
--- Skip
-
--- non contractive
--- []
--- rec x. (Skip; x)
--- Skip; Skip
-
--- non contractive
--- []
--- rec x. (Skip; x; (rec x. (Skip; x)))
--- rec x. (Skip; x); rec x. (Skip; x)
-
--- non contractive
--- []
--- rec x. ((rec x. (Skip; x)); (rec x. (Skip; x)))
--- rec x. (Skip; x); rec x. (Skip; x)
 
 -- Context-free Recursive Types, normed
 

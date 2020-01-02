@@ -1,11 +1,22 @@
 -- Rec stuff
 
-rec x . x; !Int
-rec x . x
-rec x . dualof x
-rec x . dualof dualof x  
-rec x . (dualof dualof x); &{ A: !(), B: ?Int }
-rec x .  dualof dualof  dualof dualof  dualof dualof  dualof dualof  dualof dualof x 
+rec x. x; !Int
+rec x. x  
+rec x. x;  x;  x;  x;  x
+rec x. dualof x
+rec x. dualof dualof x  
+rec x. (dualof dualof x); &{ A: !(), B: ?Int }
+rec x. dualof dualof  dualof dualof  dualof dualof  dualof dualof  dualof dualof x 
+rec a. rec b. rec c. rec d. a
+Int -> rec a. rec b. rec c. rec d. a
+rec a. rec b. rec c. rec d. a; !Bool
+rec a. ((a; !Bool); !Int) ; ?Bool
+rec z:SL.(rec z:SU.(Skip;(rec x:SU.(rec z:SL.&{B: (rec z:SL.(rec x:SL.(z;(Skip;y))))}))))
+rec z:SL.(rec x:SU.&{B: (rec z:SL.((z;Skip);y))})
+(rec x:SU.(x;!Bool));!Bool 
+rec x:SU.x;!Bool
+rec z:SL.(rec x:SU.&{B: (rec z:SL.((z;Skip);y))})
+rec z:SL.(rec z:SU.(Skip;(rec x:SU.(rec z:SL.&{B: (rec z:SL.(rec x:SL.(z;(Skip;y))))}))))
 
 -- Functional vs Session
 

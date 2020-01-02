@@ -176,12 +176,6 @@ TL
 (Bool -o Char -> (Int -> ()), Int -> Skip -> ())
 TL
 
--- dualof
-
-[]
-rec x . dualof !Int
-SL
-
 -- Quick Check
 
 [("x", SL) , ("y", SL) , ("z", SL)]
@@ -200,3 +194,110 @@ SL
 rec y:SU. (!Bool;Skip)
 SL
 
+[]
+rec x:SU.((Skip;x);!Bool)
+SU
+
+-- Terminated Recursive Types
+
+[]
+rec x:SU. Skip
+SU
+
+[]
+rec x:SU. (Skip; Skip)
+SU
+
+[]
+rec x:SU. rec y. Skip
+SU
+
+[]
+rec x:SU. (Skip; rec y. Skip)
+SU
+
+[]
+rec x:SU. (Skip; x)
+SU
+
+[]
+rec x:SU. Skip; x; Skip
+SU
+
+[]
+rec x:SU. Skip; x; x; x; x; x
+SU
+
+[]
+rec x:SU. (rec x:SU. Skip; x); (rec x:SU. (Skip; x))
+SU
+
+[]
+Skip; rec x:SU. Skip
+SU
+
+[]
+Skip; rec x:SU. Skip; Skip
+SU
+
+[]
+Skip; rec x:SU. rec y. Skip
+SU
+
+[]
+Skip; Skip; rec x:SU. (Skip; rec y. Skip)
+SU
+
+[]
+Skip; rec x:SU.(Skip; x)
+SU
+
+[]
+Skip; rec x:SU.( Skip; x; Skip)
+SU
+
+[]
+Skip; rec x:SU.( Skip; x; Skip)
+SU
+
+[]
+Skip; Skip; Skip; rec x:SU. (Skip; x; x; x; x; x)
+SU
+
+[]
+Skip; rec x:SU. ((rec x:SU. (Skip; x)); (rec x:SU. (Skip; x))); Skip; Skip
+SU
+
+[("y", SL)]
+rec x:SU. y
+SL
+
+[("a", SL)]
+rec d. rec c. rec b. a
+SL
+
+[]
+rec x:SU. (((Skip ; x) ; x) ; x)
+SU
+
+-- Dualof
+
+[]
+rec x . dualof !Int
+SL
+
+[]
+dualof Skip
+SU
+
+[]
+dualof (Skip; Skip)
+SU
+
+[]
+dualof (rec x. Skip)
+SU
+
+[]
+rec x. dualof Skip
+SU
