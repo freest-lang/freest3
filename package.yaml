@@ -75,23 +75,31 @@ executables:
       - -with-rtsopts=-N
 
 tests:
-   unit-tests:
-           main: UnitSpec.hs
-           source-dirs: 
-             - test/UnitTests
-               #  - src
-           dependencies:
-             - FreeST
-             - hspec 
-             - hspec-expectations
-             - split 
-   program-tests:
-           main: ProgSpec.hs
-           source-dirs: 
-             - test/Programs
-             #             - src
-           dependencies:
-             - FreeST
-             - hspec       
-             - HUnit
-             - silently
+    units:
+      main: UnitSpec.hs
+      source-dirs: 
+        - test/UnitTests
+      dependencies:
+        - FreeST
+        - hspec 
+        - hspec-expectations
+        - split
+
+    programs:
+      main: ProgSpec.hs
+      source-dirs: 
+        - test/Programs
+      dependencies:
+        - FreeST
+        - hspec       
+        - HUnit
+        - silently
+
+    valid-types-quick:
+      main: QuickCheckSpec.hs
+      source-dirs:
+        - test/QuickCheck
+      dependencies:
+        - FreeST
+        - QuickCheck
+        - hspec

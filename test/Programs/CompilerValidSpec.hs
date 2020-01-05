@@ -12,9 +12,6 @@ import Control.Exception
 import System.IO (stdout, stderr)
 import System.IO.Silently(hCapture)
 
-main :: IO ()
-main = hspec $ spec
-
 baseTestDir :: String -> String
 baseTestDir baseDir = baseDir ++ "/test/Programs/ValidTests/"
 

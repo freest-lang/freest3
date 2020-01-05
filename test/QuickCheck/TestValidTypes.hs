@@ -1,4 +1,4 @@
-module QuickCheck.TestValidTypes
+module TestValidTypes
 ( prop_bisimilar
 , prop_distribution
 , kinded
@@ -21,7 +21,7 @@ import           Utils.FreestState
 import           Control.Monad.State
 import           Data.Maybe
 import qualified Data.Map.Strict as Map
-import           QuickCheck.ArbitraryTypes
+import           ArbitraryTypes
 
 main = verboseCheckWith stdArgs {maxSuccess = 271, replay = Just (mkQCGen 1095646480, 0)} prop_bisimilar
 -- main = quickCheckWith stdArgs {maxSuccess = 20000} prop_bisimilar -- prop_equivalent
@@ -95,7 +95,7 @@ prop_dual_convolution t = kinded t ==> dual (dual t) == t
 -- Distribution
 
 prop_distribution :: BisimPair -> Property
-prop_distribution (BisimPair t u) = kinded t ==>
+prop_distribution (BisimPair t u) = kinded t && kinded u ==>
   collect (nodes t + nodes u) $
   tabulate "Type constructors" [constr t] $
   True

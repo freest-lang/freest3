@@ -58,15 +58,15 @@ append t            u = Semi (position t) t u
 terminated :: Type -> Bool
 terminated = term Set.empty
   where
-  term _ (Skip _)           = True
-  term delta (Semi _ t u)   = term delta t && term delta u
-  term delta (TypeVar _ x)  = x `Set.member` delta
+  term _ (Skip _) = True
+  term delta (Semi _ (TypeVar _ x) _) | x `Set.member` delta = True
+  term delta (Semi _ t u) = term delta t && term delta u
+  term delta (TypeVar _ x) = x `Set.member` delta
   term delta (Rec _ (TypeVarBind _ x _) t) = term (Set.insert x delta) t
-  term _ _            = False
+  term _ _ = False
 
 instance Normalise TypeScheme where
   normalise tenv (TypeScheme p bs t) = TypeScheme p bs (normalise tenv t)
-
 
 {- A "better" terminated predicate should be such that only free variables *of kind SU* are terminated
 

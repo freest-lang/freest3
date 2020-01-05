@@ -191,12 +191,24 @@ SL
 SL
 
 []
-rec y:SU. (!Bool;Skip)
+rec y:SU. !Bool ; Skip
 SL
 
 []
-rec x:SU.((Skip;x);!Bool)
-SU
+rec x:SL. (Skip ; x) ; !Bool
+SL
+
+[]
+rec z1:SU.(rec z2:SU.(rec x:SL.(+{A: Skip, C: x} ; rec z3:SU.(rec y:SL.(Skip;(z3;?Bool))))))
+SL
+
+[]
+rec z:SU.(+{A: Skip, C: z} ; rec y:SL.((Skip;y);?Bool))
+SL
+
+[]
+rec y:SL. Skip ; y ; ?Bool
+SL
 
 -- Terminated Recursive Types
 
