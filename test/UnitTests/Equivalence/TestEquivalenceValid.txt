@@ -321,17 +321,29 @@ rec w:SL. (!Int; w)
 +{C: (rec x:SU.Skip)};(y;((rec x:SL.y);Skip))
 +{C: (Skip;((y;(rec x:SL.(rec x:SL.y)));Skip))}
 
--- This one loops
--- []
--- rec x:SL.(+{A: Skip, C: x} ; rec z3:SU.(rec y:SL.(Skip;(z3;?Bool))))
--- rec z:SU.(+{A: Skip, C: z} ; rec y:SL.(Skip;y);?Bool) 
+[]
+rec x:SL.(+{A: Skip, C: x} ; rec z3:SU.(rec y:SL.(Skip;(z3;?Bool))))
+rec z:SU.(+{A: Skip, C: z} ; rec y:SL.(Skip;y);?Bool) 
 
 []
 Skip
 rec y:SL. (Skip ; y) ; ?Bool
 
--- rec y:SL. Skip ; y ; ?Bool
--- Skip ; (rec y:SL. Skip ; y ; ?Bool) ; ?Bool
+[]
+rec y:SL. (Skip ; y) ; ?Bool
+Skip 
+
+[]
+Skip
+(rec y:SL. Skip ; y) ; ?Bool
+
+[]
+(rec y:SL. Skip ; y) ; ?Bool
+Skip 
+
+[]
+rec y:SL. Skip ; y ; ?Bool
+Skip ; (rec y:SL. Skip ; y ; ?Bool) ; ?Bool
 
 -- Regular Recursive Types
 
