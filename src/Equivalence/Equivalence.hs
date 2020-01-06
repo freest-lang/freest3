@@ -41,32 +41,27 @@ instance Equivalence Type where
   equivalent tenv kenv = equiv Set.empty
     where
     equiv :: Visited -> Type -> Type -> Bool
-    equiv v t u
-      | (t, u) `Set.member` v = True
-      | otherwise             = equiv' t u
-      where
-      equiv' :: Type -> Type -> Bool
-        -- Functional types
-      equiv' (Basic _ b) (Basic _ c) = b == c
-      equiv' (Fun _ m t1 t2) (Fun _ n u1 u2) =
-        m == n && equiv v t1 u1 && equiv v t2 u2
-      equiv' (PairType _ t1 t2) (PairType _ u1 u2) =
-        equiv v t1 u1 && equiv v t2 u2
-      equiv' (Datatype _ m1) (Datatype _ m2) =
+    equiv v t u | (t, u) `Set.member` v = True
+    -- Functional types
+    equiv _ (Basic _ b) (Basic _ c) = b == c
+    equiv v (Fun _ m t1 t2) (Fun _ n u1 u2) = m == n && equiv v t1 u1 && equiv v t2 u2
+    equiv v (PairType _ t1 t2) (PairType _ u1 u2) = equiv v t1 u1 && equiv v t2 u2
+    equiv v (Datatype _ m1) (Datatype _ m2) =
         Map.size m1 == Map.size m2 &&
-        Map.foldlWithKey (equivField v m2) True m1 -- TODO: Use all
-        -- Functional or session
-      equiv' (TypeVar _ x) (TypeVar _ y) = x == y -- A free type var
-      equiv' t@(Rec _ _ _)  u = equiv (Set.insert (t, u) v) (Subs.unfold t) u 
-      equiv' t u@(Rec _ _ _) = equiv (Set.insert (t, u) v) t (Subs.unfold u)
-      equiv' (TypeName _ x) (TypeName _ y) = x == y -- Admissible
-      equiv' (TypeName _ x) u = equiv v (getType x) u
-      equiv' t (TypeName _ y) = equiv v t (getType y)
-        -- Session types
-      equiv' t u =
-        isSessionType tenv kenv t &&
-        isSessionType tenv kenv u &&
-        bisimilar tenv t u
+        Map.foldlWithKey (equivField v m2) True m1
+    -- Functional or session
+    equiv _ (TypeVar _ x) (TypeVar _ y) = x == y -- A free type var
+    equiv v t@(Rec _ _ _)  u = equiv (Set.insert (t, u) v) (Subs.unfold t) u 
+    equiv v t u@(Rec _ _ _) = equiv (Set.insert (t, u) v) t (Subs.unfold u)
+    -- Type operators
+    equiv _ (TypeName _ x) (TypeName _ y) = x == y -- Admissible
+    equiv v (TypeName _ x) u = equiv v (getType x) u
+    equiv v t (TypeName _ y) = equiv v t (getType y)
+    -- Session types
+    equiv _ t u =
+      isSessionType tenv kenv t &&
+      isSessionType tenv kenv u &&
+      bisimilar tenv t u
 
     equivField :: Visited -> TypeMap -> Bool -> ProgVar -> Type -> Bool
     equivField v m acc l t = acc && l `Map.member` m && equiv v (m Map.! l) t
