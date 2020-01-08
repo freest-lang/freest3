@@ -1,4 +1,4 @@
-module Validation.TestKindingInvalidSpec(spec) where
+module Validation.TestTypesInvalidSpec(spec) where
 
 import           Validation.Kinding
 import           Syntax.Kinds
@@ -9,8 +9,8 @@ import qualified Data.Map.Strict as Map
 
 spec :: Spec
 spec = do
-  describe "Invalid kinding tests" $ do
-    t <- runIO $ readFromFile "test/UnitTests/Validation/TestKindingInvalid.txt"
+  describe "Invalid types tests" $ do
+    t <- runIO $ readFromFile "test/UnitTests/Validation/TestTypesInvalid.txt"
     mapM_ matchInvalidKindingSpec t
 
 matchInvalidKindingSpec :: String -> Spec
