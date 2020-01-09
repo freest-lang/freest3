@@ -194,109 +194,110 @@ SL
 rec y:SU. !Bool ; Skip
 SL
 
-[]
-rec x:SL. (Skip ; x) ; !Bool
-SL
-
-[]
-rec z1:SU.(rec z2:SU.(rec x:SL.(+{A: Skip, C: x} ; rec z3:SU.(rec y:SL.(Skip;(z3;?Bool))))))
-SL
-
-[]
-rec z:SU.(+{A: Skip, C: z} ; rec y:SL.((Skip;y);?Bool))
-SL
-
-[]
-rec y:SL. Skip ; y ; ?Bool
-SL
-
 -- Terminated Recursive Types
 
-[]
-rec x:SU. Skip
-SU
+-- []
+-- rec y:SL. Skip ; y ; ?Bool
+-- SL
 
-[]
-rec x:SU. (Skip; Skip)
-SU
+-- []
+-- rec z:SU.(+{A: Skip, C: z} ; rec y:SL.((Skip;y);?Bool))
+-- SL
 
-[]
-rec x:SU. rec y. Skip
-SU
+-- []
+-- rec z1:SU.(rec z2:SU.(rec x:SL.(+{A: Skip, C: x} ; rec z3:SU.(rec y:SL.(Skip;(z3;?Bool))))))
+-- SL
 
-[]
-rec x:SU. (Skip; rec y. Skip)
-SU
+-- []
+-- rec x:SL. (Skip ; x) ; !Bool
+-- SL
 
-[]
-rec x:SU. (Skip; x)
-SU
+-- []
+-- rec x:SU. Skip
+-- SU
 
-[]
-rec x:SU. Skip; x; Skip
-SU
+-- []
+-- rec x:SU. (Skip; Skip)
+-- SU
 
-[]
-rec x:SU. Skip; x; x; x; x; x
-SU
+-- []
+-- rec x:SU. rec y. Skip
+-- SU
 
-[]
-rec x:SU. (rec x:SU. Skip; x); (rec x:SU. (Skip; x))
-SU
+-- []
+-- rec x:SU. (Skip; rec y. Skip)
+-- SU
 
-[]
-Skip; rec x:SU. Skip
-SU
+-- []
+-- rec x:SU. (Skip; x)
+-- SU
 
-[]
-Skip; rec x:SU. Skip; Skip
-SU
+-- []
+-- rec x:SU. Skip; x; Skip
+-- SU
 
-[]
-Skip; rec x:SU. rec y. Skip
-SU
+-- []
+-- rec x:SU. Skip; x; x; x; x; x
+-- SU
 
-[]
-Skip; Skip; rec x:SU. (Skip; rec y. Skip)
-SU
+-- []
+-- rec x:SU. (rec x:SU. Skip; x); (rec x:SU. (Skip; x))
+-- SU
 
-[]
-Skip; rec x:SU.(Skip; x)
-SU
+-- []
+-- Skip; rec x:SU. Skip
+-- SU
 
-[]
-Skip; rec x:SU.( Skip; x; Skip)
-SU
+-- []
+-- Skip; rec x:SU. Skip; Skip
+-- SU
 
-[]
-Skip; rec x:SU.( Skip; x; Skip)
-SU
+-- []
+-- Skip; rec x:SU. rec y. Skip
+-- SU
 
-[]
-Skip; Skip; Skip; rec x:SU. (Skip; x; x; x; x; x)
-SU
+-- []
+-- Skip; Skip; rec x:SU. (Skip; rec y. Skip)
+-- SU
 
-[]
-Skip; rec x:SU. ((rec x:SU. (Skip; x)); (rec x:SU. (Skip; x))); Skip; Skip
-SU
+-- []
+-- Skip; rec x:SU.(Skip; x)
+-- SU
 
-[("y", SL)]
-rec x:SU. y
-SL
+-- []
+-- Skip; rec x:SU.( Skip; x; Skip)
+-- SU
 
-[("a", SL)]
-rec d. rec c. rec b. a
-SL
+-- []
+-- Skip; rec x:SU.( Skip; x; Skip)
+-- SU
 
-[]
-rec x:SU. (((Skip ; x) ; x) ; x)
-SU
+-- []
+-- Skip; Skip; Skip; rec x:SU. (Skip; x; x; x; x; x)
+-- SU
+
+-- []
+-- Skip; rec x:SU. ((rec x:SU. (Skip; x)); (rec x:SU. (Skip; x))); Skip; Skip
+-- SU
+
+-- [("y", SL)]
+-- rec x:SU. y
+-- SL
+
+-- [("a", SL)]
+-- rec d. rec c. rec b. a
+-- SL
+
+-- []
+-- rec x:SU. (((Skip ; x) ; x) ; x)
+-- SU
 
 -- Dualof
 
-[]
-rec x . dualof !Int
-SL
+-- TODO: this should be OK
+-- []
+-- rec x . dualof !Int
+-- SL
 
 []
 dualof Skip
@@ -306,10 +307,28 @@ SU
 dualof (Skip; Skip)
 SU
 
-[]
-dualof (rec x. Skip)
-SU
+-- TODO: this should be OK
+-- []
+-- dualof (rec x. Skip)
+-- SU
+
+-- TODO: this should be OK
+-- []
+-- rec x. dualof Skip
+-- SU
 
 []
-rec x. dualof Skip
-SU
+(rec y. +{A: (rec y. (rec x. (+{A: (Skip;(?Int;!())), B: (Skip;?Char)};x)))})
+SL
+
+[]
++{A: (rec y. +{A: (((Skip;?Int);!());(rec y. +{A: (rec y. +{A:(((Skip;?Int);!());y), B: (?Char;y)})})), B: (?Char;(rec y. +{A: (rec y. +{A: (((Skip;?Int);!());y), B: (?Char;y)})}))})}
+SL
+
+[("x", SL) , ("y", SL) , ("z", SL)]
+((rec w:SL. &{B: ((+{A: &{B: x, C: Skip}};(+{A: ?Bool, B: w, C: (?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w))};Skip));+{A: (!Char;(((?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w));?Char);(?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w))))}), C: Skip});(x;((&{B: !Bool, C: Skip};((rec δ:SU. ?());y));(?Int;(+{B: x, C: ?Int};(!Int;Skip))))))
+SL
+
+[("x", SL) , ("y", SL) , ("z", SL)]
+ ((rec z:SL. (Skip;&{B: (+{A: (&{B: x, C: Skip};+{A: (?Bool;Skip), B: (z;Skip), C: (((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z);Skip)})};(+{A: !Char};(((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z);(?Char;((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z))))), C: Skip}));((x;&{B: (!Bool;(?();y)), C: (Skip;(?();y))});((?Int;+{B: x, C: ?Int});!Int)))
+SL

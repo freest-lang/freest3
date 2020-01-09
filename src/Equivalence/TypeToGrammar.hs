@@ -49,8 +49,10 @@ typeToGrammar t = do
 
 toGrammar :: Type -> TransState Word
 -- Session types
-toGrammar t
-  | terminated t = return []
+-- toGrammar t
+--   | terminated t = return []
+toGrammar (Skip _) =
+  return []
 toGrammar (Semi _ t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
@@ -66,7 +68,7 @@ toGrammar (Choice _ v m) = do
 toGrammar x@(TypeVar _ _) = do      -- x is a polymorphic variable (???)
   y <- getProd $ Map.singleton (show x) []
   return [y]
-toGrammar t@(Rec _ (TypeVarBind _ x _) _) =
+toGrammar (Rec _ (TypeVarBind _ x _) _) =
   return [x]
   -- Type operators
 toGrammar (Dualof _ t) = toGrammar (dual t)
@@ -92,8 +94,8 @@ toGrammar t = error $ "Internal error. Attempting to convert type " ++ show t ++
 type Substitution = (Type, TypeVar)
 
 collect :: [Substitution] -> Type -> TransState ()
-collect _ t
-  | terminated t = return ()
+-- collect _ t
+--   | terminated t = return ()
 collect σ (Semi _ t u) = collect σ t >> collect σ u
 collect σ (Choice _ _ m) = tMapM_ (collect σ) m
 collect σ t@(Rec _ (TypeVarBind _ x _) u) = do
