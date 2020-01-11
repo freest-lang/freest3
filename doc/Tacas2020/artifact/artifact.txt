@@ -1,0 +1,16 @@
+(To be copied into the appropriate boxes of the easychair submission form)
+
+Title:
+
+Deciding the bisimilarity of context-free session types
+
+Abstract:
+
+We present a tool to decide the equivalence of context-free session
+types and another to decide the bisimilarity of simple grammars.  The
+tools are written in Haskell and can be used from the command line or
+from a browser (no installation required).
+
+Keywords:
+
+Types, Type equivalence, Bisimulation, Algorithm

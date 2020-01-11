@@ -15,7 +15,6 @@ Portability :  portable | non-portable (<reason>)
 
 module Equivalence.Equivalence
 ( Equivalence(..)
-, isSessionType
 ) where
 
 import           Syntax.Schemes
@@ -24,8 +23,7 @@ import           Syntax.Kinds
 import           Syntax.ProgramVariables
 import           Syntax.TypeVariables
 import qualified Validation.Rename as Rename (subs, unfold)  
-import qualified Validation.Substitution as Subs (subs, unfold)  
-import           Equivalence.Normalisation
+import qualified Validation.Substitution as Subs (subs, unfold)
 import           Equivalence.Bisimulation
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
@@ -37,10 +35,13 @@ class Equivalence t where
 
 type Visited = Set.Set(Type, Type)
 
+-- A co-inductive definition for functional types. A bisimulation
+-- based definition for session types
 instance Equivalence Type where
   equivalent tenv kenv = equiv Set.empty
     where
     equiv :: Visited -> Type -> Type -> Bool
+    -- Have we been here before?
     equiv v t u | (t, u) `Set.member` v = True
     -- Functional types
     equiv _ (Basic _ b) (Basic _ c) = b == c
@@ -49,8 +50,8 @@ instance Equivalence Type where
     equiv v (Datatype _ m1) (Datatype _ m2) =
         Map.size m1 == Map.size m2 &&
         Map.foldlWithKey (equivField v m2) True m1
-    -- Functional or session
-    equiv _ (TypeVar _ x) (TypeVar _ y) = x == y -- A free type var
+    -- Recursion
+    equiv _ (TypeVar _ x) (TypeVar _ y) = x == y -- A free (a polymorhic) type var
     equiv v t@(Rec _ _ _)  u = equiv (Set.insert (t, u) v) (Subs.unfold t) u 
     equiv v t u@(Rec _ _ _) = equiv (Set.insert (t, u) v) t (Subs.unfold u)
     -- Type operators
@@ -76,7 +77,7 @@ isSessionType _ _    (Skip _)        = True
 isSessionType _ _    (Semi _ _ _)    = True
 isSessionType _ _    (Message _ _ _) = True
 isSessionType _ _    (Choice _ _ _)  = True
-  -- Functional or session
+  -- Recursion
 isSessionType _ _    (Rec _ (TypeVarBind _ _ k) _) = isSession k
 isSessionType _ kenv (TypeVar _ x)   = Map.member x kenv
   -- Type operators
