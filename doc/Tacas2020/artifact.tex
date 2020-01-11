@@ -1,0 +1,135 @@
+%%% https://tacas.info/artifacts-20.php. This is exactly as the
+%%% conference paper, except that the first line of abstract is a URL
+%%% of the artifact
+
+\documentclass[orivec,runningheads]{llncs}
+
+\usepackage[utf8]{inputenc} % for proper diacritics: Universität, Hüttel, Luís
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{stmaryrd}
+\usepackage{listings,color}
+\usepackage{alltt}
+\usepackage{flushend}
+\usepackage[dvipsnames]{xcolor}
+% \usepackage{algorithm}
+% \usepackage[noend]{algpseudocode}
+\usepackage{graphicx}
+\usepackage{tikz-cd}
+\usepackage{multicol,enumitem}
+\usepackage{tikz}
+\usepackage{subfig}
+\usepackage[font=small,labelfont=bf]{caption}
+
+
+
+\input{macros}
+
+\begin{document}
+
+\title{Deciding the bisimilarity of context-free session types
+  % \thanks{This work was supported by FCT via project Confident
+  % (PTDC/EEI-CTP/ 4503/2014) and the LASIGE Research Unit
+  % (UID/CEC/00408/2019).} % isto está nos ACK.
+}
+
+%optional, please use if title is longer than one line
+%\titlerunning{Deciding the bisimilarity of context-free session types}
+
+\author{Bernardo Almeida\inst{1} \and
+Andreia Mordido\inst{1} \and
+Vasco T. Vasconcelos\inst{1}}
+
+%\author{Bernardo Almeida}{LASIGE, Faculdade de Ciências, Universidade de Lisboa, Portugal}{balmeida@lasige.di.fc.ul.pt}{[funding]}{https://orcid.org/0000-0001-5398-6529}
+%
+%\author{Andreia Mordido}{LASIGE, Faculdade de Ciências, Universidade de Lisboa, Portugal}{afmordido@fc.ul.pt}{[funding]}{https://orcid.org/0000-0002-1547-0692}
+%
+%\author{Vasco T. Vasconcelos}{LASIGE, Faculdade de Ciências, Universidade de Lisboa, Portugal}{vmvasconcelos@fc.ul.pt}{[funding]}{https://orcid.org/0000-0002-9539-8861}
+
+\institute{LASIGE, Faculdade de Ciências, Universidade de Lisboa, Portugal}
+
+%TODO mandatory, please use full name; only 1 author per \author macro; first two parameters are mandatory, other parameters can be empty. Please provide at least the name of the affiliation and the country. The full address is optional
+
+\authorrunning{B. Almeida, A. Mordido and V.\,T. Vasconcelos}
+%
+%\category{}%optional, e.g. invited paper
+%
+%
+%\supplement{}%optional, e.g. related research data, source code, ... 
+%hosted on a repository like zenodo, figshare, GitHub, ...
+
+%\acknowledgements{I want to thank \dots}%optional
+
+\maketitle
+
+\begin{abstract}
+  URL of the artifact: \url{http://www.di.fc.ul.pt/~vv/}
+  \par
+  We present an algorithm to decide the equivalence of context-free
+  session types, practical to the point of being incorporated in a
+  compiler. We prove its soundness and completeness. We further
+  evaluate its behaviour in practice. In the process, we introduce an
+  algorithm to decide the bisimilarity of simple grammars.
+
+
+  % mandatory; please add comma-separated list of keywords
+  \keywords{Types, Type equivalence, Bisimulation, Algorithm} 
+\end{abstract}
+
+  % Session types are paramount to describe the structured interaction
+  % of processes via typed communication channels; however, they lack an
+  % efficient description for serialization of tree-structured data in a
+  % type-safe way.
+
+  % Context-free session types were proposed as an extension of session
+  % types able to capture the type-safe serialization of recursive
+  % datatypes. For the sake of a practical usage, namely in the
+  % definition of new programming languages, there is an urgent need for
+  % an algorithm to decide type equivalence. In this work, we propose an
+  % algorithm to decide type equivalence on context-free session
+  % types. We prove its soundness and completeness, and validate the
+  % algorithm on several examples.
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:
+
+
+\input{introduction}
+\input{contextfreesession}
+\input{algorithm}
+\input{soundness}
+%\input{optimisations} 
+\input{evaluation}
+\newpage
+\input{conclusion}
+
+\paragraph{Acknowledgements}
+We thank Alcides Fonseca for conducting the testing process and
+preparing the diagrams in Section~\ref{sec:evaluation}, and Filipe
+Casal for comments and discussions.
+%
+This work was supported by FCT through the LASIGE Research Unit, ref.\
+UID/CEC/00408/2019 and by Cost Action CA15123 EUTypes.
+
+\bibliographystyle{plain}
+\bibliography{biblio}
+
+%\newpage 
+%\appendix
+%\input{appendix}
+%\newpage
+%\section{Haskell code (excerpt)}
+%\lstinputlisting{Bisimulation.hs}
+%\lstinputlisting{TypeToGrammar.hs}
+%\lstinputlisting{Norm.hs}
+%\lstinputlisting{Grammar.hs}
+
+\end{document}
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
