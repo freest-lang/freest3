@@ -14,12 +14,10 @@ reflexive, congruence, and BPA rules.
 
 module Equivalence.Bisimulation
 ( bisimilar,
-  bisimilarGrammar -- Test only
 ) where
 
-import           Syntax.Schemes
 import           Syntax.Types
-import           Syntax.TypeVariables
+import           Syntax.TypeVariables -- Nonterminal symbols are type variables
 import           Equivalence.Grammar
 import           Equivalence.TypeToGrammar
 import           Equivalence.Norm
@@ -30,13 +28,15 @@ import           Data.List (isPrefixOf)
 import           Prelude hiding (Word) -- Word is (re)defined in module Equivalence.Grammar
 import           Debug.Trace
 
-bisimilarGrammar :: Grammar -> Bool
-bisimilarGrammar (Grammar [xs, ys] p) = expand (xs, ys) (prune p)
+bisimilar :: Grammar -> Bool
+bisimilar (Grammar [xs, ys] p) = expand (xs, ys) (prune p)
 
-bisimilar :: TypeEnv -> Type -> Type -> Bool
-bisimilar tEnv t u = expand (xs, ys) (prune p)
-  where Grammar [xs, ys] p = convertToGrammar tEnv [t, u]
-    -- trace (show t ++ "\nbisim\n" ++ show u) $ convertToGrammar tEnv [t, u]
+
+
+-- bisimilar :: TypeEnv -> Type -> Type -> Bool
+-- bisimilar tEnv t u = expand (xs, ys) (prune p)
+--   where Grammar [xs, ys] p = convertToGrammar tEnv [t, u]
+--     -- trace (show t ++ "\nbisim\n" ++ show u) $ convertToGrammar tEnv [t, u]
 
 type Node = Set.Set (Word, Word)
 

@@ -30,7 +30,6 @@ import           Syntax.Types
 import           Syntax.ProgramVariables
 import           Syntax.Base
 import           Equivalence.Normalisation
--- import           Parse.Lexer (Pos, position, defaultPos)
 import           Utils.Errors
 import           Utils.FreestState
 import qualified Data.Map.Strict as Map
@@ -86,7 +85,7 @@ extractBasic t = do
 extractOutput :: Expression -> Type -> FreestState (BasicType, Type)
 extractOutput = extractMessage Out "output"
 
--- Extracts an input type from a general type; gives an error if it isn't an input
+-- Extracts an input type from a general type; gives an error if an input is not found
 extractInput :: Expression -> Type -> FreestState (BasicType, Type)
 extractInput = extractMessage In "input"
 
@@ -100,13 +99,14 @@ extractMessage pol msg e t = do
       if pol == pol' then return (b, v) else extractMessageErr msg e u
     u                               ->
       extractMessageErr msg e u
+  where
+    extractMessageErr :: String -> Expression -> Type -> FreestState (BasicType, Type)
+    extractMessageErr msg e u = do
+      addError (position e) ["Expecting an", msg, "type for expression", styleRed $ show e, "\n",
+                             "\t found type", styleRed $ show u]
+      return (UnitType, Skip (position u))
 
-extractMessageErr :: String -> Expression -> Type -> FreestState (BasicType, Type)
-extractMessageErr msg e u = do
-  addError (position e) ["Expecting an", msg, "type for expression", styleRed $ show e, "\n",
-                         "\t found type", styleRed $ show u]
-  return (UnitType, Skip (position u))
-
+-- Extracts a choice type from a general type; gives an error if a choice is not found
 extractOutChoiceMap :: Expression -> Type -> FreestState TypeMap
 extractOutChoiceMap = extractChoiceMap Out "external"
 
@@ -122,12 +122,12 @@ extractChoiceMap pol msg e t = do
     (Semi _ (Choice _ pol' m) u) ->
       if pol == pol' then return $ Map.map (\v -> Semi (position v) v u) m else extractChoiceErr msg e t
     u                            -> extractChoiceErr msg e t
-
-extractChoiceErr :: String -> Expression -> Type -> FreestState TypeMap
-extractChoiceErr msg e u = do
-  addError (position e) ["Expecting an", msg, "choice type for expression", styleRed $ show e, "\n",
-                         "\t found type", styleRed $ show u]
-  return Map.empty
+  where
+    extractChoiceErr :: String -> Expression -> Type -> FreestState TypeMap
+    extractChoiceErr msg e u = do
+      addError (position e) ["Expecting an", msg, "choice type for expression", styleRed $ show e, "\n",
+                             "\t found type", styleRed $ show u]
+      return Map.empty
 
 -- Extracts a datatype from a type; gives an error if a datatype is not found
 extractDatatypeMap :: Expression -> Type -> FreestState TypeMap

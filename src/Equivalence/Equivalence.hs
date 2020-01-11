@@ -15,6 +15,7 @@ Portability :  portable | non-portable (<reason>)
 
 module Equivalence.Equivalence
 ( Equivalence(..)
+ , Equivalence.Equivalence.bisimilar -- for session types only, for testing purposes
 ) where
 
 import           Syntax.Schemes
@@ -24,7 +25,9 @@ import           Syntax.ProgramVariables
 import           Syntax.TypeVariables
 import qualified Validation.Rename as Rename (subs, unfold)  
 import qualified Validation.Substitution as Subs (subs, unfold)
-import           Equivalence.Bisimulation
+import           Equivalence.Grammar
+import           Equivalence.TypeToGrammar
+import           Equivalence.Bisimulation as Bisimulation
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
@@ -62,13 +65,18 @@ instance Equivalence Type where
     equiv _ t u =
       isSessionType tenv kenv t &&
       isSessionType tenv kenv u &&
-      bisimilar tenv t u
+      Equivalence.Equivalence.bisimilar tenv t u
 
     equivField :: Visited -> TypeMap -> Bool -> ProgVar -> Type -> Bool
     equivField v m acc l t = acc && l `Map.member` m && equiv v (m Map.! l) t
 
     getType :: TypeVar -> Type
     getType x = toType (snd (tenv Map.! x))
+
+bisimilar :: TypeEnv -> Type -> Type -> Bool
+bisimilar tEnv t u = Bisimulation.bisimilar $ convertToGrammar tEnv [t, u]
+  -- where Grammar [xs, ys] p = convertToGrammar tEnv [t, u]
+    -- trace (show t ++ "\nbisim\n" ++ show u) $ convertToGrammar tEnv [t, u]
 
 -- Assumes the type is well formed
 isSessionType :: TypeEnv -> KindEnv -> Type -> Bool

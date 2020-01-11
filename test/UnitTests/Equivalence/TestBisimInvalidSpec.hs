@@ -4,7 +4,7 @@ import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.TypeVariables
 import           Syntax.Base
-import           Equivalence.Bisimulation (bisimilar)
+import           Equivalence.Equivalence (bisimilar)
 import           Validation.Rename
 import           Utils.FreestState
 import qualified Data.Map.Strict as Map

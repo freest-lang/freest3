@@ -17,7 +17,7 @@ main = do
 
 isBisimGrammar :: Grammar -> IO ()
 isBisimGrammar g@(Grammar [xs, ys] _)
-  | bisimilarGrammar g =
+  | bisimilar g =
       putStrLn $ "Words " ++ showWord xs ++
                  "and " ++ showWord ys ++ "are bisimilar"
   | otherwise          =    

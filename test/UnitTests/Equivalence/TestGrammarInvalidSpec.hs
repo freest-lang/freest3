@@ -3,7 +3,7 @@ module Equivalence.TestGrammarInvalidSpec (spec) where
 import           Control.Monad (foldM_)
 import           Data.List.Split as L
 import qualified Data.Map.Strict as Map
-import           Equivalence.Bisimulation (bisimilarGrammar)
+import           Equivalence.Bisimulation (bisimilar)
 import           Equivalence.Grammar
 import           Parse.GrammarParser
 import           SpecHelper
@@ -19,7 +19,7 @@ import qualified Control.Monad as M
 matchInvalidSpec :: Int -> Grammar -> Spec
 matchInvalidSpec i g =
   it ("Bisimilar invalid grammar test " ++ show i ++ " (~)") (
-      bisimilarGrammar g `shouldBe` False)
+      bisimilar g `shouldBe` False)
 
 spec :: Spec
 spec = do
