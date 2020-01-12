@@ -170,9 +170,8 @@ getLHS ts = do
 addProductions :: TypeVar -> Transitions -> TransState ()
 addProductions x ts = do
   ps <- getProductions
-  existProductions x ts ps >>= \case
-    True  -> return ()
-    False -> putProductions x ts >> return ()
+  b <- existProductions x ts ps
+  when (not b) (putProductions x ts)
 
 existProductions :: TypeVar -> Transitions -> Productions -> TransState Bool
 existProductions x ts =
@@ -229,7 +228,7 @@ fixedPoint visited goals ts
         ts2 <- getTransitions y'
         if matchingTrans ts1 ts2
         then let
-          newVisited = Set.insert goal (Set.insert (x, y') visited)
+          newVisited = Set.insert (x, y') visited
           newGoals = Set.delete goal goals `Set.union` moreGoals ts1 ts2
           in fixedPoint newVisited newGoals ts
         else return False
@@ -237,7 +236,7 @@ fixedPoint visited goals ts
     where
       moreGoals :: Transitions -> Transitions -> Goals
       moreGoals ts1 ts2 = Map.foldrWithKey
-        (\l w acc -> acc `Set.union` compareWords (ts1 Map.! l) w visited)
+        (\l xs acc -> acc `Set.union` compareWords (ts1 Map.! l) xs visited)
         Set.empty
         ts2
 
