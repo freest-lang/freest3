@@ -1,3 +1,40 @@
+-- Syntatically invalid choices, conflicting choices
+
++{ A: Unit, A: Bool }
++{ A: Unit, A: Bool, B: Int }
++{ A: Unit, B: Int, A: Bool }
++{ A: Unit, B: Int, B: Int, A: Bool }
+&{ A: Unit, A: Bool }
+&{ A: Unit, A: Bool, B: Int }
+&{ A: Unit, B: Int, A: Bool }
+&{ A: Unit, B: Int, B: Int, A: Bool }
+&{}
++{}
+
+-- Duplicate labels in records
+
++{ A: !(), A: !Bool }
++{ A: !(), A: !Bool, B: ?Int }
++{ A: !(), B: ?Int, A: ?Bool }
++{ A: !(), B: ?Int, B: ?Int, A: ?Bool }
+&{ A: !(), A: ?Bool }
+&{ A: !(), A: ?Bool, B: ?Int }
+&{ A: !(), B: ?Int, A: ?Bool }
+&{ A: !(), B: ?Int, B: ?Int, A: ?Bool }
+
+
+-- Syntatically invalid datatypes, conflicting - removed these because they are not readable types anymore (only available for data declarations)
+
+-- [ A: Char, A: Bool ]
+-- [ A: Char, A: Bool, B: Int ]
+-- [ A: Char, B: Int, A: Bool ]
+-- [ A: Char, B: Int, B: Int, A: Bool ]
+-- [ A: Char, A: Bool ]
+-- [ A: Char, A: Bool, B: Int ]
+-- [ A: Char, B: Int, A: Bool ]
+-- [ A: Char, B: Int, B: Int, A: Bool ]
+-- []
+
 -- Rec stuff
 
 rec x. x; !Int
@@ -31,26 +68,4 @@ rec x : TL . !Int ; x
 +{ A: () }
 +{ A: () -> Bool }
 
--- Terminated Recursive Types
-
-rec x:SU. Skip
-rec x:SU. (Skip; Skip)
-rec x:SU. rec y. Skip
-rec x:SU. (Skip; rec y. Skip)
-rec x:SU. (Skip; x)
-rec x:SU. Skip; x; Skip
-rec x:SU. Skip; x; x; x; x; x
-rec x:SU. (rec x:SU. Skip; x); (rec x:SU. (Skip; x))
-Skip; rec x:SU. Skip
-Skip; rec x:SU. Skip; Skip
-Skip; rec x:SU. rec y. Skip
-Skip; Skip; rec x:SU. (Skip; rec y. Skip)
-Skip; rec x:SU.(Skip; x)
-Skip; rec x:SU.( Skip; x; Skip)
-Skip; rec x:SU.( Skip; x; Skip)
-Skip; Skip; Skip; rec x:SU. (Skip; x; x; x; x; x)
-Skip; rec x:SU. ((rec x:SU. (Skip; x)); (rec x:SU. (Skip; x))); Skip; Skip
-rec x:SU. y
-rec d. rec c. rec b. a
-rec x:SU. (((Skip ; x) ; x) ; x)
 
