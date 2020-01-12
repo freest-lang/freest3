@@ -58,15 +58,15 @@ toGrammar (Semi _ t u) = do
   ys <- toGrammar u
   return $ xs ++ ys
 toGrammar m@(Message _ _ _) = do
-  y <- getProduction $ Map.singleton (show m)  []
+  y <- getLHS $ Map.singleton (show m)  []
   return [y]
 toGrammar (Choice _ v m) = do
   ms <- tMapM toGrammar m
-  y <- getProduction $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
+  y <- getLHS $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
   return [y]
 -- Recursive types
 toGrammar x@(TypeVar _ _) = do      -- x is a polymorphic variable
-  y <- getProduction $ Map.singleton (show x) []
+  y <- getLHS $ Map.singleton (show x) []
   return [y]
 toGrammar (Rec _ (TypeVarBind _ x _) _) =
   return [x]
@@ -79,8 +79,6 @@ toGrammar t = error $ "Internal error. Attempting to convert type " ++ show t ++
 type SubstitutionList = [(Type, TypeVar)]
 
 collect :: SubstitutionList -> Type -> TransState ()
--- collect _ t
---   | terminated t = return ()
 collect σ (Semi _ t u) = collect σ t >> collect σ u
 collect σ (Choice _ _ m) = tMapM_ (collect σ) m
 collect σ t@(Rec _ (TypeVarBind _ x _) u) = do
@@ -88,7 +86,7 @@ collect σ t@(Rec _ (TypeVarBind _ x _) u) = do
   let u' = Substitution.subsAll σ' u
   (z:zs) <- toGrammar (normalise Map.empty u') -- TODO: use a simpler unravel function
   m <- getTransitions z
-  getProduction' x (Map.map (++ zs) m)
+  addProduction x (Map.map (++ zs) m)
   -- addProductions x (Map.map (++ zs) m)
   collect σ' u
 collect _ _ = return ()
@@ -120,7 +118,7 @@ getFreshVar :: TransState TypeVar
 getFreshVar = do
   s <- get
   let n = nextIndex s
-  modify (\s -> s {nextIndex = n + 1})
+  modify $ \s -> s {nextIndex = n + 1}
   return $ mkVar defaultPos ("#X" ++ show n)
 
 getProductions :: TransState Productions
@@ -133,33 +131,32 @@ getTransitions x = do
   ps <- getProductions
   return $ ps Map.! x
 
-addProductions :: TypeVar -> Transitions -> TransState ()
-addProductions x m =
-  modify $ \s -> s {productions = Map.insert x m (productions s)}
-
-addProduction :: TypeVar -> Label -> Word -> TransState ()
-addProduction x l w =
-  modify $ \s -> s {productions = insertProduction (productions s) x l w}
-
-addSubstitution :: TypeVar -> TypeVar -> TransState ()
-addSubstitution x y =
-  modify $ \s -> s {substitution = Map.insert x y (substitution s)}
-
 getSubstitution :: TransState Substitution
 getSubstitution = do
   s <- get
   return $ substitution s
 
--- Obtaining productions for transitions, reuse as much as possible
+addProductions :: TypeVar -> Transitions -> TransState ()
+addProductions x m =
+  modify $ \s -> s {productions = Map.insert x m (productions s)}
 
-getProduction :: Transitions -> TransState TypeVar
-getProduction ts = do
+-- addProduction :: TypeVar -> Label -> Word -> TransState ()
+-- addProduction x l w =
+--   modify $ \s -> s {productions = insertProduction (productions s) x l w}
+
+addSubstitution :: TypeVar -> TypeVar -> TransState ()
+addSubstitution x y =
+  modify $ \s -> s {substitution = Map.insert x y (substitution s)}
+
+-- Get the LHS for given transitions; if no productions for the
+-- transitions are found, add a new productions and return their LHS
+getLHS :: Transitions -> TransState TypeVar
+getLHS ts = do
   ps <- getProductions
   case reverseLookup ts ps of
     Nothing -> do
       y <- getFreshVar
       addProductions y ts
---      traceM $ "addingProd1: " ++ show y ++ " -> " ++ show ts
       return y
     Just x ->
       return x
@@ -168,25 +165,20 @@ getProduction ts = do
     reverseLookup :: Eq a => Ord k => a -> Map.Map k a -> Maybe k
     reverseLookup a = Map.foldrWithKey (\k b acc -> if a == b then Just k else acc) Nothing
 
-getProduction' :: TypeVar -> Transitions -> TransState TypeVar
-getProduction' x ts = do
+-- Adding a new production, but only if needed
+
+addProduction :: TypeVar -> Transitions -> TransState ()
+addProduction x ts = do
   ps <- getProductions
   reverseLookup' x ts ps >>= \case
-    Nothing -> addProductions x ts >> return x
-    Just y  -> return y
+    False -> addProductions x ts >> return ()
+    True  -> return ()
 
--- Lookup a key for a value in the map. Probably O(n)
-reverseLookup' :: TypeVar -> Transitions -> Productions -> TransState (Maybe TypeVar)
-reverseLookup' x a ps =
-  Map.foldrWithKey (\k b acc -> compareTrans x k a b >>=
-                     \b -> if b then return (Just k) else acc) (return Nothing) ps
-
-prodExists :: Transitions -> Transitions -> Bool
-prodExists ts ts' =
-  Map.foldrWithKey (\l xs acc -> acc && contains l xs ts) (length ts == Map.size ts') ts'
-  where
-  contains :: Label -> Word -> Transitions -> Bool
-  contains l xs ts = Map.lookup l ts == Just xs
+reverseLookup' :: TypeVar -> Transitions -> Productions -> TransState Bool
+reverseLookup' x a =
+  Map.foldrWithKey
+    (\k b acc -> compareTrans x k a b >>= \b -> if b then return True else acc)
+    (return False)
 
 -- TODO: Change these names
 -- These are two different concepts
@@ -199,22 +191,19 @@ compareTrans x y ts1 ts2
   | equalTrans ts1 ts2 = do
       let s = Set.singleton (x,y)
       let res = Map.foldrWithKey (\l w acc -> acc `Set.union`
-                                   (compareWords s w (ts2 Map.! l))) Set.empty ts1
-
-      b <- fixedPoint (Set.singleton (x,y)) res x ts1
-
+                                   (compareWords w (ts2 Map.! l) s)) Set.empty ts1
+      b <- fixedPoint s res x ts1
       if b && not (null res) -- TODO: new fun on where
         then addSubstitution x y >> return True
         else return False
   | otherwise = return False
 
--- Verifies if two transitions are equal.
--- That is if the keys on both are the same and if
--- their words have the same size
+-- Are two transitions equal?
+-- Do they have the keys and the corresponding words are of the same size?
 equalTrans :: Transitions -> Transitions -> Bool
-equalTrans ts1 ts2 = Map.keys ts1 == Map.keys ts2 &&
-                     (and $ map (\(x,y) -> length x == length y)
-                        (zip (Map.elems ts1) (Map.elems ts2)))
+equalTrans ts1 ts2 =
+  Map.keys ts1 == Map.keys ts2 &&
+  (all (\(x,y) -> length x == length y) (zip (Map.elems ts1) (Map.elems ts2)))
 
 fixedPoint :: VisitedProds -> VisitedProds -> TypeVar -> Transitions -> TransState Bool
 fixedPoint visited goals w t
@@ -222,12 +211,13 @@ fixedPoint visited goals w t
   | otherwise      = do
       let (x, y) = Set.elemAt 0 goals
       ps <- getProductions
-      if (Map.member y ps)
+      if Map.member y ps
       then do
-        y1 <- applySubs y
-        ts1 <- safeGetTransitions x t
-        ts2 <- getTransitions y1
-        fixedPoint' (Set.insert (x,y) visited) (updateGoals goals (newGoals ts1 ts2) x y) ts1 ts2 x y1
+        let ts1 = Map.findWithDefault t x ps
+        θ <- getSubstitution
+        let y' = substitute θ y
+        ts2 <- getTransitions y'
+        fixedPoint' (Set.insert (x,y) visited) (updateGoals goals (newGoals ts1 ts2) x y) ts1 ts2 x y'
       else return False
    where
      -- Recursively calls fixedPoint when the transitions are equal
@@ -241,33 +231,18 @@ fixedPoint visited goals w t
      newGoals :: Transitions -> Transitions -> Goals
      newGoals ts1 ts2 =
        Map.foldrWithKey (\l w acc -> acc `Set.union`
-                             compareWords visited (ts1 Map.! l) w) Set.empty ts2
+                             compareWords (ts1 Map.! l) w visited) Set.empty ts2
 
 -- Deletes the current goal and updates it with the new ones
 updateGoals :: Goals -> Goals -> TypeVar -> TypeVar -> Goals
 updateGoals goals newGoals x y = Set.union newGoals (Set.delete (x, y) goals)
 
-applySubs :: TypeVar -> TransState TypeVar
-applySubs y = do
-  subs <- getSubstitution
-  if Map.member y subs
-  then return $ subs Map.! y
-  else return y
-
--- If there are no transitions; returns it's own transitions
-safeGetTransitions :: TypeVar -> Transitions -> TransState Transitions
-safeGetTransitions x defaultTrans = do
-  ps <- getProductions
-  case ps Map.!? x of
-    Just p -> return p
-    Nothing -> return defaultTrans
-
 -- Compares two words
 -- If they are on the Set of visited productions, there is no need
 -- to visit them. Otherwise, we add them to the set of productions
 -- that we still need to explore.
-compareWords :: VisitedProds -> Word -> Word -> ToVisitProds
-compareWords s xs ys =
+compareWords ::  Word -> Word -> VisitedProds ->ToVisitProds
+compareWords xs ys s =
       foldl (\acc (x, y) -> if x == y || Set.member (x,y) s
                             then acc
                             else Set.insert (x, y) acc ) Set.empty (zip xs ys)
