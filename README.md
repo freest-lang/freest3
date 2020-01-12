@@ -7,31 +7,7 @@
  |_|  |_|  \___|\___|_____/   |_|
 ```
 
-
-# Table of Contents
-1. [Install stack](#stack)
-2. [Building FreeST](#buildFreeST)
-2. [Cleaning the project](#cleanProj)
-3. [Compile programs](#compileProgs)
-   1. [FreeST Samples](#freeSTSamples)
-4. [Tests](#tests)
-   1. [Unit tests](#unitTests)
-      1. [Run unit tests](#runUnitTests)
-      2. [Add unit tests](#addUnitTests)
-   2. [Program tests](#programTests)
-      1. [Run program tests](#runProgTests)
-      2. [Add program tests](#addProgTests)
-   3. [Run each spec separately](#runSpecs)
-      1. [Unit test specs](#unitSpec)
-      2. [Quickcheck spec](#quickCheckSpec)
-      3. [Program specs (valid or invalid programs)](#progSpec)
-   4. [Profiling (TODO + test)](#profiling)
-	  1. Test suite profiling 
-	  2. [Test suite profiling (10 times)](#prof10Times)
-   5. Line Coverage  (TODO + test)
-
 # Install stack
-<a id="stack"></a>
 - For Un*x-like operating systems:
 ```
     $ curl -sSL https://get.haskellstack.org/ | sh
@@ -42,8 +18,6 @@
   [Get stack for windows](https://get.haskellstack.org/stable/windows-x86_64-installer.exe)
 
 For more information about stack please visit [https://docs.haskellstack.org/en/stable/README/](https://docs.haskellstack.org/en/stable/README/)
-
-<a id="buildFreeST"></a>
 
 # Building FreeST
 
@@ -60,7 +34,6 @@ The available tools to replace ```TOOL_NAME``` are:
   - freest
   - TACAS2020
 
-<a id="compileProgs"></a>
 
 # Compile programs
 
@@ -72,29 +45,32 @@ For example, to compile a FreeST program named "test.fst" located in the directo
     $ stack run dir/test.hs
 ```
 
-<a id="freeSTSamples"></a>
-
 ## FreeST Samples
 
 There are some code examples that are available on the directory 
 [`test/Programs/ValidTests/`](test/Programs/ValidTests/)
 
 
-
-<a id="tests"></a>
-
 # Tests
-<a id="unitTests"></a>
+
+```
+    $ stack test
+```
+
+will run both program and unit tests.
 
 ## Unit tests
-<a id="runUnitTests"></a>
 
 ### Run unit tests
 ```
-    $ stack test :unit-tests
+    $ stack test :units
 ```
 
-<a id="addUnitTests"></a>
+or
+
+```
+    $ make units
+```
 
 ### Add unit tests
 To add tests to the infrastructure, the correspondent txt of the desired unit test. 
@@ -104,20 +80,20 @@ the directory `test/UnitTests/Validation`.
 The txt file is structured as follows :
 
     Testing language phrase
-        Expected
-
-
-<a id="programTests"></a>
+     Expected
 
 ## Program tests
-<a id="runProgTests"></a>
 
 ### Run program tests
 ```
-    $ stack test :program-tests
+    $ stack test :programs
 ```
 
-<a id="addProgTests"></a>
+or
+
+```
+    $ make programs
+```
 
 ### Add program tests
 
@@ -131,53 +107,67 @@ The process of creating invalid tests is analogous, except for step 3,
 since that `test.fst` is an incorrect program. Also, the tests must be
 placed under `test/Programs/InvalidTests/` .
 
-<a id="runSpecs"></a>
 
 ## Run each spec separately
 
-<a id="unitSpec"></a>
 ### Unit test specs
 ```
-    $ stack build :freest && stack runghc -- -itest/UnitTests/ PATH_TO_SPEC
+    $ stack test :units --ta "-m SPEC_NAME"
 ```
-where the PATH_TO_SPEC is one of the following:
 
-- test/UnitTests/Equivalence/TestBisimInvalidSpec.hs
-- test/UnitTests/Equivalence/TestEquivalenceInvalidSpec.hs
-- test/UnitTests/Equivalence/TestGrammarInvalidSpec.hs
-- test/UnitTests/Equivalence/TestGrammarValidSpec.hs
-- test/UnitTests/Equivalence/TestBisimValidSpec.hs
-- test/UnitTests/Equivalence/TestEquivalenceValidSpec.hs
-- test/UnitTests/Validation/TestKindingInvalidSpec.hs
-- test/UnitTests/Validation/TestKindingValidSpec.hs
-- test/UnitTests/Validation/TestTypeSchemeKindingSpec.hs
-- test/UnitTests/Parse/TestParserInvalidSpec.hs
+where the `SPEC_NAME` is one of the following:
 
-<a id="quickCheckSpec"></a>
+- Valid equivalence tests: `TestEquivalenceValid`
+- Invalid equivalence tests: `TestEquivalenceInvalid`
+- All equivalence tests: `TestEquivalence`
+- Valid types tests: `TestTypesValid`
+- Invalid types tests: `TestTypesInvalid`
+- All types tests: `TestTypes`
+
+We can also run them through:
+
+- Valid equivalence tests: `$ make equiv-types`
+- Invalid equivalence tests: `$ make nonequiv-types`
+- All equivalence tests: `make equiv`
+- Valid types tests: `$ make valid-types`
+- Invalid types tests: `$ make invalid-types`
+- All types tests: `$ make types`
+
 
 ### Quickcheck spec
 ```
-    $ stack build :freest && stack runghc -- -itest/ test/QuickCheck/QuickCheckSpec.hs
+    $ stack test :valid-types-quick
 ```
 
-<a id="progSpec"></a>
+or
+
+```
+    $ make valid-types-quick
+```
 
 ### Program specs (valid or invalid programs)
 ```
-    $ stack build :freest && stack runghc -- -itest/Programs/ PATH_TO_SPEC
+    $ stack test :units --ta "-m SPEC_NAME"
 ```
-with one of the following paths:
 
-- test/Programs/CompilerInvalidSpec.hs
-- test/Programs/CompilerValidSpec.hs
+with one of the following `SPEC_NAME`s:
 
-<a id="profiling"></a>
+- CompilerInvalid
+- CompilerValid
+
+or also,
+
+```
+    $ make valid-programs
+```
+
+```
+$ make invalid-programs
+```
 
 ## Profiling
 ### Test suite profiling
 TODO
-
-<a id="prof10Times"></a>
 
 ### Test suite profiling (10 times)
 To collect the run times and allocated memory of a test suite with 10 runs, use the command:
@@ -192,4 +182,3 @@ This will generate a file testSuiteProf.prof with the running times and allocate
 To view the test coverage run ``` make coverage ```. The output files will be stored at 
 [test/outputs](test/outputs) folder. (The main file is hpc_index.html that summarizes the 
 information available and contains links for more specific information)
-	

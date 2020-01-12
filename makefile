@@ -1,57 +1,49 @@
+# STACK ALIAS
 
-testParserInvalid :
-	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Parse/TestParserInvalidSpec.hs
+units:
+	stack test :units
+programs:
+	stack test :programs
+valid-types-quick:
+	stack test :valid-types-quick
 
-testKindingValid :
-	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Validation/TestKindingValidSpec.hs
+#PROGRAMS
+valid-programs:
+	stack test :programs --ta "-m CompilerValid"
+invalid-programs:
+	stack test :programs --ta "-m CompilerInvalid"
 
-testKindingInvalid :
-	runhaskell -isrc -itest/UnitTests/  test/UnitTests/Validation/TestKindingInvalidSpec.hs
+# EQUIVALENT TYPES
+equiv-types:
+	stack test :units --ta "-m TestEquivalenceValid"
+nonequiv-types:
+	stack test :units --ta "-m TestEquivalenceInvalid"
+equiv:
+	stack test :units --ta "-m TestEquivalence"
 
-testEquivalenceValid :
-	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Equivalence/TestEquivalenceValidSpec.hs
+# VALID TYPES
+valid-types:
+	stack test :units --ta "-m TestTypesValid"
+invalid-types:
+	stack test :units --ta "-m TestTypesInvalid"
+types:
+	stack test :units --ta "-m TestTypes"
 
-testEquivalenceInvalid :
-	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Equivalence/TestEquivalenceInvalidSpec.hs
+clean : rm `find ./ -name '*.o' -o -name '*.hi' -o -name '*.tix'` -r
 
-testBisimValid:
-	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Equivalence/TestBisimValidSpec.hs
+cleanCompiled : find ./test/Programs/ValidTests/ -type f  ! -name "*.*" -delete
 
-testBisimInvalid:
-	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Equivalence/TestBisimInvalidSpec.hs
+cleanGen : rm test/Programs/ValidTests/*/*.hs 	  
 
-testGrammarValid:
-	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Equivalence/TestGrammarValidSpec.hs
-
-testGrammarInvalid:
-	runhaskell -isrc -itest/UnitTests/ test/UnitTests/Equivalence/TestGrammarInvalidSpec.hs
-	
-testProgramsInvalid:
-	runhaskell -isrc -itest/Programs/ test/Programs/CompilerInvalidSpec.hs
-
-testProgramsValid:
-	runhaskell -isrc -itest/Programs/ test/Programs/CompilerValidSpec.hs
-
-clean :
-	rm `find ./ -name '*.o' -o -name '*.hi' -o -name '*.tix'` -r
-
-cleanCompiled : 
-	find ./test/Programs/ValidTests/ -type f  ! -name "*.*" -delete
-
-cleanGen :
-	rm test/Programs/ValidTests/*/*.hs 	  
-
-cleanOuts :
-	rm test/outputs/*
+cleanOuts : rm test/outputs/*
 
 cleanAll : clean cleanOuts
 
-coverage :
-	./coverage
+coverage : ./coverage
 
 # LOGFILE=$(LOGPATH)/`date +'%y.%m.%d %H:%M:%S'`
-TM=$(shell date '+%Y-%m-%d-%H:%M')
-backup :
-	tar -czf "../backups/backup-$(TM).tar" *
+# TM=$(shell date '+%Y-%m-%d-%H:%M')
+# backup :
+# 	tar -czf "../backups/backup-$(TM).tar" *
 
 .PHONY: test clean coverage
