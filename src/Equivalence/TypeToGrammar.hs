@@ -10,7 +10,7 @@ This module builds the initial monadic state, and converts the session types
 given as parameter to context-free grammars
 -}
 
-{-# LANGUAGE LambdaCase, NoMonadFailDesugaring #-}
+{-# LANGUAGE LambdaCase, NoMonadFailDesugaring, TypeSynonymInstances, FlexibleInstances #-}
 
 module Equivalence.TypeToGrammar
 ( convertToGrammar
@@ -38,19 +38,19 @@ import           Prelude hiding (Word) -- Word is (re)defined in module Equivale
 
 convertToGrammar :: TypeEnv -> [Type] -> Grammar
 convertToGrammar tEnv ts = --trace ("subs: " ++ show (subs state))  $
-  Grammar (map (subWords (subs state)) xs) (subsAllProds (subs state) (productions state))
-  where (xs, state) = runState (mapM typeToGrammar ts) (initial tEnv)
+  Grammar (substitute θ word) (substitute θ (productions state))
+  where
+    (word, state) = runState (mapM typeToGrammar ts) (initial tEnv)
+    θ = substitution state
 
 typeToGrammar :: Type -> TransState Word
 typeToGrammar t = do
   collect [] u
   toGrammar u
-  where u = normalise Map.empty t
+  where u = normalise Map.empty t -- TODO: use a simpler unravel function
 
 toGrammar :: Type -> TransState Word
--- Session types
--- toGrammar t
---   | terminated t = return []
+-- Non rec-types
 toGrammar (Skip _) =
   return []
 toGrammar (Semi _ t u) = do
@@ -58,42 +58,27 @@ toGrammar (Semi _ t u) = do
   ys <- toGrammar u
   return $ xs ++ ys
 toGrammar m@(Message _ _ _) = do
-  y <- getProd $ Map.singleton (show m)  []
+  y <- getProduction $ Map.singleton (show m)  []
   return [y]
 toGrammar (Choice _ v m) = do
   ms <- tMapM toGrammar m
-  y <- getProd $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
+  y <- getProduction $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
   return [y]
--- Functional or session (session in this case)
-toGrammar x@(TypeVar _ _) = do      -- x is a polymorphic variable (???)
-  y <- getProd $ Map.singleton (show x) []
+-- Recursive types
+toGrammar x@(TypeVar _ _) = do      -- x is a polymorphic variable
+  y <- getProduction $ Map.singleton (show x) []
   return [y]
 toGrammar (Rec _ (TypeVarBind _ x _) _) =
   return [x]
   -- Type operators
 toGrammar (Dualof _ t) = toGrammar (dual t)
 toGrammar (TypeName p x) = toGrammar (TypeVar p x) -- TODO: can a TypeName be taken as a TypeVar?
--- toGrammar (Dualof p (TypeName _ x)) = do
---   insertVisited x
---   (k, TypeScheme _ [] t) <- getFromVEnv x
---   trace ("Type " ++ show x ++ " = " ++ show t)
---     toGrammar (Dualof p t)
--- toGrammar (Dualof _ t) = toGrammar (dual t)
--- toGrammar (TypeName _ x) = do
---   b <- wasVisited x
---   if b
---   then    -- We have visited this type name before
---     return [x]
---   else do -- This is the first visit
---     insertVisited x
---     (k, TypeScheme _ [] t) <- getFromVEnv x
---     toGrammar t
-  -- Should not happen
+  -- Error (debugging)
 toGrammar t = error $ "Internal error. Attempting to convert type " ++ show t ++ " (a non session type) to grammar."
 
-type Substitution = (Type, TypeVar)
+type SubstitutionList = [(Type, TypeVar)]
 
-collect :: [Substitution] -> Type -> TransState ()
+collect :: SubstitutionList -> Type -> TransState ()
 -- collect _ t
 --   | terminated t = return ()
 collect σ (Semi _ t u) = collect σ t >> collect σ u
@@ -101,40 +86,38 @@ collect σ (Choice _ _ m) = tMapM_ (collect σ) m
 collect σ t@(Rec _ (TypeVarBind _ x _) u) = do
   let σ' = (t, x) : σ
   let u' = Substitution.subsAll σ' u
-  (z:zs) <- toGrammar (normalise Map.empty u')
+  (z:zs) <- toGrammar (normalise Map.empty u') -- TODO: use a simpler unravel function
   m <- getTransitions z
-  getProd' x (Map.map (++ zs) m)
+  getProduction' x (Map.map (++ zs) m)
   -- addProductions x (Map.map (++ zs) m)
   collect σ' u
-collect σ (TypeName _ x) = return ()
-  -- get the type definition t from vEnv
-  -- call collect with a Rec type built from x and from t
 collect _ _ = return ()
 
 -- The state of the translation to grammars
 
-data TState = TState {
-  productions :: Productions
-, nextIndex   :: Int
-, typeEnv     :: TypeEnv
-, subs        :: Subs
-}
+type Substitution = Map.Map TypeVar TypeVar
 
-type Subs = Map.Map TypeVar TypeVar
 type TransState = State TState
+
+data TState = TState {
+  productions  :: Productions
+, nextIndex    :: Int
+, typeEnv      :: TypeEnv
+, substitution :: Substitution
+}
 
 -- State manipulating functions
 
 initial :: TypeEnv -> TState
 initial tEnv = TState {
-  productions = Map.empty
-, nextIndex   = 1
-, typeEnv     = tEnv
-, subs        = Map.empty
+  productions  = Map.empty
+, nextIndex    = 1
+, typeEnv      = tEnv
+, substitution = Map.empty
 }
 
-freshVar :: TransState TypeVar
-freshVar = do
+getFreshVar :: TransState TypeVar
+getFreshVar = do
   s <- get
   let n = nextIndex s
   modify (\s -> s {nextIndex = n + 1})
@@ -158,44 +141,41 @@ addProduction :: TypeVar -> Label -> Word -> TransState ()
 addProduction x l w =
   modify $ \s -> s {productions = insertProduction (productions s) x l w}
 
-addSubs :: (TypeVar, TypeVar) -> TransState ()
-addSubs (x,y) =
-  modify $ \s -> s {subs= Map.insert x y (subs s)}
+addSubstitution :: TypeVar -> TypeVar -> TransState ()
+addSubstitution x y =
+  modify $ \s -> s {substitution = Map.insert x y (substitution s)}
 
-getSubs :: TransState Subs
-getSubs = do
+getSubstitution :: TransState Substitution
+getSubstitution = do
   s <- get
-  return $ subs s
+  return $ substitution s
 
-getProd :: Transitions -> TransState TypeVar
-getProd ts = do
+-- Obtaining productions for transitions, reuse as much as possible
+
+getProduction :: Transitions -> TransState TypeVar
+getProduction ts = do
   ps <- getProductions
-  -- case Map.foldrWithKey fold Nothing ps of
   case reverseLookup ts ps of
     Nothing -> do
-      y <- freshVar
+      y <- getFreshVar
       addProductions y ts
 --      traceM $ "addingProd1: " ++ show y ++ " -> " ++ show ts
       return y
     Just x ->
       return x
-  where fold x ts' acc = if prodExists ts' ts then Just x else acc
+  where
+    -- Lookup a key for a value in the map. Probably O(n)
+    reverseLookup :: Eq a => Ord k => a -> Map.Map k a -> Maybe k
+    reverseLookup a = Map.foldrWithKey (\k b acc -> if a == b then Just k else acc) Nothing
 
-  -- An attempt to reduce equivalent productions
-
-getProd' :: TypeVar -> Transitions -> TransState TypeVar
-getProd' x ts = do
+getProduction' :: TypeVar -> Transitions -> TransState TypeVar
+getProduction' x ts = do
   ps <- getProductions
   reverseLookup' x ts ps >>= \case
     Nothing -> addProductions x ts >> return x
     Just y  -> return y
 
--- Lookup a key for a value in the map. Probably O(n log n)
-reverseLookup :: Eq a => Ord k => a -> Map.Map k a -> Maybe k
-reverseLookup a =
-  Map.foldrWithKey (\k b acc -> if a == b then Just k else acc) Nothing
-
--- Lookup a key for a value in the map. Probably O(n log n)
+-- Lookup a key for a value in the map. Probably O(n)
 reverseLookup' :: TypeVar -> Transitions -> Productions -> TransState (Maybe TypeVar)
 reverseLookup' x a ps =
   Map.foldrWithKey (\k b acc -> compareTrans x k a b >>=
@@ -224,7 +204,7 @@ compareTrans x y ts1 ts2
       b <- fixedPoint (Set.singleton (x,y)) res x ts1
 
       if b && not (null res) -- TODO: new fun on where
-        then addSubs (x,y) >> return True
+        then addSubstitution x y >> return True
         else return False
   | otherwise = return False
 
@@ -249,7 +229,6 @@ fixedPoint visited goals w t
         ts2 <- getTransitions y1
         fixedPoint' (Set.insert (x,y) visited) (updateGoals goals (newGoals ts1 ts2) x y) ts1 ts2 x y1
       else return False
-
    where
      -- Recursively calls fixedPoint when the transitions are equal
      fixedPoint' :: VisitedProds -> Goals -> Transitions -> Transitions ->
@@ -270,7 +249,7 @@ updateGoals goals newGoals x y = Set.union newGoals (Set.delete (x, y) goals)
 
 applySubs :: TypeVar -> TransState TypeVar
 applySubs y = do
-  subs <- getSubs
+  subs <- getSubstitution
   if Map.member y subs
   then return $ subs Map.! y
   else return y
@@ -293,21 +272,22 @@ compareWords s xs ys =
                             then acc
                             else Set.insert (x, y) acc ) Set.empty (zip xs ys)
 
+-- Apply a TypeVar/TypeVar substitution to different objects
 
--- SUBSTITUTION
+class Substitute t where
+  substitute :: Substitution -> t -> t
 
--- Goes over the productions and substitutes the transitions
-subsAllProds :: Subs -> Productions -> Productions
-subsAllProds xs = Map.map (subTransition xs)
+instance Substitute TypeVar where
+  substitute θ v = Map.foldrWithKey (\x y w -> if x == w then y else w) v θ
 
--- Goes over the transitions and substitutes the words
-subTransition :: Subs -> Transitions -> Transitions
-subTransition xs = Map.map (subWords xs)
+instance Substitute Word where
+  substitute θ = map (substitute θ)
 
--- Goes over the words to substitute each type var
-subWords :: Subs -> Word -> Word
-subWords xs = map (subsTypeVars xs)
+instance Substitute [Word] where
+  substitute θ = map (substitute θ)
 
--- For each type var applies all the given substitutions (named subs)
-subsTypeVars :: Subs -> TypeVar -> TypeVar
-subsTypeVars subs v = Map.foldrWithKey (\x y w -> if x == w then y else w) v subs
+instance Substitute Transitions where
+  substitute θ = Map.map (substitute θ)
+
+instance Substitute Productions where
+  substitute θ = Map.map (substitute θ)

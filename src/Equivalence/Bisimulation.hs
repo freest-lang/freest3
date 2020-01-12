@@ -13,7 +13,7 @@ reflexive, congruence, and BPA rules.
 -}
 
 module Equivalence.Bisimulation
-( bisimilar,
+( bisimilar
 ) where
 
 import           Syntax.Types

@@ -15,7 +15,7 @@ Portability :  portable | non-portable (<reason>)
 
 module Equivalence.Equivalence
 ( Equivalence(..)
- , Equivalence.Equivalence.bisimilar -- for session types only, for testing purposes
+, Equivalence.Equivalence.bisimilar -- for session types only, for testing purposes
 ) where
 
 import           Syntax.Schemes
