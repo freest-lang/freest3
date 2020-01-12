@@ -36,7 +36,7 @@ main = verboseCheckWith stdArgs {maxSuccess = 271, replay = Just (mkQCGen 109564
 -- Convenience
 
 bisim :: Type -> Type -> Bool
-bisim = bisimilar Map.empty
+bisim = Equivalence.Equivalence.bisimilar Map.empty
 
 equiv :: Type -> Type -> Bool
 equiv = equivalent Map.empty kindEnv
