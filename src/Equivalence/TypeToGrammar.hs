@@ -177,7 +177,7 @@ addProductions x ts = do
 existProductions :: TypeVar -> Transitions -> Productions -> TransState Bool
 existProductions x ts =
   Map.foldrWithKey
-    (\x' ts' acc -> compareTrans x x' ts ts' >>= \b -> if b then return True else acc)
+    (\x' ts' acc -> sameTrans x x' ts ts' >>= \b -> if b then return True else acc)
     (return False)
 
 -- TODO: Change these names
@@ -186,66 +186,60 @@ type VisitedProds = Set.Set (TypeVar, TypeVar)
 type Goals = Set.Set (TypeVar, TypeVar)
 type ToVisitProds = Set.Set (TypeVar, TypeVar)
 
-compareTrans :: TypeVar -> TypeVar -> Transitions -> Transitions -> TransState Bool
-compareTrans x1 x2 ts1 ts2
-  | equalTrans ts1 ts2 = do
+sameTrans :: TypeVar -> TypeVar -> Transitions -> Transitions -> TransState Bool
+sameTrans x1 x2 ts1 ts2
+  | matchingTrans ts1 ts2 = do
       let s = Set.singleton (x1, x2)
       let res = Map.foldrWithKey (\l w acc -> acc `Set.union`
                                    (compareWords w (ts2 Map.! l) s)) Set.empty ts1
-      b <- fixedPoint s res x1 ts1
+      b <- fixedPoint s res ts1
       if b && not (null res) -- TODO: new fun on where
         then putSubstitution x1 x2 >> return True
         else return False
   | otherwise = return False
 
--- Are two transitions equal?
--- Do they have the keys and the corresponding words are of the same size?
-equalTrans :: Transitions -> Transitions -> Bool
-equalTrans ts1 ts2 =
+-- Are two transitions equal?  Do they have the same keys and the
+-- corresponding words are of the same size?
+matchingTrans :: Transitions -> Transitions -> Bool
+matchingTrans ts1 ts2 =
   Map.keys ts1 == Map.keys ts2 &&
   (all (\(x,y) -> length x == length y) (zip (Map.elems ts1) (Map.elems ts2)))
-
-fixedPoint :: VisitedProds -> VisitedProds -> TypeVar -> Transitions -> TransState Bool
-fixedPoint visited goals w t
-  | Set.null goals = return True
-  | otherwise      = do
-      let (x, y) = Set.elemAt 0 goals
-      ps <- getProductions
-      if Map.member y ps
-      then do
-        let ts1 = Map.findWithDefault t x ps
-        θ <- getSubstitution
-        let y' = substitute θ y
-        ts2 <- getTransitions y'
-        fixedPoint' (Set.insert (x,y) visited) (updateGoals goals (newGoals ts1 ts2) x y) ts1 ts2 x y'
-      else return False
-   where
-     -- Recursively calls fixedPoint when the transitions are equal
-     fixedPoint' :: VisitedProds -> Goals -> Transitions -> Transitions ->
-                    TypeVar -> TypeVar -> TransState Bool
-     fixedPoint' visited goals ts1 ts2 x y
-       | equalTrans ts1 ts2 =
-          fixedPoint (Set.insert (x,y) visited) (updateGoals goals (newGoals ts1 ts2) x y) w t
-       | otherwise = return False
-
-     newGoals :: Transitions -> Transitions -> Goals
-     newGoals ts1 ts2 =
-       Map.foldrWithKey (\l w acc -> acc `Set.union`
-                             compareWords (ts1 Map.! l) w visited) Set.empty ts2
-
--- Deletes the current goal and updates it with the new ones
-updateGoals :: Goals -> Goals -> TypeVar -> TypeVar -> Goals
-updateGoals goals newGoals x y = Set.union newGoals (Set.delete (x, y) goals)
 
 -- Compares two words
 -- If they are on the Set of visited productions, there is no need
 -- to visit them. Otherwise, we add them to the set of productions
 -- that we still need to explore.
-compareWords ::  Word -> Word -> VisitedProds ->ToVisitProds
-compareWords xs ys s =
-      foldl (\acc (x, y) -> if x == y || Set.member (x,y) s
-                            then acc
-                            else Set.insert (x, y) acc ) Set.empty (zip xs ys)
+compareWords ::  Word -> Word -> VisitedProds -> ToVisitProds
+compareWords xs ys visited = foldr
+  (\p@(x, y) acc -> if x == y || p `Set.member` visited then acc else Set.insert p acc)
+  Set.empty
+  (zip xs ys)
+
+fixedPoint :: VisitedProds -> VisitedProds -> Transitions -> TransState Bool
+fixedPoint visited goals ts
+  | Set.null goals = return True
+  | otherwise      = do
+      let goal@(x, y) = Set.elemAt 0 goals
+      ps <- getProductions
+      if y `Map.member` ps
+      then do
+        let ts1 = Map.findWithDefault ts x ps
+        θ <- getSubstitution
+        let y' = substitute θ y
+        ts2 <- getTransitions y'
+        if matchingTrans ts1 ts2
+        then let
+          newVisited = Set.insert goal (Set.insert (x, y') visited)
+          newGoals = Set.delete goal goals `Set.union` moreGoals ts1 ts2
+          in fixedPoint newVisited newGoals ts
+        else return False
+      else return False
+    where
+      moreGoals :: Transitions -> Transitions -> Goals
+      moreGoals ts1 ts2 = Map.foldrWithKey
+        (\l w acc -> acc `Set.union` compareWords (ts1 Map.! l) w visited)
+        Set.empty
+        ts2
 
 -- Apply a TypeVar/TypeVar substitution to different objects
 
