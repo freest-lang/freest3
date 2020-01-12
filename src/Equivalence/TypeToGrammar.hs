@@ -86,8 +86,8 @@ collect σ t@(Rec _ (TypeVarBind _ x _) u) = do
   let u' = Substitution.subsAll σ' u
   (z:zs) <- toGrammar (normalise Map.empty u') -- TODO: use a simpler unravel function
   m <- getTransitions z
-  addProduction x (Map.map (++ zs) m)
-  -- addProductions x (Map.map (++ zs) m)
+  addProductions x (Map.map (++ zs) m)
+  -- putProductions x (Map.map (++ zs) m)
   collect σ' u
 collect _ _ = return ()
 
@@ -104,7 +104,7 @@ data TState = TState {
 , substitution :: Substitution
 }
 
--- State manipulating functions
+-- State manipulating functions, get and put
 
 initial :: TypeEnv -> TState
 initial tEnv = TState {
@@ -136,16 +136,16 @@ getSubstitution = do
   s <- get
   return $ substitution s
 
-addProductions :: TypeVar -> Transitions -> TransState ()
-addProductions x m =
+putProductions :: TypeVar -> Transitions -> TransState ()
+putProductions x m =
   modify $ \s -> s {productions = Map.insert x m (productions s)}
 
--- addProduction :: TypeVar -> Label -> Word -> TransState ()
--- addProduction x l w =
+-- putProduction :: TypeVar -> Label -> Word -> TransState ()
+-- putProduction x l w =
 --   modify $ \s -> s {productions = insertProduction (productions s) x l w}
 
-addSubstitution :: TypeVar -> TypeVar -> TransState ()
-addSubstitution x y =
+putSubstitution :: TypeVar -> TypeVar -> TransState ()
+putSubstitution x y =
   modify $ \s -> s {substitution = Map.insert x y (substitution s)}
 
 -- Get the LHS for given transitions; if no productions for the
@@ -156,7 +156,7 @@ getLHS ts = do
   case reverseLookup ts ps of
     Nothing -> do
       y <- getFreshVar
-      addProductions y ts
+      putProductions y ts
       return y
     Just x ->
       return x
@@ -165,19 +165,19 @@ getLHS ts = do
     reverseLookup :: Eq a => Ord k => a -> Map.Map k a -> Maybe k
     reverseLookup a = Map.foldrWithKey (\k b acc -> if a == b then Just k else acc) Nothing
 
--- Adding a new production, but only if needed
+-- Add new productions, but only if needed
 
-addProduction :: TypeVar -> Transitions -> TransState ()
-addProduction x ts = do
+addProductions :: TypeVar -> Transitions -> TransState ()
+addProductions x ts = do
   ps <- getProductions
-  reverseLookup' x ts ps >>= \case
-    False -> addProductions x ts >> return ()
+  existProductions x ts ps >>= \case
     True  -> return ()
+    False -> putProductions x ts >> return ()
 
-reverseLookup' :: TypeVar -> Transitions -> Productions -> TransState Bool
-reverseLookup' x a =
+existProductions :: TypeVar -> Transitions -> Productions -> TransState Bool
+existProductions x ts =
   Map.foldrWithKey
-    (\k b acc -> compareTrans x k a b >>= \b -> if b then return True else acc)
+    (\x' ts' acc -> compareTrans x x' ts ts' >>= \b -> if b then return True else acc)
     (return False)
 
 -- TODO: Change these names
@@ -187,14 +187,14 @@ type Goals = Set.Set (TypeVar, TypeVar)
 type ToVisitProds = Set.Set (TypeVar, TypeVar)
 
 compareTrans :: TypeVar -> TypeVar -> Transitions -> Transitions -> TransState Bool
-compareTrans x y ts1 ts2
+compareTrans x1 x2 ts1 ts2
   | equalTrans ts1 ts2 = do
-      let s = Set.singleton (x,y)
+      let s = Set.singleton (x1, x2)
       let res = Map.foldrWithKey (\l w acc -> acc `Set.union`
                                    (compareWords w (ts2 Map.! l) s)) Set.empty ts1
-      b <- fixedPoint s res x ts1
+      b <- fixedPoint s res x1 ts1
       if b && not (null res) -- TODO: new fun on where
-        then addSubstitution x y >> return True
+        then putSubstitution x1 x2 >> return True
         else return False
   | otherwise = return False
 
