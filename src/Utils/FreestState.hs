@@ -173,14 +173,15 @@ setTEnv tEnv = modify (\s -> s{typeEnv = tEnv})
 
 addError :: Pos -> [String] -> FreestState ()
 addError p e = --do
-  modify (\s -> s{errors = insertError (errors s) (filename s)})  
+  modify (\s -> s{errors = insertError p (errors s) (filename s) e})  
 --  modify (\s -> s{errors = errors s ++ [styleError (filename s) p e]})  
 --   modify (\s -> s{errors = Set.insert (styleError (filename s) p e) (errors s)})
+insertError :: Pos -> [String] -> String -> [String] -> [String]
+insertError p es f e
+  | err `elem` es = es
+  | otherwise     = es ++ [err]
   where
-    insertError :: [String] -> String -> [String]
-    insertError es f =
-          let err = styleError f p e in
-          if err `elem` es then es else es ++ [err]
+    err = styleError f p e
           
 getErrors :: FreestS -> String
 getErrors = (intercalate "\n") . errors
@@ -188,6 +189,7 @@ getErrors = (intercalate "\n") . errors
   
 hasErrors :: FreestS -> Bool
 hasErrors = not . null . errors
+
 
 -- | Traversing Map.map over FreestStates
 
