@@ -1,11 +1,12 @@
 {
 module Parse.Parser
-( parseType
-, parseTypeScheme
-, parseDefs
-, parseProgram
-, parseSchemes
-) where
+-- ( parseType
+-- , parseTypeScheme
+-- , parseDefs
+-- , parseProgram
+-- , parseSchemes
+--)
+where
 
   
 import           Syntax.Expressions
@@ -36,7 +37,10 @@ import           Debug.Trace
 %name schemes Schemes
 %tokentype { Token }
 %error { parseError }
-%monad { FreestState }
+-- %monad { ParseResult } { thenParseResult } { returnParseResult }
+-- %monad { FreestState }
+%monad { FreestStateT } { (>>=) } { return }
+
 
 %token
   nl       {TokenNL _}
@@ -143,30 +147,30 @@ NL :: { () }
 Decl :: { () }
   -- Function signature
   : ProgVar ':' TypeScheme {% do
-      checkDupProgVarDecl $1
-      addToVEnv $1 $3 }
+      toStateT $ checkDupProgVarDecl $1
+      toStateT $ addToVEnv $1 $3 }
   -- Function declaration
   | ProgVar ProgVarWildSeq '=' Expr {% do
-      checkDupFunDecl $1
-      e <- buildFunBody $1 $2 $4
-      addToEEnv $1 e }
+      toStateT $ checkDupFunDecl $1
+      e <- toStateT $ buildFunBody $1 $2 $4
+      toStateT $ addToEEnv $1 e }
   -- Type abbreviation
   | type TypeNameKind TypeVarBindEmptyList '=' Type {% do
-      checkDupTypeDecl (fst $2)
-      uncurry addToTEnv $2 (TypeScheme (position $5) $3 $5) }
+      toStateT $ checkDupTypeDecl (fst $2)
+      toStateT $ uncurry addToTEnv $2 (TypeScheme (position $5) $3 $5) }
   -- Datatype declaration
   | data TypeNameKind TypeVarBindEmptyList '=' DataCons {% do
       let a = fst $2
-      checkDupTypeDecl a
+      toStateT $ checkDupTypeDecl a
       let bs = typeListToType a $5 :: [(ProgVar, Type)]
-      mapM_ (\(c, t) -> addToVEnv c (fromType t)) bs
+      toStateT $ mapM_ (\(c, t) -> addToVEnv c (fromType t)) bs
       let p = position a
-      uncurry addToTEnv $2 (TypeScheme p $3 (Datatype p (Map.fromList bs)))
+      toStateT $ uncurry addToTEnv $2 (TypeScheme p $3 (Datatype p (Map.fromList bs)))
     }
 
 DataCons :: { [(ProgVar, [Type])] }
-  : DataCon              {% checkDupCons $1 [] >> return [$1] }
-  | DataCon '|' DataCons {% checkDupCons $1 $3 >> return ($1 : $3) }
+  : DataCon              {% toStateT $ checkDupCons $1 [] >> return [$1] }
+  | DataCon '|' DataCons {% toStateT $ checkDupCons $1 $3 >> return ($1 : $3) }
 
 DataCon :: { (ProgVar, [Type]) }
   : Constructor TypeSeq { ($1, $2) }
@@ -220,14 +224,14 @@ ProgVarWildTBind :: { (ProgVar, Type) }
 
 MatchMap :: { FieldMap }
   : Match              { uncurry Map.singleton $1 }
-  | Match ',' MatchMap {% checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
+  | Match ',' MatchMap {% toStateT $ checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
 
 Match :: { (ProgVar, ([ProgVar], Expression)) }
   : ArbitraryProgVar ProgVarWild '->' Expr { ($1, ([$2], $4)) }
 
 CaseMap :: { FieldMap }
   : Case             { uncurry Map.singleton $1 }
-  | Case ',' CaseMap {% checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
+  | Case ',' CaseMap {% toStateT $ checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
                         
 Case :: { (ProgVar, ([ProgVar], Expression)) }
   : Constructor ProgVarWildSeq '->' Expr { ($1, ($2, $4)) }
@@ -282,7 +286,7 @@ ChoiceView :: { (Pos, Polarity) }
 
 FieldList :: { TypeMap }
   : Field               { uncurry Map.singleton $1 }
-  | Field ',' FieldList {% checkDupField (fst $1) $3 >>
+  | Field ',' FieldList {% toStateT $ checkDupField (fst $1) $3 >>
                            return (uncurry Map.insert $1 $3) }
 
 Field :: { (ProgVar, Type) }
@@ -328,7 +332,7 @@ ProgVarWild :: { ProgVar }
 
 ProgVarWildSeq :: { [ProgVar] }
   :                            { [] }
-  | ProgVarWild ProgVarWildSeq {% checkDupBind $1 $2 >> return ($1 : $2) }
+  | ProgVarWild ProgVarWildSeq {% toStateT $ checkDupBind $1 $2 >> return ($1 : $2) }
 
 -- TYPE VARIABLES
 
@@ -348,7 +352,7 @@ TypeNameKind :: { (TypeVar, Kind) }    -- for type and data declarations
 
 TypeVarBindList :: { [TypeVarBind] }
   : TypeVarBind                     { [$1] }
-  | TypeVarBind ',' TypeVarBindList {% checkDupTypeVarBind $1 $3 >> return ($1 : $3) }
+  | TypeVarBind ',' TypeVarBindList {% toStateT $ checkDupTypeVarBind $1 $3 >> return ($1 : $3) }
 
 TypeVarBindEmptyList :: { [TypeVarBind] }
   :                 { [] }
@@ -368,27 +372,70 @@ Schemes :: { (TypeScheme, TypeScheme) }
 -- Parsing functions --
 -----------------------
 parseKind :: String -> Kind
-parseKind  s = fst $ runState (parse s) (initialState "")
+parseKind  s =
+  case evalStateT (parse s) (initialState "") of
+    Ok x -> x
+    Failed err -> error err
   where parse = kinds . scanTokens
 
-parseType :: String -> Type
-parseType s = fst $ runState (parse s) (initialState "")
-  where parse = types . scanTokens
+parseType :: String -> Either Type String
+parseType s =
+  case runStateT (parse s) (initialState "") of
+    Ok (t, state) -> eitherTypeErr t state
+    Failed err -> Right $ err      
+  where
+    parse = types . scanTokens
+    eitherTypeErr t state
+      | hasErrors state = Right $ getErrors state
+      | otherwise       = Left $ t
+-- parseType :: String -> Either Type String
+-- parseType s =
+--   let (t, state) = runState (parse s) (initialState "") in
+--   eitherTypeErr t state
+--   where
+--     parse = types . scanTokens
+--     eitherTypeErr t state
+--       | hasErrors state = Right $ getErrors state
+--       | otherwise       = Left $ t
 
 instance Read Type where
   readsPrec _ str =
-    let (t, state) = runState (parse str) (initialState "") in
-    if hasErrors state
-    then error $ getErrors state
-    else [(t, "")]
+    case runStateT (parse str) (initialState "") of
+      Ok (t, state) ->
+        if hasErrors state then error $ getErrors state else [(t, "")]
+      Failed err -> error err
    where parse = types . scanTokens
 
-parseTypeScheme :: String -> TypeScheme
-parseTypeScheme s = fst $ runState (parse s) (initialState "")
-  where parse = typeScheme . scanTokens
+-- instance Read Type where
+--   readsPrec _ str =
+--     let (t, state) = runState (parse str) (initialState "") in
+--     if hasErrors state
+--     then error $ getErrors state
+--     else [(t, "")]
+--    where parse = types . scanTokens
+    
 
-instance Read TypeScheme where
-  readsPrec _ s = [(parseTypeScheme s, "")] 
+--------------------
+-- SCHEMES PARSER --
+--------------------
+
+-- parseTypeScheme :: String -> TypeScheme
+-- parseTypeScheme s = fst $ runState (parse s) (initialState "")
+--   where parse = typeScheme . scanTokens
+
+-- parseSchemes :: String -> (TypeScheme, TypeScheme)
+-- parseSchemes s = fst $ runState (parse s) (initialState "")
+--   where parse = schemes . scanTokens
+
+parseSchemes :: String -> (TypeScheme, TypeScheme)
+parseSchemes s =
+  case runStateT (parse s) (initialState "") of
+    Ok (t, _) -> t
+    Failed err -> error err
+  where parse = schemes . scanTokens
+  
+-- instance Read TypeScheme where
+--   readsPrec _ s = [(parseTypeScheme s, "")] 
 
 instance Read Kind where
   readsPrec _ s = -- [(parseKind s, "")]
@@ -403,12 +450,12 @@ instance Read Kind where
             else tryParse xs
           trim s = dropWhile isSpace s
 
-parseExpr :: String -> Expression
-parseExpr s = fst $ runState (parse s) (initialState "")
-  where parse = expr . scanTokens
+-- parseExpr :: String -> Expression
+-- parseExpr s = fst $ runState (parse s) (initialState "")
+--   where parse = expr . scanTokens
   
-instance Read Expression where
-  readsPrec _ s = [(parseExpr s, "")]
+-- instance Read Expression where
+--   readsPrec _ s = [(parseExpr s, "")]
 
 parseProgram :: FilePath -> Map.Map ProgVar TypeScheme -> IO FreestS
 parseProgram inputFile vEnv = do
@@ -419,12 +466,13 @@ parseProgram inputFile vEnv = do
 parseDefs :: FilePath -> VarEnv -> String -> FreestS
 parseDefs file vEnv str =
   let s = initialState file in
-  execState (parse str) (s {varEnv = vEnv})
+  case execStateT (parse str) (s {varEnv = vEnv}) of
+    Ok s1 -> s1
+    Failed err -> s {errors = (errors s) ++ [err]}
    where parse = terms . scanTokens
 
+
 checkErrors :: FreestS -> IO ()
--- checkErrors (FreestS {errors=Set.null}) = return ()
--- checkErrors s                     = die $ intercalate "\n" (errors s) 
 checkErrors s
   | hasErrors s = die $ getErrors s
   | otherwise   = return ()
@@ -433,22 +481,33 @@ checkErrors s
 -- Handle errors --
 -------------------
 
-parseError :: [Token] -> FreestState a
+-- parseError :: [Token] -> FreestState a
+-- parseError [] = do
+--   file <- getFileName
+--   error $ styleError file defaultPos
+--           ["Parse error:", styleRed "Premature end of file"]
+-- parseError xs = do  
+--   f <- getFileName
+--   error $ styleError f p [styleRed "error\n\t", "parse error on input", styleRed $ "'" ++ show (head xs) ++ "'"]
+--  where p = position (head xs)
+
+-- parseError :: [Token] -> FreestStateT a
+-- parseError xs = failM "parse error"
+
+parseError :: [Token] -> FreestStateT a
 parseError [] = do
-  file <- getFileName
-  error $ styleError file defaultPos
+  file <- toStateT getFileName
+  failM $ styleError file defaultPos
           ["Parse error:", styleRed "Premature end of file"]
 parseError xs = do  
-  f <- getFileName
-  error $ styleError f p [styleRed "error\n\t", "parse error on input", styleRed $ "'" ++ show (head xs) ++ "'"]
+  f <- toStateT getFileName
+  failM $ styleError f p ["Parse error on input", styleRed $ "'" ++ show (head xs) ++ "'"]
  where p = position (head xs)
 
+failM :: String -> FreestStateT a
+failM err = lift $ Failed err
 
---------------------
--- SCHEMES PARSER --
---------------------
-parseSchemes :: String -> (TypeScheme, TypeScheme)
-parseSchemes s = fst $ runState (parse s) (initialState "")
-  where parse = schemes . scanTokens
+
+toStateT x = state $ runState x
 
 }

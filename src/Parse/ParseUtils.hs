@@ -26,6 +26,11 @@ module Parse.ParseUtils
 , unOp
 , buildFunBody
 , typeListToType
+, ParseResult (..)
+, FreestStateT
+, thenM
+, returnM
+-- , failM
 ) where
 
 import           Syntax.Expressions
@@ -45,6 +50,44 @@ import           Control.Monad.State
 import           Syntax.Show -- debug
 import           Debug.Trace -- debug
 import           Utils.PreludeLoader -- debug
+
+
+thenM :: ParseResult a -> (a -> ParseResult b) -> ParseResult b
+m `thenM` k = 
+   case m of 
+       Ok a -> k a
+       Failed e -> Failed e
+
+returnM :: a -> ParseResult a
+returnM a = Ok a
+
+failM :: String -> ParseResult a
+failM err = Failed err
+
+catchM :: ParseResult a -> (String -> ParseResult a) -> ParseResult a
+catchM m k = 
+   case m of
+      Ok a -> Ok a
+      Failed e -> k e
+
+
+data ParseResult a = Ok a | Failed String
+type FreestStateT = StateT FreestS ParseResult
+
+instance Monad ParseResult where
+  (>>=) = thenM
+  return = returnM
+  fail = failM
+
+instance Applicative ParseResult where  
+--  
+  pure = return
+  (<*>) = ap
+
+instance Functor ParseResult where  
+  fmap = liftM
+
+
 
 checkDupField :: ProgVar -> TypeMap -> FreestState ()
 checkDupField x m =
@@ -102,6 +145,7 @@ checkDupProgVarDecl x = do
                              "\t Declared at:", show (position a), "\n",
                              "\t             ", show (position x)]
     Nothing -> return ()
+
 
 checkDupTypeDecl :: TypeVar -> FreestState ()  
 checkDupTypeDecl a = do

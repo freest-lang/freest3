@@ -6,6 +6,7 @@ module Parse.Lexer
 ) where
 
 import Syntax.Base
+import Parse.ParseUtils
 import Syntax.Show
 }
 
@@ -177,68 +178,69 @@ data Token =
 
 
 instance Show Token where
-  show (TokenNL p) = show p ++ ": NL"  
-  show (TokenIntT p) = show p ++ ": Int"  
-  show (TokenCharT p) = show p ++ ": Char"  
-  show (TokenBoolT p) = show p ++ ": Bool"  
-  show (TokenUnit p) = show p ++ ": ()"  
-  show (TokenUnArrow p) = show p ++ ": ->"  
-  show (TokenLinArrow p) = show p ++ ": -o"  
-  show (TokenLambda p) = show p ++ ": \\"  
-  show (TokenLParen p) = show p ++ ": ("
-  show (TokenRParen p) = show p ++ ": )"  
-  show (TokenLBracket p) = show p ++ ": ["  
-  show (TokenRBracket p) = show p ++ ": ]"  
-  show (TokenComma p) = show p ++ ": ,"  
-  show (TokenSkip p) = show p ++ ": Skip" 
-  show (TokenColon p) = show p ++ ": :"  
-  show (TokenUpperId p c) = show p ++ ": " ++ c
-  show (TokenSemi p) = show p ++ ": ;"  
-  show (TokenMOut p) = show p ++ ": !"  
-  show (TokenMIn p) = show p ++ ": ?"  
-  show (TokenLBrace p) = show p ++ ": {"
-  show (TokenRBrace p) = show p ++ ": }"
-  show (TokenAmpersand p) = show p ++ ": &"
-  show (TokenPlus p) = show p ++ ": +"
-  show (TokenRec p) = show p ++ ": rec"
-  show (TokenDot p) = show p ++ ": ."
-  show (TokenLowerId p s) = show p ++ ": " ++ s
-  show (TokenSU p) = show p ++ ": SU" 
-  show (TokenSL p) = show p ++ ": SL"   
-  show (TokenTU p) = show p ++ ": TU"   
-  show (TokenTL p) = show p ++ ": TL"  
-  show (TokenInteger p i) = show p ++ ": " ++ show i
-  show (TokenChar p c) = show p ++ ": " ++ show c
-  show (TokenBool p b) = show p ++ ": " ++ show b
-  show (TokenLet p) = show p ++ ": let"
-  show (TokenIn p) = show p ++ ": in"
-  show (TokenEq p) = show p ++ ": ="
-  show (TokenData p) = show p ++ ": data"  
-  show (TokenType p) = show p ++ ": type"  
-  show (TokenPipe p) = show p ++ ": |"  
-  show (TokenIf p) = show p ++ ": if"  
-  show (TokenThen p) = show p ++ ": then"  
-  show (TokenElse p) = show p ++ ": else"  
-  show (TokenNew p) = show p ++ ": new"  
-  show (TokenSend p) = show p ++ ": send"  
-  show (TokenReceive p) = show p ++ ": receive"  
-  show (TokenSelect p) = show p ++ ": select"  
-  show (TokenFork p) = show p ++ ": fork"  
-  show (TokenMatch p) = show p ++ ": match"  
-  show (TokenCase p) = show p ++ ": case"  
-  show (TokenForall p) = show p ++ ": forall"  
-  show (TokenMinus p) = show p ++ ": -"  
-  show (TokenTimes p) = show p ++ ": *"  
-  show (TokenLT p) = show p ++ ": <"
-  show (TokenGT p) = show p ++ ": >"
-  show (TokenWild p) = show p ++ ": _"  
-  show (TokenOp p s) = show p ++ ": " ++ show s
-  show (TokenOf p) = show p ++ ": of"  
-  show (TokenDualof p) = show p ++ ": dualof"  
-  show (TokenFArrow p) = show p ++ ": =>"
-  show (TokenConjunction p) = show p ++ ": (&&)"
-  show (TokenDisjunction p) = show p ++ ": (||)"
-  show (TokenDiv p) = show p ++ ": (/)"
+  show (TokenNL p) = "\n"  
+  show (TokenIntT p) = "Int"  
+  show (TokenCharT p) = "Char"  
+  show (TokenBoolT p) = "Bool"  
+  show (TokenUnit p) = "()"  
+  show (TokenUnArrow p) = "->"  
+  show (TokenLinArrow p) = "-o"  
+  show (TokenLambda p) = "\\"  
+  show (TokenLParen p) = "("
+  show (TokenRParen p) = ")"  
+  show (TokenLBracket p) = "["  
+  show (TokenRBracket p) = "]"  
+  show (TokenComma p) = ","  
+  show (TokenSkip p) = "Skip" 
+  show (TokenColon p) = ":"  
+  show (TokenUpperId p c) = "" ++ c
+  show (TokenSemi p) = ";"  
+  show (TokenMOut p) = "!"  
+  show (TokenMIn p) = "?"  
+  show (TokenLBrace p) = "{"
+  show (TokenRBrace p) = "}"
+  show (TokenAmpersand p) = "&"
+  show (TokenPlus p) = "+"
+  show (TokenRec p) = "rec"
+  show (TokenDot p) = "."
+  show (TokenLowerId p s) = "" ++ s
+  show (TokenSU p) = "SU" 
+  show (TokenSL p) = "SL"   
+  show (TokenTU p) = "TU"   
+  show (TokenTL p) = "TL"  
+  show (TokenInteger p i) = show i
+  show (TokenChar p c) = show c
+  show (TokenBool p b) = show b
+  show (TokenLet p) = "let"
+  show (TokenIn p) = "in"
+  show (TokenEq p) = "="
+  show (TokenData p) = "data"  
+  show (TokenType p) = "type"  
+  show (TokenPipe p) = "|"  
+  show (TokenIf p) = "if"  
+  show (TokenThen p) = "then"  
+  show (TokenElse p) = "else"  
+  show (TokenNew p) = "new"  
+  show (TokenSend p) = "send"  
+  show (TokenReceive p) = "receive"  
+  show (TokenSelect p) = "select"  
+  show (TokenFork p) = "fork"  
+  show (TokenMatch p) = "match"  
+  show (TokenCase p) = "case"  
+  show (TokenForall p) = "forall"  
+  show (TokenMinus p) = "-"  
+  show (TokenTimes p) = "*"  
+  show (TokenLT p) = "<"
+  show (TokenGT p) = ">"
+  show (TokenWild p) = "_"  
+  show (TokenOp p s) = show s
+  show (TokenOf p) = "of"  
+  show (TokenDualof p) = "dualof"  
+  show (TokenFArrow p) = "=>"
+  show (TokenConjunction p) = "(&&)"
+  show (TokenDisjunction p) = "(||)"
+  show (TokenDiv p) = "(/)"
+
 -- Trim newlines
 scanTokens = alexScanTokens >>= (return . trim)
 
