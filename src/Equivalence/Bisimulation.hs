@@ -16,10 +16,8 @@ module Equivalence.Bisimulation
 ( bisimilar
 ) where
 
-import           Syntax.Types
 import           Syntax.TypeVariables -- Nonterminal symbols are type variables
 import           Equivalence.Grammar
-import           Equivalence.TypeToGrammar
 import           Equivalence.Norm
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
@@ -30,13 +28,6 @@ import           Debug.Trace
 
 bisimilar :: Grammar -> Bool
 bisimilar (Grammar [xs, ys] p) = expand (xs, ys) (prune p)
-
-
-
--- bisimilar :: TypeEnv -> Type -> Type -> Bool
--- bisimilar tEnv t u = expand (xs, ys) (prune p)
---   where Grammar [xs, ys] p = convertToGrammar tEnv [t, u]
---     -- trace (show t ++ "\nbisim\n" ++ show u) $ convertToGrammar tEnv [t, u]
 
 type Node = Set.Set (Word, Word)
 
