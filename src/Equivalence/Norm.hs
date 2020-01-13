@@ -13,7 +13,7 @@ module Equivalence.Norm
 ( normed
 , norm
 , allNormed
-, sameNorm -- TODO: remove and replace by ==
+, sameNorm
 ) where
 
 import           Syntax.TypeVariables
