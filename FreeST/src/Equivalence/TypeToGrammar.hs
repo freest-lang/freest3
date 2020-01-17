@@ -25,7 +25,7 @@ import           Syntax.ProgramVariables
 import           Syntax.Base
 import           Syntax.Show
 import qualified Validation.Substitution as Substitution (subsAll) -- no renaming
-import           Equivalence.Grammar
+import           Bisimulation.Grammar
 import           Equivalence.Normalisation
 import           Utils.FreestState (tMapWithKeyM, tMapM, tMapM_)
 import           Control.Monad.State

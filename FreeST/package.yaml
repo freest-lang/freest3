@@ -38,8 +38,8 @@ library:
   exposed-modules:
   # - Main
     - Compiler
-    - Equivalence.Grammar
-    - Equivalence.Bisimulation
+    - Bisimulation.Grammar
+    - Bisimulation.Bisimulation
     - Equivalence.Equivalence
     - Equivalence.Normalisation
     - Syntax.TypeVariables

@@ -1,6 +1,6 @@
-import Equivalence.Bisimulation
 import GrammarParser
-import Equivalence.Grammar
+import Bisimulation.Bisimulation
+import Bisimulation.Grammar
 import System.Environment (getArgs)
 import Prelude hiding (Word) -- Word is (re)defined in module Equivalence.Grammar
 

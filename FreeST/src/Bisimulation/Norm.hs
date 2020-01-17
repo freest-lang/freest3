@@ -9,7 +9,7 @@ Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc
 This module is responsible for pruning unreachable symbols in unnormed sequences of symbols
 -}
 
-module Equivalence.Norm
+module Bisimulation.Norm
 ( normed
 , norm
 , allNormed
@@ -17,7 +17,7 @@ module Equivalence.Norm
 ) where
 
 import           Syntax.TypeVariables
-import           Equivalence.Grammar
+import           Bisimulation.Grammar
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import           Data.Maybe

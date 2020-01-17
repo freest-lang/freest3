@@ -12,13 +12,13 @@ through an alternation of expansion of children nodes and their simplification, 
 reflexive, congruence, and BPA rules.
 -}
 
-module Equivalence.Bisimulation
+module Bisimulation.Bisimulation
 ( bisimilar
 ) where
 
 import           Syntax.TypeVariables -- Nonterminal symbols are type variables
-import           Equivalence.Grammar
-import           Equivalence.Norm
+import           Bisimulation.Grammar
+import           Bisimulation.Norm
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.Sequence as Queue

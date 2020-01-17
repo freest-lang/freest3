@@ -1,6 +1,6 @@
 import System.Exit
 import Equivalence.Equivalence
-import Equivalence.Bisimulation
+import Bisimulation.Bisimulation
 import Parse.Parser
 import Syntax.Types
 import Syntax.Schemes

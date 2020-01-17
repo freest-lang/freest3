@@ -8,8 +8,8 @@ module TestValidTypes
 import           Test.QuickCheck
 import           Test.QuickCheck.Random (mkQCGen)
 import           Equivalence.Equivalence
-import           Equivalence.Bisimulation
 import           Equivalence.Normalisation
+import           Bisimulation.Bisimulation
 import           Validation.Substitution
 import           Validation.Kinding
 import           Syntax.Types

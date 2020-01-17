@@ -4,7 +4,7 @@ module GrammarParser (
 ) where
 
 import GrammarLexer
-import Equivalence.Grammar
+import Bisimulation.Grammar
 import Syntax.TypeVariables
 import Syntax.Base
 import Syntax.Types

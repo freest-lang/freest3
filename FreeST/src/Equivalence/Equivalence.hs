@@ -25,9 +25,9 @@ import           Syntax.ProgramVariables
 import           Syntax.TypeVariables
 import qualified Validation.Rename as Rename (subs, unfold)  
 import qualified Validation.Substitution as Subs (subs, unfold)
-import           Equivalence.Grammar
+import           Bisimulation.Grammar
+import           Bisimulation.Bisimulation as Bisimulation
 import           Equivalence.TypeToGrammar
-import           Equivalence.Bisimulation as Bisimulation
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 

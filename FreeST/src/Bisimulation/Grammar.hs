@@ -27,7 +27,7 @@ map from labels to lists of type variables.
 
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 
-module Equivalence.Grammar
+module Bisimulation.Grammar
 ( Label(..)
 , Transitions
 , Productions
