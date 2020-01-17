@@ -27,28 +27,29 @@ import           Prelude hiding (Word) -- Word is (re)defined in module Equivale
 import           Debug.Trace
 
 bisimilar :: Grammar -> Bool
-bisimilar (Grammar [xs, ys] p) = expand (xs, ys) (prune p)
+bisimilar (Grammar [xs, ys] p) = expand queue rules ps
+  where ps = prune p
+        rules | allNormed ps = [reflex, congruence, bpa2, filtering]
+              | otherwise    = [reflex, congruence, bpa1, bpa2, filtering]
+        queue = Queue.singleton (Set.singleton (xs, ys), Set.empty)
 
 type Node = Set.Set (Word, Word)
 
 type Ancestors = Node
 
-type NodeQueue = Queue.Seq (Node, Ancestors)
+type Branch = (Node, Ancestors)
 
-expand :: (Word, Word) -> Productions -> Bool
-expand p = expand' (Queue.singleton (Set.singleton p, Set.empty))
-  where
-  expand' :: NodeQueue -> Productions -> Bool
-  expand' ((n, a) Queue.:<| q) ps
-    | Set.null n      = True
-    | otherwise       = case expandNode ps n of
-        Nothing -> expand' q ps
-        Just n' -> expand' (simplify ps ls n' (Set.union a n) q) ps
-    where ls = if allNormed ps
-                 then [reflex, congruence, bpa2, filtering]
-                 else [reflex, congruence, bpa1, bpa2, filtering]
+type BranchQueue = Queue.Seq Branch
 
-  expand' Queue.Empty _ = False
+expand :: BranchQueue -> [NodeTransformation] -> Productions -> Bool
+expand Queue.Empty _ _ = False
+expand  ((n, a) Queue.:<| q) rules ps
+  | Set.null n = True
+  | otherwise = case expandNode ps n of
+      Nothing -> expand q rules ps
+      Just n' -> expand q' rules ps
+        where newNode = (n', Set.union a n)
+              q' = foldr enqueueNode q (findFixedPoint ps rules (Set.singleton newNode))
 
 expandNode :: Productions -> Node -> Maybe Node
 expandNode ps =
@@ -79,24 +80,18 @@ prune p = Map.map (Map.map (pruneWord p)) p
 pruneWord :: Productions -> Word -> Word
 pruneWord p = foldr (\x ys -> if normed p x then x:ys else [x]) []
 
--- Apply the different node transformations
-
-simplify :: Productions -> [NodeTransformation] -> Node -> Ancestors -> NodeQueue -> NodeQueue
-simplify ps ls n a q =
-  foldr enqueueNode q (findFixedPoint ps ls (Set.singleton (n, a)))
-
-enqueueNode :: (Node,Ancestors) -> NodeQueue -> NodeQueue
-enqueueNode (n,a) q
- | maxLength n <= 1 = (n,a) Queue.<| q
- | otherwise        = q Queue.|> (n,a)
+enqueueNode :: Branch -> BranchQueue -> BranchQueue
+enqueueNode (n, a) q
+ | maxLength n <= 1 = (n, a) Queue.<| q
+ | otherwise        = q Queue.|> (n, a)
 
 type NodeTransformation = Productions -> Ancestors -> Node -> Set.Set Node
 
-apply :: Productions -> NodeTransformation -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
+apply :: Productions -> NodeTransformation -> Set.Set Branch -> Set.Set Branch
 apply ps trans ns =
   Set.fold (\(n,a) ns -> Set.union (Set.map (\s -> (s,a)) (trans ps a n)) ns) Set.empty ns
 
-findFixedPoint :: Productions -> [NodeTransformation] -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
+findFixedPoint :: Productions -> [NodeTransformation] -> Set.Set Branch -> Set.Set Branch
 findFixedPoint ps ls nas
   | nas == nas' = nas
   | otherwise   = findFixedPoint ps ls nas'
@@ -136,9 +131,12 @@ filtering p _ n
   | normsMatch p n = Set.singleton n
   | otherwise      = Set.empty
 
+applyBpa :: (Productions -> Ancestors -> (Word,Word) -> Set.Set Node) -> NodeTransformation
+applyBpa transf g a n =
+  Set.foldr (\p ps -> Set.union (Set.map (\v -> Set.union v (Set.delete p n)) (transf g a p)) ps) (Set.singleton n) n
+
 bpa1 :: NodeTransformation
-bpa1 g a n =
-  Set.foldr (\p ps -> Set.union (Set.map (\v -> Set.union v (Set.delete p n)) (bpa1' g a p)) ps) (Set.singleton n) n
+bpa1 = applyBpa bpa1'
 
 bpa1' :: Productions -> Ancestors -> (Word,Word) -> Set.Set Node
 bpa1' p a (x:xs,y:ys) = case findInAncestors a x y of
@@ -161,10 +159,7 @@ findInPair ((x':xs), (y':ys)) x y
 findInPair _ _ _       = Nothing
 
 bpa2 :: NodeTransformation
-bpa2 g a n =
-  Set.foldr (\p ps ->
-                Set.union (Set.map (\v -> Set.union v (Set.delete p n)) (bpa2' g a p))
-                          ps) (Set.singleton n) n
+bpa2 = applyBpa bpa2'
 
 bpa2' :: Productions -> Ancestors -> (Word,Word) -> Set.Set Node
 bpa2' p a (x:xs, y:ys)
