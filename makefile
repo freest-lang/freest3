@@ -29,21 +29,21 @@ invalid-types:
 types:
 	stack test :units --ta "-m TestTypes"
 
-clean : rm `find ./ -name '*.o' -o -name '*.hi' -o -name '*.tix'` -r
+#clean : rm `find ./ -name '*.o' -o -name '*.hi' -o -name '*.tix'` -r
 
-cleanCompiled : find ./test/Programs/ValidTests/ -type f  ! -name "*.*" -delete
+#cleanCompiled : find ./test/Programs/ValidTests/ -type f  ! -name "*.*" -delete
 
-cleanGen : rm test/Programs/ValidTests/*/*.hs 	  
+#cleanGen : rm test/Programs/ValidTests/*/*.hs 	  
 
-cleanOuts : rm test/outputs/*
+#cleanOuts : rm test/outputs/*
 
-cleanAll : clean cleanOuts
+#cleanAll : clean cleanOuts
 
-coverage : ./coverage
+#coverage : ./coverage
 
 # LOGFILE=$(LOGPATH)/`date +'%y.%m.%d %H:%M:%S'`
 # TM=$(shell date '+%Y-%m-%d-%H:%M')
 # backup :
 # 	tar -czf "../backups/backup-$(TM).tar" *
 
-.PHONY: test clean coverage
+#.PHONY: test clean coverage

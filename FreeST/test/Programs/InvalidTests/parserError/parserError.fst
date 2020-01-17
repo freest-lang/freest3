@@ -5,6 +5,6 @@ main = 10
 
 -- invalid let just to throw a parser error
 fun : Bool
-fun = let x, y = extractPair in
+fun = let (x, y) = extractPair in
 
   

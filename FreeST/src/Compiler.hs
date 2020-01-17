@@ -22,6 +22,7 @@ import           CodeGen.Annotation
 -- import Syntax.Expressions -- test
 -- import Syntax.Show -- test
 
+-- TODO: one more if here; if a parse error occured we should not continue
 compileFile :: FilePath -> IO ()
 compileFile args 
   | "fst" `isExtensionOf` args = do

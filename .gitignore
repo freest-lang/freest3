@@ -28,9 +28,9 @@ dist-*
 .stack-work/
 
 # Test files (gen)
-test/Programs/*/*/*
-!test/Programs/*/*/*.fst
-!test/Programs/ValidTests/*/*.expected
+FreeST/test/Programs/*/*/*
+!FreeST/test/Programs/*/*/*.fst
+!FreeST/test/Programs/ValidTests/*/*.expected
 
 #Latex
 *.aux

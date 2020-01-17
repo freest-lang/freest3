@@ -29,8 +29,8 @@ resolver: lts-14.17
 #   - auto-update
 #   - wai
 packages:
-- .
-- TACAS2020
+- FreeST
+#- TACAS2020
 - SGBisim
 - CFSTEquiv
 

@@ -474,8 +474,8 @@ rec y . (+{A: Skip, B: y}; α)
 rec x . +{A: α, B: x; α}
 
 []
-(rec x. &{Leaf: Skip, Node: ?Int;x;x}); (rec x. &{Leaf: Skip, Node: ?Int;x;x})
-(rec x. &{Leaf: Skip, Node: ?Int;x;x}); (rec x. &{Leaf: Skip, Node: ?Int;x;x})
+(rec x : SL . &{Leaf: Skip, Node: ?Int;x;x}); (rec x : SL . &{Leaf: Skip, Node: ?Int;x;x})
+(rec x : SL . &{Leaf: Skip, Node: ?Int;x;x}); (rec x : SL . &{Leaf: Skip, Node: ?Int;x;x})
 
 []
 rec x . &{Add: x;x, Const: Skip}

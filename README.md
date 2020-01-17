@@ -48,7 +48,7 @@ For example, to compile a FreeST program named "test.fst" located in the directo
 ## FreeST Samples
 
 There are some code examples that are available on the directory 
-[`test/Programs/ValidTests/`](test/Programs/ValidTests/)
+[`FreeST/test/Programs/ValidTests/`](FreeST/test/Programs/ValidTests/)
 
 
 # Tests
@@ -75,7 +75,7 @@ or
 ### Add unit tests
 To add tests to the infrastructure, the correspondent txt of the desired unit test. 
 For example to add valid kinding tests, select the TestValidKinding.txt file, which is under 
-the directory `test/UnitTests/Validation`.
+the directory `FreeST/test/UnitTests/Validation`.
 
 The txt file is structured as follows :
 
@@ -99,13 +99,13 @@ or
 
 To add a valid program test follow the steps below:
 
-1. Create a new directory under `test/Programs/ValidTests/`
+1. Create a new directory under `FreeST/test/Programs/ValidTests/`
 2. Create a FreeST program (i.e. `test.fst`)
 3. Create a file with the expected result (`test.expected`)
 
 The process of creating invalid tests is analogous, except for step 3, 
 since that `test.fst` is an incorrect program. Also, the tests must be
-placed under `test/Programs/InvalidTests/` .
+placed under `FreeST/test/Programs/InvalidTests/` .
 
 
 ## Run each spec separately

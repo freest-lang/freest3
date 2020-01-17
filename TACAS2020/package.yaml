@@ -5,8 +5,8 @@ license:             BSD3
 author:              "Bernardo Almeida, Vasco T. Vasconcelos, Andreia Mordido"
 copyright:           "2019 authors"
 
-extra-source-files:
-- README.md
+#extra-source-files:
+#- README.md
 
 # Metadata used when publishing your package
 # synopsis:            Short description of your package
