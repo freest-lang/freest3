@@ -1,5 +1,3 @@
-module Main.EquivalenceMain where
-
 import System.Exit
 import Equivalence.Equivalence
 import Equivalence.Bisimulation
@@ -14,19 +12,15 @@ import qualified Data.Map.Strict as Map
 
 main :: IO ()
 main = do
+  putStrLn "Insert two types separated by a new line character (Ctrl+d to terminate):"
   contents <- getContents
-  let (t1, t2) = parseSchemes contents
- --  t2 <- validateInput t1
-  kindedType t1
-  kindedType t2
-  equivTypes t1 t2
+  case parseSchemes "CFSTEquiv" contents of
+    Right err -> die err
+    Left (t1, t2) -> do
+      kindedType t1
+      kindedType t2
+      equivTypes t1 t2
   
-
--- validateInput :: String -> IO ()
--- validateInput t
---   | length t == 0 = die $ "Provide a valid input"
---   | otherwise     = kindedType (read t :: TypeScheme)
-
 kindedType :: TypeScheme -> IO ()
 kindedType t
   | kinded t = return ()

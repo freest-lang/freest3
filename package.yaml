@@ -28,6 +28,7 @@ dependencies:
 - pretty-terminal >= 0.1.0.0
 - process <= 1.6.5.0
 - silently >= 1.2.5.1
+- transformers >= 0.5.6.2
 
 library:
   source-dirs: src
@@ -53,8 +54,6 @@ library:
     - Parse.ParseUtils
     - Utils.Errors
     - Utils.FreestState
-    - Parse.GrammarLexer 
-    - Parse.GrammarParser 
     - Parse.Lexer 
     - Parse.Parser
     - Validation.Rename

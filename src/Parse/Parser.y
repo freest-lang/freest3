@@ -344,7 +344,7 @@ TypeName :: { TypeVar }
 
 TypeVarBind :: { TypeVarBind }
   : TypeVar ':' Kind { TypeVarBind (position $1) $1 $3 }
-  | TypeVar          { TypeVarBind (position $1) $1 (omission (position $1)) }
+  | TypeVar          { TypeVarBind (position $1) $1 (kindSL (position $1)) }
 
 TypeNameKind :: { (TypeVar, Kind) }    -- for type and data declarations
   : TypeName ':' Kind { ($1, $3) }
@@ -427,12 +427,16 @@ instance Read Type where
 -- parseSchemes s = fst $ runState (parse s) (initialState "")
 --   where parse = schemes . scanTokens
 
-parseSchemes :: String -> (TypeScheme, TypeScheme)
-parseSchemes s =
-  case runStateT (parse s) (initialState "") of
-    Ok (t, _) -> t
-    Failed err -> error err
-  where parse = schemes . scanTokens
+parseSchemes :: String -> String -> Either (TypeScheme, TypeScheme) String
+parseSchemes fname s =
+  case runStateT (parse s) (initialState fname) of
+    Ok (t,s) ->
+      if hasErrors s then Right (getErrors s) else Left t
+    Failed err -> Right err
+  where
+    parse = schemes . scanTokens
+
+
   
 -- instance Read TypeScheme where
 --   readsPrec _ s = [(parseTypeScheme s, "")] 

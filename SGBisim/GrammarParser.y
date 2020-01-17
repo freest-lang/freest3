@@ -1,9 +1,9 @@
 {
-module Parse.GrammarParser (
+module GrammarParser (
    parseGrammar
 ) where
 
-import Parse.GrammarLexer
+import GrammarLexer
 import Equivalence.Grammar
 import Syntax.TypeVariables
 import Syntax.Base

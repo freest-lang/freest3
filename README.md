@@ -42,7 +42,7 @@ run ``` stack run [filepath] ```
 
 For example, to compile a FreeST program named "test.fst" located in the directory "dir" run:
 ```
-    $ stack run dir/test.hs
+    $ stack run freest dir/test.hs
 ```
 
 ## FreeST Samples
@@ -182,3 +182,10 @@ This will generate a file testSuiteProf.prof with the running times and allocate
 To view the test coverage run ``` make coverage ```. The output files will be stored at 
 [test/outputs](test/outputs) folder. (The main file is hpc_index.html that summarizes the 
 information available and contains links for more specific information)
+
+
+# Build & Run other tools
+
+ - CFSTEquiv: ``` $ stack run CFSTEquiv```
+
+ - SGBisim:  ``` $ stack run SGBisim```

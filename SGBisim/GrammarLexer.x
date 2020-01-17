@@ -1,5 +1,5 @@
 {
-module Parse.GrammarLexer
+module GrammarLexer
 (scanTokens,
  Token(..),
  getText) where
@@ -10,7 +10,7 @@ module Parse.GrammarLexer
 $upper = [A-Z]
 $lower = [a-z]
 $digit = [0-9]
-$eol=[\n]
+$eol = [\n]
 
 -- except ( ) - ,
 $symbol = [\`\~\@\#\$\%\^\&\*\_\+\=\{\[\}\]\:\;\'\"\<\>\.\/\?\!]

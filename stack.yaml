@@ -31,6 +31,8 @@ resolver: lts-14.17
 packages:
 - .
 - TACAS2020
+- SGBisim
+- CFSTEquiv
 
 # Dependency packages to be pulled from upstream that are not in the resolver.
 # These entries can reference officially published versions as well as

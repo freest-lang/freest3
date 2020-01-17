@@ -1,7 +1,5 @@
-module Main.GrammarBisimulation where
-
 import Equivalence.Bisimulation
-import Parse.GrammarParser
+import GrammarParser
 import Equivalence.Grammar
 import System.Environment (getArgs)
 import Prelude hiding (Word) -- Word is (re)defined in module Equivalence.Grammar
@@ -9,8 +7,7 @@ import Prelude hiding (Word) -- Word is (re)defined in module Equivalence.Gramma
 
 main :: IO ()
 main = do
-  -- args <- getArgs
-  -- f <- readFile (head args)
+  putStrLn "Provide a grammar (Ctrl+d to terminate):"
   contents <- getContents
   g <- parseGrammar contents
   isBisimGrammar g
@@ -23,7 +20,6 @@ isBisimGrammar g@(Grammar [xs, ys] _)
   | otherwise          =    
       putStrLn $ "Words " ++ showWord xs ++
                  "and " ++ showWord ys ++ "are *not* bisimilar"
-
 
 showWord :: Word -> String
 showWord = foldr (\w acc -> show w ++ " " ++ acc) ""
