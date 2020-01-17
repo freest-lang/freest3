@@ -344,7 +344,7 @@ TypeName :: { TypeVar }
 
 TypeVarBind :: { TypeVarBind }
   : TypeVar ':' Kind { TypeVarBind (position $1) $1 $3 }
-  | TypeVar          { TypeVarBind (position $1) $1 (kindSL (position $1)) }
+  | TypeVar          { TypeVarBind (position $1) $1 (omission (position $1)) }
 
 TypeNameKind :: { (TypeVar, Kind) }    -- for type and data declarations
   : TypeName ':' Kind { ($1, $3) }
