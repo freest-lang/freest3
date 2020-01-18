@@ -28,43 +28,31 @@ map from labels to lists of type variables.
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 
 module Bisimulation.Grammar
-( Label(..)
+( Label
 , Transitions
 , Productions
 , Grammar(..)
 , Word
 , transitions
 , insertProduction
-, trans
-, pathToSkip
-, throughPath
+--, trans
 ) where
 
-import           Syntax.Types
 import           Syntax.TypeVariables
-import           Syntax.ProgramVariables
 import           Syntax.Base
 import           Syntax.Show
 import qualified Data.Map.Strict as Map
-import           Data.List (union)
 import           Data.List (intersperse)
 import           Prelude hiding (Word) -- Word is (re)defined in module Equivalence.Grammar
 
 -- Terminal symbols are called labels
--- data Label =
---   ChoiceLabel Polarity ProgVar |
---   MessageLabel Polarity BasicType |
---   VarLabel TypeVar
---   deriving (Eq, Ord)
-
 type Label = String
 
 -- Non-terminal symbols are type variables TypeVar
-
 -- Words are strings of non-terminal symbols
 type Word = [TypeVar]
 
--- The transitions from a given label
+-- The transitions from a given non-terminal
 type Transitions = Map.Map Label Word
 
 -- The productions of a grammar
@@ -94,37 +82,11 @@ instance TransitionsFrom Word where
 insertProduction :: Productions -> TypeVar -> Label -> Word -> Productions
 insertProduction p x l w = Map.insertWith Map.union x (Map.singleton l w) p
 
--- Determine the transitions from a word
-trans :: Productions -> Word -> [Word]
-trans p xs = Map.elems (transitions xs p)
-
--- only applicable to normed variables
-pathToSkip :: Productions -> TypeVar -> [Label]
-pathToSkip p x = fst . head $ filter (null . snd) ps
-  where ps = pathToSkip' p (Map.assocs $ (Map.mapKeys (:[]) (transitions x p)))
-
-pathToSkip' :: Productions -> [([Label],Word)] -> [([Label],Word)]
-pathToSkip' p ps
-  | any (null . snd) ps = ps
-  | otherwise           = pathToSkip' p ps'
-  where ps' = foldr (\(ls,xs) ts -> union
-                    (map (\(l,ys) -> (ls++[l], ys)) $ Map.assocs $ transitions xs p)
-                    ts ) [] ps
-
-throughPath :: Productions -> [Label] -> Word -> Maybe Word
-throughPath p (l:ls) xs
-  | not (Map.member l ts) = Nothing
-  | otherwise = throughPath p ls xs'
-  where ts  = transitions xs p
-        xs' = ts Map.! l
-throughPath p _ xs = Just xs
+-- The transitions from a word
+-- trans :: Productions -> Word -> [Word]
+-- trans p xs = Map.elems (transitions xs p)
 
 -- Showing a grammar
-
--- instance Show Label where
---   show (ChoiceLabel v l)  = showChoiceView v ++ intern l
---   show (MessageLabel p t) = show p ++ show t
---   show (VarLabel l)       = intern l
 
 instance Show Grammar where
   show (Grammar xss p) =
