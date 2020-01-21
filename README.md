@@ -38,7 +38,7 @@ The available tools to replace ```TOOL_NAME``` are:
 # Compile programs
 
 To run a program just create a file (with ".fst" extension) and then, 
-run ``` stack run [filepath] ```
+run ``` stack run freest [filepath] ```
 
 For example, to compile a FreeST program named "test.fst" located in the directory "dir" run:
 ```
