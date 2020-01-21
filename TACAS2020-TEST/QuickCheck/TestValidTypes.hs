@@ -58,7 +58,7 @@ kinded t = null (errors s)
 
 -- Bisimilar types are bisimilar
 prop_bisimilar :: BisimPair -> Property
-prop_bisimilar (BisimPair t u) = kinded t && kinded u ==> {-# SCC "BISIM-TEST" #-}t `bisim` u
+prop_bisimilar (BisimPair t u) = kinded t && kinded u ==> t `bisim` u
 
 -- Equivalence
 prop_equivalent :: BisimPair -> Property
