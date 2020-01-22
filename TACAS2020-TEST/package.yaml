@@ -41,5 +41,8 @@ executables:
     dependencies:
     - FreeST
     - QuickCheck
-    ghc-options:
-    - -fno-full-laziness
+    - random
+    - clock
+    - formatting
+    # ghc-options:
+    # - -fno-full-laziness
