@@ -31,6 +31,7 @@ resolver: lts-14.17
 packages:
 - FreeST
 #- TACAS2020
+- TACAS2020-TEST
 - SGBisim
 - CFSTEquiv
 

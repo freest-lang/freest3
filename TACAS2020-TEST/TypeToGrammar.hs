@@ -12,7 +12,7 @@ given as parameter to context-free grammars
 
 {-# LANGUAGE LambdaCase, NoMonadFailDesugaring, TypeSynonymInstances, FlexibleInstances #-}
 
-module Equivalence.TypeToGrammar
+module TypeToGrammar
 ( convertToGrammar
 ) where
 
@@ -86,8 +86,8 @@ collect σ t@(Rec _ (TypeVarBind _ x _) u) = do
   let u' = Substitution.subsAll σ' u
   (z:zs) <- toGrammar (normalise Map.empty u') -- TODO: use a simpler unravel function
   m <- getTransitions z
-  addProductions x (Map.map (++ zs) m)
-  -- putProductions x (Map.map (++ zs) m)
+  -- addProductions x (Map.map (++ zs) m)
+  putProductions x (Map.map (++ zs) m)
   collect σ' u
 collect _ _ = return ()
 

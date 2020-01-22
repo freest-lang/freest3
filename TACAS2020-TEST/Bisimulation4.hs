@@ -12,7 +12,7 @@ through an alternation of expansion of children nodes and their simplification, 
 reflexive, congruence, and BPA rules.
 -}
 
-module Bisimulation23
+module Bisimulation4
 ( bisimilar
 ) where
 
@@ -29,8 +29,8 @@ import           Debug.Trace
 bisimilar :: Grammar -> Bool
 bisimilar (Grammar [xs, ys] ps) = expand queue rules ps'
   where ps' = pruneProductions ps
-        rules | allNormed ps' = [reflex, congruence, bpa2, filtering]
-              | otherwise     = [reflex, congruence, bpa1, bpa2, filtering]
+        rules | allNormed ps' = [reflex, congruence, bpa2{-, filtering-}]
+              | otherwise     = [reflex, congruence, bpa1, bpa2{-, filtering-}]
         queue = Queue.singleton (Set.singleton (xs, ys), Set.empty)
 
 type Node = Set.Set (Word, Word)
@@ -59,9 +59,9 @@ simplify q n rules ps = foldr enqueueBranch q (findFixedPoint n rules ps)
 
 -- Enqueue at one end of the queue
 enqueueBranch :: Branch -> BranchQueue -> BranchQueue
-enqueueBranch (n, a) q = q Queue.|> (n, a)
- -- | maxLength n <= 1 = (n, a) Queue.<| q
- -- | otherwise        = q Queue.|> (n, a)
+enqueueBranch (n, a) q
+  | maxLength n <= 1 = (n, a) Queue.<| q
+  | otherwise        = q Queue.|> (n, a)
 
 -- The maximum length of the pairs in a node
 maxLength :: Node -> Int
@@ -101,9 +101,9 @@ pruneWord p = foldr (\x ys -> if normed p x then x:ys else [x]) []
 
 -- The fixed point of branch wrt the application of node transformations
 findFixedPoint :: Set.Set Branch -> [NodeTransformation] -> Productions -> Set.Set Branch
-findFixedPoint branch rules ps
-   | branch == branch' = branch
-   | otherwise         = findFixedPoint branch' rules ps
+findFixedPoint branch rules ps = branch'
+  -- | branch == branch' = branch
+  -- | otherwise         = findFixedPoint branch' rules ps
     where branch' = foldr apply branch rules
           apply :: NodeTransformation -> Set.Set Branch -> Set.Set Branch
           apply trans =

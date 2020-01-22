@@ -12,7 +12,7 @@ through an alternation of expansion of children nodes and their simplification, 
 reflexive, congruence, and BPA rules.
 -}
 
-module Bisimulation.Bisimulation
+module Bisimulation24
 ( bisimilar
 ) where
 

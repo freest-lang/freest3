@@ -1,4 +1,4 @@
-name:                TACAS2020
+name:                TACAS2020-TEST
 version:             0.1.0.0
 #github:              "githubuser/ContextFreeSession"
 license:             BSD3
@@ -27,6 +27,7 @@ dependencies:
 - mtl >= 2.2.1
 - pretty-terminal >= 0.1.0.0
 - process <= 1.6.5.0
+- criterion >= 1.5.6.1
 
   #library:
   #source-dirs: src
@@ -34,10 +35,11 @@ dependencies:
   #- Main
 
 executables:
-  TACAS2020:
+  TACAS2020-TEST:
     main:                Main.hs
     source-dirs:         .
+    dependencies:
+    - FreeST
+    - QuickCheck
     ghc-options:
-      - -threaded
-      - -rtsopts
-      - -with-rtsopts=-N
+    - -fno-full-laziness

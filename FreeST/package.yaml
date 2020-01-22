@@ -40,6 +40,7 @@ library:
     - Compiler
     - Bisimulation.Grammar
     - Bisimulation.Bisimulation
+    - Bisimulation.Norm
     - Equivalence.Equivalence
     - Equivalence.Normalisation
     - Syntax.TypeVariables

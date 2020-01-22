@@ -12,7 +12,7 @@ given as parameter to context-free grammars
 
 {-# LANGUAGE LambdaCase, NoMonadFailDesugaring, TypeSynonymInstances, FlexibleInstances #-}
 
-module Equivalence.TypeToGrammar1
+module TypeToGrammar1
 ( convertToGrammar
 ) where
 
