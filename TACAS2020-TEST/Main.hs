@@ -72,14 +72,18 @@ bisimCombs tenv t u = Map.fromList
 main :: IO ()
 main =
   defaultMain [
-    bench "Bisimilar0" $ whnfIO ( 
-      quickCheckWith stdArgs {maxSuccess = 3557, replay = Just (mkQCGen 1095646480, 0)} prop_bisimilar)
+    -- bench "B0" $ whnfIO ( 
+    --   quickCheckWith stdArgs {maxSuccess = 3557, replay = Just (mkQCGen 1095646480, 0)} prop_bisimilar)
 
-    , bench "Bisimilar1" $ whnfIO (
-      quickCheckWith stdArgs {maxSuccess = 3557, replay = Just (mkQCGen 1095646480, 0)} prop_bisimilar1)
+    -- , bench "B1" $ whnfIO (
+    --   quickCheckWith stdArgs {maxSuccess = 3557, replay = Just (mkQCGen 1095646480, 0)} (prop_bisimilar1 "B1"))
       
-    , bench "Bisimilar1234" $ whnfIO (
-      quickCheckWith stdArgs {maxSuccess = 3557, replay = Just (mkQCGen 1095646480, 0)} prop_bisimilar1234)
+    --,
+      bench "B2" $ whnfIO (
+      quickCheckWith stdArgs {maxSuccess = 3557, replay = Just (mkQCGen 1095646480, 0)} (prop_bisimilar' "B2"))
+      
+    -- , bench "Bisimilar1234" $ whnfIO (
+    --   quickCheckWith stdArgs {maxSuccess = 3557, replay = Just (mkQCGen 1095646480, 0)} prop_bisimilar1234)
   ]
        
        
@@ -106,14 +110,18 @@ prop_bisimilar :: BisimPair -> Property
 prop_bisimilar (BisimPair t u) = kinded t && kinded u ==>
   B0.bisimilar $ TG.convertToGrammar Map.empty [t, u]
 
-prop_bisimilar1 :: BisimPair -> Property
-prop_bisimilar1 (BisimPair t u) = kinded t && kinded u ==>
- bisimCombs Map.empty t u Map.! "B1"
+prop_bisimilar' :: String -> BisimPair -> Property
+prop_bisimilar' str (BisimPair t u) = kinded t && kinded u ==>
+ bisimCombs Map.empty t u Map.! str
 
--- Bisimilar types are bisimilar
-prop_bisimilar1234 :: BisimPair -> Property
-prop_bisimilar1234 (BisimPair t u) = kinded t && kinded u ==>
-  bisimCombs Map.empty t u Map.! "B1234"
+-- prop_bisimilar1 :: BisimPair -> Property
+-- prop_bisimilar1 (BisimPair t u) = kinded t && kinded u ==>
+--  bisimCombs Map.empty t u Map.! "B1"
+
+-- -- Bisimilar types are bisimilar
+-- prop_bisimilar1234 :: BisimPair -> Property
+-- prop_bisimilar1234 (BisimPair t u) = kinded t && kinded u ==>
+--   bisimCombs Map.empty t u Map.! "B1234"
 
 {-
 benchmarking Bisimilar0
@@ -174,6 +182,30 @@ time                 53.56 s    (53.27 s .. 54.17 s)
 mean                 53.89 s    (53.69 s .. 54.19 s)
 std dev              299.6 ms   (66.37 ms .. 395.4 ms)
 variance introduced by outliers: 19% (moderately inflated)
+
+benchmarking Bisimilar2
++++ OK, passed 3557 tests; 1298 discarded.
++++ OK, passed 3557 tests; 1298 discarded.
++++ OK, passed 3557 tests; 1298 discarded.
++++ OK, passed 3557 tests; 1298 discarded.
++++ OK, passed 3557 tests; 1298 discarded.
++++ OK, passed 3557 tests; 1298 discarded.
++++ OK, passed 3557 tests; 1298 discarded.
++++ OK, passed 3557 tests; 1298 discarded.
++++ OK, passed 3557 tests; 1298 discarded.
++++ OK, passed 3557 tests; 1298 discarded.
++++ OK, passed 3557 tests; 1298 discarded.
++++ OK, passed 3557 tests; 1298 discarded.
++++ OK, passed 3557 tests; 1298 discarded.
++++ OK, passed 3557 tests; 1298 discarded.
++++ OK, passed 3557 tests; 1298 discarded.
++++ OK, passed 3557 tests; 1298 discarded.
+time                 53.79 s    (53.58 s .. 54.08 s)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 53.94 s    (53.86 s .. 54.01 s)
+std dev              83.76 ms   (51.20 ms .. 102.2 ms)
+variance introduced by outliers: 19% (moderately inflated)
+
 
 benchmarking Bisimilar1234
 +++ OK, passed 3557 tests; 1298 discarded.
