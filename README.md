@@ -45,6 +45,12 @@ For example, to compile a FreeST program named "test.fst" located in the directo
     $ stack run freest dir/test.hs
 ```
 
+# Run the interpreter (ghci)
+
+```
+    $ stack ghci FreeST:exe:freest
+```
+
 ## FreeST Samples
 
 There are some code examples that are available on the directory 
@@ -162,7 +168,7 @@ or also,
 ```
 
 ```
-$ make invalid-programs
+    $ make invalid-programs
 ```
 
 ## Profiling
