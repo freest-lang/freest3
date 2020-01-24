@@ -18,6 +18,7 @@ import qualified Bisimulation1234 as B1234
 import qualified TypeToGrammar as TG
 import qualified TypeToGrammar1 as TG1
 
+import Parse.Parser
 
 import Criterion.Main
 import Test.QuickCheck
@@ -52,44 +53,14 @@ import           Formatting.Clock
 
 import           Control.Exception
 
--- 1m
-timeoutInMicro = 60000000
--- depth = 1000000
--- seed = 1095646480
-
 type BisimFunction = (TypeEnv -> Type -> Type -> Bool)
+-- 10m
+timeoutInMicro = 10 * 60 * 1000000
 
-
-clockSomething :: a -> IO (String, a)
-clockSomething something = do
-  start <- getTime Monotonic
-  r <- (evaluate $ something)
-  end <- getTime Monotonic
-  return $ (formatToString (timeSpecs) start end, r)
-
-
-mkPairPositive :: Int -> Int -> IO BisimPair
-mkPairPositive seed depth = do
-    let g = mkStdGen seed
-    let (v, ng) = random g :: (Int, StdGen)
-    
-    let generator = mkQCGen $ v
-    let (BisimPair t1 t2) = unGen (arbitrary :: Gen BisimPair) generator depth
-    
-    if kinded t1 && kinded t2 then do
-      return (BisimPair t1 t2)
-    else do
-      let (v, _) = random ng :: (Int, StdGen)
-      mkPairPositive v depth
-
-nodesOf :: BisimPair -> (String, String)
-nodesOf (BisimPair t1 t2) = (show $ nodes t1, show $nodes t2)
-
--- 1 + binomial(4, 1) + binomial(4, 2) + binomial(4, 3) + 1
-
+-- Bisim functions combinations
 -- bisimCombs :: [(String, TypeEnv -> Type -> Type -> Bool)]
 bisimCombs = -- Map.fromList
-  [ ("B0", B0.bisimilar, TG.convertToGrammar)
+  [  ("B0", B0.bisimilar, TG.convertToGrammar)
   -- , ("B1", B0.bisimilar $ TG1.convertToGrammar tenv [t, u])
   -- , ("B2", B2.bisimilar $ TG.convertToGrammar tenv [t, u])
   -- , ("B3", B3.bisimilar $ TG.convertToGrammar tenv [t, u])
@@ -104,34 +75,36 @@ bisimCombs = -- Map.fromList
   -- , ("B124", B24.bisimilar $ TG1.convertToGrammar tenv [t, u])
   -- , ("B134", B34.bisimilar $ TG1.convertToGrammar tenv [t, u])
   -- , ("B234", B234.bisimilar $ TG.convertToGrammar tenv [t, u])
-  , ("B1234", B234.bisimilar, TG1.convertToGrammar)
+  , ("B1234", B1234.bisimilar, TG1.convertToGrammar)
   ]
 
--- bisimilar :: TypeEnv -> Type -> Type -> Bool
--- bisimilar tEnv t u = Bisimulation.bisimilar $ convertToGrammar tEnv [t, u]      
-                     
+-- Get exectime of a computation
+clockSomething :: a -> IO (String, a)
+clockSomething something = do
+  start <- getTime Monotonic
+  r <- (evaluate $ something)
+  end <- getTime Monotonic
+  return $ (formatToString (timeSpecs) start end, r)
 
 
--- bisimilar :: TypeEnv -> Type -> Type -> Bool
--- bisimilar tEnv t u = Bisimulation.bisimilar $ convertToGrammar tEnv [t, u]
-
- -- secs <$> time_ someIOFunction >>= print
 main :: IO ()
 main = do
   args <- getArgs
-  let (seed, version, depth, pos) = parseTestArgs args  
-  pair <- mkPairPositive seed depth
-  runEach pair depth (bisimCombs !! version) seed pos
+  let (pair, version, pos) = parseTestArgs args  
+  runEach pair (bisimCombs !! version) pos
 
-parseTestArgs :: [String] -> (Int, Int, Int, Bool)
-parseTestArgs [] = (0, 0, 0, True)
-parseTestArgs (seed:version:depth:pos:[]) = (read seed, read version, read depth, read pos)
+parseTestArgs :: [String] -> (BisimPair, Int, Bool)
+parseTestArgs [] = (BisimPair defaultType defaultType, 0, True)
+parseTestArgs (t1:t2:version:positive:_) =
+  (BisimPair (read t1) (read t2), read version, read positive)
+
+defaultType :: Type
+defaultType = Skip defaultPos
   
-runEach pair depth (name, f, g) seed pos = do
+runEach pair (name, f, g) pos = do
   v <-  timeout timeoutInMicro $ runTestVersion pair f g
   let (n1, n2) = nodesOf pair
-  let base = name ++ ";"  ++ n1 ++ ";" ++ n2 ++ ";" ++ (show depth)
-                  ++ ";" ++ (show seed) ++ ";" ++ (show pos) ++ ";"
+  let base = name ++ ";"  ++ n1 ++ ";" ++ n2 ++ ";" ++ (show pos) ++ ";"
   case v of
         Nothing -> putStrLn $ base ++ "timeout"
         (Just (time, r)) -> putStrLn $ base ++ (show r) ++ ";" ++ time
@@ -139,12 +112,8 @@ runEach pair depth (name, f, g) seed pos = do
 
 -- runTestVersion :: BisimPair -> String -> IO (String, Bool)
 runTestVersion (BisimPair t u) f g = do
-    -- putStrLn $ show p
     res <- clockSomething (f $ g Map.empty [t, u])
     return res
-
--- test :: BisimPair -> BisimFunction -> Bool
--- test (BisimPair t u) bisim = bisim Map.empty t u
 
 
 -- QuickCheck
@@ -159,6 +128,9 @@ nodes (Rec _ _ t)    = 1 + nodes t
 -- Skip, Message, TypeVar
 nodes _              = 1
 
+nodesOf :: BisimPair -> (String, String)
+nodesOf (BisimPair t1 t2) = (show $ nodes t1, show $nodes t2)
+
 kindEnv :: KindEnv
 kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (kindSL pos)))
 
@@ -166,6 +138,33 @@ kinded :: Type -> Bool
 kinded t = null (errors s)
   where (_, s) = runState (synthetise kindEnv t) (initialState "Kind synthesis")
 
--- prop_bisimilar :: String -> BisimPair -> Property
--- prop_bisimilar str (BisimPair t u) = kinded t && kinded u ==>
---  bisimCombs Map.empty t u Map.! str
+
+-- main :: IO ()
+-- main = do
+--   args <- getArgs
+--   let (seed, version, depth, pos) = parseTestArgs arguments
+-- --  used to generate pairs
+--   pair@(BisimPair t1 t2) <- mkPairPositive seed depth
+--   let (n1, n2) = nodesOf pair
+--   putStrLn $ "\n" ++ show n1 ++ ";" ++ show n2
+--   putStrLn $ show t1
+--   putStrLn $ show t2
+
+-- Gen positive types
+mkPairPositive :: Int -> Int -> IO BisimPair
+mkPairPositive seed depth = do
+    g <- newStdGen
+    let (v, ng) = random g :: (Int, StdGen)
+    let generator = mkQCGen v
+    let (BisimPair t1 t2) = unGen (arbitrary :: Gen BisimPair) generator depth
+
+    let n1 = nodes t1
+    let n2 = nodes t2
+    
+    if n1 > 0 && n1 <= 10 && n2 > 0 && n2 <= 10 then
+      if kinded t1 && kinded t2 then return (BisimPair t1 t2) else gen ng
+    else gen ng
+    where
+      gen ng = do
+        let (v, _) = random ng :: (Int, StdGen)
+        mkPairPositive v depth
