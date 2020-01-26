@@ -170,22 +170,24 @@ Notice that if $T$ is a $\mu$-type, then $\mu X_n. T_n$ is T itself.
 
 % THE TRANSLATION
 
-Finally, given an initial set of productions $\productions$, function
+Finally, given an initial set of productions $\productions_0$, function
 $\grm$ translates a type $T$ into a grammar composed of a start word
 and set of productions:
 %
 \begin{equation*}
-  %\grm(T,\productions) = (\word(T),\; \productions \cup \{\word(\Unravel(T_1')), \dots \word(\Unravel(T_n'))\})
-  \grm(T,\productions) = (\word(T), \productions_n)
+  \grm(T,\productions_0) = (\word(T), \productions_n)
 \end{equation*}
 %
-where $\productions_n$ is computed by the following recurrence:
+where each $\productions_i$ is computed by the following recurrence,
 \begin{equation*}
-  \left\{
-    \begin{array}{lll}
-      \productions_{0} &= \productions\\
-      \productions_i &= \productions_i' \cup \{X_i \rightarrow a_j\vec Y_j \vec Z \mid (Z \rightarrow a_j \vec Y_j)\in \productions_i'\}, \text{with }(Z \vec Z, \productions_i')=\grm(\Unravel(T_i'), \productions_{i-1})
-    \end{array}\right.
+  % \left\{
+  %   \begin{array}{lll}
+  %     \productions_{0} &= \productions\\
+  %     \productions_i &= 
+                       \productions_i' \cup \{X_i \rightarrow a_j\vec
+                       Y_j \vec Z \mid (Z \rightarrow a_j \vec Y_j)\in
+                       \productions_i'\} \text{ where }(Z \vec Z, \productions_i')=\grm(\Unravel(T_i'), \productions_{i-1})
+    % \end{array}\right.
 \end{equation*}
 
 Notice that $\word(\Unravel(T_i'))$ is a non-empty word because of
