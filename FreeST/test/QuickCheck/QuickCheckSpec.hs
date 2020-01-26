@@ -9,7 +9,8 @@ spec :: Spec
 spec =
   describe "QuickCheck" $ do
     prop "prop_bisimilar" $
-      verboseCheckWith stdArgs {maxSuccess = 108375, replay = Just (mkQCGen 1095646480, 0)} prop_bisimilar -- prop_distribution
+      verboseCheckWith stdArgs {maxSuccess = 120135, replay = Just (mkQCGen 1095646480, 0)} prop_bisimilar -- prop_distribution
+      -- verboseCheckWith stdArgs {maxSuccess = 108375, replay = Just (mkQCGen 1095646480, 0)} prop_bisimilar -- prop_distribution
       -- verboseCheckWith stdArgs {maxSuccess = 27100, replay = Just (mkQCGen 1095646480, 0)} prop_bisimilar -- prop_distribution
       -- verboseCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
 

@@ -24,9 +24,9 @@ import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
 import           Syntax.Base
 import           Syntax.Show
-import qualified Validation.Substitution as Substitution (subsAll) -- no renaming
+import qualified Validation.Substitution as Substitution (subsAll, unfold) -- no renaming
 import           Bisimulation.Grammar
-import           Equivalence.Normalisation
+-- import           Equivalence.Normalisation
 import           Utils.FreestState (tMapWithKeyM, tMapM, tMapM_)
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
@@ -47,7 +47,9 @@ typeToGrammar :: Type -> TransState Word
 typeToGrammar t = do
   collect [] u
   toGrammar u
-  where u = normalise Map.empty t -- TODO: use a simpler unravel function
+  where u = t
+  -- where u = unr t -- TODO: TACAS does not unravel here...
+--   where u = normalise Map.empty t -- TODO: use a simpler unravel function
 
 toGrammar :: Type -> TransState Word
 -- Non rec-types
@@ -84,7 +86,8 @@ collect σ (Choice _ _ m) = tMapM_ (collect σ) m
 collect σ t@(Rec _ (TypeVarBind _ x _) u) = do
   let σ' = (t, x) : σ
   let u' = Substitution.subsAll σ' u
-  (z:zs) <- toGrammar (normalise Map.empty u') -- TODO: use a simpler unravel function
+  (z:zs) <- toGrammar (unr u') -- TODO: use a simpler unravel function
+  -- (z:zs) <- toGrammar (normalise Map.empty u') -- TODO: use a simpler unravel function
   m <- getTransitions z
   addProductions x (Map.map (++ zs) m)
   -- putProductions x (Map.map (++ zs) m)
@@ -174,6 +177,7 @@ addProductions x ts = do
   when (not b) (putProductions x ts)
 
 existProductions :: TypeVar -> Transitions -> Productions -> TransState Bool
+-- existProductions x ts _ = return False
 existProductions x ts =
   Map.foldrWithKey
     (\x' ts' acc -> sameTrans x x' ts ts' >>= \b -> if b then return True else acc)
@@ -259,3 +263,12 @@ instance Substitute Transitions where
 
 instance Substitute Productions where
   substitute θ = Map.map (substitute θ)
+
+-- Unravel
+
+unr :: Type -> Type
+unr t@(Rec _ _ _) = unr (Substitution.unfold t)
+unr (Semi p t1 t2)
+ | unr t1 == Skip p = unr t2
+ | otherwise        = Semi p (unr t1) t2
+unr t = t
