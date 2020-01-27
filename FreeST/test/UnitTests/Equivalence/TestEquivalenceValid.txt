@@ -740,8 +740,12 @@ rec z:SL. !Int; rec w. z;w
 (+{A: !Bool, B: !()};(rec z0.(+{A: Skip, B: ?Bool, C: ?Char};z0)))
 +{A: (!Bool;+{A: (Skip;(rec z10.+{A: (Skip;z10), B: (?Bool;z10), C: (?Char;z10)})), B: (?Bool;(rec z21.+{A: (Skip;z21), B: (?Bool;z21), C: (?Char;z21)})), C: (?Char;(rec z32.+{A: (Skip;z32), B: (?Bool;z32), C: (?Char;z32)}))}), B: (!();+{A: (Skip;(rec z40.+{A: (Skip;z40), B: (?Bool;z40), C: (?Char;z40)})), B: (?Bool;(rec z51.+{A: (Skip;z51), B: (?Bool;z51), C: (?Char;z51)})), C: (?Char;(rec z62.+{A: (Skip;z62), B: (?Bool;z62), C: (?Char;z62)}))})}
 
--- This one hangs
--- []
--- ((Skip;(rec z:SU.(rec y:SU.(rec x:SU.(+{A: z, B: Skip, C: !Bool};(&{A:Skip, C: z};x))))));Skip)
+[]
+((Skip;(rec z:SU.(rec y:SU.(rec x:SU.(+{A: z, B: Skip, C: !Bool};(&{A:Skip, C: z};x))))));Skip)
 
--- (rec y:SU.+{A: (y;&{A: (Skip;(rec x:SU.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x:SU.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x), C:(y;x)})}))}), B: (Skip;&{A: (Skip;(rec x:SU.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x:SU.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x), C:(y;x)})}))}), C: (!Bool;&{A: (Skip;(rec x:SU.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x:SU.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x), C:(y;x)})}))})})
+(rec y:SU.+{A: (y;&{A: (Skip;(rec x:SU.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x:SU.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x), C:(y;x)})}))}), B: (Skip;&{A: (Skip;(rec x:SU.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x:SU.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x), C:(y;x)})}))}), C: (!Bool;&{A: (Skip;(rec x:SU.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x:SU.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x), C:(y;x)})}))})})
+
+-- This one hangs
+[]
+(rec z:SU.(rec y:SL.(rec x:SL.(rec z:SL.(&{A: x, B: ?Char, C: !Int};(&{A: ?Char, B: !(), C: y};z))))))
+(rec z:SU.(rec z:SL.&{A: (z;&{A: (?Char;z), B: (!();z), C: (z;z)}), B: (?Char;&{A: (?Char;z), B: (!();z), C: (z;z)}), C: (!Int;&{A: (?Char;z), B: (!();z), C: (z;z)})}))
