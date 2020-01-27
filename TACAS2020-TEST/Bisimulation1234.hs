@@ -16,8 +16,10 @@ module Bisimulation1234
 ( bisimilar
 ) where
 
+import           Syntax.Types
 import           Syntax.TypeVariables -- Nonterminal symbols are type variables
 import           Bisimulation.Grammar
+-- import           Equivalence.TypeToGrammar
 import           Bisimulation.Norm
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
@@ -27,53 +29,41 @@ import           Prelude hiding (Word) -- Word is (re)defined in module Equivale
 import           Debug.Trace
 
 bisimilar :: Grammar -> Bool
-bisimilar (Grammar [xs, ys] ps) = expand queue rules ps'
-  where ps' = pruneProductions ps
-        rules | allNormed ps' = [reflex, congruence, bpa2, filtering]
-              | otherwise     = [reflex, congruence, bpa1, bpa2, filtering]
-        queue = Queue.singleton (Set.singleton (xs, ys), Set.empty)
+bisimilar (Grammar [xs, ys] p) = expand (xs, ys) (prune p)
+
+
+
+-- bisimilar :: TypeEnv -> Type -> Type -> Bool
+-- bisimilar tEnv t u = expand (xs, ys) (prune p)
+--   where Grammar [xs, ys] p = convertToGrammar tEnv [t, u]
+--     -- trace (show t ++ "\nbisim\n" ++ show u) $ convertToGrammar tEnv [t, u]
 
 type Node = Set.Set (Word, Word)
 
 type Ancestors = Node
 
-type Branch = (Node, Ancestors)
+type NodeQueue = Queue.Seq (Node, Ancestors)
 
-type BranchQueue = Queue.Seq Branch
+expand :: (Word, Word) -> Productions -> Bool
+expand p = expand' (Queue.singleton (Set.singleton p, Set.empty))
+  where
+  expand' :: NodeQueue -> Productions -> Bool
+  expand' ((n, a) Queue.:<| q) ps
+    | Set.null n      = True
+    | otherwise       = case expandNode ps n of
+        Nothing -> expand' q ps
+        Just n' -> expand' (simplify ps ls n' (Set.union a n) q) ps
+    where ls = if allNormed ps
+                 then [reflex, congruence, bpa2, filtering]
+                 else [reflex, congruence, bpa1, bpa2, filtering]
 
-type NodeTransformation = Productions -> Ancestors -> Node -> Set.Set Node
-
--- The expand-simplify loop
-
-expand :: BranchQueue -> [NodeTransformation] -> Productions -> Bool
-expand Queue.Empty _ _ = False
-expand ((n, a) Queue.:<| q) rules ps
-  | Set.null n = True
-  | otherwise  = case expandNode ps n of
-      Nothing -> expand q rules ps
-      Just n' -> expand (simplify q branch rules ps) rules ps
-        where branch = Set.singleton (n', Set.union a n)
-
-simplify :: BranchQueue -> Set.Set Branch -> [NodeTransformation] -> Productions -> BranchQueue
-simplify q n rules ps = foldr enqueueBranch q (findFixedPoint n rules ps)
-
--- Enqueue at one end of the queue
-enqueueBranch :: Branch -> BranchQueue -> BranchQueue
-enqueueBranch (n, a) q
- | maxLength n <= 1 = (n, a) Queue.<| q
- | otherwise        = q Queue.|> (n, a)
-
--- The maximum length of the pairs in a node
-maxLength :: Node -> Int
-maxLength n
-  | Set.null n = 0
-  | otherwise  = maximum (Set.map (\(a,b) -> max (length a) (length b)) n)
+  expand' Queue.Empty _ = False
 
 expandNode :: Productions -> Node -> Maybe Node
 expandNode ps =
   Set.foldr(\p acc -> case acc of
-    Nothing -> Nothing
-    Just n' -> case expandPair ps p of
+    Nothing  -> Nothing
+    Just n'  -> case expandPair ps p of
       Nothing  -> Nothing
       Just n'' -> Just (Set.union n' n'')) (Just Set.empty)
 
@@ -88,26 +78,48 @@ match :: Transitions -> Transitions -> Node
 match m1 m2 =
   Map.foldrWithKey (\l xs n -> Set.insert (xs, m2 Map.! l) n) Set.empty m1
 
--- Pruning
-
-pruneProductions :: Productions -> Productions
-pruneProductions p = Map.map (Map.map (pruneWord p)) p
-
+-- Prune nodes once expanded
 pruneNode :: Productions -> Node ->  Node
 pruneNode ps = Set.map (\(xs,ys) -> (pruneWord ps xs, pruneWord ps ys))
+
+prune :: Productions -> Productions
+prune p = Map.map (Map.map (pruneWord p)) p
 
 pruneWord :: Productions -> Word -> Word
 pruneWord p = foldr (\x ys -> if normed p x then x:ys else [x]) []
 
--- The fixed point of branch wrt the application of node transformations
-findFixedPoint :: Set.Set Branch -> [NodeTransformation] -> Productions -> Set.Set Branch
-findFixedPoint branch rules ps
-  | branch == branch' = branch
-  | otherwise         = findFixedPoint branch' rules ps
-    where branch' = foldr apply branch rules
-          apply :: NodeTransformation -> Set.Set Branch -> Set.Set Branch
-          apply trans =
-            foldr (\(n,a) bs -> Set.union (Set.map (\s -> (s,a)) (trans ps a n)) bs) Set.empty
+-- Apply the different node transformations
+
+simplify :: Productions -> [NodeTransformation] -> Node -> Ancestors -> NodeQueue -> NodeQueue
+simplify ps ls n a q =
+  foldr enqueueNode q (findFixedPoint ps ls (Set.singleton (n, a)))
+
+enqueueNode :: (Node,Ancestors) -> NodeQueue -> NodeQueue
+enqueueNode (n,a) q
+ | maxLength n <= 1 = (n,a) Queue.<| q
+ | otherwise        = q Queue.|> (n,a)
+
+type NodeTransformation = Productions -> Ancestors -> Node -> Set.Set Node
+
+apply :: Productions -> NodeTransformation -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
+apply ps trans ns =
+  Set.fold (\(n,a) ns -> Set.union (Set.map (\s -> (s,a)) (trans ps a n)) ns) Set.empty ns
+
+findFixedPoint :: Productions -> [NodeTransformation] -> Set.Set (Node,Ancestors) -> Set.Set (Node,Ancestors)
+findFixedPoint ps ls nas
+  | nas == nas' = nas
+  | otherwise   = findFixedPoint ps ls nas'
+    where nas' = foldr (apply ps) nas ls
+
+normsMatch :: Productions -> Node -> Bool
+normsMatch ps n = and $ Set.map (\(xs,ys) -> sameNorm ps xs ys) n
+
+-- The maximum length of the pairs in a node
+
+maxLength :: Node -> Int
+maxLength n
+  | Set.null n = 0
+  | otherwise  = Set.findMax (Set.map (\(a,b) -> max (length a) (length b)) n)
 
 -- The various node transformations
 
@@ -115,35 +127,30 @@ reflex :: NodeTransformation
 reflex _ _ = Set.singleton . Set.filter (uncurry (/=))
 
 congruence :: NodeTransformation
-congruence _ a = Set.singleton . Set.filter (not . congruentToAncestors)
-  where
-    congruentToAncestors :: (Word, Word) -> Bool
-    congruentToAncestors p = or $ Set.map (congruentToPair p) a
+congruence _ a = Set.singleton . Set.filter (not . congruentToAncestors a)
 
-    congruentToPair :: (Word, Word) -> (Word, Word) -> Bool
-    congruentToPair (xs, ys) (xs', ys') =
-      not (null xs') && xs' `isPrefixOf` xs &&
-      not (null ys') && ys' `isPrefixOf` ys &&
-      (xs'' == ys'' || congruentToAncestors (xs'', ys''))
-      where xs'' = drop (length xs') xs
-            ys'' = drop (length ys') ys
+congruentToAncestors :: Ancestors -> (Word, Word) -> Bool
+congruentToAncestors a p = or $ Set.map (congruentToPair a p) a
+
+congruentToPair :: Ancestors -> (Word, Word) -> (Word, Word) -> Bool
+congruentToPair a (xs, ys) (xs', ys') =
+  not (null xs') && xs' `isPrefixOf` xs &&
+  not (null ys') && ys' `isPrefixOf` ys &&
+  (xs'' == ys'' || congruentToAncestors a (xs'', ys''))
+  where xs'' = drop (length xs') xs
+        ys'' = drop (length ys') ys
 
 filtering :: NodeTransformation
-filtering ps _ n
-  | normsMatch = Set.singleton n
-  | otherwise  = Set.empty
-  where
-    normsMatch = and $ Set.map (\(xs,ys) -> sameNorm ps xs ys) n
-
-applyBpa :: (Productions -> Ancestors -> (Word, Word) -> Set.Set Node) -> NodeTransformation
-applyBpa transf g a n =
-  Set.foldr (\p ps -> Set.union (Set.map (\v -> Set.union v (Set.delete p n)) (transf g a p)) ps) (Set.singleton n) n
+filtering p _ n
+  | normsMatch p n = Set.singleton n
+  | otherwise      = Set.empty
 
 bpa1 :: NodeTransformation
-bpa1 = applyBpa bpa1'
+bpa1 g a n =
+  Set.foldr (\p ps -> Set.union (Set.map (\v -> Set.union v (Set.delete p n)) (bpa1' g a p)) ps) (Set.singleton n) n
 
 bpa1' :: Productions -> Ancestors -> (Word,Word) -> Set.Set Node
-bpa1' p a (x:xs, y:ys) = case findInAncestors a x y of
+bpa1' p a (x:xs,y:ys) = case findInAncestors a x y of
       Nothing         -> Set.empty
       Just (xs', ys') -> Set.union
                             (Set.singleton (Set.fromList [(xs,xs'), (ys,ys')]))
@@ -163,9 +170,12 @@ findInPair ((x':xs), (y':ys)) x y
 findInPair _ _ _       = Nothing
 
 bpa2 :: NodeTransformation
-bpa2 = applyBpa bpa2'
+bpa2 g a n =
+  Set.foldr (\p ps ->
+                Set.union (Set.map (\v -> Set.union v (Set.delete p n)) (bpa2' g a p))
+                          ps) (Set.singleton n) n
 
-bpa2' :: Productions -> Ancestors -> (Word, Word) -> Set.Set Node
+bpa2' :: Productions -> Ancestors -> (Word,Word) -> Set.Set Node
 bpa2' p a (x:xs, y:ys)
   | not (normed p x && normed p y) = Set.empty
   | otherwise  = case gammaBPA2 p x y  of
@@ -181,8 +191,8 @@ gammaBPA2 p x y = throughPath p ls [x1]
 
 pairsBPA2 :: Productions -> Word -> Word -> Word -> Node
 pairsBPA2 p (x:xs) (y:ys) gamma = Set.fromList [p1, p2]
-  where p1 = if norm p [x] >= norm p [y] then ([x], y : gamma) else (x : gamma, [y])
-        p2 = if norm p [x] >= norm p [y] then (gamma ++ xs, ys) else (xs, gamma ++ ys)
+  where  p1 = if norm p [x] >= norm p [y] then ([x], y : gamma) else (x : gamma, [y])
+         p2 = if norm p [x] >= norm p [y] then (gamma ++ xs, ys) else (xs, gamma ++ ys)
 
 -- only applicable to normed variables
 pathToSkip :: Productions -> TypeVar -> [Label]
@@ -197,6 +207,7 @@ pathToSkip' p ps
                     (map (\(l,ys) -> (ls++[l], ys)) $ Map.assocs $ transitions xs p)
                     ts ) [] ps
 
+
 throughPath :: Productions -> [Label] -> Word -> Maybe Word
 throughPath p (l:ls) xs
   | not (Map.member l ts) = Nothing
@@ -204,4 +215,3 @@ throughPath p (l:ls) xs
   where ts  = transitions xs p
         xs' = ts Map.! l
 throughPath p _ xs = Just xs
-

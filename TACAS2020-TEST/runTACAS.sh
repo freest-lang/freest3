@@ -5,52 +5,50 @@ rm -rf run_*.log
 # ghc --make -isrc -itest/ test/TACAS2020/TestTACAS.hs
 stack build TACAS2020-TEST
 
-# file=TEST.log
-# CONTENTS=`cat TEST.log`
 j=0
+# lower=80
+# upper=90
 
-while mapfile -t -n 3 ary && ((${#ary[@]})); do
-    # printf '%s\n' "${ary[0]}"
-    # printf -- '------\n'
-    # printf '%s\n' "${ary[1]}"
-    # printf -- '--- SNIP ---\n'
-    #    printf '%d' '--- SNIP ---\n'
-    for (( i = 0; i < 2; i++ )); do
-      stack exec TACAS2020-TEST "${ary[0]}" "${ary[1]}" $i True >> run_positives_$i.log &
+while mapfile -t -n 2 ary && ((${#ary[@]})); do
+    for (( i = 0; i < 16; i++ )); do
+     # printf '%s\n' "${ary[0]}"
+     # printf -- '------\n'
+     # printf '%s\n' "${ary[1]}"
+      stack exec TACAS2020-TEST True "${ary[0]}" "${ary[1]}" $i True >> run_positives_$i.log &
+     # printf -- '--- SNIP ---\n'
     done
     wait
-    echo -en "\r$j"
     ((j++))
- done < positive_tests_10-20.log
+    echo -en "\r$j"    
+done < positives.log
+#done < positive_tests_$lower-$upper.log
 
-# for (( t = 0; t < 1000; t++ )); do
-#     for (( i = 0; i < 1; i++ )); do
-# 		echo "1"
-#     stack exec TACAS2020-TEST $t $i 1000000 True >> run_positives_$i.log &
-#     done
-#     wait
-# done
+echo ""
 
-# for (( t = 0; t < 1000; t++ )); do
-#    for (( i = 0; i < 8; i++ )); do
-#       ./test/TACAS2020/TestTACAS $t $i 1000000 False >> run_negatives_$i.log &
-#    done
-#    wait
-# done
-
+while mapfile -t -n 2 ary && ((${#ary[@]})); do
+    for (( i = 0; i < 16; i++ )); do
+      stack exec TACAS2020-TEST True "${ary[0]}" "${ary[1]}" $i True >> run_negatives_$i.log &
+    done
+    wait
+    ((j++))
+    echo -en "\r$j"    
+done < negatives.log
+#done < negative_tests_$lower-$upper.log
+ 
 
 # generate tests
 
 # for (( i = 0; i < 100; i++ )); do
-#   stack exec TACAS2020-TEST 0 0 1000000 True >> positive_tests_0-10.log
+# #  stack exec TACAS2020-TEST False $lower $upper 1000000 True >> positive_tests_$lower-$upper.log
+#   stack exec TACAS2020-TEST False $lower $upper 1000000 False >> negativeTests/negative_tests_$lower-$upper.log
 #   echo -en "\r$i"  
 # done
 
+echo ""
 
-# while read LINE
-# 	do
-# 	    if [ "$LINE" != "" ]; then            
-# 		echo -en $LINE"\n ------ \n"
-# 		i = $i + 1
-# 	    fi
-# 	done < TEST.log
+# (((z;z);(+{A: x};(y;!Char)));(((z;z);(+{A: x};(y;!Char)));(rec z:SL.(rec z:SU.((z;z);(+{A: x};(y;!Char)))))))
+# (((((z;z);+{A: x});(y;!Char));(((z;z);+{A: x});(y;!Char)));(rec z:SU.(((z;z);+{A: x});(y;!Char))))
+
+
+# (rec y:SU.((rec z:SU.(rec z:SL.(rec x:SL.(rec x:SU.(rec δ:SU.y)))));(rec z:SU.(rec z:SL.(rec x:SL.(rec x:SU.(rec δ:SU.y)))))))
+# (rec y:SU.((rec z:SL.(rec x:SL.y));(rec z:SL.(rec x:SL.y))))

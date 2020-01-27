@@ -228,7 +228,8 @@ fixedPoint visited goals ts
         ts2 <- getTransitions y'
         if matchingTrans ts1 ts2
         then let
-          newVisited = Set.insert (x, y') visited
+--          newVisited = Set.insert (x, y') visited
+          newVisited = Set.insert goal (Set.insert (x, y') visited)
           newGoals = Set.delete goal goals `Set.union` moreGoals ts1 ts2
           in fixedPoint newVisited newGoals ts
         else return False
