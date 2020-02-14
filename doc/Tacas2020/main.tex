@@ -17,9 +17,7 @@
 \usepackage{listings,color}
 \usepackage{alltt}
 \usepackage{flushend}
-\usepackage[dvipsnames]{xcolor}
-% \usepackage{algorithm}
-% \usepackage[noend]{algpseudocode}
+\usepackage[dvipsnames]{xcolor} % \color{MidnightBlue}
 \usepackage{graphicx}
 \usepackage{tikz-cd}
 \usepackage{multicol,enumitem}
@@ -27,30 +25,33 @@
 \usepackage{subfig}
 \usepackage[font=small,labelfont=bf]{caption}
 
+%%%%%% To display ORCID Logo with link, Please add below definition and copy the ORCID_Color.eps in the manuscript package %%%%%
 
+\makeatletter
+\RequirePackage[bookmarks,unicode,colorlinks=true]{hyperref}%
+   \def\@citecolor{blue}%
+   \def\@urlcolor{blue}%
+   \def\@linkcolor{blue}%
+\def\UrlFont{\rmfamily}
+\def\orcidID#1{\smash{\href{http://orcid.org/#1}{\protect\raisebox{-1.25pt}{\protect\includegraphics{orcid_color.eps}}}}}
+\makeatother
 
 \input{macros}
 
 \begin{document}
 
-\title{Deciding the bisimilarity of context-free session types
-  % \thanks{This work was supported by FCT via project Confident
-  % (PTDC/EEI-CTP/ 4503/2014) and the LASIGE Research Unit
-  % (UID/CEC/00408/2019).} % isto está nos ACK.
-}
+\title{Deciding the bisimilarity of context-free session types}
 
 %optional, please use if title is longer than one line
 %\titlerunning{Deciding the bisimilarity of context-free session types}
 
-\author{Bernardo Almeida\inst{1} \and
-Andreia Mordido\inst{1} \and
-Vasco T. Vasconcelos\inst{1}}
-
-%\author{Bernardo Almeida}{LASIGE, Faculdade de Ciências, Universidade de Lisboa, Portugal}{balmeida@lasige.di.fc.ul.pt}{[funding]}{https://orcid.org/0000-0001-5398-6529}
-%
-%\author{Andreia Mordido}{LASIGE, Faculdade de Ciências, Universidade de Lisboa, Portugal}{afmordido@fc.ul.pt}{[funding]}{https://orcid.org/0000-0002-1547-0692}
-%
-%\author{Vasco T. Vasconcelos}{LASIGE, Faculdade de Ciências, Universidade de Lisboa, Portugal}{vmvasconcelos@fc.ul.pt}{[funding]}{https://orcid.org/0000-0002-9539-8861}
+\author{
+  Bernardo Almeida\orcidID{0000-0001-5398-6529} %\inst{1}
+  \and
+  Andreia Mordido\orcidID{0000-0002-1547-0692} %\inst{1}
+  \and
+  Vasco T. Vasconcelos\orcidID{0000-0002-9539-8861} %\inst{1}
+}
 
 \institute{LASIGE, Faculdade de Ciências, Universidade de Lisboa, Portugal}
 
@@ -89,15 +90,15 @@ UID/CEC/00408/2019 and by Cost Action CA15123 EUTypes.
 \bibliographystyle{plain}
 \bibliography{biblio}
 
-%\newpage 
-%\appendix
-%\input{appendix}
-%\newpage
-%\section{Haskell code (excerpt)}
-%\lstinputlisting{Bisimulation.hs}
-%\lstinputlisting{TypeToGrammar.hs}
-%\lstinputlisting{Norm.hs}
-%\lstinputlisting{Grammar.hs}
+%%%%% To display Open Access text and logo, Please add below text and copy the cc_by_4-0.eps in the manuscript package %%%
+
+\vfill
+
+{\small\medskip\noindent{\bf Open Access} This chapter is licensed under the terms of the Creative Commons\break Attribution 4.0 International License (\url{http://creativecommons.org/licenses/by/4.0/}), which permits use, sharing, adaptation, distribution and reproduction in any medium or format, as long as you give appropriate credit to the original author(s) and the source, provide a link to the Creative Commons license and indicate if changes were made.}
+
+{\small \spaceskip .28em plus .1em minus .1em The images or other third party material in this chapter are included in the chapter's Creative Commons license, unless indicated otherwise in a credit line to the material.~If material is not included in the chapter's Creative Commons license and your intended\break use is not permitted by statutory regulation or exceeds the permitted use, you will need to obtain permission directly from the copyright holder.}
+
+\medskip\noindent\includegraphics{cc_by_4-0.eps}
 
 \end{document}
 
