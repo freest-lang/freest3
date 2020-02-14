@@ -186,18 +186,42 @@
 \newcommand{\bisimf}[2]{\bisimk{#1}\:{#2}}
 \newcommand{\isCheckedf}[1]{\isCheckedk\:{#1}}
 
-\lstset{
-  language=haskell,
+\newcommand\Small{\small}
+%\newcommand\Small{\fontsize{7.5}{8}\selectfont} 
+
+\definecolor{darkviolet}{rgb}{0.5,0,0.4}
+\definecolor{darkgreen}{rgb}{0,0.4,0.2} 
+\definecolor{darkblue}{rgb}{0.1,0.1,0.9}
+\definecolor{darkgrey}{rgb}{0.5,0.5,0.5}
+\definecolor{lightblue}{rgb}{0.4,0.4,1}
+
+\lstdefinestyle{eclipse}{
+  breaklines=true,
+  basicstyle=\sffamily\Small,
+  emphstyle=\color{red}\bfseries, 
+  keywordstyle=\color{darkviolet}\bfseries,
+  commentstyle=\color{darkgreen},
+  stringstyle=\color{darkblue},
+  numberstyle=\color{darkgrey},%\lstfontfamily,
+  emphstyle=\color{red},
+  % get also javadoc style comments
+  morecomment=[s][\color{lightblue}]{/**}{*/},
+  %columns=fullflexible, %spaceflexible, %flexible, fullflexible             
+  escapeinside={@}{@},
+  %  escapechar=@,
+  showstringspaces=false,
+  tabsize=2
 }
 
 % Programming language: cfs
 \lstdefinelanguage{cfs}{
+  style=eclipse,
   language=haskell,
 %  style=eclipse
   basicstyle=\sffamily\small,
   extendedchars=true,
   breaklines=true,
-  morekeywords={new,send,receive,skip,select,dualof,int,fork,def},
+  morekeywords={Skip,rec},
   tabsize=8,
   literate=
     {oplus}{$\oplus$}1 
