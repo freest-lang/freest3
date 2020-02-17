@@ -138,12 +138,9 @@ B0 stands for the base algorithm, $\BisimT$.
   2.93GHz and 24 GB of RAM; tests were run under a timeout of 30
   minutes.
 
-Table~\ref{table:timeouts} 
-exhibits the number of timeouts for each version of the algorithm for both
-test suites. 
-Although we do not observe an improvement with the gradual
-inclusion of optimisations in the order we have chosen,
-we achieve 0 timeouts when all the optimisations are included.
+For B0 we had 5 tests exceeding the timeout, for B1--B4 the number of timeouts
+ranged from 1 to 12, for B12 we had 2 timeouts, whereas for B1234 all tests
+ran in less than 30 minutes.
 %
 %\begin{table}
 %\centering
@@ -166,46 +163,67 @@ we achieve 0 timeouts when all the optimisations are included.
 %\end{table}
 %
 %
-Figure~\ref{fig:results} depicts the distribution of the execution
+Figure~\ref{fig:results} (a) depicts the distribution of the execution
 times (in $\mu s$) for both test suites and for all optimisations.  In
 this plot, we observe the distribution of tests for each execution
 time.  All the versions exhibit similar execution times for the
-majority of the tests.  Although we have carried out tests with a
+majority of the tests.   
+%
+Figure~\ref{fig:results} (b) represents the distribution of execution
+time per total number of nodes in the abstract syntax trees of the
+types. We observe an exponential increase in the runtime.
+%
+Although we have carried out tests with a
 fairly large number of nodes in their abstract syntax trees, we remark
 that, when used in a compiler, the algorithm will mostly come across
 types with a reduced number of nodes.
 
-\noindent
-\begin{minipage}[b]{0.49\textwidth}
-   {\small 
-  \centering
- 	\begin{tabular}{ |c|c|c| }
-	 \hline
- 		Version &  {\color{orange}Bisimilar} & {\color{MidnightBlue}Not bisimilar}  \\ 
- 		 \hline
-	 	B0 & 5 & 0 \\  
-	 	B1 &  1 & 0 \\ 
-	 	B2 & 6 & 0 \\ 
-	 	B3 &  12 & 0 \\
-	 	B4 &  4 & 0 \\
-	 	B12 &  2 & 0 \\   
-	 	B123 &  6 & 0 \\
-	 	B1234 &  \textbf{0} & \textbf{0} \\ 
-	 	 \hline  
-	\end{tabular}\vspace*{6mm}
-	\captionof{table}{Number of timeouts for each optimisation and for both test 
-	suites.\label{table:timeouts}\vspace*{4mm}}
-	}
-	\end{minipage}
-	\hfill
-\begin{minipage}[b]{0.49\textwidth}
- {\small 
-\centering
-    \includegraphics[height=.85\textwidth]{img/distribution_boxplot}%
-    \captionof{figure}{Distribution of execution time of function $\BisimT$ for both test suites. 
-    Both scales are logarithmic.\label{fig:results}}}
-    %\caption{Distribution of the execution time. \label{fig:results}}
-\end{minipage}
+
+\begin{figure}[t]
+    \centering
+    \subfloat[Distribution of the execution time]{\includegraphics[height=.5\textwidth]{img/distribution_boxplot}}%
+    \subfloat[Execution time per number of nodes]{\includegraphics[height=.5\textwidth]{img/nodes_time_B1234}}%
+    \caption{The test suite composed by equivalent pairs of types is represented in orange and the
+    test suite with non-equivalent pairs of types is represented in blue. Time 
+    in microseconds, $\mu s$. Both scales are logarithmic.\\
+    (a) Distribution of execution time of function $\BisimT$ for both test suites.\\
+    (b) Distribution of execution time of function $\BisimT$ per total number of nodes 
+    in the abstract syntax trees of the types.}%
+    \label{fig:results}%
+\end{figure}
+
+
+%\noindent
+%\begin{minipage}[b]{0.49\textwidth}
+%   {\small 
+%  \centering
+% 	\begin{tabular}{ |c|c|c| }
+%	 \hline
+% 		Version &  {\color{orange}Bisimilar} & {\color{MidnightBlue}Not bisimilar}  \\ 
+% 		 \hline
+%	 	B0 & 5 & 0 \\  
+%	 	B1 &  1 & 0 \\ 
+%	 	B2 & 6 & 0 \\ 
+%	 	B3 &  12 & 0 \\
+%	 	B4 &  4 & 0 \\
+%	 	B12 &  2 & 0 \\   
+%	 	B123 &  6 & 0 \\
+%	 	B1234 &  \textbf{0} & \textbf{0} \\ 
+%	 	 \hline  
+%	\end{tabular}\vspace*{6mm}
+%	\captionof{table}{Number of timeouts for each optimisation and for both test 
+%	suites.\label{table:timeouts}\vspace*{4mm}}
+%	}
+%	\end{minipage}
+%	\hfill
+%\begin{minipage}[b]{0.49\textwidth}
+% {\small 
+%\centering
+%    \includegraphics[height=.85\textwidth]{img/distribution_boxplot}%
+%    \captionof{figure}{Distribution of execution time of function $\BisimT$ for both test suites. 
+%    Both scales are logarithmic.\label{fig:results}}}
+%    %\caption{Distribution of the execution time. \label{fig:results}}
+%\end{minipage}
 
 %%% Local Variables:
 %%% mode: latex

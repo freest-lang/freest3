@@ -99,11 +99,13 @@ denoted by $\vec X\cdot\vec Y$.
   \word(S;T) &= \word(S) \cdot \word(T)
   \\
   \word(\sharp B) &=
-    \productions := \productions \cup (Y \rightarrow \sharp B); Y
+     Y,
+     \text{ setting } \productions := \productions \cup (Y \rightarrow \sharp B)
     && (Y\text{ fresh})
   \\
   \word(\star\{\ell_i\colon T_i\}_{i\in I}) &=
-    \productions := \productions \cup \{Y \rightarrow\star l_i\cdot \word(T_i) \mid i\in I\}; Y
+     Y,
+    \text{ setting } \productions := \productions \cup \{Y \rightarrow\star l_i\cdot \word(T_i) \mid i\in I\}
     && (Y\text{ fresh})
   \\
   \word(X) &= X
@@ -123,26 +125,28 @@ of a call to $\word(T)$.
 %
 \begin{proof}
   The direct implication follows by rule induction on
-  predicate~$\DONE$.
+  predicate~$\DONE$:
   \begin{itemize}
-  \item If $T \triangleq \skipk$, then $\word(T) = \varepsilon$.
-  \item If $T\triangleq U;V$, then the premises of the rule read
-    $\DONE{U}$ and $\DONE{V}$. Then, by induction hypothesis,
-    $\word(U) = \varepsilon$ and $\word(V) = \varepsilon$. Hence,
-    $\word(T;U) = \varepsilon$.
-  \item If $T\triangleq \mu X.S$ then the premises of $\isType[]T$ and
-    $\DONE T$ are contradictory on~$S$.
-  \item If $T\triangleq X$, then $\neg \isType[]T$.
+  \item Case $\DONE{\skipk}$: $\word(\skipk) = \varepsilon$.
+  \item Case $\DONE{X}$: if $T\triangleq X$, then $\isNotType[]T$.
+  \item Case $\DONE{S;T}$: by induction hypothesis over the 
+    rule premises 
+    $\DONE{S}$ and $\DONE{T}$,
+    $\word(S) = \varepsilon$ and $\word(T) = \varepsilon$. Hence,
+    $\word(S;T) = \varepsilon$.
+  \item Case $\mu X.S$: if $T\triangleq \mu X.S$, then the hypothesis 
+    $\DONE T$ and the rule premises of 
+    hypothesis $\isType[]T$ are contradictory.
   \end{itemize}
   %
-  Conversely, if $\word(T) = \varepsilon$, then by definition of
-  $\word$:
+  Conversely, if $\word(T) = \varepsilon$, using the rules of the definition of
+  $\word$ that produce the empty word:
   \begin{itemize}
-  \item $T\triangleq \skipk$ and we have $\DONE T$;
-  \item $T\triangleq U;V$ and the inversion of the function reads
-    $\word(U) = \varepsilon$, $\word(V) = \varepsilon$.  Thus, by
-    induction, we have $\DONE U$ and $\DONE V$. Hence, $\DONE T$;
-  \item No other case in function $\word$ produces an empty word.
+  \item if $T\triangleq \skipk$, then we have $\DONE T$.
+  \item if $T\triangleq U;V$,
+    $\word(U) = \varepsilon$, and $\word(V) = \varepsilon$, then, by
+    induction, we have $\DONE U$ and $\DONE V$. Hence, $\DONE T$.
+  \item No other case in function $\word$ produces an empty word. \qed
   \end{itemize}
 \end{proof}
 

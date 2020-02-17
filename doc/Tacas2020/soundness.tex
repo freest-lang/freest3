@@ -57,14 +57,16 @@ and vice-versa.
 
 \begin{lemma}
   \label{lem:transitions_mimic}
-  $S \LTSderives T$ if and only if $\vec X \LTSderivesP \vec Y$, 
-  where \grmcontext.
+  Let \grmcontext. Then, 
+  $S \LTSderives T$ if and only if $\vec X \LTSderivesP \vec Y$.
 \end{lemma}
 %
 \begin{proof}
-	For the direct implication and using the unravelling
-	function on recursive types, we can proceed by induction
-	on the structure of $\LTSderives$. 
+	The direct implication is done by rule induction on the
+	hypothesis.
+%	For the direct implication and using the unravelling
+%	function on recursive types, we can proceed by induction
+%	on the structure of $\LTSderives$. 
 	
 	\begin{itemize}
 		%\item $S\triangleq\skipk$ does not have any transition. And
@@ -109,7 +111,7 @@ and vice-versa.
 		Hence, $\Unravel (S)$ is of the form $\star\{l_j' :U_j\}_{j\in J};T$ with $l_i = l_j'$ and
 		$\vec X = \word(U_j) \cdot \vec Z$, for some $j\in J$. Using 
 		the LTS we conclude that 
-		$S \LTSderives[\star l_i] U_j ; T$.
+		$S \LTSderives[\star l_i] U_j ; T$. \qed
 	\end{itemize}
 \end{proof}
 
@@ -131,8 +133,8 @@ Obviously, $(\word(S), \word(T))\in \mathcal{B}'$. To prove that
 $\mathcal{B}'$ is a bisimulation, one assumes that 
 $\word (S_0)\LTSderivesP \vec X $ and proves that there exists
 $\vec Y$ such that $\word (T_0)\LTSderivesP \vec Y $
-with $(\vec X, \vec Y)\in \mathcal{B}'$. This proof follows 
-as usual by coinduction on the definition of $\word$, uses 
+with $(\vec X, \vec Y)\in \mathcal{B}'$. This proof  
+is done by coinduction on the definition of $\word$, uses 
 Lemmas~\ref{lemma:terminated-togrammar}
 and \ref{lem:transitions_mimic},
 and the definition of $\mathcal{B}'$. \smallskip\\
@@ -146,8 +148,8 @@ The proof that $\mathcal{B}$ is a bisimulation, consists in proving that:
 given $(S_0, T_0)\in \mathcal{B}$, such that $S_0\LTSderives S_0'$,
 there exists $T_0'$ such that $T_0\LTSderives T_0'$
 and $(S_0',T_0')\in \mathcal{B}$. Again, the proof
-follows by coinduction on the structure of $S_0$. 
-We omit the details. 
+follows by rule coinduction on the LTS. 
+We omit the details. \qed 
 \end{proof}
 
 Now we sketch the proof that pruning grammars also preserves bisimulation.
@@ -166,7 +168,7 @@ is a bisimulation for $\vec X$ and $\vec Y$ over $\Prune(\productions)$,
 then $\mathcal{B} = \mathcal{B}' \cup 
 \{(\vec V W, \vec V W \vec Z) \mid  (W\rightarrow \vec V W \vec Z) \in \productions, 
 \text{ $W$ unnormed} \}$ 
-is a bisimulation for $\vec X$ and $\vec Y$ over $\productions$.
+is a bisimulation for $\vec X$ and $\vec Y$ over $\productions$. \qed
 \end{proof}
 
 
@@ -245,7 +247,7 @@ the algorithm, its soundness and completeness.
   any infinite branch is successful by definition and thus the
   safeness property would imply $\word(S) \sim_{\Prune(\productions)} \word(T)$ 
   and we would have
-  $S\TypeEquiv T$, by Theorem~\ref{thm:equiv_coincide}.
+  $S\TypeEquiv T$, by Theorem~\ref{thm:equiv_coincide}.\qed
 \end{proof}
 
 %\begin{proof}
@@ -272,7 +274,7 @@ the algorithm, its soundness and completeness.
   successful branch in the expansion tree rooted at
   $\{(\vec X,\vec Y)\}$, i.e., a branch terminating in an empty node. 
   Conclude with the safeness property,
-  Lemma~\ref{lem:safeness}.
+  Lemma~\ref{lem:safeness}. \qed
   % , whenever the expansion tree rooted
   % at $\{(X_{S}, X_{T})\}$ has a (finite) successful branch, we
   % kn that $X_{S} \ProdEquiv X_{T}$.
@@ -291,7 +293,7 @@ the meta-theory of context-free session types.
 %
 \begin{proof}
   From Theorem~\ref{thm:equiv_coincide}, Theorem~\ref{thm:pruning_preserves_bisim}, 
-  and Lemma~\ref{lem:bisimilar-to-prod}.
+  and Lemma~\ref{lem:bisimilar-to-prod}.\qed
 \end{proof}
 
 % \begin{corollary}
@@ -328,7 +330,7 @@ paramount to achieve this result.
   $\{(\vec X,\vec Y)\}$, i.e., a branch terminating in an empty
   node.  Since our algorithm traverses the expansion tree using
   breadth-first search it will, eventually, reach the empty node and
-  conclude the bisimulation positively.
+  conclude the bisimulation positively.\qed
 \end{proof}
 
 Theorem~\ref{thm:completeness} ensures that if

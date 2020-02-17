@@ -61,37 +61,37 @@ $\isType T$ characterises the types of interest: the
   {
     \isType \skipk
   }
-  \qquad
+  \quad
   \frac{}
   {
     \isType {\sharp B}
   }
-  \qquad
+  \quad
   \frac{
     X \in \Delta
   }{
     \isType{X}
   }
-  \\
+  \quad
   \frac{
     \isType{S}
-    \quad
+    \enspace
     \isType{T}
   }{
     \isType{S;T}
   }
-  \qquad
+  \quad
   \frac{
     \isType{T_i}
   }{
     \isType{\star 
       \{ l_i \colon T_i\}}
   }
-  \qquad
+  \quad
   \frac{
     % \isContr T
     \neg\DONE T
-    \quad 
+    \enspace 
     \isType [\Delta, X] T
   }{
     \isType {\mu X. T}
