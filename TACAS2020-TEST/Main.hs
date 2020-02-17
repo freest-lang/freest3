@@ -109,9 +109,6 @@ runEach pair (name, f, g) pos = do
   case v of
         Nothing -> putStrLn $ base ++ "timeout"
         (Just (time, r)) -> putStrLn $ base ++ (show r) ++ ";" ++ time
-        -- (Just (time, True)) -> putStrLn $ base ++ (show True) ++ ";" ++ time
-        --    ++ "\nTypes:\n" ++ show t1 ++ "\n" ++ show t2 ++ "\n\n"
-        -- (Just (time, False)) -> putStrLn $ base ++ (show False) ++ ";" ++ time
 
 
 -- runTestVersion :: BisimPair -> String -> IO (String, Bool)
@@ -157,9 +154,9 @@ mkPairPositive sizeLower sizeUpper depth = do
     let n2 = nodes t2
     
     if (n1 > sizeLower && n1 <= sizeUpper) || (n2 > sizeLower && n2 <= sizeUpper) then
-      if kinded t1 && kinded t2 then
+--      if kinded t1 && kinded t2 then
         return (BisimPair t1 t2)
-      else mkPairPositive sizeLower sizeUpper depth
+--      else mkPairPositive sizeLower sizeUpper depth
     else mkPairPositive sizeLower sizeUpper depth
 
 
@@ -175,12 +172,6 @@ mkPairNegative sizeLower sizeUpper = do
       t2 <- genOne t1
       return $ BisimPair t1 t2
     else mkPairNegative sizeLower sizeUpper
-         
-    -- if (n1 > sizeLower && n1 <= sizeUpper) && (n2 > sizeLower && n2 <= sizeUpper) then
-    --   if kinded t1 && kinded t2 && not (test pair) then return pair
-    --   else mkPairNegative sizeLower sizeUpper
-    -- else mkPairNegative sizeLower sizeUpper
-
   where
     test t1 t2 = B1234.bisimilar $ TG1.convertToGrammar Map.empty [t1, t2]
 
