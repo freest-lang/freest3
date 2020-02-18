@@ -63,7 +63,7 @@ and vice-versa.
 %
 \begin{proof}
 	For the direct implication, we proceed by rule induction on the
-	hypothesis.
+	hypothesis, using the definition of $\word$.
 %	For the direct implication and using the unravelling
 %	function on recursive types, we can proceed by induction
 %	on the structure of $\LTSderives$. 
@@ -71,34 +71,41 @@ and vice-versa.
 	\begin{itemize}
 		%\item $S\triangleq\skipk$ does not have any transition. And
 		%neither does $\toGrammarf{\skipk} = \varepsilon$.
-		\item If $\sharp B \LTSderives[\sharp B] \skipk$ then, by definition
-		of $\word$, $\word(S) \LTSderivesP[\sharp B] \varepsilon$.
-		\item If
-		$\star\{l_i\colon S_i\}_{i\in I} \LTSderives[\star l_i] S_i$ then, by 
-		definition of $\grm$, 
+		\item Case $\sharp B$: if $\sharp B \LTSderives[\sharp B] \skipk$, then 
+			$\word(S) \LTSderivesP[\sharp B] \varepsilon$.
+		\item Case $\star l_i$: if
+		$\star\{l_i\colon S_i\}_{i\in I} \LTSderives[\star l_i] S_i$, then
 		$\word(S) \LTSderivesP[\star l_i] \word(S_i)$.
-		\item If $S_1;S_2\LTSderives S_1';S_2$ with $S_1\LTSderives S_1'$,
+		\item Case $S_1;S_2$ with $S_1\LTSderives S_1'$:
+		if $S_1;S_2\LTSderives S_1';S_2$ and $S_1\LTSderives S_1'$,
 			by induction hypothesis, we know that $\word(S_1) \LTSderivesP \word(S_1')$.
 			Furthermore, we have
 			\begin{equation}
 			\label{eq:grammar_sequential_composition}
 				\word(S_1;S_2) = \word(S_1)\cdot\word(S_2).	
 			\end{equation}
-			Hence, we have $\word(S_1;S_2) \LTSderivesP \word(S_1';S_2)$.
-		\item In the case $S_1;S_2\LTSderives S_2'$, where
+			Hence, $\word(S_1;S_2) \LTSderivesP \word(S_1';S_2)$.
+		\item Case $S_1;S_2$ with $\DONE{S_2}$ and $S_2\LTSderives S_2'$: 
+			in the case $S_1;S_2\LTSderives S_2'$, where
 			$\DONE{S_1}$ and $S_2\LTSderives S_2'$, 
 			by~\eqref{eq:grammar_sequential_composition},
 			Lemma~\ref{lemma:terminated-togrammar} and since $\DONE{S_1}$, 
 			we have $\word(S_1;S_2) = \word(S_2)$.
 			Thus, by induction hypothesis we have 
 			$\word(S_1;S_2) \LTSderivesP \word(S_2').$
-		\item If $\mu X.T\LTSderives S'$, then, by recursively going backward 
-		in the LTS rule for recursive types, we know that
-		$\Unravel(S) \LTSderives S'$ and $\Unravel(S)$ is not a recursive
-		type. Hence, by induction hypothesis, we have
-		$\word(\Unravel(S))\LTSderivesP \word(S')$.
-		By definition of $\grm(S,\emptyset)$, we thus have
-		$\word(S) = X \LTSderivesP \word(S')$. \smallskip
+		\item Case $\mu X.T$: if $\mu X.T\LTSderives S'$, 
+			then $\subs {\mu X. T}{X}{T} \LTSderives S'$. Also
+			$\Unravel(S) \LTSderives S'$ and, by induction hypothesis,
+			$\word(\Unravel(S))\LTSderivesP \word(S')$. Hence, by 
+			definition of $\word$, 
+			$\word(S) = X \LTSderivesP \word(S')$. \smallskip
+%		then, by recursively going backward 
+%		in the LTS rule for recursive types, we know that
+%		$\Unravel(S) \LTSderives S'$ and $\Unravel(S)$ is not a recursive
+%		type. Hence, by induction hypothesis, we have
+%		$\word(\Unravel(S))\LTSderivesP \word(S')$.
+%		By definition of $\grm(S,\emptyset)$, we thus have
+%		$\word(S) = X \LTSderivesP \word(S')$. \smallskip
 	\end{itemize}
 	For the reverse implication, we prove that any transition in the
 	grammar leads to a transition in the corresponding types.
@@ -115,8 +122,16 @@ and vice-versa.
 	\end{itemize}
 \end{proof}
 
+\begin{lemma}
+	 \label{lem:transitions_words}
+	 If $\word S \LTSderivesP \vec X$, then exists $T$ s.t. $S \LTSderives T$ and $\vec X = \word T$.
+\end{lemma}
+\begin{proof}
+	By induction on the definition of $\word$.\qed 
+\end{proof}
+
 The main result of this subsection follows from
-Lemma~\ref{lem:transitions_mimic}.
+Lemmas~\ref{lem:transitions_mimic} and~\ref{lem:transitions_words}.
 
 \begin{theorem}
   \label{thm:equiv_coincide}
@@ -135,8 +150,8 @@ $\word (S_0)\LTSderivesP \vec X $ and proves that there exists
 $\vec Y$ such that $\word (T_0)\LTSderivesP \vec Y $
 with $(\vec X, \vec Y)\in \mathcal{B}'$. This proof  
 is done by coinduction on the definition of $\word$, uses 
-Lemmas~\ref{lemma:terminated-togrammar}
-and \ref{lem:transitions_mimic},
+Lemmas~\ref{lemma:terminated-togrammar},
+\ref{lem:transitions_mimic}, \ref{lem:transitions_words},
 and the definition of $\mathcal{B}'$. \smallskip\\
 For the reverse implication, assume that 
 $\vec X \ProdEquiv \vec Y$, with $\vec X = \word (S)$ and
@@ -147,8 +162,10 @@ Notice that $(S,T)\in \mathcal{B}$.
 The proof that $\mathcal{B}$ is a bisimulation, consists in proving that:
 given $(S_0, T_0)\in \mathcal{B}$, such that $S_0\LTSderives S_0'$,
 there exists $T_0'$ such that $T_0\LTSderives T_0'$
-and $(S_0',T_0')\in \mathcal{B}$. Again, the proof
-follows by rule coinduction on the LTS. 
+and $(S_0',T_0')\in \mathcal{B}$. The proof
+follows by rule coinduction on the LTS and uses 
+Lemmas~\ref{lemma:terminated-togrammar},
+\ref{lem:transitions_mimic}, and~\ref{lem:transitions_words}. 
 We omit the details. \qed 
 \end{proof}
 
