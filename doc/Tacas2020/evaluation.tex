@@ -131,16 +131,15 @@ B0 stands for the base algorithm, $\BisimT$.
 %
   We implemented the base algorithm and its
   variants %described by the function $\BisimT$
-  in Haskell, using the Glasgow Haskell Compiler (version 8.6.5)
-  provided by the docker image \texttt{fpco/stack-build}. % We also
+  in Haskell, using the Glasgow Haskell Compiler (version 8.6.5). % We also
   % implemented the optimisations 1-4 above.
-  Evaluation was conducted on a machine with an Intel Xeon X5670 at
-  2.93GHz and 24 GB of RAM; tests were run under a timeout of 30
-  minutes.
+  The evaluation was conducted on a machine with an Intel Core i7-6700K at
+  4.2GHz and 8 GB of RAM running Arch Linux; tests were run under a timeout
+  of 2 minutes.
 
 For B0 we had 5 tests exceeding the timeout, for B1--B4 the number of timeouts
 ranged from 1 to 12, for B12 we had 2 timeouts, whereas for B1234 all tests
-ran in less than 30 minutes.
+ran in less than 30 minutes. 
 %
 %\begin{table}
 %\centering
