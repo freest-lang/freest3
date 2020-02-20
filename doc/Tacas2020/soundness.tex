@@ -16,7 +16,7 @@ we propose is sound and complete.
 \subsection{Type translation is fully abstract}
 
 Sections~\ref{sec:contextfreesession} and~\ref{sec:algorithm}
-introduce bisimulation relations on the set of $\mathcal T$ types
+introduce bisimulation relations on the set $\mathcal T$ of types
 $\TypeEquiv$ and on a given set $\productions$ of productions
 $\ProdEquiv$.  Our ultimate goal in this subsection is to prove that
 we can faithfully analyze the bisimilarity of types by analyzing the
@@ -72,10 +72,10 @@ and vice-versa.
 		%\item $S\triangleq\skipk$ does not have any transition. And
 		%neither does $\toGrammarf{\skipk} = \varepsilon$.
 		\item Case $\sharp B$: if $\sharp B \LTSderives[\sharp B] \skipk$, then 
-			$\word(S) \LTSderivesP[\sharp B] \varepsilon$.
-		\item Case $\star l_i$: if
-		$\star\{l_i\colon S_i\}_{i\in I} \LTSderives[\star l_i] S_i$, then
-		$\word(S) \LTSderivesP[\star l_i] \word(S_i)$.
+			$\word(\sharp B) \LTSderivesP[\sharp B] \varepsilon$.
+		\item Case $\star \ell_i$: if
+		$\star\{\ell_i\colon S_i\}_{i\in I} \LTSderives[\star \ell_i] S_i$, then
+		$\word(S) \LTSderivesP[\star \ell_i] \word(S_i)$.
 		\item Case $S_1;S_2$ with $S_1\LTSderives S_1'$:
 		if $S_1;S_2\LTSderives S_1';S_2$ and $S_1\LTSderives S_1'$,
 			by induction hypothesis, we know that $\word(S_1) \LTSderivesP \word(S_1')$.
@@ -111,20 +111,20 @@ and vice-versa.
 	grammar leads to a transition in the corresponding types.
 	\begin{itemize}
 		\item if $\word(S)\LTSderivesP[\sharp B] \vec X$, then
-		$\word(S) = Y \vec X$, where $Y\LTSderivesP[\sharp B] \varepsilon$,
-		and so $\Unravel(S) = \sharp B; T$ whence $S\LTSderives[\sharp B] T$.
-		\item if $\word(S) \LTSderivesP[\star l_i] \vec X $, then
-		$\word(\Unravel(S)) = Y $, where $Y\LTSderivesP[\star l_i] \vec X$.
-		Hence, $\Unravel (S)$ is of the form $\star\{l_j' :U_j\}_{j\in J};T$ with $l_i = l_j'$ and
-		$\vec X = \word(U_j) \cdot \vec Z$, for some $j\in J$. Using 
+		$\word(S) = Y \cdot \vec X$, where $Y\LTSderivesP[\sharp B] \varepsilon$,
+		and so $\Unravel(S) = \sharp B; T$ and thus $S\LTSderives[\sharp B] T$.
+		\item if $\word(S) \LTSderivesP[\star \ell_i] \vec X $, then
+		$\word(\Unravel(S)) = Y $, where $Y\LTSderivesP[\star \ell_i] \vec X$.
+		Hence, $\Unravel (S)$ is of the form $\star\{\ell_j' :U_j\}_{j\in J};T$ with $\ell_i = \ell_j'$ and
+		$\vec X = \word(U_j;T)$, for some $j\in J$. Using 
 		the LTS we conclude that 
-		$S \LTSderives[\star l_i] U_j ; T$. \qed
+		$S \LTSderives[\star \ell_i] U_j ; T$. \qed
 	\end{itemize}
 \end{proof}
 
 \begin{lemma}
 	 \label{lem:transitions_words}
-	 If $\word S \LTSderivesP \vec X$, then exists $T$ s.t. $S \LTSderives T$ and $\vec X = \word T$.
+	 If $\word\ S \LTSderivesP \vec X$, then exists $T$ s.t. $S \LTSderives T$ and $\vec X = \word\ T$.
 \end{lemma}
 \begin{proof}
 	By induction on the definition of $\word$.\qed 
@@ -165,8 +165,7 @@ there exists $T_0'$ such that $T_0\LTSderives T_0'$
 and $(S_0',T_0')\in \mathcal{B}$. The proof
 follows by rule coinduction on the LTS and uses 
 Lemmas~\ref{lemma:terminated-togrammar},
-\ref{lem:transitions_mimic}, and~\ref{lem:transitions_words}. 
-We omit the details. \qed 
+\ref{lem:transitions_mimic}, and~\ref{lem:transitions_words}. \qed 
 \end{proof}
 
 Now we sketch the proof that pruning grammars also preserves bisimulation.
@@ -259,7 +258,7 @@ the algorithm, its soundness and completeness.
   breadth-first search eventually terminates.
   
   When $S\not\TypeEquiv T$, we easily conclude that all branches in
-  the expansion tree are finite and thence $\Bisim(\vec X,\vec Y)$
+  the expansion tree are finite and thus $\Bisim(\vec X,\vec Y)$
   terminates.  To conclude that all branches are finite, observe that
   any infinite branch is successful by definition and thus the
   safeness property would imply $\word(S) \sim_{\Prune(\productions)} \word(T)$ 

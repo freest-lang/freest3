@@ -106,7 +106,7 @@ $\mathcal{O}(2^{2^{\mathsf{pol}(n)}})$~\cite{jancar2012bisimilarity}.
 
 % The three stages
 
-The decidability of deterministic pushdown automata has also been
+The decidability of deterministic pushdown automata (DPDA) has also been
 subject of much
 study~\cite{janvcar2008selected,senizergues1997equivalence,stirling2001decidability}.
 Several techniques have been proposed to solve the problem, but no
@@ -114,6 +114,9 @@ immediate practical algorithm was available until Henry and
 Sénizergues provide an algorithm for this
 problem~\cite{henry2013lalblc}. Its poor performance however precludes
 its incorporation in a compiler.
+Furthermore, the algorithm Henry and
+Sénizergues propose handles the problem of language equivalence rather than
+the problem of deciding bisimilarity of DPDAs.
 
 Our algorithm to decide the equivalence of context-free session types
 also allows deciding the bisimilarity of simple grammars (i.e.\
