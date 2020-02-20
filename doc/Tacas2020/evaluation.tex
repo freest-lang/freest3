@@ -137,9 +137,9 @@ B stands for the base algorithm, $\BisimT$.
   4.2GHz and 8 GB of RAM running Arch Linux; tests were run under a timeout
   of 2 minutes.
 
-For B0 we had 5 tests exceeding the timeout, for B1--B4 the number of timeouts
-ranged from 1 to 12, for B12 we had 2 timeouts, whereas for B1234 all tests
-ran in less than 30 minutes. 
+% For B0 we had 5 tests exceeding the timeout, for B1--B4 the number of timeouts
+% ranged from 1 to 12, for B12 we had 2 timeouts, whereas for B1234 all tests
+% ran in less than 30 minutes. 
 %
 %\begin{table}
 %\centering 
@@ -162,13 +162,17 @@ ran in less than 30 minutes.
 %\end{table}
 %
 %
-Figure~\ref{fig:results} (a) depicts the distribution of the execution
-times (in $\mu s$) for both test suites and for all optimisations.  In
+Figure~\ref{fig:distribution} depicts the distribution of the execution
+times (in $ms$) for both test suites and for all optimisations.  In
 this plot, we observe the distribution of tests for each execution
 time.  All the versions exhibit similar execution times for the
-majority of the tests.   
+majority of the tests.
 %
-Figure~\ref{fig:results} (b) represents the distribution of execution
+Figure~\ref{fig:timeouts} shows the number of tests that exceeded the
+timeout. The variants B3, B23, and B24 had a number of timeouts higher
+than 400, whereas variants B14 and B124 had 7 timeouts.
+%
+Figure~\ref{fig:numberOfNodes} represents the distribution of execution
 time per total number of nodes in the abstract syntax trees of the
 types. We observe an exponential increase in the runtime.
 %
@@ -196,22 +200,22 @@ types with a reduced number of nodes.
 %\centering
   \subfloat[Distribution of the execution time]{
     \includegraphics[width=\textwidth]{img/distribution_boxplot}
-    \label{distribution}}
+    \label{fig:distribution}}
   
   \subfloat[Number of timeouts per variant]{ 
-    \includegraphics[height=.4\textwidth, width=.55\textwidth]{img/timeouts}
-    \label{timeouts}} 
+    \includegraphics[height=.4\textwidth, width=.5\textwidth]{img/timeouts}
+    \label{fig:timeouts}}
   %
   \subfloat[Execution time per number of nodes]{
-    \includegraphics[height=.4\textwidth]{img/nodes_time}
-    \label{numberOfNodes}
-  }
+    \includegraphics[height=.4\textwidth, width=.5\textwidth]{img/nodes_time}
+    \label{fig:numberOfNodes}
+  } 
 \caption{The test suite composed by equivalent pairs of types is represented in blue and the
   test suite with non-equivalent pairs of types is represented in orange. Time is in
-  milliseconds. Both scales of \ref{distribution}, \ref{numberOfNodes} are logarithmic and
-  the scale of \ref{timeouts} is linear.}
+  milliseconds. Both scales of \ref{fig:distribution} and \ref{fig:numberOfNodes} are logarithmic and
+  the scale of \ref{fig:timeouts} is linear.}
 \label{fig:results}
-% \caption{The test suite composed by equivalent  pairs of types is represented in orange and the
+% \caption{The test suite composed by equivalent  pairs o f types is represented in orange and the
 %     test suite with non-equivalent pairs of types is represented in blue. Time 
 %     in microseconds, $\mu s$. Both scales are logarithmic.\\
 %     (a) Distribution of execution time of function $\BisimT$ for both test suites.\\
