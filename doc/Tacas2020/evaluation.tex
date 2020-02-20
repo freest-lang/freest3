@@ -127,7 +127,7 @@ To better understand how the algorithm performs in practice, we tested
 all the variants. We evaluated each variant 1--4 individually (denoted
 by B1--B4) and the gradual inclusion of variants, by the
 order in which they were introduced above (cases B12, B123, B1234).
-B0 stands for the base algorithm, $\BisimT$.
+B stands for the base algorithm, $\BisimT$.
 %
   We implemented the base algorithm and its
   variants %described by the function $\BisimT$
@@ -142,7 +142,7 @@ ranged from 1 to 12, for B12 we had 2 timeouts, whereas for B1234 all tests
 ran in less than 30 minutes. 
 %
 %\begin{table}
-%\centering
+%\centering 
 %	\begin{tabular}{ |c|c|c|c| }
 %	 \hline
 % 		Version ID & Version description & Bisimilar test suite & Not bisimilar 
@@ -178,19 +178,47 @@ that, when used in a compiler, the algorithm will mostly come across
 types with a reduced number of nodes.
 
 
-\begin{figure}[t]
-    \centering
-    \subfloat[Distribution of the execution time]{\includegraphics[height=.5\textwidth]{img/distribution_boxplot}}%
-    \subfloat[Execution time per number of nodes]{\includegraphics[height=.5\textwidth]{img/nodes_time_B1234}}%
-    \caption{The test suite composed by equivalent pairs of types is represented in orange and the
-    test suite with non-equivalent pairs of types is represented in blue. Time 
-    in microseconds, $\mu s$. Both scales are logarithmic.\\
-    (a) Distribution of execution time of function $\BisimT$ for both test suites.\\
-    (b) Distribution of execution time of function $\BisimT$ per total number of nodes 
-    in the abstract syntax trees of the types.}%
-    \label{fig:results}%
-\end{figure}
+% \begin{figure}[t]
+%     \centering
+%     \subfloat[Distribution of the execution time]{\includegraphics[height=.5\textwidth]{img/old_distribution_boxplot}}%
+%     \subfloat[Execution time per number of nodes]{\includegraphics[height=.5\textwidth]{img/nodes_time_B1234}}%
+%     \caption{The test suite composed by equivalent pairs of types is represented in orange and the
+%     test suite with non-equivalent pairs of types is represented in blue. Time 
+%     in microseconds, $\mu s$. Both scales are logarithmic.\\
+%     (a) Distribution of execution time of function $\BisimT$ for both test suites.\\
+%     (b) Distribution of execution time of function $\BisimT$ per total number of nodes 
+%     in the abstract syntax trees of the types.}%
+%     \label{fig:results}%
+%   \end{figure}
 
+  
+\begin{figure}[t]
+%\centering
+  \subfloat[Distribution of the execution time]{
+    \includegraphics[width=\textwidth]{img/distribution_boxplot}
+    \label{distribution}}
+  
+  \subfloat[Number of timeouts per variant]{ 
+    \includegraphics[height=.4\textwidth, width=.55\textwidth]{img/timeouts}
+    \label{timeouts}} 
+  %
+  \subfloat[Execution time per number of nodes]{
+    \includegraphics[height=.4\textwidth]{img/nodes_time}
+    \label{numberOfNodes}
+  }
+\caption{The test suite composed by equivalent pairs of types is represented in blue and the
+  test suite with non-equivalent pairs of types is represented in orange. Time is in
+  milliseconds. Both scales of \ref{distribution}, \ref{numberOfNodes} are logarithmic and
+  the scale of \ref{timeouts} is linear.}
+\label{fig:results}
+% \caption{The test suite composed by equivalent  pairs of types is represented in orange and the
+%     test suite with non-equivalent pairs of types is represented in blue. Time 
+%     in microseconds, $\mu s$. Both scales are logarithmic.\\
+%     (a) Distribution of execution time of function $\BisimT$ for both test suites.\\
+%     (b) Distribution of execution time of function $\BisimT$ per total number of nodes 
+%     in the abstract syntax trees of the types.}
+% \label{fig:subfigureExample}
+\end{figure}
 
 %\noindent
 %\begin{minipage}[b]{0.49\textwidth}
