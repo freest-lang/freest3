@@ -262,14 +262,40 @@ nonBisimPair 0 =
       skipMessage
     , varSkip
     , messageVar
+    , messageInOut    
     ]
 nonBisimPair n =
   oneof
     -- The various type constructors, excluding the "atoms": skip, message, var
     [
-      semiPair nonBisimPair n
-    , recPair nonBisimPair n
+      -- Anti-axioms
+      messageInOut 
+    , choicePairLabel bisimPair n
+    , skipMessage
+    , varSkip
+    , messageVar
+
+    -- axioms   
+    ,  skipPair
+    , messagePair
+    , varPair
     , choicePair nonBisimPair n
+    , semiPair nonBisimPair n
+    , recPair nonBisimPair n
+    
+    -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
+    -- , skipT n
+    -- , tSkip n
+    , distrib n
+    , assoc n
+--    , commut n
+    -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
+    , recRecL n
+    , recRecR n
+    , recFree n
+--    , alphaConvert n
+--    , subsOnBoth n
+    , unfoldt n
     ]
 
 -- A few anti-axioms
@@ -297,3 +323,11 @@ messageInOut = do
   (p, b) <- arbitrary
   return (Message pos p b,
           Message pos (dual p) b)
+
+choicePairLabel :: PairGen -> Int -> Gen (Type, Type)
+choicePairLabel pairGen n = do
+  p <- arbitrary
+  (m1, m2) <- typeMapPair pairGen n
+  t <- arbitrary
+  return (Choice pos p m1,
+          Choice pos p (Map.insert (mkVar pos "D") t m2))

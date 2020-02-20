@@ -47,8 +47,6 @@ import           System.Random
 import           System.Environment
 import           System.IO
 import           System.Clock
-import           System.Random
-import           System.Timeout
 import           Formatting
 import           Formatting.Clock
 
@@ -95,8 +93,6 @@ parseTestArgs (t:u:version:positive:_) =
   where
     [t',u'] = renameTypes [read t, read u]
 
-
-
 defaultType :: Type
 defaultType = Skip defaultPos
   
@@ -107,15 +103,14 @@ runEach pair (name, f, g) pos = do
   let base = name ++ ";"  ++ n1 ++ ";" ++ n2 ++ ";" ++ (show pos) ++ ";"
   let (BisimPair t1 t2) = pair
   case v of
-        Nothing -> putStrLn $ base ++ "timeout"
-        (Just (time, r)) -> putStrLn $ base ++ (show r) ++ ";" ++ time
+    Nothing -> putStrLn $ base ++ "timeout"
+    (Just (time, r)) -> putStrLn $ base ++ (show r) ++ ";" ++ time
 
 
 -- runTestVersion :: BisimPair -> String -> IO (String, Bool)
 runTestVersion (BisimPair t u) f g = do
     res <- clockSomething (f $ g Map.empty [t, u])
     return res
-
 
 
 -- QuickCheck
@@ -127,8 +122,7 @@ nodes :: Type -> Int
 nodes (Semi _ t u)   = 1 + nodes t + nodes u
 nodes (Choice _ _ m) = 1 + Map.foldr (\t acc -> nodes t + acc) 0 m
 nodes (Rec _ _ t)    = 1 + nodes t
--- Skip, Message, TypeVar
-nodes _              = 1
+nodes _              = 1 -- Skip, Message, TypeVar
 
 nodesOf :: BisimPair -> (String, String)
 nodesOf (BisimPair t1 t2) = (show $ nodes t1, show $nodes t2)
@@ -146,8 +140,8 @@ parseGenArgs [] = (0,0,0,True)
 parseGenArgs (sizeLower:sizeUpper:depth:pos:_) = (read sizeLower, read sizeUpper, read depth, read pos)   
 
 -- Gen positive types
-mkPairPositive ::  Int -> Int -> Int -> IO BisimPair
-mkPairPositive sizeLower sizeUpper depth = do
+mkPairPositive ::  Int -> Int -> IO BisimPair
+mkPairPositive sizeLower sizeUpper = do
     (BisimPair t1 t2) <- generate (arbitrary :: Gen BisimPair) -- generator depth
 
     let n1 = nodes t1
@@ -157,29 +151,67 @@ mkPairPositive sizeLower sizeUpper depth = do
 --      if kinded t1 && kinded t2 then
         return (BisimPair t1 t2)
 --      else mkPairPositive sizeLower sizeUpper depth
-    else mkPairPositive sizeLower sizeUpper depth
+    else mkPairPositive sizeLower sizeUpper
 
+-- mkPairNegative ::  Int -> Int -> IO NonBisimPair
+-- mkPairNegative sizeLower sizeUpper = do
+--     (NonBisimPair t1 t2) <- generate (arbitrary :: Gen NonBisimPair)
+--     sizedPair t1 t2
+--   where
+--     sizedPair t1 t2
+--       | nodes t1 > sizeLower && nodes t1 <= sizeUpper =
+--           return (NonBisimPair t1 t2)
+--       | nodes t2 > sizeLower && nodes t2 <= sizeUpper =
+--           return (NonBisimPair t1 t2)
+--       | otherwise                         =
+--           mkPairNegative sizeLower sizeUpper
 
-mkPairNegative :: Int -> Int -> IO BisimPair
+mkPairNegative ::  Int -> Int -> IO NonBisimPair
 mkPairNegative sizeLower sizeUpper = do
-    (BisimPair _ t1) <- generate (arbitrary :: Gen BisimPair)
-    -- (BisimPair _ t2) <- generate (arbitrary :: Gen BisimPair)
-    -- let pair = BisimPair t1 t2
-    let n1 = nodes t1
-    -- let n2 = nodes t2
-
-    if kinded t1 && n1 > sizeLower && n1 <= sizeUpper then do
-      t2 <- genOne t1
-      return $ BisimPair t1 t2
-    else mkPairNegative sizeLower sizeUpper
+    (NonBisimPair t1 t2) <- generate (arbitrary :: Gen NonBisimPair)
+    if (inInterval t1 || inInterval t2) &&
+        (kinded t1 && kinded t2) && not (testBisim t1 t2)
+      then return (NonBisimPair t1 t2)
+      else mkPairNegative sizeLower sizeUpper 
+    -- if (inInterval t1 || inInterval t2) && (kinded t1 && kinded t2)
+    --   then do
+    --     b <- timeout (3 * 60 * 1000000) $ testBisim t1 t2
+    --     case b of
+    --       Nothing -> mkPairNegative sizeLower sizeUpper
+    --       Just b1 ->
+    --         if not b1
+    --         then return (NonBisimPair t1 t2)
+    --         else mkPairNegative sizeLower sizeUpper
+    --   else mkPairNegative sizeLower sizeUpper
+      
   where
-    test t1 t2 = B1234.bisimilar $ TG1.convertToGrammar Map.empty [t1, t2]
+    testBisim t1 t2 = -- return $ 
+      B4.bisimilar $ TG1.convertToGrammar Map.empty [t1, t2] -- B14
 
-    genOne t1 = do
-      (BisimPair _ t2) <- generate (arbitrary :: Gen BisimPair)
-      let n = nodes t2
-      if kinded t2 && n > sizeLower && n <= sizeUpper && not (test t1 t2) then return t2
-      else genOne t1
+    inInterval t = nodes t > sizeLower && nodes t <= sizeUpper
+
+   
+
+-- mkPairNegative :: Int -> Int -> IO BisimPair
+-- mkPairNegative sizeLower sizeUpper = do
+--     (BisimPair _ t1) <- generate (arbitrary :: Gen BisimPair)
+--     -- (BisimPair _ t2) <- generate (arbitrary :: Gen BisimPair)
+--     -- let pair = BisimPair t1 t2
+--     let n1 = nodes t1
+--     -- let n2 = nodes t2
+
+--     if kinded t1 && n1 > sizeLower && n1 <= sizeUpper then do
+--       t2 <- genOne t1
+--       return $ BisimPair t1 t2
+--     else mkPairNegative sizeLower sizeUpper
+--   where
+--     test t1 t2 = B1234.bisimilar $ TG1.convertToGrammar Map.empty [t1, t2]
+
+--     genOne t1 = do
+--       (BisimPair _ t2) <- generate (arbitrary :: Gen BisimPair)
+--       let n = nodes t2
+--       if kinded t2 && n > sizeLower && n <= sizeUpper && not (test t1 t2) then return t2
+--       else genOne t1
 
 main :: IO ()
 main = do
@@ -196,21 +228,24 @@ testBisim args = do
 
 generateTypes :: [String] -> IO ()
 generateTypes args = do
-  let (sizeLower, sizeUpper, depth, pos) = parseGenArgs args
+  let (sizeLower, sizeUpper, _, pos) = parseGenArgs args
   if pos then do
-    pair <- mkPairPositive sizeLower sizeUpper depth
-    printTypes pair
+    pair <- mkPairPositive sizeLower sizeUpper
+    printBisimPairs pair
   else do 
     pair <- mkPairNegative sizeLower sizeUpper
-    printTypes pair
+    printNonBisimPairs pair
 
   where
-    printTypes :: BisimPair -> IO ()
-    printTypes pair@(BisimPair t1 t2) = do
-      let (n1, n2) = nodesOf pair
+    printBisimPairs :: BisimPair -> IO ()
+    printBisimPairs (BisimPair t1 t2) = do
       putStrLn $ show t1
       putStrLn $ show t2
 
+    printNonBisimPairs :: NonBisimPair -> IO ()
+    printNonBisimPairs (NonBisimPair t1 t2) = do
+      putStrLn $ show t1
+      putStrLn $ show t2
 
 
 
