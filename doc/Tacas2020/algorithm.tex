@@ -16,7 +16,7 @@ decide the bisimilarity of simple context-free languages.
 The algorithm comprises three stages:
 %
 \begin{enumerate}
-\item Translate the two types into a simple grammar,
+\item Translate the two types to a simple grammar,
 \item Prune unreachable symbols, and
 \item Explore an expansion tree, alternating between simplification
   and expansion operations, until either finding an empty node---case
@@ -105,7 +105,7 @@ denoted by $\vec X\cdot\vec Y$.
   \\
   \word(\star\{\ell_i\colon T_i\}_{i\in I}) &=
      Y,
-    \text{ setting } \productions := \productions \cup \{Y \rightarrow\star l_i\cdot \word(T_i) \mid i\in I\}
+    \text{ setting } \productions := \productions \cup \{Y \rightarrow\star \ell_i\cdot \word(T_i) \mid i\in I\}
     && (Y\text{ fresh})
   \\
   \word(X) &= X
