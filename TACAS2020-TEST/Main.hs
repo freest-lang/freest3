@@ -169,8 +169,8 @@ mkPairPositive sizeLower sizeUpper = do
 mkPairNegative ::  Int -> Int -> IO NonBisimPair
 mkPairNegative sizeLower sizeUpper = do
     (NonBisimPair t1 t2) <- generate (arbitrary :: Gen NonBisimPair)
-    if (inInterval t1 || inInterval t2) &&
-        (kinded t1 && kinded t2) && not (testBisim t1 t2)
+    if (inInterval t1 || inInterval t2) && not (testBisim t1 t2)
+--        (kinded t1 && kinded t2) && 
       then return (NonBisimPair t1 t2)
       else mkPairNegative sizeLower sizeUpper 
     -- if (inInterval t1 || inInterval t2) && (kinded t1 && kinded t2)
