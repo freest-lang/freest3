@@ -31,7 +31,7 @@ of a session channel. A process holding such a channel end must first
 \lstinline|Node|. If \lstinline|Leaf| is chosen, then interaction is
 terminated, as indicated by the \lstinline|Skip| type without
 continuation. Otherwise, the process must send an integer
-(\lstinline|!Int|) followed by two complete trees, as witnessed by the
+(\lstinline|!Int|) followed by two trees, as witnessed by the
 recursive calls occurring after the choice of \lstinline|Node|.
 %to \lstinline|TreeChannel|.
 
@@ -45,7 +45,7 @@ interacts via a \emph{dual} type:
 In this case the process must be ready to offer both choices,
 \lstinline|Leaf| and \lstinline|Node|. For the latter option, the
 process must further receive an integer (\lstinline|?Int|), followed
-by two complete trees.
+by two trees.
 
 Regular languages cannot capture such behaviour. The best one can do
 with regular session types (and without resorting to channel passing)
@@ -154,11 +154,9 @@ exponential complexity to the algorithm.
 %
 However, our experiments with a concrete implementation---both as a
 stand-alone tool and incorporated in a
-compiler~\cite{almeida.etal_freest-functional-language}---are very
-promising: deciding the bisimilarity of two types with a total of 132
-nodes in their abstract syntax trees takes on average 3.3
-milliseconds and uses less than 8 Mb in a conventional desktop
-computer (see Section~\ref{sec:evaluation}).
+compiler~\cite{almeida.etal_freest-functional-language}---are promising.
+We propose heuristics that improve the execution time and 
+reduce the number of timeouts from 301 to 7 (see Section~\ref{sec:evaluation}).
 
 % However, we propose heuristics that allow constructing the relation
 % in a reasonable time.
@@ -195,12 +193,12 @@ Section~\ref{sec:correctness},
 evaluation in Section~\ref{sec:evaluation}, and conclusions in
 Section~\ref{sec:conclusion}.
 
-The complete source code for the Haskell implementation is available
-at \url{http://rss.di.fc.ul.pt/tools/freest/}.
-%
-Type bisimulation can be exercised from a browser at
-\url{http://rss.di.fc.ul.pt/tryit/CFSTEquiv} and the bisimilarity of
-simple grammars at \url{http://rss.di.fc.ul.pt/tryit/SGEquiv}.
+%The complete source code for the Haskell implementation is available
+%at \url{http://rss.di.fc.ul.pt/tools/freest/}.
+%%
+%Type bisimulation can be exercised from a browser at
+%\url{http://rss.di.fc.ul.pt/tryit/CFSTEquiv} and the bisimilarity of
+%simple grammars at \url{http://rss.di.fc.ul.pt/tryit/SGEquiv}.
 
 %%% Local Variables:
 %%% mode: latex
