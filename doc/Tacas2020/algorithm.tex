@@ -571,11 +571,11 @@ in the grammar (function $\Prune$), the equivalence of $S$ and
 $T$ is decided using function $\Bisim$.
 %
 \begin{align*}
-  \BisimT(T, U) =\ & \Bisim(\vec X, \vec Y, \Prune (\productions'))
+  \BisimT(T, U) =\ & \Bisim(\vec X, \vec Y, \Prune (\productions))
   \\
-  &\Where\ (\vec X, \productions) =\ \grm (S, \emptyset)
+  &\Where\ (\vec X, \productions') =\ \grm (S, \emptyset)
   \\
-  &\qquad\quad\;\;\, (\vec Y, \productions') =\ \grm (T, \productions)
+  &\qquad\quad\;\;\, (\vec Y, \productions) =\ \grm (T, \productions')
 \end{align*}
 
 %%% Local Variables:
