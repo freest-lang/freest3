@@ -25,14 +25,16 @@ example, a type of the form
   rec x. +{Leaf: Skip, Node: !Int;x;x}
 \end{lstlisting}
 %
-which we abbreviate to \lstinline|TreeChannel|, may describe one end
+% which we abbreviate to \lstinline|TreeChannel| % Not used
+may describe one end
 of a session channel. A process holding such a channel end must first
 \emph{select} between choices \lstinline|Leaf| and
-\lstinline|Node|. If \lstinline|Leaf| is chosen, then interaction is
-terminated, as indicated by the \lstinline|Skip| type without
-continuation. Otherwise, the process must send an integer
-(\lstinline|!Int|) followed by two trees, as witnessed by the
-recursive calls occurring after the choice of \lstinline|Node|.
+\lstinline|Node|. If \lstinline|Leaf| is chosen, then type
+\lstinline|Skip| forwards the interaction to the continuation, if
+any. If no continuation is present, then interaction is
+over. Otherwise, the process must send an integer (\lstinline|!Int|)
+followed by two trees, as witnessed by the recursive calls occurring
+after the choice of \lstinline|Node|.
 %to \lstinline|TreeChannel|.
 
 A concurrent process holding the other end of the channel 
@@ -85,7 +87,7 @@ After the breakthrough by Christensen, H\"uttel, and Stirling---a
 result that provides no immediate practical algorithm---the problem of
 deciding the equivalence of BPA terms has been addressed by several
 researchers~\cite{DBLP:conf/mfcs/BurkartCS95,DBLP:journals/iandc/ChristensenHS95,czerwinski2010fast,janvcar1999techniques}.
-Most of these papers provide no practical algorithm that can be
+Most of these works provide no practical algorithm that can be
 readily used, except the one by Czerwinski and Lasota where a
 polynomial time algorithm is presented that decides the bisimilarity
 of normed context-free processes in
@@ -119,7 +121,7 @@ Sénizergues propose handles the problem of language equivalence rather than
 the problem of deciding bisimilarity of DPDAs.
 
 Our algorithm to decide the equivalence of context-free session types
-also allows deciding the bisimilarity of simple grammars (i.e.\
+also allows deciding the bisimilarity of simple grammars (i.e.,
 deterministic grammars in Greibach Normal Formal).  It proceeds in
 three stages.
 %
@@ -149,7 +151,7 @@ is paramount for our results of soundness and completeness.
 
 % Evaluation
 
-The branching nature of the expansion tree confers (at least) an
+The branching nature of the expansion tree confers an (at least)
 exponential complexity to the algorithm.
 %
 However, our experiments with a concrete implementation---both as a
@@ -177,17 +179,18 @@ The main contributions of this work are:
   declarative definition;
 % \item The exploration of several optimizations that make the running
 %   time 10,000 times faster.
-\item The empirical study of the runtime behaviour of the
-  implementation; and
 \item The proposal and implementation of an algorithm to decide
-  the bisimilarity of simple grammars.
+  the bisimilarity of simple grammars; and
+\item The empirical study of the runtime behaviour of the
+  implementation.
 \end{itemize}
 
 % Outline
 
-The rest of the paper is organized as follows: context-free session
-types can be found in Section~\ref{sec:contextfreesession}, the
-algorithm in Section~\ref{sec:algorithm}, the main results in
+The rest of the paper is organized as follows: an introduction to
+context-free session types can be found in
+Section~\ref{sec:contextfreesession}, the algorithm in
+Section~\ref{sec:algorithm}, the main results in
 Section~\ref{sec:correctness},
 % optimizations in Section~\ref{sec:optimisations},
 evaluation in Section~\ref{sec:evaluation}, and conclusions in
