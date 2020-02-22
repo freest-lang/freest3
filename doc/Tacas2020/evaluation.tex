@@ -151,11 +151,11 @@ following variants:
 %  This optimisation preserves soundness, completeness and termination.
 \end{enumerate}
 
-To better understand how the algorithm performs in practice, we teste
+To better understand how the algorithm performs in practice, we test
 all the optimisations and their combinations. We evaluate each variant 
-1--4 individually (denoted
-by B1--B4) and all their combinations. For instance, we denote by B124
-the variant obtained from combining optimisations 1,2, and 4 above.
+1--3 individually (denoted
+by B1--B3) and all their combinations. For instance, we denote by B12
+the variant obtained from combining optimisations 1 and 2 above.
 B stands for the base algorithm, $\BisimT$.
 %
   We implemented the base algorithm and its
@@ -199,15 +199,15 @@ differences mainly depend on the trade-off between the computational
 effort underlying each optimisation and the efficiency they bring to
 deciding the equivalence of grammars. 
 Figure~\ref{fig:timeouts} shows the number of timeouts for each variant.
-The base case, B, has 301 positive tests whose execution time
+The base case, B, has 146 positive tests whose execution time
 exceeds 2 minutes. Some variants perform better than the base case, 
 some others perform worst, again mainly due to the trade-off between the 
 effort to compute the optimisations and the benefit they bring.
 For the negative tests, we do not have any timeouts.
-Variant B14, resulting from combining optimisations 1 and 4, 
+Variant B1, resulting from considering optimisation 1, 
 performs better than all others, presenting a median of 1.4 milliseconds
 for the positive tests and 7 timeouts. 
-The distribution of execution time of B14 by the size of the input
+The distribution of execution time of B1 by the size of the input
 types is depicted in Figure~\ref{fig:numberOfNodes}.
 As expected, the execution time increases considerably with the number of nodes.
 %
@@ -241,8 +241,8 @@ types with a reduced number of nodes.
     \includegraphics[height=.3\textwidth]{img/timeouts}
     \label{fig:timeouts}}
   %
-  \subfloat[Execution time per number of nodes]{
-    \includegraphics[height=.32\textwidth]{img/nodes_time}
+  \subfloat[Execution time for B1 per number of nodes]{
+    \includegraphics[height=.30\textwidth]{img/nodes_time}
     \label{fig:numberOfNodes}
   } 
 \caption{The test suite composed by equivalent pairs of types is represented in blue and the
