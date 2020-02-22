@@ -19,7 +19,7 @@ The algorithm comprises three stages:
 \item Translate the two types to a simple grammar,
 \item Prune unreachable symbols, and
 \item Explore an expansion tree, alternating between simplification
-  and expansion operations, until either finding an empty node---case
+  and expansion operations, until finding an empty node---case
   in which it decides positively---or failing to expand all nodes---case
   in which it decides negatively.
 \end{enumerate}
@@ -41,7 +41,7 @@ productions of the form $Y \rightarrow\varepsilon$).
 %
 Due to the deterministic nature of context-free session types, the
 grammars we are interested in are \emph{simple}: for each
-non-terminal symbol~$Y$ and each terminal symbol~$a$, there is at most
+non-terminal symbol~$Y$ and terminal symbol~$a$, there is at most
 one production of the form $Y \rightarrow a\vec Z$.
 
 % GRAMMAR LTS
@@ -114,8 +114,8 @@ denoted by $\vec X\cdot\vec Y$.
 \end{align*}
 
 
-The following lemma relates terminated types~$T$ to the result 
-of a call to $\word(T)$. 
+The following lemma relates terminated types to the result 
+of a call to $\word$. 
 
 \begin{lemma}
   \label{lemma:terminated-togrammar}
@@ -562,7 +562,7 @@ $\mathsf{apply}$ as is.
 \begin{example}
   The expansion tree for our running example is in
   Figure~\ref{fig:expansion-tree}. Once a successful branch is reached
-  (depicted by the $\checkmark$ mark),
+  (marked with $\checkmark$),
   $\Bisim(\vec X, \vec Y, \productions)$ returns $\True$.
 \end{example}
 

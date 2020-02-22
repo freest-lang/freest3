@@ -78,17 +78,17 @@ and vice-versa.
 		$\word(S) \LTSderivesP[\star \ell_i] \word(S_i)$.
 		\item Case $S_1;S_2$ with $S_1\LTSderives S_1'$:
 		if $S_1;S_2\LTSderives S_1';S_2$ and $S_1\LTSderives S_1'$,
-			by induction hypothesis, we know that $\word(S_1) \LTSderivesP \word(S_1')$.
-			Furthermore, we have
-			\begin{equation}
-			\label{eq:grammar_sequential_composition}
-				\word(S_1;S_2) = \word(S_1)\cdot\word(S_2).	
-			\end{equation}
+			by induction hypothesis, we have $\word(S_1) \LTSderivesP \word(S_1')$.
+			Furthermore, 
+%			\begin{equation}
+%			\label{eq:grammar_sequential_composition}
+				$\word(S_1;S_2) = \word(S_1)\cdot\word(S_2).	$
+			%\end{equation}
 			Hence, $\word(S_1;S_2) \LTSderivesP \word(S_1';S_2)$.
 		\item Case $S_1;S_2$ with $\DONE{S_1}$ and $S_2\LTSderives S_2'$: 
 			in the case $S_1;S_2\LTSderives S_2'$, where
 			$\DONE{S_1}$ and $S_2\LTSderives S_2'$, 
-			by~\eqref{eq:grammar_sequential_composition},
+			by %~\eqref{eq:grammar_sequential_composition},
 			Lemma~\ref{lemma:terminated-togrammar} and since $\DONE{S_1}$, 
 			we have $\word(S_1;S_2) = \word(S_2)$.
 			Thus, by induction hypothesis we have 
