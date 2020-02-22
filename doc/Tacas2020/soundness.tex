@@ -62,7 +62,7 @@ and vice-versa.
 \end{lemma}
 %
 \begin{proof}
-	For the direct implication, we proceed by rule induction on the
+	For the direct implication we proceed by rule induction on the
 	hypothesis, using the definition of $\word$.
 %	For the direct implication and using the unravelling
 %	function on recursive types, we can proceed by induction
@@ -158,7 +158,7 @@ $\vec Y = \word(T)$ and let $\mathcal{B}'$ be a bisimulation
 for $\vec X$ and $\vec Y$. Then, consider
 $\mathcal{B} = \{(S_0, T_0)\mid (\word(S_0),\word(T_0))\in \mathcal{B}'\}$.
 Notice that $(S,T)\in \mathcal{B}$.
-The proof that $\mathcal{B}$ is a bisimulation, consists in proving that:
+The proof that $\mathcal{B}$ is a bisimulation, consists in showing that:
 given $(S_0, T_0)\in \mathcal{B}$, such that $S_0\LTSderives S_0'$,
 there exists $T_0'$ such that $T_0\LTSderives T_0'$
 and $(S_0',T_0')\in \mathcal{B}$. The proof
@@ -207,8 +207,9 @@ These simplification rules are
 \emph{safe}~\cite{janvcar1999techniques}, in the sense that the
 application of any rule preserves the bisimulation from a parent node
 to at least one child node and, reciprocally, that bisimulation on a
-child node implies the bisimulation of its parent node, thus proving
-the safeness property.
+child node implies the bisimulation of its parent node.
+% , thus proving
+% the safeness property.
 
 While the safeness property is instrumental in proving
 soundness, the \emph{finite witness property} is of
