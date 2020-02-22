@@ -19,21 +19,6 @@ types~\cite{almeida.etal_freest-functional-language}.
 The tests produced by this method are, on the one hand, small, and, on
 the other hand, lacking diversity.
 
-We then turned our attention to the automatic generation of test
-cases. Generating pairs of arbitrary (well-formed) types that share no
-variables is simple. 
-%The difficulty lies in deciding whether two such
-%types, independently generated, are bisimilar. Even if an oracle could
-%be identified, 
-However,
-the probability that a randomly generated pair of types
-turns out to be equivalent is extremely low. For this reason, we
-generate arbitrary pairs of types that are bisimilar by
-construction. Theorem~\ref{thm:axioms} naturally induces an algorithm:
-given a natural number $n$ (the size of the pair), arbitrarily select
-for the base case ($n=0$) one of the pairs in item 1 of the theorem
-and for the recursive case ($n\ge1$) one of the pairs in 2--12 items.\\
-
 \begin{theorem}[Properties of type equivalence]
 \label{thm:axioms}
   \begin{enumerate}
@@ -67,40 +52,59 @@ and for the recursive case ($n\ge1$) one of the pairs in 2--12 items.\\
   bisimulations. \qed
 \end{proof}
 
+We then turned our attention to the automatic generation of test
+cases. Generating pairs of arbitrary (well-formed) types that share no
+variables is simple. 
+%The difficulty lies in deciding whether two such
+%types, independently generated, are bisimilar. Even if an oracle could
+%be identified, 
+However,
+the probability that a randomly generated pair of types
+turns out to be equivalent is extremely low. For this reason, we
+generate arbitrary pairs of types that are bisimilar by
+construction. Theorem~\ref{thm:axioms} naturally induces an algorithm:
+given a natural number $n$ (the size of the pair), arbitrarily select
+for the base case ($n=0$) one of the pairs in item 1 of the theorem
+and for the recursive case ($n\ge1$) one of the pairs in 2--12 items.\\
+
 For evaluating the algorithm on non-bisimilar pairs we add the 
 following five anti-axioms to the list in 
 Theorem~\ref{thm:axioms}:
 (1) $\skipk \not\sim_\types \sharp B$; \enspace
-(2) $\skipk \not\sim_\types X$; \enspace
-(3) $\sharp B \not\sim_\types X$; \enspace
+% (2) $\skipk \not\sim_\types X$; \enspace
+% (3) $\sharp B \not\sim_\types X$; \enspace
+(2) $?B \not\sim_\types !B$; \enspace
+(3) $\skipk \not\sim_\types \star\{\ell_i\colon S_i\}_{i\in I}$; \enspace
 (4) $\oplus\{\ell_i\colon S_i\}_{i\in I} \not\sim_\types \&\{\ell_i\colon S_i\}_{i\in I}$; \enspace
-(5) $\star\{\ell_i\colon S_i\}_{i\in I} \not\sim_\types \star\{\ell_i\colon S_i\}_{i\in I\cup\{j\}}$,
-	where $\ell_j \neq \ell_i$ for all $i$.
+(5) $\star\{\ell_i\colon S_i\}_{i\in I} \not\sim_\types \star\{\ell_j\colon S_j\}_J$
+where $I \subset J$.
 %
-We generate two types using the same methodology as for the positive case and, 
-then, discard the
-data collected when the pair turns out to be
-bisimilar.
-The rationale for this generation of non-bisimilar pairs, rather than
-an arbitrary and independent generation of types, relies on the reality that 
-the compiler faces most often.
-For testing, however, we rely on manually crafted tests, given that a
-solution based on anti-axioms does not always work: note that
-bisimulation for
-context-free session types is such that there are types
-$S \not\bisim T$ such that $\mu X.S \bisim \mu X.T$ (just think of
-$!\intk;X;X$ and $!\intk;X$).
+We generate two types using the same methodology as for the positive
+case and, then, discard the data collected when the pair turns out to
+be bisimilar.
+%
+This produces pairs of types that are much closer than those obtained
+by random generation, thus hopefully approaching the reality that the
+compilers faces when in production.
 
+% The rationale for this generation of non-bisimilar pairs, rather than
+% an arbitrary and independent generation of types, relies on the reality that 
+% the compiler faces most often.
+% For testing, however, we rely on manually crafted tests, given that a
+% solution based on anti-axioms does not always work: note that
+% bisimulation for
+% context-free session types is such that there are types
+% $S \not\bisim T$ such that $\mu X.S \bisim \mu X.T$ (just think of
+% $!\intk;X;X$ and $!\intk;X$).
 
-We used QuickCheck~\cite{DBLP:conf/icfp/ClaessenH00} to generate two test
-suites. That for bisimilar pairs is constructed based on
-Theorem~\ref{thm:axioms}, whereas the construction of non-bisimilar tests
-rely on Theorem~\ref{thm:axioms} plus the anti-axioms above. Both test suites
-comprise 2000 entries, featuring types with
-a number of nodes (in the syntax tree) ranging from 1 to 200.
-We consider the size of a pair of types as the maximum number of nodes in the 
-syntax tree,
-chosen among the two types. 
+We used QuickCheck~\cite{DBLP:conf/icfp/ClaessenH00} to generate two
+test suites. That for bisimilar pairs is constructed based on
+Theorem~\ref{thm:axioms}, whereas the construction of non-bisimilar
+tests relies on Theorem~\ref{thm:axioms} plus the anti-axioms
+above. Both test suites comprise 2000 entries, featuring types with a
+number of nodes (in the syntax tree) ranging from 1 to 200.  We
+consider the size of a pair of types as the maximum number of nodes in
+the syntax tree, chosen among the two types.
 %The test suites have diversity: 100 pairs whose
 %size is between 1 and 10 nodes, 100 pairs with 11 to 20 nodes, and so on.
 
@@ -149,6 +153,36 @@ following variants:
 %  This optimisation preserves soundness, completeness and termination.
 \end{enumerate}
 
+\begin{figure}[t]
+\centering
+  \subfloat[Distribution of the execution time per variant]{
+    \includegraphics[width=0.75\textwidth]{img/distribution_boxplot}
+    \label{fig:distribution}}
+  
+  \subfloat[Number of timeouts per variant]{ 
+    \includegraphics[width=.51\textwidth]{img/timeouts}
+    \label{fig:timeouts}}
+  %
+  \subfloat[Runtime of B1 per number of nodes]{
+    \includegraphics[width=.45\textwidth]{img/nodes_time}
+    \label{fig:numberOfNodes}
+  } 
+  \caption{Results on the test suite composed by equivalent pairs of
+    types is represented in blue and the test suite with
+    non-equivalent pairs is represented in orange. Time is in
+    milliseconds.  Scales of \ref{fig:distribution} and
+    \ref{fig:numberOfNodes} are logarithmic; scale of
+    \ref{fig:timeouts} is linear.}
+\label{fig:results}
+% \caption{The test suite composed by equivalent  pairs o f types is represented in orange and the
+%     test suite with non-equivalent pairs of types is represented in blue. Time 
+%     in microseconds, $\mu s$. Both scales are logarithmic.\\
+%     (a) Distribution of execution time of function $\BisimT$ for both test suites.\\
+%     (b) Distribution of execution time of function $\BisimT$ per total number of nodes 
+%     in the abstract syntax trees of the types.}
+% \label{fig:subfigureExample}
+\end{figure}
+  
 To better understand how the algorithm performs in practice, we tested
 all the optimisations and their combinations. We evaluate each variant 
 1--3 individually (denoted
@@ -189,34 +223,6 @@ timeout of 2 minutes.
 %	\caption{Number of timeouts for each optimisation.\label{table:timeouts}}
 %\end{table}
 
-\begin{figure}[t]
-\centering
-  \subfloat[Distribution of the execution time per variant]{
-    \includegraphics[width=0.75\textwidth]{img/distribution_boxplot}
-    \label{fig:distribution}}
-  
-  \subfloat[Number of timeouts per variant]{ 
-    \includegraphics[height=.28\textwidth]{img/timeouts}
-    \label{fig:timeouts}}
-  %
-  \subfloat[Runtime of B1 per number of nodes]{
-    \includegraphics[height=.29\textwidth]{img/nodes_time}
-    \label{fig:numberOfNodes}
-  } 
-\caption{The test suite composed by equivalent pairs of types is represented in blue and the
-  test suite with non-equivalent pairs of types is represented in orange. Time is in
-  milliseconds. Both scales of \ref{fig:distribution} and \ref{fig:numberOfNodes} are logarithmic and
-  the scale of \ref{fig:timeouts} is linear.}
-\label{fig:results}
-% \caption{The test suite composed by equivalent  pairs o f types is represented in orange and the
-%     test suite with non-equivalent pairs of types is represented in blue. Time 
-%     in microseconds, $\mu s$. Both scales are logarithmic.\\
-%     (a) Distribution of execution time of function $\BisimT$ for both test suites.\\
-%     (b) Distribution of execution time of function $\BisimT$ per total number of nodes 
-%     in the abstract syntax trees of the types.}
-% \label{fig:subfigureExample}
-\end{figure}
-  
 Figure~\ref{fig:distribution} depicts the distribution of the execution
 times (in $ms$) for both test suites and all variants. We observe that 
 the behavior of negatives tests is roughly the same in all variants. However,
