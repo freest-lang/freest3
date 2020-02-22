@@ -126,8 +126,8 @@ deterministic grammars in Greibach Normal Formal).  It proceeds in
 three stages.
 %
 The \emph{first stage} builds a context-free grammar in Greibach
-Normal Formal (GNF)---in fact a simple grammar---from a context-free
-session type in a way that bisimulation is preserved.  A basic result
+Normal Formal (GNF)---in fact a simple grammar---from two context-free
+session types in a way that bisimulation is preserved.  A basic result
 from Baeten, Bergstra, and Klop states that any guarded BPA system can
 be transformed into Greibach Normal Formal (GNF) while preserving
 bisimulation equivalence, but unfortunately no procedure is
@@ -140,9 +140,9 @@ Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}.
 %
 The \emph{third stage} constructs an expansion tree, by alternating
 between expansion and simplification steps.  This last stage uses
-ideas on the expansion operations proposed by Jan\v car, Moller, and
+ideas from expansion operations proposed by Jan\v car, Moller, and
 Hirshfeld~\cite{hirshfeld1996bisimulation,janvcar1999techniques}, and
-ideas on the simplification rules proposed by Caucal, Christensen,
+ideas from simplification rules proposed by Caucal, Christensen,
 H\"uttel, Stirling, Jan\v car, and Moller
 ~\cite{caucal1986decidabilite,DBLP:journals/iandc/ChristensenHS95,janvcar1999techniques}.
 The finite representation of bisimulations of \BPA\ transition

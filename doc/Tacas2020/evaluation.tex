@@ -4,8 +4,8 @@
 This section discusses the behaviour of our algorithm in the real
 world.
 
-Both for testing and for performance evaluation, we require a test
-suite. We started with a carefully crafted, manually produced, suite
+Both for testing and for performance evaluation, we require test
+suites. We started with a carefully crafted, manually produced, suite
 of valid and invalid tests. This test suite was constructed by
 gathering pairs of types that emerged from examples we have studied
 and from programs we have written in FreeST, the programming language
@@ -196,7 +196,7 @@ times (in $ms$) for both test suites and all variants. We observe that
 the behavior of negatives tests is roughly the same in all variants. However,
 the execution time for the positive tests differ from variant to variant. These
 differences mainly depend on the trade-off between the computational
-effort underlying each optimisation and the efficiency they bring to
+effort required for each optimisation and the efficiency they bring to
 deciding the equivalence of grammars. 
 Figure~\ref{fig:timeouts} shows the number of timeouts for each variant.
 The base case, B, has 146 positive tests whose execution time

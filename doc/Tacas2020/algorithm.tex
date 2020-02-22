@@ -460,8 +460,9 @@ Predicate $\expand$ terminates as soon as all nodes fail to expand
 case in which the algorithm returns
 $\False$, or an empty node is reached, case in which the algorithm
 returns $\True$.
-In the other cases, it computes the child of the next node $n$ in the queue
-and makes a recursive call on the simplified nodes derived from it.
+In the other cases, it identifies the front node in the queue, $n$,
+and makes a recursive call after computing the nodes obtained by 
+simplification from the child of $n$.
 %
 \begin{align*}
   &\expand(q, \productions) =\\
@@ -469,7 +470,7 @@ and makes a recursive call on the simplified nodes derived from it.
   &\quad \Else\ (n,a) = \mathsf{front}(q)\\
   & \qquad\quad\; \If\ \mathsf{empty}(n)\ \Then\ \True\\
   & \qquad\quad\; \Else\ \If\ \mathsf{hasChild}(n, \productions)\\\
-  & \qquad\quad\;  \Then\
+  & \qquad\qquad\quad\; \: \Then\
     \expand(\simplify(\mathsf{dequeue}(q), 
     \{(\mathsf{child}(n, \productions), a \cup n)\},\productions))\\
   & \qquad\qquad\quad\;\: \Else\ \expand(\mathsf{dequeue}(q), \productions)
@@ -575,11 +576,11 @@ in the grammar (function $\Prune$), the equivalence of $S$ and
 $T$ is decided using function $\Bisim$.
 %
 \begin{align*}
-  \BisimT(T, U) =&\ \Bisim(\vec X, \vec Y, \Prune (\productions'))
+  \BisimT(T, U) =&\ \Bisim(\vec X, \vec Y, \Prune (\productions))
   \\
-  \mathsf{where}\ (\vec X, \productions) =&\ \grm (S, \emptyset)
+  \mathsf{where}\ (\vec X, \productions') =&\ \grm (S, \emptyset)
   \\
-  (\vec Y, \productions') =&\ \grm (T, \productions)
+  (\vec Y, \productions) =&\ \grm (T, \productions')
 \end{align*}
 
 %%% Local Variables:

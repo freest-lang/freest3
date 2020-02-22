@@ -85,7 +85,7 @@ and vice-versa.
 				\word(S_1;S_2) = \word(S_1)\cdot\word(S_2).	
 			\end{equation}
 			Hence, $\word(S_1;S_2) \LTSderivesP \word(S_1';S_2)$.
-		\item Case $S_1;S_2$ with $\DONE{S_2}$ and $S_2\LTSderives S_2'$: 
+		\item Case $S_1;S_2$ with $\DONE{S_1}$ and $S_2\LTSderives S_2'$: 
 			in the case $S_1;S_2\LTSderives S_2'$, where
 			$\DONE{S_1}$ and $S_2\LTSderives S_2'$, 
 			by~\eqref{eq:grammar_sequential_composition},
@@ -150,8 +150,7 @@ $\word (S_0)\LTSderivesP \vec X $ and proves that there exists
 $\vec Y$ such that $\word (T_0)\LTSderivesP \vec Y $
 with $(\vec X, \vec Y)\in \mathcal{B}'$. This proof  
 is done by coinduction on the definition of $\word$, uses 
-Lemmas~\ref{lemma:terminated-togrammar},
-\ref{lem:transitions_mimic}, \ref{lem:transitions_words},
+Lemmas~\ref{lem:transitions_mimic}, \ref{lem:transitions_words},
 and the definition of $\mathcal{B}'$. \smallskip\\
 For the reverse implication, assume that 
 $\vec X \ProdEquiv \vec Y$, with $\vec X = \word (S)$ and
@@ -164,8 +163,7 @@ given $(S_0, T_0)\in \mathcal{B}$, such that $S_0\LTSderives S_0'$,
 there exists $T_0'$ such that $T_0\LTSderives T_0'$
 and $(S_0',T_0')\in \mathcal{B}$. The proof
 follows by rule coinduction on the LTS and uses 
-Lemmas~\ref{lemma:terminated-togrammar},
-\ref{lem:transitions_mimic}, and~\ref{lem:transitions_words}. \qed 
+Lemmas~\ref{lem:transitions_mimic} and~\ref{lem:transitions_words}. \qed 
 \end{proof}
 
 Now we sketch the proof that pruning grammars also preserves bisimulation.
@@ -263,7 +261,8 @@ the algorithm, its soundness and completeness.
   any infinite branch is successful by definition and thus the
   safeness property would imply $\word(S) \sim_{\Prune(\productions)} \word(T)$ 
   and we would have
-  $S\TypeEquiv T$, by Theorem~\ref{thm:equiv_coincide}.\qed
+  $S\TypeEquiv T$, by Theorems~\ref{thm:equiv_coincide}
+  and~\ref{thm:pruning_preserves_bisim}.\qed
 \end{proof}
 
 %\begin{proof}
