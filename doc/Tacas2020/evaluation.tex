@@ -250,15 +250,14 @@ in the number of timeouts, when  compared to the base case.
 %others, presenting a median of 1.4 milliseconds for the positive tests
 %and 7 timeouts. 
 
-Variant B1, resulting from considering optimisation 1, performs better 
-than all others, presenting a median of 1.4 milliseconds for the positive 
-tests and 7 timeouts. By implementing optimization 1, the number of 
-timeouts reduced
-95\%. The remaining positive tests take, on 
-average, 1863.38 ms to run with the base algorithm and 195.68 ms  
-with variant B1, 
-resulting in an 89\% reduction in the execution time. 
-This is the variant in production for the FreeST 
+Variant B1, resulting from considering optimisation 1, performs better
+than all others, presenting a median of 1.4 milliseconds and 7
+timeouts, both for the positive tests. By taking advantage of
+optimisation 1, the number of timeouts reduced by 95\%. The remaining
+positive tests take, on average, 1863.38 ms to complete with the base
+algorithm and 195.68 ms with variant B1, resulting in an 89\%
+reduction in the execution time.  This is the variant in production
+for the FreeST
 compiler~\cite{almeida.etal_freest-functional-language}.
 
 The distribution of the execution time of B1 against the size of the
