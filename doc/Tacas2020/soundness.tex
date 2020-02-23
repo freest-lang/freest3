@@ -20,13 +20,13 @@ introduce bisimulation relations on the set $\mathcal T$ of types
 $\TypeEquiv$ and on a given set $\productions$ of productions
 $\ProdEquiv$.  Our ultimate goal is to prove that we can faithfully
 analyze the bisimilarity of types by analyzing the bisimilarity of the
-corresponding grammar. For this purpose, we prove that the translation
+corresponding grammars. For this purpose, we prove that the translation
 proposed in Section~\ref{sec:algorithm} is a \emph{fully abstract
   encoding}, i.e., preserves the bisimilarity
 relation. %~\cite{gorla2016full}.
 
-We start proving that the transformation of types to grammars preserves
-the labelled transitions.
+We start showing that the transformation of types to grammars
+preserves the labelled transitions.
 % Throughout this section, we abuse notation and denote by $\word(S)$
 % the start word for $S$.
 %
@@ -246,7 +246,7 @@ the algorithm, its soundness and completeness.
 \end{lemma}
 %
 \begin{proof}
-  Start by noticing that $\Prune(\productions)$ always terminate.
+  Start by noticing that $\Prune(\productions)$ always terminates.
   %
   For $\Bisim$ itself, if $S\TypeEquiv T$ then, by
   Theorems~\ref{thm:equiv_coincide} and
@@ -322,20 +322,20 @@ the meta-theory of context-free session types.
  
 Given that the algorithm terminates (Lemma~\ref{lem:termination}), we
 know that if $S\not\TypeEquiv T$, then $\Bisim(\vec X, \vec Y, 
-\Prune(\productions))$ returns
-\lstinline|False|, where \grmcontext.
+\Prune(\productions))$ returns $\False$, where \grmcontext.
 %
 We now show that the algorithm to check the bisimulation of
 context-free session types is complete with respect to the meta-theory
 of context-free session types. The finite witness property is
 paramount to achieve this result.
 
-\begin{theorem}[Completeness]
-\label{thm:completeness}
-  If $S \TypeEquiv T$ then $\Bisim(\vec X, \vec Y, \Prune(\productions))$ 
-  returns
-  \upshape{\lstinline|True|}, where \grmcontext.
-\end{theorem}
+\begin{sloppypar}
+  \begin{theorem}[Completeness]
+    \label{thm:completeness}
+    Let \grmcontext.  If $S \TypeEquiv T$ then
+    $\Bisim(\vec X, \vec Y, \Prune(\productions))$ returns $\True$.
+  \end{theorem}
+\end{sloppypar}
 %
 \begin{proof}
   Assume $S \TypeEquiv T$. By Theorems~\ref{thm:equiv_coincide}
