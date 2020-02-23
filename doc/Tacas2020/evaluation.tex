@@ -65,7 +65,7 @@ generate arbitrary pairs of types that are bisimilar by
 construction. Theorem~\ref{thm:axioms} naturally induces an algorithm:
 given a natural number $n$ (the size of the pair), arbitrarily select
 for the base case ($n=0$) one of the pairs in item 1 of the theorem
-and for the recursive case ($n\ge1$) one of the pairs in 2--12 items.\\
+and for the recursive case ($n\ge1$) one of the pairs in 2--12 items.
 
 For evaluating the algorithm on non-bisimilar pairs we add the 
 following five anti-axioms to the list in 
@@ -85,7 +85,7 @@ be bisimilar.
 %
 This produces pairs of types that are much closer than those obtained
 by random generation, thus hopefully approaching the reality that the
-compilers faces when in production.
+compilers face when in production.
 
 % The rationale for this generation of non-bisimilar pairs, rather than
 % an arbitrary and independent generation of types, relies on the reality that 
@@ -230,23 +230,37 @@ the execution time for the positive tests differ from variant to variant. These
 differences mainly depend on the trade-off between the computational
 effort required for each optimisation and the efficiency they bring to
 deciding the equivalence of grammars.
+We observe that including optimization 1 in the implementation improves 
+execution times, while the rest, in general, do not improve it. The 
+combination of optimizations has a positive impact on execution time, 
+with the exception of the B23 variant, whose distribution is worse than 
+the base case.
 
 Figure~\ref{fig:timeouts} shows the number of timeouts for each
 variant.  The base case, B, has 146 positive tests whose execution
-time exceeds 2 minutes. Some variants perform better than the base
-case, some others perform worst, again mainly due to the trade-off
-between the effort to compute the optimisations and the benefit they
-bring.  For the negative tests, we do not have timeouts.  Variant B1,
+time exceeds 2 minutes. 
+%Some variants perform better than the base
+%case, some others perform worst, again mainly due to the trade-off
+%between the effort to compute the optimisations and the benefit they
+%bring.  For the negative tests, we do not have timeouts. 
+The distribution of timeouts per variant exhibits a behavior that
+is consistent 
+with that of runtime shown in Figure~\ref{fig:distribution}.
+All the combinations of optimisations lead to a reduction in the
+number of timeouts, compared to the base case.
+
+Variant B1,
 resulting from considering optimisation 1, performs better than all
 others, presenting a median of 1.4 milliseconds for the positive tests
-and 7 timeouts.
+and 7 timeouts. This is the variant in production for the FreeST 
+compiler~\cite{almeida.etal_freest-functional-language}.
 
-The distribution of execution time of B1 by the size of the input
-types is depicted in Figure~\ref{fig:numberOfNodes}.
+The distribution of execution time of B1 depending on the size of the 
+input types is depicted in Figure~\ref{fig:numberOfNodes}.
 As expected, the execution time increases considerably with the number of nodes.
 %
 Although we have carried out tests with a
-fairly large number of nodes in their abstract syntax trees, we remark
+fairly large number of nodes in the abstract syntax trees, we remark
 that, when used in a compiler, the algorithm will mostly come across
 types with a reduced number of nodes.
 
