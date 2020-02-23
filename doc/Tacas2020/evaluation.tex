@@ -255,61 +255,15 @@ others, presenting a median of 1.4 milliseconds for the positive tests
 and 7 timeouts. This is the variant in production for the FreeST 
 compiler~\cite{almeida.etal_freest-functional-language}.
 
-The distribution of execution time of B1 depending on the size of the 
-input types is depicted in Figure~\ref{fig:numberOfNodes}.
-As expected, the execution time increases considerably with the number of nodes.
+The distribution of the execution time of B1 against the size of the
+input types is depicted in Figure~\ref{fig:numberOfNodes}.  As
+expected, the execution time increases considerably with the number of
+nodes.
 %
-Although we have carried out tests with a
-fairly large number of nodes in the abstract syntax trees, we remark
-that, when used in a compiler, the algorithm will mostly come across
-types with a reduced number of nodes.
-
-
-% \begin{figure}[t]
-%     \centering
-%     \subfloat[Distribution of the execution time]{\includegraphics[height=.5\textwidth]{img/old_distribution_boxplot}}%
-%     \subfloat[Execution time per number of nodes]{\includegraphics[height=.5\textwidth]{img/nodes_time_B1234}}%
-%     \caption{The test suite composed by equivalent pairs of types is represented in orange and the
-%     test suite with non-equivalent pairs of types is represented in blue. Time 
-%     in microseconds, $\mu s$. Both scales are logarithmic.\\
-%     (a) Distribution of execution time of function $\BisimT$ for both test suites.\\
-%     (b) Distribution of execution time of function $\BisimT$ per total number of nodes 
-%     in the abstract syntax trees of the types.}%
-%     \label{fig:results}%
-%   \end{figure}
-
-  
-%\noindent
-%\begin{minipage}[b]{0.49\textwidth}
-%   {\small 
-%  \centering
-% 	\begin{tabular}{ |c|c|c| }
-%	 \hline
-% 		Version &  {\color{orange}Bisimilar} & {\color{MidnightBlue}Not bisimilar}  \\ 
-% 		 \hline
-%	 	B0 & 5 & 0 \\  
-%	 	B1 &  1 & 0 \\ 
-%	 	B2 & 6 & 0 \\ 
-%	 	B3 &  12 & 0 \\
-%	 	B4 &  4 & 0 \\
-%	 	B12 &  2 & 0 \\   
-%	 	B123 &  6 & 0 \\
-%	 	B1234 &  \textbf{0} & \textbf{0} \\ 
-%	 	 \hline  
-%	\end{tabular}\vspace*{6mm}
-%	\captionof{table}{Number of timeouts for each optimisation and for both test 
-%	suites.\label{table:timeouts}\vspace*{4mm}}
-%	}
-%	\end{minipage}
-%	\hfill
-%\begin{minipage}[b]{0.49\textwidth}
-% {\small 
-%\centering
-%    \includegraphics[height=.85\textwidth]{img/distribution_boxplot}%
-%    \captionof{figure}{Distribution of execution time of function $\BisimT$ for both test suites. 
-%    Both scales are logarithmic.\label{fig:results}}}
-%    %\caption{Distribution of the execution time. \label{fig:results}}
-%\end{minipage}
+Although we have carried out tests with a fairly large number of nodes
+in the abstract syntax trees, we remark that, when used in a compiler,
+the algorithm will mostly come across types with a reduced number of
+nodes.
 
 %%% Local Variables:
 %%% mode: latex

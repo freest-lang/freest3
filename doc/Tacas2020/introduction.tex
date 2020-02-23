@@ -26,15 +26,14 @@ example, a type of the form
 \end{lstlisting}
 %
 % which we abbreviate to \lstinline|TreeChannel| % Not used
-may describe one end
-of a session channel. A process holding such a channel end must first
-\emph{select} between choices \lstinline|Leaf| and
-\lstinline|Node|. If \lstinline|Leaf| is chosen, then type
-\lstinline|Skip| forwards the interaction to the continuation, if
-any. If no continuation is present, then interaction is
-over. Otherwise, the process must send an integer (\lstinline|!Int|)
-followed by two trees, as witnessed by the recursive calls occurring
-after the choice of \lstinline|Node|.
+may describe one end of a communication channel. A process holding
+such a channel end must first \emph{select} between choices
+\lstinline|Leaf| and \lstinline|Node|. If \lstinline|Leaf| is chosen,
+then type \lstinline|Skip| forwards the interaction to the
+continuation, if any. If no continuation is present, then interaction
+is over. Otherwise, the process must send an integer
+(\lstinline|!Int|) followed by two trees, as witnessed by the
+recursive calls occurring after the choice of \lstinline|Node|.
 %to \lstinline|TreeChannel|.
 %
 A concurrent process holding the other end of the channel 
@@ -140,10 +139,10 @@ Stirling~\cite{DBLP:journals/iandc/ChristensenHS95}.
 %
 The \emph{third stage} constructs an expansion tree, by alternating
 between expansion and simplification steps.  This last stage uses
-ideas from expansion operations proposed by Jan\v car, Moller, and
+expansion operations proposed by Jan\v car, Moller, and
 Hirshfeld~\cite{hirshfeld1996bisimulation,janvcar1999techniques}, and
-ideas from simplification rules proposed by Caucal, Christensen,
-H\"uttel, Stirling, Jan\v car, and Moller
+simplification rules proposed by Caucal, Christensen, H\"uttel,
+Stirling, Jan\v car, and Moller
 ~\cite{caucal1986decidabilite,DBLP:journals/iandc/ChristensenHS95,janvcar1999techniques}.
 The finite representation of bisimulations of \BPA\ transition
 graphs~\cite{caucal1986decidabilite,DBLP:journals/iandc/ChristensenHS95}
