@@ -183,7 +183,7 @@ behave quite poorly. We then implemented the following variants.
 To better understand how the algorithm performs in practice, we tested
 all the optimisations and their combinations. We evaluate each variant 
 1--3 individually (denoted
-by B1--B3) and all their combinations. For instance, we denote by B12
+by B1--B3) and all their combinations. For instance, B12 denotes
 the variant obtained from combining optimisations 1 and 2 above.
 B stands for the base algorithm, $\BisimT$.
 %
@@ -245,10 +245,20 @@ consistent with that of runtime shown in
 Figure~\ref{fig:distribution}.  All combinations lead to a reduction
 in the number of timeouts, when  compared to the base case.
 
-Variant B1,
-resulting from considering optimisation 1, performs better than all
-others, presenting a median of 1.4 milliseconds for the positive tests
-and 7 timeouts. This is the variant in production for the FreeST 
+%Variant B1,
+%resulting from considering optimisation 1, performs better than all
+%others, presenting a median of 1.4 milliseconds for the positive tests
+%and 7 timeouts. 
+
+Variant B1, resulting from considering optimisation 1, performs better 
+than all others, presenting a median of 1.4 milliseconds for the positive 
+tests and 7 timeouts. By implementing optimization 1, the number of 
+timeouts reduced
+95\%. The remaining positive tests take, on 
+average, 1863.38 ms to run with the base algorithm and 195.68 ms  
+with variant B1, 
+resulting in an 89\% reduction in the execution time. 
+This is the variant in production for the FreeST 
 compiler~\cite{almeida.etal_freest-functional-language}.
 
 The distribution of the execution time of B1 against the size of the
