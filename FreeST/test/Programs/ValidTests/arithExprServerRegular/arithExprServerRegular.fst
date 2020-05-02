@@ -10,7 +10,7 @@ type Stream = +{
 -}
 
 -- A sample client: (5*4)+(2*3)
-client : rec x: SL. +{Add: x, Mult: x, Const: !Int;x, EOS: ?Int} -> Int
+client : (rec x: SL. +{Add: x, Mult: x, Const: !Int;x, EOS: ?Int}) -> Int
 client c =
   -- stream the arithmetic operation
   let c = select c Const in
@@ -35,7 +35,7 @@ client c =
   with any stream, independent of the fact that it may or may not
   represent a well formed arithmetic expression.
 -}
-size : rec x: SL. &{Add: x, Mult: x, Const: ?Int;x, EOS: !Int} -> Int -> Skip
+size : (rec x: SL. &{Add: x, Mult: x, Const: ?Int;x, EOS: !Int}) -> Int -> Skip
 size s n =
   match s with {
     Add s   -> size s (n + 1),
