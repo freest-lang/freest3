@@ -38,10 +38,12 @@ typeCheck = do
   tEnv <- getTEnv -- Type/datatype declarations
   vEnv <- getVEnv -- Function signatures
   eEnv <- getEEnv -- Function bodies
-  -- trace ("Entering type checking with\n  TEnv " ++ show tEnv)
-  --   trace ("  VEnv " ++ show (userDefined vEnv))
-  --     trace ("  EEnv " ++ show eEnv)
-  --       return ()
+  tn <- getTypeNames -- Type Names
+  traceM ("\n\n\nEntering type checking with\n  TEnv " ++ show tEnv ++ "\n\n" ++
+          "  VEnv " ++ show (userDefined vEnv) ++ "\n\n" ++
+          "  EEnv " ++ show eEnv  ++ "\n\n" ++
+          "  Tname " ++ show tn)
+
   -- 1. Check the contractiveness of all type decls
   -- trace "checking contractiveness of all type decls" (return ())
   -- mapM_ (checkContractive Map.empty . snd) tEnv

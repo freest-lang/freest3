@@ -12,7 +12,7 @@ import           System.IO (stdout)
 import           System.Directory
 import           System.FilePath
 import           Utils.FreestState
-import           Utils.PreludeLoader (prelude)
+import           Utils.PreludeLoader (prelude, userDefined) -- debug: userDefined
 import           Validation.Rename (renameState)
 import           Validation.TypeChecking (typeCheck)
 import           CodeGen.Annotation
@@ -21,6 +21,7 @@ import           CodeGen.Annotation
 -- import qualified Data.Map as Map
 -- import Syntax.Expressions -- test
 -- import Syntax.Show -- test
+import Validation.BuildTypes 
 
 -- TODO: one more if here; if a parse error occured we should not continue
 compileFile :: FilePath -> IO ()
@@ -28,12 +29,17 @@ compileFile args
   | "fst" `isExtensionOf` args = do
       s1 <- parseProgram args prelude
       let s2 = execState renameState s1
-      let s3 = execState typeCheck s2
-      if hasErrors s3
-      then
-        die $ getErrors s3
-      else
-        genCode (varEnv s3) (expEnv s3) (typeEnv s3) args
+      let s213 = execState solveTypeDecls s2
+
+      when (hasErrors s213) (die $ getErrors s213)
+      let s3 = execState typeCheck s213
+      when (hasErrors s3) (die $ getErrors s3)
+      genCode (varEnv s3) (expEnv s3) (typeEnv s3) args
+      -- if hasErrors s3
+      -- then
+      --   die $ getErrors s3
+      -- else
+      --   genCode (varEnv s3) (expEnv s3) (typeEnv s3) args
   | otherwise = die $ "Error: File extension not recognized, provide a .fst file: " ++ args
 
 -- CODE GEN

@@ -22,7 +22,9 @@ genDataTypes = Map.foldlWithKey (\acc k v -> acc ++ showElem k (snd v) ++ "\n") 
 
 showElem :: TypeVar -> TypeScheme -> String
 showElem x (TypeScheme _ _ (Datatype _ m)) = showDatatype x m
-showElem x (TypeScheme _ _ t)              = showTypeAbbr x t
+showElem x (TypeScheme _ _ _)              = ""
+-- TODO: removed the generation of types... add later
+-- showElem x (TypeScheme _ _ t)              = showTypeAbbr x t
 
 showDatatype :: TypeVar -> TypeMap -> String
 showDatatype x m = "data " ++ show x ++ " = " ++ showDatatypeMap m ++ " deriving Show"

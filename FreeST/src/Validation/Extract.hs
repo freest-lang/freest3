@@ -34,6 +34,7 @@ import           Utils.Errors
 import           Utils.FreestState
 import qualified Data.Map.Strict as Map
 import           Syntax.Show -- debug
+import           Syntax.Schemes -- debug
 import           Debug.Trace -- debug
 
 -- | The Extract Functions
@@ -102,9 +103,28 @@ extractMessage pol msg e t = do
   where
     extractMessageErr :: String -> Expression -> Type -> FreestState (BasicType, Type)
     extractMessageErr msg e u = do
+      -- let (Semi _ _ (Semi _ t1 _)) = u
+      -- u' <- showT u
       addError (position e) ["Expecting an", msg, "type for expression", styleRed $ show e, "\n",
                              "\t found type", styleRed $ show u]
+--                             "\t found type" ++ show (position t1), styleRed $ show u']
+        
       return (UnitType, Skip (position u))
+
+showT :: Type -> FreestState Type
+showT (Semi p t u) = do
+--  traceM $ "(" ++ show (position t) ++ ", " ++ show t ++ ")"  
+  tns <- getTypeNames
+  t' <- showT $ Map.findWithDefault t (position t) tns
+--  u' <- showT $ Map.findWithDefault u (position u) tns
+  u' <- showT u
+  -- traceM $ show t ++ "  ->  " ++ show t' ++ "\n" ++ show u ++ "  ->  " ++ show u'
+  return $ Semi p t' u'
+showT t = do
+  traceM $ "(" ++ show (position t) ++ ", " ++ show t ++ ")"  
+  tns <- getTypeNames
+  return $ Map.findWithDefault t (position t) tns
+  
 
 -- Extracts a choice type from a general type; gives an error if a choice is not found
 extractOutChoiceMap :: Expression -> Type -> FreestState TypeMap
@@ -136,9 +156,17 @@ extractDatatypeMap e t = do
   case t' of
     (Datatype _ m) -> return m
     u              -> do
-      addError (position e) ["Expecting a datatype for expression", styleRed $ show e, "\n",
-                             "\t found type", styleRed $ show u]
+      let p = getRecPos u
+      addError (position e) ["Expecting a datatype for expression" , styleRed $ show e, "\n",
+                             "\t found type - rec pos " ++ show p, styleRed $ show u]
       return Map.empty
+
+getRecPos :: Type -> Pos
+getRecPos (Choice _ _ m) =
+  let ((_,x):xs) = Map.toList m in getRecPos x
+getRecPos (Rec p _ _) = p
+getRecPos (Semi _ t u) = max (getRecPos t) (getRecPos u)
+getRecPos t = defaultPos
 
 -- Extracts a constructor from a choice map; gives an error if the
 -- constructor is not in the map

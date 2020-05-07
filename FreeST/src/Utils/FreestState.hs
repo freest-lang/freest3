@@ -20,6 +20,7 @@ FreestState
 , tMapM
 , tMapM_
 , tMapWithKeyM
+, tMapWithKeyM_
 -- Next index
 , getNextIndex
 -- Variable environment
@@ -44,11 +45,17 @@ FreestState
 , addError
 , hasErrors
 , getFileName
+-- Typenames
+, TypeNames
+, addTypeName
+, getTypeNames
+, findTypeName
 ) where
 
 import           Syntax.Expressions
 import           Syntax.Schemes
 import           Syntax.Kinds
+import           Syntax.Types (Type)
 import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
 import           Syntax.Base
@@ -61,16 +68,18 @@ import qualified Data.Traversable as Traversable
 
 -- | The typing state
 
-type Errors = [String]
 -- type Errors = Set.Set String
+type Errors = [String]
+type TypeNames = Map.Map Pos Type -- map between positions and type operators (typename, dualof)
 
 data FreestS = FreestS {
-  filename :: String
-, varEnv   :: VarEnv
-, expEnv   :: ExpEnv
-, typeEnv  :: TypeEnv
-, errors   :: Errors
-, nextIndex  :: Int
+  filename  :: String
+, varEnv    :: VarEnv
+, expEnv    :: ExpEnv
+, typeEnv   :: TypeEnv
+, typenames :: TypeNames
+, errors    :: Errors
+, nextIndex :: Int
 }
 
 type FreestState = State FreestS
@@ -83,6 +92,7 @@ initialState f = FreestS {
 , varEnv    = Map.empty
 , expEnv    = Map.empty
 , typeEnv   = Map.empty
+, typenames = Map.empty
 , errors    = []
 --, errors    = Set.empty
 , nextIndex = 0
@@ -169,6 +179,21 @@ getFromTEnv  b = do
 setTEnv :: TypeEnv -> FreestState ()
 setTEnv tEnv = modify (\s -> s{typeEnv = tEnv})
 
+-- | TYPENAMES
+
+addTypeName :: Pos -> Type -> FreestState ()
+addTypeName p t = modify (\s -> s{typenames = Map.insert p t (typenames s)})
+
+getTypeNames :: FreestState TypeNames
+getTypeNames = do
+  s <- get
+  return $ typenames s
+
+findTypeName :: Pos -> Type -> FreestState Type
+findTypeName p t = do
+  typenames <- getTypeNames
+  return $ Map.findWithDefault t p typenames
+
 -- | ERRORS
 
 addError :: Pos -> [String] -> FreestState ()
@@ -201,6 +226,9 @@ tMapM_ f m = tMapM f m >> return ()
 
 tMapWithKeyM :: Monad m => (k -> a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)
 tMapWithKeyM f m = Traversable.sequence (Map.mapWithKey f m)
+
+tMapWithKeyM_ :: Monad m => (k -> a1 -> m a2) -> Map.Map k a1 -> m ()
+tMapWithKeyM_ f m = tMapWithKeyM f m >> return ()
 
 {- An attempt to rename at parsing time
 

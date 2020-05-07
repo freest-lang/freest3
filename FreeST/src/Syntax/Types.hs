@@ -73,11 +73,11 @@ instance Position Type where
   position (Message p _ _)  = p
   position (Choice p _ _)   = p
   -- Functional or session
-  position (Rec p _ _)        = p
-  position (TypeVar p _)      = p
+  position (Rec p _ _)      = p
+  position (TypeVar p _)    = p
   -- Type operators
-  position (Dualof p _)       = p
-  position (TypeName p _)     = p
+  position (Dualof p _)     = p
+  position (TypeName p _)   = p
 
 instance Default Type where
   omission p = Basic p IntType

@@ -39,8 +39,8 @@ instance Contractive Type where
     when (not (contractive tEnv kEnv t)) $
      addError (position t) ["Type", styleRed $ show t, "is not contractive"]
 
--- instance Contractive TypeScheme where
---   checkContractive kEnv (TypeScheme _ xks t) = checkContractive (insert kEnv xks) t
+instance Contractive TypeScheme where
+  checkContractive kEnv (TypeScheme _ xks t) = checkContractive (insert kEnv xks) t
 
 -- Is a given type contractive?
 

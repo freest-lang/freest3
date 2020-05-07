@@ -79,6 +79,7 @@ synthetise kEnv e'@(Lambda p m x t1 e) = do
 synthetise kEnv (App _ e1 e2) = do
   t <- synthetise kEnv e1
   (u1, u2) <- extractFun e1 t
+--  traceM ("Extract Fun: " ++ show u1 ++ " | "  ++ show u2 ++ " against " ++ show e2)
   checkAgainst kEnv e2 u1
   return u2
 -- Type application
@@ -300,6 +301,7 @@ checkAgainst kEnv (BinLet _ x y e1 e2) t2 = do
 -- Default
 checkAgainst kEnv e t = do
   u <- synthetise kEnv e
+--  traceM $ "checkAgainst exp " ++ show e ++ " - "  ++ show u 
   checkEquivTypes e kEnv t u
 
 -- | Check an expression against a given type scheme
@@ -312,7 +314,7 @@ checkEquivTypes :: Expression -> KindEnv -> Type -> Type -> FreestState ()
 checkEquivTypes exp kEnv expected actual = do
   tEnv <- getTEnv
   -- vEnv <- getVEnv
-  -- trace ("checkEquivTypes :" ++ show (funSigsOnly tEnv vEnv)) (return ())
+  -- traceM ("\n checkEquivTypes exp : " ++ show exp ++ " \t" ++ show (userDefined vEnv))
   when (not $ equivalent tEnv kEnv actual expected) $
     addError (position exp) ["Couldn't match expected type", styleRed (show expected), "\n",
                           "\t             with actual type", styleRed (show actual), "\n",
