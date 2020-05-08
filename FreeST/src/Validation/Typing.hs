@@ -40,6 +40,7 @@ import qualified Data.Map.Strict as Map
 import           Syntax.Show -- debug
 import           Utils.PreludeLoader (isBuiltin, userDefined) -- debug
 import           Debug.Trace                     -- debug
+import           Validation.BuildTypes                     -- debug
 
 -- SYNTHESISING A TYPE
 
@@ -316,9 +317,14 @@ checkEquivTypes exp kEnv expected actual = do
   -- vEnv <- getVEnv
   -- traceM ("\n checkEquivTypes exp : " ++ show exp ++ " \t" ++ show (userDefined vEnv))
   when (not $ equivalent tEnv kEnv actual expected) $
-    addError (position exp) ["Couldn't match expected type", styleRed (show expected), "\n",
-                          "\t             with actual type", styleRed (show actual), "\n",
+    showType actual >>= \actual' ->    
+    showType expected >>= \expected' ->    
+    addError (position exp) ["Couldn't match expected type"++ show (position expected), styleRed (show expected'), "\n",
+                          "\t             with actual type" ++ show (position actual), styleRed (show actual'), "\n",
                           "\t               for expression", styleRed (show exp)]
+
+-- test (Semi _ t u) = position p
+-- test t = defaultPos
 
 checkEqualEnvs :: Expression -> VarEnv -> VarEnv -> FreestState ()
 checkEqualEnvs e vEnv1 vEnv2 = do

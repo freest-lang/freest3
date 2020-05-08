@@ -227,22 +227,31 @@ subsFieldMap tenv = mapM (\(ps, e) -> liftM2 (,) (pure ps) (subsExp tenv e))
 
 
 showType :: Type -> FreestState Type
-showType (Semi p t u) = do
---  tns <- getTypeNames
-  t' <- showType t -- (Map.findWithDefault t (position t) tns)
-  u' <- showType u
-  return $ Semi p t' u'
-showType r@(Rec p xs t) = do
+showType s@(Semi p t u) = do
   tns <- getTypeNames
-  showType (Map.findWithDefault r p tns)  
---  t' <- showType (Map.findWithDefault t (position t) tns)
+  case tns Map.!? p of
+    Just t -> do
+      traceM $ "found semi" ++ show p ++ " " ++ show t ++ " - "
+        ++ show (position t) ++ " - " ++ show (position u)
+      return t
+    Nothing -> liftM2 (Semi p) (showType t) (showType u)
+showType (Rec p xs t) = do
+  tns <- getTypeNames
+  case tns Map.!? p of
+    Just t  -> do
+      traceM $ "found rec"
+      return t
+    Nothing -> liftM (Rec p xs) (showType t)
 
-showType (Fun p m t u) = 
+-- showType (Fun p m t u) = 
 -- showType (PairType p t u) = 
 -- showType (Datatype p m) =  
--- showType (Semi p t u) = 
--- showType (Choice p v m) = 
-
+showType (Choice p pol m) = do
+  tns <- getTypeNames
+  case tns Map.!? p of
+    Just t  -> return t
+    Nothing -> liftM (Choice p pol) (mapM showType m)
+  
 showType t = do
   tns <- getTypeNames
   return $ Map.findWithDefault t (position t) tns

@@ -36,6 +36,7 @@ import qualified Data.Map.Strict as Map
 import           Syntax.Show -- debug
 import           Syntax.Schemes -- debug
 import           Debug.Trace -- debug
+import           Validation.BuildTypes -- debug
 
 -- | The Extract Functions
 
@@ -104,9 +105,9 @@ extractMessage pol msg e t = do
     extractMessageErr :: String -> Expression -> Type -> FreestState (BasicType, Type)
     extractMessageErr msg e u = do
       -- let (Semi _ _ (Semi _ t1 _)) = u
-      -- u' <- showT u
+      u' <- showType u
       addError (position e) ["Expecting an", msg, "type for expression", styleRed $ show e, "\n",
-                             "\t found type", styleRed $ show u]
+                             "\t found type", styleRed $ show u']
 --                             "\t found type" ++ show (position t1), styleRed $ show u']
         
       return (UnitType, Skip (position u))
