@@ -185,7 +185,7 @@ Expr :: { Expression }
   | let '(' ProgVarWild ',' ProgVarWild ')' '=' Expr in Expr
                                      { BinLet (position $1) $3 $5 $8 $10 }
   | if Expr then Expr else Expr      { Conditional (position $1) $2 $4 $6 }
-  | new Type                         { New (position $1) $2 }
+  | new Type                         { New (position $1) $2 (Dualof (negPos (position $2)) $2) }
   | match Expr with '{' MatchMap '}' { Match (position $1) $2 $5 }
   | case Expr of '{' CaseMap '}'     { Case (position $1) $2 $5 }
   | Expr '||' Expr                   { binOp $1 (mkVar (position $2) "(||)") $3 }

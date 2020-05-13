@@ -166,7 +166,7 @@ showExp i (UnLet _ x e1 e2) = "(let " ++ show x ++ " = " ++ showExp (i-1) e1 ++ 
   -- Fork
 showExp i (Fork _ e) = "fork " ++ showExp (i-1) e
   -- Session types
-showExp _ (New _ t) = "new " ++ show t
+showExp _ (New _ t _) = "new " ++ show t
 showExp i (Send _ e) = "(send " ++ showExp (i-1) e ++ ")"
 showExp i (Receive _ e) = "(receive " ++ showExp (i-1) e ++ ")"
 showExp i (Select _ e l) = "(select " ++ showExp (i-1) e ++ " " ++ show l ++ ")"

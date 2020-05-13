@@ -212,12 +212,12 @@ subsExp tenv (Conditional p e1 e2 e3) = liftM3 (Conditional p) (subsExp tenv e1)
 subsExp tenv (TypeApp p x xs)  = liftM (TypeApp p x) (mapM (subsType tenv) xs)
 subsExp tenv (UnLet p x e1 e2) = liftM2 (UnLet p x) (subsExp tenv e1) (subsExp tenv e2)
 subsExp tenv (Fork p e)        = liftM (Fork p) (subsExp tenv e)
-subsExp tenv (New p t)         = liftM (New p) (subsType tenv t)
+subsExp tenv (New p t u)       = liftM2 (New p) (subsType tenv t) (subsType tenv u)
 subsExp tenv (Send p e)        = liftM (Send p) (subsExp tenv e)
 subsExp tenv (Receive p e)     = liftM (Receive p) (subsExp tenv e)
 subsExp tenv (Select p e x)    = liftM2 (Select p) (subsExp tenv e) (pure x)
 subsExp tenv (Match p e m)     = liftM2 (Match p) (subsExp tenv e) (subsFieldMap tenv m)
-subsExp tenv e                 = return e
+subsExp _ e                    = return e
 
 subsFieldMap :: TypeEnv -> FieldMap -> FreestState FieldMap
 subsFieldMap tenv = mapM (\(ps, e) -> liftM2 (,) (pure ps) (subsExp tenv e))

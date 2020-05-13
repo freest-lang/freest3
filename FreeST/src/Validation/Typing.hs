@@ -139,9 +139,9 @@ synthetise kEnv (Case p e fm) =
   synthetiseFieldMap p kEnv e fm extractDatatypeMap paramsToVEnvCM
 -- Session types
 -- New
-synthetise kEnv (New p t) = do
+synthetise kEnv (New p t u) = do
   K.checkAgainstSession kEnv t
-  return $ PairType p t (dual t)
+  return $ PairType p t u -- (dual t)
   -- return $ PairType p t (Dualof p t)
 -- Send
 synthetise kEnv (Send p e) = do

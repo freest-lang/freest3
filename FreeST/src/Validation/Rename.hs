@@ -180,9 +180,10 @@ instance Rename Expression where
     e' <- rename bs e
     return $ Fork p e'
   -- Session types
-  rename bs (New p t) = do
+  rename bs (New p t u) = do
     t' <- rename bs t
-    return $ New p t'
+    u' <- rename bs u -- TODO: should we rename the dual as well?
+    return $ New p t' u'
   rename bs (Send p e) = do
     e' <- rename bs e
     return $ Send p e'

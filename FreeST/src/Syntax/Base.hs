@@ -17,6 +17,7 @@ module Syntax.Base
 , Pos(..) 
 , Position(..)
 , defaultPos
+, negPos
 ) where
 
 -- Defaults for the various syntactic categories
@@ -33,6 +34,9 @@ class Position t where
 
 defaultPos :: Pos
 defaultPos = Pos 0 0
+
+negPos :: Pos -> Pos
+negPos (Pos i j) = Pos (negate i) (negate j)
 
 -- Multiplicities for kinds, types, and expressions
 

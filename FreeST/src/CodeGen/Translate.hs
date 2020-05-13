@@ -223,7 +223,7 @@ translate m ast _ (Fork _ e) = do
   return ("_fork (" ++ h1 ++ " >> return ())", IOType)
 
 -- Session types
-translate _ _ _ (New _ _) = return ("_new", IOType)
+translate _ _ _ (New _ _ _) = return ("_new", IOType)
 translate m ast t (Send _ e) = do
   (h1, t1) <- translate m ast PureType e
   if isIO t1 then do
