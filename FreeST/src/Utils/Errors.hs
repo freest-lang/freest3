@@ -14,11 +14,15 @@ This module provides tools to prettify & format errors with ANSI colors for term
 module Utils.Errors
 ( styleError
 , styleRed
+, styleColor
+, styleHeader -- remove
+, styleBold -- remove
 ) where 
 
 import System.Console.Pretty (Color (..), Style (..), color, style)
 import Syntax.Base (Pos)
 import Syntax.Show
+-- import qualified Utils.FreestState as S
 
 styleError :: String -> Pos -> [String] -> String
 styleError f p body = styleHeader f p ++ styleBody body
@@ -36,3 +40,5 @@ styleRed = color Red
 styleBold :: String -> String  
 styleBold = style Bold
 
+styleColor :: Color -> String -> String
+styleColor = color

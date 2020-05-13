@@ -29,17 +29,12 @@ compileFile args
   | "fst" `isExtensionOf` args = do
       s1 <- parseProgram args prelude
       let s2 = execState renameState s1
-      let s213 = execState solveTypeDecls s2
-
-      when (hasErrors s213) (die $ getErrors s213)
-      let s3 = execState typeCheck s213
-      when (hasErrors s3) (die $ getErrors s3)
-      genCode (varEnv s3) (expEnv s3) (typeEnv s3) args
-      -- if hasErrors s3
-      -- then
-      --   die $ getErrors s3
-      -- else
-      --   genCode (varEnv s3) (expEnv s3) (typeEnv s3) args
+      let s3 = execState solveTypeDecls s2
+      when (hasErrors s3) (die $ getErrors s3)     
+      let s4 = execState typeCheck s3
+      when (hasErrors s4) (die $ getErrors s4)
+      genCode (varEnv s4) (expEnv s4) (typeEnv s4) args
+      
   | otherwise = die $ "Error: File extension not recognized, provide a .fst file: " ++ args
 
 -- CODE GEN

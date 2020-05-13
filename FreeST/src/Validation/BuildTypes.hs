@@ -1,5 +1,3 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 module Validation.BuildTypes where
 
 import Syntax.Expressions
@@ -14,10 +12,7 @@ import Data.Map.Strict as Map
 import qualified Data.Set as Set
 import Utils.FreestState
 import Debug.Trace
-import Utils.PreludeLoader (userDefined) -- Debug
-import           Utils.Errors
 import Validation.Contractive
-import           Control.Monad.State (when)
 import Control.Monad
 
 solveTypeDecls :: FreestState ()
@@ -34,7 +29,6 @@ solveTypeDecls = do
   substituteVEnv eqs'
   substituteEEnv eqs'
 
-
 -- PHASE 1: SOLVE THE SYSTEM OF EQUATIONS
 
 solveEqs :: TypeEnv -> FreestState TypeEnv
@@ -48,7 +42,7 @@ solveEqs tenv = Map.foldlWithKey solveEq (return tenv) tenv
 
 -- substitute every occurence of vaiable x in all the other entries of the map
 substituteEnv :: TypeEnv -> TypeVar -> Type -> FreestState TypeEnv -- TODO: refactor
-substituteEnv tenv x t =  tMapWithKeyM subsEnv tenv
+substituteEnv tenv x t = tMapWithKeyM subsEnv tenv
   where
     subsEnv :: TypeVar -> (Kind, TypeScheme) -> FreestState (Kind, TypeScheme)
     subsEnv v (k, (TypeScheme p b s))
@@ -121,31 +115,40 @@ toTypeVar t                = t
 -- PHASE 2 - SOLVING DUALOF TYPE OPERATORS
 
 solveDualOfs :: TypeEnv -> FreestState TypeEnv
-solveDualOfs tenv =
+solveDualOfs tenv = 
   tMapM (\(k, TypeScheme p xs t) ->
-            solveDualOf tenv t >>= \t' ->
+            solveDualOf tenv (Set.insert t Set.empty) t >>= \t' ->
             return (k, TypeScheme p xs t')) tenv
 
+type Visited = Set.Set Type
 -- TODO: update recursion variable (name) on dual ?
 -- TODO: more p matching??
-solveDualOf :: TypeEnv -> Type -> FreestState Type
-solveDualOf tenv (Choice p pol m) = liftM (Choice p pol) (tMapM (solveDualOf tenv) m)
-solveDualOf tenv (Semi p t u)     = liftM2 (Semi p) (solveDualOf tenv t) (solveDualOf tenv u)    
-solveDualOf tenv (Rec p xs t)     = liftM (Rec p xs) (solveDualOf tenv t)   
-solveDualOf tenv (TypeName p tname) =
+-- TODO: funs and all the remaining constructors
+solveDualOf :: TypeEnv -> Visited -> Type -> FreestState Type
+solveDualOf tenv s (Choice p pol m) = liftM (Choice p pol) (tMapM (solveDualOf tenv s) m)
+solveDualOf tenv s (Semi p t u)     = liftM2 (Semi p) (solveDualOf tenv s t) (solveDualOf tenv s u)    
+solveDualOf tenv s (Rec p xs t)     = liftM (Rec p xs) (solveDualOf tenv s t)   
+solveDualOf tenv s t@(TypeName p tname) = -- TODO: refactor
   case tenv Map.!? tname of
     Just (_, TypeScheme p b t) -> do
-      t' <- solveDualOf tenv t
-      return $ dual t'
+      if not ( Set.member t s) then do
+        t' <- solveDualOf tenv (Set.insert t s) t      
+        return $ (dual t')
+      else return t
     Nothing -> do
-      addError (position tname) ["Type name not in scope:", styleRed $ show tname]
+      addError (position tname) [Error "Type name not in scope:", Error tname]
       return (Basic p UnitType) -- TODO: should return t (typename) or a unit type??
-solveDualOf tenv d@(Dualof p t) = do
+solveDualOf tenv s d@(Dualof p t) = do
   addTypeName p d  
-  solveDualOf tenv (dual t)
-solveDualOf tenv p = return p
+  solveDualOf tenv s (dual t)
+solveDualOf _ _ p = return p
 
--- TMP : Worth it? 
+    -- do
+    --  t' <- solveDualOf tenv t      
+    --  return $ dual t'
+
+-- TODO : Worth it?
+-- Yes, but only on top-level... Complete
 changePos :: Pos -> Type -> Type
 changePos p (Rec _ xs t) = (Rec p xs (changePos p t)) -- TODO: just on rec?
 changePos p (Semi _ t u) = Semi p t u
@@ -224,34 +227,3 @@ subsFieldMap tenv = mapM (\(ps, e) -> liftM2 (,) (pure ps) (subsExp tenv e))
 -- data Kind = Kind Pos PreKind Multiplicity deriving Ord -- TODO: I wish we do not need this
 -- data TypeVarBind = TypeVarBind Pos TypeVar Kind deriving (Eq, Ord)
 -- type VarEnv = Map.Map ProgVar TypeScheme
-
-
-showType :: Type -> FreestState Type
-showType s@(Semi p t u) = do
-  tns <- getTypeNames
-  case tns Map.!? p of
-    Just t -> do
-      traceM $ "found semi" ++ show p ++ " " ++ show t ++ " - "
-        ++ show (position t) ++ " - " ++ show (position u)
-      return t
-    Nothing -> liftM2 (Semi p) (showType t) (showType u)
-showType (Rec p xs t) = do
-  tns <- getTypeNames
-  case tns Map.!? p of
-    Just t  -> do
-      traceM $ "found rec"
-      return t
-    Nothing -> liftM (Rec p xs) (showType t)
-
--- showType (Fun p m t u) = 
--- showType (PairType p t u) = 
--- showType (Datatype p m) =  
-showType (Choice p pol m) = do
-  tns <- getTypeNames
-  case tns Map.!? p of
-    Just t  -> return t
-    Nothing -> liftM (Choice p pol) (mapM showType m)
-  
-showType t = do
-  tns <- getTypeNames
-  return $ Map.findWithDefault t (position t) tns

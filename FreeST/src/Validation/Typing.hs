@@ -40,7 +40,8 @@ import qualified Data.Map.Strict as Map
 import           Syntax.Show -- debug
 import           Utils.PreludeLoader (isBuiltin, userDefined) -- debug
 import           Debug.Trace                     -- debug
-import           Validation.BuildTypes                     -- debug
+
+-- TODO: environments, [Type], integer (TODO)
 
 -- SYNTHESISING A TYPE
 
@@ -56,9 +57,11 @@ synthetise kEnv (ProgVar p x) = do
   -- traceM ("PROG: " ++ show x ++ " - " ++ show (x `Map.member` venv) ++ "\n" ++ show venv ++ "\n\n")
   s@(TypeScheme _ bs t) <- synthetiseVar kEnv x
   when (not $ null bs) 
-    (addError p ["Variable", styleRed $ show x, "of a polymorphic type used in a monomorphic context\n",
-              "\t The type scheme for variable", styleRed $ show x, "is", styleRed $ show s, "\n",
-              "\t Consider instantiating variable", styleRed $ show x, "with appropriate types for the polymorphic variables"])
+    (addError p
+       [Error "Variable", Error x, Error "of a polymorphic type used in a monomorphic context\n",
+        Error "\t The type scheme for variable", Error x, Error "is", Error s,
+        Error "\n\t Consider instantiating variable", Error x,
+        Error "with appropriate types for the polymorphic variables"])
   return t
 synthetise kEnv (UnLet _ x e1 e2) = do
   t1 <- synthetise kEnv e1
@@ -87,9 +90,9 @@ synthetise kEnv (App _ e1 e2) = do
 synthetise kEnv (TypeApp p x ts) = do
   (TypeScheme _ bs t) <- synthetiseVar kEnv x
   when (length ts /= length bs) 
-    (addError p ["Wrong number of arguments to type application\n",
-                "\t parameters:", styleRed $ show bs, "\n",
-                "\t arguments: ", styleRed $ show ts])  
+    (addError p [Error "Wrong number of arguments to type application\n",
+                 Error "\t parameters:", Error $ styleRed $ show bs,
+                 Error "\n\t arguments: ", Error $ styleRed $ show ts])  
   let typeKinds = zip ts bs :: [(Type, TypeVarBind)]
   mapM (\(u, TypeVarBind _ _ k) -> K.checkAgainst kEnv k u) typeKinds
   return $ foldr (\(u, TypeVarBind _ y _) -> Rename.subs u y) t typeKinds
@@ -127,9 +130,9 @@ synthetise kEnv (Fork p e) = do
   t <- synthetise kEnv e
   k <- K.synthetise kEnv t
   when (isLin k) $ addError p
-    ["Unexpected linear expression", styleRed (show e), "in fork\n",
-     "\t expression", styleRed (show e), "is of type", styleRed (show t),
-     "of kind", styleRed (show k)]
+    [Error "Unexpected linear expression", Error e, Error "in fork\n",
+     Error "\t expression", Error e, Error "is of type", Error t,
+     Error "of kind", Error k]
   return $ Basic p UnitType
 -- Datatype elimination
 synthetise kEnv (Case p e fm) =
@@ -168,8 +171,9 @@ synthetiseVar kEnv x =
       return s
     Nothing -> do
       let p = position x
-      addError p ["Variable or data constructor not in scope:", styleRed $ show x, "\n",
-               "\t (is", styleRed $ show x, "a linear variable that has been consumed?)"]
+      addError p
+        [Error "Variable or data constructor not in scope:", Error x, 
+         Error "\n\t (is", Error x, Error "a linear variable that has been consumed?)"]
       let s = omission p
       addToVEnv x s
       return s
@@ -182,10 +186,10 @@ synthetiseFieldMap p kEnv e fm extract params = do
   tm <- extract e t
   if Map.size fm /= Map.size tm
   then do
-    addError p ["Wrong number of constructors\n",
-                "\t The expression has", styleRed $ show (Map.size fm), "constructor(s)\n",
-                "\t but the type has", styleRed $ show (Map.size tm), "constructor(s)\n",
-                "\t in case/match", styleRed $ showFieldMap 1 fm]
+    addError p [Error "Wrong number of constructors\n",
+                Error "\t The expression has", Error $ styleRed $ show (Map.size fm), Error "constructor(s)\n",
+                Error "\t but the type has", Error $ styleRed $ show (Map.size tm), Error "constructor(s)\n",
+                Error "\t in case/match", Error $ styleRed $ showFieldMap 1 fm]
     return $ omission p
   else do
     vEnv <- getVEnv
@@ -215,8 +219,8 @@ paramsToVEnvMM c bs t = do
   addToVEnv (head bs) (fromType t)
   let lbs = length bs
   when (lbs /= 1) $
-    addError (position c) ["The label", styleRed (show c) , "should have 1",
-                           "argument, but has been given", show lbs]  
+    addError (position c) [Error "The label", Error c , Error "should have 1",
+                           Error "argument, but has been given", Error $ show lbs]  
 
 paramsToVEnvCM :: ProgVar -> [ProgVar] -> Type -> FreestState ()
 paramsToVEnvCM c bs t = do
@@ -225,8 +229,8 @@ paramsToVEnvCM c bs t = do
   let lbs = length bs
       lts = numArgs t
   when (lbs /= lts) $
-    addError (position c) ["The constructor", styleRed (show c) , "should have",
-                         show lts, "arguments, but has been given", show lbs]  
+    addError (position c) [Error "The constructor", Error c, Error "should have",
+                         Error $ show lts, Error "arguments, but has been given", Error $ show lbs]  
 
 zipProgVarLType :: [ProgVar] -> Type -> [(ProgVar, TypeScheme)]
 zipProgVarLType [] _ = []
@@ -243,7 +247,8 @@ synthetiseCons x tm =
   case tm Map.!? x of
     Just t  -> return t
     Nothing -> do
-      addError (position x) ["Data constructor or field name in choice type", styleRed $ show x, "not in scope"]
+      addError (position x)
+        [Error "Data constructor or field name in choice type", Error x, Error "not in scope"]
       return $ Skip (position x)
 
 -- The quotient operation. Removes a program variable from the
@@ -258,9 +263,9 @@ quotient kEnv x = do
       k <- K.synthetise kEnv t
       when (isLin k) $
         addError (position x)
-          ["Program variable", styleRed $ show x, "is linear at the end of its scope\n",
-           "\t variable", styleRed $ show x, "is of type", styleRed $ show t,
-           "of kind", styleRed $ show k]
+          [Error "Program variable", Error x, Error "is linear at the end of its scope\n",
+           Error "\t variable", Error x, Error "is of type", Error t,
+           Error "of kind", Error k]
     Nothing ->
       return ()
   removeFromVEnv x
@@ -316,12 +321,11 @@ checkEquivTypes exp kEnv expected actual = do
   tEnv <- getTEnv
   -- vEnv <- getVEnv
   -- traceM ("\n checkEquivTypes exp : " ++ show exp ++ " \t" ++ show (userDefined vEnv))
-  when (not $ equivalent tEnv kEnv actual expected) $
-    showType actual >>= \actual' ->    
-    showType expected >>= \expected' ->    
-    addError (position exp) ["Couldn't match expected type"++ show (position expected), styleRed (show expected'), "\n",
-                          "\t             with actual type" ++ show (position actual), styleRed (show actual'), "\n",
-                          "\t               for expression", styleRed (show exp)]
+  when (not $ equivalent tEnv kEnv actual expected) $  
+    addError (position exp)
+      [Error "Couldn't match expected type", Error expected,
+       Error "\n\t             with actual type", Error actual,
+       Error "\n\t               for expression", Error exp]
 
 -- test (Semi _ t u) = position p
 -- test t = defaultPos
@@ -331,9 +335,10 @@ checkEqualEnvs e vEnv1 vEnv2 = do
   -- tEnv <- getTEnv
   -- trace ("Initial vEnv: " ++ show (userDefined (noConstructors tEnv vEnv1)) ++ "\n  Final vEnv: " ++ show (userDefined (noConstructors tEnv vEnv2)) ++ "\n  Expression: " ++ show e) (return ())
   when (not $ Map.null diff)
-    (addError (position e) ["Final environment differs from initial in an unrestricted function\n",
-      "\t These extra entries are present in the final environment:", styleRed $ show diff, "\n",
-      "\t for lambda abstraction", styleRed $ show e])
+    (addError (position e)
+     [Error "Final environment differs from initial in an unrestricted function\n",
+      Error "\t These extra entries are present in the final environment:", Error $ styleRed $ show diff,
+      Error "\n\t for lambda abstraction", Error e])
   where diff = Map.difference vEnv2 vEnv1
 
 checkEquivEnvs :: Pos -> KindEnv -> VarEnv -> VarEnv -> FreestState ()
@@ -342,8 +347,8 @@ checkEquivEnvs p kEnv vEnv1 vEnv2 = do
   let vEnv1' = userDefined vEnv1
       vEnv2' = userDefined vEnv2
   when (not (equivalent tEnv kEnv vEnv1' vEnv2')) $
-    addError p ["Expecting environment", styleRed (show vEnv1'), "\n",
-             "\t to be equivalent to  ", styleRed (show vEnv2')]
+    addError p [Error "Expecting environment", Error $ styleRed (show vEnv1'),
+                Error "\n\t to be equivalent to  ", Error $ styleRed (show vEnv2')]
 
 fillFunType :: KindEnv -> ProgVar -> Expression -> TypeScheme -> FreestState Type
 fillFunType kEnv b e (TypeScheme _ _ t) = fill e t
@@ -356,8 +361,8 @@ fillFunType kEnv b e (TypeScheme _ _ t) = fill e t
     return t3
   fill e@(Lambda p _ _ _ _) t = do
     addError (position b)
-      ["Couldn't match expected type", styleRed $ show t, "\n",
-       "\t The equation for", styleRed $ show b, "has one or more arguments,\n",
-       "\t but its type", styleRed $ show t, "has none"]
+      [Error "Couldn't match expected type", Error t,
+       Error "\n\t The equation for", Error b, Error "has one or more arguments,",
+       Error "\n\t but its type", Error t, Error "has none"]
     return t
   fill e _ = synthetise kEnv e

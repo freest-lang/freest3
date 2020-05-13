@@ -1,3 +1,6 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE GADTs #-}
 {-|
 Module      :  FreestState
 Description :  The FreeST state
@@ -44,6 +47,7 @@ FreestState
 , getErrors
 , addError
 , hasErrors
+, ErrorMessage(..)
 , getFileName
 -- Typenames
 , TypeNames
@@ -55,7 +59,7 @@ FreestState
 import           Syntax.Expressions
 import           Syntax.Schemes
 import           Syntax.Kinds
-import           Syntax.Types (Type)
+import           Syntax.Types (Type(..))
 import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
 import           Syntax.Base
@@ -65,6 +69,7 @@ import qualified Data.Map.Strict as Map
 import           Data.List (intercalate)
 -- import qualified Data.Set as Set
 import qualified Data.Traversable as Traversable
+import System.Console.Pretty (Color (..)) -- TODO: refactor
 
 -- | The typing state
 
@@ -196,24 +201,116 @@ findTypeName p t = do
 
 -- | ERRORS
 
-addError :: Pos -> [String] -> FreestState ()
-addError p e = --do
-  modify (\s -> s{errors = insertError p (errors s) (filename s) e})  
---  modify (\s -> s{errors = errors s ++ [styleError (filename s) p e]})  
---   modify (\s -> s{errors = Set.insert (styleError (filename s) p e) (errors s)})
-insertError :: Pos -> [String] -> String -> [String] -> [String]
-insertError p es f e
-  | err `elem` es = es
-  | otherwise     = es ++ [err]
-  where
-    err = styleError f p e
+-- addError :: Pos -> [String] -> FreestState ()
+-- addError p e =
+--   modify (\s -> s{errors = insertError p (errors s) (filename s) e})
+  
+-- insertError :: Pos -> [String] -> String -> [String] -> [String]
+-- insertError p es f e
+--   | err `elem` es = es
+--   | otherwise     = es ++ [err]
+--   where
+--     err = styleError f p e
           
 getErrors :: FreestS -> String
 getErrors = (intercalate "\n") . errors
-  --Set.foldl (\s acc -> acc ++ "\n" ++ s) "" (errors s)
   
 hasErrors :: FreestS -> Bool
 hasErrors = not . null . errors
+
+-- | Error class and instances
+
+-- TODO: move to other module (break cycles)
+
+class ErrorMsg a where
+  pos   :: a -> Pos -- Does not make sense to be here??
+  msg   :: a -> FreestState String
+  color :: a -> Maybe Color
+  
+instance ErrorMsg Type where
+  pos     = position
+  msg t   = liftM show (showM t)
+  color _ = Just Red
+
+instance ErrorMsg String where
+  pos _   = defaultPos 
+  msg s   = pure s
+  color _ = Nothing
+  
+instance ErrorMsg Expression where
+  pos     = position
+  msg     = pure . show
+  color _ = Just Red
+
+instance ErrorMsg ProgVar where
+  pos     = position
+  msg     = pure . show
+  color _ = Just Red
+
+instance ErrorMsg TypeVar where
+  pos     = position
+  msg     = pure . show
+  color _ = Just Red
+
+
+instance ErrorMsg Pos where
+  pos     = id
+  msg     = pure . show
+  color _ = Nothing
+
+instance ErrorMsg Kind where
+  pos     = position
+  msg     = pure . show
+  color _ = Just Red      
+
+instance ErrorMsg TypeScheme where
+  pos     = position
+  msg     = pure . show
+  color _ = Just Red      
+  
+  
+data ErrorMessage where
+  Error :: ErrorMsg a => a -> ErrorMessage
+
+-- type ErrList = [ErrorMessage]
+
+-- a :: Type -> Expression -> String -> ErrList
+-- a t e s = [Error t, Error e, Error s]
+
+-- addErr :: ErrList -> FreestState ()
+-- addErr (Error x:xs) = do
+-- --  str <- foldM (\acc (Error x)  -> liftM ((acc ++ " ") ++) (msg x)) "" xs
+--   str <- foldM (\acc (Error x)  -> liftM ((acc ++ " ") ++) (msg x)) "" xs
+--   s <- msg x
+--   traceM $ "Position " ++ show (pos x) ++ " " ++ (s ++ str)
+--   pure ()
+
+formatErrorMessage :: Pos -> String -> [ErrorMessage] -> FreestState String
+formatErrorMessage _ _ []     = pure ""
+formatErrorMessage p fname es = do
+  let header = styleHeader fname p
+  body <- foldM (\acc e -> liftM ((acc ++ " ") ++) (formatError e)) "" es
+  return $ header ++ body
+
+formatError :: ErrorMessage -> FreestState String
+formatError (Error e) =
+  case color e of
+    Just c  -> liftM (styleColor c) (formatErr e)
+    Nothing -> formatErr e
+
+formatErr :: ErrorMsg a => a -> FreestState String
+formatErr m = liftM styleBold (msg m)
+
+addError :: Pos -> [ErrorMessage] -> FreestState ()
+addError p em = do
+  s <- get
+  es <- formatErrorMessage p (filename s) em
+  modify (\s -> s{errors = insertError (errors s) es})
+  
+insertError :: [String] -> String -> [String]
+insertError es err
+  | err `elem` es = es
+  | otherwise     = es ++ [err] 
 
 
 -- | Traversing Map.map over FreestStates
@@ -229,6 +326,37 @@ tMapWithKeyM f m = Traversable.sequence (Map.mapWithKey f m)
 
 tMapWithKeyM_ :: Monad m => (k -> a1 -> m a2) -> Map.Map k a1 -> m ()
 tMapWithKeyM_ f m = tMapWithKeyM f m >> return ()
+
+
+-- | Show types that consult the typename map
+
+showM :: Type -> FreestState Type
+showM s@(Semi p t u) = do
+  tns <- getTypeNames
+  case tns Map.!? p of
+    Just t -> return t
+    Nothing -> liftM2 (Semi p) (showM t) (showM u)
+showM (Rec p xs t) = do
+  tns <- getTypeNames
+  case tns Map.!? p of
+    Just t  -> return t
+    Nothing -> liftM (Rec p xs) (showM t)
+-- TODO:
+-- showM (Fun p m t u) = 
+-- showM (PairType p t u) = 
+-- showM (Datatype p m) =  
+showM (Choice p pol m) = do
+  tns <- getTypeNames
+  case tns Map.!? p of
+    Just t  -> return t
+    Nothing -> liftM (Choice p pol) (mapM showM m)
+  
+showM t = do
+  tns <- getTypeNames
+  return $ Map.findWithDefault t (position t) tns
+
+
+
 
 {- An attempt to rename at parsing time
 
