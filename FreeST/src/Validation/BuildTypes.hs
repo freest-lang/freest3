@@ -38,7 +38,7 @@ solveEqs tenv = Map.foldlWithKey solveEq (return tenv) tenv
     solveEq acc x (k, s) = do
       let bt = buildRecursiveType x (k, s)
       acc' <- liftM (Map.insert x (k, (fromType bt))) acc -- TODO: update/alter
-      substituteEnv acc' x (toType s)
+      substituteEnv acc' x bt -- (toType s)
 
 -- substitute every occurence of vaiable x in all the other entries of the map
 substituteEnv :: TypeEnv -> TypeVar -> Type -> FreestState TypeEnv -- TODO: refactor
@@ -61,7 +61,7 @@ substituteEnv tenv x t = tMapWithKeyM subsEnv tenv
     subs (Rec p tbs t)      = liftM (Rec p tbs) (subs t)
     subs n@(TypeName p tname)
       | tname == x          = addTypeName p n >> return t
-      | otherwise           =  return n      
+      | otherwise           = return n      
     subs n@(TypeVar p tname) -- should include type vars here?
       | tname == x          = addTypeName p n >> return t
       | otherwise           = return n      
