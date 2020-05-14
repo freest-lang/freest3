@@ -328,10 +328,10 @@ tMapWithKeyM_ :: Monad m => (k -> a1 -> m a2) -> Map.Map k a1 -> m ()
 tMapWithKeyM_ f m = tMapWithKeyM f m >> return ()
 
 
--- | Show types that consult the typename map
+-- | Show types, consulting the typename map
 
 showM :: Type -> FreestState Type
-showM s@(Semi p t u) = do
+showM (Semi p t u) = do
   tns <- getTypeNames
   case tns Map.!? p of
     Just t -> return t

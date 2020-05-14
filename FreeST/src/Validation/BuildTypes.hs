@@ -38,16 +38,16 @@ solveEqs tenv = Map.foldlWithKey solveEq (return tenv) tenv
     solveEq acc x (k, s) = do
       let bt = buildRecursiveType x (k, s)
       acc' <- liftM (Map.insert x (k, (fromType bt))) acc -- TODO: update/alter
-      substituteEnv acc' x bt -- (toType s)
-
--- substitute every occurence of vaiable x in all the other entries of the map
-substituteEnv :: TypeEnv -> TypeVar -> Type -> FreestState TypeEnv -- TODO: refactor
-substituteEnv tenv x t = tMapWithKeyM subsEnv tenv
+      substituteEnv x bt acc'
+      
+-- substitute every occurence of variable x in all the other entries of the map
+substituteEnv :: TypeVar -> Type -> TypeEnv -> FreestState TypeEnv -- TODO: refactor
+substituteEnv x t = tMapWithKeyM subsEnv
   where
     subsEnv :: TypeVar -> (Kind, TypeScheme) -> FreestState (Kind, TypeScheme)
-    subsEnv v (k, (TypeScheme p b s))
-      | x == v    = return (k, (TypeScheme p b s)) -- ignore the node itself
-      | otherwise = do
+    subsEnv v ks@(k, (TypeScheme p b s))
+      | x == v    = pure ks -- ignore the node itself
+      | otherwise = do     
           s' <- subs s
           let bt = buildRecursiveType v (k, (TypeScheme p b s'))
           return (k, TypeScheme p b bt)
@@ -59,12 +59,13 @@ substituteEnv tenv x t = tMapWithKeyM subsEnv tenv
     subs (Semi p t u)       = liftM2 (Semi p) (subs t) (subs u)
     subs (Choice p pol m)   = liftM (Choice p pol) (subsMap m)
     subs (Rec p tbs t)      = liftM (Rec p tbs) (subs t)
+    subs (Dualof p t)       = liftM (Dualof p) (subs t)
     subs n@(TypeName p tname)
       | tname == x          = addTypeName p n >> return t
       | otherwise           = return n      
     subs n@(TypeVar p tname) -- should include type vars here?
       | tname == x          = addTypeName p n >> return t
-      | otherwise           = return n      
+      | otherwise           = return n
     subs s                  = return s
 
     subsMap :: TypeMap -> FreestState TypeMap
@@ -99,6 +100,7 @@ isRecursiveTypeDecl v (TypeName _ x)   = x == v
 isRecursiveTypeDecl v (TypeVar _ x)    = x == v
 isRecursiveTypeDecl v (Fun _ _ t u)    = isRecursiveTypeDecl v t || isRecursiveTypeDecl v u
 isRecursiveTypeDecl v (PairType _ t u) = isRecursiveTypeDecl v t || isRecursiveTypeDecl v u 
+isRecursiveTypeDecl v (Dualof _ t) = isRecursiveTypeDecl v t
 isRecursiveTypeDecl _ _                = False
 
 
@@ -123,29 +125,34 @@ solveDualOfs tenv =
 type Visited = Set.Set Type
 -- TODO: update recursion variable (name) on dual ?
 -- TODO: more p matching??
--- TODO: funs and all the remaining constructors
+-- TODO: type becomes unfolded when expanding dualofs
+-- TODO: fauns and all the remaining constructors
 solveDualOf :: TypeEnv -> Visited -> Type -> FreestState Type
 solveDualOf tenv s (Choice p pol m) = liftM (Choice p pol) (tMapM (solveDualOf tenv s) m)
 solveDualOf tenv s (Semi p t u)     = liftM2 (Semi p) (solveDualOf tenv s t) (solveDualOf tenv s u)    
 solveDualOf tenv s (Rec p xs t)     = liftM (Rec p xs) (solveDualOf tenv s t)   
 solveDualOf tenv s t@(TypeName p tname) = -- TODO: refactor
   case tenv Map.!? tname of
-    Just (_, TypeScheme p b t) -> do
-      if not ( Set.member t s) then do
-        t' <- solveDualOf tenv (Set.insert t s) t      
-        return $ (dual t')
-      else return t
+    Just (_, TypeScheme p b t) -> pure t
+      -- do
+      -- if not ( Set.member t s) then do
+      --   t' <- solveDualOf tenv (Set.insert t s) t      
+      --   return $ (dual t')
+      -- else return t
     Nothing -> do
       addError (position tname) [Error "Type name not in scope:", Error tname]
       return (Basic p UnitType) -- TODO: should return t (typename) or a unit type??
 solveDualOf tenv s d@(Dualof p t) = do
-  addTypeName p d  
-  solveDualOf tenv s (dual t)
-solveDualOf _ _ p = return p
+  addTypeName p d
 
-    -- do
-    --  t' <- solveDualOf tenv t      
-    --  return $ dual t'
+  t' <- solveDualOf tenv s t
+  
+  traceM $ "1." ++ show d ++ "\n"++ "2." ++ show t' ++ " ~ " ++ show (dual t') ++ "\n"
+  pure $ dual t'
+  
+--  liftM dual (solveDualOf tenv s t)
+--  (solveDualOf tenv s (dual t))
+solveDualOf _ _ p = return p
 
 -- TODO : Worth it?
 -- Yes, but only on top-level... Complete
