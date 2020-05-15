@@ -303,8 +303,8 @@ formatErr m = liftM styleBold (msg m)
 
 addError :: Pos -> [ErrorMessage] -> FreestState ()
 addError p em = do
-  s <- get
-  es <- formatErrorMessage p (filename s) em
+  f <- getFileName
+  es <- formatErrorMessage p f em
   modify (\s -> s{errors = insertError (errors s) es})
   
 insertError :: [String] -> String -> [String]

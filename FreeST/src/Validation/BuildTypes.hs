@@ -100,7 +100,7 @@ isRecursiveTypeDecl v (TypeName _ x)   = x == v
 isRecursiveTypeDecl v (TypeVar _ x)    = x == v
 isRecursiveTypeDecl v (Fun _ _ t u)    = isRecursiveTypeDecl v t || isRecursiveTypeDecl v u
 isRecursiveTypeDecl v (PairType _ t u) = isRecursiveTypeDecl v t || isRecursiveTypeDecl v u 
-isRecursiveTypeDecl v (Dualof _ t) = isRecursiveTypeDecl v t
+isRecursiveTypeDecl v (Dualof _ t)     = isRecursiveTypeDecl v t
 isRecursiveTypeDecl _ _                = False
 
 
@@ -133,7 +133,7 @@ solveDualOf tenv s (Semi p t u)     = liftM2 (Semi p) (solveDualOf tenv s t) (so
 solveDualOf tenv s (Rec p xs t)     = liftM (Rec p xs) (solveDualOf tenv s t)   
 solveDualOf tenv s t@(TypeName p tname) = -- TODO: refactor
   case tenv Map.!? tname of
-    Just (_, TypeScheme p b t) -> pure t
+    Just (_, TypeScheme p b t) -> pure (toTypeVar t)
       -- do
       -- if not ( Set.member t s) then do
       --   t' <- solveDualOf tenv (Set.insert t s) t      
@@ -185,12 +185,18 @@ subsType tenv (Choice p pol m)     = liftM (Choice p pol) (mapM (subsType tenv) 
 subsType tenv (Rec p tvb t1)       = liftM (Rec p tvb) (subsType tenv t1)
 subsType tenv n@(TypeName p tname) =   
   case tenv Map.!? tname of
-    Just t -> addTypeName p n >> pure (changePos p (toType $ snd t))
+    Just t -> addTypeName p n >> pure (changePos p (toTypeVar $ toType $ snd t))
     Nothing -> return n
-subsType tenv n@(Dualof p t)       = do
+subsType tenv n@(Dualof p t)       = do -- TODO: remove duplicate call
   t1 <- subsType tenv t  
   addTypeName p n
-  subsType tenv (changePos p (dual t1))
+--  rea <- subsType tenv (changePos p (dual t1))
+  rea <- liftM (changePos p . dual) (subsType tenv t)
+  
+  traceM $ "\nON VENV intitial type " ++ show n
+        ++ "\nsubs                  " ++ show t1
+        ++ "\nresult:              " ++ show rea
+  pure rea
 subsType _ t                       = return t
 
 
