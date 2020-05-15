@@ -14,21 +14,26 @@ import Utils.FreestState
 import Debug.Trace
 import Validation.Contractive
 import Control.Monad
+import           Utils.PreludeLoader (userDefined) -- debug
 
 solveTypeDecls :: FreestState ()
 solveTypeDecls = do
   tenv <- getTEnv
   let tenv' = typeDecls tenv
   traceM $ "\n1. INITIAL ENV: " ++ show tenv' ++ "\n"
+  -- Solve the system of equations
   eqs <- solveEqs tenv'
   traceM $ "\n2. TYPENAMES: " ++ show eqs ++ "\n"
-  -- let eqs' = eqs
+  -- Replace all occurrences of DualOf t
   eqs' <- solveDualOfs eqs
   traceM $ "\n3. DUALOFS: " ++ show eqs' ++ "\n"
+  -- Check if the substituted types are contractive
   mapM_ (checkContractive Map.empty . snd) eqs'
-  substituteVEnv eqs'
+  -- Substitute all type operators on VarEnv
+  substituteVEnv eqs' 
+  -- Substitute all type operators on ExpEnv
   substituteEEnv eqs'
-
+  
 -- PHASE 1: SOLVE THE SYSTEM OF EQUATIONS
 
 solveEqs :: TypeEnv -> FreestState TypeEnv
@@ -119,8 +124,8 @@ toTypeVar t                = t
 solveDualOfs :: TypeEnv -> FreestState TypeEnv
 solveDualOfs tenv = 
   tMapM (\(k, TypeScheme p xs t) ->
-            solveDualOf tenv (Set.insert t Set.empty) t >>= \t' ->
-            return (k, TypeScheme p xs t')) tenv
+            solveDualOf tenv (Set.insert t Set.empty) t >>=
+            \t' -> return (k, TypeScheme p xs t')) tenv
 
 type Visited = Set.Set Type
 -- TODO: update recursion variable (name) on dual ?
@@ -131,23 +136,27 @@ solveDualOf :: TypeEnv -> Visited -> Type -> FreestState Type
 solveDualOf tenv s (Choice p pol m) = liftM (Choice p pol) (tMapM (solveDualOf tenv s) m)
 solveDualOf tenv s (Semi p t u)     = liftM2 (Semi p) (solveDualOf tenv s t) (solveDualOf tenv s u)    
 solveDualOf tenv s (Rec p xs t)     = liftM (Rec p xs) (solveDualOf tenv s t)   
+solveDualOf tenv s (Fun p pol t u)  = liftM2 (Fun p pol) (solveDualOf tenv s t) (solveDualOf tenv s u)
 solveDualOf tenv s t@(TypeName p tname) = -- TODO: refactor
   case tenv Map.!? tname of
     Just (_, TypeScheme p b t) -> pure (toTypeVar t)
-      -- do
-      -- if not ( Set.member t s) then do
-      --   t' <- solveDualOf tenv (Set.insert t s) t      
-      --   return $ (dual t')
-      -- else return t
     Nothing -> do
-      addError (position tname) [Error "Type name not in scope:", Error tname]
-      return (Basic p UnitType) -- TODO: should return t (typename) or a unit type??
+      -- Until we have datatypes as typenames; we have to check if it isdatatype
+      -- In other words we have to check if it is on the original map
+      tenv <- getTEnv
+      case tenv Map.!? tname of
+        Just (_, TypeScheme _ _ t) -> pure t
+        Nothing -> do 
+          addError (position tname) [Error "Type name not in scope:", Error tname]
+          return (Basic p UnitType) -- TODO: should return t (typename) or a unit type??
 solveDualOf tenv s d@(Dualof p t) = do
   addTypeName p d
 
   t' <- solveDualOf tenv s t
   
-  traceM $ "1." ++ show d ++ "\n"++ "2." ++ show t' ++ " ~ " ++ show (dual t') ++ "\n"
+  traceM $ "\n1." ++ show d
+        ++ "\n2." ++ show t'
+        ++ " ~ " ++ show (dual t') ++ "\n"
   pure $ dual t'
   
 --  liftM dual (solveDualOf tenv s t)
@@ -187,18 +196,14 @@ subsType tenv n@(TypeName p tname) =
   case tenv Map.!? tname of
     Just t -> addTypeName p n >> pure (changePos p (toTypeVar $ toType $ snd t))
     Nothing -> return n
-subsType tenv n@(Dualof p t)       = do -- TODO: remove duplicate call
-  t1 <- subsType tenv t  
-  addTypeName p n
---  rea <- subsType tenv (changePos p (dual t1))
-  rea <- liftM (changePos p . dual) (subsType tenv t)
-  
-  traceM $ "\nON VENV intitial type " ++ show n
-        ++ "\nsubs                  " ++ show t1
-        ++ "\nresult:              " ++ show rea
-  pure rea
+subsType tenv n@(Dualof p t)       =
+  addTypeName p n >> liftM (changePos p . dualFun) (subsType tenv t)
 subsType _ t                       = return t
 
+
+dualFun :: Type -> Type
+dualFun (Fun p pol t u) = Fun p pol (dualFun t) (dualFun u)
+dualFun t = dual t
 
 -- PHASE 4: SUBSTITUTE TYPES ON THE EXPRESSIONS (EXPENV)
 
