@@ -42,7 +42,8 @@ instance Normalise Type where
     | otherwise    = append (normalise tenv t) u
   normalise tenv t@(Rec _ _ _) = normalise tenv (Substitution.unfold t)
     -- Type operators
-  normalise tenv (Dualof _ t) = normalise tenv (dual t)
+--  normalise tenv (Dualof _ t) = (normalise tenv (dual t)
+  normalise tenv (Dualof p t) = Dualof p (normalise tenv t) -- Lazy version 
   normalise tenv (TypeName _ a) = normalise tenv t
     where (_, TypeScheme _ [] t) = tenv Map.! a -- TODO: type/data may be polymorphic
     -- Otherwise: Basic, Fun, PairType, Datatype, Skip, Message, Choice, TypeVar
