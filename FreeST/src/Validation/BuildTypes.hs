@@ -140,29 +140,25 @@ solveDualOf tenv s (Fun p pol t u)  = liftM2 (Fun p pol) (solveDualOf tenv s t) 
 solveDualOf tenv s t@(TypeName p tname) = -- TODO: refactor
   case tenv Map.!? tname of
     Just (_, TypeScheme p b t) -> pure (toTypeVar t)
-    Nothing -> do
-      -- Until we have datatypes as typenames; we have to check if it isdatatype
-      -- In other words we have to check if it is on the original map
-      tenv <- getTEnv
-      case tenv Map.!? tname of
-        Just (_, TypeScheme _ _ t) -> pure t
-        Nothing -> do 
-          addError (position tname) [Error "Type name not in scope:", Error tname]
-          return (Basic p UnitType) -- TODO: should return t (typename) or a unit type??
+    Nothing -> maybeErr t             
 solveDualOf tenv s d@(Dualof p t) = do
   addTypeName p d
-
-  t' <- solveDualOf tenv s t
-  
-  traceM $ "\n1." ++ show d
-        ++ "\n2." ++ show t'
-        ++ " ~ " ++ show (dual t') ++ "\n"
-  pure $ dual t'
-  
---  liftM dual (solveDualOf tenv s t)
---  (solveDualOf tenv s (dual t))
+  liftM dual (solveDualOf tenv s t)
 solveDualOf _ _ p = return p
 
+
+-- Until we have datatypes as typenames; we have to check if it is a datatype
+-- In other words we have to check if it is on the original map
+-- TODO: When typenames become rec types as well keep only the Nothing case
+maybeErr :: Type -> FreestState Type
+maybeErr (TypeName p tname) = do
+  tenv <- getTEnv
+  case tenv Map.!? tname of
+    Just (_, TypeScheme _ _ t) -> pure t
+    Nothing -> do 
+      addError p [Error "Type name not in scope:", Error tname]
+      return (Basic p UnitType) -- TODO: should return t (typename) or a unit type??
+      
 -- TODO : Worth it?
 -- Yes, but only on top-level... Complete
 changePos :: Pos -> Type -> Type
