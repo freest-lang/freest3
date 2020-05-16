@@ -23,7 +23,7 @@ import           Syntax.TypeVariables
 import           Syntax.Base
 import           Syntax.Show
 import           Equivalence.Normalisation (terminated)
-import           Utils.Errors
+import           Utils.ErrorMessage
 import           Utils.FreestState
 import           Control.Monad (when)
 import qualified Data.Map.Strict as Map

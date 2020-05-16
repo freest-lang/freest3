@@ -12,7 +12,8 @@ This module provides tools to prettify & format errors with ANSI colors for term
 -}
 
 module Utils.Errors
-( styleError
+( 
+  styleError
 , styleRed
 , styleColor
 , styleHeader -- remove

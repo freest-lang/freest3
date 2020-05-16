@@ -161,9 +161,12 @@ maybeErr (TypeName p tname) = do
       
 -- TODO : Worth it?
 -- Yes, but only on top-level... Complete
-changePos :: Pos -> Type -> Type
-changePos p (Rec _ xs t) = (Rec p xs (changePos p t)) -- TODO: just on rec?
+changePos :: Pos -> Type -> Type -- rec call???
+changePos p (Rec _ xs t) = (Rec p xs (changePos p t))
 changePos p (Semi _ t u) = Semi p t u
+changePos p (PairType _ t u) = PairType p t u
+changePos p (Basic _ t) = Basic p t
+changePos p (Fun _ pol t u) = Fun p pol t u
 changePos _ t = t
 
   
@@ -190,11 +193,11 @@ subsType tenv (Choice p pol m)     = liftM (Choice p pol) (mapM (subsType tenv) 
 subsType tenv (Rec p tvb t1)       = liftM (Rec p tvb) (subsType tenv t1)
 subsType tenv n@(TypeName p tname) =   
   case tenv Map.!? tname of
-    Just t -> addTypeName p n >> pure (changePos p (toTypeVar $ toType $ snd t))
-    Nothing -> return n
+    Just t  -> addTypeName p n >> pure (changePos p (toTypeVar $ toType $ snd t))
+    Nothing -> pure n
 subsType tenv n@(Dualof p t)       =
   addTypeName p n >> liftM (changePos p . dualFun) (subsType tenv t)
-subsType _ t                       = return t
+subsType _ t                       = pure t
 
 
 dualFun :: Type -> Type
@@ -235,9 +238,3 @@ subsExp _ e                    = return e
 
 subsFieldMap :: TypeEnv -> FieldMap -> FreestState FieldMap
 subsFieldMap tenv = mapM (\(ps, e) -> liftM2 (,) (pure ps) (subsExp tenv e))
-
-
--- type TypeEnv = Map.Map TypeVar (Kind, TypeScheme)
--- data Kind = Kind Pos PreKind Multiplicity deriving Ord -- TODO: I wish we do not need this
--- data TypeVarBind = TypeVarBind Pos TypeVar Kind deriving (Eq, Ord)
--- type VarEnv = Map.Map ProgVar TypeScheme

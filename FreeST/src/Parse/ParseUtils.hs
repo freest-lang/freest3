@@ -43,7 +43,7 @@ import           Syntax.Base
 import           Syntax.Show
 import           Equivalence.Normalisation
 import           Utils.FreestState
-import           Utils.Errors
+import           Utils.ErrorMessage
 import qualified Data.Map.Strict as Map
 import           Data.List (find)
 import           Control.Monad.State
