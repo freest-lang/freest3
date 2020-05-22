@@ -1,38 +1,36 @@
 module Compiler (compileFile) where
 
-import           CodeGen.CodeGen (genProgram)
-import           Control.Monad.State
-import qualified Data.Set as Set
-import           Parse.Parser (parseProgram)
-import           Syntax.Expressions (ExpEnv)
-import           Syntax.Schemes (TypeEnv, VarEnv)
-import           System.Exit
-import           System.Process
-import           System.IO (stdout)
-import           System.Directory
-import           System.FilePath
-import           Utils.FreestState
-import           Utils.PreludeLoader (prelude, userDefined) -- debug: userDefined
-import           Validation.Rename (renameState)
-import           Validation.TypeChecking (typeCheck)
-import           CodeGen.Annotation
--- import Debug.Trace
--- import Utils.PreludeLoader (isBuiltin)
--- import qualified Data.Map as Map
--- import Syntax.Expressions -- test
--- import Syntax.Show -- test
-import Validation.BuildTypes 
+import CodeGen.CodeGen (genProgram)
+import Control.Monad.State
+import Parse.Parser (parseProgram)
+import Syntax.Expressions (ExpEnv)
+import Syntax.Schemes (TypeEnv, VarEnv)
+import System.Directory
+import System.Exit
+import System.FilePath
+import System.IO (stdout)
+import System.Process
+import Utils.FreestState
+import Utils.PreludeLoader (prelude)
+import Validation.Rename (renameState)
+import Validation.TypeChecking (typeCheck)
+import Validation.BuildTypes
 
--- TODO: one more if here; if a parse error occured we should not continue
 compileFile :: FilePath -> IO ()
-compileFile args 
+compileFile args
   | "fst" `isExtensionOf` args = do
+      -- Parsing
       s1 <- parseProgram args prelude
+      when (hasErrors s1) (die $ getErrors s1)
+      -- Renaming the state
       let s2 = execState renameState s1
+      -- Solving type declarations and dualofs
       let s3 = execState solveTypeDecls s2
-      when (hasErrors s3) (die $ getErrors s3)     
+      when (hasErrors s3) (die $ getErrors s3)
+      -- TypeChecking
       let s4 = execState typeCheck s3
       when (hasErrors s4) (die $ getErrors s4)
+      -- Code Generation
       genCode (varEnv s4) (expEnv s4) (typeEnv s4) args
       
   | otherwise = die $ "Error: File extension not recognized, provide a .fst file: " ++ args
@@ -48,12 +46,10 @@ compileAndRun filepath = do
   let (path, filename) = splitFileName filepath
   changeDir path
   (exitcode, _, errors) <- readProcessWithExitCode "ghc" [targetFileName filename] ""
-  checkGhcOut exitcode errors    
-  -- (exitcode1, output1, errors1) <- readProcessWithExitCode ("./" ++ dropExtension filename) [] ""
+  checkGhcOut exitcode errors
   (_, _, _, handle) <- createProcess (proc ("./" ++ dropExtension filename) []){ std_out = UseHandle stdout }  
   exitcode1 <- waitForProcess handle
   checkGhcOut exitcode1 ""
---  putStr output1
   exitSuccess
 
 changeDir :: String -> IO ()
