@@ -1,69 +1,69 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE GADTs #-}
 module Utils.ErrorMessage where
 
 import Syntax.Base
-import Syntax.Types
-import Syntax.Schemes
-import Syntax.Kinds
 import Syntax.Expressions
+import Syntax.Kinds
 import Syntax.ProgramVariables
+import Syntax.Schemes
 import Syntax.TypeVariables
-import Syntax.Show
+import Syntax.Types
+-- import System.Console.Pretty (Color(..))
+import Utils.ShowDefault
 
-import System.Console.Pretty (Color(..))
-import           Control.Monad.State
+-- | Error class and instances
 
-import qualified Data.Map.Strict as Map
+class ErrorMsg a where
+  pos   :: a -> Pos -- Does not make sense to be here??
+  msg   :: TypeOpsEnv -> a -> String
+  color :: a -> Maybe Color
+   
+data ErrorMessage where
+  Error :: ErrorMsg a => a -> ErrorMessage
 
-import           Data.List (intercalate)
-import Utils.Errors
-import Utils.FreestState
-import Utils.ShowM
-
--- | The error message class is in Utils.FreestState
--- | due to cyclic imports
-
+data Color = Red
 
 -- | ErrorMessage instances
   
 instance ErrorMsg Type where
   pos     = position
-  msg     = showTypeM
+  msg     = showDefault
   color _ = Just Red
 
 instance ErrorMsg String where
   pos _   = defaultPos 
-  msg s   = return s
+  msg _ s = s
   color _ = Nothing
   
 instance ErrorMsg Expression where
   pos     = position
-  msg     = showExpM
+  msg     = showDefault 
   color _ = Just Red
 
 instance ErrorMsg ProgVar where
   pos     = position
-  msg     = pure . show
+  msg   _ = show
   color _ = Just Red
 
 instance ErrorMsg TypeVar where
   pos     = position
-  msg     = pure . show
+  msg   _ = show
   color _ = Just Red
 
 
 instance ErrorMsg Pos where
   pos     = id
-  msg     = pure . show
+  msg   _ = show
   color _ = Nothing
 
 instance ErrorMsg Kind where
   pos     = position
-  msg     = pure . show
+  msg   _ = show
   color _ = Just Red      
 
 instance ErrorMsg TypeScheme where
   pos     = position
-  msg     = pure . show
+  msg   _ = show
   color _ = Just Red      

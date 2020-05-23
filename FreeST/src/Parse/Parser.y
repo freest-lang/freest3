@@ -388,15 +388,6 @@ parseType s =
     eitherTypeErr t state
       | hasErrors state = Right $ getErrors state
       | otherwise       = Left $ t
--- parseType :: String -> Either Type String
--- parseType s =
---   let (t, state) = runState (parse s) (initialState "") in
---   eitherTypeErr t state
---   where
---     parse = types . scanTokens
---     eitherTypeErr t state
---       | hasErrors state = Right $ getErrors state
---       | otherwise       = Left $ t
 
 instance Read Type where
   readsPrec _ str =
@@ -406,26 +397,9 @@ instance Read Type where
       Failed err -> error err
    where parse = types . scanTokens
 
--- instance Read Type where
---   readsPrec _ str =
---     let (t, state) = runState (parse str) (initialState "") in
---     if hasErrors state
---     then error $ getErrors state
---     else [(t, "")]
---    where parse = types . scanTokens
-    
-
---------------------
--- SCHEMES PARSER --
---------------------
-
--- parseTypeScheme :: String -> TypeScheme
--- parseTypeScheme s = fst $ runState (parse s) (initialState "")
---   where parse = typeScheme . scanTokens
-
--- parseSchemes :: String -> (TypeScheme, TypeScheme)
--- parseSchemes s = fst $ runState (parse s) (initialState "")
---   where parse = schemes . scanTokens
+----------------------
+-- PARSING SCHEMES  --
+----------------------
 
 parseSchemes :: String -> String -> Either (TypeScheme, TypeScheme) String
 parseSchemes fname s =
@@ -435,11 +409,6 @@ parseSchemes fname s =
     Failed err -> Right err
   where
     parse = schemes . scanTokens
-
-
-  
--- instance Read TypeScheme where
---   readsPrec _ s = [(parseTypeScheme s, "")] 
 
 instance Read Kind where
   readsPrec _ s = -- [(parseKind s, "")]
@@ -454,18 +423,14 @@ instance Read Kind where
             else tryParse xs
           trim s = dropWhile isSpace s
 
--- parseExpr :: String -> Expression
--- parseExpr s = fst $ runState (parse s) (initialState "")
---   where parse = expr . scanTokens
-  
--- instance Read Expression where
---   readsPrec _ s = [(parseExpr s, "")]
+-----------------------
+-- PARSING PROGRAMS  --
+-----------------------
 
 parseProgram :: FilePath -> Map.Map ProgVar TypeScheme -> IO FreestS
 parseProgram inputFile vEnv = do
   src <- readFile inputFile
-  let p = parseDefs inputFile vEnv src
-  return p
+  return $ parseDefs inputFile vEnv src
 
 parseDefs :: FilePath -> VarEnv -> String -> FreestS
 parseDefs file vEnv str =
@@ -485,27 +450,15 @@ checkErrors s
 -- Handle errors --
 -------------------
 
--- parseError :: [Token] -> FreestState a
--- parseError [] = do
---   file <- getFileName
---   error $ styleError file defaultPos
---           ["Parse error:", styleRed "Premature end of file"]
--- parseError xs = do  
---   f <- getFileName
---   error $ styleError f p [styleRed "error\n\t", "parse error on input", styleRed $ "'" ++ show (head xs) ++ "'"]
---  where p = position (head xs)
-
--- parseError :: [Token] -> FreestStateT a
--- parseError xs = failM "parse error"
-
 parseError :: [Token] -> FreestStateT a
 parseError [] = do
   file <- toStateT getFileName
-  failM $ styleError file defaultPos
-          ["Parse error:", styleRed "Premature end of file"]
+  failM $ formatErrorMessages Map.empty defaultPos file
+          [Error "Parse error:", Error "\ESC[91mPremature end of file\ESC[0m"]
 parseError xs = do  
-  f <- toStateT getFileName
-  failM $ styleError f p ["Parse error on input", styleRed $ "'" ++ show (head xs) ++ "'"]
+  file <- toStateT getFileName
+  failM $ formatErrorMessages Map.empty defaultPos file
+    [Error "Parse error on input", Error $ "\ESC[91m'" ++ show (head xs) ++ "'\ESC[0m"]
  where p = position (head xs)
 
 failM :: String -> FreestStateT a

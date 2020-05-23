@@ -11,9 +11,10 @@ This module defines a types and equality.
 
 module Syntax.Types
 ( BasicType(..)
-, TypeMap(..)
+, TypeMap
 , Polarity(..)
 , Type(..)
+, TypeOpsEnv
 ) where
 
 import           Syntax.Kinds
@@ -21,6 +22,10 @@ import           Syntax.TypeVariables
 import           Syntax.ProgramVariables (ProgVar)
 import           Syntax.Base
 import qualified Data.Map.Strict as Map
+
+-- POSITIONS & TYPE OPERATORS (TYPENAME & DUALOF)
+
+type TypeOpsEnv = Map.Map Pos Type
 
 -- POLARITY
 

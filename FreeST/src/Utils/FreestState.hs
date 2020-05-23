@@ -1,7 +1,3 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE GADTs #-}
-
 {-|
 Module      :  FreestState
 Description :  The FreeST state
@@ -52,39 +48,37 @@ FreestState
 , ErrorMsg(..)
 , getFileName
 -- Typenames
-, TypeNames
 , addTypeName
 , getTypeNames
 , findTypeName
 ) where
 
-import           Syntax.Expressions
-import           Syntax.Schemes
-import           Syntax.Kinds
-import           Syntax.Types (Type(..))
-import           Syntax.TypeVariables
-import           Syntax.ProgramVariables
-import           Syntax.Base
-import           Utils.Errors
 import           Control.Monad.State
-import qualified Data.Map.Strict as Map
 import           Data.List (intercalate)
+import qualified Data.Map.Strict as Map
+import           Syntax.Base
+import           Syntax.Expressions
+import           Syntax.Kinds
+import           Syntax.ProgramVariables
+import           Syntax.Schemes
+import           Syntax.TypeVariables
+import           Syntax.Types (Type(..), TypeOpsEnv)
+import           Utils.Errors
 -- import qualified Data.Set as Set
 import qualified Data.Traversable as Traversable
-import System.Console.Pretty (Color (..)) -- TODO: refactor
+import           Utils.ErrorMessage
 
 -- | The typing state
 
 -- type Errors = Set.Set String
 type Errors = [String]
-type TypeNames = Map.Map Pos Type -- map between positions and type operators (typename, dualof)
 
 data FreestS = FreestS {
   filename  :: String
 , varEnv    :: VarEnv
 , expEnv    :: ExpEnv
 , typeEnv   :: TypeEnv
-, typenames :: TypeNames
+, typenames :: TypeOpsEnv
 , errors    :: Errors
 , nextIndex :: Int
 }
@@ -191,10 +185,11 @@ setTEnv tEnv = modify (\s -> s{typeEnv = tEnv})
 addTypeName :: Pos -> Type -> FreestState ()
 addTypeName p t = modify (\s -> s{typenames = Map.insert p t (typenames s)})
 
-getTypeNames :: FreestState TypeNames
-getTypeNames = do
-  s <- get
-  return $ typenames s
+getTypeNames :: FreestState TypeOpsEnv
+getTypeNames = liftM typenames get
+  -- do
+  -- s <- get
+  -- return $ typenames s
 
 findTypeName :: Pos -> Type -> FreestState Type
 findTypeName p t = do
@@ -220,44 +215,17 @@ getErrors = (intercalate "\n") . errors
 hasErrors :: FreestS -> Bool
 hasErrors = not . null . errors
 
--- | Error class and instances
--- Defined here due to cyclic imports
-
-class ErrorMsg a where
-  pos   :: a -> Pos -- Does not make sense to be here??
-  msg   :: a -> FreestState String
-  color :: a -> Maybe Color
-   
-data ErrorMessage where
-  Error :: ErrorMsg a => a -> ErrorMessage
-
 addError :: Pos -> [ErrorMessage] -> FreestState ()
 addError p em = do
-  f <- getFileName
-  es <- formatErrorMessage p f em
+  f    <- getFileName
+  tops <- getTypeNames
+  let es = formatErrorMessages tops p f em
   modify (\s -> s{errors = insertError (errors s) es})
   
 insertError :: [String] -> String -> [String]
 insertError es err
   | err `elem` es = es
   | otherwise     = es ++ [err] 
-
--- | Format errors
-formatErrorMessage :: Pos -> String -> [ErrorMessage] -> FreestState String
-formatErrorMessage _ _ []     = pure ""
-formatErrorMessage p fname es = do
-  let header = styleHeader fname p
-  body <- foldM (\acc e -> liftM ((acc ++ " ") ++) (colorMsg e)) "" es
-  pure $ header ++ body
-
-colorMsg :: ErrorMessage -> FreestState String
-colorMsg (Error e) =
-  case color e of
-    Just c  -> liftM (styleColor c) (boldMsg e)
-    Nothing -> boldMsg e
-
-boldMsg :: ErrorMsg a => a -> FreestState String
-boldMsg m = liftM styleBold (msg m)
 
 -- | Traversing Map.map over FreestStates
 
