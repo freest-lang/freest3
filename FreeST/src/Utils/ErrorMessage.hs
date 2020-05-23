@@ -1,8 +1,9 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE GADTs #-}
-module Utils.ErrorMessage where
+module Utils.ErrorMessage (ErrorMessage(..), Color(..), ErrorMsg(..)) where
 
+import Data.List (intercalate)
 import Syntax.Base
 import Syntax.Expressions
 import Syntax.Kinds
@@ -67,3 +68,32 @@ instance ErrorMsg TypeScheme where
   pos     = position
   msg   _ = show
   color _ = Just Red      
+
+-- VarEnv
+
+instance ErrorMsg Int where
+  pos   _ = defaultPos
+  msg   _ = show
+  color _ = Just Red      
+
+instance ErrorMsg [Type] where
+  pos _ = defaultPos
+  msg tops ts = showTypeList tops ts
+  color _ = Just Red
+
+showTypeList :: TypeOpsEnv -> [Type] -> String
+showTypeList tops ts = "[" ++ intercalate ", " types ++ "]"
+  where types = map (showDefault tops) ts
+  
+instance ErrorMsg [TypeVarBind] where
+  pos   _ = defaultPos
+  msg _   = show
+  color _ = Just Red
+  
+
+-- TODO: DIFFS
+-- TODO: tops
+instance ErrorMsg VarEnv where
+  pos _   = defaultPos
+  msg _   = show
+  color _ = Just Red

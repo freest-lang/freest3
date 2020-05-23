@@ -41,8 +41,6 @@ import           Syntax.Show -- debug
 import           Utils.PreludeLoader (isBuiltin, userDefined) -- debug
 import           Debug.Trace                     -- debug
 
--- TODO: environments, [Type], integer (TODO)
-
 -- SYNTHESISING A TYPE
 
 synthetise :: KindEnv -> Expression -> FreestState Type
@@ -91,8 +89,8 @@ synthetise kEnv (TypeApp p x ts) = do
   (TypeScheme _ bs t) <- synthetiseVar kEnv x
   when (length ts /= length bs) 
     (addError p [Error "Wrong number of arguments to type application\n",
-                 Error "\t parameters:", Error $ "\ESC[91m" ++ show bs ++ "\ESC[0m", -- TODO: COLOR
-                 Error "\n\t arguments: ", Error $ "\ESC[91m" ++ show ts ++ "\ESC[0m"])
+                 Error "\t parameters:", Error bs,
+                 Error "\n\t arguments: ", Error ts])
     
   let typeKinds = zip ts bs :: [(Type, TypeVarBind)]
   mapM (\(u, TypeVarBind _ _ k) -> K.checkAgainst kEnv k u) typeKinds
@@ -187,9 +185,9 @@ synthetiseFieldMap p kEnv e fm extract params = do
   tm <- extract e t
   if Map.size fm /= Map.size tm
   then do
-    addError p [Error "Wrong number of constructors\n", -- TODO: COLOR
-                Error "\t The expression has", Error $ "\ESC[91m" ++ show (Map.size fm) ++ "\ESC[0m", Error "constructor(s)\n",
-                Error "\t but the type has", Error $ "\ESC[91m" ++ show (Map.size tm) ++ "\ESC[0m", Error "constructor(s)\n",
+    addError p [Error "Wrong number of constructors\n",
+                Error "\t The expression has", Error $ Map.size fm, Error "constructor(s)\n",
+                Error "\t but the type has", Error $ Map.size tm, Error "constructor(s)\n",
                 Error "\t in case/match", Error $ "\ESC[91m" ++ showFieldMap 1 fm ++ "\ESC[0m"]
     return $ omission p
   else do
@@ -231,7 +229,7 @@ paramsToVEnvCM c bs t = do
       lts = numArgs t
   when (lbs /= lts) $
     addError (position c) [Error "The constructor", Error c, Error "should have",
-                         Error $ show lts, Error "arguments, but has been given", Error $ show lbs]  
+                         Error lts, Error "arguments, but has been given", Error lbs]  
 
 zipProgVarLType :: [ProgVar] -> Type -> [(ProgVar, TypeScheme)]
 zipProgVarLType [] _ = []
@@ -336,9 +334,9 @@ checkEqualEnvs e vEnv1 vEnv2 = do
   -- tEnv <- getTEnv
   -- trace ("Initial vEnv: " ++ show (userDefined (noConstructors tEnv vEnv1)) ++ "\n  Final vEnv: " ++ show (userDefined (noConstructors tEnv vEnv2)) ++ "\n  Expression: " ++ show e) (return ())
   when (not $ Map.null diff)
-    (addError (position e) -- TODO: COLOR
+    (addError (position e)
      [Error "Final environment differs from initial in an unrestricted function\n",
-      Error "\t These extra entries are present in the final environment:", Error $  "\ESC[91m" ++ show diff ++ "\ESC[0m",
+      Error "\t These extra entries are present in the final environment:", Error diff,
       Error "\n\t for lambda abstraction", Error e])
   where diff = Map.difference vEnv2 vEnv1
 
@@ -347,9 +345,9 @@ checkEquivEnvs p kEnv vEnv1 vEnv2 = do
   tEnv <- getTEnv
   let vEnv1' = userDefined vEnv1
       vEnv2' = userDefined vEnv2
-  when (not (equivalent tEnv kEnv vEnv1' vEnv2')) $ -- TODO: COLOR 
-    addError p [Error "Expecting environment", Error $ "\ESC[91m" ++ show vEnv1' ++ "\ESC[0m",
-                Error "\n\t to be equivalent to  ", Error $ "\ESC[91m" ++ (show vEnv2') ++ "\ESC[0m"]
+  when (not (equivalent tEnv kEnv vEnv1' vEnv2')) $
+    addError p [Error "Expecting environment", Error vEnv1',
+                Error "\n\t to be equivalent to  ", Error vEnv2']
 
 fillFunType :: KindEnv -> ProgVar -> Expression -> TypeScheme -> FreestState Type
 fillFunType kEnv b e (TypeScheme _ _ t) = fill e t
