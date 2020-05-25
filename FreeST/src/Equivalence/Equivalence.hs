@@ -31,6 +31,8 @@ import           Equivalence.TypeToGrammar
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
+import Debug.Trace --debug
+
 class Equivalence t where
   equivalent :: TypeEnv -> KindEnv -> t -> t -> Bool
 
@@ -54,17 +56,19 @@ instance Equivalence Type where
         Map.size m1 == Map.size m2 &&
         Map.foldlWithKey (equivField v m2) True m1
     -- Recursion
-    equiv _ (TypeVar _ x) (TypeVar _ y) = x == y -- A free (a polymorhic) type var
+    equiv _ (TypeVar _ x) (TypeVar _ y) = x == y -- A free (a polymorphic) type var
     equiv v t@(Rec _ _ _)  u = equiv (Set.insert (t, u) v) (Subs.unfold t) u 
     equiv v t u@(Rec _ _ _) = equiv (Set.insert (t, u) v) t (Subs.unfold u)
     -- Type operators
-    equiv _ (TypeName _ x) (TypeName _ y) = x == y -- Admissible
-    equiv v (TypeName _ x) u = equiv v (getType x) u
-    equiv v t (TypeName _ y) = equiv v t (getType y)
+    equiv _ (TypeName _ x) (TypeName _ y) = -- trace ("TNAME 1 " ++ show x) $
+      x == y -- Admissible
+    equiv v (TypeName _ x) u = -- trace ("TNAME 2 " ++ show x) $
+      equiv v (getType x) u
+    equiv v t (TypeName _ y) = -- trace ("TNAME 3 " ++ show y) $
+      equiv v t (getType y)
     -- Session types
     equiv _ t u =
-      isSessionType tenv kenv t &&
-      isSessionType tenv kenv u &&
+      isSessionType tenv kenv t && isSessionType tenv kenv u &&
       Equivalence.Equivalence.bisimilar tenv t u
 
     equivField :: Visited -> TypeMap -> Bool -> ProgVar -> Type -> Bool

@@ -23,7 +23,7 @@ import           Syntax.TypeVariables
 import           Syntax.Base
 import           Syntax.Show
 import           Equivalence.Normalisation (terminated)
-import           Utils.Errors
+import           Utils.ErrorMessage
 import           Utils.FreestState
 import           Control.Monad (when)
 import qualified Data.Map.Strict as Map
@@ -37,10 +37,11 @@ instance Contractive Type where
   checkContractive kEnv t = do
     tEnv <- getTEnv
     when (not (contractive tEnv kEnv t)) $
-     addError (position t) ["Type", styleRed $ show t, "is not contractive"]
+     addError (position t) [Error "Type", Error t, Error "is not contractive"]
+--     addError (position t) ["Type", styleRed $ show t, "is not contractive"]
 
--- instance Contractive TypeScheme where
---   checkContractive kEnv (TypeScheme _ xks t) = checkContractive (insert kEnv xks) t
+instance Contractive TypeScheme where
+  checkContractive kEnv (TypeScheme _ xks t) = checkContractive (insert kEnv xks) t
 
 -- Is a given type contractive?
 

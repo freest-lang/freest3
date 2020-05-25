@@ -47,12 +47,12 @@ data Expression =
   -- Fork
   | Fork Pos Expression
   -- Session types
-  | New Pos Type
+  | New Pos Type Type
   | Send Pos Expression
   | Receive Pos Expression
   | Select Pos Expression ProgVar
   | Match Pos Expression FieldMap
-  deriving (Eq, Ord)
+   deriving (Eq, Ord)
 
 type FieldMap  = Map.Map ProgVar ([ProgVar], Expression)
 
@@ -72,7 +72,7 @@ instance Position Expression where
   position (Conditional p _ _ _) = p
   position (Pair p _ _)          = p
   position (BinLet p _ _ _ _)    = p
-  position (New p _)             = p
+  position (New p _ _)           = p
   position (Send p _)            = p
   position (Receive p _ )        = p
   position (Select p _ _)        = p

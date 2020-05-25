@@ -20,6 +20,7 @@ FreestState
 , tMapM
 , tMapM_
 , tMapWithKeyM
+, tMapWithKeyM_
 -- Next index
 , getNextIndex
 -- Variable environment
@@ -43,34 +44,43 @@ FreestState
 , getErrors
 , addError
 , hasErrors
+, ErrorMessage(..)
+, ErrorMsg(..)
 , getFileName
+-- Typenames
+, addTypeName
+, getTypeNames
+, findTypeName
 ) where
 
-import           Syntax.Expressions
-import           Syntax.Schemes
-import           Syntax.Kinds
-import           Syntax.TypeVariables
-import           Syntax.ProgramVariables
-import           Syntax.Base
-import           Utils.Errors
 import           Control.Monad.State
-import qualified Data.Map.Strict as Map
 import           Data.List (intercalate)
+import qualified Data.Map.Strict as Map
+import           Syntax.Base
+import           Syntax.Expressions
+import           Syntax.Kinds
+import           Syntax.ProgramVariables
+import           Syntax.Schemes
+import           Syntax.TypeVariables
+import           Syntax.Types (Type(..), TypeOpsEnv)
+import           Utils.Errors
 -- import qualified Data.Set as Set
 import qualified Data.Traversable as Traversable
+import           Utils.ErrorMessage
 
 -- | The typing state
 
-type Errors = [String]
 -- type Errors = Set.Set String
+type Errors = [String]
 
 data FreestS = FreestS {
-  filename :: String
-, varEnv   :: VarEnv
-, expEnv   :: ExpEnv
-, typeEnv  :: TypeEnv
-, errors   :: Errors
-, nextIndex  :: Int
+  filename  :: String
+, varEnv    :: VarEnv
+, expEnv    :: ExpEnv
+, typeEnv   :: TypeEnv
+, typenames :: TypeOpsEnv
+, errors    :: Errors
+, nextIndex :: Int
 }
 
 type FreestState = State FreestS
@@ -83,6 +93,7 @@ initialState f = FreestS {
 , varEnv    = Map.empty
 , expEnv    = Map.empty
 , typeEnv   = Map.empty
+, typenames = Map.empty
 , errors    = []
 --, errors    = Set.empty
 , nextIndex = 0
@@ -169,27 +180,52 @@ getFromTEnv  b = do
 setTEnv :: TypeEnv -> FreestState ()
 setTEnv tEnv = modify (\s -> s{typeEnv = tEnv})
 
+-- | TYPENAMES
+
+addTypeName :: Pos -> Type -> FreestState ()
+addTypeName p t = modify (\s -> s{typenames = Map.insert p t (typenames s)})
+
+getTypeNames :: FreestState TypeOpsEnv
+getTypeNames = liftM typenames get
+  -- do
+  -- s <- get
+  -- return $ typenames s
+
+findTypeName :: Pos -> Type -> FreestState Type
+findTypeName p t = do
+  typenames <- getTypeNames
+  return $ Map.findWithDefault t p typenames
+
 -- | ERRORS
 
-addError :: Pos -> [String] -> FreestState ()
-addError p e = --do
-  modify (\s -> s{errors = insertError p (errors s) (filename s) e})  
---  modify (\s -> s{errors = errors s ++ [styleError (filename s) p e]})  
---   modify (\s -> s{errors = Set.insert (styleError (filename s) p e) (errors s)})
-insertError :: Pos -> [String] -> String -> [String] -> [String]
-insertError p es f e
-  | err `elem` es = es
-  | otherwise     = es ++ [err]
-  where
-    err = styleError f p e
+-- addError :: Pos -> [String] -> FreestState ()
+-- addError p e =
+--   modify (\s -> s{errors = insertError p (errors s) (filename s) e})
+  
+-- insertError :: Pos -> [String] -> String -> [String] -> [String]
+-- insertError p es f e
+--   | err `elem` es = es
+--   | otherwise     = es ++ [err]
+--   where
+--     err = styleError f p e
           
 getErrors :: FreestS -> String
 getErrors = (intercalate "\n") . errors
-  --Set.foldl (\s acc -> acc ++ "\n" ++ s) "" (errors s)
   
 hasErrors :: FreestS -> Bool
 hasErrors = not . null . errors
 
+addError :: Pos -> [ErrorMessage] -> FreestState ()
+addError p em = do
+  f    <- getFileName
+  tops <- getTypeNames
+  let es = formatErrorMessages tops p f em
+  modify (\s -> s{errors = insertError (errors s) es})
+  
+insertError :: [String] -> String -> [String]
+insertError es err
+  | err `elem` es = es
+  | otherwise     = es ++ [err] 
 
 -- | Traversing Map.map over FreestStates
 
@@ -201,6 +237,10 @@ tMapM_ f m = tMapM f m >> return ()
 
 tMapWithKeyM :: Monad m => (k -> a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)
 tMapWithKeyM f m = Traversable.sequence (Map.mapWithKey f m)
+
+tMapWithKeyM_ :: Monad m => (k -> a1 -> m a2) -> Map.Map k a1 -> m ()
+tMapWithKeyM_ f m = tMapWithKeyM f m >> return ()
+
 
 {- An attempt to rename at parsing time
 

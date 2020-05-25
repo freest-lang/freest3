@@ -43,7 +43,7 @@ import           Syntax.Base
 import           Syntax.Show
 import           Equivalence.Normalisation
 import           Utils.FreestState
-import           Utils.Errors
+import           Utils.ErrorMessage
 import qualified Data.Map.Strict as Map
 import           Data.List (find)
 import           Control.Monad.State
@@ -92,14 +92,20 @@ instance Functor ParseResult where
 checkDupField :: ProgVar -> TypeMap -> FreestState ()
 checkDupField x m =
   when (x `Map.member` m) $
-    addError (position x) ["Multiple declarations of field", styleRed (show x), "\n",
-                           "\t in a choice type"]
+   addError (position x)
+     [Error "Multiple declarations of field", Error x, Error "\n\t in a choice type"]
+    -- addError (position x) ["Multiple declarations of field", styleRed (show x), "\n",
+    --                        "\t in a choice type"]
 
 checkDupCase :: ProgVar -> FieldMap -> FreestState () 
 checkDupCase x m =
   when (x `Map.member` m) $
-    addError (position x) ["Pattern match is redundant", "\n",
-                           "\t In a case alternative:", styleRed (show x)]
+      addError (position x)
+        [Error "Pattern match is redundant",
+         Error "\n\t In a case alternative:",
+         Error x]
+    -- addError (position x) ["Pattern match is redundant", "\n",
+    --                        "\t In a case alternative:", styleRed (show x)]
 
 checkDupBind :: ProgVar -> [ProgVar] -> FreestState ()
 checkDupBind x xs
@@ -107,32 +113,45 @@ checkDupBind x xs
   | otherwise       = case find (== x) xs of
     Just y -> do
       addError (position y)
-        ["Conflicting definitions for program variable", styleRed (show x), "\n",
-         "\t Bound at:", show (position y), "\n",
-         "\t          ", show (position x)]
+        [Error "Conflicting definitions for program variable", Error x,
+         Error "\n\t Bound at:", Error $ show (position y),
+         Error "\n\t          ", Error $ show (position x)]
     Nothing -> return ()
+
+     -- addError (position y)
+     --    ["Conflicting definitions for program variable", styleRed (show x), "\n",
+     --     "\t Bound at:", show (position y), "\n",
+     --     "\t          ", show (position x)]
+    
 
 checkDupTypeVarBind :: TypeVarBind -> [TypeVarBind] -> FreestState ()
 checkDupTypeVarBind (TypeVarBind p x _) bs =
   case find (\(TypeVarBind _ y _) -> y == x) bs of
     Just (TypeVarBind p' _ _) -> do
       addError p'
-        ["Conflicting definitions for type variable", styleRed $ show x, "\n",
-         "\t Bound at:", show p', "\n",
-         "\t          ", show p]
+        [Error "Conflicting definitions for type variable", Error x,
+         Error "\n\t Bound at: ", Error (show p'),
+         Error "\n\t           ", Error (show p)]
     Nothing -> return ()
 
 checkDupCons :: (ProgVar, [Type]) -> [(ProgVar, [Type])] -> FreestState ()
 checkDupCons (x, _) xts
   | any (\(y, _) -> y == x) xts = 
-      addError (position x) ["Multiple declarations of", styleRed (show x), "\n",
-                             "\t in a datatype declaration"]
+      addError (position x)
+        [Error "Multiple declarations of", Error x,
+         Error "\n\t in a datatype declaration"]
+      -- addError (position x) ["Multiple declarations of", styleRed (show x), "\n",
+      --                        "\t in a datatype declaration"]
   | otherwise = do
       getFromVEnv x >>= \case
         Just s  ->
-          addError (position x) ["Multiple declarations of", styleRed (show x), "\n",
-                                 "\t Declared at:", show (position x), "\n",
-                                 "\t             ", show (position s)]
+          addError (position x)
+            [Error "Multiple declarations of", Error x,
+             Error "\n\t Declared at:", Error (position x),
+             Error "\n\t             ", Error (position s)]
+                    -- addError (position x) ["Multiple declarations of", styleRed (show x), "\n",
+                    --              "\t Declared at:", show (position x), "\n",
+                    --              "\t             ", show (position s)]
         Nothing ->      
           return ()
 
@@ -141,9 +160,10 @@ checkDupProgVarDecl x = do
   vEnv <- getVEnv
   case vEnv Map.!? x of
     Just a  ->
-      addError (position x) ["Multiple declarations of", styleRed (show x), "\n",
-                             "\t Declared at:", show (position a), "\n",
-                             "\t             ", show (position x)]
+      addError (position x)
+        [Error "Multiple declarations of", Error x,
+         Error "\n\t Declared at:", Error (position a),
+         Error "\n\t             ", Error (position x)]
     Nothing -> return ()
 
 
@@ -152,9 +172,10 @@ checkDupTypeDecl a = do
   tEnv <- getTEnv
   case tEnv Map.!? a of
     Just (_, s) ->
-      addError (position a) ["Multiple declarations of type", styleRed (show a), "\n",
-                             "\t Declared at:", show (position a), "\n",
-                             "\t             ", show (position s)]
+      addError (position a)
+        [Error "Multiple declarations of type", Error a,
+         Error "\n\t Declared at:", Error (position a),
+         Error "\n\t             ", Error (position s)]
     Nothing -> return ()
 
 checkDupFunDecl :: ProgVar -> FreestState ()
@@ -162,9 +183,10 @@ checkDupFunDecl x = do
   eEnv <- getEEnv
   case eEnv Map.!? x of
     Just e ->
-      addError (position x) ["Multiple bindings for function", styleRed (show x), "\n",
-                             "\t Declared at:", show (position x), "\n",
-                             "\t             ", show (position e)]
+      addError (position x)
+        [Error "Multiple bindings for function", Error x,
+         Error "\n\t Declared at:", Error (position x),
+         Error "\n\t             ", Error (position e)]
     Nothing -> return ()
 
 -- OPERATORS
@@ -191,11 +213,16 @@ buildFunBody f bs e =
       tEnv <- getTEnv
       return $ buildExp bs (normalise tEnv t) -- Normalisation allows type names in signatures
     Nothing -> do
-      addError (position f) ["The binding for function", styleRed $ show f,
-                             "lacks an accompanying type signature"]
+      addError (position f)
+        [Error "The binding for function", Error f,
+         Error "lacks an accompanying type signature"]
       return e
   where
     buildExp :: [ProgVar] -> Type -> Expression
     buildExp []     _               = e
     buildExp (b:bs) (Fun _ m t1 t2) = Lambda (position b) m b t1 (buildExp bs t2)
+    buildExp (b:bs) (Dualof p (Fun _ m t1 t2)) = Lambda (position b) m b
+                                                 (Dualof p t1)
+                                                 (buildExp bs (Dualof p t2))
     buildExp (b:bs) t               = Lambda (position b) Un b (omission (position b)) (buildExp bs t)
+

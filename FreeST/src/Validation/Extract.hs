@@ -34,7 +34,9 @@ import           Utils.Errors
 import           Utils.FreestState
 import qualified Data.Map.Strict as Map
 import           Syntax.Show -- debug
+import           Syntax.Schemes -- debug
 import           Debug.Trace -- debug
+import           Validation.BuildTypes -- debug
 
 -- | The Extract Functions
 
@@ -55,8 +57,9 @@ extractFun e t = do
     (Fun _ _ u v) -> return (u, v)
     u             -> do
       let p = position e
-      addError p ["Expecting a function type for expression", styleRed $ show e, "\n",
-               "\t                               found type", styleRed $ show u]
+      addError p
+        [Error "Expecting a function type for expression", Error e, 
+         Error "\n\t                               found type", Error u]
       return (omission p, omission p)
 
 -- Extracts a pair from a type; gives an error if there is no pair
@@ -67,8 +70,8 @@ extractPair e t = do
     (PairType _ u v) -> return (u, v)
     u                  -> do
       let p = position u
-      addError p ["Expecting a pair type for expression", styleRed $ show e, "\n",
-                  "\t found type", styleRed $ show u]
+      addError p [Error "Expecting a pair type for expression", Error e,
+                  Error "\n\t found type", Error u]
       return (omission p, omission p)
       
 -- Extracts a basic type from a general type; gives an error if it isn't a basic
@@ -78,7 +81,7 @@ extractBasic t = do
   case t' of
     (Basic _ b) -> return b
     u           ->
-      addError (position u) ["Expecting a basic type; found type", styleRed $ show u] >>
+      addError (position u) [Error "Expecting a basic type; found type", Error u] >>
       return IntType
 
 -- Extracts an output type from a general type; gives an error if it isn't an output
@@ -98,12 +101,13 @@ extractMessage pol msg e t = do
     u@(Semi _ (Message _ pol' b) v) ->
       if pol == pol' then return (b, v) else extractMessageErr msg e u
     u                               ->
-      extractMessageErr msg e u
+        extractMessageErr msg e u
   where
     extractMessageErr :: String -> Expression -> Type -> FreestState (BasicType, Type)
     extractMessageErr msg e u = do
-      addError (position e) ["Expecting an", msg, "type for expression", styleRed $ show e, "\n",
-                             "\t found type", styleRed $ show u]
+      addError (position e)
+          [Error $ "Expecting an " ++ msg ++ " type for expression", Error e,
+           Error "\n\t found type", Error u]        
       return (UnitType, Skip (position u))
 
 -- Extracts a choice type from a general type; gives an error if a choice is not found
@@ -125,8 +129,9 @@ extractChoiceMap pol msg e t = do
   where
     extractChoiceErr :: String -> Expression -> Type -> FreestState TypeMap
     extractChoiceErr msg e u = do
-      addError (position e) ["Expecting an", msg, "choice type for expression", styleRed $ show e, "\n",
-                             "\t found type", styleRed $ show u]
+      addError (position e)
+        [Error $ "Expecting an " ++ msg ++ " choice type for expression", Error e,
+         Error "\n\t found type", Error u]
       return Map.empty
 
 -- Extracts a datatype from a type; gives an error if a datatype is not found
@@ -136,8 +141,9 @@ extractDatatypeMap e t = do
   case t' of
     (Datatype _ m) -> return m
     u              -> do
-      addError (position e) ["Expecting a datatype for expression", styleRed $ show e, "\n",
-                             "\t found type", styleRed $ show u]
+      addError (position e)
+        [Error "Expecting a datatype for expression" , Error e,
+         Error "\n\t found type", Error u]
       return Map.empty
 
 -- Extracts a constructor from a choice map; gives an error if the
@@ -147,5 +153,5 @@ extractCons p tm x =
   case tm Map.!? x of
     Just t -> return t
     Nothing -> do
-      addError p ["Constructor", styleRed (show x), "not in scope"]             
+      addError p [Error "Constructor", Error x, Error "not in scope"]             
       return $ omission p

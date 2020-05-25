@@ -38,10 +38,12 @@ typeCheck = do
   tEnv <- getTEnv -- Type/datatype declarations
   vEnv <- getVEnv -- Function signatures
   eEnv <- getEEnv -- Function bodies
-  -- trace ("Entering type checking with\n  TEnv " ++ show tEnv)
-  --   trace ("  VEnv " ++ show (userDefined vEnv))
-  --     trace ("  EEnv " ++ show eEnv)
-  --       return ()
+  tn <- getTypeNames -- Type Names
+  traceM ("\n\n\nEntering type checking with\n  TEnv " ++ show tEnv ++ "\n\n" ++
+          "  VEnv " ++ show (userDefined vEnv) ++ "\n\n" ++
+          "  EEnv " ++ show eEnv  ++ "\n\n" ++
+          "  Tname " ++ show tn)
+
   -- 1. Check the contractiveness of all type decls
   -- trace "checking contractiveness of all type decls" (return ())
   -- mapM_ (checkContractive Map.empty . snd) tEnv
@@ -71,9 +73,9 @@ checkHasBinding f _ = do
   tEnv <- getTEnv
   when (f `Map.member` (userDefined (noConstructors tEnv vEnv)) &&
         f `Map.notMember` eEnv) $
-    addError (position f) ["The type signature for", styleRed $ show f,
-                           "lacks an accompanying binding\n",
-                           "\t Type signature:", styleRed $ show $ vEnv Map.! f]
+    addError (position f) [Error "The type signature for", Error f,
+                           Error "lacks an accompanying binding\n",
+                           Error "\t Type signature:", Error $ vEnv Map.! f]
 
 -- Check a given function body against its type; make sure all linear
 -- variables are used.
@@ -89,14 +91,14 @@ checkMainFunction = do
   vEnv <- getVEnv
   if main `Map.notMember` vEnv
   then
-    addError defaultPos ["Function", styleRed "main", "is not defined"]
+    addError defaultPos [Error "Function", Error main, Error "is not defined"]
   else do
     let s = vEnv Map.! main
     tEnv <- getTEnv
     when (not (isValidMainType s)) $
       K.synthetiseTS Map.empty s >>= \k ->
-      addError defaultPos ["The type of", styleRed "main", "must be non-function, non-polymorphic\n",
-                           "\t found type (scheme)", styleRed $ show s, "of kind", styleRed $ show k]
+      addError defaultPos [Error "The type of", Error main, Error "must be non-function, non-polymorphic\n",
+                           Error "\t found type (scheme)", Error s, Error "of kind", Error k]
 
 isValidMainType :: TypeScheme -> Bool
 isValidMainType (TypeScheme _ _ (Fun _ _ _ _)) = False

@@ -73,7 +73,7 @@ synthetise kEnv (TypeVar p x) =
     Just k -> do
       return k
     Nothing -> do
-      addError p ["Type variable not in scope:", styleRed $ show x]
+      addError p [Error "Type variable not in scope:", Error x]
       return $ omission p
 -- Type operators
 synthetise kEnv (TypeName p a) =
@@ -81,7 +81,7 @@ synthetise kEnv (TypeName p a) =
     Just (k, _) ->
       return k
     Nothing -> do
-      addError p ["Type name not in scope:", styleRed $ show a]
+      addError p [Error "Type name not in scope:", Error a]
       addToTEnv a (omission p) (omission p)
       return $ omission p
 synthetise kEnv (Dualof p t) = do
@@ -94,8 +94,8 @@ checkAgainstSession :: KindEnv -> Type -> FreestState Multiplicity
 checkAgainstSession kEnv t = do
   k@(Kind _ p m) <- synthetise kEnv t
   S.when (p /= Session) $
-    addError (position t) ["Expecting a session type\n",
-                           "\t found type", styleRed $ show t, "of kind", styleRed $ show k]
+    addError (position t) [Error "Expecting a session type\n",
+                           Error "\t found type", Error t, Error "of kind", Error k]
   return m
 
 -- Check a type against a given kind
@@ -106,9 +106,10 @@ checkAgainst kEnv k (Rec _ (TypeVarBind p x _) t) = do
 checkAgainst kEnv expected t = do
   actual <- synthetise kEnv t
   S.when (not (actual <: expected)) $
-    addError (position t) ["Couldn't match expected kind", styleRed $ show expected, "\n",
-                           "\t with actual kind", styleRed $ show actual, "\n",
-                           "\t for type", styleRed $ show t]
+    addError (position t)
+      [Error "Couldn't match expected kind", Error expected,
+       Error "\n\t with actual kind", Error actual,
+       Error "\n\t for type", Error t]
 
 synthetiseTS :: KindEnv -> TypeScheme -> FreestState Kind
 synthetiseTS kEnv (TypeScheme _ bs t) = synthetise insertBinds t

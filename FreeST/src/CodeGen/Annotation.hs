@@ -214,7 +214,7 @@ annExp fm ast t e@(Fork _ e1) =
     (Map.insert e IOType (fst ast1), IOType)  
 
 -- Session Types
-annExp _ ast _ e@(New _ _) = (Map.insert e IOType ast, IOType)
+annExp _ ast _ e@(New _ _ _) = (Map.insert e IOType ast, IOType)
 annExp fm ast _ e@(Receive _ e1) =
   let (ast1,_) = annExp fm ast PureType e1 in
     (Map.insert e IOType ast1, IOType)
