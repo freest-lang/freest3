@@ -21,13 +21,13 @@ solveTypeDecls :: FreestState ()
 solveTypeDecls = do
   tenv <- getTEnv
   let tenv' = typeDecls tenv
-  traceM $ "\n1. INITIAL ENV: " ++ show tenv' ++ "\n"
+--  traceM $ "\n1. INITIAL ENV: " ++ show tenv' ++ "\n"
   -- Solve the system of equations
   eqs <- solveEqs tenv'
-  traceM $ "\n2. TYPENAMES: " ++ show eqs ++ "\n"
+--  traceM $ "\n2. TYPENAMES: " ++ show eqs ++ "\n"
   -- Replace all occurrences of DualOf t
   eqs' <- solveDualOfs eqs
-  traceM $ "\n3. DUALOFS: " ++ show eqs' ++ "\n"
+--  traceM $ "\n3. DUALOFS: " ++ show eqs' ++ "\n"
   -- Check if the substituted types are contractive
   mapM_ (checkContractive Map.empty . snd) eqs'
   -- Substitute all type operators on VarEnv

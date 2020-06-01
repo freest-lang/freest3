@@ -11,9 +11,11 @@ The definition of program variables
 
 module Syntax.ProgramVariables
 ( ProgVar
+  , isADT -- TODO: remove
 ) where
 
 import Syntax.Base
+import Data.Char (isUpper) -- TODO: remove
 
 -- Note: isomorphic to TypeVariables: Type <-> Prog
 data ProgVar = ProgVar Pos String
@@ -31,3 +33,7 @@ instance Ord ProgVar where
 
 instance Position ProgVar where
   position (ProgVar p _) = p
+
+-- TODO: remove 
+isADT :: ProgVar -> Bool
+isADT (ProgVar _ (x:_)) = isUpper x
