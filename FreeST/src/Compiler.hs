@@ -37,8 +37,7 @@ compileFile args
       when (hasErrors s4) (die $ getErrors s4)
       -- Code Generation
       -- genCode (varEnv s4) (expEnv s4) (typeEnv s4) args
-      (res,_,_) <- eval ctxBuiltin (expEnv s4) ((expEnv s4) Map.! (mkVar defaultPos "main"))
-  
+      res <- eval ctxBuiltin (expEnv s4) ((expEnv s4) Map.! (mkVar defaultPos "main"))
       case res of
         PureWrapper io -> io >>= \res -> putStrLn $ show res
         _              -> putStrLn $ show res

@@ -9,7 +9,7 @@ import Syntax.Base
 import Data.Char (chr, ord)
 import Data.List (intercalate)
 import Control.Concurrent (forkIO)
-import qualified Control.Concurrent.Chan.Synchronous as C
+import qualified Control.Concurrent.Chan as C
 
 
 -- debug
@@ -73,6 +73,8 @@ instance Show Value where
   show (Label s)     = s
   show (Pair v1 v2)  = "(" ++ show v1 ++ ", " ++ show v2 ++ ")"
   show c@(Cons _ _)  = showCons c
+  show (Chan _)      = "Skip" -- TODO: change this
+  show (Closure x e _)  = show x ++ " " ++ show e-- TODO: change this
 
 
 showCons :: Value -> String
@@ -103,17 +105,17 @@ eval ctx _ (E.Lambda _ _ x _ e) = return $ Closure x e ctx
 eval ctx eenv (E.App _ e1 e2) =
   eval ctx eenv e1 >>= \case
     (Closure x e ctx') -> do
-      v <- eval ctx eenv e2
+      !v <- eval ctx eenv e2
       eval (Map.insert x v ctx') eenv e
     (PrimitiveFun f) -> do
-      v <- eval ctx eenv e2
+      !v <- eval ctx eenv e2
       case f v of
          (PureWrapper res) -> do
            !r <- res
            pure $ r
          r -> return r
     (Cons x xs) -> do
-      v <- eval ctx eenv e2
+      !v <- eval ctx eenv e2
       pure $ Cons x (xs ++ [[v]])
 
 eval ctx eenv (E.Pair _ e1 e2) =
@@ -125,9 +127,7 @@ eval ctx eenv (E.BinLet _ x y e1 e2) = do
   eval env eenv e2
 
 eval ctx eenv (E.Conditional _ cond e1 e2) = do
-  (Boolean b) <- eval ctx eenv cond
-  traceM $ "Conditional " ++ show cond ++ " -> " ++ show b
-  
+  (Boolean b) <- eval ctx eenv cond 
   if b then eval ctx eenv e1 else eval ctx eenv e2
     
 eval ctx eenv (E.UnLet _ x e1 e2) = do
@@ -211,7 +211,9 @@ ctxBuiltin =
   , (var "negate", PrimitiveFun (\(Integer x) -> Integer $ negate x))
   , (var "not", PrimitiveFun (\(Boolean x) -> Boolean $ not x))
   , (var "chr", PrimitiveFun (\(Integer x) -> Character $ chr x))
-
+  , (var "ord", PrimitiveFun (\(Character x) -> Integer $ ord x))
+  , (var "printInt", PrimitiveFun (\(Integer x) -> PureWrapper (putStrLn (show x) >> return Unit)))
+  , (var "print", PrimitiveFun (\x -> PureWrapper (putStrLn (show x) >> return Unit)))
   ]
 
 
