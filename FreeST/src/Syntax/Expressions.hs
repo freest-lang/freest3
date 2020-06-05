@@ -43,7 +43,7 @@ data Expression =
   -- Boolean elim
   | Conditional Pos Expression Expression Expression
   -- Let
-  | UnLet Pos ProgVar Expression Expression -- TODO: Derived; eliminate?
+  | UnLet Pos ProgVar Expression Expression -- TODO: Derived; eliminate? If is which type for the ProgVar? (cf. Lambda)
   -- Fork
   | Fork Pos Expression
   -- Session types
