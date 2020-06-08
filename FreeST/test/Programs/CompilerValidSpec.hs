@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables, LambdaCase #-}
 module CompilerValidSpec (spec) where
 
 import Compiler
@@ -11,6 +11,10 @@ import System.FilePath
 import Control.Exception
 import System.IO (stdout, stderr)
 import System.IO.Silently(hCapture)
+import System.Timeout
+import Control.Monad
+import Data.Maybe
+
 
 baseTestDir :: String -> String
 baseTestDir baseDir = baseDir ++ "/test/Programs/ValidTests/"
@@ -31,47 +35,54 @@ getSource (x:xs)
   | takeExtension x == ".fst" = x
   | otherwise = getSource xs
 
-exitProgram :: ExitCode -> IO Bool
-exitProgram ExitSuccess = return True
-exitProgram e = return False
-
 testValid :: String -> String -> Spec
 testValid baseDir testingDir = do
   sourceFiles <- runIO $ listDirectory (baseTestDir baseDir ++ testingDir)
   let source = getSource sourceFiles
+  let curTestDir = (baseTestDir baseDir ++ testingDir ++ "/" ++ source)
 
-  let curTestDir = (baseTestDir baseDir ++ testingDir ++ "/" ++ source) 
-  (b, err) <- runIO $ testOne curTestDir source
+  (res, m) <- runIO (testOne curTestDir)
+  testProgram m res source curTestDir
 
-  if b then do
-    runAndCheckResult curTestDir source
-  else  
-    it ("Testing " ++ source) $ do
-      assertFailure err
-      return ()
+  where
+    testProgram :: Bool -> String -> FilePath -> FilePath -> Spec
+    testProgram m res source curTestDir
+      | m         = testWithExpected curTestDir source res
+      | otherwise = it ("Testing " ++ source) $ failTest res
+      
+    failTest :: String -> IO ()
+    failTest []  = void $ assertFailure "Timeout (loop)"
+    failTest err = void $ assertFailure err
+ 
+testOne :: FilePath -> IO (String, Bool)
+testOne file = do
+  hCapture [stdout, stderr] $ catches test
+                 [Handler (\(e :: ExitCode)      -> exitProgram e),
+                  Handler (\(e :: SomeException) -> return False)]
 
+  where
+    test :: IO Bool 
+    test =
+      liftM isJust (timeout 5000000 (compileFile file))         
 
-testOne :: String -> String -> IO (Bool, String)
-testOne test filename = do
-  (err, b) <- hCapture [stdout, stderr] $ catches (compileFile test >> return True)
-                  [Handler (\(e :: ExitCode) -> exitProgram e),
-                   Handler (\(e :: SomeException) -> return False)]
-  return (b, err)
-  
-runAndCheckResult :: String -> String -> Spec
-runAndCheckResult testFile filename = do
-  runIO $ setCurrentDirectory $ takeDirectory testFile
-  (exitcode, output, errors) <- runIO $ readProcessWithExitCode "ghc"
-    ["-dynamic", "-XBangPatterns", (replaceExtensions filename "hs")] ""  
-  
-  if (exitcode == ExitSuccess) then do     
-      (exitcode1, output1, errors1) <-
-         runIO $ readProcessWithExitCode ("./" ++ dropExtension filename) [] ""
-      if (exitcode1 /= ExitSuccess) then
-         it ("Testing " ++ filename) $ assertFailure errors1 >> return ()
-      else do  
-         exp <- runIO $ readFile ((takeWhile (/= '.') testFile) ++ ".expected")
-         it ("Testing " ++ filename) $ 
-           (filter (/= '\n') output1) `shouldBe` (filter (/= '\n') exp)
-  else
-    it ("Testing " ++ filename) $ assertFailure errors >> return ()
+    exitProgram :: ExitCode -> IO Bool
+    exitProgram ExitSuccess = return True
+    exitProgram _           = return False
+
+testWithExpected :: FilePath -> FilePath -> String -> Spec
+testWithExpected curTestDir source res = do
+  let expectedFile = (takeWhile (/= '.') curTestDir) ++ ".expected"
+  exp <- runIO $ safeRead expectedFile
+  case exp of
+    Just s -> do
+      it ("Testing " ++ source) $
+        (filter (/= '\n') res) `shouldBe` (filter (/= '\n') s)
+    Nothing ->
+      it ("Testing " ++ source) $
+        void $ assertFailure $ "File " ++ expectedFile ++ " not found"
+  where
+    safeRead :: FilePath -> IO (Maybe String)
+    safeRead f = do
+      b <- doesFileExist f
+      if b then liftM Just (readFile f) else return Nothing
+    

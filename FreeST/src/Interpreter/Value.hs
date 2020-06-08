@@ -40,7 +40,7 @@ instance Show Value where
   show (Boolean b)   = show b
   show (Character c) = show c
   show (Label s)     = s
-  show (Pair v1 v2)  = "(" ++ show v1 ++ ", " ++ show v2 ++ ")"
+  show (Pair v1 v2)  = "(" ++ show v1 ++ "," ++ show v2 ++ ")"
   show c@(Cons _ _)  = showCons c
   show (Chan _)      = "Skip" -- TODO: change this
   show (Closure x e _)  = show x ++ " " ++ show e-- TODO: change this
