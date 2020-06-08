@@ -9,12 +9,15 @@ suc1=0
 fail=0
 fail1=0
 
+stack build &> /dev/null
+
 echo "Valid tests..."
 echo ""
 for file in $DIR/*/*.fst; do
     [ -e "$file" ] || continue
-    stack run freest $file &> /dev/null # $file-res
-    if [ $? != 1 ]; then
+    timeout 5 stack run freest $file &> /dev/null # $file-res
+    #if [ $? != 1 ] && [ $? != 124 ]; then
+    if [ $? -eq 0 ]; then
         echo $file": Success"
         ((suc++))
     else
@@ -27,17 +30,17 @@ echo "Invalid tests..."
 echo ""
 
 
-for file in $DIR1/*/*.fst; do
-    [ -e "$file" ] || continue
-    stack run freest $file &> /dev/null # $file-res
-    if [ $? != 1 ]; then
-        echo $file": Success"
-        ((suc1++))
-    else
-        echo $file": Failed"
-        ((fail1++))
-    fi   
-done
+#for file in $DIR1/*/*.fst; do
+#    [ -e "$file" ] || continue
+#    stack run freest $file &> /dev/null # $file-res
+#    if [ $? != 1 ]; then
+#        echo $file": Success"
+#        ((suc1++))
+#    else
+#        echo $file": Failed"
+#        ((fail1++))
+#    fi   
+#done
 
 nValid=`ls $DIR/*/*.fst | wc -l`
 echo ""
