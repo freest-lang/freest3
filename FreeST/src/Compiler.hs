@@ -41,8 +41,8 @@ compileFile args
       -- genCode (varEnv s4) (expEnv s4) (typeEnv s4) args
       res <- eval initialCtx (expEnv s4) ((expEnv s4) Map.! (mkVar defaultPos "main"))
       case res of
-        IOValue io -> io >>= \res -> putStrLn $ show res
-        _              -> putStrLn $ show res
+        IOValue io -> io >>= putStrLn . show
+        _          -> putStrLn $ show res
       return ()
   | otherwise = die $ "Error: File extension not recognized, provide a .fst file: " ++ args
 
