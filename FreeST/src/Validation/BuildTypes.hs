@@ -16,6 +16,8 @@ import Debug.Trace
 import Validation.Contractive
 import Control.Monad
 import           Utils.PreludeLoader (userDefined) -- debug
+import Validation.Kinding(synthetiseTS)
+
 
 solveTypeDecls :: FreestState ()
 solveTypeDecls = do
@@ -29,11 +31,20 @@ solveTypeDecls = do
   eqs' <- solveDualOfs eqs
 --  traceM $ "\n3. DUALOFS: " ++ show eqs' ++ "\n"
   -- Check if the substituted types are contractive
-  mapM_ (checkContractive Map.empty . snd) eqs'
+  
+--  mapM_ (contractive . snd) eqs'
+  mapM_ (synthetiseTS Map.empty . snd) eqs'
+--  mapM_ (checkContractive Map.empty . snd) eqs'
   -- Substitute all type operators on VarEnv
   substituteVEnv eqs' 
   -- Substitute all type operators on ExpEnv
   substituteEEnv eqs'
+
+-- Contractive
+contractive :: TypeScheme -> FreestState ()
+contractive t@(TypeScheme _ _ (Rec _ _ _)) = checkContractive Map.empty t
+contractive _ = pure ()
+
   
 -- PHASE 1: SOLVE THE SYSTEM OF EQUATIONS
 
@@ -72,7 +83,7 @@ isDataType _                               = False
 buildRecursiveType :: TypeVar -> (Kind, TypeScheme) -> Type
 buildRecursiveType v (k, TypeScheme _ _ t)
   | isRecursiveTypeDecl v t =
-      Rec (position v) (TypeVarBind (position v) v k) (toTypeVar t)
+      Rec (position v) (TypeVarBind (position v) v k) (toTypeVar v t)
   | otherwise               = t
 
 isRecursiveTypeDecl :: TypeVar -> Type -> Bool
@@ -91,16 +102,19 @@ isRecursiveTypeDecl _ _                = False
 
 
 -- Convert typenames to typeVars; when a type declaration is converted in a rec type
-toTypeVar :: Type -> Type
-toTypeVar (Choice p pol m) = Choice p pol (Map.map toTypeVar m)
-toTypeVar (TypeName p x)   = TypeVar p x
-toTypeVar (Semi p t1 t2)   = Semi p (toTypeVar t1) (toTypeVar t2)
-toTypeVar (Rec p xs t)     = Rec p xs (toTypeVar t)
+-- Added the additional type var because datatypes are also typenames
+toTypeVar :: TypeVar -> Type -> Type
+toTypeVar x (Choice p pol m) = Choice p pol (Map.map (toTypeVar x) m)
+toTypeVar x (TypeName p tname) --
+  | x == tname = TypeVar p tname
+  | otherwise  = TypeName p tname
+toTypeVar x (Semi p t1 t2)   = Semi p (toTypeVar x t1) (toTypeVar x t2)
+toTypeVar _ (Rec p xs@(TypeVarBind _ x _) t) = Rec p xs (toTypeVar x t)
 -- functional types
-toTypeVar (Fun p m t u)    = Fun p m (toTypeVar t) (toTypeVar u)
-toTypeVar (PairType p t u) = PairType p (toTypeVar t) (toTypeVar u)
+toTypeVar x (Fun p m t u)    = Fun p m (toTypeVar x t) (toTypeVar x u)
+toTypeVar x (PairType p t u) = PairType p (toTypeVar x t) (toTypeVar x u)
 -- Datatype
-toTypeVar t                = t
+toTypeVar _ t                = t
 
 -- PHASE 2 - SOLVING DUALOF TYPE OPERATORS
 
@@ -117,7 +131,7 @@ solveDualOf tenv (Rec p xs t)     = liftM (Rec p xs) (solveDualOf tenv t)
 solveDualOf tenv (Fun p pol t u)  = liftM2 (Fun p pol) (solveDualOf tenv t) (solveDualOf tenv u)
 solveDualOf tenv n@(TypeName _ tname) =
   case tenv Map.!? tname of
-    Just (_, TypeScheme _ _ t) -> pure (toTypeVar t)
+    Just (_, TypeScheme _ _ t) -> pure (toTypeVar tname t)
     Nothing -> maybeScopeErr n
 solveDualOf tenv d@(Dualof p t) = do
   addTypeName p d
@@ -197,7 +211,7 @@ subsType _ (Just (x, t)) n@(TypeName p tname)
 -- just need to lookup upon the tenv to find the conversion
 subsType tenv Nothing n@(TypeName p tname) =   
   case tenv Map.!? tname of
-    Just t  -> addTypeName p n >> pure (changePos p (toTypeVar . toType $ snd t))
+    Just t  -> addTypeName p n >> pure (changePos p ((toTypeVar tname) . toType $ snd t))
     Nothing -> pure n
 -- In the first stage (converting typenames); we should ignore dualofs
 subsType tenv Nothing n@(Dualof p t)       =
