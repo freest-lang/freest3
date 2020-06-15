@@ -15,6 +15,13 @@ import Utils.PreludeLoader (prelude)
 import Validation.Rename (renameState)
 import Validation.TypeChecking (typeCheck)
 import Validation.BuildTypes
+import Interpreter.Eval
+import Interpreter.Value
+import Interpreter.Builtin
+
+import qualified Data.Map.Strict as Map
+import Syntax.Base 
+
 
 compileFile :: FilePath -> IO ()
 compileFile args
@@ -31,8 +38,12 @@ compileFile args
       let s4 = execState typeCheck s3
       when (hasErrors s4) (die $ getErrors s4)
       -- Code Generation
-      genCode (varEnv s4) (expEnv s4) (typeEnv s4) args
-      
+      -- genCode (varEnv s4) (expEnv s4) (typeEnv s4) args
+      res <- eval initialCtx (expEnv s4) ((expEnv s4) Map.! (mkVar defaultPos "main"))
+      case res of
+        IOValue io -> io >>= putStrLn . show
+        _          -> putStrLn $ show res
+      return ()
   | otherwise = die $ "Error: File extension not recognized, provide a .fst file: " ++ args
 
 -- CODE GEN
