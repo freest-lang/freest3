@@ -30,20 +30,13 @@ solveTypeDecls = do
   -- Replace all occurrences of DualOf t
   eqs' <- solveDualOfs eqs
 --  traceM $ "\n3. DUALOFS: " ++ show eqs' ++ "\n"
-  -- Check if the substituted types are contractive
-  
---  mapM_ (contractive . snd) eqs'
+  -- Check if the substituted types are contractive  
   mapM_ (synthetiseTS Map.empty . snd) eqs'
 --  mapM_ (checkContractive Map.empty . snd) eqs'
   -- Substitute all type operators on VarEnv
   substituteVEnv eqs' 
   -- Substitute all type operators on ExpEnv
   substituteEEnv eqs'
-
--- Contractive
-contractive :: TypeScheme -> FreestState ()
-contractive t@(TypeScheme _ _ (Rec _ _ _)) = checkContractive Map.empty t
-contractive _ = pure ()
 
   
 -- PHASE 1: SOLVE THE SYSTEM OF EQUATIONS
