@@ -181,7 +181,11 @@ DataCon :: { (ProgVar, [Type]) }
 
 Expr :: { Expression }
   : let ProgVarWild '=' Expr in Expr { UnLet (position $1) $2 $4 $6 }
-
+  | Expr ';' Expr                    { App (position $1)
+                                          (Lambda (position $1) Un
+                                            (mkVar (position $1) "_")
+                                            (Basic (position $3) UnitType) $3)
+                                       $1}
   | let '(' ProgVarWild ',' ProgVarWild ')' '=' Expr in Expr
                                      { BinLet (position $1) $3 $5 $8 $10 }
   | if Expr then Expr else Expr      { Conditional (position $1) $2 $4 $6 }
