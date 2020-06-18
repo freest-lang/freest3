@@ -1,5 +1,6 @@
-module Compiler (compileFile) where
+module FreeST where
 
+import System.Environment (getArgs)
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
 import           Interpreter.Builtin
@@ -19,6 +20,15 @@ import           Utils.PreludeLoader (prelude)
 import           Validation.BuildTypes
 import           Validation.Rename (renameState)
 import           Validation.TypeChecking (typeCheck)
+
+main :: IO ()
+main = do
+  args <- getArgs
+  if length args == 1 then
+    compileFile (head args)
+  else
+    putStrLn "Error: Incorrect number of arguments, provide just one argument"
+
 
 compileFile :: FilePath -> IO ()
 compileFile args

@@ -1,7 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables, LambdaCase #-}
 module CompilerValidSpec (spec) where
 
-import Compiler
+import FreeST
 import System.Directory
 import System.Process
 import System.Exit

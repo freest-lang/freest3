@@ -1,5 +1,5 @@
 name:                FreeST
-version:             0.1.0.0
+version:             1.0.0
 #github:              "githubuser/ContextFreeSession"
 license:             BSD3
 author:              "Bernardo Almeida, Vasco T. Vasconcelos, Andreia Mordido"
@@ -38,8 +38,7 @@ library:
     - alex
     - happy
   exposed-modules:
-  # - Main
-    - Compiler
+    - FreeST
     - Bisimulation.Grammar
     - Bisimulation.Bisimulation
     - Equivalence.Equivalence
@@ -65,16 +64,13 @@ library:
 
 executables:
   freest:
-    main:                Main.hs
+    main:                FreeST.hs
     source-dirs:         src
     build-tools:
       - alex
       - happy
-    ghc-options:
-      - -threaded
-      - -rtsopts
-      - -with-rtsopts=-N
-
+    ghc-options: -main-is FreeST
+        
 tests:
     units:
       main: UnitSpec.hs
