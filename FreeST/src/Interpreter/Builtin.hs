@@ -60,7 +60,10 @@ initialCtx =
   , (var "ord", PrimitiveFun (\(Character x) -> Integer $ ord x))
   -- Prints
   , (var "printInt", PrimitiveFun (\(Integer x) -> IOValue (putStrLn (show x) >> return Unit)))
-  , (var "print", PrimitiveFun (\x -> IOValue (putStrLn (show x) >> return Unit)))
+  , (var "printBool", PrimitiveFun (\(Boolean x) -> IOValue (putStrLn (show x) >> return Unit)))
+  , (var "printChar", PrimitiveFun (\(Character x) -> IOValue (putStrLn (show x) >> return Unit)))
+  , (var "printUnit", PrimitiveFun (\Unit -> IOValue (putStrLn "()" >> return Unit)))
+--  , (var "print", PrimitiveFun (\x -> IOValue (putStrLn (show x) >> return Unit)))
   ]
   where
     var :: String -> ProgVar

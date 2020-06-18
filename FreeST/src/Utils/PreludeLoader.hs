@@ -48,7 +48,7 @@ typeList =
   , (mkVar p "printBool", fromType (Fun p Un (Basic p BoolType) (Basic p UnitType)))
   , (mkVar p "printChar", fromType (Fun p Un (Basic p CharType) (Basic p UnitType)))
   , (mkVar p "printUnit", fromType (Fun p Un (Basic p UnitType) (Basic p UnitType)))
-  , (mkVar p "print", TypeScheme p [varBind] (Fun p Un var (Basic p UnitType)))
+--  , (mkVar p "print", TypeScheme p [varBind] (Fun p Un var (Basic p UnitType)))
   ] 
   where p = defaultPos
         var = TypeVar p (mkVar p "a")
