@@ -8,7 +8,10 @@ path=/tmp/freest-$version/
 mkdir $path
 # mkdir $path/FreeST/
 cp -r ../FreeST/src $path
+cp ../LICENSE  $path
 rm $path/src/Parse/Parser.hs $path/src/Parse/Lexer.hs
+rm -rf $path/src/.stack-work/
+rm $path/FreeST.cabal
 
 resolverVersion=`cat ../stack.yaml | grep -e "^resolver:" | sed -E 's/resolver\W+//g'`
 
@@ -17,7 +20,7 @@ resolverVersion=`cat ../stack.yaml | grep -e "^resolver:" | sed -E 's/resolver\W
 echo "# FreeST stack file
 # Authors: Bernardo Almeida, Vasco T. Vasconcelos, Andreia Mordido
 
-# Resolver to choose a 'specific' stackage snapshot or a compiler version.
+# Resolver to choose a 'specific' stackage snaps\hot or a compiler version.
 resolver: $resolverVersion
 
 # packages to build
@@ -69,7 +72,11 @@ echo "\`\`\`
 For more information about stack please visit [https://docs.haskellstack.org/en/stable/README/](https://docs.haskellstack.org/en/stable/README/)
 
 # Install FreeST
+
+- Extract the zip FreeST-1.0.0.zip
+
 \`\`\`
+cd freest-1.0.0/
 stack install
 \`\`\`
 
@@ -81,29 +88,32 @@ Warning: Installation path /home/.../.local/bin
 
 add this path to your PATH environment variable: 
 \`\`\`
-export PATH=/home/.../.local/bin/:$PATH
+export PATH=/home/.../.local/bin/:\$PATH
 \`\`\`
 
 this will only work for the current terminal session. If you want to keep this, add the previous line to your ~/.bashrc file.
 
 
-# Run FreeST (program example.fst)
+# Run FreeST (program LazyTreeTraversal.fst)
 \`\`\`
-freest example.fst
+freest examples/LazyTreeTraversal.fst
 \`\`\`
 
 # Tutorial and some examples
 
 Please visit [RSS Tryit](http://rss.di.fc.ul.pt/tryit/FreeST)
 
+## License
+FreeST is under the [BSD3 license.](https://opensource.org/licenses/BSD-3-Clause)
+
 " > $path/README.md
 
 scriptDir=`pwd`
 pushd /tmp/
 
-tar -cf FreeST-$version.tar freest-$version/
+zip -r FreeST-$version.zip freest-$version/
 rm -rf $path
-mv FreeST-$version.tar $scriptDir
+mv FreeST-$version.zip $scriptDir
 
-# make tar
-# remove dir
+popd
+
