@@ -2,6 +2,7 @@
 
 data IntList = Nil | Cons Int IntList
 
+type OrderingChannel = rec x: SL. +{Vals: !Int; x; ?Int, Asc: Skip, Desc: Skip}
 
 -- ==================== List functions ====================
 
@@ -31,13 +32,13 @@ reverseAux i o =
 -- ==================== Server ====================
 
 -- Facade function to initialize server with an empty list
-initOrderedServer : (rec x: SL. &{Vals: ?Int; x; !Int, Asc: Skip, Desc: Skip}) -> ()
+initOrderedServer : dualof OrderingChannel -> ()
 initOrderedServer c =
   let _ = orderedServer[Skip] c Nil in
   ()
 
 -- Server function
-orderedServer : forall a:SL => (rec x: SL. &{Vals: ?Int; x; !Int, Asc: Skip, Desc: Skip});a -> IntList -> (IntList, a)
+orderedServer : forall a:SL => dualof OrderingChannel;a -> IntList -> (IntList, a)
 orderedServer c list =
   match c with {
     Vals c ->
@@ -64,13 +65,13 @@ orderedServer c list =
 -- ==================== Client ====================
 
 -- Simple client using Asc option
-ascClient : (rec x: SL. +{Vals: !Int; x; ?Int, Asc: Skip, Desc: Skip}) -> IntList
+ascClient : OrderingChannel -> IntList
 ascClient c =
   let (c, rList) = asc[Skip] c aList in
   rList
 
 -- Simple client using Desc option
-descClient : (rec x: SL. +{Vals: !Int; x; ?Int, Asc: Skip, Desc: Skip}) -> IntList
+descClient : OrderingChannel -> IntList
 descClient c =
   let (c, rList) = desc[Skip] c aList in
   rList
@@ -79,13 +80,13 @@ descClient c =
 -- ==================== Client Aux Functions ====================
 
 -- Function to send a list and order with Asc
-asc : forall a:SL => (rec x: SL. +{Vals: !Int; x; ?Int, Asc: Skip, Desc: Skip}); a -> IntList -> (a, IntList)
+asc : forall a:SL => OrderingChannel; a -> IntList -> (a, IntList)
 asc c sList =
   let (c, rList) = ascAux[a] c sList in
   (c, reverse rList)
 
 -- Auxiliary function to asc
-ascAux : forall a:SL => (rec x: SL. +{Vals: !Int; x; ?Int, Asc: Skip, Desc: Skip}); a -> IntList -> (a, IntList)
+ascAux : forall a:SL => OrderingChannel; a -> IntList -> (a, IntList)
 ascAux c sList =
   case sList of {
     Nil ->
@@ -101,13 +102,13 @@ ascAux c sList =
 
 
 -- Function to send a list and order with Desc
-desc : forall a:SL => (rec x: SL. +{Vals: !Int; x; ?Int, Asc: Skip, Desc: Skip}); a -> IntList -> (a, IntList)
+desc : forall a:SL => OrderingChannel; a -> IntList -> (a, IntList)
 desc c sList =
   let (c, rList) = descAux[a] c sList in
   (c, reverse rList)
 
 -- Auxiliary function to desc
-descAux : forall a:SL => (rec x: SL. +{Vals: !Int; x; ?Int, Asc: Skip, Desc: Skip}); a -> IntList -> (a, IntList)
+descAux : forall a:SL => OrderingChannel; a -> IntList -> (a, IntList)
 descAux c sList =
   case sList of {
     Nil ->
