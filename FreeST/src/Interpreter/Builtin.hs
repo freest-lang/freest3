@@ -7,7 +7,6 @@ import           Interpreter.Value
 import           Syntax.Base
 import           Syntax.ProgramVariables
 
-
 ------------------------------------------------------------
 -- Communication primitives
 ------------------------------------------------------------
@@ -64,7 +63,26 @@ initialCtx =
   , (var "printChar", PrimitiveFun (\(Character x) -> IOValue (putStrLn (show x) >> return Unit)))
   , (var "printUnit", PrimitiveFun (\Unit -> IOValue (putStrLn "()" >> return Unit)))
 --  , (var "print", PrimitiveFun (\x -> IOValue (putStrLn (show x) >> return Unit)))
+  -- Lists
+  , (var "(::)", PrimitiveFun (\x -> PrimitiveFun (\y -> Cons (var "#Cons") ([[x]] ++ [[y]]))))
+  , (var "(++)", PrimitiveFun (\(Cons x xs) -> PrimitiveFun (\y -> Cons x (findNil y xs))))
   ]
   where
     var :: String -> ProgVar
     var = mkVar defaultPos
+
+
+findNil :: Value -> [[Value]]-> [[Value]]
+findNil subs = map (findNil' subs)
+
+findNil' :: Value -> [Value] -> [Value]
+findNil' subs = map (findNil'' subs)
+
+findNil'' :: Value -> Value -> Value
+findNil'' subs (Cons x xs)
+  | x == nil = subs
+  | otherwise = Cons x (findNil subs xs)
+findNil'' _ x = x
+
+nil = mkVar defaultPos "#Nil"
+

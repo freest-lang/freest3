@@ -121,6 +121,7 @@ import           Debug.Trace
 %left '+' '-'                   -- aditive
 %left '*' '/'                   -- multiplicative
 %left NEG not                   -- unary
+%right ':'
 
 -- Type
 %right '.'       -- Used in rec 
@@ -196,11 +197,13 @@ Expr :: { Expression }
   | Expr '||' Expr                   { binOp $1 (mkVar (position $2) "(||)") $3 }
   | Expr '&&' Expr                   { binOp $1 (mkVar (position $2) "(&&)") $3 }
   | Expr OP Expr                     { binOp $1 (mkVar (position $2) (getText $2)) $3 }
--- | ListFunctions                   { $1 }
+--  | ListFunctions                   { $1 }
   | Expr '+' Expr                    { binOp $1 (mkVar (position $2) "(+)") $3 }
   | Expr '-' Expr                    { binOp $1 (mkVar (position $2) "(-)") $3 }
   | Expr '*' Expr                    { binOp $1 (mkVar (position $2) "(*)") $3 }
   | Expr '/' Expr                    { binOp $1 (mkVar (position $2) "div") $3 }
+  | Expr ':'':' Expr                 { binOp $1 (mkVar (position $2) "(::)") $4 }
+  | Expr '+''+' Expr                 { binOp $1 (mkVar (position $2) "(++)") $4 }
   | App                              { $1 }
 
 App :: { Expression }

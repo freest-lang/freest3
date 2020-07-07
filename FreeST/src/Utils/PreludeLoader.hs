@@ -50,12 +50,21 @@ typeList =
   , (mkVar p "printChar", fromType (Fun p Un (Basic p CharType) (Basic p UnitType)))
   , (mkVar p "printUnit", fromType (Fun p Un (Basic p UnitType) (Basic p UnitType)))
 --  , (mkVar p "print", TypeScheme p [varBind] (Fun p Un var (Basic p UnitType)))
+
+  -- BUILTIN LISTS
   , (mkVar p "#Nil", fromType funList)
   , (mkVar p "#Cons", fromType funIntListList)
+  -- LIST FUNCTIONS (Integers so far)
+  , (mkVar p "(::)", fromType funIntListList)
+  , (mkVar p "(++)", fromType funListListList)
   ] 
   where p = defaultPos
         var = TypeVar p (mkVar p "a")
         varBind = TypeVarBind p (mkVar p "a") (omission p)
+        funListListList =  Fun defaultPos Un (TypeName defaultPos intList)
+                           (Fun defaultPos Un
+                              (TypeName defaultPos intList)
+                              (TypeName defaultPos intList))
 
 prelude :: VarEnv
 prelude = foldl (\acc (x, s) -> Map.insert x s acc) Map.empty typeList
