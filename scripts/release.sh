@@ -3,15 +3,15 @@
 # Create folder on tmp and copy files
 
 version=`cat ../FreeST/package.yaml | grep -e "version:" | sed -E 's/version\W+//g'`
-path=/tmp/freest-$version/
+path=freest-$version/
 
 mkdir $path
 # mkdir $path/FreeST/
-cp -r ../FreeST/src $path
+cp -r ../FreeST/src examples/ $path
 cp ../LICENSE  $path
 rm $path/src/Parse/Parser.hs $path/src/Parse/Lexer.hs
 rm -rf $path/src/.stack-work/
-rm $path/FreeST.cabal
+# rm $path/src/FreeST.cabal
 
 resolverVersion=`cat ../stack.yaml | grep -e "^resolver:" | sed -E 's/resolver\W+//g'`
 
@@ -108,12 +108,12 @@ FreeST is under the [BSD3 license.](https://opensource.org/licenses/BSD-3-Clause
 
 " > $path/README.md
 
-scriptDir=`pwd`
-pushd /tmp/
+#scriptDir=`pwd`
+# pushd /tmp/
 
-zip -r FreeST-$version.zip freest-$version/
+zip -rq FreeST-$version.zip freest-$version/
 rm -rf $path
-mv FreeST-$version.zip $scriptDir
+# mv FreeST-$version.zip $scriptDir
 
-popd
+# popd
 
