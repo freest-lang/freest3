@@ -121,6 +121,7 @@ showDatatype i m = concat $ intersperse " | " $
   showAsSequence :: Type -> String
   showAsSequence (Fun _ _ t u) = " " ++ showType (i-1) t ++ showAsSequence u
   showAsSequence _ = ""
+  -- TODO(J) -> Error should show [Int] instead of #IntList
 
 showChoice :: Int -> TypeMap -> String
 showChoice i m = concat $ intersperse ", " $
