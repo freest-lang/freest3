@@ -196,11 +196,11 @@ Expr :: { Expression }
   | Expr '||' Expr                   { binOp $1 (mkVar (position $2) "(||)") $3 }
   | Expr '&&' Expr                   { binOp $1 (mkVar (position $2) "(&&)") $3 }
   | Expr OP Expr                     { binOp $1 (mkVar (position $2) (getText $2)) $3 }
+-- | ListFunctions                   { $1 }
   | Expr '+' Expr                    { binOp $1 (mkVar (position $2) "(+)") $3 }
   | Expr '-' Expr                    { binOp $1 (mkVar (position $2) "(-)") $3 }
   | Expr '*' Expr                    { binOp $1 (mkVar (position $2) "(*)") $3 }
   | Expr '/' Expr                    { binOp $1 (mkVar (position $2) "div") $3 }
---  | Expr ':' ':' Expr                { binOp $1 (mkVar (position $2) "(::)") $3 }
   | App                              { $1 }
 
 App :: { Expression }
@@ -231,19 +231,18 @@ List :: { Expression }
   | '[' IntListExpr ']'  { $2 }
 
 IntListExpr :: { Expression }
-  : ListComp                 { let p = position $1 in  
-                              App p
-                              (App p (ProgVar p (mkVar p "#Cons")) $1)
-                              (ProgVar p (mkVar p "#Nil")) }
-  | ListComp ',' IntListExpr { let p = position $1 in 
-                              App p 
-                              (App p (ProgVar p (mkVar p "#Cons")) $1) 
-                              $3 }
+  : Expr                  { let p = position $1 in  
+                            App p
+                            (App p (ProgVar p (mkVar p "#Cons")) $1)
+                            (ProgVar p (mkVar p "#Nil")) }
+  | Expr ',' IntListExpr  { let p = position $1 in 
+                            App p 
+                            (App p (ProgVar p (mkVar p "#Cons")) $1) 
+                            $3 }
 
--- TODO(J) for BasicTypes
-ListComp :: { Expression }
-  : INT                 { let (TokenInteger p x) = $1 in Integer p x }
-  | ProgVar             { ProgVar (position $1) $1 }
+-- ListFunctions :: { Expression }
+--  | Expr ':' ':' Expr                { binOp $1 (mkVar (position $2) "(::)") $3 }
+--  | Expr '+' '+' Expr                { binOp $1 (mkVar (position $2) "(++)") $3 }
 
 ProgVarWildTBind :: { (ProgVar, Type) }
  : ProgVarWild ':' Type  %prec ProgVarWildTBind { ($1, $3) }
