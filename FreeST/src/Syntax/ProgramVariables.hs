@@ -36,4 +36,4 @@ instance Position ProgVar where
 
 -- TODO: remove 
 isADT :: ProgVar -> Bool
-isADT (ProgVar _ (x:_)) = isUpper x || x == '#'
+isADT (ProgVar _ (x:_)) = isUpper x
