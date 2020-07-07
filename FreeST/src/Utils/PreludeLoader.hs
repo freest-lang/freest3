@@ -2,7 +2,6 @@ module Utils.PreludeLoader
 ( prelude
 , isBuiltin
 , userDefined
-, initialTEnv
 ) where
 
 import           Syntax.Schemes
@@ -50,8 +49,6 @@ typeList =
   , (mkVar p "printChar", fromType (Fun p Un (Basic p CharType) (Basic p UnitType)))
   , (mkVar p "printUnit", fromType (Fun p Un (Basic p UnitType) (Basic p UnitType)))
 --  , (mkVar p "print", TypeScheme p [varBind] (Fun p Un var (Basic p UnitType)))
-  , (mkVar p "#Nil", fromType funList)
-  , (mkVar p "#Cons", fromType funIntListList)
   ] 
   where p = defaultPos
         var = TypeVar p (mkVar p "a")
@@ -65,16 +62,3 @@ isBuiltin = (`elem` (map fst typeList))
 
 userDefined :: VarEnv -> VarEnv
 userDefined = Map.filterWithKey (\x _ -> not (isBuiltin x))
-
-initialTEnv :: TypeEnv
-initialTEnv = 
-  Map.fromList[(intList,(omission defaultPos,fromType dataType))]
-  where dataType = Datatype defaultPos 
-                   (Map.fromList[(mkVar defaultPos ("#Cons"), funIntListList),
-                                 (mkVar defaultPos ("#Nil"), funList)])
-
--- TODO(J) Make this pretty :)
-intList = mkVar defaultPos ("#IntList")
-funList = TypeName defaultPos intList
-funIntListList = Fun defaultPos Un (Basic defaultPos IntType) 
-        (Fun defaultPos Un (TypeName defaultPos intList) (TypeName defaultPos intList))
