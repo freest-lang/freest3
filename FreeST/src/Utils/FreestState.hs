@@ -64,6 +64,7 @@ import           Syntax.Schemes
 import           Syntax.TypeVariables
 import           Syntax.Types (Type(..), TypeOpsEnv)
 import           Utils.Errors
+import           Utils.PreludeLoader(initialTEnv)
 -- import qualified Data.Set as Set
 import qualified Data.Traversable as Traversable
 import           Utils.ErrorMessage
@@ -92,7 +93,7 @@ initialState f = FreestS {
   filename  = f
 , varEnv    = Map.empty
 , expEnv    = Map.empty
-, typeEnv   = Map.empty
+, typeEnv   = initialTEnv
 , typenames = Map.empty
 , errors    = []
 --, errors    = Set.empty
