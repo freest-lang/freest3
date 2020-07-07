@@ -200,6 +200,7 @@ Expr :: { Expression }
   | Expr '-' Expr                    { binOp $1 (mkVar (position $2) "(-)") $3 }
   | Expr '*' Expr                    { binOp $1 (mkVar (position $2) "(*)") $3 }
   | Expr '/' Expr                    { binOp $1 (mkVar (position $2) "div") $3 }
+--  | Expr ':' ':' Expr                { binOp $1 (mkVar (position $2) "(::)") $3 }
   | App                              { $1 }
 
 App :: { Expression }
@@ -210,7 +211,7 @@ App :: { Expression }
   | select Primary ArbitraryProgVar { Select (position $1) $2 $3 }
   | fork Primary                    { Fork (position $1) $2 }
   | '-' App %prec NEG               { unOp (mkVar (position $1) "negate") $2}
-  | Lists                           { $1 }
+  | List                            { $1 }
   | Primary                         { $1 }
 
 Primary :: { Expression }
@@ -225,18 +226,10 @@ Primary :: { Expression }
   | '(' Expr ',' Expr ')'                    { Pair (position $1)$2 $4 }
   | '(' Expr ')'                             { $2 }
 
-Lists :: { Expression }
-  : List                    { $1 }
-  | ListComp ':' ':' Lists  { let p = position $1 in
-                              App p
-                              (App p (ProgVar p (mkVar p "#Cons")) $1)
-                              $4 }
-
 List :: { Expression }
   : '[' ']'              { ProgVar (position $1) (mkVar (position $1) "#Nil" ) }   -- Empty case
   | '[' IntListExpr ']'  { $2 }
 
--- TODO(J) for BasicTypes
 IntListExpr :: { Expression }
   : ListComp                 { let p = position $1 in  
                               App p
@@ -247,9 +240,10 @@ IntListExpr :: { Expression }
                               (App p (ProgVar p (mkVar p "#Cons")) $1) 
                               $3 }
 
+-- TODO(J) for BasicTypes
 ListComp :: { Expression }
   : INT                 { let (TokenInteger p x) = $1 in Integer p x }
-  | ProgVar             { ProgVar (position $1) $1 }                       
+  | ProgVar             { ProgVar (position $1) $1 }
 
 ProgVarWildTBind :: { (ProgVar, Type) }
  : ProgVarWild ':' Type  %prec ProgVarWildTBind { ($1, $3) }
