@@ -99,7 +99,9 @@ showType _ (Basic _ b)          = show b
 showType _ (Skip _)             = "Skip"
 showType _ (TypeVar _ x)        = show x
 showType _ (Message _ p b)      = show p ++ show b
-showType _ (TypeName _ x)       = show x
+showType _ (TypeName _ x)       -- = show x
+  | x == mkVar defaultPos "#IntList" = "[Int]" -- TODO: extract Fun for builtins
+  | otherwise                        = show x
   -- Depth reached
 showType 0 _ = ".."
   -- Functional types
@@ -121,7 +123,6 @@ showDatatype i m = concat $ intersperse " | " $
   showAsSequence :: Type -> String
   showAsSequence (Fun _ _ t u) = " " ++ showType (i-1) t ++ showAsSequence u
   showAsSequence _ = ""
-  -- TODO(J) -> Error should show [Int] instead of #IntList
 
 showChoice :: Int -> TypeMap -> String
 showChoice i m = concat $ intersperse ", " $

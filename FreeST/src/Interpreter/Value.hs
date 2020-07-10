@@ -12,6 +12,7 @@ import qualified Data.Map.Strict as Map
 import qualified Syntax.Expressions as E
 import           Syntax.ProgramVariables
 import           Syntax.Show()
+import           Syntax.Base
 
 data Value =
     Unit
@@ -47,8 +48,12 @@ instance Show Value where
 
 
 showCons :: Value -> String
-showCons (Cons x []) = show x
-showCons (Cons x xs) = show x ++ " " ++ (intercalate " " (map showConstrList xs))
+showCons (Cons x [])
+  | x == mkVar defaultPos "#Nil"  = "[]"
+  | otherwise                     = show x
+showCons c@(Cons x xs)
+  | x == mkVar defaultPos "#Cons" = showBuiltinList c
+  | otherwise = show x ++ " " ++ (intercalate " " (map showConstrList xs))
  where
    showConstrList :: [Value] -> String
    showConstrList xs = intercalate " " (map showC xs)
@@ -57,3 +62,17 @@ showCons (Cons x xs) = show x ++ " " ++ (intercalate " " (map showConstrList xs)
    showC c@(Cons _ []) = show c
    showC c@(Cons _ _) = "(" ++ show c ++ ")"
    showC v = show v
+
+showBuiltinList :: Value -> String
+showBuiltinList (Cons x xs) = '[' : (init (intercalate "," (map showList' xs)) ++ "]")
+  where
+    showList' :: [Value] -> String
+    showList' xs = intercalate "," $ map showElem xs
+
+    showElem :: Value -> String
+    showElem (Cons x xs)
+      | x == mkVar defaultPos "#Nil" = ""
+      | otherwise                    =  intercalate "," (map showList' xs)
+    showElem v = show v
+
+-- "#Cons 1 (#Cons 2 (#Cons 3 (#Cons 4 (#Cons 5 #Nil))))"
