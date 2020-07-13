@@ -346,8 +346,8 @@ checkEquivEnvs p kEnv vEnv1 vEnv2 = do
   let vEnv1' = userDefined vEnv1
       vEnv2' = userDefined vEnv2
   when (not (equivalent tEnv kEnv vEnv1' vEnv2')) $
-    addError p [Error "Expecting environment", Error vEnv1',
-                Error "\n\t to be equivalent to  ", Error vEnv2']
+    addError p [Error "Expecting environment", Error (vEnv1' Map.\\ vEnv2'),
+                Error "\n\t to be equivalent to  ", Error (vEnv2' Map.\\ vEnv1')]
 
 fillFunType :: KindEnv -> ProgVar -> Expression -> TypeScheme -> FreestState Type
 fillFunType kEnv b e (TypeScheme _ _ t) = fill e t
