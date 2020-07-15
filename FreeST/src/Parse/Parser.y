@@ -262,7 +262,11 @@ CaseMap :: { FieldMap }
   | Case ',' CaseMap {% toStateT $ checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
                         
 Case :: { (ProgVar, ([ProgVar], Expression)) }
-  : Constructor ProgVarWildSeq '->' Expr { ($1, ($2, $4)) }
+  : Constructor ProgVarWildSeq '->' Expr                { ($1, ($2, $4)) }
+  | '(' ProgVarWild ':'':' ProgVarWild ')'  '->' Expr   {% toStateT $ checkDupBind $2 [$5] >>
+                                                           return (mkVar (position $1) "#Cons"
+                                                                  , ($2 : [$5], $8)) }
+  | '['']' '->' Expr                                    { (mkVar (position $1) "#Nil", ([], $4)) }
 
 -----------
 -- TYPE SCHEMES --
