@@ -25,7 +25,7 @@ $symbol = [\!\#\$\%\&\*\+\.\/\<\=\>\?\@\\\^\|\-\~]
 
 $digit = 0-9
 @char = \'(\\n|[\\.]|.) \'
-@lineComment  = \n*"--".* 
+@lineComment  = (\n | \r\n)*"--".* 
 @blockComment = "{-" (\\.|[^\{\-]|\n|\-\-|[^$symbol].*)* "-}"
 
 $eol=[\n]

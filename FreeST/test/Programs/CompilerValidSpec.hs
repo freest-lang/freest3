@@ -76,7 +76,7 @@ testWithExpected curTestDir source res = do
   case exp of
     Just s -> do
       it ("Testing " ++ source) $
-        (filter (/= '\n') res) `shouldBe` (filter (/= '\n') s)
+        (filter (/= '\n') res) `shouldBe` (filter (\c -> c /= '\n' && c /= '\r') s)
     Nothing ->
       it ("Testing " ++ source) $
         void $ assertFailure $ "File " ++ expectedFile ++ " not found"
