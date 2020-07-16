@@ -9,6 +9,7 @@ import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.ProgramVariables
 import           Syntax.Base
+import           Syntax.TypeVariables
 import qualified Data.Map.Strict as Map
 import Syntax.Kinds
 
@@ -83,7 +84,11 @@ initialTEnv =
                                  (mkVar defaultPos ("#Nil"), funList)])
 
 -- TODO(J) Make this pretty :)
+intList :: TypeVar
 intList = mkVar defaultPos ("#IntList")
+
+funList :: Type
 funList = TypeName defaultPos intList
-funIntListList = Fun defaultPos Un (Basic defaultPos IntType) 
-        (Fun defaultPos Un (TypeName defaultPos intList) (TypeName defaultPos intList))
+
+funIntListList :: Type
+funIntListList = Fun defaultPos Un (Basic defaultPos IntType) (Fun defaultPos Un (TypeName defaultPos intList) (TypeName defaultPos intList))
