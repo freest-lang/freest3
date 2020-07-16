@@ -7,6 +7,8 @@ import           Interpreter.Value
 import           Syntax.Base
 import           Syntax.ProgramVariables
 
+import Debug.Trace
+
 ------------------------------------------------------------
 -- Communication primitives
 ------------------------------------------------------------
@@ -64,25 +66,48 @@ initialCtx =
   , (var "printUnit", PrimitiveFun (\Unit -> IOValue (putStrLn "()" >> return Unit)))
 --  , (var "print", PrimitiveFun (\x -> IOValue (putStrLn (show x) >> return Unit)))
   -- Lists
-  , (var "(::)", PrimitiveFun (\x -> PrimitiveFun (\y -> Cons (var "#Cons") ([[x]] ++ [[y]]))))
-  , (var "(++)", PrimitiveFun (\(Cons x xs) -> PrimitiveFun (\y -> Cons x (findNil y xs))))
+   , (var "(::)", PrimitiveFun (\x -> PrimitiveFun (\y -> Cons (var "#Cons") (x : [y]))))
+   , (var "(++)", PrimitiveFun (\(Cons x xs) -> PrimitiveFun (\y -> Cons x (findNil y xs))))
+
+--   -- new
+   , (var "head", PrimitiveFun (\(Cons _ xs) -> head xs))
+   , (var "last", PrimitiveFun findLast)
+   , (var "tail", PrimitiveFun (\(Cons _ xs) -> last xs))
+   , (var "init", PrimitiveFun initList)
+-- -- -- (!!) :: [a] -> Int -> a
+   , (var "null", PrimitiveFun (\(Cons _ xs) -> Boolean $ null xs))
+   , (var "length", PrimitiveFun $ Integer . len)
+--   , (var "reverse", fromType listList)
   ]
   where
     var :: String -> ProgVar
     var = mkVar defaultPos
 
 
-findNil :: Value -> [[Value]]-> [[Value]]
-findNil subs = map (findNil' subs)
+findNil :: Value -> [Value] -> [Value]
+findNil _ [] = []
+findNil subs ((Cons x xs):ys)
+  | null xs   = [subs]
+  | null ys   = [Cons x (findNil subs xs)]
+  | otherwise = (Cons x xs) : findNil subs ys
+findNil subs (x:xs) = x : findNil subs xs
 
-findNil' :: Value -> [Value] -> [Value]
-findNil' subs = map (findNil'' subs)
 
-findNil'' :: Value -> Value -> Value
-findNil'' subs (Cons x xs)
-  | x == nil = subs
-  | otherwise = Cons x (findNil subs xs)
-findNil'' _ x = x
+-- Cons [2,Cons [3,Cons [4,Cons [5,Nil []]]]]
+findLast :: Value -> Value
+findLast (Cons x []) = error $ "last over an empty list"
+findLast (Cons y (v:(Cons x xs):ys))
+  | x == mkVar defaultPos "#Nil" = v
+  | otherwise                    = findLast (Cons y xs) 
 
-nil = mkVar defaultPos "#Nil"
+
+initList :: Value -> Value
+initList (Cons x []) = error $ "last over an empty list"
+initList (Cons y (v:(Cons x xs):_))
+  | x == mkVar defaultPos "#Nil" = Cons x xs
+  | otherwise                    = Cons y (v : [initList (Cons x xs)]) 
+
+len :: Value -> Int
+len (Cons x []) = 0
+len (Cons y (v:(Cons x xs):_)) = 1 + len (Cons x xs)
 

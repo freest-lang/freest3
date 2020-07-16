@@ -58,6 +58,14 @@ typeList =
   -- LIST FUNCTIONS (Integers so far)
   , (mkVar p "(::)", fromType funIntListList)
   , (mkVar p "(++)", fromType funListListList)
+  , (mkVar p "head", fromType listInt)
+  , (mkVar p "last", fromType listInt)
+  , (mkVar p "tail", fromType listList)
+  , (mkVar p "init", fromType listList)
+-- (!!) :: [a] -> Int -> a
+  , (mkVar p "null", fromType listBool)
+  , (mkVar p "length", fromType listInt)
+--  , (mkVar p "reverse", fromType listList)
   ] 
   where p = defaultPos
         var = TypeVar p (mkVar p "a")
@@ -84,11 +92,11 @@ initialTEnv =
                                  (mkVar defaultPos ("#Nil"), funList)])
 
 -- TODO(J) Make this pretty :)
-intList :: TypeVar
 intList = mkVar defaultPos ("#IntList")
-
-funList :: Type
 funList = TypeName defaultPos intList
+funIntListList = Fun defaultPos Un (Basic defaultPos IntType) 
+        (Fun defaultPos Un (TypeName defaultPos intList) (TypeName defaultPos intList))
 
-funIntListList :: Type
-funIntListList = Fun defaultPos Un (Basic defaultPos IntType) (Fun defaultPos Un (TypeName defaultPos intList) (TypeName defaultPos intList))
+listInt = Fun defaultPos Un (TypeName defaultPos intList) (Basic defaultPos IntType) 
+listList = Fun defaultPos Un (TypeName defaultPos intList) (TypeName defaultPos intList)
+listBool = Fun defaultPos Un (TypeName defaultPos intList) (Basic defaultPos BoolType) 

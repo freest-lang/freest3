@@ -36,7 +36,7 @@ eval ctx eenv (E.App _ e1 e2) =
          r -> return r
     (Cons x xs) -> do
       !v <- eval ctx eenv e2
-      pure $ Cons x (xs ++ [[v]])
+      pure $ Cons x (xs <> [v])
 
 eval ctx eenv (E.Pair _ e1 e2) =
   liftM2 Pair (eval ctx eenv e1) (eval ctx eenv e2)
@@ -91,7 +91,8 @@ evalCase :: Ctx -> E.ExpEnv -> E.FieldMap -> Value -> IO Value
 evalCase ctx eenv m (Cons x xs) = do
   let !(patterns, e) = m Map.! x
   let lst  = zip patterns xs
-  let ctx1 = foldl (\acc (c,xs) -> Map.insert c (head xs) acc) ctx lst  
+  let ctx1 = foldl (\acc (c,xs) -> Map.insert c xs acc) ctx lst  
+--  let ctx1 = foldl (\acc (c,xs) -> Map.insert c (head xs) acc) ctx lst  
   eval ctx1 eenv e
 
 evalVar :: Ctx -> E.ExpEnv -> ProgVar -> IO Value
