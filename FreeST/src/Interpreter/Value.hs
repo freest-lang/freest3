@@ -12,14 +12,14 @@ import qualified Data.Map.Strict as Map
 import qualified Syntax.Expressions as E
 import           Syntax.ProgramVariables
 import           Syntax.Show()
-import           Syntax.Base
+import           Syntax.Base (defaultPos, mkVar)
 
 data Value =
     Unit
   | Integer Int
   | Boolean Bool
   | Character Char  
-  | Cons ProgVar [[Value]] -- TODO: Think how to do this in other way
+  | Cons ProgVar [Value] -- TODO: Think how to do this in other way
   | Pair Value Value
   | Closure ProgVar E.Expression Ctx
   | PrimitiveFun (Value -> Value)
@@ -42,37 +42,68 @@ instance Show Value where
   show (Character c) = show c
   show (Label s)     = s
   show (Pair v1 v2)  = "(" ++ show v1 ++ "," ++ show v2 ++ ")"
-  show c@(Cons _ _)  = showCons c
+  show c@(Cons _ _)  = showCons c -- show x ++ " " ++ show xs 
+--  show c@(Cons x xs)  = show x ++ " " ++ show xs 
   show (Chan _)      = "Skip" -- TODO: change this
   show (Closure x e _)  = show x ++ " " ++ show e-- TODO: change this
 
+-- Cons [2,Cons [3,Cons [4,Cons [5,Nil []]]]]
+-- Node [7,Node [5,Leaf [],Leaf []],Node [9,Node [11,Leaf [],Leaf []],Node [15,Leaf [],Leaf []]]]
 
 showCons :: Value -> String
 showCons (Cons x [])
-  | x == mkVar defaultPos "#Nil"  = "[]"
-  | otherwise                     = show x
-showCons c@(Cons x xs)
+  | x == mkVar defaultPos "#Nil" = "[]"
+  | otherwise                    = show x
+showCons c@(Cons x xs) 
   | x == mkVar defaultPos "#Cons" = showBuiltinList c
-  | otherwise = show x ++ " " ++ (intercalate " " (map showConstrList xs))
- where
-   showConstrList :: [Value] -> String
-   showConstrList xs = intercalate " " (map showC xs)
+  | otherwise = show x ++ " " ++ showCons' xs
 
-   showC :: Value -> String
-   showC c@(Cons _ []) = show c
-   showC c@(Cons _ _) = "(" ++ show c ++ ")"
-   showC v = show v
+showCons' :: [Value] -> String
+-- showCons' = foldl (\acc v -> acc ++ showCons'' v ++ " ") ""
+showCons' = intercalate " " . map showCons''
+  
+showCons'' :: Value -> String
+showCons'' (Cons x []) = show x-- parens
+showCons'' (Cons x xs) = "(" ++ show x ++ " " ++ showCons' xs ++ ")" -- parens
+showCons'' v = show v
 
-showBuiltinList :: Value -> String
-showBuiltinList (Cons x xs) = '[' : (init (intercalate "," (map showList' xs)) ++ "]")
-  where
-    showList' :: [Value] -> String
-    showList' xs = intercalate "," $ map showElem xs
 
-    showElem :: Value -> String
-    showElem (Cons x xs)
-      | x == mkVar defaultPos "#Nil" = ""
-      | otherwise                    =  intercalate "," (map showList' xs)
-    showElem v = show v
+-- showCons :: Value -> String
+-- showCons (Cons x [])
+--   | x == mkVar defaultPos "#Nil"  = "[]"
+--   | otherwise                     = show x
+-- showCons c@(Cons x xs)
+--   | x == mkVar defaultPos "#Cons" = showBuiltinList c
+--   | otherwise = show x ++ " " ++ (intercalate " " (map showConstrList xs))
+--  where
+--    showConstrList :: [Value] -> String
+--    showConstrList xs = intercalate " " (map showC xs)
+
+--    showC :: Value -> String
+--    showC c@(Cons _ []) = show c
+--    showC c@(Cons _ _) = "(" ++ show c ++ ")"
+--    showC v = show v
+
+-- showBuiltinList :: Value -> String
+-- showBuiltinList (Cons x xs) = '[' : (init (intercalate "," (map showList' xs)) ++ "]")
+--   where
+--     showList' :: [Value] -> String
+--     showList' xs = intercalate "," $ map showElem xs
+
+--     showElem :: Value -> String
+--     showElem (Cons x xs)
+--       | x == mkVar defaultPos "#Nil" = ""
+--       | otherwise                    =  intercalate "," (map showList' xs)
+--     showElem v = show v
 
 -- "#Cons 1 (#Cons 2 (#Cons 3 (#Cons 4 (#Cons 5 #Nil))))"
+
+
+showBuiltinList :: Value -> String
+showBuiltinList (Cons x xs) = '[' : (init $ intercalate "," (map showList xs)) ++ "]"
+  where
+    showList :: Value -> String
+    showList (Cons x xs)
+      | x == mkVar defaultPos "#Nil" = ""
+      | otherwise                    =  intercalate "," (map showList xs)
+    showList v = show v
