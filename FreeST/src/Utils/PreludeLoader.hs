@@ -65,7 +65,7 @@ typeList =
 -- (!!) :: [a] -> Int -> a
   , (mkVar p "null", fromType listBool)
   , (mkVar p "length", fromType listInt)
---  , (mkVar p "reverse", fromType listList)
+  , (mkVar p "reverse", fromType listList)
   ] 
   where p = defaultPos
         var = TypeVar p (mkVar p "a")

@@ -77,7 +77,7 @@ initialCtx =
 -- -- -- (!!) :: [a] -> Int -> a
    , (var "null", PrimitiveFun (\(Cons _ xs) -> Boolean $ null xs))
    , (var "length", PrimitiveFun $ Integer . len)
---   , (var "reverse", fromType listList)
+   , (var "reverse", PrimitiveFun rev )
   ]
   where
     var :: String -> ProgVar
@@ -92,17 +92,14 @@ findNil subs ((Cons x xs):ys)
   | otherwise = (Cons x xs) : findNil subs ys
 findNil subs (x:xs) = x : findNil subs xs
 
-
--- Cons [2,Cons [3,Cons [4,Cons [5,Nil []]]]]
 findLast :: Value -> Value
 findLast (Cons x []) = error $ "last over an empty list"
 findLast (Cons y (v:(Cons x xs):ys))
   | x == mkVar defaultPos "#Nil" = v
   | otherwise                    = findLast (Cons y xs) 
 
-
 initList :: Value -> Value
-initList (Cons x []) = error $ "last over an empty list"
+initList (Cons x []) = error $ "init over an empty list"
 initList (Cons y (v:(Cons x xs):_))
   | x == mkVar defaultPos "#Nil" = Cons x xs
   | otherwise                    = Cons y (v : [initList (Cons x xs)]) 
@@ -110,4 +107,12 @@ initList (Cons y (v:(Cons x xs):_))
 len :: Value -> Int
 len (Cons x []) = 0
 len (Cons y (v:(Cons x xs):_)) = 1 + len (Cons x xs)
+
+rev :: Value -> Value
+rev (Cons x []) = Cons x []
+rev (Cons c (x:xs)) = rev' xs [Cons c [x, Cons (mkVar defaultPos "#Nil") []]]
+ where
+   rev' :: [Value] -> [Value] -> Value
+   rev' (Cons _ []:_) xs = head xs
+   rev' (Cons c (x:xs):_) acc = rev' xs [Cons c (x : acc)]
 
