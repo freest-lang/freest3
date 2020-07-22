@@ -2,13 +2,13 @@ Dear all,
 
 We want to announce that FreeST 1.0 is out. FreeST [1] is an
 experimental concurrent programming language, based on a core linear
-functional language; it features primitives to fork new threads, and
+functional language, featuring primitives to fork new threads, and
 for channel creation and communication.
 
 The powerful type system of context-free session types, proposed by
 Thiemann and Vasconcelos [2], governs the interaction on the
 communication channels. Moreover, FreeST builds on a novel algorithm
-that decides the equivalence of context-free session types [3].
+to decide the equivalence of context-free session types [3].
 
 FreeST is available on your browser at
 http://rss.di.fc.ul.pt/tryit/FreeST where a simple tutorial and some
@@ -20,13 +20,13 @@ Kind regards, Bernardo Almeida, Andreia Mordido, and Vasco T.
 Vasconcelos.
 
 
-1. Almeida, B., Mordido, A. and Vasconcelos, V.T., 2019. FreeST:
-Context-free session types in a functional language, In PLACES 2020,
-EPTCS, vol 291, pp. 12-23. pdf
+1. Almeida, B., Mordido, A. and Vasconcelos, V.T. FreeST: Context-free
+session types in a functional language, In PLACES 2019, EPTCS, vol
+291, pp. 12-23.
 
-2. Thiemann, P. and Vasconcelos, V.T., 2016. Context-free session
-types. In ICFP 2016, ACM, pp. 462-475. pdf
+2. Thiemann, P. and Vasconcelos, V.T. Context-free session types. In
+ICFP 2016, ACM, pp. 462-475.
 
-3. Almeida, B., Mordido A. and Vasconcelos V.T., 2020. Deciding the
-Bisimilarity of Context-Free Session Types. In TACAS 2020, LNCS, vol
-12079, pp. 39-56. Springer, Cham pdf
+3. Almeida, B., Mordido A. and Vasconcelos V.T. Deciding the
+bisimilarity of context-free session types. In TACAS 2020, LNCS, vol
+12079, pp. 39-56.

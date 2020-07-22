@@ -1,0 +1,6 @@
+# Version 1.0.1
+  - Small bug fixes
+  - Fixing error messages for environments. Now, it only shows the different elements between the two environments.
+  - Fixing parser and lexer error messages.
+  - Adding Ln print versions for basic types, namely, printIntLn, printBoolLn, printCharLn, and printUnitLn
+  - Adding a simple mode for emacs and atom

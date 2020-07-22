@@ -203,7 +203,6 @@ Expr :: { Expression }
 
 App :: { Expression }
   : App Primary                     { App (position $1) $1 $2 }
-  | ProgVar '[' TypeList ']'        { TypeApp (position $1) $1 $3 }
   | send Primary                    { Send (position $1) $2 }
   | receive Primary                 { Receive (position $1) $2 }
   | select Primary ArbitraryProgVar { Select (position $1) $2 $3 }
@@ -216,9 +215,8 @@ Primary :: { Expression }
   | BOOL                                     { let (TokenBool p x) = $1 in Boolean p x }
   | CHAR                                     { let (TokenChar p x) = $1 in Character p x }
   | '()'                                     { Unit (position $1) }
+  | ProgVar '[' TypeList ']'                 { TypeApp (position $1) $1 $3 }
   | ArbitraryProgVar                         { ProgVar (position $1) $1 }
-  -- | ProgVar                                  { ProgVar (position $1) $1 }
-  -- | Constructor                              { ProgVar (position $1) $1 }
   | '(' '\\' ProgVarWildTBind Arrow Expr ')' { Lambda (position $2) (snd $4) (fst $3) (snd $3) $5 }
   | '(' Expr ',' Expr ')'                    { Pair (position $1)$2 $4 }
   | '(' Expr ')'                             { $2 }
@@ -376,43 +374,38 @@ Schemes :: { (TypeScheme, TypeScheme) }
 -- Parsing functions --
 -----------------------
 parseKind :: String -> Kind
-parseKind  s =
-  case evalStateT (parse s) (initialState "") of
+parseKind str =
+  case evalStateT (parse str "" kinds) (initialState "") of
     Ok x -> x
     Failed err -> error err
-  where parse = kinds . scanTokens
 
 parseType :: String -> Either Type String
-parseType s =
-  case runStateT (parse s) (initialState "") of
+parseType str =
+  case runStateT (parse str "" types) (initialState "") of
     Ok (t, state) -> eitherTypeErr t state
     Failed err -> Right $ err      
   where
-    parse = types . scanTokens
     eitherTypeErr t state
       | hasErrors state = Right $ getErrors state
       | otherwise       = Left $ t
 
 instance Read Type where
   readsPrec _ str =
-    case runStateT (parse str) (initialState "") of
+    case runStateT (parse str "" types) (initialState "") of
       Ok (t, state) ->
         if hasErrors state then error $ getErrors state else [(t, "")]
       Failed err -> error err
-   where parse = types . scanTokens
 
 ----------------------
 -- PARSING SCHEMES  --
 ----------------------
 
 parseSchemes :: String -> String -> Either (TypeScheme, TypeScheme) String
-parseSchemes fname s =
-  case runStateT (parse s) (initialState fname) of
+parseSchemes file str =
+  case runStateT (parse str file schemes) (initialState file) of
     Ok (t,s) ->
       if hasErrors s then Right (getErrors s) else Left t
     Failed err -> Right err
-  where
-    parse = schemes . scanTokens
 
 instance Read Kind where
   readsPrec _ s = -- [(parseKind s, "")]
@@ -439,16 +432,23 @@ parseProgram inputFile vEnv = do
 parseDefs :: FilePath -> VarEnv -> String -> FreestS
 parseDefs file vEnv str =
   let s = initialState file in
-  case execStateT (parse str) (s {varEnv = vEnv}) of
+  case execStateT (parse str file terms) (s {varEnv = vEnv}) of
     Ok s1 -> s1
     Failed err -> s {errors = (errors s) ++ [err]}
-   where parse = terms . scanTokens
+   -- where
+   --   parse = lexer str file terms
 
+parse str file f = lexer str file f
 
-checkErrors :: FreestS -> IO ()
-checkErrors s
-  | hasErrors s = die $ getErrors s
-  | otherwise   = return ()
+lexer str file f = 
+  case scanTokens str file of
+    Right err -> failM err
+    Left x    -> f x
+
+-- checkErrors :: FreestS -> IO ()
+-- checkErrors s
+--   | hasErrors s = die $ getErrors s
+--   | otherwise   = return ()
 
 -------------------
 -- Handle errors --
@@ -461,13 +461,12 @@ parseError [] = do
           [Error "Parse error:", Error "\ESC[91mPremature end of file\ESC[0m"]
 parseError xs = do  
   file <- toStateT getFileName
-  failM $ formatErrorMessages Map.empty defaultPos file
+  failM $ formatErrorMessages Map.empty p file
     [Error "Parse error on input", Error $ "\ESC[91m'" ++ show (head xs) ++ "'\ESC[0m"]
  where p = position (head xs)
 
 failM :: String -> FreestStateT a
 failM err = lift $ Failed err
-
 
 toStateT x = state $ runState x
 

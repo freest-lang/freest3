@@ -7,11 +7,24 @@ path=freest-$version/
 
 mkdir $path
 # mkdir $path/FreeST/
-cp -r ../FreeST/src examples/ $path
-cp ../LICENSE  $path
+cp -r ../FreeST/src ../packages/ $path
+cp ../LICENSE  ../CHANGELOG  $path
 rm $path/src/Parse/Parser.hs $path/src/Parse/Lexer.hs
 rm -rf $path/src/.stack-work/
 # rm $path/src/FreeST.cabal
+
+mkdir $path/examples/
+# copy test examples into release
+cp ../FreeST/test/Programs/ValidTests/anbn/anbn.fst  $path/examples/AnBn.fst
+cp ../FreeST/test/Programs/ValidTests/arithExprServer/arithExprServer.fst  $path/examples/ArithExprServer.fst
+cp ../FreeST/test/Programs/ValidTests/crisscross/crisscross.fst  $path/examples/Crisscross.fst
+cp ../FreeST/test/Programs/ValidTests/fixZcombinator/fixZcombinator.fst $path/examples/FixZcombinator.fst
+cp ../FreeST/test/Programs/ValidTests/lazyTreeTraversal/lazyTreeTraversal.fst $path/examples/LazyTreeTraversal.fst
+cp ../FreeST/test/Programs/ValidTests/ordering/ordering.fst $path/examples/Ordering.fst
+cp ../FreeST/test/Programs/ValidTests/DyckWords/DyckWords.fst $path/examples/
+cp ../FreeST/test/Programs/examples/Unnormed.fst  $path/examples/
+cp ../FreeST/test/Programs/ValidTests/remoteTreeTransform/remoteTreeTransform.fst  $path/examples/TreeTransform.fst
+
 
 resolverVersion=`cat ../stack.yaml | grep -e "^resolver:" | sed -E 's/resolver\W+//g'`
 
@@ -73,10 +86,10 @@ For more information about stack please visit [https://docs.haskellstack.org/en/
 
 # Install FreeST
 
-- Extract the zip FreeST-1.0.0.zip
+- Extract the zip FreeST-$version.zip
 
 \`\`\`
-cd freest-1.0.0/
+cd freest-$version/
 stack install
 \`\`\`
 
@@ -91,7 +104,7 @@ add this path to your PATH environment variable:
 export PATH=/home/.../.local/bin/:\$PATH
 \`\`\`
 
-this will only work for the current terminal session. If you want to keep this, add the previous line to your ~/.bashrc file.
+this will only work for the current terminal session. If you want to keep it among sessions, add the previous line to your ~/.bashrc file.
 
 
 # Run FreeST (program LazyTreeTraversal.fst)
@@ -101,7 +114,12 @@ freest examples/LazyTreeTraversal.fst
 
 # Tutorial and some examples
 
-Please visit [RSS Tryit](http://rss.di.fc.ul.pt/tryit/FreeST)
+You can find a small tutorial and some examples at [RSS Tryit](http://rss.di.fc.ul.pt/tryit/FreeST).
+The examples are also available on freest-$version/examples/
+
+
+# FreeST mode
+We provide two simple modes both for emacs and atom. You can find it, as well as, the installation instructions under freest-$version/packages/
 
 ## License
 FreeST is under the [BSD3 license.](https://opensource.org/licenses/BSD-3-Clause)

@@ -44,10 +44,15 @@ typeList =
 -- If introduce fork here, programs must instantiate ths poly var. E.g., 'fork [()] (boolServer r)'
 --  , (mkVar p "fork", TypeScheme p [TypeVarBind p a (Kind p Functional Lin)] (Fun p Lin (TypeVar p a) (Basic p UnitType))) 
 --           , (mkVar p "id", TypeScheme p [TBindK p "a" (Kind p Session Un)] (Fun p Un (TypeVar p "a") (TypeVar p "a")))
+  -- Prints
   , (mkVar p "printInt", fromType (Fun p Un (Basic p IntType) (Basic p UnitType)))
+  , (mkVar p "printIntLn", fromType (Fun p Un (Basic p IntType) (Basic p UnitType)))
   , (mkVar p "printBool", fromType (Fun p Un (Basic p BoolType) (Basic p UnitType)))
+  , (mkVar p "printBoolLn", fromType (Fun p Un (Basic p BoolType) (Basic p UnitType)))
   , (mkVar p "printChar", fromType (Fun p Un (Basic p CharType) (Basic p UnitType)))
+  , (mkVar p "printCharLn", fromType (Fun p Un (Basic p CharType) (Basic p UnitType)))
   , (mkVar p "printUnit", fromType (Fun p Un (Basic p UnitType) (Basic p UnitType)))
+  , (mkVar p "printUnitLn", fromType (Fun p Un (Basic p UnitType) (Basic p UnitType)))
 --  , (mkVar p "print", TypeScheme p [varBind] (Fun p Un var (Basic p UnitType)))
   ] 
   where p = defaultPos
