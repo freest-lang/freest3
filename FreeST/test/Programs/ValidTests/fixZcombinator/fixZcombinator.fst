@@ -1,13 +1,14 @@
---type Fix = forall t:TU => (t -> t) -> t
+{- |
+Module      :  FixZcombinator
+Description :  Using fixed-point Z combinator to calculate a factorial
+Copyright   :  (c) Bernardo Almeida, Vasco T. Vasconcelos, Andreia Mordido
 
--- fix : Fix
+The fixed-point Z combinator: Z=\f.(\x.f(\z.xxz))(\y.f(\z.yyz)) is
+used to calculate the factorial of 8
 
--- fix : ((Int -> Int) -> (Int -> Int)) -> (Int -> Int)
--- fix f = (\x:(rec a.a -> (Int -> Int)) -> f(x x))
---         (\x:(rec a.a -> (Int -> Int)) -> f (x x))
+-}
 
--- Z combinator, the Y combinator (above) loops in call by name
--- Z=λf.(λx.f(λz.xxz))(λy.f(λz.yyz))
+
 fixZcomb : ((Int -> Int) -> (Int -> Int)) -> (Int -> Int)
 fixZcomb f =
   (\x:(rec a.a -> (Int -> Int)) -> f(\z:Int -> x x z))

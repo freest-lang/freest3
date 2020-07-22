@@ -1,4 +1,23 @@
+{- |
+Module      :  TreeTransform
+Description :  Serializes and tranforms a tree object on a channel
+Copyright   :  (c) Bernardo Almeida, Vasco T. Vasconcelos, Andreia Mordido
+
+The example is from Almeida, Mordido, and Vasconcelos, "FreeST: Context-free Session
+Types in a Functional Language"
+
+The example serializes a tree object on a channel. The aim is to transform
+a tree by interacting with a remote server. The client process streams a tree
+on a (single) channel. In addition, for each node sent, an integer is received.
+The server process reads a tree from the other end of the channel and, for each node
+received, sends back the sum of the integer values under (and including) that node.
+
+-}
+
+
 data Tree = Leaf | Node Int Tree Tree
+
+type TreeC : SL = +{Leaf: Skip, Node: !Int;TreeC;TreeC;?Int}
 
 -- Note: we use the same constructors for the datatype and the channel, namely Leaf and Node
 
@@ -8,44 +27,46 @@ data Tree = Leaf | Node Int Tree Tree
   returns a tree isomorphic to the input where each integer in nodes
   is read from the channel.
 -}
-transform : forall α : SL => Tree -> (rec x:SL. +{LeafC: Skip, NodeC: !Int;x;x;?Int});α -> (Tree, α)
+transform : forall a : SL => Tree -> TreeC ; a -> (Tree, a)
 transform tree c =
   case tree of {
     Leaf ->
-      (Leaf, select c LeafC),
+      (Leaf, select c Leaf),
     Node x l r ->
-      let c = select c NodeC in
+      let c = select c Node in
       let c = send c x in
-      let (l, c) = transform[(rec x:SL. +{LeafC: Skip, NodeC: !Int;x;x;?Int});?Int;α] l c in
-      let (r, c) = transform[?Int;α] r c in
+      let (l, c) = transform [TreeC ; ?Int ; a] l c in
+      let (r, c) = transform [?Int ; a] r c in
       let (y, c) = receive c in
       (Node y l r, c)
   }
+
 {-
   Reads a tree from a given channel;
   writes back on the channel the sum of the elements in the tree;
   returns this sum.
 -}
-treeSum : forall α : SL => (rec x:SL. &{LeafC: Skip, NodeC: ?Int;x;x;!Int});α -> (Int, α)
+treeSum : forall a : SL => dualof TreeC ; a -> (Int, a)
 treeSum c =
   match c with {
-    LeafC c -> (0, c),
-    NodeC c ->
+    Leaf c ->
+     (0, c), 
+    Node c ->
       let (x, c) = receive c in
-      let (l, c) = treeSum[(rec x:SL. &{LeafC: Skip, NodeC: ?Int;x;x;!Int});!Int;α] c in
-      let (r, c) = treeSum[!Int;α] c in
-      let c    = send c (x + l + r) in
+      let (l, c) = treeSum [dualof TreeC ; !Int ; a] c in
+      let (r, c) = treeSum [!Int ; a] c in
+      let c = send c (x + l + r) in
       (x + l + r, c)
   }
 
+
 aTree : Tree
-aTree = Node 1 (Node 2 Leaf (Node 3 Leaf (Node 4 Leaf (Node 5 Leaf Leaf)))) (Node 6 Leaf (Node 7 Leaf (Node 8 Leaf Leaf)))
+aTree = Node 1 (Node 2 (Node 8 Leaf Leaf) (Node 3 (Node 5 Leaf Leaf) (Node 4 Leaf Leaf))) (Node 6 Leaf (Node 7 Leaf Leaf))
+
 
 main : Tree
 main =
-  let (w, r) = new (rec x:SL. +{LeafC: Skip, NodeC: !Int;x;x;?Int}) in
---  let t, w = fork (transform[Skip] aTree w) in
---  let n, r = treeSum[Skip] r in
-  let _ = fork (treeSum[Skip] r) in
-  let (t, _) = transform[Skip] aTree w in
+  let (w, r) = new TreeC in
+  fork (treeSum [Skip] r ) ;
+  let (t, _) = transform [Skip] aTree w in
   t

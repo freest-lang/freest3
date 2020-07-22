@@ -1,0 +1,644 @@
+# Author: Diogo F. P. Barros, LASIGE, July 2020
+
+'scopeName': 'source.freest'
+'name': 'FreeST'
+'fileTypes': ['fst']
+
+'repository' :
+
+# ==================== COMMENTS ====================
+  'Comment':
+    'patterns': [
+      {
+        'include': '#BlockComment'
+      },
+      {
+        'include': '#LineComment'
+      }
+    ]
+
+  'BlockComment':
+    'patterns': [
+      {
+        'comment'    : 'Block comment'
+        'name'       : 'comment.block.double-dash.freest'
+        'contentName': 'comment.block.double-dash.freest'
+        'begin'      : '\\{-'
+        'end'        : '-\\}'
+        'patterns'   : [
+          {
+            'include': '#Comment'
+          }
+        ]
+      }
+    ]
+
+  'LineComment':
+    'patterns': [
+      {
+        'comment': 'Line comments'
+        'name'   : 'comment.line.double-dash.freest'
+        'match'  : '--.*'
+      }
+    ]
+
+# ==================== TYPE ====================
+
+  'Type':
+    'patterns': [
+      {
+        'include': '#Tuple'
+      },
+      {
+        'match': '\\((.+?)\\)'
+        'captures':
+          '1':
+            'patterns': [
+              {
+                'include': '#Type'
+              }
+            ]
+      },
+      {
+        'include': '#SessionType'
+      },
+      {
+        'include': '#BasicType'
+      },
+      {
+        'include': '#Arrow'
+      }
+    ]
+
+  # Native types
+  'BasicType':
+    'patterns': [
+      {
+        'name' : 'entity.name.type.freest'
+        'match': '(\\bInt\\b|\\bChar\\b|\\bBool\\b|\\(\\))'
+      }
+    ]
+
+  # Basic parameters TODO: might not stay
+  'Parameters':
+    'patterns': [
+      {
+        'name' : 'entity.name.tag.freest'
+        'match': '\\w+'
+      }
+    ]
+
+  # Arrow operator
+  'Arrow':
+    'patterns': [
+      {
+        'name' : 'keyword.freest'
+        'match': '(->|-o)'
+      }
+    ]
+
+  # Tuples
+  'Tuple':
+    'patterns': [
+      {
+        'match'   : '(\\()([^,{}]+?)(,)([^,{}]+?)(\\))'
+        'captures':
+          '1':
+            'name': 'keyword.freest'
+          '2':
+            'patterns': [
+              {
+                'include': '#Type'
+              },
+              {
+                'include': '#TypeVar'
+              }
+            ]
+          '3':
+            'name': 'keyword.freest'
+          '4':
+            'patterns': [
+              {
+                'include': '#Type'
+              },
+              {
+                'include': '#TypeVar'
+              }
+            ]
+          '5':
+            'name': 'keyword.freest'
+      }
+    ]
+
+  'FTuple':
+    'patterns': [
+      {
+        'match'   : '(\\()([^,]+?)(,)([^,]+?)(\\))'
+        'captures':
+          '1':
+            'name': 'keyword.freest'
+          '2':
+            'patterns': [
+              {
+                'include': '#Type'
+              },
+              {
+                'include': '#Constructor'
+              }
+            ]
+          '3':
+            'name': 'keyword.freest'
+          '4':
+            'patterns': [
+              {
+                'include': '#Type'
+              },
+              {
+                'include': '#Constructor'
+              }
+            ]
+          '5':
+            'name': 'keyword.freest'
+      }
+    ]
+
+  # Session types
+  'SessionType':
+    'patterns': [
+      'match'   : '(?:(rec)\\s+(\\w+)(:)\\s*(.+?)(\\.)\\s*)?([\\+|\\&])(\\{)(.*?)(\\})'
+      'captures':
+        '1':
+          'name': 'keyword.freest'      # rec
+        '2':
+          'name': 'freest'              # recursive variable name
+        '3':
+          'name': 'keyword.freest'      # :
+        '4':
+          'name': 'freest'              # session type (Sl)
+        '5':
+          'name': 'keyword.freest'      # .
+        '6':
+          'name': 'keyword.freest'
+        '7':
+          'name': 'keyword.freest'
+        '8':
+          'patterns': [
+            {
+              'match'   : '(?:(?:(.+?)(,))|(.+))'
+              'captures':
+                '1':
+                  'patterns': [
+                    {
+                      'include': '#Choices'
+                    }
+                  ]
+                '2':
+                  'name': 'keyword.freest'
+                '3':
+                  'patterns': [
+                    {
+                      'include': '#Choices'
+                    }
+                  ]
+            }
+          ]
+        '9':
+          'name': 'keyword.freest'
+    ]
+
+  'Choices':
+    'patterns': [
+      {
+        'match': ';'
+        'name' : 'keyword.freest'
+      },
+      {
+        'match': '([A-Z]\\w*)(:)'
+        'captures':
+          '1':
+            'name': 'entity.function.name.freest'
+          '2':
+            'name': 'keyword.freest'
+      },
+      {
+        'match': '(\\!|\\?)(\\w+)'
+        'captures':
+          '1':
+            'name': 'keyword.function'
+          '2':
+            'patterns': [
+              {
+                'include': '#Type'
+              }
+            ]
+      },
+      {
+        'match': '\\bSkip\\b'
+        'name' : 'entity.name.type.freest'
+      }
+    ]
+
+  # User defined data type
+  'DataType':
+    'patterns': [
+      {
+        # TODO: Multiline data type declaration
+        'comment': 'Data Type declaration'
+        'match': '^(data)\\s+([A-Z]\\w*)\\s*(=)(.*)'
+        'captures':
+          '1':
+            'name': 'keyword.freest'
+          '2':
+            'name': 'entity.name.type.freest'
+          '3':
+            'name': 'keyword.freest'
+          '4':
+            'patterns': [
+              {
+                'match': '([A-Z]\\w*)\\s*([^|]*)'
+                'captures':
+                  '1':
+                    'name': 'entity.name.tag.freest'
+                  '2':
+                    'name': 'entity.name.type.freest'
+              },
+              {
+                'match': '\\|'
+                'name': 'keyword.freest'
+              }
+            ]
+      }
+    ]
+
+  # User defined type
+  'TypeVar':
+    'patterns': [
+      {
+        'name' : 'entity.name.type.freest'
+        'match': '[A-Z]\\w*'
+      }
+    ]
+
+  # Data type constructor
+  'Constructor':
+    'patterns': [
+      {
+        'match': '\\b[A-Z]\\w*\\b'
+        'name': 'entity.name.tag.freest'
+      }
+    ]
+
+
+# ==================== EXPRESSIONS ====================
+
+  # Expressions
+  'Expressions':
+    'patterns': [
+      {
+        'include': '#Match'
+      },
+      {
+        'include': '#Case'
+      },
+      {
+        'include': '#Let'
+      },
+      {
+        'comment': 'IfThenElse'
+        'match'  : '(if|then|else)'
+        'name'   : 'keyword.freest'
+      },
+      {
+        'comment': 'Comparators'
+        'match'  : '(<|<=|==|/=|>=|>)'
+        'name'   : 'keyword.freest'
+      }
+    ]
+
+  # Match expression
+  'Match':
+      'patterns': [
+        {
+          'begin': '(match)\\s+(\\w+)\\s+(with\\s*\\{)'
+          'beginCaptures':
+            '1':
+              'name': 'keyword.freest'
+            '2':
+              'name': 'entity.name.type.freest'
+            '3':
+              'name': 'keyword.freest'
+          'end'  : '(\\}$)'
+          'endCaptures':
+            '1':
+              'name': 'keyword.freest'
+          'patterns': [
+            {
+              'include': '#Comment'
+            },
+            {
+              'include': '#Arrow'
+            },
+            {
+              'include': '#Expressions'
+            },
+            {
+              'include': '#Functions'
+            },
+            {
+              'include': '#FTuple'
+            },
+            {
+              'include': '#Constructor'
+            }
+          ]
+        }
+      ]
+
+  'Case':
+    'patterns': [
+      {
+        'begin': '(case)\\s+(\\w+)\\s+(of\\s*\\{)'
+        'beginCaptures':
+          '1':
+            'name': 'keyword.freest'
+          '2':
+            'name': 'entity.name.type.freest'
+          '3':
+            'name': 'keyword.freest'
+        'end'  : '(\\})'
+        'endCaptures':
+          '1':
+            'name': 'keyword.freest'
+        'patterns': [
+          {
+            'include': '#Comment'
+          },
+          {
+            'include': '#Expressions'
+          },
+          {
+            'include': '#Functions'
+          },
+          {
+            'include': '#FTuple'
+          },
+          {
+            'include': '#Constructor'
+          },
+          {
+            'include': '#Arrow'
+          }
+        ]
+      }
+    ]
+
+  'Let':
+    'patterns': [
+      {
+        'match'   : '(let)\\s+(.*)(=)(.*)(in)'
+        'captures':
+          '1':
+            'name': 'keyword.freest'
+          '2':
+            # TODO: parameters & tuples
+            'patterns': [
+              {
+                'include': '#FTuple'
+              }
+            ]
+          '3':
+            'name': 'keyword.freest'
+          '4':
+            'patterns': [
+              {
+                'include': '#Comment'
+              },
+              {
+                'include': '#Functions'
+              },
+              {
+                'include': '#Type'
+              },
+              {
+                'include': '#FTuple'
+              },
+              {
+                'include': '#Constructor'
+              },
+              {
+                'include': '#RecursionCall'
+              },
+              {
+                'include': '#Arrow'
+              }
+            ]
+          '5':
+            'name': 'keyword.freest'
+      }
+    ]
+
+  # ===================  ====================
+  'TypeDeclaration':
+    'patterns': [
+      {
+        # TODO: Multiline type declaration
+        'comment': 'Type declaration'
+        'match': '^(type)\\s+([A-Z]\\w*)\\s*(=)(.*)'
+        'captures':
+          '1':
+            'name': 'keyword.freest'
+          '2':
+            'name': 'entity.name.type.freest'
+          '3':
+            'name': 'keyword.freest'
+          '4':
+            'patterns': [
+              {
+                'include': '#Type'
+              },
+              {
+                'include': '#TypeVar'
+              },
+              {
+                'match': '\\bdualof\\b'
+                'name': 'support.function.freest'
+              }
+            ]
+      }
+    ]
+
+  # ==================== FUNCTIONS ====================
+
+  'Functions':
+    'patterns': [
+      {
+        'include': '#FreeSTFunctions'
+      }
+    ]
+
+  # FreeST function calls
+  'FreeSTFunctions':
+    'patterns': [
+      {
+        'match': '(\\bnew\\b|\\bsend\\b|\\breceive\\b|\\bselect\\b|\\bfork\\b)'
+        'name' : 'support.function.freest'
+      }
+    ]
+
+  'RecursionCall':
+    'patterns': [
+      {
+        'match': '(\\[)(.+?)(\\])'
+        'captures':
+          '1':
+            'name': 'keyword.freest'
+          '2':
+            'patterns': [
+              {
+                'include': '#Choices'
+              }
+            ]
+          '3':
+            'name': 'keyword.freest'
+      }
+    ]
+
+  # Function Body
+  'Prog':
+    'patterns': [
+      {
+        'comment' : 'Program/Function declaration'
+        'match'   : '^([\\w\\\']*)\\s*(:)(?:\\s*(forall)\\s+(\\w+)\\s*(:)\\s*(.+)\\s*(=>)\\s*)?(.*)'
+        'captures':
+          '1':
+            'comment': 'Function name'
+            'name'   : 'entity.function.name.freest'
+          '2':
+            'name': 'keyword.freest'
+          '3':
+            'name': 'keyword.freest'
+          #'4':
+          #  'name': alpha
+          '5':
+            'name': 'keyword.freest'
+          #'6':
+          #  'name': type
+          '7':
+            'name': 'keyword.freest'
+          '8':
+            'patterns': [
+              {
+                'match'   : '(?:(.+?)(->)|(.+))'
+                'captures':
+                  '1':
+                    'patterns': [
+                      {
+                        'match': '\\(([^,;]+?)\\)'
+                        'captures':
+                          '1':
+                            'patterns': [
+                              {
+                                'include': '#TypeVar'
+                              }
+                            ]
+                      },
+                      {
+                        'include': '#Type'
+                      },
+                      {
+                        'include': '#TypeVar'
+                      },
+                      {
+                        'match': '\\bdualof\\b'
+                        'name': 'support.function.freest'
+                      }
+                    ]
+                  '2':
+                    'name': 'keyword.freest'
+                  '3':
+                    'patterns': [
+                      {
+                        'include': '#Type'
+                      },
+                      {
+                        'include': '#TypeVar'
+                      },
+                      {
+                        'match': '\\bdualof\\b'
+                        'name': 'support.function.freest'
+                      }
+                    ]
+              }
+            ]
+      },
+      {
+        'comment': 'Program content'
+        'begin'  : '^([\\w\\\']+)\\s+(.*)(=)(.*)'
+        'beginCaptures':
+          '1':
+            'name': 'entity.function.name.freest'
+          '2':
+            'patterns': [
+              {
+                'match': '\\w+'
+                'name' : 'entity.name.type.freest'
+              }
+            ]
+          '3':
+            'name': 'keyword.freest'
+          '4':
+            'patterns': [
+              {
+                'include': '#Comment'
+              },
+              {
+                'include': '#Expressions'
+              },
+              {
+                'include': '#Functions'
+              },
+              {
+                'include': '#Constructor'
+              }
+            ]
+        'end'    : '^\\s$'
+        'patterns': [
+          {
+            'include': '#Comment'
+          },
+          {
+            'include': '#Expressions'
+          },
+          {
+            'include': '#Functions'
+          },
+          {
+            'include': '#FTuple'
+          },
+          {
+            'match': '\\(\\)'
+            'name' : 'entity.name.type.freest'
+          }
+        ]
+      }
+    ]
+
+
+
+'patterns': [
+  {
+    'include': '#Comment'
+  },
+  {
+    'include': '#DataType'
+  },
+  {
+    'include': '#TypeDeclaration'
+  },
+  {
+    'include': '#Functions'
+  },
+  {
+    'include': '#Prog'
+  }
+]
