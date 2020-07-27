@@ -318,11 +318,11 @@ SU
 -- SU
 
 []
-(rec y. +{A: (rec y. (rec x. (+{A: (Skip;(?Int;!())), B: (Skip;?Char)};x)))})
+(rec y . +{A: (rec y . (rec x : SL . (+{A: (Skip;(?Int;!())), B: (Skip;?Char)};x)))})
 SL
 
 []
-+{A: (rec y. +{A: (((Skip;?Int);!());(rec y. +{A: (rec y. +{A:(((Skip;?Int);!());y), B: (?Char;y)})})), B: (?Char;(rec y. +{A: (rec y. +{A: (((Skip;?Int);!());y), B: (?Char;y)})}))})}
++{A: (rec y. +{A: (((Skip;?Int);!());(rec y . +{A: (rec y : SL. +{A:(((Skip;?Int);!());y), B: (?Char;y)})})), B: (?Char;(rec y. +{A: (rec y : SL. +{A: (((Skip;?Int);!());y), B: (?Char;y)})}))})}
 SL
 
 [("x", SL) , ("y", SL) , ("z", SL)]
