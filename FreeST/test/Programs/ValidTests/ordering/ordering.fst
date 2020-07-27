@@ -1,9 +1,18 @@
+{- |
+Module      :  Ordering
+Description :  Server that orders lists and returns them
+Copyright   :  (c) Diogo Barros
+
+This example shows a server that receives a list, lets the user choose which
+order to use in quicksort and returns the ordered list.
+
+-}
+
 -- ==================== Structures ====================
 
 data IntList = Nil | Cons Int IntList
 
-type OrderingChannel = rec x: SL. +{Vals: !Int; x; ?Int, Asc: Skip, Desc: Skip}
-
+type OrderingChannel : SL = +{Vals: !Int; OrderingChannel; ?Int, Asc: Skip, Desc: Skip}
 
 -- ==================== Server ====================
 

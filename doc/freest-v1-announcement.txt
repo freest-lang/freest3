@@ -2,7 +2,11 @@ Dear all,
 
 We want to announce that FreeST 1.0 is out. FreeST [1] is an
 experimental concurrent programming language, based on a core linear
+<<<<<<< HEAD
 functional languag, featuring primitives to fork new threads, and
+=======
+functional language, featuring primitives to fork new threads, and
+>>>>>>> 63851d41cab9c67a88f4cd8c247bb5fd8fb67844
 for channel creation and communication.
 
 The powerful type system of context-free session types, proposed by

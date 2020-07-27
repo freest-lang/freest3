@@ -5,9 +5,12 @@ module Parse.Lexer
 , getText
 ) where
 
-import Syntax.Base
-import Parse.ParseUtils
-import Syntax.Show
+import qualified Data.Map.Strict as Map
+import           Parse.ParseUtils
+import           Syntax.Base
+import           Syntax.Show
+import           Utils.Errors
+import           Utils.ErrorMessage
 }
 
 %wrapper "posn"
@@ -242,7 +245,32 @@ instance Show Token where
   show (TokenDiv p) = "(/)"
 
 -- Trim newlines
-scanTokens = alexScanTokens >>= (return . trim)
+scanTokens :: String -> String -> Either [Token] String
+scanTokens str file =
+    case go (alexStartPos,'\n',[],str) of
+      Left x -> Left $ trim x
+      x -> x
+  where
+    go inp@(pos,_,_,str) =
+      case alexScan inp 0 of
+        AlexEOF -> Left []
+        AlexError _ ->
+          Right $ formatErrorMessages Map.empty (internalPos pos) file
+                  [Error "Lexical error on input",
+                   Error $ "\ESC[91m" ++ show (head str) ++ "\ESC[0m"]
+        AlexSkip  inp' len     -> go inp'
+        AlexToken inp' len act -> 
+          case go inp' of
+            Left x -> Left $ act pos (take len str) : x
+            x -> x
+ 
+getLineNum :: AlexPosn -> Int
+getLineNum (AlexPn offset lineNum colNum) = lineNum 
+ 
+getColumnNum :: AlexPosn -> Int
+getColumnNum (AlexPn offset lineNum colNum) = colNum
+ 
+
 
 trim :: [Token] -> [Token]
 trim = reverse . trim' . reverse . trim'

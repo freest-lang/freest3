@@ -1,4 +1,4 @@
-# Emacs syntax highlight mode for FreeST files (.cfs)
+# Emacs syntax highlight mode for FreeST files (.fst)
 
 ## FreeST mode
 
@@ -11,5 +11,5 @@ Then add the following lines to your emacs init file:
 (require 'freest-mode)
 
 ;; This automatically chooses freest-mode when editing FreeST files.
-(add-to-list 'auto-mode-alist '("\\.cfs\\'" . freest-mode)) 
+(add-to-list 'auto-mode-alist '("\\.fst\\'" . freest-mode)) 
 ```

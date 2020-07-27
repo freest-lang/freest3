@@ -59,10 +59,14 @@ initialCtx =
   , (var "chr", PrimitiveFun (\(Integer x) -> Character $ chr x))
   , (var "ord", PrimitiveFun (\(Character x) -> Integer $ ord x))
   -- Prints
-  , (var "printInt", PrimitiveFun (\(Integer x) -> IOValue (putStrLn (show x) >> return Unit)))
-  , (var "printBool", PrimitiveFun (\(Boolean x) -> IOValue (putStrLn (show x) >> return Unit)))
-  , (var "printChar", PrimitiveFun (\(Character x) -> IOValue (putStrLn (show x) >> return Unit)))
-  , (var "printUnit", PrimitiveFun (\Unit -> IOValue (putStrLn "()" >> return Unit)))
+  , (var "printInt", PrimitiveFun (\(Integer x) -> IOValue (putStr (show x) >> return Unit)))
+  , (var "printIntLn", PrimitiveFun (\(Integer x) -> IOValue (putStrLn (show x) >> return Unit)))
+  , (var "printBool", PrimitiveFun (\(Boolean x) -> IOValue (putStr (show x) >> return Unit)))
+  , (var "printBoolLn", PrimitiveFun (\(Boolean x) -> IOValue (putStrLn (show x) >> return Unit)))
+  , (var "printChar", PrimitiveFun (\(Character x) -> IOValue (putStr (show x) >> return Unit)))
+  , (var "printCharLn", PrimitiveFun (\(Character x) -> IOValue (putStrLn (show x) >> return Unit)))
+  , (var "printUnit", PrimitiveFun (\Unit -> IOValue (putStr "()" >> return Unit)))
+  , (var "printUnitLn", PrimitiveFun (\Unit -> IOValue (putStrLn "()" >> return Unit)))
 --  , (var "print", PrimitiveFun (\x -> IOValue (putStrLn (show x) >> return Unit)))
   ]
   where

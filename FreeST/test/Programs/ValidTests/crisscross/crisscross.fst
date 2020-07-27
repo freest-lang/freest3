@@ -1,9 +1,12 @@
-{-
+{- |
+Module      :  Crisscross
+Description :  Crossed writes and reads on two different channels
+Copyright   :  (c) Bernardo Almeida, Vasco T. Vasconcelos, Andreia Mordido
 
 This program does not deadlock with communication buffers of size 1,
 which is what you get with an implementation with two MVars per
-channel. In a typical synchronous (unbuffered) semantics, the program
-should deadlock.
+channel or with asynchronous channels. In a typical synchronous
+(unbuffered) semantics, the program deadlocks.
 
 -}
 
