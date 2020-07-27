@@ -16,19 +16,42 @@ module Validation.Contractive
 )
 where
 
-import           Syntax.Schemes
+-- import           Syntax.Schemes
 import           Syntax.Types
-import           Syntax.Kinds
+-- import           Syntax.Kinds
 import           Syntax.TypeVariables
-import           Syntax.Base
-import           Syntax.Show
+import           Syntax.Base (position)
+-- import           Syntax.Show
 import           Equivalence.Normalisation (terminated)
-import           Utils.ErrorMessage
+-- import           Utils.ErrorMessage
 import           Utils.FreestState
 import           Control.Monad (when)
-import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
+-- import qualified Data.Map.Strict as Map
+-- import qualified Data.Set as Set
 
+-- Check the contractivity of a given type; issue an error if not
+class Contractive t where
+  checkContractive :: TypeVar -> t -> FreestState ()
+
+instance Contractive Type where
+  checkContractive x t =
+    when (not (contractive x t)) $
+     addError (position t) [Error "Type", Error t, Error "is not contractive"]
+
+-- A better notion of contractivy
+contractive :: TypeVar -> Type -> Bool
+-- Session types
+contractive _ (Skip _) = False
+contractive x (Semi _ t u)
+    | terminated t = contractive x u
+    | otherwise    = contractive x t
+-- Recursive types
+contractive x (TypeVar _ y) = x /= y
+contractive x (Rec _ _ t) = contractive x t
+-- Functional and session types
+contractive _    _              = True
+
+{-
 class Contractive t where
   checkContractive :: KindEnv -> t -> FreestState ()
 
@@ -72,43 +95,4 @@ contractive tEnv kEnv = contr Set.empty
 
 getType :: (Kind, TypeScheme) -> Type
 getType (_, TypeScheme _ _ t) = t
-
--- "working on a better notion of contractive"
--- contractive :: TypeEnv -> TypeVar -> Type -> Bool
--- -- Recursive types
--- contractive _    x (TypeVar _ y)  = x /= y
--- contractive tEnv x (Rec _ _ t)    = contractive tEnv x t
--- -- Type operators
--- contractive tEnv x (TypeName _ y) = contractive tEnv x (getType (tEnv Map.! y))
--- contractive tEnv x (Dualof _ t)   = contractive tEnv x t
--- -- Session types
--- contractive tEnv x (Semi _ t _)   = contractive tEnv x t
--- -- Functional and session types
--- contractive _    _ _              = True
-
-
-{- The "fully recursive version is unneeded if contractive is called from within kinding
-
--- Revised version wrt to ICFP'16
-contractive :: TypeEnv -> KindEnv -> Type -> Bool
-contractive = contr Set.empty
-  where
-  contr :: Visited -> TypeEnv -> KindEnv -> Type -> Bool
-  -- Session types
-  contr _ _ _ (Skip _) = False
-  contr v tEnv kEnv (Semi _ t u)
-    | terminated t = contr v tEnv kEnv u
-    | otherwise    = contr v tEnv kEnv t
-  -- Functional or session
-  contr v tEnv kEnv (Rec _ _ t)   = contr v tEnv kEnv t
-  contr v tEnv kEnv (TypeVar p x) =
-    Map.findWithDefault (kindSU p) x kEnv == kindSL p
-  -- Type operators
-  contr v tEnv kEnv (Dualof _ t) = contr v tEnv kEnv t
-  contr v tEnv kEnv (TypeName p x)  -- TODO: not quite sure of this
-    | x `Set.member` v    = False
-    | x `Map.member` tEnv = contr (Set.insert x v) tEnv kEnv (getType (tEnv Map.! x))
-    | otherwise           = True
-  -- Functional types; Session Basic + Message + Choice
-  contr _ _ _ _ = True
 -}
