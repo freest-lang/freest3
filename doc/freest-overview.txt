@@ -4,7 +4,7 @@ FreeST is a concurrent functional language where processes communicate via messa
 
 Communication on channels is governed by types that describe protocols. Basic types describe the output or the input of some value. Such types may then be composed via a conventional sequential composition operator. Further types include internal and external choice allowing processes to select a choice in a menu or to offer a menu of choices.
 
-Channels are assigned a type at creation time. Processes that read or write (or select or offer choices) on channel ends are guaranteed to follow the protocol as described by the type. This simple fact ensures that programs do not face runtime errors due to unfulfilled expectations on what to find on channels. The compliance of programs with the communication protocol prescribed by the types is guaranteed at compile time.
+Channels are assigned a type at creation time. Processes that read or write (or select or offer choices) on channel ends are guaranteed to follow the protocol as described by the type. This simple fact ensures that programs do not face runtime errors due to unfulfilled expectations on what to find on channels. The compliance of programs with the communication protocol prescribed is guaranteed at compile time.
 
 Traditional session types are known to be capable of describing complex protocols in a typeful way. These are essentially regular expressions, even if they may potentially express infinite protocols. The context-free dimension goes one step forward by introducing the sequential composition of types, allowing writing protocols that exchange tree-like structures on a channel, in a typeful way.
 
