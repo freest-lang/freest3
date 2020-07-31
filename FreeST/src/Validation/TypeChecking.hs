@@ -28,10 +28,10 @@ import qualified Validation.Typing as T
 import           Utils.Errors
 import           Utils.FreestState
 import           Utils.PreludeLoader (userDefined)
-import           Control.Monad.State (when)
+import           Control.Monad.State (when, get, unless)
 import qualified Data.Map.Strict as Map
-import           Syntax.Show -- debug
-import           Debug.Trace -- debug
+-- import           Syntax.Show -- debug
+-- import           Debug.Trace -- debug
 
 typeCheck :: FreestState ()
 typeCheck = do
@@ -47,21 +47,26 @@ typeCheck = do
   -- 1. Check the contractiveness of all type decls
   -- trace "checking contractiveness of all type decls" (return ())
   -- mapM_ (checkContractive Map.empty . snd) tEnv
+
   -- 2. Check the formation of all type decls
   -- trace "checking the formation of all type decls" (return ())
   mapM_ (K.synthetiseTS Map.empty . snd) tEnv
   -- 3. Check the formation of all function signatures
   -- trace "checking the formation of all function signatures (kinding)" (return ())
   mapM_ (K.synthetiseTS Map.empty) vEnv
-  -- 4. Check whether all function signatures have a binding
-  -- trace "checking whether all function signatures have a binding" (return ())
-  tMapWithKeyM checkHasBinding vEnv
-  -- 5. Checek function bodies
-  -- trace "checking the formation of all functions (typing)" (return ())
-  tMapWithKeyM checkFunBody eEnv
-  -- 6. Check the main function
-  -- trace "checking the main function" (return ())
-  checkMainFunction
+  -- Gets the state and only continues if there are no errors so far
+  -- Can't continue to equivalence if there are ill-formed types
+  -- (i.e. not contractive under a certain variable)  
+  get >>= \s -> unless (hasErrors s) $ do
+    -- 4. Check whether all function signatures have a binding
+    -- trace "checking whether all function signatures have a binding" (return ())
+    tMapWithKeyM checkHasBinding vEnv
+    -- 5. Check function bodies
+    -- trace "checking the formation of all functions (typing)" (return ())
+    tMapWithKeyM checkFunBody eEnv
+    -- 6. Check the main function
+    -- trace "checking the main function" (return ())
+    checkMainFunction
 
 -- Check whether a given function signature has a corresponding
 -- binding. Exclude the builtin functions and the datatype
