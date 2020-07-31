@@ -104,7 +104,7 @@ synthetise kEnv (Conditional p e1 e2 e3) = do
   setVEnv vEnv2
   checkAgainst kEnv e3 t
   vEnv4 <- getVEnv
-  checkEquivEnvs p kEnv vEnv3 vEnv4
+  checkEquivEnvs p "conditional" kEnv vEnv3 vEnv4
   return t
 -- Pair introduction
 synthetise kEnv (Pair p e1 e2) = do
@@ -135,7 +135,7 @@ synthetise kEnv (Fork p e) = do
   return $ Basic p UnitType
 -- Datatype elimination
 synthetise kEnv (Case p e fm) =
-  synthetiseFieldMap p kEnv e fm extractDatatypeMap paramsToVEnvCM
+  synthetiseFieldMap p "case" kEnv e fm extractDatatypeMap paramsToVEnvCM
 -- Session types
 -- New
 synthetise kEnv (New p t u) = do
@@ -158,7 +158,7 @@ synthetise kEnv (Select p e c) = do
   extractCons p m c
 -- Match
 synthetise kEnv (Match p e fm) =
-  synthetiseFieldMap p kEnv e fm extractInChoiceMap paramsToVEnvMM
+  synthetiseFieldMap p "match" kEnv e fm extractInChoiceMap paramsToVEnvMM
 
 -- | Returns the type scheme for a variable; removes it from vEnv if lin
 synthetiseVar :: KindEnv -> ProgVar -> FreestState TypeScheme
@@ -177,10 +177,10 @@ synthetiseVar kEnv x =
       addToVEnv x s
       return s
 
-synthetiseFieldMap :: Pos -> KindEnv -> Expression -> FieldMap ->
+synthetiseFieldMap :: Pos -> String -> KindEnv -> Expression -> FieldMap ->
   (Expression -> Type -> FreestState TypeMap) ->
   (ProgVar -> [ProgVar] -> Type -> FreestState ()) -> FreestState Type
-synthetiseFieldMap p kEnv e fm extract params = do
+synthetiseFieldMap p branching kEnv e fm extract params = do
   t <- synthetise kEnv e
   tm <- extract e t
   if Map.size fm /= Map.size tm
@@ -194,7 +194,7 @@ synthetiseFieldMap p kEnv e fm extract params = do
     vEnv <- getVEnv
     (t:ts, v:vs) <- Map.foldrWithKey (synthetiseField vEnv kEnv params tm) (return ([],[])) fm
     mapM_ (checkEquivTypes e kEnv t) ts
-    mapM_ (checkEquivEnvs p kEnv v) vs
+    mapM_ (checkEquivEnvs p branching kEnv v) vs
     setVEnv v
     return t
 
@@ -282,7 +282,7 @@ checkAgainst kEnv (Conditional p e1 e2 e3) t = do
   setVEnv vEnv2
   checkAgainst kEnv e3 t
   vEnv4 <- getVEnv
-  checkEquivEnvs p kEnv vEnv3 vEnv4
+  checkEquivEnvs p "conditional" kEnv vEnv3 vEnv4
 -- Pair elimination
 checkAgainst kEnv (BinLet _ x y e1 e2) t2 = do
   t1 <- synthetise kEnv e1
@@ -340,14 +340,18 @@ checkEqualEnvs e vEnv1 vEnv2 = do
       Error "\n\t for lambda abstraction", Error e])
   where diff = Map.difference vEnv2 vEnv1
 
-checkEquivEnvs :: Pos -> KindEnv -> VarEnv -> VarEnv -> FreestState ()
-checkEquivEnvs p kEnv vEnv1 vEnv2 = do
+checkEquivEnvs :: Pos -> String -> KindEnv -> VarEnv -> VarEnv -> FreestState ()
+checkEquivEnvs p branching kEnv vEnv1 vEnv2 = do
   tEnv <- getTEnv
   let vEnv1' = userDefined vEnv1
       vEnv2' = userDefined vEnv2
   when (not (equivalent tEnv kEnv vEnv1' vEnv2')) $
-    addError p [Error "Expecting environment", Error (vEnv1' Map.\\ vEnv2'),
-                Error "\n\t to be equivalent to  ", Error (vEnv2' Map.\\ vEnv1')]
+    addError p [Error ("I have reached the end of a " ++ branching ++ " expression and found two distinct typing environments."),
+                Error "\n\t They are ", Error (vEnv1' Map.\\ vEnv2'),
+                Error "\n\t      and ", Error (vEnv2' Map.\\ vEnv1'),
+                Error "\n\t (is a given variable consumed in one branch and not the other?)",
+                Error "\n\t (is there a variable with different types in the two environments?)"
+                ]
 
 fillFunType :: KindEnv -> ProgVar -> Expression -> TypeScheme -> FreestState Type
 fillFunType kEnv b e (TypeScheme _ _ t) = fill e t
