@@ -1,5 +1,5 @@
 {-|
-Module      :  Kinding
+Module      :  Contractive
 Description :  <optional short text displayed on contents page>
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
@@ -22,7 +22,7 @@ import           Syntax.Types
 import           Syntax.TypeVariables
 import           Syntax.Base (position)
 -- import           Syntax.Show
-import           Equivalence.Normalisation (terminated)
+import           Validation.Terminated (terminated)
 -- import           Utils.ErrorMessage
 import           Utils.FreestState
 import           Control.Monad (when)

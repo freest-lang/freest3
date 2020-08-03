@@ -1,4 +1,4 @@
-A Brief Overview of FreeST
+A Brief Overview of FreeST 1.0.1
 
 FreeST is a concurrent functional language where processes communicate via message passing on bidirectional channels.
 

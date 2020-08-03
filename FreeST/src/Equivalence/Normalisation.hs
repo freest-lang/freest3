@@ -12,7 +12,6 @@ Portability :  portable | non-portable (<reason>)
 
 module Equivalence.Normalisation
 ( Normalise(..)
-, terminated
 ) where
 
 import           Syntax.Schemes
@@ -20,6 +19,7 @@ import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.Base
 import           Syntax.Duality
+import           Validation.Terminated (terminated)
 import qualified Validation.Substitution as Substitution (unfold)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
@@ -55,40 +55,5 @@ append t     (Skip _) = t
 append (Semi p t u) v = Semi p t (append u v)
 append t            u = Semi (position t) t u
 
--- As in the ICFP'16 paper, except that no substitution is applied to Rec types
-terminated :: Type -> Bool
-terminated (Skip _)     = True
-terminated (Semi _ t u) = terminated t && terminated u
-terminated (Rec _ _ t)  = terminated t
-terminated _            = False
-
--- "working on a better notion of contractive"
--- terminated = term Set.empty
---   where
---   term _ (Skip _) = True
---   term delta (Semi _ t u)
---     | termw delta t = True
---     | otherwise = term delta t && term delta u
---   term delta (TypeVar _ x) = x `Set.member` delta
---   term delta (Rec _ (TypeVarBind _ x _) t) = term (Set.insert x delta) t
---   term _ _ = False
-
---   termw delta (Semi _ t u) = term delta t && termw delta u
---   termw delta (TypeVar _ x) = x `Set.member` delta
---   termw delta (Rec _ (TypeVarBind _ x _) t) = termw (Set.insert x delta) t
---   termw _ _ = False
-
 instance Normalise TypeScheme where
   normalise tenv (TypeScheme p bs t) = TypeScheme p bs (normalise tenv t)
-
-{- A "better" terminated predicate should be such that only free variables *of kind SU* are terminated
-
-terminated :: KindEnv -> Type ->  Bool
-terminated kEnv t = term t
-  where
-  term (Skip _)      = True
-  term (Semi _ s t)  = term s && term t
-  term (Rec _ _ t)   = term t
-  term (TypeVar _ x) = isUn (kEnv Map.! x)
-  term _             = False
--}

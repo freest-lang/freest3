@@ -2,7 +2,7 @@ name:                FreeST
 version:             1.0.1
 #github:              "githubuser/ContextFreeSession"
 license:             BSD3
-author:              "Bernardo Almeida, Vasco T. Vasconcelos, Andreia Mordido"
+author:              "Bernardo Almeida, Andreia Mordido, Vasco T. Vasconcelos"
 copyright:           "2020 authors"
 
 #extra-source-files:
@@ -52,6 +52,7 @@ library:
     - Utils.FreestState
     - Parse.Lexer 
     - Parse.Parser
+    - Validation.Terminated
     - Validation.Rename
     - Validation.Kinding
     - Validation.Contractive    
