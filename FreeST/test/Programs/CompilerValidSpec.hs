@@ -16,6 +16,8 @@ import Test.Hspec
 
 import System.FilePath -- ((</>))
 
+data TestResult = Timeout | Passed | Failed
+
 baseTestDir :: String
 baseTestDir = "/test/Programs/ValidTests/"
 
@@ -25,32 +27,36 @@ spec = specTest "Valid Tests" baseTestDir testValid
 testValid :: String -> String -> Spec
 testValid baseDir testingDir = do
   let dir = baseDir ++ baseTestDir ++ testingDir
-  sourceFiles <- runIO $ listDirectory dir
   file <- runIO $ liftM getSource (listDirectory dir)
   let f = dir </> file
   testResult <- runIO $ testOne f
   checkResult testResult f
 
-testOne :: FilePath -> IO (String, Bool)
+testOne :: FilePath -> IO (String, TestResult)
 testOne file = do
   hCapture [stdout, stderr] $
-    catches (liftM isJust (timeout 5000000 (compileFile file)))
+    catches runTest
       [Handler (\(e :: ExitCode)      -> exitProgram e),
-       Handler (\(_ :: SomeException) -> return False)]
+       Handler (\(_ :: SomeException) -> pure Failed)]
   where
-    exitProgram :: ExitCode -> IO Bool
-    exitProgram ExitSuccess = return True
-    exitProgram _           = return False
+    exitProgram :: ExitCode -> IO TestResult
+    exitProgram ExitSuccess = pure Passed -- return True
+    exitProgram _           = pure Failed   -- return False
 
-checkResult :: (String, Bool) -> FilePath -> Spec
-checkResult (res, hasErrors) file
-  | hasErrors = checkAgainstExpected file res
-  | otherwise = it ("Testing " ++ takeFileName file) $ failTest res
-  where
-    failTest :: String -> IO ()
-    failTest []  = void $ assertFailure "Timeout (loop)"
-    failTest err = void $ assertFailure err
-   
+    runTest :: IO TestResult
+    runTest =
+--      timeout 2000000 (compileFile file) >>= \case
+      timeout 500000 (compileFile file) >>= \case
+        Just _  -> pure Passed
+        Nothing -> pure Timeout
+
+checkResult :: (String, TestResult) -> FilePath -> Spec
+checkResult (res, Passed) file = checkAgainstExpected file res
+checkResult (res, Failed) file =  do
+  it ("Testing " ++ takeFileName file) $
+    void $ assertFailure res
+checkResult (_, Timeout) file  = checkAgainstExpected file "<divergent>"
+             
 checkAgainstExpected :: FilePath -> String -> Spec
 checkAgainstExpected file res = do
   let expFile = file -<.> "expected"
@@ -60,8 +66,7 @@ checkAgainstExpected file res = do
         (filter (/= '\n') res) `shouldBe` (filter (/= '\n') s)
     Nothing ->
       it ("Testing " ++ takeFileName file) $
-        void $ assertFailure $ "File " ++ expFile ++ " not found"
-        
+        void $ assertFailure $ "File " ++ expFile ++ " not found"        
   where
     safeRead :: FilePath -> IO (Maybe String)
     safeRead f = do

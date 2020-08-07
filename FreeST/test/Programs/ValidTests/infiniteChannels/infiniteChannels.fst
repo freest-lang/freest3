@@ -2,6 +2,7 @@
 write : !Int -> Int -> Char
 write c n =
   let _ = send c n in
+  printIntLn n ;  
   let (r, w) = new !Int in
   let _ = fork (receive w) in
   write r (n + 1)
