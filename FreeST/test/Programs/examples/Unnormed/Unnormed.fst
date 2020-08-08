@@ -1,32 +1,33 @@
 {- |
 Module      :  Unnormed
 Description :  An infinite interaction
-Copyright   :  (c) Bernardo Almeida, Vasco T. Vasconcelos, Andreia Mordido
+Copyright   :  (c) Bernardo Almeida, Andreia Mordido, Vasco T. Vasconcelos
 
-Note: In the web version, infinite programs that **print** values to stdout,
-like this one, only show results after a system defined timeout.
+Note: In the web version, infinite programs that **print** values to
+stdout, like this one, only show results after a system defined
+timeout.
 
-The writer is expected to write recursively and in the end
-read as many times as were written on the channel.
-In practice, interactions on a channel described by T are interactions in
-which the writer writes infinitely, because it is impossible to reach the
-state where the writer supposedly reads the integers back from the channel.
+The writer is expected to write recursively and in the end read as
+many times as were written on the channel.  In practice, interactions
+on a channel described by T are interactions in which the writer
+writes infinitely, because it is impossible to reach the state where
+the writer supposedly reads the integers back from the channel.
 
 FreeST builds on a novel algorithm for deciding type equivalence of
-context-free session types. (see the algorithm at Almeida B., Mordido A.,
-Vasconcelos V.T. "Deciding the bisimilarity of context-free session types").
+context-free session types. (see the algorithm at Almeida B., Mordido
+A., Vasconcelos V.T. "Deciding the bisimilarity of context-free
+session types").
 
-The type !Int;T;?Int is equivalent to the type !Int;T because the unreachable
-sequences are pruned during the algorithm that decides whether two context-free
-session types are equivalent or not.
+The type !Int;T;?Int is equivalent to the type !Int;T because the
+unreachable sequences are pruned during the algorithm that decides
+whether two context-free session types are equivalent or not.
 
 -}
 
 type T : SL = !Int;T;?Int
 
-
 writer : Int -> T -> Skip
-writer i c = writer (i + 1) (send c (i + 1))
+writer i c = writer (i + 1) (send c i)
 
 reader : dualof T -> ()
 reader c = 
