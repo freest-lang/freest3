@@ -55,7 +55,6 @@ renameFun f (TypeScheme p xks t) = do
   t' <- rename bs t
   addToVEnv f (TypeScheme p xks' t')
   -- The function body
-  eEnv <- getEEnv
   getFromEEnv f >>= \case
     Just e -> do
       e' <- rename bs e
@@ -182,7 +181,7 @@ instance Rename Expression where
   -- Session types
   rename bs (New p t u) = do
     t' <- rename bs t
-    u' <- rename bs u -- TODO: should we rename the dual as well?
+    u' <- rename bs u
     return $ New p t' u'
   rename bs (Send p e) = do
     e' <- rename bs e

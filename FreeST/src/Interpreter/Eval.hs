@@ -1,5 +1,5 @@
 {-# LANGUAGE BangPatterns, LambdaCase #-}
-module Interpreter.Eval (eval) where
+module Interpreter.Eval (evalAndPrint) where
 
 import           Control.Concurrent (forkIO)
 import           Control.Monad (liftM, liftM2)
@@ -13,6 +13,13 @@ import           Syntax.ProgramVariables
 ------------------------------------------------------------
 -- EVALUATION
 ------------------------------------------------------------
+
+evalAndPrint :: Ctx -> E.ExpEnv -> E.Expression -> IO ()
+evalAndPrint ctx eenv e = do
+  res <- eval ctx eenv e
+  case res of
+    IOValue io -> io >>= putStrLn . show
+    _          -> putStrLn $ show res
 
 eval :: Ctx -> E.ExpEnv -> E.Expression -> IO Value
 eval _ _ (E.Unit _)        = return Unit

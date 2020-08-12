@@ -1,10 +1,10 @@
-module FreeST where
+module FreeST (checkAndRun) where
 
 import System.Environment (getArgs)
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map
 import           Interpreter.Builtin
-import           Interpreter.Eval
+import           Interpreter.Eval (evalAndPrint)
 import           Interpreter.Value
 import           Parse.Parser (parseProgram)
 import           Syntax.Base
@@ -25,29 +25,25 @@ main :: IO ()
 main = do
   args <- getArgs
   if length args == 1 then
-    compileFile (head args)
+    let filePath = head args in
+    if "fst" `isExtensionOf` filePath
+    then checkAndRun filePath
+    else die $ "Error: File extension not recognized, provide a .fst file: " ++ filePath
   else
     putStrLn "Error: Incorrect number of arguments, provide just one argument"
 
-
-compileFile :: FilePath -> IO ()
-compileFile args
-  | "fst" `isExtensionOf` args = do
-      -- Parsing
-      s1 <- parseProgram args prelude
-      when (hasErrors s1) (die $ getErrors s1)
-      -- Renaming the state
-      let s2 = execState renameState s1
-      -- Solving type declarations and dualofs
-      let s3 = execState solveTypeDecls s2
-      when (hasErrors s3) (die $ getErrors s3)
-      -- TypeChecking
-      let s4 = execState typeCheck s3
-      when (hasErrors s4) (die $ getErrors s4)
-      -- Interpreter
-      res <- eval initialCtx (expEnv s4) ((expEnv s4) Map.! (mkVar defaultPos "main"))
-      case res of
-        IOValue io -> io >>= putStrLn . show
-        _          -> putStrLn $ show res
-      return ()
-  | otherwise = die $ "Error: File extension not recognized, provide a .fst file: " ++ args
+checkAndRun :: FilePath -> IO ()
+checkAndRun filePath = do
+  -- Parse
+  s1 <- parseProgram filePath prelude
+  when (hasErrors s1) (die $ getErrors s1)
+  -- Rename
+  let s2 = execState renameState s1
+  -- Solve type declarations and dualofs
+  let s3 = execState solveTypeDecls s2
+  when (hasErrors s3) (die $ getErrors s3)
+  -- Type check
+  let s4 = execState typeCheck s3
+  when (hasErrors s4) (die $ getErrors s4)
+  -- Interpret
+  evalAndPrint initialCtx (expEnv s4) ((expEnv s4) Map.! (mkVar defaultPos "main"))

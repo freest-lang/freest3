@@ -3,7 +3,7 @@ module CompilerInvalidSpec (spec) where
 
 import Control.Exception
 import Control.Monad (void)
-import FreeST
+import FreeST (checkAndRun)
 import SpecUtils
 import System.Directory
 import System.Exit
@@ -28,7 +28,7 @@ testDir baseDir invalidTest = do
 testInvalid :: String -> String -> Spec    
 testInvalid test filename = do
   b <- runIO $ hSilence [stdout, stderr] $ 
-    catches (compileFile test >> return Nothing)
+    catches (checkAndRun test >> return Nothing)
                   [Handler (\(e :: ExitCode) -> return $ exitProgram e),
                    Handler (\(_ :: SomeException) -> return $ Just "Internal error thrown")]
   assert b

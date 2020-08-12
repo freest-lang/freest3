@@ -4,7 +4,7 @@ module CompilerValidSpec (spec) where
 import Control.Exception
 import Control.Monad
 import Data.Maybe
-import FreeST
+import FreeST (checkAndRun)
 import SpecUtils
 import System.Directory
 import System.Exit
@@ -45,8 +45,8 @@ testOne file = do
 
     runTest :: IO TestResult
     runTest =
---      timeout 2000000 (compileFile file) >>= \case
-      timeout 500000 (compileFile file) >>= \case
+--      timeout 2000000 (checkAndRun file) >>= \case
+      timeout 500000 (checkAndRun file) >>= \case
         Just _  -> pure Passed
         Nothing -> pure Timeout
 
