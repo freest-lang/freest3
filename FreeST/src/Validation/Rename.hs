@@ -30,6 +30,7 @@ import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
 import           Syntax.Base
 import qualified Validation.Substitution as Subs (subs, unfold)
+import           Validation.Terminated
 import           Utils.FreestState
 import qualified Data.Map.Strict as Map
 import           Control.Monad.State
@@ -84,39 +85,46 @@ insertBindings xks xks' bs =
 -- Types
 
 instance Rename Type where
+  rename bs t
+    | terminated t = return $ Skip (position t)
+    | otherwise    = rename' bs t
+
+rename':: Bindings -> Type -> FreestState Type
     -- Functional types
-  rename bs (Fun p m t u) = do
-    t' <- rename bs t
-    u' <- rename bs u
-    return $ Fun p m t' u'
-  rename bs (PairType p t u) = do
-    t' <- rename bs t
-    u' <- rename bs u
-    return $ PairType p t' u'
-  rename bs (Datatype p fm) = do
-    fm' <- tMapM (rename bs) fm
-    return $ Datatype p fm'
-    -- Session types
-  rename bs (Semi p t u) =do
-    t' <- rename bs t
-    u' <- rename bs u
-    return $ Semi p t' u'
-  rename bs (Choice p pol tm) = do
-    tm' <- tMapM (rename bs) tm
-    return $ Choice p pol tm'
-    -- Functional or session
-  rename bs (Rec p (TypeVarBind p' x k) t) = do
-    x' <- rename bs x
-    t' <- rename (insertVar x x' bs) t
-    return $ Rec p (TypeVarBind p' x' k) t'
-  rename bs (TypeVar p x) =
-    return $ TypeVar p (findWithDefaultVar x bs)
-    -- Type operators
-  rename bs (Dualof p t) = do
-    t' <- rename bs t
-    return $ Dualof p t'
-    -- Otherwise: Basic, Skip, Message, TypeName
-  rename _ t = return t
+rename' bs (Fun p m t u) = do
+  t' <- rename bs t
+  u' <- rename bs u
+  return $ Fun p m t' u'
+rename' bs (PairType p t u) = do
+  t' <- rename bs t
+  u' <- rename bs u
+  return $ PairType p t' u'
+rename' bs (Datatype p fm) = do
+  fm' <- tMapM (rename bs) fm
+  return $ Datatype p fm'
+  -- Session types
+rename' bs (Semi p t u) = do
+  t' <- rename bs t
+  u' <- rename bs u
+  return $ Semi p t' u'
+rename' bs (Choice p pol tm) = do
+  tm' <- tMapM (rename bs) tm
+  return $ Choice p pol tm'
+  -- Functional or session
+rename' bs (Rec p (TypeVarBind p' x k) t)
+  | x `occursIn` t = do
+      x' <- rename bs x
+      t' <- rename (insertVar x x' bs) t
+      return $ Rec p (TypeVarBind p' x' k) t'
+  | otherwise = rename bs t
+rename' bs (TypeVar p x) =
+  return $ TypeVar p (findWithDefaultVar x bs)
+  -- Type operators
+rename' bs (Dualof p t) = do
+  t' <- rename bs t
+  return $ Dualof p t'
+  -- Otherwise: Basic, Skip, Message, TypeName
+rename' _ t = return t
 
 -- Type-kind binds
 
@@ -231,22 +239,39 @@ insertVar x y = Map.insert (intern x) (intern y)
 findWithDefaultVar :: Variable a => a -> Bindings -> a
 findWithDefaultVar x bs = mkVar (position x) (Map.findWithDefault (intern x) (intern x) bs)
 
+-- Rename a type
+renameType :: Type -> Type
+renameType = head . renameTypes . (:[])
+
+-- Rename a list of types
+renameTypes :: [Type] -> [Type]
+renameTypes ts = evalState (mapM (rename Map.empty) ts) (initialState "Renaming")
+
 -- Substitution and unfold, the renamed versions
 
--- [t/x]u, substitute t for for every free occurrence of x in u
+-- [t/x]u, substitute t for for every free occurrence of x in u;
+-- rename the resulting type
 subs :: Type -> TypeVar -> Type -> Type
 subs t x u = renameType $ Subs.subs t x u
 
 -- Unfold a recursive type (one step only)
 unfold :: Type -> Type
 unfold = renameType . Subs.unfold
--- unfold t@(Rec _ (TypeVarBind _ x _) u) = Subs.subs t x (renameType u)
 
--- Stand alone
-
-renameType :: Type -> Type
-renameType = head . renameTypes . (:[])
-
-renameTypes :: [Type] -> [Type]
-renameTypes ts = evalState (mapM (rename Map.empty) ts) (initialState "Renaming for QuickCheck")
-
+-- Does a given type variable x occurs free in a type t?
+-- If not, then rec x.t can be renamed to t alone.
+occursIn :: TypeVar -> Type -> Bool
+    -- Functional types
+occursIn x (Fun _ _ t u) = occursIn x t || occursIn x u
+occursIn x (PairType _ t u) = occursIn x t || occursIn x u
+occursIn x (Datatype _ fm) = Map.foldr' (\t b -> x `occursIn` t || b) False fm
+    -- Session types
+occursIn x (Semi p t u) = occursIn x t || occursIn x u
+occursIn x (Choice p pol tm) = Map.foldr' (\t b -> x `occursIn` t || b) False tm
+  -- Functional or session 
+occursIn x (Rec _ (TypeVarBind _ y _) t) = x /= y && occursIn x t
+occursIn x (TypeVar _ y) = x == y
+  -- Type operators
+occursIn x (Dualof _ t) = occursIn x t
+  -- Basic, Skip, Message, TypeName
+occursIn _ _ = True

@@ -91,7 +91,6 @@ synthetise kEnv (TypeApp p x ts) = do
     (addError p [Error "Wrong number of arguments to type application\n",
                  Error "\t parameters:", Error bs,
                  Error "\n\t arguments: ", Error ts])
-    
   let typeKinds = zip ts bs :: [(Type, TypeVarBind)]
   mapM (\(u, TypeVarBind _ _ k) -> K.checkAgainst kEnv k u) typeKinds
   return $ foldr (\(u, TypeVarBind _ y _) -> Rename.subs u y) t typeKinds

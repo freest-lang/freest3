@@ -17,10 +17,19 @@ module Validation.Terminated
 where
 
 import           Syntax.Types
+import           Syntax.Kinds
+import           Syntax.TypeVariables
+import qualified Data.Set as Set
 
--- As in the ICFP'16 paper, except that Rec types are not terminated. Any type of the form 'rec a.T' with T terminated is not contractive, hence not well formed.
+-- A terminated type is composed of Skip, semi-colon, recursive types,
+-- and variables introduced by recursive types. In particular infinite
+-- sequences of Skips is terminated.
 terminated :: Type -> Bool
-terminated (Skip _)     = True
-terminated (Semi _ t u) = terminated t && terminated u
--- terminated (Rec _ _ t)  = terminated t
-terminated _            = False
+terminated = term Set.empty
+
+term :: Set.Set TypeVar -> Type -> Bool
+term _ (Skip _) = True
+term s (Semi _ t u) = term s t && term s u
+term s (Rec _ (TypeVarBind _ x _) t) = term (Set.insert x s) t
+term s (TypeVar _ x) = x `Set.member` s
+term _ _ = False

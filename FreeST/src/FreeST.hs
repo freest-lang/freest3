@@ -1,25 +1,22 @@
-module FreeST (checkAndRun) where
+module FreeST (main,checkAndRun) where
 
-import System.Environment (getArgs)
-import           Control.Monad.State
+import           System.Environment (getArgs)
+import           Control.Monad.State (when, execState)
+import           System.Exit (die)
+import           System.FilePath (FilePath, isExtensionOf)
 import qualified Data.Map.Strict as Map
-import           Interpreter.Builtin
-import           Interpreter.Eval (evalAndPrint)
-import           Interpreter.Value
+
 import           Parse.Parser (parseProgram)
 import           Syntax.Base
 import           Syntax.Expressions (ExpEnv)
 import           Syntax.Schemes (TypeEnv, VarEnv)
-import           System.Directory
-import           System.Exit
-import           System.FilePath
-import           System.IO (stdout)
-import           System.Process
 import           Utils.FreestState
 import           Utils.PreludeLoader (prelude)
-import           Validation.BuildTypes
 import           Validation.Rename (renameState)
+import           Validation.BuildTypes (solveTypeDecls)
 import           Validation.TypeChecking (typeCheck)
+import           Interpreter.Builtin (initialCtx)
+import           Interpreter.Eval (evalAndPrint)
 
 main :: IO ()
 main = do
@@ -39,7 +36,7 @@ checkAndRun filePath = do
   when (hasErrors s1) (die $ getErrors s1)
   -- Rename
   let s2 = execState renameState s1
-  -- Solve type declarations and dualofs
+  -- Solve type declarations and dualof operators
   let s3 = execState solveTypeDecls s2
   when (hasErrors s3) (die $ getErrors s3)
   -- Type check
