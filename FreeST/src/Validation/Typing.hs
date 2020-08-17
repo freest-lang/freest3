@@ -348,7 +348,7 @@ checkEquivEnvs p branching kEnv vEnv1 vEnv2 = do
     addError p [Error ("I have reached the end of a " ++ branching ++ " expression and found two distinct typing environments."),
                 Error "\n\t They are ", Error (vEnv1' Map.\\ vEnv2'),
                 Error "\n\t      and ", Error (vEnv2' Map.\\ vEnv1'),
-                Error "\n\t (is a given variable consumed in one branch and not the other?)",
+                Error "\n\t (is a given variable consumed in one branch and not in the other?)",
                 Error "\n\t (is there a variable with different types in the two environments?)"
                 ]
 
