@@ -15,33 +15,40 @@ import           Utils.ErrorMessage
 
 %wrapper "posn"
 
-$lowerU = [\927-\982] 
-$lowerA = [a-z]
-$lower = [$lowerA$lowerU]
+$greek = [\880-\1023]
 
-$upperU = [\913-\937] -- TODO: ranges are wrong 
-$upperA = [A-Z]
-$upper = [$upperA$upperU]
+$upperA  = [A-Z]
+$upper = [$upperA$greek]
+
+-- $lowerU  = \x02 -- Trick Alex into handling Unicode. See [Unicode in Alex].
+$lowerA = [a-z]
+$lower = [$lowerA $greek \_]
 
 $letter = [$lower$upper]
-$symbol = [\!\#\$\%\&\*\+\.\/\<\=\>\?\@\\\^\|\-\~]
 
-$digit = 0-9
-@char = \'(\\n|[\\.]|.) \'
-@lineComment  = \n*"--".* 
-@blockComment = "{-" (\\.|[^\{\-]|\n|\-\-|[^$symbol].*)* "-}"
+$unidigit  = \x03
+$ascdigit = 0-9
+$digit = [$ascdigit $unidigit]
 
+-- $ascsymbol = [\!\#\$\%\&\*\+\.\/\<\=\>\?\@\\\^\|\-\~\:]
+$ascsymbol = [\!\#\$\%\&\*\+\.\/\<\=\>\?\@\\\^\|\-\~]
+$symbol = [$ascsymbol] -- $unisymbol]
+  
 $eol=[\n]
+
+@char = \'(\\n|[\\.]|.) \'
+@blockComment = "{-" (\.*|[^\{\-]|\n|\-\-|[^$symbol].*)* "-}"
+-- @blockComment = "{-" (\\.|[^\{\-]|\n|\||\")* "-}"
+-- @blockComment = "{-"($eol|.*)*"-}"
   
 tokens :-  
   $white*$eol+                  { \p s -> TokenNL (internalPos p) }
---  $eol+                         { \p s -> TokenNL (internalPos p) }
-  $white+                       ;
-  @lineComment                  ;
+  $white+                       ;  
+  $eol*"--".*                   ;
   @blockComment                 ;
   "->"				{ \p s -> TokenUnArrow (internalPos p) }
   "-o"				{ \p s -> TokenLinArrow (internalPos p) }
-  "\"				{ \p s -> TokenLambda (internalPos p) }
+  ("\"|λ)                       { \p s -> TokenLambda (internalPos p) }
   "=>"				{ \p s -> TokenFArrow (internalPos p) }
   "("				{ \p s -> TokenLParen (internalPos p) }
   ")"				{ \p s -> TokenRParen (internalPos p) }
@@ -100,7 +107,7 @@ tokens :-
   fork				{ \p s -> TokenFork (internalPos p) }
   case				{ \p s -> TokenCase (internalPos p) }
   of				{ \p s -> TokenOf (internalPos p) }
-  forall			{ \p s -> TokenForall (internalPos p) }
+  (forall|∀)                    { \p s -> TokenForall (internalPos p) }
   dualof			{ \p s -> TokenDualof (internalPos p) }
 -- Values
   \(\)				{ \p s -> TokenUnit (internalPos p) }  
