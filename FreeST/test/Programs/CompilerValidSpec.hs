@@ -34,8 +34,8 @@ testValid baseDir testingDir = do
 
 testOne :: FilePath -> IO (String, TestResult)
 testOne file = do
-  hCapture [stdout, stderr] $
-    catches runTest
+ hCapture [stdout, stderr] $
+   catches runTest
       [Handler (\(e :: ExitCode)      -> exitProgram e),
        Handler (\(_ :: SomeException) -> pure Failed)]
   where
@@ -45,10 +45,13 @@ testOne file = do
 
     runTest :: IO TestResult
     runTest =
---      timeout 2000000 (checkAndRun file) >>= \case
-      timeout 500000 (checkAndRun file) >>= \case
+      timeout timeInMicro (checkAndRun file) >>= \case
         Just _  -> pure Passed
         Nothing -> pure Timeout
+
+-- n microseconds (1/10^6 seconds).
+timeInMicro :: Int
+timeInMicro = 2 * 1000000
 
 checkResult :: (String, TestResult) -> FilePath -> Spec
 checkResult (res, Passed) file = checkAgainstExpected file res
@@ -56,7 +59,7 @@ checkResult (res, Failed) file =  do
   it ("Testing " ++ takeFileName file) $
     void $ assertFailure res
 checkResult (_, Timeout) file  = checkAgainstExpected file "<divergent>"
-             
+
 checkAgainstExpected :: FilePath -> String -> Spec
 checkAgainstExpected file res = do
   let expFile = file -<.> "expected"
