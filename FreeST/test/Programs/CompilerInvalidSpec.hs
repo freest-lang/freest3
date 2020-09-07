@@ -11,7 +11,7 @@ import System.IO (stdout, stderr)
 import System.IO.Silently (hSilence)
 import Test.HUnit (assertFailure, assertEqual)
 import Test.Hspec
-
+  
 baseTestDir :: String
 baseTestDir = "/test/Programs/InvalidTests/"
 
@@ -28,9 +28,10 @@ testDir baseDir invalidTest = do
 testInvalid :: String -> String -> Spec    
 testInvalid test filename = do
   b <- runIO $ hSilence [stdout, stderr] $ 
-    catches (checkAndRun test >> return Nothing)
-                  [Handler (\(e :: ExitCode) -> return $ exitProgram e),
-                   Handler (\(_ :: SomeException) -> return $ Just "Internal error thrown")]
+    catches (checkAndRun test >>
+               return (Just "It was expected an error but none was thrown"))
+       [Handler (\(e :: ExitCode) -> return $ exitProgram e),
+        Handler (\(_ :: SomeException) -> return $ Just "Internal error thrown")]
   assert b
   where
     assert (Just err) = it ("Testing " ++ filename) $ void $ assertFailure err

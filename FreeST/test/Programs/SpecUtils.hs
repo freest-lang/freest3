@@ -4,6 +4,7 @@ import System.Directory (getCurrentDirectory, listDirectory, setCurrentDirectory
 import System.Exit (ExitCode (ExitSuccess))
 import System.FilePath (takeExtension)
 import Test.Hspec (Spec, runIO, describe)
+import Control.Monad (forM_)
 
 getSource :: [String] -> String
 getSource [] = ""
@@ -17,6 +18,7 @@ specTest desc dir f = do
   testDirs <- runIO $ listDirectory (baseDir ++ dir)
   
   describe desc $ do
-    mapM_ (f baseDir) testDirs
+    forM_ testDirs $ f baseDir
+--    mapM_ (f baseDir) testDirs
     
   runIO $ setCurrentDirectory baseDir
