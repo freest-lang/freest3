@@ -26,13 +26,12 @@ import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.Base
-import           Syntax.Show
+import           Syntax.Show()
 import           Validation.Contractive
 import           Utils.FreestState
-import           Utils.Errors
+import           Utils.Errors()
 import qualified Control.Monad.State as S
 import qualified Data.Map.Strict as Map
-import           Debug.Trace
 
 -- Returns the kind of a given type
 synthetise :: KindEnv -> Type -> FreestState Kind
@@ -43,7 +42,7 @@ synthetise kEnv (Fun p m t u) = do
   synthetise kEnv t
   synthetise kEnv u
   return $ Kind p Functional m
-synthetise kEnv (PairType p t u) = do
+synthetise kEnv (PairType _ t u) = do
   kt <- synthetise kEnv t
   ku <- synthetise kEnv u
   return $ join kt ku
@@ -61,13 +60,14 @@ synthetise kEnv (Semi p t u) = do
 synthetise _ (Message p _ _) =
   return $ Kind p Session Lin
 synthetise kEnv (Choice p _ m) = do
-  tMapM (checkAgainst kEnv (Kind p Session Lin)) m
+  tMapM_ (checkAgainst kEnv (Kind p Session Lin)) m
   return $ Kind p Session Lin
 -- Session or functional
 synthetise kEnv (Rec _ (TypeVarBind _ x k) t) = do
   -- let (Rec _ (TypeVarBind _ x k) u) = rename t -- On the fly α-conversion
 --  checkContractive kEnv t
-  checkContractive x t
+  
+  -- checkContractive x t
   synthetise (Map.insert x k kEnv) t
 synthetise kEnv (TypeVar p x) =
   case kEnv Map.!? x of
@@ -77,7 +77,7 @@ synthetise kEnv (TypeVar p x) =
       addError p [Error "Type variable not in scope:", Error x]
       return $ omission p
 -- Type operators
-synthetise kEnv (TypeName p a) =
+synthetise _ (TypeName p a) =
   getFromTEnv a >>= \case
     Just (k, _) ->
       return k
