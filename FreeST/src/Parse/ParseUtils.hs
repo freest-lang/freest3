@@ -35,8 +35,8 @@ module Parse.ParseUtils
 where
 
 import           Control.Monad.State
-import           Data.List ( find )
-import qualified Data.Map.Strict as Map
+import           Data.List                      ( find )
+import qualified Data.Map.Strict               as Map
 import           Equivalence.Normalisation
 import           Syntax.Base
 import           Syntax.Expressions
@@ -58,10 +58,10 @@ m `thenM` k = case m of
   Failed e -> Failed e
 
 returnM :: a -> ParseResult a
-returnM a = Ok a
+returnM = Ok
 
 failM :: String -> ParseResult a
-failM err = Failed err
+failM = Failed
 
 catchM :: ParseResult a -> (String -> ParseResult a) -> ParseResult a
 catchM m k = case m of
@@ -208,10 +208,8 @@ checkDupFunDecl x = do
 -- OPERATORS
 
 binOp :: Expression -> ProgVar -> Expression -> Expression
-binOp left op right = App
-  (position left)
-  (App (position left) (ProgVar (position op) op) left)
-  right
+binOp left op =
+  App (position left) (App (position left) (ProgVar (position op) op) left)
 
 unOp :: ProgVar -> Expression -> Expression
 unOp op expr = App (position expr) (ProgVar (position op) op) expr
@@ -219,6 +217,7 @@ unOp op expr = App (position expr) (ProgVar (position op) op) expr
 typeListToType :: TypeVar -> [(ProgVar, [Type])] -> [(ProgVar, Type)]
 typeListToType a = map (\(x, ts) -> (x, typeToFun ts))
   -- Convert a list of types and a final type constructor to a type
+
 
 
 

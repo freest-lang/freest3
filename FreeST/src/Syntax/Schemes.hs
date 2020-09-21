@@ -67,7 +67,7 @@ noConstructors tEnv = Map.filterWithKey (\x _ -> not (x `isDatatypeContructor` t
 -- (rather indirect)
 isDatatypeContructor :: ProgVar -> TypeEnv -> Bool
 isDatatypeContructor c tEnv =
-  not $ Map.null $ Map.filter (\(_, (TypeScheme _ _ t)) -> isDatatype t) tEnv
+  not $ Map.null $ Map.filter (\(_, TypeScheme _ _ t) -> isDatatype t) tEnv
   where isDatatype :: Type -> Bool
         isDatatype (Datatype _ m) = c `Map.member` m
         isDatatype _              = False
