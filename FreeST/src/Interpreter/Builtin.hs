@@ -1,8 +1,10 @@
 module Interpreter.Builtin where
 
-import qualified Control.Concurrent.Chan as C
-import           Data.Char (ord, chr)
-import qualified Data.Map as Map
+import qualified Control.Concurrent.Chan       as C
+import           Data.Char                      ( ord
+                                                , chr
+                                                )
+import qualified Data.Map                      as Map
 import           Interpreter.Value
 import           Syntax.Base
 import           Syntax.ProgramVariables
@@ -33,42 +35,106 @@ receive ch = do
 -- SETUP, builtin functions
 ------------------------------------------------------------
 
-initialCtx :: Ctx 
-initialCtx =
-  Map.fromList
+initialCtx :: Ctx
+initialCtx = Map.fromList
   -- Integers
-  [ (var "(+)" , PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x + y)))  
-  , (var "(-)" , PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x - y)))
-  , (var "(*)" , PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x * y)))
-  , (var "(/)" , PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x `div` y)))
-  , (var "mod", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x `mod` y)))
-  , (var "rem", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x `rem` y)))
-  , (var "div", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x `div` y)))
-  , (var "negate", PrimitiveFun (\(Integer x) -> Integer $ negate x))
+  [ ( var "(+)"
+    , PrimitiveFun
+      (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x + y))
+    )
+  , ( var "(-)"
+    , PrimitiveFun
+      (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x - y))
+    )
+  , ( var "(*)"
+    , PrimitiveFun
+      (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x * y))
+    )
+  , ( var "(/)"
+    , PrimitiveFun
+      (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x `div` y))
+    )
+  , ( var "mod"
+    , PrimitiveFun
+      (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x `mod` y))
+    )
+  , ( var "rem"
+    , PrimitiveFun
+      (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x `rem` y))
+    )
+  , ( var "div"
+    , PrimitiveFun
+      (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x `div` y))
+    )
+  , ( var "negate"
+    , PrimitiveFun (\(Integer x) -> Integer $ negate x)
+    )
   -- Booleans
   , (var "not", PrimitiveFun (\(Boolean x) -> Boolean $ not x))
-  , (var "(&&)", PrimitiveFun (\(Boolean x) -> PrimitiveFun (\(Boolean y) -> Boolean $ x && y)))
-  , (var "(||)", PrimitiveFun (\(Boolean x) -> PrimitiveFun (\(Boolean y) -> Boolean $ x || y)))
-  , (var "(==)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Boolean $ x == y)))
-  , (var "(/=)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Boolean $ x /= y)))
-  , (var "(<)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Boolean $ x < y)))  
-  , (var "(>)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Boolean $ x > y)))  
-  , (var "(<=)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Boolean $ x <= y)))  
-  , (var "(>=)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Boolean $ x >= y)))  
+  , ( var "(&&)"
+    , PrimitiveFun
+      (\(Boolean x) -> PrimitiveFun (\(Boolean y) -> Boolean $ x && y))
+    )
+  , ( var "(||)"
+    , PrimitiveFun
+      (\(Boolean x) -> PrimitiveFun (\(Boolean y) -> Boolean $ x || y))
+    )
+  , ( var "(==)"
+    , PrimitiveFun
+      (\(Integer x) -> PrimitiveFun (\(Integer y) -> Boolean $ x == y))
+    )
+  , ( var "(/=)"
+    , PrimitiveFun
+      (\(Integer x) -> PrimitiveFun (\(Integer y) -> Boolean $ x /= y))
+    )
+  , ( var "(<)"
+    , PrimitiveFun
+      (\(Integer x) -> PrimitiveFun (\(Integer y) -> Boolean $ x < y))
+    )
+  , ( var "(>)"
+    , PrimitiveFun
+      (\(Integer x) -> PrimitiveFun (\(Integer y) -> Boolean $ x > y))
+    )
+  , ( var "(<=)"
+    , PrimitiveFun
+      (\(Integer x) -> PrimitiveFun (\(Integer y) -> Boolean $ x <= y))
+    )
+  , ( var "(>=)"
+    , PrimitiveFun
+      (\(Integer x) -> PrimitiveFun (\(Integer y) -> Boolean $ x >= y))
+    )
   -- Chars
   , (var "chr", PrimitiveFun (\(Integer x) -> Character $ chr x))
-  , (var "ord", PrimitiveFun (\(Character x) -> Integer $ ord x))
+  , ( var "ord"
+    , PrimitiveFun (\(Character x) -> Integer $ ord x)
+    )
   -- Prints
-  , (var "printInt", PrimitiveFun (\(Integer x) -> IOValue (putStr (show x) >> return Unit)))
-  , (var "printIntLn", PrimitiveFun (\(Integer x) -> IOValue (putStrLn (show x) >> return Unit)))
-  , (var "printBool", PrimitiveFun (\(Boolean x) -> IOValue (putStr (show x) >> return Unit)))
-  , (var "printBoolLn", PrimitiveFun (\(Boolean x) -> IOValue (putStrLn (show x) >> return Unit)))
-  , (var "printChar", PrimitiveFun (\(Character x) -> IOValue (putStr (show x) >> return Unit)))
-  , (var "printCharLn", PrimitiveFun (\(Character x) -> IOValue (putStrLn (show x) >> return Unit)))
-  , (var "printUnit", PrimitiveFun (\Unit -> IOValue (putStr "()" >> return Unit)))
-  , (var "printUnitLn", PrimitiveFun (\Unit -> IOValue (putStrLn "()" >> return Unit)))
+  , ( var "printInt"
+    , PrimitiveFun (\(Integer x) -> IOValue (print x >> return Unit))
+    )
+  , ( var "printIntLn"
+    , PrimitiveFun (\(Integer x) -> IOValue (print x >> return Unit))
+    )
+  , ( var "printBool"
+    , PrimitiveFun (\(Boolean x) -> IOValue (print x >> return Unit))
+    )
+  , ( var "printBoolLn"
+    , PrimitiveFun (\(Boolean x) -> IOValue (print x >> return Unit))
+    )
+  , ( var "printChar"
+    , PrimitiveFun (\(Character x) -> IOValue (print x >> return Unit))
+    )
+  , ( var "printCharLn"
+    , PrimitiveFun (\(Character x) -> IOValue (print x >> return Unit))
+    )
+  , ( var "printUnit"
+    , PrimitiveFun (\Unit -> IOValue (putStr "()" >> return Unit))
+    )
+  , ( var "printUnitLn"
+    , PrimitiveFun (\Unit -> IOValue (putStrLn "()" >> return Unit))
+    )
 --  , (var "print", PrimitiveFun (\x -> IOValue (putStrLn (show x) >> return Unit)))
   ]
-  where
-    var :: String -> ProgVar
-    var = mkVar defaultPos
+ where
+  var :: String -> ProgVar
+  var = mkVar defaultPos

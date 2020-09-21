@@ -112,7 +112,7 @@ rename' bs (Choice p pol tm) = do
   return $ Choice p pol tm'
   -- Functional or session
 rename' bs (Rec p (TypeVarBind p' x k) t)
-  | x `occursIn` t = do
+  | x `isFreeIn` t = do
       x' <- rename bs x
       t' <- rename (insertVar x x' bs) t
       return $ Rec p (TypeVarBind p' x' k) t'
@@ -211,7 +211,7 @@ renameField :: Bindings -> ([ProgVar], Expression) -> FreestState ([ProgVar], Ex
 renameField bs (xs, e) = do
   xs' <- mapM (rename bs) xs
   e' <- rename (insertProgVars xs xs' bs) e
-  return $ (xs', e')
+  return (xs', e')
 
 insertProgVars :: [ProgVar] -> [ProgVar] -> Bindings -> Bindings
 insertProgVars xs xs' bs = foldr(\(x, x') bs -> insertVar x x' bs) bs (zip xs xs')
@@ -260,18 +260,18 @@ unfold = renameType . Subs.unfold
 
 -- Does a given type variable x occurs free in a type t?
 -- If not, then rec x.t can be renamed to t alone.
-occursIn :: TypeVar -> Type -> Bool
+isFreeIn :: TypeVar -> Type -> Bool
     -- Functional types
-occursIn x (Fun _ _ t u) = occursIn x t || occursIn x u
-occursIn x (PairType _ t u) = occursIn x t || occursIn x u
-occursIn x (Datatype _ fm) = Map.foldr' (\t b -> x `occursIn` t || b) False fm
+isFreeIn x (Fun _ _ t u) = x `isFreeIn` t || x `isFreeIn` u
+isFreeIn x (PairType _ t u) = x `isFreeIn` t || x `isFreeIn` u
+isFreeIn x (Datatype _ fm) = Map.foldr' (\t b -> x `isFreeIn` t || b) False fm
     -- Session types
-occursIn x (Semi p t u) = occursIn x t || occursIn x u
-occursIn x (Choice p pol tm) = Map.foldr' (\t b -> x `occursIn` t || b) False tm
+isFreeIn x (Semi p t u) = x `isFreeIn` t || x `isFreeIn` u
+isFreeIn x (Choice p pol tm) = Map.foldr' (\t b -> x `isFreeIn` t || b) False tm
   -- Functional or session 
-occursIn x (Rec _ (TypeVarBind _ y _) t) = x /= y && occursIn x t
-occursIn x (TypeVar _ y) = x == y
+isFreeIn x (Rec _ (TypeVarBind _ y _) t) = x /= y && x `isFreeIn` t
+isFreeIn x (TypeVar _ y) = x == y
   -- Type operators
-occursIn x (Dualof _ t) = occursIn x t
+isFreeIn x (Dualof _ t) = x `isFreeIn` t
   -- Basic, Skip, Message, TypeName
-occursIn _ _ = True
+isFreeIn _ _ = True

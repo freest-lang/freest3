@@ -11,19 +11,20 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-{-# LANGUAGE LambdaCase, NoMonadFailDesugaring #-}
+{-# LANGUAGE NoMonadFailDesugaring #-}
 
 module Validation.Extract
-( extractFun
-, extractPair
-, extractBasic
-, extractOutput
-, extractInput
-, extractOutChoiceMap
-, extractInChoiceMap
-, extractDatatypeMap
-, extractCons
-) where
+  ( extractFun
+  , extractPair
+  , extractBasic
+  , extractOutput
+  , extractInput
+  , extractOutChoiceMap
+  , extractInChoiceMap
+  , extractDatatypeMap
+  , extractCons
+  )
+where
 
 import           Syntax.Expressions
 import           Syntax.Types
@@ -32,7 +33,7 @@ import           Syntax.Base
 import           Equivalence.Normalisation
 import           Utils.Errors
 import           Utils.FreestState
-import qualified Data.Map.Strict as Map
+import qualified Data.Map.Strict               as Map
 import           Syntax.Show -- debug
 import           Syntax.Schemes -- debug
 import           Debug.Trace -- debug
@@ -57,9 +58,13 @@ extractFun e t = do
     (Fun _ _ u v) -> return (u, v)
     u             -> do
       let p = position e
-      addError p
-        [Error "Expecting a function type for expression", Error e, 
-         Error "\n\t                               found type", Error u]
+      addError
+        p
+        [ Error "Expecting a function type for expression"
+        , Error e
+        , Error "\n\t                               found type"
+        , Error u
+        ]
       return (omission p, omission p)
 
 -- Extracts a pair from a type; gives an error if there is no pair
@@ -68,21 +73,27 @@ extractPair e t = do
   t' <- norm t
   case t' of
     (PairType _ u v) -> return (u, v)
-    u                  -> do
+    u                -> do
       let p = position u
-      addError p [Error "Expecting a pair type for expression", Error e,
-                  Error "\n\t found type", Error u]
+      addError
+        p
+        [ Error "Expecting a pair type for expression"
+        , Error e
+        , Error "\n\t found type"
+        , Error u
+        ]
       return (omission p, omission p)
-      
+
 -- Extracts a basic type from a general type; gives an error if it isn't a basic
 extractBasic :: Type -> FreestState BasicType
 extractBasic t = do
   t' <- norm t
   case t' of
     (Basic _ b) -> return b
-    u           ->
-      addError (position u) [Error "Expecting a basic type; found type", Error u] >>
-      return IntType
+    u ->
+      addError (position u)
+               [Error "Expecting a basic type; found type", Error u]
+        >> return IntType
 
 -- Extracts an output type from a general type; gives an error if it isn't an output
 extractOutput :: Expression -> Type -> FreestState (BasicType, Type)
@@ -92,23 +103,28 @@ extractOutput = extractMessage Out "output"
 extractInput :: Expression -> Type -> FreestState (BasicType, Type)
 extractInput = extractMessage In "input"
 
-extractMessage :: Polarity -> String -> Expression -> Type -> FreestState (BasicType, Type)
+extractMessage
+  :: Polarity -> String -> Expression -> Type -> FreestState (BasicType, Type)
 extractMessage pol msg e t = do
   t' <- norm t
   case t' of
-    u@(Message p pol' b)            ->
+    u@(Message p pol' b) ->
       if pol == pol' then return (b, Skip p) else extractMessageErr msg e u
     u@(Semi _ (Message _ pol' b) v) ->
       if pol == pol' then return (b, v) else extractMessageErr msg e u
-    u                               ->
-        extractMessageErr msg e u
-  where
-    extractMessageErr :: String -> Expression -> Type -> FreestState (BasicType, Type)
-    extractMessageErr msg e u = do
-      addError (position e)
-          [Error $ "Expecting an " ++ msg ++ " type for expression", Error e,
-           Error "\n\t found type", Error u]        
-      return (UnitType, Skip (position u))
+    u -> extractMessageErr msg e u
+ where
+  extractMessageErr
+    :: String -> Expression -> Type -> FreestState (BasicType, Type)
+  extractMessageErr msg e u = do
+    addError
+      (position e)
+      [ Error $ "Expecting an " ++ msg ++ " type for expression"
+      , Error e
+      , Error "\n\t found type"
+      , Error u
+      ]
+    return (UnitType, Skip (position u))
 
 -- Extracts a choice type from a general type; gives an error if a choice is not found
 extractOutChoiceMap :: Expression -> Type -> FreestState TypeMap
@@ -116,23 +132,29 @@ extractOutChoiceMap = extractChoiceMap Out "external"
 
 extractInChoiceMap :: Expression -> Type -> FreestState TypeMap
 extractInChoiceMap = extractChoiceMap In "internal"
-      
-extractChoiceMap :: Polarity -> String -> Expression -> Type -> FreestState TypeMap
+
+extractChoiceMap
+  :: Polarity -> String -> Expression -> Type -> FreestState TypeMap
 extractChoiceMap pol msg e t = do
   t' <- norm t
   case t' of
-    (Choice _ pol' m)            ->
+    (Choice _ pol' m) ->
       if pol == pol' then return m else extractChoiceErr msg e t
-    (Semi _ (Choice _ pol' m) u) ->
-      if pol == pol' then return $ Map.map (\v -> Semi (position v) v u) m else extractChoiceErr msg e t
-    u                            -> extractChoiceErr msg e t
-  where
-    extractChoiceErr :: String -> Expression -> Type -> FreestState TypeMap
-    extractChoiceErr msg e u = do
-      addError (position e)
-        [Error $ "Expecting an " ++ msg ++ " choice type for expression", Error e,
-         Error "\n\t found type", Error u]
-      return Map.empty
+    (Semi _ (Choice _ pol' m) u) -> if pol == pol'
+      then return $ Map.map (\v -> Semi (position v) v u) m
+      else extractChoiceErr msg e t
+    u -> extractChoiceErr msg e t
+ where
+  extractChoiceErr :: String -> Expression -> Type -> FreestState TypeMap
+  extractChoiceErr msg e u = do
+    addError
+      (position e)
+      [ Error $ "Expecting an " ++ msg ++ " choice type for expression"
+      , Error e
+      , Error "\n\t found type"
+      , Error u
+      ]
+    return Map.empty
 
 -- Extracts a datatype from a type; gives an error if a datatype is not found
 extractDatatypeMap :: Expression -> Type -> FreestState TypeMap
@@ -141,17 +163,20 @@ extractDatatypeMap e t = do
   case t' of
     (Datatype _ m) -> return m
     u              -> do
-      addError (position e)
-        [Error "Expecting a datatype for expression" , Error e,
-         Error "\n\t found type", Error u]
+      addError
+        (position e)
+        [ Error "Expecting a datatype for expression"
+        , Error e
+        , Error "\n\t found type"
+        , Error u
+        ]
       return Map.empty
 
 -- Extracts a constructor from a choice map; gives an error if the
 -- constructor is not in the map
 extractCons :: Pos -> TypeMap -> ProgVar -> FreestState Type
-extractCons p tm x =
-  case tm Map.!? x of
-    Just t -> return t
-    Nothing -> do
-      addError p [Error "Constructor", Error x, Error "not in scope"]             
-      return $ omission p
+extractCons p tm x = case tm Map.!? x of
+  Just t  -> return t
+  Nothing -> do
+    addError p [Error "Constructor", Error x, Error "not in scope"]
+    return $ omission p

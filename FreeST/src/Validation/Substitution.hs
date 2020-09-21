@@ -70,7 +70,7 @@ free (Dualof _ t) = free t
 free _ = Set.empty
 
 freeMap :: TypeMap -> Set.Set TypeVar
-freeMap = Map.foldr (\t acc -> (free t) `Set.union` acc) Set.empty
+freeMap = Map.foldr (\t acc -> free t `Set.union` acc) Set.empty
 
 {-
 
