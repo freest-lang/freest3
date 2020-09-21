@@ -34,24 +34,23 @@ module Parse.ParseUtils
   )
 where
 
+import           Control.Monad.State
+import           Data.List ( find )
+import qualified Data.Map.Strict as Map
+import           Equivalence.Normalisation
+import           Syntax.Base
 import           Syntax.Expressions
-import           Syntax.Schemes
-import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.ProgramVariables
+import           Syntax.Schemes
 import           Syntax.TypeVariables
-import           Syntax.Base
-import           Syntax.Show
-import           Equivalence.Normalisation
-import           Utils.FreestState
+import           Syntax.Types
 import           Utils.ErrorMessage
-import qualified Data.Map.Strict               as Map
-import           Data.List                      ( find )
-import           Control.Monad.State
-import           Syntax.Show -- debug
-import           Debug.Trace -- debug
-import           Utils.PreludeLoader -- debug
+import           Utils.FreestState
 
+-- import           Debug.Trace -- debug
+-- import           Syntax.Show -- debug
+-- import           Utils.PreludeLoader -- debug
 
 thenM :: ParseResult a -> (a -> ParseResult b) -> ParseResult b
 m `thenM` k = case m of
