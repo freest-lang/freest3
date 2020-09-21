@@ -65,8 +65,8 @@ instance Equivalence Type where
       Map.size m1 == Map.size m2 && Map.foldlWithKey (equivField v m2) True m1
     -- Recursion
     equiv _ (TypeVar _ x) (TypeVar _ y) = x == y -- A free (a polymorphic) type var
-    equiv v t@(Rec _ _ _) u = equiv (Set.insert (t, u) v) (Subs.unfold t) u
-    equiv v t u@(Rec _ _ _) = equiv (Set.insert (t, u) v) t (Subs.unfold u)
+    equiv v t@Rec{} u = equiv (Set.insert (t, u) v) (Subs.unfold t) u
+    equiv v t u@Rec{} = equiv (Set.insert (t, u) v) t (Subs.unfold u)
     -- Type operators
     equiv _ (TypeName _ x) (TypeName _ y) = -- trace ("TNAME 1 " ++ show x) $
       x == y -- Admissible
@@ -95,14 +95,14 @@ bisimilar tEnv t u = Bisimulation.bisimilar $ convertToGrammar tEnv [t, u]
 isSessionType :: TypeEnv -> KindEnv -> Type -> Bool
   -- Session types
 isSessionType _ _ (Skip _) = True
-isSessionType _ _ (Semi _ _ _) = True
-isSessionType _ _ (Message _ _ _) = True
-isSessionType _ _ (Choice _ _ _) = True
+isSessionType _ _ Semi{} = True
+isSessionType _ _ Message{} = True
+isSessionType _ _ Choice{} = True
   -- Recursion
 isSessionType _ _ (Rec _ (TypeVarBind _ _ k) _) = isSession k
 isSessionType _ kenv (TypeVar _ x) = Map.member x kenv
   -- Type operators
-isSessionType _ _ (Dualof _ _) = True
+isSessionType _ _ Dualof{} = True
 isSessionType tenv _ (TypeName _ x) = isSession $ fst $ tenv Map.! x
   -- Otherwise: Functional types
 isSessionType _    _    _ = False
@@ -123,7 +123,7 @@ instantiate (TypeScheme _ bs1 t1) (TypeScheme _ bs2 t2) = inst bs1 bs2 t1 t2
     -> Type
     -> Type
     -> Maybe (KindEnv, Type, Type)
-  inst ((TypeVarBind p1 x1 k1) : bs1) ((TypeVarBind _ x2 k2) : bs2) t1 t2
+  inst (TypeVarBind p1 x1 k1 : bs1) (TypeVarBind _ x2 k2 : bs2) t1 t2
     | k1 /= k2 = Nothing
     | otherwise = -- substitute x1 for x2 in t2
                   fmap (\(m, t1', t2') -> (Map.insert x1 k1 m, t1', t2'))
