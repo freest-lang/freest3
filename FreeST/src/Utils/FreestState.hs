@@ -176,7 +176,7 @@ addTypeName :: Pos -> Type -> FreestState ()
 addTypeName p t = modify (\s -> s { typenames = Map.insert p t (typenames s) })
 
 getTypeNames :: FreestState TypeOpsEnv
-getTypeNames = liftM typenames get
+getTypeNames = fmap typenames get
   -- do
   -- s <- get
   -- return $ typenames s

@@ -5,7 +5,7 @@ module Interpreter.Eval
 where
 
 import           Control.Concurrent             ( forkIO )
-import           Control.Monad                  ( liftM
+import           Control.Monad                  ( fmap
                                                 , liftM2
                                                 )
 import qualified Data.Map                      as Map
@@ -77,7 +77,7 @@ eval _ _ (E.New _ _ _) = do
 
 eval ctx eenv (E.Send _ e) = do
   (Chan c) <- eval ctx eenv e
-  return $ PrimitiveFun (\v -> IOValue $ liftM Chan (send c v))
+  return $ PrimitiveFun (\v -> IOValue $ fmap Chan (send c v))
 
 eval ctx eenv (E.Receive _ e) = do
   (Chan c) <- eval ctx eenv e

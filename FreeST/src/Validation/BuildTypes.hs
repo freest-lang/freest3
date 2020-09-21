@@ -51,7 +51,7 @@ solveEqs tenv = Map.foldlWithKey solveEq (return tenv) tenv
     -> FreestState TypeEnv
   solveEq acc x (k, s) = do
     let bt = buildRecursiveType x (k, s)
-    liftM (Map.insert x (k, (fromType bt))) acc >>= substituteEnv x bt
+    fmap (Map.insert x (k, (fromType bt))) acc >>= substituteEnv x bt
 
 -- substitute every occurence of variable x in all the other entries of the map
 substituteEnv :: TypeVar -> Type -> TypeEnv -> FreestState TypeEnv -- TODO: refactor
@@ -129,10 +129,10 @@ solveDualOfs tenv = tMapM
 
 solveDualOf :: TypeEnv -> Type -> FreestState Type
 solveDualOf tenv (Choice p pol m) =
-  liftM (Choice p pol) (tMapM (solveDualOf tenv) m)
+  fmap (Choice p pol) (tMapM (solveDualOf tenv) m)
 solveDualOf tenv (Semi p t u) =
   liftM2 (Semi p) (solveDualOf tenv t) (solveDualOf tenv u)
-solveDualOf tenv (Rec p xs t) = liftM (Rec p xs) (solveDualOf tenv t)
+solveDualOf tenv (Rec p xs t) = fmap (Rec p xs) (solveDualOf tenv t)
 solveDualOf tenv (Fun p pol t u) =
   liftM2 (Fun p pol) (solveDualOf tenv t) (solveDualOf tenv u)
 solveDualOf tenv n@(TypeName _ tname) = case tenv Map.!? tname of
@@ -140,7 +140,7 @@ solveDualOf tenv n@(TypeName _ tname) = case tenv Map.!? tname of
   Nothing                    -> maybeScopeErr n
 solveDualOf tenv d@(Dualof p t) = do
   addTypeName p d
-  liftM dual (solveDualOf tenv t)
+  fmap dual (solveDualOf tenv t)
 solveDualOf _ p = return p
 
 
@@ -197,11 +197,11 @@ subsType tenv b (Fun p m t1 t2) =
   liftM2 (Fun p m) (subsType tenv b t1) (subsType tenv b t2)
 subsType tenv b (PairType p t1 t2) =
   liftM2 (PairType p) (subsType tenv b t1) (subsType tenv b t2)
-subsType tenv b (Datatype p m) = liftM (Datatype p) (subsMap tenv b m)
+subsType tenv b (Datatype p m) = fmap (Datatype p) (subsMap tenv b m)
 subsType tenv b (Semi p t1 t2) =
   liftM2 (Semi p) (subsType tenv b t1) (subsType tenv b t2)
-subsType tenv b (Choice p pol m ) = liftM (Choice p pol) (subsMap tenv b m)
-subsType tenv b (Rec    p tvb t1) = liftM (Rec p tvb) (subsType tenv b t1)
+subsType tenv b (Choice p pol m ) = fmap (Choice p pol) (subsMap tenv b m)
+subsType tenv b (Rec    p tvb t1) = fmap (Rec p tvb) (subsType tenv b t1)
 -- In the first phase, we only substitute if the typename is the one that
 -- we are looking for (x)
 subsType _ (Just (x, t)) n@(TypeName p tname)
@@ -215,7 +215,7 @@ subsType tenv Nothing n@(TypeName p tname) = case tenv Map.!? tname of
   Nothing -> pure n
 -- In the first stage (converting typenames); we should ignore dualofs
 subsType tenv Nothing n@(Dualof p t) =
-  addTypeName p n >> liftM (changePos p . dualFun) (subsType tenv Nothing t)
+  addTypeName p n >> fmap (changePos p . dualFun) (subsType tenv Nothing t)
 subsType _ _ t = pure t
 
 -- Apply subsType over TypeMaps
@@ -244,14 +244,14 @@ subsExp tenv (Case p e m) =
 subsExp tenv (Conditional p e1 e2 e3) =
   liftM3 (Conditional p) (subsExp tenv e1) (subsExp tenv e2) (subsExp tenv e3)
 subsExp tenv (TypeApp p x xs) =
-  liftM (TypeApp p x) (mapM (subsType tenv Nothing) xs)
+  fmap (TypeApp p x) (mapM (subsType tenv Nothing) xs)
 subsExp tenv (UnLet p x e1 e2) =
   liftM2 (UnLet p x) (subsExp tenv e1) (subsExp tenv e2)
-subsExp tenv (Fork p e) = liftM (Fork p) (subsExp tenv e)
+subsExp tenv (Fork p e) = fmap (Fork p) (subsExp tenv e)
 subsExp tenv (New p t u) =
   liftM2 (New p) (subsType tenv Nothing t) (subsType tenv Nothing u)
-subsExp tenv (Send    p e ) = liftM (Send p) (subsExp tenv e)
-subsExp tenv (Receive p e ) = liftM (Receive p) (subsExp tenv e)
+subsExp tenv (Send    p e ) = fmap (Send p) (subsExp tenv e)
+subsExp tenv (Receive p e ) = fmap (Receive p) (subsExp tenv e)
 subsExp tenv (Select p e x) = liftM2 (Select p) (subsExp tenv e) (pure x)
 subsExp tenv (Match p e m) =
   liftM2 (Match p) (subsExp tenv e) (subsFieldMap tenv m)
