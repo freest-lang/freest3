@@ -81,7 +81,7 @@ eval ctx eenv (E.Send _ e) = do
 
 eval ctx eenv (E.Receive _ e) = do
   (Chan c) <- eval ctx eenv e
-  (v, c)  <- receive c
+  (v, c)   <- receive c
   return $ Pair v (Chan c)
 
 eval ctx eenv (E.Select _ e x) = do
@@ -103,11 +103,9 @@ evalCase ctx eenv m (Cons x xs) = do
   let ctx1 = foldl (\acc (c, xs) -> Map.insert c (head xs) acc) ctx lst
   eval ctx1 eenv e
 
+-- TODO: change isADT definition
 evalVar :: Ctx -> E.ExpEnv -> ProgVar -> IO Value
-evalVar ctx eenv x
-  | isADT x = return $ Cons x []
-  | -- TODO: change isADT definition
-    Map.member x eenv = do
-    eval ctx eenv (eenv Map.! x)
-  | Map.member x ctx = return $ ctx Map.! x
-  | otherwise = error $ "error evaluating progvar: " ++ show x
+evalVar ctx eenv x | isADT x           = return $ Cons x []
+                   | Map.member x eenv = eval ctx eenv (eenv Map.! x)
+                   | Map.member x ctx  = return $ ctx Map.! x
+                   | otherwise = error $ "error evaluating progvar: " ++ show x
