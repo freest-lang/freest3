@@ -7,6 +7,7 @@ where
 import           Control.Concurrent             ( forkIO )
 import           Control.Monad                  ( fmap
                                                 , liftM2
+                                                , void
                                                 )
 import qualified Data.Map                      as Map
 import           Interpreter.Builtin
@@ -43,8 +44,8 @@ eval ctx eenv (E.App _ e1 e2     ) = eval ctx eenv e1 >>= \case
     case f v of
       (IOValue res) -> do
         !r <- res
-        pure $ r
-      r -> return r
+        pure r
+      r -> pure r
   (Cons x xs) -> do
     !v <- eval ctx eenv e2
     pure $ Cons x (xs ++ [[v]])
@@ -68,16 +69,17 @@ eval ctx eenv (E.UnLet _ x e1 e2) = do
 eval ctx eenv (E.Case _ e m) = eval ctx eenv e >>= evalCase ctx eenv m
 
 eval ctx eenv (E.Fork _ e  ) = do
-  _ <- forkIO $ eval ctx eenv e >> return ()
+  _ <- forkIO $ void $ eval ctx eenv e
   return Unit
 
-eval _ _ (E.New _ _ _) = do
+eval _ _ E.New{} = do
   (c1, c2) <- new
   return $ Pair (Chan c1) (Chan c2)
 
 eval ctx eenv (E.Send _ e) = do
   (Chan c) <- eval ctx eenv e
-  return $ PrimitiveFun (\v -> IOValue $ fmap Chan (send c v))
+  return $ PrimitiveFun $ IOValue . fmap Chan . send c
+--  return $ PrimitiveFun (\v -> IOValue $ fmap Chan (send c v))
 
 eval ctx eenv (E.Receive _ e) = do
   (Chan c) <- eval ctx eenv e
@@ -92,7 +94,7 @@ eval ctx eenv (E.Select _ e x) = do
 eval ctx eenv (E.Match _ e m) = do
   (Chan c)       <- eval ctx eenv e
   (Label !v, !c) <- receive c
-  let (patterns : _, e) = m Map.! (mkVar defaultPos v)
+  let (patterns : _, e) = m Map.! mkVar defaultPos v
   let ctx'              = Map.insert patterns (Chan c) ctx
   eval ctx' eenv e
 
