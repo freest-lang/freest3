@@ -134,9 +134,7 @@ getFreshVar = do
   return $ mkVar defaultPos ("#X" ++ show n)
 
 getProductions :: TransState Productions
-getProductions = do
-  s <- get
-  return $ productions s
+getProductions = productions <$> get
 
 getTransitions :: TypeVar -> TransState Transitions
 getTransitions x = do
@@ -144,9 +142,7 @@ getTransitions x = do
   return $ ps Map.! x
 
 getSubstitution :: TransState Substitution
-getSubstitution = do
-  s <- get
-  return $ substitution s
+getSubstitution = substitution <$> get
 
 putProductions :: TypeVar -> Transitions -> TransState ()
 putProductions x m =

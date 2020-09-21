@@ -12,60 +12,63 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Utils.FreestState
-( -- State
-FreestState
-, FreestS(..)
-, initialState
+  ( -- State
+    FreestState
+  , FreestS(..)
+  , initialState
 -- Monad & map
-, tMapM
-, tMapM_
-, tMapWithKeyM
-, tMapWithKeyM_
+  , tMapM
+  , tMapM_
+  , tMapWithKeyM
+  , tMapWithKeyM_
 -- Next index
-, getNextIndex
+  , getNextIndex
 -- Variable environment
-, getVEnv
-, getFromVEnv
-, addToVEnv
-, setVEnv
-, removeFromVEnv
+  , getVEnv
+  , getFromVEnv
+  , addToVEnv
+  , setVEnv
+  , removeFromVEnv
 -- Type environment
-, getTEnv
-, getFromTEnv
-, addToTEnv
-, setTEnv
+  , getTEnv
+  , getFromTEnv
+  , addToTEnv
+  , setTEnv
 -- Expression environment
-, getEEnv
-, getFromEEnv
-, addToEEnv
-, setEEnv
+  , getEEnv
+  , getFromEEnv
+  , addToEEnv
+  , setEEnv
 -- Errors
-, Errors (..)
-, getErrors
-, addError
-, hasErrors
-, ErrorMessage(..)
-, ErrorMsg(..)
-, getFileName
+  , Errors(..)
+  , getErrors
+  , addError
+  , hasErrors
+  , ErrorMessage(..)
+  , ErrorMsg(..)
+  , getFileName
 -- Typenames
-, addTypeName
-, getTypeNames
-, findTypeName
-) where
+  , addTypeName
+  , getTypeNames
+  , findTypeName
+  )
+where
 
 import           Control.Monad.State
-import           Data.List (intercalate)
-import qualified Data.Map.Strict as Map
+import           Data.List                      ( intercalate )
+import qualified Data.Map.Strict               as Map
 import           Syntax.Base
 import           Syntax.Expressions
 import           Syntax.Kinds
 import           Syntax.ProgramVariables
 import           Syntax.Schemes
 import           Syntax.TypeVariables
-import           Syntax.Types (Type(..), TypeOpsEnv)
+import           Syntax.Types                   ( Type(..)
+                                                , TypeOpsEnv
+                                                )
 import           Utils.Errors
 -- import qualified Data.Set as Set
-import qualified Data.Traversable as Traversable
+import qualified Data.Traversable              as Traversable
 import           Utils.ErrorMessage
 
 -- | The typing state
@@ -88,16 +91,15 @@ type FreestState = State FreestS
 -- | Initial State
 
 initialState :: String -> FreestS
-initialState f = FreestS {
-  filename  = f
-, varEnv    = Map.empty
-, expEnv    = Map.empty
-, typeEnv   = Map.empty
-, typenames = Map.empty
-, errors    = []
+initialState f = FreestS { filename  = f
+                         , varEnv    = Map.empty
+                         , expEnv    = Map.empty
+                         , typeEnv   = Map.empty
+                         , typenames = Map.empty
+                         , errors    = []
 --, errors    = Set.empty
-, nextIndex = 0
-}
+                         , nextIndex = 0
+                         }
 
 -- | NEXT VAR
 
@@ -105,22 +107,18 @@ getNextIndex :: FreestState Int
 getNextIndex = do
   s <- get
   let next = nextIndex s
-  modify (\s -> s{nextIndex = next + 1})
+  modify (\s -> s { nextIndex = next + 1 })
   return next
 
 -- | FILE NAME
 
 getFileName :: FreestState String
-getFileName = do
-  s <- get
-  return $ filename s
+getFileName = filename <$> get
 
 -- | VAR ENV
 
 getVEnv :: FreestState VarEnv
-getVEnv = do
-  s <- get
-  return $ varEnv s
+getVEnv = varEnv <$> get
 
 getFromVEnv :: ProgVar -> FreestState (Maybe TypeScheme)
 getFromVEnv x = do
@@ -128,26 +126,21 @@ getFromVEnv x = do
   return $ vEnv Map.!? x
 
 removeFromVEnv :: ProgVar -> FreestState ()
-removeFromVEnv b = modify (\s -> s {varEnv= Map.delete b (varEnv s)})  
+removeFromVEnv b = modify (\s -> s { varEnv = Map.delete b (varEnv s) })
 
 addToVEnv :: ProgVar -> TypeScheme -> FreestState ()
-addToVEnv b t =
-  modify (\s -> s{varEnv = Map.insert b t (varEnv s)})
+addToVEnv b t = modify (\s -> s { varEnv = Map.insert b t (varEnv s) })
 
 vEnvMember :: ProgVar -> FreestState Bool
-vEnvMember x = do
-  vEnv <- getVEnv
-  return $ Map.member x vEnv
+vEnvMember x = Map.member x <$> getVEnv
 
 setVEnv :: VarEnv -> FreestState ()
-setVEnv vEnv = modify (\s -> s{varEnv = vEnv})
+setVEnv vEnv = modify (\s -> s { varEnv = vEnv })
 
 -- | EXP ENV
 
 getEEnv :: FreestState ExpEnv
-getEEnv = do
-  s <- get
-  return $ expEnv s
+getEEnv = expEnv <$> get
 
 getFromEEnv :: ProgVar -> FreestState (Maybe Expression)
 getFromEEnv x = do
@@ -155,35 +148,32 @@ getFromEEnv x = do
   return $ eEnv Map.!? x
 
 addToEEnv :: ProgVar -> Expression -> FreestState ()
-addToEEnv k v =
-  modify (\s -> s{expEnv=Map.insert k v (expEnv s)})
+addToEEnv k v = modify (\s -> s { expEnv = Map.insert k v (expEnv s) })
 
 setEEnv :: ExpEnv -> FreestState ()
-setEEnv eEnv = modify (\s -> s{expEnv = eEnv})
+setEEnv eEnv = modify (\s -> s { expEnv = eEnv })
 
 -- | TYPE ENV
 
 getTEnv :: FreestState TypeEnv
-getTEnv = do
-  s <- get
-  return $ typeEnv s
+getTEnv = typeEnv <$> get
 
 addToTEnv :: TypeVar -> Kind -> TypeScheme -> FreestState ()
 addToTEnv x k t =
-  modify (\s -> s{typeEnv = Map.insert x (k, t) (typeEnv s)})
+  modify (\s -> s { typeEnv = Map.insert x (k, t) (typeEnv s) })
 
 getFromTEnv :: TypeVar -> FreestState (Maybe (Kind, TypeScheme))
-getFromTEnv  b = do
+getFromTEnv b = do
   tEnv <- getTEnv
   return $ tEnv Map.!? b
 
 setTEnv :: TypeEnv -> FreestState ()
-setTEnv tEnv = modify (\s -> s{typeEnv = tEnv})
+setTEnv tEnv = modify (\s -> s { typeEnv = tEnv })
 
 -- | TYPENAMES
 
 addTypeName :: Pos -> Type -> FreestState ()
-addTypeName p t = modify (\s -> s{typenames = Map.insert p t (typenames s)})
+addTypeName p t = modify (\s -> s { typenames = Map.insert p t (typenames s) })
 
 getTypeNames :: FreestState TypeOpsEnv
 getTypeNames = liftM typenames get
@@ -192,26 +182,25 @@ getTypeNames = liftM typenames get
   -- return $ typenames s
 
 findTypeName :: Pos -> Type -> FreestState Type
-findTypeName p t = do
-  typenames <- getTypeNames
-  return $ Map.findWithDefault t p typenames
+findTypeName p t = Map.findWithDefault t p <$> getTypeNames
+
 
 -- | ERRORS
 
 -- addError :: Pos -> [String] -> FreestState ()
 -- addError p e =
 --   modify (\s -> s{errors = insertError p (errors s) (filename s) e})
-  
+
 -- insertError :: Pos -> [String] -> String -> [String] -> [String]
 -- insertError p es f e
 --   | err `elem` es = es
 --   | otherwise     = es ++ [err]
 --   where
 --     err = styleError f p e
-          
+
 getErrors :: FreestS -> String
 getErrors = (intercalate "\n") . errors
-  
+
 hasErrors :: FreestS -> Bool
 hasErrors = not . null . errors
 
@@ -220,12 +209,11 @@ addError p em = do
   f    <- getFileName
   tops <- getTypeNames
   let es = formatErrorMessages tops p f em
-  modify (\s -> s{errors = insertError (errors s) es})
-  
+  modify (\s -> s { errors = insertError (errors s) es })
+
 insertError :: [String] -> String -> [String]
-insertError es err
-  | err `elem` es = es
-  | otherwise     = es ++ [err] 
+insertError es err | err `elem` es = es
+                   | otherwise     = es ++ [err]
 
 -- | Traversing Map.map over FreestStates
 
