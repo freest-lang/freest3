@@ -112,7 +112,7 @@ synthetise kEnv (TypeApp p x ts) = do
       ]
     )
   let typeKinds = zip ts bs :: [(Type, TypeVarBind)]
-  mapM (\(u, TypeVarBind _ _ k) -> K.checkAgainst kEnv k u) typeKinds
+  mapM_ (\(u, TypeVarBind _ _ k) -> K.checkAgainst kEnv k u) typeKinds
   return $ foldr (\(u, TypeVarBind _ y _) -> Rename.subs u y) t typeKinds
 -- Boolean elimination
 synthetise kEnv (Conditional p e1 e2 e3) = do
