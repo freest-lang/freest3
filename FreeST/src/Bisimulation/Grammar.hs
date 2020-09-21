@@ -43,8 +43,9 @@ import           Syntax.TypeVariables
 import           Syntax.Base
 import           Syntax.Show
 import qualified Data.Map.Strict               as Map
-import           Data.List                      ( intersperse )
-import           Prelude                 hiding ( Word ) -- Word is (re)defined in module Equivalence.Grammar
+import           Data.List                      ( intercalate )
+-- Word is (re)defined in module Equivalence.Grammar
+import           Prelude                 hiding ( Word )
 
 -- Terminal symbols are called labels
 type Label = String
@@ -92,7 +93,7 @@ insertProduction p x l w = Map.insertWith Map.union x (Map.singleton l w) p
 instance Show Grammar where
   show (Grammar xss p) =
     "start words: "
-      ++ concat (intersperse ", " (map showWord xss))
+      ++ intercalate ", " (map showWord xss)
       ++ "\nproductions: "
       ++ showProductions p
 
@@ -107,5 +108,4 @@ showProductions = Map.foldrWithKey showTransitions ""
 
   showTransition :: TypeVar -> Label -> Word -> String -> String
   showTransition x l xs s =
-    s ++ "\n" ++ intern x ++ " -> " ++ l ++ " " ++ concat
-      (intersperse " " (map intern xs))
+    s ++ "\n" ++ intern x ++ " -> " ++ l ++ " " ++ unwords (map intern xs)
