@@ -11,7 +11,7 @@ session types into a grammar, which is pruned. An expansion tree is computed aft
 through an alternation of expansion of children nodes and their simplification, using the
 reflexive, congruence, and BPA rules.
 -}
-
+{-# LANGUAGE TupleSections #-}
 module Bisimulation.Bisimulation
   ( bisimilar
   )
@@ -118,9 +118,9 @@ findFixedPoint branch rules ps | branch == branch' = branch
  where
   branch' = foldr apply branch rules
   apply :: NodeTransformation -> Set.Set Branch -> Set.Set Branch
-  apply trans = foldr
-    (\(n, a) bs -> Set.union (Set.map (\s -> (s, a)) (trans ps a n)) bs)
-    Set.empty
+--    (\(n, a) bs -> Set.union (Set.map (\s -> (s, a)) (trans ps a n)) bs)
+  apply trans =
+    foldr (\(n, a) bs -> Set.union (Set.map (, a) (trans ps a n)) bs) Set.empty
 
 -- The various node transformations
 
@@ -149,7 +149,7 @@ congruence _ a = Set.singleton . Set.filter (not . congruentToAncestors)
 filtering :: NodeTransformation
 filtering ps _ n | normsMatch = Set.singleton n
                  | otherwise  = Set.empty
-  where normsMatch = and $ Set.map (\(xs, ys) -> sameNorm ps xs ys) n
+  where normsMatch = and $ Set.map (uncurry (sameNorm ps)) n
 
 applyBpa
   :: (Productions -> Ancestors -> (Word, Word) -> Set.Set Node)
@@ -182,8 +182,8 @@ findInAncestors a x y = Set.foldr
   a
 
 findInPair :: (Word, Word) -> TypeVar -> TypeVar -> Maybe (Word, Word)
-findInPair ((x' : xs), (y' : ys)) x y | x == x' && y == y' = Just (xs, ys)
-                                      | otherwise          = Nothing
+findInPair (x' : xs, y' : ys) x y | x == x' && y == y' = Just (xs, ys)
+                                  | otherwise          = Nothing
 findInPair _ _ _ = Nothing
 
 bpa2 :: NodeTransformation
@@ -214,17 +214,16 @@ pairsBPA2 p (x : xs) (y : ys) gamma = Set.fromList [p1, p2]
 -- only applicable to normed variables
 pathToSkip :: Productions -> TypeVar -> [Label]
 pathToSkip p x = fst . head $ filter (null . snd) ps
- where
-  ps = pathToSkip' p (Map.assocs $ (Map.mapKeys (: []) (transitions x p)))
+  where ps = pathToSkip' p (Map.assocs $ Map.mapKeys (: []) (transitions x p))
 
 pathToSkip' :: Productions -> [([Label], Word)] -> [([Label], Word)]
 pathToSkip' p ps | any (null . snd) ps = ps
                  | otherwise           = pathToSkip' p ps'
  where
   ps' = foldr
-    (\(ls, xs) ts -> union
-      (map (\(l, ys) -> (ls ++ [l], ys)) $ Map.assocs $ transitions xs p)
-      ts
+    (\(ls, xs) ts ->
+      map (\(l, ys) -> (ls ++ [l], ys)) (Map.assocs $ transitions xs p)
+        `union` ts
     )
     []
     ps
