@@ -82,7 +82,7 @@ checkHasBinding f _ = do
   tEnv <- getTEnv
   when
       (               f
-      `Map.member`    (userDefined (noConstructors tEnv vEnv))
+      `Map.member`    userDefined (noConstructors tEnv vEnv)
       &&              f
       `Map.notMember` eEnv
       )
@@ -112,19 +112,18 @@ checkMainFunction = do
     else do
       let s = vEnv Map.! main
       tEnv <- getTEnv
-      when (not (isValidMainType s)) $ K.synthetiseTS Map.empty s >>= \k ->
-        addError
-          defaultPos
-          [ Error "The type of"
-          , Error main
-          , Error "must be non-function, non-polymorphic\n"
-          , Error "\t found type (scheme)"
-          , Error s
-          , Error "of kind"
-          , Error k
-          ]
+      unless (isValidMainType s) $ K.synthetiseTS Map.empty s >>= \k -> addError
+        defaultPos
+        [ Error "The type of"
+        , Error main
+        , Error "must be non-function, non-polymorphic\n"
+        , Error "\t found type (scheme)"
+        , Error s
+        , Error "of kind"
+        , Error k
+        ]
 
 isValidMainType :: TypeScheme -> Bool
-isValidMainType (TypeScheme _ _  (Fun _ _ _ _)) = False
-isValidMainType (TypeScheme _ [] _            ) = True
-isValidMainType _                               = False
+isValidMainType (TypeScheme _ _  Fun{}) = False
+isValidMainType (TypeScheme _ [] _    ) = True
+isValidMainType _                       = False
