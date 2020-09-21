@@ -113,12 +113,12 @@ getNextIndex = do
 -- | FILE NAME
 
 getFileName :: FreestState String
-getFileName = filename <$> get
+getFileName = gets filename
 
 -- | VAR ENV
 
 getVEnv :: FreestState VarEnv
-getVEnv = varEnv <$> get
+getVEnv = gets varEnv
 
 getFromVEnv :: ProgVar -> FreestState (Maybe TypeScheme)
 getFromVEnv x = do
@@ -140,7 +140,7 @@ setVEnv vEnv = modify (\s -> s { varEnv = vEnv })
 -- | EXP ENV
 
 getEEnv :: FreestState ExpEnv
-getEEnv = expEnv <$> get
+getEEnv = gets expEnv
 
 getFromEEnv :: ProgVar -> FreestState (Maybe Expression)
 getFromEEnv x = do
@@ -156,7 +156,7 @@ setEEnv eEnv = modify (\s -> s { expEnv = eEnv })
 -- | TYPE ENV
 
 getTEnv :: FreestState TypeEnv
-getTEnv = typeEnv <$> get
+getTEnv = gets typeEnv
 
 addToTEnv :: TypeVar -> Kind -> TypeScheme -> FreestState ()
 addToTEnv x k t =
@@ -176,14 +176,10 @@ addTypeName :: Pos -> Type -> FreestState ()
 addTypeName p t = modify (\s -> s { typenames = Map.insert p t (typenames s) })
 
 getTypeNames :: FreestState TypeOpsEnv
-getTypeNames = fmap typenames get
-  -- do
-  -- s <- get
-  -- return $ typenames s
+getTypeNames = gets typenames
 
 findTypeName :: Pos -> Type -> FreestState Type
 findTypeName p t = Map.findWithDefault t p <$> getTypeNames
-
 
 -- | ERRORS
 
