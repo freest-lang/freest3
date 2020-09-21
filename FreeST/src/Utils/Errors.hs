@@ -12,22 +12,22 @@ This module provides tools to prettify & format errors with ANSI colors for term
 -}
 
 module Utils.Errors
-( 
-formatErrorMessages
-) where 
+  ( formatErrorMessages
+  )
+where
 
-import Syntax.Base (Pos)
-import Syntax.Types (TypeOpsEnv)
-import Syntax.Show
-import Utils.ErrorMessage
+import           Syntax.Base                    ( Pos )
+import           Syntax.Types                   ( TypeOpsEnv )
+import           Syntax.Show
+import           Utils.ErrorMessage
 
 -- | Format errors
 formatErrorMessages :: TypeOpsEnv -> Pos -> String -> [ErrorMessage] -> String
-formatErrorMessages _ _ _ []     = ""
+formatErrorMessages _ _ _ [] = ""
 formatErrorMessages tops p fname es =
   let header = styleHeader fname p
-      body   = foldl (\acc e -> acc ++ " " ++ (colorMsg tops e)) "" es in
-  header ++ body
+      body   = foldl (\acc e -> acc ++ " " ++ colorMsg tops e) "" es
+  in  header ++ body
 
 colorMsg :: TypeOpsEnv -> ErrorMessage -> String
 colorMsg tops (Error e) = styleColor (color e) (boldMsg tops e)
@@ -47,7 +47,7 @@ styleHeader f p =
 styleRed :: String -> String
 styleRed str = "\ESC[91m" ++ str ++ "\ESC[0m"
 
-styleBold :: String -> String  
+styleBold :: String -> String
 styleBold str = "\ESC[1m" ++ str ++ "\ESC[0m"
 
 styleColor :: Maybe Color -> String -> String

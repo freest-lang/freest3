@@ -51,25 +51,25 @@ solveEqs tenv = Map.foldlWithKey solveEq (return tenv) tenv
     -> FreestState TypeEnv
   solveEq acc x (k, s) = do
     let bt = buildRecursiveType x (k, s)
-    fmap (Map.insert x (k, (fromType bt))) acc >>= substituteEnv x bt
+    fmap (Map.insert x (k, fromType bt)) acc >>= substituteEnv x bt
 
 -- substitute every occurence of variable x in all the other entries of the map
 substituteEnv :: TypeVar -> Type -> TypeEnv -> FreestState TypeEnv -- TODO: refactor
 substituteEnv x t = tMapWithKeyM subsEnv
  where
   subsEnv :: TypeVar -> (Kind, TypeScheme) -> FreestState (Kind, TypeScheme)
-  subsEnv v ks@(k, (TypeScheme p b s))
+  subsEnv v ks@(k, TypeScheme p b s)
     | x == v = pure ks
     | -- ignore the node itself
       otherwise = do
       s' <- subsType Map.empty (Just (x, t)) s
-      let bt = buildRecursiveType v (k, (TypeScheme p b s'))
+      let bt = buildRecursiveType v (k, TypeScheme p b s')
       return (k, TypeScheme p b bt)
 
 -- GETTING ONLY TYPE DECLS FROM TENV (IGNORING DATATYPES)
 
 typeDecls :: TypeEnv -> TypeEnv
-typeDecls = Map.filter (\t -> not (isDataType (snd t)))
+typeDecls = Map.filter (not . isDataType . snd )
 
 isDataType :: TypeScheme -> Bool
 isDataType (TypeScheme _ _ (Datatype _ _)) = True
@@ -211,7 +211,7 @@ subsType _ (Just (x, t)) n@(TypeName p tname)
 -- just need to lookup upon the tenv to find the conversion
 subsType tenv Nothing n@(TypeName p tname) = case tenv Map.!? tname of
   Just t ->
-    addTypeName p n >> pure (changePos p ((toTypeVar tname) . toType $ snd t))
+    addTypeName p n >> pure (changePos p (toTypeVar tname . toType $ snd t))
   Nothing -> pure n
 -- In the first stage (converting typenames); we should ignore dualofs
 subsType tenv Nothing n@(Dualof p t) =

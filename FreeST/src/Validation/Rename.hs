@@ -211,7 +211,7 @@ renameField :: Bindings -> ([ProgVar], Expression) -> FreestState ([ProgVar], Ex
 renameField bs (xs, e) = do
   xs' <- mapM (rename bs) xs
   e' <- rename (insertProgVars xs xs' bs) e
-  return $ (xs', e')
+  return (xs', e')
 
 insertProgVars :: [ProgVar] -> [ProgVar] -> Bindings -> Bindings
 insertProgVars xs xs' bs = foldr(\(x, x') bs -> insertVar x x' bs) bs (zip xs xs')
