@@ -23,8 +23,8 @@ evalAndPrint :: Ctx -> E.ExpEnv -> E.Expression -> IO ()
 evalAndPrint ctx eenv e = do
   res <- eval ctx eenv e
   case res of
-    IOValue io -> io >>= putStrLn . show
-    _          -> putStrLn $ show res
+    IOValue io -> io >>= print
+    _          -> print res
 
 eval :: Ctx -> E.ExpEnv -> E.Expression -> IO Value
 eval _   _    (E.Unit _          ) = return Unit
