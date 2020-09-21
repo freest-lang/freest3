@@ -195,7 +195,7 @@ findTypeName p t = Map.findWithDefault t p <$> getTypeNames
 --     err = styleError f p e
 
 getErrors :: FreestS -> String
-getErrors = (intercalate "\n") . errors
+getErrors = intercalate "\n" . errors
 
 hasErrors :: FreestS -> Bool
 hasErrors = not . null . errors
@@ -217,13 +217,13 @@ tMapM :: Monad m => (a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)
 tMapM f m = Traversable.sequence (Map.map f m)
 
 tMapM_ :: Monad m => (a1 -> m a2) -> Map.Map k a1 -> m ()
-tMapM_ f m = tMapM f m >> return ()
+tMapM_ f m = void $ tMapM f m
 
 tMapWithKeyM :: Monad m => (k -> a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)
 tMapWithKeyM f m = Traversable.sequence (Map.mapWithKey f m)
 
 tMapWithKeyM_ :: Monad m => (k -> a1 -> m a2) -> Map.Map k a1 -> m ()
-tMapWithKeyM_ f m = tMapWithKeyM f m >> return ()
+tMapWithKeyM_ f m = void $ tMapWithKeyM f m
 
 
 {- An attempt to rename at parsing time
