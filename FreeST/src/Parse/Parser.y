@@ -72,6 +72,7 @@ import           Debug.Trace
   '-'      {TokenMinus _}
   '*'      {TokenTimes _}
   '_'      {TokenWild _}
+  '$'      {TokenDollar _}
   OP       {TokenOp _ _}
   UPPER_ID {TokenUpperId _ _}
   LOWER_ID {TokenLowerId _ _}
@@ -110,6 +111,7 @@ import           Debug.Trace
 %nonassoc '()'
 
 -- Expr
+%right '$'
 %right in else match case
 %left send receive select
 %nonassoc new
@@ -180,7 +182,8 @@ DataCon :: { (ProgVar, [Type]) }
 -----------------
 
 Expr :: { Expression }
-  : let ProgVarWild '=' Expr in Expr { UnLet (position $1) $2 $4 $6 }
+  : Expr '$' Expr                    { App (position $2) $1 $3 }
+  | let ProgVarWild '=' Expr in Expr { UnLet (position $1) $2 $4 $6 }
   | Expr ';' Expr                    { App (position $1)
                                           (Lambda (position $1) Un
                                             (mkVar (position $1) "_")
