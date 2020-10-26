@@ -112,7 +112,7 @@ treeClient c  =
 main : Tree
 main =
   let (w, r) = new TreeC in
-  let _      = fork (treeClient w) in
+  let _      = fork $ badClientSendExtraValue w in
   let t      = receiveTree r in
   t
 
