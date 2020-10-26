@@ -57,8 +57,8 @@ synthetise kEnv (ProgVar   p x) = do
   -- venv <- getVEnv
   -- traceM ("PROG: " ++ show x ++ " - " ++ show (x `Map.member` venv) ++ "\n" ++ show venv ++ "\n\n")
   s@(TypeScheme _ bs t) <- synthetiseVar kEnv x
-  when
-    (not $ null bs)
+  unless
+    (null bs)
     (addError
       p
       [ Error "Variable"
@@ -112,7 +112,7 @@ synthetise kEnv (TypeApp p x ts) = do
       ]
     )
   let typeKinds = zip ts bs :: [(Type, TypeVarBind)]
-  mapM (\(u, TypeVarBind _ _ k) -> K.checkAgainst kEnv k u) typeKinds
+  mapM_ (\(u, TypeVarBind _ _ k) -> K.checkAgainst kEnv k u) typeKinds
   return $ foldr (\(u, TypeVarBind _ y _) -> Rename.subs u y) t typeKinds
 -- Boolean elimination
 synthetise kEnv (Conditional p e1 e2 e3) = do
@@ -395,7 +395,7 @@ checkEquivTypes exp kEnv expected actual = do
   tEnv <- getTEnv
   -- vEnv <- getVEnv
   -- traceM ("\n checkEquivTypes exp : " ++ show exp ++ " \t" ++ show (userDefined vEnv))
-  when (not $ equivalent tEnv kEnv actual expected) $ addError
+  unless (equivalent tEnv kEnv actual expected) $ addError
     (position exp)
     [ Error "Couldn't match expected type"
     , Error expected
@@ -412,8 +412,8 @@ checkEqualEnvs :: Expression -> VarEnv -> VarEnv -> FreestState ()
 checkEqualEnvs e vEnv1 vEnv2 =
   -- tEnv <- getTEnv
   -- trace ("Initial vEnv: " ++ show (userDefined (noConstructors tEnv vEnv1)) ++ "\n  Final vEnv: " ++ show (userDefined (noConstructors tEnv vEnv2)) ++ "\n  Expression: " ++ show e) (return ())
-                               when
-  (not $ Map.null diff)
+                               unless
+  (Map.null diff)
   (addError
     (position e)
     [ Error
@@ -431,7 +431,7 @@ checkEquivEnvs p branching kEnv vEnv1 vEnv2 = do
   tEnv <- getTEnv
   let vEnv1' = userDefined vEnv1
       vEnv2' = userDefined vEnv2
-  when (not (equivalent tEnv kEnv vEnv1' vEnv2')) $ addError
+  unless (equivalent tEnv kEnv vEnv1' vEnv2') $ addError
     p
     [ Error
       (  "I have reached the end of a "

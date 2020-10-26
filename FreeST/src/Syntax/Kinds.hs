@@ -79,7 +79,7 @@ instance Default Kind where
   omission = kindTU
 
 isSession :: Kind -> Bool
-isSession = (<: (kindSL defaultPos))
+isSession = (<: kindSL defaultPos)
 
 isLin :: Kind -> Bool
 isLin (Kind _ _ m) = m == Lin

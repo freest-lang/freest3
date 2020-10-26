@@ -59,4 +59,5 @@ checkAndRun filePath = do
   -- Interpret
   evalAndPrint initialCtx
                (expEnv s4)
-               ((expEnv s4) Map.! (mkVar defaultPos "main"))
+               (expEnv s4 Map.! mkVar defaultPos "main")
+

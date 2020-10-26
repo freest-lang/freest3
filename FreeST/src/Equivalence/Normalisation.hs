@@ -40,7 +40,7 @@ instance Normalise Type where
   normalise tenv (Semi _ t u)
     | terminated t = normalise tenv u
     | otherwise    = append (normalise tenv t) u
-  normalise tenv t@(Rec _ _ _) = normalise tenv (Substitution.unfold t)
+  normalise tenv t@Rec{} = normalise tenv (Substitution.unfold t)
     -- Type operators
 --  normalise tenv (Dualof _ t) = (normalise tenv (dual t)
   normalise tenv (Dualof p t) = Dualof p (normalise tenv t) -- Lazy version 

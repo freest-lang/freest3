@@ -21,7 +21,7 @@ import           Syntax.TypeVariables
 import           Syntax.Base (position)
 import           Validation.Terminated (terminated)
 import           Utils.FreestState
-import           Control.Monad (when)
+import           Control.Monad (unless)
 
 -- Check the contractivity of a given type; issue an error if not
 class Contractive t where
@@ -29,7 +29,7 @@ class Contractive t where
 
 instance Contractive Type where
   checkContractive x t =
-    when (not (contractive x t)) $
+    unless (contractive x t) $
      addError (position t) [Error "Type", Error t, Error "is not contractive on type variable", Error x]
 
 -- A better notion of contractivy

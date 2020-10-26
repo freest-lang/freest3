@@ -73,7 +73,7 @@ instance ErrorMsg Int where
   color _ = Just Red
 
 instance ErrorMsg [Type] where
-  msg tops ts = showTypeList tops ts
+  msg = showTypeList
   color _ = Just Red
 
 showTypeList :: TypeOpsEnv -> [Type] -> String

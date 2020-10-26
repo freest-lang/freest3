@@ -66,7 +66,7 @@ toGrammar (Semi _ t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
   return $ xs ++ ys
-toGrammar m@(Message _ _ _) = do
+toGrammar m@Message{} = do
   y <- getLHS $ Map.singleton (show m) []
   return [y]
 toGrammar (Choice _ v m) = do
@@ -134,7 +134,7 @@ getFreshVar = do
   return $ mkVar defaultPos ("#X" ++ show n)
 
 getProductions :: TransState Productions
-getProductions = productions <$> get
+getProductions = gets productions
 
 getTransitions :: TypeVar -> TransState Transitions
 getTransitions x = do
@@ -142,7 +142,7 @@ getTransitions x = do
   return $ ps Map.! x
 
 getSubstitution :: TransState Substitution
-getSubstitution = substitution <$> get
+getSubstitution = gets substitution
 
 putProductions :: TypeVar -> Transitions -> TransState ()
 putProductions x m =
@@ -179,7 +179,7 @@ addProductions :: TypeVar -> Transitions -> TransState ()
 addProductions x ts = do
   ps <- getProductions
   b  <- existProductions x ts ps
-  when (not b) (putProductions x ts)
+  unless b (putProductions x ts)
 
 existProductions :: TypeVar -> Transitions -> Productions -> TransState Bool
 -- existProductions x ts _ = return False
@@ -199,7 +199,7 @@ sameTrans x1 x2 ts1 ts2
   | matchingTrans ts1 ts2 = do
     let s = Set.singleton (x1, x2)
     let res = Map.foldrWithKey
-          (\l w acc -> acc `Set.union` (compareWords w (ts2 Map.! l) s))
+          (\l w acc -> acc `Set.union` compareWords w (ts2 Map.! l) s)
           Set.empty
           ts1
     b <- fixedPoint s res ts1
@@ -211,12 +211,9 @@ sameTrans x1 x2 ts1 ts2
 -- Are two transitions equal?  Do they have the same keys and the
 -- corresponding words are of the same size?
 matchingTrans :: Transitions -> Transitions -> Bool
-matchingTrans ts1 ts2 =
-  Map.keys ts1
-    == Map.keys ts2
-    && (all (\(x, y) -> length x == length y)
-            (zip (Map.elems ts1) (Map.elems ts2))
-       )
+matchingTrans ts1 ts2 = Map.keys ts1 == Map.keys ts2 && all
+  (\(x, y) -> length x == length y)
+  (zip (Map.elems ts1) (Map.elems ts2))
 
 -- Compares two words
 -- If they are on the Set of visited productions, there is no need
@@ -251,10 +248,9 @@ fixedPoint visited goals ts
       else return False
  where
   moreGoals :: Transitions -> Transitions -> Goals
-  moreGoals ts1 ts2 = Map.foldrWithKey
+  moreGoals ts1 = Map.foldrWithKey
     (\l xs acc -> acc `Set.union` compareWords (ts1 Map.! l) xs visited)
     Set.empty
-    ts2
 
 -- Apply a TypeVar/TypeVar substitution to different objects
 
@@ -279,7 +275,7 @@ instance Substitute Productions where
 -- Unravel
 
 unr :: Type -> Type
-unr t@(Rec _ _ _) = unr (Substitution.unfold t)
+unr t@Rec{} = unr (Substitution.unfold t)
 unr (Semi p t1 t2) | unr t1 == Skip p = unr t2
                    | otherwise        = Semi p (unr t1) t2
 unr t = t

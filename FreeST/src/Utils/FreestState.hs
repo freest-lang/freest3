@@ -113,12 +113,12 @@ getNextIndex = do
 -- | FILE NAME
 
 getFileName :: FreestState String
-getFileName = filename <$> get
+getFileName = gets filename
 
 -- | VAR ENV
 
 getVEnv :: FreestState VarEnv
-getVEnv = varEnv <$> get
+getVEnv = gets varEnv
 
 getFromVEnv :: ProgVar -> FreestState (Maybe TypeScheme)
 getFromVEnv x = do
@@ -140,7 +140,7 @@ setVEnv vEnv = modify (\s -> s { varEnv = vEnv })
 -- | EXP ENV
 
 getEEnv :: FreestState ExpEnv
-getEEnv = expEnv <$> get
+getEEnv = gets expEnv
 
 getFromEEnv :: ProgVar -> FreestState (Maybe Expression)
 getFromEEnv x = do
@@ -156,7 +156,7 @@ setEEnv eEnv = modify (\s -> s { expEnv = eEnv })
 -- | TYPE ENV
 
 getTEnv :: FreestState TypeEnv
-getTEnv = typeEnv <$> get
+getTEnv = gets typeEnv
 
 addToTEnv :: TypeVar -> Kind -> TypeScheme -> FreestState ()
 addToTEnv x k t =
@@ -176,14 +176,10 @@ addTypeName :: Pos -> Type -> FreestState ()
 addTypeName p t = modify (\s -> s { typenames = Map.insert p t (typenames s) })
 
 getTypeNames :: FreestState TypeOpsEnv
-getTypeNames = fmap typenames get
-  -- do
-  -- s <- get
-  -- return $ typenames s
+getTypeNames = gets typenames
 
 findTypeName :: Pos -> Type -> FreestState Type
 findTypeName p t = Map.findWithDefault t p <$> getTypeNames
-
 
 -- | ERRORS
 
@@ -199,7 +195,7 @@ findTypeName p t = Map.findWithDefault t p <$> getTypeNames
 --     err = styleError f p e
 
 getErrors :: FreestS -> String
-getErrors = (intercalate "\n") . errors
+getErrors = intercalate "\n" . errors
 
 hasErrors :: FreestS -> Bool
 hasErrors = not . null . errors
@@ -221,13 +217,13 @@ tMapM :: Monad m => (a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)
 tMapM f m = Traversable.sequence (Map.map f m)
 
 tMapM_ :: Monad m => (a1 -> m a2) -> Map.Map k a1 -> m ()
-tMapM_ f m = tMapM f m >> return ()
+tMapM_ f m = void $ tMapM f m
 
 tMapWithKeyM :: Monad m => (k -> a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)
 tMapWithKeyM f m = Traversable.sequence (Map.mapWithKey f m)
 
 tMapWithKeyM_ :: Monad m => (k -> a1 -> m a2) -> Map.Map k a1 -> m ()
-tMapWithKeyM_ f m = tMapWithKeyM f m >> return ()
+tMapWithKeyM_ f m = void $ tMapWithKeyM f m
 
 
 {- An attempt to rename at parsing time
