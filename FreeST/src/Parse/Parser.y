@@ -111,10 +111,10 @@ import           Debug.Trace
 %nonassoc '()'
 
 -- Expr
-%right '$'
 %right in else match case
 %left send receive select
 %nonassoc new
+%right '$'
 %left '||'                      -- disjunction
 %left '&&'                      -- conjunction
 %left '==' '/='                 -- equality
@@ -210,6 +210,7 @@ App :: { Expression }
   | receive Primary                 { Receive (position $1) $2 }
   | select Primary ArbitraryProgVar { Select (position $1) $2 $3 }
   | fork Primary                    { Fork (position $1) $2 }
+  | fork '$' Expr                   { Fork (position $1) $3 }
   | '-' App %prec NEG               { unOp (mkVar (position $1) "negate") $2}
   | Primary                         { $1 }
 

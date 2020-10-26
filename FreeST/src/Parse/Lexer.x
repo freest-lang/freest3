@@ -359,6 +359,7 @@ instance Position Token where
   position (TokenConjunction p) = p
   position (TokenDisjunction p) = p
   position (TokenDiv p) = p
+  position (TokenDollar p) = p
 --  position t = error $ show t
 
 getText :: Token -> String
