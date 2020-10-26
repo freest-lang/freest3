@@ -110,19 +110,19 @@ initialCtx = Map.fromList
     )
   -- Prints
   , ( var "printInt"
-    , PrimitiveFun (\(Integer x) -> IOValue (print x >> return Unit))
+    , PrimitiveFun (\(Integer x) -> IOValue (putStr (show x) >> return Unit))
     )
   , ( var "printIntLn"
     , PrimitiveFun (\(Integer x) -> IOValue (print x >> return Unit))
     )
   , ( var "printBool"
-    , PrimitiveFun (\(Boolean x) -> IOValue (print x >> return Unit))
+    , PrimitiveFun (\(Boolean x) -> IOValue (putStr (show x) >> return Unit))
     )
   , ( var "printBoolLn"
     , PrimitiveFun (\(Boolean x) -> IOValue (print x >> return Unit))
     )
   , ( var "printChar"
-    , PrimitiveFun (\(Character x) -> IOValue (print x >> return Unit))
+    , PrimitiveFun (\(Character x) -> IOValue (putStr (show x) >> return Unit))
     )
   , ( var "printCharLn"
     , PrimitiveFun (\(Character x) -> IOValue (print x >> return Unit))
