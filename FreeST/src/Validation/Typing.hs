@@ -22,7 +22,7 @@ module Validation.Typing
   )
 where
 
-import           Control.Monad.State            ( when )
+import           Control.Monad.State            ( when, unless )
 import qualified Data.Map.Strict               as Map
 -- import           Debug.Trace                     -- debug
 import           Equivalence.Equivalence
