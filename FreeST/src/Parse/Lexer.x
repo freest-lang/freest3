@@ -79,6 +79,7 @@ tokens :-
   "&&"  		        { \p s -> TokenConjunction (internalPos p) }
   "||"  		        { \p s -> TokenDisjunction (internalPos p) }
   "/"  		                { \p s -> TokenDiv (internalPos p) }
+  "$"  		                { \p s -> TokenDollar (internalPos p) }
 -- Kinds
   SU                            { \p s -> TokenSU (internalPos p) }
   SL                            { \p s -> TokenSL (internalPos p) }
@@ -185,6 +186,7 @@ data Token =
   | TokenConjunction Pos
   | TokenDisjunction Pos
   | TokenDiv Pos
+  | TokenDollar Pos
 
 
 instance Show Token where
@@ -250,6 +252,7 @@ instance Show Token where
   show (TokenConjunction p) = "(&&)"
   show (TokenDisjunction p) = "(||)"
   show (TokenDiv p) = "(/)"
+  show (TokenDollar p) = "($)"
 
 -- Trim newlines
 scanTokens :: String -> String -> Either [Token] String
