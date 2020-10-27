@@ -14,8 +14,8 @@ aTree = Node 1 (Node 2 (Node 8 Leaf Leaf) (Node 3 (Node 5 Leaf Leaf) (Node 4 Lea
 data TreeStack = Empty | Value Tree TreeStack
 
 -- Push a Tree to the stack
-stackPush : TreeStack -> Tree -> TreeStack
-stackPush ts t = Value t ts
+stackPush : Tree -> TreeStack -> TreeStack
+stackPush = Value
 
 -- Pop the top Tree from the Stack (Leaf if empty)
 stackPop : TreeStack -> (TreeStack, Tree)
@@ -45,7 +45,7 @@ stackSize ts =
 -- Channel to send/receive a Tree. It is important that both sender and receiver
 --  agree on an order to traverse the Tree.
 --  (In our particular case we will use PREORDER - node, left, right)
-type TreeC : SL = +{ Value: !Int; TreeC, Leaf: Skip; TreeC, End: Skip }
+type TreeC : SL = +{ Value: !Int; TreeC, Leaf: TreeC, End: Skip }
 
 
 -- Sends a tree through a TreeC
@@ -53,49 +53,48 @@ sendTree : TreeC -> Tree -> TreeC
 sendTree c t =
   case t of {
     Leaf ->
-      let c = select c Leaf in
-      c,
+      select c Leaf,
+
     Node i lt rt ->
       let c = sendTree c rt in
       let c = sendTree c lt in
       let c = select c Value in
-      let c = send c i in
-      c
+      send c i
   }
 
 
 -- Facade function to receive a Tree through a channel
 receiveTree : dualof TreeC -> Tree
-receiveTree c = receiveTree_ c Empty
+receiveTree = receiveTree_ Empty
 
 -- Receives a Tree from a TreeC
 --  This function also serves as an abstraction to the TreeStack usage
 --
 -- => ERROR DETECTION:
---  - 'W' - Sent Value without sending left and right subtrees
---  - 'V' - Sent Value without sending left or right subtree
---  - 'E' - Closed channel without sending a Tree
---  - 'F' - Closed channel mid-stream or with extra Values
-receiveTree_ : dualof TreeC -> TreeStack -> Tree
-receiveTree_ c ts =
+--  - 'W' - Received Value without receiveing left AND right subtrees
+--  - 'V' - Received Value without receiveing left OR right subtree
+--  - 'E' - Channel was closed without sending a Tree
+--  - 'F' - Channel was closed mid-stream or with leftover tree elements
+receiveTree_ : TreeStack -> dualof TreeC -> Tree
+receiveTree_ ts c =
   match c with {
     Value c ->
       let (i, c)   = receive c in
-      let _ = if (stackIsEmpty ts) then printCharLn 'W' else () in
+      let _        = if stackIsEmpty ts then printCharLn 'W' else () in
       let (ts, lt) = stackPop ts in
-      let _ = if (stackIsEmpty ts) then printCharLn 'V' else () in
+      let _        = if stackIsEmpty ts then printCharLn 'V' else () in
       let (ts, rt) = stackPop ts in
-      let ts       = stackPush ts (Node i lt rt) in
-      receiveTree_ c ts,
+      let ts       = stackPush (Node i lt rt) ts in
+      receiveTree_ ts c,
 
     Leaf c ->
-      let ts = stackPush ts Leaf in
-      receiveTree_ c ts,
+      let ts = stackPush Leaf ts in
+      receiveTree_ ts c,
 
     End  c ->
-      let _ = if (stackIsEmpty ts) then printCharLn 'E' else () in
-      let _ = if (stackSize ts > 1) then printCharLn 'F' else () in
-      let (ts, t) = stackPop ts in
+      let _      = if stackIsEmpty ts  then printCharLn 'E' else () in
+      let _      = if stackSize ts > 1 then printCharLn 'F' else () in
+      let (_, t) = stackPop ts in
       t
   }
 
@@ -113,8 +112,7 @@ main : Tree
 main =
   let (w, r) = new TreeC in
   let _      = fork $ badClientSendExtraValue w in
-  let t      = receiveTree r in
-  t
+  receiveTree r
 
 
 
@@ -154,7 +152,7 @@ badClientForgotRight c =
   -- == Bad code ==
   let c = badSendTree c aTree in
   -- == Bad code ==
-  let c = select c End in
+  let _ = select c End in
   ()
 
 
@@ -164,12 +162,11 @@ badSendTree : TreeC -> Tree -> TreeC
 badSendTree c t =
   case t of {
     Leaf ->
-      let c = select c Leaf in
-      c,
+      select c Leaf,
+
     Node i lt rt ->
       --let c = badSendTree c rt in
       let c = badSendTree c lt in
       let c = select c Value in
-      let c = send c i in
-      c
+      send c i
   }
