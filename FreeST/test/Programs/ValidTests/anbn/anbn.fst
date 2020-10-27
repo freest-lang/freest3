@@ -61,6 +61,10 @@ server' c =
 main : ()
 main =
   let (w, r) = new S0 in
-  let t = fork (client 25 w) in
+  let t = fork (sink (client 25 w)) in
   let r = server r in
   ()
+
+-- Auxiliary function because of fork : () -> ()
+sink : Skip -> ()
+sink _ = ()

@@ -63,5 +63,9 @@ client c =
 main : Int
 main =
   let (w, r)  = new dualof TermChannel;!Int in
-  let _ = fork (computeService w) in
+  let _ = fork (sink (computeService w)) in
   client r
+
+-- Auxiliary function because of fork : () -> ()
+sink : Skip -> ()
+sink _ = ()

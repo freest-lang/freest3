@@ -50,7 +50,7 @@ treeSum : forall a : SL => dualof TreeC ; a -> (Int, a)
 treeSum c =
   match c with {
     Leaf c ->
-     (0, c), 
+     (0, c),
     Node c ->
       let (x, c) = receive c in
       let (l, c) = treeSum [dualof TreeC ; !Int ; a] c in
@@ -67,6 +67,11 @@ aTree = Node 1 (Node 2 (Node 8 Leaf Leaf) (Node 3 (Node 5 Leaf Leaf) (Node 4 Lea
 main : Tree
 main =
   let (w, r) = new TreeC in
-  fork (treeSum [Skip] r ) ;
+  fork (sink (treeSum [Skip] r )) ;
   let (t, _) = transform [Skip] aTree w in
   t
+
+-
+-- Auxiliary function because of fork : () -> ()
+sink : (Int, Skip) -> ()
+sink _ = ()

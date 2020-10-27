@@ -3,7 +3,7 @@ data IntList = End | List Int IntList
 --type IntListS = &{End: Skip, List: ?Int;IntListS;!Int}
 
 transform : forall a : SL => IntList -> (rec x:SL. +{EndC: Skip, ListC: !Int;x;?Int});a -> (IntList, a)
-transform list c = 
+transform list c =
     case list of {
         End ->
             (End, select c EndC),
@@ -19,9 +19,9 @@ transform list c =
 listSum : forall a : SL => (rec x:SL. &{EndC: Skip, ListC: ?Int;x;!Int});a -> (Int,a)
 listSum c =
     match c with {
-        EndC c -> 
+        EndC c ->
             (0, c),
-        ListC c -> 
+        ListC c ->
             let (x, c) = receive c in
             let (rest, c) = listSum[!Int;a] c in
             let c = send c (x + rest) in
@@ -32,8 +32,12 @@ aList : IntList
 aList = List 5 (List 4 (List 3 (List 2 (List 1 End))))
 
 main : IntList
-main = 
+main =
     let (w, r) = new (rec x:SL. +{EndC: Skip, ListC: !Int;x;?Int}) in
-    let _ = fork (listSum[Skip] r) in
+    let _ = fork (sink (listSum[Skip] r)) in
     let (l, _) = transform[Skip] aList w in
     l
+
+-- Auxiliary function for fork
+sink : (Int, Skip) -> ()
+sink _ = ()

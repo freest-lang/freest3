@@ -96,7 +96,7 @@ concatT in1 in2 out =
       (in1, (in2, out))
   }
 
--- A few functions to write on channels  
+-- A few functions to write on channels
 writeLtGt : D -> Skip
 writeLtGt c =
   select (select (select c Lt) Gt) Dollar
@@ -129,7 +129,14 @@ main =
   let (out1, in1) = new D in
   let (out2, in2) = new D in
   let (out3, in3) = new D in
-  fork (writeLtLtGtGtLtGt out1);
-  fork (writeLtLtGtLtGtGt out2);
-  fork (concatD[Skip, Skip, Skip] in1 in2 out3);
+  fork (sink (writeLtLtGtGtLtGt out1));
+  fork (sink (writeLtLtGtLtGtGt out2));
+  fork (sink_ (concatD[Skip, Skip, Skip] in1 in2 out3));
   readD[Skip] in3
+
+-- Auxiliary function because of fork : () -> ()
+sink : Skip -> ()
+sink _ = ()
+
+sink_ : (Skip, (Skip, Skip)) -> ()
+sink_ _ = ()

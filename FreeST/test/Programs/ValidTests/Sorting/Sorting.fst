@@ -60,7 +60,7 @@ sortingServer xs c =
 main : ()
 main =
   let (w, r) = new OrderingChannel in
-  fork (sortingServer[Skip] Nil r);
+  fork (sink (sortingServer[Skip] Nil r));
   client w
 
 -- Quicksort.  Adapted from learnyouahaskell.com. The integer sorting
@@ -91,3 +91,7 @@ append xs ys =
     Nil -> ys,
     Cons x xs' -> Cons x (append xs' ys)
   }
+
+-- Auxiliary function because of fork : () -> ()
+sink : (IntList, Skip) -> ()
+sink _ = ()

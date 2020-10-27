@@ -31,7 +31,7 @@ sendTree t c =
       let c = sendTree[TreeChannel;a] l c in
       sendTree[a] r c
   }
-  
+
 receiveTree : forall a : SL => dualof TreeChannel; a -> (Tree, a)
 receiveTree c =
   match c with {
@@ -48,6 +48,10 @@ main : Tree
 main =
   let inTree = Node 7 (Node 5 Leaf Leaf) (Node 9 (Node 11 Leaf Leaf) (Node 15 Leaf Leaf)) in
   let (writer, reader) = new TreeChannel in
-  let w = fork (sendTree[Skip] inTree writer) in
+  let w = fork (sink (sendTree[Skip] inTree writer)) in
   let (outTree, r) = receiveTree[Skip] reader in
   outTree
+
+-- Auxiliary function because of fork : () -> ()
+sink : Skip -> ()
+sink _ = ()

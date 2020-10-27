@@ -3,7 +3,7 @@ data List = Nil | Cons Char List
 server : forall α : SL => (rec x:SL.&{Done: Skip, More: ?Char;x});α -> (List, α)
 server c =
   match c with {
-    More c -> 
+    More c ->
       let (h, c) = receive c in
       let (t, c) = server[α] c in
       (Cons h t, c),
@@ -28,9 +28,12 @@ hello : List
 hello = Cons 'H' (Cons 'e' (Cons 'l' (Cons 'l' (Cons 'o' Nil))))
 
 main : List
-main = 
+main =
   let (c, s) = new (rec x:SL.+{Done: Skip, More: !Char;x}) in
-  let x = fork (client[Skip] hello c) in
-  let (res, c) = server[Skip] s in 
+  let x = fork (sink (client[Skip] hello c)) in
+  let (res, c) = server[Skip] s in
   res
 
+-- Auxiliary function because of fork : () -> ()
+sink : Skip -> ()
+sink _ = ()
