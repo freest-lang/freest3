@@ -10,6 +10,6 @@ read t =
 main : Int
 main =
   let (w, r) = new !Int in
-  let _ = fork (read (Two r)) in
+  let _ = fork $ let _ = read (Two r) in () in
   let _ = send w 5 in
   10

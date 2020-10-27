@@ -145,20 +145,21 @@ synthetise kEnv (BinLet _ x y e1 e2) = do
   return t2
 -- Fork
 synthetise kEnv (Fork p e) = do
-  t <- synthetise kEnv e
-  k <- K.synthetise kEnv t
-  when (isLin k) $ addError
-    p
-    [ Error "Unexpected linear expression"
-    , Error e
-    , Error "in fork\n"
-    , Error "\t expression"
-    , Error e
-    , Error "is of type"
-    , Error t
-    , Error "of kind"
-    , Error k
-    ]
+  checkAgainst kEnv e $ Basic p UnitType
+  -- t <- synthetise kEnv e
+  -- k <- K.synthetise kEnv t
+  -- when (isLin k) $ addError
+  --   p
+  --   [ Error "Unexpected linear expression"
+  --   , Error e
+  --   , Error "in fork\n"
+  --   , Error "\t expression"
+  --   , Error e
+  --   , Error "is of type"
+  --   , Error t
+  --   , Error "of kind"
+  --   , Error k
+  --   ]
   return $ Basic p UnitType
 -- Datatype elimination
 synthetise kEnv (Case p e fm) =
