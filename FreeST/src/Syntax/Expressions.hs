@@ -52,7 +52,7 @@ data Expression =
   | Receive Pos Expression
   | Select Pos Expression ProgVar
   | Match Pos Expression FieldMap
-   deriving (Eq, Ord)
+   deriving Eq
 
 type FieldMap  = Map.Map ProgVar ([ProgVar], Expression)
 
