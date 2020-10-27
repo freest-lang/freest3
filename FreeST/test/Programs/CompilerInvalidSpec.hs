@@ -25,11 +25,14 @@ testDir baseDir invalidTest = do
   let source = getSource sourceFiles
   testInvalid (dir ++ "/" ++ source) source
 
+errorExpected :: String
+errorExpected = "An error was expected but none was thrown"
+
 testInvalid :: String -> String -> Spec    
 testInvalid test filename = do
   b <- runIO $ hSilence [stdout, stderr] $ 
     catches (checkAndRun test >>
-               return (Just "It was expected an error but none was thrown"))
+               return (Just errorExpected))
        [Handler (\(e :: ExitCode) -> return $ exitProgram e),
         Handler (\(_ :: SomeException) -> return $ Just "Internal error thrown")]
   assert b
@@ -38,5 +41,5 @@ testInvalid test filename = do
     assert _          = it ("Testing " ++ filename) $ assertEqual "OK. Passed!" 1 1
         
 exitProgram :: ExitCode -> Maybe String
-exitProgram ExitSuccess = Just "It was expected an error but none was thrown"
+exitProgram ExitSuccess = Just errorExpected
 exitProgram _           = Nothing
