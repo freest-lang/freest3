@@ -15,7 +15,7 @@ import           Utils.ErrorMessage
 
 %wrapper "posn"
 
-$greek = [\880-\1023]
+$greek = [\880-\1023] # λ  -- forall not in range ([λ ∀])
 
 $upperA  = [A-Z]
 $upper = [$upperA$greek]
