@@ -93,13 +93,13 @@ main =
   let (cw6, cr6) = new !Int in
   let (cw7, cr7) = new !Int in
   -- the various sorting nodes
-  fork (first       (p / 2)     99    l1 cw1);
-  fork (evenProcess (p / 2)     88 r1 l2 cw2);
-  fork (oddProcess  (p / 2 - 1) 33 r2 l3 cw3);
-  fork (evenProcess (p / 2)     11 r3 l4 cw4);
-  fork (oddProcess  (p / 2 - 1) 55 r4 l5 cw5);
-  fork (evenProcess (p / 2)     44 r5 l6 cw6);
-  fork (last                    77 r6    cw7);
+  fork (sink (first       (p / 2)     99    l1 cw1));
+  fork (sink (evenProcess (p / 2)     88 r1 l2 cw2));
+  fork (sink (oddProcess  (p / 2 - 1) 33 r2 l3 cw3));
+  fork (sink (evenProcess (p / 2)     11 r3 l4 cw4));
+  fork (sink (oddProcess  (p / 2 - 1) 55 r4 l5 cw5));
+  fork (sink (evenProcess (p / 2)     44 r5 l6 cw6));
+  fork (sink (last                    77 r6    cw7));
   -- collect and print results
   let (x1, _) = receive cr1 in printIntLn x1;
   let (x2, _) = receive cr2 in printIntLn x2;
@@ -108,3 +108,8 @@ main =
   let (x5, _) = receive cr5 in printIntLn x5;
   let (x6, _) = receive cr6 in printIntLn x6;
   let (x7, _) = receive cr7 in printIntLn x7
+
+
+-- Auxiliary function because of fork : () -> ()
+sink : Skip -> ()
+sink _ = ()

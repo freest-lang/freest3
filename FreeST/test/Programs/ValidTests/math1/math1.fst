@@ -9,13 +9,17 @@ mathServer c =
       let (n2, c3) = receive c2 in
       send c3 (n1 + n2)
   }
-          
+
 main : Int
 main =
   let (w,r) = new +{Opposite: !Int;?Int, Plus: !Int;!Int;?Int} in
-  let x = fork (mathServer r) in
+  let x = fork (sink (mathServer r)) in
   let w = select w Plus in
   let w = send w 5 in
   let w = send w 18 in
   let (x, _) = receive w in
   x
+
+-- Auxiliary function because of fork : () -> ()
+sink : Skip -> ()
+sink _ = ()

@@ -3,19 +3,19 @@ boolServer :  &{And: Skip;?Bool;?Bool;!Bool;Skip,
                 Not: Skip;?Bool;!Bool;Skip} -> ()
 boolServer c =
   match c with {
-    And c1 -> 
+    And c1 ->
       let (n1, c2) = receive c1 in
       let (n2, c3) = receive c2 in
       let x = send c3 (n1 && n2) in
       (),
 
-    Or c1 -> 
+    Or c1 ->
       let (n1, c2) = receive c1 in
       let (n2, c3) = receive c2 in
-      let x = send c3 (n1 || n2) in 
+      let x = send c3 (n1 || n2) in
       (),
 
-    Not c1 -> 
+    Not c1 ->
       let (n1, c2) = receive c1 in
       let x = send c2 (not n1) in
       ()
@@ -39,7 +39,6 @@ startClient client =
   let x = fork (boolServer r) in
   client w
 
-  
+
 -- remove skips from the end
 -- Type check : environment checks only the linear part (filter)
-

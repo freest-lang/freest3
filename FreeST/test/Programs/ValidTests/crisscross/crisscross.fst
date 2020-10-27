@@ -25,5 +25,9 @@ main : Bool
 main =
   let (w1, r1) = new !Char in
   let (w2, r2) = new !Bool in
-  let u = fork (writer w1 w2) in
+  let u = fork (sink (writer w1 w2)) in
   reader r1 r2
+
+-- Auxiliary function because of fork : () -> ()
+sink : Skip -> ()
+sink _ = ()

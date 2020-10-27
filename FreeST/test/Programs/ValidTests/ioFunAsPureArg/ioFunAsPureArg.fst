@@ -1,7 +1,7 @@
 main : Bool
 main =
   let (s, r) = new !Int in
-  let _ = fork (sender s 5) in
+  let _ = fork (sink (sender s 5)) in
   if (div (f r) 2) == 5 then
     True
   else
@@ -12,3 +12,7 @@ f c = let (x, c) = receive c in x
 
 sender : !Int -> Int -> Skip
 sender c i = send c (i * 2)
+
+-- Auxiliary function because of fork : () -> ()
+sink : Skip -> ()
+sink _ = ()

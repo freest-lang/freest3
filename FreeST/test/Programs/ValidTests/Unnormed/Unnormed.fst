@@ -30,13 +30,17 @@ writer : Int -> T -> Skip
 writer i c = writer (i + 1) (send c i)
 
 reader : dualof T -> ()
-reader c = 
+reader c =
   let (i, c) = receive c in
-  printIntLn i; 
+  printIntLn i;
   reader c
-  
+
 main : ()
 main =
   let (w, r) = new T in
-  let _ = fork (writer 0 w) in
+  let _ = fork (sink (writer 0 w)) in
   reader r
+
+-- Auxiliary function because of fork : () -> ()
+sink : Skip -> ()
+sink _ = ()
