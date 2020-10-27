@@ -208,7 +208,7 @@ App :: { Expression }
   : App Primary                     { App (position $1) $1 $2 }
   | send Primary                    { Send (position $1) $2 }
   | receive Primary                 { Receive (position $1) $2 }
-  | select Primary ArbitraryProgVar { Select (position $1) $2 $3 }
+  | select ArbitraryProgVar Expr    { Select (position $1) $3 $2 }
   | fork Primary                    { Fork (position $1) $2 }
   | fork '$' Expr                   { Fork (position $1) $3 }
   | '-' App %prec NEG               { unOp (mkVar (position $1) "negate") $2}

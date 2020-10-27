@@ -249,10 +249,10 @@ instance Show Token where
   show (TokenOf p) = "of"  
   show (TokenDualof p) = "dualof"  
   show (TokenFArrow p) = "=>"
-  show (TokenConjunction p) = "(&&)"
-  show (TokenDisjunction p) = "(||)"
-  show (TokenDiv p) = "(/)"
-  show (TokenDollar p) = "($)"
+  show (TokenConjunction p) = "&&"
+  show (TokenDisjunction p) = "||"
+  show (TokenDiv p) = "/"
+  show (TokenDollar p) = "$"
 
 -- Trim newlines
 scanTokens :: String -> String -> Either [Token] String
