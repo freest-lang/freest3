@@ -2,7 +2,7 @@ type RcvInt : SL = ?Int
 type Arrow = Int -> dualof RcvInt -> Int
 
 sendInt : Arrow
-sendInt i c = let _ = send c i in 0 -- zero just for test purposes
+sendInt i c = let _ = send i c in 0 -- zero just for test purposes
 
 rcvInt : dualof Arrow
 rcvInt i c =

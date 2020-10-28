@@ -71,7 +71,7 @@ streamTree t c =
     Leaf ->
       select Leaf c,
     Node x l r ->
-      send (select Node $ streamTree r $ streamTree l c) x,
+      send x $ select Node $ streamTree r $ streamTree l c,
     Error ->
       select Leaf c
   }
@@ -106,11 +106,11 @@ writeTooMuch c =
 
 writeRootTreeOnly : Stream -> Skip
 writeRootTreeOnly c =
-  select EndOfStream $ send (select Node c) 5
+  select EndOfStream $ send 5 $ select Node c
 
 writeLeftTreeOnly : Stream -> Skip
 writeLeftTreeOnly c =
-  select EndOfStream $ send (select Node $ select Leaf c) 5
+  select EndOfStream $ send 5 $ select Node $ select Leaf c
 
 -- Go!
 

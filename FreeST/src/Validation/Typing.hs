@@ -55,6 +55,7 @@ synthetise _    (Boolean   p _) = return $ Basic p BoolType
 -- Variable
 synthetise kEnv e@(ProgVar p x)
   | x == mkVar p "receive" = addPartiallyAppliedError e
+  | x == mkVar p "send" = addPartiallyAppliedError e
   | otherwise = do
   -- venv <- getVEnv
   -- traceM ("PROG: " ++ show x ++ " - " ++ show (x `Map.member` venv) ++ "\n" ++ show venv ++ "\n\n")
@@ -93,15 +94,23 @@ synthetise kEnv e'@(Lambda p m x t1 e) = do
   when (m == Un) (checkEqualEnvs e' vEnv1 vEnv2)
   return $ Fun p m t1 t2
 -- Lambda elimination
-synthetise kEnv (App p (Select _ c) e) = do -- Select
+synthetise kEnv (App p (Select _ c) e) = do -- Select c e
   t <- synthetise kEnv e
   m <- extractOutChoiceMap e t
   extractCons p m c
-synthetise kEnv (App p (ProgVar _ x) e)  -- Receive
+synthetise kEnv (App p (ProgVar _ x) e)  -- Receive e
   | x == mkVar p "receive" = do
       t        <- synthetise kEnv e
       (u1, u2) <- extractInput e t
       return $ PairType p (Basic p u1) u2
+synthetise kEnv e@(App p (ProgVar _ x) _)  -- Send e
+  | x == mkVar p "send" = addPartiallyAppliedError e
+synthetise kEnv (App p (App _ (ProgVar _ x) e1) e2)  -- Send e1 e2
+  | x == mkVar p "send" = do
+      t        <- synthetise kEnv e2
+      (u1, u2) <- extractOutput e2 t
+      checkAgainst kEnv e1 $ Basic p u1
+      return u2
 synthetise kEnv (App _ e1 e2) = do -- General case
   t        <- synthetise kEnv e1
   (u1, u2) <- extractFun e1 t
@@ -191,7 +200,7 @@ synthetise kEnv (Receive p e) = do
   t        <- synthetise kEnv e
   (u1, u2) <- extractInput e t
   return $ PairType p (Basic p u1) u2
-synthetise kEnv e@(Select p c) =
+synthetise kEnv e@(Select _ _) =
   addPartiallyAppliedError e
 -- synthetise kEnv (Select p e c) = do
 --   t <- synthetise kEnv e
