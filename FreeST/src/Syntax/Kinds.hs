@@ -13,7 +13,7 @@ manipulate prekinds and multiplicities.
 
 module Syntax.Kinds
 ( PreKind (..)
-, TypeVarBind(..)
+, KindBind(..)
 , Kind (..)
 , KindEnv
 , kindTL
@@ -25,7 +25,7 @@ module Syntax.Kinds
 , join
 , isLin
 , isUn
-, fromTypeVarBinds
+, fromKindBinds
 ) where
 
 import           Syntax.TypeVariables
@@ -96,10 +96,10 @@ type KindEnv = Map.Map TypeVar Kind
 
 -- Binding type variables to kinds
 
-data TypeVarBind = TypeVarBind Pos TypeVar Kind deriving (Eq, Ord)
+data KindBind = KindBind Pos TypeVar Kind deriving (Eq, Ord)
 
-instance Position TypeVarBind where
-  position (TypeVarBind p _ _) = p
+instance Position KindBind where
+  position (KindBind p _ _) = p
 
-fromTypeVarBinds :: [TypeVarBind] -> KindEnv
-fromTypeVarBinds = foldr (\(TypeVarBind _ x k) env -> Map.insert x k env) Map.empty
+fromKindBinds :: [KindBind] -> KindEnv
+fromKindBinds = foldr (\(KindBind _ x k) env -> Map.insert x k env) Map.empty

@@ -49,7 +49,7 @@ subsAll σ s = foldl (\u (t, x) -> subs t x u) s σ
 
 -- Unfold a recursive type (one step only)
 unfold :: Type -> Type
-unfold t@(Rec _ (TypeVarBind _ x _) u) = subs t x u
+unfold t@(Rec _ (KindBind _ x _) u) = subs t x u
 
 -- The set of free type variables in a type
 free :: Type -> Set.Set TypeVar
@@ -61,7 +61,7 @@ free (Datatype _ m) = freeMap m
 free (Semi _ t u) = Set.union (free t) (free u)
 free (Choice _ _ m) = freeMap m
   -- Functional or session
-free (Rec _ (TypeVarBind _ x _) t) = Set.delete x (free t)
+free (Rec _ (KindBind _ x _) t) = Set.delete x (free t)
 free (TypeVar _ x) = Set.singleton x
   -- Type operators
 free (TypeName _ _) = Set.empty -- TODO: fix me!
@@ -89,10 +89,10 @@ subs t x (Datatype p m)   = Datatype p (Map.map (subs t x) m)
   -- Session types
 subs t x (Semi p u v)     = Semi p (subs t x u) (subs t x v)
 subs t x (Choice p v m)   = Choice p v (Map.map (subs t x) m)
-subs t x u@(Rec p yk@(TypeVarBind q y k) v)
+subs t x u@(Rec p yk@(KindBind q y k) v)
   | y == x                = u
   -- | y `Set.notMember` (free t) || x `Set.notMember` (free v) = Rec p yk (subs t x v)
-  | otherwise             = Rec p (TypeVarBind q z k) (subs t x (subs (TypeVar q z) y v))
+  | otherwise             = Rec p (KindBind q z k) (subs t x (subs (TypeVar q z) y v))
     where z = mkNewVar 0 y
   -- Functional or session
 subs t x u@(TypeVar _ y)

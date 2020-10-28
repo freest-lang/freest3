@@ -30,6 +30,6 @@ terminated = term Set.empty
 term :: Set.Set TypeVar -> Type -> Bool
 term _ (Skip _) = True
 term s (Semi _ t u) = term s t && term s u
-term s (Rec _ (TypeVarBind _ x _) t) = term (Set.insert x s) t
+term s (Rec _ (KindBind _ x _) t) = term (Set.insert x s) t
 term s (TypeVar _ x) = x `Set.member` s
 term _ _ = False

@@ -80,7 +80,7 @@ isDataType _                               = False
 buildRecursiveType :: TypeVar -> (Kind, TypeScheme) -> Type
 buildRecursiveType v (k, TypeScheme _ _ t)
   | isRecursiveTypeDecl v t = Rec (position v)
-                                  (TypeVarBind (position v) v k)
+                                  (KindBind (position v) v k)
                                   (toTypeVar v t)
   | otherwise = t
 
@@ -89,7 +89,7 @@ isRecursiveTypeDecl v (Semi _ t u) =
   isRecursiveTypeDecl v t || isRecursiveTypeDecl v u
 isRecursiveTypeDecl v (Choice _ _ m) =
   Map.foldlWithKey (\b _ t -> b || isRecursiveTypeDecl v t) False m
-isRecursiveTypeDecl v (Rec _ (TypeVarBind _ x _) t)
+isRecursiveTypeDecl v (Rec _ (KindBind _ x _) t)
   | x == v    = False
   | -- it is already a recursive type
     otherwise = isRecursiveTypeDecl v t
@@ -111,7 +111,7 @@ toTypeVar x (TypeName p tname) | --
                                  x == tname = TypeVar p tname
                                | otherwise  = TypeName p tname
 toTypeVar x (Semi p t1 t2) = Semi p (toTypeVar x t1) (toTypeVar x t2)
-toTypeVar _ (Rec p xs@(TypeVarBind _ x _) t) = Rec p xs (toTypeVar x t)
+toTypeVar _ (Rec p xs@(KindBind _ x _) t) = Rec p xs (toTypeVar x t)
 -- functional types
 toTypeVar x (Fun p m t u) = Fun p m (toTypeVar x t) (toTypeVar x u)
 toTypeVar x (PairType p t u) = PairType p (toTypeVar x t) (toTypeVar x u)

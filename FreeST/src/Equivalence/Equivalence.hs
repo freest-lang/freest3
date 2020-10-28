@@ -99,7 +99,7 @@ isSessionType _ _ Semi{} = True
 isSessionType _ _ Message{} = True
 isSessionType _ _ Choice{} = True
   -- Recursion
-isSessionType _ _ (Rec _ (TypeVarBind _ _ k) _) = isSession k
+isSessionType _ _ (Rec _ (KindBind _ _ k) _) = isSession k
 isSessionType _ kenv (TypeVar _ x) = Map.member x kenv
   -- Type operators
 isSessionType _ _ Dualof{} = True
@@ -118,12 +118,12 @@ instantiate :: TypeScheme -> TypeScheme -> Maybe (KindEnv, Type, Type)
 instantiate (TypeScheme _ bs1 t1) (TypeScheme _ bs2 t2) = inst bs1 bs2 t1 t2
  where
   inst
-    :: [TypeVarBind]
-    -> [TypeVarBind]
+    :: [KindBind]
+    -> [KindBind]
     -> Type
     -> Type
     -> Maybe (KindEnv, Type, Type)
-  inst (TypeVarBind p1 x1 k1 : bs1) (TypeVarBind _ x2 k2 : bs2) t1 t2
+  inst (KindBind p1 x1 k1 : bs1) (KindBind _ x2 k2 : bs2) t1 t2
     | k1 /= k2 = Nothing
     | otherwise = -- substitute x1 for x2 in t2
                   fmap (\(m, t1', t2') -> (Map.insert x1 k1 m, t1', t2'))

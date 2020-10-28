@@ -77,7 +77,7 @@ toGrammar (Choice _ v m) = do
 toGrammar x@(TypeVar _ _) = do      -- x is a polymorphic variable
   y <- getLHS $ Map.singleton (show x) []
   return [y]
-toGrammar (Rec _ (TypeVarBind _ x _) _) = return [x]
+toGrammar (Rec _ (KindBind _ x _) _) = return [x]
   -- Type operators
 toGrammar (Dualof   _ t               ) = toGrammar (dual t)
 toGrammar (TypeName p x               ) = toGrammar (TypeVar p x) -- TODO: can a TypeName be taken as a TypeVar?
@@ -93,7 +93,7 @@ type SubstitutionList = [(Type, TypeVar)]
 collect :: SubstitutionList -> Type -> TransState ()
 collect σ (  Semi   _ t                   u) = collect σ t >> collect σ u
 collect σ (  Choice _ _                   m) = tMapM_ (collect σ) m
-collect σ t@(Rec    _ (TypeVarBind _ x _) u) = do
+collect σ t@(Rec    _ (KindBind _ x _) u) = do
   let σ' = (t, x) : σ
   let u' = Substitution.subsAll σ' u
   (z : zs) <- toGrammar (unr u') -- TODO: use a simpler unravel function

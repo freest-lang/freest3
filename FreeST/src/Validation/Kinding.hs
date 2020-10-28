@@ -61,8 +61,8 @@ synthetise kEnv (Choice  p _ m) = do
   tMapM_ (checkAgainst kEnv (Kind p Session Lin)) m
   return $ Kind p Session Lin
 -- Session or functional
-synthetise kEnv (Rec _ (TypeVarBind _ x k) t) =
-  -- let (Rec _ (TypeVarBind _ x k) u) = rename t -- On the fly α-conversion
+synthetise kEnv (Rec _ (KindBind _ x k) t) =
+  -- let (Rec _ (KindBind _ x k) u) = rename t -- On the fly α-conversion
   -- checkContractive kEnv t
   -- checkContractive x t
   synthetise (Map.insert x k kEnv) t
@@ -99,7 +99,7 @@ checkAgainstSession kEnv t = do
 
 -- Check a type against a given kind
 checkAgainst :: KindEnv -> Kind -> Type -> FreestState ()
--- checkAgainst kEnv k (Rec _ (TypeVarBind p x _) t) = do
+-- checkAgainst kEnv k (Rec _ (KindBind p x _) t) = do
 --   checkContractive kEnv t
 --   checkAgainst (Map.insert x (Kind p Session Un) kEnv) k t
 checkAgainst kEnv expected t = do
@@ -117,7 +117,7 @@ checkAgainst kEnv expected t = do
 synthetiseTS :: KindEnv -> TypeScheme -> FreestState Kind
 synthetiseTS kEnv (TypeScheme _ bs t) = synthetise insertBinds t
  where
-  insertBinds = foldr (\(TypeVarBind _ x k) env -> Map.insert x k env) kEnv bs
+  insertBinds = foldr (\(KindBind _ x k) env -> Map.insert x k env) kEnv bs
 
 -- Determine whether a given type is unrestricted
 un :: TypeScheme -> FreestState Bool
