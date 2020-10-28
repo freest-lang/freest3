@@ -105,7 +105,7 @@ tokens :-
   select			{ \p s -> TokenSelect (internalPos p) }
   match				{ \p s -> TokenMatch (internalPos p) }
   with				{ \p s -> TokenWith (internalPos p) }
-  fork				{ \p s -> TokenFork (internalPos p) }
+--  fork				{ \p s -> TokenFork (internalPos p) }
   case				{ \p s -> TokenCase (internalPos p) }
   of				{ \p s -> TokenOf (internalPos p) }
   (forall|∀)                    { \p s -> TokenForall (internalPos p) }
@@ -171,7 +171,7 @@ data Token =
   | TokenSelect Pos
   | TokenMatch Pos
   | TokenWith Pos
-  | TokenFork Pos
+--  | TokenFork Pos
   | TokenCase Pos
   | TokenOf Pos
   | TokenForall Pos
@@ -236,7 +236,7 @@ instance Show Token where
   show (TokenSend p) = "send"  
 --  show (TokenReceive p) = "receive"  
   show (TokenSelect p) = "select"  
-  show (TokenFork p) = "fork"  
+--  show (TokenFork p) = "fork"  
   show (TokenMatch p) = "match"  
   show (TokenCase p) = "case"  
   show (TokenForall p) = "forall"  
@@ -339,7 +339,7 @@ instance Position Token where
   position (TokenSend p) = p
 --  position (TokenReceive p) = p
   position (TokenSelect p) = p
-  position (TokenFork p) = p
+--  position (TokenFork p) = p
   position (TokenMatch p) = p
   position (TokenCase p) = p
   position (TokenForall p) = p

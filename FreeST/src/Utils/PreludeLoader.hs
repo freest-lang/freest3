@@ -12,7 +12,7 @@ import           Syntax.Base
 import qualified Data.Map.Strict               as Map
 import           Syntax.Kinds
 
-
+binIntOp :: TypeScheme
 binIntOp = fromType
   (Fun
     defaultPos
@@ -20,6 +20,8 @@ binIntOp = fromType
     (Basic defaultPos IntType)
     (Fun defaultPos Un (Basic defaultPos IntType) (Basic defaultPos IntType))
   )
+
+binBoolOp :: TypeScheme
 binBoolOp = fromType
   (Fun
     defaultPos
@@ -27,6 +29,8 @@ binBoolOp = fromType
     (Basic defaultPos BoolType)
     (Fun defaultPos Un (Basic defaultPos BoolType) (Basic defaultPos BoolType))
   )
+
+relationalOp :: TypeScheme
 relationalOp = fromType
   (Fun
     defaultPos
@@ -34,10 +38,16 @@ relationalOp = fromType
     (Basic defaultPos IntType)
     (Fun defaultPos Un (Basic defaultPos IntType) (Basic defaultPos BoolType))
   )
+  
+unIntBool :: TypeScheme
 unIntBool = fromType
   (Fun defaultPos Un (Basic defaultPos IntType) (Basic defaultPos BoolType))
+
+unIntInt :: TypeScheme
 unIntInt = fromType
   (Fun defaultPos Un (Basic defaultPos IntType) (Basic defaultPos IntType))
+
+unBoolBool :: TypeScheme
 unBoolBool = fromType
   (Fun defaultPos Un (Basic defaultPos BoolType) (Basic defaultPos BoolType))
 
@@ -68,6 +78,9 @@ typeList =
     , fromType
       (Fun defaultPos Un (Basic defaultPos IntType) (Basic defaultPos CharType))
     )
+  , ( mkVar p "fork"
+    , fromType (Fun p Un (Basic p UnitType) (Basic p UnitType))
+    )
 -- If introduce fork here, programs must instantiate ths poly var. E.g., 'fork [()] (boolServer r)'
 --  , (mkVar p "fork", TypeScheme p [TypeVarBind p a (Kind p Functional Lin)] (Fun p Lin (TypeVar p a) (Basic p UnitType))) 
 --           , (mkVar p "id", TypeScheme p [TBindK p "a" (Kind p Session Un)] (Fun p Un (TypeVar p "a") (TypeVar p "a")))
@@ -96,7 +109,6 @@ typeList =
   , ( mkVar p "printUnitLn"
     , fromType (Fun p Un (Basic p UnitType) (Basic p UnitType))
     )
---  , (mkVar p "print", TypeScheme p [varBind] (Fun p Un var (Basic p UnitType)))
   ]
  where
   p       = defaultPos
