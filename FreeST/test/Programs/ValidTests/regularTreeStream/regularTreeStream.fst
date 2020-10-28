@@ -102,15 +102,15 @@ writeNothing c =
 
 writeTooMuch : Stream -> Skip
 writeTooMuch c =
-  select EndOfStream select Leaf select Leaf c
+  select EndOfStream $ select Leaf $select Leaf c
 
 writeRootTreeOnly : Stream -> Skip
 writeRootTreeOnly c =
-  select EndOfStream send (select Node c) 5
+  select EndOfStream $ send (select Node c) 5
 
 writeLeftTreeOnly : Stream -> Skip
 writeLeftTreeOnly c =
-  select EndOfStream send (select Node select Leaf c) 5
+  select EndOfStream $ send (select Node $ select Leaf c) 5
 
 -- Go!
 

@@ -86,10 +86,11 @@ eval ctx eenv (E.Receive _ e) = do
   (v, c)   <- receive c
   return $ Pair v (Chan c)
 
-eval ctx eenv (E.Select _ e x) = do
+eval ctx eenv (E.Select _ {- e -} x) = return Unit -- FIX ME!
+{- do
   (Chan c) <- eval ctx eenv e
   !c       <- send c (Label (show x))
-  return $ Chan c
+  return $ Chan c -}
 
 eval ctx eenv (E.Match _ e m) = do
   (Chan c)       <- eval ctx eenv e
