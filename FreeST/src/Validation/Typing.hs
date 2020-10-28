@@ -91,7 +91,7 @@ synthetise kEnv e'@(Lambda p m x t1 e) = do
   when (m == Un) (checkEqualEnvs e' vEnv1 vEnv2)
   return $ Fun p m t1 t2
 -- Lambda elimination
-synthetise kEnv (App _ (Select p c) e) = do
+synthetise kEnv (App p (Select _ c) e) = do
   t <- synthetise kEnv e
   m <- extractOutChoiceMap e t
   extractCons p m c
@@ -188,7 +188,7 @@ synthetise kEnv e@(Select p c) = do
   addError p [
     Error "Ooops! You're asking too much. I cannot type a partially applied",
     Error e,
-    Error ".\n\t I promise to look into that some time in the future.\n",
+    Error "\b.\n\t I promise to look into that some time in the future.\n",
     Error "\t In the meantime consider applying",
     Error e,
     Error "to an expression denoting a channel."
