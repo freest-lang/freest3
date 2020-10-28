@@ -182,25 +182,12 @@ instance Rename Expression where
     e1' <- rename bs e1
     e2' <- rename (insertVar x x' bs) e2
     return $ UnLet p x' e1' e2'
-  -- Fork
-  rename bs (Fork p e) = do
-    e' <- rename bs e
-    return $ Fork p e'
   -- Session types
   rename bs (New p t u) = do
     t' <- rename bs t
     u' <- rename bs u
     return $ New p t' u'
-  rename bs (Send p e) = do
-    e' <- rename bs e
-    return $ Send p e'
-  rename bs (Receive p e) = do
-    e' <- rename bs e
-    return $ Receive p e'
   rename bs e@(Select _ _) = return e
-  -- rename bs (Select p e l) = do
-  --   e' <- rename bs e
-  --   return $ Select p e' l
   rename bs (Match p e fm) = do
     e' <- rename bs e
     fm' <- tMapM (renameField bs) fm
