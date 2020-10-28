@@ -50,7 +50,8 @@ import           Debug.Trace
   '()'     {TokenUnit _}
   '->'     {TokenUnArrow _}
   '-o'     {TokenLinArrow _}
-  '\\'     {TokenLambda _}
+  lambda   {TokenLambda _}
+  Lambda   {TokenUpperLambda _}
   Skip     {TokenSkip _}
   '('      {TokenLParen _}
   ')'      {TokenRParen _}
@@ -182,7 +183,7 @@ Expr :: { Expression }
   : Expr '$' Expr                    { App (position $2) $1 $3 }
   | let ProgVarWild '=' Expr in Expr { UnLet (position $1) $2 $4 $6 }
   | Expr ';' Expr                    { App (position $1)
-                                          (Lambda (position $1) Un
+                                          (Abs (position $1) Un
                                             (mkVar (position $1) "_")
                                             (Basic (position $3) UnitType) $3)
                                        $1}
@@ -214,7 +215,7 @@ Primary :: { Expression }
   | '()'                                     { Unit (position $1) }
   | ProgVar '[' TypeList ']'                 { TypeApp (position $1) $1 $3 }
   | ArbitraryProgVar                         { ProgVar (position $1) $1 }
-  | '(' '\\' ProgVarWildTBind Arrow Expr ')' { Lambda (position $2) (snd $4) (fst $3) (snd $3) $5 }
+  | '(' lambda ProgVarWildTBind Arrow Expr ')' { Abs (position $2) (snd $4) (fst $3) (snd $3) $5 }
   | '(' Expr ',' Expr ')'                    { Pair (position $1)$2 $4 }
   | '(' Expr ')'                             { $2 }
 

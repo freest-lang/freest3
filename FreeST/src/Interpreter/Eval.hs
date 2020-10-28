@@ -34,7 +34,7 @@ eval _   _    (E.Boolean   _ b   ) = return $ Boolean b
 eval _   _    (E.Character _ c   ) = return $ Character c
 eval ctx eenv (E.ProgVar   _ x   ) = evalVar ctx eenv x
 eval ctx eenv (E.TypeApp _ x _   ) = evalVar ctx eenv x
-eval ctx _    (E.Lambda _ _ x _ e) = return $ Closure x e ctx
+eval ctx _    (E.Abs _ _ x _ e) = return $ Closure x e ctx
 eval ctx eenv (E.App _ e1 e2     ) = eval ctx eenv e1 >>= \case
   (Closure x e ctx') -> do
     !v <- eval ctx eenv e2
@@ -68,23 +68,23 @@ eval ctx eenv (E.UnLet _ x e1 e2) = do
 
 eval ctx eenv (E.Case _ e m) = eval ctx eenv e >>= evalCase ctx eenv m
 
-eval ctx eenv (E.Fork _ e  ) = do
-  _ <- forkIO $ void $ eval ctx eenv e
-  return Unit
+-- eval ctx eenv (E.Fork _ e  ) = do
+--   _ <- forkIO $ void $ eval ctx eenv e
+--   return Unit
 
 eval _ _ E.New{} = do
   (c1, c2) <- new
   return $ Pair (Chan c1) (Chan c2)
 
-eval ctx eenv (E.Send _ e) = do
-  (Chan c) <- eval ctx eenv e
-  return $ PrimitiveFun $ IOValue . fmap Chan . send c
---  return $ PrimitiveFun (\v -> IOValue $ fmap Chan (send c v))
+-- eval ctx eenv (E.Send _ e) = do
+--   (Chan c) <- eval ctx eenv e
+--   return $ PrimitiveFun $ IOValue . fmap Chan . send c
+-- --  return $ PrimitiveFun (\v -> IOValue $ fmap Chan (send c v))
 
-eval ctx eenv (E.Receive _ e) = do
-  (Chan c) <- eval ctx eenv e
-  (v, c)   <- receive c
-  return $ Pair v (Chan c)
+-- eval ctx eenv (E.Receive _ e) = do
+--   (Chan c) <- eval ctx eenv e
+--   (v, c)   <- receive c
+--   return $ Pair v (Chan c)
 
 eval ctx eenv (E.Select _ {- e -} x) = return Unit -- FIX ME!
 {- do
