@@ -23,7 +23,7 @@ type S1 : SL = +{A: S1; +{B: Skip}, B: Skip}
 -- The client selects a given number of A's
 client : Int -> S0 -> Skip
 client n c =
-  let c = select c A in
+  let c = select A c in
   client'[Skip] (n - 1) c
 
 -- for each A selected a B is also selected
@@ -31,11 +31,11 @@ client' : forall a : SL => Int -> S1;a -> a
 client' n c =
   if n == 0
   then
-    select c B                                  -- a
+    select B c                                  -- a
   else
-    let c = select c A in                       -- S1; +{B: Skip}; a
+    let c = select A c in                       -- S1; +{B: Skip}; a
     let c = client'[+{B: Skip}; a] (n - 1) c in -- +{B: Skip}; a
-    select c B                                  -- a
+    select B c                                  -- a
 
 -- The server offers the choice composed by A
 server : dualof S0 -> Skip

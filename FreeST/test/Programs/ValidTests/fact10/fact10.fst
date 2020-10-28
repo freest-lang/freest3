@@ -6,7 +6,7 @@ sendInt i c =
     select Enough c
   else
     let c = select More c in
-    let c = send c i in
+    let c = send i c in
     sendInt (i - 1) c
 
 rcvInt : Int -> dualof Choice -> (Int, Skip)

@@ -31,10 +31,10 @@ transform : forall a : SL => Tree -> TreeC ; a -> (Tree, a)
 transform tree c =
   case tree of {
     Leaf ->
-      (Leaf, select c Leaf),
+      (Leaf, select Leaf c),
     Node x l r ->
-      let c = select c Node in
-      let c = send c x in
+      let c = select Node c in
+      let c = send x c in
       let (l, c) = transform [TreeC ; ?Int ; a] l c in
       let (r, c) = transform [?Int ; a] r c in
       let (y, c) = receive c in
@@ -55,7 +55,7 @@ treeSum c =
       let (x, c) = receive c in
       let (l, c) = treeSum [dualof TreeC ; !Int ; a] c in
       let (r, c) = treeSum [!Int ; a] c in
-      let c = send c (x + l + r) in
+      let c = send (x + l + r) c in
       (x + l + r, c)
   }
 
@@ -71,7 +71,6 @@ main =
   let (t, _) = transform [Skip] aTree w in
   t
 
--
 -- Auxiliary function because of fork : () -> ()
 sink : (Int, Skip) -> ()
 sink _ = ()

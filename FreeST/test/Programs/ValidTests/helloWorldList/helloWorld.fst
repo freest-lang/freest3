@@ -15,11 +15,11 @@ client : forall α :SL => List -> (rec x:SL.+{Done: Skip, More: !Char;x});α -> 
 client l c =
   case l of {
     Nil ->
-      select c Done,
+      select Done c,
     Cons h t ->
 --      client[α] l (send cons (select More c))
-      let c = select c More in
-      let c = send c h in
+      let c = select More c in
+      let c = send h c in
       let c3 = client[α] t c in
       c3
   }

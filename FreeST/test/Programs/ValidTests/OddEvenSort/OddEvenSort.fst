@@ -7,7 +7,7 @@ type Sorter : SL = +{Done: Skip, More: !Int ; ?Int; Sorter}
 first : Int -> Int -> Sorter -> !Int -> Skip
 first n x right collect =
   if n == 0
-  then let _ = select right Done in send collect x
+  then let _ = select Done right in send x collect
   else let (min, right) = exchangeRight x right in
        first (n - 1) min right collect
 
@@ -18,7 +18,7 @@ first n x right collect =
 evenProcess : Int -> Int -> dualof Sorter -> Sorter -> !Int -> Skip
 evenProcess n x left right collect =
   match left with {
-    Done left -> let _ = select right Done in send collect x,
+    Done left -> let _ = select Done right in send x collect,
     More left -> let (max, left) = exchangeLeft x left in
                  oddProcess (n - 1) max left right collect
   }
@@ -30,7 +30,7 @@ evenProcess n x left right collect =
 oddProcess : Int -> Int -> dualof Sorter -> Sorter -> !Int -> Skip
 oddProcess n x left right collect =
   if n == 0
-  then let _ = select right Done in consume left ; send collect x
+  then let _ = select Done right in consume left ; send x collect
   else let (min, right) = exchangeRight x right in
        evenProcess (n - 1) min left right collect
 
@@ -40,7 +40,7 @@ oddProcess n x left right collect =
 last : Int -> dualof Sorter -> !Int -> Skip
 last x left collect =
   match left with {
-    Done left -> send collect x,
+    Done left -> send x collect,
     More left -> let (max, left) = exchangeLeft x left in
                  last max left collect
   }
@@ -48,14 +48,14 @@ last x left collect =
 -- Exchange a value with a right node; return the min and the channel.
 exchangeRight : Int -> Sorter -> (Int, Sorter)
 exchangeRight x right =
-  let (y, right) = receive (send (select right More) x) in
+  let (y, right) = receive (send x (select More right)) in
   (min x y, right)
 
 -- Exchange a value with a right node; return the max and the channel.
 exchangeLeft : Int -> ?Int;!Int;dualof Sorter -> (Int, dualof Sorter)
 exchangeLeft x left =
   let (y, left) = receive left in
-  (max x y, send left x)
+  (max x y, send x left)
 
 -- Consume the rest of a left channel once sorting in complete for an
 -- odd process. The More branch is never exercised.
@@ -65,7 +65,7 @@ consume c =
     Done c -> (),
     More c -> -- Should not happen
       let (_, c) = receive c in
-      consume (send c (-99))
+      consume (send (-99) c)
   }
 
 min : Int -> Int -> Int

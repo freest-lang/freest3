@@ -33,16 +33,16 @@ exploreTree : forall a:SL => XploreTreeChan;a -> Tree -> a
 exploreTree c tree =
   case tree of {
     Leaf ->
-      select c Leaf,
+      select Leaf c,
     Node x l r ->
-      exploreNode[a] (select c Node) x l r
+      exploreNode[a] (select Node c) x l r
     }
 
 exploreNode : forall a:SL => XploreNodeChan;a -> Int -> Tree -> Tree -> a
 exploreNode c x l r =
   match c with {
     Value c ->
-      exploreNode[a] (send c x) x l r,
+      exploreNode[a] (send x c) x l r,
     Left c ->
       let c = exploreTree[XploreNodeChan;a] c l in
       exploreNode[a] c x l r,
@@ -66,14 +66,14 @@ server c1 n =
 
 serverNode : forall a:SL => dualof XploreNodeChan;a -> Int -> (a, Int)
 serverNode c n =
-  let (m, c) = receive (select c Value) in
+  let (m, c) = receive (select Value c) in
   if m == 0
-  then (select c Exit, 0)
+  then (select Exit c, 0)
   else
-    let c = select c Left in
+    let c = select Left c in
     let (c, m) = server[dualof XploreNodeChan;a] c (m * n) in
-    let (c, k) = server[dualof XploreNodeChan;a] (select c Right) m in
-    (select c Exit, k)
+    let (c, k) = server[dualof XploreNodeChan;a] (select Right c) m in
+    (select Exit c, k)
 
 aTree : Tree
 aTree = Node 7 (Node 5 Leaf Leaf) (Node 9 (Node 11 Leaf Leaf) (Node 15 Leaf Leaf))

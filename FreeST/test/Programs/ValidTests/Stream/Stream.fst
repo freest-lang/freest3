@@ -27,7 +27,7 @@ type OutIntStream : SL = !Int; OutIntStream
 
 -- Write on an int on a channel; return the continuation channel
 writeInt : forall β:SL => !Int; β -> β
-writeInt c = send c 7
+writeInt c = send 7 c
 
 writeIntStream : OutIntStream -> ()
 writeIntStream = consumeStream[!Int] writeInt[OutIntStream]
@@ -52,7 +52,7 @@ type OutCharInBoolStream : SL = !Char; ?Bool; OutCharInBoolStream
 -- Write and read on an out-char-in-bool stream; return the continuation channel
 writeCharReadBool : forall β:SL => !Char; ?Bool; β -> β
 writeCharReadBool c =
-  let (v, c) = receive (send c 'z') in printBool v; c
+  let (v, c) = receive (send 'z' c) in printBool v; c
 
 writeCharReadBoolStream : OutCharInBoolStream -> ()
 writeCharReadBoolStream =
@@ -62,7 +62,7 @@ writeCharReadBoolStream =
 readCharWriteBool : forall β:SL => ?Char; !Bool; β -> β
 readCharWriteBool c =
   let (v, c) = receive c in
-  printChar v; send c False
+  printChar v; send False c
 
 readCharWriteBoolStream : dualof OutCharInBoolStream -> ()
 readCharWriteBoolStream =

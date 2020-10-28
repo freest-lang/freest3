@@ -16,10 +16,10 @@ sendList : forall a : SL => ListOut;a -> List -> a
 sendList c l =
   case l of {
     Cons x xs ->
-      let c = select c Cons in
-      let c = send c x in
+      let c = select Cons c in
+      let c = send x c in
       sendList[a] c xs,
-    Nil       -> select c Nil
+    Nil       -> select Nil c
   }
 
 

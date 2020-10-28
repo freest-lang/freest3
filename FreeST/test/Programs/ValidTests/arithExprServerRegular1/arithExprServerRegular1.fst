@@ -13,18 +13,18 @@ type Stream = +{
 client : (rec x: SL. +{Add: x, Mult: x, Const: !Int;x, EOS: ?Int}) -> Int
 client c =
   -- stream the arithmetic operation
-  let c = select c Const in
-  let c = send c 5 in
-  let c = select c Const in
-  let c = send c 4 in
-  let c = select c Mult in
-  let c = select c Const in
-  let c = send c 2 in
-  let c = select c Const in
-  let c = send c 3 in
-  let c = select c Mult in
-  let c = select c Add in
-  let c = select c EOS in
+  let c = select Const c in
+  let c = send 5 c in
+  let c = select Const c in
+  let c = send 4 c in
+  let c = select Mult c in
+  let c = select Const c in
+  let c = send 2 c in
+  let c = select Const c in
+  let c = send 3 c in
+  let c = select Mult c in
+  let c = select Add c in
+  let c = select EOS c in
   -- read the result
   let (x, _) = receive c in
   -- and return it
@@ -45,7 +45,7 @@ evaluate s l =
     Const s -> let (n, s) = receive s in evaluate s (Cons n l),
     Add s   -> let (p, l) = head2 l in let (x, y) = p in evaluate s (Cons (x + y) l),
     Mult s  -> let (p, l) = head2 l in let (x, y) = p in evaluate s (Cons (x * y) l),
-    EOS s   -> send s (headSingleton l)
+    EOS s   -> send (headSingleton l) s
   }
 
 head2 : IntList -> ((Int, Int), IntList)

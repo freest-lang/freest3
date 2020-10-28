@@ -4,19 +4,19 @@ boolServer c =
     And c -> 
       let (n1, c) = receive c in
       let (n2, c) = receive c in
-      let c = send c (n1 && n2) in
+      let c = send (n1 && n2) c in
       boolServer c,
 
     Or c -> 
       let (n1, c) = receive c in
       let (n2, c) = receive c in
-      let c = send c (n1 || n2) in 
+      let c = send (n1 || n2) c in 
       boolServer c,
     Not c -> 
       let (n, c) = receive c in
       -- let c = send c (not n) in
       -- boolServer c,
-      (boolServer (send c (not n))),
+      (boolServer (send (not n) c)),
 
     End c ->
       ()
@@ -24,14 +24,14 @@ boolServer c =
 
 client1 : (rec x:SU. +{And: !Bool;!Bool;?Bool;x, Or: !Bool;!Bool;?Bool;x, Not: !Bool;?Bool;x,End: Skip}) -> Bool
 client1 c =
-  let c = select c And in
-  let c = send c True in
-  let c = send c True in
+  let c = select And c in
+  let c = send True c in
+  let c = send True c in
   let (x, c) = receive c in
-  let c = select c Not in
-  let c = send c x in
+  let c = select Not c in
+  let c = send x c in
   let (y, c) = receive c in
-  let c = select c End in
+  let c = select End c in
   y
 
 main : Bool

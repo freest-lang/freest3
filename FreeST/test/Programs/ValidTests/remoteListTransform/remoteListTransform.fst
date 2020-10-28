@@ -6,10 +6,10 @@ transform : forall a : SL => IntList -> (rec x:SL. +{EndC: Skip, ListC: !Int;x;?
 transform list c =
     case list of {
         End ->
-            (End, select c EndC),
+            (End, select EndC c),
         List i rest ->
-            let c = select c ListC in
-            let c = send c i in
+            let c = select ListC c in
+            let c = send i c in
             let (rest, c) = transform[?Int;a] rest c in
             let (y, c) = receive c in
             (List y rest, c)
@@ -24,7 +24,7 @@ listSum c =
         ListC c ->
             let (x, c) = receive c in
             let (rest, c) = listSum[!Int;a] c in
-            let c = send c (x + rest) in
+            let c = send (x + rest) c in
             (x+rest,c)
     }
 
