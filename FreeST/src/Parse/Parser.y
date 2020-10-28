@@ -95,12 +95,9 @@ import           Debug.Trace
   then     {TokenThen _}
   else     {TokenElse _}
   new      {TokenNew _}
---  send     {TokenSend _}
---  receive  {TokenReceive _}
   select   {TokenSelect _}
   match    {TokenMatch _}
   with     {TokenWith _}
---  fork     {TokenFork _}
   case     {TokenCase _}
   of       {TokenOf _}
   forall   {TokenForall _}
@@ -206,11 +203,7 @@ Expr :: { Expression }
 
 App :: { Expression }
   : App Primary                     { App (position $1) $1 $2 }
---  | send Primary                    { Send (position $1) $2 }
---  | receive Primary                 { Receive (position $1) $2 }
   | select ArbitraryProgVar         { Select (position $1) $2 }
---  | fork Primary                    { Fork (position $1) $2 }
---  | fork '$' Expr                   { Fork (position $1) $3 }
   | '-' App %prec NEG               { unOp (mkVar (position $1) "negate") $2}
   | Primary                         { $1 }
 
