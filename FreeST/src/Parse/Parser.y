@@ -95,7 +95,7 @@ import           Debug.Trace
   then     {TokenThen _}
   else     {TokenElse _}
   new      {TokenNew _}
-  send     {TokenSend _}
+--  send     {TokenSend _}
 --  receive  {TokenReceive _}
   select   {TokenSelect _}
   match    {TokenMatch _}
@@ -112,7 +112,7 @@ import           Debug.Trace
 
 -- Expr
 %right in else match case
-%left send receive select
+%left select -- send receive
 %nonassoc new
 %right '$'
 %left '||'                      -- disjunction
@@ -206,7 +206,7 @@ Expr :: { Expression }
 
 App :: { Expression }
   : App Primary                     { App (position $1) $1 $2 }
-  | send Primary                    { Send (position $1) $2 }
+--  | send Primary                    { Send (position $1) $2 }
 --  | receive Primary                 { Receive (position $1) $2 }
   | select ArbitraryProgVar         { Select (position $1) $2 }
 --  | fork Primary                    { Fork (position $1) $2 }
