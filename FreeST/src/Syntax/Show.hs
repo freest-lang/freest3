@@ -188,9 +188,11 @@ showExp i (BinLet _ x y e1 e2) =
   -- Datatype elim
 showExp i (Case _ e m) =
   "case " ++ showExp (i - 1) e ++ " of {" ++ showFieldMap (i - 1) m ++ "}"
-  -- Type application
+  -- Type Abstraction intro and elim
 showExp _ (TypeApp _ x ts) =
   show x ++ " [" ++ unwords (map show ts) ++ "]"
+showExp _ (TypeAbs _ b e) =
+  show "∀" ++ show b ++ "->" ++ showExp (i - 1) b
   -- Boolean elim
 showExp i (Conditional _ e e1 e2) =
   "if "

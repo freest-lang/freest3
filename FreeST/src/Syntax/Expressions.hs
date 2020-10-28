@@ -38,7 +38,9 @@ data Expression =
   | BinLet Pos ProgVar ProgVar Expression Expression
   -- Datatype elim
   | Case Pos Expression FieldMap
-  -- Type applicati2on
+  -- Type Abstraction intro and elim
+  | TypeAbs Pos KindBind Expression
+  -- | TypeApp Pos Expression Type -- NEW, replace the below
   | TypeApp Pos ProgVar [Type]
   -- Boolean elim
   | Conditional Pos Expression Expression Expression
