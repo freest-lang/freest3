@@ -91,6 +91,10 @@ synthetise kEnv e'@(Lambda p m x t1 e) = do
   when (m == Un) (checkEqualEnvs e' vEnv1 vEnv2)
   return $ Fun p m t1 t2
 -- Lambda elimination
+synthetise kEnv (App _ (Select p c) e) = do
+  t <- synthetise kEnv e
+  m <- extractOutChoiceMap e t
+  extractCons p m c
 synthetise kEnv (App _ e1 e2) = do
   t        <- synthetise kEnv e1
   (u1, u2) <- extractFun e1 t
@@ -182,7 +186,7 @@ synthetise kEnv (Receive p e) = do
   return $ PairType p (Basic p u1) u2
 synthetise kEnv (Select p c) = do
   addError p [Error "Ooops! You're asking too much. I cannot type a partially applied select. I promise to look into that some time in the future."]
-  return $ omission p
+  return $ Skip p
 -- synthetise kEnv (Select p e c) = do
 --   t <- synthetise kEnv e
 --   m <- extractOutChoiceMap e t

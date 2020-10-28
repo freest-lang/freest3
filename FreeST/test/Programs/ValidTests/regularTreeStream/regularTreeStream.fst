@@ -63,7 +63,7 @@ type Stream : SL = +{
 -- Writing trees on channels
 
 sendTree : Tree -> Stream -> Skip
-sendTree t c = select EndOfStream streamTree t c
+sendTree t c = select EndOfStream $ streamTree t c
 
 streamTree : Tree -> Stream -> Stream
 streamTree t c =
@@ -71,7 +71,7 @@ streamTree t c =
     Leaf ->
       select Leaf c,
     Node x l r ->
-      send (select Node streamTree r $ streamTree l c) x,
+      send (select Node $ streamTree r $ streamTree l c) x,
     Error ->
       select Leaf c
   }
@@ -102,7 +102,7 @@ writeNothing c =
 
 writeTooMuch : Stream -> Skip
 writeTooMuch c =
-  select EndOfStream $ select Leaf $select Leaf c
+  select EndOfStream $ select Leaf $ select Leaf c
 
 writeRootTreeOnly : Stream -> Skip
 writeRootTreeOnly c =
