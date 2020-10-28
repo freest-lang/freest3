@@ -57,6 +57,8 @@ data Type =
   | Semi Pos Type Type
   | Message Pos Polarity BasicType
   | Choice Pos Polarity TypeMap
+  -- Polymorphism
+  | Forall Pos KindBind Type
   -- Functional or session 
   | Rec Pos KindBind Type 
   | TypeVar Pos TypeVar  -- a recursion variable if bound, polymorphic otherwise
@@ -78,6 +80,8 @@ instance Position Type where
   position (Semi p _ _)     = p
   position (Message p _ _)  = p
   position (Choice p _ _)   = p
+  -- Polymorphism
+  position (Forall p _ _)   = p
   -- Functional or session
   position (Rec p _ _)      = p
   position (TypeVar p _)    = p
