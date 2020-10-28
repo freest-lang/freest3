@@ -53,27 +53,29 @@ synthetise _    (Integer   p _) = return $ Basic p IntType
 synthetise _    (Character p _) = return $ Basic p CharType
 synthetise _    (Boolean   p _) = return $ Basic p BoolType
 -- Variable
-synthetise kEnv (ProgVar   p x) = do
+synthetise kEnv e@(ProgVar p x)
+  | x == mkVar p "receive" = addPartiallyAppliedError e
+  | otherwise = do
   -- venv <- getVEnv
   -- traceM ("PROG: " ++ show x ++ " - " ++ show (x `Map.member` venv) ++ "\n" ++ show venv ++ "\n\n")
-  s@(TypeScheme _ bs t) <- synthetiseVar kEnv x
-  unless
-    (null bs)
-    (addError
-      p
-      [ Error "Variable"
-      , Error x
-      , Error "of a polymorphic type used in a monomorphic context\n"
-      , Error "\t The type scheme for variable"
-      , Error x
-      , Error "is"
-      , Error s
-      , Error "\n\t Consider instantiating variable"
-      , Error x
-      , Error "with appropriate types for the polymorphic variables"
-      ]
-    )
-  return t
+      s@(TypeScheme _ bs t) <- synthetiseVar kEnv x
+      unless
+        (null bs)
+        (addError
+          p
+          [ Error "Variable"
+          , Error x
+          , Error "of a polymorphic type used in a monomorphic context\n"
+          , Error "\t The type scheme for variable"
+          , Error x
+          , Error "is"
+          , Error s
+          , Error "\n\t Consider instantiating variable"
+          , Error x
+          , Error "with appropriate types for the polymorphic variables"
+          ]
+        )
+      return t
 synthetise kEnv (UnLet _ x e1 e2) = do
   t1 <- synthetise kEnv e1
   addToVEnv x (fromType t1)
@@ -91,11 +93,16 @@ synthetise kEnv e'@(Lambda p m x t1 e) = do
   when (m == Un) (checkEqualEnvs e' vEnv1 vEnv2)
   return $ Fun p m t1 t2
 -- Lambda elimination
-synthetise kEnv (App p (Select _ c) e) = do
+synthetise kEnv (App p (Select _ c) e) = do -- Select
   t <- synthetise kEnv e
   m <- extractOutChoiceMap e t
   extractCons p m c
-synthetise kEnv (App _ e1 e2) = do
+synthetise kEnv (App p (ProgVar _ x) e)  -- Receive
+  | x == mkVar p "receive" = do
+      t        <- synthetise kEnv e
+      (u1, u2) <- extractInput e t
+      return $ PairType p (Basic p u1) u2
+synthetise kEnv (App _ e1 e2) = do -- General case
   t        <- synthetise kEnv e1
   (u1, u2) <- extractFun e1 t
 --  traceM ("Extract Fun: " ++ show u1 ++ " | "  ++ show u2 ++ " against " ++ show e2)
@@ -184,16 +191,8 @@ synthetise kEnv (Receive p e) = do
   t        <- synthetise kEnv e
   (u1, u2) <- extractInput e t
   return $ PairType p (Basic p u1) u2
-synthetise kEnv e@(Select p c) = do
-  addError p
-    [ Error "Ooops! You're asking too much. I cannot type a partially applied"
-    , Error e
-    , Error "\b.\n\t I promise to look into that some time in the future.\n"
-    , Error "\t In the meantime consider applying"
-    , Error e
-    , Error "to an expression denoting a channel."
-    ]
-  return $ Skip p
+synthetise kEnv e@(Select p c) =
+  addPartiallyAppliedError e
 -- synthetise kEnv (Select p e c) = do
 --   t <- synthetise kEnv e
 --   m <- extractOutChoiceMap e t
@@ -358,6 +357,20 @@ quotient kEnv x = do
         ]
     Nothing -> return ()
   removeFromVEnv x
+
+addPartiallyAppliedError :: Expression -> FreestState Type
+addPartiallyAppliedError e = do
+  let p = position e
+  addError p
+    [ Error "Ooops! You're asking too much. I cannot type a partially applied"
+    , Error e
+    , Error "\b.\n\t I promise to look into that some time in the future.\n"
+    , Error "\t In the meantime consider applying"
+    , Error e
+    , Error "to an expression denoting a channel."
+    ]
+  return $ omission p
+
 
 -- CHECKING AGAINST A GIVEN TYPE OR TYPE SCHEME
 
