@@ -247,12 +247,9 @@ subsExp tenv (TypeApp p x xs) =
   fmap (TypeApp p x) (mapM (subsType tenv Nothing) xs)
 subsExp tenv (UnLet p x e1 e2) =
   liftM2 (UnLet p x) (subsExp tenv e1) (subsExp tenv e2)
-subsExp tenv (Fork p e) = fmap (Fork p) (subsExp tenv e)
 subsExp tenv (New p t u) =
   liftM2 (New p) (subsType tenv Nothing t) (subsType tenv Nothing u)
-subsExp tenv (Send    p e ) = fmap (Send p) (subsExp tenv e)
-subsExp tenv (Receive p e ) = fmap (Receive p) (subsExp tenv e)
-subsExp tenv (Select p {- e -} x) = liftM (Select p) {- (subsExp tenv e) -} (pure x)
+subsExp tenv (Select p x) = liftM (Select p) (pure x)
 subsExp tenv (Match p e m) =
   liftM2 (Match p) (subsExp tenv e) (subsFieldMap tenv m)
 subsExp _ e = return e

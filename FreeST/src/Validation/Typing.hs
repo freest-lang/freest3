@@ -163,24 +163,6 @@ synthetise kEnv (BinLet _ x y e1 e2) = do
   quotient kEnv x
   quotient kEnv y
   return t2
--- Fork
-synthetise kEnv (Fork p e) = do
-  checkAgainst kEnv e $ Basic p UnitType
-  -- t <- synthetise kEnv e
-  -- k <- K.synthetise kEnv t
-  -- when (isLin k) $ addError
-  --   p
-  --   [ Error "Unexpected linear expression"
-  --   , Error e
-  --   , Error "in fork\n"
-  --   , Error "\t expression"
-  --   , Error e
-  --   , Error "is of type"
-  --   , Error t
-  --   , Error "of kind"
-  --   , Error k
-  --   ]
-  return $ Basic p UnitType
 -- Datatype elimination
 synthetise kEnv (Case p e fm) =
   synthetiseFieldMap p "case" kEnv e fm extractDatatypeMap paramsToVEnvCM
@@ -190,16 +172,6 @@ synthetise kEnv (New p t u) = do
   K.checkAgainstSession kEnv t
   return $ PairType p t u -- (dual t)
   -- return $ PairType p t (Dualof p t)
--- Send
-synthetise kEnv (Send p e) = do
-  t        <- synthetise kEnv e
-  (u1, u2) <- extractOutput e t
-  return (Fun p Lin (Basic p u1) u2)
--- Receive
-synthetise kEnv (Receive p e) = do
-  t        <- synthetise kEnv e
-  (u1, u2) <- extractInput e t
-  return $ PairType p (Basic p u1) u2
 synthetise kEnv e@(Select _ _) =
   addPartiallyAppliedError e
 -- synthetise kEnv (Select p e c) = do

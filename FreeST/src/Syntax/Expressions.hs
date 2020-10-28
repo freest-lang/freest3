@@ -44,13 +44,9 @@ data Expression =
   | Conditional Pos Expression Expression Expression
   -- Let
   | UnLet Pos ProgVar Expression Expression -- TODO: Derived; eliminate? If is which type for the ProgVar? (cf. Lambda)
-  -- Fork
-  | Fork Pos Expression
   -- Session types
   | New Pos Type Type
-  | Send Pos Expression
-  | Receive Pos Expression
-  | Select Pos {- Expression -} ProgVar
+  | Select Pos ProgVar
   | Match Pos Expression FieldMap
    deriving Eq
 
@@ -73,9 +69,6 @@ instance Position Expression where
   position (Pair p _ _)          = p
   position (BinLet p _ _ _ _)    = p
   position (New p _ _)           = p
-  position (Send p _)            = p
-  position (Receive p _ )        = p
-  position (Select p {- _ -} _)        = p
+  position (Select p _)          = p
   position (Match p _ _)         = p
-  position (Fork p _)            = p
   position (Case p _ _)          = p

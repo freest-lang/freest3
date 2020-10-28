@@ -207,14 +207,9 @@ showExp i (UnLet _ x e1 e2) =
     ++ " in "
     ++ showExp (i - 1) e2
     ++ ")"
-  -- Fork
-showExp i (Fork _ e   ) = "fork " ++ showExp (i - 1) e
   -- Session types
-showExp _ (New _ t _  ) = "new " ++ show t
-showExp i (Send    _ e) = "(send " ++ showExp (i - 1) e ++ ")"
-showExp i (Receive _ e) = "(receive " ++ showExp (i - 1) e ++ ")"
-showExp i (Select _ {- e -} l) =
-  "(select " ++ {- showExp (i - 1) e ++ " " ++ -} show l ++ ")"
+showExp _ (New _ t _) = "new " ++ show t
+showExp i (Select _ l) = "(select " ++ show l ++ ")"
 showExp i (Match _ e m) =
   "match " ++ showExp (i - 1) e ++ " with {" ++ showFieldMap (i - 1) m ++ "}"
 
