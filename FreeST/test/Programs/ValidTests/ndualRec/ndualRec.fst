@@ -6,13 +6,13 @@ type DD : SL = dualof (dualof Choice)
 
 sendInt : Int -> DD -> Skip
 sendInt i c =
-    let c = select c More in
-    let c = send c i in
-    let c = select c More in
-    let c = send c (i+1) in
-    let c = select c More in
-    let c = send c (i+2) in
-    select c Enough
+    let c = select More c in
+    let c = send i c in
+    let c = select More c in
+    let c = send (i + 1) c in
+    let c = select More c in
+    let c = send (i + 2) c in
+    select Enough c
 
 rcvInt : Int -> dualof DD -> (Int, Skip)
 rcvInt acc c =
@@ -23,7 +23,6 @@ rcvInt acc c =
       let (iii, c) = rcvInt (acc+i) c in
       (iii, c)
   }
-
 
 main : Int
 main =

@@ -4,7 +4,7 @@
 type DD = dualof (dualof !Int)
 
 sendInt : DD -> Skip
-sendInt c = send c 5
+sendInt c = send 5 c
 
 rcvInt : dualof DD -> Int
 rcvInt c =
