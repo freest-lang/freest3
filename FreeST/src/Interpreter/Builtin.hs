@@ -14,8 +14,8 @@ import           Syntax.ProgramVariables
 -- Communication primitives
 ------------------------------------------------------------
 
-send :: ChannelEnd -> Value -> IO ChannelEnd
-send c v = do
+send :: Value -> ChannelEnd -> IO ChannelEnd
+send v c = do
   C.writeChan (snd c) v
   return c
 
@@ -30,7 +30,6 @@ receive ch = do
   v <- C.readChan (fst ch)
   return (v, ch)
 
-
 ------------------------------------------------------------  
 -- SETUP, builtin functions
 ------------------------------------------------------------
@@ -38,7 +37,24 @@ receive ch = do
 initialCtx :: Ctx
 initialCtx = Map.fromList
   -- Integers
-  [ ( var "(+)"
+  [ -- Communication primitives
+    ( var "send",
+      PrimitiveFun
+        (\v-> PrimitiveFun (\(Chan c) -> IOValue $ fmap Chan (send v c)))
+    )
+  ,
+
+    ( var "receive",
+      PrimitiveFun
+        (\(Chan c) -> IOValue $ receive c >>= \(v, c) -> return $ Pair v (Chan c))
+    )
+  ,
+    -- ( var "fork",
+    --   PrimitiveFun
+    --     (\v -> IOValue $ forkIO $ void $ eval ctx eenv e -> return Unit)
+    -- )
+--  ,
+    ( var "(+)"
     , PrimitiveFun
       (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x + y))
     )
