@@ -185,13 +185,13 @@ synthetise kEnv (Receive p e) = do
   (u1, u2) <- extractInput e t
   return $ PairType p (Basic p u1) u2
 synthetise kEnv e@(Select p c) = do
-  addError p [
-    Error "Ooops! You're asking too much. I cannot type a partially applied",
-    Error e,
-    Error "\b.\n\t I promise to look into that some time in the future.\n",
-    Error "\t In the meantime consider applying",
-    Error e,
-    Error "to an expression denoting a channel."
+  addError p
+    [ Error "Ooops! You're asking too much. I cannot type a partially applied"
+    , Error e
+    , Error "\b.\n\t I promise to look into that some time in the future.\n"
+    , Error "\t In the meantime consider applying"
+    , Error e
+    , Error "to an expression denoting a channel."
     ]
   return $ Skip p
 -- synthetise kEnv (Select p e c) = do
