@@ -191,8 +191,8 @@ showExp i (Case _ e m) =
   -- Type Abstraction intro and elim
 showExp _ (TypeApp _ x ts) =
   show x ++ " [" ++ unwords (map show ts) ++ "]"
-showExp _ (TypeAbs _ b e) =
-  show "∀" ++ show b ++ "->" ++ showExp (i - 1) b
+showExp i (TypeAbs _ b e) =
+  show "∀" ++ show b ++ "->" ++ showExp (i - 1) e
   -- Boolean elim
 showExp i (Conditional _ e e1 e2) =
   "if "

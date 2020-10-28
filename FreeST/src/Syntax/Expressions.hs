@@ -18,6 +18,7 @@ module Syntax.Expressions
 ) where
 
 import           Syntax.Types (Type)
+import           Syntax.Kinds (KindBind)
 import           Syntax.ProgramVariables
 import           Syntax.Base
 import qualified Data.Map.Strict as Map
@@ -67,6 +68,7 @@ instance Position Expression where
   position (UnLet p _ _ _)       = p
   position (App p _ _)           = p
   position (TypeApp p _ _)       = p
+  position (TypeAbs p _ _)       = p
   position (Conditional p _ _ _) = p
   position (Pair p _ _)          = p
   position (BinLet p _ _ _ _)    = p
