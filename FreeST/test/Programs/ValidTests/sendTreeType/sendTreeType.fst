@@ -24,10 +24,10 @@ sendTree : forall a:SL => Tree -> TreeChannel; a -> a
 sendTree t c =
   case t of {
     Leaf ->
-      select c Leaf,
+      select Leaf c,
     Node x l r ->
-      let c = select c Node in
-      let c = send c x in
+      let c = select Node c in
+      let c = send x c in
       let c = sendTree[TreeChannel;a] l c in
       sendTree[a] r c
   }
