@@ -24,6 +24,7 @@ data Value =
   | PrimitiveFun (Value -> Value)
   | Label String -- to be sent over channels
   | Chan ChannelEnd
+  | Fork
   | IOValue (IO Value)
 --  | Send ChannelEnd  
 --  | Receive
