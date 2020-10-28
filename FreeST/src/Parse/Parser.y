@@ -183,9 +183,9 @@ Expr :: { Expression }
   : Expr '$' Expr                    { App (position $2) $1 $3 }
   | let ProgVarWild '=' Expr in Expr { UnLet (position $1) $2 $4 $6 }
   | Expr ';' Expr                    { App (position $1)
-                                          (Abs (position $1) Un
-                                            (mkVar (position $1) "_")
-                                            (Basic (position $3) UnitType) $3)
+                                         (Abs (position $1) Un
+                                           (TypeBind (position $1) (mkVar (position $1) "_") (Basic (position $3) UnitType))
+                                           $3)
                                        $1}
   | let '(' ProgVarWild ',' ProgVarWild ')' '=' Expr in Expr
                                      { BinLet (position $1) $3 $5 $8 $10 }
@@ -215,7 +215,8 @@ Primary :: { Expression }
   | '()'                                     { Unit (position $1) }
   | ProgVar '[' TypeList ']'                 { TypeApp (position $1) $1 $3 }
   | ArbitraryProgVar                         { ProgVar (position $1) $1 }
-  | '(' lambda ProgVarWildTBind Arrow Expr ')' { Abs (position $2) (snd $4) (fst $3) (snd $3) $5 }
+  | '(' lambda ProgVarWildTBind Arrow Expr ')'
+     { Abs (position $2) (snd $4) (TypeBind (position $2) (fst $3) (snd $3)) $5 }
   | '(' Expr ',' Expr ')'                    { Pair (position $1)$2 $4 }
   | '(' Expr ')'                             { $2 }
 

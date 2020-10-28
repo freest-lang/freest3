@@ -232,8 +232,9 @@ dualFun t               = dual t
 -- Substitute expressions
 
 subsExp :: TypeEnv -> Expression -> FreestState Expression
-subsExp tenv (Abs p m pv t e) =
-  liftM2 (Abs p m pv) (subsType tenv Nothing t) (subsExp tenv e)
+subsExp tenv (Abs p1 m (TypeBind p2 pv t) e) = do
+  t' <- subsType tenv Nothing t
+  liftM (Abs p1 m (TypeBind p2 pv t')) (subsExp tenv e)
 subsExp tenv (App p e1 e2) = liftM2 (App p) (subsExp tenv e1) (subsExp tenv e2)
 subsExp tenv (Pair p e1 e2) =
   liftM2 (Pair p) (subsExp tenv e1) (subsExp tenv e2)

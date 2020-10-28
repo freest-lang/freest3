@@ -17,7 +17,7 @@ module Syntax.Expressions
 , ExpEnv
 ) where
 
-import           Syntax.Types (Type)
+import           Syntax.Types (Type, TypeBind)
 import           Syntax.Kinds (KindBind)
 import           Syntax.ProgramVariables
 import           Syntax.Base
@@ -32,7 +32,7 @@ data Expression =
   -- Variable
   | ProgVar Pos ProgVar
   -- Abstraction intro and elim
-  | Abs Pos Multiplicity ProgVar Type Expression
+  | Abs Pos Multiplicity TypeBind Expression
   | App Pos Expression Expression
   -- Pair intro and elim
   | Pair Pos Expression Expression
@@ -64,7 +64,7 @@ instance Position Expression where
   position (Character p _)       = p
   position (Boolean p _)         = p
   position (ProgVar p _)         = p
-  position (Abs p _ _ _ _)       = p
+  position (Abs p _ _ _)         = p
   position (UnLet p _ _ _)       = p
   position (App p _ _)           = p
   position (TypeApp p _ _)       = p

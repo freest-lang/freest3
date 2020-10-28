@@ -84,7 +84,7 @@ synthetise kEnv (UnLet _ x e1 e2) = do
   quotient kEnv x
   return t2
 -- Abs introduction
-synthetise kEnv e'@(Abs p m x t1 e) = do
+synthetise kEnv e'@(Abs p m (TypeBind _ x t1) e) = do
   K.synthetise kEnv t1
   vEnv1 <- getVEnv
   addToVEnv x (fromType t1)
@@ -462,12 +462,12 @@ fillFunType
 fillFunType kEnv b e (TypeScheme _ _ t) = fill e t
  where
   fill :: Expression -> Type -> FreestState Type
-  fill (Abs _ _ b _ e) (Fun _ _ t1 t2) = do
+  fill (Abs _ _ (TypeBind _ b _) e) (Fun _ _ t1 t2) = do
     addToVEnv b (fromType t1)
     t3 <- fill e t2
     removeFromVEnv b
     return t3
-  fill e@(Abs p _ _ _ _) t = do
+  fill e@(Abs p _ _ _) t = do
     addError
       (position b)
       [ Error "Couldn't match expected type"

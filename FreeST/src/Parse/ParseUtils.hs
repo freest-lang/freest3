@@ -243,9 +243,9 @@ buildFunBody f bs e = getFromVEnv f >>= \case
   buildExp :: [ProgVar] -> Type -> Expression
   buildExp [] _ = e
   buildExp (b : bs) (Fun _ m t1 t2) =
-    Abs (position b) m b t1 (buildExp bs t2)
+    Abs (position b) m (TypeBind (position b) b t1) (buildExp bs t2)
   buildExp (b : bs) (Dualof p (Fun _ m t1 t2)) =
-    Abs (position b) m b (Dualof p t1) (buildExp bs (Dualof p t2))
+    Abs (position b) m (TypeBind (position b) b (Dualof p t1)) (buildExp bs (Dualof p t2))
   buildExp (b : bs) t =
-    Abs (position b) Un b (omission (position b)) (buildExp bs t)
+    Abs (position b) Un (TypeBind (position b) b (omission (position b))) (buildExp bs t)
 

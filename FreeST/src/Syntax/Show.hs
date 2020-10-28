@@ -138,6 +138,9 @@ showChoice i m = intercalate ", " $ Map.foldrWithKey
   []
   m
 
+instance Show TypeBind where
+  show (TypeBind _ x t) = show x ++ ":" ++ show t
+
 -- Type Schemes
 
 instance Show TypeScheme where
@@ -162,11 +165,9 @@ showExp _ (ProgVar   _ x) = show x
   -- Depth reached
 showExp 0 _               = ".."
   -- Abstraction intro and elim
-showExp i (Abs _ m b t e) =
-  "(\\"
+showExp i (Abs _ m b e) =
+  "(λ"
     ++ show b
-    ++ " : "
-    ++ show t
     ++ showArrow m
     ++ showExp (i - 1) e
     ++ ")"
@@ -192,7 +193,7 @@ showExp i (Case _ e m) =
 showExp _ (TypeApp _ x ts) =
   show x ++ " [" ++ unwords (map show ts) ++ "]"
 showExp i (TypeAbs _ b e) =
-  show "∀" ++ show b ++ "->" ++ showExp (i - 1) e
+  show "Λ" ++ show b ++ "->" ++ showExp (i - 1) e
   -- Boolean elim
 showExp i (Conditional _ e e1 e2) =
   "if "
