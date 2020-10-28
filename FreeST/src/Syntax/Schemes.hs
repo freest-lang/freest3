@@ -34,7 +34,7 @@ import           Syntax.TypeVariables
 import           Syntax.Base
 import qualified Data.Map.Strict as Map
 
-data TypeScheme = TypeScheme Pos [TypeVarBind] Type
+data TypeScheme = TypeScheme Pos [KindBind] Type
 
 -- The definitions of the datatypes and types declared in a program
 type TypeEnv = Map.Map TypeVar (Kind, TypeScheme)
@@ -72,5 +72,5 @@ isDatatypeContructor c tEnv =
         isDatatype (Datatype _ m) = c `Map.member` m
         isDatatype _              = False
 
-insert :: KindEnv -> [TypeVarBind] -> KindEnv
-insert = foldr (\(TypeVarBind _ x k) env -> Map.insert x k env)
+insert :: KindEnv -> [KindBind] -> KindEnv
+insert = foldr (\(KindBind _ x k) env -> Map.insert x k env)

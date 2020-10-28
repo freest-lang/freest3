@@ -57,7 +57,7 @@ data Type =
   | Message Pos Polarity BasicType
   | Choice Pos Polarity TypeMap
   -- Functional or session 
-  | Rec Pos TypeVarBind Type 
+  | Rec Pos KindBind Type 
   | TypeVar Pos TypeVar  -- a recursion variable if bound, polymorphic otherwise
   -- Type operators
   | TypeName Pos TypeVar -- a named type, to be looked upon in a map of type names to types, tEnv
@@ -103,7 +103,7 @@ equalTypes s (Skip _)         (Skip _)         = True
 equalTypes s (Semi _ t1 t2)   (Semi _ u1 u2)   = equalTypes s t1 u1 && equalTypes s t2 u2
 equalTypes s (Message _ p x)  (Message _ q y)  = p == q && x == y
 equalTypes s (Choice _ v1 m1) (Choice _ v2 m2) = v1 == v2 && equalMaps s m1 m2
-equalTypes s (Rec _ (TypeVarBind _ x k) t) (Rec _ (TypeVarBind _ y l) u) =
+equalTypes s (Rec _ (KindBind _ x k) t) (Rec _ (KindBind _ y l) u) =
   k ==l && equalTypes (Map.insert x y s) t u
   -- Functional or session
 equalTypes s (TypeVar _ x)    (TypeVar _ y)    = equalVars (Map.lookup x s) x y

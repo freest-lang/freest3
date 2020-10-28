@@ -78,9 +78,9 @@ instance Rename TypeScheme where
     t' <- rename (insertBindings xks xks' bs) t
     return $ TypeScheme p xks' t'
 
-insertBindings :: [TypeVarBind] -> [TypeVarBind] -> Bindings -> Bindings
+insertBindings :: [KindBind] -> [KindBind] -> Bindings -> Bindings
 insertBindings xks xks' bs =
-  foldr (\(TypeVarBind _ x _, TypeVarBind _ y _) -> insertVar x y) bs (zip xks xks')
+  foldr (\(KindBind _ x _, KindBind _ y _) -> insertVar x y) bs (zip xks xks')
 
 -- Types
 
@@ -111,11 +111,11 @@ rename' bs (Choice p pol tm) = do
   tm' <- tMapM (rename bs) tm
   return $ Choice p pol tm'
   -- Functional or session
-rename' bs (Rec p (TypeVarBind p' x k) t)
+rename' bs (Rec p (KindBind p' x k) t)
   | x `isFreeIn` t = do
       x' <- rename bs x
       t' <- rename (insertVar x x' bs) t
-      return $ Rec p (TypeVarBind p' x' k) t'
+      return $ Rec p (KindBind p' x' k) t'
   | otherwise = rename bs t
 rename' bs (TypeVar p x) =
   return $ TypeVar p (findWithDefaultVar x bs)
@@ -128,10 +128,10 @@ rename' _ t = return t
 
 -- Type-kind binds
 
-instance Rename TypeVarBind where
-  rename bs (TypeVarBind p x k) = do
+instance Rename KindBind where
+  rename bs (KindBind p x k) = do
     y <- rename bs x
-    return $ TypeVarBind p y k
+    return $ KindBind p y k
 
 -- Expressions
 
@@ -257,7 +257,7 @@ isFreeIn x (Datatype _ fm) = Map.foldr' (\t b -> x `isFreeIn` t || b) False fm
 isFreeIn x (Semi p t u) = x `isFreeIn` t || x `isFreeIn` u
 isFreeIn x (Choice p pol tm) = Map.foldr' (\t b -> x `isFreeIn` t || b) False tm
   -- Functional or session 
-isFreeIn x (Rec _ (TypeVarBind _ y _) t) = x /= y && x `isFreeIn` t
+isFreeIn x (Rec _ (KindBind _ y _) t) = x /= y && x `isFreeIn` t
 isFreeIn x (TypeVar _ y) = x == y
   -- Type operators
 isFreeIn x (Dualof _ t) = x `isFreeIn` t

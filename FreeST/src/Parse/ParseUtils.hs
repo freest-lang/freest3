@@ -18,7 +18,7 @@ module Parse.ParseUtils
   , checkDupFunDecl
   , checkDupTypeDecl
   , checkDupBind
-  , checkDupTypeVarBind
+  , checkDupKindBind
   , checkDupField
   , checkDupCase
   , checkDupCons
@@ -122,10 +122,10 @@ checkDupBind x xs
       ]
     Nothing -> return ()
 
-checkDupTypeVarBind :: TypeVarBind -> [TypeVarBind] -> FreestState ()
-checkDupTypeVarBind (TypeVarBind p x _) bs =
-  case find (\(TypeVarBind _ y _) -> y == x) bs of
-    Just (TypeVarBind p' _ _) -> addError
+checkDupKindBind :: KindBind -> [KindBind] -> FreestState ()
+checkDupKindBind (KindBind p x _) bs =
+  case find (\(KindBind _ y _) -> y == x) bs of
+    Just (KindBind p' _ _) -> addError
       p'
       [ Error "Conflicting definitions for type variable"
       , Error x

@@ -131,9 +131,9 @@ synthetise kEnv (TypeApp p x ts) = do
       , Error ts
       ]
     )
-  let typeKinds = zip ts bs :: [(Type, TypeVarBind)]
-  mapM_ (\(u, TypeVarBind _ _ k) -> K.checkAgainst kEnv k u) typeKinds
-  return $ foldr (\(u, TypeVarBind _ y _) -> Rename.subs u y) t typeKinds
+  let typeKinds = zip ts bs :: [(Type, KindBind)]
+  mapM_ (\(u, KindBind _ _ k) -> K.checkAgainst kEnv k u) typeKinds
+  return $ foldr (\(u, KindBind _ y _) -> Rename.subs u y) t typeKinds
 -- Boolean elimination
 synthetise kEnv (Conditional p e1 e2 e3) = do
   checkAgainst kEnv e1 (Basic p BoolType)
@@ -395,7 +395,7 @@ checkAgainst kEnv e t = do
 
 -- | Check an expression against a given type scheme
 checkAgainstTS :: Expression -> TypeScheme -> FreestState ()
-checkAgainstTS e (TypeScheme _ bs t) = checkAgainst (fromTypeVarBinds bs) e t
+checkAgainstTS e (TypeScheme _ bs t) = checkAgainst (fromKindBinds bs) e t
 
 -- EQUALITY AND EQUIVALENCE CHECKING
 

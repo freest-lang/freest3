@@ -49,6 +49,7 @@ tokens :-
   "->"				{ \p s -> TokenUnArrow (internalPos p) }
   "-o"				{ \p s -> TokenLinArrow (internalPos p) }
   ("\"|λ)                       { \p s -> TokenLambda (internalPos p) }
+  ("\\"|Λ)                     { \p s -> TokenUpperLambda (internalPos p) }
   "=>"				{ \p s -> TokenFArrow (internalPos p) }
   "("				{ \p s -> TokenLParen (internalPos p) }
   ")"				{ \p s -> TokenRParen (internalPos p) }
@@ -128,6 +129,7 @@ data Token =
   | TokenUnArrow Pos 
   | TokenLinArrow Pos 
   | TokenLambda Pos 
+  | TokenUpperLambda Pos 
   | TokenLParen Pos 
   | TokenRParen Pos 
   | TokenLBracket Pos 
@@ -194,7 +196,8 @@ instance Show Token where
   show (TokenUnit p) = "()"  
   show (TokenUnArrow p) = "->"  
   show (TokenLinArrow p) = "-o"  
-  show (TokenLambda p) = "\\"  
+  show (TokenLambda p) = "λ"  
+  show (TokenUpperLambda p) = "Λ"  
   show (TokenLParen p) = "("
   show (TokenRParen p) = ")"  
   show (TokenLBracket p) = "["  
@@ -301,6 +304,7 @@ instance Position Token where
   position (TokenUnArrow p) = p 
   position (TokenLinArrow p) = p 
   position (TokenLambda p) = p 
+  position (TokenUpperLambda p) = p 
   position (TokenLParen p) = p
   position (TokenRParen p) = p 
   position (TokenLBracket p) = p 

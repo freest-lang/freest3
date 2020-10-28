@@ -154,11 +154,11 @@ Decl :: { () }
       e <- toStateT $ buildFunBody $1 $2 $4
       toStateT $ addToEEnv $1 e }
   -- Type abbreviation
-  | type TypeNameKind TypeVarBindEmptyList '=' Type {% do
+  | type TypeNameKind KindBindEmptyList '=' Type {% do
       toStateT $ checkDupTypeDecl (fst $2)
       toStateT $ uncurry addToTEnv $2 (TypeScheme (position $5) $3 $5) }
   -- Datatype declaration
-  | data TypeNameKind TypeVarBindEmptyList '=' DataCons {% do
+  | data TypeNameKind KindBindEmptyList '=' DataCons {% do
       let a = fst $2
       toStateT $ checkDupTypeDecl a
       let bs = typeListToType a $5 :: [(ProgVar, Type)]
@@ -240,7 +240,7 @@ Case :: { (ProgVar, ([ProgVar], Expression)) }
 -----------
 
 TypeScheme :: { TypeScheme }
-  : forall TypeVarBindList '=>' Type { TypeScheme (position $1) $2 $4 }
+  : forall KindBindList '=>' Type { TypeScheme (position $1) $2 $4 }
   | Type                             { TypeScheme (position $1) [] $1 }
 
 -----------
@@ -257,7 +257,7 @@ Type :: { Type }
   | Type ';' Type                    { Semi (position $2) $1 $3 }
   | Polarity BasicType               { uncurry Message $1 (snd $2) }
   | ChoiceView '{' FieldList '}'     { uncurry Choice $1 $3 } 
-  | rec TypeVarBind '.' Type         { Rec (position $1) $2 $4 }
+  | rec KindBind '.' Type         { Rec (position $1) $2 $4 }
   -- Functional or session
   | TypeVar                          { TypeVar (position $1) $1 }
   -- Type operators
@@ -341,21 +341,21 @@ TypeVar :: { TypeVar }
 TypeName :: { TypeVar }
   : UPPER_ID { mkVar (position $1) (getText $1) }
 
-TypeVarBind :: { TypeVarBind }
-  : TypeVar ':' Kind { TypeVarBind (position $1) $1 $3 }
-  | TypeVar          { TypeVarBind (position $1) $1 (omission (position $1)) }
+KindBind :: { KindBind }
+  : TypeVar ':' Kind { KindBind (position $1) $1 $3 }
+  | TypeVar          { KindBind (position $1) $1 (omission (position $1)) }
 
 TypeNameKind :: { (TypeVar, Kind) }    -- for type and data declarations
   : TypeName ':' Kind { ($1, $3) }
   | TypeName          { ($1, omission (position $1)) }
 
-TypeVarBindList :: { [TypeVarBind] }
-  : TypeVarBind                     { [$1] }
-  | TypeVarBind ',' TypeVarBindList {% toStateT $ checkDupTypeVarBind $1 $3 >> return ($1 : $3) }
+KindBindList :: { [KindBind] }
+  : KindBind                     { [$1] }
+  | KindBind ',' KindBindList {% toStateT $ checkDupKindBind $1 $3 >> return ($1 : $3) }
 
-TypeVarBindEmptyList :: { [TypeVarBind] }
+KindBindEmptyList :: { [KindBind] }
   :                 { [] }
-  | TypeVarBindList { $1 }
+  | KindBindList { $1 }
 
 
 --------------------
