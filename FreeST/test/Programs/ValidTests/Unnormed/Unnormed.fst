@@ -27,7 +27,7 @@ whether two context-free session types are equivalent or not.
 type T : SL = !Int;T;?Int
 
 writer : Int -> T -> Skip
-writer i c = writer (i + 1) (send c i)
+writer i c = writer (i + 1) (send i c)
 
 reader : dualof T -> ()
 reader c =

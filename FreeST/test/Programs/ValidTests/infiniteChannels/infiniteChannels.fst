@@ -1,7 +1,7 @@
 -- Creates an unbounded number of channels; diverges
 write : !Int -> Int -> Char
 write c n =
-  let _ = send c n in
+  let _ = send n c in
   printIntLn n ;
   let (r, w) = new !Int in
   let _ = fork (sink (receive w)) in
@@ -14,5 +14,5 @@ main =
   write r 0
 
 -- Auxiliary function because of fork : () -> ()
-sink : Skip -> ()
+sink : (Int, Skip) -> ()
 sink _ = ()

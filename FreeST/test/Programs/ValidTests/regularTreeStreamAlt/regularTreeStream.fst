@@ -53,13 +53,13 @@ sendTree : TreeC -> Tree -> TreeC
 sendTree c t =
   case t of {
     Leaf ->
-      select c Leaf,
+      select Leaf c,
 
     Node i lt rt ->
       let c = sendTree c rt in
       let c = sendTree c lt in
-      let c = select c Value in
-      send c i
+      let c = select Value c in
+      send i c
   }
 
 
@@ -102,7 +102,7 @@ receiveTree_ ts c =
 treeClient : TreeC -> ()
 treeClient c  =
   let c = sendTree c aTree in
-  let c = select c End in
+  let c = select End c in
   ()
 
 
@@ -122,7 +122,7 @@ main =
 -- This bad client ends prematurely
 badClientPrematureEnd : TreeC -> ()
 badClientPrematureEnd c =
-  let _ = select c End in
+  let _ = select End c in
   ()
 
 -- This bad client send an extra Value -1
@@ -130,10 +130,10 @@ badClientSendExtraValue : TreeC -> ()
 badClientSendExtraValue c =
   let c = sendTree c aTree in
   -- == Bad code ==
-  let c = select c Value in
-  let c = send c (-1) in
+  let c = select Value c in
+  let c = send (-1) c in
   -- == Bad code ==
-  let _ = select c End in
+  let _ = select End c in
   ()
 
 -- This bad client send an extra Leaf
@@ -141,9 +141,9 @@ badClientSendExtraLeaf : TreeC -> ()
 badClientSendExtraLeaf c =
   let c = sendTree c aTree in
   -- == Bad code ==
-  let c = select c Leaf in
+  let c = select Leaf c in
   -- == Bad code ==
-  let _ = select c End in
+  let _ = select End c in
   ()
 
 -- This client does not send the right subtree
@@ -152,7 +152,7 @@ badClientForgotRight c =
   -- == Bad code ==
   let c = badSendTree c aTree in
   -- == Bad code ==
-  let _ = select c End in
+  let _ = select End c in
   ()
 
 
@@ -162,11 +162,11 @@ badSendTree : TreeC -> Tree -> TreeC
 badSendTree c t =
   case t of {
     Leaf ->
-      select c Leaf,
+      select Leaf c,
 
     Node i lt rt ->
       --let c = badSendTree c rt in
       let c = badSendTree c lt in
-      let c = select c Value in
-      send c i
+      let c = select Value c in
+      send i c
   }

@@ -14,13 +14,13 @@ type OrderingChannel : SL = +{
 -- the values in ascending or descending order
 client : OrderingChannel -> ()
 client c =
-  let c = send (select c Value) 5 in
-  let c = send (select c Value) 4 in
-  let c = send (select c Value) 1 in
-  let c = send (select c Value) 7 in
-  let c = send (select c Value) 2 in
-  let c = send (select c Value) 9 in
-  let c = select c Descending in
+  let c = send 5 (select Value c) in
+  let c = send 4 (select Value c) in
+  let c = send 1 (select Value c) in
+  let c = send 7 (select Value c) in
+  let c = send 2 (select Value c) in
+  let c = send 9 (select Value c) in
+  let c = select Descending c in
 --  let c = select c Ascending in
   let (x, c) = receive c in
   printIntLn x;
@@ -46,9 +46,9 @@ sortingServer xs c =
       let (x, c)  = receive c in
       let (xs, c) = sortingServer[!Int;a] (Cons x xs) c in
       case xs of {
-        Cons y ys -> (ys, send c y),
+        Cons y ys -> (ys, send y c),
         -- Nil is never reached
-        Nil -> (Nil, send c 36042069)
+        Nil -> (Nil, send 36042069 c)
       },
     Ascending c ->
       (quicksort (\x:Int -> (\y:Int -> x < y)) xs, c),

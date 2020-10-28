@@ -3,18 +3,18 @@ mathServer c =
   match c with {
     Opposite c ->
       let (n, c) = receive c in
-      send c (-n),
+      send (-n) c,
     Plus c ->
       let (n1, c) = receive c in
       let (n2, c) = receive c in
-      send c (n1 + n2)
+      send (n1 + n2) c
   }
 
 main : Int
 main =
   let (r,w) = new &{Opposite: ?Int;!Int, Plus: ?Int;?Int;!Int} in
   let _ = fork (sink (mathServer r)) in
-  let (x, _) = receive (send (select w Opposite) 5) in
+  let (x, _) = receive (send 5 (select Opposite w)) in
   x
 
 -- Auxiliary function because of fork : () -> ()

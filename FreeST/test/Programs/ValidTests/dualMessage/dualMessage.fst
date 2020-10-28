@@ -2,7 +2,7 @@
 
 
 sendInt : !Int -> Skip
-sendInt c = send c 5
+sendInt c = send 5 c
 
 receiveInt : dualof (dualof (dualof !Int)) -> Int
 receiveInt c =

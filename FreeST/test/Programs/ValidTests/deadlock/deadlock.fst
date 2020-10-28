@@ -8,10 +8,10 @@ does not deadlock with buffers of size 2.
 
 writer : !Char;!Char -> !Bool;!Bool -> Skip
 writer w1 w2 =
-  let w1 = send w1 'c' in
-  let w1 = send w1 'd' in
-  let w2 = send w2 True in
-  send w2 False
+  let w1 = send 'c' w1 in
+  let w1 = send 'd' w1 in
+  let w2 = send True w2 in
+  send False w2
 
 reader : ?Char;?Char -> ?Bool;?Bool -> Bool
 reader r1 r2 =

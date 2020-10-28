@@ -13,18 +13,18 @@ type Stream = +{
 client : (rec x: SL. +{Add: x, Mult: x, Const: !Int;x, EOS: ?Int}) -> Int
 client c =
   -- stream the arithmetic operation
-  let c = select c Const in
-  let c = send c 5 in
-  let c = select c Const in
-  let c = send c 4 in
-  let c = select c Mult in
-  let c = select c Const in
-  let c = send c 2 in
-  let c = select c Const in
-  let c = send c 3 in
-  let c = select c Mult in
-  let c = select c Add in
-  let c = select c EOS in
+  let c = select Const c in
+  let c = send 5 c in
+  let c = select Const c in
+  let c = send 4 c in
+  let c = select Mult c in
+  let c = select Const c in
+  let c = send 2 c in
+  let c = select Const c in
+  let c = send 3 c in
+  let c = select Mult c in
+  let c = select Add c in
+  let c = select EOS c in
   -- read the result
   let (x, c) = receive c in
   -- and return it
@@ -41,7 +41,7 @@ size s n =
     Add s   -> size s (n + 1),
     Mult s  -> size s (n + 1),
     Const s -> let (_, s) = receive s in size s (n + 1),
-    EOS s   -> send s n
+    EOS s   -> send n s
   }
 
 -- A sample interaction: counting the number of nodes in a stream;

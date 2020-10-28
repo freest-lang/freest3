@@ -14,5 +14,5 @@ main : Int
 main =
   let (w, r) = new !Int in
   (fork $ sink $ read $ Two r) ;
-  let _ = send w 5 in
+  let _ = send 5 w in
   10

@@ -3,8 +3,8 @@ type Chan : SL = +{Done: Skip, More: !Int;Chan}
 fives : Int -> Chan -> Skip
 fives n c =
   if n == 0
-  then select c Done
-  else fives (n-1) (send (select c More) 5)
+  then select Done c
+  else fives (n-1) (send 5 (select More c))
 
 sumFives : dualof Chan -> Int
 sumFives c =

@@ -48,11 +48,11 @@ forwardD : forall a:SL, b:SL => dualof D;a -> D;b -> (a, b)
 forwardD in' out =
   match in' with {
     Lt in' ->
-      let out = select out Lt in
+      let out = select Lt out in
       let (in', out) = forwardT[dualof D;a, D;b] in' out in
         forwardD[a,b] in' out,
     Dollar in' ->
-      let out = select out Dollar in
+      let out = select Dollar out in
          (in', out)
   }
 
@@ -60,11 +60,11 @@ forwardT : forall a:SL, b:SL => dualof T;a -> T;b -> (a, b)
 forwardT in' out =
   match in' with {
     Lt in' ->
-      let out = select out Lt in
+      let out = select Lt out in
       let (in', out) = forwardT[dualof T;a, T;b] in' out in
       forwardT[a,b] in' out,
     Gt in' ->
-      let out = select out Gt in
+      let out = select Gt out in
       (in', out)
   }
 
@@ -74,7 +74,7 @@ concatD : forall a:SL, b:SL, c:SL => dualof D;a -> dualof D;b -> D;c -> (a, (b, 
 concatD in1 in2 out =
   match in1 with {
     Lt in1 ->
-      let out = select out Lt in
+      let out = select Lt out in
       let (in1, in2out) = concatT[dualof D;a, dualof D;b, D;c] in1 in2 out in
       let (in2, out) = in2out in
         concatD[a, b, c] in1 in2 out,
@@ -87,41 +87,42 @@ concatT : forall a:SL, b:SL, c:SL => dualof T;a -> b -> T;c -> (a, (b, c))
 concatT in1 in2 out =
   match in1 with {
     Lt in1 ->
-      let out = select out Lt in
+      let out = select Lt out in
       let (in1, in2out) = concatT[dualof T;a, b, T;c] in1 in2 out in
       let (in2, out) = in2out in
       concatT[a, b, c] in1 in2 out,
     Gt in1 ->
-      let out = select out Gt in
+      let out = select Gt out in
       (in1, (in2, out))
   }
 
 -- A few functions to write on channels
 writeLtGt : D -> Skip
 writeLtGt c =
-  select (select (select c Lt) Gt) Dollar
+  select Dollar $ select Gt $ select Lt c
 
 writeDollar : D -> Skip
-writeDollar c = select c Dollar
+writeDollar c = select Dollar c
 
 writeLtLtGtGtLtGt : D -> Skip
 writeLtLtGtGtLtGt c =
-  select (select (select (select (select (select (select c
-    Lt) Lt) Gt) Gt) Lt) Gt) Dollar
+  select Dollar $ select Gt $ select Lt $ select Gt $ select Gt $ select Lt $ select Lt c
 
 writeLtLtGtLtGtGt: D -> Skip
 writeLtLtGtLtGtGt c =
-  select (select (select (select (select (select (select c
-    Lt) Lt) Gt) Lt) Gt) Gt) Dollar
+  select Dollar $ select Gt $ select Gt $ select Lt $ select Gt $ select Lt $ select Lt c
+
 
 -- Putting it all together: out1 -> in1-out2 --> in2
 mainForward : Skip
 mainForward =
   let (out1, in1) = new D in
   let (out2, in2) = new D in
-  fork (writeLtLtGtGtLtGt out1);
-  fork (forwardD[Skip, Skip] in1 out2);
+  fork (sink $ writeLtLtGtGtLtGt out1);
+  fork (sinkPair (forwardD[Skip, Skip] in1 out2));
   readD[Skip] in2
+
+
 
 -- Putting it all together: (out1 | out2) --> in1-in2-out3 --> in3
 main : Skip
@@ -140,3 +141,6 @@ sink _ = ()
 
 sink_ : (Skip, (Skip, Skip)) -> ()
 sink_ _ = ()
+
+sinkPair : (Skip, Skip) -> ()
+sinkPair _ = ()
