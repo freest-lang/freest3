@@ -8,7 +8,7 @@ module Parse.Parser
 --)
 where
 
-  
+
 import           Syntax.Expressions
 import           Syntax.Schemes
 import           Syntax.Types
@@ -65,10 +65,10 @@ import           Debug.Trace
   '{'      {TokenLBrace _}
   '}'      {TokenRBrace _}
   '=>'     {TokenFArrow _}
-  '&&'     {TokenConjunction _} 
-  '||'     {TokenDisjunction _} 
-  '/'      {TokenDiv _} 
-  '&'      {TokenAmpersand _} 
+  '&&'     {TokenConjunction _}
+  '||'     {TokenDisjunction _}
+  '/'      {TokenDiv _}
+  '&'      {TokenAmpersand _}
   '+'      {TokenPlus _}
   '-'      {TokenMinus _}
   '*'      {TokenTimes _}
@@ -102,7 +102,7 @@ import           Debug.Trace
   case     {TokenCase _}
   of       {TokenOf _}
   forall   {TokenForall _}
-  dualof   {TokenDualof _}  
+  dualof   {TokenDualof _}
 
 %nonassoc LOWER_ID UPPER_ID
 %nonassoc '('
@@ -122,7 +122,7 @@ import           Debug.Trace
 %left NEG not                   -- unary
 
 -- Type
-%right '.'       -- Used in rec 
+%right '.'       -- Used in rec
 %right '->' '-o' -- TODO: an Expr operator as well
 %right ';'       -- TODO: an Expr operator as well
 %right dualof
@@ -217,11 +217,16 @@ Primary :: { Expression }
   | ArbitraryProgVar                         { ProgVar (position $1) $1 }
   | '(' lambda ProgVarWildTBind Arrow Expr ')'
      { Abs (position $2) (snd $4) (TypeBind (position $2) (fst $3) (snd $3)) $5 }
-  | '(' Expr ',' Expr ')'                    { Pair (position $1)$2 $4 }
+  --| '(' Expr ',' Expr ')'                    { Pair (position $1)$2 $4 }
+  | '(' Expr ',' NTuple ')'                  { Pair (position $1) $2 $4 }
   | '(' Expr ')'                             { $2 }
 
 ProgVarWildTBind :: { (ProgVar, Type) }
- : ProgVarWild ':' Type  %prec ProgVarWildTBind { ($1, $3) }
+  : ProgVarWild ':' Type  %prec ProgVarWildTBind { ($1, $3) }
+
+NTuple :: { Expression }
+  : Expr                { $1 }
+  | Expr ',' NTuple     { Pair (position $1) $1 $3 }
 
 MatchMap :: { FieldMap }
   : Match              { uncurry Map.singleton $1 }
@@ -233,7 +238,7 @@ Match :: { (ProgVar, ([ProgVar], Expression)) }
 CaseMap :: { FieldMap }
   : Case             { uncurry Map.singleton $1 }
   | Case ',' CaseMap {% toStateT $ checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
-                        
+
 Case :: { (ProgVar, ([ProgVar], Expression)) }
   : Constructor ProgVarWildSeq '->' Expr { ($1, ($2, $4)) }
 
@@ -253,12 +258,13 @@ Type :: { Type }
   -- Functional types
   : BasicType                        { uncurry Basic $1 }
   | Type Arrow Type                  { uncurry Fun $2 $1 $3 }
-  | '(' Type ',' Type ')'            { PairType (position $1) $2 $4 }
+  --| '(' Type ',' Type ')'            { PairType (position $1) $2 $4 }
+  | '(' Type ',' NTupleType ')'      { PairType (position $1) $2 $4 }
   -- Session types
   | Skip                             { Skip (position $1) }
   | Type ';' Type                    { Semi (position $2) $1 $3 }
   | Polarity BasicType               { uncurry Message $1 (snd $2) }
-  | ChoiceView '{' FieldList '}'     { uncurry Choice $1 $3 } 
+  | ChoiceView '{' FieldList '}'     { uncurry Choice $1 $3 }
   | rec KindBind '.' Type         { Rec (position $1) $2 $4 }
   -- Functional or session
   | TypeVar                          { TypeVar (position $1) $1 }
@@ -272,6 +278,10 @@ BasicType :: { (Pos, BasicType) }
   | Char { (position $1, CharType) }
   | Bool { (position $1, BoolType) }
   | '()' { (position $1, UnitType) }
+
+NTupleType :: { Type }
+  : Type                    { $1 }
+  | Type ',' NTupleType     { PairType (position $1) $1 $3 }
 
 Polarity :: { (Pos, Polarity) }
   : '?' { (position $1, In) }
@@ -368,7 +378,7 @@ Schemes :: { (TypeScheme, TypeScheme) }
 
 
 {
-  
+
 -----------------------
 -- Parsing functions --
 -----------------------
@@ -382,7 +392,7 @@ parseType :: String -> Either Type String
 parseType str =
   case runStateT (parse str "" types) (initialState "") of
     Ok (t, state) -> eitherTypeErr t state
-    Failed err -> Right $ err      
+    Failed err -> Right $ err
   where
     eitherTypeErr t state
       | hasErrors state = Right $ getErrors state
@@ -439,7 +449,7 @@ parseDefs file vEnv str =
 
 parse str file f = lexer str file f
 
-lexer str file f = 
+lexer str file f =
   case scanTokens str file of
     Right err -> failM err
     Left x    -> f x
@@ -458,7 +468,7 @@ parseError [] = do
   file <- toStateT getFileName
   failM $ formatErrorMessages Map.empty defaultPos file
           [Error "Parse error:", Error "\ESC[91mPremature end of file\ESC[0m"]
-parseError xs = do  
+parseError xs = do
   file <- toStateT getFileName
   failM $ formatErrorMessages Map.empty p file
     [Error "Parse error on input", Error $ "\ESC[91m'" ++ show (head xs) ++ "'\ESC[0m"]

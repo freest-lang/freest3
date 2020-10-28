@@ -122,6 +122,10 @@ showType i (Rec _ xk t) =
   -- Type operators
 showType i (Dualof _ t) = "(dualof " ++ showType (i - 1) t ++ ")"
 
+showNTupleType :: Int -> Type -> String
+showNTupleType i (PairType _ t u) = showType (i - 1) t ++ showType (i - 1) u
+showNTupleType i t                = showType i t
+
 showDatatype :: Int -> TypeMap -> String
 showDatatype i m = intercalate " | " $ Map.foldrWithKey
   (\c t acc -> (show c ++ showAsSequence t) : acc)
@@ -151,7 +155,7 @@ instance Show TypeScheme where
 -- Expressions
 
 instance Show Expression where
---  show = showExp 4 
+--  show = showExp 4
   show = showExp 44
 
 showExp :: Int -> Expression -> String

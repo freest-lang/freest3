@@ -17,7 +17,7 @@ data Value =
     Unit
   | Integer Int
   | Boolean Bool
-  | Character Char  
+  | Character Char
   | Cons ProgVar [[Value]] -- TODO: Think how to do this in other way
   | Pair Value Value
   | Closure ProgVar E.Expression Ctx
@@ -26,7 +26,7 @@ data Value =
   | Chan ChannelEnd
   | Fork
   | IOValue (IO Value)
---  | Send ChannelEnd  
+--  | Send ChannelEnd
 --  | Receive
 
 type Ctx = Map.Map ProgVar Value
@@ -41,11 +41,14 @@ instance Show Value where
   show (Boolean b)   = show b
   show (Character c) = show c
   show (Label s)     = s
-  show (Pair v1 v2)  = "(" ++ show v1 ++ "," ++ show v2 ++ ")"
+  show (Pair v1 v2)  = "(" ++ show v1 ++ ", " ++ showNTupleValue v2 ++ ")"
   show c@Cons{}  = showCons c
   show (Chan _)      = "Skip" -- TODO: change this
   show (Closure x e _)  = show x ++ " " ++ show e-- TODO: change this
 
+showNTupleValue :: Value -> String
+showNTupleValue (Pair v1 v2) = show v1 ++ ", " ++ showNTupleValue v2
+showNTupleValue v            = show v
 
 showCons :: Value -> String
 showCons (Cons x []) = show x
