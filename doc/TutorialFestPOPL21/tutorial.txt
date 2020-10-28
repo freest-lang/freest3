@@ -1,0 +1,71 @@
+Title: FreeST, a concurrent, message-passing, programming language
+
+Presenters:
+
+1. Bernardo Almeida, Andreia Mordido, Vasco T. Vasconcelos
+LASIGE, Faculdade de Ciências, Universidade de Lisboa
+2. Peter Thiemann, Freiburgh University (to be confirmed)
+
+
+Description:
+
+FreeST is a concurrent programming language. It is the implementation of the
+language proposed by Thiemann and Vasconcelos [1]. FreeST is available at
+http://rss.di.fc.ul.pt/tools/freest/ under ”Tools”. A web version is also
+available at http://rss.di.fc.ul.pt/tryit/FreeST.
+
+FreeST is a typed concurrent programming language where processes communicate
+via message-passing. Messages are exchanged on bidirectional channels.
+Communication on channels is governed by a powerful type system based on
+polymorphic context-free session types. Based on a core linear functional
+programming language, FreeST features primitives for forking new threads and for
+creating and communicating on, channels. The compiler builds on a novel
+algorithm for deciding the equivalence of context-free session types. We have
+chosen the concrete syntax to be aligned with that of Haskell, as much as
+possible.
+
+This tutorial is a gentle introduction to FreeST. Since this is a tutorial
+designed for the entire PL community, we plan to ensure that the required formal
+ground is set for all the audience by starting to introduce regular session
+types before explaining the context-free session types. Experience with
+functional programming is recommended, but not required.
+
+Throughout this tutorial, we will discuss the main syntactic categories of the
+language: kinds, types, expressions, and programs.
+
+The tutorial will be organised as follows:
+    1. Introduction to (regular) session types
+    2. Introduction to the type syntax
+    3. Show the functional vein of FreeST through examples
+    4. Programming with regular session types
+    5. Programming with context-free session types
+    6. Emphasise the main differences between programming with both
+
+We plan to carry out a live demo, where the attendees are encouraged
+to participate.
+
+[1] Thiemann, P. and Vasconcelos, V.T., 2016. Context-free Session Types.
+In ICFP 2016, ACM, pp. 462-475.
+
+
+
+Paragraph for dissemination:
+
+In this tutorial we will present FreeST, a concurrent programming language based
+on message passing through bidirectional communication channels. FreeST is a
+strongly typed programming language relying on context-free session types. These
+types were proposed by Thiemann and Vasconcelos in 2016 with the purpose
+enabling the serialization of tree-like structures in a channel, in a type-safe
+way. In FreeST, we can specify client-server protocols characterized by (some)
+deterministic context-free grammars. In this tutorial, we will present some
+motivating examples and we will present and explore the syntax of the language,
+as well as the validation procedure.
+
+
+Bio:
+Bernardo Almeida is a PhD student at the Faculty of Sciences, University of
+Lisbon, and a student researcher at LASIGE. He received his BSc and MSc both in
+Computer Science, from the University of Lisbon. Currently, his main research
+interests are type systems and programming languages.
+
+...
