@@ -50,7 +50,7 @@ data Expression =
   | New Pos Type Type
   | Send Pos Expression
   | Receive Pos Expression
-  | Select Pos Expression ProgVar
+  | Select Pos {- Expression -} ProgVar
   | Match Pos Expression FieldMap
    deriving Eq
 
@@ -75,7 +75,7 @@ instance Position Expression where
   position (New p _ _)           = p
   position (Send p _)            = p
   position (Receive p _ )        = p
-  position (Select p _ _)        = p
+  position (Select p {- _ -} _)        = p
   position (Match p _ _)         = p
   position (Fork p _)            = p
   position (Case p _ _)          = p

@@ -180,10 +180,13 @@ synthetise kEnv (Receive p e) = do
   t        <- synthetise kEnv e
   (u1, u2) <- extractInput e t
   return $ PairType p (Basic p u1) u2
-synthetise kEnv (Select p e c) = do
-  t <- synthetise kEnv e
-  m <- extractOutChoiceMap e t
-  extractCons p m c
+synthetise kEnv (Select p c) = do
+  addError p [Error "Ooops! You're asking too much. I cannot type a partially applied select. I promise to look into that some time in the future."]
+  return $ omission p
+-- synthetise kEnv (Select p e c) = do
+--   t <- synthetise kEnv e
+--   m <- extractOutChoiceMap e t
+--   extractCons p m c
 -- Match
 synthetise kEnv (Match p e fm) =
   synthetiseFieldMap p "match" kEnv e fm extractInChoiceMap paramsToVEnvMM

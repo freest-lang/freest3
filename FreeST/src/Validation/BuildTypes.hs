@@ -252,7 +252,7 @@ subsExp tenv (New p t u) =
   liftM2 (New p) (subsType tenv Nothing t) (subsType tenv Nothing u)
 subsExp tenv (Send    p e ) = fmap (Send p) (subsExp tenv e)
 subsExp tenv (Receive p e ) = fmap (Receive p) (subsExp tenv e)
-subsExp tenv (Select p e x) = liftM2 (Select p) (subsExp tenv e) (pure x)
+subsExp tenv (Select p {- e -} x) = liftM (Select p) {- (subsExp tenv e) -} (pure x)
 subsExp tenv (Match p e m) =
   liftM2 (Match p) (subsExp tenv e) (subsFieldMap tenv m)
 subsExp _ e = return e
