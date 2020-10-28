@@ -3,7 +3,7 @@ type T : SL = +{More: !Int;T, End: Skip}
 main : Int
 main = 
   let (w, r) = new T in
-  let _ = fork (select (send (select (send (select w More) 5) More) 2) End) in
+  let _ = fork $ sink $ select End $ send 2 $ select More $ send 5 $ select More w in
   g r
 
 
@@ -15,3 +15,7 @@ g r =
       v + g r,
     End r -> 0
   }		
+
+
+sink : Skip -> ()
+sink _ = ()

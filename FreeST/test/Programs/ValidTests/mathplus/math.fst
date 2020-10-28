@@ -12,11 +12,11 @@ mathServer b1 b2 c =
       mathServer v b1 c,
 
     And c ->
-      let c = send c (b1 && b2) in
+      let c = send (b1 && b2) c in
       mathServer b1 b2 c,
 
     Not c ->
-      let c = send c (not b1) in
+      let c = send (not b1) c in
       mathServer b1 b2 c,
 
     Quit c ->
@@ -33,9 +33,9 @@ client c =
   let c = sendBool c False in
   let c = sendBool c True in
   let c = sendBool c True in
-  let c = select c And in
+  let c = select And c in
   let (b, c) = receive c in
-  let c = select c Quit in
+  let c = select Quit c in
   b
 
 
@@ -43,8 +43,8 @@ client c =
 
 sendBool : (rec x: SU. +{Val: !Bool; x, And: ?Bool; x, Not: ?Bool; x, Quit: Skip}) -> Bool -> (rec x: SU. +{Val: !Bool; x, And: ?Bool; x, Not: ?Bool; x, Quit: Skip})
 sendBool c b =
-  let c = select c Val in
-  let c = send c b in
+  let c = select Val c in
+  let c = send b c in
   c
 
 

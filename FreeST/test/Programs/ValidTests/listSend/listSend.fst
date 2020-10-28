@@ -3,10 +3,10 @@ data List = Nil | Cons Int List
 flatten : List -> (rec x: SL. +{Nil: Skip, Cons: !Int;x}) -> Skip
 flatten l c =
   case l of {
-    Nil -> select c Nil,
+    Nil -> select Nil c,
     Cons h t ->
-      let c = select c Cons in
-      let c = send c h in
+      let c = select Cons c in
+      let c = send h c in
       flatten t c
   }
 

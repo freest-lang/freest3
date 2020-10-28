@@ -2,7 +2,7 @@ main : Bool
 main =
   let (w, r) = new ?Int;!Bool;Skip in
   let x = fork (client w) in
-  let c1 = send r (-5) in
+  let c1 = send (-5) r in
   let (b, c2) = receive c1
   in b
 
@@ -10,5 +10,5 @@ main =
 client : ?Int;!Bool;Skip -> ()
 client c =
   let (n, r1) = receive c in
-  let r2 = send r1 (n >= 0) in
+  let r2 = send (n >= 0) r1 in
   ()  

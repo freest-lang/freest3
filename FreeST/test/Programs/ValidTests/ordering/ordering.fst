@@ -32,11 +32,11 @@ orderedServer c list =
       let (list, c) = orderedServer[!Int;a] c (Cons x list) in
       case list of {
         Cons y ys ->
-          let c = send c y in
+          let c = send y c in
           (ys, c),
         -- Nil is never reached
         Nil ->
-          let c = send c (-36042069) in
+          let c = send (-36042069) c in
           (Nil, c)
       },
 
@@ -118,11 +118,11 @@ order : forall a:SL => OrderingChannel; a -> IntList -> Bool -> (a, IntList)
 order c sList direction =
   case sList of {
     Nil -> if direction
-           then (select c Asc , Nil)
-           else (select c Desc, Nil),
+           then (select Asc c , Nil)
+           else (select Desc c, Nil),
     Cons x xs ->
-      let c          = select c Vals in
-      let c          = send c x in
+      let c          = select Vals c in
+      let c          = send x c in
       let (c, rList) = order[?Int;a] c xs direction in
       let (y, c)     = receive c in
       (c, Cons y rList)

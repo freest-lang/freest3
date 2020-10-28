@@ -17,6 +17,8 @@ import qualified Syntax.Expressions            as E
 import           Syntax.ProgramVariables
 import           Syntax.Types
 
+
+import Debug.Trace
 ------------------------------------------------------------
 -- EVALUATION
 ------------------------------------------------------------
@@ -40,6 +42,9 @@ eval ctx eenv (E.App _ e1 e2     ) = eval ctx eenv e1 >>= \case
   (Closure x e ctx') -> do
     !v <- eval ctx eenv e2
     eval (Map.insert x v ctx') eenv e
+  Fork -> do
+     _ <- forkIO (void $ eval ctx eenv e2)
+     return Unit
   (PrimitiveFun f) -> do
     !v <- eval ctx eenv e2
     case f v of
@@ -50,7 +55,7 @@ eval ctx eenv (E.App _ e1 e2     ) = eval ctx eenv e1 >>= \case
   (Cons x xs) -> do
     !v <- eval ctx eenv e2
     pure $ Cons x (xs ++ [[v]])
-
+  e -> error $ show e
 eval ctx eenv (E.Pair _ e1 e2) =
   liftM2 Pair (eval ctx eenv e1) (eval ctx eenv e2)
 
@@ -77,17 +82,10 @@ eval _ _ E.New{} = do
   (c1, c2) <- new
   return $ Pair (Chan c1) (Chan c2)
 
--- eval ctx eenv (E.Send _ e) = do
---   (Chan c) <- eval ctx eenv e
---   return $ PrimitiveFun $ IOValue . fmap Chan . send c
--- --  return $ PrimitiveFun (\v -> IOValue $ fmap Chan (send c v))
-
--- eval ctx eenv (E.Receive _ e) = do
---   (Chan c) <- eval ctx eenv e
---   (v, c)   <- receive c
---   return $ Pair v (Chan c)
-
-eval ctx eenv (E.Select _ {- e -} x) = return Unit -- FIX ME!
+eval ctx eenv (E.Select _ {- e -} x) =
+  return $ PrimitiveFun (\(Chan c) -> IOValue $ fmap Chan (send (Label (show x)) c))
+  
+--   return Unit -- FIX ME!
 {- do
   (Chan c) <- eval ctx eenv e
   !c       <- send c (Label (show x))
@@ -112,4 +110,11 @@ evalVar :: Ctx -> E.ExpEnv -> ProgVar -> IO Value
 evalVar ctx eenv x | isADT x           = return $ Cons x []
                    | Map.member x eenv = eval ctx eenv (eenv Map.! x)
                    | Map.member x ctx  = return $ ctx Map.! x
+                   | x == mkVar defaultPos "fork" = return $ Fork
+                       -- PrimitiveFun
+                       -- (\e -> IOValue $ forkIO $ void $ eval ctx eenv e -> return Unit)
+--                     error "fork"
+                   -- | x == mkVar defaultPos "fork" =
+                   --     forkIO $ void $ eval ctx eenv e >> return Unit
                    | otherwise = error $ "error evaluating progvar: " ++ show x
+

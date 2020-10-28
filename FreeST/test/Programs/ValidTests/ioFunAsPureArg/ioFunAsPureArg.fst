@@ -11,7 +11,7 @@ f : ?Int -> Int
 f c = let (x, c) = receive c in x
 
 sender : !Int -> Int -> Skip
-sender c i = send c (i * 2)
+sender c i = send (i * 2) c
 
 -- Auxiliary function because of fork : () -> ()
 sink : Skip -> ()

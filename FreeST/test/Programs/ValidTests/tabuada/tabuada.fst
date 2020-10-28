@@ -61,12 +61,12 @@ tabuadaServer c result =
     Solucao c ->
       case result of {
         Empty ->
-          let c = send c False in
-          let c = send c 0 in
+          let c = send False c in
+          let c = send 0 c in
           tabuadaServer c result,
         Node x l ->
-          let c = send c True in
-          let c = send c x in
+          let c = send True c in
+          let c = send x c in
           tabuadaServer c l
       },
 
@@ -81,7 +81,7 @@ receiveList c = receiveListAux Empty c
 -- Funcao para receber uma lista pelo canal (devolve o canal no fim)
 receiveListAux : IntList -> (rec x: SU. +{TabuadaSimples: !Int; x, TabuadaAte: !Int; !Int; x, MultiplosEntre: !Int; !Int; !Int; x, Solucao: ?Bool; ?Int; x, Fim: Skip}) -> (IntList, (rec x: SU. +{TabuadaSimples: !Int; x, TabuadaAte: !Int; !Int; x, MultiplosEntre: !Int; !Int; !Int; x, Solucao: ?Bool; ?Int; x, Fim: Skip}))
 receiveListAux l c =
-  let c      = select c Solucao in
+  let c      = select Solucao c in
   let (b, c) = receive c in
   let (x, c) = receive c in
   if b
@@ -102,8 +102,8 @@ main : IntList
 main =
   let (r, w) = new rec x: SU. &{TabuadaSimples: ?Int; x, TabuadaAte: ?Int; ?Int; x, MultiplosEntre: ?Int; ?Int; ?Int; x, Solucao: !Bool; !Int; x, Fim: Skip} in
   let _      = fork (initTabuadaServer r) in
-  let c      = select w TabuadaSimples in
-  let c      = send c 4 in
+  let c      = select TabuadaSimples w in
+  let c      = send 4 c in
   let (result, c) = receiveList c in
-  let c      = select c Fim in
+  let c      = select Fim c in
   result

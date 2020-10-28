@@ -1,5 +1,5 @@
 f1 : !Int;!Int -> Skip
-f1 c = send (send c 5) 5
+f1 c = send 5 (send 5 c)
 
 f2 : ?Int;?Int -> Int
 f2 c =
