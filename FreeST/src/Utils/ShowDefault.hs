@@ -48,8 +48,8 @@ instance ShowWithDefault Expression where
 -- | Show expression, consulting the typename map
 
 showExpDefault :: TypeOpsEnv -> Expression -> Expression
-showExpDefault tops (Lambda p m b t e) =
-  Lambda p m b (showTypeDefault tops t) (showExpDefault tops e)
+showExpDefault tops (Abs p m b t e) =
+  Abs p m b (showTypeDefault tops t) (showExpDefault tops e)
 showExpDefault tops (TypeApp p x ts) =
   TypeApp p x (map (showTypeDefault tops) ts)
 showExpDefault tops (New p t u) = New p (showTypeDefault tops t) u

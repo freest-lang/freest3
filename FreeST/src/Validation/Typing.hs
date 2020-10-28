@@ -83,8 +83,8 @@ synthetise kEnv (UnLet _ x e1 e2) = do
   t2 <- synthetise kEnv e2
   quotient kEnv x
   return t2
--- Lambda introduction
-synthetise kEnv e'@(Lambda p m x t1 e) = do
+-- Abs introduction
+synthetise kEnv e'@(Abs p m x t1 e) = do
   K.synthetise kEnv t1
   vEnv1 <- getVEnv
   addToVEnv x (fromType t1)
@@ -93,7 +93,7 @@ synthetise kEnv e'@(Lambda p m x t1 e) = do
   vEnv2 <- getVEnv
   when (m == Un) (checkEqualEnvs e' vEnv1 vEnv2)
   return $ Fun p m t1 t2
--- Lambda elimination
+-- Abs elimination
 synthetise kEnv (App p (Select _ c) e) = do -- Select c e
   t <- synthetise kEnv e
   m <- extractOutChoiceMap e t
@@ -380,7 +380,7 @@ checkAgainst kEnv (BinLet _ x y e1 e2) t2 = do
 -- checkAgainst kEnv (Match p e fm) = checkAgainstFieldMap p kEnv e fm extractInChoiceMap
 -- TODO Datatype elimination
 -- checkAgainst kEnv (Case p e fm) = checkAgainstFieldMap p kEnv e fm extractDatatypeMap
--- Lambda elimination. It seems that we cannot do checkAgainst for we
+-- Abs elimination. It seems that we cannot do checkAgainst for we
 -- cannot decide whether to use a Lin or a Un function. See
 -- counterexamples: polySUTL.fst when using Lin, and mult.fst when
 -- using Un
@@ -462,12 +462,12 @@ fillFunType
 fillFunType kEnv b e (TypeScheme _ _ t) = fill e t
  where
   fill :: Expression -> Type -> FreestState Type
-  fill (Lambda _ _ b _ e) (Fun _ _ t1 t2) = do
+  fill (Abs _ _ b _ e) (Fun _ _ t1 t2) = do
     addToVEnv b (fromType t1)
     t3 <- fill e t2
     removeFromVEnv b
     return t3
-  fill e@(Lambda p _ _ _ _) t = do
+  fill e@(Abs p _ _ _ _) t = do
     addError
       (position b)
       [ Error "Couldn't match expected type"

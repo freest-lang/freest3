@@ -31,19 +31,19 @@ data Expression =
   -- Variable
   | ProgVar Pos ProgVar
   -- Abstraction intro and elim
-  | Lambda Pos Multiplicity ProgVar Type Expression
+  | Abs Pos Multiplicity ProgVar Type Expression
   | App Pos Expression Expression
   -- Pair intro and elim
   | Pair Pos Expression Expression
   | BinLet Pos ProgVar ProgVar Expression Expression
   -- Datatype elim
   | Case Pos Expression FieldMap
-  -- Type application
+  -- Type applicati2on
   | TypeApp Pos ProgVar [Type]
   -- Boolean elim
   | Conditional Pos Expression Expression Expression
   -- Let
-  | UnLet Pos ProgVar Expression Expression -- TODO: Derived; eliminate? If is which type for the ProgVar? (cf. Lambda)
+  | UnLet Pos ProgVar Expression Expression -- TODO: Derived; eliminate? If is which type for the ProgVar? (cf. Abs)
   -- Session types
   | New Pos Type Type
   | Select Pos ProgVar
@@ -61,7 +61,7 @@ instance Position Expression where
   position (Character p _)       = p
   position (Boolean p _)         = p
   position (ProgVar p _)         = p
-  position (Lambda p _ _ _ _)    = p
+  position (Abs p _ _ _ _)       = p
   position (UnLet p _ _ _)       = p
   position (App p _ _)           = p
   position (TypeApp p _ _)       = p

@@ -161,7 +161,7 @@ showExp _ (ProgVar   _ x) = show x
   -- Depth reached
 showExp 0 _               = ".."
   -- Abstraction intro and elim
-showExp i (Lambda _ m b t e) =
+showExp i (Abs _ m b t e) =
   "(\\"
     ++ show b
     ++ " : "
