@@ -4,13 +4,11 @@ module Utils.ShowDefault
 where
 
 import qualified Data.Map.Strict               as Map
-import           Data.Maybe                     ( fromMaybe )
+import           Data.Maybe                     (fromMaybe)
 import           Syntax.Base
 import           Syntax.Expressions
-import           Syntax.Show                    ( )
-import           Syntax.Types                   ( Type(..)
-                                                , TypeOpsEnv
-                                                )
+import           Syntax.Show                    ()
+import           Syntax.Types                   (Type(..), TypeBind(..), TypeOpsEnv)
 
 -- | Class show default
 
@@ -48,8 +46,8 @@ instance ShowWithDefault Expression where
 -- | Show expression, consulting the typename map
 
 showExpDefault :: TypeOpsEnv -> Expression -> Expression
-showExpDefault tops (Abs p m b t e) =
-  Abs p m b (showTypeDefault tops t) (showExpDefault tops e)
+showExpDefault tops (Abs p1 m (TypeBind p2 b t) e) =
+  Abs p1 m (TypeBind p2 b (showTypeDefault tops t)) (showExpDefault tops e)
 showExpDefault tops (TypeApp p x ts) =
   TypeApp p x (map (showTypeDefault tops) ts)
 showExpDefault tops (New p t u) = New p (showTypeDefault tops t) u
