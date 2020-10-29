@@ -14,7 +14,7 @@ import qualified Data.Set                      as Set
 import           Utils.FreestState
 import           Debug.Trace
 import           Validation.Contractive
-import           Control.Monad
+import           Control.Monad                  ( liftM, liftM2, liftM3 )
 import           Utils.PreludeLoader            ( userDefined ) -- debug
 import           Validation.Kinding             ( synthetiseTS )
 
