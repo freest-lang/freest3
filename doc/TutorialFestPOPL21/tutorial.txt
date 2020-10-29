@@ -42,10 +42,10 @@ regular languages. At this preliminary stage we will also introduce
 the syntax of the language and run several programs in FreeST. We then
 motivate and introduce context-free session types. The tutorial is
 mostly driven by examples. Attendees may install FreeST on their
-machines (a simple stack install' command, cf.
+machines (a simple 'stack install' command, cf.
 http://rss.di.fc.ul.pt/tools/freest/) or run their programs at the
 online interpreter (http://rss.di.fc.ul.pt/tryit/FreeST.) We plan to
-carry out live demos and encouraged to develop their won code.
+carry out live demos and encouraged to develop their own code.
 Experience with functional programming is recommended, but not
 required.
 
