@@ -44,7 +44,8 @@ data Multiplicity = Un | Lin deriving Eq
 
 instance Ord Multiplicity where
   Un <= Lin = True
-  _  <= _  = False
+  m1 <= m2 = m1 == m2
+--   _  <= _  = False
 
 -- Variables, type and program
 
