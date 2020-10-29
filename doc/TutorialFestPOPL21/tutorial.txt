@@ -8,7 +8,7 @@ Presenters:
 Bernardo Almeida (bpdalmeida@ciencias.ulisboa.pt)
 Andreia Mordido (afmordido@ciencias.ulisboa.pt)
 Vasco T. Vasconcelos (vmvasconcelos@ciencias.ulisboa.pt)
-LASIGE, Faculdade de Ciências, Universidade de Lisboa
+LASIGE, Faculty of Sciences, University of Lisbon
 
 
 Description:
@@ -42,7 +42,7 @@ regular languages. At this preliminary stage we will also introduce
 the syntax of the language and run several programs in FreeST. We then
 motivate and introduce context-free session types. The tutorial is
 mostly driven by examples. Attendees may install FreeST on their
-machines (a simple 'cabal install' command, cf.
+machines (a simple stack install' command, cf.
 http://rss.di.fc.ul.pt/tools/freest/) or run their programs at the
 online interpreter (http://rss.di.fc.ul.pt/tryit/FreeST.) We plan to
 carry out live demos and encouraged to develop their won code.
@@ -145,6 +145,6 @@ Computer Science, from the University of Lisbon. Currently, his main research
 interests are type systems and programming languages.
 
 Andreia Mordido is an Assistant Professor at the Department of Informatics of
-Faculdade de Ciências, Universidade de Lisboa, and a researcher at LASIGE.
+Faculty of Sciences, University of Lisbon, and a researcher at LASIGE.
 Andreia is a researcher working on programming languages and type systems for
 the specification and verification of communication protocols and programs.
