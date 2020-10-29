@@ -58,7 +58,7 @@ data Type =
   | Message Pos Polarity BasicType
   | Choice Pos Polarity TypeMap
   -- Polymorphism
-  | Forall Pos KindBind Type
+  | Forall Pos KindBind Type    -- ∀ a:k => T
   -- Functional or session 
   | Rec Pos KindBind Type 
   | TypeVar Pos TypeVar  -- a recursion variable if bound, polymorphic otherwise

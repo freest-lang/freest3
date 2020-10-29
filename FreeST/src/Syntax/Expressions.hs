@@ -32,16 +32,16 @@ data Expression =
   -- Variable
   | ProgVar Pos ProgVar
   -- Abstraction intro and elim
-  | Abs Pos Multiplicity TypeBind Expression
-  | App Pos Expression Expression
+  | Abs Pos Multiplicity TypeBind Expression -- λ x:T -> e
+  | App Pos Expression Expression            -- e1 e2
   -- Pair intro and elim
   | Pair Pos Expression Expression
   | BinLet Pos ProgVar ProgVar Expression Expression
   -- Datatype elim
   | Case Pos Expression FieldMap
   -- Type Abstraction intro and elim
-  | TypeAbs Pos KindBind Expression
-  -- | TypeApp Pos Expression Type -- NEW, replace the below
+  | TypeAbs Pos KindBind Expression     -- Λ a:k => e
+  -- | TypeApp Pos Expression Type      -- e T, if that does not work, then e[T]. NEW, replace the below
   | TypeApp Pos ProgVar [Type]
   -- Boolean elim
   | Conditional Pos Expression Expression Expression
