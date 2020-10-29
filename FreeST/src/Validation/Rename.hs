@@ -126,12 +126,20 @@ rename' bs (Dualof p t) = do
   -- Otherwise: Basic, Skip, Message, TypeName
 rename' _ t = return t
 
--- Type-kind binds
+-- Type var - kind binds
 
 instance Rename KindBind where
   rename bs (KindBind p x k) = do
-    y <- rename bs x
-    return $ KindBind p y k
+    x' <- rename bs x
+    return $ KindBind p x' k
+
+-- Prog var - type binds
+
+instance Rename TypeBind where
+  rename bs (TypeBind p x t) = do
+    x' <- rename bs x
+    t' <- rename bs t
+    return $ TypeBind p x' t'
 
 -- Expressions
 
@@ -140,11 +148,10 @@ instance Rename Expression where
   rename bs (ProgVar p x) =
     return $ ProgVar p (findWithDefaultVar x bs)
   -- Abstraction intro and elim
-  rename bs (Abs p1 m (TypeBind p2 x t) e) = do
-    x' <- rename bs x
-    t' <- rename bs t
+  rename bs (Abs p1 m b e) = do
+    b' <- rename bs b
     e' <- rename (insertVar x x' bs) e
-    return $ Abs p1 m (TypeBind p2 x' t') e'
+    return $ Abs p1 m b' e'
   rename bs (App p e1 e2) = do
     e1' <- rename bs e1
     e2' <- rename bs e2
