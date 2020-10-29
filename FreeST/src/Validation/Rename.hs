@@ -133,14 +133,6 @@ instance Rename KindBind where
     x' <- rename bs x
     return $ KindBind p x' k
 
--- Prog var - type binds
-
-instance Rename TypeBind where
-  rename bs (TypeBind p x t) = do
-    x' <- rename bs x
-    t' <- rename bs t
-    return $ TypeBind p x' t'
-
 -- Expressions
 
 instance Rename Expression where
@@ -148,10 +140,11 @@ instance Rename Expression where
   rename bs (ProgVar p x) =
     return $ ProgVar p (findWithDefaultVar x bs)
   -- Abstraction intro and elim
-  rename bs (Abs p1 m b e) = do
-    b' <- rename bs b
+  rename bs (Abs p1 m (TypeBind p2 x t) e) = do
+    x' <- rename bs x
+    t' <- rename bs t
     e' <- rename (insertVar x x' bs) e
-    return $ Abs p1 m b' e'
+    return $ Abs p1 m (TypeBind p2 x' t') e'
   rename bs (App p e1 e2) = do
     e1' <- rename bs e1
     e2' <- rename bs e2
