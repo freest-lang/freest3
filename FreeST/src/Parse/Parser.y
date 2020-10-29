@@ -331,15 +331,13 @@ TypeSeq :: { [Type] }
 -- KINDS --
 -----------
 
-Kind :: { Kind }
-  : SU             { kindSU (position $1) }
-  | SL             { kindSL (position $1) }
-  | TU             { kindTU (position $1) }
-  | TL             { kindTL (position $1) }
-  | MU             { kindMU (position $1) }
-  | ML             { kindML (position $1) }
-  | Kind '->' Kind { KindArrow (position $1) $1 $3 }
--- TODO: arrow
+Kind :: { Kind } :
+    SU { kindSU (position $1) }
+  | SL { kindSL (position $1) }
+  | TU { kindTU (position $1) }
+  | TL { kindTL (position $1) }
+  -- | MU { kindMU (position $1) }
+  -- | ML { kindML (position $1) }
 
 -- PROGRAM VARIABLES
 
