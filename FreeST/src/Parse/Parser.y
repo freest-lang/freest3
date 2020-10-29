@@ -180,7 +180,8 @@ Expr :: { Expression }
   : let ProgVarWild '=' Expr in Expr { UnLet (position $1) $2 $4 $6 }
   | Expr ';' Expr                    { App (position $1)
                                          (Abs (position $1) Un
-                                           (TypeBind (position $1) (mkVar (position $1) "_") (Basic (position $3) UnitType))
+                                           (TypeBind (position $1) (mkVar (position $1) "_")
+                                             (Basic (position $3) UnitType))
                                            $3)
                                        $1}
   | let '(' ProgVarWild ',' ProgVarWild ')' '=' Expr in Expr
@@ -320,6 +321,9 @@ Kind :: { Kind } :
   | SL { kindSL (position $1) }
   | TU { kindTU (position $1) }
   | TL { kindTL (position $1) }
+  -- | MU { kindMU (position $1) }
+  -- | ML { kindML (position $1) }
+
 
 -- PROGRAM VARIABLES
 
