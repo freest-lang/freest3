@@ -83,6 +83,8 @@ import           Debug.Trace
   SL       {TokenSL _}
   TU       {TokenTU _}
   TL       {TokenTL _}
+  MU       {TokenMU _}
+  ML       {TokenML _}
   INT      {TokenInt _ _ }
   BOOL     {TokenBool _ _}
   CHAR     {TokenChar _ _}
@@ -316,14 +318,14 @@ TypeSeq :: { [Type] }
 -- KINDS --
 -----------
 
-Kind :: { Kind } :
-    SU { kindSU (position $1) }
+Kind :: { Kind }
+  : SU { kindSU (position $1) }
   | SL { kindSL (position $1) }
   | TU { kindTU (position $1) }
   | TL { kindTL (position $1) }
-  -- | MU { kindMU (position $1) }
-  -- | ML { kindML (position $1) }
-
+  | MU { kindMU (position $1) }
+  | ML { kindML (position $1) }
+-- TODO: arrow
 
 -- PROGRAM VARIABLES
 
@@ -406,7 +408,7 @@ parseSchemes file str =
   case runStateT (parse str file schemes) (initialState file) of
     Ok (t, s) -> if hasErrors s then Right (getErrors s) else Left t
     Failed err -> Right err
-
+                   
 -----------------------
 -- PARSING PROGRAMS  --
 -----------------------
