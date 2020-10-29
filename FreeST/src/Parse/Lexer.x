@@ -15,31 +15,40 @@ import           Utils.ErrorMessage
 
 %wrapper "posn"
 
-$greek = [\880-\1023] # λ  -- forall not in range ([λ ∀])
+$greek = [\880-\1023] -- # λ  -- forall not in range ([λ ∀])
 
 $upperA  = [A-Z]
 $upper = [$upperA$greek]
 
 -- $lowerU  = \x02 -- Trick Alex into handling Unicode. See [Unicode in Alex].
 $lowerA = [a-z]
-$lower = [$lowerA $greek \_]
+$lower = [$lowerA$greek\_] --  $greek \_]
 
-$letter = [$lower$upper]
+$letter = [$lower$upper$greek]
 
-$unidigit  = \x03
+
+-- $unidigit  = \x03
 $ascdigit = 0-9
-$digit = [$ascdigit $unidigit]
+$digit = [$ascdigit] -- $unidigit]
 
 -- $ascsymbol = [\!\#\$\%\&\*\+\.\/\<\=\>\?\@\\\^\|\-\~\:]
 $ascsymbol = [\!\#\$\%\&\*\+\.\/\<\=\>\?\@\\\^\|\-\~]
 $symbol = [$ascsymbol] -- $unisymbol]
+
+$alphaNumeric = [$letter$digit\_\']
   
 $eol=[\n]
 
+
+
 @char = \'(\\n|[\\.]|.) \'
 @blockComment = "{-" (\.*|[^\{\-]|\n|\-\-|[^$symbol].*)* "-}"
--- @blockComment = "{-" (\\.|[^\{\-]|\n|\||\")* "-}"
--- @blockComment = "{-"($eol|.*)*"-}"
+
+-- # λ  -- forall not in range ([λ ∀])
+
+@varsym = ($lower # [λ ∀ Λ]) $alphaNumeric*  -- variable (operator) symbol
+@conssym = ($upper # [λ ∀ Λ]) $alphaNumeric*
+
   
 tokens :-  
   $white*$eol+                  { \p s -> TokenNL (internalPos p) }
@@ -49,7 +58,7 @@ tokens :-
   "->"				{ \p s -> TokenUnArrow (internalPos p) }
   "-o"				{ \p s -> TokenLinArrow (internalPos p) }
   ("\"|λ)                       { \p s -> TokenLambda (internalPos p) }
-  ("\\"|Λ)                     { \p s -> TokenUpperLambda (internalPos p) }
+  ("\\"|Λ)                      { \p s -> TokenUpperLambda (internalPos p) }
   "=>"				{ \p s -> TokenFArrow (internalPos p) }
   "("				{ \p s -> TokenLParen (internalPos p) }
   ")"				{ \p s -> TokenRParen (internalPos p) }
@@ -115,8 +124,8 @@ tokens :-
   @char				{ \p s -> TokenChar (internalPos p) (read s) }
 -- Identifiers
   "(+)" | "(-)" | "(*)"         { \p s -> TokenLowerId (internalPos p) s }  -- TODO: add remaining operators
-  $lower [$letter$digit\_\']*   { \p s -> TokenLowerId (internalPos p) s }
-  $upper [$letter$digit\_\']*	{ \p s -> TokenUpperId (internalPos p) s }
+  @varsym                       { \p s -> TokenLowerId (internalPos p) s }
+  @conssym                      { \p s -> TokenUpperId (internalPos p) s }
 
 {
 
@@ -186,7 +195,6 @@ data Token =
   | TokenDisjunction Pos
   | TokenDiv Pos
   | TokenDollar Pos
-
 
 instance Show Token where
   show (TokenNL p) = "\n"  
