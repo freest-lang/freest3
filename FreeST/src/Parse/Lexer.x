@@ -91,6 +91,8 @@ tokens :-
   SL                            { \p s -> TokenSL (internalPos p) }
   TU                            { \p s -> TokenTU (internalPos p) }
   TL                            { \p s -> TokenTL (internalPos p) }
+  MU                            { \p s -> TokenMU (internalPos p) }
+  ML                            { \p s -> TokenML (internalPos p) }
 -- Basic types
   Int				{ \p s -> TokenIntT (internalPos p) }
   Char				{ \p s -> TokenCharT (internalPos p) }
@@ -157,6 +159,8 @@ data Token =
   | TokenSL Pos 
   | TokenTU Pos 
   | TokenTL Pos
+  | TokenMU Pos
+  | TokenML Pos
   | TokenInt Pos Int
   | TokenChar Pos Char
   | TokenBool Pos Bool
@@ -224,6 +228,8 @@ instance Show Token where
   show (TokenSL p) = "SL"   
   show (TokenTU p) = "TU"   
   show (TokenTL p) = "TL"  
+  show (TokenMU p) = "MU"  
+  show (TokenML p) = "ML"  
   show (TokenInt p i) = show i
   show (TokenChar p c) = show c
   show (TokenBool p b) = show b
