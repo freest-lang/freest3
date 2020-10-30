@@ -39,7 +39,7 @@ import qualified Data.Map.Strict               as Map
 -- Returns the kind of a given type
 synthetise :: KindEnv -> Type -> FreestState Kind
 -- Functional types
-synthetise _    (Basic p _  ) = return $ Kind p Functional Un
+synthetise _    (Basic p _  ) = return $ Kind p MessageK Un
 synthetise kEnv (Fun p m t u) = do
   synthetise kEnv t
   synthetise kEnv u
