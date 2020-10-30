@@ -332,12 +332,13 @@ TypeSeq :: { [Type] }
 -----------
 
 Kind :: { Kind }
-  : SU { kindSU (position $1) }
-  | SL { kindSL (position $1) }
-  | TU { kindTU (position $1) }
-  | TL { kindTL (position $1) }
-  | MU { kindMU (position $1) }
-  | ML { kindML (position $1) }
+  : SU             { kindSU (position $1) }
+  | SL             { kindSL (position $1) }
+  | TU             { kindTU (position $1) }
+  | TL             { kindTL (position $1) }
+  | MU             { kindMU (position $1) }
+  | ML             { kindML (position $1) }
+  | Kind '->' Kind { KindArrow (position $1) $1 $3 }
 -- TODO: arrow
 
 -- PROGRAM VARIABLES
@@ -423,22 +424,12 @@ parseType str =
 -- PARSING SCHEMES  --
 ----------------------
 
-<<<<<<< HEAD
--- parseSchemes :: String -> String -> Either (TypeScheme, TypeScheme) String
--- parseSchemes file str =
---   case runStateT (parse str file schemes) (initialState file) of
---     Ok (t,s) ->
---       if hasErrors s then Right (getErrors s) else Left t
---     Failed err -> Right err
-
-=======
 parseSchemes :: String -> String -> Either (TypeScheme, TypeScheme) String
 parseSchemes file str =
   case runStateT (parse str file schemes) (initialState file) of
     Ok (t, s) -> if hasErrors s then Right (getErrors s) else Left t
     Failed err -> Right err
-                   
->>>>>>> 185096e (added concrete syntax for kind MU and ML)
+
 -----------------------
 -- PARSING PROGRAMS  --
 -----------------------
