@@ -54,8 +54,8 @@ synthetise _    (Character p _) = return $ Basic p CharType
 synthetise _    (Boolean   p _) = return $ Basic p BoolType
 -- Variable
 synthetise kEnv e@(ProgVar p x)
-  | x == mkVar p "receive" = addPartiallyAppliedError e
-  | x == mkVar p "send" = addPartiallyAppliedError e
+  | x == mkVar p "receive" = addPartiallyAppliedError e "channel"
+  | x == mkVar p "send" = addPartiallyAppliedError e "value and another denoting a channel"
   | otherwise = do
   -- venv <- getVEnv
   -- traceM ("PROG: " ++ show x ++ " - " ++ show (x `Map.member` venv) ++ "\n" ++ show venv ++ "\n\n")
@@ -104,7 +104,7 @@ synthetise kEnv (App p (ProgVar _ x) e)  -- Receive e
       (u1, u2) <- extractInput e t
       return $ PairType p (Basic p u1) u2
 synthetise kEnv e@(App p (ProgVar _ x) _)  -- Send e
-  | x == mkVar p "send" = addPartiallyAppliedError e
+  | x == mkVar p "send" = addPartiallyAppliedError e "channel"
 synthetise kEnv (App p (App _ (ProgVar _ x) e1) e2)  -- Send e1 e2
   | x == mkVar p "send" = do
       t        <- synthetise kEnv e2
@@ -173,7 +173,7 @@ synthetise kEnv (New p t u) = do
   return $ PairType p t u -- (dual t)
   -- return $ PairType p t (Dualof p t)
 synthetise kEnv e@(Select _ _) =
-  addPartiallyAppliedError e
+  addPartiallyAppliedError e "channel"
 -- synthetise kEnv (Select p e c) = do
 --   t <- synthetise kEnv e
 --   m <- extractOutChoiceMap e t
@@ -339,8 +339,8 @@ quotient kEnv x = do
     Nothing -> return ()
   removeFromVEnv x
 
-addPartiallyAppliedError :: Expression -> FreestState Type
-addPartiallyAppliedError e = do
+addPartiallyAppliedError :: Expression -> String -> FreestState Type
+addPartiallyAppliedError e s = do
   let p = position e
   addError p
     [ Error "Ooops! You're asking too much. I cannot type a partially applied"
@@ -348,7 +348,7 @@ addPartiallyAppliedError e = do
     , Error "\b.\n\t I promise to look into that some time in the future.\n"
     , Error "\t In the meantime consider applying"
     , Error e
-    , Error "to an expression denoting a channel."
+    , Error $ "to an expression denoting a " ++ s ++ "."
     ]
   return $ omission p
 
