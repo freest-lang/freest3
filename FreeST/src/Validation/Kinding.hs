@@ -57,7 +57,7 @@ synthetise _    (Skip p    ) = return $ Kind p Session Un
 synthetise kEnv (Semi p t u) = do
   m <- checkAgainstSession kEnv t
   n <- checkAgainstSession kEnv u
-  return $ Kind p Session (max m n)
+  return $ Kind p Session (max m n) -- JOURNAL: Lin 
 synthetise _    (Message p _ _) = return $ Kind p Session Lin
 synthetise kEnv (Choice  p _ m) = do
   tMapM_ (checkAgainst kEnv (Kind p Session Lin)) m
