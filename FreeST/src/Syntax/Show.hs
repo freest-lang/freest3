@@ -68,9 +68,11 @@ showVar v | isDigit (head s) = dropWhile (\x -> isDigit x || x == '#') s
 instance Show PreKind where
   show Session    = "S"
   show Functional = "T"
+  show Msg        = "M"
 
 instance Show Kind where
   show (Kind _ p m) = show p ++ show m
+  show (KindArrow _ k1 k2) = show k1 ++ " -> " ++ show k2
 
 instance Show KindBind where
 --  show (KindBind _ a k) = show a
