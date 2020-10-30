@@ -1,11 +1,11 @@
-f : Int -> ?Int -o Skip
+f : ?Int -o (Int, Skip)
 f = receive
 
 main : (Int, Skip)
 main =
   let (r, w) = new !Int in
-  let _ = fork $ sink $ f 5 r in
-  receive w
+  let _ = fork $ sink $ send 5 r in
+  f w
 
 -- Auxiliary function because of fork : () -> ()
 sink : Skip -> ()

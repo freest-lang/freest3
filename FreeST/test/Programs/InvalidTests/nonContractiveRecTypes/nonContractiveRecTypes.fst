@@ -4,5 +4,5 @@ type U = V
 
 type V = T
 
-main : Char
+main : T
 main = 'a'
