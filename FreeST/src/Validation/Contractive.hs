@@ -28,19 +28,16 @@ class Contractive t where
   checkContractive :: TypeVar -> t -> FreestState ()
 
 instance Contractive Type where
-  checkContractive x t =
-    unless (contractive x t) $
-     addError (position t) [Error "Type", Error t, Error "is not contractive on type variable", Error x]
+  checkContractive a t =
+    unless (contractive a t) $
+     addError (position t) [Error "Type", Error t, Error "is not contractive on type variable", Error a]
 
 -- A better notion of contractivy
 contractive :: TypeVar -> Type -> Bool
--- Session types
+contractive a (Semi _ t u)
+    | terminated t = contractive a u
+    | otherwise    = contractive a t
+contractive a (Rec _ _ t) = contractive a t
+contractive a (TypeVar _ b) = a /= b
 contractive _ (Skip _) = False
-contractive x (Semi _ t u)
-    | terminated t = contractive x u
-    | otherwise    = contractive x t
--- Recursive types
-contractive x (TypeVar _ y) = x /= y
-contractive x (Rec _ _ t) = contractive x t
--- Functional and session types
 contractive _ _ = True
