@@ -36,7 +36,7 @@ import qualified Data.Map.Strict as Map
 
 -- Prekinds
 
-data PreKind = Msg | Session | Functional deriving Eq
+data PreKind = MessageK | Session | Functional deriving Eq
 
 instance Ord PreKind where
    Session <= Functional = True
@@ -61,8 +61,8 @@ kindTL p = Kind p Functional Lin
 kindTU p = Kind p Functional Un
 kindSL p = Kind p Session Lin
 kindSU p = Kind p Session Un
-kindMU p = Kind p Msg Un
-kindML p = Kind p Msg Lin
+kindMU p = Kind p MessageK Un
+kindML p = Kind p MessageK Lin
 
 -- The subkinding relation. Note that Kind is a partial order, hence
 -- should *not* be an instance class Ord.
@@ -72,7 +72,7 @@ kindML p = Kind p Msg Lin
 --   \  /
 --    SU
 (<:) :: Kind -> Kind -> Bool
-(Kind _ Msg m1)     <: (Kind _ Functional m2) = m1 <= m2
+(Kind _ MessageK m1)     <: (Kind _ Functional m2) = m1 <= m2
 (Kind _ Session m1) <: (Kind _ Functional m2) = m1 <= m2
 (KindArrow _ k1 k2) <: (KindArrow _ k1' k2')  = k1' <= k1 && k2 <: k2'
 k1                  <: k2                     = preKind k1 == preKind k2 && mult k1 <= mult k2
