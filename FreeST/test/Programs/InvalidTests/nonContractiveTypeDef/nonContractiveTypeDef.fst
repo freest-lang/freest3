@@ -1,4 +1,4 @@
 type T = T
 
-main : Char
+main : T
 main = 'a'
