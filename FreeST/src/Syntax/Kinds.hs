@@ -49,10 +49,10 @@ data Kind = Kind Pos PreKind Multiplicity
           deriving Ord -- TODO: I wish we do not need this
 
 instance Eq Kind where
---  (Kind _ p n) == (Kind _ q m)           = p == q && n <= m -- (p, n) == (q, m)
-  (Kind _ p n) == (Kind _ q m)           = (p, n) == (q, m)
-  (KindArrow _ p n) == (KindArrow _ q m) = (p, n) == (q, m)
-  _ == _                                 = False
+  (Kind _ p n) == (Kind _ q m) = p == q && n <= m
+    -- (p, n) == (q, m)
+  (KindArrow _ p n) == (KindArrow _ q m) = p == q && n == m
+  _ == _ = False
   
 
 -- Abbreviations for the four kinds
@@ -75,14 +75,15 @@ kindML p = Kind p MessageK Lin
 (Kind _ MessageK m1)     <: (Kind _ Functional m2) = m1 <= m2
 (Kind _ Session m1) <: (Kind _ Functional m2) = m1 <= m2
 (KindArrow _ k1 k2) <: (KindArrow _ k1' k2')  = k1' <= k1 && k2 <: k2'
-k1                  <: k2                     = preKind k1 == preKind k2 && mult k1 <= mult k2
+k1                  <: k2                     = k1 == k2
+-- k1                  <: k2                     = preKind k1 == preKind k2 && mult k1 <= mult k2
 
-mult :: Kind -> Multiplicity
-mult (Kind _ _ m) = m
-mult (KindArrow _ k1 k2) = max (mult k1) (mult k2)
+-- mult :: Kind -> Multiplicity
+-- mult (Kind _ _ m) = m
+-- mult (KindArrow _ k1 k2) = max (mult k1) (mult k2)
 
-preKind :: Kind -> PreKind
-preKind (Kind _ k _) = k
+-- preKind :: Kind -> PreKind
+-- preKind (Kind _ k _) = k
 
 -- The least upper bound of two kinds
 join :: Kind -> Kind -> Kind
