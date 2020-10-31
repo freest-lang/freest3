@@ -122,10 +122,12 @@ import           Debug.Trace
 %left '*' '/'    -- multiplicative
 %left NEG not    -- unary
 -- Types
+%right '=>'      -- Used in forall                 
 %right '.'       -- used in rec
 %right '->' '-o' -- an Expr operator as well
-%right ';'       -- an Expr operator as well
+%right ';'       -- an Expr operator as well                
 %right dualof
+
 -- Lambda expressions
 %nonassoc ProgVarWildTBind
 
@@ -260,11 +262,13 @@ Type :: { Type }
   | Type Arrow Type               { uncurry Fun $2 $1 $3 }
   | '(' Type ',' TupleType ')'    { PairType (position $1) $2 $4 }
   -- Session types
-  | Skip                          { Skip (position $1) }
-  | Type ';' Type                 { Semi (position $2) $1 $3 }
-  | Polarity BasicType            { uncurry Message $1 (snd $2) }
-  | ChoiceView '{' FieldList '}'  { uncurry Choice $1 $3 }
-  | rec KindBind '.' Type         { Rec (position $1) $2 $4 }
+  | Skip                             { Skip (position $1) }
+  | Type ';' Type                    { Semi (position $2) $1 $3 }
+  | Polarity BasicType               { uncurry Message $1 (snd $2) }
+  | ChoiceView '{' FieldList '}'     { uncurry Choice $1 $3 }
+  | rec KindBind '.' Type            { Rec (position $1) $2 $4 }
+  -- Polymorphism
+  | forall KindBind '=>' Type        { Forall (position $1) $2 $4 }
   -- Functional or session
   | TypeVar                       { TypeVar (position $1) $1 }
   -- Type operators
