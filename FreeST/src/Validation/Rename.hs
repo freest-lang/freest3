@@ -254,8 +254,8 @@ isFreeIn x (Fun _ _ t u) = x `isFreeIn` t || x `isFreeIn` u
 isFreeIn x (PairType _ t u) = x `isFreeIn` t || x `isFreeIn` u
 isFreeIn x (Datatype _ fm) = Map.foldr' (\t b -> x `isFreeIn` t || b) False fm
     -- Session types
-isFreeIn x (Semi p t u) = x `isFreeIn` t || x `isFreeIn` u
-isFreeIn x (Choice p pol tm) = Map.foldr' (\t b -> x `isFreeIn` t || b) False tm
+isFreeIn x (Semi _ t u) = x `isFreeIn` t || x `isFreeIn` u
+isFreeIn x (Choice _ pol tm) = Map.foldr' (\t b -> x `isFreeIn` t || b) False tm
   -- Functional or session 
 isFreeIn x (Rec _ (KindBind _ y _) t) = x /= y && x `isFreeIn` t
 isFreeIn x (TypeVar _ y) = x == y
