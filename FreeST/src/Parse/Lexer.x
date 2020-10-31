@@ -336,6 +336,8 @@ instance Position Token where
   position (TokenSL p) = p 
   position (TokenTU p) = p 
   position (TokenTL p) = p
+  position (TokenML p) = p
+  position (TokenMU p) = p
   position (TokenInt p _) = p
   position (TokenChar p _) = p
   position (TokenBool p _) = p
