@@ -66,6 +66,9 @@ synthetise kEnv (Choice  p _ m) = do
 synthetise kEnv (Rec _ (KindBind _ a k) t) = do
   checkContractive a t
   synthetise (Map.insert a k kEnv) t
+synthetise kEnv (Forall p (KindBind _ x k) t) = do
+  k' <- synthetise (Map.insert x k kEnv) t
+  return $ KindArrow p k k'
 synthetise kEnv (TypeVar p x) = case kEnv Map.!? x of
   Just k  -> return k
   Nothing -> do
