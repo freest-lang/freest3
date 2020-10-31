@@ -113,14 +113,17 @@ import           Debug.Trace
 %right in else match case
 %left select
 %nonassoc new
-%right '$'       -- function call
-%left '||'       -- disjunction
-%left '&&'       -- conjunction
-%nonassoc CMP     -- comparison (relational and equality)
-%left '+' '-'    -- aditive
-%left '*' '/'    -- multiplicative
-%left NEG not    -- unary
+                 
+%right '$'
+%left '||'                      -- disjunction
+%left '&&'                      -- conjunction
+%left '==' '/='                 -- equality
+%nonassoc CMP -- '<' '<=' '>' '>='     -- relational
+%left '+' '-'                   -- aditive
+%left '*' '/'                   -- multiplicative
+%left NEG not                   -- unary
 -- Types
+%right '=>'      -- Used in forall
 %right '.'       -- Used in rec
 %right '->' '-o' -- TODO: an Expr operator as well
 %right ';'       -- TODO: an Expr operator as well
@@ -258,11 +261,13 @@ Type :: { Type }
   | Type Arrow Type               { uncurry Fun $2 $1 $3 }
   | '(' Type ',' TupleType ')'    { PairType (position $1) $2 $4 }
   -- Session types
-  | Skip                          { Skip (position $1) }
-  | Type ';' Type                 { Semi (position $2) $1 $3 }
-  | Polarity BasicType            { uncurry Message $1 (snd $2) }
-  | ChoiceView '{' FieldList '}'  { uncurry Choice $1 $3 }
-  | rec KindBind '.' Type         { Rec (position $1) $2 $4 }
+  | Skip                             { Skip (position $1) }
+  | Type ';' Type                    { Semi (position $2) $1 $3 }
+  | Polarity BasicType               { uncurry Message $1 (snd $2) }
+  | ChoiceView '{' FieldList '}'     { uncurry Choice $1 $3 }
+  | rec KindBind '.' Type            { Rec (position $1) $2 $4 }
+  -- Polymorphism
+  | forall KindBind '=>' Type        { Forall (position $1) $2 $4 }
   -- Functional or session
   | TypeVar                       { TypeVar (position $1) $1 }
   -- Type operators
