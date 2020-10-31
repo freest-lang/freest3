@@ -336,3 +336,55 @@ SL
 [("x", "SL") , ("y", "SL") , ("z", "SL")]
 (rec y:SU.+{A: (y;&{A: (Skip;(rec x:SU.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x:SU.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x), C:(y;x)})}))}), B: (Skip;&{A: (Skip;(rec x:SU.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x:SU.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x), C:(y;x)})}))}), C: (!Bool;&{A: (Skip;(rec x:SU.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x:SU.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x), C:(y;x)})}))})})
 SL
+
+-- Forall λ
+[]
+∀ a : MU => a
+MU -> MU
+
+[]
+∀ a : TU => a -> a
+TU -> TU
+
+[]
+∀ a : TL => a -o Int
+TL -> TL
+
+[]
+∀ a : TU => a -o Int
+TU -> TL
+
+[]
+∀ a : TU => a -> Int
+TU -> TU
+
+[]
+∀ a : SL => a -> Int
+SL -> TL
+
+-- forall rec
+
+[]
+∀ a : SL => rec b : SL . a -> b
+SL -> TL
+
+-- same but as a subkind
+[]
+∀ a : SL => rec b : SL . a -> b
+SL -> TU
+
+
+[]
+∀ a : SL => (rec a : SL . a) -> a
+SL -> TU
+
+[]
+∀ a : SL => Skip
+SL -> SU
+
+
+-- Subkinding & forall
+
+[]
+∀ a : TU => a -> Int
+TL -> TU
