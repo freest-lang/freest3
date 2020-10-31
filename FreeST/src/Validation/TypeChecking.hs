@@ -42,33 +42,30 @@ typeCheck = do
   tEnv <- getTEnv -- Type/datatype declarations
   vEnv <- getVEnv -- Function signatures
   eEnv <- getEEnv -- Function bodies
-  tn   <- getTypeNames -- Type Names
+  -- tn   <- getTypeNames -- Type Names
   -- traceM ("\n\n\nEntering type checking with\n  TEnv " ++ show tEnv ++ "\n\n" ++
   --         "  VEnv " ++ show (userDefined vEnv) ++ "\n\n" ++
   --         "  EEnv " ++ show eEnv  ++ "\n\n" ++
   --         "  Tname " ++ show tn)
 
-  -- 1. Check the contractiveness of all type decls
-  -- trace "checking contractiveness of all type decls" (return ())
-  -- mapM_ (checkContractive Map.empty . snd) tEnv
-
-  -- 2. Check the formation of all type decls
+  -- * Check the formation of all type decls
   -- trace "checking the formation of all type decls" (return ())
   mapM_ (K.synthetiseTS Map.empty . snd) tEnv
-  -- 3. Check the formation of all function signatures
+  -- * Check the formation of all function signatures
   -- trace "checking the formation of all function signatures (kinding)" (return ())
-  mapM_ (K.synthetiseTS Map.empty)       vEnv
+  mapM_ (K.synthetiseTS Map.empty) vEnv
   -- Gets the state and only continues if there are no errors so far
   -- Can't continue to equivalence if there are ill-formed types
   -- (i.e. not contractive under a certain variable)  
-  get >>= \s -> unless (hasErrors s) $ do
-    -- 4. Check whether all function signatures have a binding
+  s <- get
+  unless (hasErrors s) $ do
+    -- * Check whether all function signatures have a binding
     -- trace "checking whether all function signatures have a binding" (return ())
     tMapWithKeyM checkHasBinding vEnv
-    -- 5. Check function bodies
+    -- * Check function bodies
     -- trace "checking the formation of all functions (typing)" (return ())
-    tMapWithKeyM checkFunBody    eEnv
-    -- 6. Check the main function
+    tMapWithKeyM checkFunBody eEnv
+    -- * Check the main function
     -- trace "checking the main function" (return ())
     checkMainFunction
 

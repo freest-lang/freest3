@@ -12,7 +12,7 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Validation.Contractive
-( Contractive(..)
+( checkContractive
 )
 where
 
@@ -24,19 +24,15 @@ import           Utils.FreestState
 import           Control.Monad (unless)
 
 -- Check the contractivity of a given type; issue an error if not
-class Contractive t where
-  checkContractive :: TypeVar -> t -> FreestState ()
+checkContractive :: TypeVar -> Type -> FreestState ()
+checkContractive a t =
+  unless (contractive a t) $
+    addError (position t) [Error "Type", Error t, Error "is not contractive on type variable", Error a]
 
-instance Contractive Type where
-  checkContractive a t =
-    unless (contractive a t) $
-     addError (position t) [Error "Type", Error t, Error "is not contractive on type variable", Error a]
-
--- A better notion of contractivy
 contractive :: TypeVar -> Type -> Bool
 contractive a (Semi _ t u)
-    | terminated t = contractive a u
-    | otherwise    = contractive a t
+  | terminated t = contractive a u
+  | otherwise    = contractive a t
 contractive a (Rec _ _ t) = contractive a t
 contractive a (TypeVar _ b) = a /= b
 contractive _ (Skip _) = False
