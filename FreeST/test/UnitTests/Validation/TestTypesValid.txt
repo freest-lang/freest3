@@ -342,11 +342,11 @@ SL
 ∀ a : MU => a
 MU -> MU
 
--- same nut it forall keyword
+
+-- same but it forall keyword
 []
 forall a : MU => a
 MU -> MU
-
 
 []
 ∀ a : TU => a -> a
@@ -381,7 +381,7 @@ SL -> TU
 
 
 []
-∀ a : SL => (rec a : SL . !Int;a) -> a
+∀ a : SL => (rec a : SL . a) -> a
 SL -> TU
 
 []
