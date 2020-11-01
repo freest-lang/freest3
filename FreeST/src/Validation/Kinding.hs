@@ -36,6 +36,8 @@ import           Control.Monad                 (unless)
 import qualified Control.Monad.State           as S
 import qualified Data.Map.Strict               as Map
 
+import Debug.Trace
+
 -- Returns the kind of a given type
 synthetise :: KindEnv -> Type -> FreestState Kind
 -- Functional types
@@ -70,8 +72,8 @@ synthetise kEnv (Forall p (KindBind _ x k) t) = do
   k' <- synthetise (Map.insert x k kEnv) t
   return $ KindArrow p k k'
 synthetise kEnv (TypeVar p x) = case kEnv Map.!? x of
-  Just k  -> return k
-  Nothing -> do
+   Just k  -> return k
+   Nothing -> do
     addError p [Error "Type variable not in scope:", Error x]
     return $ omission p
 -- Type operators

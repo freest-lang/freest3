@@ -102,7 +102,7 @@ isSession = (<: kindSL defaultPos)
 
 isLin :: Kind -> Bool
 isLin (Kind _ _ m) = m == Lin
-isLin (KindArrow _ k1 k2) = isLin k1 || isLin k2
+isLin (KindArrow _ k1 k2) = False -- TODO: isLin k1 || isLin k2 ??????
 
 isUn :: Kind -> Bool
 isUn = not . isLin

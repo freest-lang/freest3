@@ -35,7 +35,7 @@ import           Control.Monad.State            ( when
                                                 )
 import qualified Data.Map.Strict               as Map
 -- import           Syntax.Show -- debug
--- import           Debug.Trace -- debug
+import           Debug.Trace -- debug
 
 typeCheck :: FreestState ()
 typeCheck = do

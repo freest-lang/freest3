@@ -217,10 +217,6 @@ unOp op expr = App (position expr) (ProgVar (position op) op) expr
 typeListToType :: TypeVar -> [(ProgVar, [Type])] -> [(ProgVar, Type)]
 typeListToType a = map (\(x, ts) -> (x, typeToFun ts))
   -- Convert a list of types and a final type constructor to a type
-
-
-
-
  where
   typeToFun []       = TypeName (position a) a
   typeToFun (t : ts) = Fun (position t) Un t (typeToFun ts)
@@ -246,6 +242,11 @@ buildFunBody f bs e = getFromVEnv f >>= \case
     Abs (position b) m (TypeBind (position b) b t1) (buildExp bs t2)
   buildExp (b : bs) (Dualof p (Fun _ m t1 t2)) =
     Abs (position b) m (TypeBind (position b) b (Dualof p t1)) (buildExp bs (Dualof p t2))
+    
+--  buildExp (b : bs) (Forall _ (KindBind p y _) t) = -- TODO: Abs Un ??? I think it can be (mult t)
+  buildExp bs (Forall p kb t) =
+    TypeAbs p kb (buildExp bs t)
+    
   buildExp (b : bs) t =
     Abs (position b) Un (TypeBind (position b) b (omission (position b))) (buildExp bs t)
 

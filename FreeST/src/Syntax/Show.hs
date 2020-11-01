@@ -197,7 +197,7 @@ showExp i (Case _ e m) =
   "case " ++ showExp (i - 1) e ++ " of {" ++ showFieldMap (i - 1) m ++ "}"
   -- Type Abstraction intro and elim
 showExp _ (TypeApp _ x t) =
-  show x ++ " [" ++ show t ++ "]" -- TODO: square brackets
+  "(" ++ show x ++ " [" ++ show t ++ "]" ++ ")"-- TODO: square brackets
 showExp i (TypeAbs _ b e) =
   show "Λ" ++ show b ++ "->" ++ showExp (i - 1) e
   -- Boolean elim
