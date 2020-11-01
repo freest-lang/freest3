@@ -40,10 +40,10 @@ data Expression =
   -- Datatype elim
   | Case Pos Expression FieldMap
   -- Type Abstraction intro and elim
-  | TypeAbs Pos KindBind Expression     -- λ a:k => e
-  | TypeApp Pos Expression Type         -- e[T]
+  | TypeAbs Pos KindBind Expression     -- Λ a:k => e
+  | TypeApp Pos Expression Type      -- e T, if that does not work, then e[T]. NEW, replace the below
   -- | TypeApp Pos ProgVar Type      
-  -- | TypeApp Pos ProgVar [Type]
+--  | TypeApp Pos ProgVar [Type]
   -- Boolean elim
   | Conditional Pos Expression Expression Expression
   -- Let

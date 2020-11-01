@@ -261,7 +261,7 @@ instance Unparse Expression where
   unparse (Case _ e m) = (inRator, "case " ++ s ++ " of {" ++ showFieldMap m ++ "}")
     where s = bracket (unparse e) NonAssoc inRator
   -- Type Abstraction intro and elim
-  unparse (TypeApp _ x ts) = (appRator, show x ++ " [" ++ unwords (map show ts) ++ "]")
+  unparse (TypeApp _ x t) = (appRator, show x ++ " [" ++ show t ++ "]")
   unparse (TypeAbs _ b e) = (arrowRator, "λ" ++ show b ++ "->" ++ s)
     where s = bracket (unparse e) Right arrowRator
   -- Boolean elim
@@ -370,7 +370,7 @@ showFieldMap i m = intercalate "; " (map showAssoc (Map.toList m))
 
 -- Type Schemes
 
-instance Show TypeScheme where
-  show (TypeScheme _ [] t) = show t
-  show (TypeScheme _ bs t) = "forall " ++ bindings ++ " => " ++ show t
-    where bindings = intercalate ", " (map show bs)
+-- instance Show TypeScheme where
+--   show (TypeScheme _ [] t) = show t
+--   show (TypeScheme _ bs t) = "forall " ++ bindings ++ " => " ++ show t
+--     where bindings = intercalate ", " (map show bs)

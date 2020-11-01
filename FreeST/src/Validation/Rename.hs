@@ -176,10 +176,7 @@ instance Rename Expression where
     e' <- rename bs e
     fm' <- tMapM (renameField bs) fm
     return $ Case p e' fm'
-  -- Type application & TypeAbs
-  rename bs (TypeAbs p kb e) = do
-    e' <- rename bs e
-    return $ TypeAbs p kb e'
+  -- Type application
   rename bs (TypeApp p e t) = do
 --    let x' = findWithDefaultVar x bs
     e' <- rename bs e

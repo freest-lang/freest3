@@ -208,7 +208,7 @@ Expr :: { Expression }
   | Expr '-' Expr                    { binOp $1 (mkVar (position $2) "(-)") $3 }
   | Expr '*' Expr                    { binOp $1 (mkVar (position $2) "(*)") $3 }
   | Expr '/' Expr                    { binOp $1 (mkVar (position $2) "div") $3 }
-  
+  | Expr '[' Type ']'                        { TypeApp (position $1) $1 $3 }
   | App                              { $1 }
 
 App :: { Expression }
@@ -218,19 +218,16 @@ App :: { Expression }
   | Primary                          { $1 }
 
 Primary :: { Expression }
-  : INT                                        { let (TokenInt p x) = $1 in Integer p x }
-  | BOOL                                       { let (TokenBool p x) = $1 in Boolean p x }
-  | CHAR                                       { let (TokenChar p x) = $1 in Character p x }
-  | '()'                                       { Unit (position $1) }
+  : INT                                      { let (TokenInt p x) = $1 in Integer p x }
+  | BOOL                                     { let (TokenBool p x) = $1 in Boolean p x }
+  | CHAR                                     { let (TokenChar p x) = $1 in Character p x }
+  | '()'                                     { Unit (position $1) }
 --  | ProgVar '[' Type ']'                     { TypeApp (position $1) $1 $3 }
-  | Primary '[' Type ']'                       { TypeApp (position $1) $1 $3 }
-  | ArbitraryProgVar                           { ProgVar (position $1) $1 }
-  | '(' lambda ProgVarWildTBind Arrow Expr ')' { Abs (position $2) (snd $4)
-                                                 (TypeBind (position $2) (fst $3) (snd $3)) $5 }
-  | '(' Lambda KindBind '=>' Expr ')'          { TypeAbs (position $2) $3 $5 }    
-  --| '(' Expr ',' Expr ')'                    { Pair (position $1)$2 $4 }
-  | '(' Expr ',' Tuple ')'                    { Pair (position $1) $2 $4 }
-  | '(' Expr ')'                               { $2 }
+  | ArbitraryProgVar                         { ProgVar (position $1) $1 }
+  | '(' lambda ProgVarWildTBind Arrow Expr ')'
+        { Abs (position $2) (snd $4) (TypeBind (position $2) (fst $3) (snd $3)) $5 }
+  | '(' Expr ',' Tuple ')'           { Pair (position $1) $2 $4 }
+  | '(' Expr ')'                     { $2 }
 
 ProgVarWildTBind :: { (ProgVar, Type) }
   : ProgVarWild ':' Type  %prec ProgVarWildTBind { ($1, $3) }
@@ -424,11 +421,12 @@ parseType str =
 -- PARSING SCHEMES  --
 ----------------------
 
-parseSchemes :: String -> String -> Either (TypeScheme, TypeScheme) String
-parseSchemes file str =
-  case runStateT (parse str file schemes) (initialState file) of
-    Ok (t, s) -> if hasErrors s then Right (getErrors s) else Left t
-    Failed err -> Right err
+-- parseSchemes :: String -> String -> Either (TypeScheme, TypeScheme) String
+-- parseSchemes file str =
+--   case runStateT (parse str file schemes) (initialState file) of
+--     Ok (t,s) ->
+--       if hasErrors s then Right (getErrors s) else Left t
+--     Failed err -> Right err
 
 -----------------------
 -- PARSING PROGRAMS  --

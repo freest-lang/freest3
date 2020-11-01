@@ -145,29 +145,9 @@ synthetise kEnv (TypeAbs p kb@(KindBind p' x k) e) = do
 
 -- Type application
 
---  ∆ | Γ |- e : ∀ a : κ . U        ∆ |- T : κ
--------------------------------------------------
---     ∆ | Γ |- e T : [T /a]U
-
-synthetise kEnv (TypeApp p e t) = do -- TODO: error and bs, zip
+synthetise kEnv (TypeApp p e ts) = do -- TODO: error and bs, zip
 --  (TypeScheme _ bs t) <- synthetiseVar kEnv x
-  u <- synthetise kEnv e
-  (Forall _ (KindBind _ y _) u') <- extractForall e u
-  K.synthetise kEnv t
-  -- let tmp = Rename.subs t y u'
-
-  -- traceM $ "\ESC[91m"
-  --   ++ "TYPEAPP ->\n\te: " ++ show e
-  --   ++ "\n\tu: "  ++ show u
-  --   ++ "\n\tu': "  ++ show u'
-  --   ++ "\n\ty: " ++ show y
-  --   ++ "\n\tt: " ++ show t
-  --   ++ "\n\tsubs " ++ show tmp
-  --   ++ "\ESC[0m" 
-  
-
-  
-  return $ Rename.subs t y u'
+  t <- synthetise kEnv e
   -- when
   --   (length ts /= length bs)
   --   (addError
@@ -179,9 +159,10 @@ synthetise kEnv (TypeApp p e t) = do -- TODO: error and bs, zip
   --     , Error ts
   --     ]
   --   )
-  -- let typeKinds = [] -- zip ts bs :: [(Type, KindBind)]
-  -- mapM_ (\(u, KindBind _ _ k) -> K.checkAgainst kEnv k u) typeKinds
-  -- return $ foldr (\(u, KindBind _ y _) -> Rename.subs u y) t typeKinds
+  let typeKinds = [] -- zip ts bs :: [(Type, KindBind)]
+  mapM_ (\(u, KindBind _ _ k) -> K.checkAgainst kEnv k u) typeKinds
+  return $ foldr (\(u, KindBind _ y _) -> Rename.subs u y) t typeKinds
+
 -- Boolean elimination
 synthetise kEnv (Conditional p e1 e2 e3) = do
   checkAgainst kEnv e1 (Basic p BoolType)
@@ -234,7 +215,6 @@ synthetiseVar :: KindEnv -> ProgVar -> FreestState Type
 synthetiseVar kEnv x = getFromVEnv x >>= \case
   Just s -> do
     k <- K.synthetise kEnv s
---    traceM $ "synthetiseVar " ++ show x ++ " type " ++ show s ++ " isLin " ++ show (isLin k)
     when (isLin k) $ removeFromVEnv x
     return s
   Nothing -> do
@@ -453,6 +433,7 @@ checkAgainst kEnv e t = do
 kEnvFromType :: KindEnv -> Type -> KindEnv
 kEnvFromType kenv (Forall _ (KindBind _ x k) t) = kEnvFromType (Map.insert x k kenv) t
 kEnvFromType kenv _ = kenv
+
 
 
 -- EQUALITY AND EQUIVALENCE CHECKING
