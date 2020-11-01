@@ -16,6 +16,7 @@ Portability :  portable | non-portable (<reason>)
 module Validation.Extract
   ( extractFun
   , extractPair
+  , extractForall
   , extractBasic
   , extractOutput
   , extractInput
@@ -28,6 +29,8 @@ where
 
 import           Syntax.Expressions
 import           Syntax.Types
+import           Syntax.Kinds
+import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
 import           Syntax.Base
 import           Equivalence.Normalisation
@@ -83,6 +86,26 @@ extractPair e t = do
         , Error u
         ]
       return (omission p, omission p)
+
+-- Extracts a forall from a type; gives an error if there is no forall
+extractForall :: Expression -> Type -> FreestState Type
+extractForall e t = do
+  t' <- norm t
+--  traceM $ "e: " ++ show e ++ "\tt: " ++ show t ++ "\tt': " ++ show t'
+  case t' of
+    u@(Forall _ _ _) -> return u
+    u                -> do
+--      error $ show u
+      let p = position u
+      addError
+        p
+        [ Error "Expecting a polymorphic type for expression"
+        , Error e
+        , Error "\n\t found type"
+        , Error u
+        ]
+        -- TODO: return a suitable type
+      return $ Forall p (KindBind p (mkVar p "_") (omission p)) (omission p)
 
 -- Extracts a basic type from a general type; gives an error if it isn't a basic
 extractBasic :: Type -> FreestState BasicType

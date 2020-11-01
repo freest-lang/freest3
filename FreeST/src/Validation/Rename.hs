@@ -113,6 +113,14 @@ rename' bs (Semi p t u) = do
 rename' bs (Choice p pol tm) = do
   tm' <- tMapM (rename bs) tm
   return $ Choice p pol tm'
+  -- Polymorphism
+rename' bs (Forall p (KindBind p' x k) t)
+  | x `isFreeIn` t = do
+      x' <- rename bs x
+      t' <- rename (insertVar x x' bs) t
+      return $ Forall p (KindBind p' x' k) t'
+  | otherwise = rename bs t
+
   -- Functional or session
 rename' bs (Rec p (KindBind p' a k) t)
   | a `isFreeIn` t = do
@@ -261,6 +269,8 @@ isFreeIn x (Datatype _ fm) = Map.foldr' (\t b -> x `isFreeIn` t || b) False fm
     -- Session types
 isFreeIn x (Semi _ t u) = x `isFreeIn` t || x `isFreeIn` u
 isFreeIn x (Choice _ pol tm) = Map.foldr' (\t b -> x `isFreeIn` t || b) False tm
+  -- Polymorphism
+isFreeIn x (Forall _ (KindBind _ y _) t) = x /= y && x `isFreeIn` t  
   -- Functional or session 
 isFreeIn x (Rec _ (KindBind _ y _) t) = x /= y && x `isFreeIn` t
 isFreeIn x (TypeVar _ y) = x == y
