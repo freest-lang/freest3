@@ -10,10 +10,10 @@ process.
 
 -- These should be in the prelude
 
-fst : forall a:TL, b:TU => (a, b) -> a
+fst : forall a:TL => forall b:TU => (a, b) -> a
 fst p = let (x, _) = p in x
 
-snd : forall a:TU, b:TL => (a, b) -> b
+snd : forall a:TU => forall b:TL => (a, b) -> b
 snd p = let (_, y) = p in y
 
 type Process = Int -> (Int, Process)
@@ -27,10 +27,10 @@ sum acc n = let newAcc = acc + n in (newAcc, sum newAcc)
 -- Interacting with processes
 
 curr : Process -> Int
-curr p = fst [Int, Process] (p 0)
+curr p = fst [Int][Process] (p 0)
 
 send' : Int -> Process -> Process
-send' n p = snd [Int, Process] (p n)
+send' n p = snd [Int][Process] (p n)
 
 -- If we send the process p the numbers 5, 3, and 20, the number it
 -- returns in response to the last interaction is 28.

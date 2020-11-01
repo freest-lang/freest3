@@ -43,25 +43,25 @@ readT c =
   }
 
 -- Read from a channel and immediately write on another channel
-forwardD : forall a:SL, b:SL => dualof D;a -> D;b -> (a, b)
+forwardD : forall a:SL => forall b:SL => dualof D;a -> D;b -> (a, b)
 forwardD in' out =
   match in' with {
     Lt in' ->
       let out = select Lt out in
-      let (in', out) = forwardT[dualof D;a, D;b] in' out in
-        forwardD[a,b] in' out,
+      let (in', out) = forwardT[dualof D;a][D;b] in' out in
+        forwardD[a][b] in' out,
     Dollar in' ->
       let out = select Dollar out in
          (in', out)
   }
 
-forwardT : forall a:SL, b:SL => dualof T;a -> T;b -> (a, b)
+forwardT : forall a:SL => forall b:SL => dualof T;a -> T;b -> (a, b)
 forwardT in' out =
   match in' with {
     Lt in' ->
       let out = select Lt out in
-      let (in', out) = forwardT[dualof T;a, T;b] in' out in
-      forwardT[a,b] in' out,
+      let (in', out) = forwardT[dualof T;a][T;b] in' out in
+      forwardT[a][b] in' out,
     Gt in' ->
       let out = select Gt out in
       (in', out)
@@ -69,27 +69,27 @@ forwardT in' out =
 
 -- Read from a channel; read from a second channel; while writing on a
 -- third channel
-concatD : forall a:SL, b:SL, c:SL => dualof D;a -> dualof D;b -> D;c -> (a, (b, c))
+concatD : forall a:SL => forall b:SL => forall c:SL => dualof D;a -> dualof D;b -> D;c -> (a, (b, c))
 concatD in1 in2 out =
   match in1 with {
     Lt in1 ->
       let out = select Lt out in
-      let (in1, in2out) = concatT[dualof D;a, dualof D;b, D;c] in1 in2 out in
+      let (in1, in2out) = concatT[dualof D;a][dualof D;b][D;c] in1 in2 out in
       let (in2, out) = in2out in
-        concatD[a, b, c] in1 in2 out,
+        concatD[a][b][c] in1 in2 out,
     Dollar in1 ->
-      let (in2, out) = forwardD[b, c] in2 out in
+      let (in2, out) = forwardD[b][c] in2 out in
          (in1, (in2, out))
   }
 
-concatT : forall a:SL, b:SL, c:SL => dualof T;a -> b -> T;c -> (a, (b, c))
+concatT : forall a:SL => forall b:SL => forall c:SL => dualof T;a -> b -> T;c -> (a, (b, c))
 concatT in1 in2 out =
   match in1 with {
     Lt in1 ->
       let out = select Lt out in
-      let (in1, in2out) = concatT[dualof T;a, b, T;c] in1 in2 out in
+      let (in1, in2out) = concatT[dualof T;a][b][T;c] in1 in2 out in
       let (in2, out) = in2out in
-      concatT[a, b, c] in1 in2 out,
+      concatT[a][b][c] in1 in2 out,
     Gt in1 ->
       let out = select Gt out in
       (in1, (in2, out))
@@ -117,7 +117,7 @@ mainForward =
   let (out1, in1) = new D in
   let (out2, in2) = new D in
   fork (sink[Skip] $ writeLtLtGtGtLtGt out1);
-  fork (sink[(Skip,Skip)] (forwardD[Skip, Skip] in1 out2));
+  fork (sink[(Skip, Skip)] (forwardD[Skip][Skip] in1 out2));
   readD[Skip] in2
 
 -- Putting it all together: (out1 | out2) --> in1-in2-out3 --> in3
@@ -128,7 +128,7 @@ main =
   let (out3, in3) = new D in
   fork (sink[Skip] (writeLtLtGtGtLtGt out1));
   fork (sink[Skip] (writeLtLtGtLtGtGt out2));
-  fork (sink[(Skip,Skip,Skip)] (concatD[Skip, Skip, Skip] in1 in2 out3));
+  fork (sink[(Skip, Skip, Skip)] (concatD[Skip][Skip][Skip] in1 in2 out3));
   readD[Skip] in3
 
 -- To be used with fork : () -> ()
