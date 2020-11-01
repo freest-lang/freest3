@@ -207,7 +207,7 @@ Expr :: { Expression }
   | Expr '-' Expr                    { binOp $1 (mkVar (position $2) "(-)") $3 }
   | Expr '*' Expr                    { binOp $1 (mkVar (position $2) "(*)") $3 }
   | Expr '/' Expr                    { binOp $1 (mkVar (position $2) "div") $3 }
-  | Expr '[' Type ']'                        { TypeApp (position $1) $1 $3 }
+  
   | App                              { $1 }
 
 App :: { Expression }
@@ -222,6 +222,7 @@ Primary :: { Expression }
   | CHAR                                     { let (TokenChar p x) = $1 in Character p x }
   | '()'                                     { Unit (position $1) }
 --  | ProgVar '[' Type ']'                     { TypeApp (position $1) $1 $3 }
+  | Primary '[' Type ']'                { TypeApp (position $1) $1 $3 }
   | ArbitraryProgVar                         { ProgVar (position $1) $1 }
   | '(' lambda ProgVarWildTBind Arrow Expr ')'
         { Abs (position $2) (snd $4) (TypeBind (position $2) (fst $3) (snd $3)) $5 }
@@ -463,6 +464,7 @@ parseError [] = do
           [Error "Parse error:", Error "\ESC[91mPremature end of file\ESC[0m"]
 parseError (x:_) = do
   file <- toStateT getFileName
+  traceM $ show xs
   failM $ formatErrorMessages Map.empty p file
     [Error "Parse error on input", Error $ "\ESC[91m'" ++ show x ++ "'\ESC[0m"]
  where p = position x
