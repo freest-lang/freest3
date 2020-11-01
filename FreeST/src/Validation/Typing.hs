@@ -21,6 +21,10 @@ module Validation.Typing
   )
 where
 
+import           Control.Monad.State            ( when, unless )
+import qualified Data.Map.Strict               as Map
+import           Debug.Trace                     -- debug
+import           Equivalence.Equivalence
 import           Syntax.Base
 import           Syntax.Expressions
 import           Syntax.Kinds
@@ -114,10 +118,56 @@ synthetise kEnv (App _ e1 e2) = do -- General case
 --  traceM ("Extract Fun: " ++ show u1 ++ " | "  ++ show u2 ++ " against " ++ show e2)
   checkAgainst kEnv e2 u1
   return u2
+
+  -- Type Abstraction intro and elim
+
+--        ∆, a : κ | Γ |- e : T
+----------------------------------------
+--   ∆ | Γ |- Λa : κ.e : ∀ a : κ . T
+
+synthetise kEnv (TypeAbs p kb@(KindBind p' x k) e) = do
+--  addToVEnv x (TypeVar p' x)
+  t <- synthetise (Map.insert x k kEnv) e
+  return $ Forall p kb t
+
+
+-- synthetise kEnv e'@(Abs p m (TypeBind _ x t1) e) = do
+--   K.synthetise kEnv t1
+--   vEnv1 <- getVEnv
+--   addToVEnv x t1
+--   t2 <- synthetise kEnv e
+--   quotient kEnv x
+--   vEnv2 <- getVEnv
+--   when (m == Un) (checkEqualEnvs e' vEnv1 vEnv2)
+--   return $ Fun p m t1 t2
+
+  
+
 -- Type application
-synthetise kEnv (TypeApp p e ts) = do -- TODO: error and bs, zip
+
+--  ∆ | Γ |- e : ∀ a : κ . U        ∆ |- T : κ
+-------------------------------------------------
+--     ∆ | Γ |- e T : [T /a]U
+
+synthetise kEnv (TypeApp p e t) = do -- TODO: error and bs, zip
 --  (TypeScheme _ bs t) <- synthetiseVar kEnv x
-  t <- synthetise kEnv e
+  u <- synthetise kEnv e
+  (Forall _ (KindBind _ y _) u') <- extractForall e u
+  K.synthetise kEnv t
+  -- let tmp = Rename.subs t y u'
+
+  -- traceM $ "\ESC[91m"
+  --   ++ "TYPEAPP ->\n\te: " ++ show e
+  --   ++ "\n\tu: "  ++ show u
+  --   ++ "\n\tu': "  ++ show u'
+  --   ++ "\n\ty: " ++ show y
+  --   ++ "\n\tt: " ++ show t
+  --   ++ "\n\tsubs " ++ show tmp
+  --   ++ "\ESC[0m" 
+  
+
+  
+  return $ Rename.subs t y u'
   -- when
   --   (length ts /= length bs)
   --   (addError
@@ -129,9 +179,9 @@ synthetise kEnv (TypeApp p e ts) = do -- TODO: error and bs, zip
   --     , Error ts
   --     ]
   --   )
-  let typeKinds = [] -- zip ts bs :: [(Type, KindBind)]
-  mapM_ (\(u, KindBind _ _ k) -> K.checkAgainst kEnv k u) typeKinds
-  return $ foldr (\(u, KindBind _ y _) -> Rename.subs u y) t typeKinds
+  -- let typeKinds = [] -- zip ts bs :: [(Type, KindBind)]
+  -- mapM_ (\(u, KindBind _ _ k) -> K.checkAgainst kEnv k u) typeKinds
+  -- return $ foldr (\(u, KindBind _ y _) -> Rename.subs u y) t typeKinds
 -- Boolean elimination
 synthetise kEnv (Conditional p e1 e2 e3) = do
   checkAgainst kEnv e1 (Basic p BoolType)
@@ -184,9 +234,11 @@ synthetiseVar :: KindEnv -> ProgVar -> FreestState Type
 synthetiseVar kEnv x = getFromVEnv x >>= \case
   Just s -> do
     k <- K.synthetise kEnv s
+--    traceM $ "synthetiseVar " ++ show x ++ " type " ++ show s ++ " isLin " ++ show (isLin k)
     when (isLin k) $ removeFromVEnv x
     return s
   Nothing -> do
+  --  traceM $ "synthetiseVar (not in scope) " ++ show x
     let p = position x
     addError
       p
@@ -356,6 +408,7 @@ addPartiallyAppliedError e s = do
 checkAgainst :: KindEnv -> Expression -> Type -> FreestState ()
 -- Boolean elimination
 checkAgainst kEnv (Conditional p e1 e2 e3) t = do
+  -- let kEnv = kEnvFromType kEnv t
   checkAgainst kEnv e1 (Basic p BoolType)
   vEnv2 <- getVEnv
   checkAgainst kEnv e2 t
@@ -366,6 +419,7 @@ checkAgainst kEnv (Conditional p e1 e2 e3) t = do
   checkEquivEnvs p "conditional" kEnv vEnv3 vEnv4
 -- Pair elimination
 checkAgainst kEnv (BinLet _ x y e1 e2) t2 = do
+  -- let kEnv = kEnvFromType kEnv t2
   t1       <- synthetise kEnv e1
   (u1, u2) <- extractPair e1 t1
   addToVEnv x u1
@@ -386,6 +440,7 @@ checkAgainst kEnv (BinLet _ x y e1 e2) t2 = do
 --   checkAgainst kEnv e1 (Fun p Un/Lin t u)
 -- Default
 checkAgainst kEnv e t = do
+  -- let kEnv = kEnvFromType kEnv t
   u <- synthetise kEnv e
 --  traceM $ "checkAgainst exp " ++ show e ++ " - "  ++ show u 
   checkEquivTypes e kEnv t u
@@ -393,6 +448,11 @@ checkAgainst kEnv e t = do
 -- | Check an expression against a given type scheme
 -- checkAgainstTS :: Expression -> TypeScheme -> FreestState ()
 -- checkAgainstTS e (TypeScheme _ bs t) = checkAgainst (fromKindBinds bs) e t
+
+kEnvFromType :: KindEnv -> Type -> KindEnv
+kEnvFromType kenv (Forall _ (KindBind _ x k) t) = kEnvFromType (Map.insert x k kenv) t
+kEnvFromType kenv _ = kenv
+
 
 -- EQUALITY AND EQUIVALENCE CHECKING
 
