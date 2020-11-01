@@ -149,10 +149,10 @@ instance Show TypeBind where
 
 -- Type Schemes
 
-instance Show TypeScheme where
-  show (TypeScheme _ [] t) = show t
-  show (TypeScheme _ bs t) = "forall " ++ bindings ++ " => " ++ show t
-    where bindings = intercalate ", " (map show bs)
+-- instance Show TypeScheme where
+--   show (TypeScheme _ [] t) = show t
+--   show (TypeScheme _ bs t) = "forall " ++ bindings ++ " => " ++ show t
+--     where bindings = intercalate ", " (map show bs)
 
 -- Expressions
 
@@ -196,8 +196,8 @@ showExp i (BinLet _ x y e1 e2) =
 showExp i (Case _ e m) =
   "case " ++ showExp (i - 1) e ++ " of {" ++ showFieldMap (i - 1) m ++ "}"
   -- Type Abstraction intro and elim
-showExp _ (TypeApp _ x ts) =
-  show x ++ " [" ++ unwords (map show ts) ++ "]"
+showExp _ (TypeApp _ x t) =
+  show x ++ " [" ++ show t ++ "]" -- TODO: square brackets
 showExp i (TypeAbs _ b e) =
   show "Λ" ++ show b ++ "->" ++ showExp (i - 1) e
   -- Boolean elim

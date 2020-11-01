@@ -61,10 +61,11 @@ import           Syntax.Base
 import           Syntax.Expressions
 import           Syntax.Kinds
 import           Syntax.ProgramVariables
-import           Syntax.Schemes
 import           Syntax.TypeVariables
 import           Syntax.Types                   ( Type(..)
                                                 , TypeOpsEnv
+                                                , VarEnv
+                                                , TypeEnv
                                                 )
 import           Utils.Errors
 -- import qualified Data.Set as Set
@@ -120,7 +121,7 @@ getFileName = gets filename
 getVEnv :: FreestState VarEnv
 getVEnv = gets varEnv
 
-getFromVEnv :: ProgVar -> FreestState (Maybe TypeScheme)
+getFromVEnv :: ProgVar -> FreestState (Maybe Type)
 getFromVEnv x = do
   vEnv <- getVEnv
   return $ vEnv Map.!? x
@@ -128,7 +129,7 @@ getFromVEnv x = do
 removeFromVEnv :: ProgVar -> FreestState ()
 removeFromVEnv b = modify (\s -> s { varEnv = Map.delete b (varEnv s) })
 
-addToVEnv :: ProgVar -> TypeScheme -> FreestState ()
+addToVEnv :: ProgVar -> Type -> FreestState ()
 addToVEnv b t = modify (\s -> s { varEnv = Map.insert b t (varEnv s) })
 
 vEnvMember :: ProgVar -> FreestState Bool
@@ -158,11 +159,11 @@ setEEnv eEnv = modify (\s -> s { expEnv = eEnv })
 getTEnv :: FreestState TypeEnv
 getTEnv = gets typeEnv
 
-addToTEnv :: TypeVar -> Kind -> TypeScheme -> FreestState ()
+addToTEnv :: TypeVar -> Kind -> Type -> FreestState ()
 addToTEnv x k t =
   modify (\s -> s { typeEnv = Map.insert x (k, t) (typeEnv s) })
 
-getFromTEnv :: TypeVar -> FreestState (Maybe (Kind, TypeScheme))
+getFromTEnv :: TypeVar -> FreestState (Maybe (Kind, Type))
 getFromTEnv b = do
   tEnv <- getTEnv
   return $ tEnv Map.!? b

@@ -228,9 +228,9 @@ typeListToType a = map (\(x, ts) -> (x, typeToFun ts))
 buildFunBody :: ProgVar -> [ProgVar] -> Expression -> FreestState Expression
 buildFunBody f bs e = getFromVEnv f >>= \case
   Just s -> do
-    let (TypeScheme _ _ t) = s
+--    let (TypeScheme _ _ t) = s
     tEnv <- getTEnv
-    return $ buildExp bs (normalise tEnv t) -- Normalisation allows type names in signatures
+    return $ buildExp bs (normalise tEnv s) -- Normalisation allows type names in signatures
   Nothing -> do
     addError
       (position f)

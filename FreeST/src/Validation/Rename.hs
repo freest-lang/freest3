@@ -48,17 +48,20 @@ renameState = do
   tMapWithKeyM renameFun (userDefined (noConstructors tEnv vEnv))
   return ()
 
-renameFun :: ProgVar -> TypeScheme -> FreestState ()
-renameFun f (TypeScheme p xks t) = do
+-- renameFun :: ProgVar -> TypeScheme -> FreestState ()
+-- renameFun f (TypeScheme p xks t) = do
   -- The function signature
-  xks' <- mapM (rename Map.empty) xks
-  let bs = insertBindings xks xks' Map.empty
-  t' <- rename bs t
-  addToVEnv f (TypeScheme p xks' t')
+  -- xks' <- mapM (rename Map.empty) xks
+  -- let bs = insertBindings xks xks' Map.empty
+  -- t' <- rename bs t
+
+renameFun :: ProgVar -> Type -> FreestState ()
+renameFun f t = do
+  liftM (addToVEnv f) (rename Map.empty t)
   -- The function body
   getFromEEnv f >>= \case
     Just e -> do
-      e' <- rename bs e
+      e' <- rename Map.empty e
       addToEEnv f e'
     Nothing ->
       return ()
@@ -72,15 +75,15 @@ class Rename t where
 
 -- Type schemes
 
-instance Rename TypeScheme where
-  rename bs (TypeScheme p xks t) = do
-    xks' <- mapM (rename bs) xks
-    t' <- rename (insertBindings xks xks' bs) t
-    return $ TypeScheme p xks' t'
+-- instance Rename TypeScheme where
+--   rename bs (TypeScheme p xks t) = do
+--     xks' <- mapM (rename bs) xks
+--     t' <- rename (insertBindings xks xks' bs) t
+--     return $ TypeScheme p xks' t'
 
-insertBindings :: [KindBind] -> [KindBind] -> Bindings -> Bindings
-insertBindings xks xks' bs =
-  foldr (\(KindBind _ x _, KindBind _ y _) -> insertVar x y) bs (zip xks xks')
+-- insertBindings :: [KindBind] -> [KindBind] -> Bindings -> Bindings
+-- insertBindings xks xks' bs =
+--   foldr (\(KindBind _ x _, KindBind _ y _) -> insertVar x y) bs (zip xks xks')
 
 -- Types
 
@@ -166,10 +169,12 @@ instance Rename Expression where
     fm' <- tMapM (renameField bs) fm
     return $ Case p e' fm'
   -- Type application
-  rename bs (TypeApp p x ts) = do
-    let x' = findWithDefaultVar x bs
-    ts' <- mapM (rename bs) ts
-    return $ TypeApp p x' ts'
+  rename bs (TypeApp p e t) = do
+--    let x' = findWithDefaultVar x bs
+    e' <- rename bs e
+    t' <- rename bs t
+    -- ts' <- mapM (rename bs) ts
+    return $ TypeApp p e' t'
   -- Boolean elim
   rename bs (Conditional p e1 e2 e3) =  do
     e1' <- rename bs e1

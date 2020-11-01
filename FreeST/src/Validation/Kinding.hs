@@ -17,7 +17,7 @@ module Validation.Kinding
   ( synthetise
   , checkAgainst
   , checkAgainstSession
-  , synthetiseTS
+--  , synthetiseTS
   , un
   , lin
   )
@@ -123,21 +123,21 @@ checkAgainst kEnv expected t = do
     , Error t
     ]
 
-synthetiseTS :: KindEnv -> TypeScheme -> FreestState Kind
-synthetiseTS kEnv (TypeScheme _ bs t) = synthetise insertBinds t
- where
-  insertBinds = foldr (\(KindBind _ x k) env -> Map.insert x k env) kEnv bs
+-- synthetiseTS :: KindEnv -> TypeScheme -> FreestState Kind
+-- synthetiseTS kEnv (TypeScheme _ bs t) = synthetise insertBinds t
+--  where
+--   insertBinds = foldr (\(KindBind _ x k) env -> Map.insert x k env) kEnv bs
 
 -- Determine whether a given type is unrestricted
-un :: TypeScheme -> FreestState Bool
+un :: Type -> FreestState Bool
 un = mult Un
 
 -- Determine whether a given type is linear
-lin :: TypeScheme -> FreestState Bool
+lin :: Type -> FreestState Bool
 lin = mult Lin
 
 -- Determine whether a given type is of a given multiplicity
-mult :: Multiplicity -> TypeScheme -> FreestState Bool
+mult :: Multiplicity -> Type -> FreestState Bool
 mult m1 s = do
-  (Kind _ _ m2) <- synthetiseTS Map.empty s
+  (Kind _ _ m2) <- synthetise Map.empty s
   return $ m2 == m1

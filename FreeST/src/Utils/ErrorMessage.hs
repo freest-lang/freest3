@@ -61,9 +61,9 @@ instance ErrorMsg Kind where
   msg _ = show
   color _ = Just Red
 
-instance ErrorMsg TypeScheme where
-  msg _ = show
-  color _ = Just Red
+-- instance ErrorMsg TypeScheme where
+--   msg _ = show
+--   color _ = Just Red
 
 -- VarEnv
 

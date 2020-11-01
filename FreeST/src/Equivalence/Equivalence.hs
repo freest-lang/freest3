@@ -84,7 +84,7 @@ instance Equivalence Type where
     equivField v m acc l t = acc && l `Map.member` m && equiv v (m Map.! l) t
 
     getType :: TypeVar -> Type
-    getType x = toType (snd (tenv Map.! x))
+    getType x = snd $ tenv Map.! x
 
 bisimilar :: TypeEnv -> Type -> Type -> Bool
 bisimilar tEnv t u = Bisimulation.bisimilar $ convertToGrammar tEnv [t, u]
@@ -109,27 +109,27 @@ isSessionType _    _    _ = False
 
 -- Type schemes
 
-instance Equivalence TypeScheme where
-  equivalent tenv kenv1 ts1 ts2 = case instantiate ts1 ts2 of
-    Nothing              -> False
-    Just (kenv2, t1, t2) -> equivalent tenv (kenv1 `Map.union` kenv2) t1 t2
+-- instance Equivalence TypeScheme where
+--   equivalent tenv kenv1 ts1 ts2 = case instantiate ts1 ts2 of
+--     Nothing              -> False
+--     Just (kenv2, t1, t2) -> equivalent tenv (kenv1 `Map.union` kenv2) t1 t2
 
-instantiate :: TypeScheme -> TypeScheme -> Maybe (KindEnv, Type, Type)
-instantiate (TypeScheme _ bs1 t1) (TypeScheme _ bs2 t2) = inst bs1 bs2 t1 t2
- where
-  inst
-    :: [KindBind]
-    -> [KindBind]
-    -> Type
-    -> Type
-    -> Maybe (KindEnv, Type, Type)
-  inst (KindBind p1 x1 k1 : bs1) (KindBind _ x2 k2 : bs2) t1 t2
-    | k1 /= k2 = Nothing
-    | otherwise = -- substitute x1 for x2 in t2
-                  fmap (\(m, t1', t2') -> (Map.insert x1 k1 m, t1', t2'))
-                       (inst bs1 bs2 t1 (Rename.subs (TypeVar p1 x1) x2 t2))
-  inst [] [] t1 t2 = Just (Map.empty, t1, t2)
-  inst _  _  _  _  = Nothing
+-- instantiate :: TypeScheme -> TypeScheme -> Maybe (KindEnv, Type, Type)
+-- instantiate (TypeScheme _ bs1 t1) (TypeScheme _ bs2 t2) = inst bs1 bs2 t1 t2
+--  where
+--   inst
+--     :: [KindBind]
+--     -> [KindBind]
+--     -> Type
+--     -> Type
+--     -> Maybe (KindEnv, Type, Type)
+--   inst (KindBind p1 x1 k1 : bs1) (KindBind _ x2 k2 : bs2) t1 t2
+--     | k1 /= k2 = Nothing
+--     | otherwise = -- substitute x1 for x2 in t2
+--                   fmap (\(m, t1', t2') -> (Map.insert x1 k1 m, t1', t2'))
+--                        (inst bs1 bs2 t1 (Rename.subs (TypeVar p1 x1) x2 t2))
+--   inst [] [] t1 t2 = Just (Map.empty, t1, t2)
+--   inst _  _  _  _  = Nothing
 
 -- Typing environments
 
