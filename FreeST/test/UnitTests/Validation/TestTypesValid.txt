@@ -342,6 +342,12 @@ SL
 ∀ a : MU => a
 MU -> MU
 
+-- same nut it forall keyword
+[]
+forall a : MU => a
+MU -> MU
+
+
 []
 ∀ a : TU => a -> a
 TU -> TU
