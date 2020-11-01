@@ -30,11 +30,11 @@ import           Debug.Trace
 }
 
 %name types Type
-%name typeScheme TypeScheme
+-- %name typeScheme TypeScheme
 %name terms Prog
 %name kinds Kind
 %name expr Expr
-%name schemes Schemes
+-- %name schemes Schemes
 %tokentype { Token }
 %error { parseError }
 -- %monad { ParseResult } { thenParseResult } { returnParseResult }
@@ -109,7 +109,9 @@ import           Debug.Trace
 %nonassoc LOWER_ID UPPER_ID
 %nonassoc '(' '['
 %nonassoc '()'
--- Expressions
+%nonassoc '[' -- used in type app e[T]
+
+-- Expr
 %right in else match case
 -- %left select
 %nonassoc new
@@ -147,7 +149,8 @@ NL :: { () }
 
 Decl :: { () }
   -- Function signature
-  : ProgVar ':' TypeScheme {% do
+--  : ProgVar ':' TypeScheme {% do
+  : ProgVar ':' Type {% do
       toStateT $ checkDupProgVarDecl $1
       toStateT $ addToVEnv $1 $3 }
   -- Function declaration
@@ -158,16 +161,18 @@ Decl :: { () }
   -- Type abbreviation
   | type TypeNameKind KindBindEmptyList '=' Type {% do
       toStateT $ checkDupTypeDecl (fst $2)
-      toStateT $ uncurry addToTEnv $2 (TypeScheme (position $5) $3 $5) }
+      toStateT $ uncurry addToTEnv $2 $5 } -- TODO: add KindBindEmptyList ?
+--      toStateT $ uncurry addToTEnv $2 (TypeScheme (position $5) $3 $5) }
   -- Datatype declaration
   | data TypeNameKind KindBindEmptyList '=' DataCons {% do
       let a = fst $2
       toStateT $ checkDupTypeDecl a
       let bs = typeListToType a $5 :: [(ProgVar, Type)]
-      toStateT $ mapM_ (\(c, t) -> addToVEnv c (fromType t)) bs
+      toStateT $ mapM_ (\(c, t) -> addToVEnv c t) bs
       let p = position a
-      toStateT $ uncurry addToTEnv $2 (TypeScheme p $3 (Datatype p (Map.fromList bs)))
-    }
+      toStateT $ uncurry addToTEnv $2 (Datatype p (Map.fromList bs))
+    } -- TODO: add KindBindEmptyList ?
+      -- toStateT $ uncurry addToTEnv $2 (TypeScheme p $3 (Datatype p (Map.fromList bs)))
 
 DataCons :: { [(ProgVar, [Type])] }
   : DataCon              {% toStateT $ checkDupCons $1 [] >> return [$1] }
@@ -203,6 +208,7 @@ Expr :: { Expression }
   | Expr '-' Expr                    { binOp $1 (mkVar (position $2) "(-)") $3 }
   | Expr '*' Expr                    { binOp $1 (mkVar (position $2) "(*)") $3 }
   | Expr '/' Expr                    { binOp $1 (mkVar (position $2) "div") $3 }
+  | Expr '[' Type ']'                        { TypeApp (position $1) $1 $3 }
   | App                              { $1 }
 
 App :: { Expression }
@@ -212,12 +218,12 @@ App :: { Expression }
   | Primary                          { $1 }
 
 Primary :: { Expression }
-  : INT                              { let (TokenInt p x) = $1 in Integer p x }
-  | BOOL                             { let (TokenBool p x) = $1 in Boolean p x }
-  | CHAR                             { let (TokenChar p x) = $1 in Character p x }
-  | '()'                             { Unit (position $1) }
-  | ProgVar '[' TypeList ']'         { TypeApp (position $1) $1 $3 }
-  | ArbitraryProgVar                 { ProgVar (position $1) $1 }
+  : INT                                      { let (TokenInt p x) = $1 in Integer p x }
+  | BOOL                                     { let (TokenBool p x) = $1 in Boolean p x }
+  | CHAR                                     { let (TokenChar p x) = $1 in Character p x }
+  | '()'                                     { Unit (position $1) }
+--  | ProgVar '[' Type ']'                     { TypeApp (position $1) $1 $3 }
+  | ArbitraryProgVar                         { ProgVar (position $1) $1 }
   | '(' lambda ProgVarWildTBind Arrow Expr ')'
         { Abs (position $2) (snd $4) (TypeBind (position $2) (fst $3) (snd $3)) $5 }
   | '(' Expr ',' Tuple ')'           { Pair (position $1) $2 $4 }
@@ -248,9 +254,9 @@ Case :: { (ProgVar, ([ProgVar], Expression)) }
 -- TYPE SCHEMES --
 -----------
 
-TypeScheme :: { TypeScheme }
-  : forall KindBindList '=>' Type { TypeScheme (position $1) $2 $4 }
-  | Type                          { TypeScheme (position $1) [] $1 }
+-- TypeScheme :: { TypeScheme }
+--   : forall KindBindList '=>' Type { TypeScheme (position $1) $2 $4 }
+--   | Type                             { TypeScheme (position $1) [] $1 }
 
 -----------
 -- TYPES --
@@ -310,9 +316,9 @@ Field :: { (ProgVar, Type) }
 -- TYPE LISTS AND SEQUENCES --
 -----------
 
-TypeList :: { [Type] }
-  : Type              { [$1] }
-  | Type ',' TypeList { $1 : $3 }
+-- TypeList :: { [Type] }
+--   : Type              { [$1] }
+--   | Type ',' TypeList { $1 : $3 }
 
 TypeSeq :: { [Type] }
   :              { [] }
@@ -378,8 +384,11 @@ KindBindEmptyList :: { [KindBind] }
 
 -- TYPE SCHEMES
 
-Schemes :: { (TypeScheme, TypeScheme) }
-  : TypeScheme NL TypeScheme { ($1, $3) }
+--------------------
+-- SCHEMES PARSER --
+--------------------
+-- Schemes :: { (TypeScheme, TypeScheme) }
+--   : TypeScheme NL TypeScheme { ($1, $3) }
 
 
 {
@@ -412,17 +421,18 @@ parseType str =
 -- PARSING SCHEMES  --
 ----------------------
 
-parseSchemes :: String -> String -> Either (TypeScheme, TypeScheme) String
-parseSchemes file str =
-  case runStateT (parse str file schemes) (initialState file) of
-    Ok (t, s) -> if hasErrors s then Right (getErrors s) else Left t
-    Failed err -> Right err
+-- parseSchemes :: String -> String -> Either (TypeScheme, TypeScheme) String
+-- parseSchemes file str =
+--   case runStateT (parse str file schemes) (initialState file) of
+--     Ok (t,s) ->
+--       if hasErrors s then Right (getErrors s) else Left t
+--     Failed err -> Right err
 
 -----------------------
 -- PARSING PROGRAMS  --
 -----------------------
 
-parseProgram :: FilePath -> Map.Map ProgVar TypeScheme -> IO FreestS
+parseProgram :: FilePath -> Map.Map ProgVar Type -> IO FreestS
 parseProgram inputFile vEnv = do
   src <- readFile inputFile
   return $ parseDefs inputFile vEnv src

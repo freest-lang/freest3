@@ -48,7 +48,8 @@ instance ShowWithDefault Expression where
 showExpDefault :: TypeOpsEnv -> Expression -> Expression
 showExpDefault tops (Abs p1 m (TypeBind p2 b t) e) =
   Abs p1 m (TypeBind p2 b (showTypeDefault tops t)) (showExpDefault tops e)
-showExpDefault tops (TypeApp p x ts) =
-  TypeApp p x (map (showTypeDefault tops) ts)
+showExpDefault tops (TypeApp p x t) =
+  TypeApp p x t
+ --  TypeApp p x (map (showTypeDefault tops) ts)
 showExpDefault tops (New p t u) = New p (showTypeDefault tops t) u
 showExpDefault _    e           = e
