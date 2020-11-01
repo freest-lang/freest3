@@ -342,7 +342,6 @@ SL
 ∀ a : MU => a
 MU -> MU
 
-
 -- same but it forall keyword
 []
 forall a : MU => a
