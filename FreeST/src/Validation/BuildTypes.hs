@@ -153,13 +153,13 @@ solveDualOf tenv n@(TypeName _ tname) = case tenv Map.!? tname of
   Nothing     -> maybeScopeErr n
 solveDualOf tenv d@(Dualof p t) = do
   addTypeName p d
-  u <- solveDualOf visited tenv t
+  u <- solveDualOf tenv t
   dual u
 --  fmap dual (solveDualOf tenv t)
-solveDualOf visited tenv t@(TypeVar p x)
-  | x `Set.member` visited = return t
-  | otherwise = return $ Dualof p t
-solveDualOf _ _ t = return t
+-- solveDualOf visited tenv t@(TypeVar p x)
+--   | x `Set.member` visited = return t
+--   | otherwise = return $ Dualof p t
+-- solveDualOf _ _ t = return t
 
 
 -- Until we have datatypes as typenames; we have to filter non-datatypes
