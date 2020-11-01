@@ -111,14 +111,14 @@ rename' bs (Choice p pol tm) = do
   tm' <- tMapM (rename bs) tm
   return $ Choice p pol tm'
   -- Functional or session
-rename' bs (Rec p (KindBind p' x k) t)
-  | x `isFreeIn` t = do
-      x' <- rename bs x
-      t' <- rename (insertVar x x' bs) t
-      return $ Rec p (KindBind p' x' k) t'
+rename' bs (Rec p (KindBind p' a k) t)
+  | a `isFreeIn` t = do
+      a' <- rename bs a
+      t' <- rename (insertVar a a' bs) t
+      return $ Rec p (KindBind p' a' k) t'
   | otherwise = rename bs t
-rename' bs (TypeVar p x) =
-  return $ TypeVar p (findWithDefaultVar x bs)
+rename' bs (TypeVar p a) =
+  return $ TypeVar p (findWithDefaultVar a bs)
   -- Type operators
 rename' bs (Dualof p t) = do
   t' <- rename bs t
@@ -126,12 +126,12 @@ rename' bs (Dualof p t) = do
   -- Otherwise: Basic, Skip, Message, TypeName
 rename' _ t = return t
 
--- Type var - kind binds
+-- TypeVar - kind binds
 
 instance Rename KindBind where
-  rename bs (KindBind p x k) = do
-    x' <- rename bs x
-    return $ KindBind p x' k
+  rename bs (KindBind p a k) = do
+    a' <- rename bs a
+    return $ KindBind p a' k
 
 -- Expressions
 
