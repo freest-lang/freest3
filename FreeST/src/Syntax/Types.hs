@@ -16,6 +16,8 @@ module Syntax.Types
 , TypeMap
 , Polarity(..)
 , TypeOpsEnv
+, TypeEnv
+, VarEnv
 ) where
 
 import           Syntax.Kinds
@@ -135,3 +137,11 @@ equalMaps s m1 m2 =
     Map.foldlWithKey(\b l t ->
       b && l `Map.member` m2 && equalTypes s t (m2 Map.! l)) True m1
 -}
+
+
+-- The definitions of the datatypes and types declared in a program
+type TypeEnv = Map.Map TypeVar (Kind, Type)
+
+-- The signatures of the functions names (including the primitive
+-- operators) and parameters, and the datatype constructors
+type VarEnv = Map.Map ProgVar Type

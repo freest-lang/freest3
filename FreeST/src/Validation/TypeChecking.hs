@@ -50,10 +50,10 @@ typeCheck = do
 
   -- * Check the formation of all type decls
   -- trace "checking the formation of all type decls" (return ())
-  mapM_ (K.synthetiseTS Map.empty . snd) tEnv
+  mapM_ (K.synthetise Map.empty . snd) tEnv
   -- * Check the formation of all function signatures
   -- trace "checking the formation of all function signatures (kinding)" (return ())
-  mapM_ (K.synthetiseTS Map.empty) vEnv
+  mapM_ (K.synthetise Map.empty)       vEnv
   -- Gets the state and only continues if there are no errors so far
   -- Can't continue to equivalence if there are ill-formed types
   -- (i.e. not contractive under a certain variable)  
@@ -72,7 +72,7 @@ typeCheck = do
 -- Check whether a given function signature has a corresponding
 -- binding. Exclude the builtin functions and the datatype
 -- constructors.
-checkHasBinding :: ProgVar -> TypeScheme -> FreestState ()
+checkHasBinding :: ProgVar -> Type -> FreestState ()
 checkHasBinding f _ = do
   eEnv <- getEEnv
   vEnv <- getVEnv
@@ -96,7 +96,7 @@ checkHasBinding f _ = do
 -- variables are used.
 checkFunBody :: ProgVar -> Expression -> FreestState ()
 checkFunBody f e = getFromVEnv f >>= \case
-  Just s  -> T.checkAgainstTS e s
+  Just s  -> T.checkAgainst Map.empty e s
   Nothing -> return () -- We've issued this error at parsing time
 
 checkMainFunction :: FreestState ()
@@ -109,7 +109,7 @@ checkMainFunction = do
     else do
       let s = vEnv Map.! main
       tEnv <- getTEnv
-      unless (isValidMainType s) $ K.synthetiseTS Map.empty s >>= \k -> addError
+      unless (isValidMainType s) $ K.synthetise Map.empty s >>= \k -> addError
         defaultPos
         [ Error "The type of"
         , Error main
@@ -120,7 +120,6 @@ checkMainFunction = do
         , Error k
         ]
 
-isValidMainType :: TypeScheme -> Bool
-isValidMainType (TypeScheme _ _  Fun{}) = False
-isValidMainType (TypeScheme _ [] _    ) = True
-isValidMainType _                       = False
+isValidMainType :: Type -> Bool
+isValidMainType Forall{} = False
+isValidMainType _ = True

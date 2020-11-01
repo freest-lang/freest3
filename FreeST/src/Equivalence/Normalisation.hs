@@ -34,10 +34,10 @@ instance Normalise Type where
     | otherwise    = append (normalise tenv t) u
   normalise tenv t@Rec{} = normalise tenv (Substitution.unfold t)
     -- Type operators
-  normalise tenv t@Dualof{} =
-    internalError "Equivalence.Normalisation.normalise" t
-  normalise tenv (TypeName _ a) = normalise tenv t
-    where (_, TypeScheme _ [] t) = tenv Map.! a -- TODO: internalError
+--  normalise tenv (Dualof _ t) = (normalise tenv (dual t)
+  normalise tenv (Dualof p t) =
+    internalError "Equivalence.Normalisation.normalise" t  
+  normalise tenv (TypeName _ a) = normalise tenv (snd $ tenv Map.! a) -- TODO: type/data may be polymorphic
     -- Otherwise: Basic, Fun, PairType, Datatype, Skip, Message, Choice, TypeVar
   normalise _ t = t
 
@@ -47,5 +47,5 @@ append t     (Skip _) = t
 append (Semi p t u) v = Semi p t (append u v)
 append t            u = Semi (position t) t u
 
-instance Normalise TypeScheme where
-  normalise tenv (TypeScheme p bs t) = TypeScheme p bs (normalise tenv t)
+-- instance Normalise TypeScheme where
+--   normalise tenv (TypeScheme p bs t) = TypeScheme p bs (normalise tenv t)

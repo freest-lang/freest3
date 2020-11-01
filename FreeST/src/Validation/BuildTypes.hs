@@ -10,13 +10,14 @@ import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
 import           Validation.Duality                 ( dual )
 import           Validation.Terminated
-import           Validation.Kinding             ( synthetiseTS )
 import           Utils.FreestState
 import           Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
 import           Debug.Trace
 import           Control.Monad                  ( liftM, liftM2, liftM3 )
 import           Utils.PreludeLoader            ( userDefined ) -- debug
+import           Validation.Kinding             ( synthetise )
+
 
 
 solveTypeDecls :: FreestState ()
@@ -31,7 +32,7 @@ solveTypeDecls = do
   eqs' <- solveDualOfs eqs
 --  traceM $ "\n3. DUALOFS: " ++ show eqs' ++ "\n"
   -- Check if the substituted types are contractive  
-  mapM_ (synthetiseTS Map.empty . snd) eqs'
+  mapM_ (synthetise Map.empty . snd) eqs'
 --  mapM_ (checkContractive Map.empty . snd) eqs'
   -- Substitute all type operators on VarEnv
   substituteVEnv eqs'
@@ -47,38 +48,37 @@ solveEqs tenv = Map.foldlWithKey solveEq (return tenv) tenv
   solveEq
     :: FreestState TypeEnv
     -> TypeVar
-    -> (Kind, TypeScheme)
+    -> (Kind, Type)
     -> FreestState TypeEnv
   solveEq acc x (k, s) = do
     let bt = buildRecursiveType x (k, s)
-    fmap (Map.insert x (k, fromType bt)) acc >>= substituteEnv x bt
+    fmap (Map.insert x (k, bt)) acc >>= substituteEnv x bt
 
 -- substitute every occurence of variable x in all the other entries of the map
-substituteEnv :: TypeVar -> Type -> TypeEnv -> FreestState TypeEnv -- TODO: refactor
+substituteEnv :: TypeVar -> Type -> TypeEnv -> FreestState TypeEnv
 substituteEnv x t = tMapWithKeyM subsEnv
  where
-  subsEnv :: TypeVar -> (Kind, TypeScheme) -> FreestState (Kind, TypeScheme)
-  subsEnv v ks@(k, TypeScheme p b s)
+  subsEnv :: TypeVar -> (Kind, Type) -> FreestState (Kind, Type)
+  subsEnv v ks@(k, t)
     | x == v = pure ks
     | -- ignore the node itself
       otherwise = do
-      s' <- subsType Map.empty (Just (x, t)) s
-      let bt = buildRecursiveType v (k, TypeScheme p b s')
-      return (k, TypeScheme p b bt)
+      s' <- subsType Map.empty (Just (x, t)) t
+      return (k, buildRecursiveType v (k, s'))
 
 -- GETTING ONLY TYPE DECLS FROM TENV (IGNORING DATATYPES)
 
 typeDecls :: TypeEnv -> TypeEnv
 typeDecls = Map.filter (not . isDataType . snd )
 
-isDataType :: TypeScheme -> Bool
-isDataType (TypeScheme _ _ (Datatype _ _)) = True
-isDataType _                               = False
+isDataType :: Type -> Bool
+isDataType (Datatype _ _) = True
+isDataType _              = False
 
 -- BUILDING RECURSIVE TYPES IF NEEDED
 
-buildRecursiveType :: TypeVar -> (Kind, TypeScheme) -> Type
-buildRecursiveType v (k, TypeScheme _ _ t)
+buildRecursiveType :: TypeVar -> (Kind, Type) -> Type
+buildRecursiveType v (k, t)
   | isRecursiveTypeDecl v t = Rec (position v)
                                   (KindBind (position v) v k)
                                   (toTypeVar v t)
@@ -122,8 +122,8 @@ toTypeVar _ t = t
 
 solveDualOfs :: TypeEnv -> FreestState TypeEnv
 solveDualOfs tenv = tMapM
-  (\(k, TypeScheme p xs t) ->
-    solveDualOf tenv t >>= \t' -> pure (k, TypeScheme p xs t')
+  (\(k, t) ->
+    solveDualOf tenv t >>= \t' -> pure (k, t')
   )
   tenv
 
@@ -136,8 +136,8 @@ solveDualOf tenv (Rec p xs t) = fmap (Rec p xs) (solveDualOf tenv t)
 solveDualOf tenv (Fun p pol t u) =
   liftM2 (Fun p pol) (solveDualOf tenv t) (solveDualOf tenv u)
 solveDualOf tenv n@(TypeName _ tname) = case tenv Map.!? tname of
-  Just (_, TypeScheme _ _ t) -> pure (toTypeVar tname t)
-  Nothing                    -> maybeScopeErr n
+  Just (_, t) -> pure (toTypeVar tname t)
+  Nothing     -> maybeScopeErr n
 solveDualOf tenv d@(Dualof p t) = do
   addTypeName p d
   u <- solveDualOf tenv t
@@ -152,7 +152,7 @@ solveDualOf _ p = return p
 -- only the Nothing (error) case ?
 maybeScopeErr :: Type -> FreestState Type
 maybeScopeErr (TypeName p tname) = getFromTEnv tname >>= \case
-  Just (_, TypeScheme _ _ t) -> pure t
+  Just (_, t) -> pure t
   Nothing -> addError p [Error "Type name not in scope:", Error tname]
     >> pure (Basic p UnitType)
 
@@ -176,10 +176,10 @@ changePos _ t                  = t
 substituteVEnv :: TypeEnv -> FreestState ()
 substituteVEnv tenv = getVEnv >>= tMapWithKeyM_ subsElem
  where
-  subsElem :: ProgVar -> TypeScheme -> FreestState ()
-  subsElem pv (TypeScheme p b s) = do
+  subsElem :: ProgVar -> Type -> FreestState ()
+  subsElem pv s = do
     s' <- subsType tenv Nothing s
-    addToVEnv pv (TypeScheme p b s')
+    addToVEnv pv s'
 
 -- PHASE 4: SUBSTITUTE TYPES ON THE EXPRESSIONS (EXPENV)
 
@@ -213,7 +213,7 @@ subsType _ (Just (x, t)) n@(TypeName p tname)
 -- just need to lookup upon the tenv to find the conversion
 subsType tenv Nothing n@(TypeName p tname) = case tenv Map.!? tname of
   Just t ->
-    addTypeName p n >> pure (changePos p (toTypeVar tname . toType $ snd t))
+    addTypeName p n >> pure (changePos p (toTypeVar tname (snd t)))
   Nothing -> pure n
 -- In the first stage (converting typenames); we should ignore dualofs
 subsType tenv Nothing n@(Dualof p t) = do
@@ -249,8 +249,8 @@ subsExp tenv (Case p e m) =
   liftM2 (Case p) (subsExp tenv e) (subsFieldMap tenv m)
 subsExp tenv (Conditional p e1 e2 e3) =
   liftM3 (Conditional p) (subsExp tenv e1) (subsExp tenv e2) (subsExp tenv e3)
-subsExp tenv (TypeApp p x xs) =
-  fmap (TypeApp p x) (mapM (subsType tenv Nothing) xs)
+subsExp tenv (TypeApp p x t) =
+  fmap (TypeApp p x) (subsType tenv Nothing t) -- (mapM (subsType tenv Nothing) xs)
 subsExp tenv (UnLet p x e1 e2) =
   liftM2 (UnLet p x) (subsExp tenv e1) (subsExp tenv e2)
 subsExp tenv (New p t u) =
