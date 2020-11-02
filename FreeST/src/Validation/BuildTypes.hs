@@ -69,12 +69,13 @@ substituteEnv :: TypeVar -> Type -> TypeEnv -> FreestState TypeEnv
 substituteEnv x t = tMapWithKeyM subsEnv
  where
   subsEnv :: TypeVar -> (Kind, Type) -> FreestState (Kind, Type)
-  subsEnv v ks@(k, t)
+  subsEnv v ks@(k, s)
     | x == v = pure ks
     | -- ignore the node itself
       otherwise = do
-      s' <- subsType Map.empty (Just (x, t)) t
+      s' <- subsType Map.empty (Just (x, t)) s
       return (k, buildRecursiveType v (k, s'))
+
 
 -- GETTING ONLY TYPE DECLS FROM TENV (IGNORING DATATYPES)
 
@@ -268,8 +269,10 @@ subsExp tenv (Case p e m) =
   liftM2 (Case p) (subsExp tenv e) (subsFieldMap tenv m)
 subsExp tenv (Conditional p e1 e2 e3) =
   liftM3 (Conditional p) (subsExp tenv e1) (subsExp tenv e2) (subsExp tenv e3)
-subsExp tenv (TypeApp p x t) =
-  fmap (TypeApp p x) (subsType tenv Nothing t) -- (mapM (subsType tenv Nothing) xs)
+subsExp tenv (TypeAbs p x e) =
+  fmap (TypeAbs p x) (subsExp tenv e)
+subsExp tenv (TypeApp p e t) =
+  liftM2 (TypeApp p) (subsExp tenv e) (subsType tenv Nothing t) -- (mapM (subsType tenv Nothing) xs)
 subsExp tenv (UnLet p x e1 e2) =
   liftM2 (UnLet p x) (subsExp tenv e1) (subsExp tenv e2)
 subsExp tenv (New p t u) =
