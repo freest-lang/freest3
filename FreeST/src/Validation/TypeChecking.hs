@@ -122,4 +122,5 @@ checkMainFunction = do
 
 isValidMainType :: Type -> Bool
 isValidMainType Forall{} = False
+isValidMainType Fun{} = False
 isValidMainType _ = True
