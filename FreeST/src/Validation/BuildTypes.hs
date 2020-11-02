@@ -24,21 +24,31 @@ solveTypeDecls :: FreestState ()
 solveTypeDecls = do
   tenv <- getTEnv
   let tenv' = typeDecls tenv
---  traceM $ "\n1. INITIAL ENV: " ++ show tenv' ++ "\n"
+  -- traceM $ "\n1. INITIAL ENV: " ++ show tenv' ++ "\n"
   -- Solve the system of equations
   eqs  <- solveEqs tenv'
 --  traceM $ "\n2. TYPENAMES: " ++ show eqs ++ "\n"
   -- Replace all occurrences of DualOf t
   eqs' <- solveDualOfs eqs
---  traceM $ "\n3. DUALOFS: " ++ show eqs' ++ "\n"
+ -- traceM $ "\n3. DUALOFS: " ++ show eqs' ++ "\n"
   -- Check if the substituted types are contractive  
   mapM_ (synthetise Map.empty . snd) eqs'
 --  mapM_ (checkContractive Map.empty . snd) eqs'
+  -- venv <- getVEnv
+  -- traceM $ "\n4. BEFORE VENV: " ++ show (userDefined venv) ++ "\n"
   -- Substitute all type operators on VarEnv
   substituteVEnv eqs'
-  -- Substitute all type operators on ExpEnv
-  substituteEEnv eqs'
+--  venv <- getVEnv
+--   traceM $ "\n5. AFTER VENV: " ++ show (userDefined venv) ++ "\n"
 
+  -- Substitute all type operators on ExpEnv
+
+
+  -- eenv <- getEEnv
+  -- traceM $ "\n4. BEFORE EENV: " ++ show eenv ++ "\n"
+  substituteEEnv eqs'
+  -- eenv <- getEEnv
+  -- traceM $ "\n5. AFTER EENV: " ++ show eenv ++ "\n"
 
 -- PHASE 1: SOLVE THE SYSTEM OF EQUATIONS
 
@@ -59,12 +69,13 @@ substituteEnv :: TypeVar -> Type -> TypeEnv -> FreestState TypeEnv
 substituteEnv x t = tMapWithKeyM subsEnv
  where
   subsEnv :: TypeVar -> (Kind, Type) -> FreestState (Kind, Type)
-  subsEnv v ks@(k, t)
+  subsEnv v ks@(k, s)
     | x == v = pure ks
     | -- ignore the node itself
       otherwise = do
-      s' <- subsType Map.empty (Just (x, t)) t
+      s' <- subsType Map.empty (Just (x, t)) s
       return (k, buildRecursiveType v (k, s'))
+
 
 -- GETTING ONLY TYPE DECLS FROM TENV (IGNORING DATATYPES)
 
@@ -93,6 +104,7 @@ isRecursiveTypeDecl v (Rec _ (KindBind _ x _) t)
   | x == v    = False
   | -- it is already a recursive type
     otherwise = isRecursiveTypeDecl v t
+isRecursiveTypeDecl v (Forall _ _ t) = isRecursiveTypeDecl v t
 isRecursiveTypeDecl v (TypeName _ x) = x == v
 isRecursiveTypeDecl v (TypeVar  _ x) = x == v
 isRecursiveTypeDecl v (Fun _ _ t u) =
@@ -112,6 +124,7 @@ toTypeVar x (TypeName p tname) | --
                                | otherwise  = TypeName p tname
 toTypeVar x (Semi p t1 t2) = Semi p (toTypeVar x t1) (toTypeVar x t2)
 toTypeVar _ (Rec p xs@(KindBind _ x _) t) = Rec p xs (toTypeVar x t)
+toTypeVar x (Forall p kb t) = Forall p kb (toTypeVar x t)
 -- functional types
 toTypeVar x (Fun p m t u) = Fun p m (toTypeVar x t) (toTypeVar x u)
 toTypeVar x (PairType p t u) = PairType p (toTypeVar x t) (toTypeVar x u)
@@ -133,6 +146,7 @@ solveDualOf tenv (Choice p pol m) =
 solveDualOf tenv (Semi p t u) =
   liftM2 (Semi p) (solveDualOf tenv t) (solveDualOf tenv u)
 solveDualOf tenv (Rec p xs t) = fmap (Rec p xs) (solveDualOf tenv t)
+solveDualOf tenv (Forall p kb t) = fmap (Forall p kb) (solveDualOf tenv t)
 solveDualOf tenv (Fun p pol t u) =
   liftM2 (Fun p pol) (solveDualOf tenv t) (solveDualOf tenv u)
 solveDualOf tenv n@(TypeName _ tname) = case tenv Map.!? tname of
@@ -167,6 +181,7 @@ changePos p (Semi     _ t   u) = Semi p t u
 changePos p (Message  _ pol b) = Message p pol b
 changePos p (Choice   _ pol m) = Choice p pol m
 changePos p (Rec      _ xs  t) = Rec p xs t -- (changePos p t)
+changePos p (Forall   _ xs  t) = Forall p xs t -- (changePos p t)
 -- TypeVar
 changePos _ t                  = t
 
@@ -203,6 +218,7 @@ subsType tenv b (Datatype p m) = fmap (Datatype p) (subsMap tenv b m)
 subsType tenv b (Semi p t1 t2) =
   liftM2 (Semi p) (subsType tenv b t1) (subsType tenv b t2)
 subsType tenv b (Choice p pol m ) = fmap (Choice p pol) (subsMap tenv b m)
+subsType tenv b (Forall p kb t) = fmap (Forall p kb) (subsType tenv b t)
 subsType tenv b (Rec    p tvb t1) = fmap (Rec p tvb) (subsType tenv b t1)
 -- In the first phase, we only substitute if the typename is the one that
 -- we are looking for (x)
@@ -240,7 +256,8 @@ subsMap tenv b = mapM (subsType tenv b)
 subsExp :: TypeEnv -> Expression -> FreestState Expression
 subsExp tenv (Abs p m b e) =
   liftM2 (Abs p m) (subsTypeBind tenv b) (subsExp tenv e)
-subsExp tenv (App p e1 e2) = liftM2 (App p) (subsExp tenv e1) (subsExp tenv e2)
+subsExp tenv (App p e1 e2) =
+  liftM2 (App p) (subsExp tenv e1) (subsExp tenv e2)
 subsExp tenv (Pair p e1 e2) =
   liftM2 (Pair p) (subsExp tenv e1) (subsExp tenv e2)
 subsExp tenv (BinLet p x y e1 e2) =
@@ -249,13 +266,16 @@ subsExp tenv (Case p e m) =
   liftM2 (Case p) (subsExp tenv e) (subsFieldMap tenv m)
 subsExp tenv (Conditional p e1 e2 e3) =
   liftM3 (Conditional p) (subsExp tenv e1) (subsExp tenv e2) (subsExp tenv e3)
-subsExp tenv (TypeApp p x t) =
-  fmap (TypeApp p x) (subsType tenv Nothing t) -- (mapM (subsType tenv Nothing) xs)
+subsExp tenv (TypeAbs p x e) =
+  fmap (TypeAbs p x) (subsExp tenv e)
+subsExp tenv (TypeApp p e t) =
+  liftM2 (TypeApp p) (subsExp tenv e) (subsType tenv Nothing t) -- (mapM (subsType tenv Nothing) xs)
 subsExp tenv (UnLet p x e1 e2) =
   liftM2 (UnLet p x) (subsExp tenv e1) (subsExp tenv e2)
 subsExp tenv (New p t u) =
   liftM2 (New p) (subsType tenv Nothing t) (subsType tenv Nothing u)
-subsExp tenv (Select p x) = liftM (Select p) (pure x)
+subsExp _ (Select p x) =
+  fmap (Select p) (pure x)
 subsExp tenv (Match p e m) =
   liftM2 (Match p) (subsExp tenv e) (subsFieldMap tenv m)
 subsExp _ e = return e
@@ -264,6 +284,6 @@ subsFieldMap :: TypeEnv -> FieldMap -> FreestState FieldMap
 subsFieldMap tenv = mapM (\(ps, e) -> liftM2 (,) (pure ps) (subsExp tenv e))
 
 subsTypeBind :: TypeEnv -> TypeBind -> FreestState TypeBind
-subsTypeBind tenv (TypeBind p k t) = liftM (TypeBind p k) (subsType tenv Nothing t)
+subsTypeBind tenv (TypeBind p k t) = fmap (TypeBind p k) (subsType tenv Nothing t)
 
 
