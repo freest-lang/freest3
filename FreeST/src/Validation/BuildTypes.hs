@@ -13,7 +13,7 @@ import           Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
 import           Utils.FreestState
 import           Debug.Trace
-import           Validation.Contractive
+import           Validation.Terminated
 import           Control.Monad                  ( liftM, liftM2, liftM3 )
 import           Utils.PreludeLoader            ( userDefined ) -- debug
 import           Validation.Kinding             ( synthetiseTS )

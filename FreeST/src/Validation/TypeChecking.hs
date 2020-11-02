@@ -23,7 +23,7 @@ import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.ProgramVariables
 import           Syntax.Base
-import           Validation.Contractive
+import           Validation.Terminated
 import qualified Validation.Kinding            as K
 import qualified Validation.Typing             as T
 import           Utils.Errors

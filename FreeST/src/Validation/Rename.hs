@@ -86,7 +86,7 @@ insertBindings xks xks' bs =
 
 instance Rename Type where
   rename bs t
-    | terminated t = return $ Skip (position t)
+--    | terminated t = return $ Skip (position t)
     | otherwise    = rename' bs t
 
 rename':: Bindings -> Type -> FreestState Type

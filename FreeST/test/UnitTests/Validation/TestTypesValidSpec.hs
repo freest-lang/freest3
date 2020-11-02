@@ -3,7 +3,7 @@ module Validation.TestTypesValidSpec (spec) where
 import           Syntax.Kinds
 import           Syntax.ProgramVariables
 import           Syntax.Base
-import           Validation.Contractive
+import           Validation.Terminated
 import           Validation.Kinding
 import           Utils.FreestState
 import           SpecHelper

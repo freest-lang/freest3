@@ -27,10 +27,12 @@ import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.Base
-import           Syntax.Show                    ( )
-import           Validation.Contractive
+import           Syntax.Show
+import           Syntax.TypeVariables
+import           Validation.Terminated
 import           Utils.FreestState
-import           Utils.Errors                   ( )
+import           Utils.Errors
+import           Control.Monad                 (unless)
 import qualified Control.Monad.State           as S
 import qualified Data.Map.Strict               as Map
 
@@ -79,6 +81,12 @@ synthetise _ (TypeName p a) = getFromTEnv a >>= \case
 synthetise kEnv (Dualof p t) = do
   m <- checkAgainstSession kEnv t
   return $ Kind p Session m
+
+-- Check the contractivity of a given type; issue an error if not
+checkContractive :: TypeVar -> Type -> FreestState ()
+checkContractive a t =
+  unless (contractive a t) $
+    addError (position t) [Error "Type", Error t, Error "is not contractive on type variable", Error a]
 
 -- Check whether a given type is of a session kind. In any case return
 -- the multiplicity of the kind of the type

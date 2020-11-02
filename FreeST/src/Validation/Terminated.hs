@@ -13,6 +13,7 @@ Portability :  portable | non-portable (<reason>)
 
 module Validation.Terminated
 ( terminated
+, contractive
 )
 where
 
@@ -33,7 +34,6 @@ terminated = term Set.empty
     term s (TypeVar _ a) = a `Set.member` s
     term _ _ = False
 
--- TODO: duplicated code; see Validation.Contractive. These two modules must be joined together
 contractive :: TypeVar -> Type -> Bool
 contractive a (Semi _ t u)
   | terminated t = contractive a u
