@@ -55,7 +55,6 @@ library:
     - Validation.Terminated
     - Validation.Rename
     - Validation.Kinding
-    - Validation.Contractive    
     - Validation.Substitution
 
 executables:
