@@ -74,7 +74,7 @@ import           Debug.Trace
   '*'      {TokenTimes _}
   '_'      {TokenWild _}
   '$'      {TokenDollar _}
-  OP       {TokenOp _ _}
+  CMP       {TokenCmp _ _}
   UPPER_ID {TokenUpperId _ _}
   LOWER_ID {TokenLowerId _ _}
   rec      {TokenRec _}
@@ -110,16 +110,15 @@ import           Debug.Trace
 
 -- Expr
 %right in else match case
-%left select -- send receive
+%left select
 %nonassoc new
-%right '$'
-%left '||'                      -- disjunction
-%left '&&'                      -- conjunction
-%left '==' '/='                 -- equality
-%nonassoc OP -- '<' '<=' '>' '>='     -- relational
-%left '+' '-'                   -- aditive
-%left '*' '/'                   -- multiplicative
-%left NEG not                   -- unary
+%right '$'       -- function call
+%left '||'       -- disjunction
+%left '&&'       -- conjunction
+%nonassoc CMP     -- comparison (relational and equality)
+%left '+' '-'    -- aditive
+%left '*' '/'    -- multiplicative
+%left NEG not    -- unary
 
 -- Type
 %right '.'       -- Used in rec
@@ -195,7 +194,7 @@ Expr :: { Expression }
   | case Expr of '{' CaseMap '}'     { Case (position $1) $2 $5 }
   | Expr '||' Expr                   { binOp $1 (mkVar (position $2) "(||)") $3 }
   | Expr '&&' Expr                   { binOp $1 (mkVar (position $2) "(&&)") $3 }
-  | Expr OP Expr                     { binOp $1 (mkVar (position $2) (getText $2)) $3 }
+  | Expr CMP Expr                    { binOp $1 (mkVar (position $2) (getText $2)) $3 }
   | Expr '+' Expr                    { binOp $1 (mkVar (position $2) "(+)") $3 }
   | Expr '-' Expr                    { binOp $1 (mkVar (position $2) "(-)") $3 }
   | Expr '*' Expr                    { binOp $1 (mkVar (position $2) "(*)") $3 }
@@ -203,30 +202,29 @@ Expr :: { Expression }
   | App                              { $1 }
 
 App :: { Expression }
-  : App Primary                     { App (position $1) $1 $2 }
-  | select ArbitraryProgVar         { Select (position $1) $2 }
-  | '-' App %prec NEG               { unOp (mkVar (position $1) "negate") $2}
-  | Primary                         { $1 }
+  : App Primary                      { App (position $1) $1 $2 }
+  | select ArbitraryProgVar          { Select (position $1) $2 }
+  | '-' App %prec NEG                { unOp (mkVar (position $1) "negate") $2}
+  | Primary                          { $1 }
 
 Primary :: { Expression }
-  : INT                                      { let (TokenInteger p x) = $1 in Integer p x }
-  | BOOL                                     { let (TokenBool p x) = $1 in Boolean p x }
-  | CHAR                                     { let (TokenChar p x) = $1 in Character p x }
-  | '()'                                     { Unit (position $1) }
-  | ProgVar '[' TypeList ']'                 { TypeApp (position $1) $1 $3 }
-  | ArbitraryProgVar                         { ProgVar (position $1) $1 }
+  : INT                              { let (TokenInteger p x) = $1 in Integer p x }
+  | BOOL                             { let (TokenBool p x) = $1 in Boolean p x }
+  | CHAR                             { let (TokenChar p x) = $1 in Character p x }
+  | '()'                             { Unit (position $1) }
+  | ProgVar '[' TypeList ']'         { TypeApp (position $1) $1 $3 }
+  | ArbitraryProgVar                 { ProgVar (position $1) $1 }
   | '(' lambda ProgVarWildTBind Arrow Expr ')'
-     { Abs (position $2) (snd $4) (TypeBind (position $2) (fst $3) (snd $3)) $5 }
-  --| '(' Expr ',' Expr ')'                    { Pair (position $1)$2 $4 }
-  | '(' Expr ',' NTuple ')'                  { Pair (position $1) $2 $4 }
-  | '(' Expr ')'                             { $2 }
+        { Abs (position $2) (snd $4) (TypeBind (position $2) (fst $3) (snd $3)) $5 }
+  | '(' Expr ',' Tuple ')'           { Pair (position $1) $2 $4 }
+  | '(' Expr ')'                     { $2 }
 
 ProgVarWildTBind :: { (ProgVar, Type) }
   : ProgVarWild ':' Type  %prec ProgVarWildTBind { ($1, $3) }
 
-NTuple :: { Expression }
-  : Expr                { $1 }
-  | Expr ',' NTuple     { Pair (position $1) $1 $3 }
+Tuple :: { Expression }
+  : Expr               { $1 }
+  | Expr ',' Tuple     { Pair (position $1) $1 $3 }
 
 MatchMap :: { FieldMap }
   : Match              { uncurry Map.singleton $1 }
@@ -248,7 +246,7 @@ Case :: { (ProgVar, ([ProgVar], Expression)) }
 
 TypeScheme :: { TypeScheme }
   : forall KindBindList '=>' Type { TypeScheme (position $1) $2 $4 }
-  | Type                             { TypeScheme (position $1) [] $1 }
+  | Type                          { TypeScheme (position $1) [] $1 }
 
 -----------
 -- TYPES --
@@ -256,22 +254,21 @@ TypeScheme :: { TypeScheme }
 
 Type :: { Type }
   -- Functional types
-  : BasicType                        { uncurry Basic $1 }
-  | Type Arrow Type                  { uncurry Fun $2 $1 $3 }
-  --| '(' Type ',' Type ')'            { PairType (position $1) $2 $4 }
-  | '(' Type ',' NTupleType ')'      { PairType (position $1) $2 $4 }
+  : BasicType                     { uncurry Basic $1 }
+  | Type Arrow Type               { uncurry Fun $2 $1 $3 }
+  | '(' Type ',' TupleType ')'    { PairType (position $1) $2 $4 }
   -- Session types
-  | Skip                             { Skip (position $1) }
-  | Type ';' Type                    { Semi (position $2) $1 $3 }
-  | Polarity BasicType               { uncurry Message $1 (snd $2) }
-  | ChoiceView '{' FieldList '}'     { uncurry Choice $1 $3 }
+  | Skip                          { Skip (position $1) }
+  | Type ';' Type                 { Semi (position $2) $1 $3 }
+  | Polarity BasicType            { uncurry Message $1 (snd $2) }
+  | ChoiceView '{' FieldList '}'  { uncurry Choice $1 $3 }
   | rec KindBind '.' Type         { Rec (position $1) $2 $4 }
   -- Functional or session
-  | TypeVar                          { TypeVar (position $1) $1 }
+  | TypeVar                       { TypeVar (position $1) $1 }
   -- Type operators
-  | dualof Type                      { Dualof (position $1) $2 }
-  | TypeName                         { TypeName (position $1) $1 }
-  | '(' Type ')'                     { $2 }
+  | dualof Type                   { Dualof (position $1) $2 }
+  | TypeName                      { TypeName (position $1) $1 }
+  | '(' Type ')'                  { $2 }
 
 BasicType :: { (Pos, BasicType) }
   : Int  { (position $1, IntType) }
@@ -279,9 +276,9 @@ BasicType :: { (Pos, BasicType) }
   | Bool { (position $1, BoolType) }
   | '()' { (position $1, UnitType) }
 
-NTupleType :: { Type }
+TupleType :: { Type }
   : Type                    { $1 }
-  | Type ',' NTupleType     { PairType (position $1) $1 $3 }
+  | Type ',' TupleType     { PairType (position $1) $1 $3 }
 
 Polarity :: { (Pos, Polarity) }
   : '?' { (position $1, In) }
@@ -369,10 +366,8 @@ KindBindEmptyList :: { [KindBind] }
   :                 { [] }
   | KindBindList { $1 }
 
+-- TYPE SCHEMES
 
---------------------
--- SCHEMES PARSER --
---------------------
 Schemes :: { (TypeScheme, TypeScheme) }
   : TypeScheme NL TypeScheme { ($1, $3) }
 
