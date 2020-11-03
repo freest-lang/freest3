@@ -26,7 +26,6 @@ $lower = [$lowerA$greek\_] --  $greek \_]
 
 $letter = [$lower$upper$greek]
 
-
 -- $unidigit  = \x03
 $ascdigit = 0-9
 $digit = [$ascdigit] -- $unidigit]
@@ -39,17 +38,14 @@ $alphaNumeric = [$letter$digit\_\']
   
 $eol=[\n]
 
-
-
 @char = \'(\\n|[\\.]|.) \'
 @blockComment = "{-" (\.*|[^\{\-]|\n|\-\-|[^$symbol].*)* "-}"
 
 -- # λ  -- forall not in range ([λ ∀])
 
-@varsym = ($lower # [λ ∀ Λ]) $alphaNumeric*  -- variable (operator) symbol
-@conssym = ($upper # [λ ∀ Λ]) $alphaNumeric*
+@lowerId = ($lower # [λ ∀ Λ]) $alphaNumeric*
+@upperId = ($upper # [λ ∀ Λ]) $alphaNumeric*
 
-  
 tokens :-  
   $white*$eol+                  { \p s -> TokenNL (internalPos p) }
   $white+                       ;  
@@ -80,12 +76,12 @@ tokens :-
   "-"				{ \p s -> TokenMinus (internalPos p) }
   "*"				{ \p s -> TokenTimes (internalPos p) }
   "_"				{ \p s -> TokenWild (internalPos p) }
-  ">"  	          		{ \p s -> TokenOp (internalPos p) "(>)" }
-  "<"  	          		{ \p s -> TokenOp (internalPos p) "(<)" }
-  ">="  		        { \p s -> TokenOp (internalPos p) "(>=)" }
-  "<="  		        { \p s -> TokenOp (internalPos p) "(<=)" }
-  "=="  		        { \p s -> TokenOp (internalPos p) "(==)" }
-  "/="  		        { \p s -> TokenOp (internalPos p) "(/=)" }
+  ">"  	          		{ \p s -> TokenCmp (internalPos p) "(>)" }
+  "<"  	          		{ \p s -> TokenCmp (internalPos p) "(<)" }
+  ">="  		        { \p s -> TokenCmp (internalPos p) "(>=)" }
+  "<="  		        { \p s -> TokenCmp (internalPos p) "(<=)" }
+  "=="  		        { \p s -> TokenCmp (internalPos p) "(==)" }
+  "/="  		        { \p s -> TokenCmp (internalPos p) "(/=)" }
   "&&"  		        { \p s -> TokenConjunction (internalPos p) }
   "||"  		        { \p s -> TokenDisjunction (internalPos p) }
   "/"  		                { \p s -> TokenDiv (internalPos p) }
@@ -124,8 +120,8 @@ tokens :-
   @char				{ \p s -> TokenChar (internalPos p) (read s) }
 -- Identifiers
   "(+)" | "(-)" | "(*)"         { \p s -> TokenLowerId (internalPos p) s }  -- TODO: add remaining operators
-  @varsym                       { \p s -> TokenLowerId (internalPos p) s }
-  @conssym                      { \p s -> TokenUpperId (internalPos p) s }
+  @lowerId                       { \p s -> TokenLowerId (internalPos p) s }
+  @upperId                      { \p s -> TokenUpperId (internalPos p) s }
 
 {
 
@@ -190,7 +186,7 @@ data Token =
   | TokenWild Pos
   | TokenLT Pos
   | TokenGT Pos
-  | TokenOp Pos String
+  | TokenCmp Pos String
   | TokenConjunction Pos
   | TokenDisjunction Pos
   | TokenDiv Pos
@@ -253,7 +249,7 @@ instance Show Token where
   show (TokenLT p) = "<"
   show (TokenGT p) = ">"
   show (TokenWild p) = "_"  
-  show (TokenOp p s) = show s
+  show (TokenCmp p s) = show s
   show (TokenOf p) = "of"  
   show (TokenDualof p) = "dualof"  
   show (TokenFArrow p) = "=>"
@@ -357,7 +353,7 @@ instance Position Token where
   position (TokenLT p) = p
   position (TokenGT p) = p
   position (TokenWild p) = p
-  position (TokenOp p _) = p
+  position (TokenCmp p _) = p
   position (TokenIf p) = p
   position (TokenThen p) = p
   position (TokenElse p) = p
@@ -374,6 +370,6 @@ instance Position Token where
 getText :: Token -> String
 getText (TokenUpperId _ x) = x
 getText (TokenLowerId _ x) = x
-getText (TokenOp _ x) = x
+getText (TokenCmp _ x) = x
 
 }
