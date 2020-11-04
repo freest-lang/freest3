@@ -9,7 +9,7 @@ Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc
 This module defines a types, duality and equality.
 -}
 
-module Syntax.Duality
+module Validation.Duality
 ( Dual(..)
 ) where
 

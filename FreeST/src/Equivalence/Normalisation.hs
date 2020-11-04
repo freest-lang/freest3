@@ -18,7 +18,7 @@ import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.Base
-import           Syntax.Duality
+import           Validation.Duality
 import           Validation.Terminated (terminated)
 import qualified Validation.Substitution as Substitution (unfold)
 import qualified Data.Map.Strict as Map

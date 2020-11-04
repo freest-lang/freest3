@@ -6,17 +6,17 @@ import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.Base
-import           Syntax.Duality                 ( dual )
 import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
+import           Validation.Duality                 ( dual )
+import           Validation.Terminated
+import           Validation.Kinding             ( synthetiseTS )
+import           Utils.FreestState
 import           Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
-import           Utils.FreestState
 import           Debug.Trace
-import           Validation.Terminated
 import           Control.Monad                  ( liftM, liftM2, liftM3 )
 import           Utils.PreludeLoader            ( userDefined ) -- debug
-import           Validation.Kinding             ( synthetiseTS )
 
 
 solveTypeDecls :: FreestState ()
