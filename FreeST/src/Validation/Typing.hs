@@ -22,27 +22,27 @@ module Validation.Typing
   )
 where
 
-import           Control.Monad.State            ( when, unless )
-import qualified Data.Map.Strict               as Map
--- import           Debug.Trace                     -- debug
-import           Equivalence.Equivalence
 import           Syntax.Base
-import           Syntax.Duality
 import           Syntax.Expressions
 import           Syntax.Kinds
 import           Syntax.ProgramVariables
 import           Syntax.Schemes
 import           Syntax.Show -- debug
 import           Syntax.Types
+import           Equivalence.Equivalence
+import           Validation.Duality
+import           Validation.Extract
+import qualified Validation.Kinding            as K
+import qualified Validation.Rename             as Rename
+                                                ( subs )
 import           Utils.Errors
 import           Utils.FreestState
 import           Utils.PreludeLoader            ( isBuiltin
                                                 , userDefined
                                                 ) -- debug
-import           Validation.Extract
-import qualified Validation.Kinding            as K
-import qualified Validation.Rename             as Rename
-                                                ( subs )
+import           Control.Monad.State            ( when, unless )
+import qualified Data.Map.Strict               as Map
+-- import           Debug.Trace                     -- debug
 
 -- SYNTHESISING A TYPE
 

@@ -19,12 +19,12 @@ where
 
 import           Syntax.Schemes
 import           Syntax.Types
-import           Syntax.Duality
 import           Syntax.Kinds
 import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
 import           Syntax.Base
 import           Syntax.Show
+import           Validation.Duality
 import qualified Validation.Substitution       as Substitution
                                                 ( subsAll
                                                 , unfold

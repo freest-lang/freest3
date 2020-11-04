@@ -46,12 +46,12 @@ library:
     - Syntax.Schemes
     - Syntax.Kinds
     - Syntax.ProgramVariables
-    - Syntax.Duality
     - Parse.ParseUtils
     - Utils.Errors
     - Utils.FreestState
     - Parse.Lexer 
     - Parse.Parser
+    - Validation.Duality
     - Validation.Terminated
     - Validation.Rename
     - Validation.Kinding
