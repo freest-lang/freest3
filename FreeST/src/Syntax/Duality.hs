@@ -13,7 +13,8 @@ module Syntax.Duality
 ( Dual(..)
 ) where
 
-import Syntax.Types
+import           Syntax.Types
+import           Syntax.Show
 import qualified Data.Map.Strict as Map
 
 -- The dual function on types, etc
@@ -26,15 +27,15 @@ instance Dual Polarity where
 
 instance Dual Type where
   -- Session types
-  dual (Semi p t1 t2)   = Semi p (dual t1) (dual t2)
-  -- dual (Semi p t1 t2)  = Semi p (Dualof p t1) (Dualof p t2) -- The lazy version loops
-  dual (Message p v b)  = Message p (dual v) b
-  dual (Choice p v m)   = Choice p (dual v) (Map.map dual m)
-  -- dual (Choice p v m)  = Choice p (dual v) (Map.map (Dualof p) m) -- The lazy version loops
-  dual (Rec p x t)      = Rec p x (dual t)
-  -- dual (Rec p x t)     = Rec p x (Dualof p t) -- The lazy version loops
+  dual t@(Skip _)      = t
+  dual (Semi p t1 t2)  = Semi p (dual t1) (dual t2)
+  dual (Message p v b) = Message p (dual v) b
+  dual (Choice p v m)  = Choice p (dual v) (Map.map dual m)
+  dual (Rec p x t)     = Rec p x (dual t)
+  dual t@(TypeVar _ _) = t
   -- Type operators
-  dual (Dualof _ t)     = t
-  dual t@(TypeName _ x) = t -- TODO: This can't be right
+  -- dual (Dualof _ t)     = t
+  -- dual t@(TypeName _ x) = t -- TODO: This can't be right
   -- Functional types, Skip, TypeVar
-  dual t                = t
+  -- dual t                = t
+  dual t = error $ "Internal error: Validation.dual called on type " ++ show t
