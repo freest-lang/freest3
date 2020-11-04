@@ -13,6 +13,7 @@ This module provides tools to prettify & format errors with ANSI colors for term
 
 module Utils.Errors
   ( formatErrorMessages
+  , internalError
   )
 where
 
@@ -53,3 +54,10 @@ styleBold str = "\ESC[1m" ++ str ++ "\ESC[0m"
 styleColor :: Maybe Color -> String -> String
 styleColor (Just Red) str = styleRed str
 styleColor _          str = str
+
+-- | Internal errors
+
+internalError :: Pos -> String -> String -> a
+internalError pos fun msg = do
+  error $ show pos ++ ": Internal error at " ++ fun ++ ": " ++ msg
+

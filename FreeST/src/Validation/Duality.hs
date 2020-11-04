@@ -1,5 +1,5 @@
 {- |
-Module      :  Syntax.Duality
+Module      :  Validation.Duality
 Description :  The duality module.
 Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of Lisbon
                    Andreia Mordido, LASIGE, Faculty of Sciences, University of Lisbon

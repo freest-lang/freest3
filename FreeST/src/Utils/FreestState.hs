@@ -183,17 +183,6 @@ findTypeName p t = Map.findWithDefault t p <$> getTypeNames
 
 -- | ERRORS
 
--- addError :: Pos -> [String] -> FreestState ()
--- addError p e =
---   modify (\s -> s{errors = insertError p (errors s) (filename s) e})
-
--- insertError :: Pos -> [String] -> String -> [String] -> [String]
--- insertError p es f e
---   | err `elem` es = es
---   | otherwise     = es ++ [err]
---   where
---     err = styleError f p e
-
 getErrors :: FreestS -> String
 getErrors = intercalate "\n" . errors
 
@@ -224,79 +213,3 @@ tMapWithKeyM f m = Traversable.sequence (Map.mapWithKey f m)
 
 tMapWithKeyM_ :: Monad m => (k -> a1 -> m a2) -> Map.Map k a1 -> m ()
 tMapWithKeyM_ f m = void $ tMapWithKeyM f m
-
-
-{- An attempt to rename at parsing time
-
-newPVar :: String -> FreestState PVar
-newPVar id = do
-  s <- get
-  let pvar = mkPVar (nextIndex s) id
-  put $ s {nextIndex = nextIndex s + 1, pVarsInScope = Map.insertWith (++) id [pvar] (pVarsInScope s)}
-  return pvar
-
-getPVar :: String -> FreestState PVar
-getPVar id = do
-  s <- get
-  case (pVarsInScope s) Map.!? id of
-    Just pvar -> return $ head $ pvar
-    Nothing   -> newPVar id >>= \pvar -> return pvar
-
-rmPVar :: ProgVar -> FreestState ()
-rmPVar (ProgVar _ pvar) = do
-  s <- get
-  put $ s {pVarsInScope = Map.update tailMaybe (show pvar) (pVarsInScope s)}
-  where tailMaybe []     = Nothing
-        tailMaybe (_:xs) = Just xs
-
-newTVar :: Pos -> String -> FreestState TypeVar
-newTVar p id = do
-  s <- get
-  let x = newTypeVar p (nextIndex s) id
-  put s {nextIndex      = nextIndex s + 1,
-         tTable = Map.insertWith (++) id [x] (tTable s),
-         tStack       = id : tStack s}
-  return x
-
-getTVar :: Pos -> String -> FreestState TypeVar
-getTVar p id = do
-  s <- get
-  return $ head $ Map.findWithDefault [mkTypeVar p id] id (tTable s)
-
-mark :: String
-mark = "#"
-
-beginScope :: FreestState ()
-beginScope = modify (\s -> s {tStack = mark : tStack s})
-
-endScope :: FreestState ()
-endScope = do
-  s <- get
-  let (t, m) = remove (tStack s) (tTable s)
-  put s {tStack = t, tTable = m}
-  where
-  remove (x:xs) m
-    | x == mark = (xs, m)
-    | otherwise = remove xs (Map.update tailMaybe x m)
-  tailMaybe []     = Nothing
-  tailMaybe (_:xs) = Just xs
-
-newTVar :: String -> FreestState TVar
-newTVar id = do
-  s <- get
-  let pvar = mkTVar (nextIndex s) id
-  put $ s {nextIndex = nextIndex s + 1, tTable = Map.insertWith (++) id [pvar] (tTable s)}
-  return pvar
-
-getTVar :: String -> FreestState TVar
-getTVar id = do
-  s <- get
-  return $ head $ (tTable s) Map.! id
-
-rmTVar :: ProgVar -> FreestState ()
-rmTVar (ProgVar _ pvar) = do
-  s <- get
-  put $ s {tTable = Map.update tailMaybe (show pvar) (tTable s)}
-  where tailMaybe []     = Nothing
-        tailMaybe (_:xs) = Just xs
--}

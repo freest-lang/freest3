@@ -24,7 +24,6 @@ import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
 import           Syntax.Base
 import           Syntax.Show
-import           Validation.Duality
 import qualified Validation.Substitution       as Substitution
                                                 ( subsAll
                                                 , unfold
@@ -35,11 +34,12 @@ import           Utils.FreestState              ( tMapWithKeyM
                                                 , tMapM
                                                 , tMapM_
                                                 )
+import           Utils.Errors                   ( internalError )
 import           Control.Monad.State
 import qualified Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
 import           Debug.Trace
-import           Prelude                 hiding ( Word ) -- Word is (re)defined in module Equivalence.Grammar
+import           Prelude                       hiding ( Word ) -- Word is (re)defined in module Equivalence.Grammar
 
 -- Conversion to context-free grammars
 
@@ -74,19 +74,14 @@ toGrammar (Choice _ v m) = do
   y  <- getLHS $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
   return [y]
 -- Recursive types
-toGrammar x@(TypeVar _ _) = do      -- x is a polymorphic variable
+toGrammar x@TypeVar{} = do      -- x is a polymorphic variable
   y <- getLHS $ Map.singleton (show x) []
   return [y]
 toGrammar (Rec _ (KindBind _ x _) _) = return [x]
-  -- Type operators
-toGrammar (Dualof   _ t               ) = toGrammar (dual t)
-toGrammar (TypeName p x               ) = toGrammar (TypeVar p x) -- TODO: can a TypeName be taken as a TypeVar?
-  -- Error (debugging)
-toGrammar t =
-  error
-    $  "Internal error. Attempting to convert type "
+toGrammar t = internalError (position t) "Equivalence.TypeToGrammar.toGrammar" $
+    "Attempting to convert type "
     ++ show t
-    ++ " (a non session type) to grammar."
+    ++ " (a non session type or a type operator) to grammar."
 
 type SubstitutionList = [(Type, TypeVar)]
 
