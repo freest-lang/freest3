@@ -115,7 +115,7 @@ tokens :-
   dualof			{ \p s -> TokenDualof (internalPos p) }
 -- Values
   \(\)				{ \p s -> TokenUnit (internalPos p) }  
-  (0+|[1-9]$digit*)      	{ \p s -> TokenInteger (internalPos p) (read s) }
+  (0+|[1-9]$digit*)      	{ \p s -> TokenInt (internalPos p) (read s) }
   (True|False) 	      	 	{ \p s -> TokenBool (internalPos p) (read s) }
   @char				{ \p s -> TokenChar (internalPos p) (read s) }
 -- Identifiers
@@ -157,7 +157,7 @@ data Token =
   | TokenSL Pos 
   | TokenTU Pos 
   | TokenTL Pos
-  | TokenInteger Pos Int
+  | TokenInt Pos Int
   | TokenChar Pos Char
   | TokenBool Pos Bool
   | TokenLet Pos
@@ -224,7 +224,7 @@ instance Show Token where
   show (TokenSL p) = "SL"   
   show (TokenTU p) = "TU"   
   show (TokenTL p) = "TL"  
-  show (TokenInteger p i) = show i
+  show (TokenInt p i) = show i
   show (TokenChar p c) = show c
   show (TokenBool p b) = show b
   show (TokenLet p) = "let"
@@ -331,7 +331,7 @@ instance Position Token where
   position (TokenSL p) = p 
   position (TokenTU p) = p 
   position (TokenTL p) = p
-  position (TokenInteger p _) = p
+  position (TokenInt p _) = p
   position (TokenChar p _) = p
   position (TokenBool p _) = p
   position (TokenLet p) = p 

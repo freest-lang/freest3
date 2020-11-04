@@ -74,16 +74,16 @@ import           Debug.Trace
   '*'      {TokenTimes _}
   '_'      {TokenWild _}
   '$'      {TokenDollar _}
+  '.'      {TokenDot _}
   CMP       {TokenCmp _ _}
   UPPER_ID {TokenUpperId _ _}
   LOWER_ID {TokenLowerId _ _}
   rec      {TokenRec _}
-  '.'      {TokenDot _}
   SU       {TokenSU _}
   SL       {TokenSL _}
   TU       {TokenTU _}
   TL       {TokenTL _}
-  INT      {TokenInteger _ _ }
+  INT      {TokenInt _ _ }
   BOOL     {TokenBool _ _}
   CHAR     {TokenChar _ _}
   let      {TokenLet _}
@@ -107,8 +107,7 @@ import           Debug.Trace
 %nonassoc LOWER_ID UPPER_ID
 %nonassoc '('
 %nonassoc '()'
-
--- Expr
+-- Expressions
 %right in else match case
 %left select
 %nonassoc new
@@ -119,14 +118,12 @@ import           Debug.Trace
 %left '+' '-'    -- aditive
 %left '*' '/'    -- multiplicative
 %left NEG not    -- unary
-
--- Type
+-- Types
 %right '.'       -- Used in rec
 %right '->' '-o' -- TODO: an Expr operator as well
 %right ';'       -- TODO: an Expr operator as well
 %right dualof
-
--- Precedence of lambda expressions
+-- Lambda expressions
 %nonassoc ProgVarWildTBind
 
 %%
@@ -208,7 +205,7 @@ App :: { Expression }
   | Primary                          { $1 }
 
 Primary :: { Expression }
-  : INT                              { let (TokenInteger p x) = $1 in Integer p x }
+  : INT                              { let (TokenInt p x) = $1 in Integer p x }
   | BOOL                             { let (TokenBool p x) = $1 in Boolean p x }
   | CHAR                             { let (TokenChar p x) = $1 in Character p x }
   | '()'                             { Unit (position $1) }
@@ -383,15 +380,28 @@ parseKind str =
     Ok x -> x
     Failed err -> error err
 
+instance Read Kind where
+  readsPrec _ s = -- [(parseKind s, "")]
+    tryParse [("SL", Kind defaultPos Session Lin),
+              ("SU", Kind defaultPos Session Un),
+              ("TL", Kind defaultPos Functional Lin),
+              ("TU", Kind defaultPos Functional Un)]
+    where tryParse [] = []
+          tryParse ((attempt,result):xs) =
+            if take (length attempt) (trim s) == attempt
+            then [(result, drop (length attempt) (trim s))]
+            else tryParse xs
+          trim s = dropWhile isSpace s
+
 parseType :: String -> Either Type String
 parseType str =
   case runStateT (parse str "" types) (initialState "") of
-    Ok (t, state) -> eitherTypeErr t state
+    Ok p -> eitherTypeErr p
     Failed err -> Right $ err
   where
-    eitherTypeErr t state
+    eitherTypeErr (t, state)
       | hasErrors state = Right $ getErrors state
-      | otherwise       = Left $ t
+      | otherwise       = Left t
 
 instance Read Type where
   readsPrec _ str =
@@ -407,22 +417,8 @@ instance Read Type where
 parseSchemes :: String -> String -> Either (TypeScheme, TypeScheme) String
 parseSchemes file str =
   case runStateT (parse str file schemes) (initialState file) of
-    Ok (t,s) ->
-      if hasErrors s then Right (getErrors s) else Left t
+    Ok (t, s) -> if hasErrors s then Right (getErrors s) else Left t
     Failed err -> Right err
-
-instance Read Kind where
-  readsPrec _ s = -- [(parseKind s, "")]
-    tryParse [("SL", Kind defaultPos Session Lin),
-              ("SU", Kind defaultPos Session Un),
-              ("TL", Kind defaultPos Functional Lin),
-              ("TU", Kind defaultPos Functional Un)]
-    where tryParse [] = []
-          tryParse ((attempt,result):xs) =
-            if (take (length attempt) (trim s)) == attempt
-            then [(result, drop (length attempt) (trim s))]
-            else tryParse xs
-          trim s = dropWhile isSpace s
 
 -----------------------
 -- PARSING PROGRAMS  --
@@ -439,12 +435,8 @@ parseDefs file vEnv str =
   case execStateT (parse str file terms) (s {varEnv = vEnv}) of
     Ok s1 -> s1
     Failed err -> s {errors = (errors s) ++ [err]}
-   -- where
-   --   parse = lexer str file terms
 
-parse str file f = lexer str file f
-
-lexer str file f =
+parse str file f =
   case scanTokens str file of
     Right err -> failM err
     Left x    -> f x
@@ -463,15 +455,15 @@ parseError [] = do
   file <- toStateT getFileName
   failM $ formatErrorMessages Map.empty defaultPos file
           [Error "Parse error:", Error "\ESC[91mPremature end of file\ESC[0m"]
-parseError xs = do
+parseError (x:_) = do
   file <- toStateT getFileName
   failM $ formatErrorMessages Map.empty p file
-    [Error "Parse error on input", Error $ "\ESC[91m'" ++ show (head xs) ++ "'\ESC[0m"]
- where p = position (head xs)
+    [Error "Parse error on input", Error $ "\ESC[91m'" ++ show x ++ "'\ESC[0m"]
+ where p = position x
 
 failM :: String -> FreestStateT a
-failM err = lift $ Failed err
+failM = lift . Failed
 
-toStateT x = state $ runState x
+toStateT = state . runState
 
 }
