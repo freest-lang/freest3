@@ -30,12 +30,10 @@ import           Syntax.Schemes
 import           Syntax.Show -- debug
 import           Syntax.Types
 import           Equivalence.Equivalence
-import           Validation.Duality
 import           Validation.Extract
 import qualified Validation.Kinding            as K
 import qualified Validation.Rename             as Rename
                                                 ( subs )
-import           Utils.Errors
 import           Utils.FreestState
 import           Utils.PreludeLoader            ( isBuiltin
                                                 , userDefined
@@ -171,7 +169,6 @@ synthetise kEnv (Case p e fm) =
 synthetise kEnv (New p t u) = do
   K.checkAgainstSession kEnv t
   return $ PairType p t u -- (dual t)
-  -- return $ PairType p t (Dualof p t)
 synthetise kEnv e@(Select _ _) =
   addPartiallyAppliedError e "channel"
 -- synthetise kEnv (Select p e c) = do
