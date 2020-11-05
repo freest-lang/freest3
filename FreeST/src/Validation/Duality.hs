@@ -14,7 +14,9 @@ module Validation.Duality
 ) where
 
 import           Syntax.Types
+import           Syntax.Base
 import           Syntax.Show
+import           Utils.Errors (internalError)
 import qualified Data.Map.Strict as Map
 
 -- The dual function on types, etc
@@ -26,16 +28,10 @@ instance Dual Polarity where
   dual Out = In
 
 instance Dual Type where
-  -- Session types
-  dual t@(Skip _)      = t
-  dual (Semi p t1 t2)  = Semi p (dual t1) (dual t2)
+  dual t@Skip{} = t
+  dual (Semi p t1 t2) = Semi p (dual t1) (dual t2)
   dual (Message p v b) = Message p (dual v) b
-  dual (Choice p v m)  = Choice p (dual v) (Map.map dual m)
-  dual (Rec p x t)     = Rec p x (dual t)
-  dual t@(TypeVar _ _) = t
-  -- Type operators
-  -- dual (Dualof _ t)     = t
-  -- dual t@(TypeName _ x) = t -- TODO: This can't be right
-  -- Functional types, Skip, TypeVar
-  -- dual t                = t
-  dual t = error $ "Internal error: Validation.dual called on type " ++ show t
+  dual (Choice p v m) = Choice p (dual v) (Map.map dual m)
+  dual (Rec p x t) = Rec p x (dual t)
+  dual t@TypeVar{} = t
+  dual t = internalError (position t) "Validation.Duality.dual" (show t)
