@@ -18,7 +18,7 @@ module TypeToGrammar1
 
 import           Syntax.Schemes
 import           Syntax.Types
-import           Syntax.Duality
+import           Validation.Duality
 import           Syntax.Kinds
 import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
