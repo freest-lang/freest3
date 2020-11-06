@@ -35,7 +35,7 @@ import           Syntax.Schemes
 import           Syntax.Kinds
 import           Syntax.TypeVariables
 import           Syntax.Base
-import           Syntax.Duality
+import           Validation.Duality
 import           Utils.FreestState
 import           Control.Monad.State
 import           Validation.Rename

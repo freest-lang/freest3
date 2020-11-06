@@ -11,7 +11,7 @@ import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
 import           Syntax.Base
 import           Syntax.Show
-import           Syntax.Duality
+import           Validation.Duality
 import qualified Validation.Rename as Rename
 import qualified Data.Map.Strict as Map
 import           Control.Monad
