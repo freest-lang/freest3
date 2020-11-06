@@ -140,7 +140,9 @@ solveDualOf tenv n@(TypeName _ tname) = case tenv Map.!? tname of
   Nothing                    -> maybeScopeErr n
 solveDualOf tenv d@(Dualof p t) = do
   addTypeName p d
-  fmap dual (solveDualOf tenv t)
+  u <- solveDualOf tenv t
+  dual u
+--  fmap dual (solveDualOf tenv t)
 solveDualOf _ p = return p
 
 
@@ -214,8 +216,12 @@ subsType tenv Nothing n@(TypeName p tname) = case tenv Map.!? tname of
     addTypeName p n >> pure (changePos p (toTypeVar tname . toType $ snd t))
   Nothing -> pure n
 -- In the first stage (converting typenames); we should ignore dualofs
-subsType tenv Nothing n@(Dualof p t) =
-  addTypeName p n >> fmap (changePos p . dualFun) (subsType tenv Nothing t)
+subsType tenv Nothing n@(Dualof p t) = do
+  addTypeName p n
+  u <- subsType tenv Nothing t
+  v <- dual u
+  pure $ changePos p v
+  -- addTypeName p n >> fmap (changePos p . dualFun) (subsType tenv Nothing t)
 subsType _ _ t = pure t
 
 -- Apply subsType over TypeMaps
@@ -225,9 +231,9 @@ subsMap tenv b = mapM (subsType tenv b)
 -- The notion of dual of is only for session types
 -- we must apply it recursively on function types
 -- TODO: Maybe to other type (functional) as well
-dualFun :: Type -> Type
-dualFun (Fun p pol t u) = Fun p pol (dualFun t) (dualFun u)
-dualFun t               = dual t
+-- dualFun :: Type -> Type
+-- dualFun (Fun p pol t u) = Fun p pol (dualFun t) (dualFun u)
+-- dualFun t               = dual t
 
 -- Substitute expressions
 

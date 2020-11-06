@@ -35,7 +35,7 @@ instance Normalise Type where
   normalise tenv t@Rec{} = normalise tenv (Substitution.unfold t)
     -- Type operators
   normalise tenv t@Dualof{} =
-    internalError (position t) "Equivalence.Normalisation.normalise" (show t)
+    internalError "Equivalence.Normalisation.normalise" t
   normalise tenv (TypeName _ a) = normalise tenv t
     where (_, TypeScheme _ [] t) = tenv Map.! a -- TODO: internalError
     -- Otherwise: Basic, Fun, PairType, Datatype, Skip, Message, Choice, TypeVar
