@@ -16,7 +16,7 @@ import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.TypeVariables
 import           Syntax.Base
-import           Validation.Duality
+-- import           Validation.Duality
 import           Utils.FreestState
 import           Control.Monad.State
 import           Data.Maybe
@@ -71,8 +71,8 @@ prop_equivalent (BisimPair t u) = kinded t && kinded u ==> t `equiv` u
 --         [u, v] = renameTypes [t, normalise Map.empty t']
 
 -- Duality is a convolution
-prop_dual_convolution :: Type -> Property
-prop_dual_convolution t = kinded t ==> dual (dual t) == t
+-- prop_dual_convolution :: Type -> Property
+-- prop_dual_convolution t = kinded t ==> dual (dual t) == t
 
 -- Lemma 3.1(ii) _ Substitution and kind preservation (ICFP'16)
 -- prop_subs_kind_preservation2 :: TypeVar ->Kind -> Type -> Property
