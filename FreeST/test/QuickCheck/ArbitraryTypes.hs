@@ -11,7 +11,6 @@ import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
 import           Syntax.Base
 import           Syntax.Show
-import           Validation.Duality
 import qualified Validation.Rename as Rename
 import qualified Data.Map.Strict as Map
 import           Control.Monad
@@ -48,8 +47,8 @@ arbitraryVar ids = do
 instance Arbitrary Kind where
   arbitrary = elements [kindSL pos, kindSU pos] -- Session types only
 
-instance Arbitrary TypeVarBind where
-  arbitrary = liftM3 TypeVarBind (return pos) arbitrary arbitrary
+instance Arbitrary KindBind where
+  arbitrary = liftM3 KindBind (return pos) arbitrary arbitrary
 
 instance Arbitrary BasicType where
   arbitrary = elements [IntType, CharType, BoolType, UnitType]
@@ -195,8 +194,8 @@ commut n = do
 recRecL :: Int -> Gen (Type, Type)
 recRecL n = do
   (t, u) <- bisimPair (n `div` 2)
-  xk@(TypeVarBind _ x _) <- arbitrary
-  yk@(TypeVarBind _ y _) <- arbitrary
+  xk@(KindBind _ x _) <- arbitrary
+  yk@(KindBind _ y _) <- arbitrary
   let u' = Rename.renameType u -- this type will be in a substitution
   return (Rec pos xk (Rec pos yk t),
           Rec pos xk (Rename.subs (TypeVar pos x) y u'))
@@ -204,8 +203,8 @@ recRecL n = do
 recRecR :: Int -> Gen (Type, Type)
 recRecR n = do
   (t, u) <- bisimPair (n `div` 2)
-  xk@(TypeVarBind _ x _) <- arbitrary
-  yk@(TypeVarBind _ y _) <- arbitrary
+  xk@(KindBind _ x _) <- arbitrary
+  yk@(KindBind _ y _) <- arbitrary
   let u' = Rename.renameType u -- this type will be in a substitution
   return (Rec pos xk (Rec pos yk t),
           Rec pos yk (Rename.subs (TypeVar pos y) x u'))
@@ -214,15 +213,15 @@ recFree :: Int -> Gen (Type, Type)
 recFree n = do
   (t, u) <- bisimPair (n `div` 2)
   k <- arbitrary
-  return (Rec pos (TypeVarBind pos freeTypeVar k) t, u)
+  return (Rec pos (KindBind pos freeTypeVar k) t, u)
 
 -- alphaConvert :: Int -> Gen (Type, Type) -- (fixed wrt to ICFP'16)
 -- alphaConvert n = do
 --   (t, u) <- bisimPair n
 --   (x, k) <- arbitrary
 --   let y = freeTypeVar -- TODO: Here we need a genunine free var
---   return (Rec pos (TypeVarBind pos x k) t,
---           Rec pos (TypeVarBind pos y k) (Rename.subs (TypeVar pos y) x u))
+--   return (Rec pos (KindBind pos x k) t,
+--           Rec pos (KindBind pos y k) (Rename.subs (TypeVar pos y) x u))
 
 subsOnBoth :: Int -> Gen (Type, Type)
 subsOnBoth n = do
@@ -297,3 +296,6 @@ messageInOut = do
   (p, b) <- arbitrary
   return (Message pos p b,
           Message pos (dual p) b)
+
+dual In = Out
+dual Out = In
