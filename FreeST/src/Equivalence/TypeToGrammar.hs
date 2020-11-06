@@ -13,8 +13,8 @@ given as parameter to context-free grammars
 {-# LANGUAGE NoMonadFailDesugaring, FlexibleInstances #-}
 
 module Equivalence.TypeToGrammar
-  ( convertToGrammar
-  )
+( convertToGrammar
+)
 where
 
 import           Syntax.Schemes
@@ -78,10 +78,7 @@ toGrammar x@TypeVar{} = do      -- x is a polymorphic variable
   y <- getLHS $ Map.singleton (show x) []
   return [y]
 toGrammar (Rec _ (KindBind _ x _) _) = return [x]
-toGrammar t = internalError (position t) "Equivalence.TypeToGrammar.toGrammar" $
-    "Attempting to convert type "
-    ++ show t
-    ++ " (a non session type or a type operator) to grammar."
+toGrammar t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 
 type SubstitutionList = [(Type, TypeVar)]
 

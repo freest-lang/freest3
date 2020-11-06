@@ -17,7 +17,7 @@ module Utils.Errors
   )
 where
 
-import           Syntax.Base                    ( Pos )
+import           Syntax.Base                    ( Pos, Position, position )
 import           Syntax.Types                   ( TypeOpsEnv )
 import           Syntax.Show
 import           Utils.ErrorMessage
@@ -57,7 +57,7 @@ styleColor _          str = str
 
 -- | Internal errors
 
-internalError :: Pos -> String -> String -> a
-internalError pos fun msg = do
-  error $ show pos ++ ": Internal error at " ++ fun ++ ": " ++ msg
+internalError :: (Show a, Position a) => String -> a -> b
+internalError fun syntax = do
+  error $ show (position syntax) ++ ": Internal error at " ++ fun ++ ": " ++ show syntax
 
