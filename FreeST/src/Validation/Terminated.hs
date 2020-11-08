@@ -30,7 +30,7 @@ terminated = term Set.empty
   where
     term _ (Skip _) = True
     term s (Semi _ t u) = term s t && term s u
-    term s (Rec _ (KindBind _ a _) t) = contractive a t && term (Set.insert a s) t
+    -- term s (Rec _ (KindBind _ a _) t) = contractive a t && term (Set.insert a s) t
     term s (TypeVar _ a) = a `Set.member` s
     term _ _ = False
 
