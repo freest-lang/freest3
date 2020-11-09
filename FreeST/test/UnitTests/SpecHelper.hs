@@ -1,6 +1,7 @@
 module SpecHelper
     ( module Test.Hspec
     , module Syntax.Types
+    , module Parse.Read
     , module Parse.Parser
     , module Data.List.Split
     , module Data.Char
@@ -11,6 +12,7 @@ import Test.Hspec
 import Syntax.Types
 import Data.Char
 import Parse.Parser
+import Parse.Read
 import Data.List.Split(chunksOf)
 
 readFromFile filename = do

@@ -380,19 +380,6 @@ parseKind str =
     Ok x -> x
     Failed err -> error err
 
-instance Read Kind where
-  readsPrec _ s = -- [(parseKind s, "")]
-    tryParse [("SL", Kind defaultPos Session Lin),
-              ("SU", Kind defaultPos Session Un),
-              ("TL", Kind defaultPos Functional Lin),
-              ("TU", Kind defaultPos Functional Un)]
-    where tryParse [] = []
-          tryParse ((attempt,result):xs) =
-            if take (length attempt) (trim s) == attempt
-            then [(result, drop (length attempt) (trim s))]
-            else tryParse xs
-          trim s = dropWhile isSpace s
-
 parseType :: String -> Either Type String
 parseType str =
   case runStateT (parse str "" types) (initialState "") of
@@ -403,12 +390,6 @@ parseType str =
       | hasErrors state = Right $ getErrors state
       | otherwise       = Left t
 
-instance Read Type where
-  readsPrec _ str =
-    case runStateT (parse str "" types) (initialState "") of
-      Ok (t, state) ->
-        if hasErrors state then error $ getErrors state else [(t, "")]
-      Failed err -> error err
 
 ----------------------
 -- PARSING SCHEMES  --
@@ -441,11 +422,6 @@ parse str file f =
     Right err -> failM err
     Left x    -> f x
 
--- checkErrors :: FreestS -> IO ()
--- checkErrors s
---   | hasErrors s = die $ getErrors s
---   | otherwise   = return ()
-
 -------------------
 -- Handle errors --
 -------------------
@@ -465,5 +441,6 @@ failM :: String -> FreestStateT a
 failM = lift . Failed
 
 toStateT = state . runState
+
 
 }
