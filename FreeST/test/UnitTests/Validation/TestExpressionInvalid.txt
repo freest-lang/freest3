@@ -1,0 +1,3 @@
+
+-- Discard linear values
+let (_, _) = new !Int in ()

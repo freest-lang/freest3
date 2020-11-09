@@ -57,6 +57,7 @@ library:
     - Validation.Rename
     - Validation.Kinding
     - Validation.Substitution
+    - Validation.Typing
 
 executables:
   freest:
