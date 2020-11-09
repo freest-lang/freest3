@@ -1,0 +1,10 @@
+let (x, y) = (2, True) in y
+Bool
+
+let (x, y) = (2, True) in x
+Int
+
+-- Tuple destructor
+
+let (x, y, z) = (6, True, 'a') in y
+Bool
