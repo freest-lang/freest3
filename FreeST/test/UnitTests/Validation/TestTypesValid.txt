@@ -381,7 +381,7 @@ SL -> TU
 
 
 []
-∀ a : SL => (rec a : SL . a) -> a
+∀ a : SL => (rec a : SL . !Int;a) -> a
 SL -> TU
 
 []
