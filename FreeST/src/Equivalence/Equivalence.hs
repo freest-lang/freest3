@@ -65,7 +65,8 @@ instance Equivalence Type where
       Map.size m1 == Map.size m2 && Map.foldlWithKey (equivField v m2) True m1
     -- Polymorphism
     equiv v (Forall _ kb1 t) (Forall _ kb2 u) = -- TODO: check kindbinds ?
-      kb1 == kb2 && equiv (Set.insert (t, u) v) t u
+      -- kb1 == kb2 &&
+      equiv (Set.insert (t, u) v) t u
     -- Recursion
     equiv _ (TypeVar _ x) (TypeVar _ y) = x == y -- A free (a polymorphic) type var
     equiv v t@Rec{} u = equiv (Set.insert (t, u) v) (Subs.unfold t) u
