@@ -47,6 +47,7 @@ library:
     - Syntax.Kinds
     - Syntax.ProgramVariables
     - Parse.ParseUtils
+    - Parse.Read
     - Utils.Errors
     - Utils.FreestState
     - Parse.Lexer 
