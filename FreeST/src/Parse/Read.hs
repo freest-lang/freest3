@@ -1,5 +1,6 @@
 module Parse.Read where
 
+import Parse.Lexer (Token)
 import Parse.Parser
 import Syntax.Kinds
 import Syntax.Types
@@ -25,16 +26,14 @@ instance Read Kind where
 
 
 instance Read Type where
-  readsPrec _ str =
-    case runStateT (parse str "" types) (initialState "") of
-      Ok (t, state) ->
-        if hasErrors state then error $ getErrors state else [(t, "")]
-      Failed err -> error err
-
+  readsPrec _ = parser types
 
 instance Read Expression where
-  readsPrec _ str =
-    case runStateT (parse str "" expr) (initialState "") of
+  readsPrec _ = parser expr
+
+parser :: ([Token] -> FreestStateT a) -> String -> [(a, String)]
+parser parseFun str = 
+   case runStateT (parse str "" parseFun) (initialState "") of
       Ok (t, state) ->
         if hasErrors state then error $ getErrors state else [(t, "")]
       Failed err -> error err
