@@ -159,12 +159,12 @@ Decl :: { () }
       e <- toStateT $ buildFunBody $1 $2 $4
       toStateT $ addToEEnv $1 e }
   -- Type abbreviation
-  | type TypeNameKind KindBindEmptyList '=' Type {% do
+  | type KindedTVar KindBindEmptyList '=' Type {% do
       toStateT $ checkDupTypeDecl (fst $2)
       toStateT $ uncurry addToTEnv $2 $5 } -- TODO: add KindBindEmptyList ?
 --      toStateT $ uncurry addToTEnv $2 (TypeScheme (position $5) $3 $5) }
   -- Datatype declaration
-  | data TypeNameKind KindBindEmptyList '=' DataCons {% do
+  | data KindedTVar KindBindEmptyList '=' DataCons {% do
       let a = fst $2
       toStateT $ checkDupTypeDecl a
       let bs = typeListToType a $5 :: [(ProgVar, Type)]
@@ -372,7 +372,7 @@ KindBind :: { KindBind }
   : TypeVar ':' Kind { KindBind (position $1) $1 $3 }
   | TypeVar          { KindBind (position $1) $1 (omission (position $1)) }
 
-TypeNameKind :: { (TypeVar, Kind) }    -- for type and data declarations
+KindedTVar :: { (TypeVar, Kind) }    -- for type and data declarations
   : TypeName ':' Kind { ($1, $3) }
   | TypeName          { ($1, omission (position $1)) }
 
