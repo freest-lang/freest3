@@ -52,7 +52,7 @@ data Type =
   -- Functional Types
     Basic Pos BasicType
   | Fun Pos Multiplicity Type Type
-  | PairType Pos Type Type
+  | PairType Pos Type Type      -- TODO: Rename to Pair
   | Datatype Pos TypeMap
   -- Session Types
   | Skip Pos
@@ -66,8 +66,8 @@ data Type =
   -- Recursive Types
   | Rec Pos KindBind Type       -- μ a:k => T
   -- Type operators
-  | TAbs Pos KindBind Type      -- λ a:k => T
-  | TApp Pos Type Type
+  | TAbs Pos KindBind Type      -- λ a:k => T -- TODO: Rename to Abs
+  | TApp Pos Type Type                        -- TODO: Rename to App
   | Dualof Pos Type             -- TODO: eliminate
   -- Named Type, to be looked upon in a map of type names to types, tEnv
   | TypeName Pos TypeVar 
