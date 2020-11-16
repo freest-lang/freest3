@@ -189,8 +189,8 @@ Expr :: { Expression }
                                        $1}
   --| let '(' ProgVarWild ',' ProgVarWild ')' '=' Expr in Expr                  -- CHANGED
   --                                   { BinLet (position $1) $3 $5 $8 $10 }
-  | let '(' TupleProgVarWild ')' '=' Expr in Expr                               -- CHANGED
-                                     { LetTuple (position $1) $3 $6 $8 }
+  | let '(' ProgVarWild ',' TupleProgVarWild ')' '=' Expr in Expr               -- CHANGED
+                                     { LetTuple (position $1) (Tuple (position $3) $3 $5) $8 $10 }
   | if Expr then Expr else Expr      { Conditional (position $1) $2 $4 $6 }
   | new Type                         { New (position $1) $2 (Dualof (negPos (position $2)) $2) }
   | match Expr with '{' MatchMap '}' { Match (position $1) $2 $5 }

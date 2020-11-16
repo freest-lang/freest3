@@ -192,7 +192,7 @@ synthetise kEnv (Match p e fm) =
 
                                                                                 -- CHANGED && TODO
 addTupleToVEnv :: (Type, Type) -> ProgVarTuple -> FreestState ()
-addTupleToVEnv (t1, t2)            (Tuple _ pv1 (Single _ pv2)) = do
+addTupleToVEnv (t1, t2) (Tuple _ pv1 (Single _ pv2)) = do
   addToVEnv pv1 (fromType t1)
   addToVEnv pv2 (fromType t2)
   return ()
