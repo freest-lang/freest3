@@ -49,24 +49,28 @@ data BasicType =
 -- TYPES
 
 data Type =
-  -- Functional types
+  -- Functional Types
     Basic Pos BasicType
   | Fun Pos Multiplicity Type Type
   | PairType Pos Type Type
   | Datatype Pos TypeMap
-  -- Session types
+  -- Session Types
   | Skip Pos
   | Semi Pos Type Type
   | Message Pos Polarity BasicType
   | Choice Pos Polarity TypeMap
+  -- Type Variable
+  | TypeVar Pos TypeVar  
   -- Polymorphism
   | Forall Pos KindBind Type    -- ∀ a:k => T
-  -- Functional or session 
-  | Rec Pos KindBind Type 
-  | TypeVar Pos TypeVar  -- a recursion variable if bound, polymorphic otherwise
+  -- Recursive Types
+  | Rec Pos KindBind Type       -- μ a:k => T
   -- Type operators
-  | TypeName Pos TypeVar -- a named type, to be looked upon in a map of type names to types, tEnv
-  | Dualof Pos Type      -- to be expanded into a session type
+  | TAbs Pos KindBind Type      -- λ a:k => T
+  | TApp Pos Type Type
+  | Dualof Pos Type             -- TODO: eliminate
+  -- Named Type, to be looked upon in a map of type names to types, tEnv
+  | TypeName Pos TypeVar 
   deriving (Eq, Ord)
 
 type TypeMap = Map.Map ProgVar Type
