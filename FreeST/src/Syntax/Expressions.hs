@@ -36,7 +36,8 @@ data Expression =
   | App Pos Expression Expression            -- e1 e2
   -- Pair intro and elim
   | Pair Pos Expression Expression
-  | BinLet Pos ProgVar ProgVar Expression Expression
+  | BinLet   Pos ProgVar ProgVar Expression Expression
+  | LetTuple Pos ProgVarTuple    Expression Expression                          -- CHANGED
   -- Datatype elim
   | Case Pos Expression FieldMap
   -- Type Abstraction intro and elim
@@ -72,6 +73,7 @@ instance Position Expression where
   position (Conditional p _ _ _) = p
   position (Pair p _ _)          = p
   position (BinLet p _ _ _ _)    = p
+  position (LetTuple p _ _ _)    = p                                            -- CHANGED
   position (New p _ _)           = p
   position (Select p _)          = p
   position (Match p _ _)         = p
