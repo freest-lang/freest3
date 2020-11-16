@@ -51,6 +51,10 @@ showArrow Un  = " -> "
 instance Show ProgVar where
   show = showVar
 
+instance Show ProgVarTuple where                                                -- CHANGED
+  show (Tuple  _ pv pvt) = show pv ++ ", " ++ show pvt
+  show (Single _ pv)     = show pv
+
 -- Type Variables. Note: show should be aligned with the creation
 -- of new variables; see Syntax.TypeVariables
 
@@ -108,8 +112,8 @@ showType 0 _               = ".."
   -- Functional types
 showType i (Fun _ m t u) =
   "(" ++ showType (i - 1) t ++ showArrow m ++ showType (i - 1) u ++ ")"
-showType i (PairType _ t u) =
-  "(" ++ showType (i - 1) t ++ ", " ++ showType (i - 1) u ++ ")"
+showType i (PairType p t u) =
+  "(" ++ showTupleType (i - 1) (PairType p t u) ++ ")"
 showType i (Datatype _ m) = "[" ++ showDatatype i m ++ "]"
   -- Session types
 showType i (Semi _ t u) =
@@ -122,9 +126,10 @@ showType i (Rec _ xk t) =
   -- Type operators
 showType i (Dualof _ t) = "(dualof " ++ showType (i - 1) t ++ ")"
 
-showNTupleType :: Int -> Type -> String
-showNTupleType i (PairType _ t u) = showType (i - 1) t ++ showType (i - 1) u
-showNTupleType i t                = showType i t
+showTupleType :: Int -> Type -> String
+showTupleType i (PairType _ t (PairType p t1 t2)) = showType (i - 1) t ++ ", " ++ showTupleType (i - 1) (PairType p t1 t2)
+showTupleType i (PairType _ t u) = showType (i - 1) t ++ ", " ++ showType (i - 1) u
+showTupleType i t                = showType i t
 
 showDatatype :: Int -> TypeMap -> String
 showDatatype i m = intercalate " | " $ Map.foldrWithKey
@@ -190,6 +195,14 @@ showExp i (BinLet _ x y e1 e2) =
     ++ " in "
     ++ showExp (i - 1) e2
     ++ ")"
+showExp i (LetTuple _ pvt e1 e2) =                                              -- CHANGED
+  "(let "
+  ++ show pvt
+  ++ " = "
+  ++ showExp (i - 1) e1
+  ++ " in "
+  ++ showExp (i - 1) e2
+  ++ ")"
   -- Datatype elim
 showExp i (Case _ e m) =
   "case " ++ showExp (i - 1) e ++ " of {" ++ showFieldMap (i - 1) m ++ "}"

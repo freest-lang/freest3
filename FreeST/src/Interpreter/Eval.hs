@@ -64,6 +64,11 @@ eval ctx eenv (E.BinLet _ x y e1 e2) = do
   let env = Map.insert x v1 (Map.insert y v2 ctx)
   eval env eenv e2
 
+eval ctx eenv (E.LetTuple _ pvt e1 e2) = do                                     -- CHANGED
+  (Pair v1 v2) <- eval ctx eenv e1
+  let env = mapInsertPair (Pair v1 v2) pvt ctx
+  eval env eenv e2
+
 eval ctx eenv (E.Conditional _ cond e1 e2) = do
   (Boolean b) <- eval ctx eenv cond
   if b then eval ctx eenv e1 else eval ctx eenv e2
@@ -84,7 +89,7 @@ eval _ _ E.New{} = do
 
 eval ctx eenv (E.Select _ {- e -} x) =
   return $ PrimitiveFun (\(Chan c) -> IOValue $ fmap Chan (send (Label (show x)) c))
-  
+
 --   return Unit -- FIX ME!
 {- do
   (Chan c) <- eval ctx eenv e
@@ -118,3 +123,7 @@ evalVar ctx eenv x | isADT x           = return $ Cons x []
                    --     forkIO $ void $ eval ctx eenv e >> return Unit
                    | otherwise = error $ "error evaluating progvar: " ++ show x
 
+mapInsertPair :: Value -> ProgVarTuple -> Ctx -> Ctx                            -- CHANGED
+mapInsertPair (Pair v1 v2) (Tuple  _ pv pvt) ctx = Map.insert pv v1 $ mapInsertPair v2 pvt ctx
+mapInsertPair v            (Single _ pv)     ctx = Map.insert pv v  ctx
+mapInsertPair _            _                 ctx = ctx  -- This should only happen in error cases
