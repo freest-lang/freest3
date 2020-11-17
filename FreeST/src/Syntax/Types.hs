@@ -52,7 +52,8 @@ data Type =
   -- Functional Types
     Basic Pos BasicType
   | Fun Pos Multiplicity Type Type
-  | PairType Pos Type Type      -- TODO: Rename to Pair
+  | PairType Pos Type Type      -- TODO: Rename to Pair, then
+                                -- make Pair a b = ∀c. (a => b => c) => c (see TAPL pg 352)
   | Datatype Pos TypeMap
   -- Session Types
   | Skip Pos
