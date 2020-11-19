@@ -41,9 +41,10 @@ $eol=[\n]
 @blockComment = "{-" (\.*|[^\{\-]|\n|\-\-|[^$symbol].*)* "-}"
 
 -- # λ  -- forall not in range ([λ ∀])
+$greekId = [λ ∀ Λ μ]
 
-@lowerId = ($lower # [λ ∀ Λ]) $alphaNumeric*
-@upperId = ($upper # [λ ∀ Λ]) $alphaNumeric*
+@lowerId = ($lower # $greekId) $alphaNumeric*
+@upperId = ($upper # $greekId) $alphaNumeric*
 
 tokens :-  
   $white*$eol+                  { \p s -> TokenNL (internalPos p) }
@@ -98,7 +99,7 @@ tokens :-
   Bool				{ \p s -> TokenBoolT (internalPos p) }
   Skip				{ \p s -> TokenSkip (internalPos p) }
 -- Keywords
-  rec                           { \p s -> TokenRec (internalPos p) }   
+  (rec|μ)                       { \p s -> TokenRec (internalPos p) }   
   let                           { \p s -> TokenLet (internalPos p) }
   in                            { \p s -> TokenIn (internalPos p) }
   data                          { \p s -> TokenData (internalPos p) }
