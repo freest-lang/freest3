@@ -23,7 +23,7 @@ import           Syntax.Types                   ( TypeEnv
 import           Utils.FreestState
 import           Utils.PreludeLoader            ( prelude )
 import           Validation.Rename              ( renameState )
-import           Validation.BuildTypes          ( solveTypeDecls )
+import           Validation.Elaboration         ( elaborateTypes )
 import           Validation.TypeChecking        ( typeCheck )
 import           Interpreter.Builtin            ( initialCtx )
 import           Interpreter.Eval               ( evalAndPrint )
@@ -51,7 +51,7 @@ checkAndRun filePath = do
   -- Rename
   let s2 = execState renameState s1
   -- Solve type declarations and dualof operators
-  let s3 = execState solveTypeDecls s2
+  let s3 = execState elaborateTypes s2
   when (hasErrors s3) (die $ getErrors s3)
   -- Type check
   let s4 = execState typeCheck s3

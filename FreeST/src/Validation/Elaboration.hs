@@ -1,5 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
-module Validation.BuildTypes where
+module Validation.Elaboration(elaborateTypes) where
 
 import           Syntax.Expressions
 import           Syntax.Schemes
@@ -20,8 +20,8 @@ import           Validation.Kinding             ( synthetise )
 
 
 
-solveTypeDecls :: FreestState ()
-solveTypeDecls = do
+elaborateTypes :: FreestState ()
+elaborateTypes = do
   tenv <- getTEnv
   let tenv' = typeDecls tenv
   -- traceM $ "\n1. INITIAL ENV: " ++ show tenv' ++ "\n"

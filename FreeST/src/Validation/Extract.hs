@@ -40,7 +40,7 @@ import qualified Data.Map.Strict               as Map
 import           Syntax.Show -- debug
 import           Syntax.Schemes -- debug
 import           Debug.Trace -- debug
-import           Validation.BuildTypes -- debug
+
 
 -- | The Extract Functions
 
