@@ -48,8 +48,8 @@ import           Syntax.Types
 import           Utils.ErrorMessage
 import           Utils.FreestState
 
--- import           Debug.Trace -- debug
--- import           Syntax.Show -- debug
+import           Debug.Trace -- debug
+import           Parse.Unparser -- debug
 -- import           Utils.PreludeLoader -- debug
 
 thenM :: ParseResult a -> (a -> ParseResult b) -> ParseResult b
@@ -218,7 +218,8 @@ typeListToType :: TypeVar -> [(ProgVar, [Type])] -> [(ProgVar, Type)]
 typeListToType a = map (\(x, ts) -> (x, typeToFun ts))
   -- Convert a list of types and a final type constructor to a type
  where
-  typeToFun []       = TypeName (position a) a
+--  typeToFun []       = TypeName (position a) a
+  typeToFun []       = TypeVar (position a) a
   typeToFun (t : ts) = Fun (position t) Un t (typeToFun ts)
 
 buildFunBody :: ProgVar -> [ProgVar] -> Expression -> FreestState Expression
@@ -226,6 +227,11 @@ buildFunBody f bs e = getFromVEnv f >>= \case
   Just s -> do
 --    let (TypeScheme _ _ t) = s
     tEnv <- getTEnv
+   
+    -- traceM $ "0. s = " ++ show s ++ "\n"
+    --          ++ "0.1 TENV = " ++ show tEnv ++ "\n"
+    --          ++ "1. " ++ show (normalise tEnv s) ++ "\n"
+    --          ++ "2. " ++ (show $ buildExp bs (normalise tEnv s)) ++ "\n\n"
     return $ buildExp bs (normalise tEnv s) -- Normalisation allows type names in signatures
   Nothing -> do
     addError

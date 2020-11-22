@@ -72,6 +72,8 @@ import           Utils.Errors
 import qualified Data.Traversable              as Traversable
 import           Utils.ErrorMessage
 
+import Debug.Trace
+
 -- | The typing state
 
 -- type Errors = Set.Set String
@@ -124,7 +126,15 @@ getVEnv = gets varEnv
 getFromVEnv :: ProgVar -> FreestState (Maybe Type)
 getFromVEnv x = do
   vEnv <- getVEnv
-  return $ vEnv Map.!? x
+--  debugM $ "***x " ++ show x
+  let mb = vEnv Map.!? x 
+--  debugM $ "***Get from varEnv " ++ show x ++ " " ++ show mb
+  return $ mb
+
+debugM :: String -> FreestState ()
+debugM err = do
+  i <- getNextIndex
+  traceM $ "\n" ++ show i ++ ". " ++ err ++ "\n"
 
 removeFromVEnv :: ProgVar -> FreestState ()
 removeFromVEnv b = modify (\s -> s { varEnv = Map.delete b (varEnv s) })

@@ -282,7 +282,7 @@ Type :: { Type }
   | TypeVar                       { TypeVar (position $1) $1 }
   -- Type operators
   | dualof Type                   { Dualof (position $1) $2 }
-  | TypeName                      { TypeName (position $1) $1 }
+  | TypeName                      { TypeVar (position $1) $1 } -- TODO: remove this one lex
   | '(' Type ')'                  { $2 }
 
 BasicType :: { (Pos, BasicType) }
