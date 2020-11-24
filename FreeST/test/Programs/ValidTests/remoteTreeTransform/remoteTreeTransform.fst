@@ -1,19 +1,19 @@
 {- |
 Module      :  TreeTransform
 Description :  Serializes and tranforms a tree object on a channel
-Copyright   :  (c) Bernardo Almeida, Vasco T. Vasconcelos, Andreia Mordido
+Copyright   :  (c) Bernardo Almeida, Andreia Mordido, Vasco T. Vasconcelos
 
-The example is from Almeida, Mordido, and Vasconcelos, "FreeST: Context-free Session
-Types in a Functional Language"
+The example is from Almeida, Mordido, and Vasconcelos, "FreeST:
+Context-free Session Types in a Functional Language"
 
-The example serializes a tree object on a channel. The aim is to transform
-a tree by interacting with a remote server. The client process streams a tree
-on a (single) channel. In addition, for each node sent, an integer is received.
-The server process reads a tree from the other end of the channel and, for each node
-received, sends back the sum of the integer values under (and including) that node.
+The example serializes a tree object on a channel. The aim is to
+transform a tree by interacting with a remote server. The client
+process streams a tree on a (single) channel. In addition, for each
+node sent, an integer is received.  The server process reads a tree
+from the other end of the channel and, for each node received, sends
+back the sum of the integer values under (and including) that node.
 
 -}
-
 
 data Tree = Leaf | Node Int Tree Tree
 
@@ -59,15 +59,13 @@ treeSum c =
       (x + l + r, c)
   }
 
-
 aTree : Tree
 aTree = Node 1 (Node 2 (Node 8 Leaf Leaf) (Node 3 (Node 5 Leaf Leaf) (Node 4 Leaf Leaf))) (Node 6 Leaf (Node 7 Leaf Leaf))
-
 
 main : Tree
 main =
   let (w, r) = new TreeC in
-  fork (sink (treeSum [Skip] r )) ;
+  fork (sink (treeSum [Skip] r ));
   let (t, _) = transform [Skip] aTree w in
   t
 

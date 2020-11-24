@@ -1,7 +1,7 @@
 {- |
 Module      :  ArithExprServer
 Description :  Server that computes arithmetic expressions
-Copyright   :  (c) Bernardo Almeida, Vasco T. Vasconcelos, Andreia Mordido
+Copyright   :  (c) Bernardo Almeida, Andreia Mordido, Vasco T. Vasconcelos
 
 This example is from Thiemann and Vasconcelos:
 "Context-Free Session Types" (listing 3)
@@ -12,21 +12,19 @@ computes its value and returns the value on the same channel.
 
 -}
 
-
 type TermChannel : SL  = +{
    Const: !Int,
    Add: TermChannel;TermChannel,
    Mult: TermChannel;TermChannel
  }
 
-
-
 -- Read an arithmetic expression from a channel; compute its value;
 -- return the value on the same channel.
-computeService : dualof TermChannel;!Int -> Skip
+computeService : dualof TermChannel;!Int -> ()
 computeService c =
   let (n1, c1) = receiveEval[!Int;Skip] c in
-  send n1 c1
+  let _ = send n1 c1
+  in ()
 
 -- Read an arithmetic expression in the front of a channel; compute
 -- its value; return the pair composed of this value and the channel
@@ -49,23 +47,19 @@ receiveEval c =
 -- Compute 5 + (7 * 9); return the result
 client : TermChannel;?Int -> Int
 client c =
-  let c = select Add c in
-  let c = select Const c in
-  let c = send 5 c in
-  let c = select Mult c in
-  let c = select Const c in
-  let c = send 7 c in
-  let c = select Const c in
-  let c = send 9 c in
-  let (n, _) = receive c in
+  let (n, _) = receive $
+    send 9 $
+    select Const $
+    send 7 $
+    select Const $
+    select Mult $
+    send 5 $
+    select Const $
+    select Add c in
   n
 
 main : Int
 main =
   let (w, r)  = new dualof TermChannel;!Int in
-  let _ = fork (sink (computeService w)) in
+  fork (computeService w);
   client r
-
--- Auxiliary function because of fork : () -> ()
-sink : Skip -> ()
-sink _ = ()
