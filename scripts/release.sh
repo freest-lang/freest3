@@ -22,7 +22,7 @@ cp ../FreeST/test/Programs/ValidTests/fixZcombinator/fixZcombinator.fst $path/ex
 cp ../FreeST/test/Programs/ValidTests/lazyTreeTraversal/lazyTreeTraversal.fst $path/examples/LazyTreeTraversal.fst
 cp ../FreeST/test/Programs/ValidTests/ordering/ordering.fst $path/examples/Ordering.fst
 cp ../FreeST/test/Programs/ValidTests/DyckWords/DyckWords.fst $path/examples/
-cp ../FreeST/test/Programs/examples/Unnormed.fst  $path/examples/
+cp ../FreeST/test/Programs/ValidTests/Unnormed/Unnormed.fst  $path/examples/
 cp ../FreeST/test/Programs/ValidTests/remoteTreeTransform/remoteTreeTransform.fst  $path/examples/TreeTransform.fst
 
 

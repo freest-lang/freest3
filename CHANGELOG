@@ -1,3 +1,8 @@
+# Version 1.0.2
+  - Small bug fixes
+  - Changing the order of the parameters of send and select functions.
+  - Adding the $ operator.
+
 # Version 1.0.1
   - Small bug fixes
   - Fixing error messages for environments. Now, it only shows the different elements between the two environments.
