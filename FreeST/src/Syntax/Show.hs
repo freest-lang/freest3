@@ -22,8 +22,6 @@ import           Syntax.Kinds
 import           Syntax.ProgramVariables
 import           Syntax.TypeVariables
 import           Syntax.Base
-import qualified Validation.Substitution       as Subs
-                                                ( unfold ) -- no renaming
 import qualified Data.Map.Strict               as Map
 import           Data.List                      ( intersperse
                                                 , intercalate
@@ -45,22 +43,18 @@ showArrow :: Multiplicity -> String
 showArrow Lin = " -o "
 showArrow Un  = " -> "
 
--- Program Variables. Note: show should be aligned with the creation
--- of new variables; see Syntax.ProgramVariables
+-- Program and Type Variables. Note: show should be aligned with the
+-- creation of new variables; see Syntax.ProgramVariables and
+-- Syntax.TypeVariables
 
 instance Show ProgVar where
   show = showVar
-
--- Type Variables. Note: show should be aligned with the creation
--- of new variables; see Syntax.TypeVariables
 
 instance Show TypeVar where
   show = showVar
 
 showVar :: Variable v => v -> String
-showVar v | isDigit (head s) = dropWhile (\x -> isDigit x || x == '#') s
-          | otherwise        = s
-  where s = intern v
+showVar = dropWhile (\c -> isDigit c || c == '#') . intern
 -- showVar = intern -- for testing purposes
 
 -- Kinds
@@ -73,7 +67,6 @@ instance Show Kind where
   show (Kind _ p m) = show p ++ show m
 
 instance Show KindBind where
---  show (KindBind _ a k) = show a
   show (KindBind _ a k) = show a ++ ":" ++ show k
 
 -- Types
@@ -116,7 +109,6 @@ showType i (Semi _ t u) =
   "(" ++ showType (i - 1) t ++ ";" ++ showType (i - 1) u ++ ")"
 showType i (Choice _ v m) = showChoiceView v ++ "{" ++ showChoice i m ++ "}"
 showType i (Forall _ b t) = "∀" ++ show b ++ "=>" ++ showType (i - 1) t
--- showType i t@(Rec _ _ _)     = showType (i-1) (Subs.unfold t)
 showType i (Rec _ xk t) =
   "(rec " ++ show xk ++ "." ++ showType (i - 1) t ++ ")" -- for testing purposes
   -- Type operators
