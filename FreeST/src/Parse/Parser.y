@@ -74,7 +74,6 @@ import           Debug.Trace
   '*'      {TokenTimes _}
   '_'      {TokenWild _}
   '$'      {TokenDollar _}
-  '|>'      {TokenPipeline _}
   '.'      {TokenDot _}
   CMP       {TokenCmp _ _}
   UPPER_ID {TokenUpperId _ _}
@@ -113,7 +112,7 @@ import           Debug.Trace
 %left select
 %nonassoc new
 %right '$'       -- function call
-%left '|>'       -- function call
+%left '&'       -- function call
 %left '||'       -- disjunction
 %left '&&'       -- conjunction
 %nonassoc CMP     -- comparison (relational and equality)
@@ -178,9 +177,7 @@ DataCon :: { (ProgVar, [Type]) }
 -----------------
 
 Expr :: { Expression }
-  : Expr '$' Expr                    { App (position $2) $1 $3 }
-  | Expr '|>' Expr                    { App (position $2) $3 $1 }
-  | let ProgVarWild '=' Expr in Expr { UnLet (position $1) $2 $4 $6 }
+  : let ProgVarWild '=' Expr in Expr { UnLet (position $1) $2 $4 $6 }
   | Expr ';' Expr                    { App (position $1)
                                          (Abs (position $1) Un
                                            (TypeBind (position $1) (mkVar (position $1) "_") (Basic (position $3) UnitType))
@@ -192,6 +189,8 @@ Expr :: { Expression }
   | new Type                         { New (position $1) $2 (Dualof (negPos (position $2)) $2) }
   | match Expr with '{' MatchMap '}' { Match (position $1) $2 $5 }
   | case Expr of '{' CaseMap '}'     { Case (position $1) $2 $5 }
+  | Expr '$' Expr                    { App (position $2) $1 $3 }
+  | Expr '&' Expr                    { App (position $2) $3 $1 }
   | Expr '||' Expr                   { binOp $1 (mkVar (position $2) "(||)") $3 }
   | Expr '&&' Expr                   { binOp $1 (mkVar (position $2) "(&&)") $3 }
   | Expr CMP Expr                    { binOp $1 (mkVar (position $2) (getText $2)) $3 }
