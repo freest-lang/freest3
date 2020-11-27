@@ -74,6 +74,7 @@ import           Debug.Trace
   '*'      {TokenTimes _}
   '_'      {TokenWild _}
   '$'      {TokenDollar _}
+  '|>'      {TokenPipeline _}
   '.'      {TokenDot _}
   CMP       {TokenCmp _ _}
   UPPER_ID {TokenUpperId _ _}
@@ -112,6 +113,7 @@ import           Debug.Trace
 %left select
 %nonassoc new
 %right '$'       -- function call
+%left '|>'       -- function call
 %left '||'       -- disjunction
 %left '&&'       -- conjunction
 %nonassoc CMP     -- comparison (relational and equality)
@@ -177,6 +179,7 @@ DataCon :: { (ProgVar, [Type]) }
 
 Expr :: { Expression }
   : Expr '$' Expr                    { App (position $2) $1 $3 }
+  | Expr '|>' Expr                    { App (position $2) $3 $1 }
   | let ProgVarWild '=' Expr in Expr { UnLet (position $1) $2 $4 $6 }
   | Expr ';' Expr                    { App (position $1)
                                          (Abs (position $1) Un
