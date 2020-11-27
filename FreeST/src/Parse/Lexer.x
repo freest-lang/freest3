@@ -86,7 +86,6 @@ tokens :-
   "||"  		        { \p s -> TokenDisjunction (internalPos p) }
   "/"  		                { \p s -> TokenDiv (internalPos p) }
   "$"  		                { \p s -> TokenDollar (internalPos p) }
-  "|>"  		                { \p s -> TokenPipeline (internalPos p) }
 -- Kinds
   SU                            { \p s -> TokenSU (internalPos p) }
   SL                            { \p s -> TokenSL (internalPos p) }
@@ -192,7 +191,6 @@ data Token =
   | TokenDisjunction Pos
   | TokenDiv Pos
   | TokenDollar Pos
-  | TokenPipeline Pos
 
 instance Show Token where
   show (TokenNL p) = "\n"  
@@ -259,7 +257,6 @@ instance Show Token where
   show (TokenDisjunction p) = "||"
   show (TokenDiv p) = "/"
   show (TokenDollar p) = "$"
-  show (TokenPipeline p) = "|>"
 
 -- Trim newlines
 scanTokens :: String -> String -> Either [Token] String
@@ -368,7 +365,6 @@ instance Position Token where
   position (TokenDisjunction p) = p
   position (TokenDiv p) = p
   position (TokenDollar p) = p
-  position (TokenPipeline p) = p
 --  position t = error $ show t
 
 getText :: Token -> String

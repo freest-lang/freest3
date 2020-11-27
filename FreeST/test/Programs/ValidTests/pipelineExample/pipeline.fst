@@ -28,8 +28,8 @@ type TermChannel : SL  = +{
 computeService : dualof TermChannel;!Int -> ()
 computeService c =
   let (n1, c1) = receiveEval[!Int;Skip] c in
-  send n1 c1
-  |> (\_:Skip -> ())
+  send n1 c1 &
+  (\_:Skip -> ())
 
 -- Read an arithmetic expression in the front of a channel; compute
 -- its value; return the pair composed of this value and the channel
@@ -52,15 +52,15 @@ receiveEval c =
 -- Compute 5 + (7 * 9); return the result
 client : TermChannel;?Int -> Int
 client c = select Add c
-        |> select Const
-        |> send 5
-        |> select Mult
-        |> select Const
-        |> send 7
-        |> select Const
-        |> send 9
-        |> receive
-        |> fst[Int,Skip]
+        & select Const
+        & send 5
+        & select Mult
+        & select Const
+        & send 7
+        & select Const
+        & send 9
+        & receive
+        & fst[Int,Skip]
 
 main : Int
 main =
