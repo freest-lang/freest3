@@ -105,11 +105,11 @@ import           Debug.Trace
   dualof   {TokenDualof _}
 
 %nonassoc LOWER_ID UPPER_ID
-%nonassoc '('
+%nonassoc '(' '['
 %nonassoc '()'
 -- Expressions
 %right in else match case
-%left select
+-- %left select
 %nonassoc new
 %right '$'       -- function call
 %left '&'        -- function call
@@ -121,7 +121,7 @@ import           Debug.Trace
 %left NEG not    -- unary
 -- Types
 %right '.'       -- used in rec
-%right '->' '-o' -- TODO: an Expr operator as well
+%right '->' '-o' -- an Expr operator as well
 %right ';'       -- an Expr operator as well
 %right dualof
 -- Lambda expressions
@@ -443,6 +443,5 @@ failM :: String -> FreestStateT a
 failM = lift . Failed
 
 toStateT = state . runState
-
 
 }

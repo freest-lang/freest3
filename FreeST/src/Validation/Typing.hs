@@ -224,7 +224,8 @@ synthetiseFieldMap p branching kEnv e fm extract params = do
         , Error $ Map.size tm
         , Error "constructor(s)\n"
         , Error "\t in case/match"
-        , Error $ "\ESC[91m" ++ showFieldMap 1 fm ++ "\ESC[0m"
+--        , Error $ "\ESC[91m" ++ showFieldMap 1 fm ++ "\ESC[0m"
+        , Error $ "\ESC[91m{" ++ showFieldMap fm ++ "}\ESC[0m"
         ]
       return $ omission p
     else do
