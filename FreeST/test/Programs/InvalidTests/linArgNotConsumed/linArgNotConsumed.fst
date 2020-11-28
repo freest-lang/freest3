@@ -1,5 +1,5 @@
 f : !Int -> Char
-f should_be_consumed = 'a'
+f shouldBeConsumed = 'a'
 
 main : Int
 main = 5

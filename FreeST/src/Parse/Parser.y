@@ -112,17 +112,17 @@ import           Debug.Trace
 %left select
 %nonassoc new
 %right '$'       -- function call
-%left '&'       -- function call
+%left '&'        -- function call
 %left '||'       -- disjunction
 %left '&&'       -- conjunction
-%nonassoc CMP     -- comparison (relational and equality)
+%nonassoc CMP    -- comparison (relational and equality)
 %left '+' '-'    -- aditive
 %left '*' '/'    -- multiplicative
 %left NEG not    -- unary
 -- Types
-%right '.'       -- Used in rec
+%right '.'       -- used in rec
 %right '->' '-o' -- TODO: an Expr operator as well
-%right ';'       -- TODO: an Expr operator as well
+%right ';'       -- an Expr operator as well
 %right dualof
 -- Lambda expressions
 %nonassoc ProgVarWildTBind

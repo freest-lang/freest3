@@ -53,7 +53,7 @@ For example, to compile a FreeST program named "test.fst" located in the directo
 
 ## FreeST Samples
 
-There are some code examples that are available on the directory 
+Code examples available in directory 
 [`FreeST/test/Programs/ValidTests/`](FreeST/test/Programs/ValidTests/)
 
 
@@ -169,6 +169,14 @@ or also,
 
 ```
     $ make invalid-programs
+```
+
+If the output from the compiler is important (relevant to invalid
+tests to visually inspect error messages). Warning: a bit slow.
+
+```
+cd FreeST/test/Programs/InvalidTests/
+for f in $(find . -name "*\.fst" -print); do stack run $f; done
 ```
 
 ## Profiling
