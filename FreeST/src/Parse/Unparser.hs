@@ -9,7 +9,7 @@ Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc
 Converting AST terms to strings.
 -}
 
-module Syntax.Show
+module Parse.Unparser
   ( showChoiceView
   , showFieldMap
   )

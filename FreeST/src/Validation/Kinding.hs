@@ -27,7 +27,7 @@ import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.Base
-import           Syntax.Show
+import           Parse.Unparser
 import           Syntax.TypeVariables
 import           Validation.Contractive
 import           Utils.FreestState

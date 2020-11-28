@@ -3,11 +3,11 @@ module Utils.ShowDefault
   )
 where
 
-import qualified Data.Map.Strict               as Map
+import qualified Data.Map.Strict                as Map
 import           Data.Maybe                     (fromMaybe)
 import           Syntax.Base
 import           Syntax.Expressions
-import           Syntax.Show                    ()
+import           Parse.Unparser                 ()
 import           Syntax.Types                   (Type(..), TypeBind(..), TypeOpsEnv)
 
 -- | Class show default

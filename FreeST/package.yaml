@@ -41,13 +41,13 @@ library:
     - Syntax.TypeVariables
     - Syntax.Base
     - Syntax.Types
-    - Syntax.Show
     - Syntax.Expressions
     - Syntax.Schemes
     - Syntax.Kinds
     - Syntax.ProgramVariables
     - Parse.ParseUtils
     - Parse.Read
+    - Parse.Unparser
     - Utils.Errors
     - Utils.FreestState
     - Parse.Lexer 
