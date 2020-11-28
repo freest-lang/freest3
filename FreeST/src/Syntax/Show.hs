@@ -27,6 +27,7 @@ import           Data.List                      ( intersperse
                                                 , intercalate
                                                 )
 import           Data.Char                      ( isDigit )
+import           Prelude                hiding (Left, Right) -- needed for Associativity
 
 -- Positions (Base)
 
@@ -69,7 +70,7 @@ instance Show Kind where
 instance Show KindBind where
   show (KindBind _ a k) = show a ++ ":" ++ show k
 
--- Types
+-- Polarities
 
 instance Show Polarity where
   show In  = "?"
@@ -79,23 +80,93 @@ showChoiceView :: Polarity -> String
 showChoiceView In  = "&"
 showChoiceView Out = "+"
 
+-- Basic types
+
 instance Show BasicType where
   show IntType  = "Int"
   show CharType = "Char"
   show BoolType = "Bool"
   show UnitType = "()"
 
+-- Types
+
+data Precedence = PMin | PDot | PArrow | PSemi | PDualof | PMax deriving (Eq, Ord, Bounded)
+data Associativity = Left | Right | NonAssoc deriving Eq
+type Rator = (Precedence, Associativity)
+
+dotRator, funRator, semiRator, dualofRator, maxRator, minRator :: Rator
+dotRator = (PDot, Right)
+funRator = (PArrow, Right)
+semiRator = (PSemi, Right)
+dualofRator = (PDualof, Right)
+maxRator = (maxBound, NonAssoc)
+minRator = (minBound, NonAssoc)
+ 
+noparens :: Rator -> Rator -> Associativity -> Bool
+noparens (pi, ai) (po, ao) side =
+  pi > po || pi == po && ai == ao && ao == side
+
+type Fragment = (Rator, String)
+
+bracket :: Fragment -> Associativity -> Rator -> String
+bracket (inner, image) side outer
+  | noparens inner outer side = image
+  | otherwise = "(" ++ image ++ ")"
+
+unparse :: Type -> Fragment
+unparse (Basic _ b) = (maxRator, show b)
+unparse (Skip _) = (maxRator, "Skip")
+unparse (TypeVar _ a) = (maxRator, show a)
+unparse (Message _ p b) = (maxRator, show p ++ show b)
+unparse (TypeName _ x) = (maxRator, show x)
+unparse (Fun _ m t u) = (funRator, l ++ showArrow m ++ r)
+  where l = bracket (unparse t) Left funRator
+        r = bracket (unparse u) Right funRator
+unparse (PairType _ t u) = (maxRator, "(" ++ l ++ ", " ++ r ++ ")")
+  where l = bracket (unparse t) Left minRator
+        r = bracket (unparse u) Right minRator
+unparse (Datatype _ m) = (maxRator, "[" ++ showDatatype m ++ "]")
+unparse (Semi _ t u) = (semiRator, l ++ " ; " ++ r)
+  where l = bracket (unparse t) Left semiRator
+        r = bracket (unparse u) Right semiRator
+unparse (Choice _ v m) = (maxRator, showChoiceView v ++ "{" ++ showChoice m ++ "}")
+-- unparse (Forall _ b t) = (semiRator, l ++ ";" ++ r)
+unparse (Rec _ xk t) = (dotRator, "rec " ++ show xk ++ "." ++ s)
+  where s = bracket (unparse t) Right dotRator
+unparse (Dualof _ t) = (dualofRator, "dualof " ++ s)
+  where s = bracket (unparse t) NonAssoc dualofRator
+
+showDatatype :: TypeMap -> String
+showDatatype m = intercalate " | " $ Map.foldrWithKey
+  (\c t acc -> (show c ++ showAsSequence t) : acc)
+  []
+  m
+ where
+  showAsSequence :: Type -> String
+  showAsSequence (Fun _ _ t u) = " " ++ show t ++ showAsSequence u
+  showAsSequence _             = ""
+
+showChoice :: TypeMap -> String
+showChoice m = intercalate ", " $ Map.foldrWithKey
+  (\c t acc -> (show c ++ ": " ++ show t) : acc)
+  []
+  m
+  
+instance Show Type where
+  show = snd . unparse
+
+{-
 instance Show Type where
   show = showType 4
 --  show = showType 44 -- for testing purposes
 
 showType :: Int -> Type -> String
   -- Non-recursive cases
-showType _ (Basic _ b    ) = show b
-showType _ (Skip _       ) = "Skip"
-showType _ (TypeVar _ x  ) = show x
+showType _ (Basic _ b) = show b
+showType _ (Skip _) = "Skip"
+showType _ (TypeVar _ a) = show a
 showType _ (Message _ p b) = show p ++ show b
-showType _ (TypeName _ x ) = show x
+showType _ (TypeName _ x) = show x
   -- Depth reached
 showType 0 _               = ".."
   -- Functional types
@@ -114,9 +185,9 @@ showType i (Rec _ xk t) =
   -- Type operators
 showType i (Dualof _ t) = "(dualof " ++ showType (i - 1) t ++ ")"
 
-showNTupleType :: Int -> Type -> String
-showNTupleType i (PairType _ t u) = showType (i - 1) t ++ showType (i - 1) u
-showNTupleType i t                = showType i t
+-- showNTupleType :: Int -> Type -> String
+-- showNTupleType i (PairType _ t u) = showType (i - 1) t ++ showType (i - 1) u
+-- showNTupleType i t                = showType i t
 
 showDatatype :: Int -> TypeMap -> String
 showDatatype i m = intercalate " | " $ Map.foldrWithKey
@@ -133,6 +204,9 @@ showChoice i m = intercalate ", " $ Map.foldrWithKey
   (\c t acc -> (show c ++ ": " ++ showType (i - 1) t) : acc)
   []
   m
+-}
+
+-- Type binds
 
 instance Show TypeBind where
   show (TypeBind _ x t) = show x ++ ":" ++ show t
