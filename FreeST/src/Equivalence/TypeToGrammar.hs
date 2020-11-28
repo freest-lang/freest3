@@ -23,7 +23,7 @@ import           Syntax.Kinds
 import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
 import           Syntax.Base
-import           Syntax.Show
+import           Parse.Unparser
 import qualified Validation.Substitution       as Substitution
                                                 ( subsAll
                                                 , unfold

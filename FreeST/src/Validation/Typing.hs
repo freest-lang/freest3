@@ -27,7 +27,7 @@ import           Syntax.Expressions
 import           Syntax.Kinds
 import           Syntax.ProgramVariables
 import           Syntax.Schemes
-import           Syntax.Show -- debug
+import           Parse.Unparser -- debug
 import           Syntax.Types
 import           Equivalence.Equivalence
 import           Validation.Extract
