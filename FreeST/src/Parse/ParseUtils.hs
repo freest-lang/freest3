@@ -31,8 +31,8 @@ module Parse.ParseUtils
   , thenM
   , returnM
 -- , failM
-  , createBinLet                                                                -- CHANGED
-  , createLambda
+  , buildRecLet
+  , buildRecLambda
   )
 where
 
@@ -251,23 +251,22 @@ buildFunBody f bs e = getFromVEnv f >>= \case
   buildExp (b : bs) t =
     Abs (position b) Un (TypeBind (position b) b (omission (position b))) (buildExp bs t)
 
+-- RECURSIVE EXPRESSIONS
 
-
-createBinLet :: Pos -> [ProgVar] -> Expression -> Expression -> Expression
-createBinLet p (x : y : []) expr inExp = BinLet p x y expr inExp
-createBinLet p (x : xs)      expr inExp =
+buildRecLet :: Pos -> [ProgVar] -> Expression -> Expression -> Expression
+buildRecLet p (x : y : []) expr inExp = BinLet p x y expr inExp
+buildRecLet p (x : xs)      expr inExp =
   let newVar = mkVar p ("___"++show p) in
-  BinLet p x newVar expr (createBinLet_ p xs newVar inExp)
+  BinLet p x newVar expr (buildRecLet_ p xs newVar inExp)
 
-
-createBinLet_ :: Pos -> [ProgVar] -> ProgVar -> Expression -> Expression
-createBinLet_ p (x : y : []) var inExp = BinLet p x y (ProgVar p var) inExp
-createBinLet_ p (x : xs)     var inExp =
+buildRecLet_ :: Pos -> [ProgVar] -> ProgVar -> Expression -> Expression
+buildRecLet_ p (x : y : []) var inExp = BinLet p x y (ProgVar p var) inExp
+buildRecLet_ p (x : xs)     var inExp =
   let newVar = mkVar p ("___"++show p) in
-  BinLet p x newVar (ProgVar p var) (createBinLet_ p xs newVar inExp)
+  BinLet p x newVar (ProgVar p var) (buildRecLet_ p xs newVar inExp)
 
-createLambda :: [(ProgVar, Type)] -> Multiplicity -> Expression -> Expression
-createLambda (x : []) m expr = Abs posX m (TypeBind posX (fst x) (snd x)) expr
+buildRecLambda :: [(ProgVar, Type)] -> Multiplicity -> Expression -> Expression
+buildRecLambda (x : []) m expr = Abs posX m (TypeBind posX (fst x) (snd x)) expr
   where posX = position $ fst x
-createLambda (x : xs) m expr = Abs posX m (TypeBind posX (fst x) (snd x)) $ createLambda xs m expr
+buildRecLambda (x : xs) m expr = Abs posX m (TypeBind posX (fst x) (snd x)) $ buildRecLambda xs m expr
   where posX = position $ fst x

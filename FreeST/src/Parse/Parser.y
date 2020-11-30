@@ -184,7 +184,7 @@ Expr :: { Expression }
                                            $3)
                                        $1}
   | let '(' ProgVarWildList ')' '=' Expr in Expr
-                                     { createBinLet (position $1) $3 $6 $8 }
+                                     { buildRecLet (position $1) $3 $6 $8 }
   | if Expr then Expr else Expr      { Conditional (position $1) $2 $4 $6 }
   | new Type                         { New (position $1) $2 (Dualof (negPos (position $2)) $2) }
   | match Expr with '{' MatchMap '}' { Match (position $1) $2 $5 }
@@ -211,18 +211,16 @@ Primary :: { Expression }
   | '()'                             { Unit (position $1) }
   | ProgVar '[' TypeList ']'         { TypeApp (position $1) $1 $3 }
   | ArbitraryProgVar                 { ProgVar (position $1) $1 }
-  --| '(' lambda ProgVarWildTBind Arrow Expr ')'
-  --   { Abs (position $2) (snd $4) (TypeBind (position $2) (fst $3) (snd $3)) $5 }
   | '(' LambdaProgVarWildTBindList Arrow Expr ')'
-     { createLambda $2 (snd $3) $4}
-  | '(' Tuple ')'                            { $2 }
+                                     { buildRecLambda $2 (snd $3) $4}
+  | '(' Tuple ')'                    { $2 }
 
 ProgVarWildTBind :: { (ProgVar, Type) }
   : ProgVarWild ':' Type  %prec ProgVarWildTBind { ($1, $3) }
 
 LambdaProgVarWildTBindList :: { [(ProgVar, Type)] }
-  : lambda ProgVarWildTBind                                  { [$2] }
-  | lambda ProgVarWildTBind ',' LambdaProgVarWildTBindList   { $2 : $4 }
+  : lambda ProgVarWildTBind                              { [$2] }
+  | lambda ProgVarWildTBind LambdaProgVarWildTBindList   { $2 : $3 }
 
 ProgVarWildList :: { [ProgVar] }
   : ProgVarWild ',' ProgVarWildList    { [$1] ++ $3 }

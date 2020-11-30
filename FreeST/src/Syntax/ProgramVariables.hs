@@ -11,7 +11,7 @@ The definition of program variables
 
 module Syntax.ProgramVariables
 ( ProgVar
-  , isADT -- TODO: remove                                                       -- CHANGED
+  , isADT -- TODO: remove
 ) where
 
 import Syntax.Base
