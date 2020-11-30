@@ -183,10 +183,8 @@ Expr :: { Expression }
                                            (TypeBind (position $1) (mkVar (position $1) "_") (Basic (position $3) UnitType))
                                            $3)
                                        $1}
-  --| let '(' ProgVarWild ',' ProgVarWild ')' '=' Expr in Expr                  -- CHANGED
-  --                                   { BinLet (position $1) $3 $5 $8 $10 }
-  | let '(' ProgVarWild ',' TupleProgVarWild ')' '=' Expr in Expr               -- CHANGED
-                                     { LetTuple (position $1) (Tuple (position $3) $3 $5) $8 $10 }
+  | let '(' ProgVarWildList ')' '=' Expr in Expr
+                                     { createBinLet (position $1) $3 $6 $8 }
   | if Expr then Expr else Expr      { Conditional (position $1) $2 $4 $6 }
   | new Type                         { New (position $1) $2 (Dualof (negPos (position $2)) $2) }
   | match Expr with '{' MatchMap '}' { Match (position $1) $2 $5 }
@@ -206,10 +204,6 @@ App :: { Expression }
   | '-' App %prec NEG                { unOp (mkVar (position $1) "negate") $2}
   | Primary                          { $1 }
 
-TupleProgVarWild :: { ProgVarTuple }                                            -- CHANGED
-  : ProgVarWild                         { Single (position $1) $1 }
-  | ProgVarWild ',' TupleProgVarWild    { Tuple  (position $1) $1 $3 }
-
 Primary :: { Expression }
   : INT                              { let (TokenInt p x) = $1 in Integer p x }
   | BOOL                             { let (TokenBool p x) = $1 in Boolean p x }
@@ -219,14 +213,16 @@ Primary :: { Expression }
   | ArbitraryProgVar                 { ProgVar (position $1) $1 }
   | '(' lambda ProgVarWildTBind Arrow Expr ')'
      { Abs (position $2) (snd $4) (TypeBind (position $2) (fst $3) (snd $3)) $5 }
-  --| '(' Expr ',' Expr ')'                    { Pair (position $1)$2 $4 }      -- CHANGED
-  | '(' Tuple ')'                            { $2 }       -- CHANGED
-  --| '(' Expr ')'                             { $2 }                           -- CHANGED
+  | '(' Tuple ')'                            { $2 }
 
 ProgVarWildTBind :: { (ProgVar, Type) }
   : ProgVarWild ':' Type  %prec ProgVarWildTBind { ($1, $3) }
 
-Tuple :: { Expression }                                                         -- CHANGED
+ProgVarWildList :: { [ProgVar] }                                                -- CHANGED
+  : ProgVarWild ',' ProgVarWildList    { [$1] ++ $3 }
+  | ProgVarWild ',' ProgVarWild        { [$1, $3] }
+
+Tuple :: { Expression }
   : Expr                { $1 }
   | Expr ',' Tuple      { Pair (position $1) $1 $3 }
 
@@ -260,7 +256,6 @@ Type :: { Type }
   -- Functional types
   : BasicType                        { uncurry Basic $1 }
   | Type Arrow Type                  { uncurry Fun $2 $1 $3 }
-  --| '(' Type ',' Type ')'            { PairType (position $1) $2 $4 }         -- CHANGED
   | '(' TupleType ')'                { $2 }
   -- Session types
   | Skip                          { Skip (position $1) }
@@ -273,7 +268,6 @@ Type :: { Type }
   -- Type operators
   | dualof Type                      { Dualof (position $1) $2 }
   | TypeName                         { TypeName (position $1) $1 }
-  --| '(' Type ')'                     { $2 }                                   -- CHANGED
 
 BasicType :: { (Pos, BasicType) }
   : Int  { (position $1, IntType) }
@@ -281,9 +275,9 @@ BasicType :: { (Pos, BasicType) }
   | Bool { (position $1, BoolType) }
   | '()' { (position $1, UnitType) }
 
-TupleType :: { Type }                                                           -- CHANGED
+TupleType :: { Type }
   : Type                    { $1 }
-  | Type ',' TupleType     { PairType (position $1) $1 $3 }
+  | Type ',' TupleType      { PairType (position $1) $1 $3 }
 
 Polarity :: { (Pos, Polarity) }
   : '?' { (position $1, In) }

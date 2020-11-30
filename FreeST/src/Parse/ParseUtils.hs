@@ -31,6 +31,7 @@ module Parse.ParseUtils
   , thenM
   , returnM
 -- , failM
+  , createBinLet                                                                -- CHANGED
   )
 where
 
@@ -78,7 +79,7 @@ instance Monad ParseResult where
   fail   = failM
 
 instance Applicative ParseResult where
---  
+--
   pure  = return
   (<*>) = ap
 
@@ -249,3 +250,17 @@ buildFunBody f bs e = getFromVEnv f >>= \case
   buildExp (b : bs) t =
     Abs (position b) Un (TypeBind (position b) b (omission (position b))) (buildExp bs t)
 
+
+
+createBinLet :: Pos -> [ProgVar] -> Expression -> Expression -> Expression
+createBinLet p (x : xx : []) expr nextExp = BinLet p x xx expr nextExp
+createBinLet p (x : xs)      expr nextExp =
+  let newVar = mkVar p ("abc") in
+  BinLet p x newVar expr (createBinLet_ p xs newVar nextExp)
+
+
+createBinLet_ :: Pos -> [ProgVar] -> ProgVar -> Expression -> Expression
+createBinLet_ p (x : xx : []) var nextExp = BinLet p x xx (ProgVar p var) nextExp
+createBinLet_ p (x : xs)      var nextExp =
+  let newVar = mkVar p ("abc") in
+  BinLet p x newVar (ProgVar p var) (createBinLet_ p xs newVar nextExp)

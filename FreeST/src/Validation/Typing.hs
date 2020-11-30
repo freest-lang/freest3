@@ -161,14 +161,6 @@ synthetise kEnv (BinLet _ x y e1 e2) = do
   quotient kEnv x
   quotient kEnv y
   return t2
-synthetise kEnv (LetTuple _ pvt e1 e2) = do                                     -- CHANGED && TODO
-  t1       <- synthetise kEnv e1
-  (u1, u2) <- extractPair e1 t1
-  addTupleToVEnv (u1, u2) pvt
-  vEnv <- getVEnv
-  t2   <- synthetise kEnv e2
-  quotientTuple kEnv pvt
-  return t2
 -- Datatype elimination
 synthetise kEnv (Case p e fm) =
   synthetiseFieldMap p "case" kEnv e fm extractDatatypeMap paramsToVEnvCM
@@ -186,26 +178,6 @@ synthetise kEnv e@(Select _ _) =
 -- Match
 synthetise kEnv (Match p e fm) =
   synthetiseFieldMap p "match" kEnv e fm extractInChoiceMap paramsToVEnvMM
-
-                                                                                -- CHANGED && TODO
-addTupleToVEnv :: (Type, Type) -> ProgVarTuple -> FreestState ()
-addTupleToVEnv (t1, t2) (Tuple _ pv1 (Single _ pv2)) = do
-  addToVEnv pv1 (fromType t1)
-  addToVEnv pv2 (fromType t2)
-  return ()
-addTupleToVEnv (t, (PairType p t1 t2)) (Tuple _ pv pvt) = do
-  addToVEnv pv (fromType t)
-  addTupleToVEnv (t1, t2) pvt
-  return ()
-addTupleToVEnv _ _ = do
-  return ()
-
-quotientTuple :: KindEnv -> ProgVarTuple -> FreestState ()
-quotientTuple kEnv (Tuple _ pv pvt) = do
-  quotient kEnv pv
-  quotientTuple kEnv pvt
-quotientTuple kEnv (Single _ pv) = do
-  quotient kEnv pv
 
 
 -- | Returns the type scheme for a variable; removes it from vEnv if lin

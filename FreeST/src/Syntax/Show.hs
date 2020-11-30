@@ -51,10 +51,6 @@ showArrow Un  = " -> "
 instance Show ProgVar where
   show = showVar
 
-instance Show ProgVarTuple where                                                -- CHANGED
-  show (Tuple  _ pv pvt) = show pv ++ ", " ++ show pvt
-  show (Single _ pv)     = show pv
-
 -- Type Variables. Note: show should be aligned with the creation
 -- of new variables; see Syntax.TypeVariables
 
@@ -195,14 +191,6 @@ showExp i (BinLet _ x y e1 e2) =
     ++ " in "
     ++ showExp (i - 1) e2
     ++ ")"
-showExp i (LetTuple _ pvt e1 e2) =                                              -- CHANGED
-  "(let "
-  ++ show pvt
-  ++ " = "
-  ++ showExp (i - 1) e1
-  ++ " in "
-  ++ showExp (i - 1) e2
-  ++ ")"
   -- Datatype elim
 showExp i (Case _ e m) =
   "case " ++ showExp (i - 1) e ++ " of {" ++ showFieldMap (i - 1) m ++ "}"
