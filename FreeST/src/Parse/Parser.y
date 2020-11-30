@@ -204,10 +204,6 @@ App :: { Expression }
   | '-' App %prec NEG                { unOp (mkVar (position $1) "negate") $2}
   | Primary                          { $1 }
 
-TupleProgVarWild :: { ProgVarTuple }                                            -- CHANGED
-  : ProgVarWild                         { Single (position $1) $1 }
-  | ProgVarWild ',' TupleProgVarWild    { Tuple  (position $1) $1 $3 }
-
 Primary :: { Expression }
   : INT                              { let (TokenInt p x) = $1 in Integer p x }
   | BOOL                             { let (TokenBool p x) = $1 in Boolean p x }

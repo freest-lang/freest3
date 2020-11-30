@@ -253,14 +253,14 @@ buildFunBody f bs e = getFromVEnv f >>= \case
 
 
 createBinLet :: Pos -> [ProgVar] -> Expression -> Expression -> Expression
-createBinLet p (x : xx : []) expr nextExp = BinLet p x xx expr nextExp
-createBinLet p (x : xs)      expr nextExp =
-  let newVar = mkVar p ("abc") in
-  BinLet p x newVar expr (createBinLet_ p xs newVar nextExp)
+createBinLet p (x : y : []) expr inExp = BinLet p x y expr inExp
+createBinLet p (x : xs)      expr inExp =
+  let newVar = mkVar p ("___"++show p) in
+  BinLet p x newVar expr (createBinLet_ p xs newVar inExp)
 
 
 createBinLet_ :: Pos -> [ProgVar] -> ProgVar -> Expression -> Expression
-createBinLet_ p (x : xx : []) var nextExp = BinLet p x xx (ProgVar p var) nextExp
-createBinLet_ p (x : xs)      var nextExp =
-  let newVar = mkVar p ("abc") in
-  BinLet p x newVar (ProgVar p var) (createBinLet_ p xs newVar nextExp)
+createBinLet_ p (x : y : []) var inExp = BinLet p x y (ProgVar p var) inExp
+createBinLet_ p (x : xs)     var inExp =
+  let newVar = mkVar p ("___"++show p) in
+  BinLet p x newVar (ProgVar p var) (createBinLet_ p xs newVar inExp)
