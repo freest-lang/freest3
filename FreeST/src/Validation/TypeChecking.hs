@@ -37,22 +37,30 @@ import qualified Data.Map.Strict               as Map
 -- import           Syntax.Show -- debug
 import           Debug.Trace -- debug
 
+
+-- debugM :: String -> FreestState ()
+-- debugM err = do
+--   i <- getNextIndex
+--   traceM $ "\n" ++ show i ++ ". " ++ err ++ "\n"
+
+
 typeCheck :: FreestState ()
 typeCheck = do
   tEnv <- getTEnv -- Type/datatype declarations
   vEnv <- getVEnv -- Function signatures
   eEnv <- getEEnv -- Function bodies
-  -- tn   <- getTypeNames -- Type Names
-  -- traceM ("\n\n\nEntering type checking with\n  TEnv " ++ show tEnv ++ "\n\n" ++
-  --         "  VEnv " ++ show (userDefined vEnv) ++ "\n\n" ++
-  --         "  EEnv " ++ show eEnv  ++ "\n\n" ++
-  --         "  Tname " ++ show tn)
+  tn   <- getTypeNames -- Type Names
+  -- debugM ("\n\n\nEntering type checking with\n  TEnv " ++ show tEnv ++ "\n\n"
+  --         ++ "  VEnv " ++ show (userDefined vEnv) ++ "\n\n"
+  --         ++ "  EEnv " ++ show eEnv  ++ "\n\n"
+  --         ++ "  Tname " ++ show tn)
 
   -- * Check the formation of all type decls
-  -- trace "checking the formation of all type decls" (return ())
-  mapM_ (K.synthetise Map.empty . snd) tEnv
+--  debugM "checking the formation of all type decls"
+--  mapM_ (K.synthetise Map.empty . snd) tEnv
+
   -- * Check the formation of all function signatures
-  -- trace "checking the formation of all function signatures (kinding)" (return ())
+--  debugM "checking the formation of all function signatures (kinding)" 
   mapM_ (K.synthetise Map.empty)       vEnv
   -- Gets the state and only continues if there are no errors so far
   -- Can't continue to equivalence if there are ill-formed types
@@ -60,13 +68,13 @@ typeCheck = do
   s <- get
   unless (hasErrors s) $ do
     -- * Check whether all function signatures have a binding
-    -- trace "checking whether all function signatures have a binding" (return ())
+--    debugM "checking whether all function signatures have a binding"
     tMapWithKeyM checkHasBinding vEnv
     -- * Check function bodies
-    -- trace "checking the formation of all functions (typing)" (return ())
+--    debugM "checking the formation of all functions (typing)"
     tMapWithKeyM checkFunBody eEnv
     -- * Check the main function
-    -- trace "checking the main function" (return ())
+--    debugM "checking the main function"
     checkMainFunction
 
 -- Check whether a given function signature has a corresponding

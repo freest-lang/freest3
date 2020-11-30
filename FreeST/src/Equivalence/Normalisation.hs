@@ -35,9 +35,13 @@ instance Normalise Type where
   normalise tenv t@Rec{} = normalise tenv (Substitution.unfold t)
     -- Type operators
 --  normalise tenv (Dualof _ t) = (normalise tenv (dual t)
-  normalise tenv (Dualof p t) =
+  normalise _ (Dualof _ t) =
     internalError "Equivalence.Normalisation.normalise" t  
-  normalise tenv (TypeName _ a) = normalise tenv (snd $ tenv Map.! a) -- TODO: type/data may be polymorphic
+--  normalise tenv (TypeName _ a) = normalise tenv (snd $ tenv Map.! a) -- TODO: type/data may be polymorphic
+  normalise tenv v@(TypeVar _ a) =
+    case tenv Map.!? a of
+      Just t  -> normalise tenv (snd t) -- TODO: type/data may be polymorphic
+      Nothing -> v
     -- Otherwise: Basic, Fun, PairType, Datatype, Skip, Message, Choice, TypeVar
   normalise _ t = t
 

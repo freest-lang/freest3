@@ -23,7 +23,6 @@ where
 
 import           Control.Monad.State            ( when, unless )
 import qualified Data.Map.Strict               as Map
-import           Debug.Trace                     -- debug
 import           Equivalence.Equivalence
 import           Syntax.Base
 import           Syntax.Expressions
@@ -43,7 +42,15 @@ import           Utils.PreludeLoader            ( isBuiltin
                                                 ) -- debug
 import           Control.Monad.State            ( when, unless )
 import qualified Data.Map.Strict               as Map
--- import           Debug.Trace                     -- debug
+import           Debug.Trace                     -- debug
+
+
+
+debugM :: String -> FreestState ()
+debugM err = do
+  i <- getNextIndex
+  traceM $ "\n" ++ show i ++ ". " ++ err ++ "\n"
+
 
 -- SYNTHESISING A TYPE
 
@@ -57,9 +64,12 @@ synthetise _    (Boolean   p _) = return $ Basic p BoolType
 synthetise kEnv e@(ProgVar p x)
   | x == mkVar p "receive" = addPartiallyAppliedError e "channel"
   | x == mkVar p "send" = addPartiallyAppliedError e "value and another denoting a channel"
-  | otherwise = -- do
-      synthetiseVar kEnv x
-
+  | otherwise = do
+--      debugM ("asdfklasdflk")
+--      debugM ("asdfklasdflk1")
+      t <- synthetiseVar kEnv x
+--      debugM ("asdfklasdflk1")
+      return t
       -- s@(TypeScheme _ bs t) <- synthetiseVar kEnv x
       -- unless
       --   (null bs)
@@ -112,10 +122,11 @@ synthetise kEnv (App p (App _ (ProgVar _ x) e1) e2)  -- Send e1 e2
       (u1, u2) <- extractOutput e2 t
       checkAgainst kEnv e1 $ Basic p u1
       return u2
-synthetise kEnv (App _ e1 e2) = do -- General case
+synthetise kEnv e@(App _ e1 e2) = do -- General case
+--  debugM ("Extract Fun: " ++ show e)
   t        <- synthetise kEnv e1
   (u1, u2) <- extractFun e1 t
---  traceM ("Extract Fun: " ++ show u1 ++ " | "  ++ show u2 ++ " against " ++ show e2)
+--  debugM ("Extract Fun: " ++ show u1 ++ " | "  ++ show u2 ++ " against " ++ show e2)
   checkAgainst kEnv e2 u1
   return u2
 
@@ -233,11 +244,13 @@ synthetise kEnv (Match p e fm) =
 synthetiseVar :: KindEnv -> ProgVar -> FreestState Type
 synthetiseVar kEnv x = getFromVEnv x >>= \case
   Just s -> do
+--    debugM "synthetiseVar"
     k <- K.synthetise kEnv s
 --    traceM $ "synthetiseVar " ++ show x ++ " type " ++ show s ++ " isLin " ++ show (isLin k)
     when (isLin k) $ removeFromVEnv x
     return s
   Nothing -> do
+  --  debugM $ "synthetiseVar (not in scope) " ++ show x
   --  traceM $ "synthetiseVar (not in scope) " ++ show x
     let p = position x
     addError
