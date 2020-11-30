@@ -125,10 +125,8 @@ showType i (Dualof _ t) = "(dualof " ++ showType (i - 1) t ++ ")"
 showTupleType :: Int -> Type -> String
 showTupleType i (PairType _ t (PairType p t1 t2)) =
   showType (i - 1) t ++ ", " ++ showTupleType (i - 1) (PairType p t1 t2)
-
 showTupleType i (PairType _ t u) =
   showType (i - 1) t ++ ", " ++ showType (i - 1) u
-
 showTupleType i t                = showType i t
 
 showDatatype :: Int -> TypeMap -> String
@@ -239,8 +237,6 @@ showFieldMap i m = intercalate "; " (map showAssoc (Map.toList m))
 showTupleExpr :: Int -> Expression -> String
 showTupleExpr i (Pair _ e (Pair p e1 e2)) =
   showExp (i - 1) e ++ ", " ++ showTupleExpr (i - 1) (Pair p e1 e2)
-
 showTupleExpr i (Pair _ e ee) =
   showExp (i - 1) e ++ ", " ++ showExp (i - 1) ee
-
 showTupleExpr i e = showExp i e

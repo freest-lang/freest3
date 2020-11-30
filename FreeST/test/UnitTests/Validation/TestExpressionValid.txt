@@ -9,14 +9,18 @@ Int
 let (x, y, z) = (6, True, 'a') in y
 Bool
 
+-- Parenthesis on the right are part of the tuple
 let (x, y, z) = (6, (True, 'a')) in z
 Char
 
+-- Parenthesis elsewhere create a Tuple inside the Tuple
 let (x, y) = ((6, True), 'a') in x
 (Int, Bool)
 
+-- Last variable bears the rest of the tuple
 let (x, y) = (6, True, 'a') in y
 (Bool, Char)
 
+-- Using only pairs to deconstruct a tuple
 let (x, a) = (6, True, 'a') in let (y, z) = a in y
 Bool
