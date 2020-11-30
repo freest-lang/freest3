@@ -32,6 +32,7 @@ module Parse.ParseUtils
   , returnM
 -- , failM
   , createBinLet                                                                -- CHANGED
+  , createLambda
   )
 where
 
@@ -264,3 +265,9 @@ createBinLet_ p (x : y : []) var inExp = BinLet p x y (ProgVar p var) inExp
 createBinLet_ p (x : xs)     var inExp =
   let newVar = mkVar p ("___"++show p) in
   BinLet p x newVar (ProgVar p var) (createBinLet_ p xs newVar inExp)
+
+createLambda :: [(ProgVar, Type)] -> Multiplicity -> Expression -> Expression
+createLambda (x : []) m expr = Abs posX m (TypeBind posX (fst x) (snd x)) expr
+  where posX = position $ fst x
+createLambda (x : xs) m expr = Abs posX m (TypeBind posX (fst x) (snd x)) $ createLambda xs m expr
+  where posX = position $ fst x
