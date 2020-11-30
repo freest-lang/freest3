@@ -123,8 +123,12 @@ showType i (Rec _ xk t) =
 showType i (Dualof _ t) = "(dualof " ++ showType (i - 1) t ++ ")"
 
 showTupleType :: Int -> Type -> String
-showTupleType i (PairType _ t (PairType p t1 t2)) = showType (i - 1) t ++ ", " ++ showTupleType (i - 1) (PairType p t1 t2)
-showTupleType i (PairType _ t u) = showType (i - 1) t ++ ", " ++ showType (i - 1) u
+showTupleType i (PairType _ t (PairType p t1 t2)) =
+  showType (i - 1) t ++ ", " ++ showTupleType (i - 1) (PairType p t1 t2)
+
+showTupleType i (PairType _ t u) =
+  showType (i - 1) t ++ ", " ++ showType (i - 1) u
+
 showTupleType i t                = showType i t
 
 showDatatype :: Int -> TypeMap -> String
@@ -179,8 +183,8 @@ showExp i (Abs _ m b e) =
 showExp i (App _ e1 e2) =
   "(" ++ showExp (i - 1) e1 ++ " " ++ showExp (i - 1) e2 ++ ")"
   -- Pair intro and elim
-showExp i (Pair _ e1 e2) =
-  "(" ++ showExp (i - 1) e1 ++ ", " ++ showExp (i - 1) e2 ++ ")"
+showExp i (Pair p e1 e2) =
+  "(" ++ showTupleExpr (i - 1) (Pair p e1 e2) ++ ")"
 showExp i (BinLet _ x y e1 e2) =
   "(let "
     ++ show x
@@ -231,3 +235,12 @@ showFieldMap i m = intercalate "; " (map showAssoc (Map.toList m))
       ++ unwords (map show a)
       ++ " -> "
       ++ showExp (i - 1) v
+
+showTupleExpr :: Int -> Expression -> String
+showTupleExpr i (Pair _ e (Pair p e1 e2)) =
+  showExp (i - 1) e ++ ", " ++ showTupleExpr (i - 1) (Pair p e1 e2)
+
+showTupleExpr i (Pair _ e ee) =
+  showExp (i - 1) e ++ ", " ++ showExp (i - 1) ee
+
+showTupleExpr i e = showExp i e

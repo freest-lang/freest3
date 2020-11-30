@@ -8,3 +8,15 @@ Int
 
 let (x, y, z) = (6, True, 'a') in y
 Bool
+
+let (x, y, z) = (6, (True, 'a')) in z
+Char
+
+let (x, y) = ((6, True), 'a') in x
+(Int, Bool)
+
+let (x, y) = (6, True, 'a') in y
+(Bool, Char)
+
+let (x, a) = (6, True, 'a') in let (y, z) = a in y
+Bool
