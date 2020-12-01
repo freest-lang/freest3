@@ -89,7 +89,7 @@ class Rename t where
 
 instance Rename Type where
   rename bs t
-    | terminated t = return $ Skip (position t)
+--    | terminated t = return $ Skip (position t)
     | otherwise    = rename' bs t
 
 rename':: Bindings -> Type -> FreestState Type
@@ -124,6 +124,7 @@ rename' bs (Rec p (KindBind p' a k) t)
       a' <- rename bs a
       t' <- rename (insertVar a a' bs) t
       return $ Rec p (KindBind p' a' k) t'
+  | terminated t = return $ Skip p
   | otherwise = rename bs t
 rename' bs (TypeVar p a) =
   return $ TypeVar p (findWithDefaultVar a bs)

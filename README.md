@@ -49,6 +49,7 @@ For example, to compile a FreeST program named "test.fst" located in the directo
 
 ```
     $ stack ghci FreeST:exe:freest
+    :set prompt  "λ: "
 ```
 
 ## FreeST Samples

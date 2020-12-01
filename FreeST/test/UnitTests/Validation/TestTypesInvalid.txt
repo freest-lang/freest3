@@ -28,17 +28,17 @@ rec a:TL. a
 rec a:SU. (Skip; a)
 rec a:SU. Skip; a; Skip
 rec a:SU. Skip; a; a; a; a; a
-rec a:SU. (rec a:SU. Skip; a); (rec a:SU. (Skip; a))
 Skip; rec a:SU. (Skip; a)
 Skip; rec a:SU. ( Skip; a; Skip)
 Skip; rec a:SU. ( Skip; a; Skip)
 Skip; Skip; Skip; rec a:SU. (Skip; a; a; a; a; a)
-Skip; rec a:SU. ((rec a:SU. (Skip; a)); (rec a:SU. (Skip; a))); Skip; Skip
 rec a:SU. (((Skip ; a) ; a) ; a)
 rec a. a
 rec a. a;  a;  a;  a;  a
 rec a. rec b. rec c. rec d. a
 Int -> rec a. rec b. rec c. rec d. a
+rec a:SU. (rec a:SU. Skip; a); (rec a:SU. (Skip; a))
+Skip; rec a:SU. ((rec a:SU. (Skip; a)); (rec a:SU. (Skip; a))); Skip; Skip
 
 -- Non contractive, non terminated
 
@@ -75,6 +75,18 @@ rec a : TU . !Int ; a
 rec a : TL . !Int ; a 
 +{ A: () }
 +{ A: () -> Bool }
+
+-- Free Variables
+
+a
+Skip; a
+rec b. !Int; a
+Bool -o a
+(Char, Bool -o a)
+Int -> ∀ a : MU => b  
+Int -> ∀ a : MU => (Bool -> b)
+(Char, Int -> ∀ a : MU => (Bool -> b))
+forall a:SL => forall b:SL => forall z:SL => ((rec z:SL. (Skip;&{B: (+{A: (&{B: a, C: Skip};+{A: (?Bool;Skip), B: (z;Skip), C: (((?Int;&{A: ((((?();a);z);+{A: z, C: Skip});!Int), C: !Char});z);Skip)})};(+{A: !Char};(((?Int;&{A: ((((?();a);z);+{A: z, C: Skip});!Int), C: !Char});z);(?Char;((?Int;&{A: ((((?();a);z);+{A: z, C: Skip});!Int), C: !Char});z))))), C: Skip}));((a;&{B: (!Bool;(?();b)), C: (Skip;(?();c))});((?Int;+{B: a, C: ?Int});!Int)))
 
 -- Syntatically invalid datatypes, conflicting - removed these because they are not readable types anymore (only available for data declarations)
 
