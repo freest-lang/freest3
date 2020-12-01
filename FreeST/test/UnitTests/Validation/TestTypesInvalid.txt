@@ -38,6 +38,18 @@ rec a:SU.a;!Bool
 rec z:SL.(rec a:SU.&{B: (rec z:SL.((z;Skip);b))})
 rec z:SL.(rec z:SU.(Skip;(rec a:SU.(rec z:SL.&{B: (rec z:SL.(rec a:SL.(z;(Skip;b))))}))))
 
+-- Non contractive but terminated; recursion on non session type variables
+
+rec a. a
+rec a:TL. a
+rec a. a;  a;  a;  a;  a
+rec a. rec b. rec c. rec d. a
+rec a:SU. (rec a:TU. Skip; a); (rec a:SU. (Skip; a))
+Skip; rec a:SU. ((rec a:MU. (Skip; a)); (rec a:SU. (Skip; a))); Skip; Skip
+Int -> rec a. rec b. rec c. rec d. a
+(rec a. rec b. rec c. rec d. a) -> Bool
+(rec a. rec b. rec c. rec d. a, Int)
+
 -- Non contractive with dualof
 
 rec a. dualof a
