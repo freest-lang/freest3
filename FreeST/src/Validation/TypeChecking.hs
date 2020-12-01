@@ -34,15 +34,6 @@ import           Control.Monad.State            ( when
                                                 , unless
                                                 )
 import qualified Data.Map.Strict               as Map
--- import           Syntax.Show -- debug
-import           Debug.Trace -- debug
-
-
--- debugM :: String -> FreestState ()
--- debugM err = do
---   i <- getNextIndex
---   traceM $ "\n" ++ show i ++ ". " ++ err ++ "\n"
-
 
 typeCheck :: FreestState ()
 typeCheck = do

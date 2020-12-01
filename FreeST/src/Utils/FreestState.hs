@@ -51,6 +51,7 @@ module Utils.FreestState
   , addTypeName
   , getTypeNames
   , findTypeName
+  , debugM
   )
 where
 
@@ -71,6 +72,7 @@ import           Utils.Errors
 -- import qualified Data.Set as Set
 import qualified Data.Traversable              as Traversable
 import           Utils.ErrorMessage
+import           Debug.Trace -- debug (used on debugM function)
 
 import Debug.Trace
 
@@ -130,11 +132,6 @@ getFromVEnv x = do
   let mb = vEnv Map.!? x 
 --  debugM $ "***Get from varEnv " ++ show x ++ " " ++ show mb
   return $ mb
-
-debugM :: String -> FreestState ()
-debugM err = do
-  i <- getNextIndex
-  traceM $ "\n" ++ show i ++ ". " ++ err ++ "\n"
 
 removeFromVEnv :: ProgVar -> FreestState ()
 removeFromVEnv b = modify (\s -> s { varEnv = Map.delete b (varEnv s) })
@@ -224,3 +221,10 @@ tMapWithKeyM f m = Traversable.sequence (Map.mapWithKey f m)
 
 tMapWithKeyM_ :: Monad m => (k -> a1 -> m a2) -> Map.Map k a1 -> m ()
 tMapWithKeyM_ f m = void $ tMapWithKeyM f m
+
+-- | Debug Function
+
+debugM :: String -> FreestState ()
+debugM err = do
+  i <- getNextIndex
+  traceM $ "\n" ++ show i ++ ". " ++ err ++ "\n"

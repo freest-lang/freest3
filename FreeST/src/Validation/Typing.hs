@@ -21,7 +21,9 @@ module Validation.Typing
   )
 where
 
-import           Control.Monad.State            ( when, unless )
+import           Control.Monad.State            ( when
+                                                , unless
+                                                )
 import qualified Data.Map.Strict               as Map
 import           Equivalence.Equivalence
 import           Syntax.Base
@@ -40,35 +42,30 @@ import           Utils.FreestState
 import           Utils.PreludeLoader            ( isBuiltin
                                                 , userDefined
                                                 ) -- debug
-import           Control.Monad.State            ( when, unless )
+import           Control.Monad.State            ( when
+                                                , unless
+                                                )
 import qualified Data.Map.Strict               as Map
-import           Debug.Trace                     -- debug
-
-
-
-debugM :: String -> FreestState ()
-debugM err = do
-  i <- getNextIndex
-  traceM $ "\n" ++ show i ++ ". " ++ err ++ "\n"
-
 
 -- SYNTHESISING A TYPE
 
 synthetise :: KindEnv -> Expression -> FreestState Type
 -- Basic expressions
-synthetise _    (Unit p       ) = return $ UnitType p
-synthetise _    (Integer   p _) = return $ IntType p
-synthetise _    (Character p _) = return $ CharType p
-synthetise _    (Boolean   p _) = return $ BoolType p
+synthetise _ (Unit p       ) = return $ UnitType p
+synthetise _ (Integer   p _) = return $ IntType p
+synthetise _ (Character p _) = return $ CharType p
+synthetise _ (Boolean   p _) = return $ BoolType p
 -- Variable
 synthetise kEnv e@(ProgVar p x)
   | x == mkVar p "receive" = addPartiallyAppliedError e "channel"
-  | x == mkVar p "send" = addPartiallyAppliedError e "value and another denoting a channel"
+  | x == mkVar p "send" = addPartiallyAppliedError
+    e
+    "value and another denoting a channel"
   | otherwise = do
 --      debugM $ show x
-      t <- synthetiseVar kEnv x
-    
-      return t
+    t <- synthetiseVar kEnv x
+
+    return t
       -- s@(TypeScheme _ bs t) <- synthetiseVar kEnv x
       -- unless
       --   (null bs)
@@ -108,21 +105,22 @@ synthetise kEnv (App p (Select _ c) e) = do -- Select c e
   t <- synthetise kEnv e
   m <- extractOutChoiceMap e t
   extractCons p m c
-synthetise kEnv (App p (ProgVar _ x) e)  -- Receive e
-  | x == mkVar p "receive" = do
-      t        <- synthetise kEnv e
-      (u1, u2) <- extractInput e t
-      K.checkAgainst kEnv (kindML (position u1)) u1
-      return $ PairType p u1 u2
-synthetise kEnv e@(App p (ProgVar _ x) _)  -- Send e
-  | x == mkVar p "send" = addPartiallyAppliedError e "channel"
-synthetise kEnv (App p (App _ (ProgVar _ x) e1) e2)  -- Send e1 e2
-  | x == mkVar p "send" = do
-      t        <- synthetise kEnv e2
-      (u1, u2) <- extractOutput e2 t      
-      K.checkAgainst kEnv (kindML (position u1)) u1
-      checkAgainst kEnv e1 $ u1
-      return u2
+synthetise kEnv (App p (ProgVar _ x) e) |  -- Receive e
+                                          x == mkVar p "receive" = do
+  t        <- synthetise kEnv e
+  (u1, u2) <- extractInput e t
+  K.checkAgainst kEnv (kindML (position u1)) u1
+  return $ PairType p u1 u2
+synthetise kEnv e@(App p (ProgVar _ x) _) |  -- Send e
+                                            x == mkVar p "send" =
+  addPartiallyAppliedError e "channel"
+synthetise kEnv (App p (App _ (ProgVar _ x) e1) e2) |  -- Send e1 e2
+                                                      x == mkVar p "send" = do
+  t        <- synthetise kEnv e2
+  (u1, u2) <- extractOutput e2 t
+  K.checkAgainst kEnv (kindML (position u1)) u1
+  checkAgainst kEnv e1 $ u1
+  return u2
 synthetise kEnv e@(App _ e1 e2) = do -- General case
 --  debugM ("Extract Fun: " ++ show e)
   t        <- synthetise kEnv e1
@@ -153,7 +151,7 @@ synthetise kEnv (TypeAbs p kb@(KindBind p' x k) e) = do
 --   when (m == Un) (checkEqualEnvs e' vEnv1 vEnv2)
 --   return $ Fun p m t1 t2
 
-  
+
 
 -- Type application
 --  ∆ | Γ |- e : ∀ a : κ . U        ∆ |- T : κ
@@ -162,7 +160,7 @@ synthetise kEnv (TypeAbs p kb@(KindBind p' x k) e) = do
 
 synthetise kEnv (TypeApp p e t) = do -- TODO: error and bs, zip
 --  (TypeScheme _ bs t) <- synthetiseVar kEnv x
-  u <- synthetise kEnv e
+  u                              <- synthetise kEnv e
   (Forall _ (KindBind _ y _) u') <- extractForall e u
   K.synthetise kEnv t
   -- let tmp = Rename.subs t y u'
@@ -175,9 +173,9 @@ synthetise kEnv (TypeApp p e t) = do -- TODO: error and bs, zip
   --   ++ "\n\tt: " ++ show t
   --   ++ "\n\tsubs " ++ show tmp
   --   ++ "\ESC[0m" 
-  
 
-  
+
+
   return $ Rename.subs t y u'
   -- when
   --   (length ts /= length bs)
@@ -230,8 +228,7 @@ synthetise kEnv (Case p e fm) =
 synthetise kEnv (New p t u) = do
   K.checkAgainstSession kEnv t
   return $ PairType p t u -- (dual t)
-synthetise kEnv e@(Select _ _) =
-  addPartiallyAppliedError e "channel"
+synthetise kEnv e@(Select _ _) = addPartiallyAppliedError e "channel"
 -- synthetise kEnv (Select p e c) = do
 --   t <- synthetise kEnv e
 --   m <- extractOutChoiceMap e t
@@ -355,10 +352,9 @@ paramsToVEnvCM c bs t = do
     ]
 
 zipProgVarLType :: [ProgVar] -> Type -> [(ProgVar, Type)]
-zipProgVarLType [] _ = []
-zipProgVarLType (b : bs) (Fun _ _ t1 t2) =
-  (b, t1) : zipProgVarLType bs t2
-zipProgVarLType (b : _) t = [(b, t)]
+zipProgVarLType []       _               = []
+zipProgVarLType (b : bs) (Fun _ _ t1 t2) = (b, t1) : zipProgVarLType bs t2
+zipProgVarLType (b : _ ) t               = [(b, t)]
 
 numArgs :: Type -> Int
 numArgs (Fun _ _ _ t2) = 1 + numArgs t2
@@ -405,7 +401,8 @@ quotient kEnv x = do
 addPartiallyAppliedError :: Expression -> String -> FreestState Type
 addPartiallyAppliedError e s = do
   let p = position e
-  addError p
+  addError
+    p
     [ Error "Ooops! You're asking too much. I cannot type a partially applied"
     , Error e
     , Error "\b.\n\t I promise to look into that some time in the future.\n"
@@ -464,7 +461,8 @@ checkAgainst kEnv e t = do
 -- checkAgainstTS e (TypeScheme _ bs t) = checkAgainst (fromKindBinds bs) e t
 
 kEnvFromType :: KindEnv -> Type -> KindEnv
-kEnvFromType kenv (Forall _ (KindBind _ x k) t) = kEnvFromType (Map.insert x k kenv) t
+kEnvFromType kenv (Forall _ (KindBind _ x k) t) =
+  kEnvFromType (Map.insert x k kenv) t
 kEnvFromType kenv _ = kenv
 
 
@@ -528,8 +526,7 @@ checkEquivEnvs p branching kEnv vEnv1 vEnv2 = do
       "\n\t (is there a variable with different types in the two environments?)"
     ]
 
-fillFunType
-  :: KindEnv -> ProgVar -> Expression -> Type -> FreestState Type
+fillFunType :: KindEnv -> ProgVar -> Expression -> Type -> FreestState Type
 fillFunType kEnv b = fill
  where
   fill :: Expression -> Type -> FreestState Type

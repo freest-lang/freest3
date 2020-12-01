@@ -352,12 +352,3 @@ subsFieldMap tenv = mapM (\(ps, e) -> liftM2 (,) (pure ps) (subsExp tenv e))
 
 subsTypeBind :: TypeEnv -> TypeBind -> FreestState TypeBind
 subsTypeBind tenv (TypeBind p k t) = fmap (TypeBind p k) (subsType tenv Nothing t)
-
-
-
-
-
-debugM :: String -> FreestState ()
-debugM err = do
-  i <- getNextIndex
-  traceM $ "\n" ++ show i ++ ". " ++ err ++ "\n"
