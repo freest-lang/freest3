@@ -29,7 +29,7 @@ import           Syntax.Kinds
 import           Syntax.Base
 import           Syntax.Show
 import           Syntax.TypeVariables
-import           Validation.Terminated
+import           Validation.Contractive
 import           Utils.FreestState
 import           Utils.Errors
 import           Control.Monad                 (unless)
