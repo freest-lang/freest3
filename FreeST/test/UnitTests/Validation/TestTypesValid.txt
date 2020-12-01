@@ -172,6 +172,9 @@ TL
 -- Non contractive but terminated; all these types are equivalent to
 --   Skip, according to the tick-identification convention
 
+rec a. a
+SU
+
 rec a:TL. a
 SU
 
