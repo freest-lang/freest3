@@ -25,7 +25,7 @@ module Validation.Rename
 import           Syntax.Expression
 import           Syntax.Schemes
 import           Syntax.Types
-import           Syntax.Kinds
+import           Syntax.Kind
 import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
 import           Syntax.Base

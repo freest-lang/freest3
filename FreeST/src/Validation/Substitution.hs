@@ -21,7 +21,7 @@ module Validation.Substitution
 
 import           Syntax.Base
 import           Syntax.TypeVariables
-import           Syntax.Kinds
+import           Syntax.Kind
 import           Syntax.Types
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set

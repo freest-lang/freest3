@@ -28,7 +28,7 @@ where
 
 import           Syntax.Expression
 import           Syntax.Types
-import           Syntax.Kinds
+import qualified Syntax.Kind as K
 import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
 import           Syntax.Base
@@ -104,10 +104,10 @@ extractForall e t = do
         , Error u
         ]
         -- TODO: return a suitable type
-      return $ Forall p (KindBind p (mkVar p "_") (omission p)) (omission p)
+      return $ Forall p (K.KindBind p (mkVar p "_") (omission p)) (omission p)
 
 -- Extracts a basic type from a general type; gives an error if it isn't a basic
--- Deprecated: Kind MU 
+-- Deprecated: K.Kind MU 
 -- extractBasic :: Type -> FreestState BasicType
 -- extractBasic t = do
 --   t' <- norm t

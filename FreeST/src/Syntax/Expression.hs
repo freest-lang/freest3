@@ -18,7 +18,7 @@ module Syntax.Expression
 ) where
 
 import           Syntax.Types (Type, TypeBind)
-import           Syntax.Kinds (KindBind)
+import           Syntax.Kind  (KindBind)
 import           Syntax.ProgramVariables
 import           Syntax.Base
 import qualified Data.Map.Strict as Map

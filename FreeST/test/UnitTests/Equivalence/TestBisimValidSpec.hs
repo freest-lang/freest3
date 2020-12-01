@@ -1,7 +1,7 @@
 module Equivalence.TestBisimValidSpec (spec) where
 
 import           Syntax.Types
-import           Syntax.Kinds
+import           Syntax.Kind
 import           Syntax.TypeVariables
 import           Syntax.Base
 import           Equivalence.Equivalence (bisimilar)

@@ -60,7 +60,7 @@ import           Data.List                      ( intercalate )
 import qualified Data.Map.Strict               as Map
 import           Syntax.Base
 import           Syntax.Expression
-import           Syntax.Kinds
+import           Syntax.Kind
 import           Syntax.ProgramVariables
 import           Syntax.TypeVariables
 import           Syntax.Types                   ( Type(..)

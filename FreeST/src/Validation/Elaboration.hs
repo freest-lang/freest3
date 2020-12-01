@@ -4,7 +4,7 @@ module Validation.Elaboration(elaborateTypes) where
 import           Syntax.Expression
 import           Syntax.Schemes
 import           Syntax.Types
-import           Syntax.Kinds
+import qualified Syntax.Kind as K
 import           Syntax.Base
 import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
@@ -64,7 +64,7 @@ solveEqs tenv = Map.foldlWithKey solveEq (return tenv) tenv
   solveEq
     :: FreestState TypeEnv
     -> TypeVar
-    -> (Kind, Type)
+    -> (K.Kind, Type)
     -> FreestState TypeEnv
   solveEq acc x t = do
     let bt = buildRecursiveType x t
@@ -86,7 +86,7 @@ solveEqs tenv = Map.foldlWithKey solveEq (return tenv) tenv
 -- substituteEnv :: TypeVar -> Type -> TypeEnv -> FreestState TypeEnv
 -- substituteEnv x t = tMapWithKeyM subsEnv
 --  where
---   subsEnv :: TypeVar -> (Kind, Type) -> FreestState (Kind, Type)
+--   subsEnv :: TypeVar -> (K.Kind, Type) -> FreestState (K.Kind, Type)
 --   subsEnv v ks@(k, s)
 --     | x == v = pure ks -- ignore the node itself
 --     | otherwise = do
@@ -94,14 +94,14 @@ solveEqs tenv = Map.foldlWithKey solveEq (return tenv) tenv
 --         s' <- subsType Map.empty (Just (x, t)) s
 --         return (k, buildRecursiveType v (k, s'))
 
-substituteEnv :: TypeVar -> (Kind, Type) -> TypeEnv -> FreestState TypeEnv
+substituteEnv :: TypeVar -> (K.Kind, Type) -> TypeEnv -> FreestState TypeEnv
 substituteEnv x t tenv = do -- tMapWithKeyM subsEnv
   -- debugM ("Subs " ++ show x ++ ":\n" ++ show tenv)
   tmp <- tMapWithKeyM subsEnv tenv
   -- debugM ("After subs " ++ show x ++ ":\n" ++ show tmp)
   pure tmp
  where
-  subsEnv :: TypeVar -> (Kind, Type) -> FreestState (Kind, Type)
+  subsEnv :: TypeVar -> (K.Kind, Type) -> FreestState (K.Kind, Type)
   subsEnv v ks@(k, s)
     | x == v = pure (k, buildRecursiveType v (k, s)) -- ignore the node itself
     | otherwise = do
@@ -129,10 +129,10 @@ substituteEnv x t tenv = do -- tMapWithKeyM subsEnv
 
 -- BUILDING RECURSIVE TYPES IF NEEDED
 
-buildRecursiveType :: TypeVar -> (Kind, Type) -> Type
+buildRecursiveType :: TypeVar -> (K.Kind, Type) -> Type
 buildRecursiveType v (k, t)
   | isRecursiveTypeDecl v t = Rec (pos v)
-                                  (KindBind (pos v) v k)
+                                  (K.KindBind (pos v) v k)
                                   t
   | otherwise = t
 
@@ -143,7 +143,7 @@ isRecursiveTypeDecl v (Choice _ _ m) =
   Map.foldlWithKey (\b _ t -> b || isRecursiveTypeDecl v t) False m
 isRecursiveTypeDecl v (Datatype _ m) =
   Map.foldlWithKey (\b _ t -> b || isRecursiveTypeDecl v t) False m  
-isRecursiveTypeDecl v (Rec _ (KindBind _ x _) t)
+isRecursiveTypeDecl v (Rec _ (K.KindBind _ x _) t)
   | x == v    = False -- it is already a recursive type
   | otherwise = isRecursiveTypeDecl v t
 isRecursiveTypeDecl v (Forall _ _ t) = isRecursiveTypeDecl v t
@@ -165,7 +165,7 @@ isRecursiveTypeDecl _ _            = False
 --                                  x == tname = TypeVar p tname
 --                                | otherwise  = TypeName p tname
 -- toTypeVar x (Semi p t1 t2) = Semi p (toTypeVar x t1) (toTypeVar x t2)
--- toTypeVar _ (Rec p xs@(KindBind _ x _) t) = Rec p xs (toTypeVar x t)
+-- toTypeVar _ (Rec p xs@(K.KindBind _ x _) t) = Rec p xs (toTypeVar x t)
 -- toTypeVar x (Forall p kb t) = Forall p kb (toTypeVar x t)
 -- -- functional types
 -- toTypeVar x (Fun p m t u) = Fun p m (toTypeVar x t) (toTypeVar x u)

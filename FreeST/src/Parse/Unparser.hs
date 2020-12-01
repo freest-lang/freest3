@@ -18,7 +18,7 @@ where
 import           Syntax.Expression
 import           Syntax.Schemes
 import           Syntax.Types
-import           Syntax.Kinds
+import qualified Syntax.Kind as K
 import           Syntax.ProgramVariables
 import           Syntax.TypeVariables
 import           Syntax.Base
@@ -59,18 +59,18 @@ showVar = dropWhile (\c -> isDigit c || c == '#') . intern
 
 -- Kinds
 
-instance Show PreKind where
-  show Session    = "S"
-  show Functional = "T"
-  show MessageK = "M"
+instance Show K.PreKind where
+  show K.Session    = "S"
+  show K.Functional = "T"
+  show K.Message = "M"
 
-instance Show Kind where
-  show (Kind _ p m) = show p ++ show m
+instance Show K.Kind where
+  show (K.Kind _ p m) = show p ++ show m
 
 -- Kind binds
 
-instance Show KindBind where
-  show (KindBind _ a k) = show a ++ ":" ++ show k
+instance Show K.KindBind where
+  show (K.KindBind _ a k) = show a ++ ":" ++ show k
 
 -- Polarities
 

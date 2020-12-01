@@ -43,7 +43,7 @@ library:
     - Syntax.Types
     - Syntax.Expression
     - Syntax.Schemes
-    - Syntax.Kinds
+    - Syntax.Kind
     - Syntax.ProgramVariables
     - Parse.ParseUtils
     - Parse.Read

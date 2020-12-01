@@ -1,5 +1,5 @@
 {- |
-Module      :  Syntax.Kinds
+Module      :  Syntax.Kind
 Description :  The kind of a type
 Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of Lisbon
                    Andreia Mordido, LASIGE, Faculty of Sciences, University of Lisbon
@@ -11,43 +11,44 @@ subkinding relation, the least upper bound of two kinds and other functions to
 manipulate prekinds and multiplicities.
 -}
 
-module Syntax.Kinds
-( PreKind (..)
-, KindBind(..)
-, Kind (..)
-, KindEnv
-, kindTL
-, kindTU
-, kindSL
-, kindSU
-, kindMU
-, kindML
-, isSession
-, (<:)
-, join
-, isLin
-, isUn
-) where
+module Syntax.Kind
+  ( PreKind(..)
+  , KindBind(..)
+  , Kind(..)
+  , KindEnv
+  , kindTL
+  , kindTU
+  , kindSL
+  , kindSU
+  , kindMU
+  , kindML
+  , isSession
+  , (<:)
+  , join
+  , isLin
+  , isUn
+  )
+where
 
 import           Syntax.TypeVariables
 import           Syntax.Base
-import qualified Data.Map.Strict as Map
+import qualified Data.Map.Strict               as Map
 
 -- Prekinds
 
-data PreKind = MessageK | Session | Functional deriving Eq
+data PreKind = Message | Session | Functional deriving Eq
 
 instance Ord PreKind where
-   Session <= Functional = True
-   _       <= _          = False
+  Session <= Functional = True
+  _       <= _          = False
 
 -- Kinds
 
-data Kind = Kind Pos PreKind Multiplicity 
+data Kind = Kind Pos PreKind Multiplicity
           deriving Ord -- TODO: I wish we do not need this
 
 instance Eq Kind where
-  (Kind _ p n) == (Kind _ q m) = p == q && n == m  
+  (Kind _ p n) == (Kind _ q m) = p == q && n == m
 
 -- Abbreviations for the four kinds
 kindTL, kindTU, kindSL, kindSU, kindMU, kindML :: Pos -> Kind
@@ -55,8 +56,8 @@ kindTL p = Kind p Functional Lin
 kindTU p = Kind p Functional Un
 kindSL p = Kind p Session Lin
 kindSU p = Kind p Session Un
-kindMU p = Kind p MessageK Un
-kindML p = Kind p MessageK Lin
+kindMU p = Kind p Message Un
+kindML p = Kind p Message Lin
 
 -- The subkinding relation. Note that Kind is a partial order, hence
 -- should *not* be an instance class Ord.
@@ -67,17 +68,17 @@ kindML p = Kind p MessageK Lin
 --    MU  SU
 
 (<:) :: Kind -> Kind -> Bool
-(Kind _ Session m1)  <: (Kind _ Functional m2) = m1  <= m2
-(Kind _ MessageK m1) <: (Kind _ Functional m2) = m1  <= m2
-(Kind _ k1 m1)       <: (Kind _ k2 m2)         = k1 == k2 && m1 <= m2
+(Kind _ Session m1) <: (Kind _ Functional m2) = m1 <= m2
+(Kind _ Message m1) <: (Kind _ Functional m2) = m1 <= m2
+(Kind _ k1      m1) <: (Kind _ k2         m2) = k1 == k2 && m1 <= m2
 
 -- The least upper bound of two kinds
 join :: Kind -> Kind -> Kind
-join (Kind p Functional Un) (Kind _ Session   Lin) = kindTL p
-join (Kind p Session   Lin) (Kind _ Functional Un) = kindTL p
-join (Kind p Functional Un) (Kind _ MessageK  Lin) = kindTL p
-join (Kind p MessageK  Lin) (Kind _ Functional Un) = kindTL p
-join k1                     k2                     = if k1 <: k2 then k2 else k1
+join (Kind p Functional Un ) (Kind _ Session    Lin) = kindTL p
+join (Kind p Session    Lin) (Kind _ Functional Un ) = kindTL p
+join (Kind p Functional Un ) (Kind _ Message    Lin) = kindTL p
+join (Kind p Message    Lin) (Kind _ Functional Un ) = kindTL p
+join k1 k2 = if k1 <: k2 then k2 else k1
 
 -- The kind of conventional (non linear, not sessions) functional
 -- programming languages (Alternative: the kind that sits at the top

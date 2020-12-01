@@ -10,7 +10,7 @@ where
 import           Data.List                      ( intercalate )
 import           Syntax.Base
 import           Syntax.Expression
-import           Syntax.Kinds
+import           Syntax.Kind
 import           Syntax.ProgramVariables
 import           Syntax.Schemes
 import           Syntax.TypeVariables
