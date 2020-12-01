@@ -17,7 +17,6 @@ module Validation.Extract
   ( extractFun
   , extractPair
   , extractForall
-  , extractBasic
   , extractOutput
   , extractInput
   , extractOutChoiceMap
@@ -108,26 +107,27 @@ extractForall e t = do
       return $ Forall p (KindBind p (mkVar p "_") (omission p)) (omission p)
 
 -- Extracts a basic type from a general type; gives an error if it isn't a basic
-extractBasic :: Type -> FreestState BasicType
-extractBasic t = do
-  t' <- norm t
-  case t' of
-    (Basic _ b) -> return b
-    u ->
-      addError (position u)
-               [Error "Expecting a basic type; found type", Error u]
-        >> return IntType
+-- Deprecated: Kind MU 
+-- extractBasic :: Type -> FreestState BasicType
+-- extractBasic t = do
+--   t' <- norm t
+--   case t' of
+--     (Basic _ b) -> return b
+--     u ->
+--       addError (position u)
+--                [Error "Expecting a basic type; found type", Error u]
+--         >> return IntType
 
 -- Extracts an output type from a general type; gives an error if it isn't an output
-extractOutput :: Expression -> Type -> FreestState (BasicType, Type)
+extractOutput :: Expression -> Type -> FreestState (Type, Type)
 extractOutput = extractMessage Out "output"
 
 -- Extracts an input type from a general type; gives an error if an input is not found
-extractInput :: Expression -> Type -> FreestState (BasicType, Type)
+extractInput :: Expression -> Type -> FreestState (Type, Type)
 extractInput = extractMessage In "input"
 
 extractMessage
-  :: Polarity -> String -> Expression -> Type -> FreestState (BasicType, Type)
+  :: Polarity -> String -> Expression -> Type -> FreestState (Type, Type)
 extractMessage pol msg e t = do
   t' <- norm t
   case t' of
@@ -138,7 +138,7 @@ extractMessage pol msg e t = do
     u -> extractMessageErr msg e u
  where
   extractMessageErr
-    :: String -> Expression -> Type -> FreestState (BasicType, Type)
+    :: String -> Expression -> Type -> FreestState (Type, Type)
   extractMessageErr msg e u = do
     addError
       (position e)
@@ -147,7 +147,7 @@ extractMessage pol msg e t = do
       , Error "\n\t found type"
       , Error u
       ]
-    return (UnitType, Skip (position u))
+    return (UnitType (position u), Skip (position u))
 
 -- Extracts a choice type from a general type; gives an error if a choice is not found
 extractOutChoiceMap :: Expression -> Type -> FreestState TypeMap

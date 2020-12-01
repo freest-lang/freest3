@@ -190,7 +190,7 @@ Expr :: { Expression }
   | Expr ';' Expr                    { App (position $1)
                                          (Abs (position $1) Un
                                            (TypeBind (position $1) (mkVar (position $1) "_")
-                                             (Basic (position $3) UnitType))
+                                             (UnitType (position $3)))
                                            $3)
                                        $1}
   | let '(' ProgVarWild ',' ProgVarWild ')' '=' Expr in Expr
@@ -267,17 +267,18 @@ Case :: { (ProgVar, ([ProgVar], Expression)) }
 
 Type :: { Type }
   -- Functional types
-  : BasicType                     { uncurry Basic $1 }
+--  : BasicType                     { uncurry Basic $1 }
+  : BasicType                     { $1 }
   | Type Arrow Type               { uncurry Fun $2 $1 $3 }
   | '(' Type ',' TupleType ')'    { PairType (position $1) $2 $4 }
   -- Session types
-  | Skip                             { Skip (position $1) }
-  | Type ';' Type                    { Semi (position $2) $1 $3 }
-  | Polarity BasicType               { uncurry Message $1 (snd $2) }
-  | ChoiceView '{' FieldList '}'     { uncurry Choice $1 $3 }
-  | rec KindBind '.' Type            { Rec (position $1) $2 $4 }
+  | Skip                          { Skip (position $1) }
+  | Type ';' Type                 { Semi (position $2) $1 $3 }
+  | Polarity BasicType            { uncurry Message $1 $2 }
+  | ChoiceView '{' FieldList '}'  { uncurry Choice $1 $3 }
+  | rec KindBind '.' Type         { Rec (position $1) $2 $4 }
   -- Polymorphism
-  | forall KindBind '=>' Type        { Forall (position $1) $2 $4 }
+  | forall KindBind '=>' Type     { Forall (position $1) $2 $4 }
   -- Functional or session
   | TypeVar                       { TypeVar (position $1) $1 }
   -- Type operators
@@ -285,11 +286,11 @@ Type :: { Type }
   | TypeName                      { TypeVar (position $1) $1 } -- TODO: remove this one lex
   | '(' Type ')'                  { $2 }
 
-BasicType :: { (Pos, BasicType) }
-  : Int  { (position $1, IntType) }
-  | Char { (position $1, CharType) }
-  | Bool { (position $1, BoolType) }
-  | '()' { (position $1, UnitType) }
+BasicType :: { Type }
+  : Int  { IntType (position $1) }
+  | Char { CharType (position $1) }
+  | Bool { BoolType (position $1) }
+  | '()' { UnitType (position $1) }
 
 TupleType :: { Type }
   : Type                    { $1 }

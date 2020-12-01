@@ -56,19 +56,18 @@ debugM err = do
 
 synthetise :: KindEnv -> Expression -> FreestState Type
 -- Basic expressions
-synthetise _    (Unit p       ) = return $ Basic p UnitType
-synthetise _    (Integer   p _) = return $ Basic p IntType
-synthetise _    (Character p _) = return $ Basic p CharType
-synthetise _    (Boolean   p _) = return $ Basic p BoolType
+synthetise _    (Unit p       ) = return $ UnitType p
+synthetise _    (Integer   p _) = return $ IntType p
+synthetise _    (Character p _) = return $ CharType p
+synthetise _    (Boolean   p _) = return $ BoolType p
 -- Variable
 synthetise kEnv e@(ProgVar p x)
   | x == mkVar p "receive" = addPartiallyAppliedError e "channel"
   | x == mkVar p "send" = addPartiallyAppliedError e "value and another denoting a channel"
   | otherwise = do
---      debugM ("asdfklasdflk")
---      debugM ("asdfklasdflk1")
+--      debugM $ show x
       t <- synthetiseVar kEnv x
---      debugM ("asdfklasdflk1")
+    
       return t
       -- s@(TypeScheme _ bs t) <- synthetiseVar kEnv x
       -- unless
@@ -113,14 +112,16 @@ synthetise kEnv (App p (ProgVar _ x) e)  -- Receive e
   | x == mkVar p "receive" = do
       t        <- synthetise kEnv e
       (u1, u2) <- extractInput e t
-      return $ PairType p (Basic p u1) u2
+      K.checkAgainst kEnv (kindML (position u1)) u1
+      return $ PairType p u1 u2
 synthetise kEnv e@(App p (ProgVar _ x) _)  -- Send e
   | x == mkVar p "send" = addPartiallyAppliedError e "channel"
 synthetise kEnv (App p (App _ (ProgVar _ x) e1) e2)  -- Send e1 e2
   | x == mkVar p "send" = do
       t        <- synthetise kEnv e2
-      (u1, u2) <- extractOutput e2 t
-      checkAgainst kEnv e1 $ Basic p u1
+      (u1, u2) <- extractOutput e2 t      
+      K.checkAgainst kEnv (kindML (position u1)) u1
+      checkAgainst kEnv e1 $ u1
       return u2
 synthetise kEnv e@(App _ e1 e2) = do -- General case
 --  debugM ("Extract Fun: " ++ show e)
@@ -194,7 +195,7 @@ synthetise kEnv (TypeApp p e t) = do -- TODO: error and bs, zip
   -- return $ foldr (\(u, KindBind _ y _) -> Rename.subs u y) t typeKinds
 -- Boolean elimination
 synthetise kEnv (Conditional p e1 e2 e3) = do
-  checkAgainst kEnv e1 (Basic p BoolType)
+  checkAgainst kEnv e1 (BoolType p)
   vEnv2 <- getVEnv
   t     <- synthetise kEnv e2
   vEnv3 <- getVEnv
@@ -422,7 +423,7 @@ checkAgainst :: KindEnv -> Expression -> Type -> FreestState ()
 -- Boolean elimination
 checkAgainst kEnv (Conditional p e1 e2 e3) t = do
   -- let kEnv = kEnvFromType kEnv t
-  checkAgainst kEnv e1 (Basic p BoolType)
+  checkAgainst kEnv e1 (BoolType p)
   vEnv2 <- getVEnv
   checkAgainst kEnv e2 t
   vEnv3 <- getVEnv

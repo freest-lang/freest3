@@ -230,11 +230,14 @@ maybeScopeErr :: Type -> FreestState Type
 maybeScopeErr (TypeVar p tname) = getFromTEnv tname >>= \case
   Just (_, t) -> pure t
   Nothing -> addError p [Error "Type name not in scope:", Error tname]
-    >> pure (Basic p UnitType)
+    >> pure (UnitType p)
 
 -- Change position of a given type with a given position
 changePos :: Pos -> Type -> Type
-changePos p (Basic _ t       ) = Basic p t
+changePos p (IntType _        ) = IntType p
+changePos p (CharType _       ) = CharType p
+changePos p (BoolType _       ) = BoolType p
+changePos p (UnitType _       ) = UnitType p
 changePos p (Fun _ pol t u   ) = Fun p pol t u
 changePos p (PairType _ t   u) = PairType p t u
 -- Datatype

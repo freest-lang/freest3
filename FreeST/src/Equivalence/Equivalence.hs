@@ -56,7 +56,10 @@ instance Equivalence Type where
     -- Have we been here before?
     equiv v t u | (t, u) `Set.member` v = True
     -- Functional types
-    equiv _ (Basic _ b) (Basic _ c)     = b == c
+    equiv _ (IntType _) (IntType _)     = True
+    equiv _ (CharType _) (CharType _)   = True
+    equiv _ (BoolType _) (BoolType _)   = True
+    equiv _ (UnitType _) (UnitType _)   = True
     equiv v (Fun _ m t1 t2) (Fun _ n u1 u2) =
       m == n && equiv v t1 u1 && equiv v t2 u2
     equiv v (PairType _ t1 t2) (PairType _ u1 u2) =

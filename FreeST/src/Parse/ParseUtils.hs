@@ -45,7 +45,6 @@ import           Syntax.ProgramVariables
 import           Syntax.Schemes
 import           Syntax.TypeVariables
 import           Syntax.Types
-import           Utils.ErrorMessage
 import           Utils.FreestState
 
 import           Debug.Trace -- debug

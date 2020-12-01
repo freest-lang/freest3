@@ -10,8 +10,8 @@ This module defines a types and equality.
 -}
 
 module Syntax.Types
-( BasicType(..)
-, Type(..)
+( -- BasicType(..),
+  Type(..)
 , TypeBind(..)
 , TypeMap
 , Polarity(..)
@@ -39,18 +39,21 @@ data Polarity =
 
 -- BASIC TYPES
 
-data BasicType =
-    IntType
-  | CharType
-  | BoolType
-  | UnitType
-  deriving (Eq, Ord)
+-- data BasicType =
+--     IntType
+--   | CharType
+--   | BoolType
+--   | UnitType
+--   deriving (Eq, Ord)
 
 -- TYPES
 
 data Type =
   -- Functional Types
-    Basic Pos BasicType
+    IntType Pos
+  | CharType Pos
+  | BoolType Pos
+  | UnitType Pos
   | Fun Pos Multiplicity Type Type
   | PairType Pos Type Type      -- TODO: Rename to Pair, then
                                 -- make Pair a b = ∀c. (a => b => c) => c (see TAPL pg 352)
@@ -58,7 +61,7 @@ data Type =
   -- Session Types
   | Skip Pos
   | Semi Pos Type Type
-  | Message Pos Polarity BasicType
+  | Message Pos Polarity Type
   | Choice Pos Polarity TypeMap
   -- Type Variable
   | TypeVar Pos TypeVar  
@@ -78,7 +81,10 @@ type TypeMap = Map.Map ProgVar Type
 
 instance Position Type where
   -- Functional types
-  position (Basic p _)      = p
+  position (IntType p)      = p
+  position (CharType p)     = p
+  position (BoolType p)     = p
+  position (UnitType p)     = p
   position (Fun p _ _ _)    = p
   position (PairType p _ _) = p
   position (Datatype p _)   = p
@@ -97,7 +103,7 @@ instance Position Type where
   position (TypeName p _)   = p
 
 instance Default Type where
-  omission p = Basic p IntType
+  omission p = IntType p
 
 -- Binding program variables to types
 

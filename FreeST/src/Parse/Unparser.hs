@@ -82,14 +82,6 @@ showChoiceView :: Polarity -> String
 showChoiceView In  = "&"
 showChoiceView Out = "+"
 
--- Basic types
-
-instance Show BasicType where
-  show IntType  = "Int"
-  show CharType = "Char"
-  show BoolType = "Bool"
-  show UnitType = "()"
-
 -- Unparsing types and expressions
 
 -- Norman Ramsey, Unparsing Expressions With Prefix and Postfix
@@ -137,7 +129,10 @@ instance Show Type where
   show = snd . unparse
 
 instance Unparse Type where
-  unparse (Basic _ b) = (maxRator, show b)
+  unparse (IntType _) = (maxRator, "Int")
+  unparse (CharType _) = (maxRator, "Char")
+  unparse (BoolType _) = (maxRator, "Bool")
+  unparse (UnitType _) = (maxRator, "()")
   unparse (Skip _) = (maxRator, "Skip")
   unparse (TypeVar _ a) = (maxRator, show a)
   unparse (Message _ p b) = (maxRator, show p ++ show b)

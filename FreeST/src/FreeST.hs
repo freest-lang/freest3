@@ -48,16 +48,17 @@ checkAndRun filePath = do
   -- Parse
   s1 <- parseProgram filePath prelude
   when (hasErrors s1) (die $ getErrors s1)
-  -- Rename
-  let s2 = execState renameState s1
   -- Solve type declarations and dualof operators
-  let s3 = execState elaborateTypes s2
-  when (hasErrors s3) (die $ getErrors s3)
-  -- Type check
+  let s2 = execState elaborateTypes s1
+  when (hasErrors s2) (die $ getErrors s2)
+
+  -- Rename
+  let s3 = execState renameState s2
+
+   -- Type check
   let s4 = execState typeCheck s3
   when (hasErrors s4) (die $ getErrors s4)
   -- Interpret
   evalAndPrint initialCtx
                (expEnv s4)
                (expEnv s4 Map.! mkVar defaultPos "main")
-

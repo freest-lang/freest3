@@ -41,7 +41,10 @@ import Debug.Trace
 -- Returns the kind of a given type
 synthetise :: KindEnv -> Type -> FreestState Kind
 -- Functional types
-synthetise _    (Basic p _  ) = return $ Kind p MessageK Un
+synthetise _    (IntType p) = return $ Kind p MessageK Un
+synthetise _    (CharType p) = return $ Kind p MessageK Un
+synthetise _    (BoolType p) = return $ Kind p MessageK Un
+synthetise _    (UnitType p) = return $ Kind p MessageK Un
 synthetise kEnv (Fun p m t u) = do
   synthetise kEnv t
   synthetise kEnv u
