@@ -62,6 +62,7 @@ showVar = dropWhile (\c -> isDigit c || c == '#') . intern
 instance Show PreKind where
   show Session    = "S"
   show Functional = "T"
+  show MessageK = "M"
 
 instance Show Kind where
   show (Kind _ p m) = show p ++ show m
@@ -152,7 +153,8 @@ instance Unparse Type where
     where l = bracket (unparse t) Left semiRator
           r = bracket (unparse u) Right semiRator
   unparse (Choice _ v m) = (maxRator, showChoiceView v ++ "{" ++ showChoice m ++ "}")
-  -- unparse (Forall _ b t) = (semiRator, l ++ ";" ++ r)
+  unparse (Forall _ b t) = (dotRator, "∀" ++ show b ++ "=>" ++ s)
+    where s = bracket (unparse t) Right dotRator
   unparse (Rec _ xk t) = (dotRator, "rec " ++ show xk ++ "." ++ s)
     where s = bracket (unparse t) Right dotRator
   unparse (Dualof _ t) = (dualofRator, "dualof " ++ s)
