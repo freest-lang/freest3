@@ -21,14 +21,11 @@ import           Syntax.Kinds
 import           Syntax.TypeVariables
 import qualified Data.Set as Set
 
--- A terminated type is composed of Skip, semi-colon, recursive types,
--- and variables introduced by recursive types. In particular infinite
--- sequences of Skips is terminated.
 terminated = term Set.empty
   where
     term _ (Skip _) = True
     term s (Semi _ t u) = term s t && term s u
-    term s (Rec _ (KindBind _ a _) t) = term (Set.insert a s) t
+    term s (Rec p (KindBind _ a _) t) = term (Set.insert a s) t
     term s (TypeVar _ a) = a `Set.member` s
     term _ _ = False
 
