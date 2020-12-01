@@ -3,7 +3,7 @@
 &{}
 +{}
 
--- Duplicate labels in records
+-- Duplicated labels in records
 
 +{ A: !(), A: !Bool }
 +{ A: !(), A: !Bool, B: ?Int }
@@ -21,24 +21,6 @@
 &{ A: Unit, A: Bool, B: Int }
 &{ A: Unit, B: Int, A: Bool }
 &{ A: Unit, B: Int, B: Int, A: Bool }
-
--- Non contractive, terminated
-
-rec a:TL. a
-rec a:SU. (Skip; a)
-rec a:SU. Skip; a; Skip
-rec a:SU. Skip; a; a; a; a; a
-Skip; rec a:SU. (Skip; a)
-Skip; rec a:SU. ( Skip; a; Skip)
-Skip; rec a:SU. ( Skip; a; Skip)
-Skip; Skip; Skip; rec a:SU. (Skip; a; a; a; a; a)
-rec a:SU. (((Skip ; a) ; a) ; a)
-rec a. a
-rec a. a;  a;  a;  a;  a
-rec a. rec b. rec c. rec d. a
-Int -> rec a. rec b. rec c. rec d. a
-rec a:SU. (rec a:SU. Skip; a); (rec a:SU. (Skip; a))
-Skip; rec a:SU. ((rec a:SU. (Skip; a)); (rec a:SU. (Skip; a))); Skip; Skip
 
 -- Non contractive, non terminated
 
