@@ -10,7 +10,7 @@ import           Syntax.Types
 import           Syntax.ProgramVariables
 import           Syntax.Base
 import qualified Data.Map.Strict               as Map
-import           Syntax.Kinds
+import           Syntax.Kind
 
 binIntOp :: Type
 binIntOp =

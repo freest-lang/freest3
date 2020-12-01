@@ -17,7 +17,7 @@ import           Parse.Parser
 import Parse.Read
 import           Data.List.Split                ( chunksOf )
 import qualified Data.Map.Strict               as Map
-import           Syntax.Kinds                   ( KindEnv )
+import           Syntax.Kind                   ( KindEnv )
 import           Syntax.Base                    ( defaultPos
                                                 , mkVar
                                                 )

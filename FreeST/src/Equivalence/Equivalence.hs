@@ -21,7 +21,7 @@ where
 
 import           Syntax.Schemes
 import           Syntax.Types
-import           Syntax.Kinds
+import qualified Syntax.Kind as K
 import           Syntax.ProgramVariables
 import           Syntax.TypeVariables
 import qualified Validation.Rename             as Rename
@@ -41,7 +41,7 @@ import qualified Data.Set                      as Set
 import           Debug.Trace --debug
 
 class Equivalence t where
-  equivalent :: TypeEnv -> KindEnv -> t -> t -> Bool
+  equivalent :: TypeEnv -> K.KindEnv -> t -> t -> Bool
 
 -- Types
 
@@ -99,18 +99,18 @@ bisimilar tEnv t u = Bisimulation.bisimilar $ convertToGrammar tEnv [t, u]
     -- trace (show t ++ "\nbisim\n" ++ show u) $ convertToGrammar tEnv [t, u]
 
 -- Assumes the type is well formed
-isSessionType :: TypeEnv -> KindEnv -> Type -> Bool
+isSessionType :: TypeEnv -> K.KindEnv -> Type -> Bool
   -- Session types
 isSessionType _ _ (Skip _) = True
 isSessionType _ _ Semi{} = True
 isSessionType _ _ Message{} = True
 isSessionType _ _ Choice{} = True
   -- Recursion
-isSessionType _ _ (Rec _ (KindBind _ _ k) _) = isSession k
+isSessionType _ _ (Rec _ (K.KindBind _ _ k) _) = K.isSession k
 isSessionType _ kenv (TypeVar _ x) = Map.member x kenv
   -- Type operators
 isSessionType _ _ Dualof{} = True
-isSessionType tenv _ (TypeName _ x) = isSession $ fst $ tenv Map.! x
+isSessionType tenv _ (TypeName _ x) = K.isSession $ fst $ tenv Map.! x
   -- Otherwise: Functional types
 isSessionType _    _    _ = False
 
@@ -121,16 +121,16 @@ isSessionType _    _    _ = False
 --     Nothing              -> False
 --     Just (kenv2, t1, t2) -> equivalent tenv (kenv1 `Map.union` kenv2) t1 t2
 
--- instantiate :: TypeScheme -> TypeScheme -> Maybe (KindEnv, Type, Type)
+-- instantiate :: TypeScheme -> TypeScheme -> Maybe (K.KindEnv, Type, Type)
 -- instantiate (TypeScheme _ bs1 t1) (TypeScheme _ bs2 t2) = inst bs1 bs2 t1 t2
 --  where
 --   inst
---     :: [KindBind]
---     -> [KindBind]
+--     :: [K.KindBind]
+--     -> [K.KindBind]
 --     -> Type
 --     -> Type
---     -> Maybe (KindEnv, Type, Type)
---   inst (KindBind p1 x1 k1 : bs1) (KindBind _ x2 k2 : bs2) t1 t2
+--     -> Maybe (K.KindEnv, Type, Type)
+--   inst (K.KindBind p1 x1 k1 : bs1) (K.KindBind _ x2 k2 : bs2) t1 t2
 --     | k1 /= k2 = Nothing
 --     | otherwise = -- substitute x1 for x2 in t2
 --                   fmap (\(m, t1', t2') -> (Map.insert x1 k1 m, t1', t2'))

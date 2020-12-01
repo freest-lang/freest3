@@ -28,7 +28,7 @@ noConstructors
 ) where
 
 import           Syntax.Types
-import           Syntax.Kinds
+import           Syntax.Kind
 import           Syntax.ProgramVariables
 import           Syntax.TypeVariables
 import           Syntax.Base

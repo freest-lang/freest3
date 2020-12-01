@@ -40,7 +40,7 @@ import qualified Data.Map.Strict               as Map
 import           Equivalence.Normalisation
 import           Syntax.Base
 import           Syntax.Expression
-import           Syntax.Kinds
+import           Syntax.Kind
 import           Syntax.ProgramVariables
 import           Syntax.Schemes
 import           Syntax.TypeVariables

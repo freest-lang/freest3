@@ -12,7 +12,7 @@ where
 import           Syntax.Expression
 import           Syntax.Schemes
 import           Syntax.Types
-import           Syntax.Kinds
+import qualified Syntax.Kind as K
 import           Syntax.ProgramVariables
 import           Syntax.TypeVariables
 import           Syntax.Base
@@ -332,13 +332,13 @@ TypeSeq :: { [Type] }
 -- KINDS --
 -----------
 
-Kind :: { Kind }
-  : SU             { kindSU (pos $1) }
-  | SL             { kindSL (pos $1) }
-  | TU             { kindTU (pos $1) }
-  | TL             { kindTL (pos $1) }
-  | MU             { kindMU (pos $1) }
-  | ML             { kindML (pos $1) }
+Kind :: { K.Kind }
+  : SU             { K.kindSU (pos $1) }
+  | SL             { K.kindSL (pos $1) }
+  | TU             { K.kindTU (pos $1) }
+  | TL             { K.kindTL (pos $1) }
+  | MU             { K.kindMU (pos $1) }
+  | ML             { K.kindML (pos $1) }
 --  | Kind '->' Kind { KindArrow (pos $1) $1 $3 }
 -- TODO: arrow
 
@@ -370,19 +370,19 @@ TypeVar :: { TypeVar }
 TypeName :: { TypeVar }
   : UPPER_ID { mkVar (pos $1) (getText $1) }
 
-KindBind :: { KindBind }
-  : TypeVar ':' Kind { KindBind (pos $1) $1 $3 }
-  | TypeVar          { KindBind (pos $1) $1 (omission (pos $1)) }
+KindBind :: { K.KindBind }
+  : TypeVar ':' Kind { K.KindBind (pos $1) $1 $3 }
+  | TypeVar          { K.KindBind (pos $1) $1 (omission (pos $1)) }
 
-KindedTVar :: { (TypeVar, Kind) }    -- for type and data declarations
+KindedTVar :: { (TypeVar, K.Kind) }    -- for type and data declarations
   : TypeName ':' Kind { ($1, $3) }
   | TypeName          { ($1, omission (pos $1)) }
 
-KindBindList :: { [KindBind] }
+KindBindList :: { [K.KindBind] }
   : KindBind                     { [$1] }
   | KindBind ',' KindBindList {% toStateT $ checkDupKindBind $1 $3 >> return ($1 : $3) }
 
-KindBindEmptyList :: { [KindBind] }
+KindBindEmptyList :: { [K.KindBind] }
   :                 { [] }
   | KindBindList { $1 }
 
@@ -403,7 +403,7 @@ KindBindEmptyList :: { [KindBind] }
 
 -- KINDS  
 
-parseKind :: String -> Kind
+parseKind :: String -> K.Kind
 parseKind str =
   case evalStateT (parse str "" kinds) (initialState "") of
     Ok x -> x

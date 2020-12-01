@@ -17,7 +17,7 @@ module Validation.Terminated
 where
 
 import           Syntax.Types
-import           Syntax.Kinds
+import qualified Syntax.Kind as K
 import           Syntax.TypeVariables
 import qualified Data.Set as Set
 
@@ -25,6 +25,6 @@ terminated = term Set.empty
   where
     term _ (Skip _) = True
     term s (Semi _ t u) = term s t && term s u
-    term s (Rec _ (KindBind _ a _) t) = term (Set.insert a s) t
+    term s (Rec _ (K.KindBind _ a _) t) = term (Set.insert a s) t
     term s (TypeVar _ a) = a `Set.member` s
     term _ _ = False

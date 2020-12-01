@@ -20,7 +20,7 @@ module Syntax.Types
 , VarEnv
 ) where
 
-import           Syntax.Kinds
+import qualified Syntax.Kind as K
 import           Syntax.TypeVariables
 import           Syntax.ProgramVariables (ProgVar)
 import           Syntax.Base
@@ -66,11 +66,11 @@ data Type =
   -- Type Variable
   | TypeVar Pos TypeVar  
   -- Polymorphism
-  | Forall Pos KindBind Type    -- ∀ a:k => T
+  | Forall Pos K.KindBind Type    -- ∀ a:k => T
   -- Recursive Types
-  | Rec Pos KindBind Type       -- μ a:k => T
+  | Rec Pos K.KindBind Type       -- μ a:k => T
   -- Type operators
-  | TAbs Pos KindBind Type      -- λ a:k => T -- TODO: Rename to Abs
+  | TAbs Pos K.KindBind Type      -- λ a:k => T -- TODO: Rename to Abs
   | TApp Pos Type Type                        -- TODO: Rename to App
   | Dualof Pos Type             -- TODO: eliminate
   -- Named Type, to be looked upon in a map of type names to types, tEnv
@@ -151,7 +151,7 @@ equalMaps s m1 m2 =
 
 
 -- The definitions of the datatypes and types declared in a program
-type TypeEnv = Map.Map TypeVar (Kind, Type)
+type TypeEnv = Map.Map TypeVar (K.Kind, Type)
 
 -- The signatures of the functions names (including the primitive
 -- operators) and parameters, and the datatype constructors

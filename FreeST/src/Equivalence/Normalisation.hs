@@ -16,7 +16,7 @@ module Equivalence.Normalisation
 
 import           Syntax.Schemes
 import           Syntax.Types
-import           Syntax.Kinds
+import           Syntax.Kind
 import           Syntax.Base
 import           Validation.Terminated (terminated)
 import qualified Validation.Substitution as Substitution (unfold)
