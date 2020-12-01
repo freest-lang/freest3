@@ -120,11 +120,11 @@ rename' bs (Forall p (KindBind p' a k) t) = do
   return $ Forall p (KindBind p' a' k) t'
   -- Functional or session
 rename' bs (Rec p (KindBind p' a k) t)
+  | terminated t = return $ Skip p
   | a `isFreeIn` t = do
       a' <- rename bs a
       t' <- rename (insertVar a a' bs) t
       return $ Rec p (KindBind p' a' k) t'
-  | terminated t = return $ Skip p
   | otherwise = rename bs t
 rename' bs (TypeVar p a) =
   return $ TypeVar p (findWithDefaultVar a bs)
