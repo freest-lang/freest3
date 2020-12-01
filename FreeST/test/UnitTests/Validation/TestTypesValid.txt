@@ -159,22 +159,6 @@ SL
 rec a:SL. Skip
 SU
 
--- Non contractive
--- rec b:SL. Skip ; b ; ?Bool
--- SL
-
--- Non contractive
--- rec z:SU.(+{A: Skip, C: z} ; rec b:SL.((Skip;b);?Bool))
--- SL
-
--- Non contractive
--- rec z1:SU.(rec z2:SU.(rec a:SL.(+{A: Skip, C: a} ; rec z3:SU.(rec b:SL.(Skip;(z3;?Bool))))))
--- SL
-
--- Non contractive
--- rec a:SL. (Skip ; a) ; !Bool
--- SL
-
 rec a:SU. (Skip; Skip)
 SU
 
@@ -182,26 +166,6 @@ rec a:SU. rec b. Skip
 SU
 
 rec a:SU. (Skip; rec b. Skip)
-SU
-
--- Error: non-contractive
-rec a:TL. a
-TL
-
--- Error: non-contractive
-rec a:SU. (Skip; a)
-SU
-
--- Error: non-contractive
-rec a:SU. Skip; a; Skip
-SU
-
--- Error: non-contractive
-rec a:SU. Skip; a; a; a; a; a
-SU
-
--- Error: non-contractive
-rec a:SU. (rec a:SU. Skip; a); (rec a:SU. (Skip; a))
 SU
 
 Skip; rec a:SU. Skip
@@ -216,35 +180,11 @@ SU
 Skip; Skip; rec a:SU. (Skip; rec b. Skip)
 SU
 
--- Error: non-contractive
-Skip; rec a:SU. (Skip; a)
-SU
-
--- Error: non-contractive
-Skip; rec a:SU. ( Skip; a; Skip)
-SU
-
--- Error: non-contractive
-Skip; rec a:SU. ( Skip; a; Skip)
-SU
-
--- Error: non-contractive
-Skip; Skip; Skip; rec a:SU. (Skip; a; a; a; a; a)
-SU
-
--- Error: non-contractive
-Skip; rec a:SU. ((rec a:SU. (Skip; a)); (rec a:SU. (Skip; a))); Skip; Skip
-SU
-
 forall b:SL => rec a:SU. b
 TL
 
 forall a:SL => rec d. rec c. rec b. a
 TL
-
--- Error: non-contractive
-rec a:SU. (((Skip ; a) ; a) ; a)
-SU
 
 -- Dualof
 

@@ -4,9 +4,9 @@ import           Syntax.Kinds (Kind, (<:))
 import           Validation.Rename (renameType)
 import           Validation.Kinding (synthetise)
 import           Utils.FreestState (initialState, errors)
-import           SpecHelper
 import           Control.Monad.State (runState)
-import qualified Data.Map.Strict as Map
+import qualified Data.Map.Strict as Map (empty)
+import           SpecHelper
 
 spec :: Spec
 spec = describe "Valid type tests" $ do
@@ -22,7 +22,7 @@ hasKind t k
   | null (errors s) = k' <: k
   | otherwise       = False
   where t' = renameType t
-        (k', s) = runState (synthetise Map.empty t') (initialState "Kind syntesis")
+        (k', s) = runState (synthetise Map.empty t') (initialState "Kind synthesis")
 
 main :: IO ()
 main = hspec spec

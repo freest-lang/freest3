@@ -1,13 +1,5 @@
--- Syntatically invalid choices, conflicting choices
+-- Empty choices
 
-+{ A: Unit, A: Bool }
-+{ A: Unit, A: Bool, B: Int }
-+{ A: Unit, B: Int, A: Bool }
-+{ A: Unit, B: Int, B: Int, A: Bool }
-&{ A: Unit, A: Bool }
-&{ A: Unit, A: Bool, B: Int }
-&{ A: Unit, B: Int, A: Bool }
-&{ A: Unit, B: Int, B: Int, A: Bool }
 &{}
 +{}
 
@@ -21,7 +13,68 @@
 &{ A: !(), A: ?Bool, B: ?Int }
 &{ A: !(), B: ?Int, A: ?Bool }
 &{ A: !(), B: ?Int, B: ?Int, A: ?Bool }
++{ A: Unit, A: Bool }
++{ A: Unit, A: Bool, B: Int }
++{ A: Unit, B: Int, A: Bool }
++{ A: Unit, B: Int, B: Int, A: Bool }
+&{ A: Unit, A: Bool }
+&{ A: Unit, A: Bool, B: Int }
+&{ A: Unit, B: Int, A: Bool }
+&{ A: Unit, B: Int, B: Int, A: Bool }
 
+-- Non contractive, terminated
+
+rec a:TL. a
+rec a:SU. (Skip; a)
+rec a:SU. Skip; a; Skip
+rec a:SU. Skip; a; a; a; a; a
+rec a:SU. (rec a:SU. Skip; a); (rec a:SU. (Skip; a))
+Skip; rec a:SU. (Skip; a)
+Skip; rec a:SU. ( Skip; a; Skip)
+Skip; rec a:SU. ( Skip; a; Skip)
+Skip; Skip; Skip; rec a:SU. (Skip; a; a; a; a; a)
+Skip; rec a:SU. ((rec a:SU. (Skip; a)); (rec a:SU. (Skip; a))); Skip; Skip
+rec a:SU. (((Skip ; a) ; a) ; a)
+rec a. a
+rec a. a;  a;  a;  a;  a
+rec a. rec b. rec c. rec d. a
+Int -> rec a. rec b. rec c. rec d. a
+
+-- Non contractive, non terminated
+
+rec b:SL. Skip ; b ; ?Bool
+rec z:SU.(+{A: Skip, C: z} ; rec b:SL.((Skip;b);?Bool))
+rec z1:SU.(rec z2:SU.(rec a:SL.(+{A: Skip, C: a} ; rec z3:SU.(rec b:SL.(Skip;(z3;?Bool))))))
+rec a:SL. (Skip ; a) ; !Bool
+rec a. a; !Int
+rec a. rec b. rec c. rec d. a; !Bool
+rec a. ((a; !Bool); !Int) ; ?Bool
+rec z:SL.(rec z:SU.(Skip;(rec a:SU.(rec z:SL.&{B: (rec z:SL.(rec a:SL.(z;(Skip;b))))}))))
+rec z:SL.(rec a:SU.&{B: (rec z:SL.((z;Skip);b))})
+(rec a:SU.(a;!Bool));!Bool 
+rec a:SU.a;!Bool
+rec z:SL.(rec a:SU.&{B: (rec z:SL.((z;Skip);b))})
+rec z:SL.(rec z:SU.(Skip;(rec a:SU.(rec z:SL.&{B: (rec z:SL.(rec a:SL.(z;(Skip;b))))}))))
+
+-- Non contractive with dualof
+
+rec a. dualof a
+rec a. dualof dualof a  
+rec a. (dualof dualof a); &{ A: !(), B: ?Int }
+rec a. dualof dualof  dualof dualof  dualof dualof  dualof dualof  dualof dualof a 
+
+-- Functional vs Session
+
+!Int ; Int -> Int
+!Int ; (Int, Bool)
+Int -> Int ; !Int
+(Int, Bool) ; !Int
+rec a : SL . Int -> Int ; a 
+rec a : SU . Int -> Int ; a 
+rec a : TU . !Int ; a 
+rec a : TL . !Int ; a 
++{ A: () }
++{ A: () -> Bool }
 
 -- Syntatically invalid datatypes, conflicting - removed these because they are not readable types anymore (only available for data declarations)
 
@@ -34,38 +87,4 @@
 -- [ A: Char, B: Int, A: Bool ]
 -- [ A: Char, B: Int, B: Int, A: Bool ]
 -- []
-
--- Rec stuff
-
-rec x. x; !Int
-rec x. x  
-rec x. x;  x;  x;  x;  x
-rec x. dualof x
-rec x. dualof dualof x  
-rec x. (dualof dualof x); &{ A: !(), B: ?Int }
-rec x. dualof dualof  dualof dualof  dualof dualof  dualof dualof  dualof dualof x 
-rec a. rec b. rec c. rec d. a
-Int -> rec a. rec b. rec c. rec d. a
-rec a. rec b. rec c. rec d. a; !Bool
-rec a. ((a; !Bool); !Int) ; ?Bool
-rec z:SL.(rec z:SU.(Skip;(rec x:SU.(rec z:SL.&{B: (rec z:SL.(rec x:SL.(z;(Skip;y))))}))))
-rec z:SL.(rec x:SU.&{B: (rec z:SL.((z;Skip);y))})
-(rec x:SU.(x;!Bool));!Bool 
-rec x:SU.x;!Bool
-rec z:SL.(rec x:SU.&{B: (rec z:SL.((z;Skip);y))})
-rec z:SL.(rec z:SU.(Skip;(rec x:SU.(rec z:SL.&{B: (rec z:SL.(rec x:SL.(z;(Skip;y))))}))))
-
--- Functional vs Session
-
-!Int ; Int -> Int
-!Int ; (Int, Bool)
-Int -> Int ; !Int
-(Int, Bool) ; !Int
-rec x : SL . Int -> Int ; x 
-rec x : SU . Int -> Int ; x 
-rec x : TU . !Int ; x 
-rec x : TL . !Int ; x 
-+{ A: () }
-+{ A: () -> Bool }
-
 
