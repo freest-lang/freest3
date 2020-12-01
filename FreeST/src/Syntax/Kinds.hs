@@ -27,7 +27,6 @@ module Syntax.Kinds
 , join
 , isLin
 , isUn
-, fromKindBinds
 ) where
 
 import           Syntax.TypeVariables
@@ -45,15 +44,10 @@ instance Ord PreKind where
 -- Kinds
 
 data Kind = Kind Pos PreKind Multiplicity 
-          | KindArrow Pos Kind Kind
           deriving Ord -- TODO: I wish we do not need this
 
 instance Eq Kind where
---  (Kind _ p n) == (Kind _ q m)           = p == q && n <= m -- (p, n) == (q, m)
-  (Kind _ p n) == (Kind _ q m)           = (p, n) == (q, m)
-  (KindArrow _ p n) == (KindArrow _ q m) = (p, n) == (q, m)
-  _ == _                                 = False
-  
+  (Kind _ p n) == (Kind _ q m) = p == q && n == m  
 
 -- Abbreviations for the four kinds
 kindTL, kindTU, kindSL, kindSU, kindMU, kindML :: Pos -> Kind
@@ -66,29 +60,23 @@ kindML p = Kind p MessageK Lin
 
 -- The subkinding relation. Note that Kind is a partial order, hence
 -- should *not* be an instance class Ord.
---    TL
---   /  \
--- TU    SL
---   \  /
---    SU
+--      TL
+--    / | \
+--   ML TU SL
+--   \ / \ /
+--    MU  SU
+
 (<:) :: Kind -> Kind -> Bool
-(Kind _ MessageK m1) <: (Kind _ Functional m2) = m1  <= m2
 (Kind _ Session m1)  <: (Kind _ Functional m2) = m1  <= m2
-(KindArrow _ k1 k2)  <: (KindArrow _ k1' k2')  = k1' <= k1 && k2 <: k2'
+(Kind _ MessageK m1) <: (Kind _ Functional m2) = m1  <= m2
 (Kind _ k1 m1)       <: (Kind _ k2 m2)         = k1 == k2 && m1 <= m2
--- k1                  <: k2                     = preKind k1 == preKind k2 && mult k1 <= mult k2
-
--- mult :: Kind -> Multiplicity
--- mult (Kind _ _ m) = m
--- mult (KindArrow _ k1 k2) = max (mult k1) (mult k2)
-
--- preKind :: Kind -> PreKind
--- preKind (Kind _ k _) = k
 
 -- The least upper bound of two kinds
 join :: Kind -> Kind -> Kind
 join (Kind p Functional Un) (Kind _ Session   Lin) = kindTL p
 join (Kind p Session   Lin) (Kind _ Functional Un) = kindTL p
+join (Kind p Functional Un) (Kind _ MessageK  Lin) = kindTL p
+join (Kind p MessageK  Lin) (Kind _ Functional Un) = kindTL p
 join k1                     k2                     = if k1 <: k2 then k2 else k1
 
 -- The kind of conventional (non linear, not sessions) functional
@@ -102,7 +90,6 @@ isSession = (<: kindSL defaultPos)
 
 isLin :: Kind -> Bool
 isLin (Kind _ _ m) = m == Lin
-isLin (KindArrow _ k1 k2) = False -- TODO: isLin k1 || isLin k2 ??????
 
 isUn :: Kind -> Bool
 isUn = not . isLin
@@ -120,6 +107,3 @@ data KindBind = KindBind Pos TypeVar Kind deriving (Eq, Ord)
 
 instance Position KindBind where
   position (KindBind p _ _) = p
-
-fromKindBinds :: [KindBind] -> KindEnv
-fromKindBinds = foldr (\(KindBind _ x k) env -> Map.insert x k env) Map.empty

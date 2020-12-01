@@ -89,7 +89,7 @@ class Rename t where
 
 instance Rename Type where
   rename bs t
---    | terminated t = return $ Skip (position t)
+    | terminated t = return $ Skip (position t)
     | otherwise    = rename' bs t
 
 rename':: Bindings -> Type -> FreestState Type
@@ -114,13 +114,10 @@ rename' bs (Choice p pol tm) = do
   tm' <- tMapM (rename bs) tm
   return $ Choice p pol tm'
   -- Polymorphism
-rename' bs (Forall p (KindBind p' x k) t)
-  | x `isFreeIn` t = do
-      x' <- rename bs x
-      t' <- rename (insertVar x x' bs) t
-      return $ Forall p (KindBind p' x' k) t'
-  | otherwise = rename bs t
-
+rename' bs (Forall p (KindBind p' a k) t) = do
+  a' <- rename bs a
+  t' <- rename (insertVar a a' bs) t
+  return $ Forall p (KindBind p' a' k) t'
   -- Functional or session
 rename' bs (Rec p (KindBind p' a k) t)
   | a `isFreeIn` t = do

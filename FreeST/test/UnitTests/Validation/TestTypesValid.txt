@@ -1,396 +1,317 @@
-[]
 Int
 TU
 
-[]
 Bool
 TU
 
-[]
 Char
 TU
 
-[]
 ()
 TU
 
-[]
 Skip
 SU
 
-[]
 !Int
 SL
 
-[]
 !Char
 SL
 
-[]
 ?Bool
 SL
 
-[]
 ?Char
 SL
 
-[]
 Int -> Bool
 TU
 
-[]
 Int -o Bool
 TL
 
-[]
 Char -> Skip
 TU
 
-[]
 Char -o Skip
 TL
 
-[]
 (Int,Bool)
 TU
 
-[]
 !Int;?Bool
 SL
 
-[]
 Skip;Skip
 SU
 
-[]
 !Int;Skip
 SL
 
-[]
 Skip;+{S:Skip,I:!Int}
 SL
 
--- recursive types
+-- recursive tbpes
 
-[]
-rec x . ?Bool
+rec a . ?Bool
 SL
 
-[]
-rec x . (!Int; Skip; ?Int)
+rec a . (!Int; Skip; ?Int)
 SL
   
-[]
 rec tree : SL . &{Leaf: Skip, Node: ?Int;tree;tree}
 SL
   
-[]
 rec treeChannel : SL . +{Leaf: Skip, Node: !Int;treeChannel;treeChannel}
 SL
   
-[("x", "SL")]
-rec alpha : SL . !Int ; rec treeChannel1 : SL . +{Leaf:Skip, Node:!Int;treeChannel1;treeChannel1} ; rec treeChannel2 : SL . +{Leaf:Skip, Node:!Int;treeChannel2;treeChannel2};x
-SL
+forall a:SL =>  rec alpha : SL . !Int ; rec treeChannel1 : SL . +{Leaf:Skip, Node:!Int;treeChannel1;treeChannel1} ; rec treeChannel2 : SL . +{Leaf:Skip, Node:!Int;treeChannel2;treeChannel2};a
+TL
 
--- explicitely typed recursive types
+forall a:SL => rec alpha : SL . !Int ; rec treeChannel1 : SL . +{Leaf:Skip, Node:!Int;treeChannel1;treeChannel1} ; rec treeChannel2 : SL . +{Leaf:Skip, Node:!Int;treeChannel2;treeChannel2};a
+TL
 
-[]
+-- recursive types
+
 rec a : TU . (a, Int)
 TL
 
-[]
 rec b : TU . (b, Int -> Char)
 TL
 
 -- Pairs
 
 -- (Un, Un)
-[]
 (Int, Bool) 
 TU
 
-[]
 (Int -> Bool, Char -> (Bool -> Char)) 
 TU
 
-[]
 (Skip, Bool) 
 TU
 
-[]
 (Bool, Skip) 
 TU
 
-[]
 (Int, Bool) 
 TL
 
-[]
 (Int -> Bool, Char -> (Bool -> Char)) 
 TL
 
-[]
 (Skip, Bool) 
 TL
 
-[]
 (Bool, Skip) 
 TL
 
 -- (Lin, Lin)
-[]
 (!Bool, ?Int)
 TL
 
-[]
 (!Bool, Int -o Char)
 TL
 
-[]
 (!Bool -o Int -o Char, ?Int;&{A:Skip, B:!Bool})
 TL
 
 -- (Un, Lin)
-[]
 (Bool, ?Int)
 TL
 
-[]
 (Skip, Skip -o Skip)
 TL
 
-[]
 (Bool -> Char -> Int, ?Int -o Bool -> Int)
 TL
 
 -- (Lin, Un)
-[]
 (!Bool, Int)
 TL
 
-[]
 (!Bool, Skip)
 TL
 
-[]
 (Bool -o Char -> (Int -> ()), Int -> Skip -> ())
 TL
 
 -- Quick Check
 
-[("x", "SL") , ("y", "SL") , ("z", "SL")]
-!Bool;(((!Int;Skip);(Skip;+{A: y, B: Skip}));(Skip;(rec y_0:SU. (&{A: ((?Char;(Skip;x));Skip), C: !Bool};Skip))))
-SL
+forall a:SL => forall b:SL => forall z:SL => !Bool;(((!Int;Skip);(Skip;+{A: b, B: Skip}));(Skip;(rec b_0:SU. (&{A: ((?Char;(Skip;a));Skip), C: !Bool};Skip))))
+TL
 
-[("x", "SL") , ("y", "SL") , ("z", "SL")]
-!Bool;((!Int;+{A: y, B: Skip});(rec y_1:SU. &{A: ((?Char;Skip);x), C: !Bool}))
-SL
+forall a:SL => forall b:SL => forall z:SL => !Bool;((!Int;+{A: b, B: Skip});(rec b_1:SU. &{A: ((?Char;Skip);a), C: !Bool}))
+TL
 
-[("x", "SL") , ("y", "SL") , ("z", "SL")]
-&{B: (&{C: (rec x_8:SL. (rec x_9:SU. (((+{A: y, C: z};?Bool);+{B: Skip, C: ?Bool});+{A: (rec x_10:SU. (rec y_11:SU. (rec y_12:SL. !()))), C: (Skip;Skip)})))};(((rec z_13:SL. +{B: ((Skip;(Skip;(Skip;(x;?Bool))));(?Bool;(Skip;!())))});(rec y_14:SU. !()));?Bool)), C: (?Char;(((rec y_15:SU. (Skip;((Skip;z);((y_15;(x;x));(Skip;(Skip;!()))))));Skip);+{A: (?Int;(&{B: Skip};(y;Skip)))}))}
-SL
+forall a:SL => forall b:SL => forall z:SL => &{B: (&{C: (rec a_8:SL. (rec a_9:SU. (((+{A: b, C: z};?Bool);+{B: Skip, C: ?Bool});+{A: (rec a_10:SU. (rec b_11:SU. (rec b_12:SL. !()))), C: (Skip;Skip)})))};(((rec z_13:SL. +{B: ((Skip;(Skip;(Skip;(a;?Bool))));(?Bool;(Skip;!())))});(rec b_14:SU. !()));?Bool)), C: (?Char;(((rec b_15:SU. (Skip;((Skip;z);((b_15;(a;a));(Skip;(Skip;!()))))));Skip);+{A: (?Int;(&{B: Skip};(b;Skip)))}))}
+TL
 
-[]
-rec y:SU. !Bool ; Skip
+rec b:SU. !Bool ; Skip
 SL
 
 -- Terminated Recursive Types
 
--- []
--- rec y:SL. Skip ; y ; ?Bool
+rec a:SL. Skip
+SL
+
+rec a:SL. Skip
+SU
+
+-- Non contractive
+-- rec b:SL. Skip ; b ; ?Bool
 -- SL
 
--- []
--- rec z:SU.(+{A: Skip, C: z} ; rec y:SL.((Skip;y);?Bool))
+-- Non contractive
+-- rec z:SU.(+{A: Skip, C: z} ; rec b:SL.((Skip;b);?Bool))
 -- SL
 
--- []
--- rec z1:SU.(rec z2:SU.(rec x:SL.(+{A: Skip, C: x} ; rec z3:SU.(rec y:SL.(Skip;(z3;?Bool))))))
+-- Non contractive
+-- rec z1:SU.(rec z2:SU.(rec a:SL.(+{A: Skip, C: a} ; rec z3:SU.(rec b:SL.(Skip;(z3;?Bool))))))
 -- SL
 
--- []
--- rec x:SL. (Skip ; x) ; !Bool
+-- Non contractive
+-- rec a:SL. (Skip ; a) ; !Bool
 -- SL
 
--- []
--- rec x:SU. Skip
--- SU
+rec a:SU. (Skip; Skip)
+SU
 
--- []
--- rec x:SU. (Skip; Skip)
--- SU
+rec a:SU. rec b. Skip
+SU
 
--- []
--- rec x:SU. rec y. Skip
--- SU
+rec a:SU. (Skip; rec b. Skip)
+SU
 
--- []
--- rec x:SU. (Skip; rec y. Skip)
--- SU
+-- Error: non-contractive
+rec a:TL. a
+TL
 
--- []
--- rec x:SU. (Skip; x)
--- SU
+-- Error: non-contractive
+rec a:SU. (Skip; a)
+SU
 
--- []
--- rec x:SU. Skip; x; Skip
--- SU
+-- Error: non-contractive
+rec a:SU. Skip; a; Skip
+SU
 
--- []
--- rec x:SU. Skip; x; x; x; x; x
--- SU
+-- Error: non-contractive
+rec a:SU. Skip; a; a; a; a; a
+SU
 
--- []
--- rec x:SU. (rec x:SU. Skip; x); (rec x:SU. (Skip; x))
--- SU
+-- Error: non-contractive
+rec a:SU. (rec a:SU. Skip; a); (rec a:SU. (Skip; a))
+SU
 
--- []
--- Skip; rec x:SU. Skip
--- SU
+Skip; rec a:SU. Skip
+SU
 
--- []
--- Skip; rec x:SU. Skip; Skip
--- SU
+Skip; rec a:SU. Skip; Skip
+SU
 
--- []
--- Skip; rec x:SU. rec y. Skip
--- SU
+Skip; rec a:SU. rec b. Skip
+SU
 
--- []
--- Skip; Skip; rec x:SU. (Skip; rec y. Skip)
--- SU
+Skip; Skip; rec a:SU. (Skip; rec b. Skip)
+SU
 
--- []
--- Skip; rec x:SU.(Skip; x)
--- SU
+-- Error: non-contractive
+Skip; rec a:SU. (Skip; a)
+SU
 
--- []
--- Skip; rec x:SU.( Skip; x; Skip)
--- SU
+-- Error: non-contractive
+Skip; rec a:SU. ( Skip; a; Skip)
+SU
 
--- []
--- Skip; rec x:SU.( Skip; x; Skip)
--- SU
+-- Error: non-contractive
+Skip; rec a:SU. ( Skip; a; Skip)
+SU
 
--- []
--- Skip; Skip; Skip; rec x:SU. (Skip; x; x; x; x; x)
--- SU
+-- Error: non-contractive
+Skip; Skip; Skip; rec a:SU. (Skip; a; a; a; a; a)
+SU
 
--- []
--- Skip; rec x:SU. ((rec x:SU. (Skip; x)); (rec x:SU. (Skip; x))); Skip; Skip
--- SU
+-- Error: non-contractive
+Skip; rec a:SU. ((rec a:SU. (Skip; a)); (rec a:SU. (Skip; a))); Skip; Skip
+SU
 
--- [("y", "SL")]
--- rec x:SU. y
--- SL
+forall b:SL => rec a:SU. b
+TL
 
--- [("a", "SL")]
--- rec d. rec c. rec b. a
--- SL
+forall a:SL => rec d. rec c. rec b. a
+TL
 
--- []
--- rec x:SU. (((Skip ; x) ; x) ; x)
--- SU
+-- Error: non-contractive
+rec a:SU. (((Skip ; a) ; a) ; a)
+SU
 
 -- Dualof
 
 -- TODO: this should be OK
--- []
--- rec x . dualof !Int
+-- rec a . dualof !Int
 -- SL
 
-[]
 dualof Skip
 SU
 
-[]
 dualof (Skip; Skip)
 SU
 
 -- TODO: this should be OK
--- []
--- dualof (rec x. Skip)
+-- dualof (rec a. Skip)
 -- SU
 
 -- TODO: this should be OK
--- []
--- rec x. dualof Skip
+-- rec a. dualof Skip
 -- SU
 
-[]
-(rec y . +{A: (rec y . (rec x : SL . (+{A: (Skip;(?Int;!())), B: (Skip;?Char)};x)))})
+(rec b . +{A: (rec b . (rec a : SL . (+{A: (Skip;(?Int;!())), B: (Skip;?Char)};a)))})
 SL
 
-[]
-+{A: (rec y. +{A: (((Skip;?Int);!());(rec y . +{A: (rec y : SL. +{A:(((Skip;?Int);!());y), B: (?Char;y)})})), B: (?Char;(rec y. +{A: (rec y : SL. +{A: (((Skip;?Int);!());y), B: (?Char;y)})}))})}
++{A: (rec b. +{A: (((Skip;?Int);!());(rec b . +{A: (rec b : SL. +{A:(((Skip;?Int);!());b), B: (?Char;b)})})), B: (?Char;(rec b. +{A: (rec b : SL. +{A: (((Skip;?Int);!());b), B: (?Char;b)})}))})}
 SL
 
-[("x", "SL") , ("y", "SL") , ("z", "SL")]
-((rec w:SL. &{B: ((+{A: &{B: x, C: Skip}};(+{A: ?Bool, B: w, C: (?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w))};Skip));+{A: (!Char;(((?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w));?Char);(?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w))))}), C: Skip});(x;((&{B: !Bool, C: Skip};((rec δ:SU. ?());y));(?Int;(+{B: x, C: ?Int};(!Int;Skip))))))
-SL
+forall a:SL => forall b:SL => forall z:SL => ((rec w:SL. &{B: ((+{A: &{B: a, C: Skip}};(+{A: ?Bool, B: w, C: (?Int;(&{A: ((?();(a;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w))};Skip));+{A: (!Char;(((?Int;(&{A: ((?();(a;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w));?Char);(?Int;(&{A: ((?();(a;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w))))}), C: Skip});(a;((&{B: !Bool, C: Skip};((rec δ:SU. ?());b));(?Int;(+{B: a, C: ?Int};(!Int;Skip))))))
+TL
 
-[("x", "SL") , ("y", "SL") , ("z", "SL")]
- ((rec z:SL. (Skip;&{B: (+{A: (&{B: x, C: Skip};+{A: (?Bool;Skip), B: (z;Skip), C: (((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z);Skip)})};(+{A: !Char};(((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z);(?Char;((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z))))), C: Skip}));((x;&{B: (!Bool;(?();y)), C: (Skip;(?();y))});((?Int;+{B: x, C: ?Int});!Int)))
-SL
+forall a:SL => forall b:SL => forall z:SL => ((rec z:SL. (Skip;&{B: (+{A: (&{B: a, C: Skip};+{A: (?Bool;Skip), B: (z;Skip), C: (((?Int;&{A: ((((?();a);z);+{A: z, C: Skip});!Int), C: !Char});z);Skip)})};(+{A: !Char};(((?Int;&{A: ((((?();a);z);+{A: z, C: Skip});!Int), C: !Char});z);(?Char;((?Int;&{A: ((((?();a);z);+{A: z, C: Skip});!Int), C: !Char});z))))), C: Skip}));((a;&{B: (!Bool;(?();b)), C: (Skip;(?();b))});((?Int;+{B: a, C: ?Int});!Int)))
+TL
 
-[("x", "SL") , ("y", "SL") , ("z", "SL")]
-(rec y:SU.+{A: (y;&{A: (Skip;(rec x:SU.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x:SU.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x), C:(y;x)})}))}), B: (Skip;&{A: (Skip;(rec x:SU.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x:SU.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x), C:(y;x)})}))}), C: (!Bool;&{A: (Skip;(rec x:SU.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x:SU.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x), C:(y;x)})}))})})
-SL
+forall a:SL => forall b:SL => forall z:SL => (rec b:SU.+{A: (b;&{A: (Skip;(rec a:SU.+{A: (b;&{A: (Skip;a), C:(b;a)}), B: (Skip;&{A: (Skip;a), C: (b;a)}), C: (!Bool;&{A: (Skip;a),C: (b;a)})})), C: (b;(rec a:SU.+{A: (b;&{A: (Skip;a), C: (b;a)}), B:(Skip;&{A: (Skip;a), C: (b;a)}), C: (!Bool;&{A: (Skip;a), C:(b;a)})}))}), B: (Skip;&{A: (Skip;(rec a:SU.+{A: (b;&{A: (Skip;a), C:(b;a)}), B: (Skip;&{A: (Skip;a), C: (b;a)}), C: (!Bool;&{A: (Skip;a),C: (b;a)})})), C: (b;(rec a:SU.+{A: (b;&{A: (Skip;a), C: (b;a)}), B:(Skip;&{A: (Skip;a), C: (b;a)}), C: (!Bool;&{A: (Skip;a), C:(b;a)})}))}), C: (!Bool;&{A: (Skip;(rec a:SU.+{A: (b;&{A: (Skip;a), C:(b;a)}), B: (Skip;&{A: (Skip;a), C: (b;a)}), C: (!Bool;&{A: (Skip;a),C: (b;a)})})), C: (b;(rec a:SU.+{A: (b;&{A: (Skip;a), C: (b;a)}), B:(Skip;&{A: (Skip;a), C: (b;a)}), C: (!Bool;&{A: (Skip;a), C:(b;a)})}))})})
+TL
 
 -- Forall λ
-[]
 ∀ a : MU => a
-MU -> MU
+TL
 
--- same nut it forall keyword
-[]
+-- same but with forall keyword
 forall a : MU => a
-MU -> MU
+TL
 
-
-[]
 ∀ a : TU => a -> a
-TU -> TU
+TL
 
-[]
 ∀ a : TL => a -o Int
-TL -> TL
+TL
 
-[]
 ∀ a : TU => a -o Int
-TU -> TL
+TL
 
-[]
 ∀ a : TU => a -> Int
-TU -> TU
+TL
 
-[]
 ∀ a : SL => a -> Int
-SL -> TL
+TL
 
--- forall rec
-
-[]
 ∀ a : SL => rec b : SL . a -> b
-SL -> TL
+TL
 
--- same but as a subkind
-[]
-∀ a : SL => rec b : SL . a -> b
-SL -> TU
-
-
-[]
 ∀ a : SL => (rec a : SL . !Int;a) -> a
-SL -> TU
+TL
 
-[]
 ∀ a : SL => Skip
-SL -> SU
+TL
 
-
--- Subkinding & forall
-
-[]
 ∀ a : TU => a -> Int
-TL -> TU
+TL

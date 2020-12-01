@@ -70,7 +70,7 @@ synthetise kEnv (Rec _ (KindBind _ a k) t) = do
   synthetise (Map.insert a k kEnv) t
 synthetise kEnv (Forall p (KindBind _ x k) t) = do
   k' <- synthetise (Map.insert x k kEnv) t
-  return $ KindArrow p k k'
+  return $ kindTL defaultPos
 synthetise kEnv (TypeVar p x) = case kEnv Map.!? x of
    Just k  -> return k
    Nothing -> do

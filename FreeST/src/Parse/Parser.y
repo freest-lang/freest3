@@ -337,7 +337,7 @@ Kind :: { Kind }
   | TL             { kindTL (position $1) }
   | MU             { kindMU (position $1) }
   | ML             { kindML (position $1) }
-  | Kind '->' Kind { KindArrow (position $1) $1 $3 }
+--  | Kind '->' Kind { KindArrow (position $1) $1 $3 }
 -- TODO: arrow
 
 -- PROGRAM VARIABLES

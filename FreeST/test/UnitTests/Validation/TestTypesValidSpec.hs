@@ -1,36 +1,28 @@
 module Validation.TestTypesValidSpec (spec) where
 
-import           Syntax.Kinds (KindEnv, Kind, (<:))
+import           Syntax.Kinds (Kind, (<:))
+import           Validation.Rename (renameType)
 import           Validation.Kinding (synthetise)
 import           Utils.FreestState (initialState, errors)
 import           SpecHelper
-import           Control.Monad.State
+import           Control.Monad.State (runState)
+import qualified Data.Map.Strict as Map
 
 spec :: Spec
-spec =
-  -- t <- runIO $ readFromFile "test/UnitTests/Validation/TestContractivityValid.txt"
-  describe "Valid types tests" $ do
-    t <- runIO $ readFromFile "test/UnitTests/Validation/TestTypesValid.txt"
-    mapM_ matchValidKindingSpec (chunksOf 3 t)
+spec = describe "Valid type tests" $ do
+  t <- runIO $ readFromFile "test/UnitTests/Validation/TestTypesValid.txt"
+  mapM_ matchValidKindingSpec (chunksOf 2 t)
 
 matchValidKindingSpec :: [String] -> Spec
-matchValidKindingSpec [kEnv, t, k] =
-  it t $ hasKind (readKenv kEnv) (read t) (read k) `shouldBe` True
+matchValidKindingSpec [t, k] =
+  it t $ hasKind (read t) (read k) `shouldBe` True
   
--- code from QuickCheck
-kindOf ::  KindEnv -> Type -> Maybe Kind
-kindOf kEnv t
-  | null (errors s) = Just k
-  | otherwise       = Nothing
-  where (k, s) = runState (synthetise kEnv t) (initialState "Kind syntesis")
-
-hasKind :: KindEnv -> Type -> Kind -> Bool
-hasKind kEnv t k = case kindOf kEnv t of
-  Nothing -> False
-  Just k' -> k' <: k
-
--- INVALID:
--- forall alpha . (rec Tree . &{Leaf:Skip, Node:?Int;Tree;Tree}) -> (rec TreeChannel . +{Leaf:Skip, Node:!Int;TreeChannel;TreeChannel});alpha->alpha
+hasKind :: Type -> Kind -> Bool
+hasKind t k
+  | null (errors s) = k' <: k
+  | otherwise       = False
+  where t' = renameType t
+        (k', s) = runState (synthetise Map.empty t') (initialState "Kind syntesis")
 
 main :: IO ()
 main = hspec spec

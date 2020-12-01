@@ -27,7 +27,7 @@ matchInvalidKindingSpec str =
 isWellFormed :: String -> KindEnv -> Bool
 isWellFormed str _ =
   let t = parseType str in
-    either synthetiseK (\_ -> False) t
+    either synthetiseK (const False) t
   where
     synthetiseK t =
       let s  = initialState ""
