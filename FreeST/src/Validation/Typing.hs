@@ -29,7 +29,7 @@ import           Syntax.Expressions
 import           Syntax.Kinds
 import           Syntax.ProgramVariables
 import           Syntax.Schemes
-import           Syntax.Show -- debug
+import           Parse.Unparser -- debug
 import           Syntax.Types
 import           Equivalence.Equivalence
 import           Validation.Extract
@@ -155,7 +155,6 @@ synthetise kEnv (TypeAbs p kb@(KindBind p' x k) e) = do
   
 
 -- Type application
-
 --  ∆ | Γ |- e : ∀ a : κ . U        ∆ |- T : κ
 -------------------------------------------------
 --     ∆ | Γ |- e T : [T /a]U
@@ -289,7 +288,8 @@ synthetiseFieldMap p branching kEnv e fm extract params = do
         , Error $ Map.size tm
         , Error "constructor(s)\n"
         , Error "\t in case/match"
-        , Error $ "\ESC[91m" ++ showFieldMap 1 fm ++ "\ESC[0m"
+--        , Error $ "\ESC[91m" ++ showFieldMap 1 fm ++ "\ESC[0m"
+        , Error $ "\ESC[91m{" ++ showFieldMap fm ++ "}\ESC[0m"
         ]
       return $ omission p
     else do

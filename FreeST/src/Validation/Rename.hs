@@ -89,7 +89,7 @@ class Rename t where
 
 instance Rename Type where
   rename bs t
---    | terminated t = return $ Skip (position t)
+    | terminated t = return $ Skip (position t)
     | otherwise    = rename' bs t
 
 rename':: Bindings -> Type -> FreestState Type

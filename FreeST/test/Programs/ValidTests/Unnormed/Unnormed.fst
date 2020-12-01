@@ -1,7 +1,7 @@
 {- |
 Module      :  Unnormed
 Description :  An infinite interaction
-Copyright   :  (c) Bernardo Almeida, Andreia Mordido, Vasco T. Vasconcelos
+Copyright   :  (c) Bernardo Almeida, Vasco T. Vasconcelos, Andreia Mordido
 
 Note: In the web version, infinite programs that **print** values to
 stdout, like this one, only show results after a system defined
@@ -18,16 +18,18 @@ context-free session types. (see the algorithm at Almeida B., Mordido
 A., Vasconcelos V.T. "Deciding the bisimilarity of context-free
 session types").
 
-The type !Int;T;?Int is equivalent to the type !Int;T because the
+The type !Int;T;?Int is equivalent to the type !Int;T because
 unreachable sequences are pruned during the algorithm that decides
-whether two context-free session types are equivalent or not.
+whether two context-free session types are equivalent.
 
 -}
 
 type T : SL = !Int;T;?Int
 
-writer : Int -> T -> Skip
-writer i c = writer (i + 1) (send i c)
+writer : Int -> T -> ()
+writer i c =
+  let _ = writer (i + 1) (send i c)
+  in ()
 
 reader : dualof T -> ()
 reader c =
@@ -38,9 +40,5 @@ reader c =
 main : ()
 main =
   let (w, r) = new T in
-  let _ = fork (sink (writer 0 w)) in
+  fork (writer 0 w);
   reader r
-
--- Auxiliary function because of fork : () -> ()
-sink : Skip -> ()
-sink _ = ()

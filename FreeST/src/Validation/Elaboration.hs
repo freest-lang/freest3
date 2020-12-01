@@ -205,6 +205,12 @@ solveDualOf tenv _ d@(Dualof p t) = do
   u <- solveDualOf tenv True t
   dual u
 --  fmap dual (solveDualOf tenv t)
+-- solveDualOf visited tenv t@(TypeVar p x)
+--   | x `Set.member` visited = return t
+--   | otherwise = return $ Dualof p t
+-- solveDualOf _ _ t = return t
+
+--  fmap dual (solveDualOf tenv t)
 solveDualOf _ _ p = return p
 
 

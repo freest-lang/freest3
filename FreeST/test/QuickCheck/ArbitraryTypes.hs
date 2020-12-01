@@ -10,7 +10,7 @@ import           Syntax.Kinds
 import           Syntax.TypeVariables
 import           Syntax.ProgramVariables
 import           Syntax.Base
-import           Syntax.Show
+import           Parse.Unparser
 import qualified Validation.Rename as Rename
 import qualified Data.Map.Strict as Map
 import           Control.Monad

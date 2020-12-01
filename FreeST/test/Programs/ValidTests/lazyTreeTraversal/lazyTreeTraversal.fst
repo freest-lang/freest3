@@ -1,18 +1,20 @@
 {- |
 Module      :  LazyTreeTraversal
 Description :  Computes the product of the values in a tree
-Copyright   :  (c) Bernardo Almeida, Vasco T. Vasconcelos, Andreia Mordido
+Copyright   :  (c) Bernardo Almeida, Andreia Mordido, Vasco T. Vasconcelos
 
-The example is from Thiemann and Vasconcelos: "Context-Free Session Types" (listing 4)
+The example is from Thiemann and Vasconcelos: "Context-Free Session
+Types" (listing 4)
 
-The server computes the product of the values in a tree;
-explicitly request the values; stop as soon a zero is received.
+The server computes the product of the values in a tree; explicitly
+request the values; stop as soon a zero is received.
 
 The client sends the tree as requested by the server.
 
-The type describing this interaction is mutually recursive. The type described by
-XploreNodeChan is tail-recursive like a regular session type, but XploreTreeChan is
-not since its invocations are intertwined with XploreNodeChan (adapted from the paper).
+The type describing this interaction is mutually recursive. The type
+described by XploreNodeChan is tail-recursive like a regular session
+type, but XploreTreeChan is not since its invocations are intertwined
+with XploreNodeChan (adapted from the paper).
 
 -}
 
@@ -81,7 +83,7 @@ aTree = Node 7 (Node 5 Leaf Leaf) (Node 9 (Node 11 Leaf Leaf) (Node 15 Leaf Leaf
 main : Int
 main =
   let (writer, reader) = new XploreTreeChan in
-  let _ = fork (sink (exploreTree[Skip] writer aTree)) in
+  fork (sink (exploreTree[Skip] writer aTree));
   let (_, n) = server[Skip] reader 1 in
   n
 

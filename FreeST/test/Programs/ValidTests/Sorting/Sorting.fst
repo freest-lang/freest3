@@ -14,26 +14,19 @@ type OrderingChannel : SL = +{
 -- the values in ascending or descending order
 client : OrderingChannel -> ()
 client c =
-  let c = send 5 (select Value c) in
-  let c = send 4 (select Value c) in
-  let c = send 1 (select Value c) in
-  let c = send 7 (select Value c) in
-  let c = send 2 (select Value c) in
-  let c = send 9 (select Value c) in
-  let c = select Descending c in
---  let c = select c Ascending in
-  let (x, c) = receive c in
-  printIntLn x;
-  let (x, c) = receive c in
-  printIntLn x;
-  let (x, c) = receive c in
-  printIntLn x;
-  let (x, c) = receive c in
-  printIntLn x;
-  let (x, c) = receive c in
-  printIntLn x;
-  let (x, c) = receive c in
-  printIntLn x
+  let c = select Descending {- Ascending -} $
+  send 9 $ select Value $
+  send 2 $ select Value $
+  send 7 $ select Value $
+  send 1 $ select Value $
+  send 4 $ select Value $
+  send 5 $ select Value c in
+  let (x, c) = receive c in printIntLn x;
+  let (x, c) = receive c in printIntLn x;
+  let (x, c) = receive c in printIntLn x;
+  let (x, c) = receive c in printIntLn x;
+  let (x, c) = receive c in printIntLn x;
+  let (x, c) = receive c in printIntLn x
 
 data IntList = Nil | Cons Int IntList
 

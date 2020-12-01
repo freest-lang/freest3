@@ -11,7 +11,7 @@ import           Data.List (intercalate)
 import qualified Data.Map.Strict as Map
 import qualified Syntax.Expressions as E
 import           Syntax.ProgramVariables
-import           Syntax.Show()
+import           Parse.Unparser
 
 data Value =
     Unit

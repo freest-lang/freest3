@@ -107,29 +107,29 @@ import           Debug.Trace
   dualof   {TokenDualof _}
 
 %nonassoc LOWER_ID UPPER_ID
-%nonassoc '('
+%nonassoc '(' '['
 %nonassoc '()'
 %nonassoc '[' -- used in type app e[T]
 
 -- Expr
 %right in else match case
-%left select
+-- %left select
 %nonassoc new
-                 
-%right '$'
-%left '||'                      -- disjunction
-%left '&&'                      -- conjunction
-%left '==' '/='                 -- equality
-%nonassoc CMP -- '<' '<=' '>' '>='     -- relational
-%left '+' '-'                   -- aditive
-%left '*' '/'                   -- multiplicative
-%left NEG not                   -- unary
+%right '$'       -- function call
+%left '&'        -- function call
+%left '||'       -- disjunction
+%left '&&'       -- conjunction
+%nonassoc CMP    -- comparison (relational and equality)
+%left '+' '-'    -- aditive
+%left '*' '/'    -- multiplicative
+%left NEG not    -- unary
 -- Types
-%right '=>'      -- Used in forall
-%right '.'       -- Used in rec
-%right '->' '-o' -- TODO: an Expr operator as well
-%right ';'       -- TODO: an Expr operator as well
+%right '=>'      -- Used in forall                 
+%right '.'       -- used in rec
+%right '->' '-o' -- an Expr operator as well
+%right ';'       -- an Expr operator as well                
 %right dualof
+
 -- Lambda expressions
 %nonassoc ProgVarWildTBind
 
@@ -186,8 +186,7 @@ DataCon :: { (ProgVar, [Type]) }
 -----------------
 
 Expr :: { Expression }
-  : Expr '$' Expr                    { App (position $2) $1 $3 }
-  | let ProgVarWild '=' Expr in Expr { UnLet (position $1) $2 $4 $6 }
+  : let ProgVarWild '=' Expr in Expr { UnLet (position $1) $2 $4 $6 }
   | Expr ';' Expr                    { App (position $1)
                                          (Abs (position $1) Un
                                            (TypeBind (position $1) (mkVar (position $1) "_")
@@ -200,6 +199,8 @@ Expr :: { Expression }
   | new Type                         { New (position $1) $2 (Dualof (negPos (position $2)) $2) }
   | match Expr with '{' MatchMap '}' { Match (position $1) $2 $5 }
   | case Expr of '{' CaseMap '}'     { Case (position $1) $2 $5 }
+  | Expr '$' Expr                    { App (position $2) $1 $3 }
+  | Expr '&' Expr                    { App (position $2) $3 $1 }
   | Expr '||' Expr                   { binOp $1 (mkVar (position $2) "(||)") $3 }
   | Expr '&&' Expr                   { binOp $1 (mkVar (position $2) "(&&)") $3 }
   | Expr CMP Expr                    { binOp $1 (mkVar (position $2) (getText $2)) $3 }
@@ -475,6 +476,5 @@ failM :: String -> FreestStateT a
 failM = lift . Failed
 
 toStateT = state . runState
-
 
 }
