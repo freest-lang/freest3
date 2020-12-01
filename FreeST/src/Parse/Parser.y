@@ -319,12 +319,13 @@ TypeSeq :: { [Type] }
 -----------
 
 Kind :: { Kind }
-  : SU { kindSU (position $1) }
-  | SL { kindSL (position $1) }
-  | TU { kindTU (position $1) }
-  | TL { kindTL (position $1) }
-  | MU { kindMU (position $1) }
-  | ML { kindML (position $1) }
+  : SU             { kindSU (position $1) }
+  | SL             { kindSL (position $1) }
+  | TU             { kindTU (position $1) }
+  | TL             { kindTL (position $1) }
+  | MU             { kindMU (position $1) }
+  | ML             { kindML (position $1) }
+  | Kind '->' Kind { KindArrow (position $1) $1 $3 }
 -- TODO: arrow
 
 -- PROGRAM VARIABLES
@@ -382,11 +383,15 @@ Schemes :: { (TypeScheme, TypeScheme) }
 -----------------------
 -- Parsing functions --
 -----------------------
+
+-- KINDS  
+
 parseKind :: String -> Kind
 parseKind str =
   case evalStateT (parse str "" kinds) (initialState "") of
     Ok x -> x
     Failed err -> error err
+
 
 parseType :: String -> Either Type String
 parseType str =
@@ -408,7 +413,7 @@ parseSchemes file str =
   case runStateT (parse str file schemes) (initialState file) of
     Ok (t, s) -> if hasErrors s then Right (getErrors s) else Left t
     Failed err -> Right err
-                   
+
 -----------------------
 -- PARSING PROGRAMS  --
 -----------------------
@@ -425,7 +430,11 @@ parseDefs file vEnv str =
     Ok s1 -> s1
     Failed err -> s {errors = (errors s) ++ [err]}
 
-parse str file f =
+
+parse str file f = lexer str file f
+
+
+lexer str file f =
   case scanTokens str file of
     Right err -> failM err
     Left x    -> f x

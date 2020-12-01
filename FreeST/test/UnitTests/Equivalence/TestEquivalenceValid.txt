@@ -567,11 +567,11 @@ rec y . &{N: y, L: y};!Int
 
 -- -- Examples from QuickCheck
 
-[("x", SL), ("z", SL)]
+[("x", "SL"), ("z", "SL")]
 (!Char;(+{A: z, B: z, C: z};(rec z_0:SL. ((rec y_1:SL. x);(Skip;x)))))
 ((!Char;+{A: z, B: z, C: z});(rec z_2:SL. ((rec y_3:SL. x);(Skip;x))))
 
-[("x", SL)]
+[("x", "SL")]
 rec y:SL. x
 rec z:SL. x
 
@@ -634,11 +634,11 @@ rec y:SL. &{B:+{D: ?Char}, C: y ;+{D: ?Char}}
 (rec x. +{LeafC: Skip, NodeC: x ; x}) ; Skip
  rec y. +{LeafC: Skip, NodeC: y ; y}
 
-[("α", SL)]
+[("α", "SL")]
 rec x:SL. α
 rec y:SL. α
 
-[("x", SL)]
+[("x", "SL")]
 rec y_0:SL. (rec y_1:SL. (rec y_2:SL. x))
 rec z:SL. (rec y_4:SL. x)
 
@@ -646,7 +646,7 @@ rec z:SL. (rec y_4:SL. x)
 &{A: !Char, B: ?Int}
 &{A: !Char, B: ?Int}
 
-[("x", SL)]
+[("x", "SL")]
 x
 x ; Skip
 
@@ -658,7 +658,7 @@ x ; Skip
 (&{A: (Skip;Skip), B: y};(Skip;&{A: ?Int, B: Skip}))
 &{A: ((Skip;Skip);&{A: ?Int, B: Skip}), B: (y;&{A: ?Int, B: Skip})}
 
-[("y", SL)]
+[("y", "SL")]
 (Skip;(rec x_0:SL. (rec x_1:SL. y)))
 (rec x_2:SL. y)
 
@@ -666,11 +666,11 @@ x ; Skip
 rec x. &{A: rec z. x}
 &{A: rec y. &{A: y}}
 
-[("y", SL)]
+[("y", "SL")]
 (Skip;(rec x_0:SL. (rec x_1:SL. y)))
 (rec x_2:SL. y)
 
-[("y", SL)]
+[("y", "SL")]
 ((rec d_0:SL. y);Skip)
 (rec d_1:SL. y)
 

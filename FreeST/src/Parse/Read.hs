@@ -12,18 +12,7 @@ import           Utils.FreestState
 import           Data.Char(isSpace)
 
 instance Read Kind where
-  readsPrec _ s = -- [(parseKind s, "")]
-    tryParse [("SL", Kind defaultPos Session Lin),
-              ("SU", Kind defaultPos Session Un),
-              ("TL", Kind defaultPos Functional Lin),
-              ("TU", Kind defaultPos Functional Un)]
-    where tryParse [] = []
-          tryParse ((attempt,result):xs) =
-            if take (length attempt) (trim s) == attempt
-            then [(result, drop (length attempt) (trim s))]
-            else tryParse xs
-          trim s = dropWhile isSpace s
-
+  readsPrec _ s = [(parseKind s, "")]
 
 instance Read Type where
   readsPrec _ = parser types

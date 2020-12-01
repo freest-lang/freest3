@@ -1,17 +1,13 @@
 module Validation.TestTypesValidSpec (spec) where
 
-import           Syntax.Kinds
-import           Syntax.ProgramVariables
-import           Syntax.Base
-import           Validation.Terminated
-import           Validation.Kinding
-import           Utils.FreestState
+import           Syntax.Kinds (KindEnv, Kind, (<:))
+import           Validation.Kinding (synthetise)
+import           Utils.FreestState (initialState, errors)
 import           SpecHelper
 import           Control.Monad.State
-import qualified Data.Map.Strict as Map
 
 spec :: Spec
-spec = do
+spec =
   -- t <- runIO $ readFromFile "test/UnitTests/Validation/TestContractivityValid.txt"
   describe "Valid types tests" $ do
     t <- runIO $ readFromFile "test/UnitTests/Validation/TestTypesValid.txt"
@@ -20,10 +16,7 @@ spec = do
 matchValidKindingSpec :: [String] -> Spec
 matchValidKindingSpec [kEnv, t, k] =
   it t $ hasKind (readKenv kEnv) (read t) (read k) `shouldBe` True
-  where
-    readKenv :: String -> KindEnv
-    readKenv s = Map.fromList $ map (\(x,k) -> (mkVar defaultPos x, k)) (read s)
-
+  
 -- code from QuickCheck
 kindOf ::  KindEnv -> Type -> Maybe Kind
 kindOf kEnv t

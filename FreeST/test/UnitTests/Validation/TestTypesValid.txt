@@ -88,7 +88,7 @@ SL
 rec treeChannel : SL . +{Leaf: Skip, Node: !Int;treeChannel;treeChannel}
 SL
   
-[("x", SL)]
+[("x", "SL")]
 rec alpha : SL . !Int ; rec treeChannel1 : SL . +{Leaf:Skip, Node:!Int;treeChannel1;treeChannel1} ; rec treeChannel2 : SL . +{Leaf:Skip, Node:!Int;treeChannel2;treeChannel2};x
 SL
 
@@ -178,15 +178,15 @@ TL
 
 -- Quick Check
 
-[("x", SL) , ("y", SL) , ("z", SL)]
+[("x", "SL") , ("y", "SL") , ("z", "SL")]
 !Bool;(((!Int;Skip);(Skip;+{A: y, B: Skip}));(Skip;(rec y_0:SU. (&{A: ((?Char;(Skip;x));Skip), C: !Bool};Skip))))
 SL
 
-[("x", SL) , ("y", SL) , ("z", SL)]
+[("x", "SL") , ("y", "SL") , ("z", "SL")]
 !Bool;((!Int;+{A: y, B: Skip});(rec y_1:SU. &{A: ((?Char;Skip);x), C: !Bool}))
 SL
 
-[("x", SL) , ("y", SL) , ("z", SL)]
+[("x", "SL") , ("y", "SL") , ("z", "SL")]
 &{B: (&{C: (rec x_8:SL. (rec x_9:SU. (((+{A: y, C: z};?Bool);+{B: Skip, C: ?Bool});+{A: (rec x_10:SU. (rec y_11:SU. (rec y_12:SL. !()))), C: (Skip;Skip)})))};(((rec z_13:SL. +{B: ((Skip;(Skip;(Skip;(x;?Bool))));(?Bool;(Skip;!())))});(rec y_14:SU. !()));?Bool)), C: (?Char;(((rec y_15:SU. (Skip;((Skip;z);((y_15;(x;x));(Skip;(Skip;!()))))));Skip);+{A: (?Int;(&{B: Skip};(y;Skip)))}))}
 SL
 
@@ -280,11 +280,11 @@ SL
 -- Skip; rec x:SU. ((rec x:SU. (Skip; x)); (rec x:SU. (Skip; x))); Skip; Skip
 -- SU
 
--- [("y", SL)]
+-- [("y", "SL")]
 -- rec x:SU. y
 -- SL
 
--- [("a", SL)]
+-- [("a", "SL")]
 -- rec d. rec c. rec b. a
 -- SL
 
@@ -325,14 +325,14 @@ SL
 +{A: (rec y. +{A: (((Skip;?Int);!());(rec y . +{A: (rec y : SL. +{A:(((Skip;?Int);!());y), B: (?Char;y)})})), B: (?Char;(rec y. +{A: (rec y : SL. +{A: (((Skip;?Int);!());y), B: (?Char;y)})}))})}
 SL
 
-[("x", SL) , ("y", SL) , ("z", SL)]
+[("x", "SL") , ("y", "SL") , ("z", "SL")]
 ((rec w:SL. &{B: ((+{A: &{B: x, C: Skip}};(+{A: ?Bool, B: w, C: (?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w))};Skip));+{A: (!Char;(((?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w));?Char);(?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w))))}), C: Skip});(x;((&{B: !Bool, C: Skip};((rec δ:SU. ?());y));(?Int;(+{B: x, C: ?Int};(!Int;Skip))))))
 SL
 
-[("x", SL) , ("y", SL) , ("z", SL)]
+[("x", "SL") , ("y", "SL") , ("z", "SL")]
  ((rec z:SL. (Skip;&{B: (+{A: (&{B: x, C: Skip};+{A: (?Bool;Skip), B: (z;Skip), C: (((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z);Skip)})};(+{A: !Char};(((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z);(?Char;((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z))))), C: Skip}));((x;&{B: (!Bool;(?();y)), C: (Skip;(?();y))});((?Int;+{B: x, C: ?Int});!Int)))
 SL
 
-[("x", SL) , ("y", SL) , ("z", SL)]
+[("x", "SL") , ("y", "SL") , ("z", "SL")]
 (rec y:SU.+{A: (y;&{A: (Skip;(rec x:SU.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x:SU.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x), C:(y;x)})}))}), B: (Skip;&{A: (Skip;(rec x:SU.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x:SU.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x), C:(y;x)})}))}), C: (!Bool;&{A: (Skip;(rec x:SU.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x:SU.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x), C:(y;x)})}))})})
 SL
