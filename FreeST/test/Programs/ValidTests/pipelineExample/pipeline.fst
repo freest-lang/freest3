@@ -14,7 +14,7 @@ This version uses the pipeline operator |>.
 
 -}
 
-fst : forall a : TU, b : TU => (a, b) -> a
+fst : forall a : TU => forall b : TU => (a, b) -> a
 fst p = let (x,_) = p in x
 
 type TermChannel : SL  = +{
@@ -60,7 +60,7 @@ client c = select Add c
         & select Const
         & send 9
         & receive
-        & fst[Int,Skip]
+        & fst[Int][Skip]
 
 main : Int
 main =
