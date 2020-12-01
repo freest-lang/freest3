@@ -2,7 +2,7 @@
 module CompilerValidSpec (spec) where
 
 import Control.Exception
-import Control.Monad
+import Control.Monad (void)
 import Data.Maybe
 import FreeST (checkAndRun)
 import SpecUtils
@@ -27,7 +27,7 @@ spec = specTest "Valid Tests" baseTestDir testValid
 testValid :: String -> String -> Spec
 testValid baseDir testingDir = do
   let dir = baseDir ++ baseTestDir ++ testingDir
-  file <- runIO $ liftM getSource (listDirectory dir)
+  file <- runIO $ fmap getSource (listDirectory dir)
   let f = dir </> file
   testResult <- runIO $ testOne f
   checkResult testResult f
@@ -66,7 +66,7 @@ checkAgainstExpected file res = do
   runIO (safeRead expFile) >>= \case
     Just s -> 
       it ("Testing " ++ takeFileName file) $
-        (filter (/= '\n') res) `shouldBe` (filter (/= '\n') s)
+        filter (/= '\n') res `shouldBe` filter (/= '\n') s
     Nothing ->
       it ("Testing " ++ takeFileName file) $
         void $ assertFailure $ "File " ++ expFile ++ " not found"        
@@ -74,5 +74,5 @@ checkAgainstExpected file res = do
     safeRead :: FilePath -> IO (Maybe String)
     safeRead f = do
       b <- doesFileExist f
-      if b then liftM Just (readFile f) else return Nothing
+      if b then fmap Just (readFile f) else return Nothing
         

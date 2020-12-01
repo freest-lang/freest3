@@ -97,8 +97,7 @@ prop_equivalent (BisimPair t u) = kinded t && kinded u ==> t `equiv` u
 prop_distribution :: BisimPair -> Property
 prop_distribution (BisimPair t u) = kinded t && kinded u ==>
   collect (nodes t + nodes u) $
-  tabulate "Type constructors" [constr t] $
-  True
+  tabulate "Type constructors" [constr t] True
 
 -- The number of nodes in a type
 nodes :: Type -> Int
@@ -111,7 +110,7 @@ nodes _              = 1
 -- The constructor of a type
 constr :: Type -> String
 constr (Basic _ _) = "Basic"
-constr (Syntax.Types.Fun _ _ _ _) = "Fun"
+constr (Syntax.Types.Fun {}) = "Fun"
 constr (PairType _ _ _) = "PairType"
 constr (Datatype _ _) = "Datatype"
 constr (Skip _) = "Skip"

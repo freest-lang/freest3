@@ -13,7 +13,7 @@ spec = describe "Invalid types tests" $ do
   mapM_ matchInvalidKindingSpec t
 
 matchInvalidKindingSpec :: String -> Spec
-matchInvalidKindingSpec t = it t $ do (isWellFormed t) `shouldBe` False
+matchInvalidKindingSpec t = it t $ do isWellFormed t `shouldBe` False
 
 -- either :: (a -> c) -> (b -> c) -> Either a b -> c
 -- If the value is Left a, apply the first function to a;
