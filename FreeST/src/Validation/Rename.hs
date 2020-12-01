@@ -22,7 +22,7 @@ module Validation.Rename
 , Rename(..) -- for testing only
 ) where
 
-import           Syntax.Expressions
+import           Syntax.Expression
 import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Kinds
@@ -144,7 +144,7 @@ instance Rename KindBind where
 
 -- Expressions
 
-instance Rename Expression where
+instance Rename Exp where
   -- Variable
   rename bs (ProgVar p x) =
     return $ ProgVar p (findWithDefaultVar x bs)
@@ -209,7 +209,7 @@ instance Rename Expression where
   -- Otherwise: Unit, Integer, Character, Boolean
   rename _ e = return e
 
-renameField :: Bindings -> ([ProgVar], Expression) -> FreestState ([ProgVar], Expression)
+renameField :: Bindings -> ([ProgVar], Exp) -> FreestState ([ProgVar], Exp)
 renameField bs (xs, e) = do
   xs' <- mapM (rename bs) xs
   e' <- rename (insertProgVars xs xs' bs) e

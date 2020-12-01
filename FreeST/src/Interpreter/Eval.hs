@@ -13,7 +13,7 @@ import qualified Data.Map                      as Map
 import           Interpreter.Builtin
 import           Interpreter.Value
 import           Syntax.Base
-import qualified Syntax.Expressions            as E
+import qualified Syntax.Expression            as E
 import           Syntax.ProgramVariables
 import           Syntax.Types
 
@@ -23,14 +23,14 @@ import Debug.Trace
 -- EVALUATION
 ------------------------------------------------------------
 
-evalAndPrint :: Ctx -> E.ExpEnv -> E.Expression -> IO ()
+evalAndPrint :: Ctx -> E.ExpEnv -> E.Exp -> IO ()
 evalAndPrint ctx eenv e = do
   res <- eval ctx eenv e
   case res of
     IOValue io -> io >>= print
     _          -> print res
 
-eval :: Ctx -> E.ExpEnv -> E.Expression -> IO Value
+eval :: Ctx -> E.ExpEnv -> E.Exp -> IO Value
 eval _   _    (E.Unit _          ) = return Unit
 eval _   _    (E.Integer   _ i   ) = return $ Integer i
 eval _   _    (E.Boolean   _ b   ) = return $ Boolean b

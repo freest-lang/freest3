@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 module Validation.Elaboration(elaborateTypes) where
 
-import           Syntax.Expressions
+import           Syntax.Expression
 import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Kinds
@@ -266,7 +266,7 @@ substituteVEnv tenv = getVEnv >>= tMapWithKeyM_ subsElem
 substituteEEnv :: TypeEnv -> FreestState ()
 substituteEEnv tenv = getEEnv >>= \eenv -> tMapWithKeyM_ subsUpdateExp eenv
  where
-  subsUpdateExp :: ProgVar -> Expression -> FreestState ()
+  subsUpdateExp :: ProgVar -> Exp -> FreestState ()
   subsUpdateExp pv e = subsExp tenv e >>= \e1 -> addToEEnv pv e1
 
 
@@ -320,7 +320,7 @@ subsMap tenv b = mapM (subsType tenv b)
 
 -- Substitute expressions
 
-subsExp :: TypeEnv -> Expression -> FreestState Expression
+subsExp :: TypeEnv -> Exp -> FreestState Exp
 subsExp tenv (Abs p m b e) =
   liftM2 (Abs p m) (subsTypeBind tenv b) (subsExp tenv e)
 subsExp tenv (App p e1 e2) =

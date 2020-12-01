@@ -59,7 +59,7 @@ import           Control.Monad.State
 import           Data.List                      ( intercalate )
 import qualified Data.Map.Strict               as Map
 import           Syntax.Base
-import           Syntax.Expressions
+import           Syntax.Expression
 import           Syntax.Kinds
 import           Syntax.ProgramVariables
 import           Syntax.TypeVariables
@@ -150,12 +150,12 @@ setVEnv vEnv = modify (\s -> s { varEnv = vEnv })
 getEEnv :: FreestState ExpEnv
 getEEnv = gets expEnv
 
-getFromEEnv :: ProgVar -> FreestState (Maybe Expression)
+getFromEEnv :: ProgVar -> FreestState (Maybe Exp)
 getFromEEnv x = do
   eEnv <- getEEnv
   return $ eEnv Map.!? x
 
-addToEEnv :: ProgVar -> Expression -> FreestState ()
+addToEEnv :: ProgVar -> Exp -> FreestState ()
 addToEEnv k v = modify (\s -> s { expEnv = Map.insert k v (expEnv s) })
 
 setEEnv :: ExpEnv -> FreestState ()

@@ -11,8 +11,8 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-module Syntax.Expressions
-( Expression(..)
+module Syntax.Expression
+( Exp(..)
 , FieldMap
 , ExpEnv
 ) where
@@ -23,7 +23,7 @@ import           Syntax.ProgramVariables
 import           Syntax.Base
 import qualified Data.Map.Strict as Map
 
-data Expression =
+data Exp =
   -- Basic values
     Unit Pos
   | Integer Pos Int
@@ -32,34 +32,34 @@ data Expression =
   -- Variable
   | ProgVar Pos ProgVar
   -- Abstraction intro and elim
-  | Abs Pos Multiplicity TypeBind Expression -- λ x:T -> e
-  | App Pos Expression Expression            -- e1 e2
+  | Abs Pos Multiplicity TypeBind Exp -- λ x:T -> e
+  | App Pos Exp Exp            -- e1 e2
   -- Pair intro and elim
-  | Pair Pos Expression Expression
-  | BinLet Pos ProgVar ProgVar Expression Expression
+  | Pair Pos Exp Exp
+  | BinLet Pos ProgVar ProgVar Exp Exp
   -- Datatype elim
-  | Case Pos Expression FieldMap
+  | Case Pos Exp FieldMap
   -- Type Abstraction intro and elim
-  | TypeAbs Pos KindBind Expression     -- λ a:k => e
-  | TypeApp Pos Expression Type         -- e[T]
+  | TypeAbs Pos KindBind Exp     -- λ a:k => e
+  | TypeApp Pos Exp Type         -- e[T]
   -- | TypeApp Pos ProgVar Type      
   -- | TypeApp Pos ProgVar [Type]
   -- Boolean elim
-  | Conditional Pos Expression Expression Expression
+  | Conditional Pos Exp Exp Exp
   -- Let
-  | UnLet Pos ProgVar Expression Expression -- TODO: Derived; eliminate? If is which type for the ProgVar? (cf. Abs)
+  | UnLet Pos ProgVar Exp Exp -- TODO: Derived; eliminate? If is which type for the ProgVar? (cf. Abs)
   -- Session types
   | New Pos Type Type
   | Select Pos ProgVar
-  | Match Pos Expression FieldMap
+  | Match Pos Exp FieldMap
    deriving Eq
 
-type FieldMap  = Map.Map ProgVar ([ProgVar], Expression)
+type FieldMap  = Map.Map ProgVar ([ProgVar], Exp)
 
 -- The definitions of the named functions in a program
-type ExpEnv = Map.Map ProgVar Expression
+type ExpEnv = Map.Map ProgVar Exp
 
-instance Position Expression where
+instance Position Exp where
   pos (Unit p)              = p
   pos (Integer p _)         = p
   pos (Character p _)       = p

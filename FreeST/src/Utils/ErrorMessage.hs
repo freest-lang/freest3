@@ -9,7 +9,7 @@ where
 
 import           Data.List                      ( intercalate )
 import           Syntax.Base
-import           Syntax.Expressions
+import           Syntax.Expression
 import           Syntax.Kinds
 import           Syntax.ProgramVariables
 import           Syntax.Schemes
@@ -40,7 +40,7 @@ instance ErrorMsg String where
   msg _ s = s
   color _ = Nothing
 
-instance ErrorMsg Expression where
+instance ErrorMsg Exp where
   msg = showDefault
   color _ = Just Red
 

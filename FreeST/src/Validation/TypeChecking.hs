@@ -18,7 +18,7 @@ module Validation.TypeChecking
   )
 where
 
-import           Syntax.Expressions
+import           Syntax.Expression
 import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.ProgramVariables
@@ -93,7 +93,7 @@ checkHasBinding f _ = do
 
 -- Check a given function body against its type; make sure all linear
 -- variables are used.
-checkFunBody :: ProgVar -> Expression -> FreestState ()
+checkFunBody :: ProgVar -> Exp -> FreestState ()
 checkFunBody f e = getFromVEnv f >>= \case
   Just s  -> T.checkAgainst Map.empty e s
   Nothing -> return () -- We've issued this error at parsing time

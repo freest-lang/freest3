@@ -9,7 +9,7 @@ where
 import qualified Control.Concurrent.Chan as C
 import           Data.List (intercalate)
 import qualified Data.Map.Strict as Map
-import qualified Syntax.Expressions as E
+import qualified Syntax.Expression as E
 import           Syntax.ProgramVariables
 import           Parse.Unparser
 
@@ -20,7 +20,7 @@ data Value =
   | Character Char
   | Cons ProgVar [[Value]] -- TODO: Think how to do this in other way
   | Pair Value Value
-  | Closure ProgVar E.Expression Ctx
+  | Closure ProgVar E.Exp Ctx
   | PrimitiveFun (Value -> Value)
   | Label String -- to be sent over channels
   | Chan ChannelEnd

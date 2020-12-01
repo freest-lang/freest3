@@ -39,7 +39,7 @@ import           Data.List                      ( find )
 import qualified Data.Map.Strict               as Map
 import           Equivalence.Normalisation
 import           Syntax.Base
-import           Syntax.Expressions
+import           Syntax.Expression
 import           Syntax.Kinds
 import           Syntax.ProgramVariables
 import           Syntax.Schemes
@@ -206,11 +206,11 @@ checkDupFunDecl x = do
 
 -- OPERATORS
 
-binOp :: Expression -> ProgVar -> Expression -> Expression
+binOp :: Exp -> ProgVar -> Exp -> Exp
 binOp left op =
   App (pos left) (App (pos left) (ProgVar (pos op) op) left)
 
-unOp :: ProgVar -> Expression -> Expression
+unOp :: ProgVar -> Exp -> Exp
 unOp op expr = App (pos expr) (ProgVar (pos op) op) expr
 
 typeListToType :: TypeVar -> [(ProgVar, [Type])] -> [(ProgVar, Type)]
@@ -221,7 +221,7 @@ typeListToType a = map (\(x, ts) -> (x, typeToFun ts))
   typeToFun []       = TypeVar (pos a) a
   typeToFun (t : ts) = Fun (pos t) Un t (typeToFun ts)
 
-buildFunBody :: ProgVar -> [ProgVar] -> Expression -> FreestState Expression
+buildFunBody :: ProgVar -> [ProgVar] -> Exp -> FreestState Exp
 buildFunBody f bs e = getFromVEnv f >>= \case
   Just s -> do
 --    let (TypeScheme _ _ t) = s
@@ -241,7 +241,7 @@ buildFunBody f bs e = getFromVEnv f >>= \case
       ]
     return e
  where
-  buildExp :: [ProgVar] -> Type -> Expression
+  buildExp :: [ProgVar] -> Type -> Exp
   buildExp [] _ = e
   buildExp (b : bs) (Fun _ m t1 t2) =
     Abs (pos b) m (TypeBind (pos b) b t1) (buildExp bs t2)

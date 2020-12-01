@@ -9,7 +9,7 @@ module Parse.Parser
 where
 
 
-import           Syntax.Expressions
+import           Syntax.Expression
 import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Kinds
@@ -185,7 +185,7 @@ DataCon :: { (ProgVar, [Type]) }
 -- EXPRESSIONS --
 -----------------
 
-Expr :: { Expression }
+Expr :: { Exp }
   : let ProgVarWild '=' Expr in Expr { UnLet (pos $1) $2 $4 $6 }
   | Expr ';' Expr                    { App (pos $1)
                                          (Abs (pos $1) Un
@@ -211,13 +211,13 @@ Expr :: { Expression }
   
   | App                              { $1 }
 
-App :: { Expression }
+App :: { Exp }
   : App Primary                      { App (pos $1) $1 $2 }
   | select ArbitraryProgVar          { Select (pos $1) $2 }
   | '-' App %prec NEG                { unOp (mkVar (pos $1) "negate") $2}
   | Primary                          { $1 }
 
-Primary :: { Expression }
+Primary :: { Exp }
   : INT                                        { let (TokenInt p x) = $1 in Integer p x }
   | BOOL                                       { let (TokenBool p x) = $1 in Boolean p x }
   | CHAR                                       { let (TokenChar p x) = $1 in Character p x }
@@ -235,7 +235,7 @@ Primary :: { Expression }
 ProgVarWildTBind :: { (ProgVar, Type) }
   : ProgVarWild ':' Type  %prec ProgVarWildTBind { ($1, $3) }
 
-Tuple :: { Expression }
+Tuple :: { Exp }
   : Expr               { $1 }
   | Expr ',' Tuple     { Pair (pos $1) $1 $3 }
 
@@ -243,14 +243,14 @@ MatchMap :: { FieldMap }
   : Match              { uncurry Map.singleton $1 }
   | Match ',' MatchMap {% toStateT $ checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
 
-Match :: { (ProgVar, ([ProgVar], Expression)) }
+Match :: { (ProgVar, ([ProgVar], Exp)) }
   : ArbitraryProgVar ProgVarWild '->' Expr { ($1, ([$2], $4)) }
 
 CaseMap :: { FieldMap }
   : Case             { uncurry Map.singleton $1 }
   | Case ',' CaseMap {% toStateT $ checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
 
-Case :: { (ProgVar, ([ProgVar], Expression)) }
+Case :: { (ProgVar, ([ProgVar], Exp)) }
   : Constructor ProgVarWildSeq '->' Expr { ($1, ($2, $4)) }
 
 -----------

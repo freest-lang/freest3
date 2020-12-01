@@ -15,7 +15,7 @@ module Parse.Unparser
   )
 where
 
-import           Syntax.Expressions
+import           Syntax.Expression
 import           Syntax.Schemes
 import           Syntax.Types
 import           Syntax.Kinds
@@ -229,10 +229,10 @@ instance Show TypeBind where
 
 -- Expressions
 
-instance Show Expression where
+instance Show Exp where
   show = snd . unparse
 
-instance Unparse Expression where
+instance Unparse Exp where
   -- Basic values
   unparse (Unit _) = (maxRator, "()")
   unparse (Integer _ i) = (maxRator, show i)

@@ -94,7 +94,7 @@ synthetise kEnv (Dualof p t) = do
 checkContractive :: TypeVar -> Type -> FreestState ()
 checkContractive a t =
   unless (contractive a t) $
-    addError (position t) [Error "Type", Error t, Error "is not contractive on type variable", Error a]
+    addError (pos t) [Error "Type", Error t, Error "is not contractive on type variable", Error a]
 
 -- Check whether a given type is of a session kind. In any case return
 -- the multiplicity of the kind of the type
@@ -102,7 +102,7 @@ checkAgainstSession :: KindEnv -> Type -> FreestState Multiplicity
 checkAgainstSession kEnv t = do
   k@(Kind _ p m) <- synthetise kEnv t
   S.when (p /= Session) $ addError
-    (position t)
+    (pos t)
     [ Error "Expecting a session type\n"
     , Error "\t found type"
     , Error t
@@ -119,7 +119,7 @@ checkAgainst :: KindEnv -> Kind -> Type -> FreestState ()
 checkAgainst kEnv expected t = do
   actual <- synthetise kEnv t
   S.when (not (actual <: expected)) $ addError
-    (position t)
+    (pos t)
     [ Error "Couldn't match expected kind"
     , Error expected
     , Error "\n\t with actual kind"

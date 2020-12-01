@@ -26,7 +26,7 @@ module Validation.Extract
   )
 where
 
-import           Syntax.Expressions
+import           Syntax.Expression
 import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.TypeVariables
@@ -53,7 +53,7 @@ norm t = do
   -- return u
 
 -- Extracts a function from a type; gives an error if there isn't a function
-extractFun :: Expression -> Type -> FreestState (Type, Type)
+extractFun :: Exp -> Type -> FreestState (Type, Type)
 extractFun e t = do
   t' <- norm t
   case t' of
@@ -70,7 +70,7 @@ extractFun e t = do
       return (omission p, omission p)
 
 -- Extracts a pair from a type; gives an error if there is no pair
-extractPair :: Expression -> Type -> FreestState (Type, Type)
+extractPair :: Exp -> Type -> FreestState (Type, Type)
 extractPair e t = do
   t' <- norm t
   case t' of
@@ -87,7 +87,7 @@ extractPair e t = do
       return (omission p, omission p)
 
 -- Extracts a forall from a type; gives an error if there is no forall
-extractForall :: Expression -> Type -> FreestState Type
+extractForall :: Exp -> Type -> FreestState Type
 extractForall e t = do
   t' <- norm t
 --  traceM $ "e: " ++ show e ++ "\tt: " ++ show t ++ "\tt': " ++ show t'
@@ -119,15 +119,15 @@ extractForall e t = do
 --         >> return IntType
 
 -- Extracts an output type from a general type; gives an error if it isn't an output
-extractOutput :: Expression -> Type -> FreestState (Type, Type)
+extractOutput :: Exp -> Type -> FreestState (Type, Type)
 extractOutput = extractMessage Out "output"
 
 -- Extracts an input type from a general type; gives an error if an input is not found
-extractInput :: Expression -> Type -> FreestState (Type, Type)
+extractInput :: Exp -> Type -> FreestState (Type, Type)
 extractInput = extractMessage In "input"
 
 extractMessage
-  :: Polarity -> String -> Expression -> Type -> FreestState (Type, Type)
+  :: Polarity -> String -> Exp -> Type -> FreestState (Type, Type)
 extractMessage pol msg e t = do
   t' <- norm t
   case t' of
@@ -138,7 +138,7 @@ extractMessage pol msg e t = do
     u -> extractMessageErr msg e u
  where
   extractMessageErr
-    :: String -> Expression -> Type -> FreestState (Type, Type)
+    :: String -> Exp -> Type -> FreestState (Type, Type)
   extractMessageErr msg e u = do
     addError
       (pos e)
@@ -150,14 +150,14 @@ extractMessage pol msg e t = do
     return (UnitType (pos u), Skip (pos u))
 
 -- Extracts a choice type from a general type; gives an error if a choice is not found
-extractOutChoiceMap :: Expression -> Type -> FreestState TypeMap
+extractOutChoiceMap :: Exp -> Type -> FreestState TypeMap
 extractOutChoiceMap = extractChoiceMap Out "external"
 
-extractInChoiceMap :: Expression -> Type -> FreestState TypeMap
+extractInChoiceMap :: Exp -> Type -> FreestState TypeMap
 extractInChoiceMap = extractChoiceMap In "internal"
 
 extractChoiceMap
-  :: Polarity -> String -> Expression -> Type -> FreestState TypeMap
+  :: Polarity -> String -> Exp -> Type -> FreestState TypeMap
 extractChoiceMap pol msg e t = do
   t' <- norm t
   case t' of
@@ -168,7 +168,7 @@ extractChoiceMap pol msg e t = do
       else extractChoiceErr msg e t
     u -> extractChoiceErr msg e t
  where
-  extractChoiceErr :: String -> Expression -> Type -> FreestState TypeMap
+  extractChoiceErr :: String -> Exp -> Type -> FreestState TypeMap
   extractChoiceErr msg e u = do
     addError
       (pos e)
@@ -180,7 +180,7 @@ extractChoiceMap pol msg e t = do
     return Map.empty
 
 -- Extracts a datatype from a type; gives an error if a datatype is not found
-extractDatatypeMap :: Expression -> Type -> FreestState TypeMap
+extractDatatypeMap :: Exp -> Type -> FreestState TypeMap
 extractDatatypeMap e t = do
   t' <- norm t
   case t' of

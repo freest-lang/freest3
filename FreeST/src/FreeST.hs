@@ -16,7 +16,7 @@ import qualified Data.Map.Strict               as Map
 
 import           Parse.Parser                   ( parseProgram )
 import           Syntax.Base
-import           Syntax.Expressions             ( ExpEnv )
+import           Syntax.Expression              ( ExpEnv )
 import           Syntax.Types                   ( TypeEnv
                                                 , VarEnv
                                                 )

@@ -6,7 +6,7 @@ where
 import qualified Data.Map.Strict                as Map
 import           Data.Maybe                     (fromMaybe)
 import           Syntax.Base
-import           Syntax.Expressions
+import           Syntax.Expression
 import           Parse.Unparser                 ()
 import           Syntax.Types                   (Type(..), TypeBind(..), TypeOpsEnv)
 
@@ -40,12 +40,12 @@ showTypeDefault tops t = Map.findWithDefault t (pos t) tops
 lookupPos :: TypeOpsEnv -> Pos -> Type -> Type
 lookupPos tops p defaultType = fromMaybe defaultType (tops Map.!? p)
 
-instance ShowWithDefault Expression where
+instance ShowWithDefault Exp where
   showDefault tops e = show (showExpDefault tops e)
 
 -- | Show expression, consulting the typename map
 
-showExpDefault :: TypeOpsEnv -> Expression -> Expression
+showExpDefault :: TypeOpsEnv -> Exp -> Exp
 showExpDefault tops (Abs p1 m (TypeBind p2 b t) e) =
   Abs p1 m (TypeBind p2 b (showTypeDefault tops t)) (showExpDefault tops e)
 showExpDefault tops (TypeApp p x t) =

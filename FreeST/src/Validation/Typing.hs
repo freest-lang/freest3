@@ -27,7 +27,7 @@ import           Control.Monad.State            ( when
 import qualified Data.Map.Strict               as Map
 import           Equivalence.Equivalence
 import           Syntax.Base
-import           Syntax.Expressions
+import           Syntax.Expression
 import           Syntax.Kinds
 import           Syntax.ProgramVariables
 import           Syntax.Schemes
@@ -49,7 +49,7 @@ import qualified Data.Map.Strict               as Map
 
 -- SYNTHESISING A TYPE
 
-synthetise :: KindEnv -> Expression -> FreestState Type
+synthetise :: KindEnv -> Exp -> FreestState Type
 -- Basic expressions
 synthetise _ (Unit p       ) = return $ UnitType p
 synthetise _ (Integer   p _) = return $ IntType p
@@ -266,9 +266,9 @@ synthetiseFieldMap
   :: Pos
   -> String
   -> KindEnv
-  -> Expression
+  -> Exp
   -> FieldMap
-  -> (Expression -> Type -> FreestState TypeMap)
+  -> (Exp -> Type -> FreestState TypeMap)
   -> (ProgVar -> [ProgVar] -> Type -> FreestState ())
   -> FreestState Type
 synthetiseFieldMap p branching kEnv e fm extract params = do
@@ -308,7 +308,7 @@ synthetiseField
   -> (ProgVar -> [ProgVar] -> Type -> FreestState ())
   -> TypeMap
   -> ProgVar
-  -> ([ProgVar], Expression)
+  -> ([ProgVar], Exp)
   -> FreestState ([Type], [VarEnv])
   -> FreestState ([Type], [VarEnv])
 synthetiseField vEnv1 kEnv params tm b (bs, e) state = do
@@ -398,7 +398,7 @@ quotient kEnv x = do
     Nothing -> return ()
   removeFromVEnv x
 
-addPartiallyAppliedError :: Expression -> String -> FreestState Type
+addPartiallyAppliedError :: Exp -> String -> FreestState Type
 addPartiallyAppliedError e s = do
   let p = pos e
   addError
@@ -416,7 +416,7 @@ addPartiallyAppliedError e s = do
 -- CHECKING AGAINST A GIVEN TYPE OR TYPE SCHEME
 
 -- | Check an expression against a given type
-checkAgainst :: KindEnv -> Expression -> Type -> FreestState ()
+checkAgainst :: KindEnv -> Exp -> Type -> FreestState ()
 -- Boolean elimination
 checkAgainst kEnv (Conditional p e1 e2 e3) t = do
   -- let kEnv = kEnvFromType kEnv t
@@ -457,7 +457,7 @@ checkAgainst kEnv e t = do
   checkEquivTypes e kEnv t u
 
 -- | Check an expression against a given type scheme
--- checkAgainstTS :: Expression -> TypeScheme -> FreestState ()
+-- checkAgainstTS :: Exp -> TypeScheme -> FreestState ()
 -- checkAgainstTS e (TypeScheme _ bs t) = checkAgainst (fromKindBinds bs) e t
 
 kEnvFromType :: KindEnv -> Type -> KindEnv
@@ -468,7 +468,7 @@ kEnvFromType kenv _ = kenv
 
 -- EQUALITY AND EQUIVALENCE CHECKING
 
-checkEquivTypes :: Expression -> KindEnv -> Type -> Type -> FreestState ()
+checkEquivTypes :: Exp -> KindEnv -> Type -> Type -> FreestState ()
 checkEquivTypes exp kEnv expected actual = do
   tEnv <- getTEnv
   -- vEnv <- getVEnv
@@ -486,10 +486,10 @@ checkEquivTypes exp kEnv expected actual = do
 -- test (Semi _ t u) = pos p
 -- test t = defaultPos
 
-checkEqualEnvs :: Expression -> VarEnv -> VarEnv -> FreestState ()
+checkEqualEnvs :: Exp -> VarEnv -> VarEnv -> FreestState ()
 checkEqualEnvs e vEnv1 vEnv2 =
   -- tEnv <- getTEnv
-  -- trace ("Initial vEnv: " ++ show (userDefined (noConstructors tEnv vEnv1)) ++ "\n  Final vEnv: " ++ show (userDefined (noConstructors tEnv vEnv2)) ++ "\n  Expression: " ++ show e) (return ())
+  -- trace ("Initial vEnv: " ++ show (userDefined (noConstructors tEnv vEnv1)) ++ "\n  Final vEnv: " ++ show (userDefined (noConstructors tEnv vEnv2)) ++ "\n  Exp: " ++ show e) (return ())
                                unless
   (Map.null diff)
   (addError
@@ -526,10 +526,10 @@ checkEquivEnvs p branching kEnv vEnv1 vEnv2 = do
       "\n\t (is there a variable with different types in the two environments?)"
     ]
 
-fillFunType :: KindEnv -> ProgVar -> Expression -> Type -> FreestState Type
+fillFunType :: KindEnv -> ProgVar -> Exp -> Type -> FreestState Type
 fillFunType kEnv b = fill
  where
-  fill :: Expression -> Type -> FreestState Type
+  fill :: Exp -> Type -> FreestState Type
   fill (Abs _ _ (TypeBind _ b _) e) (Fun _ _ t1 t2) = do
     addToVEnv b t1
     t3 <- fill e t2

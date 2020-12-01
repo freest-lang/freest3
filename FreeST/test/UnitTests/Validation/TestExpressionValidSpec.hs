@@ -1,7 +1,7 @@
 module Validation.TestExpressionValidSpec (spec) where
 
 import           SpecHelper
-import           Syntax.Expressions
+import           Syntax.Expression
 import           Control.Monad.State
 import           Utils.FreestState
 import           Validation.Typing(checkAgainst)
@@ -20,6 +20,6 @@ matchValidExpressionSpec :: [String] -> Spec
 matchValidExpressionSpec [e, t] =
   it (e ++ " : " ++ t) $ isExpr (read e) (read t) `shouldBe` True
 
-isExpr :: Expression -> Type -> Bool
+isExpr :: Exp -> Type -> Bool
 isExpr e t = null (errors s)
   where s = execState (checkAgainst Map.empty e t) (initialState "Check Against Expression")

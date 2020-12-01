@@ -41,7 +41,7 @@ library:
     - Syntax.TypeVariables
     - Syntax.Base
     - Syntax.Types
-    - Syntax.Expressions
+    - Syntax.Expression
     - Syntax.Schemes
     - Syntax.Kinds
     - Syntax.ProgramVariables
