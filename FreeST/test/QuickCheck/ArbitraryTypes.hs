@@ -50,8 +50,8 @@ instance Arbitrary Kind where
 instance Arbitrary KindBind where
   arbitrary = liftM3 KindBind (return pos) arbitrary arbitrary
 
-instance Arbitrary BasicType where
-  arbitrary = elements [IntType, CharType, BoolType, UnitType]
+-- instance Arbitrary Type where
+--   arbitrary = elements [IntType, CharType, BoolType, UnitType]
 
 -- Arbitrary pairs of bisimilar types
 
@@ -113,15 +113,16 @@ skipPair = return (Skip pos,
 
 messagePair :: Gen (Type, Type)
 messagePair = do
-  (p, b) <- arbitrary
-  return (Message pos p b,
-          Message pos p b)
+  pol <- arbitrary
+  t <- elements [IntType pos, CharType pos, BoolType pos, UnitType pos]
+  return (Message pos pol t,
+          Message pos pol t)
 
 varPair :: Gen (Type, Type)
 varPair = do
-  x <- arbitrary
-  return (TypeVar pos x,
-          TypeVar pos x)
+  a <- arbitrary
+  return (TypeVar pos a,
+          TypeVar pos a)
 
 semiPair :: PairGen -> Int -> Gen (Type, Type)
 semiPair pairGen n = do

@@ -7,7 +7,7 @@ import           Equivalence.Equivalence
 import           Validation.Kinding
 import           Syntax.Types
 import           Syntax.Kinds
-import           Syntax.Base
+import           Syntax.Base hiding (pos)
 import           Utils.FreestState
 import           Control.Monad.State
 import qualified Data.Map.Strict as Map

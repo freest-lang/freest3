@@ -15,7 +15,7 @@ import           Validation.Kinding
 import           Syntax.Types
 import           Syntax.Kinds
 import           Syntax.TypeVariables
-import           Syntax.Base
+import           Syntax.Base hiding (pos)
 -- import           Validation.Duality
 import           Utils.FreestState
 import           Control.Monad.State
@@ -109,7 +109,10 @@ nodes _              = 1
 
 -- The constructor of a type
 constr :: Type -> String
-constr (Basic _ _) = "Basic"
+constr (IntType _) = "Int"
+constr (CharType _) = "Char"
+constr (UnitType _) = "Unit"
+constr (IntType _) = "Int"
 constr (Syntax.Types.Fun {}) = "Fun"
 constr (PairType _ _ _) = "PairType"
 constr (Datatype _ _) = "Datatype"
