@@ -1,5 +1,5 @@
 {-|
-Module      :  Validation.Terminated
+Module      :  Validation.Contractive
 Description :  <optional short text displayed on contents page>
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
@@ -17,7 +17,6 @@ module Validation.Contractive
 where
 
 import           Syntax.Types
--- import           Syntax.Kinds
 import           Syntax.TypeVariables
 import           Validation.Terminated
 
@@ -26,6 +25,7 @@ contractive a (Semi _ t u)
   | terminated t = contractive a u
   | otherwise    = contractive a t
 contractive a (Rec _ _ t) = contractive a t
+contractive a (Forall _ _ t) = contractive a t
 contractive a (TypeVar _ b) = a /= b
 contractive _ (Skip _) = False
 contractive _ _ = True

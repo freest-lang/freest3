@@ -54,6 +54,7 @@ library:
     - Parse.Parser
     - Validation.Duality
     - Validation.Terminated
+    - Validation.Contractive
     - Validation.Rename
     - Validation.Kinding
     - Validation.Substitution
