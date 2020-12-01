@@ -27,4 +27,4 @@ instance Ord TypeVar where
   (TypeVar _ x) <= (TypeVar _ y) = x <= y
 
 instance Position TypeVar where
-  position (TypeVar p _) = p
+  pos (TypeVar p _) = p

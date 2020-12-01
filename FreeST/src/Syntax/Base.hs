@@ -30,7 +30,7 @@ class Default t where
 data Pos = Pos Int Int deriving (Eq, Ord)
 
 class Position t where
-  position :: t -> Pos  
+  pos :: t -> Pos  
 
 defaultPos :: Pos
 defaultPos = Pos 0 0

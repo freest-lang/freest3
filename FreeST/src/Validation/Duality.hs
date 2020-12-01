@@ -36,6 +36,6 @@ dual (Choice p v m) = fmap (Choice p (dualPol v)) (mapM dual m)
 dual (Rec p x t) = fmap (Rec p x) (dual t)
 dual t@TypeVar{} = pure t
 dual t = do
-  addError (position t) [Error "Dualof applied to a non session type: ", Error t]
+  addError (pos t) [Error "Dualof applied to a non session type: ", Error t]
   pure t
--- dual t = internalError (position t) "Validation.Duality.dual" (show t)
+-- dual t = internalError (pos t) "Validation.Duality.dual" (show t)

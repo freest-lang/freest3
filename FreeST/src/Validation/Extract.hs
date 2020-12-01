@@ -59,7 +59,7 @@ extractFun e t = do
   case t' of
     (Fun _ _ u v) -> return (u, v)
     u             -> do
-      let p = position e
+      let p = pos e
       addError
         p
         [ Error "Expecting a function type for expression"
@@ -76,7 +76,7 @@ extractPair e t = do
   case t' of
     (PairType _ u v) -> return (u, v)
     u                -> do
-      let p = position u
+      let p = pos u
       addError
         p
         [ Error "Expecting a pair type for expression"
@@ -95,7 +95,7 @@ extractForall e t = do
     u@(Forall _ _ _) -> return u
     u                -> do
 --      error $ show u
-      let p = position u
+      let p = pos u
       addError
         p
         [ Error "Expecting a polymorphic type for expression"
@@ -114,7 +114,7 @@ extractForall e t = do
 --   case t' of
 --     (Basic _ b) -> return b
 --     u ->
---       addError (position u)
+--       addError (pos u)
 --                [Error "Expecting a basic type; found type", Error u]
 --         >> return IntType
 
@@ -141,13 +141,13 @@ extractMessage pol msg e t = do
     :: String -> Expression -> Type -> FreestState (Type, Type)
   extractMessageErr msg e u = do
     addError
-      (position e)
+      (pos e)
       [ Error $ "Expecting an " ++ msg ++ " type for expression"
       , Error e
       , Error "\n\t found type"
       , Error u
       ]
-    return (UnitType (position u), Skip (position u))
+    return (UnitType (pos u), Skip (pos u))
 
 -- Extracts a choice type from a general type; gives an error if a choice is not found
 extractOutChoiceMap :: Expression -> Type -> FreestState TypeMap
@@ -164,14 +164,14 @@ extractChoiceMap pol msg e t = do
     (Choice _ pol' m) ->
       if pol == pol' then return m else extractChoiceErr msg e t
     (Semi _ (Choice _ pol' m) u) -> if pol == pol'
-      then return $ Map.map (\v -> Semi (position v) v u) m
+      then return $ Map.map (\v -> Semi (pos v) v u) m
       else extractChoiceErr msg e t
     u -> extractChoiceErr msg e t
  where
   extractChoiceErr :: String -> Expression -> Type -> FreestState TypeMap
   extractChoiceErr msg e u = do
     addError
-      (position e)
+      (pos e)
       [ Error $ "Expecting an " ++ msg ++ " choice type for expression"
       , Error e
       , Error "\n\t found type"
@@ -187,7 +187,7 @@ extractDatatypeMap e t = do
     (Datatype _ m) -> return m
     u              -> do
       addError
-        (position e)
+        (pos e)
         [ Error "Expecting a datatype for expression"
         , Error e
         , Error "\n\t found type"

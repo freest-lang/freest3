@@ -131,8 +131,8 @@ substituteEnv x t tenv = do -- tMapWithKeyM subsEnv
 
 buildRecursiveType :: TypeVar -> (Kind, Type) -> Type
 buildRecursiveType v (k, t)
-  | isRecursiveTypeDecl v t = Rec (position v)
-                                  (KindBind (position v) v k)
+  | isRecursiveTypeDecl v t = Rec (pos v)
+                                  (KindBind (pos v) v k)
                                   t
   | otherwise = t
 

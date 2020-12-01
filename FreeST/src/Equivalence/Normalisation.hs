@@ -49,7 +49,7 @@ append :: Type -> Type -> Type
 append (Skip _)     t = t
 append t     (Skip _) = t
 append (Semi p t u) v = Semi p t (append u v)
-append t            u = Semi (position t) t u
+append t            u = Semi (pos t) t u
 
 -- instance Normalise TypeScheme where
 --   normalise tenv (TypeScheme p bs t) = TypeScheme p bs (normalise tenv t)

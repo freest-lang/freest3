@@ -88,22 +88,22 @@ instance Functor ParseResult where
 
 checkDupField :: ProgVar -> TypeMap -> FreestState ()
 checkDupField x m = when (x `Map.member` m) $ addError
-  (position x)
+  (pos x)
   [ Error "Multiple declarations of field"
   , Error x
   , Error "\n\t in a choice type"
   ]
-    -- addError (position x) ["Multiple declarations of field", styleRed (show x), "\n",
+    -- addError (pos x) ["Multiple declarations of field", styleRed (show x), "\n",
     --                        "\t in a choice type"]
 
 checkDupCase :: ProgVar -> FieldMap -> FreestState ()
 checkDupCase x m = when (x `Map.member` m) $ addError
-  (position x)
+  (pos x)
   [ Error "Pattern match is redundant"
   , Error "\n\t In a case alternative:"
   , Error x
   ]
-    -- addError (position x) ["Pattern match is redundant", "\n",
+    -- addError (pos x) ["Pattern match is redundant", "\n",
     --                        "\t In a case alternative:", styleRed (show x)]
 
 checkDupBind :: ProgVar -> [ProgVar] -> FreestState ()
@@ -111,13 +111,13 @@ checkDupBind x xs
   | intern x == "_" = return ()
   | otherwise = case find (== x) xs of
     Just y -> addError
-      (position y)
+      (pos y)
       [ Error "Conflicting definitions for program variable"
       , Error x
       , Error "\n\t Bound at:"
-      , Error $ show (position y)
+      , Error $ show (pos y)
       , Error "\n\t          "
-      , Error $ show (position x)
+      , Error $ show (pos x)
       ]
     Nothing -> return ()
 
@@ -138,24 +138,24 @@ checkDupKindBind (KindBind p x _) bs =
 checkDupCons :: (ProgVar, [Type]) -> [(ProgVar, [Type])] -> FreestState ()
 checkDupCons (x, _) xts
   | any (\(y, _) -> y == x) xts = addError
-    (position x)
+    (pos x)
     [ Error "Multiple declarations of"
     , Error x
     , Error "\n\t in a datatype declaration"
     ]
   | otherwise = getFromVEnv x >>= \case
     Just s -> addError
-      (position x)
+      (pos x)
       [ Error "Multiple declarations of"
       , Error x
       , Error "\n\t Declared at:"
-      , Error (position x)
+      , Error (pos x)
       , Error "\n\t             "
-      , Error (position s)
+      , Error (pos s)
       ]
-                -- addError (position x) ["Multiple declarations of", styleRed (show x), "\n",
-                --              "\t Declared at:", show (position x), "\n",
-                --              "\t             ", show (position s)]
+                -- addError (pos x) ["Multiple declarations of", styleRed (show x), "\n",
+                --              "\t Declared at:", show (pos x), "\n",
+                --              "\t             ", show (pos s)]
     Nothing -> return ()
 
 checkDupProgVarDecl :: ProgVar -> FreestState ()
@@ -163,13 +163,13 @@ checkDupProgVarDecl x = do
   vEnv <- getVEnv
   case vEnv Map.!? x of
     Just a -> addError
-      (position x)
+      (pos x)
       [ Error "Multiple declarations of"
       , Error x
       , Error "\n\t Declared at:"
-      , Error (position a)
+      , Error (pos a)
       , Error "\n\t             "
-      , Error (position x)
+      , Error (pos x)
       ]
     Nothing -> return ()
 
@@ -179,13 +179,13 @@ checkDupTypeDecl a = do
   tEnv <- getTEnv
   case tEnv Map.!? a of
     Just (_, s) -> addError
-      (position a)
+      (pos a)
       [ Error "Multiple declarations of type"
       , Error a
       , Error "\n\t Declared at:"
-      , Error (position a)
+      , Error (pos a)
       , Error "\n\t             "
-      , Error (position s)
+      , Error (pos s)
       ]
     Nothing -> return ()
 
@@ -194,13 +194,13 @@ checkDupFunDecl x = do
   eEnv <- getEEnv
   case eEnv Map.!? x of
     Just e -> addError
-      (position x)
+      (pos x)
       [ Error "Multiple bindings for function"
       , Error x
       , Error "\n\t Declared at:"
-      , Error (position x)
+      , Error (pos x)
       , Error "\n\t             "
-      , Error (position e)
+      , Error (pos e)
       ]
     Nothing -> return ()
 
@@ -208,18 +208,18 @@ checkDupFunDecl x = do
 
 binOp :: Expression -> ProgVar -> Expression -> Expression
 binOp left op =
-  App (position left) (App (position left) (ProgVar (position op) op) left)
+  App (pos left) (App (pos left) (ProgVar (pos op) op) left)
 
 unOp :: ProgVar -> Expression -> Expression
-unOp op expr = App (position expr) (ProgVar (position op) op) expr
+unOp op expr = App (pos expr) (ProgVar (pos op) op) expr
 
 typeListToType :: TypeVar -> [(ProgVar, [Type])] -> [(ProgVar, Type)]
 typeListToType a = map (\(x, ts) -> (x, typeToFun ts))
   -- Convert a list of types and a final type constructor to a type
  where
---  typeToFun []       = TypeName (position a) a
-  typeToFun []       = TypeVar (position a) a
-  typeToFun (t : ts) = Fun (position t) Un t (typeToFun ts)
+--  typeToFun []       = TypeName (pos a) a
+  typeToFun []       = TypeVar (pos a) a
+  typeToFun (t : ts) = Fun (pos t) Un t (typeToFun ts)
 
 buildFunBody :: ProgVar -> [ProgVar] -> Expression -> FreestState Expression
 buildFunBody f bs e = getFromVEnv f >>= \case
@@ -234,7 +234,7 @@ buildFunBody f bs e = getFromVEnv f >>= \case
     return $ buildExp bs (normalise tEnv s) -- Normalisation allows type names in signatures
   Nothing -> do
     addError
-      (position f)
+      (pos f)
       [ Error "The binding for function"
       , Error f
       , Error "lacks an accompanying type signature"
@@ -244,14 +244,14 @@ buildFunBody f bs e = getFromVEnv f >>= \case
   buildExp :: [ProgVar] -> Type -> Expression
   buildExp [] _ = e
   buildExp (b : bs) (Fun _ m t1 t2) =
-    Abs (position b) m (TypeBind (position b) b t1) (buildExp bs t2)
+    Abs (pos b) m (TypeBind (pos b) b t1) (buildExp bs t2)
   buildExp (b : bs) (Dualof p (Fun _ m t1 t2)) =
-    Abs (position b) m (TypeBind (position b) b (Dualof p t1)) (buildExp bs (Dualof p t2))
+    Abs (pos b) m (TypeBind (pos b) b (Dualof p t1)) (buildExp bs (Dualof p t2))
     
 --  buildExp (b : bs) (Forall _ (KindBind p y _) t) = -- TODO: Abs Un ??? I think it can be (mult t)
   buildExp bs (Forall p kb t) =
     TypeAbs p kb (buildExp bs t)
     
   buildExp (b : bs) t =
-    Abs (position b) Un (TypeBind (position b) b (omission (position b))) (buildExp bs t)
+    Abs (pos b) Un (TypeBind (pos b) b (omission (pos b))) (buildExp bs t)
 

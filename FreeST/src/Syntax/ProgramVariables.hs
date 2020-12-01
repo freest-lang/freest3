@@ -32,7 +32,7 @@ instance Ord ProgVar where
   (ProgVar _ x) <= (ProgVar _ y) = x <= y
 
 instance Position ProgVar where
-  position (ProgVar p _) = p
+  pos (ProgVar p _) = p
 
 -- TODO: remove 
 isADT :: ProgVar -> Bool

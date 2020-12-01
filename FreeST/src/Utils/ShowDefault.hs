@@ -35,7 +35,7 @@ showTypeDefault tops (Datatype p m) =
   lookupPos tops p (Datatype p (Map.map (showTypeDefault tops) m))
 showTypeDefault tops (Choice p pol m) =
   lookupPos tops p (Choice p pol (Map.map (showTypeDefault tops) m))
-showTypeDefault tops t = Map.findWithDefault t (position t) tops
+showTypeDefault tops t = Map.findWithDefault t (pos t) tops
 
 lookupPos :: TypeOpsEnv -> Pos -> Type -> Type
 lookupPos tops p defaultType = fromMaybe defaultType (tops Map.!? p)

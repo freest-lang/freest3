@@ -89,7 +89,7 @@ class Rename t where
 
 instance Rename Type where
   rename bs t
-    | terminated t = return $ Skip (position t)
+    | terminated t = return $ Skip (pos t)
     | otherwise    = rename' bs t
 
 rename':: Bindings -> Type -> FreestState Type
@@ -239,7 +239,7 @@ insertVar :: Variable a => a -> a -> Bindings -> Bindings
 insertVar x y = Map.insert (intern x) (intern y)
 
 findWithDefaultVar :: Variable a => a -> Bindings -> a
-findWithDefaultVar x bs = mkVar (position x) (Map.findWithDefault (intern x) (intern x) bs)
+findWithDefaultVar x bs = mkVar (pos x) (Map.findWithDefault (intern x) (intern x) bs)
 
 -- Rename a type
 renameType :: Type -> Type

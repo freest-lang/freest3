@@ -109,7 +109,7 @@ synthetise kEnv (App p (ProgVar _ x) e) |  -- Receive e
                                           x == mkVar p "receive" = do
   t        <- synthetise kEnv e
   (u1, u2) <- extractInput e t
-  K.checkAgainst kEnv (kindML (position u1)) u1
+  K.checkAgainst kEnv (kindML (pos u1)) u1
   return $ PairType p u1 u2
 synthetise kEnv e@(App p (ProgVar _ x) _) |  -- Send e
                                             x == mkVar p "send" =
@@ -118,7 +118,7 @@ synthetise kEnv (App p (App _ (ProgVar _ x) e1) e2) |  -- Send e1 e2
                                                       x == mkVar p "send" = do
   t        <- synthetise kEnv e2
   (u1, u2) <- extractOutput e2 t
-  K.checkAgainst kEnv (kindML (position u1)) u1
+  K.checkAgainst kEnv (kindML (pos u1)) u1
   checkAgainst kEnv e1 $ u1
   return u2
 synthetise kEnv e@(App _ e1 e2) = do -- General case
@@ -249,7 +249,7 @@ synthetiseVar kEnv x = getFromVEnv x >>= \case
   Nothing -> do
   --  debugM $ "synthetiseVar (not in scope) " ++ show x
   --  traceM $ "synthetiseVar (not in scope) " ++ show x
-    let p = position x
+    let p = pos x
     addError
       p
       [ Error "Variable or data constructor not in scope:"
@@ -327,7 +327,7 @@ paramsToVEnvMM c bs t = do
   addToVEnv (head bs) t
   let lbs = length bs
   when (lbs /= 1) $ addError
-    (position c)
+    (pos c)
     [ Error "The label"
     , Error c
     , Error "should have 1"
@@ -342,7 +342,7 @@ paramsToVEnvCM c bs t = do
   let lbs = length bs
       lts = numArgs t
   when (lbs /= lts) $ addError
-    (position c)
+    (pos c)
     [ Error "The constructor"
     , Error c
     , Error "should have"
@@ -366,12 +366,12 @@ synthetiseCons x tm = case tm Map.!? x of
   Just t  -> return t
   Nothing -> do
     addError
-      (position x)
+      (pos x)
       [ Error "Data constructor or field name in choice type"
       , Error x
       , Error "not in scope"
       ]
-    return $ Skip (position x)
+    return $ Skip (pos x)
 
 -- The quotient operation. Removes a program variable from the
 -- variable environment and gives an error if it is linear
@@ -384,7 +384,7 @@ quotient kEnv x = do
     Just t -> do
       k <- K.synthetise kEnv t
       when (isLin k) $ addError
-        (position x)
+        (pos x)
         [ Error "Program variable"
         , Error x
         , Error "is linear at the end of its scope\n"
@@ -400,7 +400,7 @@ quotient kEnv x = do
 
 addPartiallyAppliedError :: Expression -> String -> FreestState Type
 addPartiallyAppliedError e s = do
-  let p = position e
+  let p = pos e
   addError
     p
     [ Error "Ooops! You're asking too much. I cannot type a partially applied"
@@ -474,7 +474,7 @@ checkEquivTypes exp kEnv expected actual = do
   -- vEnv <- getVEnv
   -- traceM ("\n checkEquivTypes exp : " ++ show exp ++ " \t" ++ show (userDefined vEnv))
   unless (equivalent tEnv kEnv actual expected) $ addError
-    (position exp)
+    (pos exp)
     [ Error "Couldn't match expected type"
     , Error expected
     , Error "\n\t             with actual type"
@@ -483,7 +483,7 @@ checkEquivTypes exp kEnv expected actual = do
     , Error exp
     ]
 
--- test (Semi _ t u) = position p
+-- test (Semi _ t u) = pos p
 -- test t = defaultPos
 
 checkEqualEnvs :: Expression -> VarEnv -> VarEnv -> FreestState ()
@@ -493,7 +493,7 @@ checkEqualEnvs e vEnv1 vEnv2 =
                                unless
   (Map.null diff)
   (addError
-    (position e)
+    (pos e)
     [ Error
       "Final environment differs from initial in an unrestricted function\n"
     , Error "\t These extra entries are present in the final environment:"
@@ -537,7 +537,7 @@ fillFunType kEnv b = fill
     return t3
   fill e@(Abs p _ _ _) t = do
     addError
-      (position b)
+      (pos b)
       [ Error "Couldn't match expected type"
       , Error t
       , Error "\n\t The equation for"

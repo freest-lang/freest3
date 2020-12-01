@@ -83,7 +83,7 @@ checkHasBinding f _ = do
       `Map.notMember` eEnv
       )
     $ addError
-        (position f)
+        (pos f)
         [ Error "The type signature for"
         , Error f
         , Error "lacks an accompanying binding\n"

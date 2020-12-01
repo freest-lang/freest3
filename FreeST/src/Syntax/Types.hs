@@ -81,26 +81,26 @@ type TypeMap = Map.Map ProgVar Type
 
 instance Position Type where
   -- Functional types
-  position (IntType p)      = p
-  position (CharType p)     = p
-  position (BoolType p)     = p
-  position (UnitType p)     = p
-  position (Fun p _ _ _)    = p
-  position (PairType p _ _) = p
-  position (Datatype p _)   = p
+  pos (IntType p)      = p
+  pos (CharType p)     = p
+  pos (BoolType p)     = p
+  pos (UnitType p)     = p
+  pos (Fun p _ _ _)    = p
+  pos (PairType p _ _) = p
+  pos (Datatype p _)   = p
   -- Session types
-  position (Skip p)         = p
-  position (Semi p _ _)     = p
-  position (Message p _ _)  = p
-  position (Choice p _ _)   = p
+  pos (Skip p)         = p
+  pos (Semi p _ _)     = p
+  pos (Message p _ _)  = p
+  pos (Choice p _ _)   = p
   -- Polymorphism
-  position (Forall p _ _)   = p
+  pos (Forall p _ _)   = p
   -- Functional or session
-  position (Rec p _ _)      = p
-  position (TypeVar p _)    = p
+  pos (Rec p _ _)      = p
+  pos (TypeVar p _)    = p
   -- Type operators
-  position (Dualof p _)     = p
-  position (TypeName p _)   = p
+  pos (Dualof p _)     = p
+  pos (TypeName p _)   = p
 
 instance Default Type where
   omission p = IntType p
@@ -110,7 +110,7 @@ instance Default Type where
 data TypeBind = TypeBind Pos ProgVar Type deriving (Eq, Ord)
 
 instance Position TypeBind where
-  position (TypeBind p _ _) = p
+  pos (TypeBind p _ _) = p
 
 {- Type equality, up to alpha-conversion
 

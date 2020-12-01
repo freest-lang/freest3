@@ -95,7 +95,7 @@ isUn :: Kind -> Bool
 isUn = not . isLin
 
 instance Position Kind where
-  position (Kind p _ _) = p
+  pos (Kind p _ _) = p
 
 -- Kind environments
 
@@ -106,4 +106,4 @@ type KindEnv = Map.Map TypeVar Kind
 data KindBind = KindBind Pos TypeVar Kind deriving (Eq, Ord)
 
 instance Position KindBind where
-  position (KindBind p _ _) = p
+  pos (KindBind p _ _) = p
