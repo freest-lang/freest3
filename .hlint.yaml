@@ -24,6 +24,10 @@
 - modules:
   - {name: [Data.Set, Data.HashSet], as: Set} # if you import Data.Set qualified, it must be as 'Set'
   - {name: [Data.Map], as: Map}
+  - {name: [Syntax.Types], as: T}
+  - {name: [Syntax.Kind], as: K}
+  - {name: [Syntax.Expression], as: E}
+
 #   - {name: Control.Arrow, within: []} # Certain modules are banned entirely
 #
 - functions:
