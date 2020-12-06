@@ -28,7 +28,7 @@ import           Syntax.Schemes
 import qualified Syntax.Type                   as T
 import           Syntax.Kind
 import           Syntax.TypeVariable
-import           Syntax.ProgramVariables
+import           Syntax.ProgramVariable
 import           Syntax.Base
 import qualified Validation.Substitution       as Subs
                                                 ( subs

@@ -41,7 +41,7 @@ import           Equivalence.Normalisation
 import           Syntax.Base
 import           Syntax.Expression
 import           Syntax.Kind
-import           Syntax.ProgramVariables
+import           Syntax.ProgramVariable
 import           Syntax.TypeVariable
 import           Syntax.Type
 import           Utils.FreestState

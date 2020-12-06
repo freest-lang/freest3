@@ -14,11 +14,10 @@ import           Interpreter.Builtin
 import           Interpreter.Value
 import           Syntax.Base
 import qualified Syntax.Expression             as E
-import           Syntax.ProgramVariables
+import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 
 
-import           Debug.Trace
 ------------------------------------------------------------
 -- EVALUATION
 ------------------------------------------------------------

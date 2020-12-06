@@ -28,7 +28,7 @@ noConstructors
 ) where
 
 import           Syntax.Type
-import           Syntax.ProgramVariables
+import           Syntax.ProgramVariable
 import qualified Data.Map.Strict as Map
 
 -- data TypeScheme = TypeScheme Pos [KindBind] Type

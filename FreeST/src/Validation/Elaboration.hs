@@ -10,7 +10,7 @@ import qualified Syntax.Type                   as T
 import qualified Syntax.Kind                   as K
 import           Syntax.Base
 import           Syntax.TypeVariable
-import           Syntax.ProgramVariables
+import           Syntax.ProgramVariable
 import           Validation.Duality             ( dual )
 -- import           Validation.Terminated
 import           Utils.FreestState

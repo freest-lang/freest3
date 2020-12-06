@@ -11,7 +11,7 @@ import           Data.List                      ( intercalate )
 import           Syntax.Base
 import           Syntax.Expression
 import           Syntax.Kind
-import           Syntax.ProgramVariables
+import           Syntax.ProgramVariable
 -- import           Syntax.Schemes
 import           Syntax.TypeVariable
 import qualified Syntax.Type                   as T

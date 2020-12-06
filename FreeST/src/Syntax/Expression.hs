@@ -21,7 +21,7 @@ where
 import qualified Data.Map.Strict               as Map
 import           Syntax.Base
 import qualified Syntax.Kind                   as K --  (KindBind)
-import           Syntax.ProgramVariables
+import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T -- (Type, TypeBind)
 
 data Exp =

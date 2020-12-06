@@ -26,7 +26,7 @@ import           Prelude                 hiding ( Left
 import           Syntax.Base
 import           Syntax.Expression
 import qualified Syntax.Kind                   as K
-import           Syntax.ProgramVariables
+import           Syntax.ProgramVariable
 import           Syntax.Schemes
 import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable

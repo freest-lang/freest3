@@ -21,7 +21,7 @@ where
 import           Syntax.Expression
 import           Syntax.Schemes
 import           Syntax.Type
-import           Syntax.ProgramVariables
+import           Syntax.ProgramVariable
 import           Syntax.Base
 import qualified Validation.Kinding            as K
 import qualified Validation.Typing             as T

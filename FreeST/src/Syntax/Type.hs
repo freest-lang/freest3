@@ -22,7 +22,7 @@ module Syntax.Type
 
 import qualified Syntax.Kind as K
 import           Syntax.TypeVariable
-import           Syntax.ProgramVariables (ProgVar)
+import           Syntax.ProgramVariable (ProgVar)
 import           Syntax.Base
 import qualified Data.Map.Strict as Map
 

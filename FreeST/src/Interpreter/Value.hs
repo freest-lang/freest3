@@ -10,7 +10,7 @@ import qualified Control.Concurrent.Chan as C
 import           Data.List (intercalate)
 import qualified Data.Map.Strict as Map
 import qualified Syntax.Expression as E
-import           Syntax.ProgramVariables
+import           Syntax.ProgramVariable
 import           Parse.Unparser
 
 data Value =

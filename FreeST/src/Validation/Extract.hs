@@ -29,7 +29,7 @@ where
 import           Syntax.Expression
 import qualified Syntax.Type                   as T
 import qualified Syntax.Kind                   as K
-import           Syntax.ProgramVariables
+import           Syntax.ProgramVariable
 import           Syntax.Base
 import           Equivalence.Normalisation
 import           Utils.FreestState

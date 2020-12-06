@@ -9,7 +9,7 @@ import           Test.QuickCheck
 import qualified Syntax.Type                   as T
 import qualified Syntax.Kind                   as K
 import           Syntax.TypeVariable
-import           Syntax.ProgramVariables
+import           Syntax.ProgramVariable
 import           Syntax.Base             hiding ( pos )
 -- import           Parse.Unparser
 import qualified Validation.Rename             as Rename

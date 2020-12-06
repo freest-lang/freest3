@@ -44,7 +44,7 @@ library:
     - Syntax.Expression
     - Syntax.Schemes
     - Syntax.Kind
-    - Syntax.ProgramVariables
+    - Syntax.ProgramVariable
     - Parse.ParseUtils
     - Parse.Read
     - Parse.Unparser

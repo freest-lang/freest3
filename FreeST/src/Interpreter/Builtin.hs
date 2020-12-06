@@ -7,7 +7,7 @@ import           Data.Char                      ( ord
 import qualified Data.Map                      as Map
 import           Interpreter.Value
 import           Syntax.Base
-import           Syntax.ProgramVariables
+import           Syntax.ProgramVariable
 
 
 ------------------------------------------------------------
