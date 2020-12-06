@@ -46,8 +46,8 @@ instance ShowWithDefault Exp where
 -- | Show expression, consulting the typename map
 
 showExpDefault :: T.TypeOpsEnv -> Exp -> Exp
-showExpDefault tops (Abs p1 m (T.TypeBind p2 b t) e) =
-  Abs p1 m (T.TypeBind p2 b (showTypeDefault tops t)) (showExpDefault tops e)
+showExpDefault tops (Abs p1 m (T.Bind p2 b t) e) =
+  Abs p1 m (T.Bind p2 b (showTypeDefault tops t)) (showExpDefault tops e)
 showExpDefault _    (TypeApp p x t) = TypeApp p x t
  --  TypeApp p x (map (showTypeDefault tops) ts)
 showExpDefault tops (New     p t u) = New p (showTypeDefault tops t) u

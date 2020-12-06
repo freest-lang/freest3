@@ -354,6 +354,6 @@ subsExp _ e = return e
 subsFieldMap :: T.TypeEnv -> FieldMap -> FreestState FieldMap
 subsFieldMap tenv = mapM (\(ps, e) -> liftM2 (,) (pure ps) (subsExp tenv e))
 
-subsTypeBind :: T.TypeEnv -> T.TypeBind -> FreestState T.TypeBind
-subsTypeBind tenv (T.TypeBind p k t) =
-  fmap (T.TypeBind p k) (subsType tenv Nothing t)
+subsTypeBind :: T.TypeEnv -> T.Bind -> FreestState T.Bind
+subsTypeBind tenv (T.Bind p k t) =
+  fmap (T.Bind p k) (subsType tenv Nothing t)

@@ -43,7 +43,7 @@ import           Syntax.Expression
 import qualified Syntax.Kind as K
 import           Syntax.ProgramVariable
 import           Syntax.TypeVariable
-import           Syntax.Type
+import qualified Syntax.Type as T
 import           Utils.FreestState
 
 -- import           Debug.Trace -- debug
@@ -85,7 +85,7 @@ instance Functor ParseResult where
 
 
 
-checkDupField :: ProgVar -> TypeMap -> FreestState ()
+checkDupField :: ProgVar -> T.TypeMap -> FreestState ()
 checkDupField x m = when (x `Map.member` m) $ addError
   (pos x)
   [ Error "Multiple declarations of field"
@@ -134,7 +134,7 @@ checkDupKindBind (K.Bind p x _) bs =
       ]
     Nothing -> return ()
 
-checkDupCons :: (ProgVar, [Type]) -> [(ProgVar, [Type])] -> FreestState ()
+checkDupCons :: (ProgVar, [T.Type]) -> [(ProgVar, [T.Type])] -> FreestState ()
 checkDupCons (x, _) xts
   | any (\(y, _) -> y == x) xts = addError
     (pos x)
@@ -212,13 +212,13 @@ binOp left op =
 unOp :: ProgVar -> Exp -> Exp
 unOp op expr = App (pos expr) (ProgVar (pos op) op) expr
 
-typeListToType :: TypeVar -> [(ProgVar, [Type])] -> [(ProgVar, Type)]
+typeListToType :: TypeVar -> [(ProgVar, [T.Type])] -> [(ProgVar, T.Type)]
 typeListToType a = map (\(x, ts) -> (x, typeToFun ts))
   -- Convert a list of types and a final type constructor to a type
  where
 --  typeToFun []       = TypeName (pos a) a
-  typeToFun []       = TypeVar (pos a) a
-  typeToFun (t : ts) = Fun (pos t) Un t (typeToFun ts)
+  typeToFun []       = T.TypeVar (pos a) a
+  typeToFun (t : ts) = T.Fun (pos t) Un t (typeToFun ts)
 
 buildFunBody :: ProgVar -> [ProgVar] -> Exp -> FreestState Exp
 buildFunBody f bs e = getFromVEnv f >>= \case
@@ -240,17 +240,17 @@ buildFunBody f bs e = getFromVEnv f >>= \case
       ]
     return e
  where
-  buildExp :: [ProgVar] -> Type -> Exp
+  buildExp :: [ProgVar] -> T.Type -> Exp
   buildExp [] _ = e
-  buildExp (b : bs) (Fun _ m t1 t2) =
-    Abs (pos b) m (TypeBind (pos b) b t1) (buildExp bs t2)
-  buildExp (b : bs) (Dualof p (Fun _ m t1 t2)) =
-    Abs (pos b) m (TypeBind (pos b) b (Dualof p t1)) (buildExp bs (Dualof p t2))
+  buildExp (b : bs) (T.Fun _ m t1 t2) =
+    Abs (pos b) m (T.Bind (pos b) b t1) (buildExp bs t2)
+  buildExp (b : bs) (T.Dualof p (T.Fun _ m t1 t2)) =
+    Abs (pos b) m (T.Bind (pos b) b (T.Dualof p t1)) (buildExp bs (T.Dualof p t2))
     
 --  buildExp (b : bs) (Forall _ (K.Bind p y _) t) = -- TODO: Abs Un ??? I think it can be (mult t)
-  buildExp bs (Forall p kb t) =
+  buildExp bs (T.Forall p kb t) =
     TypeAbs p kb (buildExp bs t)
     
   buildExp (b : bs) t =
-    Abs (pos b) Un (TypeBind (pos b) b (omission (pos b))) (buildExp bs t)
+    Abs (pos b) Un (T.Bind (pos b) b (omission (pos b))) (buildExp bs t)
 

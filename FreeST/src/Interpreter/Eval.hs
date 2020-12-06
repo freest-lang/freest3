@@ -38,7 +38,7 @@ eval ctx eenv (E.ProgVar   _ x             ) = evalVar ctx eenv x
 eval ctx eenv (E.TypeApp _ x _             ) = eval ctx eenv x
 -- TypeAbs Pos KindBind Expression
 eval ctx eenv (E.TypeAbs _ _ e             ) = eval ctx eenv e -- return $ Closure x e ctx
-eval ctx _    (E.Abs _ _ (T.TypeBind _ x _) e) = return $ Closure x e ctx
+eval ctx _    (E.Abs _ _ (T.Bind _ x _) e) = return $ Closure x e ctx
 eval ctx eenv (E.App _ e1 e2               ) = eval ctx eenv e1 >>= \case
   (Closure x e ctx') -> do
     !v <- eval ctx eenv e2

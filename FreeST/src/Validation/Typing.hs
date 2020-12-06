@@ -84,7 +84,7 @@ synthetise kEnv (UnLet _ x e1 e2) = do
   quotient kEnv x
   return t2
 -- Abs introduction
-synthetise kEnv e'@(Abs p m (T.TypeBind _ x t1) e) = do
+synthetise kEnv e'@(Abs p m (T.Bind _ x t1) e) = do
   K.synthetise kEnv t1
   vEnv1 <- getVEnv
   addToVEnv x t1
@@ -524,7 +524,7 @@ fillFunType :: K.KindEnv -> ProgVar -> Exp -> T.Type -> FreestState T.Type
 fillFunType kEnv b = fill
  where
   fill :: Exp -> T.Type -> FreestState T.Type
-  fill (Abs _ _ (T.TypeBind _ b _) e) (T.Fun _ _ t1 t2) = do
+  fill (Abs _ _ (T.Bind _ b _) e) (T.Fun _ _ t1 t2) = do
     addToVEnv b t1
     t3 <- fill e t2
     removeFromVEnv b

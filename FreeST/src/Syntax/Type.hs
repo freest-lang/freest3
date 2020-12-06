@@ -12,7 +12,7 @@ This module defines a types and equality.
 module Syntax.Type
 ( -- BasicType(..),
   Type(..)
-, TypeBind(..)
+, Bind(..)
 , TypeMap
 , Polarity(..)
 , TypeOpsEnv
@@ -109,10 +109,10 @@ instance Default Type where
 
 -- Binding program variables to types
 
-data TypeBind = TypeBind Pos ProgVar Type deriving (Eq, Ord)
+data Bind = Bind Pos ProgVar Type deriving (Eq, Ord)
 
-instance Position TypeBind where
-  pos (TypeBind p _ _) = p
+instance Position Bind where
+  pos (Bind p _ _) = p
 
 {- Type equality, up to alpha-conversion
 

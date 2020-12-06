@@ -227,8 +227,8 @@ showChoice i m = intercalate ", " $ Map.foldrWithKey
 
 -- Type binds
 
-instance Show T.TypeBind where
-  show (T.TypeBind _ x t) = show x ++ ": " ++ show t
+instance Show T.Bind where
+  show (T.Bind _ x t) = show x ++ ": " ++ show t
 
 -- Expressions
 

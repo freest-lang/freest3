@@ -189,7 +189,7 @@ Expr :: { Exp }
   : let ProgVarWild '=' Expr in Expr { UnLet (pos $1) $2 $4 $6 }
   | Expr ';' Expr                    { App (pos $1)
                                          (Abs (pos $1) Un
-                                           (T.TypeBind (pos $1) (mkVar (pos $1) "_")
+                                           (T.Bind (pos $1) (mkVar (pos $1) "_")
                                              (T.UnitType (pos $3)))
                                            $3)
                                        $1}
@@ -226,7 +226,7 @@ Primary :: { Exp }
   | Primary '[' Type ']'                       { TypeApp (pos $1) $1 $3 }
   | ArbitraryProgVar                           { ProgVar (pos $1) $1 }
   | '(' lambda ProgVarWildTBind Arrow Expr ')' { Abs (pos $2) (snd $4)
-                                                 (T.TypeBind (pos $2) (fst $3) (snd $3)) $5 }
+                                                 (T.Bind (pos $2) (fst $3) (snd $3)) $5 }
   | '(' Lambda KindBind '=>' Expr ')'          { TypeAbs (pos $2) $3 $5 }    
   --| '(' Expr ',' Expr ')'                    { Pair (pos $1)$2 $4 }
   | '(' Expr ',' Tuple ')'                    { Pair (pos $1) $2 $4 }

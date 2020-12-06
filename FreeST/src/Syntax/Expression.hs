@@ -33,7 +33,7 @@ data Exp =
   -- Variable
   | ProgVar Pos ProgVar
   -- Abstraction intro and elim
-  | Abs Pos Multiplicity T.TypeBind Exp -- λ x:T -> e
+  | Abs Pos Multiplicity T.Bind Exp -- λ x:T -> e
   | App Pos Exp Exp            -- e1 e2
   -- Pair intro and elim
   | Pair Pos Exp Exp
