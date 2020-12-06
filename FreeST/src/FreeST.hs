@@ -38,7 +38,7 @@ main = do
             [ Error "File"
             , Error $ "'" ++ head args ++ "'"
             , Error "cannot be found.\n\t"
-            , Error "(Probably you didn't provide a file with extension fst)"
+            , Error "(Probably you haven't provided a file with extension fst)"
             ]
 
 
