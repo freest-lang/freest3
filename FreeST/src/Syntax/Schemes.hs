@@ -27,11 +27,8 @@ module Syntax.Schemes
 noConstructors
 ) where
 
-import           Syntax.Types
-import           Syntax.Kind
+import           Syntax.Type
 import           Syntax.ProgramVariables
-import           Syntax.TypeVariables
-import           Syntax.Base
 import qualified Data.Map.Strict as Map
 
 -- data TypeScheme = TypeScheme Pos [KindBind] Type
@@ -67,7 +64,7 @@ noConstructors tEnv = Map.filterWithKey (\x _ -> not (x `isDatatypeContructor` t
 -- -- (rather indirect)
 isDatatypeContructor :: ProgVar -> TypeEnv -> Bool
 isDatatypeContructor c tEnv =
-  not $ Map.null $ Map.filter (\t -> isDatatype (snd t)) tEnv
+  not $ Map.null $ Map.filter (isDatatype . snd) tEnv
   where isDatatype :: Type -> Bool
         isDatatype (Datatype _ m) = c `Map.member` m
         isDatatype _              = False

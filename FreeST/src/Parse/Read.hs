@@ -3,7 +3,7 @@ module Parse.Read where
 import           Parse.Lexer                    ( Token )
 import           Parse.Parser
 import           Syntax.Kind
-import           Syntax.Types
+import           Syntax.Type
 import           Syntax.Expression
 import           Parse.ParseUtils
 import           Syntax.Base

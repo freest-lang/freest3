@@ -28,44 +28,37 @@ import qualified Data.Map.Strict               as Map
 import           Equivalence.Equivalence
 import           Syntax.Base
 import           Syntax.Expression
-import           Syntax.Kind
+import qualified Syntax.Kind                   as K
 import           Syntax.ProgramVariables
-import           Syntax.Schemes
+-- import           Syntax.Schemes
 import           Parse.Unparser -- debug
-import           Syntax.Types
-import           Equivalence.Equivalence
+import qualified Syntax.Type                   as T
+-- import           Equivalence.Equivalence
 import           Validation.Extract
 import qualified Validation.Kinding            as K
 import qualified Validation.Rename             as Rename
                                                 ( subs )
 import           Utils.FreestState
-import           Utils.PreludeLoader            ( isBuiltin
-                                                , userDefined
-                                                ) -- debug
-import           Control.Monad.State            ( when
-                                                , unless
-                                                )
-import qualified Data.Map.Strict               as Map
+import           Utils.PreludeLoader            ( userDefined ) -- debug
+-- import qualified Data.Map.Strict               as Map
 
 -- SYNTHESISING A TYPE
 
-synthetise :: KindEnv -> Exp -> FreestState Type
+synthetise :: K.KindEnv -> Exp -> FreestState T.Type
 -- Basic expressions
-synthetise _ (Unit p       ) = return $ UnitType p
-synthetise _ (Integer   p _) = return $ IntType p
-synthetise _ (Character p _) = return $ CharType p
-synthetise _ (Boolean   p _) = return $ BoolType p
+synthetise _ (Unit p       ) = return $ T.UnitType p
+synthetise _ (Integer   p _) = return $ T.IntType p
+synthetise _ (Character p _) = return $ T.CharType p
+synthetise _ (Boolean   p _) = return $ T.BoolType p
 -- Variable
 synthetise kEnv e@(ProgVar p x)
   | x == mkVar p "receive" = addPartiallyAppliedError e "channel"
   | x == mkVar p "send" = addPartiallyAppliedError
     e
     "value and another denoting a channel"
-  | otherwise = do
---      debugM $ show x
-    t <- synthetiseVar kEnv x
-
-    return t
+  | otherwise = synthetiseVar kEnv x
+  -- TODO: Error message
+--      debugM $ show x    
       -- s@(TypeScheme _ bs t) <- synthetiseVar kEnv x
       -- unless
       --   (null bs)
@@ -91,7 +84,7 @@ synthetise kEnv (UnLet _ x e1 e2) = do
   quotient kEnv x
   return t2
 -- Abs introduction
-synthetise kEnv e'@(Abs p m (TypeBind _ x t1) e) = do
+synthetise kEnv e'@(Abs p m (T.TypeBind _ x t1) e) = do
   K.synthetise kEnv t1
   vEnv1 <- getVEnv
   addToVEnv x t1
@@ -99,7 +92,7 @@ synthetise kEnv e'@(Abs p m (TypeBind _ x t1) e) = do
   quotient kEnv x
   vEnv2 <- getVEnv
   when (m == Un) (checkEqualEnvs e' vEnv1 vEnv2)
-  return $ Fun p m t1 t2
+  return $ T.Fun p m t1 t2
 -- Abs elimination
 synthetise kEnv (App p (Select _ c) e) = do -- Select c e
   t <- synthetise kEnv e
@@ -109,8 +102,8 @@ synthetise kEnv (App p (ProgVar _ x) e) |  -- Receive e
                                           x == mkVar p "receive" = do
   t        <- synthetise kEnv e
   (u1, u2) <- extractInput e t
-  K.checkAgainst kEnv (kindML (pos u1)) u1
-  return $ PairType p u1 u2
+  K.checkAgainst kEnv (K.kindML (pos u1)) u1
+  return $ T.PairType p u1 u2
 synthetise kEnv e@(App p (ProgVar _ x) _) |  -- Send e
                                             x == mkVar p "send" =
   addPartiallyAppliedError e "channel"
@@ -118,7 +111,7 @@ synthetise kEnv (App p (App _ (ProgVar _ x) e1) e2) |  -- Send e1 e2
                                                       x == mkVar p "send" = do
   t        <- synthetise kEnv e2
   (u1, u2) <- extractOutput e2 t
-  K.checkAgainst kEnv (kindML (pos u1)) u1
+  K.checkAgainst kEnv (K.kindML (pos u1)) u1
   checkAgainst kEnv e1 $ u1
   return u2
 synthetise kEnv e@(App _ e1 e2) = do -- General case
@@ -135,10 +128,10 @@ synthetise kEnv e@(App _ e1 e2) = do -- General case
 ----------------------------------------
 --   ∆ | Γ |- Λa : κ.e : ∀ a : κ . T
 
-synthetise kEnv (TypeAbs p kb@(KindBind p' x k) e) = do
+synthetise kEnv (TypeAbs p kb@(K.KindBind p' x k) e) = do
 --  addToVEnv x (TypeVar p' x)
   t <- synthetise (Map.insert x k kEnv) e
-  return $ Forall p kb t
+  return $ T.Forall p kb t
 
 
 -- synthetise kEnv e'@(Abs p m (TypeBind _ x t1) e) = do
@@ -160,8 +153,8 @@ synthetise kEnv (TypeAbs p kb@(KindBind p' x k) e) = do
 
 synthetise kEnv (TypeApp p e t) = do -- TODO: error and bs, zip
 --  (TypeScheme _ bs t) <- synthetiseVar kEnv x
-  u                              <- synthetise kEnv e
-  (Forall _ (KindBind _ y _) u') <- extractForall e u
+  u <- synthetise kEnv e
+  (T.Forall _ (K.KindBind _ y _) u') <- extractForall e u
   K.synthetise kEnv t
   -- let tmp = Rename.subs t y u'
 
@@ -193,7 +186,7 @@ synthetise kEnv (TypeApp p e t) = do -- TODO: error and bs, zip
   -- return $ foldr (\(u, KindBind _ y _) -> Rename.subs u y) t typeKinds
 -- Boolean elimination
 synthetise kEnv (Conditional p e1 e2 e3) = do
-  checkAgainst kEnv e1 (BoolType p)
+  checkAgainst kEnv e1 (T.BoolType p)
   vEnv2 <- getVEnv
   t     <- synthetise kEnv e2
   vEnv3 <- getVEnv
@@ -208,7 +201,7 @@ synthetise kEnv (Pair p e1 e2) = do
   t2 <- synthetise kEnv e2
   -- K.checkAgainst kEnv (Kind p Functional m) t1
   -- K.checkAgainst kEnv (Kind p Functional m) t2
-  return $ PairType p t1 t2
+  return $ T.PairType p t1 t2
 -- Pair elimination
 synthetise kEnv (BinLet _ x y e1 e2) = do
   t1       <- synthetise kEnv e1
@@ -227,7 +220,7 @@ synthetise kEnv (Case p e fm) =
 -- New
 synthetise kEnv (New p t u) = do
   K.checkAgainstSession kEnv t
-  return $ PairType p t u -- (dual t)
+  return $ T.PairType p t u -- (dual t)
 synthetise kEnv e@(Select _ _) = addPartiallyAppliedError e "channel"
 -- synthetise kEnv (Select p e c) = do
 --   t <- synthetise kEnv e
@@ -238,13 +231,13 @@ synthetise kEnv (Match p e fm) =
   synthetiseFieldMap p "match" kEnv e fm extractInChoiceMap paramsToVEnvMM
 
 -- | Returns the type scheme for a variable; removes it from vEnv if lin
-synthetiseVar :: KindEnv -> ProgVar -> FreestState Type
+synthetiseVar :: K.KindEnv -> ProgVar -> FreestState T.Type
 synthetiseVar kEnv x = getFromVEnv x >>= \case
   Just s -> do
 --    debugM "synthetiseVar"
     k <- K.synthetise kEnv s
 --    traceM $ "synthetiseVar " ++ show x ++ " type " ++ show s ++ " isLin " ++ show (isLin k)
-    when (isLin k) $ removeFromVEnv x
+    when (K.isLin k) $ removeFromVEnv x
     return s
   Nothing -> do
   --  debugM $ "synthetiseVar (not in scope) " ++ show x
@@ -265,12 +258,12 @@ synthetiseVar kEnv x = getFromVEnv x >>= \case
 synthetiseFieldMap
   :: Pos
   -> String
-  -> KindEnv
+  -> K.KindEnv
   -> Exp
   -> FieldMap
-  -> (Exp -> Type -> FreestState TypeMap)
-  -> (ProgVar -> [ProgVar] -> Type -> FreestState ())
-  -> FreestState Type
+  -> (Exp -> T.Type -> FreestState T.TypeMap)
+  -> (ProgVar -> [ProgVar] -> T.Type -> FreestState ())
+  -> FreestState T.Type
 synthetiseFieldMap p branching kEnv e fm extract params = do
   t  <- synthetise kEnv e
   tm <- extract e t
@@ -303,14 +296,14 @@ synthetiseFieldMap p branching kEnv e fm extract params = do
 
 -- Checks either the case map and the match map (all the expressions)
 synthetiseField
-  :: VarEnv
-  -> KindEnv
-  -> (ProgVar -> [ProgVar] -> Type -> FreestState ())
-  -> TypeMap
+  :: T.VarEnv
+  -> K.KindEnv
+  -> (ProgVar -> [ProgVar] -> T.Type -> FreestState ())
+  -> T.TypeMap
   -> ProgVar
   -> ([ProgVar], Exp)
-  -> FreestState ([Type], [VarEnv])
-  -> FreestState ([Type], [VarEnv])
+  -> FreestState ([T.Type], [T.VarEnv])
+  -> FreestState ([T.Type], [T.VarEnv])
 synthetiseField vEnv1 kEnv params tm b (bs, e) state = do
   (ts, vEnvs) <- state
   setVEnv vEnv1
@@ -322,7 +315,7 @@ synthetiseField vEnv1 kEnv params tm b (bs, e) state = do
   return (t2 : ts, vEnv2 : vEnvs)
 
 -- match map
-paramsToVEnvMM :: ProgVar -> [ProgVar] -> Type -> FreestState ()
+paramsToVEnvMM :: ProgVar -> [ProgVar] -> T.Type -> FreestState ()
 paramsToVEnvMM c bs t = do
   addToVEnv (head bs) t
   let lbs = length bs
@@ -335,7 +328,7 @@ paramsToVEnvMM c bs t = do
     , Error $ show lbs
     ]
 
-paramsToVEnvCM :: ProgVar -> [ProgVar] -> Type -> FreestState ()
+paramsToVEnvCM :: ProgVar -> [ProgVar] -> T.Type -> FreestState ()
 paramsToVEnvCM c bs t = do
   let ts = zipProgVarLType bs t
   mapM_ (uncurry addToVEnv) ts
@@ -351,17 +344,17 @@ paramsToVEnvCM c bs t = do
     , Error lbs
     ]
 
-zipProgVarLType :: [ProgVar] -> Type -> [(ProgVar, Type)]
-zipProgVarLType []       _               = []
-zipProgVarLType (b : bs) (Fun _ _ t1 t2) = (b, t1) : zipProgVarLType bs t2
-zipProgVarLType (b : _ ) t               = [(b, t)]
+zipProgVarLType :: [ProgVar] -> T.Type -> [(ProgVar, T.Type)]
+zipProgVarLType []       _                 = []
+zipProgVarLType (b : bs) (T.Fun _ _ t1 t2) = (b, t1) : zipProgVarLType bs t2
+zipProgVarLType (b : _ ) t                 = [(b, t)]
 
-numArgs :: Type -> Int
-numArgs (Fun _ _ _ t2) = 1 + numArgs t2
-numArgs _              = 0
+numArgs :: T.Type -> Int
+numArgs (T.Fun _ _ _ t2) = 1 + numArgs t2
+numArgs _                = 0
 
 -- Check whether a constructor exists in a type map
-synthetiseCons :: ProgVar -> TypeMap -> FreestState Type
+synthetiseCons :: ProgVar -> T.TypeMap -> FreestState T.Type
 synthetiseCons x tm = case tm Map.!? x of
   Just t  -> return t
   Nothing -> do
@@ -371,11 +364,11 @@ synthetiseCons x tm = case tm Map.!? x of
       , Error x
       , Error "not in scope"
       ]
-    return $ Skip (pos x)
+    return $ T.Skip (pos x)
 
 -- The quotient operation. Removes a program variable from the
 -- variable environment and gives an error if it is linear
-quotient :: KindEnv -> ProgVar -> FreestState ()
+quotient :: K.KindEnv -> ProgVar -> FreestState ()
 quotient kEnv x = do
   -- vEnv <- getVEnv
   -- tEnv <- getTEnv
@@ -383,7 +376,7 @@ quotient kEnv x = do
   getFromVEnv x >>= \case
     Just t -> do
       k <- K.synthetise kEnv t
-      when (isLin k) $ addError
+      when (K.isLin k) $ addError
         (pos x)
         [ Error "Program variable"
         , Error x
@@ -398,7 +391,7 @@ quotient kEnv x = do
     Nothing -> return ()
   removeFromVEnv x
 
-addPartiallyAppliedError :: Exp -> String -> FreestState Type
+addPartiallyAppliedError :: Exp -> String -> FreestState T.Type
 addPartiallyAppliedError e s = do
   let p = pos e
   addError
@@ -416,11 +409,11 @@ addPartiallyAppliedError e s = do
 -- CHECKING AGAINST A GIVEN TYPE OR TYPE SCHEME
 
 -- | Check an expression against a given type
-checkAgainst :: KindEnv -> Exp -> Type -> FreestState ()
+checkAgainst :: K.KindEnv -> Exp -> T.Type -> FreestState ()
 -- Boolean elimination
 checkAgainst kEnv (Conditional p e1 e2 e3) t = do
   -- let kEnv = kEnvFromType kEnv t
-  checkAgainst kEnv e1 (BoolType p)
+  checkAgainst kEnv e1 (T.BoolType p)
   vEnv2 <- getVEnv
   checkAgainst kEnv e2 t
   vEnv3 <- getVEnv
@@ -460,15 +453,15 @@ checkAgainst kEnv e t = do
 -- checkAgainstTS :: Exp -> TypeScheme -> FreestState ()
 -- checkAgainstTS e (TypeScheme _ bs t) = checkAgainst (fromKindBinds bs) e t
 
-kEnvFromType :: KindEnv -> Type -> KindEnv
-kEnvFromType kenv (Forall _ (KindBind _ x k) t) =
+kEnvFromType :: K.KindEnv -> T.Type -> K.KindEnv
+kEnvFromType kenv (T.Forall _ (K.KindBind _ x k) t) =
   kEnvFromType (Map.insert x k kenv) t
 kEnvFromType kenv _ = kenv
 
 
 -- EQUALITY AND EQUIVALENCE CHECKING
 
-checkEquivTypes :: Exp -> KindEnv -> Type -> Type -> FreestState ()
+checkEquivTypes :: Exp -> K.KindEnv -> T.Type -> T.Type -> FreestState ()
 checkEquivTypes exp kEnv expected actual = do
   tEnv <- getTEnv
   -- vEnv <- getVEnv
@@ -486,7 +479,7 @@ checkEquivTypes exp kEnv expected actual = do
 -- test (Semi _ t u) = pos p
 -- test t = defaultPos
 
-checkEqualEnvs :: Exp -> VarEnv -> VarEnv -> FreestState ()
+checkEqualEnvs :: Exp -> T.VarEnv -> T.VarEnv -> FreestState ()
 checkEqualEnvs e vEnv1 vEnv2 =
   -- tEnv <- getTEnv
   -- trace ("Initial vEnv: " ++ show (userDefined (noConstructors tEnv vEnv1)) ++ "\n  Final vEnv: " ++ show (userDefined (noConstructors tEnv vEnv2)) ++ "\n  Exp: " ++ show e) (return ())
@@ -504,7 +497,8 @@ checkEqualEnvs e vEnv1 vEnv2 =
   )
   where diff = Map.difference vEnv2 vEnv1
 
-checkEquivEnvs :: Pos -> String -> KindEnv -> VarEnv -> VarEnv -> FreestState ()
+checkEquivEnvs
+  :: Pos -> String -> K.KindEnv -> T.VarEnv -> T.VarEnv -> FreestState ()
 checkEquivEnvs p branching kEnv vEnv1 vEnv2 = do
   tEnv <- getTEnv
   let vEnv1' = userDefined vEnv1
@@ -526,11 +520,11 @@ checkEquivEnvs p branching kEnv vEnv1 vEnv2 = do
       "\n\t (is there a variable with different types in the two environments?)"
     ]
 
-fillFunType :: KindEnv -> ProgVar -> Exp -> Type -> FreestState Type
+fillFunType :: K.KindEnv -> ProgVar -> Exp -> T.Type -> FreestState T.Type
 fillFunType kEnv b = fill
  where
-  fill :: Exp -> Type -> FreestState Type
-  fill (Abs _ _ (TypeBind _ b _) e) (Fun _ _ t1 t2) = do
+  fill :: Exp -> T.Type -> FreestState T.Type
+  fill (Abs _ _ (T.TypeBind _ b _) e) (T.Fun _ _ t1 t2) = do
     addToVEnv b t1
     t3 <- fill e t2
     removeFromVEnv b

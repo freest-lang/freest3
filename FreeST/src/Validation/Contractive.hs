@@ -16,16 +16,16 @@ module Validation.Contractive
 )
 where
 
-import           Syntax.Types
+import qualified Syntax.Type as T
 import           Syntax.TypeVariables
 import           Validation.Terminated
 
-contractive :: TypeVar -> Type -> Bool
-contractive a (Semi _ t u)
+contractive :: TypeVar -> T.Type -> Bool
+contractive a (T.Semi _ t u)
   | terminated t = contractive a u
   | otherwise    = contractive a t
-contractive a (Rec _ _ t) = contractive a t
-contractive a (Forall _ _ t) = contractive a t
-contractive a (TypeVar _ b) = a /= b
-contractive _ (Skip _) = False
+contractive a (T.Rec _ _ t) = contractive a t
+contractive a (T.Forall _ _ t) = contractive a t
+contractive a (T.TypeVar _ b) = a /= b
+contractive _ (T.Skip _) = False
 contractive _ _ = True

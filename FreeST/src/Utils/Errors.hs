@@ -17,30 +17,39 @@ module Utils.Errors
   )
 where
 
-import           Syntax.Base                    ( Pos, Position, pos )
-import           Syntax.Types                   ( TypeOpsEnv )
-import           Parse.Unparser
+import           Syntax.Base                    ( Pos
+                                                , Position
+                                                , pos
+                                                , defaultPos
+                                                )
+import qualified Syntax.Type                   as T
+                                                ( TypeOpsEnv )
 import           Utils.ErrorMessage
+-- import           Parse.Unparser
 
 -- | Format errors
-formatErrorMessages :: TypeOpsEnv -> Pos -> String -> [ErrorMessage] -> String
+formatErrorMessages :: T.TypeOpsEnv -> Pos -> String -> [ErrorMessage] -> String
 formatErrorMessages _ _ _ [] = ""
 formatErrorMessages tops p fname es =
   let header = styleHeader fname p
       body   = foldl (\acc e -> acc ++ " " ++ colorMsg tops e) "" es
   in  header ++ body
 
-colorMsg :: TypeOpsEnv -> ErrorMessage -> String
+colorMsg :: T.TypeOpsEnv -> ErrorMessage -> String
 colorMsg tops (Error e) = styleColor (color e) (boldMsg tops e)
 
-boldMsg :: ErrorMsg a => TypeOpsEnv -> a -> String
+boldMsg :: ErrorMsg a => T.TypeOpsEnv -> a -> String
 boldMsg tops m = styleBold (msg tops m)
 
 -- Style the error header
 
 styleHeader :: String -> Pos -> String
-styleHeader f p =
-  styleBold $ "\n" ++ f ++ ":" ++ show p ++ ": " ++ styleRed "error:\n\t"
+styleHeader f p
+  | p == defaultPos = styleBold $ start ++ end
+  | otherwise       = styleBold $ start ++ ":" ++ show p ++ end
+ where
+   start = "\n" ++ f
+   end   = ": " ++ styleRed "error:\n\t"
 
 -- Style colors, this is built in from now on
 -- instead of importing System.Console.Pretty
@@ -59,5 +68,10 @@ styleColor _          str = str
 
 internalError :: (Show a, Position a) => String -> a -> b
 internalError fun syntax = do
-  error $ show (pos syntax) ++ ": Internal error at " ++ fun ++ ": " ++ show syntax
+  error
+    $  show (pos syntax)
+    ++ ": Internal error at "
+    ++ fun
+    ++ ": "
+    ++ show syntax
 

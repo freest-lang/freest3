@@ -13,12 +13,12 @@ import qualified Data.Map                      as Map
 import           Interpreter.Builtin
 import           Interpreter.Value
 import           Syntax.Base
-import qualified Syntax.Expression            as E
+import qualified Syntax.Expression             as E
 import           Syntax.ProgramVariables
-import           Syntax.Types
+import qualified Syntax.Type                   as T
 
 
-import Debug.Trace
+import           Debug.Trace
 ------------------------------------------------------------
 -- EVALUATION
 ------------------------------------------------------------
@@ -31,22 +31,22 @@ evalAndPrint ctx eenv e = do
     _          -> print res
 
 eval :: Ctx -> E.ExpEnv -> E.Exp -> IO Value
-eval _   _    (E.Unit _          ) = return Unit
-eval _   _    (E.Integer   _ i   ) = return $ Integer i
-eval _   _    (E.Boolean   _ b   ) = return $ Boolean b
-eval _   _    (E.Character _ c   ) = return $ Character c
-eval ctx eenv (E.ProgVar   _ x   ) = evalVar ctx eenv x
-eval ctx eenv (E.TypeApp _ x _   ) = eval ctx eenv x
+eval _   _    (E.Unit _                    ) = return Unit
+eval _   _    (E.Integer   _ i             ) = return $ Integer i
+eval _   _    (E.Boolean   _ b             ) = return $ Boolean b
+eval _   _    (E.Character _ c             ) = return $ Character c
+eval ctx eenv (E.ProgVar   _ x             ) = evalVar ctx eenv x
+eval ctx eenv (E.TypeApp _ x _             ) = eval ctx eenv x
 -- TypeAbs Pos KindBind Expression
-eval ctx eenv    (E.TypeAbs _ _ e) = eval ctx eenv e -- return $ Closure x e ctx
-eval ctx _    (E.Abs _ _ (TypeBind _ x _) e) = return $ Closure x e ctx
-eval ctx eenv (E.App _ e1 e2     ) = eval ctx eenv e1 >>= \case
+eval ctx eenv (E.TypeAbs _ _ e             ) = eval ctx eenv e -- return $ Closure x e ctx
+eval ctx _    (E.Abs _ _ (T.TypeBind _ x _) e) = return $ Closure x e ctx
+eval ctx eenv (E.App _ e1 e2               ) = eval ctx eenv e1 >>= \case
   (Closure x e ctx') -> do
     !v <- eval ctx eenv e2
     eval (Map.insert x v ctx') eenv e
   Fork -> do
-     _ <- forkIO (void $ eval ctx eenv e2)
-     return Unit
+    _ <- forkIO (void $ eval ctx eenv e2)
+    return Unit
   (PrimitiveFun f) -> do
     !v <- eval ctx eenv e2
     case f v of
@@ -80,13 +80,14 @@ eval ctx eenv (E.Case _ e m) = eval ctx eenv e >>= evalCase ctx eenv m
 --   _ <- forkIO $ void $ eval ctx eenv e
 --   return Unit
 
-eval _ _ E.New{} = do
+eval _   _    E.New{}        = do
   (c1, c2) <- new
   return $ Pair (Chan c1) (Chan c2)
 
-eval ctx eenv (E.Select _ {- e -} x) =
-  return $ PrimitiveFun (\(Chan c) -> IOValue $ fmap Chan (send (Label (show x)) c))
-  
+eval ctx eenv (E.Select _ {- e -}
+                          x) = return
+  $ PrimitiveFun (\(Chan c) -> IOValue $ fmap Chan (send (Label (show x)) c))
+
 --   return Unit -- FIX ME!
 {- do
   (Chan c) <- eval ctx eenv e
@@ -109,14 +110,15 @@ evalCase ctx eenv m (Cons x xs) = do
 
 -- TODO: change isADT definition
 evalVar :: Ctx -> E.ExpEnv -> ProgVar -> IO Value
-evalVar ctx eenv x | isADT x           = return $ Cons x []
-                   | Map.member x eenv = eval ctx eenv (eenv Map.! x)
-                   | Map.member x ctx  = return $ ctx Map.! x
+evalVar ctx eenv x | isADT x                      = return $ Cons x []
+                   | Map.member x eenv            = eval ctx eenv (eenv Map.! x)
+                   | Map.member x ctx             = return $ ctx Map.! x
                    | x == mkVar defaultPos "fork" = return $ Fork
+                   |
                        -- PrimitiveFun
                        -- (\e -> IOValue $ forkIO $ void $ eval ctx eenv e -> return Unit)
 --                     error "fork"
                    -- | x == mkVar defaultPos "fork" =
                    --     forkIO $ void $ eval ctx eenv e >> return Unit
-                   | otherwise = error $ "error evaluating progvar: " ++ show x
+                     otherwise = error $ "error evaluating progvar: " ++ show x
 

@@ -27,23 +27,20 @@ module Validation.Extract
 where
 
 import           Syntax.Expression
-import           Syntax.Types
-import qualified Syntax.Kind as K
-import           Syntax.TypeVariables
+import qualified Syntax.Type                   as T
+import qualified Syntax.Kind                   as K
 import           Syntax.ProgramVariables
 import           Syntax.Base
 import           Equivalence.Normalisation
-import           Utils.Errors
 import           Utils.FreestState
 import qualified Data.Map.Strict               as Map
 -- import           Parse.Unparser -- debug
-import           Syntax.Schemes -- debug
-import           Debug.Trace -- debug
+-- import           Debug.Trace -- debug
 
 
 -- | The Extract Functions
 
-norm :: Type -> FreestState Type
+norm :: T.Type -> FreestState T.Type
 norm t = do
   tEnv <- getTEnv
   return $ normalise tEnv t
@@ -53,12 +50,12 @@ norm t = do
   -- return u
 
 -- Extracts a function from a type; gives an error if there isn't a function
-extractFun :: Exp -> Type -> FreestState (Type, Type)
+extractFun :: Exp -> T.Type -> FreestState (T.Type, T.Type)
 extractFun e t = do
   t' <- norm t
   case t' of
-    (Fun _ _ u v) -> return (u, v)
-    u             -> do
+    (T.Fun _ _ u v) -> return (u, v)
+    u               -> do
       let p = pos e
       addError
         p
@@ -70,12 +67,12 @@ extractFun e t = do
       return (omission p, omission p)
 
 -- Extracts a pair from a type; gives an error if there is no pair
-extractPair :: Exp -> Type -> FreestState (Type, Type)
+extractPair :: Exp -> T.Type -> FreestState (T.Type, T.Type)
 extractPair e t = do
   t' <- norm t
   case t' of
-    (PairType _ u v) -> return (u, v)
-    u                -> do
+    (T.PairType _ u v) -> return (u, v)
+    u                  -> do
       let p = pos u
       addError
         p
@@ -87,13 +84,13 @@ extractPair e t = do
       return (omission p, omission p)
 
 -- Extracts a forall from a type; gives an error if there is no forall
-extractForall :: Exp -> Type -> FreestState Type
+extractForall :: Exp -> T.Type -> FreestState T.Type
 extractForall e t = do
   t' <- norm t
 --  traceM $ "e: " ++ show e ++ "\tt: " ++ show t ++ "\tt': " ++ show t'
   case t' of
-    u@(Forall _ _ _) -> return u
-    u                -> do
+    u@T.Forall{} -> return u
+    u            -> do
 --      error $ show u
       let p = pos u
       addError
@@ -104,7 +101,7 @@ extractForall e t = do
         , Error u
         ]
         -- TODO: return a suitable type
-      return $ Forall p (K.KindBind p (mkVar p "_") (omission p)) (omission p)
+      return $ T.Forall p (K.KindBind p (mkVar p "_") (omission p)) (omission p)
 
 -- Extracts a basic type from a general type; gives an error if it isn't a basic
 -- Deprecated: K.Kind MU 
@@ -119,26 +116,25 @@ extractForall e t = do
 --         >> return IntType
 
 -- Extracts an output type from a general type; gives an error if it isn't an output
-extractOutput :: Exp -> Type -> FreestState (Type, Type)
-extractOutput = extractMessage Out "output"
+extractOutput :: Exp -> T.Type -> FreestState (T.Type, T.Type)
+extractOutput = extractMessage T.Out "output"
 
 -- Extracts an input type from a general type; gives an error if an input is not found
-extractInput :: Exp -> Type -> FreestState (Type, Type)
-extractInput = extractMessage In "input"
+extractInput :: Exp -> T.Type -> FreestState (T.Type, T.Type)
+extractInput = extractMessage T.In "input"
 
 extractMessage
-  :: Polarity -> String -> Exp -> Type -> FreestState (Type, Type)
+  :: T.Polarity -> String -> Exp -> T.Type -> FreestState (T.Type, T.Type)
 extractMessage pol msg e t = do
   t' <- norm t
   case t' of
-    u@(Message p pol' b) ->
-      if pol == pol' then return (b, Skip p) else extractMessageErr msg e u
-    u@(Semi _ (Message _ pol' b) v) ->
+    u@(T.Message p pol' b) ->
+      if pol == pol' then return (b, T.Skip p) else extractMessageErr msg e u
+    u@(T.Semi _ (T.Message _ pol' b) v) ->
       if pol == pol' then return (b, v) else extractMessageErr msg e u
     u -> extractMessageErr msg e u
  where
-  extractMessageErr
-    :: String -> Exp -> Type -> FreestState (Type, Type)
+  extractMessageErr :: String -> Exp -> T.Type -> FreestState (T.Type, T.Type)
   extractMessageErr msg e u = do
     addError
       (pos e)
@@ -147,28 +143,28 @@ extractMessage pol msg e t = do
       , Error "\n\t found type"
       , Error u
       ]
-    return (UnitType (pos u), Skip (pos u))
+    return (T.UnitType (pos u), T.Skip (pos u))
 
 -- Extracts a choice type from a general type; gives an error if a choice is not found
-extractOutChoiceMap :: Exp -> Type -> FreestState TypeMap
-extractOutChoiceMap = extractChoiceMap Out "external"
+extractOutChoiceMap :: Exp -> T.Type -> FreestState T.TypeMap
+extractOutChoiceMap = extractChoiceMap T.Out "external"
 
-extractInChoiceMap :: Exp -> Type -> FreestState TypeMap
-extractInChoiceMap = extractChoiceMap In "internal"
+extractInChoiceMap :: Exp -> T.Type -> FreestState T.TypeMap
+extractInChoiceMap = extractChoiceMap T.In "internal"
 
 extractChoiceMap
-  :: Polarity -> String -> Exp -> Type -> FreestState TypeMap
+  :: T.Polarity -> String -> Exp -> T.Type -> FreestState T.TypeMap
 extractChoiceMap pol msg e t = do
   t' <- norm t
   case t' of
-    (Choice _ pol' m) ->
+    (T.Choice _ pol' m) ->
       if pol == pol' then return m else extractChoiceErr msg e t
-    (Semi _ (Choice _ pol' m) u) -> if pol == pol'
-      then return $ Map.map (\v -> Semi (pos v) v u) m
+    (T.Semi _ (T.Choice _ pol' m) u) -> if pol == pol'
+      then return $ Map.map (\v -> T.Semi (pos v) v u) m
       else extractChoiceErr msg e t
     u -> extractChoiceErr msg e t
  where
-  extractChoiceErr :: String -> Exp -> Type -> FreestState TypeMap
+  extractChoiceErr :: String -> Exp -> T.Type -> FreestState T.TypeMap
   extractChoiceErr msg e u = do
     addError
       (pos e)
@@ -180,12 +176,12 @@ extractChoiceMap pol msg e t = do
     return Map.empty
 
 -- Extracts a datatype from a type; gives an error if a datatype is not found
-extractDatatypeMap :: Exp -> Type -> FreestState TypeMap
+extractDatatypeMap :: Exp -> T.Type -> FreestState T.TypeMap
 extractDatatypeMap e t = do
   t' <- norm t
   case t' of
-    (Datatype _ m) -> return m
-    u              -> do
+    (T.Datatype _ m) -> return m
+    u                -> do
       addError
         (pos e)
         [ Error "Expecting a datatype for expression"
@@ -197,7 +193,7 @@ extractDatatypeMap e t = do
 
 -- Extracts a constructor from a choice map; gives an error if the
 -- constructor is not in the map
-extractCons :: Pos -> TypeMap -> ProgVar -> FreestState Type
+extractCons :: Pos -> T.TypeMap -> ProgVar -> FreestState T.Type
 extractCons p tm x = case tm Map.!? x of
   Just t  -> return t
   Nothing -> do

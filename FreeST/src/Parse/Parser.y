@@ -11,7 +11,7 @@ where
 
 import           Syntax.Expression
 import           Syntax.Schemes
-import           Syntax.Types
+import qualified Syntax.Type as T
 import qualified Syntax.Kind as K
 import           Syntax.ProgramVariables
 import           Syntax.TypeVariables
@@ -167,18 +167,18 @@ Decl :: { () }
   | data KindedTVar KindBindEmptyList '=' DataCons {% do
       let a = fst $2
       toStateT $ checkDupTypeDecl a
-      let bs = typeListToType a $5 :: [(ProgVar, Type)]
+      let bs = typeListToType a $5 :: [(ProgVar, T.Type)]
       toStateT $ mapM_ (\(c, t) -> addToVEnv c t) bs
       let p = pos a
-      toStateT $ uncurry addToTEnv $2 (Datatype p (Map.fromList bs))
+      toStateT $ uncurry addToTEnv $2 (T.Datatype p (Map.fromList bs))
     } -- TODO: add KindBindEmptyList ?
       -- toStateT $ uncurry addToTEnv $2 (TypeScheme p $3 (Datatype p (Map.fromList bs)))
 
-DataCons :: { [(ProgVar, [Type])] }
+DataCons :: { [(ProgVar, [T.Type])] }
   : DataCon              {% toStateT $ checkDupCons $1 [] >> return [$1] }
   | DataCon '|' DataCons {% toStateT $ checkDupCons $1 $3 >> return ($1 : $3) }
 
-DataCon :: { (ProgVar, [Type]) }
+DataCon :: { (ProgVar, [T.Type]) }
   : Constructor TypeSeq { ($1, $2) }
 
 -----------------
@@ -189,14 +189,14 @@ Expr :: { Exp }
   : let ProgVarWild '=' Expr in Expr { UnLet (pos $1) $2 $4 $6 }
   | Expr ';' Expr                    { App (pos $1)
                                          (Abs (pos $1) Un
-                                           (TypeBind (pos $1) (mkVar (pos $1) "_")
-                                             (UnitType (pos $3)))
+                                           (T.TypeBind (pos $1) (mkVar (pos $1) "_")
+                                             (T.UnitType (pos $3)))
                                            $3)
                                        $1}
   | let '(' ProgVarWild ',' ProgVarWild ')' '=' Expr in Expr
                                      { BinLet (pos $1) $3 $5 $8 $10 }
   | if Expr then Expr else Expr      { Conditional (pos $1) $2 $4 $6 }
-  | new Type                         { New (pos $1) $2 (Dualof (negPos (pos $2)) $2) }
+  | new Type                         { New (pos $1) $2 (T.Dualof (negPos (pos $2)) $2) }
   | match Expr with '{' MatchMap '}' { Match (pos $1) $2 $5 }
   | case Expr of '{' CaseMap '}'     { Case (pos $1) $2 $5 }
   | Expr '$' Expr                    { App (pos $2) $1 $3 }
@@ -226,13 +226,13 @@ Primary :: { Exp }
   | Primary '[' Type ']'                       { TypeApp (pos $1) $1 $3 }
   | ArbitraryProgVar                           { ProgVar (pos $1) $1 }
   | '(' lambda ProgVarWildTBind Arrow Expr ')' { Abs (pos $2) (snd $4)
-                                                 (TypeBind (pos $2) (fst $3) (snd $3)) $5 }
+                                                 (T.TypeBind (pos $2) (fst $3) (snd $3)) $5 }
   | '(' Lambda KindBind '=>' Expr ')'          { TypeAbs (pos $2) $3 $5 }    
   --| '(' Expr ',' Expr ')'                    { Pair (pos $1)$2 $4 }
   | '(' Expr ',' Tuple ')'                    { Pair (pos $1) $2 $4 }
   | '(' Expr ')'                               { $2 }
 
-ProgVarWildTBind :: { (ProgVar, Type) }
+ProgVarWildTBind :: { (ProgVar, T.Type) }
   : ProgVarWild ':' Type  %prec ProgVarWildTBind { ($1, $3) }
 
 Tuple :: { Exp }
@@ -265,66 +265,66 @@ Case :: { (ProgVar, ([ProgVar], Exp)) }
 -- TYPES --
 -----------
 
-Type :: { Type }
+Type :: { T.Type }
   -- Functional types
 --  : BasicType                     { uncurry Basic $1 }
   : BasicType                     { $1 }
-  | Type Arrow Type               { uncurry Fun $2 $1 $3 }
-  | '(' Type ',' TupleType ')'    { PairType (pos $1) $2 $4 }
+  | Type Arrow Type               { uncurry T.Fun $2 $1 $3 }
+  | '(' Type ',' TupleType ')'    { T.PairType (pos $1) $2 $4 }
   -- Session types
-  | Skip                          { Skip (pos $1) }
-  | Type ';' Type                 { Semi (pos $2) $1 $3 }
-  | Polarity BasicType            { uncurry Message $1 $2 }
-  | ChoiceView '{' FieldList '}'  { uncurry Choice $1 $3 }
-  | rec KindBind '.' Type         { Rec (pos $1) $2 $4 }
+  | Skip                          { T.Skip (pos $1) }
+  | Type ';' Type                 { T.Semi (pos $2) $1 $3 }
+  | Polarity BasicType            { uncurry T.Message $1 $2 }
+  | ChoiceView '{' FieldList '}'  { uncurry T.Choice $1 $3 }
+  | rec KindBind '.' Type         { T.Rec (pos $1) $2 $4 }
   -- Polymorphism
-  | forall KindBind '=>' Type     { Forall (pos $1) $2 $4 }
+  | forall KindBind '=>' Type     { T.Forall (pos $1) $2 $4 }
   -- Functional or session
-  | TypeVar                       { TypeVar (pos $1) $1 }
+  | TypeVar                       { T.TypeVar (pos $1) $1 }
   -- Type operators
-  | dualof Type                   { Dualof (pos $1) $2 }
-  | TypeName                      { TypeVar (pos $1) $1 } -- TODO: remove this one lex
+  | dualof Type                   { T.Dualof (pos $1) $2 }
+  | TypeName                      { T.TypeVar (pos $1) $1 } -- TODO: remove this one lex
   | '(' Type ')'                  { $2 }
 
-BasicType :: { Type }
-  : Int  { IntType (pos $1) }
-  | Char { CharType (pos $1) }
-  | Bool { BoolType (pos $1) }
-  | '()' { UnitType (pos $1) }
+BasicType :: { T.Type }
+  : Int  { T.IntType (pos $1) }
+  | Char { T.CharType (pos $1) }
+  | Bool { T.BoolType (pos $1) }
+  | '()' { T.UnitType (pos $1) }
 
-TupleType :: { Type }
+TupleType :: { T.Type }
   : Type                    { $1 }
-  | Type ',' TupleType     { PairType (pos $1) $1 $3 }
+  | Type ',' TupleType     { T.PairType (pos $1) $1 $3 }
 
-Polarity :: { (Pos, Polarity) }
-  : '?' { (pos $1, In) }
-  | '!' { (pos $1, Out) }
+Polarity :: { (Pos, T.Polarity) }
+  : '?' { (pos $1, T.In) }
+  | '!' { (pos $1, T.Out) }
 
 Arrow :: { (Pos, Multiplicity) }
   : '->' { (pos $1, Un) }
   | '-o' { (pos $1, Lin) }
 
-ChoiceView :: { (Pos, Polarity) }
-  : '+' { (pos $1, Out) }
-  | '&' { (pos $1, In) }
+ChoiceView :: { (Pos, T.Polarity) }
+  : '+' { (pos $1, T.Out) }
+  | '&' { (pos $1, T.In) }
 
-FieldList :: { TypeMap }
+FieldList :: { T.TypeMap }
   : Field               { uncurry Map.singleton $1 }
   | Field ',' FieldList {% toStateT $ checkDupField (fst $1) $3 >>
                            return (uncurry Map.insert $1 $3) }
 
-Field :: { (ProgVar, Type) }
+Field :: { (ProgVar, T.Type) }
   : ArbitraryProgVar ':' Type { ($1, $3) }
 
 -----------
 -- TYPE LISTS AND SEQUENCES --
 -----------
 
--- TypeList :: { [Type] }
+-- TypeList :: { [T.Type] }
 --   : Type              { [$1] }
 --   | Type ',' TypeList { $1 : $3 }
 
-TypeSeq :: { [Type] }
+TypeSeq :: { [T.Type] }
   :              { [] }
   | Type TypeSeq { $1 : $2 }
 
@@ -410,7 +410,7 @@ parseKind str =
     Failed err -> error err
 
 
-parseType :: String -> Either Type String
+parseType :: String -> Either T.Type String
 parseType str =
   case runStateT (parse str "" types) (initialState "") of
     Ok p -> eitherTypeErr p
@@ -436,12 +436,12 @@ parseType str =
 -- PARSING PROGRAMS  --
 -----------------------
 
-parseProgram :: FilePath -> Map.Map ProgVar Type -> IO FreestS
+parseProgram :: FilePath -> Map.Map ProgVar T.Type -> IO FreestS
 parseProgram inputFile vEnv = do
   src <- readFile inputFile
   return $ parseDefs inputFile vEnv src
 
-parseDefs :: FilePath -> VarEnv -> String -> FreestS
+parseDefs :: FilePath -> T.VarEnv -> String -> FreestS
 parseDefs file vEnv str =
   let s = initialState file in
   case execStateT (parse str file terms) (s {varEnv = vEnv}) of

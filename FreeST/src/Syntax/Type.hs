@@ -9,7 +9,7 @@ Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc
 This module defines a types and equality.
 -}
 
-module Syntax.Types
+module Syntax.Type
 ( -- BasicType(..),
   Type(..)
 , TypeBind(..)
@@ -99,11 +99,13 @@ instance Position Type where
   pos (Rec p _ _)      = p
   pos (TypeVar p _)    = p
   -- Type operators
+  pos (TAbs p _ _)     = p
+  pos (TApp p _ _)     = p
   pos (Dualof p _)     = p
   pos (TypeName p _)   = p
 
 instance Default Type where
-  omission p = IntType p
+  omission = IntType
 
 -- Binding program variables to types
 

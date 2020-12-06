@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiWayIf #-}
 module FreeST
   ( main
   , checkAndRun
@@ -13,13 +14,9 @@ import           System.FilePath                ( FilePath
                                                 , isExtensionOf
                                                 )
 import qualified Data.Map.Strict               as Map
-
+import           Utils.Errors
 import           Parse.Parser                   ( parseProgram )
 import           Syntax.Base
-import           Syntax.Expression              ( ExpEnv )
-import           Syntax.Types                   ( TypeEnv
-                                                , VarEnv
-                                                )
 import           Utils.FreestState
 import           Utils.PreludeLoader            ( prelude )
 import           Validation.Rename              ( renameState )
@@ -31,17 +28,19 @@ import           Interpreter.Eval               ( evalAndPrint )
 main :: IO ()
 main = do
   args <- getArgs
-  if length args == 1
-    then
-      let filePath = head args
-      in  if "fst" `isExtensionOf` filePath
-            then checkAndRun filePath
-            else
-              die
-              $  "Error: File extension not recognized, provide a .fst file: "
-              ++ filePath
-    else putStrLn
-      "Error: Incorrect number of arguments, provide just one argument"
+  if
+    | length args /= 1 ->
+        die $ formatErrorMessages Map.empty defaultPos "FreeST"
+            [Error "Incorrect number of arguments, provide just one argument"]
+    | "fst" `isExtensionOf` head args -> checkAndRun (head args)
+    | otherwise ->
+        die $ formatErrorMessages Map.empty defaultPos "FreeST"
+            [ Error "File"
+            , Error $ "'" ++ head args ++ "'"
+            , Error "cannot be found.\n\t"
+            , Error "(Probably you didn't provide a file with extension fst)"
+            ]
+
 
 checkAndRun :: FilePath -> IO ()
 checkAndRun filePath = do
@@ -59,6 +58,4 @@ checkAndRun filePath = do
   let s4 = execState typeCheck s3
   when (hasErrors s4) (die $ getErrors s4)
   -- Interpret
-  evalAndPrint initialCtx
-               (expEnv s4)
-               (expEnv s4 Map.! mkVar defaultPos "main")
+  evalAndPrint initialCtx (expEnv s4) (expEnv s4 Map.! mkVar defaultPos "main")

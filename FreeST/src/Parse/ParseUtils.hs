@@ -42,13 +42,12 @@ import           Syntax.Base
 import           Syntax.Expression
 import           Syntax.Kind
 import           Syntax.ProgramVariables
-import           Syntax.Schemes
 import           Syntax.TypeVariables
-import           Syntax.Types
+import           Syntax.Type
 import           Utils.FreestState
 
-import           Debug.Trace -- debug
-import           Parse.Unparser -- debug
+-- import           Debug.Trace -- debug
+-- import           Parse.Unparser -- debug
 -- import           Utils.PreludeLoader -- debug
 
 thenM :: ParseResult a -> (a -> ParseResult b) -> ParseResult b

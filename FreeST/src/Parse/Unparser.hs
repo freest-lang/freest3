@@ -15,17 +15,21 @@ module Parse.Unparser
   )
 where
 
-import           Syntax.Expression
-import           Syntax.Schemes
-import           Syntax.Types
-import qualified Syntax.Kind as K
-import           Syntax.ProgramVariables
-import           Syntax.TypeVariables
+import           Data.Char                      ( isDigit )
+import           Data.List                      ( intersperse
+                                                , intercalate
+                                                )
+import qualified Data.Map.Strict               as Map
+import           Prelude                 hiding ( Left
+                                                , Right
+                                                ) -- needed for Associativity
 import           Syntax.Base
-import qualified Data.Map.Strict        as Map
-import           Data.List              (intersperse, intercalate)
-import           Data.Char              (isDigit)
-import           Prelude                hiding (Left, Right) -- needed for Associativity
+import           Syntax.Expression
+import qualified Syntax.Kind                   as K
+import           Syntax.ProgramVariables
+import           Syntax.Schemes
+import qualified Syntax.Type                   as T
+import           Syntax.TypeVariables
 
 -- Positions (Base)
 
@@ -62,7 +66,7 @@ showVar = dropWhile (\c -> isDigit c || c == '#') . intern
 instance Show K.PreKind where
   show K.Session    = "S"
   show K.Functional = "T"
-  show K.Message = "M"
+  show K.Message    = "M"
 
 instance Show K.Kind where
   show (K.Kind _ p m) = show p ++ show m
@@ -74,13 +78,13 @@ instance Show K.KindBind where
 
 -- Polarities
 
-instance Show Polarity where
-  show In  = "?"
-  show Out = "!"
+instance Show T.Polarity where
+  show T.In  = "?"
+  show T.Out = "!"
 
-showChoiceView :: Polarity -> String
-showChoiceView In  = "&"
-showChoiceView Out = "+"
+showChoiceView :: T.Polarity -> String
+showChoiceView T.In  = "&"
+showChoiceView T.Out = "+"
 
 -- Unparsing types and expressions
 
@@ -100,7 +104,8 @@ type Rator = (Precedence, Associativity)
 
 type Fragment = (Rator, String)
 
-inRator, newRator, dotRator, arrowRator, semiRator, dualofRator, appRator, minRator, maxRator :: Rator
+inRator, newRator, dotRator, arrowRator, semiRator, dualofRator, appRator, minRator, maxRator
+  :: Rator
 inRator = (PIn, Right)       -- also else, match, case
 newRator = (PNew, NonAssoc)
 dotRator = (PDot, Right)
@@ -110,67 +115,65 @@ dualofRator = (PDualof, Right)
 appRator = (PApp, Left)
 minRator = (minBound, NonAssoc)
 maxRator = (maxBound, NonAssoc)
- 
+
 noparens :: Rator -> Rator -> Associativity -> Bool
-noparens (pi, ai) (po, ao) side =
-  pi > po || pi == po && ai == ao && ao == side
+noparens (pi, ai) (po, ao) side = pi > po || pi == po && ai == ao && ao == side
 
 bracket :: Fragment -> Associativity -> Rator -> String
-bracket (inner, image) side outer
-  | noparens inner outer side = image
-  | otherwise = "(" ++ image ++ ")"
+bracket (inner, image) side outer | noparens inner outer side = image
+                                  | otherwise = "(" ++ image ++ ")"
 
 class Unparse t where
   unparse :: t -> Fragment
 
 -- Types
 
-instance Show Type where
+instance Show T.Type where
   show = snd . unparse
 
-instance Unparse Type where
-  unparse (IntType _) = (maxRator, "Int")
-  unparse (CharType _) = (maxRator, "Char")
-  unparse (BoolType _) = (maxRator, "Bool")
-  unparse (UnitType _) = (maxRator, "()")
-  unparse (Skip _) = (maxRator, "Skip")
-  unparse (TypeVar _ a) = (maxRator, show a)
-  unparse (Message _ p b) = (maxRator, show p ++ show b)
-  unparse (TypeName _ x) = (maxRator, show x)
-  unparse (Fun _ m t u) = (arrowRator, l ++ showArrow m ++ r)
-    where l = bracket (unparse t) Left arrowRator
-          r = bracket (unparse u) Right arrowRator
-  unparse (PairType _ t u) = (maxRator, "(" ++ l ++ ", " ++ r ++ ")")
-    where l = bracket (unparse t) Left minRator
-          r = bracket (unparse u) Right minRator
-  unparse (Datatype _ m) = (maxRator, "[" ++ showDatatype m ++ "]")
-  unparse (Semi _ t u) = (semiRator, l ++ " ; " ++ r)
-    where l = bracket (unparse t) Left semiRator
-          r = bracket (unparse u) Right semiRator
-  unparse (Choice _ v m) = (maxRator, showChoiceView v ++ "{" ++ showChoice m ++ "}")
-  unparse (Forall _ b t) = (dotRator, "∀" ++ show b ++ "=>" ++ s)
+instance Unparse T.Type where
+  unparse (T.IntType  _   ) = (maxRator, "Int")
+  unparse (T.CharType _   ) = (maxRator, "Char")
+  unparse (T.BoolType _   ) = (maxRator, "Bool")
+  unparse (T.UnitType _   ) = (maxRator, "()")
+  unparse (T.Skip     _   ) = (maxRator, "Skip")
+  unparse (T.TypeVar _ a  ) = (maxRator, show a)
+  unparse (T.Message _ p b) = (maxRator, show p ++ show b)
+  unparse (T.TypeName _ x ) = (maxRator, show x)
+  unparse (T.Fun _ m t u  ) = (arrowRator, l ++ showArrow m ++ r)
+   where
+    l = bracket (unparse t) Left arrowRator
+    r = bracket (unparse u) Right arrowRator
+  unparse (T.PairType _ t u) = (maxRator, "(" ++ l ++ ", " ++ r ++ ")")
+   where
+    l = bracket (unparse t) Left minRator
+    r = bracket (unparse u) Right minRator
+  unparse (T.Datatype _ m) = (maxRator, "[" ++ showDatatype m ++ "]")
+  unparse (T.Semi _ t u  ) = (semiRator, l ++ " ; " ++ r)
+   where
+    l = bracket (unparse t) Left semiRator
+    r = bracket (unparse u) Right semiRator
+  unparse (T.Choice _ v m) =
+    (maxRator, showChoiceView v ++ "{" ++ showChoice m ++ "}")
+  unparse (T.Forall _ b t) = (dotRator, "∀" ++ show b ++ "=>" ++ s)
     where s = bracket (unparse t) Right dotRator
-  unparse (Rec _ xk t) = (dotRator, "rec " ++ show xk ++ "." ++ s)
+  unparse (T.Rec _ xk t) = (dotRator, "rec " ++ show xk ++ "." ++ s)
     where s = bracket (unparse t) Right dotRator
-  unparse (Dualof _ t) = (dualofRator, "dualof " ++ s)
+  unparse (T.Dualof _ t) = (dualofRator, "dualof " ++ s)
     where s = bracket (unparse t) NonAssoc dualofRator
 
-showDatatype :: TypeMap -> String
-showDatatype m = intercalate " | " $ Map.foldrWithKey
-  (\c t acc -> (show c ++ showAsSequence t) : acc)
-  []
-  m
-  where
-    showAsSequence :: Type -> String
-    showAsSequence (Fun _ _ t u) = " " ++ show t ++ showAsSequence u
-    showAsSequence _             = ""
+showDatatype :: T.TypeMap -> String
+showDatatype m = intercalate " | "
+  $ Map.foldrWithKey (\c t acc -> (show c ++ showAsSequence t) : acc) [] m
+ where
+  showAsSequence :: T.Type -> String
+  showAsSequence (T.Fun _ _ t u) = " " ++ show t ++ showAsSequence u
+  showAsSequence _             = ""
 
-showChoice :: TypeMap -> String
-showChoice m = intercalate ", " $ Map.foldrWithKey
-  (\c t acc -> (show c ++ ": " ++ show t) : acc)
-  []
-  m
-  
+showChoice :: T.TypeMap -> String
+showChoice m = intercalate ", "
+  $ Map.foldrWithKey (\c t acc -> (show c ++ ": " ++ show t) : acc) [] m
+
 {-
 instance Show Type where
   show = showType 4
@@ -224,8 +227,8 @@ showChoice i m = intercalate ", " $ Map.foldrWithKey
 
 -- Type binds
 
-instance Show TypeBind where
-  show (TypeBind _ x t) = show x ++ ": " ++ show t
+instance Show T.TypeBind where
+  show (T.TypeBind _ x t) = show x ++ ": " ++ show t
 
 -- Expressions
 
@@ -234,57 +237,63 @@ instance Show Exp where
 
 instance Unparse Exp where
   -- Basic values
-  unparse (Unit _) = (maxRator, "()")
-  unparse (Integer _ i) = (maxRator, show i)
+  unparse (Unit _       ) = (maxRator, "()")
+  unparse (Integer   _ i) = (maxRator, show i)
   unparse (Character _ c) = (maxRator, show c)
-  unparse (Boolean _ b) = (maxRator, show b)
+  unparse (Boolean   _ b) = (maxRator, show b)
   -- Variable
-  unparse (ProgVar _ x) = (maxRator, show x)
+  unparse (ProgVar   _ x) = (maxRator, show x)
   -- Abstraction intro and elim
-  unparse (Abs _ m b e) = (arrowRator, "λ" ++ show b ++ showArrow m ++ s)
+  unparse (Abs _ m b e  ) = (arrowRator, "λ" ++ show b ++ showArrow m ++ s)
     where s = bracket (unparse e) Right arrowRator
   unparse (App _ e1 e2) = (appRator, l ++ " " ++ r)
-    where l = bracket (unparse e1) Left appRator
-          r = bracket (unparse e2) Right appRator
+   where
+    l = bracket (unparse e1) Left appRator
+    r = bracket (unparse e2) Right appRator
   -- Pair intro and elim
   unparse (Pair _ e1 e2) = (maxRator, "(" ++ l ++ ", " ++ r ++ ")")
-    where l = bracket (unparse e1) Left minRator
-          r = bracket (unparse e2) Right minRator
-  unparse (BinLet _ x y e1 e2) = (inRator, "let " ++ p ++ " = " ++ l ++ " in " ++ r)
-    where p = "(" ++ show x ++ ", " ++ show y ++ ")"
-          l = bracket (unparse e1) Left inRator
-          r = bracket (unparse e2) Right inRator
+   where
+    l = bracket (unparse e1) Left minRator
+    r = bracket (unparse e2) Right minRator
+  unparse (BinLet _ x y e1 e2) =
+    (inRator, "let " ++ p ++ " = " ++ l ++ " in " ++ r)
+   where
+    p = "(" ++ show x ++ ", " ++ show y ++ ")"
+    l = bracket (unparse e1) Left inRator
+    r = bracket (unparse e2) Right inRator
   -- Datatype elim
-  unparse (Case _ e m) = (inRator, "case " ++ s ++ " of {" ++ showFieldMap m ++ "}")
+  unparse (Case _ e m) =
+    (inRator, "case " ++ s ++ " of {" ++ showFieldMap m ++ "}")
     where s = bracket (unparse e) NonAssoc inRator
   -- Type Abstraction intro and elim
   unparse (TypeApp _ x t) = (appRator, show x ++ " [" ++ show t ++ "]")
   unparse (TypeAbs _ b e) = (arrowRator, "λ" ++ show b ++ "->" ++ s)
     where s = bracket (unparse e) Right arrowRator
   -- Boolean elim
-  unparse (Conditional _ e1 e2 e3) = (inRator, "if " ++ s1 ++ " then " ++ s2 ++ " else " ++ s3)
-    where s1 = bracket (unparse e1) Left inRator
-          s2 = bracket (unparse e2) NonAssoc inRator
-          s3 = bracket (unparse e3) Right inRator
+  unparse (Conditional _ e1 e2 e3) =
+    (inRator, "if " ++ s1 ++ " then " ++ s2 ++ " else " ++ s3)
+   where
+    s1 = bracket (unparse e1) Left inRator
+    s2 = bracket (unparse e2) NonAssoc inRator
+    s3 = bracket (unparse e3) Right inRator
   -- Unary Let
   unparse (New _ t _) = (newRator, "let " ++ show t)
   -- Session expressions
-  unparse (UnLet _ x e1 e2) = (inRator, "let " ++ show x ++ " = " ++ l ++ " in " ++ r)
-    where l = bracket (unparse e1) Left inRator
-          r = bracket (unparse e2) Right inRator
+  unparse (UnLet _ x e1 e2) =
+    (inRator, "let " ++ show x ++ " = " ++ l ++ " in " ++ r)
+   where
+    l = bracket (unparse e1) Left inRator
+    r = bracket (unparse e2) Right inRator
   unparse (Select _ l) = (appRator, "select " ++ show l) -- which rator?
-  unparse (Match _ e m) = (inRator, "match " ++ s ++ " with {" ++ showFieldMap m ++ "}")
+  unparse (Match _ e m) =
+    (inRator, "match " ++ s ++ " with {" ++ showFieldMap m ++ "}")
     where s = bracket (unparse e) NonAssoc inRator
 
 showFieldMap :: FieldMap -> String
 showFieldMap m = intercalate "; " $ map showAssoc (Map.toList m)
  where
   showAssoc (b, (a, v)) =
-    show b
-      ++ " "
-      ++ unwords (map show a)
-      ++ " -> "
-      ++ show v
+    show b ++ " " ++ unwords (map show a) ++ " -> " ++ show v
 
 {-
 instance Show Expression where

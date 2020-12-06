@@ -40,7 +40,7 @@ library:
     - Equivalence.Normalisation
     - Syntax.TypeVariables
     - Syntax.Base
-    - Syntax.Types
+    - Syntax.Type
     - Syntax.Expression
     - Syntax.Schemes
     - Syntax.Kind

@@ -23,28 +23,28 @@ module Validation.Kinding
   )
 where
 
-import           Syntax.Schemes
-import qualified Syntax.Types as T
+-- import           Syntax.Schemes
+import qualified Syntax.Type                   as T
 import           Syntax.Kind
 import           Syntax.Base
-import           Parse.Unparser
+-- import           Parse.Unparser
 import           Syntax.TypeVariables
 import           Validation.Contractive
 import           Utils.FreestState
-import           Utils.Errors
-import           Control.Monad                 (unless)
+-- import           Utils.Errors
+import           Control.Monad                  ( unless )
 import qualified Control.Monad.State           as S
 import qualified Data.Map.Strict               as Map
 
-import Debug.Trace
+-- import           Debug.Trace
 
 -- Returns the kind of a given type
 synthetise :: KindEnv -> T.Type -> FreestState Kind
 -- Functional types
-synthetise _    (T.IntType p) = return $ Kind p Message Un
-synthetise _    (T.CharType p) = return $ Kind p Message Un
-synthetise _    (T.BoolType p) = return $ Kind p Message Un
-synthetise _    (T.UnitType p) = return $ Kind p Message Un
+synthetise _    (T.IntType  p ) = return $ Kind p Message Un
+synthetise _    (T.CharType p ) = return $ Kind p Message Un
+synthetise _    (T.BoolType p ) = return $ Kind p Message Un
+synthetise _    (T.UnitType p ) = return $ Kind p Message Un
 synthetise kEnv (T.Fun p m t u) = do
   synthetise kEnv t
   synthetise kEnv u
@@ -71,12 +71,12 @@ synthetise kEnv (T.Choice  p _ m) = do
 synthetise kEnv (T.Rec _ (KindBind _ a k) t) = do
   checkContractive a t
   synthetise (Map.insert a k kEnv) t
-synthetise kEnv (T.Forall p (KindBind _ x k) t) = do
-  k' <- synthetise (Map.insert x k kEnv) t
+synthetise kEnv (T.Forall _ (KindBind _ x k) t) = do
+  _ <- synthetise (Map.insert x k kEnv) t
   return $ kindTL defaultPos
 synthetise kEnv (T.TypeVar p x) = case kEnv Map.!? x of
-   Just k  -> return k
-   Nothing -> do
+  Just k  -> return k
+  Nothing -> do
     addError p [Error "Type variable not in scope:", Error x]
     return $ omission p
 -- Type operators
@@ -92,9 +92,9 @@ synthetise kEnv (T.Dualof p t) = do
 
 -- Check the contractivity of a given type; issue an error if not
 checkContractive :: TypeVar -> T.Type -> FreestState ()
-checkContractive a t =
-  unless (contractive a t) $
-    addError (pos t) [Error "Type", Error t, Error "is not contractive on type variable", Error a]
+checkContractive a t = unless (contractive a t) $ addError
+  (pos t)
+  [Error "Type", Error t, Error "is not contractive on type variable", Error a]
 
 -- Check whether a given type is of a session kind. In any case return
 -- the multiplicity of the kind of the type

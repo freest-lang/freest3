@@ -13,15 +13,13 @@ given as parameter to context-free grammars
 {-# LANGUAGE NoMonadFailDesugaring, FlexibleInstances #-}
 
 module Equivalence.TypeToGrammar
-( convertToGrammar
-)
+  ( convertToGrammar
+  )
 where
 
-import           Syntax.Schemes
-import           Syntax.Types
-import qualified Syntax.Kind as K
+import qualified Syntax.Type                   as T
+import qualified Syntax.Kind                   as K
 import           Syntax.TypeVariables
-import           Syntax.ProgramVariables
 import           Syntax.Base
 import           Parse.Unparser
 import qualified Validation.Substitution       as Substitution
@@ -30,20 +28,18 @@ import qualified Validation.Substitution       as Substitution
                                                 ) -- no renaming
 import           Bisimulation.Grammar
 -- import           Equivalence.Normalisation
-import           Utils.FreestState              ( tMapWithKeyM
-                                                , tMapM
+import           Utils.FreestState              ( tMapM
                                                 , tMapM_
                                                 )
 import           Utils.Errors                   ( internalError )
 import           Control.Monad.State
 import qualified Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
-import           Debug.Trace
-import           Prelude                       hiding ( Word ) -- Word is (re)defined in module Equivalence.Grammar
+import           Prelude                 hiding ( Word ) -- Word is (re)defined in module Equivalence.Grammar
 
 -- Conversion to context-free grammars
 
-convertToGrammar :: TypeEnv -> [Type] -> Grammar
+convertToGrammar :: T.TypeEnv -> [T.Type] -> Grammar
 convertToGrammar tEnv ts = --trace ("subs: " ++ show (subs state))  $
                            Grammar (substitute θ word)
                                    (substitute θ (productions state))
@@ -51,7 +47,7 @@ convertToGrammar tEnv ts = --trace ("subs: " ++ show (subs state))  $
   (word, state) = runState (mapM typeToGrammar ts) (initial tEnv)
   θ             = substitution state
 
-typeToGrammar :: Type -> TransState Word
+typeToGrammar :: T.Type -> TransState Word
 typeToGrammar t = do
   collect [] u
   toGrammar u
@@ -59,33 +55,33 @@ typeToGrammar t = do
   -- where u = unr t -- TODO: TACAS does not unravel here...
 --   where u = normalise Map.empty t -- TODO: use a simpler unravel function
 
-toGrammar :: Type -> TransState Word
+toGrammar :: T.Type -> TransState Word
 -- Non rec-types
-toGrammar (Skip _    ) = return []
-toGrammar (Semi _ t u) = do
+toGrammar (T.Skip _    ) = return []
+toGrammar (T.Semi _ t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
   return $ xs ++ ys
-toGrammar m@Message{} = do
+toGrammar m@T.Message{} = do
   y <- getLHS $ Map.singleton (show m) []
   return [y]
-toGrammar (Choice _ v m) = do
+toGrammar (T.Choice _ v m) = do
   ms <- tMapM toGrammar m
   y  <- getLHS $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
   return [y]
 -- Recursive types
-toGrammar x@TypeVar{} = do      -- x is a polymorphic variable
+toGrammar x@T.TypeVar{} = do      -- x is a polymorphic variable
   y <- getLHS $ Map.singleton (show x) []
   return [y]
-toGrammar (Rec _ (K.KindBind _ x _) _) = return [x]
+toGrammar (T.Rec _ (K.KindBind _ x _) _) = return [x]
 toGrammar t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 
-type SubstitutionList = [(Type, TypeVar)]
+type SubstitutionList = [(T.Type, TypeVar)]
 
-collect :: SubstitutionList -> Type -> TransState ()
-collect σ (  Semi   _ t                   u) = collect σ t >> collect σ u
-collect σ (  Choice _ _                   m) = tMapM_ (collect σ) m
-collect σ t@(Rec    _ (K.KindBind _ x _) u) = do
+collect :: SubstitutionList -> T.Type -> TransState ()
+collect σ (  T.Semi   _ t                  u) = collect σ t >> collect σ u
+collect σ (  T.Choice _ _                  m) = tMapM_ (collect σ) m
+collect σ t@(T.Rec    _ (K.KindBind _ x _) u) = do
   let σ' = (t, x) : σ
   let u' = Substitution.subsAll σ' u
   (z : zs) <- toGrammar (unr u') -- TODO: use a simpler unravel function
@@ -105,13 +101,13 @@ type TransState = State TState
 data TState = TState {
   productions  :: Productions
 , nextIndex    :: Int
-, typeEnv      :: TypeEnv
+, typeEnv      :: T.TypeEnv
 , substitution :: Substitution
 }
 
 -- State manipulating functions, get and put
 
-initial :: TypeEnv -> TState
+initial :: T.TypeEnv -> TState
 initial tEnv = TState { productions  = Map.empty
                       , nextIndex    = 1
                       , typeEnv      = tEnv
@@ -266,8 +262,8 @@ instance Substitute Productions where
 
 -- Unravel
 
-unr :: Type -> Type
-unr t@Rec{} = unr (Substitution.unfold t)
-unr (Semi p t1 t2) | unr t1 == Skip p = unr t2
-                   | otherwise        = Semi p (unr t1) t2
+unr :: T.Type -> T.Type
+unr t@T.Rec{} = unr (Substitution.unfold t)
+unr (T.Semi p t1 t2) | unr t1 == T.Skip p = unr t2
+                     | otherwise          = T.Semi p (unr t1) t2
 unr t = t

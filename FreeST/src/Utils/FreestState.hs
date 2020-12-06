@@ -40,7 +40,7 @@ module Utils.FreestState
   , addToEEnv
   , setEEnv
 -- Errors
-  , Errors(..)
+  , Errors
   , getErrors
   , addError
   , hasErrors
@@ -63,7 +63,8 @@ import           Syntax.Expression
 import           Syntax.Kind
 import           Syntax.ProgramVariables
 import           Syntax.TypeVariables
-import           Syntax.Types                   ( Type(..)
+import qualified Syntax.Type                   as T
+                                                ( Type(..)
                                                 , TypeOpsEnv
                                                 , VarEnv
                                                 , TypeEnv
@@ -74,7 +75,7 @@ import qualified Data.Traversable              as Traversable
 import           Utils.ErrorMessage
 import           Debug.Trace -- debug (used on debugM function)
 
-import Debug.Trace
+import           Debug.Trace
 
 -- | The typing state
 
@@ -83,10 +84,10 @@ type Errors = [String]
 
 data FreestS = FreestS {
   filename  :: String
-, varEnv    :: VarEnv
+, varEnv    :: T.VarEnv
 , expEnv    :: ExpEnv
-, typeEnv   :: TypeEnv
-, typenames :: TypeOpsEnv
+, typeEnv   :: T.TypeEnv
+, typenames :: T.TypeOpsEnv
 , errors    :: Errors
 , nextIndex :: Int
 }
@@ -122,27 +123,24 @@ getFileName = gets filename
 
 -- | VAR ENV
 
-getVEnv :: FreestState VarEnv
+getVEnv :: FreestState T.VarEnv
 getVEnv = gets varEnv
 
-getFromVEnv :: ProgVar -> FreestState (Maybe Type)
+getFromVEnv :: ProgVar -> FreestState (Maybe T.Type)
 getFromVEnv x = do
   vEnv <- getVEnv
---  debugM $ "***x " ++ show x
-  let mb = vEnv Map.!? x 
---  debugM $ "***Get from varEnv " ++ show x ++ " " ++ show mb
-  return $ mb
+  return $ vEnv Map.!? x
 
 removeFromVEnv :: ProgVar -> FreestState ()
 removeFromVEnv b = modify (\s -> s { varEnv = Map.delete b (varEnv s) })
 
-addToVEnv :: ProgVar -> Type -> FreestState ()
+addToVEnv :: ProgVar -> T.Type -> FreestState ()
 addToVEnv b t = modify (\s -> s { varEnv = Map.insert b t (varEnv s) })
 
-vEnvMember :: ProgVar -> FreestState Bool
-vEnvMember x = Map.member x <$> getVEnv
+-- vEnvMember :: ProgVar -> FreestState Bool
+-- vEnvMember x = Map.member x <$> getVEnv
 
-setVEnv :: VarEnv -> FreestState ()
+setVEnv :: T.VarEnv -> FreestState ()
 setVEnv vEnv = modify (\s -> s { varEnv = vEnv })
 
 -- | EXP ENV
@@ -163,30 +161,30 @@ setEEnv eEnv = modify (\s -> s { expEnv = eEnv })
 
 -- | TYPE ENV
 
-getTEnv :: FreestState TypeEnv
+getTEnv :: FreestState T.TypeEnv
 getTEnv = gets typeEnv
 
-addToTEnv :: TypeVar -> Kind -> Type -> FreestState ()
+addToTEnv :: TypeVar -> Kind -> T.Type -> FreestState ()
 addToTEnv x k t =
   modify (\s -> s { typeEnv = Map.insert x (k, t) (typeEnv s) })
 
-getFromTEnv :: TypeVar -> FreestState (Maybe (Kind, Type))
+getFromTEnv :: TypeVar -> FreestState (Maybe (Kind, T.Type))
 getFromTEnv b = do
   tEnv <- getTEnv
   return $ tEnv Map.!? b
 
-setTEnv :: TypeEnv -> FreestState ()
+setTEnv :: T.TypeEnv -> FreestState ()
 setTEnv tEnv = modify (\s -> s { typeEnv = tEnv })
 
 -- | TYPENAMES
 
-addTypeName :: Pos -> Type -> FreestState ()
+addTypeName :: Pos -> T.Type -> FreestState ()
 addTypeName p t = modify (\s -> s { typenames = Map.insert p t (typenames s) })
 
-getTypeNames :: FreestState TypeOpsEnv
+getTypeNames :: FreestState T.TypeOpsEnv
 getTypeNames = gets typenames
 
-findTypeName :: Pos -> Type -> FreestState Type
+findTypeName :: Pos -> T.Type -> FreestState T.Type
 findTypeName p t = Map.findWithDefault t p <$> getTypeNames
 
 -- | ERRORS

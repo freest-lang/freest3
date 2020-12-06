@@ -20,13 +20,11 @@ where
 
 import           Syntax.Expression
 import           Syntax.Schemes
-import           Syntax.Types
+import           Syntax.Type
 import           Syntax.ProgramVariables
 import           Syntax.Base
-import           Validation.Terminated
 import qualified Validation.Kinding            as K
 import qualified Validation.Typing             as T
-import           Utils.Errors
 import           Utils.FreestState
 import           Utils.PreludeLoader            ( userDefined )
 import           Control.Monad.State            ( when
@@ -37,10 +35,10 @@ import qualified Data.Map.Strict               as Map
 
 typeCheck :: FreestState ()
 typeCheck = do
-  tEnv <- getTEnv -- Type/datatype declarations
+--  tEnv <- getTEnv -- Type/datatype declarations
   vEnv <- getVEnv -- Function signatures
   eEnv <- getEEnv -- Function bodies
-  tn   <- getTypeNames -- Type Names
+--  tn   <- getTypeNames -- Type Names
   -- debugM ("\n\n\nEntering type checking with\n  TEnv " ++ show tEnv ++ "\n\n"
   --         ++ "  VEnv " ++ show (userDefined vEnv) ++ "\n\n"
   --         ++ "  EEnv " ++ show eEnv  ++ "\n\n"
@@ -52,7 +50,7 @@ typeCheck = do
 
   -- * Check the formation of all function signatures
 --  debugM "checking the formation of all function signatures (kinding)" 
-  mapM_ (K.synthetise Map.empty)       vEnv
+  mapM_ (K.synthetise Map.empty) vEnv
   -- Gets the state and only continues if there are no errors so far
   -- Can't continue to equivalence if there are ill-formed types
   -- (i.e. not contractive under a certain variable)  
@@ -60,10 +58,10 @@ typeCheck = do
   unless (hasErrors s) $ do
     -- * Check whether all function signatures have a binding
 --    debugM "checking whether all function signatures have a binding"
-    tMapWithKeyM checkHasBinding vEnv
+    tMapWithKeyM_ checkHasBinding vEnv
     -- * Check function bodies
 --    debugM "checking the formation of all functions (typing)"
-    tMapWithKeyM checkFunBody eEnv
+    tMapWithKeyM_ checkFunBody    eEnv
     -- * Check the main function
 --    debugM "checking the main function"
     checkMainFunction
@@ -107,7 +105,7 @@ checkMainFunction = do
                   [Error "Function", Error main, Error "is not defined"]
     else do
       let s = vEnv Map.! main
-      tEnv <- getTEnv
+--      tEnv <- getTEnv
       unless (isValidMainType s) $ K.synthetise Map.empty s >>= \k -> addError
         defaultPos
         [ Error "The type of"
@@ -121,5 +119,5 @@ checkMainFunction = do
 
 isValidMainType :: Type -> Bool
 isValidMainType Forall{} = False
-isValidMainType Fun{} = False
-isValidMainType _ = True
+isValidMainType Fun{}    = False
+isValidMainType _        = True

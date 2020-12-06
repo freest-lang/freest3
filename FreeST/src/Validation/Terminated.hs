@@ -12,19 +12,21 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Validation.Terminated
-( terminated
-)
+  ( terminated
+  )
 where
 
-import qualified Data.Set as Set
-import qualified Syntax.Kind as K
-import qualified Syntax.Types as T
+import qualified Data.Set                      as Set
+import qualified Syntax.Kind                   as K
+import qualified Syntax.Type                   as T
 
 terminated :: T.Type -> Bool
 terminated = term Set.empty
-  where
-    term _ (T.Skip _) = True
-    term s (T.Semi _ t u) = term s t && term s u
-    term s (T.Rec _ (K.KindBind _ a k) t) = K.isSession k && term (Set.insert a s) t
-    term s (T.TypeVar _ a) = a `Set.member` s
-    term _ _ = False
+ where
+  term _ (T.Skip _    ) = True
+  term s (T.Semi _ t u) = term s t && term s u
+  term s (T.Rec _ (K.KindBind _ a k) t) =
+    K.isSession k && term (Set.insert a s) t
+  term s (T.TypeVar _ a) = a `Set.member` s
+  term _ _               = False
+
