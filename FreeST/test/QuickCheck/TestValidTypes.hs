@@ -12,8 +12,8 @@ import           Equivalence.Normalisation
 import           Bisimulation.Bisimulation
 import           Validation.Substitution
 import           Validation.Kinding
-import           Syntax.Types
-import           Syntax.Kinds
+import qualified Syntax.Type as T
+import           Syntax.Kind
 import           Syntax.TypeVariables
 import           Syntax.Base hiding (pos)
 -- import           Validation.Duality
@@ -35,13 +35,13 @@ main = verboseCheckWith stdArgs {maxSuccess = 271, replay = Just (mkQCGen 109564
 
 -- Convenience
 
-bisim :: Type -> Type -> Bool
+bisim :: T.Type -> T.Type -> Bool
 bisim = Equivalence.Equivalence.bisimilar Map.empty
 
-equiv :: Type -> Type -> Bool
+equiv :: T.Type -> T.Type -> Bool
 equiv = equivalent Map.empty kindEnv
 
-norm :: Type -> Type
+norm :: T.Type -> T.Type
 norm = normalise Map.empty
 
 pos :: Pos
@@ -52,7 +52,7 @@ kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (kindSL pos)))
         -- TODO: This env should only contain the free vars of t; plus
         -- its kind may be SU
 
-kinded :: Type -> Bool
+kinded :: T.Type -> Bool
 kinded t = null (errors s)
   where (_, s) = runState (synthetise kindEnv t) (initialState "Kind synthesis")
 
@@ -100,27 +100,27 @@ prop_distribution (BisimPair t u) = kinded t && kinded u ==>
   tabulate "Type constructors" [constr t] True
 
 -- The number of nodes in a type
-nodes :: Type -> Int
-nodes (Semi _ t u)   = 1 + nodes t + nodes u
-nodes (Choice _ _ m) = 1 + Map.foldr (\t acc -> nodes t + acc) 0 m
-nodes (Rec _ _ t)    = 1 + nodes t
+nodes :: T.Type -> Int
+nodes (T.Semi _ t u)   = 1 + nodes t + nodes u
+nodes (T.Choice _ _ m) = 1 + Map.foldr (\t acc -> nodes t + acc) 0 m
+nodes (T.Rec _ _ t)    = 1 + nodes t
 -- Skip, Message, TypeVar
 nodes _              = 1
 
 -- The constructor of a type
-constr :: Type -> String
-constr (IntType _) = "Int"
-constr (CharType _) = "Char"
-constr (UnitType _) = "Unit"
-constr (IntType _) = "Int"
-constr (Syntax.Types.Fun {}) = "Fun"
-constr (PairType _ _ _) = "PairType"
-constr (Datatype _ _) = "Datatype"
-constr (Skip _) = "Skip"
-constr (Semi _ _ _) = "Semi"
-constr (Message _ _ _) = "Message"
-constr (Choice _ _ _) = "Choice"
-constr (Rec _ _ _) = "Rec"
-constr (TypeVar _ _) = "TypeVar"
-constr (TypeName _ _) = "TypeName"
-constr (Dualof _ _) = "Dualof"
+constr :: T.Type -> String
+constr T.IntType{} = "Int"
+constr T.CharType{} = "Char"
+constr T.UnitType{} = "Unit"
+constr T.BoolType{} = "Bool"
+constr T.Fun {} = "Fun"
+constr T.PairType{} = "PairType"
+constr T.Datatype{} = "Datatype"
+constr T.Skip{} = "Skip"
+constr T.Semi{} = "Semi"
+constr T.Message{} = "Message"
+constr T.Choice{} = "Choice"
+constr T.Rec{} = "Rec"
+constr T.TypeVar{} = "TypeVar"
+constr T.TypeName{} = "TypeName"
+constr T.Dualof{} = "Dualof"

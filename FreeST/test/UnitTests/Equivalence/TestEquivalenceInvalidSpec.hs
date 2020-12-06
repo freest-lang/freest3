@@ -2,7 +2,7 @@ module Equivalence.TestEquivalenceInvalidSpec(spec) where
 
 import           Equivalence.Equivalence (equivalent)
 import           Validation.Rename
-import           Syntax.Types
+import           Syntax.Type
 import           Syntax.Base
 import           Utils.FreestState
 import           SpecHelper

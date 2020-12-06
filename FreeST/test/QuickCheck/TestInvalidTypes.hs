@@ -5,8 +5,8 @@ module TestInvalidTypes
 import           ArbitraryTypes
 import           Equivalence.Equivalence
 import           Validation.Kinding
-import           Syntax.Types
-import           Syntax.Kinds
+import           Syntax.Type
+import           Syntax.Kind
 import           Syntax.Base hiding (pos)
 import           Utils.FreestState
 import           Control.Monad.State

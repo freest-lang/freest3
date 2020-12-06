@@ -1,6 +1,6 @@
 module SpecHelper
   ( module Test.Hspec
-  , module Syntax.Types
+  , module Syntax.Type
   , module Parse.Parser
   , module Parse.Read
   , module Data.List.Split
@@ -11,7 +11,7 @@ module SpecHelper
 where
 
 import           Test.Hspec
-import           Syntax.Types
+import           Syntax.Type
 import           Data.Char
 import           Parse.Parser
 import Parse.Read
@@ -22,7 +22,7 @@ import           Syntax.Base                    ( defaultPos
                                                 , mkVar
                                                 )
 
-
+readFromFile :: FilePath -> IO [String]
 readFromFile filename = do
   str <- readFile filename
   return
