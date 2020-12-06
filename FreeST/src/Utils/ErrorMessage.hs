@@ -10,7 +10,7 @@ where
 import           Data.List                      ( intercalate )
 import           Syntax.Base
 import           Syntax.Expression
-import           Syntax.Kind
+import qualified Syntax.Kind as K
 import           Syntax.ProgramVariable
 -- import           Syntax.Schemes
 import           Syntax.TypeVariable
@@ -57,7 +57,7 @@ instance ErrorMsg Pos where
   msg _ = show
   color _ = Nothing
 
-instance ErrorMsg Kind where
+instance ErrorMsg K.Kind where
   msg _ = show
   color _ = Just Red
 
@@ -80,7 +80,7 @@ showTypeList :: T.TypeOpsEnv -> [T.Type] -> String
 showTypeList tops ts = "[" ++ intercalate ", " types ++ "]"
   where types = map (showDefault tops) ts
 
-instance ErrorMsg [KindBind] where
+instance ErrorMsg [K.Bind] where
   msg _ = show
   color _ = Just Red
 

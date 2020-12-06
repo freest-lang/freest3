@@ -101,7 +101,7 @@ extractForall e t = do
         , Error u
         ]
         -- TODO: return a suitable type
-      return $ T.Forall p (K.KindBind p (mkVar p "_") (omission p)) (omission p)
+      return $ T.Forall p (K.Bind p (mkVar p "_") (omission p)) (omission p)
 
 -- Extracts a basic type from a general type; gives an error if it isn't a basic
 -- Deprecated: K.Kind MU 

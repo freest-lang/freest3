@@ -128,7 +128,7 @@ synthetise kEnv e@(App _ e1 e2) = do -- General case
 ----------------------------------------
 --   ∆ | Γ |- Λa : κ.e : ∀ a : κ . T
 
-synthetise kEnv (TypeAbs p kb@(K.KindBind p' x k) e) = do
+synthetise kEnv (TypeAbs p kb@(K.Bind p' x k) e) = do
 --  addToVEnv x (TypeVar p' x)
   t <- synthetise (Map.insert x k kEnv) e
   return $ T.Forall p kb t
@@ -154,7 +154,7 @@ synthetise kEnv (TypeAbs p kb@(K.KindBind p' x k) e) = do
 synthetise kEnv (TypeApp p e t) = do -- TODO: error and bs, zip
 --  (TypeScheme _ bs t) <- synthetiseVar kEnv x
   u <- synthetise kEnv e
-  (T.Forall _ (K.KindBind _ y _) u') <- extractForall e u
+  (T.Forall _ (K.Bind _ y _) u') <- extractForall e u
   K.synthetise kEnv t
   -- let tmp = Rename.subs t y u'
 
@@ -454,7 +454,7 @@ checkAgainst kEnv e t = do
 -- checkAgainstTS e (TypeScheme _ bs t) = checkAgainst (fromKindBinds bs) e t
 
 kEnvFromType :: K.KindEnv -> T.Type -> K.KindEnv
-kEnvFromType kenv (T.Forall _ (K.KindBind _ x k) t) =
+kEnvFromType kenv (T.Forall _ (K.Bind _ x k) t) =
   kEnvFromType (Map.insert x k kenv) t
 kEnvFromType kenv _ = kenv
 

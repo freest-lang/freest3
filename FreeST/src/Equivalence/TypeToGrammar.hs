@@ -73,7 +73,7 @@ toGrammar (T.Choice _ v m) = do
 toGrammar x@T.TypeVar{} = do      -- x is a polymorphic variable
   y <- getLHS $ Map.singleton (show x) []
   return [y]
-toGrammar (T.Rec _ (K.KindBind _ x _) _) = return [x]
+toGrammar (T.Rec _ (K.Bind _ x _) _) = return [x]
 toGrammar t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 
 type SubstitutionList = [(T.Type, TypeVar)]
@@ -81,7 +81,7 @@ type SubstitutionList = [(T.Type, TypeVar)]
 collect :: SubstitutionList -> T.Type -> TransState ()
 collect σ (  T.Semi   _ t                  u) = collect σ t >> collect σ u
 collect σ (  T.Choice _ _                  m) = tMapM_ (collect σ) m
-collect σ t@(T.Rec    _ (K.KindBind _ x _) u) = do
+collect σ t@(T.Rec    _ (K.Bind _ x _) u) = do
   let σ' = (t, x) : σ
   let u' = Substitution.subsAll σ' u
   (z : zs) <- toGrammar (unr u') -- TODO: use a simpler unravel function

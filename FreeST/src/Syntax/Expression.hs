@@ -20,7 +20,7 @@ where
 
 import qualified Data.Map.Strict               as Map
 import           Syntax.Base
-import qualified Syntax.Kind                   as K --  (KindBind)
+import qualified Syntax.Kind                   as K  (Bind)
 import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T -- (Type, TypeBind)
 
@@ -41,7 +41,7 @@ data Exp =
   -- Datatype elim
   | Case Pos Exp FieldMap
   -- Type Abstraction intro and elim
-  | TypeAbs Pos K.KindBind Exp     -- λ a:k => e
+  | TypeAbs Pos K.Bind Exp     -- λ a:k => e
   | TypeApp Pos Exp T.Type         -- e[T]
   -- | TypeApp Pos ProgVar Type      
   -- | TypeApp Pos ProgVar [Type]

@@ -139,7 +139,7 @@ substituteEnv x t tenv = do -- tMapWithKeyM subsEnv
 
 buildRecursiveType :: TypeVar -> (K.Kind, T.Type) -> T.Type
 buildRecursiveType v (k, t)
-  | isRecursiveTypeDecl v t = T.Rec (pos v) (K.KindBind (pos v) v k) t
+  | isRecursiveTypeDecl v t = T.Rec (pos v) (K.Bind (pos v) v k) t
   | otherwise               = t
 
 isRecursiveTypeDecl :: TypeVar -> T.Type -> Bool
@@ -149,7 +149,7 @@ isRecursiveTypeDecl v (T.Choice _ _ m) =
   Map.foldlWithKey (\b _ t -> b || isRecursiveTypeDecl v t) False m
 isRecursiveTypeDecl v (T.Datatype _ m) =
   Map.foldlWithKey (\b _ t -> b || isRecursiveTypeDecl v t) False m
-isRecursiveTypeDecl v (T.Rec _ (K.KindBind _ x _) t)
+isRecursiveTypeDecl v (T.Rec _ (K.Bind _ x _) t)
   | x == v    = False
   | -- it is already a recursive type
     otherwise = isRecursiveTypeDecl v t
@@ -172,7 +172,7 @@ isRecursiveTypeDecl _ _              = False
 --                                  x == tname = TypeVar p tname
 --                                | otherwise  = TypeName p tname
 -- toTypeVar x (Semi p t1 t2) = Semi p (toTypeVar x t1) (toTypeVar x t2)
--- toTypeVar _ (Rec p xs@(K.KindBind _ x _) t) = Rec p xs (toTypeVar x t)
+-- toTypeVar _ (Rec p xs@(K.Bind _ x _) t) = Rec p xs (toTypeVar x t)
 -- toTypeVar x (Forall p kb t) = Forall p kb (toTypeVar x t)
 -- -- functional types
 -- toTypeVar x (Fun p m t u) = Fun p m (toTypeVar x t) (toTypeVar x u)

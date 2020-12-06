@@ -40,7 +40,7 @@ import qualified Data.Map.Strict               as Map
 import           Equivalence.Normalisation
 import           Syntax.Base
 import           Syntax.Expression
-import           Syntax.Kind
+import qualified Syntax.Kind as K
 import           Syntax.ProgramVariable
 import           Syntax.TypeVariable
 import           Syntax.Type
@@ -120,10 +120,10 @@ checkDupBind x xs
       ]
     Nothing -> return ()
 
-checkDupKindBind :: KindBind -> [KindBind] -> FreestState ()
-checkDupKindBind (KindBind p x _) bs =
-  case find (\(KindBind _ y _) -> y == x) bs of
-    Just (KindBind p' _ _) -> addError
+checkDupKindBind :: K.Bind -> [K.Bind] -> FreestState ()
+checkDupKindBind (K.Bind p x _) bs =
+  case find (\(K.Bind _ y _) -> y == x) bs of
+    Just (K.Bind p' _ _) -> addError
       p'
       [ Error "Conflicting definitions for type variable"
       , Error x
@@ -247,7 +247,7 @@ buildFunBody f bs e = getFromVEnv f >>= \case
   buildExp (b : bs) (Dualof p (Fun _ m t1 t2)) =
     Abs (pos b) m (TypeBind (pos b) b (Dualof p t1)) (buildExp bs (Dualof p t2))
     
---  buildExp (b : bs) (Forall _ (KindBind p y _) t) = -- TODO: Abs Un ??? I think it can be (mult t)
+--  buildExp (b : bs) (Forall _ (K.Bind p y _) t) = -- TODO: Abs Un ??? I think it can be (mult t)
   buildExp bs (Forall p kb t) =
     TypeAbs p kb (buildExp bs t)
     

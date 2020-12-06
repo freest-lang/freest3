@@ -38,7 +38,7 @@ subs t x (T.Semi   p t1 t2  ) = T.Semi p (subs t x t1) (subs t x t2)
 subs t x (T.Choice p v  m   ) = T.Choice p v (Map.map (subs t x) m)
 subs t x (T.Rec    p yk u   ) = T.Rec p yk (subs t x u) -- Assume types were renamed (hence, x/=y and no -the-fly renaming needed)
   -- Polymorphism
-subs t x (T.Forall p yk@(K.KindBind _ y _) u)
+subs t x (T.Forall p yk@(K.Bind _ y _) u)
   | x == y    = subs t x u
   | -- Assume types were renamed (hence, x/=y and no -the-fly renaming needed)
     otherwise = T.Forall p yk (subs t x u)
@@ -54,7 +54,7 @@ subsAll σ s = foldl (\u (t, x) -> subs t x u) s σ
 
 -- Unfold a recursive type (one step only)
 unfold :: T.Type -> T.Type
-unfold t@(T.Rec _ (K.KindBind _ x _) u) = subs t x u
+unfold t@(T.Rec _ (K.Bind _ x _) u) = subs t x u
 unfold t = internalError "Validation.Substitution.unfold" t
 
 -- The set of free type variables in a type
@@ -67,7 +67,7 @@ free (T.Datatype _ m               ) = freeMap m
 free (T.Semi   _ t                u) = Set.union (free t) (free u)
 free (T.Choice _ _                m) = freeMap m
   -- Functional or session
-free (T.Rec    _ (K.KindBind _ x _) t) = Set.delete x (free t)
+free (T.Rec    _ (K.Bind _ x _) t) = Set.delete x (free t)
 free (T.TypeVar  _ x               ) = Set.singleton x
   -- T.Type operators
 free (T.TypeName _ _               ) = Set.empty -- TODO: fix me!
@@ -95,10 +95,10 @@ subs t x (Datatype p m)   = Datatype p (Map.map (subs t x) m)
   -- Session types
 subs t x (Semi p u v)     = Semi p (subs t x u) (subs t x v)
 subs t x (Choice p v m)   = Choice p v (Map.map (subs t x) m)
-subs t x u@(Rec p yk@(K.KindBind q y k) v)
+subs t x u@(Rec p yk@(K.Bind q y k) v)
   | y == x                = u
   -- | y `Set.notMember` (free t) || x `Set.notMember` (free v) = Rec p yk (subs t x v)
-  | otherwise             = Rec p (K.KindBind q z k) (subs t x (subs (TypeVar q z) y v))
+  | otherwise             = Rec p (K.Bind q z k) (subs t x (subs (TypeVar q z) y v))
     where z = mkNewVar 0 y
   -- Functional or session
 subs t x u@(TypeVar _ y)

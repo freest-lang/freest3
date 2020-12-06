@@ -25,7 +25,7 @@ where
 
 -- import           Syntax.Schemes
 import qualified Syntax.Type                   as T
-import           Syntax.Kind
+import qualified Syntax.Kind                   as K
 import           Syntax.Base
 -- import           Parse.Unparser
 import           Syntax.TypeVariable
@@ -39,41 +39,41 @@ import qualified Data.Map.Strict               as Map
 -- import           Debug.Trace
 
 -- Returns the kind of a given type
-synthetise :: KindEnv -> T.Type -> FreestState Kind
+synthetise :: K.KindEnv -> T.Type -> FreestState K.Kind
 -- Functional types
-synthetise _    (T.IntType  p ) = return $ Kind p Message Un
-synthetise _    (T.CharType p ) = return $ Kind p Message Un
-synthetise _    (T.BoolType p ) = return $ Kind p Message Un
-synthetise _    (T.UnitType p ) = return $ Kind p Message Un
+synthetise _    (T.IntType  p ) = return $ K.Kind p K.Message Un
+synthetise _    (T.CharType p ) = return $ K.Kind p K.Message Un
+synthetise _    (T.BoolType p ) = return $ K.Kind p K.Message Un
+synthetise _    (T.UnitType p ) = return $ K.Kind p K.Message Un
 synthetise kEnv (T.Fun p m t u) = do
   synthetise kEnv t
   synthetise kEnv u
-  return $ Kind p Functional m
+  return $ K.Kind p K.Functional m
 synthetise kEnv (T.PairType _ t u) = do
   kt <- synthetise kEnv t
   ku <- synthetise kEnv u
-  return $ join kt ku
+  return $ K.join kt ku
 synthetise kEnv (T.Datatype p m) = do
   ks <- tMapM (synthetise kEnv) m
-  let Kind _ _ n = foldr1 join ks
-  return $ Kind p Functional n
+  let K.Kind _ _ n = foldr1 K.join ks
+  return $ K.Kind p K.Functional n
   -- Session types
-synthetise _    (T.Skip p    ) = return $ Kind p Session Un
+synthetise _    (T.Skip p    ) = return $ K.Kind p K.Session Un
 synthetise kEnv (T.Semi p t u) = do
   m <- checkAgainstSession kEnv t
   n <- checkAgainstSession kEnv u
-  return $ Kind p Session (max m n) -- JOURNAL: Lin 
-synthetise _    (T.Message p _ _) = return $ Kind p Session Lin
+  return $ K.Kind p K.Session (max m n) -- JOURNAL: Lin 
+synthetise _    (T.Message p _ _) = return $ K.Kind p K.Session Lin
 synthetise kEnv (T.Choice  p _ m) = do
-  tMapM_ (checkAgainst kEnv (Kind p Session Lin)) m
-  return $ Kind p Session Lin
+  tMapM_ (checkAgainst kEnv (K.Kind p K.Session Lin)) m
+  return $ K.Kind p K.Session Lin
 -- Session or functional
-synthetise kEnv (T.Rec _ (KindBind _ a k) t) = do
+synthetise kEnv (T.Rec _ (K.Bind _ a k) t) = do
   checkContractive a t
   synthetise (Map.insert a k kEnv) t
-synthetise kEnv (T.Forall _ (KindBind _ x k) t) = do
+synthetise kEnv (T.Forall _ (K.Bind _ x k) t) = do
   _ <- synthetise (Map.insert x k kEnv) t
-  return $ kindTL defaultPos
+  return $ K.kindTL defaultPos
 synthetise kEnv (T.TypeVar p x) = case kEnv Map.!? x of
   Just k  -> return k
   Nothing -> do
@@ -88,7 +88,7 @@ synthetise _ (T.TypeName p a) = getFromTEnv a >>= \case
     return $ omission p
 synthetise kEnv (T.Dualof p t) = do
   m <- checkAgainstSession kEnv t
-  return $ Kind p Session m
+  return $ K.Kind p K.Session m
 
 -- Check the contractivity of a given type; issue an error if not
 checkContractive :: TypeVar -> T.Type -> FreestState ()
@@ -98,10 +98,10 @@ checkContractive a t = unless (contractive a t) $ addError
 
 -- Check whether a given type is of a session kind. In any case return
 -- the multiplicity of the kind of the type
-checkAgainstSession :: KindEnv -> T.Type -> FreestState Multiplicity
+checkAgainstSession :: K.KindEnv -> T.Type -> FreestState Multiplicity
 checkAgainstSession kEnv t = do
-  k@(Kind _ p m) <- synthetise kEnv t
-  S.when (p /= Session) $ addError
+  k@(K.Kind _ p m) <- synthetise kEnv t
+  S.when (p /= K.Session) $ addError
     (pos t)
     [ Error "Expecting a session type\n"
     , Error "\t found type"
@@ -112,13 +112,13 @@ checkAgainstSession kEnv t = do
   return m
 
 -- Check a type against a given kind
-checkAgainst :: KindEnv -> Kind -> T.Type -> FreestState ()
--- checkAgainst kEnv k (Rec _ (KindBind p x _) t) = do
+checkAgainst :: K.KindEnv -> K.Kind -> T.Type -> FreestState ()
+-- checkAgainst kEnv k (Rec _ (K.Bind p x _) t) = do
 --   checkContractive kEnv t
 --   checkAgainst (Map.insert x (Kind p Session Un) kEnv) k t
 checkAgainst kEnv expected t = do
   actual <- synthetise kEnv t
-  S.when (not (actual <: expected)) $ addError
+  S.when (not (actual K.<: expected)) $ addError
     (pos t)
     [ Error "Couldn't match expected kind"
     , Error expected
@@ -128,10 +128,10 @@ checkAgainst kEnv expected t = do
     , Error t
     ]
 
--- synthetiseTS :: KindEnv -> TypeScheme -> FreestState Kind
+-- synthetiseTS :: K.KindEnv -> TypeScheme -> FreestState Kind
 -- synthetiseTS kEnv (TypeScheme _ bs t) = synthetise insertBinds t
 --  where
---   insertBinds = foldr (\(KindBind _ x k) env -> Map.insert x k env) kEnv bs
+--   insertBinds = foldr (\(K.Bind _ x k) env -> Map.insert x k env) kEnv bs
 
 -- Determine whether a given type is unrestricted
 un :: T.Type -> FreestState Bool
@@ -144,5 +144,5 @@ lin = mult Lin
 -- Determine whether a given type is of a given multiplicity
 mult :: Multiplicity -> T.Type -> FreestState Bool
 mult m1 s = do
-  (Kind _ _ m2) <- synthetise Map.empty s
+  (K.Kind _ _ m2) <- synthetise Map.empty s
   return $ m2 == m1

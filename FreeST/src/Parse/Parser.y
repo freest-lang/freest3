@@ -370,19 +370,19 @@ TypeVar :: { TypeVar }
 TypeName :: { TypeVar }
   : UPPER_ID { mkVar (pos $1) (getText $1) }
 
-KindBind :: { K.KindBind }
-  : TypeVar ':' Kind { K.KindBind (pos $1) $1 $3 }
-  | TypeVar          { K.KindBind (pos $1) $1 (omission (pos $1)) }
+KindBind :: { K.Bind }
+  : TypeVar ':' Kind { K.Bind (pos $1) $1 $3 }
+  | TypeVar          { K.Bind (pos $1) $1 (omission (pos $1)) }
 
 KindedTVar :: { (TypeVar, K.Kind) }    -- for type and data declarations
   : TypeName ':' Kind { ($1, $3) }
   | TypeName          { ($1, omission (pos $1)) }
 
-KindBindList :: { [K.KindBind] }
+KindBindList :: { [K.Bind] }
   : KindBind                     { [$1] }
   | KindBind ',' KindBindList {% toStateT $ checkDupKindBind $1 $3 >> return ($1 : $3) }
 
-KindBindEmptyList :: { [K.KindBind] }
+KindBindEmptyList :: { [K.Bind] }
   :                 { [] }
   | KindBindList { $1 }
 

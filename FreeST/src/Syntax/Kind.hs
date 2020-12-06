@@ -14,7 +14,7 @@ manipulate prekinds and multiplicities.
 
 module Syntax.Kind
   ( PreKind(..)
-  , KindBind(..)
+  , Bind(..)
   , Kind(..)
   , KindEnv
   , kindTL
@@ -105,7 +105,7 @@ type KindEnv = Map.Map TypeVar Kind
 
 -- Binding type variables to kinds
 
-data KindBind = KindBind Pos TypeVar Kind deriving (Eq, Ord)
+data Bind = Bind Pos TypeVar Kind deriving (Eq, Ord)
 
-instance Position KindBind where
-  pos (KindBind p _ _) = p
+instance Position Bind where
+  pos (Bind p _ _) = p

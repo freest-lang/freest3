@@ -73,8 +73,8 @@ instance Show K.Kind where
 
 -- Kind binds
 
-instance Show K.KindBind where
-  show (K.KindBind _ a k) = show a ++ ":" ++ show k
+instance Show K.Bind where
+  show (K.Bind _ a k) = show a ++ ":" ++ show k
 
 -- Polarities
 

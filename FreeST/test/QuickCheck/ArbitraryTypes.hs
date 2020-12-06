@@ -48,8 +48,8 @@ arbitraryVar ids = do
 instance Arbitrary K.Kind where
   arbitrary = elements [K.kindSL pos, K.kindSU pos] -- Session types only
 
-instance Arbitrary K.KindBind where
-  arbitrary = liftM3 K.KindBind (return pos) arbitrary arbitrary
+instance Arbitrary K.Bind where
+  arbitrary = liftM3 K.Bind (return pos) arbitrary arbitrary
 
 -- instance Arbitrary Type where
 --   arbitrary = elements [IntType, CharType, BoolType, UnitType]
@@ -188,8 +188,8 @@ commut n = do
 recRecL :: Int -> Gen (T.Type, T.Type)
 recRecL n = do
   (t, u)                <- bisimPair (n `div` 2)
-  xk@(K.KindBind _ x _) <- arbitrary
-  yk@(K.KindBind _ y _) <- arbitrary
+  xk@(K.Bind _ x _) <- arbitrary
+  yk@(K.Bind _ y _) <- arbitrary
   let u' = Rename.renameType u -- this type will be in a substitution
   return
     ( T.Rec pos xk (T.Rec pos yk t)
@@ -199,8 +199,8 @@ recRecL n = do
 recRecR :: Int -> Gen (T.Type, T.Type)
 recRecR n = do
   (t, u)                <- bisimPair (n `div` 2)
-  xk@(K.KindBind _ x _) <- arbitrary
-  yk@(K.KindBind _ y _) <- arbitrary
+  xk@(K.Bind _ x _) <- arbitrary
+  yk@(K.Bind _ y _) <- arbitrary
   let u' = Rename.renameType u -- this type will be in a substitution
   return
     ( T.Rec pos xk (T.Rec pos yk t)
@@ -211,7 +211,7 @@ recFree :: Int -> Gen (T.Type, T.Type)
 recFree n = do
   (t, u) <- bisimPair (n `div` 2)
   k      <- arbitrary
-  return (T.Rec pos (K.KindBind pos freeTypeVar k) t, u)
+  return (T.Rec pos (K.Bind pos freeTypeVar k) t, u)
 
 -- alphaConvert :: Int -> Gen (Type, Type) -- (fixed wrt to ICFP'16)
 -- alphaConvert n = do

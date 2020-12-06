@@ -26,7 +26,7 @@ where
 import           Syntax.Expression
 import           Syntax.Schemes
 import qualified Syntax.Type                   as T
-import           Syntax.Kind
+import qualified Syntax.Kind                   as K
 import           Syntax.TypeVariable
 import           Syntax.ProgramVariable
 import           Syntax.Base
@@ -83,9 +83,9 @@ class Rename t where
 --     t' <- rename (insertBindings xks xks' bs) t
 --     return $ TypeScheme p xks' t'
 
--- insertBindings :: [KindBind] -> [KindBind] -> Bindings -> Bindings
+-- insertBindings :: [K.Bind] -> [K.Bind] -> Bindings -> Bindings
 -- insertBindings xks xks' bs =
---   foldr (\(KindBind _ x _, KindBind _ y _) -> insertVar x y) bs (zip xks xks')
+--   foldr (\(K.Bind _ x _, K.Bind _ y _) -> insertVar x y) bs (zip xks xks')
 
 -- Types
 
@@ -115,16 +115,16 @@ rename' bs (T.Choice p pol tm) = do
   tm' <- tMapM (rename bs) tm
   return $ T.Choice p pol tm'
   -- Polymorphism
-rename' bs (T.Forall p (KindBind p' a k) t) = do
+rename' bs (T.Forall p (K.Bind p' a k) t) = do
   a' <- rename bs a
   t' <- rename (insertVar a a' bs) t
-  return $ T.Forall p (KindBind p' a' k) t'
+  return $ T.Forall p (K.Bind p' a' k) t'
   -- Functional or session
-rename' bs (T.Rec p (KindBind p' a k) t)
+rename' bs (T.Rec p (K.Bind p' a k) t)
   | a `isFreeIn` t = do
     a' <- rename bs a
     t' <- rename (insertVar a a' bs) t
-    return $ T.Rec p (KindBind p' a' k) t'
+    return $ T.Rec p (K.Bind p' a' k) t'
   | otherwise = rename bs t
 rename' bs (T.TypeVar p a) = return $ T.TypeVar p (findWithDefaultVar a bs)
   -- Type operators
@@ -136,10 +136,10 @@ rename' _ t = return t
 
 -- TypeVar - kind binds
 
-instance Rename KindBind where
-  rename bs (KindBind p a k) = do
+instance Rename K.Bind where
+  rename bs (K.Bind p a k) = do
     a' <- rename bs a
-    return $ KindBind p a' k
+    return $ K.Bind p a' k
 
 -- Expressions
 
@@ -199,7 +199,7 @@ instance Rename Exp where
     t' <- rename bs t
     u' <- rename bs u
     return $ New p t' u'
-  rename _ e@(Select _ _  ) = return e
+  rename _  e@(Select _ _  ) = return e
   rename bs (  Match p e fm) = do
     e'  <- rename bs e
     fm' <- tMapM (renameField bs) fm
@@ -274,11 +274,11 @@ isFreeIn x (T.Semi _ t u) = x `isFreeIn` t || x `isFreeIn` u
 isFreeIn x (T.Choice _ _ tm) =
   Map.foldr' (\t b -> x `isFreeIn` t || b) False tm
   -- Polymorphism
-isFreeIn x (T.Forall _ (KindBind _ y _) t) = x /= y && x `isFreeIn` t
+isFreeIn x (T.Forall _ (K.Bind _ y _) t) = x /= y && x `isFreeIn` t
   -- Functional or session 
-isFreeIn x (T.Rec    _ (KindBind _ y _) t) = x /= y && x `isFreeIn` t
-isFreeIn x (T.TypeVar _ y                ) = x == y
+isFreeIn x (T.Rec    _ (K.Bind _ y _) t) = x /= y && x `isFreeIn` t
+isFreeIn x (T.TypeVar _ y              ) = x == y
   -- Type operators
-isFreeIn x (T.Dualof  _ t                ) = x `isFreeIn` t
+isFreeIn x (T.Dualof  _ t              ) = x `isFreeIn` t
   -- Basic, Skip, Message, TypeName
-isFreeIn _ _                               = True
+isFreeIn _ _                             = True
