@@ -20,7 +20,7 @@ import           Syntax.Base
 import           Utils.FreestState
 import           Utils.PreludeLoader            ( prelude )
 import           Validation.Rename              ( renameState )
-import           Validation.Elaboration         ( elaborateTypes )
+import           Validation.Elaboration         ( elaborate )
 import           Validation.TypeChecking        ( typeCheck )
 import           Interpreter.Builtin            ( initialCtx )
 import           Interpreter.Eval               ( evalAndPrint )
@@ -48,12 +48,10 @@ checkAndRun filePath = do
   s1 <- parseProgram filePath prelude
   when (hasErrors s1) (die $ getErrors s1)
   -- Solve type declarations and dualof operators
-  let s2 = execState elaborateTypes s1
+  let s2 = execState elaborate s1
   when (hasErrors s2) (die $ getErrors s2)
-
   -- Rename
   let s3 = execState renameState s2
-
    -- Type check
   let s4 = execState typeCheck s3
   when (hasErrors s4) (die $ getErrors s4)

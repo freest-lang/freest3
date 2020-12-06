@@ -1,6 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 module Validation.Elaboration
-  ( elaborateTypes
+  ( elaborate
   )
 where
 
@@ -25,8 +25,8 @@ import           Control.Monad                  ( -- liftM,
 import           Validation.Kinding             ( synthetise )
 
 
-elaborateTypes :: FreestState ()
-elaborateTypes = do
+elaborate :: FreestState ()
+elaborate = do
   tenv <- getTEnv
  -- let tenv' = typeDecls tenv
 
