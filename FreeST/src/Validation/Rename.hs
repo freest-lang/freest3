@@ -99,10 +99,10 @@ rename' bs (T.Fun p m t u) = do
   t' <- rename bs t
   u' <- rename bs u
   return $ T.Fun p m t' u'
-rename' bs (T.PairType p t u) = do
+rename' bs (T.Pair p t u) = do
   t' <- rename bs t
   u' <- rename bs u
-  return $ T.PairType p t' u'
+  return $ T.Pair p t' u'
 rename' bs (T.Datatype p fm) = do
   fm' <- tMapM (rename bs) fm
   return $ T.Datatype p fm'
@@ -265,8 +265,8 @@ unfold = renameType . Subs.unfold
 -- If not, then rec x.t can be renamed to t alone.
 isFreeIn :: TypeVar -> T.Type -> Bool
     -- Functional types
-isFreeIn x (T.Fun _ _ t u   ) = x `isFreeIn` t || x `isFreeIn` u
-isFreeIn x (T.PairType _ t u) = x `isFreeIn` t || x `isFreeIn` u
+isFreeIn x (T.Fun _ _ t u) = x `isFreeIn` t || x `isFreeIn` u
+isFreeIn x (T.Pair _ t u ) = x `isFreeIn` t || x `isFreeIn` u
 isFreeIn x (T.Datatype _ fm) =
   Map.foldr' (\t b -> x `isFreeIn` t || b) False fm
     -- Session types

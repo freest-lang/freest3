@@ -103,7 +103,7 @@ synthetise kEnv (App p (ProgVar _ x) e) |  -- Receive e
   t        <- synthetise kEnv e
   (u1, u2) <- extractInput e t
   K.checkAgainst kEnv (K.kindML (pos u1)) u1
-  return $ T.PairType p u1 u2
+  return $ T.Pair p u1 u2
 synthetise kEnv e@(App p (ProgVar _ x) _) |  -- Send e
                                             x == mkVar p "send" =
   addPartiallyAppliedError e "channel"
@@ -153,7 +153,7 @@ synthetise kEnv (TypeAbs p kb@(K.Bind p' x k) e) = do
 
 synthetise kEnv (TypeApp p e t) = do -- TODO: error and bs, zip
 --  (TypeScheme _ bs t) <- synthetiseVar kEnv x
-  u <- synthetise kEnv e
+  u                              <- synthetise kEnv e
   (T.Forall _ (K.Bind _ y _) u') <- extractForall e u
   K.synthetise kEnv t
   -- let tmp = Rename.subs t y u'
@@ -201,7 +201,7 @@ synthetise kEnv (Pair p e1 e2) = do
   t2 <- synthetise kEnv e2
   -- K.checkAgainst kEnv (Kind p Functional m) t1
   -- K.checkAgainst kEnv (Kind p Functional m) t2
-  return $ T.PairType p t1 t2
+  return $ T.Pair p t1 t2
 -- Pair elimination
 synthetise kEnv (BinLet _ x y e1 e2) = do
   t1       <- synthetise kEnv e1
@@ -220,7 +220,7 @@ synthetise kEnv (Case p e fm) =
 -- New
 synthetise kEnv (New p t u) = do
   K.checkAgainstSession kEnv t
-  return $ T.PairType p t u -- (dual t)
+  return $ T.Pair p t u -- (dual t)
 synthetise kEnv e@(Select _ _) = addPartiallyAppliedError e "channel"
 -- synthetise kEnv (Select p e c) = do
 --   t <- synthetise kEnv e

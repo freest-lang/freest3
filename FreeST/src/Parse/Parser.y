@@ -270,7 +270,7 @@ Type :: { T.Type }
 --  : BasicType                     { uncurry Basic $1 }
   : BasicType                     { $1 }
   | Type Arrow Type               { uncurry T.Fun $2 $1 $3 }
-  | '(' Type ',' TupleType ')'    { T.PairType (pos $1) $2 $4 }
+  | '(' Type ',' TupleType ')'    { T.Pair (pos $1) $2 $4 }
   -- Session types
   | Skip                          { T.Skip (pos $1) }
   | Type ';' Type                 { T.Semi (pos $2) $1 $3 }
@@ -294,7 +294,7 @@ BasicType :: { T.Type }
 
 TupleType :: { T.Type }
   : Type                    { $1 }
-  | Type ',' TupleType     { T.PairType (pos $1) $1 $3 }
+  | Type ',' TupleType     { T.Pair (pos $1) $1 $3 }
 
 Polarity :: { (Pos, T.Polarity) }
   : '?' { (pos $1, T.In) }

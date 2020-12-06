@@ -71,7 +71,7 @@ extractPair :: Exp -> T.Type -> FreestState (T.Type, T.Type)
 extractPair e t = do
   t' <- norm t
   case t' of
-    (T.PairType _ u v) -> return (u, v)
+    (T.Pair _ u v) -> return (u, v)
     u                  -> do
       let p = pos u
       addError

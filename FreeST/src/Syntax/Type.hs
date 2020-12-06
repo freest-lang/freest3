@@ -10,21 +10,22 @@ This module defines a types and equality.
 -}
 
 module Syntax.Type
-( -- BasicType(..),
-  Type(..)
-, Bind(..)
-, TypeMap
-, Polarity(..)
-, TypeOpsEnv
-, TypeEnv
-, VarEnv
-) where
+  ( -- BasicType(..),
+    Type(..)
+  , Bind(..)
+  , TypeMap
+  , Polarity(..)
+  , TypeOpsEnv
+  , TypeEnv
+  , VarEnv
+  )
+where
 
-import qualified Syntax.Kind as K
+import qualified Syntax.Kind                   as K
 import           Syntax.TypeVariable
-import           Syntax.ProgramVariable (ProgVar)
+import           Syntax.ProgramVariable         ( ProgVar )
 import           Syntax.Base
-import qualified Data.Map.Strict as Map
+import qualified Data.Map.Strict               as Map
 
 -- POSITIONS & TYPE OPERATORS (TYPENAME & DUALOF)
 
@@ -55,8 +56,7 @@ data Type =
   | BoolType Pos
   | UnitType Pos
   | Fun Pos Multiplicity Type Type
-  | PairType Pos Type Type      -- TODO: Rename to Pair, then
-                                -- make Pair a b = ∀c. (a => b => c) => c (see TAPL pg 352)
+  | Pair Pos Type Type        -- make Pair a b = ∀c. (a => b => c) => c (see TAPL pg 352)
   | Datatype Pos TypeMap
   -- Session Types
   | Skip Pos
@@ -64,45 +64,45 @@ data Type =
   | Message Pos Polarity Type
   | Choice Pos Polarity TypeMap
   -- Type Variable
-  | TypeVar Pos TypeVar  
+  | TypeVar Pos TypeVar
   -- Polymorphism
   | Forall Pos K.Bind Type    -- ∀ a:k => T
   -- Recursive Types
   | Rec Pos K.Bind Type       -- μ a:k => T
   -- Type operators
-  | Abs Pos K.Bind Type      -- λ a:k => T -- TODO: Rename to Abs
-  | App Pos Type Type                        -- TODO: Rename to App
+  | Abs Pos K.Bind Type      -- λ a:k => T
+  | App Pos Type Type
   | Dualof Pos Type             -- TODO: eliminate
   -- Named Type, to be looked upon in a map of type names to types, tEnv
-  | TypeName Pos TypeVar 
+  | TypeName Pos TypeVar
   deriving (Eq, Ord)
 
 type TypeMap = Map.Map ProgVar Type
 
 instance Position Type where
   -- Functional types
-  pos (IntType p)      = p
-  pos (CharType p)     = p
-  pos (BoolType p)     = p
-  pos (UnitType p)     = p
-  pos (Fun p _ _ _)    = p
-  pos (PairType p _ _) = p
-  pos (Datatype p _)   = p
+  pos (IntType  p   ) = p
+  pos (CharType p   ) = p
+  pos (BoolType p   ) = p
+  pos (UnitType p   ) = p
+  pos (Fun p _ _ _  ) = p
+  pos (Pair p _ _   ) = p
+  pos (Datatype p _ ) = p
   -- Session types
-  pos (Skip p)         = p
-  pos (Semi p _ _)     = p
-  pos (Message p _ _)  = p
-  pos (Choice p _ _)   = p
+  pos (Skip p       ) = p
+  pos (Semi    p _ _) = p
+  pos (Message p _ _) = p
+  pos (Choice  p _ _) = p
   -- Polymorphism
-  pos (Forall p _ _)   = p
+  pos (Forall  p _ _) = p
   -- Functional or session
-  pos (Rec p _ _)      = p
-  pos (TypeVar p _)    = p
+  pos (Rec     p _ _) = p
+  pos (TypeVar p _  ) = p
   -- Type operators
-  pos (Abs p _ _)     = p
-  pos (App p _ _)     = p
-  pos (Dualof p _)     = p
-  pos (TypeName p _)   = p
+  pos (Abs p _ _    ) = p
+  pos (App p _ _    ) = p
+  pos (Dualof   p _ ) = p
+  pos (TypeName p _ ) = p
 
 instance Default Type where
   omission = IntType

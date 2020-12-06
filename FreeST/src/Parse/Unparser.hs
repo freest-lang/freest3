@@ -144,7 +144,7 @@ instance Unparse T.Type where
    where
     l = bracket (unparse t) Left arrowRator
     r = bracket (unparse u) Right arrowRator
-  unparse (T.PairType _ t u) = (maxRator, "(" ++ l ++ ", " ++ r ++ ")")
+  unparse (T.Pair _ t u) = (maxRator, "(" ++ l ++ ", " ++ r ++ ")")
    where
     l = bracket (unparse t) Left minRator
     r = bracket (unparse u) Right minRator
@@ -168,7 +168,7 @@ showDatatype m = intercalate " | "
  where
   showAsSequence :: T.Type -> String
   showAsSequence (T.Fun _ _ t u) = " " ++ show t ++ showAsSequence u
-  showAsSequence _             = ""
+  showAsSequence _               = ""
 
 showChoice :: T.TypeMap -> String
 showChoice m = intercalate ", "
@@ -191,7 +191,7 @@ showType 0 _               = ".."
   -- Functional types
 showType i (Fun _ m t u) =
   "(" ++ showType (i - 1) t ++ showArrow m ++ showType (i - 1) u ++ ")"
-showType i (PairType _ t u) =
+showType i (Pair _ t u) =
   "(" ++ showType (i - 1) t ++ ", " ++ showType (i - 1) u ++ ")"
 showType i (Datatype _ m) = "[" ++ showDatatype i m ++ "]"
   -- Session types
@@ -205,7 +205,7 @@ showType i (Rec _ xk t) =
 showType i (Dualof _ t) = "(dualof " ++ showType (i - 1) t ++ ")"
 
 -- showNTupleType :: Int -> Type -> String
--- showNTupleType i (PairType _ t u) = showType (i - 1) t ++ showType (i - 1) u
+-- showNTupleType i (Pair _ t u) = showType (i - 1) t ++ showType (i - 1) u
 -- showNTupleType i t                = showType i t
 
 showDatatype :: Int -> TypeMap -> String

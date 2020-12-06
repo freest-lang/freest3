@@ -49,7 +49,7 @@ synthetise kEnv (T.Fun p m t u) = do
   synthetise kEnv t
   synthetise kEnv u
   return $ K.Kind p K.Functional m
-synthetise kEnv (T.PairType _ t u) = do
+synthetise kEnv (T.Pair _ t u) = do
   kt <- synthetise kEnv t
   ku <- synthetise kEnv u
   return $ K.join kt ku

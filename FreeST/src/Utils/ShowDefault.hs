@@ -27,10 +27,8 @@ showTypeDefault tops (T.Rec p xs t) =
   lookupPos tops p (T.Rec p xs (showTypeDefault tops t))
 showTypeDefault tops (T.Fun p m t u) =
   lookupPos tops p (T.Fun p m (showTypeDefault tops t) (showTypeDefault tops u))
-showTypeDefault tops (T.PairType p t u) = lookupPos
-  tops
-  p
-  (T.PairType p (showTypeDefault tops t) (showTypeDefault tops u))
+showTypeDefault tops (T.Pair p t u) =
+  lookupPos tops p (T.Pair p (showTypeDefault tops t) (showTypeDefault tops u))
 showTypeDefault tops (T.Datatype p m) =
   lookupPos tops p (T.Datatype p (Map.map (showTypeDefault tops) m))
 showTypeDefault tops (T.Choice p pol m) =

@@ -158,7 +158,7 @@ isRecursiveTypeDecl v (T.TypeName _ x) = x == v
 isRecursiveTypeDecl v (T.TypeVar  _ x) = x == v
 isRecursiveTypeDecl v (T.Fun _ _ t u) =
   isRecursiveTypeDecl v t || isRecursiveTypeDecl v u
-isRecursiveTypeDecl v (T.PairType _ t u) =
+isRecursiveTypeDecl v (T.Pair _ t u) =
   isRecursiveTypeDecl v t || isRecursiveTypeDecl v u
 isRecursiveTypeDecl v (T.Dualof _ t) = isRecursiveTypeDecl v t
 isRecursiveTypeDecl _ _              = False
@@ -176,7 +176,7 @@ isRecursiveTypeDecl _ _              = False
 -- toTypeVar x (Forall p kb t) = Forall p kb (toTypeVar x t)
 -- -- functional types
 -- toTypeVar x (Fun p m t u) = Fun p m (toTypeVar x t) (toTypeVar x u)
--- toTypeVar x (PairType p t u) = PairType p (toTypeVar x t) (toTypeVar x u)
+-- toTypeVar x (Pair p t u) = Pair p (toTypeVar x t) (toTypeVar x u)
 -- -- Datatype
 -- toTypeVar _ t = t
 
@@ -238,21 +238,21 @@ maybeScopeErr (T.TypeVar p tname) = getFromTEnv tname >>= \case
 
 -- Change position of a given type with a given position
 changePos :: Pos -> T.Type -> T.Type
-changePos p (T.IntType  _      ) = T.IntType p
-changePos p (T.CharType _      ) = T.CharType p
-changePos p (T.BoolType _      ) = T.BoolType p
-changePos p (T.UnitType _      ) = T.UnitType p
-changePos p (T.Fun _ pol t u   ) = T.Fun p pol t u
-changePos p (T.PairType _ t   u) = T.PairType p t u
+changePos p (T.IntType  _     ) = T.IntType p
+changePos p (T.CharType _     ) = T.CharType p
+changePos p (T.BoolType _     ) = T.BoolType p
+changePos p (T.UnitType _     ) = T.UnitType p
+changePos p (T.Fun _ pol t u  ) = T.Fun p pol t u
+changePos p (T.Pair    _ t   u) = T.Pair p t u
 -- Datatype
 -- Skip
-changePos p (T.Semi     _ t   u) = T.Semi p t u
-changePos p (T.Message  _ pol b) = T.Message p pol b
-changePos p (T.Choice   _ pol m) = T.Choice p pol m
-changePos p (T.Rec      _ xs  t) = T.Rec p xs t -- (changePos p t)
-changePos p (T.Forall   _ xs  t) = T.Forall p xs t -- (changePos p t)
+changePos p (T.Semi    _ t   u) = T.Semi p t u
+changePos p (T.Message _ pol b) = T.Message p pol b
+changePos p (T.Choice  _ pol m) = T.Choice p pol m
+changePos p (T.Rec     _ xs  t) = T.Rec p xs t -- (changePos p t)
+changePos p (T.Forall  _ xs  t) = T.Forall p xs t -- (changePos p t)
 -- TypeVar
-changePos _ t                    = t
+changePos _ t                   = t
 
 
 -- PHASE 3: SUBSTITUTE ON FUNCTION SIGNATURES (VARENV)
@@ -281,8 +281,8 @@ substituteEEnv tenv = getEEnv >>= \eenv -> tMapWithKeyM_ subsUpdateExp eenv
 subsType :: T.TypeEnv -> Maybe (TypeVar, T.Type) -> T.Type -> FreestState T.Type
 subsType tenv b (T.Fun p m t1 t2) =
   liftM2 (T.Fun p m) (subsType tenv b t1) (subsType tenv b t2)
-subsType tenv b (T.PairType p t1 t2) =
-  liftM2 (T.PairType p) (subsType tenv b t1) (subsType tenv b t2)
+subsType tenv b (T.Pair p t1 t2) =
+  liftM2 (T.Pair p) (subsType tenv b t1) (subsType tenv b t2)
 subsType tenv b d@(T.Datatype p m) = do
  -- m' <- subsMap tenv b m
   -- traceM $ "\nSubs Datatype -> " ++show d ++ "\nMaybe: " ++ show b ++ "\nBEFORE: " ++ show m' ++ "\nAFTER:  " ++ show m ++ "\n"
@@ -355,5 +355,4 @@ subsFieldMap :: T.TypeEnv -> FieldMap -> FreestState FieldMap
 subsFieldMap tenv = mapM (\(ps, e) -> liftM2 (,) (pure ps) (subsExp tenv e))
 
 subsTypeBind :: T.TypeEnv -> T.Bind -> FreestState T.Bind
-subsTypeBind tenv (T.Bind p k t) =
-  fmap (T.Bind p k) (subsType tenv Nothing t)
+subsTypeBind tenv (T.Bind p k t) = fmap (T.Bind p k) (subsType tenv Nothing t)

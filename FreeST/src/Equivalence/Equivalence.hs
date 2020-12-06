@@ -60,8 +60,7 @@ instance Equivalence T.Type where
     equiv _ (T.UnitType _) (T.UnitType _) = True
     equiv v (T.Fun _ m t1 t2) (T.Fun _ n u1 u2) =
       m == n && equiv v t1 u1 && equiv v t2 u2
-    equiv v (T.PairType _ t1 t2) (T.PairType _ u1 u2) =
-      equiv v t1 u1 && equiv v t2 u2
+    equiv v (T.Pair _ t1 t2) (T.Pair _ u1 u2) = equiv v t1 u1 && equiv v t2 u2
     equiv v (T.Datatype _ m1) (T.Datatype _ m2) =
       Map.size m1 == Map.size m2 && Map.foldlWithKey (equivField v m2) True m1
     -- Polymorphism
@@ -99,18 +98,18 @@ bisimilar tEnv t u = Bisimulation.bisimilar $ convertToGrammar tEnv [t, u]
 -- Assumes the type is well formed
 isSessionType :: T.TypeEnv -> K.KindEnv -> T.Type -> Bool
   -- Session types
-isSessionType _    _    (T.Skip _)                     = True
-isSessionType _    _    T.Semi{}                       = True
-isSessionType _    _    T.Message{}                    = True
-isSessionType _    _    T.Choice{}                     = True
+isSessionType _    _    (T.Skip _)                 = True
+isSessionType _    _    T.Semi{}                   = True
+isSessionType _    _    T.Message{}                = True
+isSessionType _    _    T.Choice{}                 = True
   -- Recursion
 isSessionType _    _    (T.Rec _ (K.Bind _ _ k) _) = K.isSession k
-isSessionType _    kenv (T.TypeVar _ x               ) = Map.member x kenv
+isSessionType _    kenv (T.TypeVar _ x           ) = Map.member x kenv
   -- Type operators
-isSessionType _    _    T.Dualof{}                     = True
+isSessionType _    _    T.Dualof{}                 = True
 isSessionType tenv _ (T.TypeName _ x) = K.isSession $ fst $ tenv Map.! x
   -- Otherwise: Functional types
-isSessionType _    _    _                              = False
+isSessionType _    _    _                          = False
 
 -- Type schemes
 
