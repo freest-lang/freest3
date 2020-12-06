@@ -70,8 +70,8 @@ data Type =
   -- Recursive Types
   | Rec Pos K.Bind Type       -- μ a:k => T
   -- Type operators
-  | TAbs Pos K.Bind Type      -- λ a:k => T -- TODO: Rename to Abs
-  | TApp Pos Type Type                        -- TODO: Rename to App
+  | Abs Pos K.Bind Type      -- λ a:k => T -- TODO: Rename to Abs
+  | App Pos Type Type                        -- TODO: Rename to App
   | Dualof Pos Type             -- TODO: eliminate
   -- Named Type, to be looked upon in a map of type names to types, tEnv
   | TypeName Pos TypeVar 
@@ -99,8 +99,8 @@ instance Position Type where
   pos (Rec p _ _)      = p
   pos (TypeVar p _)    = p
   -- Type operators
-  pos (TAbs p _ _)     = p
-  pos (TApp p _ _)     = p
+  pos (Abs p _ _)     = p
+  pos (App p _ _)     = p
   pos (Dualof p _)     = p
   pos (TypeName p _)   = p
 
