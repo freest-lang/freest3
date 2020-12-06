@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 {- |
 Module      :  Syntax.Show
 Description :  The show module
@@ -380,3 +381,11 @@ showFieldMap i m = intercalate "; " (map showAssoc (Map.toList m))
 --   show (TypeScheme _ [] t) = show t
 --   show (TypeScheme _ bs t) = "forall " ++ bindings ++ " => " ++ show t
 --     where bindings = intercalate ", " (map show bs)
+
+
+
+instance {-# OVERLAPPING #-} Show T.VarEnv where
+  show venv = "[" ++ intercalate "\n\t\t   ," (venvToList venv) ++ "]"
+
+venvToList :: T.VarEnv -> [String]
+venvToList = Map.foldrWithKey (\k v acc -> (show k ++ " : " ++ show v) : acc) []
