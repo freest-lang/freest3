@@ -19,7 +19,7 @@ where
 
 import qualified Syntax.Type                   as T
 import qualified Syntax.Kind                   as K
-import           Syntax.TypeVariables
+import           Syntax.TypeVariable
 import           Syntax.Base
 import           Parse.Unparser
 import qualified Validation.Substitution       as Substitution

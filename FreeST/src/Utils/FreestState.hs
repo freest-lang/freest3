@@ -62,7 +62,7 @@ import           Syntax.Base
 import           Syntax.Expression
 import           Syntax.Kind
 import           Syntax.ProgramVariables
-import           Syntax.TypeVariables
+import           Syntax.TypeVariable
 import qualified Syntax.Type                   as T
                                                 ( Type(..)
                                                 , TypeOpsEnv
@@ -74,8 +74,6 @@ import           Utils.Errors
 import qualified Data.Traversable              as Traversable
 import           Utils.ErrorMessage
 import           Debug.Trace -- debug (used on debugM function)
-
-import           Debug.Trace
 
 -- | The typing state
 

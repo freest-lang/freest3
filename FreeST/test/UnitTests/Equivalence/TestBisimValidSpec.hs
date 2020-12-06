@@ -1,15 +1,15 @@
 module Equivalence.TestBisimValidSpec (spec) where
 
-import           Syntax.Type
-import           Syntax.Kind
-import           Syntax.TypeVariables
-import           Syntax.Base
+-- import           Syntax.Type
+-- import           Syntax.Kind
+-- import           Syntax.TypeVariable
+-- import           Syntax.Base
 import           Equivalence.Equivalence (bisimilar)
 import           Validation.Rename
-import           Utils.FreestState
+-- import           Utils.FreestState
 import qualified Data.Map.Strict as Map
 import           SpecHelper
-import Debug.Trace
+
 
 -- Note that the tests cases should be kinded!
 

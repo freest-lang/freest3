@@ -27,7 +27,7 @@ import           Syntax.Expression
 import           Syntax.Schemes
 import qualified Syntax.Type                   as T
 import           Syntax.Kind
-import           Syntax.TypeVariables
+import           Syntax.TypeVariable
 import           Syntax.ProgramVariables
 import           Syntax.Base
 import qualified Validation.Substitution       as Subs

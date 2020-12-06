@@ -19,26 +19,24 @@ module Equivalence.Equivalence
   )
 where
 
-import           Syntax.Schemes
+-- import           Syntax.Schemes
 import qualified Syntax.Type                   as T
 import qualified Syntax.Kind                   as K
 import           Syntax.ProgramVariables
-import           Syntax.TypeVariables
-import qualified Validation.Rename             as Rename
-                                                ( subs
-                                                , unfold
-                                                )
+import           Syntax.TypeVariable
+-- import qualified Validation.Rename             as Rename
+--                                                 ( subs
+--                                                 , unfold
+--                                                 )
 import qualified Validation.Substitution       as Subs
-                                                ( subs
-                                                , unfold
+                                                ( -- subs,
+                                                  unfold
                                                 )
-import           Bisimulation.Grammar
+-- import           Bisimulation.Grammar
 import           Bisimulation.Bisimulation     as Bisimulation
 import           Equivalence.TypeToGrammar
 import qualified Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
-
-import           Debug.Trace --debug
 
 class Equivalence t where
   equivalent :: T.TypeEnv -> K.KindEnv -> t -> t -> Bool

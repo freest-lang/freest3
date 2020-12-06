@@ -21,7 +21,7 @@ module Syntax.Type
 ) where
 
 import qualified Syntax.Kind as K
-import           Syntax.TypeVariables
+import           Syntax.TypeVariable
 import           Syntax.ProgramVariables (ProgVar)
 import           Syntax.Base
 import qualified Data.Map.Strict as Map

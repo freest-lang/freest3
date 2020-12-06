@@ -42,7 +42,7 @@ import           Syntax.Base
 import           Syntax.Expression
 import           Syntax.Kind
 import           Syntax.ProgramVariables
-import           Syntax.TypeVariables
+import           Syntax.TypeVariable
 import           Syntax.Type
 import           Utils.FreestState
 

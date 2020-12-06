@@ -1,3 +1,4 @@
+
 {- |
 Module      :  Syntax.Kind
 Description :  The kind of a type
@@ -30,7 +31,7 @@ module Syntax.Kind
   )
 where
 
-import           Syntax.TypeVariables
+import           Syntax.TypeVariable
 import           Syntax.Base
 import qualified Data.Map.Strict               as Map
 

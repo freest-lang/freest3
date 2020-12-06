@@ -5,23 +5,23 @@ module Validation.Elaboration
 where
 
 import           Syntax.Expression
-import           Syntax.Schemes
+-- import           Syntax.Schemes
 import qualified Syntax.Type                   as T
 import qualified Syntax.Kind                   as K
 import           Syntax.Base
-import           Syntax.TypeVariables
+import           Syntax.TypeVariable
 import           Syntax.ProgramVariables
 import           Validation.Duality             ( dual )
-import           Validation.Terminated
+-- import           Validation.Terminated
 import           Utils.FreestState
 import           Data.Map.Strict               as Map
-import qualified Data.Set                      as Set
-import           Debug.Trace
-import           Control.Monad                  ( liftM
-                                                , liftM2
+-- import qualified Data.Set                      as Set
+-- import           Debug.Trace
+import           Control.Monad                  ( -- liftM,
+                                                  liftM2
                                                 , liftM3
                                                 )
-import           Utils.PreludeLoader            ( userDefined ) -- debug
+-- import           Utils.PreludeLoader            ( userDefined ) -- debug
 import           Validation.Kinding             ( synthetise )
 
 
@@ -44,7 +44,7 @@ elaborateTypes = do
   mapM_ (synthetise Map.empty . snd) eqs'
 --  mapM_ (checkContractive Map.empty . snd) eqs'
 
-  venv <- getVEnv
+--  venv <- getVEnv
 --  debugM $ "BEFORE VENV: " ++ show (userDefined venv) ++ "\n"
 
   -- Substitute all type operators on VarEnv

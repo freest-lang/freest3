@@ -24,7 +24,7 @@ import qualified Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
 import qualified Syntax.Kind                   as K
 import qualified Syntax.Type                   as T
-import           Syntax.TypeVariables
+import           Syntax.TypeVariable
 import           Utils.Errors                   ( internalError )
 
 -- [t/x]u, substitute t for for every free occurrence of x in u

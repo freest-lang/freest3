@@ -1,29 +1,27 @@
 module TestValidTypes
-( prop_bisimilar
-, prop_distribution
-, kinded
-, nodes
-) where
+  ( prop_bisimilar
+  , prop_distribution
+  , kinded
+  , nodes
+  )
+where
 
 import           Test.QuickCheck
-import           Test.QuickCheck.Random (mkQCGen)
+import           Test.QuickCheck.Random         ( mkQCGen )
 import           Equivalence.Equivalence
 import           Equivalence.Normalisation
-import           Bisimulation.Bisimulation
-import           Validation.Substitution
 import           Validation.Kinding
-import qualified Syntax.Type as T
+import qualified Syntax.Type                   as T
 import           Syntax.Kind
-import           Syntax.TypeVariables
-import           Syntax.Base hiding (pos)
--- import           Validation.Duality
+import           Syntax.Base             hiding ( pos )
 import           Utils.FreestState
 import           Control.Monad.State
-import           Data.Maybe
-import qualified Data.Map.Strict as Map
+import qualified Data.Map.Strict               as Map
 import           ArbitraryTypes
 
-main = verboseCheckWith stdArgs {maxSuccess = 271, replay = Just (mkQCGen 1095646480, 0)} prop_bisimilar
+main = verboseCheckWith
+  stdArgs { maxSuccess = 271, replay = Just (mkQCGen 1095646480, 0) }
+  prop_bisimilar
 -- main = quickCheckWith stdArgs {maxSuccess = 20000} prop_bisimilar -- prop_equivalent
 -- main = verboseCheckWith stdArgs {maxSuccess = 10000} prop_distribution
 -- main = quickCheckWith stdArgs {maxSuccess = 10000, replay = Just (mkQCGen 42, 0)} prop_bisimilar
@@ -54,7 +52,8 @@ kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (kindSL pos)))
 
 kinded :: T.Type -> Bool
 kinded t = null (errors s)
-  where (_, s) = runState (synthetise kindEnv t) (initialState "Kind synthesis")
+ where
+  (_, s) = runState (synthetise kindEnv t) (initialState "Kind synthesis")
 
 -- Bisimilar types are bisimilar
 prop_bisimilar :: BisimPair -> Property
@@ -95,32 +94,34 @@ prop_equivalent (BisimPair t u) = kinded t && kinded u ==> t `equiv` u
 -- Distribution
 
 prop_distribution :: BisimPair -> Property
-prop_distribution (BisimPair t u) = kinded t && kinded u ==>
-  collect (nodes t + nodes u) $
-  tabulate "Type constructors" [constr t] True
+prop_distribution (BisimPair t u) =
+  kinded t && kinded u ==> collect (nodes t + nodes u) $ tabulate
+    "Type constructors"
+    [constr t]
+    True
 
 -- The number of nodes in a type
 nodes :: T.Type -> Int
-nodes (T.Semi _ t u)   = 1 + nodes t + nodes u
+nodes (T.Semi   _ t u) = 1 + nodes t + nodes u
 nodes (T.Choice _ _ m) = 1 + Map.foldr (\t acc -> nodes t + acc) 0 m
-nodes (T.Rec _ _ t)    = 1 + nodes t
+nodes (T.Rec    _ _ t) = 1 + nodes t
 -- Skip, Message, TypeVar
-nodes _              = 1
+nodes _                = 1
 
 -- The constructor of a type
 constr :: T.Type -> String
-constr T.IntType{} = "Int"
+constr T.IntType{}  = "Int"
 constr T.CharType{} = "Char"
 constr T.UnitType{} = "Unit"
 constr T.BoolType{} = "Bool"
-constr T.Fun {} = "Fun"
+constr T.Fun{}      = "Fun"
 constr T.PairType{} = "PairType"
 constr T.Datatype{} = "Datatype"
-constr T.Skip{} = "Skip"
-constr T.Semi{} = "Semi"
-constr T.Message{} = "Message"
-constr T.Choice{} = "Choice"
-constr T.Rec{} = "Rec"
-constr T.TypeVar{} = "TypeVar"
+constr T.Skip{}     = "Skip"
+constr T.Semi{}     = "Semi"
+constr T.Message{}  = "Message"
+constr T.Choice{}   = "Choice"
+constr T.Rec{}      = "Rec"
+constr T.TypeVar{}  = "TypeVar"
 constr T.TypeName{} = "TypeName"
-constr T.Dualof{} = "Dualof"
+constr T.Dualof{}   = "Dualof"

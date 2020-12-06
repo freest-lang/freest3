@@ -38,7 +38,7 @@ library:
     - Bisimulation.Bisimulation
     - Equivalence.Equivalence
     - Equivalence.Normalisation
-    - Syntax.TypeVariables
+    - Syntax.TypeVariable
     - Syntax.Base
     - Syntax.Type
     - Syntax.Expression

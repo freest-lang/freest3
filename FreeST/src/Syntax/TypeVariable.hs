@@ -1,5 +1,5 @@
 {- |
-Module      :  Syntax.TypeVariables
+Module      :  Syntax.TypeVariable
 Description :  The type variables
 Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of Lisbon
                    Andreia Mordido, LASIGE, Faculty of Sciences, University of Lisbon
@@ -7,7 +7,7 @@ Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of 
 Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc.ul.pt
 -}
 
-module Syntax.TypeVariables
+module Syntax.TypeVariable
 ( TypeVar
 ) where
 
@@ -17,7 +17,7 @@ data TypeVar = TypeVar Pos String
 
 instance Variable TypeVar where
   mkVar = TypeVar
-  mkNewVar next (TypeVar pos str) = TypeVar pos (show next ++ '#' : str)
+  mkNewVar next (TypeVar p str) = TypeVar p (show next ++ '#' : str)
   intern (TypeVar _ x) = x
 
 instance Eq TypeVar where

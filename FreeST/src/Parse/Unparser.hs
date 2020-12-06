@@ -29,7 +29,7 @@ import qualified Syntax.Kind                   as K
 import           Syntax.ProgramVariables
 import           Syntax.Schemes
 import qualified Syntax.Type                   as T
-import           Syntax.TypeVariables
+import           Syntax.TypeVariable
 
 -- Positions (Base)
 

@@ -28,7 +28,7 @@ import qualified Syntax.Type                   as T
 import           Syntax.Kind
 import           Syntax.Base
 -- import           Parse.Unparser
-import           Syntax.TypeVariables
+import           Syntax.TypeVariable
 import           Validation.Contractive
 import           Utils.FreestState
 -- import           Utils.Errors

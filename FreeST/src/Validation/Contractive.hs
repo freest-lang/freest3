@@ -17,7 +17,7 @@ module Validation.Contractive
 where
 
 import qualified Syntax.Type as T
-import           Syntax.TypeVariables
+import           Syntax.TypeVariable
 import           Validation.Terminated
 
 contractive :: TypeVar -> T.Type -> Bool
