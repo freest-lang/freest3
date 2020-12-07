@@ -266,7 +266,8 @@ buildRecLet_ p (x : xs)     var inExp =
   BinLet p x newVar (ProgVar p var) (buildRecLet_ p xs newVar inExp)
 
 buildRecLambda :: [(ProgVar, Type)] -> Multiplicity -> Expression -> Expression
-buildRecLambda (x : []) m expr = Abs posX m (TypeBind posX (fst x) (snd x)) expr
-  where posX = position $ fst x
-buildRecLambda (x : xs) m expr = Abs posX m (TypeBind posX (fst x) (snd x)) $ buildRecLambda xs m expr
+buildRecLambda xs m expr = snd (foldr buildRecLambda_ (m, expr) xs)
+
+buildRecLambda_ :: (ProgVar, Type) -> (Multiplicity, Expression) -> (Multiplicity, Expression)
+buildRecLambda_ x (m, expr) = (m, Abs posX m (TypeBind posX (fst x) (snd x)) expr)
   where posX = position $ fst x
