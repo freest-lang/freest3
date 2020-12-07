@@ -75,7 +75,7 @@ data Type =
   | Dualof Pos Type             -- TODO: eliminate
   -- Named Type, to be looked upon in a map of type names to types, tEnv
   | TypeName Pos TypeVar
-  deriving (Eq, Ord)
+  deriving (Eq, Ord) -- We use Sets of Types to verify visited types on equivalence 
 
 type TypeMap = Map.Map ProgVar Type
 
@@ -109,7 +109,7 @@ instance Default Type where
 
 -- Binding program variables to types
 
-data Bind = Bind Pos ProgVar Type deriving (Eq, Ord)
+data Bind = Bind Pos ProgVar Type -- deriving (Eq, Ord)
 
 instance Position Bind where
   pos (Bind p _ _) = p

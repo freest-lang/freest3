@@ -72,7 +72,7 @@ extractPair e t = do
   t' <- norm t
   case t' of
     (T.Pair _ u v) -> return (u, v)
-    u                  -> do
+    u              -> do
       let p = pos u
       addError
         p

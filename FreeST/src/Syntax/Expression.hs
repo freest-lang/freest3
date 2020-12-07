@@ -53,7 +53,7 @@ data Exp =
   | New Pos T.Type T.Type
   | Select Pos ProgVar
   | Match Pos Exp FieldMap
-   deriving Eq
+
 
 type FieldMap = Map.Map ProgVar ([ProgVar], Exp)
 
