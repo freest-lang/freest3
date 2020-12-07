@@ -8,3 +8,9 @@ Int
 
 let (x, y, z) = (6, True, 'a') in y
 Bool
+
+(\x : Int -> x)
+Int -> Int
+
+(\x : Int -> (\y : Int -> x + y))
+Int -> Int -> Int
