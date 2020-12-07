@@ -4,3 +4,6 @@ let (_, _) = new !Int in ()
 
 -- Last tuple element is a Pair, not an Int
 let (x, y) = (1, 2, 3) in (-y)
+
+-- Lambda expression use only one '\'
+(\x:Int \y:Int -> x + y)
