@@ -256,13 +256,13 @@ buildFunBody f bs e = getFromVEnv f >>= \case
 buildRecLet :: Pos -> [ProgVar] -> Expression -> Expression -> Expression
 buildRecLet p (x : y : []) expr inExp = BinLet p x y expr inExp
 buildRecLet p (x : xs)      expr inExp =
-  let newVar = mkVar p ("___"++show p) in
+  let newVar = mkVar p ("___"++show (position x)) in
   BinLet p x newVar expr (buildRecLet_ p xs newVar inExp)
 
 buildRecLet_ :: Pos -> [ProgVar] -> ProgVar -> Expression -> Expression
 buildRecLet_ p (x : y : []) var inExp = BinLet p x y (ProgVar p var) inExp
 buildRecLet_ p (x : xs)     var inExp =
-  let newVar = mkVar p ("___"++show p) in
+  let newVar = mkVar p ("___"++show (position x)) in
   BinLet p x newVar (ProgVar p var) (buildRecLet_ p xs newVar inExp)
 
 buildRecLambda :: [(ProgVar, Type)] -> Multiplicity -> Expression -> Expression

@@ -1,3 +1,6 @@
 
 -- Discard linear values
 let (_, _) = new !Int in ()
+
+-- Last tuple element is a Pair, not an Int
+let (x, y) = (1, 2, 3) in (-y)
