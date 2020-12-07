@@ -211,16 +211,16 @@ Primary :: { Expression }
   | '()'                             { Unit (position $1) }
   | ProgVar '[' TypeList ']'         { TypeApp (position $1) $1 $3 }
   | ArbitraryProgVar                 { ProgVar (position $1) $1 }
-  | '(' LambdaProgVarWildTBindList Arrow Expr ')'
-                                     { buildRecLambda $2 (snd $3) $4}
+  | '(' lambda LambdaProgVarWildTBindList Arrow Expr ')'
+                                     { buildRecLambda $3 (snd $4) $5}
   | '(' Tuple ')'                    { $2 }
 
 ProgVarWildTBind :: { (ProgVar, Type) }
   : ProgVarWild ':' Type  %prec ProgVarWildTBind { ($1, $3) }
 
 LambdaProgVarWildTBindList :: { [(ProgVar, Type)] }
-  : lambda ProgVarWildTBind                              { [$2] }
-  | lambda ProgVarWildTBind LambdaProgVarWildTBindList   { $2 : $3 }
+  : ProgVarWildTBind                              { [$1] }
+  | ProgVarWildTBind LambdaProgVarWildTBindList   { $1 : $2 }
 
 ProgVarWildList :: { [ProgVar] }
   : ProgVarWild ',' ProgVarWildList    { [$1] ++ $3 }

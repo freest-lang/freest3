@@ -26,13 +26,13 @@ let (x, a) = (6, True, 'a') in let (y, z) = a in y
 Bool
 
 -- Simple lambda expression
---(\x:Int -> x)
---Int -> Int
+(\x:Int -> x)
+Int -> Int
 
 -- Lambda expression with two parameters
---(\x:Int \y:Int -> x + y)
---Int -> Int -> Int
+(\x:Int y:Int -> x + y)
+Int -> Int -> Int
 
 -- Extended lambda expression
---(\x:Int -> (\y:Int -> x + y))
---Int -> Int -> Int
+(\x:Int -> (\y:Int -> x + y))
+Int -> Int -> Int
