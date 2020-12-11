@@ -6,10 +6,8 @@ import           Syntax.Kind
 import           Syntax.Type
 import           Syntax.Expression
 import           Parse.ParseUtils
-import           Syntax.Base
 import           Control.Monad.State
 import           Utils.FreestState
-import           Data.Char                      ( isSpace )
 
 instance Read Kind where
   readsPrec _ s = [(parseKind s, "")]
@@ -22,7 +20,7 @@ instance Read Exp where
 
 parser :: ([Token] -> FreestStateT a) -> String -> [(a, String)]
 parser parseFun str =
-  case runStateT (parse str "" parseFun) (initialState "") of
+  case runStateT (lexer str "" parseFun) (initialState "") of
     Ok (t, state) ->
       if hasErrors state then error $ getErrors state else [(t, "")]
     Failed err -> error err

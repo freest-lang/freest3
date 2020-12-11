@@ -94,10 +94,10 @@ showChoiceView T.Out = "+"
 -- https://www.cs.tufts.edu/~nr/pubs/unparse.ps
 
 data Precedence =
-  PMin
-  -- Types and Expressions
-  | PIn | PNew | PDot | PArrow | PSemi | PDualof | PApp
-  | PMax deriving (Eq, Ord, Bounded)
+  PMin |
+  PIn | PNew | PDot | PArrow | PSemi | PDualof | PMsg | PApp |
+  PMax
+  deriving (Eq, Ord, Bounded)
 
 data Associativity = Left | Right | NonAssoc deriving Eq
 
@@ -112,6 +112,7 @@ newRator = (PNew, NonAssoc)
 dotRator = (PDot, Right)
 arrowRator = (PArrow, Right)
 semiRator = (PSemi, Right)
+msgRator = (PMsg, Right)
 dualofRator = (PDualof, Right)
 appRator = (PApp, Left)
 minRator = (minBound, NonAssoc)
@@ -139,8 +140,10 @@ instance Unparse T.Type where
   unparse (T.UnitType _   ) = (maxRator, "()")
   unparse (T.Skip     _   ) = (maxRator, "Skip")
   unparse (T.TypeVar _ a  ) = (maxRator, show a)
-  unparse (T.Message _ p b) = (maxRator, show p ++ show b)
   unparse (T.TypeName _ x ) = (maxRator, show x)
+  unparse (T.Message _ p t) = (msgRator, show p ++ m)
+   where
+     m = bracket (unparse t) Right msgRator
   unparse (T.Fun _ m t u  ) = (arrowRator, l ++ showArrow m ++ r)
    where
     l = bracket (unparse t) Left arrowRator
@@ -161,7 +164,7 @@ instance Unparse T.Type where
   unparse (T.Rec _ xk t) = (dotRator, "rec " ++ show xk ++ "." ++ s)
     where s = bracket (unparse t) Right dotRator
   unparse (T.Dualof _ t) = (dualofRator, "dualof " ++ s)
-    where s = bracket (unparse t) NonAssoc dualofRator
+    where s = bracket (unparse t) Right dualofRator
 
 showDatatype :: T.TypeMap -> String
 showDatatype m = intercalate " | "
