@@ -23,6 +23,7 @@ module Syntax.Kind
   , ml
   , isLin
   , isUn
+  , isSession
   )
 where
 
@@ -60,6 +61,9 @@ isLin (Kind _ _ m) = m == Lin
 
 isUn :: Kind -> Bool
 isUn = not . isLin
+
+isSession :: Kind -> Bool
+isSession (Kind _ b _) = b == Session
 
 instance Position Kind where
   pos (Kind p _ _) = p

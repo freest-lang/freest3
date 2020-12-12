@@ -11,7 +11,6 @@ Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc
 module Validation.Subkind
   ( (<:)
   , join
-  , isSession
   )
 where
 
@@ -67,6 +66,4 @@ join k1 k2
   | k1 <: k2 = k2
   | k2 <: k1 = k1
   | otherwise = error "join"
-
-isSession :: K.Kind -> Bool
-isSession = (<: K.sl defaultPos)
+  

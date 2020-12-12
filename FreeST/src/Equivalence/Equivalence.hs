@@ -28,7 +28,6 @@ import           Syntax.TypeVariable
 --                                                 ( subs
 --                                                 , unfold
 --                                                 )
-import           Validation.Subkind            ( isSession )
 import qualified Validation.Substitution       as Subs
                                                ( unfold )
 -- import           Bisimulation.Grammar
@@ -102,11 +101,11 @@ isSessionType _    _    T.Semi{}                   = True
 isSessionType _    _    T.Message{}                = True
 isSessionType _    _    T.Choice{}                 = True
   -- Recursion
-isSessionType _    _    (T.Rec _ (K.Bind _ _ k) _) = isSession k
+isSessionType _    _    (T.Rec _ (K.Bind _ _ k) _) = K.isSession k
 isSessionType _    kenv (T.TypeVar _ x           ) = Map.member x kenv
   -- Type operators
 isSessionType _    _    T.Dualof{}                 = True
-isSessionType tenv _ (T.TypeName _ x) = isSession $ fst $ tenv Map.! x
+isSessionType tenv _ (T.TypeName _ x) = K.isSession $ fst $ tenv Map.! x
   -- Otherwise: Functional types
 isSessionType _    _    _                          = False
 

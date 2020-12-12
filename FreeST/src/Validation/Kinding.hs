@@ -29,11 +29,11 @@ import qualified Syntax.Kind                   as K
 import           Syntax.Base
 -- import           Parse.Unparser
 import           Syntax.TypeVariable
-import           Validation.Subkind            ( (<:), join, isSession )
+import           Validation.Subkind            ( (<:), join )
 import           Validation.Contractive
 import           Utils.FreestState
 -- import           Utils.Errors
-import           Control.Monad                  ( unless )
+import           Control.Monad                 ( unless )
 import qualified Control.Monad.State           as S
 import qualified Data.Map.Strict               as Map
 
