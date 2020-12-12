@@ -26,7 +26,6 @@ import           Control.Monad.State
 import           Data.Char
 import           Data.List (nub, (\\), intercalate, find)
 import           System.Exit (die)
-import           Debug.Trace
 }
 
 %name types Type
@@ -123,11 +122,14 @@ import           Debug.Trace
 %left '+' '-'    -- aditive
 %left '*' '/'    -- multiplicative
 %left NEG not    -- unary
+
+-- Type                               
 %right '=>'      -- Used in forall                 
 %right '.'       -- used in rec
+%right ARROW
 %right '->' '-o' -- an Expr operator as well
 %right ';'       -- an Expr operator as well
-%right '!' '?'
+%right POL        -- both '!' and '?'
 %right dualof
 %nonassoc ProgVarWildTBind
 
@@ -206,13 +208,12 @@ Expr :: { Exp }
   | Expr '-' Expr                    { binOp $1 (mkVar (pos $2) "(-)") $3 }
   | Expr '*' Expr                    { binOp $1 (mkVar (pos $2) "(*)") $3 }
   | Expr '/' Expr                    { binOp $1 (mkVar (pos $2) "div") $3 }
-  
+  | '-' App %prec NEG                { unOp (mkVar (pos $1) "negate") $2}  
   | App                              { $1 }
 
 App :: { Exp }
   : App Primary                      { App (pos $1) $1 $2 }
   | select ArbitraryProgVar          { Select (pos $1) $2 }
-  | '-' App %prec NEG                { unOp (mkVar (pos $1) "negate") $2}
   | Primary                          { $1 }
 
 Primary :: { Exp }
@@ -257,16 +258,16 @@ Case :: { (ProgVar, ([ProgVar], Exp)) }
 
 Type :: { T.Type }
   -- Functional types
-  : Int 			  { T.IntType (pos $1) }
-  | Char			  { T.CharType (pos $1) }
-  | Bool			  { T.BoolType (pos $1) }
-  | '()' 			  { T.UnitType (pos $1) }
-  | Type Arrow Type               { uncurry T.Fun $2 $1 $3 }
+  : Int                           { T.IntType (pos $1) }
+  | Char                          { T.CharType (pos $1) }
+  | Bool                          { T.BoolType (pos $1) }
+  | '()'                          { T.UnitType (pos $1) }
+  | Type Arrow Type %prec ARROW   { uncurry T.Fun $2 $1 $3 }
   | '(' Type ',' TupleType ')'    { T.Pair (pos $1) $2 $4 }
   -- Session types
   | Skip                          { T.Skip (pos $1) }
   | Type ';' Type                 { T.Semi (pos $2) $1 $3 }
-  | Polarity BasicType                 { uncurry T.Message $1 $2 }
+  | Polarity Type %prec POL       { uncurry T.Message $1 $2 }
   | ChoiceView '{' FieldList '}'  { uncurry T.Choice $1 $3 }
   -- Polymorphism and recursion
   | rec KindBind '.' Type         { T.Rec (pos $1) $2 $4 }
@@ -276,12 +277,6 @@ Type :: { T.Type }
   | dualof Type                   { T.Dualof (pos $1) $2 }
   | TypeName                      { T.TypeVar (pos $1) $1 } -- TODO: remove this one lex
   | '(' Type ')'                  { $2 }
-
-BasicType :: { T.Type }
-  : Int  { T.IntType (pos $1) }
-  | Char { T.CharType (pos $1) }
-  | Bool { T.BoolType (pos $1) }
-  | '()' { T.UnitType (pos $1) }
 
 TupleType :: { T.Type }
   : Type               { $1 }
