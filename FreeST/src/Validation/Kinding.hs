@@ -49,10 +49,11 @@ synthetise kEnv (T.Fun p m t u) = do
   synthetise kEnv t
   synthetise kEnv u
   return $ K.Kind p K.Functional m
-synthetise kEnv (T.Pair _ t u) = do
-  kt <- synthetise kEnv t
-  ku <- synthetise kEnv u
-  return $ K.join kt ku
+synthetise kEnv (T.Pair p t u) = do
+  (K.Kind _ _ mt) <- synthetise kEnv t
+  (K.Kind _ _ mu) <- synthetise kEnv u
+  return $ K.Kind p K.Functional (max mt mu)
+--  return $ K.join kt ku
 synthetise kEnv (T.Datatype p m) = do
   ks <- tMapM (synthetise kEnv) m
   let K.Kind _ _ n = foldr1 K.join ks
@@ -63,7 +64,9 @@ synthetise kEnv (T.Semi p t u) = do
   m <- checkAgainstSession kEnv t
   n <- checkAgainstSession kEnv u
   return $ K.Kind p K.Session (max m n) -- JOURNAL: Lin 
-synthetise _    (T.Message p _ _) = return $ K.Kind p K.Session Lin
+synthetise kEnv    (T.Message p _ t) = do
+  checkAgainst kEnv (K.Kind p K.Message Lin) t
+  return $ K.Kind p K.Session Lin
 synthetise kEnv (T.Choice  p _ m) = do
   tMapM_ (checkAgainst kEnv (K.Kind p K.Session Lin)) m
   return $ K.Kind p K.Session Lin
