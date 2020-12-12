@@ -12,12 +12,13 @@ Multiplicity, that will be used the remaining Compiler.
 
 module Syntax.Base
 ( Default(..)
-, Multiplicity(..)
 , Variable(..)
 , Pos(..) 
 , Position(..)
 , defaultPos
 , negPos
+, Subsort(..)
+, Multiplicity(..)
 ) where
 
 -- Defaults for the various syntactic categories
@@ -25,7 +26,7 @@ module Syntax.Base
 class Default t where
   omission :: Pos -> t
 
--- POSITIONS
+-- Positions
 
 data Pos = Pos Int Int deriving (Eq, Ord)
 
@@ -38,14 +39,20 @@ defaultPos = Pos 0 0
 negPos :: Pos -> Pos
 negPos (Pos i j) = Pos (negate i) (negate j)
 
+-- The Subsort class. Instances include sub-prekinds, subkinding and subtyping
+
+class Subsort t where
+  (<:) :: t -> t -> Bool
+
 -- Multiplicities for kinds, types, and expressions
 
-data Multiplicity = Un | Lin deriving Eq
+data Multiplicity = Un | Lin
+  deriving (Eq, Ord) -- TODO: I wish we wouldn't need this
 
-instance Ord Multiplicity where
-  Un <= Lin = True
-  m1 <= m2 = m1 == m2
---   _  <= _  = False
+instance Subsort Multiplicity where
+  Un <: Lin = True
+  Un <: Un = True
+  Lin <: Lin = True
 
 -- Variables, type and program
 

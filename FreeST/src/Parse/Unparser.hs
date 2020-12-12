@@ -66,7 +66,7 @@ showVar = dropWhile (\c -> isDigit c || c == '#') . intern
 
 instance Show K.PreKind where
   show K.Session    = "S"
-  show K.Functional = "T"
+  show K.Top = "T"
   show K.Message    = "M"
 
 instance Show K.Kind where
@@ -192,7 +192,7 @@ showType _ (Message _ p b) = show p ++ show b
 showType _ (TypeName _ x) = show x
   -- Depth reached
 showType 0 _               = ".."
-  -- Functional types
+  -- Top types
 showType i (Fun _ m t u) =
   "(" ++ showType (i - 1) t ++ showArrow m ++ showType (i - 1) u ++ ")"
 showType i (Pair _ t u) =

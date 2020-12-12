@@ -7,9 +7,8 @@ Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of 
                    Vasco Vasconcelos, LASIGE, Faculty of Sciences, University of Lisbon
 Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc.ul.pt
 
-This module defines a kind and the relational order between kinds. It also defines the
-subkinding relation, the least upper bound of two kinds and other functions to
-manipulate prekinds and multiplicities.
+This module defines kinds. It also defines the subkinding relation, the least
+upper bound of two kinds and other functions to manipulate kinds.
 -}
 
 module Syntax.Kind
@@ -37,30 +36,31 @@ import qualified Data.Map.Strict               as Map
 
 -- Prekinds
 
-data PreKind = Message | Session | Functional deriving Eq
+data PreKind = Message | Session | Top
+  deriving (Eq, Ord) -- TODO: I wish we wouldn't need this
 
-instance Ord PreKind where
-  Session <= Functional = True
-  _       <= _          = False
+-- instance Ord PreKind where
+--   Session <= Top = True
+--   _       <= _          = False
 
 -- Kinds
 
 data Kind = Kind Pos PreKind Multiplicity
-          deriving Ord -- TODO: I wish we do not need this
+  deriving (Eq, Ord) -- TODO: I wish we wouldn't need this
 
-instance Eq Kind where
-  (Kind _ p n) == (Kind _ q m) = p == q && n == m
+-- instance Eq Kind where
+--   (Kind _ p n) == (Kind _ q m) = p == q && n == m
 
 -- Abbreviations for the four kinds
 kindTL, kindTU, kindSL, kindSU, kindMU, kindML :: Pos -> Kind
-kindTL p = Kind p Functional Lin
-kindTU p = Kind p Functional Un
+kindTL p = Kind p Top Lin
+kindTU p = Kind p Top Un
 kindSL p = Kind p Session Lin
 kindSU p = Kind p Session Un
 kindMU p = Kind p Message Un
 kindML p = Kind p Message Lin
 
--- The subkinding relation. Note that Kind is a partial order, hence
+-- The subkinding relation. Note that subkinding is a partial order, hence
 -- should *not* be an instance class Ord.
 --      TL
 --    / | \
@@ -68,18 +68,32 @@ kindML p = Kind p Message Lin
 --   \ / \ /
 --    MU  SU
 
-(<:) :: Kind -> Kind -> Bool
-(Kind _ Session m1) <: (Kind _ Functional m2) = m1 <= m2
-(Kind _ Message m1) <: (Kind _ Functional m2) = m1 <= m2
-(Kind _ k1      m1) <: (Kind _ k2         m2) = k1 == k2 && m1 <= m2
+instance Subsort Kind where
+  (Kind _ Session m1) <: (Kind _ Top m2) = m1 <: m2
+  (Kind _ Message m1) <: (Kind _ Top m2) = m1 <: m2
+  (Kind _ k1      m1) <: (Kind _ k2         m2) = k1 == k2 && m1 <: m2
 
 -- The least upper bound of two kinds
 join :: Kind -> Kind -> Kind
-join (Kind p Functional Un ) (Kind _ Session    Lin) = kindTL p
-join (Kind p Session    Lin) (Kind _ Functional Un ) = kindTL p
-join (Kind p Functional Un ) (Kind _ Message    Lin) = kindTL p
-join (Kind p Message    Lin) (Kind _ Functional Un ) = kindTL p
-join k1 k2 = if k1 <: k2 then k2 else k1
+join (Kind p Message Lin) (Kind _ Top     Un)  = kindTL p
+join (Kind p Top     Un ) (Kind _ Message Lin) = kindTL p
+
+join (Kind p Top     Un ) (Kind _ Session Lin) = kindTL p
+join (Kind p Session Lin) (Kind _ Top     Un ) = kindTL p
+
+join (Kind p Message Un)  (Kind _ Session Un)  = kindTU p
+join (Kind p Session Un)  (Kind _ Message Un ) = kindTU p
+
+join (Kind p Message Un ) (Kind _ Session Lin) = kindTL p
+join (Kind p Session Lin) (Kind _ Message Un ) = kindTL p
+
+join (Kind p Session Un ) (Kind _ Message Lin) = kindTL p
+join (Kind p Message Lin) (Kind _ Session Un ) = kindTL p
+
+join k1 k2
+  | k1 <: k2 = k2
+  | k2 <: k1 = k1
+  | otherwise = error "join"
 
 -- The kind of conventional (non linear, not sessions) functional
 -- programming languages (Alternative: the kind that sits at the top

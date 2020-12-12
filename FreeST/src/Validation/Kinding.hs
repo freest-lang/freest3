@@ -40,7 +40,7 @@ import qualified Data.Map.Strict               as Map
 
 -- Returns the kind of a given type
 synthetise :: K.KindEnv -> T.Type -> FreestState K.Kind
--- Functional types
+-- Top types
 synthetise _    (T.IntType  p ) = return $ K.Kind p K.Message Un
 synthetise _    (T.CharType p ) = return $ K.Kind p K.Message Un
 synthetise _    (T.BoolType p ) = return $ K.Kind p K.Message Un
@@ -48,16 +48,16 @@ synthetise _    (T.UnitType p ) = return $ K.Kind p K.Message Un
 synthetise kEnv (T.Fun p m t u) = do
   synthetise kEnv t
   synthetise kEnv u
-  return $ K.Kind p K.Functional m
+  return $ K.Kind p K.Top m
 synthetise kEnv (T.Pair p t u) = do
   (K.Kind _ _ mt) <- synthetise kEnv t
   (K.Kind _ _ mu) <- synthetise kEnv u
-  return $ K.Kind p K.Functional (max mt mu)
+  return $ K.Kind p K.Top (max mt mu)
 --  return $ K.join kt ku
 synthetise kEnv (T.Datatype p m) = do
   ks <- tMapM (synthetise kEnv) m
   let K.Kind _ _ n = foldr1 K.join ks
-  return $ K.Kind p K.Functional n
+  return $ K.Kind p K.Top n
   -- Session types
 synthetise _    (T.Skip p    ) = return $ K.Kind p K.Session Un
 synthetise kEnv (T.Semi p t u) = do
