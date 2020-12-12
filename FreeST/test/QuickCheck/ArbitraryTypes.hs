@@ -46,7 +46,7 @@ arbitraryVar ids = do
   return $ mkVar pos id
 
 instance Arbitrary K.Kind where
-  arbitrary = elements [K.kindSL pos, K.kindSU pos] -- Session types only
+  arbitrary = elements [K.sl pos, K.su pos] -- Session types only
 
 instance Arbitrary K.Bind where
   arbitrary = liftM3 K.Bind (return pos) arbitrary arbitrary

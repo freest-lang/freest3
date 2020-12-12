@@ -102,7 +102,7 @@ synthetise kEnv (App p (ProgVar _ x) e) |  -- Receive e
                                           x == mkVar p "receive" = do
   t        <- synthetise kEnv e
   (u1, u2) <- extractInput e t
-  K.checkAgainst kEnv (K.kindML (pos u1)) u1
+  K.checkAgainst kEnv (K.ml (pos u1)) u1
   return $ T.Pair p u1 u2
 synthetise kEnv e@(App p (ProgVar _ x) _) |  -- Send e
                                             x == mkVar p "send" =
@@ -111,7 +111,7 @@ synthetise kEnv (App p (App _ (ProgVar _ x) e1) e2) |  -- Send e1 e2
                                                       x == mkVar p "send" = do
   t        <- synthetise kEnv e2
   (u1, u2) <- extractOutput e2 t
-  K.checkAgainst kEnv (K.kindML (pos u1)) u1
+  K.checkAgainst kEnv (K.ml (pos u1)) u1
   checkAgainst kEnv e1 $ u1
   return u2
 synthetise kEnv e@(App _ e1 e2) = do -- General case

@@ -54,6 +54,7 @@ library:
     - Utils.PreludeLoader
     - Parse.Lexer 
     - Parse.Parser
+    - Validation.Subkind
     - Validation.Duality
     - Validation.Terminated
     - Validation.Contractive

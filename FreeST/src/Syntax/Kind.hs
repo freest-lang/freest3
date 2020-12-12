@@ -1,4 +1,3 @@
-
 {- |
 Module      :  Syntax.Kind
 Description :  The kind of a type
@@ -12,19 +11,16 @@ upper bound of two kinds and other functions to manipulate kinds.
 -}
 
 module Syntax.Kind
-  ( PreKind(..)
+  ( Basic(..)
   , Bind(..)
   , Kind(..)
   , KindEnv
-  , kindTL
-  , kindTU
-  , kindSL
-  , kindSU
-  , kindMU
-  , kindML
-  , isSession
-  , (<:)
-  , join
+  , tl
+  , tu
+  , sl
+  , su
+  , mu
+  , ml
   , isLin
   , isUn
   )
@@ -34,75 +30,30 @@ import           Syntax.TypeVariable
 import           Syntax.Base
 import qualified Data.Map.Strict               as Map
 
--- Prekinds
+-- Basic kinds
 
-data PreKind = Message | Session | Top
+data Basic = Message | Session | Top
   deriving (Eq, Ord) -- TODO: I wish we wouldn't need this
-
--- instance Ord PreKind where
---   Session <= Top = True
---   _       <= _          = False
 
 -- Kinds
 
-data Kind = Kind Pos PreKind Multiplicity
+data Kind = Kind Pos Basic Multiplicity
   deriving (Eq, Ord) -- TODO: I wish we wouldn't need this
 
--- instance Eq Kind where
---   (Kind _ p n) == (Kind _ q m) = p == q && n == m
-
--- Abbreviations for the four kinds
-kindTL, kindTU, kindSL, kindSU, kindMU, kindML :: Pos -> Kind
-kindTL p = Kind p Top Lin
-kindTU p = Kind p Top Un
-kindSL p = Kind p Session Lin
-kindSU p = Kind p Session Un
-kindMU p = Kind p Message Un
-kindML p = Kind p Message Lin
-
--- The subkinding relation. Note that subkinding is a partial order, hence
--- should *not* be an instance class Ord.
---      TL
---    / | \
---   ML TU SL
---   \ / \ /
---    MU  SU
-
-instance Subsort Kind where
-  (Kind _ Session m1) <: (Kind _ Top m2) = m1 <: m2
-  (Kind _ Message m1) <: (Kind _ Top m2) = m1 <: m2
-  (Kind _ k1      m1) <: (Kind _ k2         m2) = k1 == k2 && m1 <: m2
-
--- The least upper bound of two kinds
-join :: Kind -> Kind -> Kind
-join (Kind p Message Lin) (Kind _ Top     Un)  = kindTL p
-join (Kind p Top     Un ) (Kind _ Message Lin) = kindTL p
-
-join (Kind p Top     Un ) (Kind _ Session Lin) = kindTL p
-join (Kind p Session Lin) (Kind _ Top     Un ) = kindTL p
-
-join (Kind p Message Un)  (Kind _ Session Un)  = kindTU p
-join (Kind p Session Un)  (Kind _ Message Un ) = kindTU p
-
-join (Kind p Message Un ) (Kind _ Session Lin) = kindTL p
-join (Kind p Session Lin) (Kind _ Message Un ) = kindTL p
-
-join (Kind p Session Un ) (Kind _ Message Lin) = kindTL p
-join (Kind p Message Lin) (Kind _ Session Un ) = kindTL p
-
-join k1 k2
-  | k1 <: k2 = k2
-  | k2 <: k1 = k1
-  | otherwise = error "join"
+-- Abbreviations for the six proper kinds
+tl, tu, sl, su, mu, ml :: Pos -> Kind
+tl p = Kind p Top Lin
+tu p = Kind p Top Un
+sl p = Kind p Session Lin
+su p = Kind p Session Un
+mu p = Kind p Message Un
+ml p = Kind p Message Lin
 
 -- The kind of conventional (non linear, not sessions) functional
 -- programming languages (Alternative: the kind that sits at the top
 -- of the hierarchy)
 instance Default Kind where
-  omission = kindTU
-
-isSession :: Kind -> Bool
-isSession = (<: kindSL defaultPos)
+  omission = tu
 
 isLin :: Kind -> Bool
 isLin (Kind _ _ m) = m == Lin

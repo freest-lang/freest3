@@ -64,7 +64,7 @@ showVar = dropWhile (\c -> isDigit c || c == '#') . intern
 
 -- Kinds
 
-instance Show K.PreKind where
+instance Show K.Basic where
   show K.Session    = "S"
   show K.Top = "T"
   show K.Message    = "M"

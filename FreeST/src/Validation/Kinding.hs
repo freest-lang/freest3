@@ -29,6 +29,7 @@ import qualified Syntax.Kind                   as K
 import           Syntax.Base
 -- import           Parse.Unparser
 import           Syntax.TypeVariable
+import           Validation.Subkind            ( (<:), join, isSession )
 import           Validation.Contractive
 import           Utils.FreestState
 -- import           Utils.Errors
@@ -56,7 +57,7 @@ synthetise kEnv (T.Pair p t u) = do
 --  return $ K.join kt ku
 synthetise kEnv (T.Datatype p m) = do
   ks <- tMapM (synthetise kEnv) m
-  let K.Kind _ _ n = foldr1 K.join ks
+  let K.Kind _ _ n = foldr1 join ks
   return $ K.Kind p K.Top n
   -- Session types
 synthetise _    (T.Skip p    ) = return $ K.Kind p K.Session Un
@@ -76,7 +77,7 @@ synthetise kEnv (T.Rec _ (K.Bind _ a k) t) = do
   synthetise (Map.insert a k kEnv) t
 synthetise kEnv (T.Forall _ (K.Bind _ x k) t) = do
   _ <- synthetise (Map.insert x k kEnv) t
-  return $ K.kindTL defaultPos
+  return $ K.tl defaultPos
 synthetise kEnv (T.TypeVar p x) = case kEnv Map.!? x of
   Just k  -> return k
   Nothing -> do
@@ -121,7 +122,7 @@ checkAgainst :: K.KindEnv -> K.Kind -> T.Type -> FreestState ()
 --   checkAgainst (Map.insert x (Kind p Session Un) kEnv) k t
 checkAgainst kEnv expected t = do
   actual <- synthetise kEnv t
-  S.when (not (actual K.<: expected)) $ addError
+  S.when (not (actual <: expected)) $ addError
     (pos t)
     [ Error "Couldn't match expected kind"
     , Error expected

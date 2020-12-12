@@ -3,16 +3,15 @@ module Validation.TestTypesValidSpec
   )
 where
 
-import           Syntax.Kind                    ( Kind
-                                                , (<:)
-                                                )
+import           Syntax.Kind                    ( Kind )
+import           Validation.Subkind             ( (<:) )
 import           Validation.Rename              ( renameType )
 import           Validation.Kinding             ( synthetise )
 import           Utils.FreestState              ( initialState
                                                 , errors
                                                 )
 import           Control.Monad.State            ( runState )
-import qualified Data.Map.Strict               as Map
+import qualified Data.Map.Strict                as Map
                                                 ( empty )
 import           SpecHelper
 

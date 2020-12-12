@@ -315,12 +315,12 @@ TypeSeq :: { [T.Type] }
 -- KIND
 
 Kind :: { K.Kind }
-  : SU             { K.kindSU (pos $1) }
-  | SL             { K.kindSL (pos $1) }
-  | TU             { K.kindTU (pos $1) }
-  | TL             { K.kindTL (pos $1) }
-  | MU             { K.kindMU (pos $1) }
-  | ML             { K.kindML (pos $1) }
+  : SU             { K.su (pos $1) }
+  | SL             { K.sl (pos $1) }
+  | TU             { K.tu (pos $1) }
+  | TL             { K.tl (pos $1) }
+  | MU             { K.mu (pos $1) }
+  | ML             { K.ml (pos $1) }
 --  | Kind '->' Kind { KindArrow (pos $1) $1 $3 }
 
 -- PROGRAM VARIABLE

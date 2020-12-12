@@ -6,11 +6,11 @@ import           ArbitraryTypes
 import           Equivalence.Equivalence
 import           Validation.Kinding
 import           Syntax.Type
-import           Syntax.Kind
-import           Syntax.Base hiding (pos)
+import           Syntax.Kind              as K
+import           Syntax.Base              hiding (pos)
 import           Utils.FreestState
 import           Control.Monad.State
-import qualified Data.Map.Strict as Map
+import qualified Data.Map.Strict          as Map
 import           Test.QuickCheck
 
 main = quickCheckWith stdArgs {maxSuccess = 1000} prop_not_bisimilar
@@ -21,7 +21,7 @@ bisim = Equivalence.Equivalence.bisimilar Map.empty
 pos = defaultPos
 
 kindEnv :: KindEnv
-kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (kindSL pos)))
+kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (K.sl pos)))
         -- TODO: This env should only contain the free vars of t; plus
         -- its kind may be SU
 

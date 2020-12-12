@@ -17,7 +17,6 @@ module Syntax.Base
 , Position(..)
 , defaultPos
 , negPos
-, Subsort(..)
 , Multiplicity(..)
 ) where
 
@@ -39,20 +38,10 @@ defaultPos = Pos 0 0
 negPos :: Pos -> Pos
 negPos (Pos i j) = Pos (negate i) (negate j)
 
--- The Subsort class. Instances include sub-prekinds, subkinding and subtyping
-
-class Subsort t where
-  (<:) :: t -> t -> Bool
-
 -- Multiplicities for kinds, types, and expressions
 
 data Multiplicity = Un | Lin
   deriving (Eq, Ord) -- TODO: I wish we wouldn't need this
-
-instance Subsort Multiplicity where
-  Un <: Lin = True
-  Un <: Un = True
-  Lin <: Lin = True
 
 -- Variables, type and program
 

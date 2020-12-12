@@ -7,13 +7,14 @@ module TestValidTypes
 where
 
 import           Test.QuickCheck
-import           Test.QuickCheck.Random         ( mkQCGen )
+import           Test.QuickCheck.Random       ( mkQCGen )
 import           Equivalence.Equivalence
 import           Equivalence.Normalisation
 import           Validation.Kinding
-import qualified Syntax.Type                   as T
-import           Syntax.Kind
-import           Syntax.Base             hiding ( pos )
+import qualified Syntax.Type                  as T
+import           Syntax.Kind                  as K
+
+import           Syntax.Base                  hiding ( pos )
 import           Utils.FreestState
 import           Control.Monad.State
 import qualified Data.Map.Strict               as Map
@@ -46,7 +47,7 @@ pos :: Pos
 pos = defaultPos
 
 kindEnv :: KindEnv
-kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (kindSL pos)))
+kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (K.sl pos)))
         -- TODO: This env should only contain the free vars of t; plus
         -- its kind may be SU
 
