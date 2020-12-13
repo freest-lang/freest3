@@ -19,29 +19,27 @@ module Equivalence.Equivalence
   )
 where
 
--- import           Syntax.Schemes
-import qualified Syntax.Type                   as T
-import qualified Syntax.Kind                   as K
-import           Syntax.ProgramVariable
-import           Syntax.TypeVariable
--- import qualified Validation.Rename             as Rename
---                                                 ( subs
---                                                 , unfold
---                                                 )
-import qualified Validation.Substitution       as Subs
-                                               ( unfold )
--- import           Bisimulation.Grammar
 import           Bisimulation.Bisimulation     as Bisimulation
-import           Equivalence.TypeToGrammar
 import qualified Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
+import           Equivalence.TypeToGrammar
+import           Syntax.Base
+import qualified Syntax.Kind                   as K
+import           Syntax.ProgramVariable
+import qualified Syntax.Type                   as T
+import           Syntax.TypeVariable
+import qualified Validation.Substitution       as Subs
+                                                ( unfold )
+
 
 class Equivalence t where
   equivalent :: T.TypeEnv -> K.KindEnv -> t -> t -> Bool
 
 -- Types
 
-type Visited = Set.Set (T.Type, T.Type)
+-- We removed the Ord instance. Used to be: 
+-- type Visited = Set.Set (T.Type, T.Type)
+type Visited = Set.Set (Pos, Pos)
 
 -- A co-inductive definition for functional types. A bisimulation
 -- based definition for session types
@@ -50,25 +48,25 @@ instance Equivalence T.Type where
    where
     equiv :: Visited -> T.Type -> T.Type -> Bool
     -- Have we been here before?
-    equiv v t u | (t, u) `Set.member` v   = True
+    equiv v t u | (pos t, pos u) `Set.member` v = True
     -- Functional types
-    equiv _ (T.Int  _) (T.Int  _) = True
-    equiv _ (T.Char _) (T.Char _) = True
-    equiv _ (T.Bool _) (T.Bool _) = True
-    equiv _ (T.Unit _) (T.Unit _) = True
+    equiv _ (T.Int  _) (T.Int  _)               = True
+    equiv _ (T.Char _) (T.Char _)               = True
+    equiv _ (T.Bool _) (T.Bool _)               = True
+    equiv _ (T.Unit _) (T.Unit _)               = True
     equiv v (T.Fun _ m t1 t2) (T.Fun _ n u1 u2) =
       m == n && equiv v t1 u1 && equiv v t2 u2
     equiv v (T.Pair _ t1 t2) (T.Pair _ u1 u2) = equiv v t1 u1 && equiv v t2 u2
     equiv v (T.Datatype _ m1) (T.Datatype _ m2) =
       Map.size m1 == Map.size m2 && Map.foldlWithKey (equivField v m2) True m1
     -- Polymorphism
-    equiv v (T.Forall _ kb1 t) (T.Forall _ kb2 u) = -- TODO: check kindbinds ?
+    equiv v (T.Forall _ _ t) (T.Forall _ _ u) = -- TODO: check kindbinds ?
       -- kb1 == kb2 &&
-      equiv (Set.insert (t, u) v) t u
+      equiv (Set.insert (pos t, pos u) v) t u
     -- Recursion
     equiv _ (T.Var _ x) (T.Var _ y) = x == y -- A free (a polymorphic) type var
-    equiv v t@T.Rec{} u = equiv (Set.insert (t, u) v) (Subs.unfold t) u
-    equiv v t u@T.Rec{} = equiv (Set.insert (t, u) v) t (Subs.unfold u)
+    equiv v t@T.Rec{} u = equiv (Set.insert (pos t, pos u) v) (Subs.unfold t) u
+    equiv v t u@T.Rec{} = equiv (Set.insert (pos t, pos u) v) t (Subs.unfold u)
     -- Type operators
     equiv _ (T.Name _ x) (T.Name _ y) = -- trace ("TNAME 1 " ++ show x) $
       x == y -- Admissible
@@ -102,7 +100,7 @@ isSessionType _    _    T.Message{}                = True
 isSessionType _    _    T.Choice{}                 = True
   -- Recursion
 isSessionType _    _    (T.Rec _ (K.Bind _ _ k) _) = K.isSession k
-isSessionType _    kenv (T.Var _ x           ) = Map.member x kenv
+isSessionType _    kenv (T.Var _ x               ) = Map.member x kenv
   -- Type operators
 isSessionType _    _    T.Dualof{}                 = True
 isSessionType tenv _ (T.Name _ x) = K.isSession $ fst $ tenv Map.! x

@@ -1,3 +1,4 @@
+
 {- |
 Module      :  Equivalence.TypeToGrammar
 Description :  Conversion from types to grammars
@@ -17,16 +18,16 @@ module Equivalence.TypeToGrammar
   )
 where
 
-import qualified Syntax.Type                   as T
-import qualified Syntax.Kind                   as K
-import           Syntax.TypeVariable
-import           Syntax.Base
+import           Bisimulation.Grammar
 import           Parse.Unparser
+import           Syntax.Base
+import qualified Syntax.Kind                   as K
+import qualified Syntax.Type                   as T
+import           Syntax.TypeVariable
 import qualified Validation.Substitution       as Substitution
                                                 ( subsAll
                                                 , unfold
                                                 ) -- no renaming
-import           Bisimulation.Grammar
 -- import           Equivalence.Normalisation
 import           Utils.FreestState              ( tMapM
                                                 , tMapM_
@@ -36,6 +37,7 @@ import           Control.Monad.State
 import qualified Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
 import           Prelude                 hiding ( Word ) -- Word is (re)defined in module Equivalence.Grammar
+import           Validation.Terminated
 
 -- Conversion to context-free grammars
 
@@ -79,8 +81,8 @@ toGrammar t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 type SubstitutionList = [(T.Type, TypeVar)]
 
 collect :: SubstitutionList -> T.Type -> TransState ()
-collect σ (  T.Semi   _ t                  u) = collect σ t >> collect σ u
-collect σ (  T.Choice _ _                  m) = tMapM_ (collect σ) m
+collect σ (  T.Semi   _ t              u) = collect σ t >> collect σ u
+collect σ (  T.Choice _ _              m) = tMapM_ (collect σ) m
 collect σ t@(T.Rec    _ (K.Bind _ x _) u) = do
   let σ' = (t, x) : σ
   let u' = Substitution.subsAll σ' u
@@ -264,6 +266,7 @@ instance Substitute Productions where
 
 unr :: T.Type -> T.Type
 unr t@T.Rec{} = unr (Substitution.unfold t)
-unr (T.Semi p t1 t2) | unr t1 == T.Skip p = unr t2
-                     | otherwise          = T.Semi p (unr t1) t2
+-- unr (T.Semi p t1 t2) | unr t1 == T.Skip p = unr t2
+unr (T.Semi p t1 t2) | terminated t1 = unr t2
+                     | otherwise     = T.Semi p (unr t1) t2
 unr t = t

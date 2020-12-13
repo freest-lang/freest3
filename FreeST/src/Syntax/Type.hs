@@ -26,8 +26,7 @@ import           Syntax.ProgramVariable         ( ProgVar )
 import           Syntax.Base
 import qualified Data.Map.Strict               as Map
 
-data Polarity = In | Out
-  deriving (Eq, Ord)
+data Polarity = In | Out deriving Eq
 
 data Type =
   -- Functional Types
@@ -53,7 +52,6 @@ data Type =
   | Dualof Pos Type
   -- Named Type, to be looked upon in a map of type names to types, tEnv
   | Name Pos TypeVar
-  deriving (Eq, Ord) -- We use Sets of Types to verify visited types on equivalence. Can we use positions instead?
 
 type TypeMap = Map.Map ProgVar Type
 
