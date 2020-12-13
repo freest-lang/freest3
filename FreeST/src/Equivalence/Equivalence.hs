@@ -19,18 +19,17 @@ module Equivalence.Equivalence
   )
 where
 
-import           Bisimulation.Bisimulation     as Bisimulation
-import qualified Data.Map.Strict               as Map
-import qualified Data.Set                      as Set
-import           Equivalence.TypeToGrammar
 import           Syntax.Base
-import qualified Syntax.Kind                   as K
-import           Syntax.ProgramVariable
-import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
+import           Syntax.ProgramVariable
+import qualified Syntax.Kind                   as K
+import qualified Syntax.Type                   as T
+import           Equivalence.TypeToGrammar
+import           Bisimulation.Bisimulation     as Bisimulation
 import qualified Validation.Substitution       as Subs
                                                 ( unfold )
-
+import qualified Data.Map.Strict               as Map
+import qualified Data.Set                      as Set
 
 class Equivalence t where
   equivalent :: T.TypeEnv -> K.KindEnv -> t -> t -> Bool
@@ -103,7 +102,7 @@ isSessionType _    _    (T.Rec _ (K.Bind _ _ k) _) = K.isSession k
 isSessionType _    kenv (T.Var _ x               ) = Map.member x kenv
   -- Type operators
 isSessionType _    _    T.Dualof{}                 = True
-isSessionType tenv _ (T.Name _ x) = K.isSession $ fst $ tenv Map.! x
+-- isSessionType tenv _ (T.Name _ x) = K.isSession $ fst $ tenv Map.! x
   -- Otherwise: Functional types
 isSessionType _    _    _                          = False
 
