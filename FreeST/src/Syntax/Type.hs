@@ -20,10 +20,10 @@ module Syntax.Type
   )
 where
 
-import qualified Syntax.Kind                   as K
-import           Syntax.TypeVariable
-import           Syntax.ProgramVariable         ( ProgVar )
 import           Syntax.Base
+import           Syntax.TypeVariable            ( TypeVar )
+import           Syntax.ProgramVariable         ( ProgVar )
+import qualified Syntax.Kind                   as K
 import qualified Data.Map.Strict               as Map
 
 data Polarity = In | Out deriving Eq

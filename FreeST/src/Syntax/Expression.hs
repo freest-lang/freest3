@@ -1,6 +1,6 @@
 {- |
-Module      :  Types
-Description :  <optional short text displayed on contents page>
+Module      :  Syntax.Expressions
+Description :  The expressions in the language
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
 
@@ -18,11 +18,11 @@ module Syntax.Expression
   )
 where
 
-import qualified Data.Map.Strict               as Map
 import           Syntax.Base
-import qualified Syntax.Kind                   as K  (Bind)
 import           Syntax.ProgramVariable
-import qualified Syntax.Type                   as T -- (Type, TypeBind)
+import qualified Syntax.Kind                   as K ( Bind )
+import qualified Syntax.Type                   as T
+import qualified Data.Map.Strict               as Map
 
 data Exp =
   -- Basic values
@@ -42,7 +42,7 @@ data Exp =
   | Case Pos Exp FieldMap
   -- Type Abstraction intro and elim
   | TypeAbs Pos K.Bind Exp     -- λ a:k => e -- Higher-order polymorphism
-  | TypeApp Pos Exp T.Type         -- e[T]
+  | TypeApp Pos Exp T.Type     -- e[T]
   -- Boolean elim
   | Conditional Pos Exp Exp Exp
   -- Let
