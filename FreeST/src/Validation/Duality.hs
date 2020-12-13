@@ -1,6 +1,6 @@
 {- |
 Module      :  Validation.Duality
-Description :  The duality module.
+Description :  Session type duality.
 Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of Lisbon
                    Andreia Mordido, LASIGE, Faculty of Sciences, University of Lisbon
                    Vasco Vasconcelos, LASIGE, Faculty of Sciences, University of Lisbon
@@ -10,7 +10,7 @@ This module defines a types, duality and equality.
 -}
 
 module Validation.Duality
-  ( dual -- Dual(..)
+  ( dual
   )
 where
 
@@ -32,10 +32,10 @@ dualPol T.Out = T.In
 dual :: T.Type -> FreestState T.Type
 dual t@T.Skip{}          = pure t
 dual (T.Semi    p t1 t2) = liftM2 (T.Semi p) (dual t1) (dual t2)
-dual (T.Message p v  b ) = pure $ T.Message p (dualPol v) b
+dual (T.Message p v  t ) = pure $ T.Message p (dualPol v) t
 dual (T.Choice  p v  m ) = fmap (T.Choice p (dualPol v)) (mapM dual m)
 dual (T.Rec     p x  t ) = fmap (T.Rec p x) (dual t)
-dual t@T.TypeVar{}       = pure t
+dual t@T.Var{}           = pure t
 dual t                   = do
   addError (pos t) [Error "Dualof applied to a non session type: ", Error t]
   pure t

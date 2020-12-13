@@ -70,7 +70,7 @@ toGrammar (T.Choice _ v m) = do
   y  <- getLHS $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
   return [y]
 -- Recursive types
-toGrammar x@T.TypeVar{} = do      -- x is a polymorphic variable
+toGrammar x@T.Var{} = do      -- x is a polymorphic variable
   y <- getLHS $ Map.singleton (show x) []
   return [y]
 toGrammar (T.Rec _ (K.Bind _ x _) _) = return [x]

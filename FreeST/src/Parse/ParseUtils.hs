@@ -217,7 +217,7 @@ typeListToType a = map (\(x, ts) -> (x, typeToFun ts))
   -- Convert a list of types and a final type constructor to a type
  where
 --  typeToFun []       = TypeName (pos a) a
-  typeToFun []       = T.TypeVar (pos a) a
+  typeToFun []       = T.Var (pos a) a
   typeToFun (t : ts) = T.Fun (pos t) Un t (typeToFun ts)
 
 buildFunBody :: ProgVar -> [ProgVar] -> Exp -> FreestState Exp

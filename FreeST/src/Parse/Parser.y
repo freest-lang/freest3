@@ -190,7 +190,7 @@ Expr :: { Exp }
   | Expr ';' Expr                    { App (pos $1)
                                          (Abs (pos $1) Un
                                            (T.Bind (pos $1) (mkVar (pos $1) "_")
-                                             (T.UnitType (pos $3)))
+                                             (T.Unit (pos $3)))
                                            $3)
                                        $1}
   | let '(' ProgVarWild ',' ProgVarWild ')' '=' Expr in Expr
@@ -258,10 +258,10 @@ Case :: { (ProgVar, ([ProgVar], Exp)) }
 
 Type :: { T.Type }
   -- Functional types
-  : Int                           { T.IntType (pos $1) }
-  | Char                          { T.CharType (pos $1) }
-  | Bool                          { T.BoolType (pos $1) }
-  | '()'                          { T.UnitType (pos $1) }
+  : Int                           { T.Int (pos $1) }
+  | Char                          { T.Char (pos $1) }
+  | Bool                          { T.Bool (pos $1) }
+  | '()'                          { T.Unit (pos $1) }
   | Type Arrow Type %prec ARROW   { uncurry T.Fun $2 $1 $3 }
   | '(' Type ',' TupleType ')'    { T.Pair (pos $1) $2 $4 }
   -- Session types
@@ -272,10 +272,10 @@ Type :: { T.Type }
   -- Polymorphism and recursion
   | rec KindBind '.' Type         { T.Rec (pos $1) $2 $4 }
   | forall KindBind '=>' Type     { T.Forall (pos $1) $2 $4 }
-  | TypeVar                       { T.TypeVar (pos $1) $1 }
+  | TypeVar                       { T.Var (pos $1) $1 }
   -- Type operators
   | dualof Type                   { T.Dualof (pos $1) $2 }
-  | TypeName                      { T.TypeVar (pos $1) $1 } -- TODO: remove this one lex
+  | TypeName                      { T.Var (pos $1) $1 } -- TODO: remove this one lex
   | '(' Type ')'                  { $2 }
 
 TupleType :: { T.Type }

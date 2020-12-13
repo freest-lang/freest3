@@ -26,6 +26,6 @@ terminated = term Set.empty
   term _ (T.Skip _                 ) = True
   term s (T.Semi _ t              u) = term s t && term s u
   term s (T.Rec  _ (K.Bind _ a k) t) = K.isSession k && term (Set.insert a s) t
-  term s (T.TypeVar _ a            ) = a `Set.member` s
+  term s (T.Var _ a                ) = a `Set.member` s
   term _ _                           = False
 

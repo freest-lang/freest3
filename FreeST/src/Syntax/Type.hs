@@ -10,14 +10,13 @@ This module defines a types and equality.
 -}
 
 module Syntax.Type
-  ( -- BasicType(..),
-    Type(..)
+  ( Type(..)
   , Bind(..)
   , TypeMap
   , Polarity(..)
-  , TypeOpsEnv
   , TypeEnv
   , VarEnv
+  , TypeOpsEnv
   )
 where
 
@@ -27,34 +26,15 @@ import           Syntax.ProgramVariable         ( ProgVar )
 import           Syntax.Base
 import qualified Data.Map.Strict               as Map
 
--- POSITIONS & TYPE OPERATORS (TYPENAME & DUALOF)
-
-type TypeOpsEnv = Map.Map Pos Type
-
--- POLARITY
-
-data Polarity =
-    In
-  | Out
+data Polarity = In | Out
   deriving (Eq, Ord)
-
--- BASIC TYPES
-
--- data BasicType =
---     IntType
---   | CharType
---   | BoolType
---   | UnitType
---   deriving (Eq, Ord)
-
--- TYPES
 
 data Type =
   -- Functional Types
-    IntType Pos
-  | CharType Pos
-  | BoolType Pos
-  | UnitType Pos
+    Int Pos
+  | Char Pos
+  | Bool Pos
+  | Unit Pos
   | Fun Pos Multiplicity Type Type
   | Pair Pos Type Type        -- make Pair a b = ∀c. (a => b => c) => c (see TAPL pg 352)
   | Datatype Pos TypeMap
@@ -63,49 +43,42 @@ data Type =
   | Semi Pos Type Type
   | Message Pos Polarity Type
   | Choice Pos Polarity TypeMap
-  -- Type Variable
-  | TypeVar Pos TypeVar
-  -- Polymorphism
+  -- Polymorphism and recursive types
   | Forall Pos K.Bind Type    -- ∀ a:k => T
-  -- Recursive Types
   | Rec Pos K.Bind Type       -- μ a:k => T
+  | Var Pos TypeVar
   -- Type operators
-  | Abs Pos K.Bind Type      -- λ a:k => T
-  | App Pos Type Type
-  | Dualof Pos Type             -- TODO: eliminate
+  -- | Abs Pos K.Bind Type       -- λ a:k => T
+  -- | App Pos Type Type
+  | Dualof Pos Type
   -- Named Type, to be looked upon in a map of type names to types, tEnv
-  | TypeName Pos TypeVar
-  deriving (Eq, Ord) -- We use Sets of Types to verify visited types on equivalence 
+  | Name Pos TypeVar
+  deriving (Eq, Ord) -- We use Sets of Types to verify visited types on equivalence. Can we use positions instead?
 
 type TypeMap = Map.Map ProgVar Type
 
 instance Position Type where
-  -- Functional types
-  pos (IntType  p   ) = p
-  pos (CharType p   ) = p
-  pos (BoolType p   ) = p
-  pos (UnitType p   ) = p
+  pos (Int  p       ) = p
+  pos (Char p       ) = p
+  pos (Bool p       ) = p
+  pos (Unit p       ) = p
   pos (Fun p _ _ _  ) = p
   pos (Pair p _ _   ) = p
   pos (Datatype p _ ) = p
-  -- Session types
   pos (Skip p       ) = p
-  pos (Semi    p _ _) = p
+  pos (Semi p _ _   ) = p
   pos (Message p _ _) = p
   pos (Choice  p _ _) = p
-  -- Polymorphism
   pos (Forall  p _ _) = p
-  -- Functional or session
-  pos (Rec     p _ _) = p
-  pos (TypeVar p _  ) = p
-  -- Type operators
-  pos (Abs p _ _    ) = p
-  pos (App p _ _    ) = p
-  pos (Dualof   p _ ) = p
-  pos (TypeName p _ ) = p
+  pos (Rec p _ _    ) = p
+  pos (Var p _      ) = p
+  -- pos (Abs p _ _    ) = p
+  -- pos (App p _ _    ) = p
+  pos (Dualof p _   ) = p
+  pos (Name p _     ) = p
 
 instance Default Type where
-  omission = IntType
+  omission = Int
 
 -- Binding program variables to types
 
@@ -113,6 +86,17 @@ data Bind = Bind Pos ProgVar Type -- deriving (Eq, Ord)
 
 instance Position Bind where
   pos (Bind p _ _) = p
+
+-- The definitions of the datatypes and types declared in a program
+type TypeEnv = Map.Map TypeVar (K.Kind, Type)
+
+-- The signatures of the functions names (including the primitive
+-- operators) and parameters, and the datatype constructors
+type VarEnv = Map.Map ProgVar Type
+
+-- POSITIONS & TYPE OPERATORS (TYPENAME & DUALOF)
+
+type TypeOpsEnv = Map.Map Pos Type
 
 {- Type equality, up to alpha-conversion
 
@@ -150,11 +134,3 @@ equalMaps s m1 m2 =
     Map.foldlWithKey(\b l t ->
       b && l `Map.member` m2 && equalTypes s t (m2 Map.! l)) True m1
 -}
-
-
--- The definitions of the datatypes and types declared in a program
-type TypeEnv = Map.Map TypeVar (K.Kind, Type)
-
--- The signatures of the functions names (including the primitive
--- operators) and parameters, and the datatype constructors
-type VarEnv = Map.Map ProgVar Type

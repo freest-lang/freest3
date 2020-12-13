@@ -52,10 +52,10 @@ instance Equivalence T.Type where
     -- Have we been here before?
     equiv v t u | (t, u) `Set.member` v   = True
     -- Functional types
-    equiv _ (T.IntType  _) (T.IntType  _) = True
-    equiv _ (T.CharType _) (T.CharType _) = True
-    equiv _ (T.BoolType _) (T.BoolType _) = True
-    equiv _ (T.UnitType _) (T.UnitType _) = True
+    equiv _ (T.Int  _) (T.Int  _) = True
+    equiv _ (T.Char _) (T.Char _) = True
+    equiv _ (T.Bool _) (T.Bool _) = True
+    equiv _ (T.Unit _) (T.Unit _) = True
     equiv v (T.Fun _ m t1 t2) (T.Fun _ n u1 u2) =
       m == n && equiv v t1 u1 && equiv v t2 u2
     equiv v (T.Pair _ t1 t2) (T.Pair _ u1 u2) = equiv v t1 u1 && equiv v t2 u2
@@ -66,15 +66,15 @@ instance Equivalence T.Type where
       -- kb1 == kb2 &&
       equiv (Set.insert (t, u) v) t u
     -- Recursion
-    equiv _ (T.TypeVar _ x) (T.TypeVar _ y) = x == y -- A free (a polymorphic) type var
+    equiv _ (T.Var _ x) (T.Var _ y) = x == y -- A free (a polymorphic) type var
     equiv v t@T.Rec{} u = equiv (Set.insert (t, u) v) (Subs.unfold t) u
     equiv v t u@T.Rec{} = equiv (Set.insert (t, u) v) t (Subs.unfold u)
     -- Type operators
-    equiv _ (T.TypeName _ x) (T.TypeName _ y) = -- trace ("TNAME 1 " ++ show x) $
+    equiv _ (T.Name _ x) (T.Name _ y) = -- trace ("TNAME 1 " ++ show x) $
       x == y -- Admissible
-    equiv v (T.TypeName _ x) u = -- trace ("TNAME 2 " ++ show x) $
+    equiv v (T.Name _ x) u = -- trace ("TNAME 2 " ++ show x) $
       equiv v (getType x) u
-    equiv v t (T.TypeName _ y) = -- trace ("TNAME 3 " ++ show y) $
+    equiv v t (T.Name _ y) = -- trace ("TNAME 3 " ++ show y) $
       equiv v t (getType y)
     -- Session types
     equiv _ t u =
@@ -102,36 +102,12 @@ isSessionType _    _    T.Message{}                = True
 isSessionType _    _    T.Choice{}                 = True
   -- Recursion
 isSessionType _    _    (T.Rec _ (K.Bind _ _ k) _) = K.isSession k
-isSessionType _    kenv (T.TypeVar _ x           ) = Map.member x kenv
+isSessionType _    kenv (T.Var _ x           ) = Map.member x kenv
   -- Type operators
 isSessionType _    _    T.Dualof{}                 = True
-isSessionType tenv _ (T.TypeName _ x) = K.isSession $ fst $ tenv Map.! x
+isSessionType tenv _ (T.Name _ x) = K.isSession $ fst $ tenv Map.! x
   -- Otherwise: Functional types
 isSessionType _    _    _                          = False
-
--- Type schemes
-
--- instance Equivalence TypeScheme where
---   equivalent tenv kenv1 ts1 ts2 = case instantiate ts1 ts2 of
---     Nothing              -> False
---     Just (kenv2, t1, t2) -> equivalent tenv (kenv1 `Map.union` kenv2) t1 t2
-
--- instantiate :: TypeScheme -> TypeScheme -> Maybe (K.KindEnv, Type, Type)
--- instantiate (TypeScheme _ bs1 t1) (TypeScheme _ bs2 t2) = inst bs1 bs2 t1 t2
---  where
---   inst
---     :: [K.Bind]
---     -> [K.Bind]
---     -> Type
---     -> Type
---     -> Maybe (K.KindEnv, Type, Type)
---   inst (K.Bind p1 x1 k1 : bs1) (K.Bind _ x2 k2 : bs2) t1 t2
---     | k1 /= k2 = Nothing
---     | otherwise = -- substitute x1 for x2 in t2
---                   fmap (\(m, t1', t2') -> (Map.insert x1 k1 m, t1', t2'))
---                        (inst bs1 bs2 t1 (Rename.subs (TypeVar p1 x1) x2 t2))
---   inst [] [] t1 t2 = Just (Map.empty, t1, t2)
---   inst _  _  _  _  = Nothing
 
 -- Typing environments
 

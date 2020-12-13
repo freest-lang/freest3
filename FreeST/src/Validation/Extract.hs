@@ -143,7 +143,7 @@ extractMessage pol msg e t = do
       , Error "\n\t found type"
       , Error u
       ]
-    return (T.UnitType (pos u), T.Skip (pos u))
+    return (T.Unit (pos u), T.Skip (pos u))
 
 -- Extracts a choice type from a general type; gives an error if a choice is not found
 extractOutChoiceMap :: Exp -> T.Type -> FreestState T.TypeMap

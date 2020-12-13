@@ -110,13 +110,13 @@ skipPair = return (T.Skip pos, T.Skip pos)
 messagePair :: Gen (T.Type, T.Type)
 messagePair = do
   pol <- arbitrary
-  t <- elements [T.IntType pos, T.CharType pos, T.BoolType pos, T.UnitType pos]
+  t <- elements [T.Int pos, T.Char pos, T.Bool pos, T.Unit pos]
   return (T.Message pos pol t, T.Message pos pol t)
 
 varPair :: Gen (T.Type, T.Type)
 varPair = do
   a <- arbitrary
-  return (T.TypeVar pos a, T.TypeVar pos a)
+  return (T.Var pos a, T.Var pos a)
 
 semiPair :: PairGen -> Int -> Gen (T.Type, T.Type)
 semiPair pairGen n = do
@@ -193,7 +193,7 @@ recRecL n = do
   let u' = Rename.renameType u -- this type will be in a substitution
   return
     ( T.Rec pos xk (T.Rec pos yk t)
-    , T.Rec pos xk (Rename.subs (T.TypeVar pos x) y u')
+    , T.Rec pos xk (Rename.subs (T.Var pos x) y u')
     )
 
 recRecR :: Int -> Gen (T.Type, T.Type)
@@ -204,7 +204,7 @@ recRecR n = do
   let u' = Rename.renameType u -- this type will be in a substitution
   return
     ( T.Rec pos xk (T.Rec pos yk t)
-    , T.Rec pos yk (Rename.subs (T.TypeVar pos y) x u')
+    , T.Rec pos yk (Rename.subs (T.Var pos y) x u')
     )
 
 recFree :: Int -> Gen (T.Type, T.Type)
@@ -268,12 +268,12 @@ skipMessage = do
 varSkip :: Gen (T.Type, T.Type)
 varSkip = do
   x <- arbitrary
-  return (T.TypeVar pos x, T.Skip pos)
+  return (T.Var pos x, T.Skip pos)
 
 messageVar :: Gen (T.Type, T.Type)
 messageVar = do
   (p, b, x) <- arbitrary
-  return (T.Message pos p b, T.TypeVar pos x)
+  return (T.Message pos p b, T.Var pos x)
 
 messageInOut :: Gen (T.Type, T.Type)
 messageInOut = do

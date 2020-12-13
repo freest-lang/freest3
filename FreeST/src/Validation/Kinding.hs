@@ -42,15 +42,15 @@ import qualified Data.Map.Strict               as Map
 -- Returns the kind of a given type
 synthetise :: K.KindEnv -> T.Type -> FreestState K.Kind
 -- Top types
-synthetise _    (T.IntType  p ) = return $ K.Kind p K.Message Un
-synthetise _    (T.CharType p ) = return $ K.Kind p K.Message Un
-synthetise _    (T.BoolType p ) = return $ K.Kind p K.Message Un
-synthetise _    (T.UnitType p ) = return $ K.Kind p K.Message Un
+synthetise _    (T.Int  p) = return $ K.Kind p K.Message Un
+synthetise _    (T.Char p) = return $ K.Kind p K.Message Un
+synthetise _    (T.Bool p) = return $ K.Kind p K.Message Un
+synthetise _    (T.Unit p) = return $ K.Kind p K.Message Un
 synthetise kEnv (T.Fun p m t u) = do
   synthetise kEnv t
   synthetise kEnv u
   return $ K.Kind p K.Top m
-synthetise kEnv (T.Pair p t u) = do
+synthetise kEnv (T.Pair p t u) = do -- REDO
   (K.Kind _ _ mt) <- synthetise kEnv t
   (K.Kind _ _ mu) <- synthetise kEnv u
   return $ K.Kind p K.Top (max mt mu)
@@ -60,7 +60,7 @@ synthetise kEnv (T.Datatype p m) = do
   let K.Kind _ _ n = foldr1 join ks
   return $ K.Kind p K.Top n
   -- Session types
-synthetise _    (T.Skip p    ) = return $ K.Kind p K.Session Un
+synthetise _    (T.Skip p) = return $ K.Kind p K.Session Un
 synthetise kEnv (T.Semi p t u) = do
   m <- checkAgainstSession kEnv t
   n <- checkAgainstSession kEnv u
@@ -78,13 +78,13 @@ synthetise kEnv (T.Rec _ (K.Bind _ a k) t) = do
 synthetise kEnv (T.Forall _ (K.Bind _ x k) t) = do
   _ <- synthetise (Map.insert x k kEnv) t
   return $ K.tl defaultPos
-synthetise kEnv (T.TypeVar p x) = case kEnv Map.!? x of
+synthetise kEnv (T.Var p x) = case kEnv Map.!? x of
   Just k  -> return k
   Nothing -> do
     addError p [Error "Type variable not in scope:", Error x]
     return $ omission p
 -- Type operators
-synthetise _ (T.TypeName p a) = getFromTEnv a >>= \case
+synthetise _ (T.Name p a) = getFromTEnv a >>= \case
   Just (k, _) -> return k
   Nothing     -> do
     addError p [Error "Type name not in scope:", Error a]

@@ -26,6 +26,6 @@ contractive a (T.Semi _ t u)
   | otherwise    = contractive a t
 contractive a (T.Rec _ _ t) = contractive a t
 contractive a (T.Forall _ _ t) = contractive a t
-contractive a (T.TypeVar _ b) = a /= b
+contractive a (T.Var _ b) = a /= b
 contractive _ (T.Skip _) = False
 contractive _ _ = True

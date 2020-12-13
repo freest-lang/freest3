@@ -126,7 +126,7 @@ rename' bs (T.Rec p (K.Bind p' a k) t)
     t' <- rename (insertVar a a' bs) t
     return $ T.Rec p (K.Bind p' a' k) t'
   | otherwise = rename bs t
-rename' bs (T.TypeVar p a) = return $ T.TypeVar p (findWithDefaultVar a bs)
+rename' bs (T.Var p a) = return $ T.Var p (findWithDefaultVar a bs)
   -- Type operators
 rename' bs (T.Dualof  p t) = do
   t' <- rename bs t
@@ -277,7 +277,7 @@ isFreeIn x (T.Choice _ _ tm) =
 isFreeIn x (T.Forall _ (K.Bind _ y _) t) = x /= y && x `isFreeIn` t
   -- Functional or session 
 isFreeIn x (T.Rec    _ (K.Bind _ y _) t) = x /= y && x `isFreeIn` t
-isFreeIn x (T.TypeVar _ y              ) = x == y
+isFreeIn x (T.Var _ y              ) = x == y
   -- Type operators
 isFreeIn x (T.Dualof  _ t              ) = x `isFreeIn` t
   -- Basic, Skip, Message, TypeName

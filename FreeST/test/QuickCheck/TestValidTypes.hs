@@ -111,10 +111,10 @@ nodes _                = 1
 
 -- The constructor of a type
 constr :: T.Type -> String
-constr T.IntType{}  = "Int"
-constr T.CharType{} = "Char"
-constr T.UnitType{} = "Unit"
-constr T.BoolType{} = "Bool"
+constr T.Int{}  = "Int"
+constr T.Char{} = "Char"
+constr T.Unit{} = "Unit"
+constr T.Bool{} = "Bool"
 constr T.Fun{}      = "Fun"
 constr T.Pair{}     = "Pair"
 constr T.Datatype{} = "Datatype"
@@ -123,6 +123,6 @@ constr T.Semi{}     = "Semi"
 constr T.Message{}  = "Message"
 constr T.Choice{}   = "Choice"
 constr T.Rec{}      = "Rec"
-constr T.TypeVar{}  = "TypeVar"
-constr T.TypeName{} = "TypeName"
+constr T.Var{}  = "TypeVar"
+constr T.Name{} = "TypeName"
 constr T.Dualof{}   = "Dualof"

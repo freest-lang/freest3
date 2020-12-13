@@ -134,13 +134,13 @@ instance Show T.Type where
   show = snd . unparse
 
 instance Unparse T.Type where
-  unparse (T.IntType  _   ) = (maxRator, "Int")
-  unparse (T.CharType _   ) = (maxRator, "Char")
-  unparse (T.BoolType _   ) = (maxRator, "Bool")
-  unparse (T.UnitType _   ) = (maxRator, "()")
-  unparse (T.Skip     _   ) = (maxRator, "Skip")
-  unparse (T.TypeVar _ a  ) = (maxRator, show a)
-  unparse (T.TypeName _ x ) = (maxRator, show x)
+  unparse (T.Int  _       ) = (maxRator, "Int")
+  unparse (T.Char _       ) = (maxRator, "Char")
+  unparse (T.Bool _       ) = (maxRator, "Bool")
+  unparse (T.Unit _       ) = (maxRator, "()")
+  unparse (T.Skip _       ) = (maxRator, "Skip")
+  unparse (T.Var _ a      ) = (maxRator, show a)
+  unparse (T.Name _ x     ) = (maxRator, show x)
   unparse (T.Message _ p t) = (msgRator, show p ++ m)
    where
      m = bracket (unparse t) Right msgRator

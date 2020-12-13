@@ -35,7 +35,7 @@ import           Parse.Unparser -- debug
 import qualified Syntax.Type                   as T
 -- import           Equivalence.Equivalence
 import           Validation.Extract
-import qualified Validation.Kinding            as K
+import qualified Validation.Kinding            as K -- Again?
 import qualified Validation.Rename             as Rename
                                                 ( subs )
 import           Utils.FreestState
@@ -46,10 +46,10 @@ import           Utils.PreludeLoader            ( userDefined ) -- debug
 
 synthetise :: K.KindEnv -> Exp -> FreestState T.Type
 -- Basic expressions
-synthetise _ (Unit p       ) = return $ T.UnitType p
-synthetise _ (Integer   p _) = return $ T.IntType p
-synthetise _ (Character p _) = return $ T.CharType p
-synthetise _ (Boolean   p _) = return $ T.BoolType p
+synthetise _ (Integer   p _) = return $ T.Int p
+synthetise _ (Character p _) = return $ T.Char p
+synthetise _ (Boolean   p _) = return $ T.Bool p
+synthetise _ (Unit p       ) = return $ T.Unit p
 -- Variable
 synthetise kEnv e@(ProgVar p x)
   | x == mkVar p "receive" = addPartiallyAppliedError e "channel"
@@ -186,7 +186,7 @@ synthetise kEnv (TypeApp p e t) = do -- TODO: error and bs, zip
   -- return $ foldr (\(u, KindBind _ y _) -> Rename.subs u y) t typeKinds
 -- Boolean elimination
 synthetise kEnv (Conditional p e1 e2 e3) = do
-  checkAgainst kEnv e1 (T.BoolType p)
+  checkAgainst kEnv e1 (T.Bool p)
   vEnv2 <- getVEnv
   t     <- synthetise kEnv e2
   vEnv3 <- getVEnv
@@ -413,7 +413,7 @@ checkAgainst :: K.KindEnv -> Exp -> T.Type -> FreestState ()
 -- Boolean elimination
 checkAgainst kEnv (Conditional p e1 e2 e3) t = do
   -- let kEnv = kEnvFromType kEnv t
-  checkAgainst kEnv e1 (T.BoolType p)
+  checkAgainst kEnv e1 (T.Bool p)
   vEnv2 <- getVEnv
   checkAgainst kEnv e2 t
   vEnv3 <- getVEnv

@@ -16,24 +16,24 @@ binIntOp :: T.Type
 binIntOp =
   T.Fun defaultPos
          Un
-         (T.IntType defaultPos)
-         (T.Fun defaultPos Un (T.IntType defaultPos) (T.IntType defaultPos))
+         (T.Int defaultPos)
+         (T.Fun defaultPos Un (T.Int defaultPos) (T.Int defaultPos))
   
 
 binBoolOp :: T.Type
 binBoolOp =
   T.Fun defaultPos
          Un
-         (T.BoolType defaultPos)
-         (T.Fun defaultPos Un (T.BoolType defaultPos) (T.BoolType defaultPos))
+         (T.Bool defaultPos)
+         (T.Fun defaultPos Un (T.Bool defaultPos) (T.Bool defaultPos))
   
 
 relationalOp :: T.Type
 relationalOp =
   T.Fun defaultPos
          Un
-         (T.IntType defaultPos)
-         (T.Fun defaultPos Un (T.IntType defaultPos) (T.BoolType defaultPos))
+         (T.Int defaultPos)
+         (T.Fun defaultPos Un (T.Int defaultPos) (T.Bool defaultPos))
   
 
 -- unIntBool :: T.Type
@@ -41,11 +41,11 @@ relationalOp =
 --   T.Fun defaultPos Un (T.IntType defaultPos) (T.BoolType defaultPos)
 
 unIntInt :: T.Type
-unIntInt = T.Fun defaultPos Un (T.IntType defaultPos) (T.IntType defaultPos)
+unIntInt = T.Fun defaultPos Un (T.Int defaultPos) (T.Int defaultPos)
 
 unBoolBool :: T.Type
 unBoolBool =
-  T.Fun defaultPos Un (T.BoolType defaultPos) (T.BoolType defaultPos)
+  T.Fun defaultPos Un (T.Bool defaultPos) (T.Bool defaultPos)
 
 typeList :: [(ProgVar, T.Type)]
 typeList =
@@ -67,26 +67,26 @@ typeList =
   , (mkVar p "(<=)"  , relationalOp)
   , (mkVar p "(>=)"  , relationalOp)
   , ( mkVar p "ord"
-    , T.Fun defaultPos Un (T.CharType defaultPos) (T.IntType defaultPos)
+    , T.Fun defaultPos Un (T.Char defaultPos) (T.Int defaultPos)
     )
   , ( mkVar p "chr"
-    , T.Fun defaultPos Un (T.IntType defaultPos) (T.CharType defaultPos)
+    , T.Fun defaultPos Un (T.Int defaultPos) (T.Char defaultPos)
     )
   , ( mkVar p "fork"
-    , T.Fun p Un (T.UnitType p) (T.UnitType p)
+    , T.Fun p Un (T.Unit p) (T.Unit p)
     )
 -- If introduce fork here, programs must instantiate ths poly var. E.g., 'fork [()] (boolServer r)'
 --  , (mkVar p "fork", T.TypeScheme p [KindBind p a (Kind p T.Functional Lin)] (T.Fun p Lin (TypeVar p a) (T.UnitType p))) 
 --           , (mkVar p "id", T.TypeScheme p [TBindK p "a" (Kind p Session Un)] (T.Fun p Un (TypeVar p "a") (TypeVar p "a")))
   -- Prints
-  , (mkVar p "printInt"   , T.Fun p Un (T.IntType p) (T.UnitType p))
-  , (mkVar p "printIntLn" , T.Fun p Un (T.IntType p) (T.UnitType p))
-  , (mkVar p "printBool"  , T.Fun p Un (T.BoolType p) (T.UnitType p))
-  , (mkVar p "printBoolLn", T.Fun p Un (T.BoolType p) (T.UnitType p))
-  , (mkVar p "printChar"  , T.Fun p Un (T.CharType p) (T.UnitType p))
-  , (mkVar p "printCharLn", T.Fun p Un (T.CharType p) (T.UnitType p))
-  , (mkVar p "printUnit"  , T.Fun p Un (T.UnitType p) (T.UnitType p))
-  , (mkVar p "printUnitLn", T.Fun p Un (T.UnitType p) (T.UnitType p))
+  , (mkVar p "printInt"   , T.Fun p Un (T.Int p) (T.Unit p))
+  , (mkVar p "printIntLn" , T.Fun p Un (T.Int p) (T.Unit p))
+  , (mkVar p "printBool"  , T.Fun p Un (T.Bool p) (T.Unit p))
+  , (mkVar p "printBoolLn", T.Fun p Un (T.Bool p) (T.Unit p))
+  , (mkVar p "printChar"  , T.Fun p Un (T.Char p) (T.Unit p))
+  , (mkVar p "printCharLn", T.Fun p Un (T.Char p) (T.Unit p))
+  , (mkVar p "printUnit"  , T.Fun p Un (T.Unit p) (T.Unit p))
+  , (mkVar p "printUnitLn", T.Fun p Un (T.Unit p) (T.Unit p))
   ]
   where p = defaultPos
   -- var     = T.TypeVar p (mkVar p "a")

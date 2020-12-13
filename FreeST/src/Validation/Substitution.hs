@@ -43,7 +43,7 @@ subs t x (T.Forall p yk@(K.Bind _ y _) u)
   | -- Assume types were renamed (hence, x/=y and no -the-fly renaming needed)
     otherwise = T.Forall p yk (subs t x u)
 -- Functional or session
-subs t x u@(T.TypeVar _ y) | y == x    = t
+subs t x u@(T.Var _ y) | y == x    = t
                            | otherwise = u
 subs t x (T.Dualof p u) = T.Dualof p (subs t x u)
 subs _ _ t              = t
@@ -68,9 +68,9 @@ free (T.Semi   _ t              u) = Set.union (free t) (free u)
 free (T.Choice _ _              m) = freeMap m
   -- Functional or session
 free (T.Rec    _ (K.Bind _ x _) t) = Set.delete x (free t)
-free (T.TypeVar  _ x             ) = Set.singleton x
+free (T.Var  _ x                 ) = Set.singleton x
   -- T.Type operators
-free (T.TypeName _ _             ) = Set.empty -- TODO: fix me!
+free (T.Name _ _                 ) = Set.empty -- TODO: fix me!
 free (T.Dualof   _ t             ) = free t
   -- Otherwise: Basic, Skip, Message
 free _                             = Set.empty

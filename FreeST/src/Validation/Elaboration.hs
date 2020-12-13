@@ -154,8 +154,8 @@ isRecursiveTypeDecl v (T.Rec _ (K.Bind _ x _) t)
   | -- it is already a recursive type
     otherwise = isRecursiveTypeDecl v t
 isRecursiveTypeDecl v (T.Forall _ _ t) = isRecursiveTypeDecl v t
-isRecursiveTypeDecl v (T.TypeName _ x) = x == v
-isRecursiveTypeDecl v (T.TypeVar  _ x) = x == v
+isRecursiveTypeDecl v (T.Name _ x) = x == v
+isRecursiveTypeDecl v (T.Var  _ x) = x == v
 isRecursiveTypeDecl v (T.Fun _ _ t u) =
   isRecursiveTypeDecl v t || isRecursiveTypeDecl v u
 isRecursiveTypeDecl v (T.Pair _ t u) =
@@ -199,7 +199,7 @@ solveDualOf tenv b (T.Fun p pol t u) =
 -- solveDualOf tenv n@(TypeName _ tname) = case tenv Map.!? tname of
 --   Just (_, t) -> pure (toTypeVar tname t)
 --   Nothing     -> maybeScopeErr n
-solveDualOf tenv b n@(T.TypeVar _ tname)
+solveDualOf tenv b n@(T.Var _ tname)
   | b = case tenv Map.!? tname of
     Just (_, t) -> pure t
     Nothing     -> maybeScopeErr n
@@ -231,17 +231,17 @@ solveDualOf _ _ p = return p
 -- TODO: When datatypes become recursive types as well; one should keep
 -- only the Nothing (error) case ?
 maybeScopeErr :: T.Type -> FreestState T.Type
-maybeScopeErr (T.TypeVar p tname) = getFromTEnv tname >>= \case
+maybeScopeErr (T.Var p tname) = getFromTEnv tname >>= \case
   Just (_, t) -> pure t
   Nothing     -> addError p [Error "Type name not in scope:", Error tname]
-    >> pure (T.UnitType p)
+    >> pure (T.Unit p)
 
 -- Change position of a given type with a given position
 changePos :: Pos -> T.Type -> T.Type
-changePos p (T.IntType  _     ) = T.IntType p
-changePos p (T.CharType _     ) = T.CharType p
-changePos p (T.BoolType _     ) = T.BoolType p
-changePos p (T.UnitType _     ) = T.UnitType p
+changePos p (T.Int  _     ) = T.Int p
+changePos p (T.Char _     ) = T.Char p
+changePos p (T.Bool _     ) = T.Bool p
+changePos p (T.Unit _     ) = T.Unit p
 changePos p (T.Fun _ pol t u  ) = T.Fun p pol t u
 changePos p (T.Pair    _ t   u) = T.Pair p t u
 -- Datatype
@@ -294,14 +294,14 @@ subsType tenv b (T.Forall p kb  t ) = fmap (T.Forall p kb) (subsType tenv b t)
 subsType tenv b (T.Rec    p tvb t1) = fmap (T.Rec p tvb) (subsType tenv b t1)
 -- In the first phase, we only substitute if the typename is the one that
 -- we are looking for (x)
-subsType _ (Just (x, t)) n@(T.TypeVar p tname)
+subsType _ (Just (x, t)) n@(T.Var p tname)
   | -- n@(TypeName p tname)
     tname == x = {- traceM ("substituing " ++ show n) >> -}
                  addTypeName p n >> pure t
   | otherwise  = pure n
 -- In later stages, with all the typenames converted into rec types, we
 -- just need to lookup upon the tenv to find the conversion
-subsType tenv Nothing n@(T.TypeVar p tname) = case tenv Map.!? tname of
+subsType tenv Nothing n@(T.Var p tname) = case tenv Map.!? tname of
   Just t  -> addTypeName p n >> pure (changePos p (snd t))--(toTypeVar tname (snd t)))
   Nothing -> pure n
 -- In the first stage (converting typenames); we should ignore dualofs
