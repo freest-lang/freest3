@@ -49,7 +49,7 @@ library:
     - Parse.ParseUtils
     - Parse.Read
     - Parse.Unparser
-    - Utils.Errors
+    - Utils.Error
     - Utils.FreestState
     - Utils.PreludeLoader
     - Parse.Lexer 

@@ -69,7 +69,7 @@ import qualified Syntax.Type                   as T
                                                 , VarEnv
                                                 , TypeEnv
                                                 )
-import           Utils.Errors
+import           Utils.Error
 -- import qualified Data.Set as Set
 import qualified Data.Traversable              as Traversable
 import           Utils.ErrorMessage

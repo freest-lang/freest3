@@ -18,7 +18,7 @@ import           Syntax.TypeVariable
 import           Syntax.Base
 import           Parse.ParseUtils
 import           Parse.Lexer
-import           Utils.Errors
+import           Utils.Error
 import           Utils.FreestState
 import qualified Data.Map.Strict          as Map
 import qualified Data.Set                 as Set

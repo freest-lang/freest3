@@ -8,7 +8,7 @@ module Parse.Lexer
 import qualified Data.Map.Strict as Map
 import           Parse.ParseUtils
 import           Syntax.Base
-import           Utils.Errors
+import           Utils.Error
 import           Utils.ErrorMessage
 }
 

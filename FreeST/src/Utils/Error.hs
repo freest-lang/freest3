@@ -1,5 +1,5 @@
 {-|
-Module      :  Utils.Errors
+Module      :  Utils.Error
 Description :  This module provides tools to prettify & format errors
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
@@ -11,7 +11,7 @@ Portability :  portable | non-portable (<reason>)
 This module provides tools to prettify & format errors with ANSI colors for terminals
 -}
 
-module Utils.Errors
+module Utils.Error
   ( formatErrorMessages
   , internalError
   )

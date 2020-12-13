@@ -25,7 +25,7 @@ import qualified Data.Set                      as Set
 import qualified Syntax.Kind                   as K
 import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
-import           Utils.Errors                   ( internalError )
+import           Utils.Error                    ( internalError )
 
 -- [t/x]u, substitute t for for every free occurrence of x in u
 subs :: T.Type -> TypeVar -> T.Type -> T.Type

@@ -32,7 +32,7 @@ import qualified Validation.Substitution       as Substitution
 import           Utils.FreestState              ( tMapM
                                                 , tMapM_
                                                 )
-import           Utils.Errors                   ( internalError )
+import           Utils.Error                    ( internalError )
 import           Control.Monad.State
 import qualified Data.Map.Strict               as Map
 import qualified Data.Set                      as Set

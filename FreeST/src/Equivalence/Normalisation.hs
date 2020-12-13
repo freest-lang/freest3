@@ -20,7 +20,7 @@ import           Syntax.Base
 import           Validation.Terminated         ( terminated )
 import qualified Validation.Substitution       as Substitution
                                                ( unfold )
-import           Utils.Errors                  ( internalError )
+import           Utils.Error                   ( internalError )
 import qualified Data.Map.Strict               as Map
 
 class Normalise t where

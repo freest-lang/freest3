@@ -14,7 +14,7 @@ import           System.FilePath                ( FilePath
                                                 , isExtensionOf
                                                 )
 import qualified Data.Map.Strict               as Map
-import           Utils.Errors
+import           Utils.Error
 import           Parse.Parser                   ( parseProgram )
 import           Syntax.Base
 import           Utils.FreestState

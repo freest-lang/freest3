@@ -16,6 +16,7 @@ where
 
 import           Syntax.Base
 import qualified Syntax.Kind                   as K
+import           Utils.Error                    ( internalError )
 
 -- The subkinding relation. Note that subkinding is a partial order, hence
 -- should *not* be an instance class Ord.
@@ -75,5 +76,5 @@ instance Join K.Kind  where
   join k1 k2
     | k1 <: k2 = k2
     | k2 <: k1 = k1
-    | otherwise = error "join"
+    | otherwise = internalError "No join for " k1
   
