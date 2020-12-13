@@ -1,6 +1,6 @@
 {-|
-Module      :  Kinding
-Description :  <optional short text displayed on contents page>
+Module      :  Validation.Kinding
+Description :  Check the type formation
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
 
@@ -17,31 +17,25 @@ module Validation.Kinding
   ( synthetise
   , checkAgainst
   , checkAgainstSession
---  , synthetiseTS
   , un
   , lin
   )
 where
 
--- import           Syntax.Schemes
+import           Syntax.Base
+import           Syntax.TypeVariable
 import qualified Syntax.Type                   as T
 import qualified Syntax.Kind                   as K
-import           Syntax.Base
--- import           Parse.Unparser
-import           Syntax.TypeVariable
-import           Validation.Subkind            ( (<:), join )
 import           Validation.Contractive
+import           Validation.Subkind            ( (<:), join )
 import           Utils.FreestState
--- import           Utils.Errors
 import           Control.Monad                 ( unless )
 import qualified Control.Monad.State           as S
 import qualified Data.Map.Strict               as Map
 
--- import           Debug.Trace
-
 -- Returns the kind of a given type
 synthetise :: K.KindEnv -> T.Type -> FreestState K.Kind
--- Top types
+-- Functional types
 synthetise _    (T.Int  p) = return $ K.Kind p K.Message Un
 synthetise _    (T.Char p) = return $ K.Kind p K.Message Un
 synthetise _    (T.Bool p) = return $ K.Kind p K.Message Un
@@ -50,11 +44,10 @@ synthetise kEnv (T.Fun p m t u) = do
   synthetise kEnv t
   synthetise kEnv u
   return $ K.Kind p K.Top m
-synthetise kEnv (T.Pair p t u) = do -- REDO
+synthetise kEnv (T.Pair p t u) = do
   (K.Kind _ _ mt) <- synthetise kEnv t
   (K.Kind _ _ mu) <- synthetise kEnv u
   return $ K.Kind p K.Top (max mt mu)
---  return $ K.join kt ku
 synthetise kEnv (T.Datatype p m) = do
   ks <- tMapM (synthetise kEnv) m
   let K.Kind _ _ n = foldr1 join ks
@@ -64,13 +57,14 @@ synthetise _    (T.Skip p) = return $ K.Kind p K.Session Un
 synthetise kEnv (T.Semi p t u) = do
   m <- checkAgainstSession kEnv t
   n <- checkAgainstSession kEnv u
-  return $ K.Kind p K.Session (max m n) -- JOURNAL: Lin 
+  return $ K.sl p
+  -- return $ K.Kind p K.Session (max m n)
 synthetise kEnv    (T.Message p _ t) = do
-  checkAgainst kEnv (K.Kind p K.Message Lin) t
-  return $ K.Kind p K.Session Lin
+  checkAgainst kEnv (K.ml p) t
+  return $ K.sl p
 synthetise kEnv (T.Choice  p _ m) = do
-  tMapM_ (checkAgainst kEnv (K.Kind p K.Session Lin)) m
-  return $ K.Kind p K.Session Lin
+  tMapM_ (checkAgainst kEnv (K.sl p)) m
+  return $ K.sl p
 -- Session or functional
 synthetise kEnv (T.Rec _ (K.Bind _ a k) t) = do
   checkContractive a t
@@ -117,9 +111,6 @@ checkAgainstSession kEnv t = do
 
 -- Check a type against a given kind
 checkAgainst :: K.KindEnv -> K.Kind -> T.Type -> FreestState ()
--- checkAgainst kEnv k (Rec _ (K.Bind p x _) t) = do
---   checkContractive kEnv t
---   checkAgainst (Map.insert x (Kind p Session Un) kEnv) k t
 checkAgainst kEnv expected t = do
   actual <- synthetise kEnv t
   S.when (not (actual <: expected)) $ addError
@@ -131,11 +122,6 @@ checkAgainst kEnv expected t = do
     , Error "\n\t for type"
     , Error t
     ]
-
--- synthetiseTS :: K.KindEnv -> TypeScheme -> FreestState Kind
--- synthetiseTS kEnv (TypeScheme _ bs t) = synthetise insertBinds t
---  where
---   insertBinds = foldr (\(K.Bind _ x k) env -> Map.insert x k env) kEnv bs
 
 -- Determine whether a given type is unrestricted
 un :: T.Type -> FreestState Bool
