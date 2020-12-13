@@ -46,24 +46,34 @@ instance Subsort K.Kind where
   (K.Kind _ b1 m1) <: (K.Kind _ b2 m2) = b1 <: b2 && m1 <: m2
 
 -- The least upper bound of two kinds
-join :: K.Kind -> K.Kind -> K.Kind
-join (K.Kind p K.Message Lin) (K.Kind _ K.Top     Un ) = K.tl p
-join (K.Kind p K.Top     Un ) (K.Kind _ K.Message Lin) = K.tl p
 
-join (K.Kind p K.Top     Un ) (K.Kind _ K.Session Lin) = K.tl p
-join (K.Kind p K.Session Lin) (K.Kind _ K.Top     Un ) = K.tl p
+class Join t where
+  join :: t -> t -> t
 
-join (K.Kind p K.Message Un ) (K.Kind _ K.Session Un ) = K.tu p
-join (K.Kind p K.Session Un ) (K.Kind _ K.Message Un ) = K.tu p
+instance Join Multiplicity where
+  join Un  Lin = Lin
+  join Lin Un  = Lin
+  join Un  Un  = Un
+  join Lin Lin = Lin
 
-join (K.Kind p K.Message Un ) (K.Kind _ K.Session Lin) = K.tl p
-join (K.Kind p K.Session Lin) (K.Kind _ K.Message Un ) = K.tl p
+instance Join K.Kind  where
+  join (K.Kind p K.Message Lin) (K.Kind _ K.Top     Un ) = K.tl p
+  join (K.Kind p K.Top     Un ) (K.Kind _ K.Message Lin) = K.tl p
 
-join (K.Kind p K.Session Un ) (K.Kind _ K.Message Lin) = K.tl p
-join (K.Kind p K.Message Lin) (K.Kind _ K.Session Un ) = K.tl p
+  join (K.Kind p K.Top     Un ) (K.Kind _ K.Session Lin) = K.tl p
+  join (K.Kind p K.Session Lin) (K.Kind _ K.Top     Un ) = K.tl p
 
-join k1 k2
-  | k1 <: k2 = k2
-  | k2 <: k1 = k1
-  | otherwise = error "join"
+  join (K.Kind p K.Message Un ) (K.Kind _ K.Session Un ) = K.tu p
+  join (K.Kind p K.Session Un ) (K.Kind _ K.Message Un ) = K.tu p
+
+  join (K.Kind p K.Message Un ) (K.Kind _ K.Session Lin) = K.tl p
+  join (K.Kind p K.Session Lin) (K.Kind _ K.Message Un ) = K.tl p
+
+  join (K.Kind p K.Session Un ) (K.Kind _ K.Message Lin) = K.tl p
+  join (K.Kind p K.Message Lin) (K.Kind _ K.Session Un ) = K.tl p
+
+  join k1 k2
+    | k1 <: k2 = k2
+    | k2 <: k1 = k1
+    | otherwise = error "join"
   

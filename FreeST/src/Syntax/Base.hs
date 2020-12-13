@@ -40,8 +40,7 @@ negPos (Pos i j) = Pos (negate i) (negate j)
 
 -- Multiplicities for kinds, types, and expressions
 
-data Multiplicity = Un | Lin
-  deriving (Eq, Ord) -- TODO: I wish we wouldn't need this
+data Multiplicity = Un | Lin deriving Eq
 
 -- Variables, type and program
 

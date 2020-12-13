@@ -33,13 +33,11 @@ import qualified Data.Map.Strict               as Map
 
 -- Basic kinds
 
-data Basic = Message | Session | Top
-  deriving (Eq, Ord) -- TODO: I wish we wouldn't need this
+data Basic = Message | Session | Top deriving Eq
 
 -- Kinds
 
 data Kind = Kind Pos Basic Multiplicity
-  deriving (Eq, Ord) -- TODO: I wish we wouldn't need this
 
 -- Abbreviations for the six proper kinds
 tl, tu, sl, su, mu, ml :: Pos -> Kind
@@ -74,7 +72,7 @@ type KindEnv = Map.Map TypeVar Kind
 
 -- Binding type variables to kinds
 
-data Bind = Bind Pos TypeVar Kind deriving (Eq, Ord)
+data Bind = Bind Pos TypeVar Kind
 
 instance Position Bind where
   pos (Bind p _ _) = p
