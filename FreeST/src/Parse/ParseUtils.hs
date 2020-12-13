@@ -34,21 +34,18 @@ module Parse.ParseUtils
   )
 where
 
-import           Control.Monad.State
-import           Data.List                      ( find )
-import qualified Data.Map.Strict               as Map
-import           Equivalence.Normalisation
 import           Syntax.Base
-import           Syntax.Expression
-import qualified Syntax.Kind as K
 import           Syntax.ProgramVariable
 import           Syntax.TypeVariable
-import qualified Syntax.Type as T
+import qualified Syntax.Kind                   as K
+import qualified Syntax.Type                   as T
+import qualified Syntax.Expression             as E
+import           Equivalence.Normalisation
 import           Utils.FreestState
-
+import           Data.List                      ( find )
+import qualified Data.Map.Strict               as Map
+import           Control.Monad.State
 -- import           Debug.Trace -- debug
--- import           Parse.Unparser -- debug
--- import           Utils.PreludeLoader -- debug
 
 thenM :: ParseResult a -> (a -> ParseResult b) -> ParseResult b
 m `thenM` k = case m of
@@ -95,7 +92,7 @@ checkDupField x m = when (x `Map.member` m) $ addError
     -- addError (pos x) ["Multiple declarations of field", styleRed (show x), "\n",
     --                        "\t in a choice type"]
 
-checkDupCase :: ProgVar -> FieldMap -> FreestState ()
+checkDupCase :: ProgVar -> E.FieldMap -> FreestState ()
 checkDupCase x m = when (x `Map.member` m) $ addError
   (pos x)
   [ Error "Pattern match is redundant"
@@ -205,12 +202,12 @@ checkDupFunDecl x = do
 
 -- OPERATORS
 
-binOp :: Exp -> ProgVar -> Exp -> Exp
+binOp :: E.Exp -> ProgVar -> E.Exp -> E.Exp
 binOp left op =
-  App (pos left) (App (pos left) (ProgVar (pos op) op) left)
+  E.App (pos left) (E.App (pos left) (E.Var (pos op) op) left)
 
-unOp :: ProgVar -> Exp -> Exp
-unOp op expr = App (pos expr) (ProgVar (pos op) op) expr
+unOp :: ProgVar -> E.Exp -> E.Exp
+unOp op expr = E.App (pos expr) (E.Var (pos op) op) expr
 
 typeListToType :: TypeVar -> [(ProgVar, [T.Type])] -> [(ProgVar, T.Type)]
 typeListToType a = map (\(x, ts) -> (x, typeToFun ts))
@@ -220,7 +217,7 @@ typeListToType a = map (\(x, ts) -> (x, typeToFun ts))
   typeToFun []       = T.Var (pos a) a
   typeToFun (t : ts) = T.Fun (pos t) Un t (typeToFun ts)
 
-buildFunBody :: ProgVar -> [ProgVar] -> Exp -> FreestState Exp
+buildFunBody :: ProgVar -> [ProgVar] -> E.Exp -> FreestState E.Exp
 buildFunBody f bs e = getFromVEnv f >>= \case
   Just s -> do
 --    let (TypeScheme _ _ t) = s
@@ -240,17 +237,17 @@ buildFunBody f bs e = getFromVEnv f >>= \case
       ]
     return e
  where
-  buildExp :: [ProgVar] -> T.Type -> Exp
+  buildExp :: [ProgVar] -> T.Type -> E.Exp
   buildExp [] _ = e
   buildExp (b : bs) (T.Fun _ m t1 t2) =
-    Abs (pos b) m (T.Bind (pos b) b t1) (buildExp bs t2)
+    E.Abs (pos b) m (T.Bind (pos b) b t1) (buildExp bs t2)
   buildExp (b : bs) (T.Dualof p (T.Fun _ m t1 t2)) =
-    Abs (pos b) m (T.Bind (pos b) b (T.Dualof p t1)) (buildExp bs (T.Dualof p t2))
+    E.Abs (pos b) m (T.Bind (pos b) b (T.Dualof p t1)) (buildExp bs (T.Dualof p t2))
     
 --  buildExp (b : bs) (Forall _ (K.Bind p y _) t) = -- TODO: Abs Un ??? I think it can be (mult t)
   buildExp bs (T.Forall p kb t) =
-    TypeAbs p kb (buildExp bs t)
+    E.TypeAbs p kb (buildExp bs t)
     
   buildExp (b : bs) t =
-    Abs (pos b) Un (T.Bind (pos b) b (omission (pos b))) (buildExp bs t)
+    E.Abs (pos b) Un (T.Bind (pos b) b (omission (pos b))) (buildExp bs t)
 

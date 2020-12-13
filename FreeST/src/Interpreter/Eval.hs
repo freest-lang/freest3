@@ -30,16 +30,16 @@ evalAndPrint ctx eenv e = do
     _          -> print res
 
 eval :: Ctx -> E.ExpEnv -> E.Exp -> IO Value
-eval _   _    (E.Unit _                    ) = return Unit
-eval _   _    (E.Integer   _ i             ) = return $ Integer i
-eval _   _    (E.Boolean   _ b             ) = return $ Boolean b
-eval _   _    (E.Character _ c             ) = return $ Character c
-eval ctx eenv (E.ProgVar   _ x             ) = evalVar ctx eenv x
-eval ctx eenv (E.TypeApp _ x _             ) = eval ctx eenv x
+eval _   _    (E.Unit _                  ) = return Unit
+eval _   _    (E.Int _ i                 ) = return $ Integer i
+eval _   _    (E.Bool _ b                ) = return $ Boolean b
+eval _   _    (E.Char _ c                ) = return $ Character c
+eval ctx eenv (E.Var _ x                 ) = evalVar ctx eenv x
+eval ctx eenv (E.TypeApp _ x _           ) = eval ctx eenv x
 -- TypeAbs Pos KindBind Expression
-eval ctx eenv (E.TypeAbs _ _ e             ) = eval ctx eenv e -- return $ Closure x e ctx
+eval ctx eenv (E.TypeAbs _ _ e           ) = eval ctx eenv e -- return $ Closure x e ctx
 eval ctx _    (E.Abs _ _ (T.Bind _ x _) e) = return $ Closure x e ctx
-eval ctx eenv (E.App _ e1 e2               ) = eval ctx eenv e1 >>= \case
+eval ctx eenv (E.App _ e1 e2             ) = eval ctx eenv e1 >>= \case
   (Closure x e ctx') -> do
     !v <- eval ctx eenv e2
     eval (Map.insert x v ctx') eenv e

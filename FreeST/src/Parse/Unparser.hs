@@ -25,7 +25,7 @@ import           Prelude                 hiding ( Left
                                                 , Right
                                                 ) -- needed for Associativity
 import           Syntax.Base
-import           Syntax.Expression
+import           Syntax.Expression             as E
 import qualified Syntax.Kind                   as K
 import           Syntax.ProgramVariable
 import           Syntax.Schemes
@@ -241,55 +241,55 @@ instance Show Exp where
 
 instance Unparse Exp where
   -- Basic values
-  unparse (Unit _       ) = (maxRator, "()")
-  unparse (Integer   _ i) = (maxRator, show i)
-  unparse (Character _ c) = (maxRator, show c)
-  unparse (Boolean   _ b) = (maxRator, show b)
+  unparse (E.Unit _) = (maxRator, "()")
+  unparse (E.Int _ i) = (maxRator, show i)
+  unparse (E.Char _ c) = (maxRator, show c)
+  unparse (E.Bool _ b) = (maxRator, show b)
   -- Variable
-  unparse (ProgVar   _ x) = (maxRator, show x)
+  unparse (E.Var _ x      ) = (maxRator, show x)
   -- Abstraction intro and elim
-  unparse (Abs _ m b e  ) = (arrowRator, "λ" ++ show b ++ showArrow m ++ s)
+  unparse (E.Abs _ m b e) = (arrowRator, "λ" ++ show b ++ showArrow m ++ s)
     where s = bracket (unparse e) Right arrowRator
-  unparse (App _ e1 e2) = (appRator, l ++ " " ++ r)
+  unparse (E.App _ e1 e2) = (appRator, l ++ " " ++ r)
    where
     l = bracket (unparse e1) Left appRator
     r = bracket (unparse e2) Right appRator
   -- Pair intro and elim
-  unparse (Pair _ e1 e2) = (maxRator, "(" ++ l ++ ", " ++ r ++ ")")
+  unparse (E.Pair _ e1 e2) = (maxRator, "(" ++ l ++ ", " ++ r ++ ")")
    where
     l = bracket (unparse e1) Left minRator
     r = bracket (unparse e2) Right minRator
-  unparse (BinLet _ x y e1 e2) =
+  unparse (E.BinLet _ x y e1 e2) =
     (inRator, "let " ++ p ++ " = " ++ l ++ " in " ++ r)
    where
     p = "(" ++ show x ++ ", " ++ show y ++ ")"
     l = bracket (unparse e1) Left inRator
     r = bracket (unparse e2) Right inRator
   -- Datatype elim
-  unparse (Case _ e m) =
+  unparse (E.Case _ e m) =
     (inRator, "case " ++ s ++ " of {" ++ showFieldMap m ++ "}")
     where s = bracket (unparse e) NonAssoc inRator
   -- Type Abstraction intro and elim
-  unparse (TypeApp _ x t) = (appRator, show x ++ " [" ++ show t ++ "]")
-  unparse (TypeAbs _ b e) = (arrowRator, "λ" ++ show b ++ "->" ++ s)
+  unparse (E.TypeApp _ x t) = (appRator, show x ++ " [" ++ show t ++ "]")
+  unparse (E.TypeAbs _ b e) = (arrowRator, "λ" ++ show b ++ "->" ++ s)
     where s = bracket (unparse e) Right arrowRator
   -- Boolean elim
-  unparse (Conditional _ e1 e2 e3) =
+  unparse (E.Conditional _ e1 e2 e3) =
     (inRator, "if " ++ s1 ++ " then " ++ s2 ++ " else " ++ s3)
    where
     s1 = bracket (unparse e1) Left inRator
     s2 = bracket (unparse e2) NonAssoc inRator
     s3 = bracket (unparse e3) Right inRator
   -- Unary Let
-  unparse (New _ t _) = (newRator, "let " ++ show t)
+  unparse (E.New _ t _) = (newRator, "let " ++ show t)
   -- Session expressions
-  unparse (UnLet _ x e1 e2) =
+  unparse (E.UnLet _ x e1 e2) =
     (inRator, "let " ++ show x ++ " = " ++ l ++ " in " ++ r)
    where
     l = bracket (unparse e1) Left inRator
     r = bracket (unparse e2) Right inRator
-  unparse (Select _ l) = (appRator, "select " ++ show l) -- which rator?
-  unparse (Match _ e m) =
+  unparse (E.Select _ l) = (appRator, "select " ++ show l) -- which rator?
+  unparse (E.Match _ e m) =
     (inRator, "match " ++ s ++ " with {" ++ showFieldMap m ++ "}")
     where s = bracket (unparse e) NonAssoc inRator
 

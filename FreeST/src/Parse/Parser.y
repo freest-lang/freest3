@@ -9,10 +9,10 @@ module Parse.Parser
 where
 
 
-import           Syntax.Expression
+import           Syntax.Expression        as E
 import           Syntax.Schemes
-import qualified Syntax.Type as T
-import qualified Syntax.Kind as K
+import qualified Syntax.Type              as T
+import qualified Syntax.Kind              as K
 import           Syntax.ProgramVariable
 import           Syntax.TypeVariable
 import           Syntax.Base
@@ -20,8 +20,8 @@ import           Parse.ParseUtils
 import           Parse.Lexer
 import           Utils.Errors
 import           Utils.FreestState
-import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.Map.Strict          as Map
+import qualified Data.Set                 as Set
 import           Control.Monad.State
 import           Data.Char
 import           Data.List (nub, (\\), intercalate, find)
@@ -186,21 +186,21 @@ DataCon :: { (ProgVar, [T.Type]) }
 ----------------
 
 Expr :: { Exp }
-  : let ProgVarWild '=' Expr in Expr { UnLet (pos $1) $2 $4 $6 }
-  | Expr ';' Expr                    { App (pos $1)
-                                         (Abs (pos $1) Un
+  : let ProgVarWild '=' Expr in Expr { E.UnLet (pos $1) $2 $4 $6 }
+  | Expr ';' Expr                    { E.App (pos $1)
+                                         (E.Abs (pos $1) Un
                                            (T.Bind (pos $1) (mkVar (pos $1) "_")
                                              (T.Unit (pos $3)))
                                            $3)
                                        $1}
   | let '(' ProgVarWild ',' ProgVarWild ')' '=' Expr in Expr
-                                     { BinLet (pos $1) $3 $5 $8 $10 }
-  | if Expr then Expr else Expr      { Conditional (pos $1) $2 $4 $6 }
-  | new Type                         { New (pos $1) $2 (T.Dualof (negPos (pos $2)) $2) }
-  | match Expr with '{' MatchMap '}' { Match (pos $1) $2 $5 }
-  | case Expr of '{' CaseMap '}'     { Case (pos $1) $2 $5 }
-  | Expr '$' Expr                    { App (pos $2) $1 $3 }
-  | Expr '&' Expr                    { App (pos $2) $3 $1 }
+                                     { E.BinLet (pos $1) $3 $5 $8 $10 }
+  | if Expr then Expr else Expr      { E.Conditional (pos $1) $2 $4 $6 }
+  | new Type                         { E.New (pos $1) $2 (T.Dualof (negPos (pos $2)) $2) }
+  | match Expr with '{' MatchMap '}' { E.Match (pos $1) $2 $5 }
+  | case Expr of '{' CaseMap '}'     { E.Case (pos $1) $2 $5 }
+  | Expr '$' Expr                    { E.App (pos $2) $1 $3 }
+  | Expr '&' Expr                    { E.App (pos $2) $3 $1 }
   | Expr '||' Expr                   { binOp $1 (mkVar (pos $2) "(||)") $3 }
   | Expr '&&' Expr                   { binOp $1 (mkVar (pos $2) "(&&)") $3 }
   | Expr CMP Expr                    { binOp $1 (mkVar (pos $2) (getText $2)) $3 }
@@ -212,31 +212,29 @@ Expr :: { Exp }
   | App                              { $1 }
 
 App :: { Exp }
-  : App Primary                      { App (pos $1) $1 $2 }
-  | select ArbitraryProgVar          { Select (pos $1) $2 }
+  : App Primary                      { E.App (pos $1) $1 $2 }
+  | select ArbitraryProgVar          { E.Select (pos $1) $2 }
   | Primary                          { $1 }
 
 Primary :: { Exp }
-  : INT                                        { let (TokenInt p x) = $1 in Integer p x }
-  | BOOL                                       { let (TokenBool p x) = $1 in Boolean p x }
-  | CHAR                                       { let (TokenChar p x) = $1 in Character p x }
-  | '()'                                       { Unit (pos $1) }
---  | ProgVar '[' Type ']'                     { TypeApp (pos $1) $1 $3 }
-  | Primary '[' Type ']'                       { TypeApp (pos $1) $1 $3 }
-  | ArbitraryProgVar                           { ProgVar (pos $1) $1 }
-  | '(' lambda ProgVarWildTBind Arrow Expr ')' { Abs (pos $2) (snd $4)
-                                                 (T.Bind (pos $2) (fst $3) (snd $3)) $5 }
-  | '(' Lambda KindBind '=>' Expr ')'          { TypeAbs (pos $2) $3 $5 }    
-  --| '(' Expr ',' Expr ')'                    { Pair (pos $1)$2 $4 }
-  | '(' Expr ',' Tuple ')'                    { Pair (pos $1) $2 $4 }
-  | '(' Expr ')'                               { $2 }
+  : INT                              { let (TokenInt p x) = $1 in E.Int p x }
+  | BOOL                             { let (TokenBool p x) = $1 in E.Bool p x }
+  | CHAR                             { let (TokenChar p x) = $1 in E.Char p x }
+  | '()'                             { E.Unit (pos $1) }
+  | Primary '[' Type ']'             { E.TypeApp (pos $1) $1 $3 }
+  | ArbitraryProgVar                 { E.Var (pos $1) $1 }
+  | '(' lambda ProgVarWildTBind Arrow Expr ')' { E.Abs (pos $2) (snd $4)
+                                                  (T.Bind (pos $2) (fst $3) (snd $3)) $5 }
+  | '(' Lambda KindBind '=>' Expr ')'{ E.TypeAbs (pos $2) $3 $5 }    
+  | '(' Expr ',' Tuple ')'           { E.Pair (pos $1) $2 $4 }
+  | '(' Expr ')'                     { $2 }
 
 ProgVarWildTBind :: { (ProgVar, T.Type) }
   : ProgVarWild ':' Type  %prec ProgVarWildTBind { ($1, $3) }
 
 Tuple :: { Exp }
   : Expr               { $1 }
-  | Expr ',' Tuple     { Pair (pos $1) $1 $3 }
+  | Expr ',' Tuple     { E.Pair (pos $1) $1 $3 }
 
 MatchMap :: { FieldMap }
   : Match              { uncurry Map.singleton $1 }

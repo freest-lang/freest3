@@ -27,11 +27,11 @@ import qualified Syntax.Type                   as T -- (Type, TypeBind)
 data Exp =
   -- Basic values
     Unit Pos
-  | Integer Pos Int
-  | Character Pos Char
-  | Boolean Pos Bool
+  | Int Pos Int
+  | Char Pos Char
+  | Bool Pos Bool
   -- Variable
-  | ProgVar Pos ProgVar
+  | Var Pos ProgVar
   -- Abstraction intro and elim
   | Abs Pos Multiplicity T.Bind Exp -- λ x:T -> e
   | App Pos Exp Exp            -- e1 e2
@@ -41,19 +41,16 @@ data Exp =
   -- Datatype elim
   | Case Pos Exp FieldMap
   -- Type Abstraction intro and elim
-  | TypeAbs Pos K.Bind Exp     -- λ a:k => e
+  | TypeAbs Pos K.Bind Exp     -- λ a:k => e -- Higher-order polymorphism
   | TypeApp Pos Exp T.Type         -- e[T]
-  -- | TypeApp Pos ProgVar Type      
-  -- | TypeApp Pos ProgVar [Type]
   -- Boolean elim
   | Conditional Pos Exp Exp Exp
   -- Let
-  | UnLet Pos ProgVar Exp Exp -- TODO: Derived; eliminate? If is which type for the ProgVar? (cf. Abs)
+  | UnLet Pos ProgVar Exp Exp -- TODO: Derived; eliminate? If yes, which is type for the ProgVar? (cf. Abs)
   -- Session types
   | New Pos T.Type T.Type
   | Select Pos ProgVar
   | Match Pos Exp FieldMap
-
 
 type FieldMap = Map.Map ProgVar ([ProgVar], Exp)
 
@@ -62,13 +59,13 @@ type ExpEnv = Map.Map ProgVar Exp
 
 instance Position Exp where
   pos (Unit p             ) = p
-  pos (Integer   p _      ) = p
-  pos (Character p _      ) = p
-  pos (Boolean   p _      ) = p
-  pos (ProgVar   p _      ) = p
-  pos (Abs   p _ _ _      ) = p
+  pos (Int p _            ) = p
+  pos (Char p _           ) = p
+  pos (Bool p _           ) = p
+  pos (Var p _            ) = p
+  pos (Abs p _ _ _        ) = p
   pos (UnLet p _ _ _      ) = p
-  pos (App     p _ _      ) = p
+  pos (App p _ _          ) = p
   pos (TypeApp p _ _      ) = p
   pos (TypeAbs p _ _      ) = p
   pos (Conditional p _ _ _) = p

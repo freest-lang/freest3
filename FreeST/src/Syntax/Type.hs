@@ -52,6 +52,7 @@ data Type =
   | Dualof Pos Type
   -- Named Type, to be looked upon in a map of type names to types, tEnv
   | Name Pos TypeVar
+  -- deriving (Eq, Ord) -- We use Sets of Types to verify visited types on equivalence. Can we use positions instead?
 
 type TypeMap = Map.Map ProgVar Type
 
@@ -66,8 +67,8 @@ instance Position Type where
   pos (Skip p       ) = p
   pos (Semi p _ _   ) = p
   pos (Message p _ _) = p
-  pos (Choice  p _ _) = p
-  pos (Forall  p _ _) = p
+  pos (Choice p _ _ ) = p
+  pos (Forall p _ _ ) = p
   pos (Rec p _ _    ) = p
   pos (Var p _      ) = p
   -- pos (Abs p _ _    ) = p
