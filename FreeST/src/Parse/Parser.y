@@ -10,7 +10,6 @@ where
 
 
 import           Syntax.Expression        as E
-import           Syntax.Schemes
 import qualified Syntax.Type              as T
 import qualified Syntax.Kind              as K
 import           Syntax.ProgramVariable

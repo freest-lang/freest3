@@ -17,6 +17,7 @@ module Syntax.Type
   , TypeEnv
   , VarEnv
   , TypeOpsEnv
+  , noConstructors
   )
 where
 
@@ -96,6 +97,22 @@ type VarEnv = Map.Map ProgVar Type
 -- POSITIONS & TYPE OPERATORS (TYPENAME & DUALOF)
 
 type TypeOpsEnv = Map.Map Pos Type
+
+-- A given type environment without constructors
+noConstructors :: TypeEnv -> VarEnv -> VarEnv
+noConstructors tEnv = Map.filterWithKey (\x _ -> not (x `isDatatypeContructor` tEnv))
+
+-- To determine whether a given constructor (a program variable) is a
+-- datatype constructor we have to look in the type Environment for a
+-- type name associated to a datatype that defines the constructor
+-- (rather indirect)
+isDatatypeContructor :: ProgVar -> TypeEnv -> Bool
+isDatatypeContructor c tEnv =
+  not $ Map.null $ Map.filter (isDatatype . snd) tEnv
+  where isDatatype :: Type -> Bool
+        isDatatype (Datatype _ m) = c `Map.member` m
+        isDatatype _              = False
+
 
 {- Type equality, up to alpha-conversion
 

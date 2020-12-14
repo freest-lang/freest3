@@ -26,7 +26,6 @@ where
 import           Syntax.Base
 import           Syntax.TypeVariable
 import           Syntax.ProgramVariable
-import           Syntax.Schemes                 ( noConstructors )
 import qualified Syntax.Kind                   as K
 import qualified Syntax.Type                   as T
 import qualified Syntax.Expression             as E
@@ -49,7 +48,7 @@ renameState = do
   setTEnv tEnv'
   -- VarEnv + ExpEnv, together
   vEnv <- getVEnv
-  tMapWithKeyM_ renameFun (userDefined (noConstructors tEnv vEnv))
+  tMapWithKeyM_ renameFun (userDefined (T.noConstructors tEnv vEnv))
 
 -- renameFun :: ProgVar -> TypeScheme -> FreestState ()
 -- renameFun f (TypeScheme p xks t) = do

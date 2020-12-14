@@ -1,3 +1,4 @@
+
 {-# LANGUAGE FlexibleInstances #-}
 {- |
 Module      :  Syntax.Show
@@ -28,7 +29,6 @@ import           Syntax.Base
 import           Syntax.Expression             as E
 import qualified Syntax.Kind                   as K
 import           Syntax.ProgramVariable
-import           Syntax.Schemes
 import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
 

@@ -43,7 +43,6 @@ library:
     - Syntax.Base
     - Syntax.Type
     - Syntax.Expression
-    - Syntax.Schemes
     - Syntax.Kind
     - Syntax.ProgramVariable
     - Parse.ParseUtils

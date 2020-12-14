@@ -19,7 +19,6 @@ module Validation.TypeChecking
 where
 
 import           Syntax.Expression
-import           Syntax.Schemes
 import           Syntax.Type
 import           Syntax.ProgramVariable
 import           Syntax.Base
