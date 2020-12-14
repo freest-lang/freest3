@@ -32,7 +32,7 @@ import qualified Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
 
 class Equivalence t where
-  equivalent :: T.TypeEnv -> K.KindEnv -> t -> t -> Bool
+  equivalent :: K.KindEnv -> t -> t -> Bool
 
 -- Types
 
@@ -43,7 +43,7 @@ type Visited = Set.Set (Pos, Pos)
 -- A co-inductive definition for functional types. A bisimulation
 -- based definition for session types
 instance Equivalence T.Type where
-  equivalent tenv kenv = equiv Set.empty
+  equivalent kenv = equiv Set.empty
    where
     equiv :: Visited -> T.Type -> T.Type -> Bool
     -- Have we been here before?
@@ -66,55 +66,54 @@ instance Equivalence T.Type where
     equiv _ (T.Var _ x) (T.Var _ y) = x == y -- A free (a polymorphic) type var
     equiv v t@T.Rec{} u = equiv (Set.insert (pos t, pos u) v) (Subs.unfold t) u
     equiv v t u@T.Rec{} = equiv (Set.insert (pos t, pos u) v) t (Subs.unfold u)
-    -- Type operators
-    equiv _ (T.Name _ x) (T.Name _ y) = -- trace ("TNAME 1 " ++ show x) $
-      x == y -- Admissible
-    equiv v (T.Name _ x) u = -- trace ("TNAME 2 " ++ show x) $
-      equiv v (getType x) u
-    equiv v t (T.Name _ y) = -- trace ("TNAME 3 " ++ show y) $
-      equiv v t (getType y)
+    -- -- Type operators
+    -- equiv _ (T.Name _ x) (T.Name _ y) = -- trace ("TNAME 1 " ++ show x) $
+    --   x == y -- Admissible
+    -- equiv v (T.Name _ x) u = -- trace ("TNAME 2 " ++ show x) $
+    --   equiv v (getType x) u
+    -- equiv v t (T.Name _ y) = -- trace ("TNAME 3 " ++ show y) $
+    --   equiv v t (getType y)
     -- Session types
     equiv _ t u =
-      isSessionType tenv kenv t
-        && isSessionType tenv kenv u
-        && Equivalence.Equivalence.bisimilar tenv t u
+      isSessionType kenv t
+        && isSessionType kenv u
+        && Equivalence.Equivalence.bisimilar t u
 
     equivField :: Visited -> T.TypeMap -> Bool -> ProgVar -> T.Type -> Bool
     equivField v m acc l t = acc && l `Map.member` m && equiv v (m Map.! l) t
 
-    getType :: TypeVar -> T.Type
-    getType x = snd $ tenv Map.! x
+    -- getType :: TypeVar -> T.Type
+    -- getType x = snd $ tenv Map.! x
 
-bisimilar :: T.TypeEnv -> T.Type -> T.Type -> Bool
-bisimilar tEnv t u = Bisimulation.bisimilar $ convertToGrammar tEnv [t, u]
+bisimilar :: T.Type -> T.Type -> Bool
+bisimilar t u = Bisimulation.bisimilar $ convertToGrammar [t, u]
   -- where Grammar [xs, ys] p = convertToGrammar tEnv [t, u]
     -- trace (show t ++ "\nbisim\n" ++ show u) $ convertToGrammar tEnv [t, u]
 
 -- Assumes the type is well formed
-isSessionType :: T.TypeEnv -> K.KindEnv -> T.Type -> Bool
+isSessionType :: K.KindEnv -> T.Type -> Bool
   -- Session types
-isSessionType _    _    (T.Skip _)                 = True
-isSessionType _    _    T.Semi{}                   = True
-isSessionType _    _    T.Message{}                = True
-isSessionType _    _    T.Choice{}                 = True
+isSessionType _    (T.Skip _)                 = True
+isSessionType _    T.Semi{}                   = True
+isSessionType _    T.Message{}                = True
+isSessionType _    T.Choice{}                 = True
   -- Recursion
-isSessionType _    _    (T.Rec _ (K.Bind _ _ k) _) = K.isSession k
-isSessionType _    kenv (T.Var _ x               ) = Map.member x kenv
+isSessionType _    (T.Rec _ (K.Bind _ _ k) _) = K.isSession k
+isSessionType kenv (T.Var _ x               ) = Map.member x kenv
   -- Type operators
-isSessionType _    _    T.Dualof{}                 = True
+isSessionType _    T.Dualof{}                 = True
 -- isSessionType tenv _ (T.Name _ x) = K.isSession $ fst $ tenv Map.! x
   -- Otherwise: Functional types
-isSessionType _    _    _                          = False
+isSessionType _    _                          = False
 
 -- Typing environments
 
 instance Equivalence T.VarEnv where
-  equivalent tenv kenv env1 env2 =
+  equivalent kenv env1 env2 =
     Map.size env1
       == Map.size env2
       && Map.foldlWithKey
            (\acc b s -> acc && b `Map.member` env2 && equivalent
-             tenv
              kenv
              s
              (env2 Map.! b)

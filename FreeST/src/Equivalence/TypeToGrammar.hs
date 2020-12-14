@@ -41,12 +41,12 @@ import           Validation.Terminated
 
 -- Conversion to context-free grammars
 
-convertToGrammar :: T.TypeEnv -> [T.Type] -> Grammar
-convertToGrammar tEnv ts = --trace ("subs: " ++ show (subs state))  $
+convertToGrammar :: [T.Type] -> Grammar
+convertToGrammar ts = --trace ("subs: " ++ show (subs state))  $
                            Grammar (substitute θ word)
                                    (substitute θ (productions state))
  where
-  (word, state) = runState (mapM typeToGrammar ts) (initial tEnv)
+  (word, state) = runState (mapM typeToGrammar ts) initial
   θ             = substitution state
 
 typeToGrammar :: T.Type -> TransState Word
@@ -103,16 +103,16 @@ type TransState = State TState
 data TState = TState {
   productions  :: Productions
 , nextIndex    :: Int
-, typeEnv      :: T.TypeEnv
+-- , typeEnv      :: T.TypeEnv
 , substitution :: Substitution
 }
 
 -- State manipulating functions, get and put
 
-initial :: T.TypeEnv -> TState
-initial tEnv = TState { productions  = Map.empty
+initial :: TState
+initial = TState { productions  = Map.empty
                       , nextIndex    = 1
-                      , typeEnv      = tEnv
+       --               , typeEnv      = tEnv
                       , substitution = Map.empty
                       }
 

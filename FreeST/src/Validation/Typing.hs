@@ -440,10 +440,10 @@ kEnvFromType kenv _ = kenv
 
 checkEquivTypes :: E.Exp -> K.KindEnv -> T.Type -> T.Type -> FreestState ()
 checkEquivTypes exp kEnv expected actual = do
-  tEnv <- getTEnv
+--  tEnv <- getTEnv
   -- vEnv <- getVEnv
   -- traceM ("\n checkEquivTypes exp : " ++ show exp ++ " \t" ++ show (userDefined vEnv))
-  unless (equivalent tEnv kEnv actual expected) $ addError
+  unless (equivalent kEnv actual expected) $ addError
     (pos exp)
     [ Error "Couldn't match expected type"
     , Error expected
@@ -471,10 +471,10 @@ checkEqualEnvs e vEnv1 vEnv2 = unless
 checkEquivEnvs
   :: Pos -> String -> K.KindEnv -> T.VarEnv -> T.VarEnv -> FreestState ()
 checkEquivEnvs p branching kEnv vEnv1 vEnv2 = do
-  tEnv <- getTEnv
+--  tEnv <- getTEnv
   let vEnv1' = userDefined vEnv1
       vEnv2' = userDefined vEnv2
-  unless (equivalent tEnv kEnv vEnv1' vEnv2') $ addError
+  unless (equivalent kEnv vEnv1' vEnv2') $ addError
     p
     [ Error
       (  "I have reached the end of a "

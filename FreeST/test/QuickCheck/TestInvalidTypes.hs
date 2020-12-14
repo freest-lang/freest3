@@ -16,7 +16,7 @@ import           Test.QuickCheck
 main = quickCheckWith stdArgs {maxSuccess = 1000} prop_not_bisimilar
 
 bisim :: Type -> Type -> Bool
-bisim = Equivalence.Equivalence.bisimilar Map.empty
+bisim = Equivalence.Equivalence.bisimilar
 
 pos = defaultPos
 

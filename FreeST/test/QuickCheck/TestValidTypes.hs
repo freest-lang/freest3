@@ -35,10 +35,10 @@ main = verboseCheckWith
 -- Convenience
 
 bisim :: T.Type -> T.Type -> Bool
-bisim = Equivalence.Equivalence.bisimilar Map.empty
+bisim = Equivalence.Equivalence.bisimilar
 
 equiv :: T.Type -> T.Type -> Bool
-equiv = equivalent Map.empty kindEnv
+equiv = equivalent kindEnv
 
 norm :: T.Type -> T.Type
 norm = normalise Map.empty

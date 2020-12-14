@@ -7,7 +7,7 @@ module Equivalence.TestBisimValidSpec (spec) where
 import           Equivalence.Equivalence (bisimilar)
 import           Validation.Rename
 -- import           Utils.FreestState
-import qualified Data.Map.Strict as Map
+-- import qualified Data.Map.Strict as Map
 import           SpecHelper
 
 
@@ -17,7 +17,7 @@ matchValidSpec :: [String] -> Spec
 matchValidSpec [t, u] =
   it (t ++ " ~ " ++  u) (
       {-# SCC "BISSIM_TEST_CALL" #-}
-      bisimilar Map.empty t' u' `shouldBe` True)
+      bisimilar t' u' `shouldBe` True)
     where
       [t', u'] = renameTypes [read t, read u]
       -- readTenv :: String -> TypeEnv

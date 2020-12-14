@@ -5,7 +5,7 @@ where
 
 import           Equivalence.Equivalence        ( equivalent )
 import           Validation.Rename              ( renameTypes )
-import qualified Data.Map.Strict               as Map
+-- import qualified Data.Map.Strict               as Map
 import           SpecHelper
 
 -- Note that the tests cases should be kinded!
@@ -13,7 +13,7 @@ import           SpecHelper
 matchValidSpec :: [String] -> Spec
 matchValidSpec [k, t, u] = it
   (k ++ "  |-  " ++ t ++ " ~ " ++ u)
-  (equivalent Map.empty (readKenv k) t' u' `shouldBe` True)
+  (equivalent (readKenv k) t' u' `shouldBe` True)
   where [t', u'] = renameTypes [read t, read u]
 
 spec :: Spec
