@@ -52,6 +52,11 @@ module Utils.FreestState
   , getTypeNames
   , findTypeName
   , debugM
+-- Parse Env
+  , ParseEnv
+  , emptyPEnv
+  , addToPEnv
+  , getPEnv  
   )
 where
 
@@ -80,6 +85,8 @@ import           Debug.Trace -- debug (used on debugM function)
 -- type Errors = Set.Set String
 type Errors = [String]
 
+type ParseEnv = Map.Map ProgVar ([ProgVar], Exp)
+
 data FreestS = FreestS {
   filename  :: String
 , varEnv    :: T.VarEnv
@@ -88,6 +95,7 @@ data FreestS = FreestS {
 , typenames :: T.TypeOpsEnv
 , errors    :: Errors
 , nextIndex :: Int
+, parseEnv  :: ParseEnv
 }
 
 type FreestState = State FreestS
@@ -100,10 +108,22 @@ initialState f = FreestS { filename  = f
                          , expEnv    = Map.empty
                          , typeEnv   = Map.empty
                          , typenames = Map.empty
-                         , errors    = []
---, errors    = Set.empty
+                         , errors    = []                         
                          , nextIndex = 0
+                         , parseEnv  = Map.empty
                          }
+
+-- | Parse Env
+
+emptyPEnv :: FreestS -> FreestS
+emptyPEnv s = s { parseEnv = Map.empty }
+
+addToPEnv :: ProgVar -> [ProgVar] -> Exp -> FreestState ()
+addToPEnv x xs e =
+  modify (\s -> s { parseEnv = Map.insert x (xs, e) (parseEnv s) })
+
+getPEnv :: FreestState ParseEnv
+getPEnv = gets parseEnv
 
 -- | NEXT VAR
 

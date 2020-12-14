@@ -149,15 +149,17 @@ NL :: { () }
 
 Decl :: { () }
   -- Function signature
---  : ProgVar ':' TypeScheme {% do
   : ProgVar ':' Type {% do
       toStateT $ checkDupProgVarDecl $1
-      toStateT $ addToVEnv $1 $3 }
+      toStateT $ addToVEnv $1 $3
+    }
   -- Function declaration
   | ProgVar ProgVarWildSeq '=' Expr {% do
       toStateT $ checkDupFunDecl $1
-      e <- toStateT $ buildFunBody $1 $2 $4
-      toStateT $ addToEEnv $1 e }
+      toStateT $ addToPEnv $1 $2 $4        
+    }
+      -- e <- toStateT $ buildFunBody $1 $2 $4
+      -- toStateT $ addToEEnv $1 e
   -- Type abbreviation
   | type KindedTVar KindBindEmptyList '=' Type {% do
       toStateT $ checkDupTypeDecl (fst $2)

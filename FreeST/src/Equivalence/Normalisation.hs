@@ -36,9 +36,10 @@ instance Normalise T.Type where
   normalise _ (T.Dualof _ t) =
     internalError "Equivalence.Normalisation.normalise" t
 --  normalise tenv (TypeName _ a) = normalise tenv (snd $ tenv Map.! a) -- TODO: type/data may be polymorphic
-  normalise tenv v@(T.Var _ a) = case tenv Map.!? a of
-    Just t  -> normalise tenv (snd t) -- TODO: type/data may be polymorphic
-    Nothing -> v
+  -- normalise tenv v@(T.Var _ a) =
+  --   case tenv Map.!? a of
+  --     Just t  -> normalise tenv (snd t) -- TODO: type/data may be polymorphic
+  --     Nothing -> v
     -- Otherwise: Basic, Fun, PairType, Datatype, Skip, Message, Choice, TypeVar
   normalise _ t = t
 

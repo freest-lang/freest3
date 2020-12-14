@@ -24,7 +24,6 @@ module Parse.ParseUtils
   , checkDupCons
   , binOp
   , unOp
-  , buildFunBody
   , typeListToType
   , ParseResult(..)
   , FreestStateT
@@ -34,17 +33,17 @@ module Parse.ParseUtils
   )
 where
 
-import           Syntax.Base
-import           Syntax.ProgramVariable
-import           Syntax.TypeVariable
-import qualified Syntax.Kind                   as K
-import qualified Syntax.Type                   as T
-import qualified Syntax.Expression             as E
-import           Equivalence.Normalisation
-import           Utils.FreestState
+
+import           Control.Monad.State
 import           Data.List                      ( find )
 import qualified Data.Map.Strict               as Map
-import           Control.Monad.State
+import           Syntax.Base
+import qualified Syntax.Expression             as E
+import qualified Syntax.Kind                   as K
+import           Syntax.ProgramVariable
+import           Syntax.TypeVariable
+import qualified Syntax.Type                   as T
+import           Utils.FreestState
 -- import           Debug.Trace -- debug
 
 thenM :: ParseResult a -> (a -> ParseResult b) -> ParseResult b
@@ -187,7 +186,7 @@ checkDupTypeDecl a = do
 
 checkDupFunDecl :: ProgVar -> FreestState ()
 checkDupFunDecl x = do
-  eEnv <- getEEnv
+  eEnv <- getPEnv
   case eEnv Map.!? x of
     Just e -> addError
       (pos x)
@@ -196,7 +195,7 @@ checkDupFunDecl x = do
       , Error "\n\t Declared at:"
       , Error (pos x)
       , Error "\n\t             "
-      , Error (pos e)
+      , Error (pos $ snd e)
       ]
     Nothing -> return ()
 
@@ -212,42 +211,8 @@ unOp op expr = E.App (pos expr) (E.Var (pos op) op) expr
 typeListToType :: TypeVar -> [(ProgVar, [T.Type])] -> [(ProgVar, T.Type)]
 typeListToType a = map (\(x, ts) -> (x, typeToFun ts))
   -- Convert a list of types and a final type constructor to a type
+
  where
 --  typeToFun []       = TypeName (pos a) a
   typeToFun []       = T.Var (pos a) a
   typeToFun (t : ts) = T.Fun (pos t) Un t (typeToFun ts)
-
-buildFunBody :: ProgVar -> [ProgVar] -> E.Exp -> FreestState E.Exp
-buildFunBody f bs e = getFromVEnv f >>= \case
-  Just s -> do
---    let (TypeScheme _ _ t) = s
-    tEnv <- getTEnv
-   
-    -- traceM $ "0. s = " ++ show s ++ "\n"
-    --          ++ "0.1 TENV = " ++ show tEnv ++ "\n"
-    --          ++ "1. " ++ show (normalise tEnv s) ++ "\n"
-    --          ++ "2. " ++ (show $ buildExp bs (normalise tEnv s)) ++ "\n\n"
-    return $ buildExp bs (normalise tEnv s) -- Normalisation allows type names in signatures
-  Nothing -> do
-    addError
-      (pos f)
-      [ Error "The binding for function"
-      , Error f
-      , Error "lacks an accompanying type signature"
-      ]
-    return e
- where
-  buildExp :: [ProgVar] -> T.Type -> E.Exp
-  buildExp [] _ = e
-  buildExp (b : bs) (T.Fun _ m t1 t2) =
-    E.Abs (pos b) m (T.Bind (pos b) b t1) (buildExp bs t2)
-  buildExp (b : bs) (T.Dualof p (T.Fun _ m t1 t2)) =
-    E.Abs (pos b) m (T.Bind (pos b) b (T.Dualof p t1)) (buildExp bs (T.Dualof p t2))
-    
---  buildExp (b : bs) (Forall _ (K.Bind p y _) t) = -- TODO: Abs Un ??? I think it can be (mult t)
-  buildExp bs (T.Forall p kb t) =
-    E.TypeAbs p kb (buildExp bs t)
-    
-  buildExp (b : bs) t =
-    E.Abs (pos b) Un (T.Bind (pos b) b (omission (pos b))) (buildExp bs t)
-

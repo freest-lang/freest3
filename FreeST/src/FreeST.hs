@@ -50,8 +50,9 @@ checkAndRun filePath = do
   -- Solve type declarations and dualof operators
   let s2 = execState elaborate s1
   when (hasErrors s2) (die $ getErrors s2)
+  let s2' = emptyPEnv s2
   -- Rename
-  let s3 = execState renameState s2
+  let s3 = execState renameState s2'
    -- Type check
   let s4 = execState typeCheck s3
   when (hasErrors s4) (die $ getErrors s4)

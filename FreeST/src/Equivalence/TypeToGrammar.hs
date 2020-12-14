@@ -266,7 +266,6 @@ instance Substitute Productions where
 
 unr :: T.Type -> T.Type
 unr t@T.Rec{} = unr (Substitution.unfold t)
--- unr (T.Semi p t1 t2) | unr t1 == T.Skip p = unr t2
-unr (T.Semi p t1 t2) | terminated t1 = unr t2
-                     | otherwise     = T.Semi p (unr t1) t2
+unr (T.Semi p t1 t2) | terminated (unr t1) = unr t2
+                     | otherwise           = T.Semi p (unr t1) t2
 unr t = t
