@@ -76,5 +76,5 @@ instance Join K.Kind  where
   join k1 k2
     | k1 <: k2 = k2
     | k2 <: k1 = k1
-    | otherwise = internalError "No join for " k1
+    | otherwise = internalError "Validation.Subkind.join" k1
   
