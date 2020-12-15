@@ -15,7 +15,6 @@ Portability :  portable | non-portable (<reason>)
 
 module Equivalence.Equivalence
   ( Equivalence(..)
-  , Equivalence.Equivalence.bisimilar -- for session types only, for testing purposes
   )
 where
 
@@ -24,8 +23,7 @@ import           Syntax.TypeVariable            ( TypeVar )
 import           Syntax.ProgramVariable         ( ProgVar )
 import qualified Syntax.Kind                   as K
 import qualified Syntax.Type                   as T
-import           Equivalence.TypeToGrammar      ( convertToGrammar )
-import           Bisimulation.Bisimulation     as B
+import           Bisimulation.Bisimulation      ( bisimilar )
 import qualified Validation.Substitution       as Subs
                                                 ( unfold, subs )
 import           Validation.Subkind             ( (<:) )
@@ -53,42 +51,42 @@ instance Equivalence T.Type where
     equiv _ _ (T.Unit _) (T.Unit _) = True
     equiv v kEnv (T.Fun _ n1 t1 t2) (T.Fun _ n2 u1 u2) =
       n1 == n2 && equiv v kEnv t1 u1 && equiv v kEnv t2 u2
-    equiv v kEnv (T.Pair _ t1 t2) (T.Pair _ u1 u2) = equiv v kEnv t1 u1 && equiv v kEnv t2 u2
+    equiv v kEnv (T.Pair _ t1 t2) (T.Pair _ u1 u2) =
+      equiv v kEnv t1 u1 && equiv v kEnv t2 u2
     equiv v kEnv (T.Datatype _ m1) (T.Datatype _ m2) =
       Map.size m1 == Map.size m2 && Map.foldlWithKey (equivField v kEnv m2) True m1
     -- Polymorphism and recursion
     equiv v kEnv (T.Forall _ (K.Bind p a1 k1) t1) (T.Forall _ (K.Bind _ a2 k2) t2) =
-      k1 <: k2 && k2 <: k1 && equiv v (Map.insert a1 k1 kEnv) t1 (Subs.subs (T.Var p a1) a2 t2)
-    equiv v kEnv t1@T.Rec{} t2 = equiv (Set.insert (pos t1, pos t2) v) kEnv t2 (Subs.unfold t1)
-    equiv v kEnv t1 t2@T.Rec{} = equiv (Set.insert (pos t1, pos t2) v) kEnv t1 (Subs.unfold t2)
-    equiv _ _ (T.Var _ a1) (T.Var _ a2) = a1 == a2
-    -- Session types (should come before variables)
-    equiv _ kEnv t1 t2 = isSessionType kEnv t1
-      && isSessionType kEnv t2
-      && Equivalence.Equivalence.bisimilar t1 t2
+      k1 <: k2 && k2 <: k1 &&
+      equiv v (Map.insert a1 k1 kEnv) t1 (Subs.subs (T.Var p a1) a2 t2)
+    equiv v kEnv t1@T.Rec{} t2 =
+      equiv (Set.insert (pos t1, pos t2) v) kEnv (Subs.unfold t1) t2
+    equiv v kEnv t1 t2@T.Rec{} =
+      equiv (Set.insert (pos t1, pos t2) v) kEnv t1 (Subs.unfold t2)
+    equiv _ _ (T.Var _ a1) (T.Var _ a2) = a1 == a2 -- Polymorphic variable
+    -- Session types
+    equiv _ kEnv t1 t2 | isSessionType kEnv t1 && isSessionType kEnv t2 =
+      bisimilar t1 t2
     -- Should not happen
     equiv _ _ t1@T.Dualof{} t2 = internalError "Equivalence.Equivalence.equivalent" t1
     equiv _ _ t1 t2@T.Dualof{} = internalError "Equivalence.Equivalence.equivalent" t2
+    equiv _ _ _ _ = False
 
     equivField :: Visited -> K.KindEnv -> T.TypeMap -> Bool -> ProgVar -> T.Type -> Bool
     equivField v kEnv m acc l t = acc && l `Map.member` m && equiv v kEnv (m Map.! l) t
 
-bisimilar :: T.Type -> T.Type -> Bool
-bisimilar t u = B.bisimilar $ convertToGrammar [t, u]
-
--- Assumes the type is well formed
+-- An alternative is to call Validation.Kinding.synthetise and check whether the
+-- synthetised kind is a session type. This would be as in the paper but a lot
+-- heavier. I don't kind we have a prove that the predicates are equivalent.
 isSessionType :: K.KindEnv -> T.Type -> Bool
-  -- Session types
-isSessionType _ T.Skip{}                   = True
-isSessionType _ T.Semi{}                   = True
-isSessionType _ T.Message{}                = True
-isSessionType _ T.Choice{}                 = True
-  -- Recursion
+isSessionType _ T.Skip{} = True
+isSessionType _ T.Semi{} = True
+isSessionType _ T.Message{} = True
+isSessionType _ T.Choice{} = True
 isSessionType _ (T.Rec _ (K.Bind _ _ k) _) = K.isSession k
-isSessionType kEnv (T.Var _ x)             = Map.member x kEnv
-  -- Type operators
-isSessionType _ t@T.Dualof{}               = internalError "Equivalence.Equivalence.isSessionType" t
-isSessionType _ _                          = False
+isSessionType kEnv (T.Var _ x) = Map.member x kEnv -- Polymorphic variable
+isSessionType _ t@T.Dualof{} = internalError "Equivalence.Equivalence.isSessionType" t
+isSessionType _ _  = False
 
 instance Equivalence T.VarEnv where
   equivalent kenv env1 env2 =

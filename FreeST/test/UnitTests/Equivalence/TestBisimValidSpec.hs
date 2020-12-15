@@ -1,15 +1,8 @@
 module Equivalence.TestBisimValidSpec (spec) where
 
--- import           Syntax.Type
--- import           Syntax.Kind
--- import           Syntax.TypeVariable
--- import           Syntax.Base
-import           Equivalence.Equivalence (bisimilar)
+import           Bisimulation.Bisimulation (bisimilar)
 import           Validation.Rename
--- import           Utils.FreestState
--- import qualified Data.Map.Strict as Map
 import           SpecHelper
-
 
 -- Note that the tests cases should be kinded!
 
@@ -20,13 +13,10 @@ matchValidSpec [t, u] =
       bisimilar t' u' `shouldBe` True)
     where
       [t', u'] = renameTypes [read t, read u]
-      -- readTenv :: String -> TypeEnv
-      -- readTenv s = Map.fromList $ map (\(x,k) -> (mkVar defaultPos x, k)) (read s)
 
 spec :: Spec
 spec = do
   t <- runIO $ readFromFile "test/UnitTests/Equivalence/TestBisimValid.txt"
---  t <- runIO $ readFromFile "test/UnitTests/Equivalence/TestQuickCheck.txt"
   describe "Valid Bissim Test" $ mapM_ matchValidSpec (chunksOf 2 t)
 
 main :: IO ()

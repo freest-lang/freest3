@@ -4,7 +4,7 @@ module Equivalence.TestBisimInvalidSpec (spec) where
 -- import           Syntax.Kind
 -- import           Syntax.TypeVariables
 -- import           Syntax.Base
-import           Equivalence.Equivalence (bisimilar)
+import           Bisimulation.Bisimulation (bisimilar)
 import           Validation.Rename
 -- import           Utils.FreestState
 -- import qualified Data.Map.Strict as Map

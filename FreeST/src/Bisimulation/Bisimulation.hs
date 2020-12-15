@@ -18,6 +18,8 @@ module Bisimulation.Bisimulation
 where
 
 import           Syntax.TypeVariable -- Nonterminal symbols are type variables
+import qualified Syntax.Type                   as T
+import           Equivalence.TypeToGrammar      ( convertToGrammar )
 import           Bisimulation.Grammar
 import           Bisimulation.Norm
 import qualified Data.Map.Strict               as Map
@@ -30,8 +32,11 @@ import           Data.List                      ( isPrefixOf
 import           Prelude                 hiding ( Word )
 -- import           Debug.Trace
 
-bisimilar :: Grammar -> Bool
-bisimilar (Grammar [xs, ys] ps) = expand queue rules ps'
+bisimilar :: T.Type -> T.Type -> Bool
+bisimilar t u = bisimilarGrm $ convertToGrammar [t, u]
+
+bisimilarGrm :: Grammar -> Bool
+bisimilarGrm (Grammar [xs, ys] ps) = expand queue rules ps'
  where
   ps' = pruneProductions ps
   rules | allNormed ps' = [reflex, congruence, bpa2, filtering]

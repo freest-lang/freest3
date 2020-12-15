@@ -1,26 +1,27 @@
-module Equivalence.TestEquivalenceValidSpec
-  ( spec
-  )
-where
+module Equivalence.TestEquivalenceValidSpec (spec) where
 
-import           Equivalence.Equivalence        ( equivalent )
-import           Validation.Rename              ( renameTypes )
-import qualified Data.Map.Strict               as Map
+import           Syntax.Base
+import           Syntax.Kind
+import           Equivalence.Equivalence
+import           Validation.Rename
+import qualified Data.Map.Strict as Map
 import           SpecHelper
 
--- Note that the tests cases should be well formed (kinded)
+-- Note that the tests cases should be kinded!
 
 matchValidSpec :: [String] -> Spec
-matchValidSpec [t1, t2] = it
-  ("|- " ++ t1 ++ " ~ " ++ t2)
-  (equivalent Map.empty t1' t2' `shouldBe` True)
-  where [t1', t2'] = renameTypes [read t1, read t2]
+matchValidSpec [k, t, u] = it
+  (k ++ "  |-  " ++ t ++ " ~ " ++  u)
+  (equivalent (readKenv k) t' u' `shouldBe` True)
+  where
+    [t', u'] = renameTypes [read t, read u]
+    readKenv :: String -> KindEnv
+    readKenv s = Map.fromList $ map (\(x,k) -> (mkVar defaultPos x, k)) (read s)
 
 spec :: Spec
 spec = do
-  tests <- runIO
-    $ readFromFile "test/UnitTests/Equivalence/TestEquivalenceValid.txt"
-  describe "Valid Equivalence Test" $ mapM_ matchValidSpec (chunksOf 2 tests)
+  tests <- runIO $ readFromFile "test/UnitTests/Equivalence/TestEquivalenceValid.txt"
+  describe "Valid Equivalence Test" $ mapM_ matchValidSpec (chunksOf 3 tests)
 
 main :: IO ()
 main = hspec spec
