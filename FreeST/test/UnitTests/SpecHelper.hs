@@ -22,6 +22,8 @@ import           Syntax.Base                    ( defaultPos
                                                 , mkVar
                                                 )
 
+import Debug.Trace
+
 readFromFile :: FilePath -> IO [String]
 readFromFile filename = do
   str <- readFile filename
@@ -36,4 +38,4 @@ isComment _               = False
 
 readKenv :: String -> KindEnv
 readKenv s =
-  Map.fromList $ map (\(x, k) -> (mkVar defaultPos x, read k)) (read s)
+  Map.fromList $ map (\(x, k) -> trace (x ++ "\t" ++ k) $ (mkVar defaultPos x, read k)) (read s)
