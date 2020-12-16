@@ -10,6 +10,9 @@ import           Utils.FreestState
 import           Utils.PreludeLoader            ( prelude )
 import           Validation.Typing              ( checkAgainst )
 import qualified Data.Map.Strict               as Map
+import           Validation.Elaboration         ( subsExp
+                                                , subsType
+                                                )
 
 spec :: Spec
 spec = describe "Valid expressions" $ do
@@ -22,7 +25,10 @@ matchValidExpressionSpec [e, t] =
   it (e ++ " : " ++ t) $ isExpr (read e) (read t) `shouldBe` True
 
 isExpr :: Exp -> Type -> Bool
-isExpr e t = null (errors s)
+isExpr e t = trace (show $ errors s) $ null (errors s)
  where
-  s = execState (checkAgainst Map.empty e t) is
-  is = (initialState "Check Against Expression") { varEnv = prelude }
+  s    = execState test is
+  is   = (initialState "Check Against Expression") { varEnv = prelude }
+  test = join $ liftM2 (checkAgainst Map.empty)
+                       (subsExp Map.empty e)
+                       (subsType Map.empty Nothing t)

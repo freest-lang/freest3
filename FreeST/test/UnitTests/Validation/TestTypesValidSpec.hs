@@ -11,9 +11,10 @@ import           Utils.FreestState              ( initialState
                                                 , errors
                                                 )
 import           Control.Monad.State            ( runState )
-import qualified Data.Map.Strict                as Map
+import qualified Data.Map.Strict               as Map
                                                 ( empty )
 import           SpecHelper
+import           Validation.Elaboration
 
 spec :: Spec
 spec = describe "Valid type tests" $ do
@@ -26,8 +27,10 @@ matchValidKindingSpec [t, k] = it t $ hasKind (read t) (read k) `shouldBe` True
 hasKind :: Type -> Kind -> Bool
 hasKind t k = null (errors s) && k' <: k
  where
-  t'      = renameType t
-  (k', s) = runState (synthetise Map.empty t') (initialState "Kind synthesis")
+--  t'      = renameType t
+  (k', s) = runState test (initialState "Kind synthesis")
+  test    = synthetise Map.empty =<< subsType Map.empty Nothing (renameType t)
+
 
 main :: IO ()
 main = hspec spec

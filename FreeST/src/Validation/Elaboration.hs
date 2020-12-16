@@ -1,8 +1,27 @@
 {-# LANGUAGE LambdaCase #-}
 module Validation.Elaboration
   ( elaborate
+  , subsExp  -- Testing
+  , subsType -- Testing 
   )
 where
+
+{-
+I wish we do not need to export the two models marked as testing.
+
+One possible solution will consist of splitting the module into private and
+public parts. The private stays on an inner module which is exported, and then
+test modules can import it.
+
+The other possible solution is to use LANGUAGE CPP and the
+#ifdef TEST
+, private
+#endif
+on exports. The problem of the latter is that it compiles the code twice, and
+instead of having the test suite depending only on the library (package.yaml),
+one must include all modules in the test suite (I guess).
+
+-}
 
 import           Syntax.Expression
 -- import           Syntax.Schemes
@@ -31,7 +50,7 @@ elaborate = do
   tenv <- getTEnv
 --  debugM $ "Initial env:\n" ++ show tenv
   -- | Solve type declarations
-  eqs <- solveEquations tenv
+  eqs  <- solveEquations tenv
 --  debugM $ "Solving eqs:\n" ++ show eqs
   -- Replace all occurrences of DualOf t
   eqs' <- solveDualOfs eqs
@@ -48,7 +67,7 @@ elaborate = do
   -- debugM $ "AFTER VENV: " ++ show (userDefined venv) ++ "\n"
 
   -- | Substitute all type operators on ExpEnv
-  
+
   -- eenv <- getEEnv
   -- debugM $ "BEFORE EENV: " ++ show eenv ++ "\n"
   substitutePEnv eqs'
@@ -88,7 +107,7 @@ solveEq tenv visited f (T.Choice p pol tm) =
   fmap (T.Choice p pol) (mapM (solveEq tenv visited f) tm)
 solveEq tenv visited f t@(T.Var p x)
   | x `Set.member` visited = pure t
-  | f == x                 = pure t
+  | f == x = pure t
   | otherwise = case tenv Map.!? x of
     Just tx -> solveEq tenv (f `Set.insert` visited) x tx
     Nothing -> do
@@ -126,10 +145,10 @@ solveDualOf tenv b (T.Forall p kb t) =
 solveDualOf tenv b (T.Fun p pol t u) =
   liftM2 (T.Fun p pol) (solveDualOf tenv b t) (solveDualOf tenv b u)
 solveDualOf tenv b n@(T.Var p tname)
-
   | b = case tenv Map.!? tname of
-    Just t  -> pure t
-    Nothing -> addError p [Error "Type name not in scope:", Error tname] >> pure n
+    Just t -> pure t
+    Nothing ->
+      addError p [Error "Type name not in scope:", Error tname] >> pure n
   | otherwise = pure n
 solveDualOf tenv _ d@(T.Dualof p t) = do
   addTypeName p d
@@ -362,10 +381,10 @@ solveDualOf _ _ p = return p
 
 -- Change position of a given type with a given position
 changePos :: Pos -> T.Type -> T.Type
-changePos p (T.Int  _     ) = T.Int p
-changePos p (T.Char _     ) = T.Char p
-changePos p (T.Bool _     ) = T.Bool p
-changePos p (T.Unit _     ) = T.Unit p
+changePos p (T.Int  _         ) = T.Int p
+changePos p (T.Char _         ) = T.Char p
+changePos p (T.Bool _         ) = T.Bool p
+changePos p (T.Unit _         ) = T.Unit p
 changePos p (T.Fun _ pol t u  ) = T.Fun p pol t u
 changePos p (T.Pair    _ t   u) = T.Pair p t u
 -- Datatype
@@ -465,16 +484,14 @@ subsType tenv Nothing n@(T.Dualof p t) = do
 subsType _ _ t = pure t
 
 -- Apply subsType over TypeMaps
-subsMap
-  :: Ctx -> Maybe (TypeVar, T.Type) -> T.TypeMap -> FreestState T.TypeMap
+subsMap :: Ctx -> Maybe (TypeVar, T.Type) -> T.TypeMap -> FreestState T.TypeMap
 subsMap tenv b = mapM (subsType tenv b)
 
 -- Substitute expressions
 
 subsExp :: Ctx -> Exp -> FreestState Exp
 subsExp tenv (Abs p m b e) =
-  liftM2 (Abs p m) (subsTypeBind
-                    tenv b) (subsExp tenv e)
+  liftM2 (Abs p m) (subsTypeBind tenv b) (subsExp tenv e)
 subsExp tenv (App p e1 e2) = liftM2 (App p) (subsExp tenv e1) (subsExp tenv e2)
 subsExp tenv (Pair p e1 e2) =
   liftM2 (Pair p) (subsExp tenv e1) (subsExp tenv e2)
@@ -489,8 +506,20 @@ subsExp tenv (TypeApp p e t) =
   liftM2 (TypeApp p) (subsExp tenv e) (subsType tenv Nothing t) -- (mapM (subsType tenv Nothing) xs)
 subsExp tenv (UnLet p x e1 e2) =
   liftM2 (UnLet p x) (subsExp tenv e1) (subsExp tenv e2)
-subsExp tenv (New p t u) =
-  liftM2 (New p) (subsType tenv Nothing t) (subsType tenv Nothing u)
+subsExp tenv (New p t u) = do
+  tmp1 <- (subsType tenv Nothing t)
+  tmp2 <- (subsType tenv Nothing u)
+  debugM
+      (  "NEW "
+      ++ show t
+      ++ " - "
+      ++ show tmp1
+      ++ "\t"
+      ++ show u
+      ++ " - "
+      ++ show tmp2
+      )
+    >> liftM2 (New p) (subsType tenv Nothing t) (subsType tenv Nothing u)
 subsExp _ (Select p x) = fmap (Select p) (pure x)
 subsExp tenv (Match p e m) =
   liftM2 (Match p) (subsExp tenv e) (subsFieldMap tenv m)

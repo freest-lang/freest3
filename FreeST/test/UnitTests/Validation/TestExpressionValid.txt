@@ -15,3 +15,7 @@ Int -> Int
 (\x : Int -> (\y : Int -> x + y))
 Int -> Int -> Int
 
+-- Send recv same thread
+
+let (w,r) = new !Int in let _ = send 5 w in let (v,_) = receive r in v
+Int
