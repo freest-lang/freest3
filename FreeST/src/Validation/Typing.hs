@@ -27,7 +27,7 @@ import qualified Syntax.Type                   as T
 import qualified Syntax.Expression             as E
 import           Syntax.ProgramVariable
 import           Parse.Unparser -- debug
-import           Validation.Extract
+import qualified Validation.Extract            as Extract
 import qualified Validation.Kinding            as K -- Again?
 import qualified Validation.Rename             as Rename
                                                 ( subs )
@@ -93,12 +93,12 @@ synthetise kEnv e'@(E.Abs p m (T.Bind _ x t1) e) = do
 -- Abs elimination
 synthetise kEnv (E.App p (E.Select _ c) e) = do
   t <- synthetise kEnv e
-  m <- extractOutChoiceMap e t
-  extractCons p m c
+  m <- Extract.outChoiceMap e t
+  Extract.constructor p m c
 synthetise kEnv (E.App p (E.Var _ x) e) |  -- Receive e
                                           x == mkVar p "receive" = do
   t        <- synthetise kEnv e
-  (u1, u2) <- extractInput e t
+  (u1, u2) <- Extract.input e t
   K.checkAgainst kEnv (K.ml (pos u1)) u1
   return $ T.Pair p u1 u2
 synthetise kEnv e@(E.App p (E.Var _ x) _) |  -- Send e
@@ -107,14 +107,14 @@ synthetise kEnv e@(E.App p (E.Var _ x) _) |  -- Send e
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) |  -- Send e1 e2
                                                       x == mkVar p "send" = do
   t        <- synthetise kEnv e2
-  (u1, u2) <- extractOutput e2 t
+  (u1, u2) <- Extract.output e2 t
   K.checkAgainst kEnv (K.ml (pos u1)) u1
   checkAgainst kEnv e1 $ u1
   return u2
 synthetise kEnv e@(E.App _ e1 e2) = do -- General case
 --  debugM ("Extract Fun: " ++ show e)
   t        <- synthetise kEnv e1
-  (u1, u2) <- extractFun e1 t
+  (u1, u2) <- Extract.function e1 t
 --  debugM ("Extract Fun: " ++ show u1 ++ " | "  ++ show u2 ++ " against " ++ show e2)
   checkAgainst kEnv e2 u1
   return u2
@@ -147,7 +147,7 @@ synthetise kEnv (E.TypeAbs p kb@(K.Bind p' x k) e) = do
 
 synthetise kEnv (E.TypeApp p e t) = do -- TODO: error and bs, zip
   u                              <- synthetise kEnv e
-  (T.Forall _ (K.Bind _ y _) u') <- extractForall e u
+  (T.Forall _ (K.Bind _ y _) u') <- Extract.forall e u
   K.synthetise kEnv t
   -- let tmp = Rename.subs t y u'
   -- traceM $ "\ESC[91m"
@@ -194,7 +194,7 @@ synthetise kEnv (E.Pair p e1 e2) = do
 -- Pair elimination
 synthetise kEnv (E.BinLet _ x y e1 e2) = do
   t1       <- synthetise kEnv e1
-  (u1, u2) <- extractPair e1 t1
+  (u1, u2) <- Extract.pair e1 t1
   addToVEnv x u1
   addToVEnv y u2
   vEnv <- getVEnv
@@ -204,7 +204,7 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
   return t2
 -- Datatype elimination
 synthetise kEnv (E.Case p e fm) =
-  synthetiseFieldMap p "case" kEnv e fm extractDatatypeMap paramsToVEnvCM
+  synthetiseFieldMap p "case" kEnv e fm Extract.datatypeMap paramsToVEnvCM
 -- Session types
 -- New
 synthetise kEnv (E.New p t u) = do
@@ -213,7 +213,7 @@ synthetise kEnv (E.New p t u) = do
 synthetise kEnv e@(E.Select _ _) = addPartiallyAppliedError e "channel"
 -- Match
 synthetise kEnv (E.Match p e fm) =
-  synthetiseFieldMap p "match" kEnv e fm extractInChoiceMap paramsToVEnvMM
+  synthetiseFieldMap p "match" kEnv e fm Extract.inChoiceMap paramsToVEnvMM
 
 -- | Returns the type scheme for a variable; removes it from vEnv if lin
 synthetiseVar :: K.KindEnv -> ProgVar -> FreestState T.Type
@@ -402,16 +402,16 @@ checkAgainst kEnv (E.Conditional p e1 e2 e3) t = do
 checkAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
   -- let kEnv = kEnvFromType kEnv t2
   t1       <- synthetise kEnv e1
-  (u1, u2) <- extractPair e1 t1
+  (u1, u2) <- Extract.pair e1 t1
   addToVEnv x u1
   addToVEnv y u2
   checkAgainst kEnv e2 t2
   quotient kEnv x
   quotient kEnv y
 -- TODO Match
--- checkAgainst kEnv (Match p e fm) = checkAgainstFieldMap p kEnv e fm extractInChoiceMap
+-- checkAgainst kEnv (Match p e fm) = checkAgainstFieldMap p kEnv e fm Extract.inChoiceMap
 -- TODO Datatype elimination
--- checkAgainst kEnv (Case p e fm) = checkAgainstFieldMap p kEnv e fm extractDatatypeMap
+-- checkAgainst kEnv (Case p e fm) = checkAgainstFieldMap p kEnv e fm Extract.datatypeMap
 -- Abs elimination. It seems that we cannot do checkAgainst for we
 -- cannot decide whether to use a Lin or a Un function. See
 -- counterexamples: polySUTL.fst when using Lin, and mult.fst when
