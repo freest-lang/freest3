@@ -1,22 +1,27 @@
 module Equivalence.TestEquivalenceValidSpec (spec) where
 
 import           Syntax.Base
-import           Syntax.Kind
+import           Syntax.Kind                   as K
 import           Equivalence.Equivalence
 import           Validation.Rename
-import qualified Data.Map.Strict as Map
+import           Validation.Kinding             ( synthetise )
 import           SpecHelper
-
--- Note that the tests cases should be kinded!
+import           Utils.FreestState              ( initialState
+                                                , errors
+                                                )
+import           Control.Monad.State            ( runState )
+import qualified Data.Map.Strict               as Map
 
 matchValidSpec :: [String] -> Spec
 matchValidSpec [k, t, u] = it
   (k ++ "  |-  " ++ t ++ " ~ " ++  u)
-  (equivalent (readKenv k) t' u' `shouldBe` True)
+  (wellFormed kEnv t' && wellFormed kEnv u' && equivalent kEnv t' u' `shouldBe` True)
   where
     [t', u'] = renameTypes [read t, read u]
-    -- readKenv :: String -> KindEnv
-    -- readKenv s = Map.fromList $ map (\(x,k) -> (mkVar defaultPos x, k)) (read s)
+    kEnv = readKenv k
+
+wellFormed :: K.KindEnv -> Type -> Bool
+wellFormed kEnv t = null $ errors $ snd $ runState (synthetise kEnv t) (initialState "Kind synthesis for testing type equivalence")
 
 spec :: Spec
 spec = do

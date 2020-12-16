@@ -22,13 +22,18 @@ import           Syntax.Base                    ( Pos, pos )
 import           Syntax.ProgramVariable         ( ProgVar )
 import qualified Syntax.Kind                   as K
 import qualified Syntax.Type                   as T
+import           Validation.Kinding             ( synthetise )
 import           Bisimulation.Bisimulation      ( bisimilar )
 import qualified Validation.Substitution       as Subs
                                                 ( unfold, subs )
 import           Validation.Subkind             ( (<:) )
 import           Utils.Error                    ( internalError )
+import           Utils.FreestState              ( initialState
+                                                , errors
+                                                )
 import qualified Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
+import           Control.Monad.State            ( runState )
 
 class Equivalence t where
   equivalent :: K.KindEnv -> t -> t -> Bool
@@ -74,9 +79,15 @@ instance Equivalence T.Type where
     equivField :: Visited -> K.KindEnv -> T.TypeMap -> Bool -> ProgVar -> T.Type -> Bool
     equivField v kEnv m acc l t = acc && l `Map.member` m && equiv v kEnv (m Map.! l) t
 
--- An alternative is to call Validation.Kinding.synthetise and check whether the
--- synthetised kind is a session type. This would be as in the paper but a lot
--- heavier. I don't kind we have a prove that the predicates are equivalent.
+isSessionType :: K.KindEnv -> T.Type -> Bool
+isSessionType kEnv t =  null (errors state) && K.isSession kind
+ where
+  (kind, state) = runState (synthetise kEnv t) (initialState "Kind synthesis for equivalence")
+
+{-
+-- An alternative is below. Lighter, but I don't kind we have a proof that the
+-- predicates are equivalent.
+
 isSessionType :: K.KindEnv -> T.Type -> Bool
 isSessionType _ T.Skip{} = True
 isSessionType _ T.Semi{} = True
@@ -86,6 +97,7 @@ isSessionType _ (T.Rec _ (K.Bind _ _ k) _) = K.isSession k
 isSessionType kEnv (T.Var _ x) = Map.member x kEnv -- Polymorphic variable
 isSessionType _ t@T.Dualof{} = internalError "Equivalence.Equivalence.isSessionType" t
 isSessionType _ _  = False
+-}
 
 instance Equivalence T.VarEnv where
   equivalent kenv env1 env2 =

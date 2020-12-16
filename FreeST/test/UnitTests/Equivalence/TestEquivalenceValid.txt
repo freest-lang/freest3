@@ -657,8 +657,8 @@ x ; Skip
 (rec x_2:SL. y)
 
 []
-rec x. &{A: rec z. x}
-&{A: rec y. &{A: y}}
+rec a:SL. &{A: rec b. a}
+&{A: rec c:SL. &{A: c}}
 
 [("y", "SL")]
 (Skip;(rec x_0:SL. (rec x_1:SL. y)))

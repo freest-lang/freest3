@@ -24,8 +24,7 @@ matchValidKindingSpec :: [String] -> Spec
 matchValidKindingSpec [t, k] = it t $ hasKind (read t) (read k) `shouldBe` True
 
 hasKind :: Type -> Kind -> Bool
-hasKind t k | null (errors s) = k' <: k
-            | otherwise       = False
+hasKind t k = null (errors s) && k' <: k
  where
   t'      = renameType t
   (k', s) = runState (synthetise Map.empty t') (initialState "Kind synthesis")
