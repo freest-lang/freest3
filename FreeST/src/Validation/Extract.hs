@@ -26,34 +26,23 @@ module Validation.Extract
   )
 where
 
-import           Syntax.Expression
+import           Syntax.Base
+import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 import qualified Syntax.Kind                   as K
-import           Syntax.ProgramVariable
-import           Syntax.Base
+import           Syntax.Expression                  -- TODO: qualified
 import           Equivalence.Normalisation
 import           Utils.FreestState
 import qualified Data.Map.Strict               as Map
 -- import           Parse.Unparser -- debug
 -- import           Debug.Trace -- debug
 
-
 -- | The Extract Functions
-
-norm :: T.Type -> FreestState T.Type
-norm t = do
-  tEnv <- getTEnv
-  return $ normalise tEnv t
-  -- trace ("BinLet before: " ++ show t ++ "\n" ++ show tEnv) (return ())
-  -- let u = normalise tEnv t
-  -- trace ("BinLet after:  " ++ show u) (return ())
-  -- return u
 
 -- Extracts a function from a type; gives an error if there isn't a function
 extractFun :: Exp -> T.Type -> FreestState (T.Type, T.Type)
 extractFun e t = do
-  t' <- norm t
-  case t' of
+  case normalise t of
     (T.Fun _ _ u v) -> return (u, v)
     u               -> do
       let p = pos e
@@ -69,8 +58,7 @@ extractFun e t = do
 -- Extracts a pair from a type; gives an error if there is no pair
 extractPair :: Exp -> T.Type -> FreestState (T.Type, T.Type)
 extractPair e t = do
-  t' <- norm t
-  case t' of
+  case normalise t of
     (T.Pair _ u v) -> return (u, v)
     u              -> do
       let p = pos u
@@ -86,9 +74,7 @@ extractPair e t = do
 -- Extracts a forall from a type; gives an error if there is no forall
 extractForall :: Exp -> T.Type -> FreestState T.Type
 extractForall e t = do
-  t' <- norm t
---  traceM $ "e: " ++ show e ++ "\tt: " ++ show t ++ "\tt': " ++ show t'
-  case t' of
+  case normalise t of
     u@T.Forall{} -> return u
     u            -> do
 --      error $ show u
@@ -103,18 +89,6 @@ extractForall e t = do
         -- TODO: return a suitable type
       return $ T.Forall p (K.Bind p (mkVar p "_") (omission p)) (omission p)
 
--- Extracts a basic type from a general type; gives an error if it isn't a basic
--- Deprecated: K.Kind MU 
--- extractBasic :: Type -> FreestState BasicType
--- extractBasic t = do
---   t' <- norm t
---   case t' of
---     (Basic _ b) -> return b
---     u ->
---       addError (pos u)
---                [Error "Expecting a basic type; found type", Error u]
---         >> return IntType
-
 -- Extracts an output type from a general type; gives an error if it isn't an output
 extractOutput :: Exp -> T.Type -> FreestState (T.Type, T.Type)
 extractOutput = extractMessage T.Out "output"
@@ -126,8 +100,7 @@ extractInput = extractMessage T.In "input"
 extractMessage
   :: T.Polarity -> String -> Exp -> T.Type -> FreestState (T.Type, T.Type)
 extractMessage pol msg e t = do
-  t' <- norm t
-  case t' of
+  case normalise t of
     u@(T.Message p pol' b) ->
       if pol == pol' then return (b, T.Skip p) else extractMessageErr msg e u
     u@(T.Semi _ (T.Message _ pol' b) v) ->
@@ -155,8 +128,7 @@ extractInChoiceMap = extractChoiceMap T.In "internal"
 extractChoiceMap
   :: T.Polarity -> String -> Exp -> T.Type -> FreestState T.TypeMap
 extractChoiceMap pol msg e t = do
-  t' <- norm t
-  case t' of
+  case normalise t of
     (T.Choice _ pol' m) ->
       if pol == pol' then return m else extractChoiceErr msg e t
     (T.Semi _ (T.Choice _ pol' m) u) -> if pol == pol'
@@ -178,8 +150,7 @@ extractChoiceMap pol msg e t = do
 -- Extracts a datatype from a type; gives an error if a datatype is not found
 extractDatatypeMap :: Exp -> T.Type -> FreestState T.TypeMap
 extractDatatypeMap e t = do
-  t' <- norm t
-  case t' of
+  case normalise t of
     (T.Datatype _ m) -> return m
     u                -> do
       addError
