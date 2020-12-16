@@ -19,7 +19,6 @@ module Equivalence.Equivalence
 where
 
 import           Syntax.Base                    ( Pos, pos )
-import           Syntax.TypeVariable            ( TypeVar )
 import           Syntax.ProgramVariable         ( ProgVar )
 import qualified Syntax.Kind                   as K
 import qualified Syntax.Type                   as T

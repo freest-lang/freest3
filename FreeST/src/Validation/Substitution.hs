@@ -20,33 +20,31 @@ module Validation.Substitution
   )
 where
 
-import qualified Data.Map.Strict               as Map
-import qualified Data.Set                      as Set
+import           Syntax.TypeVariable
 import qualified Syntax.Kind                   as K
 import qualified Syntax.Type                   as T
-import           Syntax.TypeVariable
 import           Utils.Error                    ( internalError )
+import qualified Data.Map.Strict               as Map
+import qualified Data.Set                      as Set
 
--- [t/x]u, substitute t for for every free occurrence of x in u
+-- [t/x]u, substitute t for for every occurrence of x in u
+-- Assume types were renamed (hence, x/=y and no -the-fly renaming needed)
 subs :: T.Type -> TypeVar -> T.Type -> T.Type
 -- Functional types
-subs t x (T.Fun p m t1 t2 ) = T.Fun p m (subs t x t1) (subs t x t2)
-subs t x (T.Pair p t1 t2  ) = T.Pair p (subs t x t1) (subs t x t2)
-subs t x (T.Datatype p m  ) = T.Datatype p (Map.map (subs t x) m)
+subs t x (T.Fun p m t1 t2) = T.Fun p m (subs t x t1) (subs t x t2)
+subs t x (T.Pair p t1 t2) = T.Pair p (subs t x t1) (subs t x t2)
+subs t x (T.Datatype p m) = T.Datatype p (Map.map (subs t x) m)
 -- Session types
-subs t x (T.Semi   p t1 t2) = T.Semi p (subs t x t1) (subs t x t2)
-subs t x (T.Choice p v  m ) = T.Choice p v (Map.map (subs t x) m)
-subs t x (T.Rec    p yk u ) = T.Rec p yk (subs t x u) -- Assume types were renamed (hence, x/=y and no -the-fly renaming needed)
-  -- Polymorphism
-subs t x (T.Forall p yk@(K.Bind _ y _) u)
-  | x == y    = subs t x u
-  | -- Assume types were renamed (hence, x/=y and no -the-fly renaming needed)
-    otherwise = T.Forall p yk (subs t x u)
--- Functional or session
-subs t x u@(T.Var _ y) | y == x    = t
-                           | otherwise = u
-subs t x (T.Dualof p u) = T.Dualof p (subs t x u)
-subs _ _ t              = t
+subs t x (T.Semi p t1 t2) = T.Semi p (subs t x t1) (subs t x t2)
+subs t x (T.Choice p v  m) = T.Choice p v (Map.map (subs t x) m)
+  -- Polymorphism and recursion
+subs t x (T.Rec p yk u) = T.Rec p yk (subs t x u) 
+subs t x (T.Forall p yk u) = T.Forall p yk (subs t x u)
+subs t x u@(T.Var _ y)
+  | y == x = t
+  | otherwise = u
+subs _ _ t@T.Dualof{} = internalError "Validation.Substitution.subs" t
+subs _ _ t = t
 
 -- subsAll σ u, apply all substitutions in σ to u; no renaming
 subsAll :: [(T.Type, TypeVar)] -> T.Type -> T.Type
@@ -60,20 +58,19 @@ unfold t = internalError "Validation.Substitution.unfold" t
 -- The set of free type variables in a type
 free :: T.Type -> Set.Set TypeVar
   -- Functional types
-free (T.Fun _ _ t u              ) = Set.union (free t) (free u)
-free (T.Pair _ t u               ) = Set.union (free t) (free u)
-free (T.Datatype _ m             ) = freeMap m
+free (T.Fun _ _ t u) = free t `Set.union` free u
+free (T.Pair _ t u) = free t `Set.union` free u
+free (T.Datatype _ m) = freeMap m
   -- Session types
-free (T.Semi   _ t              u) = Set.union (free t) (free u)
-free (T.Choice _ _              m) = freeMap m
+free (T.Semi _ t u) = free t `Set.union` free u
+free (T.Choice _ _ m) = freeMap m
   -- Functional or session
-free (T.Rec    _ (K.Bind _ x _) t) = Set.delete x (free t)
-free (T.Var  _ x                 ) = Set.singleton x
+free (T.Rec _ (K.Bind _ x _) t) = Set.delete x (free t)
+free (T.Var _ x) = Set.singleton x
   -- T.Type operators
-free (T.Name _ _                 ) = Set.empty -- TODO: fix me!
-free (T.Dualof   _ t             ) = free t
+free t@T.Dualof{} = internalError "Validation.Substitution.free" t
   -- Otherwise: Basic, Skip, Message
-free _                             = Set.empty
+free _ = Set.empty
 
 freeMap :: T.TypeMap -> Set.Set TypeVar
 freeMap = Map.foldr (\t acc -> free t `Set.union` acc) Set.empty

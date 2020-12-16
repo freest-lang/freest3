@@ -6,19 +6,19 @@ module TestValidTypes
   )
 where
 
-import           Test.QuickCheck
-import           Test.QuickCheck.Random       ( mkQCGen )
-import           Equivalence.Equivalence
-import           Equivalence.Normalisation
-import           Validation.Kinding
+import           Syntax.Base
 import qualified Syntax.Type                  as T
 import           Syntax.Kind                  as K
-
-import           Syntax.Base                  hiding ( pos )
+import           Validation.Kinding
+import           Equivalence.Normalisation
+import           Equivalence.Equivalence
+import           Bisimulation.Bisimulation
 import           Utils.FreestState
 import           Control.Monad.State
-import qualified Data.Map.Strict               as Map
 import           ArbitraryTypes
+import qualified Data.Map.Strict               as Map
+import           Test.QuickCheck
+import           Test.QuickCheck.Random       ( mkQCGen )
 
 main = verboseCheckWith
   stdArgs { maxSuccess = 271, replay = Just (mkQCGen 1095646480, 0) }
@@ -34,31 +34,25 @@ main = verboseCheckWith
 
 -- Convenience
 
-bisim :: T.Type -> T.Type -> Bool
-bisim = Equivalence.Equivalence.bisimilar
-
 equiv :: T.Type -> T.Type -> Bool
 equiv = equivalent kindEnv
 
-norm :: T.Type -> T.Type
-norm = normalise Map.empty
-
-pos :: Pos
-pos = defaultPos
+-- norm :: T.Type -> T.Type
+-- norm = normalise Map.empty
 
 kindEnv :: KindEnv
-kindEnv = Map.fromList (zip (map (mkVar pos) ids) (repeat (K.sl pos)))
+kindEnv = Map.fromList (zip (map (mkVar defaultPos) ids) (repeat (K.sl defaultPos)))
         -- TODO: This env should only contain the free vars of t; plus
         -- its kind may be SU
 
 kinded :: T.Type -> Bool
-kinded t = null (errors s)
- where
-  (_, s) = runState (synthetise kindEnv t) (initialState "Kind synthesis")
+kinded t =
+  null $ errors $ snd $ runState (synthetise kindEnv t) (initialState "Kind synthesis")
+
 
 -- Bisimilar types are bisimilar
 prop_bisimilar :: BisimPair -> Property
-prop_bisimilar (BisimPair t u) = kinded t && kinded u ==> t `bisim` u
+prop_bisimilar (BisimPair t u) = kinded t && kinded u ==> t `bisimilar` u
 
 -- Equivalence
 prop_equivalent :: BisimPair -> Property
@@ -78,7 +72,7 @@ prop_equivalent (BisimPair t u) = kinded t && kinded u ==> t `equiv` u
 -- prop_subs_kind_preservation2 :: TypeVar ->Kind -> Type -> Property
 -- prop_subs_kind_preservation2 x k t =
 --   isJust k1 ==> k1 == kindOf (unfold u)
---   where u = renameType $ Rec pos (TypeVarBind pos x k) t
+--   where u = renameType $ Rec defaultPos (TypeVarBind defaultPos x k) t
 --         k1 = kindOf u
 
 -- Lemma 3.3 _ Laws for terminated communication (ICFP'16)
@@ -89,7 +83,7 @@ prop_equivalent (BisimPair t u) = kinded t && kinded u ==> t `equiv` u
 -- Laws for terminated communication (bonus)
 -- prop_terminated2 :: Type -> Property
 -- prop_terminated2 t =
---   kinded t' ==> terminated t' == bisim t' (Skip pos)
+--   kinded t' ==> terminated t' == bisim t' (Skip defaultPos)
 --   where t' = renameType t
 
 -- Distribution
