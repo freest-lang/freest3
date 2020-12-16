@@ -45,7 +45,7 @@ instance Equivalence T.Type where
     -- Have we been here before?
     equiv v _ t1 t2 | (pos t1, pos t2) `Set.member` v = True
     -- Functional types
-    equiv _ _ (T.Int  _) (T.Int  _) = True
+    equiv _ _ (T.Int _) (T.Int _) = True
     equiv _ _ (T.Char _) (T.Char _) = True
     equiv _ _ (T.Bool _) (T.Bool _) = True
     equiv _ _ (T.Unit _) (T.Unit _) = True
@@ -68,8 +68,8 @@ instance Equivalence T.Type where
     equiv _ kEnv t1 t2 | isSessionType kEnv t1 && isSessionType kEnv t2 =
       bisimilar t1 t2
     -- Should not happen
-    equiv _ _ t1@T.Dualof{} t2 = internalError "Equivalence.Equivalence.equivalent" t1
-    equiv _ _ t1 t2@T.Dualof{} = internalError "Equivalence.Equivalence.equivalent" t2
+    equiv _ _ t1@T.Dualof{} _ = internalError "Equivalence.Equivalence.equivalent" t1
+    equiv _ _ _ t2@T.Dualof{} = internalError "Equivalence.Equivalence.equivalent" t2
     equiv _ _ _ _ = False
 
     equivField :: Visited -> K.KindEnv -> T.TypeMap -> Bool -> ProgVar -> T.Type -> Bool

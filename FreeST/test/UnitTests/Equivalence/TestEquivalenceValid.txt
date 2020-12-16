@@ -194,7 +194,7 @@ Skip;!Int -> Bool
 !Bool; Skip
 !Bool
 
--- The below kinding environment is not strictly needed
+-- Non-empty kind environment
 
 [("α", "SL")]
 ?Char; Skip
@@ -216,6 +216,10 @@ Skip;!Int -> Bool
 [("α", "SL")]
 +{Leaf: Skip, Node: !Int}; α
 +{Leaf: Skip; α, Node: !Int; α}
+
+[]
+&{B: y ; y} ; ?Bool
+&{B: y ; y ; ?Bool}
 
 -- Terminated Recursive Types
 
@@ -336,6 +340,11 @@ rec z:SL. (!Int; z)
 []
 rec x. rec y:SL. rec z. (!Int; y)
 rec w:SL. (!Int; w)
+
+[]
+rec a : SL . a -o a
+rec a : SL . a -o a
+
 
 -- Ill-formed - TODO: should be well-formed
 -- []
@@ -575,16 +584,6 @@ rec y . &{N: y, L: y};!Int
 rec y:SL. x
 rec z:SL. x
 
--- This one is not kinded: (rec x_2:SL. (Skip;Skip))
--- []
--- (+{C: Skip};((rec x_0:SL. (Skip;Skip));(rec z_1:SL. (x;y))))
--- ((+{C: Skip};(rec x_2:SL. (Skip;Skip)));(rec z_3:SL. (x;y)))
-
--- non-kinded
--- []
--- (((rec x_0:SL. !Int);!Int);((rec z_1:SL. ((Skip;z_1);+{A: z_1, B: z_1, C: z_1}));!Int))
--- ((((rec x_2:SL. !Int);!Int);(rec z_3:SL. ((Skip;z_3);+{A: z_3, B: z_3,C: z_3})));!Int)
-
 -- This one is non-kinded (as of version April 24, 2019)
 --[]
 --((rec z_0:SL. (((Skip;z_0);?Char);&{A: y, B: y, C: z_0}));((?Bool;(rec x_1:SL. +{A: x_1, B: Skip, C: y}));+{A: (rec y_2:SL. Skip), B: ?Int, C: !Bool}))
@@ -594,7 +593,7 @@ rec z:SL. x
  (rec y_0:SL. (!Bool;+{A: y_0, B: y_0, C: x})) ; (?Int ; (?Int;&{A: Skip, B: z, C: z}))
 ((rec y_1:SL. (!Bool;+{A: y_1, B: y_1, C: x})) ; ?Int) ; (?Int;&{A: Skip, B: z, C: z})
 
--- this one hangs
+-- this one used to hang
 []
 rec y_0:SL. !Bool; +{A: y_0}
 rec y_1:SL. !Bool; +{A: y_1}
@@ -607,11 +606,6 @@ rec y_0:SL. !Char ; +{A: y_0, B: Skip, C: Skip}
 []
 !Char ; !Int ; &{A: x, B: z} ; &{A: Skip} ; ?() ; &{B: y}
 !Char ; !Int ; &{A: x, B: z} ; &{A: Skip} ; ?() ; &{B: y}
-
--- Distributivity
-[]
-&{B: y ; y} ; ?Bool
-&{B: y ; y ; ?Bool}
 
 -- Unfold
 []
@@ -744,3 +738,24 @@ rec z:SL. !Int; rec w. z;w
 -- []
 -- (rec z:SU.(rec y:SL.(rec x:SL.(rec z:SL.(&{A: x, B: ?Char, C: !Int};(&{A: ?Char, B: !(), C: y};z))))))
 -- (rec z:SU.(rec z:SL.&{A: (z;&{A: (?Char;z), B: (!();z), C: (z;z)}), B: (?Char;&{A: (?Char;z), B: (!();z), C: (z;z)}), C: (!Int;&{A: (?Char;z), B: (!();z), C: (z;z)})}))
+
+-- forall
+[]
+∀ α:SL => α -> α
+∀ β:SL => β -> β
+
+[]
+Int -> ∀ α:SL => α -> α
+Int -> ∀ α:SL => α -> α
+
+[("α", "TU")]
+∀ β:SL => β -> α
+∀ β:SL => β -> α
+
+[]
+Int -> ∀ α:SL => α -> α ; Skip
+Int -> ∀ α:SL => α -> α
+
+[]
+Bool -> ∀ α:SL => α -> α ; (α ; α)
+Bool -> ∀ α:SL => α -> (α ; α) ; α

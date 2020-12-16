@@ -134,6 +134,9 @@ TL
 rec b : TU . (b, Int -> Char)
 TL
 
+rec a : SL . a -o a
+TL
+
 -- Terminated Recursive Types
 
 rec a:SL. Skip
