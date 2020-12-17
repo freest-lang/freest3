@@ -506,20 +506,7 @@ subsExp tenv (TypeApp p e t) =
   liftM2 (TypeApp p) (subsExp tenv e) (subsType tenv Nothing t) -- (mapM (subsType tenv Nothing) xs)
 subsExp tenv (UnLet p x e1 e2) =
   liftM2 (UnLet p x) (subsExp tenv e1) (subsExp tenv e2)
-subsExp tenv (New p t u) = do
-  tmp1 <- (subsType tenv Nothing t)
-  tmp2 <- (subsType tenv Nothing u)
-  debugM
-      (  "NEW "
-      ++ show t
-      ++ " - "
-      ++ show tmp1
-      ++ "\t"
-      ++ show u
-      ++ " - "
-      ++ show tmp2
-      )
-    >> liftM2 (New p) (subsType tenv Nothing t) (subsType tenv Nothing u)
+subsExp tenv (New p t u) = liftM2 (New p) (subsType tenv Nothing t) (subsType tenv Nothing u)
 subsExp _ (Select p x) = fmap (Select p) (pure x)
 subsExp tenv (Match p e m) =
   liftM2 (Match p) (subsExp tenv e) (subsFieldMap tenv m)
