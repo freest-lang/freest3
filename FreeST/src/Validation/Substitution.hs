@@ -16,7 +16,7 @@ module Validation.Substitution
   ( subs
   , subsAll
   , unfold
-  , free
+  -- , free
   )
 where
 
@@ -55,6 +55,9 @@ unfold :: T.Type -> T.Type
 unfold t@(T.Rec _ (K.Bind _ x _) u) = subs t x u
 unfold t = internalError "Validation.Substitution.unfold" t
 
+{-
+
+-- Not needed. Cf. Validation.Renam.isFreeIn.
 -- The set of free type variables in a type
 free :: T.Type -> Set.Set TypeVar
   -- Functional types
@@ -74,8 +77,6 @@ free _ = Set.empty
 
 freeMap :: T.TypeMap -> Set.Set TypeVar
 freeMap = Map.foldr (\t acc -> free t `Set.union` acc) Set.empty
-
-{-
 
 Define [t/x]u to be the result of substituting t for every free
 occurrence of x in u, and changing bound variables to avoid clashes
