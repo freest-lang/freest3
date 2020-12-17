@@ -46,8 +46,12 @@ renameState :: FreestState ()
 renameState = do
   -- TypeVenv
   tEnv  <- getTEnv
-  tEnv' <- tMapM (\(k, s) -> rename Map.empty s >>= \s' -> return (k, s')) tEnv
-  setTEnv tEnv'
+
+  -- | Why do we need to rename the tenv ?? It will obviously have dualofs.
+  
+  -- tEnv' <- tMapM (\(k, s) -> rename Map.empty s >>= \s' -> return (k, s')) tEnv
+  -- setTEnv tEnv'
+
   -- VarEnv + ExpEnv, together
   vEnv <- getVEnv
   tMapWithKeyM_ renameFun (userDefined (noConstructors tEnv vEnv))

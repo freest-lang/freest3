@@ -48,10 +48,14 @@ elaborate = do
   -- debugM $ "Initial env:\n" ++ show tenv
   -- | Solve type declarations
   eqs  <- solveEquations tenv
-  -- debugM $ "Solving eqs:\n" ++ show eqs
+
+--  debugM $ "Solving eqs:\n" ++ show eqs
+
   -- Replace all occurrences of DualOf t
   eqs' <- solveDualOfs eqs
-  -- debugM $ "DUALOFS:\n" ++ show eqs' ++ "\n"
+
+--  debugM $ "DUALOFS:\n" ++ show eqs' ++ "\n"
+
   -- | Check if the substituted types are contractive  
   mapM_ (synthetise Map.empty) eqs'
 
@@ -60,6 +64,7 @@ elaborate = do
 
   -- | Substitute all type operators on VarEnv
   substituteVEnv eqs'
+
   -- venv <- getVEnv
   -- debugM $ "AFTER VENV: " ++ show (userDefined venv) ++ "\n"
 
@@ -67,7 +72,9 @@ elaborate = do
 
   -- eenv <- getEEnv
   -- debugM $ "BEFORE EENV: " ++ show eenv ++ "\n"
+
   substitutePEnv eqs'
+  
   -- eenv <- getEEnv
   -- debugM $ "AFTER EENV: " ++ show eenv ++ "\n"
 
@@ -130,27 +137,26 @@ solveEq _ _ _ p = pure p
 -- | PHASE 2: SOLVING DUALOFS
 
 solveDualOfs :: Ctx -> FreestState Ctx
-solveDualOfs ctx = tMapM (solveDualOf ctx False) ctx
+solveDualOfs ctx = tMapM (solveDualOf Set.empty ctx) ctx
 
-solveDualOf :: Ctx -> Bool -> T.Type -> FreestState T.Type
-solveDualOf tenv b (T.Choice p pol m) =
-  fmap (T.Choice p pol) (tMapM (solveDualOf tenv b) m)
-solveDualOf tenv b (T.Semi p t u) =
-  liftM2 (T.Semi p) (solveDualOf tenv b t) (solveDualOf tenv b u)
-solveDualOf tenv b (T.Rec p xs t) = fmap (T.Rec p xs) (solveDualOf tenv b t)
-solveDualOf tenv b (T.Forall p kb t) =
-  fmap (T.Forall p kb) (solveDualOf tenv b t)
-solveDualOf tenv b (T.Fun p pol t u) =
-  liftM2 (T.Fun p pol) (solveDualOf tenv b t) (solveDualOf tenv b u)
-solveDualOf tenv b n@(T.Var p tname)
-  | b = case tenv Map.!? tname of
-    Just t -> pure t
-    Nothing ->
-      addError p [Error "Type name not in scope:", Error tname] >> pure n
-  | otherwise = pure n
-solveDualOf tenv _ d@(T.Dualof p t) = do
+solveDualOf :: Visited -> Ctx ->  T.Type -> FreestState T.Type
+solveDualOf v tenv (T.Choice p pol m) =
+  fmap (T.Choice p pol) (tMapM (solveDualOf v tenv) m)
+solveDualOf v tenv (T.Semi p t u) =
+  liftM2 (T.Semi p) (solveDualOf v tenv t) (solveDualOf v tenv u)
+solveDualOf v tenv (T.Rec p xs@(K.Bind _ x _) t) = fmap (T.Rec p xs) (solveDualOf (Set.insert x v) tenv t)
+solveDualOf v tenv (T.Forall p kb t) =
+  fmap (T.Forall p kb) (solveDualOf v tenv t)
+solveDualOf v tenv (T.Fun p pol t u) =
+  liftM2 (T.Fun p pol) (solveDualOf v tenv t) (solveDualOf v tenv u) 
+solveDualOf v tenv n@(T.Var p tname)
+  | Set.member tname v = pure n
+  | otherwise = case tenv Map.!? tname of
+      Just t -> solveDualOf v tenv t -- pure t
+      Nothing -> addError p [Error "Type name not in scope:", Error tname] >> pure n
+solveDualOf v tenv d@(T.Dualof p t) = do
   addTypeName p d
-  u <- solveDualOf tenv True t
+  u <- solveDualOf v tenv t
   dual u
 solveDualOf _ _ p = return p
 
