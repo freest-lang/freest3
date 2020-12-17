@@ -1,5 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
-module Validation.Elaboration
+module Elaboration.Elaboration
   ( elaborate
   , subsExp  -- Testing
   , subsType -- Testing 

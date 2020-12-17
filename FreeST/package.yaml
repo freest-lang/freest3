@@ -37,6 +37,7 @@ library:
     - FreeST
     - Bisimulation.Grammar
     - Bisimulation.Bisimulation
+    - Elaboration.Elaboration
     - Equivalence.Equivalence
     - Equivalence.Normalisation
     - Syntax.TypeVariable
@@ -60,7 +61,6 @@ library:
     - Validation.Rename
     - Validation.Kinding
     - Validation.Substitution
-    - Validation.Elaboration
     - Validation.Typing
 
 executables:

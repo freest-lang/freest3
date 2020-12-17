@@ -5,10 +5,10 @@ where
 
 import           Control.Monad.State
 import qualified Data.Map.Strict               as Map
+import           Elaboration.Elaboration -- ( elaborate )
 import           SpecHelper
 import           Syntax.Expression
 import           Utils.FreestState
-import           Validation.Elaboration        -- ( elaborate )
 import           Validation.Typing              ( synthetise )
 
 spec :: Spec

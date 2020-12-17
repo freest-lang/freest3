@@ -3,16 +3,16 @@ module Validation.TestExpressionValidSpec
   )
 where
 
+import           Control.Monad.State
+import qualified Data.Map.Strict               as Map
+import           Elaboration.Elaboration        ( subsExp
+                                                , subsType
+                                                )
 import           SpecHelper
 import           Syntax.Expression
-import           Control.Monad.State
 import           Utils.FreestState
 import           Utils.PreludeLoader            ( prelude )
 import           Validation.Typing              ( checkAgainst )
-import qualified Data.Map.Strict               as Map
-import           Validation.Elaboration         ( subsExp
-                                                , subsType
-                                                )
 
 spec :: Spec
 spec = describe "Valid expressions" $ do
@@ -32,4 +32,4 @@ isExpr e t = null (errors s)
   test = join $ liftM2 (checkAgainst Map.empty)
                        (subsExp Map.empty e)
                        (subsType Map.empty Nothing t)
-   
+
