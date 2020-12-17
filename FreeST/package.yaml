@@ -60,6 +60,7 @@ library:
     - Validation.Rename
     - Validation.Kinding
     - Validation.Substitution
+    - Validation.Elaboration
     - Validation.Typing
 
 executables:
