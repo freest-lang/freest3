@@ -29,7 +29,11 @@ hasKind t k = null (errors s) && k' <: k
  where
 --  t'      = renameType t
   (k', s) = runState test (initialState "Kind synthesis")
-  test    = synthetise Map.empty =<< subsType Map.empty Nothing (renameType t)
+
+  test    = synthetise Map.empty . renameType =<< subsType Map.empty Nothing t
+  -- test = do
+  --   t' <- subsType Map.empty Nothing t
+  --   synthetise Map.empty (renameType t')
 
 
 main :: IO ()

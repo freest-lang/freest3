@@ -25,10 +25,11 @@ matchValidExpressionSpec [e, t] =
   it (e ++ " : " ++ t) $ isExpr (read e) (read t) `shouldBe` True
 
 isExpr :: Exp -> Type -> Bool
-isExpr e t = trace (show $ errors s) $ null (errors s)
+isExpr e t = null (errors s)
  where
   s    = execState test is
   is   = (initialState "Check Against Expression") { varEnv = prelude }
   test = join $ liftM2 (checkAgainst Map.empty)
                        (subsExp Map.empty e)
                        (subsType Map.empty Nothing t)
+   

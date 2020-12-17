@@ -28,7 +28,7 @@ isWellFormed :: String -> Bool
 isWellFormed str = either synthetiseK (const False) (parseType str)
  where
   synthetiseK t = null $ errors $ execState
-    (synthetise Map.empty =<< elaborateType (renameType t))
+    (synthetise Map.empty . renameType =<< elaborateType t)
     (initialState "Kind synthesis")
 
   elaborateType = subsType Map.empty Nothing
