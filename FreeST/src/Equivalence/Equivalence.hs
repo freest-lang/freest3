@@ -18,22 +18,27 @@ module Equivalence.Equivalence
   )
 where
 
-import           Syntax.Base                    ( Pos, pos )
-import           Syntax.ProgramVariable         ( ProgVar )
-import qualified Syntax.Kind                   as K
-import qualified Syntax.Type                   as T
-import           Validation.Kinding             ( synthetise )
 import           Bisimulation.Bisimulation      ( bisimilar )
-import qualified Validation.Substitution       as Subs
-                                                ( unfold, subs )
-import           Validation.Subkind             ( (<:) )
+import           Control.Monad.State            ( runState )
+import qualified Data.Map.Strict               as Map
+import qualified Data.Set                      as Set
+import           Syntax.Base                    ( Pos
+                                                , pos
+                                                )
+import qualified Syntax.Kind                   as K
+import           Syntax.Program
+import           Syntax.ProgramVariable         ( ProgVar )
+import qualified Syntax.Type                   as T
 import           Utils.Error                    ( internalError )
 import           Utils.FreestState              ( initialState
                                                 , errors
                                                 )
-import qualified Data.Map.Strict               as Map
-import qualified Data.Set                      as Set
-import           Control.Monad.State            ( runState )
+import           Validation.Kinding             ( synthetise )
+import           Validation.Subkind             ( (<:) )
+import qualified Validation.Substitution       as Subs
+                                                ( unfold
+                                                , subs
+                                                )
 
 class Equivalence t where
   equivalent :: K.KindEnv -> t -> t -> Bool
@@ -49,20 +54,24 @@ instance Equivalence T.Type where
     -- Have we been here before?
     equiv v _ t1 t2 | (pos t1, pos t2) `Set.member` v = True
     -- Functional types
-    equiv _ _ (T.Int _) (T.Int _) = True
-    equiv _ _ (T.Char _) (T.Char _) = True
-    equiv _ _ (T.Bool _) (T.Bool _) = True
-    equiv _ _ (T.Unit _) (T.Unit _) = True
+    equiv _ _ (T.Int  _) (T.Int  _)                   = True
+    equiv _ _ (T.Char _) (T.Char _)                   = True
+    equiv _ _ (T.Bool _) (T.Bool _)                   = True
+    equiv _ _ (T.Unit _) (T.Unit _)                   = True
     equiv v kEnv (T.Fun _ n1 t1 t2) (T.Fun _ n2 u1 u2) =
       n1 == n2 && equiv v kEnv t1 u1 && equiv v kEnv t2 u2
     equiv v kEnv (T.Pair _ t1 t2) (T.Pair _ u1 u2) =
       equiv v kEnv t1 u1 && equiv v kEnv t2 u2
     equiv v kEnv (T.Datatype _ m1) (T.Datatype _ m2) =
-      Map.size m1 == Map.size m2 && Map.foldlWithKey (equivField v kEnv m2) True m1
+      Map.size m1
+        == Map.size m2
+        && Map.foldlWithKey (equivField v kEnv m2) True m1
     -- Polymorphism and recursion
-    equiv v kEnv (T.Forall _ (K.Bind p a1 k1) t1) (T.Forall _ (K.Bind _ a2 k2) t2) =
-      k1 <: k2 && k2 <: k1 &&
-      equiv v (Map.insert a1 k1 kEnv) t1 (Subs.subs (T.Var p a1) a2 t2)
+    equiv v kEnv (T.Forall _ (K.Bind p a1 k1) t1) (T.Forall _ (K.Bind _ a2 k2) t2)
+      = k1 <: k2 && k2 <: k1 && equiv v
+                                      (Map.insert a1 k1 kEnv)
+                                      t1
+                                      (Subs.subs (T.Var p a1) a2 t2)
     equiv v kEnv t1@T.Rec{} t2 =
       equiv (Set.insert (pos t1, pos t2) v) kEnv (Subs.unfold t1) t2
     equiv v kEnv t1 t2@T.Rec{} =
@@ -72,17 +81,22 @@ instance Equivalence T.Type where
     equiv _ kEnv t1 t2 | isSessionType kEnv t1 && isSessionType kEnv t2 =
       bisimilar t1 t2
     -- Should not happen
-    equiv _ _ t1@T.Dualof{} _ = internalError "Equivalence.Equivalence.equivalent" t1
-    equiv _ _ _ t2@T.Dualof{} = internalError "Equivalence.Equivalence.equivalent" t2
+    equiv _ _ t1@T.Dualof{} _ =
+      internalError "Equivalence.Equivalence.equivalent" t1
+    equiv _ _ _ t2@T.Dualof{} =
+      internalError "Equivalence.Equivalence.equivalent" t2
     equiv _ _ _ _ = False
 
-    equivField :: Visited -> K.KindEnv -> T.TypeMap -> Bool -> ProgVar -> T.Type -> Bool
-    equivField v kEnv m acc l t = acc && l `Map.member` m && equiv v kEnv (m Map.! l) t
+    equivField
+      :: Visited -> K.KindEnv -> T.TypeMap -> Bool -> ProgVar -> T.Type -> Bool
+    equivField v kEnv m acc l t =
+      acc && l `Map.member` m && equiv v kEnv (m Map.! l) t
 
 isSessionType :: K.KindEnv -> T.Type -> Bool
-isSessionType kEnv t =  null (errors state) && K.isSession kind
+isSessionType kEnv t = null (errors state) && K.isSession kind
  where
-  (kind, state) = runState (synthetise kEnv t) (initialState "Kind synthesis for equivalence")
+  (kind, state) =
+    runState (synthetise kEnv t) (initialState "Kind synthesis for equivalence")
 
 {-
 -- An alternative is below. Lighter, but I don't kind we have a proof that the
@@ -99,14 +113,13 @@ isSessionType _ t@T.Dualof{} = internalError "Equivalence.Equivalence.isSessionT
 isSessionType _ _  = False
 -}
 
-instance Equivalence T.VarEnv where
+instance Equivalence VarEnv where
   equivalent kenv env1 env2 =
-    Map.size env1 == Map.size env2
+    Map.size env1
+      == Map.size env2
       && Map.foldlWithKey
-           (\acc b s -> acc && b `Map.member` env2 && equivalent
-             kenv
-             s
-             (env2 Map.! b)
+           (\acc b s ->
+             acc && b `Map.member` env2 && equivalent kenv s (env2 Map.! b)
            )
            True
            env1

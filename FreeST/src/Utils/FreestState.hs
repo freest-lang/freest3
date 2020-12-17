@@ -56,7 +56,7 @@ module Utils.FreestState
   , ParseEnv
   , emptyPEnv
   , addToPEnv
-  , getPEnv  
+  , getPEnv
   )
 where
 
@@ -66,14 +66,10 @@ import qualified Data.Map.Strict               as Map
 import           Syntax.Base
 import           Syntax.Expression
 import           Syntax.Kind
+import           Syntax.Program
 import           Syntax.ProgramVariable
-import           Syntax.TypeVariable
 import qualified Syntax.Type                   as T
-                                                ( Type(..)
-                                                , TypeOpsEnv
-                                                , VarEnv
-                                                , TypeEnv
-                                                )
+import           Syntax.TypeVariable
 import           Utils.Error
 -- import qualified Data.Set as Set
 import qualified Data.Traversable              as Traversable
@@ -89,10 +85,10 @@ type ParseEnv = Map.Map ProgVar ([ProgVar], Exp)
 
 data FreestS = FreestS {
   filename  :: String
-, varEnv    :: T.VarEnv
+, varEnv    :: VarEnv
 , expEnv    :: ExpEnv
-, typeEnv   :: T.TypeEnv
-, typenames :: T.TypeOpsEnv
+, typeEnv   :: TypeEnv
+, typenames :: TypeOpsEnv
 , errors    :: Errors
 , nextIndex :: Int
 , parseEnv  :: ParseEnv
@@ -108,7 +104,7 @@ initialState f = FreestS { filename  = f
                          , expEnv    = Map.empty
                          , typeEnv   = Map.empty
                          , typenames = Map.empty
-                         , errors    = []                         
+                         , errors    = []
                          , nextIndex = 0
                          , parseEnv  = Map.empty
                          }
@@ -141,7 +137,7 @@ getFileName = gets filename
 
 -- | VAR ENV
 
-getVEnv :: FreestState T.VarEnv
+getVEnv :: FreestState VarEnv
 getVEnv = gets varEnv
 
 getFromVEnv :: ProgVar -> FreestState (Maybe T.Type)
@@ -158,7 +154,7 @@ addToVEnv b t = modify (\s -> s { varEnv = Map.insert b t (varEnv s) })
 -- vEnvMember :: ProgVar -> FreestState Bool
 -- vEnvMember x = Map.member x <$> getVEnv
 
-setVEnv :: T.VarEnv -> FreestState ()
+setVEnv :: VarEnv -> FreestState ()
 setVEnv vEnv = modify (\s -> s { varEnv = vEnv })
 
 -- | EXP ENV
@@ -179,7 +175,7 @@ setEEnv eEnv = modify (\s -> s { expEnv = eEnv })
 
 -- | TYPE ENV
 
-getTEnv :: FreestState T.TypeEnv
+getTEnv :: FreestState TypeEnv
 getTEnv = gets typeEnv
 
 addToTEnv :: TypeVar -> Kind -> T.Type -> FreestState ()
@@ -191,7 +187,7 @@ getFromTEnv b = do
   tEnv <- getTEnv
   return $ tEnv Map.!? b
 
-setTEnv :: T.TypeEnv -> FreestState ()
+setTEnv :: TypeEnv -> FreestState ()
 setTEnv tEnv = modify (\s -> s { typeEnv = tEnv })
 
 -- | TYPENAMES
@@ -199,7 +195,7 @@ setTEnv tEnv = modify (\s -> s { typeEnv = tEnv })
 addTypeName :: Pos -> T.Type -> FreestState ()
 addTypeName p t = modify (\s -> s { typenames = Map.insert p t (typenames s) })
 
-getTypeNames :: FreestState T.TypeOpsEnv
+getTypeNames :: FreestState TypeOpsEnv
 getTypeNames = gets typenames
 
 findTypeName :: Pos -> T.Type -> FreestState T.Type

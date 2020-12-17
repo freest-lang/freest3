@@ -9,32 +9,32 @@ where
 import qualified Syntax.Type                   as T
 import           Syntax.ProgramVariable
 import           Syntax.Base
+import           Syntax.Program
 import qualified Data.Map.Strict               as Map
 -- import           Syntax.Kind
 
 binIntOp :: T.Type
-binIntOp =
-  T.Fun defaultPos
-         Un
-         (T.Int defaultPos)
-         (T.Fun defaultPos Un (T.Int defaultPos) (T.Int defaultPos))
-  
+binIntOp = T.Fun defaultPos
+                 Un
+                 (T.Int defaultPos)
+                 (T.Fun defaultPos Un (T.Int defaultPos) (T.Int defaultPos))
+
 
 binBoolOp :: T.Type
-binBoolOp =
-  T.Fun defaultPos
-         Un
-         (T.Bool defaultPos)
-         (T.Fun defaultPos Un (T.Bool defaultPos) (T.Bool defaultPos))
-  
+binBoolOp = T.Fun
+  defaultPos
+  Un
+  (T.Bool defaultPos)
+  (T.Fun defaultPos Un (T.Bool defaultPos) (T.Bool defaultPos))
+
 
 relationalOp :: T.Type
-relationalOp =
-  T.Fun defaultPos
-         Un
-         (T.Int defaultPos)
-         (T.Fun defaultPos Un (T.Int defaultPos) (T.Bool defaultPos))
-  
+relationalOp = T.Fun
+  defaultPos
+  Un
+  (T.Int defaultPos)
+  (T.Fun defaultPos Un (T.Int defaultPos) (T.Bool defaultPos))
+
 
 -- unIntBool :: T.Type
 -- unIntBool =
@@ -44,8 +44,7 @@ unIntInt :: T.Type
 unIntInt = T.Fun defaultPos Un (T.Int defaultPos) (T.Int defaultPos)
 
 unBoolBool :: T.Type
-unBoolBool =
-  T.Fun defaultPos Un (T.Bool defaultPos) (T.Bool defaultPos)
+unBoolBool = T.Fun defaultPos Un (T.Bool defaultPos) (T.Bool defaultPos)
 
 typeList :: [(ProgVar, T.Type)]
 typeList =
@@ -66,12 +65,8 @@ typeList =
   , (mkVar p "(>)"   , relationalOp)
   , (mkVar p "(<=)"  , relationalOp)
   , (mkVar p "(>=)"  , relationalOp)
-  , ( mkVar p "ord"
-    , T.Fun defaultPos Un (T.Char defaultPos) (T.Int defaultPos)
-    )
-  , ( mkVar p "chr"
-    , T.Fun defaultPos Un (T.Int defaultPos) (T.Char defaultPos)
-    )
+  , (mkVar p "ord", T.Fun defaultPos Un (T.Char defaultPos) (T.Int defaultPos))
+  , (mkVar p "chr", T.Fun defaultPos Un (T.Int defaultPos) (T.Char defaultPos))
   , ( mkVar p "fork"
     , T.Fun p Un (T.Unit p) (T.Unit p)
     )
@@ -92,11 +87,11 @@ typeList =
   -- var     = T.TypeVar p (mkVar p "a")
   -- varBind = KindBind p (mkVar p "a") (omission p)
 
-prelude :: T.VarEnv
+prelude :: VarEnv
 prelude = foldl (\acc (x, s) -> Map.insert x s acc) Map.empty typeList
 
 isBuiltin :: ProgVar -> Bool
 isBuiltin = (`elem` map fst typeList)
 
-userDefined :: T.VarEnv -> T.VarEnv
+userDefined :: VarEnv -> VarEnv
 userDefined = Map.filterWithKey (\x _ -> not (isBuiltin x))

@@ -18,19 +18,20 @@ module Validation.TypeChecking
   )
 where
 
-import           Syntax.Expression
-import           Syntax.Type
-import           Syntax.ProgramVariable
-import           Syntax.Base
-import qualified Validation.Kinding            as K
-import qualified Validation.Typing             as T
-import           Utils.FreestState
-import           Utils.PreludeLoader            ( userDefined )
 import           Control.Monad.State            ( when
                                                 , get
                                                 , unless
                                                 )
 import qualified Data.Map.Strict               as Map
+import           Syntax.Base
+import           Syntax.Expression
+import           Syntax.Program
+import           Syntax.ProgramVariable
+import           Syntax.Type
+import           Utils.FreestState
+import           Utils.PreludeLoader            ( userDefined )
+import qualified Validation.Kinding            as K
+import qualified Validation.Typing             as T
 
 typeCheck :: FreestState ()
 typeCheck = do

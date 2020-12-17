@@ -21,32 +21,33 @@ module Validation.Typing
   )
 where
 
-import           Syntax.Base
-import qualified Syntax.Kind                   as K
-import qualified Syntax.Type                   as T
-import qualified Syntax.Expression             as E
-import           Syntax.ProgramVariable
-import           Parse.Unparser -- debug
-import qualified Validation.Extract            as Extract
-import qualified Validation.Kinding            as K -- Again?
-import qualified Validation.Rename             as Rename
-                                                ( subs )
-import           Equivalence.Equivalence
-import           Utils.FreestState
-import           Utils.PreludeLoader            ( userDefined ) -- debug
 import           Control.Monad.State            ( when
                                                 , unless
                                                 )
 import qualified Data.Map.Strict               as Map
+import           Equivalence.Equivalence
+import           Parse.Unparser -- debug
+import           Syntax.Base
+import qualified Syntax.Expression             as E
+import qualified Syntax.Kind                   as K
+import           Syntax.Program
+import           Syntax.ProgramVariable
+import qualified Syntax.Type                   as T
+import           Utils.FreestState
+import           Utils.PreludeLoader            ( userDefined ) -- debug
+import qualified Validation.Extract            as Extract
+import qualified Validation.Kinding            as K -- Again?
+import qualified Validation.Rename             as Rename
+                                                ( subs )
 
 -- SYNTHESISING A TYPE
 
 synthetise :: K.KindEnv -> E.Exp -> FreestState T.Type
 -- Basic expressions
-synthetise _ (E.Int p _) = return $ T.Int p
+synthetise _ (E.Int  p _) = return $ T.Int p
 synthetise _ (E.Char p _) = return $ T.Char p
 synthetise _ (E.Bool p _) = return $ T.Bool p
-synthetise _ (E.Unit p) = return $ T.Unit p
+synthetise _ (E.Unit p  ) = return $ T.Unit p
 -- Variable
 synthetise kEnv e@(E.Var p x)
   | x == mkVar p "receive" = addPartiallyAppliedError e "channel"
@@ -105,7 +106,7 @@ synthetise kEnv e@(E.App p (E.Var _ x) _) |  -- Send e
                                             x == mkVar p "send" =
   addPartiallyAppliedError e "channel"
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) |  -- Send e1 e2
-                                                      x == mkVar p "send" = do
+                                                        x == mkVar p "send" = do
   t        <- synthetise kEnv e2
   (u1, u2) <- Extract.output e2 t
   K.checkAgainst kEnv (K.ml (pos u1)) u1
@@ -277,14 +278,14 @@ synthetiseFieldMap p branching kEnv e fm extract params = do
 
 -- Checks either the case map and the match map (all the expressions)
 synthetiseField
-  :: T.VarEnv
+  :: VarEnv
   -> K.KindEnv
   -> (ProgVar -> [ProgVar] -> T.Type -> FreestState ())
   -> T.TypeMap
   -> ProgVar
   -> ([ProgVar], E.Exp)
-  -> FreestState ([T.Type], [T.VarEnv])
-  -> FreestState ([T.Type], [T.VarEnv])
+  -> FreestState ([T.Type], [VarEnv])
+  -> FreestState ([T.Type], [VarEnv])
 synthetiseField vEnv1 kEnv params tm b (bs, e) state = do
   (ts, vEnvs) <- state
   setVEnv vEnv1
@@ -453,7 +454,7 @@ checkEquivTypes exp kEnv expected actual = do
     , Error exp
     ]
 
-checkEqualEnvs :: E.Exp -> T.VarEnv -> T.VarEnv -> FreestState ()
+checkEqualEnvs :: E.Exp -> VarEnv -> VarEnv -> FreestState ()
 checkEqualEnvs e vEnv1 vEnv2 = unless
   (Map.null diff)
   (addError
@@ -469,7 +470,7 @@ checkEqualEnvs e vEnv1 vEnv2 = unless
   where diff = Map.difference vEnv2 vEnv1
 
 checkEquivEnvs
-  :: Pos -> String -> K.KindEnv -> T.VarEnv -> T.VarEnv -> FreestState ()
+  :: Pos -> String -> K.KindEnv -> VarEnv -> VarEnv -> FreestState ()
 checkEquivEnvs p branching kEnv vEnv1 vEnv2 = do
 --  tEnv <- getTEnv
   let vEnv1' = userDefined vEnv1

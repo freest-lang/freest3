@@ -10,19 +10,18 @@ where
 import           Data.List                      ( intercalate )
 import           Syntax.Base
 import           Syntax.Expression
-import qualified Syntax.Kind as K
+import qualified Syntax.Kind                   as K
+import           Syntax.Program
 import           Syntax.ProgramVariable
--- import           Syntax.Schemes
-import           Syntax.TypeVariable
 import qualified Syntax.Type                   as T
--- import System.Console.Pretty (Color(..))
+import           Syntax.TypeVariable
 import           Utils.ShowDefault
 
 -- | Error class and instances
 
 class ErrorMsg a where
 --  pos   :: a -> Pos -- Does not make sense to be here??
-  msg   :: T.TypeOpsEnv -> a -> String
+  msg   :: TypeOpsEnv -> a -> String
   color :: a -> Maybe Color
 
 data ErrorMessage where
@@ -76,7 +75,7 @@ instance ErrorMsg [T.Type] where
   msg = showTypeList
   color _ = Just Red
 
-showTypeList :: T.TypeOpsEnv -> [T.Type] -> String
+showTypeList :: TypeOpsEnv -> [T.Type] -> String
 showTypeList tops ts = "[" ++ intercalate ", " types ++ "]"
   where types = map (showDefault tops) ts
 
@@ -87,6 +86,6 @@ instance ErrorMsg [K.Bind] where
 
 -- TODO: DIFFS
 -- TODO: tops
-instance ErrorMsg T.VarEnv where
+instance ErrorMsg VarEnv where
   msg _ = show
   color _ = Just Red

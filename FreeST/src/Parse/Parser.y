@@ -9,23 +9,29 @@ module Parse.Parser
 where
 
 
-import           Syntax.Expression        as E
-import qualified Syntax.Type              as T
-import qualified Syntax.Kind              as K
-import           Syntax.ProgramVariable
-import           Syntax.TypeVariable
-import           Syntax.Base
-import           Parse.ParseUtils
-import           Parse.Lexer
-import           Utils.Error
-import           Utils.FreestState
-import qualified Data.Map.Strict          as Map
-import qualified Data.Set                 as Set
 import           Control.Monad.State
 import           Data.Char
-import           Data.List (nub, (\\), intercalate, find)
-import           System.Exit (die)
-}
+import           Data.List                      ( nub
+                                                , (\\)
+                                                , intercalate
+                                                , find
+                                                )
+import qualified Data.Map.Strict               as Map
+import qualified Data.Set                      as Set
+import           Parse.Lexer
+import           Parse.ParseUtils
+import           Syntax.Base
+import           Syntax.Expression             as E
+import qualified Syntax.Kind                   as K
+import           Syntax.Program
+import           Syntax.ProgramVariable
+import qualified Syntax.Type                   as T
+import           Syntax.TypeVariable
+import           System.Exit                    ( die )
+import           Utils.Error
+import           Utils.FreestState
+
+  }
 
 %name types Type
 -- %name typeScheme TypeScheme
@@ -390,7 +396,7 @@ parseProgram inputFile vEnv = do
   src <- readFile inputFile
   return $ parseDefs inputFile vEnv src
 
-parseDefs :: FilePath -> T.VarEnv -> String -> FreestS
+parseDefs :: FilePath -> VarEnv -> String -> FreestS
 parseDefs file vEnv str =
   let s = initialState file in
   case execStateT (lexer str file terms) (s {varEnv = vEnv}) of

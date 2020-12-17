@@ -24,19 +24,16 @@ one must include all modules in the test suite (I guess).
 -}
 
 import           Syntax.Expression
--- import           Syntax.Schemes
 import qualified Syntax.Type                   as T
 import qualified Syntax.Kind                   as K
 import           Syntax.Base
 import           Syntax.TypeVariable
+import           Syntax.Program
 import           Syntax.ProgramVariable
 import           Validation.Duality             ( dual )
--- import           Validation.Terminated
 import           Utils.FreestState
 import           Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
--- import qualified Data.HashSet                  as Set
--- import           Debug.Trace
 import           Control.Monad                  ( -- liftM,
                                                   liftM2
                                                 , liftM3
@@ -48,13 +45,13 @@ import           Validation.Kinding             ( synthetise )
 elaborate :: FreestState ()
 elaborate = do
   tenv <- getTEnv
---  debugM $ "Initial env:\n" ++ show tenv
+  -- debugM $ "Initial env:\n" ++ show tenv
   -- | Solve type declarations
   eqs  <- solveEquations tenv
---  debugM $ "Solving eqs:\n" ++ show eqs
+  -- debugM $ "Solving eqs:\n" ++ show eqs
   -- Replace all occurrences of DualOf t
   eqs' <- solveDualOfs eqs
---  debugM $ "DUALOFS:\n" ++ show eqs' ++ "\n"
+  -- debugM $ "DUALOFS:\n" ++ show eqs' ++ "\n"
   -- | Check if the substituted types are contractive  
   mapM_ (synthetise Map.empty) eqs'
 
@@ -73,6 +70,7 @@ elaborate = do
   substitutePEnv eqs'
   -- eenv <- getEEnv
   -- debugM $ "AFTER EENV: " ++ show eenv ++ "\n"
+
   return ()
 
 
@@ -80,13 +78,13 @@ type Ctx = Map.Map TypeVar T.Type
 
 -- | PHASE 1: SOLVING THE EQUATIONS
 
-buildRec :: T.TypeEnv -> Ctx
+buildRec :: TypeEnv -> Ctx
 buildRec = Map.mapWithKey buildRec'
   where buildRec' x (k, t) = T.Rec (pos x) (K.Bind (pos x) x k) t
 
 type Visited = Set.Set TypeVar
 
-solveEquations :: T.TypeEnv -> FreestState Ctx
+solveEquations :: TypeEnv -> FreestState Ctx
 solveEquations tenv =
   let tenv' = buildRec tenv in tMapWithKeyM (solveEq tenv' Set.empty) tenv'
 
@@ -206,14 +204,14 @@ solveDualOf _ _ p = return p
 
 -- -- PHASE 1: SOLVE THE SYSTEM OF EQUATIONS
 
--- solveEqs :: T.TypeEnv -> FreestState T.TypeEnv
+-- solveEqs :: TypeEnv -> FreestState TypeEnv
 -- solveEqs tenv = Map.foldlWithKey solveEq (return tenv) tenv
 --  where
 --   solveEq
---     :: FreestState T.TypeEnv
+--     :: FreestState TypeEnv
 --     -> TypeVar
 --     -> (K.Kind, T.Type)
---     -> FreestState T.TypeEnv
+--     -> FreestState TypeEnv
 --   solveEq acc x t = do
 --     let bt = buildRecursiveType x t
 --     -- fmap (Map.insert x (fst t, bt)) acc >>=
@@ -243,7 +241,7 @@ solveDualOf _ _ p = return p
 -- --         return (k, buildRecursiveType v (k, s'))
 
 -- substituteEnv
---   :: TypeVar -> (K.Kind, T.Type) -> T.TypeEnv -> FreestState T.TypeEnv
+--   :: TypeVar -> (K.Kind, T.Type) -> TypeEnv -> FreestState TypeEnv
 -- substituteEnv x t tenv = do -- tMapWithKeyM subsEnv
 --   -- debugM ("Subs " ++ show x ++ ":\n" ++ show tenv)
 --   tmp <- tMapWithKeyM subsEnv tenv
@@ -324,11 +322,11 @@ solveDualOf _ _ p = return p
 
 -- -- PHASE 2 - SOLVING DUALOF TYPE OPERATORS
 
--- solveDualOfs :: T.TypeEnv -> FreestState T.TypeEnv
+-- solveDualOfs :: TypeEnv -> FreestState TypeEnv
 -- solveDualOfs tenv =
 --   tMapM (\(k, t) -> solveDualOf tenv False t >>= \t' -> pure (k, t')) tenv
 
--- solveDualOf :: T.TypeEnv -> Bool -> T.Type -> FreestState T.Type
+-- solveDualOf :: TypeEnv -> Bool -> T.Type -> FreestState T.Type
 -- solveDualOf tenv b (T.Choice p pol m) =
 --   fmap (T.Choice p pol) (tMapM (solveDualOf tenv b) m)
 -- solveDualOf tenv b (T.Semi p t u) =

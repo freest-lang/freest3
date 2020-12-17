@@ -1,4 +1,3 @@
-
 {-# LANGUAGE FlexibleInstances #-}
 {- |
 Module      :  Syntax.Show
@@ -28,6 +27,7 @@ import           Prelude                 hiding ( Left
 import           Syntax.Base
 import           Syntax.Expression             as E
 import qualified Syntax.Kind                   as K
+import           Syntax.Program
 import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
@@ -65,9 +65,9 @@ showVar = dropWhile (\c -> isDigit c || c == '#') . intern
 -- Kinds
 
 instance Show K.Basic where
-  show K.Session    = "S"
-  show K.Top = "T"
-  show K.Message    = "M"
+  show K.Session = "S"
+  show K.Top     = "T"
+  show K.Message = "M"
 
 instance Show K.Kind where
   show (K.Kind _ p m) = show p ++ show m
@@ -139,12 +139,11 @@ instance Unparse T.Type where
   unparse (T.Bool _       ) = (maxRator, "Bool")
   unparse (T.Unit _       ) = (maxRator, "()")
   unparse (T.Skip _       ) = (maxRator, "Skip")
-  unparse (T.Var _ a      ) = (maxRator, show a)
+  unparse (T.Var  _ a     ) = (maxRator, show a)
   unparse (T.Name _ x     ) = (maxRator, show x)
   unparse (T.Message _ p t) = (msgRator, show p ++ m)
-   where
-     m = bracket (unparse t) Right msgRator
-  unparse (T.Fun _ m t u  ) = (arrowRator, l ++ showArrow m ++ r)
+    where m = bracket (unparse t) Right msgRator
+  unparse (T.Fun _ m t u) = (arrowRator, l ++ showArrow m ++ r)
    where
     l = bracket (unparse t) Left arrowRator
     r = bracket (unparse u) Right arrowRator
@@ -241,12 +240,12 @@ instance Show Exp where
 
 instance Unparse Exp where
   -- Basic values
-  unparse (E.Unit _) = (maxRator, "()")
-  unparse (E.Int _ i) = (maxRator, show i)
-  unparse (E.Char _ c) = (maxRator, show c)
-  unparse (E.Bool _ b) = (maxRator, show b)
+  unparse (E.Unit _     ) = (maxRator, "()")
+  unparse (E.Int  _ i   ) = (maxRator, show i)
+  unparse (E.Char _ c   ) = (maxRator, show c)
+  unparse (E.Bool _ b   ) = (maxRator, show b)
   -- Variable
-  unparse (E.Var _ x      ) = (maxRator, show x)
+  unparse (E.Var  _ x   ) = (maxRator, show x)
   -- Abstraction intro and elim
   unparse (E.Abs _ m b e) = (arrowRator, "λ" ++ show b ++ showArrow m ++ s)
     where s = bracket (unparse e) Right arrowRator
@@ -387,8 +386,9 @@ showFieldMap i m = intercalate "; " (map showAssoc (Map.toList m))
 
 
 
-instance {-# OVERLAPPING #-} Show T.VarEnv where
+instance {-# OVERLAPPING #-} Show VarEnv where
   show venv = "[" ++ intercalate "\n\t\t   ," (venvToList venv) ++ "]"
 
-venvToList :: T.VarEnv -> [String]
-venvToList = Map.foldrWithKey (\k v acc -> (show k ++ " : " ++ show v) : acc) []
+venvToList :: VarEnv -> [String]
+venvToList =
+  Map.foldrWithKey (\k v acc -> (show k ++ " : " ++ show v) : acc) []

@@ -22,34 +22,31 @@ import           Syntax.Base                    ( Pos
                                                 , pos
                                                 , defaultPos
                                                 )
-import qualified Syntax.Type                   as T
-                                                ( TypeOpsEnv )
+import           Syntax.Program                 ( TypeOpsEnv )
 import           Utils.ErrorMessage
--- import           Parse.Unparser
 
 -- | Format errors
-formatErrorMessages :: T.TypeOpsEnv -> Pos -> String -> [ErrorMessage] -> String
+formatErrorMessages :: TypeOpsEnv -> Pos -> String -> [ErrorMessage] -> String
 formatErrorMessages _ _ _ [] = ""
 formatErrorMessages tops p fname es =
   let header = styleHeader fname p
       body   = foldl (\acc e -> acc ++ " " ++ colorMsg tops e) "" es
   in  header ++ body
 
-colorMsg :: T.TypeOpsEnv -> ErrorMessage -> String
+colorMsg :: TypeOpsEnv -> ErrorMessage -> String
 colorMsg tops (Error e) = styleColor (color e) (boldMsg tops e)
 
-boldMsg :: ErrorMsg a => T.TypeOpsEnv -> a -> String
+boldMsg :: ErrorMsg a => TypeOpsEnv -> a -> String
 boldMsg tops m = styleBold (msg tops m)
 
 -- Style the error header
 
 styleHeader :: String -> Pos -> String
-styleHeader f p
-  | p == defaultPos = styleBold $ start ++ end
-  | otherwise       = styleBold $ start ++ ":" ++ show p ++ end
+styleHeader f p | p == defaultPos = styleBold $ start ++ end
+                | otherwise       = styleBold $ start ++ ":" ++ show p ++ end
  where
-   start = "\n" ++ f
-   end   = ": " ++ styleRed "error:\n\t"
+  start = "\n" ++ f
+  end   = ": " ++ styleRed "error:\n\t"
 
 -- Style colors, this is built in from now on
 -- instead of importing System.Console.Pretty

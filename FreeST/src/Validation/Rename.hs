@@ -23,22 +23,23 @@ module Validation.Rename
   )
 where
 
+import           Control.Monad.State
+import qualified Data.Map.Strict               as Map
 import           Syntax.Base
-import           Syntax.TypeVariable
-import           Syntax.ProgramVariable
-import qualified Syntax.Kind                   as K
-import qualified Syntax.Type                   as T
 import qualified Syntax.Expression             as E
+import qualified Syntax.Kind                   as K
+import           Syntax.Program
+import           Syntax.ProgramVariable
+import qualified Syntax.Type                   as T
+import           Syntax.TypeVariable
+import           Utils.Error                    ( internalError )
+import           Utils.FreestState
+import           Utils.PreludeLoader            ( userDefined ) -- debugging
 import qualified Validation.Substitution       as Subs
                                                 ( subs
                                                 , unfold
                                                 )
 import           Validation.Terminated
-import           Utils.FreestState
-import           Utils.Error                    ( internalError )
-import           Utils.PreludeLoader            ( userDefined ) -- debugging
-import qualified Data.Map.Strict               as Map
-import           Control.Monad.State
 -- import           Debug.Trace -- debugging
 
 renameState :: FreestState ()
@@ -49,7 +50,7 @@ renameState = do
   setTEnv tEnv'
   -- VarEnv + ExpEnv, together
   vEnv <- getVEnv
-  tMapWithKeyM_ renameFun (userDefined (T.noConstructors tEnv vEnv))
+  tMapWithKeyM_ renameFun (userDefined (noConstructors tEnv vEnv))
 
 -- renameFun :: ProgVar -> TypeScheme -> FreestState ()
 -- renameFun f (TypeScheme p xks t) = do
@@ -114,11 +115,11 @@ rename' bs (T.Rec p (K.Bind p' a k) t)
     t' <- rename (insertVar a a' bs) t
     return $ T.Rec p (K.Bind p' a' k) t'
   | otherwise = rename bs t
-rename' bs (T.Var p a) = return $ T.Var p (findWithDefaultVar a bs)
+rename' bs (T.Var p a)  = return $ T.Var p (findWithDefaultVar a bs)
   -- Type operators
-rename' _ t@T.Dualof{} = internalError "Validation.Rename.rename" t
+rename' _  t@T.Dualof{} = internalError "Validation.Rename.rename" t
   -- Otherwise: Basic, Skip, Message, TypeName
-rename' _ t = return t
+rename' _  t            = return t
 
 -- Expressions
 
@@ -188,9 +189,9 @@ renameField bs (xs, e) = do
   xs' <- mapM (rename bs) xs
   e'  <- rename (insertProgVars xs') e
   return (xs', e')
-  where
-    insertProgVars :: [ProgVar] -> Bindings
-    insertProgVars xs' = foldr (uncurry insertVar) bs (zip xs xs')
+ where
+  insertProgVars :: [ProgVar] -> Bindings
+  insertProgVars xs' = foldr (uncurry insertVar) bs (zip xs xs')
 
 -- Program variables
 
@@ -251,9 +252,9 @@ isFreeIn x (T.Choice _ _ tm) =
   -- Polymorphism
 isFreeIn x (T.Forall _ (K.Bind _ y _) t) = x /= y && x `isFreeIn` t
   -- Functional or session 
-isFreeIn x (T.Rec _ (K.Bind _ y _) t) = x /= y && x `isFreeIn` t
-isFreeIn x (T.Var _ y) = x == y
+isFreeIn x (T.Rec    _ (K.Bind _ y _) t) = x /= y && x `isFreeIn` t
+isFreeIn x (T.Var _ y                  ) = x == y
   -- Type operators
 isFreeIn _ t@T.Dualof{} = internalError "Validation.Rename.isFreeIn" t
   -- Basic, Skip, Message, TypeName
-isFreeIn _ _ = False
+isFreeIn _ _                             = False
