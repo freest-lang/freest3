@@ -1,3 +1,14 @@
+{- |
+Module      :  Syntax.Types
+Description :  Signatures for the functions in the prelude
+Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of Lisbon
+                   Andreia Mordido, LASIGE, Faculty of Sciences, University of Lisbon
+                   Vasco Vasconcelos, LASIGE, Faculty of Sciences, University of Lisbon
+Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc.ul.pt
+
+This module introduces the signatures for the functions in the prelude
+-}
+
 module Utils.PreludeLoader
   ( prelude
   , isBuiltin
@@ -5,90 +16,50 @@ module Utils.PreludeLoader
   )
 where
 
--- import           Syntax.Schemes
-import qualified Syntax.Type                   as T
 import           Syntax.ProgramVariable
 import           Syntax.Base
+import qualified Syntax.Type                   as T
 import           Syntax.Program
 import qualified Data.Map.Strict               as Map
--- import           Syntax.Kind
-
-binIntOp :: T.Type
-binIntOp = T.Fun defaultPos
-                 Un
-                 (T.Int defaultPos)
-                 (T.Fun defaultPos Un (T.Int defaultPos) (T.Int defaultPos))
-
-
-binBoolOp :: T.Type
-binBoolOp = T.Fun
-  defaultPos
-  Un
-  (T.Bool defaultPos)
-  (T.Fun defaultPos Un (T.Bool defaultPos) (T.Bool defaultPos))
-
-
-relationalOp :: T.Type
-relationalOp = T.Fun
-  defaultPos
-  Un
-  (T.Int defaultPos)
-  (T.Fun defaultPos Un (T.Int defaultPos) (T.Bool defaultPos))
-
-
--- unIntBool :: T.Type
--- unIntBool =
---   T.Fun defaultPos Un (T.IntType defaultPos) (T.BoolType defaultPos)
-
-unIntInt :: T.Type
-unIntInt = T.Fun defaultPos Un (T.Int defaultPos) (T.Int defaultPos)
-
-unBoolBool :: T.Type
-unBoolBool = T.Fun defaultPos Un (T.Bool defaultPos) (T.Bool defaultPos)
+import           Parse.Read                     ()
 
 typeList :: [(ProgVar, T.Type)]
 typeList =
-  [ (mkVar p "(+)"   , binIntOp)
-  , (mkVar p "(-)"   , binIntOp)
-  , (mkVar p "(/)"   , binIntOp)
-  , (mkVar p "(*)"   , binIntOp)
-  , (mkVar p "mod"   , binIntOp)
-  , (mkVar p "rem"   , binIntOp)
-  , (mkVar p "div"   , binIntOp)
-  , (mkVar p "negate", unIntInt)
-  , (mkVar p "not"   , unBoolBool)
-  , (mkVar p "(&&)"  , binBoolOp)
-  , (mkVar p "(||)"  , binBoolOp)
-  , (mkVar p "(==)"  , relationalOp)
-  , (mkVar p "(/=)"  , relationalOp)
-  , (mkVar p "(<)"   , relationalOp)
-  , (mkVar p "(>)"   , relationalOp)
-  , (mkVar p "(<=)"  , relationalOp)
-  , (mkVar p "(>=)"  , relationalOp)
-  , (mkVar p "ord", T.Fun defaultPos Un (T.Char defaultPos) (T.Int defaultPos))
-  , (mkVar p "chr", T.Fun defaultPos Un (T.Int defaultPos) (T.Char defaultPos))
-  , ( mkVar p "fork"
-    , T.Fun p Un (T.Unit p) (T.Unit p)
-    )
--- If introduce fork here, programs must instantiate ths poly var. E.g., 'fork [()] (boolServer r)'
---  , (mkVar p "fork", T.TypeScheme p [KindBind p a (Kind p T.Functional Lin)] (T.Fun p Lin (TypeVar p a) (T.UnitType p))) 
---           , (mkVar p "id", T.TypeScheme p [TBindK p "a" (Kind p Session Un)] (T.Fun p Un (TypeVar p "a") (TypeVar p "a")))
-  -- Prints
-  , (mkVar p "printInt"   , T.Fun p Un (T.Int p) (T.Unit p))
-  , (mkVar p "printIntLn" , T.Fun p Un (T.Int p) (T.Unit p))
-  , (mkVar p "printBool"  , T.Fun p Un (T.Bool p) (T.Unit p))
-  , (mkVar p "printBoolLn", T.Fun p Un (T.Bool p) (T.Unit p))
-  , (mkVar p "printChar"  , T.Fun p Un (T.Char p) (T.Unit p))
-  , (mkVar p "printCharLn", T.Fun p Un (T.Char p) (T.Unit p))
-  , (mkVar p "printUnit"  , T.Fun p Un (T.Unit p) (T.Unit p))
-  , (mkVar p "printUnitLn", T.Fun p Un (T.Unit p) (T.Unit p))
+  [ (mkVar p "(+)"   , read "Int -> Int -> Int"    :: T.Type)
+  , (mkVar p "(-)"   , read "Int -> Int -> Int"    :: T.Type)
+  , (mkVar p "(/)"   , read "Int -> Int -> Int"    :: T.Type)
+  , (mkVar p "(*)"   , read "Int -> Int -> Int"    :: T.Type)
+  , (mkVar p "mod"   , read "Int -> Int -> Int"    :: T.Type)
+  , (mkVar p "rem"   , read "Int -> Int -> Int"    :: T.Type)
+  , (mkVar p "div"   , read "Int -> Int -> Int"    :: T.Type)
+  , (mkVar p "negate", read "Int -> Int"           :: T.Type)
+  , (mkVar p "not"   , read "Bool -> Bool"         :: T.Type)
+  , (mkVar p "(&&)"  , read "Bool -> Bool -> Bool" :: T.Type)
+  , (mkVar p "(||)"  , read "Bool -> Bool -> Bool" :: T.Type)
+  , (mkVar p "(==)"  , read "Int -> Int -> Bool"   :: T.Type)
+  , (mkVar p "(/=)"  , read "Int -> Int -> Bool"   :: T.Type)
+  , (mkVar p "(<)"   , read "Int -> Int -> Bool"   :: T.Type)
+  , (mkVar p "(>)"   , read "Int -> Int -> Bool"   :: T.Type)
+  , (mkVar p "(<=)"  , read "Int -> Int -> Bool"   :: T.Type)
+  , (mkVar p "(>=)"  , read "Int -> Int -> Bool"   :: T.Type)
+  , (mkVar p "ord"   , read "Char -> Int"          :: T.Type)
+  , (mkVar p "chr"   , read "Int -> Char"          :: T.Type)
+  , (mkVar p "fork"  , read "() -> ()"             :: T.Type)
+  -- , (mkVar p "fst"   , read "∀ a:TU => ∀ b:TU => (a, b) -> a" :: T.Type)
+  -- , (mkVar p "snd"   , read "∀ a:TU => ∀ b:TU => (a, b) -> b" :: T.Type)
+  , (mkVar p "printInt"   , read "Int -> ()"       :: T.Type)
+  , (mkVar p "printIntLn" , read "Int -> ()"       :: T.Type)
+  , (mkVar p "printBool"  , read "Bool -> ()"      :: T.Type)
+  , (mkVar p "printBoolLn", read "Bool -> ()"      :: T.Type)
+  , (mkVar p "printChar"  , read "Char -> ()"      :: T.Type)
+  , (mkVar p "printCharLn", read "Char -> ()"      :: T.Type)
+  , (mkVar p "printUnit"  , read "() -> ()"        :: T.Type)
+  , (mkVar p "printUnitLn", read "() -> ()"        :: T.Type)
   ]
   where p = defaultPos
-  -- var     = T.TypeVar p (mkVar p "a")
-  -- varBind = KindBind p (mkVar p "a") (omission p)
-
+  
 prelude :: VarEnv
-prelude = foldl (\acc (x, s) -> Map.insert x s acc) Map.empty typeList
+prelude = foldr (uncurry Map.insert) Map.empty typeList
 
 isBuiltin :: ProgVar -> Bool
 isBuiltin = (`elem` map fst typeList)
