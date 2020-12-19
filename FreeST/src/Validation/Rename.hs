@@ -23,45 +23,36 @@ module Validation.Rename
   )
 where
 
-import           Control.Monad.State
-import qualified Data.Map.Strict               as Map
 import           Syntax.Base
-import qualified Syntax.Expression             as E
-import qualified Syntax.Kind                   as K
-import           Syntax.Program
-import           Syntax.ProgramVariable
-import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
-import           Utils.Error                    ( internalError )
-import           Utils.FreestState
-import           Utils.PreludeLoader            ( userDefined ) -- debugging
+import           Syntax.ProgramVariable
+import qualified Syntax.Kind                   as K
+import qualified Syntax.Type                   as T
+import qualified Syntax.Expression             as E
+import           Syntax.Program
+import           Validation.Terminated          ( terminated )
 import qualified Validation.Substitution       as Subs
                                                 ( subs
                                                 , unfold
                                                 )
-import           Validation.Terminated
+import           Utils.Error                    ( internalError )
+import           Utils.FreestState
+import           Utils.PreludeLoader            ( userDefined ) -- debugging
+import qualified Data.Map.Strict               as Map
+import           Control.Monad                  ( liftM, liftM2, liftM3 )
+import           Control.Monad.State
 -- import           Debug.Trace -- debugging
 
 renameState :: FreestState ()
 renameState = do
   -- TypeVenv
   tEnv  <- getTEnv
-
   -- | Why do we need to rename the tenv ?? It will obviously have dualofs.
-  
   -- tEnv' <- tMapM (\(k, s) -> rename Map.empty s >>= \s' -> return (k, s')) tEnv
   -- setTEnv tEnv'
-
   -- VarEnv + ExpEnv, together
   vEnv <- getVEnv
   tMapWithKeyM_ renameFun (userDefined (noConstructors tEnv vEnv))
-
--- renameFun :: ProgVar -> TypeScheme -> FreestState ()
--- renameFun f (TypeScheme p xks t) = do
-  -- The function signature
-  -- xks' <- mapM (rename Map.empty) xks
-  -- let bs = insertBindings xks xks' Map.empty
-  -- t' <- rename bs t
 
 renameFun :: ProgVar -> T.Type -> FreestState ()
 renameFun f t = do
@@ -88,42 +79,32 @@ instance Rename T.Type where
 
 rename' :: Bindings -> T.Type -> FreestState T.Type
     -- Functional types
-rename' bs (T.Fun p m t u) = do
-  t' <- rename bs t
-  u' <- rename bs u
-  return $ T.Fun p m t' u'
-rename' bs (T.Pair p t u) = do
-  t' <- rename bs t
-  u' <- rename bs u
-  return $ T.Pair p t' u'
-rename' bs (T.Datatype p fm) = do
-  fm' <- tMapM (rename bs) fm
-  return $ T.Datatype p fm'
+rename' bs (T.Fun p m t u) = liftM2 (T.Fun p m) (rename bs t) (rename bs u)
+rename' bs (T.Pair p t u) = liftM2 (T.Pair p) (rename bs t) (rename bs u)
+rename' bs (T.Datatype p fm) = liftM (T.Datatype p) (tMapM (rename bs) fm)
   -- Session types
-rename' bs (T.Semi p t u) = do
-  t' <- rename bs t
-  u' <- rename bs u
-  return $ T.Semi p t' u'
-rename' bs (T.Choice p pol tm) = do
-  tm' <- tMapM (rename bs) tm
-  return $ T.Choice p pol tm'
+rename' bs (T.Semi p t u) = liftM2 (T.Semi p) (rename bs t) (rename bs u)
+rename' bs (T.Choice p pol tm) = liftM (T.Choice p pol) (tMapM (rename bs) tm)
   -- Polymorphism
 rename' bs (T.Forall p (K.Bind p' a k) t) = do
   a' <- rename bs a
   t' <- rename (insertVar a a' bs) t
   return $ T.Forall p (K.Bind p' a' k) t'
   -- Functional or session
-rename' bs (T.Rec p (K.Bind p' a k) t)
-  | a `isFreeIn` t = do
-    a' <- rename bs a
-    t' <- rename (insertVar a a' bs) t
-    return $ T.Rec p (K.Bind p' a' k) t'
-  | otherwise = rename bs t
-rename' bs (T.Var p a)  = return $ T.Var p (findWithDefaultVar a bs)
+rename' bs (T.Rec p (K.Bind p' a k) t) = do
+  a' <- rename bs a
+  t' <- rename (insertVar a a' bs) t
+  return $ T.Rec p (K.Bind p' a' k) t'
+  -- | a `isFreeIn` t = do
+  --   a' <- rename bs a
+  --   t' <- rename (insertVar a a' bs) t
+  --   return $ T.Rec p (K.Bind p' a' k) t'
+  -- | otherwise = rename bs t
+rename' bs (T.Var p a) = return $ T.Var p (findWithDefaultVar a bs)
   -- Type operators
-rename' _  t@T.Dualof{} = internalError "Validation.Rename.rename" t
+rename' _ t@T.Dualof{} = internalError "Validation.Rename.rename" t
   -- Otherwise: Basic, Skip, Message, TypeName
-rename' _  t            = return t
+rename' _ t = return t
 
 -- Expressions
 
@@ -136,15 +117,9 @@ instance Rename E.Exp where
     t' <- rename bs t
     e' <- rename (insertVar x x' bs) e
     return $ E.Abs p1 m (T.Bind p2 x' t') e'
-  rename bs (E.App p e1 e2) = do
-    e1' <- rename bs e1
-    e2' <- rename bs e2
-    return $ E.App p e1' e2'
+  rename bs (E.App p e1 e2) = liftM2 (E.App p) (rename bs e1) (rename bs e2)
   -- Pair intro and elim
-  rename bs (E.Pair p e1 e2) = do
-    e1' <- rename bs e1
-    e2' <- rename bs e2
-    return $ E.Pair p e1' e2'
+  rename bs (E.Pair p e1 e2) = liftM2 ( E.Pair p) (rename bs e1) (rename bs e2)
   rename bs (E.BinLet p x y e1 e2) = do
     x'  <- rename bs x
     y'  <- rename bs y
@@ -152,24 +127,17 @@ instance Rename E.Exp where
     e2' <- rename (insertVar y y' (insertVar x x' bs)) e2
     return $ E.BinLet p x' y' e1' e2'
   -- Datatype elim
-  rename bs (E.Case p e fm) = do
-    e'  <- rename bs e
-    fm' <- tMapM (renameField bs) fm
-    return $ E.Case p e' fm'
+  rename bs (E.Case p e fm) =
+    liftM2 (E.Case p) (rename bs e) (tMapM (renameField bs) fm)
   -- Type application & TypeAbs
-  rename bs (E.TypeAbs p kb e) = do
-    e' <- rename bs e
-    return $ E.TypeAbs p kb e'
-  rename bs (E.TypeApp p e t) = do
-    e' <- rename bs e
-    t' <- rename bs t
-    return $ E.TypeApp p e' t'
+  rename bs (E.TypeAbs p (K.Bind p' a k) e) = do
+    a' <- rename bs a
+    e' <- rename (insertVar a a' bs) e
+    return $ E.TypeAbs p (K.Bind p' a' k) e'
+  rename bs (E.TypeApp p e t) = liftM2 (E.TypeApp p) (rename bs e) (rename bs t)
   -- Boolean elim
-  rename bs (E.Conditional p e1 e2 e3) = do
-    e1' <- rename bs e1
-    e2' <- rename bs e2
-    e3' <- rename bs e3
-    return $ E.Conditional p e1' e2' e3'
+  rename bs (E.Conditional p e1 e2 e3) =
+    liftM3 (E.Conditional p) (rename bs e1) (rename bs e2) (rename bs e3)
   -- Let
   rename bs (E.UnLet p x e1 e2) = do
     x'  <- rename bs x
@@ -177,14 +145,9 @@ instance Rename E.Exp where
     e2' <- rename (insertVar x x' bs) e2
     return $ E.UnLet p x' e1' e2'
   -- Session types
-  rename bs (E.New p t u) = do
-    t' <- rename bs t
-    u' <- rename bs u
-    return $ E.New p t' u'
-  rename bs (E.Match p e fm) = do
-    e'  <- rename bs e
-    fm' <- tMapM (renameField bs) fm
-    return $ E.Match p e' fm'
+  rename bs (E.New p t u) = liftM2 (E.New p) (rename bs t) (rename bs u)
+  rename bs (E.Match p e fm) =
+    liftM2 (E.Match p) (rename bs e) (tMapM (renameField bs) fm)
   -- Otherwise: Unit, Integer, Character, Boolean, Select
   rename _ e = return e
 
@@ -195,7 +158,7 @@ renameField bs (xs, e) = do
   return (xs', e')
  where
   insertProgVars :: [ProgVar] -> Bindings
-  insertProgVars xs' = foldr (uncurry insertVar) bs (zip xs xs')
+  insertProgVars xs' = foldr (uncurry insertVar) bs (zip xs xs')  
 
 -- Program variables
 
@@ -241,6 +204,8 @@ subs t x u = renameType $ Subs.subs t x u
 unfold :: T.Type -> T.Type
 unfold = renameType . Subs.unfold
 
+{-
+
 -- Does a given type variable x occur free in a type t?
 -- If not, then rec x.t can be renamed to t alone.
 isFreeIn :: TypeVar -> T.Type -> Bool
@@ -262,3 +227,5 @@ isFreeIn x (T.Var _ y                  ) = x == y
 isFreeIn _ t@T.Dualof{} = internalError "Validation.Rename.isFreeIn" t
   -- Basic, Skip, Message, TypeName
 isFreeIn _ _                             = False
+
+-}
