@@ -62,22 +62,27 @@ showVar :: Variable v => v -> String
 showVar = dropWhile (\c -> isDigit c || c == '#') . intern
 -- showVar = intern -- for testing purposes
 
--- Kinds
+-- Sorted variable. Either a:k or x:t (just to get the spacing right)
+
+showSortedVar :: (Show a, Show b) => a -> b -> String
+showSortedVar x t = show x ++ ":" ++ show t
+
+-- Kind
 
 instance Show K.Basic where
   show K.Session = "S"
-  show K.Top     = "T"
   show K.Message = "M"
+  show K.Top     = "T"
 
 instance Show K.Kind where
   show (K.Kind _ p m) = show p ++ show m
 
--- Kind binds
+-- Kind bind
 
 instance Show K.Bind where
-  show (K.Bind _ a k) = show a ++ ":" ++ show k
+  show (K.Bind _ a k) = showSortedVar a k
 
--- Polarities
+-- Polarity
 
 instance Show T.Polarity where
   show T.In  = "?"
@@ -128,7 +133,7 @@ bracket (inner, image) side outer | noparens inner outer side = image
 class Unparse t where
   unparse :: t -> Fragment
 
--- Types
+-- Type
 
 instance Show T.Type where
   show = snd . unparse
@@ -177,63 +182,12 @@ showChoice :: T.TypeMap -> String
 showChoice m = intercalate ", "
   $ Map.foldrWithKey (\c t acc -> (show c ++ ": " ++ show t) : acc) [] m
 
-{-
-instance Show Type where
-  show = showType 4
---  show = showType 44 -- for testing purposes
-
-showType :: Int -> Type -> String
-  -- Non-recursive cases
-showType _ (Basic _ b) = show b
-showType _ (Skip _) = "Skip"
-showType _ (TypeVar _ a) = show a
-showType _ (Message _ p b) = show p ++ show b
-showType _ (TypeName _ x) = show x
-  -- Depth reached
-showType 0 _               = ".."
-  -- Top types
-showType i (Fun _ m t u) =
-  "(" ++ showType (i - 1) t ++ showArrow m ++ showType (i - 1) u ++ ")"
-showType i (Pair _ t u) =
-  "(" ++ showType (i - 1) t ++ ", " ++ showType (i - 1) u ++ ")"
-showType i (Datatype _ m) = "[" ++ showDatatype i m ++ "]"
-  -- Session types
-showType i (Semi _ t u) =
-  "(" ++ showType (i - 1) t ++ ";" ++ showType (i - 1) u ++ ")"
-showType i (Choice _ v m) = showChoiceView v ++ "{" ++ showChoice i m ++ "}"
-showType i (Forall _ b t) = "∀" ++ show b ++ "=>" ++ showType (i - 1) t
-showType i (Rec _ xk t) =
-  "(rec " ++ show xk ++ "." ++ showType (i - 1) t ++ ")" -- for testing purposes
-  -- Type operators
-showType i (Dualof _ t) = "(dualof " ++ showType (i - 1) t ++ ")"
-
--- showNTupleType :: Int -> Type -> String
--- showNTupleType i (Pair _ t u) = showType (i - 1) t ++ showType (i - 1) u
--- showNTupleType i t                = showType i t
-
-showDatatype :: Int -> TypeMap -> String
-showDatatype i m = intercalate " | " $ Map.foldrWithKey
-  (\c t acc -> (show c ++ showAsSequence t) : acc)
-  []
-  m
- where
-  showAsSequence :: Type -> String
-  showAsSequence (Fun _ _ t u) = " " ++ showType (i - 1) t ++ showAsSequence u
-  showAsSequence _             = ""
-
-showChoice :: Int -> TypeMap -> String
-showChoice i m = intercalate ", " $ Map.foldrWithKey
-  (\c t acc -> (show c ++ ": " ++ showType (i - 1) t) : acc)
-  []
-  m
--}
-
--- Type binds
+-- Type bind
 
 instance Show T.Bind where
   show (T.Bind _ x t) = show x ++ ": " ++ show t
 
--- Expressions
+-- Expression
 
 instance Show Exp where
   show = snd . unparse
@@ -298,97 +252,11 @@ showFieldMap m = intercalate "; " $ map showAssoc (Map.toList m)
   showAssoc (b, (a, v)) =
     show b ++ " " ++ unwords (map show a) ++ " -> " ++ show v
 
-{-
-instance Show Expression where
-  show = showExp 4
---  show = showExp 44
-
-showExp :: Int -> Expression -> String
-  -- Basic values
-showExp _ (Unit _       ) = "()"
-showExp _ (Integer   _ i) = show i
-showExp _ (Character _ c) = show c
-showExp _ (Boolean   _ b) = show b
-  -- Variable
-showExp _ (ProgVar   _ x) = show x
-  -- Depth reached
-showExp 0 _               = ".."
-  -- Abstraction intro and elim
-showExp i (Abs _ m b e) =
-  "(λ"
-    ++ show b
-    ++ showArrow m
-    ++ showExp (i - 1) e
-    ++ ")"
-showExp i (App _ e1 e2) =
-  "(" ++ showExp (i - 1) e1 ++ " " ++ showExp (i - 1) e2 ++ ")"
-  -- Pair intro and elim
-showExp i (Pair _ e1 e2) =
-  "(" ++ showExp (i - 1) e1 ++ ", " ++ showExp (i - 1) e2 ++ ")"
-showExp i (BinLet _ x y e1 e2) =
-  "(let ("
-    ++ show x
-    ++ ", "
-    ++ show y
-    ++ ") = "
-    ++ showExp (i - 1) e1
-    ++ " in "
-    ++ showExp (i - 1) e2
-    ++ ")"
-  -- Datatype elim
-showExp i (Case _ e m) =
-  "case " ++ showExp (i - 1) e ++ " of {" ++ showFieldMap (i - 1) m ++ "}"
-  -- Type Abstraction intro and elim
-showExp _ (TypeApp _ x ts) =
-  show x ++ " [" ++ unwords (map show ts) ++ "]"
-showExp i (TypeAbs _ b e) =
-  show "Λ" ++ show b ++ "->" ++ showExp (i - 1) e
-  -- Boolean elim
-showExp i (Conditional _ e e1 e2) =
-  "if "
-    ++ show e
-    ++ " then "
-    ++ showExp (i - 1) e1
-    ++ " else "
-    ++ showExp (i - 1) e2
-  -- Let
-showExp i (UnLet _ x e1 e2) =
-  "(let "
-    ++ show x
-    ++ " = "
-    ++ showExp (i - 1) e1
-    ++ " in "
-    ++ showExp (i - 1) e2
-    ++ ")"
-  -- Session types
-showExp _ (New _ t _) = "new " ++ show t
-showExp i (Select _ l) = "(select " ++ show l ++ ")"
-showExp i (Match _ e m) =
-  "match " ++ showExp (i - 1) e ++ " with {" ++ showFieldMap (i - 1) m ++ "}"
-
-showFieldMap :: Int -> FieldMap -> String
-showFieldMap i m = intercalate "; " (map showAssoc (Map.toList m))
- where
-  showAssoc (b, (a, v)) =
-    show b
-      ++ " "
-      ++ unwords (map show a)
-      ++ " -> "
-      ++ showExp (i - 1) v
--}
-
--- Type Schemes
-
--- instance Show TypeScheme where
---   show (TypeScheme _ [] t) = show t
---   show (TypeScheme _ bs t) = "forall " ++ bindings ++ " => " ++ show t
---     where bindings = intercalate ", " (map show bs)
-
-
+-- VarEnv
 
 instance {-# OVERLAPPING #-} Show VarEnv where
   show venv = "[" ++ intercalate "\n\t\t   ," (venvToList venv) ++ "]"
 
 venvToList :: VarEnv -> [String]
 venvToList =
-  Map.foldrWithKey (\k v acc -> (show k ++ " : " ++ show v) : acc) []
+  Map.foldrWithKey (\k v acc -> showSortedVar k v : acc) []

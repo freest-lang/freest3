@@ -31,11 +31,11 @@ import           Syntax.TypeVariable
 import           Syntax.Base
 import qualified Data.Map.Strict               as Map
 
--- Basic kinds
+-- Basic kind
 
 data Basic = Message | Session | Top deriving Eq
 
--- Kinds
+-- Kind
 
 data Kind = Kind Pos Basic Multiplicity
 
@@ -48,9 +48,9 @@ su p = Kind p Session Un
 mu p = Kind p Message Un
 ml p = Kind p Message Lin
 
--- The kind of conventional (non linear, not sessions) functional
--- programming languages (Alternative: the kind that sits at the top
--- of the hierarchy)
+-- The kind of conventional (non linear, non session) functional programming
+-- languages' types (Alternative: the kind that sits at the top of the
+-- hierarchy)
 instance Default Kind where
   omission = tu
 

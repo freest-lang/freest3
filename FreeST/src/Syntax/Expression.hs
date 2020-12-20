@@ -33,7 +33,7 @@ data Exp =
   -- Variable
   | Var Pos ProgVar
   -- Abstraction intro and elim
-  | Abs Pos Multiplicity T.Bind Exp -- λ x:T -> e
+  | Abs Pos Multiplicity T.Bind Exp -- λ x:T -> e, Abstraction
   | App Pos Exp Exp            -- e1 e2
   -- Pair intro and elim
   | Pair Pos Exp Exp
@@ -41,7 +41,7 @@ data Exp =
   -- Datatype elim
   | Case Pos Exp FieldMap
   -- Type Abstraction intro and elim
-  | TypeAbs Pos K.Bind Exp     -- λ a:k => e -- Higher-order polymorphism
+  | TypeAbs Pos K.Bind Exp     -- λ a:k => e -- Type abstraction
   | TypeApp Pos Exp T.Type     -- e[T]
   -- Boolean elim
   | Conditional Pos Exp Exp Exp
