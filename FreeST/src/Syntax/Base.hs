@@ -15,17 +15,17 @@ module Syntax.Base
 , Variable(..)
 , Pos(..) 
 , Position(..)
+, Multiplicity(..)
 , defaultPos
 , negPos
-, Multiplicity(..)
 ) where
 
--- Defaults for the various syntactic categories
+-- Default for the various syntactic categories
 
 class Default t where
   omission :: Pos -> t
 
--- Positions
+-- Position
 
 data Pos = Pos Int Int deriving (Eq, Ord)
 
@@ -38,11 +38,11 @@ defaultPos = Pos 0 0
 negPos :: Pos -> Pos
 negPos (Pos i j) = Pos (negate i) (negate j)
 
--- Multiplicities for kinds, types, and expressions
+-- Multiplicity for kinds, types and expressions
 
 data Multiplicity = Un | Lin deriving Eq
 
--- Variables, type and program
+-- Type and program variable
 
 class Position t => Variable t where
   -- The string, internal representation of a variable
