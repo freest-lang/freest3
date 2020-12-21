@@ -39,6 +39,15 @@ data Basic = Message | Session | Top deriving Eq
 
 data Kind = Kind Pos Basic Multiplicity
 
+instance Position Kind where
+  pos (Kind p _ _) = p
+
+-- The kind of conventional (non linear, non session) functional programming
+-- languages' types (Alternative: the kind that sits at the top of the
+-- hierarchy)
+instance Default Kind where
+  omission = tu
+
 -- Abbreviations for the six proper kinds
 tl, tu, sl, su, mu, ml :: Pos -> Kind
 tl p = Kind p Top Lin
@@ -47,12 +56,6 @@ sl p = Kind p Session Lin
 su p = Kind p Session Un
 mu p = Kind p Message Un
 ml p = Kind p Message Lin
-
--- The kind of conventional (non linear, non session) functional programming
--- languages' types (Alternative: the kind that sits at the top of the
--- hierarchy)
-instance Default Kind where
-  omission = tu
 
 isLin :: Kind -> Bool
 isLin (Kind _ _ m) = m == Lin
@@ -63,13 +66,6 @@ isUn = not . isLin
 isSession :: Kind -> Bool
 isSession (Kind _ b _) = b == Session
 
-instance Position Kind where
-  pos (Kind p _ _) = p
-
--- Kind environments
-
-type KindEnv = Map.Map TypeVar Kind
-
 -- Bind, a:k => t or a:k => e
 
 data Bind a = Bind Pos TypeVar Kind a
@@ -78,4 +74,8 @@ instance Position (Bind a) where
   pos (Bind p _ _ _) = p
 
 instance Default a => Default (Bind a) where
-  omission p = Bind p (mkVar p "omission") (omission p) (omission p)
+  omission p = Bind p (omission p) (omission p) (omission p)
+
+-- Kind environment
+
+type KindEnv = Map.Map TypeVar Kind

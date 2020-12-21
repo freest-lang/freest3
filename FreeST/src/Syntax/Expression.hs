@@ -81,4 +81,4 @@ instance Position Bind where
   pos (Bind p _ _ _ _) = p
 
 instance Default Bind where
-  omission p = Bind p Un (mkVar p "omission") (T.Unit p) (Unit p)
+  omission p = Bind p Un (omission p) (T.Unit p) (Unit p)

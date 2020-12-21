@@ -28,3 +28,6 @@ instance Ord TypeVar where
 
 instance Position TypeVar where
   pos (TypeVar p _) = p
+
+instance Default TypeVar where
+  omission p = mkVar p "omission"

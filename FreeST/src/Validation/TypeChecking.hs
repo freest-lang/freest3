@@ -27,11 +27,12 @@ import           Syntax.Base
 import qualified Syntax.Expression             as E
 import           Syntax.Program
 import           Syntax.ProgramVariable
-import           Syntax.Type
+import qualified Syntax.Type                   as T 
 import           Utils.FreestState
 import           Utils.PreludeLoader            ( userDefined )
+import           Utils.Error                    ( internalError )
 import qualified Validation.Kinding            as K
-import qualified Validation.Typing             as T
+import qualified Validation.Typing             as T -- Again
 
 typeCheck :: FreestState ()
 typeCheck = do

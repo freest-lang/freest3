@@ -34,7 +34,7 @@ import           Syntax.Program
 import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 import           Utils.FreestState
--- import           Utils.PreludeLoader            ( userDefined ) -- debug
+import           Utils.PreludeLoader            ( userDefined ) -- debug
 import qualified Validation.Extract            as Extract
 import qualified Validation.Kinding            as K -- Again?
 import qualified Validation.Rename             as Rename
@@ -82,7 +82,7 @@ synthetise kEnv (E.UnLet _ x e1 e2) = do
   quotient kEnv x
   return t2
 -- Abs introduction
-synthetise kEnv e'@(E.Abs p (T.Bind _ m x t1 e)) = do
+synthetise kEnv e'@(E.Abs p (E.Bind _ m x t1 e)) = do
   K.synthetise kEnv t1
   vEnv1 <- getVEnv
   addToVEnv x t1
@@ -126,10 +126,10 @@ synthetise kEnv e@(E.App _ e1 e2) = do -- General case
 ----------------------------------------
 --   ∆ | Γ |- Λa : κ.e : ∀ a : κ . T
 
-synthetise kEnv (E.TypeAbs p kb@(K.Bind p' x k) e) = do
+synthetise kEnv (E.TypeAbs _ (K.Bind p x k e)) = do
 --  addToVEnv x (TypeVar p' x)
   t <- synthetise (Map.insert x k kEnv) e
-  return $ T.Forall p kb t
+  return $ T.Forall p (K.Bind p x k t)
 
 -- synthetise kEnv e'@(Abs p m (TypeBind _ x t1) e) = do
 --   K.synthetise kEnv t1
@@ -148,7 +148,7 @@ synthetise kEnv (E.TypeAbs p kb@(K.Bind p' x k) e) = do
 
 synthetise kEnv (E.TypeApp p e t) = do -- TODO: error and bs, zip
   u                              <- synthetise kEnv e
-  (T.Forall _ (K.Bind _ y _) u') <- Extract.forall e u
+  (T.Forall _ (K.Bind _ y _ u')) <- Extract.forall e u
   K.synthetise kEnv t
   -- let tmp = Rename.subs t y u'
   -- traceM $ "\ESC[91m"
@@ -432,7 +432,7 @@ checkAgainst kEnv e t = do
 -- checkAgainstTS e (TypeScheme _ bs t) = checkAgainst (fromKindBinds bs) e t
 
 kEnvFromType :: K.KindEnv -> T.Type -> K.KindEnv
-kEnvFromType kenv (T.Forall _ (K.Bind _ x k) t) =
+kEnvFromType kenv (T.Forall _ (K.Bind _ x k t)) =
   kEnvFromType (Map.insert x k kenv) t
 kEnvFromType kenv _ = kenv
 
@@ -496,12 +496,12 @@ fillFunType :: K.KindEnv -> ProgVar -> E.Exp -> T.Type -> FreestState T.Type
 fillFunType kEnv b = fill
  where
   fill :: E.Exp -> T.Type -> FreestState T.Type
-  fill (E.Abs _ (T.Bind _ _ b _ e)) (T.Fun _ _ t1 t2) = do
+  fill (E.Abs _ (E.Bind _ _ b _ e)) (T.Fun _ _ t1 t2) = do
     addToVEnv b t1
     t3 <- fill e t2
     removeFromVEnv b
     return t3
-  fill e@(E.Abs p _ _ _ _) t = do
+  fill e@(E.Abs p _) t = do
     addError
       (pos b)
       [ Error "Couldn't match expected type"

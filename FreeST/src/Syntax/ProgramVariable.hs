@@ -34,6 +34,9 @@ instance Ord ProgVar where
 instance Position ProgVar where
   pos (ProgVar p _) = p
 
+instance Default ProgVar where
+  omission p = mkVar p "omission"
+
 -- TODO: remove 
 isADT :: ProgVar -> Bool
 isADT (ProgVar _ (x:_)) = isUpper x
