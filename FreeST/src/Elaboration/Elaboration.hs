@@ -464,19 +464,13 @@ subsType tenv b (T.Fun p m t1 t2) =
   liftM2 (T.Fun p m) (subsType tenv b t1) (subsType tenv b t2)
 subsType tenv b (T.Pair p t1 t2) =
   liftM2 (T.Pair p) (subsType tenv b t1) (subsType tenv b t2)
-subsType tenv b d@(T.Datatype p m) = do
+subsType tenv b (T.Datatype p m) =
   fmap (T.Datatype p) (subsMap tenv b m)
 subsType tenv b (T.Semi p t1 t2) =
   liftM2 (T.Semi p) (subsType tenv b t1) (subsType tenv b t2)
-
 subsType tenv b (T.Choice p pol m ) = fmap (T.Choice p pol) (subsMap tenv b m)
-subsType tenv b (T.Forall p (K.Bind p1 x k t)) = do
-  t' <- subsType tenv b t
-  pure $ T.Forall p (K.Bind p1 x k t')
-subsType tenv b (T.Rec    p (K.Bind p1 x k t)) = do
-  t' <- subsType tenv b t
-  pure $ T.Rec p (K.Bind p1 x k t')
-
+subsType tenv b (T.Forall p kb) = fmap (T.Forall p) (subsKBindType tenv kb)
+subsType tenv _ (T.Rec    p kb) = fmap (T.Rec p) (subsKBindType tenv kb)
 -- In the first phase, we only substitute if the typename is the one that
 -- we are looking for (x)
 subsType _ (Just (x, t)) n@(T.Var p tname)
@@ -500,6 +494,9 @@ subsType _ _ t = pure t
 subsMap :: Ctx -> Maybe (TypeVar, T.Type) -> T.TypeMap -> FreestState T.TypeMap
 subsMap tenv b = mapM (subsType tenv b)
 
+subsKBindType :: Ctx -> K.Bind T.Type -> FreestState (K.Bind T.Type)
+subsKBindType ctx (K.Bind p x k t) = fmap (K.Bind p x k) (subsType ctx Nothing t)
+
 -- Substitute expressions
 
 subsExp :: Ctx -> Exp -> FreestState Exp
@@ -514,7 +511,7 @@ subsExp tenv (Case p e m) =
   liftM2 (Case p) (subsExp tenv e) (subsFieldMap tenv m)
 subsExp tenv (Conditional p e1 e2 e3) =
   liftM3 (Conditional p) (subsExp tenv e1) (subsExp tenv e2) (subsExp tenv e3)
-subsExp tenv (TypeAbs p b) = fmap (TypeAbs p) (subsKBind tenv b) -- fmap (TypeAbs p x) (subsExp tenv e)
+subsExp tenv (TypeAbs p b) = fmap (TypeAbs p) (subsKBindExp tenv b) -- fmap (TypeAbs p x) (subsExp tenv e)
 subsExp tenv (TypeApp p e t) =
   liftM2 (TypeApp p) (subsExp tenv e) (subsType tenv Nothing t) -- (mapM (subsType tenv Nothing) xs)
 subsExp tenv (UnLet p x e1 e2) =
@@ -531,5 +528,5 @@ subsFieldMap ctx = mapM (\(ps, e) -> liftM2 (,) (pure ps) (subsExp ctx e))
 subsTypeBind :: Ctx -> Bind -> FreestState Bind
 subsTypeBind ctx (Bind p m x t e) = liftM2 (Bind p m x) (subsType ctx Nothing t) (subsExp ctx e)
 
-subsKBind :: Ctx -> (K.Bind Exp) -> FreestState (K.Bind Exp)
-subsKBind ctx (K.Bind p x k e) = fmap (K.Bind p x k) (subsExp ctx e)
+subsKBindExp :: Ctx -> K.Bind Exp -> FreestState (K.Bind Exp)
+subsKBindExp ctx (K.Bind p x k e) = fmap (K.Bind p x k) (subsExp ctx e)
