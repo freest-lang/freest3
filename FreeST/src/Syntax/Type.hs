@@ -11,7 +11,6 @@ This module defines a types and equality.
 
 module Syntax.Type
   ( Type(..)
-  , Bind(..)
   , TypeMap
   , Polarity(..)
   )
@@ -40,11 +39,11 @@ data Type =
   | Message Pos Polarity Type
   | Choice Pos Polarity TypeMap
   -- Polymorphism and recursive types
-  | Forall Pos K.Bind Type    -- ∀ a:k => T, Universal type
-  | Rec Pos K.Bind Type       -- μ a:k => T, Recursive type
+  | Forall Pos (K.Bind Type)   -- ∀ a:k => T, Universal type
+  | Rec Pos (K.Bind Type)      -- μ a:k => T, Recursive type
   | Var Pos TypeVar
   -- Type operators
-  -- | Abs Pos K.Bind Type       -- λ a:k => T, Operator abstraction
+  -- | Abs Pos (Bind Type)       -- λ a:k => T, Operator abstraction
   -- | App Pos Type Type
   | Dualof Pos Type
   -- Named Type, to be looked upon in a map of type names to types, tEnv
@@ -64,20 +63,13 @@ instance Position Type where
   pos (Semi p _ _   ) = p
   pos (Message p _ _) = p
   pos (Choice p _ _ ) = p
-  pos (Forall p _ _ ) = p
-  pos (Rec p _ _    ) = p
+  pos (Forall p _   ) = p
+  pos (Rec p _      ) = p
   pos (Var p _      ) = p
-  -- pos (Abs p _ _    ) = p
+  -- pos (Abs p _      ) = p
   -- pos (App p _ _    ) = p
   pos (Dualof p _   ) = p
   pos (Name p _     ) = p
 
 instance Default Type where
   omission = Int
-
--- Binding program variables to types
-
-data Bind = Bind Pos ProgVar Type
-
-instance Position Bind where
-  pos (Bind p _ _) = p

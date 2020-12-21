@@ -77,10 +77,19 @@ instance Show K.Basic where
 instance Show K.Kind where
   show (K.Kind _ p m) = show p ++ show m
 
--- Kind bind
+-- Binds
 
-instance Show K.Bind where
-  show (K.Bind _ a k) = showSortedVar a k
+showKind :: (Show a, Show b, Show c) => a -> b -> String -> c -> String
+showKind var sort arrow term =
+  showSortedVar var sort ++ " " ++ arrow ++ " " ++ show term
+
+instance Show t => Show (K.Bind t) where
+  show (K.Bind _ a k t) = showKind a k "=>" t
+
+-- Type bind
+
+instance Show E.Bind where
+  show (E.Bind _ m x t e) = showKind x t (showArrow m) e
 
 -- Polarity
 
@@ -163,10 +172,10 @@ instance Unparse T.Type where
     r = bracket (unparse u) Right semiRator
   unparse (T.Choice _ v m) =
     (maxRator, showChoiceView v ++ "{" ++ showChoice m ++ "}")
-  unparse (T.Forall _ b t) = (dotRator, "∀" ++ show b ++ "=>" ++ s)
-    where s = bracket (unparse t) Right dotRator
-  unparse (T.Rec _ xk t) = (dotRator, "rec " ++ show xk ++ "." ++ s)
-    where s = bracket (unparse t) Right dotRator
+  unparse (T.Forall _ b) = (dotRator, "∀" ++ show b) -- ++ "=>" ++ s)
+    -- where s = bracket (unparse t) Right dotRator
+  unparse (T.Rec _ b) = (dotRator, "rec " ++ show b) -- xk ++ "." ++ s)
+    -- where s = bracket (unparse t) Right dotRator
   unparse (T.Dualof _ t) = (dualofRator, "dualof " ++ s)
     where s = bracket (unparse t) Right dualofRator
 
@@ -182,11 +191,6 @@ showChoice :: T.TypeMap -> String
 showChoice m = intercalate ", "
   $ Map.foldrWithKey (\c t acc -> (show c ++ ": " ++ show t) : acc) [] m
 
--- Type bind
-
-instance Show T.Bind where
-  show (T.Bind _ x t) = show x ++ ": " ++ show t
-
 -- Expression
 
 instance Show Exp where
@@ -194,15 +198,15 @@ instance Show Exp where
 
 instance Unparse Exp where
   -- Basic values
-  unparse (E.Unit _     ) = (maxRator, "()")
-  unparse (E.Int  _ i   ) = (maxRator, show i)
-  unparse (E.Char _ c   ) = (maxRator, show c)
-  unparse (E.Bool _ b   ) = (maxRator, show b)
+  unparse (E.Unit _  ) = (maxRator, "()")
+  unparse (E.Int  _ i) = (maxRator, show i)
+  unparse (E.Char _ c) = (maxRator, show c)
+  unparse (E.Bool _ b) = (maxRator, show b)
   -- Variable
-  unparse (E.Var  _ x   ) = (maxRator, show x)
+  unparse (E.Var  _ x) = (maxRator, show x)
   -- Abstraction intro and elim
-  unparse (E.Abs _ m b e) = (arrowRator, "λ" ++ show b ++ showArrow m ++ s)
-    where s = bracket (unparse e) Right arrowRator
+  unparse (E.Abs _ b) = (arrowRator, "λ" ++ show b) -- ++ showArrow m ++ s)
+    -- where s = bracket (unparse e) Right arrowRator
   unparse (E.App _ e1 e2) = (appRator, l ++ " " ++ r)
    where
     l = bracket (unparse e1) Left appRator
@@ -224,8 +228,8 @@ instance Unparse Exp where
     where s = bracket (unparse e) NonAssoc inRator
   -- Type Abstraction intro and elim
   unparse (E.TypeApp _ x t) = (appRator, show x ++ " [" ++ show t ++ "]")
-  unparse (E.TypeAbs _ b e) = (arrowRator, "λ" ++ show b ++ "->" ++ s)
-    where s = bracket (unparse e) Right arrowRator
+  unparse (E.TypeAbs _ b) = (arrowRator, "λ" ++ show b) -- ++ "->" ++ s)
+    -- where s = bracket (unparse e) Right arrowRator
   -- Boolean elim
   unparse (E.Conditional _ e1 e2 e3) =
     (inRator, "if " ++ s1 ++ " then " ++ s2 ++ " else " ++ s3)
