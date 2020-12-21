@@ -30,7 +30,6 @@ import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 import           Utils.FreestState
 import           Utils.PreludeLoader            ( userDefined )
-import           Utils.Error
 import qualified Validation.Kinding            as K
 import qualified Validation.Typing             as T -- Again
 
@@ -95,7 +94,7 @@ checkHasBinding f _ = do
 checkFunBody :: ProgVar -> E.Exp -> FreestState ()
 checkFunBody f e = getFromVEnv f >>= \case
   Just s  -> T.checkAgainst Map.empty e s
-  Nothing -> internalError "Validation.TypeChecking.checkFunBody" f -- We've checked this at parsing time
+  Nothing -> return ()
 
 checkMainFunction :: FreestState ()
 checkMainFunction = do
