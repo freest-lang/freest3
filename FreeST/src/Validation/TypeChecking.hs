@@ -27,9 +27,10 @@ import           Syntax.Base
 import qualified Syntax.Expression             as E
 import           Syntax.Program
 import           Syntax.ProgramVariable
-import           Syntax.Type
+import qualified Syntax.Type                   as T
 import           Utils.FreestState
 import           Utils.PreludeLoader            ( userDefined )
+import           Utils.Error
 import qualified Validation.Kinding            as K
 import qualified Validation.Typing             as T
 
@@ -61,7 +62,7 @@ typeCheck = do
     tMapWithKeyM_ checkHasBinding vEnv
     -- * Check function bodies
 --    debugM "checking the formation of all functions (typing)"
-    tMapWithKeyM_ checkFunBody eEnv
+    tMapWithKeyM_ checkFunBody    eEnv
     -- * Check the main function
 --    debugM "checking the main function"
     checkMainFunction
