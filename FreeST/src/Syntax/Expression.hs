@@ -14,7 +14,6 @@ Portability :  portable | non-portable (<reason>)
 module Syntax.Expression
   ( Exp(..)
   , FieldMap
-  , ExpEnv
   )
 where
 
@@ -53,9 +52,6 @@ data Exp =
   | Match Pos Exp FieldMap
 
 type FieldMap = Map.Map ProgVar ([ProgVar], Exp)
-
--- The definitions of the named functions in a program
-type ExpEnv = Map.Map ProgVar Exp
 
 instance Position Exp where
   pos (Unit p             ) = p
