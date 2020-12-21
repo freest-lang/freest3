@@ -30,7 +30,7 @@ hasKind t k = null (errors s) && k' <: k
 --  t'      = renameType t
   (k', s) = runState test (initialState "Kind synthesis")
 
-  test    = synthetise Map.empty . renameType =<< subsType Map.empty Nothing t
+  test    = synthetise Map.empty . renameType =<< elaborate t
   -- test = do
   --   t' <- subsType Map.empty Nothing t
   --   synthetise Map.empty (renameType t')

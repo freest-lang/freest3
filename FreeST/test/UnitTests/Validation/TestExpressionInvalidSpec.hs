@@ -23,9 +23,9 @@ matchInvalidExpSpec e = it e $ isExpr (read e) `shouldBe` False
 isExpr :: Exp -> Bool
 isExpr e = null (errors s)
  where
-  s = execState (synthetise Map.empty =<< elaborateExp e)
+  s = execState (synthetise Map.empty =<< elaborate e)
                 (initialState "Check Against Expression") -- (elaborateExp e)
-  elaborateExp = subsExp Map.empty
+
 
 main :: IO ()
 main = hspec spec

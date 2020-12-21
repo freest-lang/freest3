@@ -92,7 +92,7 @@ data FreestS = FreestS {
 , errors    :: Errors
 , nextIndex :: Int
 , parseEnv  :: ParseEnv
-}
+} deriving Show -- FOR DEBUG purposes
 
 type FreestState = State FreestS
 
@@ -204,7 +204,7 @@ findTypeName p t = Map.findWithDefault t p <$> getTypeNames
 -- | ERRORS
 
 getErrors :: FreestS -> String
-getErrors = intercalate "\n" . errors
+getErrors = intercalate "\n" . take 10 . errors
 
 hasErrors :: FreestS -> Bool
 hasErrors = not . null . errors
