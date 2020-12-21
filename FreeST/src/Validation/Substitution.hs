@@ -29,22 +29,29 @@ import qualified Data.Set                      as Set
 
 -- [t/x]u, substitute t for for every occurrence of x in u
 -- Assume types were renamed (hence, x/=y and no -the-fly renaming needed)
-subs :: T.Type -> TypeVar -> T.Type -> T.Type
--- Functional types
-subs t x (T.Fun p m t1 t2) = T.Fun p m (subs t x t1) (subs t x t2)
-subs t x (T.Pair p t1 t2) = T.Pair p (subs t x t1) (subs t x t2)
-subs t x (T.Datatype p m) = T.Datatype p (Map.map (subs t x) m)
--- Session types
-subs t x (T.Semi p t1 t2) = T.Semi p (subs t x t1) (subs t x t2)
-subs t x (T.Choice p v  m) = T.Choice p v (Map.map (subs t x) m)
-  -- Polymorphism and recursion
-subs t x (T.Rec p yk u) = T.Rec p yk (subs t x u) 
-subs t x (T.Forall p yk u) = T.Forall p yk (subs t x u)
-subs t x u@(T.Var _ y)
-  | y == x = t
-  | otherwise = u
-subs _ _ t@T.Dualof{} = internalError "Validation.Substitution.subs" t
-subs _ _ t = t
+
+class Subs t where
+  subs :: T.Type -> TypeVar -> t -> t
+
+instance Subs T.Type where
+  -- Functional types
+  subs t x (T.Fun p m t1 t2) = T.Fun p m (subs t x t1) (subs t x t2)
+  subs t x (T.Pair p t1 t2) = T.Pair p (subs t x t1) (subs t x t2)
+  subs t x (T.Datatype p m) = T.Datatype p (Map.map (subs t x) m)
+  -- Session types
+  subs t x (T.Semi p t1 t2) = T.Semi p (subs t x t1) (subs t x t2)
+  subs t x (T.Choice p v m) = T.Choice p v (Map.map (subs t x) m)
+    -- Polymorphism and recursion
+  subs t x (T.Rec p b) = T.Rec p (subs t x b) 
+  subs t x (T.Forall p b) = T.Forall p (subs t x b)
+  subs t x u@(T.Var _ y)  
+    | y == x = t
+    | otherwise = u
+  subs _ _ t@T.Dualof{} = internalError "Validation.Substitution.subs" t
+  subs _ _ t = t
+
+instance Subs t => Subs (K.Bind t) where
+  subs t x (K.Bind p y k u) = K.Bind p y k (subs t x u)
 
 -- subsAll σ u, apply all substitutions in σ to u; no renaming
 subsAll :: [(T.Type, TypeVar)] -> T.Type -> T.Type
@@ -52,7 +59,7 @@ subsAll σ s = foldl (\u (t, x) -> subs t x u) s σ
 
 -- Unfold a recursive type (one step only)
 unfold :: T.Type -> T.Type
-unfold t@(T.Rec _ (K.Bind _ x _) u) = subs t x u
+unfold t@(T.Rec _ (K.Bind _ x _ u)) = subs t x u
 unfold t = internalError "Validation.Substitution.unfold" t
 
 {-
