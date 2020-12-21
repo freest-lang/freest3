@@ -1,6 +1,6 @@
-type InfinitePair = rec x . (x, Int)
+type InfinitePair = rec a . (a, Int)
 
-f : Int -> rec x . (x, Int)
+f : InfinitePair
 f x = (f x, x + 1)
 
 main : Int

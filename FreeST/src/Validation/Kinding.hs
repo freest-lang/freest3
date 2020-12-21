@@ -71,10 +71,10 @@ synthetise kEnv (T.Rec _ (K.Bind _ a k t)) = do
   synthetise (Map.insert a k kEnv) t
 synthetise kEnv (T.Forall _ (K.Bind _ a k t)) =
   synthetise (Map.insert a k kEnv) t
-synthetise kEnv (T.Var p x) = case kEnv Map.!? x of
+synthetise kEnv (T.Var p a) = case kEnv Map.!? a of
   Just k -> return k
   Nothing -> do
-    addError p [Error "Type variable not in scope:", Error x]
+    addError p [Error "Type variable not in scope:", Error a]
     return $ omission p
 -- Type operators
 synthetise _ (T.Name p a) = getFromTEnv a >>= \case
@@ -83,7 +83,7 @@ synthetise _ (T.Name p a) = getFromTEnv a >>= \case
     addError p [Error "Type name not in scope:", Error a]
     addToTEnv a (omission p) (omission p)
     return $ omission p
-synthetise _ t@T.Dualof{} = internalError "Validation.Kinding.unfold" t
+synthetise _ t@T.Dualof{} = internalError "Validation.Kinding.synthetise" t
 
 -- Check the contractivity of a given type; issue an error if not
 checkContractive :: TypeVar -> T.Type -> FreestState ()

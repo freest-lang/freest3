@@ -172,6 +172,9 @@ TL
 forall a:SL => rec d. rec c. rec b. a
 TL
 
+rec a . (a, Int)
+TU
+
 -- Non contractive but terminated; all these types are equivalent to
 --   Skip, according to the tick-identification convention
 
