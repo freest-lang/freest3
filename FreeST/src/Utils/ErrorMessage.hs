@@ -79,7 +79,11 @@ showTypeList :: TypeOpsEnv -> [T.Type] -> String
 showTypeList tops ts = "[" ++ intercalate ", " types ++ "]"
   where types = map (showDefault tops) ts
 
-instance ErrorMsg [K.Bind] where
+instance ErrorMsg [K.Bind T.Type] where
+  msg _ = show
+  color _ = Just Red
+
+instance ErrorMsg [K.Bind Exp] where
   msg _ = show
   color _ = Just Red
 

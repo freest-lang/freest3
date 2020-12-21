@@ -10,6 +10,7 @@ import           Syntax.Base
 import           Syntax.Expression
 import           Syntax.Program
 import qualified Syntax.Type                   as T
+import qualified Syntax.Kind                   as K
 
 
 -- | Class show default
@@ -25,8 +26,8 @@ instance ShowWithDefault T.Type where
 showTypeDefault :: TypeOpsEnv -> T.Type -> T.Type
 showTypeDefault tops (T.Semi p t u) =
   lookupPos tops p (T.Semi p (showTypeDefault tops t) (showTypeDefault tops u))
-showTypeDefault tops (T.Rec p xs t) =
-  lookupPos tops p (T.Rec p xs (showTypeDefault tops t))
+showTypeDefault tops (T.Rec p (K.Bind p' x k t)) = -- xs t
+  lookupPos tops p (T.Rec p (K.Bind p' x k (showTypeDefault tops t)))
 showTypeDefault tops (T.Fun p m t u) =
   lookupPos tops p (T.Fun p m (showTypeDefault tops t) (showTypeDefault tops u))
 showTypeDefault tops (T.Pair p t u) =
@@ -46,8 +47,8 @@ instance ShowWithDefault Exp where
 -- | Show expression, consulting the typename map
 
 showExpDefault :: TypeOpsEnv -> Exp -> Exp
-showExpDefault tops (Abs p1 m (T.Bind p2 b t) e) =
-  Abs p1 m (T.Bind p2 b (showTypeDefault tops t)) (showExpDefault tops e)
+showExpDefault tops (Abs p1 (Bind p2 m b t e)) =
+  Abs p1 (Bind p2 m b (showTypeDefault tops t) (showExpDefault tops e))
 showExpDefault _    (TypeApp p x t) = TypeApp p x t
  --  TypeApp p x (map (showTypeDefault tops) ts)
 showExpDefault tops (New     p t u) = New p (showTypeDefault tops t) u

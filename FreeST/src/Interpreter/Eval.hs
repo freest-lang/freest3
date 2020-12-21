@@ -17,6 +17,7 @@ import qualified Syntax.Expression             as E
 import           Syntax.Program
 import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
+import qualified Syntax.Kind                   as K
 
 
 ------------------------------------------------------------
@@ -38,8 +39,8 @@ eval _   _    (E.Char _ c                ) = return $ Character c
 eval ctx eenv (E.Var _ x                 ) = evalVar ctx eenv x
 eval ctx eenv (E.TypeApp _ x _           ) = eval ctx eenv x
 -- TypeAbs Pos KindBind Expression
-eval ctx eenv (E.TypeAbs _ _ e           ) = eval ctx eenv e -- return $ Closure x e ctx
-eval ctx _    (E.Abs _ _ (T.Bind _ x _) e) = return $ Closure x e ctx
+eval ctx eenv (E.TypeAbs _ (K.Bind _ _ _ e)) = eval ctx eenv e -- return $ Closure x e ctx
+eval ctx _    (E.Abs _ (E.Bind _ _ x _ e)) = return $ Closure x e ctx
 eval ctx eenv (E.App _ e1 e2             ) = eval ctx eenv e1 >>= \case
   (Closure x e ctx') -> do
     !v <- eval ctx eenv e2
