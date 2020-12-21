@@ -31,7 +31,7 @@ import qualified Syntax.Type                   as T
 import           Utils.FreestState
 import           Utils.PreludeLoader            ( userDefined )
 import qualified Validation.Kinding            as K
-import qualified Validation.Typing             as T -- Again
+import qualified Validation.Typing             as Typing -- Again
 
 typeCheck :: FreestState ()
 typeCheck = do
@@ -93,7 +93,7 @@ checkHasBinding f _ = do
 -- variables are used.
 checkFunBody :: ProgVar -> E.Exp -> FreestState ()
 checkFunBody f e = getFromVEnv f >>= \case
-  Just s  -> T.checkAgainst Map.empty e s
+  Just s  -> Typing.checkAgainst Map.empty e s
   Nothing -> return ()
 
 checkMainFunction :: FreestState ()
