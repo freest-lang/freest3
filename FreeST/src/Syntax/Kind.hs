@@ -77,9 +77,5 @@ data Bind a = Bind Pos TypeVar Kind a
 instance Position (Bind a) where
   pos (Bind p _ _ _) = p
 
--- Binding type variables to kinds
-
--- data Bind = Bind Pos TypeVar Kind
-
--- instance Position Bind where
---   pos (Bind p _ _) = p
+instance Default a => Default (Bind a) where
+  omission p = Bind p (mkVar p "omission") (omission p) (omission p)

@@ -31,7 +31,6 @@ instance Dual t => Dual (K.Bind t) where
   dual (K.Bind p a k t) = fmap (K.Bind p a k) (dual t)
 
 instance Dual T.Type where
-  dual :: T.Type -> FreestState T.Type
   dual t@T.Skip{}        = pure t
   dual (T.Semi    p t u) = liftM2 (T.Semi p) (dual t) (dual u)
   dual (T.Message p v t) = pure $ T.Message p (dualPol v) t

@@ -79,3 +79,6 @@ data Bind = Bind Pos Multiplicity ProgVar T.Type Exp
 
 instance Position Bind where
   pos (Bind p _ _ _ _) = p
+
+instance Default Bind where
+  omission p = Bind p Un (mkVar p "omission") (T.Unit p) (Unit p)
