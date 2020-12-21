@@ -166,19 +166,19 @@ Decl :: { () }
       -- e <- toStateT $ buildFunBody $1 $2 $4
       -- toStateT $ addToEEnv $1 e
   -- Type abbreviation
-  | type KindedTVar KindBindEmptyList '=' Type {% do
+  | type KindedTVar {- KindBindEmptyList -} '=' Type {% do
       toStateT $ checkDupTypeDecl (fst $2)
-      toStateT $ uncurry addToTEnv $2 $5 } -- TODO: add KindBindEmptyList ?
---      toStateT $ uncurry addToTEnv $2 (TypeScheme (pos $5) $3 $5) }
+      toStateT $ uncurry addToTEnv $2 $4 } -- TODO: add KindBindEmptyList ?
+
   -- Datatype declaration
-  | data KindedTVar KindBindEmptyList '=' DataCons {% do
+  | data KindedTVar {- KindBindEmptyList -} '=' DataCons {% do
       let a = fst $2
       toStateT $ checkDupTypeDecl a
-      let bs = typeListToType a $5 :: [(ProgVar, T.Type)]
+      let bs = typeListToType a $4 :: [(ProgVar, T.Type)]
       toStateT $ mapM_ (\(c, t) -> addToVEnv c t) bs
       let p = pos a
       toStateT $ uncurry addToTEnv $2 (T.Datatype p (Map.fromList bs))
-    } -- TODO: add KindBindEmptyList ?
+  } -- TODO: add KindBindEmptyList ?
       -- toStateT $ uncurry addToTEnv $2 (TypeScheme p $3 (Datatype p (Map.fromList bs)))
 
 DataCons :: { [(ProgVar, [T.Type])] }
@@ -195,10 +195,10 @@ DataCon :: { (ProgVar, [T.Type]) }
 Expr :: { Exp }
   : let ProgVarWild '=' Expr in Expr { E.UnLet (pos $1) $2 $4 $6 }
   | Expr ';' Expr                    { E.App (pos $1)
-                                         (E.Abs (pos $1) Un
-                                           (T.Bind (pos $1) (mkVar (pos $1) "_")
-                                             (T.Unit (pos $3)))
-                                           $3)
+                                         (E.Abs (pos $1) 
+                                           (E.Bind (pos $1) Un (mkVar (pos $1) "_")
+                                             (T.Unit (pos $3))
+                                           $3))
                                        $1}
   | let '(' ProgVarWild ',' ProgVarWild ')' '=' Expr in Expr
                                      { E.BinLet (pos $1) $3 $5 $8 $10 }
@@ -230,9 +230,10 @@ Primary :: { Exp }
   | '()'                             { E.Unit (pos $1) }
   | Primary '[' Type ']'             { E.TypeApp (pos $1) $1 $3 }
   | ArbitraryProgVar                 { E.Var (pos $1) $1 }
-  | '(' lambda ProgVarWildTBind Arrow Expr ')' { E.Abs (pos $2) (snd $4)
-                                                  (T.Bind (pos $2) (fst $3) (snd $3)) $5 }
-  | '(' Lambda KindBind '=>' Expr ')'{ E.TypeAbs (pos $2) $3 $5 }    
+  | '(' lambda ProgVarWildTBind Arrow Expr ')' { E.Abs (pos $2) 
+                                                  (E.Bind (pos $2) (snd $4) (fst $3) (snd $3) $5) }
+  | '(' Lambda KindBind '=>' Expr ')'{  let (p,x,k) = $3 in
+                                        E.TypeAbs (pos $2) (K.Bind p x k $5) }    
   | '(' Expr ',' Tuple ')'           { E.Pair (pos $1) $2 $4 }
   | '(' Expr ')'                     { $2 }
 
@@ -275,8 +276,10 @@ Type :: { T.Type }
   | Polarity Type %prec POL       { uncurry T.Message $1 $2 }
   | ChoiceView '{' FieldList '}'  { uncurry T.Choice $1 $3 }
   -- Polymorphism and recursion
-  | rec KindBind '.' Type         { T.Rec (pos $1) $2 $4 }
-  | forall KindBind '=>' Type     { T.Forall (pos $1) $2 $4 }
+  | rec KindBind '.' Type         { let (p,x,k) = $2 in
+                                      T.Rec (pos $1) (K.Bind p x k $4) }
+  | forall KindBind '=>' Type     { let (p,x,k) = $2 in
+                                      T.Forall (pos $1) (K.Bind p x k $4) }
   | TypeVar                       { T.Var (pos $1) $1 }
   -- Type operators
   | dualof Type                   { T.Dualof (pos $1) $2 }
@@ -356,21 +359,25 @@ TypeVar :: { TypeVar }
 TypeName :: { TypeVar }
   : UPPER_ID { mkVar (pos $1) (getText $1) }
 
-KindBind :: { K.Bind }
-  : TypeVar ':' Kind { K.Bind (pos $1) $1 $3 }
-  | TypeVar          { K.Bind (pos $1) $1 (omission (pos $1)) }
+KindBind :: { (Pos, TypeVar, K.Kind) }
+  : TypeVar ':' Kind { (pos $1, $1, $3) }
+  | TypeVar          { (pos $1, $1, omission (pos $1)) }
+  
+-- KindBind :: { K.Bind }
+--   : TypeVar ':' Kind { K.Bind (pos $1) $1 $3 }
+--   | TypeVar          { K.Bind (pos $1) $1 (omission (pos $1)) }
 
 KindedTVar :: { (TypeVar, K.Kind) }    -- for type and data declarations
   : TypeName ':' Kind { ($1, $3) }
   | TypeName          { ($1, omission (pos $1)) }
 
-KindBindList :: { [K.Bind] }
-  : KindBind                     { [$1] }
-  | KindBind ',' KindBindList {% toStateT $ checkDupKindBind $1 $3 >> return ($1 : $3) }
+-- KindBindList :: { [K.Bind] }
+--   : KindBind                     { [$1] }
+--   | KindBind ',' KindBindList {% toStateT $ checkDupKindBind $1 $3 >> return ($1 : $3) }
 
-KindBindEmptyList :: { [K.Bind] }
-  :                 { [] }
-  | KindBindList { $1 }
+-- KindBindEmptyList :: { [K.Bind] }
+--   :                 { [] }
+--   | KindBindList { $1 }
 
 {
 -- Parsing Kinds, Types and Programs
