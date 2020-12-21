@@ -1,5 +1,5 @@
 {- |
-Module      :  Position
+Module      :  Validation.Substitution
 Description :  <optional short text displayed on contents page>
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
@@ -8,7 +8,7 @@ Maintainer  :  <email>
 Stability   :  unstable | experimental | provisional | stable | frozen
 Portability :  portable | non-portable (<reason>)
 
-Unfolding of recursive types and substitution
+Substitution and unfolding recursive types.
 
 -}
 
@@ -16,7 +16,6 @@ module Validation.Substitution
   ( subs
   , subsAll
   , unfold
-  -- , free
   )
 where
 
@@ -25,7 +24,6 @@ import qualified Syntax.Kind                   as K
 import qualified Syntax.Type                   as T
 import           Utils.Error                    ( internalError )
 import qualified Data.Map.Strict               as Map
-import qualified Data.Set                      as Set
 
 -- [t/x]u, substitute t for for every occurrence of x in u
 -- Assume types were renamed (hence, x/=y and no -the-fly renaming needed)

@@ -116,10 +116,10 @@ checkDupBind x xs
       ]
     Nothing -> return ()
 
-checkDupKindBind :: K.Bind -> [K.Bind] -> FreestState ()
-checkDupKindBind (K.Bind p x _) bs =
-  case find (\(K.Bind _ y _) -> y == x) bs of
-    Just (K.Bind p' _ _) -> addError
+checkDupKindBind :: K.Bind a -> [K.Bind a] -> FreestState ()
+checkDupKindBind (K.Bind p x _ _) bs =
+  case find (\(K.Bind _ y _ _) -> y == x) bs of
+    Just (K.Bind p' _ _ _) -> addError
       p'
       [ Error "Conflicting definitions for type variable"
       , Error x
