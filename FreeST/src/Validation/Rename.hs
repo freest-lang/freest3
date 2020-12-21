@@ -71,6 +71,21 @@ type Bindings = Map.Map String String
 class Rename t where
   rename :: Bindings -> t -> FreestState t
 
+-- Binds
+
+instance Rename t => Rename (K.Bind t) where
+  rename bs (K.Bind p a k t) = do
+    a' <- rename bs a
+    t' <- rename (insertVar a a' bs) t
+    return $ K.Bind p a' k t'
+
+instance Rename E.Bind where
+  rename bs (E.Bind p m x t e) =  do
+    x' <- rename bs x
+    t' <- rename bs t
+    e' <- rename (insertVar x x' bs) e
+    return $ E.Bind p m x' t' e'
+
 -- Types
 
 instance Rename T.Type where
@@ -86,20 +101,17 @@ rename' bs (T.Datatype p fm) = liftM (T.Datatype p) (tMapM (rename bs) fm)
 rename' bs (T.Semi p t u) = liftM2 (T.Semi p) (rename bs t) (rename bs u)
 rename' bs (T.Choice p pol tm) = liftM (T.Choice p pol) (tMapM (rename bs) tm)
   -- Polymorphism
-rename' bs (T.Forall p (K.Bind p' a k) t) = do
-  a' <- rename bs a
-  t' <- rename (insertVar a a' bs) t
-  return $ T.Forall p (K.Bind p' a' k) t'
+rename' bs (T.Forall p b) = liftM (T.Forall p) (rename bs b)
+-- rename' bs (T.Forall p (K.Bind p' a k) t) = do
+--   a' <- rename bs a
+--   t' <- rename (insertVar a a' bs) t
+--   return $ T.Forall p (K.Bind p' a' k) t'
   -- Functional or session
-rename' bs (T.Rec p (K.Bind p' a k) t) = do
-  a' <- rename bs a
-  t' <- rename (insertVar a a' bs) t
-  return $ T.Rec p (K.Bind p' a' k) t'
-  -- | a `isFreeIn` t = do
-  --   a' <- rename bs a
-  --   t' <- rename (insertVar a a' bs) t
-  --   return $ T.Rec p (K.Bind p' a' k) t'
-  -- | otherwise = rename bs t
+rename' bs (T.Rec p b) = liftM (T.Rec p) (rename bs b)
+-- rename' bs (T.Rec p (K.Bind p' a k) t) = do
+--   a' <- rename bs a
+--   t' <- rename (insertVar a a' bs) t
+--   return $ T.Rec p (K.Bind p' a' k) t'
 rename' bs (T.Var p a) = return $ T.Var p (findWithDefaultVar a bs)
   -- Type operators
 rename' _ t@T.Dualof{} = internalError "Validation.Rename.rename" t
@@ -112,11 +124,11 @@ instance Rename E.Exp where
   -- Variable
   rename bs (E.Var p x) = return $ E.Var p (findWithDefaultVar x bs)
   -- Abstraction intro and elim
-  rename bs (E.Abs p1 m (T.Bind p2 x t) e) = do
+  rename bs (E.Abs p1 (E.Bind p2 m x t e)) = do
     x' <- rename bs x
     t' <- rename bs t
     e' <- rename (insertVar x x' bs) e
-    return $ E.Abs p1 m (T.Bind p2 x' t') e'
+    return $ E.Abs p1 (E.Bind p2 m x' t' e')
   rename bs (E.App p e1 e2) = liftM2 (E.App p) (rename bs e1) (rename bs e2)
   -- Pair intro and elim
   rename bs (E.Pair p e1 e2) = liftM2 ( E.Pair p) (rename bs e1) (rename bs e2)
@@ -130,10 +142,11 @@ instance Rename E.Exp where
   rename bs (E.Case p e fm) =
     liftM2 (E.Case p) (rename bs e) (tMapM (renameField bs) fm)
   -- Type application & TypeAbs
-  rename bs (E.TypeAbs p (K.Bind p' a k) e) = do
-    a' <- rename bs a
-    e' <- rename (insertVar a a' bs) e
-    return $ E.TypeAbs p (K.Bind p' a' k) e'
+  rename bs (E.TypeAbs p b) = liftM (E.TypeAbs p) (rename bs b)
+  -- rename bs (E.TypeAbs p (K.Bind p' a k) e) = do
+  --   a' <- rename bs a
+  --   e' <- rename (insertVar a a' bs) e
+  --   return $ E.TypeAbs p (K.Bind p' a' k) e'
   rename bs (E.TypeApp p e t) = liftM2 (E.TypeApp p) (rename bs e) (rename bs t)
   -- Boolean elim
   rename bs (E.Conditional p e1 e2 e3) =

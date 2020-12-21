@@ -81,7 +81,7 @@ forall e t =
         , Error "\n\t found type"
         , Error u
         ]
-      return $ T.Forall p (K.Bind p (mkVar p "_") (omission p)) (omission p)
+      return $ T.Forall p (omission p)
 
 output :: E.Exp -> T.Type -> FreestState (T.Type, T.Type)
 output = message T.Out "output"

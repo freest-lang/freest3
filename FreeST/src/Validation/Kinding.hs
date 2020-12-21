@@ -66,10 +66,10 @@ synthetise kEnv (T.Choice  p _ m) = do
   tMapM_ (checkAgainst kEnv (K.sl p)) m
   return $ K.sl p
 -- Session or functional
-synthetise kEnv (T.Rec _ (K.Bind _ a k) t) = do
+synthetise kEnv (T.Rec _ (K.Bind _ a k t)) = do
   checkContractive a t
   synthetise (Map.insert a k kEnv) t
-synthetise kEnv (T.Forall _ (K.Bind _ x k) t) = do
+synthetise kEnv (T.Forall _ (K.Bind _ x k t)) = do
   synthetise (Map.insert x k kEnv) t
   return $ K.tl (pos t)
 synthetise kEnv (T.Var p x) = case kEnv Map.!? x of
