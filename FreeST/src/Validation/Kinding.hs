@@ -54,7 +54,7 @@ synthetise kEnv (T.Datatype p m) = do
   let K.Kind _ _ n = foldr1 join ks
   return $ K.Kind p K.Top n
   -- Session types
-synthetise _ (T.Skip p) = return $ K.Kind p K.Session Un
+synthetise _ (T.Skip p) = return $ K.su p
 synthetise kEnv (T.Semi p t u) = do
   checkAgainstSession kEnv t
   checkAgainstSession kEnv u
@@ -69,9 +69,8 @@ synthetise kEnv (T.Choice  p _ m) = do
 synthetise kEnv (T.Rec _ (K.Bind _ a k t)) = do
   checkContractive a t
   synthetise (Map.insert a k kEnv) t
-synthetise kEnv (T.Forall _ (K.Bind _ x k t)) = do
-  synthetise (Map.insert x k kEnv) t
-  return $ K.tl (pos t)
+synthetise kEnv (T.Forall _ (K.Bind _ a k t)) =
+  synthetise (Map.insert a k kEnv) t
 synthetise kEnv (T.Var p x) = case kEnv Map.!? x of
   Just k -> return k
   Nothing -> do
