@@ -19,17 +19,19 @@ module Validation.Rename
   , renameTypes
   , subs
   , unfold
+  , isFreeIn
   , Rename(..) -- for testing only
   )
 where
 
 import           Syntax.Base
 import           Syntax.TypeVariable
+import           Syntax.Program                 ( noConstructors )
 import           Syntax.ProgramVariable
 import qualified Syntax.Kind                   as K
 import qualified Syntax.Type                   as T
 import qualified Syntax.Expression             as E
-import           Syntax.Program
+--import           Syntax.Program
 import           Validation.Terminated          ( terminated )
 import qualified Validation.Substitution       as Subs
                                                 ( subs
@@ -39,17 +41,21 @@ import           Utils.Error                    ( internalError )
 import           Utils.FreestState
 import           Utils.PreludeLoader            ( userDefined ) -- debugging
 import qualified Data.Map.Strict               as Map
-import           Control.Monad                  ( liftM, liftM2, liftM3 )
+import           Control.Monad                  ( liftM
+                                                , liftM2
+                                                , liftM3
+                                                )
 import           Control.Monad.State
 -- import           Debug.Trace -- debugging
 
 renameState :: FreestState ()
 renameState = do
   -- TypeVenv
-  tEnv  <- getTEnv
+  tEnv <- getTEnv
   -- | Why do we need to rename the tenv ?? It will obviously have dualofs.
   -- tEnv' <- tMapM (\(k, s) -> rename Map.empty s >>= \s' -> return (k, s')) tEnv
   -- setTEnv tEnv'
+
   -- VarEnv + ExpEnv, together
   vEnv <- getVEnv
   tMapWithKeyM_ renameFun (userDefined (noConstructors tEnv vEnv))
@@ -114,9 +120,9 @@ rename' bs (T.Rec p b) = liftM (T.Rec p) (rename bs b)
 --   return $ T.Rec p (K.Bind p' a' k) t'
 rename' bs (T.Var p a) = return $ T.Var p (findWithDefaultVar a bs)
   -- Type operators
-rename' _ t@T.Dualof{} = internalError "Validation.Rename.rename" t
+rename' _  t@T.Dualof{} = internalError "Validation.Rename.rename" t
   -- Otherwise: Basic, Skip, Message, TypeName
-rename' _ t = return t
+rename' _  t            = return t
 
 -- Expressions
 
@@ -131,7 +137,7 @@ instance Rename E.Exp where
     return $ E.Abs p1 (E.Bind p2 m x' t' e')
   rename bs (E.App p e1 e2) = liftM2 (E.App p) (rename bs e1) (rename bs e2)
   -- Pair intro and elim
-  rename bs (E.Pair p e1 e2) = liftM2 ( E.Pair p) (rename bs e1) (rename bs e2)
+  rename bs (E.Pair p e1 e2) = liftM2 (E.Pair p) (rename bs e1) (rename bs e2)
   rename bs (E.BinLet p x y e1 e2) = do
     x'  <- rename bs x
     y'  <- rename bs y
@@ -171,7 +177,7 @@ renameField bs (xs, e) = do
   return (xs', e')
  where
   insertProgVars :: [ProgVar] -> Bindings
-  insertProgVars xs' = foldr (uncurry insertVar) bs (zip xs xs')  
+  insertProgVars xs' = foldr (uncurry insertVar) bs (zip xs xs')
 
 -- Program variables
 
@@ -217,7 +223,6 @@ subs t x u = renameType $ Subs.subs t x u
 unfold :: T.Type -> T.Type
 unfold = renameType . Subs.unfold
 
-{-
 
 -- Does a given type variable x occur free in a type t?
 -- If not, then rec x.t can be renamed to t alone.
@@ -232,13 +237,11 @@ isFreeIn x (T.Semi _ t u) = x `isFreeIn` t || x `isFreeIn` u
 isFreeIn x (T.Choice _ _ tm) =
   Map.foldr' (\t b -> x `isFreeIn` t || b) False tm
   -- Polymorphism
-isFreeIn x (T.Forall _ (K.Bind _ y _) t) = x /= y && x `isFreeIn` t
+isFreeIn x (T.Forall _ (K.Bind _ y _ t)) = x /= y && x `isFreeIn` t
   -- Functional or session 
-isFreeIn x (T.Rec    _ (K.Bind _ y _) t) = x /= y && x `isFreeIn` t
+isFreeIn x (T.Rec    _ (K.Bind _ y _ t)) = x /= y && x `isFreeIn` t
 isFreeIn x (T.Var _ y                  ) = x == y
   -- Type operators
 isFreeIn _ t@T.Dualof{} = internalError "Validation.Rename.isFreeIn" t
   -- Basic, Skip, Message, TypeName
 isFreeIn _ _                             = False
-
--}

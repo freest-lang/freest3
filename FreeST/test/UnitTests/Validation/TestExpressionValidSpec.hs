@@ -5,9 +5,7 @@ where
 
 import           Control.Monad.State
 import qualified Data.Map.Strict               as Map
-import           Elaboration.Elaboration        ( subsExp
-                                                , subsType
-                                                )
+import           Elaboration.Elaboration        
 import           SpecHelper
 import           Syntax.Expression
 import           Utils.FreestState
@@ -30,6 +28,6 @@ isExpr e t = null (errors s)
   s    = execState test is
   is   = (initialState "Check Against Expression") { varEnv = prelude }
   test = join $ liftM2 (checkAgainst Map.empty)
-                       (subsExp Map.empty e)
-                       (subsType Map.empty Nothing t)
+                       (elaborate e)
+                       (elaborate t)
 

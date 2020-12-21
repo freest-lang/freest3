@@ -157,7 +157,8 @@ synthetise kEnv (E.TypeApp p e t) = do
   --   ++ "\n\ty: " ++ show y
   --   ++ "\n\tt: " ++ show t
   --   ++ "\n\tsubs " ++ show tmp
-  --   ++ "\ESC[0m" 
+  --   ++ "\ESC[0m"
+--  debugM $ "On type app " ++ show tapp++ "\n" ++ show (Rename.subs t y u') ++ "\n"
   return $ Rename.subs t y u'
   -- when
   --   (length ts /= length bs)

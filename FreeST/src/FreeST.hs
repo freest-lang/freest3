@@ -9,7 +9,7 @@ import           Control.Monad.State            ( when
                                                 , execState
                                                 )
 import qualified Data.Map.Strict               as Map
-import           Elaboration.Elaboration        ( elaborate )
+import           Elaboration.Elaboration        ( elaboration )
 import           Interpreter.Builtin            ( initialCtx )
 import           Interpreter.Eval               ( evalAndPrint )
 import           Parse.Parser                   ( parseProgram )
@@ -52,7 +52,7 @@ checkAndRun filePath = do
   s1 <- parseProgram filePath prelude
   when (hasErrors s1) (die $ getErrors s1)
   -- Solve type declarations and dualof operators
-  let s2 = execState elaborate s1
+  let s2 = execState elaboration s1
   when (hasErrors s2) (die $ getErrors s2)
   let s2' = emptyPEnv s2
   -- Rename

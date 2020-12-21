@@ -80,7 +80,7 @@ concatD in1 in2 out =
     Dollar in1 ->
       let (in2, out) = forwardD[b][c] in2 out in
          (in1, (in2, out))
-  }
+  } -- forwardD : forall a:SL => forall b:SL => dualof D;a -> D;b -> (a, b)
 
 concatT : forall a:SL => forall b:SL => forall c:SL => dualof T;a -> b -> T;c -> (a, (b, c))
 concatT in1 in2 out =

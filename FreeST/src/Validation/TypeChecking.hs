@@ -25,7 +25,7 @@ import           Control.Monad.State            ( when
 import qualified Data.Map.Strict               as Map
 import           Syntax.Base
 import qualified Syntax.Expression             as E
-import           Syntax.Program
+import           Syntax.Program                 ( noConstructors )
 import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 import           Utils.FreestState
@@ -35,10 +35,11 @@ import qualified Validation.Typing             as Typing -- Again
 
 typeCheck :: FreestState ()
 typeCheck = do
---  tEnv <- getTEnv -- Type/datatype declarations
+
   vEnv <- getVEnv -- Function signatures
   eEnv <- getEEnv -- Function bodies
---  tn   <- getTypeNames -- Type Names
+  -- tn   <- getTypeNames -- Type Names
+  -- tEnv <- getTEnv -- Type/datatype declarations
   -- debugM ("\n\n\nEntering type checking with\n  TEnv " ++ show tEnv ++ "\n\n"
   --         ++ "  VEnv " ++ show (userDefined vEnv) ++ "\n\n"
   --         ++ "  EEnv " ++ show eEnv  ++ "\n\n"
