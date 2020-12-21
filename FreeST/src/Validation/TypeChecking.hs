@@ -1,5 +1,5 @@
 {-|
-Module      :  Typing
+Module      :  Validation.TypeChecking
 Description :  <optional short text displayed on contents page>
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
@@ -24,7 +24,7 @@ import           Control.Monad.State            ( when
                                                 )
 import qualified Data.Map.Strict               as Map
 import           Syntax.Base
-import           Syntax.Expression
+import qualified Syntax.Expression             as E
 import           Syntax.Program
 import           Syntax.ProgramVariable
 import           Syntax.Type
@@ -61,7 +61,7 @@ typeCheck = do
     tMapWithKeyM_ checkHasBinding vEnv
     -- * Check function bodies
 --    debugM "checking the formation of all functions (typing)"
-    tMapWithKeyM_ checkFunBody    eEnv
+    tMapWithKeyM_ checkFunBody eEnv
     -- * Check the main function
 --    debugM "checking the main function"
     checkMainFunction
@@ -69,7 +69,7 @@ typeCheck = do
 -- Check whether a given function signature has a corresponding
 -- binding. Exclude the builtin functions and the datatype
 -- constructors.
-checkHasBinding :: ProgVar -> Type -> FreestState ()
+checkHasBinding :: ProgVar -> T.Type -> FreestState ()
 checkHasBinding f _ = do
   eEnv <- getEEnv
   vEnv <- getVEnv
@@ -91,10 +91,10 @@ checkHasBinding f _ = do
 
 -- Check a given function body against its type; make sure all linear
 -- variables are used.
-checkFunBody :: ProgVar -> Exp -> FreestState ()
+checkFunBody :: ProgVar -> E.Exp -> FreestState ()
 checkFunBody f e = getFromVEnv f >>= \case
   Just s  -> T.checkAgainst Map.empty e s
-  Nothing -> return () -- We've issued this error at parsing time
+  Nothing -> internalError "Validation.TypeChecking.checkFunBody" f -- We've checked this at parsing time
 
 checkMainFunction :: FreestState ()
 checkMainFunction = do
@@ -106,7 +106,7 @@ checkMainFunction = do
     else do
       let s = vEnv Map.! main
 --      tEnv <- getTEnv
-      unless (isValidMainType s) $ K.synthetise Map.empty s >>= \k -> addError
+      unless (validMainType s) $ K.synthetise Map.empty s >>= \k -> addError
         defaultPos
         [ Error "The type of"
         , Error main
@@ -117,7 +117,7 @@ checkMainFunction = do
         , Error k
         ]
 
-isValidMainType :: Type -> Bool
-isValidMainType Forall{} = False
-isValidMainType Fun{}    = False
-isValidMainType _        = True
+validMainType :: T.Type -> Bool -- TODO: why this restriction?
+validMainType T.Forall{} = False
+validMainType T.Fun{}    = False
+validMainType _          = True

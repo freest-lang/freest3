@@ -34,7 +34,7 @@ import           Syntax.Program
 import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 import           Utils.FreestState
-import           Utils.PreludeLoader            ( userDefined ) -- debug
+-- import           Utils.PreludeLoader            ( userDefined ) -- debug
 import qualified Validation.Extract            as Extract
 import qualified Validation.Kinding            as K -- Again?
 import qualified Validation.Rename             as Rename
@@ -82,7 +82,7 @@ synthetise kEnv (E.UnLet _ x e1 e2) = do
   quotient kEnv x
   return t2
 -- Abs introduction
-synthetise kEnv e'@(E.Abs p m (T.Bind _ x t1) e) = do
+synthetise kEnv e'@(E.Abs p (T.Bind _ m x t1 e)) = do
   K.synthetise kEnv t1
   vEnv1 <- getVEnv
   addToVEnv x t1
@@ -496,12 +496,12 @@ fillFunType :: K.KindEnv -> ProgVar -> E.Exp -> T.Type -> FreestState T.Type
 fillFunType kEnv b = fill
  where
   fill :: E.Exp -> T.Type -> FreestState T.Type
-  fill (E.Abs _ _ (T.Bind _ b _) e) (T.Fun _ _ t1 t2) = do
+  fill (E.Abs _ (T.Bind _ _ b _ e)) (T.Fun _ _ t1 t2) = do
     addToVEnv b t1
     t3 <- fill e t2
     removeFromVEnv b
     return t3
-  fill e@(E.Abs p _ _ _) t = do
+  fill e@(E.Abs p _ _ _ _) t = do
     addError
       (pos b)
       [ Error "Couldn't match expected type"
