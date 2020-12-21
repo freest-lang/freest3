@@ -85,9 +85,6 @@ synthetise _ (T.Name p a) = getFromTEnv a >>= \case
     addToTEnv a (omission p) (omission p)
     return $ omission p
 synthetise _ t@T.Dualof{} = internalError "Validation.Kinding.unfold" t
--- synthetise kEnv (T.Dualof p t) = do
---   m <- checkAgainstSession kEnv t
---   return $ K.Kind p K.Session m
 
 -- Check the contractivity of a given type; issue an error if not
 checkContractive :: TypeVar -> T.Type -> FreestState ()

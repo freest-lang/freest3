@@ -82,7 +82,7 @@ synthetise kEnv (E.UnLet _ x e1 e2) = do
   quotient kEnv x
   return t2
 -- Abs introduction
-synthetise kEnv e'@(E.Abs p (E.Bind _ m x t1 e)) = do
+synthetise kEnv e'@(E.Abs p (E.Bind _ m x t1 e)) = do -- TODO: synthetise for E.Bind
   K.synthetise kEnv t1
   vEnv1 <- getVEnv
   addToVEnv x t1
