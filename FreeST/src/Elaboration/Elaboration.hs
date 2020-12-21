@@ -87,7 +87,7 @@ type Ctx = Map.Map TypeVar T.Type
 
 buildRec :: TypeEnv -> Ctx
 buildRec = Map.mapWithKey buildRec'
-  where buildRec' x (k, t) = T.Rec (pos x) (K.Bind (pos x) x k) t
+  where buildRec' x (k, t) = T.Rec (pos x) (K.Bind (pos x) x k t)
 
 type Visited = Set.Set TypeVar
 
@@ -119,10 +119,12 @@ solveEq tenv visited f t@(T.Var p x)
       addError p [Error "Type variable not in scope:", Error x]
       pure $ omission p
 
-solveEq tenv visited f (T.Forall p b t) =
-  fmap (T.Forall p b) (solveEq tenv visited f t)
-solveEq tenv visited f (T.Rec p b t) =
-  fmap (T.Rec p b) (solveEq tenv visited f t)
+solveEq tenv visited f (T.Forall p (K.Bind p1 x k t)) = do
+  t' <- solveEq tenv visited f t
+  pure $ T.Forall p (K.Bind p1 x k t')
+solveEq tenv visited f (T.Rec p (K.Bind p1 x k t)) = do
+  t' <- solveEq tenv visited f t
+  pure $ T.Rec p (K.Bind p1 x k t')
 
 -- solveEq tenv visited f (T.Abs p b t) =  -- λ a:k => T  
 --   fmap (T.Abs p b) (solveEq tenv visited f t)
@@ -144,9 +146,12 @@ solveDualOf v tenv (T.Choice p pol m) =
   fmap (T.Choice p pol) (tMapM (solveDualOf v tenv) m)
 solveDualOf v tenv (T.Semi p t u) =
   liftM2 (T.Semi p) (solveDualOf v tenv t) (solveDualOf v tenv u)
-solveDualOf v tenv (T.Rec p xs@(K.Bind _ x _) t) = fmap (T.Rec p xs) (solveDualOf (Set.insert x v) tenv t)
-solveDualOf v tenv (T.Forall p kb t) =
-  fmap (T.Forall p kb) (solveDualOf v tenv t)
+solveDualOf v tenv (T.Rec p (K.Bind p1 x k t)) = do
+  t' <- solveDualOf (Set.insert x v) tenv t
+  pure $ T.Rec p (K.Bind p1 x k t')
+solveDualOf v tenv (T.Forall p (K.Bind p1 x k t)) = do
+  t' <- solveDualOf v tenv t
+  pure $ T.Forall p (K.Bind p1 x k t')
 solveDualOf v tenv (T.Fun p pol t u) =
   liftM2 (T.Fun p pol) (solveDualOf v tenv t) (solveDualOf v tenv u) 
 solveDualOf v tenv n@(T.Var p tname)
@@ -396,8 +401,8 @@ changePos p (T.Pair    _ t   u) = T.Pair p t u
 changePos p (T.Semi    _ t   u) = T.Semi p t u
 changePos p (T.Message _ pol b) = T.Message p pol b
 changePos p (T.Choice  _ pol m) = T.Choice p pol m
-changePos p (T.Rec     _ xs  t) = T.Rec p xs t -- (changePos p t)
-changePos p (T.Forall  _ xs  t) = T.Forall p xs t -- (changePos p t)
+changePos p (T.Rec     _ xs   ) = T.Rec p xs -- (changePos p t)
+changePos p (T.Forall  _ xs   ) = T.Forall p xs -- (changePos p t)
 -- TypeVar
 changePos _ t                   = t
 
@@ -438,15 +443,14 @@ buildFunBody f bs e = getFromVEnv f >>= \case
   buildExp :: [ProgVar] -> T.Type -> Exp
   buildExp [] _ = e
   buildExp (b : bs) (T.Fun _ m t1 t2) =
-    Abs (pos b) m (T.Bind (pos b) b t1) (buildExp bs t2)
-  buildExp (b : bs) (T.Dualof p (T.Fun _ m t1 t2)) = Abs
-    (pos b)
-    m
-    (T.Bind (pos b) b (T.Dualof p t1))
-    (buildExp bs (T.Dualof p t2))
-  buildExp bs (T.Forall p kb t) = TypeAbs p kb (buildExp bs t)
+    Abs (pos b) (Bind (pos b) m b t1 (buildExp bs t2))
+  buildExp (b : bs) (T.Dualof p (T.Fun _ m t1 t2)) =
+    Abs (pos b) (Bind (pos b) m b (T.Dualof p t1)
+    (buildExp bs (T.Dualof p t2)))
+  buildExp bs (T.Forall p (K.Bind p1 x k t)) =
+    TypeAbs p (K.Bind p1 x k (buildExp bs t))
   buildExp (b : bs) t =
-    Abs (pos b) Un (T.Bind (pos b) b (omission (pos b))) (buildExp bs t)
+    Abs (pos b) (Bind (pos b) Un b (omission (pos b)) (buildExp bs t))
 
 
 
@@ -466,8 +470,13 @@ subsType tenv b (T.Semi p t1 t2) =
   liftM2 (T.Semi p) (subsType tenv b t1) (subsType tenv b t2)
 
 subsType tenv b (T.Choice p pol m ) = fmap (T.Choice p pol) (subsMap tenv b m)
-subsType tenv b (T.Forall p kb  t ) = fmap (T.Forall p kb) (subsType tenv b t)
-subsType tenv b (T.Rec    p tvb t1) = fmap (T.Rec p tvb) (subsType tenv b t1)
+subsType tenv b (T.Forall p (K.Bind p1 x k t)) = do
+  t' <- subsType tenv b t
+  pure $ T.Forall p (K.Bind p1 x k t')
+subsType tenv b (T.Rec    p (K.Bind p1 x k t)) = do
+  t' <- subsType tenv b t
+  pure $ T.Rec p (K.Bind p1 x k t')
+
 -- In the first phase, we only substitute if the typename is the one that
 -- we are looking for (x)
 subsType _ (Just (x, t)) n@(T.Var p tname)
@@ -494,8 +503,8 @@ subsMap tenv b = mapM (subsType tenv b)
 -- Substitute expressions
 
 subsExp :: Ctx -> Exp -> FreestState Exp
-subsExp tenv (Abs p m b e) =
-  liftM2 (Abs p m) (subsTypeBind tenv b) (subsExp tenv e)
+subsExp tenv (Abs p b) =
+  fmap (Abs p) (subsTypeBind tenv b) -- (subsExp tenv e)
 subsExp tenv (App p e1 e2) = liftM2 (App p) (subsExp tenv e1) (subsExp tenv e2)
 subsExp tenv (Pair p e1 e2) =
   liftM2 (Pair p) (subsExp tenv e1) (subsExp tenv e2)
@@ -505,7 +514,7 @@ subsExp tenv (Case p e m) =
   liftM2 (Case p) (subsExp tenv e) (subsFieldMap tenv m)
 subsExp tenv (Conditional p e1 e2 e3) =
   liftM3 (Conditional p) (subsExp tenv e1) (subsExp tenv e2) (subsExp tenv e3)
-subsExp tenv (TypeAbs p x e) = fmap (TypeAbs p x) (subsExp tenv e)
+subsExp tenv (TypeAbs p b) = fmap (TypeAbs p) (subsKBind tenv b) -- fmap (TypeAbs p x) (subsExp tenv e)
 subsExp tenv (TypeApp p e t) =
   liftM2 (TypeApp p) (subsExp tenv e) (subsType tenv Nothing t) -- (mapM (subsType tenv Nothing) xs)
 subsExp tenv (UnLet p x e1 e2) =
@@ -519,5 +528,8 @@ subsExp _ e = return e
 subsFieldMap :: Ctx -> FieldMap -> FreestState FieldMap
 subsFieldMap ctx = mapM (\(ps, e) -> liftM2 (,) (pure ps) (subsExp ctx e))
 
-subsTypeBind :: Ctx -> T.Bind -> FreestState T.Bind
-subsTypeBind ctx (T.Bind p k t) = fmap (T.Bind p k) (subsType ctx Nothing t)
+subsTypeBind :: Ctx -> Bind -> FreestState Bind
+subsTypeBind ctx (Bind p m x t e) = liftM2 (Bind p m x) (subsType ctx Nothing t) (subsExp ctx e)
+
+subsKBind :: Ctx -> (K.Bind Exp) -> FreestState (K.Bind Exp)
+subsKBind ctx (K.Bind p x k e) = fmap (K.Bind p x k) (subsExp ctx e)

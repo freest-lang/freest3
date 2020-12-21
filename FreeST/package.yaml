@@ -67,9 +67,6 @@ executables:
   freest:
     main:                FreeST.hs
     source-dirs:         src
-    extra-source-files:
-      - Parse/Lexer.x
-      - Parse/Parser.y
     build-tools:
       - alex
       - happy
