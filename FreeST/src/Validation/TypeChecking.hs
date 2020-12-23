@@ -111,8 +111,8 @@ checkMainFunction = do
         defaultPos
         [ Error "The type of"
         , Error main
-        , Error "must be non-function, non-polymorphic\n"
-        , Error "\t found type (scheme)"
+        , Error "must be non-function, non-polymorphic, non-linear\n"
+        , Error "\t found type"
         , Error s
         , Error "of kind"
         , Error k

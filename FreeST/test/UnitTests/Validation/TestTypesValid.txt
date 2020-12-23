@@ -253,6 +253,9 @@ TL
 
 -- Forall
 
+∀ a => a -> a -> a -- Boolean type as Church Encoding
+TL
+
 ∀ a : MU => a
 TL
 
