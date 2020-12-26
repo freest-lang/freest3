@@ -16,7 +16,7 @@ import           Syntax.Base
 import qualified Syntax.Expression             as E
 import           Syntax.Program
 import           Syntax.ProgramVariable
-import qualified Syntax.Type                   as T
+-- import qualified Syntax.Type                   as T
 import qualified Syntax.Kind                   as K
 
 
@@ -29,8 +29,8 @@ evalAndPrint ctx eenv e = do
   res <- eval ctx eenv e
   case res of
     IOValue io     -> io >>= print
-    Closure _ _ _  -> print "<fun>"
-    PrimitiveFun _ -> print "<fun>"
+    Closure _ _ _  -> putStrLn "<fun>"
+    PrimitiveFun _ -> putStrLn "<fun>"
     _              -> print res
 
 eval :: Ctx -> ExpEnv -> E.Exp -> IO Value
