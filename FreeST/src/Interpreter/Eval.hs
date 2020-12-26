@@ -28,8 +28,10 @@ evalAndPrint :: Ctx -> ExpEnv -> E.Exp -> IO ()
 evalAndPrint ctx eenv e = do
   res <- eval ctx eenv e
   case res of
-    IOValue io -> io >>= print
-    _          -> print res
+    IOValue io     -> io >>= print
+    Closure _ _ _  -> print "<fun>"
+    PrimitiveFun _ -> print "<fun>"
+    _              -> print res
 
 eval :: Ctx -> ExpEnv -> E.Exp -> IO Value
 eval _   _    (E.Unit _                  ) = return Unit

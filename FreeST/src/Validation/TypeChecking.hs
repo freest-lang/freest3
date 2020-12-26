@@ -28,6 +28,7 @@ import qualified Syntax.Expression             as E
 import           Syntax.Program                 ( noConstructors )
 import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
+import qualified Syntax.Kind                   as K
 import           Utils.FreestState
 import           Utils.PreludeLoader            ( userDefined )
 import qualified Validation.Kinding            as K
@@ -103,22 +104,23 @@ checkMainFunction = do
   vEnv <- getVEnv
   if main `Map.notMember` vEnv
     then addError defaultPos
-                  [Error "Function", Error main, Error "is not defined"]
+                  [Error "Function", Error main, Error "not defined"]
     else do
-      let s = vEnv Map.! main
---      tEnv <- getTEnv
-      unless (validMainType s) $ K.synthetise Map.empty s >>= \k -> addError
+      let t = vEnv Map.! main
+      k <- K.synthetise Map.empty t
+      unless (not (K.isLin k)) $  addError
         defaultPos
         [ Error "The type of"
         , Error main
-        , Error "must be non-function, non-polymorphic\n"
-        , Error "\t found type (scheme)"
-        , Error s
+        , Error "must be non linear"
+        -- , Error "must be non-function, non-polymorphic\n"
+        , Error "\n\t found type"
+        , Error t
         , Error "of kind"
         , Error k
         ]
 
-validMainType :: T.Type -> Bool -- TODO: why this restriction?
-validMainType T.Forall{} = False
-validMainType T.Fun{}    = False
-validMainType _          = True
+-- validMainType :: T.Type -> Bool -- TODO: why this restriction?
+-- validMainType T.Forall{} = False
+-- validMainType T.Fun{}    = False
+-- validMainType _          = True
