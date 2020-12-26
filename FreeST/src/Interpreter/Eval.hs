@@ -29,8 +29,6 @@ evalAndPrint ctx eenv e = do
   res <- eval ctx eenv e
   case res of
     IOValue io     -> io >>= print
-    Closure _ _ _  -> putStrLn "<fun>"
-    PrimitiveFun _ -> putStrLn "<fun>"
     _              -> print res
 
 eval :: Ctx -> ExpEnv -> E.Exp -> IO Value

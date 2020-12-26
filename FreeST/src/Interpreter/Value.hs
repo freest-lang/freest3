@@ -7,7 +7,6 @@ module Interpreter.Value
 where
 
 import qualified Control.Concurrent.Chan as C
-import           Data.List (intercalate)
 import qualified Data.Map.Strict as Map
 import qualified Syntax.Expression as E
 import           Syntax.ProgramVariable
@@ -18,41 +17,41 @@ data Value =
   | Integer Int
   | Boolean Bool
   | Character Char
-  | Cons ProgVar [[Value]] -- TODO: Think how to do this in other way
+  | Label String -- to be sent on channels
   | Pair Value Value
+  | Cons ProgVar [[Value]] -- TODO: Think how to do this in another way
   | Closure ProgVar E.Exp Ctx
   | PrimitiveFun (Value -> Value)
-  | Label String -- to be sent over channels
   | Chan ChannelEnd
   | Fork
   | IOValue (IO Value)
---  | Send ChannelEnd
---  | Receive
 
 type Ctx = Map.Map ProgVar Value
 
 type ChannelEnd = (C.Chan Value, C.Chan Value)
 type Channel    = (ChannelEnd, ChannelEnd)
 
-
 instance Show Value where
-  show Unit          = "()"
-  show (Integer i)   = show i
-  show (Boolean b)   = show b
-  show (Character c) = show c
-  show (Label s)     = s
-  show (Pair v1 v2)  = "(" ++ show v1 ++ ", " ++ showNTupleValue v2 ++ ")"
-  show c@Cons{}  = showCons c
-  show (Chan _)      = "Skip" -- TODO: change this
-  show (Closure x e _)  = show x ++ " " ++ show e-- TODO: change this
+  show Unit             = "()"
+  show (Integer i)      = show i
+  show (Boolean b)      = show b
+  show (Character c)    = show c
+  show (Label s)        = s
+  show (Pair v1 v2)     = "(" ++ show v1 ++ ", " ++ showTuple v2 ++ ")"
+  show (Cons c xs)      = showCons c xs
+  show Closure{}        = "<fun>"
+  show PrimitiveFun{}   = "<fun>"
+  show Chan{}           = "Skip" -- TODO: change this
+  show Fork             = "fork"
+  show IOValue{}        = "<IOValue>"
+  
+showTuple :: Value -> String
+showTuple (Pair v1 v2) = show v1 ++ ", " ++ showTuple v2
+showTuple v            = show v
 
-showNTupleValue :: Value -> String
-showNTupleValue (Pair v1 v2) = show v1 ++ ", " ++ showNTupleValue v2
-showNTupleValue v            = show v
-
-showCons :: Value -> String
-showCons (Cons x []) = show x
-showCons (Cons x xs) = show x ++ " " ++ unwords (map showConstrList xs)
+showCons :: ProgVar -> [[Value]] -> String
+showCons x [] = show x
+showCons x xs = show x ++ " " ++ unwords (map showConstrList xs)
  where
    showConstrList :: [Value] -> String
    showConstrList = unwords . map showC

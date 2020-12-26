@@ -39,7 +39,7 @@ eleven = quadruple [Int] (λ x:Int -> x + 2) 3
 
 -- Church Encodings
 
-type CBool = ∀ a => a -> a -> a
+-- type CBool = ∀ a => a -> a -> a
 
 tru : ∀ a => a -> a -> a
 tru = (Λ a => (λ t:a -> (λ f: a -> t)))
@@ -50,7 +50,7 @@ fls = (Λ a => (λ t:a -> (λ f: a -> f)))
 nott : (∀ a => a -> a -> a) -> (∀ a => a -> a -> a)
 nott = (λ b: (∀ a => a -> a -> a) -> (Λ c => (λ t:c -> (λ f:c -> b [c] f t))))
 
--- short version
+-- Abbreviated version
 
 truS : ∀ a => a -> a -> a
 truS t _ = t
