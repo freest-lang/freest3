@@ -25,10 +25,8 @@ import qualified Syntax.Kind                   as K
 import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
 import qualified Validation.Substitution       as Substitution
-                                                ( subsAll
-                                                , unfold
-                                                ) -- no renaming
--- import           Equivalence.Normalisation
+                                                ( subsAll )
+import           Equivalence.Normalisation      ( normalise )
 import           Utils.FreestState              ( tMapM
                                                 , tMapM_
                                                 )
@@ -37,7 +35,6 @@ import           Control.Monad.State
 import qualified Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
 import           Prelude                 hiding ( Word ) -- Word is (re)defined in module Equivalence.Grammar
-import           Validation.Terminated
 
 -- Conversion to context-free grammars
 
@@ -51,11 +48,8 @@ convertToGrammar ts = --trace ("subs: " ++ show (subs state))  $
 
 typeToGrammar :: T.Type -> TransState Word
 typeToGrammar t = do
-  collect [] u
-  toGrammar u
-  where u = t
-  -- where u = unr t -- TODO: TACAS does not unravel here...
---   where u = normalise Map.empty t -- TODO: use a simpler unravel function
+  collect [] t
+  toGrammar t
 
 toGrammar :: T.Type -> TransState Word
 -- Non rec-types
@@ -86,11 +80,9 @@ collect σ (  T.Choice _ _              m) = tMapM_ (collect σ) m
 collect σ t@(T.Rec    _ (K.Bind _ x _ u)) = do
   let σ' = (t, x) : σ
   let u' = Substitution.subsAll σ' u
-  (z : zs) <- toGrammar (unr u') -- TODO: use a simpler unravel function
-  -- (z:zs) <- toGrammar (normalise Map.empty u') -- TODO: use a simpler unravel function
+  (z : zs) <- toGrammar (normalise u')
   m        <- getTransitions z
   addProductions x (Map.map (++ zs) m)
-  -- putProductions x (Map.map (++ zs) m)
   collect σ' u
 collect _ _ = return ()
 
@@ -103,7 +95,6 @@ type TransState = State TState
 data TState = TState {
   productions  :: Productions
 , nextIndex    :: Int
--- , typeEnv      :: T.TypeEnv
 , substitution :: Substitution
 }
 
@@ -112,7 +103,6 @@ data TState = TState {
 initial :: TState
 initial = TState { productions  = Map.empty
                       , nextIndex    = 1
-       --               , typeEnv      = tEnv
                       , substitution = Map.empty
                       }
 
@@ -261,11 +251,3 @@ instance Substitute Transitions where
 
 instance Substitute Productions where
   substitute θ = Map.map (substitute θ)
-
--- Unravel
-
-unr :: T.Type -> T.Type
-unr t@T.Rec{} = unr (Substitution.unfold t)
-unr (T.Semi p t1 t2) | terminated (unr t1) = unr t2
-                     | otherwise           = T.Semi p (unr t1) t2
-unr t = t
