@@ -78,7 +78,7 @@ solveEquations =
       Nothing ->
         addError p [Error "Type variable not in scope:", Error x] $> omission p
   solveEq v f (T.Forall p (K.Bind p1 x k t)) = -- TODO: Should we insert on visited?
-    T.Forall p . K.Bind p1 x k <$> solveEq v f t 
+    T.Forall p . K.Bind p1 x k <$> solveEq (x `Set.insert` v) f t
   solveEq v f (T.Rec p (K.Bind p1 x k t)) = 
     T.Rec p . K.Bind p1 x k <$> solveEq (x `Set.insert` v) f t
   -- solveEq v f (T.Abs p b t) =  -- λ a:k => T  
@@ -103,7 +103,7 @@ solveDualOfs =
   solveDualOf v (T.Rec p (K.Bind p1 x k t)) =
      T.Rec p . K.Bind p1 x k <$> solveDualOf (Set.insert x v) t
   solveDualOf v (T.Forall p (K.Bind p1 x k t)) = 
-     T.Forall p . K.Bind p1 x k <$> solveDualOf v t
+     T.Forall p . K.Bind p1 x k <$> solveDualOf (Set.insert x v) t
   solveDualOf v (T.Fun p pol t u) =
     T.Fun p pol <$> solveDualOf v t <*> solveDualOf v u
   solveDualOf v n@(T.Var p tname)
