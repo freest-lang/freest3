@@ -24,7 +24,8 @@ import           Validation.Rename              ( isFreeIn )
 elaboration :: FreestState ()
 elaboration = do
   -- | Build data and type declarations as recursive types
-  buildRecursiveTypes
+  buildRecursiveTypes 
+--  debugM . ("Building recursive types" ++) <$> show =<< getTEnv
   -- | Solve type declarations; from this point on the
   -- | there are no type names on type env
   solveEquations

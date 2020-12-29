@@ -46,13 +46,12 @@ import           Control.Monad                  ( liftM
                                                 , liftM3
                                                 )
 import           Control.Monad.State
--- import           Debug.Trace -- debugging
 
 renameState :: FreestState ()
 renameState = do
   -- TypeVenv
   tEnv <- getTEnv
-  -- | Why do we need to rename the tenv ?? It will obviously have dualofs.
+  -- | Why do we need to rename the tenv ??
   -- tEnv' <- tMapM (\(k, s) -> rename Map.empty s >>= \s' -> return (k, s')) tEnv
   -- setTEnv tEnv'
 
@@ -62,8 +61,7 @@ renameState = do
 
 renameFun :: ProgVar -> T.Type -> FreestState ()
 renameFun f t = do
-  fmap (addToVEnv f) (rename Map.empty t)
-  -- The function body
+  rename Map.empty t >>= addToVEnv f
   getFromEEnv f >>= \case
     Just e -> do
       e' <- rename Map.empty e
