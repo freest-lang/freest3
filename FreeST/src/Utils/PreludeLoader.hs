@@ -59,7 +59,7 @@ typeList =
   where p = defaultPos
   
 prelude :: VarEnv
-prelude = foldr (uncurry Map.insert) Map.empty typeList
+prelude = Map.fromList typeList-- foldr (uncurry Map.insert) Map.empty typeList
 
 isBuiltin :: ProgVar -> Bool
 isBuiltin = (`elem` map fst typeList)

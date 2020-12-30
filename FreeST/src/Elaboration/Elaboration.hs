@@ -16,15 +16,15 @@ import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
 import           Utils.Error                    ( internalError )
 import           Utils.FreestState
+import           Utils.PreludeLoader            ( userDefined )
 import           Validation.Duality             ( dual )
 import           Validation.Kinding             ( synthetise )
 import           Validation.Rename              ( isFreeIn )
 
-
 elaboration :: FreestState ()
 elaboration = do
   -- | Build data and type declarations as recursive types
-  buildRecursiveTypes 
+  buildRecursiveTypes
 --  debugM . ("Building recursive types" ++) <$> show =<< getTEnv
   -- | Solve type declarations; from this point on the
   -- | there are no type names on type env
@@ -80,7 +80,7 @@ solveEquations =
         addError p [Error "Type variable not in scope:", Error x] $> omission p
   solveEq v f (T.Forall p (K.Bind p1 x k t)) = -- TODO: Should we insert on visited?
     T.Forall p . K.Bind p1 x k <$> solveEq (x `Set.insert` v) f t
-  solveEq v f (T.Rec p (K.Bind p1 x k t)) = 
+  solveEq v f (T.Rec p (K.Bind p1 x k t)) =
     T.Rec p . K.Bind p1 x k <$> solveEq (x `Set.insert` v) f t
   -- solveEq v f (T.Abs p b t) =  -- λ a:k => T  
     --   fmap (T.Abs p b) (solveEq v f t)
@@ -102,9 +102,9 @@ solveDualOfs =
   solveDualOf v (T.Semi p t u) =
     T.Semi p <$> solveDualOf v t <*> solveDualOf v u
   solveDualOf v (T.Rec p (K.Bind p1 x k t)) =
-     T.Rec p . K.Bind p1 x k <$> solveDualOf (Set.insert x v) t
-  solveDualOf v (T.Forall p (K.Bind p1 x k t)) = 
-     T.Forall p . K.Bind p1 x k <$> solveDualOf (Set.insert x v) t
+    T.Rec p . K.Bind p1 x k <$> solveDualOf (Set.insert x v) t
+  solveDualOf v (T.Forall p (K.Bind p1 x k t)) =
+    T.Forall p . K.Bind p1 x k <$> solveDualOf (Set.insert x v) t
   solveDualOf v (T.Fun p pol t u) =
     T.Fun p pol <$> solveDualOf v t <*> solveDualOf v u
   solveDualOf v n@(T.Var p tname)
@@ -124,16 +124,17 @@ solveDualOfs =
 cleanUnusedRecs :: FreestState ()
 cleanUnusedRecs = Map.mapWithKey clean <$> getTEnv >>= setTEnv
  where
-  clean x u@(k, T.Rec _ (K.Bind _ _ _ t))
-     | x `isFreeIn` t = u
-     | otherwise      = (k, t)
+  clean x u@(k, T.Rec _ (K.Bind _ _ _ t)) | x `isFreeIn` t = u
+                                          | otherwise      = (k, t)
   clean _ kt = kt
 
 -- | Substitute on function signatures (VarEnv)
 
 substituteVEnv :: FreestState ()
 substituteVEnv =
-  getVEnv >>= tMapWithKeyM_ (\pv t -> addToVEnv pv =<< elaborate t)
+  tMapWithKeyM_ (\pv t -> addToVEnv pv =<< elaborate t)
+    .   userDefined
+    =<< getVEnv
 
 -- | Substitute Types on the expressions (ExpEnv)
 
@@ -178,9 +179,9 @@ instance Elaboration T.Type where
   elaborate (  T.Datatype p m   ) = T.Datatype p <$> elaborate m
   elaborate (  T.Semi   p t1  t2) = T.Semi p <$> elaborate t1 <*> elaborate t2
   elaborate (  T.Choice p pol m ) = T.Choice p pol <$> elaborate m
-  elaborate (T.Forall p kb) = T.Forall p <$> elaborate kb
-  elaborate (T.Rec    p kb) = T.Rec p <$> elaborate kb
-  elaborate n@(T.Var p tname    ) = getFromTEnv tname >>= \case
+  elaborate (  T.Forall p kb    ) = T.Forall p <$> elaborate kb
+  elaborate (  T.Rec    p kb    ) = T.Rec p <$> elaborate kb
+  elaborate n@(T.Var    p tname ) = getFromTEnv tname >>= \case
     Just t  -> addTypeName p n >> pure (changePos p (snd t))
     Nothing -> pure n
   elaborate n@(T.Dualof p t) =
@@ -205,7 +206,7 @@ instance Elaboration Bind where
 -- Substitute expressions
 
 instance Elaboration Exp where
-  elaborate  (Abs p b) =  Abs p <$> elaborate b
+  elaborate (Abs p b     ) = Abs p <$> elaborate b
   elaborate (App  p e1 e2) = App p <$> elaborate e1 <*> elaborate e2
   elaborate (Pair p e1 e2) = Pair p <$> elaborate e1 <*> elaborate e2
   elaborate (BinLet p x y e1 e2) =
@@ -214,7 +215,7 @@ instance Elaboration Exp where
   elaborate (Conditional p e1 e2 e3) =
     Conditional p <$> elaborate e1 <*> elaborate e2 <*> elaborate e3
   elaborate (TypeApp p e t  ) = TypeApp p <$> elaborate e <*> elaborate t
-  elaborate (TypeAbs p b) = TypeAbs p <$> elaborate b
+  elaborate (TypeAbs p b    ) = TypeAbs p <$> elaborate b
   elaborate (UnLet p x e1 e2) = UnLet p x <$> elaborate e1 <*> elaborate e2
   elaborate (New p t u      ) = New p <$> elaborate t <*> elaborate u
   elaborate e@Select{}        = pure e
@@ -240,7 +241,7 @@ changePos p (T.Pair    _ t   u) = T.Pair p t u
 changePos p (T.Semi    _ t   u) = T.Semi p t u
 changePos p (T.Message _ pol b) = T.Message p pol b
 changePos p (T.Choice  _ pol m) = T.Choice p pol m
-changePos p (T.Rec     _ xs   ) = T.Rec p xs -- (changePos p t)
-changePos p (T.Forall  _ xs   ) = T.Forall p xs -- (changePos p t)
+changePos p (T.Rec    _ xs    ) = T.Rec p xs -- (changePos p t)
+changePos p (T.Forall _ xs    ) = T.Forall p xs -- (changePos p t)
 -- TypeVar
 changePos _ t                   = t

@@ -36,7 +36,6 @@ import qualified Validation.Typing             as Typing -- Again
 
 typeCheck :: FreestState ()
 typeCheck = do
-
   vEnv <- getVEnv -- Function signatures
   eEnv <- getEEnv -- Function bodies
   -- tn   <- getTypeNames -- Type Names
