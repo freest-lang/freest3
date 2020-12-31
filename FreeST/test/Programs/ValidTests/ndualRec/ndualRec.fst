@@ -1,6 +1,3 @@
--- type Choice : SL = +{More: !Int;DD, Enough: ?Int} --TODO: TEST OTHER VERSION
-
---type Choice : SL = +{More: !Int;Choice, Enough: Skip}
 type Choice : SL = +{More: !Int;DD, Enough: Skip}
 type DD : SL = dualof (dualof Choice)
 
@@ -33,9 +30,3 @@ main =
 
 sink : Skip -> ()
 sink _ = ()
-
-
--- tmp/ndualRec.fst:29:29: error:
--- 	 Couldn't match expected type ((dualof DD);Skip)
--- 	             with actual type (dualof DD)
--- 	               for expression r

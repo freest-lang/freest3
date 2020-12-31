@@ -26,40 +26,66 @@ doubleIntArrowInt = double [Int -> Int]
 thirteen : Int
 thirteen = doubleIntArrowInt doubleInt (λ x:Int -> x + 2) 5
 
-selfApp : ∀ a => (a -> a) -> a -> a
-selfApp = (Λ a => double [a -> a] (double [a]))
-
 quadruple : ∀ a => (a -> a) -> a -> a
 quadruple = (Λ a => double [a -> a] (double [a]))
 
 eleven : Int
 eleven = quadruple [Int] (λ x:Int -> x + 2) 3
 
+-- main : Int
+-- main = eleven
+
 -- Polymorphic Lists. Requires type constructor List
 
 -- Church Encodings
 
--- type CBool = ∀ a => a -> a -> a
+type BoolC = ∀ b => b -> b -> b
 
-tru : ∀ a => a -> a -> a
-tru = (Λ a => (λ t:a -> (λ f: a -> t)))
+trueC : BoolC
+trueC = (Λ a => (λ t:a -> (λ f:a -> t)))
 
-fls : ∀ a => a -> a -> a
-fls = (Λ a => (λ t:a -> (λ f: a -> f)))
+falseC : BoolC
+falseC = (Λ a => (λ t:a -> (λ f:a -> f)))
 
-nott : (∀ a => a -> a -> a) -> (∀ a => a -> a -> a)
-nott = (λ b: (∀ a => a -> a -> a) -> (Λ c => (λ t:c -> (λ f:c -> b [c] f t))))
+notC : BoolC -> BoolC
+notC = (λ b: BoolC -> (Λ a => (λ t:a -> (λ f:a -> b [a] f t))))
 
--- Abbreviated version
+-- Abbreviated versions
 
-truS : ∀ a => a -> a -> a
-truS t _ = t
+trueS : BoolC
+trueS t _ = t
 
-flsS : ∀ a => a -> a -> a
-flsS _ f = f
+falseS : BoolC
+falseS _ f = f
 
-notS : (∀ a => a -> a -> a) -> (∀ a => a -> a -> a)
-notS b = (Λ c => (λ t:c -> (λ f:c -> b [c] f t)))
+ifC : ∀ a => BoolC -> a -> a -> a
+ifC b e1 e2 = b [a] e1 e2
+
+notS : BoolC -> BoolC
+notS b = (Λ a => (λ t:a -> (λ f:a -> b [a] f t)))
+
+notS' : BoolC -> BoolC
+notS' b = ifC [BoolC] b falseC trueC
+
+orC : BoolC -> BoolC -> BoolC
+orC b1 b2 = ifC [BoolC] b1 trueC b2
+
+andC : BoolC -> BoolC -> BoolC
+andC b1 b2 = ifC [BoolC] b1 b2 falseC
+
+-- Testing
+
+toBool : BoolC -> Bool
+toBool b = b [Bool] True False
+
+toBit : BoolC -> Int
+toBit b = b [Int] 1 0
+
+ifInt : BoolC -> Int -> Int -> Int
+ifInt = ifC [Int]
 
 main : Int
-main = eleven
+main = ifInt (notC trueC) 1 2
+
+-- main : Bool
+-- main = toBool $ andC (orC falseC trueC) (notS' falseC)
