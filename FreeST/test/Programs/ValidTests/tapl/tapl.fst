@@ -32,8 +32,8 @@ quadruple = (Λ a => double [a -> a] (double [a]))
 eleven : Int
 eleven = quadruple [Int] (λ x:Int -> x + 2) 3
 
--- main : Int
--- main = eleven
+main : Int
+main = eleven
 
 -- Polymorphic Lists. Requires type constructor List
 
@@ -84,8 +84,8 @@ toBit b = b [Int] 1 0
 ifInt : BoolC -> Int -> Int -> Int
 ifInt = ifC [Int]
 
-main : Int
-main = ifInt (notC trueC) 1 2
+-- main : Int
+-- main = ifInt (notC trueC) 1 2
 
 -- main : Bool
 -- main = toBool $ andC (orC falseC trueC) (notS' falseC)

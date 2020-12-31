@@ -11,8 +11,11 @@ The dual function on session types
 
 module Validation.Duality
   ( Dual(..)
+  , dualPol
   )
 where
+
+-- DEPRECATED
 
 import           Control.Monad                  ( liftM2 )
 import           Syntax.Base

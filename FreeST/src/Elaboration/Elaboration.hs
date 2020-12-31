@@ -26,20 +26,21 @@ elaboration = do
   -- | Build data and type declarations as recursive types
   buildRecursiveTypes
 --  debugM . ("Building recursive types" ++) <$> show =<< getTEnv
-  -- | Solve type declarations; from this point on the
-  -- | there are no type names on type env
+  -- | Solve the equations
   solveEquations
-  -- | Replace all occurrences of DualOf T on type env
-  solveDualOfs
+  -- | Note: From this point on there are no type names on type env
+  -- | Resolve all occurrences of the dualof type operator
+  resolveDualof
+  -- | Note: From this point on there are no occurrences of type dualof
   -- | Remove recursive types (rec x . T) where the recursion   
   -- | variable x does not occur free in T
   cleanUnusedRecs
   -- | Check if the substituted types are contractive
-  mapM_ (synthetise Map.empty . snd) =<< getTEnv
-  -- | Substitute all type operators on VarEnv
-  -- | From this point on the function types contain no
-  -- | type names neither dualofs
+  mapM_ (synthetise Map.empty . snd) =<< getTEnv -- TODO: why do we need this here?
+  -- | Substitute all type operators (type names?) on VarEnv
   substituteVEnv
+  -- | Note: From this point on function types (all types?) contain no
+  -- | type names neither dualofs TODO: Don't understand
   -- | Build the expression environment: substitute all
   -- | type operators on ExpEnv;
   -- | From f x = E and f : T -> U
@@ -89,35 +90,73 @@ solveEquations =
   solveEq _ _ t@T.Dualof{} = pure t
   solveEq _ _ p            = pure p
 
-  -- solveBind (K.Bind p x k t) = 
+-- | Resolving the dualof operator
 
--- | Solving DualOfs
-
-solveDualOfs :: FreestState ()
-solveDualOfs =
-  getTEnv >>= tMapM (\(k, t) -> (,) k <$> solveDualOf Set.empty t) >>= setTEnv
+resolveDualof :: FreestState ()
+resolveDualof =
+  getTEnv >>= tMapM (\(k, t) -> (,) k <$> solveType Set.empty t) >>= setTEnv
  where
-  solveDualOf :: Visited -> T.Type -> FreestState T.Type
-  solveDualOf v (T.Choice p pol m) = T.Choice p pol <$> tMapM (solveDualOf v) m
-  solveDualOf v (T.Semi p t u) =
-    T.Semi p <$> solveDualOf v t <*> solveDualOf v u
-  solveDualOf v (T.Rec p (K.Bind p1 x k t)) =
-    T.Rec p . K.Bind p1 x k <$> solveDualOf (Set.insert x v) t
-  solveDualOf v (T.Forall p (K.Bind p1 x k t)) =
-    T.Forall p . K.Bind p1 x k <$> solveDualOf (Set.insert x v) t
-  solveDualOf v (T.Fun p pol t u) =
-    T.Fun p pol <$> solveDualOf v t <*> solveDualOf v u
-  solveDualOf v n@(T.Var p tname)
-    | Set.member tname v = pure n
-    | otherwise = getFromTEnv tname >>= \case
-      Just t -> solveDualOf v (snd t)
-      Nothing ->
-        addError p [Error "Type variable not in scope:", Error tname] $> n
-  solveDualOf v d@(T.Dualof p t) = do
-    addTypeName p d
-    dual =<< solveDualOf v t
-  solveDualOf _ p = pure p
+  solveType :: Visited -> T.Type -> FreestState T.Type
+  -- Functional Types
+  solveType v (T.Fun p pol t u) =
+    T.Fun p pol <$> solveType v t <*> solveType v u
+  solveType v (T.Pair p t u) =
+    T.Pair p <$> solveType v t <*> solveType v u
+  solveType v (T.Datatype p m) = T.Datatype p <$> tMapM (solveType v) m
+  -- Session Types
+  solveType v (T.Semi p t u) = T.Semi p <$> solveType v t <*> solveType v u
+  solveType v (T.Message p pol t ) = T.Message p pol <$> solveType v t
+  solveType v (T.Choice p pol m) = T.Choice p pol <$> tMapM (solveType v) m
+  -- Polymorphism and recursive types
+  solveType v (T.Forall p (K.Bind p' a k t)) =
+    T.Forall p . K.Bind p' a k <$> solveType v t
+  solveType v (T.Rec p b) = T.Rec p <$> solveBindT v b
+  solveType _ t@T.Var{} = pure t
+  -- Dualof
+  solveType v d@(T.Dualof p t) = addTypeName p d >> solveDual v t
+  -- Int, Char, Bool, Unit, Skip
+  solveType _ p = pure p
 
+  solveDual :: Visited -> T.Type -> FreestState T.Type
+  -- Session Types
+  solveDual _ t@T.Skip{} = pure t
+  solveDual v (T.Semi p t u) = T.Semi p <$> solveDual v t <*> solveDual v u
+  solveDual v (T.Message p pol t) = T.Message p (dualPol pol) <$> solveType v t
+  solveDual v (T.Choice p pol m) =
+    T.Choice p (dualPol pol) <$> tMapM (solveDual v) m
+  -- Recursive types
+  solveDual v (T.Rec p b) = T.Rec p <$> solveBindD v b
+  solveDual v t@(T.Var p a)
+    | a `Set.member` v = pure t -- A recursion variable
+    | otherwise = 
+        addError p
+        [Error "Cannot compute the dual of a non-recursion variable:"
+        , Error t] $> t
+    -- | otherwise = getFromTEnv a >>= \case
+    --   Just (_, u) -> solveDual v u
+    --   Nothing -> -- A polymorphic variable
+    --     addError p
+    --     [Error "Cannot compute the dual of a non-recursion variable:"
+    --     , Error a] $> t
+  -- Dualof
+  solveDual v d@(T.Dualof p t) = addTypeName p d >> solveType v t
+  -- Non session-types
+  solveDual _ t =
+        addError (pos t)
+        [Error "Dualof applied to a non session type: "
+        , Error t] $> t
+  
+  solveBindT :: Visited -> K.Bind T.Type -> FreestState (K.Bind T.Type)
+  solveBindT v (K.Bind p a k t) =
+    K.Bind p a k <$> solveType (Set.insert a v) t
+
+  solveBindD :: Visited -> K.Bind T.Type -> FreestState (K.Bind T.Type)
+  solveBindD v (K.Bind p a k t) =
+    K.Bind p a k <$> solveDual (Set.insert a v) t
+
+  dualPol :: T.Polarity -> T.Polarity
+  dualPol T.In  = T.Out
+  dualPol T.Out = T.In
 
 -- | Clean rec types where the variable does not occur free
 
