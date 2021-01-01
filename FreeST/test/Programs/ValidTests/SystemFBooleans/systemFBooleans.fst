@@ -9,13 +9,13 @@ Church Encoding _ Boolean Values
 type BoolC = ∀ b => b -> b -> b
 
 trueC : BoolC
-trueC = (Λ a => (λ t:a -> (λ f:a -> t)))
+trueC = Λ a => λ t:a -> λ f:a -> t
 
 falseC : BoolC
-falseC = (Λ a => (λ t:a -> (λ f:a -> f)))
+falseC = Λ a => λ t:a -> λ f:a -> f
 
 notC : BoolC -> BoolC
-notC = (λ b: BoolC -> (Λ a => (λ t:a -> (λ f:a -> b [a] f t))))
+notC = λ b: BoolC -> Λ a => λ t:a -> λ f:a -> b [a] f t
 
 -- Abbreviated versions of the above
 
@@ -28,7 +28,7 @@ falseC' : BoolC
 falseC' _ f = f
 
 notC' : BoolC -> BoolC
-notC' b = (Λ a => (λ t:a -> (λ f:a -> b [a] f t)))
+notC' b = Λ a => λ t:a -> λ f:a -> b [a] f t
 
 -- Destructor
 

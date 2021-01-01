@@ -231,10 +231,10 @@ Primary :: { Exp }
   | '()'                             { E.Unit (pos $1) }
   | Primary '[' Type ']'             { E.TypeApp (pos $1) $1 $3 }
   | ArbitraryProgVar                 { E.Var (pos $1) $1 }
-  | '(' lambda ProgVarWildTBind Arrow Expr ')' { E.Abs (pos $2) 
-                                                  (E.Bind (pos $2) (snd $4) (fst $3) (snd $3) $5) }
-  | '(' Lambda KindBind '=>' Expr ')'{  let (p,a,k) = $3 in
-                                        E.TypeAbs (pos $2) (K.Bind p a k $5) }    
+  | lambda ProgVarWildTBind Arrow Expr
+      { E.Abs (pos $1) (E.Bind (pos $1) (snd $3) (fst $2) (snd $2) $4) }
+  | Lambda KindBind '=>' Expr
+      { let (p,a,k) = $2 in E.TypeAbs (pos $1) (K.Bind p a k $4) }    
   | '(' Expr ',' Tuple ')'           { E.Pair (pos $1) $2 $4 }
   | '(' Expr ')'                     { $2 }
 

@@ -9,7 +9,7 @@ Church Encoding _ Natural Numbers
 type Nat = ∀ a => (a -> a) -> a -> a
 
 zero : Nat
-zero = (Λ a => (λs:(a -> a) -> (λz:a -> z)))
+zero = Λ a => λs:(a -> a) -> λz:a -> z
 
 zero' : Nat -- Abbreviated version
 zero' s z = z
@@ -24,35 +24,35 @@ three : Nat
 three s z = s (s (s z))
 
 succ : Nat -> Nat
-succ n = (Λ a => (λs:(a->a) -> (λz:a -> s (n [a] s z))))
+succ n = Λ a => λs:(a->a) -> λz:a -> s (n [a] s z)
 
 four : Nat
 four = succ three
 
 plus : Nat -> Nat -> Nat
-plus m n = (Λ a => (λs:(a->a) -> (λz:a -> m [a] s (n [a] s z))))
+plus m n = Λ a => λs:(a->a) -> λz:a -> m [a] s (n [a] s z)
 
 isZero : Nat -> Bool
 isZero n = n [Bool] (λ_:Bool -> False) True
 
 times : Nat -> Nat -> Nat
-times m n = (Λ a => (λs:(a->a) -> n [a] (m [a] s)))
+times m n = Λ a => λs:(a->a) -> n [a] (m [a] s)
 
 exp : Nat -> Nat -> Nat
-exp m n = (Λ a => n [a->a] (m [a]))
+exp m n = Λ a => n [a->a] (m [a])
 
 square : Nat -> Nat
-square n = (Λ a => (λs:(a -> a) -> (λz:a -> n [a] (n [a] s) z)))
+square n = Λ a => λs:(a -> a) -> λz:a -> n [a] (n [a] s) z
 
 -- Pairs of natural numbers for the predecessor
 
 type Pair = (Nat -> Nat -> Nat) -> Nat
 
 fst : Pair -> Nat
-fst p = p (λm:Nat -> (λ_:Nat -> m))
+fst p = p (λm:Nat -> λ_:Nat -> m)
 
 snd : Pair -> Nat
-snd p = p (λ_:Nat -> (λn:Nat -> n))
+snd p = p (λ_:Nat -> λn:Nat -> n)
 
 pair : Nat -> Nat -> Pair
 pair m n z = z m n
