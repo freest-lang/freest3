@@ -44,8 +44,8 @@ instance Show Multiplicity where
   show Lin = "L"
 
 showArrow :: Multiplicity -> String
-showArrow Lin = " -o "
-showArrow Un  = " -> "
+showArrow Lin = "-o"
+showArrow Un  = "->"
 
 -- Program and Type Variables.
 
