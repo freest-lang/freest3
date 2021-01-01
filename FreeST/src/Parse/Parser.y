@@ -163,23 +163,24 @@ Decl :: { () }
       toStateT $ checkDupFunDecl $1
       toStateT $ addToPEnv $1 $2 $4        
     }
-      -- e <- toStateT $ buildFunBody $1 $2 $4
-      -- toStateT $ addToEEnv $1 e
   -- Type abbreviation
-  | type KindedTVar {- KindBindEmptyList -} '=' Type {% do
+  | type KindedTVar TypeDecl {% do
       toStateT $ checkDupTypeDecl (fst $2)
-      toStateT $ uncurry addToTEnv $2 $4 } -- TODO: add KindBindEmptyList ?
-
+      toStateT $ uncurry addToTEnv $2 $3
+    }
   -- Datatype declaration
-  | data KindedTVar {- KindBindEmptyList -} '=' DataCons {% do
+  | data KindedTVar '=' DataCons {% do
       let a = fst $2
       toStateT $ checkDupTypeDecl a
       let bs = typeListToType a $4 :: [(ProgVar, T.Type)]
       toStateT $ mapM_ (\(c, t) -> addToVEnv c t) bs
       let p = pos a
       toStateT $ uncurry addToTEnv $2 (T.Datatype p (Map.fromList bs))
-  } -- TODO: add KindBindEmptyList ?
-      -- toStateT $ uncurry addToTEnv $2 (TypeScheme p $3 (Datatype p (Map.fromList bs)))
+    }
+
+TypeDecl :: { T.Type }
+  : '=' Type { $2 }
+  | KindBind TypeDecl { let (p,a,k) = $1 in T.Forall p (K.Bind (pos k) a k $2) }
 
 DataCons :: { [(ProgVar, [T.Type])] }
   : DataCon              {% toStateT $ checkDupCons $1 [] >> return [$1] }
@@ -232,8 +233,8 @@ Primary :: { Exp }
   | ArbitraryProgVar                 { E.Var (pos $1) $1 }
   | '(' lambda ProgVarWildTBind Arrow Expr ')' { E.Abs (pos $2) 
                                                   (E.Bind (pos $2) (snd $4) (fst $3) (snd $3) $5) }
-  | '(' Lambda KindBind '=>' Expr ')'{  let (p,x,k) = $3 in
-                                        E.TypeAbs (pos $2) (K.Bind p x k $5) }    
+  | '(' Lambda KindBind '=>' Expr ')'{  let (p,a,k) = $3 in
+                                        E.TypeAbs (pos $2) (K.Bind p a k $5) }    
   | '(' Expr ',' Tuple ')'           { E.Pair (pos $1) $2 $4 }
   | '(' Expr ')'                     { $2 }
 
@@ -241,8 +242,8 @@ ProgVarWildTBind :: { (ProgVar, T.Type) }
   : ProgVarWild ':' Type  %prec ProgVarWildTBind { ($1, $3) }
 
 Tuple :: { Exp }
-  : Expr               { $1 }
-  | Expr ',' Tuple     { E.Pair (pos $1) $1 $3 }
+  : Expr           { $1 }
+  | Expr ',' Tuple { E.Pair (pos $1) $1 $3 }
 
 MatchMap :: { FieldMap }
   : Match              { uncurry Map.singleton $1 }
@@ -276,10 +277,10 @@ Type :: { T.Type }
   | Polarity Type %prec POL       { uncurry T.Message $1 $2 }
   | ChoiceView '{' FieldList '}'  { uncurry T.Choice $1 $3 }
   -- Polymorphism and recursion
-  | rec KindBind '.' Type         { let (p,x,k) = $2 in
-                                      T.Rec (pos $1) (K.Bind p x k $4) }
-  | forall KindBind '=>' Type     { let (p,x,k) = $2 in
-                                      T.Forall (pos $1) (K.Bind p x k $4) }
+  | rec KindBind '.' Type         { let (p,a,k) = $2 in
+                                      T.Rec (pos $1) (K.Bind p a k $4) }
+  | forall KindBind '=>' Type     { let (p,a,k) = $2 in
+                                      T.Forall (pos $1) (K.Bind p a k $4) }
   | TypeVar                       { T.Var (pos $1) $1 }
   -- Type operators
   | dualof Type                   { T.Dualof (pos $1) $2 }

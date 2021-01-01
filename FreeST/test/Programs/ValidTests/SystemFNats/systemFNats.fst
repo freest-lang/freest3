@@ -1,5 +1,5 @@
 {- |
-Module      : SystemFBooleans
+Module      : SystemFNats
 Description : Examples from TAPL, Chapter 23, Universal Types
 Copyright   : (c) Vasco T. Vasconcelos, 31 dec 2020
 

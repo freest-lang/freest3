@@ -19,6 +19,8 @@ notC = (λ b: BoolC -> (Λ a => (λ t:a -> (λ f:a -> b [a] f t))))
 
 -- Abbreviated versions of the above
 
+type BoolC' b = b -> b -> b
+
 trueC' : BoolC
 trueC' t _ = t
 
