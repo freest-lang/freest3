@@ -73,7 +73,7 @@ forall e t =
   case normalise t of
     u@T.Forall{} -> return u
     u            -> do
-      let p = pos u
+      let p = pos e
       addError
         p
         [ Error "Expecting a polymorphic type for expression"

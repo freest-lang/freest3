@@ -55,7 +55,7 @@ snd : Pair -> Nat
 snd p = p (λ _:Nat n:Nat -> n)
 
 pair : Nat -> Nat -> Pair
-pair m n z = z m n
+pair m n = λz:(Nat -> Nat -> Nat) -> z m n
 
 shift : Pair -> Pair
 shift p = pair (succ (fst p)) (fst p)
