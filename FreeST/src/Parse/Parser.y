@@ -180,7 +180,7 @@ Decl :: { () }
 
 TypeDecl :: { T.Type }
   : '=' Type { $2 }
-  | KindBind TypeDecl { let (p,a,k) = $1 in T.Forall p (K.Bind (pos k) a k $2) }
+  | KindBind TypeDecl { let (a,k) = $1 in T.Forall (pos a) (K.Bind (pos k) a k $2) }
 
 DataCons :: { [(ProgVar, [T.Type])] }
   : DataCon              {% toStateT $ checkDupCons $1 [] >> return [$1] }
@@ -193,7 +193,7 @@ DataCon :: { (ProgVar, [T.Type]) }
 -- EXPRESSION --
 ----------------
 
-Expr :: { Exp }
+Expr :: { E.Exp }
   : let ProgVarWild '=' Expr in Expr { E.UnLet (pos $1) $2 $4 $6 }
   | Expr ';' Expr                    { E.App (pos $1)
                                          (E.Abs (pos $1) 
@@ -219,29 +219,36 @@ Expr :: { Exp }
   | '-' App %prec NEG                { unOp (mkVar (pos $1) "negate") $2}  
   | App                              { $1 }
 
-App :: { Exp }
+App :: { E.Exp }
   : App Primary                      { E.App (pos $1) $1 $2 }
   | select ArbitraryProgVar          { E.Select (pos $1) $2 }
   | Primary                          { $1 }
 
-Primary :: { Exp }
+Primary :: { E.Exp }
   : INT                              { let (TokenInt p x) = $1 in E.Int p x }
   | BOOL                             { let (TokenBool p x) = $1 in E.Bool p x }
   | CHAR                             { let (TokenChar p x) = $1 in E.Char p x }
   | '()'                             { E.Unit (pos $1) }
   | Primary '[' Type ']'             { E.TypeApp (pos $1) $1 $3 }
   | ArbitraryProgVar                 { E.Var (pos $1) $1 }
-  | lambda ProgVarWildTBind Arrow Expr
-      { E.Abs (pos $1) (E.Bind (pos $1) (snd $3) (fst $2) (snd $2) $4) }
-  | Lambda KindBind '=>' Expr
-      { let (p,a,k) = $2 in E.TypeAbs (pos $1) (K.Bind p a k $4) }    
+  | lambda ProgVarWildTBind Abs
+      { let ((p,m),e) = $3 in E.Abs p (E.Bind p m (fst $2) (snd $2) e) }
+  | Lambda KindBind TAbs
+      { let (a,k) = $2 in E.TypeAbs (pos a) (K.Bind (pos k) a k $3) }    
   | '(' Expr ',' Tuple ')'           { E.Pair (pos $1) $2 $4 }
   | '(' Expr ')'                     { $2 }
 
-ProgVarWildTBind :: { (ProgVar, T.Type) }
-  : ProgVarWild ':' Type  %prec ProgVarWildTBind { ($1, $3) }
+Abs :: { ((Pos, Multiplicity), E.Exp) }
+  : Arrow Expr { ($1, $2) }
+  | ProgVarWildTBind Abs
+      { let ((p,m),e) = $2 in ((p, m), E.Abs p (E.Bind p m (fst $1) (snd $1) e)) }
 
-Tuple :: { Exp }
+TAbs :: { E.Exp }
+  : '=>' Expr { $2 }
+  | KindBind TAbs
+      { let (a,k) = $1 in E.TypeAbs (pos a) (K.Bind (pos k) a k $2) }    
+
+Tuple :: { E.Exp }
   : Expr           { $1 }
   | Expr ',' Tuple { E.Pair (pos $1) $1 $3 }
 
@@ -249,14 +256,14 @@ MatchMap :: { FieldMap }
   : Match              { uncurry Map.singleton $1 }
   | Match ',' MatchMap {% toStateT $ checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
 
-Match :: { (ProgVar, ([ProgVar], Exp)) }
+Match :: { (ProgVar, ([ProgVar], E.Exp)) }
   : ArbitraryProgVar ProgVarWild '->' Expr { ($1, ([$2], $4)) }
 
 CaseMap :: { FieldMap }
   : Case             { uncurry Map.singleton $1 }
   | Case ',' CaseMap {% toStateT $ checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
 
-Case :: { (ProgVar, ([ProgVar], Exp)) }
+Case :: { (ProgVar, ([ProgVar], E.Exp)) }
   : Constructor ProgVarWildSeq '->' Expr { ($1, ($2, $4)) }
 
 ----------
@@ -277,15 +284,20 @@ Type :: { T.Type }
   | Polarity Type %prec POL       { uncurry T.Message $1 $2 }
   | ChoiceView '{' FieldList '}'  { uncurry T.Choice $1 $3 }
   -- Polymorphism and recursion
-  | rec KindBind '.' Type         { let (p,a,k) = $2 in
-                                      T.Rec (pos $1) (K.Bind p a k $4) }
-  | forall KindBind '=>' Type     { let (p,a,k) = $2 in
-                                      T.Forall (pos $1) (K.Bind p a k $4) }
+  | rec KindBind '.' Type
+      { let (a,k) = $2 in T.Rec (pos $1) (K.Bind (pos a) a k $4) }
+  | forall KindBind Forall
+      { let (a,k) = $2 in T.Forall (pos $1) (K.Bind (pos a) a k $3) }
   | TypeVar                       { T.Var (pos $1) $1 }
   -- Type operators
   | dualof Type                   { T.Dualof (pos $1) $2 }
   | TypeName                      { T.Var (pos $1) $1 } -- TODO: remove this one lex
   | '(' Type ')'                  { $2 }
+
+Forall :: { T.Type }
+  : '=>' Type { $2 }
+  | KindBind Forall 
+      { let (a,k) = $1 in T.Forall (pos a) (K.Bind (pos k) a k $2) }
 
 TupleType :: { T.Type }
   : Type               { $1 }
@@ -317,19 +329,15 @@ TypeSeq :: { [T.Type] }
   :              { [] }
   | Type TypeSeq { $1 : $2 }
 
--- TypeList :: { [T.Type] }
---   : Type              { [$1] }
---   | Type ',' TypeList { $1 : $3 }
-
 -- KIND
 
 Kind :: { K.Kind }
-  : SU             { K.su (pos $1) }
-  | SL             { K.sl (pos $1) }
-  | TU             { K.tu (pos $1) }
-  | TL             { K.tl (pos $1) }
-  | MU             { K.mu (pos $1) }
-  | ML             { K.ml (pos $1) }
+  : SU { K.su (pos $1) }
+  | SL { K.sl (pos $1) }
+  | TU { K.tu (pos $1) }
+  | TL { K.tl (pos $1) }
+  | MU { K.mu (pos $1) }
+  | ML { K.ml (pos $1) }
 --  | Kind '->' Kind { KindArrow (pos $1) $1 $3 }
 
 -- PROGRAM VARIABLE
@@ -352,6 +360,9 @@ ProgVarWildSeq :: { [ProgVar] }
   :                            { [] }
   | ProgVarWild ProgVarWildSeq {% toStateT $ checkDupBind $1 $2 >> return ($1 : $2) }
 
+ProgVarWildTBind :: { (ProgVar, T.Type) }
+  : ProgVarWild ':' Type  %prec ProgVarWildTBind { ($1, $3) }
+
 -- TYPE VARIABLE
 
 TypeVar :: { TypeVar }
@@ -360,25 +371,13 @@ TypeVar :: { TypeVar }
 TypeName :: { TypeVar }
   : UPPER_ID { mkVar (pos $1) (getText $1) }
 
-KindBind :: { (Pos, TypeVar, K.Kind) }
-  : TypeVar ':' Kind { (pos $1, $1, $3) }
-  | TypeVar          { (pos $1, $1, omission (pos $1)) }
+KindBind :: { (TypeVar, K.Kind) }
+  : TypeVar ':' Kind { ($1, $3) }
+  | TypeVar          { ($1, omission (pos $1)) }
   
--- KindBind :: { K.Bind }
---   : TypeVar ':' Kind { K.Bind (pos $1) $1 $3 }
---   | TypeVar          { K.Bind (pos $1) $1 (omission (pos $1)) }
-
 KindedTVar :: { (TypeVar, K.Kind) }    -- for type and data declarations
   : TypeName ':' Kind { ($1, $3) }
   | TypeName          { ($1, omission (pos $1)) }
-
--- KindBindList :: { [K.Bind] }
---   : KindBind                     { [$1] }
---   | KindBind ',' KindBindList {% toStateT $ checkDupKindBind $1 $3 >> return ($1 : $3) }
-
--- KindBindEmptyList :: { [K.Bind] }
---   :                 { [] }
---   | KindBindList { $1 }
 
 {
 -- Parsing Kinds, Types and Programs

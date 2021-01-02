@@ -11,7 +11,7 @@ five : Int
 five = id [Int] 5
 
 double : ∀ a => (a -> a) -> a -> a
-double = Λ a => λ f:(a->a) -> λ x:a -> f (f x)
+double = Λ a => λ f:(a->a) x:a -> f (f x)
 
 doubleInt : (Int -> Int) -> Int -> Int
 doubleInt = double [Int]
