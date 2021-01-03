@@ -246,7 +246,7 @@ Abs :: { ((Pos, Multiplicity), E.Exp) }
 TAbs :: { E.Exp }
   : '=>' Expr { $2 }
   | KindBind TAbs
-      { let (a,k) = $1 in E.TypeAbs (pos a) (K.Bind (pos k) a k $2) }    
+      { let (a,k) = $1 in E.TypeAbs (pos a) (K.Bind (pos k) a k $2) }
 
 Tuple :: { E.Exp }
   : Expr           { $1 }
