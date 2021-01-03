@@ -20,7 +20,7 @@ Int -> Int -> Int
 let (w,r) = new !Int in let _ = send 5 w in let (v,_) = receive r in v
 Int
 
--- Λ, λ, ∀ abstractions abbreviated
+-- Sequences of Λ, λ, ∀ abstractions and type applications abbreviated
 
 Λ a => Λ b => λ x:a -> λ y:b -> x
 ∀ a => ∀ b => a -> b -> a
@@ -33,3 +33,6 @@ Int
 
 λ n:(∀ a => (a -> a) -> a -> a) -> Λ a => λ s:(a -> a) z:a -> s (n [a] s z)
 (∀ a => (a -> a) -> a -> a) -> (∀ a => (a -> a) -> a -> a)
+
+(Λa b => λx:a y:b -> Λc => λz:(a -> b -> c) -> z x y) [Int Bool]
+Int -> Bool -> ∀c => (Int -> Bool -> c) -> c

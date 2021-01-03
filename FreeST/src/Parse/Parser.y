@@ -229,7 +229,8 @@ Primary :: { E.Exp }
   | BOOL                             { let (TokenBool p x) = $1 in E.Bool p x }
   | CHAR                             { let (TokenChar p x) = $1 in E.Char p x }
   | '()'                             { E.Unit (pos $1) }
-  | Primary '[' Type ']'             { E.TypeApp (pos $1) $1 $3 }
+  | TApp ']'                         { $1 }
+  -- | Primary '[' Type ']'             { E.TypeApp (pos $1) $1 $3 }
   | ArbitraryProgVar                 { E.Var (pos $1) $1 }
   | lambda ProgVarWildTBind Abs
       { let ((p,m),e) = $3 in E.Abs p (E.Bind p m (fst $2) (snd $2) e) }
@@ -247,6 +248,10 @@ TAbs :: { E.Exp }
   : '=>' Expr { $2 }
   | KindBind TAbs
       { let (a,k) = $1 in E.TypeAbs (pos a) (K.Bind (pos k) a k $2) }
+
+TApp :: { E.Exp }
+  : Primary '[' Type { E.TypeApp (pos $1) $1 $3 }
+  | TApp Type    { E.TypeApp (pos $1) $1 $2 }
 
 Tuple :: { E.Exp }
   : Expr           { $1 }

@@ -5,7 +5,7 @@ Copyright   : (c) Vasco T. Vasconcelos
 
 Church Encoding _ Binary natural numbers.
 
-Jean-Ives Girard
+Jean-Yves Girard
 The Blind Spot
 European Mathematical Society, 2011
 
