@@ -48,8 +48,8 @@ arbitraryVar ids = do
 instance Arbitrary K.Kind where
   arbitrary = elements [K.sl pos, K.su pos] -- Session types only
 
-instance Arbitrary K.Bind where
-  arbitrary = liftM3 K.Bind (return pos) arbitrary arbitrary
+instance Arbitrary a => Arbitrary (K.Bind a) where
+  arbitrary = liftM4 K.Bind (return pos) arbitrary arbitrary arbitrary
 
 -- instance Arbitrary Type where
 --   arbitrary = elements [IntType, CharType, BoolType, UnitType]
@@ -146,8 +146,9 @@ typeMapPair pairGen n = do
 recPair :: PairGen -> Int -> Gen (T.Type, T.Type)
 recPair pairGen n = do
   (t, u) <- pairGen (n `div` 4)
-  xk     <- arbitrary
-  return (T.Rec pos xk t, T.Rec pos xk u)
+  a      <- arbitrary
+  k      <- arbitrary
+  return (T.Rec pos (K.Bind pos a k t), T.Rec pos (K.Bind pos a k u))
 
 -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
 
@@ -188,30 +189,32 @@ commut n = do
 recRecL :: Int -> Gen (T.Type, T.Type)
 recRecL n = do
   (t, u)                <- bisimPair (n `div` 2)
-  xk@(K.Bind _ x _) <- arbitrary
-  yk@(K.Bind _ y _) <- arbitrary
+  a <- arbitrary
+  b <- arbitrary
+  k <- arbitrary
   let u' = Rename.renameType u -- this type will be in a substitution
   return
-    ( T.Rec pos xk (T.Rec pos yk t)
-    , T.Rec pos xk (Rename.subs (T.Var pos x) y u')
+    ( T.Rec pos (K.Bind pos a k (T.Rec pos (K.Bind pos b k t)))
+    , T.Rec pos (K.Bind pos a k (Rename.subs (T.Var pos a) b u'))
     )
 
 recRecR :: Int -> Gen (T.Type, T.Type)
 recRecR n = do
   (t, u)                <- bisimPair (n `div` 2)
-  xk@(K.Bind _ x _) <- arbitrary
-  yk@(K.Bind _ y _) <- arbitrary
+  a <- arbitrary
+  b <- arbitrary
+  k <- arbitrary
   let u' = Rename.renameType u -- this type will be in a substitution
   return
-    ( T.Rec pos xk (T.Rec pos yk t)
-    , T.Rec pos yk (Rename.subs (T.Var pos y) x u')
+    ( T.Rec pos (K.Bind pos a k (Rename.subs (T.Var pos a) b u'))
+    , T.Rec pos (K.Bind pos a k (T.Rec pos (K.Bind pos b k t)))
     )
 
 recFree :: Int -> Gen (T.Type, T.Type)
 recFree n = do
   (t, u) <- bisimPair (n `div` 2)
   k      <- arbitrary
-  return (T.Rec pos (K.Bind pos freeTypeVar k) t, u)
+  return (T.Rec pos (K.Bind pos freeTypeVar k t), u)
 
 -- alphaConvert :: Int -> Gen (Type, Type) -- (fixed wrt to ICFP'16)
 -- alphaConvert n = do
@@ -233,8 +236,9 @@ unfoldt :: Int -> Gen (T.Type, T.Type)
 unfoldt n = do
   (t, u) <- bisimPair (n `div` 2)
   let u' = Rename.renameType u -- this type will be unfolded
-  xk <- arbitrary
-  return (T.Rec pos xk t, Rename.unfold (T.Rec pos xk u'))
+  a <- arbitrary
+  k <- arbitrary
+  return (T.Rec pos (K.Bind pos a k t), Rename.unfold (T.Rec pos (K.Bind pos a k u')))
 
 -- Arbitrary pairs of non-bisimilar types
 
