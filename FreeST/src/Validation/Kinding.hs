@@ -28,9 +28,11 @@ import           Syntax.TypeVariable
 import qualified Syntax.Type                   as T
 import qualified Syntax.Kind                   as K
 import           Validation.Contractive
-import           Validation.Subkind             ( (<:), join )
+import           Validation.Subkind             ( (<:)
+                                                , join
+                                                )
 import           Util.FreestState
-import           Util.Error                    ( internalError )
+import           Util.Error                     ( internalError )
 import           Control.Monad                  ( unless )
 import qualified Control.Monad.State           as S
 import qualified Data.Map.Strict               as Map
@@ -38,10 +40,10 @@ import qualified Data.Map.Strict               as Map
 -- Returns the kind of a given type
 synthetise :: K.KindEnv -> T.Type -> FreestState K.Kind
 -- Functional types
-synthetise _ (T.Int p) = return $ K.Kind p K.Message Un
-synthetise _ (T.Char p) = return $ K.Kind p K.Message Un
-synthetise _ (T.Bool p) = return $ K.Kind p K.Message Un
-synthetise _ (T.Unit p) = return $ K.Kind p K.Message Un
+synthetise _    (T.Int  p     ) = return $ K.Kind p K.Message Un
+synthetise _    (T.Char p     ) = return $ K.Kind p K.Message Un
+synthetise _    (T.Bool p     ) = return $ K.Kind p K.Message Un
+synthetise _    (T.Unit p     ) = return $ K.Kind p K.Message Un
 synthetise kEnv (T.Fun p m t u) = do
   synthetise kEnv t
   synthetise kEnv u
@@ -55,7 +57,7 @@ synthetise kEnv (T.Datatype p m) = do
   let K.Kind _ _ n = foldr1 join ks
   return $ K.Kind p K.Top n
   -- Session types
-synthetise _ (T.Skip p) = return $ K.su p
+synthetise _    (T.Skip p    ) = return $ K.su p
 synthetise kEnv (T.Semi p t u) = do
   checkAgainstSession kEnv t
   checkAgainstSession kEnv u
@@ -63,18 +65,19 @@ synthetise kEnv (T.Semi p t u) = do
 synthetise kEnv (T.Message p _ t) = do
   checkAgainst kEnv (K.ml p) t
   return $ K.sl p
-synthetise kEnv (T.Choice  p _ m) = do
+synthetise kEnv (T.Choice p _ m) = do
   tMapM_ (checkAgainst kEnv (K.sl p)) m
   return $ K.sl p
 -- Session or functional
 synthetise kEnv (T.Rec _ (K.Bind _ a k t)) = do
   checkContractive a t
   k' <- synthetise (Map.insert a k kEnv) t
-  checkEqualKinds (pos k) k k' a
+  checkSubkind t k' a k 
+  return k'
 synthetise kEnv (T.Forall _ (K.Bind _ a k t)) =
   synthetise (Map.insert a k kEnv) t
 synthetise kEnv (T.Var p a) = case kEnv Map.!? a of
-  Just k -> return k
+  Just k  -> return k
   Nothing -> do
     addError p [Error "Type variable not in scope:", Error a]
     return $ omission p
@@ -88,15 +91,22 @@ synthetise _ (T.Name p a) = getFromTEnv a >>= \case
 synthetise _ t@T.Dualof{} = internalError "Validation.Kinding.synthetise" t
 
 -- Check whether two kinds are equal or not
-checkEqualKinds
-  :: Pos -> K.Kind -> K.Kind -> TypeVar -> FreestState K.Kind
-checkEqualKinds p k' k a
-  | k <: k'  = return k'
-  | otherwise =
-      addError p [Error "Type variable", Error a,  Error "has kind", Error k',
-                  Error "\n\t expecting kind", Error k]
-    $> omission p
-    
+checkSubkind :: T.Type -> K.Kind -> TypeVar -> K.Kind -> FreestState ()
+checkSubkind t k a k' = unless (k <: k') $ addError (pos t)
+  [ Error "Expecting the kind of the recursion variable"
+  , Error a
+  , Error "to be a subkind of the kind for"
+  , Error t
+  , Error "\n\t"
+  , Error a
+  , Error "is of kind"
+  , Error k'
+  , Error "\n\t"
+  , Error t
+  , Error "is of kind"
+  , Error k
+  ]
+
 -- Check the contractivity of a given type; issue an error if not
 checkContractive :: TypeVar -> T.Type -> FreestState ()
 checkContractive a t = unless (contractive a t) $ addError

@@ -10,7 +10,7 @@ import           Syntax.Base
 import qualified Syntax.Type                  as T
 import           Syntax.Kind                  as K
 import           Validation.Kinding
-import           Equivalence.Normalisation
+-- import           Equivalence.Normalisation
 import           Equivalence.Equivalence
 import           Bisimulation.Bisimulation
 import           Util.FreestState
@@ -18,11 +18,11 @@ import           Control.Monad.State
 import           ArbitraryTypes
 import qualified Data.Map.Strict               as Map
 import           Test.QuickCheck
-import           Test.QuickCheck.Random       ( mkQCGen )
+-- import           Test.QuickCheck.Random       ( mkQCGen )
 
-main = verboseCheckWith
-  stdArgs { maxSuccess = 271, replay = Just (mkQCGen 1095646480, 0) }
-  prop_bisimilar
+-- main = verboseCheckWith
+--   stdArgs { maxSuccess = 271, replay = Just (mkQCGen 1095646480, 0) }
+--   prop_bisimilar
 -- main = quickCheckWith stdArgs {maxSuccess = 20000} prop_bisimilar -- prop_equivalent
 -- main = verboseCheckWith stdArgs {maxSuccess = 10000} prop_distribution
 -- main = quickCheckWith stdArgs {maxSuccess = 10000, replay = Just (mkQCGen 42, 0)} prop_bisimilar

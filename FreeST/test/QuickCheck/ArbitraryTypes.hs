@@ -46,13 +46,10 @@ arbitraryVar ids = do
   return $ mkVar pos id
 
 instance Arbitrary K.Kind where
-  arbitrary = elements [K.sl pos, K.su pos] -- Session types only
+  arbitrary = elements $ K.su pos : replicate 9 (K.sl pos) -- 90% of SL
 
 instance Arbitrary a => Arbitrary (K.Bind a) where
   arbitrary = liftM4 K.Bind (return pos) arbitrary arbitrary arbitrary
-
--- instance Arbitrary Type where
---   arbitrary = elements [IntType, CharType, BoolType, UnitType]
 
 -- Arbitrary pairs of bisimilar types
 
