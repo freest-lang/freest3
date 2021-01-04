@@ -11,14 +11,17 @@ The dual function on session types
 
 module Validation.Duality
   ( Dual(..)
+  , dualPol
   )
 where
+
+-- DEPRECATED
 
 import           Control.Monad                  ( liftM2 )
 import           Syntax.Base
 import qualified Syntax.Kind                   as K
 import qualified Syntax.Type                   as T
-import           Utils.FreestState
+import           Util.FreestState
 
 class Dual t where
   dual :: t -> FreestState t

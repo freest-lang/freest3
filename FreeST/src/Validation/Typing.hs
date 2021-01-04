@@ -33,8 +33,8 @@ import qualified Syntax.Kind                   as K
 import           Syntax.Program
 import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
-import           Utils.FreestState
-import           Utils.PreludeLoader            ( userDefined ) -- debug
+import           Util.FreestState
+import           Util.PreludeLoader            ( userDefined ) -- debug
 import qualified Validation.Extract            as Extract
 import qualified Validation.Kinding            as K -- Again?
 import qualified Validation.Rename             as Rename
@@ -175,7 +175,7 @@ synthetise kEnv (E.TypeApp p e t) = do
   -- mapM_ (\(u, KindBind _ _ k) -> K.checkAgainst kEnv k u) typeKinds
   -- return $ foldr (\(u, KindBind _ y _) -> Rename.subs u y) t typeKinds
 -- Boolean elimination
-synthetise kEnv (E.Conditional p e1 e2 e3) = do
+synthetise kEnv (E.Cond p e1 e2 e3) = do
   checkAgainst kEnv e1 (T.Bool p)
   vEnv2 <- getVEnv
   t     <- synthetise kEnv e2
@@ -386,7 +386,7 @@ addPartiallyAppliedError e s = do
 -- | Check an expression against a given type
 checkAgainst :: K.KindEnv -> E.Exp -> T.Type -> FreestState ()
 -- Boolean elimination
-checkAgainst kEnv (E.Conditional p e1 e2 e3) t = do
+checkAgainst kEnv (E.Cond p e1 e2 e3) t = do
   checkAgainst kEnv e1 (T.Bool p)
   vEnv2 <- getVEnv
   checkAgainst kEnv e2 t

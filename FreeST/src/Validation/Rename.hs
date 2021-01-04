@@ -37,22 +37,21 @@ import qualified Validation.Substitution       as Subs
                                                 ( subs
                                                 , unfold
                                                 )
-import           Utils.Error                    ( internalError )
-import           Utils.FreestState
-import           Utils.PreludeLoader            ( userDefined ) -- debugging
+import           Util.Error                    ( internalError )
+import           Util.FreestState
+import           Util.PreludeLoader            ( userDefined )
 import qualified Data.Map.Strict               as Map
 import           Control.Monad                  ( liftM
                                                 , liftM2
                                                 , liftM3
                                                 )
 import           Control.Monad.State
--- import           Debug.Trace -- debugging
 
 renameState :: FreestState ()
 renameState = do
   -- TypeVenv
   tEnv <- getTEnv
-  -- | Why do we need to rename the tenv ?? It will obviously have dualofs.
+  -- | Why do we need to rename the tenv ??
   -- tEnv' <- tMapM (\(k, s) -> rename Map.empty s >>= \s' -> return (k, s')) tEnv
   -- setTEnv tEnv'
 
@@ -62,8 +61,7 @@ renameState = do
 
 renameFun :: ProgVar -> T.Type -> FreestState ()
 renameFun f t = do
-  fmap (addToVEnv f) (rename Map.empty t)
-  -- The function body
+  rename Map.empty t >>= addToVEnv f
   getFromEEnv f >>= \case
     Just e -> do
       e' <- rename Map.empty e
@@ -155,8 +153,8 @@ instance Rename E.Exp where
   --   return $ E.TypeAbs p (K.Bind p' a' k) e'
   rename bs (E.TypeApp p e t) = liftM2 (E.TypeApp p) (rename bs e) (rename bs t)
   -- Boolean elim
-  rename bs (E.Conditional p e1 e2 e3) =
-    liftM3 (E.Conditional p) (rename bs e1) (rename bs e2) (rename bs e3)
+  rename bs (E.Cond p e1 e2 e3) =
+    liftM3 (E.Cond p) (rename bs e1) (rename bs e2) (rename bs e3)
   -- Let
   rename bs (E.UnLet p x e1 e2) = do
     x'  <- rename bs x

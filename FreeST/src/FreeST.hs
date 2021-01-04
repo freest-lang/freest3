@@ -19,9 +19,9 @@ import           System.Exit                    ( die )
 import           System.FilePath                ( FilePath
                                                 , isExtensionOf
                                                 )
-import           Utils.Error
-import           Utils.FreestState
-import           Utils.PreludeLoader            ( prelude )
+import           Util.Error
+import           Util.FreestState
+import           Util.PreludeLoader            ( prelude )
 import           Validation.Rename              ( renameState )
 import           Validation.TypeChecking        ( typeCheck )
 

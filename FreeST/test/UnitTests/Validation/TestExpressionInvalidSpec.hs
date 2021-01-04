@@ -8,7 +8,7 @@ import qualified Data.Map.Strict               as Map
 import           Elaboration.Elaboration -- ( elaborate )
 import           SpecHelper
 import           Syntax.Expression
-import           Utils.FreestState
+import           Util.FreestState
 import           Validation.Typing              ( synthetise )
 
 spec :: Spec

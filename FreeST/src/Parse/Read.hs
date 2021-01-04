@@ -7,7 +7,7 @@ import           Syntax.Type
 import           Syntax.Expression
 import           Parse.ParseUtils
 import           Control.Monad.State
-import           Utils.FreestState
+import           Util.FreestState
 
 instance Read Kind where
   readsPrec _ s = [(parseKind s, "")]

@@ -29,8 +29,8 @@ import qualified Syntax.Kind                   as K
 import           Syntax.Program
 import           Syntax.ProgramVariable         ( ProgVar )
 import qualified Syntax.Type                   as T
-import           Utils.Error                    ( internalError )
-import           Utils.FreestState              ( initialState
+import           Util.Error                    ( internalError )
+import           Util.FreestState              ( initialState
                                                 , errors
                                                 )
 import           Validation.Kinding             ( synthetise )

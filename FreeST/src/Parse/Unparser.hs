@@ -44,8 +44,8 @@ instance Show Multiplicity where
   show Lin = "L"
 
 showArrow :: Multiplicity -> String
-showArrow Lin = " -o "
-showArrow Un  = " -> "
+showArrow Lin = "-o"
+showArrow Un  = "->"
 
 -- Program and Type Variables.
 
@@ -231,7 +231,7 @@ instance Unparse Exp where
   unparse (E.TypeAbs _ b) = (arrowRator, "λ" ++ show b) -- ++ "->" ++ s)
     -- where s = bracket (unparse e) Right arrowRator
   -- Boolean elim
-  unparse (E.Conditional _ e1 e2 e3) =
+  unparse (E.Cond _ e1 e2 e3) =
     (inRator, "if " ++ s1 ++ " then " ++ s2 ++ " else " ++ s3)
    where
     s1 = bracket (unparse e1) Left inRator

@@ -43,7 +43,7 @@ import qualified Syntax.Kind                   as K
 import           Syntax.ProgramVariable
 import           Syntax.TypeVariable
 import qualified Syntax.Type                   as T
-import           Utils.FreestState
+import           Util.FreestState
 -- import           Debug.Trace -- debug
 
 thenM :: ParseResult a -> (a -> ParseResult b) -> ParseResult b

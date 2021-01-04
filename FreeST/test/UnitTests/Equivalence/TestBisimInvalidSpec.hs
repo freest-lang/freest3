@@ -1,13 +1,7 @@
 module Equivalence.TestBisimInvalidSpec (spec) where
 
--- import           Syntax.Type
--- import           Syntax.Kind
--- import           Syntax.TypeVariables
--- import           Syntax.Base
 import           Bisimulation.Bisimulation (bisimilar)
 import           Validation.Rename
--- import           Utils.FreestState
--- import qualified Data.Map.Strict as Map
 import           SpecHelper
 
 -- Note that the tests cases should be kinded!

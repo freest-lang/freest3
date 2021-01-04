@@ -22,7 +22,7 @@ where
 import           Syntax.TypeVariable
 import qualified Syntax.Kind                   as K
 import qualified Syntax.Type                   as T
-import           Utils.Error                    ( internalError )
+import           Util.Error                    ( internalError )
 import qualified Data.Map.Strict               as Map
 
 -- [t/x]u, substitute t for for every occurrence of x in u

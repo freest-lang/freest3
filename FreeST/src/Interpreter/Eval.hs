@@ -67,7 +67,7 @@ eval ctx eenv (E.BinLet _ x y e1 e2) = do
   let env = Map.insert x v1 (Map.insert y v2 ctx)
   eval env eenv e2
 
-eval ctx eenv (E.Conditional _ cond e1 e2) = do
+eval ctx eenv (E.Cond _ cond e1 e2) = do
   (Boolean b) <- eval ctx eenv cond
   if b then eval ctx eenv e1 else eval ctx eenv e2
 

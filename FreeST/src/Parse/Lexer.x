@@ -8,8 +8,8 @@ module Parse.Lexer
 import qualified Data.Map.Strict as Map
 import           Parse.ParseUtils
 import           Syntax.Base
-import           Utils.Error
-import           Utils.ErrorMessage
+import           Util.Error
+import           Util.ErrorMessage
 }
 
 %wrapper "posn"

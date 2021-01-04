@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances, GADTs #-}
 
-module Utils.ErrorMessage
+module Util.ErrorMessage
   ( ErrorMessage(..)
   , Color(..)
   , ErrorMsg(..)
@@ -15,7 +15,7 @@ import           Syntax.Program
 import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
-import           Utils.ShowDefault
+import           Util.ShowDefault
 
 -- | Error class and instances
 

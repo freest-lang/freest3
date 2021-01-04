@@ -11,7 +11,7 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-module Utils.FreestState
+module Util.FreestState
   ( -- State
     FreestState
   , FreestS(..)
@@ -70,10 +70,10 @@ import           Syntax.Program
 import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
-import           Utils.Error
+import           Util.Error
 -- import qualified Data.Set as Set
 import qualified Data.Traversable              as Traversable
-import           Utils.ErrorMessage
+import           Util.ErrorMessage
 import           Debug.Trace -- debug (used on debugM function)
 
 -- | The typing state

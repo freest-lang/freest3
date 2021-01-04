@@ -1,4 +1,4 @@
-module Utils.ShowDefault
+module Util.ShowDefault
   ( ShowWithDefault(..)
   )
 where
@@ -28,6 +28,8 @@ showTypeDefault tops (T.Semi p t u) =
   lookupPos tops p (T.Semi p (showTypeDefault tops t) (showTypeDefault tops u))
 showTypeDefault tops (T.Rec p (K.Bind p' x k t)) = -- xs t
   lookupPos tops p (T.Rec p (K.Bind p' x k (showTypeDefault tops t)))
+showTypeDefault tops (T.Forall p (K.Bind p' x k t)) = -- xs t
+  lookupPos tops p (T.Forall p (K.Bind p' x k (showTypeDefault tops t)))
 showTypeDefault tops (T.Fun p m t u) =
   lookupPos tops p (T.Fun p m (showTypeDefault tops t) (showTypeDefault tops u))
 showTypeDefault tops (T.Pair p t u) =

@@ -1,23 +1,10 @@
 {
 module Parse.Parser
--- ( parseType
--- , parseTypeScheme
--- , parseDefs
--- , parseProgram
--- , parseSchemes
---)
 where
 
 
 import           Control.Monad.State
-import           Data.Char
-import           Data.List                      ( nub
-                                                , (\\)
-                                                , intercalate
-                                                , find
-                                                )
 import qualified Data.Map.Strict               as Map
-import qualified Data.Set                      as Set
 import           Parse.Lexer
 import           Parse.ParseUtils
 import           Syntax.Base
@@ -27,24 +14,20 @@ import           Syntax.Program
 import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
-import           System.Exit                    ( die )
-import           Utils.Error
-import           Utils.FreestState
+import           Util.Error
+import           Util.FreestState
 
-  }
+}
 
 %name types Type
--- %name typeScheme TypeScheme
 %name terms Prog
 %name kinds Kind
-%name expr Expr
--- %name schemes Schemes
+%name expr Exp
 %tokentype { Token }
 %error { parseError }
 -- %monad { ParseResult } { thenParseResult } { returnParseResult }
 -- %monad { FreestState }
 %monad { FreestStateT } { (>>=) } { return }
-
 
 %token
   nl       {TokenNL _}
@@ -115,7 +98,7 @@ import           Utils.FreestState
 %nonassoc '()'
 %nonassoc '[' -- used in type app e[T]
 
--- Expr
+-- Exp
 %right in else match case
 -- %left select
 %nonassoc new
@@ -132,14 +115,13 @@ import           Utils.FreestState
 %right '=>'      -- Used in forall                 
 %right '.'       -- used in rec
 %right ARROW
-%right '->' '-o' -- an Expr operator as well
-%right ';'       -- an Expr operator as well
+%right '->' '-o' -- an Exp operator as well
+%right ';'       -- an Exp operator as well
 %right POL        -- both '!' and '?'
 %right dualof
 %nonassoc ProgVarWildTBind
 
 %%
-
 -------------
 -- PROGRAM --
 -------------
@@ -159,27 +141,28 @@ Decl :: { () }
       toStateT $ addToVEnv $1 $3
     }
   -- Function declaration
-  | ProgVar ProgVarWildSeq '=' Expr {% do
+  | ProgVar ProgVarWildSeq '=' Exp {% do
       toStateT $ checkDupFunDecl $1
       toStateT $ addToPEnv $1 $2 $4        
     }
-      -- e <- toStateT $ buildFunBody $1 $2 $4
-      -- toStateT $ addToEEnv $1 e
   -- Type abbreviation
-  | type KindedTVar {- KindBindEmptyList -} '=' Type {% do
+  | type KindedTVar TypeDecl {% do
       toStateT $ checkDupTypeDecl (fst $2)
-      toStateT $ uncurry addToTEnv $2 $4 } -- TODO: add KindBindEmptyList ?
-
+      toStateT $ uncurry addToTEnv $2 $3
+    }
   -- Datatype declaration
-  | data KindedTVar {- KindBindEmptyList -} '=' DataCons {% do
+  | data KindedTVar '=' DataCons {% do
       let a = fst $2
       toStateT $ checkDupTypeDecl a
       let bs = typeListToType a $4 :: [(ProgVar, T.Type)]
       toStateT $ mapM_ (\(c, t) -> addToVEnv c t) bs
       let p = pos a
       toStateT $ uncurry addToTEnv $2 (T.Datatype p (Map.fromList bs))
-  } -- TODO: add KindBindEmptyList ?
-      -- toStateT $ uncurry addToTEnv $2 (TypeScheme p $3 (Datatype p (Map.fromList bs)))
+    }
+
+TypeDecl :: { T.Type }
+  : '=' Type { $2 }
+  | KindBind TypeDecl { let (a,k) = $1 in T.Forall (pos a) (K.Bind (pos k) a k $2) }
 
 DataCons :: { [(ProgVar, [T.Type])] }
   : DataCon              {% toStateT $ checkDupCons $1 [] >> return [$1] }
@@ -192,71 +175,83 @@ DataCon :: { (ProgVar, [T.Type]) }
 -- EXPRESSION --
 ----------------
 
-Expr :: { Exp }
-  : let ProgVarWild '=' Expr in Expr { E.UnLet (pos $1) $2 $4 $6 }
-  | Expr ';' Expr                    { E.App (pos $1)
+Exp :: { E.Exp }
+  : let ProgVarWild '=' Exp in Exp { E.UnLet (pos $1) $2 $4 $6 }
+  | Exp ';' Exp                    { E.App (pos $1)
                                          (E.Abs (pos $1) 
                                            (E.Bind (pos $1) Un (mkVar (pos $1) "_")
                                              (T.Unit (pos $3))
                                            $3))
                                        $1}
-  | let '(' ProgVarWild ',' ProgVarWild ')' '=' Expr in Expr
-                                     { E.BinLet (pos $1) $3 $5 $8 $10 }
-  | if Expr then Expr else Expr      { E.Conditional (pos $1) $2 $4 $6 }
-  | new Type                         { E.New (pos $1) $2 (T.Dualof (negPos (pos $2)) $2) }
-  | match Expr with '{' MatchMap '}' { E.Match (pos $1) $2 $5 }
-  | case Expr of '{' CaseMap '}'     { E.Case (pos $1) $2 $5 }
-  | Expr '$' Expr                    { E.App (pos $2) $1 $3 }
-  | Expr '&' Expr                    { E.App (pos $2) $3 $1 }
-  | Expr '||' Expr                   { binOp $1 (mkVar (pos $2) "(||)") $3 }
-  | Expr '&&' Expr                   { binOp $1 (mkVar (pos $2) "(&&)") $3 }
-  | Expr CMP Expr                    { binOp $1 (mkVar (pos $2) (getText $2)) $3 }
-  | Expr '+' Expr                    { binOp $1 (mkVar (pos $2) "(+)") $3 }
-  | Expr '-' Expr                    { binOp $1 (mkVar (pos $2) "(-)") $3 }
-  | Expr '*' Expr                    { binOp $1 (mkVar (pos $2) "(*)") $3 }
-  | Expr '/' Expr                    { binOp $1 (mkVar (pos $2) "div") $3 }
-  | '-' App %prec NEG                { unOp (mkVar (pos $1) "negate") $2}  
-  | App                              { $1 }
+  | let '(' ProgVarWild ',' ProgVarWild ')' '=' Exp in Exp
+                                   { E.BinLet (pos $1) $3 $5 $8 $10 }
+  | if Exp then Exp else Exp       { E.Cond (pos $1) $2 $4 $6 }
+  | new Type                       { E.New (pos $1) $2 (T.Dualof (negPos (pos $2)) $2) }
+  | match Exp with '{' MatchMap '}'{ E.Match (pos $1) $2 $5 }
+  | case Exp of '{' CaseMap '}'    { E.Case (pos $1) $2 $5 }
+  | Exp '$' Exp                    { E.App (pos $2) $1 $3 }
+  | Exp '&' Exp                    { E.App (pos $2) $3 $1 }
+  | Exp '||' Exp                   { binOp $1 (mkVar (pos $2) "(||)") $3 }
+  | Exp '&&' Exp                   { binOp $1 (mkVar (pos $2) "(&&)") $3 }
+  | Exp CMP Exp                    { binOp $1 (mkVar (pos $2) (getText $2)) $3 }
+  | Exp '+' Exp                    { binOp $1 (mkVar (pos $2) "(+)") $3 }
+  | Exp '-' Exp                    { binOp $1 (mkVar (pos $2) "(-)") $3 }
+  | Exp '*' Exp                    { binOp $1 (mkVar (pos $2) "(*)") $3 }
+  | Exp '/' Exp                    { binOp $1 (mkVar (pos $2) "div") $3 }
+  | '-' App %prec NEG              { unOp (mkVar (pos $1) "negate") $2}  
+  | App                            { $1 }
 
-App :: { Exp }
-  : App Primary                      { E.App (pos $1) $1 $2 }
-  | select ArbitraryProgVar          { E.Select (pos $1) $2 }
-  | Primary                          { $1 }
+App :: { E.Exp }
+  : App Primary                    { E.App (pos $1) $1 $2 }
+  | select ArbitraryProgVar        { E.Select (pos $1) $2 }
+  | Primary                        { $1 }
 
-Primary :: { Exp }
-  : INT                              { let (TokenInt p x) = $1 in E.Int p x }
-  | BOOL                             { let (TokenBool p x) = $1 in E.Bool p x }
-  | CHAR                             { let (TokenChar p x) = $1 in E.Char p x }
-  | '()'                             { E.Unit (pos $1) }
-  | Primary '[' Type ']'             { E.TypeApp (pos $1) $1 $3 }
-  | ArbitraryProgVar                 { E.Var (pos $1) $1 }
-  | '(' lambda ProgVarWildTBind Arrow Expr ')' { E.Abs (pos $2) 
-                                                  (E.Bind (pos $2) (snd $4) (fst $3) (snd $3) $5) }
-  | '(' Lambda KindBind '=>' Expr ')'{  let (p,x,k) = $3 in
-                                        E.TypeAbs (pos $2) (K.Bind p x k $5) }    
-  | '(' Expr ',' Tuple ')'           { E.Pair (pos $1) $2 $4 }
-  | '(' Expr ')'                     { $2 }
+Primary :: { E.Exp }
+  : INT                            { let (TokenInt p x) = $1 in E.Int p x }
+  | BOOL                           { let (TokenBool p x) = $1 in E.Bool p x }
+  | CHAR                           { let (TokenChar p x) = $1 in E.Char p x }
+  | '()'                           { E.Unit (pos $1) }
+  | TApp ']'                       { $1 }
+  -- | Primary '[' Type ']'             { E.TypeApp (pos $1) $1 $3 }
+  | ArbitraryProgVar               { E.Var (pos $1) $1 }
+  | lambda ProgVarWildTBind Abs
+      { let ((p,m),e) = $3 in E.Abs p (E.Bind p m (fst $2) (snd $2) e) }
+  | Lambda KindBind TAbs
+      { let (a,k) = $2 in E.TypeAbs (pos a) (K.Bind (pos k) a k $3) }    
+  | '(' Exp ',' Tuple ')'          { E.Pair (pos $1) $2 $4 }
+  | '(' Exp ')'                    { $2 }
 
-ProgVarWildTBind :: { (ProgVar, T.Type) }
-  : ProgVarWild ':' Type  %prec ProgVarWildTBind { ($1, $3) }
+Abs :: { ((Pos, Multiplicity), E.Exp) }
+  : Arrow Exp { ($1, $2) }
+  | ProgVarWildTBind Abs
+      { let ((p,m),e) = $2 in ((p, m), E.Abs p (E.Bind p m (fst $1) (snd $1) e)) }
 
-Tuple :: { Exp }
-  : Expr               { $1 }
-  | Expr ',' Tuple     { E.Pair (pos $1) $1 $3 }
+TAbs :: { E.Exp }
+  : '=>' Exp { $2 }
+  | KindBind TAbs
+      { let (a,k) = $1 in E.TypeAbs (pos a) (K.Bind (pos k) a k $2) }
+
+TApp :: { E.Exp }
+  : Primary '[' Type { E.TypeApp (pos $1) $1 $3 }
+  | TApp Type    { E.TypeApp (pos $1) $1 $2 }
+
+Tuple :: { E.Exp }
+  : Exp           { $1 }
+  | Exp ',' Tuple { E.Pair (pos $1) $1 $3 }
 
 MatchMap :: { FieldMap }
   : Match              { uncurry Map.singleton $1 }
   | Match ',' MatchMap {% toStateT $ checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
 
-Match :: { (ProgVar, ([ProgVar], Exp)) }
-  : ArbitraryProgVar ProgVarWild '->' Expr { ($1, ([$2], $4)) }
+Match :: { (ProgVar, ([ProgVar], E.Exp)) }
+  : ArbitraryProgVar ProgVarWild '->' Exp { ($1, ([$2], $4)) }
 
 CaseMap :: { FieldMap }
   : Case             { uncurry Map.singleton $1 }
   | Case ',' CaseMap {% toStateT $ checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
 
-Case :: { (ProgVar, ([ProgVar], Exp)) }
-  : Constructor ProgVarWildSeq '->' Expr { ($1, ($2, $4)) }
+Case :: { (ProgVar, ([ProgVar], E.Exp)) }
+  : Constructor ProgVarWildSeq '->' Exp { ($1, ($2, $4)) }
 
 ----------
 -- TYPE --
@@ -276,27 +271,32 @@ Type :: { T.Type }
   | Polarity Type %prec POL       { uncurry T.Message $1 $2 }
   | ChoiceView '{' FieldList '}'  { uncurry T.Choice $1 $3 }
   -- Polymorphism and recursion
-  | rec KindBind '.' Type         { let (p,x,k) = $2 in
-                                      T.Rec (pos $1) (K.Bind p x k $4) }
-  | forall KindBind '=>' Type     { let (p,x,k) = $2 in
-                                      T.Forall (pos $1) (K.Bind p x k $4) }
+  | rec KindBind '.' Type
+      { let (a,k) = $2 in T.Rec (pos $1) (K.Bind (pos a) a k $4) }
+  | forall KindBind Forall
+      { let (a,k) = $2 in T.Forall (pos $1) (K.Bind (pos a) a k $3) }
   | TypeVar                       { T.Var (pos $1) $1 }
   -- Type operators
   | dualof Type                   { T.Dualof (pos $1) $2 }
   | TypeName                      { T.Var (pos $1) $1 } -- TODO: remove this one lex
   | '(' Type ')'                  { $2 }
 
+Forall :: { T.Type }
+  : '=>' Type { $2 }
+  | KindBind Forall 
+      { let (a,k) = $1 in T.Forall (pos a) (K.Bind (pos k) a k $2) }
+
 TupleType :: { T.Type }
   : Type               { $1 }
   | Type ',' TupleType { T.Pair (pos $1) $1 $3 }
 
-Polarity :: { (Pos, T.Polarity) }
-  : '?' { (pos $1, T.In) }
-  | '!' { (pos $1, T.Out) }
-
 Arrow :: { (Pos, Multiplicity) }
   : '->' { (pos $1, Un) }
   | '-o' { (pos $1, Lin) }
+
+Polarity :: { (Pos, T.Polarity) }
+  : '!' { (pos $1, T.Out) }
+  | '?' { (pos $1, T.In) }
 
 ChoiceView :: { (Pos, T.Polarity) }
   : '+' { (pos $1, T.Out) }
@@ -316,19 +316,17 @@ TypeSeq :: { [T.Type] }
   :              { [] }
   | Type TypeSeq { $1 : $2 }
 
--- TypeList :: { [T.Type] }
---   : Type              { [$1] }
---   | Type ',' TypeList { $1 : $3 }
-
--- KIND
+----------
+-- KIND --
+----------
 
 Kind :: { K.Kind }
-  : SU             { K.su (pos $1) }
-  | SL             { K.sl (pos $1) }
-  | TU             { K.tu (pos $1) }
-  | TL             { K.tl (pos $1) }
-  | MU             { K.mu (pos $1) }
-  | ML             { K.ml (pos $1) }
+  : SU { K.su (pos $1) }
+  | SL { K.sl (pos $1) }
+  | TU { K.tu (pos $1) }
+  | TL { K.tl (pos $1) }
+  | MU { K.mu (pos $1) }
+  | ML { K.ml (pos $1) }
 --  | Kind '->' Kind { KindArrow (pos $1) $1 $3 }
 
 -- PROGRAM VARIABLE
@@ -351,6 +349,9 @@ ProgVarWildSeq :: { [ProgVar] }
   :                            { [] }
   | ProgVarWild ProgVarWildSeq {% toStateT $ checkDupBind $1 $2 >> return ($1 : $2) }
 
+ProgVarWildTBind :: { (ProgVar, T.Type) }
+  : ProgVarWild ':' Type  %prec ProgVarWildTBind { ($1, $3) }
+
 -- TYPE VARIABLE
 
 TypeVar :: { TypeVar }
@@ -359,25 +360,13 @@ TypeVar :: { TypeVar }
 TypeName :: { TypeVar }
   : UPPER_ID { mkVar (pos $1) (getText $1) }
 
-KindBind :: { (Pos, TypeVar, K.Kind) }
-  : TypeVar ':' Kind { (pos $1, $1, $3) }
-  | TypeVar          { (pos $1, $1, omission (pos $1)) }
+KindBind :: { (TypeVar, K.Kind) }
+  : TypeVar ':' Kind { ($1, $3) }
+  | TypeVar          { ($1, omission (pos $1)) }
   
--- KindBind :: { K.Bind }
---   : TypeVar ':' Kind { K.Bind (pos $1) $1 $3 }
---   | TypeVar          { K.Bind (pos $1) $1 (omission (pos $1)) }
-
 KindedTVar :: { (TypeVar, K.Kind) }    -- for type and data declarations
   : TypeName ':' Kind { ($1, $3) }
   | TypeName          { ($1, omission (pos $1)) }
-
--- KindBindList :: { [K.Bind] }
---   : KindBind                     { [$1] }
---   | KindBind ',' KindBindList {% toStateT $ checkDupKindBind $1 $3 >> return ($1 : $3) }
-
--- KindBindEmptyList :: { [K.Bind] }
---   :                 { [] }
---   | KindBindList { $1 }
 
 {
 -- Parsing Kinds, Types and Programs

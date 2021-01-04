@@ -21,7 +21,7 @@ import           Syntax.Base                    ( pos )
 import qualified Syntax.Type                   as T
 import           Validation.Terminated          ( terminated )
 import           Validation.Substitution        ( unfold )
-import           Utils.Error                    ( internalError )
+import           Util.Error                    ( internalError )
 
 normalise :: T.Type -> T.Type
 -- Session types

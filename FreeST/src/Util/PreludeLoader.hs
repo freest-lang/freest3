@@ -9,7 +9,7 @@ Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc
 This module introduces the signatures for the functions in the prelude
 -}
 
-module Utils.PreludeLoader
+module Util.PreludeLoader
   ( prelude
   , isBuiltin
   , userDefined
@@ -59,7 +59,7 @@ typeList =
   where p = defaultPos
   
 prelude :: VarEnv
-prelude = foldr (uncurry Map.insert) Map.empty typeList
+prelude = Map.fromList typeList-- foldr (uncurry Map.insert) Map.empty typeList
 
 isBuiltin :: ProgVar -> Bool
 isBuiltin = (`elem` map fst typeList)

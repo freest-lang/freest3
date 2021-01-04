@@ -16,7 +16,7 @@ where
 
 import           Syntax.Base
 import qualified Syntax.Kind                   as K
-import           Utils.Error                    ( internalError )
+import           Util.Error                    ( internalError )
 
 -- The subkinding relation. Note that subkinding is a partial order, hence
 -- should *not* be an instance class Ord.

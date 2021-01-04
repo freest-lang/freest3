@@ -29,14 +29,13 @@ import           Syntax.Program                 ( noConstructors )
 import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 import qualified Syntax.Kind                   as K
-import           Utils.FreestState
-import           Utils.PreludeLoader            ( userDefined )
+import           Util.FreestState
+import           Util.PreludeLoader            ( userDefined )
 import qualified Validation.Kinding            as K
 import qualified Validation.Typing             as Typing -- Again
 
 typeCheck :: FreestState ()
 typeCheck = do
-
   vEnv <- getVEnv -- Function signatures
   eEnv <- getEEnv -- Function bodies
   -- tn   <- getTypeNames -- Type Names
