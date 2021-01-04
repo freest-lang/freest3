@@ -22,6 +22,7 @@ module Validation.Kinding
   )
 where
 
+import           Data.Functor
 import           Syntax.Base
 import           Syntax.TypeVariable
 import qualified Syntax.Type                   as T
@@ -68,7 +69,8 @@ synthetise kEnv (T.Choice  p _ m) = do
 -- Session or functional
 synthetise kEnv (T.Rec _ (K.Bind _ a k t)) = do
   checkContractive a t
-  synthetise (Map.insert a k kEnv) t
+  k' <- synthetise (Map.insert a k kEnv) t
+  checkEqualKinds (pos k) k k' a
 synthetise kEnv (T.Forall _ (K.Bind _ a k t)) =
   synthetise (Map.insert a k kEnv) t
 synthetise kEnv (T.Var p a) = case kEnv Map.!? a of
@@ -85,6 +87,16 @@ synthetise _ (T.Name p a) = getFromTEnv a >>= \case
     return $ omission p
 synthetise _ t@T.Dualof{} = internalError "Validation.Kinding.synthetise" t
 
+-- Check whether two kinds are equal or not
+checkEqualKinds
+  :: Pos -> K.Kind -> K.Kind -> TypeVar -> FreestState K.Kind
+checkEqualKinds p k' k a
+  | k <: k'  = return k'
+  | otherwise =
+      addError p [Error "Type variable", Error a,  Error "has kind", Error k',
+                  Error "\n\t expecting kind", Error k]
+    $> omission p
+    
 -- Check the contractivity of a given type; issue an error if not
 checkContractive :: TypeVar -> T.Type -> FreestState ()
 checkContractive a t = unless (contractive a t) $ addError
