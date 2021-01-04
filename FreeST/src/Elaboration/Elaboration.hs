@@ -251,8 +251,8 @@ instance Elaboration Exp where
   elaborate (BinLet p x y e1 e2) =
     BinLet p x y <$> elaborate e1 <*> elaborate e2
   elaborate (Case p e m) = Case p <$> elaborate e <*> elaborate m
-  elaborate (Conditional p e1 e2 e3) =
-    Conditional p <$> elaborate e1 <*> elaborate e2 <*> elaborate e3
+  elaborate (Cond p e1 e2 e3) =
+    Cond p <$> elaborate e1 <*> elaborate e2 <*> elaborate e3
   elaborate (TypeApp p e t  ) = TypeApp p <$> elaborate e <*> elaborate t
   elaborate (TypeAbs p b    ) = TypeAbs p <$> elaborate b
   elaborate (UnLet p x e1 e2) = UnLet p x <$> elaborate e1 <*> elaborate e2

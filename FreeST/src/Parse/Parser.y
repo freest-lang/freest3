@@ -1,23 +1,10 @@
 {
 module Parse.Parser
--- ( parseType
--- , parseTypeScheme
--- , parseDefs
--- , parseProgram
--- , parseSchemes
---)
 where
 
 
 import           Control.Monad.State
-import           Data.Char
-import           Data.List                      ( nub
-                                                , (\\)
-                                                , intercalate
-                                                , find
-                                                )
 import qualified Data.Map.Strict               as Map
-import qualified Data.Set                      as Set
 import           Parse.Lexer
 import           Parse.ParseUtils
 import           Syntax.Base
@@ -27,24 +14,20 @@ import           Syntax.Program
 import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
-import           System.Exit                    ( die )
 import           Utils.Error
 import           Utils.FreestState
 
-  }
+}
 
 %name types Type
--- %name typeScheme TypeScheme
 %name terms Prog
 %name kinds Kind
-%name expr Expr
--- %name schemes Schemes
+%name expr Exp
 %tokentype { Token }
 %error { parseError }
 -- %monad { ParseResult } { thenParseResult } { returnParseResult }
 -- %monad { FreestState }
 %monad { FreestStateT } { (>>=) } { return }
-
 
 %token
   nl       {TokenNL _}
@@ -115,7 +98,7 @@ import           Utils.FreestState
 %nonassoc '()'
 %nonassoc '[' -- used in type app e[T]
 
--- Expr
+-- Exp
 %right in else match case
 -- %left select
 %nonassoc new
@@ -132,14 +115,13 @@ import           Utils.FreestState
 %right '=>'      -- Used in forall                 
 %right '.'       -- used in rec
 %right ARROW
-%right '->' '-o' -- an Expr operator as well
-%right ';'       -- an Expr operator as well
+%right '->' '-o' -- an Exp operator as well
+%right ';'       -- an Exp operator as well
 %right POL        -- both '!' and '?'
 %right dualof
 %nonassoc ProgVarWildTBind
 
 %%
-
 -------------
 -- PROGRAM --
 -------------
@@ -159,7 +141,7 @@ Decl :: { () }
       toStateT $ addToVEnv $1 $3
     }
   -- Function declaration
-  | ProgVar ProgVarWildSeq '=' Expr {% do
+  | ProgVar ProgVarWildSeq '=' Exp {% do
       toStateT $ checkDupFunDecl $1
       toStateT $ addToPEnv $1 $2 $4        
     }
@@ -193,59 +175,59 @@ DataCon :: { (ProgVar, [T.Type]) }
 -- EXPRESSION --
 ----------------
 
-Expr :: { E.Exp }
-  : let ProgVarWild '=' Expr in Expr { E.UnLet (pos $1) $2 $4 $6 }
-  | Expr ';' Expr                    { E.App (pos $1)
+Exp :: { E.Exp }
+  : let ProgVarWild '=' Exp in Exp { E.UnLet (pos $1) $2 $4 $6 }
+  | Exp ';' Exp                    { E.App (pos $1)
                                          (E.Abs (pos $1) 
                                            (E.Bind (pos $1) Un (mkVar (pos $1) "_")
                                              (T.Unit (pos $3))
                                            $3))
                                        $1}
-  | let '(' ProgVarWild ',' ProgVarWild ')' '=' Expr in Expr
-                                     { E.BinLet (pos $1) $3 $5 $8 $10 }
-  | if Expr then Expr else Expr      { E.Conditional (pos $1) $2 $4 $6 }
-  | new Type                         { E.New (pos $1) $2 (T.Dualof (negPos (pos $2)) $2) }
-  | match Expr with '{' MatchMap '}' { E.Match (pos $1) $2 $5 }
-  | case Expr of '{' CaseMap '}'     { E.Case (pos $1) $2 $5 }
-  | Expr '$' Expr                    { E.App (pos $2) $1 $3 }
-  | Expr '&' Expr                    { E.App (pos $2) $3 $1 }
-  | Expr '||' Expr                   { binOp $1 (mkVar (pos $2) "(||)") $3 }
-  | Expr '&&' Expr                   { binOp $1 (mkVar (pos $2) "(&&)") $3 }
-  | Expr CMP Expr                    { binOp $1 (mkVar (pos $2) (getText $2)) $3 }
-  | Expr '+' Expr                    { binOp $1 (mkVar (pos $2) "(+)") $3 }
-  | Expr '-' Expr                    { binOp $1 (mkVar (pos $2) "(-)") $3 }
-  | Expr '*' Expr                    { binOp $1 (mkVar (pos $2) "(*)") $3 }
-  | Expr '/' Expr                    { binOp $1 (mkVar (pos $2) "div") $3 }
-  | '-' App %prec NEG                { unOp (mkVar (pos $1) "negate") $2}  
-  | App                              { $1 }
+  | let '(' ProgVarWild ',' ProgVarWild ')' '=' Exp in Exp
+                                   { E.BinLet (pos $1) $3 $5 $8 $10 }
+  | if Exp then Exp else Exp       { E.Cond (pos $1) $2 $4 $6 }
+  | new Type                       { E.New (pos $1) $2 (T.Dualof (negPos (pos $2)) $2) }
+  | match Exp with '{' MatchMap '}'{ E.Match (pos $1) $2 $5 }
+  | case Exp of '{' CaseMap '}'    { E.Case (pos $1) $2 $5 }
+  | Exp '$' Exp                    { E.App (pos $2) $1 $3 }
+  | Exp '&' Exp                    { E.App (pos $2) $3 $1 }
+  | Exp '||' Exp                   { binOp $1 (mkVar (pos $2) "(||)") $3 }
+  | Exp '&&' Exp                   { binOp $1 (mkVar (pos $2) "(&&)") $3 }
+  | Exp CMP Exp                    { binOp $1 (mkVar (pos $2) (getText $2)) $3 }
+  | Exp '+' Exp                    { binOp $1 (mkVar (pos $2) "(+)") $3 }
+  | Exp '-' Exp                    { binOp $1 (mkVar (pos $2) "(-)") $3 }
+  | Exp '*' Exp                    { binOp $1 (mkVar (pos $2) "(*)") $3 }
+  | Exp '/' Exp                    { binOp $1 (mkVar (pos $2) "div") $3 }
+  | '-' App %prec NEG              { unOp (mkVar (pos $1) "negate") $2}  
+  | App                            { $1 }
 
 App :: { E.Exp }
-  : App Primary                      { E.App (pos $1) $1 $2 }
-  | select ArbitraryProgVar          { E.Select (pos $1) $2 }
-  | Primary                          { $1 }
+  : App Primary                    { E.App (pos $1) $1 $2 }
+  | select ArbitraryProgVar        { E.Select (pos $1) $2 }
+  | Primary                        { $1 }
 
 Primary :: { E.Exp }
-  : INT                              { let (TokenInt p x) = $1 in E.Int p x }
-  | BOOL                             { let (TokenBool p x) = $1 in E.Bool p x }
-  | CHAR                             { let (TokenChar p x) = $1 in E.Char p x }
-  | '()'                             { E.Unit (pos $1) }
-  | TApp ']'                         { $1 }
+  : INT                            { let (TokenInt p x) = $1 in E.Int p x }
+  | BOOL                           { let (TokenBool p x) = $1 in E.Bool p x }
+  | CHAR                           { let (TokenChar p x) = $1 in E.Char p x }
+  | '()'                           { E.Unit (pos $1) }
+  | TApp ']'                       { $1 }
   -- | Primary '[' Type ']'             { E.TypeApp (pos $1) $1 $3 }
-  | ArbitraryProgVar                 { E.Var (pos $1) $1 }
+  | ArbitraryProgVar               { E.Var (pos $1) $1 }
   | lambda ProgVarWildTBind Abs
       { let ((p,m),e) = $3 in E.Abs p (E.Bind p m (fst $2) (snd $2) e) }
   | Lambda KindBind TAbs
       { let (a,k) = $2 in E.TypeAbs (pos a) (K.Bind (pos k) a k $3) }    
-  | '(' Expr ',' Tuple ')'           { E.Pair (pos $1) $2 $4 }
-  | '(' Expr ')'                     { $2 }
+  | '(' Exp ',' Tuple ')'          { E.Pair (pos $1) $2 $4 }
+  | '(' Exp ')'                    { $2 }
 
 Abs :: { ((Pos, Multiplicity), E.Exp) }
-  : Arrow Expr { ($1, $2) }
+  : Arrow Exp { ($1, $2) }
   | ProgVarWildTBind Abs
       { let ((p,m),e) = $2 in ((p, m), E.Abs p (E.Bind p m (fst $1) (snd $1) e)) }
 
 TAbs :: { E.Exp }
-  : '=>' Expr { $2 }
+  : '=>' Exp { $2 }
   | KindBind TAbs
       { let (a,k) = $1 in E.TypeAbs (pos a) (K.Bind (pos k) a k $2) }
 
@@ -254,22 +236,22 @@ TApp :: { E.Exp }
   | TApp Type    { E.TypeApp (pos $1) $1 $2 }
 
 Tuple :: { E.Exp }
-  : Expr           { $1 }
-  | Expr ',' Tuple { E.Pair (pos $1) $1 $3 }
+  : Exp           { $1 }
+  | Exp ',' Tuple { E.Pair (pos $1) $1 $3 }
 
 MatchMap :: { FieldMap }
   : Match              { uncurry Map.singleton $1 }
   | Match ',' MatchMap {% toStateT $ checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
 
 Match :: { (ProgVar, ([ProgVar], E.Exp)) }
-  : ArbitraryProgVar ProgVarWild '->' Expr { ($1, ([$2], $4)) }
+  : ArbitraryProgVar ProgVarWild '->' Exp { ($1, ([$2], $4)) }
 
 CaseMap :: { FieldMap }
   : Case             { uncurry Map.singleton $1 }
   | Case ',' CaseMap {% toStateT $ checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
 
 Case :: { (ProgVar, ([ProgVar], E.Exp)) }
-  : Constructor ProgVarWildSeq '->' Expr { ($1, ($2, $4)) }
+  : Constructor ProgVarWildSeq '->' Exp { ($1, ($2, $4)) }
 
 ----------
 -- TYPE --
@@ -308,13 +290,13 @@ TupleType :: { T.Type }
   : Type               { $1 }
   | Type ',' TupleType { T.Pair (pos $1) $1 $3 }
 
-Polarity :: { (Pos, T.Polarity) }
-  : '?' { (pos $1, T.In) }
-  | '!' { (pos $1, T.Out) }
-
 Arrow :: { (Pos, Multiplicity) }
   : '->' { (pos $1, Un) }
   | '-o' { (pos $1, Lin) }
+
+Polarity :: { (Pos, T.Polarity) }
+  : '!' { (pos $1, T.Out) }
+  | '?' { (pos $1, T.In) }
 
 ChoiceView :: { (Pos, T.Polarity) }
   : '+' { (pos $1, T.Out) }
@@ -334,7 +316,9 @@ TypeSeq :: { [T.Type] }
   :              { [] }
   | Type TypeSeq { $1 : $2 }
 
--- KIND
+----------
+-- KIND --
+----------
 
 Kind :: { K.Kind }
   : SU { K.su (pos $1) }

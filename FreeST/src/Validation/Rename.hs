@@ -153,8 +153,8 @@ instance Rename E.Exp where
   --   return $ E.TypeAbs p (K.Bind p' a' k) e'
   rename bs (E.TypeApp p e t) = liftM2 (E.TypeApp p) (rename bs e) (rename bs t)
   -- Boolean elim
-  rename bs (E.Conditional p e1 e2 e3) =
-    liftM3 (E.Conditional p) (rename bs e1) (rename bs e2) (rename bs e3)
+  rename bs (E.Cond p e1 e2 e3) =
+    liftM3 (E.Cond p) (rename bs e1) (rename bs e2) (rename bs e3)
   -- Let
   rename bs (E.UnLet p x e1 e2) = do
     x'  <- rename bs x
