@@ -27,10 +27,10 @@ import           Syntax.TypeVariable
 import qualified Validation.Substitution       as Substitution
                                                 ( subsAll )
 import           Equivalence.Normalisation      ( normalise )
-import           Utils.FreestState              ( tMapM
+import           Util.FreestState              ( tMapM
                                                 , tMapM_
                                                 )
-import           Utils.Error                    ( internalError )
+import           Util.Error                    ( internalError )
 import           Control.Monad.State
 import qualified Data.Map.Strict               as Map
 import qualified Data.Set                      as Set

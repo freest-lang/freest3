@@ -1,4 +1,4 @@
-module Utils.ShowDefault
+module Util.ShowDefault
   ( ShowWithDefault(..)
   )
 where

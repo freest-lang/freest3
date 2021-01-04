@@ -37,9 +37,9 @@ import qualified Validation.Substitution       as Subs
                                                 ( subs
                                                 , unfold
                                                 )
-import           Utils.Error                    ( internalError )
-import           Utils.FreestState
-import           Utils.PreludeLoader            ( userDefined )
+import           Util.Error                    ( internalError )
+import           Util.FreestState
+import           Util.PreludeLoader            ( userDefined )
 import qualified Data.Map.Strict               as Map
 import           Control.Monad                  ( liftM
                                                 , liftM2

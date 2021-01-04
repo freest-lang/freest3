@@ -8,7 +8,7 @@ import           Equivalence.Equivalence
 import           Validation.Rename
 import           Validation.Kinding             ( synthetise )
 import           SpecHelper
-import           Utils.FreestState              ( initialState
+import           Util.FreestState              ( initialState
                                                 , errors
                                                 )
 import           Control.Monad.State            ( execState )

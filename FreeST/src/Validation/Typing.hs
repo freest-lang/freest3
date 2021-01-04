@@ -33,8 +33,8 @@ import qualified Syntax.Kind                   as K
 import           Syntax.Program
 import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
-import           Utils.FreestState
-import           Utils.PreludeLoader            ( userDefined ) -- debug
+import           Util.FreestState
+import           Util.PreludeLoader            ( userDefined ) -- debug
 import qualified Validation.Extract            as Extract
 import qualified Validation.Kinding            as K -- Again?
 import qualified Validation.Rename             as Rename

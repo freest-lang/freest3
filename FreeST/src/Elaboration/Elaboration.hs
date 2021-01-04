@@ -14,9 +14,9 @@ import qualified Syntax.Kind                   as K
 import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
-import           Utils.Error                    ( internalError )
-import           Utils.FreestState
-import           Utils.PreludeLoader            ( userDefined )
+import           Util.Error                    ( internalError )
+import           Util.FreestState
+import           Util.PreludeLoader            ( userDefined )
 import           Validation.Duality             ( dual )
 import           Validation.Kinding             ( synthetise )
 import           Validation.Rename              ( isFreeIn )

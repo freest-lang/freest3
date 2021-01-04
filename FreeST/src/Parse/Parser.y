@@ -14,8 +14,8 @@ import           Syntax.Program
 import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
-import           Utils.Error
-import           Utils.FreestState
+import           Util.Error
+import           Util.FreestState
 
 }
 

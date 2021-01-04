@@ -9,7 +9,7 @@ import qualified Data.Map.Strict               as Map
 import           Elaboration.Elaboration
 import           SpecHelper
 import           Syntax.Kind                    ( Kind )
-import           Utils.FreestState              ( initialState
+import           Util.FreestState              ( initialState
                                                 , errors
                                                 )
 import           Validation.Kinding             ( synthetise )

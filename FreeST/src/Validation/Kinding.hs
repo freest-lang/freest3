@@ -28,8 +28,8 @@ import qualified Syntax.Type                   as T
 import qualified Syntax.Kind                   as K
 import           Validation.Contractive
 import           Validation.Subkind             ( (<:), join )
-import           Utils.FreestState
-import           Utils.Error                    ( internalError )
+import           Util.FreestState
+import           Util.Error                    ( internalError )
 import           Control.Monad                  ( unless )
 import qualified Control.Monad.State           as S
 import qualified Data.Map.Strict               as Map

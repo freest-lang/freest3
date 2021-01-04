@@ -9,7 +9,7 @@ Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc
 This module introduces the signatures for the functions in the prelude
 -}
 
-module Utils.PreludeLoader
+module Util.PreludeLoader
   ( prelude
   , isBuiltin
   , userDefined

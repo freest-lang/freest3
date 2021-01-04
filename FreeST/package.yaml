@@ -49,9 +49,9 @@ library:
     - Parse.ParseUtils
     - Parse.Read
     - Parse.Unparser
-    - Utils.Error
-    - Utils.FreestState
-    - Utils.PreludeLoader
+    - Util.Error
+    - Util.FreestState
+    - Util.PreludeLoader
     - Parse.Lexer 
     - Parse.Parser
     - Validation.Subkind

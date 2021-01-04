@@ -35,7 +35,7 @@ import qualified Syntax.Kind                   as K
 import qualified Syntax.Type                   as T
 import qualified Syntax.Expression             as E
 import           Equivalence.Normalisation      ( normalise )
-import           Utils.FreestState
+import           Util.FreestState
 import qualified Data.Map.Strict               as Map
 
 function :: E.Exp -> T.Type -> FreestState (T.Type, T.Type)

@@ -8,8 +8,8 @@ import qualified Data.Map.Strict               as Map
 import           Elaboration.Elaboration        
 import           SpecHelper
 import           Syntax.Expression
-import           Utils.FreestState
-import           Utils.PreludeLoader            ( prelude )
+import           Util.FreestState
+import           Util.PreludeLoader            ( prelude )
 import           Validation.Typing              ( checkAgainst )
 
 spec :: Spec

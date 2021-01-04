@@ -8,7 +8,7 @@ import qualified Data.Map.Strict               as Map
                                                 ( empty )
 import           Elaboration.Elaboration
 import           SpecHelper
-import           Utils.FreestState              ( initialState
+import           Util.FreestState              ( initialState
                                                 , errors
                                                 )
 import           Validation.Kinding             ( synthetise )

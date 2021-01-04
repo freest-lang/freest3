@@ -13,7 +13,7 @@ import           Validation.Kinding
 import           Equivalence.Normalisation
 import           Equivalence.Equivalence
 import           Bisimulation.Bisimulation
-import           Utils.FreestState
+import           Util.FreestState
 import           Control.Monad.State
 import           ArbitraryTypes
 import qualified Data.Map.Strict               as Map

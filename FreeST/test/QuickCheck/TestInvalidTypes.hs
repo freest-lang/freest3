@@ -8,7 +8,7 @@ import           Validation.Kinding
 import           Syntax.Type
 import           Syntax.Kind              as K
 import           Syntax.Base
-import           Utils.FreestState
+import           Util.FreestState
 import           Control.Monad.State
 import qualified Data.Map.Strict          as Map
 import           Test.QuickCheck

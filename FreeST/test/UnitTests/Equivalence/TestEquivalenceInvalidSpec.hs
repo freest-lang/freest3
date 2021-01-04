@@ -6,8 +6,7 @@ where
 import           Equivalence.Equivalence        ( equivalent )
 import           Validation.Rename
 import           Syntax.Type
-import           Syntax.Base
-import           Utils.FreestState
+import           Util.FreestState
 import           SpecHelper
 import qualified Data.Map.Strict               as Map
 import           Control.Monad.State

@@ -1,5 +1,5 @@
 {-|
-Module      :  Utils.Error
+Module      :  Util.Error
 Description :  This module provides tools to prettify & format errors
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
@@ -11,7 +11,7 @@ Portability :  portable | non-portable (<reason>)
 This module provides tools to prettify & format errors with ANSI colors for terminals
 -}
 
-module Utils.Error
+module Util.Error
   ( formatErrorMessages
   , internalError
   )
@@ -23,7 +23,7 @@ import           Syntax.Base                    ( Pos
                                                 , defaultPos
                                                 )
 import           Syntax.Program                 ( TypeOpsEnv )
-import           Utils.ErrorMessage
+import           Util.ErrorMessage
 
 -- | Format errors
 formatErrorMessages :: TypeOpsEnv -> Pos -> String -> [ErrorMessage] -> String
