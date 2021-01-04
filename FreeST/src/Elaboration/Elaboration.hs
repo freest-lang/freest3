@@ -87,7 +87,8 @@ solveEquations =
     --   fmap (T.Abs p b) (solveEq v f t)
   -- solveEq v f (T.App p t1 t2) =
     --   liftM2 (T.App p) (solveEq v f t1) (solveEq v f t2)
-  solveEq _ _ t@T.Dualof{} = pure t
+  solveEq v f (T.Dualof p t) =
+    T.Dualof p <$> solveEq v f t
   solveEq _ _ p            = pure p
 
 -- | Resolving the dualof operator
