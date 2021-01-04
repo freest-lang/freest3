@@ -46,9 +46,6 @@ instance Subsort K.Basic where
 instance Subsort K.Kind where
   (K.Kind _ b1 m1) <: (K.Kind _ b2 m2) = b1 <: b2 && m1 <: m2
 
-instance Eq K.Kind where
-  k1 == k2 = k1 <: k2 && k2 <: k1
-  
 -- The least upper bound of two kinds
 
 class Join t where
