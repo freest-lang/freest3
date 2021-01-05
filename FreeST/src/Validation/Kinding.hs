@@ -71,9 +71,8 @@ synthetise kEnv (T.Choice p _ m) = do
 -- Session or functional
 synthetise kEnv (T.Rec _ (K.Bind _ a k t)) = do
   checkContractive a t
-  k' <- synthetise (Map.insert a k kEnv) t
-  checkSubkind t k' a k 
-  return k'
+  checkAgainst (Map.insert a k kEnv) k t
+  return k
 synthetise kEnv (T.Forall _ (K.Bind _ a k t)) =
   synthetise (Map.insert a k kEnv) t
 synthetise kEnv (T.Var p a) = case kEnv Map.!? a of
@@ -90,22 +89,6 @@ synthetise _ (T.Name p a) = getFromTEnv a >>= \case
     return $ omission p
 synthetise _ t@T.Dualof{} = internalError "Validation.Kinding.synthetise" t
 
--- Check whether two kinds are equal or not
-checkSubkind :: T.Type -> K.Kind -> TypeVar -> K.Kind -> FreestState ()
-checkSubkind t k a k' = unless (k <: k') $ addError (pos t)
-  [ Error "Expecting the kind of the recursion variable"
-  , Error a
-  , Error "to be a subkind of the kind for type"
-  , Error t
-  , Error "\n\t"
-  , Error a
-  , Error "is of kind"
-  , Error k'
-  , Error "\n\t"
-  , Error t
-  , Error "is of kind"
-  , Error k
-  ]
 
 -- Check the contractivity of a given type; issue an error if not
 checkContractive :: TypeVar -> T.Type -> FreestState ()
