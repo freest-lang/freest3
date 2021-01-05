@@ -95,7 +95,7 @@ checkSubkind :: T.Type -> K.Kind -> TypeVar -> K.Kind -> FreestState ()
 checkSubkind t k a k' = unless (k <: k') $ addError (pos t)
   [ Error "Expecting the kind of the recursion variable"
   , Error a
-  , Error "to be a subkind of the kind for"
+  , Error "to be a subkind of the kind for type"
   , Error t
   , Error "\n\t"
   , Error a
