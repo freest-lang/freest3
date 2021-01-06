@@ -100,3 +100,6 @@ rec a . ?(Int; a)
 -- [ A: Char, B: Int, B: Int, A: Bool ]
 -- []
 
+-- The kind of the recursion variable is a sub-kind of the one of rec body
+-- expecting the other way around.
+rec a:MU . !a
