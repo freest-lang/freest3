@@ -1,4 +1,4 @@
-module SpecHelper
+module SpecUtils
   ( module Test.Hspec
   , module Syntax.Type
   , module Parse.Parser
@@ -21,7 +21,6 @@ import           Syntax.Kind                   ( KindEnv )
 import           Syntax.Base                    ( defaultPos
                                                 , mkVar
                                                 )
-
 import Debug.Trace
 
 readFromFile :: FilePath -> IO [String]
@@ -32,10 +31,10 @@ readFromFile filename = do
     $ filter (not . null)
     $ map (dropWhile isSpace)
     $ lines str
-
-isComment ('-' : '-' : _) = True
-isComment _               = False
+  where
+    isComment ('-' : '-' : _) = True
+    isComment _               = False
 
 readKenv :: String -> KindEnv
 readKenv s =
-  Map.fromList $ map (\(x, k) -> trace (x ++ "\t" ++ k) $ (mkVar defaultPos x, read k)) (read s)
+  Map.fromList $ map (\(x, k) -> {-trace (x ++ "\t" ++ k) $-} (mkVar defaultPos x, read k)) (read s)

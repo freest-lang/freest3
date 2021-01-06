@@ -1,4 +1,4 @@
-module TestEquivalenceSpecMain where
+module Main.TestEquivalenceSpecMain where
 
 import           Test.Hspec
 import qualified Equivalence.TestEquivalenceValidSpec as Equiv

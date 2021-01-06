@@ -7,7 +7,7 @@ import           Equivalence.Equivalence        ( equivalent )
 import           Validation.Rename
 import           Syntax.Type
 import           Util.FreestState
-import           SpecHelper
+import           SpecUtils
 import qualified Data.Map.Strict               as Map
 import           Control.Monad.State
 

@@ -6,7 +6,7 @@ where
 import           Control.Monad.State
 import qualified Data.Map.Strict               as Map
 import           Elaboration.Elaboration        
-import           SpecHelper
+import           SpecUtils
 import           Syntax.Expression
 import           Util.FreestState
 import           Util.PreludeLoader            ( prelude )

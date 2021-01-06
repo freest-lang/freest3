@@ -1,4 +1,4 @@
-module TestTypesSpecMain where
+module Main.TestTypesSpecMain where
 
 import           Test.Hspec
 import qualified Validation.TestTypesValidSpec as Types

@@ -7,7 +7,7 @@ import           Control.Monad.State            ( execState )
 import qualified Data.Map.Strict               as Map
                                                 ( empty )
 import           Elaboration.Elaboration
-import           SpecHelper
+import           SpecUtils
 import           Util.FreestState              ( initialState
                                                 , errors
                                                 )

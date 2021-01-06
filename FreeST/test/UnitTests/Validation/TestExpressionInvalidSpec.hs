@@ -6,7 +6,7 @@ where
 import           Control.Monad.State
 import qualified Data.Map.Strict               as Map
 import           Elaboration.Elaboration -- ( elaborate )
-import           SpecHelper
+import           SpecUtils
 import           Syntax.Expression
 import           Util.FreestState
 import           Validation.Typing              ( synthetise )

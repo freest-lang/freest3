@@ -2,7 +2,7 @@ module Equivalence.TestBisimInvalidSpec (spec) where
 
 import           Bisimulation.Bisimulation (bisimilar)
 import           Validation.Rename
-import           SpecHelper
+import           SpecUtils
 
 -- Note that the tests cases should be kinded!
 

@@ -1,4 +1,4 @@
-module TestBisimSpecMain where
+module Main.TestBisimSpecMain where
 
 import           Test.Hspec
 import qualified Equivalence.TestBisimValidSpec as BisimValid

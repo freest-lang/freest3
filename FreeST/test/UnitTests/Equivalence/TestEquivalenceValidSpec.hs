@@ -7,7 +7,7 @@ import           Syntax.Kind                   as K
 import           Equivalence.Equivalence
 import           Validation.Rename
 import           Validation.Kinding             ( synthetise )
-import           SpecHelper
+import           SpecUtils
 import           Util.FreestState              ( initialState
                                                 , errors
                                                 )
