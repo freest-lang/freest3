@@ -24,6 +24,7 @@ module Syntax.Kind
   , isLin
   , isUn
   , isSession
+  , body
   )
 where
 
@@ -75,6 +76,9 @@ instance Position (Bind a) where
 
 instance Default a => Default (Bind a) where
   omission p = Bind p (omission p) (omission p) (omission p)
+
+body :: Bind a -> a
+body (Bind _ _ _ a) = a
 
 -- Kind environment
 
