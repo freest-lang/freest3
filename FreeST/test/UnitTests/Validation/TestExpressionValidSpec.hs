@@ -25,9 +25,7 @@ matchValidExpressionSpec [e, t] =
 isExpr :: Exp -> Type -> Bool
 isExpr e t = null (errors s)
  where
-  s    = execState test is
-  is   = (initialState "Check Against Expression") { varEnv = prelude }
-  test = join $ liftM2 (checkAgainst Map.empty)
-                       (elaborate e)
-                       (elaborate t)
+  s    = execState test
+         (initialState "Check Against Expression") { varEnv = prelude }
+  test = join $ checkAgainst Map.empty <$> elaborate e <*> elaborate t
 

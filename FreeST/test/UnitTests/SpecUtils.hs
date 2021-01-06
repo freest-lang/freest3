@@ -21,7 +21,7 @@ import           Syntax.Kind                   ( KindEnv )
 import           Syntax.Base                    ( defaultPos
                                                 , mkVar
                                                 )
-import Debug.Trace
+-- import Debug.Trace
 
 readFromFile :: FilePath -> IO [String]
 readFromFile filename = do
