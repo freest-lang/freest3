@@ -20,10 +20,10 @@ spec = describe "Valid expressions" $ do
 
 matchValidExpressionSpec :: [String] -> Spec
 matchValidExpressionSpec [e, t] =
-  it (e ++ " : " ++ t) $ isExpr (read e) (read t) `shouldBe` True
+  it (e ++ " : " ++ t) $ isExpr (read e) (read t) `shouldBe` Left True
 
-isExpr :: Exp -> Type -> Bool
-isExpr e t = null (errors s)
+isExpr :: Exp -> Type -> TestExpectation
+isExpr e t = testValidExpectation True (errors s) -- null (errors s)
  where
   s    = execState test
          (initialState "Check Against Expression") { varEnv = prelude }

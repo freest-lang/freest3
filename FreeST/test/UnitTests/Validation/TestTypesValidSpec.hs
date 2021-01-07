@@ -22,19 +22,13 @@ spec = describe "Valid type tests" $ do
   mapM_ matchValidKindingSpec (chunksOf 2 t)
 
 matchValidKindingSpec :: [String] -> Spec
-matchValidKindingSpec [t, k] = it t $ hasKind (read t) (read k) `shouldBe` True
+matchValidKindingSpec [t, k] = it t $ hasKind (read t) (read k) `shouldBe` Left True
 
-hasKind :: Type -> Kind -> Bool
-hasKind t k = null (errors s) && k' <: k
+hasKind :: Type -> Kind -> TestExpectation
+hasKind t k = testValidExpectation (k' <: k) (errors s) -- null (errors s) && k' <: k
  where
---  t'      = renameType t
   (k', s) = runState test (initialState "Kind synthesis")
-
   test    = synthetise Map.empty . renameType =<< elaborate t
-  -- test = do
-  --   t' <- subsType Map.empty Nothing t
-  --   synthetise Map.empty (renameType t')
-
-
+  
 main :: IO ()
 main = hspec spec

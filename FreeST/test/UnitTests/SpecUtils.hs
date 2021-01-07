@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 module SpecUtils
   ( module Test.Hspec
   , module Syntax.Type
@@ -7,6 +8,8 @@ module SpecUtils
   , module Data.Char
   , readFromFile
   , readKenv
+  , TestExpectation
+  , testValidExpectation
   )
 where
 
@@ -15,13 +18,15 @@ import           Syntax.Type
 import           Data.Char
 import           Parse.Parser
 import Parse.Read
+import           Data.List                      ( intercalate )
 import           Data.List.Split                ( chunksOf )
 import qualified Data.Map.Strict               as Map
 import           Syntax.Kind                   ( KindEnv )
 import           Syntax.Base                    ( defaultPos
                                                 , mkVar
                                                 )
--- import Debug.Trace
+import           Util.FreestState              ( Errors )
+import Debug.Trace
 
 readFromFile :: FilePath -> IO [String]
 readFromFile filename = do
@@ -38,3 +43,40 @@ readFromFile filename = do
 readKenv :: String -> KindEnv
 readKenv s =
   Map.fromList $ map (\(x, k) -> {-trace (x ++ "\t" ++ k) $-} (mkVar defaultPos x, read k)) (read s)
+
+
+
+-- Test expectations 
+
+-- WAS: type Expect = Either Bool String
+-- type Expect = Maybe Errors
+
+-- instance {-# OVERLAPPING #-} Show Expect where
+--   show Nothing = "True" -- Expect valid
+--   show (Just err) = showErrors err
+
+-- showErrors :: [String] -> String
+-- showErrors = intercalate "\n" . take 2
+
+-- testValidExpectation :: Errors -> Expect
+-- testValidExpectation errs
+--   | not $ null errs = Just errs
+--   | otherwise       = Nothing
+
+-- expect :: Expect
+-- expect = Nothing
+
+
+type TestExpectation = Either Bool String
+
+instance {-# OVERLAPPING #-} Show TestExpectation where
+  show (Left b)    = show b
+  show (Right err) = err
+
+showErrors :: [String] -> String
+showErrors = intercalate "\n" . take 2
+
+testValidExpectation :: Bool -> Errors -> TestExpectation
+testValidExpectation b errs
+  | not $ null errs = Right $ showErrors errs
+  | otherwise       = Left b
