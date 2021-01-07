@@ -29,6 +29,14 @@ invalid-types:
 types:
 	stack test :units --ta "-m TestTypes"
 
+# Expressions
+valid-exps:
+	stack test :units --ta "-m TestExpressionValid"
+invalid-exps:
+	stack test :units --ta "-m TestExpressionInvalid"
+exps:
+	stack test :units --ta "-m TestExpression"
+
 #clean : rm `find ./ -name '*.o' -o -name '*.hi' -o -name '*.tix'` -r
 
 #cleanCompiled : find ./test/Programs/ValidTests/ -type f  ! -name "*.*" -delete
