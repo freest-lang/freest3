@@ -154,7 +154,6 @@ instance Unparse T.Type where
   unparse (T.Unit _       ) = (maxRator, "()")
   unparse (T.Skip _       ) = (maxRator, "Skip")
   unparse (T.Var  _ a     ) = (maxRator, show a)
-  unparse (T.Name _ x     ) = (maxRator, show x)
   unparse (T.Message _ p t) = (msgRator, show p ++ m)
     where m = bracket (unparse t) Right msgRator
   unparse (T.Fun _ m t u) = (arrowRator, l ++ showArrow m ++ r)

@@ -81,12 +81,6 @@ synthetise kEnv (T.Var p a) = case kEnv Map.!? a of
     addError p [Error "Type variable not in scope:", Error a]
     return $ omission p
 -- Type operators
-synthetise _ (T.Name p a) = getFromTEnv a >>= \case
-  Just (k, _) -> return k
-  Nothing     -> do
-    addError p [Error "Type name not in scope:", Error a]
-    addToTEnv a (omission p) (omission p)
-    return $ omission p
 synthetise _ t@T.Dualof{} = internalError "Validation.Kinding.synthetise" t
 
 

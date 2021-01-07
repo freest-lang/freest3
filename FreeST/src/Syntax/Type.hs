@@ -46,8 +46,6 @@ data Type =
   -- | Abs Pos (Bind Type)       -- λ a:k => T, Operator abstraction
   -- | App Pos Type Type
   | Dualof Pos Type
-  -- Named Type, to be looked upon in a map of type names to types, tEnv
-  | Name Pos TypeVar
 
 type TypeMap = Map.Map ProgVar Type
 
@@ -69,7 +67,6 @@ instance Position Type where
   -- pos (Abs p _      ) = p
   -- pos (App p _ _    ) = p
   pos (Dualof p _   ) = p
-  pos (Name p _     ) = p
 
 instance Default Type where
   omission = Int
