@@ -17,7 +17,6 @@ import           Syntax.TypeVariable
 import           Util.Error                    ( internalError )
 import           Util.FreestState
 import           Util.PreludeLoader            ( userDefined )
-import           Validation.Duality             ( dual )
 import           Validation.Kinding             ( synthetise )
 import           Validation.Rename              ( isFreeIn )
 
@@ -96,68 +95,68 @@ solveEquations =
 resolveDualof :: FreestState ()
 resolveDualof =
   getTEnv >>= tMapM (\(k, t) -> (,) k <$> solveType Set.empty t) >>= setTEnv
- where
-  solveType :: Visited -> T.Type -> FreestState T.Type
-  -- Functional Types
-  solveType v (T.Fun p pol t u) =
-    T.Fun p pol <$> solveType v t <*> solveType v u
-  solveType v (T.Pair p t u) =
-    T.Pair p <$> solveType v t <*> solveType v u
-  solveType v (T.Datatype p m) = T.Datatype p <$> tMapM (solveType v) m
-  -- Session Types
-  solveType v (T.Semi p t u) = T.Semi p <$> solveType v t <*> solveType v u
-  solveType v (T.Message p pol t ) = T.Message p pol <$> solveType v t
-  solveType v (T.Choice p pol m) = T.Choice p pol <$> tMapM (solveType v) m
-  -- Polymorphism and recursive types
-  solveType v (T.Forall p (K.Bind p' a k t)) =
-    T.Forall p . K.Bind p' a k <$> solveType v t
-  solveType v (T.Rec p b) = T.Rec p <$> solveBindT v b
-  solveType _ t@T.Var{} = pure t
-  -- Dualof
-  solveType v d@(T.Dualof p t) = addTypeName p d >> solveDual v t
-  -- Int, Char, Bool, Unit, Skip
-  solveType _ p = pure p
 
-  solveDual :: Visited -> T.Type -> FreestState T.Type
-  -- Session Types
-  solveDual _ t@T.Skip{} = pure t
-  solveDual v (T.Semi p t u) = T.Semi p <$> solveDual v t <*> solveDual v u
-  solveDual v (T.Message p pol t) = T.Message p (dualPol pol) <$> solveType v t
-  solveDual v (T.Choice p pol m) =
-    T.Choice p (dualPol pol) <$> tMapM (solveDual v) m
-  -- Recursive types
-  solveDual v (T.Rec p b) = T.Rec p <$> solveBindD v b
-  solveDual v t@(T.Var p a)
-    | a `Set.member` v = pure t -- A recursion variable
-    | otherwise = 
-        addError p
-        [Error "Cannot compute the dual of a non-recursion variable:"
-        , Error t] $> t
-    -- | otherwise = getFromTEnv a >>= \case
-    --   Just (_, u) -> solveDual v u
-    --   Nothing -> -- A polymorphic variable
-    --     addError p
-    --     [Error "Cannot compute the dual of a non-recursion variable:"
-    --     , Error a] $> t
-  -- Dualof
-  solveDual v d@(T.Dualof p t) = addTypeName p d >> solveType v t
-  -- Non session-types
-  solveDual _ t =
-        addError (pos t)
-        [Error "Dualof applied to a non session type: "
-        , Error t] $> t
+solveType :: Visited -> T.Type -> FreestState T.Type
+-- Functional Types
+solveType v (T.Fun p pol t u) =
+  T.Fun p pol <$> solveType v t <*> solveType v u
+solveType v (T.Pair p t u) =
+  T.Pair p <$> solveType v t <*> solveType v u
+solveType v (T.Datatype p m) = T.Datatype p <$> tMapM (solveType v) m
+-- Session Types
+solveType v (T.Semi p t u) = T.Semi p <$> solveType v t <*> solveType v u
+solveType v (T.Message p pol t ) = T.Message p pol <$> solveType v t
+solveType v (T.Choice p pol m) = T.Choice p pol <$> tMapM (solveType v) m
+-- Polymorphism and recursive types
+solveType v (T.Forall p (K.Bind p' a k t)) =
+  T.Forall p . K.Bind p' a k <$> solveType v t
+solveType v (T.Rec p b) = T.Rec p <$> solveBindT v b
+solveType _ t@T.Var{} = pure t
+-- Dualof
+solveType v d@(T.Dualof p t) = addTypeName p d >> solveDual v t
+-- Int, Char, Bool, Unit, Skip
+solveType _ p = pure p
+
+solveDual :: Visited -> T.Type -> FreestState T.Type
+-- Session Types
+solveDual _ t@T.Skip{} = pure t
+solveDual v (T.Semi p t u) = T.Semi p <$> solveDual v t <*> solveDual v u
+solveDual v (T.Message p pol t) = T.Message p (dualPol pol) <$> solveType v t
+solveDual v (T.Choice p pol m) =
+  T.Choice p (dualPol pol) <$> tMapM (solveDual v) m
+-- Recursive types
+solveDual v (T.Rec p b) = T.Rec p <$> solveBindD v b
+solveDual v t@(T.Var p a)
+  | a `Set.member` v = pure t -- A recursion variable
+  | otherwise = 
+      addError p
+      [Error "Cannot compute the dual of a non-recursion variable:"
+      , Error t] $> t
+  -- | otherwise = getFromTEnv a >>= \case
+  --   Just (_, u) -> solveDual v u
+  --   Nothing -> -- A polymorphic variable
+  --     addError p
+  --     [Error "Cannot compute the dual of a non-recursion variable:"
+  --     , Error a] $> t
+-- Dualof
+solveDual v d@(T.Dualof p t) = addTypeName p d >> solveType v t
+-- Non session-types
+solveDual _ t =
+      addError (pos t)
+      [Error "Dualof applied to a non session type: "
+      , Error t] $> t
   
-  solveBindT :: Visited -> K.Bind T.Type -> FreestState (K.Bind T.Type)
-  solveBindT v (K.Bind p a k t) =
-    K.Bind p a k <$> solveType (Set.insert a v) t
+solveBindT :: Visited -> K.Bind T.Type -> FreestState (K.Bind T.Type)
+solveBindT v (K.Bind p a k t) =
+  K.Bind p a k <$> solveType (Set.insert a v) t
 
-  solveBindD :: Visited -> K.Bind T.Type -> FreestState (K.Bind T.Type)
-  solveBindD v (K.Bind p a k t) =
-    K.Bind p a k <$> solveDual (Set.insert a v) t
+solveBindD :: Visited -> K.Bind T.Type -> FreestState (K.Bind T.Type)
+solveBindD v (K.Bind p a k t) =
+  K.Bind p a k <$> solveDual (Set.insert a v) t
 
-  dualPol :: T.Polarity -> T.Polarity
-  dualPol T.In  = T.Out
-  dualPol T.Out = T.In
+dualPol :: T.Polarity -> T.Polarity
+dualPol T.In  = T.Out
+dualPol T.Out = T.In
 
 -- | Clean rec types where the variable does not occur free
 
@@ -225,19 +224,19 @@ instance Elaboration T.Type where
     Just t  -> addTypeName p n >> pure (changePos p (snd t))
     Nothing -> pure n
   elaborate n@(T.Dualof p t) =
-    addTypeName p n >> changePos p <$> (dual =<< elaborate t)
+    addTypeName p n >>
+    changePos p <$> (solveDual Set.empty =<< elaborate t)
   elaborate t = pure t
 
 -- Apply elaborateType over TypeMaps
 instance Elaboration T.TypeMap where
   elaborate = mapM elaborate
 
-instance Elaboration (K.Bind T.Type) where
+instance Elaboration a => Elaboration (K.Bind a) where
   elaborate (K.Bind p x k a) = K.Bind p x k <$> elaborate a
 
-instance Elaboration (K.Bind Exp) where
-  elaborate (K.Bind p x k e) = K.Bind p x k <$> elaborate e
-
+-- instance Elaboration (K.Bind Exp) where
+--   elaborate (K.Bind p x k e) = K.Bind p x k <$> elaborate e
 
 instance Elaboration Bind where
   elaborate (Bind p m x t e) = Bind p m x <$> elaborate t <*> elaborate e
