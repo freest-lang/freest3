@@ -79,19 +79,20 @@ tests:
         - test/UnitTests
       dependencies:
         - FreeST
-        - hspec 
-        - hspec-expectations
-        - split
+        - hspec >= 2.7.1
+        - hspec-expectations >= 0.8.2
+        - hspec-discover >= 2.7.1
+        - split >= 0.2.3.3
 
     programs:
       main: ProgSpec.hs
       source-dirs: 
         - test/Programs
       dependencies:
-        - FreeST
-        - hspec       
-        - HUnit
-        - silently
+        - FreeST 
+        - hspec >= 2.7.1       
+        - HUnit >= 1.6.0.0
+        - silently >= 1.2.5.1
 
     valid-types-quick:
       main: QuickCheckSpec.hs
