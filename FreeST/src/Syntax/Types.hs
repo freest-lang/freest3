@@ -42,6 +42,7 @@ data BasicType =
   | CharType
   | BoolType
   | UnitType
+  | StringType
   deriving (Eq, Ord)
 
 -- TYPES

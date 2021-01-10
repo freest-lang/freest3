@@ -45,6 +45,8 @@ $eol=[\n]
 @lowerId = ($lower # [λ ∀ Λ]) $alphaNumeric*
 @upperId = ($upper # [λ ∀ Λ]) $alphaNumeric*
 
+@stringLiteral = \"(\\.|[^\"]|\n)*\"
+
 tokens :-  
   $white*$eol+                  { \p s -> TokenNL (internalPos p) }
   $white+                       ;  
@@ -94,6 +96,7 @@ tokens :-
   Int				{ \p s -> TokenIntT (internalPos p) }
   Char				{ \p s -> TokenCharT (internalPos p) }
   Bool				{ \p s -> TokenBoolT (internalPos p) }
+  String			{ \p s -> TokenStringT (internalPos p) }
   Skip				{ \p s -> TokenSkip (internalPos p) }
 -- Keywords
   rec                           { \p s -> TokenRec (internalPos p) }   
@@ -117,6 +120,7 @@ tokens :-
   (0+|[1-9]$digit*)      	{ \p s -> TokenInt (internalPos p) (read s) }
   (True|False) 	      	 	{ \p s -> TokenBool (internalPos p) (read s) }
   @char				{ \p s -> TokenChar (internalPos p) (read s) }
+  @stringLiteral		{ \p s -> TokenString (internalPos p) (read s) }
 -- Identifiers
   "(+)" | "(-)" | "(*)"         { \p s -> TokenLowerId (internalPos p) s }  -- TODO: add remaining operators
   @lowerId                       { \p s -> TokenLowerId (internalPos p) s }
@@ -129,6 +133,7 @@ data Token =
   | TokenIntT Pos 
   | TokenCharT Pos 
   | TokenBoolT Pos 
+  | TokenStringT Pos 
   | TokenUnit Pos 
   | TokenUnArrow Pos 
   | TokenLinArrow Pos 
@@ -158,6 +163,7 @@ data Token =
   | TokenTL Pos
   | TokenInt Pos Int
   | TokenChar Pos Char
+  | TokenString Pos String
   | TokenBool Pos Bool
   | TokenLet Pos
   | TokenIn Pos
@@ -192,70 +198,72 @@ data Token =
   | TokenDollar Pos
 
 instance Show Token where
-  show (TokenNL p) = "\n"  
-  show (TokenIntT p) = "Int"  
-  show (TokenCharT p) = "Char"  
-  show (TokenBoolT p) = "Bool"  
-  show (TokenUnit p) = "()"  
-  show (TokenUnArrow p) = "->"  
-  show (TokenLinArrow p) = "-o"  
-  show (TokenLambda p) = "λ"  
-  show (TokenUpperLambda p) = "Λ"  
-  show (TokenLParen p) = "("
-  show (TokenRParen p) = ")"  
-  show (TokenLBracket p) = "["  
-  show (TokenRBracket p) = "]"  
-  show (TokenComma p) = ","  
-  show (TokenSkip p) = "Skip" 
-  show (TokenColon p) = ":"  
-  show (TokenUpperId p c) = "" ++ c
-  show (TokenSemi p) = ";"  
-  show (TokenMOut p) = "!"  
-  show (TokenMIn p) = "?"  
-  show (TokenLBrace p) = "{"
-  show (TokenRBrace p) = "}"
-  show (TokenAmpersand p) = "&"
-  show (TokenPlus p) = "+"
-  show (TokenRec p) = "rec"
-  show (TokenDot p) = "."
-  show (TokenLowerId p s) = "" ++ s
-  show (TokenSU p) = "SU" 
-  show (TokenSL p) = "SL"   
-  show (TokenTU p) = "TU"   
-  show (TokenTL p) = "TL"  
-  show (TokenInt p i) = show i
-  show (TokenChar p c) = show c
-  show (TokenBool p b) = show b
-  show (TokenLet p) = "let"
-  show (TokenIn p) = "in"
-  show (TokenEq p) = "="
-  show (TokenData p) = "data"  
-  show (TokenType p) = "type"  
-  show (TokenPipe p) = "|"  
-  show (TokenIf p) = "if"  
-  show (TokenThen p) = "then"  
-  show (TokenElse p) = "else"  
-  show (TokenNew p) = "new"  
---  show (TokenSend p) = "send"  
---  show (TokenReceive p) = "receive"  
-  show (TokenSelect p) = "select"  
---  show (TokenFork p) = "fork"  
-  show (TokenMatch p) = "match"  
-  show (TokenCase p) = "case"  
-  show (TokenForall p) = "forall"  
-  show (TokenMinus p) = "-"  
-  show (TokenTimes p) = "*"  
-  show (TokenLT p) = "<"
-  show (TokenGT p) = ">"
-  show (TokenWild p) = "_"  
-  show (TokenCmp p s) = show s
-  show (TokenOf p) = "of"  
-  show (TokenDualof p) = "dualof"  
-  show (TokenFArrow p) = "=>"
-  show (TokenConjunction p) = "&&"
-  show (TokenDisjunction p) = "||"
-  show (TokenDiv p) = "/"
-  show (TokenDollar p) = "$"
+  show (TokenNL _) = "\n"  
+  show (TokenIntT _) = "Int"  
+  show (TokenCharT _) = "Char"  
+  show (TokenBoolT _) = "Bool"  
+  show (TokenStringT _) = "String"  
+  show (TokenUnit _) = "()"  
+  show (TokenUnArrow _) = "->"  
+  show (TokenLinArrow _) = "-o"  
+  show (TokenLambda _) = "λ"  
+  show (TokenUpperLambda _) = "Λ"  
+  show (TokenLParen _) = "("
+  show (TokenRParen _) = ")"  
+  show (TokenLBracket _) = "["  
+  show (TokenRBracket _) = "]"  
+  show (TokenComma _) = ","  
+  show (TokenSkip _) = "Skip" 
+  show (TokenColon _) = ":"  
+  show (TokenUpperId _ c) = "" ++ c
+  show (TokenSemi _) = ";"  
+  show (TokenMOut _) = "!"  
+  show (TokenMIn _) = "?"  
+  show (TokenLBrace _) = "{"
+  show (TokenRBrace _) = "}"
+  show (TokenAmpersand _) = "&"
+  show (TokenPlus _) = "+"
+  show (TokenRec _) = "rec"
+  show (TokenDot _) = "."
+  show (TokenLowerId _ s) = "" ++ s
+  show (TokenSU _) = "SU" 
+  show (TokenSL _) = "SL"   
+  show (TokenTU _) = "TU"   
+  show (TokenTL _) = "TL"  
+  show (TokenInt _ i) = show i
+  show (TokenChar _ c) = show c
+  show (TokenString _ s) = s
+  show (TokenBool _ b) = show b
+  show (TokenLet _) = "let"
+  show (TokenIn _) = "in"
+  show (TokenEq _) = "="
+  show (TokenData _) = "data"  
+  show (TokenType _) = "type"  
+  show (TokenPipe _) = "|"  
+  show (TokenIf _) = "if"  
+  show (TokenThen _) = "then"  
+  show (TokenElse _) = "else"  
+  show (TokenNew _) = "new"  
+--  show (TokenSend _) = "send"  
+--  show (TokenReceive _) = "receive"  
+  show (TokenSelect _) = "select"  
+--  show (TokenFork _) = "fork"  
+  show (TokenMatch _) = "match"  
+  show (TokenCase _) = "case"  
+  show (TokenForall _) = "forall"  
+  show (TokenMinus _) = "-"  
+  show (TokenTimes _) = "*"  
+  show (TokenLT _) = "<"
+  show (TokenGT _) = ">"
+  show (TokenWild _) = "_"  
+  show (TokenCmp _ s) = show s
+  show (TokenOf _) = "of"  
+  show (TokenDualof _) = "dualof"  
+  show (TokenFArrow _) = "=>"
+  show (TokenConjunction _) = "&&"
+  show (TokenDisjunction _) = "||"
+  show (TokenDiv _) = "/"
+  show (TokenDollar _) = "$"
 
 -- Trim newlines
 scanTokens :: String -> String -> Either [Token] String
@@ -303,6 +311,7 @@ instance Position Token where
   position (TokenIntT p) = p 
   position (TokenCharT p) = p 
   position (TokenBoolT p) = p 
+  position (TokenStringT p) = p 
   position (TokenUnit p) = p 
   position (TokenUnArrow p) = p 
   position (TokenLinArrow p) = p 

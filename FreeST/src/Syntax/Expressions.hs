@@ -29,6 +29,7 @@ data Expression =
   | Integer Pos Int
   | Character Pos Char
   | Boolean Pos Bool
+  | String Pos String
   -- Variable
   | ProgVar Pos ProgVar
   -- Abstraction intro and elim
@@ -63,6 +64,7 @@ instance Position Expression where
   position (Integer p _)         = p
   position (Character p _)       = p
   position (Boolean p _)         = p
+  position (String p _)         = p
   position (ProgVar p _)         = p
   position (Abs p _ _ _)         = p
   position (UnLet p _ _ _)       = p

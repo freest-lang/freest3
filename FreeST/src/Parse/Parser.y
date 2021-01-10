@@ -47,6 +47,7 @@ import           Debug.Trace
   Int      {TokenIntT _}
   Char     {TokenCharT _}
   Bool     {TokenBoolT _}
+  String   {TokenStringT _}
   '()'     {TokenUnit _}
   '->'     {TokenUnArrow _}
   '-o'     {TokenLinArrow _}
@@ -86,6 +87,7 @@ import           Debug.Trace
   INT      {TokenInt _ _ }
   BOOL     {TokenBool _ _}
   CHAR     {TokenChar _ _}
+  STR      {TokenString _ _}
   let      {TokenLet _}
   in       {TokenIn _}
   '='      {TokenEq _}
@@ -210,6 +212,7 @@ Primary :: { Expression }
   : INT                              { let (TokenInt p x) = $1 in Integer p x }
   | BOOL                             { let (TokenBool p x) = $1 in Boolean p x }
   | CHAR                             { let (TokenChar p x) = $1 in Character p x }
+  | STR                              { let (TokenString p x) = $1 in String p x }
   | '()'                             { Unit (position $1) }
   | ProgVar '[' TypeList ']'         { TypeApp (position $1) $1 $3 }
   | ArbitraryProgVar                 { ProgVar (position $1) $1 }
@@ -270,9 +273,10 @@ Type :: { Type }
   | '(' Type ')'                  { $2 }
 
 BasicType :: { (Pos, BasicType) }
-  : Int  { (position $1, IntType) }
-  | Char { (position $1, CharType) }
-  | Bool { (position $1, BoolType) }
+  : Int    { (position $1, IntType) }
+  | Char   { (position $1, CharType) }
+  | Bool   { (position $1, BoolType) }
+  | String { (position $1, StringType) }
   | '()' { (position $1, UnitType) }
 
 TupleType :: { Type }
