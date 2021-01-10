@@ -41,6 +41,7 @@ instance Show Value where
   show (Integer i)   = show i
   show (Boolean b)   = show b
   show (Character c) = show c
+  show (String s)    = s
   show (Label s)     = s
   show (Pair v1 v2)  = "(" ++ show v1 ++ ", " ++ showNTupleValue v2 ++ ")"
   show c@Cons{}  = showCons c
