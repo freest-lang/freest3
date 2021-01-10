@@ -50,6 +50,7 @@ synthetise _    (Unit p       ) = return $ Basic p UnitType
 synthetise _    (Integer   p _) = return $ Basic p IntType
 synthetise _    (Character p _) = return $ Basic p CharType
 synthetise _    (Boolean   p _) = return $ Basic p BoolType
+synthetise _    (String   p _) = return $ Basic p StringType
 -- Variable
 synthetise kEnv e@(ProgVar p x)
   | x == mkVar p "receive" = addPartiallyAppliedError e "channel"

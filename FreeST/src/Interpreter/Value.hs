@@ -18,6 +18,7 @@ data Value =
   | Integer Int
   | Boolean Bool
   | Character Char
+  | String String
   | Cons ProgVar [[Value]] -- TODO: Think how to do this in other way
   | Pair Value Value
   | Closure ProgVar E.Expression Ctx

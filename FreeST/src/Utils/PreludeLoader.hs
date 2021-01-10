@@ -109,6 +109,12 @@ typeList =
   , ( mkVar p "printUnitLn"
     , fromType (Fun p Un (Basic p UnitType) (Basic p UnitType))
     )
+  , ( mkVar p "printString"
+    , fromType (Fun p Un (Basic p StringType) (Basic p UnitType))
+    )
+  , ( mkVar p "printStringLn"
+    , fromType (Fun p Un (Basic p StringType) (Basic p UnitType))
+    )
   ]
  where
   p       = defaultPos
