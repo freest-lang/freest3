@@ -11,13 +11,14 @@ import           Data.List (intercalate)
 import qualified Data.Map.Strict as Map
 import qualified Syntax.Expressions as E
 import           Syntax.ProgramVariables
-import           Syntax.Show()
+import           Parse.Unparser
 
 data Value =
     Unit
   | Integer Int
   | Boolean Bool
   | Character Char
+  | String String
   | Cons ProgVar [[Value]] -- TODO: Think how to do this in other way
   | Pair Value Value
   | Closure ProgVar E.Expression Ctx

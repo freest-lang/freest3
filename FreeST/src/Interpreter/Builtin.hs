@@ -149,6 +149,12 @@ initialCtx = Map.fromList
   , ( var "printUnitLn"
     , PrimitiveFun (\Unit -> IOValue (putStrLn "()" >> return Unit))
     )
+  , ( var "printString"
+    , PrimitiveFun (\(String s) -> IOValue (putStr s >> return Unit))
+    )
+  , ( var "printStringLn"
+    , PrimitiveFun (\(String s) -> IOValue (putStrLn s >> return Unit))
+    )
 --  , (var "print", PrimitiveFun (\x -> IOValue (putStrLn (show x) >> return Unit)))
   ]
  where

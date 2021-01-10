@@ -123,27 +123,31 @@ toTypeVar _ t = t
 solveDualOfs :: TypeEnv -> FreestState TypeEnv
 solveDualOfs tenv = tMapM
   (\(k, TypeScheme p xs t) ->
-    solveDualOf tenv t >>= \t' -> pure (k, TypeScheme p xs t')
+    solveDualOf Set.empty tenv t >>= \t' -> pure (k, TypeScheme p xs t')
   )
   tenv
 
-solveDualOf :: TypeEnv -> Type -> FreestState Type
-solveDualOf tenv (Choice p pol m) =
-  fmap (Choice p pol) (tMapM (solveDualOf tenv) m)
-solveDualOf tenv (Semi p t u) =
-  liftM2 (Semi p) (solveDualOf tenv t) (solveDualOf tenv u)
-solveDualOf tenv (Rec p xs t) = fmap (Rec p xs) (solveDualOf tenv t)
-solveDualOf tenv (Fun p pol t u) =
-  liftM2 (Fun p pol) (solveDualOf tenv t) (solveDualOf tenv u)
-solveDualOf tenv n@(TypeName _ tname) = case tenv Map.!? tname of
+solveDualOf :: Set.Set TypeVar -> TypeEnv -> Type -> FreestState Type
+solveDualOf visited tenv (Choice p pol m) =
+  fmap (Choice p pol) (tMapM (solveDualOf visited tenv) m)
+solveDualOf visited tenv (Semi p t u) =
+  liftM2 (Semi p) (solveDualOf visited tenv t) (solveDualOf visited tenv u)
+solveDualOf visited tenv (Rec p xs@(KindBind _ x _) t) =
+  fmap (Rec p xs) (solveDualOf (Set.insert x visited) tenv t)
+solveDualOf visited tenv (Fun p pol t u) =
+  liftM2 (Fun p pol) (solveDualOf visited tenv t) (solveDualOf visited tenv u)
+solveDualOf visited tenv n@(TypeName _ tname) = case tenv Map.!? tname of
   Just (_, TypeScheme _ _ t) -> pure (toTypeVar tname t)
   Nothing                    -> maybeScopeErr n
-solveDualOf tenv d@(Dualof p t) = do
+solveDualOf visited tenv d@(Dualof p t) = do
   addTypeName p d
-  u <- solveDualOf tenv t
+  u <- solveDualOf visited tenv t
   dual u
 --  fmap dual (solveDualOf tenv t)
-solveDualOf _ p = return p
+solveDualOf visited tenv t@(TypeVar p x)
+  | x `Set.member` visited = return t
+  | otherwise = return $ Dualof p t
+solveDualOf _ _ t = return t
 
 
 -- Until we have datatypes as typenames; we have to filter non-datatypes

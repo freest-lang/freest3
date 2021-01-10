@@ -19,7 +19,7 @@ where
 
 import           Syntax.Base                    ( Pos, Position, position )
 import           Syntax.Types                   ( TypeOpsEnv )
-import           Syntax.Show
+import           Parse.Unparser
 import           Utils.ErrorMessage
 
 -- | Format errors

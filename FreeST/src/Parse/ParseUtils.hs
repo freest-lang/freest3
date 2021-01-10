@@ -217,13 +217,9 @@ unOp op expr = App (position expr) (ProgVar (position op) op) expr
 typeListToType :: TypeVar -> [(ProgVar, [Type])] -> [(ProgVar, Type)]
 typeListToType a = map (\(x, ts) -> (x, typeToFun ts))
   -- Convert a list of types and a final type constructor to a type
-
-
-
-
- where
-  typeToFun []       = TypeName (position a) a
-  typeToFun (t : ts) = Fun (position t) Un t (typeToFun ts)
+  where
+    typeToFun []     = TypeName (position a) a
+    typeToFun (t:ts) = Fun (position t) Un t (typeToFun ts)
 
 buildFunBody :: ProgVar -> [ProgVar] -> Expression -> FreestState Expression
 buildFunBody f bs e = getFromVEnv f >>= \case

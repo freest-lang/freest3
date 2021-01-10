@@ -17,7 +17,6 @@ Example suggested by the authors Frank Pfenning, Ankush Das, Henry DeYoung, and 
 
 -}
 
-
 type D : SL = +{ Lt : T;D, Dollar : Skip }
 type T : SL = +{ Lt : T;T, Gt : Skip }
 
@@ -112,17 +111,14 @@ writeLtLtGtLtGtGt: D -> Skip
 writeLtLtGtLtGtGt c =
   select Dollar $ select Gt $ select Gt $ select Lt $ select Gt $ select Lt $ select Lt c
 
-
 -- Putting it all together: out1 -> in1-out2 --> in2
 mainForward : Skip
 mainForward =
   let (out1, in1) = new D in
   let (out2, in2) = new D in
-  fork (sink $ writeLtLtGtGtLtGt out1);
-  fork (sinkPair (forwardD[Skip, Skip] in1 out2));
+  fork (sink[Skip] $ writeLtLtGtGtLtGt out1);
+  fork (sink[(Skip,Skip)] (forwardD[Skip, Skip] in1 out2));
   readD[Skip] in2
-
-
 
 -- Putting it all together: (out1 | out2) --> in1-in2-out3 --> in3
 main : Skip
@@ -130,17 +126,12 @@ main =
   let (out1, in1) = new D in
   let (out2, in2) = new D in
   let (out3, in3) = new D in
-  fork (sink (writeLtLtGtGtLtGt out1));
-  fork (sink (writeLtLtGtLtGtGt out2));
-  fork (sink_ (concatD[Skip, Skip, Skip] in1 in2 out3));
+  fork (sink[Skip] (writeLtLtGtGtLtGt out1));
+  fork (sink[Skip] (writeLtLtGtLtGtGt out2));
+  fork (sink[(Skip,Skip,Skip)] (concatD[Skip, Skip, Skip] in1 in2 out3));
   readD[Skip] in3
 
--- Auxiliary function because of fork : () -> ()
-sink : Skip -> ()
+-- To be used with fork : () -> ()
+sink : forall a : SU => a -> ()
 sink _ = ()
 
-sink_ : (Skip, (Skip, Skip)) -> ()
-sink_ _ = ()
-
-sinkPair : (Skip, Skip) -> ()
-sinkPair _ = ()

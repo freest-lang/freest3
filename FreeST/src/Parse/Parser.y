@@ -47,6 +47,7 @@ import           Debug.Trace
   Int      {TokenIntT _}
   Char     {TokenCharT _}
   Bool     {TokenBoolT _}
+  String   {TokenStringT _}
   '()'     {TokenUnit _}
   '->'     {TokenUnArrow _}
   '-o'     {TokenLinArrow _}
@@ -86,6 +87,7 @@ import           Debug.Trace
   INT      {TokenInt _ _ }
   BOOL     {TokenBool _ _}
   CHAR     {TokenChar _ _}
+  STR      {TokenString _ _}
   let      {TokenLet _}
   in       {TokenIn _}
   '='      {TokenEq _}
@@ -105,23 +107,24 @@ import           Debug.Trace
   dualof   {TokenDualof _}
 
 %nonassoc LOWER_ID UPPER_ID
-%nonassoc '('
+%nonassoc '(' '['
 %nonassoc '()'
 -- Expressions
 %right in else match case
-%left select
+-- %left select
 %nonassoc new
 %right '$'       -- function call
+%left '&'        -- function call
 %left '||'       -- disjunction
 %left '&&'       -- conjunction
-%nonassoc CMP     -- comparison (relational and equality)
+%nonassoc CMP    -- comparison (relational and equality)
 %left '+' '-'    -- aditive
 %left '*' '/'    -- multiplicative
 %left NEG not    -- unary
 -- Types
-%right '.'       -- Used in rec
-%right '->' '-o' -- TODO: an Expr operator as well
-%right ';'       -- TODO: an Expr operator as well
+%right '.'       -- used in rec
+%right '->' '-o' -- an Expr operator as well
+%right ';'       -- an Expr operator as well
 %right dualof
 -- Lambda expressions
 %nonassoc ProgVarWildTBind
@@ -176,8 +179,7 @@ DataCon :: { (ProgVar, [Type]) }
 -----------------
 
 Expr :: { Expression }
-  : Expr '$' Expr                    { App (position $2) $1 $3 }
-  | let ProgVarWild '=' Expr in Expr { UnLet (position $1) $2 $4 $6 }
+  : let ProgVarWild '=' Expr in Expr { UnLet (position $1) $2 $4 $6 }
   | Expr ';' Expr                    { App (position $1)
                                          (Abs (position $1) Un
                                            (TypeBind (position $1) (mkVar (position $1) "_") (Basic (position $3) UnitType))
@@ -189,6 +191,8 @@ Expr :: { Expression }
   | new Type                         { New (position $1) $2 (Dualof (negPos (position $2)) $2) }
   | match Expr with '{' MatchMap '}' { Match (position $1) $2 $5 }
   | case Expr of '{' CaseMap '}'     { Case (position $1) $2 $5 }
+  | Expr '$' Expr                    { App (position $2) $1 $3 }
+  | Expr '&' Expr                    { App (position $2) $3 $1 }
   | Expr '||' Expr                   { binOp $1 (mkVar (position $2) "(||)") $3 }
   | Expr '&&' Expr                   { binOp $1 (mkVar (position $2) "(&&)") $3 }
   | Expr CMP Expr                    { binOp $1 (mkVar (position $2) (getText $2)) $3 }
@@ -208,6 +212,7 @@ Primary :: { Expression }
   : INT                              { let (TokenInt p x) = $1 in Integer p x }
   | BOOL                             { let (TokenBool p x) = $1 in Boolean p x }
   | CHAR                             { let (TokenChar p x) = $1 in Character p x }
+  | STR                              { let (TokenString p x) = $1 in String p x }
   | '()'                             { Unit (position $1) }
   | ProgVar '[' TypeList ']'         { TypeApp (position $1) $1 $3 }
   | ArbitraryProgVar                 { ProgVar (position $1) $1 }
@@ -268,9 +273,10 @@ Type :: { Type }
   | '(' Type ')'                  { $2 }
 
 BasicType :: { (Pos, BasicType) }
-  : Int  { (position $1, IntType) }
-  | Char { (position $1, CharType) }
-  | Bool { (position $1, BoolType) }
+  : Int    { (position $1, IntType) }
+  | Char   { (position $1, CharType) }
+  | Bool   { (position $1, BoolType) }
+  | String { (position $1, StringType) }
   | '()' { (position $1, UnitType) }
 
 TupleType :: { Type }
@@ -441,6 +447,5 @@ failM :: String -> FreestStateT a
 failM = lift . Failed
 
 toStateT = state . runState
-
 
 }

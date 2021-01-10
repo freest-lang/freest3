@@ -10,7 +10,12 @@ The interaction with this server is performed by sending
 an arithmetic expression. The server reads the expression,
 computes its value and returns the value on the same channel.
 
+This version uses the pipeline operator |>.
+
 -}
+
+fst : forall a : TU, b : TU => (a, b) -> a
+fst p = let (x,_) = p in x
 
 type TermChannel : SL  = +{
    Const: !Int,
@@ -23,8 +28,8 @@ type TermChannel : SL  = +{
 computeService : dualof TermChannel;!Int -> ()
 computeService c =
   let (n1, c1) = receiveEval[!Int;Skip] c in
-  let _ = send n1 c1
-  in ()
+  send n1 c1 &
+  (\_:Skip -> ())
 
 -- Read an arithmetic expression in the front of a channel; compute
 -- its value; return the pair composed of this value and the channel
@@ -46,17 +51,16 @@ receiveEval c =
 
 -- Compute 5 + (7 * 9); return the result
 client : TermChannel;?Int -> Int
-client c =
-  let (n, _) = receive $
-    send 9 $
-    select Const $
-    send 7 $
-    select Const $
-    select Mult $
-    send 5 $
-    select Const $
-    select Add c in
-  n
+client c = select Add c
+        & select Const
+        & send 5
+        & select Mult
+        & select Const
+        & send 7
+        & select Const
+        & send 9
+        & receive
+        & fst[Int,Skip]
 
 main : Int
 main =

@@ -27,7 +27,7 @@ import           Syntax.Expressions
 import           Syntax.Kinds
 import           Syntax.ProgramVariables
 import           Syntax.Schemes
-import           Syntax.Show -- debug
+import           Parse.Unparser -- debug
 import           Syntax.Types
 import           Equivalence.Equivalence
 import           Validation.Extract
@@ -50,6 +50,7 @@ synthetise _    (Unit p       ) = return $ Basic p UnitType
 synthetise _    (Integer   p _) = return $ Basic p IntType
 synthetise _    (Character p _) = return $ Basic p CharType
 synthetise _    (Boolean   p _) = return $ Basic p BoolType
+synthetise _    (String   p _) = return $ Basic p StringType
 -- Variable
 synthetise kEnv e@(ProgVar p x)
   | x == mkVar p "receive" = addPartiallyAppliedError e "channel"
@@ -224,7 +225,8 @@ synthetiseFieldMap p branching kEnv e fm extract params = do
         , Error $ Map.size tm
         , Error "constructor(s)\n"
         , Error "\t in case/match"
-        , Error $ "\ESC[91m" ++ showFieldMap 1 fm ++ "\ESC[0m"
+--        , Error $ "\ESC[91m" ++ showFieldMap 1 fm ++ "\ESC[0m"
+        , Error $ "\ESC[91m{" ++ showFieldMap fm ++ "}\ESC[0m"
         ]
       return $ omission p
     else do

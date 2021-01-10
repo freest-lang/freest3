@@ -15,7 +15,6 @@ module Validation.Duality
 
 import           Syntax.Types
 import           Syntax.Base
-import           Syntax.Show
 import           Utils.FreestState
 import           Control.Monad          (liftM2)
 import qualified Data.Map.Strict as Map

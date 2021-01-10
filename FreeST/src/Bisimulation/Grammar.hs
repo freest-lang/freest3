@@ -41,7 +41,7 @@ where
 
 import           Syntax.TypeVariables
 import           Syntax.Base
-import           Syntax.Show
+import           Parse.Unparser
 import qualified Data.Map.Strict               as Map
 import           Data.List                      ( intercalate )
 -- Word is (re)defined in module Equivalence.Grammar

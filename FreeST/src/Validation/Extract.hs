@@ -34,7 +34,7 @@ import           Equivalence.Normalisation
 import           Utils.Errors
 import           Utils.FreestState
 import qualified Data.Map.Strict               as Map
-import           Syntax.Show -- debug
+-- import           Parse.Unparser -- debug
 import           Syntax.Schemes -- debug
 import           Debug.Trace -- debug
 import           Validation.BuildTypes -- debug
