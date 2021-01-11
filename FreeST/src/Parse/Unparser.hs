@@ -242,6 +242,7 @@ instance Unparse Expression where
   unparse (Integer _ i) = (maxRator, show i)
   unparse (Character _ c) = (maxRator, show c)
   unparse (Boolean _ b) = (maxRator, show b)
+  unparse (String _ s) = (maxRator, s)
   -- Variable
   unparse (ProgVar _ x) = (maxRator, show x)
   -- Abstraction intro and elim
