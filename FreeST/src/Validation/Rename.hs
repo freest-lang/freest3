@@ -58,8 +58,8 @@ renameState = do
 renameFun :: ProgVar -> T.Type -> FreestState ()
 renameFun f t = do
   rename Map.empty t >>= addToVEnv f
-  getFromEEnv f >>= \case
-    Just e  -> rename Map.empty e >>= addToEEnv f
+  getFromProg f >>= \case
+    Just e  -> rename Map.empty e >>= addToProg f
     Nothing -> return ()
 
 -- Renaming the various syntactic categories

@@ -179,7 +179,7 @@ substituteVEnv =
 
 substitutePEnv :: FreestState ()
 substitutePEnv = getPEnv >>= tMapWithKeyM_
-  (\pv (ps, e) -> addToEEnv pv =<< buildFunBody pv ps =<< elaborate e)
+  (\pv (ps, e) -> addToProg pv =<< buildFunBody pv ps =<< elaborate e)
 
 
 buildFunBody :: ProgVar -> [ProgVar] -> Exp -> FreestState Exp

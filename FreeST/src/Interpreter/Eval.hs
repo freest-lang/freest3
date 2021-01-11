@@ -24,14 +24,14 @@ import qualified Syntax.Kind                   as K
 -- EVALUATION
 ------------------------------------------------------------
 
-evalAndPrint :: Ctx -> ExpEnv -> E.Exp -> IO ()
+evalAndPrint :: Ctx -> Prog -> E.Exp -> IO ()
 evalAndPrint ctx eenv e = do
   res <- eval ctx eenv e
   case res of
     IOValue io     -> io >>= print
     _              -> print res
 
-eval :: Ctx -> ExpEnv -> E.Exp -> IO Value
+eval :: Ctx -> Prog -> E.Exp -> IO Value
 eval _   _    (E.Unit _                  ) = return Unit
 eval _   _    (E.Int _ i                 ) = return $ Integer i
 eval _   _    (E.Bool _ b                ) = return $ Boolean b
@@ -102,7 +102,7 @@ eval ctx eenv (E.Match _ e m) = do
   let ctx'              = Map.insert patterns (Chan c) ctx
   eval ctx' eenv e
 
-evalCase :: Ctx -> ExpEnv -> E.FieldMap -> Value -> IO Value
+evalCase :: Ctx -> Prog -> E.FieldMap -> Value -> IO Value
 evalCase ctx eenv m (Cons x xs) = do
   let !(patterns, e) = m Map.! x
   let lst            = zip patterns xs
@@ -110,7 +110,7 @@ evalCase ctx eenv m (Cons x xs) = do
   eval ctx1 eenv e
 
 -- TODO: change isADT definition
-evalVar :: Ctx -> ExpEnv -> ProgVar -> IO Value
+evalVar :: Ctx -> Prog -> ProgVar -> IO Value
 evalVar ctx eenv x | isADT x                      = return $ Cons x []
                    | Map.member x eenv            = eval ctx eenv (eenv Map.! x)
                    | Map.member x ctx             = return $ ctx Map.! x

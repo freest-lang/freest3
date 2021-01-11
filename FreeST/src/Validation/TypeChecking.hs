@@ -37,7 +37,7 @@ import qualified Validation.Typing             as Typing -- Again
 typeCheck :: FreestState ()
 typeCheck = do
   vEnv <- getVEnv -- Function signatures
-  eEnv <- getEEnv -- Function bodies
+  eEnv <- getProg -- Function bodies
   -- tn   <- getTypeNames -- Type Names
   -- tEnv <- getTEnv -- Type/datatype declarations
   -- debugM ("\n\n\nEntering type checking with\n  TEnv " ++ show tEnv ++ "\n\n"
@@ -72,7 +72,7 @@ typeCheck = do
 -- constructors.
 checkHasBinding :: ProgVar -> T.Type -> FreestState ()
 checkHasBinding f _ = do
-  eEnv <- getEEnv
+  eEnv <- getProg
   vEnv <- getVEnv
   tEnv <- getTEnv
   when

@@ -1,7 +1,7 @@
 module Syntax.Program
   ( TypeEnv
   , VarEnv
-  , ExpEnv
+  , Prog
   , TypeOpsEnv
   , noConstructors
   )
@@ -29,7 +29,7 @@ type VarEnv = Map.Map ProgVar T.Type
 type TypeOpsEnv = Map.Map Pos T.Type
 
 -- The definitions of the named functions in a program
-type ExpEnv = Map.Map ProgVar E.Exp
+type Prog = Map.Map ProgVar E.Exp
 
 
 -- A given type environment without constructors

@@ -34,11 +34,11 @@ module Util.FreestState
   , getFromTEnv
   , addToTEnv
   , setTEnv
--- Expression environment
-  , getEEnv
-  , getFromEEnv
-  , addToEEnv
-  , setEEnv
+-- Program
+  , getProg
+  , getFromProg
+  , addToProg
+  , setProg
 -- Errors
   , Errors
   , getErrors
@@ -86,7 +86,7 @@ type ParseEnv = Map.Map ProgVar ([ProgVar], Exp)
 data FreestS = FreestS {
   filename  :: String
 , varEnv    :: VarEnv
-, expEnv    :: ExpEnv
+, prog      :: Prog
 , typeEnv   :: TypeEnv
 , typenames :: TypeOpsEnv
 , errors    :: Errors
@@ -101,7 +101,7 @@ type FreestState = State FreestS
 initialState :: String -> FreestS
 initialState f = FreestS { filename  = f
                          , varEnv    = Map.empty
-                         , expEnv    = Map.empty
+                         , prog    = Map.empty
                          , typeEnv   = Map.empty
                          , typenames = Map.empty
                          , errors    = []
@@ -159,19 +159,19 @@ setVEnv vEnv = modify (\s -> s { varEnv = vEnv })
 
 -- | EXP ENV
 
-getEEnv :: FreestState ExpEnv
-getEEnv = gets expEnv
+getProg :: FreestState Prog
+getProg = gets prog
 
-getFromEEnv :: ProgVar -> FreestState (Maybe Exp)
-getFromEEnv x = do
-  eEnv <- getEEnv
+getFromProg :: ProgVar -> FreestState (Maybe Exp)
+getFromProg x = do
+  eEnv <- getProg
   return $ eEnv Map.!? x
 
-addToEEnv :: ProgVar -> Exp -> FreestState ()
-addToEEnv k v = modify (\s -> s { expEnv = Map.insert k v (expEnv s) })
+addToProg :: ProgVar -> Exp -> FreestState ()
+addToProg k v = modify (\s -> s { prog = Map.insert k v (prog s) })
 
-setEEnv :: ExpEnv -> FreestState ()
-setEEnv eEnv = modify (\s -> s { expEnv = eEnv })
+setProg :: Prog -> FreestState ()
+setProg p = modify (\s -> s { prog = p })
 
 -- | TYPE ENV
 

@@ -61,4 +61,4 @@ checkAndRun filePath = do
   let s4  = execState typeCheck s3
   when (hasErrors s4) (die $ getErrors s4)
   -- Interpret
-  evalAndPrint initialCtx (expEnv s4) (expEnv s4 Map.! mkVar defaultPos "main")
+  evalAndPrint initialCtx (prog s4) (prog s4 Map.! mkVar defaultPos "main")
