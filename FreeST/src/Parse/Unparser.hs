@@ -87,6 +87,7 @@ instance Show BasicType where
   show IntType  = "Int"
   show CharType = "Char"
   show BoolType = "Bool"
+  show StringType = "String"
   show UnitType = "()"
 
 -- Unparsing types and expressions
