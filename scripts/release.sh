@@ -23,7 +23,7 @@ cp ../FreeST/test/Programs/ValidTests/lazyTreeTraversal/lazyTreeTraversal.fst $p
 cp ../FreeST/test/Programs/ValidTests/ordering/ordering.fst $path/examples/Ordering.fst
 cp ../FreeST/test/Programs/ValidTests/DyckWords/DyckWords.fst $path/examples/
 cp ../FreeST/test/Programs/ValidTests/Unnormed/Unnormed.fst  $path/examples/
-cp ../FreeST/test/Programs/ValidTests/remoteTreeTransform/remoteTreeTransform.fst  $path/examples/TreeTransform.fst
+cp ../FreeST/test/Programs/ValidTests/TreeTransform/TreeTransform.fst  $path/examples/
 
 
 resolverVersion=`cat ../stack.yaml | grep -e "^resolver:" | sed -E 's/resolver\W+//g'`

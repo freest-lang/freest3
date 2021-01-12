@@ -87,6 +87,7 @@ instance Show BasicType where
   show IntType  = "Int"
   show CharType = "Char"
   show BoolType = "Bool"
+  show StringType = "String"
   show UnitType = "()"
 
 -- Unparsing types and expressions
@@ -241,6 +242,7 @@ instance Unparse Expression where
   unparse (Integer _ i) = (maxRator, show i)
   unparse (Character _ c) = (maxRator, show c)
   unparse (Boolean _ b) = (maxRator, show b)
+  unparse (String _ s) = (maxRator, s)
   -- Variable
   unparse (ProgVar _ x) = (maxRator, show x)
   -- Abstraction intro and elim
