@@ -55,7 +55,7 @@ timeInMicro = 2 * 1000000
 
 checkResult :: (String, TestResult) -> FilePath -> Spec
 checkResult (res, Passed) file = checkAgainstExpected file res
-checkResult (res, Failed) file =  do
+checkResult (res, Failed) file = 
   it ("Testing " ++ takeFileName file) $
     void $ assertFailure res
 checkResult (_, Timeout) file  = checkAgainstExpected file "<divergent>"
@@ -64,7 +64,7 @@ checkAgainstExpected :: FilePath -> String -> Spec
 checkAgainstExpected file res = do
   let expFile = file -<.> "expected"
   runIO (safeRead expFile) >>= \case
-    Just s -> 
+    Just s ->
       it ("Testing " ++ takeFileName file) $
         filter (/= '\n') res `shouldBe` filter (/= '\n') s
     Nothing ->

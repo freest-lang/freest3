@@ -92,6 +92,7 @@ tests:
         - hspec >= 2.7.1       
         - HUnit >= 1.6.0.0
         - silently >= 1.2.5.1
+      ghc-options: -threaded +RTS -N -RTS
 
     valid-types-quick:
       main: QuickCheckSpec.hs
