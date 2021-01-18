@@ -17,9 +17,7 @@ module Parse.Unparser
 where
 
 import           Data.Char                      ( isDigit )
-import           Data.List                      ( intersperse
-                                                , intercalate
-                                                )
+import           Data.List                      ( intercalate )
 import qualified Data.Map.Strict               as Map
 import           Prelude                 hiding ( Left
                                                 , Right
@@ -119,7 +117,8 @@ type Rator = (Precedence, Associativity)
 
 type Fragment = (Rator, String)
 
-inRator, newRator, dotRator, arrowRator, semiRator, dualofRator, appRator, minRator, maxRator
+inRator, newRator, dotRator, arrowRator, semiRator,
+ dualofRator, appRator, minRator, maxRator, msgRator 
   :: Rator
 inRator = (PIn, Right)       -- also else, match, case
 newRator = (PNew, NonAssoc)
