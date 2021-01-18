@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, FlexibleInstances #-}
+{-# LANGUAGE LambdaCase, FlexibleInstances, TupleSections #-}
 module Elaboration.Elaboration
   ( elaboration
   , Elaboration(..)
@@ -8,61 +8,59 @@ where
 import           Data.Functor
 import           Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
+import           Elaboration.Duality
 import           Syntax.Base
 import           Syntax.Expression
 import qualified Syntax.Kind                   as K
+import           Syntax.Program                 ( VarEnv )
 import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
-import           Util.Error                    ( internalError )
+import           Util.Error                     ( internalError )
 import           Util.FreestState
-import           Util.PreludeLoader            ( userDefined )
-import           Validation.Kinding             ( synthetise )
+import           Util.PreludeLoader             ( userDefined )
 import           Validation.Rename              ( isFreeIn )
 
 elaboration :: FreestState ()
 elaboration = do
-  -- | Build data and type declarations as recursive types
-  buildRecursiveTypes
---  debugM . ("Building recursive types" ++) <$> show =<< getTEnv
-  -- | Solve the equations
+  -- | Solve the equations' system.
   solveEquations
-  -- | Note: From this point on there are no type names on type env
-  -- | Resolve all occurrences of the dualof type operator
-  resolveDualof
-  -- | Note: From this point on there are no occurrences of type dualof
-  -- | Remove recursive types (rec x . T) where the recursion   
-  -- | variable x does not occur free in T
-  cleanUnusedRecs
-  -- | Check if the substituted types are contractive
-  mapM_ (synthetise Map.empty . snd) =<< getTEnv -- TODO: why do we need this here?
-  -- | Substitute all type operators (type names?) on VarEnv
-  substituteVEnv
-  -- | Note: From this point on function types (all types?) contain no
-  -- | type names neither dualofs TODO: Don't understand
+  -- | From this point, there are no type names on the RHS
+  --   of the type declarations and datatypes (type env)
+  -- | Substitute all type names on the function signatures
+  substitute =<< getVEnv
+  -- | same for parse env (which contains the functions' bodies)
+  substitute =<< getPEnv
+  -- | From this point, there are no type names on the function signatures
+  --   and on the function bodies. 
+  -- | Then, resolve all the dualof occurrences on:
+  -- | Type Env (i.e. type A = dualof !Int)
+  (resolveDualof =<< getTEnv) >>= setTEnv
+  -- | Var Env (i.e. f : dualof !Int -> Skip)
+  (resolveDualof =<< getVEnv) >>= setVEnv
+  -- | Parse Env (i.e. f c = send 5 c)
+  (resolveDualof =<< getPEnv) >>= setPEnv
+  -- | From this point there are no more occurrences of the dualof operator
   -- | Build the expression environment: substitute all
-  -- | type operators on ExpEnv;
-  -- | From f x = E and f : T -> U
-  -- | build a lambda expression: f = \x : T -> E
-  substitutePEnv
-
-
--- | Build recursive types
-
-buildRecursiveTypes :: FreestState ()
-buildRecursiveTypes = Map.mapWithKey buildRec <$> getTEnv >>= setTEnv
-  where buildRec x (k, t) = (k, T.Rec (pos x) (K.Bind (pos x) x k t))
+  --   type operators on ExpEnv;
+  --   From f x = E and f : T -> U
+  --   build a lambda expression: f = \x : T -> E
+  buildProg
+--  debugM . ("Building recursive types" ++) <$> show =<< getTEnv
 
 type Visited = Set.Set TypeVar
 
 -- | Solve equations (TypeEnv)
 
 solveEquations :: FreestState ()
-solveEquations =
-  getTEnv
-    >>= tMapWithKeyM (\x (k, v) -> (,) k <$> solveEq Set.empty x v)
-    >>= setTEnv
+solveEquations = buildRecursiveTypes >> solveAll >> cleanUnusedRecs
  where
+  solveAll :: FreestState ()
+  solveAll =
+    getTEnv
+      >>= tMapWithKeyM (\x (k, v) -> (k, ) <$> solveEq Set.empty x v)
+      >>= setTEnv
+
   solveEq :: Visited -> TypeVar -> T.Type -> FreestState T.Type
   solveEq v f (T.Fun p m t1 t2) =
     T.Fun p m <$> solveEq v f t1 <*> solveEq v f t2
@@ -78,85 +76,19 @@ solveEquations =
       Just tx -> solveEq (f `Set.insert` v) x (snd tx)
       Nothing ->
         addError p [Error "Type variable not in scope:", Error x] $> omission p
-  solveEq v f (T.Forall p (K.Bind p1 x k t)) = -- TODO: Should we insert on visited?
+  solveEq v f (T.Forall p (K.Bind p1 x k t)) =
     T.Forall p . K.Bind p1 x k <$> solveEq (x `Set.insert` v) f t
   solveEq v f (T.Rec p (K.Bind p1 x k t)) =
     T.Rec p . K.Bind p1 x k <$> solveEq (x `Set.insert` v) f t
-  -- solveEq v f (T.Abs p b t) =  -- λ a:k => T  
-    --   fmap (T.Abs p b) (solveEq v f t)
-  -- solveEq v f (T.App p t1 t2) =
-    --   liftM2 (T.App p) (solveEq v f t1) (solveEq v f t2)
-  solveEq v f (T.Dualof p t) =
-    T.Dualof p <$> solveEq v f t
-  solveEq _ _ p            = pure p
+  solveEq v f (T.Dualof p t) = T.Dualof p <$> solveEq v f t
+  solveEq _ _ p              = pure p
 
--- | Resolving the dualof operator
 
-resolveDualof :: FreestState ()
-resolveDualof =
-  getTEnv >>= tMapM (\(k, t) -> (,) k <$> solveType Set.empty t) >>= setTEnv
+-- | Build recursive types
 
-solveType :: Visited -> T.Type -> FreestState T.Type
--- Functional Types
-solveType v (T.Fun p pol t u) =
-  T.Fun p pol <$> solveType v t <*> solveType v u
-solveType v (T.Pair p t u) =
-  T.Pair p <$> solveType v t <*> solveType v u
-solveType v (T.Datatype p m) = T.Datatype p <$> tMapM (solveType v) m
--- Session Types
-solveType v (T.Semi p t u) = T.Semi p <$> solveType v t <*> solveType v u
-solveType v (T.Message p pol t ) = T.Message p pol <$> solveType v t
-solveType v (T.Choice p pol m) = T.Choice p pol <$> tMapM (solveType v) m
--- Polymorphism and recursive types
-solveType v (T.Forall p (K.Bind p' a k t)) =
-  T.Forall p . K.Bind p' a k <$> solveType v t
-solveType v (T.Rec p b) = T.Rec p <$> solveBindT v b
-solveType _ t@T.Var{} = pure t
--- Dualof
-solveType v d@(T.Dualof p t) = addTypeName p d >> solveDual v t
--- Int, Char, Bool, Unit, Skip
-solveType _ p = pure p
-
-solveDual :: Visited -> T.Type -> FreestState T.Type
--- Session Types
-solveDual _ t@T.Skip{} = pure t
-solveDual v (T.Semi p t u) = T.Semi p <$> solveDual v t <*> solveDual v u
-solveDual v (T.Message p pol t) = T.Message p (dualPol pol) <$> solveType v t
-solveDual v (T.Choice p pol m) =
-  T.Choice p (dualPol pol) <$> tMapM (solveDual v) m
--- Recursive types
-solveDual v (T.Rec p b) = T.Rec p <$> solveBindD v b
-solveDual v t@(T.Var p a)
-  | a `Set.member` v = pure t -- A recursion variable
-  | otherwise = 
-      addError p
-      [Error "Cannot compute the dual of a non-recursion variable:"
-      , Error t] $> t
-  -- | otherwise = getFromTEnv a >>= \case
-  --   Just (_, u) -> solveDual v u
-  --   Nothing -> -- A polymorphic variable
-  --     addError p
-  --     [Error "Cannot compute the dual of a non-recursion variable:"
-  --     , Error a] $> t
--- Dualof
-solveDual v d@(T.Dualof p t) = addTypeName p d >> solveType v t
--- Non session-types
-solveDual _ t =
-      addError (pos t)
-      [Error "Dualof applied to a non session type: "
-      , Error t] $> t
-  
-solveBindT :: Visited -> K.Bind T.Type -> FreestState (K.Bind T.Type)
-solveBindT v (K.Bind p a k t) =
-  K.Bind p a k <$> solveType (Set.insert a v) t
-
-solveBindD :: Visited -> K.Bind T.Type -> FreestState (K.Bind T.Type)
-solveBindD v (K.Bind p a k t) =
-  K.Bind p a k <$> solveDual (Set.insert a v) t
-
-dualPol :: T.Polarity -> T.Polarity
-dualPol T.In  = T.Out
-dualPol T.Out = T.In
+buildRecursiveTypes :: FreestState ()
+buildRecursiveTypes = Map.mapWithKey buildRec <$> getTEnv >>= setTEnv
+  where buildRec x (k, t) = (k, T.Rec (pos x) (K.Bind (pos x) x k t))
 
 -- | Clean rec types where the variable does not occur free
 
@@ -167,50 +99,27 @@ cleanUnusedRecs = Map.mapWithKey clean <$> getTEnv >>= setTEnv
                                           | otherwise      = (k, t)
   clean _ kt = kt
 
+
+-- | Substitutions over environment (VarEnv + ParseEnv)
+
+class Substitution t where
+  substitute :: t -> FreestState ()
+
 -- | Substitute on function signatures (VarEnv)
 
-substituteVEnv :: FreestState ()
-substituteVEnv =
-  tMapWithKeyM_ (\pv t -> addToVEnv pv =<< elaborate t)
-    .   userDefined
-    =<< getVEnv
+instance Substitution VarEnv where
+  substitute =
+    tMapWithKeyM_ (\pv t -> addToVEnv pv =<< elaborate t) . userDefined
 
--- | Substitute Types on the expressions (ExpEnv)
+-- | Substitute Types on the expressions (ParseEnv)
 
-substitutePEnv :: FreestState ()
-substitutePEnv = getPEnv >>= tMapWithKeyM_
-  (\pv (ps, e) -> addToProg pv =<< buildFunBody pv ps =<< elaborate e)
+instance Substitution ParseEnv where
+  substitute = tMapWithKeyM_ (\x (ps, e) -> addToPEnv x ps =<< elaborate e)
 
-
-buildFunBody :: ProgVar -> [ProgVar] -> Exp -> FreestState Exp
-buildFunBody f as e = getFromVEnv f >>= \case
-  Just s  -> return $ buildExp as s
-  Nothing -> do
-    addError
-      (pos f)
-      [ Error "The binding for function"
-      , Error f
-      , Error "lacks an accompanying type signature"
-      ]
-    return e
- where
-  buildExp :: [ProgVar] -> T.Type -> Exp
-  buildExp [] _ = e
-  buildExp (b : bs) (T.Fun _ m t1 t2) =
-    Abs (pos b) (Bind (pos b) m b t1 (buildExp bs t2))
-  buildExp _ t@(T.Dualof _ _) =
-    internalError "Elaboration.Elaboration.buildFunbody.buildExp" t
-  buildExp bs (T.Forall p (K.Bind p1 x k t)) =
-    TypeAbs p (K.Bind p1 x k (buildExp bs t))
-  buildExp (b : bs) t =
-    Abs (pos b) (Bind (pos b) Un b (omission (pos b)) (buildExp bs t))
-
-
--- | Elaboration
+-- | Elaboration: Substitutions over Type, Exp, TypeMap, FieldMap, and Binds
 
 class Elaboration t where
   elaborate :: t -> FreestState t
-
 
 instance Elaboration T.Type where
   elaborate (  T.Fun p m t1 t2  ) = T.Fun p m <$> elaborate t1 <*> elaborate t2
@@ -223,10 +132,8 @@ instance Elaboration T.Type where
   elaborate n@(T.Var    p tname ) = getFromTEnv tname >>= \case
     Just t  -> addTypeName p n >> pure (changePos p (snd t))
     Nothing -> pure n
-  elaborate n@(T.Dualof p t) =
-    addTypeName p n >>
-    changePos p <$> (solveDual Set.empty =<< elaborate t)
-  elaborate t = pure t
+  elaborate (T.Dualof p t) = T.Dualof p <$> elaborate t
+  elaborate t              = pure t
 
 -- Apply elaborateType over TypeMaps
 instance Elaboration T.TypeMap where
@@ -240,7 +147,6 @@ instance Elaboration a => Elaboration (K.Bind a) where
 
 instance Elaboration Bind where
   elaborate (Bind p m x t e) = Bind p m x <$> elaborate t <*> elaborate e
-
 
 -- Substitute expressions
 
@@ -261,9 +167,39 @@ instance Elaboration Exp where
   elaborate (Match p e m)     = Match p <$> elaborate e <*> elaborate m
   elaborate e                 = return e
 
-
 instance Elaboration FieldMap where
-  elaborate = mapM (\(ps, e) -> (,) ps <$> elaborate e)
+  elaborate = mapM (\(ps, e) -> (ps, ) <$> elaborate e)
+
+
+-- | Build a program from the parse env
+
+buildProg :: FreestState ()
+buildProg = getPEnv
+  >>= tMapWithKeyM_ (\pv (ps, e) -> addToProg pv =<< buildFunBody pv ps e)
+ where
+  buildFunBody :: ProgVar -> [ProgVar] -> Exp -> FreestState Exp
+  buildFunBody f as e = getFromVEnv f >>= \case
+    Just s  -> return $ buildExp e as s
+    Nothing -> do
+      addError
+        (pos f)
+        [ Error "The binding for function"
+        , Error f
+        , Error "lacks an accompanying type signature"
+        ]
+      return e
+
+  buildExp :: Exp -> [ProgVar] -> T.Type -> Exp
+  buildExp e [] _ = e
+  buildExp e (b : bs) (T.Fun _ m t1 t2) =
+    Abs (pos b) (Bind (pos b) m b t1 (buildExp e bs t2))
+  buildExp _ _ t@(T.Dualof _ _) =
+    internalError "Elaboration.Elaboration.buildFunbody.buildExp" t
+  buildExp e bs (T.Forall p (K.Bind p1 x k t)) =
+    TypeAbs p (K.Bind p1 x k (buildExp e bs t))
+  buildExp e (b : bs) t =
+    Abs (pos b) (Bind (pos b) Un b (omission (pos b)) (buildExp e bs t))
+
 
 -- | Changing positions
 
@@ -280,7 +216,7 @@ changePos p (T.Pair    _ t   u) = T.Pair p t u
 changePos p (T.Semi    _ t   u) = T.Semi p t u
 changePos p (T.Message _ pol b) = T.Message p pol b
 changePos p (T.Choice  _ pol m) = T.Choice p pol m
-changePos p (T.Rec    _ xs    ) = T.Rec p xs -- (changePos p t)
-changePos p (T.Forall _ xs    ) = T.Forall p xs -- (changePos p t)
+changePos p (T.Rec    _ xs    ) = T.Rec p xs
+changePos p (T.Forall _ xs    ) = T.Forall p xs
 -- TypeVar
 changePos _ t                   = t

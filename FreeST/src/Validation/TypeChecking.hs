@@ -47,7 +47,7 @@ typeCheck = do
 
   -- * Check the formation of all type decls
 --  debugM "checking the formation of all type decls"
---  mapM_ (K.synthetise Map.empty . snd) tEnv
+  mapM_ (K.synthetise Map.empty . snd) =<< getTEnv 
 
   -- * Check the formation of all function signatures
 --  debugM "checking the formation of all function signatures (kinding)" 

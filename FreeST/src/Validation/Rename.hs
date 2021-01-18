@@ -102,8 +102,8 @@ rename' bs (T.Choice p pol tm) = T.Choice p pol <$> tMapM (rename bs) tm
 rename' bs (T.Forall p b     ) = T.Forall p <$> rename bs b
   -- Functional or session
 rename' bs (T.Rec    p b)
- | properRec b = T.Rec p <$> rename bs b
- | otherwise   = rename bs (K.body b)
+ | isProperRec b = T.Rec p <$> rename bs b
+ | otherwise     = rename bs (K.body b)
 rename' bs (T.Var    p a     ) = return $ T.Var p (findWithDefaultVar a bs)
   -- Type operators
 rename' _  t@T.Dualof{}        = internalError "Validation.Rename.rename" t
@@ -205,8 +205,8 @@ unfold = renameType . Subs.unfold
 
 -- Does a given bind form a proper rec?
 -- Does the Bind type variable occur free the type?
-properRec :: K.Bind T.Type -> Bool
-properRec (K.Bind _ x _ t) = x `isFreeIn` t
+isProperRec :: K.Bind T.Type -> Bool
+isProperRec (K.Bind _ x _ t) = x `isFreeIn` t
 
 -- Does a given type variable x occur free in a type t?
 -- If not, then rec x.t can be renamed to t alone.
@@ -226,6 +226,10 @@ isFreeIn x (T.Forall _ (K.Bind _ y _ t)) = x /= y && x `isFreeIn` t
 isFreeIn x (T.Rec    _ (K.Bind _ y _ t)) = x /= y && x `isFreeIn` t
 isFreeIn x (T.Var    _ y               ) = x == y
   -- Type operators
-isFreeIn _ t@T.Dualof{} = internalError "Validation.Rename.isFreeIn" t
+isFreeIn x (T.Dualof _ t) = x `isFreeIn` t
+  
+--isFreeIn _ t@T.Dualof{} =
+-- It is used during elaboration; otherwise we should throw an internal error
+--  internalError "Validation.Rename.isFreeIn" t
   -- Basic, Skip, Message, TypeName
 isFreeIn _ _                             = False

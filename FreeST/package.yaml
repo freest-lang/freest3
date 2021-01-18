@@ -37,6 +37,7 @@ library:
     - FreeST
     - Bisimulation.Grammar
     - Bisimulation.Bisimulation
+    - Elaboration.Duality
     - Elaboration.Elaboration
     - Equivalence.Equivalence
     - Equivalence.Normalisation
@@ -69,7 +70,7 @@ executables:
     build-tools:
       - alex
       - happy
-    ghc-options: -main-is FreeST
+    ghc-options: -main-is FreeST -threaded -rtsopts -with-rtsopts=-N
 
 tests:
     units:

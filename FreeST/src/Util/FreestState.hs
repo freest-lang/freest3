@@ -56,7 +56,8 @@ module Util.FreestState
   , ParseEnv
   , emptyPEnv
   , addToPEnv
-  , getPEnv
+  , getPEnv 
+  , setPEnv 
   )
 where
 
@@ -101,7 +102,7 @@ type FreestState = State FreestS
 initialState :: String -> FreestS
 initialState f = FreestS { filename  = f
                          , varEnv    = Map.empty
-                         , prog    = Map.empty
+                         , prog      = Map.empty
                          , typeEnv   = Map.empty
                          , typenames = Map.empty
                          , errors    = []
@@ -120,6 +121,10 @@ addToPEnv x xs e =
 
 getPEnv :: FreestState ParseEnv
 getPEnv = gets parseEnv
+
+setPEnv :: ParseEnv -> FreestState ()
+setPEnv pEnv = modify (\s -> s { parseEnv = pEnv })
+
 
 -- | NEXT VAR
 
