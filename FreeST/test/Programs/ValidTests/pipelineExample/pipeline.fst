@@ -14,7 +14,7 @@ This version uses the pipeline operator |>.
 
 -}
 
-fst : forall a : TU => forall b : TU => (a, b) -> a
+fst : forall a : TU . forall b : TU . (a, b) -> a
 fst p = let (x,_) = p in x
 
 type TermChannel : SL  = +{
@@ -34,7 +34,7 @@ computeService c =
 -- Read an arithmetic expression in the front of a channel; compute
 -- its value; return the pair composed of this value and the channel
 -- residual.
-receiveEval : forall a:SL => dualof TermChannel;a -> (Int, a)
+receiveEval : forall a:SL . dualof TermChannel;a -> (Int, a)
 receiveEval c =
   match c with {
     Const c ->

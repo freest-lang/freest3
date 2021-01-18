@@ -10,7 +10,7 @@ The Blind Spot
 European Mathematical Society, 2011
 -}
 
-type Tree a = ∀t => a -> (t -> t -> t) -> t
+type Tree a = ∀t . a -> (t -> t -> t) -> t
 
 main : Int
 main = 5

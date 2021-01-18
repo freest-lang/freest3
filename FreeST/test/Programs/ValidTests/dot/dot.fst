@@ -1,4 +1,4 @@
-dot : forall a => forall b => forall c => (b -> c) -> (a -> b) -> a -> c
+dot : forall a . forall b . forall c . (b -> c) -> (a -> b) -> a -> c
 dot f g x = f (g x)
 
 double : Int -> Int

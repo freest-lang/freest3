@@ -6,7 +6,7 @@ Copyright   : (c) Vasco T. Vasconcelos, 31 dec 2020
 Church Encoding _ Natural Numbers
 -}
 
-type Nat = ∀ a => (a -> a) -> a -> a
+type Nat = ∀ a . (a -> a) -> a -> a
 
 zero : Nat
 zero = Λ a => λs:(a -> a) -> λz:a -> z

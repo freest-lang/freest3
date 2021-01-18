@@ -112,8 +112,8 @@ import           Util.FreestState
 %left NEG not    -- unary
 
 -- Type                               
-%right '=>'      -- Used in forall                 
-%right '.'       -- used in rec
+%right '=>'      -- Used in typeabs            
+%right '.'       -- used in rec and forall
 %right ARROW
 %right '->' '-o' -- an Exp operator as well
 %right ';'       -- an Exp operator as well
@@ -282,7 +282,7 @@ Type :: { T.Type }
   | '(' Type ')'                  { $2 }
 
 Forall :: { T.Type }
-  : '=>' Type { $2 }
+  : '.' Type { $2 }
   | KindBind Forall 
       { let (a,k) = $1 in T.Forall (pos a) (K.Bind (pos k) a k $2) }
 

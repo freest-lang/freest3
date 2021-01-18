@@ -10,10 +10,10 @@ process.
 
 -- These should be in the prelude
 
-fst : forall a:TL => forall b:TU => (a, b) -> a
+fst : forall a:TL . forall b:TU . (a, b) -> a
 fst p = let (x, _) = p in x
 
-snd : forall a:TU => forall b:TL => (a, b) -> b
+snd : forall a:TU . forall b:TL . (a, b) -> b
 snd p = let (_, y) = p in y
 
 type Process = Int -> (Int, Process)

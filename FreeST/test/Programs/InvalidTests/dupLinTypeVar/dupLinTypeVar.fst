@@ -1,4 +1,4 @@
-f : forall a : TL => a -> a
+f : forall a : TL . a -> a
 f x = (x, x)
 
 main : (Int, Int)

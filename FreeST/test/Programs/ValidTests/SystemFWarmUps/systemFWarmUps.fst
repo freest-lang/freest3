@@ -4,13 +4,13 @@ Description : Examples from TAPL, Chapter 23, Universal Types
 Copyright   : (c) Vasco T. Vasconcelos, 31 dec 2020
 -}
 
-id : ∀ a => a -> a
+id : ∀ a . a -> a
 id = Λ a => λ x:a -> x
 
 five : Int
 five = id [Int] 5
 
-double : ∀ a => (a -> a) -> a -> a
+double : ∀ a . (a -> a) -> a -> a
 double = Λ a => λ f:(a->a) x:a -> f (f x)
 
 doubleInt : (Int -> Int) -> Int -> Int
@@ -26,7 +26,7 @@ doubleIntArrowInt = double [Int -> Int]
 thirteen : Int
 thirteen = doubleIntArrowInt doubleInt (λ x:Int -> x + 2) 5
 
-quadruple : ∀ a => (a -> a) -> a -> a
+quadruple : ∀ a . (a -> a) -> a -> a
 quadruple = Λ a => double [a -> a] (double [a])
 
 main : Int

@@ -12,7 +12,7 @@ European Mathematical Society, 2011
 "The previous integers are <<Cro-Magnon integer>>, anterior to the Babylonian numeration. A more modern version of integers requires finite sequences of zeros and ones." (page 119)
 -}
 
-type Bin = ∀a => a -> (a -> a) -> (a -> a) -> a
+type Bin = ∀a . a -> (a -> a) -> (a -> a) -> a
 
 zero : Bin
 zero z s0 s1 = z

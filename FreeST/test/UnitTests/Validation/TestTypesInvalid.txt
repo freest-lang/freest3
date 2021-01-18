@@ -77,10 +77,10 @@ Skip; a
 rec b. !Int; a
 Bool -o a
 (Char, Bool -o a)
-Int -> ∀ a : MU => b  
-Int -> ∀ a : MU => (Bool -> b)
-(Char, Int -> ∀ a : MU => (Bool -> b))
-forall a:SL => forall b:SL => forall z:SL => ((rec z:SL. (Skip;&{B: (+{A: (&{B: a, C: Skip};+{A: (?Bool;Skip), B: (z;Skip), C: (((?Int;&{A: ((((?();a);z);+{A: z, C: Skip});!Int), C: !Char});z);Skip)})};(+{A: !Char};(((?Int;&{A: ((((?();a);z);+{A: z, C: Skip});!Int), C: !Char});z);(?Char;((?Int;&{A: ((((?();a);z);+{A: z, C: Skip});!Int), C: !Char});z))))), C: Skip}));((a;&{B: (!Bool;(?();b)), C: (Skip;(?();c))});((?Int;+{B: a, C: ?Int});!Int)))
+Int -> ∀ a : MU . b  
+Int -> ∀ a : MU . (Bool -> b)
+(Char, Int -> ∀ a : MU . (Bool -> b))
+forall a:SL . forall b:SL . forall z:SL . ((rec z:SL. (Skip;&{B: (+{A: (&{B: a, C: Skip};+{A: (?Bool;Skip), B: (z;Skip), C: (((?Int;&{A: ((((?();a);z);+{A: z, C: Skip});!Int), C: !Char});z);Skip)})};(+{A: !Char};(((?Int;&{A: ((((?();a);z);+{A: z, C: Skip});!Int), C: !Char});z);(?Char;((?Int;&{A: ((((?();a);z);+{A: z, C: Skip});!Int), C: !Char});z))))), C: Skip}));((a;&{B: (!Bool;(?();b)), C: (Skip;(?();c))});((?Int;+{B: a, C: ?Int});!Int)))
 
 -- Messages not of kind ML
 

@@ -6,7 +6,7 @@ Copyright   : (c) Vasco T. Vasconcelos, 31 dec 2020
 Church Encoding _ Boolean Values
 -}
 
-type BoolC = ∀ b => b -> b -> b
+type BoolC = ∀ b . b -> b -> b
 
 trueC : BoolC
 trueC = Λ a => λ t:a -> λ f:a -> t
@@ -32,7 +32,7 @@ notC' b = Λ a => λ t:a f:a -> b [a] f t
 
 -- Destructor
 
-cond : ∀ a => BoolC -> a -> a -> a
+cond : ∀ a . BoolC -> a -> a -> a
 cond b e1 e2 = b [a] e1 e2
 
 -- Boolean ops based on the conditional

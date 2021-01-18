@@ -1,4 +1,4 @@
-f : forall a:SL => a -> (Int, a)
+f : forall a:SL . a -> (Int, a)
 f x = (7, x)
 
 main : Int

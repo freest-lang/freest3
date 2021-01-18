@@ -21,7 +21,7 @@ type D : SL = +{ Lt : T;D, Dollar : Skip }
 type T : SL = +{ Lt : T;T, Gt : Skip }
 
 -- Read from a channel; print what is read
-readD : forall a:SL => dualof D;a -> a
+readD : forall a:SL . dualof D;a -> a
 readD c =
   match c with {
     Lt c ->
@@ -31,7 +31,7 @@ readD c =
       printCharLn '$';
       c
   }
-readT : forall a:SL => dualof T;a -> a
+readT : forall a:SL . dualof T;a -> a
 readT c =
   match c with {
     Lt c ->
@@ -43,7 +43,7 @@ readT c =
   }
 
 -- Read from a channel and immediately write on another channel
-forwardD : forall a:SL => forall b:SL => dualof D;a -> D;b -> (a, b)
+forwardD : forall a:SL . forall b:SL . dualof D;a -> D;b -> (a, b)
 forwardD in' out =
   match in' with {
     Lt in' ->
@@ -55,7 +55,7 @@ forwardD in' out =
          (in', out)
   }
 
-forwardT : forall a:SL => forall b:SL => dualof T;a -> T;b -> (a, b)
+forwardT : forall a:SL . forall b:SL . dualof T;a -> T;b -> (a, b)
 forwardT in' out =
   match in' with {
     Lt in' ->
@@ -69,7 +69,7 @@ forwardT in' out =
 
 -- Read from a channel; read from a second channel; while writing on a
 -- third channel
-concatD : forall a:SL => forall b:SL => forall c:SL => dualof D;a -> dualof D;b -> D;c -> (a, (b, c))
+concatD : forall a:SL . forall b:SL . forall c:SL . dualof D;a -> dualof D;b -> D;c -> (a, (b, c))
 concatD in1 in2 out =
   match in1 with {
     Lt in1 ->
@@ -80,9 +80,9 @@ concatD in1 in2 out =
     Dollar in1 ->
       let (in2, out) = forwardD[b][c] in2 out in
          (in1, (in2, out))
-  } -- forwardD : forall a:SL => forall b:SL => dualof D;a -> D;b -> (a, b)
+  } -- forwardD : forall a:SL . forall b:SL . dualof D;a -> D;b -> (a, b)
 
-concatT : forall a:SL => forall b:SL => forall c:SL => dualof T;a -> b -> T;c -> (a, (b, c))
+concatT : forall a:SL . forall b:SL . forall c:SL . dualof T;a -> b -> T;c -> (a, (b, c))
 concatT in1 in2 out =
   match in1 with {
     Lt in1 ->
@@ -132,6 +132,6 @@ main =
   readD[Skip] in3
 
 -- To be used with fork : () -> ()
-sink : forall a : SU => a -> ()
+sink : forall a : SU . a -> ()
 sink _ = ()
 

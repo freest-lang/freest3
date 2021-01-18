@@ -23,16 +23,16 @@ Int
 -- Sequences of Λ, λ, ∀ abstractions and type applications abbreviated
 
 Λ a => Λ b => λ x:a -> λ y:b -> x
-∀ a => ∀ b => a -> b -> a
+∀ a . ∀ b . a -> b -> a
 
 Λ a b => λ x:a -> λ y:b -> x
-∀ a => ∀ b => a -> b -> a
+∀ a . ∀ b . a -> b -> a
 
 Λ a b => λ x:a -> λ y:b -> x
-∀ a b => a -> b -> a
+∀ a b . a -> b -> a
 
-λ n:(∀ a => (a -> a) -> a -> a) -> Λ a => λ s:(a -> a) z:a -> s (n [a] s z)
-(∀ a => (a -> a) -> a -> a) -> (∀ a => (a -> a) -> a -> a)
+λ n:(∀ a . (a -> a) -> a -> a) -> Λ a => λ s:(a -> a) z:a -> s (n [a] s z)
+(∀ a . (a -> a) -> a -> a) -> (∀ a . (a -> a) -> a -> a)
 
 (Λa b => λx:a y:b -> Λc => λz:(a -> b -> c) -> z x y) [Int Bool]
-Int -> Bool -> ∀c => (Int -> Bool -> c) -> c
+Int -> Bool -> ∀c . (Int -> Bool -> c) -> c
