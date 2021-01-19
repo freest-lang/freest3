@@ -124,6 +124,9 @@ initialCtx = Map.fromList
   , ( var "ord"
     , PrimitiveFun (\(Character x) -> Integer $ ord x)
     )
+  -- Pairs
+  , (var "fst", PrimitiveFun (\(Pair a _) -> a))
+  , (var "snd", PrimitiveFun (\(Pair _ b) -> b))
   -- Prints
   , ( var "printInt"
     , PrimitiveFun (\(Integer x) -> IOValue (putStr (show x) >> return Unit))
