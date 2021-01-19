@@ -102,8 +102,6 @@ import           Util.FreestState
 %right in else match case
 -- %left select
 %nonassoc new
-%right '$'       -- function call
-%left '&'        -- function call
 %left '||'       -- disjunction
 %left '&&'       -- conjunction
 %nonassoc CMP    -- comparison (relational and equality)
@@ -120,6 +118,10 @@ import           Util.FreestState
 %right POL        -- both '!' and '?'
 %right dualof
 %nonassoc ProgVarWildTBind
+
+-- Higher precedence than ';'
+%right '$'       -- function call
+%left '&'        -- function call
 
 %%
 -------------
