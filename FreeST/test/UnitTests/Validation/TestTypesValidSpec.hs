@@ -6,11 +6,11 @@ where
 import           Control.Monad.State            ( runState )
 import qualified Data.Map.Strict               as Map
                                                 ( empty )
-import           Elaboration.Duality
+import           Elaboration.Duality           as Dual
 import           Elaboration.Elaboration
 import           SpecUtils
 import           Syntax.Kind                    ( Kind )
-import           Util.FreestState              ( initialState
+import           Util.FreestState               ( initialState
                                                 , errors
                                                 )
 import           Validation.Kinding             ( synthetise )
@@ -29,7 +29,7 @@ hasKind :: Type -> Kind -> TestExpectation
 hasKind t k = testValidExpectation (k' <: k) (errors s) -- null (errors s) && k' <: k
  where
   (k', s) = runState test (initialState "Kind synthesis")
-  test    = synthetise Map.empty . renameType =<< resolveDualof t
+  test    = synthetise Map.empty . renameType =<< Dual.resolve t
   
 main :: IO ()
 main = hspec spec

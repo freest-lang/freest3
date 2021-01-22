@@ -1,12 +1,12 @@
 {- |
 Module      :  Syntax.Types
-Description :  The language types.
+Description :  The types in FreeST.
 Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of Lisbon
                    Andreia Mordido, LASIGE, Faculty of Sciences, University of Lisbon
                    Vasco Vasconcelos, LASIGE, Faculty of Sciences, University of Lisbon
 Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc.ul.pt
 
-This module defines a types and equality.
+This module defines the syntax for types.
 -}
 
 module Syntax.Type
@@ -31,7 +31,7 @@ data Type =
   | Bool Pos
   | Unit Pos
   | Fun Pos Multiplicity Type Type
-  | Pair Pos Type Type        -- make Pair a b = ∀c. (a => b => c) => c (see TAPL pg 352)
+  | Pair Pos Type Type
   | Datatype Pos TypeMap
   -- Session Types
   | Skip Pos
@@ -39,7 +39,7 @@ data Type =
   | Message Pos Polarity Type
   | Choice Pos Polarity TypeMap
   -- Polymorphism and recursive types
-  | Forall Pos (K.Bind Type)   -- ∀ a:k => T, Universal type
+  | Forall Pos (K.Bind Type)   -- ∀ a:k . T, Universal type
   | Rec Pos (K.Bind Type)      -- μ a:k => T, Recursive type
   | Var Pos TypeVar
   -- Type operators

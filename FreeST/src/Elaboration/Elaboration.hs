@@ -8,7 +8,7 @@ where
 import           Data.Functor
 import           Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
-import           Elaboration.Duality
+import           Elaboration.Duality           as Dual
 import           Syntax.Base
 import           Syntax.Expression
 import qualified Syntax.Kind                   as K
@@ -35,11 +35,11 @@ elaboration = do
   --   and on the function bodies. 
   -- | Then, resolve all the dualof occurrences on:
   -- | Type Env (i.e. type A = dualof !Int)
-  (resolveDualof =<< getTEnv) >>= setTEnv
+  (Dual.resolve =<< getTEnv) >>= setTEnv
   -- | Var Env (i.e. f : dualof !Int -> Skip)
-  (resolveDualof =<< getVEnv) >>= setVEnv
+  (Dual.resolve =<< getVEnv) >>= setVEnv
   -- | Parse Env (i.e. f c = send 5 c)
-  (resolveDualof =<< getPEnv) >>= setPEnv
+  (Dual.resolve =<< getPEnv) >>= setPEnv
   -- | From this point there are no more occurrences of the dualof operator
   -- | Build the expression environment: substitute all
   --   type operators on ExpEnv;

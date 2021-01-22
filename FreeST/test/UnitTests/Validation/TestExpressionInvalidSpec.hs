@@ -5,7 +5,7 @@ where
 
 import           Control.Monad.State
 import qualified Data.Map.Strict               as Map
-import           Elaboration.Duality -- ( elaborate )
+import           Elaboration.Duality           as Dual
 import           SpecUtils
 import           Syntax.Expression
 import           Util.FreestState
@@ -23,7 +23,7 @@ matchInvalidExpSpec e = it e $ isExpr (read e) `shouldBe` False
 isExpr :: Exp -> Bool
 isExpr e = null (errors s)
  where
-  s = execState (synthetise Map.empty =<< resolveDualof e)
+  s = execState (synthetise Map.empty =<< Dual.resolve e)
                 (initialState "Check Against Expression") -- (elaborateExp e)
 
 
