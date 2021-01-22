@@ -73,9 +73,10 @@ synthetise kEnv (T.Rec _ (K.Bind _ a k t)) = do
   checkContractive a t
   checkAgainst (Map.insert a k kEnv) k t
   return k
-synthetise kEnv (T.Forall _ (K.Bind _ a k t)) =
-  -- synthetise (Map.insert a k kEnv) t
-  checkAgainstTop (Map.insert a k kEnv) t
+synthetise kEnv (T.Forall _ (K.Bind p a k t)) = do
+  (K.Kind _ _ m) <- synthetise (Map.insert a k kEnv) t
+  return $ K.Kind p K.Top m
+  -- checkAgainstTop (Map.insert a k kEnv) t
 synthetise kEnv (T.Var p a) = case kEnv Map.!? a of
   Just k  -> return k
   Nothing -> do
@@ -91,8 +92,24 @@ checkContractive a t = unless (contractive a t) $ addError
   (pos t)
   [Error "Type", Error t, Error "is not contractive on type variable", Error a]
 
--- Check whether a given type is of a session kind. In any case return
--- the multiplicity of the kind of the type
+-- Check a type against a given kind
+checkAgainst :: K.KindEnv -> K.Kind -> T.Type -> FreestState K.Kind
+checkAgainst kEnv expected t = do
+  actual <- synthetise kEnv t
+  S.when (not (actual <: expected)) $ addError
+    (pos t)
+    [ Error "Couldn't match expected kind"
+    , Error expected
+    , Error "\n\t with actual kind"
+    , Error actual
+    , Error "\n\t for type"
+    , Error t
+    ]
+  pure expected
+
+-- Check whether a given type is of a session kind. In any case return the
+-- multiplicity of the kind of the type. This is a refined version of
+-- checkAgainst for a better error messages
 checkAgainstSession :: K.KindEnv -> T.Type -> FreestState Multiplicity
 checkAgainstSession kEnv t = do
   k@(K.Kind _ p m) <- synthetise kEnv t
@@ -105,34 +122,6 @@ checkAgainstSession kEnv t = do
     , Error k
     ]
   return m
-
--- Check whether a given type is of a top kind.
-checkAgainstTop :: K.KindEnv -> T.Type -> FreestState K.Kind
-checkAgainstTop kEnv t = do
-  k@(K.Kind _ p _) <- synthetise kEnv t
-  S.when (p /= K.Top) $ addError
-    (pos t)
-    [ Error "Expecting a functional type\n"
-    , Error "\t found type"
-    , Error t
-    , Error "of kind"
-    , Error k
-    ]
-  return k
-
--- Check a type against a given kind
-checkAgainst :: K.KindEnv -> K.Kind -> T.Type -> FreestState ()
-checkAgainst kEnv expected t = do
-  actual <- synthetise kEnv t
-  S.when (not (actual <: expected)) $ addError
-    (pos t)
-    [ Error "Couldn't match expected kind"
-    , Error expected
-    , Error "\n\t with actual kind"
-    , Error actual
-    , Error "\n\t for type"
-    , Error t
-    ]
 
 -- Determine whether a given type is unrestricted
 un :: T.Type -> FreestState Bool
