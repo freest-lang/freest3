@@ -5,14 +5,6 @@ TAPL, page 270
 "A more useful variant of the Hungry type above is the type Stream of functions that can consume an arbitrary number of unit values, each time returning a pair of a number and a new stream."
 -}
 
--- These should be in the prelude
-
-fst : forall a:TL . forall b:TU . (a, b) -> a
-fst p = let (x, _) = p in x
-
-snd : forall a:TU . forall b:TL . (a, b) -> b
-snd p = let (_, y) = p in y
-
 -- A more useful variant of the Hungry type above is the type Stream
 -- of functions that can consume an arbitrary number of unit values,
 -- each time returning a pair of a number and a new stream.

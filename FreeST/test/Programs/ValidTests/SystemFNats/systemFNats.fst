@@ -48,20 +48,20 @@ square n = Λ a => λ s:(a -> a) z:a -> n [a] (n [a] s) z
 
 type Pair = (Nat -> Nat -> Nat) -> Nat
 
-fst : Pair -> Nat
-fst p = p (λ m:Nat _:Nat -> m)
+fst' : Pair -> Nat
+fst' p = p (λ m:Nat _:Nat -> m)
 
-snd : Pair -> Nat
-snd p = p (λ _:Nat n:Nat -> n)
+snd' : Pair -> Nat
+snd' p = p (λ _:Nat n:Nat -> n)
 
 pair : Nat -> Nat -> Pair
 pair m n = λz:(Nat -> Nat -> Nat) -> z m n
 
 shift : Pair -> Pair
-shift p = pair (succ (fst p)) (fst p)
+shift p = pair (succ (fst' p)) (fst' p)
 
 pred : Nat -> Nat
-pred n = snd (n [Pair] shift (pair zero zero))
+pred n = snd' (n [Pair] shift (pair zero zero))
 
 -- Testing
 

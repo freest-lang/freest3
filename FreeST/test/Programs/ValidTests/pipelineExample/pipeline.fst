@@ -14,9 +14,6 @@ This version uses the pipeline operator |>.
 
 -}
 
-fst : forall a : TU . forall b : TU . (a, b) -> a
-fst p = let (x,_) = p in x
-
 type TermChannel : SL  = +{
    Const: !Int,
    Add: TermChannel;TermChannel,
