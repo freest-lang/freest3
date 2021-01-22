@@ -62,12 +62,10 @@ synthetise kEnv (T.Semi p t u) = do
   checkAgainstSession kEnv t
   checkAgainstSession kEnv u
   return $ K.sl p
-synthetise kEnv (T.Message p _ t) = do
-  checkAgainst kEnv (K.ml p) t
-  return $ K.sl p
-synthetise kEnv (T.Choice p _ m) = do
-  tMapM_ (checkAgainst kEnv (K.sl p)) m
-  return $ K.sl p
+synthetise kEnv (T.Message p _ t) =
+  checkAgainst kEnv (K.ml p) t $> K.sl p
+synthetise kEnv (T.Choice p _ m) =
+  tMapM_ (checkAgainst kEnv (K.sl p)) m $> K.sl p
 -- Session or functional
 synthetise kEnv (T.Rec _ (K.Bind _ a k t)) = do
   checkContractive a t
@@ -110,9 +108,9 @@ checkAgainst kEnv expected t = do
 -- Check whether a given type is of a session kind. In any case return the
 -- multiplicity of the kind of the type. This is a refined version of
 -- checkAgainst for a better error messages
-checkAgainstSession :: K.KindEnv -> T.Type -> FreestState Multiplicity
+checkAgainstSession :: K.KindEnv -> T.Type -> FreestState ()
 checkAgainstSession kEnv t = do
-  k@(K.Kind _ p m) <- synthetise kEnv t
+  k@(K.Kind _ p _) <- synthetise kEnv t
   S.when (p /= K.Session) $ addError
     (pos t)
     [ Error "Expecting a session type\n"
@@ -121,7 +119,7 @@ checkAgainstSession kEnv t = do
     , Error "of kind"
     , Error k
     ]
-  return m
+  return ()
 
 -- Determine whether a given type is unrestricted
 un :: T.Type -> FreestState Bool
