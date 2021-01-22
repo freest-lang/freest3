@@ -74,7 +74,8 @@ synthetise kEnv (T.Rec _ (K.Bind _ a k t)) = do
   checkAgainst (Map.insert a k kEnv) k t
   return k
 synthetise kEnv (T.Forall _ (K.Bind _ a k t)) =
-  synthetise (Map.insert a k kEnv) t
+  -- synthetise (Map.insert a k kEnv) t
+  checkAgainstTop (Map.insert a k kEnv) t
 synthetise kEnv (T.Var p a) = case kEnv Map.!? a of
   Just k  -> return k
   Nothing -> do
@@ -104,6 +105,20 @@ checkAgainstSession kEnv t = do
     , Error k
     ]
   return m
+
+-- Check whether a given type is of a top kind.
+checkAgainstTop :: K.KindEnv -> T.Type -> FreestState K.Kind
+checkAgainstTop kEnv t = do
+  k@(K.Kind _ p _) <- synthetise kEnv t
+  S.when (p /= K.Top) $ addError
+    (pos t)
+    [ Error "Expecting a functional type\n"
+    , Error "\t found type"
+    , Error t
+    , Error "of kind"
+    , Error k
+    ]
+  return k
 
 -- Check a type against a given kind
 checkAgainst :: K.KindEnv -> K.Kind -> T.Type -> FreestState ()
