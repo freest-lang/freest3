@@ -55,6 +55,8 @@ typeList =
   , (mkVar p "printCharLn", read "Char -> ()"     )
   , (mkVar p "printUnit"  , read "() -> ()"       )
   , (mkVar p "printUnitLn", read "() -> ()"       )
+  , (mkVar p "printString"  , read "String -> ()" )
+  , (mkVar p "printStringLn", read "String -> ()" )
   ]
   where p = defaultPos
   

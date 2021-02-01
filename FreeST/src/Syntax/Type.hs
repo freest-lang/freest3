@@ -30,6 +30,7 @@ data Type =
   | Char Pos
   | Bool Pos
   | Unit Pos
+  | String Pos
   | Fun Pos Multiplicity Type Type
   | Pair Pos Type Type
   | Datatype Pos TypeMap

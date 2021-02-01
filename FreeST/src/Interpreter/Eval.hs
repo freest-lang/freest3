@@ -36,6 +36,7 @@ eval _   _    (E.Unit _                  ) = return Unit
 eval _   _    (E.Int _ i                 ) = return $ Integer i
 eval _   _    (E.Bool _ b                ) = return $ Boolean b
 eval _   _    (E.Char _ c                ) = return $ Character c
+eval _   _    (E.String _ s              ) = return $ String s
 eval ctx eenv (E.Var _ x                 ) = evalVar ctx eenv x
 eval ctx eenv (E.TypeApp _ x _           ) = eval ctx eenv x
 -- TypeAbs Pos KindBind Expression

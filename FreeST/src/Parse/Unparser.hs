@@ -150,6 +150,7 @@ instance Unparse T.Type where
   unparse (T.Int  _       ) = (maxRator, "Int")
   unparse (T.Char _       ) = (maxRator, "Char")
   unparse (T.Bool _       ) = (maxRator, "Bool")
+  unparse (T.String _ )     = (maxRator, "String")
   unparse (T.Unit _       ) = (maxRator, "()")
   unparse (T.Skip _       ) = (maxRator, "Skip")
   unparse (T.Var  _ a     ) = (maxRator, show a)
@@ -200,6 +201,7 @@ instance Unparse Exp where
   unparse (E.Int  _ i) = (maxRator, show i)
   unparse (E.Char _ c) = (maxRator, show c)
   unparse (E.Bool _ b) = (maxRator, show b)
+  unparse (E.String _ s) = (maxRator, s)
   -- Variable
   unparse (E.Var  _ x) = (maxRator, show x)
   -- Abstraction intro and elim

@@ -18,8 +18,9 @@ data Value =
   | Boolean Bool
   | Character Char
   | Label String -- to be sent on channels
+  | String String
+  | Cons ProgVar [[Value]] -- TODO: Think how to do this in other way
   | Pair Value Value
-  | Cons ProgVar [[Value]] -- TODO: Think how to do this in another way
   | Closure ProgVar E.Exp Ctx
   | PrimitiveFun (Value -> Value)
   | Chan ChannelEnd
@@ -36,6 +37,7 @@ instance Show Value where
   show (Integer i)      = show i
   show (Boolean b)      = show b
   show (Character c)    = show c
+  show (String s)       = s
   show (Label s)        = s
   show (Pair v1 v2)     = "(" ++ show v1 ++ ", " ++ showTuple v2 ++ ")"
   show (Cons c xs)      = showCons c xs

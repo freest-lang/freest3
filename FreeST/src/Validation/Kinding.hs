@@ -44,6 +44,7 @@ synthetise _    (T.Int  p     ) = return $ K.Kind p K.Message Un
 synthetise _    (T.Char p     ) = return $ K.Kind p K.Message Un
 synthetise _    (T.Bool p     ) = return $ K.Kind p K.Message Un
 synthetise _    (T.Unit p     ) = return $ K.Kind p K.Message Un
+synthetise _    (T.String p     ) = return $ K.Kind p K.Message Un
 synthetise kEnv (T.Fun p m t u) = do
   synthetise kEnv t
   synthetise kEnv u

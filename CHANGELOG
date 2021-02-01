@@ -1,3 +1,10 @@
+# Version 1.0.3
+  - Adding String literals
+  - Adding printString and printStringLn
+  - Adding the & operator.
+  - Showing Types and expressions with less parentheses
+  - Small bug fixes
+
 # Version 1.0.2
   - Small bug fixes
   - Changing the order of the parameters of send and select functions.

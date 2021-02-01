@@ -34,6 +34,7 @@ import           Util.FreestState
   Int      {TokenIntT _}
   Char     {TokenCharT _}
   Bool     {TokenBoolT _}
+  String   {TokenStringT _}
   '()'     {TokenUnit _}
   '->'     {TokenUnArrow _}
   '-o'     {TokenLinArrow _}
@@ -75,6 +76,7 @@ import           Util.FreestState
   INT      {TokenInt _ _ }
   BOOL     {TokenBool _ _}
   CHAR     {TokenChar _ _}
+  STR      {TokenString _ _}
   let      {TokenLet _}
   in       {TokenIn _}
   '='      {TokenEq _}
@@ -212,6 +214,7 @@ Primary :: { E.Exp }
   : INT                            { let (TokenInt p x) = $1 in E.Int p x }
   | BOOL                           { let (TokenBool p x) = $1 in E.Bool p x }
   | CHAR                           { let (TokenChar p x) = $1 in E.Char p x }
+  | STR                            { let (TokenString p x) = $1 in String p x }
   | '()'                           { E.Unit (pos $1) }
   | TApp ']'                       { $1 }
   -- | Primary '[' Type ']'             { E.TypeApp (pos $1) $1 $3 }
@@ -264,6 +267,7 @@ Type :: { T.Type }
   : Int                           { T.Int (pos $1) }
   | Char                          { T.Char (pos $1) }
   | Bool                          { T.Bool (pos $1) }
+  | String                        { T.String (pos $1) }
   | '()'                          { T.Unit (pos $1) }
   | Type Arrow Type %prec ARROW   { uncurry T.Fun $2 $1 $3 }
   | '(' Type ',' TupleType ')'    { T.Pair (pos $1) $2 $4 }

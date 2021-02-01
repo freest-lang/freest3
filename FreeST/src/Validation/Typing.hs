@@ -48,6 +48,7 @@ synthetise _ (E.Int  p _) = return $ T.Int p
 synthetise _ (E.Char p _) = return $ T.Char p
 synthetise _ (E.Bool p _) = return $ T.Bool p
 synthetise _ (E.Unit p  ) = return $ T.Unit p
+synthetise _ (E.String p _) = return $ T.String p
 -- Variable
 synthetise kEnv e@(E.Var p x)
   | x == mkVar p "receive" = addPartiallyAppliedError e "channel"

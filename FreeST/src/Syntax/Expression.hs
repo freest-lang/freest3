@@ -30,6 +30,7 @@ data Exp =
   | Int Pos Int
   | Char Pos Char
   | Bool Pos Bool
+  | String Pos String
   -- Variable
   | Var Pos ProgVar
   -- Abstraction intro and elim
