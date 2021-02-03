@@ -18,11 +18,11 @@ pair : ∀a b . a -> b -> ∀c . (a -> b -> c) -> c
 pair x y = Λc => λz:(a -> b -> c) -> z x y
 
 intBoolPair : Int -> Bool -> ∀c . (Int -> Bool -> c) -> c 
-intBoolPair = pair [Int Bool]
+intBoolPair = pair [Int, Bool]
 
 main : Char
-main = snd' [Int Char] $
+main = snd' [Int, Char] $
        fst' [∀c . (Int -> Char -> c) -> c] [Bool] $
-       pair [∀c . (Int -> Char -> c) -> c] [Bool] (pair [Int Char] 5 'c') False
+       pair [∀c . (Int -> Char -> c) -> c] [Bool] (pair [Int, Char] 5 'c') False
 
 -- main = snd' [Int] [Bool] $ pair [Int] [Bool] 5 False

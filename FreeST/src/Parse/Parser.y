@@ -238,7 +238,7 @@ TAbs :: { E.Exp }
 
 TApp :: { E.Exp }
   : Primary '[' Type { E.TypeApp (pos $1) $1 $3 }
-  | TApp Type    { E.TypeApp (pos $1) $1 $2 }
+  | TApp ',' Type        { E.TypeApp (pos $1) $1 $3 }
 
 Tuple :: { E.Exp }
   : Exp           { $1 }
