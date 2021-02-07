@@ -60,6 +60,7 @@ instance Position Exp where
   pos (Int p _            ) = p
   pos (Char p _           ) = p
   pos (Bool p _           ) = p
+  pos (String p _         ) = p
   pos (Var p _            ) = p
   pos (Abs p _            ) = p
   pos (UnLet p _ _ _      ) = p

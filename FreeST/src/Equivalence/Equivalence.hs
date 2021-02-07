@@ -52,12 +52,13 @@ instance Equivalence T.Type where
    where
     equiv :: Visited -> K.KindEnv -> T.Type -> T.Type -> Bool
     -- Have we been here before?
-    equiv v _ t1 t2 | (pos t1, pos t2) `Set.member` v = True
+    equiv v _ t1 t2 | (pos t1, pos t2) `Set.member` v  = True
     -- Functional types
-    equiv _ _ (T.Int  _) (T.Int  _)                   = True
-    equiv _ _ (T.Char _) (T.Char _)                   = True
-    equiv _ _ (T.Bool _) (T.Bool _)                   = True
-    equiv _ _ (T.Unit _) (T.Unit _)                   = True
+    equiv _ _ (T.Int  _) (T.Int  _)                    = True
+    equiv _ _ (T.Char _) (T.Char _)                    = True
+    equiv _ _ (T.Bool _) (T.Bool _)                    = True
+    equiv _ _ (T.Unit _) (T.Unit _)                    = True
+    equiv _ _ (T.String _) (T.String _)                = True
     equiv v kEnv (T.Fun _ n1 t1 t2) (T.Fun _ n2 u1 u2) =
       n1 == n2 && equiv v kEnv t1 u1 && equiv v kEnv t2 u2
     equiv v kEnv (T.Pair _ t1 t2) (T.Pair _ u1 u2) =
