@@ -29,8 +29,8 @@ data Type =
     Int Pos
   | Char Pos
   | Bool Pos
-  | Unit Pos
   | String Pos
+  | Unit Pos
   | Fun Pos Multiplicity Type Type
   | Pair Pos Type Type
   | Datatype Pos TypeMap
@@ -41,7 +41,7 @@ data Type =
   | Choice Pos Polarity TypeMap
   -- Polymorphism and recursive types
   | Forall Pos (K.Bind Type)   -- ∀ a:k . T, Universal type
-  | Rec Pos (K.Bind Type)      -- μ a:k => T, Recursive type
+  | Rec Pos (K.Bind Type)      -- μ a:k . T, Recursive type
   | Var Pos TypeVar
   -- Type operators
   -- | Abs Pos (Bind Type)       -- λ a:k => T, Operator abstraction
@@ -54,6 +54,7 @@ instance Position Type where
   pos (Int  p       ) = p
   pos (Char p       ) = p
   pos (Bool p       ) = p
+  pos (String p     ) = p
   pos (Unit p       ) = p
   pos (Fun p _ _ _  ) = p
   pos (Pair p _ _   ) = p

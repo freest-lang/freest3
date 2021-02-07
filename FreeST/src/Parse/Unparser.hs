@@ -29,6 +29,7 @@ import           Syntax.Program
 import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
+import           Syntax.ProgramVariable
 
 -- Positions (Base)
 
@@ -106,9 +107,21 @@ showChoiceView T.Out = "+"
 -- https://www.cs.tufts.edu/~nr/pubs/unparse.ps
 
 data Precedence =
-  PMin |
-  PIn | PNew | PDot | PArrow | PSemi | PDualof | PMsg | PApp |
-  PMax
+    PMin
+  | PIn      -- in, else, match, case (expressions)
+  | PNew     -- new T
+  | PDisj    -- ||
+  | PConj    -- &&
+  | PCmp     -- comparison (relational and equality)
+  | PAdd     -- +, -
+  | PMult    -- *, /
+  | PDot     -- ∀ a:k . T and μ a:k . T
+  | PArrow   -- λλ a:k => e,  x:T -> e, λ x:T -o e, T -> T and T -o T
+  | PSemi    -- T ; U
+  | PMsg     -- !T and ?T
+  | PDualof  -- dualof T
+  | PApp     -- e1 e2
+  | PMax
   deriving (Eq, Ord, Bounded)
 
 data Associativity = Left | Right | NonAssoc deriving Eq
@@ -117,11 +130,15 @@ type Rator = (Precedence, Associativity)
 
 type Fragment = (Rator, String)
 
-inRator, newRator, dotRator, arrowRator, semiRator,
- dualofRator, appRator, minRator, maxRator, msgRator 
+minRator, inRator, newRator, disjRator, conjRator, cmpRator, addRator, multRator, dotRator, arrowRator, semiRator, dualofRator, appRator, msgRator, maxRator 
   :: Rator
-inRator = (PIn, Right)       -- also else, match, case
+inRator = (PIn, Right)
 newRator = (PNew, NonAssoc)
+disjRator = (PDisj, Left)
+conjRator = (PConj, Left)
+cmpRator = (PCmp, NonAssoc)
+addRator = (PAdd, Left)
+multRator = (PMult, Left)
 dotRator = (PDot, Right)
 arrowRator = (PArrow, Right)
 semiRator = (PSemi, Right)
@@ -150,7 +167,7 @@ instance Unparse T.Type where
   unparse (T.Int  _       ) = (maxRator, "Int")
   unparse (T.Char _       ) = (maxRator, "Char")
   unparse (T.Bool _       ) = (maxRator, "Bool")
-  unparse (T.String _ )     = (maxRator, "String")
+  unparse (T.String _     ) = (maxRator, "String")
   unparse (T.Unit _       ) = (maxRator, "()")
   unparse (T.Skip _       ) = (maxRator, "Skip")
   unparse (T.Var  _ a     ) = (maxRator, show a)
@@ -197,16 +214,40 @@ instance Show Exp where
 
 instance Unparse Exp where
   -- Basic values
-  unparse (E.Unit _  ) = (maxRator, "()")
-  unparse (E.Int  _ i) = (maxRator, show i)
+  unparse (E.Unit _) = (maxRator, "()")
+  unparse (E.Int _ i) = (maxRator, show i)
   unparse (E.Char _ c) = (maxRator, show c)
   unparse (E.Bool _ b) = (maxRator, show b)
   unparse (E.String _ s) = (maxRator, s)
   -- Variable
   unparse (E.Var  _ x) = (maxRator, show x)
   -- Abstraction intro and elim
-  unparse (E.Abs _ b) = (arrowRator, "λ" ++ show b) -- ++ showArrow m ++ s)
-    -- where s = bracket (unparse e) Right arrowRator
+  unparse (E.Abs _ b) = (arrowRator, "λ" ++ show b)
+  unparse (E.App _ (E.App _ (E.Var p x) e1) e2) | show x == "(||)" =
+   (disjRator, l ++ " || " ++ r)
+   where
+    l = bracket (unparse e1) Left disjRator
+    r = bracket (unparse e2) Right disjRator
+  unparse (E.App _ (E.App _ (E.Var p x) e1) e2) | show x == "(&&)" =
+   (conjRator, l ++ " && " ++ r)
+   where
+    l = bracket (unparse e1) Left conjRator
+    r = bracket (unparse e2) Right conjRator
+  unparse (E.App _ (E.App _ (E.Var p x) e1) e2) | isCmp x =
+   (cmpRator, l ++ (showOp x) ++ r)
+   where
+    l = bracket (unparse e1) Left cmpRator
+    r = bracket (unparse e2) Right cmpRator
+  unparse (E.App _ (E.App _ (E.Var p x) e1) e2) | isAdd x =
+   (addRator, l ++ (showOp x) ++ r)
+   where
+    l = bracket (unparse e1) Left addRator
+    r = bracket (unparse e2) Right addRator
+  unparse (E.App _ (E.App _ (E.Var p x) e1) e2) | isMult x =
+   (multRator, l ++ (showOp x) ++ r)
+   where
+    l = bracket (unparse e1) Left multRator
+    r = bracket (unparse e2) Right multRator
   unparse (E.App _ e1 e2) = (appRator, l ++ " " ++ r)
    where
     l = bracket (unparse e1) Left appRator
@@ -255,6 +296,21 @@ showFieldMap m = intercalate "; " $ map showAssoc (Map.toList m)
  where
   showAssoc (b, (a, v)) =
     show b ++ " " ++ unwords (map show a) ++ " -> " ++ show v
+
+isOp :: [String] -> ProgVar -> Bool
+isOp ops x = show x `elem` ops
+
+isCmp :: ProgVar -> Bool
+isCmp = isOp ["(<)", "(>)", "(<=)", "(>=)", "(==)", "(/=)"]
+
+isAdd :: ProgVar -> Bool
+isAdd = isOp ["(+)", "(-)"]
+
+isMult :: ProgVar -> Bool
+isMult = isOp ["(*)", "(/)"]
+
+showOp :: ProgVar -> String
+showOp x = " " ++ (tail $ init $ show x) ++ " "
 
 -- VarEnv
 

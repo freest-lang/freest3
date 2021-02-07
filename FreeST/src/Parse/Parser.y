@@ -2,7 +2,6 @@
 module Parse.Parser
 where
 
-
 import           Control.Monad.State
 import qualified Data.Map.Strict               as Map
 import           Parse.Lexer
@@ -25,8 +24,6 @@ import           Util.FreestState
 %name expr Exp
 %tokentype { Token }
 %error { parseError }
--- %monad { ParseResult } { thenParseResult } { returnParseResult }
--- %monad { FreestState }
 %monad { FreestStateT } { (>>=) } { return }
 
 %token
@@ -98,11 +95,7 @@ import           Util.FreestState
 %nonassoc LOWER_ID UPPER_ID
 %nonassoc '(' '['
 %nonassoc '()'
-%nonassoc '[' -- used in type app e[T]
-
--- Exp
 %right in else match case
--- %left select
 %nonassoc new
 %left '||'       -- disjunction
 %left '&&'       -- conjunction
@@ -110,18 +103,12 @@ import           Util.FreestState
 %left '+' '-'    -- aditive
 %left '*' '/'    -- multiplicative
 %left NEG not    -- unary
-
--- Type                               
-%right '=>'      -- Used in typeabs            
-%right '.'       -- used in rec and forall
-%right ARROW
-%right '->' '-o' -- an Exp operator as well
-%right ';'       -- an Exp operator as well
-%right POL        -- both '!' and '?'
+%right '.'       -- ∀ a:k . T and μ a:k . T
+%right '=>' '->' '-o' ARROW -- λλ a:k => e,  x:T -> e, λ x:T -o e, T -> T and T -o T
+%right ';'       -- T;T and e;e
+%right MSG       -- !T and ?T
 %right dualof
 %nonassoc ProgVarWildTBind
-
--- Higher precedence than ';'
 %right '$'       -- function call
 %left '&'        -- function call
 
@@ -201,7 +188,7 @@ Exp :: { E.Exp }
   | Exp '+' Exp                    { binOp $1 (mkVar (pos $2) "(+)") $3 }
   | Exp '-' Exp                    { binOp $1 (mkVar (pos $2) "(-)") $3 }
   | Exp '*' Exp                    { binOp $1 (mkVar (pos $2) "(*)") $3 }
-  | Exp '/' Exp                    { binOp $1 (mkVar (pos $2) "div") $3 }
+  | Exp '/' Exp                    { binOp $1 (mkVar (pos $2) "(/)") $3 }
   | '-' App %prec NEG              { unOp (mkVar (pos $1) "negate") $2}  
   | App                            { $1 }
 
@@ -274,7 +261,7 @@ Type :: { T.Type }
   -- Session types
   | Skip                          { T.Skip (pos $1) }
   | Type ';' Type                 { T.Semi (pos $2) $1 $3 }
-  | Polarity Type %prec POL       { uncurry T.Message $1 $2 }
+  | Polarity Type %prec MSG       { uncurry T.Message $1 $2 }
   | ChoiceView '{' FieldList '}'  { uncurry T.Choice $1 $3 }
   -- Polymorphism and recursion
   | rec KindBind '.' Type
