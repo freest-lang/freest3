@@ -22,4 +22,4 @@ specTest desc dir f = do
       forM_ testDirs $ f baseDir
 --    mapM_ (f baseDir) testDirs
     
-  runIO $ setCurrentDirectory baseDir
+--  runIO $ setCurrentDirectory baseDir

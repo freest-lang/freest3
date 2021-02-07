@@ -204,12 +204,11 @@ Primary :: { E.Exp }
   | STR                            { let (TokenString p x) = $1 in String p x }
   | '()'                           { E.Unit (pos $1) }
   | TApp ']'                       { $1 }
-  -- | Primary '[' Type ']'             { E.TypeApp (pos $1) $1 $3 }
   | ArbitraryProgVar               { E.Var (pos $1) $1 }
   | lambda ProgVarWildTBind Abs
       { let ((p,m),e) = $3 in E.Abs p (E.Bind p m (fst $2) (snd $2) e) }
   | Lambda KindBind TAbs
-      { let (a,k) = $2 in E.TypeAbs (pos a) (K.Bind (pos k) a k $3) }    
+      { let (a,k) = $2 in E.TypeAbs (pos a) (K.Bind (pos k) a k $3) }
   | '(' Exp ',' Tuple ')'          { E.Pair (pos $1) $2 $4 }
   | '(' Exp ')'                    { $2 }
 

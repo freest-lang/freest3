@@ -34,5 +34,5 @@ Int
 λ n:(∀ a . (a -> a) -> a -> a) -> Λ a => λ s:(a -> a) z:a -> s (n [a] s z)
 (∀ a . (a -> a) -> a -> a) -> (∀ a . (a -> a) -> a -> a)
 
-(Λa b => λx:a y:b -> Λc => λz:(a -> b -> c) -> z x y) [Int Bool]
+(Λa b => λx:a y:b -> Λc => λz:(a -> b -> c) -> z x y) [Int, Bool]
 Int -> Bool -> ∀c . (Int -> Bool -> c) -> c

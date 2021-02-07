@@ -3,7 +3,6 @@ module CompilerValidSpec (spec) where
 
 import Control.Exception
 import Control.Monad (void)
-import Data.Maybe
 import FreeST (checkAndRun)
 import SpecUtils
 import System.Directory
@@ -33,7 +32,7 @@ testValid baseDir testingDir = do
   checkResult testResult f
 
 testOne :: FilePath -> IO (String, TestResult)
-testOne file = do
+testOne file =
  hCapture [stdout, stderr] $
    catches runTest
       [Handler (\(e :: ExitCode)      -> exitProgram e),
