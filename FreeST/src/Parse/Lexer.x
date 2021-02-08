@@ -53,11 +53,11 @@ tokens :-
   $white+                       ;  
   $eol*"--".*                   ;
   @blockComment                 ;
-  "->"				{ \p s -> TokenUnArrow (internalPos p) }
-  "-o"				{ \p s -> TokenLinArrow (internalPos p) }
+  ("->"|→)			{ \p s -> TokenUnArrow (internalPos p) }
+  ("-o"|⊸)                      { \p s -> TokenLinArrow (internalPos p) }
   ("\"|λ)                       { \p s -> TokenLambda (internalPos p) }
   ("\\"|Λ)                      { \p s -> TokenUpperLambda (internalPos p) }
-  "=>"				{ \p s -> TokenFArrow (internalPos p) }
+  ("=>"|⇒)                      { \p s -> TokenFArrow (internalPos p) }
   "("				{ \p s -> TokenLParen (internalPos p) }
   ")"				{ \p s -> TokenRParen (internalPos p) }
   "["				{ \p s -> TokenLBracket (internalPos p) }

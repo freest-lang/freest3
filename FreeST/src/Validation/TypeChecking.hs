@@ -36,13 +36,13 @@ import qualified Validation.Typing             as Typing -- Again
 
 typeCheck :: FreestState ()
 typeCheck = do
-  vEnv <- getVEnv -- Function signatures
-  eEnv <- getProg -- Function bodies
+  -- vEnv <- getVEnv -- Function signatures
+  -- eEnv <- getProg -- Function bodies
   -- tn   <- getTypeNames -- Type Names
   -- tEnv <- getTEnv -- Type/datatype declarations
   -- debugM ("\n\n\nEntering type checking with\n  TEnv " ++ show tEnv ++ "\n\n"
   --         ++ "  VEnv " ++ show (userDefined vEnv) ++ "\n\n"
-  --         ++ "  EEnv " ++ show eEnv  ++ "\n\n"
+  --         ++ "  Prog " ++ show eEnv  ++ "\n\n"
   --         ++ "  Tname " ++ show tn)
 
   -- * Check the formation of all type decls
@@ -51,7 +51,7 @@ typeCheck = do
 
   -- * Check the formation of all function signatures
 --  debugM "checking the formation of all function signatures (kinding)" 
-  mapM_ (K.synthetise Map.empty) vEnv
+  mapM_ (K.synthetise Map.empty) =<< getVEnv
   -- Gets the state and only continues if there are no errors so far
   -- Can't continue to equivalence if there are ill-formed types
   -- (i.e. not contractive under a certain variable)  
@@ -59,10 +59,10 @@ typeCheck = do
   unless (hasErrors s) $ do
     -- * Check whether all function signatures have a binding
 --    debugM "checking whether all function signatures have a binding"
-    tMapWithKeyM_ checkHasBinding vEnv
+    tMapWithKeyM_ checkHasBinding =<< getVEnv
     -- * Check function bodies
 --    debugM "checking the formation of all functions (typing)"
-    tMapWithKeyM_ checkFunBody    eEnv
+    tMapWithKeyM_ checkFunBody =<< getProg
     -- * Check the main function
 --    debugM "checking the main function"
     checkMainFunction

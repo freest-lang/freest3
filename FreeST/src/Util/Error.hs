@@ -64,7 +64,7 @@ styleColor _          str = str
 -- | Internal errors
 
 internalError :: (Show a, Position a) => String -> a -> b
-internalError fun syntax = do
+internalError fun syntax =
   error
     $  show (pos syntax)
     ++ ": Internal error at "

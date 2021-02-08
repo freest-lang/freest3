@@ -39,7 +39,6 @@ import qualified Validation.Extract            as Extract
 import qualified Validation.Kinding            as K -- Again?
 import qualified Validation.Rename             as Rename
                                                 ( subs )
-
 -- SYNTHESISING A TYPE
 
 synthetise :: K.KindEnv -> E.Exp -> FreestState T.Type
@@ -56,26 +55,6 @@ synthetise kEnv e@(E.Var p x)
     e
     "value and another denoting a channel"
   | otherwise = synthetiseVar kEnv x
-  -- TODO: Error message
---      debugM $ show x    
-      -- s@(TypeScheme _ bs t) <- synthetiseVar kEnv x
-      -- unless
-      --   (null bs)
-      --   (addError
-      --     p
-      --     [ Error "Variable"
-      --     , Error x
-      --     , Error "of a polymorphic type used in a monomorphic context\n"
-      --     , Error "\t The type scheme for variable"
-      --     , Error x
-      --     , Error "is"
-      --     , Error s
-      --     , Error "\n\t Consider instantiating variable"
-      --     , Error x
-      --     , Error "with appropriate types for the polymorphic variables"
-      --     ]
-      --   )
-      -- return t
 synthetise kEnv (E.UnLet _ x e1 e2) = do
   t1 <- synthetise kEnv e1
   addToVEnv x t1
@@ -90,6 +69,7 @@ synthetise kEnv e'@(E.Abs p (E.Bind _ m x t1 e)) = do
   t2 <- synthetise kEnv e
   quotient kEnv x
   vEnv2 <- getVEnv
+--  checkEqualEnvs e' vEnv1 vEnv2
   when (m == Un) (checkEqualEnvs e' vEnv1 vEnv2)
   return $ T.Fun p m t1 t2
 -- Abs elimination
@@ -114,67 +94,20 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkVar p "send" = do
   checkAgainst kEnv e1 u1
   return u2
 synthetise kEnv (E.App _ e1 e2) = do -- General case
---  debugM ("Extract Fun: " ++ show e)
   t        <- synthetise kEnv e1
   (u1, u2) <- Extract.function e1 t
---  debugM ("Extract Fun: " ++ show u1 ++ " | "  ++ show u2 ++ " against " ++ show e2)
   checkAgainst kEnv e2 u1
   return u2
-
-  -- Type Abstraction intro and elim
-
---        ∆, a : κ | Γ |- e : T
-----------------------------------------
---   ∆ | Γ |- Λa : κ.e : ∀ a : κ . T
-
+-- Type Abstraction intro and elim
 synthetise kEnv (E.TypeAbs _ (K.Bind p a k e)) = do
   t <- synthetise (Map.insert a k kEnv) e
   return $ T.Forall p (K.Bind p a k t)
-
--- synthetise kEnv e'@(Abs p m (TypeBind _ x t1) e) = do
---   K.synthetise kEnv t1
---   vEnv1 <- getVEnv
---   addToVEnv x t1
---   t2 <- synthetise kEnv e
---   quotient kEnv x
---   vEnv2 <- getVEnv
---   when (m == Un) (checkEqualEnvs e' vEnv1 vEnv2)
---   return $ Fun p m t1 t2
-
 -- Type application
---  ∆ | Γ |- e : ∀ a : κ . U        ∆ |- T : κ
--------------------------------------------------
---     ∆ | Γ |- e T : [T /a]U
-
-synthetise kEnv (E.TypeApp p e t) = do
+synthetise kEnv (E.TypeApp _ e t) = do
   u                              <- synthetise kEnv e
   (T.Forall _ (K.Bind _ y _ u')) <- Extract.forall e u
   K.synthetise kEnv t
-  -- let tmp = Rename.subs t y u'
-  -- traceM $ "\ESC[91m"
-  --   ++ "TYPEAPP ->\n\te: " ++ show e
-  --   ++ "\n\tu: "  ++ show u
-  --   ++ "\n\tu': "  ++ show u'
-  --   ++ "\n\ty: " ++ show y
-  --   ++ "\n\tt: " ++ show t
-  --   ++ "\n\tsubs " ++ show tmp
-  --   ++ "\ESC[0m"
---  debugM $ "On type app " ++ show tapp++ "\n" ++ show (Rename.subs t y u') ++ "\n"
   return $ Rename.subs t y u'
-  -- when
-  --   (length ts /= length bs)
-  --   (addError
-  --     p
-  --     [ Error "Wrong number of arguments to type application\n"
-  --     , Error "\t parameters:"
-  --     , Error bs
-  --     , Error "\n\t arguments: "
-  --     , Error ts
-  --     ]
-  --   )
-  -- let typeKinds = [] -- zip ts bs :: [(Type, KindBind)]
-  -- mapM_ (\(u, KindBind _ _ k) -> K.checkAgainst kEnv k u) typeKinds
-  -- return $ foldr (\(u, KindBind _ y _) -> Rename.subs u y) t typeKinds
 -- Boolean elimination
 synthetise kEnv (E.Cond p e1 e2 e3) = do
   checkAgainst kEnv e1 (T.Bool p)
@@ -199,7 +132,6 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
   (u1, u2) <- Extract.pair e1 t1
   addToVEnv x u1
   addToVEnv y u2
-  vEnv <- getVEnv
   t2   <- synthetise kEnv e2
   quotient kEnv x
   quotient kEnv y
@@ -211,9 +143,10 @@ synthetise kEnv (E.Case p e fm) =
 synthetise kEnv (E.New p t u) = do
   K.checkAgainstSession kEnv t
   return $ T.Pair p t u
-synthetise kEnv e@(E.Select _ _) = addPartiallyAppliedError e "channel"
+synthetise _ e@(E.Select _ _) = addPartiallyAppliedError e "channel"
 synthetise kEnv (E.Match p e fm) =
   synthetiseFieldMap p "match" kEnv e fm Extract.inChoiceMap paramsToVEnvMM
+
 
 -- | Returns the type scheme for a variable; removes it from vEnv if lin
 synthetiseVar :: K.KindEnv -> ProgVar -> FreestState T.Type
@@ -422,10 +355,10 @@ checkAgainst kEnv e t = do
 --  traceM $ "checkAgainst exp " ++ show e ++ " - "  ++ show u 
   checkEquivTypes e kEnv t u
 
-kEnvFromType :: K.KindEnv -> T.Type -> K.KindEnv
-kEnvFromType kenv (T.Forall _ (K.Bind _ x k t)) =
-  kEnvFromType (Map.insert x k kenv) t
-kEnvFromType kenv _ = kenv
+-- kEnvFromType :: K.KindEnv -> T.Type -> K.KindEnv
+-- kEnvFromType kenv (T.Forall _ (K.Bind _ x k t)) =
+--   kEnvFromType (Map.insert x k kenv) t
+-- kEnvFromType kenv _ = kenv
 
 -- EQUALITY AND EQUIVALENCE CHECKING
 
