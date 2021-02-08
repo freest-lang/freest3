@@ -194,8 +194,11 @@ Exp :: { E.Exp }
   | Exp '/' Exp                    { binOp $1 (mkVar (pos $2) "(/)") $3 }
   | Exp '^' Exp                    { binOp $1 (mkVar (pos $2) "(^)") $3 }
   | '-' App %prec NEG              { unOp (mkVar (pos $1) "negate") $2}  
+  | '(' Op Exp ')'                 { unOp $2 $3 } -- left section
+  | '(' Exp Op ')'                 { unOp $3 $2 } -- right section
+  | '(' Exp '-' ')'                { unOp (mkVar (pos $2) "(-)") $2 } -- right section (-) 
   | App                            { $1 }
-
+  
 App :: { E.Exp }
   : App Primary                    { E.App (pos $1) $1 $2 }
   | select ArbitraryProgVar        { E.Select (pos $1) $2 }
@@ -247,6 +250,16 @@ CaseMap :: { FieldMap }
 
 Case :: { (ProgVar, ([ProgVar], E.Exp)) }
   : Constructor ProgVarWildSeq '->' Exp { ($1, ($2, $4)) }
+
+Op :: { ProgVar }
+   : '||'   { mkVar (pos $1) "(||)"      }
+   | '&&'  { mkVar (pos $1) "(&&)"       }
+   | CMP   { mkVar (pos $1) (getText $1) }
+   | '+'   { mkVar (pos $1) "(+)"        }  
+   | '*'   { mkVar (pos $1) "(*)"        }
+   | '/'   { mkVar (pos $1) "(/)"        }
+   | '^'   { mkVar (pos $1) "(^)"        }
+
 
 ----------
 -- TYPE --

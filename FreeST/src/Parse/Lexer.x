@@ -125,9 +125,11 @@ tokens :-
   (True|False) 	      	 	{ \p s -> TokenBool (internalPos p) (read s) }
   @char				{ \p s -> TokenChar (internalPos p) (read s) }
   @stringLiteral		{ \p s -> TokenString (internalPos p) (read s) }
--- Identifiers
-  "(+)" | "(-)" | "(*)"         { \p s -> TokenLowerId (internalPos p) s }  -- TODO: add remaining operators
-  @lowerId                       { \p s -> TokenLowerId (internalPos p) s }
+-- Identifiers  
+  ("(+)"|"(-)"|"(*)"|"(/)"|"(^)"
+  |"(>)"|"(<)"|"(>=)"|"(<=)"|"(==)"|"(/=)" 
+  |"(&&)"|"(||)")               { \p s -> TokenLowerId (internalPos p) s }
+  @lowerId                      { \p s -> TokenLowerId (internalPos p) s }
   @upperId                      { \p s -> TokenUpperId (internalPos p) s }
 
 {
