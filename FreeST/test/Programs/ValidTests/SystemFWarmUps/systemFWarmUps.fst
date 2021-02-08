@@ -4,9 +4,6 @@ Description : Examples from TAPL, Chapter 23, Universal Types
 Copyright   : (c) Vasco T. Vasconcelos, 31 dec 2020
 -}
 
-id : ∀ a . a -> a
-id = Λ a => λ x:a -> x
-
 five : Int
 five = id [Int] 5
 

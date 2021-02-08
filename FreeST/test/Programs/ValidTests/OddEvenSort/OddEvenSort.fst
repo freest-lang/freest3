@@ -68,11 +68,6 @@ consume c =
       consume (send (-99) c)
   }
 
-min : Int -> Int -> Int
-max : Int -> Int -> Int
-min x y = if x < y then x else y
-max x y = if x > y then x else y
-
 main : ()
 main =
   -- number of inner processes

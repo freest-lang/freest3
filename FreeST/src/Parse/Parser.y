@@ -15,6 +15,7 @@ import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
 import           Util.Error
 import           Util.FreestState
+import Paths_FreeST (getDataFileName)
 
 }
 
@@ -57,6 +58,7 @@ import           Util.FreestState
   '+'      {TokenPlus _}
   '-'      {TokenMinus _}
   '*'      {TokenTimes _}
+  '^'      {TokenRaise _} 
   '_'      {TokenWild _}
   '$'      {TokenDollar _}
   '.'      {TokenDot _}
@@ -102,6 +104,7 @@ import           Util.FreestState
 %nonassoc CMP    -- comparison (relational and equality)
 %left '+' '-'    -- aditive
 %left '*' '/'    -- multiplicative
+%right '^'        -- power
 %left NEG not    -- unary
 %right '.'       -- ∀ a:k . T and μ a:k . T
 %right '=>' '->' '-o' ARROW -- λλ a:k => e,  x:T -> e, λ x:T -o e, T -> T and T -o T
@@ -182,13 +185,14 @@ Exp :: { E.Exp }
   | case Exp of '{' CaseMap '}'    { E.Case (pos $1) $2 $5 }
   | Exp '$' Exp                    { E.App (pos $2) $1 $3 }
   | Exp '&' Exp                    { E.App (pos $2) $3 $1 }
-  | Exp '||' Exp                   { binOp $1 (mkVar (pos $2) "(||)") $3 }
-  | Exp '&&' Exp                   { binOp $1 (mkVar (pos $2) "(&&)") $3 }
-  | Exp CMP Exp                    { binOp $1 (mkVar (pos $2) (getText $2)) $3 }
+  | Exp '||' Exp                    { binOp $1 (mkVar (pos $2) "(||)") $3 }
+  | Exp '&&' Exp                    { binOp $1 (mkVar (pos $2) "(&&)") $3 }
+  | Exp CMP Exp                     { binOp $1 (mkVar (pos $2) (getText $2)) $3 }
   | Exp '+' Exp                    { binOp $1 (mkVar (pos $2) "(+)") $3 }
   | Exp '-' Exp                    { binOp $1 (mkVar (pos $2) "(-)") $3 }
   | Exp '*' Exp                    { binOp $1 (mkVar (pos $2) "(*)") $3 }
   | Exp '/' Exp                    { binOp $1 (mkVar (pos $2) "(/)") $3 }
+  | Exp '^' Exp                    { binOp $1 (mkVar (pos $2) "(^)") $3 }
   | '-' App %prec NEG              { unOp (mkVar (pos $1) "negate") $2}  
   | App                            { $1 }
 
@@ -379,17 +383,37 @@ parseType str =
       | hasErrors state = Right $ getErrors state
       | otherwise       = Left t
 
+
 parseProgram :: FilePath -> Map.Map ProgVar T.Type -> IO FreestS
 parseProgram inputFile vEnv = do
-  src <- readFile inputFile
-  return $ parseDefs inputFile vEnv src
+  prelude <- getDataFileName "Prelude.fst"
+  str <- readFile prelude
+  let (Ok s) = execStateT (lexer str prelude terms) ((initialState inputFile) {varEnv = vEnv})
 
-parseDefs :: FilePath -> VarEnv -> String -> FreestS
-parseDefs file vEnv str =
+  src <- readFile inputFile
+  return $ parseDefs inputFile s src
+
+parseDefs :: FilePath -> FreestS -> String -> FreestS
+parseDefs file fState str =
   let s = initialState file in
-  case execStateT (lexer str file terms) (s {varEnv = vEnv}) of
+  case execStateT (lexer str file terms) fState of
     Ok s1 -> s1
     Failed err -> s {errors = (errors s) ++ [err]}
+
+
+-- parseProgram :: FilePath -> Map.Map ProgVar T.Type -> IO FreestS
+-- parseProgram inputFile vEnv = do
+--   src <- readFile inputFile
+--   return $ parseDefs inputFile vEnv src
+
+-- parseDefs :: FilePath -> VarEnv -> String -> FreestS
+-- parseDefs file vEnv str =
+--   let s = initialState file in
+--   case execStateT (lexer str file terms) (s {varEnv = vEnv}) of
+--     Ok s1 -> s1
+--     Failed err -> s {errors = (errors s) ++ [err]}
+
+    
 
 lexer str file f =
   case scanTokens str file of

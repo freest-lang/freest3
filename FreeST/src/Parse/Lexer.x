@@ -77,6 +77,7 @@ tokens :-
   "+"				{ \p s -> TokenPlus (internalPos p) }   
   "-"				{ \p s -> TokenMinus (internalPos p) }
   "*"				{ \p s -> TokenTimes (internalPos p) }
+  "^"				{ \p s -> TokenRaise (internalPos p) }
   "_"				{ \p s -> TokenWild (internalPos p) }
   ">"  	          		{ \p s -> TokenCmp (internalPos p) "(>)" }
   "<"  	          		{ \p s -> TokenCmp (internalPos p) "(<)" }
@@ -84,8 +85,8 @@ tokens :-
   "<="  		        { \p s -> TokenCmp (internalPos p) "(<=)" }
   "=="  		        { \p s -> TokenCmp (internalPos p) "(==)" }
   "/="  		        { \p s -> TokenCmp (internalPos p) "(/=)" }
-  "&&"  		        { \p s -> TokenConjunction (internalPos p) }
-  "||"  		        { \p s -> TokenDisjunction (internalPos p) }
+  ("&&"|∧)  		        { \p s -> TokenConjunction (internalPos p) }
+  ("||"|∨)  		        { \p s -> TokenDisjunction (internalPos p) }
   "/"  		                { \p s -> TokenDiv (internalPos p) }
   "$"  		                { \p s -> TokenDollar (internalPos p) }
 -- Kinds
@@ -193,6 +194,7 @@ data Token =
   | TokenFArrow Pos
   | TokenMinus Pos
   | TokenTimes Pos
+  | TokenRaise Pos
   | TokenWild Pos
   | TokenLT Pos
   | TokenGT Pos
@@ -259,7 +261,8 @@ instance Show Token where
   show (TokenCase _) = "case"  
   show (TokenForall _) = "forall"  
   show (TokenMinus _) = "-"  
-  show (TokenTimes _) = "*"  
+  show (TokenTimes _) = "*"
+  show (TokenRaise _) = "^"
   show (TokenLT _) = "<"
   show (TokenGT _) = ">"
   show (TokenWild _) = "_"  
@@ -368,6 +371,7 @@ instance Position Token where
   pos (TokenForall p) = p
   pos (TokenMinus p) = p
   pos (TokenTimes p) = p
+  pos (TokenRaise p) = p
   pos (TokenLT p) = p
   pos (TokenGT p) = p
   pos (TokenWild p) = p
