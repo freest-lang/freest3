@@ -8,9 +8,9 @@ where
 
 import qualified Control.Concurrent.Chan as C
 import qualified Data.Map.Strict as Map
+import           Parse.Unparser ()
 import qualified Syntax.Expression as E
 import           Syntax.ProgramVariable
-import           Parse.Unparser
 
 data Value =
     Unit
@@ -46,7 +46,7 @@ instance Show Value where
   show Chan{}           = "Skip" -- TODO: change this
   show Fork             = "fork"
   show IOValue{}        = "<IOValue>"
-  
+
 showTuple :: Value -> String
 showTuple (Pair v1 v2) = show v1 ++ ", " ++ showTuple v2
 showTuple v            = show v
