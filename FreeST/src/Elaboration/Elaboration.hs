@@ -209,7 +209,7 @@ changePos p (T.Int  _         ) = T.Int p
 changePos p (T.Char _         ) = T.Char p
 changePos p (T.Bool _         ) = T.Bool p
 changePos p (T.Unit _         ) = T.Unit p
-changePos p (T.Fun _ pol t u  ) = T.Fun p pol t u
+changePos p (T.Fun _ pol t u  ) = T.Fun p pol (changePos p t) (changePos p u)
 changePos p (T.Pair    _ t   u) = T.Pair p t u
 -- Datatype
 -- Skip

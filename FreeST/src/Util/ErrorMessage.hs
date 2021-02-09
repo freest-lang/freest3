@@ -15,7 +15,7 @@ import           Syntax.Program
 import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
-import           Util.ShowDefault
+import           Util.GetTOps
 
 -- | Error class and instances
 
@@ -25,14 +25,14 @@ class ErrorMsg a where
   color :: a -> Maybe Color
 
 data ErrorMessage where
-  Error ::ErrorMsg a => a -> ErrorMessage
+  Error :: ErrorMsg a => a -> ErrorMessage
 
 data Color = Red
 
 -- | ErrorMessage instances
 
 instance ErrorMsg T.Type where
-  msg = showDefault
+  msg tops t = show $ getDefault tops t
   color _ = Just Red
 
 instance ErrorMsg String where
@@ -40,7 +40,7 @@ instance ErrorMsg String where
   color _ = Nothing
 
 instance ErrorMsg Exp where
-  msg = showDefault
+  msg tops e = show $ getDefault tops e
   color _ = Just Red
 
 instance ErrorMsg ProgVar where
@@ -50,7 +50,6 @@ instance ErrorMsg ProgVar where
 instance ErrorMsg TypeVar where
   msg _ = show
   color _ = Just Red
-
 
 instance ErrorMsg Pos where
   msg _ = show
@@ -77,7 +76,7 @@ instance ErrorMsg [T.Type] where
 
 showTypeList :: TypeOpsEnv -> [T.Type] -> String
 showTypeList tops ts = "[" ++ intercalate ", " types ++ "]"
-  where types = map (showDefault tops) ts
+  where types = map (show . getDefault tops) ts
 
 instance ErrorMsg [K.Bind T.Type] where
   msg _ = show
