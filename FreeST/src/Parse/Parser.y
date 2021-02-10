@@ -94,9 +94,9 @@ import Paths_FreeST (getDataFileName)
   forall   {TokenForall _}
   dualof   {TokenDualof _}
 
-%nonassoc LOWER_ID UPPER_ID
-%nonassoc '(' '['
-%nonassoc '()'
+-- %nonassoc LOWER_ID UPPER_ID
+-- %nonassoc '(' '['
+-- %nonassoc '()'
 %right in else match case
 %nonassoc new
 %left '||'       -- disjunction
@@ -111,7 +111,7 @@ import Paths_FreeST (getDataFileName)
 %right ';'       -- T;T and e;e
 %right MSG       -- !T and ?T
 %right dualof
-%nonassoc ProgVarWildTBind
+-- %nonassoc ProgVarWildTBind
 %right '$'       -- function call
 %left '&'        -- function call
 
@@ -359,7 +359,7 @@ ProgVarWildSeq :: { [ProgVar] }
   | ProgVarWild ProgVarWildSeq {% toStateT $ checkDupBind $1 $2 >> return ($1 : $2) }
 
 ProgVarWildTBind :: { (ProgVar, T.Type) }
-  : ProgVarWild ':' Type  %prec ProgVarWildTBind { ($1, $3) }
+  : ProgVarWild ':' Type  {- %prec ProgVarWildTBind -} { ($1, $3) }
 
 -- TYPE VARIABLE
 
@@ -411,7 +411,7 @@ parseDefs file fState str =
   let s = initialState file in
   case execStateT (lexer str file terms) fState of
     Ok s1 -> s1
-    Failed err -> s {errors = (errors s) ++ [err]}
+    Failed err -> s {errors = errors s ++ [err]}
 
 
 -- parseProgram :: FilePath -> Map.Map ProgVar T.Type -> IO FreestS
