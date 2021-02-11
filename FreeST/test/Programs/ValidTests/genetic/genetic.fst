@@ -6,7 +6,9 @@ This program is an implementation of a Genetic Algorithm tailored
 
 Additional notes:
   - to enable printing inside the sequential genetic algorithm,
-      uncomment lines 242 and 244
+      uncomment lines 243 and 245
+  - to enable printing inside the parallel genetic algorithm,
+      uncomment line 331
 
 -}
 
@@ -328,7 +330,7 @@ masterLoop channels nIterG =
     -- Print information
     --printIntLn fittest;
     -- Send fittest to all
-    let channels = sendFittest channels fittest in
+    let channels = sendFittest fittest channels in
     -- Continue iterating
     masterLoop channels (nIterG-1)
 
@@ -368,60 +370,36 @@ runIsland master seed nIterI pop =
 
 -- Compute the absolute fittest individual of all islands
 receiveFittest : ListIslandChannel -> (Individual, ListIslandChannel)
-receiveFittest channels0 =
-  case channels0 of {
-    Nil ->
-      (0, Nil), -- This case should never happen, there is always at least one island
-    Cons channel channels1 ->
-      -- Receive first island's fittest individual...
-      let (fittest, channel) = receive $ select Fittest channel in
-      -- ... to compare with fittest individuals from other islands
-      let (fittest, channels1) = receiveFittest_ channels1 fittest in
-      -- Return fittest individual and the rebuilt island channel list
-      (fittest, Cons channel channels1)
-  }
+receiveFittest = foldIslands[Individual] receiveFittestF 0
 
-receiveFittest_ : ListIslandChannel -> Individual -> (Individual, ListIslandChannel)
-receiveFittest_ channels0 fittest0 =
-  case channels0 of {
-    Nil ->
-      (fittest0, Nil),
-    Cons channel channels1 ->
-      -- Receive island's fittest individual...
-      let (fittest1, channel) = receive $ select Fittest channel in
-      -- Compare fittests and get the fittest
-      let fittest = compareIndividuals fittest0 fittest1 in
-      -- Continue comparing to fittest individuals from other islands
-      let (fittest, channels1) = receiveFittest_ channels1 fittest in
-      -- Return fittest individual from all islands and the channels
-      (fittest, Cons channel channels1)
-  }
+receiveFittestF :  Individual -> IslandChannel -> (Individual, IslandChannel)
+receiveFittestF ind0 island =
+  let (ind1, island) = receive $ select Fittest island in
+  (compareIndividuals ind0 ind1, island)
 
 
 -- Send an individual to every island to do another round of the GA
-sendFittest : ListIslandChannel -> Individual -> ListIslandChannel
-sendFittest channels0 fittest =
-  case channels0 of {
-    Nil ->
-      Nil,
-    Cons channel channels1 ->
-      let channel = send fittest $ select Crossover channel in
-      Cons channel $ sendFittest channels1 fittest
-  }
+sendFittest : Individual -> ListIslandChannel -> ListIslandChannel
+sendFittest fittest channels0 = snd[Individual, ListIslandChannel] $ foldIslands[Int] sendFittestF fittest channels0
+
+sendFittestF :  Int -> IslandChannel -> (Int, IslandChannel)
+sendFittestF fittest island = (fittest, send fittest $ select Crossover island)
 
 
 -- End all islands and compute the absolute fittest individual
+--   Note: This function can not use the foldIslands function because
+--         the resulting channels would be Skip and not IslandChannel,
+--         therefore raising an error
 endIslands : ListIslandChannel -> Individual
 endIslands channels0 =
   case channels0 of {
     Nil ->
       0, -- This case should never happen, there is always at least one island
     Cons channel channels1 ->
-      -- Receive first island's fittest individual...
-      let (fittest, _) = receive $ select End channel in
-      -- ... to compare with fittest individuals from other islands
-      --     and return the absolute fittest individual
-      endIslands_ channels1 fittest
+      -- Receive first island's fittest individual
+      --   to compare with fittest individuals from other islands
+      --   and return the absolute fittest individual
+      endIslands_ channels1 $ fst[Individual, Skip] $ receive $ select End channel
   }
 
 endIslands_ : ListIslandChannel -> Individual -> Individual
@@ -436,4 +414,16 @@ endIslands_ channels0 fittest0 =
       let fittest = compareIndividuals fittest0 fittest1 in
       -- Continue comparing to fittest individuals from other islands
       endIslands_ channels1 fittest
+  }
+
+-- Fold function over a list of IslandChannels
+foldIslands : forall a . (a -> IslandChannel -> (a, IslandChannel)) -> a -> ListIslandChannel -> (a, ListIslandChannel)
+foldIslands f x chs =
+  case chs of {
+    Nil ->
+      (x, Nil),
+    Cons ch chss ->
+      let (x, ch) = f x ch in
+      let (x, chss) = foldIslands[a] f x chss in
+      (x, Cons ch chss)
   }
