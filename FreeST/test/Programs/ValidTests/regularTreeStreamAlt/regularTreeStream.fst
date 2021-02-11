@@ -1,3 +1,17 @@
+-- ==== MAIN ====
+-- This main acts as the server that receives the Tree sent by a client
+main : Tree
+main =
+  let (w, r) = new TreeC in
+  fork $ treeClient w;
+  --fork $ badClientPrematureEnd w;
+  --fork $ badClientSendExtraValue w;
+  --fork $ badClientSendExtraLeaf w;
+  --fork $ badClientForgotRight w;
+  --fork $ badClientSendOnlyValue w;
+  receiveTree r
+
+
 -- Represents a classical binary tree (Node LeftTree RightTree)
 data Tree = Leaf | Node Int Tree Tree
 
@@ -45,21 +59,21 @@ stackSize ts =
 -- Channel to send/receive a Tree. It is important that both sender and receiver
 --  agree on an order to traverse the Tree.
 --  (In our particular case we will use PREORDER - node, left, right)
-type TreeC : SL = +{ Value: !Int; TreeC, Leaf: TreeC, End: Skip }
+type TreeC : SL = +{
+  Value: !Int; TreeC,
+  Leaf:  TreeC,
+  End:   Skip }
 
 
 -- Sends a tree through a TreeC
-sendTree : TreeC -> Tree -> TreeC
-sendTree c t =
+sendTree : Tree -> TreeC -> TreeC
+sendTree t c =
   case t of {
     Leaf ->
       select Leaf c,
 
     Node i lt rt ->
-      let c = sendTree c rt in
-      let c = sendTree c lt in
-      let c = select Value c in
-      send i c
+      send i $ select Value $ sendTree lt $ sendTree rt c
   }
 
 
@@ -69,51 +83,40 @@ receiveTree = receiveTree_ Empty
 
 -- Receives a Tree from a TreeC
 --  This function also serves as an abstraction to the TreeStack usage
---
--- => ERROR DETECTION:
---  - 'W' - Received Value without receiveing left AND right subtrees
---  - 'V' - Received Value without receiveing left OR right subtree
---  - 'E' - Channel was closed without sending a Tree
---  - 'F' - Channel was closed mid-stream or with leftover tree elements
 receiveTree_ : TreeStack -> dualof TreeC -> Tree
 receiveTree_ ts c =
   match c with {
     Value c ->
       let (i, c)   = receive c in
-      let _        = if stackIsEmpty ts then printCharLn 'W' else () in
+      let _ = if stackIsEmpty ts
+              then error[String] "Received Value without receiveing left AND right subtrees"
+              else "" in
       let (ts, lt) = stackPop ts in
-      let _        = if stackIsEmpty ts then printCharLn 'V' else () in
+      let _ = if stackIsEmpty ts
+              then error[String] "Received Value without receiveing left OR right subtree"
+              else "" in
       let (ts, rt) = stackPop ts in
       let ts       = stackPush (Node i lt rt) ts in
       receiveTree_ ts c,
 
     Leaf c ->
-      let ts = stackPush Leaf ts in
-      receiveTree_ ts c,
+      receiveTree_ (stackPush Leaf ts) c,
 
     End  c ->
-      let _      = if stackIsEmpty ts  then printCharLn 'E' else () in
-      let _      = if stackSize ts > 1 then printCharLn 'F' else () in
-      let (_, t) = stackPop ts in
-      t
+      let _ = if stackIsEmpty ts
+              then error[String] "Channel was closed without sending a Tree"
+              else "" in
+      let _ = if stackSize ts > 1
+              then error[String] "Channel was closed mid-stream or with leftover tree elements"
+              else "" in
+      snd[TreeStack, Tree] $ stackPop ts
   }
 
 -- Simple treeClient that sends a Tree through a TreeC
 treeClient : TreeC -> ()
-treeClient c  =
-  let c = sendTree c aTree in
-  let c = select End c in
+treeClient c =
+  let _ = select End $ sendTree aTree c in
   ()
-
-
--- ==== MAIN ====
--- This main acts as the server that receives the Tree sent by a client
-main : Tree
-main =
-  let (w, r) = new TreeC in
-  let _      = fork $ badClientSendExtraValue w in
-  receiveTree r
-
 
 
 -- ==== BAD CLIENTS ===
@@ -128,45 +131,40 @@ badClientPrematureEnd c =
 -- This bad client send an extra Value -1
 badClientSendExtraValue : TreeC -> ()
 badClientSendExtraValue c =
-  let c = sendTree c aTree in
-  -- == Bad code ==
-  let c = select Value c in
-  let c = send (-1) c in
-  -- == Bad code ==
-  let _ = select End c in
+  let _ = select End $ send (-1) $ select Value $ sendTree aTree c in
+  -- Bad Code         ===========================
   ()
 
 -- This bad client send an extra Leaf
 badClientSendExtraLeaf : TreeC -> ()
 badClientSendExtraLeaf c =
-  let c = sendTree c aTree in
-  -- == Bad code ==
-  let c = select Leaf c in
-  -- == Bad code ==
-  let _ = select End c in
+  let _ = select End $ select Leaf $ sendTree aTree c in
+  -- Bad  Code         =============
   ()
 
 -- This client does not send the right subtree
 badClientForgotRight: TreeC -> ()
 badClientForgotRight c =
-  -- == Bad code ==
-  let c = badSendTree c aTree in
-  -- == Bad code ==
-  let _ = select End c in
+  let _ = select End $ badSendTree aTree c in
+  -- Bad Code          ===========
+  ()
+
+-- This client only sends a value without sending leafs
+badClientSendOnlyValue : TreeC -> ()
+badClientSendOnlyValue c =
+  let _  = select End $ send 1 $ select Value c in
+  -- Bad code          ========================
   ()
 
 
 -- Sends a tree through a TreeC
 -- !!! But forgets to send right subtree
-badSendTree : TreeC -> Tree -> TreeC
-badSendTree c t =
+badSendTree : Tree -> TreeC -> TreeC
+badSendTree t c =
   case t of {
     Leaf ->
       select Leaf c,
 
     Node i lt rt ->
-      --let c = badSendTree c rt in
-      let c = badSendTree c lt in
-      let c = select Value c in
-      send i c
+      send i $ select Value $ badSendTree lt c -- $ badSendTree rt c
   }
