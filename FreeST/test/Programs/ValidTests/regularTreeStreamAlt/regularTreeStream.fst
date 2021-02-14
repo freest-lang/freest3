@@ -88,13 +88,9 @@ receiveTree_ ts c =
   match c with {
     Value c ->
       let (i, c)   = receive c in
-      let _ = if stackIsEmpty ts
-              then error[String] "Received Value without receiveing left AND right subtrees"
-              else "" in
+      errorWhen (stackIsEmpty ts) "Received Value without receiveing left AND right subtrees";
       let (ts, lt) = stackPop ts in
-      let _ = if stackIsEmpty ts
-              then error[String] "Received Value without receiveing left OR right subtree"
-              else "" in
+      errorWhen (stackIsEmpty ts) "Received Value without receiveing left OR right subtrees";
       let (ts, rt) = stackPop ts in
       let ts       = stackPush (Node i lt rt) ts in
       receiveTree_ ts c,
@@ -103,14 +99,17 @@ receiveTree_ ts c =
       receiveTree_ (stackPush Leaf ts) c,
 
     End  c ->
-      let _ = if stackIsEmpty ts
-              then error[String] "Channel was closed without sending a Tree"
-              else "" in
-      let _ = if stackSize ts > 1
-              then error[String] "Channel was closed mid-stream or with leftover tree elements"
-              else "" in
+      errorWhen (stackIsEmpty ts)  "Channel was closed without sending a Tree";
+      errorWhen (stackSize ts > 1) "Channel was closed mid-stream or with leftover tree elements";
       snd[TreeStack, Tree] $ stackPop ts
   }
+
+-- Generates an error with a given message if a given boolean is true
+errorWhen : Bool -> String -> ()
+errorWhen b s =
+  if b
+  then error[()] s
+  else ()
 
 -- Simple treeClient that sends a Tree through a TreeC
 treeClient : TreeC -> ()
