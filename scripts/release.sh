@@ -7,7 +7,7 @@ path=freest-$version/
 
 mkdir $path
 # mkdir $path/FreeST/
-cp -r ../FreeST/src ../packages/ $path
+cp -r ../FreeST/src ../FreeST/StandardLib/ ../packages/ $path
 cp ../LICENSE  ../CHANGELOG  $path
 rm $path/src/Parse/Parser.hs $path/src/Parse/Lexer.hs
 rm -rf $path/src/.stack-work/
@@ -48,12 +48,19 @@ name=`cat ../FreeST/package.yaml | grep -e "name:"`
 license=`cat ../FreeST/package.yaml | grep -e "license:"`
 author=`cat ../FreeST/package.yaml | grep -e "author:"`
 copyright=`cat ../FreeST/package.yaml | grep -e "copyright:"`
+datadir=`cat ../FreeST/package.yaml | grep -e "data-dir:"`
+datafiles=`cat ../FreeST/package.yaml | grep -e "data-files:"`
+
+
 
 echo $name >> $package
 echo "version: "$version >> $package
 echo $license >> $package
 echo $author >> $package
 echo $copyright >> $package
+echo "" >> $package
+echo $datadir >> $package
+echo $datafiles >> $package
 echo "" >> $package
 
 echo "$(awk '/^dependencies:/,/^$/' ../FreeST/package.yaml)" >> $package

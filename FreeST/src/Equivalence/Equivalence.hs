@@ -15,134 +15,112 @@ Portability :  portable | non-portable (<reason>)
 
 module Equivalence.Equivalence
   ( Equivalence(..)
-  , Equivalence.Equivalence.bisimilar -- for session types only, for testing purposes
   )
 where
 
-import           Syntax.Schemes
-import           Syntax.Types
-import           Syntax.Kinds
-import           Syntax.ProgramVariables
-import           Syntax.TypeVariables
-import qualified Validation.Rename             as Rename
-                                                ( subs
-                                                , unfold
-                                                )
-import qualified Validation.Substitution       as Subs
-                                                ( subs
-                                                , unfold
-                                                )
-import           Bisimulation.Grammar
-import           Bisimulation.Bisimulation     as Bisimulation
-import           Equivalence.TypeToGrammar
+import           Bisimulation.Bisimulation      ( bisimilar )
+import           Control.Monad.State            ( runState )
 import qualified Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
-
-import           Debug.Trace --debug
+import           Syntax.Base                    ( Pos
+                                                , pos
+                                                )
+import qualified Syntax.Kind                   as K
+import           Syntax.Program
+import           Syntax.ProgramVariable         ( ProgVar )
+import qualified Syntax.Type                   as T
+import           Util.Error                    ( internalError )
+import           Util.FreestState              ( initialState
+                                                , errors
+                                                )
+import           Validation.Kinding             ( synthetise )
+import           Validation.Subkind             ( (<:) )
+import qualified Validation.Substitution       as Subs
+                                                ( unfold
+                                                , subs
+                                                )
 
 class Equivalence t where
-  equivalent :: TypeEnv -> KindEnv -> t -> t -> Bool
+  equivalent :: K.KindEnv -> t -> t -> Bool
 
--- Types
-
-type Visited = Set.Set (Type, Type)
+type Visited = Set.Set (Pos, Pos)
 
 -- A co-inductive definition for functional types. A bisimulation
 -- based definition for session types
-instance Equivalence Type where
-  equivalent tenv kenv = equiv Set.empty
+instance Equivalence T.Type where
+  equivalent = equiv Set.empty
    where
-    equiv :: Visited -> Type -> Type -> Bool
+    equiv :: Visited -> K.KindEnv -> T.Type -> T.Type -> Bool
     -- Have we been here before?
-    equiv v t u | (t, u) `Set.member` v = True
+    equiv v _ t1 t2 | (pos t1, pos t2) `Set.member` v  = True
     -- Functional types
-    equiv _ (Basic _ b) (Basic _ c)     = b == c
-    equiv v (Fun _ m t1 t2) (Fun _ n u1 u2) =
-      m == n && equiv v t1 u1 && equiv v t2 u2
-    equiv v (PairType _ t1 t2) (PairType _ u1 u2) =
-      equiv v t1 u1 && equiv v t2 u2
-    equiv v (Datatype _ m1) (Datatype _ m2) =
-      Map.size m1 == Map.size m2 && Map.foldlWithKey (equivField v m2) True m1
-    -- Recursion
-    equiv _ (TypeVar _ x) (TypeVar _ y) = x == y -- A free (a polymorphic) type var
-    equiv v t@Rec{} u = equiv (Set.insert (t, u) v) (Subs.unfold t) u
-    equiv v t u@Rec{} = equiv (Set.insert (t, u) v) t (Subs.unfold u)
-    -- Type operators
-    equiv _ (TypeName _ x) (TypeName _ y) = -- trace ("TNAME 1 " ++ show x) $
-      x == y -- Admissible
-    equiv v (TypeName _ x) u = -- trace ("TNAME 2 " ++ show x) $
-      equiv v (getType x) u
-    equiv v t (TypeName _ y) = -- trace ("TNAME 3 " ++ show y) $
-      equiv v t (getType y)
+    equiv _ _ (T.Int  _) (T.Int  _)                    = True
+    equiv _ _ (T.Char _) (T.Char _)                    = True
+    equiv _ _ (T.Bool _) (T.Bool _)                    = True
+    equiv _ _ (T.Unit _) (T.Unit _)                    = True
+    equiv _ _ (T.String _) (T.String _)                = True
+    equiv v kEnv (T.Fun _ n1 t1 t2) (T.Fun _ n2 u1 u2) =
+      n1 == n2 && equiv v kEnv t1 u1 && equiv v kEnv t2 u2
+    equiv v kEnv (T.Pair _ t1 t2) (T.Pair _ u1 u2) =
+      equiv v kEnv t1 u1 && equiv v kEnv t2 u2
+    equiv v kEnv (T.Datatype _ m1) (T.Datatype _ m2) =
+      Map.size m1
+        == Map.size m2
+        && Map.foldlWithKey (equivField v kEnv m2) True m1
+    -- Polymorphism and recursion
+    equiv v kEnv (T.Forall _ (K.Bind p a1 k1 t1)) (T.Forall _ (K.Bind _ a2 k2 t2))
+      = k1 <: k2 && k2 <: k1 && equiv v
+                                      (Map.insert a1 k1 kEnv)
+                                      t1
+                                      (Subs.subs (T.Var p a1) a2 t2)
+    equiv v kEnv t1@T.Rec{} t2 =
+      equiv (Set.insert (pos t1, pos t2) v) kEnv (Subs.unfold t1) t2
+    equiv v kEnv t1 t2@T.Rec{} =
+      equiv (Set.insert (pos t1, pos t2) v) kEnv t1 (Subs.unfold t2)
+    equiv _ _ (T.Var _ a1) (T.Var _ a2) = a1 == a2 -- Polymorphic variable
     -- Session types
-    equiv _ t u =
-      isSessionType tenv kenv t
-        && isSessionType tenv kenv u
-        && Equivalence.Equivalence.bisimilar tenv t u
+    equiv _ kEnv t1 t2 | isSessionType kEnv t1 && isSessionType kEnv t2 =
+      bisimilar t1 t2
+    -- Should not happen
+    equiv _ _ t1@T.Dualof{} _ =
+      internalError "Equivalence.Equivalence.equivalent" t1
+    equiv _ _ _ t2@T.Dualof{} =
+      internalError "Equivalence.Equivalence.equivalent" t2
+    equiv _ _ _ _ = False
 
-    equivField :: Visited -> TypeMap -> Bool -> ProgVar -> Type -> Bool
-    equivField v m acc l t = acc && l `Map.member` m && equiv v (m Map.! l) t
+    equivField
+      :: Visited -> K.KindEnv -> T.TypeMap -> Bool -> ProgVar -> T.Type -> Bool
+    equivField v kEnv m acc l t =
+      acc && l `Map.member` m && equiv v kEnv (m Map.! l) t
 
-    getType :: TypeVar -> Type
-    getType x = toType (snd (tenv Map.! x))
-
-bisimilar :: TypeEnv -> Type -> Type -> Bool
-bisimilar tEnv t u = Bisimulation.bisimilar $ convertToGrammar tEnv [t, u]
-  -- where Grammar [xs, ys] p = convertToGrammar tEnv [t, u]
-    -- trace (show t ++ "\nbisim\n" ++ show u) $ convertToGrammar tEnv [t, u]
-
--- Assumes the type is well formed
-isSessionType :: TypeEnv -> KindEnv -> Type -> Bool
-  -- Session types
-isSessionType _ _ (Skip _) = True
-isSessionType _ _ Semi{} = True
-isSessionType _ _ Message{} = True
-isSessionType _ _ Choice{} = True
-  -- Recursion
-isSessionType _ _ (Rec _ (KindBind _ _ k) _) = isSession k
-isSessionType _ kenv (TypeVar _ x) = Map.member x kenv
-  -- Type operators
-isSessionType _ _ Dualof{} = True
-isSessionType tenv _ (TypeName _ x) = isSession $ fst $ tenv Map.! x
-  -- Otherwise: Functional types
-isSessionType _    _    _ = False
-
--- Type schemes
-
-instance Equivalence TypeScheme where
-  equivalent tenv kenv1 ts1 ts2 = case instantiate ts1 ts2 of
-    Nothing              -> False
-    Just (kenv2, t1, t2) -> equivalent tenv (kenv1 `Map.union` kenv2) t1 t2
-
-instantiate :: TypeScheme -> TypeScheme -> Maybe (KindEnv, Type, Type)
-instantiate (TypeScheme _ bs1 t1) (TypeScheme _ bs2 t2) = inst bs1 bs2 t1 t2
+isSessionType :: K.KindEnv -> T.Type -> Bool
+isSessionType kEnv t = null (errors state) && K.isSession kind
  where
-  inst
-    :: [KindBind]
-    -> [KindBind]
-    -> Type
-    -> Type
-    -> Maybe (KindEnv, Type, Type)
-  inst (KindBind p1 x1 k1 : bs1) (KindBind _ x2 k2 : bs2) t1 t2
-    | k1 /= k2 = Nothing
-    | otherwise = -- substitute x1 for x2 in t2
-                  fmap (\(m, t1', t2') -> (Map.insert x1 k1 m, t1', t2'))
-                       (inst bs1 bs2 t1 (Rename.subs (TypeVar p1 x1) x2 t2))
-  inst [] [] t1 t2 = Just (Map.empty, t1, t2)
-  inst _  _  _  _  = Nothing
+  (kind, state) =
+    runState (synthetise kEnv t) (initialState "Kind synthesis for equivalence")
 
--- Typing environments
+{-
+-- An alternative is below. Lighter, but I don't kind we have a proof that the
+-- predicates are equivalent.
+
+isSessionType :: K.KindEnv -> T.Type -> Bool
+isSessionType _ T.Skip{} = True
+isSessionType _ T.Semi{} = True
+isSessionType _ T.Message{} = True
+isSessionType _ T.Choice{} = True
+isSessionType _ (T.Rec _ (K.Bind _ _ k) _) = K.isSession k
+isSessionType kEnv (T.Var _ x) = Map.member x kEnv -- Polymorphic variable
+isSessionType _ t@T.Dualof{} = internalError "Equivalence.Equivalence.isSessionType" t
+isSessionType _ _  = False
+-}
 
 instance Equivalence VarEnv where
-  equivalent tenv kenv env1 env2 =
+  equivalent kenv env1 env2 =
     Map.size env1
       == Map.size env2
       && Map.foldlWithKey
-           (\acc b s -> acc && b `Map.member` env2 && equivalent
-             tenv
-             kenv
-             s
-             (env2 Map.! b)
+           (\acc b s ->
+             acc && b `Map.member` env2 && equivalent kenv s (env2 Map.! b)
            )
            True
            env1

@@ -7,8 +7,6 @@ main =
 
 type F = +{B: !Bool}
 
-<
-
 f : F -> Skip
 f c = let c = select c B in send c True
 

@@ -17,9 +17,9 @@ specTest desc dir f = do
   baseDir <- runIO getCurrentDirectory
   testDirs <- runIO $ listDirectory (baseDir ++ dir)
   
-  parallel $ do
-    describe desc $ do
+  parallel $
+    describe desc $
       forM_ testDirs $ f baseDir
 --    mapM_ (f baseDir) testDirs
     
-  runIO $ setCurrentDirectory baseDir
+--  runIO $ setCurrentDirectory baseDir

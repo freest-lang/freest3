@@ -2,16 +2,16 @@ import Test.Hspec
 import Test.Hspec.QuickCheck
 import Test.QuickCheck
 import Test.QuickCheck.Random (mkQCGen)
-import ArbitraryTypes
 import TestValidTypes
+
+args = stdArgs {maxSuccess = 150135, replay = Just (mkQCGen 1095646480, 0)}
+-- args = stdArgs {maxSuccess = 120135, replay = Just (mkQCGen 1095646480, 0)}
+-- agrs = stdArgs {maxSuccess = 108375, replay = Just (mkQCGen 1095646480, 0)}
 
 spec :: Spec
 spec =
   describe "QuickCheck" $ do
     prop "prop_bisimilar" $
-      verboseCheckWith stdArgs {maxSuccess = 120135, replay = Just (mkQCGen 1095646480, 0)} prop_bisimilar -- prop_distribution
-      -- verboseCheckWith stdArgs {maxSuccess = 108375, replay = Just (mkQCGen 1095646480, 0)} prop_bisimilar -- prop_distribution
-      -- verboseCheckWith stdArgs {maxSuccess = 27100, replay = Just (mkQCGen 1095646480, 0)} prop_bisimilar -- prop_distribution
-      -- verboseCheckWith stdArgs {maxSuccess = 10000} prop_bisimilar
+      verboseCheckWith args prop_bisimilar -- prop_distribution
 
 main = hspec spec

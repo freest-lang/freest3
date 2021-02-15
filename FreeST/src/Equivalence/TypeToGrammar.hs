@@ -1,3 +1,4 @@
+
 {- |
 Module      :  Equivalence.TypeToGrammar
 Description :  Conversion from types to grammars
@@ -13,86 +14,75 @@ given as parameter to context-free grammars
 {-# LANGUAGE NoMonadFailDesugaring, FlexibleInstances #-}
 
 module Equivalence.TypeToGrammar
-( convertToGrammar
-)
+  ( convertToGrammar
+  )
 where
 
-import           Syntax.Schemes
-import           Syntax.Types
-import           Syntax.Kinds
-import           Syntax.TypeVariables
-import           Syntax.ProgramVariables
-import           Syntax.Base
-import           Parse.Unparser
-import qualified Validation.Substitution       as Substitution
-                                                ( subsAll
-                                                , unfold
-                                                ) -- no renaming
 import           Bisimulation.Grammar
--- import           Equivalence.Normalisation
-import           Utils.FreestState              ( tMapWithKeyM
-                                                , tMapM
+import           Parse.Unparser
+import           Syntax.Base
+import qualified Syntax.Kind                   as K
+import qualified Syntax.Type                   as T
+import           Syntax.TypeVariable
+import qualified Validation.Substitution       as Substitution
+                                                ( subsAll )
+import           Equivalence.Normalisation      ( normalise )
+import           Util.FreestState              ( tMapM
                                                 , tMapM_
                                                 )
-import           Utils.Errors                   ( internalError )
+import           Util.Error                    ( internalError )
 import           Control.Monad.State
 import qualified Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
-import           Debug.Trace
-import           Prelude                       hiding ( Word ) -- Word is (re)defined in module Equivalence.Grammar
+import           Prelude                 hiding ( Word ) -- Word is (re)defined in module Equivalence.Grammar
 
 -- Conversion to context-free grammars
 
-convertToGrammar :: TypeEnv -> [Type] -> Grammar
-convertToGrammar tEnv ts = --trace ("subs: " ++ show (subs state))  $
+convertToGrammar :: [T.Type] -> Grammar
+convertToGrammar ts = --trace ("subs: " ++ show (subs state))  $
                            Grammar (substitute θ word)
                                    (substitute θ (productions state))
  where
-  (word, state) = runState (mapM typeToGrammar ts) (initial tEnv)
+  (word, state) = runState (mapM typeToGrammar ts) initial
   θ             = substitution state
 
-typeToGrammar :: Type -> TransState Word
+typeToGrammar :: T.Type -> TransState Word
 typeToGrammar t = do
-  collect [] u
-  toGrammar u
-  where u = t
-  -- where u = unr t -- TODO: TACAS does not unravel here...
---   where u = normalise Map.empty t -- TODO: use a simpler unravel function
+  collect [] t
+  toGrammar t
 
-toGrammar :: Type -> TransState Word
+toGrammar :: T.Type -> TransState Word
 -- Non rec-types
-toGrammar (Skip _    ) = return []
-toGrammar (Semi _ t u) = do
+toGrammar (T.Skip _    ) = return []
+toGrammar (T.Semi _ t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
   return $ xs ++ ys
-toGrammar m@Message{} = do
+toGrammar m@T.Message{} = do
   y <- getLHS $ Map.singleton (show m) []
   return [y]
-toGrammar (Choice _ v m) = do
+toGrammar (T.Choice _ v m) = do
   ms <- tMapM toGrammar m
   y  <- getLHS $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
   return [y]
 -- Recursive types
-toGrammar x@TypeVar{} = do      -- x is a polymorphic variable
+toGrammar x@T.Var{} = do      -- x is a polymorphic variable
   y <- getLHS $ Map.singleton (show x) []
   return [y]
-toGrammar (Rec _ (KindBind _ x _) _) = return [x]
+toGrammar (T.Rec _ (K.Bind _ x _ _)) = return [x]
 toGrammar t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 
-type SubstitutionList = [(Type, TypeVar)]
+type SubstitutionList = [(T.Type, TypeVar)]
 
-collect :: SubstitutionList -> Type -> TransState ()
-collect σ (  Semi   _ t                   u) = collect σ t >> collect σ u
-collect σ (  Choice _ _                   m) = tMapM_ (collect σ) m
-collect σ t@(Rec    _ (KindBind _ x _) u) = do
+collect :: SubstitutionList -> T.Type -> TransState ()
+collect σ (  T.Semi   _ t              u) = collect σ t >> collect σ u
+collect σ (  T.Choice _ _              m) = tMapM_ (collect σ) m
+collect σ t@(T.Rec    _ (K.Bind _ x _ u)) = do
   let σ' = (t, x) : σ
   let u' = Substitution.subsAll σ' u
-  (z : zs) <- toGrammar (unr u') -- TODO: use a simpler unravel function
-  -- (z:zs) <- toGrammar (normalise Map.empty u') -- TODO: use a simpler unravel function
+  (z : zs) <- toGrammar (normalise u')
   m        <- getTransitions z
   addProductions x (Map.map (++ zs) m)
-  -- putProductions x (Map.map (++ zs) m)
   collect σ' u
 collect _ _ = return ()
 
@@ -105,16 +95,14 @@ type TransState = State TState
 data TState = TState {
   productions  :: Productions
 , nextIndex    :: Int
-, typeEnv      :: TypeEnv
 , substitution :: Substitution
 }
 
 -- State manipulating functions, get and put
 
-initial :: TypeEnv -> TState
-initial tEnv = TState { productions  = Map.empty
+initial :: TState
+initial = TState { productions  = Map.empty
                       , nextIndex    = 1
-                      , typeEnv      = tEnv
                       , substitution = Map.empty
                       }
 
@@ -263,11 +251,3 @@ instance Substitute Transitions where
 
 instance Substitute Productions where
   substitute θ = Map.map (substitute θ)
-
--- Unravel
-
-unr :: Type -> Type
-unr t@Rec{} = unr (Substitution.unfold t)
-unr (Semi p t1 t2) | unr t1 == Skip p = unr t2
-                   | otherwise        = Semi p (unr t1) t2
-unr t = t

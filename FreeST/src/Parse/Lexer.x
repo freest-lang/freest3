@@ -8,8 +8,8 @@ module Parse.Lexer
 import qualified Data.Map.Strict as Map
 import           Parse.ParseUtils
 import           Syntax.Base
-import           Utils.Errors
-import           Utils.ErrorMessage
+import           Util.Error
+import           Util.ErrorMessage
 }
 
 %wrapper "posn"
@@ -41,9 +41,10 @@ $eol=[\n]
 @blockComment = "{-" (\.*|[^\{\-]|\n|\-\-|[^$symbol].*)* "-}"
 
 -- # λ  -- forall not in range ([λ ∀])
+$greekId = [λ ∀ Λ μ]
 
-@lowerId = ($lower # [λ ∀ Λ]) $alphaNumeric*
-@upperId = ($upper # [λ ∀ Λ]) $alphaNumeric*
+@lowerId = ($lower # $greekId) $alphaNumeric*
+@upperId = ($upper # $greekId) $alphaNumeric*
 
 @stringLiteral = \"(\\.|[^\"]|\n)*\"
 
@@ -52,11 +53,11 @@ tokens :-
   $white+                       ;  
   $eol*"--".*                   ;
   @blockComment                 ;
-  "->"				{ \p s -> TokenUnArrow (internalPos p) }
-  "-o"				{ \p s -> TokenLinArrow (internalPos p) }
+  ("->"|→)			{ \p s -> TokenUnArrow (internalPos p) }
+  ("-o"|⊸)                      { \p s -> TokenLinArrow (internalPos p) }
   ("\"|λ)                       { \p s -> TokenLambda (internalPos p) }
   ("\\"|Λ)                      { \p s -> TokenUpperLambda (internalPos p) }
-  "=>"				{ \p s -> TokenFArrow (internalPos p) }
+  ("=>"|⇒)                      { \p s -> TokenFArrow (internalPos p) }
   "("				{ \p s -> TokenLParen (internalPos p) }
   ")"				{ \p s -> TokenRParen (internalPos p) }
   "["				{ \p s -> TokenLBracket (internalPos p) }
@@ -76,6 +77,7 @@ tokens :-
   "+"				{ \p s -> TokenPlus (internalPos p) }   
   "-"				{ \p s -> TokenMinus (internalPos p) }
   "*"				{ \p s -> TokenTimes (internalPos p) }
+  "^"				{ \p s -> TokenRaise (internalPos p) }
   "_"				{ \p s -> TokenWild (internalPos p) }
   ">"  	          		{ \p s -> TokenCmp (internalPos p) "(>)" }
   "<"  	          		{ \p s -> TokenCmp (internalPos p) "(<)" }
@@ -83,8 +85,8 @@ tokens :-
   "<="  		        { \p s -> TokenCmp (internalPos p) "(<=)" }
   "=="  		        { \p s -> TokenCmp (internalPos p) "(==)" }
   "/="  		        { \p s -> TokenCmp (internalPos p) "(/=)" }
-  "&&"  		        { \p s -> TokenConjunction (internalPos p) }
-  "||"  		        { \p s -> TokenDisjunction (internalPos p) }
+  ("&&"|∧)  		        { \p s -> TokenConjunction (internalPos p) }
+  ("||"|∨)  		        { \p s -> TokenDisjunction (internalPos p) }
   "/"  		                { \p s -> TokenDiv (internalPos p) }
   "$"  		                { \p s -> TokenDollar (internalPos p) }
 -- Kinds
@@ -92,6 +94,8 @@ tokens :-
   SL                            { \p s -> TokenSL (internalPos p) }
   TU                            { \p s -> TokenTU (internalPos p) }
   TL                            { \p s -> TokenTL (internalPos p) }
+  MU                            { \p s -> TokenMU (internalPos p) }
+  ML                            { \p s -> TokenML (internalPos p) }
 -- Basic types
   Int				{ \p s -> TokenIntT (internalPos p) }
   Char				{ \p s -> TokenCharT (internalPos p) }
@@ -99,7 +103,7 @@ tokens :-
   String			{ \p s -> TokenStringT (internalPos p) }
   Skip				{ \p s -> TokenSkip (internalPos p) }
 -- Keywords
-  rec                           { \p s -> TokenRec (internalPos p) }   
+  (rec|μ)                       { \p s -> TokenRec (internalPos p) }   
   let                           { \p s -> TokenLet (internalPos p) }
   in                            { \p s -> TokenIn (internalPos p) }
   data                          { \p s -> TokenData (internalPos p) }
@@ -121,9 +125,11 @@ tokens :-
   (True|False) 	      	 	{ \p s -> TokenBool (internalPos p) (read s) }
   @char				{ \p s -> TokenChar (internalPos p) (read s) }
   @stringLiteral		{ \p s -> TokenString (internalPos p) (read s) }
--- Identifiers
-  "(+)" | "(-)" | "(*)"         { \p s -> TokenLowerId (internalPos p) s }  -- TODO: add remaining operators
-  @lowerId                       { \p s -> TokenLowerId (internalPos p) s }
+-- Identifiers  
+  ("(+)"|"(-)"|"(*)"|"(/)"|"(^)"
+  |"(>)"|"(<)"|"(>=)"|"(<=)"|"(==)"|"(/=)" 
+  |"(&&)"|"(||)")               { \p s -> TokenLowerId (internalPos p) s }
+  @lowerId                      { \p s -> TokenLowerId (internalPos p) s }
   @upperId                      { \p s -> TokenUpperId (internalPos p) s }
 
 {
@@ -161,6 +167,8 @@ data Token =
   | TokenSL Pos 
   | TokenTU Pos 
   | TokenTL Pos
+  | TokenMU Pos
+  | TokenML Pos
   | TokenInt Pos Int
   | TokenChar Pos Char
   | TokenString Pos String
@@ -188,6 +196,7 @@ data Token =
   | TokenFArrow Pos
   | TokenMinus Pos
   | TokenTimes Pos
+  | TokenRaise Pos
   | TokenWild Pos
   | TokenLT Pos
   | TokenGT Pos
@@ -202,8 +211,8 @@ instance Show Token where
   show (TokenIntT _) = "Int"  
   show (TokenCharT _) = "Char"  
   show (TokenBoolT _) = "Bool"  
-  show (TokenStringT _) = "String"  
-  show (TokenUnit _) = "()"  
+  show (TokenUnit _) = "()"
+  show (TokenStringT _) = "String"
   show (TokenUnArrow _) = "->"  
   show (TokenLinArrow _) = "-o"  
   show (TokenLambda _) = "λ"  
@@ -230,10 +239,12 @@ instance Show Token where
   show (TokenSL _) = "SL"   
   show (TokenTU _) = "TU"   
   show (TokenTL _) = "TL"  
+  show (TokenMU _) = "MU"  
+  show (TokenML _) = "ML"  
   show (TokenInt _ i) = show i
   show (TokenChar _ c) = show c
-  show (TokenString _ s) = s
   show (TokenBool _ b) = show b
+  show (TokenString _ s) = s
   show (TokenLet _) = "let"
   show (TokenIn _) = "in"
   show (TokenEq _) = "="
@@ -252,7 +263,8 @@ instance Show Token where
   show (TokenCase _) = "case"  
   show (TokenForall _) = "forall"  
   show (TokenMinus _) = "-"  
-  show (TokenTimes _) = "*"  
+  show (TokenTimes _) = "*"
+  show (TokenRaise _) = "^"
   show (TokenLT _) = "<"
   show (TokenGT _) = ">"
   show (TokenWild _) = "_"  
@@ -307,73 +319,77 @@ internalPos :: AlexPosn -> Pos
 internalPos (AlexPn _ l c) = Pos l c
 
 instance Position Token where
-  position (TokenNL p) = p 
-  position (TokenIntT p) = p 
-  position (TokenCharT p) = p 
-  position (TokenBoolT p) = p 
-  position (TokenStringT p) = p 
-  position (TokenUnit p) = p 
-  position (TokenUnArrow p) = p 
-  position (TokenLinArrow p) = p 
-  position (TokenLambda p) = p 
-  position (TokenUpperLambda p) = p 
-  position (TokenLParen p) = p
-  position (TokenRParen p) = p 
-  position (TokenLBracket p) = p 
-  position (TokenRBracket p) = p 
-  position (TokenComma p) = p 
-  position (TokenSkip p) = p 
-  position (TokenColon p) = p 
-  position (TokenUpperId p _) = p
-  position (TokenSemi p) = p 
-  position (TokenMOut p) = p 
-  position (TokenMIn p) = p 
-  position (TokenLBrace p) = p
-  position (TokenRBrace p) = p 
-  position (TokenAmpersand p) = p 
-  position (TokenPlus p) = p 
-  position (TokenRec p) = p 
-  position (TokenDot p) = p 
-  position (TokenLowerId p _) = p 
-  position (TokenSU p) = p 
-  position (TokenSL p) = p 
-  position (TokenTU p) = p 
-  position (TokenTL p) = p
-  position (TokenInt p _) = p
-  position (TokenChar p _) = p
-  position (TokenBool p _) = p
-  position (TokenLet p) = p 
-  position (TokenIn p) = p
-  position (TokenEq p) = p
-  position (TokenData p) = p
-  position (TokenType p) = p
-  position (TokenPipe p) = p
-  position (TokenNew p) = p
---  position (TokenSend p) = p
---  position (TokenReceive p) = p
-  position (TokenSelect p) = p
---  position (TokenFork p) = p
-  position (TokenMatch p) = p
-  position (TokenCase p) = p
-  position (TokenForall p) = p
-  position (TokenMinus p) = p
-  position (TokenTimes p) = p
-  position (TokenLT p) = p
-  position (TokenGT p) = p
-  position (TokenWild p) = p
-  position (TokenCmp p _) = p
-  position (TokenIf p) = p
-  position (TokenThen p) = p
-  position (TokenElse p) = p
-  position (TokenWith p) = p
-  position (TokenOf p) = p
-  position (TokenDualof p) = p
-  position (TokenFArrow p) = p
-  position (TokenConjunction p) = p
-  position (TokenDisjunction p) = p
-  position (TokenDiv p) = p
-  position (TokenDollar p) = p
---  position t = error $ show t
+  pos (TokenNL p) = p 
+  pos (TokenIntT p) = p 
+  pos (TokenCharT p) = p 
+  pos (TokenBoolT p) = p 
+  pos (TokenUnit p) = p
+  pos (TokenStringT p) = p 
+  pos (TokenUnArrow p) = p 
+  pos (TokenLinArrow p) = p 
+  pos (TokenLambda p) = p 
+  pos (TokenUpperLambda p) = p 
+  pos (TokenLParen p) = p
+  pos (TokenRParen p) = p 
+  pos (TokenLBracket p) = p 
+  pos (TokenRBracket p) = p 
+  pos (TokenComma p) = p 
+  pos (TokenSkip p) = p 
+  pos (TokenColon p) = p 
+  pos (TokenUpperId p _) = p
+  pos (TokenSemi p) = p 
+  pos (TokenMOut p) = p 
+  pos (TokenMIn p) = p 
+  pos (TokenLBrace p) = p
+  pos (TokenRBrace p) = p 
+  pos (TokenAmpersand p) = p 
+  pos (TokenPlus p) = p 
+  pos (TokenRec p) = p 
+  pos (TokenDot p) = p 
+  pos (TokenLowerId p _) = p 
+  pos (TokenSU p) = p 
+  pos (TokenSL p) = p 
+  pos (TokenTU p) = p 
+  pos (TokenTL p) = p
+  pos (TokenML p) = p
+  pos (TokenMU p) = p
+  pos (TokenInt p _) = p
+  pos (TokenChar p _) = p
+  pos (TokenBool p _) = p
+  pos (TokenString p _) = p 
+  pos (TokenLet p) = p 
+  pos (TokenIn p) = p
+  pos (TokenEq p) = p
+  pos (TokenData p) = p
+  pos (TokenType p) = p
+  pos (TokenPipe p) = p
+  pos (TokenNew p) = p
+--  pos (TokenSend p) = p
+--  pos (TokenReceive p) = p
+  pos (TokenSelect p) = p
+--  pos (TokenFork p) = p
+  pos (TokenMatch p) = p
+  pos (TokenCase p) = p
+  pos (TokenForall p) = p
+  pos (TokenMinus p) = p
+  pos (TokenTimes p) = p
+  pos (TokenRaise p) = p
+  pos (TokenLT p) = p
+  pos (TokenGT p) = p
+  pos (TokenWild p) = p
+  pos (TokenCmp p _) = p
+  pos (TokenIf p) = p
+  pos (TokenThen p) = p
+  pos (TokenElse p) = p
+  pos (TokenWith p) = p
+  pos (TokenOf p) = p
+  pos (TokenDualof p) = p
+  pos (TokenFArrow p) = p
+  pos (TokenConjunction p) = p
+  pos (TokenDisjunction p) = p
+  pos (TokenDiv p) = p
+  pos (TokenDollar p) = p
+--  pos t = error $ show t
 
 getText :: Token -> String
 getText (TokenUpperId _ x) = x

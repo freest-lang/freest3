@@ -32,7 +32,7 @@ data IntList = Nil | Cons Int IntList
 
 -- Receive a series of integer values; return them in ascending or
 -- descending order
-sortingServer : forall a:SL => IntList -> dualof OrderingChannel;a -> (IntList, a)
+sortingServer : forall a:SL . IntList -> dualof OrderingChannel;a -> (IntList, a)
 sortingServer xs c =
   match c with {
     Value c ->

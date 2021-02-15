@@ -1,31 +1,40 @@
-module Equivalence.TestEquivalenceValidSpec (spec) where
+module Equivalence.TestEquivalenceValidSpec
+  ( spec
+  )
+where
 
-import           Syntax.Types
-import           Syntax.Kinds
-import           Syntax.TypeVariables
-import           Syntax.Base
+import           Syntax.Kind                   as K
 import           Equivalence.Equivalence
 import           Validation.Rename
-import           Utils.FreestState
-import qualified Data.Map.Strict as Map
-import           SpecHelper
-
--- Note that the tests cases should be kinded!
+import           Validation.Kinding             ( synthetise )
+import           SpecUtils
+import           Util.FreestState              ( initialState
+                                                , errors
+                                                )
+import           Control.Monad.State            ( execState )
 
 matchValidSpec :: [String] -> Spec
-matchValidSpec [k, t, u] =
-  it (k ++ "  |-  " ++ t ++ " ~ " ++  u) (
-      {-# SCC "EQUIVALENT_TEST_CALL" #-}
-      equivalent Map.empty (readKenv k) t' u' `shouldBe` True)
-    where
-      [t', u'] = renameTypes [read t, read u]
-      readKenv :: String -> KindEnv
-      readKenv s = Map.fromList $ map (\(x,k) -> (mkVar defaultPos x, k)) (read s)
+matchValidSpec [k, t, u] = it
+  (k ++ "  |-  " ++ t ++ " ~ " ++ u)
+  (          wellFormed kEnv t'
+  &&         wellFormed kEnv u'
+  &&         equivalent kEnv t' u'
+  `shouldBe` True
+  )
+ where
+  [t', u'] = renameTypes [read t, read u]
+  kEnv     = readKenv k
+
+wellFormed :: K.KindEnv -> Type -> Bool
+wellFormed kEnv t = null $ errors $ execState
+  (synthetise kEnv t)
+  (initialState "Kind synthesis for testing type equivalence")
 
 spec :: Spec
 spec = do
-  t <- runIO $ readFromFile "test/UnitTests/Equivalence/TestEquivalenceValid.txt"
-  describe "Valid Equivalence Test" $ mapM_ matchValidSpec (chunksOf 3 t)
+  tests <- runIO
+    $ readFromFile "test/UnitTests/Equivalence/TestEquivalenceValid.txt"
+  describe "Valid Equivalence Test" $ mapM_ matchValidSpec (chunksOf 3 tests)
 
 main :: IO ()
 main = hspec spec

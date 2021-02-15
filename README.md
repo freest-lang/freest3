@@ -49,6 +49,7 @@ For example, to compile a FreeST program named "test.fst" located in the directo
 
 ```
     $ stack ghci FreeST:exe:freest
+    :set prompt  "λ: "
 ```
 
 ## FreeST Samples
@@ -125,6 +126,9 @@ where the `SPEC_NAME` is one of the following:
 
 - Valid equivalence tests: `TestEquivalenceValid`
 - Invalid equivalence tests: `TestEquivalenceInvalid`
+- Well formed expressions: `TestExpressionInvalid
+`
+- Non Well formed expressions: `TestExpressionValid`
 - All equivalence tests: `TestEquivalence`
 - Valid types tests: `TestTypesValid`
 - Invalid types tests: `TestTypesInvalid`

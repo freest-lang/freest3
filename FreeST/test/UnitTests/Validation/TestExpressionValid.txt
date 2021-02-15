@@ -8,3 +8,31 @@ Int
 
 let (x, y, z) = (6, True, 'a') in y
 Bool
+
+(\x : Int -> x)
+Int -> Int
+
+(\x : Int -> (\y : Int -> x + y))
+Int -> Int -> Int
+
+-- Send recv same thread
+
+let (w,r) = new !Int in let _ = send 5 w in let (v,_) = receive r in v
+Int
+
+-- Sequences of Λ, λ, ∀ abstractions and type applications abbreviated
+
+Λ a => Λ b => λ x:a -> λ y:b -> x
+∀ a . ∀ b . a -> b -> a
+
+Λ a b => λ x:a -> λ y:b -> x
+∀ a . ∀ b . a -> b -> a
+
+Λ a b => λ x:a -> λ y:b -> x
+∀ a b . a -> b -> a
+
+λ n:(∀ a . (a -> a) -> a -> a) -> Λ a => λ s:(a -> a) z:a -> s (n [a] s z)
+(∀ a . (a -> a) -> a -> a) -> (∀ a . (a -> a) -> a -> a)
+
+(Λa b => λx:a y:b -> Λc => λz:(a -> b -> c) -> z x y) [Int, Bool]
+Int -> Bool -> ∀c . (Int -> Bool -> c) -> c

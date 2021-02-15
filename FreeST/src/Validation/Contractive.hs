@@ -1,5 +1,5 @@
 {-|
-Module      :  Validation.Terminated
+Module      :  Validation.Contractive
 Description :  <optional short text displayed on contents page>
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
@@ -12,20 +12,27 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Validation.Contractive
-( contractive
+( Contractive(..)
 )
 where
 
-import           Syntax.Types
--- import           Syntax.Kinds
-import           Syntax.TypeVariables
+import qualified Syntax.Kind as K
+import qualified Syntax.Type as T
+import           Syntax.TypeVariable
 import           Validation.Terminated
 
-contractive :: TypeVar -> Type -> Bool
-contractive a (Semi _ t u)
-  | terminated t = contractive a u
-  | otherwise    = contractive a t
-contractive a (Rec _ _ t) = contractive a t
-contractive a (TypeVar _ b) = a /= b
-contractive _ (Skip _) = False
-contractive _ _ = True
+class Contractive a where
+  contractive :: TypeVar -> a -> Bool
+
+instance Contractive T.Type where
+  contractive a (T.Semi _ t u)
+    | terminated t = contractive a u
+    | otherwise    = contractive a t
+  contractive a (T.Rec _ b) = contractive a b
+  contractive a (T.Forall _ b) = contractive a b
+  contractive a (T.Var _ b) = a /= b
+  contractive _ (T.Skip _) = False
+  contractive _ _ = True
+
+instance Contractive t => Contractive (K.Bind t) where
+  contractive a (K.Bind _ _ _ t) = contractive a t

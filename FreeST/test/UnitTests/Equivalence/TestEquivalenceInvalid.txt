@@ -39,52 +39,52 @@ Skip; !Int; Skip
 &{B: Skip; !Char, A: ?Bool, C:!Char}
 
 !Int
-rec x . !Bool
+rec a . !Bool
 
-rec x . !Int
-rec x . !Bool
+rec a . !Int
+rec a . !Bool
 
-rec x. !Int; x; x
-rec x. ?Int; x; x
+rec a. !Int; a; a
+rec a. ?Int; a; a
 
-rec x. rec y. !Int; x; y
-rec y. rec x. !Char; x; ?Bool; y
+rec a. rec b. !Int; a; b
+rec b. rec a. !Char; a; ?Bool; b
 
-rec x . ?Bool; x
-rec y . !Bool; y; y; !Char; y; ?Int; y; y; ?Bool; y; y
+rec a . ?Bool; a
+rec b . !Bool; b; b; !Char; b; ?Int; b; b; ?Bool; b; b
 
-rec x . +{A: !Bool;x}
-rec y . +{A: y}; !Bool
+rec a . +{A: !Bool;a}
+rec b . +{A: b}; !Bool
 
-rec x . +{A: !Int, B: x}
-rec y . +{A: y, B: Skip}; !Bool
+rec a . +{A: !Int, B: a}
+rec b . +{A: b, B: Skip}; !Bool
 
-rec x . +{A: !Int, B: x}
-rec y . +{A: Skip, B: y}; !Bool
+rec a . +{A: !Int, B: a}
+rec b . +{A: Skip, B: b}; !Bool
 
-rec x. &{Leaf: ?Bool; x, Node: ?Int;x;x}
-rec x. &{Leaf: ?Bool, Node: ?Int;x;x}
+rec a. &{Leaf: ?Bool; a, Node: ?Int;a;a}
+rec a. &{Leaf: ?Bool, Node: ?Int;a;a}
 
-(((rec x . &{LeafC: Skip, NodeC: (?Int;(x;x))});(rec x . &{LeafC: Skip, NodeC: (?Int;(x;x))}));a)
-((rec x . &{LeafC: Skip, NodeC: (?Int;(x;x))});(rec x . (&{LeafC: Skip, NodeC: (?Int;(x;x))};a)))
+(rec a . &{LeafC: Skip, NodeC: (?Int;(a;a))}  ); a
+ rec a . &{LeafC: Skip, NodeC: (?Int;(a;a))};a
 
-(rec x . &{N: x;!Int, L: Skip});?Int
-rec x . &{N: x;!Int;?Int, L:?Int}
+(rec a . &{N: a;!Int, L: Skip});?Int
+rec a . &{N: a;!Int;?Int, L:?Int}
 
-rec x. +{A: x; !Bool, B: !Bool}
-rec x. +{A: x; !Bool, B: !Bool}; +{B: Skip}; +{B: Skip}; !Bool
+rec a. +{A: a; !Bool, B: !Bool}
+rec a. +{A: a; !Bool, B: !Bool}; +{B: Skip}; +{B: Skip}; !Bool
 
-rec x  . &{N:x;x;!Int, L:!Int}
-(rec x  . &{N:x;x;!Int, L:Skip});!Int
+rec a  . &{N:a;a;!Int, L:!Int}
+(rec a  . &{N:a;a;!Int, L:Skip});!Int
 
-rec x  . &{N:x;x;!Int, L:!Int}
-rec x  . &{N:x;x;!Int, L:Skip};!Int
+rec a  . &{N:a;a;!Int, L:!Int}
+rec a  . &{N:a;a;!Int, L:Skip};!Int
 
-rec x  . &{N:x;x;!Int, L:!Int}
-rec x  . (&{N:x;x;!Int, L:Skip};!Int)
+rec a  . &{N:a;a;!Int, L:!Int}
+rec a  . (&{N:a;a;!Int, L:Skip};!Int)
 
-(rec x. +{A: x; ?Char, B: ?Char}); ?Char
-(rec x. +{A: x; +{B: Skip}; +{B: Skip}; ?Char, B: +{B: Skip}; +{B: Skip}; ?Char}); +{B: Skip}; +{B: Skip}; ?Char
+(rec a. +{A: a; ?Char, B: ?Char}); ?Char
+(rec a. +{A: a; +{B: Skip}; +{B: Skip}; ?Char, B: +{B: Skip}; +{B: Skip}; ?Char}); +{B: Skip}; +{B: Skip}; ?Char
 
-(rec y. +{A: (rec y. (rec x. (+{A: (Skip;(?Int;!())), B: (Skip;?Char)};x)))})
-+{A: (rec y. +{A: (((Skip;?Int);!());(rec y. +{A: (rec y. +{A: (((Skip;?Int);!());y), B: (?Char;y)})})), B: (?Char;(rec y. +{A: (rec y. +{A: (((Skip;?Int);!());y), B: (?Char;y)})}))})}
+(rec b. +{A: (rec b. (rec a. (+{A: (Skip;(?Int;!())), B: (Skip;?Char)};a)))})
++{A: (rec b. +{A: (((Skip;?Int);!());(rec b. +{A: (rec b. +{A: (((Skip;?Int);!());b), B: (?Char;b)})})), B: (?Char;(rec b. +{A: (rec b. +{A: (((Skip;?Int);!());b), B: (?Char;b)})}))})}

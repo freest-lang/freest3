@@ -3,7 +3,7 @@ data List = Cons Int List | Nil
 type ListOut : SL = +{Nil : Skip, Cons: !Int;ListOut}
 type ListIn = dualof ListOut
 
-rcvList : forall a : SL => ListIn;a -> (List, a)
+rcvList : forall a : SL . ListIn;a -> (List, a)
 rcvList c =
   match c with {
     Cons c ->
@@ -13,7 +13,7 @@ rcvList c =
     Nil c -> (Nil, c)
   }
 
-sendList : forall a : SL => ListOut;a -> List -> a
+sendList : forall a : SL . ListOut;a -> List -> a
 sendList c l =
   case l of {
     Cons x xs ->

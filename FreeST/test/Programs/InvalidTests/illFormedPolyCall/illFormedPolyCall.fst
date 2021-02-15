@@ -1,6 +1,6 @@
 data Tree = Leaf | Node Int Tree Tree
 
-sendTree : forall α => Tree -> (rec x . +{NodeC: !Int;x;x, LeafC: Skip}); α -> α
+sendTree : forall α . Tree -> (rec x . +{NodeC: !Int;x;x, LeafC: Skip}); α -> α
 sendTree t c =
   case t of {
     Leaf ->
