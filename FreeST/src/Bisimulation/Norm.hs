@@ -16,7 +16,7 @@ module Bisimulation.Norm
 , sameNorm
 ) where
 
-import           Syntax.TypeVariables
+import           Syntax.TypeVariable
 import           Bisimulation.Grammar
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set

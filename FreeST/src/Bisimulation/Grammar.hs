@@ -39,9 +39,9 @@ module Bisimulation.Grammar
   )
 where
 
-import           Syntax.TypeVariables
+import           Syntax.TypeVariable
 import           Syntax.Base
-import           Parse.Unparser
+import           Parse.Unparser                 ( )
 import qualified Data.Map.Strict               as Map
 import           Data.List                      ( intercalate )
 -- Word is (re)defined in module Equivalence.Grammar

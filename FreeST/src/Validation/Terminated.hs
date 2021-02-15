@@ -12,22 +12,20 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Validation.Terminated
-( terminated
-)
+  ( terminated
+  )
 where
 
-import           Syntax.Types
-import           Syntax.Kinds
-import           Syntax.TypeVariables
-import qualified Data.Set as Set
+import qualified Syntax.Kind                   as K
+import qualified Syntax.Type                   as T
+import qualified Data.Set                      as Set
 
--- A terminated type is composed of Skip, semi-colon, recursive types,
--- and variables introduced by recursive types. In particular infinite
--- sequences of Skips is terminated.
+terminated :: T.Type -> Bool
 terminated = term Set.empty
-  where
-    term _ (Skip _) = True
-    term s (Semi _ t u) = term s t && term s u
-    term s (Rec _ (KindBind _ a _) t) = term (Set.insert a s) t
-    term s (TypeVar _ a) = a `Set.member` s
-    term _ _ = False
+ where
+  term _ (T.Skip _                 ) = True
+  term s (T.Semi _ t u             ) = term s t && term s u
+  term s (T.Rec  _ (K.Bind _ a k t)) = K.isSession k && term (Set.insert a s) t
+  term s (T.Var _ a                ) = a `Set.member` s
+  term _ _                           = False
+

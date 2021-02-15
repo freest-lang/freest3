@@ -1,5 +1,5 @@
 {-|
-Module      :  Typing
+Module      :  Validation.TypeChecking
 Description :  <optional short text displayed on contents page>
 Copyright   :  (c) <Authors or Affiliations>
 License     :  <license>
@@ -18,63 +18,61 @@ module Validation.TypeChecking
   )
 where
 
-import           Syntax.Expressions
-import           Syntax.Schemes
-import           Syntax.Types
-import           Syntax.ProgramVariables
-import           Syntax.Base
-import           Validation.Terminated
-import qualified Validation.Kinding            as K
-import qualified Validation.Typing             as T
-import           Utils.Errors
-import           Utils.FreestState
-import           Utils.PreludeLoader            ( userDefined )
 import           Control.Monad.State            ( when
                                                 , get
                                                 , unless
                                                 )
 import qualified Data.Map.Strict               as Map
--- import           Syntax.Show -- debug
--- import           Debug.Trace -- debug
+import           Syntax.Base
+import qualified Syntax.Expression             as E
+import           Syntax.Program                 ( noConstructors )
+import           Syntax.ProgramVariable
+import qualified Syntax.Type                   as T
+import qualified Syntax.Kind                   as K
+import           Util.FreestState
+import           Util.PreludeLoader            ( userDefined )
+import qualified Validation.Kinding            as K
+import qualified Validation.Typing             as Typing -- Again
 
 typeCheck :: FreestState ()
 typeCheck = do
-  tEnv <- getTEnv -- Type/datatype declarations
-  vEnv <- getVEnv -- Function signatures
-  eEnv <- getEEnv -- Function bodies
+  -- vEnv <- getVEnv -- Function signatures
+  -- eEnv <- getProg -- Function bodies
   -- tn   <- getTypeNames -- Type Names
-  -- traceM ("\n\n\nEntering type checking with\n  TEnv " ++ show tEnv ++ "\n\n" ++
-  --         "  VEnv " ++ show (userDefined vEnv) ++ "\n\n" ++
-  --         "  EEnv " ++ show eEnv  ++ "\n\n" ++
-  --         "  Tname " ++ show tn)
+  -- tEnv <- getTEnv -- Type/datatype declarations
+  -- debugM ("\n\n\nEntering type checking with\n  TEnv " ++ show tEnv ++ "\n\n"
+  --         ++ "  VEnv " ++ show (userDefined vEnv) ++ "\n\n"
+  --         ++ "  Prog " ++ show eEnv  ++ "\n\n"
+  --         ++ "  Tname " ++ show tn)
 
   -- * Check the formation of all type decls
-  -- trace "checking the formation of all type decls" (return ())
-  mapM_ (K.synthetiseTS Map.empty . snd) tEnv
+--  debugM "checking the formation of all type decls"
+  mapM_ (K.synthetise Map.empty . snd) =<< getTEnv 
+
   -- * Check the formation of all function signatures
-  -- trace "checking the formation of all function signatures (kinding)" (return ())
-  mapM_ (K.synthetiseTS Map.empty) vEnv
+--  debugM "checking the formation of all function signatures (kinding)" 
+  mapM_ (K.synthetise Map.empty) =<< getVEnv
   -- Gets the state and only continues if there are no errors so far
   -- Can't continue to equivalence if there are ill-formed types
   -- (i.e. not contractive under a certain variable)  
   s <- get
   unless (hasErrors s) $ do
     -- * Check whether all function signatures have a binding
-    -- trace "checking whether all function signatures have a binding" (return ())
-    tMapWithKeyM checkHasBinding vEnv
+--    debugM "checking whether all function signatures have a binding"
+    tMapWithKeyM_ checkHasBinding =<< getVEnv
     -- * Check function bodies
-    -- trace "checking the formation of all functions (typing)" (return ())
-    tMapWithKeyM checkFunBody eEnv
+--    debugM "checking the formation of all functions (typing)"
+    tMapWithKeyM_ checkFunBody =<< getProg
     -- * Check the main function
-    -- trace "checking the main function" (return ())
+--    debugM "checking the main function"
     checkMainFunction
 
 -- Check whether a given function signature has a corresponding
 -- binding. Exclude the builtin functions and the datatype
 -- constructors.
-checkHasBinding :: ProgVar -> TypeScheme -> FreestState ()
+checkHasBinding :: ProgVar -> T.Type -> FreestState ()
 checkHasBinding f _ = do
-  eEnv <- getEEnv
+  eEnv <- getProg
   vEnv <- getVEnv
   tEnv <- getTEnv
   when
@@ -84,7 +82,7 @@ checkHasBinding f _ = do
       `Map.notMember` eEnv
       )
     $ addError
-        (position f)
+        (pos f)
         [ Error "The type signature for"
         , Error f
         , Error "lacks an accompanying binding\n"
@@ -94,10 +92,10 @@ checkHasBinding f _ = do
 
 -- Check a given function body against its type; make sure all linear
 -- variables are used.
-checkFunBody :: ProgVar -> Expression -> FreestState ()
+checkFunBody :: ProgVar -> E.Exp -> FreestState ()
 checkFunBody f e = getFromVEnv f >>= \case
-  Just s  -> T.checkAgainstTS e s
-  Nothing -> return () -- We've issued this error at parsing time
+  Just s  -> Typing.checkAgainst Map.empty e s
+  Nothing -> return ()
 
 checkMainFunction :: FreestState ()
 checkMainFunction = do
@@ -105,22 +103,23 @@ checkMainFunction = do
   vEnv <- getVEnv
   if main `Map.notMember` vEnv
     then addError defaultPos
-                  [Error "Function", Error main, Error "is not defined"]
+                  [Error "Function", Error main, Error "not defined"]
     else do
-      let s = vEnv Map.! main
-      tEnv <- getTEnv
-      unless (isValidMainType s) $ K.synthetiseTS Map.empty s >>= \k -> addError
+      let t = vEnv Map.! main
+      k <- K.synthetise Map.empty t
+      unless (not (K.isLin k)) $  addError
         defaultPos
         [ Error "The type of"
         , Error main
-        , Error "must be non-function, non-polymorphic\n"
-        , Error "\t found type (scheme)"
-        , Error s
+        , Error "must be non linear"
+        -- , Error "must be non-function, non-polymorphic\n"
+        , Error "\n\t found type"
+        , Error t
         , Error "of kind"
         , Error k
         ]
 
-isValidMainType :: TypeScheme -> Bool
-isValidMainType (TypeScheme _ _  Fun{}) = False
-isValidMainType (TypeScheme _ [] _    ) = True
-isValidMainType _                       = False
+-- validMainType :: T.Type -> Bool -- TODO: why this restriction?
+-- validMainType T.Forall{} = False
+-- validMainType T.Fun{}    = False
+-- validMainType _          = True

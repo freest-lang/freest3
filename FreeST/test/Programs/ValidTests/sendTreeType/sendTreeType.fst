@@ -20,7 +20,7 @@ type TreeChannel = rec x::Su. +{
 }
 -}
 
-sendTree : forall a:SL => Tree -> TreeChannel; a -> a
+sendTree : forall a:SL . Tree -> TreeChannel; a -> a
 sendTree t c =
   case t of {
     Leaf ->
@@ -32,7 +32,7 @@ sendTree t c =
       sendTree[a] r c
   }
 
-receiveTree : forall a : SL => dualof TreeChannel; a -> (Tree, a)
+receiveTree : forall a : SL . dualof TreeChannel; a -> (Tree, a)
 receiveTree c =
   match c with {
     Leaf c ->

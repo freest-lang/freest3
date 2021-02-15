@@ -12,25 +12,25 @@ Multiplicity, that will be used the remaining Compiler.
 
 module Syntax.Base
 ( Default(..)
-, Multiplicity(..)
 , Variable(..)
 , Pos(..) 
 , Position(..)
+, Multiplicity(..)
 , defaultPos
 , negPos
 ) where
 
--- Defaults for the various syntactic categories
+-- Default for the various syntactic categories
 
 class Default t where
   omission :: Pos -> t
 
--- POSITIONS
+-- Position
 
 data Pos = Pos Int Int deriving (Eq, Ord)
 
 class Position t where
-  position :: t -> Pos  
+  pos :: t -> Pos  
 
 defaultPos :: Pos
 defaultPos = Pos 0 0
@@ -38,15 +38,11 @@ defaultPos = Pos 0 0
 negPos :: Pos -> Pos
 negPos (Pos i j) = Pos (negate i) (negate j)
 
--- Multiplicities for kinds, types, and expressions
+-- Multiplicity for kinds, types and expressions
 
 data Multiplicity = Un | Lin deriving Eq
 
-instance Ord Multiplicity where
-  Un <= Lin = True
-  _  <= _  = False
-
--- Variables, type and program
+-- Type and program variable
 
 class Position t => Variable t where
   -- The string, internal representation of a variable

@@ -27,7 +27,7 @@ type TreeC : SL = +{Leaf: Skip, Node: !Int;TreeC;TreeC;?Int}
   returns a tree isomorphic to the input where each integer in nodes
   is read from the channel.
 -}
-transform : forall a : SL => Tree -> TreeC ; a -> (Tree, a)
+transform : forall a : SL . Tree -> TreeC ; a -> (Tree, a)
 transform tree c =
   case tree of {
     Leaf ->
@@ -46,7 +46,7 @@ transform tree c =
   writes back on the channel the sum of the elements in the tree;
   returns this sum.
 -}
-treeSum : forall a : SL => dualof TreeC ; a -> (Int, a)
+treeSum : forall a : SL . dualof TreeC ; a -> (Int, a)
 treeSum c =
   match c with {
     Leaf c ->

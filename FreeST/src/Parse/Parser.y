@@ -1,46 +1,31 @@
 {
 module Parse.Parser
--- ( parseType
--- , parseTypeScheme
--- , parseDefs
--- , parseProgram
--- , parseSchemes
---)
 where
 
-
-import           Syntax.Expressions
-import           Syntax.Schemes
-import           Syntax.Types
-import           Syntax.Kinds
-import           Syntax.ProgramVariables
-import           Syntax.TypeVariables
-import           Syntax.Base
-import           Parse.ParseUtils
-import           Parse.Lexer
-import           Utils.Errors
-import           Utils.FreestState
-import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
 import           Control.Monad.State
-import           Data.Char
-import           Data.List (nub, (\\), intercalate, find)
-import           System.Exit (die)
-import           Debug.Trace
+import qualified Data.Map.Strict               as Map
+import           Parse.Lexer
+import           Parse.ParseUtils
+import           Syntax.Base
+import           Syntax.Expression             as E
+import qualified Syntax.Kind                   as K
+import           Syntax.Program
+import           Syntax.ProgramVariable
+import qualified Syntax.Type                   as T
+import           Syntax.TypeVariable
+import           Util.Error
+import           Util.FreestState
+import Paths_FreeST (getDataFileName)
+
 }
 
 %name types Type
-%name typeScheme TypeScheme
 %name terms Prog
 %name kinds Kind
-%name expr Expr
-%name schemes Schemes
+%name expr Exp
 %tokentype { Token }
 %error { parseError }
--- %monad { ParseResult } { thenParseResult } { returnParseResult }
--- %monad { FreestState }
 %monad { FreestStateT } { (>>=) } { return }
-
 
 %token
   nl       {TokenNL _}
@@ -73,6 +58,7 @@ import           Debug.Trace
   '+'      {TokenPlus _}
   '-'      {TokenMinus _}
   '*'      {TokenTimes _}
+  '^'      {TokenRaise _} 
   '_'      {TokenWild _}
   '$'      {TokenDollar _}
   '.'      {TokenDot _}
@@ -84,6 +70,8 @@ import           Debug.Trace
   SL       {TokenSL _}
   TU       {TokenTU _}
   TL       {TokenTL _}
+  MU       {TokenMU _}
+  ML       {TokenML _}
   INT      {TokenInt _ _ }
   BOOL     {TokenBool _ _}
   CHAR     {TokenChar _ _}
@@ -106,34 +94,31 @@ import           Debug.Trace
   forall   {TokenForall _}
   dualof   {TokenDualof _}
 
-%nonassoc LOWER_ID UPPER_ID
-%nonassoc '(' '['
-%nonassoc '()'
--- Expressions
+-- %nonassoc LOWER_ID UPPER_ID
+-- %nonassoc '(' '['
+-- %nonassoc '()'
 %right in else match case
--- %left select
 %nonassoc new
-%right '$'       -- function call
-%left '&'        -- function call
 %left '||'       -- disjunction
 %left '&&'       -- conjunction
 %nonassoc CMP    -- comparison (relational and equality)
 %left '+' '-'    -- aditive
 %left '*' '/'    -- multiplicative
+%right '^'        -- power
 %left NEG not    -- unary
--- Types
-%right '.'       -- used in rec
-%right '->' '-o' -- an Expr operator as well
-%right ';'       -- an Expr operator as well
+%right '.'       -- ∀ a:k . T and μ a:k . T
+%right '=>' '->' '-o' ARROW -- λλ a:k => e,  x:T -> e, λ x:T -o e, T -> T and T -o T
+%right ';'       -- T;T and e;e
+%right MSG       -- !T and ?T
 %right dualof
--- Lambda expressions
 %nonassoc ProgVarWildTBind
+%right '$'       -- function call
+%left '&'        -- function call
 
 %%
-
----------------
+-------------
 -- PROGRAM --
----------------
+-------------
 
 Prog :: { () }
   : Decl         {}
@@ -145,250 +130,265 @@ NL :: { () }
 
 Decl :: { () }
   -- Function signature
-  : ProgVar ':' TypeScheme {% do
+  : ProgVar ':' Type {% do
       toStateT $ checkDupProgVarDecl $1
-      toStateT $ addToVEnv $1 $3 }
+      toStateT $ addToVEnv $1 $3
+    }
   -- Function declaration
-  | ProgVar ProgVarWildSeq '=' Expr {% do
+  | ProgVar ProgVarWildSeq '=' Exp {% do
       toStateT $ checkDupFunDecl $1
-      e <- toStateT $ buildFunBody $1 $2 $4
-      toStateT $ addToEEnv $1 e }
+      toStateT $ addToPEnv $1 $2 $4        
+    }
   -- Type abbreviation
-  | type TypeNameKind KindBindEmptyList '=' Type {% do
+  | type KindedTVar TypeDecl {% do
       toStateT $ checkDupTypeDecl (fst $2)
-      toStateT $ uncurry addToTEnv $2 (TypeScheme (position $5) $3 $5) }
+      toStateT $ uncurry addToTEnv $2 $3
+    }
   -- Datatype declaration
-  | data TypeNameKind KindBindEmptyList '=' DataCons {% do
+  | data KindedTVar '=' DataCons {% do
       let a = fst $2
       toStateT $ checkDupTypeDecl a
-      let bs = typeListToType a $5 :: [(ProgVar, Type)]
-      toStateT $ mapM_ (\(c, t) -> addToVEnv c (fromType t)) bs
-      let p = position a
-      toStateT $ uncurry addToTEnv $2 (TypeScheme p $3 (Datatype p (Map.fromList bs)))
+      let bs = typeListToType a $4 :: [(ProgVar, T.Type)]
+      toStateT $ mapM_ (\(c, t) -> addToVEnv c t) bs
+      let p = pos a
+      toStateT $ uncurry addToTEnv $2 (T.Datatype p (Map.fromList bs))
     }
 
-DataCons :: { [(ProgVar, [Type])] }
+TypeDecl :: { T.Type }
+  : '=' Type { $2 }
+  | KindBind TypeDecl { let (a,k) = $1 in T.Forall (pos a) (K.Bind (pos k) a k $2) }
+
+DataCons :: { [(ProgVar, [T.Type])] }
   : DataCon              {% toStateT $ checkDupCons $1 [] >> return [$1] }
   | DataCon '|' DataCons {% toStateT $ checkDupCons $1 $3 >> return ($1 : $3) }
 
-DataCon :: { (ProgVar, [Type]) }
+DataCon :: { (ProgVar, [T.Type]) }
   : Constructor TypeSeq { ($1, $2) }
 
------------------
--- EXPRESSIONS --
------------------
+----------------
+-- EXPRESSION --
+----------------
 
-Expr :: { Expression }
-  : let ProgVarWild '=' Expr in Expr { UnLet (position $1) $2 $4 $6 }
-  | Expr ';' Expr                    { App (position $1)
-                                         (Abs (position $1) Un
-                                           (TypeBind (position $1) (mkVar (position $1) "_") (Basic (position $3) UnitType))
-                                           $3)
+Exp :: { E.Exp }
+  : let ProgVarWild '=' Exp in Exp { E.UnLet (pos $1) $2 $4 $6 }
+  | Exp ';' Exp                    { E.App (pos $1)
+                                         (E.Abs (pos $1) 
+                                           (E.Bind (pos $1) Un (mkVar (pos $1) "_")
+                                             (T.Unit (pos $3))
+                                           $3))
                                        $1}
-  | let '(' ProgVarWild ',' ProgVarWild ')' '=' Expr in Expr
-                                     { BinLet (position $1) $3 $5 $8 $10 }
-  | if Expr then Expr else Expr      { Conditional (position $1) $2 $4 $6 }
-  | new Type                         { New (position $1) $2 (Dualof (negPos (position $2)) $2) }
-  | match Expr with '{' MatchMap '}' { Match (position $1) $2 $5 }
-  | case Expr of '{' CaseMap '}'     { Case (position $1) $2 $5 }
-  | Expr '$' Expr                    { App (position $2) $1 $3 }
-  | Expr '&' Expr                    { App (position $2) $3 $1 }
-  | Expr '||' Expr                   { binOp $1 (mkVar (position $2) "(||)") $3 }
-  | Expr '&&' Expr                   { binOp $1 (mkVar (position $2) "(&&)") $3 }
-  | Expr CMP Expr                    { binOp $1 (mkVar (position $2) (getText $2)) $3 }
-  | Expr '+' Expr                    { binOp $1 (mkVar (position $2) "(+)") $3 }
-  | Expr '-' Expr                    { binOp $1 (mkVar (position $2) "(-)") $3 }
-  | Expr '*' Expr                    { binOp $1 (mkVar (position $2) "(*)") $3 }
-  | Expr '/' Expr                    { binOp $1 (mkVar (position $2) "div") $3 }
-  | App                              { $1 }
+  | let '(' ProgVarWild ',' ProgVarWild ')' '=' Exp in Exp
+                                   { E.BinLet (pos $1) $3 $5 $8 $10 }
+  | if Exp then Exp else Exp       { E.Cond (pos $1) $2 $4 $6 }
+  | new Type                       { E.New (pos $1) $2 (T.Dualof (negPos (pos $2)) $2) }
+  | match Exp with '{' MatchMap '}'{ E.Match (pos $1) $2 $5 }
+  | case Exp of '{' CaseMap '}'    { E.Case (pos $1) $2 $5 }
+  | Exp '$' Exp                    { E.App (pos $2) $1 $3 }
+  | Exp '&' Exp                    { E.App (pos $2) $3 $1 }
+  | Exp '||' Exp                    { binOp $1 (mkVar (pos $2) "(||)") $3 }
+  | Exp '&&' Exp                    { binOp $1 (mkVar (pos $2) "(&&)") $3 }
+  | Exp CMP Exp                     { binOp $1 (mkVar (pos $2) (getText $2)) $3 }
+  | Exp '+' Exp                    { binOp $1 (mkVar (pos $2) "(+)") $3 }
+  | Exp '-' Exp                    { binOp $1 (mkVar (pos $2) "(-)") $3 }
+  | Exp '*' Exp                    { binOp $1 (mkVar (pos $2) "(*)") $3 }
+  | Exp '/' Exp                    { binOp $1 (mkVar (pos $2) "(/)") $3 }
+  | Exp '^' Exp                    { binOp $1 (mkVar (pos $2) "(^)") $3 }
+  | '-' App %prec NEG              { unOp (mkVar (pos $1) "negate") $2}  
+  | '(' Op Exp ')'                 { unOp $2 $3 } -- left section
+  | '(' Exp Op ')'                 { unOp $3 $2 } -- right section
+  | '(' Exp '-' ')'                { unOp (mkVar (pos $2) "(-)") $2 } -- right section (-) 
+  | App                            { $1 }
+  
+App :: { E.Exp }
+  : App Primary                    { E.App (pos $1) $1 $2 }
+  | select ArbitraryProgVar        { E.Select (pos $1) $2 }
+  | Primary                        { $1 }
 
-App :: { Expression }
-  : App Primary                      { App (position $1) $1 $2 }
-  | select ArbitraryProgVar          { Select (position $1) $2 }
-  | '-' App %prec NEG                { unOp (mkVar (position $1) "negate") $2}
-  | Primary                          { $1 }
+Primary :: { E.Exp }
+  : INT                            { let (TokenInt p x) = $1 in E.Int p x }
+  | BOOL                           { let (TokenBool p x) = $1 in E.Bool p x }
+  | CHAR                           { let (TokenChar p x) = $1 in E.Char p x }
+  | STR                            { let (TokenString p x) = $1 in String p x }
+  | '()'                           { E.Unit (pos $1) }
+  | TApp ']'                       { $1 }
+  | ArbitraryProgVar               { E.Var (pos $1) $1 }
+  | lambda ProgVarWildTBind Abs
+      { let ((p,m),e) = $3 in E.Abs p (E.Bind p m (fst $2) (snd $2) e) }
+  | Lambda KindBind TAbs
+      { let (a,k) = $2 in E.TypeAbs (pos a) (K.Bind (pos k) a k $3) }
+  | '(' Exp ',' Tuple ')'          { E.Pair (pos $1) $2 $4 }
+  | '(' Exp ')'                    { $2 }
 
-Primary :: { Expression }
-  : INT                              { let (TokenInt p x) = $1 in Integer p x }
-  | BOOL                             { let (TokenBool p x) = $1 in Boolean p x }
-  | CHAR                             { let (TokenChar p x) = $1 in Character p x }
-  | STR                              { let (TokenString p x) = $1 in String p x }
-  | '()'                             { Unit (position $1) }
-  | ProgVar '[' TypeList ']'         { TypeApp (position $1) $1 $3 }
-  | ArbitraryProgVar                 { ProgVar (position $1) $1 }
-  | '(' lambda ProgVarWildTBind Arrow Expr ')'
-        { Abs (position $2) (snd $4) (TypeBind (position $2) (fst $3) (snd $3)) $5 }
-  | '(' Expr ',' Tuple ')'           { Pair (position $1) $2 $4 }
-  | '(' Expr ')'                     { $2 }
+Abs :: { ((Pos, Multiplicity), E.Exp) }
+  : Arrow Exp { ($1, $2) }
+  | ProgVarWildTBind Abs
+      { let ((p,m),e) = $2 in ((p, m), E.Abs p (E.Bind p m (fst $1) (snd $1) e)) }
 
-ProgVarWildTBind :: { (ProgVar, Type) }
-  : ProgVarWild ':' Type  %prec ProgVarWildTBind { ($1, $3) }
+TAbs :: { E.Exp }
+  : '=>' Exp { $2 }
+  | KindBind TAbs
+      { let (a,k) = $1 in E.TypeAbs (pos a) (K.Bind (pos k) a k $2) }
 
-Tuple :: { Expression }
-  : Expr               { $1 }
-  | Expr ',' Tuple     { Pair (position $1) $1 $3 }
+TApp :: { E.Exp }
+  : Primary '[' Type { E.TypeApp (pos $1) $1 $3 }
+  | TApp ',' Type        { E.TypeApp (pos $1) $1 $3 }
+
+Tuple :: { E.Exp }
+  : Exp           { $1 }
+  | Exp ',' Tuple { E.Pair (pos $1) $1 $3 }
 
 MatchMap :: { FieldMap }
   : Match              { uncurry Map.singleton $1 }
   | Match ',' MatchMap {% toStateT $ checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
 
-Match :: { (ProgVar, ([ProgVar], Expression)) }
-  : ArbitraryProgVar ProgVarWild '->' Expr { ($1, ([$2], $4)) }
+Match :: { (ProgVar, ([ProgVar], E.Exp)) }
+  : ArbitraryProgVar ProgVarWild '->' Exp { ($1, ([$2], $4)) }
 
 CaseMap :: { FieldMap }
   : Case             { uncurry Map.singleton $1 }
   | Case ',' CaseMap {% toStateT $ checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
 
-Case :: { (ProgVar, ([ProgVar], Expression)) }
-  : Constructor ProgVarWildSeq '->' Expr { ($1, ($2, $4)) }
+Case :: { (ProgVar, ([ProgVar], E.Exp)) }
+  : Constructor ProgVarWildSeq '->' Exp { ($1, ($2, $4)) }
 
------------
--- TYPE SCHEMES --
------------
+Op :: { ProgVar }
+   : '||'   { mkVar (pos $1) "(||)"      }
+   | '&&'  { mkVar (pos $1) "(&&)"       }
+   | CMP   { mkVar (pos $1) (getText $1) }
+   | '+'   { mkVar (pos $1) "(+)"        }  
+   | '*'   { mkVar (pos $1) "(*)"        }
+   | '/'   { mkVar (pos $1) "(/)"        }
+   | '^'   { mkVar (pos $1) "(^)"        }
 
-TypeScheme :: { TypeScheme }
-  : forall KindBindList '=>' Type { TypeScheme (position $1) $2 $4 }
-  | Type                          { TypeScheme (position $1) [] $1 }
 
------------
--- TYPES --
------------
+----------
+-- TYPE --
+----------
 
-Type :: { Type }
+Type :: { T.Type }
   -- Functional types
-  : BasicType                     { uncurry Basic $1 }
-  | Type Arrow Type               { uncurry Fun $2 $1 $3 }
-  | '(' Type ',' TupleType ')'    { PairType (position $1) $2 $4 }
+  : Int                           { T.Int (pos $1) }
+  | Char                          { T.Char (pos $1) }
+  | Bool                          { T.Bool (pos $1) }
+  | String                        { T.String (pos $1) }
+  | '()'                          { T.Unit (pos $1) }
+  | Type Arrow Type %prec ARROW   { uncurry T.Fun $2 $1 $3 }
+  | '(' Type ',' TupleType ')'    { T.Pair (pos $1) $2 $4 }
   -- Session types
-  | Skip                          { Skip (position $1) }
-  | Type ';' Type                 { Semi (position $2) $1 $3 }
-  | Polarity BasicType            { uncurry Message $1 (snd $2) }
-  | ChoiceView '{' FieldList '}'  { uncurry Choice $1 $3 }
-  | rec KindBind '.' Type         { Rec (position $1) $2 $4 }
-  -- Functional or session
-  | TypeVar                       { TypeVar (position $1) $1 }
+  | Skip                          { T.Skip (pos $1) }
+  | Type ';' Type                 { T.Semi (pos $2) $1 $3 }
+  | Polarity Type %prec MSG       { uncurry T.Message $1 $2 }
+  | ChoiceView '{' FieldList '}'  { uncurry T.Choice $1 $3 }
+  -- Polymorphism and recursion
+  | rec KindBind '.' Type
+      { let (a,k) = $2 in T.Rec (pos $1) (K.Bind (pos a) a k $4) }
+  | forall KindBind Forall
+      { let (a,k) = $2 in T.Forall (pos $1) (K.Bind (pos a) a k $3) }
+  | TypeVar                       { T.Var (pos $1) $1 }
   -- Type operators
-  | dualof Type                   { Dualof (position $1) $2 }
-  | TypeName                      { TypeName (position $1) $1 }
+  | dualof Type                   { T.Dualof (pos $1) $2 }
+  | TypeName                      { T.Var (pos $1) $1 } -- TODO: remove this one lex
   | '(' Type ')'                  { $2 }
 
-BasicType :: { (Pos, BasicType) }
-  : Int    { (position $1, IntType) }
-  | Char   { (position $1, CharType) }
-  | Bool   { (position $1, BoolType) }
-  | String { (position $1, StringType) }
-  | '()' { (position $1, UnitType) }
+Forall :: { T.Type }
+  : '.' Type { $2 }
+  | KindBind Forall 
+      { let (a,k) = $1 in T.Forall (pos a) (K.Bind (pos k) a k $2) }
 
-TupleType :: { Type }
-  : Type                    { $1 }
-  | Type ',' TupleType     { PairType (position $1) $1 $3 }
-
-Polarity :: { (Pos, Polarity) }
-  : '?' { (position $1, In) }
-  | '!' { (position $1, Out) }
+TupleType :: { T.Type }
+  : Type               { $1 }
+  | Type ',' TupleType { T.Pair (pos $1) $1 $3 }
 
 Arrow :: { (Pos, Multiplicity) }
-  : '->' { (position $1, Un) }
-  | '-o' { (position $1, Lin) }
+  : '->' { (pos $1, Un) }
+  | '-o' { (pos $1, Lin) }
 
-ChoiceView :: { (Pos, Polarity) }
-  : '+' { (position $1, Out) }
-  | '&' { (position $1, In) }
+Polarity :: { (Pos, T.Polarity) }
+  : '!' { (pos $1, T.Out) }
+  | '?' { (pos $1, T.In) }
 
-FieldList :: { TypeMap }
+ChoiceView :: { (Pos, T.Polarity) }
+  : '+' { (pos $1, T.Out) }
+  | '&' { (pos $1, T.In) }
+
+FieldList :: { T.TypeMap }
   : Field               { uncurry Map.singleton $1 }
   | Field ',' FieldList {% toStateT $ checkDupField (fst $1) $3 >>
                            return (uncurry Map.insert $1 $3) }
 
-Field :: { (ProgVar, Type) }
+Field :: { (ProgVar, T.Type) }
   : ArbitraryProgVar ':' Type { ($1, $3) }
 
------------
--- TYPE LISTS AND SEQUENCES --
------------
+-- TYPE SEQUENCE
 
-TypeList :: { [Type] }
-  : Type              { [$1] }
-  | Type ',' TypeList { $1 : $3 }
-
-TypeSeq :: { [Type] }
+TypeSeq :: { [T.Type] }
   :              { [] }
   | Type TypeSeq { $1 : $2 }
 
------------
--- KINDS --
------------
+----------
+-- KIND --
+----------
 
-Kind :: { Kind } :
-    SU { kindSU (position $1) }
-  | SL { kindSL (position $1) }
-  | TU { kindTU (position $1) }
-  | TL { kindTL (position $1) }
+Kind :: { K.Kind }
+  : SU { K.su (pos $1) }
+  | SL { K.sl (pos $1) }
+  | TU { K.tu (pos $1) }
+  | TL { K.tl (pos $1) }
+  | MU { K.mu (pos $1) }
+  | ML { K.ml (pos $1) }
+--  | Kind '->' Kind { KindArrow (pos $1) $1 $3 }
 
--- PROGRAM VARIABLES
+-- PROGRAM VARIABLE
 
 ArbitraryProgVar :: { ProgVar }
  : ProgVar     { $1 }
  | Constructor { $1 }
 
 ProgVar :: { ProgVar }
-  : LOWER_ID { mkVar (position $1) (getText $1) }
+  : LOWER_ID { mkVar (pos $1) (getText $1) }
 
 Constructor :: { ProgVar }
-  : UPPER_ID { mkVar (position $1) (getText $1) }
+  : UPPER_ID { mkVar (pos $1) (getText $1) }
 
 ProgVarWild :: { ProgVar }
   : ProgVar { $1 }
-  | '_'     { mkVar (position $1) "_" }
+  | '_'     { mkVar (pos $1) "_" }
 
 ProgVarWildSeq :: { [ProgVar] }
   :                            { [] }
   | ProgVarWild ProgVarWildSeq {% toStateT $ checkDupBind $1 $2 >> return ($1 : $2) }
 
--- TYPE VARIABLES
+ProgVarWildTBind :: { (ProgVar, T.Type) }
+  : ProgVarWild ':' Type  %prec ProgVarWildTBind { ($1, $3) }
+
+-- TYPE VARIABLE
 
 TypeVar :: { TypeVar }
-  : LOWER_ID { mkVar (position $1) (getText $1) }
+  : LOWER_ID { mkVar (pos $1) (getText $1) }
 
 TypeName :: { TypeVar }
-  : UPPER_ID { mkVar (position $1) (getText $1) }
+  : UPPER_ID { mkVar (pos $1) (getText $1) }
 
-KindBind :: { KindBind }
-  : TypeVar ':' Kind { KindBind (position $1) $1 $3 }
-  | TypeVar          { KindBind (position $1) $1 (omission (position $1)) }
-
-TypeNameKind :: { (TypeVar, Kind) }    -- for type and data declarations
+KindBind :: { (TypeVar, K.Kind) }
+  : TypeVar ':' Kind { ($1, $3) }
+  | TypeVar          { ($1, omission (pos $1)) }
+  
+KindedTVar :: { (TypeVar, K.Kind) }    -- for type and data declarations
   : TypeName ':' Kind { ($1, $3) }
-  | TypeName          { ($1, omission (position $1)) }
-
-KindBindList :: { [KindBind] }
-  : KindBind                     { [$1] }
-  | KindBind ',' KindBindList {% toStateT $ checkDupKindBind $1 $3 >> return ($1 : $3) }
-
-KindBindEmptyList :: { [KindBind] }
-  :                 { [] }
-  | KindBindList { $1 }
-
--- TYPE SCHEMES
-
-Schemes :: { (TypeScheme, TypeScheme) }
-  : TypeScheme NL TypeScheme { ($1, $3) }
-
+  | TypeName          { ($1, omission (pos $1)) }
 
 {
+-- Parsing Kinds, Types and Programs
 
------------------------
--- Parsing functions --
------------------------
-parseKind :: String -> Kind
+parseKind :: String -> K.Kind
 parseKind str =
-  case evalStateT (parse str "" kinds) (initialState "") of
+  case evalStateT (lexer str "" kinds) (initialState "") of
     Ok x -> x
     Failed err -> error err
 
-parseType :: String -> Either Type String
+parseType :: String -> Either T.Type String
 parseType str =
-  case runStateT (parse str "" types) (initialState "") of
+  case runStateT (lexer str "" types) (initialState "") of
     Ok p -> eitherTypeErr p
     Failed err -> Right $ err
   where
@@ -397,40 +397,43 @@ parseType str =
       | otherwise       = Left t
 
 
-----------------------
--- PARSING SCHEMES  --
-----------------------
-
-parseSchemes :: String -> String -> Either (TypeScheme, TypeScheme) String
-parseSchemes file str =
-  case runStateT (parse str file schemes) (initialState file) of
-    Ok (t, s) -> if hasErrors s then Right (getErrors s) else Left t
-    Failed err -> Right err
-
------------------------
--- PARSING PROGRAMS  --
------------------------
-
-parseProgram :: FilePath -> Map.Map ProgVar TypeScheme -> IO FreestS
+parseProgram :: FilePath -> Map.Map ProgVar T.Type -> IO FreestS
 parseProgram inputFile vEnv = do
+  prelude <- getDataFileName "Prelude.fst"
+  str <- readFile prelude
+  let (Ok s) = execStateT (lexer str prelude terms) ((initialState inputFile) {varEnv = vEnv})
+
   src <- readFile inputFile
-  return $ parseDefs inputFile vEnv src
+  return $ parseDefs inputFile s src
 
-parseDefs :: FilePath -> VarEnv -> String -> FreestS
-parseDefs file vEnv str =
+parseDefs :: FilePath -> FreestS -> String -> FreestS
+parseDefs file fState str =
   let s = initialState file in
-  case execStateT (parse str file terms) (s {varEnv = vEnv}) of
+  case execStateT (lexer str file terms) fState of
     Ok s1 -> s1
-    Failed err -> s {errors = (errors s) ++ [err]}
+    Failed err -> s {errors = errors s ++ [err]}
 
-parse str file f =
+
+-- parseProgram :: FilePath -> Map.Map ProgVar T.Type -> IO FreestS
+-- parseProgram inputFile vEnv = do
+--   src <- readFile inputFile
+--   return $ parseDefs inputFile vEnv src
+
+-- parseDefs :: FilePath -> VarEnv -> String -> FreestS
+-- parseDefs file vEnv str =
+--   let s = initialState file in
+--   case execStateT (lexer str file terms) (s {varEnv = vEnv}) of
+--     Ok s1 -> s1
+--     Failed err -> s {errors = (errors s) ++ [err]}
+
+    
+
+lexer str file f =
   case scanTokens str file of
     Right err -> failM err
     Left x    -> f x
 
--------------------
--- Handle errors --
--------------------
+-- Error Handling
 
 parseError :: [Token] -> FreestStateT a
 parseError [] = do
@@ -439,9 +442,10 @@ parseError [] = do
           [Error "Parse error:", Error "\ESC[91mPremature end of file\ESC[0m"]
 parseError (x:_) = do
   file <- toStateT getFileName
+--  traceM $ show xs
   failM $ formatErrorMessages Map.empty p file
     [Error "Parse error on input", Error $ "\ESC[91m'" ++ show x ++ "'\ESC[0m"]
- where p = position x
+ where p = pos x
 
 failM :: String -> FreestStateT a
 failM = lift . Failed

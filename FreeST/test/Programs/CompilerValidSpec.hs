@@ -2,8 +2,7 @@
 module CompilerValidSpec (spec) where
 
 import Control.Exception
-import Control.Monad
-import Data.Maybe
+import Control.Monad (void)
 import FreeST (checkAndRun)
 import SpecUtils
 import System.Directory
@@ -27,13 +26,13 @@ spec = specTest "Valid Tests" baseTestDir testValid
 testValid :: String -> String -> Spec
 testValid baseDir testingDir = do
   let dir = baseDir ++ baseTestDir ++ testingDir
-  file <- runIO $ liftM getSource (listDirectory dir)
+  file <- runIO $ fmap getSource (listDirectory dir)
   let f = dir </> file
   testResult <- runIO $ testOne f
   checkResult testResult f
 
 testOne :: FilePath -> IO (String, TestResult)
-testOne file = do
+testOne file =
  hCapture [stdout, stderr] $
    catches runTest
       [Handler (\(e :: ExitCode)      -> exitProgram e),
@@ -51,11 +50,11 @@ testOne file = do
 
 -- n microseconds (1/10^6 seconds).
 timeInMicro :: Int
-timeInMicro = 2 * 1000000
+timeInMicro = 6 * 1000000
 
 checkResult :: (String, TestResult) -> FilePath -> Spec
 checkResult (res, Passed) file = checkAgainstExpected file res
-checkResult (res, Failed) file =  do
+checkResult (res, Failed) file = 
   it ("Testing " ++ takeFileName file) $
     void $ assertFailure res
 checkResult (_, Timeout) file  = checkAgainstExpected file "<divergent>"
@@ -64,9 +63,9 @@ checkAgainstExpected :: FilePath -> String -> Spec
 checkAgainstExpected file res = do
   let expFile = file -<.> "expected"
   runIO (safeRead expFile) >>= \case
-    Just s -> 
+    Just s ->
       it ("Testing " ++ takeFileName file) $
-        (filter (/= '\n') res) `shouldBe` (filter (/= '\n') s)
+        filter (/= '\n') res `shouldBe` filter (/= '\n') s
     Nothing ->
       it ("Testing " ++ takeFileName file) $
         void $ assertFailure $ "File " ++ expFile ++ " not found"        
@@ -74,5 +73,5 @@ checkAgainstExpected file res = do
     safeRead :: FilePath -> IO (Maybe String)
     safeRead f = do
       b <- doesFileExist f
-      if b then liftM Just (readFile f) else return Nothing
+      if b then fmap Just (readFile f) else return Nothing
         

@@ -27,7 +27,7 @@ client n c =
   ()
 
 -- for each A selected a B is also selected
-client' : forall a : SL => Int -> S1;a -> a
+client' : forall a : SL . Int -> S1;a -> a
 client' n c =
   if n == 0
   then
@@ -45,7 +45,7 @@ server c =
   }
 
 -- For each A selected, a choice for B is also offered
-server' : forall a : SL => dualof S1; a -> a
+server' : forall a : SL . dualof S1; a -> a
 server' c =
   match c with {
     A c ->     -- (rec x:SL. &{A: x; &{B: Skip}, B: Skip})) ; &{B: Skip}

@@ -1,23 +1,27 @@
-module Equivalence.TestEquivalenceInvalidSpec(spec) where
+module Equivalence.TestEquivalenceInvalidSpec
+  ( spec
+  )
+where
 
-import           Equivalence.Equivalence (equivalent)
+import           Equivalence.Equivalence        ( equivalent )
 import           Validation.Rename
-import           Syntax.Types
-import           Syntax.Base
-import           Utils.FreestState
-import           SpecHelper
-import qualified Data.Map.Strict as Map
+import           Syntax.Type
+import           Util.FreestState
+import           SpecUtils
+import qualified Data.Map.Strict               as Map
 import           Control.Monad.State
 
 matchInvalidSpec :: [String] -> Spec
 matchInvalidSpec [a, b] =
-  it (a ++ " `~/~` " ++  b) $
-    equivalent Map.empty Map.empty t u `shouldBe` False
-          where (PairType p t u) = evalState (rename Map.empty (PairType p (read a) (read b))) (initialState "Testing Type Equivalence")
+  it (a ++ " `~/~` " ++ b) $ equivalent Map.empty t u `shouldBe` False
+ where
+  (Pair p t u) = evalState (rename Map.empty (Pair p (read a) (read b)))
+                           (initialState "Testing Type Equivalence")
 
 spec :: Spec
 spec = do
-  t <- runIO $ readFromFile "test/UnitTests/Equivalence/TestEquivalenceInvalid.txt"
+  t <- runIO
+    $ readFromFile "test/UnitTests/Equivalence/TestEquivalenceInvalid.txt"
   describe "Invalid Equivalence Test" $ mapM_ matchInvalidSpec (chunksOf 2 t)
 
 main :: IO ()

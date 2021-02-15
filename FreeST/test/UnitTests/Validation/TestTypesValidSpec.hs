@@ -1,43 +1,35 @@
-module Validation.TestTypesValidSpec (spec) where
+module Validation.TestTypesValidSpec
+  ( spec
+  )
+where
 
-import           Syntax.Kinds
-import           Syntax.ProgramVariables
-import           Syntax.Base
-import           Validation.Terminated
-import           Validation.Kinding
-import           Utils.FreestState
-import           SpecHelper
-import           Control.Monad.State
-import qualified Data.Map.Strict as Map
+import           Control.Monad.State            ( runState )
+import qualified Data.Map.Strict               as Map
+                                                ( empty )
+import           Elaboration.Duality           as Dual
+import           Elaboration.Elaboration
+import           SpecUtils
+import           Syntax.Kind                    ( Kind )
+import           Util.FreestState               ( initialState
+                                                , errors
+                                                )
+import           Validation.Kinding             ( synthetise )
+import           Validation.Rename              ( renameType )
+import           Validation.Subkind             ( (<:) )
 
 spec :: Spec
-spec = do
-  -- t <- runIO $ readFromFile "test/UnitTests/Validation/TestContractivityValid.txt"
-  describe "Valid types tests" $ do
-    t <- runIO $ readFromFile "test/UnitTests/Validation/TestTypesValid.txt"
-    mapM_ matchValidKindingSpec (chunksOf 3 t)
+spec = describe "Valid type tests" $ do
+  t <- runIO $ readFromFile "test/UnitTests/Validation/TestTypesValid.txt"
+  mapM_ matchValidKindingSpec (chunksOf 2 t)
 
 matchValidKindingSpec :: [String] -> Spec
-matchValidKindingSpec [kEnv, t, k] =
-  it t $ hasKind (readKenv kEnv) (read t) (read k) `shouldBe` True
-  where
-    readKenv :: String -> KindEnv
-    readKenv s = Map.fromList $ map (\(x,k) -> (mkVar defaultPos x, k)) (read s)
+matchValidKindingSpec [t, k] = it t $ hasKind (read t) (read k) `shouldBe` Left True
 
--- code from QuickCheck
-kindOf ::  KindEnv -> Type -> Maybe Kind
-kindOf kEnv t
-  | null (errors s) = Just k
-  | otherwise       = Nothing
-  where (k, s) = runState (synthetise kEnv t) (initialState "Kind syntesis")
-
-hasKind :: KindEnv -> Type -> Kind -> Bool
-hasKind kEnv t k = case kindOf kEnv t of
-  Nothing -> False
-  Just k' -> k' <: k
-
--- INVALID:
--- forall alpha . (rec Tree . &{Leaf:Skip, Node:?Int;Tree;Tree}) -> (rec TreeChannel . +{Leaf:Skip, Node:!Int;TreeChannel;TreeChannel});alpha->alpha
-
+hasKind :: Type -> Kind -> TestExpectation
+hasKind t k = testValidExpectation (k' <: k) (errors s) -- null (errors s) && k' <: k
+ where
+  (k', s) = runState test (initialState "Kind synthesis")
+  test    = synthetise Map.empty . renameType =<< Dual.resolve t
+  
 main :: IO ()
 main = hspec spec

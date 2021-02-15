@@ -1,25 +1,30 @@
-module Validation.TestExpressionInvalidSpec(spec) where
+module Validation.TestExpressionInvalidSpec
+  ( spec
+  )
+where
 
-import           SpecHelper
-import           Syntax.Expressions
 import           Control.Monad.State
-import           Utils.FreestState
-import           Validation.Typing(synthetise)
-import qualified Data.Map.Strict as Map
+import qualified Data.Map.Strict               as Map
+import           Elaboration.Duality           as Dual
+import           SpecUtils
+import           Syntax.Expression
+import           Util.FreestState
+import           Validation.Typing              ( synthetise )
 
 spec :: Spec
-spec = do
-  describe "Invalid expression tests" $ do
-    e <- runIO $ readFromFile "test/UnitTests/Validation/TestExpressionInvalid.txt"
-    mapM_ matchInvalidExpressionSpec e
+spec = describe "Invalid expression tests" $ do
+  e <- runIO
+    $ readFromFile "test/UnitTests/Validation/TestExpressionInvalid.txt"
+  mapM_ matchInvalidExpSpec e
 
-matchInvalidExpressionSpec :: String -> Spec
-matchInvalidExpressionSpec e =
-  it e $ isExpr (read e) `shouldBe` False
+matchInvalidExpSpec :: String -> Spec
+matchInvalidExpSpec e = it e $ isExpr (read e) `shouldBe` False
 
-isExpr :: Expression -> Bool
+isExpr :: Exp -> Bool
 isExpr e = null (errors s)
-  where s = execState (synthetise Map.empty e) (initialState "Check Against Expression")
+ where
+  s = execState (synthetise Map.empty =<< Dual.resolve e)
+                (initialState "Check Against Expression") -- (elaborateExp e)
 
 
 main :: IO ()
