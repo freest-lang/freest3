@@ -111,7 +111,7 @@ import Paths_FreeST (getDataFileName)
 %right ';'       -- T;T and e;e
 %right MSG       -- !T and ?T
 %right dualof
--- %nonassoc ProgVarWildTBind
+%nonassoc ProgVarWildTBind
 %right '$'       -- function call
 %left '&'        -- function call
 
@@ -359,7 +359,7 @@ ProgVarWildSeq :: { [ProgVar] }
   | ProgVarWild ProgVarWildSeq {% toStateT $ checkDupBind $1 $2 >> return ($1 : $2) }
 
 ProgVarWildTBind :: { (ProgVar, T.Type) }
-  : ProgVarWild ':' Type  {- %prec ProgVarWildTBind -} { ($1, $3) }
+  : ProgVarWild ':' Type  %prec ProgVarWildTBind { ($1, $3) }
 
 -- TYPE VARIABLE
 

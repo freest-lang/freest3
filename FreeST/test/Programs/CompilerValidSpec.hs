@@ -50,7 +50,7 @@ testOne file =
 
 -- n microseconds (1/10^6 seconds).
 timeInMicro :: Int
-timeInMicro = 2 * 1000000
+timeInMicro = 6 * 1000000
 
 checkResult :: (String, TestResult) -> FilePath -> Spec
 checkResult (res, Passed) file = checkAgainstExpected file res
