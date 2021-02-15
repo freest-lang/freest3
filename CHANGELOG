@@ -1,3 +1,14 @@
+# Version 2.0.0	
+  - Impredicative polymorphism (System F)
+  - New kinds that classify types that can be sent in channels (MU and ML)
+  - Adding more prelude functions ((^), max, min, succ, pred, abs, quot, gcd,
+	lcm, subtract, even, odd, error, id, flip, until, curry, uncurry, swap).
+  - Section-like constants for all operators ((+), (*), ...)
+  - Proper sections for all operators (except for '-', one should use subtract in this case)
+  - Support for more multi-byte unicode symbols
+  - Printing boolean/arithmetic/relational operators in the infix way instead of prefix as it previously was.
+  - Small bug fixes
+
 # Version 1.0.3
   - Adding String literals
   - Adding printString and printStringLn
