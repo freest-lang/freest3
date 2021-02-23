@@ -17,7 +17,7 @@ module Equivalence.Normalisation
   )
 where
 
-import           Syntax.Base                    ( pos )
+import           Syntax.Base                    ( Pos )
 import qualified Syntax.Type                   as T
 import           Validation.Terminated          ( terminated )
 import           Validation.Substitution        ( unfold )
@@ -25,17 +25,18 @@ import           Util.Error                    ( internalError )
 
 normalise :: T.Type -> T.Type
 -- Session types
-normalise (T.Semi _ t u)
+normalise (T.Semi p t u)
   | terminated t = normalise u
-  | otherwise    = append (normalise t) u
+  | otherwise    = append p (normalise t) u
 normalise t@T.Rec{} = normalise (unfold t)
  -- Type operators
 normalise t@T.Dualof{} = internalError "Equivalence.Normalisation.normalise" t
 -- Otherwise: Basic, Fun, PairType, Datatype, Skip, Message, Choice, TypeVar
 normalise t = t
 
-append :: T.Type -> T.Type -> T.Type
-append (T.Skip _)     t          = t
-append t              (T.Skip _) = t
-append (T.Semi p t u) v          = T.Semi p t (append u v)
-append t              u          = T.Semi (pos t) t u
+append :: Pos -> T.Type -> T.Type -> T.Type
+append _ (T.Skip _)     t          = t
+append _ t              (T.Skip _) = t
+append p (T.Semi p1 t u) v          = T.Semi p1 t (append p u v)
+append p t              u          = T.Semi p t u
+-- append t              u          = T.Semi (pos t) t u
