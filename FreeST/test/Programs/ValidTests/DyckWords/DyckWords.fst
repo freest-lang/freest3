@@ -132,6 +132,6 @@ main =
   readD[Skip] in3
 
 -- To be used with fork : () -> ()
-sink : forall a : SU . a -> ()
+sink : forall a . a -> ()
 sink _ = ()
 
