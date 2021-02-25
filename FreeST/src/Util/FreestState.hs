@@ -131,8 +131,7 @@ setPEnv pEnv = modify (\s -> s { parseEnv = pEnv })
 
 getNextIndex :: FreestState Int
 getNextIndex = do
-  s <- get
-  let next = nextIndex s
+  next <- gets nextIndex
   modify (\s -> s { nextIndex = next + 1 })
   return next
 
@@ -216,6 +215,8 @@ addDualof d@(T.Dualof p t) = do
       modify (\s -> s { typenames = Map.insert p (T.Dualof p u) tn })
     Nothing ->
       modify (\s -> s { typenames = Map.insert p d tn })
+addDualof t = internalError "Util.FreestState.addDualof" t
+
 
 -- | ERRORS
 
