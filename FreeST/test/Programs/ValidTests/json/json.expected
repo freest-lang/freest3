@@ -1,0 +1,1 @@
+ConsJSON name (StringVal James) (ConsJSON age (IntVal 30) (ConsJSON car NilVal (ConsJSON children (JSONListVal (ConsJSONList (ConsJSON name (StringVal Jonah) NilJSON) (ConsJSONList (ConsJSON name (StringVal Johanson) NilJSON) NilJSONList))) NilJSON)))
