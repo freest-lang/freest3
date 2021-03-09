@@ -26,9 +26,9 @@ data Array = ConsArray Value Array | EmptyArray
 
 data Value = StringVal String |
              IntVal    Int    |
-             BoolVal   Bool   |
              ObjectVal Object |
              ArrayVal  Array  |
+             BoolVal   Bool   |
              NullVal
 
 -- JSON object example:
@@ -62,9 +62,9 @@ type ObjectChannel : SL = +{
 type ValueChannel : SL = +{
     StringVal : !String,
     IntVal    : !Int,
-    BoolVal   : !Bool,
     ObjectVal : ObjectChannel,
     ArrayVal  : ArrayChannel,
+    BoolVal   : !Bool,
     NullVal   : Skip
   }
 
@@ -82,9 +82,9 @@ sendValue v c =
   case v of {
     StringVal s -> send s $ select StringVal c,
     IntVal i    -> send i $ select IntVal c,
-    BoolVal b   -> send b $ select BoolVal c,
     ObjectVal j -> sendObject[a] j $ select ObjectVal c,
     ArrayVal l  -> sendArray[a] l $ select ArrayVal c,
+    BoolVal b   -> send b $ select BoolVal c,
     NullVal     -> select NullVal c
   }
 
@@ -118,15 +118,15 @@ receiveValue c =
     IntVal c ->
       let (i, c) = receive c in
       (IntVal i, c),
-    BoolVal c ->
-      let (b, c) = receive c in
-      (BoolVal b, c),
     ObjectVal c ->
       let (j, c) = receiveObject[a] c in
       (ObjectVal j, c),
     ArrayVal c ->
       let (l, c) = receiveArray[a] c in
       (ArrayVal l, c),
+    BoolVal c ->
+      let (b, c) = receive c in
+      (BoolVal b, c),
     NullVal c ->
       (NullVal, c)
   }
