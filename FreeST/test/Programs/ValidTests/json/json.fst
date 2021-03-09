@@ -6,30 +6,32 @@ The JSON format (ECMA-404 The JSON Data Interchange Standard), is
   inherently context free, and because of this, its implementation in
   FreeST is rather natural and fluent.
 
+More info at https://www.json.org
+
 -}
 
 
-main : JSON
+main : Object
 main =
-  let (w, r) = new JSONChannel in
-  let _ = fork $ sink $ sendJSON[Skip] json w in
-  fst[JSON, Skip] $ receiveJSON[Skip] r
+  let (w, r) = new ObjectChannel in
+  let _ = fork $ sink $ sendObject[Skip] json w in
+  fst[Object, Skip] $ receiveObject[Skip] r
 
 sink : Skip -> ()
 sink s = ()
 
-data JSON = ConsJSON String Value JSON | NilJSON
+data Object = ConsObject String Value Object | EmptyObject
 
-data JSONList = ConsJSONList JSON JSONList | NilJSONList
+data Array = ConsArray Value Array | EmptyArray
 
-data Value = StringVal String     |
-             IntVal Int           |
-             BoolVal Bool         |
-             JSONVal JSON         |
-             JSONListVal JSONList |
-             NilVal
+data Value = StringVal String |
+             IntVal    Int    |
+             BoolVal   Bool   |
+             ObjectVal Object |
+             ArrayVal  Array  |
+             NullVal
 
--- JSON example:
+-- JSON object example:
 -- {
 --   "name":"James",
 --   "age":30,
@@ -40,73 +42,69 @@ data Value = StringVal String     |
 --       {"name": "Johanson"}
 --     ]
 -- }
-json : JSON
-json = ConsJSON "name"     (StringVal "James") $
-       ConsJSON "age"      (IntVal 30) $
-       ConsJSON "car"      NilVal $
-       ConsJSON "children" (JSONListVal $ ConsJSONList (ConsJSON "name" (StringVal "Jonah")    NilJSON) $
-                                          ConsJSONList (ConsJSON "name" (StringVal "Johanson") NilJSON) $
-                                          NilJSONList) $
-       NilJSON
+json : Object
+json = ConsObject "name"     (StringVal "James") $
+       ConsObject "age"      (IntVal 30) $
+       ConsObject "car"      NullVal $
+       ConsObject "children" (ArrayVal $ ConsArray (ObjectVal $ ConsObject "name" (StringVal "Jonah")    EmptyObject) $
+                                         ConsArray (ObjectVal $ ConsObject "name" (StringVal "Johanson") EmptyObject) $
+                                         EmptyArray) $
+       EmptyObject
 
-printStringQLn : String -> ()
-printStringQLn s = printString "\""; printString s; printString "\""
 
 -- Channel for sending JSONObjects
-type JSONChannel : SL = +{
-    Cons: !String; ValueChannel; JSONChannel,
-    Nil: Skip
+type ObjectChannel : SL = +{
+    Cons : !String; ValueChannel; ObjectChannel,
+    Empty: Skip
   }
 
 -- Channel for sending values
 type ValueChannel : SL = +{
-    StringVal   : !String,
-    IntVal      : !Int,
-    BoolVal     : !Bool,
-    JSONVal     : JSONChannel,
-    JSONListVal : JSONListChannel,
-    NilVal      : Skip
+    StringVal : !String,
+    IntVal    : !Int,
+    BoolVal   : !Bool,
+    ObjectVal : ObjectChannel,
+    ArrayVal  : ArrayChannel,
+    NullVal   : Skip
   }
 
 -- Channel for sending JSON lists
-type JSONListChannel : SL = +{
-    Cons: JSONChannel; JSONListChannel,
-    Nil: Skip
+type ArrayChannel : SL = +{
+    Cons : ValueChannel; ArrayChannel,
+    Empty: Skip
   }
-
 
 
 -- Sending
 
-sendVal : forall a : SL . Value -> ValueChannel;a -> a
-sendVal v c =
+sendValue : forall a : SL . Value -> ValueChannel;a -> a
+sendValue v c =
   case v of {
-    StringVal s   -> send s $ select StringVal c,
-    IntVal i      -> send i $ select IntVal c,
-    BoolVal b     -> send b $ select BoolVal c,
-    JSONVal j     -> sendJSON[a] j $ select JSONVal c,
-    JSONListVal l -> sendJSONListVal[a] l $ select JSONListVal c,
-    NilVal        ->          select NilVal c
+    StringVal s -> send s $ select StringVal c,
+    IntVal i    -> send i $ select IntVal c,
+    BoolVal b   -> send b $ select BoolVal c,
+    ObjectVal j -> sendObject[a] j $ select ObjectVal c,
+    ArrayVal l  -> sendArray[a] l $ select ArrayVal c,
+    NullVal     -> select NullVal c
   }
 
-sendJSON : forall a : SL . JSON -> JSONChannel;a -> a
-sendJSON j c =
+sendObject : forall a : SL . Object -> ObjectChannel;a -> a
+sendObject j c =
   case j of {
-    ConsJSON key val j1 ->
-      sendJSON[a] j1 $ sendVal[JSONChannel;a] val $ send key $ select Cons c,
-    NilJSON ->
-      select Nil c
+    ConsObject key val j1 ->
+      sendObject[a] j1 $ sendValue[ObjectChannel;a] val $ send key $ select Cons c,
+    EmptyObject ->
+      select Empty c
   }
 
-sendJSONListVal : forall a : SL . JSONList -> JSONListChannel;a -> a
-sendJSONListVal l c =
+sendArray : forall a : SL . Array -> ArrayChannel;a -> a
+sendArray l c =
   case l of {
-    ConsJSONList j l1 ->
-      sendJSONListVal[a] l1 $ sendJSON[JSONListChannel;a] j $ select Cons c,
-    NilJSONList ->
-      select Nil c
+    ConsArray j l1 ->
+      sendArray[a] l1 $ sendValue[ArrayChannel;a] j $ select Cons c,
+    EmptyArray ->
+      select Empty c
   }
-
 
 
 -- Receiving
@@ -123,35 +121,35 @@ receiveValue c =
     BoolVal c ->
       let (b, c) = receive c in
       (BoolVal b, c),
-    JSONVal c ->
-      let (j, c) = receiveJSON[a] c in
-      (JSONVal j, c),
-    JSONListVal c ->
-      let (l, c) = receiveJSONList[a] c in
-      (JSONListVal l, c),
-    NilVal c ->
-      (NilVal, c)
+    ObjectVal c ->
+      let (j, c) = receiveObject[a] c in
+      (ObjectVal j, c),
+    ArrayVal c ->
+      let (l, c) = receiveArray[a] c in
+      (ArrayVal l, c),
+    NullVal c ->
+      (NullVal, c)
   }
 
-receiveJSONList : forall a : SL . dualof JSONListChannel;a -> (JSONList, a)
-receiveJSONList c =
+receiveArray : forall a : SL . dualof ArrayChannel;a -> (Array, a)
+receiveArray c =
   match c with {
     Cons c ->
-      let (j, c) = receiveJSON[dualof JSONListChannel;a] c in
-      let (l, c) = receiveJSONList[a] c in
-      (ConsJSONList j l, c),
-    Nil c ->
-      (NilJSONList, c)
+      let (j, c) = receiveValue[dualof ArrayChannel;a] c in
+      let (l, c) = receiveArray[a] c in
+      (ConsArray j l, c),
+    Empty c ->
+      (EmptyArray, c)
   }
 
-receiveJSON : forall a : SL . dualof JSONChannel;a -> (JSON, a)
-receiveJSON c =
+receiveObject : forall a : SL . dualof ObjectChannel;a -> (Object, a)
+receiveObject c =
   match c with {
     Cons c ->
-      let (key, c) = receive c in
-      let (value, c) = receiveValue[dualof JSONChannel;a] c in
-      let (next, c) = receiveJSON[a] c in
-      (ConsJSON key value next, c),
-    Nil c ->
-      (NilJSON, c)
+      let (key, c)   = receive c in
+      let (value, c) = receiveValue[dualof ObjectChannel;a] c in
+      let (next, c)  = receiveObject[a] c in
+      (ConsObject key value next, c),
+    Empty c ->
+      (EmptyObject, c)
   }
