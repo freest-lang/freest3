@@ -22,10 +22,10 @@ data JSON = ConsJSON String Value JSON | NilJSON
 
 data JSONList = ConsJSONList JSON JSONList | NilJSONList
 
---type Key   = String    -- expecting type MU, actual type TU ?
-data Value = StringVal String |
-             IntVal Int |
-             JSONVal JSON |
+data Value = StringVal String     |
+             IntVal Int           |
+             BoolVal Bool         |
+             JSONVal JSON         |
              JSONListVal JSONList |
              NilVal
 
@@ -62,6 +62,7 @@ type JSONChannel : SL = +{
 type ValueChannel : SL = +{
     StringVal   : !String,
     IntVal      : !Int,
+    BoolVal     : !Bool,
     JSONVal     : JSONChannel,
     JSONListVal : JSONListChannel,
     NilVal      : Skip
@@ -82,6 +83,7 @@ sendVal v c =
   case v of {
     StringVal s   -> send s $ select StringVal c,
     IntVal i      -> send i $ select IntVal c,
+    BoolVal b     -> send b $ select BoolVal c,
     JSONVal j     -> sendJSON[a] j $ select JSONVal c,
     JSONListVal l -> sendJSONListVal[a] l $ select JSONListVal c,
     NilVal        ->          select NilVal c
@@ -118,6 +120,9 @@ receiveValue c =
     IntVal c ->
       let (i, c) = receive c in
       (IntVal i, c),
+    BoolVal c ->
+      let (b, c) = receive c in
+      (BoolVal b, c),
     JSONVal c ->
       let (j, c) = receiveJSON[a] c in
       (JSONVal j, c),
