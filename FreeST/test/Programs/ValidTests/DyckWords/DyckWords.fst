@@ -116,8 +116,8 @@ mainForward : Skip
 mainForward =
   let (out1, in1) = new D in
   let (out2, in2) = new D in
-  fork (sink[Skip] $ writeLtLtGtGtLtGt out1);
-  fork (sink[(Skip, Skip)] (forwardD[Skip][Skip] in1 out2));
+  fork[Skip] $ writeLtLtGtGtLtGt out1;
+  fork[(Skip, Skip)] (forwardD[Skip][Skip] in1 out2);
   readD[Skip] in2
 
 -- Putting it all together: (out1 | out2) --> in1-in2-out3 --> in3
@@ -126,12 +126,7 @@ main =
   let (out1, in1) = new D in
   let (out2, in2) = new D in
   let (out3, in3) = new D in
-  fork (sink[Skip] (writeLtLtGtGtLtGt out1));
-  fork (sink[Skip] (writeLtLtGtLtGtGt out2));
-  fork (sink[(Skip, Skip, Skip)] (concatD[Skip][Skip][Skip] in1 in2 out3));
+  fork[Skip] (writeLtLtGtGtLtGt out1);
+  fork[Skip] (writeLtLtGtLtGtGt out2);
+  fork[(Skip, Skip, Skip)] (concatD[Skip][Skip][Skip] in1 in2 out3);
   readD[Skip] in3
-
--- To be used with fork : () -> ()
-sink : forall a . a -> ()
-sink _ = ()
-

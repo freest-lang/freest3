@@ -15,9 +15,5 @@ rcvInt c =
 main : Int
 main =
   let (w,r) = new DD in
-  let _ = fork (sink (sendInt w)) in
+  let _ = fork[Skip] (sendInt w) in
   rcvInt r
-
--- Auxiliary function because of fork : () -> ()
-sink : Skip -> ()
-sink _ = ()

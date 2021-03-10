@@ -43,7 +43,7 @@ readIntStream = consumeStream[?Int] readInt[dualof OutIntStream]
 mainIntStream : ()
 mainIntStream =
   let (w, r) = new OutIntStream in
-  fork (writeIntStream w);
+  fork[()] (writeIntStream w);
   readIntStream r
 
 -- 2 _ Stream of out-char-in-bool values
@@ -72,7 +72,7 @@ readCharWriteBoolStream =
 mainCharBoolStream : ()
 mainCharBoolStream =
   let (w, r) = new OutCharInBoolStream in
-  fork (writeCharReadBoolStream w);
+  fork[()] (writeCharReadBoolStream w);
   readCharWriteBoolStream r
 
 -- Go!

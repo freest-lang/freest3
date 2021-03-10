@@ -14,11 +14,8 @@ More info at https://www.json.org
 main : Object
 main =
   let (w, r) = new ObjectChannel in
-  let _ = fork $ sink $ sendObject[Skip] json w in
+  let _ = fork[Skip] $ sendObject[Skip] json w in
   fst[Object, Skip] $ receiveObject[Skip] r
-
-sink : Skip -> ()
-sink s = ()
 
 data Object = ConsObject String Value Object | EmptyObject
 

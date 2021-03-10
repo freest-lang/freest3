@@ -1,7 +1,7 @@
 main : Tree
 main =
   let (client, server) = new TreeChannel in
-  fork $ clientSendTree client;
+  fork[()] $ clientSendTree client;
   fst[Tree, Skip] $ receiveTree[Skip] server
 
 

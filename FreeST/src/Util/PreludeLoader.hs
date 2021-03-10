@@ -76,7 +76,7 @@ typeList =
   , (mkVar p "printString", read "String -> ()")
   , ( mkVar p "printStringLn", read "String -> ()")
   -- Fork
-  , ( mkVar p "fork", read "() -> ()")
+  , ( mkVar p "fork", read "∀ a:TU. a -> ()")
   -- Error
   , (mkVar p "error", read "∀ a:TU . String -> a")
   ]

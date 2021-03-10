@@ -48,10 +48,6 @@ main : Tree
 main =
   let inTree = Node 7 (Node 5 Leaf Leaf) (Node 9 (Node 11 Leaf Leaf) (Node 15 Leaf Leaf)) in
   let (writer, reader) = new TreeChannel in
-  let w = fork (sink (sendTree[Skip] inTree writer)) in
+  let w = fork[Skip] (sendTree[Skip] inTree writer) in
   let (outTree, r) = receiveTree[Skip] reader in
   outTree
-
--- Auxiliary function because of fork : () -> ()
-sink : Skip -> ()
-sink _ = ()

@@ -19,7 +19,7 @@ null xs = case xs of {
     Nil -> True,
     Cons _ _ -> False
   }
-  
+
 head : List -> Tree
 head xs =
   case xs of {
@@ -114,15 +114,12 @@ writeLeftTreeOnly c =
 
 -- Go!
 
-sink : Skip -> ()
-sink _ = ()
-
 main : Tree
 main =
   let (w, r) = new Stream in
---  (fork $ sink $ sendTree aTree w);
---  (fork $ sink $ writeNothing w);       -- 'P' 
---  (fork $ sink $ writeTooMuch w);     -- 'X'
-  (fork $ sink $ writeRootTreeOnly w);  -- 'R'
---  (fork $ sink $ writeLeftTreeOnly w);  -- 'L'
+--  (fork[Skip] $ sendTree aTree w);
+--  (fork[Skip] $ writeNothing w);       -- 'P'
+--  (fork[Skip] $ writeTooMuch w);     -- 'X'
+  (fork[Skip] $ writeRootTreeOnly w);  -- 'R'
+--  (fork[Skip] $ writeLeftTreeOnly w);  -- 'L'
   receiveTree r

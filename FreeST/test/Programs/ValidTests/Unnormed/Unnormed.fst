@@ -40,5 +40,5 @@ reader c =
 main : ()
 main =
   let (w, r) = new T in
-  fork (writer 0 w);
+  fork[()] $ writer 0 w;
   reader r

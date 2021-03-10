@@ -7,12 +7,9 @@ read t =
     Two c -> let (x, _) = receive c in x
   }
 
-sink : Int -> ()
-sink _ = ()
-
 main : Int
 main =
   let (w, r) = new !Int in
-  (fork $ sink $ read $ Two r) ;
+  fork[Int] $ read $ Two r;
   let _ = send 5 w in
   10

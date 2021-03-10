@@ -36,7 +36,7 @@ client1 w =
 startClient : (+{And: !Bool;!Bool;?Bool;Skip, Or: !Bool;!Bool;?Bool;Skip, Not: !Bool;?Bool;Skip} -> Bool) -> Bool
 startClient client =
   let (w,r) = new +{And: !Bool;!Bool;?Bool;Skip, Or: !Bool;!Bool;?Bool;Skip, Not: !Bool;?Bool;Skip} in
-  let x = fork (boolServer r) in
+  let x = fork[()] (boolServer r) in
   client w
 
 

@@ -292,12 +292,12 @@ initIslands_ channels seed islands popSize nIterI nIterG =
   if islands == 0
   then
     let (client, server) = new ResultChannel in
-    fork $ runMasterServer server channels nIterG;
+    fork[()] $ runMasterServer server channels nIterG;
     client
   else
     let (master, island) = new IslandChannel in
     let (seed, pop) = generatePopulation seed popSize in
-    fork $ runIsland island seed nIterI pop;
+    fork[()] $ runIsland island seed nIterI pop;
     initIslands_ (Cons master channels) seed (islands-1) popSize nIterI nIterG
 
 
