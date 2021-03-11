@@ -93,7 +93,7 @@ data FreestS = FreestS {
 , typenames :: TypeOpsEnv
 , errors    :: Errors
 , nextIndex :: Int
-, parseEnv  :: ParseEnv
+, parseEnv  :: ParseEnv -- "discarded" after elaboration
 } deriving Show -- FOR DEBUG purposes
 
 type FreestState = State FreestS
