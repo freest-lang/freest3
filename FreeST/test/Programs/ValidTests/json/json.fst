@@ -77,11 +77,11 @@ type ArrayChannel : SL = +{
 sendValue : forall a : SL . Value -> ValueChannel;a -> a
 sendValue v c =
   case v of {
-    StringVal s -> send s $ select StringVal c,
-    IntVal i    -> send i $ select IntVal c,
-    ObjectVal j -> sendObject[a] j $ select ObjectVal c,
-    ArrayVal l  -> sendArray[a] l $ select ArrayVal c,
-    BoolVal b   -> send b $ select BoolVal c,
+    StringVal s -> select StringVal c & send s,
+    IntVal i    -> select IntVal c    & send i,
+    ObjectVal j -> select ObjectVal c & sendObject[a] j,
+    ArrayVal l  -> select ArrayVal c  & sendArray[a] l,
+    BoolVal b   -> select BoolVal c   & send b,
     NullVal     -> select NullVal c
   }
 
@@ -89,7 +89,7 @@ sendObject : forall a : SL . Object -> ObjectChannel;a -> a
 sendObject j c =
   case j of {
     ConsObject key val j1 ->
-      sendObject[a] j1 $ sendValue[ObjectChannel;a] val $ send key $ select Cons c,
+      select Cons c & send key & sendValue[ObjectChannel;a] val & sendObject[a] j1,
     EmptyObject ->
       select Empty c
   }
@@ -98,7 +98,7 @@ sendArray : forall a : SL . Array -> ArrayChannel;a -> a
 sendArray l c =
   case l of {
     ConsArray j l1 ->
-      sendArray[a] l1 $ sendValue[ArrayChannel;a] j $ select Cons c,
+      select Cons c & sendValue[ArrayChannel;a] j & sendArray[a] l1 ,
     EmptyArray ->
       select Empty c
   }
