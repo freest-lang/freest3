@@ -48,13 +48,13 @@ parseOptions [x]
         , Error $ '\'' : x ++ "'"
         , Error "does not exist (No such file or directory)"
         ]
-  | hasExtension x = throwError
-    [Error "Expecting a .fst file; found", Error (takeExtension x)]
-  | otherwise = throwError
+  | '-' == head x = throwError
     [ Error "Unexpected option"
     , Error $ "'" ++ x ++ "'"
     , Error "\n\t Try `freest --help` for help"
-    ]
+    ]        
+  | otherwise = throwError
+    [Error "Expecting a .fst file; found", Error x]
 parseOptions (x : _) = do
   putStrLn
     $  warning "warning:"
