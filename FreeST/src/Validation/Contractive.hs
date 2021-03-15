@@ -20,14 +20,13 @@ import           Syntax.TypeVariable
 import qualified Syntax.Kind as K
 import qualified Syntax.Type as T
 import           Validation.Terminated
-import qualified Data.Set                      as Set
 
 -- class Contractive a where
 --   contractive :: Set.Set TypeVar -> TypeVar -> a -> Bool
 
 -- instance Contractive T.Type where
 
-contractive :: Set.Set TypeVar -> TypeVar -> T.Type -> Bool
+contractive :: K.PolyVars -> TypeVar -> T.Type -> Bool
 contractive s a (T.Semi _ t u)
   | terminated s t                            = contractive s a u
   | otherwise                                 = contractive s a t
