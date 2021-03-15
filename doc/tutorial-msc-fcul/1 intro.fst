@@ -15,7 +15,7 @@ server s =
 main : Bool
 main = 
   let (x, y) = new IntPred in -- x: IntPred, y: IntPredDual
-  fork (sink (server y));
+  fork[()] (sink (server y));
   client x
 
 sink : Skip -> ()
