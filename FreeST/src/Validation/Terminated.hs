@@ -16,16 +16,15 @@ module Validation.Terminated
   )
 where
 
+import           Syntax.TypeVariable
 import qualified Syntax.Kind                   as K
 import qualified Syntax.Type                   as T
 import qualified Data.Set                      as Set
 
-terminated :: T.Type -> Bool
-terminated = term Set.empty
- where
-  term _ (T.Skip _                 ) = True
-  term s (T.Semi _ t u             ) = term s t && term s u
-  term s (T.Rec  _ (K.Bind _ a k t)) = K.isSession k && term (Set.insert a s) t
-  term s (T.Var _ a                ) = a `Set.member` s
-  term _ _                           = False
+terminated :: Set.Set TypeVar -> T.Type -> Bool
+terminated _ (T.Skip _                 ) = True
+terminated s (T.Semi _ t u             ) = terminated s t && terminated s u
+terminated s (T.Rec  _ (K.Bind _ a k t)) = K.isSession k && terminated (Set.insert a s) t
+terminated s (T.Var _ a                ) = a `Set.member` s
+terminated _ _                           = False
 
