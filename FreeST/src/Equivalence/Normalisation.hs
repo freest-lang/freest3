@@ -22,11 +22,13 @@ import qualified Syntax.Type                   as T
 import           Validation.Terminated          ( terminated )
 import           Validation.Substitution        ( unfold )
 import           Util.Error                    ( internalError )
+import qualified Data.Set as Set
+
 
 normalise :: T.Type -> T.Type
 -- Session types
 normalise (T.Semi p t u)
-  | terminated t = normalise u
+  | terminated Set.empty t = normalise u
   | otherwise    = append p (normalise t) u
 normalise t@T.Rec{} = normalise (unfold t)
  -- Type operators

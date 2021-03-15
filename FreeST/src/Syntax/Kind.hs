@@ -15,6 +15,7 @@ module Syntax.Kind
   , Bind(..)
   , Kind(..)
   , KindEnv
+  , PolyVars
   , tl
   , tu
   , sl
@@ -31,6 +32,7 @@ where
 import           Syntax.TypeVariable
 import           Syntax.Base
 import qualified Data.Map.Strict               as Map
+import qualified Data.Set as Set
 
 -- Basic kind
 
@@ -83,3 +85,5 @@ body (Bind _ _ _ a) = a
 -- Kind environment
 
 type KindEnv = Map.Map TypeVar Kind
+
+type PolyVars = Set.Set TypeVar
