@@ -17,6 +17,7 @@ import           Util.FreestState
 import           Control.Monad.State
 import           ArbitraryTypes
 import qualified Data.Map.Strict               as Map
+import qualified Data.Set                 as Set
 import           Test.QuickCheck
 -- import           Test.QuickCheck.Random       ( mkQCGen )
 
@@ -47,7 +48,7 @@ kindEnv = Map.fromList (zip (map (mkVar defaultPos) ids) (repeat (K.sl defaultPo
 
 kinded :: T.Type -> Bool
 kinded t =
-  null $ errors $ snd $ runState (synthetise kindEnv t) (initialState "Kind synthesis")
+  null $ errors $ snd $ runState (synthetise Set.empty kindEnv t) (initialState "Kind synthesis")
 
 
 -- Bisimilar types are bisimilar
