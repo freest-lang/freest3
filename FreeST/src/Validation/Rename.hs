@@ -88,8 +88,9 @@ instance Rename E.Bind where
 -- Types
 
 instance Rename T.Type where
-  rename bs t | terminated Set.empty t = return $ T.Skip (pos t)
-              | otherwise    = rename' bs t
+  rename = rename'
+    -- | terminated Set.empty t = return $ T.Skip (pos t)
+    -- | otherwise    = 
 
 rename' :: Bindings -> T.Type -> FreestState T.Type
     -- Functional types
