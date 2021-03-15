@@ -17,8 +17,6 @@ import           Validation.Kinding             ( synthetise )
 import           Validation.Rename              ( renameType )
 import           Validation.Subkind             ( (<:) )
 
-import qualified Data.Set as Set
-
 spec :: Spec
 spec = describe "Valid type tests" $ do
   t <- runIO $ readFromFile "test/UnitTests/Validation/TestTypesValid.txt"
@@ -31,7 +29,7 @@ hasKind :: Type -> Kind -> TestExpectation
 hasKind t k = testValidExpectation (k' <: k) (errors s) -- null (errors s) && k' <: k
  where
   (k', s) = runState test (initialState "Kind synthesis")
-  test    = synthetise Set.empty Map.empty . renameType =<< Dual.resolve t
+  test    = synthetise Map.empty . renameType =<< Dual.resolve t
   
 main :: IO ()
 main = hspec spec

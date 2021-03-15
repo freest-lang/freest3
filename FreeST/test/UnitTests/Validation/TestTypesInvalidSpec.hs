@@ -15,8 +15,6 @@ import           Util.FreestState              ( initialState
 import           Validation.Kinding             ( synthetise )
 import           Validation.Rename              ( renameType )
 
-import qualified Data.Set as Set
-
 spec :: Spec
 spec = describe "Invalid types tests" $ do
   t <- runIO $ readFromFile "test/UnitTests/Validation/TestTypesInvalid.txt"
@@ -33,7 +31,7 @@ isWellFormed :: String -> Bool
 isWellFormed str = either synthetiseK (const False) (parseType str)
  where
   synthetiseK t = null $ errors $ execState
-    (synthetise Set.empty Map.empty . renameType =<< Dual.resolve t)
+    (synthetise Map.empty . renameType =<< Dual.resolve t)
     (initialState "Kind synthesis")
 
 main :: IO ()

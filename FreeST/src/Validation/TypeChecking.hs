@@ -33,7 +33,6 @@ import           Util.FreestState
 import           Util.PreludeLoader            ( userDefined )
 import qualified Validation.Kinding            as K
 import qualified Validation.Typing             as Typing -- Again
-import qualified Data.Set as Set
 
 typeCheck :: FreestState ()
 typeCheck = do
@@ -48,11 +47,11 @@ typeCheck = do
 
   -- * Check the formation of all type decls
 --  debugM "checking the formation of all type decls"
-  mapM_ (K.synthetise Set.empty Map.empty . snd) =<< getTEnv 
+  mapM_ (K.synthetise Map.empty . snd) =<< getTEnv 
 
   -- * Check the formation of all function signatures
 --  debugM "checking the formation of all function signatures (kinding)" 
-  mapM_ (K.synthetise Set.empty Map.empty) =<< getVEnv
+  mapM_ (K.synthetise Map.empty) =<< getVEnv
   -- Gets the state and only continues if there are no errors so far
   -- Can't continue to equivalence if there are ill-formed types
   -- (i.e. not contractive under a certain variable)  
@@ -107,7 +106,7 @@ checkMainFunction = do
                   [Error "Function", Error main, Error "not defined"]
     else do
       let t = vEnv Map.! main
-      k <- K.synthetise Set.empty Map.empty t
+      k <- K.synthetise Map.empty t
       unless (not (K.isLin k)) $  addError
         defaultPos
         [ Error "The type of"

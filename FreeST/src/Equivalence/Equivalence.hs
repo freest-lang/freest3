@@ -97,7 +97,7 @@ isSessionType :: K.KindEnv -> T.Type -> Bool
 isSessionType kEnv t = null (errors state) && K.isSession kind
  where
   (kind, state) =
-    runState (synthetise Set.empty kEnv t) (initialState "Kind synthesis for equivalence")
+    runState (synthetise kEnv t) (initialState "Kind synthesis for equivalence")
 
 {-
 -- An alternative is below. Lighter, but I don't kind we have a proof that the

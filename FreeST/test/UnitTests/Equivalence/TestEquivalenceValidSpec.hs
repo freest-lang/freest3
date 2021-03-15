@@ -13,8 +13,6 @@ import           Util.FreestState              ( initialState
                                                 )
 import           Control.Monad.State            ( execState )
 
-import qualified Data.Set as Set
-
 matchValidSpec :: [String] -> Spec
 matchValidSpec [k, t, u] = it
   (k ++ "  |-  " ++ t ++ " ~ " ++ u)
@@ -29,7 +27,7 @@ matchValidSpec [k, t, u] = it
 
 wellFormed :: K.KindEnv -> Type -> Bool
 wellFormed kEnv t = null $ errors $ execState
-  (synthetise Set.empty kEnv t)
+  (synthetise kEnv t)
   (initialState "Kind synthesis for testing type equivalence")
 
 spec :: Spec
