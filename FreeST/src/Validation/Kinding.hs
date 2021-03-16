@@ -42,13 +42,13 @@ import qualified Data.Set               as Set
 -- Exported Functions: Top-level definitions of those defined in this module
 
 synthetise :: K.KindEnv -> T.Type -> FreestState K.Kind
-synthetise = synthetise' Set.empty
+synthetise kenv = synthetise'  (Map.keysSet kenv) kenv
 
 checkAgainst :: K.KindEnv -> K.Kind -> T.Type -> FreestState K.Kind
-checkAgainst = checkAgainst' Set.empty
+checkAgainst kenv = checkAgainst' (Map.keysSet kenv) kenv
 
 checkAgainstSession :: K.KindEnv -> T.Type -> FreestState ()
-checkAgainstSession = checkAgainstSession' Set.empty
+checkAgainstSession kenv = checkAgainstSession' (Map.keysSet kenv) kenv
 
 
 -- Kinding
