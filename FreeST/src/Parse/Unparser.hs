@@ -83,7 +83,7 @@ showKind var sort arrow term =
   showSortedVar var sort ++ " " ++ arrow ++ " " ++ show term
 
 instance Show t => Show (K.Bind t) where
-  show (K.Bind _ a k t) = showKind a k "=>" t
+  show (K.Bind _ a k t) = showKind a k "." t
 
 -- Type bind
 
