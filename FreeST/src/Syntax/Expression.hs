@@ -42,7 +42,7 @@ data Exp =
   -- Datatype elim
   | Case Pos Exp FieldMap
   -- Type Abstraction intro and elim
-  | TypeAbs Pos (K.Bind Exp)     -- λ a:k => e -- Type abstraction
+  | TypeAbs Pos (K.Bind Exp)   -- Λ a:k => e
   | TypeApp Pos Exp T.Type     -- e[T]
   -- Boolean elim
   | Cond Pos Exp Exp Exp

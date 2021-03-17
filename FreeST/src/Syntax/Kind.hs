@@ -69,7 +69,7 @@ isUn = not . isLin
 isSession :: Kind -> Bool
 isSession (Kind _ b _) = b == Session
 
--- Bind, a:k => t or a:k => e
+-- Bind: ∀ a:k . t or Λ a:k => e
 
 data Bind a = Bind Pos TypeVar Kind a
 
