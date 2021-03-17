@@ -88,10 +88,10 @@ showKind var sort arrow term =
 --   show (K.Bind _ a k t) = showKind a k "=>" t
 
 showBindType :: K.Bind T.Type -> String
-showBindType (K.Bind _ a k t) = showKind a k "." t
+showBindType (K.Bind _ a k t) = showKind a k "." t -- ∀ a:k . t
 
 showBindExp :: K.Bind E.Exp -> String
-showBindExp (K.Bind _ a k e) = showKind a k "=>" e
+showBindExp (K.Bind _ a k e) = showKind a k "=>" e -- Λ a:k => e
 
 -- Type bind
 

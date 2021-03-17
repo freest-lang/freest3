@@ -34,8 +34,8 @@ data Exp =
   -- Variable
   | Var Pos ProgVar
   -- Abstraction intro and elim
-  | Abs Pos Bind -- λ x:T -> e, Abstraction
-  | App Pos Exp Exp            -- e1 e2
+  | Abs Pos Bind        -- λ x:T -> e, λ x:T -o e
+  | App Pos Exp Exp     -- e1 e2
   -- Pair intro and elim
   | Pair Pos Exp Exp
   | BinLet Pos ProgVar ProgVar Exp Exp
