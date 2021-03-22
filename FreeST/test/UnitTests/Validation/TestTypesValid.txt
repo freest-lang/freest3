@@ -317,4 +317,7 @@ rec a. dualof Skip
 SU
 
 rec y:SL .             +{B: !(), C: !Bool} ; (+{A: y;!(), C: !()} ; y)
+SL
+
 rec x:SL . rec y:SL .  +{B: !(), C: !Bool} ; ((+{A: y, C: Skip};!())  ; x)
+SL
