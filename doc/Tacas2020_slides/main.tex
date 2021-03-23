@@ -229,7 +229,7 @@ sendTree (Node x l r) c =
  	\vspace*{2mm}
 \end{frame}
 
-
+%%% COMMENT
 % \begin{frame}{Algorithm for checking the equivalence of CFST \hfill {\color{mLightBrown}Main stages}}
 
 % 	\begin{center}
@@ -255,38 +255,39 @@ sendTree (Node x l r) c =
 % \end{frame}
 
 
-% \begin{frame} {Simplify and expand}
-% 	\hfill\includegraphics[height=2.8cm]{img/simplifyExpand.png}
+\begin{frame} {Simplify and expand}
+	\hfill\includegraphics[height=2.8cm]{img/simplifyExpand.png}
 	
-% 	\vspace*{-3cm}
-% 	Following the ideas from Hirshfeld, Jan{\v{c}}ar, Moller, \\
-% 	a bisimulation is seen as an {\bf expansion tree}\\
-%     that alternates between:
-% 	\begin{itemize}
-% 		\item { expansion operations}
-% 		\item { simplification operations	}
-% 	\end{itemize}
-% 	\begin{center}
-% 		\hspace*{-2mm}\includegraphics[height=4cm]{img/expand_simplify}
-% 	\end{center}	
-% \end{frame}
+	\vspace*{-3cm}
+	Following the ideas from Hirshfeld, Jan{\v{c}}ar, Moller, \\
+	a bisimulation is seen as an {\bf expansion tree}\\
+    that alternates between:
+	\begin{itemize}
+		\item { expansion operations}
+		\item { simplification operations	}
+	\end{itemize}
+	\begin{center}
+		\hspace*{-2mm}\includegraphics[height=4cm]{img/expand_simplify}
+	\end{center}	
+\end{frame}
 
 
-% \begin{frame} {Simplify and expand}
-% 	An expansion tree alternates between:
-% 	\vspace*{-1mm}
-% 	\begin{itemize} 
-% 		\item {\color{mLightBrown} \bf expansion operations} - a single derived node results from the expansion of the parent node. \pause
-% 		\item {\color{teal}\bf simplification operations	}
-% 		\begin{itemize}
-% 			\item {\bf reflexive rule}: omit from a node $N$ any reflexive pair.
-% 			\item {\bf congruence rule}: omit from a node $N$ any pair that belongs to the least congruence containing the ancestors of $N$. \pause
-% 			\item {\bf basic process algebra rules}\\
-% 			\vspace*{-2mm}
-% 			\hspace*{-2cm}\includegraphics[height=4cm]{img/bpa_new}\smallskip
-% 		\end{itemize}
-% 	\end{itemize}
-% \end{frame}
+\begin{frame} {Simplify and expand}
+	An expansion tree alternates between:
+	\vspace*{-1mm}
+	\begin{itemize} 
+		\item {\color{mLightBrown} \bf expansion operations} - a single derived node results from the expansion of the parent node. \pause
+		\item {\color{teal}\bf simplification operations	}
+		\begin{itemize}
+			\item {\bf reflexive rule}: omit from a node $N$ any reflexive pair.
+			\item {\bf congruence rule}: omit from a node $N$ any pair that belongs to the least congruence containing the ancestors of $N$. \pause
+			\item {\bf basic process algebra rules}\\
+			\vspace*{-2mm}
+			\hspace*{-2cm}\includegraphics[height=4cm]{img/bpa_new}\smallskip
+		\end{itemize}
+	\end{itemize}
+\end{frame}
+
 
 % \begin{frame}{Simplify and Expand}
 % 	All these transformation rules preserve the \emph{safeness property}:
@@ -304,116 +305,75 @@ sendTree (Node x l r) c =
 % 	\end{block}
 % \end{frame}
 
-\begin{frame}
-	\begin{tabular} {l l l }
-		{\color{teal}\rule{3cm}{2pt}} &  $S$ &$\triangleq (\mu x. \&\{n\colon x;x;?\,\intk,
-     	 \ell\colon ?\,\intk \});( \mu z. !\,\intk; z;z )$\\
- 		{\color{teal} Simplify \& expand:}  &  $T$ &$\triangleq (\mu y. \&\{n\colon y;y,
-     	 \ell\colon \skipk \}; ?\,\intk); (\mu z. !\,\intk; z)$\\
- 		{\color{teal} An example:}&&
+\newcommand{\typeA}{\semiT {(\recT x \choiceExtT {n\colon {\semiT x {\semiT
+          x{\msgInT\intk}}}, \ell \colon \msgInT\intk})} {(\recT z
+    {\semiT{\msgOutT\intk}{\semiT zz}})}}
+\newcommand{\typeB}{\semiT {(\semiT {\recT y {\choiceExtT {n\colon\semiT yy,
+          \ell\colon\skipk}}}{\msgInT\intk)}}{(\recT z \semiT{\msgOutT\intk}z)}}
+
+\newcommand{\header}[2]{
+    \footnotesize
+    \setlength\tabcolsep{4pt}
+    \vskip 0.2cm
+	\begin{tabular} {l l l l l }    
+      {\color{teal}\rule{3cm}{2pt}} &\hfill\hspace{1.5cm} & $S$ & $\triangleq$ &  $\typeA$\\
+      {\color{teal} #1}             &\hfill & $T$ & $\triangleq$ &  $\typeB$\\
+      {\color{teal} #2}             &\hfill &     &              &\\
 	\end{tabular}
 	\vspace*{2mm}
+    \normalsize
+}
+
+\begin{frame}
+    \header{Simplify \& expand --}{An example:}
 	\includegraphics[width=11.5cm]{img/exemplo-9}\smallskip
 \end{frame}
 
 \begin{frame}
-	\begin{tabular} {l l l }
-  		{\color{teal}\rule{3cm}{2pt}} &  $S$ &$\triangleq (\mu x. \&\{n\colon x;x;?\,\intk,
-      	\ell\colon ?\,\intk \});( \mu z. !\,\intk; z;z )$\\
-  	{\color{teal} Example}  &  $T$ &$\triangleq (\mu y. \&\{n\colon y;y,
-      \ell\colon \skipk \}; ?\,\intk); (\mu z. !\,\intk; z)$
-	\end{tabular}
-	\vspace*{2mm}
+	\header{Simplify \& expand --}{An example:}
 	\includegraphics[width=11.5cm]{img/exemplo-8}\smallskip
 \end{frame}
 
 
 \begin{frame}
-	\begin{tabular} {l l l }
-  		{\color{teal}\rule{3cm}{2pt}} &  $S$ &$\triangleq (\mu x. \&\{n\colon x;x;?\,\intk,
-      \ell\colon ?\,\intk \});( \mu z. !\,\intk; z;z )$\\
-  		{\color{teal} Example}  &  $T$ &$\triangleq (\mu y. \&\{n\colon y;y,
-      \ell\colon \skipk \}; ?\,\intk); (\mu z. !\,\intk; z)$
-	\end{tabular}
-	\vspace*{2mm}
+	\header{Simplify \& expand --}{An example:}
 	\includegraphics[width=11.5cm]{img/exemplo-7}\smallskip
 \end{frame}
 
 \begin{frame}
-	\begin{tabular} {l l l }
-  		{\color{teal}\rule{3cm}{2pt}} &  $S$ &$\triangleq (\mu x. \&\{n\colon x;x;?\,\intk,
-      \ell\colon ?\,\intk \});( \mu z. !\,\intk; z;z )$\\
- 		{\color{teal} Example}  &  $T$ &$\triangleq (\mu y. \&\{n\colon y;y,
-      \ell\colon \skipk \}; ?\,\intk); (\mu z. !\,\intk; z)$
-	\end{tabular}
-	\vspace*{2mm}
+	\header{Simplify \& expand --}{An example:}
 	\includegraphics[width=11.5cm]{img/exemplo-6}\smallskip
 \end{frame}
 
 \begin{frame}
-	\begin{tabular} {l l l }
-  		{\color{teal}\rule{3cm}{2pt}} &  $S$ &$\triangleq (\mu x. \&\{n\colon x;x;?\,\intk,
-      \ell\colon ?\,\intk \});( \mu z. !\,\intk; z;z )$\\
-  		{\color{teal} Example}  &  $T$ &$\triangleq (\mu y. \&\{n\colon y;y,
-      \ell\colon \skipk \}; ?\,\intk); (\mu z. !\,\intk; z)$
-	\end{tabular}
-	\vspace*{2mm}
+	\header{Simplify \& expand --}{An example:}
 	\includegraphics[width=11.5cm]{img/exemplo-5}\smallskip
 \end{frame}
 
 \begin{frame}
-	\begin{tabular} {l l l }
-  		{\color{teal}\rule{3cm}{2pt}} &  $S$ &$\triangleq (\mu x. \&\{n\colon x;x;?\,\intk,
-      \ell\colon ?\,\intk \});( \mu z. !\,\intk; z;z )$\\
-  		{\color{teal} Example}  &  $T$ &$\triangleq (\mu y. \&\{n\colon y;y,
-      \ell\colon \skipk \}; ?\,\intk); (\mu z. !\,\intk; z)$
-	\end{tabular}
-	\vspace*{2mm}
+	\header{Simplify \& expand --}{An example:}
 	\includegraphics[width=11.5cm]{img/exemplo-4}\smallskip
 \end{frame}
 
 \begin{frame}
-	\begin{tabular} {l l l }
-  		{\color{teal}\rule{3cm}{2pt}} &  $S$ &$\triangleq (\mu x. \&\{n\colon x;x;?\,\intk,
-      \ell\colon ?\,\intk \});( \mu z. !\,\intk; z;z )$\\
-  		{\color{teal} Example}  &  $T$ &$\triangleq (\mu y. \&\{n\colon y;y,
-      \ell\colon \skipk \}; ?\,\intk); (\mu z. !\,\intk; z)$
-	\end{tabular}
-	\vspace*{2mm}
+	\header{Simplify \& expand --}{An example:}
 	\includegraphics[width=11.5cm]{img/exemplo-3}\smallskip
 \end{frame}
 
 \begin{frame}
-	\begin{tabular} {l l l }
-  		{\color{teal}\rule{3cm}{2pt}} &  $S$ &$\triangleq (\mu x. \&\{n\colon x;x;?\,\intk,
-      \ell\colon ?\,\intk \});( \mu z. !\,\intk; z;z )$\\
-  		{\color{teal} Example}  &  $T$ &$\triangleq (\mu y. \&\{n\colon y;y,
-      \ell\colon \skipk \}; ?\,\intk); (\mu z. !\,\intk; z)$
-	\end{tabular}
-	\vspace*{2mm}
+	\header{Simplify \& expand --}{An example:}
 	\includegraphics[width=11.5cm]{img/exemplo-2}\smallskip
 \end{frame}
 
 \begin{frame}
-	\begin{tabular} {l l l }
-  		{\color{teal}\rule{3cm}{2pt}} &  $S$ &$\triangleq (\mu x. \&\{n\colon x;x;?\,\intk,
-      \ell\colon ?\,\intk \});( \mu z. !\,\intk; z;z )$\\
-  		{\color{teal} Example}  &  $T$ &$\triangleq (\mu y. \&\{n\colon y;y,
-      \ell\colon \skipk \}; ?\,\intk); (\mu z. !\,\intk; z)$
-	\end{tabular}
-	\vspace*{2mm}
+	\header{Simplify \& expand --}{An example:}
 	\includegraphics[width=11.5cm]{img/exemplo-1}\smallskip
 \end{frame}
 
 \begin{frame}
-	\begin{tabular} {l l l }
-  		{\color{teal}\rule{3cm}{2pt}} &  $S$ &$\triangleq (\mu x. \&\{n\colon x;x;?\,\intk,
-      \ell\colon ?\,\intk \});( \mu z. !\,\intk; z;z )$\\
-  		{\color{teal} Example}  &  $T$ &$\triangleq (\mu y. \&\{n\colon y;y,
-      \ell\colon \skipk \}; ?\,\intk); (\mu z. !\,\intk; z)$
-	\end{tabular}
-	\vspace*{2mm}
-	\includegraphics[width=11.5cm]{img/example_expansion_tree}\smallskip
+  \header{Full example}{}
+  \vskip -0.9cm
+  \includegraphics[width=11.5cm]{img/example_expansion_tree}\smallskip
 \end{frame}
 
 % \begin{frame}{Algorithm for checking the equivalence of CFST \hfill {\color{mLightBrown}Main stages}}

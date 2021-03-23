@@ -223,13 +223,6 @@
 \newcommand\Equiv[2]{#1\,\thicksim\,#2}
 
 
-%%% Local Variables:
-%%% mode: latex
-%%% TeX-master: "cfst-inforum18"
-%%% End:
-      
-
- 
 % THEME
 \newtcolorbox{mybox}{colback=orange!5!white,colframe=orange!75!black}
 \newtcolorbox{myboxazul}{colback=teal!5!white,colframe=teal!75!black}
@@ -267,3 +260,27 @@
 \newcommand{\intk}{\keyword{int}}
 \newcommand{\skipk}{\keyword{skip}}
 \newcommand{\keyword}[1]{\mathsf{#1}}
+
+
+\newcommand{\msg}[2]{#1 #2}
+\newcommand{\msgOutT}[1]{\msg \outView #1}
+\newcommand{\msgInT}[1]{\msg \inView #1}
+
+\newcommand{\recT}[2]{\mu #1 . #2}
+\newcommand{\semiT}[2]{#1 ; #2}
+
+\newcommand{\choiceT}[2]{#1\{#2\}}
+\newcommand{\choiceExtT}[1]{\choiceT \external {#1}}
+\newcommand{\choiceIntT}[1]{\choiceT \internal {#1}}
+
+% Polarities
+\newcommand{\internal}{\oplus}
+\newcommand{\external}{\&}
+\newcommand{\outView}{!}
+\newcommand{\inView}{?}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:
+      
