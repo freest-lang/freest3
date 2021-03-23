@@ -155,7 +155,7 @@ sendTree (Node x l r) c =
   	\pause \vspace*{5mm}
   	\begin{tabular}{l l l |l l l}
     	&Productions for $S$& & & Productions for $T$& \\ \hline
-    	&\uncover<3-> {{\color{gray}$X_{} \rightarrow \,! (\,)\,X_1 X_4$}} & & &\uncover<3-> {{\color{gray}$Y_{} \rightarrow \,! (\,)\, Y_1 Y_3 $} }&\\
+    	&\uncover<3-> {{\color{gray}$X_{} \rightarrow \,X_1 X_4$}} & & &\uncover<3-> {{\color{gray}$Y_{} \rightarrow \,Y_1 Y_3 $} }&\\
     	&$X_1 \rightarrow \& n\, X_1 X_1 X_2$ & & &$Y_1 \rightarrow \& n\, Y_1 Y_1 Y_2 $ &\\
     	&$X_1 \rightarrow \& \ell\, X_3$ &&& $Y_1 \rightarrow \& \ell \,Y_2 $&\\
     	&$X_2 \rightarrow \,? \intk$&&& $Y_2 \rightarrow \,? \intk$&\\
@@ -449,7 +449,9 @@ sendTree (Node x l r) c =
   \item We went for Automated test generation: QuickCheck
   \item Generating valid (well-formed) types is easy, but the probability of
     generating two types that are bisimilar is extremely low.
-  \item We generate arbitrary pairs of types that are bisimilar
+    \smallskip
+    \smallskip
+  \item We generate arbitrary pairs of types that are \textbf{bisimilar}
     by construction % (based on properties of type bisimilarity).
   \item For \textbf{non-bisimilar pairs} we add five anti-axioms to the previous list.
   \end{itemize}
@@ -491,7 +493,7 @@ sendTree (Node x l r) c =
 
 \begin{frame}
   \frametitle{Optimisations}
-  The algorithm presented turned out to behave quite poorly
+  To enhance the performance of the algorithm, we tested the following optimisations:
   
   \textbf{We implemented the following optimisations}
   \begin{enumerate}
@@ -518,8 +520,8 @@ sendTree (Node x l r) c =
   \includegraphics[width=.55\textwidth]{img/nodes_time.pdf}%
   \includegraphics[width=.55\textwidth]{img/timeouts.pdf}
 
-  Based on these results, we only use variant B1 of the algorithm
-  -- eliminating redundant productions in the grammar
+  Based on these results, we have variant B1 in production: redundant
+  productions are eliminated before exploring the expansion tree
 \end{frame}
 
 \begin{frame}
@@ -527,12 +529,12 @@ sendTree (Node x l r) c =
 
   \begin{itemize}
   \item We developed an algorithm to decide the bisimulation of context-free
-    session types and proved it correct.
+    session types and proved it \emph{sound} and \emph{complete}.
   \item The algorithm is incorporated in a compiler for a concurrent functional
     language equipped with context-free session types.
     
-  \item Despite being exponential, the algorithm behave well to types up to 200 nodes.
-  \item \textbf{Future:} Capture and show a witness when two types as not bisimilar.
+  \item Despite being exponential, the algorithm behaves well to types up to 200 nodes.
+  \item \textbf{Future work:} Provide a counter-example when two types are not equivalent.
   \end{itemize}
  \end{frame}
 
