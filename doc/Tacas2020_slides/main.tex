@@ -54,22 +54,32 @@
 \begin{frame}[fragile]{Motivation}
 \vspace*{5mm}
 
-\begin{lstlisting}[language=CFST]
-data Tree = Leaf | Node Int Tree Tree
-\end{lstlisting}
+% \begin{lstlisting}[language=CFST]
+% data Tree = Leaf | Node Int Tree Tree
+% \end{lstlisting}
 
-\begin{lstlisting}[language=CFST]
-sendTree Leaf c =
-  select Leaf c
-sendTree (Node x l r) c =
-  let c1 = select Node c
-      c2 = send x c1
-      c3 = sendTree l c2
-      c4 = sendTree r c3
-   in c4
-\end{lstlisting}
-  
-\vspace*{-1.8cm}
+% \begin{lstlisting}[language=CFST]
+% sendTree Leaf c =
+%   select Leaf c
+% sendTree (Node x l r) c =
+%   let c1 = select Node c
+%       c2 = send x c1
+%       c3 = sendTree l c2
+%       c4 = sendTree r c3
+%    in c4
+%\end{lstlisting}
+
+\begin{itemize}
+\item Context-free session types from Thiemann and Vasconcelos
+  \vskip 1cm
+\item Context-free session types VS. regular session types
+  \vskip 1cm
+\item Thiemann and Vasconcelos proved that type equivalence is decidable
+  \vskip 1cm
+\item Developed an algorithm that can be used in a compiler
+\end{itemize}
+
+% \vspace*{1.8cm}
 \hfill \includegraphics[height=4cm]{img/tree}
 \end{frame}
 
@@ -117,23 +127,22 @@ sendTree (Node x l r) c =
 \end{frame}
 
 
-\begin{frame}{Convert types to a grammar}
-  
-  	\vspace*{-1cm}
-  	\hspace*{-3mm}\parbox{8cm}{
-  	\vspace*{-2.5cm}
-  	  	We consider a finite set of productions $X \rightarrow a \vec Y$ where:
-   	\begin{itemize}
-     	\item $X, Y$ represent \emph{non-terminal symbols}
-     	\item $a$ is a \emph{terminal symbol} (a \emph{label} in the labelled transition system)
-   	\end{itemize}
-	}\hfill\includegraphics[height=2.8cm]{img/typeToGrammar.png}
-	Context-free session types are seen as \emph{simple grammars}:
-  	\begin{itemize}
-		\item context-free grammars in \emph{Greibach normal form} 
-		\item s.t. for each $X$ and $a$ there is at most one production $X \rightarrow a \vec Y$
-  	\end{itemize}
-\end{frame}
+% \begin{frame}{Convert types to a grammar}  
+%   	\vspace*{-1cm}
+%   	\hspace*{-3mm}\parbox{8cm}{
+%   	\vspace*{-2.5cm}
+%   	  	We consider a finite set of productions $X \rightarrow a \vec Y$ where:
+%    	\begin{itemize}
+%      	\item $X, Y$ represent \emph{non-terminal symbols}
+%      	\item $a$ is a \emph{terminal symbol} (a \emph{label} in the labelled transition system)
+%    	\end{itemize}
+% 	}\hfill\includegraphics[height=2.8cm]{img/typeToGrammar.png}
+% 	Context-free session types are seen as \emph{simple grammars}:
+%   	\begin{itemize}
+% 		\item context-free grammars in \emph{Greibach normal form} 
+% 		\item s.t. for each $X$ and $a$ there is at most one production $X \rightarrow a \vec Y$
+%   	\end{itemize}
+% \end{frame}
 
 
 \begin{frame}{Convert types to a grammar}
@@ -402,17 +411,32 @@ sendTree (Node x l r) c =
 % 	\end{center}
 % \end{frame}
 
+\begin{frame}
+  \frametitle{Optimisations}
+  To enhance the performance of the algorithm, we implemented the following optimisations
+  \begin{enumerate}
+  \item Eliminating redundant productions in the grammar
+    \vskip 0.5cm
+  \item Using a filter rule that removes nodes with hopeless pairs
+    \vskip 0.5cm    
+  \item Using a double-ended queue to prepend promising children
+  \end{enumerate}
+\end{frame}
+
 \begin{frame}{Evaluation}
   \begin{itemize}
   \item Started with a carefully crafted, manually produced, suite of tests.
+  \smallskip
   \item They were small, lacking diversity
+  \smallskip
   \item We went for Automated test generation: QuickCheck
+  \smallskip
   \item Generating valid (well-formed) types is easy, but the probability of
     generating two types that are bisimilar is extremely low.
     \smallskip
-    \smallskip
   \item We generate arbitrary pairs of types that are \textbf{bisimilar}
     by construction % (based on properties of type bisimilarity).
+    \smallskip
   \item For \textbf{non-bisimilar pairs} we add five anti-axioms to the previous list.
   \end{itemize}
      
@@ -451,25 +475,15 @@ sendTree (Node x l r) c =
 %   \end{enumerate}
 % \end{frame}
 
-\begin{frame}
-  \frametitle{Optimisations}
-  To enhance the performance of the algorithm, we tested the following optimisations:
-  
-  \textbf{We implemented the following optimisations}
-  \begin{enumerate}
-  \item Eliminating redundant productions in the grammar.
-  \item Using a filter rule that removes nodes with hopeless pairs
-  \item Using a double-ended queue to prepend promising children
-  \end{enumerate}
-\end{frame}
+
 
 \begin{frame}
   \frametitle{Results (I)}
   \begin{itemize}
-  \item We tested all the optimisations and their combinations.
   \item Two test suites comprise 2000 entries. (number of
-    nodes, in the syntax tree, ranging from 1 to 200).
+    nodes, in the syntax tree, ranging from 1 to 200).    
   \item Tests were run under a timeout of 2 minutes.
+  \item We tested all the optimisations and their combinations.    
   \end{itemize}
   \pause
   \includegraphics[scale=0.20]{img/distribution_boxplot.pdf}
