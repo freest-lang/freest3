@@ -71,15 +71,15 @@
 
 \begin{itemize}
 \item Context-free session types from Thiemann and Vasconcelos
-  \vskip 1cm
+  \vskip 0.4cm
 \item Context-free session types VS. regular session types
-  \vskip 1cm
+  \vskip 0.4cm
 \item Thiemann and Vasconcelos proved that type equivalence is decidable
-  \vskip 1cm
+  \vskip 0.4cm
 \item Developed an algorithm that can be used in a compiler
 \end{itemize}
 
-% \vspace*{1.8cm}
+\vspace*{0.6cm}
 \hfill \includegraphics[height=4cm]{img/tree}
 \end{frame}
 
@@ -88,9 +88,9 @@
   \begin{align*}
   S,T &\grmeq \skipk \grmor \sharp B \grmor 
   \star\{\ell_i\colon T_i\}_{i\in I} \grmor S;T \grmor \mu X.T \grmor X
-  \\
+    \\&\\
   \sharp &\grmeq {}! \grmor {}? 
-  \\
+  \\&\\
   \star  &\grmeq \oplus \grmor {}\&
   % \qquad \qquad
   % a \grmeq \sharp B \grmor \star l \grmor X
@@ -429,13 +429,13 @@
   \smallskip
   \item They were small, lacking diversity
   \smallskip
-  \item We went for Automated test generation: QuickCheck
+  \item We went for automated test generation: QuickCheck
   \smallskip
   \item Generating valid (well-formed) types is easy, but the probability of
     generating two types that are bisimilar is extremely low.
     \smallskip
   \item We generate arbitrary pairs of types that are \textbf{bisimilar}
-    by construction % (based on properties of type bisimilarity).
+    by construction (based on properties of type bisimilarity).
     \smallskip
   \item For \textbf{non-bisimilar pairs} we add five anti-axioms to the previous list.
   \end{itemize}
@@ -502,7 +502,7 @@
   \frametitle{Final remarks}
 
   \begin{itemize}
-  \item We developed an algorithm to decide the bisimulation of context-free
+  \item We developed an algorithm to decide the bisimilarity of context-free
     session types and proved it \emph{sound} and \emph{complete}.
   \item The algorithm is incorporated in a compiler for a concurrent functional
     language equipped with context-free session types.
