@@ -23,8 +23,6 @@ import qualified Data.Set                      as Set
 terminated :: K.PolyVars -> T.Type -> Bool
 terminated _ (T.Skip _                 ) = True
 terminated s (T.Semi _ t u             ) = terminated s t && terminated s u
-terminated s (T.Rec  _ (K.Bind _ a _ t)) = terminated (Set.insert a s) t
--- terminated s (T.Rec  _ (K.Bind _ a k t)) = K.isSession k && terminated (Set.insert a s) t
-terminated s (T.Var _ a                ) = a `Set.member` s
+terminated s (T.Rec  _ (K.Bind _ _ _ t)) = terminated s t
 terminated _ _                           = False
 
