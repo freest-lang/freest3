@@ -12,7 +12,7 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Validation.Contractive
-  ( contractive -- Contractive(..)
+  ( contractive
   )
 where
 
@@ -20,11 +20,7 @@ import           Syntax.TypeVariable
 import qualified Syntax.Kind as K
 import qualified Syntax.Type as T
 import           Validation.Terminated
-
--- class Contractive a where
---   contractive :: Set.Set TypeVar -> TypeVar -> a -> Bool
-
--- instance Contractive T.Type where
+import qualified Data.Set as Set
 
 contractive :: K.PolyVars -> TypeVar -> T.Type -> Bool
 contractive s a (T.Semi _ t u)
@@ -32,9 +28,6 @@ contractive s a (T.Semi _ t u)
   | otherwise                                 = contractive s a t
 contractive s a (T.Rec _ (K.Bind _ _ _ t))    = contractive s a t
 contractive s a (T.Forall _ (K.Bind _ _ _ t)) = contractive s a t
-contractive _ a (T.Var _ b)                   = a /= b
-contractive _ _ (T.Skip _)                    = False
+contractive s a (T.Var _ b)                   = b `Set.notMember` s && a /= b
 contractive _ _ _                             = True
 
--- instance Contractive t => Contractive (K.Bind t) where
---   contractive a (K.Bind _ _ _ t) = contractive a t
