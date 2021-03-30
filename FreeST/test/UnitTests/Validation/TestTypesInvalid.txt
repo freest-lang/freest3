@@ -103,3 +103,5 @@ rec a . ?(Int; a)
 -- The kind of the recursion variable is a sub-kind of the one of rec body
 -- expecting the other way around.
 rec a:MU . !a
+
+forall b:SL. !Int; rec a:SL. b; a

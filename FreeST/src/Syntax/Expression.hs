@@ -34,15 +34,15 @@ data Exp =
   -- Variable
   | Var Pos ProgVar
   -- Abstraction intro and elim
-  | Abs Pos Bind -- λx:T -> e, Abstraction
-  | App Pos Exp Exp            -- e1 e2
+  | Abs Pos Bind        -- λ x:T -> e, λ x:T -o e
+  | App Pos Exp Exp     -- e1 e2
   -- Pair intro and elim
   | Pair Pos Exp Exp
   | BinLet Pos ProgVar ProgVar Exp Exp
   -- Datatype elim
   | Case Pos Exp FieldMap
   -- Type Abstraction intro and elim
-  | TypeAbs Pos (K.Bind Exp)   -- Λa:k => e -- Type abstraction
+  | TypeAbs Pos (K.Bind Exp)   -- Λ a:k => e
   | TypeApp Pos Exp T.Type     -- e[T]
   -- Boolean elim
   | Cond Pos Exp Exp Exp

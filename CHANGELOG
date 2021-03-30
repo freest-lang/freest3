@@ -1,4 +1,10 @@
-# Version 2.0.0	
+# Version 2.1.0
+  - Fork is now polymorphic
+  - Adding options -v,--version and -h,--help
+  - Tuning show for recursive and polymorphic types
+  - Small bug fixes
+
+# Version 2.0.0
   - Impredicative polymorphism (System F)
   - New kinds that classify types that can be sent in channels (MU and ML)
   - Adding more prelude functions ((^), max, min, succ, pred, abs, quot, gcd,

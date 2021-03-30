@@ -22,7 +22,7 @@ consumeStream : forall α:SL .
   ()
 consumeStream f c = consumeStream[α] f (f c)
 
--- 1 _ Stream out-integer values
+-- 1 _ Stream of integer values
 type OutIntStream : SL = !Int; OutIntStream
 
 -- Write on an int on a channel; return the continuation channel
@@ -75,14 +75,7 @@ mainCharBoolStream =
   fork[()] (writeCharReadBoolStream w);
   readCharWriteBoolStream r
 
--- 3 _ Stream of Skip, that is Skip
-mainSkipStream : ()
-mainSkipStream =
-  let (w, _) = new Skip in
-  fork [()] (consumeStream[Skip] id[Skip] w)
-
 -- Go!
 main : ()
 -- main = mainIntStream
--- main = mainCharBoolStream
-main = mainSkipStream
+main = mainCharBoolStream

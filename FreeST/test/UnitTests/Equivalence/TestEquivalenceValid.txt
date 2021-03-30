@@ -759,3 +759,15 @@ Int -> ∀ α:SL . α -> α
 []
 Bool -> ∀ α:SL . α -> α ; (α ; α)
 Bool -> ∀ α:SL . α -> (α ; α) ; α
+
+-- []
+-- rec y:SL .             +{B: !(), C: !Bool} ; (+{A: y;!(), C: !()} ; y)
+-- rec x:SL . rec y:SL .  +{B: !(), C: !Bool} ; ((+{A: y, C: Skip};!())  ; x)
+
+-- [("z", "SL")]
+-- rec y:SL . (+{B: z, C: !Char};(?();!Bool);+{A: y;!(), C: Skip;!()});!Bool;y
+-- rec y:SL . rec x:SL . (+{B: z, C: !Char});(?();!Bool;+{A: y, C: Skip};!());!Bool;x
+
+-- [("z","SL")]
+-- rec y:SL . (+{B: z;Skip, C: !Char;Skip};(?();!Bool);+{A: y;!(), C: Skip;!()});!Bool;y
+-- rec y:SL . rec x:SL . (+{B: z, C: !Char};Skip;Skip);(?();!Bool;+{A: y, C: Skip};!());!Bool;x
