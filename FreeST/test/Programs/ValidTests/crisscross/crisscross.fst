@@ -1,7 +1,7 @@
 {- |
 Module      :  Crisscross
 Description :  Crossed writes and reads on two different channels
-Copyright   :  (c) Bernardo Almeida, Andreia Mordido, Vasco T. Vasconcelos, 
+Copyright   :  (c) Bernardo Almeida, Andreia Mordido, Vasco T. Vasconcelos,
 
 This program does not deadlock with communication buffers of size 1,
 which is what you get with an implementation with two MVars per
@@ -26,6 +26,5 @@ main : Bool
 main =
   let (w1, r1) = new !Char in
   let (w2, r2) = new !Bool in
-  fork (writer w1 w2);
+  fork[()] (writer w1 w2);
   reader r1 r2
-

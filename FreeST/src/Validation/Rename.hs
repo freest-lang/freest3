@@ -93,6 +93,7 @@ instance Rename T.Type where
 rename' :: Bindings -> T.Type -> FreestState T.Type
     -- Functional types
 rename' bs (T.Fun p m t u    ) = T.Fun p m <$> rename bs t <*> rename bs u
+rename' bs (T.Message p pol t) = T.Message p pol <$> rename bs t
 rename' bs (T.Pair p t u     ) = T.Pair p <$> rename bs t <*> rename bs u
 rename' bs (T.Datatype p fm  ) = T.Datatype p <$> tMapM (rename bs) fm
   -- Session types

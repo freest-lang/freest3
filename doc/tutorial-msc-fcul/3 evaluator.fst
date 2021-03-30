@@ -10,7 +10,7 @@ type EChan : SL =
    , Times: EChan ; EChan
    }
 
-writeExp : forall a:SL => Exp -> EChan;a -> a
+writeExp : forall a:SL . Exp -> EChan;a -> a
 writeExp e c = case e of
   { Lit n -> send n $ select Lit c
   , Plus e1 e2 ->
@@ -29,7 +29,7 @@ wExp e c =
   let (n, _) = receive c1 in
   printIntLn n
 
-readExp : forall a:SL => dualof EChan;a -> (Int, a)
+readExp : forall a:SL . dualof EChan;a -> (Int, a)
 readExp c = match c with
   { Lit c -> receive c
   , Plus c ->
@@ -50,7 +50,7 @@ rExp c =
 main : Skip
 main =
   let (w, r) = new EChan;?Int in
-  fork (wExp e1 w);
+  fork[()] (wExp e1 w);
   rExp r
 
 {-

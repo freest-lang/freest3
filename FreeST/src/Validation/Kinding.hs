@@ -40,15 +40,13 @@ import qualified Data.Map.Strict               as Map
 -- Returns the kind of a given type
 synthetise :: K.KindEnv -> T.Type -> FreestState K.Kind
 -- Functional types
-synthetise _    (T.Int  p     ) = return $ K.Kind p K.Message Un
-synthetise _    (T.Char p     ) = return $ K.Kind p K.Message Un
-synthetise _    (T.Bool p     ) = return $ K.Kind p K.Message Un
-synthetise _    (T.Unit p     ) = return $ K.Kind p K.Message Un
-synthetise _    (T.String p     ) = return $ K.Kind p K.Message Un
-synthetise kEnv (T.Fun p m t u) = do
-  synthetise kEnv t
-  synthetise kEnv u
-  return $ K.Kind p K.Top m
+synthetise _ (T.Int    p) = return $ K.Kind p K.Message Un
+synthetise _ (T.Char   p) = return $ K.Kind p K.Message Un
+synthetise _ (T.Bool   p) = return $ K.Kind p K.Message Un
+synthetise _ (T.Unit   p) = return $ K.Kind p K.Message Un
+synthetise _ (T.String p) = return $ K.Kind p K.Message Un
+synthetise kEnv (T.Fun p m t u) = -- do
+  synthetise kEnv t >> synthetise kEnv u $> K.Kind p K.Top m
 synthetise kEnv (T.Pair p t u) = do
   (K.Kind _ _ mt) <- synthetise kEnv t
   (K.Kind _ _ mu) <- synthetise kEnv u
@@ -63,24 +61,20 @@ synthetise kEnv (T.Semi p t u) = do
   checkAgainstSession kEnv t
   checkAgainstSession kEnv u
   return $ K.sl p
-synthetise kEnv (T.Message p _ t) =
-  checkAgainst kEnv (K.ml p) t $> K.sl p
+synthetise kEnv (T.Message p _ t) = checkAgainst kEnv (K.ml p) t $> K.sl p
 synthetise kEnv (T.Choice p _ m) =
   tMapM_ (checkAgainst kEnv (K.sl p)) m $> K.sl p
 -- Session or functional
-synthetise kEnv (T.Rec _ (K.Bind _ a k t)) = do
-  checkContractive a t
-  checkAgainst (Map.insert a k kEnv) k t
-  return k
+synthetise kEnv (T.Rec _ (K.Bind _ a k t)) =
+  checkContractive a t >> checkAgainst (Map.insert a k kEnv) k t $> k
 synthetise kEnv (T.Forall _ (K.Bind p a k t)) = do
   (K.Kind _ _ m) <- synthetise (Map.insert a k kEnv) t
   return $ K.Kind p K.Top m
   -- checkAgainstTop (Map.insert a k kEnv) t
 synthetise kEnv (T.Var p a) = case kEnv Map.!? a of
-  Just k  -> return k
-  Nothing -> do
-    addError p [Error "Type variable not in scope:", Error a]
-    return $ omission p
+  Just k -> return k
+  Nothing ->
+    addError p [Error "Type variable not in scope:", Error a] $> omission p
 -- Type operators
 synthetise _ t@T.Dualof{} = internalError "Validation.Kinding.synthetise" t
 
@@ -120,7 +114,6 @@ checkAgainstSession kEnv t = do
     , Error "of kind"
     , Error k
     ]
-  return ()
 
 -- Determine whether a given type is unrestricted
 un :: T.Type -> FreestState Bool

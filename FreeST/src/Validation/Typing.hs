@@ -23,6 +23,7 @@ where
 
 import           Control.Monad.State            ( when
                                                 , unless
+                                                , void
                                                 )
 import qualified Data.Map.Strict               as Map
 import           Equivalence.Equivalence
@@ -63,7 +64,7 @@ synthetise kEnv (E.UnLet _ x e1 e2) = do
   return t2
 -- Abs introduction
 synthetise kEnv e'@(E.Abs p (E.Bind _ m x t1 e)) = do
-  K.synthetise kEnv t1
+  void $ K.synthetise kEnv t1
   vEnv1 <- getVEnv
   addToVEnv x t1
   t2 <- synthetise kEnv e
@@ -81,7 +82,7 @@ synthetise kEnv (E.App p (E.Select _ c) e) = do
 synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "receive" = do
   t        <- synthetise kEnv e
   (u1, u2) <- Extract.input e t
-  K.checkAgainst kEnv (K.ml (pos u1)) u1
+  void $ K.checkAgainst kEnv (K.ml (pos u1)) u1
   return $ T.Pair p u1 u2
   -- Send e
 synthetise _ e@(E.App p (E.Var _ x) _) | x == mkVar p "send" =
@@ -90,7 +91,7 @@ synthetise _ e@(E.App p (E.Var _ x) _) | x == mkVar p "send" =
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkVar p "send" = do
   t        <- synthetise kEnv e2
   (u1, u2) <- Extract.output e2 t
-  K.checkAgainst kEnv (K.ml (pos u1)) u1
+  void $ K.checkAgainst kEnv (K.ml (pos u1)) u1
   checkAgainst kEnv e1 u1
   return u2
 synthetise kEnv (E.App _ e1 e2) = do -- General case
@@ -105,8 +106,8 @@ synthetise kEnv (E.TypeAbs _ (K.Bind p a k e)) = do
 -- Type application
 synthetise kEnv (E.TypeApp _ e t) = do
   u                              <- synthetise kEnv e
-  (T.Forall _ (K.Bind _ y _ u')) <- Extract.forall e u
-  K.synthetise kEnv t
+  (T.Forall _ (K.Bind _ y k u')) <- Extract.forall e u
+  void $ K.checkAgainst kEnv k t
   return $ Rename.subs t y u'
 -- Boolean elimination
 synthetise kEnv (E.Cond p e1 e2 e3) = do
@@ -123,8 +124,6 @@ synthetise kEnv (E.Cond p e1 e2 e3) = do
 synthetise kEnv (E.Pair p e1 e2) = do
   t1 <- synthetise kEnv e1
   t2 <- synthetise kEnv e2
-  -- K.checkAgainst kEnv (Kind p Functional m) t1
-  -- K.checkAgainst kEnv (Kind p Functional m) t2
   return $ T.Pair p t1 t2
 -- Pair elimination
 synthetise kEnv (E.BinLet _ x y e1 e2) = do
@@ -146,7 +145,6 @@ synthetise kEnv (E.New p t u) = do
 synthetise _ e@(E.Select _ _) = addPartiallyAppliedError e "channel"
 synthetise kEnv (E.Match p e fm) =
   synthetiseFieldMap p "match" kEnv e fm Extract.inChoiceMap paramsToVEnvMM
-
 
 -- | Returns the type scheme for a variable; removes it from vEnv if lin
 synthetiseVar :: K.KindEnv -> ProgVar -> FreestState T.Type

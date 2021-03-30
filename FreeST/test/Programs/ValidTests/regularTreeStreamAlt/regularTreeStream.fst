@@ -3,12 +3,12 @@
 main : Tree
 main =
   let (w, r) = new TreeC in
-  fork $ treeClient w;
-  --fork $ badClientPrematureEnd w;
-  --fork $ badClientSendExtraValue w;
-  --fork $ badClientSendExtraLeaf w;
-  --fork $ badClientForgotRight w;
-  --fork $ badClientSendOnlyValue w;
+  fork[()] $ treeClient w;
+  --fork[()] $ badClientPrematureEnd w;
+  --fork[()] $ badClientSendExtraValue w;
+  --fork[()] $ badClientSendExtraLeaf w;
+  --fork[()] $ badClientForgotRight w;
+  --fork[()] $ badClientSendOnlyValue w;
   receiveTree r
 
 

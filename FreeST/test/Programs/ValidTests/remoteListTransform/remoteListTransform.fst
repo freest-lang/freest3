@@ -34,10 +34,6 @@ aList = List 5 (List 4 (List 3 (List 2 (List 1 End))))
 main : IntList
 main =
     let (w, r) = new (rec x:SL. +{EndC: Skip, ListC: !Int;x;?Int}) in
-    let _ = fork (sink (listSum[Skip] r)) in
+    let _ = fork[(Int, Skip)] $ listSum[Skip] r in
     let (l, _) = transform[Skip] aList w in
     l
-
--- Auxiliary function for fork
-sink : (Int, Skip) -> ()
-sink _ = ()

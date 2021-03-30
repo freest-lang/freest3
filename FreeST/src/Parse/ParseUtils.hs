@@ -88,8 +88,6 @@ checkDupField x m = when (x `Map.member` m) $ addError
   , Error x
   , Error "\n\t in a choice type"
   ]
-    -- addError (pos x) ["Multiple declarations of field", styleRed (show x), "\n",
-    --                        "\t in a choice type"]
 
 checkDupCase :: ProgVar -> E.FieldMap -> FreestState ()
 checkDupCase x m = when (x `Map.member` m) $ addError
@@ -98,8 +96,6 @@ checkDupCase x m = when (x `Map.member` m) $ addError
   , Error "\n\t In a case alternative:"
   , Error x
   ]
-    -- addError (pos x) ["Pattern match is redundant", "\n",
-    --                        "\t In a case alternative:", styleRed (show x)]
 
 checkDupBind :: ProgVar -> [ProgVar] -> FreestState ()
 checkDupBind x xs

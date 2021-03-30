@@ -30,5 +30,5 @@ theServer s =
 main : Int
 main =
   let (c, s) = new MathClient in
-  fork (theServer s);
+  fork[()] (theServer s);
   aClient c

@@ -13,10 +13,6 @@ mathServer c =
 main : Int
 main =
   let (r,w) = new &{Opposite: ?Int;!Int, Plus: ?Int;?Int;!Int} in
-  let _ = fork (sink (mathServer r)) in
+  let _ = fork[Skip] (mathServer r) in
   let (x, _) = receive (send 5 (select Opposite w)) in
   x
-
--- Auxiliary function because of fork : () -> ()
-sink : Skip -> ()
-sink _ = ()

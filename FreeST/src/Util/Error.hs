@@ -14,6 +14,9 @@ This module provides tools to prettify & format errors with ANSI colors for term
 module Util.Error
   ( formatErrorMessages
   , internalError
+  , styleRed
+  , styleCyan
+  , styleBold
   )
 where
 
@@ -53,6 +56,9 @@ styleHeader f p | p == defaultPos = styleBold $ start ++ end
 
 styleRed :: String -> String
 styleRed str = "\ESC[91m" ++ str ++ "\ESC[0m"
+
+styleCyan :: String -> String
+styleCyan str = "\ESC[36m" ++ str ++ "\ESC[0m"
 
 styleBold :: String -> String
 styleBold str = "\ESC[1m" ++ str ++ "\ESC[0m"
