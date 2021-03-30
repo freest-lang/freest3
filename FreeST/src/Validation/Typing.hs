@@ -56,6 +56,7 @@ synthetise kEnv e@(E.Var p x)
   | x == mkVar p "send" = addPartiallyAppliedError
     e
     "value and another denoting a channel"
+  | x == mkVar p "branch" = addPartiallyAppliedError e "channel"
   | otherwise = synthetiseVar kEnv x
 synthetise kEnv (E.UnLet _ x e1 e2) = do
   t1 <- synthetise kEnv e1
@@ -85,6 +86,11 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "receive" = do
   (u1, u2) <- Extract.input e t
   void $ K.checkAgainst kEnv (K.ml (pos u1)) u1
   return $ T.Pair p u1 u2
+  -- branch e
+synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "branch" = do
+  t <- synthetise kEnv e
+  tm <- Extract.inChoiceMap e t
+  return $ T.Datatype p tm
   -- Send e
 synthetise _ e@(E.App p (E.Var _ x) _) | x == mkVar p "send" =
   addPartiallyAppliedError e "channel"
@@ -147,7 +153,7 @@ synthetise _ e@(E.Select _ _) = addPartiallyAppliedError e "channel"
 synthetise kEnv (E.Match p e fm) =
   synthetiseFieldMap p "match" kEnv e fm Extract.inChoiceMap paramsToVEnvMM
 
--- | Returns the type scheme for a variable; removes it from vEnv if lin
+-- | Returns the type of a variable; removes it from vEnv if lin
 synthetiseVar :: K.KindEnv -> ProgVar -> FreestState T.Type
 synthetiseVar kEnv x = getFromVEnv x >>= \case
   Just s -> do
