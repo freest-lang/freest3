@@ -23,6 +23,7 @@ import           Validation.Terminated          ( terminated )
 import           Validation.Substitution        ( unfold )
 import           Util.Error                    ( internalError )
 
+
 normalise :: T.Type -> T.Type
 -- Session types
 normalise (T.Semi p t u)

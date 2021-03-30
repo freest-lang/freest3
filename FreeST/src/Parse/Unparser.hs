@@ -13,6 +13,8 @@ Converting AST terms to strings.
 module Parse.Unparser
   ( showChoiceView
   , showFieldMap
+  , showBindType
+  , showBindExp
   )
 where
 
@@ -82,8 +84,14 @@ showKind :: (Show a, Show b, Show c) => a -> b -> String -> c -> String
 showKind var sort arrow term =
   showSortedVar var sort ++ " " ++ arrow ++ " " ++ show term
 
-instance Show t => Show (K.Bind t) where
-  show (K.Bind _ a k t) = showKind a k "." t
+-- instance Show t => Show (K.Bind t) where
+--   show (K.Bind _ a k t) = showKind a k "=>" t
+
+showBindType :: K.Bind T.Type -> String
+showBindType (K.Bind _ a k t) = showKind a k "." t -- ∀ a:k . t
+
+showBindExp :: K.Bind E.Exp -> String
+showBindExp (K.Bind _ a k e) = showKind a k "=>" e -- Λ a:k => e
 
 -- Type bind
 
@@ -188,9 +196,9 @@ instance Unparse T.Type where
     r = bracket (unparse u) Right semiRator
   unparse (T.Choice _ v m) =
     (maxRator, showChoiceView v ++ "{" ++ showChoice m ++ "}")
-  unparse (T.Forall _ b) = (dotRator, "∀" ++ show b) -- ++ "=>" ++ s)
+  unparse (T.Forall _ b) = (dotRator, "∀" ++ showBindType b) -- ++ "=>" ++ s)
     -- where s = bracket (unparse t) Right dotRator
-  unparse (T.Rec _ b) = (dotRator, "rec " ++ show b) -- xk ++ "." ++ s)
+  unparse (T.Rec _ b) = (dotRator, "rec " ++ showBindType b) -- xk ++ "." ++ s)
     -- where s = bracket (unparse t) Right dotRator
   unparse (T.Dualof _ t) = (dualofRator, "dualof " ++ s)
     where s = bracket (unparse t) Right dualofRator
@@ -269,8 +277,7 @@ instance Unparse Exp where
     where s = bracket (unparse e) NonAssoc inRator
   -- Type Abstraction intro and elim
   unparse (E.TypeApp _ x t) = (appRator, show x ++ " [" ++ show t ++ "]")
-  unparse (E.TypeAbs _ b) = (arrowRator, "λ" ++ show b) -- ++ "->" ++ s)
-    -- where s = bracket (unparse e) Right arrowRator
+  unparse (E.TypeAbs _ b) = (arrowRator, "λ" ++ showBindExp b)
   -- Boolean elim
   unparse (E.Cond _ e1 e2 e3) =
     (inRator, "if " ++ s1 ++ " then " ++ s2 ++ " else " ++ s3)

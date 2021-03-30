@@ -40,6 +40,7 @@ import qualified Validation.Extract            as Extract
 import qualified Validation.Kinding            as K -- Again?
 import qualified Validation.Rename             as Rename
                                                 ( subs )
+
 -- SYNTHESISING A TYPE
 
 synthetise :: K.KindEnv -> E.Exp -> FreestState T.Type
