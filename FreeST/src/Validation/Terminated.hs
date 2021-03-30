@@ -18,11 +18,10 @@ where
 
 import qualified Syntax.Kind                   as K
 import qualified Syntax.Type                   as T
-import qualified Data.Set                      as Set
 
-terminated :: K.PolyVars -> T.Type -> Bool
-terminated _ (T.Skip _                 ) = True
-terminated s (T.Semi _ t u             ) = terminated s t && terminated s u
-terminated s (T.Rec  _ (K.Bind _ _ _ t)) = terminated s t
-terminated _ _                           = False
+terminated :: T.Type -> Bool
+terminated (T.Skip _                 ) = True
+terminated (T.Semi _ t u             ) = terminated t && terminated u
+terminated (T.Rec  _ (K.Bind _ _ _ t)) = terminated t
+terminated _                           = False
 
