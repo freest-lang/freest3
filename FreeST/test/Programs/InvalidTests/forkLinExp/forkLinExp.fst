@@ -1,2 +1,2 @@
 main : Int
-main = fork (new !Int)
+main = fork[!Int] (new !Int)

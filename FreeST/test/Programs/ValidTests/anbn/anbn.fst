@@ -60,5 +60,5 @@ server' c =
 main : Skip
 main =
   let (w, r) = new S0 in
-  fork (client 25 w);
+  fork[()] $ client 25 w;
   server r

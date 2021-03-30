@@ -15,7 +15,6 @@ import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
 import           Util.Error
 import           Util.FreestState
-import Paths_FreeST (getDataFileName)
 
 }
 
@@ -397,34 +396,33 @@ parseType str =
       | otherwise       = Left t
 
 
-parseProgram :: FilePath -> Map.Map ProgVar T.Type -> IO FreestS
-parseProgram inputFile vEnv = do
-  prelude <- getDataFileName "Prelude.fst"
-  str <- readFile prelude
-  let (Ok s) = execStateT (lexer str prelude terms) ((initialState inputFile) {varEnv = vEnv})
-
-  src <- readFile inputFile
-  return $ parseDefs inputFile s src
-
-parseDefs :: FilePath -> FreestS -> String -> FreestS
-parseDefs file fState str =
-  let s = initialState file in
-  case execStateT (lexer str file terms) fState of
-    Ok s1 -> s1
-    Failed err -> s {errors = errors s ++ [err]}
-
-
 -- parseProgram :: FilePath -> Map.Map ProgVar T.Type -> IO FreestS
 -- parseProgram inputFile vEnv = do
---   src <- readFile inputFile
---   return $ parseDefs inputFile vEnv src
+--   prelude <- getDataFileName "Prelude.fst"
+--   str <- readFile prelude
+--   let (Ok s) = execStateT (lexer str prelude terms) ((initialState inputFile) {varEnv = vEnv})
 
--- parseDefs :: FilePath -> VarEnv -> String -> FreestS
--- parseDefs file vEnv str =
+--   src <- readFile inputFile
+--   return $ parseDefs inputFile s src
+
+-- parseDefs :: FilePath -> FreestS -> String -> FreestS
+-- parseDefs file fState str =
 --   let s = initialState file in
---   case execStateT (lexer str file terms) (s {varEnv = vEnv}) of
+--   case execStateT (lexer str file terms) fState of
 --     Ok s1 -> s1
---     Failed err -> s {errors = (errors s) ++ [err]}
+--     Failed err -> s {errors = errors s ++ [err]}
+
+
+parseProgram :: FilePath -> Map.Map ProgVar T.Type -> IO FreestS
+parseProgram inputFile vEnv = -- do
+  parseDefs inputFile vEnv <$> readFile inputFile
+
+parseDefs :: FilePath -> VarEnv -> String -> FreestS
+parseDefs file vEnv str =
+  let s = initialState file in
+  case execStateT (lexer str file terms) (s {varEnv = vEnv}) of
+    Ok s1 -> s1
+    Failed err -> s {errors = (errors s) ++ [err]}
 
     
 

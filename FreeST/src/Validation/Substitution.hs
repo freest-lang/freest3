@@ -33,6 +33,7 @@ class Subs t where
 
 instance Subs T.Type where
   -- Functional types
+  subs t x (T.Message p pol t1) = T.Message p pol (subs t x t1)
   subs t x (T.Fun p m t1 t2) = T.Fun p m (subs t x t1) (subs t x t2)
   subs t x (T.Pair p t1 t2) = T.Pair p (subs t x t1) (subs t x t2)
   subs t x (T.Datatype p m) = T.Datatype p (Map.map (subs t x) m)

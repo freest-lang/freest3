@@ -12,9 +12,5 @@ receiveInt c =
 main : Int
 main =
   let (w,r) = new dualof !Int in
-  let _     = fork (sink (sendInt r)) in
+  let _     = fork[Skip] $ sendInt r in
   receiveInt w
-
--- Auxiliary function because of fork : () -> ()
-sink : Skip -> ()
-sink _ = ()

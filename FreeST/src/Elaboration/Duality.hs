@@ -72,7 +72,7 @@ solveType v (T.Forall p (K.Bind p' a k t)) =
   T.Forall p . K.Bind p' a k <$> solveType v t
 solveType v (T.Rec p b        ) = T.Rec p <$> solveBind solveType v b
 -- Dualof
-solveType v d@(T.Dualof p t   ) = addTypeName p d >> solveDual v t
+solveType v d@(T.Dualof p t   ) = addDualof d >> solveDual v (changePos p t)
 -- Var, Int, Char, Bool, Unit, Skip
 solveType _ t                   = pure t
   
@@ -92,7 +92,7 @@ solveDual v t@(T.Var p a)
       p [Error "Cannot compute the dual of a non-recursion variable:", Error t]
     $> t
 -- Dualof
-solveDual v d@(T.Dualof p t) = addTypeName p d >> solveType v t
+solveDual v d@(T.Dualof p t) = addDualof d >> solveType v (changePos p t)
 -- Non session-types
 solveDual _ t =
   addError (pos t) [Error "Dualof applied to a non session type:", Error t]
@@ -105,3 +105,24 @@ solveBind solve v (K.Bind p a k t) = K.Bind p a k <$> solve (Set.insert a v) t
 dual :: T.Polarity -> T.Polarity
 dual T.In  = T.Out
 dual T.Out = T.In
+
+
+-- | Changing positions
+
+-- Change position of a given type with a given position
+changePos :: Pos -> T.Type -> T.Type
+changePos p (T.Int  _         ) = T.Int p
+changePos p (T.Char _         ) = T.Char p
+changePos p (T.Bool _         ) = T.Bool p
+changePos p (T.Unit _         ) = T.Unit p
+changePos p (T.Fun _ pol t u  ) = T.Fun p pol t u
+changePos p (T.Pair    _ t   u) = T.Pair p t u
+changePos p (T.Datatype _ m   ) = T.Datatype p m
+changePos p (T.Skip _         ) = T.Skip p
+changePos p (T.Semi    _ t   u) = T.Semi p t u
+changePos p (T.Message _ pol b) = T.Message p pol b
+changePos p (T.Choice  _ pol m) = T.Choice p pol m
+changePos p (T.Rec    _ xs    ) = T.Rec p xs
+changePos p (T.Forall _ xs    ) = T.Forall p xs
+changePos p (T.Var    _ x     ) = T.Var p x
+changePos p (T.Dualof _ t     ) = T.Dualof p t --(changePos p t)

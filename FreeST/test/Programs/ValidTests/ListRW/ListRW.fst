@@ -7,7 +7,7 @@ iListW : forall a:SL . IList -> IListW;a -> a
 iListW xs c =
   case xs of {
     Nil -> select Nil c,
-    Cons x xs -> select Cons c & send x & iListW [a] xs      
+    Cons x xs -> select Cons c & send x & iListW [a] xs
   }
 
 iListR : forall a:SL . (dualof IListW);a -> (IList, a)
@@ -36,7 +36,7 @@ iLength' x = iFold [Int, a] 0 (+) x
 
 iFold : forall a:TL b:SL .
   a -> (Int -> a -> a) -> (dualof IListW);b -> (a, b)
-iFold n f c = 
+iFold n f c =
   match c with {
     Nil c -> (n, c),
     Cons c -> let (m, c) = receive c in
@@ -47,12 +47,9 @@ iFold n f c =
 aList : IList
 aList = Cons 5 (Cons 3 (Cons 7 (Cons 1 Nil)))
 
-sink : forall a . a -> ()
-sink _ = ()
-
 main : Int
 main = let (w, r) = new IListW in
-       fork (sink [Skip] $ iListW [Skip] aList w);
+       fork[Skip] $ iListW [Skip] aList w;
        fst [Int, Skip] $ iLength' [Skip] r
 
 -- main : IList

@@ -6,9 +6,9 @@ This program is an implementation of a Genetic Algorithm tailored
 
 Additional notes:
   - to enable printing inside the sequential genetic algorithm,
-      uncomment lines 243 and 245
+      uncomment lines 238 and 240
   - to enable printing inside the parallel genetic algorithm,
-      uncomment line 331
+      uncomment line 327
 
 -}
 
@@ -19,41 +19,44 @@ main : ()
 main =
   let result = clientParallel in
   -- Print value
-  printChar 'R'; printIntLn result;
+  printString "  Value: "; printIntLn result;
   -- Print fitness
-  printChar 'F'; printIntLn $ fitnessAllOnes result
+  printString "Fitness: "; printIntLn $ fitnessAllOnes result
+
+-- Initial seed for random number generation
+argSeed : Int
+argSeed = 12345
+
+-- Amount of individuals per population
+argPopSize : Int
+argPopSize = 10
+
+-- Iterations per population
+argIterPop : Int
+argIterPop = 5
+
+-- [PARALLEL] Amount of islands (each island has one population)
+argIslands : Int
+argIslands = 4
+
+-- [PARALLEL] Amount of population iteration & fittest individual sync
+argIterIsl : Int
+argIterIsl = 5
 
 -- Example of a client using the sequential genetic algorithm
 clientSequential : Int
-clientSequential =
-  -- User defined metrics
-  let seed = 19237 in
-  let popSize = 15 in
-  let iterations = 100 in
-  -- Run genetic algorithm
-  geneticAlg seed popSize iterations
+clientSequential = geneticAlg argSeed argPopSize argIterPop
 
 -- Example of a client using the parallel genetic algorithm
 clientParallel : Int
-clientParallel =
-  -- User defined metrics
-  let seed    = 12345 in
-  let islands = 4  in
-  let popSize = 10 in
-  let nIterI  = 5  in
-  let nIterG  = 10 in
-  -- Initialize all needed processes
-  let resultC = initIslands seed islands popSize nIterI nIterG in
-  -- Start computation & receive the result
-  let (result, _) = receive resultC in
-  result
+clientParallel = fst[Int, Skip] $ receive $ initIslands argSeed argIslands argPopSize argIterPop argIterIsl
 
 
 -- ===== CONSTANTS =====
 
--- Number of bits of the numbers in the individuals
-numBits : Int
-numBits = 62
+-- Max number
+maxNum : Int
+maxNum = 100000
 
 
 -- ===== UTILITY =====
@@ -61,8 +64,8 @@ numBits = 62
 -- == RANDOM ==
 
 -- Generates a pseudorandom number given a seed, and an upper bound
-getNextRand : Int -> Int -> (Int, Int)
-getNextRand seed upperBound =
+nextRandomBounded : Int -> Int -> (Int, Int)
+nextRandomBounded seed upperBound =
   let random = nextRandom seed in
   (random, mod random upperBound)
 
@@ -85,14 +88,6 @@ countOnes i =
   else mod i 2
 
 
--- Calculates a power
-pow : Int -> Int -> Int
-pow base exp =
-  if exp == 0
-  then 1
-  else base * (pow base (exp-1))
-
-
 -- ===== INDIVIDUAL =====
 
 -- Represents a single individual, in this case, a single Integer
@@ -103,7 +98,7 @@ type Individual = Int
 --   This implementation generates an individual
 --   with at most 2^3 as its value
 generateIndividual : Int -> (Int, Individual)
-generateIndividual seed = getNextRand seed (pow 2 3)
+generateIndividual seed = nextRandomBounded seed (2^3)
 
 
 -- Compares two individuals and returns the fittest
@@ -133,8 +128,8 @@ crossoverWith seed ind0 ind1 =
 --   and a new seed
 crossoverBoth : Int -> Individual -> Individual -> (Int, Individual, Individual)
 crossoverBoth seed ind0 ind1 =
-  -- Generate random crossover point (at most to the last bit possible)
-  let (seed, crossover) = getNextRand seed numBits in
+  -- Generate random crossover point (at most to the maxNum)
+  let (seed, crossover) = nextRandomBounded seed maxNum in
   -- Return result with an updated seed
   (seed, crossoverBoth_ ind0 ind1 1 (crossover+1))
 
@@ -146,7 +141,7 @@ crossoverBoth_ ind0 ind1 counter crossover =
   else
     let bit0 = mod ind0 2 in
     let bit1 = mod ind1 2 in
-    let (ind0, ind1) = crossoverBoth_ (ind0/2) (ind1/2) (counter*2) (crossover-1) in
+    let (ind0, ind1) = crossoverBoth_ (ind0/2) (ind1/2) (counter*2) (crossover/2) in
     ((bit1 * counter) + ind0, (bit0 * counter) + ind1)
 
 
@@ -155,8 +150,8 @@ crossoverBoth_ ind0 ind1 counter crossover =
 --   This implementation sums a random power of 2 and does a wraparound
 mutateIndividual : Int -> Individual -> (Int, Individual)
 mutateIndividual seed ind =
-  let (seed, exp) = getNextRand seed (numBits+1) in
-  (seed, mod (ind + pow 2 exp) (pow 2 numBits))
+  let (seed, n) = nextRandomBounded seed maxNum in
+  (seed, mod (ind + n) (maxNum))
 
 
 -- ===== POPULATION =====
@@ -182,7 +177,7 @@ getFittestIndividual population =
   case population of {
     NilPop -> (0, NilPop),  -- Should never happen
     ConsPop ind l ->
-      getIndividual_ ind l (\x:Int -> (\y:Int -> x >= y))
+      getIndividual_ ind l (>=)
   }
 
 -- Get the fittest individual of a population and isolates them from the rest
@@ -191,7 +186,7 @@ getUnFittestIndividual population =
   case population of {
     NilPop -> (0, NilPop),   -- Should never happen
     ConsPop ind l ->
-      getIndividual_ ind l (\x:Int -> (\y:Int -> x < y))
+      getIndividual_ ind l (<)
     }
 
 -- Auxiliary function to filter through a population
@@ -275,7 +270,7 @@ geneticAlg_ seed iterations pop =
 type IslandChannel : SL = +{
   Fittest:   ?Int; IslandChannel, -- Gets the fittest individual of an Island
   Crossover: !Int; IslandChannel, -- Sends an individual to perform a GA iteration
-  End:       ?Int }               -- Equal to Fittest but it closes the channel
+  End:       Skip }               -- Close the channel
 
 
 -- Channel for the client to ask master the result
@@ -297,12 +292,12 @@ initIslands_ channels seed islands popSize nIterI nIterG =
   if islands == 0
   then
     let (client, server) = new ResultChannel in
-    fork $ runMasterServer server channels nIterG;
+    fork[()] $ runMasterServer server channels nIterG;
     client
   else
     let (master, island) = new IslandChannel in
     let (seed, pop) = generatePopulation seed popSize in
-    fork $ runIsland island seed nIterI pop;
+    fork[()] $ runIsland island seed nIterI pop;
     initIslands_ (Cons master channels) seed (islands-1) popSize nIterI nIterG
 
 
@@ -312,11 +307,12 @@ runMasterServer : dualof ResultChannel -> ListIslandChannel -> Int -> ()
 runMasterServer c channels nIterG =
   -- Apply nIterG global iterations
   let channels = masterLoop channels nIterG in
-  -- End and commpute fittest individual from all islands
-  --   and send it to the client
-  let _ =  send (endIslands channels) c in
-  -- Stop
-  ()
+  -- Get fittest individual from all islands...
+  let (fittest, channels) = receiveFittest channels in
+  -- ... and send it to the client
+  let _ = send fittest c in
+  -- End all islands
+  endIslands channels
 
 -- Auxiliary function that performs the getFittest-sendFittest loop
 masterLoop : ListIslandChannel -> Int -> ListIslandChannel
@@ -359,10 +355,6 @@ runIsland master seed nIterI pop =
       -- Continue serving
       runIsland master seed nIterI pop,
     End master ->
-      -- Get our population's fittest
-      let (ourFittest, _) = getFittestIndividual pop in
-      -- Send it to the master
-      let _ = send ourFittest master in
       -- Stop (get some help  -Michael Jordan)
       ()
   }
@@ -390,30 +382,14 @@ sendFittestF fittest island = (fittest, send fittest $ select Crossover island)
 --   Note: This function can not use the foldIslands function because
 --         the resulting channels would be Skip and not IslandChannel,
 --         therefore raising an error
-endIslands : ListIslandChannel -> Individual
+endIslands : ListIslandChannel -> ()
 endIslands channels0 =
   case channels0 of {
     Nil ->
-      0, -- This case should never happen, there is always at least one island
+      (),
     Cons channel channels1 ->
-      -- Receive first island's fittest individual
-      --   to compare with fittest individuals from other islands
-      --   and return the absolute fittest individual
-      endIslands_ channels1 $ fst[Individual, Skip] $ receive $ select End channel
-  }
-
-endIslands_ : ListIslandChannel -> Individual -> Individual
-endIslands_ channels0 fittest0 =
-  case channels0 of {
-    Nil ->
-      fittest0,
-    Cons channel channels1 ->
-      -- Receive island's fittest individual...
-      let (fittest1, _) = receive $ select End channel in
-      -- Compare fittests and get the fittest
-      let fittest = compareIndividuals fittest0 fittest1 in
-      -- Continue comparing to fittest individuals from other islands
-      endIslands_ channels1 fittest
+      let _ = select End channel in
+      endIslands channels1
   }
 
 -- Fold function over a list of IslandChannels

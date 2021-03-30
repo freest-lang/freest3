@@ -26,13 +26,9 @@ sendList c l =
 main : List
 main =
   let (x, y) = new ListOut in
-  let _      = fork (sink (sendList[Skip] x aList)) in
+  let _      = fork[Skip] (sendList[Skip] x aList) in
   let (list, _) = rcvList[Skip] y in
   list
 
 aList : List
 aList = Cons 2 (Cons 3 (Cons 4 (Cons 5 Nil)))
-
--- Auxiliary function because of fork : () -> ()
-sink : Skip -> ()
-sink _ = ()

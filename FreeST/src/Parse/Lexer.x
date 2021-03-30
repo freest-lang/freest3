@@ -51,7 +51,7 @@ $greekId = [λ ∀ Λ μ]
 tokens :-  
   $white*$eol+                  { \p s -> TokenNL (internalPos p) }
   $white+                       ;  
-  $eol*"--".*                   ;
+  $white*"--".*                 ;
   @blockComment                 ;
   ("->"|→)			{ \p s -> TokenUnArrow (internalPos p) }
   ("-o"|⊸)                      { \p s -> TokenLinArrow (internalPos p) }
@@ -207,7 +207,7 @@ data Token =
   | TokenDollar Pos
 
 instance Show Token where
-  show (TokenNL _) = "\n"  
+  show (TokenNL _) = "\\n"  
   show (TokenIntT _) = "Int"  
   show (TokenCharT _) = "Char"  
   show (TokenBoolT _) = "Bool"  

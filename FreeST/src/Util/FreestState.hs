@@ -51,6 +51,7 @@ module Util.FreestState
   , addTypeName
   , getTypeNames
   , findTypeName
+  , addDualof
   , debugM
 -- Parse Env
   , ParseEnv
@@ -92,7 +93,7 @@ data FreestS = FreestS {
 , typenames :: TypeOpsEnv
 , errors    :: Errors
 , nextIndex :: Int
-, parseEnv  :: ParseEnv
+, parseEnv  :: ParseEnv -- "discarded" after elaboration
 } deriving Show -- FOR DEBUG purposes
 
 type FreestState = State FreestS
@@ -130,8 +131,7 @@ setPEnv pEnv = modify (\s -> s { parseEnv = pEnv })
 
 getNextIndex :: FreestState Int
 getNextIndex = do
-  s <- get
-  let next = nextIndex s
+  next <- gets nextIndex
   modify (\s -> s { nextIndex = next + 1 })
   return next
 
@@ -205,6 +205,18 @@ getTypeNames = gets typenames
 
 findTypeName :: Pos -> T.Type -> FreestState T.Type
 findTypeName p t = Map.findWithDefault t p <$> getTypeNames
+
+addDualof :: T.Type -> FreestState ()
+addDualof d@(T.Dualof p t) = do
+  tn <- getTypeNames
+  case tn Map.!? pos t of
+    Just (T.Dualof _ _) -> return ()
+    Just u ->
+      modify (\s -> s { typenames = Map.insert p (T.Dualof p u) tn })
+    Nothing ->
+      modify (\s -> s { typenames = Map.insert p d tn })
+addDualof t = internalError "Util.FreestState.addDualof" t
+
 
 -- | ERRORS
 
