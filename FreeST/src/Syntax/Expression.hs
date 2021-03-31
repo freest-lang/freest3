@@ -53,7 +53,7 @@ data Exp =
   | Select Pos ProgVar
   | Match Pos Exp FieldMap
 
-type FieldMap = Map.Map ProgVar ([ProgVar], Exp)
+type FieldMap = Map.Map ProgVar Exp -- ([ProgVar], Exp)
 
 instance Position Exp where
   pos (Unit p             ) = p

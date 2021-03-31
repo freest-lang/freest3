@@ -20,6 +20,8 @@ import           Syntax.ProgramVariable
 import qualified Syntax.Kind                   as K
 import Util.Error(internalError)
 
+import Debug.Trace
+
 ------------------------------------------------------------
 -- EVALUATION
 ------------------------------------------------------------
@@ -86,21 +88,53 @@ eval _ _ (E.Select _ x) = return
   $ PrimitiveFun (\(Chan c) -> IOValue $ fmap Chan (send (Label (show x)) c))
 
 eval ctx eenv (E.Match _ e m) = do
-  (Chan c)       <- eval ctx eenv e
-  (Label !v, !c) <- receive c
-  let (patterns : _, e) = m Map.! mkVar defaultPos v
-  let ctx'              = Map.insert patterns (Chan c) ctx
-  eval ctx' eenv e
+  -- (Chan c)       <- eval ctx eenv e
+  -- (Label !v, !c) <- receive c
+  -- let (patterns : _, e) = m Map.! mkVar defaultPos v
+  -- let ctx'              = Map.insert patterns (Chan c) ctx
+  -- eval ctx' eenv e
+  return Unit
+  
+-- eval ctx eenv (E.Case _ e m) = 
+--   eval ctx eenv e >>= \case
+--     Chan c -> do
+--        (Label !v, !c) <- receive c
+--        let (patterns : _, e) = m Map.! mkVar defaultPos v
+--        eval (Map.insert patterns (Chan c) ctx) eenv e
+--     Cons x xs -> evalCase ctx eenv m x xs
+    
+-- evalCase :: Ctx -> Prog -> E.FieldMap -> ProgVar -> [[Value]] -> IO Value
+-- evalCase ctx eenv m x xs = do
 
 evalCase :: Ctx -> Prog -> E.FieldMap -> Value -> IO Value
-evalCase ctx eenv m (Cons x xs) = do
-  let !(patterns, e) = m Map.! x
-  let lst            = zip patterns xs
-  let ctx1 = foldl (\acc (c, y:_) -> Map.insert c y acc) ctx lst
-  eval ctx1 eenv e
+evalCase ctx eenv m v@(Cons x (x':xs)) = do
+--  traceM $ show x ++ " " ++ show xs
+--  let e1 = 
+--  traceM $ show e
+  eval ctx eenv (m Map.! x) >>= \case
+    (Closure y e ctx') -> do
+--      traceM $ show y ++ "\t->\t" ++ show e
+      let (ctx'', e') = joinCases (Map.insert y (head x') ctx') e xs
+      eval ctx'' eenv e'
+--      return Unit
+    v1 -> error $ "error on case " ++ show v1
+
+--    ()
+  -- let !(patterns, e) = m Map.! x
+  -- let lst            = zip patterns xs
+  -- let ctx1 = foldl (\acc (c, y:_) -> Map.insert c y acc) ctx lst
+
+--  return Unit
 evalCase _ _ _ _ = error "Internal error. Bug in FreeST" 
+-- evalCase _ _ _ _ _ = error "Internal error. Bug in FreeST" 
 
 
+joinCases :: Ctx -> E.Exp -> [[Value]] -> (Ctx, E.Exp)
+joinCases ctx (E.Abs _ (E.Bind _ _ x _ e)) (v:vs) =
+  joinCases (Map.insert x (head v) ctx) e vs
+joinCases ctx e _ = (ctx, e)
+  
+                   
 -- TODO: change isADT definition
 evalVar :: Ctx -> Prog -> ProgVar -> IO Value
 evalVar ctx eenv x | isADT x                      = return $ Cons x []

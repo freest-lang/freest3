@@ -59,7 +59,7 @@ instance DefaultTypeOp Bind where
   getDefault m (Bind p mul x k t) = Bind p mul x k $ getDefault m t
 
 instance DefaultTypeOp FieldMap where
-  getDefault m = Map.map (\(x, y) -> (x, getDefault m y))
+  getDefault _ m = m -- Map.map (\(x, y) -> (x, getDefault m y))
 
 instance DefaultTypeOp (K.Bind T.Type) where
   getDefault m (K.Bind p x k t) = K.Bind p x k $ getDefault m t

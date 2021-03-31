@@ -156,7 +156,7 @@ instance Elaboration Exp where
   elaborate (Pair p e1 e2) = Pair p <$> elaborate e1 <*> elaborate e2
   elaborate (BinLet p x y e1 e2) =
     BinLet p x y <$> elaborate e1 <*> elaborate e2
-  elaborate (Case p e m) = Case p <$> elaborate e <*> elaborate m
+  elaborate (Case p e m) = Case p <$> elaborate e <*> (elaborate =<< fixMap m)
   elaborate (Cond p e1 e2 e3) =
     Cond p <$> elaborate e1 <*> elaborate e2 <*> elaborate e3
   elaborate (TypeApp p e t  ) = TypeApp p <$> elaborate e <*> elaborate t
@@ -164,11 +164,11 @@ instance Elaboration Exp where
   elaborate (UnLet p x e1 e2) = UnLet p x <$> elaborate e1 <*> elaborate e2
   elaborate (New p t u      ) = New p <$> elaborate t <*> elaborate u
   elaborate e@Select{}        = pure e
-  elaborate (Match p e m)     = Match p <$> elaborate e <*> elaborate m
+  elaborate (Match p e m)     = Match p <$> elaborate e <*> (elaborate =<< fixMap m)
   elaborate e                 = return e
 
 instance Elaboration FieldMap where
-  elaborate = mapM (\(ps, e) -> (ps, ) <$> elaborate e)
+  elaborate m = mapM elaborate m -- (\(ps, e) -> (ps, ) <$> elaborate e)
 
 
 -- | Build a program from the parse env
@@ -180,14 +180,12 @@ buildProg = getPEnv
   buildFunBody :: ProgVar -> [ProgVar] -> Exp -> FreestState Exp
   buildFunBody f as e = getFromVEnv f >>= \case
     Just s  -> return $ buildExp e as s
-    Nothing -> do
-      addError
-        (pos f)
+    Nothing ->
+      addError (pos f)
         [ Error "The binding for function"
         , Error f
         , Error "lacks an accompanying type signature"
-        ]
-      return e
+        ] $> e
 
   buildExp :: Exp -> [ProgVar] -> T.Type -> Exp
   buildExp e [] _ = e
@@ -199,7 +197,6 @@ buildProg = getPEnv
     TypeAbs p (K.Bind p1 x k (buildExp e bs t))
   buildExp e (b : bs) t =
     Abs (pos b) (Bind (pos b) Un b (omission (pos b)) (buildExp e bs t))
-
 
 -- | Changing positions
 
@@ -220,3 +217,44 @@ changePos p (T.Rec    _ xs    ) = T.Rec p xs
 changePos p (T.Forall _ xs    ) = T.Forall p xs
 -- TypeVar
 changePos _ t                   = t
+
+
+
+-- fixMaps :: FreestState ()
+-- fixMaps = getPEnv
+--     >>= tMapWithKeyM_ (\pv (ps, e) -> (ps,) (descend e) )
+--     where
+-- descend venv (Abs p b     ) = Abs p b -- descendBind b
+-- descend venv (App  p e1 e2) = App p <$> descend e1 <*> descend e2
+-- descend venv (Pair p e1 e2) = Pair p <$> descend e1 <*> descend e2
+-- descend venv (BinLet p x y e1 e2) =
+--   BinLet p x y <$> descend e1 <*> descend e2
+-- descend venv (Case p e m) = Case p <$> descend e <*> descend m
+-- descend venv (Cond p e1 e2 e3) =
+--   Cond p <$> descend e1 <*> descend e2 <*> descend e3
+-- descend venv (TypeApp p e t  ) = TypeApp p <$> descend e <*> descend t
+-- descend venv (TypeAbs p b    ) = TypeAbs p <$> descend b
+-- descend venv (UnLet p x e1 e2) = UnLet p x <$> descend e1 <*> descend e2
+-- descend venv (New p t u      ) = New p <$> descend t <*> descend u
+-- descend venv e@Select{}        = pure e
+-- descend venv (Match p e m)     = Match p <$> descend e <*> descend m
+-- descend venv e                 = return e
+
+--      descend
+
+-- remove
+fixMap :: FieldMap -> FreestState FieldMap
+fixMap m = do
+  venv <- getVEnv
+  return $ fixFieldMap venv m 
+
+fixFieldMap :: VarEnv -> FieldMap -> FieldMap
+fixFieldMap venv = Map.mapWithKey (\x e -> fillFunType e (type' x))
+  where type' x = case venv Map.!? x of
+          Just t -> t
+          Nothing -> error $ "Not found variable " ++ show x ++ "\n" ++ show venv
+
+fillFunType :: Exp -> T.Type -> Exp
+fillFunType (Abs p1 (Bind p2 m x _ e)) (T.Fun _ _ t1 t2) =
+    Abs p1 $ Bind p2 m x t1 (fillFunType e t2)
+fillFunType e _ = e

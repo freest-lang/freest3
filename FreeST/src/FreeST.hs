@@ -93,14 +93,18 @@ checkAndRun filePath = do
     ++ "Couldn't find prelude; proceeding without it"
     )
   let (initialPrelude, initialProg) = fromPreludeFile s0
+
   -- Parse
   s1 <- parseProgram filePath initialPrelude
   when (hasErrors s1) (die $ getErrors s1)
+--  putStrLn $ "initial env: " ++  show (varEnv s1) ++ "\n\n"
+--  putStrLn $ show $ parseEnv s1
   -- Solve type declarations and dualof operators
   let s2 = emptyPEnv $ execState
         elaboration
         (s1 { parseEnv = parseEnv s1 `Map.union` initialProg })
   when (hasErrors s2) (die $ getErrors s2)
+--  putStrLn $ show $ prog s2
   -- Rename
   let s3 = execState renameState s2
    -- Type check

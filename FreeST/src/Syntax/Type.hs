@@ -47,7 +47,8 @@ data Type =
   -- | Abs Pos (Bind Type)       -- λ a:k => T, Operator abstraction
   -- | App Pos Type Type
   | Dualof Pos Type
-
+  | Bottom -- A type to be used at parse time. then it is replaced on the elab phase
+  
 type TypeMap = Map.Map ProgVar Type
 
 instance Position Type where

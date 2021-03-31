@@ -238,17 +238,20 @@ Tuple :: { E.Exp }
 
 MatchMap :: { FieldMap }
   : Match              { uncurry Map.singleton $1 }
-  | Match ',' MatchMap {% toStateT $ checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
+  | Match ',' MatchMap {% toStateT $ checkDupCase (fst $1) $3 >>
+                          return (uncurry Map.insert $1 $3) }
 
-Match :: { (ProgVar, ([ProgVar], E.Exp)) }
-  : ArbitraryProgVar ProgVarWild '->' Exp { ($1, ([$2], $4)) }
+Match :: { (ProgVar, E.Exp) }
+  : ArbitraryProgVar ProgVarWild '->' Exp { ($1, toLamFun $4 [$2]) }
 
 CaseMap :: { FieldMap }
   : Case             { uncurry Map.singleton $1 }
-  | Case ',' CaseMap {% toStateT $ checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
+  | Case ',' CaseMap {% toStateT $ checkDupCase (fst $1) $3 >>
+                        return (uncurry Map.insert $1 $3)
+                     }
 
-Case :: { (ProgVar, ([ProgVar], E.Exp)) }
-  : Constructor ProgVarWildSeq '->' Exp { ($1, ($2, $4)) }
+Case :: { (ProgVar, E.Exp) }
+  : Constructor ProgVarWildSeq '->' Exp { ($1, toLamFun $4 $2) }
 
 Op :: { ProgVar }
    : '||'   { mkVar (pos $1) "(||)"      }

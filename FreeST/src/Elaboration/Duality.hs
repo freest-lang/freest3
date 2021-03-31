@@ -47,7 +47,7 @@ instance Duality E.Exp where
 
 -- This should be an instance but it overlaps with that one of ParseEnv
 resolveFieldMap :: FieldMap -> FreestState FieldMap
-resolveFieldMap = mapM (\(xs, e) -> (xs,) <$> resolve e)
+resolveFieldMap m = pure m -- mapM (\(xs, e) -> (xs,) <$> resolve e)
 
 instance Duality (K.Bind Exp) where
   resolve (K.Bind p a k e) = K.Bind p a k <$> resolve e

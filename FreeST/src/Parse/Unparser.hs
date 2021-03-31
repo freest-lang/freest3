@@ -172,6 +172,7 @@ instance Show T.Type where
   show = snd . unparse
 
 instance Unparse T.Type where
+  unparse (T.Bottom       ) = (maxRator, "Bottom") -- remove
   unparse (T.Int  _       ) = (maxRator, "Int")
   unparse (T.Char _       ) = (maxRator, "Char")
   unparse (T.Bool _       ) = (maxRator, "Bool")
@@ -301,8 +302,8 @@ instance Unparse Exp where
 showFieldMap :: FieldMap -> String
 showFieldMap m = intercalate "; " $ map showAssoc (Map.toList m)
  where
-  showAssoc (b, (a, v)) =
-    show b ++ " " ++ unwords (map show a) ++ " -> " ++ show v
+  showAssoc (b, e) =
+    show b ++ " -> " ++  show e --unwords (map show a) ++ " -> " ++ show v
 
 isOp :: [String] -> ProgVar -> Bool
 isOp ops x = show x `elem` ops

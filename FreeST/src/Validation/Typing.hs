@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 {-|
 Module      :  Validation.Typing
 Description :  Checking the good formation of expressions
@@ -137,15 +138,28 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
   quotient kEnv y
   return t2
 -- Datatype elimination
-synthetise kEnv (E.Case p e fm) =
-  synthetiseFieldMap p "case" kEnv e fm Extract.datatypeMap paramsToVEnvCM
+synthetise kEnv (E.Case p e fm) = do
+  -- TODO:
+  t <- synthetise kEnv e
+--  debugM $ "t: " ++ show t
+  tm <- Extract.datatypeMap e t
+--  debugM $ "tm: " ++ show tm
+  -- when (Map.size fm /= Map.size tm) (error "diff sizes")
+  vEnv <- getVEnv
+  (t:ts, v:vs) <- Map.foldrWithKey
+    (synthetiseField kEnv vEnv tm) (return ([],[])) fm
+  mapM_ (checkEquivTypes e kEnv t)          ts
+  mapM_ (checkEquivEnvs p "case" kEnv v) vs
+  setVEnv v
+  return (returnType t)
+--  synthetiseFieldMap p "case" kEnv e fm Extract.datatypeMap paramsToVEnvCM
 -- Session types
 synthetise kEnv (E.New p t u) = do
   K.checkAgainstSession kEnv t
   return $ T.Pair p t u
 synthetise _ e@(E.Select _ _) = addPartiallyAppliedError e "channel"
-synthetise kEnv (E.Match p e fm) =
-  synthetiseFieldMap p "match" kEnv e fm Extract.inChoiceMap paramsToVEnvMM
+synthetise kEnv (E.Match p e fm) = error "Sorry, Cannot do match yet"
+--  synthetiseFieldMap p "match" kEnv e fm Extract.inChoiceMap paramsToVEnvMM
 
 -- | Returns the type scheme for a variable; removes it from vEnv if lin
 synthetiseVar :: K.KindEnv -> ProgVar -> FreestState T.Type
@@ -168,63 +182,82 @@ synthetiseVar kEnv x = getFromVEnv x >>= \case
     addToVEnv x s
     return s
 
-synthetiseFieldMap
-  :: Pos
-  -> String
-  -> K.KindEnv
-  -> E.Exp
-  -> E.FieldMap
-  -> (E.Exp -> T.Type -> FreestState T.TypeMap)
-  -> (ProgVar -> [ProgVar] -> T.Type -> FreestState ())
-  -> FreestState T.Type
-synthetiseFieldMap p branching kEnv e fm extract params = do
-  t  <- synthetise kEnv e
-  tm <- extract e t
-  if Map.size fm /= Map.size tm
-    then do
-      addError
-        p
-        [ Error "Wrong number of constructors\n"
-        , Error "\t The expression has"
-        , Error $ Map.size fm
-        , Error "constructor(s)\n"
-        , Error "\t but the type has"
-        , Error $ Map.size tm
-        , Error "constructor(s)\n"
-        , Error "\t in case/match"
---        , Error $ "\ESC[91m" ++ showFieldMap 1 fm ++ "\ESC[0m"
-        , Error $ "\ESC[91m{" ++ showFieldMap fm ++ "}\ESC[0m"
-        ]
-      return $ omission p
-    else do
-      vEnv             <- getVEnv
-      (t : ts, v : vs) <- Map.foldrWithKey
-        (synthetiseField vEnv kEnv params tm)
-        (return ([], []))
-        fm
-      mapM_ (checkEquivTypes e kEnv t)          ts
-      mapM_ (checkEquivEnvs p branching kEnv v) vs
-      setVEnv v
-      return t
 
-synthetiseField
-  :: VarEnv
-  -> K.KindEnv
-  -> (ProgVar -> [ProgVar] -> T.Type -> FreestState ())
-  -> T.TypeMap
-  -> ProgVar
-  -> ([ProgVar], E.Exp)
-  -> FreestState ([T.Type], [VarEnv])
-  -> FreestState ([T.Type], [VarEnv])
-synthetiseField vEnv1 kEnv params tm b (bs, e) state = do
-  (ts, vEnvs) <- state
-  setVEnv vEnv1
-  t1 <- synthetiseCons b tm
-  params b bs t1
-  t2 <- fillFunType kEnv b e t1
-  mapM_ (quotient kEnv) bs
+returnType :: T.Type -> T.Type
+returnType (T.Fun _ _ _ t2) = returnType t2
+returnType t = t
+
+synthetiseField :: K.KindEnv -> VarEnv -> T.TypeMap -> ProgVar -> E.Exp ->
+                   FreestState ([T.Type],[VarEnv]) ->
+                   FreestState ([T.Type],[VarEnv])
+synthetiseField kEnv vEnv tm x e state = do
+  (types, envs) <- state
+--  setVEnv vEnv
+--  debugM $ "synthetising cons... " ++ show x
+  t <- synthetise kEnv e
+--  debugM $ "got type ... " ++ show t
   vEnv2 <- getVEnv
-  return (t2 : ts, vEnv2 : vEnvs)
+  setVEnv vEnv  
+  return (returnType t:types, vEnv2:envs)  
+
+
+-- synthetiseFieldMap
+--   :: Pos
+--   -> String
+--   -> K.KindEnv
+--   -> E.Exp
+--   -> E.FieldMap
+--   -> (E.Exp -> T.Type -> FreestState T.TypeMap)
+--   -> (ProgVar -> [ProgVar] -> T.Type -> FreestState ())
+--   -> FreestState T.Type
+-- synthetiseFieldMap p branching kEnv e fm extract params = do
+--   t  <- synthetise kEnv e
+--   tm <- extract e t
+--   if Map.size fm /= Map.size tm
+--     then do
+--       addError
+--         p
+--         [ Error "Wrong number of constructors\n"
+--         , Error "\t The expression has"
+--         , Error $ Map.size fm
+--         , Error "constructor(s)\n"
+--         , Error "\t but the type has"
+--         , Error $ Map.size tm
+--         , Error "constructor(s)\n"
+--         , Error "\t in case/match"
+-- --        , Error $ "\ESC[91m" ++ showFieldMap 1 fm ++ "\ESC[0m"
+--         , Error $ "\ESC[91m{" ++ showFieldMap fm ++ "}\ESC[0m"
+--         ]
+--       return $ omission p
+--     else do
+--       vEnv             <- getVEnv
+--       (t : ts, v : vs) <- Map.foldrWithKey
+--         (synthetiseField vEnv kEnv params tm)
+--         (return ([], []))
+--         fm
+--       mapM_ (checkEquivTypes e kEnv t)          ts
+--       mapM_ (checkEquivEnvs p branching kEnv v) vs
+--       setVEnv v
+--       return t
+
+-- synthetiseField
+--   :: VarEnv
+--   -> K.KindEnv
+--   -> (ProgVar -> [ProgVar] -> T.Type -> FreestState ())
+--   -> T.TypeMap
+--   -> ProgVar
+--   -> ([ProgVar], E.Exp)
+--   -> FreestState ([T.Type], [VarEnv])
+--   -> FreestState ([T.Type], [VarEnv])
+-- synthetiseField vEnv1 kEnv params tm b (bs, e) state = do
+--   (ts, vEnvs) <- state
+--   setVEnv vEnv1
+--   t1 <- synthetiseCons b tm
+--   params b bs t1
+--   t2 <- fillFunType kEnv b e t1
+--   mapM_ (quotient kEnv) bs
+--   vEnv2 <- getVEnv
+--   return (t2 : ts, vEnv2 : vEnvs)
 
 -- match map
 paramsToVEnvMM :: ProgVar -> [ProgVar] -> T.Type -> FreestState ()

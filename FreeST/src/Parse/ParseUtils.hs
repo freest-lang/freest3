@@ -29,6 +29,7 @@ module Parse.ParseUtils
   , FreestStateT
   , thenM
   , returnM
+  , toLamFun
 -- , failM
   )
 where
@@ -198,8 +199,7 @@ checkDupFunDecl x = do
 -- OPERATORS
 
 binOp :: E.Exp -> ProgVar -> E.Exp -> E.Exp
-binOp left op =
-  E.App (pos left) (E.App (pos left) (E.Var (pos op) op) left)
+binOp left op = E.App (pos left) (E.App (pos left) (E.Var (pos op) op) left)
 
 unOp :: ProgVar -> E.Exp -> E.Exp
 unOp op expr = E.App (pos expr) (E.Var (pos op) op) expr
@@ -207,8 +207,12 @@ unOp op expr = E.App (pos expr) (E.Var (pos op) op) expr
 typeListToType :: TypeVar -> [(ProgVar, [T.Type])] -> [(ProgVar, T.Type)]
 typeListToType a = map (\(x, ts) -> (x, typeToFun ts))
   -- Convert a list of types and a final type constructor to a type
-
  where
 --  typeToFun []       = TypeName (pos a) a
   typeToFun []       = T.Var (pos a) a
   typeToFun (t : ts) = T.Fun (pos t) Un t (typeToFun ts)
+
+
+toLamFun :: E.Exp -> [ProgVar] -> E.Exp
+toLamFun = foldr
+  (\var acc -> E.Abs defaultPos $ E.Bind defaultPos Un var T.Bottom acc)

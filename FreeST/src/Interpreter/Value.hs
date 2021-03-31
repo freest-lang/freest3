@@ -25,6 +25,7 @@ data Value =
   | PrimitiveFun (Value -> Value)
   | Chan ChannelEnd
   | Fork
+--  | Branch Value
   | IOValue (IO Value)
 
 type Ctx = Map.Map ProgVar Value
@@ -44,6 +45,7 @@ instance Show Value where
   show Closure{}        = "<fun>"
   show PrimitiveFun{}   = "<fun>"
   show Chan{}           = "Skip" -- TODO: change this
+--  show Branch{}         = "<branch>" -- TODO: change this
   show Fork             = "fork"
   show IOValue{}        = "<IOValue>"
 
