@@ -12,27 +12,22 @@ Portability :  portable | non-portable (<reason>)
 -}
 
 module Validation.Contractive
-( Contractive(..)
-)
+  ( contractive
+  )
 where
 
+import           Syntax.TypeVariable
 import qualified Syntax.Kind as K
 import qualified Syntax.Type as T
-import           Syntax.TypeVariable
 import           Validation.Terminated
+import qualified Data.Set as Set
 
-class Contractive a where
-  contractive :: TypeVar -> a -> Bool
+contractive :: K.PolyVars -> TypeVar -> T.Type -> Bool
+contractive s a (T.Semi _ t u)
+  | terminated t                              = contractive s a u
+  | otherwise                                 = contractive s a t
+contractive s a (T.Rec _ (K.Bind _ _ _ t))    = contractive s a t
+contractive s a (T.Forall _ (K.Bind _ _ _ t)) = contractive s a t
+contractive s a (T.Var _ b)                   = b `Set.notMember` s && a /= b
+contractive _ _ _                             = True
 
-instance Contractive T.Type where
-  contractive a (T.Semi _ t u)
-    | terminated t = contractive a u
-    | otherwise    = contractive a t
-  contractive a (T.Rec _ b) = contractive a b
-  contractive a (T.Forall _ b) = contractive a b
-  contractive a (T.Var _ b) = a /= b
-  contractive _ (T.Skip _) = False
-  contractive _ _ = True
-
-instance Contractive t => Contractive (K.Bind t) where
-  contractive a (K.Bind _ _ _ t) = contractive a t

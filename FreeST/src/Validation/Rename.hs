@@ -42,6 +42,7 @@ import           Util.FreestState
 import           Util.PreludeLoader             ( userDefined )
 import qualified Data.Map.Strict               as Map
 import           Control.Monad.State
+import qualified Data.Set as Set
 
 renameState :: FreestState ()
 renameState = do
@@ -87,8 +88,10 @@ instance Rename E.Bind where
 -- Types
 
 instance Rename T.Type where
-  rename bs t | terminated t = return $ T.Skip (pos t)
-              | otherwise    = rename' bs t
+  rename = rename'
+  -- rename bs t
+  --   | terminated Set.empty t = return $ T.Skip (pos t)
+  --   | otherwise              = rename' bs t
 
 rename' :: Bindings -> T.Type -> FreestState T.Type
     -- Functional types

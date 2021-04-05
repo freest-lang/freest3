@@ -7,15 +7,16 @@ module Util.ErrorMessage
   )
 where
 
-import           Data.List                      ( intercalate )
 import           Syntax.Base
-import           Syntax.Expression
+import           Syntax.Expression             as E
 import qualified Syntax.Kind                   as K
 import           Syntax.Program
 import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
+import           Parse.Unparser
 import           Util.GetTOps
+import           Data.List                      ( intercalate )
 
 -- | Error class and instances
 
@@ -39,7 +40,7 @@ instance ErrorMsg String where
   msg _ s = s
   color _ = Nothing
 
-instance ErrorMsg Exp where
+instance ErrorMsg E.Exp where
   msg tops e = show $ getDefault tops e
   color _ = Just Red
 
@@ -79,11 +80,11 @@ showTypeList tops ts = "[" ++ intercalate ", " types ++ "]"
   where types = map (show . getDefault tops) ts
 
 instance ErrorMsg [K.Bind T.Type] where
-  msg _ = show
+  msg _ = concat . map showBindType
   color _ = Just Red
 
-instance ErrorMsg [K.Bind Exp] where
-  msg _ = show
+instance ErrorMsg [K.Bind E.Exp] where
+  msg _ = concat . map showBindExp
   color _ = Just Red
 
 
