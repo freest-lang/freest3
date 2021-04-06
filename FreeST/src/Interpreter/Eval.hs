@@ -41,6 +41,9 @@ eval ctx eenv (E.Var    _ x                  ) = evalVar ctx eenv x
 eval ctx eenv (E.TypeApp _ x _               ) = eval ctx eenv x
 eval ctx eenv (E.TypeAbs _ (K.Bind _ _ _ e  )) = eval ctx eenv e
 eval ctx _    (E.Abs     _ (E.Bind _ _ x _ e)) = return $ Closure x e ctx
+eval ctx eenv (E.App p (E.TypeApp _ (E.Var _ x) t) e)
+  | x == mkVar p "branch" =
+      eval ctx eenv e                                                        
 eval ctx eenv (E.App _ e1 e2                 ) = eval ctx eenv e1 >>= \case
   (Closure x e ctx') -> do
     !v <- eval ctx eenv e2
@@ -85,20 +88,23 @@ eval _   _    E.New{}        = do
 eval _ _ (E.Select _ x) = return
   $ PrimitiveFun (\(Chan c) -> IOValue $ fmap Chan (send (Label (show x)) c))
 
-eval ctx eenv (E.Match _ e m) = do
-  (Chan c)       <- eval ctx eenv e
+eval ctx eenv (E.Match _ e m) =
+  eval ctx eenv e >>= evalMatch ctx eenv m
+  
+evalMatch ctx eenv m (Chan c) = do
   (Label !v, !c) <- receive c
   let (patterns : _, e) = m Map.! mkVar defaultPos v
   let ctx'              = Map.insert patterns (Chan c) ctx
   eval ctx' eenv e
 
 evalCase :: Ctx -> Prog -> E.FieldMap -> Value -> IO Value
+evalCase ctx eenv m c@Chan{} = evalMatch ctx eenv m c
 evalCase ctx eenv m (Cons x xs) = do
   let !(patterns, e) = m Map.! x
   let lst            = zip patterns xs
   let ctx1 = foldl (\acc (c, y:_) -> Map.insert c y acc) ctx lst
   eval ctx1 eenv e
-evalCase _ _ _ _ = error "Internal error. Bug in FreeST" 
+evalCase _ _ _ v = internalError "Interpreter.Eval.evalCase" v
 
 
 -- TODO: change isADT definition
@@ -107,8 +113,7 @@ evalVar ctx eenv x | isADT x                      = return $ Cons x []
                    | Map.member x eenv            = eval ctx eenv (eenv Map.! x)
                    | Map.member x ctx             = return $ ctx Map.! x
                    | x == mkVar defaultPos "fork" = return Fork
-                   | x == mkVar defaultPos "flip" = return flip'
                    | otherwise = internalError "Interpreter.Eval.evalVar" x
-                  where
-                    flip' :: Value
-                    flip' = Integer 0 -- PrimitiveFun flip 
+                  -- where
+                  --   flip' :: Value
+                  --   flip' = Integer 0 -- PrimitiveFun flip 
