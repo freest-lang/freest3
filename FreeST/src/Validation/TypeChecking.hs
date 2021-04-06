@@ -104,7 +104,7 @@ checkMainFunction = do
 --  let main =  mkVar defaultPos "main"
   vEnv <- getVEnv
   if main `Map.notMember` vEnv
-    then addError defaultPos [Error "Function", Error main, Error "not defined"]
+    then addError defaultPos [Error "Function", Error main, Error "is not defined"]
     else do
       let t = vEnv Map.! main
       k <- K.synthetise Map.empty t
