@@ -53,13 +53,15 @@ synthetise _ (E.Bool p _  ) = return $ T.Bool p
 synthetise _ (E.Unit p    ) = return $ T.Unit p
 synthetise _ (E.String p _) = return $ T.String p
 -- Variable
-synthetise kEnv e@(E.Var p x)
-  | x == mkVar p "receive" = addPartiallyAppliedError e "channel"
-  | x == mkVar p "send" = addPartiallyAppliedError
-    e
-    "value and another denoting a channel"
-  | x == mkVar p "branch" = addPartiallyAppliedError e "channel"
-  | otherwise = synthetiseVar kEnv x
+synthetise kEnv (E.Var p x) =
+  synthetiseVar kEnv x
+-- synthetise kEnv e@(E.Var p x)
+--   | x == mkVar p "receive" = addPartiallyAppliedError e "channel"
+--   | x == mkVar p "send" = addPartiallyAppliedError
+--     e
+--     "value and another denoting a channel"
+--   | x == mkVar p "branch" = addPartiallyAppliedError e "channel"
+--   | otherwise = synthetiseVar kEnv x
 synthetise kEnv (E.UnLet _ x e1 e2) = do
   t1 <- synthetise kEnv e1
   addToVEnv x t1
@@ -82,6 +84,11 @@ synthetise kEnv (E.App p (E.Select _ c) e) = do
   t <- synthetise kEnv e
   m <- Extract.outChoiceMap e t
   Extract.constructor p m c
+  -- Fork e
+synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "fork" = do
+  t <- synthetise kEnv e
+  void $ K.checkAgainst kEnv (K.tu p) t
+  return $ T.Unit p
   -- Receive e
 synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "receive" = do
   t        <- synthetise kEnv e
@@ -89,14 +96,13 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "receive" = do
   void $ K.checkAgainst kEnv (K.ml (pos u1)) u1
   return $ T.Pair p u1 u2
   -- branch e
--- synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "branch" = do
 synthetise kEnv (E.App p (E.TypeApp _ (E.Var _ x) t) e)
   | x == mkVar p "branch" = do
     tm <- Extract.inChoiceMap e =<< synthetise kEnv e
     return $ T.Datatype p $ Map.map (\u -> T.Fun p Un u t) tm
   -- Send e
-synthetise _ e@(E.App p (E.Var _ x) _) | x == mkVar p "send" =
-  addPartiallyAppliedError e "channel"
+-- synthetise _ e@(E.App p (E.Var _ x) _) | x == mkVar p "send" =
+--   addPartiallyAppliedError e "channel"
   -- Send e1 e2
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkVar p "send" = do
   t        <- synthetise kEnv e2
@@ -152,8 +158,8 @@ synthetise kEnv (E.Case p e fm) =
 synthetise kEnv (E.New p t u) = do
   K.checkAgainstSession kEnv t
   return $ T.Pair p t u
-synthetise _    e@(E.Select _ _  ) = addPartiallyAppliedError e "channel"
-synthetise kEnv (  E.Match p e fm) =
+synthetise _ e@(E.Select _ _) = addPartiallyAppliedError e "channel"
+synthetise kEnv (E.Match p e fm) =
   synthetiseCase True "match" p kEnv e fm Extract.inChoiceMap
 
 -- | Returns the type of a variable; removes it from vEnv if lin
