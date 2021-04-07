@@ -74,11 +74,14 @@ typeList =
   , (mkVar p "printUnit"  , read "() -> ()")
   , (mkVar p "printUnitLn", read "() -> ()")
   , (mkVar p "printString", read "String -> ()")
-  , ( mkVar p "printStringLn", read "String -> ()")
+  , (mkVar p "printStringLn", read "String -> ()")
   -- Fork
-  , ( mkVar p "fork", read "∀ a:TU. a -> ()")
+  , (mkVar p "fork", read "∀a:TU. a -> ()")
   -- Error
-  , (mkVar p "error", read "∀ a:TU . String -> a")
+  , (mkVar p "error", read "∀a:TU . String -> a")
+  -- Session ops
+  , (mkVar p "send", read "∀a:ML . a -> ∀b:SL . !a;b -o b")
+  , (mkVar p "receive", read "∀a:ML . ∀b:SL . ?a;b -> (a, b)")
   ]
   where p = defaultPos
 
