@@ -55,15 +55,15 @@ returnM :: a -> ParseResult a
 returnM = Ok
 
 failM :: String -> ParseResult a
-failM = Failed
+failM s = Failed (defaultPos, s)
 
-catchM :: ParseResult a -> (String -> ParseResult a) -> ParseResult a
+catchM :: ParseResult a -> ((Pos, String) -> ParseResult a) -> ParseResult a
 catchM m k = case m of
   Ok     a -> Ok a
   Failed e -> k e
 
 
-data ParseResult a = Ok a | Failed String
+data ParseResult a = Ok a | Failed (Pos, String)
 type FreestStateT = StateT FreestS ParseResult
 
 instance Monad ParseResult where
@@ -72,7 +72,7 @@ instance Monad ParseResult where
   fail   = failM
 
 instance Applicative ParseResult where
---  
+--
   pure  = return
   (<*>) = ap
 

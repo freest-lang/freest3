@@ -18,12 +18,13 @@ import           Syntax.Type
 import           Data.Char
 import           Parse.Parser
 import Parse.Read
-import           Data.List                      ( intercalate )
+import           Data.List                      ( intercalate, sortBy )
 import           Data.List.Split                ( chunksOf )
 import qualified Data.Map.Strict               as Map
 import           Syntax.Kind                   ( KindEnv )
 import           Syntax.Base                    ( defaultPos
                                                 , mkVar
+                                                , Pos
                                                 )
 import           Util.FreestState              ( Errors )
 import Debug.Trace
@@ -46,7 +47,7 @@ readKenv s =
 
 
 
--- Test expectations 
+-- Test expectations
 
 -- WAS: type Expect = Either Bool String
 -- type Expect = Maybe Errors
@@ -73,8 +74,9 @@ instance {-# OVERLAPPING #-} Show TestExpectation where
   show (Left b)    = show b
   show (Right err) = err
 
-showErrors :: [String] -> String
-showErrors = intercalate "\n" . take 2
+showErrors :: [(Pos, String)] -> String
+showErrors = intercalate "\n" . map snd . sortBy cmp . take 2
+  where cmp err1 err2 = fst err1 `compare` fst err2
 
 testValidExpectation :: Bool -> Errors -> TestExpectation
 testValidExpectation b errs
