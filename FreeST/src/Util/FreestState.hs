@@ -59,6 +59,11 @@ module Util.FreestState
   , addToPEnv
   , getPEnv
   , setPEnv
+-- Run Options
+  , RunOpts(..)
+  , defaultOpts
+  , initialOpts
+  , getOpts
   )
 where
 
@@ -76,7 +81,10 @@ import           Util.Error
 -- import qualified Data.Set as Set
 import qualified Data.Traversable              as Traversable
 import           Util.ErrorMessage
+
+import           Control.Applicative
 import           Debug.Trace -- debug (used on debugM function)
+import           Data.Maybe
 
 -- | The typing state
 
@@ -86,7 +94,7 @@ type Errors = [(Pos, String)]
 type ParseEnv = Map.Map ProgVar ([ProgVar], Exp)
 
 data FreestS = FreestS {
-  filename  :: String
+  runOpts    :: RunOpts
 , varEnv    :: VarEnv
 , prog      :: Prog
 , typeEnv   :: TypeEnv
@@ -101,7 +109,7 @@ type FreestState = State FreestS
 -- | Initial State
 
 initialState :: String -> FreestS
-initialState f = FreestS { filename  = f
+initialState f = FreestS { runOpts   = initialOpts
                          , varEnv    = Map.empty
                          , prog      = Map.empty
                          , typeEnv   = Map.empty
@@ -138,7 +146,7 @@ getNextIndex = do
 -- | FILE NAME
 
 getFileName :: FreestState String
-getFileName = gets filename
+getFileName = fromMaybe "" . runFilePath <$> gets runOpts
 
 -- | VAR ENV
 
@@ -211,10 +219,8 @@ addDualof d@(T.Dualof p t) = do
   tn <- getTypeNames
   case tn Map.!? pos t of
     Just (T.Dualof _ _) -> return ()
-    Just u ->
-      modify (\s -> s { typenames = Map.insert p (T.Dualof p u) tn })
-    Nothing ->
-      modify (\s -> s { typenames = Map.insert p d tn })
+    Just u -> modify (\s -> s { typenames = Map.insert p (T.Dualof p u) tn })
+    Nothing -> modify (\s -> s { typenames = Map.insert p d tn })
 addDualof t = internalError "Util.FreestState.addDualof" t
 
 
@@ -260,3 +266,28 @@ debugM :: String -> FreestState ()
 debugM err = do
   i <- getNextIndex
   traceM $ "\n" ++ show i ++ ". " ++ err ++ "\n"
+
+-- | Run Options
+
+data RunOpts = RunOpts { runFilePath :: Maybe FilePath
+--                     , preludeFile :: Maybe FilePath
+                     , mainFunction :: Maybe ProgVar
+                     } deriving Show
+
+instance Semigroup RunOpts where
+  o1 <> o2 = RunOpts { runFilePath  = runFilePath o1 <|> runFilePath o2
+--                    , preludeFile  = preludeFile o1 <|> preludeFile o2
+                     , mainFunction = mainFunction o1 <|> mainFunction o2
+                     }
+
+defaultOpts :: RunOpts
+defaultOpts = RunOpts { runFilePath  = Nothing
+--                    , preludeFile  = Just "Prelude.fst"
+                      , mainFunction = Just $ mkVar defaultPos "main"
+                      }
+
+initialOpts :: RunOpts
+initialOpts = RunOpts Nothing Nothing -- Nothing
+
+getOpts :: FreestState RunOpts
+getOpts = gets runOpts

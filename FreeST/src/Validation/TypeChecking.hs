@@ -23,14 +23,15 @@ import           Control.Monad.State            ( when
                                                 , unless
                                                 )
 import qualified Data.Map.Strict               as Map
+import           Data.Maybe
 import           Syntax.Base
 import qualified Syntax.Expression             as E
+import qualified Syntax.Kind                   as K
 import           Syntax.Program                 ( noConstructors )
 import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
-import qualified Syntax.Kind                   as K
 import           Util.FreestState
-import           Util.PreludeLoader            ( userDefined )
+import           Util.PreludeLoader             ( userDefined )
 import qualified Validation.Kinding            as K
 import qualified Validation.Typing             as Typing -- Again
 
@@ -47,7 +48,7 @@ typeCheck = do
 
   -- * Check the formation of all type decls
 --  debugM "checking the formation of all type decls"
-  mapM_ (K.synthetise Map.empty . snd) =<< getTEnv 
+  mapM_ (K.synthetise Map.empty . snd) =<< getTEnv
 
   -- * Check the formation of all function signatures
 --  debugM "checking the formation of all function signatures (kinding)" 
@@ -99,15 +100,15 @@ checkFunBody f e = getFromVEnv f >>= \case
 
 checkMainFunction :: FreestState ()
 checkMainFunction = do
-  let main = mkVar defaultPos "main"
+  main <- fromJust . mainFunction <$> getOpts
+--  let main =  mkVar defaultPos "main"
   vEnv <- getVEnv
   if main `Map.notMember` vEnv
-    then addError defaultPos
-                  [Error "Function", Error main, Error "not defined"]
+    then addError defaultPos [Error "Function", Error main, Error "is not defined"]
     else do
       let t = vEnv Map.! main
       k <- K.synthetise Map.empty t
-      unless (not (K.isLin k)) $  addError
+      unless (not (K.isLin k)) $ addError
         defaultPos
         [ Error "The type of"
         , Error main
