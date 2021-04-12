@@ -294,9 +294,6 @@ instance Unparse Exp where
     l = bracket (unparse e1) Left inRator
     r = bracket (unparse e2) Right inRator
   unparse (E.Select _ l) = (appRator, "select " ++ show l) -- which rator?
-  unparse (E.Match _ e m) =
-    (inRator, "match " ++ s ++ " with {" ++ showFieldMap m ++ "}")
-    where s = bracket (unparse e) NonAssoc inRator
 
 showFieldMap :: FieldMap -> String
 showFieldMap m = intercalate "; " $ map showAssoc (Map.toList m)

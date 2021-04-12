@@ -90,16 +90,7 @@ eval _   _    E.New{}        = do
 
 eval _ _ (E.Select _ x) = return
   $ PrimitiveFun (\(Chan c) -> IOValue $ fmap Chan (send (Label (show x)) c))
-
-eval ctx eenv (E.Match _ e m) =
-  eval ctx eenv e >>= evalMatch ctx eenv m
   
-evalMatch ctx eenv m (Chan c) = do
-  (Label !v, !c) <- receive c
-  let (patterns : _, e) = m Map.! mkVar defaultPos v
-  let ctx'              = Map.insert patterns (Chan c) ctx
-  eval ctx' eenv e
-
 evalCase :: Ctx -> Prog -> E.FieldMap -> Value -> IO Value
 evalCase ctx eenv m c@Chan{} = evalMatch ctx eenv m c
 evalCase ctx eenv m (Cons x xs) = do
@@ -108,6 +99,12 @@ evalCase ctx eenv m (Cons x xs) = do
   let ctx1 = foldl (\acc (c, y:_) -> Map.insert c y acc) ctx lst
   eval ctx1 eenv e
 evalCase _ _ _ v = internalError "Interpreter.Eval.evalCase" v
+
+evalMatch ctx eenv m (Chan c) = do
+  (Label !v, !c) <- receive c
+  let (patterns : _, e) = m Map.! mkVar defaultPos v
+  let ctx'              = Map.insert patterns (Chan c) ctx
+  eval ctx' eenv e
 
 
 -- TODO: change isADT definition

@@ -160,8 +160,6 @@ synthetise kEnv (E.New p t u) = do
   K.checkAgainstSession kEnv t
   return $ T.Pair p t u
 synthetise _ e@(E.Select _ _) = addPartiallyAppliedError e "channel"
--- synthetise kEnv (E.Match p e fm) =
---   synthetiseCase True "match" p kEnv e fm Extract.inChoiceMap
 
 -- | Returns the type of a variable; removes it from vEnv if lin
 synthetiseVar :: K.KindEnv -> ProgVar -> FreestState T.Type
@@ -329,10 +327,6 @@ buildMap p tm fm
   = tMapWithKeyM (buildAbstraction tm) fm
 
 
--- The Bool parameters is because we decided to keep match for a while. Thus, we
--- need can't calculate the number of arguments in the same way as we do for
--- case. When we remove match we can safely remove this argument and everything
--- will keep working as expect
 buildAbstraction
   :: T.TypeMap
   -> ProgVar

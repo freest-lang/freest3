@@ -51,7 +51,6 @@ data Exp =
   -- Session types
   | New Pos T.Type T.Type
   | Select Pos ProgVar
-  | Match Pos Exp FieldMap
 
 type FieldMap = Map.Map ProgVar ([ProgVar], Exp)
 
@@ -72,7 +71,6 @@ instance Position Exp where
   pos (BinLet p _ _ _ _   ) = p
   pos (New p _ _          ) = p
   pos (Select p _         ) = p
-  pos (Match p _ _        ) = p
   pos (Case  p _ _        ) = p
 
 -- Bind
