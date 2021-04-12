@@ -46,14 +46,13 @@ import           Data.Functor
 
 synthetise :: K.KindEnv -> E.Exp -> FreestState T.Type
 -- Basic expressions
-synthetise _ (E.Int  p _  ) = return $ T.Int p
-synthetise _ (E.Char p _  ) = return $ T.Char p
-synthetise _ (E.Bool p _  ) = return $ T.Bool p
-synthetise _ (E.Unit p    ) = return $ T.Unit p
-synthetise _ (E.String p _) = return $ T.String p
+synthetise _    (E.Int  p _       ) = return $ T.Int p
+synthetise _    (E.Char p _       ) = return $ T.Char p
+synthetise _    (E.Bool p _       ) = return $ T.Bool p
+synthetise _    (E.Unit p         ) = return $ T.Unit p
+synthetise _    (E.String p _     ) = return $ T.String p
 -- Variable
-synthetise kEnv (E.Var p x) =
-  synthetiseVar kEnv x
+synthetise kEnv (E.Var    p x     ) = synthetiseVar kEnv x
 -- synthetise kEnv e@(E.Var p x)
 --   | x == mkVar p "receive" = addPartiallyAppliedError e "channel"
 --   | x == mkVar p "send" = addPartiallyAppliedError
@@ -95,16 +94,13 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "receive" = do
   void $ K.checkAgainst kEnv (K.ml (pos u1)) u1
   return $ T.Pair p u1 u2
   -- branch e
-synthetise kEnv (E.App _ (E.Var p x) e)
-  | x == mkVar p "branch" = do
-    tm <- Extract.inChoiceMap e =<< synthetise kEnv e
-    return $ T.Datatype p $ Map.map (\u -> T.Fun p Un u (T.Int defaultPos)) tm
---    return $ T.Datatype p $ Map.map (\u -> T.Fun p Un u (T.Int defaultPos)) tm
-    
-synthetise kEnv (E.App p (E.TypeApp _ (E.Var _ x) t) e)
-  | x == mkVar p "branch" = do
-    tm <- Extract.inChoiceMap e =<< synthetise kEnv e
-    return $ T.Datatype p $ Map.map (\u -> T.Fun p Un u t) tm
+synthetise kEnv (E.App _ (E.Var p x) e) | x == mkVar p "branch" = do
+  tm <- Extract.inChoiceMap e =<< synthetise kEnv e
+  return $ T.Datatype p $ Map.map (\u -> T.Fun p Un u (T.Unit defaultPos)) tm
+-- synthetise kEnv (E.App p (E.TypeApp _ (E.Var _ x) t) e)
+--   | x == mkVar p "branch" = do
+--     tm <- Extract.inChoiceMap e =<< synthetise kEnv e
+--     return $ T.Datatype p $ Map.map (\u -> T.Fun p Un u t) tm
   -- Send e
 -- synthetise _ e@(E.App p (E.Var _ x) _) | x == mkVar p "send" =
 --   addPartiallyAppliedError e "channel"
@@ -126,7 +122,7 @@ synthetise kEnv (E.TypeAbs _ (K.Bind p a k e)) = -- do
   T.Forall p . K.Bind p a k <$> synthetise (Map.insert a k kEnv) e
 -- Type application
 synthetise kEnv (E.TypeApp _ e t) = do
-  u                              <- synthetise kEnv e
+  u                               <- synthetise kEnv e
   ~(T.Forall _ (K.Bind _ y k u')) <- Extract.forall e u
   void $ K.checkAgainst kEnv k t
   return $ Rename.subs t y u'
@@ -158,14 +154,14 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
   return t2
 -- Datatype elimination
 synthetise kEnv (E.Case p e fm) =
-  synthetiseCase False "case" p kEnv e fm Extract.datatypeMap
+  synthetiseCase p kEnv e fm Extract.datatypeMap
 -- Session types
 synthetise kEnv (E.New p t u) = do
   K.checkAgainstSession kEnv t
   return $ T.Pair p t u
 synthetise _ e@(E.Select _ _) = addPartiallyAppliedError e "channel"
-synthetise kEnv (E.Match p e fm) =
-  synthetiseCase True "match" p kEnv e fm Extract.inChoiceMap
+-- synthetise kEnv (E.Match p e fm) =
+--   synthetiseCase True "match" p kEnv e fm Extract.inChoiceMap
 
 -- | Returns the type of a variable; removes it from vEnv if lin
 synthetiseVar :: K.KindEnv -> ProgVar -> FreestState T.Type
@@ -258,8 +254,7 @@ checkAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
 -- checkAgainst kEnv (App p e1 e2) u = do
 --   t <- synthetise kEnv e2
 --   checkAgainst kEnv e1 (Fun p Un/Lin t u)
-checkAgainst kEnv e t = do
-  checkEquivTypes e kEnv t =<< synthetise kEnv e
+checkAgainst kEnv e t = checkEquivTypes e kEnv t =<< synthetise kEnv e
 
 -- EQUALITY AND EQUIVALENCE CHECKING
 
@@ -314,21 +309,24 @@ checkEquivEnvs p branching kEnv vEnv1 vEnv2 = do
 
 -- TODO: later, turn into warning
 -- TODO: remove bool and string (see comment below)
-buildMap :: Bool -> String -> Pos -> T.TypeMap -> E.FieldMap -> FreestState E.FieldMap
-buildMap b s p tm fm
-  | Map.size tm /= Map.size fm = addError p
-     [ Error "Wrong number of constructors\n"
-     , Error "\t The expression has"
-     , Error $ Map.size fm
-     , Error "constructor(s)\n"
-     , Error "\t but the type has"
-     , Error $ Map.size tm
-     , Error "constructor(s)\n"
-     , Error $ "\t in " ++ s
-     , Error $ "\ESC[91m{" ++ showFieldMap fm ++ "}\ESC[0m"
-     ]
-     >> pure fm
-  | otherwise = tMapWithKeyM (buildAbstraction b tm) fm
+buildMap :: Pos -> T.TypeMap -> E.FieldMap -> FreestState E.FieldMap
+buildMap p tm fm
+  | Map.size tm /= Map.size fm
+  = addError
+      p
+      [ Error "Wrong number of constructors\n"
+      , Error "\t The expression has"
+      , Error $ Map.size fm
+      , Error "constructor(s)\n"
+      , Error "\t but the type has"
+      , Error $ Map.size tm
+      , Error "constructor(s)\n"
+      , Error $ "\t in case "
+      , Error $ "\ESC[91m{" ++ showFieldMap fm ++ "}\ESC[0m"
+      ]
+    >> pure fm
+  | otherwise
+  = tMapWithKeyM (buildAbstraction tm) fm
 
 
 -- The Bool parameters is because we decided to keep match for a while. Thus, we
@@ -336,19 +334,14 @@ buildMap b s p tm fm
 -- case. When we remove match we can safely remove this argument and everything
 -- will keep working as expect
 buildAbstraction
-  :: Bool
-  -> T.TypeMap
+  :: T.TypeMap
   -> ProgVar
   -> ([ProgVar], E.Exp)
   -> FreestState ([ProgVar], E.Exp)
-buildAbstraction b tm x (xs, e) = case tm Map.!? x of
-  Just t -> if
-    | b && 1 /= length xs ->
-        diffArgsErr 1 $> (xs, e)
-    | not b && numberOfArgs t /= length xs ->
-        diffArgsErr (numberOfArgs t) $> (xs, e)
-    | otherwise ->
-        (xs, ) <$> buildAbstraction' (xs, e) t
+buildAbstraction tm x (xs, e) = case tm Map.!? x of
+  Just t -> if numberOfArgs t /= length xs
+    then diffArgsErr (numberOfArgs t) $> (xs, e)
+    else (xs, ) <$> buildAbstraction' (xs, e) t
   Nothing ->
     addError (pos x) [Error "Data constructor", Error x, Error "not in scope"]
       $> (xs, e)
@@ -377,20 +370,22 @@ buildAbstraction b tm x (xs, e) = case tm Map.!? x of
   numberOfArgs (T.Fun _ _ _ t) = 1 + numberOfArgs t
   numberOfArgs _               = 0
 
-
--- remove bool and string comment above
-synthetiseCase :: Bool -> String -> Pos -> K.KindEnv -> E.Exp -> E.FieldMap -> 
-                  (E.Exp -> T.Type -> FreestState T.TypeMap) ->
-                  FreestState T.Type
-synthetiseCase b branching p kEnv e fm extract = do
-  tm               <- extract e =<< synthetise kEnv e
-  newMap           <- buildMap b branching p tm fm
-  vEnv             <- getVEnv
-  ~(t : ts, v : vs) <- Map.foldrWithKey (synthetiseMap kEnv vEnv)
-                                       (return ([], []))
-                                       newMap
-  mapM_ (checkEquivTypes e kEnv t)        ts
-  mapM_ (checkEquivEnvs p branching kEnv v) vs
+synthetiseCase
+  :: Pos
+  -> K.KindEnv
+  -> E.Exp
+  -> E.FieldMap
+  -> (E.Exp -> T.Type -> FreestState T.TypeMap)
+  -> FreestState T.Type
+synthetiseCase p kEnv e fm extract = do
+  tm                <- extract e =<< synthetise kEnv e
+  newMap            <- buildMap p tm fm
+  vEnv              <- getVEnv
+  ~(t : ts, v : vs) <- Map.foldr (synthetiseMap kEnv vEnv)
+                                 (return ([], []))
+                                 newMap
+  mapM_ (checkEquivTypes e kEnv t)       ts
+  mapM_ (checkEquivEnvs p "case" kEnv v) vs
   setVEnv v
   return t
 
@@ -398,11 +393,10 @@ synthetiseCase b branching p kEnv e fm extract = do
 synthetiseMap
   :: K.KindEnv
   -> VarEnv
-  -> ProgVar
   -> ([ProgVar], E.Exp)
   -> FreestState ([T.Type], [VarEnv])
   -> FreestState ([T.Type], [VarEnv])
-synthetiseMap kEnv vEnv k (x, e) state = do
+synthetiseMap kEnv vEnv (x, e) state = do
   (ts, envs) <- state
   t          <- synthetise kEnv e
   env        <- getVEnv
