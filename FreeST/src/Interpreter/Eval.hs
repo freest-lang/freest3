@@ -41,6 +41,9 @@ eval ctx eenv (E.Var    _ x                  ) = evalVar ctx eenv x
 eval ctx eenv (E.TypeApp _ x _               ) = eval ctx eenv x
 eval ctx eenv (E.TypeAbs _ (K.Bind _ _ _ e  )) = eval ctx eenv e
 eval ctx _    (E.Abs     _ (E.Bind _ _ x _ e)) = return $ Closure x e ctx
+eval ctx eenv (E.App p (E.Var _ x) e)
+  | x == mkVar p "branch" =
+      eval ctx eenv e                                                        
 eval ctx eenv (E.App p (E.TypeApp _ (E.Var _ x) t) e)
   | x == mkVar p "branch" =
       eval ctx eenv e                                                        

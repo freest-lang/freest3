@@ -11,9 +11,8 @@ Portability :  portable | non-portable (<reason>)
 A bidirectional type system.
 -}
 
-{-# LANGUAGE LambdaCase, TupleSections, NoMonadFailDesugaring, MultiWayIf #-}
+{-# LANGUAGE LambdaCase, TupleSections, MultiWayIf #-}
 
--- TODO: remove NoMonadFailDesugaring and add an instance monad fail
 module Validation.Typing
   ( synthetise
   , checkAgainst
@@ -96,6 +95,12 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "receive" = do
   void $ K.checkAgainst kEnv (K.ml (pos u1)) u1
   return $ T.Pair p u1 u2
   -- branch e
+synthetise kEnv (E.App _ (E.Var p x) e)
+  | x == mkVar p "branch" = do
+    tm <- Extract.inChoiceMap e =<< synthetise kEnv e
+    return $ T.Datatype p $ Map.map (\u -> T.Fun p Un u (T.Int defaultPos)) tm
+--    return $ T.Datatype p $ Map.map (\u -> T.Fun p Un u (T.Int defaultPos)) tm
+    
 synthetise kEnv (E.App p (E.TypeApp _ (E.Var _ x) t) e)
   | x == mkVar p "branch" = do
     tm <- Extract.inChoiceMap e =<< synthetise kEnv e
@@ -122,7 +127,7 @@ synthetise kEnv (E.TypeAbs _ (K.Bind p a k e)) = -- do
 -- Type application
 synthetise kEnv (E.TypeApp _ e t) = do
   u                              <- synthetise kEnv e
-  (T.Forall _ (K.Bind _ y k u')) <- Extract.forall e u
+  ~(T.Forall _ (K.Bind _ y k u')) <- Extract.forall e u
   void $ K.checkAgainst kEnv k t
   return $ Rename.subs t y u'
 -- Boolean elimination
@@ -381,7 +386,7 @@ synthetiseCase b branching p kEnv e fm extract = do
   tm               <- extract e =<< synthetise kEnv e
   newMap           <- buildMap b branching p tm fm
   vEnv             <- getVEnv
-  (t : ts, v : vs) <- Map.foldrWithKey (synthetiseMap kEnv vEnv)
+  ~(t : ts, v : vs) <- Map.foldrWithKey (synthetiseMap kEnv vEnv)
                                        (return ([], []))
                                        newMap
   mapM_ (checkEquivTypes e kEnv t)        ts
