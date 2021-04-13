@@ -6,8 +6,8 @@ Int
 
 -- Tuple destructor
 
-let (x, y, z) = (6, True, 'a') in y
-Bool
+-- let (x, y, z) = (6, True, 'a') in y
+-- Bool
 
 (\x : Int -> x)
 Int -> Int
@@ -36,3 +36,17 @@ Int
 
 (Λa b => λx:a y:b -> Λc => λz:(a -> b -> c) -> z x y) [Int, Bool]
 Int -> Bool -> ∀c . (Int -> Bool -> c) -> c
+
+
+-- Lambda applied
+
+(λx:Int → x) 23
+Int
+
+(λ_:Bool → λy:Int → y) False 23
+Int
+
+-- Rec skip
+
+(\_:(rec x:SU. Skip, Skip) -> λy:Int -> y) (new Skip) 23
+Int
