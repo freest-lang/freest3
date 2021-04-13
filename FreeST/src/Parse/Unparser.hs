@@ -286,7 +286,7 @@ instance Unparse Exp where
     s2 = bracket (unparse e2) NonAssoc inRator
     s3 = bracket (unparse e3) Right inRator
   -- Unary Let
-  unparse (E.New _ t _) = (newRator, "let " ++ show t)
+  unparse (E.New _ t _) = (newRator, "new " ++ show t)
   -- Session expressions
   unparse (E.UnLet _ x e1 e2) =
     (inRator, "let " ++ show x ++ " = " ++ l ++ " in " ++ r)
