@@ -66,7 +66,7 @@ instance Position Exp where
   pos (App p _ _          ) = p
   pos (TypeApp p _ _      ) = p
   pos (TypeAbs p _        ) = p
-  pos (Cond p _ _ _) = p
+  pos (Cond p _ _ _       ) = p
   pos (Pair p _ _         ) = p
   pos (BinLet p _ _ _ _   ) = p
   pos (New p _ _          ) = p

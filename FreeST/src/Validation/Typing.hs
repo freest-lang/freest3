@@ -93,8 +93,8 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "receive" = do
   (u1, u2) <- Extract.input e t
   void $ K.checkAgainst kEnv (K.ml (pos u1)) u1
   return $ T.Pair p u1 u2
-  -- branch e
-synthetise kEnv (E.App _ (E.Var p x) e) | x == mkVar p "branch" = do
+  -- collect e
+synthetise kEnv (E.App _ (E.Var p x) e) | x == mkVar p "collect" = do
   tm <- Extract.inChoiceMap e =<< synthetise kEnv e
   return $ T.Datatype p $ Map.map (\u -> T.Fun p Un u (T.Unit defaultPos)) tm
 -- synthetise kEnv (E.App p (E.TypeApp _ (E.Var _ x) t) e)
