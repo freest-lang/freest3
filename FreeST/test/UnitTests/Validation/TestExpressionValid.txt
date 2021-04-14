@@ -1,7 +1,43 @@
+
+-- Simple tests
+
+div 50 10
+Int
+
+254-231
+Int
+
+74 + 36
+Int
+
+55555*23
+Int
+
+-- succ'
+(λx:Int → x+1) 22
+Int
+
+-- max'
+(λx:Int y:Int → if x >= y then x else y) 17 23
+Int
+
+-- min'
+(λx:Int y:Int → if x < y then x else y) 17 23
+Int
+
+-- pred'
+
+(λx:Int → x-1) 1905
+Int
+
 let (x, y) = (2, True) in y
 Bool
 
 let (x, y) = (2, True) in x
+Int
+
+-- id
+(Λa:TU => λx:a → x)[Int] 5
 Int
 
 -- Tuple destructor
