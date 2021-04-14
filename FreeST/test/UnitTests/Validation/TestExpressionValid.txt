@@ -50,3 +50,6 @@ Int
 
 (\_:(rec x:SU. Skip, Skip) -> λy:Int -> y) (new Skip) 23
 Int
+
+(\_:Skip -> λy:Int -> y) (fst [Skip, Skip](new Skip)) 23
+Int
