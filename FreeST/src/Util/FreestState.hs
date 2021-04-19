@@ -68,7 +68,7 @@ module Util.FreestState
 where
 
 import           Control.Monad.State
-import           Data.List                      ( intercalate )
+import           Data.List                      ( intercalate, sortBy )
 import qualified Data.Map.Strict               as Map
 import           Syntax.Base
 import           Syntax.Expression
@@ -89,7 +89,7 @@ import           Data.Maybe
 -- | The typing state
 
 -- type Errors = Set.Set String
-type Errors = [String]
+type Errors = [(Pos, String)]
 
 type ParseEnv = Map.Map ProgVar ([ProgVar], Exp)
 
@@ -227,7 +227,10 @@ addDualof t = internalError "Util.FreestState.addDualof" t
 -- | ERRORS
 
 getErrors :: FreestS -> String
-getErrors = intercalate "\n" . take 10 . errors
+getErrors = intercalate "\n" . map snd . sortBy errCmp . take 10 . errors
+
+errCmp :: (Pos, String) -> (Pos, String) -> Ordering
+errCmp (p1, _) (p2, _) = compare p1 p2
 
 hasErrors :: FreestS -> Bool
 hasErrors = not . null . errors
@@ -237,9 +240,9 @@ addError p em = do
   f    <- getFileName
   tops <- getTypeNames
   let es = formatErrorMessages tops p f em
-  modify (\s -> s { errors = insertError (errors s) es })
+  modify (\s -> s { errors = insertError (errors s) (p, es) })
 
-insertError :: [String] -> String -> [String]
+insertError :: [(Pos, String)] -> (Pos, String) -> [(Pos, String)]
 insertError es err | err `elem` es = es
                    | otherwise     = es ++ [err]
 

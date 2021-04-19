@@ -149,8 +149,6 @@ instance Rename E.Exp where
     return $ E.UnLet p x' e1' e2'
   -- Session types
   rename bs (E.New p t u) = E.New p <$> rename bs t <*> rename bs u
-  rename bs (E.Match p e fm) =
-    E.Match p <$> rename bs e <*> tMapM (renameField bs) fm
   -- Otherwise: Unit, Integer, Character, Boolean, Select
   rename _ e = return e
 

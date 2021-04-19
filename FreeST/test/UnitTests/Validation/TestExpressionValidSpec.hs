@@ -12,6 +12,7 @@ import           Syntax.Expression
 import           Util.FreestState
 import           Util.PreludeLoader            ( prelude )
 import           Validation.Typing              ( checkAgainst )
+import Validation.Rename
 import Debug.Trace
 
 spec :: Spec
@@ -30,4 +31,7 @@ isExpr e t = testValidExpectation True (errors s) -- null (errors s)
  where
   s    = execState test
          (initialState "Check Against Expression") { varEnv = prelude }
-  test = join $ checkAgainst Map.empty <$> Dual.resolve e <*> Dual.resolve t
+  test = do
+    t' <- rename Map.empty =<< Dual.resolve t
+    e' <- rename Map.empty =<< Dual.resolve e
+    checkAgainst Map.empty e' t'

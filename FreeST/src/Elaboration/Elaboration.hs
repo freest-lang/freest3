@@ -164,7 +164,6 @@ instance Elaboration Exp where
   elaborate (UnLet p x e1 e2) = UnLet p x <$> elaborate e1 <*> elaborate e2
   elaborate (New p t u      ) = New p <$> elaborate t <*> elaborate u
   elaborate e@Select{}        = pure e
-  elaborate (Match p e m)     = Match p <$> elaborate e <*> elaborate m
   elaborate e                 = return e
 
 instance Elaboration FieldMap where

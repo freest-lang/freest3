@@ -41,9 +41,8 @@ eval ctx eenv (E.Var    _ x                  ) = evalVar ctx eenv x
 eval ctx eenv (E.TypeApp _ x _               ) = eval ctx eenv x
 eval ctx eenv (E.TypeAbs _ (K.Bind _ _ _ e  )) = eval ctx eenv e
 eval ctx _    (E.Abs     _ (E.Bind _ _ x _ e)) = return $ Closure x e ctx
-eval ctx eenv (E.App p (E.TypeApp _ (E.Var _ x) t) e)
-  | x == mkVar p "branch" =
-      eval ctx eenv e                                                        
+eval ctx eenv (E.App p (E.Var _ x) e) | x == mkVar p "collect" =
+  eval ctx eenv e
 eval ctx eenv (E.App _ e1 e2                 ) = eval ctx eenv e1 >>= \case
   (Closure x e ctx') -> do
     !v <- eval ctx eenv e2
@@ -87,16 +86,7 @@ eval _   _    E.New{}        = do
 
 eval _ _ (E.Select _ x) = return
   $ PrimitiveFun (\(Chan c) -> IOValue $ fmap Chan (send (Label (show x)) c))
-
-eval ctx eenv (E.Match _ e m) =
-  eval ctx eenv e >>= evalMatch ctx eenv m
   
-evalMatch ctx eenv m (Chan c) = do
-  (Label !v, !c) <- receive c
-  let (patterns : _, e) = m Map.! mkVar defaultPos v
-  let ctx'              = Map.insert patterns (Chan c) ctx
-  eval ctx' eenv e
-
 evalCase :: Ctx -> Prog -> E.FieldMap -> Value -> IO Value
 evalCase ctx eenv m c@Chan{} = evalMatch ctx eenv m c
 evalCase ctx eenv m (Cons x xs) = do
@@ -105,6 +95,12 @@ evalCase ctx eenv m (Cons x xs) = do
   let ctx1 = foldl (\acc (c, y:_) -> Map.insert c y acc) ctx lst
   eval ctx1 eenv e
 evalCase _ _ _ v = internalError "Interpreter.Eval.evalCase" v
+
+evalMatch ctx eenv m (Chan c) = do
+  (Label !v, !c) <- receive c
+  let (patterns : _, e) = m Map.! mkVar defaultPos v
+  let ctx'              = Map.insert patterns (Chan c) ctx
+  eval ctx' eenv e
 
 
 -- TODO: change isADT definition
