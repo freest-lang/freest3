@@ -1,15 +1,16 @@
 module Interpreter.Value
-( Value(..)
-, Ctx
-, Channel -- Do we need this one?
-, ChannelEnd
-)
+  ( Value(..)
+  , Ctx
+  , Channel -- Do we need this one?
+  , ChannelEnd
+  )
 where
 
-import qualified Control.Concurrent.Chan as C
-import qualified Data.Map.Strict as Map
-import           Parse.Unparser ()
-import qualified Syntax.Expression as E
+import qualified Control.Concurrent.Chan       as C
+import qualified Data.Map.Strict               as Map
+import           Parse.Unparser                 ( )
+import           Syntax.Base
+import qualified Syntax.Expression             as E
 import           Syntax.ProgramVariable
 
 data Value =
@@ -30,22 +31,22 @@ data Value =
 type Ctx = Map.Map ProgVar Value
 
 type ChannelEnd = (C.Chan Value, C.Chan Value)
-type Channel    = (ChannelEnd, ChannelEnd)
+type Channel = (ChannelEnd, ChannelEnd)
 
 instance Show Value where
-  show Unit             = "()"
-  show (Integer i)      = show i
-  show (Boolean b)      = show b
-  show (Character c)    = show c
-  show (String s)       = s
-  show (Label s)        = s
-  show (Pair v1 v2)     = "(" ++ show v1 ++ ", " ++ showTuple v2 ++ ")"
-  show (Cons c xs)      = showCons c xs
-  show Closure{}        = "<fun>"
-  show PrimitiveFun{}   = "<fun>"
-  show Chan{}           = "Skip" -- TODO: change this
-  show Fork             = "fork"
-  show IOValue{}        = "<IOValue>"
+  show Unit           = "()"
+  show (Integer   i)  = show i
+  show (Boolean   b)  = show b
+  show (Character c)  = show c
+  show (String    s)  = s
+  show (Label     s)  = s
+  show (Pair v1 v2 )  = "(" ++ show v1 ++ ", " ++ showTuple v2 ++ ")"
+  show (Cons c  xs )  = showCons c xs
+  show Closure{}      = "<fun>"
+  show PrimitiveFun{} = "<fun>"
+  show Chan{}         = "Skip" -- TODO: change this
+  show Fork           = "fork"
+  show IOValue{}      = "<IOValue>"
 
 showTuple :: Value -> String
 showTuple (Pair v1 v2) = show v1 ++ ", " ++ showTuple v2
@@ -55,10 +56,13 @@ showCons :: ProgVar -> [[Value]] -> String
 showCons x [] = show x
 showCons x xs = show x ++ " " ++ unwords (map showConstrList xs)
  where
-   showConstrList :: [Value] -> String
-   showConstrList = unwords . map showC
+  showConstrList :: [Value] -> String
+  showConstrList = unwords . map showC
 
-   showC :: Value -> String
-   showC c@(Cons _ []) = show c
-   showC c@Cons{} = "(" ++ show c ++ ")"
-   showC v = show v
+  showC :: Value -> String
+  showC c@(Cons _ []) = show c
+  showC c@Cons{}      = "(" ++ show c ++ ")"
+  showC v             = show v
+
+instance Position Value where
+  pos _ = defaultPos

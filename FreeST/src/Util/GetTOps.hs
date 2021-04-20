@@ -49,7 +49,6 @@ instance DefaultTypeOp Exp where
   getDefault m (UnLet p x e1 e2) =
     UnLet p x (getDefault m e1) (getDefault m e2)
   getDefault m (New   p t u ) = New p (getDefault m t) (getDefault m u)
-  getDefault m (Match p e fm) = Match p (getDefault m e) (getDefault m fm)
   getDefault _ e              = e
 
 instance DefaultTypeOp (K.Bind Exp) where

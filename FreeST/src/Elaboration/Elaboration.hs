@@ -122,6 +122,7 @@ class Elaboration t where
   elaborate :: t -> FreestState t
 
 instance Elaboration T.Type where
+  elaborate (  T.Message p pol t) = T.Message p pol <$> elaborate t
   elaborate (  T.Fun p m t1 t2  ) = T.Fun p m <$> elaborate t1 <*> elaborate t2
   elaborate (  T.Pair p t1 t2   ) = T.Pair p <$> elaborate t1 <*> elaborate t2
   elaborate (  T.Datatype p m   ) = T.Datatype p <$> elaborate m
@@ -164,7 +165,6 @@ instance Elaboration Exp where
   elaborate (UnLet p x e1 e2) = UnLet p x <$> elaborate e1 <*> elaborate e2
   elaborate (New p t u      ) = New p <$> elaborate t <*> elaborate u
   elaborate e@Select{}        = pure e
-  elaborate (Match p e m)     = Match p <$> elaborate e <*> elaborate m
   elaborate e                 = return e
 
 instance Elaboration FieldMap where

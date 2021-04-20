@@ -46,7 +46,7 @@ function e t =
       let p = pos e
       addError
         p
-        [ Error "Expecting a function type for expression"
+        [ Error "Expecting an arrow type for expression"
         , Error e
         , Error "\n\t                               found type"
         , Error u
