@@ -122,6 +122,7 @@ class Elaboration t where
   elaborate :: t -> FreestState t
 
 instance Elaboration T.Type where
+  elaborate (  T.Message p pol t) = T.Message p pol <$> elaborate t
   elaborate (  T.Fun p m t1 t2  ) = T.Fun p m <$> elaborate t1 <*> elaborate t2
   elaborate (  T.Pair p t1 t2   ) = T.Pair p <$> elaborate t1 <*> elaborate t2
   elaborate (  T.Datatype p m   ) = T.Datatype p <$> elaborate m
