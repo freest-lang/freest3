@@ -48,7 +48,7 @@ function e t =
         p
         [ Error "Expecting an arrow type for expression"
         , Error e
-        , Error "\n\t                               found type"
+        , Error "\n\t                             found type"
         , Error u
         ]
       return (omission p, omission p)
