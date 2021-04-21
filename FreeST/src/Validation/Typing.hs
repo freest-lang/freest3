@@ -159,7 +159,7 @@ synthetise kEnv (E.Case p e fm) =
 synthetise kEnv (E.New p t u) = do
   K.checkAgainstSession kEnv t
   return $ T.Pair p t u
-synthetise _ e@(E.Select _ _) = addPartiallyAppliedError e "channel"
+synthetise _ e@(E.Select _ _) = addPartiallyAppliedError e "channel of a + type"
 
 -- | Returns the type of a variable; removes it from vEnv if lin
 synthetiseVar :: K.KindEnv -> ProgVar -> FreestState T.Type
@@ -211,8 +211,9 @@ addPartiallyAppliedError e s = do
     p
     [ Error "Ooops! You're asking too much. I cannot type a partially applied"
     , Error e
-    , Error "\b.\n\t I promise to look into that some time in the future.\n"
-    , Error "\t In the meantime consider applying"
+    -- , Error "\b.\n\t I promise to look into that some time in the future.\n"
+    -- , Error "\t In the meantime consider applying"
+    , Error "\n\t Consider applying"
     , Error e
     , Error $ "to an expression denoting a " ++ s ++ "."
     ]
