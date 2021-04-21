@@ -1,5 +1,5 @@
 {- |
-Module      : stack
+Module      : Stack
 Description : A stack with a type controlled by a context-free session type
 Copyright   : (c) Vasco T. Vasconcelos, 11 apr 2021
 
