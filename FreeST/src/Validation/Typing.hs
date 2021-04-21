@@ -81,7 +81,7 @@ synthetise kEnv e'@(E.Abs p (E.Bind _ m x t1 e)) = do
 synthetise kEnv (E.App p (E.Select _ c) e) = do
   t <- synthetise kEnv e
   m <- Extract.outChoiceMap e t
-  Extract.constructor p m c
+  Extract.outChoiceBranch p m c t
   -- Fork e
 synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "fork" = do
   t <- synthetise kEnv e

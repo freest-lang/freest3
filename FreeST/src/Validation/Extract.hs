@@ -25,7 +25,7 @@ module Validation.Extract
   , outChoiceMap
   , inChoiceMap
   , datatypeMap
-  , constructor
+  , outChoiceBranch
   )
 where
 
@@ -150,9 +150,9 @@ datatypeMap e t =
         ]
       return Map.empty
 
-constructor :: Pos -> T.TypeMap -> ProgVar -> FreestState T.Type
-constructor p tm x = case tm Map.!? x of
+outChoiceBranch :: Pos -> T.TypeMap -> ProgVar -> T.Type -> FreestState T.Type
+outChoiceBranch p tm x t = case tm Map.!? x of
   Just t  -> return t
   Nothing -> do
-    addError p [Error "Constructor", Error x, Error "not in scope"]
+    addError p [Error "Branch", Error x, Error "not present in internal choice type", Error t]
     return $ omission p
