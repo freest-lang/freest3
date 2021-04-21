@@ -260,6 +260,7 @@ instance Show Token where
   show (TokenSelect _) = "select"
 --  show (TokenFork _) = "fork"
   show (TokenMatch _) = "match"
+  show (TokenWith _) = "with"
   show (TokenCase _) = "case"
   show (TokenForall _) = "forall"
   show (TokenMinus _) = "-"
