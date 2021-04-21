@@ -1,9 +1,6 @@
-send' : ∀a:ML . a -> ∀b:SL . !a;b -o b
-send' x = send [a] x
-
 f : Bool -> !Int -> !Int;?Bool -> Skip
 f cond c d =
-  let x = send' [Int] 5 in  -- x : ∀b:SL . !Int;b -o b
+  let x = send [Int] 5 in  -- x : ∀b:SL . !Int;b -o b
     if cond
     then let _ = x [Skip] c            in consumeD d
     else let _ = receive (x [?Bool] d) in consumeC c
