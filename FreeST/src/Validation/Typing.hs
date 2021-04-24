@@ -52,14 +52,15 @@ synthetise _    (E.Bool p _       ) = return $ T.Bool p
 synthetise _    (E.Unit p         ) = return $ T.Unit p
 synthetise _    (E.String p _     ) = return $ T.String p
 -- Variable
-synthetise kEnv (E.Var    p x     ) = synthetiseVar kEnv x
--- synthetise kEnv e@(E.Var p x)
---   | x == mkVar p "receive" = addPartiallyAppliedError e "channel"
+synthetise kEnv e@(E.Var p x)
+  -- The 1st 2 cases are not strictly necessaray but yield better error messages
+  | x == mkVar p "select" =  addPartiallyAppliedError e "label and a channel of + type"
+  | x == mkVar p "collect" = addPartiallyAppliedError e "channel of & type"
 --   | x == mkVar p "send" = addPartiallyAppliedError
 --     e
 --     "value and another denoting a channel"
 --   | x == mkVar p "branch" = addPartiallyAppliedError e "channel"
---   | otherwise = synthetiseVar kEnv x
+  | otherwise = synthetiseVar kEnv x
 synthetise kEnv (E.UnLet _ x e1 e2) = do
   t1 <- synthetise kEnv e1
   addToVEnv x t1
@@ -74,29 +75,24 @@ synthetise kEnv e'@(E.Abs p (E.Bind _ m x t1 e)) = do
   t2 <- synthetise kEnv e
   quotient kEnv x
   vEnv2 <- getVEnv
---  checkEqualEnvs e' vEnv1 vEnv2
   when (m == Un) (checkEqualEnvs e' vEnv1 vEnv2)
   return $ T.Fun p m t1 t2
--- Abs elimination
+-- Application, the special cases
+synthetise _ e@(E.Select _ _) = addPartiallyAppliedError e "channel of + type"
 synthetise kEnv (E.App p (E.Select _ c) e) = do
   t <- synthetise kEnv e
   m <- Extract.outChoiceMap e t
   Extract.outChoiceBranch p m c t
   -- Fork e
-synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "fork" = do
-  t <- synthetise kEnv e
-  void $ K.checkAgainst kEnv (K.tu p) t
-  return $ T.Unit p
-  -- Receive e
+synthetise kEnv (E.App _ (E.Var p x) e) | x == mkVar p "collect" = do
+  tm <- Extract.inChoiceMap e =<< synthetise kEnv e
+  return $ T.Datatype p $ Map.map (\u -> T.Fun p Un u (T.Unit defaultPos)) tm
 synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "receive" = do
   t        <- synthetise kEnv e
   (u1, u2) <- Extract.input e t
   void $ K.checkAgainst kEnv (K.ml (pos u1)) u1
   return $ T.Pair p u1 u2
-  -- collect e
-synthetise kEnv (E.App _ (E.Var p x) e) | x == mkVar p "collect" = do
-  tm <- Extract.inChoiceMap e =<< synthetise kEnv e
-  return $ T.Datatype p $ Map.map (\u -> T.Fun p Un u (T.Unit defaultPos)) tm
+  -- Collect e
 -- synthetise kEnv (E.App p (E.TypeApp _ (E.Var _ x) t) e)
 --   | x == mkVar p "branch" = do
 --     tm <- Extract.inChoiceMap e =<< synthetise kEnv e
@@ -111,14 +107,18 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkVar p "send" = do
   void $ K.checkAgainst kEnv (K.ml (pos u1)) u1
   checkAgainst kEnv e1 u1
   return u2
-synthetise kEnv (E.App _ e1 e2) = do -- General case
+synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "fork" = do
+  t <- synthetise kEnv e
+  void $ K.checkAgainst kEnv (K.tu p) t
+  return $ T.Unit p
+-- Application, general case
+synthetise kEnv (E.App _ e1 e2) = do
   t        <- synthetise kEnv e1
   (u1, u2) <- Extract.function e1 t
   checkAgainst kEnv e2 u1
   return u2
--- Type Abstraction intro and elim
+-- Type abstraction
 synthetise kEnv (E.TypeAbs _ (K.Bind p a k e)) = -- do
---  t <- synthetise (Map.insert a k kEnv) e
   T.Forall p . K.Bind p a k <$> synthetise (Map.insert a k kEnv) e
 -- Type application
 synthetise kEnv (E.TypeApp _ e t) = do
@@ -159,7 +159,6 @@ synthetise kEnv (E.Case p e fm) =
 synthetise kEnv (E.New p t u) = do
   K.checkAgainstSession kEnv t
   return $ T.Pair p t u
-synthetise _ e@(E.Select _ _) = addPartiallyAppliedError e "channel of a + type"
 
 -- | Returns the type of a variable; removes it from vEnv if lin
 synthetiseVar :: K.KindEnv -> ProgVar -> FreestState T.Type
@@ -255,7 +254,7 @@ checkAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
 --   checkAgainst kEnv e1 (Fun p Un/Lin t u)
 checkAgainst kEnv e t = checkEquivTypes e kEnv t =<< synthetise kEnv e
 
--- EQUALITY AND EQUIVALENCE CHECKING
+-- EQUALITY EQUIVALENCE CHECKING
 
 checkEquivTypes :: E.Exp -> K.KindEnv -> T.Type -> T.Type -> FreestState ()
 checkEquivTypes exp kEnv expected actual =
@@ -275,8 +274,8 @@ checkEqualEnvs e vEnv1 vEnv2 = unless
   (addError
     (pos e)
     [ Error
-      "Final environment differs from initial in an unrestricted function\n"
-    , Error "\t These extra entries are present in the final environment:"
+      "Final environment differs from initial in an unrestricted function"
+    , Error "\n\t These extra entries are present in the final environment:"
     , Error diff
     , Error "\n\t for lambda abstraction"
     , Error e
@@ -291,14 +290,12 @@ checkEquivEnvs p branching kEnv vEnv1 vEnv2 = do
       vEnv2' = userDefined vEnv2
   unless (equivalent kEnv vEnv1' vEnv2') $ addError
     p
-    [ Error
-      (  "I have reached the end of a "
-      ++ branching
-      ++ " expression and found two distinct typing environments."
-      )
-    , Error "\n\t They are "
+    [ Error "I have reached the end of a"
+    , Error branching
+    , Error "expression and found two distinct typing environments."
+    , Error "\n\t They are"
     , Error (vEnv1' Map.\\ vEnv2')
-    , Error "\n\t      and "
+    , Error "\n\t      and"
     , Error (vEnv2' Map.\\ vEnv1')
     , Error
       "\n\t (is a given variable consumed in one branch and not in the other?)"
@@ -326,7 +323,6 @@ buildMap p tm fm
     >> pure fm
   | otherwise
   = tMapWithKeyM (buildAbstraction tm) fm
-
 
 buildAbstraction
   :: T.TypeMap
