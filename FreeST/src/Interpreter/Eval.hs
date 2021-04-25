@@ -61,32 +61,23 @@ eval ctx eenv (E.App _ e1 e2) = eval ctx eenv e1 >>= \case
   (Cons x xs) -> do
     !v <- eval ctx eenv e2
     pure $ Cons x (xs ++ [[v]])
-
   e -> error $ show e
 eval ctx eenv (E.Pair _ e1 e2) =
   liftM2 Pair (eval ctx eenv e1) (eval ctx eenv e2)
-
 eval ctx eenv (E.BinLet _ x y e1 e2) = do
   (Pair v1 v2) <- eval ctx eenv e1
   let env = Map.insert x v1 (Map.insert y v2 ctx)
   eval env eenv e2
-
 eval ctx eenv (E.Cond _ cond e1 e2) = do
   (Boolean b) <- eval ctx eenv cond
   if b then eval ctx eenv e1 else eval ctx eenv e2
-
 eval ctx eenv (E.UnLet _ x e1 e2) = do
   !v <- eval ctx eenv e1
   eval (Map.insert x v ctx) eenv e2
-
 eval ctx eenv (E.Case _ e m) = eval ctx eenv e >>= evalCase ctx eenv m
-
 eval _   _    E.New{}        = do
   (c1, c2) <- new
   return $ Pair (Chan c1) (Chan c2)
-
--- eval _ _ (E.Select _ x) = return
---   $ PrimitiveFun (\(Chan c) -> IOValue $ fmap Chan (send (Label (show x)) c))
 
 evalCase :: Ctx -> Prog -> E.FieldMap -> Value -> IO Value
 evalCase ctx eenv m c@Chan{}    = evalMatch ctx eenv m c
@@ -97,6 +88,7 @@ evalCase ctx eenv m (Cons x xs) = do
   eval ctx1 eenv e
 evalCase _ _ _ v = internalError "Interpreter.Eval.evalCase" v
 
+evalMatch :: Ctx -> Prog -> E.FieldMap -> Value -> IO Value
 evalMatch ctx eenv m (Chan c) = do
   (Label !v, !c) <- receive c
   let (patterns : _, e) = m Map.! mkVar defaultPos v

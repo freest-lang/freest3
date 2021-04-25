@@ -112,7 +112,6 @@ tokens :-
   then				                  { \p s -> TokenThen (internalPos p) }
   else				                  { \p s -> TokenElse (internalPos p) }
   new				                    { \p s -> TokenNew (internalPos p) }
---  select			                  { \p s -> TokenSelect (internalPos p) }
   match				                  { \p s -> TokenMatch (internalPos p) }
   with				                  { \p s -> TokenWith (internalPos p) }
   case				                  { \p s -> TokenCase (internalPos p) }
@@ -183,12 +182,8 @@ data Token =
   | TokenThen Pos
   | TokenElse Pos
   | TokenNew Pos
---  | TokenSend Pos
---  | TokenReceive Pos
-  | TokenSelect Pos
   | TokenMatch Pos
   | TokenWith Pos
---  | TokenFork Pos
   | TokenCase Pos
   | TokenOf Pos
   | TokenForall Pos
@@ -255,10 +250,6 @@ instance Show Token where
   show (TokenThen _) = "then"
   show (TokenElse _) = "else"
   show (TokenNew _) = "new"
---  show (TokenSend _) = "send"
---  show (TokenReceive _) = "receive"
-  show (TokenSelect _) = "select"
---  show (TokenFork _) = "fork"
   show (TokenMatch _) = "match"
   show (TokenWith _) = "with"
   show (TokenCase _) = "case"
@@ -365,10 +356,6 @@ instance Position Token where
   pos (TokenType p) = p
   pos (TokenPipe p) = p
   pos (TokenNew p) = p
---  pos (TokenSend p) = p
---  pos (TokenReceive p) = p
-  pos (TokenSelect p) = p
---  pos (TokenFork p) = p
   pos (TokenMatch p) = p
   pos (TokenCase p) = p
   pos (TokenForall p) = p

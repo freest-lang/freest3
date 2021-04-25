@@ -164,7 +164,6 @@ instance Elaboration Exp where
   elaborate (TypeAbs p b    ) = TypeAbs p <$> elaborate b
   elaborate (UnLet p x e1 e2) = UnLet p x <$> elaborate e1 <*> elaborate e2
   elaborate (New p t u      ) = New p <$> elaborate t <*> elaborate u
-  elaborate e@Select{}        = pure e
   elaborate e                 = return e
 
 instance Elaboration FieldMap where

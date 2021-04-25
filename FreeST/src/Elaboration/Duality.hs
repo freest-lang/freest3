@@ -41,7 +41,6 @@ instance Duality E.Exp where
   resolve (E.TypeAbs p b    ) = E.TypeAbs p <$> resolve b
   resolve (E.UnLet p x e1 e2) = E.UnLet p x <$> resolve e1 <*> resolve e2
   resolve (E.New p t u      ) = E.New p <$> resolve t <*> resolve u
-  resolve e@E.Select{}        = pure e
   resolve e                   = return e
 
 -- This should be an instance but it overlaps with that one of ParseEnv

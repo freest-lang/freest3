@@ -50,7 +50,6 @@ data Exp =
   | UnLet Pos ProgVar Exp Exp -- TODO: Derived; eliminate? If yes, which is type for the ProgVar? (cf. Abs)
   -- Session types
   | New Pos T.Type T.Type
-  | Select Pos ProgVar
 
 type FieldMap = Map.Map ProgVar ([ProgVar], Exp)
 
@@ -70,7 +69,6 @@ instance Position Exp where
   pos (Pair p _ _         ) = p
   pos (BinLet p _ _ _ _   ) = p
   pos (New p _ _          ) = p
-  pos (Select p _         ) = p
   pos (Case  p _ _        ) = p
 
 -- Bind
