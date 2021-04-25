@@ -112,7 +112,7 @@ tokens :-
   then				                  { \p s -> TokenThen (internalPos p) }
   else				                  { \p s -> TokenElse (internalPos p) }
   new				                    { \p s -> TokenNew (internalPos p) }
-  select			                  { \p s -> TokenSelect (internalPos p) }
+--  select			                  { \p s -> TokenSelect (internalPos p) }
   match				                  { \p s -> TokenMatch (internalPos p) }
   with				                  { \p s -> TokenWith (internalPos p) }
   case				                  { \p s -> TokenCase (internalPos p) }

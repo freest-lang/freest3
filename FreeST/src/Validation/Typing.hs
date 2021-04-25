@@ -78,10 +78,10 @@ synthetise kEnv e'@(E.Abs p (E.Bind _ m x t1 e)) = do
   when (m == Un) (checkEqualEnvs e' vEnv1 vEnv2)
   return $ T.Fun p m t1 t2
 -- Application, the special cases
-synthetise _ e@(E.Select _ _) = addPartiallyAppliedError e "channel of + type"
-synthetise kEnv (E.App p (E.Select _ c) e) = do
-  t <- synthetise kEnv e
-  m <- Extract.outChoiceMap e t
+-- synthetise _ e@(E.Select _ _) = addPartiallyAppliedError e "channel of + type"
+synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e2) | x == mkVar p "select" = do  
+  t <- synthetise kEnv e2
+  m <- Extract.outChoiceMap e2 t
   Extract.outChoiceBranch p m c t
   -- Fork e
 synthetise kEnv (E.App _ (E.Var p x) e) | x == mkVar p "collect" = do

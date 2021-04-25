@@ -203,7 +203,7 @@ Exp :: { E.Exp }
 
 App :: { E.Exp }
   : App Primary                    { E.App (pos $1) $1 $2 }
-  | select ArbitraryProgVar        { E.Select (pos $1) $2 }
+--  | select ArbitraryProgVar        { E.Select (pos $1) $2 }
   | Primary                        { $1 }
 
 Primary :: { E.Exp }
