@@ -297,7 +297,7 @@ checkEquivEnvs p branching kEnv vEnv1 vEnv2 = do
     , Error "\n\t      and"
     , Error (vEnv2' Map.\\ vEnv1')
     , Error
-      "\n\t (is a given variable consumed in one branch and not in the other?)"
+      "\n\t (was a variable consumed in one branch and not in the other?)"
     , Error
       "\n\t (is there a variable with different types in the two environments?)"
     ]
