@@ -70,14 +70,14 @@ synthetise kEnv (E.Abs p (E.Bind _ Lin x t1 e)) = do
   t2 <- synthetise kEnv e
   quotient kEnv x
   return $ T.Fun p Lin t1 t2
-synthetise kEnv e'@(E.Abs p (E.Bind _ Un x t1 e)) = do
+synthetise kEnv (E.Abs p (E.Bind _ Un x t1 e)) = do
   void $ K.synthetise kEnv t1
   vEnv1 <- getVEnv
   addToVEnv x t1
   t2 <- synthetise kEnv e
   quotient kEnv x
   vEnv2 <- getVEnv
-  checkEqualEnvs e' vEnv1 vEnv2
+  checkEquivEnvs (pos e) "unary abstraction" kEnv vEnv1 vEnv2
   return $ T.Fun p Un t1 t2
 -- Application, the special cases first
   -- Select C, an error
