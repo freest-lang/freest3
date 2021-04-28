@@ -64,18 +64,24 @@ synthetise kEnv (E.UnLet _ x e1 e2) = do
   quotient kEnv x
   return t2
 -- Abs introduction
-synthetise kEnv e'@(E.Abs p (E.Bind _ m x t1 e)) = do
+synthetise kEnv (E.Abs p (E.Bind _ Lin x t1 e)) = do
+  void $ K.synthetise kEnv t1
+  addToVEnv x t1
+  t2 <- synthetise kEnv e
+  quotient kEnv x
+  return $ T.Fun p Lin t1 t2
+synthetise kEnv e'@(E.Abs p (E.Bind _ Un x t1 e)) = do
   void $ K.synthetise kEnv t1
   vEnv1 <- getVEnv
   addToVEnv x t1
   t2 <- synthetise kEnv e
   quotient kEnv x
   vEnv2 <- getVEnv
-  when (m == Un) (checkEqualEnvs e' vEnv1 vEnv2)
-  return $ T.Fun p m t1 t2
+  checkEqualEnvs e' vEnv1 vEnv2
+  return $ T.Fun p Un t1 t2
 -- Application, the special cases first
-  -- Select e, an error
-synthetise kEnv e@(E.App p (E.Var _ x) _) | x == mkVar p "select" =
+  -- Select C, an error
+synthetise _ e@(E.App p (E.Var _ x) _) | x == mkVar p "select" =
   partialApplicationError e "channel of + type"
   -- Select C e
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e) | x == mkVar p "select" = do  
