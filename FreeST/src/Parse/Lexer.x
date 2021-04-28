@@ -67,6 +67,7 @@ tokens :-
   ","				                    { \p s -> TokenComma (internalPos p) }
   ":"                           { \p s -> TokenColon (internalPos p) }
   ";"	       	      	  	      { \p s -> TokenSemi (internalPos p) }
+  ";;"	       	      	  	      { \p s -> TokenSemiSemi (internalPos p) }
   "!"				                    { \p s -> TokenMOut (internalPos p) }
   "?"				                    { \p s -> TokenMIn (internalPos p) }
   "&"				                    { \p s -> TokenAmpersand (internalPos p) }
@@ -153,6 +154,7 @@ data Token =
   | TokenColon Pos
   | TokenUpperId Pos String
   | TokenSemi Pos
+  | TokenSemiSemi Pos
   | TokenMOut Pos
   | TokenMIn Pos
   | TokenLBrace Pos
@@ -221,6 +223,7 @@ instance Show Token where
   show (TokenColon _) = ":"
   show (TokenUpperId _ c) = "" ++ c
   show (TokenSemi _) = ";"
+  show (TokenSemiSemi _) = ";;"
   show (TokenMOut _) = "!"
   show (TokenMIn _) = "?"
   show (TokenLBrace _) = "{"
@@ -330,6 +333,7 @@ instance Position Token where
   pos (TokenColon p) = p
   pos (TokenUpperId p _) = p
   pos (TokenSemi p) = p
+  pos (TokenSemiSemi p) = p
   pos (TokenMOut p) = p
   pos (TokenMIn p) = p
   pos (TokenLBrace p) = p

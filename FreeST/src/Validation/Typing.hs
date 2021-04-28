@@ -39,7 +39,6 @@ import qualified Validation.Extract            as Extract
 import qualified Validation.Kinding            as K -- Again?
 import qualified Validation.Rename             as Rename
                                                 ( subs )
-
 import           Data.Functor
 
 -- SYNTHESISING A TYPE
@@ -77,7 +76,7 @@ synthetise kEnv (E.Abs p (E.Bind _ Un x t1 e)) = do
   t2 <- synthetise kEnv e
   quotient kEnv x
   vEnv2 <- getVEnv
-  checkEquivEnvs (pos e) "unary abstraction" kEnv vEnv1 vEnv2
+  checkEquivEnvs (pos e) "an unrestricted lambda" kEnv vEnv1 vEnv2
   return $ T.Fun p Un t1 t2
 -- Application, the special cases first
   -- Select C, an error
@@ -134,7 +133,7 @@ synthetise kEnv (E.Cond p e1 e2 e3) = do
   setVEnv vEnv2
   checkAgainst kEnv e3 t
   vEnv4 <- getVEnv
-  checkEquivEnvs p "conditional" kEnv vEnv3 vEnv4
+  checkEquivEnvs p "a conditional" kEnv vEnv3 vEnv4
   return t
 -- Pair introduction
 synthetise kEnv (E.Pair p e1 e2) = do
@@ -230,7 +229,7 @@ checkAgainst kEnv (E.Cond p e1 e2 e3) t = do
   setVEnv vEnv2
   checkAgainst kEnv e3 t
   vEnv4 <- getVEnv
-  checkEquivEnvs p "conditional" kEnv vEnv3 vEnv4
+  checkEquivEnvs p "a conditional" kEnv vEnv3 vEnv4
 -- Pair elimination
 checkAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
   t1       <- synthetise kEnv e1
@@ -289,7 +288,7 @@ checkEquivEnvs p branching kEnv vEnv1 vEnv2 = do
       vEnv2' = userDefined vEnv2
   unless (equivalent kEnv vEnv1' vEnv2') $ addError
     p
-    [ Error "I have reached the end of a"
+    [ Error "I have reached the end of"
     , Error branching
     , Error "expression and found two distinct typing environments."
     , Error "\n\t They are"
@@ -375,7 +374,7 @@ synthetiseCase p kEnv e fm extract = do
                                  (return ([], []))
                                  newMap
   mapM_ (checkEquivTypes e kEnv t)       ts
-  mapM_ (checkEquivEnvs p "case" kEnv v) vs
+  mapM_ (checkEquivEnvs p "a case" kEnv v) vs
   setVEnv v
   return t
 
