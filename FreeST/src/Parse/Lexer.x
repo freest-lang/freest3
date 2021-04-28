@@ -67,7 +67,6 @@ tokens :-
   ","				                    { \p s -> TokenComma (internalPos p) }
   ":"                           { \p s -> TokenColon (internalPos p) }
   ";"	       	      	  	      { \p s -> TokenSemi (internalPos p) }
-  ";;"	       	      	  	      { \p s -> TokenSemiSemi (internalPos p) }
   "!"				                    { \p s -> TokenMOut (internalPos p) }
   "?"				                    { \p s -> TokenMIn (internalPos p) }
   "&"				                    { \p s -> TokenAmpersand (internalPos p) }
@@ -113,6 +112,7 @@ tokens :-
   then				                  { \p s -> TokenThen (internalPos p) }
   else				                  { \p s -> TokenElse (internalPos p) }
   new				                    { \p s -> TokenNew (internalPos p) }
+  select			                  { \p s -> TokenSelect (internalPos p) }
   match				                  { \p s -> TokenMatch (internalPos p) }
   with				                  { \p s -> TokenWith (internalPos p) }
   case				                  { \p s -> TokenCase (internalPos p) }
@@ -154,7 +154,6 @@ data Token =
   | TokenColon Pos
   | TokenUpperId Pos String
   | TokenSemi Pos
-  | TokenSemiSemi Pos
   | TokenMOut Pos
   | TokenMIn Pos
   | TokenLBrace Pos
@@ -184,8 +183,12 @@ data Token =
   | TokenThen Pos
   | TokenElse Pos
   | TokenNew Pos
+--  | TokenSend Pos
+--  | TokenReceive Pos
+  | TokenSelect Pos
   | TokenMatch Pos
   | TokenWith Pos
+--  | TokenFork Pos
   | TokenCase Pos
   | TokenOf Pos
   | TokenForall Pos
@@ -223,7 +226,6 @@ instance Show Token where
   show (TokenColon _) = ":"
   show (TokenUpperId _ c) = "" ++ c
   show (TokenSemi _) = ";"
-  show (TokenSemiSemi _) = ";;"
   show (TokenMOut _) = "!"
   show (TokenMIn _) = "?"
   show (TokenLBrace _) = "{"
@@ -253,8 +255,11 @@ instance Show Token where
   show (TokenThen _) = "then"
   show (TokenElse _) = "else"
   show (TokenNew _) = "new"
+--  show (TokenSend _) = "send"
+--  show (TokenReceive _) = "receive"
+  show (TokenSelect _) = "select"
+--  show (TokenFork _) = "fork"
   show (TokenMatch _) = "match"
-  show (TokenWith _) = "with"
   show (TokenCase _) = "case"
   show (TokenForall _) = "forall"
   show (TokenMinus _) = "-"
@@ -333,7 +338,6 @@ instance Position Token where
   pos (TokenColon p) = p
   pos (TokenUpperId p _) = p
   pos (TokenSemi p) = p
-  pos (TokenSemiSemi p) = p
   pos (TokenMOut p) = p
   pos (TokenMIn p) = p
   pos (TokenLBrace p) = p
@@ -360,6 +364,10 @@ instance Position Token where
   pos (TokenType p) = p
   pos (TokenPipe p) = p
   pos (TokenNew p) = p
+--  pos (TokenSend p) = p
+--  pos (TokenReceive p) = p
+  pos (TokenSelect p) = p
+--  pos (TokenFork p) = p
   pos (TokenMatch p) = p
   pos (TokenCase p) = p
   pos (TokenForall p) = p

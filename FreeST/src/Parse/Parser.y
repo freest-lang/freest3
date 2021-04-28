@@ -46,7 +46,6 @@ import           Util.FreestState
   ']'      {TokenRBracket _}
   ':'      {TokenColon _}
   ';'      {TokenSemi _}
-  ';;'     {TokenSemiSemi _}
   '!'      {TokenMOut _}
   '?'      {TokenMIn _}
   '{'      {TokenLBrace _}
@@ -108,7 +107,7 @@ import           Util.FreestState
 %left NEG not    -- unary
 %right '.'       -- ∀ a:k . T and μ a:k . T
 %right '=>' '->' '-o' ARROW -- λλ a:k => e,  x:T -> e, λ x:T -o e, T -> T and T -o T
-%right ';' ';;'  -- T;T and e;e and e;;e
+%right ';'       -- T;T and e;e
 %right MSG       -- !T and ?T
 %right dualof
 %nonassoc ProgVarWildTBind
@@ -171,18 +170,7 @@ DataCon :: { (ProgVar, [T.Type]) }
 
 Exp :: { E.Exp }
   : let ProgVarWild '=' Exp in Exp { E.UnLet (pos $1) $2 $4 $6 }
-  | Exp ';' Exp                    { E.App (pos $1)
-                                         (E.Abs (pos $1)
-                                           (E.Bind (pos $1) Un (mkVar (pos $1) "_")
-                                             (T.Unit (pos $3))
-                                           $3))
-                                       $1}
-  | Exp ';;' Exp                    { E.App (pos $1)
-                                         (E.Abs (pos $1)
-                                           (E.Bind (pos $1) Lin (mkVar (pos $1) "_")
-                                             (T.Unit (pos $3))
-                                           $3))
-                                       $1}
+  | Exp ';' Exp                    { E.UnLet (pos $1) (mkVar (pos $1) "_") $1 $3 }
   | let '(' ProgVarWild ',' ProgVarWild ')' '=' Exp in Exp
                                    { E.BinLet (pos $1) $3 $5 $8 $10 }
   | if Exp then Exp else Exp       { E.Cond (pos $1) $2 $4 $6 }
@@ -193,9 +181,9 @@ Exp :: { E.Exp }
   | case Exp of '{' CaseMap '}'    { E.Case (pos $1) $2 $5 }
   | Exp '$' Exp                    { E.App (pos $2) $1 $3 }
   | Exp '&' Exp                    { E.App (pos $2) $3 $1 }
-  | Exp '||' Exp                    { binOp $1 (mkVar (pos $2) "(||)") $3 }
-  | Exp '&&' Exp                    { binOp $1 (mkVar (pos $2) "(&&)") $3 }
-  | Exp CMP Exp                     { binOp $1 (mkVar (pos $2) (getText $2)) $3 }
+  | Exp '||' Exp                   { binOp $1 (mkVar (pos $2) "(||)") $3 }
+  | Exp '&&' Exp                   { binOp $1 (mkVar (pos $2) "(&&)") $3 }
+  | Exp CMP Exp                    { binOp $1 (mkVar (pos $2) (getText $2)) $3 }
   | Exp '+' Exp                    { binOp $1 (mkVar (pos $2) "(+)") $3 }
   | Exp '-' Exp                    { binOp $1 (mkVar (pos $2) "(-)") $3 }
   | Exp '*' Exp                    { binOp $1 (mkVar (pos $2) "(*)") $3 }
