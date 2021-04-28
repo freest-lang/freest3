@@ -28,7 +28,6 @@ import           Syntax.Base
 import           Syntax.Expression             as E
 import qualified Syntax.Kind                   as K
 import           Syntax.Program
-import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
 import           Syntax.ProgramVariable
@@ -45,8 +44,8 @@ instance Show Multiplicity where
   show Lin = "L"
 
 showArrow :: Multiplicity -> String
-showArrow Lin = " -o "
-showArrow Un  = " -> "
+showArrow Lin = "-o"
+showArrow Un  = "->"
 
 -- Program and Type Variables.
 

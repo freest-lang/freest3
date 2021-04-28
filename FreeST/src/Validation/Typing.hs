@@ -69,14 +69,14 @@ synthetise kEnv (E.Abs p (E.Bind _ Lin x t1 e)) = do
   t2 <- synthetise kEnv e
   quotient kEnv x
   return $ T.Fun p Lin t1 t2
-synthetise kEnv (E.Abs p (E.Bind _ Un x t1 e)) = do
+synthetise kEnv e'@(E.Abs p (E.Bind _ Un x t1 e)) = do
   void $ K.synthetise kEnv t1
   vEnv1 <- getVEnv
   addToVEnv x t1
   t2 <- synthetise kEnv e
   quotient kEnv x
   vEnv2 <- getVEnv
-  checkEquivEnvs (pos e) "an unrestricted lambda" kEnv vEnv1 vEnv2
+  checkEquivEnvs (pos e) "an unrestricted lambda" e' kEnv vEnv1 vEnv2
   return $ T.Fun p Un t1 t2
 -- Application, the special cases first
   -- Select C, an error
@@ -125,7 +125,7 @@ synthetise kEnv (E.TypeApp _ e t) = do
   void $ K.checkAgainst kEnv k t
   return $ Rename.subs t y u'
 -- Boolean elimination
-synthetise kEnv (E.Cond p e1 e2 e3) = do
+synthetise kEnv e'@(E.Cond p e1 e2 e3) = do
   checkAgainst kEnv e1 (T.Bool p)
   vEnv2 <- getVEnv
   t     <- synthetise kEnv e2
@@ -133,7 +133,7 @@ synthetise kEnv (E.Cond p e1 e2 e3) = do
   setVEnv vEnv2
   checkAgainst kEnv e3 t
   vEnv4 <- getVEnv
-  checkEquivEnvs p "a conditional" kEnv vEnv3 vEnv4
+  checkEquivEnvs p "a conditional" e' kEnv vEnv3 vEnv4
   return t
 -- Pair introduction
 synthetise kEnv (E.Pair p e1 e2) = do
@@ -221,7 +221,7 @@ partialApplicationError e s = do
 -- | Check an expression against a given type
 checkAgainst :: K.KindEnv -> E.Exp -> T.Type -> FreestState ()
 -- Boolean elimination
-checkAgainst kEnv (E.Cond p e1 e2 e3) t = do
+checkAgainst kEnv e@(E.Cond p e1 e2 e3) t = do
   checkAgainst kEnv e1 (T.Bool p)
   vEnv2 <- getVEnv
   checkAgainst kEnv e2 t
@@ -229,7 +229,7 @@ checkAgainst kEnv (E.Cond p e1 e2 e3) t = do
   setVEnv vEnv2
   checkAgainst kEnv e3 t
   vEnv4 <- getVEnv
-  checkEquivEnvs p "a conditional" kEnv vEnv3 vEnv4
+  checkEquivEnvs p "a conditional" e kEnv vEnv3 vEnv4
 -- Pair elimination
 checkAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
   t1       <- synthetise kEnv e1
@@ -282,8 +282,8 @@ checkEqualEnvs e vEnv1 vEnv2 = unless
   where diff = Map.difference vEnv2 vEnv1
 
 checkEquivEnvs
-  :: Pos -> String -> K.KindEnv -> VarEnv -> VarEnv -> FreestState ()
-checkEquivEnvs p branching kEnv vEnv1 vEnv2 = do
+  :: Pos -> String -> E.Exp -> K.KindEnv -> VarEnv -> VarEnv -> FreestState ()
+checkEquivEnvs p branching exp kEnv vEnv1 vEnv2 = do
   let vEnv1' = userDefined vEnv1
       vEnv2' = userDefined vEnv2
   unless (equivalent kEnv vEnv1' vEnv2') $ addError
@@ -291,14 +291,16 @@ checkEquivEnvs p branching kEnv vEnv1 vEnv2 = do
     [ Error "I have reached the end of"
     , Error branching
     , Error "expression and found two distinct typing environments."
-    , Error "\n\t They are"
+    , Error "\n\t     The contexts are"
     , Error (vEnv1' Map.\\ vEnv2')
-    , Error "\n\t      and"
+    , Error "\n\t                  and"
     , Error (vEnv2' Map.\\ vEnv1')
+    , Error "\n\tand the expression is"
+    , Error exp
     , Error
-      "\n\t (was a variable consumed in one branch and not in the other?)"
+      "\n\t(was a variable consumed in one branch and not in the other?)"
     , Error
-      "\n\t (is there a variable with different types in the two environments?)"
+      "\n\t(is there a variable with different types in the two environments?)"
     ]
 
 -- TODO: later, turn into warning
@@ -309,13 +311,13 @@ buildMap p tm fm
   = addError
       p
       [ Error "Wrong number of constructors\n"
-      , Error "\t The expression has"
+      , Error "\tThe expression has"
       , Error $ Map.size fm
       , Error "constructor(s)\n"
-      , Error "\t but the type has"
+      , Error "\tbut the type has"
       , Error $ Map.size tm
       , Error "constructor(s)\n"
-      , Error $ "\t in case "
+      , Error $ "\tin case "
       , Error $ "\ESC[91m{" ++ showFieldMap fm ++ "}\ESC[0m"
       ]
     >> pure fm
@@ -338,7 +340,8 @@ buildAbstraction tm x (xs, e) = case tm Map.!? x of
   buildAbstraction' :: ([ProgVar], E.Exp) -> T.Type -> FreestState E.Exp
   buildAbstraction' ([], e) _ = pure e
   buildAbstraction' (x : xs, e) (T.Fun _ _ t1 t2) = -- m ?? Un ??
-    E.Abs (pos e) . E.Bind (pos e) Un x t1 <$> buildAbstraction' (xs, e) t2
+    E.Abs (pos e) . E.Bind (pos e) Lin x t1 <$> buildAbstraction' (xs, e) t2
+    -- E.Abs (pos e) . E.Bind (pos e) Un x t1 <$> buildAbstraction' (xs, e) t2
   buildAbstraction' ([x], e) t =
     return $ E.Abs (pos e) $ E.Bind (pos e) Un x t e
 
@@ -374,7 +377,7 @@ synthetiseCase p kEnv e fm extract = do
                                  (return ([], []))
                                  newMap
   mapM_ (checkEquivTypes e kEnv t)       ts
-  mapM_ (checkEquivEnvs p "a case" kEnv v) vs
+  mapM_ (checkEquivEnvs p "a case" e kEnv v) vs
   setVEnv v
   return t
 
