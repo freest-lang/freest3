@@ -41,7 +41,7 @@ client c =
 
 -- ==================== Aux Functions ====================
 
-sendBool : (rec x: SL. +{Val: !Bool; x, And: ?Bool; x, Not: ?Bool; x, Quit: Skip}) -> Bool -> (rec x: SL. +{Val: !Bool; x, And: ?Bool; x, Not: ?Bool; x, Quit: Skip})
+sendBool : (rec x: SL. +{Val: !Bool; x, And: ?Bool; x, Not: ?Bool; x, Quit: Skip}) -> Bool -o (rec x: SL. +{Val: !Bool; x, And: ?Bool; x, Not: ?Bool; x, Quit: Skip})
 sendBool c b =
   let c = select Val c in
   let c = send b c in

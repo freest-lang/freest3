@@ -10,13 +10,13 @@ channel or with asynchronous channels. In a typical synchronous
 
 -}
 
-writer : !Char -> !Bool -> ()
+writer : !Char -> !Bool -o ()
 writer w1 w2 =
   let _ = send 'c' w1 in
   let _ = send False w2 in
   ()
 
-reader : ?Char -> ?Bool -> Bool
+reader : ?Char -> ?Bool -o Bool
 reader r1 r2 =
   let (x, _) = receive r2 in
   let (_, _) = receive r1 in

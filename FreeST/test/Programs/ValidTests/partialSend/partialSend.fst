@@ -1,4 +1,4 @@
-f : Bool -> !Int -> !Int;?Bool -> Skip
+f : Bool -> !Int -> !Int;?Bool -o Skip
 f cond c d =
   let x = send [Int] 5 in  -- x : ∀b:SL . !Int;b -o b
     if cond
