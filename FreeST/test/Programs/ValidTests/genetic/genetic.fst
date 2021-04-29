@@ -303,7 +303,7 @@ initIslands_ channels seed islands popSize nIterI nIterG =
 
 -- Run the master process that coordinates all the islands
 --   and then sends the result to the client
-runMasterServer : dualof ResultChannel -> ListIslandChannel -> Int -> ()
+runMasterServer : dualof ResultChannel -> ListIslandChannel -o Int -o ()
 runMasterServer c channels nIterG =
   -- Apply nIterG global iterations
   let channels = masterLoop channels nIterG in
@@ -333,7 +333,7 @@ masterLoop channels nIterG =
 
 -- Run an island instance that holds a population an performs
 --   the GA on demand (by the master)
-runIsland : dualof IslandChannel -> Int -> Int -> Population -> ()
+runIsland : dualof IslandChannel -> Int -o Int -o Population -o ()
 runIsland master seed nIterI pop =
   match master with {
     Fittest master ->

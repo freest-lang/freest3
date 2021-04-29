@@ -13,4 +13,4 @@ consumeD d = let (_, d) = receive (send 7 d) in d
 
 main : Int
 main = 5
-x
+
