@@ -60,21 +60,21 @@ synthetise kEnv (E.UnLet _ x e1 e2) = do
   t1 <- synthetise kEnv e1
   addToVEnv x t1
   t2 <- synthetise kEnv e2
-  quotient kEnv x
+  difference kEnv x
   return t2
 -- Abs introduction
 synthetise kEnv (E.Abs p (E.Bind _ Lin x t1 e)) = do
   void $ K.synthetise kEnv t1
   addToVEnv x t1
   t2 <- synthetise kEnv e
-  quotient kEnv x
+  difference kEnv x
   return $ T.Fun p Lin t1 t2
 synthetise kEnv e'@(E.Abs p (E.Bind _ Un x t1 e)) = do
   void $ K.synthetise kEnv t1
   vEnv1 <- getVEnv
   addToVEnv x t1
   t2 <- synthetise kEnv e
-  quotient kEnv x
+  difference kEnv x
   vEnv2 <- getVEnv
   checkEquivEnvs (pos e) "an unrestricted lambda" e' kEnv vEnv1 vEnv2
   return $ T.Fun p Un t1 t2
@@ -147,8 +147,8 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
   addToVEnv x u1
   addToVEnv y u2
   t2 <- synthetise kEnv e2
-  quotient kEnv x
-  quotient kEnv y
+  difference kEnv x
+  difference kEnv y
   return t2
 -- Datatype elimination
 synthetise kEnv (E.Case p e fm) =
@@ -179,10 +179,10 @@ synthetiseVar kEnv x = getFromVEnv x >>= \case
     addToVEnv x s
     return s
 
--- The quotient operation. Removes a program variable from the
+-- The difference operation. Removes a program variable from the
 -- variable environment and gives an error if it is linear
-quotient :: K.KindEnv -> ProgVar -> FreestState ()
-quotient kEnv x = do
+difference :: K.KindEnv -> ProgVar -> FreestState ()
+difference kEnv x = do
   getFromVEnv x >>= \case
     Just t -> do
       k <- K.synthetise kEnv t
@@ -237,8 +237,8 @@ checkAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
   addToVEnv x u1
   addToVEnv y u2
   checkAgainst kEnv e2 t2
-  quotient kEnv x
-  quotient kEnv y
+  difference kEnv x
+  difference kEnv y
 -- TODO Match
 -- checkAgainst kEnv (Match p e fm) = checkAgainstFieldMap p kEnv e fm Extract.inChoiceMap
 -- TODO Datatype elimination
@@ -266,20 +266,20 @@ checkEquivTypes exp kEnv expected actual =
     , Error exp
     ]
 
-checkEqualEnvs :: E.Exp -> VarEnv -> VarEnv -> FreestState ()
-checkEqualEnvs e vEnv1 vEnv2 = unless
-  (Map.null diff)
-  (addError
-    (pos e)
-    [ Error
-      "Final environment differs from initial in an unrestricted function"
-    , Error "\n\t These extra entries are present in the final environment:"
-    , Error diff
-    , Error "\n\t for lambda abstraction"
-    , Error e
-    ]
-  )
-  where diff = Map.difference vEnv2 vEnv1
+-- checkEqualEnvs :: E.Exp -> VarEnv -> VarEnv -> FreestState ()
+-- checkEqualEnvs e vEnv1 vEnv2 = unless
+--   (Map.null diff)
+--   (addError
+--     (pos e)
+--     [ Error
+--       "Final environment differs from initial in an unrestricted function"
+--     , Error "\n\t These extra entries are present in the final environment:"
+--     , Error diff
+--     , Error "\n\t for lambda abstraction"
+--     , Error e
+--     ]
+--   )
+--   where diff = Map.difference vEnv2 vEnv1
 
 checkEquivEnvs
   :: Pos -> String -> E.Exp -> K.KindEnv -> VarEnv -> VarEnv -> FreestState ()
