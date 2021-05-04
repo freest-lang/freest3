@@ -62,7 +62,7 @@ instance Equivalence T.Type where
     equiv _ _ (T.Bool _) (T.Bool _)                    = True
     equiv _ _ (T.Unit _) (T.Unit _)                    = True
     equiv _ _ (T.String _) (T.String _)                = True
-    equiv v kEnv (T.Fun _ n1 t1 t2) (T.Fun _ n2 u1 u2) =
+    equiv v kEnv (T.Arrow _ n1 t1 t2) (T.Arrow _ n2 u1 u2) =
       n1 == n2 && equiv v kEnv t1 u1 && equiv v kEnv t2 u2
     equiv v kEnv (T.Pair _ t1 t2) (T.Pair _ u1 u2) =
       equiv v kEnv t1 u1 && equiv v kEnv t2 u2

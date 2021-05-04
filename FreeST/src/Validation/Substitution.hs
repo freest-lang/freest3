@@ -34,7 +34,7 @@ class Subs t where
 instance Subs T.Type where
   -- Functional types
   subs t x (T.Message p pol t1) = T.Message p pol (subs t x t1)
-  subs t x (T.Fun p m t1 t2) = T.Fun p m (subs t x t1) (subs t x t2)
+  subs t x (T.Arrow p m t1 t2) = T.Arrow p m (subs t x t1) (subs t x t2)
   subs t x (T.Pair p t1 t2) = T.Pair p (subs t x t1) (subs t x t2)
   subs t x (T.Datatype p m) = T.Datatype p (Map.map (subs t x) m)
   -- Session types
@@ -67,7 +67,7 @@ unfold t = internalError "Validation.Substitution.unfold" t
 -- The set of free type variables in a type
 free :: T.Type -> Set.Set TypeVar
   -- Functional types
-free (T.Fun _ _ t u) = free t `Set.union` free u
+free (T.Arrow _ _ t u) = free t `Set.union` free u
 free (T.Pair _ t u) = free t `Set.union` free u
 free (T.Datatype _ m) = freeMap m
   -- Session types

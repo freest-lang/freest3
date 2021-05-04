@@ -31,7 +31,7 @@ data Type =
   | Bool Pos
   | String Pos
   | Unit Pos
-  | Fun Pos Multiplicity Type Type
+  | Arrow Pos Multiplicity Type Type
   | Pair Pos Type Type
   | Datatype Pos TypeMap
   -- Session Types
@@ -56,7 +56,7 @@ instance Position Type where
   pos (Bool p       ) = p
   pos (String p     ) = p
   pos (Unit p       ) = p
-  pos (Fun p _ _ _  ) = p
+  pos (Arrow p _ _ _) = p
   pos (Pair p _ _   ) = p
   pos (Datatype p _ ) = p
   pos (Skip p       ) = p

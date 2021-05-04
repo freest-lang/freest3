@@ -41,7 +41,7 @@ import qualified Data.Map.Strict               as Map
 function :: E.Exp -> T.Type -> FreestState (T.Type, T.Type)
 function e t =
   case normalise t of
-    (T.Fun _ _ u v) -> return (u, v)
+    (T.Arrow _ _ u v) -> return (u, v)
     u               -> do
       let p = pos e
       addError

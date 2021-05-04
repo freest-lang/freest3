@@ -211,4 +211,4 @@ typeListToType a = map (\(x, ts) -> (x, typeToFun ts))
  where
 --  typeToFun []       = TypeName (pos a) a
   typeToFun []       = T.Var (pos a) a
-  typeToFun (t : ts) = T.Fun (pos t) Un t (typeToFun ts)
+  typeToFun (t : ts) = T.Arrow (pos t) Un t (typeToFun ts)

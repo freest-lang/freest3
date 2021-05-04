@@ -62,8 +62,8 @@ solveEquations = buildRecursiveTypes >> solveAll >> cleanUnusedRecs
       >>= setTEnv
 
   solveEq :: Visited -> TypeVar -> T.Type -> FreestState T.Type
-  solveEq v f (T.Fun p m t1 t2) =
-    T.Fun p m <$> solveEq v f t1 <*> solveEq v f t2
+  solveEq v f (T.Arrow p m t1 t2) =
+    T.Arrow p m <$> solveEq v f t1 <*> solveEq v f t2
   solveEq v f (T.Pair p t1 t2) = T.Pair p <$> solveEq v f t1 <*> solveEq v f t2
   solveEq v f (T.Datatype p tm) = T.Datatype p <$> mapM (solveEq v f) tm
   solveEq v f (T.Semi p t1 t2) = T.Semi p <$> solveEq v f t1 <*> solveEq v f t2
@@ -123,7 +123,7 @@ class Elaboration t where
 
 instance Elaboration T.Type where
   elaborate (  T.Message p pol t) = T.Message p pol <$> elaborate t
-  elaborate (  T.Fun p m t1 t2  ) = T.Fun p m <$> elaborate t1 <*> elaborate t2
+  elaborate (  T.Arrow p m t1 t2  ) = T.Arrow p m <$> elaborate t1 <*> elaborate t2
   elaborate (  T.Pair p t1 t2   ) = T.Pair p <$> elaborate t1 <*> elaborate t2
   elaborate (  T.Datatype p m   ) = T.Datatype p <$> elaborate m
   elaborate (  T.Semi   p t1  t2) = T.Semi p <$> elaborate t1 <*> elaborate t2
@@ -190,7 +190,7 @@ buildProg = getPEnv
 
   buildExp :: Exp -> [ProgVar] -> T.Type -> Exp
   buildExp e [] _ = e
-  buildExp e (b : bs) (T.Fun _ m t1 t2) =
+  buildExp e (b : bs) (T.Arrow _ m t1 t2) =
     Abs (pos b) (Bind (pos b) m b t1 (buildExp e bs t2))
   buildExp _ _ t@(T.Dualof _ _) =
     internalError "Elaboration.Elaboration.buildFunbody.buildExp" t
@@ -208,7 +208,7 @@ changePos p (T.Int  _         ) = T.Int p
 changePos p (T.Char _         ) = T.Char p
 changePos p (T.Bool _         ) = T.Bool p
 changePos p (T.Unit _         ) = T.Unit p
-changePos p (T.Fun _ pol t u  ) = T.Fun p pol (changePos p t) (changePos p u)
+changePos p (T.Arrow _ pol t u) = T.Arrow p pol (changePos p t) (changePos p u)
 changePos p (T.Pair    _ t   u) = T.Pair p t u
 -- Datatype
 -- Skip

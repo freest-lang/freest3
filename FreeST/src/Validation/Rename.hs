@@ -95,7 +95,7 @@ instance Rename T.Type where
 
 rename' :: Bindings -> T.Type -> FreestState T.Type
     -- Functional types
-rename' bs (T.Fun p m t u    ) = T.Fun p m <$> rename bs t <*> rename bs u
+rename' bs (T.Arrow p m t u    ) = T.Arrow p m <$> rename bs t <*> rename bs u
 rename' bs (T.Message p pol t) = T.Message p pol <$> rename bs t
 rename' bs (T.Pair p t u     ) = T.Pair p <$> rename bs t <*> rename bs u
 rename' bs (T.Datatype p fm  ) = T.Datatype p <$> tMapM (rename bs) fm
@@ -214,7 +214,7 @@ isProperRec (K.Bind _ x _ t) = x `isFreeIn` t
 -- If not, then rec x.t can be renamed to t alone.
 isFreeIn :: TypeVar -> T.Type -> Bool
     -- Functional types
-isFreeIn x (T.Fun _ _ t u) = x `isFreeIn` t || x `isFreeIn` u
+isFreeIn x (T.Arrow _ _ t u) = x `isFreeIn` t || x `isFreeIn` u
 isFreeIn x (T.Pair _ t u ) = x `isFreeIn` t || x `isFreeIn` u
 isFreeIn x (T.Datatype _ fm) =
   Map.foldr' (\t b -> x `isFreeIn` t || b) False fm

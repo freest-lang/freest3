@@ -68,7 +68,7 @@ synthetise kEnv (E.Abs p (E.Bind _ Lin x t1 e)) = do
   addToVEnv x t1
   t2 <- synthetise kEnv e
   difference kEnv x
-  return $ T.Fun p Lin t1 t2
+  return $ T.Arrow p Lin t1 t2
 synthetise kEnv e'@(E.Abs p (E.Bind _ Un x t1 e)) = do
   void $ K.synthetise kEnv t1
   vEnv1 <- getVEnv
@@ -77,7 +77,7 @@ synthetise kEnv e'@(E.Abs p (E.Bind _ Un x t1 e)) = do
   difference kEnv x
   vEnv2 <- getVEnv
   checkEquivEnvs (pos e) "an unrestricted lambda" e' kEnv vEnv1 vEnv2
-  return $ T.Fun p Un t1 t2
+  return $ T.Arrow p Un t1 t2
 -- Application, the special cases first
   -- Select C, an error
 synthetise _ e@(E.App p (E.Var _ x) _) | x == mkVar p "select" =
@@ -90,7 +90,7 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e) | x == mkVar p "se
   -- Collect e
 synthetise kEnv (E.App _ (E.Var p x) e) | x == mkVar p "collect" = do
   tm <- Extract.inChoiceMap e =<< synthetise kEnv e
-  return $ T.Datatype p $ Map.map (\u -> T.Fun p Un u (T.Unit defaultPos)) tm
+  return $ T.Datatype p $ Map.map (\u -> T.Arrow p Un u (T.Unit defaultPos)) tm
   -- Receive e
 synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "receive" = do
   t        <- synthetise kEnv e
@@ -339,7 +339,7 @@ buildAbstraction tm x (xs, e) = case tm Map.!? x of
  where
   buildAbstraction' :: ([ProgVar], E.Exp) -> T.Type -> FreestState E.Exp
   buildAbstraction' ([], e) _ = pure e
-  buildAbstraction' (x : xs, e) (T.Fun _ _ t1 t2) = -- m ?? Un ??
+  buildAbstraction' (x : xs, e) (T.Arrow _ _ t1 t2) = -- m ?? Un ??
     E.Abs (pos e) . E.Bind (pos e) Lin x t1 <$> buildAbstraction' (xs, e) t2
     -- E.Abs (pos e) . E.Bind (pos e) Un x t1 <$> buildAbstraction' (xs, e) t2
   buildAbstraction' ([x], e) t =
@@ -359,7 +359,7 @@ buildAbstraction tm x (xs, e) = case tm Map.!? x of
     ]
 
   numberOfArgs :: T.Type -> Int
-  numberOfArgs (T.Fun _ _ _ t) = 1 + numberOfArgs t
+  numberOfArgs (T.Arrow _ _ _ t) = 1 + numberOfArgs t
   numberOfArgs _               = 0
 
 synthetiseCase
@@ -397,5 +397,5 @@ synthetiseMap kEnv vEnv (x, e) state = do
  where
   returnType :: Int -> T.Type -> T.Type
   returnType 0 t                = t
-  returnType i (T.Fun _ _ _ t2) = returnType (i - 1) t2
+  returnType i (T.Arrow _ _ _ t2) = returnType (i - 1) t2
   returnType _ t                = t

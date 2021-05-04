@@ -267,7 +267,7 @@ Type :: { T.Type }
   | Bool                          { T.Bool (pos $1) }
   | String                        { T.String (pos $1) }
   | '()'                          { T.Unit (pos $1) }
-  | Type Arrow Type %prec ARROW   { uncurry T.Fun $2 $1 $3 }
+  | Type Arrow Type %prec ARROW   { uncurry T.Arrow $2 $1 $3 }
   | '(' Type ',' TupleType ')'    { T.Pair (pos $1) $2 $4 }
   -- Session types
   | Skip                          { T.Skip (pos $1) }

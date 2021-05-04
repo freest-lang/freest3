@@ -180,7 +180,7 @@ instance Unparse T.Type where
   unparse (T.Var  _ a     ) = (maxRator, show a)
   unparse (T.Message _ p t) = (msgRator, show p ++ m)
     where m = bracket (unparse t) Right msgRator
-  unparse (T.Fun _ m t u) = (arrowRator, l ++ showArrow m ++ r)
+  unparse (T.Arrow _ m t u) = (arrowRator, l ++ showArrow m ++ r)
    where
     l = bracket (unparse t) Left arrowRator
     r = bracket (unparse u) Right arrowRator
@@ -207,7 +207,7 @@ showDatatype m = intercalate " | "
   $ Map.foldrWithKey (\c t acc -> (show c ++ showAsSequence t) : acc) [] m
  where
   showAsSequence :: T.Type -> String
-  showAsSequence (T.Fun _ _ t u) = " " ++ show t ++ showAsSequence u
+  showAsSequence (T.Arrow _ _ t u) = " " ++ show t ++ showAsSequence u
   showAsSequence _               = ""
 
 showChoice :: T.TypeMap -> String

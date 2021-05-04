@@ -19,8 +19,8 @@ class DefaultTypeOp a where
   getDefault :: TypeOpsEnv -> a -> a
 
 instance DefaultTypeOp T.Type where
-  getDefault m (T.Fun p mu t u) =
-    lookupPos m p $ T.Fun p mu (getDefault m t) (getDefault m u)
+  getDefault m (T.Arrow p mu t u) =
+    lookupPos m p $ T.Arrow p mu (getDefault m t) (getDefault m u)
   getDefault m (T.Pair p t u) =
     lookupPos m p $ T.Pair p (getDefault m t) (getDefault m u)
   getDefault m (T.Datatype p sm) =

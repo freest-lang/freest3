@@ -60,7 +60,7 @@ synthetise' _ _ (T.Char   p) = return $ K.Kind p K.Message Un
 synthetise' _ _ (T.Bool   p) = return $ K.Kind p K.Message Un
 synthetise' _ _ (T.Unit   p) = return $ K.Kind p K.Message Un
 synthetise' _ _ (T.String p) = return $ K.Kind p K.Message Un
-synthetise' s kEnv (T.Fun p m t u) = -- do
+synthetise' s kEnv (T.Arrow p m t u) = -- do
   synthetise' s kEnv t >> synthetise' s kEnv u $> K.Kind p K.Top m
 synthetise' s kEnv (T.Pair p t u) = do
   (K.Kind _ _ mt) <- synthetise' s kEnv t
