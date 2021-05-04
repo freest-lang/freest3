@@ -59,9 +59,9 @@ checkAndRun runOpts = do
   let s4 = execState typeCheck (s3 { runOpts })
   when (hasErrors s4) (die $ getErrors s4)
   -- Interpret
-  evalAndPrint initialCtx
+  evalAndPrint (typeEnv s4) initialCtx
                (prog s4)
-               (prog s4 Map.! fromJust (mainFunction runOpts))
+               (prog s4 Map.! fromJust (mainFunction runOpts)) 
  where
   fromPreludeFile :: FreestS -> (VarEnv, ParseEnv)
   fromPreludeFile s0 | hasErrors s0 = (prelude, Map.empty)

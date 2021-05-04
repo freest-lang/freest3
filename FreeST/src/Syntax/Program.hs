@@ -4,6 +4,7 @@ module Syntax.Program
   , Prog
   , TypeOpsEnv
   , noConstructors
+  , isDatatypeContructor
   )
 where
 

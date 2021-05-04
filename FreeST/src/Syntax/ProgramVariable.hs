@@ -11,7 +11,6 @@ The definition of program variables
 
 module Syntax.ProgramVariable
 ( ProgVar
-  , isADT -- TODO: remove
 ) where
 
 import Syntax.Base
@@ -36,8 +35,3 @@ instance Position ProgVar where
 
 instance Default ProgVar where
   omission p = mkVar p "omission"
-
--- TODO: remove 
-isADT :: ProgVar -> Bool
-isADT (ProgVar _ (x:_)) = isUpper x
-isADT _ = False
