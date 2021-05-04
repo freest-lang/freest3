@@ -139,7 +139,7 @@ choiceMap pol msg e t =
 datatypeMap :: E.Exp -> T.Type -> FreestState T.TypeMap
 datatypeMap e t =
   case normalise t of
-    (T.Datatype _ m) -> return m
+    (T.Variant _ m) -> return m
     u                -> do
       addError
         (pos e)

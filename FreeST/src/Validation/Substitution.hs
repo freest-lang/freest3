@@ -36,7 +36,7 @@ instance Subs T.Type where
   subs t x (T.Message p pol t1) = T.Message p pol (subs t x t1)
   subs t x (T.Arrow p m t1 t2) = T.Arrow p m (subs t x t1) (subs t x t2)
   subs t x (T.Pair p t1 t2) = T.Pair p (subs t x t1) (subs t x t2)
-  subs t x (T.Datatype p m) = T.Datatype p (Map.map (subs t x) m)
+  subs t x (T.Variant p m) = T.Variant p (Map.map (subs t x) m)
   -- Session types
   subs t x (T.Semi p t1 t2) = T.Semi p (subs t x t1) (subs t x t2)
   subs t x (T.Choice p v m) = T.Choice p v (Map.map (subs t x) m)
@@ -69,7 +69,7 @@ free :: T.Type -> Set.Set TypeVar
   -- Functional types
 free (T.Arrow _ _ t u) = free t `Set.union` free u
 free (T.Pair _ t u) = free t `Set.union` free u
-free (T.Datatype _ m) = freeMap m
+free (T.Variant _ m) = freeMap m
   -- Session types
 free (T.Semi _ t u) = free t `Set.union` free u
 free (T.Choice _ _ m) = freeMap m

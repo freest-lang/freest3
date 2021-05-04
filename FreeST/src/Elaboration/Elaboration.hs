@@ -65,7 +65,7 @@ solveEquations = buildRecursiveTypes >> solveAll >> cleanUnusedRecs
   solveEq v f (T.Arrow p m t1 t2) =
     T.Arrow p m <$> solveEq v f t1 <*> solveEq v f t2
   solveEq v f (T.Pair p t1 t2) = T.Pair p <$> solveEq v f t1 <*> solveEq v f t2
-  solveEq v f (T.Datatype p tm) = T.Datatype p <$> mapM (solveEq v f) tm
+  solveEq v f (T.Variant p tm) = T.Variant p <$> mapM (solveEq v f) tm
   solveEq v f (T.Semi p t1 t2) = T.Semi p <$> solveEq v f t1 <*> solveEq v f t2
   solveEq v f (T.Message p pol t) = T.Message p pol <$> solveEq v f t
   solveEq v f (T.Choice p pol tm) = T.Choice p pol <$> mapM (solveEq v f) tm
@@ -125,7 +125,7 @@ instance Elaboration T.Type where
   elaborate (  T.Message p pol t) = T.Message p pol <$> elaborate t
   elaborate (  T.Arrow p m t1 t2  ) = T.Arrow p m <$> elaborate t1 <*> elaborate t2
   elaborate (  T.Pair p t1 t2   ) = T.Pair p <$> elaborate t1 <*> elaborate t2
-  elaborate (  T.Datatype p m   ) = T.Datatype p <$> elaborate m
+  elaborate (  T.Variant p m   ) = T.Variant p <$> elaborate m
   elaborate (  T.Semi   p t1  t2) = T.Semi p <$> elaborate t1 <*> elaborate t2
   elaborate (  T.Choice p pol m ) = T.Choice p pol <$> elaborate m
   elaborate (  T.Forall p kb    ) = T.Forall p <$> elaborate kb

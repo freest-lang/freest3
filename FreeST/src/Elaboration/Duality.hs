@@ -64,7 +64,7 @@ solveType :: Visited -> T.Type -> FreestState T.Type
 solveType v (T.Arrow p pol t u) =
   T.Arrow p pol <$> solveType v t <*> solveType v u
 solveType v (T.Pair p t u     ) = T.Pair p <$> solveType v t <*> solveType v u
-solveType v (T.Datatype p m   ) = T.Datatype p <$> tMapM (solveType v) m
+solveType v (T.Variant p m   ) = T.Variant p <$> tMapM (solveType v) m
 -- Session Types
 solveType v (T.Semi    p t   u) = T.Semi p <$> solveType v t <*> solveType v u
 solveType v (T.Message p pol t) = T.Message p pol <$> solveType v t
@@ -126,7 +126,7 @@ changePos p (T.Bool _         ) = T.Bool p
 changePos p (T.Unit _         ) = T.Unit p
 changePos p (T.Arrow _ pol t u) = T.Arrow p pol t u
 changePos p (T.Pair _ t u     ) = T.Pair p t u
-changePos p (T.Datatype _ m   ) = T.Datatype p m
+changePos p (T.Variant _ m    ) = T.Variant p m
 changePos p (T.Skip _         ) = T.Skip p
 changePos p (T.Semi    _ t   u) = T.Semi p t u
 changePos p (T.Message _ pol b) = T.Message p pol b

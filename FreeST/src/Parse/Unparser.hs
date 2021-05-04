@@ -188,7 +188,7 @@ instance Unparse T.Type where
    where
     l = bracket (unparse t) Left minRator
     r = bracket (unparse u) Right minRator
-  unparse (T.Datatype _ m) = (maxRator, "[" ++ showDatatype m ++ "]")
+  unparse (T.Variant _ m) = (maxRator, "[" ++ showDatatype m ++ "]")
   unparse (T.Semi _ t u  ) = (semiRator, l ++ " ; " ++ r)
    where
     l = bracket (unparse t) Left semiRator

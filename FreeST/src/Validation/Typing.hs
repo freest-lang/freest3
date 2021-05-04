@@ -24,6 +24,7 @@ import           Control.Monad.State            ( when
                                                 , unless
                                                 , void
                                                 )
+import           Data.Functor
 import qualified Data.Map.Strict               as Map
 import           Equivalence.Equivalence
 import           Parse.Unparser -- debug
@@ -39,20 +40,22 @@ import qualified Validation.Extract            as Extract
 import qualified Validation.Kinding            as K -- Again?
 import qualified Validation.Rename             as Rename
                                                 ( subs )
-import           Data.Functor
 
 -- SYNTHESISING A TYPE
 
 synthetise :: K.KindEnv -> E.Exp -> FreestState T.Type
 -- Basic expressions
-synthetise _    (E.Int  p _       ) = return $ T.Int p
-synthetise _    (E.Char p _       ) = return $ T.Char p
-synthetise _    (E.Bool p _       ) = return $ T.Bool p
-synthetise _    (E.Unit p         ) = return $ T.Unit p
-synthetise _    (E.String p _     ) = return $ T.String p
+synthetise _ (E.Int  p _  ) = return $ T.Int p
+synthetise _ (E.Char p _  ) = return $ T.Char p
+synthetise _ (E.Bool p _  ) = return $ T.Bool p
+synthetise _ (E.Unit p    ) = return $ T.Unit p
+synthetise _ (E.String p _) = return $ T.String p
 synthetise kEnv e@(E.Var p x)
+  |
   -- The 1st 2 cases are not strictly necessary but yield better error messages
-  | x == mkVar p "select" =  partialApplicationError e "label and another denoting channel of + type"
+    x == mkVar p "select" = partialApplicationError
+    e
+    "label and another denoting channel of + type"
   | x == mkVar p "collect" = partialApplicationError e "channel of & type"
   | otherwise = synthetiseVar kEnv x
 -- Unary let
@@ -83,14 +86,15 @@ synthetise kEnv e'@(E.Abs p (E.Bind _ Un x t1 e)) = do
 synthetise _ e@(E.App p (E.Var _ x) _) | x == mkVar p "select" =
   partialApplicationError e "channel of + type"
   -- Select C e
-synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e) | x == mkVar p "select" = do  
-  t <- synthetise kEnv e
-  m <- Extract.outChoiceMap e t
-  Extract.outChoiceBranch p m c t
+synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
+  | x == mkVar p "select" = do
+    t <- synthetise kEnv e
+    m <- Extract.outChoiceMap e t
+    Extract.outChoiceBranch p m c t
   -- Collect e
 synthetise kEnv (E.App _ (E.Var p x) e) | x == mkVar p "collect" = do
   tm <- Extract.inChoiceMap e =<< synthetise kEnv e
-  return $ T.Datatype p $ Map.map (\u -> T.Arrow p Un u (T.Unit defaultPos)) tm
+  return $ T.Variant p $ Map.map (flip (T.Arrow p Un) (T.Unit defaultPos)) tm
   -- Receive e
 synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "receive" = do
   t        <- synthetise kEnv e
@@ -297,8 +301,7 @@ checkEquivEnvs p branching exp kEnv vEnv1 vEnv2 = do
     , Error (vEnv2' Map.\\ vEnv1')
     , Error "\n\tand the expression is"
     , Error exp
-    , Error
-      "\n\t(was a variable consumed in one branch and not in the other?)"
+    , Error "\n\t(was a variable consumed in one branch and not in the other?)"
     , Error
       "\n\t(is there a variable with different types in the two environments?)"
     ]
@@ -360,7 +363,7 @@ buildAbstraction tm x (xs, e) = case tm Map.!? x of
 
   numberOfArgs :: T.Type -> Int
   numberOfArgs (T.Arrow _ _ _ t) = 1 + numberOfArgs t
-  numberOfArgs _               = 0
+  numberOfArgs _                 = 0
 
 synthetiseCase
   :: Pos
@@ -376,7 +379,7 @@ synthetiseCase p kEnv e fm extract = do
   ~(t : ts, v : vs) <- Map.foldr (synthetiseMap kEnv vEnv)
                                  (return ([], []))
                                  newMap
-  mapM_ (checkEquivTypes e kEnv t)       ts
+  mapM_ (checkEquivTypes e kEnv t)           ts
   mapM_ (checkEquivEnvs p "a case" e kEnv v) vs
   setVEnv v
   return t
@@ -396,6 +399,6 @@ synthetiseMap kEnv vEnv (x, e) state = do
   return (returnType (length x) t : ts, env : envs)
  where
   returnType :: Int -> T.Type -> T.Type
-  returnType 0 t                = t
+  returnType 0 t                  = t
   returnType i (T.Arrow _ _ _ t2) = returnType (i - 1) t2
-  returnType _ t                = t
+  returnType _ t                  = t

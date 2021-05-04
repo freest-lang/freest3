@@ -150,7 +150,7 @@ Decl :: { () }
       let bs = typeListToType a $4 :: [(ProgVar, T.Type)]
       toStateT $ mapM_ (\(c, t) -> addToVEnv c t) bs
       let p = pos a
-      toStateT $ uncurry addToTEnv $2 (T.Datatype p (Map.fromList bs))
+      toStateT $ uncurry addToTEnv $2 (T.Variant p (Map.fromList bs))
     }
 
 TypeDecl :: { T.Type }

@@ -33,7 +33,7 @@ data Type =
   | Unit Pos
   | Arrow Pos Multiplicity Type Type
   | Pair Pos Type Type
-  | Datatype Pos TypeMap
+  | Variant Pos TypeMap
   -- Session Types
   | Skip Pos
   | Semi Pos Type Type
@@ -58,7 +58,7 @@ instance Position Type where
   pos (Unit p       ) = p
   pos (Arrow p _ _ _) = p
   pos (Pair p _ _   ) = p
-  pos (Datatype p _ ) = p
+  pos (Variant p _  ) = p
   pos (Skip p       ) = p
   pos (Semi p _ _   ) = p
   pos (Message p _ _) = p

@@ -66,7 +66,7 @@ instance Equivalence T.Type where
       n1 == n2 && equiv v kEnv t1 u1 && equiv v kEnv t2 u2
     equiv v kEnv (T.Pair _ t1 t2) (T.Pair _ u1 u2) =
       equiv v kEnv t1 u1 && equiv v kEnv t2 u2
-    equiv v kEnv (T.Datatype _ m1) (T.Datatype _ m2) =
+    equiv v kEnv (T.Variant _ m1) (T.Variant _ m2) =
       Map.size m1
         == Map.size m2
         && Map.foldlWithKey (equivField v kEnv m2) True m1

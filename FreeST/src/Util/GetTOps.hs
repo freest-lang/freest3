@@ -23,8 +23,8 @@ instance DefaultTypeOp T.Type where
     lookupPos m p $ T.Arrow p mu (getDefault m t) (getDefault m u)
   getDefault m (T.Pair p t u) =
     lookupPos m p $ T.Pair p (getDefault m t) (getDefault m u)
-  getDefault m (T.Datatype p sm) =
-    lookupPos m p $ T.Datatype p $ getDefault m sm
+  getDefault m (T.Variant p sm) =
+    lookupPos m p $ T.Variant p $ getDefault m sm
   getDefault m (T.Semi p t u) =
     lookupPos m p $ T.Semi p (getDefault m t) (getDefault m u)
   getDefault m (T.Message p pol t) =

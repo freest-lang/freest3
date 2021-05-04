@@ -66,7 +66,7 @@ synthetise' s kEnv (T.Pair p t u) = do
   (K.Kind _ _ mt) <- synthetise' s kEnv t
   (K.Kind _ _ mu) <- synthetise' s kEnv u
   return $ K.Kind p K.Top (join mt mu)
-synthetise' s kEnv (T.Datatype p m) = do
+synthetise' s kEnv (T.Variant p m) = do
   ks <- tMapM (synthetise' s kEnv) m
   let K.Kind _ _ n = foldr1 join ks
   return $ K.Kind p K.Top n
