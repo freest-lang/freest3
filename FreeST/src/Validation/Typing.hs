@@ -31,6 +31,7 @@ import           Parse.Unparser -- debug
 import           Syntax.Base
 import qualified Syntax.Expression             as E
 import qualified Syntax.Kind                   as K
+import           Syntax.Value
 import           Syntax.Program
 import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
@@ -120,7 +121,8 @@ synthetise kEnv (E.App _ e1 e2) = do
   checkAgainst kEnv e2 u1
   return u2
 -- Type abstraction
-synthetise kEnv (E.TypeAbs _ (K.Bind p a k e)) = -- do
+synthetise kEnv (E.TypeAbs _ (K.Bind p a k e)) =
+  unless (isVal e) (addError (pos e) [Error e, Error "is not a value"]) >>
   T.Forall p . K.Bind p a k <$> synthetise (Map.insert a k kEnv) e
 -- Type application
 synthetise kEnv (E.TypeApp _ e t) = do
