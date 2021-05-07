@@ -121,9 +121,11 @@ synthetise kEnv (E.App _ e1 e2) = do
   checkAgainst kEnv e2 u1
   return u2
 -- Type abstraction
-synthetise kEnv (E.TypeAbs _ (K.Bind p a k e)) =
-  unless (isVal e) (addError (pos e) [Error e, Error "is not a value"]) >>
-  T.Forall p . K.Bind p a k <$> synthetise (Map.insert a k kEnv) e
+synthetise kEnv e@(E.TypeAbs _ (K.Bind p a k e')) =
+  unless (isVal e') (addError (pos e') [ Error "The body of the term-level type abstraction"
+                                       , Error e, Error "\n\t namely", Error e'
+                                       , Error "\n\t is not a value"]) >>
+  T.Forall p . K.Bind p a k <$> synthetise (Map.insert a k kEnv) e'
 -- Type application
 synthetise kEnv (E.TypeApp _ e t) = do
   u                               <- synthetise kEnv e
