@@ -276,7 +276,7 @@ instance Unparse Exp where
     where s = bracket (unparse e) NonAssoc inRator
   -- Type Abstraction intro and elim
   unparse (E.TypeApp _ x t) = (appRator, show x ++ " [" ++ show t ++ "]")
-  unparse (E.TypeAbs _ b) = (arrowRator, "λ" ++ showBindExp b)
+  unparse (E.TypeAbs _ b) = (arrowRator, "Λ" ++ showBindExp b)
   -- Boolean elim
   unparse (E.Cond _ e1 e2 e3) =
     (inRator, "if " ++ s1 ++ " then " ++ s2 ++ " else " ++ s3)
