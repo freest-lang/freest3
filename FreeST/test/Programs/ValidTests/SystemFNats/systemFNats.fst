@@ -39,7 +39,18 @@ times : Nat -> Nat -> Nat
 times m n = Λ a => λs:(a->a) -> n [a] (m [a] s)
 
 exp : Nat -> Nat -> Nat
-exp m n = Λ a => n [a->a] (m [a])
+exp m n = Λ a => λ f:(a -> a) -> n [a->a] (m [a]) f
+
+{-
+Note: One cannot apply eta-reduction in the code above to get rid
+of f and obtain:
+
+  exp m n = Λ a => n [a->a] (m [a])
+
+for the body of the type application (that is, n [a->a] (m [a]))
+must be a value. Once we apply eta-expansion we obtain Λ a => λ f...
+which is OK for λ f... is a value.
+-}
 
 square : Nat -> Nat
 square n = Λ a => λ s:(a -> a) z:a -> n [a] (n [a] s) z
