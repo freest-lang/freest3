@@ -86,6 +86,7 @@ import           Util.FreestState
   then     {TokenThen _}
   else     {TokenElse _}
   new      {TokenNew _}
+  select   {TokenSelect _}
   match    {TokenMatch _}
   with     {TokenWith _}
   case     {TokenCase _}
@@ -197,8 +198,11 @@ Exp :: { E.Exp }
 
 App :: { E.Exp }
   : App Primary                    { E.App (pos $1) $1 $2 }
+  | select Constructor             { E.App (pos $1)
+                                       (E.Var (pos $1) (mkVar (pos $1) "select"))
+                                       (E.Var (pos $2) $2) }
   | Primary                        { $1 }
-
+   
 Primary :: { E.Exp }
   : INT                            { let (TokenInt p x) = $1 in E.Int p x }
   | BOOL                           { let (TokenBool p x) = $1 in E.Bool p x }

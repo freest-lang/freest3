@@ -51,12 +51,8 @@ synthetise _ (E.Char p _  ) = return $ T.Char p
 synthetise _ (E.Bool p _  ) = return $ T.Bool p
 synthetise _ (E.Unit p    ) = return $ T.Unit p
 synthetise _ (E.String p _) = return $ T.String p
-synthetise kEnv e@(E.Var p x)
-  |
   -- The 1st 2 cases are not strictly necessary but yield better error messages
-    x == mkVar p "select" = partialApplicationError
-    e
-    "label and another denoting channel of + type"
+synthetise kEnv e@(E.Var p x)
   | x == mkVar p "collect" = partialApplicationError e "channel of & type"
   | otherwise = synthetiseVar kEnv x
 -- Unary let
@@ -83,9 +79,6 @@ synthetise kEnv e'@(E.Abs p (E.Bind _ Un x t1 e)) = do
   checkEquivEnvs (pos e) "an unrestricted lambda" e' kEnv vEnv1 vEnv2
   return $ T.Arrow p Un t1 t2
 -- Application, the special cases first
-  -- Select C, an error
-synthetise _ e@(E.App p (E.Var _ x) _) | x == mkVar p "select" =
-  partialApplicationError e "channel of + type"
   -- Select C e
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
   | x == mkVar p "select" = do
@@ -100,13 +93,13 @@ synthetise kEnv (E.App _ (E.Var p x) e) | x == mkVar p "collect" = do
 synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "receive" = do
   t        <- synthetise kEnv e
   (u1, u2) <- Extract.input e t
-  void $ K.checkAgainst kEnv (K.ml (pos u1)) u1
+  void $ K.checkAgainst kEnv (K.ml $ pos u1) u1
   return $ T.Pair p u1 u2
   -- Send e1 e2
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkVar p "send" = do
   t        <- synthetise kEnv e2
   (u1, u2) <- Extract.output e2 t
-  void $ K.checkAgainst kEnv (K.ml (pos u1)) u1
+  void $ K.checkAgainst kEnv (K.ml $ pos u1) u1
   checkAgainst kEnv e1 u1
   return u2
   -- Fork e
