@@ -51,7 +51,7 @@ synthetise _ (E.Char p _  ) = return $ T.Char p
 synthetise _ (E.Bool p _  ) = return $ T.Bool p
 synthetise _ (E.Unit p    ) = return $ T.Unit p
 synthetise _ (E.String p _) = return $ T.String p
-  -- The 1st 2 cases are not strictly necessary but yield better error messages
+  -- The 1st case is not strictly necessary but yields a better error message
 synthetise kEnv e@(E.Var p x)
   | x == mkVar p "collect" = partialApplicationError e "channel of & type"
   | otherwise = synthetiseVar kEnv x
@@ -154,8 +154,7 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
   difference kEnv y
   return t2
 -- Datatype elimination
-synthetise kEnv (E.Case p e fm) =
-  synthetiseCase p kEnv e fm Extract.datatypeMap
+synthetise kEnv (E.Case p e fm) = synthetiseCase p kEnv e fm
 -- Session types
 synthetise kEnv (E.New p t u) = do
   K.checkAgainstSession kEnv t
@@ -191,15 +190,10 @@ difference kEnv x = do
       k <- K.synthetise kEnv t
       when (K.isLin k) $ addError
         (pos x)
-        [ Error "Program variable"
-        , Error x
-        , Error "is linear at the end of its scope\n"
-        , Error "\t variable"
-        , Error x
-        , Error "is of type"
-        , Error t
-        , Error "of kind"
-        , Error k
+        [ Error "Program variable", Error x
+        , Error "is linear at the end of its scope\n\t variable", Error x
+        , Error "is of type", Error t
+        , Error "of kind", Error k
         ]
     Nothing -> return ()
   removeFromVEnv x
@@ -207,15 +201,10 @@ difference kEnv x = do
 partialApplicationError :: E.Exp -> String -> FreestState T.Type
 partialApplicationError e s = do
   let p = pos e
-  addError
-    p
+  addError p
     [ Error "Ooops! You're asking too much. I cannot type a partially applied"
-    , Error e
-    -- , Error "\b.\n\t I promise to look into that some time in the future.\n"
-    -- , Error "\t In the meantime consider applying"
-    , Error "\n\t Consider applying"
-    , Error e
-    , Error $ "to an expression denoting a " ++ s ++ "."
+    , Error e, Error "\n\t Consider applying"
+    , Error e, Error $ "to an expression denoting a " ++ s ++ "."
     ]
   return $ omission p
 
@@ -242,8 +231,6 @@ checkAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
   checkAgainst kEnv e2 t2
   difference kEnv x
   difference kEnv y
--- TODO Match
--- checkAgainst kEnv (Match p e fm) = checkAgainstFieldMap p kEnv e fm Extract.inChoiceMap
 -- TODO Datatype elimination
 -- checkAgainst kEnv (Case p e fm) = checkAgainstFieldMap p kEnv e fm Extract.datatypeMap
 -- Abs elimination. It seems that we cannot do checkAgainst for we
@@ -269,21 +256,6 @@ checkEquivTypes exp kEnv expected actual =
     , Error exp
     ]
 
--- checkEqualEnvs :: E.Exp -> VarEnv -> VarEnv -> FreestState ()
--- checkEqualEnvs e vEnv1 vEnv2 = unless
---   (Map.null diff)
---   (addError
---     (pos e)
---     [ Error
---       "Final environment differs from initial in an unrestricted function"
---     , Error "\n\t These extra entries are present in the final environment:"
---     , Error diff
---     , Error "\n\t for lambda abstraction"
---     , Error e
---     ]
---   )
---   where diff = Map.difference vEnv2 vEnv1
-
 checkEquivEnvs
   :: Pos -> String -> E.Exp -> K.KindEnv -> VarEnv -> VarEnv -> FreestState ()
 checkEquivEnvs p branching exp kEnv vEnv1 vEnv2 = do
@@ -304,100 +276,76 @@ checkEquivEnvs p branching exp kEnv vEnv1 vEnv2 = do
     , Error
       "\n\t(is there a variable with different types in the two environments?)"
     ]
-
--- TODO: later, turn into warning
--- TODO: remove bool and string (see comment below)
-buildMap :: Pos -> T.TypeMap -> E.FieldMap -> FreestState E.FieldMap
-buildMap p tm fm
-  | Map.size tm /= Map.size fm
-  = addError
-      p
-      [ Error "Wrong number of constructors\n"
-      , Error "\tThe expression has"
-      , Error $ Map.size fm
-      , Error "constructor(s)\n"
-      , Error "\tbut the type has"
-      , Error $ Map.size tm
-      , Error "constructor(s)\n"
-      , Error $ "\tin case "
-      , Error $ "\ESC[91m{" ++ showFieldMap fm ++ "}\ESC[0m"
-      ]
-    >> pure fm
-  | otherwise
-  = tMapWithKeyM (buildAbstraction tm) fm
-
-buildAbstraction
-  :: T.TypeMap
-  -> ProgVar
-  -> ([ProgVar], E.Exp)
-  -> FreestState ([ProgVar], E.Exp)
-buildAbstraction tm x (xs, e) = case tm Map.!? x of
-  Just t -> if numberOfArgs t /= length xs
-    then diffArgsErr (numberOfArgs t) $> (xs, e)
-    else (xs, ) <$> buildAbstraction' (xs, e) t
-  Nothing ->
-    addError (pos x) [Error "Data constructor", Error x, Error "not in scope"]
-      $> (xs, e)
- where
-  buildAbstraction' :: ([ProgVar], E.Exp) -> T.Type -> FreestState E.Exp
-  buildAbstraction' ([], e) _ = pure e
-  buildAbstraction' (x : xs, e) (T.Arrow _ _ t1 t2) = -- m ?? Un ??
-    E.Abs (pos e) . E.Bind (pos e) Lin x t1 <$> buildAbstraction' (xs, e) t2
-    -- E.Abs (pos e) . E.Bind (pos e) Un x t1 <$> buildAbstraction' (xs, e) t2
-  buildAbstraction' ([x], e) t =
-    return $ E.Abs (pos e) $ E.Bind (pos e) Un x t e
-
-  diffArgsErr :: Int -> FreestState ()
-  diffArgsErr i = addError
-    (pos e)
-    [ Error "The constructor"
-    , Error x
-    , Error "should have"
-    , Error i
-    , Error "arguments, but has been given"
-    , Error $ length xs
-    , Error "\n\t In the pattern:"
-    , Error $ show x ++ " " ++ unwords (map show xs) ++ " -> " ++ show e
-    ]
-
-  numberOfArgs :: T.Type -> Int
-  numberOfArgs (T.Arrow _ _ _ t) = 1 + numberOfArgs t
-  numberOfArgs _                 = 0
-
-synthetiseCase
-  :: Pos
-  -> K.KindEnv
-  -> E.Exp
-  -> E.FieldMap
-  -> (E.Exp -> T.Type -> FreestState T.TypeMap)
-  -> FreestState T.Type
-synthetiseCase p kEnv e fm extract = do
-  tm                <- extract e =<< synthetise kEnv e
-  newMap            <- buildMap p tm fm
-  vEnv              <- getVEnv
+    
+synthetiseCase :: Pos -> K.KindEnv -> E.Exp -> E.FieldMap -> FreestState T.Type
+synthetiseCase p kEnv e fm  = do
+  fm'  <- buildMap p fm =<< Extract.datatypeMap e =<< synthetise kEnv e
+  vEnv <- getVEnv
   ~(t : ts, v : vs) <- Map.foldr (synthetiseMap kEnv vEnv)
-                                 (return ([], []))
-                                 newMap
+                                 (return ([], [])) fm'
   mapM_ (checkEquivTypes e kEnv t)           ts
   mapM_ (checkEquivEnvs p "a case" e kEnv v) vs
   setVEnv v
   return t
 
-
-synthetiseMap
-  :: K.KindEnv
-  -> VarEnv
-  -> ([ProgVar], E.Exp)
-  -> FreestState ([T.Type], [VarEnv])
-  -> FreestState ([T.Type], [VarEnv])
-synthetiseMap kEnv vEnv (x, e) state = do
+synthetiseMap :: K.KindEnv -> VarEnv -> ([ProgVar], E.Exp)
+              -> FreestState ([T.Type], [VarEnv])
+              -> FreestState ([T.Type], [VarEnv])
+synthetiseMap kEnv vEnv (xs, e) state = do
   (ts, envs) <- state
   t          <- synthetise kEnv e
   env        <- getVEnv
   setVEnv vEnv
-  return (returnType (length x) t : ts, env : envs)
+  return (returnType xs t : ts, env : envs)
  where
-  returnType :: Int -> T.Type -> T.Type
-  returnType 0 t                  = t
-  returnType i (T.Arrow _ _ _ t2) = returnType (i - 1) t2
+  returnType :: [ProgVar] -> T.Type -> T.Type
+  returnType [] t                  = t
+  returnType (_:xs) (T.Arrow _ _ _ t2) = returnType xs t2
   returnType _ t                  = t
+
+
+-- Building abstractions for each case element
+
+buildMap :: Pos -> E.FieldMap -> T.TypeMap -> FreestState E.FieldMap
+buildMap p fm tm
+  | Map.size tm == Map.size fm = tMapWithKeyM (buildAbstraction tm) fm
+  -- Non-exhaustive case (later it might be a warning)
+  | otherwise = addError p
+      [ Error "Wrong number of constructors\n\tThe expression has"
+      , Error $ Map.size fm
+      , Error "constructor(s)\n\tbut the type has"
+      , Error $ Map.size tm
+      , Error "constructor(s)\n\tin case "
+      , Error $ "\ESC[91m{" ++ showFieldMap fm ++ "}\ESC[0m"
+      ] $> fm
+
+buildAbstraction :: T.TypeMap -> ProgVar -> ([ProgVar], E.Exp)
+                 -> FreestState ([ProgVar], E.Exp)
+buildAbstraction tm x (xs, e) = case tm Map.!? x of
+  Just t -> let n = numberOfArgs t in
+    if n /= length xs
+      then diffArgsErr n $> (xs, e)
+      else return (xs, buildAbstraction' (xs, e) t) 
+  Nothing ->
+    addError (pos x) [Error "Data constructor", Error x, Error "not in scope"]
+      $> (xs, e)
+ where
+  buildAbstraction' :: ([ProgVar], E.Exp) -> T.Type -> E.Exp
+  buildAbstraction' ([], e) _ = e
+  buildAbstraction' (x : xs, e) (T.Arrow _ _ t1 t2) =
+    E.Abs (pos e) $ E.Bind (pos e) Lin x t1 $ buildAbstraction' (xs, e) t2
+  buildAbstraction' ([x], e) t = E.Abs (pos e) $ E.Bind (pos e) Un x t e
+
+  diffArgsErr :: Int -> FreestState ()
+  diffArgsErr i = addError (pos e)
+    [ Error "The constructor", Error x
+    , Error "should have", Error i
+    , Error "arguments, but has been given", Error $ length xs
+    , Error "\n\t In the pattern:"
+    , Error $ show x ++ " " ++ unwords (map show xs) ++ "-> " ++ show e
+    ]
+ 
+  numberOfArgs :: T.Type -> Int
+  numberOfArgs (T.Arrow _ _ _ t) = 1 + numberOfArgs t
+  numberOfArgs _                 = 0
+
