@@ -326,7 +326,7 @@ buildAbstraction tm x (xs, e) = case tm Map.!? x of
     if n /= length xs
       then diffArgsErr n $> (xs, e)
       else return (xs, buildAbstraction' (xs, e) t) 
-  Nothing ->
+  Nothing -> -- Data constructor not in scope
     addError (pos x) [Error "Data constructor", Error x, Error "not in scope"]
       $> (xs, e)
  where
@@ -342,7 +342,7 @@ buildAbstraction tm x (xs, e) = case tm Map.!? x of
     , Error "should have", Error i
     , Error "arguments, but has been given", Error $ length xs
     , Error "\n\t In the pattern:"
-    , Error $ show x ++ " " ++ unwords (map show xs) ++ "-> " ++ show e
+    , Error $ show x ++ " " ++ unwords (" ":map show xs) ++ " -> " ++ show e
     ]
  
   numberOfArgs :: T.Type -> Int
