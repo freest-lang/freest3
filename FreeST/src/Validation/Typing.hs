@@ -342,7 +342,7 @@ buildAbstraction tm x (xs, e) = case tm Map.!? x of
     , Error "should have", Error i
     , Error "arguments, but has been given", Error $ length xs
     , Error "\n\t In the pattern:"
-    , Error $ show x ++ " " ++ unwords (" ":map show xs) ++ " -> " ++ show e
+    , Error $ show x ++ " " ++ unwords (map show xs) ++ " -> " ++ show e
     ]
  
   numberOfArgs :: T.Type -> Int

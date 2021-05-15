@@ -288,7 +288,7 @@ scanTokens str file =
       case alexScan inp 0 of
         AlexEOF -> Left []
         AlexError _ ->
-          Right $ formatErrorMessages Map.empty (internalPos pos) file
+          Right $ formatErrorMessage Map.empty (internalPos pos) file
                   [Error "Lexical error on input",
                    Error $ "\ESC[91m" ++ show (head str) ++ "\ESC[0m"]
         AlexSkip  inp' len     -> go inp'

@@ -67,7 +67,6 @@ instance ErrorMsg K.Kind where
 -- VarEnv
 
 instance ErrorMsg Int where
-
   msg _ = show
   color _ = Just Red
 
@@ -80,11 +79,11 @@ showTypeList tops ts = "[" ++ intercalate ", " types ++ "]"
   where types = map (show . getDefault tops) ts
 
 instance ErrorMsg [K.Bind T.Type] where
-  msg _ = concat . map showBindType
+  msg _ = concatMap showBindType
   color _ = Just Red
 
 instance ErrorMsg [K.Bind E.Exp] where
-  msg _ = concat . map showBindExp
+  msg _ = concatMap showBindExp
   color _ = Just Red
 
 

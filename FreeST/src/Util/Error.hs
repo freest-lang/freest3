@@ -12,7 +12,7 @@ This module provides tools to prettify & format errors with ANSI colors for term
 -}
 
 module Util.Error
-  ( formatErrorMessages
+  ( formatErrorMessage
   , internalError
   , styleRed
   , styleCyan
@@ -29,9 +29,9 @@ import           Syntax.Program                 ( TypeOpsEnv )
 import           Util.ErrorMessage
 
 -- | Format errors
-formatErrorMessages :: TypeOpsEnv -> Pos -> String -> [ErrorMessage] -> String
-formatErrorMessages _ _ _ [] = ""
-formatErrorMessages tops p fname es =
+formatErrorMessage :: TypeOpsEnv -> Pos -> String -> [ErrorMessage] -> String
+formatErrorMessage _ _ _ [] = ""
+formatErrorMessage tops p fname es =
   let header = styleHeader fname p
       body   = foldl (\acc e -> acc ++ " " ++ colorMsg tops e) "" es
   in  header ++ body

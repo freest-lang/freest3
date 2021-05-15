@@ -11,7 +11,7 @@ import           Syntax.ProgramVariable         ( ProgVar )
 import           System.Exit                    ( die )
 import           System.IO.Unsafe               ( unsafePerformIO )
 
-import           Util.Error                     ( formatErrorMessages )
+import           Util.Error                     ( formatErrorMessage )
 import           Util.ErrorMessage              ( ErrorMessage(..) )
 import           Data.Functor
 
@@ -192,7 +192,7 @@ initialCtx = Map.fromList
   -- Error
   , ( var "error"
     , PrimitiveFun
-      (\(String s) -> unsafePerformIO $ die $ formatErrorMessages Map.empty
+      (\(String s) -> unsafePerformIO $ die $ formatErrorMessage Map.empty
                                                                   defaultPos
                                                                   "FreeST"
                                                                   [Error s]

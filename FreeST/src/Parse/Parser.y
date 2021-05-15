@@ -437,12 +437,12 @@ lexer str file f =
 parseError :: [Token] -> FreestStateT a
 parseError [] = do
   file <- toStateT getFileName
-  failM $ formatErrorMessages Map.empty defaultPos file
+  failM $ formatErrorMessage Map.empty defaultPos file
           [Error "Parse error:", Error "\ESC[91mPremature end of file\ESC[0m"]
 parseError (x:_) = do
   file <- toStateT getFileName
 --  traceM $ show xs
-  failM $ formatErrorMessages Map.empty p file
+  failM $ formatErrorMessage Map.empty p file
     [Error "Parse error on input", Error $ "\ESC[91m'" ++ show x ++ "'\ESC[0m"]
  where p = pos x
 

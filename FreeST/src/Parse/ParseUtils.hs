@@ -144,9 +144,6 @@ checkDupCons (x, _) xts
       , Error "\n\t             "
       , Error (pos s)
       ]
-                -- addError (pos x) ["Multiple declarations of", styleRed (show x), "\n",
-                --              "\t Declared at:", show (pos x), "\n",
-                --              "\t             ", show (pos s)]
     Nothing -> return ()
 
 checkDupProgVarDecl :: ProgVar -> FreestState ()

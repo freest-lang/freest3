@@ -44,7 +44,7 @@ function e t =
     (T.Arrow _ _ u v) -> return (u, v)
     u               -> do
       let p = pos e
-      addError
+      addError -- (TypeMismatch p e u)
         p
         [ Error "Expecting an arrow type for expression"
         , Error e

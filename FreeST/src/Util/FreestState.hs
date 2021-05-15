@@ -223,7 +223,6 @@ addDualof d@(T.Dualof p t) = do
     Nothing -> modify (\s -> s { typenames = Map.insert p d tn })
 addDualof t = internalError "Util.FreestState.addDualof" t
 
-
 -- | ERRORS
 
 getErrors :: FreestS -> String
@@ -239,7 +238,7 @@ addError :: Pos -> [ErrorMessage] -> FreestState ()
 addError p em = do
   f    <- getFileName
   tops <- getTypeNames
-  let es = formatErrorMessages tops p f em
+  let es = formatErrorMessage tops p f em
   modify (\s -> s { errors = insertError (errors s) (p, es) })
 
 insertError :: [(Pos, String)] -> (Pos, String) -> [(Pos, String)]
