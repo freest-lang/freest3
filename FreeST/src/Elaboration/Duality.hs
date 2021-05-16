@@ -54,7 +54,7 @@ instance Duality (K.Bind Exp) where
   resolve (K.Bind p a k e) = K.Bind p a k <$> resolve e
 
 instance Duality E.Bind where
-  resolve (E.Bind p m a k e) = E.Bind p m a k <$> resolve e
+  resolve (E.Bind p m a t e) = E.Bind p m a <$> resolve t <*> resolve e
 
 instance Duality T.Type where
   resolve = solveType Set.empty
