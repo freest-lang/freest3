@@ -193,8 +193,8 @@ initialCtx = Map.fromList
   , ( var "error"
     , PrimitiveFun
       (\(String s) -> unsafePerformIO $ die $ formatErrorMessage Map.empty
-                                                                  defaultPos
                                                                   "FreeST"
+                                                                  defaultPos
                                                                   [Error s]
       )
     )

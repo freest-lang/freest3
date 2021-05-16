@@ -29,9 +29,9 @@ import           Syntax.Program                 ( TypeOpsEnv )
 import           Util.ErrorMessage
 
 -- | Format errors
-formatErrorMessage :: TypeOpsEnv -> Pos -> String -> [ErrorMessage] -> String
+formatErrorMessage :: TypeOpsEnv -> String -> Pos -> [ErrorMessage] -> String
 formatErrorMessage _ _ _ [] = ""
-formatErrorMessage tops p fname es =
+formatErrorMessage tops fname p es =
   let header = styleHeader fname p
       body   = foldl (\acc e -> acc ++ " " ++ colorMsg tops e) "" es
   in  header ++ body

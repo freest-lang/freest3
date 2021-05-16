@@ -15,6 +15,7 @@ import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
 import           Util.Error
+import           Util.Err
 import           Util.FreestState
 
 }
@@ -384,35 +385,17 @@ parseKind :: String -> K.Kind
 parseKind str =
   case evalStateT (lexer str "" kinds) (initialState "") of
     Ok x -> x
-    Failed err -> error $ snd err
+    Failed err -> error $ "" -- snd err
 
-parseType :: String -> Either T.Type String
+parseType :: String -> Either T.Type Errors
 parseType str =
   case runStateT (lexer str "" types) (initialState "") of
     Ok p -> eitherTypeErr p
-    Failed err -> Right $ snd err
+    Failed err -> Right [err]
   where
     eitherTypeErr (t, state)
-      | hasErrors state = Right $ getErrors state
+      | hasErrors state = Right $ errors state
       | otherwise       = Left t
-
-
--- parseProgram :: FilePath -> Map.Map ProgVar T.Type -> IO FreestS
--- parseProgram inputFile vEnv = do
---   prelude <- getDataFileName "Prelude.fst"
---   str <- readFile prelude
---   let (Ok s) = execStateT (lexer str prelude terms) ((initialState inputFile) {varEnv = vEnv})
-
---   src <- readFile inputFile
---   return $ parseDefs inputFile s src
-
--- parseDefs :: FilePath -> FreestS -> String -> FreestS
--- parseDefs file fState str =
---   let s = initialState file in
---   case execStateT (lexer str file terms) fState of
---     Ok s1 -> s1
---     Failed err -> s {errors = errors s ++ [err]}
-
 
 parseProgram :: FilePath -> Map.Map ProgVar T.Type -> IO FreestS
 parseProgram inputFile vEnv = -- do
@@ -437,16 +420,12 @@ lexer str file f =
 parseError :: [Token] -> FreestStateT a
 parseError [] = do
   file <- toStateT getFileName
-  failM $ formatErrorMessage Map.empty defaultPos file
-          [Error "Parse error:", Error "\ESC[91mPremature end of file\ESC[0m"]
+  failM $ PrematureEndOfFile defaultPos
 parseError (x:_) = do
   file <- toStateT getFileName
---  traceM $ show xs
-  failM $ formatErrorMessage Map.empty p file
-    [Error "Parse error on input", Error $ "\ESC[91m'" ++ show x ++ "'\ESC[0m"]
- where p = pos x
+  failM $ ParseError (pos x) (show x)
 
-failM :: String -> FreestStateT a
+failM :: ErrorType -> FreestStateT a
 failM = lift . Failed . (defaultPos, )
 
 toStateT = state . runState

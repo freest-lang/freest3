@@ -36,6 +36,7 @@ import           Syntax.Program
 import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 import           Util.FreestState
+import           Util.Err
 import           Util.PreludeLoader             ( userDefined ) -- debug
 import qualified Validation.Extract            as Extract
 import qualified Validation.Kinding            as K -- Again?
@@ -115,11 +116,7 @@ synthetise kEnv (E.App _ e1 e2) = do
   return u2
 -- Type abstraction
 synthetise kEnv e@(E.TypeAbs _ (K.Bind p a k e')) =
-  unless (isVal e') (addError (pos e')
-                     [ Error "The body of type abstraction"
-                     , Error e, Error "\n\t                       namely"
-                     , Error e'
-                     , Error "\n\t               is not a value"]) >>
+  unless (isVal e') (addError (pos e') (TypeAbsBodyNotValue (pos e') e e')) >>
   T.Forall p . K.Bind p a k <$> synthetise (Map.insert a k kEnv) e'
 -- Type application
 synthetise kEnv (E.TypeApp _ e t) = do
@@ -169,17 +166,11 @@ synthetiseVar kEnv x = getFromVEnv x >>= \case
     return s
   Nothing -> do
     let p = pos x
-    addError
-      p
-      [ Error "Variable or data constructor not in scope:"
-      , Error x
-      , Error "\n\t (is"
-      , Error x
-      , Error "a linear variable that has been consumed?)"
-      ]
-    let s = omission p
+        s = omission p
+    addError p (VarOrConsNotInScope p x)
     addToVEnv x s
     return s
+
 
 -- The difference operation. Removes a program variable from the
 -- variable environment and gives an error if it is linear
@@ -188,25 +179,13 @@ difference kEnv x = do
   getFromVEnv x >>= \case
     Just t -> do
       k <- K.synthetise kEnv t
-      when (K.isLin k) $ addError
-        (pos x)
-        [ Error "Program variable", Error x
-        , Error "is linear at the end of its scope\n\t variable", Error x
-        , Error "is of type", Error t
-        , Error "of kind", Error k
-        ]
+      when (K.isLin k) $ let p = pos x in addError p (LinProgVar p x t k)
     Nothing -> return ()
   removeFromVEnv x
 
 partialApplicationError :: E.Exp -> String -> FreestState T.Type
-partialApplicationError e s = do
-  let p = pos e
-  addError p
-    [ Error "Ooops! You're asking too much. I cannot type a partially applied"
-    , Error e, Error "\n\t Consider applying"
-    , Error e, Error $ "to an expression denoting a " ++ s ++ "."
-    ]
-  return $ omission p
+partialApplicationError e s =
+  let p = pos e in addError p (PartialApplied p e s) $> omission p
 
 -- CHECKING AGAINST A GIVEN TYPE
 
@@ -246,36 +225,16 @@ checkAgainst kEnv e t = checkEquivTypes e kEnv t =<< synthetise kEnv e
 
 checkEquivTypes :: E.Exp -> K.KindEnv -> T.Type -> T.Type -> FreestState ()
 checkEquivTypes exp kEnv expected actual =
-  unless (equivalent kEnv actual expected) $ addError
-    (pos exp)
-    [ Error "Couldn't match expected type"
-    , Error expected
-    , Error "\n\t             with actual type"
-    , Error actual
-    , Error "\n\t               for expression"
-    , Error exp
-    ]
-
+  unless (equivalent kEnv actual expected) $
+    let p = pos exp in addError p (NonEquivTypes p expected actual exp)
+    
 checkEquivEnvs
   :: Pos -> String -> E.Exp -> K.KindEnv -> VarEnv -> VarEnv -> FreestState ()
 checkEquivEnvs p branching exp kEnv vEnv1 vEnv2 = do
   let vEnv1' = userDefined vEnv1
       vEnv2' = userDefined vEnv2
-  unless (equivalent kEnv vEnv1' vEnv2') $ addError
-    p
-    [ Error "I have reached the end of"
-    , Error branching
-    , Error "expression and found two distinct typing environments."
-    , Error "\n\t     The contexts are"
-    , Error (vEnv1' Map.\\ vEnv2')
-    , Error "\n\t                  and"
-    , Error (vEnv2' Map.\\ vEnv1')
-    , Error "\n\tand the expression is"
-    , Error exp
-    , Error "\n\t(was a variable consumed in one branch and not in the other?)"
-    , Error
-      "\n\t(is there a variable with different types in the two environments?)"
-    ]
+  unless (equivalent kEnv vEnv1' vEnv2') $
+    addError p (NonEquivEnvs p branching (vEnv1' Map.\\ vEnv2') (vEnv2' Map.\\ vEnv1') exp)
     
 synthetiseCase :: Pos -> K.KindEnv -> E.Exp -> E.FieldMap -> FreestState T.Type
 synthetiseCase p kEnv e fm  = do
@@ -310,40 +269,26 @@ buildMap :: Pos -> E.FieldMap -> T.TypeMap -> FreestState E.FieldMap
 buildMap p fm tm
   | Map.size tm == Map.size fm = tMapWithKeyM (buildAbstraction tm) fm
   -- Non-exhaustive case (later it might be a warning)
-  | otherwise = addError p
-      [ Error "Wrong number of constructors\n\tThe expression has"
-      , Error $ Map.size fm
-      , Error "constructor(s)\n\tbut the type has"
-      , Error $ Map.size tm
-      , Error "constructor(s)\n\tin case "
-      , Error $ "\ESC[91m{" ++ showFieldMap fm ++ "}\ESC[0m"
-      ] $> fm
+  | otherwise = addError p (NonExhaustiveCase p fm tm) $> fm
 
 buildAbstraction :: T.TypeMap -> ProgVar -> ([ProgVar], E.Exp)
                  -> FreestState ([ProgVar], E.Exp)
 buildAbstraction tm x (xs, e) = case tm Map.!? x of
   Just t -> let n = numberOfArgs t in
     if n /= length xs
-      then diffArgsErr n $> (xs, e)
+      then let p = pos e in
+             addError p (WrongNumOfCons p x n (length xs)
+                   (show x ++ " " ++ unwords (map show xs) ++ " -> " ++ show e))
+             $> (xs, e)
       else return (xs, buildAbstraction' (xs, e) t) 
   Nothing -> -- Data constructor not in scope
-    addError (pos x) [Error "Data constructor", Error x, Error "not in scope"]
-      $> (xs, e)
+    let p = pos x in addError p (DataConsNotInScope p x) $> (xs, e)
  where
   buildAbstraction' :: ([ProgVar], E.Exp) -> T.Type -> E.Exp
   buildAbstraction' ([], e) _ = e
   buildAbstraction' (x : xs, e) (T.Arrow _ _ t1 t2) =
     E.Abs (pos e) $ E.Bind (pos e) Lin x t1 $ buildAbstraction' (xs, e) t2
   buildAbstraction' ([x], e) t = E.Abs (pos e) $ E.Bind (pos e) Un x t e
-
-  diffArgsErr :: Int -> FreestState ()
-  diffArgsErr i = addError (pos e)
-    [ Error "The constructor", Error x
-    , Error "should have", Error i
-    , Error "arguments, but has been given", Error $ length xs
-    , Error "\n\t In the pattern:"
-    , Error $ show x ++ " " ++ unwords (map show xs) ++ " -> " ++ show e
-    ]
  
   numberOfArgs :: T.Type -> Int
   numberOfArgs (T.Arrow _ _ _ t) = 1 + numberOfArgs t

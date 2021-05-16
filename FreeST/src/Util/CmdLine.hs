@@ -38,7 +38,7 @@ options =
 --  , Option ['p'] ["prelude"] (ReqArg Prelude "prelude_file") "prelude file"
 --  , Option [] ["no-colors", "no-colours"]    (NoArg Main) "Black and white errors"
 --  , Option Warnings as errors
--- verbose ???
+-- verbose (full comment depth)
 -- -i --import ??  
   ]
 
@@ -98,7 +98,7 @@ handleFile opts fpath defaultMain
   | otherwise = die $ show fpath ++ " has not extension fst "
 
 throwError :: [ErrorMessage] -> IO ()
-throwError = die . formatErrorMessage Map.empty defaultPos "FreeST"
+throwError = die . formatErrorMessage Map.empty "FreeST" defaultPos
 
 noFileProvided :: IO ()
 noFileProvided = throwError

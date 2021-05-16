@@ -31,6 +31,7 @@ import           Syntax.Program                 ( noConstructors )
 import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 import           Util.FreestState
+import           Util.Err
 import           Util.PreludeLoader             ( userDefined )
 import qualified Validation.Kinding            as K
 import qualified Validation.Typing             as Typing -- Again
@@ -82,14 +83,7 @@ checkHasBinding f _ = do
       &&              f
       `Map.notMember` eEnv
       )
-    $ addError
-        (pos f)
-        [ Error "The type signature for"
-        , Error f
-        , Error "lacks an accompanying binding\n"
-        , Error "\t Type signature:"
-        , Error $ vEnv Map.! f
-        ]
+    $ let p = pos f in addError p (SignatureLacksBinding p f (vEnv Map.! f))
 
 -- Check a given function body against its type; make sure all linear
 -- variables are used.
@@ -101,26 +95,11 @@ checkFunBody f e = getFromVEnv f >>= \case
 checkMainFunction :: FreestState ()
 checkMainFunction = do
   main <- fromJust . mainFunction <$> getOpts
---  let main =  mkVar defaultPos "main"
   vEnv <- getVEnv
   if main `Map.notMember` vEnv
-    then addError defaultPos [Error "Function", Error main, Error "is not defined"]
+    then addError defaultPos (MainNotDefined defaultPos main)
     else do
       let t = vEnv Map.! main
       k <- K.synthetise Map.empty t
-      unless (not (K.isLin k)) $ addError
-        defaultPos
-        [ Error "The type of"
-        , Error main
-        , Error "must be non linear"
-        -- , Error "must be non-function, non-polymorphic\n"
-        , Error "\n\t found type"
-        , Error t
-        , Error "of kind"
-        , Error k
-        ]
-
--- validMainType :: T.Type -> Bool -- TODO: why this restriction?
--- validMainType T.Forall{} = False
--- validMainType T.Fun{}    = False
--- validMainType _          = True
+      unless (not (K.isLin k)) $
+        addError defaultPos (UnrestrictedMainFun defaultPos main t k)

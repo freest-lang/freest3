@@ -8,6 +8,8 @@ import           Syntax.Expression
 import           Parse.ParseUtils
 import           Control.Monad.State
 import           Util.FreestState
+import Util.Err
+import qualified Data.Map as Map
 
 instance Read Kind where
   readsPrec _ s = [(parseKind s, "")]
@@ -23,4 +25,4 @@ parser parseFun str =
   case runStateT (lexer str "" parseFun) (initialState "") of
     Ok (t, state) ->
       if hasErrors state then error $ getErrors state else [(t, "")]
-    Failed err -> error $ snd err
+    Failed err -> error $ formatError "" Map.empty (snd err)

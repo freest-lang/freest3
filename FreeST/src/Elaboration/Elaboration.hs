@@ -17,6 +17,7 @@ import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
 import           Util.Error                     ( internalError )
+import           Util.Err
 import           Util.FreestState
 import           Util.PreludeLoader             ( userDefined )
 import           Validation.Rename              ( isFreeIn )
@@ -74,8 +75,7 @@ solveEquations = buildRecursiveTypes >> solveAll >> cleanUnusedRecs
     | f == x = pure t
     | otherwise = getFromTEnv x >>= \case
       Just tx -> solveEq (f `Set.insert` v) x (snd tx)
-      Nothing ->
-        addError p [Error "Type variable not in scope:", Error x] $> omission p
+      Nothing -> addError p (TypeVarOutOfScope p x) $> omission p
   solveEq v f (T.Forall p (K.Bind p1 x k t)) =
     T.Forall p . K.Bind p1 x k <$> solveEq (x `Set.insert` v) f t
   solveEq v f (T.Rec p (K.Bind p1 x k t)) =
@@ -179,15 +179,8 @@ buildProg = getPEnv
   buildFunBody :: ProgVar -> [ProgVar] -> Exp -> FreestState Exp
   buildFunBody f as e = getFromVEnv f >>= \case
     Just s  -> return $ buildExp e as s
-    Nothing -> do
-      addError
-        (pos f)
-        [ Error "The binding for function"
-        , Error f
-        , Error "lacks an accompanying type signature"
-        ]
-      return e
-
+    Nothing -> let p = pos f in addError p (FuctionLacksSignature p f) $> e
+      
   buildExp :: Exp -> [ProgVar] -> T.Type -> Exp
   buildExp e [] _ = e
   buildExp e (b : bs) (T.Arrow _ m t1 t2) =

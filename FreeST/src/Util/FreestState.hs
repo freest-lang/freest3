@@ -81,7 +81,7 @@ import           Util.Error
 -- import qualified Data.Set as Set
 import qualified Data.Traversable              as Traversable
 import           Util.ErrorMessage
-
+import Util.Err
 import           Control.Applicative
 import           Debug.Trace -- debug (used on debugM function)
 import           Data.Maybe
@@ -89,7 +89,8 @@ import           Data.Maybe
 -- | The typing state
 
 -- type Errors = Set.Set String
-type Errors = [(Pos, String)]
+-- type Errors = [(Pos, String)]
+type Errors = [(Pos, ErrorType)]
 
 type ParseEnv = Map.Map ProgVar ([ProgVar], Exp)
 
@@ -226,25 +227,36 @@ addDualof t = internalError "Util.FreestState.addDualof" t
 -- | ERRORS
 
 getErrors :: FreestS -> String
-getErrors = intercalate "\n" . map snd . sortBy errCmp . take 10 . errors
+getErrors s =
+   (intercalate "\n" . map (format . snd) . sortBy errCmp . take 10 . errors) s
+  where
+    format = formatError (fromMaybe "" . runFilePath $ runOpts s) (typenames s)
 
-errCmp :: (Pos, String) -> (Pos, String) -> Ordering
+-- Define an Ord instance and then use insert?
+errCmp :: (Pos, a) -> (Pos, a) -> Ordering
 errCmp (p1, _) (p2, _) = compare p1 p2
 
 hasErrors :: FreestS -> Bool
 hasErrors = not . null . errors
 
-addError :: Pos -> [ErrorMessage] -> FreestState ()
-addError p em = do
-  f    <- getFileName
-  tops <- getTypeNames
-  let es = formatErrorMessage tops p f em
-  modify (\s -> s { errors = insertError (errors s) (p, es) })
+-- addError :: Pos -> [ErrorMessage] -> FreestState ()
+-- addError p em = do
+--   f    <- getFileName
+--   tops <- getTypeNames
+--   let es = formatErrorMessage tops p f em
+--   modify (\s -> s { errors = insertError (errors s) (p, es) })
 
-insertError :: [(Pos, String)] -> (Pos, String) -> [(Pos, String)]
-insertError es err | err `elem` es = es
-                   | otherwise     = es ++ [err]
+addError :: Pos -> ErrorType -> FreestState ()
+addError p e = modify (\s -> s { errors = insertError (errors s) (p, e) })
 
+-- How to deal with duplicates? Keep using strings? Define eq?
+insertError :: [(Pos, ErrorType)] -> (Pos, ErrorType) -> Errors -- [(Pos, ErrorType)]
+insertError es err = es ++ [err]
+-- insertError :: [(Pos, ErrorType)] -> (Pos, ErrorType) -> Errors -- [(Pos, ErrorType)]
+-- insertError es err
+--   | err `elem` es = es
+--   | otherwise     = es ++ [err]
+  
 -- | Traversing Map.map over FreestStates
 
 tMapM :: Monad m => (a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)
