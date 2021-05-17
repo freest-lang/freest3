@@ -19,4 +19,4 @@ null : ∀a . (∀r . (a -> r -> r) -> r -> r) -> Bool
 null = Λa => λl:(∀r . (a -> r -> r) -> r -> r) -> l [Bool] (λhd:a tl:Bool -> False) True
 
 main : Bool
-main = null [Char] nil [Char]
+main = null [Char] (nil [Char])
