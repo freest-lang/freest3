@@ -22,7 +22,7 @@ import Parse.Unparser (showFieldMap) -- temporary
 
 data ErrorType =
   -- Lexer.x
-  -- Token, circular binding (move to other module)
+  -- Token, circular import (move to other module)
     LexicalError Pos String
   -- Parser.y
   | PrematureEndOfFile Pos
@@ -60,7 +60,7 @@ data ErrorType =
   | NonEquivEnvs Pos String VarEnv VarEnv E.Exp
   | NonExhaustiveCase Pos E.FieldMap T.TypeMap
   | DataConsNotInScope Pos ProgVar
-  | WrongNumOfCons Pos ProgVar Int Int String -- String -> Change Later
+  | WrongNumOfCons Pos ProgVar Int [ProgVar] E.Exp
   -- Extract (join all of these?)
   | ExtractError Pos String E.Exp T.Type
   -- | ExpectingArrow Pos E.Exp T.Type
@@ -177,10 +177,12 @@ errorMsg (NonExhaustiveCase p fm tm) =
     , Error $ "\ESC[91m{" ++ showFieldMap fm ++ "}\ESC[0m"])
 errorMsg (DataConsNotInScope p pv) =
   (p,  [Error "Data constructor", Error pv, Error "not in scope"])
-errorMsg (WrongNumOfCons p pv i i' s) =
+errorMsg (WrongNumOfCons p pv i pvs e) =
   (p, [ Error "The constructor", Error pv, Error "should have", Error i
-      , Error "arguments, but has been given", Error i'
-      , Error "\n\t In the pattern:", Error s] )
+      , Error "arguments, but has been given", Error $ length pvs
+      , Error "\n\t In the pattern:"
+      , Error $ "\ESC[91m" ++ show pv ++ " " ++ unwords (map show pvs)
+             ++ " -> " ++ show e ++ "\ESC[0m"])
 -- Validation.Extract -- Join all (except the last)
 errorMsg (ExtractError p s e t) =
   (p, [ Error $ "Expecting " ++ s ++ " type for expression", Error e

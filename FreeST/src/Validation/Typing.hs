@@ -276,10 +276,7 @@ buildAbstraction :: T.TypeMap -> ProgVar -> ([ProgVar], E.Exp)
 buildAbstraction tm x (xs, e) = case tm Map.!? x of
   Just t -> let n = numberOfArgs t in
     if n /= length xs
-      then let p = pos e in
-             addError p (WrongNumOfCons p x n (length xs)
-                   (show x ++ " " ++ unwords (map show xs) ++ " -> " ++ show e))
-             $> (xs, e)
+      then addError (pos e) (WrongNumOfCons (pos e) x n xs e) $> (xs, e)
       else return (xs, buildAbstraction' (xs, e) t) 
   Nothing -> -- Data constructor not in scope
     let p = pos x in addError p (DataConsNotInScope p x) $> (xs, e)
@@ -293,4 +290,3 @@ buildAbstraction tm x (xs, e) = case tm Map.!? x of
   numberOfArgs :: T.Type -> Int
   numberOfArgs (T.Arrow _ _ _ t) = 1 + numberOfArgs t
   numberOfArgs _                 = 0
-
