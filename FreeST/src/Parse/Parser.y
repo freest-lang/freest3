@@ -179,7 +179,7 @@ Exp :: { E.Exp }
   | match Exp with '{' MatchMap '}'{ E.Case (pos $1) (E.App (pos $1)
                                      (E.Var (pos $1) (mkVar (pos $1) "collect")) $2) $5 }
 --  | match Exp with '{' MatchMap '}'{ E.Match (pos $1) $2 $5 }
-  | case Exp of '{' CaseMap '}'    { E.Case (pos $1) $2 $5 }
+  | case Exp of '{' CaseMap '}'    { E.Case (pos $6) $2 $5 }
   | Exp '$' Exp                    { E.App (pos $2) $1 $3 }
   | Exp '&' Exp                    { E.App (pos $2) $3 $1 }
   | Exp '||' Exp                   { binOp $1 (mkVar (pos $2) "(||)") $3 }
