@@ -9,7 +9,7 @@
 
 # Install stack
 - For Un*x-like operating systems:
-```
+```bash
     $ curl -sSL https://get.haskellstack.org/ | sh
 ```
 
@@ -21,7 +21,7 @@ For more information about stack please visit [https://docs.haskellstack.org/en/
 
 # Building FreeST
 
-```
+```bash
     $ stack build :TOOL_NAME
 ```	
 
@@ -41,26 +41,37 @@ To run a program just create a file (with ".fst" extension) and then,
 run ``` stack run freest [filepath] ```
 
 For example, to compile a FreeST program named "test.fst" located in the directory "dir" run:
+```bash
+    $ stack run freest dir/test.fst
 ```
-    $ stack run freest dir/test.hs
+
+One can find the suitable compiler options by running 
+```bash
+    $ stack run -- -h
 ```
+
+For example, if you want to specify which function should be interpreted as the main function (`fun` in this example) you should run:
+```bash
+    $ stack run test.fst -- -m fun
+```
+
 
 # Run the interpreter (ghci)
 
-```
+```bash
     $ stack ghci FreeST:exe:freest
     :set prompt  "λ: "
 ```
 
 ## FreeST Samples
 
-Code examples available in directory 
+Code examples available in directory
 [`FreeST/test/Programs/ValidTests/`](FreeST/test/Programs/ValidTests/)
 
 
 # Tests
 
-```
+```bash
     $ stack test
 ```
 
@@ -69,13 +80,13 @@ will run both program and unit tests.
 ## Unit tests
 
 ### Run unit tests
-```
+```bash
     $ stack test :units
 ```
 
 or
 
-```
+```bash
     $ make units
 ```
 
@@ -92,13 +103,13 @@ The txt file is structured as follows :
 ## Program tests
 
 ### Run program tests
-```
+```bash
     $ stack test :programs
 ```
 
 or
 
-```
+```bash
     $ make programs
 ```
 
@@ -118,7 +129,7 @@ placed under `FreeST/test/Programs/InvalidTests/` .
 ## Run each spec separately
 
 ### Unit test specs
-```
+```bash
     $ stack test :units --ta "-m SPEC_NAME"
 ```
 
@@ -145,18 +156,18 @@ We can also run them through:
 
 
 ### Quickcheck spec
-```
+```bash
     $ stack test :valid-types-quick
 ```
 
 or
 
-```
+```bash
     $ make valid-types-quick
 ```
 
 ### Program specs (valid or invalid programs)
-```
+```bash
     $ stack test :units --ta "-m SPEC_NAME"
 ```
 
@@ -167,18 +178,18 @@ with one of the following `SPEC_NAME`s:
 
 or also,
 
-```
+```bash
     $ make valid-programs
 ```
 
-```
+```bash
     $ make invalid-programs
 ```
 
 If the output from the compiler is important (relevant to invalid
 tests to visually inspect error messages). Warning: a bit slow.
 
-```
+```bash
 cd FreeST/test/Programs/InvalidTests/
 for f in $(find . -name "*\.fst" -print); do stack run $f; done
 ```
@@ -190,7 +201,7 @@ TODO
 ### Test suite profiling (10 times)
 To collect the run times and allocated memory of a test suite with 10 runs, use the command:
 
-```
+```bash
 $ bash ./testSuiteProf.sh
 ```
 
@@ -207,3 +218,6 @@ information available and contains links for more specific information)
  - CFSTEquiv: ``` $ stack run CFSTEquiv```
 
  - SGBisim:  ``` $ stack run SGBisim```
+
+Note: For the ease of the development cycle, these two tools are commented out on file `stack.yaml`. 
+Uncomment to run them. Having them commented allows running `stack run test.fst` instead of `stack run freest test.fst`.
