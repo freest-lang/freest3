@@ -51,11 +51,11 @@ typeCheck = do
   mapM_ (K.synthetise Map.empty . snd) =<< getTEnv
 
   -- * Check the formation of all function signatures
---  debugM "checking the formation of all function signatures (kinding)" 
+--  debugM "checking the formation of all function signatures (kinding)"
   mapM_ (K.synthetise Map.empty) =<< getVEnv
   -- Gets the state and only continues if there are no errors so far
   -- Can't continue to equivalence if there are ill-formed types
-  -- (i.e. not contractive under a certain variable)  
+  -- (i.e. not contractive under a certain variable)
   s <- get
   unless (hasErrors s) $ do
     -- * Check whether all function signatures have a binding
@@ -100,12 +100,13 @@ checkFunBody f e = getFromVEnv f >>= \case
 
 checkMainFunction :: FreestState ()
 checkMainFunction = do
-  main <- fromJust . mainFunction <$> getOpts
---  let main =  mkVar defaultPos "main"
   vEnv <- getVEnv
-  if main `Map.notMember` vEnv
-    then addError defaultPos [Error "Function", Error main, Error "is not defined"]
-    else do
+  runOpts <- getOpts
+  let mainFlag = isMainFlagSet runOpts
+  let main = getMain runOpts
+
+  if main `Map.member` vEnv
+    then do
       let t = vEnv Map.! main
       k <- K.synthetise Map.empty t
       unless (not (K.isLin k)) $ addError
@@ -119,6 +120,13 @@ checkMainFunction = do
         , Error "of kind"
         , Error k
         ]
+    else if mainFlag
+      then
+        addError defaultPos [Error "Function", Error main, Error "is not defined"]
+      else
+        -- This error is ignored in order to not raise a type check error
+        --   when main is undifined
+        return ()
 
 -- validMainType :: T.Type -> Bool -- TODO: why this restriction?
 -- validMainType T.Forall{} = False

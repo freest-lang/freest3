@@ -63,6 +63,8 @@ module Util.FreestState
   , RunOpts(..)
   , defaultOpts
   , initialOpts
+  , getMain
+  , isMainFlagSet
   , getOpts
   )
 where
@@ -283,11 +285,21 @@ instance Semigroup RunOpts where
 defaultOpts :: RunOpts
 defaultOpts = RunOpts { runFilePath  = Nothing
 --                    , preludeFile  = Just "Prelude.fst"
-                      , mainFunction = Just $ mkVar defaultPos "main"
+                      , mainFunction = Nothing
                       }
 
 initialOpts :: RunOpts
 initialOpts = RunOpts Nothing Nothing -- Nothing
+
+getMain :: RunOpts -> ProgVar
+getMain runOpts =
+  if isJust $ maybeMain
+    then fromJust $ maybeMain
+    else mkVar defaultPos "main"
+  where maybeMain = mainFunction runOpts
+
+isMainFlagSet :: RunOpts -> Bool
+isMainFlagSet runOpts = isJust $ mainFunction runOpts
 
 getOpts :: FreestState RunOpts
 getOpts = gets runOpts

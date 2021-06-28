@@ -7,6 +7,7 @@ module FreeST
 where
 
 import           Control.Monad.State            ( when
+                                                , unless
                                                 , execState
                                                 )
 import qualified Data.Map.Strict               as Map
@@ -55,13 +56,20 @@ checkAndRun runOpts = do
   when (hasErrors s2) (die $ getErrors s2)
   -- Rename
   let s3 = execState renameState (s2 { runOpts })
-   -- Type check
+  -- Type check
   let s4 = execState typeCheck (s3 { runOpts })
   when (hasErrors s4) (die $ getErrors s4)
-  -- Interpret
-  evalAndPrint (typeEnv s4) initialCtx
-               (prog s4)
-               (prog s4 Map.! fromJust (mainFunction runOpts)) 
+  -- Check if main was left undefined
+  let main = getMain runOpts
+  if main `Map.member` (varEnv s4)
+  then
+    -- If main is defined, eval and print
+    evalAndPrint (typeEnv s4) initialCtx
+    (prog s4)
+    (prog s4 Map.! main)
+  else
+    -- If main is undefined, do not eval, only typecheck
+    putStrLn "Main is not defined (only typechecked)"
  where
   fromPreludeFile :: FreestS -> (VarEnv, ParseEnv)
   fromPreludeFile s0 | hasErrors s0 = (prelude, Map.empty)
