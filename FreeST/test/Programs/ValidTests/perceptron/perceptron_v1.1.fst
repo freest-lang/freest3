@@ -10,7 +10,7 @@ seed : Int
 seed = 1
 
 -- main
-main : ()
+main : Int
 main = 
     let ls = List (len input) layers in -- add connection from entry neurons
     let ls = addTail 1 ls            in -- add connection to exit neuron
@@ -19,9 +19,9 @@ main =
     let rs = startup input cons      in -- start up network
     -- printStringLn "Cenas e tal";
     let r  = recNeuron rs            in
-    printString "Result: ";
-    printIntLn r
-    -- ()
+    -- printString "Result: ";
+    -- printIntLn r
+    r
 
 ---- Structures ----
 data IntList = End | List Int IntList
