@@ -29,68 +29,45 @@ module Validation.Extract
   )
 where
 
+import           Data.Functor
+import qualified Data.Map.Strict as Map
+import           Equivalence.Normalisation ( normalise )
 import           Syntax.Base
-import           Syntax.ProgramVariable         ( ProgVar )
-import qualified Syntax.Kind                   as K
-import qualified Syntax.Type                   as T
-import qualified Syntax.Expression             as E
-import           Equivalence.Normalisation      ( normalise )
+import qualified Syntax.Expression as E
+import           Syntax.ProgramVariable ( ProgVar )
+import qualified Syntax.Type as T
+import           Util.Error
 import           Util.FreestState
-import qualified Data.Map.Strict               as Map
 
 function :: E.Exp -> T.Type -> FreestState (T.Type, T.Type)
 function e t =
   case normalise t of
     (T.Arrow _ _ u v) -> return (u, v)
-    u               -> do
-      let p = pos e
-      addError
-        p
-        [ Error "Expecting an arrow type for expression"
-        , Error e
-        , Error "\n\t                             found type"
-        , Error u
-        ]
-      return (omission p, omission p)
+    u               -> let p = pos e in
+      addError (ExtractError p "an arrow" e u) $> (omission p, omission p)
 
 pair :: E.Exp -> T.Type -> FreestState (T.Type, T.Type)
 pair e t =
   case normalise t of
     (T.Pair _ u v) -> return (u, v)
-    u              -> do
-      let p = pos u
-      addError
-        p
-        [ Error "Expecting a pair type for expression"
-        , Error e
-        , Error "\n\t found type"
-        , Error u
-        ]
-      return (omission p, omission p)
+    u              -> let p = pos u in
+      addError (ExtractError p "a pair" e u) $> (omission p, omission p)
 
 forall :: E.Exp -> T.Type -> FreestState T.Type
 forall e t =
   case normalise t of
     u@T.Forall{} -> return u
-    u            -> do
-      let p = pos e
-      addError
-        p
-        [ Error "Expecting a polymorphic type for expression"
-        , Error e
-        , Error "\n\t found type"
-        , Error u
-        ]
-      return $ T.Forall p (omission p)
+    u            -> let p = pos e in
+      addError (ExtractError p "a polymorphic" e u) $> T.Forall p (omission p)
 
 output :: E.Exp -> T.Type -> FreestState (T.Type, T.Type)
-output = message T.Out "output"
+output = message T.Out "an output"
 
 input :: E.Exp -> T.Type -> FreestState (T.Type, T.Type)
-input = message T.In "input"
+input = message T.In "an input"
 
 message :: T.Polarity -> String -> E.Exp -> T.Type -> FreestState (T.Type, T.Type)
-message pol msg e t = do
+message pol msg e t =
   case normalise t of
     u@(T.Message p pol' b) ->
       if pol == pol' then return (b, T.Skip p) else messageErr u
@@ -99,21 +76,14 @@ message pol msg e t = do
     u -> messageErr u
  where
   messageErr :: T.Type -> FreestState (T.Type, T.Type)
-  messageErr u = do
-    addError
-      (pos e)
-      [ Error $ "Expecting an " ++ msg ++ " type for expression"
-      , Error e
-      , Error "\n\t found type"
-      , Error u
-      ]
-    return (T.Unit (pos u), T.Skip (pos u))
+  messageErr u = let p = pos e in
+    addError (ExtractError p msg e u) $> (T.Unit $ pos u, T.Skip $ pos u)
 
 outChoiceMap :: E.Exp -> T.Type -> FreestState T.TypeMap
-outChoiceMap = choiceMap T.Out "external"
+outChoiceMap = choiceMap T.Out "an external"
 
 inChoiceMap :: E.Exp -> T.Type -> FreestState T.TypeMap
-inChoiceMap = choiceMap T.In "internal"
+inChoiceMap = choiceMap T.In "an internal"
 
 choiceMap :: T.Polarity -> String -> E.Exp -> T.Type -> FreestState T.TypeMap
 choiceMap pol msg e t =
@@ -126,33 +96,17 @@ choiceMap pol msg e t =
     u -> choiceErr u
  where
   choiceErr :: T.Type -> FreestState T.TypeMap
-  choiceErr u = do
-    addError
-      (pos e)
-      [ Error $ "Expecting an " ++ msg ++ " choice type for expression"
-      , Error e
-      , Error "\n\t found type"
-      , Error u
-      ]
-    return Map.empty
+  choiceErr u = let p = pos e in
+    addError (ExtractError p msg e u) $> Map.empty
 
 datatypeMap :: E.Exp -> T.Type -> FreestState T.TypeMap
 datatypeMap e t =
   case normalise t of
     (T.Variant _ m) -> return m
-    u                -> do
-      addError
-        (pos e)
-        [ Error "Expecting a datatype for expression"
-        , Error e
-        , Error "\n\t found type"
-        , Error u
-        ]
-      return Map.empty
+    u                -> let p = pos e in
+      addError (ExtractError p "a datatype" e u) $> Map.empty
 
 outChoiceBranch :: Pos -> T.TypeMap -> ProgVar -> T.Type -> FreestState T.Type
 outChoiceBranch p tm x t = case tm Map.!? x of
   Just t  -> return t
-  Nothing -> do
-    addError p [Error "Branch", Error x, Error "not present in internal choice type", Error t]
-    return $ omission p
+  Nothing -> addError (BranchNotInScope p x t) $> omission p

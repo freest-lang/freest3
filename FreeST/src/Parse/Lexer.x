@@ -8,6 +8,7 @@ module Parse.Lexer
 import qualified Data.Map.Strict as Map
 import           Parse.ParseUtils
 import           Syntax.Base
+import           Util.PrettyError
 import           Util.Error
 import           Util.ErrorMessage
 }
@@ -278,7 +279,7 @@ instance Show Token where
   show (TokenDollar _) = "$"
 
 -- Trim newlines
-scanTokens :: String -> String -> Either [Token] String
+scanTokens :: String -> String -> Either [Token] ErrorType
 scanTokens str file =
     case go (alexStartPos,'\n',[],str) of
       Left x -> Left $ trim x
@@ -288,9 +289,7 @@ scanTokens str file =
       case alexScan inp 0 of
         AlexEOF -> Left []
         AlexError _ ->
-          Right $ formatErrorMessages Map.empty (internalPos pos) file
-                  [Error "Lexical error on input",
-                   Error $ "\ESC[91m" ++ show (head str) ++ "\ESC[0m"]
+          Right $ LexicalError (internalPos pos) (show $ head str)
         AlexSkip  inp' len     -> go inp'
         AlexToken inp' len act ->
           case go inp' of
@@ -302,8 +301,6 @@ getLineNum (AlexPn offset lineNum colNum) = lineNum
 
 getColumnNum :: AlexPosn -> Int
 getColumnNum (AlexPn offset lineNum colNum) = colNum
-
-
 
 trim :: [Token] -> [Token]
 trim = reverse . trim' . reverse . trim'

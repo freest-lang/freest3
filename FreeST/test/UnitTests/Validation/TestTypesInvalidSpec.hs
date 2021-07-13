@@ -31,8 +31,7 @@ isWellFormed :: String -> Bool
 isWellFormed str = either synthetiseK (const False) (parseType str)
  where
   synthetiseK t = null $ errors $ execState
-    (synthetise Map.empty . renameType =<< Dual.resolve t)
-    (initialState "Kind synthesis")
+    (synthetise Map.empty . renameType =<< Dual.resolve t) initialState
 
 main :: IO ()
 main = hspec spec

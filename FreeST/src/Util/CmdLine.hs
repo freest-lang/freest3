@@ -11,6 +11,10 @@ import           System.Console.GetOpt
 import           System.Directory
 import           System.Exit                    ( die )
 import           System.FilePath
+import           Util.PrettyError
+ -- TODO: remove later (when proper warnings were introduced)
+import           Util.ErrorMessage (Color(..))
+import           Util.PrettyError (formatColor, formatBold)
 import           Util.Error
 import           Util.FreestState
 
@@ -38,7 +42,7 @@ options =
 --  , Option ['p'] ["prelude"] (ReqArg Prelude "prelude_file") "prelude file"
 --  , Option [] ["no-colors", "no-colours"]    (NoArg Main) "Black and white errors"
 --  , Option Warnings as errors
--- verbose ???
+-- verbose (full comment depth)
 -- -i --import ??  
   ]
 
@@ -50,14 +54,14 @@ helpHeader = "Usage: freest [OPTION...] files..."
 
 freestVersion :: IO ()
 freestVersion =
-  putStrLn $ styleBold $ "The FreeST compiler, version " ++ showVersion version
+  putStrLn $ formatBold $ "FreeST, Version " ++ showVersion version
 
 
 handleOpts :: ([Flag], [String]) -> IO RunOpts
 handleOpts = handleOpts' initialOpts
  where
   handleOpts' :: RunOpts -> ([Flag], [String]) -> IO RunOpts
-  handleOpts' opts ([], []) = noFileProvided $> opts
+  handleOpts' opts ([], []) = throwError NoInputFile $> opts
   handleOpts' opts ([], [x]) =
     pure $ opts { runFilePath = Just x } <> defaultOpts
   handleOpts' opts (flags, xs) = do
@@ -65,13 +69,13 @@ handleOpts = handleOpts' initialOpts
     pure $ foldr (<>) initialOpts m <> defaultOpts
 
 handleFlags :: RunOpts -> [String] -> Flag -> IO RunOpts
-handleFlags opts []      (     Main _) = noFileProvided $> opts
+handleFlags opts []      (     Main _) = throwError NoInputFile $> opts
 handleFlags opts [file ] (     Main s) = handleFile opts file s
 handleFlags opts (x : _) flag@(Main _) = do
   putStrLn
-    $  styleBold (styleCyan "warning: ")
+    $  formatBold (formatColor (Just Cyan) "warning: ")
     ++ "multiple files provided. using: "
-    ++ styleRed x
+    ++ formatColor (Just Red) x
   handleFlags opts [x] flag
 handleFlags opts _ Version = freestVersion $> opts
 handleFlags opts _ Help    = helpMenu $> opts
@@ -84,24 +88,13 @@ handleFile :: RunOpts -> FilePath -> String -> IO RunOpts
 handleFile opts fpath defaultMain
   | "fst" `isExtensionOf` fpath = do
     f <- doesFileExist fpath
-    if f
-      then pure $ opts { runFilePath  = Just fpath
-                       , mainFunction = Just $ mkVar defaultPos defaultMain
-                       }
-      else
-        throwError
-            [ Error "File"
-            , Error $ '\'' : fpath ++ "'"
-            , Error "does not exist (No such file or directory)"
-            ]
-          $> opts
+    if f then
+      pure $ opts { runFilePath  = Just fpath
+                  , mainFunction = Just $ mkVar defaultPos defaultMain
+                  }
+    else throwError (FileNotFound fpath) $> opts
   | otherwise = die $ show fpath ++ " has not extension fst "
 
-throwError :: [ErrorMessage] -> IO ()
-throwError = die . formatErrorMessages Map.empty defaultPos "FreeST"
+throwError :: ErrorType -> IO ()
+throwError = die . formatError Nothing Map.empty
 
-noFileProvided :: IO ()
-noFileProvided = throwError
-  [ Error "freest: no input files\n\t"
-  , Error "Usage: For basic information, try the '--help' option."
-  ]

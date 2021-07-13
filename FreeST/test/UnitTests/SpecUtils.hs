@@ -22,11 +22,13 @@ import           Data.List                      ( intercalate, sortBy )
 import           Data.List.Split                ( chunksOf )
 import qualified Data.Map.Strict               as Map
 import           Syntax.Kind                   ( KindEnv )
-import           Syntax.Base                    ( defaultPos
-                                                , mkVar
-                                                , Pos
-                                                )
+import           Syntax.Base                   ( defaultPos
+                                               , mkVar
+                                               , Pos
+                                               , pos
+                                               )
 import           Util.FreestState              ( Errors )
+import           Util.Error
 import Debug.Trace
 
 readFromFile :: FilePath -> IO [String]
@@ -74,9 +76,9 @@ instance {-# OVERLAPPING #-} Show TestExpectation where
   show (Left b)    = show b
   show (Right err) = err
 
-showErrors :: [(Pos, String)] -> String
-showErrors = intercalate "\n" . map snd . sortBy cmp . take 2
-  where cmp err1 err2 = fst err1 `compare` fst err2
+showErrors :: Errors -> String
+showErrors = intercalate "\n" . map (formatError Nothing Map.empty) . sortBy cmp . take 2
+ where cmp err1 err2 = pos err1 `compare` pos err2
 
 testValidExpectation :: Bool -> Errors -> TestExpectation
 testValidExpectation b errs

@@ -29,8 +29,7 @@ matchValidExpressionSpec [e, t] =
 isExpr :: Exp -> Type -> TestExpectation
 isExpr e t = testValidExpectation True (errors s) -- null (errors s)
  where
-  s    = execState test
-         (initialState "Check Against Expression") { varEnv = prelude }
+  s    = execState test initialState { varEnv = prelude }
   test = do
     t' <- rename Map.empty =<< Dual.resolve t
     e' <- rename Map.empty =<< Dual.resolve e

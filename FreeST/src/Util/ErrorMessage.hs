@@ -21,14 +21,13 @@ import           Data.List                      ( intercalate )
 -- | Error class and instances
 
 class ErrorMsg a where
---  pos   :: a -> Pos -- Does not make sense to be here??
   msg   :: TypeOpsEnv -> a -> String
   color :: a -> Maybe Color
 
 data ErrorMessage where
   Error :: ErrorMsg a => a -> ErrorMessage
 
-data Color = Red
+data Color = Red | Cyan
 
 -- | ErrorMessage instances
 
@@ -67,7 +66,6 @@ instance ErrorMsg K.Kind where
 -- VarEnv
 
 instance ErrorMsg Int where
-
   msg _ = show
   color _ = Just Red
 
@@ -80,16 +78,14 @@ showTypeList tops ts = "[" ++ intercalate ", " types ++ "]"
   where types = map (show . getDefault tops) ts
 
 instance ErrorMsg [K.Bind T.Type] where
-  msg _ = concat . map showBindType
+  msg _ = concatMap showBindType
   color _ = Just Red
 
 instance ErrorMsg [K.Bind E.Exp] where
-  msg _ = concat . map showBindExp
+  msg _ = concatMap showBindExp
   color _ = Just Red
 
-
--- TODO: DIFFS
--- TODO: tops
+-- TODO: Diffs, Tops ???
 instance ErrorMsg VarEnv where
   msg _ = show
   color _ = Just Red

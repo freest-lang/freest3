@@ -11,7 +11,7 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-{-# LANGUAGE LambdaCase, NoMonadFailDesugaring #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Parse.ParseUtils
   ( checkDupProgVarDecl
@@ -29,7 +29,6 @@ module Parse.ParseUtils
   , FreestStateT
   , thenM
   , returnM
--- , failM
   )
 where
 
@@ -44,7 +43,8 @@ import           Syntax.ProgramVariable
 import           Syntax.TypeVariable
 import qualified Syntax.Type                   as T
 import           Util.FreestState
--- import           Debug.Trace -- debug
+import           Util.Error
+-- import qualified Control.Monad.Fail as Fail
 
 thenM :: ParseResult a -> (a -> ParseResult b) -> ParseResult b
 m `thenM` k = case m of
@@ -54,22 +54,24 @@ m `thenM` k = case m of
 returnM :: a -> ParseResult a
 returnM = Ok
 
-failM :: String -> ParseResult a
-failM s = Failed (defaultPos, s)
+-- failM :: ErrorType -> ParseResult a
+-- failM s = Failed (defaultPos, s)
 
-catchM :: ParseResult a -> ((Pos, String) -> ParseResult a) -> ParseResult a
-catchM m k = case m of
-  Ok     a -> Ok a
-  Failed e -> k e
+-- catchM :: ParseResult a -> ((Pos, ErrorType) -> ParseResult a) -> ParseResult a
+-- catchM m k = case m of
+--   Ok     a -> Ok a
+--   Failed e -> k e
 
-
-data ParseResult a = Ok a | Failed (Pos, String)
+data ParseResult a = Ok a | Failed ErrorType
 type FreestStateT = StateT FreestS ParseResult
 
 instance Monad ParseResult where
   (>>=)  = thenM
   return = returnM
-  fail   = failM
+--   fail   = Fail.fail
+
+-- instance Fail.MonadFail ParseResult where
+--   fail = failM
 
 instance Applicative ParseResult where
 --
@@ -79,89 +81,43 @@ instance Applicative ParseResult where
 instance Functor ParseResult where
   fmap = liftM
 
-
+-- Parse errors
 
 checkDupField :: ProgVar -> T.TypeMap -> FreestState ()
-checkDupField x m = when (x `Map.member` m) $ addError
-  (pos x)
-  [ Error "Multiple declarations of field"
-  , Error x
-  , Error "\n\t in a choice type"
-  ]
+checkDupField x m = when (x `Map.member` m) $
+  let p = pos x in addError (MultipleFieldDecl p x)
 
 checkDupCase :: ProgVar -> E.FieldMap -> FreestState ()
-checkDupCase x m = when (x `Map.member` m) $ addError
-  (pos x)
-  [ Error "Pattern match is redundant"
-  , Error "\n\t In a case alternative:"
-  , Error x
-  ]
+checkDupCase x m = when (x `Map.member` m) $
+  let p = pos x in addError (RedundantPMatch p x)
 
 checkDupBind :: ProgVar -> [ProgVar] -> FreestState ()
 checkDupBind x xs
   | intern x == "_" = return ()
   | otherwise = case find (== x) xs of
-    Just y -> addError
-      (pos y)
-      [ Error "Conflicting definitions for program variable"
-      , Error x
-      , Error "\n\t Bound at:"
-      , Error $ show (pos y)
-      , Error "\n\t          "
-      , Error $ show (pos x)
-      ]
+    Just y ->  addError (DuplicatePVar (pos y) x (pos x))
     Nothing -> return ()
 
 checkDupKindBind :: K.Bind a -> [K.Bind a] -> FreestState ()
 checkDupKindBind (K.Bind p x _ _) bs =
   case find (\(K.Bind _ y _ _) -> y == x) bs of
-    Just (K.Bind p' _ _ _) -> addError
-      p'
-      [ Error "Conflicting definitions for type variable"
-      , Error x
-      , Error "\n\t Bound at: "
-      , Error (show p')
-      , Error "\n\t           "
-      , Error (show p)
-      ]
+    Just (K.Bind p' _ _ _) -> addError (DuplicateTVar p' x p)
     Nothing -> return ()
 
 checkDupCons :: (ProgVar, [T.Type]) -> [(ProgVar, [T.Type])] -> FreestState ()
 checkDupCons (x, _) xts
-  | any (\(y, _) -> y == x) xts = addError
-    (pos x)
-    [ Error "Multiple declarations of"
-    , Error x
-    , Error "\n\t in a datatype declaration"
-    ]
+  | any (\(y, _) -> y == x) xts = addError (DuplicateFieldInDatatype (pos x) x)
   | otherwise = getFromVEnv x >>= \case
-    Just s -> addError
-      (pos x)
-      [ Error "Multiple declarations of"
-      , Error x
-      , Error "\n\t Declared at:"
-      , Error (pos x)
-      , Error "\n\t             "
-      , Error (pos s)
-      ]
-                -- addError (pos x) ["Multiple declarations of", styleRed (show x), "\n",
-                --              "\t Declared at:", show (pos x), "\n",
-                --              "\t             ", show (pos s)]
+    Just s ->
+      let p = pos x in addError (MultipleDatatypeDecl p x (pos s))
     Nothing -> return ()
 
 checkDupProgVarDecl :: ProgVar -> FreestState ()
 checkDupProgVarDecl x = do
   vEnv <- getVEnv
   case vEnv Map.!? x of
-    Just a -> addError
-      (pos x)
-      [ Error "Multiple declarations of"
-      , Error x
-      , Error "\n\t Declared at:"
-      , Error (pos a)
-      , Error "\n\t             "
-      , Error (pos x)
-      ]
+    Just a -> 
+      let p = pos x in addError (MultipleDatatypeDecl (pos a) x p)
     Nothing -> return ()
 
 
@@ -169,30 +125,15 @@ checkDupTypeDecl :: TypeVar -> FreestState ()
 checkDupTypeDecl a = do
   tEnv <- getTEnv
   case tEnv Map.!? a of
-    Just (_, s) -> addError
-      (pos a)
-      [ Error "Multiple declarations of type"
-      , Error a
-      , Error "\n\t Declared at:"
-      , Error (pos a)
-      , Error "\n\t             "
-      , Error (pos s)
-      ]
+    Just (_, s) ->
+      addError (MultipleTypeDecl (pos a) a (pos s))
     Nothing -> return ()
 
 checkDupFunDecl :: ProgVar -> FreestState ()
 checkDupFunDecl x = do
   eEnv <- getPEnv
   case eEnv Map.!? x of
-    Just e -> addError
-      (pos x)
-      [ Error "Multiple bindings for function"
-      , Error x
-      , Error "\n\t Declared at:"
-      , Error (pos x)
-      , Error "\n\t             "
-      , Error (pos $ snd e)
-      ]
+    Just e -> addError (MultipleFunBindings (pos x) x (pos $ snd e))
     Nothing -> return ()
 
 -- OPERATORS
@@ -207,8 +148,6 @@ unOp op expr = E.App (pos expr) (E.Var (pos op) op) expr
 typeListToType :: TypeVar -> [(ProgVar, [T.Type])] -> [(ProgVar, T.Type)]
 typeListToType a = map (\(x, ts) -> (x, typeToFun ts))
   -- Convert a list of types and a final type constructor to a type
-
  where
---  typeToFun []       = TypeName (pos a) a
   typeToFun []       = T.Var (pos a) a
   typeToFun (t : ts) = T.Arrow (pos t) Un t (typeToFun ts)

@@ -21,7 +21,7 @@ import           Syntax.Base                    ( Pos )
 import qualified Syntax.Type                   as T
 import           Validation.Terminated          ( terminated )
 import           Validation.Substitution        ( unfold )
-import           Util.Error                    ( internalError )
+import           Util.Error                     ( internalError )
 import Validation.Substitution (subs)
 import qualified Syntax.Kind as K
 

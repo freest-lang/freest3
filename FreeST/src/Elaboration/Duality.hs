@@ -13,6 +13,7 @@ import           Syntax.Program
 import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
 import           Util.FreestState
+import           Util.Error
 
 
 type Visited = Set.Set TypeVar
@@ -89,20 +90,13 @@ solveDual v (T.Choice p pol m) =
 -- Recursive types
 solveDual v (T.Rec p b) = T.Rec p <$> solveBind solveDual v b
 solveDual v t@(T.Var p a)
-  |
   -- A recursion variable
-    a `Set.member` v
-  = pure t
-  | otherwise
-  = addError
-      p
-      [Error "Cannot compute the dual of a non-recursion variable:", Error t]
-    $> t
+  | a `Set.member` v = pure t
+  | otherwise        = addError (DualOfNonRecVar p t) $> t
 -- Dualof
 solveDual v d@(T.Dualof p t) = addDualof d >> solveType v (changePos p t)
 -- Non session-types
-solveDual _ t =
-  addError (pos t) [Error "Dualof applied to a non session type:", Error t] $> t
+solveDual _ t = let p = pos t in addError (DualOfNonSession p t) $> t
 
 solveBind
   :: (Visited -> T.Type -> FreestState T.Type)

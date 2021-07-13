@@ -33,6 +33,7 @@ import           Validation.Subkind             ( (<:)
                                                 )
 import           Util.FreestState
 import           Util.Error                     ( internalError )
+import           Util.Error
 import           Control.Monad                  ( unless )
 import qualified Control.Monad.State           as S
 import qualified Data.Map.Strict               as Map
@@ -87,33 +88,23 @@ synthetise' s kEnv (T.Forall _ (K.Bind p a k t)) = do
   return $ K.Kind p K.Top m
 synthetise' _ kEnv (T.Var p a) = case kEnv Map.!? a of
   Just k -> return k
-  Nothing ->
-    addError p [Error "Type variable not in scope:", Error a] $> omission p
+  Nothing -> addError (TypeVarNotInScope p a) $> omission p
 -- Type operators
 synthetise' _ _ t@T.Dualof{} = internalError "Validation.Kinding.synthetise'" t
 
-
 -- Check the contractivity of a given type; issue an error if not
 checkContractive :: K.PolyVars -> TypeVar -> T.Type -> FreestState ()
-checkContractive s a t = unless (contractive s a t) $ addError
-  (pos t)
-  [Error "Type", Error t, Error "is not contractive on type variable", Error a]
+checkContractive s a t = let p = pos t in
+  unless (contractive s a t) $ addError (TypeNotContractive p t a)
 
 -- Check a type against a given kind
 
 checkAgainst' :: K.PolyVars -> K.KindEnv -> K.Kind -> T.Type -> FreestState K.Kind
 checkAgainst' s kEnv expected t = do
   actual <- synthetise' s kEnv t
-  S.when (not (actual <: expected)) $ addError
-    (pos t)
-    [ Error "Couldn't match expected kind"
-    , Error expected
-    , Error "\n\t with actual kind"
-    , Error actual
-    , Error "\n\t for type"
-    , Error t
-    ]
-  pure expected
+  S.when (not $ actual <: expected)
+    (addError (CantMatchKinds (pos t) expected actual t))
+  $> expected
 
 -- Check whether a given type is of a session kind. In any case return the
 -- multiplicity of the kind of the type. This is a refined version of
@@ -121,14 +112,8 @@ checkAgainst' s kEnv expected t = do
 checkAgainstSession' :: K.PolyVars -> K.KindEnv -> T.Type -> FreestState ()
 checkAgainstSession' s kEnv t = do
   k@(K.Kind _ p _) <- synthetise' s kEnv t
-  S.when (p /= K.Session) $ addError
-    (pos t)
-    [ Error "Expecting a session type\n"
-    , Error "\t found type"
-    , Error t
-    , Error "of kind"
-    , Error k
-    ]
+  S.when (p /= K.Session) $ let p = pos t in
+    addError (ExpectingSession p t k)
 
 -- Determine whether a given type is unrestricted
 un :: T.Type -> FreestState Bool

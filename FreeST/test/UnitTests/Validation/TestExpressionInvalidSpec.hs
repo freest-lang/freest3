@@ -23,8 +23,7 @@ matchInvalidExpSpec e = it e $ isExpr (read e) `shouldBe` False
 isExpr :: Exp -> Bool
 isExpr e = null (errors s)
  where
-  s = execState (synthetise Map.empty =<< Dual.resolve e)
-                (initialState "Check Against Expression") -- (elaborateExp e)
+  s = execState (synthetise Map.empty =<< Dual.resolve e) initialState
 
 
 main :: IO ()

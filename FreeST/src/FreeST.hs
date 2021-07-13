@@ -21,7 +21,8 @@ import           System.Directory
 import           System.Environment             ( getArgs )
 import           System.Exit                    ( die )
 import           System.FilePath
-import           Util.Error
+import           Util.PrettyError
+import           Util.ErrorMessage
 import           Util.FreestState
 import           Util.PreludeLoader             ( prelude )
 import           Validation.Rename              ( renameState )
@@ -77,7 +78,8 @@ checkAndRun runOpts = do
 
   cantFindPrelude :: String
   cantFindPrelude =
-    styleCyan "warning: " ++ "Couldn't find prelude; proceeding without it"
+    formatColor (Just Cyan) $ "warning: " ++ "Couldn't find prelude; proceeding without it"
 
+  -- TODO: remove later (proper warnings)
   warning :: String -> String
-  warning = styleCyan
+  warning = formatColor (Just Cyan)
