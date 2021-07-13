@@ -11,8 +11,9 @@ import           Syntax.ProgramVariable         ( ProgVar )
 import           System.Exit                    ( die )
 import           System.IO.Unsafe               ( unsafePerformIO )
 
-import           Util.Error                     ( formatErrorMessages )
-import           Util.ErrorMessage              ( ErrorMessage(..) )
+import           Util.Error                     ( formatError
+                                                , ErrorType(..)
+                                                )
 import           Data.Functor
 
 ------------------------------------------------------------
@@ -75,7 +76,7 @@ initialCtx = Map.fromList
   , ( var "(^)"
     , PrimitiveFun
       (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x ^ y))
-    )    
+    )
   , (var "abs", PrimitiveFun (\(Integer x) -> Integer $ abs x))
   , ( var "mod"
     , PrimitiveFun
@@ -91,7 +92,6 @@ initialCtx = Map.fromList
       (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x `div` y))
     )
   , (var "negate", PrimitiveFun (\(Integer x) -> Integer $ negate x))
-
   , ( var "max"
     , PrimitiveFun
       (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x `max` y))
@@ -102,7 +102,6 @@ initialCtx = Map.fromList
     )
   , (var "succ", PrimitiveFun (\(Integer x) -> Integer $ succ x))
   , (var "pred", PrimitiveFun (\(Integer x) -> Integer $ pred x))
-  
   , (var "abs" , PrimitiveFun (\(Integer x) -> Integer $ abs x))
   , ( var "quot"
     , PrimitiveFun
@@ -159,7 +158,9 @@ initialCtx = Map.fromList
     )
   -- Pairs
   , (var "fst", PrimitiveFun (\(Pair a _) -> a))
-  , ( var "snd", PrimitiveFun (\(Pair _ b) -> b))
+  , ( var "snd"
+    , PrimitiveFun (\(Pair _ b) -> b)
+    )
   -- Prints
   , ( var "printInt"
     , PrimitiveFun (\(Integer x) -> IOValue $ putStr (show x) $> Unit)
@@ -192,10 +193,9 @@ initialCtx = Map.fromList
   -- Error
   , ( var "error"
     , PrimitiveFun
-      (\(String s) -> unsafePerformIO $ die $ formatErrorMessages Map.empty
-                                                                  defaultPos
-                                                                  "FreeST"
-                                                                  [Error s]
+      (\(String s) -> unsafePerformIO $ die $ formatError Nothing
+                                                          Map.empty
+                                                          (ErrorFunction s)
       )
     )
 

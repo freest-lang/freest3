@@ -11,35 +11,35 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-module Util.FreestState
-  ( -- State
+module Util.FreestState (
+-- * State
     FreestState
   , FreestS(..)
   , initialState
--- Monad & map
+-- * Monad & map
   , tMapM
   , tMapM_
   , tMapWithKeyM
   , tMapWithKeyM_
--- Next index
+-- * Next index
   , getNextIndex
--- Variable environment
+-- * Variable environment
   , getVEnv
   , getFromVEnv
   , addToVEnv
   , setVEnv
   , removeFromVEnv
--- Type environment
+-- * Type environment
   , getTEnv
   , getFromTEnv
   , addToTEnv
   , setTEnv
--- Program
+-- * Program
   , getProg
   , getFromProg
   , addToProg
   , setProg
--- Errors
+-- * Errors
   , Errors
   , getErrors
   , addError
@@ -47,19 +47,19 @@ module Util.FreestState
   , ErrorMessage(..)
   , ErrorMsg(..)
   , getFileName
--- Typenames
+-- * Typenames
   , addTypeName
   , getTypeNames
   , findTypeName
   , addDualof
   , debugM
--- Parse Env
+-- * Parse Env
   , ParseEnv
   , emptyPEnv
   , addToPEnv
   , getPEnv
   , setPEnv
--- Run Options
+-- * Run Options
   , RunOpts(..)
   , defaultOpts
   , initialOpts
@@ -69,29 +69,29 @@ module Util.FreestState
   )
 where
 
+import           Control.Applicative
 import           Control.Monad.State
-import           Data.List                      ( intercalate, sortBy )
-import qualified Data.Map.Strict               as Map
+import           Data.List ( intercalate, sortBy )
+import qualified Data.Map.Strict as Map
+import           Data.Maybe
+import qualified Data.Traversable as Traversable
+import           Debug.Trace -- debug (used on debugM function)
 import           Syntax.Base
 import           Syntax.Expression
 import           Syntax.Kind
 import           Syntax.Program
 import           Syntax.ProgramVariable
-import qualified Syntax.Type                   as T
+import qualified Syntax.Type as T
 import           Syntax.TypeVariable
 import           Util.Error
--- import qualified Data.Set as Set
-import qualified Data.Traversable              as Traversable
 import           Util.ErrorMessage
-
-import           Control.Applicative
-import           Debug.Trace -- debug (used on debugM function)
-import           Data.Maybe
+import           Util.PrettyError
 
 -- | The typing state
 
 -- type Errors = Set.Set String
-type Errors = [(Pos, String)]
+-- type Errors = [(Pos, String)]
+type Errors = [ErrorType]
 
 type ParseEnv = Map.Map ProgVar ([ProgVar], Exp)
 
@@ -110,16 +110,16 @@ type FreestState = State FreestS
 
 -- | Initial State
 
-initialState :: String -> FreestS
-initialState f = FreestS { runOpts   = initialOpts
-                         , varEnv    = Map.empty
-                         , prog      = Map.empty
-                         , typeEnv   = Map.empty
-                         , typenames = Map.empty
-                         , errors    = []
-                         , nextIndex = 0
-                         , parseEnv  = Map.empty
-                         }
+initialState :: FreestS
+initialState = FreestS { runOpts   = initialOpts
+                       , varEnv    = Map.empty
+                       , prog      = Map.empty
+                       , typeEnv   = Map.empty
+                       , typenames = Map.empty
+                       , errors    = []
+                       , nextIndex = 0
+                       , parseEnv  = Map.empty
+                       }
 
 -- | Parse Env
 
@@ -225,29 +225,23 @@ addDualof d@(T.Dualof p t) = do
     Nothing -> modify (\s -> s { typenames = Map.insert p d tn })
 addDualof t = internalError "Util.FreestState.addDualof" t
 
-
 -- | ERRORS
 
 getErrors :: FreestS -> String
-getErrors = intercalate "\n" . map snd . sortBy errCmp . take 10 . errors
-
-errCmp :: (Pos, String) -> (Pos, String) -> Ordering
-errCmp (p1, _) (p2, _) = compare p1 p2
+getErrors s = 
+   (intercalate "\n" . map f . sortBy errCmp . take 10 . errors) s
+  where
+    f = formatError (runFilePath $ runOpts s) (typenames s)
+    errCmp x y = compare (pos x) (pos y)
 
 hasErrors :: FreestS -> Bool
 hasErrors = not . null . errors
 
-addError :: Pos -> [ErrorMessage] -> FreestState ()
-addError p em = do
-  f    <- getFileName
-  tops <- getTypeNames
-  let es = formatErrorMessages tops p f em
-  modify (\s -> s { errors = insertError (errors s) (p, es) })
-
-insertError :: [(Pos, String)] -> (Pos, String) -> [(Pos, String)]
-insertError es err | err `elem` es = es
-                   | otherwise     = es ++ [err]
-
+-- TODO: Do we need to deal with error duplication?
+-- Use insert? Don't think so...
+addError :: ErrorType -> FreestState ()
+addError e = modify (\s -> s { errors = e : errors s })
+  
 -- | Traversing Map.map over FreestStates
 
 tMapM :: Monad m => (a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)
@@ -273,8 +267,8 @@ debugM err = do
 
 data RunOpts = RunOpts { runFilePath :: Maybe FilePath
 --                     , preludeFile :: Maybe FilePath
-                     , mainFunction :: Maybe ProgVar
-                     } deriving Show
+                       , mainFunction :: Maybe ProgVar
+                       } deriving Show
 
 instance Semigroup RunOpts where
   o1 <> o2 = RunOpts { runFilePath  = runFilePath o1 <|> runFilePath o2

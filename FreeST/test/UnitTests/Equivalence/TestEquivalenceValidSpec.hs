@@ -26,9 +26,7 @@ matchValidSpec [k, t, u] = it
   kEnv     = readKenv k
 
 wellFormed :: K.KindEnv -> Type -> Bool
-wellFormed kEnv t = null $ errors $ execState
-  (synthetise kEnv t)
-  (initialState "Kind synthesis for testing type equivalence")
+wellFormed kEnv t = null $ errors $ execState (synthetise kEnv t) initialState
 
 spec :: Spec
 spec = do

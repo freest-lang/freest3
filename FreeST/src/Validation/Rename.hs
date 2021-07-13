@@ -192,7 +192,7 @@ renameType = head . renameTypes . (: [])
 -- Rename a list of types
 renameTypes :: [T.Type] -> [T.Type]
 renameTypes ts =
-  evalState (mapM (rename Map.empty) ts) (initialState "Renaming")
+  evalState (mapM (rename Map.empty) ts) initialState
 
 -- Substitution and unfold, the renamed versions
 

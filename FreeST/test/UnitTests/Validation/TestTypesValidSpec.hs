@@ -28,7 +28,7 @@ matchValidKindingSpec [t, k] = it t $ hasKind (read t) (read k) `shouldBe` Left 
 hasKind :: Type -> Kind -> TestExpectation
 hasKind t k = testValidExpectation (k' <: k) (errors s) -- null (errors s) && k' <: k
  where
-  (k', s) = runState test (initialState "Kind synthesis")
+  (k', s) = runState test initialState
   test    = synthetise Map.empty . renameType =<< Dual.resolve t
   
 main :: IO ()
