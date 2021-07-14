@@ -62,7 +62,7 @@ checkAndRun runOpts = do
   when (hasErrors s4) (die $ getErrors s4)
   -- Check if main was left undefined
   let main = getMain runOpts
-  if main `Map.member` (varEnv s4)
+  if main `Map.member` varEnv s4
   then
     -- If main is defined, eval and print
     evalAndPrint (typeEnv s4) initialCtx
@@ -75,11 +75,7 @@ checkAndRun runOpts = do
   fromPreludeFile :: FreestS -> (VarEnv, ParseEnv)
   fromPreludeFile s0 | hasErrors s0 = (prelude, Map.empty)
                      | otherwise    = (varEnv s0, parseEnv s0)
-
+  -- TODO: remove later (proper warnings)
   cantFindPrelude :: String
   cantFindPrelude =
     formatColor (Just Cyan) $ "warning: " ++ "Couldn't find prelude; proceeding without it"
-
-  -- TODO: remove later (proper warnings)
-  warning :: String -> String
-  warning = formatColor (Just Cyan)

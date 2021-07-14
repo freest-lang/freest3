@@ -286,14 +286,11 @@ initialOpts :: RunOpts
 initialOpts = RunOpts Nothing Nothing -- Nothing
 
 getMain :: RunOpts -> ProgVar
-getMain runOpts =
-  if isJust $ maybeMain
-    then fromJust $ maybeMain
-    else mkVar defaultPos "main"
-  where maybeMain = mainFunction runOpts
+getMain opts = fromMaybe (mkVar defaultPos "main") maybeMain
+  where maybeMain = mainFunction opts
 
 isMainFlagSet :: RunOpts -> Bool
-isMainFlagSet runOpts = isJust $ mainFunction runOpts
+isMainFlagSet = isJust . mainFunction
 
 getOpts :: FreestState RunOpts
 getOpts = gets runOpts

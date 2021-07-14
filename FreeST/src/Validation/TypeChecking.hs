@@ -1,4 +1,5 @@
 {-|
+
 Module      :  Validation.TypeChecking
 Description :  <optional short text displayed on contents page>
 Copyright   :  (c) <Authors or Affiliations>
@@ -103,14 +104,8 @@ checkMainFunction = do
     then do
       let t = vEnv Map.! main
       k <- K.synthetise Map.empty t
-      unless (not (K.isLin k)) $ addError (UnrestrictedMainFun defaultPos main t k)
-    else if mainFlag
-      then
-        addError (MainNotDefined defaultPos main)
-      else
-        -- This error is ignored in order to not raise a type check error
-        --   when main is undifined
-        return ()
+      when (K.isLin k) $ addError (UnrestrictedMainFun defaultPos main t k)
+    else when mainFlag $ addError (MainNotDefined defaultPos main)
 
 -- validMainType :: T.Type -> Bool -- TODO: why this restriction?
 -- validMainType T.Forall{} = False
