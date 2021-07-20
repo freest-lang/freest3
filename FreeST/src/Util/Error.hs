@@ -187,8 +187,8 @@ errorMsg (DualOfNonSession _ t) = [Error "Dualof applied to a non session type:"
 -- Validation.TypeChecking
 errorMsg (SignatureLacksBinding _ pv t) =
   [ Error "The type signature for", Error pv, Error "lacks an accompanying binding\n"
-  , Error "\t Type signature:", Error $ t ]
-errorMsg (MainNotDefined _ pv) = [ Error "Function", Error pv, Error "is not defined"]
+  , Error "\t Type signature:", Error t ]
+errorMsg (MainNotDefined _ pv) = [Error "Main function", Error pv, Error "is not defined"]
 errorMsg (UnrestrictedMainFun _ pv t k) =
   [ Error "The type of"    , Error pv, Error "must be non linear"
   , Error "\n\t found type", Error t, Error "of kind", Error k]

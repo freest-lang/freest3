@@ -97,7 +97,6 @@ checkMainFunction :: FreestState ()
 checkMainFunction = do
   vEnv <- getVEnv
   runOpts <- getOpts
-  let mainFlag = isMainFlagSet runOpts
   let main = getMain runOpts
 
   if main `Map.member` vEnv
@@ -105,7 +104,7 @@ checkMainFunction = do
       let t = vEnv Map.! main
       k <- K.synthetise Map.empty t
       when (K.isLin k) $ addError (UnrestrictedMainFun defaultPos main t k)
-    else when mainFlag $ addError (MainNotDefined defaultPos main)
+    else when (isMainFlagSet runOpts) $ addError (MainNotDefined defaultPos main)
 
 -- validMainType :: T.Type -> Bool -- TODO: why this restriction?
 -- validMainType T.Forall{} = False
