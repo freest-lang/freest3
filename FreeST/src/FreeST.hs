@@ -59,7 +59,8 @@ checkAndRun runOpts = do
   let s3 = execState renameState (s2 { runOpts })
   -- Type check
   let s4 = execState typeCheck (s3 { runOpts })
-  when (hasErrors s4) (die $ getErrors s4)
+  when (hasErrors s4)   (die $ getErrors s4)
+  when (hasWarnings s4) (putStrLn $ getWarnings s4)
   -- Check if main was left undefined
   let main = getMain runOpts
   if main `Map.member` (varEnv s4)

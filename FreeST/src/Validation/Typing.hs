@@ -36,6 +36,7 @@ import           Syntax.Program
 import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 import           Util.FreestState
+import           Util.Warning
 import           Util.Error
 import           Util.PreludeLoader             ( userDefined ) -- debug
 import qualified Validation.Extract            as Extract
@@ -227,15 +228,16 @@ checkEquivTypes :: E.Exp -> K.KindEnv -> T.Type -> T.Type -> FreestState ()
 checkEquivTypes exp kEnv expected actual =
   unless (equivalent kEnv actual expected) $
     let p = pos exp in addError (NonEquivTypes p expected actual exp)
-    
+
 checkEquivEnvs
   :: Pos -> String -> E.Exp -> K.KindEnv -> VarEnv -> VarEnv -> FreestState ()
 checkEquivEnvs p branching exp kEnv vEnv1 vEnv2 = do
   let vEnv1' = userDefined vEnv1
       vEnv2' = userDefined vEnv2
   unless (equivalent kEnv vEnv1' vEnv2') $
-    addError (NonEquivEnvs p branching (vEnv1' Map.\\ vEnv2') (vEnv2' Map.\\ vEnv1') exp)
-    
+    return ()
+    --addError (NonEquivEnvs p branching (vEnv1' Map.\\ vEnv2') (vEnv2' Map.\\ vEnv1') exp)
+
 synthetiseCase :: Pos -> K.KindEnv -> E.Exp -> E.FieldMap -> FreestState T.Type
 synthetiseCase p kEnv e fm  = do
   fm'  <- buildMap p fm =<< Extract.datatypeMap e =<< synthetise kEnv e
@@ -269,7 +271,7 @@ buildMap :: Pos -> E.FieldMap -> T.TypeMap -> FreestState E.FieldMap
 buildMap p fm tm
   | Map.size tm == Map.size fm = tMapWithKeyM (buildAbstraction tm) fm
   -- Non-exhaustive case (later it might be a warning)
-  | otherwise = addError (NonExhaustiveCase p fm tm) $> fm
+  | otherwise = addWarning (NonExhaustiveCase p fm tm) $> fm
 
 buildAbstraction :: T.TypeMap -> ProgVar -> ([ProgVar], E.Exp)
                  -> FreestState ([ProgVar], E.Exp)
@@ -277,7 +279,7 @@ buildAbstraction tm x (xs, e) = case tm Map.!? x of
   Just t -> let n = numberOfArgs t in
     if n /= length xs
       then addError (WrongNumOfCons (pos e) x n xs e) $> (xs, e)
-      else return (xs, buildAbstraction' (xs, e) t) 
+      else return (xs, buildAbstraction' (xs, e) t)
   Nothing -> -- Data constructor not in scope
     let p = pos x in addError (DataConsNotInScope p x) $> (xs, e)
  where
@@ -286,7 +288,7 @@ buildAbstraction tm x (xs, e) = case tm Map.!? x of
   buildAbstraction' (x : xs, e) (T.Arrow _ _ t1 t2) =
     E.Abs (pos e) $ E.Bind (pos e) Lin x t1 $ buildAbstraction' (xs, e) t2
   buildAbstraction' ([x], e) t = E.Abs (pos e) $ E.Bind (pos e) Un x t e
- 
+
   numberOfArgs :: T.Type -> Int
   numberOfArgs (T.Arrow _ _ _ t) = 1 + numberOfArgs t
   numberOfArgs _                 = 0
