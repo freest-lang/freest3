@@ -182,7 +182,7 @@ errorMsg (FuctionLacksSignature _ pv) =
   , Error "lacks an accompanying type signature"]
 -- Elaboration.Duality
 errorMsg (DualOfNonRecVar _ t) =
-  [Error "Cannot compute the dual of a non-recursion variable:", Error t]
+  [Error "Cannot compute the dual of a polymorphic variable:", Error t]
 errorMsg (DualOfNonSession _ t) = [Error "Dualof applied to a non session type:", Error t]
 -- Validation.TypeChecking
 errorMsg (SignatureLacksBinding _ pv t) =
