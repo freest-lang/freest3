@@ -62,15 +62,11 @@ checkAndRun runOpts = do
   when (hasErrors s4) (die $ getErrors s4)
   -- Check if main was left undefined
   let main = getMain runOpts
-  if main `Map.member` varEnv s4
-  then
-    -- If main is defined, eval and print
-    evalAndPrint (typeEnv s4) initialCtx
+  -- If main is defined, eval and print
+  when (main `Map.member` varEnv s4)
+    (evalAndPrint (typeEnv s4) initialCtx
     (prog s4)
-    (prog s4 Map.! main)
-  else
-    -- If main is undefined, do not eval, only typecheck
-    putStrLn "(type checks)"
+    (prog s4 Map.! main))
  where
   fromPreludeFile :: FreestS -> (VarEnv, ParseEnv)
   fromPreludeFile s0 | hasErrors s0 = (prelude, Map.empty)
