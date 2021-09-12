@@ -52,6 +52,6 @@ formatBold :: String -> String
 formatBold str = "\ESC[1m" ++ str ++ "\ESC[0m"
 
 formatColor :: Maybe Color -> String -> String
-formatColor (Just Red) str = "\ESC[91m" ++ str ++ "\ESC[0m"
+formatColor (Just Red) str = "\ESC[31m" ++ str ++ "\ESC[0m"
 formatColor (Just Cyan) str = "\ESC[36m" ++ str ++ "\ESC[0m"
 formatColor _          str = str
