@@ -70,7 +70,7 @@ checkAndRun runOpts = do
     (prog s4 Map.! main)
   else
     -- If main is undefined, do not eval, only typecheck
-    putStrLn "Main is not defined (only typechecked)"
+    putStrLn "(type checks)"
  where
   fromPreludeFile :: FreestS -> (VarEnv, ParseEnv)
   fromPreludeFile s0 | hasErrors s0 = (prelude, Map.empty)
