@@ -62,8 +62,8 @@ typeList =
   , (mkVar p "ord", read "Char -> Int")
   , ( mkVar p "chr", read "Int -> Char")
   -- Pairs
-  , (mkVar p "fst", read "∀ a:TU . ∀ b:TU . (a, b) -> a")
-  , ( mkVar p "snd", read "∀ a:TU . ∀ b:TU . (a, b) -> b")
+  , (mkVar p "fst", read "∀ a:TL . ∀ b:TU . (a, b) -> a")
+  , ( mkVar p "snd", read "∀ a:TU . ∀ b:TL . (a, b) -> b")
   --  Prints
   , (mkVar p "printInt"   , read "Int -> ()")
   , (mkVar p "printIntLn" , read "Int -> ()")
@@ -76,7 +76,7 @@ typeList =
   , (mkVar p "printString", read "String -> ()")
   , (mkVar p "printStringLn", read "String -> ()")
   -- Fork
-  , (mkVar p "fork", read "∀a:TU. a -> ()")
+  , (mkVar p "fork", read "∀a:TL. a -> ()")
   -- Error
   , (mkVar p "error", read "∀a:TU . String -> a")
   -- Session ops
