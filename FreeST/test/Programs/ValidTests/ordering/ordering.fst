@@ -33,11 +33,8 @@ orderedServer c list =
       case list of {
         Cons y ys ->
           let c = send y c in
-          (ys, c),
+          (ys, c)
         -- Nil is never reached
-        Nil ->
-          let c = send (-36042069) c in
-          (Nil, c)
       },
 
     -- Quicksorts with descending to send it reversed

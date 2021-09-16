@@ -39,6 +39,13 @@ module Util.FreestState (
   , getFromProg
   , addToProg
   , setProg
+-- * Warnings
+  --, Warnings
+  , getWarnings
+  , addWarning
+  , hasWarnings
+  --, WarningMessage(..)
+  --, WarningMsg(..)
 -- * Errors
   , Errors
   , getErrors
@@ -65,6 +72,7 @@ module Util.FreestState (
   , initialOpts
   , getMain
   , isMainFlagSet
+  , isQuietFlagSet
   , getOpts
   )
 where
@@ -83,11 +91,16 @@ import           Syntax.Program
 import           Syntax.ProgramVariable
 import qualified Syntax.Type as T
 import           Syntax.TypeVariable
+import           Util.Warning
+import           Util.WarningMessage
+import           Util.PrettyWarning
 import           Util.Error
 import           Util.ErrorMessage
 import           Util.PrettyError
 
 -- | The typing state
+
+type Warnings = [WarningType]
 
 -- type Errors = Set.Set String
 -- type Errors = [(Pos, String)]
@@ -101,6 +114,7 @@ data FreestS = FreestS {
 , prog      :: Prog
 , typeEnv   :: TypeEnv
 , typenames :: TypeOpsEnv
+, warnings  :: Warnings
 , errors    :: Errors
 , nextIndex :: Int
 , parseEnv  :: ParseEnv -- "discarded" after elaboration
@@ -116,6 +130,7 @@ initialState = FreestS { runOpts   = initialOpts
                        , prog      = Map.empty
                        , typeEnv   = Map.empty
                        , typenames = Map.empty
+                       , warnings  = []
                        , errors    = []
                        , nextIndex = 0
                        , parseEnv  = Map.empty
@@ -225,10 +240,25 @@ addDualof d@(T.Dualof p t) = do
     Nothing -> modify (\s -> s { typenames = Map.insert p d tn })
 addDualof t = internalError "Util.FreestState.addDualof" t
 
+-- | WARNINGS
+
+getWarnings :: FreestS -> String
+getWarnings s =
+   (intercalate "\n" . map f . sortBy cmp . take 10 . warnings) s
+  where
+    f = formatWarning (runFilePath $ runOpts s) (typenames s)
+    cmp x y = compare (pos x) (pos y)
+
+hasWarnings :: FreestS -> Bool
+hasWarnings = not . null . warnings
+
+addWarning :: WarningType -> FreestState ()
+addWarning w = modify (\s -> s { warnings = w : warnings s })
+
 -- | ERRORS
 
 getErrors :: FreestS -> String
-getErrors s = 
+getErrors s =
    (intercalate "\n" . map f . sortBy errCmp . take 10 . errors) s
   where
     f = formatError (runFilePath $ runOpts s) (typenames s)
@@ -241,7 +271,7 @@ hasErrors = not . null . errors
 -- Use insert? Don't think so...
 addError :: ErrorType -> FreestState ()
 addError e = modify (\s -> s { errors = e : errors s })
-  
+
 -- | Traversing Map.map over FreestStates
 
 tMapM :: Monad m => (a1 -> m a2) -> Map.Map k a1 -> m (Map.Map k a2)
@@ -265,25 +295,28 @@ debugM err = do
 
 -- | Run Options
 
-data RunOpts = RunOpts { runFilePath :: Maybe FilePath
---                     , preludeFile :: Maybe FilePath
+data RunOpts = RunOpts { runFilePath  :: Maybe FilePath
+--                     , preludeFile  :: Maybe FilePath
                        , mainFunction :: Maybe ProgVar
+                       , quietmode    :: Bool
                        } deriving Show
 
 instance Semigroup RunOpts where
   o1 <> o2 = RunOpts { runFilePath  = runFilePath o1 <|> runFilePath o2
 --                    , preludeFile  = preludeFile o1 <|> preludeFile o2
                      , mainFunction = mainFunction o1 <|> mainFunction o2
+                     , quietmode    = quietmode o1 || quietmode o2
                      }
 
 defaultOpts :: RunOpts
 defaultOpts = RunOpts { runFilePath  = Nothing
 --                    , preludeFile  = Just "Prelude.fst"
                       , mainFunction = Nothing
+                      , quietmode    = False
                       }
 
 initialOpts :: RunOpts
-initialOpts = RunOpts Nothing Nothing -- Nothing
+initialOpts = RunOpts Nothing Nothing False -- Nothing
 
 getMain :: RunOpts -> ProgVar
 getMain opts = fromMaybe (mkVar defaultPos "main") maybeMain
@@ -291,6 +324,9 @@ getMain opts = fromMaybe (mkVar defaultPos "main") maybeMain
 
 isMainFlagSet :: RunOpts -> Bool
 isMainFlagSet = isJust . mainFunction
+
+isQuietFlagSet :: RunOpts -> Bool
+isQuietFlagSet = quietmode
 
 getOpts :: FreestState RunOpts
 getOpts = gets runOpts

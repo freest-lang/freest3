@@ -18,13 +18,6 @@ import qualified Data.Map                      as Map
 import           Data.Maybe
 import           Parse.Unparser                 ( showFieldMap ) -- temporary
 
-
--- Warnings
--- FreeST.hs:82:
-   -- styleCyan "warning: " ++ "Couldn't find prelude; proceeding without it" 
--- CmdLine:72:
-   -- multiple files provided
-
 -- | Internal errors
 
 internalError :: (Show a, Position a) => String -> a -> b
@@ -87,7 +80,7 @@ data ErrorType =
   | PartialApplied Pos E.Exp String
   | NonEquivTypes Pos T.Type T.Type E.Exp
   | NonEquivEnvs Pos String VarEnv VarEnv E.Exp
-  | NonExhaustiveCase Pos E.FieldMap T.TypeMap
+  -- | NonExhaustiveCase Pos E.FieldMap T.TypeMap
   | DataConsNotInScope Pos ProgVar
   | WrongNumOfCons Pos ProgVar Int [ProgVar] E.Exp
   | ExtractError Pos String E.Exp T.Type
@@ -128,7 +121,7 @@ instance Position ErrorType where
   pos (PartialApplied p _ _        ) = p
   pos (NonEquivTypes p _ _ _       ) = p
   pos (NonEquivEnvs p _ _ _ _      ) = p
-  pos (NonExhaustiveCase p _ _     ) = p
+  --pos (NonExhaustiveCase p _ _     ) = p
   pos (DataConsNotInScope p _      ) = p
   pos (WrongNumOfCons p _ _ _ _    ) = p
   pos (ExtractError p _ _ _        ) = p
@@ -143,15 +136,15 @@ errorMsg (FileNotFound f) =
 errorMsg NoInputFile =
   [ Error "freest: no input files\n\t"
   , Error "Usage: For basic information, try the '--help' option."]
--- Lexer  
+-- Lexer
 errorMsg (LexicalError _ t) =
   [Error "Lexical error on input", Error $ "\ESC[91m" ++ t ++ "\ESC[0m"]
--- Parser.y   
+-- Parser.y
 errorMsg (PrematureEndOfFile _) =
   [Error "Parse error:", Error "\ESC[91mPremature end of file\ESC[0m"]
 errorMsg (ParseError _ x) =
   [Error "Parse error on input", Error $ "\ESC[91m'" ++ x ++ "'\ESC[0m"]
--- Parse.ParseUtils    
+-- Parse.ParseUtils
 errorMsg (MultipleFieldDecl _ pv) =
   [ Error "Multiple declarations of field", Error pv, Error "\n\t in a choice type"]
 errorMsg (RedundantPMatch _ pv) =
@@ -224,16 +217,16 @@ errorMsg (NonEquivTypes _ t u e) =
 errorMsg (NonEquivEnvs _ branching vEnv vEnv' e) =
   [ Error "I have reached the end of", Error branching
   , Error "expression and found two distinct typing environments."
-  , Error "\n\t The contexts are", Error (vEnv Map.\\ vEnv')
-  , Error "\n\t              and", Error (vEnv' Map.\\ vEnv)
-  , Error "\n\t and the expression is", Error e
-  , Error "\n\t (are there variables in one environment and not in the other?)"
-  , Error "\n\t (is there a variable with different types in the two environments?)"]
-errorMsg (NonExhaustiveCase _ fm tm) =
-  [ Error "Wrong number of constructors\n\tThe expression has", Error $ Map.size fm
-    , Error "constructor(s)\n\tbut the type has", Error $ Map.size tm
-    , Error "constructor(s)\n\tin case "
-    , Error $ "\ESC[91m{" ++ showFieldMap fm ++ "}\ESC[0m"]
+  , Error "\n\t     The contexts are", Error (vEnv Map.\\ vEnv')
+  , Error "\n\t                  and", Error (vEnv' Map.\\ vEnv)
+  , Error "\n\tand the expression is", Error e
+  , Error "\n\t(was a variable consumed in one branch and not in the other?)"
+  , Error "\n\t(is there a variable with different types in the two environments?)"]
+--errorMsg (NonExhaustiveCase _ fm tm) =
+--  [ Error "Wrong number of constructors\n\tThe expression has", Error $ Map.size fm
+--    , Error "constructor(s)\n\tbut the type has", Error $ Map.size tm
+--    , Error "constructor(s)\n\tin case "
+--    , Error $ "\ESC[91m{" ++ showFieldMap fm ++ "}\ESC[0m"]
 errorMsg (DataConsNotInScope _ pv) =
    [Error "Data constructor", Error pv, Error "not in scope"]
 errorMsg (WrongNumOfCons _ pv i pvs e) =
@@ -254,4 +247,3 @@ errorMsg (ErrorFunction s) = [Error s]
 -- Should I add more info to this error?
 -- ex: File: Error s
 --       error, called at File:Pos
-
