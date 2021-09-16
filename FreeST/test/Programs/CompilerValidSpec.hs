@@ -49,7 +49,7 @@ testOne file = hCapture [stdout, stderr] $ catches
 
   runTest :: IO TestResult
   runTest =
-    timeout timeInMicro (checkAndRun defaultOpts { runFilePath = Just file })
+    timeout timeInMicro (checkAndRun defaultOpts { runFilePath = Just file, quietmode = True })
       >>= \case
             Just _  -> pure Passed
             Nothing -> pure Timeout
@@ -84,4 +84,3 @@ checkAgainstExpected file res = do
   safeRead f = do
     b <- doesFileExist f
     if b then fmap Just (readFile f) else return Nothing
-

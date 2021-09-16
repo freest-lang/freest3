@@ -21,8 +21,9 @@ import           Util.FreestState
 
 data Flag
   = Main String           -- -m --main
-  | Version               -- -v -- version
-  | Help                  -- -h --help  
+  | Version               -- -v --version
+  | Help                  -- -h --help
+  | Quiet                 -- -q --quiet
 --  | Prelude String      -- -p --prelude
   deriving Show
 
@@ -39,11 +40,12 @@ options =
   [ Option ['v'] ["version"] (NoArg Version)               "show version number"
   , Option ['h'] ["help"]    (NoArg Help)                  "show help menu"
   , Option ['m'] ["main"]    (ReqArg Main "main_function") "main function"
+  , Option ['q'] ["quiet"]   (NoArg Quiet)                 "suppress warnings"
 --  , Option ['p'] ["prelude"] (ReqArg Prelude "prelude_file") "prelude file"
 --  , Option [] ["no-colors", "no-colours"]    (NoArg Main) "Black and white errors"
 --  , Option Warnings as errors
 -- verbose (full comment depth)
--- -i --import ??  
+-- -i --import ??
   ]
 
 helpMenu :: IO ()
@@ -79,6 +81,8 @@ handleFlags opts (x : _) flag@(Main _) = do
   handleFlags opts [x] flag
 handleFlags opts _ Version = freestVersion $> opts
 handleFlags opts _ Help    = helpMenu $> opts
+handleFlags opts []   Quiet  = throwError NoInputFile $> opts
+handleFlags opts [xs] Quiet  = return $ opts { runFilePath  = Just xs ,quietmode = True }
 --handleFlags opts _ (Prelude prelude) =
    -- check if exists? ...
 --  return $ opts { preludeFile = Just prelude }
@@ -97,4 +101,3 @@ handleFile opts fpath defaultMain
 
 throwError :: ErrorType -> IO ()
 throwError = die . formatError Nothing Map.empty
-
