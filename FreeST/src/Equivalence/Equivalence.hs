@@ -72,10 +72,9 @@ instance Equivalence T.Type where
         && Map.foldlWithKey (equivField v kEnv m2) True m1
     -- Polymorphism and recursion
     equiv v kEnv (T.Forall _ (K.Bind p a1 k1 t1)) (T.Forall _ (K.Bind _ a2 k2 t2))
-      = k1 <: k2 && k2 <: k1 && equiv v
-                                      (Map.insert a1 k1 kEnv)
-                                      t1
-                                      (Subs.subs (T.Var p a1) a2 t2)
+      = k1 <: k2 && k2 <: k1 &&
+           equiv v (Map.insert a1 k1 kEnv) t1
+            (Subs.subs (T.Var p a1) a2 t2)
     equiv v kEnv t1@T.Rec{} t2 =
       equiv (Set.insert (pos t1, pos t2) v) kEnv (Subs.unfold t1) t2
     equiv v kEnv t1 t2@T.Rec{} =

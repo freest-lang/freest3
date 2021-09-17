@@ -201,6 +201,7 @@ instance Unparse T.Type where
     -- where s = bracket (unparse t) Right dotRator
   unparse (T.Dualof _ t) = (dualofRator, "dualof " ++ s)
     where s = bracket (unparse t) Right dualofRator
+  unparse (T.CoVar _ a) = (dualofRator, "dualof " ++ show a)
 
 showDatatype :: T.TypeMap -> String
 showDatatype m = intercalate " | "

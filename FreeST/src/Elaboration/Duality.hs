@@ -1,11 +1,13 @@
 {-# LANGUAGE TupleSections, FlexibleInstances #-}
 module Elaboration.Duality
   ( Duality(..)
+  , dualof
   )
 where
 
 import           Data.Functor
 import qualified Data.Set                      as Set
+import qualified Data.Map                      as Map
 import           Syntax.Base
 import qualified Syntax.Kind                   as K
 import           Syntax.Expression             as E
@@ -92,7 +94,7 @@ solveDual v (T.Rec p b) = T.Rec p <$> solveBind solveDual v b
 solveDual v t@(T.Var p a)
   -- A recursion variable
   | a `Set.member` v = pure t
-  | otherwise        = addError (DualOfNonRecVar p t) $> t
+  | otherwise        = pure $ T.CoVar p a
 -- Dualof
 solveDual v d@(T.Dualof p t) = addDualof d >> solveType v (changePos p t)
 -- Non session-types
@@ -118,6 +120,7 @@ changePos p (T.Int  _         ) = T.Int p
 changePos p (T.Char _         ) = T.Char p
 changePos p (T.Bool _         ) = T.Bool p
 changePos p (T.Unit _         ) = T.Unit p
+changePos p (T.String _         ) = T.String p
 changePos p (T.Arrow _ pol t u) = T.Arrow p pol t u
 changePos p (T.Pair _ t u     ) = T.Pair p t u
 changePos p (T.Variant _ m    ) = T.Variant p m
@@ -128,4 +131,21 @@ changePos p (T.Choice  _ pol m) = T.Choice p pol m
 changePos p (T.Rec    _ xs    ) = T.Rec p xs
 changePos p (T.Forall _ xs    ) = T.Forall p xs
 changePos p (T.Var    _ x     ) = T.Var p x
-changePos p (T.Dualof _ t     ) = T.Dualof p t --(changePos p t)
+changePos p (T.Dualof _ t     ) = T.Dualof p t
+changePos p (T.CoVar _ t     ) = T.CoVar p t
+
+
+
+dualof :: T.Type -> T.Type
+-- Session Types
+dualof (T.Semi    p t   u) = T.Semi p (dualof t) (dualof u)
+dualof (T.Message p pol t) = T.Message p (dual pol) (dualof t)
+dualof (T.Choice p pol m) = T.Choice p (dual pol) (Map.map dualof m)
+dualof (T.Rec p b) = T.Rec p (dualBind  b)
+  where dualBind (K.Bind p a k t) = K.Bind p a k (dualof t) 
+dualof (T.Dualof _ t) = dualof t
+-- Non session-types & Skip
+dualof t = t
+
+
+

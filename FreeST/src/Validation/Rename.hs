@@ -109,6 +109,7 @@ rename' bs (T.Rec    p b)
  | isProperRec b = T.Rec p <$> rename bs b
  | otherwise     = rename bs (K.body b)
 rename' bs (T.Var    p a     ) = return $ T.Var p (findWithDefaultVar a bs)
+rename' bs (T.CoVar    p a   ) = return $ T.CoVar p (findWithDefaultVar a bs)
   -- Type operators
 rename' _  t@T.Dualof{}        = internalError "Validation.Rename.rename" t
   -- Otherwise: Basic, Skip, Message, TypeName

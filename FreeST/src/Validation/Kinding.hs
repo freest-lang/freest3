@@ -90,6 +90,12 @@ synthetise' _ kEnv (T.Var p a) = case kEnv Map.!? a of
   Just k -> return k
   Nothing -> addError (TypeVarNotInScope p a) $> omission p
 -- Type operators
+synthetise' _ kEnv t@(T.CoVar p a) =
+  case kEnv Map.!? a of
+    Just k -> S.when (not $ k <: K.sl p)
+            (addError (CantMatchKinds p k (K.sl p) t)) $> K.sl p
+    Nothing -> addError (TypeVarNotInScope p a) $> omission p
+
 synthetise' _ _ t@T.Dualof{} = internalError "Validation.Kinding.synthetise'" t
 
 -- Check the contractivity of a given type; issue an error if not

@@ -70,6 +70,10 @@ toGrammar x@T.Var{} = do      -- x is a polymorphic variable
   y <- getLHS $ Map.singleton (show x) []
   return [y]
 toGrammar (T.Rec _ (K.Bind _ x _ _)) = return [x]
+toGrammar (T.CoVar _ a) = do
+  y <- getLHS $ Map.singleton ("dual" ++ show a) []
+  return [y]
+
 toGrammar t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 
 type SubstitutionList = [(T.Type, TypeVar)]

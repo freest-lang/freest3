@@ -44,9 +44,10 @@ data Type =
   | Rec Pos (K.Bind Type)      -- μ a:k . T, Recursive type
   | Var Pos TypeVar
   -- Type operators
+  | Dualof Pos Type
+  | CoVar Pos TypeVar
   -- | Abs Pos (Bind Type)       -- λ a:k => T, Operator abstraction
   -- | App Pos Type Type
-  | Dualof Pos Type
 
 type TypeMap = Map.Map ProgVar Type
 
@@ -69,6 +70,7 @@ instance Position Type where
   -- pos (Abs p _      ) = p
   -- pos (App p _ _    ) = p
   pos (Dualof p _   ) = p
+  pos (CoVar p _   ) = p
 
 instance Default Type where
   omission = Int
