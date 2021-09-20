@@ -11,8 +11,6 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-{-# LANGUAGE NoMonadFailDesugaring #-}
-
 module Validation.Kinding
   ( synthetise
   , checkAgainst

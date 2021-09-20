@@ -14,8 +14,6 @@ Each function normalises the type, checks whether it is of the right form and
 issues an error if not.
 -}
 
-{-# LANGUAGE NoMonadFailDesugaring #-}
-
 module Validation.Extract
   ( function
   , pair

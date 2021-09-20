@@ -11,7 +11,7 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-{-# LANGUAGE LambdaCase, NoMonadFailDesugaring #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Validation.Rename
   ( renameState
@@ -32,7 +32,7 @@ import qualified Syntax.Kind                   as K
 import qualified Syntax.Type                   as T
 import qualified Syntax.Expression             as E
 --import           Syntax.Program
-import           Validation.Terminated          ( terminated )
+-- import           Validation.Terminated          ( terminated )
 import qualified Validation.Substitution       as Subs
                                                 ( subs
                                                 , unfold
@@ -42,7 +42,6 @@ import           Util.FreestState
 import           Util.PreludeLoader             ( userDefined )
 import qualified Data.Map.Strict               as Map
 import           Control.Monad.State
-import qualified Data.Set as Set
 
 renameState :: FreestState ()
 renameState = do

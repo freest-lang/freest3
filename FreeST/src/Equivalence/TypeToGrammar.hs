@@ -1,4 +1,3 @@
-
 {- |
 Module      :  Equivalence.TypeToGrammar
 Description :  Conversion from types to grammars
@@ -11,7 +10,7 @@ This module builds the initial monadic state, and converts the session types
 given as parameter to context-free grammars
 -}
 
-{-# LANGUAGE NoMonadFailDesugaring, FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Equivalence.TypeToGrammar
   ( convertToGrammar
@@ -84,7 +83,7 @@ collect σ (  T.Choice _ _              m) = tMapM_ (collect σ) m
 collect σ t@(T.Rec    _ (K.Bind _ x _ u)) = do
   let σ' = (t, x) : σ
   let u' = Substitution.subsAll σ' u
-  (z : zs) <- toGrammar (normalise u')
+  ~(z : zs) <- toGrammar (normalise u')
   m        <- getTransitions z
   addProductions x (Map.map (++ zs) m)
   collect σ' u
