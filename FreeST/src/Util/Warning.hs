@@ -19,7 +19,7 @@ formatWarning:: Maybe String -> TypeOpsEnv -> WarningType -> String
 formatWarning mFile tops wrn = format (pos wrn) (warningMsg wrn)
   where
    f = fromMaybe "FreeST" mFile
-   format p e = formatBody tops e
+   format p e = formatHeader f p ++ formatBody tops e
 
 
 -- Warnings
@@ -37,7 +37,7 @@ instance Position WarningType where
 
 warningMsg :: WarningType -> [WarningMessage]
 warningMsg (NonExhaustiveCase _ fm tm) =
-  [ Warning "Wrong number of constructors\n\tThe expression has", Warning $ Map.size fm
-  , Warning "constructor(s)\n\tbut the type has", Warning $ Map.size tm
-  , Warning "constructor(s)\n\tin case "
-  , Warning $ "\ESC[36m{" ++ showFieldMap fm ++ "}\ESC[0m"]
+  [ Warning "Pattern match(es) are non-exhaustive\n\t"
+  , Warning "In a case alternative: Patterns not matched:"
+  , Warning $ formatColor (Just Pink) $ foldr (\k acc -> show k ++ acc) ""
+            $ Map.keys $ Map.difference tm fm]

@@ -6,9 +6,7 @@ module Util.WarningMessage
     , WarningMsg(..)
     ) where
 
-
 import           Syntax.Program                 ( TypeOpsEnv )
-
 
 -- | Warning class and instances
 
@@ -19,14 +17,14 @@ class WarningMsg a where
 data WarningMessage where
   Warning :: WarningMsg a => a -> WarningMessage
 
-data Color = Red | Cyan
+data Color = Red | Pink
 
 -- | WarningMessage instances
 
 instance WarningMsg String where
   msg _ s = s
-  color _ = Just Cyan
+  color _ = Nothing
 
 instance WarningMsg Int where
   msg _ = show
-  color _ = Just Cyan
+  color _ = Just Pink
