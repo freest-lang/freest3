@@ -51,35 +51,31 @@ typeToGrammar t = do
   toGrammar t
 
 toGrammar :: T.Type -> TransState Word
--- Non rec-types
 toGrammar (T.Skip _    ) = return []
 toGrammar (T.Semi _ t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
   return $ xs ++ ys
-toGrammar m@T.Message{} = do
-  y <- getLHS $ Map.singleton (show m) []
-  return [y]
+toGrammar t@T.Message{} = terminal $ show t
 toGrammar (T.Choice _ v m) = do
   ms <- tMapM toGrammar m
   y  <- getLHS $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
   return [y]
--- Recursive types
-toGrammar x@T.Var{} = do      -- x is a polymorphic variable
-  y <- getLHS $ Map.singleton (show x) []
-  return [y]
+toGrammar t@T.Var{}   = terminal $ show t
+toGrammar t@T.CoVar{} = terminal $ show t
 toGrammar (T.Rec _ (K.Bind _ x _ _)) = return [x]
-toGrammar (T.CoVar _ a) = do
-  y <- getLHS $ Map.singleton ("dual" ++ show a) []
-  return [y]
-
 toGrammar t = internalError "Equivalence.TypeToGrammar.toGrammar" t
+
+terminal :: String -> TransState Word
+terminal s = do
+  y <- getLHS $ Map.singleton s []
+  return [y]
 
 type SubstitutionList = [(T.Type, TypeVar)]
 
 collect :: SubstitutionList -> T.Type -> TransState ()
-collect σ (  T.Semi   _ t              u) = collect σ t >> collect σ u
-collect σ (  T.Choice _ _              m) = tMapM_ (collect σ) m
+collect σ (T.Semi   _ t                u) = collect σ t >> collect σ u
+collect σ (T.Choice _ _                m) = tMapM_ (collect σ) m
 collect σ t@(T.Rec    _ (K.Bind _ x _ u)) = do
   let σ' = (t, x) : σ
   let u' = Substitution.subsAll σ' u

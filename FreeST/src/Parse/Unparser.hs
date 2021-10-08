@@ -178,6 +178,7 @@ instance Unparse T.Type where
   unparse (T.Unit _       ) = (maxRator, "()")
   unparse (T.Skip _       ) = (maxRator, "Skip")
   unparse (T.Var  _ a     ) = (maxRator, show a)
+  unparse (T.CoVar _ a    ) = (maxRator, "dual " ++ show a)
   unparse (T.Message _ p t) = (msgRator, show p ++ m)
     where m = bracket (unparse t) Right msgRator
   unparse (T.Arrow _ m t u) = (arrowRator, l ++ showArrow m ++ r)
@@ -201,7 +202,6 @@ instance Unparse T.Type where
     -- where s = bracket (unparse t) Right dotRator
   unparse (T.Dualof _ t) = (dualofRator, "dualof " ++ s)
     where s = bracket (unparse t) Right dualofRator
-  unparse (T.CoVar _ a) = (dualofRator, "dualof " ++ show a)
 
 showDatatype :: T.TypeMap -> String
 showDatatype m = intercalate " | "
