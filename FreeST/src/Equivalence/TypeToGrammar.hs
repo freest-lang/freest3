@@ -1,13 +1,12 @@
 {- |
 Module      :  Equivalence.TypeToGrammar
-Description :  Conversion from types to grammars
+Description :  Converting types to grammars
 Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of Lisbon
                    Andreia Mordido, LASIGE, Faculty of Sciences, University of Lisbon
                    Vasco Vasconcelos, LASIGE, Faculty of Sciences, University of Lisbon
 Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc.ul.pt
 
-This module builds the initial monadic state, and converts the session types
-given as parameter to context-free grammars
+This module converts a list of session types into a grammar.
 -}
 
 {-# LANGUAGE FlexibleInstances #-}
@@ -26,24 +25,23 @@ import           Syntax.TypeVariable
 import qualified Validation.Substitution       as Substitution
                                                 ( subsAll )
 import           Equivalence.Normalisation      ( normalise )
-import           Util.FreestState              ( tMapM
+import           Util.FreestState               ( tMapM
                                                 , tMapM_
                                                 )
 import           Util.Error                    ( internalError )
 import           Control.Monad.State
 import qualified Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
-import           Prelude                 hiding ( Word ) -- Word is (re)defined in module Bisimulation.Grammar
+import           Prelude                       hiding ( Word ) -- Word is (re)defined in module Bisimulation.Grammar
 
 -- Conversion to context-free grammars
 
 convertToGrammar :: [T.Type] -> Grammar
-convertToGrammar ts = --trace ("subs: " ++ show (subs state))  $
-                           Grammar (substitute θ word)
-                                   (substitute θ (productions state))
- where
-  (word, state) = runState (mapM typeToGrammar ts) initial
-  θ             = substitution state
+convertToGrammar ts =
+  Grammar (substitute θ word) (substitute θ (productions state))
+  where
+    (word, state) = runState (mapM typeToGrammar ts) initial
+    θ             = substitution state
 
 typeToGrammar :: T.Type -> TransState Word
 typeToGrammar t = do
@@ -56,8 +54,11 @@ toGrammar (T.Semi _ t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
   return $ xs ++ ys
-toGrammar (T.Message _ p t) = do
-  xs <- toGrammar t
+-- Optimisation
+toGrammar t@(T.Message _ p u)
+  | isBaseType u = nonTerminalForType t
+  | otherwise = do
+  xs <- toGrammar u
   ys <- closePolarity p
   getLHS $ Map.singleton (show p) (xs ++ ys)
 toGrammar (T.Choice _ v m) = do
@@ -78,6 +79,17 @@ closePolarity T.Out = nonTerminal "¡"
 
 nonTerminal :: Label -> TransState Word
 nonTerminal l = getLHS $ Map.singleton l []
+
+-- cf. isSessionType in module Equivalence.Equivalence
+-- A bit dangerous ...
+isBaseType :: T.Type -> Bool
+isBaseType T.Int{}    = True
+isBaseType T.Char{}   = True
+isBaseType T.Bool{}   = True
+isBaseType T.String{} = True
+isBaseType T.Unit{}   = True
+isBaseType _          = False
+
 
 type SubstitutionList = [(T.Type, TypeVar)]
 

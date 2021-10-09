@@ -25,6 +25,7 @@ module Syntax.Kind
   , isLin
   , isUn
   , isSession
+  , isMessage
   , body
   )
 where
@@ -68,6 +69,9 @@ isUn = not . isLin
 
 isSession :: Kind -> Bool
 isSession (Kind _ b _) = b == Session
+
+isMessage :: Kind -> Bool
+isMessage (Kind _ b _) = b == Message
 
 -- Bind: ∀ a:k . t or Λ a:k => e
 

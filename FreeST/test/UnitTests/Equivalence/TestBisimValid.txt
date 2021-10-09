@@ -3,6 +3,9 @@
 !((rec x.&{Leaf: Skip, Node: (?Int;(x;x))});Skip)
 !(rec x.&{Leaf: Skip, Node: (?Int;(x;x))})
 
+!((rec x.&{Leaf: Skip, Node: (?Int;(x;x))});Skip) ; ?((rec x.+{Leaf: Skip, Node: (!Int;(x;x))});a)
+!(rec x.&{Leaf: Skip, Node: (?Int;(x;x))})        ; ?((rec x.+{Leaf: Skip, Node: (!Int;(x;x))});a)
+
 -- First order
 
 ((rec termChan.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)});(!Int;Skip))
