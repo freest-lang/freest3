@@ -1,0 +1,116 @@
+name:                RuleBased
+version:             0.1.0.0
+#github:              "githubuser/ContextFreeSession"
+license:             BSD3
+author:              "Bernardo Almeida, Vasco T. Vasconcelos, Andreia Mordido"
+copyright:           "2019 authors"
+
+# extra-source-files:
+# - README.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/githubuser/ContextFreeSession#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- containers >=0.5.9
+# - unordered-containers >= 0.2
+- mtl >= 2.2.1
+- array <= 0.5.4.0
+- directory >= 1.3.2.0
+- filepath >= 1.4.2
+- process <= 1.6.13.2
+# - silently >= 1.2.5.1
+# - synchronous-channels >= 0.2
+
+executables:
+  RuleBased:
+    main:                Main.hs
+    source-dirs:         .
+                         ../FreeST/src/
+    other-modules:
+      -  Equivalence.Equivalence
+      -  Equivalence.Normalisation        
+      -  Equivalence.TypeToGrammar
+      -  Bisimulation.Bisimulation
+      -  Bisimulation.Norm
+      -  Bisimulation.Grammar
+      -  Parse.Unparser
+      -  Syntax.Base
+      -  Syntax.Expression
+      -  Syntax.Kind
+      -  Syntax.Program
+      -  Syntax.ProgramVariable
+      -  Syntax.Type
+      -  Syntax.TypeVariable
+      -  Elaboration.Duality
+      -  Util.Error
+      -  Util.ErrorMessage
+      -  Util.FreestState
+      -  Util.GetTOps
+      -  Util.PrettyError
+      -  Util.PrettyWarning
+      -  Util.Warning
+      -  Util.WarningMessage
+      -  Validation.Contractive
+      -  Validation.Kinding
+      -  Validation.Subkind
+      -  Validation.Substitution
+      -  Validation.Terminated
+
+
+tests:
+    quick:
+      main: QuickCheckSpec.hs
+      source-dirs:
+        - ../FreeST/test/QuickCheck
+        - ../FreeST/src
+      dependencies:
+        - QuickCheck
+        - hspec >= 2.7.1          
+      other-modules:
+        -  ArbitraryTypes
+        -  Parse.ParseUtils
+        -  Parse.Read
+        -  TestValidTypes
+        -  Util.PreludeLoader
+        -  Validation.Rename
+        -  Parse.Lexer
+        -  Parse.Parser
+        -  Equivalence.Equivalence
+        -  Equivalence.Normalisation        
+        -  Equivalence.TypeToGrammar
+        -  Bisimulation.Bisimulation
+        -  Bisimulation.Norm
+        -  Bisimulation.Grammar
+        -  Parse.Unparser
+        -  Syntax.Base
+        -  Syntax.Expression
+        -  Syntax.Kind
+        -  Syntax.Program
+        -  Syntax.ProgramVariable
+        -  Syntax.Type
+        -  Syntax.TypeVariable
+        -  Elaboration.Duality
+        -  Util.Error
+        -  Util.ErrorMessage
+        -  Util.FreestState
+        -  Util.GetTOps
+        -  Util.PrettyError
+        -  Util.PrettyWarning
+        -  Util.Warning
+        -  Util.WarningMessage
+        -  Validation.Contractive
+        -  Validation.Kinding
+        -  Validation.Subkind
+        -  Validation.Substitution
+        -  Validation.Terminated
+
+
+
