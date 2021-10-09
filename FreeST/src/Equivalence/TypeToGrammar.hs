@@ -56,20 +56,28 @@ toGrammar (T.Semi _ t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
   return $ xs ++ ys
-toGrammar t@T.Message{} = typeTerminal t
+toGrammar (T.Message _ p t) = do
+  xs <- toGrammar t
+  ys <- closePolarity p
+  getLHS $ Map.singleton (show p) (xs ++ ys)
 toGrammar (T.Choice _ v m) = do
   ms <- tMapM toGrammar m
   getLHS $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
-toGrammar t@T.Var{}   = typeTerminal t
-toGrammar t@T.CoVar{} = typeTerminal t
 toGrammar (T.Rec _ (K.Bind _ x _ _)) = return [x]
-toGrammar t = internalError "Equivalence.TypeToGrammar.toGrammar" t
+toGrammar t = nonTerminalForType t
+-- toGrammar t@T.Var{}   = nonTerminalForType t
+-- toGrammar t@T.CoVar{} = nonTerminalForType t
+-- toGrammar t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 
-typeTerminal :: T.Type -> TransState Word
-typeTerminal t = terminal $ show t
+nonTerminalForType :: T.Type -> TransState Word
+nonTerminalForType t = nonTerminal $ show t
 
-terminal :: Label -> TransState Word
-terminal l = getLHS $ Map.singleton l []
+closePolarity :: T.Polarity -> TransState Word
+closePolarity T.In = nonTerminal "¿"
+closePolarity T.Out = nonTerminal "¡"
+
+nonTerminal :: Label -> TransState Word
+nonTerminal l = getLHS $ Map.singleton l []
 
 type SubstitutionList = [(T.Type, TypeVar)]
 
