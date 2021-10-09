@@ -6,6 +6,27 @@
 !((rec x.&{Leaf: Skip, Node: (?Int;(x;x))});Skip) ; ?((rec x.+{Leaf: Skip, Node: (!Int;(x;x))});a)
 !(rec x.&{Leaf: Skip, Node: (?Int;(x;x))})        ; ?((rec x.+{Leaf: Skip, Node: (!Int;(x;x))});a)
 
+rec x. !x
+rec x. !x
+
+rec x. !x
+rec x. (!x ; Skip)
+
+rec x. !x
+(rec x. !x) ; Skip
+
+!(rec x. !x)
+!(rec x. !x)
+
+rec x. !x
+!(rec x. !x)
+
+rec x. !x
+!(!(!(rec x. !x)))
+
+rec x. !x
+rec y. !y
+
 -- First order
 
 ((rec termChan.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)});(!Int;Skip))
@@ -108,7 +129,7 @@
 α
 
 ((rec x.+{Leaf: Skip, Node: (rec y.&{Exit: Skip, Left: (x;y), Right: (x;y), Root: (!Int;y)})});Skip)
-(rec x.+{Leaf: Skip, Node: (rec y.&{Exit: Skip, Left: (x;y), Right: (x;y), Root: (!Int;y)})})
+(rec z.+{Leaf: Skip, Node: (rec x.&{Exit: Skip, Left: (z;x), Right: (z;x), Root: (!Int;x)})})
 
 ((rec x.&{Leaf: Skip, Node: (rec y.+{Exit: Skip, Left: (x;y), Right: (x;y), Root: (?Int;y)})});Skip)
 (rec x.&{Leaf: Skip, Node: (rec y.+{Exit: Skip, Left: (x;y), Right: (x;y), Root: (?Int;y)})})
@@ -141,7 +162,7 @@
 (Skip;α)
 
 ((rec x.+{Done: Skip, More: (!Char;x)});Skip)
-(rec x.+{Done: Skip, More: (!Char;x)})
+(rec y.+{Done: Skip, More: (!Char;y)})
 
 ((rec x.&{Done: Skip, More: (?Char;x)});Skip)
 (rec x.&{Done: Skip, More: (?Char;x)})

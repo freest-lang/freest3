@@ -28,7 +28,7 @@ import           Equivalence.Normalisation      ( normalise )
 import           Util.FreestState               ( tMapM
                                                 , tMapM_
                                                 )
-import           Util.Error                    ( internalError )
+import           Util.Error                     ( internalError )
 import           Control.Monad.State
 import qualified Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
@@ -253,13 +253,13 @@ instance Substitute TypeVar where
   substitute θ v = Map.foldrWithKey (\x y w -> if x == w then y else w) v θ
 
 instance Substitute Word where
-  substitute θ = map (substitute θ)
+  substitute = map . substitute
 
 instance Substitute [Word] where
-  substitute θ = map (substitute θ)
+  substitute = map . substitute
 
 instance Substitute Transitions where
-  substitute θ = Map.map (substitute θ)
+  substitute = Map.map . substitute
 
 instance Substitute Productions where
-  substitute θ = Map.map (substitute θ)
+  substitute = Map.map . substitute
