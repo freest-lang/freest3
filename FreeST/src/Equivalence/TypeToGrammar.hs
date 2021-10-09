@@ -54,13 +54,11 @@ toGrammar (T.Semi _ t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
   return $ xs ++ ys
--- Optimisation
 toGrammar t@(T.Message _ p u)
-  | isBaseType u = nonTerminalForType t
-  | otherwise = do
-  xs <- toGrammar u
-  ys <- closePolarity p
-  getLHS $ Map.singleton (show p) (xs ++ ys)
+  | not (isBaseType u) =  do  -- optimisation
+      xs <- toGrammar u
+      ys <- closePolarity p
+      getLHS $ Map.singleton (show p) (xs ++ ys)
 toGrammar (T.Choice _ v m) = do
   ms <- tMapM toGrammar m
   getLHS $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
