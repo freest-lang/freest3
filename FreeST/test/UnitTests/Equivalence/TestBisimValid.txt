@@ -1,3 +1,10 @@
+-- Higher order
+
+!((rec x.&{Leaf: Skip, Node: (?Int;(x;x))});Skip)
+!(rec x.&{Leaf: Skip, Node: (?Int;(x;x))})
+
+-- First order
+
 ((rec termChan.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)});(!Int;Skip))
 ((rec termChan.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)});!Int)
 
