@@ -33,7 +33,7 @@ import           Util.Error                    ( internalError )
 import           Control.Monad.State
 import qualified Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
-import           Prelude                 hiding ( Word ) -- Word is (re)defined in module Equivalence.Grammar
+import           Prelude                 hiding ( Word ) -- Word is (re)defined in module Bisimulation.Grammar
 
 -- Conversion to context-free grammars
 
@@ -56,20 +56,20 @@ toGrammar (T.Semi _ t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
   return $ xs ++ ys
-toGrammar t@T.Message{} = terminal $ show t
+toGrammar t@T.Message{} = typeTerminal t
 toGrammar (T.Choice _ v m) = do
   ms <- tMapM toGrammar m
-  y  <- getLHS $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
-  return [y]
-toGrammar t@T.Var{}   = terminal $ show t
-toGrammar t@T.CoVar{} = terminal $ show t
+  getLHS $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
+toGrammar t@T.Var{}   = typeTerminal t
+toGrammar t@T.CoVar{} = typeTerminal t
 toGrammar (T.Rec _ (K.Bind _ x _ _)) = return [x]
 toGrammar t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 
-terminal :: String -> TransState Word
-terminal s = do
-  y <- getLHS $ Map.singleton s []
-  return [y]
+typeTerminal :: T.Type -> TransState Word
+typeTerminal t = terminal $ show t
+
+terminal :: Label -> TransState Word
+terminal l = getLHS $ Map.singleton l []
 
 type SubstitutionList = [(T.Type, TypeVar)]
 
@@ -80,7 +80,7 @@ collect σ t@(T.Rec    _ (K.Bind _ x _ u)) = do
   let σ' = (t, x) : σ
   let u' = Substitution.subsAll σ' u
   ~(z : zs) <- toGrammar (normalise u')
-  m        <- getTransitions z
+  m         <- getTransitions z
   addProductions x (Map.map (++ zs) m)
   collect σ' u
 collect _ _ = return ()
@@ -137,15 +137,15 @@ putSubstitution x y =
 
 -- Get the LHS for given transitions; if no productions for the
 -- transitions are found, add a new productions and return their LHS
-getLHS :: Transitions -> TransState TypeVar
+getLHS :: Transitions -> TransState Word
 getLHS ts = do
   ps <- getProductions
   case reverseLookup ts ps of
     Nothing -> do
       y <- getFreshVar
       putProductions y ts
-      return y
-    Just x -> return x
+      return [y]
+    Just x -> return [x]
  where
     -- Lookup a key for a value in the map. Probably O(n)
   reverseLookup :: Eq a => Ord k => a -> Map.Map k a -> Maybe k
