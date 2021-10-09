@@ -54,25 +54,22 @@ toGrammar (T.Semi _ t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
   return $ xs ++ ys
-toGrammar t@(T.Message _ p u)
-  | not (isBaseType u) =  do  -- optimisation
-      xs <- toGrammar u
+toGrammar (T.Message _ p t)
+  | not (isBaseType t) = do  -- optimisation
+      xs <- toGrammar t
       ys <- closePolarity p
       getLHS $ Map.singleton (show p) (xs ++ ys)
 toGrammar (T.Choice _ v m) = do
   ms <- tMapM toGrammar m
   getLHS $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
 toGrammar (T.Rec _ (K.Bind _ x _ _)) = return [x]
-toGrammar t = nonTerminalForType t
--- toGrammar t@T.Var{}   = nonTerminalForType t
--- toGrammar t@T.CoVar{} = nonTerminalForType t
+toGrammar t = nonTerminal $ show t
+-- toGrammar t@T.Var{}   = nonTerminalFor t
+-- toGrammar t@T.CoVar{} = nonTerminalFor t
 -- toGrammar t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 
-nonTerminalForType :: T.Type -> TransState Word
-nonTerminalForType t = nonTerminal $ show t
-
 closePolarity :: T.Polarity -> TransState Word
-closePolarity T.In = nonTerminal "¿"
+closePolarity T.In  = nonTerminal "¿"
 closePolarity T.Out = nonTerminal "¡"
 
 nonTerminal :: Label -> TransState Word
@@ -87,7 +84,6 @@ isBaseType T.Bool{}   = True
 isBaseType T.String{} = True
 isBaseType T.Unit{}   = True
 isBaseType _          = False
-
 
 type SubstitutionList = [(T.Type, TypeVar)]
 
@@ -119,9 +115,9 @@ data TState = TState {
 
 initial :: TState
 initial = TState { productions  = Map.empty
-                      , nextIndex    = 1
-                      , substitution = Map.empty
-                      }
+                 , nextIndex    = 1
+                 , substitution = Map.empty
+                 }
 
 getFreshVar :: TransState TypeVar
 getFreshVar = do
@@ -154,7 +150,7 @@ putSubstitution x y =
   modify $ \s -> s { substitution = Map.insert x y (substitution s) }
 
 -- Get the LHS for given transitions; if no productions for the
--- transitions are found, add a new productions and return their LHS
+-- transitions are found, add a new production and return its LHS
 getLHS :: Transitions -> TransState Word
 getLHS ts = do
   ps <- getProductions
@@ -181,8 +177,7 @@ addProductions x ts = do
 existProductions :: TypeVar -> Transitions -> Productions -> TransState Bool
 -- existProductions x ts _ = return False
 existProductions x ts = Map.foldrWithKey
-  (\x' ts' acc -> sameTrans x x' ts ts' >>= \b -> if b then return True else acc
-  )
+  (\x' ts' acc -> sameTrans x x' ts ts' >>= \b -> if b then return True else acc)
   (return False)
 
 -- TODO: Change these names
