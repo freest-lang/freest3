@@ -242,17 +242,17 @@ instance Unparse Exp where
     l = bracket (unparse e1) Left conjRator
     r = bracket (unparse e2) Right conjRator
   unparse (E.App _ (E.App _ (E.Var p x) e1) e2) | isCmp x =
-   (cmpRator, l ++ (showOp x) ++ r)
+   (cmpRator, l ++ showOp x ++ r)
    where
     l = bracket (unparse e1) Left cmpRator
     r = bracket (unparse e2) Right cmpRator
   unparse (E.App _ (E.App _ (E.Var p x) e1) e2) | isAdd x =
-   (addRator, l ++ (showOp x) ++ r)
+   (addRator, l ++ showOp x ++ r)
    where
     l = bracket (unparse e1) Left addRator
     r = bracket (unparse e2) Right addRator
   unparse (E.App _ (E.App _ (E.Var p x) e1) e2) | isMult x =
-   (multRator, l ++ (showOp x) ++ r)
+   (multRator, l ++ showOp x ++ r)
    where
     l = bracket (unparse e1) Left multRator
     r = bracket (unparse e2) Right multRator
@@ -313,7 +313,7 @@ isMult :: ProgVar -> Bool
 isMult = isOp ["(*)", "(/)"]
 
 showOp :: ProgVar -> String
-showOp x = " " ++ (tail $ init $ show x) ++ " "
+showOp x = " " ++ tail (init $ show x) ++ " "
 
 -- VarEnv
 

@@ -16,7 +16,6 @@ import           Syntax.Program                 ( VarEnv )
 import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
-import           Util.Error                     ( internalError )
 import           Util.Error
 import           Util.FreestState
 import           Util.PreludeLoader             ( userDefined )

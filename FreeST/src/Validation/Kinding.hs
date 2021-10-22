@@ -30,7 +30,6 @@ import           Validation.Subkind             ( (<:)
                                                 , join
                                                 )
 import           Util.FreestState
-import           Util.Error                     ( internalError )
 import           Util.Error
 import           Control.Monad                  ( unless )
 import qualified Control.Monad.State           as S

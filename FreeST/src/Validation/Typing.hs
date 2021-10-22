@@ -11,7 +11,7 @@ Portability :  portable | non-portable (<reason>)
 A bidirectional type system.
 -}
 
-{-# LANGUAGE LambdaCase, TupleSections, MultiWayIf #-}
+{-# LANGUAGE LambdaCase, MultiWayIf #-}
 
 module Validation.Typing
   ( synthetise
@@ -22,12 +22,11 @@ where
 
 import           Control.Monad.State            ( when
                                                 , unless
-                                                , void
                                                 )
 import           Data.Functor
 import qualified Data.Map.Strict               as Map
 import           Equivalence.Equivalence
-import           Parse.Unparser -- debug
+import           Parse.Unparser() -- debug
 import           Syntax.Base
 import qualified Syntax.Expression             as E
 import qualified Syntax.Kind                   as K

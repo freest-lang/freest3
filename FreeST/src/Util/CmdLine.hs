@@ -4,15 +4,12 @@ import           Data.Functor
 import qualified Data.Map.Strict               as Map
 import           Data.Version                   ( showVersion )
 import           Paths_FreeST                   ( version
-                                             --   , getDataFileName
                                                 )
 import           Syntax.Base
 import           System.Console.GetOpt
 import           System.Directory
 import           System.Exit                    ( die )
 import           System.FilePath
-import           Util.PrettyError
- -- TODO: remove later (when proper warnings were introduced)
 import           Util.ErrorMessage (Color(..))
 import           Util.PrettyError (formatColor, formatBold)
 import           Util.Error

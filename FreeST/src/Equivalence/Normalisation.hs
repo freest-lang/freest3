@@ -20,9 +20,8 @@ where
 import           Syntax.Base                    ( Pos )
 import qualified Syntax.Type                   as T
 import           Validation.Terminated          ( terminated )
-import           Validation.Substitution        ( unfold )
+import           Validation.Substitution        ( subs )
 import           Util.Error                     ( internalError )
-import Validation.Substitution (subs)
 import qualified Syntax.Kind as K
 
 normalise :: T.Type -> T.Type
