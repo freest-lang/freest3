@@ -87,32 +87,26 @@ instance Rename E.Bind where
 -- Types
 
 instance Rename T.Type where
-  rename = rename'
-  -- rename bs t
-  --   | terminated Set.empty t = return $ T.Skip (pos t)
-  --   | otherwise              = rename' bs t
-
-rename' :: Bindings -> T.Type -> FreestState T.Type
     -- Functional types
-rename' bs (T.Arrow p m t u    ) = T.Arrow p m <$> rename bs t <*> rename bs u
-rename' bs (T.Message p pol t) = T.Message p pol <$> rename bs t
-rename' bs (T.Pair p t u     ) = T.Pair p <$> rename bs t <*> rename bs u
-rename' bs (T.Variant p fm  ) = T.Variant p <$> tMapM (rename bs) fm
+  rename bs (T.Arrow p m t u    ) = T.Arrow p m <$> rename bs t <*> rename bs u
+  rename bs (T.Message p pol t) = T.Message p pol <$> rename bs t
+  rename bs (T.Pair p t u     ) = T.Pair p <$> rename bs t <*> rename bs u
+  rename bs (T.Variant p fm  ) = T.Variant p <$> tMapM (rename bs) fm
   -- Session types
-rename' bs (T.Semi   p t   u ) = T.Semi p <$> rename bs t <*> rename bs u
-rename' bs (T.Choice p pol tm) = T.Choice p pol <$> tMapM (rename bs) tm
+  rename bs (T.Semi   p t   u ) = T.Semi p <$> rename bs t <*> rename bs u
+  rename bs (T.Choice p pol tm) = T.Choice p pol <$> tMapM (rename bs) tm
   -- Polymorphism
-rename' bs (T.Forall p b     ) = T.Forall p <$> rename bs b
+  rename bs (T.Forall p b     ) = T.Forall p <$> rename bs b
   -- Functional or session
-rename' bs (T.Rec    p b)
- | isProperRec b = T.Rec p <$> rename bs b
- | otherwise     = rename bs (K.body b)
-rename' bs (T.Var    p a     ) = return $ T.Var p (findWithDefaultVar a bs)
-rename' bs (T.CoVar    p a   ) = return $ T.CoVar p (findWithDefaultVar a bs)
+  rename bs (T.Rec    p b)
+   | isProperRec b = T.Rec p <$> rename bs b
+   | otherwise     = rename bs (K.body b)
+  rename bs (T.Var    p a     ) = return $ T.Var p (findWithDefaultVar a bs)
+  rename bs (T.CoVar    p a   ) = return $ T.CoVar p (findWithDefaultVar a bs)
   -- Type operators
-rename' _  t@T.Dualof{}        = internalError "Validation.Rename.rename" t
+  rename _  t@T.Dualof{}        = internalError "Validation.Rename.rename" t
   -- Otherwise: Basic, Skip, Message, TypeName
-rename' _  t                   = return t
+  rename _  t                   = return t
 
 
 -- Expressions
@@ -219,6 +213,7 @@ isFreeIn x (T.Pair _ t u ) = x `isFreeIn` t || x `isFreeIn` u
 isFreeIn x (T.Variant _ fm) =
   Map.foldr' (\t b -> x `isFreeIn` t || b) False fm
     -- Session types
+isFreeIn x (T.Message _ _ t) = x `isFreeIn` t
 isFreeIn x (T.Semi _ t u) = x `isFreeIn` t || x `isFreeIn` u
 isFreeIn x (T.Choice _ _ tm) =
   Map.foldr' (\t b -> x `isFreeIn` t || b) False tm
@@ -229,9 +224,4 @@ isFreeIn x (T.Rec    _ (K.Bind _ y _ t)) = x /= y && x `isFreeIn` t
 isFreeIn x (T.Var    _ y               ) = x == y
   -- Type operators
 isFreeIn x (T.Dualof _ t) = x `isFreeIn` t
-  
---isFreeIn _ t@T.Dualof{} =
--- It is used during elaboration; otherwise we should throw an internal error
---  internalError "Validation.Rename.isFreeIn" t
-  -- Basic, Skip, Message, TypeName
 isFreeIn _ _                             = False

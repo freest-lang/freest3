@@ -28,17 +28,17 @@ import           Equivalence.Normalisation      ( normalise )
 import           Util.FreestState               ( tMapM
                                                 , tMapM_
                                                 )
-import           Util.Error                     ( internalError )
 import           Control.Monad.State
 import qualified Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
 import           Prelude                       hiding ( Word ) -- Word is (re)defined in module Bisimulation.Grammar
-import           Debug.Trace -- debug (used on debugM function)
+import           Util.Error                     ( internalError )
+import           Debug.Trace
 
--- Conversion to context-free grammars
+-- Conversion to simple grammars
 
 convertToGrammar :: [T.Type] -> Grammar
-convertToGrammar ts = trace (show grammar) grammar
+convertToGrammar ts = {- trace (show ts ++ "\n" ++ show grammar) -} grammar
   where
     grammar = Grammar (substitute θ word) (substitute θ (productions state))
     (word, state) = runState (mapM typeToGrammar ts) initial
@@ -50,25 +50,22 @@ typeToGrammar t = do
   toGrammar t
 
 toGrammar :: T.Type -> TransState Word
-toGrammar (T.Skip _    ) = return []
+toGrammar (T.Skip _) = return []
 toGrammar (T.Semi _ t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
   return $ xs ++ ys
 toGrammar (T.Message _ p t) = do
   xs <- toGrammar t
-  z <- getFreshVar
+  z <- getBottom -- getFreshVar
   getLHS $ Map.fromList [('d' : show p, xs ++ [z]), ('c' : show p, [])]
 toGrammar (T.Choice _ v m) = do
   ms <- tMapM toGrammar m
   getLHS $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
 toGrammar (T.Rec _ (K.Bind _ x _ _)) = return [x]
+toGrammar t = getLHS $ Map.singleton (show t) []
 -- toGrammar t@T.CoVar{} = nonTerminal $ show t
-toGrammar t = emptyProduction t
 -- toGrammar t = internalError "Equivalence.TypeToGrammar.toGrammar" t
-
-emptyProduction :: T.Type -> TransState Word
-emptyProduction t =  getLHS $ Map.singleton (show t) []
 
 -- cf. isSessionType in module Equivalence.Equivalence
 -- A bit dangerous ...
@@ -95,7 +92,7 @@ collect σ t@(T.Rec _ (K.Bind _ x _ u)) = do
   collect σ' u
 collect _ _ = return ()
 
--- The state of the translation to grammars
+-- The state of the translation to grammar
 
 type Substitution = Map.Map TypeVar TypeVar
 
@@ -105,6 +102,7 @@ data TState = TState {
   productions  :: Productions
 , nextIndex    :: Int
 , substitution :: Substitution
+, bottom       :: TypeVar
 }
 
 -- State manipulating functions, get and put
@@ -113,6 +111,7 @@ initial :: TState
 initial = TState { productions  = Map.empty
                  , nextIndex    = 1
                  , substitution = Map.empty
+                 , bottom       = makeFreshVar 0 -- smaller than the nextIndex
                  }
 
 getFreshVar :: TransState TypeVar
@@ -120,10 +119,16 @@ getFreshVar = do
   s <- get
   let n = nextIndex s
   modify $ \s -> s { nextIndex = n + 1 }
-  return $ mkVar defaultPos ("#X" ++ show n)
+  return $ makeFreshVar n
+
+makeFreshVar :: Int -> TypeVar
+makeFreshVar n = mkVar defaultPos ("#X" ++ show n)
 
 getProductions :: TransState Productions
 getProductions = gets productions
+
+getBottom :: TransState TypeVar
+getBottom = gets bottom
 
 getTransitions :: TypeVar -> TransState Transitions
 getTransitions x = do
