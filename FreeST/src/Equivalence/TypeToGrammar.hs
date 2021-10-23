@@ -33,13 +33,14 @@ import           Control.Monad.State
 import qualified Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
 import           Prelude                       hiding ( Word ) -- Word is (re)defined in module Bisimulation.Grammar
+import           Debug.Trace -- debug (used on debugM function)
 
 -- Conversion to context-free grammars
 
 convertToGrammar :: [T.Type] -> Grammar
-convertToGrammar ts =
-  Grammar (substitute θ word) (substitute θ (productions state))
+convertToGrammar ts = trace (show grammar) grammar
   where
+    grammar = Grammar (substitute θ word) (substitute θ (productions state))
     (word, state) = runState (mapM typeToGrammar ts) initial
     θ             = substitution state
 
@@ -54,26 +55,20 @@ toGrammar (T.Semi _ t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
   return $ xs ++ ys
-toGrammar (T.Message _ p t)
-  | not (isBaseType t) = do  -- optimisation
-      xs <- toGrammar t
-      ys <- closePolarity p
-      getLHS $ Map.singleton (show p) (xs ++ ys)
+toGrammar (T.Message _ p t) = do
+  xs <- toGrammar t
+  z <- getFreshVar
+  getLHS $ Map.fromList [('d' : show p, xs ++ [z]), ('c' : show p, [])]
 toGrammar (T.Choice _ v m) = do
   ms <- tMapM toGrammar m
   getLHS $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
 toGrammar (T.Rec _ (K.Bind _ x _ _)) = return [x]
-toGrammar t = nonTerminal $ show t
--- toGrammar t@T.Var{}   = nonTerminalFor t
--- toGrammar t@T.CoVar{} = nonTerminalFor t
+-- toGrammar t@T.CoVar{} = nonTerminal $ show t
+toGrammar t = emptyProduction t
 -- toGrammar t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 
-closePolarity :: T.Polarity -> TransState Word
-closePolarity T.In  = nonTerminal "¿"
-closePolarity T.Out = nonTerminal "¡"
-
-nonTerminal :: Label -> TransState Word
-nonTerminal l = getLHS $ Map.singleton l []
+emptyProduction :: T.Type -> TransState Word
+emptyProduction t =  getLHS $ Map.singleton (show t) []
 
 -- cf. isSessionType in module Equivalence.Equivalence
 -- A bit dangerous ...
@@ -88,9 +83,10 @@ isBaseType _          = False
 type SubstitutionList = [(T.Type, TypeVar)]
 
 collect :: SubstitutionList -> T.Type -> TransState ()
-collect σ (T.Semi   _ t                u) = collect σ t >> collect σ u
-collect σ (T.Choice _ _                m) = tMapM_ (collect σ) m
-collect σ t@(T.Rec    _ (K.Bind _ x _ u)) = do
+collect σ (T.Semi _ t u) = collect σ t >> collect σ u
+collect σ (T.Choice _ _ m) = tMapM_ (collect σ) m
+collect σ (T.Message _ _ t) = collect σ t
+collect σ t@(T.Rec _ (K.Bind _ x _ u)) = do
   let σ' = (t, x) : σ
   let u' = Substitution.subsAll σ' u
   ~(z : zs) <- toGrammar (normalise u')
