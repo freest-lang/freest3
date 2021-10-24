@@ -1,3 +1,38 @@
+-- Functional
+
+Int -> Bool
+Int -> Bool
+
+Int -o Bool
+Int -o Bool
+
+Int -> Bool -> Char
+Int -> Bool -> Char
+
+!(Int -> rec x. ?Bool;x)
+!(Int -> rec y. ?Bool;?Bool;y)
+
+(rec x. ?Bool;x) -> Char
+(rec y. ?Bool;?Bool;y) -> Char
+
+!Char -> (rec x. ?Bool;x)
+!Char -> (rec y. ?Bool;?Bool;y)
+
+(rec y. !Char;!Char;y) -> (rec x. ?Bool;x)
+(rec y. !Char;y) -> (rec y. ?Bool;?Bool;y)
+
+(Char, Bool)
+(Char, Bool)
+
+(Char -> !Int, Bool)
+(Char -> !Int, Bool)
+
+(rec y. !Char;!Char;y, Bool)
+(rec y. !Char;y, Bool)
+
+rec x . [Nil, Cons Int x]
+rec y . [Cons Int y, Nil]
+
 -- Higher order
 
 !((rec x.&{Leaf: Skip, Node: (?Int;(x;x))});Skip)

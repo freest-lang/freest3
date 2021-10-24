@@ -50,6 +50,22 @@ typeToGrammar t = do
   toGrammar t
 
 toGrammar :: T.Type -> TransState Word
+  -- Functional Types
+toGrammar (T.Arrow _ p t u) = do
+  xs <- toGrammar t
+  ys <- toGrammar u
+  b <- getBottom
+  getLHS $ Map.fromList [(left p, xs ++ [b]), (right p, ys ++ [b])]
+toGrammar (T.Pair _ t u) = do
+  xs <- toGrammar t
+  ys <- toGrammar u
+  b <- getBottom
+  getLHS $ Map.fromList [(left '×', xs ++ [b]), (right '×', ys ++ [b])]
+toGrammar (T.Variant _ m) = do -- Can't test this type directly
+  ms <- tMapM toGrammar m
+  getLHS $ Map.mapKeys (\k -> "<>" ++ show k) ms  
+-- toGrammar (T.Forall _ (K.Bind _ a k t)) = ??? What do we do with tvar a?
+  -- Session Types
 toGrammar (T.Skip _) = return []
 toGrammar (T.Semi _ t u) = do
   xs <- toGrammar t
@@ -57,8 +73,8 @@ toGrammar (T.Semi _ t u) = do
   return $ xs ++ ys
 toGrammar (T.Message _ p t) = do
   xs <- toGrammar t
-  z <- getBottom -- getFreshVar
-  getLHS $ Map.fromList [('d' : show p, xs ++ [z]), ('c' : show p, [])]
+  b <- getBottom
+  getLHS $ Map.fromList [(left p, xs ++ [b]), (right p, [])]
 toGrammar (T.Choice _ v m) = do
   ms <- tMapM toGrammar m
   getLHS $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
@@ -66,6 +82,12 @@ toGrammar (T.Rec _ (K.Bind _ x _ _)) = return [x]
 toGrammar t = getLHS $ Map.singleton (show t) []
 -- toGrammar t@T.CoVar{} = nonTerminal $ show t
 -- toGrammar t = internalError "Equivalence.TypeToGrammar.toGrammar" t
+
+left :: Show a => a -> String
+left x = show x ++ "l"
+
+right :: Show a => a -> String
+right x = show x ++ "r"
 
 -- cf. isSessionType in module Equivalence.Equivalence
 -- A bit dangerous ...
