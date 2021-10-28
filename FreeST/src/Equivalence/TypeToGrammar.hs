@@ -38,7 +38,7 @@ import           Debug.Trace
 -- Conversion to simple grammars
 
 convertToGrammar :: [T.Type] -> Grammar
-convertToGrammar ts = {- trace (show ts ++ "\n" ++ show grammar) -} grammar
+convertToGrammar ts = trace (show ts ++ "\n" ++ show grammar) grammar
   where
     grammar = Grammar (substitute θ word) (substitute θ (productions state))
     (word, state) = runState (mapM typeToGrammar ts) initial
@@ -54,13 +54,11 @@ toGrammar :: T.Type -> TransState Word
 toGrammar (T.Arrow _ p t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
-  b <- getBottom
-  getLHS $ Map.fromList [(left p, xs ++ [b]), (right p, ys ++ [b])]
+  getLHS $ Map.fromList [(left p, xs), (right p, ys)]
 toGrammar (T.Pair _ t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
-  b <- getBottom
-  getLHS $ Map.fromList [(left '×', xs ++ [b]), (right '×', ys ++ [b])]
+  getLHS $ Map.fromList [(left 'x', xs), (right 'x', ys)]
 toGrammar (T.Variant _ m) = do -- Can't test this type directly
   ms <- tMapM toGrammar m
   getLHS $ Map.mapKeys (\k -> "<>" ++ show k) ms  
@@ -112,6 +110,8 @@ collect σ t@(T.Rec _ (K.Bind _ x _ u)) = do
   m         <- getTransitions z
   addProductions x (Map.map (++ zs) m)
   collect σ' u
+collect σ (T.Arrow _ _ t u) = collect σ t >> collect σ u
+collect σ (T.Pair _ t u) = collect σ t >> collect σ u
 collect _ _ = return ()
 
 -- The state of the translation to grammar

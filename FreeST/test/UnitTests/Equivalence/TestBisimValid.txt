@@ -37,9 +37,6 @@ Int -> Bool -> Char
 !((rec y. !Char;!Char;y) -> (rec x. ?Bool;x)) ; ?Bool
 !((rec y. !Char;y) -> (rec y. ?Bool;?Bool;y)) ; ?Bool
 
-!((rec y. +{a:!Char;!Char;y, b: Skip}) -> (rec x. ?Bool;x)) ; ?Bool
-!((rec y. +{a:!Char;y, b: Skip}) -> (rec y. ?Bool;?Bool;y)) ; ?Bool
-
 -- Higher order
 
 !((rec x.&{Leaf: Skip, Node: (?Int;(x;x))});Skip)
@@ -241,3 +238,7 @@ a
 
 &{And: (Skip;(?Bool;(?Bool;(!Bool;Skip)))), Not: (Skip;(?Bool;(!Bool;Skip))), Or: (Skip;(?Bool;(?Bool;(!Bool;Skip))))}
 &{And: (?Bool;(?Bool;(!Bool;Skip))), Not: (?Bool;(!Bool;Skip)), Or: (?Bool;(?Bool;(!Bool;Skip)))}
+
+!((rec y. !Char;!Char;y) , (rec x. ?Bool;x)) ; ?Bool
+!((rec y. !Char;y) , (rec y. ?Bool;?Bool;y)) ; ?Bool
+
