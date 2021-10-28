@@ -30,8 +30,15 @@ Int -> Bool -> Char
 (rec y. !Char;!Char;y, Bool)
 (rec y. !Char;y, Bool)
 
-rec x . [Nil, Cons Int x]
-rec y . [Cons Int y, Nil]
+-- How do we test variant types?
+-- rec x . [Nil, Cons Int x]
+-- rec y . [Cons Int y, Nil]
+
+!((rec y. !Char;!Char;y) -> (rec x. ?Bool;x)) ; ?Bool
+!((rec y. !Char;y) -> (rec y. ?Bool;?Bool;y)) ; ?Bool
+
+!((rec y. +{a:!Char;!Char;y, b: Skip}) -> (rec x. ?Bool;x)) ; ?Bool
+!((rec y. +{a:!Char;y, b: Skip}) -> (rec y. ?Bool;?Bool;y)) ; ?Bool
 
 -- Higher order
 
