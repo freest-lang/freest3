@@ -226,7 +226,7 @@ checkAgainst kEnv e t = checkEquivTypes e kEnv t =<< synthetise kEnv e
 checkEquivTypes :: E.Exp -> K.KindEnv -> T.Type -> T.Type -> FreestState ()
 checkEquivTypes exp kEnv expected actual =
   unless (equivalent kEnv actual expected) $
-    let p = pos exp in addError (NonEquivTypes p expected actual exp)
+    addError (NonEquivTypes (pos exp) expected actual exp)
 
 checkEquivEnvs
   :: Pos -> String -> E.Exp -> K.KindEnv -> VarEnv -> VarEnv -> FreestState ()
