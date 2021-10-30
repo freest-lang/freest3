@@ -24,7 +24,9 @@ import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
 import qualified Validation.Substitution       as Substitution
                                                 ( subsAll )
+import           Validation.Terminated          ( terminated )
 import           Equivalence.Normalisation      ( normalise )
+import           Util.Error                     ( internalError )
 import           Util.FreestState               ( tMapM
                                                 , tMapM_
                                                 )
@@ -32,7 +34,6 @@ import           Control.Monad.State
 import qualified Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
 import           Prelude                       hiding ( Word ) -- Word is (re)defined in module Bisimulation.Grammar
-import           Util.Error                     ( internalError )
 import           Debug.Trace
 
 -- Conversion to simple grammars
@@ -50,36 +51,41 @@ typeToGrammar t = do
   toGrammar t
 
 toGrammar :: T.Type -> TransState Word
-  -- Functional Types
-toGrammar (T.Arrow _ p t u) = do
+toGrammar (T.Skip _) = return []
+toGrammar t = case fatTerminal t of
+  Just t' -> getLHS $ Map.singleton (show t') []
+  Nothing -> toGrammar' t
+
+toGrammar' :: T.Type -> TransState Word
+-- Functional Types
+toGrammar' (T.Arrow _ p t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
   getLHS $ Map.fromList [(left p, xs), (right p, ys)]
-toGrammar (T.Pair _ t u) = do
+toGrammar' (T.Pair _ t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
   getLHS $ Map.fromList [(left 'x', xs), (right 'x', ys)]
-toGrammar (T.Variant _ m) = do -- Can't test this type directly
+toGrammar' (T.Variant _ m) = do -- Can't test this type directly
   ms <- tMapM toGrammar m
-  getLHS $ Map.mapKeys (\k -> "<>" ++ show k) ms  
--- toGrammar (T.Forall _ (K.Bind _ a k t)) = ??? What do we do with tvar a?
-  -- Session Types
-toGrammar (T.Skip _) = return []
-toGrammar (T.Semi _ t u) = do
-  xs <- toGrammar t
-  ys <- toGrammar u
-  return $ xs ++ ys
-toGrammar (T.Message _ p t) = do
+  getLHS $ Map.mapKeys (\k -> "<>" ++ show k) ms
+-- Session Types
+toGrammar' (T.Semi _ t u) = liftM2 (++) (toGrammar t) (toGrammar u)
+toGrammar' (T.Message _ p t) = do
   xs <- toGrammar t
   b <- getBottom
   getLHS $ Map.fromList [(left p, xs ++ [b]), (right p, [])]
-toGrammar (T.Choice _ v m) = do
+toGrammar' (T.Choice _ v m) = do
   ms <- tMapM toGrammar m
   getLHS $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
-toGrammar (T.Rec _ (K.Bind _ x _ _)) = return [x]
-toGrammar t = getLHS $ Map.singleton (show t) []
--- toGrammar t@T.CoVar{} = nonTerminal $ show t
--- toGrammar t = internalError "Equivalence.TypeToGrammar.toGrammar" t
+-- Polymorphism and recursive types
+-- toGrammar' t@T.Forall{} =
+toGrammar' (T.Rec _ (K.Bind _ x _ _)) = return [x]
+-- toGrammar' t@T.Var{} = 
+-- Type operators
+-- toGrammar' t@T.CoVar{} =
+-- toGrammar' t@T.Dualof{} =
+toGrammar' t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 
 left :: Show a => a -> String
 left x = show x ++ "l"
@@ -87,15 +93,24 @@ left x = show x ++ "l"
 right :: Show a => a -> String
 right x = show x ++ "r"
 
--- cf. isSessionType in module Equivalence.Equivalence
--- A bit dangerous ...
-isBaseType :: T.Type -> Bool
-isBaseType T.Int{}    = True
-isBaseType T.Char{}   = True
-isBaseType T.Bool{}   = True
-isBaseType T.String{} = True
-isBaseType T.Unit{}   = True
-isBaseType _          = False
+-- Fat terminal types can be compared for syntactic equality
+fatTerminal :: T.Type -> Maybe T.Type
+-- Functional Types
+fatTerminal t@T.Int{}           = Just t
+fatTerminal t@T.Char{}          = Just t
+fatTerminal t@T.Bool{}          = Just t
+fatTerminal t@T.String{}        = Just t
+fatTerminal t@T.Unit{}          = Just t
+fatTerminal (T.Arrow p m t u)   = Just (T.Arrow p m ) <*> fatTerminal t <*> fatTerminal u
+fatTerminal (T.Pair p t u)      = Just (T.Pair p) <*> fatTerminal t <*> fatTerminal u
+fatTerminal (T.Variant p m)     = Just (T.Variant p) <*> mapM fatTerminal m
+-- Session Types
+fatTerminal t | terminated t    = Just $ T.Skip defaultPos
+fatTerminal (T.Semi p t u)      = Just (T.Semi p) <*> fatTerminal t <*> fatTerminal u
+fatTerminal (T.Message p pol t) = Just (T.Message p pol) <*> fatTerminal t
+fatTerminal (T.Choice p pol m)  = Just (T.Choice p pol) <*> mapM fatTerminal m
+-- Default
+fatTerminal _                   = Nothing
 
 type SubstitutionList = [(T.Type, TypeVar)]
 
