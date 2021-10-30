@@ -24,7 +24,6 @@ import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
 import qualified Validation.Substitution       as Substitution
                                                 ( subsAll )
-import           Validation.Terminated          ( terminated )
 import           Equivalence.Normalisation      ( normalise )
 import           Util.Error                     ( internalError )
 import           Util.FreestState               ( tMapM
@@ -39,7 +38,7 @@ import           Debug.Trace
 -- Conversion to simple grammars
 
 convertToGrammar :: [T.Type] -> Grammar
-convertToGrammar ts = trace (show ts ++ "\n" ++ show grammar) grammar
+convertToGrammar ts = {- trace (show ts ++ "\n" ++ show grammar) -} grammar
   where
     grammar = Grammar (substitute θ word) (substitute θ (productions state))
     (word, state) = runState (mapM typeToGrammar ts) initial
@@ -53,7 +52,7 @@ typeToGrammar t = do
 toGrammar :: T.Type -> TransState Word
 toGrammar (T.Skip _) = return []
 toGrammar t = case fatTerminal t of
-  Just t' -> getLHS $ Map.singleton (show t') []
+  Just t' -> getLHS $ Map.singleton (show $ normalise t') []
   Nothing -> toGrammar' t
 
 toGrammar' :: T.Type -> TransState Word
@@ -70,6 +69,7 @@ toGrammar' (T.Variant _ m) = do -- Can't test this type directly
   ms <- tMapM toGrammar m
   getLHS $ Map.mapKeys (\k -> "<>" ++ show k) ms
 -- Session Types
+toGrammar' (T.Skip _) = return []
 toGrammar' (T.Semi _ t u) = liftM2 (++) (toGrammar t) (toGrammar u)
 toGrammar' (T.Message _ p t) = do
   xs <- toGrammar t
@@ -81,9 +81,9 @@ toGrammar' (T.Choice _ v m) = do
 -- Polymorphism and recursive types
 -- toGrammar' t@T.Forall{} =
 toGrammar' (T.Rec _ (K.Bind _ x _ _)) = return [x]
--- toGrammar' t@T.Var{} = 
+toGrammar' t@T.Var{} = getLHS $ Map.singleton (show t) []
 -- Type operators
--- toGrammar' t@T.CoVar{} =
+toGrammar' t@T.CoVar{} = getLHS $ Map.singleton (show t) []
 -- toGrammar' t@T.Dualof{} =
 toGrammar' t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 
@@ -105,10 +105,12 @@ fatTerminal (T.Arrow p m t u)   = Just (T.Arrow p m ) <*> fatTerminal t <*> fatT
 fatTerminal (T.Pair p t u)      = Just (T.Pair p) <*> fatTerminal t <*> fatTerminal u
 fatTerminal (T.Variant p m)     = Just (T.Variant p) <*> mapM fatTerminal m
 -- Session Types
-fatTerminal t | terminated t    = Just $ T.Skip defaultPos
-fatTerminal (T.Semi p t u)      = Just (T.Semi p) <*> fatTerminal t <*> fatTerminal u
+-- fatTerminal t | terminated t    = Just $ T.Skip defaultPos
+fatTerminal (T.Semi p T.Skip{} t) = fatTerminal t
+fatTerminal (T.Semi p t T.Skip{}) = fatTerminal t
+-- fatTerminal (T.Semi p t u)      = Just (T.Semi p) <*> fatTerminal t <*> fatTerminal u
 fatTerminal (T.Message p pol t) = Just (T.Message p pol) <*> fatTerminal t
-fatTerminal (T.Choice p pol m)  = Just (T.Choice p pol) <*> mapM fatTerminal m
+-- fatTerminal (T.Choice p pol m)  = Just (T.Choice p pol) <*> mapM fatTerminal m -- This would preclude distributivity
 -- Default
 fatTerminal _                   = Nothing
 

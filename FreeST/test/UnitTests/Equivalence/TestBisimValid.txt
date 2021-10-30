@@ -1,78 +1,85 @@
--- Functional
+-- -- Functional
 
-Int -> Bool
-Int -> Bool
+-- Int -> Bool
+-- Int -> Bool
 
-Int -o Bool
-Int -o Bool
+-- Int -o Bool
+-- Int -o Bool
 
-Int -> Bool -> Char
-Int -> Bool -> Char
+-- Int -> Bool -> Char
+-- Int -> Bool -> Char
 
-!(Int -> rec x. ?Bool;x)
-!(Int -> rec y. ?Bool;?Bool;y)
+-- !(Int -> rec x. ?Bool;x)
+-- !(Int -> rec y. ?Bool;?Bool;y)
 
-(rec x. ?Bool;x) -> Char
-(rec y. ?Bool;?Bool;y) -> Char
+-- (rec x. ?Bool;x) -> Char
+-- (rec y. ?Bool;?Bool;y) -> Char
 
-!Char -> (rec x. ?Bool;x)
-!Char -> (rec y. ?Bool;?Bool;y)
+-- !Char -> (rec x. ?Bool;x)
+-- !Char -> (rec y. ?Bool;?Bool;y)
 
-(rec y. !Char;!Char;y) -> (rec x. ?Bool;x)
-(rec y. !Char;y) -> (rec y. ?Bool;?Bool;y)
+-- (rec y. !Char;!Char;y) -> (rec x. ?Bool;x)
+-- (rec y. !Char;y) -> (rec y. ?Bool;?Bool;y)
 
-(Char, Bool)
-(Char, Bool)
+-- (Char, Bool)
+-- (Char, Bool)
 
-(Char -> !Int, Bool)
-(Char -> !Int, Bool)
+-- (Char -> !Int, Bool)
+-- (Char -> !Int, Bool)
 
-(rec y. !Char;!Char;y, Bool)
-(rec y. !Char;y, Bool)
+-- (rec y. !Char;!Char;y, Bool)
+-- (rec y. !Char;y, Bool)
 
--- How do we test variant types?
--- rec x . [Nil, Cons Int x]
--- rec y . [Cons Int y, Nil]
+-- -- How do we test variant types?
+-- -- rec x . [Nil, Cons Int x]
+-- -- rec y . [Cons Int y, Nil]
 
-!((rec y. !Char;!Char;y) -> (rec x. ?Bool;x)) ; ?Bool
-!((rec y. !Char;y) -> (rec y. ?Bool;?Bool;y)) ; ?Bool
+-- !((rec y. !Char;!Char;y) -> (rec x. ?Bool;x)) ; ?Bool
+-- !((rec y. !Char;y) -> (rec y. ?Bool;?Bool;y)) ; ?Bool
 
--- Higher order
+-- -- Higher order
 
-!((rec x.&{Leaf: Skip, Node: (?Int;(x;x))});Skip)
-!(rec y.&{Leaf: Skip, Node: (?Int;(y;y))})
+-- !((rec x.&{Leaf: Skip, Node: (?Int;(x;x))});Skip)
+-- !(rec y.&{Leaf: Skip, Node: (?Int;(y;y))})
 
-!((rec x.&{Leaf: Skip, Node: (?Int;(x;x))});Skip) ; ?((rec x.+{Leaf: Skip, Node: (!Int;(x;x))});a)
-!(rec y.&{Leaf: Skip, Node: (?Int;(y;y))})        ; ?((rec y.+{Leaf: Skip, Node: (!Int;(y;y))});a)
+-- !((rec x.&{Leaf: Skip, Node: (?Int;(x;x))});Skip) ; ?((rec x.+{Leaf: Skip, Node: (!Int;(x;x))});a)
+-- !(rec y.&{Leaf: Skip, Node: (?Int;(y;y))})        ; ?((rec y.+{Leaf: Skip, Node: (!Int;(y;y))});a)
 
-rec x. !x
-rec y. !y
+-- rec x. !x
+-- rec y. !y
 
-rec x. !x
-rec y. (!y ; Skip)
+-- rec x. !x
+-- rec y. (!y ; Skip)
 
-rec x. !x
-(rec y. !y) ; Skip
+-- rec x. !x
+-- (rec y. !y) ; Skip
 
-!(rec x. !x)
-!(rec y. !y)
+-- !(rec x. !x)
+-- !(rec y. !y)
 
-rec x. !x
-!(rec x. !x)
+-- rec x. !x
+-- !(rec x. !x)
 
-rec x. !x
-!(!(!(rec y. !y)))
+-- rec x. !x
+-- !(!(!(rec y. !y)))
 
--- First order
+-- -- First order
+-- -- Note: many of these types are not well formed (most rec vars should be of kind SL)
 
-((rec termChan.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)});(!Int;Skip))
-((rec termChan.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)});!Int)
+-- +{A: Char, B: +{A: Char}, C: +{A: !Int};!()}
+-- +{A: Char, B: +{A: Char}, C: +{A: !Int;!()}}
 
-((rec termChan.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)});((rec termChan.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)});x))
-(((rec termChan.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)});(rec termChan.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)}));x)
+-- !Int; (?Bool; !Char)
+-- (!Int; ?Bool); !Char
 
-((rec termChan.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)});((rec termChan.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)});x))
-(((rec termChan.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)});(rec termChan.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)}));x)
+((rec termChan:SL.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)});(!Int;Skip))
+((rec termChan:SL.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)});!Int)
+
+((rec termChan:SL.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)});((rec termChan:SL.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)});x))
+(((rec termChan:SL.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)});(rec termChan:SL.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)}));x)
+
+((rec termChan:SL.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)});((rec termChan:SL.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)});x))
+(((rec termChan:SL.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)});(rec termChan:SL.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)}));x)
 
 ((rec x.+{A: (x;+{B: Skip}), B: Skip});Skip)
 (rec x.+{A: (x;+{B: Skip}), B: Skip})
