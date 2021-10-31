@@ -38,7 +38,7 @@ import           Debug.Trace
 -- Conversion to simple grammars
 
 convertToGrammar :: [T.Type] -> Grammar
-convertToGrammar ts = {- trace (show ts ++ "\n" ++ show grammar) -} grammar
+convertToGrammar ts = trace (show ts ++ "\n" ++ show grammar) grammar
   where
     grammar = Grammar (substitute θ word) (substitute θ (productions state))
     (word, state) = runState (mapM typeToGrammar ts) initial
@@ -50,9 +50,9 @@ typeToGrammar t = do
   toGrammar t
 
 toGrammar :: T.Type -> TransState Word
-toGrammar (T.Skip _) = return []
+-- Syntactic equality
 toGrammar t = case fatTerminal t of
-  Just t' -> getLHS $ Map.singleton (show $ normalise t') []
+  Just t' ->  getLHS $ Map.singleton (show t') []
   Nothing -> toGrammar' t
 
 toGrammar' :: T.Type -> TransState Word
@@ -60,11 +60,11 @@ toGrammar' :: T.Type -> TransState Word
 toGrammar' (T.Arrow _ p t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
-  getLHS $ Map.fromList [(left p, xs), (right p, ys)]
+  getLHS $ Map.fromList [(left $ showArrow p, xs), (right $ showArrow p, ys)]
 toGrammar' (T.Pair _ t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
-  getLHS $ Map.fromList [(left 'x', xs), (right 'x', ys)]
+  getLHS $ Map.fromList [(left "x", xs), (right "x", ys)]
 toGrammar' (T.Variant _ m) = do -- Can't test this type directly
   ms <- tMapM toGrammar m
   getLHS $ Map.mapKeys (\k -> "<>" ++ show k) ms
@@ -74,7 +74,7 @@ toGrammar' (T.Semi _ t u) = liftM2 (++) (toGrammar t) (toGrammar u)
 toGrammar' (T.Message _ p t) = do
   xs <- toGrammar t
   b <- getBottom
-  getLHS $ Map.fromList [(left p, xs ++ [b]), (right p, [])]
+  getLHS $ Map.fromList [(left $ show p, xs ++ [b]), (right $ show p, [])]
 toGrammar' (T.Choice _ v m) = do
   ms <- tMapM toGrammar m
   getLHS $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
@@ -87,32 +87,56 @@ toGrammar' t@T.CoVar{} = getLHS $ Map.singleton (show t) []
 -- toGrammar' t@T.Dualof{} =
 toGrammar' t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 
-left :: Show a => a -> String
-left x = show x ++ "l"
+left :: String -> String
+left = ('l':)
 
-right :: Show a => a -> String
-right x = show x ++ "r"
+right :: String -> String
+right = ('r':)
 
 -- Fat terminal types can be compared for syntactic equality
+-- Returns a normalised type in case the type can become fat terminal
 fatTerminal :: T.Type -> Maybe T.Type
 -- Functional Types
-fatTerminal t@T.Int{}           = Just t
-fatTerminal t@T.Char{}          = Just t
-fatTerminal t@T.Bool{}          = Just t
-fatTerminal t@T.String{}        = Just t
-fatTerminal t@T.Unit{}          = Just t
-fatTerminal (T.Arrow p m t u)   = Just (T.Arrow p m ) <*> fatTerminal t <*> fatTerminal u
-fatTerminal (T.Pair p t u)      = Just (T.Pair p) <*> fatTerminal t <*> fatTerminal u
-fatTerminal (T.Variant p m)     = Just (T.Variant p) <*> mapM fatTerminal m
+fatTerminal t@T.Int{}             = Just t
+fatTerminal t@T.Char{}            = Just t
+fatTerminal t@T.Bool{}            = Just t
+fatTerminal t@T.String{}          = Just t
+fatTerminal t@T.Unit{}            = Just t
+fatTerminal (T.Arrow p m t u)     = Just (T.Arrow p m) <*> fatTerminal t <*> fatTerminal u
+fatTerminal (T.Pair p t u)        = Just (T.Pair p) <*> fatTerminal t <*> fatTerminal u
+fatTerminal (T.Variant p m)       = Just (T.Variant p) <*> mapM fatTerminal m
 -- Session Types
--- fatTerminal t | terminated t    = Just $ T.Skip defaultPos
-fatTerminal (T.Semi p T.Skip{} t) = fatTerminal t
-fatTerminal (T.Semi p t T.Skip{}) = fatTerminal t
+fatTerminal (T.Semi _ T.Skip{} t) = fatTerminal t
+fatTerminal (T.Semi _ t T.Skip{}) = fatTerminal t
+fatTerminal (T.Message p pol t)   = Just (T.Message p pol) <*> fatTerminal t
+-- These two would preclude distributivity:
 -- fatTerminal (T.Semi p t u)      = Just (T.Semi p) <*> fatTerminal t <*> fatTerminal u
-fatTerminal (T.Message p pol t) = Just (T.Message p pol) <*> fatTerminal t
--- fatTerminal (T.Choice p pol m)  = Just (T.Choice p pol) <*> mapM fatTerminal m -- This would preclude distributivity
+-- fatTerminal (T.Choice p pol m)  = Just (T.Choice p pol) <*> mapM fatTerminal m
 -- Default
-fatTerminal _                   = Nothing
+fatTerminal _                     = Nothing
+
+{-
+-- Can this type become a fat terminal?
+syntactic :: T.Type -> Bool
+-- Functional Types
+syntactic t@T.Int{}             = True
+syntactic t@T.Char{}            = True
+syntactic t@T.Bool{}            = True
+syntactic t@T.String{}          = True
+syntactic t@T.Unit{}            = True
+syntactic (T.Arrow _ _ t u)     = syntactic t && syntactic u
+syntactic (T.Pair _ t u)        = syntactic t && syntactic u
+syntactic (T.Variant p m)       = Map.foldr (\t b -> b && syntactic t) True m
+-- Session Types
+syntactic (T.Semi _ T.Skip{} t) = syntactic t
+syntactic (T.Semi _ t T.Skip{}) = syntactic t
+syntactic (T.Message _ _ t)     = syntactic t
+-- These two would preclude distributivity:
+-- syntactic (T.Semi p t u)      = 
+-- syntactic (T.Choice p pol m)  = 
+-- Default
+syntactic _                     = False
+-}
 
 type SubstitutionList = [(T.Type, TypeVar)]
 

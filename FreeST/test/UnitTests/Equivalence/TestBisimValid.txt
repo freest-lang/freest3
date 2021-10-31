@@ -171,3 +171,6 @@ a
 
 &{And: (Skip;(?Bool;(?Bool;(!Bool;Skip)))), Not: (Skip;(?Bool;(!Bool;Skip))), Or: (Skip;(?Bool;(?Bool;(!Bool;Skip))))}
 &{And: (?Bool;(?Bool;(!Bool;Skip))), Not: (?Bool;(!Bool;Skip)), Or: (?Bool;(?Bool;(!Bool;Skip)))}
+
+(Int, !Bool;Skip) -> (!(Char -o ?(Bool, !((Int, !Bool) -> (!(Char -o ?(Bool, !Int);Skip))))))
+(Int, !Bool) -> (!(Char -o ?(Bool, !((Int, Skip;(!Bool;Skip)) -> (!(Char -o ?(Bool, !Int)))))))

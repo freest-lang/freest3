@@ -15,6 +15,7 @@ module Parse.Unparser
   , showFieldMap
   , showBindType
   , showBindExp
+  , showArrow
   )
 where
 
