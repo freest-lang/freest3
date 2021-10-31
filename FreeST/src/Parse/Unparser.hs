@@ -45,8 +45,11 @@ instance Show Multiplicity where
   show Lin = "L"
 
 showArrow :: Multiplicity -> String
-showArrow Lin = " -o "
-showArrow Un  = " -> "
+showArrow Lin = "-o"
+showArrow Un  = "->"
+
+space :: String -> String
+space s = ' ' : s ++ " "
 
 -- Program and Type Variables.
 
@@ -96,7 +99,7 @@ showBindExp (K.Bind _ a k e) = showKind a k " => " e -- Λ a:k => e
 -- Type bind
 
 instance Show E.Bind where
-  show (E.Bind _ m x t e) = showKind x t (showArrow m) e
+  show (E.Bind _ m x t e) = showKind x t (space $ showArrow m) e
 
 -- Polarity
 
@@ -182,7 +185,7 @@ instance Unparse T.Type where
   unparse (T.CoVar _ a    ) = (maxRator, "dual " ++ show a)
   unparse (T.Message _ p t) = (msgRator, show p ++ m)
     where m = bracket (unparse t) Right msgRator
-  unparse (T.Arrow _ m t u) = (arrowRator, l ++ showArrow m ++ r)
+  unparse (T.Arrow _ m t u) = (arrowRator, l ++ space (showArrow m) ++ r)
    where
     l = bracket (unparse t) Left arrowRator
     r = bracket (unparse u) Right arrowRator

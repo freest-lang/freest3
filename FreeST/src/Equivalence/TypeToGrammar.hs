@@ -64,7 +64,7 @@ toGrammar' (T.Arrow _ p t u) = do
 toGrammar' (T.Pair _ t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
-  getLHS $ Map.fromList [(left "x", xs), (right "x", ys)]
+  getLHS $ Map.fromList [(left "*", xs), (right "*", ys)]
 toGrammar' (T.Variant _ m) = do -- Can't test this type directly
   ms <- tMapM toGrammar m
   getLHS $ Map.mapKeys (\k -> "<>" ++ show k) ms
@@ -88,10 +88,10 @@ toGrammar' t@T.CoVar{} = getLHS $ Map.singleton (show t) []
 toGrammar' t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 
 left :: String -> String
-left = ('l':)
+left = (++ "l")
 
 right :: String -> String
-right = ('r':)
+right = (++ "r")
 
 -- Fat terminal types can be compared for syntactic equality
 -- Returns a normalised type in case the type can become fat terminal
