@@ -215,13 +215,14 @@ errorMsg (NonEquivTypes _ t u e) =
   , Error "\n\t             with actual type", Error u
   , Error "\n\t               for expression", Error e]
 errorMsg (NonEquivEnvs _ branching vEnv vEnv' e) =
-  [ Error "I have reached the end of", Error branching
-  , Error "expression and found two distinct typing environments."
-  , Error "\n\t     The contexts are", Error (vEnv Map.\\ vEnv')
-  , Error "\n\t                  and", Error (vEnv' Map.\\ vEnv)
-  , Error "\n\tand the expression is", Error e
+  [ Error "Couldn't match the final context against the initial context for"
+  , Error branching
+  , Error "expression"
+  , Error "\n\t The initial context is", Error (vEnv Map.\\ vEnv')
+  , Error "\n\t   the final context is", Error (vEnv' Map.\\ vEnv)
+  , Error "\n\t  and the expression is", Error e
   , Error "\n\t(was a variable consumed in one branch and not in the other?)"
-  , Error "\n\t(is there a variable with different types in the two environments?)"]
+  , Error "\n\t(is there a variable with different types in the two contexts?)"]
 --errorMsg (NonExhaustiveCase _ fm tm) =
 --  [ Error "Wrong number of constructors\n\tThe expression has", Error $ Map.size fm
 --    , Error "constructor(s)\n\tbut the type has", Error $ Map.size tm

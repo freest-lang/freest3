@@ -44,8 +44,8 @@ instance Show Multiplicity where
   show Lin = "L"
 
 showArrow :: Multiplicity -> String
-showArrow Lin = " -o "
-showArrow Un  = " -> "
+showArrow Lin = "-o"
+showArrow Un  = "->"
 
 -- Program and Type Variables.
 
@@ -81,7 +81,7 @@ instance Show K.Kind where
 
 showKind :: (Show a, Show b, Show c) => a -> b -> String -> c -> String
 showKind var sort arrow term =
-  showSortedVar var sort ++ " " ++ arrow ++ " " ++ show term
+  showSortedVar var sort ++ spaced arrow ++ show term
 
 -- instance Show t => Show (K.Bind t) where
 --   show (K.Bind _ a k t) = showKind a k "=>" t
@@ -90,7 +90,7 @@ showBindType :: K.Bind T.Type -> String
 showBindType (K.Bind _ a k t) = showKind a k "." t -- ∀ a:k . t
 
 showBindExp :: K.Bind E.Exp -> String
-showBindExp (K.Bind _ a k e) = showKind a k " => " e -- Λ a:k => e
+showBindExp (K.Bind _ a k e) = showKind a k "=>" e -- Λ a:k => e
 
 -- Type bind
 
@@ -181,7 +181,7 @@ instance Unparse T.Type where
   unparse (T.CoVar _ a    ) = (maxRator, "dual " ++ show a)
   unparse (T.Message _ p t) = (msgRator, show p ++ m)
     where m = bracket (unparse t) Right msgRator
-  unparse (T.Arrow _ m t u) = (arrowRator, l ++ showArrow m ++ r)
+  unparse (T.Arrow _ m t u) = (arrowRator, l ++ spaced (showArrow m) ++ r)
    where
     l = bracket (unparse t) Left arrowRator
     r = bracket (unparse u) Right arrowRator
@@ -226,7 +226,7 @@ instance Unparse Exp where
   unparse (E.Int _ i) = (maxRator, show i)
   unparse (E.Char _ c) = (maxRator, show c)
   unparse (E.Bool _ b) = (maxRator, show b)
-  unparse (E.String _ s) = (maxRator, s)
+  unparse (E.String _ s) = (maxRator, show s)
   -- Variable
   unparse (E.Var  _ x) = (maxRator, show x)
   -- Abstraction intro and elim
@@ -313,7 +313,10 @@ isMult :: ProgVar -> Bool
 isMult = isOp ["(*)", "(/)"]
 
 showOp :: ProgVar -> String
-showOp x = " " ++ tail (init $ show x) ++ " "
+showOp x = spaced $ tail (init $ show x)
+
+spaced :: String -> String
+spaced s = ' ' : s ++ " "
 
 -- VarEnv
 
