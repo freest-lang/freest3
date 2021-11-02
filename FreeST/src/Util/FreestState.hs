@@ -259,7 +259,7 @@ addWarning w = modify (\s -> s { warnings = w : warnings s })
 
 getErrors :: FreestS -> String
 getErrors s =
-   (intercalate "\n" . map f . sortBy errCmp . take 10 . errors) s
+   (intercalate "\n" . map f . take 10 . sortBy errCmp . reverse . errors) s
   where
     f = formatError (runFilePath $ runOpts s) (typenames s)
     errCmp x y = compare (pos x) (pos y)
@@ -267,8 +267,6 @@ getErrors s =
 hasErrors :: FreestS -> Bool
 hasErrors = not . null . errors
 
--- TODO: Do we need to deal with error duplication?
--- Use insert? Don't think so...
 addError :: ErrorType -> FreestState ()
 addError e = modify (\s -> s { errors = e : errors s })
 
