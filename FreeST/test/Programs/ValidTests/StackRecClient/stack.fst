@@ -68,17 +68,17 @@ reverseNE n c =
     pop [dualof NEStack ; a]
 
 -- A generic client working on an empty stack
-reverseE : dualof EStack -> Skip
-reverseE c =
-  pushE [Skip] 10 c &
-  reverseNE [dualof EStack] 9 &
+reverseE : Int -> dualof EStack -> Skip
+reverseE n c =
+  pushE [Skip] n c &
+  reverseNE [dualof EStack] (n-1) &
   pop [dualof EStack] &
   select End
 
 main : Skip
 main =
   let (r, w) = new EStack in
-  fork $ eStack [Skip] r;
-  reverseE w
+  fork [Skip] $ eStack [Skip] r;
+  reverseE 10 w
   -- reverseThree w
 
