@@ -38,7 +38,7 @@ library:
     - FreeST
     - Bisimulation.Grammar
     - Bisimulation.Bisimulation
-    - Elaboration.Duality
+    - Elaboration.ResolveDuality
     - Elaboration.Elaboration
     - Equivalence.Equivalence
     - Equivalence.Normalisation

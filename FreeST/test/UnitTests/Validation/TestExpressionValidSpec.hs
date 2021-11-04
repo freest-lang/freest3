@@ -6,7 +6,7 @@ where
 import           Control.Monad.State
 import qualified Data.Map.Strict               as Map
 import           Elaboration.Elaboration        
-import           Elaboration.Duality           as Dual       
+import           Elaboration.ResolveDuality    as Dual
 import           SpecUtils
 import           Syntax.Expression
 import           Util.FreestState

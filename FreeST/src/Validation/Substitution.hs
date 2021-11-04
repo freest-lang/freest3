@@ -20,7 +20,7 @@ module Validation.Substitution
 where
 
 import qualified Data.Map.Strict               as Map
--- import           Elaboration.Duality
+import           Elaboration.Duality
 import qualified Syntax.Kind                   as K
 import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
@@ -44,16 +44,20 @@ instance Subs T.Type where
     -- Polymorphism and recursion
   subs t x (T.Rec    p b      ) = T.Rec p (subs t x b)
   subs t x (T.Forall p b      ) = T.Forall p (subs t x b)
-  subs t x u@(T.Var _ y) | y == x    = t
-                         | otherwise = u
-  subs (T.Var _ t) x u@(T.CoVar p y) | y == x    = T.CoVar p t
-                                     | otherwise = u
-  subs t x u@(T.CoVar _ y) | y == x    = dualof t
-                           | otherwise = u
+  subs t x u@(T.Var _ y)
+    | y == x    = t
+    | otherwise = u
+  subs (T.Var _ t) x u@(T.CoVar p y)
+    | y == x    = T.CoVar p t
+    | otherwise = u
+  subs t x u@(T.CoVar _ y)
+    | y == x    = dualof t
+    | otherwise = u
+  subs _ _ t            = t
   -- Can't issue this error because we use
   -- this function during the elaboration of dualofs
---  subs _ _ t@T.Dualof{} = internalError "Validation.Substitution.subs" t
-  subs _ _ t            = t
+  --  subs _ _ t@T.Dualof{} = internalError "Validation.Substitution.subs" t
+
 
 instance Subs t => Subs (K.Bind t) where
   subs t x (K.Bind p y k u) = K.Bind p y k (subs t x u)
@@ -66,24 +70,6 @@ subsAll σ s = foldl (\u (t, x) -> subs t x u) s σ
 unfold :: T.Type -> T.Type
 unfold t@(T.Rec _ (K.Bind _ x _ u)) = subs t x u
 unfold t = internalError "Validation.Substitution.unfold" t
-
-
--- TODO: Move to the proper module (cyclic import if in Elaboration.Duality)
-dualof :: T.Type -> T.Type
--- Session Types
-dualof (T.Semi    p t   u) = T.Semi p (dualof t) (dualof u)
-dualof (T.Message p pol t) = T.Message p (dual pol) (dualof t)
-dualof (T.Choice p pol m) = T.Choice p (dual pol) (Map.map dualof m)
-dualof (T.Rec p b) = T.Rec p (dualBind  b)
-  where dualBind (K.Bind p a k t) = K.Bind p a k (dualof t) 
-dualof (T.Dualof _ t) = dualof t
--- Non session-types & Skip
-dualof t = t
-
--- TODO: duplicated (with Duality.duality) remove
-dual :: T.Polarity -> T.Polarity
-dual T.In  = T.Out
-dual T.Out = T.In
 
 
 {-

@@ -8,7 +8,7 @@ where
 import           Data.Functor
 import           Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
-import           Elaboration.Duality           as Dual
+import           Elaboration.ResolveDuality    as Dual
 import           Syntax.Base
 import           Syntax.Expression
 import qualified Syntax.Kind                   as K
