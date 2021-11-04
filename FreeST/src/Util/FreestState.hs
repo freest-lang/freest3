@@ -23,6 +23,7 @@ module Util.FreestState (
   , tMapWithKeyM_
 -- * Next index
   , getNextIndex
+  , freshTVar
 -- * Variable environment
   , getVEnv
   , getFromVEnv
@@ -159,6 +160,9 @@ getNextIndex = do
   next <- gets nextIndex
   modify (\s -> s { nextIndex = next + 1 })
   return next
+
+freshTVar :: String -> Pos -> FreestState TypeVar
+freshTVar s p = mkVar p . (s ++) . show <$> getNextIndex
 
 -- | FILE NAME
 
