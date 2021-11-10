@@ -80,7 +80,7 @@ where
 
 import           Control.Applicative
 import           Control.Monad.State
-import           Data.List ( intercalate, sortBy )
+import           Data.List ( intercalate ) -- , sortBy )
 import qualified Data.Map.Strict as Map
 import           Data.Maybe
 import qualified Data.Traversable as Traversable
@@ -95,6 +95,7 @@ import           Syntax.TypeVariable
 import           Util.Warning
 import           Util.WarningMessage ()
 import           Util.PrettyWarning ()
+-- import           Util.PreludeLoader
 import           Util.Error
 import           Util.ErrorMessage
 import           Util.PrettyError ()
@@ -248,10 +249,10 @@ addDualof t = internalError "Util.FreestState.addDualof" t
 
 getWarnings :: FreestS -> String
 getWarnings s =
-   (intercalate "\n" . map f . sortBy cmp . take 10 . warnings) s
+   (intercalate "\n" . map f . take 10 . reverse . warnings) s
   where
     f = formatWarning (runFilePath $ runOpts s) (typenames s)
-    cmp x y = compare (pos x) (pos y)
+--    cmp x y = compare (pos x) (pos y)
 
 hasWarnings :: FreestS -> Bool
 hasWarnings = not . null . warnings
