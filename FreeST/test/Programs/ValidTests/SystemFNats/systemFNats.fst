@@ -30,7 +30,10 @@ four : Nat
 four = succ' three
 
 plus : Nat -> Nat -> Nat
-plus m n = Λ a => λ s:(a->a) z:a -> m [a] s (n [a] s z)
+plus m n = m [Nat] succ' n
+
+plus' : Nat -> Nat -> Nat
+plus' m n = Λ a => λ s:(a->a) z:a -> m [a] s (n [a] s z)
 
 isZero : Nat -> Bool
 isZero n = n [Bool] (λ_:Bool -> False) True
@@ -80,7 +83,7 @@ toInt : Nat -> Int
 toInt n = n [Int] (λx:Int -> x + 1) 0
 
 main : Int
-main = toInt $ pred' four
+main = toInt $ pred' $ plus one three
 -- main = toInt $ exp two $ times four four
 
 -- main : Bool

@@ -18,5 +18,8 @@ cons = Λa => λhd:a tl:(∀r . (a -> r -> r) -> r -> r) ->
 null : ∀a . (∀r . (a -> r -> r) -> r -> r) -> Bool
 null = Λa => λl:(∀r . (a -> r -> r) -> r -> r) -> l [Bool] (λhd:a tl:Bool -> False) True
 
+diverge : ∀a . () -> a -> a
+diverge = Λa => λ_:() -> fix [a] (λx:(a -> a) -> x)
+
 main : Bool
 main = null [Char] (nil [Char])
