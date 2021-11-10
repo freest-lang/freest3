@@ -195,6 +195,7 @@ initialCtx = Map.fromList
     , PrimitiveFun
       (\(String s) -> unsafePerformIO $ die $ formatError Nothing
                                                           Map.empty
+                                                          []
                                                           (ErrorFunction s)
       )
     )

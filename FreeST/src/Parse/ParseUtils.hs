@@ -87,37 +87,37 @@ instance Functor ParseResult where
 
 checkDupField :: ProgVar -> T.TypeMap -> FreestState ()
 checkDupField x m =
-  when (x `Map.member` m) $ let p = pos x in addError (MultipleFieldDecl p x)
+  when (x `Map.member` m) $ addError $ MultipleFieldDecl (pos x) x
 
 checkDupCase :: ProgVar -> E.FieldMap -> FreestState ()
 checkDupCase x m =
-  when (x `Map.member` m) $ let p = pos x in addError (RedundantPMatch p x)
+  when (x `Map.member` m) $ addError $ RedundantPMatch (pos x) x
 
 checkDupBind :: ProgVar -> [ProgVar] -> FreestState ()
 checkDupBind x xs
   | intern x == "_" = return ()
   | otherwise = case find (== x) xs of
-    Just y  -> addError (DuplicatePVar (pos y) x (pos x))
+    Just y  -> addError $ DuplicatePVar (pos y) x (pos x)
     Nothing -> return ()
 
 checkDupKindBind :: K.Bind a -> [K.Bind a] -> FreestState ()
 checkDupKindBind (K.Bind p x _ _) bs =
   case find (\(K.Bind _ y _ _) -> y == x) bs of
-    Just (K.Bind p' _ _ _) -> addError (DuplicateTVar p' x p)
+    Just (K.Bind p' _ _ _) -> addError $ DuplicateTVar p' x p
     Nothing                -> return ()
 
 checkDupCons :: (ProgVar, [T.Type]) -> [(ProgVar, [T.Type])] -> FreestState ()
 checkDupCons (x, _) xts
-  | any (\(y, _) -> y == x) xts = addError (DuplicateFieldInDatatype (pos x) x)
+  | any (\(y, _) -> y == x) xts = addError $ DuplicateFieldInDatatype (pos x) x
   | otherwise = getFromVEnv x >>= \case
-    Just s  -> let p = pos x in addError (MultipleDatatypeDecl p x (pos s))
-    Nothing -> return ()
+      Just s  -> addError $ MultipleDatatypeDecl (pos x) x (pos s)
+      Nothing -> return ()
 
 checkDupProgVarDecl :: ProgVar -> FreestState ()
 checkDupProgVarDecl x = do
   vEnv <- getVEnv
   case vEnv Map.!? x of
-    Just a  -> let p = pos x in addError (MultipleDatatypeDecl (pos a) x p)
+    Just a  -> addError $ MultipleDatatypeDecl (pos x) x (pos a)
     Nothing -> return ()
 
 
@@ -125,14 +125,14 @@ checkDupTypeDecl :: TypeVar -> FreestState ()
 checkDupTypeDecl a = do
   tEnv <- getTEnv
   case tEnv Map.!? a of
-    Just (_, s) -> addError (MultipleTypeDecl (pos a) a (pos s))
+    Just (_, s) -> addError $ MultipleTypeDecl (pos a) a (pos s)
     Nothing     -> return ()
 
 checkDupFunDecl :: ProgVar -> FreestState ()
 checkDupFunDecl x = do
   eEnv <- getPEnv
   case eEnv Map.!? x of
-    Just e  -> addError (MultipleFunBindings (pos x) x (pos $ snd e))
+    Just e  -> addError $ MultipleFunBindings (pos x) x (pos $ snd e)
     Nothing -> return ()
 
 -- OPERATORS

@@ -112,14 +112,14 @@ type ParseEnv = Map.Map ProgVar ([ProgVar], Exp)
 
 data FreestS = FreestS {
   runOpts    :: RunOpts
-, varEnv    :: VarEnv
-, prog      :: Prog
-, typeEnv   :: TypeEnv
-, typenames :: TypeOpsEnv
-, warnings  :: Warnings
-, errors    :: Errors
-, nextIndex :: Int
-, parseEnv  :: ParseEnv -- "discarded" after elaboration
+, varEnv     :: VarEnv
+, prog       :: Prog
+, typeEnv    :: TypeEnv
+, typenames  :: TypeOpsEnv
+, warnings   :: Warnings
+, errors     :: Errors
+, nextIndex  :: Int
+, parseEnv   :: ParseEnv -- "discarded" after elaboration
 } deriving Show -- FOR DEBUG purposes
 
 type FreestState = State FreestS
@@ -127,15 +127,15 @@ type FreestState = State FreestS
 -- | Initial State
 
 initialState :: FreestS
-initialState = FreestS { runOpts   = initialOpts
-                       , varEnv    = Map.empty
-                       , prog      = Map.empty
-                       , typeEnv   = Map.empty
-                       , typenames = Map.empty
-                       , warnings  = []
-                       , errors    = []
-                       , nextIndex = 0
-                       , parseEnv  = Map.empty
+initialState = FreestS { runOpts    = initialOpts
+                       , varEnv     = Map.empty
+                       , prog       = Map.empty
+                       , typeEnv    = Map.empty
+                       , typenames  = Map.empty
+                       , warnings   = []
+                       , errors     = []
+                       , nextIndex  = 0
+                       , parseEnv   = Map.empty
                        }
 
 -- | Parse Env
@@ -262,12 +262,12 @@ addWarning w = modify (\s -> s { warnings = w : warnings s })
 
 -- | ERRORS
 
-getErrors :: FreestS -> String
-getErrors s =
+getErrors :: PreludeNames -> FreestS -> String
+getErrors v s =
    (intercalate "\n" . map f . take 10 . reverse . errors) s
 --   (intercalate "\n" . map f . take 10 . sortBy errCmp . reverse . errors) s
   where
-    f = formatError (runFilePath $ runOpts s) (typenames s)
+    f = formatError (runFilePath $ runOpts s) (typenames s) v
 --    errCmp x y = compare (pos x) (pos y)
 
 hasErrors :: FreestS -> Bool

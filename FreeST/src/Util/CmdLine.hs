@@ -97,4 +97,4 @@ handleFile opts fpath defaultMain
   | otherwise = die $ show fpath ++ " has not extension fst "
 
 throwError :: ErrorType -> IO ()
-throwError = die . formatError Nothing Map.empty
+throwError = die . formatError Nothing Map.empty []

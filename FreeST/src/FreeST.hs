@@ -46,20 +46,21 @@ checkAndRun runOpts = do
   s0              <- parseProgram preludeFilePath prelude
   when (hasErrors s0) (putStrLn cantFindPrelude)
   let (initialPrelude, initialProg) = fromPreludeFile s0
+  let preludeNames = Map.keys initialPrelude
   -- Parse
   s1 <- parseProgram (fromJust $ runFilePath runOpts) initialPrelude
-  when (hasErrors s1) (die $ getErrors s1)
+  when (hasErrors s1) (die $ getErrors preludeNames s1)
   -- Solve type declarations and dualof operators
   let s2 = emptyPEnv $ execState
         elaboration
-        (s1 { runOpts, parseEnv = parseEnv s1 `Map.union` initialProg })
-  when (hasErrors s2) (die $ getErrors s2)
+        (s1 { runOpts, parseEnv = parseEnv s1 `Map.union` initialProg})
+  when (hasErrors s2) (die $ getErrors preludeNames s2)
   -- Rename
   let s3 = execState renameState (s2 { runOpts })
   -- Type check
   let s4 = execState typeCheck (s3 { runOpts })
   when (not (isQuietFlagSet runOpts) && hasWarnings s4) (putStrLn $ getWarnings s4)
-  when (hasErrors s4)   (die $ getErrors s4)
+  when (hasErrors s4)   (die $ getErrors preludeNames s4)
   -- Check if main was left undefined
   let main = getMain runOpts
   -- If main is defined, eval and print

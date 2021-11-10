@@ -21,7 +21,6 @@ module Util.PrettyError
 where
 
 import           Syntax.Base                    ( Pos
-                                                , pos
                                                 , defaultPos
                                                 )
 import           Syntax.Program                 ( TypeOpsEnv )

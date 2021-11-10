@@ -3,6 +3,7 @@ module Syntax.Program
   , VarEnv
   , Prog
   , TypeOpsEnv
+  , PreludeNames
   , noConstructors
   , isDatatypeContructor
   )
@@ -23,6 +24,9 @@ type TypeEnv = Map.Map TypeVar (K.Kind, T.Type)
 -- The signatures of the functions names (including the primitive
 -- operators) and parameters, and the datatype constructors
 type VarEnv = Map.Map ProgVar T.Type
+
+-- The names of the functions from the Prelude
+type PreludeNames = [ProgVar]
 
 -- Mapping between positions & type operators (Typename & Dualof)
 -- Used to give better error messages

@@ -25,6 +25,6 @@ parser parseFun str =
   case runStateT (lexer str "" parseFun) initialState of
     Ok (t, state) ->
       if hasErrors state
-      then error $ getErrors state
+      then error $ getErrors [] state
       else [(t, "")]
-    Failed err -> error $ formatError Nothing Map.empty err
+    Failed err -> error $ formatError Nothing Map.empty [] err
