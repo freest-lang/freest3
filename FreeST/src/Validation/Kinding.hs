@@ -53,13 +53,14 @@ checkAgainstSession kenv = checkAgainstSession' (Map.keysSet kenv) kenv
 -- Returns the kind of a given type
 synthetise' :: K.PolyVars -> K.KindEnv -> T.Type -> FreestState K.Kind
 -- Functional types
-synthetise' _ _ (T.Int    p) = return $ K.Kind p K.Message Un
-synthetise' _ _ (T.Char   p) = return $ K.Kind p K.Message Un
-synthetise' _ _ (T.Bool   p) = return $ K.Kind p K.Message Un
-synthetise' _ _ (T.Unit   p) = return $ K.Kind p K.Message Un
-synthetise' _ _ (T.String p) = return $ K.Kind p K.Message Un
+synthetise' _ _ (T.Int    p) = return $ K.Kind p K.Message K.Un
+synthetise' _ _ (T.Char   p) = return $ K.Kind p K.Message K.Un
+synthetise' _ _ (T.Bool   p) = return $ K.Kind p K.Message K.Un
+synthetise' _ _ (T.Unit   p) = return $ K.Kind p K.Message K.Un
+synthetise' _ _ (T.String p) = return $ K.Kind p K.Message K.Un
 synthetise' s kEnv (T.Arrow p m t u) = -- do
-  synthetise' s kEnv t >> synthetise' s kEnv u $> K.Kind p K.Top m
+  synthetise' s kEnv t >>
+  synthetise' s kEnv u $> K.Kind p K.Top (typeToKindMult m)
 synthetise' s kEnv (T.Pair p t u) = do
   (K.Kind _ _ mt) <- synthetise' s kEnv t
   (K.Kind _ _ mu) <- synthetise' s kEnv u
@@ -120,14 +121,19 @@ checkAgainstSession' s kEnv t = do
 
 -- Determine whether a given type is unrestricted
 un :: T.Type -> FreestState Bool
-un = mult Un
+un = mult K.Un
 
 -- Determine whether a given type is linear
 lin :: T.Type -> FreestState Bool
-lin = mult Lin
+lin = mult K.Lin
 
 -- Determine whether a given type is of a given multiplicity
-mult :: Multiplicity -> T.Type -> FreestState Bool
+mult :: K.Multiplicity -> T.Type -> FreestState Bool
 mult m1 t = do
   (K.Kind _ _ m2) <- synthetise' Set.empty Map.empty t
   return $ m2 == m1
+
+-- Type to kind multiplicity
+typeToKindMult :: Multiplicity -> K.Multiplicity
+typeToKindMult Lin = K.Lin
+typeToKindMult Un = K.Un

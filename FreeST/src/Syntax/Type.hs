@@ -13,6 +13,8 @@ module Syntax.Type
   ( Type(..)
   , TypeMap
   , Polarity(..)
+  , View(..)
+--  , Multiplicity(..)
   )
 where
 
@@ -22,7 +24,8 @@ import           Syntax.ProgramVariable         ( ProgVar )
 import qualified Syntax.Kind                   as K
 import qualified Data.Map.Strict               as Map
 
-data Polarity = In | Out deriving Eq
+data Polarity = Out | In deriving Eq
+data View = External | Internal deriving Eq
 
 data Type =
   -- Functional Types
@@ -38,7 +41,7 @@ data Type =
   | Skip Pos
   | Semi Pos Type Type
   | Message Pos Polarity Type
-  | Choice Pos Polarity TypeMap
+  | Choice Pos View TypeMap
   -- Polymorphism and recursive types
   | Forall Pos (K.Bind Type)   -- ∀ a:k . T, Universal type
   | Rec Pos (K.Bind Type)      -- μ a:k . T, Recursive type

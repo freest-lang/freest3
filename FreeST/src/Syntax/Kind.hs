@@ -14,6 +14,7 @@ module Syntax.Kind
   ( Basic(..)
   , Bind(..)
   , Kind(..)
+  , Multiplicity(..)
   , KindEnv
   , PolyVars
   , tl
@@ -29,14 +30,17 @@ module Syntax.Kind
   )
 where
 
-import           Syntax.TypeVariable
-import           Syntax.Base
 import qualified Data.Map.Strict               as Map
-import qualified Data.Set as Set
+import qualified Data.Set                      as Set
+import           Syntax.Base             hiding ( Multiplicity(..) )
+import           Syntax.TypeVariable
 
 -- Basic kind
 
 data Basic = Message | Session | Top deriving Eq
+
+-- Multiplicity
+data Multiplicity = Un | Lin deriving Eq
 
 -- Kind
 

@@ -23,7 +23,7 @@ module Validation.Extract
   , outChoiceMap
   , inChoiceMap
   , datatypeMap
-  , outChoiceBranch
+  , choiceBranch
   )
 where
 
@@ -78,17 +78,18 @@ message pol msg e t =
     addError (ExtractError p msg e u) $> (T.Unit $ pos u, T.Skip $ pos u)
 
 outChoiceMap :: E.Exp -> T.Type -> FreestState T.TypeMap
-outChoiceMap = choiceMap T.Out "an external"
+outChoiceMap = choiceMap T.External "an external choice (&)"
 
 inChoiceMap :: E.Exp -> T.Type -> FreestState T.TypeMap
-inChoiceMap = choiceMap T.In "an internal"
+inChoiceMap = choiceMap T.Internal "an internal choice (+)"
 
-choiceMap :: T.Polarity -> String -> E.Exp -> T.Type -> FreestState T.TypeMap
-choiceMap pol msg e t =
+choiceMap :: T.View -> String -> E.Exp -> T.Type -> FreestState T.TypeMap
+choiceMap view msg e t =
   case normalise t of
-    (T.Choice _ pol' m) ->
-      if pol == pol' then return m else choiceErr t
-    (T.Semi _ (T.Choice _ pol' m) u) -> if pol == pol'
+    (T.Choice _ view' m) ->
+      if view == view' then return m else choiceErr t
+    (T.Semi _ (T.Choice _ view' m) u) ->
+      if view == view'
       then return $ Map.map (\v -> T.Semi (pos v) v u) m
       else choiceErr t
     u -> choiceErr u
@@ -104,7 +105,7 @@ datatypeMap e t =
     u                -> let p = pos e in
       addError (ExtractError p "a datatype" e u) $> Map.empty
 
-outChoiceBranch :: Pos -> T.TypeMap -> ProgVar -> T.Type -> FreestState T.Type
-outChoiceBranch p tm x t = case tm Map.!? x of
+choiceBranch :: Pos -> T.TypeMap -> ProgVar -> T.Type -> FreestState T.Type
+choiceBranch p tm x t = case tm Map.!? x of
   Just t  -> return t
   Nothing -> addError (BranchNotInScope p x t) $> omission p

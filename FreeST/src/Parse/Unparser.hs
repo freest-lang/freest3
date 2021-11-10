@@ -11,8 +11,7 @@ Converting AST terms to strings.
 -}
 
 module Parse.Unparser
-  ( showChoiceView
-  , showFieldMap
+  ( showFieldMap
   , showBindType
   , showBindExp
   )
@@ -37,15 +36,28 @@ import           Syntax.ProgramVariable
 instance Show Pos where
   show (Pos l c) = show l ++ ":" ++ show c
 
--- Multiplicities (Base)
+-- Multiplicities
 
+-- Kind
+instance Show K.Multiplicity where
+  show K.Un  = "U"
+  show K.Lin = "L"
+
+-- Type & Expression (Syntax.Base)
 instance Show Multiplicity where
-  show Un  = "U"
-  show Lin = "L"
+  show Un  = "->"
+  show Lin = "-o"
 
-showArrow :: Multiplicity -> String
-showArrow Lin = "-o"
-showArrow Un  = "->"
+-- Choice view
+
+instance Show T.View where
+  show T.External = "&"
+  show T.Internal = "+"
+
+-- Message Polarity
+instance Show T.Polarity where
+  show T.In  = "?"
+  show T.Out = "!"
 
 -- Program and Type Variables.
 
@@ -95,17 +107,7 @@ showBindExp (K.Bind _ a k e) = showKind a k "=>" e -- Λ a:k => e
 -- Type bind
 
 instance Show E.Bind where
-  show (E.Bind _ m x t e) = showKind x t (showArrow m) e
-
--- Polarity
-
-instance Show T.Polarity where
-  show T.In  = "?"
-  show T.Out = "!"
-
-showChoiceView :: T.Polarity -> String
-showChoiceView T.In  = "&"
-showChoiceView T.Out = "+"
+  show (E.Bind _ m x t e) = showKind x t (show m) e
 
 -- Unparsing types and expressions
 
@@ -181,7 +183,7 @@ instance Unparse T.Type where
   unparse (T.CoVar _ a    ) = (maxRator, "dual " ++ show a)
   unparse (T.Message _ p t) = (msgRator, show p ++ m)
     where m = bracket (unparse t) Right msgRator
-  unparse (T.Arrow _ m t u) = (arrowRator, l ++ spaced (showArrow m) ++ r)
+  unparse (T.Arrow _ m t u) = (arrowRator, l ++ spaced (show m) ++ r)
    where
     l = bracket (unparse t) Left arrowRator
     r = bracket (unparse u) Right arrowRator
@@ -195,7 +197,7 @@ instance Unparse T.Type where
     l = bracket (unparse t) Left semiRator
     r = bracket (unparse u) Right semiRator
   unparse (T.Choice _ v m) =
-    (maxRator, showChoiceView v ++ "{" ++ showChoice m ++ "}")
+    (maxRator, show v ++ "{" ++ showChoice m ++ "}")
   unparse (T.Forall _ b) = (dotRator, "∀" ++ showBindType b) -- ++ "=>" ++ s)
     -- where s = bracket (unparse t) Right dotRator
   unparse (T.Rec _ b) = (dotRator, "rec " ++ showBindType b) -- xk ++ "." ++ s)

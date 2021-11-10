@@ -24,3 +24,6 @@ instance Duality T.Polarity where
   dualof T.In  = T.Out
   dualof T.Out = T.In
 
+instance Duality T.View where
+  dualof T.Internal = T.External
+  dualof T.External = T.Internal

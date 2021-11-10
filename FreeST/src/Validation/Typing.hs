@@ -84,11 +84,11 @@ synthetise kEnv e'@(E.Abs p (E.Bind _ Un x t1 e)) = do
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
   | x == mkVar p "select" = do
     t <- synthetise kEnv e
-    m <- Extract.outChoiceMap e t
-    Extract.outChoiceBranch p m c t
+    m <- Extract.inChoiceMap e t
+    Extract.choiceBranch p m c t
   -- Collect e
 synthetise kEnv (E.App _ (E.Var p x) e) | x == mkVar p "collect" = do
-  tm <- Extract.inChoiceMap e =<< synthetise kEnv e
+  tm <- Extract.outChoiceMap e =<< synthetise kEnv e
   return $ T.Variant p $ Map.map (flip (T.Arrow p Un) (T.Unit defaultPos)) tm
   -- Receive e
 synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "receive" = do

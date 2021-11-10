@@ -58,7 +58,7 @@ toGrammar (T.Semi _ t u) = do
 toGrammar t@T.Message{}    = typeTerminal t
 toGrammar (T.Choice _ v m) = do
   ms <- tMapM toGrammar m
-  getLHS $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
+  getLHS $ Map.mapKeys (\k -> show v ++ show k) ms
 toGrammar t@T.Var{}                  = typeTerminal t
 toGrammar t@T.CoVar{}                = typeTerminal t
 toGrammar (T.Rec _ (K.Bind _ x _ _)) = return [x]

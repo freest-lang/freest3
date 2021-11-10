@@ -10,7 +10,7 @@ import           Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
 import           Elaboration.ResolveDuality    as Dual
 import           Syntax.Base
-import           Syntax.Expression
+import qualified Syntax.Expression             as E
 import qualified Syntax.Kind                   as K
 import           Syntax.Program                 ( VarEnv )
 import           Syntax.ProgramVariable
@@ -145,27 +145,27 @@ instance Elaboration a => Elaboration (K.Bind a) where
 -- instance Elaboration (K.Bind Exp) where
 --   elaborate (K.Bind p x k e) = K.Bind p x k <$> elaborate e
 
-instance Elaboration Bind where
-  elaborate (Bind p m x t e) = Bind p m x <$> elaborate t <*> elaborate e
+instance Elaboration E.Bind where
+  elaborate (E.Bind p m x t e) = E.Bind p m x <$> elaborate t <*> elaborate e
 
 -- Substitute expressions
 
-instance Elaboration Exp where
-  elaborate (Abs p b     ) = Abs p <$> elaborate b
-  elaborate (App  p e1 e2) = App p <$> elaborate e1 <*> elaborate e2
-  elaborate (Pair p e1 e2) = Pair p <$> elaborate e1 <*> elaborate e2
-  elaborate (BinLet p x y e1 e2) =
-    BinLet p x y <$> elaborate e1 <*> elaborate e2
-  elaborate (Case p e m) = Case p <$> elaborate e <*> elaborate m
-  elaborate (Cond p e1 e2 e3) =
-    Cond p <$> elaborate e1 <*> elaborate e2 <*> elaborate e3
-  elaborate (TypeApp p e t  ) = TypeApp p <$> elaborate e <*> elaborate t
-  elaborate (TypeAbs p b    ) = TypeAbs p <$> elaborate b
-  elaborate (UnLet p x e1 e2) = UnLet p x <$> elaborate e1 <*> elaborate e2
-  elaborate (New p t u      ) = New p <$> elaborate t <*> elaborate u
+instance Elaboration E.Exp where
+  elaborate (E.Abs p b     ) = E.Abs p <$> elaborate b
+  elaborate (E.App  p e1 e2) = E.App p <$> elaborate e1 <*> elaborate e2
+  elaborate (E.Pair p e1 e2) = E.Pair p <$> elaborate e1 <*> elaborate e2
+  elaborate (E.BinLet p x y e1 e2) =
+    E.BinLet p x y <$> elaborate e1 <*> elaborate e2
+  elaborate (E.Case p e m) = E.Case p <$> elaborate e <*> elaborate m
+  elaborate (E.Cond p e1 e2 e3) =
+    E.Cond p <$> elaborate e1 <*> elaborate e2 <*> elaborate e3
+  elaborate (E.TypeApp p e t  ) = E.TypeApp p <$> elaborate e <*> elaborate t
+  elaborate (E.TypeAbs p b    ) = E.TypeAbs p <$> elaborate b
+  elaborate (E.UnLet p x e1 e2) = E.UnLet p x <$> elaborate e1 <*> elaborate e2
+  elaborate (E.New p t u      ) = E.New p <$> elaborate t <*> elaborate u
   elaborate e                 = return e
 
-instance Elaboration FieldMap where
+instance Elaboration E.FieldMap where
   elaborate = mapM (\(ps, e) -> (ps, ) <$> elaborate e)
 
 
@@ -175,22 +175,21 @@ buildProg :: FreestState ()
 buildProg = getPEnv
   >>= tMapWithKeyM_ (\pv (ps, e) -> addToProg pv =<< buildFunBody pv ps e)
  where
-  buildFunBody :: ProgVar -> [ProgVar] -> Exp -> FreestState Exp
+  buildFunBody :: ProgVar -> [ProgVar] -> E.Exp -> FreestState E.Exp
   buildFunBody f as e = getFromVEnv f >>= \case
     Just s  -> return $ buildExp e as s
     Nothing -> let p = pos f in addError (FuctionLacksSignature p f) $> e
       
-  buildExp :: Exp -> [ProgVar] -> T.Type -> Exp
+  buildExp :: E.Exp -> [ProgVar] -> T.Type -> E.Exp
   buildExp e [] _ = e
   buildExp e (b : bs) (T.Arrow _ m t1 t2) =
-    Abs (pos b) (Bind (pos b) m b t1 (buildExp e bs t2))
+    E.Abs (pos b) (E.Bind (pos b) m b t1 (buildExp e bs t2))
   buildExp _ _ t@(T.Dualof _ _) =
     internalError "Elaboration.Elaboration.buildFunbody.buildExp" t
   buildExp e bs (T.Forall p (K.Bind p1 x k t)) =
-    TypeAbs p (K.Bind p1 x k (buildExp e bs t))
+    E.TypeAbs p (K.Bind p1 x k (buildExp e bs t))
   buildExp e (b : bs) t =
-    Abs (pos b) (Bind (pos b) Un b (omission (pos b)) (buildExp e bs t))
-
+    E.Abs (pos b) (E.Bind (pos b) Un b (omission (pos b)) (buildExp e bs t))
 
 -- | Changing positions
 

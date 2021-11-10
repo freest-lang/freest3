@@ -273,7 +273,7 @@ Type :: { T.Type }
   | Bool                          { T.Bool (pos $1) }
   | String                        { T.String (pos $1) }
   | '()'                          { T.Unit (pos $1) }
-  | Type Arrow Type %prec ARROW   { uncurry T.Arrow $2 $1 $3 }
+  | Type Arrow Type %prec ARROW  { uncurry T.Arrow $2 $1 $3 }
   | '(' Type ',' TupleType ')'    { T.Pair (pos $1) $2 $4 }
   -- Session types
   | Skip                          { T.Skip (pos $1) }
@@ -308,9 +308,9 @@ Polarity :: { (Pos, T.Polarity) }
   : '!' { (pos $1, T.Out) }
   | '?' { (pos $1, T.In) }
 
-ChoiceView :: { (Pos, T.Polarity) }
-  : '+' { (pos $1, T.Out) }
-  | '&' { (pos $1, T.In) }
+ChoiceView :: { (Pos, T.View) }
+  : '+' { (pos $1, T.Internal) }
+  | '&' { (pos $1, T.External) }
 
 FieldList :: { T.TypeMap }
   : Field               { uncurry Map.singleton $1 }

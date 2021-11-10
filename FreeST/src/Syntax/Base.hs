@@ -38,7 +38,7 @@ defaultPos = Pos 0 0
 negPos :: Pos -> Pos
 negPos (Pos i j) = Pos (negate i) (negate j)
 
--- Multiplicity for kinds, types and expressions
+-- Multiplicity for types and expressions
 
 data Multiplicity = Un | Lin deriving Eq
 
