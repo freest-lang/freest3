@@ -93,11 +93,11 @@ import           Syntax.ProgramVariable
 import qualified Syntax.Type as T
 import           Syntax.TypeVariable
 import           Util.Warning
-import           Util.WarningMessage
-import           Util.PrettyWarning
+import           Util.WarningMessage ()
+import           Util.PrettyWarning ()
 import           Util.Error
 import           Util.ErrorMessage
-import           Util.PrettyError
+import           Util.PrettyError ()
 
 -- | The typing state
 
@@ -263,10 +263,11 @@ addWarning w = modify (\s -> s { warnings = w : warnings s })
 
 getErrors :: FreestS -> String
 getErrors s =
-   (intercalate "\n" . map f . take 10 . sortBy errCmp . reverse . errors) s
+   (intercalate "\n" . map f . take 10 . reverse . errors) s
+--   (intercalate "\n" . map f . take 10 . sortBy errCmp . reverse . errors) s
   where
     f = formatError (runFilePath $ runOpts s) (typenames s)
-    errCmp x y = compare (pos x) (pos y)
+--    errCmp x y = compare (pos x) (pos y)
 
 hasErrors :: FreestS -> Bool
 hasErrors = not . null . errors
