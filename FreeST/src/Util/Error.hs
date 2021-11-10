@@ -55,7 +55,7 @@ data ErrorType =
   | DuplicatePVar Pos ProgVar Pos -- one pos? (same for the others)
   | DuplicateTVar Pos TypeVar Pos
   | DuplicateFieldInDatatype Pos ProgVar
-  | MultipleDatatypeDecl Pos ProgVar Pos
+  | MultipleDeclarations Pos ProgVar Pos
   | MultipleTypeDecl Pos TypeVar Pos
   | MultipleFunBindings Pos ProgVar Pos
   -- Elab
@@ -100,7 +100,7 @@ instance Position ErrorType where
   pos (DuplicatePVar p _ _         ) = p
   pos (DuplicateTVar p _ _         ) = p
   pos (DuplicateFieldInDatatype p _) = p
-  pos (MultipleDatatypeDecl p _ _  ) = p
+  pos (MultipleDeclarations p _ _  ) = p
   pos (MultipleTypeDecl     p _ _  ) = p
   pos (MultipleFunBindings  p _ _  ) = p
   pos (TypeVarOutOfScope     p _   ) = p
@@ -157,7 +157,7 @@ errorMsg _ (DuplicateTVar p tv p') =
   , Error "\n\t           ", Error (show p') ]
 errorMsg _ (DuplicateFieldInDatatype _ pv) =
   [ Error "Multiple declarations of", Error pv, Error "\n\t in a datatype declaration"]
-errorMsg prelude (MultipleDatatypeDecl p pv p')
+errorMsg prelude (MultipleDeclarations p pv p')
   | pv `elem` prelude =
       [Error "Ambiguous occurrence", Error pv, 
        Error "\n\t It could refer to the prelude function", Error pv,

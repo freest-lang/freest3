@@ -110,14 +110,14 @@ checkDupCons :: (ProgVar, [T.Type]) -> [(ProgVar, [T.Type])] -> FreestState ()
 checkDupCons (x, _) xts
   | any (\(y, _) -> y == x) xts = addError $ DuplicateFieldInDatatype (pos x) x
   | otherwise = getFromVEnv x >>= \case
-      Just s  -> addError $ MultipleDatatypeDecl (pos x) x (pos s)
+      Just s  -> addError $ MultipleDeclarations (pos x) x (pos s)
       Nothing -> return ()
 
 checkDupProgVarDecl :: ProgVar -> FreestState ()
 checkDupProgVarDecl x = do
   vEnv <- getVEnv
   case vEnv Map.!? x of
-    Just a  -> addError $ MultipleDatatypeDecl (pos x) x (pos a)
+    Just a  -> addError $ MultipleDeclarations (pos x) x (pos a)
     Nothing -> return ()
 
 
