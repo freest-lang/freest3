@@ -82,8 +82,6 @@ typeList =
   -- Session ops
   , (mkVar p "send", read "∀a:ML . a -> ∀b:SL . !a;b -o b")
   , (mkVar p "receive", read "∀a:ML . ∀b:SL . ?a;b -> (a, b)")
-  -- fixpoint
-  , (mkVar p "fix", read "∀a:TU . ((a -> a) -> (a -> a)) -> (a -> a)")
   ]
   where p = defaultPos
 
