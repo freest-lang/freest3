@@ -7,7 +7,13 @@ path=freest-$version/
 
 mkdir $path
 # mkdir $path/FreeST/
-cp -r ../FreeST/src ../FreeST/StandardLib/ ../packages/ $path
+cp -r ../FreeST/src ../FreeST/StandardLib/ $path
+
+# Suppose that you have the project freest-mode cloned
+# (at the same level of this one)
+mkdir $path/packages
+cp -r ../../freest-mode/emacs/ ../../freest-mode/atom/ $path/packages
+
 cp ../LICENSE  ../CHANGELOG  $path
 rm $path/src/Parse/Parser.hs $path/src/Parse/Lexer.hs
 rm -rf $path/src/.stack-work/
