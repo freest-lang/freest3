@@ -47,7 +47,7 @@ kindEnv = Map.fromList (zip (map (mkVar defaultPos) ids) (repeat (K.sl defaultPo
 
 kinded :: T.Type -> Bool
 kinded t =
-  null $ errors $ snd $ runState (synthetise kindEnv t) (initialState "Kind synthesis")
+  null $ errors $ execState (synthetise kindEnv t) (initialState) --  "Kind synthesis")
 
 
 -- Bisimilar types are bisimilar
@@ -109,9 +109,9 @@ constr T.Int{}  = "Int"
 constr T.Char{} = "Char"
 constr T.Unit{} = "Unit"
 constr T.Bool{} = "Bool"
-constr T.Fun{} = "Fun"
+constr T.Arrow{} = "Fun"
 constr T.Pair{} = "Pair"
-constr T.Datatype{} = "Datatype"
+constr T.Variant{} = "Datatype"
 constr T.Skip{} = "Skip"
 constr T.Semi{} = "Semi"
 constr T.Message{} = "Message"

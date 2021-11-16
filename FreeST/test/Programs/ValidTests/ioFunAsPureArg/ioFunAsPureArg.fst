@@ -10,5 +10,5 @@ main =
 f : ?Int -> Int
 f c = let (x, c) = receive c in x
 
-sender : !Int -> Int -> Skip
+sender : !Int -o Int -> Skip
 sender c i = send (i * 2) c

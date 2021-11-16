@@ -8,15 +8,15 @@ where
 import           Data.Functor
 import           Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
-import           Elaboration.Duality           as Dual
+import           Elaboration.ResolveDuality    as Dual
 import           Syntax.Base
-import           Syntax.Expression
+import qualified Syntax.Expression             as E
 import qualified Syntax.Kind                   as K
 import           Syntax.Program                 ( VarEnv )
 import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
-import           Util.Error                     ( internalError )
+import           Util.Error
 import           Util.FreestState
 import           Util.PreludeLoader             ( userDefined )
 import           Validation.Rename              ( isFreeIn )
@@ -62,10 +62,10 @@ solveEquations = buildRecursiveTypes >> solveAll >> cleanUnusedRecs
       >>= setTEnv
 
   solveEq :: Visited -> TypeVar -> T.Type -> FreestState T.Type
-  solveEq v f (T.Fun p m t1 t2) =
-    T.Fun p m <$> solveEq v f t1 <*> solveEq v f t2
+  solveEq v f (T.Arrow p m t1 t2) =
+    T.Arrow p m <$> solveEq v f t1 <*> solveEq v f t2
   solveEq v f (T.Pair p t1 t2) = T.Pair p <$> solveEq v f t1 <*> solveEq v f t2
-  solveEq v f (T.Datatype p tm) = T.Datatype p <$> mapM (solveEq v f) tm
+  solveEq v f (T.Variant p tm) = T.Variant p <$> mapM (solveEq v f) tm
   solveEq v f (T.Semi p t1 t2) = T.Semi p <$> solveEq v f t1 <*> solveEq v f t2
   solveEq v f (T.Message p pol t) = T.Message p pol <$> solveEq v f t
   solveEq v f (T.Choice p pol tm) = T.Choice p pol <$> mapM (solveEq v f) tm
@@ -74,8 +74,7 @@ solveEquations = buildRecursiveTypes >> solveAll >> cleanUnusedRecs
     | f == x = pure t
     | otherwise = getFromTEnv x >>= \case
       Just tx -> solveEq (f `Set.insert` v) x (snd tx)
-      Nothing ->
-        addError p [Error "Type variable not in scope:", Error x] $> omission p
+      Nothing -> addError (TypeVarOutOfScope p x) $> omission p
   solveEq v f (T.Forall p (K.Bind p1 x k t)) =
     T.Forall p . K.Bind p1 x k <$> solveEq (x `Set.insert` v) f t
   solveEq v f (T.Rec p (K.Bind p1 x k t)) =
@@ -122,9 +121,10 @@ class Elaboration t where
   elaborate :: t -> FreestState t
 
 instance Elaboration T.Type where
-  elaborate (  T.Fun p m t1 t2  ) = T.Fun p m <$> elaborate t1 <*> elaborate t2
+  elaborate (  T.Message p pol t) = T.Message p pol <$> elaborate t
+  elaborate (  T.Arrow p m t1 t2  ) = T.Arrow p m <$> elaborate t1 <*> elaborate t2
   elaborate (  T.Pair p t1 t2   ) = T.Pair p <$> elaborate t1 <*> elaborate t2
-  elaborate (  T.Datatype p m   ) = T.Datatype p <$> elaborate m
+  elaborate (  T.Variant p m   ) = T.Variant p <$> elaborate m
   elaborate (  T.Semi   p t1  t2) = T.Semi p <$> elaborate t1 <*> elaborate t2
   elaborate (  T.Choice p pol m ) = T.Choice p pol <$> elaborate m
   elaborate (  T.Forall p kb    ) = T.Forall p <$> elaborate kb
@@ -145,29 +145,27 @@ instance Elaboration a => Elaboration (K.Bind a) where
 -- instance Elaboration (K.Bind Exp) where
 --   elaborate (K.Bind p x k e) = K.Bind p x k <$> elaborate e
 
-instance Elaboration Bind where
-  elaborate (Bind p m x t e) = Bind p m x <$> elaborate t <*> elaborate e
+instance Elaboration E.Bind where
+  elaborate (E.Bind p m x t e) = E.Bind p m x <$> elaborate t <*> elaborate e
 
 -- Substitute expressions
 
-instance Elaboration Exp where
-  elaborate (Abs p b     ) = Abs p <$> elaborate b
-  elaborate (App  p e1 e2) = App p <$> elaborate e1 <*> elaborate e2
-  elaborate (Pair p e1 e2) = Pair p <$> elaborate e1 <*> elaborate e2
-  elaborate (BinLet p x y e1 e2) =
-    BinLet p x y <$> elaborate e1 <*> elaborate e2
-  elaborate (Case p e m) = Case p <$> elaborate e <*> elaborate m
-  elaborate (Cond p e1 e2 e3) =
-    Cond p <$> elaborate e1 <*> elaborate e2 <*> elaborate e3
-  elaborate (TypeApp p e t  ) = TypeApp p <$> elaborate e <*> elaborate t
-  elaborate (TypeAbs p b    ) = TypeAbs p <$> elaborate b
-  elaborate (UnLet p x e1 e2) = UnLet p x <$> elaborate e1 <*> elaborate e2
-  elaborate (New p t u      ) = New p <$> elaborate t <*> elaborate u
-  elaborate e@Select{}        = pure e
-  elaborate (Match p e m)     = Match p <$> elaborate e <*> elaborate m
+instance Elaboration E.Exp where
+  elaborate (E.Abs p b     ) = E.Abs p <$> elaborate b
+  elaborate (E.App  p e1 e2) = E.App p <$> elaborate e1 <*> elaborate e2
+  elaborate (E.Pair p e1 e2) = E.Pair p <$> elaborate e1 <*> elaborate e2
+  elaborate (E.BinLet p x y e1 e2) =
+    E.BinLet p x y <$> elaborate e1 <*> elaborate e2
+  elaborate (E.Case p e m) = E.Case p <$> elaborate e <*> elaborate m
+  elaborate (E.Cond p e1 e2 e3) =
+    E.Cond p <$> elaborate e1 <*> elaborate e2 <*> elaborate e3
+  elaborate (E.TypeApp p e t  ) = E.TypeApp p <$> elaborate e <*> elaborate t
+  elaborate (E.TypeAbs p b    ) = E.TypeAbs p <$> elaborate b
+  elaborate (E.UnLet p x e1 e2) = E.UnLet p x <$> elaborate e1 <*> elaborate e2
+  elaborate (E.New p t u      ) = E.New p <$> elaborate t <*> elaborate u
   elaborate e                 = return e
 
-instance Elaboration FieldMap where
+instance Elaboration E.FieldMap where
   elaborate = mapM (\(ps, e) -> (ps, ) <$> elaborate e)
 
 
@@ -177,29 +175,21 @@ buildProg :: FreestState ()
 buildProg = getPEnv
   >>= tMapWithKeyM_ (\pv (ps, e) -> addToProg pv =<< buildFunBody pv ps e)
  where
-  buildFunBody :: ProgVar -> [ProgVar] -> Exp -> FreestState Exp
+  buildFunBody :: ProgVar -> [ProgVar] -> E.Exp -> FreestState E.Exp
   buildFunBody f as e = getFromVEnv f >>= \case
     Just s  -> return $ buildExp e as s
-    Nothing -> do
-      addError
-        (pos f)
-        [ Error "The binding for function"
-        , Error f
-        , Error "lacks an accompanying type signature"
-        ]
-      return e
-
-  buildExp :: Exp -> [ProgVar] -> T.Type -> Exp
+    Nothing -> let p = pos f in addError (FuctionLacksSignature p f) $> e
+      
+  buildExp :: E.Exp -> [ProgVar] -> T.Type -> E.Exp
   buildExp e [] _ = e
-  buildExp e (b : bs) (T.Fun _ m t1 t2) =
-    Abs (pos b) (Bind (pos b) m b t1 (buildExp e bs t2))
+  buildExp e (b : bs) (T.Arrow _ m t1 t2) =
+    E.Abs (pos b) (E.Bind (pos b) m b t1 (buildExp e bs t2))
   buildExp _ _ t@(T.Dualof _ _) =
     internalError "Elaboration.Elaboration.buildFunbody.buildExp" t
   buildExp e bs (T.Forall p (K.Bind p1 x k t)) =
-    TypeAbs p (K.Bind p1 x k (buildExp e bs t))
+    E.TypeAbs p (K.Bind p1 x k (buildExp e bs t))
   buildExp e (b : bs) t =
-    Abs (pos b) (Bind (pos b) Un b (omission (pos b)) (buildExp e bs t))
-
+    E.Abs (pos b) (E.Bind (pos b) Un b (omission (pos b)) (buildExp e bs t))
 
 -- | Changing positions
 
@@ -209,7 +199,7 @@ changePos p (T.Int  _         ) = T.Int p
 changePos p (T.Char _         ) = T.Char p
 changePos p (T.Bool _         ) = T.Bool p
 changePos p (T.Unit _         ) = T.Unit p
-changePos p (T.Fun _ pol t u  ) = T.Fun p pol (changePos p t) (changePos p u)
+changePos p (T.Arrow _ pol t u) = T.Arrow p pol (changePos p t) (changePos p u)
 changePos p (T.Pair    _ t   u) = T.Pair p t u
 -- Datatype
 -- Skip

@@ -38,7 +38,7 @@ client c =
 data IntList = Nil | Cons Int IntList
 
 evaluate : (rec x: SL. &{Add: x, Mult: x, Const: ?Int;x, EOS: !Int}) ->
-           IntList ->
+           IntList -o
            Skip
 evaluate s l =
   match s with {

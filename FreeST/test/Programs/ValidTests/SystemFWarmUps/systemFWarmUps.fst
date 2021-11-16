@@ -24,7 +24,18 @@ thirteen : Int
 thirteen = doubleIntArrowInt doubleInt (λ x:Int -> x + 2) 5
 
 quadruple : ∀ a . (a -> a) -> a -> a
-quadruple = Λ a => double [a -> a] (double [a])
+quadruple = Λ a => λ f:(a->a) -> double [a -> a] (double [a]) f
+
+{-
+Note: One cannot apply eta-reduction in the code above to get rid
+of f and obtain:
+
+  quadruple = Λ a => double [a -> a] (double [a])[a])
+
+for the body of the type application (that is, n [a->a] (m [a]))
+must be a value. Once we apply eta-expansion we obtain Λ a => λ f...
+which is OK for λ f... is a value.
+-}
 
 main : Int
 main = quadruple [Int] (λ x:Int -> x + 2) 3

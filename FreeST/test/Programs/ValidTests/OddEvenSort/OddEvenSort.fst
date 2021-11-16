@@ -4,45 +4,45 @@ type Sorter : SL = +{Done: Skip, More: !Int ; ?Int; Sorter}
 -- channel to the right and the channel where to announce the result
 -- once done. First is an odd process, hence it controls when sorting
 -- is completed.
-first : Int -> Int -> Sorter -> !Int -> Skip
-first n x right collect =
+first : Int -> Int -> Sorter -> !Int -o Skip
+first n x right collect' =
   if n == 0
-  then let _ = select Done right in send x collect
+  then let _ = select Done right in send x collect'
   else let (min, right) = exchangeRight x right in
-       first (n - 1) min right collect
+       first (n - 1) min right collect'
 
 -- evenProcess accepts the number of phases, the value in the node,
 -- the channel to the left, the channel to the right and the channel
 -- where to announce the result once complete. evenProcess receives
 -- from the left the announcement that sorting is completed (Done).
-evenProcess : Int -> Int -> dualof Sorter -> Sorter -> !Int -> Skip
-evenProcess n x left right collect =
+evenProcess : Int -> Int -> dualof Sorter -> Sorter -o !Int -o Skip
+evenProcess n x left right collect' =
   match left with {
-    Done left -> let _ = select Done right in send x collect,
+    Done left -> let _ = select Done right in send x collect',
     More left -> let (max, left) = exchangeLeft x left in
-                 oddProcess (n - 1) max left right collect
+                 oddProcess (n - 1) max left right collect'
   }
 
 -- oddProcess accepts the number of phases, the value in the node, the
 -- channel to the left, the channel to the right and the channel where
 -- to announce the result once done. oddProcess is an odd process,
 -- hence it controls when sorting is complete.
-oddProcess : Int -> Int -> dualof Sorter -> Sorter -> !Int -> Skip
-oddProcess n x left right collect =
+oddProcess : Int -> Int -> dualof Sorter -> Sorter -o !Int -o Skip
+oddProcess n x left right collect' =
   if n == 0
-  then let _ = select Done right in consume left ; send x collect
+  then let _ = select Done right in consume left ; send x collect'
   else let (min, right) = exchangeRight x right in
-       evenProcess (n - 1) min left right collect
+       evenProcess (n - 1) min left right collect'
 
 -- last accepts the value in the node, the channel to the left and the
 -- channel where to announce the result once done. last receives from
 -- the left the announcement that sorting is completed (Done).
-last : Int -> dualof Sorter -> !Int -> Skip
-last x left collect =
+last : Int -> dualof Sorter -> !Int -o Skip
+last x left collect' =
   match left with {
-    Done left -> send x collect,
+    Done left -> send x collect',
     More left -> let (max, left) = exchangeLeft x left in
-                 last max left collect
+                 last max left collect'
   }
 
 -- Exchange a value with a right node; return the min and the channel.
@@ -79,7 +79,7 @@ main =
   let (l4, r4) = new Sorter in
   let (l5, r5) = new Sorter in
   let (l6, r6) = new Sorter in
-  -- collect channels
+  -- collect' channels
   let (cw1, cr1) = new !Int in
   let (cw2, cr2) = new !Int in
   let (cw3, cr3) = new !Int in
@@ -95,7 +95,7 @@ main =
   fork[Skip] (oddProcess  (p / 2 - 1) 55 r4 l5 cw5);
   fork[Skip] (evenProcess (p / 2)     44 r5 l6 cw6);
   fork[Skip] (last                    77 r6    cw7);
-  -- collect and print results
+  -- collect' and print results
   let (x1, _) = receive cr1 in printIntLn x1;
   let (x2, _) = receive cr2 in printIntLn x2;
   let (x3, _) = receive cr3 in printIntLn x3;

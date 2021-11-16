@@ -19,11 +19,12 @@ module Validation.Substitution
   )
 where
 
-import           Syntax.TypeVariable
+import qualified Data.Map.Strict               as Map
+import           Elaboration.Duality
 import qualified Syntax.Kind                   as K
 import qualified Syntax.Type                   as T
-import           Util.Error                    ( internalError )
-import qualified Data.Map.Strict               as Map
+import           Syntax.TypeVariable
+import           Util.Error                     ( internalError )
 
 -- [t/x]u, substitute t for for every occurrence of x in u
 -- Assume types were renamed (hence, x/=y and no -the-fly renaming needed)
@@ -34,20 +35,29 @@ class Subs t where
 instance Subs T.Type where
   -- Functional types
   subs t x (T.Message p pol t1) = T.Message p pol (subs t x t1)
-  subs t x (T.Fun p m t1 t2) = T.Fun p m (subs t x t1) (subs t x t2)
-  subs t x (T.Pair p t1 t2) = T.Pair p (subs t x t1) (subs t x t2)
-  subs t x (T.Datatype p m) = T.Datatype p (Map.map (subs t x) m)
+  subs t x (T.Arrow p m t1 t2 ) = T.Arrow p m (subs t x t1) (subs t x t2)
+  subs t x (T.Pair p t1 t2    ) = T.Pair p (subs t x t1) (subs t x t2)
+  subs t x (T.Variant p m     ) = T.Variant p (Map.map (subs t x) m)
   -- Session types
-  subs t x (T.Semi p t1 t2) = T.Semi p (subs t x t1) (subs t x t2)
-  subs t x (T.Choice p v m) = T.Choice p v (Map.map (subs t x) m)
+  subs t x (T.Semi   p t1 t2  ) = T.Semi p (subs t x t1) (subs t x t2)
+  subs t x (T.Choice p v  m   ) = T.Choice p v (Map.map (subs t x) m)
     -- Polymorphism and recursion
-  subs t x (T.Rec p b) = T.Rec p (subs t x b) 
-  subs t x (T.Forall p b) = T.Forall p (subs t x b)
-  subs t x u@(T.Var _ y)  
-    | y == x = t
+  subs t x (T.Rec    p b      ) = T.Rec p (subs t x b)
+  subs t x (T.Forall p b      ) = T.Forall p (subs t x b)
+  subs t x u@(T.Var _ y)
+    | y == x    = t
     | otherwise = u
-  subs _ _ t@T.Dualof{} = internalError "Validation.Substitution.subs" t
-  subs _ _ t = t
+  subs (T.Var _ t) x u@(T.CoVar p y)
+    | y == x    = T.CoVar p t
+    | otherwise = u
+  subs t x u@(T.CoVar _ y)
+    | y == x    = dualof t
+    | otherwise = u
+  subs _ _ t            = t
+  -- Can't issue this error because we use
+  -- this function during the elaboration of dualofs
+  --  subs _ _ t@T.Dualof{} = internalError "Validation.Substitution.subs" t
+
 
 instance Subs t => Subs (K.Bind t) where
   subs t x (K.Bind p y k u) = K.Bind p y k (subs t x u)
@@ -61,15 +71,16 @@ unfold :: T.Type -> T.Type
 unfold t@(T.Rec _ (K.Bind _ x _ u)) = subs t x u
 unfold t = internalError "Validation.Substitution.unfold" t
 
+
 {-
 
 -- Not needed. Cf. Validation.Renam.isFreeIn.
 -- The set of free type variables in a type
 free :: T.Type -> Set.Set TypeVar
   -- Functional types
-free (T.Fun _ _ t u) = free t `Set.union` free u
+free (T.Arrow _ _ t u) = free t `Set.union` free u
 free (T.Pair _ t u) = free t `Set.union` free u
-free (T.Datatype _ m) = freeMap m
+free (T.Variant _ m) = freeMap m
   -- Session types
 free (T.Semi _ t u) = free t `Set.union` free u
 free (T.Choice _ _ m) = freeMap m

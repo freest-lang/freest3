@@ -11,8 +11,9 @@ Converting AST terms to strings.
 -}
 
 module Parse.Unparser
-  ( showChoiceView
-  , showFieldMap
+  ( showFieldMap
+  , showBindType
+  , showBindExp
   )
 where
 
@@ -26,7 +27,6 @@ import           Syntax.Base
 import           Syntax.Expression             as E
 import qualified Syntax.Kind                   as K
 import           Syntax.Program
-import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
 import           Syntax.ProgramVariable
@@ -36,15 +36,28 @@ import           Syntax.ProgramVariable
 instance Show Pos where
   show (Pos l c) = show l ++ ":" ++ show c
 
--- Multiplicities (Base)
+-- Multiplicities
 
+-- Kind
+instance Show K.Multiplicity where
+  show K.Un  = "U"
+  show K.Lin = "L"
+
+-- Type & Expression (Syntax.Base)
 instance Show Multiplicity where
-  show Un  = "U"
-  show Lin = "L"
+  show Un  = "->"
+  show Lin = "-o"
 
-showArrow :: Multiplicity -> String
-showArrow Lin = "-o"
-showArrow Un  = "->"
+-- Choice view
+
+instance Show T.View where
+  show T.External = "&"
+  show T.Internal = "+"
+
+-- Message Polarity
+instance Show T.Polarity where
+  show T.In  = "?"
+  show T.Out = "!"
 
 -- Program and Type Variables.
 
@@ -80,25 +93,21 @@ instance Show K.Kind where
 
 showKind :: (Show a, Show b, Show c) => a -> b -> String -> c -> String
 showKind var sort arrow term =
-  showSortedVar var sort ++ " " ++ arrow ++ " " ++ show term
+  showSortedVar var sort ++ spaced arrow ++ show term
 
-instance Show t => Show (K.Bind t) where
-  show (K.Bind _ a k t) = showKind a k "." t
+-- instance Show t => Show (K.Bind t) where
+--   show (K.Bind _ a k t) = showKind a k "=>" t
+
+showBindType :: K.Bind T.Type -> String
+showBindType (K.Bind _ a k t) = showKind a k "." t -- ∀ a:k . t
+
+showBindExp :: K.Bind E.Exp -> String
+showBindExp (K.Bind _ a k e) = showKind a k "=>" e -- Λ a:k => e
 
 -- Type bind
 
 instance Show E.Bind where
-  show (E.Bind _ m x t e) = showKind x t (showArrow m) e
-
--- Polarity
-
-instance Show T.Polarity where
-  show T.In  = "?"
-  show T.Out = "!"
-
-showChoiceView :: T.Polarity -> String
-showChoiceView T.In  = "&"
-showChoiceView T.Out = "+"
+  show (E.Bind _ m x t e) = showKind x t (show m) e
 
 -- Unparsing types and expressions
 
@@ -171,9 +180,10 @@ instance Unparse T.Type where
   unparse (T.Unit _       ) = (maxRator, "()")
   unparse (T.Skip _       ) = (maxRator, "Skip")
   unparse (T.Var  _ a     ) = (maxRator, show a)
+  unparse (T.CoVar _ a    ) = (maxRator, "dual " ++ show a)
   unparse (T.Message _ p t) = (msgRator, show p ++ m)
     where m = bracket (unparse t) Right msgRator
-  unparse (T.Fun _ m t u) = (arrowRator, l ++ showArrow m ++ r)
+  unparse (T.Arrow _ m t u) = (arrowRator, l ++ spaced (show m) ++ r)
    where
     l = bracket (unparse t) Left arrowRator
     r = bracket (unparse u) Right arrowRator
@@ -181,16 +191,16 @@ instance Unparse T.Type where
    where
     l = bracket (unparse t) Left minRator
     r = bracket (unparse u) Right minRator
-  unparse (T.Datatype _ m) = (maxRator, "[" ++ showDatatype m ++ "]")
+  unparse (T.Variant _ m) = (maxRator, "[" ++ showDatatype m ++ "]")
   unparse (T.Semi _ t u  ) = (semiRator, l ++ " ; " ++ r)
    where
     l = bracket (unparse t) Left semiRator
     r = bracket (unparse u) Right semiRator
   unparse (T.Choice _ v m) =
-    (maxRator, showChoiceView v ++ "{" ++ showChoice m ++ "}")
-  unparse (T.Forall _ b) = (dotRator, "∀" ++ show b) -- ++ "=>" ++ s)
+    (maxRator, show v ++ "{" ++ showChoice m ++ "}")
+  unparse (T.Forall _ b) = (dotRator, "∀" ++ showBindType b) -- ++ "=>" ++ s)
     -- where s = bracket (unparse t) Right dotRator
-  unparse (T.Rec _ b) = (dotRator, "rec " ++ show b) -- xk ++ "." ++ s)
+  unparse (T.Rec _ b) = (dotRator, "rec " ++ showBindType b) -- xk ++ "." ++ s)
     -- where s = bracket (unparse t) Right dotRator
   unparse (T.Dualof _ t) = (dualofRator, "dualof " ++ s)
     where s = bracket (unparse t) Right dualofRator
@@ -200,7 +210,7 @@ showDatatype m = intercalate " | "
   $ Map.foldrWithKey (\c t acc -> (show c ++ showAsSequence t) : acc) [] m
  where
   showAsSequence :: T.Type -> String
-  showAsSequence (T.Fun _ _ t u) = " " ++ show t ++ showAsSequence u
+  showAsSequence (T.Arrow _ _ t u) = " " ++ show t ++ showAsSequence u
   showAsSequence _               = ""
 
 showChoice :: T.TypeMap -> String
@@ -218,7 +228,7 @@ instance Unparse Exp where
   unparse (E.Int _ i) = (maxRator, show i)
   unparse (E.Char _ c) = (maxRator, show c)
   unparse (E.Bool _ b) = (maxRator, show b)
-  unparse (E.String _ s) = (maxRator, s)
+  unparse (E.String _ s) = (maxRator, show s)
   -- Variable
   unparse (E.Var  _ x) = (maxRator, show x)
   -- Abstraction intro and elim
@@ -234,17 +244,17 @@ instance Unparse Exp where
     l = bracket (unparse e1) Left conjRator
     r = bracket (unparse e2) Right conjRator
   unparse (E.App _ (E.App _ (E.Var p x) e1) e2) | isCmp x =
-   (cmpRator, l ++ (showOp x) ++ r)
+   (cmpRator, l ++ showOp x ++ r)
    where
     l = bracket (unparse e1) Left cmpRator
     r = bracket (unparse e2) Right cmpRator
   unparse (E.App _ (E.App _ (E.Var p x) e1) e2) | isAdd x =
-   (addRator, l ++ (showOp x) ++ r)
+   (addRator, l ++ showOp x ++ r)
    where
     l = bracket (unparse e1) Left addRator
     r = bracket (unparse e2) Right addRator
   unparse (E.App _ (E.App _ (E.Var p x) e1) e2) | isMult x =
-   (multRator, l ++ (showOp x) ++ r)
+   (multRator, l ++ showOp x ++ r)
    where
     l = bracket (unparse e1) Left multRator
     r = bracket (unparse e2) Right multRator
@@ -269,8 +279,7 @@ instance Unparse Exp where
     where s = bracket (unparse e) NonAssoc inRator
   -- Type Abstraction intro and elim
   unparse (E.TypeApp _ x t) = (appRator, show x ++ " [" ++ show t ++ "]")
-  unparse (E.TypeAbs _ b) = (arrowRator, "λ" ++ show b) -- ++ "->" ++ s)
-    -- where s = bracket (unparse e) Right arrowRator
+  unparse (E.TypeAbs _ b) = (arrowRator, "Λ" ++ showBindExp b)
   -- Boolean elim
   unparse (E.Cond _ e1 e2 e3) =
     (inRator, "if " ++ s1 ++ " then " ++ s2 ++ " else " ++ s3)
@@ -279,17 +288,13 @@ instance Unparse Exp where
     s2 = bracket (unparse e2) NonAssoc inRator
     s3 = bracket (unparse e3) Right inRator
   -- Unary Let
-  unparse (E.New _ t _) = (newRator, "let " ++ show t)
+  unparse (E.New _ t _) = (newRator, "new " ++ show t)
   -- Session expressions
   unparse (E.UnLet _ x e1 e2) =
     (inRator, "let " ++ show x ++ " = " ++ l ++ " in " ++ r)
    where
     l = bracket (unparse e1) Left inRator
     r = bracket (unparse e2) Right inRator
-  unparse (E.Select _ l) = (appRator, "select " ++ show l) -- which rator?
-  unparse (E.Match _ e m) =
-    (inRator, "match " ++ s ++ " with {" ++ showFieldMap m ++ "}")
-    where s = bracket (unparse e) NonAssoc inRator
 
 showFieldMap :: FieldMap -> String
 showFieldMap m = intercalate "; " $ map showAssoc (Map.toList m)
@@ -310,7 +315,10 @@ isMult :: ProgVar -> Bool
 isMult = isOp ["(*)", "(/)"]
 
 showOp :: ProgVar -> String
-showOp x = " " ++ (tail $ init $ show x) ++ " "
+showOp x = spaced $ tail (init $ show x)
+
+spaced :: String -> String
+spaced s = ' ' : s ++ " "
 
 -- VarEnv
 

@@ -11,7 +11,7 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-{-# LANGUAGE LambdaCase, NoMonadFailDesugaring #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Validation.Rename
   ( renameState
@@ -32,7 +32,7 @@ import qualified Syntax.Kind                   as K
 import qualified Syntax.Type                   as T
 import qualified Syntax.Expression             as E
 --import           Syntax.Program
-import           Validation.Terminated          ( terminated )
+-- import           Validation.Terminated          ( terminated )
 import qualified Validation.Substitution       as Subs
                                                 ( subs
                                                 , unfold
@@ -87,15 +87,17 @@ instance Rename E.Bind where
 -- Types
 
 instance Rename T.Type where
-  rename bs t | terminated t = return $ T.Skip (pos t)
-              | otherwise    = rename' bs t
+  rename = rename'
+  -- rename bs t
+  --   | terminated Set.empty t = return $ T.Skip (pos t)
+  --   | otherwise              = rename' bs t
 
 rename' :: Bindings -> T.Type -> FreestState T.Type
     -- Functional types
-rename' bs (T.Fun p m t u    ) = T.Fun p m <$> rename bs t <*> rename bs u
+rename' bs (T.Arrow p m t u    ) = T.Arrow p m <$> rename bs t <*> rename bs u
 rename' bs (T.Message p pol t) = T.Message p pol <$> rename bs t
 rename' bs (T.Pair p t u     ) = T.Pair p <$> rename bs t <*> rename bs u
-rename' bs (T.Datatype p fm  ) = T.Datatype p <$> tMapM (rename bs) fm
+rename' bs (T.Variant p fm  ) = T.Variant p <$> tMapM (rename bs) fm
   -- Session types
 rename' bs (T.Semi   p t   u ) = T.Semi p <$> rename bs t <*> rename bs u
 rename' bs (T.Choice p pol tm) = T.Choice p pol <$> tMapM (rename bs) tm
@@ -106,6 +108,7 @@ rename' bs (T.Rec    p b)
  | isProperRec b = T.Rec p <$> rename bs b
  | otherwise     = rename bs (K.body b)
 rename' bs (T.Var    p a     ) = return $ T.Var p (findWithDefaultVar a bs)
+rename' bs (T.CoVar    p a   ) = return $ T.CoVar p (findWithDefaultVar a bs)
   -- Type operators
 rename' _  t@T.Dualof{}        = internalError "Validation.Rename.rename" t
   -- Otherwise: Basic, Skip, Message, TypeName
@@ -146,8 +149,6 @@ instance Rename E.Exp where
     return $ E.UnLet p x' e1' e2'
   -- Session types
   rename bs (E.New p t u) = E.New p <$> rename bs t <*> rename bs u
-  rename bs (E.Match p e fm) =
-    E.Match p <$> rename bs e <*> tMapM (renameField bs) fm
   -- Otherwise: Unit, Integer, Character, Boolean, Select
   rename _ e = return e
 
@@ -191,7 +192,7 @@ renameType = head . renameTypes . (: [])
 -- Rename a list of types
 renameTypes :: [T.Type] -> [T.Type]
 renameTypes ts =
-  evalState (mapM (rename Map.empty) ts) (initialState "Renaming")
+  evalState (mapM (rename Map.empty) ts) initialState
 
 -- Substitution and unfold, the renamed versions
 
@@ -213,9 +214,9 @@ isProperRec (K.Bind _ x _ t) = x `isFreeIn` t
 -- If not, then rec x.t can be renamed to t alone.
 isFreeIn :: TypeVar -> T.Type -> Bool
     -- Functional types
-isFreeIn x (T.Fun _ _ t u) = x `isFreeIn` t || x `isFreeIn` u
+isFreeIn x (T.Arrow _ _ t u) = x `isFreeIn` t || x `isFreeIn` u
 isFreeIn x (T.Pair _ t u ) = x `isFreeIn` t || x `isFreeIn` u
-isFreeIn x (T.Datatype _ fm) =
+isFreeIn x (T.Variant _ fm) =
   Map.foldr' (\t b -> x `isFreeIn` t || b) False fm
     -- Session types
 isFreeIn x (T.Semi _ t u) = x `isFreeIn` t || x `isFreeIn` u

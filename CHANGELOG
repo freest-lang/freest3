@@ -1,3 +1,20 @@
+# Version 2.2.0
+  - Fork can be used with and without type parameters
+  - Send and receive can be used partially applied
+  - Adding collect function (`case collect c of` is the same of `match c with`)
+  - New mode with proper syntax-highlighting for emacs
+  - Better error messages
+  - Warning were added
+  - Now we allow the dual of non-recursive variables through co-variables
+  - Type abstractions are now values
+  - Added a restriction imposing expressions under type abstractions to be values
+  - Fixed the associativity of type applications
+  - Fixed the Duality for recursion variables
+  - New primitive `fix : forall a . ((a -> a) -> (a -> a)) -> (a -> a)`
+  - New option -m or --main= that allows to choose the main function to be run
+  - New option -q or --quiet that suppresses all warnings
+  - Small bug fixes
+
 # Version 2.1.0
   - Fork is now polymorphic
   - Adding options -v,--version and -h,--help

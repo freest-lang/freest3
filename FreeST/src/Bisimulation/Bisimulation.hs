@@ -25,11 +25,13 @@ import           Bisimulation.Norm
 import qualified Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
 import qualified Data.Sequence                 as Queue
+import           Data.Bifunctor
 import           Data.List                      ( isPrefixOf
                                                 , union
                                                 )
 -- Word is (re)defined in module Equivalence.Grammar
 import           Prelude                 hiding ( Word )
+
 -- import           Debug.Trace
 
 bisimilar :: T.Type -> T.Type -> Bool
@@ -110,7 +112,8 @@ pruneProductions :: Productions -> Productions
 pruneProductions p = Map.map (Map.map (pruneWord p)) p
 
 pruneNode :: Productions -> Node -> Node
-pruneNode ps = Set.map (\(xs, ys) -> (pruneWord ps xs, pruneWord ps ys))
+pruneNode ps = Set.map $ bimap (pruneWord ps) (pruneWord ps)
+  -- Set.map (\(xs, ys) -> (pruneWord ps xs, pruneWord ps ys))
 
 pruneWord :: Productions -> Word -> Word
 pruneWord p = foldr (\x ys -> if normed p x then x : ys else [x]) []

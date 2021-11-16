@@ -1,12 +1,14 @@
 module Parse.Read where
 
-import           Parse.Lexer                    ( Token )
+import           Control.Monad.State
+import qualified Data.Map as Map
+import           Parse.Lexer ( Token )
+import           Parse.ParseUtils
 import           Parse.Parser
+import           Syntax.Expression
 import           Syntax.Kind
 import           Syntax.Type
-import           Syntax.Expression
-import           Parse.ParseUtils
-import           Control.Monad.State
+import           Util.Error
 import           Util.FreestState
 
 instance Read Kind where
@@ -20,7 +22,9 @@ instance Read Exp where
 
 parser :: ([Token] -> FreestStateT a) -> String -> [(a, String)]
 parser parseFun str =
-  case runStateT (lexer str "" parseFun) (initialState "") of
+  case runStateT (lexer str "" parseFun) initialState of
     Ok (t, state) ->
-      if hasErrors state then error $ getErrors state else [(t, "")]
-    Failed err -> error err
+      if hasErrors state
+      then error $ getErrors [] state
+      else [(t, "")]
+    Failed err -> error $ formatError Nothing Map.empty [] err

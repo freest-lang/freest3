@@ -53,34 +53,33 @@ instance Equivalence T.Type where
     equiv :: Visited -> K.KindEnv -> T.Type -> T.Type -> Bool
     -- Have we been here before?
     equiv v _ t1 t2 | (pos t1, pos t2) `Set.member` v  = True
+    -- Session types
+    equiv _ kEnv t1 t2 | isSessionType kEnv t1 && isSessionType kEnv t2 =
+      bisimilar t1 t2
     -- Functional types
     equiv _ _ (T.Int  _) (T.Int  _)                    = True
     equiv _ _ (T.Char _) (T.Char _)                    = True
     equiv _ _ (T.Bool _) (T.Bool _)                    = True
     equiv _ _ (T.Unit _) (T.Unit _)                    = True
     equiv _ _ (T.String _) (T.String _)                = True
-    equiv v kEnv (T.Fun _ n1 t1 t2) (T.Fun _ n2 u1 u2) =
+    equiv v kEnv (T.Arrow _ n1 t1 t2) (T.Arrow _ n2 u1 u2) =
       n1 == n2 && equiv v kEnv t1 u1 && equiv v kEnv t2 u2
     equiv v kEnv (T.Pair _ t1 t2) (T.Pair _ u1 u2) =
       equiv v kEnv t1 u1 && equiv v kEnv t2 u2
-    equiv v kEnv (T.Datatype _ m1) (T.Datatype _ m2) =
+    equiv v kEnv (T.Variant _ m1) (T.Variant _ m2) =
       Map.size m1
         == Map.size m2
         && Map.foldlWithKey (equivField v kEnv m2) True m1
     -- Polymorphism and recursion
     equiv v kEnv (T.Forall _ (K.Bind p a1 k1 t1)) (T.Forall _ (K.Bind _ a2 k2 t2))
-      = k1 <: k2 && k2 <: k1 && equiv v
-                                      (Map.insert a1 k1 kEnv)
-                                      t1
-                                      (Subs.subs (T.Var p a1) a2 t2)
+      = k1 <: k2 && k2 <: k1 &&
+           equiv v (Map.insert a1 k1 kEnv) t1
+            (Subs.subs (T.Var p a1) a2 t2)
     equiv v kEnv t1@T.Rec{} t2 =
       equiv (Set.insert (pos t1, pos t2) v) kEnv (Subs.unfold t1) t2
     equiv v kEnv t1 t2@T.Rec{} =
       equiv (Set.insert (pos t1, pos t2) v) kEnv t1 (Subs.unfold t2)
     equiv _ _ (T.Var _ a1) (T.Var _ a2) = a1 == a2 -- Polymorphic variable
-    -- Session types
-    equiv _ kEnv t1 t2 | isSessionType kEnv t1 && isSessionType kEnv t2 =
-      bisimilar t1 t2
     -- Should not happen
     equiv _ _ t1@T.Dualof{} _ =
       internalError "Equivalence.Equivalence.equivalent" t1
@@ -96,11 +95,11 @@ instance Equivalence T.Type where
 isSessionType :: K.KindEnv -> T.Type -> Bool
 isSessionType kEnv t = null (errors state) && K.isSession kind
  where
-  (kind, state) =
-    runState (synthetise kEnv t) (initialState "Kind synthesis for equivalence")
+  (kind, state) = runState (synthetise kEnv t) initialState
+      -- (initialState "Kind synthesis for equivalence")
 
 {-
--- An alternative is below. Lighter, but I don't kind we have a proof that the
+-- An alternative is below. Lighter, but I don't have a proof that the
 -- predicates are equivalent.
 
 isSessionType :: K.KindEnv -> T.Type -> Bool

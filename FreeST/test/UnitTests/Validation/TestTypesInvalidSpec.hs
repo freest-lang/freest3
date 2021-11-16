@@ -6,7 +6,7 @@ where
 import           Control.Monad.State            ( execState )
 import qualified Data.Map.Strict               as Map
                                                 ( empty )
-import           Elaboration.Duality           as Dual
+import           Elaboration.ResolveDuality    as Dual
 import           Elaboration.Elaboration
 import           SpecUtils
 import           Util.FreestState              ( initialState
@@ -31,8 +31,7 @@ isWellFormed :: String -> Bool
 isWellFormed str = either synthetiseK (const False) (parseType str)
  where
   synthetiseK t = null $ errors $ execState
-    (synthetise Map.empty . renameType =<< Dual.resolve t)
-    (initialState "Kind synthesis")
+    (synthetise Map.empty . renameType =<< Dual.resolve t) initialState
 
 main :: IO ()
 main = hspec spec

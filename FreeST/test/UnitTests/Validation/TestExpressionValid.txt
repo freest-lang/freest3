@@ -1,13 +1,49 @@
-let (x, y) = (2, True) in y
-Bool
 
-let (x, y) = (2, True) in x
+-- Simple tests
+
+div 50 10
+Int
+
+254-231
+Int
+
+74 + 36
+Int
+
+55555*23
+Int
+
+-- succ'
+(λx:Int → x+1) 22
+Int
+
+-- max'
+(λx:Int y:Int → if x >= y then x else y) 17 23
+Int
+
+-- min'
+(λx:Int y:Int → if x < y then x else y) 17 23
+Int
+
+-- pred'
+(λx:Int → x-1) 1905
+Int
+
+-- id
+(Λa:TU => λx:a → x)[Int] 5
 Int
 
 -- Tuple destructor
 
-let (x, y, z) = (6, True, 'a') in y
+-- pairs
+let (x, y) = (2, True) in y
 Bool
+
+let (x, y) = (2, True) in x 
+Int
+
+-- let (x, y, z) = (6, True, 'a') in y
+-- Bool
 
 (\x : Int -> x)
 Int -> Int
@@ -36,3 +72,20 @@ Int
 
 (Λa b => λx:a y:b -> Λc => λz:(a -> b -> c) -> z x y) [Int, Bool]
 Int -> Bool -> ∀c . (Int -> Bool -> c) -> c
+
+
+-- Lambda applied
+
+(λx:Int → x) 23
+Int
+
+(λ_:Bool → λy:Int → y) False 23
+Int
+
+-- Rec skip
+
+(\_:(rec x:SU. Skip, Skip) -> λy:Int -> y) (new Skip) 23
+Int
+
+(\_:Skip -> λy:Int -> y) (fst [Skip, Skip](new Skip)) 23
+Int

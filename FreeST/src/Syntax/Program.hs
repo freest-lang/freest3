@@ -3,7 +3,9 @@ module Syntax.Program
   , VarEnv
   , Prog
   , TypeOpsEnv
+  , PreludeNames
   , noConstructors
+  , isDatatypeContructor
   )
 where
 
@@ -22,6 +24,9 @@ type TypeEnv = Map.Map TypeVar (K.Kind, T.Type)
 -- The signatures of the functions names (including the primitive
 -- operators) and parameters, and the datatype constructors
 type VarEnv = Map.Map ProgVar T.Type
+
+-- The names of the functions from the Prelude
+type PreludeNames = [ProgVar]
 
 -- Mapping between positions & type operators (Typename & Dualof)
 -- Used to give better error messages
@@ -48,5 +53,5 @@ isDatatypeContructor c tEnv = not $ Map.null $ Map.filter (isDatatype . snd)
  where
   isDatatype :: T.Type -> Bool
   isDatatype (T.Rec _ (K.Bind _ _ _ t)) =  isDatatype t
-  isDatatype (T.Datatype _ m) = c `Map.member` m
+  isDatatype (T.Variant _ m) = c `Map.member` m
   isDatatype _                = False

@@ -1,17 +1,25 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module CompilerInvalidSpec (spec) where
+module CompilerInvalidSpec
+  ( spec
+  )
+where
 
-import Control.Exception
-import Control.Monad (void)
-import FreeST (checkAndRun)
-import SpecUtils
-import System.Directory
-import System.Exit
-import System.IO (stdout, stderr)
-import System.IO.Silently (hSilence)
-import Test.HUnit (assertFailure, assertEqual)
-import Test.Hspec
-  
+import           Control.Exception
+import           Control.Monad                  ( void )
+import           FreeST                         ( checkAndRun )
+import           SpecUtils
+import           System.Directory
+import           System.Exit
+import           System.IO                      ( stdout
+                                                , stderr
+                                                )
+import           System.IO.Silently             ( hSilence )
+import           Test.HUnit                     ( assertFailure
+                                                , assertEqual
+                                                )
+import           Test.Hspec
+import           Util.FreestState
+
 baseTestDir :: String
 baseTestDir = "/test/Programs/InvalidTests/"
 
@@ -28,18 +36,20 @@ testDir baseDir invalidTest = do
 errorExpected :: String
 errorExpected = "An error was expected but none was thrown"
 
-testInvalid :: String -> String -> Spec    
+testInvalid :: String -> String -> Spec
 testInvalid test filename = do
-  b <- runIO $ hSilence [stdout, stderr] $ 
-    catches (checkAndRun test >>
-               return (Just errorExpected))
-       [Handler (\(e :: ExitCode) -> return $ exitProgram e),
-        Handler (\(_ :: SomeException) -> return $ Just "Internal error thrown")]
+  b <- runIO $ hSilence [stdout, stderr] $ catches
+    (  checkAndRun (defaultOpts { runFilePath = Just test, quietmode = True })
+    >> return (Just errorExpected)
+    )
+    [ Handler (\(e :: ExitCode) -> return $ exitProgram e)
+    , Handler (\(_ :: SomeException) -> return $ Just "Internal error thrown")
+    ]
   assert b
-  where
-    assert (Just err) = it ("Testing " ++ filename) $ void $ assertFailure err
-    assert _          = it ("Testing " ++ filename) $ assertEqual "OK. Passed!" 1 1
-        
+ where
+  assert (Just err) = it ("Testing " ++ filename) $ void $ assertFailure err
+  assert _ = it ("Testing " ++ filename) $ assertEqual "OK. Passed!" 1 1
+
 exitProgram :: ExitCode -> Maybe String
 exitProgram ExitSuccess = Just errorExpected
 exitProgram _           = Nothing

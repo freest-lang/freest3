@@ -1,4 +1,5 @@
 {
+{-# LANGUAGE TupleSections, NamedFieldPuns #-}
 module Parse.Parser
 where
 
@@ -13,6 +14,7 @@ import           Syntax.Program
 import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
+import           Util.PrettyError
 import           Util.Error
 import           Util.FreestState
 
@@ -57,7 +59,7 @@ import           Util.FreestState
   '+'      {TokenPlus _}
   '-'      {TokenMinus _}
   '*'      {TokenTimes _}
-  '^'      {TokenRaise _} 
+  '^'      {TokenRaise _}
   '_'      {TokenWild _}
   '$'      {TokenDollar _}
   '.'      {TokenDot _}
@@ -136,7 +138,7 @@ Decl :: { () }
   -- Function declaration
   | ProgVar ProgVarWildSeq '=' Exp {% do
       toStateT $ checkDupFunDecl $1
-      toStateT $ addToPEnv $1 $2 $4        
+      toStateT $ addToPEnv $1 $2 $4
     }
   -- Type abbreviation
   | type KindedTVar TypeDecl {% do
@@ -150,7 +152,7 @@ Decl :: { () }
       let bs = typeListToType a $4 :: [(ProgVar, T.Type)]
       toStateT $ mapM_ (\(c, t) -> addToVEnv c t) bs
       let p = pos a
-      toStateT $ uncurry addToTEnv $2 (T.Datatype p (Map.fromList bs))
+      toStateT $ uncurry addToTEnv $2 (T.Variant p (Map.fromList bs))
     }
 
 TypeDecl :: { T.Type }
@@ -170,46 +172,46 @@ DataCon :: { (ProgVar, [T.Type]) }
 
 Exp :: { E.Exp }
   : let ProgVarWild '=' Exp in Exp { E.UnLet (pos $1) $2 $4 $6 }
-  | Exp ';' Exp                    { E.App (pos $1)
-                                         (E.Abs (pos $1) 
-                                           (E.Bind (pos $1) Un (mkVar (pos $1) "_")
-                                             (T.Unit (pos $3))
-                                           $3))
-                                       $1}
+  | Exp ';' Exp                    { E.UnLet (pos $1) (mkVar (pos $1) "_") $1 $3 }
   | let '(' ProgVarWild ',' ProgVarWild ')' '=' Exp in Exp
                                    { E.BinLet (pos $1) $3 $5 $8 $10 }
   | if Exp then Exp else Exp       { E.Cond (pos $1) $2 $4 $6 }
   | new Type                       { E.New (pos $1) $2 (T.Dualof (negPos (pos $2)) $2) }
-  | match Exp with '{' MatchMap '}'{ E.Match (pos $1) $2 $5 }
-  | case Exp of '{' CaseMap '}'    { E.Case (pos $1) $2 $5 }
+  | match Exp with '{' MatchMap '}'{ E.Case (pos $1) (E.App (pos $1)
+                                     (E.Var (pos $1) (mkVar (pos $1) "collect")) $2) $5 }
+--  | match Exp with '{' MatchMap '}'{ E.Match (pos $1) $2 $5 }
+  | case Exp of '{' CaseMap '}'    { E.Case (pos $6) $2 $5 }
   | Exp '$' Exp                    { E.App (pos $2) $1 $3 }
   | Exp '&' Exp                    { E.App (pos $2) $3 $1 }
-  | Exp '||' Exp                    { binOp $1 (mkVar (pos $2) "(||)") $3 }
-  | Exp '&&' Exp                    { binOp $1 (mkVar (pos $2) "(&&)") $3 }
-  | Exp CMP Exp                     { binOp $1 (mkVar (pos $2) (getText $2)) $3 }
+  | Exp '||' Exp                   { binOp $1 (mkVar (pos $2) "(||)") $3 }
+  | Exp '&&' Exp                   { binOp $1 (mkVar (pos $2) "(&&)") $3 }
+  | Exp CMP Exp                    { binOp $1 (mkVar (pos $2) (getText $2)) $3 }
   | Exp '+' Exp                    { binOp $1 (mkVar (pos $2) "(+)") $3 }
   | Exp '-' Exp                    { binOp $1 (mkVar (pos $2) "(-)") $3 }
   | Exp '*' Exp                    { binOp $1 (mkVar (pos $2) "(*)") $3 }
   | Exp '/' Exp                    { binOp $1 (mkVar (pos $2) "(/)") $3 }
   | Exp '^' Exp                    { binOp $1 (mkVar (pos $2) "(^)") $3 }
-  | '-' App %prec NEG              { unOp (mkVar (pos $1) "negate") $2}  
+  | '-' App %prec NEG              { unOp (mkVar (pos $1) "negate") $2}
   | '(' Op Exp ')'                 { unOp $2 $3 } -- left section
   | '(' Exp Op ')'                 { unOp $3 $2 } -- right section
-  | '(' Exp '-' ')'                { unOp (mkVar (pos $2) "(-)") $2 } -- right section (-) 
+  | '(' Exp '-' ')'                { unOp (mkVar (pos $2) "(-)") $2 } -- right section (-)
   | App                            { $1 }
-  
+
 App :: { E.Exp }
   : App Primary                    { E.App (pos $1) $1 $2 }
-  | select ArbitraryProgVar        { E.Select (pos $1) $2 }
+  | select Constructor             { E.App (pos $1)
+                                       (E.Var (pos $1) (mkVar (pos $1) "select"))
+                                       (E.Var (pos $2) $2) }
+  | TApp ']'                       { $1 }
   | Primary                        { $1 }
-
+   
 Primary :: { E.Exp }
   : INT                            { let (TokenInt p x) = $1 in E.Int p x }
   | BOOL                           { let (TokenBool p x) = $1 in E.Bool p x }
   | CHAR                           { let (TokenChar p x) = $1 in E.Char p x }
   | STR                            { let (TokenString p x) = $1 in String p x }
   | '()'                           { E.Unit (pos $1) }
-  | TApp ']'                       { $1 }
+--  | TApp ']'                       { $1 }
   | ArbitraryProgVar               { E.Var (pos $1) $1 }
   | lambda ProgVarWildTBind Abs
       { let ((p,m),e) = $3 in E.Abs p (E.Bind p m (fst $2) (snd $2) e) }
@@ -229,8 +231,8 @@ TAbs :: { E.Exp }
       { let (a,k) = $1 in E.TypeAbs (pos a) (K.Bind (pos k) a k $2) }
 
 TApp :: { E.Exp }
-  : Primary '[' Type { E.TypeApp (pos $1) $1 $3 }
-  | TApp ',' Type        { E.TypeApp (pos $1) $1 $3 }
+  : App '[' Type { E.TypeApp (pos $1) $1 $3 }
+  | TApp ',' Type    { E.TypeApp (pos $1) $1 $3 }
 
 Tuple :: { E.Exp }
   : Exp           { $1 }
@@ -254,7 +256,7 @@ Op :: { ProgVar }
    : '||'   { mkVar (pos $1) "(||)"      }
    | '&&'  { mkVar (pos $1) "(&&)"       }
    | CMP   { mkVar (pos $1) (getText $1) }
-   | '+'   { mkVar (pos $1) "(+)"        }  
+   | '+'   { mkVar (pos $1) "(+)"        }
    | '*'   { mkVar (pos $1) "(*)"        }
    | '/'   { mkVar (pos $1) "(/)"        }
    | '^'   { mkVar (pos $1) "(^)"        }
@@ -271,7 +273,7 @@ Type :: { T.Type }
   | Bool                          { T.Bool (pos $1) }
   | String                        { T.String (pos $1) }
   | '()'                          { T.Unit (pos $1) }
-  | Type Arrow Type %prec ARROW   { uncurry T.Fun $2 $1 $3 }
+  | Type Arrow Type %prec ARROW  { uncurry T.Arrow $2 $1 $3 }
   | '(' Type ',' TupleType ')'    { T.Pair (pos $1) $2 $4 }
   -- Session types
   | Skip                          { T.Skip (pos $1) }
@@ -291,7 +293,7 @@ Type :: { T.Type }
 
 Forall :: { T.Type }
   : '.' Type { $2 }
-  | KindBind Forall 
+  | KindBind Forall
       { let (a,k) = $1 in T.Forall (pos a) (K.Bind (pos k) a k $2) }
 
 TupleType :: { T.Type }
@@ -306,9 +308,9 @@ Polarity :: { (Pos, T.Polarity) }
   : '!' { (pos $1, T.Out) }
   | '?' { (pos $1, T.In) }
 
-ChoiceView :: { (Pos, T.Polarity) }
-  : '+' { (pos $1, T.Out) }
-  | '&' { (pos $1, T.In) }
+ChoiceView :: { (Pos, T.View) }
+  : '+' { (pos $1, T.Internal) }
+  | '&' { (pos $1, T.External) }
 
 FieldList :: { T.TypeMap }
   : Field               { uncurry Map.singleton $1 }
@@ -371,7 +373,7 @@ TypeName :: { TypeVar }
 KindBind :: { (TypeVar, K.Kind) }
   : TypeVar ':' Kind { ($1, $3) }
   | TypeVar          { ($1, omission (pos $1)) }
-  
+
 KindedTVar :: { (TypeVar, K.Kind) }    -- for type and data declarations
   : TypeName ':' Kind { ($1, $3) }
   | TypeName          { ($1, omission (pos $1)) }
@@ -381,50 +383,31 @@ KindedTVar :: { (TypeVar, K.Kind) }    -- for type and data declarations
 
 parseKind :: String -> K.Kind
 parseKind str =
-  case evalStateT (lexer str "" kinds) (initialState "") of
+  case evalStateT (lexer str "" kinds) initialState of
     Ok x -> x
-    Failed err -> error err
+    Failed err -> error $ "" -- snd err
 
-parseType :: String -> Either T.Type String
+parseType :: String -> Either T.Type Errors
 parseType str =
-  case runStateT (lexer str "" types) (initialState "") of
+  case runStateT (lexer str "" types) initialState of
     Ok p -> eitherTypeErr p
-    Failed err -> Right $ err
+    Failed err -> Right [err]
   where
     eitherTypeErr (t, state)
-      | hasErrors state = Right $ getErrors state
+      | hasErrors state = Right $ errors state
       | otherwise       = Left t
-
-
--- parseProgram :: FilePath -> Map.Map ProgVar T.Type -> IO FreestS
--- parseProgram inputFile vEnv = do
---   prelude <- getDataFileName "Prelude.fst"
---   str <- readFile prelude
---   let (Ok s) = execStateT (lexer str prelude terms) ((initialState inputFile) {varEnv = vEnv})
-
---   src <- readFile inputFile
---   return $ parseDefs inputFile s src
-
--- parseDefs :: FilePath -> FreestS -> String -> FreestS
--- parseDefs file fState str =
---   let s = initialState file in
---   case execStateT (lexer str file terms) fState of
---     Ok s1 -> s1
---     Failed err -> s {errors = errors s ++ [err]}
-
 
 parseProgram :: FilePath -> Map.Map ProgVar T.Type -> IO FreestS
 parseProgram inputFile vEnv = -- do
   parseDefs inputFile vEnv <$> readFile inputFile
 
 parseDefs :: FilePath -> VarEnv -> String -> FreestS
-parseDefs file vEnv str =
-  let s = initialState file in
-  case execStateT (lexer str file terms) (s {varEnv = vEnv}) of
+parseDefs file varEnv str =
+  let runOpts = initialOpts { runFilePath = Just file } in
+  case execStateT (lexer str file terms)
+         (initialState { varEnv, runOpts }) of
     Ok s1 -> s1
-    Failed err -> s {errors = (errors s) ++ [err]}
-
-    
+    Failed err -> initialState { errors = [err] }
 
 lexer str file f =
   case scanTokens str file of
@@ -436,17 +419,14 @@ lexer str file f =
 parseError :: [Token] -> FreestStateT a
 parseError [] = do
   file <- toStateT getFileName
-  failM $ formatErrorMessages Map.empty defaultPos file
-          [Error "Parse error:", Error "\ESC[91mPremature end of file\ESC[0m"]
+  failM $ PrematureEndOfFile defaultPos
 parseError (x:_) = do
   file <- toStateT getFileName
---  traceM $ show xs
-  failM $ formatErrorMessages Map.empty p file
-    [Error "Parse error on input", Error $ "\ESC[91m'" ++ show x ++ "'\ESC[0m"]
- where p = pos x
+  failM $ ParseError (pos x) (show x)
 
-failM :: String -> FreestStateT a
+failM :: ErrorType -> FreestStateT a
 failM = lift . Failed
+-- failM = lift . Failed . (defaultPos, )
 
 toStateT = state . runState
 

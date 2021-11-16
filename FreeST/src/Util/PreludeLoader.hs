@@ -25,7 +25,7 @@ import           Parse.Read                     ( )
 
 typeList :: [(ProgVar, T.Type)]
 typeList =
-  [ -- Integers
+  [ -- Int
     (mkVar p "(+)"     , read "Int -> Int -> Int")
   , (mkVar p "(-)"     , read "Int -> Int -> Int")
   , (mkVar p "(/)"     , read "Int -> Int -> Int")
@@ -58,13 +58,13 @@ typeList =
   , ( mkVar p "(||)"
     , read "Bool -> Bool -> Bool"
     )
-  -- Chars
+  -- Char
   , (mkVar p "ord", read "Char -> Int")
   , ( mkVar p "chr", read "Int -> Char")
-  -- Pairs
-  , (mkVar p "fst", read "∀ a:TU . ∀ b:TU . (a, b) -> a")
-  , ( mkVar p "snd", read "∀ a:TU . ∀ b:TU . (a, b) -> b")
-  --  Prints
+  -- Pair
+  , (mkVar p "fst", read "∀ a:TL . ∀ b:TU . (a, b) -> a")
+  , (mkVar p "snd", read "∀ a:TU . ∀ b:TL . (a, b) -> b")
+  -- Print
   , (mkVar p "printInt"   , read "Int -> ()")
   , (mkVar p "printIntLn" , read "Int -> ()")
   , (mkVar p "printBool"  , read "Bool -> ()")
@@ -76,9 +76,12 @@ typeList =
   , (mkVar p "printString", read "String -> ()")
   , ( mkVar p "printStringLn", read "String -> ()")
   -- Fork
-  , ( mkVar p "fork", read "∀ a:TU. a -> ()")
+  , (mkVar p "fork", read "∀a:TL. a -> ()")
   -- Error
-  , (mkVar p "error", read "∀ a:TU . String -> a")
+  , (mkVar p "error", read "∀a:TU . String -> a")
+  -- Session ops
+  , (mkVar p "send", read "∀a:ML . a -> ∀b:SL . !a;b -o b")
+  , (mkVar p "receive", read "∀a:ML . ∀b:SL . ?a;b -> (a, b)")
   ]
   where p = defaultPos
 

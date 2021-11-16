@@ -67,6 +67,37 @@
 # Define some custom infix operators
 # - fixity: infixr 3 ~^#^~
 
+- group:
+    name: default
+    enabled: true
+    imports:
+    - package base
+    rules:
+
+    # BIFUNCTOR
+
+    - warn: {lhs: bimap id g, rhs: second g}
+    - warn: {lhs: bimap f id, rhs: first f}
+    - warn: {lhs: first id, rhs: id}
+    - warn: {lhs: second id, rhs: id}
+    - warn: {lhs: bimap id id, rhs: id}
+    - warn: {lhs: first f (second g x), rhs: bimap f g x}
+    - warn: {lhs: second g (first f x), rhs: bimap f g x}
+    - warn: {lhs: first f (first g x), rhs: first (f . g) x}
+    - warn: {lhs: second f (second g x), rhs: second (f . g) x}
+    - warn: {lhs: bimap f h (bimap g i x), rhs: bimap (f . g) (h . i) x}
+    - warn: {lhs: first f (bimap g h x), rhs: bimap (f . g) h x}
+    - warn: {lhs: second g (bimap f h x), rhs: bimap f (g . h) x}
+    - warn: {lhs: bimap f h (first g x), rhs: bimap (f . g) h x}
+    - warn: {lhs: bimap f g (second h x), rhs: bimap f (g . h) x}
+    - hint: {lhs: "\\(x,y) -> (f x, g y)", rhs: Data.Bifunctor.bimap f g, note: IncreasesLaziness}
+    - hint: {lhs: "\\(x,y) -> (f x,y)", rhs: Data.Bifunctor.first f, note: IncreasesLaziness}
+    - hint: {lhs: "\\(x,y) -> (x,f y)", rhs: Data.Bifunctor.second f, note: IncreasesLaziness}
+    - hint: {lhs: "(f (fst x), g (snd x))", rhs: Data.Bifunctor.bimap f g x}
+    - hint: {lhs: "(f (fst x), snd x)", rhs: Data.Bifunctor.first f x}
+    - hint: {lhs: "(fst x, g (snd x))", rhs: Data.Bifunctor.second g x}
+
+
 
 # To generate a suitable file for HLint do:
 # $ hlint --default > .hlint.yaml

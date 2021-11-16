@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 module FreeST
   ( main
   , checkAndRun
@@ -5,6 +6,7 @@ module FreeST
 where
 
 import           Control.Monad.State            ( when
+                                                , unless
                                                 , execState
                                                 )
 import qualified Data.Map.Strict               as Map
@@ -18,7 +20,8 @@ import           System.Directory
 import           System.Environment             ( getArgs )
 import           System.Exit                    ( die )
 import           System.FilePath
-import           Util.Error
+import           Util.PrettyError
+import           Util.ErrorMessage
 import           Util.FreestState
 import           Util.PreludeLoader             ( prelude )
 import           Validation.Rename              ( renameState )
@@ -27,89 +30,49 @@ import           Data.Version                   ( showVersion )
 import           Paths_FreeST                   ( version
                                                 , getDataFileName
                                                 )
+import           Data.Maybe
+import           Util.CmdLine
 
 main :: IO ()
-main = parseOptions =<< getArgs
+main = checkAndRun =<< handleOpts =<< compilerOpts =<< getArgs
 
-parseOptions :: [String] -> IO ()
-parseOptions [] = throwError
-  [ Error "no input file\n\t"
-  , Error "Usage: For basic information, try the `--help` option."
-  ]
-parseOptions [x]
-  | x `elem` ["-h", "--help"] = helpMenu
-  | x `elem` ["-v", "--version"] = freestVersion
-  | "fst" `isExtensionOf` x = do
-    f <- doesFileExist x
-    if f
-      then checkAndRun x
-      else throwError
-        [ Error "File"
-        , Error $ '\'' : x ++ "'"
-        , Error "does not exist (No such file or directory)"
-        ]
-  | '-' == head x = throwError
-    [ Error "Unexpected option"
-    , Error $ "'" ++ x ++ "'"
-    , Error "\n\t Try `freest --help` for help"
-    ]        
-  | otherwise = throwError
-    [Error "Expecting a .fst file; found", Error x]
-parseOptions (x : _) = do
-  putStrLn
-    $  warning "warning:"
-    ++ " Found more that one option. Ignoring all but the first one."
-  parseOptions [x]
-
-
-throwError :: [ErrorMessage] -> IO ()
-throwError = die . formatErrorMessages Map.empty defaultPos "FreeST"
-
-helpMenu :: IO ()
-helpMenu = putStrLn $ unlines
-  [ styleBold "Welcome to FreeST help\n"
-  , styleBold "Basic usage: " ++ "`freest path_to_file.fst`\n"
-  , styleBold "Available options:\n"
-  , "  --help, -h             show this help menu"
-  , "  --version, -v          shows the current version"
-  ]
-
-freestVersion :: IO ()
-freestVersion =
-  putStrLn $ styleBold $ "The FreeST compiler, version " ++ showVersion version
-
-warning :: String -> String
-warning = styleCyan
-
-checkAndRun :: FilePath -> IO ()
-checkAndRun filePath = do
+checkAndRun :: RunOpts -> IO ()
+checkAndRun runOpts = do
+  -- No file, die
+  when (isNothing $ runFilePath runOpts) (die "")
   -- Prelude
-  preludeFile <- getDataFileName "Prelude.fst"
-  s0          <- parseProgram preludeFile prelude
-  when
-    (hasErrors s0)
-    (  putStrLn
-    $  warning "warning: "
-    ++ "Couldn't find prelude; proceeding without it"
-    )
+  -- preludeFilePath <- getDataFileName (fromJust $ preludeFile runOpts)
+  preludeFilePath <- getDataFileName "Prelude.fst"
+  s0              <- parseProgram preludeFilePath prelude
+  when (hasErrors s0) (putStrLn cantFindPrelude)
   let (initialPrelude, initialProg) = fromPreludeFile s0
+  let preludeNames = Map.keys initialPrelude
   -- Parse
-  s1 <- parseProgram filePath initialPrelude
-  when (hasErrors s1) (die $ getErrors s1)
+  s1 <- parseProgram (fromJust $ runFilePath runOpts) initialPrelude
+  when (hasErrors s1) (die $ getErrors preludeNames s1)
   -- Solve type declarations and dualof operators
   let s2 = emptyPEnv $ execState
         elaboration
-        (s1 { parseEnv = parseEnv s1 `Map.union` initialProg })
-  when (hasErrors s2) (die $ getErrors s2)
+        (s1 { runOpts, parseEnv = parseEnv s1 `Map.union` initialProg})
+  when (hasErrors s2) (die $ getErrors preludeNames s2)
   -- Rename
-  let s3 = execState renameState s2
-   -- Type check
-  let s4 = execState typeCheck s3
-  when (hasErrors s4) (die $ getErrors s4)
-  -- Interpret
-  evalAndPrint initialCtx (prog s4) (prog s4 Map.! mkVar defaultPos "main")
-  where
-    fromPreludeFile :: FreestS -> (VarEnv, ParseEnv)
-    fromPreludeFile s0
-      | hasErrors s0 = (prelude, Map.empty)
-      | otherwise    = (varEnv s0, parseEnv s0)
+  let s3 = execState renameState (s2 { runOpts })
+  -- Type check
+  let s4 = execState typeCheck (s3 { runOpts })
+  when (not (isQuietFlagSet runOpts) && hasWarnings s4) (putStrLn $ getWarnings s4)
+  when (hasErrors s4)   (die $ getErrors preludeNames s4)
+  -- Check if main was left undefined
+  let main = getMain runOpts
+  -- If main is defined, eval and print
+  when (main `Map.member` varEnv s4)
+    (evalAndPrint (typeEnv s4) initialCtx
+    (prog s4)
+    (prog s4 Map.! main))
+ where
+  fromPreludeFile :: FreestS -> (VarEnv, ParseEnv)
+  fromPreludeFile s0 | hasErrors s0 = (prelude, Map.empty)
+                     | otherwise    = (varEnv s0, parseEnv s0)
+  -- TODO: remove later (proper warnings)
+  cantFindPrelude :: String
+  cantFindPrelude =
+    formatColor (Just Cyan) $ "warning: " ++ "Couldn't find prelude; proceeding without it"

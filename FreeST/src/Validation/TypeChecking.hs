@@ -1,4 +1,5 @@
 {-|
+
 Module      :  Validation.TypeChecking
 Description :  <optional short text displayed on contents page>
 Copyright   :  (c) <Authors or Affiliations>
@@ -11,7 +12,7 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-{-# LANGUAGE LambdaCase, NoMonadFailDesugaring #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Validation.TypeChecking
   ( typeCheck
@@ -23,14 +24,16 @@ import           Control.Monad.State            ( when
                                                 , unless
                                                 )
 import qualified Data.Map.Strict               as Map
+import           Data.Maybe
 import           Syntax.Base
 import qualified Syntax.Expression             as E
+import qualified Syntax.Kind                   as K
 import           Syntax.Program                 ( noConstructors )
 import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
-import qualified Syntax.Kind                   as K
 import           Util.FreestState
-import           Util.PreludeLoader            ( userDefined )
+import           Util.Error
+import           Util.PreludeLoader             ( userDefined )
 import qualified Validation.Kinding            as K
 import qualified Validation.Typing             as Typing -- Again
 
@@ -47,14 +50,14 @@ typeCheck = do
 
   -- * Check the formation of all type decls
 --  debugM "checking the formation of all type decls"
-  mapM_ (K.synthetise Map.empty . snd) =<< getTEnv 
+  mapM_ (K.synthetise Map.empty . snd) =<< getTEnv
 
   -- * Check the formation of all function signatures
---  debugM "checking the formation of all function signatures (kinding)" 
+--  debugM "checking the formation of all function signatures (kinding)"
   mapM_ (K.synthetise Map.empty) =<< getVEnv
   -- Gets the state and only continues if there are no errors so far
   -- Can't continue to equivalence if there are ill-formed types
-  -- (i.e. not contractive under a certain variable)  
+  -- (i.e. not contractive under a certain variable)
   s <- get
   unless (hasErrors s) $ do
     -- * Check whether all function signatures have a binding
@@ -81,14 +84,7 @@ checkHasBinding f _ = do
       &&              f
       `Map.notMember` eEnv
       )
-    $ addError
-        (pos f)
-        [ Error "The type signature for"
-        , Error f
-        , Error "lacks an accompanying binding\n"
-        , Error "\t Type signature:"
-        , Error $ vEnv Map.! f
-        ]
+    $ let p = pos f in addError (SignatureLacksBinding p f (vEnv Map.! f))
 
 -- Check a given function body against its type; make sure all linear
 -- variables are used.
@@ -99,25 +95,16 @@ checkFunBody f e = getFromVEnv f >>= \case
 
 checkMainFunction :: FreestState ()
 checkMainFunction = do
-  let main = mkVar defaultPos "main"
   vEnv <- getVEnv
-  if main `Map.notMember` vEnv
-    then addError defaultPos
-                  [Error "Function", Error main, Error "not defined"]
-    else do
+  runOpts <- getOpts
+  let main = getMain runOpts
+
+  if main `Map.member` vEnv
+    then do
       let t = vEnv Map.! main
       k <- K.synthetise Map.empty t
-      unless (not (K.isLin k)) $  addError
-        defaultPos
-        [ Error "The type of"
-        , Error main
-        , Error "must be non linear"
-        -- , Error "must be non-function, non-polymorphic\n"
-        , Error "\n\t found type"
-        , Error t
-        , Error "of kind"
-        , Error k
-        ]
+      when (K.isLin k) $ addError (UnrestrictedMainFun defaultPos main t k)
+    else when (isMainFlagSet runOpts) $ addError (MainNotDefined defaultPos main)
 
 -- validMainType :: T.Type -> Bool -- TODO: why this restriction?
 -- validMainType T.Forall{} = False

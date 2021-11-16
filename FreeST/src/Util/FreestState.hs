@@ -11,35 +11,43 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-module Util.FreestState
-  ( -- State
+module Util.FreestState (
+-- * State
     FreestState
   , FreestS(..)
   , initialState
--- Monad & map
+-- * Monad & map
   , tMapM
   , tMapM_
   , tMapWithKeyM
   , tMapWithKeyM_
--- Next index
+-- * Next index
   , getNextIndex
--- Variable environment
+  , freshTVar
+-- * Variable environment
   , getVEnv
   , getFromVEnv
   , addToVEnv
   , setVEnv
   , removeFromVEnv
--- Type environment
+-- * Type environment
   , getTEnv
   , getFromTEnv
   , addToTEnv
   , setTEnv
--- Program
+-- * Program
   , getProg
   , getFromProg
   , addToProg
   , setProg
--- Errors
+-- * Warnings
+  --, Warnings
+  , getWarnings
+  , addWarning
+  , hasWarnings
+  --, WarningMessage(..)
+  --, WarningMsg(..)
+-- * Errors
   , Errors
   , getErrors
   , addError
@@ -47,69 +55,88 @@ module Util.FreestState
   , ErrorMessage(..)
   , ErrorMsg(..)
   , getFileName
--- Typenames
+-- * Typenames
   , addTypeName
   , getTypeNames
   , findTypeName
   , addDualof
   , debugM
--- Parse Env
+-- * Parse Env
   , ParseEnv
   , emptyPEnv
   , addToPEnv
-  , getPEnv 
-  , setPEnv 
+  , getPEnv
+  , setPEnv
+-- * Run Options
+  , RunOpts(..)
+  , defaultOpts
+  , initialOpts
+  , getMain
+  , isMainFlagSet
+  , isQuietFlagSet
+  , getOpts
   )
 where
 
+import           Control.Applicative
 import           Control.Monad.State
-import           Data.List                      ( intercalate )
-import qualified Data.Map.Strict               as Map
+import           Data.List ( intercalate ) -- , sortBy )
+import qualified Data.Map.Strict as Map
+import           Data.Maybe
+import qualified Data.Traversable as Traversable
+import           Debug.Trace -- debug (used on debugM function)
 import           Syntax.Base
 import           Syntax.Expression
 import           Syntax.Kind
 import           Syntax.Program
 import           Syntax.ProgramVariable
-import qualified Syntax.Type                   as T
+import qualified Syntax.Type as T
 import           Syntax.TypeVariable
+import           Util.Warning
+import           Util.WarningMessage ()
+import           Util.PrettyWarning ()
+-- import           Util.PreludeLoader
 import           Util.Error
--- import qualified Data.Set as Set
-import qualified Data.Traversable              as Traversable
 import           Util.ErrorMessage
-import           Debug.Trace -- debug (used on debugM function)
+import           Util.PrettyError ()
 
 -- | The typing state
 
+type Warnings = [WarningType]
+
 -- type Errors = Set.Set String
-type Errors = [String]
+-- type Errors = [(Pos, String)]
+type Errors = [ErrorType]
 
 type ParseEnv = Map.Map ProgVar ([ProgVar], Exp)
 
 data FreestS = FreestS {
-  filename  :: String
-, varEnv    :: VarEnv
-, prog      :: Prog
-, typeEnv   :: TypeEnv
-, typenames :: TypeOpsEnv
-, errors    :: Errors
-, nextIndex :: Int
-, parseEnv  :: ParseEnv -- "discarded" after elaboration
+  runOpts    :: RunOpts
+, varEnv     :: VarEnv
+, prog       :: Prog
+, typeEnv    :: TypeEnv
+, typenames  :: TypeOpsEnv
+, warnings   :: Warnings
+, errors     :: Errors
+, nextIndex  :: Int
+, parseEnv   :: ParseEnv -- "discarded" after elaboration
 } deriving Show -- FOR DEBUG purposes
 
 type FreestState = State FreestS
 
 -- | Initial State
 
-initialState :: String -> FreestS
-initialState f = FreestS { filename  = f
-                         , varEnv    = Map.empty
-                         , prog      = Map.empty
-                         , typeEnv   = Map.empty
-                         , typenames = Map.empty
-                         , errors    = []
-                         , nextIndex = 0
-                         , parseEnv  = Map.empty
-                         }
+initialState :: FreestS
+initialState = FreestS { runOpts    = initialOpts
+                       , varEnv     = Map.empty
+                       , prog       = Map.empty
+                       , typeEnv    = Map.empty
+                       , typenames  = Map.empty
+                       , warnings   = []
+                       , errors     = []
+                       , nextIndex  = 0
+                       , parseEnv   = Map.empty
+                       }
 
 -- | Parse Env
 
@@ -135,10 +162,13 @@ getNextIndex = do
   modify (\s -> s { nextIndex = next + 1 })
   return next
 
+freshTVar :: String -> Pos -> FreestState TypeVar
+freshTVar s p = mkVar p . (s ++) . show <$> getNextIndex
+
 -- | FILE NAME
 
 getFileName :: FreestState String
-getFileName = gets filename
+getFileName = fromMaybe "" . runFilePath <$> gets runOpts
 
 -- | VAR ENV
 
@@ -211,31 +241,40 @@ addDualof d@(T.Dualof p t) = do
   tn <- getTypeNames
   case tn Map.!? pos t of
     Just (T.Dualof _ _) -> return ()
-    Just u ->
-      modify (\s -> s { typenames = Map.insert p (T.Dualof p u) tn })
-    Nothing ->
-      modify (\s -> s { typenames = Map.insert p d tn })
+    Just u -> modify (\s -> s { typenames = Map.insert p (T.Dualof p u) tn })
+    Nothing -> modify (\s -> s { typenames = Map.insert p d tn })
 addDualof t = internalError "Util.FreestState.addDualof" t
 
+-- | WARNINGS
+
+getWarnings :: FreestS -> String
+getWarnings s =
+   (intercalate "\n" . map f . take 10 . reverse . warnings) s
+  where
+    f = formatWarning (runFilePath $ runOpts s) (typenames s)
+--    cmp x y = compare (pos x) (pos y)
+
+hasWarnings :: FreestS -> Bool
+hasWarnings = not . null . warnings
+
+addWarning :: WarningType -> FreestState ()
+addWarning w = modify (\s -> s { warnings = w : warnings s })
 
 -- | ERRORS
 
-getErrors :: FreestS -> String
-getErrors = intercalate "\n" . take 10 . errors
+getErrors :: PreludeNames -> FreestS -> String
+getErrors v s =
+   (intercalate "\n" . map f . take 10 . reverse . errors) s
+--   (intercalate "\n" . map f . take 10 . sortBy errCmp . reverse . errors) s
+  where
+    f = formatError (runFilePath $ runOpts s) (typenames s) v
+--    errCmp x y = compare (pos x) (pos y)
 
 hasErrors :: FreestS -> Bool
 hasErrors = not . null . errors
 
-addError :: Pos -> [ErrorMessage] -> FreestState ()
-addError p em = do
-  f    <- getFileName
-  tops <- getTypeNames
-  let es = formatErrorMessages tops p f em
-  modify (\s -> s { errors = insertError (errors s) es })
-
-insertError :: [String] -> String -> [String]
-insertError es err | err `elem` es = es
-                   | otherwise     = es ++ [err]
+addError :: ErrorType -> FreestState ()
+addError e = modify (\s -> s { errors = e : errors s })
 
 -- | Traversing Map.map over FreestStates
 
@@ -257,3 +296,41 @@ debugM :: String -> FreestState ()
 debugM err = do
   i <- getNextIndex
   traceM $ "\n" ++ show i ++ ". " ++ err ++ "\n"
+
+-- | Run Options
+
+data RunOpts = RunOpts { runFilePath  :: Maybe FilePath
+--                     , preludeFile  :: Maybe FilePath
+                       , mainFunction :: Maybe ProgVar
+                       , quietmode    :: Bool
+                       } deriving Show
+
+instance Semigroup RunOpts where
+  o1 <> o2 = RunOpts { runFilePath  = runFilePath o1 <|> runFilePath o2
+--                    , preludeFile  = preludeFile o1 <|> preludeFile o2
+                     , mainFunction = mainFunction o1 <|> mainFunction o2
+                     , quietmode    = quietmode o1 || quietmode o2
+                     }
+
+defaultOpts :: RunOpts
+defaultOpts = RunOpts { runFilePath  = Nothing
+--                    , preludeFile  = Just "Prelude.fst"
+                      , mainFunction = Nothing
+                      , quietmode    = False
+                      }
+
+initialOpts :: RunOpts
+initialOpts = RunOpts Nothing Nothing False -- Nothing
+
+getMain :: RunOpts -> ProgVar
+getMain opts = fromMaybe (mkVar defaultPos "main") maybeMain
+  where maybeMain = mainFunction opts
+
+isMainFlagSet :: RunOpts -> Bool
+isMainFlagSet = isJust . mainFunction
+
+isQuietFlagSet :: RunOpts -> Bool
+isQuietFlagSet = quietmode
+
+getOpts :: FreestState RunOpts
+getOpts = gets runOpts
