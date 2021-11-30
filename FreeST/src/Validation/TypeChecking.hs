@@ -83,7 +83,7 @@ checkHasBinding f _ = do
       &&              f
       `Map.notMember` eEnv
       )
-    $ let p = pos f in addError (SignatureLacksBinding p f (vEnv Map.! f))
+    $ addError (SignatureLacksBinding (pos f) f (vEnv Map.! f))
 
 -- Check a given function body against its type; make sure all linear
 -- variables are used.

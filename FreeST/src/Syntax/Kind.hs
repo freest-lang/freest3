@@ -44,10 +44,13 @@ data Multiplicity = Un | Lin deriving Eq
 
 -- Kind
 
-data Kind = Kind Pos Basic Multiplicity
+data Kind =
+    Kind Pos Basic Multiplicity
+  | Arrow Pos Kind Kind
 
 instance Position Kind where
   pos (Kind p _ _) = p
+  pos (Arrow p _ _) = p
 
 -- The kind of conventional (non linear, non session) functional programming
 -- languages' types (Alternative: the kind that sits at the top of the
@@ -66,12 +69,14 @@ ml p = Kind p Message Lin
 
 isLin :: Kind -> Bool
 isLin (Kind _ _ m) = m == Lin
+isLin (Arrow _ k1 k2) = isLin k1 || isLin k2 -- -- TODO: Is this correct??
 
 isUn :: Kind -> Bool
 isUn = not . isLin
 
 isSession :: Kind -> Bool
-isSession (Kind _ b _) = b == Session
+isSession (Kind _ b _) = b == Session 
+isSession _ = False
 
 -- Bind: ∀ a:k . t or Λ a:k => e
 

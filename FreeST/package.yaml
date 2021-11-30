@@ -27,6 +27,10 @@ dependencies:
   - optparse-applicative >= 0.16.1.0
   - control-bool >= 0.2.1
 
+
+ghc-options:
+  - -Wno-unused-do-bind
+
 library:
   source-dirs: src
   build-tools:

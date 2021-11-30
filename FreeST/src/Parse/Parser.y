@@ -156,9 +156,8 @@ Decl :: { () }
     }
 
 TypeDecl :: { T.Type }
-  : '=' Type { $2 }
-  | KindBind TypeDecl { let (a,k) = $1 in T.Forall (pos a) (K.Bind (pos k) a k $2) }
-
+  : '=' Type          { $2 }
+  | KindBind TypeDecl { let (a,k) = $1 in T.Abs (pos a) (K.Bind (pos k) a k $2) }
 DataCons :: { [(ProgVar, [T.Type])] }
   : DataCon              {% toStateT $ checkDupCons $1 [] >> return [$1] }
   | DataCon '|' DataCons {% toStateT $ checkDupCons $1 $3 >> return ($1 : $3) }
@@ -268,27 +267,41 @@ Op :: { ProgVar }
 
 Type :: { T.Type }
   -- Functional types
-  : Int                           { T.Int (pos $1) }
-  | Char                          { T.Char (pos $1) }
-  | Bool                          { T.Bool (pos $1) }
-  | String                        { T.String (pos $1) }
-  | '()'                          { T.Unit (pos $1) }
-  | Type Arrow Type %prec ARROW  { uncurry T.Arrow $2 $1 $3 }
-  | '(' Type ',' TupleType ')'    { T.Pair (pos $1) $2 $4 }
+  : Type Arrow Type %prec ARROW  { uncurry T.Arrow $2 $1 $3 }
+
   -- Session types
-  | Skip                          { T.Skip (pos $1) }
+
   | Type ';' Type                 { T.Semi (pos $2) $1 $3 }
-  | Polarity Type %prec MSG       { uncurry T.Message $1 $2 }
   | ChoiceView '{' FieldList '}'  { uncurry T.Choice $1 $3 }
   -- Polymorphism and recursion
   | rec KindBind '.' Type
       { let (a,k) = $2 in T.Rec (pos $1) (K.Bind (pos a) a k $4) }
   | forall KindBind Forall
       { let (a,k) = $2 in T.Forall (pos $1) (K.Bind (pos a) a k $3) }
-  | TypeVar                       { T.Var (pos $1) $1 }
+
   -- Type operators
   | dualof Type                   { T.Dualof (pos $1) $2 }
-  | TypeName                      { T.Var (pos $1) $1 } -- TODO: remove this one lex
+  | lambda KindBind '->' Type
+      { let (a,k) = $2 in T.Abs (pos $1) (K.Bind (pos a) a k $4) }
+--   | '(' Type ')'                  { $2 }
+  | TypeApp                       { $1 }
+
+TypeApp :: { T.Type }
+  : TypeApp PrimaryType           { T.App (pos $1) $1 $2 }
+  | PrimaryType                   { $1 }
+
+PrimaryType :: { T.Type }
+  -- Functional types
+  : Int                           { T.Int (pos $1) }
+  | Char                          { T.Char (pos $1) }
+  | Bool                          { T.Bool (pos $1) }
+  | String                        { T.String (pos $1) }
+  | '()'                          { T.Unit (pos $1) }
+  | '(' Type ',' TupleType ')'    { T.Pair (pos $1) $2 $4 }
+  | Skip                          { T.Skip (pos $1) }
+  | Polarity Type %prec MSG       { uncurry T.Message $1 $2 }
+  | TypeVar                       { T.Var (pos $1) $1 }
+  | TypeName                      { T.Var (pos $1) $1 } -- TODO: remove this one lex  
   | '(' Type ')'                  { $2 }
 
 Forall :: { T.Type }
@@ -324,7 +337,7 @@ Field :: { (ProgVar, T.Type) }
 
 TypeSeq :: { [T.Type] }
   :              { [] }
-  | Type TypeSeq { $1 : $2 }
+  | PrimaryType TypeSeq { $1 : $2 }
 
 ----------
 -- KIND --
@@ -337,7 +350,7 @@ Kind :: { K.Kind }
   | TL { K.tl (pos $1) }
   | MU { K.mu (pos $1) }
   | ML { K.ml (pos $1) }
---  | Kind '->' Kind { KindArrow (pos $1) $1 $3 }
+  | '(' Kind '->' Kind ')' { K.Arrow (pos $2) $2 $4 }
 
 -- PROGRAM VARIABLE
 
@@ -360,7 +373,7 @@ ProgVarWildSeq :: { [ProgVar] }
   | ProgVarWild ProgVarWildSeq {% toStateT $ checkDupBind $1 $2 >> return ($1 : $2) }
 
 ProgVarWildTBind :: { (ProgVar, T.Type) }
-  : ProgVarWild ':' Type  %prec ProgVarWildTBind { ($1, $3) }
+  : ProgVarWild ':' PrimaryType  %prec ProgVarWildTBind { ($1, $3) }
 
 -- TYPE VARIABLE
 
