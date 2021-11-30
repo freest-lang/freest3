@@ -134,7 +134,7 @@ instance Elaboration T.Type where
     Nothing -> pure n
   elaborate (  T.Dualof p t     ) = T.Dualof p <$> elaborate t
   elaborate (  T.App    p t    u) = T.App p <$> elaborate t <*> elaborate u
-  elaborate (  T.Abs    p kb    ) = T.Rec p <$> elaborate kb
+  elaborate (  T.Abs    p kb    ) = T.Abs p <$> elaborate kb
   elaborate t                     = pure t
 
 -- Apply elaborateType over TypeMaps
