@@ -210,5 +210,7 @@ changePos p (T.Message _ pol b) = T.Message p pol b
 changePos p (T.Choice  _ pol m) = T.Choice p pol m
 changePos p (T.Rec    _ xs    ) = T.Rec p xs
 changePos p (T.Forall _ xs    ) = T.Forall p xs
+changePos p (T.Abs    _ b     ) = T.Abs p b
+changePos p (T.App _ t u      ) = T.App p t u
 -- TypeVar
 changePos _ t                   = t
