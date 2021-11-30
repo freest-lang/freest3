@@ -158,6 +158,7 @@ Decl :: { () }
 TypeDecl :: { T.Type }
   : '=' Type          { $2 }
   | KindBind TypeDecl { let (a,k) = $1 in T.Abs (pos a) (K.Bind (pos k) a k $2) }
+  
 DataCons :: { [(ProgVar, [T.Type])] }
   : DataCon              {% toStateT $ checkDupCons $1 [] >> return [$1] }
   | DataCon '|' DataCons {% toStateT $ checkDupCons $1 $3 >> return ($1 : $3) }
@@ -268,21 +269,15 @@ Op :: { ProgVar }
 Type :: { T.Type }
   -- Functional types
   : Type Arrow Type %prec ARROW  { uncurry T.Arrow $2 $1 $3 }
-
   -- Session types
-
   | Type ';' Type                 { T.Semi (pos $2) $1 $3 }
-  | ChoiceView '{' FieldList '}'  { uncurry T.Choice $1 $3 }
   -- Polymorphism and recursion
   | rec KindBind '.' Type
       { let (a,k) = $2 in T.Rec (pos $1) (K.Bind (pos a) a k $4) }
   | forall KindBind Forall
       { let (a,k) = $2 in T.Forall (pos $1) (K.Bind (pos a) a k $3) }
-
   -- Type operators
   | dualof Type                   { T.Dualof (pos $1) $2 }
-  | lambda KindBind '->' Type
-      { let (a,k) = $2 in T.Abs (pos $1) (K.Bind (pos a) a k $4) }
 --   | '(' Type ')'                  { $2 }
   | TypeApp                       { $1 }
 
@@ -300,8 +295,11 @@ PrimaryType :: { T.Type }
   | '(' Type ',' TupleType ')'    { T.Pair (pos $1) $2 $4 }
   | Skip                          { T.Skip (pos $1) }
   | Polarity Type %prec MSG       { uncurry T.Message $1 $2 }
+  | ChoiceView '{' FieldList '}'  { uncurry T.Choice $1 $3 }
   | TypeVar                       { T.Var (pos $1) $1 }
-  | TypeName                      { T.Var (pos $1) $1 } -- TODO: remove this one lex  
+  | TypeName                      { T.Var (pos $1) $1 } -- TODO: remove this one lex
+  | lambda KindBind '->' Type
+      { let (a,k) = $2 in T.Abs (pos $1) (K.Bind (pos a) a k $4) }
   | '(' Type ')'                  { $2 }
 
 Forall :: { T.Type }

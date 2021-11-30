@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# OPTIONS_GHC  -Wno-unused-do-bind #-}
 {-|
 Module      :  Validation.Kinding
@@ -121,8 +122,10 @@ checkAgainst' s kEnv expected t = do
 -- checkAgainst for a better error messages
 checkAgainstSession' :: K.PolyVars -> K.KindEnv -> T.Type -> FreestState ()
 checkAgainstSession' s kEnv t = do
-  ~k@(K.Kind _ p _) <- properType t =<< synthetise' s kEnv t
-  S.when (p /= K.Session) $ addError (ExpectingSession (pos t) t k)
+  synthetise' s kEnv t >>= \case
+    k@(K.Kind _ p _) ->  
+      S.when (p /= K.Session) $ addError (ExpectingSession (pos t) t k)
+    k@K.Arrow{} -> addError (ExpectingSession (pos t) t k)
 
 -- Determine whether a given type is unrestricted
 un :: T.Type -> FreestState Bool
@@ -145,15 +148,13 @@ typeToKindMult Un = K.Un
 
 -- | TODO: Added these two functions so that we can pattern match with Irrefutable patterns
 -- | TODO: add proper errors for both functions
+-- | TODO: check calls
 
 properType :: T.Type -> K.Kind -> FreestState K.Kind
 properType _ k@K.Kind{} = return k
-properType t k@K.Arrow{} = do
---  error $ "Expecting a proper type, found the type operator " ++ show t ++ " with kind " ++ show k
-  return $ omission (pos k)
+properType t k@K.Arrow{} = addError (ExpectingProperType (pos t) t k) $> omission (pos k)
 
 typeOperator :: T.Type -> K.Kind -> FreestState K.Kind
 typeOperator _ k@K.Arrow{} = return k
-typeOperator t k@K.Kind{} = do
---  error $ "Expecting a type operator, found the proper type " ++ show t ++ " with kind " ++ show k
-  return $ K.Arrow (pos k) (omission $ pos k) (omission $ pos k)
+typeOperator t k@(K.Kind p _ _)  =
+  addError (ExpectingTypeOperator (pos t) t k) $> K.Arrow (pos k) (omission p) (omission p)

@@ -72,6 +72,8 @@ data ErrorType =
   | TypeNotContractive Pos T.Type TypeVar
   | CantMatchKinds Pos Kind Kind T.Type
   | ExpectingSession Pos T.Type Kind
+  | ExpectingProperType Pos T.Type Kind
+  | ExpectingTypeOperator Pos T.Type Kind
   -- Typing
   | TypeAbsBodyNotValue Pos E.Exp E.Exp
   | VarOrConsNotInScope Pos ProgVar
@@ -113,6 +115,8 @@ instance Position ErrorType where
   pos (TypeNotContractive p _ _    ) = p
   pos (CantMatchKinds p _ _ _      ) = p
   pos (ExpectingSession    p _ _   ) = p
+  pos (ExpectingProperType p _ _   ) = p
+  pos (ExpectingTypeOperator p _ _ ) = p
   pos (TypeAbsBodyNotValue p _ _   ) = p
   pos (VarOrConsNotInScope p _     ) = p
   pos (LinProgVar p _ _ _          ) = p
@@ -199,6 +203,10 @@ errorMsg _ (CantMatchKinds _ k k' t) =
   , Error "\n\t for type", Error t ]
 errorMsg _ (ExpectingSession _ t k) =
   [ Error "Expecting a session type\n", Error "\t found type", Error t, Error "of kind", Error k]
+errorMsg _ (ExpectingProperType _ t k) =
+  [ Error "Expecting a proper type\n", Error "\t found a type operator", Error t, Error "of kind", Error k]
+errorMsg _ (ExpectingTypeOperator _ t k) =
+  [ Error "Expecting a type opertator\n", Error "\t found a proper type", Error t, Error "of kind", Error k]  
 -- Validation.Typing
 errorMsg _ (TypeAbsBodyNotValue _ e e') =
   [ Error "The body of type abstraction", Error e
