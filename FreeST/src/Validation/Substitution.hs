@@ -53,6 +53,8 @@ instance Subs T.Type where
   subs t x u@(T.CoVar _ y)
     | y == x    = dualof t
     | otherwise = u
+  subs t x (T.App p u v) = T.App p (subs t x u) (subs t x v)
+  subs t x (T.Abs p b)   = T.Abs p (subs t x b)
   subs _ _ t            = t
   -- Can't issue this error because we use
   -- this function during the elaboration of dualofs

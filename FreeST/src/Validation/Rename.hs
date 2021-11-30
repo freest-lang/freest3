@@ -110,6 +110,8 @@ rename' bs (T.Rec    p b)
 rename' bs (T.Var    p a     ) = return $ T.Var p (findWithDefaultVar a bs)
 rename' bs (T.CoVar    p a   ) = return $ T.CoVar p (findWithDefaultVar a bs)
   -- Type operators
+rename' bs (T.App    p t u   ) = T.App p <$> rename bs t <*> rename bs u
+rename' bs (T.Abs    p b     ) =  T.Abs p <$> rename bs b
 rename' _  t@T.Dualof{}        = internalError "Validation.Rename.rename" t
   -- Otherwise: Basic, Skip, Message, TypeName
 rename' _  t                   = return t
@@ -221,17 +223,19 @@ isFreeIn x (T.Variant _ fm) =
     -- Session types
 isFreeIn x (T.Semi _ t u) = x `isFreeIn` t || x `isFreeIn` u
 isFreeIn x (T.Choice _ _ tm) =
-  Map.foldr' (\t b -> x `isFreeIn` t || b) False tm
+  Map.foldr' (\t b -> b || x `isFreeIn` t) False tm
   -- Polymorphism
 isFreeIn x (T.Forall _ (K.Bind _ y _ t)) = x /= y && x `isFreeIn` t
   -- Functional or session 
 isFreeIn x (T.Rec    _ (K.Bind _ y _ t)) = x /= y && x `isFreeIn` t
 isFreeIn x (T.Var    _ y               ) = x == y
   -- Type operators
-isFreeIn x (T.Dualof _ t) = x `isFreeIn` t
-  
+isFreeIn x (T.App _ t u) = x `isFreeIn` t || x `isFreeIn` u
+isFreeIn x (T.Abs _ (K.Bind _ y _ t)) = x /= y && x `isFreeIn` t
+isFreeIn x (T.Dualof    _ t               ) = x `isFreeIn` t
+-- It is used during elaboration; otherwise we should
+-- throw an internal error
 --isFreeIn _ t@T.Dualof{} =
--- It is used during elaboration; otherwise we should throw an internal error
 --  internalError "Validation.Rename.isFreeIn" t
   -- Basic, Skip, Message, TypeName
 isFreeIn _ _                             = False

@@ -92,6 +92,10 @@ solveType vs v d@(T.Dualof p var@(T.Var p' x)) = case v Map.!? x of
   Nothing -> addDualof d >> solveDual vs v (changePos p var)
 solveType vs v d@(T.Dualof p t) =
   addDualof d >> solveDual vs v (changePos p t)
+solveType vs v (T.Abs p b) =
+  T.Abs p <$> solveBind solveType vs v b
+solveType vs v (T.App p t u) =
+  T.App p <$> solveType vs v t <*> solveType vs v u
 -- Var, Int, Char, Bool, Unit, Skip
 solveType _ _ t                = pure t
 
@@ -118,6 +122,10 @@ solveDual vs v d@(T.Dualof p t@(T.Var _ a))
   | otherwise = addDualof d >> solveType vs v (changePos p t)
 solveDual vs v d@(T.Dualof p t) =
   addDualof d >> solveType vs v (changePos p t)
+solveDual vs v (T.Abs p b) =
+  T.Abs p <$> solveBind solveDual vs v b
+solveDual vs v (T.App p t u) =
+  T.App p <$> solveDual vs v t <*> solveDual vs v u
 -- Non session-types
 solveDual _ _ t = addError (DualOfNonSession (pos t) t) $> t
 
@@ -151,5 +159,7 @@ changePos p (T.Forall _ xs    ) = T.Forall p xs
 changePos p (T.Var    _ x     ) = T.Var p x
 changePos p (T.Dualof _ t     ) = T.Dualof p t
 changePos p (T.CoVar  _ t     ) = T.CoVar p t
+changePos p (T.Abs  _ tb      ) = T.Abs p tb
+changePos p (T.App  _ t u     ) = T.App p t u
 
 

@@ -122,9 +122,9 @@ class Elaboration t where
 
 instance Elaboration T.Type where
   elaborate (  T.Message p pol t) = T.Message p pol <$> elaborate t
-  elaborate (  T.Arrow p m t1 t2  ) = T.Arrow p m <$> elaborate t1 <*> elaborate t2
+  elaborate (  T.Arrow p m t1 t2) = T.Arrow p m <$> elaborate t1 <*> elaborate t2
   elaborate (  T.Pair p t1 t2   ) = T.Pair p <$> elaborate t1 <*> elaborate t2
-  elaborate (  T.Variant p m   ) = T.Variant p <$> elaborate m
+  elaborate (  T.Variant p m    ) = T.Variant p <$> elaborate m
   elaborate (  T.Semi   p t1  t2) = T.Semi p <$> elaborate t1 <*> elaborate t2
   elaborate (  T.Choice p pol m ) = T.Choice p pol <$> elaborate m
   elaborate (  T.Forall p kb    ) = T.Forall p <$> elaborate kb
@@ -132,8 +132,10 @@ instance Elaboration T.Type where
   elaborate n@(T.Var    p tname ) = getFromTEnv tname >>= \case
     Just t  -> addTypeName p n >> pure (changePos p (snd t))
     Nothing -> pure n
-  elaborate (T.Dualof p t) = T.Dualof p <$> elaborate t
-  elaborate t              = pure t
+  elaborate (  T.Dualof p t     ) = T.Dualof p <$> elaborate t
+  elaborate (  T.App    p t    u) = T.App p <$> elaborate t <*> elaborate u
+  elaborate (  T.Abs    p kb    ) = T.Rec p <$> elaborate kb
+  elaborate t                     = pure t
 
 -- Apply elaborateType over TypeMaps
 instance Elaboration T.TypeMap where
@@ -178,7 +180,7 @@ buildProg = getPEnv
   buildFunBody :: ProgVar -> [ProgVar] -> E.Exp -> FreestState E.Exp
   buildFunBody f as e = getFromVEnv f >>= \case
     Just s  -> return $ buildExp e as s
-    Nothing -> let p = pos f in addError (FuctionLacksSignature p f) $> e
+    Nothing -> addError (FuctionLacksSignature (pos f) f) $> e
       
   buildExp :: E.Exp -> [ProgVar] -> T.Type -> E.Exp
   buildExp e [] _ = e
