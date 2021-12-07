@@ -1,7 +1,7 @@
-mathServer : &{Opposite: ?Int;!Int, Plus: ?Int;?Int;!Int} -> Skip
+mathServer : &{Negate: ?Int;!Int, Plus: ?Int;?Int;!Int} -> Skip
 mathServer c =
   match c with {
-    Opposite c ->
+    Negate c ->
       let (n, c) = receive c in
       send (-n) c,
     Plus c ->
@@ -12,7 +12,7 @@ mathServer c =
 
 main : Int
 main =
-  let (r,w) = new &{Opposite: ?Int;!Int, Plus: ?Int;?Int;!Int} in
-  let _ = fork[Skip] (mathServer r) in
-  let (x, _) = receive (send 5 (select Opposite w)) in
+  let (r,w) = new &{Negate: ?Int;!Int, Plus: ?Int;?Int;!Int} in
+  let _ = fork (mathServer r) in
+  let (x, _) = receive (send 5 (select Negate w)) in
   x
