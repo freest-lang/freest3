@@ -59,6 +59,7 @@ data ErrorType =
   | MultipleFunBindings Pos ProgVar Pos
   -- Elab
   | TypeVarOutOfScope Pos TypeVar
+  | WrongTypeApp Pos T.Type T.Type
   | FuctionLacksSignature Pos ProgVar
   -- Duality
   | DualOfNonRecVar Pos  T.Type
@@ -105,6 +106,7 @@ instance Position ErrorType where
   pos (MultipleTypeDecl     p _ _  ) = p
   pos (MultipleFunBindings  p _ _  ) = p
   pos (TypeVarOutOfScope     p _   ) = p
+  pos (WrongTypeApp       p  _ _   ) = p
   pos (FuctionLacksSignature p _   ) = p
   pos (DualOfNonRecVar       p _   ) = p
   pos (DualOfNonSession      p _   ) = p
@@ -179,6 +181,11 @@ errorMsg _ (MultipleFunBindings p pv p') =
   , Error p, Error "\n\t             ", Error p' ]
 -- Elaboration.Elaboration
 errorMsg _ (TypeVarOutOfScope _ tv) = [ Error "Type variable not in scope:", Error tv]
+errorMsg _ (WrongTypeApp _ t u) =
+  [ Error "Wrong type application"
+  , Error "\n\t was expecting: ", Error t
+  , Error "\n\t but got:       ", Error u]
+  
 errorMsg _ (FuctionLacksSignature _ pv) =
   [ Error "The binding for function", Error pv
   , Error "lacks an accompanying type signature"]

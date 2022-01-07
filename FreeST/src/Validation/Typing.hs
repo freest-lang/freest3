@@ -40,8 +40,7 @@ import           Util.Error
 import           Util.PreludeLoader             ( userDefined ) -- debug
 import qualified Validation.Extract            as Extract
 import qualified Validation.Kinding            as K -- Again?
-import qualified Validation.Rename             as Rename
-                                                ( subs )
+import qualified Validation.Rename             as Rename ( subs )
 
 -- SYNTHESISING A TYPE
 

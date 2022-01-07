@@ -6,13 +6,13 @@ module Elaboration.Elaboration
 where
 
 import           Data.Functor
-import           Data.Map.Strict               as Map
+import qualified Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
 import           Elaboration.ResolveDuality    as Dual
 import           Syntax.Base
 import qualified Syntax.Expression             as E
 import qualified Syntax.Kind                   as K
-import           Syntax.Program                 ( VarEnv )
+import           Syntax.Program                 ( VarEnv, TypeEnv )
 import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
@@ -20,9 +20,14 @@ import           Util.Error
 import           Util.FreestState
 import           Util.PreludeLoader             ( userDefined )
 import           Validation.Rename              ( isFreeIn )
+import           Validation.Substitution              ( subs )
+import           Validation.Rename
 
 elaboration :: FreestState ()
 elaboration = do
+  -- | Builds recursive types
+  -- Performs the proper substitutions (for type applications)
+  buildRecTypes
   -- | Solve the equations' system.
   solveEquations
   -- | From this point, there are no type names on the RHS
@@ -46,14 +51,63 @@ elaboration = do
   --   From f x = E and f : T -> U
   --   build a lambda expression: f = \x : T -> E
   buildProg
---  debugM . ("Building recursive types" ++) <$> show =<< getTEnv
+  -- debugM . ("Building recursive types" ++) <$> show =<< getTEnv
+  -- debugM . ("VEnv" ++) <$> show . userDefined =<< getVEnv
+ 
 
 type Visited = Set.Set TypeVar
 
+
+-- | Builds recursive types
+-- 
+-- Assumes that each type abbreviation and datatype:
+-- ex: type LC a:MU = +{ Cons: !a;(LC a), Nil: Skip }
+-- comes (from the parser) as
+-- type LC a:MU = \a:MU -> rec LC . +{ Cons: !a;(LC a), Nil: Skip }
+--
+-- Then, it traverses the type env and transforms each type abbrv/datatype into:
+-- type LC a:MU = \a:MU -> rec LC . +{ Cons: !a;LC, Nil: Skip }
+-- issues an error if the application is ill-formed.
+
+buildRecTypes :: FreestState ()
+buildRecTypes = getTEnv >>= tMapWithKeyM simplifyRec >>= setTEnv 
+
+simplifyRec :: TypeVar -> (K.Kind, T.Type) -> FreestState (K.Kind, T.Type)
+simplifyRec name (k, u) = (k,) <$> subsApp u
+  where
+    -- acc :: T.Type -> initially is the name of the type abbreviation
+    buildApp :: T.Type -> T.Type -> T.Type
+    buildApp acc (T.Abs _ (K.Bind _ x _ t)) = buildApp (T.App (pos acc) acc (T.Var (pos x) x)) t
+    buildApp acc _ = acc
+
+    subsApp :: T.Type -> FreestState T.Type
+    subsApp (T.Arrow p m t1 t2) = T.Arrow p m <$> subsApp t1 <*> subsApp t2
+    subsApp (T.Pair p t1 t2) = T.Pair p <$> subsApp t1 <*> subsApp t2
+    subsApp (T.Variant p tm) = T.Variant p <$> mapM subsApp tm
+    subsApp (T.Semi p t1 t2) = T.Semi p <$> subsApp t1 <*> subsApp t2
+    subsApp (T.Message p pol t) = T.Message p pol <$> subsApp t
+    subsApp (T.Choice p pol tm) = T.Choice p pol  <$> mapM subsApp tm
+    subsApp (T.Forall p (K.Bind p1 x k t)) = T.Forall p . K.Bind p1 x k <$> subsApp t
+    subsApp (T.Rec p (K.Bind p1 x k t)) = T.Rec p . K.Bind p1 x k <$> subsApp t
+    subsApp (T.Dualof p t) = T.Dualof p <$> subsApp t
+    subsApp t@T.App{} =
+      let app   = buildApp (T.Var (pos name) name) u
+          equal = compareApp app t in
+        if equal
+        then pure $ T.Var (pos name) name
+        else addError (WrongTypeApp (pos t) app t) $> t
+    subsApp (T.Abs p (K.Bind p1 x k t)) = T.Abs p . K.Bind p1 x k <$> subsApp t
+    subsApp p = pure p
+ 
+    compareApp :: T.Type -> T.Type -> Bool
+    compareApp (T.App _ t1 u1) (T.App _ t2 u2) = compareApp t1 t2 && compareApp u1 u2
+    compareApp (T.Var _ x)     (T.Var _ y)     = x == y
+    compareApp _ _                             = False 
+ 
 -- | Solve equations (TypeEnv)
 
 solveEquations :: FreestState ()
-solveEquations = buildRecursiveTypes >> solveAll >> cleanUnusedRecs
+solveEquations = solveAll >> cleanUnusedRecs
  where
   solveAll :: FreestState ()
   solveAll =
@@ -80,24 +134,20 @@ solveEquations = buildRecursiveTypes >> solveAll >> cleanUnusedRecs
   solveEq v f (T.Rec p (K.Bind p1 x k t)) =
     T.Rec p . K.Bind p1 x k <$> solveEq (x `Set.insert` v) f t
   solveEq v f (T.Dualof p t) = T.Dualof p <$> solveEq v f t
+  solveEq v f (T.App p t u) = T.App p <$> solveEq v f t <*> solveEq v f u
+  solveEq v f (T.Abs p (K.Bind p1 x k t)) =
+    T.Abs p . K.Bind p1 x k <$> solveEq (x `Set.insert` v) f t
+--    T.Abs p . K.Bind p1 x k <$> solveEq v f t
   solveEq _ _ p              = pure p
 
-
--- | Build recursive types
-
-buildRecursiveTypes :: FreestState ()
-buildRecursiveTypes = Map.mapWithKey buildRec <$> getTEnv >>= setTEnv
-  where buildRec x (k, t) = (k, T.Rec (pos x) (K.Bind (pos x) x k t))
-
--- | Clean rec types where the variable does not occur free
-
 cleanUnusedRecs :: FreestState ()
-cleanUnusedRecs = Map.mapWithKey clean <$> getTEnv >>= setTEnv
- where
-  clean x u@(k, T.Rec _ (K.Bind _ _ _ t)) | x `isFreeIn` t = u
-                                          | otherwise      = (k, t)
-  clean _ kt = kt
-
+cleanUnusedRecs = Map.mapWithKey (\x (k,t) -> (k, clean x t)) <$> getTEnv >>= setTEnv
+  where
+    clean x (T.Abs p (K.Bind p1 x1 k1 t)) = T.Abs p $ K.Bind p1 x1 k1 $ clean x t
+    clean x (T.Rec p (K.Bind p' y k t))
+      | x `isFreeIn` t = T.Rec p $ K.Bind p' y k $ clean x t
+      | otherwise      = t    
+    clean _ kt = kt
 
 -- | Substitutions over environment (VarEnv + ParseEnv)
 
@@ -114,6 +164,11 @@ instance Substitution VarEnv where
 
 instance Substitution ParseEnv where
   substitute = tMapWithKeyM_ (\x (ps, e) -> addToPEnv x ps =<< elaborate e)
+
+
+instance Substitution TypeEnv where
+  substitute = tMapWithKeyM_ (\x (k, t) -> addToTEnv x k =<< elaborate t)
+
 
 -- | Elaboration: Substitutions over Type, Exp, TypeMap, FieldMap, and Binds
 
@@ -134,7 +189,9 @@ instance Elaboration T.Type where
     Nothing -> pure n
   elaborate (  T.Dualof p t     ) = T.Dualof p <$> elaborate t
   elaborate (  T.App    p t    u) = T.App p <$> elaborate t <*> elaborate u
-  elaborate (  T.Abs    p kb    ) = T.Abs p <$> elaborate kb
+  elaborate (  T.Abs    p b    ) =  T.Abs p <$> elaborate b
+  -- elaborate (  T.Abs    p (K.Bind p' x k a)    ) =
+  --   T.Abs p . K.Bind p' x k <$> (elaborate =<< rename Map.empty a)
   elaborate t                     = pure t
 
 -- Apply elaborateType over TypeMaps

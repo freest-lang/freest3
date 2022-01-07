@@ -33,6 +33,8 @@ instance DefaultTypeOp T.Type where
     lookupPos m p $ T.Choice p pol $ getDefault m cm
   getDefault m (T.Forall p b) = lookupPos m p $ T.Forall p $ getDefault m b
   getDefault m (T.Rec    p b) = lookupPos m p $ T.Rec p $ getDefault m b
+  getDefault m (T.App    p t u) = T.App p (getDefault m t) (getDefault m u)
+  getDefault m (T.Abs    p b) = lookupPos m p $ T.Abs p (getDefault m b)
   getDefault _ t              = t
 
 instance DefaultTypeOp Exp where

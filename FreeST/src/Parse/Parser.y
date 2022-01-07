@@ -5,6 +5,7 @@ where
 
 import           Control.Monad.State
 import qualified Data.Map.Strict               as Map
+import           Data.Bifunctor                 ( second )
 import           Parse.Lexer
 import           Parse.ParseUtils
 import           Syntax.Base
@@ -143,22 +144,34 @@ Decl :: { () }
   -- Type abbreviation
   | type KindedTVar TypeDecl {% do
       toStateT $ checkDupTypeDecl (fst $2)
-      toStateT $ uncurry addToTEnv $2 $3
+      toStateT $ uncurry addToTEnv $2 (buildRecursive $2 $3)
     }
   -- Datatype declaration
-  | data KindedTVar '=' DataCons {% do
+  | data KindedTVar KindBinds '=' DataCons {% do
       let a = fst $2
       toStateT $ checkDupTypeDecl a
-      let bs = typeListToType a $4 :: [(ProgVar, T.Type)]
-      toStateT $ mapM_ (\(c, t) -> addToVEnv c t) bs
+      let bs = typeListToType a $3 $5 :: [(ProgVar, T.Type)]
+ --      toStateT $ debugM $ show bs ++ "\n\n"
+      let bs' = map (second $ forallTypeOnCons $3) bs
+      toStateT $ mapM_ (\(c, t) -> addToVEnv c t) bs'
       let p = pos a
-      toStateT $ uncurry addToTEnv $2 (T.Variant p (Map.fromList bs))
+      let e = buildVariant (pos a) $3 bs
+--      toStateT $ debugM $ "Map from List bs -> " ++ show (Map.fromList bs) ++ "\n\n\t" ++ show e
+      toStateT $ uncurry addToTEnv $2 (buildRecursive $2 e)
     }
 
 TypeDecl :: { T.Type }
   : '=' Type          { $2 }
   | KindBind TypeDecl { let (a,k) = $1 in T.Abs (pos a) (K.Bind (pos k) a k $2) }
-  
+    
+KindBinds :: { [(TypeVar, K.Kind)] }
+  : {- empty -}               { [] }
+  | KindedTVarLower KindBinds { $1 : $2 }
+
+KindedTVarLower :: { (TypeVar, K.Kind) }    -- for type and data declarations
+  : TypeVar ':' Kind { ($1, $3) }
+  | TypeVar          { ($1, omission (pos $1)) }
+    
 DataCons :: { [(ProgVar, [T.Type])] }
   : DataCon              {% toStateT $ checkDupCons $1 [] >> return [$1] }
   | DataCon '|' DataCons {% toStateT $ checkDupCons $1 $3 >> return ($1 : $3) }

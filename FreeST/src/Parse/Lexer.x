@@ -5,7 +5,6 @@ module Parse.Lexer
 , getText
 ) where
 
-
 import           Syntax.Base (Pos(..), Position(..))
 import           Util.Error (ErrorType(..))
 }

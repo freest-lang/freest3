@@ -53,7 +53,7 @@ typeCheck = do
 
   -- * Check the formation of all function signatures
 --  debugM "checking the formation of all function signatures (kinding)"
-  mapM_ (K.synthetise Map.empty) =<< getVEnv
+  mapM_ (K.synthetise Map.empty) . userDefined =<< getVEnv
   -- Gets the state and only continues if there are no errors so far
   -- Can't continue to equivalence if there are ill-formed types
   -- (i.e. not contractive under a certain variable)

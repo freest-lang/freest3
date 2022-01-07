@@ -183,7 +183,7 @@ instance Unparse T.Type where
   unparse (T.Var  _ a     ) = (maxRator, show a)
   unparse (T.CoVar _ a    ) = (maxRator, "dual " ++ show a)
   unparse (T.Abs _ b      ) = (arrowRator, "λ" ++ showBindType b)
-  unparse (T.App _ t u    ) = (appRator, "(" ++ l ++ " " ++ r ++ ")")
+  unparse (T.App _ t u    ) = (appRator, l ++ " " ++ r)
    where
     l = bracket (unparse t) Left appRator
     r = bracket (unparse u) Right appRator

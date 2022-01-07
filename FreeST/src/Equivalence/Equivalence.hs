@@ -80,9 +80,10 @@ instance Equivalence T.Type where
       equiv (Set.insert (pos t1, pos t2) v) kEnv t1 (Subs.unfold t2)
     equiv _ _ (T.Var _ a1) (T.Var _ a2) = a1 == a2 -- Polymorphic variable
     -- Type operators
-    equiv v kEnv (T.Abs _ (K.Bind p a1 k1 t1)) (T.Abs _ (K.Bind _ a2 k2 t2)) =
+    equiv v kEnv a@(T.Abs _ (K.Bind p a1 k1 t1)) b@(T.Abs _ (K.Bind _ a2 k2 t2)) =
       k1 <: k2 && k2 <: k1 &&
-        equiv v (Map.insert a1 k1 kEnv) t1 (Subs.subs (T.Var p a1) a2 t2)
+        equiv (Set.insert (pos a, pos b) v)
+          (Map.insert a1 k1 kEnv) t1 (Subs.subs (T.Var p a1) a2 t2)
     equiv v kEnv (T.App _ t1 u1) (T.App _ t2 u2) =
       equiv v kEnv t1 t2 && equiv v kEnv u1 u2
     equiv v kEnv t@T.App{} u         = equiv v kEnv (normalise t) u

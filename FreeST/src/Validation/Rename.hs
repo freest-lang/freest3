@@ -48,7 +48,7 @@ renameState = do
   -- TypeVenv
   tEnv <- getTEnv
   -- | Why do we need to rename the tenv ??
-  -- tEnv' <- tMapM (\(k, s) -> rename Map.empty s >>= \s' -> return (k, s')) tEnv
+  -- tEnv' <- tMapM (\(k, s) -> rename Map.empty s >>= \s' -> return (k, s')) t m Env
   -- setTEnv tEnv'
 
   -- VarEnv + ExpEnv, together
@@ -111,7 +111,7 @@ rename' bs (T.Var    p a     ) = return $ T.Var p (findWithDefaultVar a bs)
 rename' bs (T.CoVar    p a   ) = return $ T.CoVar p (findWithDefaultVar a bs)
   -- Type operators
 rename' bs (T.App    p t u   ) = T.App p <$> rename bs t <*> rename bs u
-rename' bs (T.Abs    p b     ) =  T.Abs p <$> rename bs b
+rename' bs (T.Abs    p b     ) = T.Abs p <$> rename bs b
 rename' _  t@T.Dualof{}        = internalError "Validation.Rename.rename" t
   -- Otherwise: Basic, Skip, Message, TypeName
 rename' _  t                   = return t
@@ -219,7 +219,7 @@ isFreeIn :: TypeVar -> T.Type -> Bool
 isFreeIn x (T.Arrow _ _ t u) = x `isFreeIn` t || x `isFreeIn` u
 isFreeIn x (T.Pair _ t u ) = x `isFreeIn` t || x `isFreeIn` u
 isFreeIn x (T.Variant _ fm) =
-  Map.foldr' (\t b -> x `isFreeIn` t || b) False fm
+  Map.foldr' (\t b -> b || x `isFreeIn` t) False fm
     -- Session types
 isFreeIn x (T.Semi _ t u) = x `isFreeIn` t || x `isFreeIn` u
 isFreeIn x (T.Choice _ _ tm) =

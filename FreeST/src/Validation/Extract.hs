@@ -31,6 +31,7 @@ import           Data.Functor
 import qualified Data.Map.Strict as Map
 import           Equivalence.Normalisation ( normalise )
 import           Syntax.Base
+import qualified Syntax.Kind as K
 import qualified Syntax.Expression as E
 import           Syntax.ProgramVariable ( ProgVar )
 import qualified Syntax.Type as T
@@ -53,7 +54,9 @@ pair e t =
 
 forall :: E.Exp -> T.Type -> FreestState T.Type
 forall e t =
-  case normalise t of
+  -- let v = normalise t in
+  -- debugM ("t: " ++ show t ++ "\n" ++ show v ++ "\n" ++ Rename.subs ) >>
+  case normalise t of    
     u@T.Forall{} -> return u
     u            -> let p = pos e in
       addError (ExtractError p "a polymorphic" e u) $> T.Forall p (omission p)
@@ -92,6 +95,8 @@ choiceMap view msg e t =
       if view == view'
       then return $ Map.map (\v -> T.Semi (pos v) v u) m
       else choiceErr t
+    t@(T.Semi _ (T.Rec _ _) _) -> choiceMap view msg e t     
+    t@T.Rec{} -> choiceMap view msg e t     
     u -> choiceErr u
  where
   choiceErr :: T.Type -> FreestState T.TypeMap
@@ -102,6 +107,7 @@ datatypeMap :: E.Exp -> T.Type -> FreestState T.TypeMap
 datatypeMap e t =
   case normalise t of
     (T.Variant _ m) -> return m
+    t@T.Rec{} -> datatypeMap e t
     u                -> let p = pos e in
       addError (ExtractError p "a datatype" e u) $> Map.empty
 
