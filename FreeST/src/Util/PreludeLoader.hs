@@ -51,16 +51,14 @@ typeList =
   , (mkVar p "(<)"     , read "Int -> Int -> Bool")
   , (mkVar p "(>)"     , read "Int -> Int -> Bool")
   , (mkVar p "(<=)"    , read "Int -> Int -> Bool")
-  , ( mkVar p "(>=)"   , read "Int -> Int -> Bool")
+  , (mkVar p "(>=)"    , read "Int -> Int -> Bool")
   -- Bool
   , (mkVar p "not" , read "Bool -> Bool")
   , (mkVar p "(&&)", read "Bool -> Bool -> Bool")
-  , ( mkVar p "(||)"
-    , read "Bool -> Bool -> Bool"
-    )
+  , (mkVar p "(||)", read "Bool -> Bool -> Bool")
   -- Char
   , (mkVar p "ord", read "Char -> Int")
-  , ( mkVar p "chr", read "Int -> Char")
+  , (mkVar p "chr", read "Int -> Char")
   -- Pair
   , (mkVar p "fst", read "∀ a:TL . ∀ b:TU . (a, b) -> a")
   , (mkVar p "snd", read "∀ a:TU . ∀ b:TL . (a, b) -> b")
@@ -74,7 +72,7 @@ typeList =
   , (mkVar p "printUnit"  , read "() -> ()")
   , (mkVar p "printUnitLn", read "() -> ()")
   , (mkVar p "printString", read "String -> ()")
-  , ( mkVar p "printStringLn", read "String -> ()")
+  , (mkVar p "printStringLn", read "String -> ()")
   -- Fork
   , (mkVar p "fork", read "∀a:TL. a -> ()")
   -- Error
