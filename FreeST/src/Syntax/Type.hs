@@ -43,7 +43,7 @@ data Type =
   | Message Pos Polarity Type
   | Choice Pos View TypeMap
   -- Polymorphism and recursive types
-  | Forall Pos (K.Bind Type)   -- ∀ a:k . T, Universal type
+  | Forall Pos (K.Bind Type)   -- ∀k . T, Universal type
   | Rec Pos (K.Bind Type)      -- μ a:k . T, Recursive type
   | Var Pos TypeVar
   -- Type operators

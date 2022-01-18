@@ -2,7 +2,7 @@
 Module      :  MovingAverage
 Description :  Calculates the moving average
 Copyright   :  (c) LASIGE and University of Lisbon, Portugal
-Maintainer  :  FreeST authors
+Maintainer  :  Bernardo Almeida
 
 Calculates the moving average.
 
@@ -33,13 +33,13 @@ writeAll i c =
       select More c & send i & writeAll[a] (i+1)
   else select End c
 
-readValues : ?Int;?Int;dualof Channel ⊸ Channel ⊸ Skip
+readValues : ?Int;?Int;dualof Channel -> Channel -> Skip
 readValues c1 c2 =
   let (x, c1) = receive c1 in
   let (y, c1) = receive c1 in
   readAll[Skip] x y c1 c2 
 
-readAll : ∀ a : SL . Int -> Int -> dualof Channel ; a ⊸ Channel ⊸ a
+readAll : ∀ a : SL . Int -> Int -> dualof Channel ; a -> Channel -> a
 readAll x y c1 c2 =
   match c1 with {
     More c1 ->
@@ -50,7 +50,7 @@ readAll x y c1 c2 =
   }
 
 average : Int -> Int -> Int -> Int
-average x y z = (x+y+z) / 3
+average x y z = (x + y + z) / 3
 
 main : ()
 main =
