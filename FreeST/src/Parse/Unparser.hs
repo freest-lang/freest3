@@ -124,8 +124,8 @@ data Precedence =
   | PCmp     -- comparison (relational and equality)
   | PAdd     -- +, -
   | PMult    -- *, /
-  | PDot     -- ∀ a:k . T and μ a:k . T
-  | PArrow   -- λλ a:k => e,  x:T -> e, λ x:T -o e, T -> T and T -o T
+  | PDot     -- μ a:k . T
+  | PArrow   -- λλ a:k => e,  x:T -> e, λ x:T -o e, T -> T and T -o T and ∀ a:k . T
   | PSemi    -- T ; U
   | PMsg     -- !T and ?T
   | PDualof  -- dualof T
@@ -198,7 +198,7 @@ instance Unparse T.Type where
     r = bracket (unparse u) Right semiRator
   unparse (T.Choice _ v m) =
     (maxRator, show v ++ "{" ++ showChoice m ++ "}")
-  unparse (T.Forall _ b) = (dotRator, "∀" ++ showBindType b) -- ++ "=>" ++ s)
+  unparse (T.Forall _ b) = (arrowRator, "∀" ++ showBindType b) -- ++ "=>" ++ s)
     -- where s = bracket (unparse t) Right dotRator
   unparse (T.Rec _ b) = (dotRator, "rec " ++ showBindType b) -- xk ++ "." ++ s)
     -- where s = bracket (unparse t) Right dotRator
