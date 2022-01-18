@@ -77,8 +77,8 @@ instance {-# OVERLAPPING #-} Show TestExpectation where
   show (Right err) = err
 
 showErrors :: Errors -> String
-showErrors = intercalate "\n" . map (formatError Nothing Map.empty) . sortBy cmp . take 2
- where cmp err1 err2 = pos err1 `compare` pos err2
+showErrors = intercalate "\n" . map f . take 2 . reverse
+  where f = formatError Nothing Map.empty []
 
 testValidExpectation :: Bool -> Errors -> TestExpectation
 testValidExpectation b errs
