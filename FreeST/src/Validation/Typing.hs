@@ -22,7 +22,6 @@ where
 
 import           Control.Monad.State            ( when
                                                 , unless
-                                                , void
                                                 )
 import           Data.Functor
 import qualified Data.Map.Strict               as Map

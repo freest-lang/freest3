@@ -403,9 +403,8 @@ parseProgram inputFile vEnv = -- do
 
 parseDefs :: FilePath -> VarEnv -> String -> FreestS
 parseDefs file varEnv str =
-  let runOpts = initialOpts { runFilePath = Just file } in
   case execStateT (lexer str file terms)
-         (initialState { varEnv, runOpts }) of
+         (initialState { varEnv }) of
     Ok s1 -> s1
     Failed err -> initialState { errors = [err] }
 

@@ -4,16 +4,14 @@ module Validation.TestExpressionValidSpec
 where
 
 import           Control.Monad.State
-import qualified Data.Map.Strict               as Map
-import           Elaboration.Elaboration        
-import           Elaboration.ResolveDuality    as Dual
+import qualified Data.Map.Strict            as Map
+import           Elaboration.ResolveDuality as Dual
 import           SpecUtils
 import           Syntax.Expression
 import           Util.FreestState
-import           Util.PreludeLoader            ( prelude )
-import           Validation.Typing              ( checkAgainst )
-import Validation.Rename
-import Debug.Trace
+import           Util.PreludeLoader         ( prelude )
+import           Validation.Rename
+import           Validation.Typing          ( checkAgainst )
 
 spec :: Spec
 spec = describe "Valid expressions" $ do

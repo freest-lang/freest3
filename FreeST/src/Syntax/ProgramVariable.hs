@@ -14,7 +14,6 @@ module Syntax.ProgramVariable
 ) where
 
 import Syntax.Base
-import Data.Char (isUpper) -- TODO: remove
 
 -- Note: isomorphic to TypeVariables: Type <-> Prog
 data ProgVar = ProgVar Pos String

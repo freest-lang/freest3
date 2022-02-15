@@ -70,15 +70,14 @@ module Util.FreestState (
 -- * Run Options
   , RunOpts(..)
   , defaultOpts
-  , initialOpts
+--  , initialOpts
   , getMain
   , isMainFlagSet
-  , isQuietFlagSet
+  -- , isQuietFlagSet
   , getOpts
   )
 where
 
-import           Control.Applicative
 import           Control.Monad.State
 import           Data.List ( intercalate ) -- , sortBy )
 import qualified Data.Map.Strict as Map
@@ -127,7 +126,7 @@ type FreestState = State FreestS
 -- | Initial State
 
 initialState :: FreestS
-initialState = FreestS { runOpts    = initialOpts
+initialState = FreestS { runOpts    = defaultOpts
                        , varEnv     = Map.empty
                        , prog       = Map.empty
                        , typeEnv    = Map.empty
@@ -168,7 +167,7 @@ freshTVar s p = mkVar p . (s ++) . show <$> getNextIndex
 -- | FILE NAME
 
 getFileName :: FreestState String
-getFileName = fromMaybe "" . runFilePath <$> gets runOpts
+getFileName = runFilePath <$> gets runOpts
 
 -- | VAR ENV
 
@@ -252,7 +251,6 @@ getWarnings s =
    (intercalate "\n" . map f . take 10 . reverse . warnings) s
   where
     f = formatWarning (runFilePath $ runOpts s) (typenames s)
---    cmp x y = compare (pos x) (pos y)
 
 hasWarnings :: FreestS -> Bool
 hasWarnings = not . null . warnings
@@ -299,28 +297,19 @@ debugM err = do
 
 -- | Run Options
 
-data RunOpts = RunOpts { runFilePath  :: Maybe FilePath
+data RunOpts = RunOpts { runFilePath  :: FilePath
 --                     , preludeFile  :: Maybe FilePath
                        , mainFunction :: Maybe ProgVar
                        , quietmode    :: Bool
                        } deriving Show
 
-instance Semigroup RunOpts where
-  o1 <> o2 = RunOpts { runFilePath  = runFilePath o1 <|> runFilePath o2
---                    , preludeFile  = preludeFile o1 <|> preludeFile o2
-                     , mainFunction = mainFunction o1 <|> mainFunction o2
-                     , quietmode    = quietmode o1 || quietmode o2
-                     }
 
 defaultOpts :: RunOpts
-defaultOpts = RunOpts { runFilePath  = Nothing
+defaultOpts = RunOpts { runFilePath  = ""
 --                    , preludeFile  = Just "Prelude.fst"
                       , mainFunction = Nothing
                       , quietmode    = False
                       }
-
-initialOpts :: RunOpts
-initialOpts = RunOpts Nothing Nothing False -- Nothing
 
 getMain :: RunOpts -> ProgVar
 getMain opts = fromMaybe (mkVar defaultPos "main") maybeMain
@@ -329,8 +318,8 @@ getMain opts = fromMaybe (mkVar defaultPos "main") maybeMain
 isMainFlagSet :: RunOpts -> Bool
 isMainFlagSet = isJust . mainFunction
 
-isQuietFlagSet :: RunOpts -> Bool
-isQuietFlagSet = quietmode
+-- isQuietFlagSet :: RunOpts -> Bool
+-- isQuietFlagSet = quietmode
 
 getOpts :: FreestState RunOpts
 getOpts = gets runOpts

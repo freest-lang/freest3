@@ -14,7 +14,6 @@ module Validation.Subkind
   )
 where
 
-import           Syntax.Base
 import qualified Syntax.Kind                   as K
 import           Util.Error                    ( internalError )
 

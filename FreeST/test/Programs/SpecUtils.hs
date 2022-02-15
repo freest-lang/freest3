@@ -1,10 +1,10 @@
 module SpecUtils where
 
-import System.Directory (getCurrentDirectory, listDirectory, setCurrentDirectory)
-import System.Exit (ExitCode (ExitSuccess))
+import Control.Monad (forM_)
+import System.Directory (getCurrentDirectory, listDirectory)
+-- import System.Exit (ExitCode (ExitSuccess))
 import System.FilePath (takeExtension)
 import Test.Hspec (Spec, runIO, describe, parallel)
-import Control.Monad (forM_)
 
 getSource :: [String] -> String
 getSource [] = ""

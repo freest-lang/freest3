@@ -49,7 +49,7 @@ testOne file = hCapture [stdout, stderr] $ catches
 
   runTest :: IO TestResult
   runTest =
-    timeout timeInMicro (checkAndRun defaultOpts { runFilePath = Just file, quietmode = True })
+    timeout timeInMicro (checkAndRun defaultOpts { runFilePath = file, quietmode = True })
       >>= \case
             Just _  -> pure Passed
             Nothing -> pure Timeout
