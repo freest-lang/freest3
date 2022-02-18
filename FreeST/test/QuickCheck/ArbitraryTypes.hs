@@ -25,6 +25,10 @@ instance Arbitrary Multiplicity where
 instance Arbitrary T.Polarity where
   arbitrary = elements [T.In, T.Out]
 
+instance Arbitrary T.View where
+  arbitrary = elements [T.External, T.Internal]
+  
+
 ids :: [String]            -- Type Variables
 ids = ["x", "y", "z"]
 
