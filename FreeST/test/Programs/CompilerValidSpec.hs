@@ -44,8 +44,8 @@ testOne file = hCapture [stdout, stderr] $ catches
   ]
  where
   exitProgram :: ExitCode -> IO TestResult
-  exitProgram ExitSuccess = pure Passed -- return True
-  exitProgram _           = pure Failed   -- return False
+  exitProgram ExitSuccess = pure Passed
+  exitProgram _           = pure Failed
 
   runTest :: IO TestResult
   runTest =
@@ -56,7 +56,7 @@ testOne file = hCapture [stdout, stderr] $ catches
 
 -- n microseconds (1/10^6 seconds).
 timeInMicro :: Int
-timeInMicro = 6 * 1000000
+timeInMicro = 3 * 1000000
 
 checkResult :: (String, TestResult) -> FilePath -> Spec
 checkResult (res, Passed) file = checkAgainstExpected file res
@@ -69,16 +69,11 @@ checkAgainstExpected file res = do
   let expFile = file -<.> "expected"
   runIO (safeRead expFile) >>= \case
     Just s ->
-      it ("Testing " ++ takeFileName file)
-        $          filter (/= '\n') res
-        `shouldBe` filter (/= '\n') s
+      it ("Testing " ++ takeFileName file) $
+        filter (/= '\n') res `shouldBe` filter (/= '\n') s
     Nothing ->
-      it ("Testing " ++ takeFileName file)
-        $  void
-        $  assertFailure
-        $  "File "
-        ++ expFile
-        ++ " not found"
+      it ("Testing " ++ takeFileName file) $
+        void $ assertFailure $ "File " ++ expFile ++ " not found"
  where
   safeRead :: FilePath -> IO (Maybe String)
   safeRead f = do
