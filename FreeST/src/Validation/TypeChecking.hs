@@ -24,7 +24,6 @@ import           Control.Monad.State            ( when
                                                 , unless
                                                 )
 import qualified Data.Map.Strict               as Map
-import           Data.Maybe
 import           Syntax.Base
 import qualified Syntax.Expression             as E
 import qualified Syntax.Kind                   as K

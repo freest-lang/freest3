@@ -5,12 +5,9 @@ module Parse.Lexer
 , getText
 ) where
 
-import qualified Data.Map.Strict as Map
-import           Parse.ParseUtils
-import           Syntax.Base
-import           Util.PrettyError
-import           Util.Error
-import           Util.ErrorMessage
+
+import           Syntax.Base (Pos(..), Position(..))
+import           Util.Error (ErrorType(..))
 }
 
 %wrapper "posn"

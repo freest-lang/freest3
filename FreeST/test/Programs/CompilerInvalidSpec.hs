@@ -39,7 +39,7 @@ errorExpected = "An error was expected but none was thrown"
 testInvalid :: String -> String -> Spec
 testInvalid test filename = do
   b <- runIO $ hSilence [stdout, stderr] $ catches
-    (  checkAndRun (defaultOpts { runFilePath = Just test, quietmode = True })
+    (  checkAndRun defaultOpts { runFilePath = test, quietmode = True }
     >> return (Just errorExpected)
     )
     [ Handler (\(e :: ExitCode) -> return $ exitProgram e)

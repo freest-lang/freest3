@@ -15,7 +15,7 @@ import qualified Syntax.Expression             as E
 import           Util.PrettyError
 import           Util.ErrorMessage
 import qualified Data.Map                      as Map
-import           Data.Maybe
+-- import           Data.Maybe
 import           Parse.Unparser                 ()
 
 -- | Internal errors
@@ -31,10 +31,9 @@ internalError fun syntax =
 
 -- | Format errors
 
-formatError :: Maybe String -> TypeOpsEnv -> PreludeNames -> ErrorType -> String
-formatError file tops prelude err = format (pos err) (errorMsg prelude err)
+formatError :: String -> TypeOpsEnv -> PreludeNames -> ErrorType -> String
+formatError f tops prelude err = format (pos err) (errorMsg prelude err)
  where
-  f = fromMaybe "FreeST" file
   format p e = formatHeader f p ++ formatBody tops e
 
 -- | Errors

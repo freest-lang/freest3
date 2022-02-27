@@ -34,7 +34,11 @@ formatHeader f p
   | p == defaultPos = formatBold $ start ++ end
   | otherwise       = formatBold $ start ++ ":" ++ show p ++ end
  where
-  start = "\n" ++ f
+  filename 
+    | null f = "FreeST"
+    | otherwise = f
+
+  start = "\n" ++ filename
   end   = ": " ++ formatColor (Just Red) "error:\n\t"
 
 -- | Style of the error body

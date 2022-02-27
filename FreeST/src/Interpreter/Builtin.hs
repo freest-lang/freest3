@@ -193,7 +193,7 @@ initialCtx = Map.fromList
   -- Error
   , ( var "error"
     , PrimitiveFun
-      (\(String s) -> unsafePerformIO $ die $ formatError Nothing
+      (\(String s) -> unsafePerformIO $ die $ formatError ""
                                                           Map.empty
                                                           []
                                                           (ErrorFunction s)

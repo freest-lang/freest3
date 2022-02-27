@@ -27,4 +27,4 @@ parser parseFun str =
       if hasErrors state
       then error $ getErrors [] state
       else [(t, "")]
-    Failed err -> error $ formatError Nothing Map.empty [] err
+    Failed err -> error $ formatError "" Map.empty [] err

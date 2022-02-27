@@ -18,7 +18,6 @@ module Equivalence.TypeToGrammar
 where
 
 import           Bisimulation.Grammar
-import           Parse.Unparser
 import           Syntax.Base
 import qualified Syntax.Kind                   as K
 import qualified Syntax.Type                   as T
@@ -35,6 +34,7 @@ import           Data.Functor
 import qualified Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
 import           Prelude                 hiding ( Word ) -- Word is (re)defined in module Bisimulation.Grammar
+-- import           Parse.Unparser -- debug
 
 -- Conversion to context-free grammars
 

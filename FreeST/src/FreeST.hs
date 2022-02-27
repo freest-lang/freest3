@@ -6,7 +6,6 @@ module FreeST
 where
 
 import           Control.Monad.State            ( when
-                                                , unless
                                                 , execState
                                                 )
 import qualified Data.Map.Strict               as Map
@@ -14,32 +13,30 @@ import           Elaboration.Elaboration        ( elaboration )
 import           Interpreter.Builtin            ( initialCtx )
 import           Interpreter.Eval               ( evalAndPrint )
 import           Parse.Parser                   ( parseProgram )
-import           Syntax.Base
+-- import           Syntax.Base
 import           Syntax.Program
-import           System.Directory
-import           System.Environment             ( getArgs )
+-- import           System.Directory
+-- import           System.Environment             ( getArgs )
 import           System.Exit                    ( die )
-import           System.FilePath
+-- import           System.FilePath
 import           Util.PrettyError
 import           Util.ErrorMessage
 import           Util.FreestState
 import           Util.PreludeLoader             ( prelude )
 import           Validation.Rename              ( renameState )
 import           Validation.TypeChecking        ( typeCheck )
-import           Data.Version                   ( showVersion )
-import           Paths_FreeST                   ( version
-                                                , getDataFileName
-                                                )
-import           Data.Maybe
+-- import           Data.Version                   ( showVersion )
+import           Paths_FreeST                   ( getDataFileName )
+-- import           Data.Maybe
 import           Util.CmdLine
 
 main :: IO ()
-main = checkAndRun =<< handleOpts =<< compilerOpts =<< getArgs
+main = checkAndRun =<< flags -- handleOpts =<< compilerOpts =<< getArgs
 
 checkAndRun :: RunOpts -> IO ()
 checkAndRun runOpts = do
   -- No file, die
-  when (isNothing $ runFilePath runOpts) (die "")
+  -- when (isNothing $ runFilePath runOpts) (die "")
   -- Prelude
   -- preludeFilePath <- getDataFileName (fromJust $ preludeFile runOpts)
   preludeFilePath <- getDataFileName "Prelude.fst"
@@ -48,7 +45,7 @@ checkAndRun runOpts = do
   let (initialPrelude, initialProg) = fromPreludeFile s0
   let preludeNames = Map.keys initialPrelude
   -- Parse
-  s1 <- parseProgram (fromJust $ runFilePath runOpts) initialPrelude
+  s1 <- parseProgram (runFilePath runOpts) initialPrelude
   when (hasErrors s1) (die $ getErrors preludeNames s1)
   -- Solve type declarations and dualof operators
   let s2 = emptyPEnv $ execState
@@ -59,7 +56,7 @@ checkAndRun runOpts = do
   let s3 = execState renameState (s2 { runOpts })
   -- Type check
   let s4 = execState typeCheck (s3 { runOpts })
-  when (not (isQuietFlagSet runOpts) && hasWarnings s4) (putStrLn $ getWarnings s4)
+  when (not (quietmode runOpts) && hasWarnings s4) (putStrLn $ getWarnings s4)
   when (hasErrors s4)   (die $ getErrors preludeNames s4)
   -- Check if main was left undefined
   let main = getMain runOpts
