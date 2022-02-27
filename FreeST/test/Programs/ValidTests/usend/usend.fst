@@ -8,7 +8,8 @@ The type of send is
 yet it can be used with an MU type via eta-conversion.
 -}
 
-usend : ∀a:MU . a -> () -> ∀b:SL . !a;b -o b
+-- send: ∀a:ML . a ->       ∀b:SL . !a;b -o b
+usend :  ∀a:MU . a -> () -> ∀b:SL . !a;b -> b
 usend = Λa:MU => λx:a -> λ_:() -> Λb:SL => send [a] x [b]
 
 main : (Int, Skip)
