@@ -118,6 +118,7 @@ import           Util.FreestState
 %nonassoc ProgVarWildTBind
 %right '$'       -- function call
 %left '&'        -- function call
+%right '::'      -- list constructor                        native_lists
 
 %%
 -------------
@@ -210,6 +211,12 @@ Exp :: { E.Exp }
   | '(' Op Exp ')'                 { unOp $2 $3 } -- left section
   | '(' Exp Op ')'                 { unOp $3 $2 } -- right section
   | '(' Exp '-' ')'                { unOp (mkVar (pos $2) "(-)") $2 } -- right section (-)
+  --
+  | '[]'                           { E.Nil  (pos $1) }                      -- native_lists
+-- | '[' ']'                       { E.Nil  (pos $1) }                      -- native_lists
+  | Exp '::' Exp                   { E.List (pos $1) $1 $3 }                -- native_lists
+  | '[' List ']'                   { $2 }                                   -- native_lists
+  --
   | App                            { $1 }
 
 App :: { E.Exp }
@@ -233,12 +240,6 @@ Primary :: { E.Exp }
   | Lambda KindBind TAbs
       { let (a,k) = $2 in E.TypeAbs (pos a) (K.Bind (pos k) a k $3) }
   | '(' Exp ',' Tuple ')'          { E.Pair (pos $1) $2 $4 }
-  --
-  | Exp '::' Exp                   { E.List (pos $1) $1 $3 }                -- native_lists
-  | '[]'                           { E.Nil  (pos $1) }                      -- native_lists
--- | '[' ']'                       { E.Nil  (pos $1) }                      -- native_lists
-  | '[' List ']'                   { $2 }                                   -- native_lists
-  --
   | '(' Exp ')'                    { $2 }
 
 Abs :: { ((Pos, Multiplicity), E.Exp) }
@@ -276,10 +277,10 @@ CaseMap :: { FieldMap }
 
 Case :: { (ProgVar, ([ProgVar], E.Exp)) }
   : Constructor ProgVarWildSeq   '->' Exp { ($1, ($2, $4)) }
-  | CaseList                                                                -- native_lists
+  | CaseList        { $1 }                                                  -- native_lists
 
 CaseList :: { (ProgVar, ([ProgVar], E.Exp)) }                               -- native_lists
-  | '[]'                         '->' Exp { (mkVar (pos $1) (getText "Nil"),  ([], $3)) }
+  : '[]'                         '->' Exp { (mkVar (pos $1) (getText "Nil"),  ([], $3)) }
 -- | '[' ']'                     '->' Exp { (mkVar (pos $1) (getText "Nil"),  ([], $4)) }
   | ProgVarWild '::' ProgVarWild '->' Exp { (mkVar (pos $2) (getText "List"), (($1:$3:[]), $5)) }
 
