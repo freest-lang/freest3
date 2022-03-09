@@ -57,11 +57,13 @@ tokens :-
   ("=>"|⇒)                      { \p s -> TokenFArrow (internalPos p) }
   "("				                    { \p s -> TokenLParen (internalPos p) }
   ")"				                    { \p s -> TokenRParen (internalPos p) }
+  "[]"                          { \p s -> TokenNil (internalPos p) }                 -- native_lists
   "["				                    { \p s -> TokenLBracket (internalPos p) }
   "]"			                      { \p s -> TokenRBracket (internalPos p) }
   "{"				                    { \p s -> TokenLBrace (internalPos p) }
   "}"			                      { \p s -> TokenRBrace (internalPos p) }
   ","				                    { \p s -> TokenComma (internalPos p) }
+  "::"                          { \p s -> TokenFourDots (internalPos p) }            -- native_lists
   ":"                           { \p s -> TokenColon (internalPos p) }
   ";"	       	      	  	      { \p s -> TokenSemi (internalPos p) }
   "!"				                    { \p s -> TokenMOut (internalPos p) }
@@ -144,10 +146,12 @@ data Token =
   | TokenUpperLambda Pos
   | TokenLParen Pos
   | TokenRParen Pos
+  | TokenNil Pos                        -- native_lists
   | TokenLBracket Pos
   | TokenRBracket Pos
   | TokenComma Pos
   | TokenSkip Pos
+  | TokenFourDots Pos                   -- native_lists
   | TokenColon Pos
   | TokenUpperId Pos String
   | TokenSemi Pos
@@ -216,10 +220,12 @@ instance Show Token where
   show (TokenUpperLambda _) = "Λ"
   show (TokenLParen _) = "("
   show (TokenRParen _) = ")"
+  show (TokenNil _) = "[]"                -- native_lists
   show (TokenLBracket _) = "["
   show (TokenRBracket _) = "]"
   show (TokenComma _) = ","
   show (TokenSkip _) = "Skip"
+  show (TokenFourDots _) = "::"           -- native_lists
   show (TokenColon _) = ":"
   show (TokenUpperId _ c) = "" ++ c
   show (TokenSemi _) = ";"
@@ -324,10 +330,12 @@ instance Position Token where
   pos (TokenUpperLambda p) = p
   pos (TokenLParen p) = p
   pos (TokenRParen p) = p
+  pos (TokenNil p) = p                    -- native_lists
   pos (TokenLBracket p) = p
   pos (TokenRBracket p) = p
   pos (TokenComma p) = p
   pos (TokenSkip p) = p
+  pos (TokenFourDots p) = p               -- native_lists
   pos (TokenColon p) = p
   pos (TokenUpperId p _) = p
   pos (TokenSemi p) = p

@@ -44,8 +44,10 @@ import           Util.FreestState
   '('      {TokenLParen _}
   ')'      {TokenRParen _}
   ','      {TokenComma _}
+  '[]'     {TokenNil _}                   -- native_lists
   '['      {TokenLBracket _}
   ']'      {TokenRBracket _}
+  '::'     {TokenFourDots _}              -- native_lists
   ':'      {TokenColon _}
   ';'      {TokenSemi _}
   '!'      {TokenMOut _}
@@ -231,6 +233,12 @@ Primary :: { E.Exp }
   | Lambda KindBind TAbs
       { let (a,k) = $2 in E.TypeAbs (pos a) (K.Bind (pos k) a k $3) }
   | '(' Exp ',' Tuple ')'          { E.Pair (pos $1) $2 $4 }
+  --
+  | Exp '::' Exp                   { E.List (pos $1) $1 $3 }                -- native_lists
+  | '[]'                           { E.Nil  (pos $1) }                      -- native_lists
+-- | '[' ']'                       { E.Nil  (pos $1) }                      -- native_lists
+  | '[' List ']'                   { $2 }                                   -- native_lists
+  --
   | '(' Exp ')'                    { $2 }
 
 Abs :: { ((Pos, Multiplicity), E.Exp) }
@@ -251,6 +259,10 @@ Tuple :: { E.Exp }
   : Exp           { $1 }
   | Exp ',' Tuple { E.Pair (pos $1) $1 $3 }
 
+List :: { E.Exp }                                                           -- native_lists
+  : Exp           { $1 }
+  | Exp ',' List  { E.List (pos $1) $1 $3 }
+
 MatchMap :: { FieldMap }
   : Match              { uncurry Map.singleton $1 }
   | Match ',' MatchMap {% toStateT $ checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
@@ -263,7 +275,13 @@ CaseMap :: { FieldMap }
   | Case ',' CaseMap {% toStateT $ checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
 
 Case :: { (ProgVar, ([ProgVar], E.Exp)) }
-  : Constructor ProgVarWildSeq '->' Exp { ($1, ($2, $4)) }
+  : Constructor ProgVarWildSeq   '->' Exp { ($1, ($2, $4)) }
+  | CaseList                                                                -- native_lists
+
+CaseList :: { (ProgVar, ([ProgVar], E.Exp)) }                               -- native_lists
+  | '[]'                         '->' Exp { (mkVar (pos $1) (getText "Nil"),  ([], $3)) }
+-- | '[' ']'                     '->' Exp { (mkVar (pos $1) (getText "Nil"),  ([], $4)) }
+  | ProgVarWild '::' ProgVarWild '->' Exp { (mkVar (pos $2) (getText "List"), (($1:$3:[]), $5)) }
 
 Op :: { ProgVar }
    : '||'   { mkVar (pos $1) "(||)"      }
@@ -313,6 +331,7 @@ PrimaryType :: { T.Type }
   | TypeName                      { T.Var (pos $1) $1 } -- TODO: remove this one lex
   | lambda KindBind '->' Type
       { let (a,k) = $2 in T.Abs (pos $1) (K.Bind (pos a) a k $4) }
+  | '[' Type ']'                  { T.App (pos $1) (T.Var (pos $1) (mkVar (pos $1) (getText "List"))) $2 }  -- native_lists
   | '(' Type ')'                  { $2 }
 
 Forall :: { T.Type }
