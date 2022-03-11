@@ -62,8 +62,8 @@ instance Position Exp where
   pos (Char p _           ) = p
   pos (Bool p _           ) = p
   pos (String p _         ) = p
-  pos (Nil p _            ) = p -- native_lists
-  pos (List p _ _ _       ) = p -- native_lists
+  pos (Nil p              ) = p -- native_lists
+  pos (List p _ _         ) = p -- native_lists
   pos (Var p _            ) = p
   pos (Abs p _            ) = p
   pos (UnLet p _ _ _      ) = p

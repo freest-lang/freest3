@@ -280,9 +280,9 @@ Case :: { (ProgVar, ([ProgVar], E.Exp)) }
   | CaseList        { $1 }                                                  -- native_lists
 
 CaseList :: { (ProgVar, ([ProgVar], E.Exp)) }                               -- native_lists
-  : '[]'                         '->' Exp { (mkVar (pos $1) (getText "Nil"),  ([], $3)) }
--- | '[' ']'                     '->' Exp { (mkVar (pos $1) (getText "Nil"),  ([], $4)) }
-  | ProgVarWild '::' ProgVarWild '->' Exp { (mkVar (pos $2) (getText "List"), (($1:$3:[]), $5)) }
+  : '[]'                         '->' Exp { (mkVar (pos $1) "Nil",  ([], $3)) }
+-- | '[' ']'                     '->' Exp { (mkVar (pos $1) "Nil",  ([], $4)) }
+  | ProgVarWild '::' ProgVarWild '->' Exp { (mkVar (pos $2) "List", (($1:$3:[]), $5)) }
 
 Op :: { ProgVar }
    : '||'   { mkVar (pos $1) "(||)"      }
@@ -332,7 +332,7 @@ PrimaryType :: { T.Type }
   | TypeName                      { T.Var (pos $1) $1 } -- TODO: remove this one lex
   | lambda KindBind '->' Type
       { let (a,k) = $2 in T.Abs (pos $1) (K.Bind (pos a) a k $4) }
-  | '[' Type ']'                  { T.App (pos $1) (T.Var (pos $1) (mkVar (pos $1) (getText "List"))) $2 }  -- native_lists
+  | '[' Type ']'                  { T.App (pos $1) (T.Var (pos $1) (mkVar (pos $1) "List")) $2 }  -- native_lists
   | '(' Type ')'                  { $2 }
 
 Forall :: { T.Type }
