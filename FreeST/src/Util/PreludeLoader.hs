@@ -80,6 +80,9 @@ typeList =
   -- Session ops
   , (mkVar p "send", read "∀a:ML . a -> ∀b:SL . !a;b -o b")
   , (mkVar p "receive", read "∀a:ML . ∀b:SL . ?a;b -> (a, b)")
+  -- Lists
+  , (mkVar p "([])", read "[Int]")
+  , (mkVar p "(::)", read "Int -> [Int] -> [Int]")
   ]
   where p = defaultPos
 

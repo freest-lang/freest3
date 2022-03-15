@@ -212,9 +212,9 @@ Exp :: { E.Exp }
   | '(' Exp Op ')'                 { unOp $3 $2 } -- right section
   | '(' Exp '-' ')'                { unOp (mkVar (pos $2) "(-)") $2 } -- right section (-)
   --
-  | '[]'                           { E.Nil  (pos $1) }                      -- native_lists
--- | '[' ']'                       { E.Nil  (pos $1) }                      -- native_lists
-  | Exp '::' Exp                   { E.List (pos $1) $1 $3 }                -- native_lists
+  | '[]'                           { mkVar (pos $1) "([])" }                -- native_lists
+  | '[' ']'                        { mkVar (pos $1) "([])" }                -- native_lists
+  | Exp '::' Exp                   { binOp $1 (mkVar (pos $2) "(::)") $3 }  -- native_lists
   | '[' List ']'                   { $2 }                                   -- native_lists
   --
   | App                            { $1 }
@@ -276,13 +276,13 @@ CaseMap :: { FieldMap }
   | Case ',' CaseMap {% toStateT $ checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
 
 Case :: { (ProgVar, ([ProgVar], E.Exp)) }
-  : Constructor ProgVarWildSeq   '->' Exp { ($1, ($2, $4)) }
-  | CaseList        { $1 }                                                  -- native_lists
+  : Constructor ProgVarWildSeq '->' Exp { ($1, ($2, $4)) }
+  | CaseList                            { $1 }                              -- native_lists
 
 CaseList :: { (ProgVar, ([ProgVar], E.Exp)) }                               -- native_lists
-  : '[]'                         '->' Exp { (mkVar (pos $1) "Nil",  ([], $3)) }
--- | '[' ']'                     '->' Exp { (mkVar (pos $1) "Nil",  ([], $4)) }
-  | ProgVarWild '::' ProgVarWild '->' Exp { (mkVar (pos $2) "List", (($1:$3:[]), $5)) }
+  : '[]'                         '->' Exp { (mkVar (pos $1) "([])", ([], $3)) }
+  | '[' ']'                      '->' Exp { (mkVar (pos $1) "([])", ([], $4)) }
+  | ProgVarWild '::' ProgVarWild '->' Exp { (mkVar (pos $2) "(::)", (($1:$3:[]), $5)) }
 
 Op :: { ProgVar }
    : '||'   { mkVar (pos $1) "(||)"      }
