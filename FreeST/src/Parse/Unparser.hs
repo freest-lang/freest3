@@ -132,6 +132,7 @@ data Precedence =
   | PDualof  -- dualof T
   | PApp     -- e1 e2
   | PMax
+  | PList    -- native_lists
   deriving (Eq, Ord, Bounded)
 
 data Associativity = Left | Right | NonAssoc deriving Eq
@@ -157,6 +158,7 @@ dualofRator = (PDualof, Right)
 appRator = (PApp, Left)
 minRator = (minBound, NonAssoc)
 maxRator = (maxBound, NonAssoc)
+listRator = (PList, Right)         -- native_lists
 
 noparens :: Rator -> Rator -> Associativity -> Bool
 noparens (pi, ai) (po, ao) side = pi > po || pi == po && ai == ao && ao == side
@@ -268,6 +270,12 @@ instance Unparse Exp where
    where
     l = bracket (unparse e1) Left appRator
     r = bracket (unparse e2) Right appRator
+  -- List                                                       -- native_lists
+  unparse (E.App _ (E.App _ (E.Var p x) e1) e2) | isList x =
+   (listRator, l ++ showOp x ++ r)
+   where
+    l = bracket (unparse e1) Left  listRator
+    r = bracket (unparse e2) Right listRator
   -- Pair intro and elim
   unparse (E.Pair _ e1 e2) = (maxRator, "(" ++ l ++ ", " ++ r ++ ")")
    where
@@ -319,6 +327,9 @@ isAdd = isOp ["(+)", "(-)"]
 
 isMult :: ProgVar -> Bool
 isMult = isOp ["(*)", "(/)"]
+
+isList :: ProgVar -> Bool
+isList = isOp ["([])","(::)"]
 
 showOp :: ProgVar -> String
 showOp x = spaced $ tail (init $ show x)
