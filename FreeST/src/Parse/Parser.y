@@ -262,7 +262,7 @@ Tuple :: { E.Exp }
 
 List :: { E.Exp }                                                           -- native_lists
   : Exp           { $1 }
-  | Exp ',' List  { E.List (pos $1) $1 $3 }
+  | Exp ',' List  { binOp $1 (mkVar (pos $2) "(::)") $3 }
 
 MatchMap :: { FieldMap }
   : Match              { uncurry Map.singleton $1 }

@@ -131,8 +131,8 @@ data Precedence =
   | PMsg     -- !T and ?T
   | PDualof  -- dualof T
   | PApp     -- e1 e2
-  | PMax
   | PList    -- native_lists
+  | PMax
   deriving (Eq, Ord, Bounded)
 
 data Associativity = Left | Right | NonAssoc deriving Eq
@@ -141,7 +141,7 @@ type Rator = (Precedence, Associativity)
 
 type Fragment = (Rator, String)
 
-minRator, inRator, newRator, disjRator, conjRator, cmpRator, addRator, multRator, dotRator, arrowRator, semiRator, dualofRator, appRator, msgRator, maxRator, listRator
+minRator, inRator, newRator, disjRator, conjRator, cmpRator, addRator, multRator, dotRator, arrowRator, semiRator, dualofRator, appRator, msgRator, listRator, maxRator
   :: Rator
 inRator = (PIn, Right)
 newRator = (PNew, NonAssoc)
@@ -156,9 +156,9 @@ semiRator = (PSemi, Right)
 msgRator = (PMsg, Right)
 dualofRator = (PDualof, Right)
 appRator = (PApp, Left)
+listRator = (PList, Right)         -- native_lists
 minRator = (minBound, NonAssoc)
 maxRator = (maxBound, NonAssoc)
-listRator = (PList, Right)         -- native_lists
 
 noparens :: Rator -> Rator -> Associativity -> Bool
 noparens (pi, ai) (po, ao) side = pi > po || pi == po && ai == ao && ao == side
@@ -266,16 +266,15 @@ instance Unparse Exp where
    where
     l = bracket (unparse e1) Left multRator
     r = bracket (unparse e2) Right multRator
-  unparse (E.App _ e1 e2) = (appRator, l ++ " " ++ r)
-   where
-    l = bracket (unparse e1) Left appRator
-    r = bracket (unparse e2) Right appRator
-  -- List                                                       -- native_lists
-  unparse (E.App _ (E.App _ (E.Var p x) e1) e2) | isList x =
+  unparse (E.App _ (E.App _ (E.Var p x) e1) e2) | isList x =  -- native_lists
    (listRator, l ++ showOp x ++ r)
    where
     l = bracket (unparse e1) Left  listRator
     r = bracket (unparse e2) Right listRator
+  unparse (E.App _ e1 e2) = (appRator, l ++ " " ++ r)
+   where
+    l = bracket (unparse e1) Left appRator
+    r = bracket (unparse e2) Right appRator
   -- Pair intro and elim
   unparse (E.Pair _ e1 e2) = (maxRator, "(" ++ l ++ ", " ++ r ++ ")")
    where
