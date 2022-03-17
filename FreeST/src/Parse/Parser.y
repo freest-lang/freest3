@@ -332,7 +332,7 @@ PrimaryType :: { T.Type }
   | TypeName                      { T.Var (pos $1) $1 } -- TODO: remove this one lex
   | lambda KindBind '->' Type
       { let (a,k) = $2 in T.Abs (pos $1) (K.Bind (pos a) a k $4) }
-  | '[' Type ']'                  { T.App (pos $1) (T.Var (pos $1) (mkVar (pos $1) "List")) $2 }  -- native_lists
+  | '[' Type ']'                  { T.App (pos $1) (T.Var (pos $1) (mkVar (pos $1) "(::)")) $2 }  -- native_lists
   | '(' Type ')'                  { $2 }
 
 Forall :: { T.Type }
