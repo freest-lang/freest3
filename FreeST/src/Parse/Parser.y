@@ -212,10 +212,10 @@ Exp :: { E.Exp }
   | '(' Exp Op ')'                 { unOp $3 $2 } -- right section
   | '(' Exp '-' ')'                { unOp (mkVar (pos $2) "(-)") $2 } -- right section (-)
   --
-  | '[]'                           { mkVar (pos $1) "([])" }                -- native_lists
-  | '[' ']'                        { mkVar (pos $1) "([])" }                -- native_lists
-  | Exp '::' Exp                   { binOp $1 (mkVar (pos $2) "(::)") $3 }  -- native_lists
-  | '[' List ']'                   { $2 }                                   -- native_lists
+  | '[]'                           { E.Var (pos $1) (mkVar (pos $1) "([])") } -- native_lists
+  | '[' ']'                        { E.Var (pos $1) (mkVar (pos $1) "([])") } -- native_lists
+  | Exp '::' Exp                   { binOp $1 (mkVar (pos $2) "(::)") $3 }    -- native_lists
+  | '[' List ']'                   { $2 }                                     -- native_lists
   --
   | App                            { $1 }
 
