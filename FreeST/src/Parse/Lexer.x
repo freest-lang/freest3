@@ -57,7 +57,6 @@ tokens :-
   ("=>"|⇒)                      { \p s -> TokenFArrow (internalPos p) }
   "("				                    { \p s -> TokenLParen (internalPos p) }
   ")"				                    { \p s -> TokenRParen (internalPos p) }
-  "[]"                          { \p s -> TokenNil (internalPos p) }                 -- native_lists
   "["				                    { \p s -> TokenLBracket (internalPos p) }
   "]"			                      { \p s -> TokenRBracket (internalPos p) }
   "{"				                    { \p s -> TokenLBrace (internalPos p) }
@@ -146,7 +145,6 @@ data Token =
   | TokenUpperLambda Pos
   | TokenLParen Pos
   | TokenRParen Pos
-  | TokenNil Pos                        -- native_lists
   | TokenLBracket Pos
   | TokenRBracket Pos
   | TokenComma Pos
@@ -220,7 +218,6 @@ instance Show Token where
   show (TokenUpperLambda _) = "Λ"
   show (TokenLParen _) = "("
   show (TokenRParen _) = ")"
-  show (TokenNil _) = "[]"                -- native_lists
   show (TokenLBracket _) = "["
   show (TokenRBracket _) = "]"
   show (TokenComma _) = ","
@@ -330,7 +327,6 @@ instance Position Token where
   pos (TokenUpperLambda p) = p
   pos (TokenLParen p) = p
   pos (TokenRParen p) = p
-  pos (TokenNil p) = p                    -- native_lists
   pos (TokenLBracket p) = p
   pos (TokenRBracket p) = p
   pos (TokenComma p) = p

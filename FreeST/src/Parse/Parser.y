@@ -44,7 +44,6 @@ import           Util.FreestState
   '('      {TokenLParen _}
   ')'      {TokenRParen _}
   ','      {TokenComma _}
-  '[]'     {TokenNil _}                   -- native_lists
   '['      {TokenLBracket _}
   ']'      {TokenRBracket _}
   '::'     {TokenFourDots _}              -- native_lists
@@ -212,10 +211,9 @@ Exp :: { E.Exp }
   | '(' Exp Op ')'                 { unOp $3 $2 } -- right section
   | '(' Exp '-' ')'                { unOp (mkVar (pos $2) "(-)") $2 } -- right section (-)
   --
-  | '[]'                           { E.Var (pos $1) (mkVar (pos $1) "([])") } -- native_lists
   | '[' ']'                        { E.Var (pos $1) (mkVar (pos $1) "([])") } -- native_lists
   | Exp '::' Exp                   { binOp $1 (mkVar (pos $2) "(::)") $3 }    -- native_lists
-  | '[' List ']'                   { $2 }                                     -- native_lists
+  -- | '[' ExpList ']'                { $2 }                                     -- native_lists
   --
   | App                            { $1 }
 
@@ -260,9 +258,9 @@ Tuple :: { E.Exp }
   : Exp           { $1 }
   | Exp ',' Tuple { E.Pair (pos $1) $1 $3 }
 
-List :: { E.Exp }                                                           -- native_lists
-  : Exp           { $1 }
-  | Exp ',' List  { binOp $1 (mkVar (pos $2) "(::)") $3 }
+-- ExpList :: { E.Exp }                                                           -- native_lists
+--   : Exp             { binOp $1 (mkVar (pos $1) "(::)") (mkVar (pos $1) "([])") }
+--   | Exp ',' ExpList { binOp $1 (mkVar (pos $2) "(::)") $3 }
 
 MatchMap :: { FieldMap }
   : Match              { uncurry Map.singleton $1 }
@@ -280,9 +278,8 @@ Case :: { (ProgVar, ([ProgVar], E.Exp)) }
   | CaseList                            { $1 }                              -- native_lists
 
 CaseList :: { (ProgVar, ([ProgVar], E.Exp)) }                               -- native_lists
-  : '[]'                         '->' Exp { (mkVar (pos $1) "([])", ([], $3)) }
-  | '[' ']'                      '->' Exp { (mkVar (pos $1) "([])", ([], $4)) }
-  | ProgVarWild '::' ProgVarWild '->' Exp { (mkVar (pos $2) "(::)", (($1:$3:[]), $5)) }
+  : '[' ']'                      '->' Exp { (mkVar (pos $1) "([])", ([], $4)) }
+  | ProgVarWild '::' ProgVarWild '->' Exp { (mkVar (pos $2) "(::)", (([$1,$3]), $5)) }
 
 Op :: { ProgVar }
    : '||'   { mkVar (pos $1) "(||)"      }
