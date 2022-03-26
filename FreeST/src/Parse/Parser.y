@@ -118,6 +118,7 @@ import           Util.FreestState
 %right '$'       -- function call
 %left '&'        -- function call
 %right '::'      -- list constructor                        native_lists
+%left ','      -- list constructor                        native_lists
 
 %%
 -------------
