@@ -71,8 +71,15 @@ synthetise' s kEnv (T.Variant p m) = do
   ks <- tMapM (synthetise' s kEnv) m
   let K.Kind _ _ n = foldr1 join ks
   return $ K.Kind p K.Top n
-  -- Session types
+-- Session types
 synthetise' _ _    (T.Skip p    ) = return $ K.su p
+-- shared channels (for cases where a:SU |- !/?T; a:SU)
+synthetise' s kEnv (T.Semi p (T.Message p1 pol t) (T.Var p2 a))
+  | a `Map.member` kEnv && K.isUn (kEnv Map.! a) = do
+    checkAgainstSession' s kEnv (T.Message p1 pol t)
+    checkAgainstSession' s kEnv (T.Var p2 a)
+    return $ K.su p  
+-- regular case
 synthetise' s kEnv (T.Semi p t u) = do
   checkAgainstSession' s kEnv t
   checkAgainstSession' s kEnv u

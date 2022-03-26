@@ -277,13 +277,13 @@ buildAbstraction tm x (xs, e) = case tm Map.!? x of
       then addError (WrongNumOfCons (pos e) x n xs e) $> (xs, e)
       else return (xs, buildAbstraction' (xs, e) t)
   Nothing -> -- Data constructor not in scope
-    let p = pos x in addError (DataConsNotInScope p x) $> (xs, e)
+    addError (DataConsNotInScope (pos x) x) $> (xs, e)
  where
   buildAbstraction' :: ([ProgVar], E.Exp) -> T.Type -> E.Exp
   buildAbstraction' ([], e) _ = e
   buildAbstraction' (x : xs, e) (T.Arrow _ _ t1 t2) =
     E.Abs (pos e) $ E.Bind (pos e) Lin x t1 $ buildAbstraction' (xs, e) t2
-  buildAbstraction' ([x], e) t = E.Abs (pos e) $ E.Bind (pos e) Un x t e
+  buildAbstraction' ([x], e) t = E.Abs (pos e) $ E.Bind (pos e) Lin x t e
 
   numberOfArgs :: T.Type -> Int
   numberOfArgs (T.Arrow _ _ _ t) = 1 + numberOfArgs t
