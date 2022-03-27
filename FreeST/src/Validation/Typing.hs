@@ -32,7 +32,6 @@ import qualified Syntax.Expression             as E
 import qualified Syntax.Kind                   as K
 import           Syntax.Value
 import           Syntax.Program
-import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 import           Util.FreestState
 import           Util.Warning
@@ -64,13 +63,13 @@ synthetise kEnv (E.UnLet _ x e1 e2) = do
   difference kEnv x
   return t2
 -- Abs introduction
-synthetise kEnv (E.Abs p (E.Bind _ Lin x t1 e)) = do
+synthetise kEnv (E.Abs p Lin (Bind _ x t1 e)) = do
   void $ K.synthetise kEnv t1
   addToVEnv x t1
   t2 <- synthetise kEnv e
   difference kEnv x
   return $ T.Arrow p Lin t1 t2
-synthetise kEnv e'@(E.Abs p (E.Bind _ Un x t1 e)) = do
+synthetise kEnv e'@(E.Abs p Un (Bind _ x t1 e)) = do
   void $ K.synthetise kEnv t1
   vEnv1 <- getVEnv
   addToVEnv x t1
@@ -115,13 +114,13 @@ synthetise kEnv (E.App _ e1 e2) = do
   checkAgainst kEnv e2 u1
   return u2
 -- Type abstraction
-synthetise kEnv e@(E.TypeAbs _ (K.Bind p a k e')) =
+synthetise kEnv e@(E.TypeAbs _ (Bind p a k e')) =
   unless (isVal e') (addError (TypeAbsBodyNotValue (pos e') e e')) >>
-  T.Forall p . K.Bind p a k <$> synthetise (Map.insert a k kEnv) e'
+  T.Forall p . Bind p a k <$> synthetise (Map.insert a k kEnv) e'
 -- Type application
 synthetise kEnv (E.TypeApp _ e t) = do
   u                               <- synthetise kEnv e
-  ~(T.Forall _ (K.Bind _ y k u')) <- Extract.forall e u
+  ~(T.Forall _ (Bind _ y k u')) <- Extract.forall e u
   void $ K.checkAgainst kEnv k t
   return $ Rename.subs t y u'
 -- Boolean elimination
@@ -158,7 +157,7 @@ synthetise kEnv (E.New p t u) = do
   return $ T.Pair p t u
 
 -- | Returns the type of a variable; removes it from vEnv if lin
-synthetiseVar :: K.KindEnv -> ProgVar -> FreestState T.Type
+synthetiseVar :: K.KindEnv -> Variable -> FreestState T.Type
 synthetiseVar kEnv x = getFromVEnv x >>= \case
   Just s -> do
     k <- K.synthetise kEnv s
@@ -174,7 +173,7 @@ synthetiseVar kEnv x = getFromVEnv x >>= \case
 
 -- The difference operation. Removes a program variable from the
 -- variable environment and gives an error if it is linear
-difference :: K.KindEnv -> ProgVar -> FreestState ()
+difference :: K.KindEnv -> Variable -> FreestState ()
 difference kEnv x = do
   getFromVEnv x >>= \case
     Just t -> do
@@ -247,7 +246,7 @@ synthetiseCase p kEnv e fm  = do
   setVEnv v
   return t
 
-synthetiseMap :: K.KindEnv -> VarEnv -> ([ProgVar], E.Exp)
+synthetiseMap :: K.KindEnv -> VarEnv -> ([Variable], E.Exp)
               -> FreestState ([T.Type], [VarEnv])
               -> FreestState ([T.Type], [VarEnv])
 synthetiseMap kEnv vEnv (xs, e) state = do
@@ -257,7 +256,7 @@ synthetiseMap kEnv vEnv (xs, e) state = do
   setVEnv vEnv
   return (returnType xs t : ts, env : envs)
  where
-  returnType :: [ProgVar] -> T.Type -> T.Type
+  returnType :: [Variable] -> T.Type -> T.Type
   returnType [] t                  = t
   returnType (_:xs) (T.Arrow _ _ _ t2) = returnType xs t2
   returnType _ t                  = t
@@ -270,8 +269,8 @@ buildMap p fm tm = do
   when (Map.size tm /= Map.size fm) $ addWarning (NonExhaustiveCase p fm tm)
   tMapWithKeyM (buildAbstraction tm) fm
 
-buildAbstraction :: T.TypeMap -> ProgVar -> ([ProgVar], E.Exp)
-                 -> FreestState ([ProgVar], E.Exp)
+buildAbstraction :: T.TypeMap -> Variable -> ([Variable], E.Exp)
+                 -> FreestState ([Variable], E.Exp)
 buildAbstraction tm x (xs, e) = case tm Map.!? x of
   Just t -> let n = numberOfArgs t in
     if n /= length xs
@@ -280,11 +279,11 @@ buildAbstraction tm x (xs, e) = case tm Map.!? x of
   Nothing -> -- Data constructor not in scope
     addError (DataConsNotInScope (pos x) x) $> (xs, e)
  where
-  buildAbstraction' :: ([ProgVar], E.Exp) -> T.Type -> E.Exp
+  buildAbstraction' :: ([Variable], E.Exp) -> T.Type -> E.Exp
   buildAbstraction' ([], e) _ = e
   buildAbstraction' (x : xs, e) (T.Arrow _ _ t1 t2) =
-    E.Abs (pos e) $ E.Bind (pos e) Lin x t1 $ buildAbstraction' (xs, e) t2
-  buildAbstraction' ([x], e) t = E.Abs (pos e) $ E.Bind (pos e) Lin x t e
+    E.Abs (pos e) Lin $ Bind (pos e) x t1 $ buildAbstraction' (xs, e) t2
+  buildAbstraction' ([x], e) t = E.Abs (pos e) Lin $ Bind (pos e) x t e
 
   numberOfArgs :: T.Type -> Int
   numberOfArgs (T.Arrow _ _ _ t) = 1 + numberOfArgs t

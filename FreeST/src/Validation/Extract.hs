@@ -32,7 +32,6 @@ import qualified Data.Map.Strict as Map
 import           Equivalence.Normalisation ( normalise )
 import           Syntax.Base
 import qualified Syntax.Expression as E
-import           Syntax.ProgramVariable ( ProgVar )
 import qualified Syntax.Type as T
 import           Util.Error
 import           Util.FreestState
@@ -105,7 +104,7 @@ datatypeMap e t =
     u                -> let p = pos e in
       addError (ExtractError p "a datatype" e u) $> Map.empty
 
-choiceBranch :: Pos -> T.TypeMap -> ProgVar -> T.Type -> FreestState T.Type
+choiceBranch :: Pos -> T.TypeMap -> Variable -> T.Type -> FreestState T.Type
 choiceBranch p tm x t = case tm Map.!? x of
   Just t  -> return t
   Nothing -> addError (BranchNotInScope p x t) $> omission p

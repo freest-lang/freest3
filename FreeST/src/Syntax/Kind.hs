@@ -9,10 +9,10 @@ Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc
 This module defines kinds. It also defines the subkinding relation, the least
 upper bound of two kinds and other functions to manipulate kinds.
 -}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Syntax.Kind
   ( Basic(..)
-  , Bind(..)
   , Kind(..)
   , Multiplicity(..)
   , KindEnv
@@ -26,15 +26,12 @@ module Syntax.Kind
   , isLin
   , isUn
   , isSession
-  , body
   )
 where
 
 import qualified Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
 import           Syntax.Base             hiding ( Multiplicity(..) )
-import           Syntax.TypeVariable
-
 -- Basic kind
 
 data Basic = Message | Session | Top deriving Eq
@@ -73,21 +70,11 @@ isUn = not . isLin
 isSession :: Kind -> Bool
 isSession (Kind _ b _) = b == Session
 
--- Bind: ∀ a:k . t or Λ a:k => e
-
-data Bind a = Bind Pos TypeVar Kind a
-
-instance Position (Bind a) where
-  pos (Bind p _ _ _) = p
-
-instance Default a => Default (Bind a) where
-  omission p = Bind p (omission p) (omission p) (omission p)
-
-body :: Bind a -> a
-body (Bind _ _ _ a) = a
-
 -- Kind environment
 
-type KindEnv = Map.Map TypeVar Kind
+type KindEnv = Map.Map Variable Kind
 
-type PolyVars = Set.Set TypeVar
+type PolyVars = Set.Set Variable
+
+instance (Default a) => Default (Bind Kind a) where
+  omission p = Bind p (omission p) (omission p) (omission p)

@@ -36,7 +36,7 @@ instance DefaultTypeOp T.Type where
   getDefault _ t              = t
 
 instance DefaultTypeOp Exp where
-  getDefault m (Abs p b     ) = Abs p $ getDefault m b
+  getDefault m (Abs p mul b   ) = Abs p mul $ getDefault m b
   getDefault m (App  p e1 e2) = App p (getDefault m e1) (getDefault m e2)
   getDefault m (Pair p e1 e2) = Pair p (getDefault m e1) (getDefault m e2)
   getDefault m (BinLet p x y e1 e2) =
@@ -51,17 +51,17 @@ instance DefaultTypeOp Exp where
   getDefault m (New p t u) = New p (getDefault m t) (getDefault m u)
   getDefault _ e           = e
 
-instance DefaultTypeOp (K.Bind Exp) where
-  getDefault m (K.Bind p x k e) = K.Bind p x k $ getDefault m e
+instance DefaultTypeOp (Bind K.Kind Exp) where
+  getDefault m (Bind p x k e) = Bind p x k $ getDefault m e
 
-instance DefaultTypeOp Bind where
-  getDefault m (Bind p mul x k t) = Bind p mul x k $ getDefault m t
+instance DefaultTypeOp (Bind T.Type Exp) where
+  getDefault m (Bind p x k t) = Bind p x k $ getDefault m t
 
 instance DefaultTypeOp FieldMap where
   getDefault m = Map.map $ second (getDefault m) -- (\(x, y) -> (x, getDefault m y))
 
-instance DefaultTypeOp (K.Bind T.Type) where
-  getDefault m (K.Bind p x k t) = K.Bind p x k $ getDefault m t
+instance DefaultTypeOp (Bind K.Kind T.Type) where
+  getDefault m (Bind p x k t) = Bind p x k $ getDefault m t
 
 instance DefaultTypeOp T.TypeMap where
   getDefault m = Map.map (getDefault m)

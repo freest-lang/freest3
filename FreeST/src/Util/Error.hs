@@ -6,8 +6,6 @@ module Util.Error
 where
 
 import           Syntax.Base
-import           Syntax.ProgramVariable
-import           Syntax.TypeVariable
 import           Syntax.Kind
 import           Syntax.Program
 import qualified Syntax.Type                   as T
@@ -49,40 +47,40 @@ data ErrorType =
   | PrematureEndOfFile Pos
   | ParseError Pos String -- String -> Token
   -- ParseUtils
-  | MultipleFieldDecl Pos ProgVar
-  | RedundantPMatch Pos ProgVar
-  | DuplicatePVar Pos ProgVar Pos -- one pos? (same for the others)
-  | DuplicateTVar Pos TypeVar Pos
-  | DuplicateFieldInDatatype Pos ProgVar
-  | MultipleDeclarations Pos ProgVar Pos
-  | MultipleTypeDecl Pos TypeVar Pos
-  | MultipleFunBindings Pos ProgVar Pos
+  | MultipleFieldDecl Pos Variable
+  | RedundantPMatch Pos Variable
+  | DuplicatePVar Pos Variable Pos -- one pos? (same for the others)
+  | DuplicateTVar Pos Variable Pos
+  | DuplicateFieldInDatatype Pos Variable
+  | MultipleDeclarations Pos Variable Pos
+  | MultipleTypeDecl Pos Variable Pos
+  | MultipleFunBindings Pos Variable Pos
   -- Elab
-  | TypeVarOutOfScope Pos TypeVar
-  | FuctionLacksSignature Pos ProgVar
+  | TypeVarOutOfScope Pos Variable
+  | FuctionLacksSignature Pos Variable
   -- Duality
   | DualOfNonRecVar Pos  T.Type
   | DualOfNonSession Pos T.Type
   -- TypeCheck
-  | SignatureLacksBinding Pos ProgVar T.Type
-  | MainNotDefined Pos ProgVar -- Later, a warning
-  | UnrestrictedMainFun Pos ProgVar T.Type Kind
+  | SignatureLacksBinding Pos Variable T.Type
+  | MainNotDefined Pos Variable -- Later, a warning
+  | UnrestrictedMainFun Pos Variable T.Type Kind
   -- Kinding
-  | TypeVarNotInScope Pos TypeVar -- Duplicated: TypeVarOutOfScope
-  | TypeNotContractive Pos T.Type TypeVar
+  | TypeVarNotInScope Pos Variable -- Duplicated: TypeVarOutOfScope
+  | TypeNotContractive Pos T.Type Variable
   | CantMatchKinds Pos Kind Kind T.Type
   | ExpectingSession Pos T.Type Kind
   -- Typing
   | TypeAbsBodyNotValue Pos E.Exp E.Exp
-  | VarOrConsNotInScope Pos ProgVar
-  | LinProgVar Pos ProgVar T.Type Kind
+  | VarOrConsNotInScope Pos Variable
+  | LinProgVar Pos Variable T.Type Kind
   | PartialApplied Pos E.Exp String
   | NonEquivTypes Pos T.Type T.Type E.Exp
   | NonEquivEnvs Pos String VarEnv VarEnv E.Exp
-  | DataConsNotInScope Pos ProgVar
-  | WrongNumOfCons Pos ProgVar Int [ProgVar] E.Exp
+  | DataConsNotInScope Pos Variable
+  | WrongNumOfCons Pos Variable Int [Variable] E.Exp
   | ExtractError Pos String E.Exp T.Type
-  | BranchNotInScope Pos ProgVar T.Type
+  | BranchNotInScope Pos Variable T.Type
   -- Builtin
   | ErrorFunction String
   deriving Show

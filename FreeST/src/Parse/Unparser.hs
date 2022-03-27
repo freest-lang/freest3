@@ -14,6 +14,7 @@ module Parse.Unparser
   ( showFieldMap
   , showBindType
   , showBindExp
+  , showBindTerm
   )
 where
 
@@ -28,8 +29,6 @@ import           Syntax.Expression             as E
 import qualified Syntax.Kind                   as K
 import           Syntax.Program
 import qualified Syntax.Type                   as T
-import           Syntax.TypeVariable
-import           Syntax.ProgramVariable
 
 -- Positions (Base)
 
@@ -64,13 +63,10 @@ instance Show T.Polarity where
 -- Note: show should be aligned with the creation of new variables;
 -- see Syntax.ProgramVariables and Syntax.TypeVariables
 
-instance Show ProgVar where
+instance Show Variable where
   show = showVar
 
-instance Show TypeVar where
-  show = showVar
-
-showVar :: Variable v => v -> String
+showVar :: Variable -> String
 showVar = dropWhile (\c -> isDigit c || c == '#') . intern
 -- showVar = intern -- for testing purposes
 
@@ -98,16 +94,15 @@ showKind var sort arrow term =
 -- instance Show t => Show (K.Bind t) where
 --   show (K.Bind _ a k t) = showKind a k "=>" t
 
-showBindType :: K.Bind T.Type -> String
-showBindType (K.Bind _ a k t) = showKind a k "." t -- ∀ a:k . t
+showBindType :: Bind K.Kind T.Type -> String
+showBindType (Bind _ a k t) = showKind a k "." t -- ∀ a:k . t
 
-showBindExp :: K.Bind E.Exp -> String
-showBindExp (K.Bind _ a k e) = showKind a k "=>" e -- Λ a:k => e
+showBindExp :: Bind K.Kind E.Exp -> String
+showBindExp (Bind _ a k e) = showKind a k "=>" e -- Λ a:k => e
 
 -- Type bind
-
-instance Show E.Bind where
-  show (E.Bind _ m x t e) = showKind x t (show m) e
+showBindTerm :: Bind T.Type E.Exp -> Multiplicity -> String
+showBindTerm (Bind _ x t e) m = showKind x t (show m) e -- λ x:t -> e
 
 -- Unparsing types and expressions
 
@@ -232,7 +227,7 @@ instance Unparse Exp where
   -- Variable
   unparse (E.Var  _ x) = (maxRator, show x)
   -- Abstraction intro and elim
-  unparse (E.Abs _ b) = (arrowRator, "λ" ++ show b)
+  unparse (E.Abs _ m b) = (arrowRator, "λ" ++ showBindTerm b m)
   unparse (E.App _ (E.App _ (E.Var p x) e1) e2) | show x == "(||)" =
    (disjRator, l ++ " || " ++ r)
    where
@@ -302,19 +297,19 @@ showFieldMap m = intercalate "; " $ map showAssoc (Map.toList m)
   showAssoc (b, (a, v)) =
     show b ++ " " ++ unwords (map show a) ++ " -> " ++ show v
 
-isOp :: [String] -> ProgVar -> Bool
+isOp :: [String] -> Variable -> Bool
 isOp ops x = show x `elem` ops
 
-isCmp :: ProgVar -> Bool
+isCmp :: Variable -> Bool
 isCmp = isOp ["(<)", "(>)", "(<=)", "(>=)", "(==)", "(/=)"]
 
-isAdd :: ProgVar -> Bool
+isAdd :: Variable -> Bool
 isAdd = isOp ["(+)", "(-)"]
 
-isMult :: ProgVar -> Bool
+isMult :: Variable -> Bool
 isMult = isOp ["(*)", "(/)"]
 
-showOp :: ProgVar -> String
+showOp :: Variable -> String
 showOp x = spaced $ tail (init $ show x)
 
 spaced :: String -> String

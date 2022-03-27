@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, FlexibleInstances, TupleSections #-}
+{-# LANGUAGE LambdaCase, FlexibleInstances, TupleSections, NamedFieldPuns #-}
 module Elaboration.Elaboration
   ( elaboration
   , Elaboration(..)
@@ -13,9 +13,7 @@ import           Syntax.Base
 import qualified Syntax.Expression             as E
 import qualified Syntax.Kind                   as K
 import           Syntax.Program                 ( VarEnv )
-import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
-import           Syntax.TypeVariable
 import           Util.Error
 import           Util.FreestState
 import           Util.PreludeLoader             ( userDefined )
@@ -48,7 +46,7 @@ elaboration = do
   buildProg
 --  debugM . ("Building recursive types" ++) <$> show =<< getTEnv
 
-type Visited = Set.Set TypeVar
+type Visited = Set.Set Variable
 
 -- | Solve equations (TypeEnv)
 
@@ -61,7 +59,7 @@ solveEquations = buildRecursiveTypes >> solveAll >> cleanUnusedRecs
       >>= tMapWithKeyM (\x (k, v) -> (k, ) <$> solveEq Set.empty x v)
       >>= setTEnv
 
-  solveEq :: Visited -> TypeVar -> T.Type -> FreestState T.Type
+  solveEq :: Visited -> Variable -> T.Type -> FreestState T.Type
   solveEq v f (T.Arrow p m t1 t2) =
     T.Arrow p m <$> solveEq v f t1 <*> solveEq v f t2
   solveEq v f (T.Pair p t1 t2) = T.Pair p <$> solveEq v f t1 <*> solveEq v f t2
@@ -75,10 +73,10 @@ solveEquations = buildRecursiveTypes >> solveAll >> cleanUnusedRecs
     | otherwise = getFromTEnv x >>= \case
       Just tx -> solveEq (f `Set.insert` v) x (snd tx)
       Nothing -> addError (TypeVarOutOfScope p x) $> omission p
-  solveEq v f (T.Forall p (K.Bind p1 x k t)) =
-    T.Forall p . K.Bind p1 x k <$> solveEq (x `Set.insert` v) f t
-  solveEq v f (T.Rec p (K.Bind p1 x k t)) =
-    T.Rec p . K.Bind p1 x k <$> solveEq (x `Set.insert` v) f t
+  solveEq v f (T.Forall p (Bind p1 x k t)) =
+    T.Forall p . Bind p1 x k <$> solveEq (x `Set.insert` v) f t
+  solveEq v f (T.Rec p (Bind p1 x k t)) =
+    T.Rec p . Bind p1 x k <$> solveEq (x `Set.insert` v) f t
   solveEq v f (T.Dualof p t) = T.Dualof p <$> solveEq v f t
   solveEq _ _ p              = pure p
 
@@ -87,15 +85,15 @@ solveEquations = buildRecursiveTypes >> solveAll >> cleanUnusedRecs
 
 buildRecursiveTypes :: FreestState ()
 buildRecursiveTypes = Map.mapWithKey buildRec <$> getTEnv >>= setTEnv
-  where buildRec x (k, t) = (k, T.Rec (pos x) (K.Bind (pos x) x k t))
+  where buildRec x (k, t) = (k, T.Rec (pos x) (Bind (pos x) x k t))
 
 -- | Clean rec types where the variable does not occur free
 
 cleanUnusedRecs :: FreestState ()
 cleanUnusedRecs = Map.mapWithKey clean <$> getTEnv >>= setTEnv
  where
-  clean x u@(k, T.Rec _ (K.Bind _ _ _ t)) | x `isFreeIn` t = u
-                                          | otherwise      = (k, t)
+  clean x u@(k, T.Rec _ Bind{body}) | x `isFreeIn` body = u
+                                    | otherwise      = (k, body)
   clean _ kt = kt
 
 
@@ -139,19 +137,19 @@ instance Elaboration T.Type where
 instance Elaboration T.TypeMap where
   elaborate = mapM elaborate
 
-instance Elaboration a => Elaboration (K.Bind a) where
-  elaborate (K.Bind p x k a) = K.Bind p x k <$> elaborate a
+instance Elaboration a => Elaboration (Bind K.Kind a) where
+  elaborate (Bind p x k a) = Bind p x k <$> elaborate a
 
--- instance Elaboration (K.Bind Exp) where
---   elaborate (K.Bind p x k e) = K.Bind p x k <$> elaborate e
+-- instance Elaboration (Bind K.Kind Exp) where
+--   elaborate (Bind p x k e) = Bind p x k <$> elaborate e
 
-instance Elaboration E.Bind where
-  elaborate (E.Bind p m x t e) = E.Bind p m x <$> elaborate t <*> elaborate e
+instance Elaboration (Bind T.Type E.Exp) where
+  elaborate (Bind p x t e) = Bind p x <$> elaborate t <*> elaborate e
 
 -- Substitute expressions
 
 instance Elaboration E.Exp where
-  elaborate (E.Abs p b     ) = E.Abs p <$> elaborate b
+  elaborate (E.Abs p m b   ) = E.Abs p m <$> elaborate b
   elaborate (E.App  p e1 e2) = E.App p <$> elaborate e1 <*> elaborate e2
   elaborate (E.Pair p e1 e2) = E.Pair p <$> elaborate e1 <*> elaborate e2
   elaborate (E.BinLet p x y e1 e2) =
@@ -175,21 +173,21 @@ buildProg :: FreestState ()
 buildProg = getPEnv
   >>= tMapWithKeyM_ (\pv (ps, e) -> addToProg pv =<< buildFunBody pv ps e)
  where
-  buildFunBody :: ProgVar -> [ProgVar] -> E.Exp -> FreestState E.Exp
+  buildFunBody :: Variable -> [Variable] -> E.Exp -> FreestState E.Exp
   buildFunBody f as e = getFromVEnv f >>= \case
     Just s  -> return $ buildExp e as s
     Nothing -> let p = pos f in addError (FuctionLacksSignature p f) $> e
       
-  buildExp :: E.Exp -> [ProgVar] -> T.Type -> E.Exp
+  buildExp :: E.Exp -> [Variable] -> T.Type -> E.Exp
   buildExp e [] _ = e
   buildExp e (b : bs) (T.Arrow _ m t1 t2) =
-    E.Abs (pos b) (E.Bind (pos b) m b t1 (buildExp e bs t2))
+    E.Abs (pos b) m (Bind (pos b) b t1 (buildExp e bs t2))
   buildExp _ _ t@(T.Dualof _ _) =
     internalError "Elaboration.Elaboration.buildFunbody.buildExp" t
-  buildExp e bs (T.Forall p (K.Bind p1 x k t)) =
-    E.TypeAbs p (K.Bind p1 x k (buildExp e bs t))
+  buildExp e bs (T.Forall p (Bind p1 x k t)) =
+    E.TypeAbs p (Bind p1 x k (buildExp e bs t))
   buildExp e (b : bs) t =
-    E.Abs (pos b) (E.Bind (pos b) Un b (omission (pos b)) (buildExp e bs t))
+    E.Abs (pos b) Un (Bind (pos b) b (omission (pos b)) (buildExp e bs t))
 
 -- | Changing positions
 

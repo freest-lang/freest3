@@ -16,14 +16,13 @@ module Util.PreludeLoader
   )
 where
 
-import           Syntax.ProgramVariable
 import           Syntax.Base
 import qualified Syntax.Type                   as T
 import           Syntax.Program
 import qualified Data.Map.Strict               as Map
 import           Parse.Read                     ( )
 
-typeList :: [(ProgVar, T.Type)]
+typeList :: [(Variable, T.Type)]
 typeList =
   [ -- Int
     (mkVar p "(+)"     , read "Int -> Int -> Int")
@@ -86,7 +85,7 @@ typeList =
 prelude :: VarEnv
 prelude = Map.fromList typeList-- foldr (uncurry Map.insert) Map.empty typeList
 
-isBuiltin :: ProgVar -> Bool
+isBuiltin :: Variable -> Bool
 isBuiltin = (`elem` map fst typeList)
 
 userDefined :: VarEnv -> VarEnv

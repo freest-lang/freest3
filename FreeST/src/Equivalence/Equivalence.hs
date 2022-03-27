@@ -24,10 +24,11 @@ import qualified Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
 import           Syntax.Base                    ( Pos
                                                 , pos
+                                                , Variable
+                                                , Bind(..)
                                                 )
 import qualified Syntax.Kind                   as K
 import           Syntax.Program
-import           Syntax.ProgramVariable         ( ProgVar )
 import qualified Syntax.Type                   as T
 import           Util.Error                    ( internalError )
 import           Util.FreestState              ( initialState
@@ -71,7 +72,7 @@ instance Equivalence T.Type where
         == Map.size m2
         && Map.foldlWithKey (equivField v kEnv m2) True m1
     -- Polymorphism and recursion
-    equiv v kEnv (T.Forall _ (K.Bind p a1 k1 t1)) (T.Forall _ (K.Bind _ a2 k2 t2))
+    equiv v kEnv (T.Forall _ (Bind p a1 k1 t1)) (T.Forall _ (Bind _ a2 k2 t2))
       = k1 <: k2 && k2 <: k1 &&
            equiv v (Map.insert a1 k1 kEnv) t1
             (Subs.subs (T.Var p a1) a2 t2)
@@ -88,7 +89,7 @@ instance Equivalence T.Type where
     equiv _ _ _ _ = False
 
     equivField
-      :: Visited -> K.KindEnv -> T.TypeMap -> Bool -> ProgVar -> T.Type -> Bool
+      :: Visited -> K.KindEnv -> T.TypeMap -> Bool -> Variable -> T.Type -> Bool
     equivField v kEnv m acc l t =
       acc && l `Map.member` m && equiv v kEnv (m Map.! l) t
 
@@ -107,7 +108,7 @@ isSessionType _ T.Skip{} = True
 isSessionType _ T.Semi{} = True
 isSessionType _ T.Message{} = True
 isSessionType _ T.Choice{} = True
-isSessionType _ (T.Rec _ (K.Bind _ _ k) _) = K.isSession k
+isSessionType _ (T.Rec _ (Bind _ _ k) _) = K.isSession k
 isSessionType kEnv (T.Var _ x) = Map.member x kEnv -- Polymorphic variable
 isSessionType _ t@T.Dualof{} = internalError "Equivalence.Equivalence.isSessionType" t
 isSessionType _ _  = False

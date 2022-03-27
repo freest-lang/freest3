@@ -17,7 +17,7 @@ module Equivalence.Normalisation
   )
 where
 
-import           Syntax.Base                    ( Pos )
+import           Syntax.Base                    ( Pos, Bind(..) )
 import qualified Syntax.Type                   as T
 import           Validation.Terminated          ( terminated )
 import           Validation.Substitution        ( subs )
@@ -29,7 +29,7 @@ normalise :: T.Type -> T.Type
 normalise (T.Semi p t u)
   | terminated t = normalise u
   | otherwise    = append p (normalise t) u
-normalise u@(T.Rec _ (K.Bind _ x _ t)) = subs u x (normalise t)
+normalise u@(T.Rec _ (Bind _ x _ t)) = subs u x (normalise t)
 -- Type operators
 normalise t@T.Dualof{} = internalError "Equivalence.Normalisation.normalise" t
 -- Otherwise: Basic, Fun, PairType, Datatype, Skip, Message, Choice, TypeVar

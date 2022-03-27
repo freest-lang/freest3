@@ -88,9 +88,7 @@ import           Syntax.Base
 import           Syntax.Expression
 import           Syntax.Kind
 import           Syntax.Program
-import           Syntax.ProgramVariable
 import qualified Syntax.Type as T
-import           Syntax.TypeVariable
 import           Util.Warning
 import           Util.WarningMessage ()
 import           Util.PrettyWarning ()
@@ -107,7 +105,7 @@ type Warnings = [WarningType]
 -- type Errors = [(Pos, String)]
 type Errors = [ErrorType]
 
-type ParseEnv = Map.Map ProgVar ([ProgVar], Exp)
+type ParseEnv = Map.Map Variable ([Variable], Exp)
 
 data FreestS = FreestS {
   runOpts    :: RunOpts
@@ -142,7 +140,7 @@ initialState = FreestS { runOpts    = defaultOpts
 emptyPEnv :: FreestS -> FreestS
 emptyPEnv s = s { parseEnv = Map.empty }
 
-addToPEnv :: ProgVar -> [ProgVar] -> Exp -> FreestState ()
+addToPEnv :: Variable -> [Variable] -> Exp -> FreestState ()
 addToPEnv x xs e =
   modify (\s -> s { parseEnv = Map.insert x (xs, e) (parseEnv s) })
 
@@ -161,7 +159,7 @@ getNextIndex = do
   modify (\s -> s { nextIndex = next + 1 })
   return next
 
-freshTVar :: String -> Pos -> FreestState TypeVar
+freshTVar :: String -> Pos -> FreestState Variable
 freshTVar s p = mkVar p . (s ++) . show <$> getNextIndex
 
 -- | FILE NAME
@@ -174,18 +172,18 @@ getFileName = runFilePath <$> gets runOpts
 getVEnv :: FreestState VarEnv
 getVEnv = gets varEnv
 
-getFromVEnv :: ProgVar -> FreestState (Maybe T.Type)
+getFromVEnv :: Variable -> FreestState (Maybe T.Type)
 getFromVEnv x = do
   vEnv <- getVEnv
   return $ vEnv Map.!? x
 
-removeFromVEnv :: ProgVar -> FreestState ()
+removeFromVEnv :: Variable -> FreestState ()
 removeFromVEnv b = modify (\s -> s { varEnv = Map.delete b (varEnv s) })
 
-addToVEnv :: ProgVar -> T.Type -> FreestState ()
+addToVEnv :: Variable -> T.Type -> FreestState ()
 addToVEnv b t = modify (\s -> s { varEnv = Map.insert b t (varEnv s) })
 
--- vEnvMember :: ProgVar -> FreestState Bool
+-- vEnvMember :: Variable -> FreestState Bool
 -- vEnvMember x = Map.member x <$> getVEnv
 
 setVEnv :: VarEnv -> FreestState ()
@@ -196,12 +194,12 @@ setVEnv vEnv = modify (\s -> s { varEnv = vEnv })
 getProg :: FreestState Prog
 getProg = gets prog
 
-getFromProg :: ProgVar -> FreestState (Maybe Exp)
+getFromProg :: Variable -> FreestState (Maybe Exp)
 getFromProg x = do
   eEnv <- getProg
   return $ eEnv Map.!? x
 
-addToProg :: ProgVar -> Exp -> FreestState ()
+addToProg :: Variable -> Exp -> FreestState ()
 addToProg k v = modify (\s -> s { prog = Map.insert k v (prog s) })
 
 setProg :: Prog -> FreestState ()
@@ -212,11 +210,11 @@ setProg p = modify (\s -> s { prog = p })
 getTEnv :: FreestState TypeEnv
 getTEnv = gets typeEnv
 
-addToTEnv :: TypeVar -> Kind -> T.Type -> FreestState ()
+addToTEnv :: Variable -> Kind -> T.Type -> FreestState ()
 addToTEnv x k t =
   modify (\s -> s { typeEnv = Map.insert x (k, t) (typeEnv s) })
 
-getFromTEnv :: TypeVar -> FreestState (Maybe (Kind, T.Type))
+getFromTEnv :: Variable -> FreestState (Maybe (Kind, T.Type))
 getFromTEnv b = do
   tEnv <- getTEnv
   return $ tEnv Map.!? b
@@ -299,7 +297,7 @@ debugM err = do
 
 data RunOpts = RunOpts { runFilePath  :: FilePath
 --                     , preludeFile  :: Maybe FilePath
-                       , mainFunction :: Maybe ProgVar
+                       , mainFunction :: Maybe Variable
                        , quietmode    :: Bool
                        } deriving Show
 
@@ -311,7 +309,7 @@ defaultOpts = RunOpts { runFilePath  = ""
                       , quietmode    = False
                       }
 
-getMain :: RunOpts -> ProgVar
+getMain :: RunOpts -> Variable
 getMain opts = fromMaybe (mkVar defaultPos "main") maybeMain
   where maybeMain = mainFunction opts
 
