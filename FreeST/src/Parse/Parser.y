@@ -194,8 +194,7 @@ Exp :: { E.Exp }
   | if Exp then Exp else Exp       { E.Cond (pos $1) $2 $4 $6 }
   | new Type                       { E.New (pos $1) $2 (T.Dualof (negPos (pos $2)) $2) }
   | match Exp with '{' MatchMap '}'{ E.Case (pos $1) (E.App (pos $1)
-                                     (E.Var (pos $1) (mkVar (pos $1) "collect")) $2) $5 }
---  | match Exp with '{' MatchMap '}'{ E.Match (pos $1) $2 $5 }
+                                      (E.Var (pos $1) (mkVar (pos $1) "collect")) $2) $5 }
   | case Exp of '{' CaseMap '}'    { E.Case (pos $6) $2 $5 }
   | Exp '$' Exp                    { E.App (pos $2) $1 $3 }
   | Exp '&' Exp                    { E.App (pos $2) $3 $1 }
@@ -207,15 +206,12 @@ Exp :: { E.Exp }
   | Exp '*' Exp                    { binOp $1 (mkVar (pos $2) "(*)") $3 }
   | Exp '/' Exp                    { binOp $1 (mkVar (pos $2) "(/)") $3 }
   | Exp '^' Exp                    { binOp $1 (mkVar (pos $2) "(^)") $3 }
+  | Exp '::' Exp                   { binOp $1 (mkVar (pos $2) "(::)") $3 }
   | '-' App %prec NEG              { unOp (mkVar (pos $1) "negate") $2}
   | '(' Op Exp ')'                 { unOp $2 $3 } -- left section
   | '(' Exp Op ')'                 { unOp $3 $2 } -- right section
   | '(' Exp '-' ')'                { unOp (mkVar (pos $2) "(-)") $2 } -- right section (-)
-  --
-  | '[' ']'                        { E.Var (pos $1) (mkVar (pos $1) "([])") } -- native_lists
-  | Exp '::' Exp                   { binOp $1 (mkVar (pos $2) "(::)") $3 }    -- native_lists
-  | '[' ExpList ']'                { $2 }                                     -- native_lists
-  --
+  | '[' ExpList                    { $2 }
   | App                            { $1 }
 
 App :: { E.Exp }
@@ -232,35 +228,34 @@ Primary :: { E.Exp }
   | CHAR                           { let (TokenChar p x) = $1 in E.Char p x }
   | STR                            { let (TokenString p x) = $1 in String p x }
   | '()'                           { E.Unit (pos $1) }
---  | TApp ']'                       { $1 }
+  | '[' ']'                        { E.Var (pos $1) (mkVar (pos $1) "([])") }
   | ArbitraryProgVar               { E.Var (pos $1) $1 }
-  | lambda ProgVarWildTBind Abs
-      { let ((p,m),e) = $3 in E.Abs p (E.Bind p m (fst $2) (snd $2) e) }
-  | Lambda KindBind TAbs
-      { let (a,k) = $2 in E.TypeAbs (pos a) (K.Bind (pos k) a k $3) }
+  | lambda ProgVarWildTBind Abs    { let ((p,m),e) = $3 in
+                                       E.Abs p (E.Bind p m (fst $2) (snd $2) e) }
+  | Lambda KindBind TAbs           { let (a,k) = $2 in
+                                       E.TypeAbs (pos a) (K.Bind (pos k) a k $3) }
   | '(' Exp ',' Tuple ')'          { E.Pair (pos $1) $2 $4 }
   | '(' Exp ')'                    { $2 }
 
 Abs :: { ((Pos, Multiplicity), E.Exp) }
-  : Arrow Exp { ($1, $2) }
-  | ProgVarWildTBind Abs
-      { let ((p,m),e) = $2 in ((p, m), E.Abs p (E.Bind p m (fst $1) (snd $1) e)) }
+  : Arrow Exp                      { ($1, $2) }
+  | ProgVarWildTBind Abs           { let ((p,m),e) = $2 in
+                                       ((p, m), E.Abs p (E.Bind p m (fst $1) (snd $1) e)) }
 
 TAbs :: { E.Exp }
-  : '=>' Exp { $2 }
-  | KindBind TAbs
-      { let (a,k) = $1 in E.TypeAbs (pos a) (K.Bind (pos k) a k $2) }
+  : '=>' Exp      { $2 }
+  | KindBind TAbs { let (a,k) = $1 in E.TypeAbs (pos a) (K.Bind (pos k) a k $2) }
 
 TApp :: { E.Exp }
-  : App '[' Type { E.TypeApp (pos $1) $1 $3 }
-  | TApp ',' Type    { E.TypeApp (pos $1) $1 $3 }
+  : App '[' Type  { E.TypeApp (pos $1) $1 $3 }
+  | TApp ',' Type { E.TypeApp (pos $1) $1 $3 }
 
 Tuple :: { E.Exp }
   : Exp           { $1 }
   | Exp ',' Tuple { E.Pair (pos $1) $1 $3 }
 
-ExpList :: { E.Exp }                                                           -- native_lists
-  : Exp             { binOp $1 (mkVar (pos $1) "(::)") (E.Var (pos $1) (mkVar (pos $1) "([])")) }
+ExpList :: { E.Exp }
+  : Exp ']'         { binOp $1 (mkVar (pos $1) "(::)") (E.Var (pos $1) (mkVar (pos $1) "([])")) }
   | Exp ',' ExpList { binOp $1 (mkVar (pos $2) "(::)") $3 }
 
 MatchMap :: { FieldMap }
@@ -275,12 +270,12 @@ CaseMap :: { FieldMap }
   | Case ',' CaseMap {% toStateT $ checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
 
 Case :: { (ProgVar, ([ProgVar], E.Exp)) }
-  : Constructor ProgVarWildSeq '->' Exp { ($1, ($2, $4)) }
-  | '[' ']'                      '->' Exp { (mkVar (pos $1) "([])", ([], $4)) }         -- native_lists
-  | ProgVarWild '::' ProgVarWild '->' Exp { (mkVar (pos $2) "(::)", (([$1,$3]), $5)) }  -- native_lists
+  : Constructor ProgVarWildSeq   '->' Exp { ($1, ($2, $4)) }
+  | ProgVarWild '::' ProgVarWild '->' Exp { (mkVar (pos $2) "(::)", (([$1,$3]), $5)) }
+  | '[' ']'                      '->' Exp { (mkVar (pos $1) "([])", ([], $4)) }
 
 Op :: { ProgVar }
-   : '||'   { mkVar (pos $1) "(||)"      }
+   : '||'  { mkVar (pos $1) "(||)"      }
    | '&&'  { mkVar (pos $1) "(&&)"       }
    | CMP   { mkVar (pos $1) (getText $1) }
    | '+'   { mkVar (pos $1) "(+)"        }

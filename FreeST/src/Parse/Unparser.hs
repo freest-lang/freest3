@@ -8,6 +8,11 @@ Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of 
 Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc.ul.pt
 
 Converting AST terms to strings.
+
+Based on
+  Norman Ramsey, Unparsing Expressions With Prefix and Postfix
+  Operators, Software—Practice and Experience, 1998.
+  https://www.cs.tufts.edu/~nr/pubs/unparse.ps
 -}
 
 module Parse.Unparser
@@ -111,10 +116,6 @@ instance Show E.Bind where
   show (E.Bind _ m x t e) = showKind x t (show m) e
 
 -- Unparsing types and expressions
-
--- Norman Ramsey, Unparsing Expressions With Prefix and Postfix
--- Operators, Software—Practice and Experience, 1998.
--- https://www.cs.tufts.edu/~nr/pubs/unparse.ps
 
 data Precedence =
     PMin
