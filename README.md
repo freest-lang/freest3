@@ -123,8 +123,8 @@ To add a valid program test follow the steps below:
 4. Create a file, under the directory created on step 2, with the expected result (`test.expected`)
 
 The contents of the ".expected" test file may be:
-  - <divergent>, if the computation do not end.
-  - <pending>, can be used as a TODO list. These are tests that need to be taken care in the future.
+  - \<divergent\>, if the computation do not end.
+  - \<pending\>, can be used as a TODO list. These are tests that need to be taken care in the future.
   - The result of the computation
 
 
