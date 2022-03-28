@@ -268,10 +268,11 @@ instance Unparse Exp where
     l = bracket (unparse e1) Left multRator
     r = bracket (unparse e2) Right multRator
   unparse (E.App _ (E.App _ (E.Var p x) e1) e2) | isList x =  -- native_lists
-   (listRator, l ++ showOp x ++ r)
-   where
-    l = bracket (unparse e1) Left  listRator
-    r = bracket (unparse e2) Right listRator
+   (listRator, showNativeList e1 e2)                          -- [exp,exp]
+  --  (listRator, l ++ showOp x ++ r)                         -- exp :: exp :: []
+  --  where
+  --   l = bracket (unparse e1) Left  listRator
+  --   r = bracket (unparse e2) Right listRator
   unparse (E.App _ e1 e2) = (appRator, l ++ " " ++ r)
    where
     l = bracket (unparse e1) Left appRator
@@ -329,10 +330,19 @@ isMult :: ProgVar -> Bool
 isMult = isOp ["(*)", "(/)"]
 
 isList :: ProgVar -> Bool
-isList = isOp ["(::)"] -- ["([])","(::)"]
+isList = isOp ["(::)"] -- ["[]","(::)"]
 
 showOp :: ProgVar -> String
 showOp x = spaced $ tail (init $ show x)
+
+showNativeList :: Exp -> Exp -> String
+showNativeList e1 e2 = "[" ++ l ++ showNativeList' e2
+  where l = bracket (unparse e1) Left listRator
+
+showNativeList' :: Exp -> String
+showNativeList' (E.Var  _ x) = "]"
+showNativeList' (E.App _ (E.App _ (E.Var p x) e1) e2) = "," ++ e ++ showNativeList' e2
+  where e = bracket (unparse e1) Left listRator
 
 spaced :: String -> String
 spaced s = ' ' : s ++ " "
