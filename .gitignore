@@ -28,10 +28,10 @@ dist-*
 .stack-work/
 
 # Test files (gen)
-FreeST/test/Programs/*/*/*
-!FreeST/test/Programs/*/*/*.fst
-!FreeST/test/Programs/*/*/*.expected
-!FreeST/test/Programs/ValidTests/*/*.expected
+# FreeST/test/Programs/*/*/*
+# !FreeST/test/Programs/*/*/*.fst
+# !FreeST/test/Programs/*/*/*.expected
+# !FreeST/test/Programs/ValidTests/*/*.expected
 
 # Stack
 stack.yaml.lock

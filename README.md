@@ -75,7 +75,7 @@ Code examples available in directory
     $ stack test
 ```
 
-will run both program and unit tests.
+will run program tests, quickcheck, and unit tests.
 
 ## Unit tests
 
@@ -117,13 +117,21 @@ or
 
 To add a valid program test follow the steps below:
 
-1. Create a new directory under `FreeST/test/Programs/ValidTests/`
-2. Create a FreeST program (i.e. `test.fst`)
-3. Create a file with the expected result (`test.expected`)
+1. Create or use a directory under `FreeST/test/Programs/ValidTests/` which represents the test category
+2. Create a new directory to add the test files 
+3. Create a FreeST program under the directory created on step 2 (i.e. `test.fst`)
+4. Create a file, under the directory created on step 2, with the expected result (`test.expected`)
 
-The process of creating invalid tests is analogous, except for step 3, 
-since that `test.fst` is an incorrect program. Also, the tests must be
-placed under `FreeST/test/Programs/InvalidTests/` .
+The contents of the ".expected" test file may be:
+  - \<divergent\>, if the computation do not end.
+  - \<pending\>, can be used as a TODO list. These are tests that need to be taken care in the future.
+  - The result of the computation
+
+
+The process of creating invalid tests is analogous. In the third step, the only
+option that makes sense is "<pending>" since these are incorrect programs and
+thus they are expected to raise errors. Also, the tests must be
+placed under `FreeST/test/Programs/InvalidTests/`.
 
 
 ## Run each spec separately
@@ -168,7 +176,7 @@ or
 
 ### Program specs (valid or invalid programs)
 ```bash
-    $ stack test :units --ta "-m SPEC_NAME"
+    $ stack test :programs --ta "-m SPEC_NAME"
 ```
 
 with one of the following `SPEC_NAME`s:
@@ -185,6 +193,16 @@ or also,
 ```bash
     $ make invalid-programs
 ```
+
+**Note:** It is possible run the tests of each category separately by using the
+same approach. Try:
+
+```bash
+    $ stack test :programs --ta "-m SessionTypes"
+```
+
+*Warning!* If there are two categories named "SessionTypes" (one on invalid and
+the other on valid test), the previous command will capture both.
 
 If the output from the compiler is important (relevant to invalid
 tests to visually inspect error messages). Warning: a bit slow.
