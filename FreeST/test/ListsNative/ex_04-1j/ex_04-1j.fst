@@ -14,5 +14,5 @@ posicoes' list m i =
     }
 
 main : [Int]
-main = posicoes [1,3,6,2,5,15,3,5,7,18] 3
+main = posicoes ([1,3,6,2,5,15,3,5,7,18]) 3
 -- result = [1,2,5,6,9]

@@ -11,5 +11,5 @@ multiplos list x =
     }
 
 main : [Int]
-main = multiplos [1,3,6,2,5,15,3,5] 3
+main = multiplos ([1,3,6,2,5,15,3,5]) 3
 -- result = [3,6,15,3]

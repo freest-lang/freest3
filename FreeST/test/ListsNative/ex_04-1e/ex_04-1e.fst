@@ -11,5 +11,5 @@ substitui x y list =
     }
 
 main : [Int]
-main = substitui 2 3 [1,2,3]
+main = substitui 2 3 ([1,2,3])
 -- result = [1,3,3]

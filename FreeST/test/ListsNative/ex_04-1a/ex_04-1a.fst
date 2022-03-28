@@ -8,5 +8,5 @@ sum' list =
     }
 
 main : Int
-main = sum' [1,2,3]
+main = sum' $ [1,2,3]
 -- result = 6

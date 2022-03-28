@@ -11,5 +11,5 @@ altera list x y =
     }
 
 main : [Int]
-main = altera [10,0,23,4,14,2,11] 10 5
+main = altera ([10,0,23,4,14,2,11]) 10 5
 -- result = [10,5,23,5,14,5,11]

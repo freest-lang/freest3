@@ -2,6 +2,8 @@
 
 -- "Prelude" Functions
 
+data MaybeInt = Empty | Number Int
+
 addHead : Int -> [Int] -> [Int]
 addHead head list = head :: list
 
@@ -56,7 +58,7 @@ listLength list =
     }
 
 listReverse : [Int] -> [Int]
-listReverse list = listShifter list End
+listReverse list = listShifter list []
 
 listShifter : [Int] -> [Int] -> [Int]
 listShifter list invertedList = 

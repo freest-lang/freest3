@@ -11,5 +11,5 @@ elem' x list =
     }
 
 main : Bool
-main = elem' 3 [1,2,3,4]
+main = elem' 3 ([1,2,3,4])
 -- result = True

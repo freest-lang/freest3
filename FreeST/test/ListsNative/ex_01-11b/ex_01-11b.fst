@@ -26,5 +26,5 @@ getPerfects x = if x <= 1 then [] else
                         else getPerfects (x-1)
 
 main : [Int]
-main = getPerfects 10000
--- result = [8128,496,28,6]
+main = getPerfects 500
+-- result = [496,28,6]

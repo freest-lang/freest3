@@ -20,5 +20,5 @@ maximo' max list =
     }
 
 main : MaybeInt
-main = maximo [1,2,5,3,4]
+main = maximo $ [1,2,5,3,4]
 -- result = 5

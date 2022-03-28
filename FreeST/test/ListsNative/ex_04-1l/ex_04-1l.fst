@@ -12,5 +12,5 @@ trocaPares list =
     }
 
 main : [Int]
-main = trocaPares [1,2,3,4,5]
+main = trocaPares ([1,2,3,4,5])
 -- result = [2,1,4,3,5]

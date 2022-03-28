@@ -20,12 +20,11 @@ foldl' f list acc =
 
 poly : Int -> [Int] -> Int
 poly x list = 
-    let (t,_) = foldr' (function x) list (0.0) in t
+    let (t,_) = foldr' (function x) list (0,0) in t
 
 function : Int -> Int -> (Int,Int) -> (Int,Int)
 function x n tuple =
-    let (acc,i) = (((n*(pow x i)) + acc),(i+1))
-    }
+    let (acc,i) = tuple in (((n*(pow x i)) + acc),(i+1))
 
 pow : Int -> Int -> Int
 pow b e = if e <= 0 then 1 else b * (pow b (e-1))

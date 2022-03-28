@@ -15,4 +15,4 @@ getSecond list =
 
 main : MaybeInt
 main = getSecond ([1,2,3])
--- result = 2
+-- result = Number 2
