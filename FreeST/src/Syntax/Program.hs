@@ -18,6 +18,8 @@ import           Syntax.ProgramVariable         ( ProgVar )
 import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable            ( TypeVar )
 
+import Data.List
+
 -- The definitions of the datatypes and types declared in a program
 type TypeEnv = Map.Map TypeVar (K.Kind, T.Type)
 
@@ -48,8 +50,9 @@ noConstructors tEnv =
 -- type name associated to a datatype that defines the constructor
 -- (rather indirect)
 isDatatypeContructor :: ProgVar -> TypeEnv -> Bool
-isDatatypeContructor c tEnv = not $ Map.null $ Map.filter (isDatatype . snd)
-                                                          tEnv
+isDatatypeContructor c tEnv =
+  any (== c) [mkVar defaultPos "([])", mkVar defaultPos "(::)"] || 
+  (not $ Map.null $ Map.filter (isDatatype . snd) tEnv)
  where
   isDatatype :: T.Type -> Bool
   isDatatype (T.Rec _ (K.Bind _ _ _ t)) =  isDatatype t
