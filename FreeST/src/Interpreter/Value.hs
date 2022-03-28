@@ -42,7 +42,10 @@ instance Show Value where
   show (String    s)  = s
   show (Label     s)  = s
   show (Pair v1 v2 )  = "(" ++ show v1 ++ ", " ++ showTuple v2 ++ ")"
-  show (Cons c  xs )  = showCons c xs
+  show (Cons c  xs )
+    | show c ==  "[]"  = "[]"
+    | show c == "(::)" = let ([y]:ys) = xs in "[" ++ show y ++ showNativeList ys ++ "]"
+    | otherwise = showCons c xs
   show Closure{}      = "<fun>"
   show TypeAbs{}      = "<fun>"
   show PrimitiveFun{} = "<fun>"
@@ -65,6 +68,11 @@ showCons x xs = show x ++ " " ++ unwords (map showConstrList xs)
   showC c@(Cons _ []) = show c
   showC c@Cons{}      = "(" ++ show c ++ ")"
   showC v             = show v
+
+showNativeList :: [[Value]] -> String
+showNativeList [[Cons _ []]]           = ""
+showNativeList ([(Cons _ ([y]:ys))]:_) = "," ++ show y ++ showNativeList ys
+-- showNativeList xs = show xs
 
 instance Position Value where
   pos _ = defaultPos
