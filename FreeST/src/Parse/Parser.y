@@ -118,7 +118,6 @@ import           Util.FreestState
 %right '$'       -- function call
 %left '&'        -- function call
 %right '::'      -- list constructor                        native_lists
--- %left ','        -- list constructor                        native_lists
 
 %%
 -------------
@@ -228,7 +227,7 @@ Primary :: { E.Exp }
   | CHAR                           { let (TokenChar p x) = $1 in E.Char p x }
   | STR                            { let (TokenString p x) = $1 in String p x }
   | '()'                           { E.Unit (pos $1) }
-  | '[' ']'                        { E.Var (pos $1) (mkVar (pos $1) "([])") }
+  | '[' ']'                        { E.Var (pos $1) (mkVar (pos $1) "[]") }
   | ArbitraryProgVar               { E.Var (pos $1) $1 }
   | lambda ProgVarWildTBind Abs    { let ((p,m),e) = $3 in
                                        E.Abs p (E.Bind p m (fst $2) (snd $2) e) }
@@ -255,7 +254,7 @@ Tuple :: { E.Exp }
   | Exp ',' Tuple { E.Pair (pos $1) $1 $3 }
 
 ExpList :: { E.Exp }
-  : Exp ']'         { binOp $1 (mkVar (pos $1) "(::)") (E.Var (pos $1) (mkVar (pos $1) "([])")) }
+  : Exp ']'         { binOp $1 (mkVar (pos $1) "(::)") (E.Var (pos $1) (mkVar (pos $1) "[]")) }
   | Exp ',' ExpList { binOp $1 (mkVar (pos $2) "(::)") $3 }
 
 MatchMap :: { FieldMap }
@@ -272,7 +271,7 @@ CaseMap :: { FieldMap }
 Case :: { (ProgVar, ([ProgVar], E.Exp)) }
   : Constructor ProgVarWildSeq   '->' Exp { ($1, ($2, $4)) }
   | ProgVarWild '::' ProgVarWild '->' Exp { (mkVar (pos $2) "(::)", (([$1,$3]), $5)) }
-  | '[' ']'                      '->' Exp { (mkVar (pos $1) "([])", ([], $4)) }
+  | '[' ']'                      '->' Exp { (mkVar (pos $1) "[]", ([], $4)) }
 
 Op :: { ProgVar }
    : '||'  { mkVar (pos $1) "(||)"      }
@@ -282,7 +281,7 @@ Op :: { ProgVar }
    | '*'   { mkVar (pos $1) "(*)"        }
    | '/'   { mkVar (pos $1) "(/)"        }
    | '^'   { mkVar (pos $1) "(^)"        }
-
+   | '::'  { mkVar (pos $1) "(::)"       } -- native_lists
 
 ----------
 -- TYPE --

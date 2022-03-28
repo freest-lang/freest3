@@ -329,7 +329,7 @@ isMult :: ProgVar -> Bool
 isMult = isOp ["(*)", "(/)"]
 
 isList :: ProgVar -> Bool
-isList = isOp ["([])","(::)"]
+isList = isOp ["(::)"] -- ["([])","(::)"]
 
 showOp :: ProgVar -> String
 showOp x = spaced $ tail (init $ show x)
