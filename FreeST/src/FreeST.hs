@@ -22,7 +22,7 @@ import           System.Exit                    ( die )
 import           Util.PrettyError
 import           Util.ErrorMessage
 import           Util.FreestState
-import           Util.PreludeLoader             ( prelude )
+import           Util.PreludeLoader             ( prelude, datatypes )
 import           Validation.Rename              ( renameState )
 import           Validation.TypeChecking        ( typeCheck )
 -- import           Data.Version                   ( showVersion )
@@ -35,10 +35,6 @@ main = checkAndRun =<< flags -- handleOpts =<< compilerOpts =<< getArgs
 
 checkAndRun :: RunOpts -> IO ()
 checkAndRun runOpts = do
-  -- No file, die
-  -- when (isNothing $ runFilePath runOpts) (die "")
-  -- Prelude
-  -- preludeFilePath <- getDataFileName (fromJust $ preludeFile runOpts)
   preludeFilePath <- getDataFileName "Prelude.fst"
   s0              <- parseProgram preludeFilePath prelude
   when (hasErrors s0) (putStrLn cantFindPrelude)
@@ -50,7 +46,8 @@ checkAndRun runOpts = do
   -- Solve type declarations and dualof operators
   let s2 = emptyPEnv $ execState
         elaboration
-        (s1 { runOpts, parseEnv = parseEnv s1 `Map.union` initialProg})
+        (s1 { runOpts, parseEnv = parseEnv s1 `Map.union` initialProg,
+              typeEnv = typeEnv s1 `Map.union` datatypes})
   when (hasErrors s2) (die $ getErrors preludeNames s2)
   -- Rename
   let s3 = execState renameState (s2 { runOpts })

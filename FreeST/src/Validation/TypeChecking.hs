@@ -77,12 +77,8 @@ checkHasBinding f _ = do
   eEnv <- getProg
   vEnv <- getVEnv
   tEnv <- getTEnv
-  when
-      (               f
-      `Map.member`    userDefined (noConstructors tEnv vEnv)
-      &&              f
-      `Map.notMember` eEnv
-      )
+  when (f `Map.member` userDefined (noConstructors tEnv vEnv)
+        && f `Map.notMember` eEnv )
     $ addError (SignatureLacksBinding (pos f) f (vEnv Map.! f))
 
 -- Check a given function body against its type; make sure all linear

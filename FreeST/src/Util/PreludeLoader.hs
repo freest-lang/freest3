@@ -13,15 +13,20 @@ module Util.PreludeLoader
   ( prelude
   , isBuiltin
   , userDefined
+  , datatypes
   )
 where
 
 import           Syntax.ProgramVariable
+import           Syntax.TypeVariable
 import           Syntax.Base
 import qualified Syntax.Type                   as T
+import qualified Syntax.Kind                   as K
 import           Syntax.Program
 import qualified Data.Map.Strict               as Map
 import           Parse.Read                     ( )
+
+import Data.List
 
 typeList :: [(ProgVar, T.Type)]
 typeList =
@@ -93,4 +98,29 @@ isBuiltin :: ProgVar -> Bool
 isBuiltin = (`elem` map fst typeList)
 
 userDefined :: VarEnv -> VarEnv
-userDefined = Map.filterWithKey (\x _ -> not (isBuiltin x))
+userDefined = Map.filterWithKey (\x _ ->
+                            any (== x) [listEmpty defaultPos, listCons defaultPos]
+                                    || not (isBuiltin x))
+
+
+-- Predifined datatypes
+datatypes :: TypeEnv -- [(TypeVar, (K.Kind, T.Type))]
+datatypes = Map.fromList
+  [ (list p, (K.tu p, T.Rec p $ K.Bind p (list p) (K.tu p) variant))
+  ]
+  where
+    p    = defaultPos
+    variant = T.Variant p $
+                Map.fromList
+                  [ (mkVar p "[]", read "[Int]") ]
+
+-- With type operators
+-- (K.Arrow p (K.tu p) (K.tu p), T.Abs p $ K.Bind p (mkVar p "a") (K.tu p) recBind)
+
+
+list :: Pos -> TypeVar
+list      p = mkVar p "#List"
+
+listEmpty, listCons :: Pos -> ProgVar
+listEmpty p = mkVar p "([])"
+listCons  p = mkVar p "(::)"
