@@ -1,4 +1,4 @@
-data T = C (Int -> Int)
+data T = C Int -> Int
 
 f : Int -> Int
 f x = x

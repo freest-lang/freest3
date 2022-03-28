@@ -53,7 +53,7 @@ typeCheck = do
 
   -- * Check the formation of all function signatures
 --  debugM "checking the formation of all function signatures (kinding)"
-  mapM_ (K.synthetise Map.empty) . userDefined =<< getVEnv
+  mapM_ (K.synthetise Map.empty) =<< getVEnv
   -- Gets the state and only continues if there are no errors so far
   -- Can't continue to equivalence if there are ill-formed types
   -- (i.e. not contractive under a certain variable)
@@ -83,7 +83,7 @@ checkHasBinding f _ = do
       &&              f
       `Map.notMember` eEnv
       )
-    $ addError (SignatureLacksBinding (pos f) f (vEnv Map.! f))
+    $ let p = pos f in addError (SignatureLacksBinding p f (vEnv Map.! f))
 
 -- Check a given function body against its type; make sure all linear
 -- variables are used.

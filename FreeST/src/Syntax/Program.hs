@@ -53,8 +53,5 @@ isDatatypeContructor c tEnv = not $ Map.null $ Map.filter (isDatatype . snd)
  where
   isDatatype :: T.Type -> Bool
   isDatatype (T.Rec _ (K.Bind _ _ _ t)) =  isDatatype t
---  isDatatype (T.Forall _ (K.Bind _ _ _ t)) =  isDatatype t
-  isDatatype (T.App _ t u) =  isDatatype t || isDatatype u
-  isDatatype (T.Abs _ (K.Bind _ _ _ t)) =  isDatatype t
   isDatatype (T.Variant _ m) = c `Map.member` m
   isDatatype _                = False

@@ -20,7 +20,7 @@ where
 import           Syntax.Base                    ( Pos )
 import qualified Syntax.Type                   as T
 import           Validation.Terminated          ( terminated )
-import           Validation.Rename              ( subs )
+import           Validation.Substitution        ( subs )
 import           Util.Error                     ( internalError )
 import qualified Syntax.Kind as K
 
@@ -28,11 +28,9 @@ normalise :: T.Type -> T.Type
 -- Session types
 normalise (T.Semi p t u)
   | terminated t = normalise u
-  | otherwise    = append p (normalise t) (normalise u)
+  | otherwise    = append p (normalise t) u
 normalise u@(T.Rec _ (K.Bind _ x _ t)) = subs u x (normalise t)
 -- Type operators
-normalise (T.App _ (T.Abs _ (K.Bind _ x _ t)) u) = subs (normalise u) x t
-normalise (T.App p t u) = normalise $ T.App p (normalise t) u
 normalise t@T.Dualof{} = internalError "Equivalence.Normalisation.normalise" t
 -- Otherwise: Basic, Fun, PairType, Datatype, Skip, Message, Choice, TypeVar
 normalise t = t

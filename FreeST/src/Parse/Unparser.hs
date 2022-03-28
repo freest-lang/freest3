@@ -88,7 +88,6 @@ instance Show K.Basic where
 
 instance Show K.Kind where
   show (K.Kind _ p m) = show p ++ show m
-  show (K.Arrow _ k1 k2) = show k1 ++ " -> " ++ show k2
 
 -- Binds
 
@@ -182,11 +181,6 @@ instance Unparse T.Type where
   unparse (T.Skip _       ) = (maxRator, "Skip")
   unparse (T.Var  _ a     ) = (maxRator, show a)
   unparse (T.CoVar _ a    ) = (maxRator, "dual " ++ show a)
-  unparse (T.Abs _ b      ) = (arrowRator, "λ" ++ showBindType b)
-  unparse (T.App _ t u    ) = (appRator, l ++ " " ++ r)
-   where
-    l = bracket (unparse t) Left appRator
-    r = bracket (unparse u) Right appRator
   unparse (T.Message _ p t) = (msgRator, show p ++ m)
     where m = bracket (unparse t) Right msgRator
   unparse (T.Arrow _ m t u) = (arrowRator, l ++ spaced (show m) ++ r)

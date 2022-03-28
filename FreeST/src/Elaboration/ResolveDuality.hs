@@ -17,7 +17,6 @@ import           Syntax.TypeVariable
 import           Util.FreestState
 import           Util.Error
 import           Validation.Substitution
-import           Equivalence.Normalisation
 
 -- | Resolving the dualof operator
 
@@ -91,14 +90,8 @@ solveType vs v d@(T.Dualof p var@(T.Var p' x)) = case v Map.!? x of
     let b = K.Bind p' fv (K.sl p') (changePos p (subs (T.Var p' fv) x t))
     T.Rec p <$> solveBind solveDual vs (x `Map.delete` v) b
   Nothing -> addDualof d >> solveDual vs v (changePos p var)
-solveType vs v d@(T.Dualof p t@T.App{}) =
-  solveDual vs v (changePos p  (normalise t))
 solveType vs v d@(T.Dualof p t) =
   addDualof d >> solveDual vs v (changePos p t)
-solveType vs v (T.Abs p b) =
-  T.Abs p <$> solveBind solveType vs v b
-solveType vs v (T.App p t u) =
-  T.App p <$> solveType vs v t <*> solveType vs v u
 -- Var, Int, Char, Bool, Unit, Skip
 solveType _ _ t                = pure t
 
@@ -123,12 +116,8 @@ solveDual vs v d@(T.Dualof p t@(T.Var _ a))
   | a `Map.member` v =
      addDualof d >> solveType vs (a `Map.delete` v) (changePos p (v Map.! a))
   | otherwise = addDualof d >> solveType vs v (changePos p t)
-solveDual vs v d@(T.Dualof p t@T.App{}) =
-  addDualof d >> solveType vs v (changePos p (normalise t))
 solveDual vs v d@(T.Dualof p t) =
   addDualof d >> solveType vs v (changePos p t)
-solveDual vs v (T.Abs p b) = T.Abs p <$> solveBind solveDual vs v b
-solveDual vs v (T.App p t u) = T.App p <$> solveDual vs v t <*> pure u
 -- Non session-types
 solveDual _ _ t = addError (DualOfNonSession (pos t) t) $> t
 
@@ -162,7 +151,5 @@ changePos p (T.Forall _ xs    ) = T.Forall p xs
 changePos p (T.Var    _ x     ) = T.Var p x
 changePos p (T.Dualof _ t     ) = T.Dualof p t
 changePos p (T.CoVar  _ t     ) = T.CoVar p t
-changePos p (T.Abs  _ tb      ) = T.Abs p tb
-changePos p (T.App  _ t u     ) = T.App p t u
 
 

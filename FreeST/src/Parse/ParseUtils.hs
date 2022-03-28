@@ -25,9 +25,6 @@ module Parse.ParseUtils
   , binOp
   , unOp
   , typeListToType
-  , forallTypeOnCons
-  , buildVariant
-  , buildRecursive
   , ParseResult(..)
   , FreestStateT
   , thenM
@@ -48,8 +45,6 @@ import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
 import           Util.Error
 import           Util.FreestState
--- import           Validation.Rename
-import           Validation.Substitution
 
 -- import qualified Control.Monad.Fail as Fail
 
@@ -148,45 +143,10 @@ binOp left op = E.App (pos left) (E.App (pos left) (E.Var (pos op) op) left)
 unOp :: ProgVar -> E.Exp -> E.Exp
 unOp op expr = E.App (pos expr) (E.Var (pos op) op) expr
 
+typeListToType :: TypeVar -> [(ProgVar, [T.Type])] -> [(ProgVar, T.Type)]
+typeListToType a = map $ second typeToFun -- map (\(x, ts) -> (x, typeToFun ts))
+  -- Convert a list of types and a final type constructor to a type
 
-typeListToType :: TypeVar -> [(TypeVar, K.Kind)] -> [(ProgVar, [T.Type])] -> [(ProgVar, T.Type)]
-typeListToType a xs = map $ second (typeToFun xs) -- map (\(x, ts) -> (x, typeToFun ts))
  where
-  typeToFun [] []       = T.Var (pos a) a
-  typeToFun xs []       = foldl (\t' (x, _) -> T.App (pos a) t' (T.Var (pos x) x)) (T.Var (pos a) a) xs
-  typeToFun xs (t : ts) = T.Arrow (pos t) Un t (typeToFun xs ts)
-
--- typeListToType :: TypeVar -> [(TypeVar, K.Kind)] -> [(ProgVar, [T.Type])] -> [(ProgVar, T.Type)]
--- typeListToType a xs ys =
---   map (\(pv, ts) ->
---          (pv, foldl (\t' (x,k) -> T.Forall (pos x) (K.Bind (pos k) x k t'))
---                       (typeToFun xs ts) xs)) ys
---  where
---   typeToFun [] []       = T.Var (pos a) a
---   typeToFun xs []       = foldl (\t' (x, _) -> T.App (pos a) t' (T.Var (pos x) x)) (T.Var (pos a) a) xs
---   typeToFun xs (t : ts) = T.Arrow (pos t) Un t (typeToFun xs ts)
-
---  t = map (second typeToFun) ys
-
-
-forallTypeOnCons :: [(TypeVar, K.Kind)] -> T.Type -> T.Type
-forallTypeOnCons = flip $ foldl (\acc (v,k) -> T.Forall (pos v) $ K.Bind (pos k) v k acc)
-
-buildVariant :: Pos -> [(TypeVar, K.Kind)] -> [(ProgVar, T.Type)] -> T.Type
--- buildVariant p binds bs = 
---         foldl (\e (v, k) ->
---               renameType (T.Abs (pos v) (K.Bind (pos v) v k e)))
---                 (T.Variant p (Map.fromList bs)) binds
-buildVariant p binds bs =         
- foldl (\t (v, k) ->
-      let v' = mkVar (pos v) ("0#" ++ intern v) in
-        T.Abs (pos v) (K.Bind (pos v) v' k (subs (T.Var (pos v) v') v t)))
- (T.Variant p (Map.fromList bs)) binds
-
-
-
-buildRecursive :: (TypeVar, K.Kind) -> T.Type -> T.Type
-buildRecursive vk  (T.Abs p (K.Bind p' x k t)) =
-  T.Abs p $ K.Bind p' x k $ buildRecursive vk t
-buildRecursive (v, k) t =
-  T.Rec (pos v) $ K.Bind (pos t) v k t
+  typeToFun []       = T.Var (pos a) a
+  typeToFun (t : ts) = T.Arrow (pos t) Un t (typeToFun ts)
