@@ -176,7 +176,7 @@ or
 
 ### Program specs (valid or invalid programs)
 ```bash
-    $ stack test :units --ta "-m SPEC_NAME"
+    $ stack test :programs --ta "-m SPEC_NAME"
 ```
 
 with one of the following `SPEC_NAME`s:
@@ -193,6 +193,16 @@ or also,
 ```bash
     $ make invalid-programs
 ```
+
+**Note:** It is possible run the tests of each category separately by using the
+same approach. Try:
+
+```bash
+    $ stack test :programs --ta "-m SessionTypes"
+```
+
+*Warning!* If there are two categories named "SessionTypes" (one on invalid and
+the other on valid test), the previous command will capture both.
 
 If the output from the compiler is important (relevant to invalid
 tests to visually inspect error messages). Warning: a bit slow.
