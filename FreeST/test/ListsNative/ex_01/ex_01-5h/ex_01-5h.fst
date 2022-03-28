@@ -14,5 +14,5 @@ sumNFirst n list =
     } 
 
 main : Int
-main = sum5First [1,2,3,4,5,6,7]
+main = sum5First ([1,2,3,4,5,6,7])
 -- result = 15

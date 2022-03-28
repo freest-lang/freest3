@@ -21,5 +21,5 @@ concat' list1 list2 =
     }
     
 main : [Int]
-main = reproduz [3,5,1,0]
+main = reproduz ([3,5,1,0])
 -- result = 3 :: 3 :: 3 :: 5 :: 5 :: 5 :: 5 :: 5 :: 1 :: []

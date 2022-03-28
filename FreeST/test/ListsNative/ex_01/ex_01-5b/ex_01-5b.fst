@@ -11,5 +11,5 @@ isNotNull : [Int] -> Bool
 isNotNull list = not (isNull list)
 
 main : Bool
-main = isNotNull [1]
+main = isNotNull ([1])
 -- result = True

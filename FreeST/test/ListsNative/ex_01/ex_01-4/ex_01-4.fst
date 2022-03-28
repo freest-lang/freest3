@@ -8,5 +8,5 @@ listLength list =
     }
 
 main : Int
-main = listLength [1,2,3]
+main = listLength ([1,2,3])
 -- result = 3

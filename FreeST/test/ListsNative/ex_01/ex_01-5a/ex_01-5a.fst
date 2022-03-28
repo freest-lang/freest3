@@ -11,5 +11,5 @@ biggerThan10 : [Int] -> Bool
 biggerThan10 list = listLength list > 10
 
 main : Bool
-main = biggerThan10 [1,2]
+main = biggerThan10 ([1,2])
 -- result = False

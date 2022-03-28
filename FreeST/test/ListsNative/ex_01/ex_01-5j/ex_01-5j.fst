@@ -45,5 +45,5 @@ equalsMaybeInt a b =
     }
 
 main : Bool
-main = isSameLengthAndHasSameLast [1,2,3] [2,1,3]
+main = isSameLengthAndHasSameLast ([1,2,3]) ([2,1,3])
 -- result True

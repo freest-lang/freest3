@@ -8,5 +8,5 @@ multiplyBy2 list =
     }
 
 main : [Int]
-main = multiplyBy2 [1,2,3]
+main = multiplyBy2 ([1,2,3])
 -- result 2 :: 4 :: 6 :: []

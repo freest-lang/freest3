@@ -18,5 +18,5 @@ invert' from to =
     }
 
 main : [Int]
-main = invertAllButFirst [1,2,3,4,5]
+main = invertAllButFirst ([1,2,3,4,5])
 -- result = 1 :: 5 :: 4 :: 3 :: 2 :: []
