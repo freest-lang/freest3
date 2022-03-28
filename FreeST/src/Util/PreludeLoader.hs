@@ -112,7 +112,8 @@ datatypes = Map.fromList
     p    = defaultPos
     variant = T.Variant p $
                 Map.fromList
-                  [ (mkVar p "[]", read "[Int]") ]
+                  [ (mkVar p "[]", read "[Int]")
+                  , (mkVar p "(::)", read "Int -> [Int] -> [Int]")]
 
 -- With type operators
 -- (K.Arrow p (K.tu p) (K.tu p), T.Abs p $ K.Bind p (mkVar p "a") (K.tu p) recBind)
