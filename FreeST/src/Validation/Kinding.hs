@@ -79,6 +79,9 @@ synthetise' s kEnv (T.Semi p1 (T.Choice p2 v m) (T.Var p3 tVar))
   | tVar `Map.member` kEnv && K.isUn (kEnv Map.! tVar) = do
     checkAgainstSession' s kEnv (T.Choice p2 v m)
     checkAgainstSession' s kEnv (T.Var p3 tVar)
+    -- choice map must be su
+    --tMapM_ (checkAgainst' s kEnv (K.su p1)) m -- check whole type or each option? or both?
+    checkAgainst' s kEnv (K.su p1) (T.Choice p2 v m)
     return $ K.su p1
 -- Session types
 synthetise' _ _    (T.Skip p    ) = return $ K.su p
@@ -87,8 +90,10 @@ synthetise' s kEnv (T.Semi p t u) = do
   checkAgainstSession' s kEnv u
   return $ K.sl p
 synthetise' s kEnv (T.Message p _ t) = checkAgainst' s kEnv (K.ml p) t $> K.sl p
-synthetise' s kEnv (T.Choice p _ m) =
-  tMapM_ (checkAgainst' s kEnv (K.sl p)) m $> K.sl p
+synthetise' s kEnv (T.Choice p _ m) = 
+  if all T.isSkip $ Map.elems m
+    then return $ K.su p
+    else tMapM_ (checkAgainst' s kEnv (K.sl p)) m $> K.sl p
 -- Session or functional
 synthetise' s kEnv (T.Rec _ (K.Bind _ a k t)) =
   checkContractive s a t >> checkAgainst' s (Map.insert a k kEnv) k t $> k

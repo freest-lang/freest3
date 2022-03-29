@@ -77,3 +77,8 @@ instance Position Type where
 
 instance Default Type where
   omission = Int
+
+
+isSkip :: Type -> Bool
+isSkip (Skip _) = True
+isSkip _          = False
