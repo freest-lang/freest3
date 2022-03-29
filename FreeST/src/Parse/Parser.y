@@ -44,7 +44,7 @@ import           Util.FreestState
   ','      {TokenComma _}
   '['      {TokenLBracket _}
   ']'      {TokenRBracket _}
-  '::'     {TokenFourDots _}              -- native_lists
+  '::'     {TokenFourDots _}
   ':'      {TokenColon _}
   ';'      {TokenSemi _}
   '!'      {TokenMOut _}
@@ -115,7 +115,7 @@ import           Util.FreestState
 %nonassoc ProgVarWildTBind
 %right '$'       -- function call
 %left '&'        -- function call
-%right '::'      -- list constructor                        native_lists
+%right '::'      -- list constructor
 
 %%
 -------------
@@ -208,7 +208,7 @@ Exp :: { E.Exp }
   | '(' Op Exp ')'                 { unOp $2 $3 } -- left section
   | '(' Exp Op ')'                 { unOp $3 $2 } -- right section
   | '(' Exp '-' ')'                { unOp (mkVar (pos $2) "(-)") $2 } -- right section (-)
-  | '[' ExpList                    { $2 }
+  | '[' Exp ExpList                { binOp $2 (mkVar (pos $2) "(::)") $3 }
   | App                            { $1 }
 
 App :: { E.Exp }
@@ -252,8 +252,8 @@ Tuple :: { E.Exp }
   | Exp ',' Tuple { E.Pair (pos $1) $1 $3 }
 
 ExpList :: { E.Exp }
-  : Exp ']'         { binOp $1 (mkVar (pos $1) "(::)") (E.Var (pos $1) (mkVar (pos $1) "[]")) }
-  | Exp ',' ExpList { binOp $1 (mkVar (pos $2) "(::)") $3 }
+  : ']'             { E.Var (pos $1) (mkVar (pos $1) "[]") }
+  | ',' Exp ExpList { binOp $2 (mkVar (pos $2) "(::)") $3 }
 
 MatchMap :: { FieldMap }
   : Match              { uncurry Map.singleton $1 }
@@ -272,14 +272,14 @@ Case :: { (Variable, ([Variable], E.Exp)) }
   | '[' ']'                      '->' Exp { (mkVar (pos $1) "[]", ([], $4)) }
 
 Op :: { Variable }
-   : '||'  { mkVar (pos $1) "(||)"      }
+   : '||'  { mkVar (pos $1) "(||)"       }
    | '&&'  { mkVar (pos $1) "(&&)"       }
    | CMP   { mkVar (pos $1) (getText $1) }
    | '+'   { mkVar (pos $1) "(+)"        }
    | '*'   { mkVar (pos $1) "(*)"        }
    | '/'   { mkVar (pos $1) "(/)"        }
    | '^'   { mkVar (pos $1) "(^)"        }
-   | '::'  { mkVar (pos $1) "(::)"       } -- native_lists
+   | '::'  { mkVar (pos $1) "(::)"       }
 
 ----------
 -- TYPE --
@@ -319,8 +319,7 @@ PrimaryType :: { T.Type }
   | TypeName                      { T.Var (pos $1) $1 } -- TODO: remove this one lex
   | lambda KindBind '->' Type
       { let (a,k) = $2 in T.Abs (pos $1) (Bind (pos a) a k $4) }
---  | '[' Type ']'                  { T.App (pos $1) (T.Var (pos $1) (mkVar (pos $1) "(::)")) $2 }  -- native_lists
-  | '[' Int ']'                  { (T.Var (pos $1) (mkVar (pos $1) "#List")) }  -- native_lists
+  | '[' Int ']'                   { (T.Var (pos $1) (mkVar (pos $1) "#List")) }
   | '(' Type ')'                  { $2 }
 
 Forall :: { T.Type }
