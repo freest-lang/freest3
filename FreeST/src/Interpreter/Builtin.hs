@@ -7,7 +7,6 @@ import           Data.Char                      ( ord
 import qualified Data.Map                      as Map
 import           Interpreter.Value
 import           Syntax.Base
-import           Syntax.ProgramVariable         ( ProgVar )
 import           System.Exit                    ( die )
 import           System.IO.Unsafe               ( unsafePerformIO )
 
@@ -203,5 +202,5 @@ initialCtx = Map.fromList
 --  , (var "print", PrimitiveFun (\x -> IOValue (putStrLn (show x) >> return Unit)))
   ]
  where
-  var :: String -> ProgVar
+  var :: String -> Variable
   var = mkVar defaultPos

@@ -1,7 +1,7 @@
 module Elaboration.Duality where
 
+import           Syntax.Base                   (Bind(..))
 import qualified Data.Map                      as Map
-import qualified Syntax.Kind                   as K
 import qualified Syntax.Type                   as T
 
 
@@ -15,7 +15,7 @@ instance Duality T.Type where
   dualof (T.Message p pol t) = T.Message p (dualof pol) (dualof t)
   dualof (T.Choice p pol m) = T.Choice p (dualof pol) (Map.map dualof m)
   dualof (T.Rec p b) = T.Rec p (dualBind  b)
-    where dualBind (K.Bind p a k t) = K.Bind p a k (dualof t) 
+    where dualBind (Bind p a k t) = Bind p a k (dualof t) 
   dualof (T.Dualof _ t) = dualof t
   -- Non session-types & Skip
   dualof t = t

@@ -12,12 +12,16 @@ Multiplicity, that will be used the remaining Compiler.
 
 module Syntax.Base
 ( Default(..)
-, Variable(..)
 , Pos(..) 
 , Position(..)
 , Multiplicity(..)
 , defaultPos
 , negPos
+, Bind(..)
+, Variable(..)
+, intern
+, mkVar
+, mkNewVar
 ) where
 
 -- Default for the various syntactic categories
@@ -43,12 +47,31 @@ negPos (Pos i j) = Pos (negate i) (negate j)
 data Multiplicity = Un | Lin deriving Eq
 
 -- Type and program variable
+data Variable = Variable Pos String
 
-class Position t => Variable t where
-  -- The string, internal representation of a variable
-  intern :: t -> String
-  -- Making a variable from a string, type or program
-  mkVar :: Pos -> String -> t
-  -- Making a new variable from a given variable. The variable is
-  -- unique up to the point where the integer is
-  mkNewVar :: Int -> t -> t
+instance Eq Variable where
+  (Variable _ x) == (Variable _ y) = x == y
+  
+instance Ord Variable where
+  (Variable _ x) <= (Variable _ y) = x <= y
+
+instance Position Variable where
+  pos (Variable p _) = p
+
+instance Default Variable where
+  omission p = mkVar p "omission"
+
+-- The string, internal representation of a variable
+intern :: Variable -> String
+intern (Variable _ x) = x
+
+-- Making a variable from a string, type or program
+mkVar :: Pos -> String -> Variable
+mkVar = Variable
+-- Making a new variable from a given variable. The variable is
+-- unique up to the point where the integer is
+mkNewVar :: Int -> Variable -> Variable
+mkNewVar next (Variable p str) = Variable p (show next ++ '#' : str)
+
+-- Bind: (λ x:t -> e), (∀ a:k . t) or (Λ a:k => e) 
+data Bind a b = Bind {posn :: Pos, var :: Variable, binder :: a, body :: b}

@@ -19,8 +19,6 @@ module Syntax.Type
 where
 
 import           Syntax.Base
-import           Syntax.TypeVariable            ( TypeVar )
-import           Syntax.ProgramVariable         ( ProgVar )
 import qualified Syntax.Kind                   as K
 import qualified Data.Map.Strict               as Map
 
@@ -43,16 +41,16 @@ data Type =
   | Message Pos Polarity Type
   | Choice Pos View TypeMap
   -- Polymorphism and recursive types
-  | Forall Pos (K.Bind Type)   -- ∀k . T, Universal type
-  | Rec Pos (K.Bind Type)      -- μ a:k . T, Recursive type
-  | Var Pos TypeVar
+  | Forall Pos (Bind K.Kind Type)   -- ∀k . T, Universal type
+  | Rec Pos (Bind K.Kind Type)      -- μ a:k . T, Recursive type
+  | Var Pos Variable
   -- Type operators
   | Dualof Pos Type
-  | CoVar Pos TypeVar
-  | Abs Pos (K.Bind Type)       -- λ a:k -> T, Operator abstraction
+  | CoVar Pos Variable
+  | Abs Pos (Bind K.Kind Type)       -- λ a:k -> T, Operator abstraction
   | App Pos Type Type           -- T T       , Operator application
 
-type TypeMap = Map.Map ProgVar Type
+type TypeMap = Map.Map Variable Type
 
 instance Position Type where
   pos (Int  p       ) = p

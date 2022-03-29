@@ -17,8 +17,6 @@ module Util.PreludeLoader
   )
 where
 
-import           Syntax.ProgramVariable
-import           Syntax.TypeVariable
 import           Syntax.Base
 import qualified Syntax.Type                   as T
 import qualified Syntax.Kind                   as K
@@ -28,7 +26,7 @@ import           Parse.Read                     ( )
 
 import Data.List
 
-typeList :: [(ProgVar, T.Type)]
+typeList :: [(Variable, T.Type)]
 typeList =
   [ -- Int
     (mkVar p "(+)"     , read "Int -> Int -> Int")
@@ -94,7 +92,7 @@ typeList =
 prelude :: VarEnv
 prelude = Map.fromList typeList-- foldr (uncurry Map.insert) Map.empty typeList
 
-isBuiltin :: ProgVar -> Bool
+isBuiltin :: Variable -> Bool
 isBuiltin = (`elem` map fst typeList)
 
 userDefined :: VarEnv -> VarEnv
@@ -106,7 +104,7 @@ userDefined = Map.filterWithKey (\x _ ->
 -- Predifined datatypes
 datatypes :: TypeEnv -- [(TypeVar, (K.Kind, T.Type))]
 datatypes = Map.fromList
-  [ (list p, (K.tu p, T.Rec p $ K.Bind p (list p) (K.tu p) variant))
+  [ (list p, (K.tu p, T.Rec p $ Bind p (list p) (K.tu p) variant))
   ]
   where
     p    = defaultPos
@@ -118,10 +116,7 @@ datatypes = Map.fromList
 -- With type operators
 -- (K.Arrow p (K.tu p) (K.tu p), T.Abs p $ K.Bind p (mkVar p "a") (K.tu p) recBind)
 
-
-list :: Pos -> TypeVar
+list, listEmpty, listCons :: Pos -> Variable
 list      p = mkVar p "#List"
-
-listEmpty, listCons :: Pos -> ProgVar
 listEmpty p = mkVar p "[]"
 listCons  p = mkVar p "(::)"

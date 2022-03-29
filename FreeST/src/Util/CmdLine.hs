@@ -16,7 +16,6 @@ import           System.FilePath
 import           Util.FreestState
 
 import Data.String
-import Syntax.ProgramVariable
 
 import Options.Applicative
 -- import Options.Applicative.Help
@@ -24,10 +23,10 @@ import Options.Applicative
 -- import           Data.Functor
 
 
-instance Data.String.IsString ProgVar where
+instance Data.String.IsString Variable where
   fromString = mkVar defaultPos
 
--- instance Read ProgVar where
+-- instance Read Variable where
 --   readsPrec _ s = [(mkVar defaultPos s,"")]
 
 runOptsParser :: Parser RunOpts

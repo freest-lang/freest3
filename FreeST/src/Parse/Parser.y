@@ -12,9 +12,7 @@ import           Syntax.Base
 import           Syntax.Expression             as E
 import qualified Syntax.Kind                   as K
 import           Syntax.Program
-import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
-import           Syntax.TypeVariable
 import           Util.PrettyError
 import           Util.Error
 import           Util.FreestState
@@ -152,7 +150,7 @@ Decl :: { () }
   | data KindedTVar KindBinds '=' DataCons {% do
       let a = fst $2
       toStateT $ checkDupTypeDecl a
-      let bs = typeListToType a $3 $5 :: [(ProgVar, T.Type)]
+      let bs = typeListToType a $3 $5 :: [(Variable, T.Type)]
  --      toStateT $ debugM $ show bs ++ "\n\n"
       let bs' = map (second $ forallTypeOnCons $3) bs
       toStateT $ mapM_ (\(c, t) -> addToVEnv c t) bs'
@@ -164,21 +162,21 @@ Decl :: { () }
 
 TypeDecl :: { T.Type }
   : '=' Type          { $2 }
-  | KindBind TypeDecl { let (a,k) = $1 in T.Abs (pos a) (K.Bind (pos k) a k $2) }
+  | KindBind TypeDecl { let (a,k) = $1 in T.Abs (pos a) (Bind (pos k) a k $2) }
     
-KindBinds :: { [(TypeVar, K.Kind)] }
+KindBinds :: { [(Variable, K.Kind)] }
   : {- empty -}               { [] }
   | KindedTVarLower KindBinds { $1 : $2 }
 
-KindedTVarLower :: { (TypeVar, K.Kind) }    -- for type and data declarations
+KindedTVarLower :: { (Variable, K.Kind) }    -- for type and data declarations
   : TypeVar ':' Kind { ($1, $3) }
   | TypeVar          { ($1, omission (pos $1)) }
     
-DataCons :: { [(ProgVar, [T.Type])] }
+DataCons :: { [(Variable, [T.Type])] }
   : DataCon              {% toStateT $ checkDupCons $1 [] >> return [$1] }
   | DataCon '|' DataCons {% toStateT $ checkDupCons $1 $3 >> return ($1 : $3) }
 
-DataCon :: { (ProgVar, [T.Type]) }
+DataCon :: { (Variable, [T.Type]) }
   : Constructor TypeSeq { ($1, $2) }
 
 ----------------
@@ -230,20 +228,20 @@ Primary :: { E.Exp }
   | '[' ']'                        { E.Var (pos $1) (mkVar (pos $1) "[]") }
   | ArbitraryProgVar               { E.Var (pos $1) $1 }
   | lambda ProgVarWildTBind Abs    { let ((p,m),e) = $3 in
-                                       E.Abs p (E.Bind p m (fst $2) (snd $2) e) }
+                                       E.Abs p m (Bind p (fst $2) (snd $2) e) }
   | Lambda KindBind TAbs           { let (a,k) = $2 in
-                                       E.TypeAbs (pos a) (K.Bind (pos k) a k $3) }
+                                       E.TypeAbs (pos a) (Bind (pos k) a k $3) }
   | '(' Exp ',' Tuple ')'          { E.Pair (pos $1) $2 $4 }
   | '(' Exp ')'                    { $2 }
 
 Abs :: { ((Pos, Multiplicity), E.Exp) }
   : Arrow Exp                      { ($1, $2) }
   | ProgVarWildTBind Abs           { let ((p,m),e) = $2 in
-                                       ((p, m), E.Abs p (E.Bind p m (fst $1) (snd $1) e)) }
+                                       ((p, m), E.Abs p m (Bind p (fst $1) (snd $1) e)) }
 
 TAbs :: { E.Exp }
   : '=>' Exp      { $2 }
-  | KindBind TAbs { let (a,k) = $1 in E.TypeAbs (pos a) (K.Bind (pos k) a k $2) }
+  | KindBind TAbs { let (a,k) = $1 in E.TypeAbs (pos a) (Bind (pos k) a k $2) }
 
 TApp :: { E.Exp }
   : App '[' Type  { E.TypeApp (pos $1) $1 $3 }
@@ -261,19 +259,19 @@ MatchMap :: { FieldMap }
   : Match              { uncurry Map.singleton $1 }
   | Match ',' MatchMap {% toStateT $ checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
 
-Match :: { (ProgVar, ([ProgVar], E.Exp)) }
+Match :: { (Variable, ([Variable], E.Exp)) }
   : ArbitraryProgVar ProgVarWild '->' Exp { ($1, ([$2], $4)) }
 
 CaseMap :: { FieldMap }
   : Case             { uncurry Map.singleton $1 }
   | Case ',' CaseMap {% toStateT $ checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
 
-Case :: { (ProgVar, ([ProgVar], E.Exp)) }
+Case :: { (Variable, ([Variable], E.Exp)) }
   : Constructor ProgVarWildSeq   '->' Exp { ($1, ($2, $4)) }
   | ProgVarWild '::' ProgVarWild '->' Exp { (mkVar (pos $2) "(::)", (([$1,$3]), $5)) }
   | '[' ']'                      '->' Exp { (mkVar (pos $1) "[]", ([], $4)) }
 
-Op :: { ProgVar }
+Op :: { Variable }
    : '||'  { mkVar (pos $1) "(||)"      }
    | '&&'  { mkVar (pos $1) "(&&)"       }
    | CMP   { mkVar (pos $1) (getText $1) }
@@ -294,9 +292,9 @@ Type :: { T.Type }
   | Type ';' Type                 { T.Semi (pos $2) $1 $3 }
   -- Polymorphism and recursion
   | rec KindBind '.' Type
-      { let (a,k) = $2 in T.Rec (pos $1) (K.Bind (pos a) a k $4) }
+      { let (a,k) = $2 in T.Rec (pos $1) (Bind (pos a) a k $4) }
   | forall KindBind Forall
-      { let (a,k) = $2 in T.Forall (pos $1) (K.Bind (pos a) a k $3) }
+      { let (a,k) = $2 in T.Forall (pos $1) (Bind (pos a) a k $3) }
   -- Type operators
   | dualof Type                   { T.Dualof (pos $1) $2 }
 --   | '(' Type ')'                  { $2 }
@@ -320,7 +318,7 @@ PrimaryType :: { T.Type }
   | TypeVar                       { T.Var (pos $1) $1 }
   | TypeName                      { T.Var (pos $1) $1 } -- TODO: remove this one lex
   | lambda KindBind '->' Type
-      { let (a,k) = $2 in T.Abs (pos $1) (K.Bind (pos a) a k $4) }
+      { let (a,k) = $2 in T.Abs (pos $1) (Bind (pos a) a k $4) }
 --  | '[' Type ']'                  { T.App (pos $1) (T.Var (pos $1) (mkVar (pos $1) "(::)")) $2 }  -- native_lists
   | '[' Int ']'                  { (T.Var (pos $1) (mkVar (pos $1) "#List")) }  -- native_lists
   | '(' Type ')'                  { $2 }
@@ -328,7 +326,7 @@ PrimaryType :: { T.Type }
 Forall :: { T.Type }
   : '.' Type { $2 }
   | KindBind Forall
-      { let (a,k) = $1 in T.Forall (pos a) (K.Bind (pos k) a k $2) }
+      { let (a,k) = $1 in T.Forall (pos a) (Bind (pos k) a k $2) }
 
 TupleType :: { T.Type }
   : Type               { $1 }
@@ -351,7 +349,7 @@ FieldList :: { T.TypeMap }
   | Field ',' FieldList {% toStateT $ checkDupField (fst $1) $3 >>
                            return (uncurry Map.insert $1 $3) }
 
-Field :: { (ProgVar, T.Type) }
+Field :: { (Variable, T.Type) }
   : ArbitraryProgVar ':' Type { ($1, $3) }
 
 -- TYPE SEQUENCE
@@ -375,40 +373,40 @@ Kind :: { K.Kind }
 
 -- PROGRAM VARIABLE
 
-ArbitraryProgVar :: { ProgVar }
+ArbitraryProgVar :: { Variable }
  : ProgVar     { $1 }
  | Constructor { $1 }
 
-ProgVar :: { ProgVar }
+ProgVar :: { Variable }
   : LOWER_ID { mkVar (pos $1) (getText $1) }
 
-Constructor :: { ProgVar }
+Constructor :: { Variable }
   : UPPER_ID { mkVar (pos $1) (getText $1) }
 
-ProgVarWild :: { ProgVar }
+ProgVarWild :: { Variable }
   : ProgVar { $1 }
   | '_'     { mkVar (pos $1) "_" }
 
-ProgVarWildSeq :: { [ProgVar] }
+ProgVarWildSeq :: { [Variable] }
   :                            { [] }
   | ProgVarWild ProgVarWildSeq {% toStateT $ checkDupBind $1 $2 >> return ($1 : $2) }
 
-ProgVarWildTBind :: { (ProgVar, T.Type) }
+ProgVarWildTBind :: { (Variable, T.Type) }
   : ProgVarWild ':' PrimaryType  %prec ProgVarWildTBind { ($1, $3) }
 
 -- TYPE VARIABLE
 
-TypeVar :: { TypeVar }
+TypeVar :: { Variable }
   : LOWER_ID { mkVar (pos $1) (getText $1) }
 
-TypeName :: { TypeVar }
+TypeName :: { Variable }
   : UPPER_ID { mkVar (pos $1) (getText $1) }
 
-KindBind :: { (TypeVar, K.Kind) }
+KindBind :: { (Variable, K.Kind) }
   : TypeVar ':' Kind { ($1, $3) }
   | TypeVar          { ($1, omission (pos $1)) }
 
-KindedTVar :: { (TypeVar, K.Kind) }    -- for type and data declarations
+KindedTVar :: { (Variable, K.Kind) }    -- for type and data declarations
   : TypeName ':' Kind { ($1, $3) }
   | TypeName          { ($1, omission (pos $1)) }
 
@@ -431,7 +429,7 @@ parseType str =
       | hasErrors state = Right $ errors state
       | otherwise       = Left t
 
-parseProgram :: FilePath -> Map.Map ProgVar T.Type -> IO FreestS
+parseProgram :: FilePath -> Map.Map Variable T.Type -> IO FreestS
 parseProgram inputFile vEnv = -- do
   parseDefs inputFile vEnv <$> readFile inputFile
 

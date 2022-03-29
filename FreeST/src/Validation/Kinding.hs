@@ -24,7 +24,6 @@ where
 
 import           Data.Functor
 import           Syntax.Base
-import           Syntax.TypeVariable
 import qualified Syntax.Type                   as T
 import qualified Syntax.Kind                   as K
 import           Validation.Contractive
@@ -81,9 +80,9 @@ synthetise' s kEnv (T.Message p _ t) = checkAgainst' s kEnv (K.ml p) t $> K.sl p
 synthetise' s kEnv (T.Choice p _ m) =
   tMapM_ (checkAgainst' s kEnv (K.sl p)) m $> K.sl p
 -- Session or functional
-synthetise' s kEnv (T.Rec _ (K.Bind _ a k t)) =
+synthetise' s kEnv (T.Rec _ (Bind _ a k t)) =
   checkContractive s a t >> checkAgainst' s (Map.insert a k kEnv) k t $> k
-synthetise' s kEnv (T.Forall _ (K.Bind p a k t)) = do
+synthetise' s kEnv (T.Forall _ (Bind p a k t)) = do
   ~(K.Kind _ _ m) <- properType t =<< synthetise' (Set.insert a s) (Map.insert a k kEnv) t
   return $ K.Kind p K.Top m
 synthetise' _ kEnv (T.Var p a) = case kEnv Map.!? a of
@@ -95,7 +94,7 @@ synthetise' _ kEnv t@(T.CoVar p a) =
     Just k -> S.when (not $ k <: K.sl p)
             (addError (CantMatchKinds p k (K.sl p) t)) $> K.sl p
     Nothing -> addError (TypeVarNotInScope p a) $> omission p
-synthetise' s kEnv (T.Abs _ (K.Bind p a k t)) =  
+synthetise' s kEnv (T.Abs _ (Bind p a k t)) =  
   K.Arrow p k <$> synthetise' s (Map.insert a k kEnv) t
 synthetise' s kEnv (T.App _ t u) = do
   ~(K.Arrow _ k1 k2) <- typeOperator t =<< synthetise' s kEnv t
@@ -104,7 +103,7 @@ synthetise' s kEnv (T.App _ t u) = do
 synthetise' _ _ t@T.Dualof{} = internalError "Validation.Kinding.synthetise'" t
 
 -- Check the contractivity of a given type; issue an error if not
-checkContractive :: K.PolyVars -> TypeVar -> T.Type -> FreestState ()
+checkContractive :: K.PolyVars -> Variable -> T.Type -> FreestState ()
 checkContractive s a t =
   unless (contractive s a t) $ addError (TypeNotContractive (pos t) t a)
 

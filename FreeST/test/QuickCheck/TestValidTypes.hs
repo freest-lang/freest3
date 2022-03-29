@@ -99,7 +99,7 @@ prop_distribution (BisimPair t u) =
 nodes :: T.Type -> Int
 nodes (T.Semi   _ t u) = 1 + nodes t + nodes u
 nodes (T.Choice _ _ m) = 1 + Map.foldr (\t acc -> nodes t + acc) 0 m
-nodes (T.Rec    _ (K.Bind _ _ _ t)) = 1 + nodes t
+nodes (T.Rec    _ (Bind _ _ _ t)) = 1 + nodes t
 -- Skip, Message, TypeVar
 nodes _                = 1
 

@@ -43,9 +43,7 @@ import qualified Data.Map.Strict               as Map
 import           Syntax.Base
 import qualified Syntax.Expression             as E
 import qualified Syntax.Kind                   as K
-import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
-import           Syntax.TypeVariable
 import           Util.Error
 import           Util.FreestState
 -- import           Validation.Rename
@@ -90,35 +88,35 @@ instance Functor ParseResult where
 
 -- Parse errors
 
-checkDupField :: ProgVar -> T.TypeMap -> FreestState ()
+checkDupField :: Variable -> T.TypeMap -> FreestState ()
 checkDupField x m =
   when (x `Map.member` m) $ addError $ MultipleFieldDecl (pos x) x
 
-checkDupCase :: ProgVar -> E.FieldMap -> FreestState ()
+checkDupCase :: Variable -> E.FieldMap -> FreestState ()
 checkDupCase x m =
   when (x `Map.member` m) $ addError $ RedundantPMatch (pos x) x
 
-checkDupBind :: ProgVar -> [ProgVar] -> FreestState ()
+checkDupBind :: Variable -> [Variable] -> FreestState ()
 checkDupBind x xs
   | intern x == "_" = return ()
   | otherwise = case find (== x) xs of
     Just y  -> addError $ DuplicatePVar (pos y) x (pos x)
     Nothing -> return ()
 
-checkDupKindBind :: K.Bind a -> [K.Bind a] -> FreestState ()
-checkDupKindBind (K.Bind p x _ _) bs =
-  case find (\(K.Bind _ y _ _) -> y == x) bs of
-    Just (K.Bind p' _ _ _) -> addError $ DuplicateTVar p' x p
+checkDupKindBind :: Bind K.Kind a -> [Bind K.Kind a] -> FreestState ()
+checkDupKindBind (Bind p x _ _) bs =
+  case find (\(Bind _ y _ _) -> y == x) bs of
+    Just (Bind p' _ _ _) -> addError $ DuplicateTVar p' x p
     Nothing                -> return ()
 
-checkDupCons :: (ProgVar, [T.Type]) -> [(ProgVar, [T.Type])] -> FreestState ()
+checkDupCons :: (Variable, [T.Type]) -> [(Variable, [T.Type])] -> FreestState ()
 checkDupCons (x, _) xts
   | any (\(y, _) -> y == x) xts = addError $ DuplicateFieldInDatatype (pos x) x
   | otherwise = getFromVEnv x >>= \case
       Just s  -> addError $ MultipleDeclarations (pos x) x (pos s)
       Nothing -> return ()
 
-checkDupProgVarDecl :: ProgVar -> FreestState ()
+checkDupProgVarDecl :: Variable -> FreestState ()
 checkDupProgVarDecl x = do
   vEnv <- getVEnv
   case vEnv Map.!? x of
@@ -126,14 +124,14 @@ checkDupProgVarDecl x = do
     Nothing -> return ()
 
 
-checkDupTypeDecl :: TypeVar -> FreestState ()
+checkDupTypeDecl :: Variable -> FreestState ()
 checkDupTypeDecl a = do
   tEnv <- getTEnv
   case tEnv Map.!? a of
     Just (_, s) -> addError $ MultipleTypeDecl (pos a) a (pos s)
     Nothing     -> return ()
 
-checkDupFunDecl :: ProgVar -> FreestState ()
+checkDupFunDecl :: Variable -> FreestState ()
 checkDupFunDecl x = do
   eEnv <- getPEnv
   case eEnv Map.!? x of
@@ -142,24 +140,26 @@ checkDupFunDecl x = do
 
 -- OPERATORS
 
-binOp :: E.Exp -> ProgVar -> E.Exp -> E.Exp
+binOp :: E.Exp -> Variable -> E.Exp -> E.Exp
 binOp left op = E.App (pos left) (E.App (pos left) (E.Var (pos op) op) left)
 
-unOp :: ProgVar -> E.Exp -> E.Exp
+unOp :: Variable -> E.Exp -> E.Exp
 unOp op expr = E.App (pos expr) (E.Var (pos op) op) expr
 
 
-typeListToType :: TypeVar -> [(TypeVar, K.Kind)] -> [(ProgVar, [T.Type])] -> [(ProgVar, T.Type)]
+  -- Convert a list of types and a final type constructor to a type
+
+typeListToType :: Variable -> [(Variable, K.Kind)] -> [(Variable, [T.Type])] -> [(Variable, T.Type)]
 typeListToType a xs = map $ second (typeToFun xs) -- map (\(x, ts) -> (x, typeToFun ts))
  where
   typeToFun [] []       = T.Var (pos a) a
   typeToFun xs []       = foldl (\t' (x, _) -> T.App (pos a) t' (T.Var (pos x) x)) (T.Var (pos a) a) xs
   typeToFun xs (t : ts) = T.Arrow (pos t) Un t (typeToFun xs ts)
 
--- typeListToType :: TypeVar -> [(TypeVar, K.Kind)] -> [(ProgVar, [T.Type])] -> [(ProgVar, T.Type)]
+-- typeListToType :: Variable -> [(Variable, K.Kind)] -> [(Variable, [T.Type])] -> [(Variable, T.Type)]
 -- typeListToType a xs ys =
 --   map (\(pv, ts) ->
---          (pv, foldl (\t' (x,k) -> T.Forall (pos x) (K.Bind (pos k) x k t'))
+--          (pv, foldl (\t' (x,k) -> T.Forall (pos x) (Bind (pos k) x k t'))
 --                       (typeToFun xs ts) xs)) ys
 --  where
 --   typeToFun [] []       = T.Var (pos a) a
@@ -169,24 +169,24 @@ typeListToType a xs = map $ second (typeToFun xs) -- map (\(x, ts) -> (x, typeTo
 --  t = map (second typeToFun) ys
 
 
-forallTypeOnCons :: [(TypeVar, K.Kind)] -> T.Type -> T.Type
-forallTypeOnCons = flip $ foldl (\acc (v,k) -> T.Forall (pos v) $ K.Bind (pos k) v k acc)
+forallTypeOnCons :: [(Variable, K.Kind)] -> T.Type -> T.Type
+forallTypeOnCons = flip $ foldl (\acc (v,k) -> T.Forall (pos v) $ Bind (pos k) v k acc)
 
-buildVariant :: Pos -> [(TypeVar, K.Kind)] -> [(ProgVar, T.Type)] -> T.Type
+buildVariant :: Pos -> [(Variable, K.Kind)] -> [(Variable, T.Type)] -> T.Type
 -- buildVariant p binds bs = 
 --         foldl (\e (v, k) ->
---               renameType (T.Abs (pos v) (K.Bind (pos v) v k e)))
+--               renameType (T.Abs (pos v) (Bind (pos v) v k e)))
 --                 (T.Variant p (Map.fromList bs)) binds
 buildVariant p binds bs =         
  foldl (\t (v, k) ->
       let v' = mkVar (pos v) ("0#" ++ intern v) in
-        T.Abs (pos v) (K.Bind (pos v) v' k (subs (T.Var (pos v) v') v t)))
+        T.Abs (pos v) (Bind (pos v) v' k (subs (T.Var (pos v) v') v t)))
  (T.Variant p (Map.fromList bs)) binds
 
 
 
-buildRecursive :: (TypeVar, K.Kind) -> T.Type -> T.Type
-buildRecursive vk  (T.Abs p (K.Bind p' x k t)) =
-  T.Abs p $ K.Bind p' x k $ buildRecursive vk t
+buildRecursive :: (Variable, K.Kind) -> T.Type -> T.Type
+buildRecursive vk  (T.Abs p (Bind p' x k t)) =
+  T.Abs p $ Bind p' x k $ buildRecursive vk t
 buildRecursive (v, k) t =
-  T.Rec (pos v) $ K.Bind (pos t) v k t
+  T.Rec (pos v) $ Bind (pos t) v k t

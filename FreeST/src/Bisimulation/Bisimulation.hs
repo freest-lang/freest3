@@ -17,7 +17,7 @@ module Bisimulation.Bisimulation
   )
 where
 
-import           Syntax.TypeVariable -- Nonterminal symbols are type variables
+import           Syntax.Base                    (Variable) -- Nonterminal symbols are type variables
 import qualified Syntax.Type                   as T
 import           Equivalence.TypeToGrammar      ( convertToGrammar )
 import           Bisimulation.Grammar
@@ -180,7 +180,7 @@ bpa1' p a (x : xs, y : ys) = case findInAncestors a x y of
     (bpa1' p (Set.delete (x : xs', y : ys') a) (x : xs, y : ys))
 bpa1' _ _ _ = Set.empty
 
-findInAncestors :: Ancestors -> TypeVar -> TypeVar -> Maybe (Word, Word)
+findInAncestors :: Ancestors -> Variable -> Variable -> Maybe (Word, Word)
 findInAncestors a x y = Set.foldr
   (\p acc -> case acc of
     Just p  -> Just p
@@ -189,7 +189,7 @@ findInAncestors a x y = Set.foldr
   Nothing
   a
 
-findInPair :: (Word, Word) -> TypeVar -> TypeVar -> Maybe (Word, Word)
+findInPair :: (Word, Word) -> Variable -> Variable -> Maybe (Word, Word)
 findInPair (x' : xs, y' : ys) x y | x == x' && y == y' = Just (xs, ys)
                                   | otherwise          = Nothing
 findInPair _ _ _ = Nothing
@@ -205,7 +205,7 @@ bpa2' p a (x : xs, y : ys)
     Just gamma -> Set.singleton (pairsBPA2 p (x : xs) (y : ys) gamma)
 bpa2' _ _ _ = Set.empty
 
-gammaBPA2 :: Productions -> TypeVar -> TypeVar -> Maybe Word
+gammaBPA2 :: Productions -> Variable -> Variable -> Maybe Word
 gammaBPA2 p x y = throughPath p ls [x1]
  where
   x0 = if norm p [x] <= norm p [y] then x else y
@@ -220,7 +220,7 @@ pairsBPA2 p (x : xs) (y : ys) gamma = Set.fromList [p1, p2]
     if norm p [x] >= norm p [y] then (gamma ++ xs, ys) else (xs, gamma ++ ys)
 
 -- only applicable to normed variables
-pathToSkip :: Productions -> TypeVar -> [Label]
+pathToSkip :: Productions -> Variable -> [Label]
 pathToSkip p x = fst . head $ filter (null . snd) ps
   where ps = pathToSkip' p (Map.assocs $ Map.mapKeys (: []) (transitions x p))
 

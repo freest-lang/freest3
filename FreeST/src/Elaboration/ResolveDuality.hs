@@ -13,7 +13,6 @@ import qualified Syntax.Kind                   as K
 import           Syntax.Expression             as E
 import           Syntax.Program
 import qualified Syntax.Type                   as T
-import           Syntax.TypeVariable
 import           Util.FreestState
 import           Util.Error
 import           Validation.Substitution
@@ -34,7 +33,7 @@ instance ResolveDuality ParseEnv where
   resolve = tMapM (\(args, e) -> (args, ) <$> resolve e)
 
 instance ResolveDuality E.Exp where
-  resolve (E.Abs p b           ) = E.Abs p <$> resolve b
+  resolve (E.Abs p m b         ) = E.Abs p m <$> resolve b
   resolve (E.App  p e1 e2      ) = E.App p <$> resolve e1 <*> resolve e2
   resolve (E.Pair p e1 e2      ) = E.Pair p <$> resolve e1 <*> resolve e2
   resolve (E.BinLet p x y e1 e2) = E.BinLet p x y <$> resolve e1 <*> resolve e2
@@ -51,17 +50,17 @@ instance ResolveDuality E.Exp where
 resolveFieldMap :: FieldMap -> FreestState FieldMap
 resolveFieldMap = mapM (\(xs, e) -> (xs, ) <$> resolve e)
 
-instance ResolveDuality (K.Bind Exp) where
-  resolve (K.Bind p a k e) = K.Bind p a k <$> resolve e
+instance ResolveDuality (Bind K.Kind Exp) where
+  resolve (Bind p a k e) = Bind p a k <$> resolve e
 
-instance ResolveDuality E.Bind where
-  resolve (E.Bind p m a t e) = E.Bind p m a <$> resolve t <*> resolve e
+instance ResolveDuality (Bind T.Type E.Exp) where
+  resolve (Bind p a t e) = Bind p a <$> resolve t <*> resolve e
 
 instance ResolveDuality T.Type where
   resolve = solveType Set.empty Map.empty
 
-type VisitedRecVars = Set.Set TypeVar
-type VisitedRecBody = Map.Map TypeVar T.Type
+type VisitedRecVars = Set.Set Variable
+type VisitedRecBody = Map.Map Variable T.Type
 
 solveType :: VisitedRecVars -> VisitedRecBody -> T.Type -> FreestState T.Type
 -- Functional Types
@@ -79,8 +78,8 @@ solveType vs v (T.Message p pol t) =
 solveType vs v (T.Choice  p pol m) =
   T.Choice p pol <$> tMapM (solveType vs v) m
 -- Polymorphism and recursive types
-solveType vs v (T.Forall p (K.Bind p' a k t)) =
-  T.Forall p . K.Bind p' a k <$> solveType vs v t
+solveType vs v (T.Forall p (Bind p' a k t)) =
+  T.Forall p . Bind p' a k <$> solveType vs v t
 solveType vs v (T.Rec p b) =
   T.Rec p <$> solveBind solveType vs v b
 -- Dualof
@@ -88,7 +87,7 @@ solveType vs v d@(T.Dualof p var@(T.Var p' x)) = case v Map.!? x of
   Just t -> do
     addDualof d
     fv <- freshTVar "#X" p'
-    let b = K.Bind p' fv (K.sl p') (changePos p (subs (T.Var p' fv) x t))
+    let b = Bind p' fv (K.sl p') (changePos p (subs (T.Var p' fv) x t))
     T.Rec p <$> solveBind solveDual vs (x `Map.delete` v) b
   Nothing -> addDualof d >> solveDual vs v (changePos p var)
 solveType vs v d@(T.Dualof p t@T.App{}) =
@@ -136,10 +135,10 @@ solveBind
   :: (VisitedRecVars -> VisitedRecBody -> T.Type -> FreestState T.Type)
   -> VisitedRecVars
   -> VisitedRecBody
-  -> K.Bind T.Type
-  -> FreestState (K.Bind T.Type)
-solveBind solve vs v (K.Bind p a k t) =
-  K.Bind p a k <$> solve (Set.insert a vs) (Map.insert a t v) t
+  -> Bind K.Kind T.Type
+  -> FreestState (Bind K.Kind T.Type)
+solveBind solve vs v (Bind p a k t) =
+  Bind p a k <$> solve (Set.insert a vs) (Map.insert a t v) t
 
 -- | Changing positions
 

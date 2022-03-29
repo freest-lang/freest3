@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, FlexibleInstances, TupleSections #-}
+{-# LANGUAGE LambdaCase, FlexibleInstances, TupleSections, NamedFieldPuns #-}
 module Elaboration.Elaboration
   ( elaboration
   , Elaboration(..)
@@ -13,9 +13,7 @@ import           Syntax.Base
 import qualified Syntax.Expression             as E
 import qualified Syntax.Kind                   as K
 import           Syntax.Program                 ( VarEnv, TypeEnv )
-import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
-import           Syntax.TypeVariable
 import           Util.Error
 import           Util.FreestState
 import           Util.PreludeLoader             ( userDefined )
@@ -55,7 +53,7 @@ elaboration = do
   -- debugM . ("VEnv" ++) <$> show . userDefined =<< getVEnv
  
 
-type Visited = Set.Set TypeVar
+type Visited = Set.Set Variable
 
 
 -- | Builds recursive types
@@ -72,12 +70,12 @@ type Visited = Set.Set TypeVar
 buildRecTypes :: FreestState ()
 buildRecTypes = getTEnv >>= tMapWithKeyM simplifyRec >>= setTEnv 
 
-simplifyRec :: TypeVar -> (K.Kind, T.Type) -> FreestState (K.Kind, T.Type)
+simplifyRec :: Variable -> (K.Kind, T.Type) -> FreestState (K.Kind, T.Type)
 simplifyRec name (k, u) = (k,) <$> subsApp u
   where
     -- acc :: T.Type -> initially is the name of the type abbreviation
     buildApp :: T.Type -> T.Type -> T.Type
-    buildApp acc (T.Abs _ (K.Bind _ x _ t)) = buildApp (T.App (pos acc) acc (T.Var (pos x) x)) t
+    buildApp acc (T.Abs _ (Bind _ x _ t)) = buildApp (T.App (pos acc) acc (T.Var (pos x) x)) t
     buildApp acc _ = acc
 
     subsApp :: T.Type -> FreestState T.Type
@@ -87,8 +85,8 @@ simplifyRec name (k, u) = (k,) <$> subsApp u
     subsApp (T.Semi p t1 t2) = T.Semi p <$> subsApp t1 <*> subsApp t2
     subsApp (T.Message p pol t) = T.Message p pol <$> subsApp t
     subsApp (T.Choice p pol tm) = T.Choice p pol  <$> mapM subsApp tm
-    subsApp (T.Forall p (K.Bind p1 x k t)) = T.Forall p . K.Bind p1 x k <$> subsApp t
-    subsApp (T.Rec p (K.Bind p1 x k t)) = T.Rec p . K.Bind p1 x k <$> subsApp t
+    subsApp (T.Forall p (Bind p1 x k t)) = T.Forall p . Bind p1 x k <$> subsApp t
+    subsApp (T.Rec p (Bind p1 x k t)) = T.Rec p . Bind p1 x k <$> subsApp t
     subsApp (T.Dualof p t) = T.Dualof p <$> subsApp t
     subsApp t@T.App{} =
       let app   = buildApp (T.Var (pos name) name) u
@@ -96,7 +94,7 @@ simplifyRec name (k, u) = (k,) <$> subsApp u
         if equal
         then pure $ T.Var (pos name) name
         else addError (WrongTypeApp (pos t) app t) $> t
-    subsApp (T.Abs p (K.Bind p1 x k t)) = T.Abs p . K.Bind p1 x k <$> subsApp t
+    subsApp (T.Abs p (Bind p1 x k t)) = T.Abs p . Bind p1 x k <$> subsApp t
     subsApp p = pure p
  
     compareApp :: T.Type -> T.Type -> Bool
@@ -115,7 +113,7 @@ solveEquations = solveAll >> cleanUnusedRecs
       >>= tMapWithKeyM (\x (k, v) -> (k, ) <$> solveEq Set.empty x v)
       >>= setTEnv
 
-  solveEq :: Visited -> TypeVar -> T.Type -> FreestState T.Type
+  solveEq :: Visited -> Variable -> T.Type -> FreestState T.Type
   solveEq v f (T.Arrow p m t1 t2) =
     T.Arrow p m <$> solveEq v f t1 <*> solveEq v f t2
   solveEq v f (T.Pair p t1 t2) = T.Pair p <$> solveEq v f t1 <*> solveEq v f t2
@@ -129,23 +127,23 @@ solveEquations = solveAll >> cleanUnusedRecs
     | otherwise = getFromTEnv x >>= \case
       Just tx -> solveEq (f `Set.insert` v) x (snd tx)
       Nothing -> addError (TypeVarOutOfScope p x) $> omission p
-  solveEq v f (T.Forall p (K.Bind p1 x k t)) =
-    T.Forall p . K.Bind p1 x k <$> solveEq (x `Set.insert` v) f t
-  solveEq v f (T.Rec p (K.Bind p1 x k t)) =
-    T.Rec p . K.Bind p1 x k <$> solveEq (x `Set.insert` v) f t
+  solveEq v f (T.Forall p (Bind p1 x k t)) =
+    T.Forall p . Bind p1 x k <$> solveEq (x `Set.insert` v) f t
+  solveEq v f (T.Rec p (Bind p1 x k t)) =
+    T.Rec p . Bind p1 x k <$> solveEq (x `Set.insert` v) f t
   solveEq v f (T.Dualof p t) = T.Dualof p <$> solveEq v f t
   solveEq v f (T.App p t u) = T.App p <$> solveEq v f t <*> solveEq v f u
-  solveEq v f (T.Abs p (K.Bind p1 x k t)) =
-    T.Abs p . K.Bind p1 x k <$> solveEq (x `Set.insert` v) f t
---    T.Abs p . K.Bind p1 x k <$> solveEq v f t
+  solveEq v f (T.Abs p (Bind p1 x k t)) =
+    T.Abs p . Bind p1 x k <$> solveEq (x `Set.insert` v) f t
+--    T.Abs p . Bind p1 x k <$> solveEq v f t
   solveEq _ _ p              = pure p
 
 cleanUnusedRecs :: FreestState ()
 cleanUnusedRecs = Map.mapWithKey (\x (k,t) -> (k, clean x t)) <$> getTEnv >>= setTEnv
   where
-    clean x (T.Abs p (K.Bind p1 x1 k1 t)) = T.Abs p $ K.Bind p1 x1 k1 $ clean x t
-    clean x (T.Rec p (K.Bind p' y k t))
-      | x `isFreeIn` t = T.Rec p $ K.Bind p' y k $ clean x t
+    clean x (T.Abs p (Bind p1 x1 k1 t)) = T.Abs p $ Bind p1 x1 k1 $ clean x t
+    clean x (T.Rec p (Bind p' y k t))
+      | x `isFreeIn` t = T.Rec p $ Bind p' y k $ clean x t
       | otherwise      = t    
     clean _ kt = kt
 
@@ -190,27 +188,27 @@ instance Elaboration T.Type where
   elaborate (  T.Dualof p t     ) = T.Dualof p <$> elaborate t
   elaborate (  T.App    p t    u) = T.App p <$> elaborate t <*> elaborate u
   elaborate (  T.Abs    p b    ) =  T.Abs p <$> elaborate b
-  -- elaborate (  T.Abs    p (K.Bind p' x k a)    ) =
-  --   T.Abs p . K.Bind p' x k <$> (elaborate =<< rename Map.empty a)
+  -- elaborate (  T.Abs    p (Bind p' x k a)    ) =
+  --   T.Abs p . Bind p' x k <$> (elaborate =<< rename Map.empty a)
   elaborate t                     = pure t
 
 -- Apply elaborateType over TypeMaps
 instance Elaboration T.TypeMap where
   elaborate = mapM elaborate
 
-instance Elaboration a => Elaboration (K.Bind a) where
-  elaborate (K.Bind p x k a) = K.Bind p x k <$> elaborate a
+instance Elaboration a => Elaboration (Bind K.Kind a) where
+  elaborate (Bind p x k a) = Bind p x k <$> elaborate a
 
--- instance Elaboration (K.Bind Exp) where
---   elaborate (K.Bind p x k e) = K.Bind p x k <$> elaborate e
+-- instance Elaboration (Bind K.Kind Exp) where
+--   elaborate (Bind p x k e) = Bind p x k <$> elaborate e
 
-instance Elaboration E.Bind where
-  elaborate (E.Bind p m x t e) = E.Bind p m x <$> elaborate t <*> elaborate e
+instance Elaboration (Bind T.Type E.Exp) where
+  elaborate (Bind p x t e) = Bind p x <$> elaborate t <*> elaborate e
 
 -- Substitute expressions
 
 instance Elaboration E.Exp where
-  elaborate (E.Abs p b     ) = E.Abs p <$> elaborate b
+  elaborate (E.Abs p m b   ) = E.Abs p m <$> elaborate b
   elaborate (E.App  p e1 e2) = E.App p <$> elaborate e1 <*> elaborate e2
   elaborate (E.Pair p e1 e2) = E.Pair p <$> elaborate e1 <*> elaborate e2
   elaborate (E.BinLet p x y e1 e2) =
@@ -234,21 +232,21 @@ buildProg :: FreestState ()
 buildProg = getPEnv
   >>= tMapWithKeyM_ (\pv (ps, e) -> addToProg pv =<< buildFunBody pv ps e)
  where
-  buildFunBody :: ProgVar -> [ProgVar] -> E.Exp -> FreestState E.Exp
+  buildFunBody :: Variable -> [Variable] -> E.Exp -> FreestState E.Exp
   buildFunBody f as e = getFromVEnv f >>= \case
     Just s  -> return $ buildExp e as s
     Nothing -> addError (FuctionLacksSignature (pos f) f) $> e
       
-  buildExp :: E.Exp -> [ProgVar] -> T.Type -> E.Exp
+  buildExp :: E.Exp -> [Variable] -> T.Type -> E.Exp
   buildExp e [] _ = e
   buildExp e (b : bs) (T.Arrow _ m t1 t2) =
-    E.Abs (pos b) (E.Bind (pos b) m b t1 (buildExp e bs t2))
+    E.Abs (pos b) m (Bind (pos b) b t1 (buildExp e bs t2))
   buildExp _ _ t@(T.Dualof _ _) =
     internalError "Elaboration.Elaboration.buildFunbody.buildExp" t
-  buildExp e bs (T.Forall p (K.Bind p1 x k t)) =
-    E.TypeAbs p (K.Bind p1 x k (buildExp e bs t))
+  buildExp e bs (T.Forall p (Bind p1 x k t)) =
+    E.TypeAbs p (Bind p1 x k (buildExp e bs t))
   buildExp e (b : bs) t =
-    E.Abs (pos b) (E.Bind (pos b) Un b (omission (pos b)) (buildExp e bs t))
+    E.Abs (pos b) Un (Bind (pos b) b (omission (pos b)) (buildExp e bs t))
 
 -- | Changing positions
 
@@ -269,5 +267,5 @@ changePos p (T.Rec    _ xs    ) = T.Rec p xs
 changePos p (T.Forall _ xs    ) = T.Forall p xs
 changePos p (T.Abs    _ b     ) = T.Abs p b
 changePos p (T.App _ t u      ) = T.App p t u
--- TypeVar
+-- Variable
 changePos _ t                   = t

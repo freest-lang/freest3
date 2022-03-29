@@ -21,7 +21,6 @@ import           Bisimulation.Grammar
 import           Syntax.Base
 import qualified Syntax.Kind                   as K
 import qualified Syntax.Type                   as T
-import           Syntax.TypeVariable
 import qualified Validation.Substitution       as Substitution
                                                 ( subsAll )
 import           Equivalence.Normalisation      ( normalise )
@@ -61,7 +60,7 @@ toGrammar (T.Choice _ v m) = do
   getLHS $ Map.mapKeys (\k -> show v ++ show k) ms
 toGrammar t@T.Var{}                  = typeTerminal t
 toGrammar t@T.CoVar{}                = typeTerminal t
-toGrammar (T.Rec _ (K.Bind _ x _ _)) = return [x]
+toGrammar (T.Rec _ (Bind _ x _ _)) = return [x]
 toGrammar t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 
 typeTerminal :: T.Type -> TransState Word
@@ -70,12 +69,12 @@ typeTerminal = terminal . show
 terminal :: Label -> TransState Word
 terminal l = getLHS $ Map.singleton l []
 
-type SubstitutionList = [(T.Type, TypeVar)]
+type SubstitutionList = [(T.Type, Variable)]
 
 collect :: SubstitutionList -> T.Type -> TransState ()
 collect σ (  T.Semi   _ t u          ) = collect σ t >> collect σ u
 collect σ (  T.Choice _ _ m          ) = tMapM_ (collect σ) m
-collect σ t@(T.Rec _ (K.Bind _ x _ u)) = do
+collect σ t@(T.Rec _ (Bind _ x _ u)) = do
   let σ' = (t, x) : σ
   let u' = Substitution.subsAll σ' u
   ~(z : zs) <- toGrammar (normalise u')
@@ -86,7 +85,7 @@ collect _ _ = return ()
 
 -- The state of the translation to grammars
 
-type Substitution = Map.Map TypeVar TypeVar
+type Substitution = Map.Map Variable Variable
 
 type TransState = State TState
 
@@ -102,7 +101,7 @@ initial :: TState
 initial =
   TState { productions = Map.empty, nextIndex = 1, substitution = Map.empty }
 
-getFreshVar :: TransState TypeVar
+getFreshVar :: TransState Variable
 getFreshVar = do
   s <- get
   let n = nextIndex s
@@ -112,7 +111,7 @@ getFreshVar = do
 getProductions :: TransState Productions
 getProductions = gets productions
 
-getTransitions :: TypeVar -> TransState Transitions
+getTransitions :: Variable -> TransState Transitions
 getTransitions x = do
   ps <- getProductions
   return $ ps Map.! x
@@ -120,15 +119,15 @@ getTransitions x = do
 getSubstitution :: TransState Substitution
 getSubstitution = gets substitution
 
-putProductions :: TypeVar -> Transitions -> TransState ()
+putProductions :: Variable -> Transitions -> TransState ()
 putProductions x m =
   modify $ \s -> s { productions = Map.insert x m (productions s) }
 
--- putProduction :: TypeVar -> Label -> Word -> TransState ()
+-- putProduction :: Variable -> Label -> Word -> TransState ()
 -- putProduction x l w =
 --   modify $ \s -> s {productions = insertProduction (productions s) x l w}
 
-putSubstitution :: TypeVar -> TypeVar -> TransState ()
+putSubstitution :: Variable -> Variable -> TransState ()
 putSubstitution x y =
   modify $ \s -> s { substitution = Map.insert x y (substitution s) }
 
@@ -151,20 +150,20 @@ getLHS ts = do
 
 -- Add new productions, but only if needed
 
-addProductions :: TypeVar -> Transitions -> TransState ()
+addProductions :: Variable -> Transitions -> TransState ()
 addProductions x ts = do
   ps <- getProductions
   b  <- existProductions x ts ps
   unless b (putProductions x ts)
 
-existProductions :: TypeVar -> Transitions -> Productions -> TransState Bool
+existProductions :: Variable -> Transitions -> Productions -> TransState Bool
 -- existProductions x ts _ = return False
 existProductions x ts = Map.foldrWithKey
   (\x' ts' acc -> sameTrans x x' ts ts' >>= \b -> if b then return True else acc
   )
   (return False)
 
-sameTrans :: TypeVar -> TypeVar -> Transitions -> Transitions -> TransState Bool
+sameTrans :: Variable -> Variable -> Transitions -> Transitions -> TransState Bool
 sameTrans x1 x2 ts1 ts2
   | matchingTrans ts1 ts2 = do
     let s   = Set.singleton (x1, x2)
@@ -180,9 +179,9 @@ matchingTrans ts1 ts2 = Map.keys ts1 == Map.keys ts2 && all
   (\(x, y) -> length x == length y)
   (zip (Map.elems ts1) (Map.elems ts2))
 
-type VisitedProds = Set.Set (TypeVar, TypeVar)
-type ToVisitProds = Set.Set (TypeVar, TypeVar)
-type Goals = Set.Set (TypeVar, TypeVar)
+type VisitedProds = Set.Set (Variable, Variable)
+type ToVisitProds = Set.Set (Variable, Variable)
+type Goals = Set.Set (Variable, Variable)
 
 -- Compares two words
 -- If they are on the Set of visited productions, there is no need
@@ -217,12 +216,12 @@ findGoals visited ts1 = Map.foldrWithKey
   (\l xs acc -> acc `Set.union` compareWords (ts1 Map.! l) xs visited)
   Set.empty
 
--- Apply a TypeVar/TypeVar substitution to different objects
+-- Apply a Variable/Variable substitution to different objects
 
 class Substitute t where
   substitute :: Substitution -> t -> t
 
-instance Substitute TypeVar where
+instance Substitute Variable where
   substitute θ v = Map.foldrWithKey (\x y w -> if x == w then y else w) v θ
 
 instance Substitute Word where

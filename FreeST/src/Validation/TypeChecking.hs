@@ -28,7 +28,6 @@ import           Syntax.Base
 import qualified Syntax.Expression             as E
 import qualified Syntax.Kind                   as K
 import           Syntax.Program                 ( noConstructors )
-import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 import           Util.FreestState
 import           Util.Error
@@ -72,7 +71,7 @@ typeCheck = do
 -- Check whether a given function signature has a corresponding
 -- binding. Exclude the builtin functions and the datatype
 -- constructors.
-checkHasBinding :: ProgVar -> T.Type -> FreestState ()
+checkHasBinding :: Variable -> T.Type -> FreestState ()
 checkHasBinding f _ = do
   eEnv <- getProg
   vEnv <- getVEnv
@@ -83,7 +82,7 @@ checkHasBinding f _ = do
 
 -- Check a given function body against its type; make sure all linear
 -- variables are used.
-checkFunBody :: ProgVar -> E.Exp -> FreestState ()
+checkFunBody :: Variable -> E.Exp -> FreestState ()
 checkFunBody f e = getFromVEnv f >>= \case
   Just s  -> Typing.checkAgainst Map.empty e s
   Nothing -> return ()
