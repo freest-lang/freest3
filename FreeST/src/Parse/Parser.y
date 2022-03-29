@@ -278,6 +278,16 @@ Type :: { T.Type }
   -- Session types
   | Skip                          { T.Skip (pos $1) }
   | Type ';' Type                 { T.Semi (pos $2) $1 $3 }
+  -- 
+  | '*' Polarity Type %prec MSG 
+    { let p = pos $1 in
+      let tVar = mkVar p "a" in
+      T.Rec p $ K.Bind p tVar (K.su p) $ uncurry T.Message $2 $3 }
+  | '*' ChoiceView '{' SkipFieldList '}'
+    { let p = pos $1 in
+      let tVar = mkVar p "a" in
+      T.Rec p $ K.Bind p tVar (K.su p) $ uncurry T.Choice $2 $4 }
+  --
   | Polarity Type %prec MSG       { uncurry T.Message $1 $2 }
   | ChoiceView '{' FieldList '}'  { uncurry T.Choice $1 $3 }
   -- Polymorphism and recursion
@@ -319,6 +329,12 @@ FieldList :: { T.TypeMap }
 
 Field :: { (ProgVar, T.Type) }
   : ArbitraryProgVar ':' Type { ($1, $3) }
+
+-- Similar to FieldList, but only has labels and types are Skip
+SkipFieldList :: { T.TypeMap }
+  : ArbitraryProgVar                   { uncurry Map.singleton ($1, T.Skip (pos $1)) }
+  | ArbitraryProgVar ',' SkipFieldList {% toStateT $ checkDupField $1 $3 >>
+                                          return (uncurry Map.insert ($1, T.Skip (pos $1)) $3) }
 
 -- TYPE SEQUENCE
 
