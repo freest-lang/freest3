@@ -391,7 +391,7 @@ ProgVarWildSeq :: { [Variable] }
   | ProgVarWild ProgVarWildSeq {% toStateT $ checkDupBind $1 $2 >> return ($1 : $2) }
 
 ProgVarWildTBind :: { (Variable, T.Type) }
-  : ProgVarWild ':' PrimaryType  %prec ProgVarWildTBind { ($1, $3) }
+  : ProgVarWild ':' Type  %prec ProgVarWildTBind { ($1, $3) }
 
 -- TYPE VARIABLE
 
