@@ -282,11 +282,11 @@ Type :: { T.Type }
   | '*' Polarity Type %prec MSG 
     { let p = pos $1 in
       let tVar = mkVar p "a" in
-      T.Rec p $ K.Bind p tVar (K.su p) $ uncurry T.Message $2 $3 }
+      T.Rec p $ K.Bind p tVar (K.su p) $ T.Semi p (uncurry T.Message $2 $3) (T.Var p tVar) }
   | '*' ChoiceView '{' SkipFieldList '}'
     { let p = pos $1 in
       let tVar = mkVar p "a" in
-      T.Rec p $ K.Bind p tVar (K.su p) $ uncurry T.Choice $2 $4 }
+      T.Rec p $ K.Bind p tVar (K.su p) $ T.Semi p (uncurry T.Choice $2 $4) (T.Var p tVar) }
   --
   | Polarity Type %prec MSG       { uncurry T.Message $1 $2 }
   | ChoiceView '{' FieldList '}'  { uncurry T.Choice $1 $3 }
