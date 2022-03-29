@@ -69,7 +69,18 @@ synthetise' s kEnv (T.Variant p m) = do
   ks <- tMapM (synthetise' s kEnv) m
   let K.Kind _ _ n = foldr1 join ks
   return $ K.Kind p K.Top n
-  -- Session types
+-- Shared session types
+synthetise' s kEnv (T.Semi p1 (T.Message p2 pol t) (T.Var p3 tVar)) 
+  | tVar `Map.member` kEnv && K.isUn (kEnv Map.! tVar) = do
+    checkAgainstSession' s kEnv (T.Message p2 pol t) 
+    checkAgainstSession' s kEnv (T.Var p3 tVar)
+    return $ K.su p1
+synthetise' s kEnv (T.Semi p1 (T.Choice p2 v m) (T.Var p3 tVar))
+  | tVar `Map.member` kEnv && K.isUn (kEnv Map.! tVar) = do
+    checkAgainstSession' s kEnv (T.Choice p2 v m)
+    checkAgainstSession' s kEnv (T.Var p3 tVar)
+    return $ K.su p1
+-- Session types
 synthetise' _ _    (T.Skip p    ) = return $ K.su p
 synthetise' s kEnv (T.Semi p t u) = do
   checkAgainstSession' s kEnv t
