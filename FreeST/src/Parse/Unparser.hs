@@ -178,6 +178,8 @@ instance Unparse T.Type where
   unparse (T.String _     ) = (maxRator, "String")
   unparse (T.Unit _       ) = (maxRator, "()")
   unparse (T.Skip _       ) = (maxRator, "Skip")
+  unparse (T.Var  _ 
+      (Variable _ "#List")) = (listRator, "[Int]")
   unparse (T.Var  _ a     ) = (maxRator, show a)
   unparse (T.CoVar _ a    ) = (maxRator, "dual " ++ show a)
   unparse (T.Abs _ b      ) = (arrowRator, "λ" ++ showBindType b)
