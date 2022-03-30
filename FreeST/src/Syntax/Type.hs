@@ -11,6 +11,7 @@ This module defines the syntax for types.
 
 module Syntax.Type
   ( Type(..)
+  , isSkip
   , TypeMap
   , Polarity(..)
   , View(..)
