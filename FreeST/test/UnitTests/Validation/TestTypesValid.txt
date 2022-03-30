@@ -271,3 +271,29 @@ SL
 
 rec x:SL . rec y:SL .  +{B: !(), C: !Bool} ; ((+{A: y, C: Skip};!())  ; x)
 SL
+
+-- Shared channels
+
+rec a:SU . !Int; a
+SU
+
+rec a:SU . ?Int; a
+SU
+
+rec a:SU . +{One: Skip, Two: Skip}; a
+SU
+
+rec a:SU . &{One: Skip, Two: Skip}; a
+SU
+
+*!Int
+SU
+
+*?Int
+SU
+
+*+{One, Two}
+SU
+
+*&{One, Two}
+SU

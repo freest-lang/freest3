@@ -156,3 +156,9 @@ TU
 (rec a:SU. rec b:SU. rec c:SU. rec d:SU. a, Int)
 TU
 
+-- Shared channels
+rec a:SU . ?Int; ?Int; a
+SU
+
+rec a:SU . +{One: !Int, Two: ?Int, Three: Skip}; a
+SU
