@@ -100,6 +100,7 @@ import           Util.FreestState
 -- %nonassoc '()'
 %right in else match case
 %nonassoc new
+%right '::'      -- list constructor
 %left '||'       -- disjunction
 %left '&&'       -- conjunction
 %nonassoc CMP    -- comparison (relational and equality)
@@ -115,7 +116,6 @@ import           Util.FreestState
 %nonassoc ProgVarWildTBind
 %right '$'       -- function call
 %left '&'        -- function call
-%right '::'      -- list constructor
 
 %%
 -------------
