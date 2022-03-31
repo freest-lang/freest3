@@ -116,6 +116,7 @@ data Precedence =
     PMin
   | PIn      -- in, else, match, case (expressions)
   | PNew     -- new T
+  | PCons    -- native_lists
   | PDisj    -- ||
   | PConj    -- &&
   | PCmp     -- comparison (relational and equality)
@@ -127,7 +128,6 @@ data Precedence =
   | PMsg     -- !T and ?T
   | PDualof  -- dualof T
   | PApp     -- e1 e2
-  | PList    -- native_lists
   | PMax
   deriving (Eq, Ord, Bounded)
 
@@ -137,10 +137,11 @@ type Rator = (Precedence, Associativity)
 
 type Fragment = (Rator, String)
 
-minRator, inRator, newRator, disjRator, conjRator, cmpRator, addRator, multRator, dotRator, arrowRator, semiRator, dualofRator, appRator, msgRator, listRator, maxRator
+minRator, inRator, newRator, consRator, disjRator, conjRator, cmpRator, addRator, multRator, dotRator, arrowRator, semiRator, dualofRator, appRator, msgRator, maxRator
   :: Rator
 inRator = (PIn, Right)
 newRator = (PNew, NonAssoc)
+consRator = (PCons, Right)         -- native_lists
 disjRator = (PDisj, Left)
 conjRator = (PConj, Left)
 cmpRator = (PCmp, NonAssoc)
@@ -152,7 +153,6 @@ semiRator = (PSemi, Right)
 msgRator = (PMsg, Right)
 dualofRator = (PDualof, Right)
 appRator = (PApp, Left)
-listRator = (PList, Right)         -- native_lists
 minRator = (minBound, NonAssoc)
 maxRator = (maxBound, NonAssoc)
 
@@ -179,7 +179,7 @@ instance Unparse T.Type where
   unparse (T.Unit _       ) = (maxRator, "()")
   unparse (T.Skip _       ) = (maxRator, "Skip")
   unparse (T.Var  _ 
-      (Variable _ "#List")) = (listRator, "[Int]")
+      (Variable _ "#List")) = (maxRator, "[Int]")
   unparse (T.Var  _ a     ) = (maxRator, show a)
   unparse (T.CoVar _ a    ) = (maxRator, "dual " ++ show a)
   unparse (T.Abs _ b      ) = (arrowRator, "λ" ++ showBindType b)
@@ -265,11 +265,11 @@ instance Unparse Exp where
     l = bracket (unparse e1) Left multRator
     r = bracket (unparse e2) Right multRator
   unparse (E.App _ (E.App _ (E.Var p x) e1) e2) | isList x =  -- native_lists
-   (listRator, showNativeList e1 e2)                          -- [exp,exp]
-  --  (listRator, l ++ showOp x ++ r)                         -- exp :: exp :: []
+   (consRator, showNativeList e1 e2)                          -- [exp,exp]
+  --  (consRator, l ++ showOp x ++ r)                         -- exp :: exp :: []
   --  where
-  --   l = bracket (unparse e1) Left  listRator
-  --   r = bracket (unparse e2) Right listRator
+  --   l = bracket (unparse e1) Left  consRator
+  --   r = bracket (unparse e2) Right consRator
   unparse (E.App _ e1 e2) = (appRator, l ++ " " ++ r)
    where
     l = bracket (unparse e1) Left appRator
@@ -334,12 +334,12 @@ showOp x = spaced $ tail (init $ show x)
 
 showNativeList :: Exp -> Exp -> String
 showNativeList e1 e2 = "[" ++ l ++ showNativeList' e2
-  where l = bracket (unparse e1) Left listRator
+  where l = bracket (unparse e1) Left consRator
 
 showNativeList' :: Exp -> String
 showNativeList' (E.Var  _ x) = "]"
 showNativeList' (E.App _ (E.App _ (E.Var p x) e1) e2) = "," ++ e ++ showNativeList' e2
-  where e = bracket (unparse e1) Left listRator
+  where e = bracket (unparse e1) Left consRator
 
 spaced :: String -> String
 spaced s = ' ' : s ++ " "
