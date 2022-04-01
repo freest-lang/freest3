@@ -44,7 +44,7 @@ synthetise kenv = synthetise'  (Map.keysSet kenv) kenv
 checkAgainst :: K.KindEnv -> K.Kind -> T.Type -> FreestState K.Kind
 checkAgainst kenv = checkAgainst' (Map.keysSet kenv) kenv
 
-checkAgainstSession :: K.KindEnv -> T.Type -> FreestState ()
+checkAgainstSession :: K.KindEnv -> T.Type -> FreestState K.Kind
 checkAgainstSession kenv = checkAgainstSession' (Map.keysSet kenv) kenv
 
 
@@ -71,9 +71,9 @@ synthetise' s kEnv (T.Variant p m) = do
   -- Session types
 synthetise' _ _    (T.Skip p    ) = return $ K.su p
 synthetise' s kEnv (T.Semi p t u) = do
-  checkAgainstSession' s kEnv t
-  checkAgainstSession' s kEnv u
-  return $ K.sl p
+  (K.Kind _ _ mt) <- checkAgainstSession' s kEnv t
+  (K.Kind _ _ mu) <- checkAgainstSession' s kEnv u
+  return $ K.Kind p K.Session (join mt mu)
 synthetise' s kEnv (T.Message p _ t) = checkAgainst' s kEnv (K.ml p) t $> K.sl p
 synthetise' s kEnv (T.Choice p _ m) =
   tMapM_ (checkAgainst' s kEnv (K.sl p)) m $> K.sl p
@@ -110,13 +110,13 @@ checkAgainst' s kEnv expected t = do
   $> expected
 
 -- Check whether a given type is of a session kind. In any case return the
--- multiplicity of the kind of the type. This is a refined version of
--- checkAgainst for a better error messages
-checkAgainstSession' :: K.PolyVars -> K.KindEnv -> T.Type -> FreestState ()
+-- kind of the type. This is a refined version of checkAgainst for a better error messages
+checkAgainstSession' :: K.PolyVars -> K.KindEnv -> T.Type -> FreestState K.Kind
 checkAgainstSession' s kEnv t = do
   k@(K.Kind _ p _) <- synthetise' s kEnv t
-  S.when (p /= K.Session) $ let p = pos t in
-    addError (ExpectingSession p t k)
+  S.when (p /= K.Session) 
+    (let p = pos t in addError (ExpectingSession p t k)) 
+  return k
 
 -- Determine whether a given type is unrestricted
 un :: T.Type -> FreestState Bool
