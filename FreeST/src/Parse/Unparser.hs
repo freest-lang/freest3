@@ -141,10 +141,10 @@ minRator, inRator, newRator, consRator, disjRator, conjRator, cmpRator, addRator
   :: Rator
 inRator = (PIn, Right)
 newRator = (PNew, NonAssoc)
-consRator = (PCons, Right)         -- native_lists
 disjRator = (PDisj, Left)
 conjRator = (PConj, Left)
 cmpRator = (PCmp, NonAssoc)
+consRator = (PCons, Right)         -- native_lists
 addRator = (PAdd, Left)
 multRator = (PMult, Left)
 dotRator = (PDot, Right)

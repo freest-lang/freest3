@@ -100,10 +100,10 @@ import           Util.FreestState
 -- %nonassoc '()'
 %right in else match case
 %nonassoc new
-%right '::'      -- list constructor
 %left '||'       -- disjunction
 %left '&&'       -- conjunction
 %nonassoc CMP    -- comparison (relational and equality)
+%right '::'      -- list constructor
 %left '+' '-'    -- aditive
 %left '*' '/'    -- multiplicative
 %right '^'        -- power
