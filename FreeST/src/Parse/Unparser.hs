@@ -116,10 +116,10 @@ data Precedence =
     PMin
   | PIn      -- in, else, match, case (expressions)
   | PNew     -- new T
-  | PCons    -- native_lists
   | PDisj    -- ||
   | PConj    -- &&
   | PCmp     -- comparison (relational and equality)
+  | PCons    -- :: native_lists
   | PAdd     -- +, -
   | PMult    -- *, /
   | PDot     -- μ a:k . T
@@ -264,12 +264,16 @@ instance Unparse Exp where
    where
     l = bracket (unparse e1) Left multRator
     r = bracket (unparse e2) Right multRator
-  unparse (E.App _ (E.App _ (E.Var p x) e1) e2) | isList x =  -- native_lists
-   (consRator, showNativeList e1 e2)                          -- [exp,exp]
-  --  (consRator, l ++ showOp x ++ r)                         -- exp :: exp :: []
-  --  where
-  --   l = bracket (unparse e1) Left  consRator
-  --   r = bracket (unparse e2) Right consRator
+  unparse (E.App _ (E.App _ (E.Var p x) e1) e2) | isList x && isListLiteral e2 =
+   (consRator, "[" ++ l ++ r )          -- [exp, ... , exp]  
+    where 
+      l = bracket (unparse e1) Left consRator
+      r = showNativeList e2
+  unparse (E.App _ (E.App _ (E.Var p x) e1) e2) | isList x =
+   (consRator, l ++ showOp x ++ r)      -- exp :: ... :: exp :: []
+   where
+    l = bracket (unparse e1) Left  consRator
+    r = bracket (unparse e2) Right consRator
   unparse (E.App _ e1 e2) = (appRator, l ++ " " ++ r)
    where
     l = bracket (unparse e1) Left appRator
@@ -327,22 +331,27 @@ isMult :: Variable -> Bool
 isMult = isOp ["(*)", "(/)"]
 
 isList :: Variable -> Bool
-isList = isOp ["(::)"] -- ["[]","(::)"]
+isList = isOp ["(::)"]
 
 showOp :: Variable -> String
 showOp x = spaced $ tail (init $ show x)
 
-showNativeList :: Exp -> Exp -> String
-showNativeList e1 e2 = "[" ++ l ++ showNativeList' e2
-  where l = bracket (unparse e1) Left consRator
-
-showNativeList' :: Exp -> String
-showNativeList' (E.Var  _ x) = "]"
-showNativeList' (E.App _ (E.App _ (E.Var p x) e1) e2) = "," ++ e ++ showNativeList' e2
-  where e = bracket (unparse e1) Left consRator
-
 spaced :: String -> String
 spaced s = ' ' : s ++ " "
+
+-- aux Lists
+
+isListLiteral :: Exp -> Bool
+isListLiteral (E.Var  _ x)
+  | show x == "[]" = True
+  | otherwise      = False
+isListLiteral (E.App _ (E.App _ (E.Var p x) _) r) = isList x && isListLiteral r
+isListLiteral _ = False
+
+showNativeList :: Exp -> String
+showNativeList (E.Var  _ x) = "]"
+showNativeList (E.App _ (E.App _ _ e1) e2) = "," ++ e ++ showNativeList e2
+  where e = bracket (unparse e1) Right consRator
 
 -- VarEnv
 
