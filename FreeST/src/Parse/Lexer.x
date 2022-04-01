@@ -62,7 +62,7 @@ tokens :-
   "{"				                    { \p s -> TokenLBrace (internalPos p) }
   "}"			                      { \p s -> TokenRBrace (internalPos p) }
   ","				                    { \p s -> TokenComma (internalPos p) }
-  "::"                          { \p s -> TokenFourDots (internalPos p) }            -- native_lists
+  "::"                          { \p s -> TokenFourDots (internalPos p) }
   ":"                           { \p s -> TokenColon (internalPos p) }
   ";"	       	      	  	      { \p s -> TokenSemi (internalPos p) }
   "!"				                    { \p s -> TokenMOut (internalPos p) }
@@ -149,7 +149,7 @@ data Token =
   | TokenRBracket Pos
   | TokenComma Pos
   | TokenSkip Pos
-  | TokenFourDots Pos                   -- native_lists
+  | TokenFourDots Pos
   | TokenColon Pos
   | TokenUpperId Pos String
   | TokenSemi Pos
@@ -222,7 +222,7 @@ instance Show Token where
   show (TokenRBracket _) = "]"
   show (TokenComma _) = ","
   show (TokenSkip _) = "Skip"
-  show (TokenFourDots _) = "::"           -- native_lists
+  show (TokenFourDots _) = "::"
   show (TokenColon _) = ":"
   show (TokenUpperId _ c) = "" ++ c
   show (TokenSemi _) = ";"
@@ -331,7 +331,7 @@ instance Position Token where
   pos (TokenRBracket p) = p
   pos (TokenComma p) = p
   pos (TokenSkip p) = p
-  pos (TokenFourDots p) = p               -- native_lists
+  pos (TokenFourDots p) = p
   pos (TokenColon p) = p
   pos (TokenUpperId p _) = p
   pos (TokenSemi p) = p

@@ -119,7 +119,7 @@ data Precedence =
   | PDisj    -- ||
   | PConj    -- &&
   | PCmp     -- comparison (relational and equality)
-  | PCons    -- :: native_lists
+  | PCons    -- ::
   | PAdd     -- +, -
   | PMult    -- *, /
   | PDot     -- μ a:k . T
@@ -144,7 +144,7 @@ newRator = (PNew, NonAssoc)
 disjRator = (PDisj, Left)
 conjRator = (PConj, Left)
 cmpRator = (PCmp, NonAssoc)
-consRator = (PCons, Right)         -- native_lists
+consRator = (PCons, Right)
 addRator = (PAdd, Left)
 multRator = (PMult, Left)
 dotRator = (PDot, Right)
