@@ -12,8 +12,8 @@ More info on json at https://www.json.org
 main : Object
 main =
   let (w, r) = new ObjectChannel in
-  fork [Skip] $ writeObject[Skip] json w;
-  fst [Object, Skip] $ readObject [Skip] r
+  fork  @Skip $ writeObject @Skip json w;
+  fst  @Object @Skip $ readObject  @Skip r
 
 -- A dataype for JSON
 data Value = StringVal String |
@@ -62,8 +62,8 @@ writeValue v c =
   case v of {
     StringVal s -> select StringVal c & send s,
     IntVal    i -> select IntVal    c & send i,
-    ObjectVal j -> select ObjectVal c & writeObject [a] j,
-    ArrayVal  l -> select ArrayVal  c & writeArray [a] l,
+    ObjectVal j -> select ObjectVal c & writeObject  @a j,
+    ArrayVal  l -> select ArrayVal  c & writeArray  @a l,
     BoolVal   b -> select BoolVal   c & send b,
     NullVal     -> select NullVal   c
   }
@@ -73,8 +73,8 @@ writeObject j c =
     ConsObject key val j1 ->
       select ConsObject c &
       send key &
-      writeValue [ObjectChannel;a] val &
-      writeObject [a] j1,
+      writeValue  @(ObjectChannel ; a) val &
+      writeObject  @a j1,
     EmptyObject ->
       select Empty c
   }
@@ -83,8 +83,8 @@ writeArray l c =
   case l of {
     ConsArray j l1 ->
       select ConsObject c &
-      writeValue [ArrayChannel;a] j &
-      writeArray [a] l1 ,
+      writeValue  @(ArrayChannel ; a) j &
+      writeArray  @a l1 ,
     EmptyArray ->
       select Empty c
   }
@@ -95,8 +95,8 @@ readValue c =
   match c with {
     StringVal c -> let (s, c) = receive c in (StringVal s, c),
     IntVal    c -> let (i, c) = receive c in (IntVal i, c),
-    ObjectVal c -> let (j, c) = readObject [a] c in (ObjectVal j, c),
-    ArrayVal  c -> let (l, c) = readArray [a] c in (ArrayVal l, c),
+    ObjectVal c -> let (j, c) = readObject  @a c in (ObjectVal j, c),
+    ArrayVal  c -> let (l, c) = readArray  @a c in (ArrayVal l, c),
     BoolVal   c -> let (b, c) = receive c in (BoolVal b, c),
     NullVal   c -> (NullVal, c)
   }
@@ -105,8 +105,8 @@ readObject c =
   match c with {
     ConsObject c ->
       let (key, c)   = receive c in
-      let (value, c) = readValue [dualof ObjectChannel;a] c in
-      let (next, c)  = readObject [a] c in
+      let (value, c) = readValue  @(dualof ObjectChannel ; a) c in
+      let (next, c)  = readObject  @a c in
       (ConsObject key value next, c),
     Empty c ->
       (EmptyObject, c)
@@ -115,8 +115,8 @@ readArray : forall a:SL . dualof ArrayChannel;a -> (Array, a)
 readArray c =
   match c with {
     ConsObject c ->
-      let (j, c) = readValue [dualof ArrayChannel;a] c in
-      let (l, c) = readArray [a] c in
+      let (j, c) = readValue  @(dualof ArrayChannel ; a) c in
+      let (l, c) = readArray  @a c in
       (ConsArray j l, c),
     Empty c ->
       (EmptyArray, c)

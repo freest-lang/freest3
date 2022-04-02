@@ -37,5 +37,5 @@ client1 c =
 main : Bool
 main =
   let (w, r) = new rec x:SL. +{And: !Bool;!Bool;?Bool;x, Or: !Bool;!Bool;?Bool;x, Not: !Bool;?Bool;x, End: Skip} in
-  let x = fork[()] (boolServer r) in
+  let x = fork @() (boolServer r) in
   client1 w

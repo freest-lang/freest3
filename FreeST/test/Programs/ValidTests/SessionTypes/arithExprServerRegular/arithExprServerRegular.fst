@@ -49,7 +49,7 @@ size s n =
 main : Int
 main =
   let (c, s) = new rec x: SL. +{Add: x, Mult: x, Const: !Int;x, EOS: ?Int} in
-  let _ = fork[Skip] (size s 0) in
+  let _ = fork @Skip (size s 0) in
   client c
 
 -- Auxiliary function because of fork : () -> ()

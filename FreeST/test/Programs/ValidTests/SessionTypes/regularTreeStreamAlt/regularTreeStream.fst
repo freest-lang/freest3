@@ -3,12 +3,12 @@
 main : Tree
 main =
   let (w, r) = new TreeC in
-  fork[()] $ treeClient w;
-  --fork[()] $ badClientPrematureEnd w;
-  --fork[()] $ badClientSendExtraValue w;
-  --fork[()] $ badClientSendExtraLeaf w;
-  --fork[()] $ badClientForgotRight w;
-  --fork[()] $ badClientSendOnlyValue w;
+  fork @() $ treeClient w;
+  --fork @() $ badClientPrematureEnd w;
+  --fork @() $ badClientSendExtraValue w;
+  --fork @() $ badClientSendExtraLeaf w;
+  --fork @() $ badClientForgotRight w;
+  --fork @() $ badClientSendOnlyValue w;
   receiveTree r
 
 
@@ -101,14 +101,14 @@ receiveTree_ ts c =
     End  c ->
       errorWhen (stackIsEmpty ts)  "Channel was closed without sending a Tree";
       errorWhen (stackSize ts > 1) "Channel was closed mid-stream or with leftover tree elements";
-      snd[TreeStack, Tree] $ stackPop ts
+      snd @TreeStack @Tree $ stackPop ts
   }
 
 -- Generates an error with a given message if a given boolean is true
 errorWhen : Bool -> String -> ()
 errorWhen b s =
   if b
-  then error[()] s
+  then error @() s
   else ()
 
 -- Simple treeClient that sends a Tree through a TreeC

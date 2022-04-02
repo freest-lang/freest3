@@ -26,7 +26,7 @@ readD c =
   match c with {
     Lt c ->
       printChar '<';
-      readD[a] (readT[dualof D;a] c),
+      readD @a (readT @(dualof D ; a) c),
     Dollar c ->
       printCharLn '$';
       c
@@ -36,7 +36,7 @@ readT c =
   match c with {
     Lt c ->
       printChar '<';
-      readT[a] (readT[dualof T;a] c),
+      readT @a (readT @(dualof T ; a) c),
     Gt c ->
       printChar '>';
       c
@@ -48,8 +48,8 @@ forwardD in' out =
   match in' with {
     Lt in' ->
       let out = select Lt out in
-      let (in', out) = forwardT[dualof D;a][D;b] in' out in
-        forwardD[a][b] in' out,
+      let (in', out) = forwardT @(dualof D ; a) @(D ; b) in' out in
+        forwardD @a @b in' out,
     Dollar in' ->
       let out = select Dollar out in
          (in', out)
@@ -60,8 +60,8 @@ forwardT in' out =
   match in' with {
     Lt in' ->
       let out = select Lt out in
-      let (in', out) = forwardT[dualof T;a][T;b] in' out in
-      forwardT[a][b] in' out,
+      let (in', out) = forwardT @(dualof T ; a) @(T ; b) in' out in
+      forwardT @a @b in' out,
     Gt in' ->
       let out = select Gt out in
       (in', out)
@@ -74,11 +74,11 @@ concatD in1 in2 out =
   match in1 with {
     Lt in1 ->
       let out = select Lt out in
-      let (in1, in2out) = concatT[dualof D;a][dualof D;b][D;c] in1 in2 out in
+      let (in1, in2out) = concatT @(dualof D ; a) @(dualof D ; b) @(D ; c) in1 in2 out in
       let (in2, out) = in2out in
-        concatD[a][b][c] in1 in2 out,
+        concatD @a @b @c in1 in2 out,
     Dollar in1 ->
-      let (in2, out) = forwardD[b][c] in2 out in
+      let (in2, out) = forwardD @b @c in2 out in
          (in1, (in2, out))
   } -- forwardD : forall a:SL . forall b:SL . dualof D;a -> D;b -> (a, b)
 
@@ -87,9 +87,9 @@ concatT in1 in2 out =
   match in1 with {
     Lt in1 ->
       let out = select Lt out in
-      let (in1, in2out) = concatT[dualof T;a][b][T;c] in1 in2 out in
+      let (in1, in2out) = concatT @(dualof T ; a) @b @(T ; c) in1 in2 out in
       let (in2, out) = in2out in
-      concatT[a][b][c] in1 in2 out,
+      concatT @a @b @c in1 in2 out,
     Gt in1 ->
       let out = select Gt out in
       (in1, (in2, out))
@@ -116,9 +116,9 @@ mainForward : Skip
 mainForward =
   let (out1, in1) = new D in
   let (out2, in2) = new D in
-  fork[Skip] $ writeLtLtGtGtLtGt out1;
-  fork[(Skip, Skip)] (forwardD[Skip][Skip] in1 out2);
-  readD[Skip] in2
+  fork @Skip $ writeLtLtGtGtLtGt out1;
+  fork @(Skip, Skip) (forwardD @Skip @Skip in1 out2);
+  readD @Skip in2
 
 -- Putting it all together: (out1 | out2) --> in1-in2-out3 --> in3
 main : Skip
@@ -126,7 +126,7 @@ main =
   let (out1, in1) = new D in
   let (out2, in2) = new D in
   let (out3, in3) = new D in
-  fork[Skip] (writeLtLtGtGtLtGt out1);
-  fork[Skip] (writeLtLtGtLtGtGt out2);
-  fork[(Skip, Skip, Skip)] (concatD[Skip][Skip][Skip] in1 in2 out3);
-  readD[Skip] in3
+  fork @Skip (writeLtLtGtGtLtGt out1);
+  fork @Skip (writeLtLtGtLtGtGt out2);
+  fork @(Skip, (Skip, Skip)) (concatD @Skip @Skip @Skip in1 in2 out3);
+  readD @Skip in3

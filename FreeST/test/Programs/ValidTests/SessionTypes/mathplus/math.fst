@@ -52,5 +52,5 @@ sendBool c b =
 main : Bool
 main =
   let (r, w) = new rec x: SL. &{Val: ?Bool; x, And: !Bool; x, Not: !Bool; x, Quit: Skip} in
-  let _      = fork[()] $ initMathServer r in
+  let _      = fork @() $ initMathServer r in
   client w

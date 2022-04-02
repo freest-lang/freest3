@@ -6,4 +6,4 @@ f x = 2 * x
 
 main : Int
 main =
-  (id'[Int -o Int] f) 5
+  (id' @(Int -o Int) f) 5

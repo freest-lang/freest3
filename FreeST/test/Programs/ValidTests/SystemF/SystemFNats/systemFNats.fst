@@ -24,25 +24,25 @@ three : Nat
 three s z = s (s (s z))
 
 succ' : Nat -> Nat
-succ' n = Λ a => λ s:(a->a) z:a -> s (n [a] s z)
+succ' n = Λ a => λ s:(a->a) z:a -> s (n  @a s z)
 
 four : Nat
 four = succ' three
 
 plus : Nat -> Nat -> Nat
-plus m n = m [Nat] succ' n
+plus m n = m  @Nat succ' n
 
 plus' : Nat -> Nat -> Nat
-plus' m n = Λ a => λ s:(a->a) z:a -> m [a] s (n [a] s z)
+plus' m n = Λ a => λ s:(a->a) z:a -> m  @a s (n  @a s z)
 
 isZero : Nat -> Bool
-isZero n = n [Bool] (λ_:Bool -> False) True
+isZero n = n  @Bool (λ_:Bool -> False) True
 
 times : Nat -> Nat -> Nat
-times m n = Λ a => λs:(a->a) -> n [a] (m [a] s)
+times m n = Λ a => λs:(a->a) -> n  @a (m  @a s)
 
 exp : Nat -> Nat -> Nat
-exp m n = Λ a => λ f:(a -> a) -> n [a->a] (m [a]) f
+exp m n = Λ a => λ f:(a -> a) -> n  @(a -> a) (m  @a) f
 
 {-
 Note: One cannot apply eta-reduction in the code above to get rid
@@ -56,7 +56,7 @@ which is OK for λ f... is a value.
 -}
 
 square : Nat -> Nat
-square n = Λ a => λ s:(a -> a) z:a -> n [a] (n [a] s) z
+square n = Λ a => λ s:(a -> a) z:a -> n  @a (n  @a s) z
 
 -- Pairs of natural numbers for the predecessor
 
@@ -75,12 +75,12 @@ shift : Pair -> Pair
 shift p = pair (succ' (fst' p)) (fst' p)
 
 pred' : Nat -> Nat
-pred' n = snd' (n [Pair] shift (pair zero zero))
+pred' n = snd' (n  @Pair shift (pair zero zero))
 
 -- Testing
 
 toInt : Nat -> Int
-toInt n = n [Int] (λx:Int -> x + 1) 0
+toInt n = n  @Int (λx:Int -> x + 1) 0
 
 main : Int
 main = toInt $ pred' $ plus one three

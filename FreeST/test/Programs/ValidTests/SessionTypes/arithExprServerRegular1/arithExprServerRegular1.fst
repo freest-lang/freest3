@@ -76,5 +76,5 @@ err = -1
 main : Int
 main =
   let (c, s) = new rec x: SL. +{Add: x, Mult: x, Const: !Int;x, EOS: ?Int} in
-  let _ = fork[Skip] (evaluate s Nil) in
+  let _ = fork @Skip (evaluate s Nil) in
   client c

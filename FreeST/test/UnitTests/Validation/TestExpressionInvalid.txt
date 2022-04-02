@@ -4,4 +4,4 @@ let (_, _) = new !Int in ()
 
 -- Substitution
 
-(Λ a:MU => 5)[(Bool,Bool)]
+(Λ a:MU => 5) @(Bool,Bool)

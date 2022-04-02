@@ -120,6 +120,6 @@ main =
 --  (fork[Skip] $ sendTree aTree w);
 --  (fork[Skip] $ writeNothing w);       -- 'P'
 --  (fork[Skip] $ writeTooMuch w);     -- 'X'
-  (fork[Skip] $ writeRootTreeOnly w);  -- 'R'
+  (fork @Skip $ writeRootTreeOnly w);  -- 'R'
 --  (fork[Skip] $ writeLeftTreeOnly w);  -- 'L'
   receiveTree r

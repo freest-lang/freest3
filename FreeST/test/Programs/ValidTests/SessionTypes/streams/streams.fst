@@ -20,12 +20,12 @@ type Stream = rec x. () -> (Int, x)
 -- hd s is the first number it returns when we pass it unit.
 
 hd : Stream -> Int
-hd s = fst [Int][Stream] (s ())
+hd s = fst  @Int @Stream (s ())
 
 -- Similarly, tl s is the new stream that we obtain when we pass unit to s.
 
 tl : Stream -> Stream
-tl s = snd [Int][Stream] (s ())
+tl s = snd  @Int @Stream (s ())
 
 -- Construct a stream
 

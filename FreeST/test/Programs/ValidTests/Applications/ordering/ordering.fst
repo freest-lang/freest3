@@ -19,7 +19,7 @@ type OrderingChannel : SL = +{Vals: !Int; OrderingChannel; ?Int, Asc: Skip, Desc
 -- Facade function to initialize server with an empty list
 initOrderedServer : dualof OrderingChannel -> ()
 initOrderedServer c =
-  let _ = orderedServer[Skip] c Nil in
+  let _ = orderedServer @Skip c Nil in
   ()
 
 -- Server function
@@ -29,7 +29,7 @@ orderedServer c list =
   match c with {
     Vals c ->
       let (x, c)  = receive c in
-      let (list, c) = orderedServer[!Int;a] c (Cons x list) in
+      let (list, c) = orderedServer @(!Int ; a) c (Cons x list) in
       case list of {
         Cons y ys ->
           let c = send y c in
@@ -96,13 +96,13 @@ listAppend l ll =
 -- Simple client using Asc option
 ascClient : OrderingChannel -> IntList
 ascClient c =
-  let (c, rList) = order[Skip] c aList True in
+  let (c, rList) = order @Skip c aList True in
   rList
 
 -- Simple client using Desc option
 descClient : OrderingChannel -> IntList
 descClient c =
-  let (c, rList) = order[Skip] c aList False in
+  let (c, rList) = order @Skip c aList False in
   rList
 
 
@@ -120,7 +120,7 @@ order c sList direction =
     Cons x xs ->
       let c          = select Vals c in
       let c          = send x c in
-      let (c, rList) = order[?Int;a] c xs direction in
+      let (c, rList) = order @(?Int ; a) c xs direction in
       let (y, c)     = receive c in
       (c, Cons y rList)
   }
@@ -137,6 +137,6 @@ aList = Cons 4 (Cons 1 (Cons 3 (Cons 2 Nil)))
 main : IntList
 main =
   let (w, r) = new OrderingChannel in
-  let _      = fork[()] $ initOrderedServer r in
+  let _      = fork @() $ initOrderedServer r in
   descClient w
   --ascClient w

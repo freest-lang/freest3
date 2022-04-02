@@ -35,8 +35,8 @@ transform tree c =
     Node x l r ->
       let c = select Node c in
       let c = send x c in
-      let (l, c) = transform [TreeC ; ?Int ; a] l c in
-      let (r, c) = transform [?Int ; a] r c in
+      let (l, c) = transform  @(TreeC ; ?Int ; a) l c in
+      let (r, c) = transform  @(?Int ; a) r c in
       let (y, c) = receive c in
       (Node y l r, c)
   }
@@ -53,8 +53,8 @@ treeSum c =
      (0, c),
     Node c ->
       let (x, c) = receive c in
-      let (l, c) = treeSum [dualof TreeC ; !Int ; a] c in
-      let (r, c) = treeSum [!Int ; a] c in
+      let (l, c) = treeSum  @(dualof TreeC ; !Int ; a) c in
+      let (r, c) = treeSum  @(!Int ; a) c in
       let c = send (x + l + r) c in
       (x + l + r, c)
   }
@@ -65,6 +65,6 @@ aTree = Node 1 (Node 2 (Node 8 Leaf Leaf) (Node 3 (Node 5 Leaf Leaf) (Node 4 Lea
 main : Tree
 main =
   let (w, r) = new TreeC in
-  fork[(Int, Skip)] (treeSum [Skip] r );
-  let (t, _) = transform [Skip] aTree w in
+  fork @(Int, Skip) (treeSum  @Skip r );
+  let (t, _) = transform  @Skip aTree w in
   t
