@@ -37,6 +37,7 @@ import           Util.FreestState
   '-o'     {TokenLinArrow _}
   lambda   {TokenLambda _}
   Lambda   {TokenUpperLambda _}
+  '@'      {TokenAt _}
   Skip     {TokenSkip _}
   '('      {TokenLParen _}
   ')'      {TokenRParen _}
@@ -54,7 +55,6 @@ import           Util.FreestState
   '||'     {TokenDisjunction _}
   '/'      {TokenDiv _}
   '&'      {TokenAmpersand _}
-  '@'      {TokenAt _}
   '+'      {TokenPlus _}
   '-'      {TokenMinus _}
   '*'      {TokenTimes _}
