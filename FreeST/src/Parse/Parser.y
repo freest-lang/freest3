@@ -54,6 +54,7 @@ import           Util.FreestState
   '||'     {TokenDisjunction _}
   '/'      {TokenDiv _}
   '&'      {TokenAmpersand _}
+  '@'      {TokenAt _}
   '+'      {TokenPlus _}
   '-'      {TokenMinus _}
   '*'      {TokenTimes _}
@@ -200,8 +201,8 @@ App :: { E.Exp }
   | select Constructor             { E.App (pos $1)
                                        (E.Var (pos $1) (mkVar (pos $1) "select"))
                                        (E.Var (pos $2) $2) }
-  | TApp ']'                       { $1 }
   | Primary                        { $1 }
+  | TApp                           { $1 }
    
 Primary :: { E.Exp }
   : INT                            { let (TokenInt p x) = $1 in E.Int p x }
@@ -209,7 +210,6 @@ Primary :: { E.Exp }
   | CHAR                           { let (TokenChar p x) = $1 in E.Char p x }
   | STR                            { let (TokenString p x) = $1 in String p x }
   | '()'                           { E.Unit (pos $1) }
---  | TApp ']'                       { $1 }
   | ArbitraryProgVar               { E.Var (pos $1) $1 }
   | lambda ProgVarWildTBind Abs
       { let ((p,m),e) = $3 in E.Abs p m (Bind p (fst $2) (snd $2) e) }
@@ -229,8 +229,7 @@ TAbs :: { E.Exp }
       { let (a,k) = $1 in E.TypeAbs (pos a) (Bind (pos k) a k $2) }
 
 TApp :: { E.Exp }
-  : App '[' Type { E.TypeApp (pos $1) $1 $3 }
-  | TApp ',' Type    { E.TypeApp (pos $1) $1 $3 }
+  : App '@' Type { E.TypeApp (pos $1) $1 $3}
 
 Tuple :: { E.Exp }
   : Exp           { $1 }

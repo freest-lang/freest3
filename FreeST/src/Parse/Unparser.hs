@@ -273,7 +273,8 @@ instance Unparse Exp where
     (inRator, "case " ++ s ++ " of {" ++ showFieldMap m ++ "}")
     where s = bracket (unparse e) NonAssoc inRator
   -- Type Abstraction intro and elim
-  unparse (E.TypeApp _ x t) = (appRator, show x ++ " [" ++ show t ++ "]")
+  unparse (E.TypeApp _ x t) = (appRator, show x ++ " @" ++ t')
+    where t' = bracket (unparse t) Right appRator
   unparse (E.TypeAbs _ b) = (arrowRator, "Λ" ++ showBindExp b)
   -- Boolean elim
   unparse (E.Cond _ e1 e2 e3) =
