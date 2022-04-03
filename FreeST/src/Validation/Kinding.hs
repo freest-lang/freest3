@@ -64,7 +64,7 @@ synthetise' s kEnv (T.Pair p t u) = do
   (K.Kind _ _ mt) <- synthetise' s kEnv t
   (K.Kind _ _ mu) <- synthetise' s kEnv u
   return $ K.Kind p K.Top (join mt mu)
-synthetise' s kEnv (T.Variant p m) = do
+synthetise' s kEnv (T.Almanac p T.Variant m) = do
   ks <- tMapM (synthetise' s kEnv) m
   let K.Kind _ _ n = foldr1 join ks
   return $ K.Kind p K.Top n
@@ -75,7 +75,7 @@ synthetise' s kEnv (T.Semi p t u) = do
   (K.Kind _ _ mu) <- checkAgainstSession' s kEnv u
   return $ K.Kind p K.Session (join mt mu)
 synthetise' s kEnv (T.Message p _ t) = checkAgainst' s kEnv (K.ml p) t $> K.sl p
-synthetise' s kEnv (T.Choice p _ m) =
+synthetise' s kEnv (T.Almanac p (T.Choice _) m) =
   tMapM_ (checkAgainst' s kEnv (K.sl p)) m $> K.sl p
 -- Session or functional
 synthetise' s kEnv (T.Rec _ (Bind _ a k t)) =

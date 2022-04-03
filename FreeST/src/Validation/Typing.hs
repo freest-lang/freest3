@@ -88,7 +88,7 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
   -- Collect e
 synthetise kEnv (E.App _ (E.Var p x) e) | x == mkVar p "collect" = do
   tm <- Extract.outChoiceMap e =<< synthetise kEnv e
-  return $ T.Variant p $ Map.map (flip (T.Arrow p Un) (T.Unit defaultPos)) tm
+  return $ T.Almanac p T.Variant $ Map.map (flip (T.Arrow p Un) (T.Unit defaultPos)) tm
   -- Receive e
 synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "receive" = do
   t        <- synthetise kEnv e

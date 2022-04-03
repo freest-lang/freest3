@@ -13,6 +13,7 @@ module Syntax.Type
   ( Type(..)
   , TypeMap
   , Polarity(..)
+  , Sort(..)
   , View(..)
 --  , Multiplicity(..)
   )
@@ -34,12 +35,11 @@ data Type =
   | Unit Pos
   | Arrow Pos Multiplicity Type Type
   | Pair Pos Type Type
-  | Variant Pos TypeMap
+  | Almanac Pos Sort TypeMap
   -- Session Types
   | Skip Pos
   | Semi Pos Type Type
   | Message Pos Polarity Type
-  | Choice Pos View TypeMap
   -- Polymorphism and recursive types
   | Forall Pos (Bind K.Kind Type)   -- ∀k . T, Universal type
   | Rec Pos (Bind K.Kind Type)      -- μ a:k . T, Recursive type
@@ -53,6 +53,8 @@ data Type =
 
 type TypeMap = Map.Map Variable Type
 
+data Sort = Record | Variant | Choice View deriving Eq
+
 instance Position Type where
   pos (Int  p       ) = p
   pos (Char p       ) = p
@@ -61,11 +63,10 @@ instance Position Type where
   pos (Unit p       ) = p
   pos (Arrow p _ _ _) = p
   pos (Pair p _ _   ) = p
-  pos (Variant p _  ) = p
+  pos (Almanac p _ _) = p
   pos (Skip p       ) = p
   pos (Semi p _ _   ) = p
   pos (Message p _ _) = p
-  pos (Choice p _ _ ) = p
   pos (Forall p _   ) = p
   pos (Rec p _      ) = p
   pos (Var p _      ) = p

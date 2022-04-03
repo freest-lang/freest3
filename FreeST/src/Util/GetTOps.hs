@@ -24,13 +24,12 @@ instance DefaultTypeOp T.Type where
     lookupPos m p $ T.Arrow p mu (getDefault m t) (getDefault m u)
   getDefault m (T.Pair p t u) =
     lookupPos m p $ T.Pair p (getDefault m t) (getDefault m u)
-  getDefault m (T.Variant p sm) = lookupPos m p $ T.Variant p $ getDefault m sm
+  getDefault m (T.Almanac p s cm) =
+    lookupPos m p $ T.Almanac p s $ getDefault m cm
   getDefault m (T.Semi p t u) =
     lookupPos m p $ T.Semi p (getDefault m t) (getDefault m u)
   getDefault m (T.Message p pol t) =
     lookupPos m p $ T.Message p pol $ getDefault m t
-  getDefault m (T.Choice p pol cm) =
-    lookupPos m p $ T.Choice p pol $ getDefault m cm
   getDefault m (T.Forall p b) = lookupPos m p $ T.Forall p $ getDefault m b
   getDefault m (T.Rec    p b) = lookupPos m p $ T.Rec p $ getDefault m b
   getDefault _ t              = t

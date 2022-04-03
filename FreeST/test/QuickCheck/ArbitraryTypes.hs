@@ -127,7 +127,7 @@ choicePair :: PairGen -> Int -> Gen (T.Type, T.Type)
 choicePair pairGen n = do
   p        <- arbitrary
   (m1, m2) <- typeMapPair pairGen n
-  return (T.Choice pos p m1, T.Choice pos p m2)
+  return (T.Almanac pos (T.Choice p) m1, T.Almanac pos (T.Choice p) m2)
 
 typeMapPair :: PairGen -> Int -> Gen (T.TypeMap, T.TypeMap)
 typeMapPair pairGen n = do
@@ -167,8 +167,8 @@ distrib n = do
   (m1, m2) <- typeMapPair bisimPair (n `div` 4)
   p        <- arbitrary
   return
-    ( T.Semi pos (T.Choice pos p m1) t
-    , T.Choice pos p (Map.map (\v -> T.Semi pos v u) m2)
+    ( T.Semi pos (T.Almanac pos (T.Choice p) m1) t
+    , T.Almanac pos (T.Choice p) (Map.map (\v -> T.Semi pos v u) m2)
     )
 
 assoc :: Int -> Gen (T.Type, T.Type)

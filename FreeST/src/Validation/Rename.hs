@@ -96,14 +96,14 @@ instance Rename T.Type where
   --   | otherwise              = rename' bs t
 
 rename' :: Bindings -> T.Type -> FreestState T.Type
-    -- Functional types
+  -- Almanac
+rename' bs (T.Almanac p s m) = T.Almanac p s <$> tMapM (rename bs) m
+  -- Functional types
 rename' bs (T.Arrow p m t u    ) = T.Arrow p m <$> rename bs t <*> rename bs u
 rename' bs (T.Message p pol t) = T.Message p pol <$> rename bs t
 rename' bs (T.Pair p t u     ) = T.Pair p <$> rename bs t <*> rename bs u
-rename' bs (T.Variant p fm  ) = T.Variant p <$> tMapM (rename bs) fm
   -- Session types
 rename' bs (T.Semi   p t   u ) = T.Semi p <$> rename bs t <*> rename bs u
-rename' bs (T.Choice p pol tm) = T.Choice p pol <$> tMapM (rename bs) tm
   -- Polymorphism
 rename' bs (T.Forall p b     ) = T.Forall p <$> rename bs b
   -- Functional or session
@@ -211,15 +211,14 @@ isProperRec (Bind _ x _ t) = x `isFreeIn` t
 -- Does a given type variable x occur free in a type t?
 -- If not, then rec x.t can be renamed to t alone.
 isFreeIn :: Variable -> T.Type -> Bool
+  -- Almanac
+isFreeIn x (T.Almanac _ _ m) =
+  Map.foldr' (\t b -> x `isFreeIn` t || b) False m
     -- Functional types
 isFreeIn x (T.Arrow _ _ t u) = x `isFreeIn` t || x `isFreeIn` u
 isFreeIn x (T.Pair _ t u ) = x `isFreeIn` t || x `isFreeIn` u
-isFreeIn x (T.Variant _ fm) =
-  Map.foldr' (\t b -> x `isFreeIn` t || b) False fm
     -- Session types
 isFreeIn x (T.Semi _ t u) = x `isFreeIn` t || x `isFreeIn` u
-isFreeIn x (T.Choice _ _ tm) =
-  Map.foldr' (\t b -> x `isFreeIn` t || b) False tm
   -- Polymorphism
 isFreeIn x (T.Forall _ (Bind _ y _ t)) = x /= y && x `isFreeIn` t
   -- Functional or session 

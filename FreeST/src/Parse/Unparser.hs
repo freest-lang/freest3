@@ -186,12 +186,12 @@ instance Unparse T.Type where
    where
     l = bracket (unparse t) Left minRator
     r = bracket (unparse u) Right minRator
-  unparse (T.Variant _ m) = (maxRator, "[" ++ showDatatype m ++ "]")
+  unparse (T.Almanac _ T.Variant m) = (maxRator, "[" ++ showDatatype m ++ "]")
   unparse (T.Semi _ t u  ) = (semiRator, l ++ " ; " ++ r)
    where
     l = bracket (unparse t) Left semiRator
     r = bracket (unparse u) Right semiRator
-  unparse (T.Choice _ v m) =
+  unparse (T.Almanac _ (T.Choice v) m) =
     (maxRator, show v ++ "{" ++ showChoice m ++ "}")
   unparse (T.Forall _ b) = (arrowRator, "∀" ++ showBindType b) -- ++ "=>" ++ s)
     -- where s = bracket (unparse t) Right dotRator

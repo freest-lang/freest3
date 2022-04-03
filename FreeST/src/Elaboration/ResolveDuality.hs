@@ -62,20 +62,19 @@ type VisitedRecVars = Set.Set Variable
 type VisitedRecBody = Map.Map Variable T.Type
 
 solveType :: VisitedRecVars -> VisitedRecBody -> T.Type -> FreestState T.Type
+-- Almanac (Variant, Choice, Record)
+solveType vs v (T.Almanac p s m) = 
+  T.Almanac p s <$> tMapM (solveType vs v) m
 -- Functional Types
 solveType vs v (T.Arrow p pol t u) =
   T.Arrow p pol <$> solveType vs v t <*> solveType vs v u
 solveType vs v (T.Pair p t u     ) =
   T.Pair p <$> solveType vs v t <*> solveType vs v u
-solveType vs v (T.Variant p m    ) =
-  T.Variant p <$> tMapM (solveType vs v) m
 -- Session Types
 solveType vs v (T.Semi    p t   u) =
   T.Semi p <$> solveType vs v t <*> solveType vs v u
 solveType vs v (T.Message p pol t) =
   T.Message p pol <$> solveType vs v t
-solveType vs v (T.Choice  p pol m) =
-  T.Choice p pol <$> tMapM (solveType vs v) m
 -- Polymorphism and recursive types
 solveType vs v (T.Forall p (Bind p' a k t)) =
   T.Forall p . Bind p' a k <$> solveType vs v t
@@ -102,8 +101,8 @@ solveDual vs v (T.Semi    p t   u) =
   T.Semi p <$> solveDual vs v t <*> solveDual vs v u
 solveDual vs v (T.Message p pol t) =
   T.Message p (dualof pol) <$> solveType vs v t
-solveDual vs v (T.Choice p pol m) =
-  T.Choice p (dualof pol) <$> tMapM (solveDual vs v) m
+solveDual vs v (T.Almanac p (T.Choice view) m) =
+  T.Almanac p (T.Choice $ dualof view) <$> tMapM (solveDual vs v) m
 -- Recursive types
 solveDual vs v (T.Rec p b) =
   T.Rec p <$> solveBind solveDual vs v b
@@ -140,11 +139,10 @@ changePos p (T.Unit   _       ) = T.Unit p
 changePos p (T.String _       ) = T.String p
 changePos p (T.Arrow _ pol t u) = T.Arrow p pol t u
 changePos p (T.Pair _ t u     ) = T.Pair p t u
-changePos p (T.Variant _ m    ) = T.Variant p m
+changePos p (T.Almanac _ s m  ) = T.Almanac p s m
 changePos p (T.Skip _         ) = T.Skip p
 changePos p (T.Semi    _ t   u) = T.Semi p t u
 changePos p (T.Message _ pol b) = T.Message p pol b
-changePos p (T.Choice  _ pol m) = T.Choice p pol m
 changePos p (T.Rec    _ xs    ) = T.Rec p xs
 changePos p (T.Forall _ xs    ) = T.Forall p xs
 changePos p (T.Var    _ x     ) = T.Var p x

@@ -60,13 +60,12 @@ solveEquations = buildRecursiveTypes >> solveAll >> cleanUnusedRecs
       >>= setTEnv
 
   solveEq :: Visited -> Variable -> T.Type -> FreestState T.Type
+  solveEq v f (T.Almanac p s tm) = T.Almanac p s <$> mapM (solveEq v f) tm
   solveEq v f (T.Arrow p m t1 t2) =
     T.Arrow p m <$> solveEq v f t1 <*> solveEq v f t2
   solveEq v f (T.Pair p t1 t2) = T.Pair p <$> solveEq v f t1 <*> solveEq v f t2
-  solveEq v f (T.Variant p tm) = T.Variant p <$> mapM (solveEq v f) tm
   solveEq v f (T.Semi p t1 t2) = T.Semi p <$> solveEq v f t1 <*> solveEq v f t2
   solveEq v f (T.Message p pol t) = T.Message p pol <$> solveEq v f t
-  solveEq v f (T.Choice p pol tm) = T.Choice p pol <$> mapM (solveEq v f) tm
   solveEq v f t@(T.Var p x)
     | x `Set.member` v = pure t
     | f == x = pure t
@@ -119,12 +118,11 @@ class Elaboration t where
   elaborate :: t -> FreestState t
 
 instance Elaboration T.Type where
+  elaborate (  T.Almanac p s m ) = T.Almanac p s <$> elaborate m
   elaborate (  T.Message p pol t) = T.Message p pol <$> elaborate t
   elaborate (  T.Arrow p m t1 t2  ) = T.Arrow p m <$> elaborate t1 <*> elaborate t2
   elaborate (  T.Pair p t1 t2   ) = T.Pair p <$> elaborate t1 <*> elaborate t2
-  elaborate (  T.Variant p m   ) = T.Variant p <$> elaborate m
   elaborate (  T.Semi   p t1  t2) = T.Semi p <$> elaborate t1 <*> elaborate t2
-  elaborate (  T.Choice p pol m ) = T.Choice p pol <$> elaborate m
   elaborate (  T.Forall p kb    ) = T.Forall p <$> elaborate kb
   elaborate (  T.Rec    p kb    ) = T.Rec p <$> elaborate kb
   elaborate n@(T.Var    p tname ) = getFromTEnv tname >>= \case
@@ -203,8 +201,8 @@ changePos p (T.Pair    _ t   u) = T.Pair p t u
 -- Skip
 changePos p (T.Semi    _ t   u) = T.Semi p t u
 changePos p (T.Message _ pol b) = T.Message p pol b
-changePos p (T.Choice  _ pol m) = T.Choice p pol m
-changePos p (T.Rec    _ xs    ) = T.Rec p xs
-changePos p (T.Forall _ xs    ) = T.Forall p xs
+changePos p (T.Almanac _ s   m) = T.Almanac p s m
+changePos p (T.Rec     _ xs   ) = T.Rec p xs
+changePos p (T.Forall  _ xs   ) = T.Forall p xs
 -- TypeVar
 changePos _ t                   = t

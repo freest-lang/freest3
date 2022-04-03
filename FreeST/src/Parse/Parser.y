@@ -150,7 +150,7 @@ Decl :: { () }
       let bs = typeListToType a $4 :: [(Variable, T.Type)]
       toStateT $ mapM_ (\(c, t) -> addToVEnv c t) bs
       let p = pos a
-      toStateT $ uncurry addToTEnv $2 (T.Variant p (Map.fromList bs))
+      toStateT $ uncurry addToTEnv $2 (T.Almanac p T.Variant (Map.fromList bs))
     }
 
 TypeDecl :: { T.Type }
@@ -277,7 +277,7 @@ Type :: { T.Type }
   | Skip                          { T.Skip (pos $1) }
   | Type ';' Type                 { T.Semi (pos $2) $1 $3 }
   | Polarity Type %prec MSG       { uncurry T.Message $1 $2 }
-  | ChoiceView '{' FieldList '}'  { uncurry T.Choice $1 $3 }
+  | ChoiceView '{' FieldList '}'  { T.Almanac (fst $1) (T.Choice (snd $1)) $3 }
   -- Polymorphism and recursion
   | rec KindBind '.' Type
       { let (a,k) = $2 in T.Rec (pos $1) (Bind (pos a) a k $4) }

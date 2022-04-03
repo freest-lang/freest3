@@ -98,7 +98,7 @@ prop_distribution (BisimPair t u) =
 -- The number of nodes in a type
 nodes :: T.Type -> Int
 nodes (T.Semi   _ t u) = 1 + nodes t + nodes u
-nodes (T.Choice _ _ m) = 1 + Map.foldr (\t acc -> nodes t + acc) 0 m
+nodes (T.Almanac _ (T.Choice _) m) = 1 + Map.foldr (\t acc -> nodes t + acc) 0 m
 nodes (T.Rec    _ (Bind _ _ _ t)) = 1 + nodes t
 -- Skip, Message, TypeVar
 nodes _                = 1
@@ -111,11 +111,11 @@ constr T.Unit{} = "Unit"
 constr T.Bool{} = "Bool"
 constr T.Arrow{} = "Fun"
 constr T.Pair{} = "Pair"
-constr T.Variant{} = "Datatype"
+constr (T.Almanac _ T.Variant _) = "Datatype"
 constr T.Skip{} = "Skip"
 constr T.Semi{} = "Semi"
 constr T.Message{} = "Message"
-constr T.Choice{} = "Choice"
+constr (T.Almanac _ (T.Choice _) _) = "Choice"
 constr T.Rec{} = "Rec"
 constr T.Var{} = "TypeVar"
 constr T.Dualof{} = "Dualof"

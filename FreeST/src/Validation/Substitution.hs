@@ -33,15 +33,15 @@ class Subs t where
   subs :: T.Type -> Variable -> t -> t
 
 instance Subs T.Type where
+  -- Almanac
+  subs t x (T.Almanac p s m   ) = T.Almanac p s (Map.map (subs t x) m)
   -- Functional types
   subs t x (T.Message p pol t1) = T.Message p pol (subs t x t1)
   subs t x (T.Arrow p m t1 t2 ) = T.Arrow p m (subs t x t1) (subs t x t2)
   subs t x (T.Pair p t1 t2    ) = T.Pair p (subs t x t1) (subs t x t2)
-  subs t x (T.Variant p m     ) = T.Variant p (Map.map (subs t x) m)
   -- Session types
   subs t x (T.Semi   p t1 t2  ) = T.Semi p (subs t x t1) (subs t x t2)
-  subs t x (T.Choice p v  m   ) = T.Choice p v (Map.map (subs t x) m)
-    -- Polymorphism and recursion
+  -- Polymorphism and recursion
   subs t x (T.Rec    p b      ) = T.Rec p (subs t x b)
   subs t x (T.Forall p b      ) = T.Forall p (subs t x b)
   subs t x u@(T.Var _ y)

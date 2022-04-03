@@ -49,15 +49,15 @@ typeToGrammar :: T.Type -> TransState Word
 typeToGrammar t = collect [] t >> toGrammar t
 
 toGrammar :: T.Type -> TransState Word
+toGrammar (T.Almanac _ (T.Choice v) m) = do
+  ms <- tMapM toGrammar m
+  getLHS $ Map.mapKeys (\k -> show v ++ show k) ms
 toGrammar (T.Skip _    ) = return []
 toGrammar (T.Semi _ t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
   return $ xs ++ ys
 toGrammar t@T.Message{}    = typeTerminal t
-toGrammar (T.Choice _ v m) = do
-  ms <- tMapM toGrammar m
-  getLHS $ Map.mapKeys (\k -> show v ++ show k) ms
 toGrammar t@T.Var{}                  = typeTerminal t
 toGrammar t@T.CoVar{}                = typeTerminal t
 toGrammar (T.Rec _ (Bind _ x _ _)) = return [x]
@@ -73,7 +73,7 @@ type SubstitutionList = [(T.Type, Variable)]
 
 collect :: SubstitutionList -> T.Type -> TransState ()
 collect σ (  T.Semi   _ t u          ) = collect σ t >> collect σ u
-collect σ (  T.Choice _ _ m          ) = tMapM_ (collect σ) m
+collect σ (  T.Almanac _ (T.Choice v) m ) = tMapM_ (collect σ) m
 collect σ t@(T.Rec _ (Bind _ x _ u)) = do
   let σ' = (t, x) : σ
   let u' = Substitution.subsAll σ' u

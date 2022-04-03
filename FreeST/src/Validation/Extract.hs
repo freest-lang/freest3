@@ -85,9 +85,9 @@ inChoiceMap = choiceMap T.Internal "an internal choice (+)"
 choiceMap :: T.View -> String -> E.Exp -> T.Type -> FreestState T.TypeMap
 choiceMap view msg e t =
   case normalise t of
-    (T.Choice _ view' m) ->
+    (T.Almanac _ (T.Choice view') m) ->
       if view == view' then return m else choiceErr t
-    (T.Semi _ (T.Choice _ view' m) u) ->
+    (T.Semi _ (T.Almanac _ (T.Choice view') m) u) ->
       if view == view'
       then return $ Map.map (\v -> T.Semi (pos v) v u) m
       else choiceErr t
@@ -100,7 +100,7 @@ choiceMap view msg e t =
 datatypeMap :: E.Exp -> T.Type -> FreestState T.TypeMap
 datatypeMap e t =
   case normalise t of
-    (T.Variant _ m) -> return m
+    (T.Almanac _ T.Variant m) -> return m
     u                -> let p = pos e in
       addError (ExtractError p "a datatype" e u) $> Map.empty
 

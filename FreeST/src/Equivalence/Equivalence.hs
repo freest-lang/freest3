@@ -54,6 +54,11 @@ instance Equivalence T.Type where
     equiv :: Visited -> K.KindEnv -> T.Type -> T.Type -> Bool
     -- Have we been here before?
     equiv v _ t1 t2 | (pos t1, pos t2) `Set.member` v  = True
+    -- Almanac
+    equiv v kEnv (T.Almanac _ T.Variant m1) (T.Almanac _ T.Variant m2) =
+      Map.size m1
+        == Map.size m2
+        && Map.foldlWithKey (equivField v kEnv m2) True m1
     -- Session types
     equiv _ kEnv t1 t2 | isSessionType kEnv t1 && isSessionType kEnv t2 =
       bisimilar t1 t2
@@ -67,10 +72,6 @@ instance Equivalence T.Type where
       n1 == n2 && equiv v kEnv t1 u1 && equiv v kEnv t2 u2
     equiv v kEnv (T.Pair _ t1 t2) (T.Pair _ u1 u2) =
       equiv v kEnv t1 u1 && equiv v kEnv t2 u2
-    equiv v kEnv (T.Variant _ m1) (T.Variant _ m2) =
-      Map.size m1
-        == Map.size m2
-        && Map.foldlWithKey (equivField v kEnv m2) True m1
     -- Polymorphism and recursion
     equiv v kEnv (T.Forall _ (Bind p a1 k1 t1)) (T.Forall _ (Bind _ a2 k2 t2))
       = k1 <: k2 && k2 <: k1 &&
@@ -107,7 +108,7 @@ isSessionType :: K.KindEnv -> T.Type -> Bool
 isSessionType _ T.Skip{} = True
 isSessionType _ T.Semi{} = True
 isSessionType _ T.Message{} = True
-isSessionType _ T.Choice{} = True
+isSessionType _ T.Almanac _ (T.Choice v) _ = True
 isSessionType _ (T.Rec _ (Bind _ _ k) _) = K.isSession k
 isSessionType kEnv (T.Var _ x) = Map.member x kEnv -- Polymorphic variable
 isSessionType _ t@T.Dualof{} = internalError "Equivalence.Equivalence.isSessionType" t
