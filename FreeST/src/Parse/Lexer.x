@@ -126,7 +126,7 @@ tokens :-
 -- Identifiers
   ("(+)"|"(-)"|"(*)"|"(/)"|"(^)"
   |"(>)"|"(<)"|"(>=)"|"(<=)"|"(==)"|"(/=)"
-  |"(&&)"|"(||)")               { \p s -> TokenLowerId (internalPos p) s }
+  |"(&&)"|"(||)"|"(::)")        { \p s -> TokenLowerId (internalPos p) s }
   @lowerId                      { \p s -> TokenLowerId (internalPos p) s }
   @upperId                      { \p s -> TokenUpperId (internalPos p) s }
 
