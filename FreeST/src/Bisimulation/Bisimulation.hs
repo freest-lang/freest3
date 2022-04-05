@@ -14,6 +14,7 @@ reflexive, congruence, and BPA rules.
 {-# LANGUAGE TupleSections #-}
 module Bisimulation.Bisimulation
   ( bisimilar
+  , bisimilarGrm -- For SGBisim
   )
 where
 
