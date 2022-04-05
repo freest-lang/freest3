@@ -5,9 +5,9 @@ module GrammarParser (
 
 import GrammarLexer
 import Bisimulation.Grammar
-import Syntax.TypeVariables
+import Syntax.TypeVariable
 import Syntax.Base
-import Syntax.Types
+import Syntax.Type
 import Prelude hiding (Word)
 import qualified Data.Map.Strict as Map
 import System.Exit
