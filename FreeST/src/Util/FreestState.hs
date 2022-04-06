@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-|
 Module      :  FreestState
 Description :  The FreeST state
@@ -75,7 +76,6 @@ module Util.FreestState (
   , isMainFlagSet
   -- , isQuietFlagSet
   , getOpts
-  , fname --TODO: test
   )
 where
 
@@ -141,7 +141,7 @@ initialState = FreestS { runOpts    = defaultOpts
 emptyPEnv :: FreestS -> FreestS
 emptyPEnv s = s { parseEnv = Map.empty }
 
-addToPEnv :: Variable -> [Variable] -> Exp -> FreestState ()
+addToPEnv :: MonadState FreestS m => Variable -> [Variable] -> Exp -> m ()
 addToPEnv x xs e =
   modify (\s -> s { parseEnv = Map.insert x (xs, e) (parseEnv s) })
 
@@ -176,7 +176,7 @@ getFromVEnv x = do
 removeFromVEnv :: Variable -> FreestState ()
 removeFromVEnv b = modify (\s -> s { varEnv = Map.delete b (varEnv s) })
 
-addToVEnv :: Variable -> T.Type -> FreestState ()
+addToVEnv :: MonadState FreestS m => Variable -> T.Type -> m ()
 addToVEnv b t = modify (\s -> s { varEnv = Map.insert b t (varEnv s) })
 
 -- vEnvMember :: Variable -> FreestState Bool
@@ -206,7 +206,7 @@ setProg p = modify (\s -> s { prog = p })
 getTEnv :: FreestState TypeEnv
 getTEnv = gets typeEnv
 
-addToTEnv :: Variable -> Kind -> T.Type -> FreestState ()
+addToTEnv :: MonadState FreestS m => Variable -> Kind -> T.Type -> m ()
 addToTEnv x k t =
   modify (\s -> s { typeEnv = Map.insert x (k, t) (typeEnv s) })
 
@@ -265,7 +265,8 @@ getErrors v s =
 hasErrors :: FreestS -> Bool
 hasErrors = not . null . errors
 
-addError :: ErrorType -> FreestState ()
+-- addError :: ErrorType -> FreestState ()
+addError :: MonadState FreestS m => ErrorType -> m ()
 addError e = modify (\s -> s { errors = e : errors s })
 
 -- | Traversing Map.map over FreestStates
@@ -315,13 +316,13 @@ isMainFlagSet = isJust . mainFunction
 -- isQuietFlagSet :: RunOpts -> Bool
 -- isQuietFlagSet = quietmode
 
-getOpts :: FreestState RunOpts
+-- getOpts :: FreestState RunOpts
+getOpts :: MonadState FreestS m => m RunOpts
 getOpts = gets runOpts
 
 -- | FILE NAME
 
-getFileName :: FreestState String
+getFileName :: MonadState FreestS m => m String
 getFileName = runFilePath <$> getOpts
 
-fname :: FreestS -> String
-fname = runFilePath . runOpts
+

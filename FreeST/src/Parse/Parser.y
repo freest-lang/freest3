@@ -131,19 +131,19 @@ NL :: { () }
 
 Decl :: { () }
   -- Function signature
-  : ProgVar ':' Type {% checkDupProgVarDecl $1 >> addToVEnv' $1 $3 }
+  : ProgVar ':' Type {% checkDupProgVarDecl $1 >> addToVEnv $1 $3 }
   -- Function declaration
-  | ProgVar ProgVarWildSeq '=' Exp {% checkDupFunDecl $1 >> addToPEnv' $1 $2 $4 }
+  | ProgVar ProgVarWildSeq '=' Exp {% checkDupFunDecl $1 >> addToPEnv $1 $2 $4 }
   -- Type abbreviation
-  | type KindedTVar TypeDecl {% checkDupTypeDecl (fst $2) >> uncurry addToTEnv' $2 $3 }
+  | type KindedTVar TypeDecl {% checkDupTypeDecl (fst $2) >> uncurry addToTEnv $2 $3 }
   -- Datatype declaration
   | data KindedTVar '=' DataCons {% do
       let a = fst $2
       checkDupTypeDecl a
       let bs = typeListToType a $4 :: [(Variable, T.Type)]
-      mapM_ (\(c, t) -> addToVEnv' c t) bs
+      mapM_ (\(c, t) -> addToVEnv c t) bs
       let p = pos a
-      uncurry addToTEnv' $2 (T.Almanac p T.Variant (Map.fromList bs))
+      uncurry addToTEnv $2 (T.Almanac p T.Variant (Map.fromList bs))
     }
 
 TypeDecl :: { T.Type }
