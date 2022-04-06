@@ -374,27 +374,16 @@ KindedTVar :: { (Variable, K.Kind) }    -- for type and data declarations
 parse :: String -> FilePath -> ([Token] -> FreestStateT a) -> FreestStateT a
 parse str file parseFun = either (lift . Failed) parseFun (scanTokens str file)
 
-parseKind :: String -> K.Kind
+parseKind :: String -> Either Errors K.Kind
 parseKind str =
   case evalStateT (parse str "" kinds) state of
-    Ok k       -> k
-    Failed err -> error $ formatError "Parse.Kind" Map.empty [] err
-      -- error $ show err
+    Ok k       -> Right k
+    Failed err -> Left [err]
   where
     state = initialState { runOpts = defaultOpts {runFilePath = "Parse.Kind"}}
 
-parseType :: String -> T.Type
+parseType :: String -> Either Errors T.Type
 parseType str =
-  case runStateT (parse str "" types) state of
-    Ok (t,s)
-      | hasErrors s -> error $ getErrors [] s
-      | otherwise   -> t
-    Failed err -> error $ formatError "Parse.Type" Map.empty [] err
-  where
-    state = initialState { runOpts = defaultOpts {runFilePath = "Parse.Type"}}
-
-parseTypeEither :: String -> Either Errors T.Type
-parseTypeEither str =
   case runStateT (parse str "" types) state of
     Ok (t,s)
       | hasErrors s -> Left $ errors s
@@ -403,13 +392,13 @@ parseTypeEither str =
   where
     state = initialState { runOpts = defaultOpts {runFilePath = "Parse.Type"}}
 
-parseExpr :: String -> E.Exp
+parseExpr :: String -> Either Errors E.Exp
 parseExpr str =
   case runStateT (parse str "" expr) state of
     Ok (t,s)
-      | hasErrors s -> error $ getErrors [] s
-      | otherwise   -> t
-    Failed err -> error $ formatError "Parse.Expression" Map.empty [] err
+      | hasErrors s -> Left $ errors s
+      | otherwise   -> Right t
+    Failed err -> Left [err]
   where
     state = initialState { runOpts = defaultOpts {runFilePath = "Parse.Expression"}}
 

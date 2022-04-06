@@ -110,53 +110,24 @@ forall b:SL. !Int; rec a:SL. b; a
 -- Non contractive types
 
 rec a:SL. a
-SU
-
 rec a:SU. a
-SU
-
 rec a:SU. (Skip; a)
-SU
-
 rec a:SU. Skip; a; Skip
-SU
-
 rec a:SU. Skip; a; a; a; a; a
-SU
-
 Skip; rec a:SU. (Skip; a)
-SU
-
 Skip; rec a:SU. ( Skip; a; Skip)
-SU
-
 Skip; rec a:SU. ( Skip; a; Skip)
-SU
-
 Skip; Skip; Skip; rec a:SU. (Skip; a; a; a; a; a)
-SU
-
 rec a:SU. (((Skip ; a) ; a) ; a)
-SU
-
 rec a:SU. (rec a:SU. Skip; a); (rec a:SU. (Skip; a))
-SU
-
 Skip; rec a:SU. ((rec a:SU. (Skip; a)); (rec a:SU. (Skip; a))); Skip; Skip
-SU
 
 -- Types with a part that is non contractive but terminated
 
 Int -> rec a:SL. rec b:SL. rec c:SL. rec d:SL. a
-TU
-
 (rec a:TU. rec b:TU. rec c:TU. rec d:TU. a) -> Bool
-TU
-
 (rec a:SU. rec b:SU. rec c:SU. rec d:SU. a, Int)
-TU
 
 -- HIGHER ORDER
 
 ?((Skip ; Skip) ; Int)
-SL
