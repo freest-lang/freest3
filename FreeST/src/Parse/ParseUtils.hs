@@ -26,10 +26,10 @@ module Parse.ParseUtils
   , binOp
   , unOp
   , typeListToType
-  , ParseResult(..)
+  -- , ParseResult(..)
   , FreestStateT
-  , thenM
-  , returnM
+  -- , thenM
+  -- , returnM
   )
 where
 
@@ -45,29 +45,8 @@ import qualified Syntax.Type                   as T
 import           Util.Error
 import           Util.FreestState
 
--- import qualified Control.Monad.Fail as Fail
 
-thenM :: ParseResult a -> (a -> ParseResult b) -> ParseResult b
-m `thenM` k = case m of
-  Ok     a -> k a
-  Failed e -> Failed e
-
-returnM :: a -> ParseResult a
-returnM = Ok
-
-data ParseResult a = Ok a | Failed ErrorType
-type FreestStateT = StateT FreestS ParseResult
-
-instance Monad ParseResult where
-  (>>=)  = thenM
-  return = returnM
-
-instance Applicative ParseResult where
-  pure  = return
-  (<*>) = ap
-
-instance Functor ParseResult where
-  fmap = liftM
+type FreestStateT = StateT FreestS (Either ErrorType)
 
 -- Parse errors
 

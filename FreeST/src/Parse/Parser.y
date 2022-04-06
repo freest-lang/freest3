@@ -372,50 +372,41 @@ KindedTVar :: { (Variable, K.Kind) }    -- for type and data declarations
 {
 
 parse :: String -> FilePath -> ([Token] -> FreestStateT a) -> FreestStateT a
-parse str file parseFun = either (lift . Failed) parseFun (scanTokens str file)
+parse str file parseFun = either (lift . Left) parseFun (scanTokens str file)
 
 parseKind :: String -> Either Errors K.Kind
-parseKind str =
-  case evalStateT (parse str "" kinds) state of
-    Ok k       -> Right k
-    Failed err -> Left [err]
+parseKind str = either (Left . (:[])) (Right . id) (evalStateT (parse str "" kinds) state)
   where
     state = initialState { runOpts = defaultOpts {runFilePath = "Parse.Kind"}}
 
 parseType :: String -> Either Errors T.Type
-parseType str =
-  case runStateT (parse str "" types) state of
-    Ok (t,s)
-      | hasErrors s -> Left $ errors s
-      | otherwise   -> Right t
-    Failed err -> Left [err]
+parseType str = either (Left . (:[])) stateToEither (runStateT (parse str "" types) state)
   where
     state = initialState { runOpts = defaultOpts {runFilePath = "Parse.Type"}}
 
 parseExpr :: String -> Either Errors E.Exp
-parseExpr str =
-  case runStateT (parse str "" expr) state of
-    Ok (t,s)
-      | hasErrors s -> Left $ errors s
-      | otherwise   -> Right t
-    Failed err -> Left [err]
+parseExpr str = either (Left . (:[])) stateToEither (runStateT (parse str "" expr) state)
   where
     state = initialState { runOpts = defaultOpts {runFilePath = "Parse.Expression"}}
 
+stateToEither :: (a, FreestS) -> Either Errors a
+stateToEither (t,s)
+  | hasErrors s = Left $ errors s
+  | otherwise   = Right t
+
+parseProgram :: FilePath -> VarEnv -> IO FreestS
 parseProgram inputFile vEnv = parseDefs inputFile vEnv <$> readFile inputFile
 
 parseDefs :: FilePath -> VarEnv -> String -> FreestS
 parseDefs file varEnv str =
-  case execStateT (parse str file terms) state of
-    Ok s1 -> s1
-    Failed err -> state { errors = [err] }
+  either (\e -> state { errors = [e] }) id (execStateT (parse str file terms) state)
   where
     state = initialState { varEnv , runOpts = defaultOpts {runFilePath = file}}
 
 -- Error Handling
 
 parseError :: [Token] -> FreestStateT a
-parseError [] = lift . Failed $ PrematureEndOfFile defaultPos
-parseError (x:_) = lift . Failed $ ParseError (pos x) (show x)
+parseError [] = lift . Left $ PrematureEndOfFile defaultPos
+parseError (x:_) = lift . Left $ ParseError (pos x) (show x)
 
 }
