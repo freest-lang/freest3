@@ -1,27 +1,31 @@
 {
-{-# LANGUAGE TupleSections, NamedFieldPuns #-}
+{-# LANGUAGE TupleSections, NamedFieldPuns, LambdaCase #-}
 module Parse.Parser
 where
 
-import           Control.Monad.State
-import qualified Data.Map.Strict               as Map
 import           Parse.Lexer
 import           Parse.ParseUtils
 import           Syntax.Base
-import           Syntax.Expression             as E
-import qualified Syntax.Kind                   as K
+import           Syntax.Expression as E
+import qualified Syntax.Kind as K
 import           Syntax.Program
-import qualified Syntax.Type                   as T
+import qualified Syntax.Type as T
 import           Util.PrettyError
 import           Util.Error
 import           Util.FreestState
 
-import Data.Functor
-import Data.Either
+import           Control.Monad.State
+import           Data.Either
+import           Data.Functor
+import qualified Data.Map.Strict as Map
+import           Data.Maybe
+import qualified Data.Set as Set
+import           System.Directory
+import           System.FilePath
 }
 
 %name types Type
-%name terms Prog
+%name terms TopLevel
 %name kinds Kind
 %name expr Exp
 %tokentype { Token }
@@ -30,6 +34,9 @@ import Data.Either
 
 %token
   nl       {TokenNL _}
+  where    {TokenWhere _}
+  module   {TokenModule _}  
+  import   {TokenImport _}  
   Int      {TokenIntT _}
   Char     {TokenCharT _}
   Bool     {TokenBoolT _}
@@ -117,10 +124,28 @@ import Data.Either
 %left '&'        -- function call
 
 %%
--------------
--- PROGRAM --
--------------
+--------------
+-- TopLevel --
+--------------
 
+TopLevel :: { () }
+  : module QualifiedUpperId where NL Import  {% setModuleName $ Just $2 } -- match file name?
+  | Import                                   {}
+
+Import :: { () }
+  : import QualifiedUpperId NL Import        {% addImport $2 }
+  | Prog                                     {}
+
+
+QualifiedUpperId :: { FilePath }
+  : UPPER_ID '.' QualifiedUpperId  { getText $1 ++ "/" ++ $3}
+  | UPPER_ID                       { getText $1 }
+
+
+-------------
+-- Program --
+-------------
+  
 Prog :: { () }
   : Decl         {}
   | Decl NL Prog {}
@@ -394,15 +419,56 @@ stateToEither (t,s)
   | hasErrors s = Left $ errors s
   | otherwise   = Right t
 
-parseProgram :: FilePath -> VarEnv -> IO FreestS
-parseProgram inputFile vEnv = parseDefs inputFile vEnv <$> readFile inputFile
+parseProgram :: FreestS -> FilePath -> VarEnv -> IO FreestS
+parseProgram s inputFile vEnv = do
+--  print $ "parsing " ++ show inputFile  
+  parseDefs s inputFile vEnv <$> readFile inputFile
 
-parseDefs :: FilePath -> VarEnv -> String -> FreestS
-parseDefs file varEnv str =
+parseDefs :: FreestS -> FilePath -> VarEnv -> String -> FreestS
+parseDefs s file varEnv str =
   either (\e -> state { errors = [e] }) id (execStateT (parse str file terms) state)
   where
-    state = initialState { varEnv , runOpts = defaultOpts {runFilePath = file}}
+    state = s { varEnv , runOpts = defaultOpts {runFilePath = file}}
 
+-- TODO: parse should begin with a state 
+
+parseAndImport :: FreestS -> FilePath -> VarEnv -> IO FreestS
+parseAndImport initial file vEnv = do
+  s <- parseProgram initial file vEnv
+  let imps = imports s
+  case moduleName s of
+    Just name ->
+      if name == takeBaseName (runFilePath $ runOpts s)
+      then doImports (Set.singleton name) (Set.toList imps) s -- ) s imps
+      else do
+        print "WIP: Add error -> File do not match with module name"
+        return s
+    Nothing   -> doImports Set.empty (Set.toList imps) s -- ) s imps
+  where
+      
+    doImports :: Imports -> [FilePath] -> FreestS -> IO FreestS
+    doImports _ [] s = return s
+    doImports imported (curImport:toImport) s
+      | curImport `Set.member` imported = return s
+      | otherwise = do 
+          let fileToImport = replaceBaseName file curImport -<.> "fst"
+          exists <- doesFileExist fileToImport
+            
+          if exists then do
+            s' <- parseProgram s fileToImport (varEnv s)
+            let imps = imports s'
+            
+            when (curImport /= (fromJust $ moduleName s'))
+                 (putStrLn $ "WIP: Add error -> File do not match with module name\n\t"
+                     ++ curImport ++ " /= " ++ (fromJust $ moduleName s') ++ "\n"
+                 )
+        
+            doImports (Set.insert curImport imported) (toImport ++ Set.toList imps) s'
+          else do
+            print "WIP: Add error -> import not found error "
+            return s -- $ (s, Set.insert curImport imported)
+
+        
 -- Error Handling
 
 parseError :: [Token] -> FreestStateT a

@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase #-}
 {- |
 Module      :  Parse.ParseUtils
 Description :  <optional short text displayed on contents page>
@@ -11,8 +11,6 @@ Portability :  portable | non-portable (<reason>)
 
 <module description starting at first column>
 -}
-
-{-# LANGUAGE LambdaCase #-}
 
 module Parse.ParseUtils
   ( checkDupProgVarDecl
@@ -45,6 +43,7 @@ import qualified Syntax.Type                   as T
 import           Util.Error
 import           Util.FreestState
 
+import qualified Data.Set as Set -- TODO: tmp 
 
 type FreestStateT = StateT FreestS (Either ErrorType)
 
@@ -116,3 +115,4 @@ typeListToType a = map $ second typeToFun -- map (\(x, ts) -> (x, typeToFun ts))
  where
   typeToFun []       = T.Var (pos a) a
   typeToFun (t : ts) = T.Arrow (pos t) Un t (typeToFun ts)
+      

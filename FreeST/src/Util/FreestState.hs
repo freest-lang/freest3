@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-|
 Module      :  FreestState
@@ -12,76 +13,12 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-module Util.FreestState (
--- * State
-    FreestState
-  , FreestS(..)
-  , initialState
--- * Monad & map
-  , tMapM
-  , tMapM_
-  , tMapWithKeyM
-  , tMapWithKeyM_
--- * Next index
-  , getNextIndex
-  , freshTVar
--- * Variable environment
-  , getVEnv
-  , getFromVEnv
-  , addToVEnv
-  , setVEnv
-  , removeFromVEnv
--- * Type environment
-  , getTEnv
-  , getFromTEnv
-  , addToTEnv
-  , setTEnv
--- * Program
-  , getProg
-  , getFromProg
-  , addToProg
-  , setProg
--- * Warnings
-  --, Warnings
-  , getWarnings
-  , addWarning
-  , hasWarnings
-  --, WarningMessage(..)
-  --, WarningMsg(..)
--- * Errors
-  , Errors
-  , getErrors
-  , addError
-  , hasErrors
-  , ErrorMessage(..)
-  , ErrorMsg(..)
-  , getFileName
--- * Typenames
-  , addTypeName
-  , getTypeNames
-  , findTypeName
-  , addDualof
-  , debugM
--- * Parse Env
-  , ParseEnv
-  , emptyPEnv
-  , addToPEnv
-  , getPEnv
-  , setPEnv
--- * Run Options
-  , RunOpts(..)
-  , defaultOpts
---  , initialOpts
-  , getMain
-  , isMainFlagSet
-  -- , isQuietFlagSet
-  , getOpts
-  )
-where
+module Util.FreestState where
 
 import           Control.Monad.State
 import           Data.List ( intercalate ) -- , sortBy )
 import qualified Data.Map.Strict as Map
+import qualified Data.Set        as Set
 import           Data.Maybe
 import qualified Data.Traversable as Traversable
 import           Debug.Trace -- debug (used on debugM function)
@@ -93,32 +30,32 @@ import qualified Syntax.Type as T
 import           Util.Warning
 import           Util.WarningMessage ()
 import           Util.PrettyWarning ()
--- import           Util.PreludeLoader
 import           Util.Error
-import           Util.ErrorMessage
 import           Util.PrettyError ()
 
 -- | The typing state
 
 type Warnings = [WarningType]
 
--- type Errors = Set.Set String
--- type Errors = [(Pos, String)]
 type Errors = [ErrorType]
+
+type Imports = Set.Set FilePath 
 
 type ParseEnv = Map.Map Variable ([Variable], Exp)
 
 data FreestS = FreestS {
-  runOpts    :: RunOpts
-, varEnv     :: VarEnv
-, prog       :: Prog
-, typeEnv    :: TypeEnv
-, typenames  :: TypeOpsEnv
-, warnings   :: Warnings
-, errors     :: Errors
-, nextIndex  :: Int
-, parseEnv   :: ParseEnv -- "discarded" after elaboration
-} deriving Show -- FOR DEBUG purposes
+    runOpts    :: RunOpts
+  , varEnv     :: VarEnv
+  , prog       :: Prog
+  , typeEnv    :: TypeEnv
+  , typenames  :: TypeOpsEnv
+  , warnings   :: Warnings
+  , errors     :: Errors
+  , nextIndex  :: Int
+  , parseEnv   :: ParseEnv -- "discarded" after elaboration
+  , moduleName :: Maybe FilePath
+  , imports    :: Imports
+  } deriving Show -- FOR DEBUG purposes
 
 type FreestState = State FreestS
 
@@ -134,6 +71,8 @@ initialState = FreestS { runOpts    = defaultOpts
                        , errors     = []
                        , nextIndex  = 0
                        , parseEnv   = Map.empty
+                       , moduleName = Nothing
+                       , imports    = Set.empty
                        }
 
 -- | Parse Env
@@ -149,7 +88,7 @@ getPEnv :: FreestState ParseEnv
 getPEnv = gets parseEnv
 
 setPEnv :: ParseEnv -> FreestState ()
-setPEnv pEnv = modify (\s -> s { parseEnv = pEnv })
+setPEnv parseEnv = modify (\s -> s { parseEnv })
 
 
 -- | NEXT VAR
@@ -183,7 +122,7 @@ addToVEnv b t = modify (\s -> s { varEnv = Map.insert b t (varEnv s) })
 -- vEnvMember x = Map.member x <$> getVEnv
 
 setVEnv :: VarEnv -> FreestState ()
-setVEnv vEnv = modify (\s -> s { varEnv = vEnv })
+setVEnv varEnv = modify (\s -> s { varEnv })
 
 -- | EXP ENV
 
@@ -199,7 +138,7 @@ addToProg :: Variable -> Exp -> FreestState ()
 addToProg k v = modify (\s -> s { prog = Map.insert k v (prog s) })
 
 setProg :: Prog -> FreestState ()
-setProg p = modify (\s -> s { prog = p })
+setProg prog = modify (\s -> s { prog })
 
 -- | TYPE ENV
 
@@ -216,7 +155,7 @@ getFromTEnv b = do
   return $ tEnv Map.!? b
 
 setTEnv :: TypeEnv -> FreestState ()
-setTEnv tEnv = modify (\s -> s { typeEnv = tEnv })
+setTEnv typeEnv = modify (\s -> s { typeEnv })
 
 -- | TYPENAMES
 
@@ -324,5 +263,24 @@ getOpts = gets runOpts
 
 getFileName :: MonadState FreestS m => m String
 getFileName = runFilePath <$> getOpts
+
+
+-- | Modules & Imports
+
+setModuleName :: MonadState FreestS m => Maybe FilePath -> m ()
+setModuleName moduleName = modify (\s -> s { moduleName })
+
+getModuleName :: MonadState FreestS m => m (Maybe FilePath)
+getModuleName = gets moduleName
+
+setImports :: MonadState FreestS m => Imports -> m ()
+setImports imports = modify (\s -> s { imports })
+
+addImport :: MonadState FreestS m => FilePath -> m ()
+addImport imp = modify (\s -> s { imports = Set.insert imp (imports s) })
+
+getImports :: MonadState FreestS m => m Imports
+getImports = gets imports 
+
 
 
