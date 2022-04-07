@@ -6,7 +6,7 @@ module Parse.Lexer
 ) where
 
 
-import           Syntax.Base (Pos(..), Position(..))
+import           Syntax.Base (Pos(..), Position(..), Span(..), Spannable(..))
 import           Util.Error (ErrorType(..))
 }
 
@@ -296,7 +296,8 @@ scanTokens str file =
       case alexScan inp 0 of
         AlexEOF -> Right []
         AlexError _ ->
-          Left $ LexicalError (internalPos pos) (show $ head str)
+          let p = internalPos pos in
+          Left $ LexicalError (Span p p file) (show $ head str)
         AlexSkip  inp' len     -> go inp'
         AlexToken inp' len act ->
           case go inp' of
@@ -397,6 +398,84 @@ instance Position Token where
   pos (TokenWhere p) = p
   pos (TokenImport p) = p
 --  pos t = error $ show t
+
+-- FIXME: proper spans
+instance Spannable Token where
+  span (TokenNL p) = Span p p ""
+  span (TokenIntT p) = Span p p ""
+  span (TokenCharT p) = Span p p ""
+  span (TokenBoolT p) = Span p p ""
+  span (TokenUnit p) = Span p p ""
+  span (TokenStringT p) = Span p p ""
+  span (TokenUnArrow p) = Span p p ""
+  span (TokenLinArrow p) = Span p p ""
+  span (TokenLambda p) = Span p p ""
+  span (TokenUpperLambda p) = Span p p ""
+  span (TokenLParen p) = Span p p ""
+  span (TokenRParen p) = Span p p ""
+  span (TokenLBracket p) = Span p p ""
+  span (TokenRBracket p) = Span p p ""
+  span (TokenComma p) = Span p p ""
+  span (TokenSkip p) = Span p p ""
+  span (TokenColon p) = Span p p ""
+  span (TokenUpperId p _) = Span p p ""
+  span (TokenSemi p) = Span p p ""
+  span (TokenMOut p) = Span p p ""
+  span (TokenMIn p) = Span p p ""
+  span (TokenLBrace p) = Span p p ""
+  span (TokenRBrace p) = Span p p ""
+  span (TokenAmpersand p) = Span p p ""
+  span (TokenPlus p) = Span p p ""
+  span (TokenRec p) = Span p p ""
+  span (TokenDot p) = Span p p ""
+  span (TokenLowerId p _) = Span p p ""
+  span (TokenSU p) = Span p p ""
+  span (TokenSL p) = Span p p ""
+  span (TokenTU p) = Span p p ""
+  span (TokenTL p) = Span p p ""
+  span (TokenML p) = Span p p ""
+  span (TokenMU p) = Span p p ""
+  span (TokenInt p _) = Span p p ""
+  span (TokenChar p _) = Span p p ""
+  span (TokenBool p _) = Span p p ""
+  span (TokenString p _) = Span p p ""
+  span (TokenLet p) = Span p p ""
+  span (TokenIn p) = Span p p ""
+  span (TokenEq p) = Span p p ""
+  span (TokenData p) = Span p p ""
+  span (TokenType p) = Span p p ""
+  span (TokenPipe p) = Span p p ""
+  span (TokenNew p) = Span p p ""
+--  span (TokenSend p) = Span p p ""
+--  span (TokenReceive p) = Span p p ""
+  span (TokenSelect p) = Span p p ""
+--  span (TokenFork p) = Span p p ""
+  span (TokenMatch p) = Span p p ""
+  span (TokenCase p) = Span p p ""
+  span (TokenForall p) = Span p p ""
+  span (TokenMinus p) = Span p p ""
+  span (TokenTimes p) = Span p p ""
+  span (TokenRaise p) = Span p p ""
+  span (TokenLT p) = Span p p ""
+  span (TokenGT p) = Span p p ""
+  span (TokenWild p) = Span p p ""
+  span (TokenCmp p _) = Span p p ""
+  span (TokenIf p) = Span p p ""
+  span (TokenThen p) = Span p p ""
+  span (TokenElse p) = Span p p ""
+  span (TokenWith p) = Span p p ""
+  span (TokenOf p) = Span p p ""
+  span (TokenDualof p) = Span p p ""
+  span (TokenFArrow p) = Span p p ""
+  span (TokenConjunction p) = Span p p ""
+  span (TokenDisjunction p) = Span p p ""
+  span (TokenDiv p) = Span p p ""
+  span (TokenDollar p) = Span p p ""
+  span (TokenModule p) = Span p p ""
+  span (TokenWhere p) = Span p p ""
+  span (TokenImport p) = Span p p ""
+--  pos t = error $ show t
+
 
 getText :: Token -> String
 getText (TokenUpperId _ x) = x

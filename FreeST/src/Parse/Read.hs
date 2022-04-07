@@ -18,6 +18,6 @@ instance Read Exp where
 
 eitherRead :: (String -> Either Errors a) -> String -> [(a, String)]
 eitherRead f s =
-  either (error . getErrors [] . state) ((:[]) . (,"")) (f s) 
+  either (error . getErrors . state) ((:[]) . (,"")) (f s) 
   where
     state errors = initialState {errors}

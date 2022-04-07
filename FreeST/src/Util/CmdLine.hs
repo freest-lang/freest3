@@ -1,30 +1,24 @@
 module Util.CmdLine where
 
-import           Control.Monad
-import           Control.Bool                  ( whenM )
-import           Data.Version                   ( showVersion )
-import           Paths_FreeST                   ( version
-                                                )
-import           Syntax.Base
--- import           System.Console.GetOpt
-import           System.Directory
-import           System.Exit                    ( die )
-import           System.FilePath
 -- import           Util.ErrorMessage (Color(..))
--- import           Util.PrettyError (formatColor, formatBold)
--- import           Util.Error
+import           Util.Error
 import           Util.FreestState
+import           Syntax.Base
 
-import Data.String
-
-import Options.Applicative
--- import Options.Applicative.Help
--- import Data.Semigroup ((<>))
--- import           Data.Functor
+import           Control.Bool ( whenM )
+import           Control.Monad
+import qualified Data.Map.Strict as Map
+import           Data.String
+import           Data.Version ( showVersion )
+import           Options.Applicative
+import           Paths_FreeST ( version )
+import           System.Directory
+import           System.Exit ( die )
+import           System.FilePath
 
 
 instance Data.String.IsString Variable where
-  fromString = mkVar defaultPos
+  fromString = mkVar defaultSpan
 
 -- instance Read Variable where
 --   readsPrec _ s = [(mkVar defaultPos s,"")]
@@ -59,10 +53,8 @@ handleFlags fg@(RunOpts f _ _) = do
   when (not $ "fst" `isExtensionOf` f) $ die wrongFileExtension
   return fg
   where
-    fileDoNotExist = "\nFile " ++ f ++ " does not exist (no such file or directory)"
-    wrongFileExtension = "\nFile " ++ f ++ " has not a valid file extension\n\t" ++
-                         "Expecting: " ++ (f -<.> "fst") ++ "\n\t" ++
-                         "but got:   " ++ f
+    fileDoNotExist = showErrors "FreeST" Map.empty (FileNotFound f)
+    wrongFileExtension = showErrors "FreeST" Map.empty (WrongFileExtension f)
 
 flags :: IO RunOpts
 flags = handleFlags =<< execParser opts
@@ -84,4 +76,3 @@ flags = handleFlags =<< execParser opts
 -- - --no-colors --no-colours -> "Remove colors from error messages"
 -- --  Option Warnings as errors ??
 -- -- verbose (full comment depth)
--- -- -i --import ??

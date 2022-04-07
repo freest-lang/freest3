@@ -41,7 +41,7 @@ equiv = equivalent kindEnv
 -- norm = normalise Map.empty
 
 kindEnv :: KindEnv
-kindEnv = Map.fromList (zip (map (mkVar defaultPos) ids) (repeat (K.sl defaultPos)))
+kindEnv = Map.fromList (zip (map (mkVar defaultSpan) ids) (repeat (K.sl defaultSpan)))
         -- TODO: This env should only contain the free vars of t; plus
         -- its kind may be SU
 

@@ -1,23 +1,25 @@
 module Util.Error
   ( ErrorType(..)
-  , formatError
+  , showErrors
   , internalError
-  )
-where
+  ) where
 
+import           Parse.Unparser
 import           Syntax.Base
-import           Syntax.Kind
+import qualified Syntax.Expression as E
+import qualified Syntax.Kind as K
 import           Syntax.Program
-import qualified Syntax.Type                   as T
-import qualified Syntax.Expression             as E
-import           Util.PrettyError
-import           Util.ErrorMessage
-import qualified Data.Map                      as Map
--- import           Data.Maybe
-import           Parse.Unparser                 ()
+import qualified Syntax.Type as T
+import           Util.GetTOps
+import           Util.Message
+
+import qualified Data.Map as Map
+import           Prelude hiding (span)
+import           System.FilePath
+
 
 -- | Internal errors
-
+-- FIXME: span instead of pos (adds more information)
 internalError :: (Show a, Position a) => String -> a -> b
 internalError fun syntax =
   error
@@ -28,221 +30,193 @@ internalError fun syntax =
     ++ show syntax
 
 -- | Format errors
+showErrors :: String -> TypeOpsEnv -> ErrorType -> String
+showErrors f tops err = let base = replaceBaseName f (defModule (span err)) in 
+  title err True (span err) base ++ "\n  " ++ msg err True tops
 
-formatError :: String -> TypeOpsEnv -> PreludeNames -> ErrorType -> String
-formatError f tops prelude err = format (pos err) (errorMsg prelude err)
- where
-  format p e = formatHeader f p ++ formatBody tops e
 
 -- | Errors
 
 data ErrorType =
   -- CmdLine
     FileNotFound FilePath
-  | NoInputFile
+  | WrongFileExtension FilePath
   -- Lexer.x
   -- Token, circular import (move to other module)
-  | LexicalError Pos String
+  | LexicalError Span String
   -- Parser.y
-  | PrematureEndOfFile Pos
-  | ParseError Pos String -- String -> Token
+  | PrematureEndOfFile Span
+  | ParseError Span String -- String -> Token
   -- ParseUtils
-  | MultipleFieldDecl Pos Variable
-  | RedundantPMatch Pos Variable
-  | DuplicatePVar Pos Variable Pos -- one pos? (same for the others)
-  | DuplicateTVar Pos Variable Pos
-  | DuplicateFieldInDatatype Pos Variable
-  | MultipleDeclarations Pos Variable Pos
-  | MultipleTypeDecl Pos Variable Pos
-  | MultipleFunBindings Pos Variable Pos
+  | MultipleFieldDecl Span Span Variable
+  | RedundantPMatch Span Variable
+  | DuplicateVar Span String Variable Span  -- string is the variable description: type or program
+  | DuplicateFieldInDatatype Span Variable Span
+  | MultipleDeclarations Span Variable Span
+  | MultipleTypeDecl Span Variable Span
+  | MultipleFunBindings Span Variable Span
   -- Elab
-  | TypeVarOutOfScope Pos Variable
-  | FuctionLacksSignature Pos Variable
+  | TypeVarOutOfScope Span Variable
+  | FuctionLacksSignature Span Variable
   -- Duality
-  | DualOfNonRecVar Pos  T.Type
-  | DualOfNonSession Pos T.Type
+--  | DualOfNonRecVar Span  T.Type
+  | DualOfNonSession Span T.Type
   -- TypeCheck
-  | SignatureLacksBinding Pos Variable T.Type
-  | MainNotDefined Pos Variable -- Later, a warning
-  | UnrestrictedMainFun Pos Variable T.Type Kind
+  | SignatureLacksBinding Span Variable T.Type
+  | MainNotDefined Span Variable
+  | UnrestrictedMainFun Span Variable T.Type K.Kind
   -- Kinding
-  | TypeVarNotInScope Pos Variable -- Duplicated: TypeVarOutOfScope
-  | TypeNotContractive Pos T.Type Variable
-  | CantMatchKinds Pos Kind Kind T.Type
-  | ExpectingSession Pos T.Type Kind
+  | TypeVarNotInScope Span Variable -- Duplicated: TypeVarOutOfScope
+  | TypeNotContractive Span T.Type Variable
+  | CantMatchKinds Span K.Kind K.Kind T.Type
+  | ExpectingSession Span T.Type K.Kind
   -- Typing
-  | TypeAbsBodyNotValue Pos E.Exp E.Exp
-  | VarOrConsNotInScope Pos Variable
-  | LinProgVar Pos Variable T.Type Kind
-  | PartialApplied Pos E.Exp String
-  | NonEquivTypes Pos T.Type T.Type E.Exp
-  | NonEquivEnvs Pos String VarEnv VarEnv E.Exp
-  | DataConsNotInScope Pos Variable
-  | WrongNumOfCons Pos Variable Int [Variable] E.Exp
-  | ExtractError Pos String E.Exp T.Type
-  | BranchNotInScope Pos Variable T.Type
+  | TypeAbsBodyNotValue Span E.Exp E.Exp
+  | VarOrConsNotInScope Span Variable
+  | LinProgVar Span Variable T.Type K.Kind
+  | PartialApplied Span E.Exp String
+  | NonEquivTypes Span T.Type T.Type E.Exp
+  | NonEquivEnvs Span String VarEnv VarEnv E.Exp
+  | DataConsNotInScope Span Variable
+  | WrongNumOfCons Span Variable Int [Variable] E.Exp
+  | ExtractError Span String E.Exp T.Type
+  | BranchNotInScope Span Variable T.Type
   -- Builtin
-  | ErrorFunction String
+  | ErrorFunction Span String
   deriving Show
 
+instance Spannable ErrorType where
+  span (FileNotFound _)               = defaultSpan
+  span (WrongFileExtension _)         = defaultSpan
+  span (LexicalError p _              ) = p
+  span (PrematureEndOfFile p          ) = p
+  span (ParseError        p _         ) = p
+  span (MultipleFieldDecl p _ _       ) = p
+  span (RedundantPMatch   p _         ) = p
+  span (DuplicateVar p _ _ _          ) = p
+  span (DuplicateFieldInDatatype p _ _) = p
+  span (MultipleDeclarations p _ _  ) = p
+  span (MultipleTypeDecl     p _ _  ) = p
+  span (MultipleFunBindings  p _ _  ) = p
+  span (TypeVarOutOfScope     p _   ) = p
+  span (FuctionLacksSignature p _   ) = p
+--  span (DualOfNonRecVar       p _   ) = p
+  span (DualOfNonSession      p _   ) = p
+  span (SignatureLacksBinding p _ _ ) = p
+  span (MainNotDefined p _          ) = p
+  span (UnrestrictedMainFun p _ _ _ ) = p
+  span (TypeVarNotInScope p _       ) = p
+  span (TypeNotContractive p _ _    ) = p
+  span (CantMatchKinds p _ _ _      ) = p
+  span (ExpectingSession    p _ _   ) = p
+  span (TypeAbsBodyNotValue p _ _   ) = p
+  span (VarOrConsNotInScope p _     ) = p
+  span (LinProgVar p _ _ _          ) = p
+  span (PartialApplied p _ _        ) = p
+  span (NonEquivTypes p _ _ _       ) = p
+  span (NonEquivEnvs p _ _ _ _      ) = p
+  span (DataConsNotInScope p _      ) = p
+  span (WrongNumOfCons p _ _ _ _    ) = p
+  span (ExtractError p _ _ _        ) = p
+  span (BranchNotInScope p _ _      ) = p
+  span (ErrorFunction _ _           ) = defaultSpan
 
-instance Position ErrorType where
-  pos (FileNotFound _)               = defaultPos
-  pos NoInputFile                    = defaultPos
-  pos (LexicalError p _            ) = p
-  pos (PrematureEndOfFile p        ) = p
-  pos (ParseError        p _       ) = p
-  pos (MultipleFieldDecl p _       ) = p
-  pos (RedundantPMatch   p _       ) = p
-  pos (DuplicatePVar p _ _         ) = p
-  pos (DuplicateTVar p _ _         ) = p
-  pos (DuplicateFieldInDatatype p _) = p
-  pos (MultipleDeclarations p _ _  ) = p
-  pos (MultipleTypeDecl     p _ _  ) = p
-  pos (MultipleFunBindings  p _ _  ) = p
-  pos (TypeVarOutOfScope     p _   ) = p
-  pos (FuctionLacksSignature p _   ) = p
-  pos (DualOfNonRecVar       p _   ) = p
-  pos (DualOfNonSession      p _   ) = p
-  pos (SignatureLacksBinding p _ _ ) = p
-  pos (MainNotDefined p _          ) = p
-  pos (UnrestrictedMainFun p _ _ _ ) = p
-  pos (TypeVarNotInScope p _       ) = p
-  pos (TypeNotContractive p _ _    ) = p
-  pos (CantMatchKinds p _ _ _      ) = p
-  pos (ExpectingSession    p _ _   ) = p
-  pos (TypeAbsBodyNotValue p _ _   ) = p
-  pos (VarOrConsNotInScope p _     ) = p
-  pos (LinProgVar p _ _ _          ) = p
-  pos (PartialApplied p _ _        ) = p
-  pos (NonEquivTypes p _ _ _       ) = p
-  pos (NonEquivEnvs p _ _ _ _      ) = p
-  pos (DataConsNotInScope p _      ) = p
-  pos (WrongNumOfCons p _ _ _ _    ) = p
-  pos (ExtractError p _ _ _        ) = p
-  pos (BranchNotInScope p _ _      ) = p
-  pos (ErrorFunction _             ) = defaultPos
 
-errorMsg :: PreludeNames -> ErrorType -> [ErrorMessage]
--- CmdLine
-errorMsg _ (FileNotFound f) =
-  [ Error "File", Error $ '\'' : f ++ "'"
-  , Error "does not exist (No such file or directory)"]
-errorMsg _ NoInputFile =
-  [ Error "freest: no input files\n\t"
-  , Error "Usage: For basic information, try the '--help' option."]
--- Lexer
-errorMsg _ (LexicalError _ t) =
-  [Error "Lexical error on input", Error $ "\ESC[91m" ++ t ++ "\ESC[0m"]
--- Parser.y
-errorMsg _ (PrematureEndOfFile _) =
-  [Error "Parse error:", Error "\ESC[91mPremature end of file\ESC[0m"]
-errorMsg _ (ParseError _ x) =
-  [Error "Parse error on input", Error $ "\ESC[91m'" ++ x ++ "'\ESC[0m"]
--- Parse.ParseUtils
-errorMsg _ (MultipleFieldDecl _ pv) =
-  [ Error "Multiple declarations of field", Error pv, Error "\n\t in a choice type"]
-errorMsg _ (RedundantPMatch _ pv) =
-  [ Error "Pattern match is redundant", Error "\n\t In a case alternative:", Error pv]
-errorMsg _ (DuplicatePVar p pv p') =
-  [ Error "Conflicting definitions for program variable", Error pv
-  , Error "\n\t Bound at:", Error $ show p, Error "\n\t          "
-  , Error $ show p' ]
-errorMsg _ (DuplicateTVar p tv p') =
-  [ Error "Conflicting definitions for type variable", Error tv
-  , Error "\n\t Bound at: ", Error (show p)
-  , Error "\n\t           ", Error (show p') ]
-errorMsg _ (DuplicateFieldInDatatype _ pv) =
-  [ Error "Multiple declarations of", Error pv, Error "\n\t in a datatype declaration"]
-errorMsg prelude (MultipleDeclarations p pv p')
-  | pv `elem` prelude =
-      [Error "Ambiguous occurrence", Error pv, 
-       Error "\n\t It could refer to the prelude function", Error pv,
-       Error "\n\t or the function", Error pv,
-       Error "defined at", Error (show p),
-       Error "(consider renaming it)"]
-  | otherwise = 
-      [ Error "Multiple declarations of",
-        Error pv, Error "\n\t Declared at:"
-      , Error p, Error "\n\t             ", Error p']
-errorMsg _ (MultipleTypeDecl p t p') =
-  [ Error "Multiple declarations of type", Error t, Error "\n\t Declared at:"
-  , Error p, Error "\n\t             ", Error p']
-errorMsg _ (MultipleFunBindings p pv p') =
-  [ Error "Multiple bindings for function", Error pv, Error "\n\t Declared at:"
-  , Error p, Error "\n\t             ", Error p' ]
--- Elaboration.Elaboration
-errorMsg _ (TypeVarOutOfScope _ tv) = [ Error "Type variable not in scope:", Error tv]
-errorMsg _ (FuctionLacksSignature _ pv) =
-  [ Error "The binding for function", Error pv
-  , Error "lacks an accompanying type signature"]
--- Elaboration.Duality
-errorMsg _ (DualOfNonRecVar _ t) =
-  [Error "Cannot compute the dual of a polymorphic variable:", Error t]
-errorMsg _ (DualOfNonSession _ t) = [Error "Dualof applied to a non session type:", Error t]
--- Validation.TypeChecking
-errorMsg _ (SignatureLacksBinding _ pv t) =
-  [ Error "The type signature for", Error pv, Error "lacks an accompanying binding\n"
-  , Error "\t Type signature:", Error t ]
-errorMsg _ (MainNotDefined _ pv) = [Error "Main function", Error pv, Error "is not defined"]
-errorMsg _ (UnrestrictedMainFun _ pv t k) =
-  [ Error "The type of"    , Error pv, Error "must be non linear"
-  , Error "\n\t found type", Error t, Error "of kind", Error k]
--- Validation.Kinding
-errorMsg _ (TypeVarNotInScope _ tv) = [Error "Type variable not in scope:", Error tv]
-errorMsg _ (TypeNotContractive _ t tv) =
-  [Error "Type", Error t, Error "is not contractive on type variable", Error tv]
-errorMsg _ (CantMatchKinds _ k k' t) =
-  [ Error "Couldn't match expected kind", Error k, Error "\n\t with actual kind", Error k'
-  , Error "\n\t for type", Error t ]
-errorMsg _ (ExpectingSession _ t k) =
-  [ Error "Expecting a session type\n", Error "\t found type", Error t, Error "of kind", Error k]
+instance Message ErrorType where
+  title _  sty = msgHeader (red sty "error:") sty
+  
+  msg (FileNotFound f) sty ts =
+    "File " ++ style red sty ts f ++ " does not exist (No such file or directory)"
+  msg (WrongFileExtension f) sty ts = 
+   "File has not a valid file extension\n\tExpecting: " ++ red sty (quote $ f -<.> "fst") ++
+   "\n\t\tbut got:   " ++ style red sty ts f
+  msg (LexicalError _ tk) sty _ = "Lexical error on input " ++ red sty tk
+  msg (PrematureEndOfFile _) _ _ =  "Parse error: Premature end of file"
+  msg (ParseError _ x) sty _ = "Parse error on input " ++ red sty (quote x)
+  msg (MultipleFieldDecl sp1 sp2 x) sty ts =
+    "Multiple declarations of field " ++ style red sty ts x ++
+    " in a choice type.\n\tDeclared at " ++ show sp1 ++ " and " ++ show sp2
+  msg (RedundantPMatch _ x) sty ts =
+    "Pattern match is redundant\n\t In a case alternative: " ++  style red sty ts x
+  msg (DuplicateVar p tVar x p') sty ts =
+    "Conflicting definitions for the " ++ tVar ++ " variable " ++ style red sty ts x ++
+    "\n\tBound at: " ++ show p' ++ " and " ++ show p
+  msg (DuplicateFieldInDatatype p pv p') sty ts =
+    "Multiple declarations of " ++ style red sty ts pv ++ " in a datatype declaration" ++
+     "\n\tDeclared at: " ++ show p ++ " and " ++ show p'
+  msg (MultipleDeclarations p pv p') sty ts =
+    "Ambiguous occurrence " ++ style red sty ts pv ++
+    "\n\tDeclared in modules: " ++ showModule (showModuleName p') p' ++
+    "\n\t                     " ++ showModule (showModuleName p) p
+  msg (MultipleTypeDecl p t p') sty ts =
+    "Multiple declarations of type " ++ style red sty ts t ++
+    "\n\t Declared in modules: " ++ showModule (showModuleName p') p' ++
+    "\n\t                      " ++ showModule (showModuleName p) p
+  msg (MultipleFunBindings sp1 x sp2) sty ts =
+    "Multiple bindings for function " ++ style red sty ts x ++
+    "\n\t Declared in modules: " ++ showModule (showModuleName sp2) sp2 ++
+    "\n\t                      " ++ showModule (showModuleName sp1) sp1
+  msg (TypeVarOutOfScope _ x) sty ts = "Type variable not in scope: " ++ style red sty ts x
+  msg (FuctionLacksSignature _ x) sty ts =
+    "The binding for function " ++ style red sty ts x ++ " lacks an accompanying type signature"
+  msg (DualOfNonSession _ t) sty ts = 
+    "Dualof applied to a non session type: " ++ style red sty ts t
+  msg (SignatureLacksBinding _ x t) sty ts = 
+    "The type signature for "  ++ style red sty ts x ++
+    " lacks an accompanying binding\n\t Type signature: " ++ style red sty ts t
+  msg (MainNotDefined _ main) sty ts =
+    "Main function " ++ style red sty ts main ++ " is not defined"
+  msg (UnrestrictedMainFun _ x t k) sty ts = 
+    "The type of " ++ style red sty ts x ++ " must be non linear\n\t Found type " ++
+    style red sty ts t ++ " of kind " ++ style red sty ts k
+  -- Validation.Kinding
+  msg (TypeVarNotInScope _ a) sty ts = "Type variable not in scope: " ++ style red sty ts a
+  msg (TypeNotContractive _ t a) sty ts =
+    "Type " ++ style red sty ts t ++ " is not contractive on type variable " ++
+    style red sty ts a
+  msg (CantMatchKinds _ k k' t) sty ts =
+    "Couldn't match expected kind " ++ style red sty ts k ++ "\n\t with actual kind " ++
+    style red sty ts k' ++ "\n\t for type " ++ style red sty ts t
+  msg (ExpectingSession _ t k) sty ts =
+    "Expecting a session type\n\t found type " ++ style red sty ts t ++ " of kind " ++
+    style red sty ts k
 -- Validation.Typing
-errorMsg _ (TypeAbsBodyNotValue _ e e') =
-  [ Error "The body of type abstraction", Error e
-  , Error "\n\t                       namely", Error e'
-  , Error "\n\t               is not a value"]
-errorMsg _ (VarOrConsNotInScope _ pv) =
-  [ Error "Variable or data constructor not in scope:", Error pv
-  , Error "\n\t (is", Error pv, Error "a linear variable that has been consumed?)"]
-errorMsg _ (LinProgVar _ pv t k) =
-  [ Error "Program variable", Error pv
-  , Error "is linear at the end of its scope\n\t variable"
-  , Error pv, Error "is of type", Error t, Error "of kind", Error k]
-errorMsg _ (PartialApplied _ e s) =
-  [ Error "Ooops! You're asking too much. I cannot type a partially applied"
-  , Error e, Error "\n\t Consider applying", Error e
-  ,  Error $ "to an expression denoting a " ++ s ++ "."]
-errorMsg _ (NonEquivTypes _ t u e) =
-  [ Error "Couldn't match expected type", Error t
-  , Error "\n\t             with actual type", Error u
-  , Error "\n\t               for expression", Error e]
-errorMsg _ (NonEquivEnvs _ branching vEnv vEnv' e) =
-  [ Error "Couldn't match the final context against the initial context for"
-  , Error branching
-  , Error "expression"
-  , Error "\n\t The initial context is", Error (vEnv Map.\\ vEnv')
-  , Error "\n\t   the final context is", Error (vEnv' Map.\\ vEnv)
-  , Error "\n\t  and the expression is", Error e
-  , Error "\n\t(was a variable consumed in one branch and not in the other?)"
-  , Error "\n\t(is there a variable with different types in the two contexts?)"]
-errorMsg _ (DataConsNotInScope _ pv) =
-   [Error "Data constructor", Error pv, Error "not in scope"]
-errorMsg _ (WrongNumOfCons _ pv i pvs e) =
-  [ Error "The constructor", Error pv, Error "should have", Error i
-  , Error "arguments, but has been given", Error $ length pvs
-  , Error "\n\t In the pattern:"
-  , Error $ "\ESC[91m" ++ show pv ++ " " ++ unwords (map show pvs)
-         ++ " -> " ++ show e ++ "\ESC[0m"]
--- Validation.Extract -- Join all (except the last)
-errorMsg _ (ExtractError _ s e t) =
-  [ Error $ "Expecting " ++ s ++ " type for expression", Error e
-  , Error $ "\n\t                    " ++ replicate (length s) ' '
-  , Error "found type", Error t]
-errorMsg _ (BranchNotInScope _ pv t) =
-  [Error "Branch", Error pv, Error "not present in internal choice type", Error t]
--- Builtin
-errorMsg _ (ErrorFunction s) = [Error s]
--- Should I add more info to this error?
--- ex: File: Error s
---       error, called at File:Pos
+  msg (TypeAbsBodyNotValue _ e e') sty ts =
+    "The body of type abstraction " ++ style red sty ts e ++ "\n                        namely " ++
+    style red sty ts e' ++ "\n                is not a value"
+  msg (VarOrConsNotInScope _ pv) sty ts = 
+    "Variable or data constructor not in scope: " ++ style red sty ts pv ++
+    "\n  (is " ++ style red sty ts pv ++ " a linear variable that has been consumed?)"
+  msg (LinProgVar _ x t k) sty ts =
+    "Program variable " ++ style red sty ts x ++ " is linear at the end of its scope\n\t  variable " ++
+    style red sty ts x ++ " is of type " ++ style red sty ts t ++ " of kind " ++ style red sty ts k
+  msg (PartialApplied _ e s) sty ts = 
+    "Ooops! You're asking too much. I cannot type a partially applied " ++ style red sty ts e ++
+    ".\n\t Consider applying " ++ style red sty ts e ++ " to an expression denoting a " ++ s ++ "."
+  msg (NonEquivTypes _ t u e) sty ts =
+    "Couldn't match expected type " ++ style red sty ts t ++ "\n              with actual type " ++
+    style red sty ts u ++"\n                for expression " ++ style red sty ts e
+  msg (NonEquivEnvs _ branching vEnv vEnv' e) sty ts =
+    "Couldn't match the final context against the initial context for " ++ branching ++
+    " expression \n\t The initial context is " ++ style red sty ts (vEnv Map.\\ vEnv') ++
+    "\n\t   the final context is " ++ style red sty ts (vEnv' Map.\\ vEnv) ++
+    "\n\t  and the expression is " ++ style red sty ts e ++
+    "\n\t (was a variable consumed in one branch and not in the other?)" ++
+    "\n\t (is there a variable with different types in the two contexts?)"
+  msg (DataConsNotInScope _ x) sty ts = "Data constructor " ++ style red sty ts x ++ " not in scope."
+  msg (WrongNumOfCons _ x i xs e) sty ts =
+    "The constructor " ++ style red sty ts x ++ " should have " ++ red sty (show i) ++
+    " arguments, but has been given " ++ red sty (show $ length xs) ++
+    "\n\t In the pattern (" ++ show (startPos $ span x) ++ " - " ++ show (endPos $ span e)  ++ "): " ++
+    red sty (show x ++ " " ++ unwords (map show xs) ++ " -> " ++ show (getDefault ts e))
+  msg (ExtractError _ s e t) sty ts = 
+    "Expecting " ++ s ++ " type for expression " ++ style red sty ts e ++
+    "\n                      " ++ replicate (length s) ' ' ++
+    "found type " ++ style red sty ts t
+  msg (BranchNotInScope _ x t) sty ts =
+    "Choice branch not in scope.\n\t Branch " ++ style red sty ts x ++
+    " is not present in the internal choice type " ++ style red sty ts t ++
+    "\n\t Defined at: " ++ show (span t)
+--  Builtin
+  msg (ErrorFunction s e) _ _ = -- TODO: This one is from the point of view of the callee not the caller
+    e ++ "\n  error, called at module" ++ defModule s ++ ":" ++ show (startPos s)

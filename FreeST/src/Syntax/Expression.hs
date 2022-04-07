@@ -25,30 +25,30 @@ import qualified Data.Map.Strict               as Map
 
 data Exp =
   -- Basic values
-    Unit Pos
-  | Int Pos Int
-  | Char Pos Char
-  | Bool Pos Bool
-  | String Pos String
+    Unit Span
+  | Int Span Int
+  | Char Span Char
+  | Bool Span Bool
+  | String Span String
   -- Variable
-  | Var Pos Variable
+  | Var Span Variable
   -- Abstraction intro and elim
-  | Abs Pos Multiplicity (Bind T.Type Exp)        -- λ x:T -> e, λ x:T -o e
-  | App Pos Exp Exp     -- e1 e2
+  | Abs Span Multiplicity (Bind T.Type Exp)        -- λ x:T -> e, λ x:T -o e
+  | App Span Exp Exp     -- e1 e2
   -- Pair intro and elim
-  | Pair Pos Exp Exp
-  | BinLet Pos Variable Variable Exp Exp
+  | Pair Span Exp Exp
+  | BinLet Span Variable Variable Exp Exp
   -- Datatype elim
-  | Case Pos Exp FieldMap
+  | Case Span Exp FieldMap
   -- Type Abstraction intro and elim
-  | TypeAbs Pos (Bind K.Kind Exp)   -- Λ a:k => e
-  | TypeApp Pos Exp T.Type     -- e[T]
+  | TypeAbs Span (Bind K.Kind Exp)   -- Λ a:k => e
+  | TypeApp Span Exp T.Type     -- e[T]
   -- Boolean elim
-  | Cond Pos Exp Exp Exp
+  | Cond Span Exp Exp Exp
   -- Let
-  | UnLet Pos Variable Exp Exp -- TODO: Derived; eliminate? If yes, which is type for the ProgVar? (cf. Abs)
+  | UnLet Span Variable Exp Exp -- TODO: Derived; eliminate? If yes, which is type for the ProgVar? (cf. Abs)
   -- Session types
-  | New Pos T.Type T.Type
+  | New Span T.Type T.Type
 
 instance Default (Bind T.Type Exp) where
   omission p = Bind p (omission p) (T.Unit p) (Unit p)
@@ -56,19 +56,37 @@ instance Default (Bind T.Type Exp) where
 type FieldMap = Map.Map Variable ([Variable], Exp)
 
 instance Position Exp where
-  pos (Unit p             ) = p
-  pos (Int p _            ) = p
-  pos (Char p _           ) = p
-  pos (Bool p _           ) = p
-  pos (String p _         ) = p
-  pos (Var p _            ) = p
-  pos (Abs p _ _          ) = p
-  pos (UnLet p _ _ _      ) = p
-  pos (App p _ _          ) = p
-  pos (TypeApp p _ _      ) = p
-  pos (TypeAbs p _        ) = p
-  pos (Cond p _ _ _       ) = p
-  pos (Pair p _ _         ) = p
-  pos (BinLet p _ _ _ _   ) = p
-  pos (New p _ _          ) = p
-  pos (Case  p _ _        ) = p
+  pos (Unit p             ) = startPos p
+  pos (Int p _            ) = startPos p
+  pos (Char p _           ) = startPos p
+  pos (Bool p _           ) = startPos p
+  pos (String p _         ) = startPos p
+  pos (Var p _            ) = startPos p
+  pos (Abs p _ _          ) = startPos p
+  pos (UnLet p _ _ _      ) = startPos p
+  pos (App p _ _          ) = startPos p
+  pos (TypeApp p _ _      ) = startPos p
+  pos (TypeAbs p _        ) = startPos p
+  pos (Cond p _ _ _       ) = startPos p
+  pos (Pair p _ _         ) = startPos p
+  pos (BinLet p _ _ _ _   ) = startPos p
+  pos (New p _ _          ) = startPos p
+  pos (Case  p _ _        ) = startPos p
+
+instance Spannable Exp where
+  span (Unit p             ) = p
+  span (Int p _            ) = p
+  span (Char p _           ) = p
+  span (Bool p _           ) = p
+  span (String p _         ) = p
+  span (Var p _            ) = p
+  span (Abs p _ _          ) = p
+  span (UnLet p _ _ _      ) = p
+  span (App p _ _          ) = p
+  span (TypeApp p _ _      ) = p
+  span (TypeAbs p _        ) = p
+  span (Cond p _ _ _       ) = p
+  span (Pair p _ _         ) = p
+  span (BinLet p _ _ _ _   ) = p
+  span (New p _ _          ) = p
+  span (Case  p _ _        ) = p

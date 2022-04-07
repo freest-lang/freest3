@@ -80,7 +80,7 @@ typeList =
   , (mkVar p "send", read "∀a:ML . a -> ∀b:SL . !a;b -o b")
   , (mkVar p "receive", read "∀a:ML . ∀b:SL . ?a;b -> (a, b)")
   ]
-  where p = defaultPos
+  where p = defaultSpan {defModule = "Prelude"}
 
 prelude :: VarEnv
 prelude = Map.fromList typeList-- foldr (uncurry Map.insert) Map.empty typeList

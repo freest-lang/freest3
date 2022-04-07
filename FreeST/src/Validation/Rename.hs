@@ -40,6 +40,7 @@ import           Util.FreestState
 import           Util.PreludeLoader             ( userDefined )
 import qualified Data.Map.Strict               as Map
 import           Control.Monad.State
+import Prelude hiding (span)
 
 renameState :: FreestState ()
 renameState = do
@@ -181,7 +182,7 @@ insertVar x y = Map.insert (intern x) (intern y)
 
 findWithDefaultVar :: Variable -> Bindings -> Variable
 findWithDefaultVar x bs =
-  mkVar (pos x) (Map.findWithDefault (intern x) (intern x) bs)
+  mkVar (span x) (Map.findWithDefault (intern x) (intern x) bs)
 
 -- Rename a type
 renameType :: T.Type -> T.Type

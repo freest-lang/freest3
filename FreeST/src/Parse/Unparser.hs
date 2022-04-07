@@ -15,25 +15,38 @@ module Parse.Unparser
   , showBindType
   , showBindExp
   , showBindTerm
-  )
-where
+  , showModuleName
+  ) where
 
-import           Data.Char                      ( isDigit )
-import           Data.List                      ( intercalate )
-import qualified Data.Map.Strict               as Map
+import           Syntax.Base
+import           Syntax.Expression as E
+import qualified Syntax.Kind as K
+import           Syntax.Program
+import qualified Syntax.Type as T
+
+import           Data.Char ( isDigit )
+import           Data.List ( intercalate )
+import qualified Data.Map.Strict as Map
 import           Prelude                 hiding ( Left
                                                 , Right
                                                 ) -- needed for Associativity
-import           Syntax.Base
-import           Syntax.Expression             as E
-import qualified Syntax.Kind                   as K
-import           Syntax.Program
-import qualified Syntax.Type                   as T
 
 -- Positions (Base)
 
 instance Show Pos where
   show (Pos l c) = show l ++ ":" ++ show c
+
+-- FIXME: Proper show for span (check Haskell)
+instance Show Span where
+  show (Span sp fp _)
+    | sp == fp  = show sp
+    | otherwise = '(' : show sp ++ "-" ++ show fp ++ ")"
+
+
+-- TODO: replace "/" by "."
+showModuleName :: Span -> String
+showModuleName s = map (\x -> if x == '/' then '.' else x ) (defModule s)
+
 
 -- Multiplicities
 
@@ -82,6 +95,7 @@ instance Show K.Basic where
   show K.Message = "M"
   show K.Top     = "T"
 
+-- FIXME: tmp show span for debug
 instance Show K.Kind where
   show (K.Kind _ p m) = show p ++ show m
 

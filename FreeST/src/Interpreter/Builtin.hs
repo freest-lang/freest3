@@ -1,19 +1,13 @@
 module Interpreter.Builtin where
 
-import qualified Control.Concurrent.Chan       as C
-import           Data.Char                      ( ord
-                                                , chr
-                                                )
-import qualified Data.Map                      as Map
+
 import           Interpreter.Value
 import           Syntax.Base
-import           System.Exit                    ( die )
-import           System.IO.Unsafe               ( unsafePerformIO )
 
-import           Util.Error                     ( formatError
-                                                , ErrorType(..)
-                                                )
+import qualified Control.Concurrent.Chan as C
+import           Data.Char ( ord, chr )
 import           Data.Functor
+import qualified Data.Map as Map
 
 ------------------------------------------------------------
 -- Communication primitives
@@ -190,17 +184,11 @@ initialCtx = Map.fromList
     , PrimitiveFun id
     )
   -- Error
-  , ( var "error"
-    , PrimitiveFun
-      (\(String s) -> unsafePerformIO $ die $ formatError ""
-                                                          Map.empty
-                                                          []
-                                                          (ErrorFunction s)
-      )
-    )
+  -- , ( var "error", PrimitiveFun (\(String e) ->
+  --        unsafePerformIO $ die $ showErrors "" Map.empty [] (ErrorFunction s e)))
 
 --  , (var "print", PrimitiveFun (\x -> IOValue (putStrLn (show x) >> return Unit)))
   ]
  where
   var :: String -> Variable
-  var = mkVar defaultPos
+  var = mkVar defaultSpan

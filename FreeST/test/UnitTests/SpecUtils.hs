@@ -24,8 +24,7 @@ import qualified Data.Map.Strict               as Map
 import           Syntax.Kind                   ( KindEnv )
 import           Syntax.Base                   ( defaultPos
                                                , mkVar
-                                               -- , Pos
-                                               -- , pos
+                                               , defaultSpan
                                                )
 import           Util.FreestState              ( Errors )
 import           Util.Error
@@ -45,7 +44,7 @@ readFromFile filename = do
 
 readKenv :: String -> KindEnv
 readKenv s =
-  Map.fromList $ map (\(x, k) -> {-trace (x ++ "\t" ++ k) $-} (mkVar defaultPos x, read k)) (read s)
+  Map.fromList $ map (\(x, k) -> {-trace (x ++ "\t" ++ k) $-} (mkVar defaultSpan x, read k)) (read s)
 
 
 
@@ -76,11 +75,11 @@ instance {-# OVERLAPPING #-} Show TestExpectation where
   show (Left b)    = show b
   show (Right err) = err
 
-showErrors :: Errors -> String
-showErrors = intercalate "\n" . map f . take 2 . reverse
-  where f = formatError "" Map.empty []
+showTestErrors :: Errors -> String
+showTestErrors = intercalate "\n" . map f . take 2 . reverse
+  where f = showErrors "" Map.empty
 
 testValidExpectation :: Bool -> Errors -> TestExpectation
 testValidExpectation b errs
-  | not $ null errs = Right $ showErrors errs
+  | not $ null errs = Right $ showTestErrors errs
   | otherwise       = Left b

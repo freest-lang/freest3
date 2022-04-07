@@ -15,23 +15,26 @@ Portability :  portable | non-portable (<reason>)
 
 module Util.FreestState where
 
-import           Control.Monad.State
-import           Data.List ( intercalate ) -- , sortBy )
-import qualified Data.Map.Strict as Map
-import qualified Data.Set        as Set
-import           Data.Maybe
-import qualified Data.Traversable as Traversable
-import           Debug.Trace -- debug (used on debugM function)
 import           Syntax.Base
 import           Syntax.Expression
 import           Syntax.Kind
 import           Syntax.Program
 import qualified Syntax.Type as T
 import           Util.Warning
-import           Util.WarningMessage ()
-import           Util.PrettyWarning ()
+-- import           Util.WarningMessage ()
+-- import           Util.PrettyWarning ()
 import           Util.Error
-import           Util.PrettyError ()
+import           Util.Warning
+-- import           Util.PrettyError ()
+
+import           Control.Monad.State
+import           Data.List ( intercalate )
+import qualified Data.Map.Strict as Map
+import           Data.Maybe
+import qualified Data.Set as Set
+import qualified Data.Traversable as Traversable
+import           Debug.Trace -- debug (used on debugM function)
+import           Prelude hiding (span)
 
 -- | The typing state
 
@@ -99,7 +102,7 @@ getNextIndex = do
   modify (\s -> s { nextIndex = next + 1 })
   return next
 
-freshTVar :: String -> Pos -> FreestState Variable
+freshTVar :: String -> Span -> FreestState Variable
 freshTVar s p = mkVar p . (s ++) . show <$> getNextIndex
 
 -- | VAR ENV
@@ -159,19 +162,19 @@ setTEnv typeEnv = modify (\s -> s { typeEnv })
 
 -- | TYPENAMES
 
-addTypeName :: Pos -> T.Type -> FreestState ()
+addTypeName :: Span -> T.Type -> FreestState ()
 addTypeName p t = modify (\s -> s { typenames = Map.insert p t (typenames s) })
 
 getTypeNames :: FreestState TypeOpsEnv
 getTypeNames = gets typenames
 
-findTypeName :: Pos -> T.Type -> FreestState T.Type
+findTypeName :: Span -> T.Type -> FreestState T.Type
 findTypeName p t = Map.findWithDefault t p <$> getTypeNames
 
 addDualof :: T.Type -> FreestState ()
 addDualof d@(T.Dualof p t) = do
   tn <- getTypeNames
-  case tn Map.!? pos t of
+  case tn Map.!? (span t) of
     Just (T.Dualof _ _) -> return ()
     Just u -> modify (\s -> s { typenames = Map.insert p (T.Dualof p u) tn })
     Nothing -> modify (\s -> s { typenames = Map.insert p d tn })
@@ -183,7 +186,7 @@ getWarnings :: FreestS -> String
 getWarnings s =
    (intercalate "\n" . map f . take 10 . reverse . warnings) s
   where
-    f = formatWarning (runFilePath $ runOpts s) (typenames s)
+    f = showWarnings (runFilePath $ runOpts s) (typenames s)
 
 hasWarnings :: FreestS -> Bool
 hasWarnings = not . null . warnings
@@ -193,13 +196,9 @@ addWarning w = modify (\s -> s { warnings = w : warnings s })
 
 -- | ERRORS
 
-getErrors :: PreludeNames -> FreestS -> String
-getErrors v s =
-   (intercalate "\n" . map f . take 10 . reverse . errors) s
---   (intercalate "\n" . map f . take 10 . sortBy errCmp . reverse . errors) s
-  where
-    f = formatError (runFilePath $ runOpts s) (typenames s) v
---    errCmp x y = compare (pos x) (pos y)
+getErrors :: FreestS -> String
+getErrors s = (intercalate "\n" . map f . take 10 . reverse . errors) s
+  where f = showErrors (runFilePath $ runOpts s) (typenames s)
 
 hasErrors :: FreestS -> Bool
 hasErrors = not . null . errors
@@ -246,7 +245,7 @@ defaultOpts = RunOpts { runFilePath  = ""
                       }
 
 getMain :: RunOpts -> Variable
-getMain opts = fromMaybe (mkVar defaultPos "main") maybeMain
+getMain opts = fromMaybe (mkVar defaultSpan "main") maybeMain
   where maybeMain = mainFunction opts
 
 isMainFlagSet :: RunOpts -> Bool

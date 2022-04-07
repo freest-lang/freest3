@@ -11,23 +11,27 @@ Multiplicity, that will be used the remaining Compiler.
 -}
 
 module Syntax.Base
-( Default(..)
-, Pos(..) 
-, Position(..)
-, Multiplicity(..)
-, defaultPos
-, negPos
-, Bind(..)
-, Variable(..)
-, intern
-, mkVar
-, mkNewVar
+  ( Default(..)
+  , Pos(..) 
+  , Position(..)
+  , Multiplicity(..)
+  , defaultPos
+  , negPos
+  , Bind(..)
+  , Variable(..)
+  , intern
+  , mkVar
+  , mkNewVar
+  , Span(..)
+  , defaultSpan
+  , Spannable(..)
+  , negSpan
 ) where
 
 -- Default for the various syntactic categories
 
 class Default t where
-  omission :: Pos -> t
+  omission :: Span -> t
 
 -- Position
 
@@ -42,12 +46,30 @@ defaultPos = Pos 0 0
 negPos :: Pos -> Pos
 negPos (Pos i j) = Pos (negate i) (negate j)
 
+
+-- Span
+
+class Spannable t where
+  span :: t -> Span
+
+data Span = Span
+  { startPos     :: Pos
+  , endPos       :: Pos
+  , defModule    :: FilePath
+  } deriving (Eq, Ord)
+
+defaultSpan :: Span
+defaultSpan = Span defaultPos defaultPos "FreeST"
+
+negSpan :: Span -> Span
+negSpan s = s {startPos = negPos (startPos s), endPos = negPos (endPos s)}
+
 -- Multiplicity for types and expressions
 
 data Multiplicity = Un | Lin deriving Eq
 
 -- Type and program variable
-data Variable = Variable Pos String
+data Variable = Variable Span String
 
 instance Eq Variable where
   (Variable _ x) == (Variable _ y) = x == y
@@ -55,23 +77,29 @@ instance Eq Variable where
 instance Ord Variable where
   (Variable _ x) <= (Variable _ y) = x <= y
 
+-- FIXME 
 instance Position Variable where
-  pos (Variable p _) = p
+  pos (Variable p _) = startPos p
+  
+instance Spannable Variable where
+  span (Variable p _) = p
 
+-- FIXME 
 instance Default Variable where
-  omission p = mkVar p "omission"
+  omission p = mkVar defaultSpan "omission"
 
 -- The string, internal representation of a variable
 intern :: Variable -> String
 intern (Variable _ x) = x
 
 -- Making a variable from a string, type or program
-mkVar :: Pos -> String -> Variable
+mkVar :: Span -> String -> Variable
 mkVar = Variable
+
 -- Making a new variable from a given variable. The variable is
 -- unique up to the point where the integer is
 mkNewVar :: Int -> Variable -> Variable
 mkNewVar next (Variable p str) = Variable p (show next ++ '#' : str)
 
 -- Bind: (λ x:t -> e), (∀ a:k . t) or (Λ a:k => e) 
-data Bind a b = Bind {posn :: Pos, var :: Variable, binder :: a, body :: b}
+data Bind a b = Bind {bSpan :: Span, var :: Variable, binder :: a, body :: b}
