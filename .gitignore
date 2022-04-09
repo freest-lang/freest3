@@ -60,3 +60,7 @@ stack.yaml.lock
 # AucTeX
 auto
 
+# Emacs
+*~
+\#*\#
+

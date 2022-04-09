@@ -75,7 +75,8 @@ synthetise' s kEnv (T.Semi p t u) = do
   checkAgainstSession' s kEnv t
   checkAgainstSession' s kEnv u
   return $ K.sl p
-synthetise' s kEnv (T.Message p _ t) = checkAgainst' s kEnv (K.ml p) t $> K.sl p
+synthetise' s kEnv (T.Message p _ t) = checkAgainst' s kEnv (K.tl p) t $> K.sl p -- HO CFST
+-- synthetise' s kEnv (T.Message p _ t) = checkAgainst' s kEnv (K.ml p) t $> K.sl p
 synthetise' s kEnv (T.Choice p _ m) =
   tMapM_ (checkAgainst' s kEnv (K.sl p)) m $> K.sl p
 -- Session or functional

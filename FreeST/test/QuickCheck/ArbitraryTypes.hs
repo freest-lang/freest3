@@ -72,15 +72,12 @@ instance Arbitrary T.Type where
 type PairGen = Int -> Gen (T.Type, T.Type)
 
 bisimPair :: PairGen
-bisimPair 0 =
-  oneof
-    -- The various type constructors
-        [skipPair, messagePair, varPair]
+bisimPair 0 = oneof [skipPair, varPair]
 bisimPair n = oneof
     -- The various type constructors
   [ skipPair
-  , messagePair
   , varPair
+  , messagePair bisimPair n
   , choicePair bisimPair n
   , recPair bisimPair n
   , semiPair bisimPair n
@@ -104,11 +101,12 @@ bisimPair n = oneof
 skipPair :: Gen (T.Type, T.Type)
 skipPair = return (T.Skip pos, T.Skip pos)
 
-messagePair :: Gen (T.Type, T.Type)
-messagePair = do
+messagePair :: PairGen -> Int -> Gen (T.Type, T.Type)
+messagePair pairGen n = do
   pol <- arbitrary
-  t <- elements [T.Int pos, T.Char pos, T.Bool pos, T.Unit pos]
-  return (T.Message pos pol t, T.Message pos pol t)
+  (t, u) <- pairGen (n `div` 4) -- HO CFST
+-- elements [T.Int pos, T.Char pos, T.Bool pos, T.Unit pos]
+  return (T.Message pos pol t, T.Message pos pol u)
 
 varPair :: Gen (T.Type, T.Type)
 varPair = do

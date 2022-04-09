@@ -51,19 +51,17 @@ typeList =
   , (mkVar p "(<)"     , read "Int -> Int -> Bool")
   , (mkVar p "(>)"     , read "Int -> Int -> Bool")
   , (mkVar p "(<=)"    , read "Int -> Int -> Bool")
-  , ( mkVar p "(>=)"   , read "Int -> Int -> Bool")
+  , (mkVar p "(>=)"   , read "Int -> Int -> Bool")
   -- Bool
   , (mkVar p "not" , read "Bool -> Bool")
   , (mkVar p "(&&)", read "Bool -> Bool -> Bool")
-  , ( mkVar p "(||)"
-    , read "Bool -> Bool -> Bool"
-    )
+  , (mkVar p "(||)", read "Bool -> Bool -> Bool")
   -- Chars
   , (mkVar p "ord", read "Char -> Int")
-  , ( mkVar p "chr", read "Int -> Char")
+  , (mkVar p "chr", read "Int -> Char")
   -- Pairs
   , (mkVar p "fst", read "∀ a:TL . ∀ b:TU . (a, b) -> a")
-  , ( mkVar p "snd", read "∀ a:TU . ∀ b:TL . (a, b) -> b")
+  , (mkVar p "snd", read "∀ a:TU . ∀ b:TL . (a, b) -> b")
   --  Prints
   , (mkVar p "printInt"   , read "Int -> ()")
   , (mkVar p "printIntLn" , read "Int -> ()")
@@ -80,8 +78,10 @@ typeList =
   -- Error
   , (mkVar p "error", read "∀a:TU . String -> a")
   -- Session ops
-  , (mkVar p "send", read "∀a:ML . a -> ∀b:SL . !a;b -o b")
-  , (mkVar p "receive", read "∀a:ML . ∀b:SL . ?a;b -> (a, b)")
+  , (mkVar p "send", read "∀a:TL . a -> ∀b:SL . !a;b -o b") -- HO CFST
+  , (mkVar p "receive", read "∀a:TL . ∀b:SL . ?a;b -> (a, b)") -- HO CFST
+  -- , (mkVar p "send", read "∀a:ML . a -> ∀b:SL . !a;b -o b")
+  -- , (mkVar p "receive", read "∀a:ML . ∀b:SL . ?a;b -> (a, b)")
   ]
   where p = defaultPos
 

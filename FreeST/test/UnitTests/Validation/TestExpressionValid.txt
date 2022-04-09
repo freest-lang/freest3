@@ -89,3 +89,8 @@ Int
 
 (\_:Skip -> λy:Int -> y) (fst [Skip, Skip](new Skip)) 23
 Int
+
+-- Substitution
+
+(Λ a:TU => 5)[(Bool,Bool)]
+Int

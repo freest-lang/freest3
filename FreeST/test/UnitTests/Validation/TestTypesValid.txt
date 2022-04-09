@@ -206,10 +206,10 @@ TL
 ∀ a . a -> a -> a -- Boolean type as Church Encoding
 TL
 
-∀ a : MU . a
+∀ a : TL . a
 TL
 
-forall a : MU . a
+forall a : TL . a
 TL
 
 ∀ a : TU . a -> a
@@ -242,7 +242,7 @@ TL
 Int -> ∀ a : TU . a
 TL
 
-(Int, ∀ a : ML . a)
+(Int, ∀ a : TL . a)
 TL
 
 Bool -> ∀ a : SL . (rec a : SL . !Int;a) -> a
@@ -270,4 +270,15 @@ rec y:SL .             +{B: !(), C: !Bool} ; (+{A: y;!(), C: !()} ; y)
 SL
 
 rec x:SL . rec y:SL .  +{B: !(), C: !Bool} ; ((+{A: y, C: Skip};!())  ; x)
+SL
+
+-- Messages not of kind ML
+
+!(Int, Bool)
+SL
+
+!(!Int; ?Bool)
+SL
+
+rec a:SL . ?(!Int; a)
 SL

@@ -84,9 +84,9 @@ forall a:SL . forall b:SL . forall z:SL . ((rec z:SL. (Skip;&{B: (+{A: (&{B: a, 
 
 -- Messages not of kind ML
 
-!(Int, Bool)
-!(!Int; ?Bool)
-rec a . ?(Int; a)
+-- !(Int, Bool)
+-- !(!Int; ?Bool)
+-- rec a . ?(Int; a)
 
 -- Syntatically invalid datatypes, conflicting - removed these because they are not readable types anymore (only available for data declarations)
 
@@ -127,10 +127,10 @@ SU
 Skip; rec a:SU. (Skip; a)
 SU
 
-Skip; rec a:SU. ( Skip; a; Skip)
+Skip; rec a:SU. (Skip; a; Skip)
 SU
 
-Skip; rec a:SU. ( Skip; a; Skip)
+Skip; rec a:SU. (Skip; a; Skip)
 SU
 
 Skip; Skip; Skip; rec a:SU. (Skip; a; a; a; a; a)
