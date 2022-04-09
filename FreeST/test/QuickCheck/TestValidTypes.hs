@@ -18,6 +18,7 @@ import           Control.Monad.State
 import           ArbitraryTypes
 import qualified Data.Map.Strict               as Map
 import           Test.QuickCheck
+import           Debug.Trace
 -- import           Test.QuickCheck.Random       ( mkQCGen )
 
 -- main = verboseCheckWith
@@ -52,7 +53,10 @@ kinded t =
 
 -- Bisimilar types are bisimilar
 prop_bisimilar :: BisimPair -> Property
-prop_bisimilar (BisimPair t u) = kinded t && kinded u ==> t `bisimilar` u
+prop_bisimilar (BisimPair t u) =
+  kinded t && kinded u ==>
+    trace ("Check:\n" ++ show t ++ " bisimilar-to " ++ show u)
+    t `bisimilar` u
 
 -- Equivalence
 prop_equivalent :: BisimPair -> Property

@@ -34,7 +34,9 @@ import           Prelude                 hiding ( Word )
 -- import           Debug.Trace
 
 bisimilar :: T.Type -> T.Type -> Bool
-bisimilar t u = bisimilarGrm $ convertToGrammar [t, u]
+bisimilar t u =
+  -- trace (show t ++ "\n" ++ show u ++ "\n")
+  bisimilarGrm $ convertToGrammar [t, u]
 
 bisimilarGrm :: Grammar -> Bool
 bisimilarGrm (Grammar [xs, ys] ps) = expand queue rules ps'

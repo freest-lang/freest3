@@ -771,3 +771,29 @@ Bool -> ∀ α:SL . α -> (α ; α) ; α
 -- [("z","SL")]
 -- rec y:SL . (+{B: z;Skip, C: !Char;Skip};(?();!Bool);+{A: y;!(), C: Skip;!()});!Bool;y
 -- rec y:SL . rec x:SL . (+{B: z, C: !Char};Skip;Skip);(?();!Bool;+{A: y, C: Skip};!());!Bool;x
+
+-- Higher-order
+
+[]
+!Skip
+!Skip
+
+[]
+rec x:SL . !x
+rec x:SL . !x
+
+[("x","SL"), ("y","SL"), ("z","SL")]
+rec z:SL . (!Skip ; (rec x:SL . !x))
+rec z:SL . rec y:SL . !Skip ; (rec x:SL . !x)
+
+[("x","SL"), ("y","SL"), ("z","SL")]
+rec z:SL . (rec x:SL . !x) ; &{A: z ; &{B: x ; z}, B: Skip ; &{B: x ; z}, C: Skip ; &{B: x ; z}}
+rec z:SL . rec y:SL . (rec x:SL . !x) ; &{A: z, B: Skip, C: Skip} ; &{B: x} ; y
+
+[]
+rec z:SL . !Skip ; (rec x:SL . !x) ; &{A: z, B: z}
+rec z:SL . !Skip ; (rec x:SL . !x) ; &{A: z, B: Skip} ; z
+
+-- [("x","SL"), ("y","SL"), ("z","SL")]
+-- rec z:SL . (!Skip ; (rec x:SL . !x)) ; &{A: z ; &{B: x ; z}, B: Skip ; &{B: x ; z}, C: Skip ; &{B: x ; z}}
+-- rec z:SL . rec y:SL . !Skip ; (rec x:SL . !x) ; &{A: z, B: Skip, C: Skip} ; &{B: x} ; y
