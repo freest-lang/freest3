@@ -31,12 +31,13 @@ import           Data.List                      ( isPrefixOf
                                                 )
 -- Word is (re)defined in module Equivalence.Grammar
 import           Prelude                 hiding ( Word )
--- import           Debug.Trace
+import           Debug.Trace
 
 bisimilar :: T.Type -> T.Type -> Bool
 bisimilar t u =
-  -- trace (show t ++ "\n" ++ show u ++ "\n")
-  bisimilarGrm $ convertToGrammar [t, u]
+  let g = convertToGrammar [t, u] in
+  trace (show t ++ "\n" ++ show u ++ "\n" ++ show g) $
+  bisimilarGrm g
 
 bisimilarGrm :: Grammar -> Bool
 bisimilarGrm (Grammar [xs, ys] ps) = expand queue rules ps'

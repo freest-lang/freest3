@@ -60,11 +60,11 @@ toGrammar' :: T.Type -> TransState Word
 toGrammar' (T.Arrow _ p t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
-  getLHS $ Map.fromList [(left $ showArrow p, xs), (right $ showArrow p, ys)]
+  getLHS $ Map.fromList [('d' : showArrow p, xs), ('r' : showArrow p, ys)]
 toGrammar' (T.Pair _ t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
-  getLHS $ Map.fromList [(left "*", xs), (right "*", ys)]
+  getLHS $ Map.fromList [("l*", xs), ("l*", ys)]
 toGrammar' (T.Variant _ m) = do -- Can't test this type directly
   ms <- tMapM toGrammar m
   getLHS $ Map.mapKeys (\k -> "<>" ++ show k) ms
@@ -74,7 +74,7 @@ toGrammar' (T.Semi _ t u) = liftM2 (++) (toGrammar t) (toGrammar u)
 toGrammar' (T.Message _ p t) = do
   xs <- toGrammar t
   b <- getBottom
-  getLHS $ Map.fromList [(left $ show p, xs ++ [b]), (right $ show p, [])]
+  getLHS $ Map.fromList [('d' : show p, xs ++ [b]), ('c' : show p, [])]
 toGrammar' (T.Choice _ v m) = do
   ms <- tMapM toGrammar m
   getLHS $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
