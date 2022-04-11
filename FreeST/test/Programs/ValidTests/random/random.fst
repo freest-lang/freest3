@@ -1,40 +1,32 @@
-type IntStream : SU = !Int; IntStream
+type IntStream : SU = *!Int
 
 type BitStream : SU = IntStream
 type Random    : SU = dualof IntStream
 
-zeroSender : BitStream -> ()
-zeroSender ch = zeroSender $ send 0 ch
+-- Args -> (Args -> SendType) -> *!SendType
+genericSender : forall a b:ML c:SU . a -> (a -> b) -> (rec c:SU . !b;c) -> ()
+genericSender arg f chan =
+    genericSender[a, b, c] arg f $ send (f arg) chan
 
-oneSender : BitStream -> ()
-oneSender ch = oneSender $ send 1 ch
-
-receiveInt : dualof BitStream -> Int
-receiveInt bitS = receiveInt' 32 bitS
-
-receiveInt' : Int -> dualof BitStream -> Int
-receiveInt' nBits bitS = 
+receiveBits : Int -> dualof BitStream -> Int
+receiveBits nBits bitS = 
     if nBits < 0
     then 0
     else
         let (i, bitS) = receive bitS in
-        i + (receiveInt' (nBits-1) bitS) * 2
-
-randomServer : dualof BitStream -> dualof Random -> ()
-randomServer bitS outS =
-    randomServer bitS $ send (receiveInt bitS) outS
+        i + (receiveBits (nBits-1) bitS) * 2
 
 initRandom : Random
 initRandom =
     -- init bit sending 
-    let (sending, receiving) = new BitStream in
+    let (bitSend, bitRecv) = new BitStream in
     -- init bit sending threads
-    fork $ zeroSender sending;
-    fork $ oneSender  sending;
+    fork $ genericSender[Int, Int, BitStream] 0 (id[Int]) bitSend;
+    fork $ genericSender[Int, Int, BitStream] 1 (id[Int]) bitSend;
     -- init server/client endpoint
     let (client, server) = new Random in
     -- init random server
-    fork $ randomServer receiving server;
+    fork $ genericSender[dualof BitStream, Int, dualof Random] bitRecv (receiveBits 4) server;
     -- return client endpoint
     client
 
@@ -42,6 +34,7 @@ main : Bool
 main =
     let rand = initRandom in
     let (i, _) = receive rand in
+    --printIntLn i; --comment out this line to manually test 
     -- no way to test non-deterministic
     --   values, so opt instead to only
     --   check no errors are raised
