@@ -64,7 +64,7 @@ toGrammar' (T.Arrow _ p t u) = do
 toGrammar' (T.Pair _ t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
-  getLHS $ Map.fromList [("l*", xs), ("l*", ys)]
+  getLHS $ Map.fromList [("l*", xs), ("r*", ys)]
 toGrammar' (T.Variant _ m) = do -- Can't test this type directly
   ms <- tMapM toGrammar m
   getLHS $ Map.mapKeys (\k -> "<>" ++ show k) ms
@@ -79,7 +79,9 @@ toGrammar' (T.Choice _ v m) = do
   ms <- tMapM toGrammar m
   getLHS $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
 -- Polymorphism and recursive types
--- toGrammar' t@T.Forall{} =
+toGrammar' (T.Forall _ (K.Bind _ x k t)) = do
+  xs <- toGrammar' t
+  getLHS $  Map.singleton ('∀' : show k) xs
 toGrammar' (T.Rec _ (K.Bind _ x _ _)) = return [x]
 toGrammar' t@T.Var{} = getLHS $ Map.singleton (show t) []
 -- Type operators

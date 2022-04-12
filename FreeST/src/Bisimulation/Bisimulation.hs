@@ -36,7 +36,7 @@ import           Debug.Trace
 bisimilar :: T.Type -> T.Type -> Bool
 bisimilar t u =
   let g = convertToGrammar [t, u] in
-  trace (show t ++ "\n" ++ show u ++ "\n" ++ show g) $
+  -- trace (show t ++ "\n" ++ show u ++ "\n" ++ show g) $
   bisimilarGrm g
 
 bisimilarGrm :: Grammar -> Bool

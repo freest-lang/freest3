@@ -32,7 +32,7 @@ data Color = Red | Cyan
 -- | ErrorMessage instances
 
 instance ErrorMsg T.Type where
-  msg tops t = show $ getDefault tops t
+  msg tops t = show t -- $ getDefault tops t
   color _ = Just Red
 
 instance ErrorMsg String where

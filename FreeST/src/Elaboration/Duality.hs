@@ -16,6 +16,7 @@ import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
 import           Util.FreestState
 import           Util.Error
+import           Validation.Substitution
 
 
 type Visited = Set.Set TypeVar
@@ -90,13 +91,16 @@ solveDual v (T.Message p pol t) = T.Message p (dual pol) <$> solveType v t
 solveDual v (T.Choice p pol m) =
   T.Choice p (dual pol) <$> tMapM (solveDual v) m
 -- Recursive types
-solveDual v (T.Rec p b) = T.Rec p <$> solveBind solveDual v b
+solveDual v t@(T.Rec p b@(K.Bind _ a _ _)) = do
+  u <- solveDBind solveDual v b
+  return $ cosubs t a (T.Rec p u)
 solveDual v t@(T.Var p a)
   -- A recursion variable
   | a `Set.member` v = pure t
   | otherwise        = pure $ T.CoVar p a
 -- Dualof
 solveDual v d@(T.Dualof p t) = addDualof d >> solveType v (changePos p t)
+solveDual v (T.CoVar p a) = pure $ T.Var p a
 -- Non session-types
 solveDual _ t = let p = pos t in addError (DualOfNonSession p t) $> t
 
@@ -106,6 +110,14 @@ solveBind
   -> K.Bind T.Type
   -> FreestState (K.Bind T.Type)
 solveBind solve v (K.Bind p a k t) = K.Bind p a k <$> solve (Set.insert a v) t
+
+solveDBind
+  :: (Visited -> T.Type -> FreestState T.Type)
+  -> Visited
+  -> K.Bind T.Type
+  -> FreestState (K.Bind T.Type)
+solveDBind solve v (K.Bind p a k t) =
+  K.Bind p a k <$> solve (Set.insert a v) (subs (T.CoVar p a) a t)
 
 dual :: T.Polarity -> T.Polarity
 dual T.In  = T.Out
@@ -135,14 +147,20 @@ changePos p (T.Dualof _ t     ) = T.Dualof p t
 changePos p (T.CoVar _ t     ) = T.CoVar p t
 
 
-
+-- Lindley-Morris Duality, Polished, Definition 31
+-- https://arxiv.org/pdf/2004.01322.pdf
 dualof :: T.Type -> T.Type
 -- Session Types
-dualof (T.Semi    p t   u) = T.Semi p (dualof t) (dualof u)
-dualof (T.Message p pol t) = T.Message p (dual pol) (dualof t)
+dualof (T.Semi p t u) = T.Semi p (dualof t) (dualof u)
+dualof (T.Message p pol t) = T.Message p (dual pol) t
+-- dualof (T.Message p pol t) = T.Message p (dual pol) (dualof t)
 dualof (T.Choice p pol m) = T.Choice p (dual pol) (Map.map dualof m)
-dualof (T.Rec p b) = T.Rec p (dualBind  b)
-  where dualBind (K.Bind p a k t) = K.Bind p a k (dualof t) 
+dualof (T.Rec p (K.Bind p' a k t)) =
+  T.Rec p (K.Bind p' a k (dualof (subs (T.CoVar p' a) a t)))
+-- T.Rec p (dualBind  b)
+--   where dualBind (K.Bind p a k t) = K.Bind p a k (dualof t)
+dualof (T.Var p x) = T.CoVar p x
+dualof (T.CoVar p x) = T.Var p x
 dualof (T.Dualof _ t) = dualof t
 -- Non session-types & Skip
 dualof t = t

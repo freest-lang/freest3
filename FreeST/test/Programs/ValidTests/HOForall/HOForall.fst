@@ -1,4 +1,4 @@
-main : Int
+main : Bool
 main = recvFun [Bool] True
 
 recvFun : ∀a . a -> a

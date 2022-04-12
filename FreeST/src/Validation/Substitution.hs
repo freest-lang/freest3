@@ -14,13 +14,14 @@ Substitution and unfolding recursive types.
 
 module Validation.Substitution
   ( subs
+  , cosubs
   , subsAll
   , unfold
   )
 where
 
 import qualified Data.Map.Strict               as Map
-import           Elaboration.Duality
+-- import           Elaboration.Duality
 import qualified Syntax.Kind                   as K
 import qualified Syntax.Type                   as T
 import           Syntax.TypeVariable
@@ -50,11 +51,40 @@ instance Subs T.Type where
                                      | otherwise = u
   subs t x u@(T.CoVar _ y) | y == x    = dualof t
                            | otherwise = u
-  subs _ _ t@T.Dualof{} = internalError "Validation.Substitution.subs" t
+  -- subs _ _ t@T.Dualof{} = internalError "Validation.Substitution.subs" t
   subs _ _ t            = t
 
 instance Subs t => Subs (K.Bind t) where
   subs t x (K.Bind p y k u) = K.Bind p y k (subs t x u)
+
+-- CoVar subs, [t/co-x]u
+
+class Cosubs t where
+  cosubs :: T.Type -> TypeVar -> t -> t
+
+instance Cosubs T.Type where
+  -- Functional types
+  cosubs t x (T.Message p pol t1) = T.Message p pol (cosubs t x t1)
+  cosubs t x (T.Arrow p m t1 t2 ) = T.Arrow p m (cosubs t x t1) (cosubs t x t2)
+  cosubs t x (T.Pair p t1 t2    ) = T.Pair p (cosubs t x t1) (cosubs t x t2)
+  cosubs t x (T.Variant p m     ) = T.Variant p (Map.map (cosubs t x) m)
+  -- Session types
+  cosubs t x (T.Semi   p t1 t2  ) = T.Semi p (cosubs t x t1) (cosubs t x t2)
+  cosubs t x (T.Choice p v  m   ) = T.Choice p v (Map.map (cosubs t x) m)
+    -- Polymorphism and recursion
+  cosubs t x (T.Rec    p b      ) = T.Rec p (cosubs t x b)
+  cosubs t x (T.Forall p b      ) = T.Forall p (cosubs t x b)
+  cosubs t x u@(T.CoVar _ y) | y == x = t
+                             | otherwise = u
+  -- cosubs (T.Var _ t) x u@(T.CoVar p y) | y == x    = T.CoVar p t
+  --                                    | otherwise = u
+  -- cosubs t x u@(T.Var _ y) | y == x    = dualof t
+  --                          | otherwise = u
+  cosubs _ _ t@T.Dualof{} = internalError "Validation.Substitution.cosubs" t
+  cosubs _ _ t            = t
+
+instance Cosubs t => Cosubs (K.Bind t) where
+  cosubs t x (K.Bind p y k u) = K.Bind p y k (cosubs t x u)
 
 -- subsAll σ u, apply all substitutions in σ to u; no renaming
 subsAll :: [(T.Type, TypeVar)] -> T.Type -> T.Type
@@ -64,6 +94,30 @@ subsAll σ s = foldl (\u (t, x) -> subs t x u) s σ
 unfold :: T.Type -> T.Type
 unfold t@(T.Rec _ (K.Bind _ x _ u)) = subs t x u
 unfold t = internalError "Validation.Substitution.unfold" t
+
+-- DUPLICATED! see Elaboration.Duality
+-- Lindley-Morris Duality, Polished, Definition 31
+-- https://arxiv.org/pdf/2004.01322.pdf
+dualof :: T.Type -> T.Type
+-- Session Types
+dualof (T.Semi p t u) = T.Semi p (dualof t) (dualof u)
+dualof (T.Message p pol t) = T.Message p (dual pol) t
+-- dualof (T.Message p pol t) = T.Message p (dual pol) (dualof t)
+dualof (T.Choice p pol m) = T.Choice p (dual pol) (Map.map dualof m)
+dualof (T.Rec p (K.Bind p' a k t)) =
+  T.Rec p (K.Bind p' a k (subs (T.CoVar p' a) a t))
+-- T.Rec p (dualBind  b)
+--   where dualBind (K.Bind p a k t) = K.Bind p a k (dualof t)
+dualof (T.Var p x) = T.CoVar p x
+dualof (T.CoVar p x) = T.Var p x
+dualof (T.Dualof _ t) = dualof t
+-- Non session-types & Skip
+dualof t = t
+
+-- DUPLICATED! see Elaboration.Duality
+dual :: T.Polarity -> T.Polarity
+dual T.In  = T.Out
+dual T.Out = T.In
 
 {-
 

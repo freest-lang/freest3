@@ -204,7 +204,7 @@ App :: { E.Exp }
                                        (E.Var (pos $2) $2) }
   | TApp ']'                       { $1 }
   | Primary                        { $1 }
-   
+
 Primary :: { E.Exp }
   : INT                            { let (TokenInt p x) = $1 in E.Int p x }
   | BOOL                           { let (TokenBool p x) = $1 in E.Bool p x }
