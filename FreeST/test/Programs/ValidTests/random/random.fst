@@ -3,10 +3,10 @@ type IntStream : SU = *!Int
 type BitStream : SU = IntStream
 type Random    : SU = dualof IntStream
 
--- Args -> (Args -> SendType) -> *!SendType
-genericSender : forall a b:ML c:SU . a -> (a -> b) -> (rec c:SU . !b;c) -> ()
-genericSender arg f chan =
-    genericSender[a, b, c] arg f $ send (f arg) chan
+-- Args -> *!SendType
+genericUnSender : forall a:MU . a -> (rec b:SU . !a;b) -> ()
+genericUnSender x chan =
+    genericUnSender[a] x $ send x chan
 
 receiveBits : Int -> dualof BitStream -> Int
 receiveBits nBits bitS = 
@@ -21,12 +21,12 @@ initRandom =
     -- init bit sending 
     let (bitSend, bitRecv) = new BitStream in
     -- init bit sending threads
-    fork $ genericSender[Int, Int, BitStream] 0 (id[Int]) bitSend;
-    fork $ genericSender[Int, Int, BitStream] 1 (id[Int]) bitSend;
+    fork $ genericUnSender[Int] 0 bitSend;
+    fork $ genericUnSender[Int] 1 bitSend;
     -- init server/client endpoint
     let (client, server) = new Random in
     -- init random server
-    fork $ genericSender[dualof BitStream, Int, dualof Random] bitRecv (receiveBits 4) server;
+    fork $ genericUnSender[Int] (receiveBits 4 bitRecv) server;
     -- return client endpoint
     client
 
