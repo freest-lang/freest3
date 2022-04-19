@@ -30,11 +30,14 @@ internalError fun syntax =
     ++ show syntax
 
 -- | Format errors
-showErrors :: String -> TypeOpsEnv -> ErrorType -> String
-showErrors f tops err = let base = replaceBaseName f (defModule (span err)) in 
-  title err True (span err) base ++ "\n  " ++ msg err True tops
-
-
+showErrors :: Stylable -> String -> TypeOpsEnv -> ErrorType -> String
+showErrors sty f tops err = let base = replaceBaseName f (trimModule $ defModule (span err)) in 
+  title err sty (span err) base ++ "\n  " ++ msg err sty tops
+  where
+    trimModule f
+      | isExtensionOf "fst" f = takeBaseName f
+      | otherwise             = f
+      
 -- | Errors
 
 data ErrorType =
@@ -46,7 +49,9 @@ data ErrorType =
   | LexicalError Span String
   -- Parser.y
   | PrematureEndOfFile Span
-  | ParseError Span String -- String -> Token
+  | ParseError Span String -- String should be Token (circular import)
+  | NameModuleMismatch Span FilePath FilePath
+  | ImportNotFound Span FilePath FilePath
   -- ParseUtils
   | MultipleFieldDecl Span Span Variable
   | RedundantPMatch Span Variable
@@ -91,6 +96,8 @@ instance Spannable ErrorType where
   span (LexicalError p _              ) = p
   span (PrematureEndOfFile p          ) = p
   span (ParseError        p _         ) = p
+  span (NameModuleMismatch p _ _      ) = p
+  span (ImportNotFound p _ _          ) = p
   span (MultipleFieldDecl p _ _       ) = p
   span (RedundantPMatch   p _         ) = p
   span (DuplicateVar p _ _ _          ) = p
@@ -133,6 +140,13 @@ instance Message ErrorType where
   msg (LexicalError _ tk) sty _ = "Lexical error on input " ++ red sty tk
   msg (PrematureEndOfFile _) _ _ =  "Parse error: Premature end of file"
   msg (ParseError _ x) sty _ = "Parse error on input " ++ red sty (quote x)
+
+  msg (ImportNotFound _ m f) sty tops =
+    "Could not find module " ++ style red sty tops (showModuleWithDots m) ++
+    "\n  Locations searched:\n\t" ++ style red sty tops f 
+  msg (NameModuleMismatch _ m f) sty tops =
+    "File name does not match the module name.\n    Module name: " ++
+    style red sty tops (showModuleWithDots m) ++ "\n    Filename:    " ++ style red sty tops f
   msg (MultipleFieldDecl sp1 sp2 x) sty ts =
     "Multiple declarations of field " ++ style red sty ts x ++
     " in a choice type.\n\tDeclared at " ++ show sp1 ++ " and " ++ show sp2

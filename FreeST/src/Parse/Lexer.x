@@ -286,22 +286,22 @@ instance Show Token where
   show (TokenImport _)  = "import"
 
 -- Trim newlines
-scanTokens :: String -> String -> Either ErrorType [Token] 
-scanTokens str file =
-    case go (alexStartPos,'\n',[],str) of
+scanTokens :: String -> FilePath -> Either ErrorType [Token] 
+scanTokens input filename =
+    case go (alexStartPos,'\n',[],input) of
       Right x -> Right $ trim x
       x -> x
   where
-    go inp@(pos,_,_,str) =
+    go inp@(pos,_,_,input) =
       case alexScan inp 0 of
         AlexEOF -> Right []
         AlexError _ ->
           let p = internalPos pos in
-          Left $ LexicalError (Span p p file) (show $ head str)
+          Left $ LexicalError (Span p p filename) (show $ head input)
         AlexSkip  inp' len     -> go inp'
         AlexToken inp' len act ->
           case go inp' of
-            Right x -> Right $ act pos (take len str) : x
+            Right x -> Right $ act pos (take len input) : x
             x -> x
 
 getLineNum :: AlexPosn -> Int

@@ -1,6 +1,5 @@
 module Util.CmdLine where
 
--- import           Util.ErrorMessage (Color(..))
 import           Util.Error
 import           Util.FreestState
 import           Syntax.Base
@@ -20,23 +19,25 @@ import           System.FilePath
 instance Data.String.IsString Variable where
   fromString = mkVar defaultSpan
 
--- instance Read Variable where
---   readsPrec _ s = [(mkVar defaultPos s,"")]
-
 runOptsParser :: Parser RunOpts
 runOptsParser = RunOpts
   <$> strArgument
      ( help "FreeST (.fst) file"
-     <> metavar "FILEPATH" )   
+    <> metavar "FILEPATH" )   
   <*> (optional . strOption)
-      ( long "main"
-     <> short 'm' 
-     <> help "Main function"
-     <> metavar "STRING" )
+     ( long "main"
+    <> short 'm' 
+    <> help "Main function"
+    <> metavar "STRING" )
+  <*> flag True False    -- This is the reverse of switch
+     ( long "no-colors"
+    <> long "no-colours"
+    <> help "Remove styles from the errors messages")
   <*> switch
-      ( long "quiet"
-     <> short 'q'
-     <> help "Suppress warnings" )
+     ( long "quiet"
+    <> short 'q'
+    <> help "Suppress warnings" )
+  
 
 
 versionParser :: String -> Parser (a -> a)
@@ -48,13 +49,13 @@ versionParser s =
 
 
 handleFlags :: RunOpts -> IO RunOpts
-handleFlags fg@(RunOpts f _ _) = do
+handleFlags fg@(RunOpts f _ sty _) = do
   whenM (not <$> doesFileExist f) $ die fileDoNotExist :: IO ()
   when (not $ "fst" `isExtensionOf` f) $ die wrongFileExtension
   return fg
   where
-    fileDoNotExist = showErrors "FreeST" Map.empty (FileNotFound f)
-    wrongFileExtension = showErrors "FreeST" Map.empty (WrongFileExtension f)
+    fileDoNotExist = showErrors sty "FreeST" Map.empty (FileNotFound f)
+    wrongFileExtension = showErrors sty "FreeST" Map.empty (WrongFileExtension f)
 
 flags :: IO RunOpts
 flags = handleFlags =<< execParser opts

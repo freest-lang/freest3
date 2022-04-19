@@ -42,4 +42,3 @@ directoryContents dir =
 safeRead :: FilePath -> IO (Maybe String)
 safeRead f =
   ifM (doesFileExist f) (fmap Just (readFile f)) (pure Nothing)
-     

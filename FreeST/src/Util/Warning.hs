@@ -17,32 +17,26 @@ import           System.FilePath
 -- TODO: Stylable to runOpts
 
 showWarnings :: String -> TypeOpsEnv -> WarningType -> String
-showWarnings f tops wrn = let base = replaceBaseName f (defModule (span wrn)) in
+showWarnings f tops wrn = let base = replaceBaseName f (trimModule $ defModule (span wrn)) in
   title wrn True (span wrn) base ++ "\n  " ++ msg wrn True tops
-
+  where
+    trimModule f
+      | isExtensionOf "fst" f = takeBaseName f
+      | otherwise             = f
 
 data WarningType =
-    NoPrelude 
+    NoPrelude FilePath
   | NonExhaustiveCase Span E.FieldMap T.TypeMap
   deriving Show
 
 instance Spannable WarningType where
-  span NoPrelude                 = defaultSpan
+  span (NoPrelude f)             = defaultSpan {defModule = f}
   span (NonExhaustiveCase p _ _) = p
-
-
--- warningMsg :: WarningType -> [WarningMessage]
--- warningMsg (NonExhaustiveCase _ fm tm) =
---   [ Warning "Pattern match(es) are non-exhaustive\n\t"
---   , Warning "In a case alternative: Patterns not matched:"
---   , Warning $ formatColor (Just Pink) $ foldr (\k acc -> show k ++ acc) ""
---             $ Map.keys $ Map.difference tm fm]
-
 
 instance Message WarningType where
   title _  sty = msgHeader (yellow sty "warning:") sty
   
-  msg NoPrelude _ _ = "Couldn't find prelude; proceeding without it"
+  msg NoPrelude{} _ _ = "Couldn't find prelude; proceeding without it"
   msg (NonExhaustiveCase _ fm tm) sty _ =
     "Pattern match(es) are non-exhaustive\n\t In a case alternative: Patterns not matched:" ++
     yellow sty (intercalate ", " $ map show $ Map.keys $ Map.difference tm fm)

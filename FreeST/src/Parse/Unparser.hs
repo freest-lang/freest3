@@ -16,6 +16,7 @@ module Parse.Unparser
   , showBindExp
   , showBindTerm
   , showModuleName
+  , showModuleWithDots
   ) where
 
 import           Syntax.Base
@@ -40,13 +41,13 @@ instance Show Pos where
 instance Show Span where
   show (Span sp fp _)
     | sp == fp  = show sp
-    | otherwise = '(' : show sp ++ "-" ++ show fp ++ ")"
+    | otherwise = '(' : show sp ++ ")-(" ++ show fp ++ ")"
 
-
--- TODO: replace "/" by "."
 showModuleName :: Span -> String
-showModuleName s = map (\x -> if x == '/' then '.' else x ) (defModule s)
+showModuleName s = showModuleWithDots (defModule s)
 
+showModuleWithDots :: String -> String
+showModuleWithDots = map (\x -> if x == '/' then '.' else x )
 
 -- Multiplicities
 

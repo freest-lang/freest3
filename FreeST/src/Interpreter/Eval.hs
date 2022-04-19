@@ -99,5 +99,5 @@ evalVar tEnv ctx eenv x
   | x == mkVar defaultSpan "fork"  = return Fork
   | x == mkVar defaultSpan "error" = return $ PrimitiveFun
       (\(String e) -> unsafePerformIO $ die $
-          showErrors "" Map.empty (ErrorFunction (span x) e))
+          showErrors False "" Map.empty (ErrorFunction (span x) e))
   | otherwise                      = internalError "Interpreter.Eval.evalVar" x

@@ -441,13 +441,14 @@ mkSpanPos p = do
 mkSpanPosPos :: Pos -> Pos -> FreestStateT Span
 mkSpanPosPos p1 p2 = do
   f <- getFileName
-  maybe (Span p1 p2 "FreeST") (Span p1 p2) <$> getModuleName
+  maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
   
 
 -- Parse functions
+-- Used in the Read instances
   
 parse :: String -> FilePath -> ([Token] -> FreestStateT a) -> FreestStateT a
-parse str file parseFun = either (lift . Left) parseFun (scanTokens str file)
+parse input fname parseFun = either (lift . Left) parseFun (scanTokens input fname)
 
 parseKind :: String -> Either Errors K.Kind
 parseKind str = either (Left . (:[])) (Right . id) (evalStateT (parse str "" kinds) state)
@@ -469,63 +470,57 @@ stateToEither (t,s)
   | hasErrors s = Left $ errors s
   | otherwise   = Right t
 
-parseProgram :: FreestS -> FilePath -> VarEnv -> IO FreestS
-parseProgram s inputFile vEnv = do
-  f <- readFile inputFile
-  let m = parseMod s inputFile vEnv f
-  return $ parseDefs (m {moduleName = moduleName m
-                        ,runOpts = defaultOpts {runFilePath = inputFile}
-                        }) inputFile vEnv f
 
-parseDefs :: FreestS -> FilePath -> VarEnv -> String -> FreestS
-parseDefs s file varEnv str =
-  either (\e -> state { errors = [e] }) id (execStateT (parse str file terms) state)
-  where
-    state = s { varEnv , runOpts = defaultOpts {runFilePath = file}}
+-- FreeST parsing functions 
 
-parseMod :: FreestS -> FilePath -> VarEnv -> String -> FreestS
-parseMod s file varEnv str =
-  either (\e -> state { errors = [e] }) id (execStateT (parse str file modname) state)
-  where
-    state = s { varEnv, runOpts = defaultOpts {runFilePath = file}}
+-- Parses a the module header and then the program
+parseProgram :: FreestS -> IO FreestS
+parseProgram s = do
+  let filename = runFilePath $ runOpts s
+  input <- readFile filename
+  let mh = parseModHeader s filename input
+  return $ parseDefs (s {moduleName = moduleName mh}) filename input
 
--- TODO: parse should begin with a state 
 
-parseAndImport :: FreestS -> FilePath -> VarEnv -> IO FreestS
-parseAndImport initial file vEnv = do
-  s <- parseProgram (initial {moduleName = Nothing}) file vEnv
-  let imps = imports s   
+parseModHeader :: FreestS -> FilePath -> String -> FreestS
+parseModHeader s filename input =
+  either (\e -> s { errors = [e] }) id (execStateT (parse input filename modname) s)
+
+parseDefs :: FreestS -> FilePath -> String -> FreestS
+parseDefs s filename input =
+  either (\e -> s { errors = [e] }) id (execStateT (parse input filename terms) s)
+
+
+parseAndImport :: FreestS -> IO FreestS
+parseAndImport initial = do
+  let filename = runFilePath $ runOpts initial 
+  s <- parseProgram (initial {moduleName = Nothing})
+ 
+  let baseName = takeBaseName (runFilePath $ runOpts s)
   case moduleName s of
     Just name
-      | name == takeBaseName (runFilePath $ runOpts s) ->
-          doImports (Set.singleton name) (Set.toList imps) s
-      | otherwise -> 
-        print "WIP: Add error -> File do not match with module name" $> s
-    Nothing   -> doImports Set.empty (Set.toList imps) s
+      | name == baseName -> doImports (Set.singleton name) (Set.toList (imports s)) s
+      | otherwise -> pure $ s {errors = errors s ++ [NameModuleMismatch defaultSpan name baseName]}
+    Nothing   -> doImports Set.empty (Set.toList (imports s)) s
   where
       
     doImports :: Imports -> [FilePath] -> FreestS -> IO FreestS
     doImports _ [] s = return s
     doImports imported (curImport:toImport) s
       | curImport `Set.member` imported = return s
-      | otherwise = do 
-          let fileToImport = replaceBaseName file curImport -<.> "fst"
-          exists <- doesFileExist fileToImport
-            
+      | otherwise = do
+          let defModule = runFilePath $ runOpts s
+          let fileToImport = replaceBaseName defModule curImport -<.> "fst"
+          exists <- doesFileExist fileToImport            
           if exists then do
-            s' <- parseProgram (s {moduleName = Nothing}) fileToImport (varEnv s)
-            let imps = imports s'
-            
-            when (curImport /= (fromJust $ moduleName s'))
-                 (putStrLn $ "WIP: Add error -> File do not match with module name\n\t"
-                     ++ curImport ++ " /= " ++ (fromJust $ moduleName s') ++ "\n"
-                 )
-        
-            doImports (Set.insert curImport imported) (toImport ++ Set.toList imps) s'
-          else do
-            print "WIP: Add error -> import not found error "
-            return s
-
+            s' <- parseProgram (s {moduleName = Nothing, runOpts=defaultOpts{runFilePath=fileToImport}})
+            let modName = fromJust $ moduleName s'
+            if curImport /= modName then
+              pure $ s' {errors = errors s ++ [NameModuleMismatch defaultSpan{defModule} modName curImport]}
+            else
+              doImports (Set.insert curImport imported) (toImport ++ Set.toList (imports s')) s'
+          else
+            pure $ s {errors = errors s ++ [ImportNotFound defaultSpan{defModule} curImport fileToImport]}
         
 -- Error Handling
 

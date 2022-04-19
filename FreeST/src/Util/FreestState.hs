@@ -198,7 +198,7 @@ addWarning w = modify (\s -> s { warnings = w : warnings s })
 
 getErrors :: FreestS -> String
 getErrors s = (intercalate "\n" . map f . take 10 . reverse . errors) s
-  where f = showErrors (runFilePath $ runOpts s) (typenames s)
+  where f = showErrors (isStylable $ runOpts s) (runFilePath $ runOpts s) (typenames s)
 
 hasErrors :: FreestS -> Bool
 hasErrors = not . null . errors
@@ -233,6 +233,7 @@ debugM err = do
 data RunOpts = RunOpts { runFilePath  :: FilePath
 --                     , preludeFile  :: Maybe FilePath
                        , mainFunction :: Maybe Variable
+                       , isStylable   :: Bool
                        , quietmode    :: Bool
                        } deriving Show
 
@@ -241,6 +242,7 @@ defaultOpts :: RunOpts
 defaultOpts = RunOpts { runFilePath  = ""
 --                    , preludeFile  = Just "Prelude.fst"
                       , mainFunction = Nothing
+                      , isStylable   = True
                       , quietmode    = False
                       }
 
@@ -251,10 +253,6 @@ getMain opts = fromMaybe (mkVar defaultSpan "main") maybeMain
 isMainFlagSet :: RunOpts -> Bool
 isMainFlagSet = isJust . mainFunction
 
--- isQuietFlagSet :: RunOpts -> Bool
--- isQuietFlagSet = quietmode
-
--- getOpts :: FreestState RunOpts
 getOpts :: MonadState FreestS m => m RunOpts
 getOpts = gets runOpts
 
