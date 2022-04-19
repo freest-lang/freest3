@@ -499,17 +499,16 @@ parseAndImport initial = do
   let baseName = takeBaseName (runFilePath $ runOpts s)
   case moduleName s of
     Just name
-      | name == baseName -> doImports (Set.singleton name) (Set.toList (imports s)) s
+      | name == baseName -> doImports filename (Set.singleton name) (Set.toList (imports s)) s
       | otherwise -> pure $ s {errors = errors s ++ [NameModuleMismatch defaultSpan name baseName]}
-    Nothing   -> doImports Set.empty (Set.toList (imports s)) s
+    Nothing   -> doImports filename Set.empty (Set.toList (imports s)) s
   where
       
-    doImports :: Imports -> [FilePath] -> FreestS -> IO FreestS
-    doImports _ [] s = return s
-    doImports imported (curImport:toImport) s
+    doImports :: FilePath -> Imports -> [FilePath] -> FreestS -> IO FreestS
+    doImports _ _ [] s = return s
+    doImports defModule imported (curImport:toImport) s
       | curImport `Set.member` imported = return s
       | otherwise = do
-          let defModule = runFilePath $ runOpts s
           let fileToImport = replaceBaseName defModule curImport -<.> "fst"
           exists <- doesFileExist fileToImport            
           if exists then do
@@ -518,7 +517,7 @@ parseAndImport initial = do
             if curImport /= modName then
               pure $ s' {errors = errors s ++ [NameModuleMismatch defaultSpan{defModule} modName curImport]}
             else
-              doImports (Set.insert curImport imported) (toImport ++ Set.toList (imports s')) s'
+              doImports defModule (Set.insert curImport imported) (toImport ++ Set.toList (imports s')) s'
           else
             pure $ s {errors = errors s ++ [ImportNotFound defaultSpan{defModule} curImport fileToImport]}
         

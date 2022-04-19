@@ -146,7 +146,7 @@ instance Message ErrorType where
     "\n  Locations searched:\n\t" ++ style red sty tops f 
   msg (NameModuleMismatch _ m f) sty tops =
     "File name does not match the module name.\n    Module name: " ++
-    style red sty tops (showModuleWithDots m) ++ "\n    Filename:    " ++ style red sty tops f
+    style red sty tops (showModuleWithDots m) ++ "\n    Filename:    " ++ style red sty tops (f -<.> "fst")
   msg (MultipleFieldDecl sp1 sp2 x) sty ts =
     "Multiple declarations of field " ++ style red sty ts x ++
     " in a choice type.\n\tDeclared at " ++ show sp1 ++ " and " ++ show sp2
