@@ -283,7 +283,7 @@ Type :: { T.Type }
     { let p = pos $1 in
       let tVar = mkVar p "a" in
       T.Rec p $ K.Bind p tVar (K.su p) $ T.Semi p (uncurry T.Message $2 $3) (T.Var p tVar) }
-  | '*' ChoiceView '{' SkipFieldList '}'
+  | '*' ChoiceView '{' FieldList '}'
     { let p = pos $1 in
       let tVar = mkVar p "a" in
       T.Rec p $ K.Bind p tVar (K.su p) $ T.Semi p (uncurry T.Choice $2 $4) (T.Var p tVar) }
@@ -331,10 +331,10 @@ Field :: { (ProgVar, T.Type) }
   : ArbitraryProgVar ':' Type { ($1, $3) }
 
 -- Similar to FieldList, but only has labels and types are Skip
-SkipFieldList :: { T.TypeMap }
-  : ArbitraryProgVar                   { uncurry Map.singleton ($1, T.Skip (pos $1)) }
-  | ArbitraryProgVar ',' SkipFieldList {% toStateT $ checkDupField $1 $3 >>
-                                          return (uncurry Map.insert ($1, T.Skip (pos $1)) $3) }
+FieldList :: { T.TypeMap }
+  : ArbitraryProgVar               { uncurry Map.singleton ($1, T.Skip (pos $1)) }
+  | ArbitraryProgVar ',' FieldList {% toStateT $ checkDupField $1 $3 >>
+                                      return (uncurry Map.insert ($1, T.Skip (pos $1)) $3) }
 
 -- TYPE SEQUENCE
 
