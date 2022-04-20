@@ -16,16 +16,15 @@ module Util.PreludeLoader
   )
 where
 
-import           Syntax.ProgramVariable
 import           Syntax.Base
 import qualified Syntax.Type                   as T
 import           Syntax.Program
 import qualified Data.Map.Strict               as Map
 import           Parse.Read                     ( )
 
-typeList :: [(ProgVar, T.Type)]
+typeList :: [(Variable, T.Type)]
 typeList =
-  [ -- Integers
+  [ -- Int
     (mkVar p "(+)"     , read "Int -> Int -> Int")
   , (mkVar p "(-)"     , read "Int -> Int -> Int")
   , (mkVar p "(/)"     , read "Int -> Int -> Int")
@@ -51,18 +50,18 @@ typeList =
   , (mkVar p "(<)"     , read "Int -> Int -> Bool")
   , (mkVar p "(>)"     , read "Int -> Int -> Bool")
   , (mkVar p "(<=)"    , read "Int -> Int -> Bool")
-  , (mkVar p "(>=)"   , read "Int -> Int -> Bool")
+  , (mkVar p "(>=)"    , read "Int -> Int -> Bool")
   -- Bool
   , (mkVar p "not" , read "Bool -> Bool")
   , (mkVar p "(&&)", read "Bool -> Bool -> Bool")
   , (mkVar p "(||)", read "Bool -> Bool -> Bool")
-  -- Chars
+  -- Char
   , (mkVar p "ord", read "Char -> Int")
   , (mkVar p "chr", read "Int -> Char")
-  -- Pairs
+  -- Pair
   , (mkVar p "fst", read "∀ a:TL . ∀ b:TU . (a, b) -> a")
   , (mkVar p "snd", read "∀ a:TU . ∀ b:TL . (a, b) -> b")
-  --  Prints
+  -- Print
   , (mkVar p "printInt"   , read "Int -> ()")
   , (mkVar p "printIntLn" , read "Int -> ()")
   , (mkVar p "printBool"  , read "Bool -> ()")
@@ -88,7 +87,7 @@ typeList =
 prelude :: VarEnv
 prelude = Map.fromList typeList-- foldr (uncurry Map.insert) Map.empty typeList
 
-isBuiltin :: ProgVar -> Bool
+isBuiltin :: Variable -> Bool
 isBuiltin = (`elem` map fst typeList)
 
 userDefined :: VarEnv -> VarEnv

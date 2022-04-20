@@ -39,7 +39,6 @@ module Bisimulation.Grammar
   )
 where
 
-import           Syntax.TypeVariable
 import           Syntax.Base
 import           Parse.Unparser                 ( )
 import qualified Data.Map.Strict               as Map
@@ -50,15 +49,15 @@ import           Prelude                 hiding ( Word )
 -- Terminal symbols are called labels
 type Label = String
 
--- Non-terminal symbols are type variables TypeVar
+-- Non-terminal symbols are type variables Variable
 -- Words are strings of non-terminal symbols
-type Word = [TypeVar]
+type Word = [Variable]
 
 -- The transitions from a given non-terminal
 type Transitions = Map.Map Label Word
 
 -- The productions of a grammar
-type Productions = Map.Map TypeVar Transitions
+type Productions = Map.Map Variable Transitions
 
 -- The grammar, we have one initial non-terminal for each type that we
 -- convert together
@@ -70,7 +69,7 @@ class TransitionsFrom t where
   transitions :: t -> Productions -> Transitions
 
 -- The transitions from a non-terminal
-instance TransitionsFrom TypeVar where
+instance TransitionsFrom Variable where
   transitions = Map.findWithDefault Map.empty
 
 -- The transitions from a word
@@ -81,7 +80,7 @@ instance TransitionsFrom Word where
 -- Add a production from a non-terminal; the productions may already
 -- contain transitions for the given nonterminal (hence the insertWith
 -- and union)
-insertProduction :: Productions -> TypeVar -> Label -> Word -> Productions
+insertProduction :: Productions -> Variable -> Label -> Word -> Productions
 insertProduction p x l w = Map.insertWith Map.union x (Map.singleton l w) p
 
 -- The transitions from a word
@@ -103,9 +102,9 @@ showWord = foldr (\x acc -> show x ++ acc) ""
 showProductions :: Productions -> String
 showProductions = Map.foldrWithKey showTransitions ""
  where
-  showTransitions :: TypeVar -> Transitions -> String -> String
+  showTransitions :: Variable -> Transitions -> String -> String
   showTransitions x m s = s ++ Map.foldrWithKey (showTransition x) "" m
 
-  showTransition :: TypeVar -> Label -> Word -> String -> String
+  showTransition :: Variable -> Label -> Word -> String -> String
   showTransition x l xs s =
     s ++ "\n" ++ intern x ++ " -> " ++ l ++ " " ++ unwords (map intern xs)

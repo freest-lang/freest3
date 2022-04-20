@@ -11,14 +11,11 @@ import qualified Syntax.Expression             as E
 import           Util.PrettyWarning
 import           Util.WarningMessage
 import qualified Data.Map                      as Map
-import           Data.Maybe
-import           Parse.Unparser                 ( showFieldMap ) -- temporary
+-- import           Data.Maybe
 
-
-formatWarning:: Maybe String -> TypeOpsEnv -> WarningType -> String
-formatWarning mFile tops wrn = format (pos wrn) (warningMsg wrn)
+formatWarning :: String -> TypeOpsEnv -> WarningType -> String
+formatWarning f tops wrn = format (pos wrn) (warningMsg wrn)
   where
-   f = fromMaybe "FreeST" mFile
    format p e = formatHeader f p ++ formatBody tops e
 
 

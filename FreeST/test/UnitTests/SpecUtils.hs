@@ -18,18 +18,18 @@ import           Syntax.Type
 import           Data.Char
 import           Parse.Parser
 import Parse.Read
-import           Data.List                      ( intercalate, sortBy )
+import           Data.List                      ( intercalate )
 import           Data.List.Split                ( chunksOf )
 import qualified Data.Map.Strict               as Map
 import           Syntax.Kind                   ( KindEnv )
 import           Syntax.Base                   ( defaultPos
                                                , mkVar
-                                               , Pos
-                                               , pos
+                                               -- , Pos
+                                               -- , pos
                                                )
 import           Util.FreestState              ( Errors )
 import           Util.Error
-import Debug.Trace
+-- import Debug.Trace
 
 readFromFile :: FilePath -> IO [String]
 readFromFile filename = do
@@ -77,8 +77,8 @@ instance {-# OVERLAPPING #-} Show TestExpectation where
   show (Right err) = err
 
 showErrors :: Errors -> String
-showErrors = intercalate "\n" . map (formatError Nothing Map.empty) . sortBy cmp . take 2
- where cmp err1 err2 = pos err1 `compare` pos err2
+showErrors = intercalate "\n" . map f . take 2 . reverse
+  where f = formatError "" Map.empty []
 
 testValidExpectation :: Bool -> Errors -> TestExpectation
 testValidExpectation b errs

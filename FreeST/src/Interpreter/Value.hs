@@ -11,7 +11,6 @@ import qualified Data.Map.Strict               as Map
 import           Parse.Unparser                 ( )
 import           Syntax.Base
 import qualified Syntax.Expression             as E
-import           Syntax.ProgramVariable
 
 data Value =
     Unit
@@ -20,16 +19,16 @@ data Value =
   | Character Char
   | Label String -- to be sent on channels
   | String String
-  | Cons ProgVar [[Value]] -- TODO: Think how to do this in other way
+  | Cons Variable [[Value]] -- TODO: Think how to do this in other way
   | Pair Value Value
-  | Closure ProgVar E.Exp Ctx
+  | Closure Variable E.Exp Ctx
   | TypeAbs E.Exp Ctx
   | PrimitiveFun (Value -> Value)
   | Chan ChannelEnd
   | Fork
   | IOValue (IO Value)
 
-type Ctx = Map.Map ProgVar Value
+type Ctx = Map.Map Variable Value
 
 type ChannelEnd = (C.Chan Value, C.Chan Value)
 type Channel = (ChannelEnd, ChannelEnd)
@@ -54,7 +53,7 @@ showTuple :: Value -> String
 showTuple (Pair v1 v2) = show v1 ++ ", " ++ showTuple v2
 showTuple v            = show v
 
-showCons :: ProgVar -> [[Value]] -> String
+showCons :: Variable -> [[Value]] -> String
 showCons x [] = show x
 showCons x xs = show x ++ " " ++ unwords (map showConstrList xs)
  where

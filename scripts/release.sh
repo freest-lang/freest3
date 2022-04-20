@@ -7,9 +7,18 @@ path=freest-$version/
 
 mkdir $path
 # mkdir $path/FreeST/
-cp -r ../FreeST/src ../FreeST/StandardLib/ ../packages/ $path
+cp -r ../FreeST/src ../FreeST/StandardLib/ $path
+
+# Suppose that you have the project freest-mode cloned
+# (at the same level of this one)
+mkdir $path/packages
+mkdir $path/packages/freest-mode/
+cp -r ../../freest-mode/emacs/freest-mode/freest-mode.el  ../../freest-mode/emacs/freest-mode/freest-font-lock.el ../../freest-mode/emacs/freest-mode/ob-freest.el $path/packages/freest-mode/
+cp -r ../../freest-mode/atom/ $path/packages
+
 cp ../LICENSE  ../CHANGELOG  $path
-rm $path/src/Parse/Parser.hs $path/src/Parse/Lexer.hs
+[ -e $path/src/Parse/Parser.hs ] && rm  $path/src/Parse/Parser.hs
+[ -e $path/src/Parse/Lexer.hs ] && rm  $path/src/Parse/Lexer.hs
 rm -rf $path/src/.stack-work/
 # rm $path/src/FreeST.cabal
 

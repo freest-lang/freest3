@@ -1,8 +1,0 @@
-{
-  "name": "language-freest",
-  "version": "0.0.0",
-  "description": "FreeST language support in Atom",
-  "engines": {
-    "atom": "*"
-  }
-}

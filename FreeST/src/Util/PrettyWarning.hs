@@ -6,12 +6,11 @@ module Util.PrettyWarning
     ) where
 
 import           Syntax.Base                    ( Pos
-                                                , pos
                                                 , defaultPos
                                                 )
 import           Syntax.Program                 ( TypeOpsEnv )
 import           Util.WarningMessage
-import           Parse.Unparser                 -- show Pos
+import           Parse.Unparser ()
 
 -- | Style of the warning header
 

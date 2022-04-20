@@ -17,11 +17,9 @@ module Equivalence.TypeToGrammar
 where
 
 import           Bisimulation.Grammar
-import           Parse.Unparser
 import           Syntax.Base
 import qualified Syntax.Kind                   as K
 import qualified Syntax.Type                   as T
-import           Syntax.TypeVariable
 import qualified Validation.Substitution       as Substitution
                                                 ( subsAll )
 import           Equivalence.Normalisation      ( normalise )
@@ -30,6 +28,7 @@ import           Util.FreestState               ( tMapM
                                                 , tMapM_
                                                 )
 import           Control.Monad.State
+import           Data.Functor
 import qualified Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
 import           Prelude                       hiding ( Word ) -- Word is (re)defined in module Bisimulation.Grammar
@@ -44,10 +43,9 @@ convertToGrammar ts = grammar -- trace (show ts ++ "\n" ++ show grammar) grammar
     (word, state) = runState (mapM typeToGrammar ts) initial
     θ             = substitution state
 
+
 typeToGrammar :: T.Type -> TransState Word
-typeToGrammar t = do
-  collect [] t
-  toGrammar t
+typeToGrammar t = collect [] t >> toGrammar t
 
 toGrammar :: T.Type -> TransState Word
 -- Syntactic equality
@@ -60,12 +58,12 @@ toGrammar' :: T.Type -> TransState Word
 toGrammar' (T.Arrow _ p t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
-  getLHS $ Map.fromList [('d' : showArrow p, xs), ('r' : showArrow p, ys)]
+  getLHS $ Map.fromList [('d' : show p, xs), ('r' : show p, ys)]
 toGrammar' (T.Pair _ t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
   getLHS $ Map.fromList [("l*", xs), ("r*", ys)]
-toGrammar' (T.Variant _ m) = do -- Can't test this type directly
+toGrammar' (T.Almanac _  T.Variant m) = do -- Can't test this type directly
   ms <- tMapM toGrammar m
   getLHS $ Map.mapKeys (\k -> "<>" ++ show k) ms
 -- Session Types
@@ -75,14 +73,18 @@ toGrammar' (T.Message _ p t) = do
   xs <- toGrammar t
   b <- getBottom
   getLHS $ Map.fromList [('d' : show p, xs ++ [b]), ('c' : show p, [])]
-toGrammar' (T.Choice _ v m) = do
+-- toGrammar' (T.Choice _ v m) = do
+--   ms <- tMapM toGrammar m
+--   getLHS $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
+toGrammar' (T.Almanac _ (T.Choice v) m) = do
   ms <- tMapM toGrammar m
-  getLHS $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
+  getLHS $ Map.mapKeys (\k -> show v ++ show k) ms
+
 -- Polymorphism and recursive types
-toGrammar' (T.Forall _ (K.Bind _ x k t)) = do
+toGrammar' (T.Forall _ (Bind _ x k t)) = do
   xs <- toGrammar' t
   getLHS $  Map.singleton ('∀' : show k) xs
-toGrammar' (T.Rec _ (K.Bind _ x _ _)) = return [x]
+toGrammar' (T.Rec _ (Bind _ x _ _)) = return [x]
 toGrammar' t@T.Var{} = getLHS $ Map.singleton (show t) []
 -- Type operators
 toGrammar' t@T.CoVar{} = getLHS $ Map.singleton (show t) []
@@ -106,7 +108,7 @@ fatTerminal t@T.String{}          = Just t
 fatTerminal t@T.Unit{}            = Just t
 fatTerminal (T.Arrow p m t u)     = Just (T.Arrow p m) <*> fatTerminal t <*> fatTerminal u
 fatTerminal (T.Pair p t u)        = Just (T.Pair p) <*> fatTerminal t <*> fatTerminal u
-fatTerminal (T.Variant p m)       = Just (T.Variant p) <*> mapM fatTerminal m
+fatTerminal (T.Almanac p T.Variant m) = Just (T.Almanac p T.Variant) <*> mapM fatTerminal m
 -- Session Types
 fatTerminal (T.Semi _ T.Skip{} t) = fatTerminal t
 fatTerminal (T.Semi _ t T.Skip{}) = fatTerminal t
@@ -140,13 +142,15 @@ syntactic (T.Message _ _ t)     = syntactic t
 syntactic _                     = False
 -}
 
-type SubstitutionList = [(T.Type, TypeVar)]
+
+type SubstitutionList = [(T.Type, Variable)]
 
 collect :: SubstitutionList -> T.Type -> TransState ()
 collect σ (T.Semi _ t u) = collect σ t >> collect σ u
-collect σ (T.Choice _ _ m) = tMapM_ (collect σ) m
+-- collect σ (T.Choice _ _ m) = tMapM_ (collect σ) m
+collect σ (  T.Almanac _ (T.Choice v) m ) = tMapM_ (collect σ) m
 collect σ (T.Message _ _ t) = collect σ t
-collect σ t@(T.Rec _ (K.Bind _ x _ u)) = do
+collect σ t@(T.Rec _ (Bind _ x _ u)) = do
   let σ' = (t, x) : σ
   let u' = Substitution.subsAll σ' u
   ~(z : zs) <- toGrammar (normalise u')
@@ -159,7 +163,7 @@ collect _ _ = return ()
 
 -- The state of the translation to grammar
 
-type Substitution = Map.Map TypeVar TypeVar
+type Substitution = Map.Map Variable Variable
 
 type TransState = State TState
 
@@ -167,7 +171,7 @@ data TState = TState {
   productions  :: Productions
 , nextIndex    :: Int
 , substitution :: Substitution
-, bottom       :: TypeVar
+, bottom       :: Variable
 }
 
 -- State manipulating functions, get and put
@@ -179,23 +183,24 @@ initial = TState { productions  = Map.empty
                  , bottom       = makeFreshVar 0 -- smaller than the nextIndex
                  }
 
-getFreshVar :: TransState TypeVar
+getFreshVar :: TransState Variable
 getFreshVar = do
   s <- get
   let n = nextIndex s
   modify $ \s -> s { nextIndex = n + 1 }
   return $ makeFreshVar n
 
-makeFreshVar :: Int -> TypeVar
+makeFreshVar :: Int -> Variable
 makeFreshVar n = mkVar defaultPos ("#X" ++ show n)
 
 getProductions :: TransState Productions
 getProductions = gets productions
 
-getBottom :: TransState TypeVar
+
+getBottom :: TransState Variable
 getBottom = gets bottom
 
-getTransitions :: TypeVar -> TransState Transitions
+getTransitions :: Variable -> TransState Transitions
 getTransitions x = do
   ps <- getProductions
   return $ ps Map.! x
@@ -203,15 +208,15 @@ getTransitions x = do
 getSubstitution :: TransState Substitution
 getSubstitution = gets substitution
 
-putProductions :: TypeVar -> Transitions -> TransState ()
+putProductions :: Variable -> Transitions -> TransState ()
 putProductions x m =
   modify $ \s -> s { productions = Map.insert x m (productions s) }
 
--- putProduction :: TypeVar -> Label -> Word -> TransState ()
+-- putProduction :: Variable -> Label -> Word -> TransState ()
 -- putProduction x l w =
 --   modify $ \s -> s {productions = insertProduction (productions s) x l w}
 
-putSubstitution :: TypeVar -> TypeVar -> TransState ()
+putSubstitution :: Variable -> Variable -> TransState ()
 putSubstitution x y =
   modify $ \s -> s { substitution = Map.insert x y (substitution s) }
 
@@ -234,36 +239,25 @@ getLHS ts = do
 
 -- Add new productions, but only if needed
 
-addProductions :: TypeVar -> Transitions -> TransState ()
+addProductions :: Variable -> Transitions -> TransState ()
 addProductions x ts = do
   ps <- getProductions
   b  <- existProductions x ts ps
   unless b (putProductions x ts)
 
-existProductions :: TypeVar -> Transitions -> Productions -> TransState Bool
+existProductions :: Variable -> Transitions -> Productions -> TransState Bool
 -- existProductions x ts _ = return False
 existProductions x ts = Map.foldrWithKey
   (\x' ts' acc -> sameTrans x x' ts ts' >>= \b -> if b then return True else acc)
   (return False)
 
--- TODO: Change these names
--- These are two different concepts
-type VisitedProds = Set.Set (TypeVar, TypeVar)
-type Goals = Set.Set (TypeVar, TypeVar)
-type ToVisitProds = Set.Set (TypeVar, TypeVar)
-
-sameTrans :: TypeVar -> TypeVar -> Transitions -> Transitions -> TransState Bool
+sameTrans :: Variable -> Variable -> Transitions -> Transitions -> TransState Bool
 sameTrans x1 x2 ts1 ts2
   | matchingTrans ts1 ts2 = do
-    let s = Set.singleton (x1, x2)
-    let res = Map.foldrWithKey
-          (\l w acc -> acc `Set.union` compareWords w (ts2 Map.! l) s)
-          Set.empty
-          ts1
+    let s   = Set.singleton (x1, x2)
+    let res = findGoals s ts1 ts2
     b <- fixedPoint s res ts1
-    if b && not (null res) -- TODO: new fun on where
-      then putSubstitution x1 x2 >> return True
-      else return False
+    if not (null res) && b then putSubstitution x1 x2 $> True else return False
   | otherwise = return False
 
 -- Are two transitions equal?  Do they have the same keys and the
@@ -273,6 +267,10 @@ matchingTrans ts1 ts2 = Map.keys ts1 == Map.keys ts2 && all
   (\(x, y) -> length x == length y)
   (zip (Map.elems ts1) (Map.elems ts2))
 
+type VisitedProds = Set.Set (Variable, Variable)
+type ToVisitProds = Set.Set (Variable, Variable)
+type Goals = Set.Set (Variable, Variable)
+
 -- Compares two words
 -- If they are on the Set of visited productions, there is no need
 -- to visit them. Otherwise, we add them to the set of productions
@@ -281,41 +279,37 @@ compareWords :: Word -> Word -> VisitedProds -> ToVisitProds
 compareWords xs ys visited = foldr
   (\p@(x, y) acc ->
     if x == y || p `Set.member` visited then acc else Set.insert p acc
-  )
-  Set.empty
-  (zip xs ys)
+  ) Set.empty (zip xs ys)
 
-fixedPoint :: VisitedProds -> VisitedProds -> Transitions -> TransState Bool
+fixedPoint :: VisitedProds -> ToVisitProds -> Transitions -> TransState Bool
 fixedPoint visited goals ts
   | Set.null goals = return True
   | otherwise = do
-    let goal@(x, y) = Set.elemAt 0 goals
+    let (x, y) = Set.elemAt 0 goals
     ps <- getProductions
-    if y `Map.member` ps
-      then do
-        let ts1 = Map.findWithDefault ts x ps
-        θ <- getSubstitution
-        let y' = substitute θ y
-        ts2 <- getTransitions y'
-        if matchingTrans ts1 ts2
-          then
-            let newVisited = Set.insert (x, y') visited
-                newGoals   = Set.delete goal goals `Set.union` moreGoals ts1 ts2
-            in  fixedPoint newVisited newGoals ts
-          else return False
-      else return False
+    fixedPoint' (x, y) ps
+      (Map.findWithDefault ts x ps) =<< getTransitions y
  where
-  moreGoals :: Transitions -> Transitions -> Goals
-  moreGoals ts1 = Map.foldrWithKey
-    (\l xs acc -> acc `Set.union` compareWords (ts1 Map.! l) xs visited)
-    Set.empty
+  fixedPoint' goal@(_, y) ps ts1 ts2
+    | y `Map.notMember` ps        = return False
+    | not $ matchingTrans ts1 ts2 = return False
+    | otherwise                   =
+      let newVisited = Set.insert goal visited in
+        fixedPoint newVisited
+         (Set.delete goal goals `Set.union`
+          findGoals newVisited ts1 ts2) ts
 
--- Apply a TypeVar/TypeVar substitution to different objects
+findGoals :: VisitedProds -> Transitions -> Transitions -> Goals
+findGoals visited ts1 = Map.foldrWithKey
+  (\l xs acc -> acc `Set.union` compareWords (ts1 Map.! l) xs visited)
+  Set.empty
+
+-- Apply a Variable/Variable substitution to different objects
 
 class Substitute t where
   substitute :: Substitution -> t -> t
 
-instance Substitute TypeVar where
+instance Substitute Variable where
   substitute θ v = Map.foldrWithKey (\x y w -> if x == w then y else w) v θ
 
 instance Substitute Word where

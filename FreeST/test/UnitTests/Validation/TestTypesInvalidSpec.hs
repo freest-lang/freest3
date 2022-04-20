@@ -3,17 +3,13 @@ module Validation.TestTypesInvalidSpec
   )
 where
 
-import           Control.Monad.State            ( execState )
-import qualified Data.Map.Strict               as Map
-                                                ( empty )
-import           Elaboration.Duality           as Dual
-import           Elaboration.Elaboration
+import           Control.Monad.State                ( execState )
+import qualified Data.Map.Strict            as Map  ( empty )
+import           Elaboration.ResolveDuality as Dual
 import           SpecUtils
-import           Util.FreestState              ( initialState
-                                                , errors
-                                                )
-import           Validation.Kinding             ( synthetise )
-import           Validation.Rename              ( renameType )
+import           Util.FreestState                   ( initialState, errors )
+import           Validation.Kinding                 ( synthetise )
+import           Validation.Rename                  ( renameType )
 
 spec :: Spec
 spec = describe "Invalid types tests" $ do

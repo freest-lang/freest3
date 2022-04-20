@@ -4,14 +4,15 @@ module Util.GetTOps
   )
 where
 
+import           Data.Bifunctor                 ( second )
 import qualified Data.Map.Strict               as Map
 import           Data.Maybe                     ( fromMaybe )
 import           Parse.Unparser                 ( )
 import           Syntax.Base
 import           Syntax.Expression
+import qualified Syntax.Kind                   as K
 import           Syntax.Program
 import qualified Syntax.Type                   as T
-import qualified Syntax.Kind                   as K
 
 -- | Class to get the type operators back to their original locations
 
@@ -23,20 +24,18 @@ instance DefaultTypeOp T.Type where
     lookupPos m p $ T.Arrow p mu (getDefault m t) (getDefault m u)
   getDefault m (T.Pair p t u) =
     lookupPos m p $ T.Pair p (getDefault m t) (getDefault m u)
-  getDefault m (T.Variant p sm) =
-    lookupPos m p $ T.Variant p $ getDefault m sm
+  getDefault m (T.Almanac p s cm) =
+    lookupPos m p $ T.Almanac p s $ getDefault m cm
   getDefault m (T.Semi p t u) =
     lookupPos m p $ T.Semi p (getDefault m t) (getDefault m u)
   getDefault m (T.Message p pol t) =
     lookupPos m p $ T.Message p pol $ getDefault m t
-  getDefault m (T.Choice p pol cm) =
-    lookupPos m p $ T.Choice p pol $ getDefault m cm
   getDefault m (T.Forall p b) = lookupPos m p $ T.Forall p $ getDefault m b
   getDefault m (T.Rec    p b) = lookupPos m p $ T.Rec p $ getDefault m b
   getDefault _ t              = t
 
 instance DefaultTypeOp Exp where
-  getDefault m (Abs p b     ) = Abs p $ getDefault m b
+  getDefault m (Abs p mul b   ) = Abs p mul $ getDefault m b
   getDefault m (App  p e1 e2) = App p (getDefault m e1) (getDefault m e2)
   getDefault m (Pair p e1 e2) = Pair p (getDefault m e1) (getDefault m e2)
   getDefault m (BinLet p x y e1 e2) =
@@ -48,20 +47,20 @@ instance DefaultTypeOp Exp where
     Cond p (getDefault m e1) (getDefault m e2) (getDefault m e3)
   getDefault m (UnLet p x e1 e2) =
     UnLet p x (getDefault m e1) (getDefault m e2)
-  getDefault m (New   p t u ) = New p (getDefault m t) (getDefault m u)
-  getDefault _ e              = e
+  getDefault m (New p t u) = New p (getDefault m t) (getDefault m u)
+  getDefault _ e           = e
 
-instance DefaultTypeOp (K.Bind Exp) where
-  getDefault m (K.Bind p x k e) = K.Bind p x k $ getDefault m e
+instance DefaultTypeOp (Bind K.Kind Exp) where
+  getDefault m (Bind p x k e) = Bind p x k $ getDefault m e
 
-instance DefaultTypeOp Bind where
-  getDefault m (Bind p mul x k t) = Bind p mul x k $ getDefault m t
+instance DefaultTypeOp (Bind T.Type Exp) where
+  getDefault m (Bind p x k t) = Bind p x k $ getDefault m t
 
 instance DefaultTypeOp FieldMap where
-  getDefault m = Map.map (\(x, y) -> (x, getDefault m y))
+  getDefault m = Map.map $ second (getDefault m) -- (\(x, y) -> (x, getDefault m y))
 
-instance DefaultTypeOp (K.Bind T.Type) where
-  getDefault m (K.Bind p x k t) = K.Bind p x k $ getDefault m t
+instance DefaultTypeOp (Bind K.Kind T.Type) where
+  getDefault m (Bind p x k t) = Bind p x k $ getDefault m t
 
 instance DefaultTypeOp T.TypeMap where
   getDefault m = Map.map (getDefault m)

@@ -12,7 +12,6 @@ import           Interpreter.Value
 import           Syntax.Base
 import qualified Syntax.Expression             as E
 import           Syntax.Program
-import           Syntax.ProgramVariable
 -- import qualified Syntax.Type                   as T
 import qualified Syntax.Kind                   as K
 import           Util.Error                     ( internalError )
@@ -34,8 +33,8 @@ eval _ _   _ (E.Int    _ i                  )       = return $ Integer i
 eval _ _   _ (E.Bool   _ b                  )       = return $ Boolean b
 eval _ _   _ (E.Char   _ c                  )       = return $ Character c
 eval _ _   _ (E.String _ s                  )       = return $ String s
-eval _ ctx _ (E.TypeAbs _ (K.Bind _ _ _ e  ))       = return $ TypeAbs e ctx
-eval _ ctx _ (E.Abs _ (E.Bind _ _ x _ e))           = return $ Closure x e ctx
+eval _ ctx _ (E.TypeAbs _ (Bind _ _ _ e))       = return $ TypeAbs e ctx
+eval _ ctx _ (E.Abs _ _ (Bind _ x _ e))           = return $ Closure x e ctx
 eval tEnv ctx eenv (E.Var    _ x               )    = evalVar tEnv ctx eenv x
 eval tEnv ctx eenv (E.TypeApp _ e _            )    = eval tEnv ctx eenv e >>= \case
   (TypeAbs e ctx) -> eval tEnv ctx eenv e
@@ -89,7 +88,7 @@ evalCase tEnv ctx eenv m (Cons x xs) = do
 evalCase _ _ _ _ v = internalError "Interpreter.Eval.evalCase" v
 
 -- TODO: change isADT definition
-evalVar :: TypeEnv -> Ctx -> Prog -> ProgVar -> IO Value
+evalVar :: TypeEnv -> Ctx -> Prog -> Variable -> IO Value
 evalVar tEnv ctx eenv x
   | isDatatypeContructor x tEnv  = return $ Cons x []
   | Map.member x eenv            = eval tEnv ctx eenv (eenv Map.! x)

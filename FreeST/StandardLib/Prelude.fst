@@ -28,3 +28,10 @@ uncurry f p =  f (fst[a,b] p) (snd[a,b] p)
 -- | Swap the components of a pair.
 swap : forall a b . (a,b) -> (b,a)
 swap x = let (a,b) = x in (b,a)
+
+-- |  Fixed-point Z combinator
+fix : forall a . ((a -> a) -> (a -> a)) -> (a -> a)
+fix f =
+  (\x:(rec b.b -> (a -> a)) -> f (\z:a -> x x z))
+  (\x:(rec b.b -> (a -> a)) -> f (\z:a -> x x z))
+

@@ -10,17 +10,16 @@ Portability :  portable | non-portable (<reason>)
 
 <module description starting at first column>
 -}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Syntax.Expression
   ( Exp(..)
   , FieldMap
-  , Bind(..)
   )
 where
 
 import           Syntax.Base
-import           Syntax.ProgramVariable
-import qualified Syntax.Kind                   as K ( Bind )
+import qualified Syntax.Kind                   as K ( Kind )
 import qualified Syntax.Type                   as T
 import qualified Data.Map.Strict               as Map
 
@@ -32,26 +31,29 @@ data Exp =
   | Bool Pos Bool
   | String Pos String
   -- Variable
-  | Var Pos ProgVar
+  | Var Pos Variable
   -- Abstraction intro and elim
-  | Abs Pos Bind        -- λ x:T -> e, λ x:T -o e
+  | Abs Pos Multiplicity (Bind T.Type Exp)        -- λ x:T -> e, λ x:T -o e
   | App Pos Exp Exp     -- e1 e2
   -- Pair intro and elim
   | Pair Pos Exp Exp
-  | BinLet Pos ProgVar ProgVar Exp Exp
+  | BinLet Pos Variable Variable Exp Exp
   -- Datatype elim
   | Case Pos Exp FieldMap
   -- Type Abstraction intro and elim
-  | TypeAbs Pos (K.Bind Exp)   -- Λ a:k => e
+  | TypeAbs Pos (Bind K.Kind Exp)   -- Λ a:k => e
   | TypeApp Pos Exp T.Type     -- e[T]
   -- Boolean elim
   | Cond Pos Exp Exp Exp
   -- Let
-  | UnLet Pos ProgVar Exp Exp -- TODO: Derived; eliminate? If yes, which is type for the ProgVar? (cf. Abs)
+  | UnLet Pos Variable Exp Exp -- TODO: Derived; eliminate? If yes, which is type for the ProgVar? (cf. Abs)
   -- Session types
   | New Pos T.Type T.Type
 
-type FieldMap = Map.Map ProgVar ([ProgVar], Exp)
+instance Default (Bind T.Type Exp) where
+  omission p = Bind p (omission p) (T.Unit p) (Unit p)
+
+type FieldMap = Map.Map Variable ([Variable], Exp)
 
 instance Position Exp where
   pos (Unit p             ) = p
@@ -60,7 +62,7 @@ instance Position Exp where
   pos (Bool p _           ) = p
   pos (String p _         ) = p
   pos (Var p _            ) = p
-  pos (Abs p _            ) = p
+  pos (Abs p _ _          ) = p
   pos (UnLet p _ _ _      ) = p
   pos (App p _ _          ) = p
   pos (TypeApp p _ _      ) = p
@@ -70,13 +72,3 @@ instance Position Exp where
   pos (BinLet p _ _ _ _   ) = p
   pos (New p _ _          ) = p
   pos (Case  p _ _        ) = p
-
--- Bind
-
-data Bind = Bind Pos Multiplicity ProgVar T.Type Exp
-
-instance Position Bind where
-  pos (Bind p _ _ _ _) = p
-
-instance Default Bind where
-  omission p = Bind p Un (omission p) (T.Unit p) (Unit p)

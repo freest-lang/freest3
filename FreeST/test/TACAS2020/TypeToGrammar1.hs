@@ -53,9 +53,9 @@ toGrammar (Semi _ t u) = do
 toGrammar (Message _ p b) = do
   y <- getProd $ Map.singleton (MessageLabel p b) []
   return [y]
-toGrammar (Choice _ p m) = do
+toGrammar (Almanac _ (Choice v) m) = do
   ms <- tMapM toGrammar m
-  y <- getProd $ Map.mapKeys (ChoiceLabel p) ms
+  y <- getProd $ Map.mapKeys (ChoiceLabel v) ms
   return [y]
 -- Functional or session (session in this case)
 toGrammar (TypeVar _ x) = do      -- x is a polymorphic variable
@@ -86,7 +86,7 @@ type Substitution = (Type, TypeVar)
 
 collect :: [Substitution] -> Type -> TransState ()
 collect σ (Semi _ t u) = collect σ t >> collect σ u
-collect σ (Choice _ _ m) = tMapM_ (collect σ) m
+collect σ (Almanac _ (Choice _) m) = tMapM_ (collect σ) m
 collect σ t@(Rec _ (TypeVarBind _ x _) u) = do
   let σ' = (t, x) : σ
   let u' = Substitution.subsAll σ' u
