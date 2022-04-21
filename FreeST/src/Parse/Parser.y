@@ -268,28 +268,29 @@ Op :: { ProgVar }
 
 Type :: { T.Type }
   -- Functional types
-  : Int                           { T.Int (pos $1) }
-  | Char                          { T.Char (pos $1) }
-  | Bool                          { T.Bool (pos $1) }
-  | String                        { T.String (pos $1) }
-  | '()'                          { T.Unit (pos $1) }
+  : Int                          { T.Int (pos $1) }
+  | Char                         { T.Char (pos $1) }
+  | Bool                         { T.Bool (pos $1) }
+  | String                       { T.String (pos $1) }
+  | '()'                         { T.Unit (pos $1) }
   | Type Arrow Type %prec ARROW  { uncurry T.Arrow $2 $1 $3 }
-  | '(' Type ',' TupleType ')'    { T.Pair (pos $1) $2 $4 }
+  | '(' Type ',' TupleType ')'   { T.Pair (pos $1) $2 $4 }
   -- Session types
-  | Skip                          { T.Skip (pos $1) }
-  | Type ';' Type                 { T.Semi (pos $2) $1 $3 }
-  -- 
+  | Skip                         { T.Skip (pos $1) }
+  | Type ';' Type                { T.Semi (pos $2) $1 $3 }
+  | Polarity Type %prec MSG      { uncurry T.Message $1 $2 }
+  | ChoiceView '{' FieldList '}' { uncurry T.Choice $1 $3 }
+  -- Star types
   | '*' Polarity Type %prec MSG 
     { let p = pos $1 in
       let tVar = mkVar p "a" in
-      T.Rec p $ K.Bind p tVar (K.su p) $ T.Semi p (uncurry T.Message $2 $3) (T.Var p tVar) }
-  | '*' ChoiceView '{' EmptyFieldList '}'
+      T.Rec p $ K.Bind p tVar (K.su p) $
+        T.Semi p (uncurry T.Message $2 $3) (T.Var p tVar) }
+  | '*' ChoiceView '{' LabelList '}'
     { let p = pos $1 in
       let tVar = mkVar p "a" in
-      T.Rec p $ K.Bind p tVar (K.su p) $ uncurry T.Choice $2 $ Map.map ($ (T.Var p tVar)) $4 }
-  --
-  | Polarity Type %prec MSG       { uncurry T.Message $1 $2 }
-  | ChoiceView '{' FieldList '}'  { uncurry T.Choice $1 $3 }
+      T.Rec p $ K.Bind p tVar (K.su p) $
+        uncurry T.Choice $2 $ Map.map ($ (T.Var p tVar)) $4 }
   -- Polymorphism and recursion
   | rec KindBind '.' Type
       { let (a,k) = $2 in T.Rec (pos $1) (K.Bind (pos a) a k $4) }
@@ -330,11 +331,10 @@ FieldList :: { T.TypeMap }
 Field :: { (ProgVar, T.Type) }
   : ArbitraryProgVar ':' Type { ($1, $3) }
 
--- Similar to FieldList, but without types (should later be defined)
-EmptyFieldList :: { Map.Map ProgVar (T.Type -> T.Type) }
-  : ArbitraryProgVar                    { uncurry Map.singleton ($1, id) }
-  | ArbitraryProgVar ',' EmptyFieldList {% toStateT $ checkDupField $1 $3 >>
-                                         return (uncurry Map.insert ($1, id) $3) }
+LabelList :: { Map.Map ProgVar (T.Type -> T.Type) }
+  : ArbitraryProgVar               { Map.singleton $1 id }
+  | ArbitraryProgVar ',' LabelList {% toStateT $ checkDupField $1 $3 >>
+                                    return (Map.insert $1 id $3) }
 
 -- TYPE SEQUENCE
 
