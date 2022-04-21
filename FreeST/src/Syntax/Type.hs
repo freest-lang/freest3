@@ -11,7 +11,6 @@ This module defines the syntax for types.
 
 module Syntax.Type
   ( Type(..)
-  , isSkip
   , TypeMap
   , Polarity(..)
   , View(..)
@@ -78,8 +77,3 @@ instance Position Type where
 
 instance Default Type where
   omission = Int
-
-
-isSkip :: Type -> Bool
-isSkip (Skip _) = True
-isSkip _          = False

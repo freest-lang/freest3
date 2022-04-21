@@ -91,9 +91,7 @@ synthetise' s kEnv (T.Semi p t u) = do
   return $ K.sl p
 synthetise' s kEnv (T.Message p _ t) = checkAgainst' s kEnv (K.ml p) t $> K.sl p
 synthetise' s kEnv (T.Choice p _ m) = 
-  if all T.isSkip $ Map.elems m
-    then return $ K.su p
-    else tMapM_ (checkAgainst' s kEnv (K.sl p)) m $> K.sl p
+      tMapM_ (checkAgainst' s kEnv (K.sl p)) m $> K.sl p
 -- Session or functional
 synthetise' s kEnv (T.Rec _ (K.Bind _ a k t)) =
   checkContractive s a t >> checkAgainst' s (Map.insert a k kEnv) k t $> k

@@ -283,10 +283,10 @@ Type :: { T.Type }
     { let p = pos $1 in
       let tVar = mkVar p "a" in
       T.Rec p $ K.Bind p tVar (K.su p) $ T.Semi p (uncurry T.Message $2 $3) (T.Var p tVar) }
-  | '*' ChoiceView '{' SkipFieldList '}'
+  | '*' ChoiceView '{' EmptyFieldList '}'
     { let p = pos $1 in
       let tVar = mkVar p "a" in
-      T.Rec p $ K.Bind p tVar (K.su p) $ T.Semi p (uncurry T.Choice $2 $4) (T.Var p tVar) }
+      T.Rec p $ K.Bind p tVar (K.su p) $ uncurry T.Choice $2 $ Map.map ($ (T.Var p tVar)) $4 }
   --
   | Polarity Type %prec MSG       { uncurry T.Message $1 $2 }
   | ChoiceView '{' FieldList '}'  { uncurry T.Choice $1 $3 }
@@ -330,11 +330,11 @@ FieldList :: { T.TypeMap }
 Field :: { (ProgVar, T.Type) }
   : ArbitraryProgVar ':' Type { ($1, $3) }
 
--- Similar to FieldList, but only has labels and types are Skip
-SkipFieldList :: { T.TypeMap }
-  : ArbitraryProgVar                   { uncurry Map.singleton ($1, T.Skip (pos $1)) }
-  | ArbitraryProgVar ',' SkipFieldList {% toStateT $ checkDupField $1 $3 >>
-                                          return (uncurry Map.insert ($1, T.Skip (pos $1)) $3) }
+-- Similar to FieldList, but without types (should later be defined)
+EmptyFieldList :: { Map.Map ProgVar (T.Type -> T.Type) }
+  : ArbitraryProgVar                    { uncurry Map.singleton ($1, id) }
+  | ArbitraryProgVar ',' EmptyFieldList {% toStateT $ checkDupField $1 $3 >>
+                                         return (uncurry Map.insert ($1, id) $3) }
 
 -- TYPE SEQUENCE
 
