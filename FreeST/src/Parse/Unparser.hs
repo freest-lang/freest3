@@ -200,6 +200,10 @@ instance Unparse T.Type where
     (maxRator, show v ++ "{" ++ showChoice m ++ "}")
   unparse (T.Forall _ b) = (arrowRator, "∀" ++ showBindType b) -- ++ "=>" ++ s)
     -- where s = bracket (unparse t) Right dotRator
+  unparse (T.Rec _ (K.Bind _ _ k (T.Semi _ t _)))   | K.isUn k = -- *!T   *?T
+    (maxRator, "*" ++ show t)
+  unparse (T.Rec _ (K.Bind _ _ k (T.Choice _ v m))) | K.isUn k = -- *+{}  *&{}
+    (maxRator, "*" ++ show v ++ "{" ++ showChoiceLabels m ++ "}")
   unparse (T.Rec _ b) = (dotRator, "rec " ++ showBindType b) -- xk ++ "." ++ s)
     -- where s = bracket (unparse t) Right dotRator
   unparse (T.Dualof _ t) = (dualofRator, "dualof " ++ s)
@@ -216,6 +220,10 @@ showDatatype m = intercalate " | "
 showChoice :: T.TypeMap -> String
 showChoice m = intercalate ", "
   $ Map.foldrWithKey (\c t acc -> (show c ++ ": " ++ show t) : acc) [] m
+
+showChoiceLabels :: T.TypeMap -> String
+showChoiceLabels m = intercalate ", "
+  $ Map.foldrWithKey (\c _ acc -> (show c) : acc) [] m
 
 -- Expression
 
