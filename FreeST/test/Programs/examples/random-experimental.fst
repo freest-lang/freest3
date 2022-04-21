@@ -1,23 +1,51 @@
 type Bit = Int
 
+unbiasedBit : *?Bit -> Bit
+unbiasedBit c =
+  let (b1, c) = receive c in
+  let (b2, c) = receive c in
+  -- printInt b1;
+  -- printInt b2;
+  if b1 == b2 then unbiasedBit c else b1
+
+type Diverge = Char
+
+produce : Bit -> *!Bit -> Diverge
+produce b c = produce (1 - b) $ send b c
+
+collect' : *?Bit -> Int -> Int
+collect' c n =
+  if n == 0
+  then 0
+  else unbiasedBit c + 2 * collect' c (n - 1)
+
+bits' : Int -> Int
+bits' =
+  let (r, w) = new *?Bit in
+  fork $ produce 1 w;
+  fork $ produce 0 w;
+  collect' r
+
+----
+
 biasedBit : Bit
 biasedBit =
   let (r, w) = new *?Int in --new *?Int in
-  fork (send 1 w);
   fork (send 0 w);
+  fork (send 1 w);
   let (b, _) = receive r in
   b
 
-unbiasedBit : Bit
-unbiasedBit =
+unbiasedBit' : Bit
+unbiasedBit' =
   let b = biasedBit in
-  if b == biasedBit then unbiasedBit else b
+  if b == biasedBit then unbiasedBit' else b
   
 bits : Int -> Int
 bits n =
   if n == 0
   then 0
-  else unbiasedBit + 2 * bits (n - 1)
+  else unbiasedBit' + 2 * bits (n - 1)
 
 -----------------------------------------------------------------------
 
@@ -96,7 +124,7 @@ printFreq : Int -> (Int, Int) -> ()
 printFreq ratio pair = 
     let (value, frequency) = pair in
     printInt value; printString "\t("; printInt frequency; printString ")\t";
-    repeatF (frequency / ratio) (\_:() -> printString "|"); printStringLn ""
+    repeatF (frequency / ratio) (\_:() -> printString "x"); printStringLn ""
 
 repeatF : Int -> (() -> ()) -> ()
 repeatF n f =
@@ -153,6 +181,6 @@ main =
     -- fork $ noiseClient c;
     --
     let n = 1000 in
-    let f2 = (\_:() -> bits 4) in
+    let f2 = (\_:() -> bits 5) in
     runTestSuite n f2
     

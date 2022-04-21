@@ -30,7 +30,7 @@ initRandom =
     -- return client endpoint
     client
 
-main : Bool
+main : Int
 main =
     let rand = initRandom in
     let (i, _) = receive rand in
@@ -39,4 +39,4 @@ main =
     --   values, so opt instead to only
     --   check no errors are raised
     --   during execution
-    True
+    i
