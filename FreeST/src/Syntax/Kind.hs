@@ -21,8 +21,6 @@ module Syntax.Kind
   , tu
   , sl
   , su
-  , mu
-  , ml
   , isLin
   , isUn
   , isSession
@@ -34,7 +32,7 @@ import qualified Data.Set                      as Set
 import           Syntax.Base             hiding ( Multiplicity(..) )
 -- Basic kind
 
-data Basic = Message | Session | Top deriving Eq
+data Basic = Session | Top deriving Eq
 
 -- Multiplicity
 data Multiplicity = Un | Lin deriving Eq
@@ -53,13 +51,11 @@ instance Default Kind where
   omission = tu
 
 -- Abbreviations for the six proper kinds
-tl, tu, sl, su, mu, ml :: Pos -> Kind
+tl, tu, sl, su :: Pos -> Kind
 tl p = Kind p Top Lin
 tu p = Kind p Top Un
 sl p = Kind p Session Lin
 su p = Kind p Session Un
-mu p = Kind p Message Un
-ml p = Kind p Message Lin
 
 isLin :: Kind -> Bool
 isLin (Kind _ _ m) = m == Lin

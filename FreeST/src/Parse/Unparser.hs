@@ -67,8 +67,8 @@ instance Show Variable where
   show = showVar
 
 showVar :: Variable -> String
-showVar = dropWhile (\c -> isDigit c || c == '#') . intern
--- showVar = intern -- for testing purposes
+-- showVar = dropWhile (\c -> isDigit c || c == '#') . intern
+showVar = intern -- for testing purposes
 
 -- Sorted variable. Either a:k or x:t (just to get the spacing right)
 
@@ -79,7 +79,6 @@ showSortedVar x t = show x ++ ":" ++ show t
 
 instance Show K.Basic where
   show K.Session = "S"
-  show K.Message = "M"
   show K.Top     = "T"
 
 instance Show K.Kind where

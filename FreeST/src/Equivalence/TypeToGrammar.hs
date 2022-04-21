@@ -37,7 +37,7 @@ import           Debug.Trace
 -- Conversion to simple grammars
 
 convertToGrammar :: [T.Type] -> Grammar
-convertToGrammar ts = grammar -- trace (show ts ++ "\n" ++ show grammar) grammar
+convertToGrammar ts = {- trace (show ts ++ "\n" ++ show grammar) -} grammar
   where
     grammar = Grammar (substitute θ word) (substitute θ (productions state))
     (word, state) = runState (mapM typeToGrammar ts) initial

@@ -20,10 +20,10 @@ import           Util.Error                    ( internalError )
 -- The subkinding relation. Note that subkinding is a partial order, hence
 -- should *not* be an instance class Ord.
 --      TL
---    / | \
---   ML TU SL
---   \ / \ /
---    MU  SU
+--     /  \
+--    TU  SL
+--     \ /
+--      SU
 
 -- The Subsort class. Instances include multiplicity, basic kinds and kinds
 
@@ -35,9 +35,7 @@ instance Subsort K.Multiplicity where
   _     <: _  = True
 
 instance Subsort K.Basic where
-  K.Message <: K.Top     = True
   K.Session <: K.Top     = True
-  K.Message <: K.Message = True
   K.Session <: K.Session = True
   K.Top     <: K.Top     = True
   _         <: _         = False
@@ -57,20 +55,8 @@ instance Join K.Multiplicity where
   join K.Lin K.Lin = K.Lin
 
 instance Join K.Kind  where
-  join (K.Kind p K.Message K.Lin) (K.Kind _ K.Top     K.Un ) = K.tl p
-  join (K.Kind p K.Top     K.Un ) (K.Kind _ K.Message K.Lin) = K.tl p
-
   join (K.Kind p K.Top     K.Un ) (K.Kind _ K.Session K.Lin) = K.tl p
   join (K.Kind p K.Session K.Lin) (K.Kind _ K.Top     K.Un ) = K.tl p
-
-  join (K.Kind p K.Message K.Un ) (K.Kind _ K.Session K.Un ) = K.tu p
-  join (K.Kind p K.Session K.Un ) (K.Kind _ K.Message K.Un ) = K.tu p
-
-  join (K.Kind p K.Message K.Un ) (K.Kind _ K.Session K.Lin) = K.tl p
-  join (K.Kind p K.Session K.Lin) (K.Kind _ K.Message K.Un ) = K.tl p
-
-  join (K.Kind p K.Session K.Un ) (K.Kind _ K.Message K.Lin) = K.tl p
-  join (K.Kind p K.Message K.Lin) (K.Kind _ K.Session K.Un ) = K.tl p
 
   join k1 k2
     | k1 <: k2 = k2

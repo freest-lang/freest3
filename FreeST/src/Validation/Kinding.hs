@@ -52,12 +52,12 @@ checkAgainstSession kenv = checkAgainstSession' (Map.keysSet kenv) kenv
 -- Returns the kind of a given type
 synthetise' :: K.PolyVars -> K.KindEnv -> T.Type -> FreestState K.Kind
 -- Functional types
-synthetise' _ _ (T.Int    p) = return $ K.Kind p K.Message K.Un
-synthetise' _ _ (T.Char   p) = return $ K.Kind p K.Message K.Un
-synthetise' _ _ (T.Bool   p) = return $ K.Kind p K.Message K.Un
-synthetise' _ _ (T.Unit   p) = return $ K.Kind p K.Message K.Un
-synthetise' _ _ (T.String p) = return $ K.Kind p K.Message K.Un
-synthetise' s kEnv (T.Arrow p m t u) = -- do
+synthetise' _ _ (T.Int    p) = return $ K.tu p
+synthetise' _ _ (T.Char   p) = return $ K.tu p
+synthetise' _ _ (T.Bool   p) = return $ K.tu p
+synthetise' _ _ (T.Unit   p) = return $ K.tu p
+synthetise' _ _ (T.String p) = return $ K.tu p
+synthetise' s kEnv (T.Arrow p m t u) = 
   synthetise' s kEnv t >>
   synthetise' s kEnv u $> K.Kind p K.Top (typeToKindMult m)
 synthetise' s kEnv (T.Pair p t u) = do

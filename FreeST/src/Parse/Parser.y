@@ -333,8 +333,6 @@ Kind :: { K.Kind }
   | SL { K.sl (pos $1) }
   | TU { K.tu (pos $1) }
   | TL { K.tl (pos $1) }
-  -- | MU { K.mu (pos $1) }
-  -- | ML { K.ml (pos $1) }
 --  | Kind '->' Kind { KindArrow (pos $1) $1 $3 }
 
 -- PROGRAM VARIABLE
