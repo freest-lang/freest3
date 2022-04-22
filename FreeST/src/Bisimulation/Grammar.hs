@@ -88,23 +88,20 @@ insertProduction p x l w = Map.insertWith Map.union x (Map.singleton l w) p
 -- trans p xs = Map.elems (transitions xs p)
 
 -- Showing a grammar
-
 instance Show Grammar where
   show (Grammar xss p) =
-    "start words: "
-      ++ intercalate ", " (map showWord xss)
-      ++ "\nproductions: "
-      ++ showProductions p
+    "start words: " ++ intercalate ", " (map showWord xss) ++
+    "\nproductions: " ++ showProductions p
 
 showWord :: Word -> String
-showWord = foldr (\x acc -> show x ++ acc) ""
+showWord = unwords . map intern
 
 showProductions :: Productions -> String
 showProductions = Map.foldrWithKey showTransitions ""
- where
-  showTransitions :: Variable -> Transitions -> String -> String
-  showTransitions x m s = s ++ Map.foldrWithKey (showTransition x) "" m
+  where
+    showTransitions :: Variable -> Transitions -> String -> String
+    showTransitions x m s = s ++ Map.foldrWithKey (showTransition x) "" m
 
-  showTransition :: Variable -> Label -> Word -> String -> String
-  showTransition x l xs s =
-    s ++ "\n" ++ intern x ++ " -> " ++ l ++ " " ++ unwords (map intern xs)
+    showTransition :: Variable -> Label -> Word -> String -> String
+    showTransition x l xs s =
+      s ++ "\n" ++ intern x ++ " -> " ++ l ++ " " ++ showWord xs
