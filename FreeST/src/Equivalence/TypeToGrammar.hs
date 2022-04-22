@@ -140,7 +140,7 @@ type SubstitutionList = [(T.Type, Variable)]
 collect :: SubstitutionList -> T.Type -> TransState ()
 collect σ (T.Semi _ t u) = collect σ t >> collect σ u
 -- collect σ (T.Choice _ _ m) = tMapM_ (collect σ) m
-collect σ (  T.Almanac _ (T.Choice v) m ) = tMapM_ (collect σ) m
+collect σ (T.Almanac _ (T.Choice v) m ) = tMapM_ (collect σ) m
 collect σ (T.Message _ _ t) = collect σ t
 collect σ t@(T.Rec _ (Bind _ x _ u)) = do
   let σ' = (t, x) : σ
