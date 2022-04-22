@@ -37,7 +37,7 @@ import           Debug.Trace
 -- Conversion to simple grammars
 
 convertToGrammar :: [T.Type] -> Grammar
-convertToGrammar ts = {- trace (show ts ++ "\n" ++ show grammar) -} grammar
+convertToGrammar ts = trace (show ts ++ "\n" ++ show grammar) grammar
   where
     grammar = Grammar (substitute θ word) (substitute θ (productions state))
     (word, state) = runState (mapM typeToGrammar ts) initial
@@ -58,11 +58,11 @@ toGrammar' :: T.Type -> TransState Word
 toGrammar' (T.Arrow _ p t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
-  getLHS $ Map.fromList [('d' : show p, xs), ('r' : show p, ys)]
+  getLHS $ Map.fromList [(show p ++ "d", xs), (show p ++ "r", ys)]
 toGrammar' (T.Pair _ t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
-  getLHS $ Map.fromList [("l*", xs), ("r*", ys)]
+  getLHS $ Map.fromList [("*l", xs), ("*r", ys)]
 toGrammar' (T.Almanac _  T.Variant m) = do -- Can't test this type directly
   ms <- tMapM toGrammar m
   getLHS $ Map.mapKeys (\k -> "<>" ++ show k) ms
@@ -71,15 +71,13 @@ toGrammar' (T.Skip _) = return []
 toGrammar' (T.Semi _ t u) = liftM2 (++) (toGrammar t) (toGrammar u)
 toGrammar' (T.Message _ p t) = do
   xs <- toGrammar t
-  b <- getBottom
-  getLHS $ Map.fromList [('d' : show p, xs ++ [b]), ('c' : show p, [])]
+  getLHS $ Map.fromList [(show p ++ "d", xs ++ [bottom]), (show p ++ "c", [])]
 -- toGrammar' (T.Choice _ v m) = do
 --   ms <- tMapM toGrammar m
 --   getLHS $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
 toGrammar' (T.Almanac _ (T.Choice v) m) = do
   ms <- tMapM toGrammar m
   getLHS $ Map.mapKeys (\k -> show v ++ show k) ms
-
 -- Polymorphism and recursive types
 toGrammar' (T.Forall _ (Bind _ x k t)) = do
   xs <- toGrammar' t
@@ -90,12 +88,6 @@ toGrammar' t@T.Var{} = getLHS $ Map.singleton (show t) []
 toGrammar' t@T.CoVar{} = getLHS $ Map.singleton (show t) []
 -- toGrammar' t@T.Dualof{} =
 toGrammar' t = internalError "Equivalence.TypeToGrammar.toGrammar" t
-
-left :: String -> String
-left = (++ "l")
-
-right :: String -> String
-right = (++ "r")
 
 -- Fat terminal types can be compared for syntactic equality
 -- Returns a normalised type in case the type can become fat terminal
@@ -168,20 +160,22 @@ type Substitution = Map.Map Variable Variable
 type TransState = State TState
 
 data TState = TState {
-  productions  :: Productions
-, nextIndex    :: Int
-, substitution :: Substitution
-, bottom       :: Variable
-}
+    productions  :: Productions
+  , nextIndex    :: Int
+  , substitution :: Substitution
+  }
 
 -- State manipulating functions, get and put
 
 initial :: TState
-initial = TState { productions  = Map.empty
-                 , nextIndex    = 1
-                 , substitution = Map.empty
-                 , bottom       = makeFreshVar 0 -- smaller than the nextIndex
-                 }
+initial = TState {
+    productions  = Map.empty
+  , nextIndex    = 1
+  , substitution = Map.empty
+  }
+
+bottom :: Variable
+bottom = mkVar defaultPos "⊥"
 
 getFreshVar :: TransState Variable
 getFreshVar = do
@@ -195,10 +189,6 @@ makeFreshVar n = mkVar defaultPos ("#X" ++ show n)
 
 getProductions :: TransState Productions
 getProductions = gets productions
-
-
-getBottom :: TransState Variable
-getBottom = gets bottom
 
 getTransitions :: Variable -> TransState Transitions
 getTransitions x = do
@@ -221,7 +211,7 @@ putSubstitution x y =
   modify $ \s -> s { substitution = Map.insert x y (substitution s) }
 
 -- Get the LHS for given transitions; if no productions for the
--- transitions are found, add a new production and return its LHS
+-- transitions are found, add new productions and return its LHS
 getLHS :: Transitions -> TransState Word
 getLHS ts = do
   ps <- getProductions
@@ -232,7 +222,7 @@ getLHS ts = do
       return [y]
     Just x -> return [x]
  where
-    -- Lookup a key for a value in the map. Probably O(n)
+  -- Lookup a key for a value in the map. Probably O(n)
   reverseLookup :: Eq a => Ord k => a -> Map.Map k a -> Maybe k
   reverseLookup a =
     Map.foldrWithKey (\k b acc -> if a == b then Just k else acc) Nothing
