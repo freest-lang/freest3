@@ -90,8 +90,8 @@ insertProduction p x l w = Map.insertWith Map.union x (Map.singleton l w) p
 -- Showing a grammar
 instance Show Grammar where
   show (Grammar xss p) =
-    "start words: " ++ intercalate ", " (map showWord xss) ++
-    "\nproductions: " ++ showProductions p
+    "start words: (" ++ intercalate ", " (map showWord xss) ++
+    ")\nproductions: " ++ showProductions p
 
 showWord :: Word -> String
 showWord = unwords . map intern

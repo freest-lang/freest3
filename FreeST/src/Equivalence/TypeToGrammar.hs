@@ -165,6 +165,11 @@ data TState = TState {
   , substitution :: Substitution
   }
 
+-- A non-terminal without productions, guaranteed
+
+bottom :: Variable
+bottom = mkVar defaultPos "⊥"
+
 -- State manipulating functions, get and put
 
 initial :: TState
@@ -173,9 +178,6 @@ initial = TState {
   , nextIndex    = 1
   , substitution = Map.empty
   }
-
-bottom :: Variable
-bottom = mkVar defaultPos "⊥"
 
 getFreshVar :: TransState Variable
 getFreshVar = do
