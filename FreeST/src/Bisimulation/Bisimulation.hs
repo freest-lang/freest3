@@ -121,6 +121,7 @@ pruneNode ps = Set.map $ bimap (pruneWord ps) (pruneWord ps)
 
 pruneWord :: Productions -> Word -> Word
 pruneWord p = foldr (\x ys -> if normed p x then x : ys else [x]) []
+-- pruneWord p = foldr (\x ys -> x : if normed p [x] then ys else []) []
 
 -- The fixed point of branch wrt the application of node transformations
 findFixedPoint
@@ -161,7 +162,7 @@ congruence _ a = Set.singleton . Set.filter (not . congruentToAncestors)
 filtering :: NodeTransformation
 filtering ps _ n | normsMatch = Set.singleton n
                  | otherwise  = Set.empty
-  where normsMatch = and $ Set.map (uncurry (sameNorm ps)) n
+  where normsMatch = and $ Set.map (uncurry (equallyNormed ps)) n
 
 applyBpa
   :: (Productions -> Ancestors -> (Word, Word) -> Set.Set Node)
@@ -211,17 +212,18 @@ bpa2' _ _ _ = Set.empty
 
 gammaBPA2 :: Productions -> Variable -> Variable -> Maybe Word
 gammaBPA2 p x y = throughPath p ls [x1]
- where
-  x0 = if norm p [x] <= norm p [y] then x else y
-  x1 = if norm p [x] <= norm p [y] then y else x
-  ls = pathToSkip p x0
+  where
+    nx = norm p [x]
+    ny = norm p [y]
+    x0 = if nx <= ny then x else y
+    x1 = if nx <= ny then y else x
+    ls = pathToSkip p x0
 
 pairsBPA2 :: Productions -> Word -> Word -> Word -> Node
 pairsBPA2 p (x : xs) (y : ys) gamma = Set.fromList [p1, p2]
  where
   p1 = if norm p [x] >= norm p [y] then ([x], y : gamma) else (x : gamma, [y])
-  p2 =
-    if norm p [x] >= norm p [y] then (gamma ++ xs, ys) else (xs, gamma ++ ys)
+  p2 = if norm p [x] >= norm p [y] then (gamma ++ xs, ys) else (xs, gamma ++ ys)
 
 -- only applicable to normed variables
 pathToSkip :: Productions -> Variable -> [Label]
