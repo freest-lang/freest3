@@ -117,11 +117,9 @@ pruneProductions p = Map.map (Map.map (pruneWord p)) p
 
 pruneNode :: Productions -> Node -> Node
 pruneNode ps = Set.map $ bimap (pruneWord ps) (pruneWord ps)
-  -- Set.map (\(xs, ys) -> (pruneWord ps xs, pruneWord ps ys))
 
 pruneWord :: Productions -> Word -> Word
-pruneWord p = foldr (\x ys -> if normed p x then x : ys else [x]) []
--- pruneWord p = foldr (\x ys -> x : if normed p [x] then ys else []) []
+pruneWord p = foldr (\x ys -> x : if normed p x then ys else []) []
 
 -- The fixed point of branch wrt the application of node transformations
 findFixedPoint
@@ -131,7 +129,6 @@ findFixedPoint branch rules ps | branch == branch' = branch
  where
   branch' = foldr apply branch rules
   apply :: NodeTransformation -> Set.Set Branch -> Set.Set Branch
---    (\(n, a) bs -> Set.union (Set.map (\s -> (s, a)) (trans ps a n)) bs)
   apply trans =
     foldr (\(n, a) bs -> Set.union (Set.map (, a) (trans ps a n)) bs) Set.empty
 
