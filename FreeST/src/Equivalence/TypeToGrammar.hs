@@ -6,7 +6,8 @@ Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of 
                    Vasco Vasconcelos, LASIGE, Faculty of Sciences, University of Lisbon
 Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc.ul.pt
 
-This module converts a list of session types into a grammar.
+This module converts a list of session types into a simple grammar without
+unreachable symbols
 -}
 
 {-# LANGUAGE FlexibleInstances #-}
@@ -16,13 +17,14 @@ module Equivalence.TypeToGrammar
   )
 where
 
-import           Bisimulation.Grammar
 import           Syntax.Base
 import qualified Syntax.Kind                   as K
 import qualified Syntax.Type                   as T
 import qualified Validation.Substitution       as Substitution
                                                 ( subsAll )
 import           Equivalence.Normalisation      ( normalise )
+import           Bisimulation.Grammar
+import           Bisimulation.Norm
 import           Util.Error                     ( internalError )
 import           Util.FreestState               ( tMapM
                                                 , tMapM_
@@ -31,18 +33,16 @@ import           Control.Monad.State
 import           Data.Functor
 import qualified Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
-import           Prelude                       hiding ( Word ) -- Word is (re)defined in module Bisimulation.Grammar
+import           Prelude                       hiding ( Word ) -- redefined in module Bisimulation.Grammar
 import           Debug.Trace
 
--- Conversion to simple grammars
-
 convertToGrammar :: [T.Type] -> Grammar
-convertToGrammar ts = {- trace (show ts ++ "\n" ++ show grammar) -} grammar
+convertToGrammar ts = trace (show ts ++ "\n" ++ show grammar) grammar
   where
-    grammar = Grammar (substitute θ word) (substitute θ (productions state))
     (word, state) = runState (mapM typeToGrammar ts) initial
     θ             = substitution state
-
+    prods         = prune (substitute θ (productions state))
+    grammar       = Grammar (substitute θ word) prods
 
 typeToGrammar :: T.Type -> TransState Word
 typeToGrammar t = collect [] t >> toGrammar t
