@@ -35,7 +35,6 @@ import qualified Control.Monad.State           as S
 import qualified Data.Map.Strict               as Map
 import qualified Data.Set               as Set
 
-
 -- Exported Functions: Top-level definitions of those defined in this module
 
 synthetise :: K.KindEnv -> T.Type -> FreestState K.Kind
@@ -68,14 +67,22 @@ synthetise' s kEnv (T.Almanac p T.Variant m) = do
   ks <- tMapM (synthetise' s kEnv) m
   let K.Kind _ _ n = foldr1 join ks
   return $ K.Kind p K.Top n
-  -- Session types
+-- Shared session types
+synthetise' s kEnv (T.Rec p1 (Bind _ a k (T.Semi p2 (T.Message p3 pol t) (T.Var p4 tVar))))
+  | K.isUn k && a == tVar = do
+    checkAgainstSession' s (Map.insert a k kEnv) (T.Semi p2 (T.Message p3 pol t) (T.Var p4 tVar))
+    return $ K.su p1
+synthetise' s kEnv (T.Rec p1 (Bind p2 a k (T.Almanac p3 (T.Choice v) m)))
+  | K.isUn k && all (\t -> case t of (T.Var _ a') -> a == a' ; _ -> False) m = do
+    return $ K.su p1
+-- Session types
 synthetise' _ _    (T.Skip p    ) = return $ K.su p
 synthetise' s kEnv (T.Semi p t u) = do
   (K.Kind _ _ mt) <- checkAgainstSession' s kEnv t
   (K.Kind _ _ mu) <- checkAgainstSession' s kEnv u
   return $ K.Kind p K.Session (join mt mu)
 synthetise' s kEnv (T.Message p _ t) = checkAgainst' s kEnv (K.tl p) t $> K.sl p -- HO CFST
-synthetise' s kEnv (T.Almanac p (T.Choice _) m) =
+synthetise' s kEnv (T.Almanac p (T.Choice v) m) =
   tMapM_ (checkAgainst' s kEnv (K.sl p)) m $> K.sl p
 -- Session or functional
 synthetise' s kEnv (T.Rec _ (Bind _ a k t)) =

@@ -269,7 +269,7 @@ SU
 rec y:SL .             +{B: !(), C: !Bool} ; (+{A: y;!(), C: !()} ; y)
 SL
 
-rec x:SL . rec y:SL .  +{B: !(), C: !Bool} ; ((+{A: y, C: Skip};!())  ; x)
+rec x:SL . rec y:SL . +{B: !(), C: !Bool} ; ((+{A: y, C: Skip};!())  ; x)
 SL
 
 -- Messages not of kind ML
@@ -282,3 +282,37 @@ SL
 
 rec a:SL . ?(!Int; a)
 SL
+
+-- Shared channels, special syntax
+
+*!Int
+SU
+
+*?Int
+SU
+
+*?(rec x:SL . rec y:SL . +{B: !(), C: !Bool} ; ((+{A: y, C: Skip};!())  ; x))
+SU
+
+*+{One, Two}
+SU
+
+*&{One, Two}
+SU
+
+*&{Mon, Tue, ed, Thu, Fri, Sat, Sun}
+SU
+
+-- Shared channels, raw syntax
+
+rec a:SU . !Int; a
+SU
+
+rec a:SU . ?Int; a
+SU
+
+rec a:SU . +{One: Skip, Two: Skip}; a
+SU
+
+rec a:SU . &{One: Skip, Two: Skip}; a
+SU

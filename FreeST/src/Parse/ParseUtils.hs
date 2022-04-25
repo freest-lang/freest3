@@ -83,7 +83,7 @@ instance Functor ParseResult where
 
 -- Parse errors
 
-checkDupField :: Variable -> T.TypeMap -> FreestState ()
+checkDupField :: Variable -> Map.Map Variable v -> FreestState ()
 checkDupField x m =
   when (x `Map.member` m) $ addError $ MultipleFieldDecl (pos x) x
 
