@@ -34,18 +34,14 @@ import           Data.List                      ( isPrefixOf
 import           Prelude                 hiding ( Word )
 import           Debug.Trace
 
-
 bisimilar :: T.Type -> T.Type -> Bool
-bisimilar t u =
-  let g = convertToGrammar [t, u] in
-  -- trace (show t ++ "\n" ++ show u ++ "\n" ++ show g) $
-  bisimilarGrm g
+bisimilar t u = bisimilarGrm $ convertToGrammar [t, u]
 
+-- | Assumes a grammar without unreachable symbols
 bisimilarGrm :: Grammar -> Bool
-bisimilarGrm (Grammar [xs, ys] ps) = expand queue rules ps'
+bisimilarGrm (Grammar [xs, ys] ps) = expand queue rules ps
  where
-  ps' = pruneProductions ps
-  rules | allNormed ps' = [reflex, congruence, bpa2, filtering]
+  rules | allNormed ps = [reflex, congruence, bpa2, filtering]
         | otherwise     = [reflex, congruence, bpa1, bpa2, filtering]
   queue = Queue.singleton (Set.singleton (xs, ys), Set.empty)
 
@@ -109,17 +105,6 @@ expandPair ps (xs, ys) | Map.keysSet m1 == Map.keysSet m2 = Just $ match m1 m2
 match :: Transitions -> Transitions -> Node
 match m1 m2 =
   Map.foldrWithKey (\l xs n -> Set.insert (xs, m2 Map.! l) n) Set.empty m1
-
--- Pruning
-
-pruneProductions :: Productions -> Productions
-pruneProductions p = Map.map (Map.map (pruneWord p)) p
-
-pruneNode :: Productions -> Node -> Node
-pruneNode ps = Set.map $ bimap (pruneWord ps) (pruneWord ps)
-
-pruneWord :: Productions -> Word -> Word
-pruneWord p = foldr (\x ys -> x : if normed p x then ys else []) []
 
 -- The fixed point of branch wrt the application of node transformations
 findFixedPoint
