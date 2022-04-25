@@ -1,8 +1,13 @@
-type SyncServer  = *?SyncService
-type SyncService = ?Int
+type SyncServer  : SU = *?SyncService
+type SyncService : SL = ?Int
 
 syncServer : Int -> dualof SyncServer -> ()
-syncServer limit ch = 
+syncServer limit ch =
+    syncServerOnce limit ch;
+    syncServer limit ch
+
+syncServerOnce : Int -> dualof SyncServer -> ()
+syncServerOnce limit ch = 
     if limit == 0
     then ()
     else 
@@ -11,7 +16,7 @@ syncServer limit ch =
         -- send client's endpoint
         let ch = send c ch in
         -- recursive call
-        syncServer (limit-1) ch;
+        syncServerOnce (limit-1) ch;
         -- sync client
         let _ = send 0 s in
         ()
@@ -25,22 +30,25 @@ sync ch =
     let _ = receive c in
     ()
 
-thread : Int -> SyncServer -> ()
-thread id ch =
-    wait $ id * 100;
+client : Int -> SyncServer -> ()
+client id ch =
+    printIntLn (-id);
     sync ch;
-    putIntLn id
+    printIntLn id
 
-forkNThreads : Int -> SyncServer -> ()
-forkNThreads i ch =
+forkNClients : Int -> SyncServer -> ()
+forkNClients i ch =
     if i == 0
     then ()
     else 
-        fork thread ch; 
-        forkNThreads (i-1) ch
+        fork $ client i ch; 
+        forkNClients (i-1) ch
+
+nServers : Int
+nServers = 20
 
 main : ()
 main = 
     let (c, s) = new SyncServer in
-    forkNThreads 20 c;
-    syncServer 20 s
+    forkNClients nServers c;
+    syncServer nServers s
