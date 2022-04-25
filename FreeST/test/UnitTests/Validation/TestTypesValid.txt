@@ -311,8 +311,8 @@ SU
 rec a:SU . ?Int; a
 SU
 
-rec a:SU . +{One: Skip, Two: Skip}; a
+rec a:SU . +{One: a, Two: a}
 SU
 
-rec a:SU . &{One: Skip, Two: Skip}; a
+rec a:SU . &{One: a, Two: a}
 SU
