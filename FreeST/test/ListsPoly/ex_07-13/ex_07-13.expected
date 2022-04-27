@@ -1,0 +1,3 @@
+<pending>
+Expected when polymorphic lists are implemented
+B '{' (Item 1 ':' 1 ',' (Item 2 ':' 2 ',' (Item 3 ':' 3 ',' (Item 4 ':' 4 ',' (Item 8 ':' 8 '}' E)))))
