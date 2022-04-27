@@ -1,7 +1,6 @@
 <pending>
-Result should be:
-    Hello, World!
-    Skip
+Result should be some permutation of 1, True and OK.
+    For example: 1OKTrue, is valid
 
 But it often gets jumbled around.
 Maybe implement a mechanism to have a consistent
