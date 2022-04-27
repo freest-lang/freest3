@@ -794,11 +794,11 @@ rec z:SL . rec y:SL . (rec x:SL . !x) ; &{A: z, B: Skip, C: Skip} ; &{B: x} ; y
 rec x:SL . !Skip; x; x 
 rec x:SL . !Skip; x; x 
 
--- These 2 tests hang
--- []
--- rec z:SL . !Skip ; (rec x:SL . !x) ; &{A: z, B: z}
--- rec z:SL . !Skip ; (rec x:SL . !x) ; &{A: z, B: Skip} ; z
+-- These 2 tests used to hang
+[]
+rec z:SL . !Skip ; (rec x:SL . !x) ; &{A: z, B: z}
+rec z:SL . !Skip ; (rec x:SL . !x) ; &{A: z, B: Skip} ; z
 
--- [("x","SL"), ("y","SL"), ("z","SL")]
--- rec z:SL . (!Skip ; (rec x:SL . !x)) ; &{A: z ; &{B: x ; z}, B: Skip ; &{B: x ; z}, C: Skip ; &{B: x ; z}}
--- rec z:SL . rec y:SL . !Skip ; (rec x:SL . !x) ; &{A: z, B: Skip, C: Skip} ; &{B: x} ; y
+[("x","SL"), ("y","SL"), ("z","SL")]
+rec z:SL . (!Skip ; (rec x:SL . !x)) ; &{A: z ; &{B: x ; z}, B: Skip ; &{B: x ; z}, C: Skip ; &{B: x ; z}}
+rec z:SL . rec y:SL . !Skip ; (rec x:SL . !x) ; &{A: z, B: Skip, C: Skip} ; &{B: x} ; y

@@ -67,8 +67,8 @@ instance Show Variable where
   show = showVar
 
 showVar :: Variable -> String
--- showVar = dropWhile (\c -> isDigit c || c == '#') . intern
-showVar = intern -- for testing purposes
+showVar = dropWhile (\c -> isDigit c || c == '#') . intern
+-- showVar = intern -- for testing purposes
 
 -- Sorted variable. Either a:k or x:t (just to get the spacing right)
 

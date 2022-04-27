@@ -27,14 +27,16 @@ instance Arbitrary T.View where
   arbitrary = elements [T.External, T.Internal]
   
 
-ids :: [String]            -- Type and program variables
+-- | Type variables
+ids :: [String]
 ids = ["x", "y", "z"]
 
 freeTypeVar :: Variable
 freeTypeVar = mkVar pos "δ"
 
--- choices :: [String]        -- Program Variables
--- choices = ["A", "B", "C"]
+-- | Labels in choices
+choices :: [String]
+choices = ["A", "B", "C"]
 
 instance Arbitrary Variable where
   arbitrary = arbitraryVar ids
@@ -107,8 +109,10 @@ messagePair :: PairGen -> Int -> Gen (T.Type, T.Type)
 messagePair pairGen n = do
   pol <- arbitrary
   (t, u) <- pairGen (n `div` 4) -- HO CFST
--- elements [T.Int pos, T.Char pos, T.Bool pos, T.Unit pos]
   return (T.Message pos pol t, T.Message pos pol u)
+  -- First Order
+  -- t <- elements [T.Int pos, T.Char pos, T.Bool pos, T.Unit pos]
+  -- return (T.Message pos pol t, T.Message pos pol t)
 
 varPair :: Gen (T.Type, T.Type)
 varPair = do
@@ -129,7 +133,7 @@ choicePair pairGen n = do
 
 typeMapPair :: PairGen -> Int -> Gen (T.TypeMap, T.TypeMap)
 typeMapPair pairGen n = do
-  k     <- choose (1, length ids) -- previously choices
+  k     <- choose (1, length choices)
   pairs <- vectorOf k $ fieldPair (n `div` k)
   let (f1, f2) = unzip pairs
   return (Map.fromList f1, Map.fromList f2)
@@ -137,7 +141,8 @@ typeMapPair pairGen n = do
   fieldPair :: Int -> Gen ((Variable, T.Type), (Variable, T.Type))
   fieldPair n = do
     (t, u) <- pairGen (n `div` 4)
-    x      <- arbitrary
+    l      <- elements choices -- arbitrary
+    let x = mkVar pos l
     return ((x, t), (x, u))
 
 recPair :: PairGen -> Int -> Gen (T.Type, T.Type)

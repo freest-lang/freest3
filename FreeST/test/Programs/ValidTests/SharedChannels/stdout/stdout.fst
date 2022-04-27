@@ -17,7 +17,6 @@ printGeneric sel stdout x =
     let (printer, _) = receive stdout in
     sel printer & send x & select Close
 
-
 printBool' : StdOut -> Bool -> Skip
 printBool' = printGeneric[Bool] (\printer:Printer -> select PrintBool printer) 
 

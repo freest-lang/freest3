@@ -7,7 +7,7 @@ Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of 
 Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc.ul.pt
 
 The concept of normed words. Words are sequences of non-terminal symbols. Non
-terminal symbols are variables.
+terminal symbols are Variables.
 -}
 
 module Bisimulation.Norm
@@ -15,7 +15,7 @@ module Bisimulation.Norm
 , norm
 , allNormed
 , equallyNormed
-, prune
+-- , prune
 ) where
 
 import           Syntax.Base          (Variable)
@@ -66,14 +66,11 @@ unionMaybeWith _ Nothing  m        = m
 unionMaybeWith _ m        Nothing  = m
 unionMaybeWith f (Just x) (Just y) = Just (f x y)
 
--- | Any unnormed word xs is bisimilar to its concatenation with any other word
+-- Any unnormed word xs is bisimilar to its concatenation with any other word
 -- ys. We use this fact to prune words ys from productions.
-prune :: Productions -> Productions
-prune p = Map.map (Map.map pruneWord) p
-  where
-    pruneWord :: Word -> Word
-    pruneWord = foldr (\x ys -> x : if normed p x then ys else []) []
-
--- pruneNode :: Productions -> Node -> Node
--- pruneNode ps = Set.map $ bimap (pruneWord ps) (pruneWord ps)
+-- prune :: Productions -> Productions
+-- prune p = Map.map (Map.map pruneWord) p
+--   where
+--     pruneWord :: Word -> Word
+--     pruneWord = foldr (\x ys -> x : if normed p x then ys else []) []
 

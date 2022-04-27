@@ -24,7 +24,6 @@ import qualified Validation.Substitution       as Substitution
                                                 ( subsAll )
 import           Equivalence.Normalisation      ( normalise )
 import           Bisimulation.Grammar
-import           Bisimulation.Norm
 import           Util.Error                     ( internalError )
 import           Util.FreestState               ( tMapM
                                                 , tMapM_
@@ -41,7 +40,7 @@ convertToGrammar ts = {- trace (show ts ++ "\n" ++ show grammar) -} grammar
   where
     (word, state) = runState (mapM typeToGrammar ts) initial
     θ             = substitution state
-    prods         = prune (substitute θ (productions state))
+    prods         = substitute θ (productions state)
     grammar       = Grammar (substitute θ word) prods
 
 typeToGrammar :: T.Type -> TransState Word

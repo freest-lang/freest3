@@ -42,7 +42,7 @@ bisimilarGrm :: Grammar -> Bool
 bisimilarGrm (Grammar [xs, ys] ps) = expand queue rules ps
  where
   rules | allNormed ps = [reflex, congruence, bpa2, filtering]
-        | otherwise     = [reflex, congruence, bpa1, bpa2, filtering]
+        | otherwise    = [reflex, congruence, bpa1, bpa2, filtering]
   queue = Queue.singleton (Set.singleton (xs, ys), Set.empty)
 
 type Node = Set.Set (Word, Word)
@@ -64,7 +64,9 @@ expand ((n, a) Queue.:<| q) rules ps
   | otherwise = case expandNode ps n of
     Nothing -> expand q rules ps
     Just n' -> expand (simplify q branch rules ps) rules ps
-      where branch = Set.singleton (n', Set.union a n)
+      where
+        n'' = pruneNode ps n'
+        branch = Set.singleton (n'', Set.union a n)
 
 simplify
   :: BranchQueue
@@ -232,3 +234,10 @@ throughPath p (l : ls) xs | not (Map.member l ts) = Nothing
   xs' = ts Map.! l
 throughPath p _ xs = Just xs
 
+-- Pruning nodes (Warning: pruneWord is duplicated from Bisimulation.Norm)
+
+pruneNode :: Productions -> Node -> Node
+pruneNode ps = Set.map $ bimap pruneWord pruneWord
+  where
+    pruneWord :: Word -> Word
+    pruneWord = foldr (\x ys -> x : if normed ps x then ys else []) []
