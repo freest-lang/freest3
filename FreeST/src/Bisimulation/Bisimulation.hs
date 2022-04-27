@@ -42,7 +42,7 @@ bisimilarGrm :: Grammar -> Bool
 bisimilarGrm (Grammar [xs, ys] ps) = expand queue rules ps
  where
   rules | allNormed ps = [reflex, congruence, bpa2, filtering]
-        | otherwise     = [reflex, congruence, bpa1, bpa2, filtering]
+        | otherwise    = [reflex, congruence, bpa1, bpa2, filtering]
   queue = Queue.singleton (Set.singleton (xs, ys), Set.empty)
 
 type Node = Set.Set (Word, Word)
