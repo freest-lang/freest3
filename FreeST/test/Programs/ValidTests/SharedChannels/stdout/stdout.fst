@@ -18,7 +18,7 @@ printGeneric stdout x sel =
     sel printer & send x & select Close
 
 printBool' : Bool -> StdOut -> Skip
-printBool'   b stdout = printGeneric[Bool] stdout b (\printer:Printer -> select PrintBool printer) 
+printBool'   b stdout = printGeneric[Bool] stdout b (\printer:select PrintBool printer) 
 
 printBoolLn' : Bool -> StdOut -> Skip
 printBoolLn' b stdout = printGeneric[Bool] stdout b (\printer:Printer -> select PrintBoolLn printer)

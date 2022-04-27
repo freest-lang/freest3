@@ -74,6 +74,3 @@ prune p = Map.map (Map.map pruneWord) p
     pruneWord :: Word -> Word
     pruneWord = foldr (\x ys -> x : if normed p x then ys else []) []
 
--- pruneNode :: Productions -> Node -> Node
--- pruneNode ps = Set.map $ bimap (pruneWord ps) (pruneWord ps)
-
