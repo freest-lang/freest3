@@ -17,4 +17,4 @@ merger x y = (x,y)
 
 main : IntTupleList
 main = zipWith' merger ([1,2]) ([3,4,5])
--- result = [(1,3),(2,4)]
+-- result = [(1, 3),(2, 4)]

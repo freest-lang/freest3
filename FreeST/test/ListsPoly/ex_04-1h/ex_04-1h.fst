@@ -13,4 +13,4 @@ zip' list1 list2 =
 
 main : [(Int,Int)]
 main = zip' ([1,2,3]) ([3,2,1])
--- result = [(1,3),(2,2),(3,1)]
+-- result = [(1, 3),(2, 2),(3, 1)]

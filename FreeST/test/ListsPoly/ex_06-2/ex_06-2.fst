@@ -154,4 +154,4 @@ main =
     let _ = unionWith plus map' map'        in -- M [(1,2),(4,8),(9,18),(10,20)]
     let _ = unionWith plus map' map''       in -- M [(1,2),(4,8),(5,5),(9,9),(10,20)]
     fromList (toList map')
---result = M [(1,1),(4,4),(9,9),(10,10)]
+--result = M [(1, 1),(4, 4),(9, 9),(10, 10)]

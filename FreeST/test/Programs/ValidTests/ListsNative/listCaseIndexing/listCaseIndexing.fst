@@ -2,7 +2,7 @@
 l : [Int]
 l = [1,2,3,4,5]
 
-index : [Int] -> Int
+index : [Int] -> Int -> Int
 index l i =
     case l of {
         x :: xs -> 

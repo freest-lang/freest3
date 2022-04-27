@@ -36,4 +36,4 @@ zipList list1 list2 =
 main : [(Int,Char)]
 main = zipList (tailInt  ([ 0 , 1 , 2 , 3]))
                (initChar (['a','b','c'   ]))
--- result = [(1,'a'),(2,'b')]
+-- result = [(1, 'a'),(2, 'b')]
