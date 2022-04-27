@@ -12,37 +12,38 @@ type Printer : SL = +{ PrintBool    : !Bool  ; Printer
 
 -- helper functions
 
-printGeneric : forall a . StdOut -> a -> (Printer -> !a;Printer) -> Skip
-printGeneric stdout x sel =
+printGeneric : forall a . (Printer -> !a;Printer) -> StdOut -> a -> Skip
+printGeneric sel stdout x =
     let (printer, _) = receive stdout in
     sel printer & send x & select Close
 
-printBool' : Bool -> StdOut -> Skip
-printBool'   b stdout = printGeneric[Bool] stdout b (\printer:Printer -> select PrintBool printer) 
 
-printBoolLn' : Bool -> StdOut -> Skip
-printBoolLn' b stdout = printGeneric[Bool] stdout b (\printer:Printer -> select PrintBoolLn printer)
+printBool' : StdOut -> Bool -> Skip
+printBool' = printGeneric[Bool] (\printer:Printer -> select PrintBool printer) 
 
-
-printInt' : Int -> StdOut -> Skip
-printInt' i stdout = printGeneric[Int] stdout i (\printer:Printer -> select PrintInt printer)
-
-printIntLn' : Int -> StdOut -> Skip
-printIntLn' i stdout = printGeneric[Int] stdout i (\printer:Printer -> select PrintIntLn printer)
+printBoolLn' : StdOut -> Bool -> Skip
+printBoolLn' = printGeneric[Bool] (\printer:Printer -> select PrintBoolLn printer)
 
 
-printChar' : Char -> StdOut -> Skip
-printChar' c stdout = printGeneric[Char] stdout c (\printer:Printer -> select PrintChar printer)
+printInt' : StdOut -> Int -> Skip
+printInt' = printGeneric[Int] (\printer:Printer -> select PrintInt printer)
 
-printCharLn' : Char -> StdOut -> Skip
-printCharLn' c stdout = printGeneric[Char] stdout c (\printer:Printer -> select PrintCharLn printer)
+printIntLn' : StdOut -> Int -> Skip
+printIntLn' = printGeneric[Int] (\printer:Printer -> select PrintIntLn printer)
 
 
-printString' : String -> StdOut -> Skip
-printString' s stdout = printGeneric[String] stdout s (\printer:Printer -> select PrintString printer)
+printChar' : StdOut -> Char -> Skip
+printChar' = printGeneric[Char] (\printer:Printer -> select PrintChar printer)
 
-printStringLn' : String -> StdOut -> Skip
-printStringLn' s stdout = printGeneric[String] stdout s (\printer:Printer -> select PrintStringLn printer)
+printCharLn' : StdOut -> Char -> Skip
+printCharLn' = printGeneric[Char] (\printer:Printer -> select PrintCharLn printer)
+
+
+printString' : StdOut -> String -> Skip
+printString' = printGeneric[String] (\printer:Printer -> select PrintString printer)
+
+printStringLn' : StdOut -> String -> Skip
+printStringLn' = printGeneric[String] (\printer:Printer -> select PrintStringLn printer)
 
 -- stdout server
 
@@ -74,12 +75,27 @@ aux printer printFun =
     printer
 
 
+-- selfish client
 
-main : Skip
+-- a client that captures stdout to print uninterruptedly
+selfishClient : StdOut -> ()
+selfishClient stdout =
+    let printer = fst[Printer, StdOut] $ receive stdout in
+    let _ = 
+        select PrintString printer & send "O" &
+        select PrintString         & send "K" &
+        select Close
+        in ()
+
+-- main
+
+main : ()
 main = 
     let (stdout, s) = new StdOut in
-    fork $ runStdout s;
-    printStringLn' "Hello, World!" stdout
+    fork (printInt'  stdout 1); -- print "1"
+    fork (printBool' stdout True); -- print "True"
+    fork (selfishClient stdout);
+    runStdout s -- run stdout server
 
 
 
