@@ -17,16 +17,6 @@ import           Control.Monad
 pos :: Pos
 pos = defaultPos
 
-instance Arbitrary Multiplicity where
-  arbitrary = elements [Un, Lin]
-
-instance Arbitrary T.Polarity where
-  arbitrary = elements [T.In, T.Out]
-
-instance Arbitrary T.View where
-  arbitrary = elements [T.External, T.Internal]
-  
-
 -- | Type variables
 ids :: [String]
 ids = ["x", "y", "z"]
@@ -38,16 +28,24 @@ freeTypeVar = mkVar pos "δ"
 choices :: [String]
 choices = ["A", "B", "C"]
 
+instance Arbitrary Multiplicity where
+  arbitrary = elements [Un, Lin]
+
+instance Arbitrary T.Polarity where
+  arbitrary = elements [T.In, T.Out]
+
+instance Arbitrary T.View where
+  arbitrary = elements [T.External, T.Internal]
+  
+instance Arbitrary T.Sort where
+  arbitrary = elements [
+    -- T.Record, T.Variant, -- These two yield too many 'precondition false'
+    T.Choice T.External, T.Choice T.Internal]
+
 instance Arbitrary Variable where
-  arbitrary = arbitraryVar ids
-
--- instance Arbitrary Variable where
---  arbitrary = arbitraryVar choices
-
-arbitraryVar :: [String] -> Gen Variable
-arbitraryVar ids = do
-  id <- elements ids
-  return $ mkVar pos id
+  arbitrary = do
+    id <- elements ids
+    return $ mkVar pos id
 
 instance Arbitrary K.Kind where
   arbitrary = elements $ K.su pos : replicate 9 (K.sl pos) -- 90% of SL
@@ -78,13 +76,21 @@ type PairGen = Int -> Gen (T.Type, T.Type)
 bisimPair :: PairGen
 bisimPair 0 = oneof [skipPair, varPair]
 bisimPair n = oneof
-    -- The various type constructors
-  [ skipPair
-  , varPair
+  [
+  -- Some functional type constructors
+    intPair
+  , charPair
+    -- Bool, String, Unit may not be needed
+  , arrowPair bisimPair n
+  , pairPair bisimPair n
+  -- The various session types constructors
+  , skipPair
+  , semiPair bisimPair n
   , messagePair bisimPair n
   , choicePair bisimPair n
+  -- The recursive type constructors
   , recPair bisimPair n
-  , semiPair bisimPair n
+  , varPair
     -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
   , skipT n
   , tSkip n
@@ -104,6 +110,12 @@ bisimPair n = oneof
 
 skipPair :: Gen (T.Type, T.Type)
 skipPair = return (T.Skip pos, T.Skip pos)
+
+intPair :: Gen (T.Type, T.Type)
+intPair = return (T.Int pos, T.Int pos)
+
+charPair :: Gen (T.Type, T.Type)
+charPair = return (T.Char pos, T.Char pos)
 
 messagePair :: PairGen -> Int -> Gen (T.Type, T.Type)
 messagePair pairGen n = do
@@ -127,9 +139,9 @@ semiPair pairGen n = do
 
 choicePair :: PairGen -> Int -> Gen (T.Type, T.Type)
 choicePair pairGen n = do
-  p        <- arbitrary
+  c        <- arbitrary
   (m1, m2) <- typeMapPair pairGen n
-  return (T.Almanac pos (T.Choice p) m1, T.Almanac pos (T.Choice p) m2)
+  return (T.Almanac pos c m1, T.Almanac pos c m2)
 
 typeMapPair :: PairGen -> Int -> Gen (T.TypeMap, T.TypeMap)
 typeMapPair pairGen n = do
@@ -144,6 +156,23 @@ typeMapPair pairGen n = do
     l      <- elements choices -- arbitrary
     let x = mkVar pos l
     return ((x, t), (x, u))
+
+-- The various type constructors (except forall
+
+arrowPair :: PairGen -> Int -> Gen (T.Type, T.Type)
+arrowPair pairGen n = do
+  mult <- arbitrary
+  (t, u) <- pairGen (n `div` 8)
+  (v, w) <- pairGen (n `div` 8)
+  return (T.Arrow pos mult t v, T.Arrow pos mult u w)
+
+pairPair :: PairGen -> Int -> Gen (T.Type, T.Type)
+pairPair pairGen n = do
+  (t, u) <- pairGen (n `div` 8)
+  (v, w) <- pairGen (n `div` 8)
+  return (T.Pair pos t v, T.Pair pos u w)
+
+-- Recursion
 
 recPair :: PairGen -> Int -> Gen (T.Type, T.Type)
 recPair pairGen n = do

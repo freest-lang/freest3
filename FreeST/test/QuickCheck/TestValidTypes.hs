@@ -38,9 +38,6 @@ import           Debug.Trace
 equiv :: T.Type -> T.Type -> Bool
 equiv = equivalent kindEnv
 
--- norm :: T.Type -> T.Type
--- norm = normalise Map.empty
-
 kindEnv :: KindEnv
 kindEnv = Map.fromList (zip (map (mkVar defaultPos) ids) (repeat (K.sl defaultPos)))
         -- TODO: This env should only contain the free vars of t; plus
@@ -48,14 +45,13 @@ kindEnv = Map.fromList (zip (map (mkVar defaultPos) ids) (repeat (K.sl defaultPo
 
 kinded :: T.Type -> Bool
 kinded t =
-  null $ errors $ execState (synthetise kindEnv t) (initialState) --  "Kind synthesis")
-
+  null $ errors $ execState (synthetise kindEnv t) (initialState)
 
 -- Bisimilar types are bisimilar
 prop_bisimilar :: BisimPair -> Property
-prop_bisimilar (BisimPair t u) =
+prop_bisimilar p@(BisimPair t u) =
   kinded t && kinded u ==>
-    trace ("Check:\n" ++ show t ++ " bisimilar-to " ++ show u)
+    -- trace ("Check:\n" ++ show p) -- trace at TypeToGrammar instead
     t `bisimilar` u
 
 -- Equivalence
