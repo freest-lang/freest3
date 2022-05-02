@@ -280,16 +280,20 @@ Type :: { T.Type }
   | ChoiceView '{' FieldList '}' { T.Almanac (fst $1) (T.Choice (snd $1)) $3 }
   -- Star types
   | '*' Polarity Type %prec MSG 
-    { let p = pos $1 in
-      let tVar = mkVar p "a" in
-      T.Rec p $ Bind p tVar (K.su p) $
-        T.Semi p (uncurry T.Message $2 $3) (T.Var p tVar) }
+    {% do
+        i <- toStateT getNextIndex
+        let p = pos $1
+        let tVar = mkNewVar i (mkVar p "a")
+        return (T.Rec p $ Bind p tVar (K.su p) $
+          T.Semi p (uncurry T.Message $2 $3) (T.Var p tVar)) }
   | '*' ChoiceView '{' LabelList '}'
-    { let p = pos $1 in
-      let tVar = mkVar p "a" in
-      let tMap = Map.map ($ (T.Var p tVar)) $4 in
-      T.Rec p $ Bind p tVar (K.su p) $
-        T.Almanac (fst $2) (T.Choice (snd $2)) tMap }
+    {% do
+        i <- toStateT getNextIndex
+        let p = pos $1
+        let tVar = mkNewVar i (mkVar p "a")
+        let tMap = Map.map ($ (T.Var p tVar)) $4
+        return (T.Rec p $ Bind p tVar (K.su p) $
+            T.Almanac (fst $2) (T.Choice (snd $2)) tMap) }
   -- Polymorphism and recursion
   | rec KindBind '.' Type
       { let (a,k) = $2 in T.Rec (pos $1) (Bind (pos a) a k $4) }
