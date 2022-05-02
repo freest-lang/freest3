@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables, LambdaCase #-}
+{-# LANGUAGE ScopedTypeVariables, LambdaCase, BangPatterns #-}
 module CompilerValidSpec
   ( spec
   )
@@ -14,13 +14,18 @@ import           System.Exit
 import           System.IO                      ( stdout
                                                 , stderr
                                                 )
-import           System.IO.Silently             ( hCapture )
+import           System.IO.Silently            -- ( hCapture )
 import           System.Timeout
 import           Test.HUnit                     ( assertFailure )
 import           Test.Hspec
 import           Util.FreestState
 import           System.FilePath -- ((</>))
 import Data.List
+import GHC.IO.Handle
+import System.IO
+import System.Directory
+
+import Debug.Trace
 
 data TestResult = Timeout | Passed | Failed
 
@@ -28,43 +33,58 @@ baseTestDir :: String
 baseTestDir = "/test/Programs/ValidTests/"
 
 spec :: Spec
-spec = specTest "Valid Tests" baseTestDir testValid
+spec = specTest' "Valid Tests" baseTestDir validTest
+-- spec = specTest "Valid Tests" baseTestDir testValid
 
-testValid :: String -> String -> Spec
-testValid baseDir testingDir = do
-  let dir = baseDir ++ baseTestDir ++ testingDir
-  file <- runIO $ fmap getSource (listDirectory dir)
-  let f = dir </> file
-  let expectedFile = f -<.> "expected"
- -- unless (pending f) $ do
-  runIO (readExpected expectedFile) >>= \case
-    Left s -> s
-    Right s ->
-       checkResult s expectedFile =<< runIO (testOne f)
+validTest :: FilePath -> (FilePath, String) -> Expectation
+validTest dir (testFile, exp) = do
+  (out, res) <- testOne testFile
+--  let out = exp
 
- where
-   readExpected :: FilePath -> IO (Either Spec String)
-   readExpected expectedFile = do
-     safeRead expectedFile >>= \case
-       Just s
-         | "<pending>" `isPrefixOf` s  -> pure $ Left $
-              it ("Testing " ++ takeBaseName expectedFile) $
-                pendingWith $ intercalate "\n\t" $ tail $ lines s
-         | otherwise -> pure $ Right s
-       Nothing ->
-         pure $ Left $
-           it ("Testing " ++ takeBaseName expectedFile) $
-             void $ assertFailure $ "File " ++ expectedFile ++ " not found"
-     
+  case res of
+    Timeout -> doExpectationsMatch exp "<divergent>"
+    Failed  -> void $ assertFailure out
+    Passed
+      | "<pending>" `isPrefixOf` exp -> pendingWith $ intercalate "\n\t" $ tail $ lines exp
+      | otherwise -> doExpectationsMatch exp out
 
 
-     
+doExpectationsMatch :: String -> String -> Expectation
+doExpectationsMatch out exp =
+  filter (/= '\n') out `shouldBe` filter (/= '\n') exp
+
+-- testValid :: String -> String -> Spec
+-- testValid baseDir testingDir = do
+--   let dir = baseDir ++ baseTestDir ++ testingDir
+--   file <- runIO $ fmap getSource (listDirectory dir)
+--   let f = dir </> file
+--   let expectedFile = f -<.> "expected"
+--  -- unless (pending f) $ do
+--   runIO (readExpected expectedFile) >>= \case
+--     Left s -> s
+--     Right s -> checkResult s expectedFile =<< runIO (testOne f)
+    
+--  where
+--    readExpected :: FilePath -> IO (Either Spec String)
+--    readExpected expectedFile = do
+--      safeRead expectedFile >>= \case
+--        Just s
+--          | "<pending>" `isPrefixOf` s  -> pure $ Left $
+--               it ("Testing " ++ takeBaseName expectedFile) $
+--                 pendingWith $ intercalate "\n\t" $ tail $ lines s
+--          | otherwise -> pure $ Right s
+--        Nothing ->
+--          pure $ Left $
+--            it ("Testing " ++ takeBaseName expectedFile) $
+--              void $ assertFailure $ "File " ++ expectedFile ++ " not found"
+
+  
 testOne :: FilePath -> IO (String, TestResult)
-testOne file = hCapture [stdout, stderr] $ catches
-  runTest
-  [ Handler (\(e :: ExitCode) -> exitProgram e)
-  , Handler (\(_ :: SomeException) -> pure Failed)
-  ]
+testOne file = hCapture [stdout, stderr] $
+   catches runTest
+    [ Handler (\(e :: ExitCode) -> exitProgram e)
+    , Handler (\(_ :: SomeException) -> pure Failed)
+    ]
  where
   exitProgram :: ExitCode -> IO TestResult
   exitProgram ExitSuccess = pure Passed
@@ -81,16 +101,16 @@ testOne file = hCapture [stdout, stderr] $ catches
 timeInMicro :: Int
 timeInMicro = 3 * 1000000
 
-checkResult :: String -> String -> (String, TestResult) -> Spec
-checkResult contents file (_, Timeout) = checkAgainstExpected file contents "<divergent>"
-checkResult contents file (res, Passed) = checkAgainstExpected file contents res
-checkResult _ file (res, Failed) = it ("Testing " ++ takeBaseName file) $ void $ assertFailure res
+-- checkResult :: String -> String -> (String, TestResult) -> Spec
+-- checkResult contents file (_, Timeout) = checkAgainstExpected file contents "<divergent>"
+-- checkResult contents file (res, Passed) = checkAgainstExpected file contents res
+-- checkResult _ file (res, Failed) = it ("Testing " ++ takeBaseName file) $ void $ assertFailure res
 
 
-checkAgainstExpected :: FilePath -> String -> String -> Spec
-checkAgainstExpected expectedFile expectedContents result =
-  it ("Testing " ++ takeBaseName expectedFile) $
-     filter (/= '\n') result `shouldBe` filter (/= '\n') expectedContents
+-- checkAgainstExpected :: FilePath -> String -> String -> Spec
+-- checkAgainstExpected expectedFile expectedContents result =
+--   it ("Testing " ++ takeBaseName expectedFile) $
+--      filter (/= '\n') result `shouldBe` filter (/= '\n') expectedContents
 
 
 -- checkResult :: (String, TestResult) -> String -> Spec

@@ -84,6 +84,7 @@ checkHasBinding f _ = do
 -- variables are used.
 checkFunBody :: Variable -> E.Exp -> FreestState ()
 checkFunBody f e = getFromVEnv f >>= \case
+  -- setModuleName (Just . defModule $ span s) >>
   Just s  -> Typing.checkAgainst Map.empty e s
   Nothing -> return ()
 

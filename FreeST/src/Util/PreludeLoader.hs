@@ -1,3 +1,5 @@
+{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {- |
 Module      :  Syntax.Types
 Description :  Signatures for the functions in the prelude
@@ -22,65 +24,76 @@ import           Syntax.Program
 import qualified Data.Map.Strict               as Map
 import           Parse.Read                     ( )
 
+import           Parse.Parser
+import Util.FreestState
+
 typeList :: [(Variable, T.Type)]
 typeList =
   [ -- Int
-    (mkVar p "(+)"     , read "Int -> Int -> Int")
-  , (mkVar p "(-)"     , read "Int -> Int -> Int")
-  , (mkVar p "(/)"     , read "Int -> Int -> Int")
-  , (mkVar p "(*)"     , read "Int -> Int -> Int")
-  , (mkVar p "(^)"     , read "Int -> Int -> Int")
-  , (mkVar p "mod"     , read "Int -> Int -> Int")
-  , (mkVar p "rem"     , read "Int -> Int -> Int")
-  , (mkVar p "div"     , read "Int -> Int -> Int")
-  , (mkVar p "max"     , read "Int -> Int -> Int")
-  , (mkVar p "min"     , read "Int -> Int -> Int")
-  , (mkVar p "quot"    , read "Int -> Int -> Int")
-  , (mkVar p "gcd"     , read "Int -> Int -> Int")
-  , (mkVar p "lcm"     , read "Int -> Int -> Int")
-  , (mkVar p "subtract", read "Int -> Int -> Int")
-  , (mkVar p "succ"    , read "Int -> Int")
-  , (mkVar p "pred"    , read "Int -> Int")
-  , (mkVar p "abs"     , read "Int -> Int")
-  , (mkVar p "negate"  , read "Int -> Int")
-  , (mkVar p "even"    , read "Int -> Bool")
-  , (mkVar p "odd"     , read "Int -> Bool")
-  , (mkVar p "(==)"    , read "Int -> Int -> Bool")
-  , (mkVar p "(/=)"    , read "Int -> Int -> Bool")
-  , (mkVar p "(<)"     , read "Int -> Int -> Bool")
-  , (mkVar p "(>)"     , read "Int -> Int -> Bool")
-  , (mkVar p "(<=)"    , read "Int -> Int -> Bool")
-  , (mkVar p "(>=)"    , read "Int -> Int -> Bool")
+    (mkVar p "(+)"     , readT "Int -> Int -> Int")
+  , (mkVar p "(-)"     , readT "Int -> Int -> Int")
+  , (mkVar p "(/)"     , readT "Int -> Int -> Int")
+  , (mkVar p "(*)"     , readT "Int -> Int -> Int")
+  , (mkVar p "(^)"     , readT "Int -> Int -> Int")
+  , (mkVar p "mod"     , readT "Int -> Int -> Int")
+  , (mkVar p "rem"     , readT "Int -> Int -> Int")
+  , (mkVar p "div"     , readT "Int -> Int -> Int")
+  , (mkVar p "max"     , readT "Int -> Int -> Int")
+  , (mkVar p "min"     , readT "Int -> Int -> Int")
+  , (mkVar p "quot"    , readT "Int -> Int -> Int")
+  , (mkVar p "gcd"     , readT "Int -> Int -> Int")
+  , (mkVar p "lcm"     , readT "Int -> Int -> Int")
+  , (mkVar p "subtract", readT "Int -> Int -> Int")
+  , (mkVar p "succ"    , readT "Int -> Int")
+  , (mkVar p "pred"    , readT "Int -> Int")
+  , (mkVar p "abs"     , readT "Int -> Int")
+  , (mkVar p "negate"  , readT "Int -> Int")
+  , (mkVar p "even"    , readT "Int -> Bool")
+  , (mkVar p "odd"     , readT "Int -> Bool")
+  , (mkVar p "(==)"    , readT "Int -> Int -> Bool")
+  , (mkVar p "(/=)"    , readT "Int -> Int -> Bool")
+  , (mkVar p "(<)"     , readT "Int -> Int -> Bool")
+  , (mkVar p "(>)"     , readT "Int -> Int -> Bool")
+  , (mkVar p "(<=)"    , readT "Int -> Int -> Bool")
+  , (mkVar p "(>=)"    , readT "Int -> Int -> Bool")
   -- Bool
-  , (mkVar p "not" , read "Bool -> Bool")
-  , (mkVar p "(&&)", read "Bool -> Bool -> Bool")
-  , (mkVar p "(||)", read "Bool -> Bool -> Bool")
+  , (mkVar p "not" , readT "Bool -> Bool")
+  , (mkVar p "(&&)", readT "Bool -> Bool -> Bool")
+  , (mkVar p "(||)", readT "Bool -> Bool -> Bool")
   -- Char
-  , (mkVar p "ord", read "Char -> Int")
-  , (mkVar p "chr", read "Int -> Char")
+  , (mkVar p "ord", readT "Char -> Int")
+  , (mkVar p "chr", readT "Int -> Char")
   -- Pair
-  , (mkVar p "fst", read "∀ a:TL . ∀ b:TU . (a, b) -> a")
-  , (mkVar p "snd", read "∀ a:TU . ∀ b:TL . (a, b) -> b")
+  , (mkVar p "fst", readT "∀ a:TL . ∀ b:TU . (a, b) -> a")
+  , (mkVar p "snd", readT "∀ a:TU . ∀ b:TL . (a, b) -> b")
   -- Print
-  , (mkVar p "printInt"   , read "Int -> ()")
-  , (mkVar p "printIntLn" , read "Int -> ()")
-  , (mkVar p "printBool"  , read "Bool -> ()")
-  , (mkVar p "printBoolLn", read "Bool -> ()")
-  , (mkVar p "printChar"  , read "Char -> ()")
-  , (mkVar p "printCharLn", read "Char -> ()")
-  , (mkVar p "printUnit"  , read "() -> ()")
-  , (mkVar p "printUnitLn", read "() -> ()")
-  , (mkVar p "printString", read "String -> ()")
-  , (mkVar p "printStringLn", read "String -> ()")
+  , (mkVar p "printInt"   , readT "Int -> ()")
+  , (mkVar p "printIntLn" , readT "Int -> ()")
+  , (mkVar p "printBool"  , readT "Bool -> ()")
+  , (mkVar p "printBoolLn", readT "Bool -> ()")
+  , (mkVar p "printChar"  , readT "Char -> ()")
+  , (mkVar p "printCharLn", readT "Char -> ()")
+  , (mkVar p "printUnit"  , readT "() -> ()")
+  , (mkVar p "printUnitLn", readT "() -> ()")
+  , (mkVar p "printString", readT "String -> ()")
+  , (mkVar p "printStringLn", readT "String -> ()")
   -- Fork
-  , (mkVar p "fork", read "∀a:TL. a -> ()")
+  , (mkVar p "fork", readT "∀a:TL. a -> ()")
   -- Error
-  , (mkVar p "error", read "∀a:TU . String -> a")
+  , (mkVar p "error", readT "∀a:TU . String -> a")
   -- Session ops
-  , (mkVar p "send", read "∀a:ML . a -> ∀b:SL . !a;b -o b")
-  , (mkVar p "receive", read "∀a:ML . ∀b:SL . ?a;b -> (a, b)")
+  , (mkVar p "send", readT "∀a:ML . a -> ∀b:SL . !a;b -o b")
+  , (mkVar p "receive", readT "∀a:ML . ∀b:SL . ?a;b -> (a, b)")
   ]
   where p = defaultSpan {defModule = "Prelude"}
+
+
+-- Similar to the Read instance, but it enforces the type's module to be Prelude.
+class ReadType t where
+  readT :: String -> t
+
+instance ReadType T.Type where
+  readT s = either (error . getErrors . (\errors -> initialState {errors})) id (parseType "Prelude" s)
 
 prelude :: VarEnv
 prelude = Map.fromList typeList-- foldr (uncurry Map.insert) Map.empty typeList

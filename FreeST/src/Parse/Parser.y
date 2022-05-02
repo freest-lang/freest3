@@ -450,20 +450,22 @@ mkSpanPosPos p1 p2 = do
 parse :: String -> FilePath -> ([Token] -> FreestStateT a) -> FreestStateT a
 parse input fname parseFun = either (lift . Left) parseFun (scanTokens input fname)
 
-parseKind :: String -> Either Errors K.Kind
-parseKind str = either (Left . (:[])) (Right . id) (evalStateT (parse str "" kinds) state)
+parseKind :: FilePath -> String -> Either Errors K.Kind
+parseKind runFilePath str = either (Left . (:[])) (Right . id) (evalStateT (parse str "" kinds) state)
   where
-    state = initialState { runOpts = defaultOpts {runFilePath = "Parse.Kind"}}
+    state = initialState { runOpts = defaultOpts {runFilePath}}
+--    state = initialState { runOpts = defaultOpts {runFilePath = "Parse.Kind"}}
 
-parseType :: String -> Either Errors T.Type
-parseType str = either (Left . (:[])) stateToEither (runStateT (parse str "" types) state)
+parseType :: FilePath -> String -> Either Errors T.Type
+parseType runFilePath str = either (Left . (:[])) stateToEither (runStateT (parse str "" types) state)
   where
-    state = initialState { runOpts = defaultOpts {runFilePath = "Parse.Type"}}
+    state = initialState { runOpts = defaultOpts {runFilePath}}
+--     state = initialState { runOpts = defaultOpts {runFilePath = "Parse.Type"}}
 
-parseExpr :: String -> Either Errors E.Exp
-parseExpr str = either (Left . (:[])) stateToEither (runStateT (parse str "" expr) state)
+parseExpr :: FilePath -> String -> Either Errors E.Exp
+parseExpr runFilePath str = either (Left . (:[])) stateToEither (runStateT (parse str "" expr) state)
   where
-    state = initialState { runOpts = defaultOpts {runFilePath = "Parse.Expression"}}
+    state = initialState { runOpts = defaultOpts {runFilePath}}
 
 stateToEither :: (a, FreestS) -> Either Errors a
 stateToEither (t,s)
@@ -495,7 +497,6 @@ parseAndImport :: FreestS -> IO FreestS
 parseAndImport initial = do
   let filename = runFilePath $ runOpts initial 
   s <- parseProgram (initial {moduleName = Nothing})
- 
   let baseName = takeBaseName (runFilePath $ runOpts s)
   case moduleName s of
     Just name
@@ -503,11 +504,10 @@ parseAndImport initial = do
       | otherwise -> pure $ s {errors = errors s ++ [NameModuleMismatch defaultSpan name baseName]}
     Nothing   -> doImports filename Set.empty (Set.toList (imports s)) s
   where
-      
     doImports :: FilePath -> Imports -> [FilePath] -> FreestS -> IO FreestS
     doImports _ _ [] s = return s
     doImports defModule imported (curImport:toImport) s
-      | curImport `Set.member` imported = return s
+      | curImport `Set.member` imported = doImports defModule imported toImport s
       | otherwise = do
           let fileToImport = replaceBaseName defModule curImport -<.> "fst"
           exists <- doesFileExist fileToImport            
@@ -522,7 +522,6 @@ parseAndImport initial = do
             pure $ s {errors = errors s ++ [ImportNotFound defaultSpan{defModule} curImport fileToImport]}
         
 -- Error Handling
-
 parseError :: [Token] -> FreestStateT a
 parseError [] = lift . Left $ PrematureEndOfFile defaultSpan
 parseError (x:_) = lift . Left $ ParseError (span x) (show x)

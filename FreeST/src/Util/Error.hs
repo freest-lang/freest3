@@ -198,9 +198,12 @@ instance Message ErrorType where
   msg (TypeAbsBodyNotValue _ e e') sty ts =
     "The body of type abstraction " ++ style red sty ts e ++ "\n                        namely " ++
     style red sty ts e' ++ "\n                is not a value"
-  msg (VarOrConsNotInScope _ pv) sty ts = 
-    "Variable or data constructor not in scope: " ++ style red sty ts pv ++
-    "\n  (is " ++ style red sty ts pv ++ " a linear variable that has been consumed?)"
+  msg (VarOrConsNotInScope p pv) sty ts =
+    let styledVar = style red sty ts pv in
+    "Variable or data constructor not in scope: " ++ styledVar ++
+    "\n  In module: " ++ showModule (showModuleName p) p ++
+    "\n  (is " ++ styledVar ++ " a linear variable that has been consumed?)" ++
+    "\n  (is " ++ styledVar ++ " a function defined in other module that is not imported?)"
   msg (LinProgVar _ x t k) sty ts =
     "Program variable " ++ style red sty ts x ++ " is linear at the end of its scope\n\t  variable " ++
     style red sty ts x ++ " is of type " ++ style red sty ts t ++ " of kind " ++ style red sty ts k

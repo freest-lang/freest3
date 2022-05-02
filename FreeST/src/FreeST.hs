@@ -33,7 +33,7 @@ checkAndRun runOpts = do
   s1 <- preludeHasErrors (runFilePath runOpts) s0 <$> (parseProgram s0)
 
   -- | Parse
-  s2 <- parseAndImport s1{runOpts} 
+  s2 <- parseAndImport s1{runOpts}
   when (hasErrors s2) (die $ getErrors s2)
 
  -- | Solve type declarations and dualof operators

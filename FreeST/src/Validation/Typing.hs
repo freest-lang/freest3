@@ -42,6 +42,7 @@ import           Control.Monad.State            ( when
                                                 )
 import           Data.Functor
 import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
 import           Prelude hiding ( span )
 
 -- SYNTHESISING A TYPE
@@ -110,7 +111,6 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkVar p "send" = do
 synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "fork" = do
   t <- synthetise kEnv e
   void $ K.checkAgainst kEnv (K.tl defaultSpan) t -- FIXME: Span
---  void $ K.checkAgainst kEnv (K.tl p) t
   return $ T.Unit p
 -- Application, general case
 synthetise kEnv (E.App _ e1 e2) = do
@@ -162,19 +162,20 @@ synthetise kEnv (E.New p t u) = do
   return $ T.Pair p t u
 
 -- | Returns the type of a variable; removes it from vEnv if lin
+
+-- TODO: this does not solve all the problems. Check with 3 depth 
 synthetiseVar :: K.KindEnv -> Variable -> FreestState T.Type
 synthetiseVar kEnv x = getFromVEnv x >>= \case
-  Just s -> do
-    k <- K.synthetise kEnv s
-    when (K.isLin k) $ removeFromVEnv x
-    return s
-  Nothing -> do
-    let p = span x
-        s = omission p
-    addError (VarOrConsNotInScope p x)
-    addToVEnv x s
-    return s
-
+    Just s -> do
+      k <- K.synthetise kEnv s
+      when (K.isLin k) $ removeFromVEnv x
+      return s
+    Nothing -> do
+      let p = span x
+          s = omission p
+      addError (VarOrConsNotInScope p x)
+      addToVEnv x s
+      return s
 
 -- The difference operation. Removes a program variable from the
 -- variable environment and gives an error if it is linear

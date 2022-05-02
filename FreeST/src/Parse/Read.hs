@@ -16,8 +16,8 @@ instance Read Type where
 instance Read Exp where
   readsPrec _ = eitherRead parseExpr
 
-eitherRead :: (String -> Either Errors a) -> String -> [(a, String)]
+eitherRead :: (FilePath -> String -> Either Errors a) -> String -> [(a, String)]
 eitherRead f s =
-  either (error . getErrors . state) ((:[]) . (,"")) (f s) 
+  either (error . getErrors . state) ((:[]) . (,"")) (f "" s) 
   where
     state errors = initialState {errors}

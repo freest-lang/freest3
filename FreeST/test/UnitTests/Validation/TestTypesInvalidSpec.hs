@@ -27,7 +27,7 @@ matchInvalidKindingSpec t = it t $ isWellFormed t `shouldBe` False
 -- if it is Right b, apply the second function to b.
 
 isWellFormed :: String -> Bool
-isWellFormed str =  either (const False) synthetiseK (parseType str)
+isWellFormed str =  either (const False) synthetiseK (parseType "TestTypesInvalidSpec" str)
  where
   synthetiseK t = null $ errors $ execState
     (synthetise Map.empty . renameType =<< Dual.resolve t) initialState
