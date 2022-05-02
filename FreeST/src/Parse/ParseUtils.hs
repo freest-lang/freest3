@@ -29,6 +29,10 @@ module Parse.ParseUtils
   , FreestStateT
   , thenM
   , returnM
+  , addToVEnv'
+  , addToPEnv'
+  , addToTEnv'
+
   )
 where
 
@@ -83,54 +87,58 @@ instance Functor ParseResult where
 
 -- Parse errors
 
-checkDupField :: Variable -> T.TypeMap -> FreestState ()
-checkDupField x m =
-  when (x `Map.member` m) $ addError $ MultipleFieldDecl (pos x) x
+checkDupField :: Variable -> T.TypeMap -> FreestStateT ()
+checkDupField x m = 
+  when (x `Map.member` m) $ addError' $ MultipleFieldDecl (pos x) x
 
-checkDupCase :: Variable -> E.FieldMap -> FreestState ()
+addError' :: ErrorType -> FreestStateT ()
+addError' e = modify (\s -> s { errors = e : errors s })
+
+checkDupCase :: Variable -> E.FieldMap -> FreestStateT ()
 checkDupCase x m =
-  when (x `Map.member` m) $ addError $ RedundantPMatch (pos x) x
+  when (x `Map.member` m) $ addError' $ RedundantPMatch (pos x) x
 
-checkDupBind :: Variable -> [Variable] -> FreestState ()
+checkDupBind :: Variable -> [Variable] -> FreestStateT ()
 checkDupBind x xs
   | intern x == "_" = return ()
   | otherwise = case find (== x) xs of
-    Just y  -> addError $ DuplicatePVar (pos y) x (pos x)
+    Just y  -> addError' $ DuplicatePVar (pos y) x (pos x)
     Nothing -> return ()
 
-checkDupKindBind :: Bind K.Kind a -> [Bind K.Kind a] -> FreestState ()
+checkDupKindBind :: Bind K.Kind a -> [Bind K.Kind a] -> FreestStateT ()
 checkDupKindBind (Bind p x _ _) bs =
   case find (\(Bind _ y _ _) -> y == x) bs of
-    Just (Bind p' _ _ _) -> addError $ DuplicateTVar p' x p
+    Just (Bind p' _ _ _) -> addError' $ DuplicateTVar p' x p
     Nothing                -> return ()
 
-checkDupCons :: (Variable, [T.Type]) -> [(Variable, [T.Type])] -> FreestState ()
+checkDupCons :: (Variable, [T.Type]) -> [(Variable, [T.Type])] -> FreestStateT ()
 checkDupCons (x, _) xts
-  | any (\(y, _) -> y == x) xts = addError $ DuplicateFieldInDatatype (pos x) x
-  | otherwise = getFromVEnv x >>= \case
-      Just s  -> addError $ MultipleDeclarations (pos x) x (pos s)
-      Nothing -> return ()
+  | any (\(y, _) -> y == x) xts = addError' $ DuplicateFieldInDatatype (pos x) x
+  | otherwise =
+     flip (Map.!?) x . varEnv <$> get >>= \case
+       Just s  -> addError' $ MultipleDeclarations (pos x) x (pos s)
+       Nothing -> return ()
 
-checkDupProgVarDecl :: Variable -> FreestState ()
+checkDupProgVarDecl :: Variable -> FreestStateT ()
 checkDupProgVarDecl x = do
-  vEnv <- getVEnv
+  vEnv <- varEnv <$> get
   case vEnv Map.!? x of
-    Just a  -> addError $ MultipleDeclarations (pos x) x (pos a)
+    Just a  -> addError' $ MultipleDeclarations (pos x) x (pos a)
     Nothing -> return ()
 
 
-checkDupTypeDecl :: Variable -> FreestState ()
+checkDupTypeDecl :: Variable -> FreestStateT ()
 checkDupTypeDecl a = do
-  tEnv <- getTEnv
+  tEnv <- typeEnv <$> get
   case tEnv Map.!? a of
-    Just (_, s) -> addError $ MultipleTypeDecl (pos a) a (pos s)
+    Just (_, s) -> addError' $ MultipleTypeDecl (pos a) a (pos s)
     Nothing     -> return ()
 
-checkDupFunDecl :: Variable -> FreestState ()
+checkDupFunDecl :: Variable -> FreestStateT ()
 checkDupFunDecl x = do
-  eEnv <- getPEnv
+  eEnv <- parseEnv <$> get
   case eEnv Map.!? x of
-    Just e  -> addError $ MultipleFunBindings (pos x) x (pos $ snd e)
+    Just e  -> addError' $ MultipleFunBindings (pos x) x (pos $ snd e)
     Nothing -> return ()
 
 -- OPERATORS
@@ -148,3 +156,20 @@ typeListToType a = map $ second typeToFun -- map (\(x, ts) -> (x, typeToFun ts))
  where
   typeToFun []       = T.Var (pos a) a
   typeToFun (t : ts) = T.Arrow (pos t) Un t (typeToFun ts)
+
+
+-- Utility functions to work over FreestStateT, the monad transformer for the parser
+
+
+addToVEnv' :: Variable -> T.Type -> FreestStateT ()
+addToVEnv' b t = modify (\s -> s { varEnv = Map.insert b t (varEnv s) })
+
+addToPEnv' :: Variable -> [Variable] -> E.Exp -> FreestStateT ()
+addToPEnv' x xs e =
+  modify (\s -> s { parseEnv = Map.insert x (xs, e) (parseEnv s) })
+
+
+addToTEnv' :: Variable -> K.Kind -> T.Type -> FreestStateT ()
+addToTEnv' x k t =
+  modify (\s -> s { typeEnv = Map.insert x (k, t) (typeEnv s) })
+

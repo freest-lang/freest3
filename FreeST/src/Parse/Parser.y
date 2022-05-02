@@ -16,6 +16,8 @@ import           Util.PrettyError
 import           Util.Error
 import           Util.FreestState
 
+import Data.Functor
+import Data.Either
 }
 
 %name types Type
@@ -129,28 +131,19 @@ NL :: { () }
 
 Decl :: { () }
   -- Function signature
-  : ProgVar ':' Type {% do
-      toStateT $ checkDupProgVarDecl $1
-      toStateT $ addToVEnv $1 $3
-    }
+  : ProgVar ':' Type {% checkDupProgVarDecl $1 >> addToVEnv' $1 $3 }
   -- Function declaration
-  | ProgVar ProgVarWildSeq '=' Exp {% do
-      toStateT $ checkDupFunDecl $1
-      toStateT $ addToPEnv $1 $2 $4
-    }
+  | ProgVar ProgVarWildSeq '=' Exp {% checkDupFunDecl $1 >> addToPEnv' $1 $2 $4 }
   -- Type abbreviation
-  | type KindedTVar TypeDecl {% do
-      toStateT $ checkDupTypeDecl (fst $2)
-      toStateT $ uncurry addToTEnv $2 $3
-    }
+  | type KindedTVar TypeDecl {% checkDupTypeDecl (fst $2) >> uncurry addToTEnv' $2 $3 }
   -- Datatype declaration
   | data KindedTVar '=' DataCons {% do
       let a = fst $2
-      toStateT $ checkDupTypeDecl a
+      checkDupTypeDecl a
       let bs = typeListToType a $4 :: [(Variable, T.Type)]
-      toStateT $ mapM_ (\(c, t) -> addToVEnv c t) bs
+      mapM_ (\(c, t) -> addToVEnv' c t) bs
       let p = pos a
-      toStateT $ uncurry addToTEnv $2 (T.Almanac p T.Variant (Map.fromList bs))
+      uncurry addToTEnv' $2 (T.Almanac p T.Variant (Map.fromList bs))
     }
 
 TypeDecl :: { T.Type }
@@ -158,9 +151,9 @@ TypeDecl :: { T.Type }
   | KindBind TypeDecl { let (a,k) = $1 in T.Forall (pos a) (Bind (pos k) a k $2) }
 
 DataCons :: { [(Variable, [T.Type])] }
-  : DataCon              {% toStateT $ checkDupCons $1 [] >> return [$1] }
-  | DataCon '|' DataCons {% toStateT $ checkDupCons $1 $3 >> return ($1 : $3) }
-
+  : DataCon              {% checkDupCons $1 [] >> return [$1] }
+  | DataCon '|' DataCons {% checkDupCons $1 $3 >> return ($1 : $3) }
+  
 DataCon :: { (Variable, [T.Type]) }
   : Constructor TypeSeq { ($1, $2) }
 
@@ -238,14 +231,14 @@ Tuple :: { E.Exp }
 
 MatchMap :: { FieldMap }
   : Match              { uncurry Map.singleton $1 }
-  | Match ',' MatchMap {% toStateT $ checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
+  | Match ',' MatchMap {% checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
 
 Match :: { (Variable, ([Variable], E.Exp)) }
   : ArbitraryProgVar ProgVarWild '->' Exp { ($1, ([$2], $4)) }
 
 CaseMap :: { FieldMap }
   : Case             { uncurry Map.singleton $1 }
-  | Case ',' CaseMap {% toStateT $ checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
+  | Case ',' CaseMap {% checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
 
 Case :: { (Variable, ([Variable], E.Exp)) }
   : Constructor ProgVarWildSeq '->' Exp { ($1, ($2, $4)) }
@@ -312,9 +305,9 @@ ChoiceView :: { (Pos, T.View) }
 
 FieldList :: { T.TypeMap }
   : Field               { uncurry Map.singleton $1 }
-  | Field ',' FieldList {% toStateT $ checkDupField (fst $1) $3 >>
+  | Field ',' FieldList {% checkDupField (fst $1) $3 >>
                            return (uncurry Map.insert $1 $3) }
-
+                           
 Field :: { (Variable, T.Type) }
   : ArbitraryProgVar ':' Type { ($1, $3) }
 
@@ -329,12 +322,12 @@ TypeSeq :: { [T.Type] }
 ----------
 
 Kind :: { K.Kind }
-  : SU { K.su (pos $1) }
-  | SL { K.sl (pos $1) }
-  | TU { K.tu (pos $1) }
-  | TL { K.tl (pos $1) }
-  | MU { K.mu (pos $1) }
-  | ML { K.ml (pos $1) }
+  : SU { K.su $ pos $1 }
+  | SL { K.sl $ pos $1 }
+  | TU { K.tu $ pos $1 }
+  | TL { K.tl $ pos $1 }
+  | MU { K.mu $ pos $1 }
+  | ML { K.ml $ pos $1 }
 --  | Kind '->' Kind { KindArrow (pos $1) $1 $3 }
 
 -- PROGRAM VARIABLE
@@ -355,7 +348,7 @@ ProgVarWild :: { Variable }
 
 ProgVarWildSeq :: { [Variable] }
   :                            { [] }
-  | ProgVarWild ProgVarWildSeq {% toStateT $ checkDupBind $1 $2 >> return ($1 : $2) }
+  | ProgVarWild ProgVarWildSeq {% checkDupBind $1 $2 >> return ($1 : $2) }
 
 ProgVarWildTBind :: { (Variable, T.Type) }
   : ProgVarWild ':' Type  %prec ProgVarWildTBind { ($1, $3) }
@@ -377,54 +370,63 @@ KindedTVar :: { (Variable, K.Kind) }    -- for type and data declarations
   | TypeName          { ($1, omission (pos $1)) }
 
 {
--- Parsing Kinds, Types and Programs
+
+parse :: String -> FilePath -> ([Token] -> FreestStateT a) -> FreestStateT a
+parse str file parseFun = either (lift . Failed) parseFun (scanTokens str file)
 
 parseKind :: String -> K.Kind
 parseKind str =
-  case evalStateT (lexer str "" kinds) initialState of
-    Ok x -> x
-    Failed err -> error $ "" -- snd err
-
-parseType :: String -> Either T.Type Errors
-parseType str =
-  case runStateT (lexer str "" types) initialState of
-    Ok p -> eitherTypeErr p
-    Failed err -> Right [err]
+  case evalStateT (parse str "" kinds) state of
+    Ok k       -> k
+    Failed err -> error $ formatError "Parse.Kind" Map.empty [] err
+      -- error $ show err
   where
-    eitherTypeErr (t, state)
-      | hasErrors state = Right $ errors state
-      | otherwise       = Left t
+    state = initialState { runOpts = defaultOpts {runFilePath = "Parse.Kind"}}
 
-parseProgram :: FilePath -> Map.Map Variable T.Type -> IO FreestS
-parseProgram inputFile vEnv = -- do
-  parseDefs inputFile vEnv <$> readFile inputFile
+parseType :: String -> T.Type
+parseType str =
+  case runStateT (parse str "" types) state of
+    Ok (t,s)
+      | hasErrors s -> error $ getErrors [] s
+      | otherwise   -> t
+    Failed err -> error $ formatError "Parse.Type" Map.empty [] err
+  where
+    state = initialState { runOpts = defaultOpts {runFilePath = "Parse.Type"}}
+
+parseTypeEither :: String -> Either Errors T.Type
+parseTypeEither str =
+  case runStateT (parse str "" types) state of
+    Ok (t,s)
+      | hasErrors s -> Left $ errors s
+      | otherwise   -> Right t
+    Failed err -> Left [err]
+  where
+    state = initialState { runOpts = defaultOpts {runFilePath = "Parse.Type"}}
+
+parseExpr :: String -> E.Exp
+parseExpr str =
+  case runStateT (parse str "" expr) state of
+    Ok (t,s)
+      | hasErrors s -> error $ getErrors [] s
+      | otherwise   -> t
+    Failed err -> error $ formatError "Parse.Expression" Map.empty [] err
+  where
+    state = initialState { runOpts = defaultOpts {runFilePath = "Parse.Expression"}}
+
+parseProgram inputFile vEnv = parseDefs inputFile vEnv <$> readFile inputFile
 
 parseDefs :: FilePath -> VarEnv -> String -> FreestS
 parseDefs file varEnv str =
-  case execStateT (lexer str file terms)
-         (initialState { varEnv }) of
+  case execStateT (parse str file terms) state of
     Ok s1 -> s1
-    Failed err -> initialState { errors = [err] }
-
-lexer str file f =
-  case scanTokens str file of
-    Right err -> failM err
-    Left x    -> f x
+    Failed err -> state { errors = [err] }
+  where
+    state = initialState { varEnv , runOpts = defaultOpts {runFilePath = file}}
 
 -- Error Handling
 
 parseError :: [Token] -> FreestStateT a
-parseError [] = do
-  file <- toStateT getFileName
-  failM $ PrematureEndOfFile defaultPos
-parseError (x:_) = do
-  file <- toStateT getFileName
-  failM $ ParseError (pos x) (show x)
-
-failM :: ErrorType -> FreestStateT a
-failM = lift . Failed
--- failM = lift . Failed . (defaultPos, )
-
-toStateT = state . runState
+parseError [] = lift . Failed $ PrematureEndOfFile defaultPos
+parseError (x:_) = lift . Failed $ ParseError (pos x) (show x)
 
 }

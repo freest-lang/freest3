@@ -75,6 +75,7 @@ module Util.FreestState (
   , isMainFlagSet
   -- , isQuietFlagSet
   , getOpts
+  , fname --TODO: test
   )
 where
 
@@ -161,11 +162,6 @@ getNextIndex = do
 
 freshTVar :: String -> Pos -> FreestState Variable
 freshTVar s p = mkVar p . (s ++) . show <$> getNextIndex
-
--- | FILE NAME
-
-getFileName :: FreestState String
-getFileName = runFilePath <$> gets runOpts
 
 -- | VAR ENV
 
@@ -321,3 +317,11 @@ isMainFlagSet = isJust . mainFunction
 
 getOpts :: FreestState RunOpts
 getOpts = gets runOpts
+
+-- | FILE NAME
+
+getFileName :: FreestState String
+getFileName = runFilePath <$> getOpts
+
+fname :: FreestS -> String
+fname = runFilePath . runOpts

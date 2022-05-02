@@ -276,21 +276,21 @@ instance Show Token where
   show (TokenDollar _) = "$"
 
 -- Trim newlines
-scanTokens :: String -> String -> Either [Token] ErrorType
+scanTokens :: String -> String -> Either ErrorType [Token] 
 scanTokens str file =
     case go (alexStartPos,'\n',[],str) of
-      Left x -> Left $ trim x
+      Right x -> Right $ trim x
       x -> x
   where
     go inp@(pos,_,_,str) =
       case alexScan inp 0 of
-        AlexEOF -> Left []
+        AlexEOF -> Right []
         AlexError _ ->
-          Right $ LexicalError (internalPos pos) (show $ head str)
+          Left $ LexicalError (internalPos pos) (show $ head str)
         AlexSkip  inp' len     -> go inp'
         AlexToken inp' len act ->
           case go inp' of
-            Left x -> Left $ act pos (take len str) : x
+            Right x -> Right $ act pos (take len str) : x
             x -> x
 
 getLineNum :: AlexPosn -> Int
