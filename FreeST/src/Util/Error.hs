@@ -19,11 +19,11 @@ import           System.FilePath
 
 
 -- | Internal errors
--- FIXME: span instead of pos (adds more information)
-internalError :: (Show a, Position a) => String -> a -> b
+
+internalError :: (Show a, Spannable a) => String -> a -> b
 internalError fun syntax =
   error
-    $  show (pos syntax)
+    $  show (span syntax)
     ++ ": Internal error at "
     ++ fun
     ++ ": "

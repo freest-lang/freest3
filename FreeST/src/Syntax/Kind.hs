@@ -82,6 +82,5 @@ type KindEnv = Map.Map Variable Kind
 
 type PolyVars = Set.Set Variable
 
--- FIXME
 instance (Default a) => Default (Bind Kind a) where
   omission p = Bind p (omission p) (omission p) (omission p)

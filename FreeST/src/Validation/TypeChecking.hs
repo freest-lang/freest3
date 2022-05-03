@@ -104,8 +104,6 @@ checkMainFunction = do
     else when (isMainFlagSet runOpts) $
       addError (MainNotDefined (defaultSpan {defModule = runFilePath runOpts}) main)
 
--- FIXME: defaultSpan ??
-
 
 -- validMainType :: T.Type -> Bool -- TODO: why this restriction?
 -- validMainType T.Forall{} = False

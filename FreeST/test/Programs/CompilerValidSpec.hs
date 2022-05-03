@@ -40,13 +40,12 @@ validTest :: FilePath -> (FilePath, String) -> Expectation
 validTest dir (testFile, exp) = do
   (out, res) <- testOne testFile
 --  let out = exp
-
   case res of
     Timeout -> doExpectationsMatch exp "<divergent>"
     Failed  -> void $ assertFailure out
     Passed
       | "<pending>" `isPrefixOf` exp -> pendingWith $ intercalate "\n\t" $ tail $ lines exp
-      | otherwise -> doExpectationsMatch exp out
+      | otherwise -> doExpectationsMatch out exp
 
 
 doExpectationsMatch :: String -> String -> Expectation

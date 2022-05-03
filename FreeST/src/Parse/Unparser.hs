@@ -37,7 +37,6 @@ import           Prelude                 hiding ( Left
 instance Show Pos where
   show (Pos l c) = show l ++ ":" ++ show c
 
--- FIXME: Proper show for span (check Haskell)
 instance Show Span where
   show (Span sp fp _)
     | sp == fp  = show sp
@@ -96,7 +95,6 @@ instance Show K.Basic where
   show K.Message = "M"
   show K.Top     = "T"
 
--- FIXME: tmp show span for debug
 instance Show K.Kind where
   show (K.Kind _ p m) = show p ++ show m
 

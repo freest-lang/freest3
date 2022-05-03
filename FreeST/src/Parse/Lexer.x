@@ -399,7 +399,7 @@ instance Position Token where
   pos (TokenImport p) = p
 --  pos t = error $ show t
 
--- FIXME: proper spans
+-- TODO: proper spans, proper filename
 instance Spannable Token where
   span (TokenNL p) = Span p p ""
   span (TokenIntT p) = Span p p ""

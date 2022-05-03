@@ -39,7 +39,6 @@ import           Control.Monad.State
 import           Data.Bifunctor ( second )
 import           Data.List ( find )
 import qualified Data.Map.Strict as Map
--- import qualified Data.Set as Set -- TODO: tmp
 import           Prelude hiding (span)
 
 
@@ -108,8 +107,6 @@ checkDupFunDecl x = do
 
 -- OPERATORS
 
--- FIXME: check spans,  the first one (span left) should be the begining of left
--- and the end at right
 binOp :: E.Exp -> Variable -> E.Exp -> E.Exp
 binOp l op r = E.App s (E.App (span l) (E.Var (span op) op) l) r
   where s = Span (startPos $ span l) (endPos $ span r) (defModule $ span l)
@@ -121,7 +118,6 @@ unOp op expr s = E.App s (E.Var (span op) op) expr
 typeListToType :: Variable -> [(Variable, [T.Type])] -> [(Variable, T.Type)]
 typeListToType a = map $ second typeToFun -- map (\(x, ts) -> (x, typeToFun ts))
   -- Convert a list of types and a final type constructor to a type
-
  where
   typeToFun []       = T.Var (span a) a
   typeToFun (t : ts) = T.Arrow (span t) Un t (typeToFun ts)

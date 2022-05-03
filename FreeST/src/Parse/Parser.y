@@ -247,13 +247,11 @@ Primary :: { E.Exp }
       {% let ((p,m),e) = $3 in mkSpanPosPos (pos $1) p >>= \s -> pure $ E.Abs s m (Bind s (fst $2) (snd $2) e) }
   | Lambda KindBind TAbs
       {% let (a,k) = $2 in mkSpanPosPos (pos $1) (endPos $ span $3) >>= \s ->
-         pure $ E.TypeAbs s (Bind s a k $3) } -- FIXME: The second s (within Bind was pos k, check)
+         pure $ E.TypeAbs s (Bind s a k $3) }
   | '(' Exp ',' Tuple ')'          {% mkSpanPosPos (pos $1) (pos $5) >>= \s -> pure $ E.Pair s $2 $4 }
   | '(' Exp ')'                    { $2 }
 
 
--- FIXME: Do I need Pos here?
--- FIXME: Am I building the span correctly??
 Abs :: { ((Pos, Multiplicity), E.Exp) }
   : Arrow Exp { ($1, $2) }
   | ProgVarWildTBind Abs
@@ -349,7 +347,6 @@ TupleType :: { T.Type }
   : Type               { $1 }
   | Type ',' TupleType { T.Pair (span $1) $1 $3 }
 
--- FIXME: only multiplicity
 Arrow :: { (Pos, Multiplicity) }
   : '->' { (pos $1, Un) }
   | '-o' { (pos $1, Lin) }

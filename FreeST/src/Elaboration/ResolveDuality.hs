@@ -88,7 +88,6 @@ solveType vs v d@(T.Dualof p var@(T.Var p' x)) = case v Map.!? x of
   Just t -> do
     addDualof d
     fv <- freshTVar "#X" p'
-    -- TODO: FIXME: Span
     let b = Bind p' fv (K.sl p') (changePos p (subs (T.Var p' fv) x t))
     T.Rec p <$> solveBind solveDual vs (x `Map.delete` v) b
   Nothing -> addDualof d >> solveDual vs v (changePos p var)

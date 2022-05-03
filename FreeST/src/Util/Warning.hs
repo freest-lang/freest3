@@ -14,7 +14,6 @@ import           Data.List                      ( intercalate )
 import           Prelude hiding (span)
 import           System.FilePath
 
--- TODO: Stylable to runOpts
 
 showWarnings :: String -> TypeOpsEnv -> WarningType -> String
 showWarnings f tops wrn = let base = replaceBaseName f (trimModule $ defModule (span wrn)) in

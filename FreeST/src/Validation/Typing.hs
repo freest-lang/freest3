@@ -96,21 +96,21 @@ synthetise kEnv (E.App _ (E.Var p x) e) | x == mkVar p "collect" = do
 synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "receive" = do
   t        <- synthetise kEnv e
   (u1, u2) <- Extract.input e t
-  void $ K.checkAgainst kEnv (K.ml $ defaultSpan) u1 -- FIXME: Span
+  void $ K.checkAgainst kEnv (K.ml $ defaultSpan) u1
 --  void $ K.checkAgainst kEnv (K.ml $ pos u1) u1
   return $ T.Pair p u1 u2
   -- Send e1 e2
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkVar p "send" = do
   t        <- synthetise kEnv e2
   (u1, u2) <- Extract.output e2 t
-  void $ K.checkAgainst kEnv (K.ml defaultSpan) u1 -- FIXME: Span
+  void $ K.checkAgainst kEnv (K.ml defaultSpan) u1
 --  void $ K.checkAgainst kEnv (K.ml $ pos u1) u1
   checkAgainst kEnv e1 u1
   return u2
   -- Fork e
 synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "fork" = do
   t <- synthetise kEnv e
-  void $ K.checkAgainst kEnv (K.tl defaultSpan) t -- FIXME: Span
+  void $ K.checkAgainst kEnv (K.tl defaultSpan) t
   return $ T.Unit p
 -- Application, general case
 synthetise kEnv (E.App _ e1 e2) = do
@@ -163,7 +163,6 @@ synthetise kEnv (E.New p t u) = do
 
 -- | Returns the type of a variable; removes it from vEnv if lin
 
--- TODO: this does not solve all the problems. Check with 3 depth 
 synthetiseVar :: K.KindEnv -> Variable -> FreestState T.Type
 synthetiseVar kEnv x = getFromVEnv x >>= \case
     Just s -> do

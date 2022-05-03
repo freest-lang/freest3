@@ -77,16 +77,14 @@ instance Eq Variable where
 instance Ord Variable where
   (Variable _ x) <= (Variable _ y) = x <= y
 
--- FIXME 
 instance Position Variable where
   pos (Variable p _) = startPos p
   
 instance Spannable Variable where
   span (Variable p _) = p
 
--- FIXME 
 instance Default Variable where
-  omission p = mkVar defaultSpan "omission"
+  omission p = mkVar p "omission"
 
 -- The string, internal representation of a variable
 intern :: Variable -> String

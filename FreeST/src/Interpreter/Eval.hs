@@ -90,7 +90,6 @@ evalCase tEnv ctx eenv m (Cons x xs) = do
   eval tEnv ctx1 eenv e 
 evalCase _ _ _ _ v = internalError "Interpreter.Eval.evalCase" v
 
--- TODO: change isADT definition
 evalVar :: TypeEnv -> Ctx -> Prog -> Variable -> IO Value
 evalVar tEnv ctx eenv x
   | isDatatypeContructor x tEnv    = return $ Cons x []

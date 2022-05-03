@@ -48,50 +48,48 @@ checkAgainst kenv = checkAgainst' (Map.keysSet kenv) kenv
 checkAgainstSession :: K.KindEnv -> T.Type -> FreestState K.Kind
 checkAgainstSession kenv = checkAgainstSession' (Map.keysSet kenv) kenv
 
- -- FIXME: Span (entire function)
 -- Kinding
 -- Returns the kind of a given type
 synthetise' :: K.PolyVars -> K.KindEnv -> T.Type -> FreestState K.Kind
 -- Functional types
-synthetise' _ _ (T.Int    p) = return $ K.Kind defaultSpan K.Message K.Un
-synthetise' _ _ (T.Char   p) = return $ K.Kind defaultSpan K.Message K.Un
-synthetise' _ _ (T.Bool   p) = return $ K.Kind defaultSpan K.Message K.Un
-synthetise' _ _ (T.Unit   p) = return $ K.Kind defaultSpan K.Message K.Un 
-synthetise' _ _ (T.String p) = return $ K.Kind defaultSpan K.Message K.Un
-synthetise' s kEnv (T.Arrow p m t u) = -- do
-  synthetise' s kEnv t >>
-  synthetise' s kEnv u $> K.Kind defaultSpan K.Top (typeToKindMult m)
+synthetise' _ _ (T.Int    p) = return $ K.Kind p K.Message K.Un
+synthetise' _ _ (T.Char   p) = return $ K.Kind p K.Message K.Un
+synthetise' _ _ (T.Bool   p) = return $ K.Kind p K.Message K.Un
+synthetise' _ _ (T.Unit   p) = return $ K.Kind p K.Message K.Un 
+synthetise' _ _ (T.String p) = return $ K.Kind p K.Message K.Un
+synthetise' s kEnv (T.Arrow p m t u) =
+  synthetise' s kEnv t >> synthetise' s kEnv u $> K.Kind p K.Top (typeToKindMult m)
 synthetise' s kEnv (T.Pair p t u) = do
   (K.Kind _ _ mt) <- synthetise' s kEnv t
   (K.Kind _ _ mu) <- synthetise' s kEnv u
-  return $ K.Kind defaultSpan K.Top (join mt mu)
+  return $ K.Kind p K.Top (join mt mu)
 synthetise' s kEnv (T.Almanac p T.Variant m) = do
   ks <- tMapM (synthetise' s kEnv) m
   let K.Kind _ _ n = foldr1 join ks
-  return $ K.Kind defaultSpan K.Top n
+  return $ K.Kind p K.Top n
   -- Session types
-synthetise' _ _    (T.Skip p    ) = return $ K.su defaultSpan
+synthetise' _ _    (T.Skip p    ) = return $ K.su p
 synthetise' s kEnv (T.Semi p t u) = do
   (K.Kind _ _ mt) <- checkAgainstSession' s kEnv t
   (K.Kind _ _ mu) <- checkAgainstSession' s kEnv u
-  return $ K.Kind defaultSpan K.Session (join mt mu)                      
-synthetise' s kEnv (T.Message p _ t) = checkAgainst' s kEnv (K.ml defaultSpan) t $> K.sl defaultSpan
+  return $ K.Kind p K.Session (join mt mu)                      
+synthetise' s kEnv (T.Message p _ t) = checkAgainst' s kEnv (K.ml p) t $> K.sl p
 synthetise' s kEnv (T.Almanac p (T.Choice _) m) =
-  tMapM_ (checkAgainst' s kEnv (K.sl defaultSpan)) m $> K.sl defaultSpan
+  tMapM_ (checkAgainst' s kEnv (K.sl p)) m $> K.sl p
 -- Session or functional
 synthetise' s kEnv (T.Rec _ (Bind _ a k t)) =
   checkContractive s a t >> checkAgainst' s (Map.insert a k kEnv) k t $> k
 synthetise' s kEnv (T.Forall _ (Bind p a k t)) = do
   (K.Kind _ _ m) <- synthetise' (Set.insert a s) (Map.insert a k kEnv) t
-  return $ K.Kind defaultSpan K.Top m
+  return $ K.Kind p K.Top m
 synthetise' _ kEnv (T.Var p a) = case kEnv Map.!? a of
   Just k -> return k
   Nothing -> addError (TypeVarNotInScope p a) $> omission p
 -- Type operators
 synthetise' _ kEnv t@(T.CoVar p a) =
   case kEnv Map.!? a of
-    Just k -> S.when (not $ k <: K.sl defaultSpan)
-            (addError (CantMatchKinds p k (K.sl defaultSpan) t)) $> K.sl defaultSpan
+    Just k -> S.when (not $ k <: K.sl p)
+            (addError (CantMatchKinds p k (K.sl p) t)) $> K.sl p
     Nothing -> addError (TypeVarNotInScope p a) $> omission p
 
 synthetise' _ _ t@T.Dualof{} = internalError "Validation.Kinding.synthetise'" t

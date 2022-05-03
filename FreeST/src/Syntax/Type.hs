@@ -56,7 +56,6 @@ type TypeMap = Map.Map Variable Type
 
 data Sort = Record | Variant | Choice View deriving Eq
 
--- FIXME: instance Span ???
 instance Position Type where
   pos (Int  p       ) = startPos p
   pos (Char p       ) = startPos p
@@ -77,7 +76,6 @@ instance Position Type where
   pos (Dualof p _   ) = startPos p
   pos (CoVar p _   ) = startPos p
 
--- FIXME: change Default ???
 instance Default Type where
   omission = Int
 
