@@ -59,6 +59,8 @@ For example, if you want to specify which function should be interpreted as the 
 # Run the interpreter (ghci)
 
 ```bash
+    $ stack clean
+    $ stack build
     $ stack ghci FreeST:exe:freest
     :set prompt  "λ: "
 ```
