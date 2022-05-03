@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleInstances #-}
+
 module Parse.Read where
 
 import           Control.Monad.State

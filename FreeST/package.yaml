@@ -52,6 +52,7 @@ library:
     - Util.PrettyError
     - Util.FreestState
     - Util.PreludeLoader
+    - Util.DeBruijn
     - Parse.Lexer 
     - Parse.Parser
     - Validation.Subkind

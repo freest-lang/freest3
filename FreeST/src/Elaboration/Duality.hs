@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleInstances #-}
+
 module Elaboration.Duality where
 
 import           Syntax.Base                   (Bind(..))

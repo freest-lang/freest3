@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleInstances #-}
+
 module ArbitraryTypes
   ( BisimPair(..)
   , NonBisimPair(..)
