@@ -15,7 +15,6 @@ Portability :  portable | non-portable (<reason>)
 module Syntax.Expression
   ( ExpOf(..)
   , Exp
-  , FieldMap_
   , FieldMap
   )
 where
@@ -44,7 +43,7 @@ data ExpOf a =
   | Pair Pos (ExpOf a) (ExpOf a)
   | BinLet Pos Variable Variable (ExpOf a) (ExpOf a)
   -- Datatype elim
-  | Case Pos (ExpOf a) (FieldMap_ a)
+  | Case Pos (ExpOf a) (FieldMapOf a)
   -- Type Abstraction intro and elim
   | TypeAbs Pos (Bind K.Kind (ExpOf a))   -- Λ a:k => e
   | TypeApp Pos (ExpOf a) (T.TypeOf a)     -- e[T]
@@ -55,13 +54,13 @@ data ExpOf a =
   -- Session types
   | New Pos (T.TypeOf a) (T.TypeOf a)
 
-type FieldMap_ a = Map.Map Variable ([Variable], ExpOf a)
+type FieldMapOf a = Map.Map Variable ([Variable], ExpOf a)
 
 instance Default (Bind (T.TypeOf a) (ExpOf a)) where
   omission p = Bind p (omission p) (T.Unit p) (Unit p)
 
 -- Named expressions
-type FieldMap = FieldMap_ Variable
+type FieldMap = FieldMapOf Variable
 type Exp = ExpOf Variable
 
 instance Position (ExpOf a) where

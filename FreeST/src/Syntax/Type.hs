@@ -38,7 +38,7 @@ data TypeOf a =
   | Unit Pos
   | Arrow Pos Multiplicity (TypeOf a) (TypeOf a)
   | Pair Pos (TypeOf a) (TypeOf a)
-  | Almanac Pos Sort (TypeMap_ a)
+  | Almanac Pos Sort (TypeMapOf a)
   -- Session Types
   | Skip Pos
   | Semi Pos (TypeOf a) (TypeOf a)
@@ -54,89 +54,13 @@ data TypeOf a =
 -- | Abs Pos (Bind Type)       -- λ a:k => T, Operator abstraction
 -- | App Pos Type Type
 
-type TypeMap_ a = Map.Map Variable (TypeOf a)
+type TypeMapOf a = Map.Map Variable (TypeOf a)
 
-type TypeMap = TypeMap_ Variable
+type TypeMap = TypeMapOf Variable
 
 type Type = TypeOf Variable
 
 data Sort = Record | Variant | Choice View deriving Eq
-
-{-
-instance Eq NamelessType where
-  Int _ == Int _ = True
-  Char _ == Char _ = True
-  Bool _ == Bool _ = True
-  String _ == String _ = True
-  Unit _ == Unit _ = True
-  Arrow _ m1 t11 t12 == Arrow _ m2 t21 t22 = 
-    m1 == m2 &&
-    t11 == t21 &&
-    t12 == t22
-  Pair _ t11 t12 == Pair _ t21 t22 =
-    t11 == t21 &&
-    t12 == t22
-  Almanac _ s1 tm1 == Almanac _ s2 tm2 =
-    s1 == s2 &&
-    tm1 == tm2
-  Skip _ == Skip _ = True
-  Semi _ t11 t12 == Semi _ t21 t22 =
-    t11 == t21 &&
-    t12 == t22
-  Message _ p1 t1 == Message _ p2 t2 =
-    p1 == p2 &&
-    t1 == t2
-  Forall _ b1 == Forall _ b2 =
-    binder b1 == binder b2 &&
-    body b1 == body b2
-  Rec _ b1 == Rec _ b2 =
-    binder b1 == binder b2 &&
-    body b1 == body b2
-  Var _ i1 == Var _ i2 =
-    i1 == i2
-  Dualof _ t1 == Dualof _ t2 =
-    t1 == t2
-  CoVar _ i1 == CoVar _ i2 =
-    i1 == i2
-  _ == _ = False
-
-instance Eq Type where
-  Int _ == Int _ = True
-  Char _ == Char _ = True
-  Bool _ == Bool _ = True
-  String _ == String _ = True
-  Unit _ == Unit _ = True
-  Arrow _ m1 t11 t12 == Arrow _ m2 t21 t22 = 
-    m1 == m2 &&
-    t11 == t21 &&
-    t12 == t22
-  Pair _ t11 t12 == Pair _ t21 t22 =
-    t11 == t21 &&
-    t12 == t22
-  Almanac _ s1 tm1 == Almanac _ s2 tm2 =
-    s1 == s2 &&
-    tm1 == tm2
-  Skip _ == Skip _ = True
-  Semi _ t11 t12 == Semi _ t21 t22 =
-    t11 == t21 &&
-    t12 == t22
-  Message _ p1 t1 == Message _ p2 t2 =
-    p1 == p2 &&
-    t1 == t2
-  Forall _ b1 == Forall _ b2 =
-    binder b1 == binder b2 &&
-    body b1 == body b2
-  Rec _ b1 == Rec _ b2 =
-    binder b1 == binder b2 &&
-    body b1 == body b2
-  Var _ i1 == Var _ i2 =
-    i1 == i2
-  Dualof _ t1 == Dualof _ t2 =
-    t1 == t2
-  CoVar _ i1 == CoVar _ i2 =
-    i1 == i2
-  _ == _ = False
--}
 
 instance Position (TypeOf a) where
   pos (Int  p       ) = p

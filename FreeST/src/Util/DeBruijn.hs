@@ -265,21 +265,4 @@ instance Nameless T.TypeOf where
     shift d c (T.Dualof p t) = T.Dualof p (shift d c t)
     shift d c (T.CoVar p i) | idx i < c = T.CoVar p i
                             | otherwise = T.CoVar p i{idx = idx i + d}
-    
-
-
-{-
-Unit tests
--- ...
-   mapM_ (checkRemoveRestoreSpec . (!!0)) (chunksOf 2 t)
-
-checkRemoveRestoreSpec :: String -> Spec
-checkRemoveRestoreSpec e =
-  it ("restorenames(Γ,removenames(Γ," ++ e ++ ")) = " ++ e) $ 
-    isEqual (read e) `shouldBe` Left True
-
-isEqual :: Exp -> TestExpectation
-isEqual e =
-  testValidExpectation (e == e') []
-  where e' = evalState (removeNames preludeNamingCtx (length preludeNamingCtx) e >>= restoreNames) initialState
--}
+                            
