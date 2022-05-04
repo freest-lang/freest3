@@ -17,7 +17,6 @@ import qualified Data.Map as Map
 import           Prelude hiding (span)
 import           System.FilePath
 
-
 -- | Internal errors
 
 internalError :: (Show a, Spannable a) => String -> a -> b
@@ -31,12 +30,14 @@ internalError fun syntax =
 
 -- | Format errors
 showErrors :: Stylable -> String -> TypeOpsEnv -> ErrorType -> String
-showErrors sty f tops err = let base = replaceBaseName f (trimModule $ defModule (span err)) in 
+showErrors sty f tops err =
+  let base = replaceBaseName f (trimModule f (defModule (span err))) in 
   title err sty (span err) base ++ "\n  " ++ msg err sty tops
   where
-    trimModule f
-      | isExtensionOf "fst" f = takeBaseName f
-      | otherwise             = f
+    trimModule f mod
+      | null mod                = takeBaseName f
+      | isExtensionOf "fst" mod = takeBaseName mod
+      | otherwise               = mod
       
 -- | Errors
 

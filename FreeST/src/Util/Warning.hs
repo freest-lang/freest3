@@ -16,12 +16,14 @@ import           System.FilePath
 
 
 showWarnings :: String -> TypeOpsEnv -> WarningType -> String
-showWarnings f tops wrn = let base = replaceBaseName f (trimModule $ defModule (span wrn)) in
+showWarnings f tops wrn =
+  let base = replaceBaseName f (trimModule f (defModule (span wrn))) in
   title wrn True (span wrn) base ++ "\n  " ++ msg wrn True tops
   where
-    trimModule f
-      | isExtensionOf "fst" f = takeBaseName f
-      | otherwise             = f
+    trimModule f mod
+      | null mod                = takeBaseName f
+      | isExtensionOf "fst" mod = takeBaseName mod
+      | otherwise               = mod
 
 data WarningType =
     NoPrelude FilePath

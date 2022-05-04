@@ -59,7 +59,7 @@ data Span = Span
   } deriving (Eq, Ord)
 
 defaultSpan :: Span
-defaultSpan = Span defaultPos defaultPos "FreeST"
+defaultSpan = Span defaultPos defaultPos ""
 
 negSpan :: Span -> Span
 negSpan s = s {startPos = negPos (startPos s), endPos = negPos (endPos s)}
