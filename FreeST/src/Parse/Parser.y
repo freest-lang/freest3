@@ -281,16 +281,14 @@ Type :: { T.Type }
   -- Star types
   | '*' Polarity Type %prec MSG 
     {% do
-        i <- toStateT getNextIndex
         let p = pos $1
-        let tVar = mkNewVar i (mkVar p "a")
+        tVar <- toStateT $ freshTVar "a" p
         return (T.Rec p $ Bind p tVar (K.su p) $
           T.Semi p (uncurry T.Message $2 $3) (T.Var p tVar)) }
   | '*' ChoiceView '{' LabelList '}'
     {% do
-        i <- toStateT getNextIndex
         let p = pos $1
-        let tVar = mkNewVar i (mkVar p "a")
+        tVar <- toStateT $ freshTVar "a" p
         let tMap = Map.map ($ (T.Var p tVar)) $4
         return (T.Rec p $ Bind p tVar (K.su p) $
             T.Almanac (fst $2) (T.Choice (snd $2)) tMap) }
