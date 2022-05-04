@@ -11,8 +11,9 @@ import           Test.QuickCheck
 import qualified Syntax.Type                   as T
 import qualified Syntax.Kind                   as K
 import           Syntax.Base             hiding ( pos )
--- import           Parse.Unparser
+import           Validation.Contractive
 import qualified Validation.Rename             as Rename
+import qualified Data.Set                      as Set
 import qualified Data.Map.Strict               as Map
 import           Control.Monad
 
@@ -76,7 +77,7 @@ instance Arbitrary T.Type where
 type PairGen = Int -> Gen (T.Type, T.Type)
 
 bisimPair :: PairGen
-bisimPair 0 = oneof [skipPair, varPair]
+bisimPair 0 = oneof [skipPair, varPair, intPair]
 bisimPair n = oneof
   [
   -- Some functional type constructors
@@ -182,6 +183,9 @@ recPair pairGen n = do
   a      <- arbitrary
   k      <- arbitrary
   return (T.Rec pos (Bind pos a k t), T.Rec pos (Bind pos a k u))
+  -- return $ if contractive Set.empty a t && contractive Set.empty a u
+  --          then (T.Rec pos (Bind pos a k t), T.Rec pos (Bind pos a k u))
+  --          else (t, u)
 
 -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
 
