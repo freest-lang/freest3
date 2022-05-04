@@ -93,14 +93,14 @@ showKind var sort arrow term =
 -- instance Show t => Show (K.Bind t) where
 --   show (K.Bind _ a k t) = showKind a k "=>" t
 
-showBindType :: Bind K.Kind T.Type -> String
+showBindType :: Show a => Bind K.Kind (T.TypeOf a) -> String
 showBindType (Bind _ a k t) = showKind a k "." t -- ∀ a:k . t
 
-showBindExp :: Bind K.Kind E.Exp -> String
+showBindExp :: Show a => Bind K.Kind (E.ExpOf a) -> String
 showBindExp (Bind _ a k e) = showKind a k "=>" e -- Λ a:k => e
 
 -- Type bind
-showBindTerm :: Bind T.Type E.Exp -> Multiplicity -> String
+showBindTerm :: Show a => Bind (T.TypeOf a) (E.ExpOf a) -> Multiplicity -> String
 showBindTerm (Bind _ x t e) m = showKind x t (show m) e -- λ x:t -> e
 
 -- Unparsing types and expressions
@@ -163,10 +163,10 @@ class Unparse t where
 
 -- Type
 
-instance Show T.Type where
+instance Show a => Show (T.TypeOf a) where
   show = snd . unparse
 
-instance Unparse T.Type where
+instance Show a => Unparse (T.TypeOf a) where
   unparse (T.Int  _       ) = (maxRator, "Int")
   unparse (T.Char _       ) = (maxRator, "Char")
   unparse (T.Bool _       ) = (maxRator, "Bool")
@@ -203,28 +203,28 @@ instance Unparse T.Type where
   unparse (T.Dualof _ t) = (dualofRator, "dualof " ++ s)
     where s = bracket (unparse t) Right dualofRator
 
-showDatatype :: T.TypeMap -> String
+showDatatype :: Show a => T.TypeMapOf a -> String
 showDatatype m = intercalate " | "
   $ Map.foldrWithKey (\c t acc -> (show c ++ showAsSequence t) : acc) [] m
  where
-  showAsSequence :: T.Type -> String
+  showAsSequence :: Show a => T.TypeOf a -> String
   showAsSequence (T.Arrow _ _ t u) = " " ++ show t ++ showAsSequence u
   showAsSequence _               = ""
 
-showChoice :: T.TypeMap -> String
+showChoice :: Show a => T.TypeMapOf a -> String
 showChoice m = intercalate ", "
   $ Map.foldrWithKey (\c t acc -> (show c ++ ": " ++ show t) : acc) [] m
 
-showChoiceLabels :: T.TypeMap -> String
+showChoiceLabels :: Show a => T.TypeMapOf a -> String
 showChoiceLabels m = intercalate ", "
-  $ Map.foldrWithKey (\c _ acc -> (show c) : acc) [] m
+  $ Map.foldrWithKey (\c _ acc -> show c : acc) [] m
 
 -- Expression
 
-instance Show Exp where
+instance Show a => Show (ExpOf a) where
   show = snd . unparse
 
-instance Unparse Exp where
+instance Show a => Unparse (ExpOf a) where
   -- Basic values
   unparse (E.Unit _) = (maxRator, "()")
   unparse (E.Int _ i) = (maxRator, show i)
@@ -298,25 +298,25 @@ instance Unparse Exp where
     l = bracket (unparse e1) Left inRator
     r = bracket (unparse e2) Right inRator
 
-showFieldMap :: FieldMap -> String
+showFieldMap :: Show a => FieldMapOf a -> String
 showFieldMap m = intercalate "; " $ map showAssoc (Map.toList m)
  where
   showAssoc (b, (a, v)) =
     show b ++ " " ++ unwords (map show a) ++ " -> " ++ show v
 
-isOp :: [String] -> Variable -> Bool
+isOp :: Show a => [String] -> a -> Bool
 isOp ops x = show x `elem` ops
 
-isCmp :: Variable -> Bool
+isCmp :: Show a => a -> Bool
 isCmp = isOp ["(<)", "(>)", "(<=)", "(>=)", "(==)", "(/=)"]
 
-isAdd :: Variable -> Bool
+isAdd :: Show a => a -> Bool
 isAdd = isOp ["(+)", "(-)"]
 
-isMult :: Variable -> Bool
+isMult :: Show a => a -> Bool
 isMult = isOp ["(*)", "(/)"]
 
-showOp :: Variable -> String
+showOp :: Show a => a -> String
 showOp x = spaced $ tail (init $ show x)
 
 spaced :: String -> String

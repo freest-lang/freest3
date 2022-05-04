@@ -14,6 +14,7 @@ This module defines the syntax for types.
 module Syntax.Type
   ( TypeOf(..)
   , Type
+  , TypeMapOf
   , TypeMap
   , Polarity(..)
   , Sort(..)

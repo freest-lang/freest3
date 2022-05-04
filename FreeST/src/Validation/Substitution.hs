@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, FlexibleContexts, UndecidableInstances #-}
 {- |
 Module      :  Validation.Substitution
 Description :  <optional short text displayed on contents page>
@@ -27,14 +27,17 @@ import           Syntax.Base
 import qualified Syntax.Kind                   as K
 import qualified Syntax.Type                   as T
 import           Util.Error                     ( internalError )
+import Util.DeBruijn (NamelessType, Index (idx), varToIdx, Nameless (shift))
 
 -- [t/x]u, substitute t for for every occurrence of x in u
 -- Assume types were renamed (hence, x/=y and no -the-fly renaming needed)
 
-class Subs t where
-  subs :: T.Type -> Variable -> t -> t
+class Subs t x u where
+  subs :: t -> x -> u -> u
+  subsAll :: [(t, x)] -> u -> u
+  subsAll σ s = foldl (\u (t, x) -> subs t x u) s σ  -- apply all substitutions in σ to u; no renaming
 
-instance Subs T.Type where
+instance Subs T.Type Variable T.Type where
   -- Almanac
   subs t x (T.Almanac p s m   ) = T.Almanac p s (Map.map (subs t x) m)
   -- Functional types
@@ -61,7 +64,7 @@ instance Subs T.Type where
   --  subs _ _ t@T.Dualof{} = internalError "Validation.Substitution.subs" t
 
 
-instance (Subs t) => Subs (Bind k t) where
+instance (Subs T.Type Variable t) => Subs T.Type Variable (Bind k t) where
   subs t x (Bind p y k u) = Bind p y k (subs t x u)
 
 -- CoVar subs, [t/co-x]u
@@ -92,9 +95,6 @@ instance Cosubs T.Type where
 instance Cosubs t => Cosubs (Bind K.Kind t) where
   cosubs t x (Bind p y k u) = Bind p y k (cosubs t x u)
 
--- subsAll σ u, apply all substitutions in σ to u; no renaming
-subsAll :: [(T.Type, Variable)] -> T.Type -> T.Type
-subsAll σ s = foldl (\u (t, x) -> subs t x u) s σ
 
 -- Unfold a recursive type (one step only)
 unfold :: T.Type -> T.Type
@@ -105,7 +105,7 @@ unfold t = internalError "Validation.Substitution.unfold" t
 -- DUPLICATED, check Elaboration.Duality
 -- Calculates the dual of a session type
 class Duality t where
-  dualof :: t -> t 
+  dualof :: t -> t
 
 -- Lindley-Morris Duality, Polished, Definition 31
 -- https://arxiv.org/pdf/2004.01322.pdf
@@ -136,6 +136,51 @@ instance Duality T.View where
   dualof T.External = T.Internal
 
 
+instance Subs NamelessType Int NamelessType where
+  -- Almanac
+  subs t j (T.Almanac p s m   ) = T.Almanac p s (Map.map (subs t j) m)
+  -- Functional types
+  subs t j (T.Message p pol t1) = T.Message p pol (subs t j t1)
+  subs t j (T.Arrow p m t1 t2 ) = T.Arrow p m (subs t j t1) (subs t j t2)
+  subs t j (T.Pair p t1 t2    ) = T.Pair p (subs t j t1) (subs t j t2)
+  -- Session types
+  subs t j (T.Semi   p t1 t2  ) = T.Semi p (subs t j t1) (subs t j t2)
+  -- Polymorphism and recursion
+  subs t j (T.Rec    p b      ) = T.Rec p (subs (shift 1 t) (j + 1) b)
+  subs t j (T.Forall p b      ) = T.Forall p (subs (shift 1 t) (j + 1) b)
+  subs t j u@(T.Var _ y)
+    | idx y == j    = t
+    | otherwise = u
+  subs (T.Var _ t) j u@(T.CoVar p y)
+    | idx y == j    = T.CoVar p t
+    | otherwise = u
+  subs t j u@(T.CoVar _ y)
+    | idx y == j    = dualof t
+    | otherwise = u
+  subs _ _ t            = t
+
+instance (Subs NamelessType Int t) => Subs NamelessType Int (Bind k t) where
+  subs t x (Bind p y k u) = Bind p y k (subs t x u)
+
+-- Lindley-Morris Duality, Polished, Definition 31
+-- https://arxiv.org/pdf/2004.01322.pdf
+instance Duality NamelessType where 
+  -- Session Types
+  dualof (T.Semi p t u) = T.Semi p (dualof t) (dualof u)
+  dualof (T.Message p pol t) = T.Message p (dualof pol) t
+  -- dualof (T.Message p pol t) = T.Message p (dual pol) (dualof t)
+ -- dualof (T.Choice p pol m) = T.Choice p (dual pol) (Map.map dualof m)
+  dualof (T.Almanac p (T.Choice v) m) =
+    T.Almanac p (T.Choice $ dualof v) (Map.map dualof m)
+  dualof (T.Rec p (Bind p' a k t)) =
+    T.Rec p (Bind p' a k (dualof (subs (T.CoVar p' (varToIdx a 0 (-1))) (0 :: Int) t))) -- Making up a depth here
+  -- T.Rec p (dualBind  b)
+  --   where dualBind (K.Bind p a k t) = K.Bind p a k (dualof t)
+  dualof (T.Var p x) = T.CoVar p x
+  dualof (T.CoVar p x) = T.Var p x
+  dualof (T.Dualof _ t) = dualof t
+  -- Non session-types & Skip
+  dualof t = t
 
 {-
 

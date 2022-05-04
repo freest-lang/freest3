@@ -1,6 +1,30 @@
+{- |
+Module      :  Util.DeBruijn
+Description :  Nameless representation of terms and types using De Bruijn indices.
+Copyright   :  (c) Gil Silva, LASIGE, Faculty of Sciences, University of Lisbon
+Maintainer  :  gsilva@lasige.di.fc.ul.pt
+
+Defines Index, an alternative inner representation for variables using De Bruijn 
+indices, and the Nameless class that defines common operations on nameless terms,
+such as shifting the indices and converting between named and nameless expressions.
+Declares E.TypeOf and E.ExpOf as instances of this class.
+
+-}
+
 {-# LANGUAGE FlexibleInstances, TupleSections  #-}
 
-module Util.DeBruijn where
+
+module Util.DeBruijn
+    ( Index(..)
+    , idxToVar
+    , varToIdx
+    , NamingCtx
+    , Nameless(..)
+    , NamelessExp
+    , NamelessType
+    , preludeNamingCtx
+    )
+where
 
 import           Syntax.Base
 import qualified Syntax.Expression  as E
@@ -18,7 +42,7 @@ data Index = Index {idxPos :: Pos, idxName :: String, idx :: Int, idxDepth :: In
 
 instance Eq Index where
   (Index _ _ i1 d1) == (Index _ _ i2 d2) = i1 == i2 && d1 == d2
-  
+
 instance Ord Index where
   (Index _ _ i1 _) <= (Index _ _ i2 _) = i1 <= i2
 
@@ -31,13 +55,16 @@ instance Default Index where
 idxToVar :: Index -> Variable
 idxToVar (Index p n _ _) = Variable p n
 
+varToIdx :: Variable -> Int -> Int -> Index
+varToIdx (Variable p n) = Index p n
+
 -- Nameless expressions and types
 type NamelessExp = E.ExpOf Index
 type NamelessType = T.TypeOf Index
 
 -- The naming context is simply a list
 type NamingCtx = [String]
--- Names from the prelude, in order. 
+-- Names from the prelude, in order 
 preludeNamingCtx :: NamingCtx
 preludeNamingCtx = map intern $ Map.keys prelude
 
@@ -45,7 +72,9 @@ preludeNamingCtx = map intern $ Map.keys prelude
 class Nameless t where
     removeNames :: NamingCtx -> Int -> t Variable -> FreestState (t Index)
     restoreNames :: t Index -> FreestState (t Variable)
-    shift :: Int -> Int -> t Index -> t Index
+    shift :: Int -> t Index -> t Index
+    shift t = shift' t 0
+    shift' :: Int -> Int -> t Index -> t Index
 
 -- Operations on nameless expressions
 instance Nameless E.ExpOf where
@@ -58,7 +87,7 @@ instance Nameless E.ExpOf where
     -- Term abstraction
     removeNames ctx d (E.Var pe x@(Variable pv name)) =
         case elemIndex name ctx of
-            Nothing -> addError (VarOrConsNotInScope pv x) >> 
+            Nothing -> addError (VarOrConsNotInScope pv x) >>
                        return (E.Var defaultPos (omission pv))
             Just i  -> return $ E.Var pe (Index pv name i d)
     removeNames ctx d (E.Abs p m b) = do
@@ -143,34 +172,34 @@ instance Nameless E.ExpOf where
     restoreNames (E.New p t1 t2) =
         E.New p <$> restoreNames t1
                 <*> restoreNames t2
-    
+
     -- Basic Types
-    shift d _ (E.Int    p i) = E.Int    p i
-    shift d _ (E.Char   p c) = E.Char   p c
-    shift d _ (E.String p s) = E.String p s
-    shift d _ (E.Bool   p b) = E.Bool   p b
-    shift d _ (E.Unit   p  ) = E.Unit   p
+    shift' d _ (E.Int    p i) = E.Int    p i
+    shift' d _ (E.Char   p c) = E.Char   p c
+    shift' d _ (E.String p s) = E.String p s
+    shift' d _ (E.Bool   p b) = E.Bool   p b
+    shift' d _ (E.Unit   p  ) = E.Unit   p
     -- Term abstraction
-    shift d c (E.Var p i) | idx i < c = E.Var p i
+    shift' d c (E.Var p i) | idx i < c = E.Var p i
                           | otherwise = E.Var p i{idx = idx i + d}
-    shift d c (E.Abs p m b)           = E.Abs p m b{body = shift d (c + 1) (body b)}
-    shift d c (E.App p e1 e2)         = E.App p (shift d c e1) (shift d c e2)
+    shift' d c (E.Abs p m b)           = E.Abs p m b{body = shift' d (c + 1) (body b)}
+    shift' d c (E.App p e1 e2)         = E.App p (shift' d c e1) (shift' d c e2)
     -- Pairs
-    shift d c (E.Pair p e1 e2)         = E.Pair p (shift d c e1) (shift d c e2)
-    shift d c (E.BinLet p v1 v2 e1 e2) = E.BinLet p v1 v2 (shift d c e1) (shift d (c + 2) e2)
+    shift' d c (E.Pair p e1 e2)         = E.Pair p (shift' d c e1) (shift' d c e2)
+    shift' d c (E.BinLet p v1 v2 e1 e2) = E.BinLet p v1 v2 (shift' d c e1) (shift' d (c + 2) e2)
     -- Datatypes
-    shift d c (E.Case p e fm) = E.Case p (shift d c e) fm' 
-        where fm' = Map.map (\(vs, e') -> (vs, shift d (length vs) e')) fm'
+    shift' d c (E.Case p e fm) = E.Case p (shift' d c e) fm'
+        where fm' = Map.map (\(vs, e') -> (vs, shift' d (length vs) e')) fm'
     -- Type abstraction
-    shift d c (E.TypeAbs p b)   = E.TypeAbs p b{body = shift d (c + 1) (body b)}
-    shift d c (E.TypeApp p e t) = E.TypeApp p (shift d c e) (shift d c t)
+    shift' d c (E.TypeAbs p b)   = E.TypeAbs p b{body = shift' d (c + 1) (body b)}
+    shift' d c (E.TypeApp p e t) = E.TypeApp p (shift' d c e) (shift' d c t)
     -- Conditional
-    shift d c (E.Cond p e1 e2 e3) = E.Cond p (shift d c e1) (shift d c e2) (shift d c e3)
+    shift' d c (E.Cond p e1 e2 e3) = E.Cond p (shift' d c e1) (shift' d c e2) (shift' d c e3)
     -- Unary let
-    shift d c (E.UnLet p v e1 e2) = E.UnLet p v (shift d c e1) (shift d (c + 1) e2)
+    shift' d c (E.UnLet p v e1 e2) = E.UnLet p v (shift' d c e1) (shift' d (c + 1) e2)
     -- New
-    shift d c (E.New p t1 t2) = E.New p (shift d c t1) (shift d c t2)
-    
+    shift' d c (E.New p t1 t2) = E.New p (shift' d c t1) (shift' d c t2)
+
 -- Operations on nameless types
 instance Nameless T.TypeOf where
     -- REMOVE NAMES
@@ -244,25 +273,25 @@ instance Nameless T.TypeOf where
 
     -- SHIFT
     -- Functional types
-    shift d c (T.Int    p)        = T.Int    p
-    shift d c (T.Char   p)        = T.Char   p
-    shift d c (T.String p)        = T.String p
-    shift d c (T.Bool   p)        = T.Bool   p
-    shift d c (T.Unit   p)        = T.Unit   p
-    shift d c (T.Arrow p m t1 t2) = T.Arrow p m (shift d c t1) (shift d c t2)
-    shift d c (T.Pair p t1 t2)    = T.Pair p (shift d c t1) (shift d c t2)
-    shift d c (T.Almanac p s tm)  = T.Almanac p s (Map.map (shift d c) tm)
+    shift' d c (T.Int    p)        = T.Int    p
+    shift' d c (T.Char   p)        = T.Char   p
+    shift' d c (T.String p)        = T.String p
+    shift' d c (T.Bool   p)        = T.Bool   p
+    shift' d c (T.Unit   p)        = T.Unit   p
+    shift' d c (T.Arrow p m t1 t2) = T.Arrow p m (shift' d c t1) (shift' d c t2)
+    shift' d c (T.Pair p t1 t2)    = T.Pair p (shift' d c t1) (shift' d c t2)
+    shift' d c (T.Almanac p s tm)  = T.Almanac p s (Map.map (shift' d c) tm)
     -- Session types
-    shift d c (T.Skip p)            = T.Skip p
-    shift d c (T.Semi p t1 t2)      = T.Semi p (shift d c t1) (shift d c t2)
-    shift d c (T.Message pos pol t) = T.Message pos pol (shift d c t)
+    shift' d c (T.Skip p)            = T.Skip p
+    shift' d c (T.Semi p t1 t2)      = T.Semi p (shift' d c t1) (shift' d c t2)
+    shift' d c (T.Message pos pol t) = T.Message pos pol (shift' d c t)
     -- Polymorphic and recursive types
-    shift d c (T.Forall p b) = T.Forall p b{body = shift d (c + 1) (body b)}
-    shift d c (T.Rec p b) = T.Rec p b{body = shift d (c + 1) (body b)}
-    shift d c (T.Var p i) | idx i < c = T.Var p i
+    shift' d c (T.Forall p b) = T.Forall p b{body = shift' d (c + 1) (body b)}
+    shift' d c (T.Rec p b) = T.Rec p b{body = shift' d (c + 1) (body b)}
+    shift' d c (T.Var p i) | idx i < c = T.Var p i
                           | otherwise = T.Var p i{idx = idx i + d}
     -- Operators
-    shift d c (T.Dualof p t) = T.Dualof p (shift d c t)
-    shift d c (T.CoVar p i) | idx i < c = T.CoVar p i
+    shift' d c (T.Dualof p t) = T.Dualof p (shift' d c t)
+    shift' d c (T.CoVar p i) | idx i < c = T.CoVar p i
                             | otherwise = T.CoVar p i{idx = idx i + d}
                             

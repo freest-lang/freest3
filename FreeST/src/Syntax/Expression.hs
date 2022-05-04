@@ -16,6 +16,7 @@ module Syntax.Expression
   ( ExpOf(..)
   , Exp
   , FieldMap
+  , FieldMapOf
   )
 where
 
