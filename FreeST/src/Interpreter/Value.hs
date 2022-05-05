@@ -44,7 +44,7 @@ instance Show Value where
   show (Cons c  xs )
     | show c ==  "[]"  = "[]"
     | show c == "(::)" = let ([y]:ys) = xs in "[" ++ show y ++ showNativeList ys ++ "]"
-    | otherwise = showCons c xs
+    | otherwise        = showCons c xs
   show Closure{}      = "<fun>"
   show TypeAbs{}      = "<fun>"
   show PrimitiveFun{} = "<fun>"
@@ -65,6 +65,7 @@ showCons x xs = show x ++ " " ++ unwords (map showConstrList xs)
 
   showC :: Value -> String
   showC c@(Cons _ []) = show c
+  showC c@(Cons c' _) | show c' == "(::)" = show c
   showC c@Cons{}      = "(" ++ show c ++ ")"
   showC v             = show v
 
