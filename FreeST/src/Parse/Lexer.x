@@ -92,8 +92,8 @@ tokens :-
   SL                            { \p s -> TokenSL (internalPos p) }
   TU                            { \p s -> TokenTU (internalPos p) }
   TL                            { \p s -> TokenTL (internalPos p) }
-  MU                            { \p s -> TokenMU (internalPos p) }
-  ML                            { \p s -> TokenML (internalPos p) }
+  -- MU                            { \p s -> TokenMU (internalPos p) }
+  -- ML                            { \p s -> TokenML (internalPos p) }
 -- Basic types
   Int				                    { \p s -> TokenIntT (internalPos p) }
   Char				                  { \p s -> TokenCharT (internalPos p) }
@@ -165,8 +165,8 @@ data Token =
   | TokenSL Pos
   | TokenTU Pos
   | TokenTL Pos
-  | TokenMU Pos
-  | TokenML Pos
+  -- | TokenMU Pos
+  -- | TokenML Pos
   | TokenInt Pos Int
   | TokenChar Pos Char
   | TokenString Pos String
@@ -184,9 +184,9 @@ data Token =
 --  | TokenSend Pos
 --  | TokenReceive Pos
   | TokenSelect Pos
+--  | TokenFork Pos
   | TokenMatch Pos
   | TokenWith Pos
---  | TokenFork Pos
   | TokenCase Pos
   | TokenOf Pos
   | TokenForall Pos
@@ -237,8 +237,8 @@ instance Show Token where
   show (TokenSL _) = "SL"
   show (TokenTU _) = "TU"
   show (TokenTL _) = "TL"
-  show (TokenMU _) = "MU"
-  show (TokenML _) = "ML"
+  -- show (TokenMU _) = "MU"
+  -- show (TokenML _) = "ML"
   show (TokenInt _ i) = show i
   show (TokenChar _ c) = show c
   show (TokenBool _ b) = show b
@@ -258,18 +258,19 @@ instance Show Token where
   show (TokenSelect _) = "select"
 --  show (TokenFork _) = "fork"
   show (TokenMatch _) = "match"
+  show (TokenWith _) = "with"
   show (TokenCase _) = "case"
+  show (TokenOf _) = "of"
   show (TokenForall _) = "forall"
+  show (TokenDualof _) = "dualof"
+  show (TokenFArrow _) = "=>"
   show (TokenMinus _) = "-"
   show (TokenTimes _) = "*"
   show (TokenRaise _) = "^"
+  show (TokenWild _) = "_"
   show (TokenLT _) = "<"
   show (TokenGT _) = ">"
-  show (TokenWild _) = "_"
   show (TokenCmp _ s) = show s
-  show (TokenOf _) = "of"
-  show (TokenDualof _) = "dualof"
-  show (TokenFArrow _) = "=>"
   show (TokenConjunction _) = "&&"
   show (TokenDisjunction _) = "||"
   show (TokenDiv _) = "/"
@@ -345,8 +346,8 @@ instance Position Token where
   pos (TokenSL p) = p
   pos (TokenTU p) = p
   pos (TokenTL p) = p
-  pos (TokenML p) = p
-  pos (TokenMU p) = p
+  -- pos (TokenML p) = p
+  -- pos (TokenMU p) = p
   pos (TokenInt p _) = p
   pos (TokenChar p _) = p
   pos (TokenBool p _) = p

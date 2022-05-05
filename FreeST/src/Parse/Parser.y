@@ -69,8 +69,8 @@ import           Util.FreestState
   SL       {TokenSL _}
   TU       {TokenTU _}
   TL       {TokenTL _}
-  MU       {TokenMU _}
-  ML       {TokenML _}
+  -- MU       {TokenMU _}
+  -- ML       {TokenML _}
   INT      {TokenInt _ _ }
   BOOL     {TokenBool _ _}
   CHAR     {TokenChar _ _}
