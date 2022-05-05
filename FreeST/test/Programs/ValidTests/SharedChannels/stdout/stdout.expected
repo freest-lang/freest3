@@ -1,7 +1,4 @@
 <pending>
-Result should be some permutation of 1, True and OK.
-    For example: 1OKTrue, is valid
+Result should be "ABCD" or "CDAB"
 
-But it often gets jumbled around.
-Maybe implement a mechanism to have a consistent
-    result?
+Waiting for non-deterministic testing (check issue #122)
