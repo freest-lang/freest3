@@ -268,8 +268,10 @@ synthetiseMap kEnv vEnv (xs, e) state = do
 
 buildMap :: Pos -> E.FieldMap -> T.TypeMap -> FreestState E.FieldMap
 buildMap p fm tm = do
-  when (Map.size tm /= Map.size fm) $ addWarning (NonExhaustiveCase p fm tm)
+  when (tmS /= fmS && tmS > fmS) $ addWarning (NonExhaustiveCase p fm tm)
   tMapWithKeyM (buildAbstraction tm) fm
+  where tmS = Map.size tm
+        fmS = Map.size fm
 
 buildAbstraction :: T.TypeMap -> Variable -> ([Variable], E.Exp)
                  -> FreestState ([Variable], E.Exp)
