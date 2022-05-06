@@ -5,7 +5,7 @@ type Bag:SL = +{Put: !Int, Get: ?Int}
 type SharedBag = *?Bag
 
 -- | The state of the shared bag: integer messages in transit
-type State = *?Int
+type State = (*?Int, *!Int)
 
 -- | When you diverge any type will do
 type Diverge = Char
@@ -14,18 +14,18 @@ type Diverge = Char
 
 -- | An empty shared bag
 emptyBagServer : dualof SharedBag -> Diverge
-emptyBagServer = bagServer (new State)
+emptyBagServer = bagServer (new *?Int)
 
--- | A bag server with a state
-bagServer : (State, dualof State) -> dualof SharedBag -> Diverge
+-- | A shared bag server with a state
+bagServer : State -> dualof SharedBag -> Diverge
 bagServer state serverChannel =
   let (clientSide, serverSide) = new Bag in
   send clientSide serverChannel;
   fork $ handleClient state serverSide;
   bagServer state serverChannel
 
--- | Handling the interaction with a particular client
-handleClient : (State, dualof State) -> dualof Bag -> ()
+-- | Handling a linear interaction with a particular client
+handleClient : State -> dualof Bag -> ()
 handleClient state chan =
   let (readFromState, writeOnState) = state in
   match chan with
