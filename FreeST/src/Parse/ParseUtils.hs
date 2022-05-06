@@ -12,21 +12,7 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-module Parse.ParseUtils
-  ( checkDupProgVarDecl
-  , checkDupFunDecl
-  , checkDupTypeDecl
-  , checkDupBind
---  , checkDupKindBind
-  , checkDupField
-  , checkDupCase
-  , checkDupCons
-  , binOp
-  , unOp
-  , typeListToType
-  , FreestStateT
-  )
-where
+module Parse.ParseUtils where
 
 import           Syntax.Base
 import qualified Syntax.Expression as E
@@ -42,6 +28,32 @@ import qualified Data.Map.Strict as Map
 
 
 type FreestStateT = StateT FreestS (Either ErrorType)
+
+-- Modules
+
+mkSpan :: Spannable a => a -> FreestStateT Span
+mkSpan a = do
+  let (Span p1 p2 _) = getSpan a
+  f <- getFileName
+  maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
+  
+mkSpanSpan :: (Spannable a, Spannable b) => a -> b -> FreestStateT Span
+mkSpanSpan a b = do
+  let (Span p1 _ _) = getSpan a
+  let (Span _ p2 _) = getSpan b
+  f <- getFileName
+  maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
+
+mkSpanFromSpan :: Spannable a => Span -> a -> FreestStateT Span
+mkSpanFromSpan (Span p1 _ _) a = do
+  let (Span _ p2 _) = getSpan a
+  f <- getFileName
+  maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
+
+liftModToSpan :: Span -> FreestStateT Span
+liftModToSpan (Span p1 p2 _) = do
+  f <- getFileName
+  maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
 
 -- Parse errors
 

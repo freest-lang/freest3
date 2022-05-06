@@ -191,63 +191,49 @@ DataCon :: { (Variable, [T.Type]) }
 ----------------
 
 Exp :: { E.Exp }
-  : let ProgVarWild '=' Exp in Exp {% mkSpanPosPos (startPos $ getSpan $1) (endPos $ getSpan $6) >>=
-                                       \s -> pure $ E.UnLet s $2 $4 $6 }
-  | Exp ';' Exp                    {% mkSpanPosPos (startPos $ getSpan $1) (endPos $ getSpan $3) >>=
-                                       \s -> mkSpanPosPos (startPos $ getSpan $1) (endPos $ getSpan $1) >>=
-                                       \s' -> pure $ E.UnLet s (mkVar s' "_") $1 $3 }
+  : let ProgVarWild '=' Exp in Exp {% mkSpanSpan $1 $6 >>= \s -> pure $ E.UnLet s $2 $4 $6 }
+  | Exp ';' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ E.UnLet s (mkVar s "_") $1 $3 }
   | let '(' ProgVarWild ',' ProgVarWild ')' '=' Exp in Exp
-                                   {% mkSpanPosPos (startPos $ getSpan $1) (endPos $ getSpan $10) >>=
-                                       \s -> pure $ E.BinLet s $3 $5 $8 $10 }
-  | if Exp then Exp else Exp       {% mkSpanPosPos (startPos $ getSpan $1) (endPos $ getSpan $6) >>=
-                                       \s -> pure $ E.Cond s $2 $4 $6 }
-  | new Type                       {% mkSpanPosPos (startPos $ getSpan $1) (endPos $ getSpan $2) >>=
-                                       \s -> pure $ E.New s $2 (T.Dualof (negSpan s) $2) }
-  | match Exp with '{' MatchMap '}' {% let s' = getSpan $2 in mkSpanPosPos (startPos $ getSpan $1) (endPos $ getSpan $6) >>=
-                                       \s -> pure $ E.Case s (E.App s' (E.Var s' (mkVar s' "collect")) $2) $5 }
-  | case Exp of '{' CaseMap '}'    {% mkSpanPosPos (startPos $ getSpan $1) (endPos $ getSpan $6) >>=
-                                       \s -> pure $ E.Case s $2 $5 }
-  | Exp '$' Exp                    {% mkSpanPosPos (startPos $ getSpan $1) (endPos $ getSpan $3) >>=
-                                       \s -> pure $ E.App s $1 $3 }
-  | Exp '&' Exp                    {% mkSpanPosPos (startPos $ getSpan $1) (endPos $ getSpan $3) >>=
-                                       \s -> pure $  E.App s $3 $1 }
-  | Exp '||' Exp                   {% mkSpanPos (startPos $ getSpan $2) >>= \s -> pure $ binOp $1 (mkVar s "(||)") $3 }
-  | Exp '&&' Exp                   {% mkSpanPos (startPos $ getSpan $2) >>= \s -> pure $ binOp $1 (mkVar s "(&&)") $3 }
-  | Exp CMP Exp                    {% mkSpanPos (startPos $ getSpan $2) >>= \s -> pure $ binOp $1 (mkVar s (getText $2)) $3 }
-  | Exp '+' Exp                    {% mkSpanPos (startPos $ getSpan $2) >>= \s -> pure $ binOp $1 (mkVar s "(+)") $3 }
-  | Exp '-' Exp                    {% mkSpanPos (startPos $ getSpan $2) >>= \s -> pure $ binOp $1 (mkVar s "(-)") $3 }
-  | Exp '*' Exp                    {% mkSpanPos (startPos $ getSpan $2) >>= \s -> pure $ binOp $1 (mkVar s "(*)") $3 }
-  | Exp '/' Exp                    {% mkSpanPos (startPos $ getSpan $2) >>= \s -> pure $ binOp $1 (mkVar s "(/)") $3 }
-  | Exp '^' Exp                    {% mkSpanPos (startPos $ getSpan $2) >>= \s -> pure $ binOp $1 (mkVar s "(^)") $3 }
-  | '-' App %prec NEG              {% mkSpanPos (startPos $ getSpan $1) >>= \s -> pure $ unOp (mkVar s "negate") $2 s }
-  | '(' Op Exp ')'                 {% mkSpanPosPos (startPos $ getSpan $1) (startPos $ getSpan $4) >>= pure . unOp $2 $3 } -- left section
-  | '(' Exp Op ')'                 {% mkSpanPosPos (startPos $ getSpan $1) (startPos $ getSpan $4) >>= pure . unOp $3 $2 } -- right section
-  | '(' Exp '-' ')'                {% mkSpanPos (startPos $ getSpan $2) >>= \s -> pure $ unOp (mkVar s "(-)") $2 s } -- right section (-)
+                                   {% mkSpanSpan $1 $10 >>= \s -> pure $ E.BinLet s $3 $5 $8 $10 }
+  | if Exp then Exp else Exp       {% mkSpanSpan $1 $6 >>= \s -> pure $ E.Cond s $2 $4 $6 }
+  | new Type                       {% mkSpanSpan $1 $2 >>= \s -> pure $ E.New s $2 (T.Dualof (negSpan s) $2) }
+  | match Exp with '{' MatchMap '}' {% let s' = getSpan $2 in mkSpanSpan $1 $6 >>= \s ->
+                                       pure $ E.Case s (E.App s' (E.Var s' (mkVar s' "collect")) $2) $5 }
+  | case Exp of '{' CaseMap '}'    {% mkSpanSpan $1 $6 >>= \s -> pure $ E.Case s $2 $5 }
+  | Exp '$' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ E.App s $1 $3 }
+  | Exp '&' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $  E.App s $3 $1 }
+  | Exp '||' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(||)") $3 }
+  | Exp '&&' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(&&)") $3 }
+  | Exp CMP Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s (getText $2)) $3 }
+  | Exp '+' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(+)") $3 }
+  | Exp '-' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(-)") $3 }
+  | Exp '*' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(*)") $3 }
+  | Exp '/' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(/)") $3 }
+  | Exp '^' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(^)") $3 }
+  | '-' App %prec NEG              {% mkSpan $1 >>= \s -> pure $ unOp (mkVar s "negate") $2 s }
+  | '(' Op Exp ')'                 {% mkSpanSpan $1 $4 >>= pure . unOp $2 $3 } -- left section
+  | '(' Exp Op ')'                 {% mkSpanSpan $1 $4 >>= pure . unOp $3 $2 } -- right section
+  | '(' Exp '-' ')'                {% mkSpan $2 >>= \s -> pure $ unOp (mkVar s "(-)") $2 s } -- right section (-)
   | App                            { $1 }
 
 App :: { E.Exp }
-  : App Primary                    {% mkSpanPosPos (startPos $ getSpan $1) (startPos $ getSpan $2) >>= \s -> return $ E.App s $1 $2 }
-  | select Constructor             {% mkSpanPosPos (startPos $ getSpan $1) (endPos $ getSpan $2) >>=
-                                       \s -> mkSpanPos (startPos $ getSpan $2) >>=
+  : App Primary                    {% mkSpanSpan $1 $2 >>= \s -> return $ E.App s $1 $2 }
+  | select Constructor             {% mkSpanSpan $1 $2 >>= \s -> mkSpan $2 >>=
                                        \s1 -> pure $ E.App s (E.Var s (mkVar s1 "select")) (E.Var s1 $2)
                                    }
   | TApp ']'                       { $1 }
   | Primary                        { $1 }
    
 Primary :: { E.Exp }
-  : INT                            {% let (TokenInt p x) = $1 in flip E.Int x `fmap` mkSpanPos (startPos p) }
-  | BOOL                           {% let (TokenBool p x) = $1 in flip E.Bool x `fmap`  mkSpanPos (startPos p) }
-  | CHAR                           {% let (TokenChar p x) = $1 in flip E.Char x `fmap` mkSpanPos (startPos p) }
-  | STR                            {% let (TokenString p x) = $1 in flip String x `fmap` mkSpanPos (startPos p) }
-  | '()'                           {% E.Unit `fmap` mkSpanFromSpan (getSpan $1) }
-  | ArbitraryProgVar               {% flip E.Var $1 `fmap` mkSpanFromSpan (getSpan $1) }
-  | lambda ProgVarWildTBind Abs
-      {% let (m,e) = $3 in mkSpanPosPos (startPos $ getSpan $1) (endPos $ getSpan e) >>=
-         \s -> pure $ E.Abs s m (Bind s (fst $2) (snd $2) e) }
-  | Lambda KindBind TAbs
-      {% let (a,k) = $2 in mkSpanPosPos (startPos $ getSpan $1) (endPos $ getSpan $3) >>=
-         \s -> pure $ E.TypeAbs s (Bind s a k $3) }
-  | '(' Exp ',' Tuple ')'          {% mkSpanPosPos (startPos $ getSpan $1) (startPos $ getSpan $5) >>= \s -> pure $ E.Pair s $2 $4 }
+  : INT                            {% let (TokenInt p x) = $1 in flip E.Int x `fmap` liftModToSpan p }
+  | BOOL                           {% let (TokenBool p x) = $1 in flip E.Bool x `fmap` liftModToSpan p }
+  | CHAR                           {% let (TokenChar p x) = $1 in flip E.Char x `fmap` liftModToSpan p }
+  | STR                            {% let (TokenString p x) = $1 in flip String x `fmap` liftModToSpan p }
+  | '()'                           {% E.Unit `fmap` mkSpan $1 }
+  | ArbitraryProgVar               {% flip E.Var $1 `fmap` mkSpan $1 }
+  | lambda ProgVarWildTBind Abs    {% let (m,e) = $3 in mkSpanSpan $1 e >>= \s -> pure $ E.Abs s m (Bind s (fst $2) (snd $2) e) }
+  | Lambda KindBind TAbs           {% let (a,k) = $2 in mkSpanSpan $1 $3 >>= \s -> pure $ E.TypeAbs s (Bind s a k $3) }
+  | '(' Exp ',' Tuple ')'          {% mkSpanSpan $1 $5 >>= \s -> pure $ E.Pair s $2 $4 }
   | '(' Exp ')'                    { $2 }
 
 
@@ -256,25 +242,25 @@ Abs :: { (Multiplicity, E.Exp) }
   | ProgVarWildTBind Abs
       {% let (v, t) = $1 in
          let (m, e) = $2 in
-         mkSpanPosPos (startPos $ getSpan v) (endPos $ getSpan e) >>=
-          \s -> pure (m, E.Abs s m (Bind s v t e))
+         mkSpanSpan v e >>= \s -> pure (m, E.Abs s m (Bind s v t e))
       }
 
 TAbs :: { E.Exp }
   : '=>' Exp { $2 }
   | KindBind TAbs
-      {% let (a,k) = $1 in mkSpanPosPos (startPos $ getSpan a) (endPos $ getSpan $2) >>=
-         \s -> mkSpanPosPos (startPos $ getSpan k) (endPos $ getSpan $2) >>=
+      {% let (a,k) = $1 in mkSpanSpan a $2 >>=
+         \s -> mkSpanSpan k $2 >>=
          \s' -> pure $ E.TypeAbs s (Bind s' a k $2)
       }
 
 TApp :: { E.Exp }
-  : App '[' Type     {% mkSpanPosPos (startPos $ getSpan $1) (endPos $ getSpan $3) >>= \s -> pure $ E.TypeApp s $1 $3 }
-  | TApp ',' Type    {% mkSpanPosPos (startPos $ getSpan $1) (endPos $ getSpan $3) >>= \s -> pure $ E.TypeApp s $1 $3 }
+  : App '[' Type     {% mkSpanSpan $1 $3 >>= \s -> pure $ E.TypeApp s $1 $3 }
+  | TApp ',' Type    {% mkSpanSpan $1 $3 >>= \s -> pure $ E.TypeApp s $1 $3 }
 
 Tuple :: { E.Exp }
   : Exp           { $1 }
-  | Exp ',' Tuple {% mkSpanPosPos (startPos $ getSpan $1) (endPos $ getSpan $3) >>= \s -> pure $ E.Pair s $1 $3 }
+  | Exp ',' Tuple {% mkSpanSpan $1 $3 >>= \s -> pure $ E.Pair s $1 $3 }
+--  | Exp ',' Tuple {% mkSpanPosPos (startPos $ getSpan $1) (endPos $ getSpan $3) >>= \s -> pure $ E.Pair s $1 $3 }
 
 MatchMap :: { FieldMap }
   : Match              { uncurry Map.singleton $1 }
@@ -291,13 +277,13 @@ Case :: { (Variable, ([Variable], E.Exp)) }
   : Constructor ProgVarWildSeq '->' Exp { ($1, ($2, $4)) }
 
 Op :: { Variable }
-   : '||'  {% flip mkVar "(||)" `fmap` mkSpanPos (startPos $ getSpan $1) }
-   | '&&'  {% flip mkVar "(&&)" `fmap` mkSpanPos (startPos $ getSpan $1)  }
-   | CMP   {% flip mkVar (getText $1) `fmap` mkSpanPos (startPos $ getSpan $1) }
-   | '+'   {% flip mkVar "(+)" `fmap` mkSpanPos (startPos $ getSpan $1)  }
-   | '*'   {% flip mkVar "(*)" `fmap` mkSpanPos (startPos $ getSpan $1)  }
-   | '/'   {% flip mkVar "(/)"  `fmap` mkSpanPos (startPos $ getSpan $1) }
-   | '^'   {% flip mkVar "(^)" `fmap` mkSpanPos (startPos $ getSpan $1)  }
+   : '||'  {% flip mkVar "(||)" `fmap` mkSpan $1 }
+   | '&&'  {% flip mkVar "(&&)" `fmap` mkSpan $1  }
+   | CMP   {% flip mkVar (getText $1) `fmap` mkSpan $1 }
+   | '+'   {% flip mkVar "(+)" `fmap` mkSpan $1  }
+   | '*'   {% flip mkVar "(*)" `fmap` mkSpan $1  }
+   | '/'   {% flip mkVar "(/)"  `fmap` mkSpan $1 }
+   | '^'   {% flip mkVar "(^)" `fmap` mkSpan $1 }
 
 
 ----------
@@ -306,33 +292,25 @@ Op :: { Variable }
 
 Type :: { T.Type }
   -- Functional types
-  : Int                           {% T.Int `fmap` mkSpanPos (startPos $ getSpan $1) }
-  | Char                          {% T.Char `fmap` mkSpanPos (startPos $ getSpan $1) }
-  | Bool                          {% T.Bool `fmap` mkSpanPos (startPos $ getSpan $1) }
-  | String                        {% T.String `fmap` mkSpanPos (startPos $ getSpan $1) }
-  | '()'                          {% T.Unit `fmap` mkSpanPos (startPos $ getSpan $1) }
-  | Type Arrow Type %prec ARROW   {% mkSpanPosPos (startPos $ getSpan $1) (endPos $ getSpan $3) >>=
-                                   \s -> pure $ T.Arrow s $2 $1 $3 }
-  | '(' Type ',' TupleType ')'    {% mkSpanPosPos (startPos $ getSpan $1) (startPos $ getSpan $5) >>=
-                                   \s -> pure $ T.Pair s $2 $4 }
+  : Int                           {% T.Int `fmap` mkSpan $1 }
+  | Char                          {% T.Char `fmap` mkSpan $1 }
+  | Bool                          {% T.Bool `fmap` mkSpan $1 }
+  | String                        {% T.String `fmap` mkSpan $1 }
+  | '()'                          {% T.Unit `fmap` mkSpan $1 }
+  | Type Arrow Type %prec ARROW   {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Arrow s $2 $1 $3 }
+  | '(' Type ',' TupleType ')'    {% mkSpanSpan $1 $5 >>= \s -> pure $ T.Pair s $2 $4 }
   -- Session types
-  | Skip                          {% mkSpanPos (startPos $ getSpan $1) >>= pure . T.Skip }
-  | Type ';' Type                 {% mkSpanPosPos (startPos $ getSpan $1) (startPos $ getSpan $3) >>=
-                                   \s -> pure $ T.Semi s $1 $3 }
-  | Polarity Type %prec MSG       {% mkSpanPosPos (startPos $ fst $1) (endPos $ getSpan $2) >>=
-                                   \s -> pure $ T.Message s (snd $1) $2 }
-  | ChoiceView '{' FieldList '}'  {% mkSpanPosPos (startPos $ fst $1) (endPos $ getSpan $4) >>=
-                                   \s -> pure $ T.Almanac s (T.Choice (snd $1)) $3 }
+  | Skip                          {% T.Skip `fmap` mkSpan $1 }
+  | Type ';' Type                 {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Semi s $1 $3 }
+  | Polarity Type %prec MSG       {% mkSpanFromSpan (fst $1) $2 >>= \s -> pure $ T.Message s (snd $1) $2 }                                 
+  | ChoiceView '{' FieldList '}'  {% mkSpanFromSpan (fst $1) $4 >>= \s -> pure $ T.Almanac s (T.Choice (snd $1)) $3 } 
   -- Polymorphism and recursion
-  | rec KindBind '.' Type
-      {% mkSpanPosPos (startPos $ getSpan $1) (startPos $ getSpan $4) >>= \s -> let (a,k) = $2 in
-       pure $ T.Rec s (Bind (getSpan a) a k $4) }
-  | forall KindBind Forall        {% let (a,k) = $2 in mkSpanPosPos (startPos $ getSpan $1) (startPos $ getSpan $3) >>= \s ->
-                                     pure $ T.Forall s (Bind (getSpan a) a k $3) }
-  | TypeVar                       {% mkSpanPos (startPos $ getSpan $1) >>= \s -> pure $ T.Var s $1 }
+  | rec KindBind '.' Type         {% let (a,k) = $2 in flip T.Rec (Bind (getSpan a) a k $4) `fmap` mkSpanSpan $1 $4 }
+  | forall KindBind Forall        {% let (a,k) = $2 in flip T.Forall (Bind (getSpan a) a k $3) `fmap` mkSpanSpan $1 $3 }
+  | TypeVar                       {% flip T.Var $1 `fmap` mkSpan $1 }
   -- Type operators
-  | dualof Type                   {% flip T.Dualof $2 `fmap` mkSpanPosPos (startPos $ getSpan $1) (startPos $ getSpan $2) }
-  | TypeName                      {% flip T.Var $1 `fmap` mkSpanPos (startPos $ getSpan $1) }   -- TODO: remove this one lex
+  | dualof Type                   {% flip T.Dualof $2 `fmap` mkSpanSpan $1 $2 }
+  | TypeName                      {% flip T.Var $1 `fmap` mkSpan $1 }   -- TODO: remove this one lex
   | '(' Type ')'                  { $2 }
 
 Forall :: { T.Type }
@@ -375,12 +353,12 @@ TypeSeq :: { [T.Type] }
 ----------
 
 Kind :: { K.Kind }
-  : SU {% K.su `fmap` mkSpanPos (startPos $ getSpan $1) }
-  | SL {% K.sl `fmap` mkSpanPos (startPos $ getSpan $1) }
-  | TU {% K.tu `fmap` mkSpanPos (startPos $ getSpan $1) }
-  | TL {% K.tl `fmap` mkSpanPos (startPos $ getSpan $1) }
-  | MU {% K.mu `fmap` mkSpanPos (startPos $ getSpan $1) }
-  | ML {% K.ml `fmap` mkSpanPos (startPos $ getSpan $1) }
+  : SU {% K.su `fmap` mkSpan $1 }
+  | SL {% K.sl `fmap` mkSpan $1 }
+  | TU {% K.tu `fmap` mkSpan $1 }
+  | TL {% K.tl `fmap` mkSpan $1 }
+  | MU {% K.mu `fmap` mkSpan $1 }
+  | ML {% K.ml `fmap` mkSpan $1 }
 
 -- PROGRAM VARIABLE
 
@@ -389,14 +367,14 @@ ArbitraryProgVar :: { Variable }
  | Constructor { $1 }
 
 ProgVar :: { Variable }
-  : LOWER_ID {% flip mkVar (getText $1) `fmap` mkSpanPos (startPos $ getSpan $1) }
+  : LOWER_ID {% flip mkVar (getText $1) `fmap` mkSpan $1 }
 
 Constructor :: { Variable }
-  : UPPER_ID {% flip mkVar (getText $1) `fmap` mkSpanPos (startPos $ getSpan $1) }
+  : UPPER_ID {% flip mkVar (getText $1) `fmap` mkSpan $1 }
 
 ProgVarWild :: { Variable }
   : ProgVar { $1 }
-  | '_'     {% flip mkVar "_" `fmap` mkSpanPos (startPos $ getSpan $1) }
+  | '_'     {% flip mkVar "_" `fmap` mkSpan $1 }
 
 ProgVarWildSeq :: { [Variable] }
   :                            { [] }
@@ -408,10 +386,10 @@ ProgVarWildTBind :: { (Variable, T.Type) }
 -- TYPE VARIABLE
 
 TypeVar :: { Variable }
-  : LOWER_ID {% flip mkVar (getText $1) `fmap` mkSpanPos (startPos $ getSpan $1) }
+  : LOWER_ID {% flip mkVar (getText $1) `fmap` mkSpan $1 }
 
 TypeName :: { Variable }
-  : UPPER_ID {% flip mkVar (getText $1) `fmap` mkSpanPos (startPos $ getSpan $1) }
+  : UPPER_ID {% flip mkVar (getText $1) `fmap` mkSpan $1 }
 
 KindBind :: { (Variable, K.Kind) }
   : TypeVar ':' Kind { ($1, $3) }
@@ -422,29 +400,6 @@ KindedTVar :: { (Variable, K.Kind) }    -- for type and data declarations
   | TypeName          { ($1, omission (getSpan $1)) }
 
 {
-
--- Span functions
--- TODO: move them to utils
-
-mkSpanPos :: Pos -> FreestStateT Span
-mkSpanPos p = do
-  f <- getFileName
-  maybe (Span p p f) (Span p p) <$> getModuleName
-  
-mkSpanPosPos :: Pos -> Pos -> FreestStateT Span
-mkSpanPosPos p1 p2 = do
-  f <- getFileName
-  maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
-
-mkSpanFromSpan :: Span -> FreestStateT Span
-mkSpanFromSpan (Span p1 p2 _) = do
-  f <- getFileName
-  maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
-  
-mkSpanFromSpanSpan :: Span -> Span -> FreestStateT Span
-mkSpanFromSpanSpan (Span p1 _ _) (Span _ p2 _) = do
-  f <- getFileName
-  maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
 
 -- Parse functions
 -- Used in the Read instances
