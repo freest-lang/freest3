@@ -137,79 +137,79 @@ tokens :-
 {
 
 data Token =
-    TokenNL Pos
-  | TokenIntT Pos
-  | TokenCharT Pos
-  | TokenBoolT Pos
-  | TokenStringT Pos
-  | TokenUnit Pos
-  | TokenUnArrow Pos
-  | TokenLinArrow Pos
-  | TokenLambda Pos
-  | TokenUpperLambda Pos
-  | TokenLParen Pos
-  | TokenRParen Pos
-  | TokenLBracket Pos
-  | TokenRBracket Pos
-  | TokenComma Pos
-  | TokenSkip Pos
-  | TokenColon Pos
-  | TokenUpperId Pos String
-  | TokenSemi Pos
-  | TokenMOut Pos
-  | TokenMIn Pos
-  | TokenLBrace Pos
-  | TokenRBrace Pos
-  | TokenAmpersand Pos
-  | TokenPlus Pos
-  | TokenRec Pos
-  | TokenDot Pos
-  | TokenLowerId Pos String
-  | TokenSU Pos
-  | TokenSL Pos
-  | TokenTU Pos
-  | TokenTL Pos
-  | TokenMU Pos
-  | TokenML Pos
-  | TokenInt Pos Int
-  | TokenChar Pos Char
-  | TokenString Pos String
-  | TokenBool Pos Bool
-  | TokenLet Pos
-  | TokenIn Pos
-  | TokenEq Pos
-  | TokenData Pos
-  | TokenType Pos
-  | TokenPipe Pos
-  | TokenIf Pos
-  | TokenThen Pos
-  | TokenElse Pos
-  | TokenNew Pos
---  | TokenSend Pos
---  | TokenReceive Pos
-  | TokenSelect Pos
-  | TokenMatch Pos
-  | TokenWith Pos
---  | TokenFork Pos
-  | TokenCase Pos
-  | TokenOf Pos
-  | TokenForall Pos
-  | TokenDualof Pos
-  | TokenFArrow Pos
-  | TokenMinus Pos
-  | TokenTimes Pos
-  | TokenRaise Pos
-  | TokenWild Pos
-  | TokenLT Pos
-  | TokenGT Pos
-  | TokenCmp Pos String
-  | TokenConjunction Pos
-  | TokenDisjunction Pos
-  | TokenDiv Pos
-  | TokenDollar Pos
-  | TokenModule Pos
-  | TokenWhere Pos
-  | TokenImport Pos
+    TokenNL Span
+  | TokenIntT Span
+  | TokenCharT Span
+  | TokenBoolT Span
+  | TokenStringT Span
+  | TokenUnit Span
+  | TokenUnArrow Span
+  | TokenLinArrow Span
+  | TokenLambda Span
+  | TokenUpperLambda Span
+  | TokenLParen Span
+  | TokenRParen Span
+  | TokenLBracket Span
+  | TokenRBracket Span
+  | TokenComma Span
+  | TokenSkip Span
+  | TokenColon Span
+  | TokenUpperId Span String
+  | TokenSemi Span
+  | TokenMOut Span
+  | TokenMIn Span
+  | TokenLBrace Span
+  | TokenRBrace Span
+  | TokenAmpersand Span
+  | TokenPlus Span
+  | TokenRec Span
+  | TokenDot Span
+  | TokenLowerId Span String
+  | TokenSU Span
+  | TokenSL Span
+  | TokenTU Span
+  | TokenTL Span
+  | TokenMU Span
+  | TokenML Span
+  | TokenInt Span Int
+  | TokenChar Span Char
+  | TokenString Span String
+  | TokenBool Span Bool
+  | TokenLet Span
+  | TokenIn Span
+  | TokenEq Span
+  | TokenData Span
+  | TokenType Span
+  | TokenPipe Span
+  | TokenIf Span
+  | TokenThen Span
+  | TokenElse Span
+  | TokenNew Span
+--  | TokenSend Span
+--  | TokenReceive Span
+  | TokenSelect Span
+  | TokenMatch Span
+  | TokenWith Span
+--  | TokenFork Span
+  | TokenCase Span
+  | TokenOf Span
+  | TokenForall Span
+  | TokenDualof Span
+  | TokenFArrow Span
+  | TokenMinus Span
+  | TokenTimes Span
+  | TokenRaise Span
+  | TokenWild Span
+  | TokenLT Span
+  | TokenGT Span
+  | TokenCmp Span String
+  | TokenConjunction Span
+  | TokenDisjunction Span
+  | TokenDiv Span
+  | TokenDollar Span
+  | TokenModule Span
+  | TokenWhere Span
+  | TokenImport Span
 
 instance Show Token where
   show (TokenNL _) = "\\n"
@@ -297,7 +297,7 @@ scanTokens input filename =
         AlexEOF -> Right []
         AlexError _ ->
           let p = internalPos pos in
-          Left $ LexicalError (Span p p filename) (show $ head input)
+          Left $ LexicalError (Span (startPos p) (endPos p) filename) (show $ head input)
         AlexSkip  inp' len     -> go inp'
         AlexToken inp' len act ->
           case go inp' of
@@ -320,160 +320,84 @@ trim = reverse . trim' . reverse . trim'
 
 -- POSITIONS
 
-internalPos :: AlexPosn -> Pos
-internalPos (AlexPn _ l c) = Pos l c
+internalPos :: AlexPosn -> Span
+internalPos (AlexPn _ l c) = let p = Pos l c in Span p p ""
 
-instance Position Token where
-  pos (TokenNL p) = p
-  pos (TokenIntT p) = p
-  pos (TokenCharT p) = p
-  pos (TokenBoolT p) = p
-  pos (TokenUnit p) = p
-  pos (TokenStringT p) = p
-  pos (TokenUnArrow p) = p
-  pos (TokenLinArrow p) = p
-  pos (TokenLambda p) = p
-  pos (TokenUpperLambda p) = p
-  pos (TokenLParen p) = p
-  pos (TokenRParen p) = p
-  pos (TokenLBracket p) = p
-  pos (TokenRBracket p) = p
-  pos (TokenComma p) = p
-  pos (TokenSkip p) = p
-  pos (TokenColon p) = p
-  pos (TokenUpperId p _) = p
-  pos (TokenSemi p) = p
-  pos (TokenMOut p) = p
-  pos (TokenMIn p) = p
-  pos (TokenLBrace p) = p
-  pos (TokenRBrace p) = p
-  pos (TokenAmpersand p) = p
-  pos (TokenPlus p) = p
-  pos (TokenRec p) = p
-  pos (TokenDot p) = p
-  pos (TokenLowerId p _) = p
-  pos (TokenSU p) = p
-  pos (TokenSL p) = p
-  pos (TokenTU p) = p
-  pos (TokenTL p) = p
-  pos (TokenML p) = p
-  pos (TokenMU p) = p
-  pos (TokenInt p _) = p
-  pos (TokenChar p _) = p
-  pos (TokenBool p _) = p
-  pos (TokenString p _) = p
-  pos (TokenLet p) = p
-  pos (TokenIn p) = p
-  pos (TokenEq p) = p
-  pos (TokenData p) = p
-  pos (TokenType p) = p
-  pos (TokenPipe p) = p
-  pos (TokenNew p) = p
---  pos (TokenSend p) = p
---  pos (TokenReceive p) = p
-  pos (TokenSelect p) = p
---  pos (TokenFork p) = p
-  pos (TokenMatch p) = p
-  pos (TokenCase p) = p
-  pos (TokenForall p) = p
-  pos (TokenMinus p) = p
-  pos (TokenTimes p) = p
-  pos (TokenRaise p) = p
-  pos (TokenLT p) = p
-  pos (TokenGT p) = p
-  pos (TokenWild p) = p
-  pos (TokenCmp p _) = p
-  pos (TokenIf p) = p
-  pos (TokenThen p) = p
-  pos (TokenElse p) = p
-  pos (TokenWith p) = p
-  pos (TokenOf p) = p
-  pos (TokenDualof p) = p
-  pos (TokenFArrow p) = p
-  pos (TokenConjunction p) = p
-  pos (TokenDisjunction p) = p
-  pos (TokenDiv p) = p
-  pos (TokenDollar p) = p
-  pos (TokenModule p) = p
-  pos (TokenWhere p) = p
-  pos (TokenImport p) = p
---  pos t = error $ show t
-
--- TODO: proper spans, proper filename
+-- TODO: proper spans?, proper filename
 instance Spannable Token where
-  span (TokenNL p) = Span p p ""
-  span (TokenIntT p) = Span p p ""
-  span (TokenCharT p) = Span p p ""
-  span (TokenBoolT p) = Span p p ""
-  span (TokenUnit p) = Span p p ""
-  span (TokenStringT p) = Span p p ""
-  span (TokenUnArrow p) = Span p p ""
-  span (TokenLinArrow p) = Span p p ""
-  span (TokenLambda p) = Span p p ""
-  span (TokenUpperLambda p) = Span p p ""
-  span (TokenLParen p) = Span p p ""
-  span (TokenRParen p) = Span p p ""
-  span (TokenLBracket p) = Span p p ""
-  span (TokenRBracket p) = Span p p ""
-  span (TokenComma p) = Span p p ""
-  span (TokenSkip p) = Span p p ""
-  span (TokenColon p) = Span p p ""
-  span (TokenUpperId p _) = Span p p ""
-  span (TokenSemi p) = Span p p ""
-  span (TokenMOut p) = Span p p ""
-  span (TokenMIn p) = Span p p ""
-  span (TokenLBrace p) = Span p p ""
-  span (TokenRBrace p) = Span p p ""
-  span (TokenAmpersand p) = Span p p ""
-  span (TokenPlus p) = Span p p ""
-  span (TokenRec p) = Span p p ""
-  span (TokenDot p) = Span p p ""
-  span (TokenLowerId p _) = Span p p ""
-  span (TokenSU p) = Span p p ""
-  span (TokenSL p) = Span p p ""
-  span (TokenTU p) = Span p p ""
-  span (TokenTL p) = Span p p ""
-  span (TokenML p) = Span p p ""
-  span (TokenMU p) = Span p p ""
-  span (TokenInt p _) = Span p p ""
-  span (TokenChar p _) = Span p p ""
-  span (TokenBool p _) = Span p p ""
-  span (TokenString p _) = Span p p ""
-  span (TokenLet p) = Span p p ""
-  span (TokenIn p) = Span p p ""
-  span (TokenEq p) = Span p p ""
-  span (TokenData p) = Span p p ""
-  span (TokenType p) = Span p p ""
-  span (TokenPipe p) = Span p p ""
-  span (TokenNew p) = Span p p ""
---  span (TokenSend p) = Span p p ""
---  span (TokenReceive p) = Span p p ""
-  span (TokenSelect p) = Span p p ""
---  span (TokenFork p) = Span p p ""
-  span (TokenMatch p) = Span p p ""
-  span (TokenCase p) = Span p p ""
-  span (TokenForall p) = Span p p ""
-  span (TokenMinus p) = Span p p ""
-  span (TokenTimes p) = Span p p ""
-  span (TokenRaise p) = Span p p ""
-  span (TokenLT p) = Span p p ""
-  span (TokenGT p) = Span p p ""
-  span (TokenWild p) = Span p p ""
-  span (TokenCmp p _) = Span p p ""
-  span (TokenIf p) = Span p p ""
-  span (TokenThen p) = Span p p ""
-  span (TokenElse p) = Span p p ""
-  span (TokenWith p) = Span p p ""
-  span (TokenOf p) = Span p p ""
-  span (TokenDualof p) = Span p p ""
-  span (TokenFArrow p) = Span p p ""
-  span (TokenConjunction p) = Span p p ""
-  span (TokenDisjunction p) = Span p p ""
-  span (TokenDiv p) = Span p p ""
-  span (TokenDollar p) = Span p p ""
-  span (TokenModule p) = Span p p ""
-  span (TokenWhere p) = Span p p ""
-  span (TokenImport p) = Span p p ""
+  span (TokenNL p) = p
+  span (TokenIntT p) = p
+  span (TokenCharT p) = p
+  span (TokenBoolT p) = p
+  span (TokenUnit p) = p
+  span (TokenStringT p) = p
+  span (TokenUnArrow p) = p
+  span (TokenLinArrow p) = p
+  span (TokenLambda p) = p
+  span (TokenUpperLambda p) = p
+  span (TokenLParen p) = p
+  span (TokenRParen p) = p
+  span (TokenLBracket p) = p
+  span (TokenRBracket p) = p
+  span (TokenComma p) = p
+  span (TokenSkip p) = p
+  span (TokenColon p) = p
+  span (TokenUpperId p _) = p
+  span (TokenSemi p) = p
+  span (TokenMOut p) = p
+  span (TokenMIn p) = p
+  span (TokenLBrace p) = p
+  span (TokenRBrace p) = p
+  span (TokenAmpersand p) = p
+  span (TokenPlus p) = p
+  span (TokenRec p) = p
+  span (TokenDot p) = p
+  span (TokenLowerId p _) = p
+  span (TokenSU p) = p
+  span (TokenSL p) = p
+  span (TokenTU p) = p
+  span (TokenTL p) = p
+  span (TokenML p) = p
+  span (TokenMU p) = p
+  span (TokenInt p _) = p
+  span (TokenChar p _) = p
+  span (TokenBool p _) = p
+  span (TokenString p _) = p
+  span (TokenLet p) = p
+  span (TokenIn p) = p
+  span (TokenEq p) = p
+  span (TokenData p) = p
+  span (TokenType p) = p
+  span (TokenPipe p) = p
+  span (TokenNew p) = p
+--  span (TokenSend p) = p
+--  span (TokenReceive p) = p
+  span (TokenSelect p) = p
+--  span (TokenFork p) = p
+  span (TokenMatch p) = p
+  span (TokenCase p) = p
+  span (TokenForall p) = p
+  span (TokenMinus p) = p
+  span (TokenTimes p) = p
+  span (TokenRaise p) = p
+  span (TokenLT p) = p
+  span (TokenGT p) = p
+  span (TokenWild p) = p
+  span (TokenCmp p _) = p
+  span (TokenIf p) = p
+  span (TokenThen p) = p
+  span (TokenElse p) = p
+  span (TokenWith p) = p
+  span (TokenOf p) = p
+  span (TokenDualof p) = p
+  span (TokenFArrow p) = p
+  span (TokenConjunction p) = p
+  span (TokenDisjunction p) = p
+  span (TokenDiv p) = p
+  span (TokenDollar p) = p
+  span (TokenModule p) = p
+  span (TokenWhere p) = p
+  span (TokenImport p) = p
 --  pos t = error $ show t
 
 
