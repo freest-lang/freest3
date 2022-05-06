@@ -12,8 +12,7 @@ Multiplicity, that will be used the remaining Compiler.
 
 module Syntax.Base
   ( Default(..)
-  , Pos(..) 
-  , Position(..)
+  , Pos
   , Multiplicity(..)
   , defaultPos
   , negPos
@@ -35,17 +34,16 @@ class Default t where
 
 -- Position
 
-data Pos = Pos Int Int deriving (Eq, Ord)
+type Pos = (Int, Int)
 
-class Position t where
-  pos :: t -> Pos  
+-- class Position t where
+--   pos :: t -> Pos  
 
 defaultPos :: Pos
-defaultPos = Pos 0 0
+defaultPos = (0, 0)
 
 negPos :: Pos -> Pos
-negPos (Pos i j) = Pos (negate i) (negate j)
-
+negPos (i, j) = (negate i, negate j)
 
 -- Span
 
@@ -77,8 +75,8 @@ instance Eq Variable where
 instance Ord Variable where
   (Variable _ x) <= (Variable _ y) = x <= y
 
-instance Position Variable where
-  pos (Variable p _) = startPos p
+-- instance Position Variable where
+--   pos (Variable p _) = startPos p
   
 instance Spannable Variable where
   span (Variable p _) = p

@@ -6,7 +6,7 @@ module Parse.Lexer
 ) where
 
 
-import           Syntax.Base (Pos(..), Position(..), Span(..), Spannable(..))
+import           Syntax.Base 
 import           Util.Error (ErrorType(..))
 }
 
@@ -321,7 +321,7 @@ trim = reverse . trim' . reverse . trim'
 -- POSITIONS
 
 internalPos :: AlexPosn -> Span
-internalPos (AlexPn _ l c) = let p = Pos l c in Span p p ""
+internalPos (AlexPn _ l c) = let p = (l, c) in Span p p ""
 
 -- TODO: proper spans?, proper filename
 instance Spannable Token where

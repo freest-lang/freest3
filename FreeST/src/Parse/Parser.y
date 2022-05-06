@@ -22,7 +22,7 @@ import qualified Data.Set as Set
 import           Prelude hiding (span)
 import           System.Directory
 import           System.FilePath
-import Debug.Trace
+
 }
 
 %partial modname Module
@@ -264,18 +264,18 @@ Abs :: { (Multiplicity, E.Exp) }
 TAbs :: { E.Exp }
   : '=>' Exp { $2 }
   | KindBind TAbs
-      {% let (a,k) = $1 in mkSpanPosPos (pos a) (pos $2) >>=
-         \s -> mkSpanPosPos (pos k) (pos $2) >>=
+      {% let (a,k) = $1 in mkSpanPosPos (startPos $ span a) (endPos $ span $2) >>=
+         \s -> mkSpanPosPos (startPos $ span k) (endPos $ span $2) >>=
          \s' -> pure $ E.TypeAbs s (Bind s' a k $2)
       }
 
 TApp :: { E.Exp }
-  : App '[' Type     {% mkSpanPosPos (pos $1) (pos $3) >>= \s -> pure $ E.TypeApp s $1 $3 }
-  | TApp ',' Type    {% mkSpanPosPos (pos $1) (pos $3) >>= \s -> pure $ E.TypeApp s $1 $3 }
+  : App '[' Type     {% mkSpanPosPos (startPos $ span $1) (endPos $ span $3) >>= \s -> pure $ E.TypeApp s $1 $3 }
+  | TApp ',' Type    {% mkSpanPosPos (startPos $ span $1) (endPos $ span $3) >>= \s -> pure $ E.TypeApp s $1 $3 }
 
 Tuple :: { E.Exp }
   : Exp           { $1 }
-  | Exp ',' Tuple {% mkSpanPosPos (pos $1) (pos $3) >>= \s -> pure $ E.Pair s $1 $3 }
+  | Exp ',' Tuple {% mkSpanPosPos (startPos $ span $1) (endPos $ span $3) >>= \s -> pure $ E.Pair s $1 $3 }
 
 MatchMap :: { FieldMap }
   : Match              { uncurry Map.singleton $1 }
@@ -439,6 +439,11 @@ mkSpanPosPos p1 p2 = do
 
 mkSpanFromSpan :: Span -> FreestStateT Span
 mkSpanFromSpan (Span p1 p2 _) = do
+  f <- getFileName
+  maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
+  
+mkSpanFromSpanSpan :: Span -> Span -> FreestStateT Span
+mkSpanFromSpanSpan (Span p1 _ _) (Span _ p2 _) = do
   f <- getFileName
   maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
 

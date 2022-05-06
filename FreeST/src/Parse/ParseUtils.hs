@@ -71,32 +71,32 @@ checkDupBind x xs
 
 checkDupCons :: (Variable, [T.Type]) -> [(Variable, [T.Type])] -> FreestStateT ()
 checkDupCons (x, _) xts
-  | any compare xts = addError $ DuplicateFieldInDatatype (span x) x pos2
+  | any compare xts = addError $ DuplicateFieldInDatatype (span x) x pos
   | otherwise =
      flip (Map.!?) x . varEnv <$> get >>= \case
-       Just _  -> addError $ MultipleDeclarations (span x) x pos2
+       Just _  -> addError $ MultipleDeclarations (span x) x pos
        Nothing -> return ()
   where
     compare = \(y, _) -> y == x
-    pos2 = maybe defaultSpan (span . fst) (find compare xts)
+    pos = maybe defaultSpan (span . fst) (find compare xts)
 
 checkDupProgVarDecl :: Variable -> FreestStateT ()
 checkDupProgVarDecl x = do
   vEnv <- varEnv <$> get
   case vEnv Map.!? x of
-    Just _  -> addError $ MultipleDeclarations (span x) x (pos2 vEnv)
+    Just _  -> addError $ MultipleDeclarations (span x) x (pos vEnv)
     Nothing -> return ()
  where
-    pos2 vEnv = span $ fst $ Map.elemAt (Map.findIndex x vEnv) vEnv
+    pos vEnv = span $ fst $ Map.elemAt (Map.findIndex x vEnv) vEnv
 
 checkDupTypeDecl :: Variable -> FreestStateT ()
 checkDupTypeDecl a = do
   tEnv <- typeEnv <$> get
   case tEnv Map.!? a of
-    Just (_, s) -> addError $ MultipleTypeDecl (span a) a (pos2 tEnv)-- (span s)
+    Just (_, s) -> addError $ MultipleTypeDecl (span a) a (pos tEnv)-- (span s)
     Nothing     -> return ()
  where
-    pos2 tEnv = span $ fst $ Map.elemAt (Map.findIndex a tEnv) tEnv
+    pos tEnv = span $ fst $ Map.elemAt (Map.findIndex a tEnv) tEnv
   
 checkDupFunDecl :: Variable -> FreestStateT ()
 checkDupFunDecl x = do

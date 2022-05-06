@@ -55,24 +55,6 @@ instance Default (Bind T.Type Exp) where
 
 type FieldMap = Map.Map Variable ([Variable], Exp)
 
-instance Position Exp where
-  pos (Unit p             ) = startPos p
-  pos (Int p _            ) = startPos p
-  pos (Char p _           ) = startPos p
-  pos (Bool p _           ) = startPos p
-  pos (String p _         ) = startPos p
-  pos (Var p _            ) = startPos p
-  pos (Abs p _ _          ) = startPos p
-  pos (UnLet p _ _ _      ) = startPos p
-  pos (App p _ _          ) = startPos p
-  pos (TypeApp p _ _      ) = startPos p
-  pos (TypeAbs p _        ) = startPos p
-  pos (Cond p _ _ _       ) = startPos p
-  pos (Pair p _ _         ) = startPos p
-  pos (BinLet p _ _ _ _   ) = startPos p
-  pos (New p _ _          ) = startPos p
-  pos (Case  p _ _        ) = startPos p
-
 instance Spannable Exp where
   span (Unit p             ) = p
   span (Int p _            ) = p

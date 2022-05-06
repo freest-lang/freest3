@@ -65,8 +65,5 @@ showCons x xs = show x ++ " " ++ unwords (map showConstrList xs)
   showC c@Cons{}      = "(" ++ show c ++ ")"
   showC v             = show v
 
-instance Position Value where
-  pos _ = defaultPos
-  
 instance Spannable Value where
   span _ = defaultSpan

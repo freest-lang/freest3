@@ -56,26 +56,6 @@ type TypeMap = Map.Map Variable Type
 
 data Sort = Record | Variant | Choice View deriving Eq
 
-instance Position Type where
-  pos (Int  p       ) = startPos p
-  pos (Char p       ) = startPos p
-  pos (Bool p       ) = startPos p
-  pos (String p     ) = startPos p
-  pos (Unit p       ) = startPos p
-  pos (Arrow p _ _ _) = startPos p
-  pos (Pair p _ _   ) = startPos p
-  pos (Almanac p _ _) = startPos p
-  pos (Skip p       ) = startPos p
-  pos (Semi p _ _   ) = startPos p
-  pos (Message p _ _) = startPos p
-  pos (Forall p _   ) = startPos p
-  pos (Rec p _      ) = startPos p
-  pos (Var p _      ) = startPos p
-  -- pos (Abs p _      ) = startPos p
-  -- pos (App p _ _    ) = startPos p
-  pos (Dualof p _   ) = startPos p
-  pos (CoVar p _   ) = startPos p
-
 instance Default Type where
   omission = Int
 

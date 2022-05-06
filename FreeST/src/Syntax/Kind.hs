@@ -46,9 +46,6 @@ data Multiplicity = Un | Lin deriving Eq
 
 data Kind = Kind Span Basic Multiplicity
 
-instance Position Kind where
-  pos (Kind p _ _) = startPos p
-
 instance Spannable Kind where
   span (Kind p _ _) = p
 

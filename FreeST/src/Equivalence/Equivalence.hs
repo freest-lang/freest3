@@ -18,33 +18,32 @@ module Equivalence.Equivalence
   )
 where
 
-import           Bisimulation.Bisimulation      ( bisimilar )
-import           Control.Monad.State            ( runState )
-import qualified Data.Map.Strict               as Map
-import qualified Data.Set                      as Set
-import           Syntax.Base                    ( Pos
-                                                , pos
-                                                , Variable
-                                                , Bind(..)
-                                                )
-import qualified Syntax.Kind                   as K
+import           Bisimulation.Bisimulation ( bisimilar )
+import           Syntax.Base
+import qualified Syntax.Kind as K
 import           Syntax.Program
-import qualified Syntax.Type                   as T
-import           Util.Error                    ( internalError )
+import qualified Syntax.Type as T
+import           Util.Error ( internalError )
 import           Util.FreestState              ( initialState
                                                 , errors
                                                 )
-import           Validation.Kinding             ( synthetise )
-import           Validation.Subkind             ( (<:) )
-import qualified Validation.Substitution       as Subs
+import           Validation.Kinding ( synthetise )
+import           Validation.Subkind ( (<:) )
+import qualified Validation.Substitution as Subs
                                                 ( unfold
                                                 , subs
                                                 )
 
+import           Control.Monad.State ( runState )
+import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
+import           Prelude hiding (span)
+
+
 class Equivalence t where
   equivalent :: K.KindEnv -> t -> t -> Bool
 
-type Visited = Set.Set (Pos, Pos)
+type Visited = Set.Set (Span, Span)
 
 -- A co-inductive definition for functional types. A bisimulation
 -- based definition for session types
@@ -53,7 +52,7 @@ instance Equivalence T.Type where
    where
     equiv :: Visited -> K.KindEnv -> T.Type -> T.Type -> Bool
     -- Have we been here before?
-    equiv v _ t1 t2 | (pos t1, pos t2) `Set.member` v  = True
+    equiv v _ t1 t2 | (span t1, span t2) `Set.member` v  = True
     -- Almanac
     equiv v kEnv (T.Almanac _ T.Variant m1) (T.Almanac _ T.Variant m2) =
       Map.size m1
@@ -78,9 +77,9 @@ instance Equivalence T.Type where
            equiv v (Map.insert a1 k1 kEnv) t1
             (Subs.subs (T.Var p a1) a2 t2)
     equiv v kEnv t1@T.Rec{} t2 =
-      equiv (Set.insert (pos t1, pos t2) v) kEnv (Subs.unfold t1) t2
+      equiv (Set.insert (span t1, span t2) v) kEnv (Subs.unfold t1) t2
     equiv v kEnv t1 t2@T.Rec{} =
-      equiv (Set.insert (pos t1, pos t2) v) kEnv t1 (Subs.unfold t2)
+      equiv (Set.insert (span t1, span t2) v) kEnv t1 (Subs.unfold t2)
     equiv _ _ (T.Var _ a1) (T.Var _ a2) = a1 == a2 -- Polymorphic variable
     -- Should not happen
     equiv _ _ t1@T.Dualof{} _ =

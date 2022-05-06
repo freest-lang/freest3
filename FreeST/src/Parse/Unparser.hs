@@ -34,14 +34,14 @@ import           Prelude                 hiding ( Left
 
 -- Positions (Base)
 
-instance Show Pos where
-  show (Pos l c) = show l ++ ":" ++ show c
-
 instance Show Span where
   show (Span sp fp _)
     | sp == fp  = show sp
-    | otherwise = '(' : show sp ++ ")-(" ++ show fp ++ ")"
+    | otherwise = '(' : showPos sp ++ ")-(" ++ showPos fp ++ ")"
+    where
+      showPos (l,c) = show l ++ ":" ++ show c
 
+        
 showModuleName :: Span -> String
 showModuleName s = showModuleWithDots (defModule s)
 
