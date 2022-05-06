@@ -34,7 +34,6 @@ import           Data.Maybe
 import qualified Data.Set as Set
 import qualified Data.Traversable as Traversable
 import           Debug.Trace -- debug (used on debugM function)
-import           Prelude hiding (span)
 
 -- | The typing state
 
@@ -174,7 +173,7 @@ findTypeName p t = Map.findWithDefault t p <$> getTypeNames
 addDualof :: T.Type -> FreestState ()
 addDualof d@(T.Dualof p t) = do
   tn <- getTypeNames
-  case tn Map.!? (span t) of
+  case tn Map.!? (getSpan t) of
     Just (T.Dualof _ _) -> return ()
     Just u -> modify (\s -> s { typenames = Map.insert p (T.Dualof p u) tn })
     Nothing -> modify (\s -> s { typenames = Map.insert p d tn })

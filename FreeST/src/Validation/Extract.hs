@@ -36,28 +36,27 @@ import           Util.FreestState
 
 import           Data.Functor
 import qualified Data.Map.Strict as Map
-import           Prelude hiding (span)
 
 
 function :: E.Exp -> T.Type -> FreestState (T.Type, T.Type)
 function e t =
   case normalise t of
     (T.Arrow _ _ u v) -> return (u, v)
-    u               -> let p = span e in
+    u               -> let p = getSpan e in
       addError (ExtractError p "an arrow" e u) $> (omission p, omission p)
 
 pair :: E.Exp -> T.Type -> FreestState (T.Type, T.Type)
 pair e t =
   case normalise t of
     (T.Pair _ u v) -> return (u, v)
-    u              -> let p = span u in
+    u              -> let p = getSpan u in
       addError (ExtractError p "a pair" e u) $> (omission p, omission p)
 
 forall :: E.Exp -> T.Type -> FreestState T.Type
 forall e t =
   case normalise t of
     u@T.Forall{} -> return u
-    u            -> let p = span e in
+    u            -> let p = getSpan e in
       addError (ExtractError p "a polymorphic" e u) $> T.Forall p (omission p)
 
 output :: E.Exp -> T.Type -> FreestState (T.Type, T.Type)
@@ -77,7 +76,7 @@ message pol msg e t =
  where
   messageErr :: T.Type -> FreestState (T.Type, T.Type)
   messageErr u = 
-    addError (ExtractError (span e) msg e u) $> (T.Unit $ span u, T.Skip $ span u)
+    addError (ExtractError (getSpan e) msg e u) $> (T.Unit $ getSpan u, T.Skip $ getSpan u)
 
 outChoiceMap :: E.Exp -> T.Type -> FreestState T.TypeMap
 outChoiceMap = choiceMap T.External "an external choice (&)"
@@ -92,20 +91,20 @@ choiceMap view msg e t =
       if view == view' then return m else choiceErr t
     (T.Semi _ (T.Almanac _ (T.Choice view') m) u) ->
       if view == view'
-      then return $ Map.map (\v -> T.Semi (span v) v u) m
+      then return $ Map.map (\v -> T.Semi (getSpan v) v u) m
       else choiceErr t
     u -> choiceErr u
  where
   choiceErr :: T.Type -> FreestState T.TypeMap
   choiceErr u = 
-    addError (ExtractError (span e) msg e u) $> Map.empty
+    addError (ExtractError (getSpan e) msg e u) $> Map.empty
 
 datatypeMap :: E.Exp -> T.Type -> FreestState T.TypeMap
 datatypeMap e t =
   case normalise t of
     (T.Almanac _ T.Variant m) -> return m
     u                -> 
-      addError (ExtractError (span e) "a datatype" e u) $> Map.empty
+      addError (ExtractError (getSpan e) "a datatype" e u) $> Map.empty
 
 choiceBranch :: Span -> T.TypeMap -> Variable -> T.Type -> FreestState T.Type
 choiceBranch p tm x t = case tm Map.!? x of

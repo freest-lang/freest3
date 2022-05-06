@@ -14,7 +14,6 @@ import           Util.GetTOps
 import           Util.Message
 
 import qualified Data.Map as Map
-import           Prelude hiding (span)
 import           System.FilePath
 
 -- | Internal errors
@@ -22,7 +21,7 @@ import           System.FilePath
 internalError :: (Show a, Spannable a) => String -> a -> b
 internalError fun syntax =
   error
-    $  show (span syntax)
+    $  show (getSpan syntax)
     ++ ": Internal error at "
     ++ fun
     ++ ": "
@@ -31,8 +30,8 @@ internalError fun syntax =
 -- | Format errors
 showErrors :: Stylable -> String -> TypeOpsEnv -> ErrorType -> String
 showErrors sty f tops err =
-  let base = replaceBaseName f (trimModule f (defModule (span err))) in 
-  title err sty (span err) base ++ "\n  " ++ msg err sty tops
+  let base = replaceBaseName f (trimModule f (defModule (getSpan err))) in 
+  title err sty (getSpan err) base ++ "\n  " ++ msg err sty tops
   where
     trimModule f mod
       | null mod                = takeBaseName f
@@ -92,42 +91,42 @@ data ErrorType =
   deriving Show
 
 instance Spannable ErrorType where
-  span (FileNotFound _)               = defaultSpan
-  span (WrongFileExtension _)         = defaultSpan
-  span (LexicalError p _              ) = p
-  span (PrematureEndOfFile p          ) = p
-  span (ParseError        p _         ) = p
-  span (NameModuleMismatch p _ _      ) = p
-  span (ImportNotFound p _ _          ) = p
-  span (MultipleFieldDecl p _ _       ) = p
-  span (RedundantPMatch   p _         ) = p
-  span (DuplicateVar p _ _ _          ) = p
-  span (DuplicateFieldInDatatype p _ _) = p
-  span (MultipleDeclarations p _ _  ) = p
-  span (MultipleTypeDecl     p _ _  ) = p
-  span (MultipleFunBindings  p _ _  ) = p
-  span (TypeVarOutOfScope     p _   ) = p
-  span (FuctionLacksSignature p _   ) = p
---  span (DualOfNonRecVar       p _   ) = p
-  span (DualOfNonSession      p _   ) = p
-  span (SignatureLacksBinding p _ _ ) = p
-  span (MainNotDefined p _          ) = p
-  span (UnrestrictedMainFun p _ _ _ ) = p
-  span (TypeVarNotInScope p _       ) = p
-  span (TypeNotContractive p _ _    ) = p
-  span (CantMatchKinds p _ _ _      ) = p
-  span (ExpectingSession    p _ _   ) = p
-  span (TypeAbsBodyNotValue p _ _   ) = p
-  span (VarOrConsNotInScope p _     ) = p
-  span (LinProgVar p _ _ _          ) = p
-  span (PartialApplied p _ _        ) = p
-  span (NonEquivTypes p _ _ _       ) = p
-  span (NonEquivEnvs p _ _ _ _      ) = p
-  span (DataConsNotInScope p _      ) = p
-  span (WrongNumOfCons p _ _ _ _    ) = p
-  span (ExtractError p _ _ _        ) = p
-  span (BranchNotInScope p _ _      ) = p
-  span (ErrorFunction _ _           ) = defaultSpan
+  getSpan (FileNotFound _)               = defaultSpan
+  getSpan (WrongFileExtension _)         = defaultSpan
+  getSpan (LexicalError p _              ) = p
+  getSpan (PrematureEndOfFile p          ) = p
+  getSpan (ParseError        p _         ) = p
+  getSpan (NameModuleMismatch p _ _      ) = p
+  getSpan (ImportNotFound p _ _          ) = p
+  getSpan (MultipleFieldDecl p _ _       ) = p
+  getSpan (RedundantPMatch   p _         ) = p
+  getSpan (DuplicateVar p _ _ _          ) = p
+  getSpan (DuplicateFieldInDatatype p _ _) = p
+  getSpan (MultipleDeclarations p _ _  ) = p
+  getSpan (MultipleTypeDecl     p _ _  ) = p
+  getSpan (MultipleFunBindings  p _ _  ) = p
+  getSpan (TypeVarOutOfScope     p _   ) = p
+  getSpan (FuctionLacksSignature p _   ) = p
+--  getSpan (DualOfNonRecVar       p _   ) = p
+  getSpan (DualOfNonSession      p _   ) = p
+  getSpan (SignatureLacksBinding p _ _ ) = p
+  getSpan (MainNotDefined p _          ) = p
+  getSpan (UnrestrictedMainFun p _ _ _ ) = p
+  getSpan (TypeVarNotInScope p _       ) = p
+  getSpan (TypeNotContractive p _ _    ) = p
+  getSpan (CantMatchKinds p _ _ _      ) = p
+  getSpan (ExpectingSession    p _ _   ) = p
+  getSpan (TypeAbsBodyNotValue p _ _   ) = p
+  getSpan (VarOrConsNotInScope p _     ) = p
+  getSpan (LinProgVar p _ _ _          ) = p
+  getSpan (PartialApplied p _ _        ) = p
+  getSpan (NonEquivTypes p _ _ _       ) = p
+  getSpan (NonEquivEnvs p _ _ _ _      ) = p
+  getSpan (DataConsNotInScope p _      ) = p
+  getSpan (WrongNumOfCons p _ _ _ _    ) = p
+  getSpan (ExtractError p _ _ _        ) = p
+  getSpan (BranchNotInScope p _ _      ) = p
+  getSpan (ErrorFunction _ _           ) = defaultSpan
 
 
 instance Message ErrorType where
@@ -225,7 +224,7 @@ instance Message ErrorType where
   msg (WrongNumOfCons _ x i xs e) sty ts =
     "The constructor " ++ style red sty ts x ++ " should have " ++ red sty (show i) ++
     " arguments, but has been given " ++ red sty (show $ length xs) ++
-    "\n\t In the pattern (" ++ show (startPos $ span x) ++ " - " ++ show (endPos $ span e)  ++ "): " ++
+    "\n\t In the pattern (" ++ show (startPos $ getSpan x) ++ " - " ++ show (endPos $ getSpan e)  ++ "): " ++
     red sty (show x ++ " " ++ unwords (map show xs) ++ " -> " ++ show (getDefault ts e))
   msg (ExtractError _ s e t) sty ts = 
     "Expecting " ++ s ++ " type for expression " ++ style red sty ts e ++
@@ -234,7 +233,7 @@ instance Message ErrorType where
   msg (BranchNotInScope _ x t) sty ts =
     "Choice branch not in scope.\n\t Branch " ++ style red sty ts x ++
     " is not present in the internal choice type " ++ style red sty ts t ++
-    "\n\t Defined at: " ++ show (span t)
+    "\n\t Defined at: " ++ show (getSpan t)
 --  Builtin
   msg (ErrorFunction s e) _ _ = -- TODO: This one is from the point of view of the callee not the caller
     e ++ "\n  error, called at module" ++ defModule s ++ ":" ++ show (startPos s)

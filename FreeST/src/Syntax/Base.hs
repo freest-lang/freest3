@@ -48,7 +48,7 @@ negPos (i, j) = (negate i, negate j)
 -- Span
 
 class Spannable t where
-  span :: t -> Span
+  getSpan :: t -> Span
 
 data Span = Span
   { startPos     :: Pos
@@ -79,7 +79,7 @@ instance Ord Variable where
 --   pos (Variable p _) = startPos p
   
 instance Spannable Variable where
-  span (Variable p _) = p
+  getSpan (Variable p _) = p
 
 instance Default Variable where
   omission p = mkVar p "omission"

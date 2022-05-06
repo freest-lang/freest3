@@ -56,19 +56,19 @@ instance Default (Bind T.Type Exp) where
 type FieldMap = Map.Map Variable ([Variable], Exp)
 
 instance Spannable Exp where
-  span (Unit p             ) = p
-  span (Int p _            ) = p
-  span (Char p _           ) = p
-  span (Bool p _           ) = p
-  span (String p _         ) = p
-  span (Var p _            ) = p
-  span (Abs p _ _          ) = p
-  span (UnLet p _ _ _      ) = p
-  span (App p _ _          ) = p
-  span (TypeApp p _ _      ) = p
-  span (TypeAbs p _        ) = p
-  span (Cond p _ _ _       ) = p
-  span (Pair p _ _         ) = p
-  span (BinLet p _ _ _ _   ) = p
-  span (New p _ _          ) = p
-  span (Case  p _ _        ) = p
+  getSpan (Unit p             ) = p
+  getSpan (Int p _            ) = p
+  getSpan (Char p _           ) = p
+  getSpan (Bool p _           ) = p
+  getSpan (String p _         ) = p
+  getSpan (Var p _            ) = p
+  getSpan (Abs p _ _          ) = p
+  getSpan (UnLet p _ _ _      ) = p
+  getSpan (App p _ _          ) = p
+  getSpan (TypeApp p _ _      ) = p
+  getSpan (TypeAbs p _        ) = p
+  getSpan (Cond p _ _ _       ) = p
+  getSpan (Pair p _ _         ) = p
+  getSpan (BinLet p _ _ _ _   ) = p
+  getSpan (New p _ _          ) = p
+  getSpan (Case  p _ _        ) = p

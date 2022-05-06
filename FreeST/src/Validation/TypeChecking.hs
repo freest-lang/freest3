@@ -33,7 +33,6 @@ import qualified Validation.Typing as Typing -- Again
 
 import           Control.Monad.State ( when, get, unless )
 import qualified Data.Map.Strict as Map
-import           Prelude hiding (span)
 
 typeCheck :: FreestState ()
 typeCheck = do
@@ -78,13 +77,13 @@ checkHasBinding f _ = do
   tEnv <- getTEnv
   when (f `Map.member` userDefined (noConstructors tEnv vEnv) &&
         f `Map.notMember` eEnv )
-    $ addError (SignatureLacksBinding (span f) f (vEnv Map.! f))
+    $ addError (SignatureLacksBinding (getSpan f) f (vEnv Map.! f))
 
 -- Check a given function body against its type; make sure all linear
 -- variables are used.
 checkFunBody :: Variable -> E.Exp -> FreestState ()
 checkFunBody f e = getFromVEnv f >>= \case
-  -- setModuleName (Just . defModule $ span s) >>
+  -- setModuleName (Just . defModule $ getSpan s) >>
   Just s  -> Typing.checkAgainst Map.empty e s
   Nothing -> return ()
 
@@ -99,7 +98,7 @@ checkMainFunction = do
       let t = vEnv Map.! main
       k <- K.synthetise Map.empty t
       when (K.isLin k) $
-        let sp = span $ fst $ Map.elemAt (Map.findIndex main vEnv) vEnv in
+        let sp = getSpan $ fst $ Map.elemAt (Map.findIndex main vEnv) vEnv in
         addError (UnrestrictedMainFun sp main t k)
     else when (isMainFlagSet runOpts) $
       addError (MainNotDefined (defaultSpan {defModule = runFilePath runOpts}) main)

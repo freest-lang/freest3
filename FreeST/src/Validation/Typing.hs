@@ -43,7 +43,6 @@ import           Control.Monad.State            ( when
 import           Data.Functor
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import           Prelude hiding ( span )
 
 -- SYNTHESISING A TYPE
 
@@ -79,7 +78,7 @@ synthetise kEnv e'@(E.Abs p Un (Bind _ x t1 e)) = do
   t2 <- synthetise kEnv e
   difference kEnv x
   vEnv2 <- getVEnv
-  checkEquivEnvs (span e) "an unrestricted lambda" e' kEnv vEnv1 vEnv2
+  checkEquivEnvs (getSpan e) "an unrestricted lambda" e' kEnv vEnv1 vEnv2
   return $ T.Arrow p Un t1 t2
 -- Application, the special cases first
   -- Select C e
@@ -120,7 +119,7 @@ synthetise kEnv (E.App _ e1 e2) = do
   return u2
 -- Type abstraction
 synthetise kEnv e@(E.TypeAbs _ (Bind p a k e')) =
-  unless (isVal e') (addError (TypeAbsBodyNotValue (span e') e e')) >>
+  unless (isVal e') (addError (TypeAbsBodyNotValue (getSpan e') e e')) >>
   T.Forall p . Bind p a k <$> synthetise (Map.insert a k kEnv) e'
 -- Type application
 synthetise kEnv (E.TypeApp _ e t) = do
@@ -170,7 +169,7 @@ synthetiseVar kEnv x = getFromVEnv x >>= \case
       when (K.isLin k) $ removeFromVEnv x
       return s
     Nothing -> do
-      let p = span x
+      let p = getSpan x
           s = omission p
       addError (VarOrConsNotInScope p x)
       addToVEnv x s
@@ -183,13 +182,13 @@ difference kEnv x = do
   getFromVEnv x >>= \case
     Just t -> do
       k <- K.synthetise kEnv t
-      when (K.isLin k) $ addError (LinProgVar (span x) x t k)
+      when (K.isLin k) $ addError (LinProgVar (getSpan x) x t k)
     Nothing -> return ()
   removeFromVEnv x
 
 partialApplicationError :: E.Exp -> String -> FreestState T.Type
 partialApplicationError e s =
-  let p = span e in addError (PartialApplied p e s) $> omission p
+  let p = getSpan e in addError (PartialApplied p e s) $> omission p
 
 -- CHECKING AGAINST A GIVEN TYPE
 
@@ -230,7 +229,7 @@ checkAgainst kEnv e t = checkEquivTypes e kEnv t =<< synthetise kEnv e
 checkEquivTypes :: E.Exp -> K.KindEnv -> T.Type -> T.Type -> FreestState ()
 checkEquivTypes exp kEnv expected actual =
   unless (equivalent kEnv actual expected) $
-    addError (NonEquivTypes (span exp) expected actual exp)
+    addError (NonEquivTypes (getSpan exp) expected actual exp)
 
 checkEquivEnvs
   :: Span -> String -> E.Exp -> K.KindEnv -> VarEnv -> VarEnv -> FreestState ()
@@ -281,16 +280,16 @@ buildAbstraction :: T.TypeMap -> Variable -> ([Variable], E.Exp)
 buildAbstraction tm x (xs, e) = case tm Map.!? x of
   Just t -> let n = numberOfArgs t in
     if n /= length xs
-      then addError (WrongNumOfCons (span e) x n xs e) $> (xs, e)
+      then addError (WrongNumOfCons (getSpan e) x n xs e) $> (xs, e)
       else return (xs, buildAbstraction' (xs, e) t)
   Nothing -> -- Data constructor not in scope
-    addError (DataConsNotInScope (span x) x) $> (xs, e)
+    addError (DataConsNotInScope (getSpan x) x) $> (xs, e)
  where
   buildAbstraction' :: ([Variable], E.Exp) -> T.Type -> E.Exp
   buildAbstraction' ([], e) _ = e
   buildAbstraction' (x : xs, e) (T.Arrow _ _ t1 t2) =
-    E.Abs (span e) Lin $ Bind (span e) x t1 $ buildAbstraction' (xs, e) t2
-  buildAbstraction' ([x], e) t = E.Abs (span e) Lin $ Bind (span e) x t e
+    E.Abs (getSpan e) Lin $ Bind (getSpan e) x t1 $ buildAbstraction' (xs, e) t2
+  buildAbstraction' ([x], e) t = E.Abs (getSpan e) Lin $ Bind (getSpan e) x t e
 
   numberOfArgs :: T.Type -> Int
   numberOfArgs (T.Arrow _ _ _ t) = 1 + numberOfArgs t

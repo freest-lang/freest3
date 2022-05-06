@@ -15,7 +15,6 @@ import           Util.Error
 import           Control.Concurrent ( forkIO )
 import           Data.Functor
 import qualified Data.Map as Map
-import           Prelude hiding (span)
 import           System.Exit ( die )
 import           System.IO.Unsafe ( unsafePerformIO )
 
@@ -98,5 +97,5 @@ evalVar tEnv ctx eenv x
   | x == mkVar defaultSpan "fork"  = return Fork
   | x == mkVar defaultSpan "error" = return $ PrimitiveFun
       (\(String e) -> unsafePerformIO $ die $
-          showErrors False "" Map.empty (ErrorFunction (span x) e))
+          showErrors False "" Map.empty (ErrorFunction (getSpan x) e))
   | otherwise                      = internalError "Interpreter.Eval.evalVar" x

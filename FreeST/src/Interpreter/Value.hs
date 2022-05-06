@@ -66,4 +66,4 @@ showCons x xs = show x ++ " " ++ unwords (map showConstrList xs)
   showC v             = show v
 
 instance Spannable Value where
-  span _ = defaultSpan
+  getSpan _ = defaultSpan

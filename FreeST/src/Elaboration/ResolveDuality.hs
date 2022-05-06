@@ -18,7 +18,6 @@ import           Validation.Substitution
 import           Data.Functor
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import           Prelude hiding (span)
 
 -- | Resolving the dualof operator
 
@@ -120,7 +119,7 @@ solveDual vs v d@(T.Dualof p t@(T.Var _ a))
 solveDual vs v d@(T.Dualof p t) =
   addDualof d >> solveType vs v (changePos p t)
 -- Non session-types
-solveDual _ _ t = addError (DualOfNonSession (span t) t) $> t
+solveDual _ _ t = addError (DualOfNonSession (getSpan t) t) $> t
 
 solveBind
   :: (VisitedRecVars -> VisitedRecBody -> T.Type -> FreestState T.Type)

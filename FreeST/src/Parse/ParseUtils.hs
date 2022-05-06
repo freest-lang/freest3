@@ -39,7 +39,6 @@ import           Control.Monad.State
 import           Data.Bifunctor ( second )
 import           Data.List ( find )
 import qualified Data.Map.Strict as Map
-import           Prelude hiding (span)
 
 
 type FreestStateT = StateT FreestS (Either ErrorType)
@@ -48,19 +47,19 @@ type FreestStateT = StateT FreestS (Either ErrorType)
 
 checkDupField :: Variable -> T.TypeMap -> FreestStateT ()
 checkDupField x m = 
-  when (x `Map.member` m) $ addError $ MultipleFieldDecl (span x) (span k) x
+  when (x `Map.member` m) $ addError $ MultipleFieldDecl (getSpan x) (getSpan k) x
   where
     (k,_) = Map.elemAt (Map.findIndex x m) m
 
 checkDupCase :: Variable -> E.FieldMap -> FreestStateT ()
 checkDupCase x m =
-  when (x `Map.member` m) $ addError $ RedundantPMatch (span x) x
+  when (x `Map.member` m) $ addError $ RedundantPMatch (getSpan x) x
 
 checkDupBind :: Variable -> [Variable] -> FreestStateT ()
 checkDupBind x xs
   | intern x == "_" = return ()
   | otherwise = case find (== x) xs of
-    Just y  -> addError $ DuplicateVar (span y) "program" x (span x)
+    Just y  -> addError $ DuplicateVar (getSpan y) "program" x (getSpan x)
     Nothing -> return ()
 
 -- checkDupKindBind :: Bind K.Kind a -> [Bind K.Kind a] -> FreestStateT ()
@@ -71,54 +70,54 @@ checkDupBind x xs
 
 checkDupCons :: (Variable, [T.Type]) -> [(Variable, [T.Type])] -> FreestStateT ()
 checkDupCons (x, _) xts
-  | any compare xts = addError $ DuplicateFieldInDatatype (span x) x pos
+  | any compare xts = addError $ DuplicateFieldInDatatype (getSpan x) x pos
   | otherwise =
      flip (Map.!?) x . varEnv <$> get >>= \case
-       Just _  -> addError $ MultipleDeclarations (span x) x pos
+       Just _  -> addError $ MultipleDeclarations (getSpan x) x pos
        Nothing -> return ()
   where
     compare = \(y, _) -> y == x
-    pos = maybe defaultSpan (span . fst) (find compare xts)
+    pos = maybe defaultSpan (getSpan . fst) (find compare xts)
 
 checkDupProgVarDecl :: Variable -> FreestStateT ()
 checkDupProgVarDecl x = do
   vEnv <- varEnv <$> get
   case vEnv Map.!? x of
-    Just _  -> addError $ MultipleDeclarations (span x) x (pos vEnv)
+    Just _  -> addError $ MultipleDeclarations (getSpan x) x (pos vEnv)
     Nothing -> return ()
  where
-    pos vEnv = span $ fst $ Map.elemAt (Map.findIndex x vEnv) vEnv
+    pos vEnv = getSpan $ fst $ Map.elemAt (Map.findIndex x vEnv) vEnv
 
 checkDupTypeDecl :: Variable -> FreestStateT ()
 checkDupTypeDecl a = do
   tEnv <- typeEnv <$> get
   case tEnv Map.!? a of
-    Just (_, s) -> addError $ MultipleTypeDecl (span a) a (pos tEnv)-- (span s)
+    Just (_, s) -> addError $ MultipleTypeDecl (getSpan a) a (pos tEnv)-- (getSpan s)
     Nothing     -> return ()
  where
-    pos tEnv = span $ fst $ Map.elemAt (Map.findIndex a tEnv) tEnv
+    pos tEnv = getSpan $ fst $ Map.elemAt (Map.findIndex a tEnv) tEnv
   
 checkDupFunDecl :: Variable -> FreestStateT ()
 checkDupFunDecl x = do
   eEnv <- parseEnv <$> get
   case eEnv Map.!? x of
-    Just e  -> addError $ MultipleFunBindings (span x) x (span $ snd e)
+    Just e  -> addError $ MultipleFunBindings (getSpan x) x (getSpan $ snd e)
     Nothing -> return ()
 
 -- OPERATORS
 
 binOp :: E.Exp -> Variable -> E.Exp -> E.Exp
-binOp l op r = E.App s (E.App (span l) (E.Var (span op) op) l) r
-  where s = Span (startPos $ span l) (endPos $ span r) (defModule $ span l)
+binOp l op r = E.App s (E.App (getSpan l) (E.Var (getSpan op) op) l) r
+  where s = Span (startPos $ getSpan l) (endPos $ getSpan r) (defModule $ getSpan l)
 
 unOp :: Variable -> E.Exp -> Span -> E.Exp
-unOp op expr s = E.App s (E.Var (span op) op) expr
+unOp op expr s = E.App s (E.Var (getSpan op) op) expr
 
 
 typeListToType :: Variable -> [(Variable, [T.Type])] -> [(Variable, T.Type)]
 typeListToType a = map $ second typeToFun -- map (\(x, ts) -> (x, typeToFun ts))
   -- Convert a list of types and a final type constructor to a type
  where
-  typeToFun []       = T.Var (span a) a
-  typeToFun (t : ts) = T.Arrow (span t) Un t (typeToFun ts)
+  typeToFun []       = T.Var (getSpan a) a
+  typeToFun (t : ts) = T.Arrow (getSpan t) Un t (typeToFun ts)
       

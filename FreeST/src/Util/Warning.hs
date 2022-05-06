@@ -5,20 +5,17 @@ import           Syntax.Base
 import           Syntax.Program ( TypeOpsEnv )
 import qualified Syntax.Type as T
 import qualified Syntax.Expression as E
--- import           Util.PrettyWarning
--- import           Util.WarningMessage
 import           Util.Message
 
 import qualified Data.Map                      as Map
 import           Data.List                      ( intercalate )
-import           Prelude hiding (span)
 import           System.FilePath
 
 
 showWarnings :: String -> TypeOpsEnv -> WarningType -> String
 showWarnings f tops wrn =
-  let base = replaceBaseName f (trimModule f (defModule (span wrn))) in
-  title wrn True (span wrn) base ++ "\n  " ++ msg wrn True tops
+  let base = replaceBaseName f (trimModule f (defModule (getSpan wrn))) in
+  title wrn True (getSpan wrn) base ++ "\n  " ++ msg wrn True tops
   where
     trimModule f mod
       | null mod                = takeBaseName f
@@ -31,8 +28,8 @@ data WarningType =
   deriving Show
 
 instance Spannable WarningType where
-  span (NoPrelude f)             = defaultSpan {defModule = f}
-  span (NonExhaustiveCase p _ _) = p
+  getSpan (NoPrelude f)             = defaultSpan {defModule = f}
+  getSpan (NonExhaustiveCase p _ _) = p
 
 instance Message WarningType where
   title _  sty = msgHeader (yellow sty "warning:") sty
