@@ -5,19 +5,21 @@ module Elaboration.Elaboration
   )
 where
 
-import           Data.Functor
-import           Data.Map.Strict               as Map
-import qualified Data.Set                      as Set
-import           Elaboration.ResolveDuality    as Dual
+import           Elaboration.ResolveDuality as Dual
+import           Equivalence.Normalisation ( normalise )
 import           Syntax.Base
-import qualified Syntax.Expression             as E
-import qualified Syntax.Kind                   as K
-import           Syntax.Program                 ( VarEnv )
-import qualified Syntax.Type                   as T
+import qualified Syntax.Expression as E
+import qualified Syntax.Kind as K
+import           Syntax.Program ( VarEnv )
+import qualified Syntax.Type as T
 import           Util.Error
 import           Util.FreestState
-import           Util.PreludeLoader             ( userDefined )
-import           Validation.Rename              ( isFreeIn )
+import           Util.PreludeLoader ( userDefined )
+import           Validation.Rename ( isFreeIn )
+
+import           Data.Functor
+import           Data.Map.Strict as Map
+import qualified Data.Set as Set
 
 elaboration :: FreestState ()
 elaboration = do
@@ -44,7 +46,7 @@ elaboration = do
   --   From f x = E and f : T -> U
   --   build a lambda expression: f = \x : T -> E
   buildProg
---  debugM . ("Building recursive types" ++) <$> show =<< getTEnv
+  -- debugM . ("Program " ++) <$> show =<< getProg
 
 type Visited = Set.Set Variable
 
@@ -174,10 +176,11 @@ buildProg = getPEnv
   buildFunBody :: Variable -> [Variable] -> E.Exp -> FreestState E.Exp
   buildFunBody f as e = getFromVEnv f >>= \case
     Just s  -> return $ buildExp e as s
-    Nothing -> let p = pos f in addError (FuctionLacksSignature p f) $> e
+    Nothing -> addError (FuctionLacksSignature (pos f) f) $> e
       
   buildExp :: E.Exp -> [Variable] -> T.Type -> E.Exp
   buildExp e [] _ = e
+  buildExp e bs t@(T.Rec _ _) = buildExp e bs (normalise t)
   buildExp e (b : bs) (T.Arrow _ m t1 t2) =
     E.Abs (pos b) m (Bind (pos b) b t1 (buildExp e bs t2))
   buildExp _ _ t@(T.Dualof _ _) =

@@ -11,6 +11,7 @@ import qualified Syntax.Expression             as E
 import           Util.PrettyWarning
 import           Util.WarningMessage
 import qualified Data.Map                      as Map
+import           Data.List                      ( intercalate )
 -- import           Data.Maybe
 
 formatWarning :: String -> TypeOpsEnv -> WarningType -> String
@@ -36,5 +37,5 @@ warningMsg :: WarningType -> [WarningMessage]
 warningMsg (NonExhaustiveCase _ fm tm) =
   [ Warning "Pattern match(es) are non-exhaustive\n\t"
   , Warning "In a case alternative: Patterns not matched:"
-  , Warning $ formatColor (Just Pink) $ foldr (\k acc -> show k ++ acc) ""
+  , Warning $ formatColor (Just Pink) $ intercalate ", " $ map show
             $ Map.keys $ Map.difference tm fm]
