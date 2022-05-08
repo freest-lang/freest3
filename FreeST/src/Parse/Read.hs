@@ -12,6 +12,7 @@ import           Syntax.Kind
 import           Syntax.Type
 import           Util.Error
 import           Util.FreestState
+import Util.DeBruijn (NamelessExp, NamelessType)
 
 instance Read Kind where
   readsPrec _ s = [(parseKind s, "")]
@@ -21,6 +22,9 @@ instance Read Type where
 
 instance Read Exp where
   readsPrec _ = parser expr
+
+instance Read NamelessType where
+  readsPrec _ = parser namelessTypes
 
 parser :: ([Token] -> FreestStateT a) -> String -> [(a, String)]
 parser parseFun str =

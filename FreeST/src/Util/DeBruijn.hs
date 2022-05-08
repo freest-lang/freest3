@@ -22,7 +22,8 @@ module Util.DeBruijn
     , Nameless(..)
     , NamelessExp
     , NamelessType
-    , preludeNamingCtx
+    , NamelessTypeMap
+    , aeq
     )
 where
 
@@ -34,11 +35,13 @@ import qualified Data.Map.Strict    as Map
 import           Util.FreestState          (FreestState, tMapM, addError)
 import           Util.Error                (ErrorType(VarOrConsNotInScope, TypeVarNotInScope))
 import           Data.Functor              (($>))
-import           Util.PreludeLoader        (prelude)
 
 
 -- Indices
 data Index = Index {idxPos :: Pos, idxName :: String, idx :: Int, idxDepth :: Int}
+
+instance Show Index where
+    show i = "§" ++ show (idx i)
 
 instance Eq Index where
   (Index _ _ i1 d1) == (Index _ _ i2 d2) = i1 == i2 && d1 == d2
@@ -61,12 +64,10 @@ varToIdx (Variable p n) = Index p n
 -- Nameless expressions and types
 type NamelessExp = E.ExpOf Index
 type NamelessType = T.TypeOf Index
+type NamelessTypeMap = T.TypeMapOf Index
 
 -- The naming context is simply a list
 type NamingCtx = [String]
--- Names from the prelude, in order 
-preludeNamingCtx :: NamingCtx
-preludeNamingCtx = map intern $ Map.keys prelude
 
 -- Operations on nameless representations
 class Nameless t where
@@ -180,8 +181,8 @@ instance Nameless E.ExpOf where
     shift' d _ (E.Bool   p b) = E.Bool   p b
     shift' d _ (E.Unit   p  ) = E.Unit   p
     -- Term abstraction
-    shift' d c (E.Var p i) | idx i < c = E.Var p i
-                          | otherwise = E.Var p i{idx = idx i + d}
+    shift' d c (E.Var p i) | idx i < c = E.Var p i{idxDepth = idxDepth i + d}
+                          | otherwise = E.Var p i{idx = idx i + d, idxDepth = idxDepth i + d}
     shift' d c (E.Abs p m b)           = E.Abs p m b{body = shift' d (c + 1) (body b)}
     shift' d c (E.App p e1 e2)         = E.App p (shift' d c e1) (shift' d c e2)
     -- Pairs
@@ -294,4 +295,38 @@ instance Nameless T.TypeOf where
     shift' d c (T.Dualof p t) = T.Dualof p (shift' d c t)
     shift' d c (T.CoVar p i) | idx i < c = T.CoVar p i
                             | otherwise = T.CoVar p i{idx = idx i + d}
-                            
+
+-- Alpha-equivalence
+aeq :: NamelessType -> NamelessType -> Bool
+(T.Int    _) `aeq` (T.Int    _) = True
+(T.Char   _) `aeq` (T.Char   _) = True
+(T.String _) `aeq` (T.String _) = True
+(T.Bool   _) `aeq` (T.Bool   _) = True
+(T.Unit   _) `aeq` (T.Unit   _) = True
+(T.Arrow _ m1 t11 t12) `aeq` (T.Arrow _ m2 t21 t22) =
+    m1 == m2 && t11 `aeq` t21 && t12 `aeq` t22
+(T.Pair _ t11 t12) `aeq` (T.Pair p t21 t22) =
+    t11 `aeq` t21 && t12 `aeq` t22
+(T.Almanac _ s1 tm1) `aeq` (T.Almanac _ s2 tm2) =
+    s1 == s2 && 
+    Map.null 
+        (Map.differenceWith (\t1 t2 -> if t1 `aeq` t2 then Nothing else Just t1)  tm1 tm2)
+-- Session types
+(T.Skip _) `aeq` (T.Skip _) = True
+(T.Semi _ t11 t12) `aeq` (T.Semi p t21 t22) =
+    t11 `aeq` t21 && t12 `aeq` t22
+(T.Message _ p1 t1) `aeq` (T.Message _ p2 t2) =
+    p1 == p2 && t1 `aeq` t2
+-- Polymorphic and recursive types
+(T.Forall _ (Bind _ _ k1 b1)) `aeq` (T.Forall _ (Bind _ _ k2 b2)) =
+    k1 == k2 && 
+    b1 `aeq` b2
+(T.Rec _ (Bind _ _ k1 b1)) `aeq` (T.Rec _ (Bind _ _ k2 b2)) =
+    k1 == k2 && 
+    b1 `aeq` b2
+(T.Var _ i1) `aeq` (T.Var _ i2) = idx i1 == idx i2
+-- Operators
+(T.Dualof _ t1) `aeq` (T.Dualof _ t2) = t1 `aeq` t2
+(T.CoVar _ i1) `aeq` (T.CoVar _ i2) = idx i1 == idx i2
+-- Catch-all
+_ `aeq` _ = False

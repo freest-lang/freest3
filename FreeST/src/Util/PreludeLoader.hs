@@ -13,6 +13,7 @@ module Util.PreludeLoader
   ( prelude
   , isBuiltin
   , userDefined
+  , preludeNamingCtx
   )
 where
 
@@ -92,3 +93,7 @@ isBuiltin = (`elem` map fst typeList)
 
 userDefined :: VarEnv -> VarEnv
 userDefined = Map.filterWithKey (\x _ -> not (isBuiltin x))
+
+-- Names from the prelude, in order 
+preludeNamingCtx :: [String]
+preludeNamingCtx = map intern $ Map.keys prelude

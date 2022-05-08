@@ -129,6 +129,8 @@ tokens :-
   |"(&&)"|"(||)")               { \p s -> TokenLowerId (internalPos p) s }
   @lowerId                      { \p s -> TokenLowerId (internalPos p) s }
   @upperId                      { \p s -> TokenUpperId (internalPos p) s }
+-- DeBruijn
+  "§"                           { \p s -> TokenSection (internalPos p)}
 
 {
 
@@ -203,6 +205,7 @@ data Token =
   | TokenDisjunction Pos
   | TokenDiv Pos
   | TokenDollar Pos
+  | TokenSection Pos
 
 instance Show Token where
   show (TokenNL _) = "\\n"
@@ -274,6 +277,7 @@ instance Show Token where
   show (TokenDisjunction _) = "||"
   show (TokenDiv _) = "/"
   show (TokenDollar _) = "$"
+  show (TokenSection _) = "§"
 
 -- Trim newlines
 scanTokens :: String -> String -> Either [Token] ErrorType
@@ -383,6 +387,7 @@ instance Position Token where
   pos (TokenDisjunction p) = p
   pos (TokenDiv p) = p
   pos (TokenDollar p) = p
+  pos (TokenSection p) = p
 --  pos t = error $ show t
 
 getText :: Token -> String
