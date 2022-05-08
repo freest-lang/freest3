@@ -59,8 +59,17 @@ For example, if you want to specify which function should be interpreted as the 
 # Run the interpreter (ghci)
 
 ```bash
+    $ stack clean
+    $ stack build
     $ stack ghci FreeST:exe:freest
-    :set prompt  "λ: "
+```
+
+If it yields an error on finding the modules, you may need to run the following
+snippet before loading FreeST into the interpreter.
+
+```bash
+    $ stack clean
+    $ stack build
 ```
 
 ## FreeST Samples

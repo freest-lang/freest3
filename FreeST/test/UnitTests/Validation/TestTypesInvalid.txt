@@ -162,3 +162,8 @@ SU
 
 rec a:SU . +{One: !Int, Two: ?Int, Three: Skip}; a
 SU
+
+-- HIGHER ORDER
+
+?((Skip ; Skip) ; Int)
+SL

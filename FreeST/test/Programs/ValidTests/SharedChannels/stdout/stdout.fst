@@ -76,13 +76,13 @@ aux printer printFun =
 
 -- selfish client
 
--- a client that captures stdout to print uninterruptedly
-selfishClient : StdOut -> ()
-selfishClient stdout =
+-- a client that captures stdout to print two strings uninterruptedly
+client : StdOut -> String -> String -> ()
+client stdout s1 s2 =
     let printer = fst[Printer, StdOut] $ receive stdout in
     let _ = 
-        select PrintString printer & send "O" &
-        select PrintString         & send "K" &
+        select PrintString printer & send s1 &
+        select PrintString         & send s2 &
         select Close
         in ()
 
@@ -91,9 +91,8 @@ selfishClient stdout =
 main : ()
 main = 
     let (stdout, s) = new StdOut in
-    fork (printInt'  stdout 1); -- print "1"
-    fork (printBool' stdout True); -- print "True"
-    fork (selfishClient stdout);
+    fork $ client stdout "A" "B";
+    fork $ client stdout "C" "D";
     runStdout s -- run stdout server
 
 

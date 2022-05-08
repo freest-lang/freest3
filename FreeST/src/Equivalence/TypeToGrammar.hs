@@ -38,6 +38,7 @@ import           Debug.Trace
 convertToGrammar :: [T.Type] -> Grammar
 convertToGrammar ts = {- trace (show ts ++ "\n" ++ show grammar) -} grammar
   where
+    -- ts'           = mapM $ removeNames [] preludeNamingCtx (length preludeNamingCtx) ts
     (word, state) = runState (mapM typeToGrammar ts) initial
     θ             = substitution state
     prods         = substitute θ (productions state)
@@ -78,7 +79,7 @@ toGrammar' (T.Almanac _ (T.Choice v) m) = do
   ms <- tMapM toGrammar m
   getLHS $ Map.mapKeys (\k -> show v ++ show k) ms
 -- Polymorphism and recursive types
-toGrammar' (T.Forall _ (Bind _ x k t)) = do
+toGrammar' (T.Forall _ (Bind _ _ k t)) = do
   xs <- toGrammar' t
   getLHS $  Map.singleton ('∀' : show k) xs
 toGrammar' (T.Rec _ (Bind _ x _ _)) = return [x]
