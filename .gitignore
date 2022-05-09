@@ -60,3 +60,6 @@ stack.yaml.lock
 # AucTeX
 auto
 
+# mac
+.DS_Store
+
