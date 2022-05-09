@@ -1,2 +1,0 @@
-type Tree = Leaf
-          | Node int Tree Tree

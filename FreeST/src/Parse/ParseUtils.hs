@@ -34,16 +34,16 @@ where
 
 
 import           Control.Monad.State
+import           Data.Bifunctor                 ( second )
 import           Data.List                      ( find )
 import qualified Data.Map.Strict               as Map
 import           Syntax.Base
 import qualified Syntax.Expression             as E
 import qualified Syntax.Kind                   as K
-import           Syntax.ProgramVariable
-import           Syntax.TypeVariable
 import qualified Syntax.Type                   as T
-import           Util.FreestState
 import           Util.Error
+import           Util.FreestState
+
 -- import qualified Control.Monad.Fail as Fail
 
 thenM :: ParseResult a -> (a -> ParseResult b) -> ParseResult b
@@ -83,71 +83,68 @@ instance Functor ParseResult where
 
 -- Parse errors
 
-checkDupField :: ProgVar -> T.TypeMap -> FreestState ()
-checkDupField x m = when (x `Map.member` m) $
-  let p = pos x in addError (MultipleFieldDecl p x)
+checkDupField :: Variable -> T.TypeMap -> FreestState ()
+checkDupField x m =
+  when (x `Map.member` m) $ addError $ MultipleFieldDecl (pos x) x
 
-checkDupCase :: ProgVar -> E.FieldMap -> FreestState ()
-checkDupCase x m = when (x `Map.member` m) $
-  let p = pos x in addError (RedundantPMatch p x)
+checkDupCase :: Variable -> E.FieldMap -> FreestState ()
+checkDupCase x m =
+  when (x `Map.member` m) $ addError $ RedundantPMatch (pos x) x
 
-checkDupBind :: ProgVar -> [ProgVar] -> FreestState ()
+checkDupBind :: Variable -> [Variable] -> FreestState ()
 checkDupBind x xs
   | intern x == "_" = return ()
   | otherwise = case find (== x) xs of
-    Just y ->  addError (DuplicatePVar (pos y) x (pos x))
+    Just y  -> addError $ DuplicatePVar (pos y) x (pos x)
     Nothing -> return ()
 
-checkDupKindBind :: K.Bind a -> [K.Bind a] -> FreestState ()
-checkDupKindBind (K.Bind p x _ _) bs =
-  case find (\(K.Bind _ y _ _) -> y == x) bs of
-    Just (K.Bind p' _ _ _) -> addError (DuplicateTVar p' x p)
-    Nothing -> return ()
+checkDupKindBind :: Bind K.Kind a -> [Bind K.Kind a] -> FreestState ()
+checkDupKindBind (Bind p x _ _) bs =
+  case find (\(Bind _ y _ _) -> y == x) bs of
+    Just (Bind p' _ _ _) -> addError $ DuplicateTVar p' x p
+    Nothing                -> return ()
 
-checkDupCons :: (ProgVar, [T.Type]) -> [(ProgVar, [T.Type])] -> FreestState ()
+checkDupCons :: (Variable, [T.Type]) -> [(Variable, [T.Type])] -> FreestState ()
 checkDupCons (x, _) xts
-  | any (\(y, _) -> y == x) xts = addError (DuplicateFieldInDatatype (pos x) x)
+  | any (\(y, _) -> y == x) xts = addError $ DuplicateFieldInDatatype (pos x) x
   | otherwise = getFromVEnv x >>= \case
-    Just s ->
-      let p = pos x in addError (MultipleDatatypeDecl p x (pos s))
-    Nothing -> return ()
+      Just s  -> addError $ MultipleDeclarations (pos x) x (pos s)
+      Nothing -> return ()
 
-checkDupProgVarDecl :: ProgVar -> FreestState ()
+checkDupProgVarDecl :: Variable -> FreestState ()
 checkDupProgVarDecl x = do
   vEnv <- getVEnv
   case vEnv Map.!? x of
-    Just a -> 
-      let p = pos x in addError (MultipleDatatypeDecl (pos a) x p)
+    Just a  -> addError $ MultipleDeclarations (pos x) x (pos a)
     Nothing -> return ()
 
 
-checkDupTypeDecl :: TypeVar -> FreestState ()
+checkDupTypeDecl :: Variable -> FreestState ()
 checkDupTypeDecl a = do
   tEnv <- getTEnv
   case tEnv Map.!? a of
-    Just (_, s) ->
-      addError (MultipleTypeDecl (pos a) a (pos s))
-    Nothing -> return ()
+    Just (_, s) -> addError $ MultipleTypeDecl (pos a) a (pos s)
+    Nothing     -> return ()
 
-checkDupFunDecl :: ProgVar -> FreestState ()
+checkDupFunDecl :: Variable -> FreestState ()
 checkDupFunDecl x = do
   eEnv <- getPEnv
   case eEnv Map.!? x of
-    Just e -> addError (MultipleFunBindings (pos x) x (pos $ snd e))
+    Just e  -> addError $ MultipleFunBindings (pos x) x (pos $ snd e)
     Nothing -> return ()
 
 -- OPERATORS
 
-binOp :: E.Exp -> ProgVar -> E.Exp -> E.Exp
-binOp left op =
-  E.App (pos left) (E.App (pos left) (E.Var (pos op) op) left)
+binOp :: E.Exp -> Variable -> E.Exp -> E.Exp
+binOp left op = E.App (pos left) (E.App (pos left) (E.Var (pos op) op) left)
 
-unOp :: ProgVar -> E.Exp -> E.Exp
+unOp :: Variable -> E.Exp -> E.Exp
 unOp op expr = E.App (pos expr) (E.Var (pos op) op) expr
 
-typeListToType :: TypeVar -> [(ProgVar, [T.Type])] -> [(ProgVar, T.Type)]
-typeListToType a = map (\(x, ts) -> (x, typeToFun ts))
+typeListToType :: Variable -> [(Variable, [T.Type])] -> [(Variable, T.Type)]
+typeListToType a = map $ second typeToFun -- map (\(x, ts) -> (x, typeToFun ts))
   -- Convert a list of types and a final type constructor to a type
+
  where
   typeToFun []       = T.Var (pos a) a
   typeToFun (t : ts) = T.Arrow (pos t) Un t (typeToFun ts)

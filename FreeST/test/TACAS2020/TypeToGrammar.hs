@@ -54,10 +54,10 @@ toGrammar (Message _ p b) = do
   y <- freshVar
   addProductions y $ Map.singleton (MessageLabel p b) []
   return [y]
-toGrammar (Choice _ p m) = do
+toGrammar (Almanac _ (Choice v) m) = do
   ms <- tMapM toGrammar m
   y <- freshVar
-  addProductions y $ Map.mapKeys (ChoiceLabel p) ms
+  addProductions y $ Map.mapKeys (ChoiceLabel v) ms
   return [y]
 -- Functional or session (session in this case)
 toGrammar (TypeVar _ x) = do      -- x is a polymorphic variable

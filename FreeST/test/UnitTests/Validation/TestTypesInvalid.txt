@@ -156,3 +156,7 @@ TU
 (rec a:SU. rec b:SU. rec c:SU. rec d:SU. a, Int)
 TU
 
+-- HIGHER ORDER
+
+?((Skip ; Skip) ; Int)
+SL

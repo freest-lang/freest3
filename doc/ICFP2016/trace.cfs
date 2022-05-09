@@ -1,7 +1,0 @@
-                 c ::TC
-select Node      c1::!int;TC;TC;?int
-send c1 x        c2::TC;TC;?int == oplus{Leaf: TC;?int, Node:!int;TC;TC;?int;TC;?int}
-transform l c2   c3::TC;?int == oplus{Leaf: ?int, Node:!int;TC;TC;?int;?int}
-transform r c3   c4::?int == ?int;skip
-receive c4       c5::skip
-

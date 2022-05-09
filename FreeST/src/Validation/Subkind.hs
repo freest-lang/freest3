@@ -14,7 +14,6 @@ module Validation.Subkind
   )
 where
 
-import           Syntax.Base
 import qualified Syntax.Kind                   as K
 import           Util.Error                    ( internalError )
 
@@ -31,9 +30,9 @@ import           Util.Error                    ( internalError )
 class Subsort t where
   (<:) :: t -> t -> Bool
 
-instance Subsort Multiplicity where
-  Lin <: Un = False
-  _   <: _  = True
+instance Subsort K.Multiplicity where
+  K.Lin <: K.Un = False
+  _     <: _  = True
 
 instance Subsort K.Basic where
   K.Message <: K.Top     = True
@@ -51,27 +50,27 @@ instance Subsort K.Kind where
 class Join t where
   join :: t -> t -> t
 
-instance Join Multiplicity where
-  join Un  Lin = Lin
-  join Lin Un  = Lin
-  join Un  Un  = Un
-  join Lin Lin = Lin
+instance Join K.Multiplicity where
+  join K.Un  K.Lin = K.Lin
+  join K.Lin K.Un  = K.Lin
+  join K.Un  K.Un  = K.Un
+  join K.Lin K.Lin = K.Lin
 
 instance Join K.Kind  where
-  join (K.Kind p K.Message Lin) (K.Kind _ K.Top     Un ) = K.tl p
-  join (K.Kind p K.Top     Un ) (K.Kind _ K.Message Lin) = K.tl p
+  join (K.Kind p K.Message K.Lin) (K.Kind _ K.Top     K.Un ) = K.tl p
+  join (K.Kind p K.Top     K.Un ) (K.Kind _ K.Message K.Lin) = K.tl p
 
-  join (K.Kind p K.Top     Un ) (K.Kind _ K.Session Lin) = K.tl p
-  join (K.Kind p K.Session Lin) (K.Kind _ K.Top     Un ) = K.tl p
+  join (K.Kind p K.Top     K.Un ) (K.Kind _ K.Session K.Lin) = K.tl p
+  join (K.Kind p K.Session K.Lin) (K.Kind _ K.Top     K.Un ) = K.tl p
 
-  join (K.Kind p K.Message Un ) (K.Kind _ K.Session Un ) = K.tu p
-  join (K.Kind p K.Session Un ) (K.Kind _ K.Message Un ) = K.tu p
+  join (K.Kind p K.Message K.Un ) (K.Kind _ K.Session K.Un ) = K.tu p
+  join (K.Kind p K.Session K.Un ) (K.Kind _ K.Message K.Un ) = K.tu p
 
-  join (K.Kind p K.Message Un ) (K.Kind _ K.Session Lin) = K.tl p
-  join (K.Kind p K.Session Lin) (K.Kind _ K.Message Un ) = K.tl p
+  join (K.Kind p K.Message K.Un ) (K.Kind _ K.Session K.Lin) = K.tl p
+  join (K.Kind p K.Session K.Lin) (K.Kind _ K.Message K.Un ) = K.tl p
 
-  join (K.Kind p K.Session Un ) (K.Kind _ K.Message Lin) = K.tl p
-  join (K.Kind p K.Message Lin) (K.Kind _ K.Session Un ) = K.tl p
+  join (K.Kind p K.Session K.Un ) (K.Kind _ K.Message K.Lin) = K.tl p
+  join (K.Kind p K.Message K.Lin) (K.Kind _ K.Session K.Un ) = K.tl p
 
   join k1 k2
     | k1 <: k2 = k2

@@ -8,8 +8,6 @@ where
 import           Test.QuickCheck
 import qualified Syntax.Type                   as T
 import qualified Syntax.Kind                   as K
-import           Syntax.TypeVariable
-import           Syntax.ProgramVariable
 import           Syntax.Base             hiding ( pos )
 -- import           Parse.Unparser
 import qualified Validation.Rename             as Rename
@@ -25,22 +23,26 @@ instance Arbitrary Multiplicity where
 instance Arbitrary T.Polarity where
   arbitrary = elements [T.In, T.Out]
 
-ids :: [String]            -- Type Variables
+instance Arbitrary T.View where
+  arbitrary = elements [T.External, T.Internal]
+  
+
+ids :: [String]            -- Type and program variables
 ids = ["x", "y", "z"]
 
-freeTypeVar :: TypeVar
+freeTypeVar :: Variable
 freeTypeVar = mkVar pos "δ"
 
-choices :: [String]        -- Program Variables
-choices = ["A", "B", "C"]
+-- choices :: [String]        -- Program Variables
+-- choices = ["A", "B", "C"]
 
-instance Arbitrary TypeVar where
+instance Arbitrary Variable where
   arbitrary = arbitraryVar ids
 
-instance Arbitrary ProgVar where
-  arbitrary = arbitraryVar choices
+-- instance Arbitrary Variable where
+--  arbitrary = arbitraryVar choices
 
-arbitraryVar :: Variable b => [String] -> Gen b
+arbitraryVar :: [String] -> Gen Variable
 arbitraryVar ids = do
   id <- elements ids
   return $ mkVar pos id
@@ -48,8 +50,8 @@ arbitraryVar ids = do
 instance Arbitrary K.Kind where
   arbitrary = elements $ K.su pos : replicate 9 (K.sl pos) -- 90% of SL
 
-instance Arbitrary a => Arbitrary (K.Bind a) where
-  arbitrary = liftM4 K.Bind (return pos) arbitrary arbitrary arbitrary
+instance (Arbitrary a, Arbitrary b) => Arbitrary (Bind a b) where
+  arbitrary = liftM4 Bind (return pos) arbitrary arbitrary arbitrary
 
 -- Arbitrary pairs of bisimilar types
 
@@ -125,16 +127,16 @@ choicePair :: PairGen -> Int -> Gen (T.Type, T.Type)
 choicePair pairGen n = do
   p        <- arbitrary
   (m1, m2) <- typeMapPair pairGen n
-  return (T.Choice pos p m1, T.Choice pos p m2)
+  return (T.Almanac pos (T.Choice p) m1, T.Almanac pos (T.Choice p) m2)
 
 typeMapPair :: PairGen -> Int -> Gen (T.TypeMap, T.TypeMap)
 typeMapPair pairGen n = do
-  k     <- choose (1, length choices)
+  k     <- choose (1, length ids) -- previously choices
   pairs <- vectorOf k $ fieldPair (n `div` k)
   let (f1, f2) = unzip pairs
   return (Map.fromList f1, Map.fromList f2)
  where
-  fieldPair :: Int -> Gen ((ProgVar, T.Type), (ProgVar, T.Type))
+  fieldPair :: Int -> Gen ((Variable, T.Type), (Variable, T.Type))
   fieldPair n = do
     (t, u) <- pairGen (n `div` 4)
     x      <- arbitrary
@@ -145,7 +147,7 @@ recPair pairGen n = do
   (t, u) <- pairGen (n `div` 4)
   a      <- arbitrary
   k      <- arbitrary
-  return (T.Rec pos (K.Bind pos a k t), T.Rec pos (K.Bind pos a k u))
+  return (T.Rec pos (Bind pos a k t), T.Rec pos (Bind pos a k u))
 
 -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
 
@@ -165,8 +167,8 @@ distrib n = do
   (m1, m2) <- typeMapPair bisimPair (n `div` 4)
   p        <- arbitrary
   return
-    ( T.Semi pos (T.Choice pos p m1) t
-    , T.Choice pos p (Map.map (\v -> T.Semi pos v u) m2)
+    ( T.Semi pos (T.Almanac pos (T.Choice p) m1) t
+    , T.Almanac pos (T.Choice p) (Map.map (\v -> T.Semi pos v u) m2)
     )
 
 assoc :: Int -> Gen (T.Type, T.Type)
@@ -191,8 +193,8 @@ recRecL n = do
   k <- arbitrary
   let u' = Rename.renameType u -- this type will be in a substitution
   return
-    ( T.Rec pos (K.Bind pos a k (T.Rec pos (K.Bind pos b k t)))
-    , T.Rec pos (K.Bind pos a k (Rename.subs (T.Var pos a) b u'))
+    ( T.Rec pos (Bind pos a k (T.Rec pos (Bind pos b k t)))
+    , T.Rec pos (Bind pos a k (Rename.subs (T.Var pos a) b u'))
     )
 
 recRecR :: Int -> Gen (T.Type, T.Type)
@@ -203,15 +205,15 @@ recRecR n = do
   k <- arbitrary
   let u' = Rename.renameType u -- this type will be in a substitution
   return
-    ( T.Rec pos (K.Bind pos a k (Rename.subs (T.Var pos a) b u'))
-    , T.Rec pos (K.Bind pos a k (T.Rec pos (K.Bind pos b k t)))
+    ( T.Rec pos (Bind pos a k (Rename.subs (T.Var pos a) b u'))
+    , T.Rec pos (Bind pos a k (T.Rec pos (Bind pos b k t)))
     )
 
 recFree :: Int -> Gen (T.Type, T.Type)
 recFree n = do
   (t, u) <- bisimPair (n `div` 2)
   k      <- arbitrary
-  return (T.Rec pos (K.Bind pos freeTypeVar k t), u)
+  return (T.Rec pos (Bind pos freeTypeVar k t), u)
 
 -- alphaConvert :: Int -> Gen (Type, Type) -- (fixed wrt to ICFP'16)
 -- alphaConvert n = do
@@ -235,7 +237,7 @@ unfoldt n = do
   let u' = Rename.renameType u -- this type will be unfolded
   a <- arbitrary
   k <- arbitrary
-  return (T.Rec pos (K.Bind pos a k t), Rename.unfold (T.Rec pos (K.Bind pos a k u')))
+  return (T.Rec pos (Bind pos a k t), Rename.unfold (T.Rec pos (Bind pos a k u')))
 
 -- Arbitrary pairs of non-bisimilar types
 

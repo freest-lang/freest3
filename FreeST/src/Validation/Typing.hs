@@ -11,7 +11,7 @@ Portability :  portable | non-portable (<reason>)
 A bidirectional type system.
 -}
 
-{-# LANGUAGE LambdaCase, TupleSections, MultiWayIf #-}
+{-# LANGUAGE LambdaCase, MultiWayIf #-}
 
 module Validation.Typing
   ( synthetise
@@ -22,20 +22,19 @@ where
 
 import           Control.Monad.State            ( when
                                                 , unless
-                                                , void
                                                 )
 import           Data.Functor
 import qualified Data.Map.Strict               as Map
 import           Equivalence.Equivalence
-import           Parse.Unparser -- debug
+import           Parse.Unparser() -- debug
 import           Syntax.Base
 import qualified Syntax.Expression             as E
 import qualified Syntax.Kind                   as K
 import           Syntax.Value
 import           Syntax.Program
-import           Syntax.ProgramVariable
 import qualified Syntax.Type                   as T
 import           Util.FreestState
+import           Util.Warning
 import           Util.Error
 import           Util.PreludeLoader             ( userDefined ) -- debug
 import qualified Validation.Extract            as Extract
@@ -64,13 +63,13 @@ synthetise kEnv (E.UnLet _ x e1 e2) = do
   difference kEnv x
   return t2
 -- Abs introduction
-synthetise kEnv (E.Abs p (E.Bind _ Lin x t1 e)) = do
+synthetise kEnv (E.Abs p Lin (Bind _ x t1 e)) = do
   void $ K.synthetise kEnv t1
   addToVEnv x t1
   t2 <- synthetise kEnv e
   difference kEnv x
   return $ T.Arrow p Lin t1 t2
-synthetise kEnv e'@(E.Abs p (E.Bind _ Un x t1 e)) = do
+synthetise kEnv e'@(E.Abs p Un (Bind _ x t1 e)) = do
   void $ K.synthetise kEnv t1
   vEnv1 <- getVEnv
   addToVEnv x t1
@@ -84,12 +83,12 @@ synthetise kEnv e'@(E.Abs p (E.Bind _ Un x t1 e)) = do
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
   | x == mkVar p "select" = do
     t <- synthetise kEnv e
-    m <- Extract.outChoiceMap e t
-    Extract.outChoiceBranch p m c t
+    m <- Extract.inChoiceMap e t
+    Extract.choiceBranch p m c t
   -- Collect e
 synthetise kEnv (E.App _ (E.Var p x) e) | x == mkVar p "collect" = do
-  tm <- Extract.inChoiceMap e =<< synthetise kEnv e
-  return $ T.Variant p $ Map.map (flip (T.Arrow p Un) (T.Unit defaultPos)) tm
+  tm <- Extract.outChoiceMap e =<< synthetise kEnv e
+  return $ T.Almanac p T.Variant $ Map.map (flip (T.Arrow p Un) (T.Unit defaultPos)) tm
   -- Receive e
 synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "receive" = do
   t        <- synthetise kEnv e
@@ -106,7 +105,7 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkVar p "send" = do
   -- Fork e
 synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "fork" = do
   t <- synthetise kEnv e
-  void $ K.checkAgainst kEnv (K.tu p) t
+  void $ K.checkAgainst kEnv (K.tl p) t
   return $ T.Unit p
 -- Application, general case
 synthetise kEnv (E.App _ e1 e2) = do
@@ -115,13 +114,13 @@ synthetise kEnv (E.App _ e1 e2) = do
   checkAgainst kEnv e2 u1
   return u2
 -- Type abstraction
-synthetise kEnv e@(E.TypeAbs _ (K.Bind p a k e')) =
+synthetise kEnv e@(E.TypeAbs _ (Bind p a k e')) =
   unless (isVal e') (addError (TypeAbsBodyNotValue (pos e') e e')) >>
-  T.Forall p . K.Bind p a k <$> synthetise (Map.insert a k kEnv) e'
+  T.Forall p . Bind p a k <$> synthetise (Map.insert a k kEnv) e'
 -- Type application
 synthetise kEnv (E.TypeApp _ e t) = do
   u                               <- synthetise kEnv e
-  ~(T.Forall _ (K.Bind _ y k u')) <- Extract.forall e u
+  ~(T.Forall _ (Bind _ y k u')) <- Extract.forall e u
   void $ K.checkAgainst kEnv k t
   return $ Rename.subs t y u'
 -- Boolean elimination
@@ -158,7 +157,7 @@ synthetise kEnv (E.New p t u) = do
   return $ T.Pair p t u
 
 -- | Returns the type of a variable; removes it from vEnv if lin
-synthetiseVar :: K.KindEnv -> ProgVar -> FreestState T.Type
+synthetiseVar :: K.KindEnv -> Variable -> FreestState T.Type
 synthetiseVar kEnv x = getFromVEnv x >>= \case
   Just s -> do
     k <- K.synthetise kEnv s
@@ -174,7 +173,7 @@ synthetiseVar kEnv x = getFromVEnv x >>= \case
 
 -- The difference operation. Removes a program variable from the
 -- variable environment and gives an error if it is linear
-difference :: K.KindEnv -> ProgVar -> FreestState ()
+difference :: K.KindEnv -> Variable -> FreestState ()
 difference kEnv x = do
   getFromVEnv x >>= \case
     Just t -> do
@@ -226,8 +225,8 @@ checkAgainst kEnv e t = checkEquivTypes e kEnv t =<< synthetise kEnv e
 checkEquivTypes :: E.Exp -> K.KindEnv -> T.Type -> T.Type -> FreestState ()
 checkEquivTypes exp kEnv expected actual =
   unless (equivalent kEnv actual expected) $
-    let p = pos exp in addError (NonEquivTypes p expected actual exp)
-    
+    addError (NonEquivTypes (pos exp) expected actual exp)
+
 checkEquivEnvs
   :: Pos -> String -> E.Exp -> K.KindEnv -> VarEnv -> VarEnv -> FreestState ()
 checkEquivEnvs p branching exp kEnv vEnv1 vEnv2 = do
@@ -235,7 +234,7 @@ checkEquivEnvs p branching exp kEnv vEnv1 vEnv2 = do
       vEnv2' = userDefined vEnv2
   unless (equivalent kEnv vEnv1' vEnv2') $
     addError (NonEquivEnvs p branching (vEnv1' Map.\\ vEnv2') (vEnv2' Map.\\ vEnv1') exp)
-    
+
 synthetiseCase :: Pos -> K.KindEnv -> E.Exp -> E.FieldMap -> FreestState T.Type
 synthetiseCase p kEnv e fm  = do
   fm'  <- buildMap p fm =<< Extract.datatypeMap e =<< synthetise kEnv e
@@ -247,7 +246,7 @@ synthetiseCase p kEnv e fm  = do
   setVEnv v
   return t
 
-synthetiseMap :: K.KindEnv -> VarEnv -> ([ProgVar], E.Exp)
+synthetiseMap :: K.KindEnv -> VarEnv -> ([Variable], E.Exp)
               -> FreestState ([T.Type], [VarEnv])
               -> FreestState ([T.Type], [VarEnv])
 synthetiseMap kEnv vEnv (xs, e) state = do
@@ -257,7 +256,7 @@ synthetiseMap kEnv vEnv (xs, e) state = do
   setVEnv vEnv
   return (returnType xs t : ts, env : envs)
  where
-  returnType :: [ProgVar] -> T.Type -> T.Type
+  returnType :: [Variable] -> T.Type -> T.Type
   returnType [] t                  = t
   returnType (_:xs) (T.Arrow _ _ _ t2) = returnType xs t2
   returnType _ t                  = t
@@ -266,27 +265,28 @@ synthetiseMap kEnv vEnv (xs, e) state = do
 -- Building abstractions for each case element
 
 buildMap :: Pos -> E.FieldMap -> T.TypeMap -> FreestState E.FieldMap
-buildMap p fm tm
-  | Map.size tm == Map.size fm = tMapWithKeyM (buildAbstraction tm) fm
-  -- Non-exhaustive case (later it might be a warning)
-  | otherwise = addError (NonExhaustiveCase p fm tm) $> fm
+buildMap p fm tm = do
+  when (tmS /= fmS && tmS > fmS) $ addWarning (NonExhaustiveCase p fm tm)
+  tMapWithKeyM (buildAbstraction tm) fm
+  where tmS = Map.size tm
+        fmS = Map.size fm
 
-buildAbstraction :: T.TypeMap -> ProgVar -> ([ProgVar], E.Exp)
-                 -> FreestState ([ProgVar], E.Exp)
+buildAbstraction :: T.TypeMap -> Variable -> ([Variable], E.Exp)
+                 -> FreestState ([Variable], E.Exp)
 buildAbstraction tm x (xs, e) = case tm Map.!? x of
   Just t -> let n = numberOfArgs t in
     if n /= length xs
       then addError (WrongNumOfCons (pos e) x n xs e) $> (xs, e)
-      else return (xs, buildAbstraction' (xs, e) t) 
+      else return (xs, buildAbstraction' (xs, e) t)
   Nothing -> -- Data constructor not in scope
-    let p = pos x in addError (DataConsNotInScope p x) $> (xs, e)
+    addError (DataConsNotInScope (pos x) x) $> (xs, e)
  where
-  buildAbstraction' :: ([ProgVar], E.Exp) -> T.Type -> E.Exp
+  buildAbstraction' :: ([Variable], E.Exp) -> T.Type -> E.Exp
   buildAbstraction' ([], e) _ = e
   buildAbstraction' (x : xs, e) (T.Arrow _ _ t1 t2) =
-    E.Abs (pos e) $ E.Bind (pos e) Lin x t1 $ buildAbstraction' (xs, e) t2
-  buildAbstraction' ([x], e) t = E.Abs (pos e) $ E.Bind (pos e) Un x t e
- 
+    E.Abs (pos e) Lin $ Bind (pos e) x t1 $ buildAbstraction' (xs, e) t2
+  buildAbstraction' ([x], e) t = E.Abs (pos e) Lin $ Bind (pos e) x t e
+
   numberOfArgs :: T.Type -> Int
   numberOfArgs (T.Arrow _ _ _ t) = 1 + numberOfArgs t
   numberOfArgs _                 = 0
