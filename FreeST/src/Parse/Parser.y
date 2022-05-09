@@ -15,12 +15,14 @@ import qualified Syntax.Type                   as T
 import           Util.PrettyError
 import           Util.Error
 import           Util.FreestState
+import           Util.DeBruijn
 
 }
 
 %name types Type
 %name terms Prog
 %name kinds Kind
+%name namelessTypes TopLevelDBType
 %name expr Exp
 %tokentype { Token }
 %error { parseError }
@@ -92,6 +94,7 @@ import           Util.FreestState
   of       {TokenOf _}
   forall   {TokenForall _}
   dualof   {TokenDualof _}
+  '§'      {TokenSection _}
 
 -- %nonassoc LOWER_ID UPPER_ID
 -- %nonassoc '(' '['
@@ -392,6 +395,76 @@ KindBind :: { (Variable, K.Kind) }
 KindedTVar :: { (Variable, K.Kind) }    -- for type and data declarations
   : TypeName ':' Kind { ($1, $3) }
   | TypeName          { ($1, omission (pos $1)) }
+
+------------------------
+-- DE BRUIJN NOTATION --
+------------------------
+
+TopLevelDBType :: {NamelessType}
+  : DBType { $1 0 }
+
+DBType :: { Int -> NamelessType }
+  -- Functional types
+  : Int                              { \_ -> T.Int (pos $1) }
+  | Char                             { \_ -> T.Char (pos $1) }
+  | Bool                             { \_ -> T.Bool (pos $1) }
+  | String                           { \_ -> T.String (pos $1) }
+  | '()'                             { \_ -> T.Unit (pos $1) }
+  | DBType Arrow DBType %prec ARROW  { \d -> uncurry T.Arrow $2 ($1 d) ($3 d) }
+  | '(' DBType ',' DBTupleType ')'   { \d -> T.Pair (pos $1) ($2 d) ($4 d) }
+  -- Session types
+  | Skip                         { \_ -> T.Skip (pos $1) }
+  | DBType ';' DBType                { \d -> T.Semi (pos $2) ($1 d) ($3 d) }
+  | Polarity DBType %prec MSG      { \d -> uncurry T.Message $1 ($2 d) }
+  | ChoiceView '{' DBFieldList '}' { \d -> T.Almanac (fst $1) (T.Choice (snd $1)) ($3 d) }
+  -- Star types
+  | '*' Polarity DBType %prec MSG 
+    {% do
+        let p = pos $1
+        tVar <- toStateT $ freshTVar "a" p
+        let tIdx = varToIdx tVar 0 0
+        return (\d -> (T.Rec p $ Bind p tVar (K.su p) $
+                        T.Semi p (uncurry T.Message $2 (shift 1 ($3 d))) (T.Var p tIdx)))}
+  | '*' ChoiceView '{' DBLabelList '}'
+    {% do
+        let p = pos $1
+        tVar <- toStateT $ freshTVar "a" p
+        return (\d -> let tIdx = varToIdx tVar 0 0
+                          tMap = Map.map ($ (T.Var p tIdx)) $4 in
+                            (T.Rec p $ Bind p tVar (K.su p) $
+                            T.Almanac (fst $2) (T.Choice (snd $2)) tMap)) }
+  -- Polymorphism and recursion
+  | rec MaybeKind '.' DBType
+      { \d -> let p = (pos $1) in T.Rec p (Bind p (Variable p "a") ($2 p) ($4 (d+1))) } -- dummy names, do not restoreNames!
+  | forall MaybeKind '.' DBType -- Allows a single binding per forall, so we can omit kinds...
+      { \d -> let p = (pos $1) in T.Forall p (Bind p (Variable p "a") ($2 p) ($4 (d+1))) }
+  | '§' INT 
+      {\d -> let (TokenInt p x) = $2 in T.Var (pos $1) (Index (pos $1) "a" x d)}
+  -- Type operators
+  | dualof DBType                   { \d -> T.Dualof (pos $1) ($2 d) }
+  -- | TypeName                      { T.Var (pos $1) $1 } -- TODO: remove this one lex
+  | '(' DBType ')'                  { \d -> $2 d }
+
+DBTupleType :: { Int -> NamelessType }
+  : DBType               { \d -> $1 d }
+  | DBType ',' DBTupleType { \d -> let t = ($1 d) in T.Pair (pos t) t ($3 d) }
+
+DBFieldList :: { Int -> NamelessTypeMap }
+  : DBField               { \d -> uncurry Map.singleton ($1 d) }
+  | DBField ',' DBFieldList {% toStateT $ checkDupField (fst ($1 0)) ($3 0) >>
+                                return (\d -> (uncurry Map.insert ($1 d) ($3 d)))}
+
+DBField :: { Int -> (Variable, NamelessType) } -- Not really a variable but a label
+  : ArbitraryProgVar ':' DBType { \d -> ($1, ($3 d)) }
+
+DBLabelList :: { Map.Map Variable (NamelessType -> NamelessType) }
+  : ArbitraryProgVar                 { Map.singleton $1 id }
+  | ArbitraryProgVar ',' DBLabelList {% toStateT $ checkDupField $1 $3 >>
+                                      return (Map.insert $1 id $3) }
+
+MaybeKind :: {Pos -> K.Kind}
+  : Kind { \_ -> $1}
+  | {- empty -} { \p -> omission p }
 
 {
 -- Parsing Kinds, Types and Programs

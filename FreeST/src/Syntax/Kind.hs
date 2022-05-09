@@ -41,6 +41,10 @@ data Multiplicity = Un | Lin deriving Eq
 
 data Kind = Kind Pos Basic Multiplicity
 
+instance Eq Kind where
+  (Kind _ b1 m1) == (Kind _ b2 m2) = True
+  
+
 instance Position Kind where
   pos (Kind p _ _) = p
 
