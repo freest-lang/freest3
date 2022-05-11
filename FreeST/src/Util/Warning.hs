@@ -1,41 +1,40 @@
-module Util.Warning
-    ( WarningType(..)
-    , formatWarning
-    ) where
+module Util.Warning where
 
 
 import           Syntax.Base
-import           Syntax.Program                 ( TypeOpsEnv )
-import qualified Syntax.Type                   as T
-import qualified Syntax.Expression             as E
-import           Util.PrettyWarning
-import           Util.WarningMessage
+import           Syntax.Program ( TypeOpsEnv )
+import qualified Syntax.Type as T
+import qualified Syntax.Expression as E
+import           Util.Message
+
 import qualified Data.Map                      as Map
 import           Data.List                      ( intercalate )
--- import           Data.Maybe
+import           System.FilePath
 
-formatWarning :: String -> TypeOpsEnv -> WarningType -> String
-formatWarning f tops wrn = format (pos wrn) (warningMsg wrn)
+
+showWarnings :: String -> TypeOpsEnv -> WarningType -> String
+showWarnings f tops wrn =
+  let base = replaceBaseName f (trimModule f (defModule (getSpan wrn))) in
+  title wrn True (getSpan wrn) base ++ "\n  " ++ msg wrn True tops
   where
-   format p e = formatHeader f p ++ formatBody tops e
-
-
--- Warnings
--- FreeST.hs:82:
-   -- styleCyan "warning: " ++ "Couldn't find prelude; proceeding without it"
--- CmdLine:72:
-   -- multiple files provided
+    trimModule f mod
+      | null mod                = takeBaseName f
+      | isExtensionOf "fst" mod = takeBaseName mod
+      | otherwise               = mod
 
 data WarningType =
-  NonExhaustiveCase Pos E.FieldMap T.TypeMap
+    NoPrelude FilePath
+  | NonExhaustiveCase Span E.FieldMap T.TypeMap
   deriving Show
 
-instance Position WarningType where
-  pos (NonExhaustiveCase p _ _) = p
+instance Located WarningType where
+  getSpan (NoPrelude f)             = defaultSpan {defModule = f}
+  getSpan (NonExhaustiveCase p _ _) = p
 
-warningMsg :: WarningType -> [WarningMessage]
-warningMsg (NonExhaustiveCase _ fm tm) =
-  [ Warning "Pattern match(es) are non-exhaustive\n\t"
-  , Warning "In a case alternative: Patterns not matched:"
-  , Warning $ formatColor (Just Pink) $ intercalate ", " $ map show
-            $ Map.keys $ Map.difference tm fm]
+instance Message WarningType where
+  title _  sty = msgHeader (yellow sty "warning:") sty
+  
+  msg NoPrelude{} _ _ = "Couldn't find prelude; proceeding without it"
+  msg (NonExhaustiveCase _ fm tm) sty _ =
+    "Pattern match(es) are non-exhaustive\n\t In a case alternative: Patterns not matched:" ++
+    yellow sty (intercalate ", " $ map show $ Map.keys $ Map.difference tm fm)

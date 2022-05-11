@@ -29,7 +29,7 @@ type PreludeNames = [Variable]
 -- Mapping between positions & type operators (Typename & Dualof)
 -- Used to give better error messages
 
-type TypeOpsEnv = Map.Map Pos T.Type
+type TypeOpsEnv = Map.Map Span T.Type
 
 -- The definitions of the named functions in a program
 type Prog = Map.Map Variable E.Exp

@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 {- |
 Module      :  Syntax.Types
 Description :  The types in FreeST.
@@ -28,25 +29,25 @@ data View = External | Internal deriving Eq
 
 data Type =
   -- Functional Types
-    Int Pos
-  | Char Pos
-  | Bool Pos
-  | String Pos
-  | Unit Pos
-  | Arrow Pos Multiplicity Type Type
-  | Pair Pos Type Type
-  | Almanac Pos Sort TypeMap
+    Int Span
+  | Char Span
+  | Bool Span
+  | String Span
+  | Unit Span
+  | Arrow Span Multiplicity Type Type
+  | Pair Span Type Type
+  | Almanac Span Sort TypeMap
   -- Session Types
-  | Skip Pos
-  | Semi Pos Type Type
-  | Message Pos Polarity Type
+  | Skip Span
+  | Semi Span Type Type
+  | Message Span Polarity Type
   -- Polymorphism and recursive types
-  | Forall Pos (Bind K.Kind Type)   -- ∀k . T, Universal type
-  | Rec Pos (Bind K.Kind Type)      -- μ a:k . T, Recursive type
-  | Var Pos Variable
+  | Forall Span (Bind K.Kind Type)   -- ∀k . T, Universal type
+  | Rec Span (Bind K.Kind Type)      -- μ a:k . T, Recursive type
+  | Var Span Variable
   -- Type operators
-  | Dualof Pos Type
-  | CoVar Pos Variable
+  | Dualof Span Type
+  | CoVar Span Variable
 
 -- | Abs Pos (Bind Type)       -- λ a:k => T, Operator abstraction
 -- | App Pos Type Type
@@ -55,25 +56,25 @@ type TypeMap = Map.Map Variable Type
 
 data Sort = Record | Variant | Choice View deriving Eq
 
-instance Position Type where
-  pos (Int  p       ) = p
-  pos (Char p       ) = p
-  pos (Bool p       ) = p
-  pos (String p     ) = p
-  pos (Unit p       ) = p
-  pos (Arrow p _ _ _) = p
-  pos (Pair p _ _   ) = p
-  pos (Almanac p _ _) = p
-  pos (Skip p       ) = p
-  pos (Semi p _ _   ) = p
-  pos (Message p _ _) = p
-  pos (Forall p _   ) = p
-  pos (Rec p _      ) = p
-  pos (Var p _      ) = p
-  -- pos (Abs p _      ) = p
-  -- pos (App p _ _    ) = p
-  pos (Dualof p _   ) = p
-  pos (CoVar p _   ) = p
-
 instance Default Type where
   omission = Int
+
+instance Located Type where
+  getSpan (Int  p       ) = p
+  getSpan (Char p       ) = p
+  getSpan (Bool p       ) = p
+  getSpan (String p     ) = p
+  getSpan (Unit p       ) = p
+  getSpan (Arrow p _ _ _) = p
+  getSpan (Pair p _ _   ) = p
+  getSpan (Almanac p _ _) = p
+  getSpan (Skip p       ) = p
+  getSpan (Semi p _ _   ) = p
+  getSpan (Message p _ _) = p
+  getSpan (Forall p _   ) = p
+  getSpan (Rec p _      ) = p
+  getSpan (Var p _      ) = p
+  -- getSpan (Abs p _      ) = p
+  -- getSpan (App p _ _    ) = p
+  getSpan (Dualof p _   ) = p
+  getSpan (CoVar p _   ) = p

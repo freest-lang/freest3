@@ -106,7 +106,7 @@ getFreshVar = do
   s <- get
   let n = nextIndex s
   modify $ \s -> s { nextIndex = n + 1 }
-  return $ mkVar defaultPos ("#X" ++ show n)
+  return $ mkVar defaultSpan ("#X" ++ show n)
 
 getProductions :: TransState Productions
 getProductions = gets productions

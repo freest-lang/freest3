@@ -29,9 +29,12 @@ module Syntax.Kind
   )
 where
 
-import qualified Data.Map.Strict               as Map
-import qualified Data.Set                      as Set
-import           Syntax.Base             hiding ( Multiplicity(..) )
+
+import           Syntax.Base hiding ( Multiplicity(..) )
+
+import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
+
 -- Basic kind
 
 data Basic = Message | Session | Top deriving Eq
@@ -41,19 +44,19 @@ data Multiplicity = Un | Lin deriving Eq
 
 -- Kind
 
-data Kind = Kind Pos Basic Multiplicity
+data Kind = Kind Span Basic Multiplicity
 
-instance Position Kind where
-  pos (Kind p _ _) = p
+instance Located Kind where
+  getSpan (Kind p _ _) = p
 
 -- The kind of conventional (non linear, non session) functional programming
 -- languages' types (Alternative: the kind that sits at the top of the
 -- hierarchy)
 instance Default Kind where
-  omission = tu
+  omission _ = tu defaultSpan
 
 -- Abbreviations for the six proper kinds
-tl, tu, sl, su, mu, ml :: Pos -> Kind
+tl, tu, sl, su, mu, ml :: Span -> Kind
 tl p = Kind p Top Lin
 tu p = Kind p Top Un
 sl p = Kind p Session Lin

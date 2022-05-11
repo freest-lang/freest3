@@ -14,8 +14,8 @@ import qualified Validation.Rename             as Rename
 import qualified Data.Map.Strict               as Map
 import           Control.Monad
 
-pos :: Pos
-pos = defaultPos
+pos :: Span
+pos = defaultSpan
 
 instance Arbitrary Multiplicity where
   arbitrary = elements [Un, Lin]
