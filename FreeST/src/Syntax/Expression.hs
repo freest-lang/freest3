@@ -55,7 +55,7 @@ instance Default (Bind T.Type Exp) where
 
 type FieldMap = Map.Map Variable ([Variable], Exp)
 
-instance Spannable Exp where
+instance Located Exp where
   getSpan (Unit p             ) = p
   getSpan (Int p _            ) = p
   getSpan (Char p _           ) = p

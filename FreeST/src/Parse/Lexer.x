@@ -324,7 +324,7 @@ internalPos :: AlexPosn -> Span
 internalPos (AlexPn _ l c) = let p = (l, c) in Span p p ""
 
 -- TODO: proper spans?, proper filename
-instance Spannable Token where
+instance Located Token where
   getSpan (TokenNL p) = p
   getSpan (TokenIntT p) = p
   getSpan (TokenCharT p) = p

@@ -23,7 +23,7 @@ module Syntax.Base
   , mkNewVar
   , Span(..)
   , defaultSpan
-  , Spannable(..)
+  , Located(..)
   , negSpan
 ) where
 
@@ -47,7 +47,7 @@ negPos (i, j) = (negate i, negate j)
 
 -- Span
 
-class Spannable t where
+class Located t where
   getSpan :: t -> Span
 
 data Span = Span
@@ -78,7 +78,7 @@ instance Ord Variable where
 -- instance Position Variable where
 --   pos (Variable p _) = startPos p
   
-instance Spannable Variable where
+instance Located Variable where
   getSpan (Variable p _) = p
 
 instance Default Variable where

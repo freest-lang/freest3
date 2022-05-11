@@ -18,7 +18,7 @@ import           System.FilePath
 
 -- | Internal errors
 
-internalError :: (Show a, Spannable a) => String -> a -> b
+internalError :: (Show a, Located a) => String -> a -> b
 internalError fun syntax =
   error
     $  show (getSpan syntax)
@@ -90,7 +90,7 @@ data ErrorType =
   | ErrorFunction Span String
   deriving Show
 
-instance Spannable ErrorType where
+instance Located ErrorType where
   getSpan (FileNotFound _)               = defaultSpan
   getSpan (WrongFileExtension _)         = defaultSpan
   getSpan (LexicalError p _              ) = p

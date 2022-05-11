@@ -46,7 +46,7 @@ data Multiplicity = Un | Lin deriving Eq
 
 data Kind = Kind Span Basic Multiplicity
 
-instance Spannable Kind where
+instance Located Kind where
   getSpan (Kind p _ _) = p
 
 -- The kind of conventional (non linear, non session) functional programming

@@ -27,7 +27,7 @@ data WarningType =
   | NonExhaustiveCase Span E.FieldMap T.TypeMap
   deriving Show
 
-instance Spannable WarningType where
+instance Located WarningType where
   getSpan (NoPrelude f)             = defaultSpan {defModule = f}
   getSpan (NonExhaustiveCase p _ _) = p
 

@@ -31,20 +31,20 @@ type FreestStateT = StateT FreestS (Either ErrorType)
 
 -- Modules
 
-mkSpan :: Spannable a => a -> FreestStateT Span
+mkSpan :: Located a => a -> FreestStateT Span
 mkSpan a = do
   let (Span p1 p2 _) = getSpan a
   f <- getFileName
   maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
   
-mkSpanSpan :: (Spannable a, Spannable b) => a -> b -> FreestStateT Span
+mkSpanSpan :: (Located a, Located b) => a -> b -> FreestStateT Span
 mkSpanSpan a b = do
   let (Span p1 _ _) = getSpan a
   let (Span _ p2 _) = getSpan b
   f <- getFileName
   maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
 
-mkSpanFromSpan :: Spannable a => Span -> a -> FreestStateT Span
+mkSpanFromSpan :: Located a => Span -> a -> FreestStateT Span
 mkSpanFromSpan (Span p1 _ _) a = do
   let (Span _ p2 _) = getSpan a
   f <- getFileName

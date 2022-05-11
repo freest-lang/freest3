@@ -59,7 +59,7 @@ data Sort = Record | Variant | Choice View deriving Eq
 instance Default Type where
   omission = Int
 
-instance Spannable Type where
+instance Located Type where
   getSpan (Int  p       ) = p
   getSpan (Char p       ) = p
   getSpan (Bool p       ) = p
