@@ -181,7 +181,7 @@ insertVar x y = Map.insert (intern x) (intern y)
 
 findWithDefaultVar :: Variable -> Bindings -> Variable
 findWithDefaultVar x bs =
-  mkVar (pos x) (Map.findWithDefault (intern x) (intern x) bs)
+  mkVar (getSpan x) (Map.findWithDefault (intern x) (intern x) bs)
 
 -- Rename a type
 renameType :: T.Type -> T.Type

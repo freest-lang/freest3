@@ -1,48 +1,43 @@
 module Util.CmdLine where
 
-import           Control.Monad
-import           Control.Bool                  ( whenM )
-import           Data.Version                   ( showVersion )
-import           Paths_FreeST                   ( version
-                                                )
-import           Syntax.Base
--- import           System.Console.GetOpt
-import           System.Directory
-import           System.Exit                    ( die )
-import           System.FilePath
--- import           Util.ErrorMessage (Color(..))
--- import           Util.PrettyError (formatColor, formatBold)
--- import           Util.Error
+import           Util.Error
 import           Util.FreestState
+import           Syntax.Base
 
-import Data.String
-
-import Options.Applicative
--- import Options.Applicative.Help
--- import Data.Semigroup ((<>))
--- import           Data.Functor
+import           Control.Bool ( whenM )
+import           Control.Monad
+import qualified Data.Map.Strict as Map
+import           Data.String
+import           Data.Version ( showVersion )
+import           Options.Applicative
+import           Paths_FreeST ( version )
+import           System.Directory
+import           System.Exit ( die )
+import           System.FilePath
 
 
 instance Data.String.IsString Variable where
-  fromString = mkVar defaultPos
-
--- instance Read Variable where
---   readsPrec _ s = [(mkVar defaultPos s,"")]
+  fromString = mkVar defaultSpan
 
 runOptsParser :: Parser RunOpts
 runOptsParser = RunOpts
   <$> strArgument
      ( help "FreeST (.fst) file"
-     <> metavar "FILEPATH" )   
+    <> metavar "FILEPATH" )   
   <*> (optional . strOption)
-      ( long "main"
-     <> short 'm' 
-     <> help "Main function"
-     <> metavar "STRING" )
+     ( long "main"
+    <> short 'm' 
+    <> help "Main function"
+    <> metavar "STRING" )
+  <*> flag True False    -- This is the reverse of switch
+     ( long "no-colors"
+    <> long "no-colours"
+    <> help "Remove styles from the errors messages")
   <*> switch
-      ( long "quiet"
-     <> short 'q'
-     <> help "Suppress warnings" )
+     ( long "quiet"
+    <> short 'q'
+    <> help "Suppress warnings" )
+  
 
 
 versionParser :: String -> Parser (a -> a)
@@ -54,15 +49,13 @@ versionParser s =
 
 
 handleFlags :: RunOpts -> IO RunOpts
-handleFlags fg@(RunOpts f _ _) = do
+handleFlags fg@(RunOpts f _ sty _) = do
   whenM (not <$> doesFileExist f) $ die fileDoNotExist :: IO ()
   when (not $ "fst" `isExtensionOf` f) $ die wrongFileExtension
   return fg
   where
-    fileDoNotExist = "\nFile " ++ f ++ " does not exist (no such file or directory)"
-    wrongFileExtension = "\nFile " ++ f ++ " has not a valid file extension\n\t" ++
-                         "Expecting: " ++ (f -<.> "fst") ++ "\n\t" ++
-                         "but got:   " ++ f
+    fileDoNotExist = showErrors sty "FreeST" Map.empty (FileNotFound f)
+    wrongFileExtension = showErrors sty "FreeST" Map.empty (WrongFileExtension f)
 
 flags :: IO RunOpts
 flags = handleFlags =<< execParser opts
@@ -84,4 +77,3 @@ flags = handleFlags =<< execParser opts
 -- - --no-colors --no-colours -> "Remove colors from error messages"
 -- --  Option Warnings as errors ??
 -- -- verbose (full comment depth)
--- -- -i --import ??

@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts, LambdaCase #-}
 {- |
 Module      :  Parse.ParseUtils
 Description :  <optional short text displayed on contents page>
@@ -11,140 +12,124 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-{-# LANGUAGE LambdaCase #-}
+module Parse.ParseUtils where
 
-module Parse.ParseUtils
-  ( checkDupProgVarDecl
-  , checkDupFunDecl
-  , checkDupTypeDecl
-  , checkDupBind
-  , checkDupKindBind
-  , checkDupField
-  , checkDupCase
-  , checkDupCons
-  , binOp
-  , unOp
-  , typeListToType
-  , ParseResult(..)
-  , FreestStateT
-  , thenM
-  , returnM
-  )
-where
-
-
-import           Control.Monad.State
-import           Data.Bifunctor                 ( second )
-import           Data.List                      ( find )
-import qualified Data.Map.Strict               as Map
 import           Syntax.Base
-import qualified Syntax.Expression             as E
-import qualified Syntax.Kind                   as K
-import qualified Syntax.Type                   as T
+import qualified Syntax.Expression as E
+-- import qualified Syntax.Kind as K
+import qualified Syntax.Type as T
 import           Util.Error
 import           Util.FreestState
 
--- import qualified Control.Monad.Fail as Fail
+import           Control.Monad.State
+import           Data.Bifunctor ( second )
+import           Data.List ( find )
+import qualified Data.Map.Strict as Map
 
-thenM :: ParseResult a -> (a -> ParseResult b) -> ParseResult b
-m `thenM` k = case m of
-  Ok     a -> k a
-  Failed e -> Failed e
 
-returnM :: a -> ParseResult a
-returnM = Ok
+type FreestStateT = StateT FreestS (Either ErrorType)
 
--- failM :: ErrorType -> ParseResult a
--- failM s = Failed (defaultPos, s)
+-- Modules
 
--- catchM :: ParseResult a -> ((Pos, ErrorType) -> ParseResult a) -> ParseResult a
--- catchM m k = case m of
---   Ok     a -> Ok a
---   Failed e -> k e
+mkSpan :: Located a => a -> FreestStateT Span
+mkSpan a = do
+  let (Span p1 p2 _) = getSpan a
+  f <- getFileName
+  maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
+  
+mkSpanSpan :: (Located a, Located b) => a -> b -> FreestStateT Span
+mkSpanSpan a b = do
+  let (Span p1 _ _) = getSpan a
+  let (Span _ p2 _) = getSpan b
+  f <- getFileName
+  maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
 
-data ParseResult a = Ok a | Failed ErrorType
-type FreestStateT = StateT FreestS ParseResult
+mkSpanFromSpan :: Located a => Span -> a -> FreestStateT Span
+mkSpanFromSpan (Span p1 _ _) a = do
+  let (Span _ p2 _) = getSpan a
+  f <- getFileName
+  maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
 
-instance Monad ParseResult where
-  (>>=)  = thenM
-  return = returnM
---   fail   = Fail.fail
-
--- instance Fail.MonadFail ParseResult where
---   fail = failM
-
-instance Applicative ParseResult where
---
-  pure  = return
-  (<*>) = ap
-
-instance Functor ParseResult where
-  fmap = liftM
+liftModToSpan :: Span -> FreestStateT Span
+liftModToSpan (Span p1 p2 _) = do
+  f <- getFileName
+  maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
 
 -- Parse errors
 
-checkDupField :: Variable -> T.TypeMap -> FreestState ()
-checkDupField x m =
-  when (x `Map.member` m) $ addError $ MultipleFieldDecl (pos x) x
+checkDupField :: Variable -> T.TypeMap -> FreestStateT ()
+checkDupField x m = 
+  when (x `Map.member` m) $ addError $ MultipleFieldDecl (getSpan x) (getSpan k) x
+  where
+    (k,_) = Map.elemAt (Map.findIndex x m) m
 
-checkDupCase :: Variable -> E.FieldMap -> FreestState ()
+checkDupCase :: Variable -> E.FieldMap -> FreestStateT ()
 checkDupCase x m =
-  when (x `Map.member` m) $ addError $ RedundantPMatch (pos x) x
+  when (x `Map.member` m) $ addError $ RedundantPMatch (getSpan x) x
 
-checkDupBind :: Variable -> [Variable] -> FreestState ()
+checkDupBind :: Variable -> [Variable] -> FreestStateT ()
 checkDupBind x xs
   | intern x == "_" = return ()
   | otherwise = case find (== x) xs of
-    Just y  -> addError $ DuplicatePVar (pos y) x (pos x)
+    Just y  -> addError $ DuplicateVar (getSpan y) "program" x (getSpan x)
     Nothing -> return ()
 
-checkDupKindBind :: Bind K.Kind a -> [Bind K.Kind a] -> FreestState ()
-checkDupKindBind (Bind p x _ _) bs =
-  case find (\(Bind _ y _ _) -> y == x) bs of
-    Just (Bind p' _ _ _) -> addError $ DuplicateTVar p' x p
-    Nothing                -> return ()
+-- checkDupKindBind :: Bind K.Kind a -> [Bind K.Kind a] -> FreestStateT ()
+-- checkDupKindBind (Bind p x _ _) bs =
+--   case find (\(Bind _ y _ _) -> y == x) bs of
+--     Just (Bind p' _ _ _) -> addError $ DuplicateTVar p' x p
+--     Nothing                -> return ()
 
-checkDupCons :: (Variable, [T.Type]) -> [(Variable, [T.Type])] -> FreestState ()
+checkDupCons :: (Variable, [T.Type]) -> [(Variable, [T.Type])] -> FreestStateT ()
 checkDupCons (x, _) xts
-  | any (\(y, _) -> y == x) xts = addError $ DuplicateFieldInDatatype (pos x) x
-  | otherwise = getFromVEnv x >>= \case
-      Just s  -> addError $ MultipleDeclarations (pos x) x (pos s)
-      Nothing -> return ()
+  | any compare xts = addError $ DuplicateFieldInDatatype (getSpan x) x pos
+  | otherwise =
+     flip (Map.!?) x . varEnv <$> get >>= \case
+       Just _  -> addError $ MultipleDeclarations (getSpan x) x pos
+       Nothing -> return ()
+  where
+    compare = \(y, _) -> y == x
+    pos = maybe defaultSpan (getSpan . fst) (find compare xts)
 
-checkDupProgVarDecl :: Variable -> FreestState ()
+checkDupProgVarDecl :: Variable -> FreestStateT ()
 checkDupProgVarDecl x = do
-  vEnv <- getVEnv
+  vEnv <- varEnv <$> get
   case vEnv Map.!? x of
-    Just a  -> addError $ MultipleDeclarations (pos x) x (pos a)
+    Just _  -> addError $ MultipleDeclarations (getSpan x) x (pos vEnv)
     Nothing -> return ()
+ where
+    pos vEnv = getSpan $ fst $ Map.elemAt (Map.findIndex x vEnv) vEnv
 
-
-checkDupTypeDecl :: Variable -> FreestState ()
+checkDupTypeDecl :: Variable -> FreestStateT ()
 checkDupTypeDecl a = do
-  tEnv <- getTEnv
+  tEnv <- typeEnv <$> get
   case tEnv Map.!? a of
-    Just (_, s) -> addError $ MultipleTypeDecl (pos a) a (pos s)
+    Just (_, s) -> addError $ MultipleTypeDecl (getSpan a) a (pos tEnv)-- (getSpan s)
     Nothing     -> return ()
-
-checkDupFunDecl :: Variable -> FreestState ()
+ where
+    pos tEnv = getSpan $ fst $ Map.elemAt (Map.findIndex a tEnv) tEnv
+  
+checkDupFunDecl :: Variable -> FreestStateT ()
 checkDupFunDecl x = do
-  eEnv <- getPEnv
+  eEnv <- parseEnv <$> get
   case eEnv Map.!? x of
-    Just e  -> addError $ MultipleFunBindings (pos x) x (pos $ snd e)
+    Just e  -> addError $ MultipleFunBindings (getSpan x) x (getSpan $ snd e)
     Nothing -> return ()
 
 -- OPERATORS
 
 binOp :: E.Exp -> Variable -> E.Exp -> E.Exp
-binOp left op = E.App (pos left) (E.App (pos left) (E.Var (pos op) op) left)
+binOp l op r = E.App s (E.App (getSpan l) (E.Var (getSpan op) op) l) r
+  where s = Span (startPos $ getSpan l) (endPos $ getSpan r) (defModule $ getSpan l)
 
-unOp :: Variable -> E.Exp -> E.Exp
-unOp op expr = E.App (pos expr) (E.Var (pos op) op) expr
+unOp :: Variable -> E.Exp -> Span -> E.Exp
+unOp op expr s = E.App s (E.Var (getSpan op) op) expr
+
 
 typeListToType :: Variable -> [(Variable, [T.Type])] -> [(Variable, T.Type)]
 typeListToType a = map $ second typeToFun -- map (\(x, ts) -> (x, typeToFun ts))
   -- Convert a list of types and a final type constructor to a type
-
  where
-  typeToFun []       = T.Var (pos a) a
-  typeToFun (t : ts) = T.Arrow (pos t) Un t (typeToFun ts)
+  typeToFun []       = T.Var (getSpan a) a
+  typeToFun (t : ts) = T.Arrow (getSpan t) Un t (typeToFun ts)
+      

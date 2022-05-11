@@ -64,8 +64,8 @@ For example, if you want to specify which function should be interpreted as the 
     $ stack ghci FreeST:exe:freest
 ```
 
-If it yields an error on finding the modules, you may need to run the following
-snippet before loading FreeST into the interpreter.
+If you get an error on finding some modules, run the following snippet before
+loading FreeST into the interpreter.
 
 ```bash
     $ stack clean

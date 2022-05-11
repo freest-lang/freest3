@@ -19,21 +19,20 @@ module Validation.TypeChecking
   )
 where
 
-import           Control.Monad.State            ( when
-                                                , get
-                                                , unless
-                                                )
-import qualified Data.Map.Strict               as Map
 import           Syntax.Base
-import qualified Syntax.Expression             as E
-import qualified Syntax.Kind                   as K
-import           Syntax.Program                 ( noConstructors )
-import qualified Syntax.Type                   as T
+import qualified Syntax.Expression as E
+import qualified Syntax.Kind as K
+import           Syntax.Program ( noConstructors )
+import qualified Syntax.Type as T
 import           Util.FreestState
 import           Util.Error
-import           Util.PreludeLoader             ( userDefined )
-import qualified Validation.Kinding            as K
-import qualified Validation.Typing             as Typing -- Again
+import           Util.PreludeLoader ( userDefined )
+import qualified Validation.Kinding as K
+import qualified Validation.Typing as Typing -- Again
+
+
+import           Control.Monad.State ( when, get, unless )
+import qualified Data.Map.Strict as Map
 
 typeCheck :: FreestState ()
 typeCheck = do
@@ -76,18 +75,15 @@ checkHasBinding f _ = do
   eEnv <- getProg
   vEnv <- getVEnv
   tEnv <- getTEnv
-  when
-      (               f
-      `Map.member`    userDefined (noConstructors tEnv vEnv)
-      &&              f
-      `Map.notMember` eEnv
-      )
-    $ let p = pos f in addError (SignatureLacksBinding p f (vEnv Map.! f))
+  when (f `Map.member` userDefined (noConstructors tEnv vEnv) &&
+        f `Map.notMember` eEnv )
+    $ addError (SignatureLacksBinding (getSpan f) f (vEnv Map.! f))
 
 -- Check a given function body against its type; make sure all linear
 -- variables are used.
 checkFunBody :: Variable -> E.Exp -> FreestState ()
 checkFunBody f e = getFromVEnv f >>= \case
+  -- setModuleName (Just . defModule $ getSpan s) >>
   Just s  -> Typing.checkAgainst Map.empty e s
   Nothing -> return ()
 
@@ -101,8 +97,12 @@ checkMainFunction = do
     then do
       let t = vEnv Map.! main
       k <- K.synthetise Map.empty t
-      when (K.isLin k) $ addError (UnrestrictedMainFun defaultPos main t k)
-    else when (isMainFlagSet runOpts) $ addError (MainNotDefined defaultPos main)
+      when (K.isLin k) $
+        let sp = getSpan $ fst $ Map.elemAt (Map.findIndex main vEnv) vEnv in
+        addError (UnrestrictedMainFun sp main t k)
+    else when (isMainFlagSet runOpts) $
+      addError (MainNotDefined (defaultSpan {defModule = runFilePath runOpts}) main)
+
 
 -- validMainType :: T.Type -> Bool -- TODO: why this restriction?
 -- validMainType T.Forall{} = False

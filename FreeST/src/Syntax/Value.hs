@@ -23,7 +23,7 @@ isVal E.TypeAbs{} = True
 isVal E.Pair{}    = True
 -- | l v -- TODO
 -- | select l
-isVal (E.App _ (E.Var p x) v) | x == mkVar p "select" = True
+isVal (E.App _ (E.Var p x) _) | x == mkVar p "select" = True
 -- | send [T]
 isVal (E.TypeApp _ (E.Var p x) _) | x == mkVar p "send" = True
 -- | send [T] v

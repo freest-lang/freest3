@@ -4,18 +4,20 @@ module Elaboration.ResolveDuality
   )
 where
 
-import           Data.Functor
-import qualified Data.Set                      as Set
-import qualified Data.Map                      as Map
+
 import           Elaboration.Duality
 import           Syntax.Base
-import qualified Syntax.Kind                   as K
-import           Syntax.Expression             as E
+import qualified Syntax.Kind as K
+import           Syntax.Expression as E
 import           Syntax.Program
-import qualified Syntax.Type                   as T
+import qualified Syntax.Type as T
 import           Util.FreestState
 import           Util.Error
 import           Validation.Substitution
+
+import           Data.Functor
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 -- | Resolving the dualof operator
 
@@ -117,7 +119,7 @@ solveDual vs v d@(T.Dualof p t@(T.Var _ a))
 solveDual vs v d@(T.Dualof p t) =
   addDualof d >> solveType vs v (changePos p t)
 -- Non session-types
-solveDual _ _ t = addError (DualOfNonSession (pos t) t) $> t
+solveDual _ _ t = addError (DualOfNonSession (getSpan t) t) $> t
 
 solveBind
   :: (VisitedRecVars -> VisitedRecBody -> T.Type -> FreestState T.Type)
@@ -131,7 +133,7 @@ solveBind solve vs v (Bind p a k t) =
 -- | Changing positions
 
 -- Change position of a given type with a given position
-changePos :: Pos -> T.Type -> T.Type
+changePos :: Span -> T.Type -> T.Type
 changePos p (T.Int    _       ) = T.Int p
 changePos p (T.Char   _       ) = T.Char p
 changePos p (T.Bool   _       ) = T.Bool p

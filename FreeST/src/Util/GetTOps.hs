@@ -65,5 +65,5 @@ instance DefaultTypeOp (Bind K.Kind T.Type) where
 instance DefaultTypeOp T.TypeMap where
   getDefault m = Map.map (getDefault m)
 
-lookupPos :: TypeOpsEnv -> Pos -> T.Type -> T.Type
+lookupPos :: TypeOpsEnv -> Span -> T.Type -> T.Type
 lookupPos tops p defaultType = fromMaybe defaultType (tops Map.!? p)

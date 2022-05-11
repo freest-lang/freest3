@@ -20,21 +20,20 @@ module Validation.Kinding
   )
 where
 
-import           Data.Functor
 import           Syntax.Base
-import qualified Syntax.Type                   as T
-import qualified Syntax.Kind                   as K
+import qualified Syntax.Type as T
+import qualified Syntax.Kind as K
 import           Validation.Contractive
-import           Validation.Subkind             ( (<:)
-                                                , join
-                                                )
+import           Validation.Subkind ( (<:), join )
 import           Util.FreestState
 import           Util.Error
-import           Control.Monad                  ( unless )
-import qualified Control.Monad.State           as S
-import qualified Data.Map.Strict               as Map
-import qualified Data.Set               as Set
 
+
+import           Control.Monad ( unless )
+import qualified Control.Monad.State as S
+import           Data.Functor
+import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
 
 -- Exported Functions: Top-level definitions of those defined in this module
 
@@ -47,7 +46,6 @@ checkAgainst kenv = checkAgainst' (Map.keysSet kenv) kenv
 checkAgainstSession :: K.KindEnv -> T.Type -> FreestState K.Kind
 checkAgainstSession kenv = checkAgainstSession' (Map.keysSet kenv) kenv
 
-
 -- Kinding
 -- Returns the kind of a given type
 synthetise' :: K.PolyVars -> K.KindEnv -> T.Type -> FreestState K.Kind
@@ -55,11 +53,10 @@ synthetise' :: K.PolyVars -> K.KindEnv -> T.Type -> FreestState K.Kind
 synthetise' _ _ (T.Int    p) = return $ K.Kind p K.Message K.Un
 synthetise' _ _ (T.Char   p) = return $ K.Kind p K.Message K.Un
 synthetise' _ _ (T.Bool   p) = return $ K.Kind p K.Message K.Un
-synthetise' _ _ (T.Unit   p) = return $ K.Kind p K.Message K.Un
+synthetise' _ _ (T.Unit   p) = return $ K.Kind p K.Message K.Un 
 synthetise' _ _ (T.String p) = return $ K.Kind p K.Message K.Un
-synthetise' s kEnv (T.Arrow p m t u) = -- do
-  synthetise' s kEnv t >>
-  synthetise' s kEnv u $> K.Kind p K.Top (typeToKindMult m)
+synthetise' s kEnv (T.Arrow p m t u) =
+  synthetise' s kEnv t >> synthetise' s kEnv u $> K.Kind p K.Top (typeToKindMult m)
 synthetise' s kEnv (T.Pair p t u) = do
   (K.Kind _ _ mt) <- synthetise' s kEnv t
   (K.Kind _ _ mu) <- synthetise' s kEnv u
@@ -73,7 +70,7 @@ synthetise' _ _    (T.Skip p    ) = return $ K.su p
 synthetise' s kEnv (T.Semi p t u) = do
   (K.Kind _ _ mt) <- checkAgainstSession' s kEnv t
   (K.Kind _ _ mu) <- checkAgainstSession' s kEnv u
-  return $ K.Kind p K.Session (join mt mu)
+  return $ K.Kind p K.Session (join mt mu)                      
 synthetise' s kEnv (T.Message p _ t) = checkAgainst' s kEnv (K.ml p) t $> K.sl p
 synthetise' s kEnv (T.Almanac p (T.Choice _) m) =
   tMapM_ (checkAgainst' s kEnv (K.sl p)) m $> K.sl p
@@ -97,7 +94,7 @@ synthetise' _ _ t@T.Dualof{} = internalError "Validation.Kinding.synthetise'" t
 
 -- Check the contractivity of a given type; issue an error if not
 checkContractive :: K.PolyVars -> Variable -> T.Type -> FreestState ()
-checkContractive s a t = let p = pos t in
+checkContractive s a t = let p = getSpan t in
   unless (contractive s a t) $ addError (TypeNotContractive p t a)
 
 -- Check a type against a given kind
@@ -106,7 +103,7 @@ checkAgainst' :: K.PolyVars -> K.KindEnv -> K.Kind -> T.Type -> FreestState K.Ki
 checkAgainst' s kEnv expected t = do
   actual <- synthetise' s kEnv t
   S.when (not $ actual <: expected)
-    (addError (CantMatchKinds (pos t) expected actual t))
+    (addError (CantMatchKinds (getSpan t) expected actual t))
   $> expected
 
 -- Check whether a given type is of a session kind. In any case return the
@@ -114,8 +111,7 @@ checkAgainst' s kEnv expected t = do
 checkAgainstSession' :: K.PolyVars -> K.KindEnv -> T.Type -> FreestState K.Kind
 checkAgainstSession' s kEnv t = do
   k@(K.Kind _ p _) <- synthetise' s kEnv t
-  S.when (p /= K.Session) 
-    (let p = pos t in addError (ExpectingSession p t k)) 
+  S.when (p /= K.Session) (addError (ExpectingSession (getSpan t) t k)) 
   return k
 
 -- Determine whether a given type is unrestricted

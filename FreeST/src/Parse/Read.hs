@@ -1,30 +1,23 @@
+{-# LANGUAGE NamedFieldPuns,TupleSections #-}
 module Parse.Read where
 
-import           Control.Monad.State
-import qualified Data.Map as Map
-import           Parse.Lexer ( Token )
-import           Parse.ParseUtils
 import           Parse.Parser
 import           Syntax.Expression
 import           Syntax.Kind
 import           Syntax.Type
-import           Util.Error
 import           Util.FreestState
 
 instance Read Kind where
-  readsPrec _ s = [(parseKind s, "")]
+  readsPrec _ = eitherRead parseKind
 
 instance Read Type where
-  readsPrec _ = parser types
+  readsPrec _ = eitherRead parseType
 
 instance Read Exp where
-  readsPrec _ = parser expr
+  readsPrec _ = eitherRead parseExpr
 
-parser :: ([Token] -> FreestStateT a) -> String -> [(a, String)]
-parser parseFun str =
-  case runStateT (lexer str "" parseFun) initialState of
-    Ok (t, state) ->
-      if hasErrors state
-      then error $ getErrors [] state
-      else [(t, "")]
-    Failed err -> error $ formatError "" Map.empty [] err
+eitherRead :: (FilePath -> String -> Either Errors a) -> String -> [(a, String)]
+eitherRead f s =
+  either (error . getErrors . state) ((:[]) . (,"")) (f "" s) 
+  where
+    state errors = initialState {errors}

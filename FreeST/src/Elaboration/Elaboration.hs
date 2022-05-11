@@ -21,6 +21,7 @@ import           Data.Functor
 import           Data.Map.Strict as Map
 import qualified Data.Set as Set
 
+
 elaboration :: FreestState ()
 elaboration = do
   -- | Solve the equations' system.
@@ -86,7 +87,7 @@ solveEquations = buildRecursiveTypes >> solveAll >> cleanUnusedRecs
 
 buildRecursiveTypes :: FreestState ()
 buildRecursiveTypes = Map.mapWithKey buildRec <$> getTEnv >>= setTEnv
-  where buildRec x (k, t) = (k, T.Rec (pos x) (Bind (pos x) x k t))
+  where buildRec x (k, t) = (k, T.Rec (getSpan x) (Bind (getSpan x) x k t))
 
 -- | Clean rec types where the variable does not occur free
 
@@ -176,24 +177,24 @@ buildProg = getPEnv
   buildFunBody :: Variable -> [Variable] -> E.Exp -> FreestState E.Exp
   buildFunBody f as e = getFromVEnv f >>= \case
     Just s  -> return $ buildExp e as s
-    Nothing -> addError (FuctionLacksSignature (pos f) f) $> e
+    Nothing -> addError (FuctionLacksSignature (getSpan f) f) $> e
       
   buildExp :: E.Exp -> [Variable] -> T.Type -> E.Exp
   buildExp e [] _ = e
   buildExp e bs t@(T.Rec _ _) = buildExp e bs (normalise t)
   buildExp e (b : bs) (T.Arrow _ m t1 t2) =
-    E.Abs (pos b) m (Bind (pos b) b t1 (buildExp e bs t2))
+    E.Abs (getSpan b) m (Bind (getSpan b) b t1 (buildExp e bs t2))
   buildExp _ _ t@(T.Dualof _ _) =
     internalError "Elaboration.Elaboration.buildFunbody.buildExp" t
   buildExp e bs (T.Forall p (Bind p1 x k t)) =
     E.TypeAbs p (Bind p1 x k (buildExp e bs t))
   buildExp e (b : bs) t =
-    E.Abs (pos b) Un (Bind (pos b) b (omission (pos b)) (buildExp e bs t))
+    E.Abs (getSpan b) Un (Bind (getSpan b) b (omission (getSpan b)) (buildExp e bs t))
 
 -- | Changing positions
 
 -- Change position of a given type with a given position
-changePos :: Pos -> T.Type -> T.Type
+changePos :: Span -> T.Type -> T.Type
 changePos p (T.Int  _         ) = T.Int p
 changePos p (T.Char _         ) = T.Char p
 changePos p (T.Bool _         ) = T.Bool p
