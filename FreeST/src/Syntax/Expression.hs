@@ -57,7 +57,7 @@ instance Default (Bind T.Type Exp) where
   omission p = Bind p (omission p) (T.Unit p) (Unit p)
 
 type FieldMap  = Map.Map Variable ([Variable], Exp)
-type FieldMapP = Map.Map Variable ([Pattern] , Exp)
+type FieldMapP = Map.Map Variable ([Pattern] , Exp) -- TODO: with some care can be joined
 
 data Pattern = 
     V Variable           -- Variable   name
