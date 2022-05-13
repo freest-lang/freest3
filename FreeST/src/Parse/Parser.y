@@ -199,7 +199,7 @@ Exp :: { E.Exp }
   | new Type                       {% mkSpanSpan $1 $2 >>= \s -> pure $ E.New s $2 (T.Dualof (negSpan s) $2) }
   | match Exp with '{' MatchMap '}' {% let s' = getSpan $2 in mkSpanSpan $1 $6 >>= \s ->
                                        pure $ E.Case s (E.App s' (E.Var s' (mkVar s' "collect")) $2) $5 }
-  | case Exp of '{' CaseMap '}'    {% mkSpanSpan $1 $6 >>= \s -> pure $ E.Case s $2 $5 }
+  | case Exp of '{' CaseMap '}'    {% mkSpanSpan $1 $6 >>= \s -> pure $ E.CaseP s $2 $5 }
   | Exp '$' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ E.App s $1 $3 }
   | Exp '&' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $  E.App s $3 $1 }
   | Exp '||' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(||)") $3 }
@@ -269,12 +269,24 @@ MatchMap :: { FieldMap }
 Match :: { (Variable, ([Variable], E.Exp)) }
   : ArbitraryProgVar ProgVarWild '->' Exp { ($1, ([$2], $4)) }
 
-CaseMap :: { FieldMap }
+CaseMap :: { FieldMapP }
   : Case             { uncurry Map.singleton $1 }
-  | Case ',' CaseMap {% checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
+  | Case ',' CaseMap {% checkDupCaseP (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
 
-Case :: { (Variable, ([Variable], E.Exp)) }
-  : Constructor ProgVarWildSeq '->' Exp { ($1, ($2, $4)) }
+-- Case :: { (Variable, ([Variable], E.Exp)) }
+--   : Constructor ProgVarWildSeq '->' Exp { ($1, ($2, $4)) }
+
+Case :: { (Variable, ([Pattern], E.Exp)) }
+  : ProgVarWild            '->' Exp  { ($1, ([], $3)) }
+  | Constructor PatternSeq '->' Exp  { ($1, ($2, $4)) }
+
+PatternSeq :: { [Pattern] }
+  :                     {[]}
+  | Pattern PatternSeq  {$1:$2}
+
+Pattern :: { Pattern }
+  : ProgVarWild                       { E.V $1 }
+  | '(' Constructor PatternSeq ')'    { E.C $2 $3 }
 
 Op :: { Variable }
    : '||'  {% flip mkVar "(||)" `fmap` mkSpan $1 }

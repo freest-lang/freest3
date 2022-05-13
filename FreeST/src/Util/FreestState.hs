@@ -43,7 +43,8 @@ type Errors = [ErrorType]
 
 type Imports = Set.Set FilePath 
 
-type ParseEnv = Map.Map Variable ([Variable], Exp)
+type ParseEnv  = Map.Map Variable ([Variable], Exp)
+type ParseEnvP = Map.Map Variable ([Pattern], Exp)
 
 data FreestS = FreestS {
     runOpts    :: RunOpts

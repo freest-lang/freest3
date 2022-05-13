@@ -67,6 +67,11 @@ checkDupCase :: Variable -> E.FieldMap -> FreestStateT ()
 checkDupCase x m =
   when (x `Map.member` m) $ addError $ RedundantPMatch (getSpan x) x
 
+-- TOOD join types and reuse function
+checkDupCaseP :: Variable -> E.FieldMapP -> FreestStateT ()
+checkDupCaseP x m =
+  when (x `Map.member` m) $ addError $ RedundantPMatch (getSpan x) x
+
 checkDupBind :: Variable -> [Variable] -> FreestStateT ()
 checkDupBind x xs
   | intern x == "_" = return ()

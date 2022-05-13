@@ -15,6 +15,8 @@ Portability :  portable | non-portable (<reason>)
 module Syntax.Expression
   ( Exp(..)
   , FieldMap
+  , Pattern(..)
+  , FieldMapP
   )
 where
 
@@ -39,7 +41,8 @@ data Exp =
   | Pair Span Exp Exp
   | BinLet Span Variable Variable Exp Exp
   -- Datatype elim
-  | Case Span Exp FieldMap
+  | Case  Span Exp FieldMap
+  | CaseP Span Exp FieldMapP                       -- for pattern elimination
   -- Type Abstraction intro and elim
   | TypeAbs Span (Bind K.Kind Exp)   -- Λ a:k => e
   | TypeApp Span Exp T.Type     -- e[T]
@@ -53,7 +56,12 @@ data Exp =
 instance Default (Bind T.Type Exp) where
   omission p = Bind p (omission p) (T.Unit p) (Unit p)
 
-type FieldMap = Map.Map Variable ([Variable], Exp)
+type FieldMap  = Map.Map Variable ([Variable], Exp)
+type FieldMapP = Map.Map Variable ([Pattern] , Exp)
+
+data Pattern = 
+    V Variable           -- Variable   name
+  | C Variable [Pattern] -- Construtor name patterns
 
 instance Located Exp where
   getSpan (Unit p             ) = p
