@@ -163,7 +163,7 @@ Decl :: { () }
   -- Function signature
   : ProgVar ':' Type {% checkDupProgVarDecl $1 >> addToVEnv $1 $3 }
   -- Function declaration
-  | ProgVar ProgVarWildSeq '=' Exp {% checkDupFunDecl $1 >> addToPEnv $1 $2 $4 }
+  | DeclSeq          { $1 }
   -- Type abbreviation
   | type KindedTVar TypeDecl {% checkDupTypeDecl (fst $2) >> uncurry addToTEnv $2 $3 }
   -- Datatype declaration
@@ -174,6 +174,11 @@ Decl :: { () }
       mapM_ (\(c, t) -> addToVEnv c t) bs
       uncurry addToTEnv $2 (T.Almanac (getSpan a) T.Variant (Map.fromList bs))
     }
+
+-- TODO: check if first is unique, and that next ones are the same, since it need a new signature to be diferent 
+DeclSeq :: { () }
+  : ProgVar PatternSeq '=' Exp            { () } -- {% checkDupFunDecl $1 >> addToPEnv $1 $2 $4 }
+  | ProgVar PatternSeq '=' Exp NL DeclSeq { () } 
 
 TypeDecl :: { T.Type }
   : '=' Type { $2 }
@@ -277,7 +282,7 @@ CaseMap :: { FieldMapP }
 --   : Constructor ProgVarWildSeq '->' Exp { ($1, ($2, $4)) }
 
 Case :: { (Variable, ([Pattern], E.Exp)) }
-  : ProgVarWild            '->' Exp  { ($1, ([], $3)) }
+  : ProgVarWild            '->' Exp  { ($1, ([E.V $1], $3)) }
   | Constructor PatternSeq '->' Exp  { ($1, ($2, $4)) }
 
 PatternSeq :: { [Pattern] }
@@ -286,6 +291,7 @@ PatternSeq :: { [Pattern] }
 
 Pattern :: { Pattern }
   : ProgVarWild                       { E.V $1 }
+  | Constructor                       { E.C $1 [] }
   | '(' Constructor PatternSeq ')'    { E.C $2 $3 }
 
 Op :: { Variable }
