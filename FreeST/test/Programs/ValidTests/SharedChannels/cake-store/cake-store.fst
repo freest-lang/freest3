@@ -1,3 +1,10 @@
+{-
+
+Based on the 'Ami and Boe' example from
+    'Towards Races in Linear Logic', Wen Kokke, J. Garret Morris, And Philip Waddler
+
+-}
+
 type CakeStore   : SU = *?CakeService
 type CakeService : SL = &{ Cake: Skip
                          , Disappointment: Skip
