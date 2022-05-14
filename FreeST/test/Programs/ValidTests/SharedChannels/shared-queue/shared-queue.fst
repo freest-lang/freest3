@@ -29,6 +29,14 @@ parallel n thread =
   else fork $ thread ();
        parallel [a] (n - 1) thread
 
+-- | Create a new child process and a channel through which it can communicate
+-- with its parent process.
+fork_ : forall a:SU . (dualof a -> ()) -> a
+fork_ thread =
+  let (x, y) = new a in
+  fork $ thread y;
+  x
+
 -- channel types
 
 type Request : SU = *+{Tail, Internal}
@@ -40,23 +48,23 @@ type Internal : SL = ?Int; ?Internal
 
 -- nodes
 
-runHeadNode : dualof Head -> Internal -> ()
-runHeadNode head prev = 
+runHeadNode : Internal -o dualof Head -> ()
+runHeadNode prev head = 
     let (i, prev) = receive prev in
     let (prev, _) = receive prev in
 
-    sendUn[Int] i head;
+    sendUn [Int] i head;
 
-    runHeadNode head prev
+    runHeadNode prev head
 
-runTailNode : dualof Tail -> dualof Internal -> ()
-runTailNode tail next =
-    let i = receiveUn[Int] tail in
+runTailNode : dualof Internal -o dualof Tail -> ()
+runTailNode next tail =
+    let i = receiveUn [Int] tail in
     let (prev', next') = new Internal in
-
     fork $ send prev' (send i next);
-
-    runTailNode tail next'
+    runTailNode next' tail
+    -- Internal error at Validation.Rename.rename: dualof
+    -- runTailNode (fork_ [Internal] (λ c:dualof Internal -> send c (send i next))) tail
 
 -- queue
 
@@ -65,14 +73,8 @@ type Queue = (Head, Tail)
 initQueue : Queue
 initQueue =
     let (internalC, internalS) = new Internal in
-
-    let (headC, headS) = new Head in
-    fork $ runHeadNode headS internalC;
-
-    let (tailC, tailS) = new Tail in
-    fork $ runTailNode tailS internalS;
-
-    (headC, tailC)
+    (fork_ [Head] (runHeadNode internalC),
+     fork_ [Tail] (runTailNode internalS))
 
 enqueue : Int -> Queue -> ()
 enqueue i queue = 
