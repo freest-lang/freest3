@@ -21,6 +21,14 @@ runN n f =
         f ();
         runN[a] (n-1) f
 
+-- |Launch n similar threads in parallel
+parallel : forall a . Int -> (() -> a) -> ()
+parallel n thread =
+  if n <= 0
+  then ()
+  else fork $ thread ();
+       parallel [a] (n - 1) thread
+
 -- channel types
 
 type Request : SU = *+{Tail, Internal}
@@ -68,7 +76,7 @@ initQueue =
 
 enqueue : Int -> Queue -> ()
 enqueue i queue = 
-    let _ = send i $ snd[Head, Tail] queue in ()
+    sendUn [Int] i $ snd[Head, Tail] queue
 
 dequeue : Queue -> Int
 dequeue queue = 
@@ -95,6 +103,9 @@ main : ()
 main =
     let queue   = initQueue in
     let counter = initCounter in
-    
-    forkN[()] 10 $ (\_:() -> enqueue (receiveUn[Int] counter) queue);
-    runN[()]  10 $ (\_:() -> printIntLn (dequeue queue))
+    -- writer-reader concurrency, no writter-writer nor reader-reader concurrency
+    forkN [()] 10 $ (\_:() -> enqueue (receiveUn[Int] counter) queue);
+    runN [()]  10 $ (\_:() -> printIntLn (dequeue queue))
+    -- writer-reader, writter-writer and reader-reader concurrency
+    -- parallel [()] 10 $ (\_:() -> enqueue (receiveUn[Int] counter) queue);
+    -- parallel [()]  10 $ (\_:() -> printIntLn (dequeue queue))
