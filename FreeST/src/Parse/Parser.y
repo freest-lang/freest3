@@ -163,7 +163,7 @@ Decl :: { () }
   -- Function signature
   : ProgVar ':' Type {% checkDupProgVarDecl $1 >> addToVEnv $1 $3 }
   -- Function declaration
-  | DeclSeq          { $1 }
+  | ProgVar PatternSeq '=' Exp {% checkDupFunDecl $1 >> addToPEnv $1 $2 $4 }
   -- Type abbreviation
   | type KindedTVar TypeDecl {% checkDupTypeDecl (fst $2) >> uncurry addToTEnv $2 $3 }
   -- Datatype declaration
@@ -174,11 +174,6 @@ Decl :: { () }
       mapM_ (\(c, t) -> addToVEnv c t) bs
       uncurry addToTEnv $2 (T.Almanac (getSpan a) T.Variant (Map.fromList bs))
     }
-
--- TODO: check if first is unique, and that next ones are the same, since it need a new signature to be diferent 
-DeclSeq :: { () }
-  : ProgVar PatternSeq '=' Exp            { () } -- {% checkDupFunDecl $1 >> addToPEnv $1 $2 $4 }
-  | ProgVar PatternSeq '=' Exp NL DeclSeq { () } 
 
 TypeDecl :: { T.Type }
   : '=' Type { $2 }
