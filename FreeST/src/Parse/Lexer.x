@@ -54,8 +54,8 @@ tokens :-
   module                        { \p s -> TokenModule(internalPos p) }
   where                         { \p s -> TokenWhere (internalPos p) }
   import                        { \p s -> TokenImport (internalPos p) }
-  ("->"|→)			{ \p s -> TokenUnArrow (internalPos p) }
-  ("-o"|⊸)                      { \p s -> TokenLinArrow (internalPos p) }
+  ("->"|→|"*->"|"*→")           { \p s -> TokenUnArrow (internalPos p) }
+  ("1->"|"1→")                  { \p s -> TokenLinArrow (internalPos p) }
   ("\"|λ)                       { \p s -> TokenLambda (internalPos p) }
   ("\\"|Λ)                      { \p s -> TokenUpperLambda (internalPos p) }
   ("=>"|⇒)                      { \p s -> TokenFArrow (internalPos p) }
@@ -219,7 +219,7 @@ instance Show Token where
   show (TokenUnit _) = "()"
   show (TokenStringT _) = "String"
   show (TokenUnArrow _) = "->"
-  show (TokenLinArrow _) = "-o"
+  show (TokenLinArrow _) = "1->"
   show (TokenLambda _) = "λ"
   show (TokenUpperLambda _) = "Λ"
   show (TokenLParen _) = "("

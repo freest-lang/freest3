@@ -7,13 +7,13 @@ The type of send is
 yet it can be used with an MU type via eta-conversion.
 -}
 
--- usend : ∀a:MU . a -> () -> ∀b:SL . !a;b -o b
+-- usend : ∀a:MU . a -> () -> ∀b:SL . !a;b 1-> b
 -- usend = Λa:MU => λx:a -> λ_:() -> Λb:SL => send [a] x [b]
 
 main : ()
 main =
-  -- let unfunc = usend [Int] 5 in -- unfunc : () -> ∀b: 1S . !Int;b -o b
-  let unfunc = λ_:() -> send [Int] 5 in -- unfunc : () -> ∀b: 1S . !Int;b -o b
+  -- let unfunc = usend [Int] 5 in -- unfunc : () -> ∀b: 1S . !Int;b 1-> b
+  let unfunc = λ_:() -> send [Int] 5 in -- unfunc : () -> ∀b: 1S . !Int;b 1-> b
   let (s1, r1) = new !Int in
   let (s2, r2) = new !Int in
   fork $ unfunc () [Skip] s1;

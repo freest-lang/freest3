@@ -33,7 +33,7 @@ data Exp =
   -- Variable
   | Var Span Variable
   -- Abstraction intro and elim
-  | Abs Span Multiplicity (Bind T.Type Exp)        -- λ x:T -> e, λ x:T -o e
+  | Abs Span Multiplicity (Bind T.Type Exp)        -- λ x:T -> e, λ x:T 1-> e
   | App Span Exp Exp     -- e1 e2
   -- Pair intro and elim
   | Pair Span Exp Exp

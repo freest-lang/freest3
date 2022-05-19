@@ -4,7 +4,7 @@ type Sorter : 1S = +{Done: Skip, More: !Int ; ?Int; Sorter}
 -- channel to the right and the channel where to announce the result
 -- once done. First is an odd process, hence it controls when sorting
 -- is completed.
-first : Int -> Int -> Sorter -> !Int -o Skip
+first : Int -> Int -> Sorter -> !Int 1-> Skip
 first n x right collect' =
   if n == 0
   then let _ = select Done right in send x collect'
@@ -15,7 +15,7 @@ first n x right collect' =
 -- the channel to the left, the channel to the right and the channel
 -- where to announce the result once complete. evenProcess receives
 -- from the left the announcement that sorting is completed (Done).
-evenProcess : Int -> Int -> dualof Sorter -> Sorter -o !Int -o Skip
+evenProcess : Int -> Int -> dualof Sorter -> Sorter 1-> !Int 1-> Skip
 evenProcess n x left right collect' =
   match left with {
     Done left -> let _ = select Done right in send x collect',
@@ -27,7 +27,7 @@ evenProcess n x left right collect' =
 -- channel to the left, the channel to the right and the channel where
 -- to announce the result once done. oddProcess is an odd process,
 -- hence it controls when sorting is complete.
-oddProcess : Int -> Int -> dualof Sorter -> Sorter -o !Int -o Skip
+oddProcess : Int -> Int -> dualof Sorter -> Sorter 1-> !Int 1-> Skip
 oddProcess n x left right collect' =
   if n == 0
   then let _ = select Done right in consume left ; send x collect'
@@ -37,7 +37,7 @@ oddProcess n x left right collect' =
 -- last accepts the value in the node, the channel to the left and the
 -- channel where to announce the result once done. last receives from
 -- the left the announcement that sorting is completed (Done).
-last : Int -> dualof Sorter -> !Int -o Skip
+last : Int -> dualof Sorter -> !Int 1-> Skip
 last x left collect' =
   match left with {
     Done left -> send x collect',

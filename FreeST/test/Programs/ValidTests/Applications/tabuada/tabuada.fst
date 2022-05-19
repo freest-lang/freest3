@@ -29,10 +29,10 @@ multiplosEntre i x n = if x == n
 -- Tipo do canal (os parentesis fazem diferenca)
 -- type TabuadaC = (rec x: SL. &{TabuadaSimples: ?Int; x, TabuadaAte: ?Int; ?Int; x, MultiplosEntre: ?Int; ?Int; ?Int; x, Solucao: !Bool; !Int; x, Fim: Skip})
 
-initTabuadaServer : (rec x: 1S. &{TabuadaSimples: ?Int; x, TabuadaAte: ?Int; ?Int; x, MultiplosEntre: ?Int; ?Int; ?Int; x, Solucao: !Bool; !Int; x, Fim: Skip}) -o ()
+initTabuadaServer : (rec x: 1S. &{TabuadaSimples: ?Int; x, TabuadaAte: ?Int; ?Int; x, MultiplosEntre: ?Int; ?Int; ?Int; x, Solucao: !Bool; !Int; x, Fim: Skip}) 1-> ()
 initTabuadaServer c = tabuadaServer c Empty
 
-tabuadaServer : (rec x: 1S. &{TabuadaSimples: ?Int; x, TabuadaAte: ?Int; ?Int; x, MultiplosEntre: ?Int; ?Int; ?Int; x, Solucao: !Bool; !Int; x, Fim: Skip}) -o IntList -> ()
+tabuadaServer : (rec x: 1S. &{TabuadaSimples: ?Int; x, TabuadaAte: ?Int; ?Int; x, MultiplosEntre: ?Int; ?Int; ?Int; x, Solucao: !Bool; !Int; x, Fim: Skip}) 1-> IntList -> ()
 tabuadaServer c result =
   match c with {
 

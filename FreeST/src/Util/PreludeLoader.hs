@@ -82,7 +82,7 @@ typeList =
   -- Error
   , (mkVar p "error", readT "∀a:*T . String -> a")
   -- Session ops
-  , (mkVar p "send", readT "∀a:1M . a -> ∀b:1S . !a;b -o b")
+  , (mkVar p "send", readT "∀a:1M . a -> ∀b:1S . !a;b 1-> b")
   , (mkVar p "receive", readT "∀a:1M . ∀b:1S . ?a;b -> (a, b)")
   ]
   where p = defaultSpan {defModule = "Prelude"}

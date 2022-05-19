@@ -1,5 +1,5 @@
 -- Creates an unbounded number of channels; diverges
-write : !Int -o Int -> Char
+write : !Int 1-> Int *-> Char
 write c n =
   let _ = send n c in
   printIntLn n ;

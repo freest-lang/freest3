@@ -75,8 +75,8 @@ rec a : 1T . !Int ; a
 a
 Skip; a
 rec b. !Int; a
-Bool -o a
-(Char, Bool -o a)
+Bool 1-> a
+(Char, Bool 1-> a)
 Int -> ∀ a : *M . b  
 Int -> ∀ a : *M . (Bool -> b)
 (Char, Int -> ∀ a : *M . (Bool -> b))

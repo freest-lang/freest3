@@ -1,4 +1,4 @@
-f : ?Int -o (Int, Skip)
+f : ?Int 1-> (Int, Skip)
 f = receive
 
 main : (Int, Skip)

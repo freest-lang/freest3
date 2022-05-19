@@ -1,4 +1,4 @@
-type Arrow = Int -o Bool
+type Arrow = Int 1-> Bool
 
 is10 : Arrow
 is10 x = x == 10

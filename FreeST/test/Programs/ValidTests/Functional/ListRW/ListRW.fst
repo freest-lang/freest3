@@ -35,7 +35,7 @@ iLength' : forall a: 1S . (dualof IListW);a -> (Int, a)
 iLength' x = iFold [Int, a] 0 (+) x
 
 iFold : forall a: 1T b: 1S .
-  a -> (Int -> a -> a) -o (dualof IListW);b -o (a, b)
+  a -> (Int -> a -> a) 1-> (dualof IListW);b 1-> (a, b)
 iFold n f c =
   match c with {
     Nil c -> (n, c),

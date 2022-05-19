@@ -43,7 +43,7 @@ readT c =
   }
 
 -- Read from a channel and immediately write on another channel
-forwardD : forall a: 1S . forall b: 1S . dualof D;a -> D;b -o (a, b)
+forwardD : forall a: 1S . forall b: 1S . dualof D;a -> D;b 1-> (a, b)
 forwardD in' out =
   match in' with {
     Lt in' ->
@@ -55,7 +55,7 @@ forwardD in' out =
          (in', out)
   }
 
-forwardT : forall a: 1S . forall b: 1S . dualof T;a -> T;b -o (a, b)
+forwardT : forall a: 1S . forall b: 1S . dualof T;a -> T;b 1-> (a, b)
 forwardT in' out =
   match in' with {
     Lt in' ->
@@ -69,7 +69,7 @@ forwardT in' out =
 
 -- Read from a channel; read from a second channel; while writing on a
 -- third channel
-concatD : forall a: 1S . forall b: 1S . forall c: 1S . dualof D;a -> dualof D;b -o D;c -o (a, (b, c))
+concatD : forall a: 1S . forall b: 1S . forall c: 1S . dualof D;a -> dualof D;b 1-> D;c 1-> (a, (b, c))
 concatD in1 in2 out =
   match in1 with {
     Lt in1 ->
@@ -82,7 +82,7 @@ concatD in1 in2 out =
          (in1, (in2, out))
   } -- forwardD : forall a: 1S . forall b: 1S . dualof D;a -> D;b -> (a, b)
 
-concatT : forall a: 1S . forall b: 1S . forall c: 1S . dualof T;a -> b -o T;c -o (a, (b, c))
+concatT : forall a: 1S . forall b: 1S . forall c: 1S . dualof T;a -> b 1-> T;c 1-> (a, (b, c))
 concatT in1 in2 out =
   match in1 with {
     Lt in1 ->

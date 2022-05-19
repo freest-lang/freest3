@@ -58,7 +58,7 @@ instance Show K.Multiplicity where
 -- Type & Expression (Syntax.Base)
 instance Show Multiplicity where
   show Un  = "->"
-  show Lin = "-o"
+  show Lin = "1->"
 
 -- Choice view
 
@@ -133,7 +133,7 @@ data Precedence =
   | PAdd     -- +, -
   | PMult    -- *, /
   | PDot     -- μ a:k . T
-  | PArrow   -- λλ a:k => e,  x:T -> e, λ x:T -o e, T -> T and T -o T and ∀ a:k . T
+  | PArrow   -- λλ a:k => e,  x:T -> e, λ x:T 1-> e, T -> T and T 1-> T and ∀ a:k . T
   | PSemi    -- T ; U
   | PMsg     -- !T and ?T
   | PDualof  -- dualof T

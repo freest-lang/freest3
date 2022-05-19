@@ -35,7 +35,7 @@ client c =
   with any stream, independent of the fact that it may or may not
   represent a well formed arithmetic expression.
 -}
-size : (rec x: 1S. &{Add: x, Mult: x, Const: ?Int;x, EOS: !Int}) -> Int -o Skip
+size : (rec x: 1S. &{Add: x, Mult: x, Const: ?Int;x, EOS: !Int}) -> Int 1-> Skip
 size s n =
   match s with {
     Add s   -> size s (n + 1),

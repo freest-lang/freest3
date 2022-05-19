@@ -113,32 +113,32 @@ Skip;!Int -> Bool
 !Int -> ?Char -> Bool
 
 []
-!Char -o Bool
-!Char -o Bool
+!Char 1-> Bool
+!Char 1-> Bool
 
 []
-!Int -o Bool
-(Skip;!Int) -o Bool
+!Int 1-> Bool
+(Skip;!Int) 1-> Bool
 
 []
-!Int -o Bool
-(Skip;!Int) -o Bool
+!Int 1-> Bool
+(Skip;!Int) 1-> Bool
 
 []
-!Bool -o !Char
-!Bool -o !Char;Skip
+!Bool 1-> !Char
+!Bool 1-> !Char;Skip
 
 []
-!Int -o ?Bool
-!Int -o ?Bool;Skip
+!Int 1-> ?Bool
+!Int 1-> ?Bool;Skip
 
 []
-!Int -o Bool
-!Int;Skip -o Bool
+!Int 1-> Bool
+!Int;Skip 1-> Bool
 
 []
-!Int -o Bool
-!Int;Skip -o Bool
+!Int 1-> Bool
+!Int;Skip 1-> Bool
 
 []
 (!Char, Bool)
@@ -342,8 +342,8 @@ rec x. rec y: 1S. rec z. (!Int; y)
 rec w: 1S. (!Int; w)
 
 []
-rec a : 1T . a -o a
-rec a : 1T . a -o a
+rec a : 1T . a 1-> a
+rec a : 1T . a 1-> a
 
 
 -- Ill-formed - TODO: should be well-formed

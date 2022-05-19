@@ -30,13 +30,13 @@ writeAll i c =
      select More c & send (if mod i 10 == 0 then 100 else i) & writeAll[a] (i + 1)
   else select End c
 
-readValues : ?Int;?Int;dualof Channel -o Channel -o Skip
+readValues : ?Int;?Int;dualof Channel 1-> Channel 1-> Skip
 readValues c1 c2 =
   let (x, c1) = receive c1 in
   let (y, c1) = receive c1 in
   readAll[Skip] x y c1 c2 
 
-readAll : ∀ a : 1S . Int -> Int -> dualof Channel ; a -o Channel -o a
+readAll : ∀ a : 1S . Int -> Int -> dualof Channel ; a 1-> Channel 1-> a
 readAll x y c1 c2 =
   match c1 with {
     More c1 ->

@@ -1,4 +1,4 @@
-f : Int -> !Int -o Skip
+f : Int -> !Int 1-> Skip
 f = send
 
 main : (Int, Skip)

@@ -44,7 +44,7 @@ import           System.FilePath
   String   {TokenStringT _}
   '()'     {TokenUnit _}
   '->'     {TokenUnArrow _}
-  '-o'     {TokenLinArrow _}
+  '1->'     {TokenLinArrow _}
   lambda   {TokenLambda _}
   Lambda   {TokenUpperLambda _}
   Skip     {TokenSkip _}
@@ -116,7 +116,7 @@ import           System.FilePath
 %right '^'        -- power
 %left NEG not    -- unary
 %right '.'       -- ∀ a:k . T and μ a:k . T
-%right '=>' '->' '-o' ARROW -- λλ a:k => e,  x:T -> e, λ x:T -o e, T -> T and T -o T
+%right '=>' '->' '1->' ARROW -- λλ a:k => e,  x:T -> e, λ x:T 1-> e, T -> T and T 1-> T
 %right ';'       -- T;T and e;e
 %right MSG       -- !T and ?T
 %right dualof
@@ -324,7 +324,7 @@ TupleType :: { T.Type }
 
 Arrow :: { Multiplicity }
   : '->' { Un  }
-  | '-o' { Lin }
+  | '1->' { Lin }
 
 Polarity :: { (Span, T.Polarity) }
   : '!' { (getSpan $1, T.Out) }
