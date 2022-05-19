@@ -1,4 +1,4 @@
-f : ∀ α:SL . (rec b:SL . α ; b) -> ()
+f : ∀ α: 1S . (rec b: 1S . α ; b) -> ()
 f x = f [α] x
 
 main : ()

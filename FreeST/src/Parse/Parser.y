@@ -75,12 +75,12 @@ import           System.FilePath
   UPPER_ID {TokenUpperId _ _}
   LOWER_ID {TokenLowerId _ _}
   rec      {TokenRec _}
-  SU       {TokenSU _}
-  SL       {TokenSL _}
-  TU       {TokenTU _}
-  TL       {TokenTL _}
-  MU       {TokenMU _}
-  ML       {TokenML _}
+  US       {TokenUnS _}
+  LS       {TokenLinS _}
+  UT       {TokenUnT _}
+  LT       {TokenLinT _}
+  UM       {TokenUnM _}
+  LM       {TokenLinM _}
   INT      {TokenInt _ _ }
   BOOL     {TokenBool _ _}
   CHAR     {TokenChar _ _}
@@ -353,12 +353,12 @@ TypeSeq :: { [T.Type] }
 ----------
 
 Kind :: { K.Kind }
-  : SU {% K.su `fmap` mkSpan $1 }
-  | SL {% K.sl `fmap` mkSpan $1 }
-  | TU {% K.tu `fmap` mkSpan $1 }
-  | TL {% K.tl `fmap` mkSpan $1 }
-  | MU {% K.mu `fmap` mkSpan $1 }
-  | ML {% K.ml `fmap` mkSpan $1 }
+  : US {% K.us `fmap` mkSpan $1 }
+  | LS {% K.ls `fmap` mkSpan $1 }
+  | UT {% K.ut `fmap` mkSpan $1 }
+  | LT {% K.lt `fmap` mkSpan $1 }
+  | UM {% K.um `fmap` mkSpan $1 }
+  | LM {% K.lm `fmap` mkSpan $1 }
 
 -- PROGRAM VARIABLE
 

@@ -30,7 +30,7 @@ Int
 Int
 
 -- id
-(Λa:TU => λx:a → x)[Int] 5
+(Λa: *T => λx:a → x)[Int] 5
 Int
 
 -- Tuple destructor
@@ -84,7 +84,7 @@ Int
 
 -- Rec skip
 
-(\_:(rec x:SU. Skip, Skip) -> λy:Int -> y) (new Skip) 23
+(\_:(rec x: *S. Skip, Skip) -> λy:Int -> y) (new Skip) 23
 Int
 
 (\_:Skip -> λy:Int -> y) (fst [Skip, Skip](new Skip)) 23

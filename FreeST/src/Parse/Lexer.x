@@ -91,12 +91,12 @@ tokens :-
   "/"  		                { \p s -> TokenDiv (internalPos p) }
   "$"  		                { \p s -> TokenDollar (internalPos p) }
 -- Kinds
-  SU                            { \p s -> TokenSU (internalPos p) }
-  SL                            { \p s -> TokenSL (internalPos p) }
-  TU                            { \p s -> TokenTU (internalPos p) }
-  TL                            { \p s -> TokenTL (internalPos p) }
-  MU                            { \p s -> TokenMU (internalPos p) }
-  ML                            { \p s -> TokenML (internalPos p) }
+  "*S"                            { \p s -> TokenUnS (internalPos p) }
+  "1S"                            { \p s -> TokenLinS (internalPos p) }
+  "*T"                            { \p s -> TokenUnT (internalPos p) }
+  "1T"                            { \p s -> TokenLinT (internalPos p) }
+  "*M"                            { \p s -> TokenUnM (internalPos p) }
+  "1M"                            { \p s -> TokenLinM (internalPos p) }
 -- Basic types
   Int			        { \p s -> TokenIntT (internalPos p) }
   Char				{ \p s -> TokenCharT (internalPos p) }
@@ -165,12 +165,12 @@ data Token =
   | TokenRec Span
   | TokenDot Span
   | TokenLowerId Span String
-  | TokenSU Span
-  | TokenSL Span
-  | TokenTU Span
-  | TokenTL Span
-  | TokenMU Span
-  | TokenML Span
+  | TokenUnS Span
+  | TokenLinS Span
+  | TokenUnT Span
+  | TokenLinT Span
+  | TokenUnM Span
+  | TokenLinM Span
   | TokenInt Span Int
   | TokenChar Span Char
   | TokenString Span String
@@ -240,12 +240,12 @@ instance Show Token where
   show (TokenRec _) = "rec"
   show (TokenDot _) = "."
   show (TokenLowerId _ s) = "" ++ s
-  show (TokenSU _) = "SU"
-  show (TokenSL _) = "SL"
-  show (TokenTU _) = "TU"
-  show (TokenTL _) = "TL"
-  show (TokenMU _) = "MU"
-  show (TokenML _) = "ML"
+  show (TokenUnS _) = "*S"
+  show (TokenLinS _) = "1S"
+  show (TokenUnT _) = "*T"
+  show (TokenLinT _) = "1T"
+  show (TokenUnM _) = "*M"
+  show (TokenLinM _) = "1M"
   show (TokenInt _ i) = show i
   show (TokenChar _ c) = show c
   show (TokenBool _ b) = show b
@@ -353,12 +353,12 @@ instance Located Token where
   getSpan (TokenRec p) = p
   getSpan (TokenDot p) = p
   getSpan (TokenLowerId p _) = p
-  getSpan (TokenSU p) = p
-  getSpan (TokenSL p) = p
-  getSpan (TokenTU p) = p
-  getSpan (TokenTL p) = p
-  getSpan (TokenML p) = p
-  getSpan (TokenMU p) = p
+  getSpan (TokenUnS p) = p
+  getSpan (TokenLinS p) = p
+  getSpan (TokenUnT p) = p
+  getSpan (TokenLinT p) = p
+  getSpan (TokenLinM p) = p
+  getSpan (TokenUnM p) = p
   getSpan (TokenInt p _) = p
   getSpan (TokenChar p _) = p
   getSpan (TokenBool p _) = p

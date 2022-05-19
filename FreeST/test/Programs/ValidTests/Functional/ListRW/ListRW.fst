@@ -1,8 +1,8 @@
 data IList = Nil | Cons Int IList
 
-type IListW : SL = +{Nil: Skip, Cons: !Int; IListW}
+type IListW : 1S = +{Nil: Skip, Cons: !Int; IListW}
 
-iListW : forall a:SL . IList -> IListW;a -> a
+iListW : forall a: 1S . IList -> IListW;a -> a
 
 iListW xs c =
   case xs of {
@@ -10,7 +10,7 @@ iListW xs c =
     Cons x xs -> select Cons c & send x & iListW [a] xs
   }
 
-iListR : forall a:SL . (dualof IListW);a -> (IList, a)
+iListR : forall a: 1S . (dualof IListW);a -> (IList, a)
 iListR c =
   match c with {
     Nil c -> (Nil, c),
@@ -19,10 +19,10 @@ iListR c =
               (Cons x xs, c)
   }
 
-iListR' : forall a:SL . (dualof IListW);a -> (IList, a)
+iListR' : forall a: 1S . (dualof IListW);a -> (IList, a)
 iListR' c = iFold [IList, a] Nil Cons c
 
-iLength : forall a:SL . (dualof IListW);a -> (Int, a)
+iLength : forall a: 1S . (dualof IListW);a -> (Int, a)
 iLength c =
   match c with {
     Nil c -> (0, c),
@@ -31,10 +31,10 @@ iLength c =
               (m + n, c)
   }
 
-iLength' : forall a:SL . (dualof IListW);a -> (Int, a)
+iLength' : forall a: 1S . (dualof IListW);a -> (Int, a)
 iLength' x = iFold [Int, a] 0 (+) x
 
-iFold : forall a:TL b:SL .
+iFold : forall a: 1T b: 1S .
   a -> (Int -> a -> a) -o (dualof IListW);b -o (a, b)
 iFold n f c =
   match c with {

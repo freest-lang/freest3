@@ -54,7 +54,7 @@ getTwo xs  =
 
 -- Streams
 
-type Stream : SL = +{
+type Stream : 1S = +{
     Node: !Int; Stream,
     Leaf: Stream,
     EndOfStream: Skip

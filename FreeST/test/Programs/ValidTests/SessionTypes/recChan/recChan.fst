@@ -1,4 +1,4 @@
-type Chan : SL = +{Done: Skip, More: !Int;Chan}
+type Chan : 1S = +{Done: Skip, More: !Int;Chan}
 
 fives : Int -> Chan -> Skip
 fives n c =

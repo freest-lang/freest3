@@ -1,4 +1,4 @@
-myfork : ∀a:TL. a -> ()
+myfork : ∀a: 1T. a -> ()
 myfork = fork
 
 main : Int

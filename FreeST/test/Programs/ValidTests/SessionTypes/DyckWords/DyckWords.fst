@@ -17,11 +17,11 @@ Example suggested by the authors Frank Pfenning, Ankush Das, Henry DeYoung, and 
 
 -}
 
-type D : SL = +{ Lt : T;D, Dollar : Skip }
-type T : SL = +{ Lt : T;T, Gt : Skip }
+type D : 1S = +{ Lt : T;D, Dollar : Skip }
+type T : 1S = +{ Lt : T;T, Gt : Skip }
 
 -- Read from a channel; print what is read
-readD : forall a:SL . dualof D;a -> a
+readD : forall a: 1S . dualof D;a -> a
 readD c =
   match c with {
     Lt c ->
@@ -31,7 +31,7 @@ readD c =
       printCharLn '$';
       c
   }
-readT : forall a:SL . dualof T;a -> a
+readT : forall a: 1S . dualof T;a -> a
 readT c =
   match c with {
     Lt c ->
@@ -43,7 +43,7 @@ readT c =
   }
 
 -- Read from a channel and immediately write on another channel
-forwardD : forall a:SL . forall b:SL . dualof D;a -> D;b -o (a, b)
+forwardD : forall a: 1S . forall b: 1S . dualof D;a -> D;b -o (a, b)
 forwardD in' out =
   match in' with {
     Lt in' ->
@@ -55,7 +55,7 @@ forwardD in' out =
          (in', out)
   }
 
-forwardT : forall a:SL . forall b:SL . dualof T;a -> T;b -o (a, b)
+forwardT : forall a: 1S . forall b: 1S . dualof T;a -> T;b -o (a, b)
 forwardT in' out =
   match in' with {
     Lt in' ->
@@ -69,7 +69,7 @@ forwardT in' out =
 
 -- Read from a channel; read from a second channel; while writing on a
 -- third channel
-concatD : forall a:SL . forall b:SL . forall c:SL . dualof D;a -> dualof D;b -o D;c -o (a, (b, c))
+concatD : forall a: 1S . forall b: 1S . forall c: 1S . dualof D;a -> dualof D;b -o D;c -o (a, (b, c))
 concatD in1 in2 out =
   match in1 with {
     Lt in1 ->
@@ -80,9 +80,9 @@ concatD in1 in2 out =
     Dollar in1 ->
       let (in2, out) = forwardD[b][c] in2 out in
          (in1, (in2, out))
-  } -- forwardD : forall a:SL . forall b:SL . dualof D;a -> D;b -> (a, b)
+  } -- forwardD : forall a: 1S . forall b: 1S . dualof D;a -> D;b -> (a, b)
 
-concatT : forall a:SL . forall b:SL . forall c:SL . dualof T;a -> b -o T;c -o (a, (b, c))
+concatT : forall a: 1S . forall b: 1S . forall c: 1S . dualof T;a -> b -o T;c -o (a, (b, c))
 concatT in1 in2 out =
   match in1 with {
     Lt in1 ->

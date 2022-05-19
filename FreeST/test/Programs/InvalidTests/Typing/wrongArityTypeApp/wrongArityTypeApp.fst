@@ -1,4 +1,4 @@
-fst' : forall a: TU . forall b: TU . (a, b) -> a
+fst' : forall a: *T . forall b: *T . (a, b) -> a
 fst' p = let (x, _) = p in x
 
 main: Int

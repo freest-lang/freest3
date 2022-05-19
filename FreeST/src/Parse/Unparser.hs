@@ -52,8 +52,8 @@ showModuleWithDots = map (\x -> if x == '/' then '.' else x )
 
 -- Kind
 instance Show K.Multiplicity where
-  show K.Un  = "U"
-  show K.Lin = "L"
+  show K.Un  = "*"
+  show K.Lin = "1"
 
 -- Type & Expression (Syntax.Base)
 instance Show Multiplicity where
@@ -96,7 +96,7 @@ instance Show K.Basic where
   show K.Top     = "T"
 
 instance Show K.Kind where
-  show (K.Kind _ p m) = show p ++ show m
+  show (K.Kind _ p m) = show m ++ show p
 
 -- Binds
 

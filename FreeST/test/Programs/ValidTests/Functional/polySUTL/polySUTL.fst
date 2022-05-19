@@ -1,4 +1,4 @@
-id' : forall a : TL . a -> a
+id' : forall a : 1T . a -> a
 id' x = x
 
 f : Int -o Int

@@ -1,6 +1,6 @@
 data List = Nil | Cons Int List
 
-flatten : List -> (rec x: SL. +{Nil: Skip, Cons: !Int;x}) -> Skip
+flatten : List -> (rec x: 1S. +{Nil: Skip, Cons: !Int;x}) -> Skip
 flatten l c =
   case l of {
     Nil -> select Nil c,
@@ -10,7 +10,7 @@ flatten l c =
       flatten t c
   }
 
-reconstruct : (rec x: SL. &{Nil: Skip, Cons: ?Int;x}) -> List
+reconstruct : (rec x: 1S. &{Nil: Skip, Cons: ?Int;x}) -> List
 reconstruct c =
   match c with {
     Nil c -> Nil,
@@ -25,6 +25,6 @@ aList = Cons 5 (Cons 7 (Cons 2 (Cons 6 (Cons 3 Nil))))
 
 main : List
 main =
-  let (w, r) = new rec x: SL. +{Nil: Skip, Cons: !Int;x} in
+  let (w, r) = new rec x: 1S. +{Nil: Skip, Cons: !Int;x} in
   let _ = fork[Skip] $ flatten aList w in
   reconstruct r

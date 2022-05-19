@@ -64,8 +64,8 @@ typeList =
   , (mkVar p "ord", readT "Char -> Int")
   , (mkVar p "chr", readT "Int -> Char")
   -- Pair
-  , (mkVar p "fst", readT "∀ a:TL . ∀ b:TU . (a, b) -> a")
-  , (mkVar p "snd", readT "∀ a:TU . ∀ b:TL . (a, b) -> b")
+  , (mkVar p "fst", readT "∀ a:1T . ∀ b:*T . (a, b) -> a")
+  , (mkVar p "snd", readT "∀ a:*T . ∀ b:1T . (a, b) -> b")
   -- Print
   , (mkVar p "printInt"   , readT "Int -> ()")
   , (mkVar p "printIntLn" , readT "Int -> ()")
@@ -78,12 +78,12 @@ typeList =
   , (mkVar p "printString", readT "String -> ()")
   , (mkVar p "printStringLn", readT "String -> ()")
   -- Fork
-  , (mkVar p "fork", readT "∀a:TL. a -> ()")
+  , (mkVar p "fork", readT "∀a:1T. a -> ()")
   -- Error
-  , (mkVar p "error", readT "∀a:TU . String -> a")
+  , (mkVar p "error", readT "∀a:*T . String -> a")
   -- Session ops
-  , (mkVar p "send", readT "∀a:ML . a -> ∀b:SL . !a;b -o b")
-  , (mkVar p "receive", readT "∀a:ML . ∀b:SL . ?a;b -> (a, b)")
+  , (mkVar p "send", readT "∀a:1M . a -> ∀b:1S . !a;b -o b")
+  , (mkVar p "receive", readT "∀a:1M . ∀b:1S . ?a;b -> (a, b)")
   ]
   where p = defaultSpan {defModule = "Prelude"}
 

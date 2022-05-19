@@ -1,4 +1,4 @@
-type Choice : SL = +{More: !Int;Choice, Enough: Skip}
+type Choice : 1S = +{More: !Int;Choice, Enough: Skip}
 
 sendInt : Int -> Choice -> Skip
 sendInt i c =

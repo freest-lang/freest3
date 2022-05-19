@@ -19,12 +19,12 @@ Structure:
 
 -}
 
-type Channel : SL = +{More: !Int;Channel, End:Skip}
+type Channel : 1S = +{More: !Int;Channel, End:Skip}
 
 writeValues : !Int;!Int;Channel -> Skip
 writeValues c = send 1 c & send 2 & writeAll[Skip] 3
 
-writeAll : ∀ a : SL . Int -> Channel;a -> a
+writeAll : ∀ a : 1S . Int -> Channel;a -> a
 writeAll i c =
   if i <= 40 then
      select More c & send (if mod i 10 == 0 then 100 else i) & writeAll[a] (i + 1)
@@ -36,7 +36,7 @@ readValues c1 c2 =
   let (y, c1) = receive c1 in
   readAll[Skip] x y c1 c2 
 
-readAll : ∀ a : SL . Int -> Int -> dualof Channel ; a -o Channel -o a
+readAll : ∀ a : 1S . Int -> Int -> dualof Channel ; a -o Channel -o a
 readAll x y c1 c2 =
   match c1 with {
     More c1 ->
@@ -58,7 +58,7 @@ main =
   receiveMain[Skip] r2 ;
   ()
 
-receiveMain : ∀ a:SL . dualof Channel ; a -> a
+receiveMain : ∀ a: 1S . dualof Channel ; a -> a
 receiveMain c =
   match c with {
      More c ->

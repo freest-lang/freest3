@@ -17,12 +17,12 @@ module Syntax.Kind
   , Multiplicity(..)
   , KindEnv
   , PolyVars
-  , tl
-  , tu
-  , sl
-  , su
-  , mu
-  , ml
+  , lt
+  , ut
+  , ls
+  , us
+  , um
+  , lm
   , isLin
   , isUn
   , isSession
@@ -44,7 +44,7 @@ data Multiplicity = Un | Lin deriving Eq
 
 -- Kind
 
-data Kind = Kind Span Basic Multiplicity
+data Kind = Kind Span Multiplicity Basic
 
 instance Located Kind where
   getSpan (Kind p _ _) = p
@@ -53,25 +53,25 @@ instance Located Kind where
 -- languages' types (Alternative: the kind that sits at the top of the
 -- hierarchy)
 instance Default Kind where
-  omission _ = tu defaultSpan
+  omission _ = ut defaultSpan
 
 -- Abbreviations for the six proper kinds
-tl, tu, sl, su, mu, ml :: Span -> Kind
-tl p = Kind p Top Lin
-tu p = Kind p Top Un
-sl p = Kind p Session Lin
-su p = Kind p Session Un
-mu p = Kind p Message Un
-ml p = Kind p Message Lin
+lt, ut, ls, us, um, lm :: Span -> Kind
+lt p = Kind p Lin Top 
+ut p = Kind p Un Top 
+ls p = Kind p Lin Session 
+us p = Kind p Un Session 
+um p = Kind p Un Message
+lm p = Kind p Lin Message
 
 isLin :: Kind -> Bool
-isLin (Kind _ _ m) = m == Lin
+isLin (Kind _ m _) = m == Lin
 
 isUn :: Kind -> Bool
 isUn = not . isLin
 
 isSession :: Kind -> Bool
-isSession (Kind _ b _) = b == Session
+isSession (Kind _ _ b) = b == Session
 
 -- Kind environment
 

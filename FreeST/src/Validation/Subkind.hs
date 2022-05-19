@@ -57,20 +57,20 @@ instance Join K.Multiplicity where
   join K.Lin K.Lin = K.Lin
 
 instance Join K.Kind  where
-  join (K.Kind p K.Message K.Lin) (K.Kind _ K.Top     K.Un ) = K.tl p
-  join (K.Kind p K.Top     K.Un ) (K.Kind _ K.Message K.Lin) = K.tl p
+  join (K.Kind p K.Lin K.Message) (K.Kind _ K.Un  K.Top    ) = K.lt p
+  join (K.Kind p K.Un  K.Top    ) (K.Kind _ K.Lin K.Message) = K.lt p
 
-  join (K.Kind p K.Top     K.Un ) (K.Kind _ K.Session K.Lin) = K.tl p
-  join (K.Kind p K.Session K.Lin) (K.Kind _ K.Top     K.Un ) = K.tl p
+  join (K.Kind p K.Un  K.Top    ) (K.Kind _ K.Lin K.Session) = K.lt p
+  join (K.Kind p K.Lin K.Session) (K.Kind _ K.Un  K.Top    ) = K.lt p
 
-  join (K.Kind p K.Message K.Un ) (K.Kind _ K.Session K.Un ) = K.tu p
-  join (K.Kind p K.Session K.Un ) (K.Kind _ K.Message K.Un ) = K.tu p
+  join (K.Kind p K.Un K.Message ) (K.Kind _ K.Un K.Session ) = K.ut p
+  join (K.Kind p K.Un K.Session ) (K.Kind _ K.Un K.Message ) = K.ut p
 
-  join (K.Kind p K.Message K.Un ) (K.Kind _ K.Session K.Lin) = K.tl p
-  join (K.Kind p K.Session K.Lin) (K.Kind _ K.Message K.Un ) = K.tl p
+  join (K.Kind p K.Un K.Message ) (K.Kind _ K.Lin K.Session) = K.lt p
+  join (K.Kind p K.Lin K.Session) (K.Kind _ K.Un K.Message ) = K.lt p
 
-  join (K.Kind p K.Session K.Un ) (K.Kind _ K.Message K.Lin) = K.tl p
-  join (K.Kind p K.Message K.Lin) (K.Kind _ K.Session K.Un ) = K.tl p
+  join (K.Kind p K.Un K.Session ) (K.Kind _ K.Lin K.Message) = K.lt p
+  join (K.Kind p K.Lin K.Message) (K.Kind _ K.Un K.Session ) = K.lt p
 
   join k1 k2
     | k1 <: k2 = k2

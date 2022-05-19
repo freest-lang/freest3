@@ -1,10 +1,10 @@
 -- Initializes mathServer with a default boolean tuple
-initMathServer : (rec x: SL. &{Val: ?Bool; x, And: !Bool; x, Not: !Bool; x, Quit: Skip}) -> ()
+initMathServer : (rec x: 1S. &{Val: ?Bool; x, And: !Bool; x, Not: !Bool; x, Quit: Skip}) -> ()
 initMathServer c = mathServer False False c
 
 -- While receiving values, the pair b1 and b2 function as a "partial stack"
 --   storing only the last 2 values, where b1 is the "top" of the stack.
-mathServer : Bool -> Bool -> (rec x: SL. &{Val: ?Bool; x, And: !Bool; x, Not: !Bool; x, Quit: Skip}) -> ()
+mathServer : Bool -> Bool -> (rec x: 1S. &{Val: ?Bool; x, And: !Bool; x, Not: !Bool; x, Quit: Skip}) -> ()
 mathServer b1 b2 c =
   match c with {
     Val c ->
@@ -28,7 +28,7 @@ mathServer b1 b2 c =
 
 -- Sends False, then True, then True, and calls for And
 --   should return True
-client : (rec x: SL. +{Val: !Bool; x, And: ?Bool; x, Not: ?Bool; x, Quit: Skip}) -> Bool
+client : (rec x: 1S. +{Val: !Bool; x, And: ?Bool; x, Not: ?Bool; x, Quit: Skip}) -> Bool
 client c =
   let c = sendBool c False in
   let c = sendBool c True in
@@ -41,7 +41,7 @@ client c =
 
 -- ==================== Aux Functions ====================
 
-sendBool : (rec x: SL. +{Val: !Bool; x, And: ?Bool; x, Not: ?Bool; x, Quit: Skip}) -> Bool -o (rec x: SL. +{Val: !Bool; x, And: ?Bool; x, Not: ?Bool; x, Quit: Skip})
+sendBool : (rec x: 1S. +{Val: !Bool; x, And: ?Bool; x, Not: ?Bool; x, Quit: Skip}) -> Bool -o (rec x: 1S. +{Val: !Bool; x, And: ?Bool; x, Not: ?Bool; x, Quit: Skip})
 sendBool c b =
   let c = select Val c in
   let c = send b c in
@@ -51,6 +51,6 @@ sendBool c b =
 -- ==================== Main ====================
 main : Bool
 main =
-  let (r, w) = new rec x: SL. &{Val: ?Bool; x, And: !Bool; x, Not: !Bool; x, Quit: Skip} in
+  let (r, w) = new rec x: 1S. &{Val: ?Bool; x, And: !Bool; x, Not: !Bool; x, Quit: Skip} in
   let _      = fork[()] $ initMathServer r in
   client w

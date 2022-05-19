@@ -59,7 +59,7 @@ stackSize ts =
 -- Channel to send/receive a Tree. It is important that both sender and receiver
 --  agree on an order to traverse the Tree.
 --  (In our particular case we will use PREORDER - node, left, right)
-type TreeC : SL = +{
+type TreeC : 1S = +{
   Value: !Int; TreeC,
   Leaf:  TreeC,
   End:   Skip }

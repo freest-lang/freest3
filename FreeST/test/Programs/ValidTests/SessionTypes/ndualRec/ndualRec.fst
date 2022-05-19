@@ -1,5 +1,5 @@
-type Choice : SL = +{More: !Int;DD, Enough: Skip}
-type DD : SL = dualof (dualof Choice)
+type Choice : 1S = +{More: !Int;DD, Enough: Skip}
+type DD : 1S = dualof (dualof Choice)
 
 sendInt : Int -> DD -> Skip
 sendInt i c =

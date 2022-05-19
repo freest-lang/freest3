@@ -10,7 +10,7 @@ type Stream = +{
 -}
 
 -- A sample client: (5*4)+(2*3)
-client : (rec x: SL. +{Add: x, Mult: x, Const: !Int;x, EOS: ?Int}) -> Int
+client : (rec x: 1S. +{Add: x, Mult: x, Const: !Int;x, EOS: ?Int}) -> Int
 client c =
   -- stream the arithmetic operation
   let c = select Const c in
@@ -37,7 +37,7 @@ client c =
 
 data IntList = Nil | Cons Int IntList
 
-evaluate : (rec x: SL. &{Add: x, Mult: x, Const: ?Int;x, EOS: !Int}) ->
+evaluate : (rec x: 1S. &{Add: x, Mult: x, Const: ?Int;x, EOS: !Int}) ->
            IntList -o
            Skip
 evaluate s l =
@@ -75,6 +75,6 @@ err = -1
 -- expect 26 on the console.
 main : Int
 main =
-  let (c, s) = new rec x: SL. +{Add: x, Mult: x, Const: !Int;x, EOS: ?Int} in
+  let (c, s) = new rec x: 1S. +{Add: x, Mult: x, Const: !Int;x, EOS: ?Int} in
   let _ = fork[Skip] (evaluate s Nil) in
   client c

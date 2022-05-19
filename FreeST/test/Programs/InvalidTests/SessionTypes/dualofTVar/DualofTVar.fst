@@ -1,7 +1,7 @@
-myNew : ∀a: SL . (a, dualof a)
+myNew : ∀a: 1S . (a, dualof a)
 myNew = new a
 
-run : ∀a: SL . (a -> ()) -o (dualof a -> ()) -o ()
+run : ∀a: 1S . (a -> ()) -o (dualof a -> ()) -o ()
 run f g = let (x, y) = myNew [a] in fork[()] (f x); g y
 
 write : !Int -> ()

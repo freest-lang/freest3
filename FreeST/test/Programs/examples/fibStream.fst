@@ -18,10 +18,10 @@ fib n = fibs !! n
 
 -- These should be in the prelude
 
-fst : forall a:TL, b:TU => (a, b) -> a
+fst : forall a: 1T, b: *T => (a, b) -> a
 fst p = let (x, _) = p in x
 
-snd : forall a:TU, b:TL => (a, b) -> b
+snd : forall a: *T, b: 1T => (a, b) -> b
 snd p = let (_, y) = p in y
 
 -- Stream
