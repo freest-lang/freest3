@@ -26,5 +26,5 @@ aList = Cons 5 (Cons 7 (Cons 2 (Cons 6 (Cons 3 Nil))))
 main : List
 main =
   let (w, r) = new rec x: 1S. +{Nil: Skip, Cons: !Int;x} in
-  let _ = fork[Skip] $ flatten aList w in
+  let _ = fork @Skip $ flatten aList w in
   reconstruct r

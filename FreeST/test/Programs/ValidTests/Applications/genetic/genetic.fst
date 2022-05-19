@@ -49,7 +49,7 @@ clientSequential = geneticAlg argSeed argPopSize argIterPop
 
 -- Example of a client using the parallel genetic algorithm
 clientParallel : Int
-clientParallel = fst[Int, Skip] $ receive $ initIslands argSeed argIslands argPopSize argIterPop argIterIsl
+clientParallel = fst @Int @Skip $ receive $ initIslands argSeed argIslands argPopSize argIterPop argIterIsl
 
 
 -- ===== CONSTANTS =====
@@ -292,12 +292,12 @@ initIslands_ channels seed islands popSize nIterI nIterG =
   if islands == 0
   then
     let (client, server) = new ResultChannel in
-    fork[()] $ runMasterServer server channels nIterG;
+    fork @() $ runMasterServer server channels nIterG;
     client
   else
     let (master, island) = new IslandChannel in
     let (seed, pop) = generatePopulation seed popSize in
-    fork[()] $ runIsland island seed nIterI pop;
+    fork @() $ runIsland island seed nIterI pop;
     initIslands_ (Cons master channels) seed (islands-1) popSize nIterI nIterG
 
 
@@ -362,7 +362,7 @@ runIsland master seed nIterI pop =
 
 -- Compute the absolute fittest individual of all islands
 receiveFittest : ListIslandChannel -> (Individual, ListIslandChannel)
-receiveFittest = foldIslands[Individual] receiveFittestF 0
+receiveFittest = foldIslands @Individual receiveFittestF 0
 
 receiveFittestF :  Individual -> IslandChannel -> (Individual, IslandChannel)
 receiveFittestF ind0 island =
@@ -372,7 +372,7 @@ receiveFittestF ind0 island =
 
 -- Send an individual to every island to do another round of the GA
 sendFittest : Individual -> ListIslandChannel -> ListIslandChannel
-sendFittest fittest channels0 = snd[Individual, ListIslandChannel] $ foldIslands[Int] sendFittestF fittest channels0
+sendFittest fittest channels0 = snd @Individual @ListIslandChannel $ foldIslands @Int sendFittestF fittest channels0
 
 sendFittestF :  Int -> IslandChannel -> (Int, IslandChannel)
 sendFittestF fittest island = (fittest, send fittest $ select Crossover island)
@@ -400,6 +400,6 @@ foldIslands f x chs =
       (x, Nil),
     Cons ch chss ->
       let (x, ch) = f x ch in
-      let (x, chss) = foldIslands[a] f x chss in
+      let (x, chss) = foldIslands @a f x chss in
       (x, Cons ch chss)
   }

@@ -15,14 +15,14 @@ type NEStack : 1S = &{Push: ?Int; NEStack; NEStack, Pop: !Int}
 eStack : ∀ a: 1S . EStack;a -> a
 eStack c =
   case collect c of {
-    Push c -> let (x, c) = receive c in eStack[a] (neStack[EStack;a] x c),
+    Push c -> let (x, c) = receive c in eStack @a (neStack @(EStack ; a) x c),
     End  c -> c
   }
 
 neStack : ∀ a: 1S . Int -> NEStack;a -> a
 neStack x c =
   case collect c of {
-    Push c -> let (y, c) = receive c in neStack[a] x (neStack[NEStack;a] y c),
+    Push c -> let (y, c) = receive c in neStack @a x (neStack @(NEStack ; a) y c),
     Pop  c -> send x c
   }
 
@@ -45,6 +45,6 @@ aStackClient c =
 main : Int
 main =
   let (r, w) = new EStack in
-  fork $ eStack[Skip] r;
+  fork $ eStack @Skip r;
   aStackClient w
     

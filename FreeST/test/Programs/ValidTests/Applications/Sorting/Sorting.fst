@@ -37,7 +37,7 @@ sortingServer xs c =
   match c with {
     Value c ->
       let (x, c)  = receive c in
-      let (xs, c) = sortingServer[!Int;a] (Cons x xs) c in
+      let (xs, c) = sortingServer @(!Int ; a) (Cons x xs) c in
       case xs of {
         Cons y ys -> (ys, send y c),
         -- Nil is never reached
@@ -53,7 +53,7 @@ sortingServer xs c =
 main : ()
 main =
   let (w, r) = new OrderingChannel in
-  fork[(IntList, Skip)] (sortingServer[Skip] Nil r);
+  fork @(IntList, Skip) (sortingServer @Skip Nil r);
   client w
 
 -- Quicksort.  Adapted from learnyouahaskell.com. The integer sorting

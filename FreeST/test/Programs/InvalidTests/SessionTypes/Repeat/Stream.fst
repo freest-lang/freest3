@@ -18,7 +18,7 @@ consumeStream : ∀ α: 1M .
   ((μb: 1S. ?α;b) -> (μb: 1S. ?α;b)) -> -- A function that consumes the head of a stream
   (μb: 1S. ?α;b) ->                    -- The stream
   ()
-consumeStream f c = consumeStream[α] f (f c)
+consumeStream f c = consumeStream @α f (f c)
 
 -- 1 _ Stream of integer values
 type OutIntStream : 1S = !Int; OutIntStream
@@ -28,20 +28,20 @@ writeInt : forall β: 1S . !Int; β -> β
 writeInt c = send 7 c
 
 writeIntStream : OutIntStream -> ()
-writeIntStream = consumeStream[!Int] writeInt[OutIntStream]
+writeIntStream = consumeStream @(!Int) writeInt @OutIntStream
 
 -- Read from an int stream
 readInt : forall β: 1S . ?Int; β -> β
 readInt c = let (v, c) = receive c in printInt v; c
 
 readIntStream : dualof OutIntStream -> ()
-readIntStream = consumeStream[?Int] readInt[dualof OutIntStream]
+readIntStream = consumeStream @(?Int) readInt @(dualof OutIntStream)
 
 -- Run an int stream
 mainIntStream : ()
 mainIntStream =
   let (w, r) = new OutIntStream in
-  fork[()] (writeIntStream w);
+  fork @() (writeIntStream w);
   readIntStream r
 
 -- 2 _ Stream of out-char-in-bool values
@@ -54,23 +54,23 @@ writeCharReadBool c =
 
 writeCharReadBoolStream : OutCharInBoolStream -> ()
 writeCharReadBoolStream =
-  consumeStream[!Char; ?Bool] writeCharReadBool[OutCharInBoolStream]
+  consumeStream @(!Char ; ?Bool) writeCharReadBool @OutCharInBoolStream
 
 -- 1 _ Stream of integer values
 type IntStream: 1S = !Int; IntStream
 
 writeIntStream : IntStream -> ()
-writeIntStream = produceStream [Int] (\c:IntStream -> send 7 c)
+writeIntStream = produceStream  @Int (\c:IntStream -> send 7 c)
 
 -- Run an out-char-in-bool stream
 mainCharBoolStream : ()
 mainCharBoolStream =
   let (w, r) = new OutCharInBoolStream in
-  fork[()] (writeCharReadBoolStream w);
+  fork @() (writeCharReadBoolStream w);
   readCharWriteBoolStream r
 
 main : ()
 main =
   let (w, r) = new IntStream in
-  fork[()] (writeIntStream w);
+  fork @() (writeIntStream w);
   readIntStream r

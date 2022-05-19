@@ -59,13 +59,14 @@ tokens :-
   ("\"|λ)                       { \p s -> TokenLambda (internalPos p) }
   ("\\"|Λ)                      { \p s -> TokenUpperLambda (internalPos p) }
   ("=>"|⇒)                      { \p s -> TokenFArrow (internalPos p) }
-  "("				{ \p s -> TokenLParen (internalPos p) }
-  ")"				{ \p s -> TokenRParen (internalPos p) }
-  "["				{ \p s -> TokenLBracket (internalPos p) }
-  "]"			        { \p s -> TokenRBracket (internalPos p) }
-  "{"                           { \p s -> TokenLBrace (internalPos p) }
-  "}"			        { \p s -> TokenRBrace (internalPos p) }
-  ","				{ \p s -> TokenComma (internalPos p) }
+  "@"                           { \p s -> TokenAt (internalPos p)}
+  "("				                    { \p s -> TokenLParen (internalPos p) }
+  ")"				                    { \p s -> TokenRParen (internalPos p) }
+  "["				                    { \p s -> TokenLBracket (internalPos p) }
+  "]"			                      { \p s -> TokenRBracket (internalPos p) }
+  "{"				                    { \p s -> TokenLBrace (internalPos p) }
+  "}"			                      { \p s -> TokenRBrace (internalPos p) }
+  ","				                    { \p s -> TokenComma (internalPos p) }
   ":"                           { \p s -> TokenColon (internalPos p) }
   ";"	       	      	  	{ \p s -> TokenSemi (internalPos p) }
   "!"                           { \p s -> TokenMOut (internalPos p) }
@@ -147,6 +148,7 @@ data Token =
   | TokenLinArrow Span
   | TokenLambda Span
   | TokenUpperLambda Span
+  | TokenAt Span
   | TokenLParen Span
   | TokenRParen Span
   | TokenLBracket Span
@@ -222,6 +224,7 @@ instance Show Token where
   show (TokenLinArrow _) = "1->"
   show (TokenLambda _) = "λ"
   show (TokenUpperLambda _) = "Λ"
+  show (TokenAt _) = "@"
   show (TokenLParen _) = "("
   show (TokenRParen _) = ")"
   show (TokenLBracket _) = "["
@@ -335,6 +338,7 @@ instance Located Token where
   getSpan (TokenLinArrow p) = p
   getSpan (TokenLambda p) = p
   getSpan (TokenUpperLambda p) = p
+  getSpan (TokenAt p) = p
   getSpan (TokenLParen p) = p
   getSpan (TokenRParen p) = p
   getSpan (TokenLBracket p) = p

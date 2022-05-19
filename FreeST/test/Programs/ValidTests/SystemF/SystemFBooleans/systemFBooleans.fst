@@ -15,7 +15,7 @@ falseC : BoolC
 falseC = Λ a => λ t:a -> λ f:a -> f
 
 notC : BoolC -> BoolC
-notC = λ b: BoolC -> Λ a => λ t:a -> λ f:a -> b [a] f t
+notC = λ b: BoolC -> Λ a => λ t:a -> λ f:a -> b  @a f t
 
 -- Abbreviated versions of the above
 
@@ -28,34 +28,34 @@ falseC' : BoolC
 falseC' _ f = f
 
 notC' : BoolC -> BoolC
-notC' b = Λ a => λ t:a f:a -> b [a] f t
+notC' b = Λ a => λ t:a f:a -> b  @a f t
 
 -- Destructor
 
 cond : ∀ a . BoolC -> a -> a -> a
-cond b e1 e2 = b [a] e1 e2
+cond b e1 e2 = b  @a e1 e2
 
 -- Boolean ops based on the conditional
 
 notC'' : BoolC -> BoolC
-notC'' b = cond [BoolC] b falseC trueC
+notC'' b = cond  @BoolC b falseC trueC
 
 orC : BoolC -> BoolC -> BoolC
-orC b1 b2 = cond [BoolC] b1 trueC b2
+orC b1 b2 = cond  @BoolC b1 trueC b2
 
 andC : BoolC -> BoolC -> BoolC
-andC b1 b2 = cond [BoolC] b1 b2 falseC
+andC b1 b2 = cond  @BoolC b1 b2 falseC
 
 -- Testing
 
 toBool : BoolC -> Bool
-toBool b = b [Bool] True False
+toBool b = b  @Bool True False
 
 toBit : BoolC -> Int
-toBit b = b [Int] 1 0
+toBit b = b  @Int 1 0
 
 ifInt : BoolC -> Int -> Int -> Int
-ifInt = cond [Int]
+ifInt = cond  @Int
 
 -- main : Int
 -- main = ifInt (notC trueC) 1 2

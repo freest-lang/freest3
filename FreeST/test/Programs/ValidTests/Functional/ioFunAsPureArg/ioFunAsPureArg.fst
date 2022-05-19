@@ -1,7 +1,7 @@
 main : Bool
 main =
   let (s, r) = new !Int in
-  let _ = fork[Skip] $ sender s 5 in
+  let _ = fork @Skip $ sender s 5 in
   if (div (f r) 2) == 5 then
     True
   else

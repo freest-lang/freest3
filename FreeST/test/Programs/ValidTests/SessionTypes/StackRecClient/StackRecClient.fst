@@ -20,7 +20,7 @@ type NEStack : 1S = &{Push: ?Int; NEStack; NEStack, Pop: !Int}
 eStack : forall a: 1S . EStack;a -> a
 eStack c =
   match c with {
-    Push c -> let (x, c) = receive c in eStack[a] (neStack[EStack;a] x c),
+    Push c -> let (x, c) = receive c in eStack @a (neStack @(EStack ; a) x c),
     End  c -> c
   }
 
@@ -28,7 +28,7 @@ eStack c =
 neStack : forall a: 1S . Int -> NEStack;a -> a
 neStack x c =
   match c with {
-    Push c -> let (y, c) = receive c in neStack[a] x (neStack[NEStack;a] y c),
+    Push c -> let (y, c) = receive c in neStack @a x (neStack @(NEStack ; a) y c),
     Pop  c -> send x c
   }
 
@@ -49,12 +49,12 @@ pop c =
 -- A finite client
 reverseThree : dualof EStack -> Skip
 reverseThree c =
-  pushE  [Skip] 5 c &
-  pushNE [dualof EStack] 6 &
-  pushNE [dualof NEStack ; dualof EStack] 7 &
-  pop    [dualof NEStack ; dualof NEStack ; dualof EStack] &
-  pop    [dualof NEStack ; dualof EStack] &
-  pop    [dualof EStack] &
+  pushE   @Skip 5 c &
+  pushNE  @(dualof EStack) 6 &
+  pushNE  @(dualof NEStack ; dualof EStack) 7 &
+  pop     @(dualof NEStack ; dualof NEStack ; dualof EStack) &
+  pop     @(dualof NEStack ; dualof EStack) &
+  pop     @(dualof EStack) &
   select End
 
 -- A recursive client working on a nonempty stack
@@ -63,22 +63,22 @@ reverseNE n c =
   if n == 0
   then c
   else
-    pushNE [a] n c &
-    reverseNE [dualof NEStack ; a] (n - 1) &
-    pop [dualof NEStack ; a]
+    pushNE  @a n c &
+    reverseNE  @(dualof NEStack ; a) (n - 1) &
+    pop  @(dualof NEStack ; a)
 
 -- A generic client working on an empty stack
 reverseE : Int -> dualof EStack -> Skip
 reverseE n c =
-  pushE [Skip] n c &
-  reverseNE [dualof EStack] (n-1) &
-  pop [dualof EStack] &
+  pushE  @Skip n c &
+  reverseNE  @(dualof EStack) (n-1) &
+  pop  @(dualof EStack) &
   select End
 
 main : Skip
 main =
   let (r, w) = new EStack in
-  fork [Skip] $ eStack [Skip] r;
+  fork  @Skip $ eStack  @Skip r;
   reverseE 10 w
   -- reverseThree w
 

@@ -10,7 +10,7 @@ transform list c =
         List i rest ->
             let c = select ListC c in
             let c = send i c in
-            let (rest, c) = transform[?Int;a] rest c in
+            let (rest, c) = transform @(?Int ; a) rest c in
             let (y, c) = receive c in
             (List y rest, c)
     }
@@ -23,7 +23,7 @@ listSum c =
             (0, c),
         ListC c ->
             let (x, c) = receive c in
-            let (rest, c) = listSum[!Int;a] c in
+            let (rest, c) = listSum @(!Int ; a) c in
             let c = send (x + rest) c in
             (x+rest,c)
     }
@@ -34,6 +34,6 @@ aList = List 5 (List 4 (List 3 (List 2 (List 1 End))))
 main : IntList
 main =
     let (w, r) = new (rec x: 1S. +{EndC: Skip, ListC: !Int;x;?Int}) in
-    let _ = fork[(Int, Skip)] $ listSum[Skip] r in
-    let (l, _) = transform[Skip] aList w in
+    let _ = fork @(Int, Skip) $ listSum @Skip r in
+    let (l, _) = transform @Skip aList w in
     l

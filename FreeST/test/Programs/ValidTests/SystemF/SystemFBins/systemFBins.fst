@@ -36,10 +36,10 @@ fifteen : Bin
 fifteen z s0 s1 = s1 $ s1 $ s1 $ s1 $ z -- 11111
 
 isZero : Bin -> Bool
-isZero n = n [Bool] True (λ_:Bool -> False) (λ_:Bool -> False)
+isZero n = n  @Bool True (λ_:Bool -> False) (λ_:Bool -> False)
 
 toInt : Bin -> Int
-toInt n = n [Int] 0 (λx:Int -> 2 * x) (λx:Int -> 2 * x + 1)
+toInt n = n  @Int 0 (λx:Int -> 2 * x) (λx:Int -> 2 * x + 1)
 
 main : Bool
 main = isZero fifteen

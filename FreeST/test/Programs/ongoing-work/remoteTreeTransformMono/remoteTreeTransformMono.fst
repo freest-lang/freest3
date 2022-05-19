@@ -68,8 +68,8 @@ treeSum c =
     LeafC c -> (0, c),
     NodeC c ->
       let (x, c) = receive c in
-      let (l, c) = treeSum[(rec x: 1S. &{LeafC: Skip, NodeC: ?Int;x;x;!Int});!Int;α] c in
-      let (r, c) = treeSum[!Int;α] c in
+      let (l, c) = treeSum @((rec x: 1S. &{LeafC: Skip, NodeC: ?Int;x;x;!Int});!Int;α) c in
+      let (r, c) = treeSum @(!Int) @α c in
       let c    = send c (x + l + r) in
       (x + l + r, c)
   }
@@ -82,6 +82,6 @@ main =
   let (w, r) = new (rec x: 1S. +{LeafC: Skip, NodeC: !Int;x;x;?Int}) in
 --  let t, w = fork (transform[Skip] aTree w) in
 --  let n, r = treeSum[Skip] r in
-  let _ = fork (treeSum[Skip] r) in
+  let _ = fork (treeSum @Skip r) in
   let (t, _) = transformTree aTree w in
   t

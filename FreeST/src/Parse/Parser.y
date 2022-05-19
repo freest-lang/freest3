@@ -47,6 +47,7 @@ import           System.FilePath
   '1->'     {TokenLinArrow _}
   lambda   {TokenLambda _}
   Lambda   {TokenUpperLambda _}
+  '@'      {TokenAt _}
   Skip     {TokenSkip _}
   '('      {TokenLParen _}
   ')'      {TokenRParen _}
@@ -225,8 +226,8 @@ App :: { E.Exp }
   | select Constructor             {% mkSpanSpan $1 $2 >>= \s -> mkSpan $2 >>=
                                        \s1 -> pure $ E.App s (E.Var s (mkVar s1 "select")) (E.Var s1 $2)
                                    }
-  | TApp ']'                       { $1 }
   | Primary                        { $1 }
+  | TApp                           { $1 }
    
 Primary :: { E.Exp }
   : INT                            {% let (TokenInt p x) = $1 in flip E.Int x `fmap` liftModToSpan p }
@@ -258,8 +259,7 @@ TAbs :: { E.Exp }
       }
 
 TApp :: { E.Exp }
-  : App '[' Type     {% mkSpanSpan $1 $3 >>= \s -> pure $ E.TypeApp s $1 $3 }
-  | TApp ',' Type    {% mkSpanSpan $1 $3 >>= \s -> pure $ E.TypeApp s $1 $3 }
+  : App '@' Type     {% mkSpanSpan $1 $3 >>= \s -> pure $ E.TypeApp s $1 $3 }
 
 Tuple :: { E.Exp }
   : Exp           { $1 }

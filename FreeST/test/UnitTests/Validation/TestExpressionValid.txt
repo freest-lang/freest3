@@ -30,7 +30,7 @@ Int
 Int
 
 -- id
-(Λa: *T => λx:a → x)[Int] 5
+(Λa: *T => λx:a → x) @Int 5
 Int
 
 -- Tuple destructor
@@ -67,10 +67,10 @@ Int
 Λ a b => λ x:a -> λ y:b -> x
 ∀ a b . a -> b -> a
 
-λ n:(∀ a . (a -> a) -> a -> a) -> Λ a => λ s:(a -> a) z:a -> s (n [a] s z)
+λ n:(∀ a . (a -> a) -> a -> a) -> Λ a => λ s:(a -> a) z:a -> s (n @a s z)
 (∀ a . (a -> a) -> a -> a) -> (∀ a . (a -> a) -> a -> a)
 
-(Λa b => λx:a y:b -> Λc => λz:(a -> b -> c) -> z x y) [Int, Bool]
+(Λa b => λx:a y:b -> Λc => λz:(a -> b -> c) -> z x y) @Int @Bool
 Int -> Bool -> ∀c . (Int -> Bool -> c) -> c
 
 
@@ -87,5 +87,5 @@ Int
 (\_:(rec x: *S. Skip, Skip) -> λy:Int -> y) (new Skip) 23
 Int
 
-(\_:Skip -> λy:Int -> y) (fst [Skip, Skip](new Skip)) 23
+(\_:Skip -> λy:Int -> y) (fst @Skip @Skip (new Skip)) 23
 Int

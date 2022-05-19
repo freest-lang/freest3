@@ -24,7 +24,7 @@ type TermChannel : 1S  = +{
 -- return the value on the same channel.
 computeService : dualof TermChannel;!Int -> ()
 computeService c =
-  let (n1, c1) = receiveEval[!Int;Skip] c in
+  let (n1, c1) = receiveEval @(!Int ; Skip) c in
   send n1 c1 &
   (\_:Skip -> ())
 
@@ -37,12 +37,12 @@ receiveEval c =
     Const c ->
       receive c,
     Add c ->
-      let (n1, c) = receiveEval[dualof TermChannel;a] c in
-      let (n2, c) = receiveEval[a] c in
+      let (n1, c) = receiveEval @(dualof TermChannel ; a) c in
+      let (n2, c) = receiveEval @a c in
       (n1 + n2, c),
     Mult c ->
-      let (n1, c) = receiveEval[dualof TermChannel;a] c in
-      let (n2, c) = receiveEval[a] c in
+      let (n1, c) = receiveEval @(dualof TermChannel ; a) c in
+      let (n2, c) = receiveEval @a c in
       (n1 * n2, c)
   }
 
@@ -57,10 +57,10 @@ client c = select Add c
         & select Const
         & send 9
         & receive
-        & fst[Int][Skip]
+        & fst @Int @Skip
 
 main : Int
 main =
   let (w, r)  = new dualof TermChannel;!Int in
-  fork[()] (computeService w);
+  fork @() (computeService w);
   client r

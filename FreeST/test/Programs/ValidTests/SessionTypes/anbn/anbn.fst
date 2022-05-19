@@ -23,7 +23,7 @@ type S1 : 1S = +{A: S1; +{B: Skip}, B: Skip}
 client : Int -> S0 -> ()
 client n c =
   let c = select A c in
-  let _ = client'[Skip] (n - 1) c in
+  let _ = client' @Skip (n - 1) c in
   ()
 
 -- for each A selected a B is also selected
@@ -34,14 +34,14 @@ client' n c =
     select B c                                  -- a
   else
     let c = select A c in                       -- S1; +{B: Skip}; a
-    let c = client'[+{B: Skip}; a] (n - 1) c in -- +{B: Skip}; a
+    let c = client' @(+{B: Skip} ; a) (n - 1) c in -- +{B: Skip}; a
     select B c                                  -- a
 
 -- The server offers the choice composed by A
 server : dualof S0 -> Skip
 server c =
   match c with {
-    A c -> server'[Skip] c
+    A c -> server' @Skip c
   }
 
 -- For each A selected, a choice for B is also offered
@@ -49,7 +49,7 @@ server' : forall a : 1S . dualof S1; a -> a
 server' c =
   match c with {
     A c ->     -- (rec x: 1S. &{A: x; &{B: Skip}, B: Skip})) ; &{B: Skip}
-      (let c = server'[&{B: Skip}; a] c in  -- &{B: Skip}; a
+      (let c = server' @(&{B: Skip};a) c in  -- &{B: Skip}; a
        match c with {
          B c -> c
        }),                                  -- a
@@ -60,5 +60,5 @@ server' c =
 main : Skip
 main =
   let (w, r) = new S0 in
-  fork[()] $ client 25 w;
+  fork @() $ client 25 w;
   server r

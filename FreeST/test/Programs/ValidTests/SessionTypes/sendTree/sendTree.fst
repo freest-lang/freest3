@@ -27,8 +27,8 @@ sendTree t c =
     Node x l r ->
       let c = select Node c in
       let c = send x c in
-      let c = sendTree[(rec x: 1S. +{Leaf: Skip, Node: !Int;x;x});a] l c in
-      sendTree[a] r c
+      let c = sendTree @((rec x: 1S. +{Leaf: Skip, Node: !Int;x;x});a) l c in
+      sendTree @a r c
   }
 
 receiveTree : forall a : 1S . (rec x: 1S. &{Leaf: Skip, Node: ?Int;x;x}); a -> (Tree, a)
@@ -38,8 +38,8 @@ receiveTree c =
       (Leaf, c),
     Node c ->
       let (x, c) = receive c in
-      let (left, c) = receiveTree [(rec x: 1S. &{Leaf: Skip, Node: ?Int;x;x});a] c in
-      let (right, c) = receiveTree[a] c in
+      let (left, c) = receiveTree @((rec x: 1S. &{Leaf: Skip, Node: ?Int;x;x});a) c in
+      let (right, c) = receiveTree @a c in
       (Node x left right, c)
   }
 
@@ -47,6 +47,6 @@ main : Tree
 main =
   let inTree = Node 7 (Node 5 Leaf Leaf) (Node 9 (Node 11 Leaf Leaf) (Node 15 Leaf Leaf)) in
   let (writer, reader) = new (rec x: 1S . +{Leaf: Skip, Node: !Int;x;x}) in
-  let w = fork[Skip] (sendTree[Skip] inTree writer) in
-  let (outTree, r) = receiveTree[Skip] reader in
+  let w = fork @Skip (sendTree @Skip inTree writer) in
+  let (outTree, r) = receiveTree @Skip reader in
   outTree
