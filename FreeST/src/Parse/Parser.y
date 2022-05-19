@@ -161,7 +161,7 @@ NL :: { () }
 
 Decl :: { () }
   -- Function signature
-  : ProgVar ':' Type {% checkDupProgVarDecl $1 >> addToVEnv $1 $3 }
+  : ProgVarList ':' Type {% forM_ $1 (\x -> checkDupProgVarDecl x >> addToVEnv x $3) }
   -- Function declaration
   | ProgVar ProgVarWildSeq '=' Exp {% checkDupFunDecl $1 >> addToPEnv $1 $2 $4 }
   -- Type abbreviation
@@ -174,6 +174,10 @@ Decl :: { () }
       mapM_ (\(c, t) -> addToVEnv c t) bs
       uncurry addToTEnv $2 (T.Almanac (getSpan a) T.Variant (Map.fromList bs))
     }
+
+ProgVarList :: { [Variable] }
+  : ProgVar                 { [$1] }
+  | ProgVar ',' ProgVarList { $1 : $3}
 
 TypeDecl :: { T.Type }
   : '=' Type { $2 }
