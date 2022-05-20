@@ -22,7 +22,7 @@ intBoolPair = pair  @Int @Bool
 
 main : Char
 main = snd'  @Int @Char $
-       fst'  @(∀c:TU . (Int -> Char -> c) -> c)  @Bool $
-       pair  @(∀c:TU . (Int -> Char -> c) -> c)  @Bool (pair  @Int @Char 5 'c') False
+       fst'  @(∀c:*T . (Int -> Char -> c) -> c)  @Bool $
+       pair  @(∀c:*T . (Int -> Char -> c) -> c)  @Bool (pair  @Int @Char 5 'c') False
 
 -- main = snd' [Int] [Bool] $ pair [Int] [Bool] 5 False
