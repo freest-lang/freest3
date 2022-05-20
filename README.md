@@ -130,11 +130,11 @@ To add a valid program test follow the steps below:
    represents the test category
 2. Create a new directory to add the test files (i.e. `test/`)
 3. Under the directory created on step two, create:
- 3.1. A FreeST program:
-  3.1.1. A single FreeST file with the same name of the directory created on step 2 (i.e. `test.fst`)
-  3.2.2. A program with several modules (the main file must also have the same
-  name of the directory created on step 2).
- 3.2. An expected file (with the same name) with the expected result (i.e. `test.expected`).
+   1. A FreeST program:
+      1. A single FreeST file with the same name of the directory created on step 2 (i.e. `test.fst`)
+      2. A program with several modules (the main file must also have the same name of the directory created on step 2).
+   2. An expected file (with the same name) with the expected result (i.e. `test.expected`).
+
 
 The contents of the ".expected" test file may be:
   - \<divergent\>, if the computation do not end.
