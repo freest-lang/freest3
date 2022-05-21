@@ -4,27 +4,26 @@ Description : Examples from TAPL, Chapter 23, Universal Types
 Copyright   : (c) Vasco T. Vasconcelos, 31 dec 2020
 -}
 
-five : Int
+five, seven, thirteen : Int
+
 five = id  @Int 5
 
-double : ∀ a . (a -> a) -> a -> a
+double, quadruple : ∀ a . (a -> a) -> a -> a
+
 double = Λ a => λ f:(a->a) x:a -> f (f x)
+
+quadruple = Λ a => λ f:(a->a) -> double  @(a -> a) (double  @a) f
 
 doubleInt : (Int -> Int) -> Int -> Int
 doubleInt = double  @Int
 
-seven : Int
 seven = doubleInt (λ x:Int -> x + 2) 3
 
 doubleIntArrowInt :
   ((Int -> Int) -> (Int -> Int)) -> (Int -> Int) -> (Int -> Int)
 doubleIntArrowInt = double  @(Int -> Int)
 
-thirteen : Int
 thirteen = doubleIntArrowInt doubleInt (λ x:Int -> x + 2) 5
-
-quadruple : ∀ a . (a -> a) -> a -> a
-quadruple = Λ a => λ f:(a->a) -> double  @(a -> a) (double  @a) f
 
 {-
 Note: One cannot apply eta-reduction in the code above to get rid

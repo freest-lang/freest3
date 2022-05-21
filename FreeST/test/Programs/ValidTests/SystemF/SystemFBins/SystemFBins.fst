@@ -14,25 +14,20 @@ European Mathematical Society, 2011
 
 type Bin = ∀a . a -> (a -> a) -> (a -> a) -> a
 
-zero : Bin
+zero, zero', one, two, three, four, fifteen : Bin
+
 zero z s0 s1 = z
 
-zero' : Bin
 zero' z s0 s1 = s0 z
 
-one : Bin
 one z s0 s1 = s1 z
 
-two : Bin
 two z s0 s1 = s0 $ s1 z -- 10
 
-three : Bin
 three z s0 s1 = s1 $ s1 z -- 11
 
-four : Bin
 four z s0 s1 = s0 $ s0 $ s1 $ z -- 100
 
-fifteen : Bin
 fifteen z s0 s1 = s1 $ s1 $ s1 $ s1 $ z -- 11111
 
 isZero : Bin -> Bool

@@ -59,10 +59,10 @@ treeSum c =
       (x + l + r, c)
   }
 
-aTree : Tree
+aTree, main : Tree
+
 aTree = Node 1 (Node 2 (Node 8 Leaf Leaf) (Node 3 (Node 5 Leaf Leaf) (Node 4 Leaf Leaf))) (Node 6 Leaf (Node 7 Leaf Leaf))
 
-main : Tree
 main =
   let (w, r) = new TreeC in
   fork @(Int, Skip) (treeSum  @Skip r );

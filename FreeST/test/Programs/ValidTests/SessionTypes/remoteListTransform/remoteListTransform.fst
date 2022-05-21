@@ -28,10 +28,10 @@ listSum c =
             (x+rest,c)
     }
 
-aList : IntList
+aList, main : IntList
+
 aList = List 5 (List 4 (List 3 (List 2 (List 1 End))))
 
-main : IntList
 main =
     let (w, r) = new (rec x: 1S. +{EndC: Skip, ListC: !Int;x;?Int}) in
     let _ = fork @(Int, Skip) $ listSum @Skip r in

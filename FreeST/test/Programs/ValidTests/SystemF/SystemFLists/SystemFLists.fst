@@ -20,13 +20,11 @@ cons hd tl c n = c hd (tl  @r c n)
 --          Λr => λc:(a -> r -> r) -> λn:r -> c hd (tl [r] c n) -- extended version
 
 -- Some lists
-empty : ∀r . (Char -> r -> r) -> r -> r
+empty, singleton, twoChars : ∀r . (Char -> r -> r) -> r -> r
 empty = nil  @Char
 
-singleton : ∀r . (Char -> r -> r) -> r -> r
 singleton = cons  @Char 'a' empty
 
-twoChars : ∀r . (Char -> r -> r) -> r -> r
 twoChars = cons  @Char 'b' singleton
 
 mainChars : Char
@@ -89,11 +87,11 @@ mainLength = length  @Char twoChars
 type Nat = ∀ a . (a -> a) -> a -> a
 
 -- Some nats
-zero : Nat
+zero, one, four : Nat
 zero _ z = z
-one : Nat
+
 one s z = s z
-four : Nat
+
 four s z = s $ s $ s $ s z
 
 -- replicate n x is a list of length n with x the value of every element

@@ -96,18 +96,16 @@ concatT in1 in2 out =
   }
 
 -- A few functions to write on channels
-writeLtGt : D -> Skip
+writeLtGt, writeDollar, writeLtLtGtGtLtGt, writeLtLtGtLtGtGt : D -> Skip
+
 writeLtGt c =
   select Dollar $ select Gt $ select Lt c
 
-writeDollar : D -> Skip
 writeDollar c = select Dollar c
 
-writeLtLtGtGtLtGt : D -> Skip
 writeLtLtGtGtLtGt c =
   select Dollar $ select Gt $ select Lt $ select Gt $ select Gt $ select Lt $ select Lt c
 
-writeLtLtGtLtGtGt: D -> Skip
 writeLtLtGtLtGtGt c =
   select Dollar $ select Gt $ select Gt $ select Lt $ select Gt $ select Lt $ select Lt c
 

@@ -8,10 +8,10 @@ Church Encoding _ Boolean Values
 
 type BoolC = ∀ b . b -> b -> b
 
-trueC : BoolC
+trueC, falseC : BoolC
+
 trueC = Λ a => λ t:a -> λ f:a -> t
 
-falseC : BoolC
 falseC = Λ a => λ t:a -> λ f:a -> f
 
 notC : BoolC -> BoolC
@@ -21,10 +21,10 @@ notC = λ b: BoolC -> Λ a => λ t:a -> λ f:a -> b  @a f t
 
 type BoolC' b = b -> b -> b
 
-trueC' : BoolC
+trueC', falseC': BoolC
+
 trueC' t _ = t
 
-falseC' : BoolC
 falseC' _ f = f
 
 notC' : BoolC -> BoolC
@@ -40,10 +40,9 @@ cond b e1 e2 = b  @a e1 e2
 notC'' : BoolC -> BoolC
 notC'' b = cond  @BoolC b falseC trueC
 
-orC : BoolC -> BoolC -> BoolC
+orC, andC : BoolC -> BoolC -> BoolC
 orC b1 b2 = cond  @BoolC b1 trueC b2
 
-andC : BoolC -> BoolC -> BoolC
 andC b1 b2 = cond  @BoolC b1 b2 falseC
 
 -- Testing

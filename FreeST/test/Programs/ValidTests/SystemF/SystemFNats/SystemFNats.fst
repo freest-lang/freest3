@@ -8,41 +8,37 @@ Church Encoding _ Natural Numbers
 
 type Nat = ∀ a . (a -> a) -> a -> a
 
-zero : Nat
+zero, zero', one, two, three, four : Nat
+
 zero = Λ a => λs:(a -> a) -> λz:a -> z
 
-zero' : Nat -- Abbreviated version
+-- Abbreviated version
 zero' s z = z
 
-one : Nat
 one s z = s z
 
-two : Nat
 two s z = s (s z)
 
-three : Nat
 three s z = s (s (s z))
 
-succ' : Nat -> Nat
-succ' n = Λ a => λ s:(a->a) z:a -> s (n  @a s z)
-
-four : Nat
 four = succ' three
 
-plus : Nat -> Nat -> Nat
+succ', square : Nat -> Nat
+succ' n = Λ a => λ s:(a->a) z:a -> s (n  @a s z)
+
+square n = Λ a => λ s:(a -> a) z:a -> n  @a (n  @a s) z
+
+plus, plus', times, exp : Nat -> Nat -> Nat
 plus m n = m  @Nat succ' n
 
-plus' : Nat -> Nat -> Nat
 plus' m n = Λ a => λ s:(a->a) z:a -> m  @a s (n  @a s z)
+
+times m n = Λ a => λs:(a->a) -> n  @a (m  @a s)
+
+exp m n = Λ a => λ f:(a -> a) -> n  @(a -> a) (m  @a) f
 
 isZero : Nat -> Bool
 isZero n = n  @Bool (λ_:Bool -> False) True
-
-times : Nat -> Nat -> Nat
-times m n = Λ a => λs:(a->a) -> n  @a (m  @a s)
-
-exp : Nat -> Nat -> Nat
-exp m n = Λ a => λ f:(a -> a) -> n  @(a -> a) (m  @a) f
 
 {-
 Note: One cannot apply eta-reduction in the code above to get rid
@@ -55,17 +51,13 @@ must be a value. Once we apply eta-expansion we obtain Λ a => λ f...
 which is OK for λ f... is a value.
 -}
 
-square : Nat -> Nat
-square n = Λ a => λ s:(a -> a) z:a -> n  @a (n  @a s) z
-
 -- Pairs of natural numbers for the predecessor
 
 type Pair = (Nat -> Nat -> Nat) -> Nat
 
-fst' : Pair -> Nat
+fst', snd' : Pair -> Nat
 fst' p = p (λ m:Nat _:Nat -> m)
 
-snd' : Pair -> Nat
 snd' p = p (λ _:Nat n:Nat -> n)
 
 pair : Nat -> Nat -> Pair

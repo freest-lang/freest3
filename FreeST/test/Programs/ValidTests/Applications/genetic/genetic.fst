@@ -23,32 +23,29 @@ main =
   -- Print fitness
   printString "Fitness: "; printIntLn $ fitnessAllOnes result
 
+-- Parameters
+argSeed, argPopSize, argIterPop, argIslands, argIterIsl : Int
+
 -- Initial seed for random number generation
-argSeed : Int
 argSeed = 12345
 
 -- Amount of individuals per population
-argPopSize : Int
 argPopSize = 10
 
 -- Iterations per population
-argIterPop : Int
 argIterPop = 5
 
 -- [PARALLEL] Amount of islands (each island has one population)
-argIslands : Int
 argIslands = 4
 
 -- [PARALLEL] Amount of population iteration & fittest individual sync
-argIterIsl : Int
 argIterIsl = 5
 
--- Example of a client using the sequential genetic algorithm
-clientSequential : Int
+-- Example clients using the sequential vs the parallel genetic algorithms
+clientSequential, clientParallel : Int
+
 clientSequential = geneticAlg argSeed argPopSize argIterPop
 
--- Example of a client using the parallel genetic algorithm
-clientParallel : Int
 clientParallel = fst @Int @Skip $ receive $ initIslands argSeed argIslands argPopSize argIterPop argIterIsl
 
 

@@ -37,18 +37,18 @@ inBool : Bool -> IntPlusBool
 inBool b = inr  @Int  @Bool b
 
 -- convert a Int+Bool sum into an Int
-main : Int
+main, toInt : Int
+
 main = fromL  @Int @Bool (inInt 324) 0
 
 -- same w/o using fromL
-toInt : Int
 toInt = cases  @Int @Bool @Int (inInt 324) (id  @Int) (λ_:Bool -> 0)
 
 -- convert a Int+Bool sum into a Bool
-main' : Bool
+main', toBool : Bool
+
 main' = fromR  @Int @Bool (inBool True) False
 
-toBool : Bool
 toBool = cases  @Int @Bool @Bool (inBool True) (λ_:Int -> False) (id  @Bool)
 
 

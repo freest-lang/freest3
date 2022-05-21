@@ -1,9 +1,9 @@
 
 -- input 
-input : IntList
+input, layers : IntList
+
 input = List 1 $ List 50 $ List 100 End
 
-layers : IntList
 layers = List 50 $ List 50 $ List 50 End
 
 seed : Int

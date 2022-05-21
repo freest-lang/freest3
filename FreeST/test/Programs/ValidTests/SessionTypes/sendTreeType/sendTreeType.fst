@@ -36,10 +36,10 @@ read c =
       (Node x left right, c)
   }
 
-aTree : Tree
+aTree, main : Tree
+
 aTree = Node 7 (Node 5 Leaf Leaf) (Node 9 (Node 11 Leaf Leaf) (Node 15 Leaf Leaf))
 
-main : Tree
 main =
   let (writer, reader) = new TreeChannel in
   fork  @Skip $ write  @Skip aTree writer;

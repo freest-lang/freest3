@@ -60,12 +60,9 @@ quicksort list direction =
       listAppend (quicksort smaller direction) (Cons x (quicksort greater direction))
   }
 
--- quicksort option to sort by ascending
-asc : Int -> Int -> Bool
+-- quicksort option to sort by ascending or descending
+asc, desc : Int -> Int -> Bool
 asc x i = x < i
-
--- quicksort option to sort by descending
-desc : Int -> Int -> Bool
 desc x i = not (asc x i)
 
 -- Facade function to quicksortDivide
@@ -93,14 +90,13 @@ listAppend l ll =
 
 -- ==================== Client ====================
 
--- Simple client using Asc option
-ascClient : OrderingChannel -> IntList
+-- Simple clients using Asc or Desc options
+ascClient, descClient : OrderingChannel -> IntList
+
 ascClient c =
   let (c, rList) = order @Skip c aList True in
   rList
 
--- Simple client using Desc option
-descClient : OrderingChannel -> IntList
 descClient c =
   let (c, rList) = order @Skip c aList False in
   rList

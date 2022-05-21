@@ -68,12 +68,12 @@ headSingleton l =
                 }
   }
 
-err : Int
+err, main : Int
+
 err = -1
 
 -- A sample interaction: evaluating an arithmetic expression;
 -- expect 26 on the console.
-main : Int
 main =
   let (c, s) = new rec x: 1S. +{Add: x, Mult: x, Const: !Int;x, EOS: ?Int} in
   let _ = fork @Skip (evaluate s Nil) in
