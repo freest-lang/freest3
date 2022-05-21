@@ -22,6 +22,6 @@ rcvInt acc c =
 main : Int
 main =
   let (w, r) = new Choice in
-  let _ = fork @Skip (sendInt 10 w) in
+  let _ = fork @Skip \_:() 1-> sendInt 10 w in
   let (i, _) = rcvInt 1 r in
   i

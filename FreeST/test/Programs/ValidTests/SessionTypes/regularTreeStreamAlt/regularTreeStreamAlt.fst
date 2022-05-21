@@ -3,7 +3,7 @@
 main : Tree
 main =
   let (w, r) = new TreeC in
-  fork @() $ treeClient w;
+  fork @() (\_:() 1-> treeClient w);
   --fork @() $ badClientPrematureEnd w;
   --fork @() $ badClientSendExtraValue w;
   --fork @() $ badClientSendExtraLeaf w;

@@ -15,5 +15,5 @@ rcvInt c =
 main : Int
 main =
   let (w,r) = new DD in
-  let _ = fork @Skip (sendInt w) in
+  let _ = fork @Skip \_:() 1-> (sendInt w) in
   rcvInt r

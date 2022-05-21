@@ -78,7 +78,7 @@ typeList =
   , (mkVar p "printString", readT "String -> ()")
   , (mkVar p "printStringLn", readT "String -> ()")
   -- Fork
-  , (mkVar p "fork", readT "∀a:1T. a -> ()")
+  , (mkVar p "fork", readT "∀a:*T. (() 1-> a) -> ()")
   -- Error
   , (mkVar p "error", readT "∀a:*T . String -> a")
   -- Session ops

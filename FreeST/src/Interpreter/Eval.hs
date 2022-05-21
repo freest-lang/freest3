@@ -49,7 +49,7 @@ eval tEnv ctx eenv (E.App _ e1 e2) = eval tEnv ctx eenv e1 >>= \case
   (Closure x e ctx') -> do
     !v <- eval tEnv ctx eenv e2
     eval tEnv (Map.insert x v ctx') eenv e
-  Fork -> forkIO (void $ eval tEnv ctx eenv e2) $> Unit
+  Fork -> forkIO (void $ eval tEnv ctx eenv (E.App (getSpan e2) e2 (E.Unit (getSpan e2)))) $> Unit
   (PrimitiveFun f) -> do
     !v <- eval tEnv ctx eenv e2
     case f v of

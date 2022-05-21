@@ -28,7 +28,7 @@ main, aList : List
 
 main =
   let (x, y) = new ListOut in
-  let _      = fork @Skip (sendList @Skip x aList) in
+  let _      = fork @Skip \_:() 1-> sendList @Skip x aList in
   let (list, _) = rcvList @Skip y in
   list
 

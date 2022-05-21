@@ -41,5 +41,5 @@ readIntStream = consumeStream @Int
 main : ()
 main =
   let (w, r) = new IntStream in
-  fork @() (writeIntStream w);
+  fork @() (\_:() 1-> writeIntStream w);
   readIntStream r

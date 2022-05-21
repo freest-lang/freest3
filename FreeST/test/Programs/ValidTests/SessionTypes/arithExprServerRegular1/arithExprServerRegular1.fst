@@ -76,5 +76,5 @@ err = -1
 -- expect 26 on the console.
 main =
   let (c, s) = new rec x: 1S. +{Add: x, Mult: x, Const: !Int;x, EOS: ?Int} in
-  let _ = fork @Skip (evaluate s Nil) in
+  let _ = fork @Skip \_:() 1-> evaluate s Nil in
   client c

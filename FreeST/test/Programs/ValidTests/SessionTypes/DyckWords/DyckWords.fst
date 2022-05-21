@@ -114,8 +114,8 @@ mainForward : Skip
 mainForward =
   let (out1, in1) = new D in
   let (out2, in2) = new D in
-  fork @Skip $ writeLtLtGtGtLtGt out1;
-  fork @(Skip, Skip) (forwardD @Skip @Skip in1 out2);
+  fork @Skip (\_:() 1-> writeLtLtGtGtLtGt out1);
+  fork @(Skip, Skip) (\_:() 1-> forwardD @Skip @Skip in1 out2);
   readD @Skip in2
 
 -- Putting it all together: (out1 | out2) --> in1-in2-out3 --> in3
@@ -124,7 +124,7 @@ main =
   let (out1, in1) = new D in
   let (out2, in2) = new D in
   let (out3, in3) = new D in
-  fork @Skip (writeLtLtGtGtLtGt out1);
-  fork @Skip (writeLtLtGtLtGtGt out2);
-  fork @(Skip, (Skip, Skip)) (concatD @Skip @Skip @Skip in1 in2 out3);
+  fork @Skip (\_:() 1-> writeLtLtGtGtLtGt out1);
+  fork @Skip (\_:() 1-> writeLtLtGtLtGtGt out2);
+  fork @(Skip, (Skip, Skip)) (\_:() 1-> concatD @Skip @Skip @Skip in1 in2 out3);
   readD @Skip in3

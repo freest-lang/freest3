@@ -78,7 +78,7 @@ reverseE n c =
 main : Skip
 main =
   let (r, w) = new EStack in
-  fork  @Skip $ eStack  @Skip r;
+  fork  @Skip (\_:() 1-> eStack  @Skip r);
   reverseE 10 w
   -- reverseThree w
 

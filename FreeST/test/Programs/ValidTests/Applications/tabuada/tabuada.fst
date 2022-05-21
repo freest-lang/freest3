@@ -101,7 +101,7 @@ addToList i l =
 main : IntList
 main =
   let (r, w) = new rec x: 1S. &{TabuadaSimples: ?Int; x, TabuadaAte: ?Int; ?Int; x, MultiplosEntre: ?Int; ?Int; ?Int; x, Solucao: !Bool; !Int; x, Fim: Skip} in
-  let _      = fork @() (initTabuadaServer r) in
+  let _      = fork @() \_:() 1-> initTabuadaServer r in
   let c      = select TabuadaSimples w in
   let c      = send 4 c in
   let (result, c) = receiveList c in

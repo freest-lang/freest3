@@ -12,7 +12,7 @@ More info on json at https://www.json.org
 main : Object
 main =
   let (w, r) = new ObjectChannel in
-  fork  @Skip $ writeObject @Skip json w;
+  fork  @Skip (\_:() 1-> writeObject @Skip json w);
   fst  @Object @Skip $ readObject  @Skip r
 
 -- A dataype for JSON

@@ -49,7 +49,7 @@ aList = Cons 5 (Cons 3 (Cons 7 (Cons 1 Nil)))
 
 main : Int
 main = let (w, r) = new IListW in
-       fork @Skip $ iListW  @Skip aList w;
+       fork @Skip (\_:() 1-> iListW  @Skip aList w);
        fst  @Int @Skip $ iLength'  @Skip r
 
 -- main : IList

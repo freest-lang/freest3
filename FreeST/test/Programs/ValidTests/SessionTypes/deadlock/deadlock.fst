@@ -25,5 +25,5 @@ main : Bool
 main =
   let (w1, r1) = new !Char;!Char in
   let (w2, r2) = new !Bool;!Bool in
-  let u = fork @Skip $ writer w1 w2 in
+  let u = fork @Skip \_:() 1-> writer w1 w2 in
   reader r1 r2

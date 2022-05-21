@@ -47,6 +47,6 @@ main : Tree
 main =
   let inTree = Node 7 (Node 5 Leaf Leaf) (Node 9 (Node 11 Leaf Leaf) (Node 15 Leaf Leaf)) in
   let (writer, reader) = new (rec x: 1S . +{Leaf: Skip, Node: !Int;x;x}) in
-  let w = fork @Skip (sendTree @Skip inTree writer) in
+  let w = fork @Skip \_:() 1-> sendTree @Skip inTree writer in
   let (outTree, r) = receiveTree @Skip reader in
   outTree

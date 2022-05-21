@@ -10,5 +10,5 @@ write c n =
 main : Char
 main =
   let (r, w) = new !Int in
-  let _ = fork @(Int, Skip) $ receive w in
+  let _ = fork @(Int, Skip) \_:() 1-> receive w in
   write r 0
