@@ -44,7 +44,7 @@ type Errors = [ErrorType]
 type Imports = Set.Set FilePath 
 
 type ParseEnv  = Map.Map Variable ([Variable], Exp)
-type ParseEnvP = Map.Map Variable ([Pattern], Exp)
+type ParseEnvP = Map.Map Variable [([Pattern], Exp)]
 
 data FreestS = FreestS {
     runOpts    :: RunOpts
@@ -55,10 +55,11 @@ data FreestS = FreestS {
   , warnings   :: Warnings
   , errors     :: Errors
   , nextIndex  :: Int
-  , parseEnv   :: ParseEnv -- "discarded" after elaboration
+  , parseEnv   :: ParseEnv  -- "discarded" after elaboration
+  , parseEnvP  :: ParseEnvP -- for pattern elimination
   , moduleName :: Maybe FilePath
   , imports    :: Imports
-  } deriving Show -- FOR DEBUG purposes
+  } -- deriving Show -- FOR DEBUG purposes
 
 type FreestState = State FreestS
 
@@ -74,6 +75,7 @@ initialState = FreestS { runOpts    = defaultOpts
                        , errors     = []
                        , nextIndex  = 0
                        , parseEnv   = Map.empty
+                       , parseEnvP  = Map.empty
                        , moduleName = Nothing
                        , imports    = Set.empty
                        }
@@ -93,6 +95,15 @@ getPEnv = gets parseEnv
 setPEnv :: ParseEnv -> FreestState ()
 setPEnv parseEnv = modify (\s -> s { parseEnv })
 
+-- | Parse Env P (with Patterns)
+  -- I have to build PEnvP to then translate into just PEnv
+addToPEnvP :: MonadState FreestS m => Variable -> [Pattern] -> Exp -> m ()
+addToPEnvP x xs e =
+  modify (\s -> s 
+    { parseEnvP = Map.insertWith (++) x [(xs, e)] (parseEnvP s) })
+
+getPEnvP :: FreestState ParseEnvP
+getPEnvP = gets parseEnvP
 
 -- | NEXT VAR
 
