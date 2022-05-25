@@ -15,14 +15,32 @@ receiveUn ch = fst[a, *?a] $ receive ch
 sendUn : forall a:TL . a -> *!a -o ()
 sendUn x ch = let _ = send x ch in ()
 
+runWith : forall a:SL . (dualof a -o ()) -> a
+runWith f =
+    let (c, s) = new a in
+    f s;
+    c
+
+-- | Execute a function n times sequentially
+runN : forall a . Int -> (() -> a) -> ()
+runN n f =
+    if n < 0
+    then ()
+    else 
+        f ();
+        runN[a] (n-1) f
+
 -- | Create a new child process and a linear channel through which it can 
 --   communicate with its parent process.
 forkWith : forall a:SL . (dualof a -o ()) -> a
-forkWith f =
+forkWith f = --runWith[a] $ \c:dualof a -> fork (f c)
     let (c, s) = new a in
     fork $ f s;
     c
 
+-- | Fork a function n times
+forkN : forall a . Int -> (() -> a) -> ()
+forkN n f = runN[()] n (\_:() -> fork (f ()))
 
 initSession : forall a:SL . *!a -> dualof a
 initSession ch =
@@ -109,7 +127,10 @@ type ListC : SL = +{ Append: !ProductId; !Issue; !RmaNumber; ListC
 
 {- list server -}
 
-runListServer : dualof SharedList -> ()
+initList : SharedList
+initList = forkWith[SharedList] runListServer
+
+runListServer : dualof SharedList -o ()
 runListServer ch =
     runServer[ListC, List] ch runListService Nil 
 
@@ -188,6 +209,12 @@ mapHas pName map =
             else mapHas pName map'
     }
 
+fromJust : MaybeValue -> (Amount, Price)
+fromJust maybeVal =
+    case maybeVal of {
+        JustValue val -> val
+    }
+
 {- channel types -}
 
 type SharedMap : SU = *?MapC
@@ -205,9 +232,15 @@ type MaybeValueC : SL = &{ JustVal: dualof ValueC
 
 {- map server -}
 
-runMapServer : dualof SharedMap -> ()
-runMapServer ch = 
-    runServer[MapC, Map] ch runMapService Empty
+initMap : SharedMap
+initMap = initMapWith Empty
+
+initMapWith : Map -> SharedMap
+initMapWith map = forkWith[SharedMap] (runMapServer map)
+
+runMapServer : Map -> dualof SharedMap -o ()
+runMapServer map ch = 
+    runServer[MapC, Map] ch runMapService map
 
 runMapService : Map -> dualof MapC -o Map
 runMapService map ch =
@@ -237,41 +270,49 @@ runMapService map ch =
 
 {- client functions -}
 
-put : SharedMap -> ProductName -> (Amount, Price) -> ()
-put ch pName val =
+putUn : SharedMap -> ProductName -> (Amount, Price) -> ()
+putUn ch pName val =
+    sink[Skip] $ 
+    select Close $
+    putLin pName val $ 
+    receiveUn[MapC] ch 
+
+getUn : SharedMap -> ProductName -> MaybeValue
+getUn ch pName =
+    let (maybeVal, c) = getLin pName $ receiveUn[MapC] ch in
+    sink[Skip] $ select Close c;
+    maybeVal
+
+hasUn : SharedMap -> ProductName -> Bool
+hasUn ch pName = 
+    let (b, ch) = hasLin pName $ receiveUn[MapC] ch in
+    sink[Skip] $ select Close ch;
+    b
+
+putLin : ProductName -> (Amount, Price) -> MapC -o MapC
+putLin pName val ch = 
     let (amount, price) = val in
-    receiveUn[MapC] ch &
-    select Put &
+    select Put ch &
     send pName &
     send amount &
-    send price &
-    select Close &
-    sink[Skip]
+    send price
 
-get : SharedMap -> ProductName -> MaybeValue
-get ch pName =
-    let ch = receiveUn[MapC] ch &
-             select Get &
+getLin : ProductName -> MapC -o (MaybeValue, MapC)
+getLin pName ch =
+    let ch = select Get ch &
              send pName in
     match ch with {
         JustVal ch -> 
             let (amount, ch) = receive ch in
             let (price, ch)  = receive ch in
-            sink[Skip] $ select Close ch;
-            JustValue (amount, price),
+            (JustValue (amount, price), ch),
         NothingVal ch -> 
-            sink[Skip] $ select Close ch;
-            NothingValue
+            (NothingValue, ch)
     }
 
-has : SharedMap -> ProductName -> Bool
-has ch pName = 
-    let (b, ch) = receiveUn[MapC] ch &
-                  select Has &
-                  send pName &
-                  receive in
-    sink[Skip] $ select Close ch;
-    b
+hasLin : ProductName -> MapC -o (Bool, MapC)
+hasLin pName ch =
+    select Has ch & send pName & receive
 
 ---------------------------------- Bank ----------------------------------
 
@@ -284,28 +325,37 @@ type PaymentC : SL = !CCNumber; !CCCode
 
 {- bank worker -}
 
+
+initBank : Bank
+initBank = 
+    -- runWith[Bank] $
+    --     \bank:dualof Bank -o forkN[()] 3 (bankWorker bank)
+    let (c, s) = new Bank in
+    forkN[()] 3 (\_:() -> bankWorker s);
+    c
+
 bankWorker : dualof Bank -> ()
 bankWorker ch =
     runServer[BankService, ()] ch runBankService ()
 
 runBankService : () -> dualof BankService -o ()
 runBankService _ ch =
-    let ch = snd[Int, !PaymentC] $ receive ch in
-    let (c, s) = new PaymentC in
-    sink[Skip] $ send c ch;
-    runPayment s
+    let (price, ch) = receive ch in
+    runWith[dualof PaymentC] (\c:PaymentC -o sink[Skip] $ send c ch) &
+    runPayment price
 
-runPayment : dualof PaymentC -> ()
-runPayment ch =
-    -- mock up
+runPayment : Price -> dualof PaymentC -> ()
+runPayment _ ch =
+    -- mock up 
+    -- TODO: logging
     let (_, ch) = receive ch in
     let (_, ch) = receive ch in
     ()
 
 {- client functions -}
 
-createPayment : Bank -> Price -> PaymentC
-createPayment bank price =
+createPayment : Price -> Bank -> PaymentC
+createPayment price bank =
     let ch = receiveUn[BankService] bank in
     fst[PaymentC, Skip] $ receive $ send price ch
 
@@ -333,7 +383,7 @@ type AvailabilityC : SL = &{ Available : ?Price; CheckoutC
                            , OutOfStock: Skip
                            }
 
-type CheckoutC : SL = +{ Confirm: PaymentC
+type CheckoutC : SL = +{ Confirm: ?PaymentC
                        , Cancel : Skip
                        }
 
@@ -343,64 +393,120 @@ type CheckoutC : SL = +{ Confirm: PaymentC
 type BuyQueue = (*?dualof BuyC, *!dualof BuyC)
 type RmaQueue = (*?dualof RmaC, *!dualof RmaC)
 
-runStoreFront : dualof TechStore -> BuyQueue -> RmaQueue -> ()
-runStoreFront store buyQueue rmaQueue =
+runStoreFront : BuyQueue -> RmaQueue -> dualof TechStore -o ()
+runStoreFront buyQueue rmaQueue store =
     match initSession[TechService] store with {
         Buy ch ->
             let (c, s) = new BuyC in
             let _ = send c ch in
-            enqueue[dualof BuyC] s buyQueue;
-            runStoreFront store buyQueue rmaQueue,
+            enqueue[dualof BuyC] s buyQueue,
         Rma ch ->
             let (c, s) = new RmaC in
             let _ = send c ch in
-            enqueue[dualof RmaC] s rmaQueue;
-            runStoreFront store buyQueue rmaQueue
-    }
+            enqueue[dualof RmaC] s rmaQueue
+    };
+    runStoreFront buyQueue rmaQueue store
 
 {- buy workers -}
 
--- buyWorker : BuyQueue -> SharedMap -> Bank -> ()
--- buyWorker buyQueue map bank = 
---     let ch = dequeue[dualof BuyC] buyQueue in
---     --
---     let (pName, ch) = receive ch in
---     -- manually work with map to prevent interleaving
---     let mapS = receiveUn[MapC] map in
-    
+buyWorker : BuyQueue -> SharedMap -> Bank -> ()
+buyWorker buyQueue map bank = 
+    let ch = dequeue[dualof BuyC] buyQueue in
+    --
+    let (pName, ch) = receive ch in
+    -- manually work with map to prevent interleaving
+    let mapS = receiveUn[MapC] map in
+    let (hasP, mapS) = hasLin pName mapS in
 
---     if isNothingValue
---     then
---         sink[Skip] $  select OutOfStock ch
---     else
---         let ch = send select Available ch in
-        
-
---     --
---     buyWorker buyQueue map bank
+    if not hasP
+    then
+        sink[Skip] $ select Close mapS;
+        sink[Skip] $ select OutOfStock ch
+    else
+        let (maybeVal, mapS) = getLin pName mapS in
+        let (price, amount) = fromJust maybeVal in
+        let ch = send price $ select Available ch in
+        sink[Skip] $ 
+            match ch with {
+                Confirm ch -> send (createPayment price bank) ch,
+                Cancel ch  -> ch
+            };
+        sink[Skip] $ select Close mapS
+    ;
+    --
+    buyWorker buyQueue map bank
 
 
 
 {- rma workers -}
 
 rmaWorker : RmaQueue -> Counter -> SharedList -> ()
-rmaWorker rmaQueue counter list =
+rmaWorker rmaQueue counter rmaList =
     let ch = dequeue[dualof RmaC] rmaQueue in
     --
     let (productId, ch) = receive ch in
     let (issue    , ch) = receive ch in
     let rmaNumber = receiveUn[Int] counter in
-    append list (productId, issue, rmaNumber);
+    append rmaList (productId, issue, rmaNumber);
     sink[Skip] $ send rmaNumber ch;
     --
-    rmaWorker rmaQueue counter list
+    rmaWorker rmaQueue counter rmaList
+
+{- store setup -}
+
+setupStore : Bank -> TechStore 
+setupStore bank =
+    -- buy
+    let buyQueue = initQueue[dualof BuyC] () in
+    let stockMap = initMap in
+    forkN[()] 4 (\_:() -> buyWorker buyQueue stockMap bank);
+    -- rma
+    let rmaQueue = initQueue[dualof RmaC] () in
+    let counter = initCounter in
+    let rmaList = initList in
+    forkN[()] 2 (\_:() -> rmaWorker rmaQueue counter rmaList);
+    -- store front
+    forkWith[TechStore] $ runStoreFront buyQueue rmaQueue
+
+initialStock : Map
+initialStock = 
+    mapPut 'C' (2, 20) $
+    mapPut 'B' (3, 5 ) $
+    mapPut 'A' (1, 50) $
+    Empty
 
 
+---------------------------------- Clients ----------------------------------
+
+client0 : TechStore -> ()
+client0 ch = 
+    -- wait to be served by store
+    let store = receiveUn[TechService] ch in
+    -- go to the buy queue
+    let (buyC, _) = receive $ select Buy store in
+    -- wait & do my business
+    -- ask for product 'A'
+    let buyC = send 'A' buyC in
+    match buyC with {
+        OutOfStock _ -> (),
+        Available buyC -> 
+            let (price, buyC) = receive buyC in
+            -- buyer's price limit
+            if price > 100 
+            then sink[Skip] $ select Cancel buyC
+            else
+                let (paymentC, _) = receive $ select Confirm buyC in
+                sink[Skip] $ send 123 $ send 123123123 paymentC
+    }
+
+
+---------------------------------- Main ----------------------------------
 
 {- main -}
 
--- main : Int
--- main = 
---     let intQueue = initQueue[Int] () in
---     enqueue[Int] 1 intQueue;
---     dequeue[Int] intQueue
+main : ()
+main =
+    let bank = initBank in
+    let store = setupStore bank in
+    ()
+    -- client0 store
