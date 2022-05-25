@@ -54,6 +54,68 @@ runServer ch handle state =
 
 ---------------------------------- SharedCounter ----------------------------------
 
+{- channel types -}
+
+type StdOut  : SU = *?Printer
+type Printer : SL = +{ PrintBool    : !Bool  ; Printer
+                     , PrintBoolLn  : !Bool  ; Printer
+                     , PrintInt     : !Int   ; Printer
+                     , PrintIntLn   : !Int   ; Printer
+                     , PrintChar    : !Char  ; Printer
+                     , PrintCharLn  : !Char  ; Printer
+                     , PrintString  : !String; Printer
+                     , PrintStringLn: !String; Printer
+                     , Close        : Skip
+                     }
+
+{- server -}
+
+initStdout : StdOut
+initStdout = forkWith[StdOut] runStdout
+
+runStdout  : dualof StdOut -o ()
+runStdout stdout =
+    runServer[Printer, ()] stdout runPrinter ()
+
+runPrinter : () -> dualof Printer -o ()
+runPrinter _ printer =
+    match printer with {
+        PrintBool     printer -> aux[Bool]   printer printBool     & runPrinter (),
+        PrintBoolLn   printer -> aux[Bool]   printer printBoolLn   & runPrinter (),
+        PrintInt      printer -> aux[Int]    printer printInt      & runPrinter (),
+        PrintIntLn    printer -> aux[Int]    printer printIntLn    & runPrinter (),
+        PrintChar     printer -> aux[Char]   printer printChar     & runPrinter (),
+        PrintCharLn   printer -> aux[Char]   printer printCharLn   & runPrinter (),
+        PrintString   printer -> aux[String] printer printString   & runPrinter (),
+        PrintStringLn printer -> aux[String] printer printStringLn & runPrinter (),
+        Close         _       -> ()
+    }
+
+aux : forall a . ?a;dualof Printer -> (a -> ()) -o dualof Printer
+aux printer printFun =
+    let (x, printer) = receive printer in
+    printFun x;
+    printer
+
+{- client functions -}
+
+printGenericLin : forall a . (Printer -> !a;Printer) -> a -> Printer -> Printer
+printGenericLin sel x printer = sel printer & send x 
+
+printStringLin : String -> Printer -> Printer
+printStringLin = printGenericLin[String] (\printer:Printer -> select PrintString printer)
+
+printStringLnLin : String -> Printer -> Printer
+printStringLnLin = printGenericLin[String] (\printer:Printer -> select PrintStringLn printer)
+
+printIntLin : Int -> Printer -> Printer
+printIntLin = printGenericLin[Int] (\printer:Printer -> select PrintInt printer)
+
+printIntLnLin : Int -> Printer -> Printer
+printIntLnLin = printGenericLin[Int] (\printer:Printer -> select PrintIntLn printer)
+
+---------------------------------- SharedCounter ----------------------------------
+
 type Counter : SU = *?Int
 
 initCounter : Counter
@@ -127,21 +189,32 @@ type ListC : SL = +{ Append: !ProductId; !Issue; !RmaNumber; ListC
 
 {- list server -}
 
-initList : SharedList
-initList = forkWith[SharedList] runListServer
+initList : StdOut -> SharedList
+initList stdout = forkWith[SharedList] (runListServer stdout)
 
-runListServer : dualof SharedList -o ()
-runListServer ch =
-    runServer[ListC, List] ch runListService Nil 
+runListServer : StdOut -> dualof SharedList -o ()
+runListServer stdout ch =
+    runServer[ListC, List] ch (runListService stdout) Nil 
 
-runListService : List -> dualof ListC -o List
-runListService list ch = 
+runListService : StdOut -> List -> dualof ListC -o List
+runListService stdout list ch = 
     match ch with {
         Append ch -> 
             let (productId, ch) = receive ch in
             let (issue    , ch) = receive ch in
             let (rmaNumber, ch) = receive ch in
-            runListService (Cons (productId, issue, rmaNumber) list) ch,
+            -- logging
+            receiveUn[Printer] stdout &
+            printStringLin "RMA processed \t\t @ product id: " &
+            printIntLin    productId &
+            printStringLin ", issue: " &
+            printStringLin    issue &
+            printStringLin ", RMA id: " &
+            printIntLnLin  rmaNumber &
+            select Close &
+            sink[Skip];
+            --
+            runListService stdout (Cons (productId, issue, rmaNumber) list) ch,
         Close _ -> 
             list
     }
@@ -326,31 +399,41 @@ type PaymentC : SL = !CCNumber; !CCCode
 {- bank worker -}
 
 
-initBank : Bank
-initBank = 
+initBank : StdOut -> Bank
+initBank stdout = 
     -- runWith[Bank] $
     --     \bank:dualof Bank -o forkN[()] 3 (bankWorker bank)
     let (c, s) = new Bank in
-    forkN[()] 3 (\_:() -> bankWorker s);
+    forkN[()] 2 (\_:() -> bankWorker stdout s);
     c
 
-bankWorker : dualof Bank -> ()
-bankWorker ch =
-    runServer[BankService, ()] ch runBankService ()
+bankWorker : StdOut -> dualof Bank -> ()
+bankWorker stdout ch =
+    runServer[BankService, ()] ch (runBankService stdout) ()
 
-runBankService : () -> dualof BankService -o ()
-runBankService _ ch =
+runBankService : StdOut -> () -> dualof BankService -o ()
+runBankService stdout _ ch =
     let (price, ch) = receive ch in
     runWith[dualof PaymentC] (\c:PaymentC -o sink[Skip] $ send c ch) &
-    runPayment price
+    runPayment stdout price
+    
 
-runPayment : Price -> dualof PaymentC -> ()
-runPayment _ ch =
+runPayment : StdOut -> Price -> dualof PaymentC -> ()
+runPayment stdout price ch =
     -- mock up 
-    -- TODO: logging
-    let (_, ch) = receive ch in
-    let (_, ch) = receive ch in
-    ()
+    let (ccnumber, ch) = receive ch in
+    let (cccode, ch) = receive ch in
+    -- logging
+    receiveUn[Printer] stdout &
+    printStringLin "Payment processed \t @ amount: " &
+    printIntLin    price &
+    printStringLin ", credit card: " &
+    printIntLin    ccnumber &
+    printStringLin ", credit card code: " &
+    printIntLnLin  cccode &
+    select Close &
+    sink[Skip]
+    --
 
 {- client functions -}
 
@@ -454,17 +537,17 @@ rmaWorker rmaQueue counter rmaList =
 
 {- store setup -}
 
-setupStore : Bank -> TechStore 
-setupStore bank =
+setupStore : StdOut -> Bank -> TechStore 
+setupStore stdout bank =
     -- buy
     let buyQueue = initQueue[dualof BuyC] () in
-    let stockMap = initMap in
-    forkN[()] 4 (\_:() -> buyWorker buyQueue stockMap bank);
+    let stockMap = initMapWith initialStock in
+    forkN[()] 3 (\_:() -> buyWorker buyQueue stockMap bank);
     -- rma
     let rmaQueue = initQueue[dualof RmaC] () in
     let counter = initCounter in
-    let rmaList = initList in
-    forkN[()] 2 (\_:() -> rmaWorker rmaQueue counter rmaList);
+    let rmaList = initList stdout in
+    forkN[()] 1 (\_:() -> rmaWorker rmaQueue counter rmaList);
     -- store front
     forkWith[TechStore] $ runStoreFront buyQueue rmaQueue
 
@@ -488,7 +571,7 @@ client0 ch =
     -- ask for product 'A'
     let buyC = send 'A' buyC in
     match buyC with {
-        OutOfStock _ -> (),
+        OutOfStock _ -> printIntLn (-1),
         Available buyC -> 
             let (price, buyC) = receive buyC in
             -- buyer's price limit
@@ -499,6 +582,17 @@ client0 ch =
                 sink[Skip] $ send 123 $ send 123123123 paymentC
     }
 
+client1 : TechStore -> ()
+client1 ch =
+    -- wait to be served by store
+    let store = receiveUn[TechService] ch in
+    -- go to the rma queue
+    let (rmaC, _) = receive $ select Rma store in
+    -- wait & do my business
+    let (rmaId, _) = send 1234567890 rmaC &
+                     send "Monitor flickers when punched" &
+                     receive in
+    ()
 
 ---------------------------------- Main ----------------------------------
 
@@ -506,7 +600,14 @@ client0 ch =
 
 main : ()
 main =
-    let bank = initBank in
-    let store = setupStore bank in
-    ()
-    -- client0 store
+    let stdout = initStdout in
+    --
+    let bank = initBank stdout in
+    let store = setupStore stdout bank in
+    fork $ client0 store;
+    fork $ client1 store;
+    fork $ client1 store;
+    diverge ()
+
+diverge : () -> ()
+diverge = diverge
