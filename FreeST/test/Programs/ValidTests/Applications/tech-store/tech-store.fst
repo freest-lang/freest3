@@ -22,11 +22,11 @@ repeat n thunk =
 
 -- type Handler a = dualof a -o ()
 
--- | Receive a value from a shared channel
+-- | Receive a value from a star channel
 receive_ : forall a:TL . *?a -> a
 receive_ ch = fst [a, *?a] $ receive ch
 
--- | Send a value on a shared channel
+-- | Send a value on a star channel
 send_ : forall a:TL . a -> *!a -o ()
 send_ x ch = sink [*!a] $ send x ch
 
@@ -42,22 +42,24 @@ forkWith f =
     fork $ f y;
     x
 
-initSession : forall a:SL b:SL . !a; b -> (dualof a, b)
-initSession ch =
-    let (c, s) = new a in
-    let ch = send c ch in
-    (s, ch)
-
 -- |Session initiation
 -- |Accept a request for a linear session on a shared channel.
 -- |The requester uses a conventional receive to obtain the channel end
-accept : forall a:SL . *!a -> dualof a
-accept ch = fst [dualof a, *!a] $ initSession [a, *!a] ch
+accept : forall a:SL b:SU . !a; b -> dualof a
+accept ch =
+    let (x, y) = new a in
+    send x ch;
+    y
 
--- | Run a server process given its endpoint, a function to serve a client (an handle) and the state.
+-- |Session initiation on an start channel
+accept_ : forall a:SL . *!a -> dualof a
+accept_ ch = accept [a, *!a] ch
+
+-- | Run a server process given its endpoint, a function to serve a client (a
+-- handle) and the initial state.
 runServer : forall a:SL b . *!a -> (b -> dualof a -o b) -> b -> Diverge
 runServer ch handle state =
-    runServer [a, b] ch handle $ handle state $ accept [a] ch 
+    runServer [a, b] ch handle $ handle state $ accept_ [a] ch 
 
 ---------------------------------- SharedCounter ----------------------------------
 
@@ -482,11 +484,12 @@ type RmaQueue = (*?dualof RmaC, *!dualof RmaC)
 
 runStoreFront : BuyQueue -> RmaQueue -> dualof TechStore -o ()
 runStoreFront buyQueue rmaQueue store =
-    match accept[TechService] store with {
+    match accept_ [TechService] store with {
         Buy ch ->
-            enqueue [dualof BuyC] (fst [dualof BuyC, Skip] (initSession [BuyC, Skip] ch)) buyQueue,
+            enqueue [dualof BuyC] (accept [BuyC, Skip] ch) buyQueue,
         Rma ch ->
-            enqueue [dualof RmaC] (fst [dualof RmaC, Skip] (initSession [RmaC, Skip] ch)) rmaQueue
+            enqueue [dualof RmaC] (accept [RmaC, Skip] ch) rmaQueue
+            -- enqueue [dualof RmaC] (fst [dualof RmaC, Skip] (accept [RmaC, Skip] ch)) rmaQueue
     };
     runStoreFront buyQueue rmaQueue store
 
