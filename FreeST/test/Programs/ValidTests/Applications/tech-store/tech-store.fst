@@ -13,7 +13,7 @@ sink _ = ()
 receive_ : forall a:TL . *?a -> a
 receive_ ch = fst [a, *?a] $ receive ch
 
--- | Send a value in a shared channel
+-- | Send a value on a shared channel
 send_ : forall a:TL . a -> *!a -o ()
 send_ x ch = sink [*!a] $ send x ch
 
@@ -24,14 +24,18 @@ runWith f =
     f s;
     c
 
--- | Execute a function n times sequentially
+-- | Execute a thunk n times sequentially
 repeat : forall a . Int -> (() -> a) -> ()
-repeat n f =
+repeat n thunk =
     if n < 0
     then ()
     else 
-        f ();
-        repeat [a] (n - 1) f
+        thunk ();
+        repeat [a] (n - 1) thunk
+
+-- | Fork a thunk n times
+parallel : Int -> (() -> ()) -> ()
+parallel n thunk = repeat [()] n (\_:() -> fork (thunk ()))
 
 -- | Create a new child process and a linear channel through which it can 
 --   communicate with its parent process.
@@ -41,23 +45,19 @@ forkWith f = --runWith[a] $ \c:dualof a -> fork (f c)
     fork $ f s;
     c
 
--- | Fork a function n times
-parallel : forall a . Int -> (() -> a) -> ()
-parallel n f = repeat [()] n (\_:() -> fork (f ()))
-
-initSession : forall a:SL b:SL . !a; b -> (dualof a, b)
-initSession ch =
+accept : forall a:SL b:SL . !a; b -> (dualof a, b)
+accept ch =
     let (c, s) = new a in
     let ch = send c ch in
     (s, ch)
 
-initSessionUn : forall a:SL . *!a -> dualof a
-initSessionUn ch =
-    fst [dualof a, *!a] $ initSession [a, *!a] ch
+acceptUn : forall a:SL . *!a -> dualof a
+acceptUn ch =
+    fst [dualof a, *!a] $ accept [a, *!a] ch
 
 runServer : forall a:SL b . *!a -> (b -> dualof a -o b) -> b -> ()
 runServer ch handle state =
-    runServer [a, b] ch handle $ handle state $ initSessionUn [a] ch 
+    runServer [a, b] ch handle $ handle state $ acceptUn [a] ch 
 
 ---------------------------------- SharedCounter ----------------------------------
 
@@ -398,9 +398,9 @@ type PaymentC : SL = !CCNumber; !CCCode
 initBank : StdOut -> Bank
 initBank stdout = 
     -- runWith [Bank] $
-    --     \bank:dualof Bank -o parallel [()] 3 (bankWorker bank)
+    --     \bank:dualof Bank -o parallel 3 (bankWorker bank)
     let (c, s) = new Bank in
-    parallel [()] 2 (\_:() -> bankWorker stdout s);
+    parallel 2 (\_:() -> bankWorker stdout s);
     c
 
 bankWorker : StdOut -> dualof Bank -> ()
@@ -474,11 +474,11 @@ type RmaQueue = (*?dualof RmaC, *!dualof RmaC)
 
 runStoreFront : BuyQueue -> RmaQueue -> dualof TechStore -o ()
 runStoreFront buyQueue rmaQueue store =
-    match initSessionUn[TechService] store with {
+    match acceptUn[TechService] store with {
         Buy ch ->
-            enqueue [dualof BuyC] (fst [dualof BuyC, Skip] (initSession [BuyC, Skip] ch)) buyQueue,
+            enqueue [dualof BuyC] (fst [dualof BuyC, Skip] (accept [BuyC, Skip] ch)) buyQueue,
         Rma ch ->
-            enqueue [dualof RmaC] (fst [dualof RmaC, Skip] (initSession [RmaC, Skip] ch)) rmaQueue
+            enqueue [dualof RmaC] (fst [dualof RmaC, Skip] (accept [RmaC, Skip] ch)) rmaQueue
     };
     runStoreFront buyQueue rmaQueue store
 
@@ -562,12 +562,12 @@ setupStore stdout bank =
     -- buy
     let buyQueue = initQueue [dualof BuyC] () in
     let stockMap = initMapWith initialStock in
-    parallel [()] 3 (\_:() -> buyWorker buyQueue stockMap bank);
+    parallel 3 (\_:() -> buyWorker buyQueue stockMap bank);
     -- rma
     let rmaQueue = initQueue [dualof RmaC] () in
     let counter = initCounter in
     let rmaList = initList stdout in
-    parallel [()] 1 (\_:() -> rmaWorker rmaQueue counter rmaList);
+    parallel  1 (\_:() -> rmaWorker rmaQueue counter rmaList);
     -- store front
     forkWith [TechStore] $ runStoreFront buyQueue rmaQueue
 
