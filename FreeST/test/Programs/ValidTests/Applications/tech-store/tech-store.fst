@@ -7,6 +7,8 @@ sink _ = ()
 ---------------------------------- Concurrent.fst ----------------------------------
 -- module Concurrent where
 
+-- type Handler a = dualof a -o ()
+
 -- | Receive a value from a shared channel
 receiveUn : forall a:TL . *?a -> a
 receiveUn ch = fst[a, *?a] $ receive ch
@@ -15,6 +17,7 @@ receiveUn ch = fst[a, *?a] $ receive ch
 sendUn : forall a:TL . a -> *!a -o ()
 sendUn x ch = let _ = send x ch in ()
 
+-- | Executes a function
 runWith : forall a:SL . (dualof a -o ()) -> a
 runWith f =
     let (c, s) = new a in
@@ -42,15 +45,19 @@ forkWith f = --runWith[a] $ \c:dualof a -> fork (f c)
 forkN : forall a . Int -> (() -> a) -> ()
 forkN n f = runN[()] n (\_:() -> fork (f ()))
 
-initSession : forall a:SL . *!a -> dualof a
+initSession : forall a:SL b:SL . !a; b -> (dualof a, b)
 initSession ch =
     let (c, s) = new a in
-    sendUn[a] c ch;
-    s
+    let ch = send c ch in
+    (s, ch)
+
+initSessionUn : forall a:SL . *!a -> dualof a
+initSessionUn ch =
+    fst[dualof a, *!a] $ initSession[a, *!a] ch
 
 runServer : forall a:SL b . *!a -> (b -> dualof a -o b) -> b -> ()
 runServer ch handle state =
-    runServer[a, b] ch handle $ handle state $ initSession[a] ch 
+    runServer[a, b] ch handle $ handle state $ initSessionUn[a] ch 
 
 ---------------------------------- SharedCounter ----------------------------------
 
@@ -71,11 +78,12 @@ type Printer : SL = +{ PrintBool    : !Bool  ; Printer
 {- server -}
 
 initStdout : StdOut
-initStdout = forkWith[StdOut] runStdout
+initStdout = forkWith[StdOut] runStdout 
+                -- \stdout:dualof StdOut -o runServer[Printer, ()] stdout runPrinter ()
 
 runStdout  : dualof StdOut -o ()
-runStdout stdout =
-    runServer[Printer, ()] stdout runPrinter ()
+runStdout stdout = runServer[Printer, ()] stdout runPrinter ()
+    
 
 runPrinter : () -> dualof Printer -o ()
 runPrinter _ printer =
@@ -100,13 +108,23 @@ aux printer printFun =
 {- client functions -}
 
 printGenericLin : forall a . (Printer -> !a;Printer) -> a -> Printer -> Printer
-printGenericLin sel x printer = sel printer & send x 
+printGenericLin sel x printer = 
+    sel printer & send x 
+
+printGenericUn : forall a . (Printer -> !a;Printer) -> a -> StdOut -> ()
+printGenericUn sel x stdout =
+    printGenericLin[a] sel x (receiveUn[Printer] stdout) & 
+    select Close &
+    sink[Skip]
 
 printStringLin : String -> Printer -> Printer
 printStringLin = printGenericLin[String] (\printer:Printer -> select PrintString printer)
 
 printStringLnLin : String -> Printer -> Printer
 printStringLnLin = printGenericLin[String] (\printer:Printer -> select PrintStringLn printer)
+
+printStringLnUn : String -> StdOut -> ()
+printStringLnUn = printGenericUn[String] (\printer:Printer -> select PrintStringLn printer)
 
 printIntLin : Int -> Printer -> Printer
 printIntLin = printGenericLin[Int] (\printer:Printer -> select PrintInt printer)
@@ -152,7 +170,8 @@ runTailNode : forall a:TL . dualof (rec x:SL . ?a; ?x) -> dualof *!a -o ()
 runTailNode next tail =
     let i = receiveUn [a] tail in
     let next' = 
-        forkWith[dualof (rec x:SL . ?a; ?x)] (\c:(rec x:SL . ?a; ?x) -o sink[Skip] $ send c $ send i next) 
+        forkWith[dualof (rec x:SL . ?a; ?x)] 
+            (\c:(rec x:SL . ?a; ?x) -o sink[Skip] $ send c $ send i next) 
         in
     runTailNode[a] next' tail 
 
@@ -190,7 +209,7 @@ type ListC : SL = +{ Append: !ProductId; !Issue; !RmaNumber; ListC
 {- list server -}
 
 initList : StdOut -> SharedList
-initList stdout = forkWith[SharedList] (runListServer stdout)
+initList stdout = forkWith[SharedList] $ runListServer stdout
 
 runListServer : StdOut -> dualof SharedList -o ()
 runListServer stdout ch =
@@ -282,10 +301,18 @@ mapHas pName map =
             else mapHas pName map'
     }
 
-fromJust : MaybeValue -> (Amount, Price)
-fromJust maybeVal =
+isNothing : MaybeValue -> Bool
+isNothing maybeVal =
     case maybeVal of {
-        JustValue val -> val
+        JustValue _  -> False,
+        NothingValue -> True
+    }
+
+fromJustOrDefault :  (Amount, Price) -> MaybeValue -> (Amount, Price)
+fromJustOrDefault default maybeVal =
+    case maybeVal of {
+        JustValue val -> val,
+        NothingValue -> default
     }
 
 {- channel types -}
@@ -293,7 +320,6 @@ fromJust maybeVal =
 type SharedMap : SU = *?MapC
 type MapC : SL = +{ Put: !ProductName; ValueC     ; MapC
                   , Get: !ProductName; MaybeValueC; MapC
-                  , Has: !ProductName; ?Bool      ; MapC
                   , Close: Skip
                   }
 
@@ -304,9 +330,6 @@ type MaybeValueC : SL = &{ JustVal: dualof ValueC
                          }
 
 {- map server -}
-
-initMap : SharedMap
-initMap = initMapWith Empty
 
 initMapWith : Map -> SharedMap
 initMapWith map = forkWith[SharedMap] (runMapServer map)
@@ -335,32 +358,10 @@ runMapService map ch =
                             send price
                      } in
             runMapService map ch,
-        Has ch ->
-            let (pName , ch) = receive ch in
-            runMapService map $ send (mapHas pName map) ch,
         Close _ -> map
     }
 
 {- client functions -}
-
-putUn : SharedMap -> ProductName -> (Amount, Price) -> ()
-putUn ch pName val =
-    sink[Skip] $ 
-    select Close $
-    putLin pName val $ 
-    receiveUn[MapC] ch 
-
-getUn : SharedMap -> ProductName -> MaybeValue
-getUn ch pName =
-    let (maybeVal, c) = getLin pName $ receiveUn[MapC] ch in
-    sink[Skip] $ select Close c;
-    maybeVal
-
-hasUn : SharedMap -> ProductName -> Bool
-hasUn ch pName = 
-    let (b, ch) = hasLin pName $ receiveUn[MapC] ch in
-    sink[Skip] $ select Close ch;
-    b
 
 putLin : ProductName -> (Amount, Price) -> MapC -o MapC
 putLin pName val ch = 
@@ -382,10 +383,6 @@ getLin pName ch =
         NothingVal ch -> 
             (NothingValue, ch)
     }
-
-hasLin : ProductName -> MapC -o (Bool, MapC)
-hasLin pName ch =
-    select Has ch & send pName & receive
 
 ---------------------------------- Bank ----------------------------------
 
@@ -478,15 +475,11 @@ type RmaQueue = (*?dualof RmaC, *!dualof RmaC)
 
 runStoreFront : BuyQueue -> RmaQueue -> dualof TechStore -o ()
 runStoreFront buyQueue rmaQueue store =
-    match initSession[TechService] store with {
+    match initSessionUn[TechService] store with {
         Buy ch ->
-            let (c, s) = new BuyC in
-            let _ = send c ch in
-            enqueue[dualof BuyC] s buyQueue,
+            enqueue[dualof BuyC] (fst[dualof BuyC, Skip] (initSession[BuyC, Skip] ch)) buyQueue,
         Rma ch ->
-            let (c, s) = new RmaC in
-            let _ = send c ch in
-            enqueue[dualof RmaC] s rmaQueue
+            enqueue[dualof RmaC] (fst[dualof RmaC, Skip] (initSession[RmaC, Skip] ch)) rmaQueue
     };
     runStoreFront buyQueue rmaQueue store
 
@@ -497,29 +490,58 @@ buyWorker buyQueue map bank =
     let ch = dequeue[dualof BuyC] buyQueue in
     --
     let (pName, ch) = receive ch in
-    -- manually work with map to prevent interleaving
-    let mapS = receiveUn[MapC] map in
-    let (hasP, mapS) = hasLin pName mapS in
-
-    if not hasP
-    then
-        sink[Skip] $ select Close mapS;
-        sink[Skip] $ select OutOfStock ch
+    -- (try to) reserve from stock
+    let (amount, price) = fromJustOrDefault (0, 0) $ getFromStock pName map in
+    if amount < 1
+    then sink[Skip] $ select OutOfStock ch
     else
-        let (maybeVal, mapS) = getLin pName mapS in
-        let (price, amount) = fromJust maybeVal in
         let ch = send price $ select Available ch in
         sink[Skip] $ 
             match ch with {
                 Confirm ch -> send (createPayment price bank) ch,
-                Cancel ch  -> ch
-            };
-        sink[Skip] $ select Close mapS
+                Cancel ch  -> returnToStock pName map; ch
+            }
     ;
     --
     buyWorker buyQueue map bank
 
+getFromStock : ProductName -> SharedMap -> MaybeValue
+getFromStock pName map =
+    -- get map access
+    let mapS = receiveUn[MapC] map in
+    -- get from map
+    let (maybeVal, mapS) = getLin pName mapS in
+    -- 
+    case maybeVal of {
+        NothingValue -> mapS,
+        JustValue val -> 
+            let (amount, price) = val in
+            if amount > 0
+            -- if stock > 0, decrement stock (reserves it)
+            then putLin pName (amount-1, price) mapS
+            -- if no stock, nothing
+            else mapS
+    } &
+    select Close &
+    sink[Skip];
+    --
+    maybeVal
+    
 
+returnToStock : ProductName -> SharedMap -> ()
+returnToStock pName map =
+    -- get map access
+    let mapS = receiveUn[MapC] map in
+    -- get from map
+    let (maybeVal, mapS) = getLin pName mapS in
+    case maybeVal of {
+        NothingValue -> mapS,
+        JustValue val -> 
+            let (amount, price) = val in
+            putLin pName (amount+1, price) mapS
+    } &
+    select Close &
+    sink[Skip]
 
 {- rma workers -}
 
@@ -561,8 +583,10 @@ initialStock =
 
 ---------------------------------- Clients ----------------------------------
 
-client0 : TechStore -> ()
-client0 ch = 
+{- buy clients -}
+
+client0 : StdOut -> TechStore -> ()
+client0 stdout ch = 
     -- wait to be served by store
     let store = receiveUn[TechService] ch in
     -- go to the buy queue
@@ -571,7 +595,8 @@ client0 ch =
     -- ask for product 'A'
     let buyC = send 'A' buyC in
     match buyC with {
-        OutOfStock _ -> printIntLn (-1),
+        OutOfStock _ -> 
+            printStringLnUn "[Client 0] I was unable to buy product 'A'" stdout,
         Available buyC -> 
             let (price, buyC) = receive buyC in
             -- buyer's price limit
@@ -582,8 +607,10 @@ client0 ch =
                 sink[Skip] $ send 123 $ send 123123123 paymentC
     }
 
-client1 : TechStore -> ()
-client1 ch =
+{- rma clients -}
+
+client1 : StdOut -> TechStore -> ()
+client1 _ ch =
     -- wait to be served by store
     let store = receiveUn[TechService] ch in
     -- go to the rma queue
@@ -604,9 +631,9 @@ main =
     --
     let bank = initBank stdout in
     let store = setupStore stdout bank in
-    fork $ client0 store;
-    fork $ client1 store;
-    fork $ client1 store;
+    fork $ client0 stdout store;
+    fork $ client0 stdout store;
+    fork $ client1 stdout store;
     diverge ()
 
 diverge : () -> ()
