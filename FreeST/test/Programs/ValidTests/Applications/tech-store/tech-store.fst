@@ -15,22 +15,26 @@ receiveUn ch = fst [a, *?a] $ receive ch
 sendUn : forall a:TL . a -> *!a -o ()
 sendUn x ch = sink [*!a] $ send x ch
 
+-- | Execute a function n times, one after the other
+repeat : forall a . Int -> (() -> a) -> ()
+repeat n thread =
+    if n <= 0
+    then ()
+    else 
+        thread ();
+        repeat [a] (n - 1) thread
+
+-- | fork n identical threads
+parallel : forall a . Int -> (() -> a) -> ()
+parallel n thread = repeat [()] n (\_:() -> fork (thread ()))
+
 runWith : forall a:SL . (dualof a -o ()) -> a
 runWith f =
     let (c, s) = new a in
     f s;
     c
 
--- | Execute a function n times sequentially
-runN : forall a . Int -> (() -> a) -> ()
-runN n f =
-    if n < 0
-    then ()
-    else 
-        f ();
-        runN [a] (n-1) f
-
--- | Create a new child process and a linear channel through which it can 
+-- | Create a new child process and a linear channel through which it can
 --   communicate with its parent process.
 forkWith : forall a:SL . (dualof a -o ()) -> a
 forkWith f = --runWith[a] $ \c:dualof a -> fork (f c)
@@ -38,19 +42,18 @@ forkWith f = --runWith[a] $ \c:dualof a -> fork (f c)
     fork $ f s;
     c
 
--- | Fork a function n times
-forkN : forall a . Int -> (() -> a) -> ()
-forkN n f = runN [()] n (\_:() -> fork (f ()))
-
-initSession : forall a:SL . *!a -> dualof a
-initSession ch =
-    let (c, s) = new a in
-    sendUn [a] c ch;
-    s
+-- |Session initiation
+-- |Accept a request for a linear session on a shared channel.
+-- |The requester uses a conventional receive to obtain the channel end
+accept : forall a:SL . *! a -> dualof a
+accept ch =
+  let (x, y) = new a in -- Create a new linear channel
+  send x ch;            -- send one end to client
+  y                     -- return the other
 
 runServer : forall a:SL b . *!a -> (b -> dualof a -o b) -> b -> ()
 runServer ch handle state =
-    runServer [a, b] ch handle $ handle state $ initSession [a] ch 
+    runServer [a, b] ch handle $ handle state $ accept [a] ch 
 
 ---------------------------------- SharedCounter ----------------------------------
 
@@ -150,7 +153,7 @@ runHeadNode prev head =
 
 runTailNode : forall a:TL . dualof (rec x:SL . ?a; ?x) -> dualof *!a -o ()
 runTailNode next tail =
-    let i = receiveUn  [a] tail in
+    let i = receiveUn [a] tail in
     let next' = 
         forkWith [dualof (rec x:SL . ?a; ?x)] (\c:(rec x:SL . ?a; ?x) -o sink [Skip] $ send c $ send i next) 
         in
@@ -213,7 +216,6 @@ runListService stdout list ch =
             printIntLnLin  rmaNumber &
             select Close &
             sink [Skip];
-            --
             runListService stdout (Cons (productId, issue, rmaNumber) list) ch,
         Close _ -> 
             list
@@ -345,21 +347,21 @@ runMapService map ch =
 
 putUn : SharedMap -> ProductName -> (Amount, Price) -> ()
 putUn ch pName val =
-    sink [Skip] $ 
-    select Close $
-    putLin pName val $ 
-    receiveUn [MapC] ch 
+    receiveUn [MapC] ch &
+    putLin pName val &
+    select Close &
+    sink [Skip]
 
 getUn : SharedMap -> ProductName -> MaybeValue
 getUn ch pName =
     let (maybeVal, c) = getLin pName $ receiveUn [MapC] ch in
-    sink [Skip] $ select Close c;
+    select Close c;
     maybeVal
 
 hasUn : SharedMap -> ProductName -> Bool
 hasUn ch pName = 
     let (b, ch) = hasLin pName $ receiveUn [MapC] ch in
-    sink [Skip] $ select Close ch;
+    select Close ch;
     b
 
 putLin : ProductName -> (Amount, Price) -> MapC -o MapC
@@ -402,9 +404,9 @@ type PaymentC : SL = !CCNumber; !CCCode
 initBank : StdOut -> Bank
 initBank stdout = 
     -- runWith [Bank] $
-    --     \bank:dualof Bank -o forkN [()] 3 (bankWorker bank)
+    --     \bank:dualof Bank -o parallel [()] 3 (bankWorker bank)
     let (c, s) = new Bank in
-    forkN [()] 2 (\_:() -> bankWorker stdout s);
+    parallel [()] 2 (\_:() -> bankWorker stdout s);
     c
 
 bankWorker : StdOut -> dualof Bank -> ()
@@ -414,7 +416,7 @@ bankWorker stdout ch =
 runBankService : StdOut -> () -> dualof BankService -o ()
 runBankService stdout _ ch =
     let (price, ch) = receive ch in
-    runWith [dualof PaymentC] (\c:PaymentC -o sink [Skip] $ send c ch) &
+    runWith [dualof PaymentC] (\c:PaymentC -o send c ch & sink [Skip]) &
     runPayment stdout price
     
 
@@ -432,8 +434,8 @@ runPayment stdout price ch =
     printStringLin ", credit card code: " &
     printIntLnLin  cccode &
     select Close &
+    -- done
     sink [Skip]
-    --
 
 {- client functions -}
 
@@ -478,7 +480,7 @@ type RmaQueue = (*?dualof RmaC, *!dualof RmaC)
 
 runStoreFront : BuyQueue -> RmaQueue -> dualof TechStore -o ()
 runStoreFront buyQueue rmaQueue store =
-    match initSession [TechService] store with {
+    match accept [TechService] store with {
         Buy ch ->
             let (c, s) = new BuyC in
             let _ = send c ch in
@@ -503,20 +505,18 @@ buyWorker buyQueue map bank =
 
     if not hasP
     then
-        sink [Skip] $ select Close mapS;
-        sink [Skip] $ select OutOfStock ch
+        select Close mapS;
+        select OutOfStock ch & sink [Skip]
     else
         let (maybeVal, mapS) = getLin pName mapS in
         let (price, amount) = fromJust maybeVal in
         let ch = send price $ select Available ch in
-        sink [Skip] $ 
-            match ch with {
-                Confirm ch -> send (createPayment price bank) ch,
-                Cancel ch  -> ch
-            };
-        sink [Skip] $ select Close mapS
+        match ch with {
+            Confirm ch -> send (createPayment price bank) ch,
+            Cancel ch  -> ch
+        };
+        select Close mapS & sink [Skip]
     ;
-    --
     buyWorker buyQueue map bank
 
 
@@ -531,8 +531,7 @@ rmaWorker rmaQueue counter rmaList =
     let (issue    , ch) = receive ch in
     let rmaNumber = receiveUn [Int] counter in
     append rmaList (productId, issue, rmaNumber);
-    sink [Skip] $ send rmaNumber ch;
-    --
+    send rmaNumber ch;
     rmaWorker rmaQueue counter rmaList
 
 {- store setup -}
@@ -542,12 +541,12 @@ setupStore stdout bank =
     -- buy
     let buyQueue = initQueue [dualof BuyC] () in
     let stockMap = initMapWith initialStock in
-    forkN [()] 3 (\_:() -> buyWorker buyQueue stockMap bank);
+    parallel [()] 3 (\_:() -> buyWorker buyQueue stockMap bank);
     -- rma
     let rmaQueue = initQueue [dualof RmaC] () in
     let counter = initCounter in
     let rmaList = initList stdout in
-    forkN [()] 1 (\_:() -> rmaWorker rmaQueue counter rmaList);
+    parallel [()] 1 (\_:() -> rmaWorker rmaQueue counter rmaList);
     -- store front
     forkWith [TechStore] $ runStoreFront buyQueue rmaQueue
 
@@ -576,10 +575,10 @@ client0 ch =
             let (price, buyC) = receive buyC in
             -- buyer's price limit
             if price > 100 
-            then sink [Skip] $ select Cancel buyC
+            then select Cancel buyC & sink [Skip]
             else
                 let (paymentC, _) = receive $ select Confirm buyC in
-                sink [Skip] $ send 123 $ send 123123123 paymentC
+                send 123123123 paymentC &  send 123 & sink [Skip]
     }
 
 client1 : TechStore -> ()
