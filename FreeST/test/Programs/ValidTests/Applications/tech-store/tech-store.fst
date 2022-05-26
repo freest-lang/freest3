@@ -1,8 +1,21 @@
 ---------------------------------- Util.fst ----------------------------------
 -- module Util where
 
+-- | A mark for functions that do not terminate
+type Diverge = ()
+
+-- | Discard an unrestricted value
 sink : forall a . a -> ()
 sink _ = ()
+
+-- | Execute a thunk n times, sequentially
+repeat : forall a . Int -> (() -> a) -> ()
+repeat n thunk =
+    if n < 0
+    then ()
+    else 
+        thunk ();
+        repeat [a] (n - 1) thunk
 
 ---------------------------------- Concurrent.fst ----------------------------------
 -- module Concurrent where
@@ -17,47 +30,34 @@ receive_ ch = fst [a, *?a] $ receive ch
 send_ : forall a:TL . a -> *!a -o ()
 send_ x ch = sink [*!a] $ send x ch
 
--- | Executes a function
-runWith : forall a:SL . (dualof a -o ()) -> a
-runWith f =
-    let (c, s) = new a in
-    f s;
-    c
-
--- | Execute a thunk n times sequentially
-repeat : forall a . Int -> (() -> a) -> ()
-repeat n thunk =
-    if n < 0
-    then ()
-    else 
-        thunk ();
-        repeat [a] (n - 1) thunk
-
--- | Fork a thunk n times
+-- | Fork n identical threads
 parallel : Int -> (() -> ()) -> ()
 parallel n thunk = repeat [()] n (\_:() -> fork (thunk ()))
 
 -- | Create a new child process and a linear channel through which it can 
---   communicate with its parent process.
+--   communicate with its parent process. Return the channel endpoint.
 forkWith : forall a:SL . (dualof a -o ()) -> a
-forkWith f = --runWith[a] $ \c:dualof a -> fork (f c)
-    let (c, s) = new a in
-    fork $ f s;
-    c
+forkWith f =
+    let (x, y) = new a in
+    fork $ f y;
+    x
 
-accept : forall a:SL b:SL . !a; b -> (dualof a, b)
-accept ch =
+initSession : forall a:SL b:SL . !a; b -> (dualof a, b)
+initSession ch =
     let (c, s) = new a in
     let ch = send c ch in
     (s, ch)
 
-acceptUn : forall a:SL . *!a -> dualof a
-acceptUn ch =
-    fst [dualof a, *!a] $ accept [a, *!a] ch
+-- |Session initiation
+-- |Accept a request for a linear session on a shared channel.
+-- |The requester uses a conventional receive to obtain the channel end
+accept : forall a:SL . *!a -> dualof a
+accept ch = fst [dualof a, *!a] $ initSession [a, *!a] ch
 
-runServer : forall a:SL b . *!a -> (b -> dualof a -o b) -> b -> ()
+-- | Run a server process given its endpoint, a function to serve a client (an handle) and the state.
+runServer : forall a:SL b . *!a -> (b -> dualof a -o b) -> b -> Diverge
 runServer ch handle state =
-    runServer [a, b] ch handle $ handle state $ acceptUn [a] ch 
+    runServer [a, b] ch handle $ handle state $ accept [a] ch 
 
 ---------------------------------- SharedCounter ----------------------------------
 
@@ -407,6 +407,14 @@ bankWorker : StdOut -> dualof Bank -> ()
 bankWorker stdout ch =
     runServer [BankService, ()] ch (runBankService stdout) ()
 
+-- TODO: Expand this function
+-- | Executes a function
+runWith : forall a:SL . (dualof a -o ()) -> a
+runWith f =
+    let (c, s) = new a in
+    f s;
+    c
+
 runBankService : StdOut -> () -> dualof BankService -o ()
 runBankService stdout _ ch =
     let (price, ch) = receive ch in
@@ -474,11 +482,11 @@ type RmaQueue = (*?dualof RmaC, *!dualof RmaC)
 
 runStoreFront : BuyQueue -> RmaQueue -> dualof TechStore -o ()
 runStoreFront buyQueue rmaQueue store =
-    match acceptUn[TechService] store with {
+    match accept[TechService] store with {
         Buy ch ->
-            enqueue [dualof BuyC] (fst [dualof BuyC, Skip] (accept [BuyC, Skip] ch)) buyQueue,
+            enqueue [dualof BuyC] (fst [dualof BuyC, Skip] (initSession [BuyC, Skip] ch)) buyQueue,
         Rma ch ->
-            enqueue [dualof RmaC] (fst [dualof RmaC, Skip] (accept [RmaC, Skip] ch)) rmaQueue
+            enqueue [dualof RmaC] (fst [dualof RmaC, Skip] (initSession [RmaC, Skip] ch)) rmaQueue
     };
     runStoreFront buyQueue rmaQueue store
 
