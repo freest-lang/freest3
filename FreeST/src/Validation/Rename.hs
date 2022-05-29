@@ -17,6 +17,7 @@ module Validation.Rename
   ( renameState
   , renameType
   , renameTypes
+  , renameVar
   , subs
   , unfold
   , isFreeIn
