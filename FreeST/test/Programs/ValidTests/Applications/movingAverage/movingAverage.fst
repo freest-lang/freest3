@@ -1,6 +1,6 @@
 {- |
 Module      :  MovingAverage
-Description :  Calculates the moving average
+Description :  Calculates the moving average of a series of numbers
 Copyright   :  (c) LASIGE and University of Lisbon, Portugal
 Maintainer  :  Bernardo Almeida
 
@@ -23,18 +23,18 @@ Structure:
 
 -- | Create a new child process and a linear channel through which it can 
 --   communicate with its parent process. Return the channel endpoint.
-forkWith : ∀ a:1S b:*T . (dualof a -> b) -> a
+forkWith : ∀ a:1S b:*T . (dualof a *-> b) -> a
 forkWith f =
-    let (x, y) = new a in
-    fork $ f y;
-    x
+  let (x, y) = new a in
+  fork $ f y;
+  x
 
 -- | Similar to forkWith but with a linear signature
 forkWith1 : ∀ a:1S b:*T . (dualof a 1-> b) -> a
 forkWith1 f =
-    let (x, y) = new a in
-    fork $ f y;
-    x
+  let (x, y) = new a in
+  fork $ f y;
+  x
 
 -- This module
 
