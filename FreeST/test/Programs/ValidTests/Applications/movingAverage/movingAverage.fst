@@ -23,14 +23,14 @@ Structure:
 
 -- | Create a new child process and a linear channel through which it can 
 --   communicate with its parent process. Return the channel endpoint.
-forkWith : forall a:1S b:*T. (dualof a -> b) -> a
+forkWith : ∀ a:1S b:*T . (dualof a -> b) -> a
 forkWith f =
     let (x, y) = new a in
     fork $ f y;
     x
 
 -- | Similar to forkWith but with a linear signature
-forkWith1 : forall a:1S b:*T. (dualof a 1-> b) -> a
+forkWith1 : ∀ a:1S b:*T . (dualof a 1-> b) -> a
 forkWith1 f =
     let (x, y) = new a in
     fork $ f y;
@@ -38,7 +38,7 @@ forkWith1 f =
 
 -- This module
 
-type FiniteOutStream:1S = +{More: !Int;FiniteOutStream, Enough:Skip}
+type FiniteOutStream:1S = +{More: !Int;FiniteOutStream, Enough: Skip}
 type FiniteInStream:1S = dualof FiniteOutStream
 
 writeValues : !Int;!Int;FiniteOutStream -> Skip
@@ -69,9 +69,6 @@ readAll x y from to =
     Enough from -> select Enough to ; from
   }
 
-average3 : Int -> Int -> Int -> Int
-average3 x y z = (x + y + z) / 3
-
 collectValues : ∀ a:1S . FiniteInStream ; a -> a
 collectValues c =
   match c with {
@@ -81,6 +78,9 @@ collectValues c =
        collectValues @a c,
      Enough c -> c
   }
+
+average3 : Int -> Int -> Int -> Int
+average3 x y z = (x + y + z) / 3
 
 main : Skip
 main =
