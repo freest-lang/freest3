@@ -58,7 +58,7 @@ readValues from to =
   let (y, from) = receive from in
   readAll @Skip x y from to 
 
-readAll : ∀ a:1S . Int -> Int -> FiniteInStream;a 1-> FiniteOutStream 1-> a
+readAll : ∀ a:1S . Int -> Int -> FiniteInStream;a -> FiniteOutStream 1-> a
 readAll x y from to =
   match from with {
     More from ->
