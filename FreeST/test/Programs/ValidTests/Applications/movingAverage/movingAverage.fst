@@ -52,13 +52,13 @@ writeAll i c =
      writeAll @a (i + 1)
   else select Enough c
 
-readValues : ?Int;?Int;dualof FiniteOutStream -> FiniteOutStream 1-> Skip
+readValues : ?Int;?Int;FiniteInStream -> FiniteOutStream 1-> Skip
 readValues from to =
   let (x, from) = receive from in
   let (y, from) = receive from in
   readAll @Skip x y from to 
 
-readAll : ∀ a:1S . Int -> Int -> dualof FiniteOutStream;a 1-> FiniteOutStream 1-> a
+readAll : ∀ a:1S . Int -> Int -> FiniteInStream;a 1-> FiniteOutStream 1-> a
 readAll x y from to =
   match from with {
     More from ->
@@ -72,7 +72,7 @@ readAll x y from to =
 average3 : Int -> Int -> Int -> Int
 average3 x y z = (x + y + z) / 3
 
-collectValues : ∀ a:1S . dualof FiniteOutStream ; a -> a
+collectValues : ∀ a:1S . FiniteInStream ; a -> a
 collectValues c =
   match c with {
      More c ->
@@ -84,6 +84,6 @@ collectValues c =
 
 main : Skip
 main =
-  let r1 = forkWith @(?Int;?Int;dualof FiniteOutStream) @Skip writeValues in
-  let r2 = forkWith1 @dualof FiniteOutStream @Skip (readValues r1) in
+  let r1 = forkWith @(?Int;?Int;FiniteInStream) @Skip writeValues in
+  let r2 = forkWith1 @FiniteInStream @Skip (readValues r1) in
   collectValues @Skip r2
