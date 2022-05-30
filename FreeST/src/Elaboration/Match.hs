@@ -86,10 +86,36 @@ ruleEmpty :: Match -> Match
 ruleEmpty x = x
 
 ruleVar :: Match -> Match
-ruleVar x = x
-
+ruleVar ERROR = ERROR
+ruleVar (M us cs o) = matching $ M us' cs' o
+  where (v:us') = us
+        replace (p:ps,e) = (ps, replaceExp v p e)
+        cs' = map replace cs
+        
 ruleCon :: Match -> Match
 ruleCon x = x
 
 ruleMix :: Match -> Match
 ruleMix x = x
+
+replaceExp :: Variable -> Variable -> Exp -> Exp
+replaceExp v p (Var s v1)               = Var     s (replaceVar v p v1)
+replaceExp v p (Abs     s m (Bind t e)) = Abs     s m (Bind t (replaceExp v p e))
+replaceExp v p (App     s e1 e2)        = App     s (replaceExp v p e1) (replaceExp v p e2)
+replaceExp v p (Pair    s e1 e2)        = Pair    s (replaceExp v p e1) (replaceExp v p e2)
+replaceExp v p (BinLet  s v1 v2 e1 e22) = BinLet  s (replaceVar v p v1) (replaceVar v p v2) (replaceExp v p e1) (replaceExp v p e2)
+replaceExp v p (Case    s e fm)         = Case    s (replaceExp v p e) (Map.map (substitute v p) fm)
+replaceExp v p (CaseP   s e fmp)        = CaseP   s (replaceExp v p e) (Map.map (substitute v p).match fmp)
+replaceExp v p (TypeAbs s (Bind k e))   = TypeAbs s (Bind k (replaceExp v p e))
+replaceExp v p (TypeApp s e t)          = TypeApp s (replaceExp v p e) t
+replaceExp v p (Cond    s e1 e2 e3)     = Cond    s (replaceExp v p e1) (replaceExp v p e2) (replaceExp v p e3)
+replaceExp v p (UnLet   s v1 e1 e2)     = UnLet   s (replaceVar v p v1) (replaceExp v p e1) (replaceExp v p e2)
+replaceExp e = e
+
+replaceVar :: Variable -> Variable -> Variable
+replaceVar (Variable _ name1) (Variable _ name) v@(Variable span name2)
+  | name1 == name2 = Variable span name
+  | otherwise      = v
+
+substitute :: Variable -> Variable -> ([Variable],Exp)
+substitute v p (vs,e) = (map (replaceVar v p) vs, replaceExp v p e)
