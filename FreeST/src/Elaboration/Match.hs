@@ -14,19 +14,24 @@ import           Util.FreestState
 --------------- just to remember the format ----------------
 -- cases                                                  --
 -- type FieldMap  = Map.Map Variable ([Variable], Exp)    --
--- type FieldMapP = Map.Map Variable ([Pattern], Exp)     --
+-- type FieldMapP = Map.Map Variable [([Pattern], Exp)]   --
 -- functions                                              --
 -- type ParseEnv  = Map.Map Variable ([Variable], Exp)    --
 -- type ParseEnvP = Map.Map Variable [([Pattern], Exp)]   --
 ------------------------------------------------------------
 
---              fun args     patterns, exp   otherwise
-data Match = M [Variable] [([Pattern], Exp)] Match
+--                  fun args     patterns, exp   otherwise
+data Match = M     [Variable] [([Pattern], Exp)] Match
+--                 var        cons      vars      case
+           | CaseM Variable [(Variable,[Variable],Match)]
            | ERROR
+
+matchFun :: ParseEnvP -> ParseEnv
+matchFun pep = Map.map (match) pep
 
 match :: [([Pattern],Exp)] -> ([Variable],Exp)
 match xs@(x:_) = 
-  let arguments = map (mkVar) (fst x)  in
+  let arguments = map (mkVar) (fst x)  in -- TODO make Monad: <-
   let m         = M arguments xs ERROR in
   let result    = matching m           in
   casefy result
@@ -39,16 +44,12 @@ match xs@(x:_) =
 
 -- > ainda tenho de descobrir como fazer os cases
 
-mkVar :: Pattern -> Variable
+mkVar :: Pattern -> Variable -- TODO make Monad
 mkVar (V var)   = R.renameVar var
 mkVar (C var _) = R.renameVar var
 
--- TODO
-casefy :: Matching -> ([Variables],Exp)
-casefy (M us cs o) = ([], undefined)
-
-matchFun :: ParseEnvP -> ParseEnv
-matchFun pep = Map.map (match) pep
+destructPat :: Pattern -> [Pattern]
+destructPat (C _ ps) = ps
 
 -- TODO
 matching :: Match -> Match
@@ -57,6 +58,10 @@ matching (M us cs o)
   | isRuleVar   cs = matching $ ruleVar x
   | isRuleCon   cs = matching $ ruleCon x
   | otherwise      = matching $ ruleMix x
+
+-- TODO
+casefy :: Matching -> ([Variables],Exp)
+casefy (M us cs o) = ([], undefined)
 
 isRuleEmpty :: Match -> Bool
 isRuleEmpty ERROR = False
@@ -78,28 +83,40 @@ isVar :: Pattern -> Bool
 isVar (Var _) = True
 isVar _       = False
 
-isPat :: Pattern -> Bool
-isPat (C _ _) = True
-isPat _       = False
+isCon :: Pattern -> Bool
+isCon (C _ _) = True
+isCon _       = False
 
 ruleEmpty :: Match -> Match
 ruleEmpty x = x
 
 ruleVar :: Match -> Match
 ruleVar ERROR = ERROR
-ruleVar (M us cs o) = matching $ M us' cs' o
-  where (v:us') = us
-        replace (p:ps,e) = (ps, replaceExp v p e)
-        cs' = map replace cs
+ruleVar (M (v:us) cs o) = matching $ M us cs' o
+  where cs' = map (\(p:ps,e) = (ps, replaceExp v p e)) cs
         
 ruleCon :: Match -> Match
-ruleCon x = x
+ruleCon ERROR = ERROR
+ruleCon (M (v:us) cs o) = 
+  where name (((C (Variable _ s) _):_),_) = s 
+        css = groupSortBy name cs
+        (hs,ts) = (heads css, tails css)
+        hs = map 
+
+        -- TODO
+
+        CaseM v [(cons,vars,match)]
+        CaseM Exp FieldMap
+
+ruleCon' :: Variable -> 
+ruleCon' css = map matchfy css
+  where matchfy cs = M us 
 
 ruleMix :: Match -> Match
 ruleMix x = x
 
 replaceExp :: Variable -> Variable -> Exp -> Exp
-replaceExp v p (Var s v1)               = Var     s (replaceVar v p v1)
+replaceExp v p (Var     s v1)           = Var     s (replaceVar v p v1)
 replaceExp v p (Abs     s m (Bind t e)) = Abs     s m (Bind t (replaceExp v p e))
 replaceExp v p (App     s e1 e2)        = App     s (replaceExp v p e1) (replaceExp v p e2)
 replaceExp v p (Pair    s e1 e2)        = Pair    s (replaceExp v p e1) (replaceExp v p e2)
@@ -119,3 +136,7 @@ replaceVar (Variable _ name1) (Variable _ name) v@(Variable span name2)
 
 substitute :: Variable -> Variable -> ([Variable],Exp)
 substitute v p (vs,e) = (map (replaceVar v p) vs, replaceExp v p e)
+
+groupSortBy :: Ord b => (a -> b) -> [a] -> [[a]]
+groupSortBy f = groupBy apply . sortOn f
+  where apply n1 n2 = f n1 == f n2 
