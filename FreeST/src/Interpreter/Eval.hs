@@ -60,7 +60,7 @@ eval tEnv ctx eenv (E.App _ e1 e2) = eval tEnv ctx eenv e1 >>= \case
   (Cons x xs) -> do
     !v <- eval tEnv ctx eenv e2
     pure $ Cons x (xs ++ [[v]])
-  e -> error $ show e
+  c -> pure c
 eval tEnv ctx eenv (E.Pair _ e1 e2)  = Pair <$> eval tEnv ctx eenv e1 <*> eval tEnv ctx eenv e2
 eval tEnv ctx eenv (E.BinLet _ x y e1 e2) = do
   (Pair v1 v2) <- eval tEnv ctx eenv e1
