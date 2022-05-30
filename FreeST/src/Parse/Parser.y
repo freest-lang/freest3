@@ -163,7 +163,7 @@ Decl :: { () }
   -- Function signature
   : ProgVar ':' Type {% checkDupProgVarDecl $1 >> addToVEnv $1 $3 }
   -- Function declaration
-  | ProgVar PatternSeq '=' Exp {% addToPEnvP $1 $2 $4 }
+  | ProgVar PatternSeq '=' Exp { addToPEnvP $1 $2 $4 }
                             -- {% checkDupFunDecl $1 >> addToPEnv $1 $2 $4 }
   -- Type abbreviation
   | type KindedTVar TypeDecl {% checkDupTypeDecl (fst $2) >> uncurry addToTEnv $2 $3 }
@@ -272,7 +272,8 @@ Match :: { (Variable, ([Variable], E.Exp)) }
 
 CaseMap :: { FieldMapP }
   : Case             { uncurry Map.singleton $1 }
-  | Case ',' CaseMap {% checkDupCaseP (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
+  | Case ',' CaseMap { uncurry Map.insert $1 $3 }
+  -- | Case ',' CaseMap {% checkDupCaseP (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
 
 -- Case :: { (Variable, ([Variable], E.Exp)) }
 --   : Constructor ProgVarWildSeq '->' Exp { ($1, ($2, $4)) }
