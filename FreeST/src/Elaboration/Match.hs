@@ -4,6 +4,9 @@ module Elaboration.Match
   )
 where
 
+import           Data.List(groupBy,sortOn)
+import           Data.Function((&))
+
 import           Syntax.Base
 import           Syntax.Expression
 import           Validation.Rename as R
@@ -97,20 +100,10 @@ ruleVar (M (v:us) cs o) = matching $ M us cs' o
         
 ruleCon :: Match -> Match
 ruleCon ERROR = ERROR
-ruleCon (M (v:us) cs o) = 
-  where name (((C (Variable _ s) _):_),_) = s 
-        css = groupSortBy name cs
-        (hs,ts) = (heads css, tails css)
-        hs = map 
-
-        -- TODO
-
-        CaseM v [(cons,vars,match)]
-        CaseM Exp FieldMap
-
-ruleCon' :: Variable -> 
-ruleCon' css = map matchfy css
-  where matchfy cs = M us 
+ruleCon (M (v:us) cs o) = groupSortBy name.head.fst cs 
+                        & map destruct
+                        & matchfy us o
+                        & CaseM v
 
 ruleMix :: Match -> Match
 ruleMix x = x
@@ -140,3 +133,25 @@ substitute v p (vs,e) = (map (replaceVar v p) vs, replaceExp v p e)
 groupSortBy :: Ord b => (a -> b) -> [a] -> [[a]]
 groupSortBy f = groupBy apply . sortOn f
   where apply n1 n2 = f n1 == f n2 
+
+name :: Pattern -> String
+name (C v _) = intern v
+
+pVar :: Pattern -> Variable
+pVar (C v _) = v
+
+pPats :: Pattern -> [Pattern]
+pPats (C _ ps) = ps
+
+destruct :: [([Pattern],Exp)] -> (Variable, [Variable], [([Pattern],Exp)])
+destruct l@((p:ps):cs) = (pVar p, newArgs, destruct' l)
+  where newArgs = map mkVar (pPats p)
+
+destruct' :: [([Pattern],Exp)] -> [([Pattern],Exp)]
+destruct' [] = []
+destruct' ((p:ps,e):xs) = (ps'++ps,e) : destruct' xs 
+  where ps' = pPats p
+
+matchfy :: [Variable] -> Match -> (Variable, [Variable], [([Pattern],Exp)])
+                               -> (Variable, [Variable], Match)
+matchfy us o (con,vs,css) = (con,vs,M (vs++us) css o)
