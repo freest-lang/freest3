@@ -27,6 +27,8 @@ import           Util.FreestState
 data Match = M     [Variable] [([Pattern], Exp)] Match
 --                 var        cons      vars      case
            | CaseM Variable [(Variable,[Variable],Match)]
+--                 exp
+           | ExpM  Exp
            | ERROR
 
 matchFun :: ParseEnvP -> ParseEnv
@@ -47,67 +49,72 @@ match xs@(x:_) =
 
 -- > ainda tenho de descobrir como fazer os cases
 
-mkVar :: Pattern -> Variable -- TODO make Monad
-mkVar (V var)   = R.renameVar var
-mkVar (C var _) = R.renameVar var
-
-destructPat :: Pattern -> [Pattern]
-destructPat (C _ ps) = ps
-
--- TODO
 matching :: Match -> Match
-matching (M us cs o) 
-  | isRuleEmpty cs = ruleEmpty x
-  | isRuleVar   cs = matching $ ruleVar x
-  | isRuleCon   cs = matching $ ruleCon x
-  | otherwise      = matching $ ruleMix x
+matching (CaseM v xs) = CaseM v (map (\(a,b,c) -> (a,b,matching c)) xs)
+matching x@(M us cs o) 
+  | isRuleEmpty x = ruleEmpty x
+  | isRuleVar   x = matching $ ruleVar x
+  | isRuleCon   x = matching $ ruleCon x
+  | otherwise     = matching $ ruleMix x
+matching x = x
 
 -- TODO
-casefy :: Matching -> ([Variables],Exp)
+casefy :: Match -> ([Variables],Exp)
 casefy (M us cs o) = ([], undefined)
 
+-- is rule
 isRuleEmpty :: Match -> Bool
-isRuleEmpty ERROR = False
 isRuleEmpty (M us cs o) = and $ map empty.head cs
+isRuleEmpty _ = False
 
 isRuleVar :: Match -> Bool
-isRuleVar ERROR = False
 isRuleVar (M _ cs _) = and $ map check.fst.head cs
   where check p = not empty p
                && isVar (head p)
+isRuleVar _ = False
 
 isRuleCon :: Match -> Bool
-isRuleCon ERROR = False
 isRuleCon (M _ cs _) = and $ map check.fst.head cs
   where check p = not empty p
                && isCon (head p)
+isRuleCon _ = False
 
-isVar :: Pattern -> Bool
-isVar (Var _) = True
-isVar _       = False
-
-isCon :: Pattern -> Bool
-isCon (C _ _) = True
-isCon _       = False
-
+-- rules
+-- TODO
 ruleEmpty :: Match -> Match
-ruleEmpty x = x
+ruleEmpty (M _ ((_,e):cs) _) = ExpM e
 
 ruleVar :: Match -> Match
-ruleVar ERROR = ERROR
 ruleVar (M (v:us) cs o) = matching $ M us cs' o
   where cs' = map (\(p:ps,e) = (ps, replaceExp v p e)) cs
-        
+
 ruleCon :: Match -> Match
-ruleCon ERROR = ERROR
 ruleCon (M (v:us) cs o) = groupSortBy name.head.fst cs 
                         & map destruct
                         & matchfy us o
-                        & CaseM v
+                        & \cs' -> CaseM v cs' o
 
 ruleMix :: Match -> Match
-ruleMix x = x
+ruleMix (M us cs o) = groupOn name.head.fst cs
+                    & distribute us o
+  where distribute us o [] = o
+        distribute us o (cs:css) = M us cs (distribute us o css)
 
+-- rule con aux
+destruct :: [([Pattern],Exp)] -> (Variable, [Variable], [([Pattern],Exp)])
+destruct l@((p:ps):cs) = (pVar p, newArgs, destruct' l)
+  where newArgs = map mkVar (pPats p)
+
+destruct' :: [([Pattern],Exp)] -> [([Pattern],Exp)]
+destruct' [] = []
+destruct' ((p:ps,e):xs) = (ps'++ps,e) : destruct' xs 
+  where ps' = pPats p
+
+matchfy :: [Variable] -> Match -> (Variable, [Variable], [([Pattern],Exp)])
+                               -> (Variable, [Variable], Match)
+matchfy us o (con,vs,css) = (con,vs,M (vs++us) css o)
+
+-- replace Variables
 replaceExp :: Variable -> Variable -> Exp -> Exp
 replaceExp v p (Var     s v1)           = Var     s (replaceVar v p v1)
 replaceExp v p (Abs     s m (Bind t e)) = Abs     s m (Bind t (replaceExp v p e))
@@ -130,11 +137,9 @@ replaceVar (Variable _ name1) (Variable _ name) v@(Variable span name2)
 substitute :: Variable -> Variable -> ([Variable],Exp)
 substitute v p (vs,e) = (map (replaceVar v p) vs, replaceExp v p e)
 
-groupSortBy :: Ord b => (a -> b) -> [a] -> [[a]]
-groupSortBy f = groupBy apply . sortOn f
-  where apply n1 n2 = f n1 == f n2 
-
+-- aux
 name :: Pattern -> String
+name (V v)   = ""
 name (C v _) = intern v
 
 pVar :: Pattern -> Variable
@@ -143,15 +148,21 @@ pVar (C v _) = v
 pPats :: Pattern -> [Pattern]
 pPats (C _ ps) = ps
 
-destruct :: [([Pattern],Exp)] -> (Variable, [Variable], [([Pattern],Exp)])
-destruct l@((p:ps):cs) = (pVar p, newArgs, destruct' l)
-  where newArgs = map mkVar (pPats p)
+isVar :: Pattern -> Bool
+isVar (Var _) = True
+isVar _       = False
 
-destruct' :: [([Pattern],Exp)] -> [([Pattern],Exp)]
-destruct' [] = []
-destruct' ((p:ps,e):xs) = (ps'++ps,e) : destruct' xs 
-  where ps' = pPats p
+isCon :: Pattern -> Bool
+isCon (C _ _) = True
+isCon _       = False
 
-matchfy :: [Variable] -> Match -> (Variable, [Variable], [([Pattern],Exp)])
-                               -> (Variable, [Variable], Match)
-matchfy us o (con,vs,css) = (con,vs,M (vs++us) css o)
+mkVar :: Pattern -> Variable -- TODO make Monad
+mkVar (V var)   = R.renameVar var
+mkVar (C var _) = R.renameVar var
+
+groupOn :: Eq b => (a -> b) -> [a] -> [[a]]
+groupOn f = groupBy apply
+  where apply n1 n2 = f n1 == f n2
+
+groupSortBy :: Ord b => (a -> b) -> [a] -> [[a]]
+groupSortBy f = groupOn f . sortOn f
