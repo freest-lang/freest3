@@ -271,7 +271,7 @@ Match :: { (Variable, ([Variable], E.Exp)) }
 
 CaseMap :: { FieldMapP }
   : Case             { uncurry Map.singleton $1 }
-  | Case ',' CaseMap { uncurry updateMapWith $1 $3 }
+  | Case ',' CaseMap { uncurry appendMap $1 $3 }
   -- | Case ',' CaseMap {% checkDupCaseP (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
 
 -- Case :: { (Variable, ([Variable], E.Exp)) }
@@ -390,9 +390,10 @@ ProgVarWild :: { Variable }
   : ProgVar { $1 }
   | '_'     {% flip mkVar "_" `fmap` mkSpan $1 }
 
-ProgVarWildSeq :: { [Variable] }
-  :                            { [] }
-  | ProgVarWild ProgVarWildSeq {% checkDupBind $1 $2 >> return ($1 : $2) }
+-- TODO remove, only used on case
+-- ProgVarWildSeq :: { [Variable] }
+--   :                            { [] }
+--   | ProgVarWild ProgVarWildSeq {% checkDupBind $1 $2 >> return ($1 : $2) }
 
 ProgVarWildTBind :: { (Variable, T.Type) }
   : ProgVarWild ':' Type  %prec ProgVarWildTBind { ($1, $3) }
@@ -496,9 +497,5 @@ parseAndImport initial = do
 parseError :: [Token] -> FreestStateT a
 parseError [] = lift . Left $ PrematureEndOfFile defaultSpan
 parseError (x:_) = lift . Left $ ParseError (getSpan x) (show x)
-
-
-updateMapWith k v = Map.alter (Just . maybe v (++ v)) k
-
 
 }

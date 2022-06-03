@@ -137,4 +137,13 @@ typeListToType a = map $ second typeToFun -- map (\(x, ts) -> (x, typeToFun ts))
  where
   typeToFun []       = T.Var (getSpan a) a
   typeToFun (t : ts) = T.Arrow (getSpan t) Un t (typeToFun ts)
-      
+
+appendMap :: Ord k => k -> [v] -> Map.Map k [v] -> Map.Map k [v]
+appendMap k v = Map.insertWith add k v
+  where add a b = b++a
+
+-- TODO remove      
+-- updateMapWith :: Ord k => (v -> v -> v) -> k -> v -> Map.Map k v -> Map.Map k v
+-- updateMapWith f k v = Map.alter (Just . maybe v (`f` v)) k
+-- appendMap' :: Ord k => k -> v -> Map.Map k [v] -> Map.Map k [v]
+-- appendMap' k v = updateMapWith (++) k [v]

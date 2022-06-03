@@ -1,18 +1,17 @@
 module Elaboration.Match
   ( matchFun
- -- , match
   )
 where
 
 import           Data.List(groupBy,sortOn)
 import           Data.Function((&))
+import           Data.Traversable
 
-import           Syntax.Base hiding (mkVar)
+import           Syntax.Base
 import           Syntax.Expression
 import           Validation.Rename as R
 import qualified Data.Map.Strict   as Map
 
-import Data.Traversable
 import           Util.FreestState
 
 --------------- just to remember the format ----------------
@@ -33,22 +32,14 @@ data Match = M     [Variable] [([Pattern], Exp)] Match
            | ERROR
 
 matchFun :: ParseEnvP -> FreestState ParseEnv
-matchFun pep = undefined -- mapM (match) pep
+matchFun pep = mapM match pep
 
 match :: [([Pattern],Exp)] -> FreestState ([Variable],Exp)
 match xs@(x:_) = do 
-  arguments <- mapM mkVar (fst x)  -- TODO make Monad: <-
+  arguments <- mapM newVar (fst x)
   let m         = M arguments xs ERROR 
   let result    = matching m           
   return $ casefy result
--- TODO
--- criar len [Pattern] variaveis, porque sao os argumentos
--- transformar [([Pattern],Exp)] into Match
--- identificar a rule correta
--- chamar a rule sobre o estado
--- recursivo até chegar à rule empty?
-
--- > ainda tenho de descobrir como fazer os cases
 
 matching :: Match -> Match
 matching (CaseM v xs) = CaseM v (map (\(a,b,c) -> (a,b,matching c)) xs)
@@ -65,18 +56,18 @@ casefy (M us cs o) = ([], undefined)
 
 -- is rule
 isRuleEmpty :: Match -> Bool
-isRuleEmpty (M us cs o) = and $ map (empty . head) cs
+isRuleEmpty (M _ cs _) = and $ map (null.fst) cs
 isRuleEmpty _ = False
 
 isRuleVar :: Match -> Bool
-isRuleVar (M _ cs _) = and $ map check.fst.head cs
-  where check p = not empty p
+isRuleVar (M _ cs _) = and $ map (check.fst) cs
+  where check p = not $ null p
                && isVar (head p)
 isRuleVar _ = False
 
 isRuleCon :: Match -> Bool
-isRuleCon (M _ cs _) = and $ map check.fst.head cs
-  where check p = not empty p
+isRuleCon (M _ cs _) = and $ map (check.fst) cs
+  where check p = not $ null p
                && isCon (head p)
 isRuleCon _ = False
 
@@ -87,24 +78,32 @@ ruleEmpty (M _ ((_,e):cs) _) = ExpM e
 
 ruleVar :: Match -> Match
 ruleVar (M (v:us) cs o) = matching $ M us cs' o
-  where cs' = map (\(p:ps,e) -> (ps, replaceExp v p e)) cs
+  where cs' = map (\(p:ps,e) -> (ps, replaceExp v (pVar p) e)) cs
 
+-- todo
 ruleCon :: Match -> Match
-ruleCon (M (v:us) cs o) = groupSortBy name.head.fst cs 
-                        & map destruct
+ruleCon (M (v:us) cs o) = groupSortBy (name.head.fst) cs 
+                        & mapM destruct
                         & matchfy us o
                         & \cs' -> CaseM v cs' o
 
+ruleCon' :: Match -> Match
+ruleCon' (M (v:us) cs o) = do 
+  cs <- groupSortBy (name.head.fst) cs 
+      & mapM destruct
+  return $ matchfy us o cs
+         & \cs' -> CaseM v cs' o
+
 ruleMix :: Match -> Match
-ruleMix (M us cs o) = groupOn name.head.fst cs
+ruleMix (M us cs o) = groupOn (name.head.fst) cs
                     & distribute us o
   where distribute us o [] = o
         distribute us o (cs:css) = M us cs (distribute us o css)
 
 -- rule con aux
-destruct :: [([Pattern],Exp)] -> (Variable, [Variable], [([Pattern],Exp)])
+destruct :: [([Pattern],Exp)] -> FreestState (Variable, [Variable], [([Pattern],Exp)])
 destruct l@((p:ps):cs) = (pVar p, newArgs, destruct' l)
-  where newArgs = map mkVar (pPats p)
+  where newArgs = mapM newVar (pPats p)
 
 destruct' :: [([Pattern],Exp)] -> [([Pattern],Exp)]
 destruct' [] = []
@@ -157,9 +156,9 @@ isCon :: Pattern -> Bool
 isCon (C _ _) = True
 isCon _       = False
 
-mkVar :: Pattern -> FreestState Variable -- TODO make Monad
-mkVar (V var)   = R.renameVar var
-mkVar (C var _) = R.renameVar var
+newVar :: Pattern -> FreestState Variable -- TODO make Monad
+newVar (V var)   = R.renameVar var
+newVar (C var _) = R.renameVar var
 
 groupOn :: Eq b => (a -> b) -> [a] -> [[a]]
 groupOn f = groupBy apply
