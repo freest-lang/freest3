@@ -1,17 +1,18 @@
 module Elaboration.Match
   ( matchFun
-    match
+ -- , match
   )
 where
 
 import           Data.List(groupBy,sortOn)
 import           Data.Function((&))
 
-import           Syntax.Base
+import           Syntax.Base hiding (mkVar)
 import           Syntax.Expression
 import           Validation.Rename as R
 import qualified Data.Map.Strict   as Map
 
+import Data.Traversable
 import           Util.FreestState
 
 --------------- just to remember the format ----------------
@@ -31,15 +32,15 @@ data Match = M     [Variable] [([Pattern], Exp)] Match
            | ExpM  Exp
            | ERROR
 
-matchFun :: ParseEnvP -> ParseEnv
-matchFun pep = Map.map (match) pep
+matchFun :: ParseEnvP -> FreestState ParseEnv
+matchFun pep = undefined -- mapM (match) pep
 
-match :: [([Pattern],Exp)] -> ([Variable],Exp)
-match xs@(x:_) = 
-  let arguments = map (mkVar) (fst x)  in -- TODO make Monad: <-
-  let m         = M arguments xs ERROR in
-  let result    = matching m           in
-  casefy result
+match :: [([Pattern],Exp)] -> FreestState ([Variable],Exp)
+match xs@(x:_) = do 
+  arguments <- mapM mkVar (fst x)  -- TODO make Monad: <-
+  let m         = M arguments xs ERROR 
+  let result    = matching m           
+  return $ casefy result
 -- TODO
 -- criar len [Pattern] variaveis, porque sao os argumentos
 -- transformar [([Pattern],Exp)] into Match
@@ -59,12 +60,12 @@ matching x@(M us cs o)
 matching x = x
 
 -- TODO
-casefy :: Match -> ([Variables],Exp)
+casefy :: Match -> ([Variable],Exp)
 casefy (M us cs o) = ([], undefined)
 
 -- is rule
 isRuleEmpty :: Match -> Bool
-isRuleEmpty (M us cs o) = and $ map empty.head cs
+isRuleEmpty (M us cs o) = and $ map (empty . head) cs
 isRuleEmpty _ = False
 
 isRuleVar :: Match -> Bool
@@ -86,7 +87,7 @@ ruleEmpty (M _ ((_,e):cs) _) = ExpM e
 
 ruleVar :: Match -> Match
 ruleVar (M (v:us) cs o) = matching $ M us cs' o
-  where cs' = map (\(p:ps,e) = (ps, replaceExp v p e)) cs
+  where cs' = map (\(p:ps,e) -> (ps, replaceExp v p e)) cs
 
 ruleCon :: Match -> Match
 ruleCon (M (v:us) cs o) = groupSortBy name.head.fst cs 
@@ -156,7 +157,7 @@ isCon :: Pattern -> Bool
 isCon (C _ _) = True
 isCon _       = False
 
-mkVar :: Pattern -> Variable -- TODO make Monad
+mkVar :: Pattern -> FreestState Variable -- TODO make Monad
 mkVar (V var)   = R.renameVar var
 mkVar (C var _) = R.renameVar var
 
