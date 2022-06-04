@@ -94,7 +94,6 @@ import           Util.DeBruijn
   of       {TokenOf _}
   forall   {TokenForall _}
   dualof   {TokenDualof _}
-  '§'      {TokenSection _}
 
 -- %nonassoc LOWER_ID UPPER_ID
 -- %nonassoc '(' '['
@@ -436,17 +435,17 @@ DBType :: { Int -> NamelessType }
   -- Polymorphism and recursion
   | rec MaybeKind '.' DBType
       { \d -> let p = (pos $1) in T.Rec p (Bind p (Variable p "a") ($2 p) ($4 (d+1))) } -- dummy names, do not restoreNames!
-  | forall MaybeKind '.' DBType -- Allows a single binding per forall, so we can omit kinds...
+  | forall MaybeKind '.' DBType -- Allows a single binding per forall, so that we can omit kinds...
       { \d -> let p = (pos $1) in T.Forall p (Bind p (Variable p "a") ($2 p) ($4 (d+1))) }
-  | '§' INT 
-      {\d -> let (TokenInt p x) = $2 in T.Var (pos $1) (Index (pos $1) "a" x d)}
+  | INT 
+      {\d -> let (TokenInt p x) = $1 in T.Var (pos $1) (Index (pos $1) "a" x d)}
   -- Type operators
   | dualof DBType                   { \d -> T.Dualof (pos $1) ($2 d) }
   -- | TypeName                      { T.Var (pos $1) $1 } -- TODO: remove this one lex
   | '(' DBType ')'                  { \d -> $2 d }
 
 DBTupleType :: { Int -> NamelessType }
-  : DBType               { \d -> $1 d }
+  : DBType                 { \d -> $1 d }
   | DBType ',' DBTupleType { \d -> let t = ($1 d) in T.Pair (pos t) t ($3 d) }
 
 DBFieldList :: { Int -> NamelessTypeMap }
