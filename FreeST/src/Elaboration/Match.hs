@@ -6,6 +6,7 @@ where
 import           Data.List(groupBy,sortOn)
 import           Data.Function((&))
 import           Data.Traversable
+import           Control.Monad
 
 import           Syntax.Base
 import           Syntax.Expression
@@ -32,7 +33,7 @@ data Match = M     [Variable] [([Pattern], Exp)] Match
            | ERROR
 
 matchFun :: ParseEnvP -> FreestState ParseEnv
-matchFun pep = return $ mapM match pep
+matchFun pep = mapM match pep
 
 match :: [([Pattern],Exp)] -> FreestState ([Variable],Exp)
 match xs@(x:_) = do 
@@ -42,16 +43,18 @@ match xs@(x:_) = do
   return $ casefy result
 
 matching :: Match -> FreestState Match
-matching (CaseM v xs) = return $ CaseM v (map (\(a,b,c) -> (a,b,matching c)) xs)
+matching (CaseM v xs) = return.CaseM v =<< (mapM f xs)
+  where f (a,b,c) = matching c >>= return.(,,) a b
 matching x@(M us cs o) 
-  | isRuleEmpty x = return $ ruleEmpty x
-  | isRuleVar   x = return $ matching $ ruleVar x
-  | isRuleCon   x =          matching $ ruleCon x
-  | otherwise     = return $ matching $ ruleMix x
+  | isRuleEmpty x = return     $ ruleEmpty x
+  | isRuleVar   x = matching   $ ruleVar x
+  | isRuleCon   x = matching =<< ruleCon x
+  | otherwise     = matching   $ ruleMix x
 matching x = return x
 
 -- TODO
 casefy :: Match -> ([Variable],Exp)
+-- casefy (ExpM e) = 
 casefy (M us cs o) = ([], undefined)
 
 -- is rule
@@ -81,13 +84,16 @@ ruleVar (M (v:us) cs o) = M us cs' o
 
 -- todo
 ruleCon :: Match -> FreestState Match
-ruleCon (M (v:us) cs o) = do 
-  m <- groupSortBy (name.head.fst) cs 
-     & mapM destruct
-  m <- matchfy us o m
-     & \cs' -> CaseM v cs' o
-  return m
-
+ruleCon (M (v:us) cs o) = groupSortBy (name.head.fst) cs
+                        & mapM destruct
+                      >>= mapM (return.matchfy us o) -- ugly
+                      >>= return.CaseM v
+  -- do
+  -- let a = groupSortBy (name.head.fst) cs
+  -- b <- mapM destruct a
+  -- let c = map (matchfy us o) b
+  -- return $ CaseM v c
+  
 ruleMix :: Match -> Match
 ruleMix (M us cs o) = groupOn (name.head.fst) cs
                     & distribute us o
@@ -96,8 +102,9 @@ ruleMix (M us cs o) = groupOn (name.head.fst) cs
 
 -- rule con aux
 destruct :: [([Pattern],Exp)] -> FreestState (Variable, [Variable], [([Pattern],Exp)])
-destruct l@((p:ps):cs) = (pVar p, newArgs, destruct' l)
+destruct l@((p:ps,_):cs) = f =<< newArgs
   where newArgs = mapM newVar (pPats p)
+        f a = return (pVar p,a,destruct' l)
 
 destruct' :: [([Pattern],Exp)] -> [([Pattern],Exp)]
 destruct' [] = []
