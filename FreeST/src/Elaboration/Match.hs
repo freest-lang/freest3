@@ -32,23 +32,23 @@ data Match = M     [Variable] [([Pattern], Exp)] Match
            | ERROR
 
 matchFun :: ParseEnvP -> FreestState ParseEnv
-matchFun pep = mapM match pep
+matchFun pep = return $ mapM match pep
 
 match :: [([Pattern],Exp)] -> FreestState ([Variable],Exp)
 match xs@(x:_) = do 
   arguments <- mapM newVar (fst x)
-  let m         = M arguments xs ERROR 
-  let result    = matching m           
+  let m = M arguments xs ERROR 
+  result <- matching m           
   return $ casefy result
 
-matching :: Match -> Match
-matching (CaseM v xs) = CaseM v (map (\(a,b,c) -> (a,b,matching c)) xs)
+matching :: Match -> FreestState Match
+matching (CaseM v xs) = return $ CaseM v (map (\(a,b,c) -> (a,b,matching c)) xs)
 matching x@(M us cs o) 
-  | isRuleEmpty x = ruleEmpty x
-  | isRuleVar   x = matching $ ruleVar x
-  | isRuleCon   x = matching $ ruleCon x
-  | otherwise     = matching $ ruleMix x
-matching x = x
+  | isRuleEmpty x = return $ ruleEmpty x
+  | isRuleVar   x = return $ matching $ ruleVar x
+  | isRuleCon   x =          matching $ ruleCon x
+  | otherwise     = return $ matching $ ruleMix x
+matching x = return x
 
 -- TODO
 casefy :: Match -> ([Variable],Exp)
@@ -72,27 +72,21 @@ isRuleCon (M _ cs _) = and $ map (check.fst) cs
 isRuleCon _ = False
 
 -- rules
--- TODO
 ruleEmpty :: Match -> Match
 ruleEmpty (M _ ((_,e):cs) _) = ExpM e
 
 ruleVar :: Match -> Match
-ruleVar (M (v:us) cs o) = matching $ M us cs' o
+ruleVar (M (v:us) cs o) = M us cs' o
   where cs' = map (\(p:ps,e) -> (ps, replaceExp v (pVar p) e)) cs
 
 -- todo
-ruleCon :: Match -> Match
-ruleCon (M (v:us) cs o) = groupSortBy (name.head.fst) cs 
-                        & mapM destruct
-                        & matchfy us o
-                        & \cs' -> CaseM v cs' o
-
-ruleCon' :: Match -> Match
-ruleCon' (M (v:us) cs o) = do 
-  cs <- groupSortBy (name.head.fst) cs 
-      & mapM destruct
-  return $ matchfy us o cs
-         & \cs' -> CaseM v cs' o
+ruleCon :: Match -> FreestState Match
+ruleCon (M (v:us) cs o) = do 
+  m <- groupSortBy (name.head.fst) cs 
+     & mapM destruct
+  m <- matchfy us o m
+     & \cs' -> CaseM v cs' o
+  return m
 
 ruleMix :: Match -> Match
 ruleMix (M us cs o) = groupOn (name.head.fst) cs
@@ -156,7 +150,7 @@ isCon :: Pattern -> Bool
 isCon (C _ _) = True
 isCon _       = False
 
-newVar :: Pattern -> FreestState Variable -- TODO make Monad
+newVar :: Pattern -> FreestState Variable
 newVar (V var)   = R.renameVar var
 newVar (C var _) = R.renameVar var
 
