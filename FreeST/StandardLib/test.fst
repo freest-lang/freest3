@@ -1,0 +1,2 @@
+abcde : String
+abcde = ""

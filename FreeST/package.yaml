@@ -8,7 +8,7 @@ copyright:           "2020 authors"
 #extra-source-files:
 #- README.md
 data-dir: StandardLib
-data-files: Prelude.fst
+data-files: test.fst # TODO put back Prelude.fst
 # Metadata used when publishing your package
 # synopsis:            Short description of your package
 # category:            Web

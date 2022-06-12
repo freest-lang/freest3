@@ -34,13 +34,14 @@ data Match = M     [Variable] [([Pattern], Exp)] Match
 
 matchFun :: ParseEnvP -> FreestState ParseEnv
 matchFun pep = mapM match pep
+-- matchFun pep = sequence $ Map.mapWithKey match pep
 
 match :: [([Pattern],Exp)] -> FreestState ([Variable],Exp)
 match xs@(x:_) = do 
   arguments <- mapM newVar (fst x)
   let m = M arguments xs ERROR 
   result <- matching m           
-  return $ casefy result
+  return $ casefy arguments result
 
 matching :: Match -> FreestState Match
 matching (CaseM v xs) = return.CaseM v =<< (mapM f xs)
@@ -52,17 +53,16 @@ matching x@(M us cs o)
   | otherwise     = matching   $ ruleMix x
 matching x = return x
 
--- should some sort of Monad for the ERROR message
-casefy :: Match -> ([Variable],Exp)
-casefy (M args cs o) = ([], undefined) -- TODO
+casefy :: [Variable] -> Match -> ([Variable],Exp)
+casefy as cs = (as, expfy cs)
 
--- TODO
 expfy :: Match -> Exp
--- ...
+expfy (ExpM e)     = e
 expfy (CaseM v cs) = Case s (Var s v) fm
   where s  = getSpan v
-        fm = foldl (\m (con,vs,mat) -> Map.insert con (vs,expfy mat)) Map.empty cs
--- ...
+        fm = foldl (\m (con,vs,mat) -> Map.insert con (vs,expfy mat) m) Map.empty cs
+-- expfy ERROR = ? TODO maybe should be added a monad for errors
+-- expfy M not expected
 
 -- is rule
 isRuleEmpty :: Match -> Bool
@@ -89,7 +89,6 @@ ruleVar :: Match -> Match
 ruleVar (M (v:us) cs o) = M us cs' o
   where cs' = map (\(p:ps,e) -> (ps, replaceExp v (pVar p) e)) cs
 
--- todo
 ruleCon :: Match -> FreestState Match
 ruleCon (M (v:us) cs o) = groupSortBy (name.head.fst) cs
                         & mapM destruct
@@ -155,6 +154,7 @@ name (V v)   = ""
 name (C v _) = intern v
 
 pVar :: Pattern -> Variable
+pVar (V v)   = v
 pVar (C v _) = v
 
 pPats :: Pattern -> [Pattern]

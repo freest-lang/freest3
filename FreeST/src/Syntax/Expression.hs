@@ -59,9 +59,8 @@ instance Default (Bind T.Type Exp) where
 type FieldMap  = Map.Map Variable ([Variable], Exp)
 type FieldMapP = Map.Map Variable [([Pattern], Exp)]
 
-data Pattern = 
-    V Variable           -- Variable   name
-  | C Variable [Pattern] -- Construtor name patterns
+data Pattern = V Variable           -- Variable   name
+             | C Variable [Pattern] -- Construtor name patterns
 
 instance Located Exp where
   getSpan (Unit p             ) = p
