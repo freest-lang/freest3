@@ -15,6 +15,9 @@ import qualified Data.Map.Strict   as Map
 
 import           Util.FreestState
 
+-- TODO remove
+import           Debug.Trace
+
 --------------- just to remember the format ----------------
 -- cases                                                  --
 -- type FieldMap  = Map.Map Variable ([Variable], Exp)    --
@@ -45,7 +48,10 @@ instance Show Pattern where
 ----------------------------------------------------
 
 matchFun :: ParseEnvP -> FreestState ParseEnv
-matchFun pep = mapM match pep
+matchFun pep = do
+  a <- mapM match pep
+  debugM . ("ParseEnv " ++) <$> show =<< (return a)
+  return a
 -- matchFun pep = sequence $ Map.mapWithKey match pep
 
 match :: [([Pattern],Exp)] -> FreestState ([Variable],Exp)
@@ -53,14 +59,19 @@ match xs@(x:_) = do
   arguments <- mapM newVar (fst x)
   debugM . ("Args " ++) <$> show =<< (return arguments)
   let m = M arguments xs ERROR 
-  debugM "# match"
-  debugM . ("Program " ++) <$> show =<< (return m)
-  result <- matching m
+  -- result <- matching m
+  result <- matchingPrint m
   return $ casefy arguments result
+
+matchingPrint :: Match -> FreestState Match
+matchingPrint x = do
+  debugM "# matching"
+  debugM . ("Program " ++) <$> show =<< (return x)
+  matching x
 
 matching :: Match -> FreestState Match
 matching (CaseM v xs) = return.CaseM v =<< (mapM f xs)
-  where f (a,b,c) = matching c >>= return.(,,) a b
+  where f (a,b,c) = matchingPrint c >>= return.(,,) a b
 -- matching x@(M us cs o) 
 --   | isRuleEmpty x = return     $ ruleEmpty x
 --   | isRuleVar   x = matching   $ ruleVar x
@@ -68,9 +79,9 @@ matching (CaseM v xs) = return.CaseM v =<< (mapM f xs)
 --   | otherwise     = matching   $ ruleMix x
 matching x@(M us cs o) 
   | isRuleEmpty x = ruleEmpty x
-  | isRuleVar   x = matching =<< ruleVar x
-  | isRuleCon   x = matching =<< ruleCon x
-  | otherwise     = matching =<< ruleMix x
+  | isRuleVar   x = matchingPrint =<< ruleVar x
+  | isRuleCon   x = matchingPrint =<< ruleCon x
+  | otherwise     = matchingPrint =<< ruleMix x
 matching x = return x
 
 casefy :: [Variable] -> Match -> ([Variable],Exp)
@@ -78,9 +89,9 @@ casefy as cs = (as, expfy cs)
 
 expfy :: Match -> Exp
 expfy (ExpM e)     = e
-expfy (CaseM v cs) = Case s (Var s v) fm
-  where s  = getSpan v
-        fm = foldl (\m (con,vs,mat) -> Map.insert con (vs,expfy mat) m) Map.empty cs
+expfy (CaseM v cs) = Case s (Var s v) (Map.fromList l)
+  where l = map (\(con,vs,mat) -> (con,(vs,expfy mat))) cs
+        s = getSpan v
 -- expfy ERROR = ? TODO maybe should be added a monad for errors
 -- expfy M not expected
 
@@ -91,13 +102,13 @@ isRuleEmpty _ = False
 
 isRuleVar :: Match -> Bool
 isRuleVar (M _ cs _) = and $ map (check.fst) cs
-  where check p = not $ null p
+  where check p = not   (null p)
                && isVar (head p)
 isRuleVar _ = False
 
 isRuleCon :: Match -> Bool
 isRuleCon (M _ cs _) = and $ map (check.fst) cs
-  where check p = not $ null p
+  where check p = not   (null p)
                && isCon (head p)
 isRuleCon _ = False
 
@@ -184,7 +195,7 @@ replaceBind v p (Bind {bSpan=s,var=v1,binder=t,body=exp}) =
   Bind {bSpan=s,var=replaceVar v p v1,binder=t,body=replaceExp v p exp}
 
 replaceVar :: Variable -> Variable -> Variable -> Variable
-replaceVar (Variable _ name1) (Variable _ name) v@(Variable span name2)
+replaceVar (Variable _ name) (Variable _ name1) v@(Variable span name2)
   | name1 == name2 = Variable span name
   | otherwise      = v
 
