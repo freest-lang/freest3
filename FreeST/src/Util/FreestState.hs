@@ -100,7 +100,8 @@ setPEnv parseEnv = modify (\s -> s { parseEnv })
 addToPEnvP :: MonadState FreestS m => Variable -> [Pattern] -> Exp -> m ()
 addToPEnvP x xs e =
   modify (\s -> s 
-    { parseEnvP = Map.insertWith (++) x [(xs, e)] (parseEnvP s) })
+    { parseEnvP = Map.insertWith add x [(xs, e)] (parseEnvP s) })
+    where add b a = (++) a b
 
 getPEnvP :: FreestState ParseEnvP
 getPEnvP = gets parseEnvP

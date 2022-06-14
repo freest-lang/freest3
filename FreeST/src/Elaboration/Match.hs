@@ -30,7 +30,19 @@ data Match = M     [Variable] [([Pattern], Exp)] Match
            | CaseM Variable [(Variable,[Variable],Match)]
 --                 exp
            | ExpM  Exp
-           | ERROR
+           | ERROR 
+
+---------------- TODO for debugging ----------------
+instance Show Match where
+  show (M us ps o)   = "(m " ++ show us ++ ", " ++ show ps ++ ", " ++ show o ++ ")"
+  show (CaseM as xs) = "(casem " ++ show as ++ ", " ++ show xs ++ ")"
+  show (ExpM e)      = "expression " ++ show e
+  show (ERROR)       = "ERROR"
+
+instance Show Pattern where
+  show (V v)    = "Var " ++ show v
+  show (C v xs) = "Pat " ++ show v ++ "("++ show xs ++")"
+----------------------------------------------------
 
 matchFun :: ParseEnvP -> FreestState ParseEnv
 matchFun pep = mapM match pep
@@ -39,18 +51,26 @@ matchFun pep = mapM match pep
 match :: [([Pattern],Exp)] -> FreestState ([Variable],Exp)
 match xs@(x:_) = do 
   arguments <- mapM newVar (fst x)
+  debugM . ("Args " ++) <$> show =<< (return arguments)
   let m = M arguments xs ERROR 
-  result <- matching m           
+  debugM "# match"
+  debugM . ("Program " ++) <$> show =<< (return m)
+  result <- matching m
   return $ casefy arguments result
 
 matching :: Match -> FreestState Match
 matching (CaseM v xs) = return.CaseM v =<< (mapM f xs)
   where f (a,b,c) = matching c >>= return.(,,) a b
+-- matching x@(M us cs o) 
+--   | isRuleEmpty x = return     $ ruleEmpty x
+--   | isRuleVar   x = matching   $ ruleVar x
+--   | isRuleCon   x = matching =<< ruleCon x
+--   | otherwise     = matching   $ ruleMix x
 matching x@(M us cs o) 
-  | isRuleEmpty x = return     $ ruleEmpty x
-  | isRuleVar   x = matching   $ ruleVar x
+  | isRuleEmpty x = ruleEmpty x
+  | isRuleVar   x = matching =<< ruleVar x
   | isRuleCon   x = matching =<< ruleCon x
-  | otherwise     = matching   $ ruleMix x
+  | otherwise     = matching =<< ruleMix x
 matching x = return x
 
 casefy :: [Variable] -> Match -> ([Variable],Exp)
@@ -82,27 +102,50 @@ isRuleCon (M _ cs _) = and $ map (check.fst) cs
 isRuleCon _ = False
 
 -- rules
-ruleEmpty :: Match -> Match
-ruleEmpty (M _ ((_,e):cs) _) = ExpM e
+-- ruleEmpty :: Match -> Match
+-- ruleEmpty (M _ ((_,e):cs) _) = ExpM e
 
-ruleVar :: Match -> Match
-ruleVar (M (v:us) cs o) = M us cs' o
-  where cs' = map (\(p:ps,e) -> (ps, replaceExp v (pVar p) e)) cs
+ruleEmpty :: Match -> FreestState Match
+ruleEmpty (M _ ((_,e):cs) _) = do
+  debugM "# ruleEmpty"
+  return $ ExpM e
+
+-- ruleVar :: Match -> Match
+-- ruleVar (M (v:us) cs o) = M us (map replace cs) o
+--   where replace (p:ps,e) = (ps, replaceExp v (pVar p) e)
+
+ruleVar :: Match -> FreestState Match
+ruleVar (M (v:us) cs o) = do
+  debugM "# ruleVar"
+  return $ M us (map replace cs) o
+  where replace (p:ps,e) = (ps, replaceExp v (pVar p) e)
+
+-- ruleCon :: Match -> FreestState Match
+-- ruleCon (M (v:us) cs o) = groupSortBy (name.head.fst) cs
+--                         & mapM destruct
+--                       >>= mapM (return.matchfy us o) -- ugly
+--                       >>= return.CaseM v
 
 ruleCon :: Match -> FreestState Match
-ruleCon (M (v:us) cs o) = groupSortBy (name.head.fst) cs
-                        & mapM destruct
-                      >>= mapM (return.matchfy us o) -- ugly
-                      >>= return.CaseM v
-  -- do
-  -- let a = groupSortBy (name.head.fst) cs
-  -- b <- mapM destruct a
-  -- let c = map (matchfy us o) b
-  -- return $ CaseM v c
-  
-ruleMix :: Match -> Match
-ruleMix (M us cs o) = groupOn (name.head.fst) cs
+ruleCon (M (v:us) cs o) = do
+  let a = groupSortBy (name.head.fst) cs
+  b <- mapM destruct a
+  let c = map (matchfy us o) b
+  debugM "# ruleCon"
+  return $ CaseM v c
+
+-- ruleMix :: Match -> Match
+-- ruleMix (M us cs o) = groupOn (name.head.fst) cs
+--                     & distribute us o
+--   where distribute us o [] = o
+--         distribute us o (cs:css) = M us cs (distribute us o css)
+
+ruleMix :: Match -> FreestState Match
+ruleMix (M us cs o) = do
+  debugM "# ruleMix"
+  groupOn (name.head.fst) cs
                     & distribute us o
+                    & return
   where distribute us o [] = o
         distribute us o (cs:css) = M us cs (distribute us o css)
 
@@ -162,7 +205,7 @@ pPats (C _ ps) = ps
 
 isVar :: Pattern -> Bool
 isVar (V _) = True
-isVar _       = False
+isVar _     = False
 
 isCon :: Pattern -> Bool
 isCon (C _ _) = True
