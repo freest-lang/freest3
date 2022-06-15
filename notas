@@ -1,0 +1,21 @@
+
+Type = Almanac com Sort Variant
+Sort =
+Variant =
+
+data List:TU = Nil | Cons Int List 
+
+no TypeEnv fica uma entrada (List,(Kind.TU,Type.Almanac))
+
+Type.Almanac Span Sort TypeMap
+
+Sort -> Variant
+TypeMap -> (Variable,Type)
+           (Cons    ,Int -> List -> List)
+           (Nil     ,List)
+           
+criar variavel ignorada
+| '_'     {% flip mkVar "_" `fmap` mkSpan $1 }
+
+mkVar "_"
+
