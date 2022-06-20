@@ -28,15 +28,14 @@ import           Validation.Subkind ( (<:), join )
 import           Util.FreestState
 import           Util.Error
 
-
-import           Control.Monad ( unless )
-import qualified Control.Monad.State as S
+import           Control.Monad.State hiding (join)
 import           Data.Functor
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
 -- Exported Functions: Top-level definitions of those defined in this module
 
+-- synthetise :: MonadState FreestS m => K.KindEnv -> T.Type -> m K.Kind
 synthetise :: K.KindEnv -> T.Type -> FreestState K.Kind
 synthetise kenv = synthetise'  (Map.keysSet kenv) kenv
 
@@ -96,7 +95,7 @@ synthetise' _ kEnv (T.Var p a) = case kEnv Map.!? a of
 -- Type operators
 synthetise' _ kEnv t@(T.CoVar p a) =
   case kEnv Map.!? a of
-    Just k -> S.when (not $ k <: K.ls p)
+    Just k -> when (not $ k <: K.ls p)
             (addError (CantMatchKinds p k (K.ls p) t)) $> K.ls p
     Nothing -> addError (TypeVarNotInScope p a) $> omission p
 
@@ -112,7 +111,7 @@ checkContractive s a t = let p = getSpan t in
 checkAgainst' :: K.PolyVars -> K.KindEnv -> K.Kind -> T.Type -> FreestState K.Kind
 checkAgainst' s kEnv expected t = do
   actual <- synthetise' s kEnv t
-  S.when (not $ actual <: expected)
+  when (not $ actual <: expected)
     (addError (CantMatchKinds (getSpan t) expected actual t))
   $> expected
 
@@ -121,7 +120,7 @@ checkAgainst' s kEnv expected t = do
 checkAgainstSession' :: K.PolyVars -> K.KindEnv -> T.Type -> FreestState K.Kind
 checkAgainstSession' s kEnv t = do
   k@(K.Kind _ _ p) <- synthetise' s kEnv t
-  S.when (p /= K.Session) (addError (ExpectingSession (getSpan t) t k)) 
+  when (p /= K.Session) (addError (ExpectingSession (getSpan t) t k)) 
   return k
 
 -- Determine whether a given type is unrestricted
