@@ -156,6 +156,7 @@ ruleMix (M us cs o) = do
   debugM "# ruleMix"
   groupOn (name.head.fst) cs
                     & distribute us o
+                    & fill us
                     & return
   where distribute us o [] = o
         distribute us o (cs:css) = M us cs (distribute us o css)
@@ -174,6 +175,29 @@ destruct' ((p:ps,e):xs) = (ps'++ps,e) : destruct' xs
 matchfy :: [Variable] -> Match -> (Variable, [Variable], [([Pattern],Exp)])
                                -> (Variable, [Variable], Match)
 matchfy us o (con,vs,css) = (con,vs,M (vs++us) css o)
+
+-- rule mix aux
+fill :: [Variable] -> Match -> Match
+fill (u:_) (M vs cs o)
+  | hasVar cs = (M vs (fill' u cs) (fill o))
+  | otherwise = (M vs cs (fill o))
+  where hasVar cs = not (null cs) 
+               && isVar $ fst $ head cs
+fill x = x
+
+fill' :: Variable -> [([Pattern],Exp)] -> [([Pattern],Exp)]
+fill' _ [] = []
+fill' v ((p:ps,e):xs) = filledCons ++ fill' xs
+  where newExp = replaceExp v (pVar p) e
+        newPatterns = getCons $ snd $ lookup (pVar p) getTEnv -- TODO monading
+        filledCons = fillCons p ps e newPatterns
+
+fillCons :: Pattern -> [Pattern] -> Exp -> [Variable] -> [([Pattern],Exp)]
+fillCons p ps e vs = [] --TODO
+
+-- returns constructors and the amount of variables they need
+getCons :: Type -> [(Variable,Int)]
+getCons (Almanac _ Variant tm) = [] -- map (TODO contar) (Map.keys tm)
 
 -- replace Variables
 replaceExp :: Variable -> Variable -> Exp -> Exp
