@@ -96,7 +96,7 @@ parseOpt (Just xs)
   | isOpt [":t ",":type "] = lift $ typeOf (opt xs')
   | isOpt [":k ",":kind "] = lift $ kindOf (opt xs')
   | isOpt [":i ", ":info "] = lift $ info (opt xs')     
-  | ":" `isPrefixOf` xs' = liftS (putStrLn $ "unknown command '" ++ xs' ++ "', use :h for help")
+  | ":" `isPrefixOf` xs' = liftS $ putStrLn $ "unknown command '" ++ xs' ++ "', use :h for help"
   | null (dropWhile isSpace xs') = pure ()
   | otherwise = do
       f <- lift getFileName
@@ -106,8 +106,8 @@ parseOpt (Just xs)
         Right e       -> do
           let s1 = execState (T.synthetise Map.empty e) st
           if hasErrors s1
-            then liftS (putStrLn $ getErrors s1)
-            else liftS (evalAndPrint st e)
+            then liftS $ putStrLn $ getErrors s1
+            else liftS $ evalAndPrint st e
   where
     isOpt :: [String] -> Bool
     isOpt = any (`isPrefixOf` xs)
@@ -265,24 +265,3 @@ readLoop s = do
     Just ":}" -> pure s
     Just str -> readLoop (s ++ "\n" ++ str)
     Nothing -> readLoop s
-
-
-
-   
--- OPTIONS
-
--- :l, :load
--- :q, :quit
--- :r, :reload
--- :t, :type 
--- :k, :kind
--- :h, :help
--- :i, :info 
-
-
--- TODO:
-
--- import ?? 
-
--- Modules names 
--- error on expression non elab types (ex: write)
