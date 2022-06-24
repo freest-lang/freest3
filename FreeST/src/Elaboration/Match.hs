@@ -10,7 +10,8 @@ import           Control.Monad
 
 import           Syntax.Base
 import           Syntax.Expression
-import           Validation.Rename as R
+import qualified Syntax.Type       as T
+import qualified Validation.Rename as R
 import qualified Data.Map.Strict   as Map
 
 import           Util.FreestState
@@ -156,8 +157,7 @@ ruleMix (M us cs o) = do
   debugM "# ruleMix"
   groupOn (name.head.fst) cs
                     & distribute us o
-                    & fill us
-                    & return
+                    & fill (head us)
   where distribute us o [] = o
         distribute us o (cs:css) = M us cs (distribute us o css)
 
@@ -177,20 +177,26 @@ matchfy :: [Variable] -> Match -> (Variable, [Variable], [([Pattern],Exp)])
 matchfy us o (con,vs,css) = (con,vs,M (vs++us) css o)
 
 -- rule mix aux
-fill :: [Variable] -> Match -> Match
-fill (u:_) (M vs cs o)
-  | hasVar cs = (M vs (fill' u cs) (fill o))
-  | otherwise = (M vs cs (fill o))
-  where hasVar cs = not (null cs) 
-               && isVar $ fst $ head cs
-fill _ x = x
+fill :: Variable -> Match -> FreestState Match
+fill u (M vs cs o)
+  | hasVar cs = do
+    cs' <- fill' u cs
+    o'  <- fill  u o
+    return $ M vs cs' o'
+  | otherwise = do 
+    o' <- fill u o
+    return $ M vs cs o'
+  where hasVar cs = not   (null cs) 
+                 && not   (null (fst (head cs))) 
+                 && isVar (head (fst (head cs)))
+fill _ x = return x
 
 fill' :: Variable -> [([Pattern],Exp)] -> FreestState [([Pattern],Exp)]
-fill' _ [] = []
+fill' _ [] = return []
 fill' v ((p:ps,e):xs) = do
   env <- getTEnv
   t   <- lookup p env
-  fc1 <- fillCons v (p:ps) e (getCons t) 
+  let fc1 = fillCons v (p:ps) e (getCons t) 
   fc2 <- fill' v xs
   return $ fc1 ++ fc2
 
@@ -202,9 +208,9 @@ fillCons v (p:ps) e vs = map newP vs
         newP (c,n) = (p': ps, newE)
 
 -- returns constructors and the amount of variables they need
-getCons :: Type -> [(Variable,Int)]
-getCons (Almanac _ Variant tm) = map (\(v,t) -> (v,countArrows t)) (Map.toList tm)
-  where countArrows (Arrow _ _ _ t2) = 1 + countArrows t2
+getCons :: T.Type -> [(Variable,Int)]
+getCons (T.Almanac _ T.Variant tm) = map (\(v,t) -> (v,countArrows t)) (Map.toList tm)
+  where countArrows (T.Arrow _ _ _ t2) = 1 + countArrows t2
         countArrows _ = 0 
 
 -- replace Variables
