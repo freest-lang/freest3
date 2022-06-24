@@ -183,36 +183,48 @@ fill (u:_) (M vs cs o)
   | otherwise = (M vs cs (fill o))
   where hasVar cs = not (null cs) 
                && isVar $ fst $ head cs
-fill x = x
+fill _ x = x
 
-fill' :: Variable -> [([Pattern],Exp)] -> [([Pattern],Exp)]
+fill' :: Variable -> [([Pattern],Exp)] -> FreestState [([Pattern],Exp)]
 fill' _ [] = []
-fill' v ((p:ps,e):xs) = filledCons ++ fill' xs
-  where newExp = replaceExp v (pVar p) e
-        newPatterns = getCons $ snd $ lookup (pVar p) getTEnv -- TODO monading
-        filledCons = fillCons p ps e newPatterns
+fill' v ((p:ps,e):xs) = do
+  env <- getTEnv
+  t   <- lookup p env
+  fc1 <- fillCons v (p:ps) e (getCons t) 
+  fc2 <- fill' v xs
+  return $ fc1 ++ fc2
 
-fillCons :: Pattern -> [Pattern] -> Exp -> [Variable] -> [([Pattern],Exp)]
-fillCons p ps e vs = [] --TODO
+fillCons :: Variable -> [Pattern] -> Exp -> [(Variable,Int)] -> [([Pattern],Exp)]
+fillCons v (p:ps) e vs = map newP vs
+  where newE = replaceExp v p e
+        s = getSpan $ pVar p
+        p' = C v (replicate n (mkVar s '_'))
+        newP (c,n) = (p': ps, newE)
 
 -- returns constructors and the amount of variables they need
 getCons :: Type -> [(Variable,Int)]
-getCons (Almanac _ Variant tm) = [] -- map (TODO contar) (Map.keys tm)
+getCons (Almanac _ Variant tm) = map (\(v,t) -> (v,countArrows t)) (Map.toList tm)
+  where countArrows (Arrow _ _ _ t2) = 1 + countArrows t2
+        countArrows _ = 0 
 
 -- replace Variables
 replaceExp :: Variable -> Variable -> Exp -> Exp
-replaceExp v p (Var     s v1)           = Var     s (replaceVar v p v1)
-replaceExp v p (Abs     s m b)          = Abs     s m (replaceBind v p b)
-replaceExp v p (App     s e1 e2)        = App     s (replaceExp v p e1) (replaceExp v p e2)
-replaceExp v p (Pair    s e1 e2)        = Pair    s (replaceExp v p e1) (replaceExp v p e2)
+replaceExp v p (Var     s v1)          = Var     s (replaceVar v p v1)
+replaceExp v p (Abs     s m b)         = Abs     s m (replaceBind v p b)
+replaceExp v p (App     s e1 e2)       = App     s (replaceExp v p e1) (replaceExp v p e2)
+replaceExp v p (Pair    s e1 e2)       = Pair    s (replaceExp v p e1) (replaceExp v p e2)
 replaceExp v p (BinLet  s v1 v2 e1 e2) = BinLet  s (replaceVar v p v1) (replaceVar v p v2) (replaceExp v p e1) (replaceExp v p e2)
-replaceExp v p (Case    s e fm)         = Case    s (replaceExp v p e) (Map.map (substitute v p) fm)
--- replaceExp v p (CaseP   s e fmp)        = CaseP   s (replaceExp v p e) (Map.map ((substitute v p).match) fmp) TODO monading
-replaceExp v p (TypeAbs s b)            = TypeAbs s (replaceBind v p b)
-replaceExp v p (TypeApp s e t)          = TypeApp s (replaceExp v p e) t
-replaceExp v p (Cond    s e1 e2 e3)     = Cond    s (replaceExp v p e1) (replaceExp v p e2) (replaceExp v p e3)
-replaceExp v p (UnLet   s v1 e1 e2)     = UnLet   s (replaceVar v p v1) (replaceExp v p e1) (replaceExp v p e2)
+replaceExp v p (Case    s e fm)        = Case    s (replaceExp v p e) (Map.map (substitute v p) fm)
+-- replaceExp v p (CaseP   s e fmp)       = CaseP   s (replaceExp v p e) (Map.map ((substitute v p).match) fmp) TODO monading
+replaceExp v p (TypeAbs s b)           = TypeAbs s (replaceBind v p b)
+replaceExp v p (TypeApp s e t)         = TypeApp s (replaceExp v p e) t
+replaceExp v p (Cond    s e1 e2 e3)    = Cond    s (replaceExp v p e1) (replaceExp v p e2) (replaceExp v p e3)
+replaceExp v p (UnLet   s v1 e1 e2)    = UnLet   s (replaceVar v p v1) (replaceExp v p e1) (replaceExp v p e2)
 replaceExp _ _ e = e
+
+-- TODO adicionar monad
+-- separar monad do resto
+-- fazer return ao resto
 
 replaceBind :: Variable -> Variable -> Bind a Exp -> Bind a Exp
 replaceBind v p (Bind {bSpan=s,var=v1,binder=t,body=exp}) =
