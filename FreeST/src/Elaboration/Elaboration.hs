@@ -19,6 +19,7 @@ import           Validation.Rename ( isFreeIn )
 
 import           Data.Functor
 import           Data.Map.Strict as Map
+import           Data.Maybe
 import qualified Data.Set as Set
 
 
@@ -173,23 +174,23 @@ instance Elaboration E.FieldMap where
 buildProg :: FreestState ()
 buildProg = getPEnv
   >>= tMapWithKeyM_ (\pv (ps, e) -> addToProg pv =<< buildFunBody pv ps e)
- where
-  buildFunBody :: Variable -> [Variable] -> E.Exp -> FreestState E.Exp
-  buildFunBody f as e = getFromVEnv f >>= \case
-    Just s  -> return $ buildExp e as s
+  
+buildFunBody :: Variable -> [Variable] -> E.Exp -> FreestState E.Exp
+buildFunBody f as e = getFromVEnv f >>= \case
+    Just s  -> buildExp e as s
     Nothing -> addError (FuctionLacksSignature (getSpan f) f) $> e
-      
-  buildExp :: E.Exp -> [Variable] -> T.Type -> E.Exp
-  buildExp e [] _ = e
+ where      
+  buildExp :: E.Exp -> [Variable] -> T.Type -> FreestState E.Exp
+  buildExp e [] _ = pure e
   buildExp e bs t@(T.Rec _ _) = buildExp e bs (normalise t)
   buildExp e (b : bs) (T.Arrow _ m t1 t2) =
-    E.Abs (getSpan b) m (Bind (getSpan b) b t1 (buildExp e bs t2))
-  buildExp _ _ t@(T.Dualof _ _) =
-    internalError "Elaboration.Elaboration.buildFunbody.buildExp" t
+    E.Abs (getSpan b) m . Bind (getSpan b) b t1 <$> buildExp e bs t2
   buildExp e bs (T.Forall p (Bind p1 x k t)) =
-    E.TypeAbs p (Bind p1 x k (buildExp e bs t))
-  buildExp e (b : bs) t =
-    E.Abs (getSpan b) Un (Bind (getSpan b) b (omission (getSpan b)) (buildExp e bs t))
+    E.TypeAbs p . Bind p1 x k <$> buildExp e bs t
+  buildExp _ _ t@(T.Dualof _ _) = internalError "Elaboration.Elaboration.buildFunbody.buildExp" t
+  buildExp _ xs _ = do
+    t <- fromJust <$> getFromVEnv f
+    addError (WrongNumberOfArguments (getSpan f) f (length as - length xs) (length as) t) $> e
 
 -- | Changing positions
 

@@ -63,6 +63,7 @@ data ErrorType =
   -- Elab
   | TypeVarOutOfScope Span Variable
   | FuctionLacksSignature Span Variable
+  | WrongNumberOfArguments Span Variable Int Int T.Type
   -- Duality
 --  | DualOfNonRecVar Span  T.Type
   | DualOfNonSession Span T.Type
@@ -107,6 +108,7 @@ instance Located ErrorType where
   getSpan (MultipleFunBindings  p _ _  ) = p
   getSpan (TypeVarOutOfScope     p _   ) = p
   getSpan (FuctionLacksSignature p _   ) = p
+  getSpan (WrongNumberOfArguments p _ _ _ _) = p 
 --  getSpan (DualOfNonRecVar       p _   ) = p
   getSpan (DualOfNonSession      p _   ) = p
   getSpan (SignatureLacksBinding p _ _ ) = p
@@ -173,6 +175,12 @@ instance Message ErrorType where
   msg (TypeVarOutOfScope _ x) sty ts = "Type variable not in scope: " ++ style red sty ts x
   msg (FuctionLacksSignature _ x) sty ts =
     "The binding for function " ++ style red sty ts x ++ " lacks an accompanying type signature"
+  msg (WrongNumberOfArguments p fun exp got t) sty ts =
+    "Wrong number of arguments in function " ++ style red sty ts (show fun) ++
+    "\n  expecting " ++ style red sty ts (show exp) ++
+    ", but got " ++ style red sty ts (show got) ++
+    "\n  Declared in file/module " ++ showModule (showModuleName p) p ++
+    ":\n  " ++ red sty (show fun ++ " : " ++ show t)
   msg (DualOfNonSession _ t) sty ts = 
     "Dualof applied to a non session type: " ++ style red sty ts t
   msg (SignatureLacksBinding _ x t) sty ts = 
