@@ -50,8 +50,12 @@ instance ResolveDuality E.Exp where
 resolveFieldMap :: FieldMap -> FreestState FieldMap
 resolveFieldMap = mapM (\(xs, e) -> (xs, ) <$> resolve e)
 
-instance ResolveDuality (Bind a Exp) where
-  resolve (Bind p a k e) = Bind p a k <$> resolve e
+instance (ResolveDuality a, ResolveDuality b) => ResolveDuality (Bind a b) where
+  resolve (Bind p a t e) = Bind p a <$> resolve t <*> resolve e
+
+-- We need this one, to have the previous one working. In case E.TAbs a is a Kind 
+instance ResolveDuality K.Kind where
+  resolve k = pure k
 
 instance ResolveDuality T.Type where
   resolve = solveType Set.empty
