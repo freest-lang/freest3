@@ -45,7 +45,7 @@ instance Show Match where
 
 instance Show Pattern where
   show (V v)    = "Var " ++ show v
-  show (C v xs) = "Pat " ++ show v ++ "("++ show xs ++")"
+  show (C v xs) = "Pat " ++ show v ++ " ("++ show xs ++")"
 ----------------------------------------------------
 
 matchFun :: ParseEnvP -> FreestState ParseEnv
@@ -62,7 +62,7 @@ match xs@(x:_) = do
   let m = M arguments xs ERROR 
   -- result <- matching m
   result <- matchingPrint m
-  return $ casefy arguments result
+  return $ (arguments, casefy result)
 
 matchingPrint :: Match -> FreestState Match
 matchingPrint x = do
@@ -85,18 +85,13 @@ matching x@(M us cs o)
   | otherwise     = matchingPrint =<< ruleMix x
 matching x = return x
 
-casefy :: [Variable] -> Match -> ([Variable],Exp)
-casefy as cs = (as, expfy cs)
-
-expfy :: Match -> Exp
-expfy (ExpM e)     = e
-expfy (CaseM v cs) = Case s (Var s v) (Map.fromList l)
-  where l = map (\(con,vs,mat) -> (con,(vs,expfy mat))) cs
+casefy :: Match -> Exp
+casefy (ExpM e)     = e
+casefy (CaseM v cs) = Case s (Var s v) (Map.fromList l)
+  where l = map (\(con,vs,mat) -> (con,(vs,casefy mat))) cs
         s = getSpan v
--- expfy ERROR = ? TODO maybe should be added a monad for errors
--- expfy M not expected
 
--- is rule
+-- is rule ---------------------------------------------------------
 isRuleEmpty :: Match -> Bool
 isRuleEmpty (M _ cs _) = and $ map (null.fst) cs
 isRuleEmpty _ = False
@@ -113,31 +108,22 @@ isRuleCon (M _ cs _) = and $ map (check.fst) cs
                && isCon (head p)
 isRuleCon _ = False
 
--- rules
--- ruleEmpty :: Match -> Match
--- ruleEmpty (M _ ((_,e):cs) _) = ExpM e
+-- rules -----------------------------------------------------------
 
+-- empty -----------------------------------------------------------
 ruleEmpty :: Match -> FreestState Match
 ruleEmpty (M _ ((_,e):cs) _) = do
   debugM "# ruleEmpty"
   return $ ExpM e
 
--- ruleVar :: Match -> Match
--- ruleVar (M (v:us) cs o) = M us (map replace cs) o
---   where replace (p:ps,e) = (ps, replaceExp v (pVar p) e)
-
+-- var -------------------------------------------------------------
 ruleVar :: Match -> FreestState Match
 ruleVar (M (v:us) cs o) = do
   debugM "# ruleVar"
   return $ M us (map replace cs) o
   where replace (p:ps,e) = (ps, replaceExp v (pVar p) e)
 
--- ruleCon :: Match -> FreestState Match
--- ruleCon (M (v:us) cs o) = groupSortBy (name.head.fst) cs
---                         & mapM destruct
---                       >>= mapM (return.matchfy us o) -- ugly
---                       >>= return.CaseM v
-
+-- con -------------------------------------------------------------
 ruleCon :: Match -> FreestState Match
 ruleCon (M (v:us) cs o) = do
   let a = groupSortBy (name.head.fst) cs
@@ -146,74 +132,78 @@ ruleCon (M (v:us) cs o) = do
   debugM "# ruleCon"
   return $ CaseM v c
 
--- ruleMix :: Match -> Match
--- ruleMix (M us cs o) = groupOn (name.head.fst) cs
---                     & distribute us o
---   where distribute us o [] = o
---         distribute us o (cs:css) = M us cs (distribute us o css)
-
-ruleMix :: Match -> FreestState Match
-ruleMix (M us cs o) = do
-  debugM "# ruleMix"
-  groupOn (name.head.fst) cs
-                    & distribute us o
-                    & fill (head us)
-  where distribute us o [] = o
-        distribute us o (cs:css) = M us cs (distribute us o css)
-
--- rule con aux
+-- rule con aux 
 destruct :: [([Pattern],Exp)] -> FreestState (Variable, [Variable], [([Pattern],Exp)])
-destruct l@((p:ps,_):cs) = f =<< newArgs
+destruct l@((p:ps,_):cs) = construct (pVar p) (destruct' l) =<< newArgs
   where newArgs = mapM newVar (pPats p)
-        f a = return (pVar p,a,destruct' l)
+        construct a c b = return (a,b,c)
 
 destruct' :: [([Pattern],Exp)] -> [([Pattern],Exp)]
 destruct' [] = []
-destruct' ((p:ps,e):xs) = (ps'++ps,e) : destruct' xs 
-  where ps' = pPats p
+destruct' ((p:ps,e):xs) = ((pPats p)++ps,e) : destruct' xs 
 
 matchfy :: [Variable] -> Match -> (Variable, [Variable], [([Pattern],Exp)])
                                -> (Variable, [Variable], Match)
 matchfy us o (con,vs,css) = (con,vs,M (vs++us) css o)
 
--- rule mix aux
-fill :: Variable -> Match -> FreestState Match
-fill u (M vs cs o)
-  | hasVar cs = do
-    cs' <- fill' u cs
-    o'  <- fill  u o
+-- mix -------------------------------------------------------------
+ruleMix :: Match -> FreestState Match
+ruleMix (M us cs o) = do
+  debugM "# ruleMix"
+  consList <- getCons $ getDataType cs
+  groupOn (name.head.fst) cs
+    & distribute us o
+    & fill (head us) consList
+  where distribute us o [] = o
+        distribute us o (cs:css) = M us cs (distribute us o css)
+
+-- rule mix aux 
+fill :: Variable -> [(Variable,Int)] -> Match -> FreestState Match
+fill v cons (M vs cs o) = do
+    cs' <- if hasVar cs then fill' v cons cs else return cs
+    o'  <- fill v cons o
     return $ M vs cs' o'
-  | otherwise = do 
-    o' <- fill u o
-    return $ M vs cs o'
   where hasVar cs = not   (null cs) 
                  && not   (null (fst (head cs))) 
                  && isVar (head (fst (head cs)))
-fill _ x = return x
+fill _ _ o = return o -- TODO esta a entrar aqui perceber porque
 
-fill' :: Variable -> [([Pattern],Exp)] -> FreestState [([Pattern],Exp)]
-fill' _ [] = return []
-fill' v ((p:ps,e):xs) = do
-  env <- getTEnv
-  t   <- lookup p env
-  let fc1 = fillCons v (p:ps) e (getCons t) 
-  fc2 <- fill' v xs
+fill' :: Variable -> [(Variable,Int)] -> [([Pattern],Exp)] -> FreestState [([Pattern],Exp)]
+fill' _ _ [] = return []
+fill' v cons ((p:ps,e):xs) = do
+  let fc1 = fillCons v e (p:ps) cons
+  fc2 <- fill' v cons xs
   return $ fc1 ++ fc2
 
-fillCons :: Variable -> [Pattern] -> Exp -> [(Variable,Int)] -> [([Pattern],Exp)]
-fillCons v (p:ps) e vs = map newP vs
-  where newE = replaceExp v p e
+-- fills the case with constructors
+fillCons :: Variable -> Exp -> [Pattern] -> [(Variable,Int)] -> [([Pattern],Exp)]
+fillCons v e (p:ps) cons = map (\(c,n) -> ((C v (rep n s)): ps, newE)) cons
+  where newE = replaceExp v (pVar p) e
         s = getSpan $ pVar p
-        p' = C v (replicate n (mkVar s '_'))
-        newP (c,n) = (p': ps, newE)
+        rep n s = map V (replicate n (mkVar s "_"))
+
+-- gets every constructor from the data type
+getDataType :: [([Pattern], Exp)] -> Variable
+getDataType cs = filter (isCon.head.fst) cs
+               & pVar.head.fst.head
+  where hasCon p = not (null $ fst p)
+                && (isCon $ head $ fst p)
 
 -- returns constructors and the amount of variables they need
-getCons :: T.Type -> [(Variable,Int)]
-getCons (T.Almanac _ T.Variant tm) = map (\(v,t) -> (v,countArrows t)) (Map.toList tm)
+getCons :: Variable -> FreestState [(Variable,Int)]
+getCons c = return.findDt.Map.toList =<< getTEnv
+  where findDt ((dt,(_,t)):xs) = 
+          if c `elem` getKeys t then getCons' t else findDt xs
+
+getKeys :: T.Type -> [Variable]
+getKeys (T.Almanac _ T.Variant tm) = Map.keys tm
+
+getCons' :: T.Type -> [(Variable,Int)]
+getCons' (T.Almanac _ T.Variant tm) = map (\(v,t) -> (v,countArrows t)) (Map.toList tm)
   where countArrows (T.Arrow _ _ _ t2) = 1 + countArrows t2
         countArrows _ = 0 
 
--- replace Variables
+-- replace Variables -----------------------------------------------
 replaceExp :: Variable -> Variable -> Exp -> Exp
 replaceExp v p (Var     s v1)          = Var     s (replaceVar v p v1)
 replaceExp v p (Abs     s m b)         = Abs     s m (replaceBind v p b)
