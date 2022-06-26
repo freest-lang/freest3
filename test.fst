@@ -7,3 +7,5 @@ f (D (D x)) = 1
 
 main : Int
 main = f $ D $ D $ B
+
+-- a mixture tem de ser puxada para trás
