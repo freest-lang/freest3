@@ -45,7 +45,7 @@ instance Show Match where
 
 instance Show Pattern where
   show (V v)    = "Var " ++ show v
-  show (C v xs) = "Pat " ++ show v ++ " ("++ show xs ++")"
+  show (C v xs) = "Pat " ++ show v ++ " "++ show xs ++" "
 ----------------------------------------------------
 
 matchFun :: ParseEnvP -> FreestState ParseEnv
@@ -72,12 +72,7 @@ matchingPrint x = do
 
 matching :: Match -> FreestState Match
 matching (CaseM v xs) = return.CaseM v =<< (mapM f xs)
-  where f (a,b,c) = matchingPrint c >>= return.(,,) a b
--- matching x@(M us cs o) 
---   | isRuleEmpty x = return     $ ruleEmpty x
---   | isRuleVar   x = matching   $ ruleVar x
---   | isRuleCon   x = matching =<< ruleCon x
---   | otherwise     = matching   $ ruleMix x
+  where f (a,b,c) = return.(,,) a b =<< matchingPrint c
 matching x@(M us cs o) 
   | isRuleEmpty x = ruleEmpty x
   | isRuleVar   x = matchingPrint =<< ruleVar x
@@ -112,8 +107,9 @@ isRuleCon _ = False
 
 -- empty -----------------------------------------------------------
 ruleEmpty :: Match -> FreestState Match
-ruleEmpty (M _ ((_,e):cs) _) = do
+ruleEmpty m@(M _ ((_,e):cs) _) = do
   debugM "# ruleEmpty"
+  debugM $ "RULE EMPTY " ++ show m
   return $ ExpM e
 
 -- var -------------------------------------------------------------
@@ -150,13 +146,13 @@ matchfy us o (con,vs,css) = (con,vs,M (vs++us) css o)
 ruleMix :: Match -> FreestState Match
 ruleMix (M us cs o) = do
   debugM "# ruleMix"
-  consList <- getCons $ getDataType cs
+  consList <- constructors $ getDataType cs
   groupOn (name.head.fst) cs
     & distribute us o
     & fill (head us) consList
   where distribute us o [] = o
         distribute us o (cs:css) = M us cs (distribute us o css)
-
+ 
 -- rule mix aux 
 fill :: Variable -> [(Variable,Int)] -> Match -> FreestState Match
 fill v cons (M vs cs o) = do
@@ -177,7 +173,7 @@ fill' v cons ((p:ps,e):xs) = do
 
 -- fills the case with constructors
 fillCons :: Variable -> Exp -> [Pattern] -> [(Variable,Int)] -> [([Pattern],Exp)]
-fillCons v e (p:ps) cons = map (\(c,n) -> ((C v (rep n s)): ps, newE)) cons
+fillCons v e (p:ps) cons = map (\(c,n) -> ((C c (rep n s)): ps, newE)) cons
   where newE = replaceExp v (pVar p) e
         s = getSpan $ pVar p
         rep n s = map V (replicate n (mkVar s "_"))
@@ -190,16 +186,16 @@ getDataType cs = filter (isCon.head.fst) cs
                 && (isCon $ head $ fst p)
 
 -- returns constructors and the amount of variables they need
-getCons :: Variable -> FreestState [(Variable,Int)]
-getCons c = return.findDt.Map.toList =<< getTEnv
+constructors :: Variable -> FreestState [(Variable,Int)]
+constructors c = return.findDt.Map.toList =<< getTEnv
   where findDt ((dt,(_,t)):xs) = 
-          if c `elem` getKeys t then getCons' t else findDt xs
+          if c `elem` getKeys t then constructors' t else findDt xs
 
 getKeys :: T.Type -> [Variable]
 getKeys (T.Almanac _ T.Variant tm) = Map.keys tm
 
-getCons' :: T.Type -> [(Variable,Int)]
-getCons' (T.Almanac _ T.Variant tm) = map (\(v,t) -> (v,countArrows t)) (Map.toList tm)
+constructors' :: T.Type -> [(Variable,Int)]
+constructors' (T.Almanac _ T.Variant tm) = map (\(v,t) -> (v,countArrows t)) (Map.toList tm)
   where countArrows (T.Arrow _ _ _ t2) = 1 + countArrows t2
         countArrows _ = 0 
 
@@ -211,7 +207,7 @@ replaceExp v p (App     s e1 e2)       = App     s (replaceExp v p e1) (replaceE
 replaceExp v p (Pair    s e1 e2)       = Pair    s (replaceExp v p e1) (replaceExp v p e2)
 replaceExp v p (BinLet  s v1 v2 e1 e2) = BinLet  s (replaceVar v p v1) (replaceVar v p v2) (replaceExp v p e1) (replaceExp v p e2)
 replaceExp v p (Case    s e fm)        = Case    s (replaceExp v p e) (Map.map (substitute v p) fm)
--- replaceExp v p (CaseP   s e fmp)       = CaseP   s (replaceExp v p e) (Map.map ((substitute v p).match) fmp) TODO monading
+-- replaceExp v p (CaseP   s e fmp)       = CaseP   s (replaceExp v p e) (Map.map ((substitute v p).match) fmp) -- TODO monading
 replaceExp v p (TypeAbs s b)           = TypeAbs s (replaceBind v p b)
 replaceExp v p (TypeApp s e t)         = TypeApp s (replaceExp v p e) t
 replaceExp v p (Cond    s e1 e2 e3)    = Cond    s (replaceExp v p e1) (replaceExp v p e2) (replaceExp v p e3)
