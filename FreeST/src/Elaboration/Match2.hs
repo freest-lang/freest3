@@ -146,16 +146,37 @@ matchfy us o (con,vs,css) = (con,vs,M (vs++us) css o)
 ruleMix :: Match -> FreestState Match
 ruleMix (M us cs o) = do
   debugM "# ruleMix"
-
   consList <- constructors $ getDataType cs
-  let css = groupOn (name.head.fst) cs
-  let cs' = concat $ map fill css
-  return (M us cs o)
+  groupOn (name.head.fst) cs
+    & distribute us o
+    & fill (head us) consList
+  where distribute us o [] = o
+        distribute us o (cs:css) = M us cs (distribute us o css)
+ 
+-- rule mix aux 
+fill :: Variable -> [(Variable,Int)] -> Match -> FreestState Match
+fill v cons (M vs cs o) = do
+    cs' <- if hasVar cs then fill' v cons cs else return cs
+    o'  <- fill v cons o
+    return $ M vs cs' o'
+  where hasVar cs = not   (null cs) 
+                 && not   (null (fst (head cs))) 
+                 && isVar (head (fst (head cs)))
+fill _ _ o = return o -- TODO esta a entrar aqui perceber porque
 
---rule mix aux
-fill :: [([Pattern],Exp)] -> [([Pattern],Exp)]
-fill = undefined
+fill' :: Variable -> [(Variable,Int)] -> [([Pattern],Exp)] -> FreestState [([Pattern],Exp)]
+fill' _ _ [] = return []
+fill' v cons ((p:ps,e):xs) = do
+  let fc1 = fillCons v e (p:ps) cons
+  fc2 <- fill' v cons xs
+  return $ fc1 ++ fc2
 
+-- fills the case with constructors
+fillCons :: Variable -> Exp -> [Pattern] -> [(Variable,Int)] -> [([Pattern],Exp)]
+fillCons v e (p:ps) cons = map (\(c,n) -> ((C c (rep n s)): ps, newE)) cons
+  where newE = replaceExp v (pVar p) e
+        s = getSpan $ pVar p
+        rep n s = map V (replicate n (mkVar s "_"))
 
 -- gets every constructor from the data type
 getDataType :: [([Pattern], Exp)] -> Variable
