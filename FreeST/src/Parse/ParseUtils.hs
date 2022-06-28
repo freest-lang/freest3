@@ -122,14 +122,6 @@ checkDupVarPat' ((E.V v)   :xs) vs = do
     Nothing -> return ()
   checkDupVarPat' xs (v:vs)
 
--- TODOX remove
--- checkDupFunDecl :: Variable -> FreestStateT ()
--- checkDupFunDecl x = do
---   eEnv <- parseEnv <$> get
---   case eEnv Map.!? x of
---     Just e  -> addError $ MultipleFunBindings (getSpan x) x (getSpan $ snd e)
---     Nothing -> return ()
-
 -- OPERATORS
 
 binOp :: E.Exp -> Variable -> E.Exp -> E.Exp

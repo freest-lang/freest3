@@ -163,7 +163,6 @@ Decl :: { () }
   : ProgVar ':' Type {% checkDupProgVarDecl $1 >> addToVEnv $1 $3 }
   -- Function declaration
   | ProgVar PatternSeq '=' Exp {% checkDupVarPat $2 >> addToPEnvP $1 $2 $4 }
-                            -- {% checkDupFunDecl $1 >> addToPEnv $1 $2 $4 } -- TODOX remove
   -- Type abbreviation
   | type KindedTVar TypeDecl {% checkDupTypeDecl (fst $2) >> uncurry addToTEnv $2 $3 }
   -- Datatype declaration

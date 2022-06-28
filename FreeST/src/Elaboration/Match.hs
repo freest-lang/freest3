@@ -17,24 +17,6 @@ import qualified Data.Map.Strict   as Map
 
 import           Util.FreestState
 
--- TODOX remove
-import           Debug.Trace
-
---------------- just to remember the format ----------------
--- cases                                                  --
--- type FieldMap  = Map.Map Variable ([Variable], Exp)    --
--- type FieldMapP = Map.Map Variable [([Pattern], Exp)]   --
--- functions                                              --
--- type ParseEnv  = Map.Map Variable ([Variable], Exp)    --
--- type ParseEnvP = Map.Map Variable [([Pattern], Exp)]   --
-------------------------------------------------------------
-
-------------------------------------------------------------
--- instance Show Pattern where
---   show (V v)    = "Var " ++ show v
---   show (C v xs) = "Pat " ++ show v ++ " "++ show xs ++" "
-------------------------------------------------------------
-
 matchFuns :: ParseEnvP -> FreestState ParseEnv
 matchFuns pep = mapM matchFun pep
 
