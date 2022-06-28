@@ -75,9 +75,9 @@ matching (CaseM v xs) = return.CaseM v =<< (mapM f xs)
   where f (a,b,c) = return.(,,) a b =<< matchingPrint c
 matching x@(M us cs o) 
   | isRuleEmpty x = ruleEmpty x
-  | isRuleVar   x = matchingPrint =<< ruleVar x
-  | isRuleCon   x = matchingPrint =<< ruleCon x
-  | otherwise     = matchingPrint =<< ruleMix x
+  | isRuleVar   x = ruleVar x
+  | isRuleCon   x = ruleCon x
+  | otherwise     = ruleMix x
 matching x = return x
 
 casefy :: Match -> Exp
@@ -116,7 +116,7 @@ ruleEmpty m@(M _ ((_,e):cs) _) = do
 ruleVar :: Match -> FreestState Match
 ruleVar (M (v:us) cs o) = do
   debugM "# ruleVar"
-  return $ M us (map replace cs) o
+  matching $ M us (map replace cs) o
   where replace (p:ps,e) = (ps, replaceExp v (pVar p) e)
 
 -- con -------------------------------------------------------------
@@ -126,7 +126,7 @@ ruleCon (M (v:us) cs o) = do
   b <- mapM destruct a
   let c = map (matchfy us o) b
   debugM "# ruleCon"
-  return $ CaseM v c
+  matching $ CaseM v c
 
 -- rule con aux 
 destruct :: [([Pattern],Exp)] -> FreestState (Variable, [Variable], [([Pattern],Exp)])
@@ -146,23 +146,28 @@ matchfy us o (con,vs,css) = (con,vs,M (vs++us) css o)
 ruleMix :: Match -> FreestState Match
 ruleMix (M us cs o) = do
   debugM "# ruleMix"
-
-  consList <- constructors $ getDataType cs
-  let css = groupOn (name.head.fst) cs
-  let cs' = concat $ map fill css
-  return (M us cs o)
+  cons <- constructors $ getDataType cs
+  let css = groupOn (isVar.head.fst) cs
+  let cs' = concat $ map (fill cons) css
+  matching $ M us cs' o
 
 --rule mix aux
-fill :: [([Pattern],Exp)] -> [([Pattern],Exp)]
-fill = undefined
+fill :: [(Variable,Int)] -> [([Pattern],Exp)] -> [([Pattern],Exp)]
+fill cons cs 
+  | hasVar cs = fill' cons cs
+  | otherwise = cs
+  where hasVar = isVar.head.fst.head
 
+fill' :: [(Variable,Int)] -> [([Pattern],Exp)] -> [([Pattern],Exp)]
+fill' _ [] = []
+fill' cons ((p:ps,e):cs) = map mkCons cons ++ fill' cons cs
+  where v = V $ mkVar (getSpan $ pVar p) "_"
+        mkCons (c,n) = ((C c (replicate n v):ps),e)
 
 -- gets every constructor from the data type
 getDataType :: [([Pattern], Exp)] -> Variable
 getDataType cs = filter (isCon.head.fst) cs
                & pVar.head.fst.head
-  where hasCon p = not (null $ fst p)
-                && (isCon $ head $ fst p)
 
 -- returns constructors and the amount of variables they need
 constructors :: Variable -> FreestState [(Variable,Int)]
@@ -170,13 +175,13 @@ constructors c = return.findDt.Map.toList =<< getTEnv
   where findDt ((dt,(_,t)):xs) = 
           if c `elem` getKeys t then constructors' t else findDt xs
 
-getKeys :: T.Type -> [Variable]
-getKeys (T.Almanac _ T.Variant tm) = Map.keys tm
-
 constructors' :: T.Type -> [(Variable,Int)]
 constructors' (T.Almanac _ T.Variant tm) = map (\(v,t) -> (v,countArrows t)) (Map.toList tm)
   where countArrows (T.Arrow _ _ _ t2) = 1 + countArrows t2
         countArrows _ = 0 
+
+getKeys :: T.Type -> [Variable]
+getKeys (T.Almanac _ T.Variant tm) = Map.keys tm
 
 -- replace Variables -----------------------------------------------
 replaceExp :: Variable -> Variable -> Exp -> Exp
