@@ -1,4 +1,4 @@
-module Elaboration.Match
+module Elaboration.Match2
   ( matchFun
   )
 where
@@ -28,74 +28,111 @@ import           Debug.Trace
 -- type ParseEnvP = Map.Map Variable [([Pattern], Exp)]   --
 ------------------------------------------------------------
 
-------------------------------------------------------------
+--                  fun args     patterns, exp   otherwise
+data Match = M     [Variable] [([Pattern], Exp)] Match
+--                 var        cons      vars      case
+           | CaseM Variable [(Variable,[Variable],Match)]
+--                 exp
+           | ExpM  Exp
+           | ERROR 
+
+---------------- TODO for debugging ----------------
+instance Show Match where
+  show (M us ps o)   = "(m " ++ show us ++ ", " ++ show ps ++ ", " ++ show o ++ ")"
+  show (CaseM as xs) = "(casem " ++ show as ++ ", " ++ show xs ++ ")"
+  show (ExpM e)      = "expression " ++ show e
+  show (ERROR)       = "ERROR"
+
 instance Show Pattern where
   show (V v)    = "Var " ++ show v
   show (C v xs) = "Pat " ++ show v ++ " "++ show xs ++" "
-------------------------------------------------------------
+----------------------------------------------------
 
 matchFun :: ParseEnvP -> FreestState ParseEnv
 matchFun pep = mapM match pep
 
 match :: [([Pattern],Exp)] -> FreestState ([Variable],Exp)
-match xs@(x:_) = mapM newVar (fst x)
-             >>= \args -> (return.(,) args =<< (matching args xs))
+match xs@(x:_) = do 
+  arguments <- mapM newVar (fst x)
+  let m = M arguments xs ERROR 
+  result <- matching m
+  return $ (arguments, casefy result)
 
-matching :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
-matching vs x
-  | isRuleEmpty x = ruleEmpty vs x
-  | isRuleVar   x = ruleVar   vs x
-  | isRuleCon   x = ruleCon   vs x
-  | otherwise     = ruleMix   vs x
+matching :: Match -> FreestState Match
+matching (CaseM v xs) = return.CaseM v =<< (mapM f xs)
+  where f (a,b,c) = return.(,,) a b =<< matching c
+matching x@(M us cs o) 
+  | isRuleEmpty x = ruleEmpty x
+  | isRuleVar   x = ruleVar x
+  | isRuleCon   x = ruleCon x
+  | otherwise     = ruleMix x
+matching x = return x
+
+casefy :: Match -> Exp
+casefy (ExpM e)     = e
+casefy (CaseM v cs) = Case s (Var s v) (Map.fromList l)
+  where l = map (\(con,vs,mat) -> (con,(vs,casefy mat))) cs
+        s = getSpan v
 
 -- is rule ---------------------------------------------------------
-isRuleEmpty :: [([Pattern],Exp)] -> Bool
-isRuleEmpty cs = and $ map (null.fst) cs
+isRuleEmpty :: Match -> Bool
+isRuleEmpty (M _ cs _) = and $ map (null.fst) cs
+isRuleEmpty _ = False
 
-isRuleVar   :: [([Pattern],Exp)] -> Bool
-isRuleVar cs = and $ map (check.fst) cs
+isRuleVar :: Match -> Bool
+isRuleVar (M _ cs _) = and $ map (check.fst) cs
   where check p = not   (null p)
                && isVar (head p)
+isRuleVar _ = False
 
-isRuleCon   :: [([Pattern],Exp)] -> Bool
-isRuleCon cs = and $ map (check.fst) cs
+isRuleCon :: Match -> Bool
+isRuleCon (M _ cs _) = and $ map (check.fst) cs
   where check p = not   (null p)
                && isCon (head p)
+isRuleCon _ = False
 
 -- rules -----------------------------------------------------------
 
 -- empty -----------------------------------------------------------
-ruleEmpty :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
-ruleEmpty _ ((_,e):cs) = return e
+ruleEmpty :: Match -> FreestState Match
+ruleEmpty m@(M _ ((_,e):cs) _) = do
+  return $ ExpM e
 
 -- var -------------------------------------------------------------
-ruleVar :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
-ruleVar (v:us) cs = matching us (map replace cs)
+ruleVar :: Match -> FreestState Match
+ruleVar (M (v:us) cs o) = do
+  matching $ M us (map replace cs) o
   where replace (p:ps,e) = (ps, replaceExp v (pVar p) e)
 
 -- con -------------------------------------------------------------
-ruleCon :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
-ruleCon (v:us) cs = groupSortBy (name.head.fst) cs
-                  & mapM destruct
-                >>= mapM (\(con,vs,cs) -> return.(,) con.(,) vs =<< matching (vs++us) cs)
-                >>= return . Case s (Var s v) . Map.fromList
-  where s = getSpan v
-  
+ruleCon :: Match -> FreestState Match
+ruleCon (M (v:us) cs o) = do
+  let a = groupSortBy (name.head.fst) cs
+  b <- mapM destruct a
+  let c = map (matchfy us o) b
+  matching $ CaseM v c
+
 -- rule con aux 
 destruct :: [([Pattern],Exp)] -> FreestState (Variable, [Variable], [([Pattern],Exp)])
-destruct l@((p:ps,_):cs) = mapM newVar (pPats p)
-                       >>= return.(\args -> (,,) (pVar p) args (destruct' l))
+destruct l@((p:ps,_):cs) = construct (pVar p) (destruct' l) =<< newArgs
+  where newArgs = mapM newVar (pPats p)
+        construct a c b = return (a,b,c)
 
 destruct' :: [([Pattern],Exp)] -> [([Pattern],Exp)]
 destruct' [] = []
 destruct' ((p:ps,e):xs) = ((pPats p)++ps,e) : destruct' xs 
 
+matchfy :: [Variable] -> Match -> (Variable, [Variable], [([Pattern],Exp)])
+                               -> (Variable, [Variable], Match)
+matchfy us o (con,vs,css) = (con,vs,M (vs++us) css o)
+
 -- mix -------------------------------------------------------------
-ruleMix :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
-ruleMix us cs = do
+ruleMix :: Match -> FreestState Match
+ruleMix (M us cs o) = do
   cons <- constructors $ getDataType cs
-  matching us $ groupOn (isVar.head.fst) cs
-              & concat.map (fill cons)
+  let css = groupOn (isVar.head.fst) cs
+  let cs' = concat $ map (fill cons) css
+  matching $ M us cs' o
 
 --rule mix aux
 fill :: [(Variable,Int)] -> [([Pattern],Exp)] -> [([Pattern],Exp)]

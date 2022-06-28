@@ -1,4 +1,4 @@
-module Elaboration.Match
+module Elaboration.Match3
   ( matchFun
   )
 where
@@ -38,8 +38,10 @@ matchFun :: ParseEnvP -> FreestState ParseEnv
 matchFun pep = mapM match pep
 
 match :: [([Pattern],Exp)] -> FreestState ([Variable],Exp)
-match xs@(x:_) = mapM newVar (fst x)
-             >>= \args -> (return.(,) args =<< (matching args xs))
+match xs@(x:_) = do 
+  arguments <- mapM newVar (fst x)
+  result <- matching arguments xs
+  return $ (arguments, result)
 
 matching :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
 matching vs x
@@ -75,16 +77,19 @@ ruleVar (v:us) cs = matching us (map replace cs)
 
 -- con -------------------------------------------------------------
 ruleCon :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
-ruleCon (v:us) cs = groupSortBy (name.head.fst) cs
-                  & mapM destruct
-                >>= mapM (\(con,vs,cs) -> return.(,) con.(,) vs =<< matching (vs++us) cs)
-                >>= return . Case s (Var s v) . Map.fromList
-  where s = getSpan v
-  
+ruleCon (v:us) cs = do
+  let a = groupSortBy (name.head.fst) cs
+  b <- mapM destruct a
+  let s = getSpan v
+  cs' <- mapM (\(con,vs,cs) -> return.(,) con.(,) vs =<< matching (vs++us) cs) b
+  let c = Case s (Var s v) (Map.fromList cs')
+  return c
+
 -- rule con aux 
 destruct :: [([Pattern],Exp)] -> FreestState (Variable, [Variable], [([Pattern],Exp)])
-destruct l@((p:ps,_):cs) = mapM newVar (pPats p)
-                       >>= return.(\args -> (,,) (pVar p) args (destruct' l))
+destruct l@((p:ps,_):cs) = construct (pVar p) (destruct' l) =<< newArgs
+  where newArgs = mapM newVar (pPats p)
+        construct a c b = return (a,b,c)
 
 destruct' :: [([Pattern],Exp)] -> [([Pattern],Exp)]
 destruct' [] = []
@@ -94,8 +99,9 @@ destruct' ((p:ps,e):xs) = ((pPats p)++ps,e) : destruct' xs
 ruleMix :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
 ruleMix us cs = do
   cons <- constructors $ getDataType cs
-  matching us $ groupOn (isVar.head.fst) cs
-              & concat.map (fill cons)
+  let css = groupOn (isVar.head.fst) cs
+  let cs' = concat $ map (fill cons) css
+  matching us cs'
 
 --rule mix aux
 fill :: [(Variable,Int)] -> [([Pattern],Exp)] -> [([Pattern],Exp)]
