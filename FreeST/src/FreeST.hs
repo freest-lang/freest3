@@ -28,8 +28,7 @@ main = checkAndRun =<< flags -- handleOpts =<< compilerOpts =<< getArgs
 checkAndRun :: RunOpts -> IO ()
 checkAndRun runOpts = do
   -- | Prelude
-  -- preludeFp <- getDataFileName "Prelude.fst" -- TODO put back
-  preludeFp <- getDataFileName "test.fst"       -- TODO remove
+  preludeFp <- getDataFileName "Prelude.fst"
   let s0 = initialState {varEnv = prelude, runOpts=runOpts{runFilePath=preludeFp}}
   s1 <- preludeHasErrors (runFilePath runOpts) s0 <$> (parseProgram s0)
 

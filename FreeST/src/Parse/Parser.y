@@ -277,8 +277,9 @@ CaseMap :: { FieldMapP }
 --   : Constructor ProgVarWildSeq '->' Exp { ($1, ($2, $4)) }
 
 Case :: { ([Pattern], E.Exp) }
-  : ProgVarWild            '->' Exp  { ([E.V $1], $3) }
-  | Constructor PatternSeq '->' Exp  {% checkDupVarPat $2 >> return ([E.C $1 $2], $4) }
+  : ProgVarWild                    '->' Exp  { ([E.V $1], $3) }
+  | Constructor PatternSeq         '->' Exp  {% checkDupVarPat $2 >> return ([E.C $1 $2], $4) }
+  | '(' Constructor PatternSeq ')' '->' Exp  {% checkDupVarPat $3 >> return ([E.C $2 $3], $6) }
 
 PatternSeq :: { [Pattern] }
   :                     {[]}
