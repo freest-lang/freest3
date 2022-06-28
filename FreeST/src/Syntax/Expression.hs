@@ -57,10 +57,15 @@ instance Default (Bind T.Type Exp) where
   omission p = Bind p (omission p) (T.Unit p) (Unit p)
 
 type FieldMap  = Map.Map Variable ([Variable], Exp)
-type FieldMapP = Map.Map Variable [([Pattern], Exp)]
+type FieldMapP = [([Pattern], Exp)]
 
 data Pattern = V Variable           -- Variable   name
              | C Variable [Pattern] -- Construtor name patterns
+
+-- TODOX remove
+instance Show Pattern where
+  show (V v) = "V " ++ intern v
+  show (C v ps) = "C " ++ intern v ++ show ps
 
 instance Located Exp where
   getSpan (Unit p             ) = p

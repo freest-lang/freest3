@@ -16,7 +16,7 @@ import qualified Data.Map.Strict   as Map
 
 import           Util.FreestState
 
--- TODO remove
+-- TODOXS remove
 import           Debug.Trace
 
 --------------- just to remember the format ----------------
@@ -36,17 +36,17 @@ data Match = M     [Variable] [([Pattern], Exp)] Match
            | ExpM  Exp
            | ERROR 
 
----------------- TODO for debugging ----------------
+---------------- TODOX for debugging ----------------
 instance Show Match where
   show (M us ps o)   = "(m " ++ show us ++ ", " ++ show ps ++ ", " ++ show o ++ ")"
   show (CaseM as xs) = "(casem " ++ show as ++ ", " ++ show xs ++ ")"
   show (ExpM e)      = "expression " ++ show e
   show (ERROR)       = "ERROR"
 
-instance Show Pattern where
-  show (V v)    = "Var " ++ show v
-  show (C v xs) = "Pat " ++ show v ++ " "++ show xs ++" "
-----------------------------------------------------
+-- instance Show Pattern where
+--   show (V v)    = "Var " ++ show v
+--   show (C v xs) = "Pat " ++ show v ++ " "++ show xs ++" "
+-----------------------------------------------------
 
 matchFun :: ParseEnvP -> FreestState ParseEnv
 matchFun pep = mapM match pep

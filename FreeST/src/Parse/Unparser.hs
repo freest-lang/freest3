@@ -82,7 +82,7 @@ instance Show Variable where
 showVar :: Variable -> String
 -- showVar = dropWhile (\c -> isDigit c || c == '#') . intern
 showVar = intern -- for testing purposes
--- TODO change back
+-- TODOX change back
 
 -- Sorted variable. Either a:k or x:t (just to get the spacing right)
 
@@ -286,6 +286,10 @@ instance Unparse Exp where
   unparse (E.Case _ e m) =
     (inRator, "case " ++ s ++ " of {" ++ showFieldMap m ++ "}")
     where s = bracket (unparse e) NonAssoc inRator
+  -- TODOX REMOVE DEBUGGING
+  unparse (E.CaseP _ e m) =
+    (inRator, "case " ++ s ++ " of {" ++ showFieldMapP m ++ "}")
+    where s = bracket (unparse e) NonAssoc inRator
   -- Type Abstraction intro and elim
   unparse (E.TypeApp _ x t) = (appRator, show x ++ " [" ++ show t ++ "]")
   unparse (E.TypeAbs _ b) = (arrowRator, "Λ" ++ showBindExp b)
@@ -307,6 +311,13 @@ instance Unparse Exp where
 
 showFieldMap :: FieldMap -> String
 showFieldMap m = intercalate "; " $ map showAssoc (Map.toList m)
+ where
+  showAssoc (b, (a, v)) =
+    show b ++ " " ++ unwords (map show a) ++ " -> " ++ show v
+
+-- TODOX for debugging
+showFieldMapP :: FieldMapP -> String
+showFieldMapP m = intercalate "; " $ map show m
  where
   showAssoc (b, (a, v)) =
     show b ++ " " ++ unwords (map show a) ++ " -> " ++ show v

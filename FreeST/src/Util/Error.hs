@@ -59,7 +59,7 @@ data ErrorType =
   | DuplicateFieldInDatatype Span Variable Span
   | MultipleDeclarations Span Variable Span
   | MultipleTypeDecl Span Variable Span
-  | MultipleFunBindings Span Variable Span
+  | MultipleFunBindings Span Variable Span -- TODOX remove?
   -- Elab
   | TypeVarOutOfScope Span Variable
   | FuctionLacksSignature Span Variable

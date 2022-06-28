@@ -1,37 +1,22 @@
 
-Type = Almanac com Sort Variant
-Sort =
-Variant =
+-- outros
+1. Erro que já não é:
+FreeST/test/Programs/InvalidTests/ParseErrors/dupFunDecl/dupFunDecl.fst
 
-data List:TU = Nil | Cons Int List 
+f : Int
+f = 5
+f = 6
 
-no TypeEnv fica uma entrada (List,(Kind.TU,Type.Almanac))
+2. Erro que já não é: (por causa de nested Cases)
+FreeST/test/Programs/InvalidTests/ParseErrors/dupCases/dupCases.fst
 
-Type.Almanac Span Sort TypeMap
+data D = E
 
-Sort -> Variant
-TypeMap -> (Variable,Type)
-           (Cons    ,Int -> List -> List)
-           (Nil     ,List)
-           
-criar variavel ignorada
-| '_'     {% flip mkVar "_" `fmap` mkSpan $1 }
+f : Bool
+f = 
+  case D of {
+    E -> True,
+    E -> False
+  }
 
-mkVar "_"
-
---
-data T = A | B | C
-
-f : T -> Int
-f A = 1
-f x = x
-
-[u1]
-[([A],1)
-,([x],x)
-] o
-
-case u1 of 
-  A -> 1
-  B -> 2
-  C -> 2
+3. 

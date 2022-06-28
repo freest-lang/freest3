@@ -26,7 +26,7 @@ import           Elaboration.Match as Match
 elaboration :: FreestState ()
 elaboration = do
   -- | Remove all patterns
-  (Match.matchFun =<< getPEnvP) >>= setPEnv 
+  (Match.matchFuns =<< getPEnvP) >>= setPEnv 
   -- | Solve the equations' system.
   solveEquations
   -- | From this point, there are no type names on the RHS

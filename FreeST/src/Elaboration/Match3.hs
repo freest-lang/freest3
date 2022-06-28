@@ -29,9 +29,9 @@ import           Debug.Trace
 ------------------------------------------------------------
 
 ------------------------------------------------------------
-instance Show Pattern where
-  show (V v)    = "Var " ++ show v
-  show (C v xs) = "Pat " ++ show v ++ " "++ show xs ++" "
+-- instance Show Pattern where
+--   show (V v)    = "Var " ++ show v
+--   show (C v xs) = "Pat " ++ show v ++ " "++ show xs ++" "
 ------------------------------------------------------------
 
 matchFun :: ParseEnvP -> FreestState ParseEnv

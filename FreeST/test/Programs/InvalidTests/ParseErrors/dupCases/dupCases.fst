@@ -2,7 +2,7 @@ data D = E
 
 f : Bool
 f =
-  case D of {
+  case E of {
     E -> True,
     E -> False
   }

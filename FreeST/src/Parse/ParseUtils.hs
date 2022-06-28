@@ -67,11 +67,6 @@ checkDupCase :: Variable -> E.FieldMap -> FreestStateT ()
 checkDupCase x m =
   when (x `Map.member` m) $ addError $ RedundantPMatch (getSpan x) x
 
--- TOOD join types and reuse function
-checkDupCaseP :: Variable -> E.FieldMapP -> FreestStateT ()
-checkDupCaseP x m =
-  when (x `Map.member` m) $ addError $ RedundantPMatch (getSpan x) x
-
 checkDupBind :: Variable -> [Variable] -> FreestStateT ()
 checkDupBind x xs
   | intern x == "_" = return ()
@@ -113,13 +108,27 @@ checkDupTypeDecl a = do
     Nothing     -> return ()
  where
     pos tEnv = getSpan $ fst $ Map.elemAt (Map.findIndex a tEnv) tEnv
-  
-checkDupFunDecl :: Variable -> FreestStateT ()
-checkDupFunDecl x = do
-  eEnv <- parseEnv <$> get
-  case eEnv Map.!? x of
-    Just e  -> addError $ MultipleFunBindings (getSpan x) x (getSpan $ snd e)
+
+
+checkDupVarPat :: [E.Pattern] -> FreestStateT ()
+checkDupVarPat ps = checkDupVarPat' ps []
+
+checkDupVarPat' :: [E.Pattern] -> [Variable] -> FreestStateT ()
+checkDupVarPat' [] _ = return ()
+checkDupVarPat' ((E.C c cs):xs) vs = checkDupVarPat' cs vs >> checkDupVarPat' xs vs
+checkDupVarPat' ((E.V v)   :xs) vs = do
+  case find (\v2 -> (==) (intern v) (intern v2)) vs of
+    Just v2 -> addError $ DuplicateVar (getSpan v) "program" v2 (getSpan $ v2)
     Nothing -> return ()
+  checkDupVarPat' xs (v:vs)
+
+-- TODOX remove
+-- checkDupFunDecl :: Variable -> FreestStateT ()
+-- checkDupFunDecl x = do
+--   eEnv <- parseEnv <$> get
+--   case eEnv Map.!? x of
+--     Just e  -> addError $ MultipleFunBindings (getSpan x) x (getSpan $ snd e)
+--     Nothing -> return ()
 
 -- OPERATORS
 
@@ -138,12 +147,5 @@ typeListToType a = map $ second typeToFun -- map (\(x, ts) -> (x, typeToFun ts))
   typeToFun []       = T.Var (getSpan a) a
   typeToFun (t : ts) = T.Arrow (getSpan t) Un t (typeToFun ts)
 
-appendMap :: Ord k => k -> [v] -> Map.Map k [v] -> Map.Map k [v]
-appendMap k v = Map.insertWith add k v
-  where add a b = b++a
-
--- TODO remove      
--- updateMapWith :: Ord k => (v -> v -> v) -> k -> v -> Map.Map k v -> Map.Map k v
--- updateMapWith f k v = Map.alter (Just . maybe v (`f` v)) k
--- appendMap' :: Ord k => k -> v -> Map.Map k [v] -> Map.Map k [v]
--- appendMap' k v = updateMapWith (++) k [v]
+insertMap :: Ord k => k -> [v] -> Map.Map k [v] -> Map.Map k [v]
+insertMap k v = Map.insertWith (++) k v

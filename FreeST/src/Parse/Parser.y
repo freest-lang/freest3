@@ -162,8 +162,8 @@ Decl :: { () }
   -- Function signature
   : ProgVar ':' Type {% checkDupProgVarDecl $1 >> addToVEnv $1 $3 }
   -- Function declaration
-  | ProgVar PatternSeq '=' Exp {% addToPEnvP $1 $2 $4 }
-                            -- {% checkDupFunDecl $1 >> addToPEnv $1 $2 $4 }
+  | ProgVar PatternSeq '=' Exp {% checkDupVarPat $2 >> addToPEnvP $1 $2 $4 }
+                            -- {% checkDupFunDecl $1 >> addToPEnv $1 $2 $4 } -- TODOX remove
   -- Type abbreviation
   | type KindedTVar TypeDecl {% checkDupTypeDecl (fst $2) >> uncurry addToTEnv $2 $3 }
   -- Datatype declaration
@@ -270,16 +270,16 @@ Match :: { (Variable, ([Variable], E.Exp)) }
   : ArbitraryProgVar ProgVarWild '->' Exp { ($1, ([$2], $4)) }
 
 CaseMap :: { FieldMapP }
-  : Case             { uncurry Map.singleton $1 }
-  | Case ',' CaseMap { uncurry appendMap $1 $3 }
+  : Case             { [$1] }
+  | Case ',' CaseMap { $1 : $3 }
   -- | Case ',' CaseMap {% checkDupCaseP (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
 
 -- Case :: { (Variable, ([Variable], E.Exp)) }
 --   : Constructor ProgVarWildSeq '->' Exp { ($1, ($2, $4)) }
 
-Case :: { (Variable, [([Pattern], E.Exp)]) }
-  : ProgVarWild            '->' Exp  { ($1, [([E.V $1], $3)]) }
-  | Constructor PatternSeq '->' Exp  { ($1, [($2, $4)]) }
+Case :: { ([Pattern], E.Exp) }
+  : ProgVarWild            '->' Exp  { ([E.V $1], $3) }
+  | Constructor PatternSeq '->' Exp  {% checkDupVarPat $2 >> return ([E.C $1 $2], $4) }
 
 PatternSeq :: { [Pattern] }
   :                     {[]}
