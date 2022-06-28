@@ -94,12 +94,12 @@ fill' cons ((p:ps,e):cs) = map mkCons cons ++ fill' cons cs
   where v = V $ mkVar (getSpan $ pVar p) "_"
         mkCons (c,n) = ((C c (replicate n v):ps),e)
 
--- gets every constructor from the data type
+-- gets the first contructor name
 getDataType :: [([Pattern], Exp)] -> Variable
 getDataType cs = filter (isCon.head.fst) cs
                & pVar.head.fst.head
 
--- returns constructors and thCons , e amount of variables they need
+-- returns constructors and the amount of variables they need
 constructors :: Variable -> FreestState [(Variable,Int)]
 constructors c = findDt.Map.toList <$> getTEnv
   where findDt ((dt,(_,t)):xs) = 
