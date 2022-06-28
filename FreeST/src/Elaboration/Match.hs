@@ -75,7 +75,7 @@ ruleVar (v:us) cs = matching us (map replace cs)
 
 -- con -------------------------------------------------------------
 ruleCon :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
-ruleCon (v:us) cs = groupSortBy (name.head.fst) cs
+ruleCon (v:us) cs = groupSortBy (pName.head.fst) cs
                   & mapM destruct
                 >>= mapM (\(con,vs,cs) -> return.(,) con.(,) vs =<< matching (vs++us) cs)
                 >>= return . Case s (Var s v) . Map.fromList
@@ -161,9 +161,8 @@ substitute :: Variable -> Variable -> ([Variable],Exp) -> ([Variable],Exp)
 substitute v p (vs,e) = (map (replaceVar v p) vs, replaceExp v p e)
 
 -- aux
-name :: Pattern -> String
-name (V v)   = ""
-name (C v _) = intern v
+pName :: Pattern -> String
+pName (C v _) = intern v
 
 pVar :: Pattern -> Variable
 pVar (V v)   = v
@@ -177,12 +176,10 @@ isVar (V _) = True
 isVar _     = False
 
 isCon :: Pattern -> Bool
-isCon (C _ _) = True
-isCon _       = False
+isCon = not.isVar
 
 newVar :: Pattern -> FreestState Variable
-newVar (V var)   = R.renameVar var
-newVar (C var _) = R.renameVar var
+newVar = R.renameVar.pVar
 
 groupOn :: Eq b => (a -> b) -> [a] -> [[a]]
 groupOn f = groupBy apply
