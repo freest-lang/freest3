@@ -9,7 +9,8 @@ import           Data.Function((&))
 import           Data.Functor((<&>))
 import           Data.Traversable
 import           Control.Monad
-import qualified Control.Bool(ifThenElseM)
+import           Control.Monad.Extra
+import           Control.Bool(ifThenElseM)
 
 import           Syntax.Base
 import           Syntax.Expression
@@ -19,21 +20,18 @@ import qualified Data.Map.Strict   as Map
 
 import           Util.FreestState
 
+import           Debug.Trace
+
 matchFuns :: ParseEnvP -> FreestState ParseEnv
-matchFuns pep = do
-  debugM $ "#matchFuns " ++ show pep
-  mapM matchFun pep
+matchFuns pep = mapM matchFun pep
 
 matchFun :: [([Pattern],Exp)] -> FreestState ([Variable],Exp)
 matchFun xs@((ps,_):_) = mapM newVar ps
                      >>= \args -> (,) args <$> match args xs
 
 match :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
-match vs x = do
-  debugM $ "#match " ++ show x
-  Control.Bool.ifThenElseM (isRuleChan x) 
-                                      (ruleChan vs x)
-                                      (match' vs x)
+match vs x = ifThenElseM (isRuleChan x) 
+                         (ruleChan vs x) (match' vs x)
 
 match' :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
 match' vs x
@@ -57,27 +55,19 @@ isRuleCon cs = and $ map (check.fst) cs
                && isCon (head p)
 
 isRuleChan  :: [([Pattern],Exp)] -> FreestState Bool
-isRuleChan cs = and <$> mapM (check.fst) cs
-  where check p = (&&) (not (null p) && isCon (head p))
-                   <$> (isChan $ head p)
+isRuleChan cs = b1 &&^ b2
+  where b1 = return $ (not $ isRuleEmpty cs) && (not $ isRuleVar cs) && (isRuleCon cs)
+        b2 = and <$> mapM (isChan.head.fst) cs
 
 -- rules -----------------------------------------------------------
 
 -- chan ------------------------------------------------------------
 ruleChan :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
-ruleChan (v:us) cs = do
-  debugM $ "#CHAN " ++ show cs
-  groupSortBy (pName.head.fst) cs
+ruleChan (v:us) cs = groupSortBy (pName.head.fst) cs
                    & mapM destruct
                  >>= mapM (\(con,vs,cs) -> (,) con . (,) vs <$> match (vs++us) cs)
                  <&> Case s (App s (Var s (mkVar s "collect")) (Var s v)) . Map.fromList
   where s = getSpan v
-
--- 1     2   3     4  5         6
--- match Exp with '{' MatchMap '}'
--- let s' = getSpan $2 in mkSpanSpan $1 $6 >>= \s -> pure $ 
--- E.Case s (E.App s' (E.Var s' (mkVar s' "collect")) $2) $5
-
 
 -- empty -----------------------------------------------------------
 ruleEmpty :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
@@ -109,7 +99,7 @@ destruct' ((p:ps,e):xs) = ((pPats p)++ps,e) : destruct' xs
 -- mix -------------------------------------------------------------
 ruleMix :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
 ruleMix us cs = do
-  cons <- constructors $ getDataType cs
+  cons <- constructors $ getCons cs
   match us $ groupOn (isVar.head.fst) cs
            & concat.map (fill cons)
 
@@ -126,16 +116,20 @@ fill' cons ((p:ps,e):cs) = map mkCons cons ++ fill' cons cs
   where v = V $ mkVar (getSpan $ pVar p) "_"
         mkCons (c,n) = ((C c (replicate n v):ps),e)
 
--- gets the data type from the constructor
-getDataType :: [([Pattern], Exp)] -> Variable
-getDataType cs = filter (isCon.head.fst) cs
+-- gets constructor
+getCons :: [([Pattern], Exp)] -> Variable
+getCons cs = filter (isCon.head.fst) cs
                & pVar.head.fst.head
 
 -- returns constructors and the amount of variables they need
 constructors :: Variable -> FreestState [(Variable,Int)]
-constructors c = findDt.Map.toList <$> getTEnv
-  where findDt ((dt,(_,t)):xs) = 
-          if c `elem` getKeys t then constructors' t else findDt xs
+constructors c = (findCons c).(map (snd.snd)).(Map.toList) <$> getTEnv
+
+findCons :: Variable -> [T.Type] -> [(Variable,Int)]
+findCons c [] = []
+findCons c (t:ts) 
+  | c `elem` getKeys t = constructors' t
+  | otherwise = findCons c ts
 
 constructors' :: T.Type -> [(Variable,Int)]
 constructors' (T.Almanac _ T.Variant tm) = map (\(v,t) -> (v,countArrows t)) (Map.toList tm)
@@ -144,6 +138,7 @@ constructors' (T.Almanac _ T.Variant tm) = map (\(v,t) -> (v,countArrows t)) (Ma
 
 getKeys :: T.Type -> [Variable]
 getKeys (T.Almanac _ T.Variant tm) = Map.keys tm
+getKeys _ = []
 
 -- replace Variables -----------------------------------------------
 replaceExp :: Variable -> Variable -> Exp -> FreestState Exp
@@ -163,7 +158,8 @@ replaceExp v p (CaseP s e flp)        = sub <$> replaceExp v p e <*> match vs' f
 replaceExp _ _ e = return e
 
 replaceBind :: Variable -> Variable -> Bind a Exp -> FreestState (Bind a Exp)
-replaceBind v p b@(Bind {var=v1,body=exp}) = (\e -> b {var=replaceVar v p v1,body=e}) <$> replaceExp v p exp
+replaceBind v p b@(Bind {var=v1,body=exp}) = replaceExp v p exp
+                                         <&> (\e -> b {var=replaceVar v p v1,body=e})
 
 replaceVar :: Variable -> Variable -> Variable -> Variable
 replaceVar (Variable _ name) (Variable _ name1) v@(Variable span name2)
@@ -193,7 +189,10 @@ isCon = not.isVar
 
 isChan :: Pattern -> FreestState Bool
 isChan (V _)   = return False
-isChan (C c _) = null <$> constructors c
+isChan (C c _) = Map.toList <$> getTEnv
+             <&> map (getKeys.snd.snd)
+             <&> concat
+             <&> notElem c
 
 newVar :: Pattern -> FreestState Variable
 newVar = R.renameVar.pVar

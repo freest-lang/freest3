@@ -19,4 +19,13 @@ f =
     E -> False
   }
 
+data List = Nil | Cons Int List
+f : Int
+f = 
+  case (Cons 1 $ Cons 2 Nil) of {
+    Nil        -> 0,
+    Cons _ Nil -> 1,
+    Cons _ _   -> 2,
+  }
+
 3. 
