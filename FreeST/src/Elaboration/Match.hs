@@ -4,10 +4,12 @@ module Elaboration.Match
 where
 
 import           Data.List(groupBy,sortOn)
+import qualified Data.Foldable(null)
 import           Data.Function((&))
 import           Data.Functor((<&>))
 import           Data.Traversable
 import           Control.Monad
+import qualified Control.Bool(ifThenElseM)
 
 import           Syntax.Base
 import           Syntax.Expression
@@ -18,14 +20,23 @@ import qualified Data.Map.Strict   as Map
 import           Util.FreestState
 
 matchFuns :: ParseEnvP -> FreestState ParseEnv
-matchFuns pep = mapM matchFun pep
+matchFuns pep = do
+  debugM $ "#matchFuns " ++ show pep
+  mapM matchFun pep
 
 matchFun :: [([Pattern],Exp)] -> FreestState ([Variable],Exp)
 matchFun xs@((ps,_):_) = mapM newVar ps
                      >>= \args -> (,) args <$> match args xs
 
 match :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
-match vs x
+match vs x = do
+  debugM $ "#match " ++ show x
+  Control.Bool.ifThenElseM (isRuleChan x) 
+                                      (ruleChan vs x)
+                                      (match' vs x)
+
+match' :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
+match' vs x
   | isRuleEmpty x = ruleEmpty vs x
   | isRuleVar   x = ruleVar   vs x
   | isRuleCon   x = ruleCon   vs x
@@ -45,7 +56,28 @@ isRuleCon cs = and $ map (check.fst) cs
   where check p = not   (null p)
                && isCon (head p)
 
+isRuleChan  :: [([Pattern],Exp)] -> FreestState Bool
+isRuleChan cs = and <$> mapM (check.fst) cs
+  where check p = (&&) (not (null p) && isCon (head p))
+                   <$> (isChan $ head p)
+
 -- rules -----------------------------------------------------------
+
+-- chan ------------------------------------------------------------
+ruleChan :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
+ruleChan (v:us) cs = do
+  debugM $ "#CHAN " ++ show cs
+  groupSortBy (pName.head.fst) cs
+                   & mapM destruct
+                 >>= mapM (\(con,vs,cs) -> (,) con . (,) vs <$> match (vs++us) cs)
+                 <&> Case s (App s (Var s (mkVar s "collect")) (Var s v)) . Map.fromList
+  where s = getSpan v
+
+-- 1     2   3     4  5         6
+-- match Exp with '{' MatchMap '}'
+-- let s' = getSpan $2 in mkSpanSpan $1 $6 >>= \s -> pure $ 
+-- E.Case s (E.App s' (E.Var s' (mkVar s' "collect")) $2) $5
+
 
 -- empty -----------------------------------------------------------
 ruleEmpty :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
@@ -158,6 +190,10 @@ isVar _     = False
 
 isCon :: Pattern -> Bool
 isCon = not.isVar
+
+isChan :: Pattern -> FreestState Bool
+isChan (V _)   = return False
+isChan (C c _) = null <$> constructors c
 
 newVar :: Pattern -> FreestState Variable
 newVar = R.renameVar.pVar
