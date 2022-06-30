@@ -15,24 +15,16 @@ aTree = Node 1 (Node 2 (Node 8 Leaf Leaf) (Node 3 (Node 5 Leaf Leaf) (Node 4 Lea
 data List = Nil | Cons Tree List
 
 null : List -> Bool
-null xs = case xs of {
-    Nil -> True,
-    Cons _ _ -> False
-  }
+null Nil        = True
+null (Cons _ _) = False
 
 head : List -> Tree
-head xs =
-  case xs of {
-    Nil -> Leaf,
-    Cons x _ -> x
-  }
+head Nil        = Leaf
+head (Cons x _) = x
 
 tail : List -> List
-tail xs =
-  case xs of {
-    Nil -> Nil,
-    Cons _ xs -> xs
-  }
+tail Nil         = Nil
+tail (Cons _ xs) = xs
 
 getFromSingleton : List -> Tree
 getFromSingleton xs =
@@ -43,14 +35,9 @@ getFromSingleton xs =
   else head xs
 
 getTwo : List -> (List, (Tree, Tree))
-getTwo xs  =
-  case xs of {
-    Nil -> printChar 'R'; (Nil, (Error, Error)), -- "Error: Empty stack on right subtree"
-    Cons left ys -> case ys of {
-      Nil -> printChar 'L'; (Nil, (Error, left)), -- "Error: Empty stack on left subtree",
-      Cons right zs -> (zs, (left, right))
-    }
-  }
+getTwo Nil             = printChar 'R'; (Nil, (Error, Error)) -- "Error: Empty stack on right subtree"
+getTwo (Cons left Nil) = printChar 'L'; (Nil, (Error, left )) -- "Error: Empty stack on left subtree",
+getTwo (Cons left (Cons right zs)) = (zs, (left, right))
 
 -- Streams
 
@@ -66,15 +53,9 @@ sendTree : Tree -> Stream -> Skip
 sendTree t c = select EndOfStream $ streamTree t c
 
 streamTree : Tree -> Stream -> Stream
-streamTree t c =
-  case t of {
-    Leaf ->
-      select Leaf c,
-    Node x l r ->
-      send x $ select Node $ streamTree r $ streamTree l c,
-    Error ->
-      select Leaf c
-  }
+streamTree Leaf c         = select Leaf c
+streamTree (Node x l r) c = send x $ select Node $ streamTree r $ streamTree l c
+streamTree Error          = select Leaf c      
 
 -- Reading trees from channels
 
@@ -82,17 +63,12 @@ receiveTree : dualof Stream -> Tree
 receiveTree = recTree Nil
 
 recTree : List -> dualof Stream -> Tree
-recTree xs c =
-  match c with {
-    Node c ->
-      let (xs, p) = getTwo xs in
-      let (left, right) = p in
-      let (root, c) = receive c in
-      recTree (Cons (Node root left right) xs) c,
-    Leaf c ->
-      recTree (Cons Leaf xs) c,
-    EndOfStream _ -> getFromSingleton xs
-  }
+recTree xs (Leaf c)        = recTree (Cons Leaf xs) c
+recTree xs (EndOfStream _) = getFromSingleton xs
+recTree xs (Node c)        = let (xs, p) = getTwo xs in
+                             let (left, right) = p in
+                             let (root, c) = receive c in
+                             recTree (Cons (Node root left right) xs) c
 
 -- Babdly behaving writers
 

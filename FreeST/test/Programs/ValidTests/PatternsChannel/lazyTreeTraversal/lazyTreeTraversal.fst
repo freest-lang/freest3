@@ -32,39 +32,22 @@ type XploreNodeChan : SL = &{
 
 -- The client. Send the tree as requested by the server.
 exploreTree : forall a:SL . XploreTreeChan;a -> Tree -o a
-exploreTree c tree =
-  case tree of {
-    Leaf ->
-      select Leaf c,
-    Node x l r ->
-      exploreNode[a] (select Node c) x l r
-    }
+exploreTree c Leaf         = select Leaf c
+exploreTree c (Node x l r) = exploreNode[a] (select Node c) x l r
 
 exploreNode : forall a:SL . XploreNodeChan;a -> Int -o Tree -o Tree -o a
-exploreNode c x l r =
-  match c with {
-    Value c ->
-      exploreNode[a] (send x c) x l r,
-    Left c ->
-      let c = exploreTree[XploreNodeChan;a] c l in
-      exploreNode[a] c x l r,
-    Right c ->
-      let c = exploreTree[XploreNodeChan;a] c r in
-      exploreNode[a] c x l r,
-    Exit c ->
-      c
-  }
+exploreNode (Value c) x l r = exploreNode[a] (send x c) x l r
+exploreNode (Left  c) x l r = let c = exploreTree[XploreNodeChan;a] c l in
+                              exploreNode[a] c x l r
+exploreNode (Right c) x l r = let c = exploreTree[XploreNodeChan;a] c r in
+                              exploreNode[a] c x l r
+exploreNode (Exit  c) x l r = c
 
 -- The server. Compute the product of the values in a tree;
 -- explicitely request the values; stop as soon a zero is received
 server : forall a:SL . dualof XploreTreeChan ;a -> Int -o (a, Int)
-server c1 n =
-  match c1 with {
-    Leaf c1 ->
-      (c1, n),
-    Node c1 ->
-      serverNode[a] c1 n
-  }
+server (Leaf c1) n = (c1, n)
+server (Node c1) n = serverNode[a] c1 n
 
 serverNode : forall a:SL . dualof XploreNodeChan;a -> Int -o (a, Int)
 serverNode c n =

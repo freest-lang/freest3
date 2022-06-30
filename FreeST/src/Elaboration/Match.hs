@@ -100,21 +100,20 @@ destruct' ((p:ps,e):xs) = ((pPats p)++ps,e) : destruct' xs
 ruleMix :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
 ruleMix us cs = do
   cons <- constructors $ getCons cs
-  match us $ groupOn (isVar.head.fst) cs
-           & concat.map (fill cons)
+  match us =<< (concat <$> mapM (fill cons) (groupOn (isVar.head.fst) cs))
 
 --rule mix aux
-fill :: [(Variable,Int)] -> [([Pattern],Exp)] -> [([Pattern],Exp)]
+fill :: [(Variable,Int)] -> [([Pattern],Exp)] -> FreestState [([Pattern],Exp)]
 fill cons cs 
   | hasVar cs = fill' cons cs
-  | otherwise = cs
+  | otherwise = return cs
   where hasVar = isVar.head.fst.head
 
-fill' :: [(Variable,Int)] -> [([Pattern],Exp)] -> [([Pattern],Exp)]
-fill' _ [] = []
-fill' cons ((p:ps,e):cs) = map mkCons cons ++ fill' cons cs
-  where v = V $ mkVar (getSpan $ pVar p) "_"
-        mkCons (c,n) = ((C c (replicate n v):ps),e)
+fill' :: [(Variable,Int)] -> [([Pattern],Exp)] -> FreestState [([Pattern],Exp)]
+fill' _ [] = return []
+fill' cons ((p:ps,e):cs) = (++) <$> (mapM mkCons cons) <*> (fill' cons cs)
+  where nV = V <$> newVar p
+        mkCons (c,n) = (\v -> ((C c (replicate n v):ps),e)) <$> nV
 
 -- gets constructor
 getCons :: [([Pattern], Exp)] -> Variable

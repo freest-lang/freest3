@@ -20,28 +20,20 @@ type TreeChannel = rec x::Su. +{
 -}
 
 sendTree : forall a:SL . Tree -> (rec x:SL. +{Leaf : Skip, Node: !Int;x;x}); a -> a
-sendTree t c =
-  case t of {
-    Leaf ->
-      select Leaf c,
-    Node x l r ->
-      let c = select Node c in
-      let c = send x c in
-      let c = sendTree[(rec x:SL. +{Leaf: Skip, Node: !Int;x;x});a] l c in
-      sendTree[a] r c
-  }
+sendTree Leaf         c = select Leaf c
+sendTree (Node x l r) c =
+  let c = select Node c in
+  let c = send x c in
+  let c = sendTree[(rec x:SL. +{Leaf: Skip, Node: !Int;x;x});a] l c in
+  sendTree[a] r c
 
 receiveTree : forall a : SL . (rec x:SL. &{Leaf: Skip, Node: ?Int;x;x}); a -> (Tree, a)
-receiveTree c =
-  match c with {
-    Leaf c ->
-      (Leaf, c),
-    Node c ->
-      let (x, c) = receive c in
-      let (left, c) = receiveTree [(rec x:SL. &{Leaf: Skip, Node: ?Int;x;x});a] c in
-      let (right, c) = receiveTree[a] c in
-      (Node x left right, c)
-  }
+receiveTree (Leaf c) = (Leaf, c)
+receiveTree (Node c) = 
+  let (x, c) = receive c in
+  let (left, c) = receiveTree [(rec x:SL. &{Leaf: Skip, Node: ?Int;x;x});a] c in
+  let (right, c) = receiveTree[a] c in
+  (Node x left right, c)
 
 main : Tree
 main =

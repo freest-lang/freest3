@@ -40,33 +40,19 @@ data IntList = Nil | Cons Int IntList
 evaluate : (rec x: SL. &{Add: x, Mult: x, Const: ?Int;x, EOS: !Int}) ->
            IntList -o
            Skip
-evaluate s l =
-  match s with {
-    Const s -> let (n, s) = receive s in evaluate s (Cons n l),
-    Add s   -> let (p, l) = head2 l in let (x, y) = p in evaluate s (Cons (x + y) l),
-    Mult s  -> let (p, l) = head2 l in let (x, y) = p in evaluate s (Cons (x * y) l),
-    EOS s   -> send (headSingleton l) s
-  }
+evaluate (Const s) l = let (n, s) = receive s in evaluate s (Cons n l)
+evaluate (Add   s) l = let (p, l) = head2 l in let (x, y) = p in evaluate s (Cons (x + y) l)
+evaluate (Mult  s) l = let (p, l) = head2 l in let (x, y) = p in evaluate s (Cons (x * y) l)
+evaluate (EOS   s) l = send (headSingleton l) s
 
 head2 : IntList -> ((Int, Int), IntList)
-head2 l =
-  case l of {
-    Nil -> ((err, err), Nil),             -- Error: Empty stack on add/mult (left operand)
-    Cons n l -> case l of {
-                  Nil -> ((n, err), Nil), -- Error: Empty stack on add/mult (right operand)
-                  Cons m l -> ((n, m), l)
-                }
-  }
+head2 Nil                 = ((err, err), Nil) -- Error: Empty stack on add/mult (left operand)
+head2 (Cons n Nil)        = ((n, err), Nil)   -- Error: Empty stack on add/mult (right operand)
+head2 (Cons n (Cons m l)) = ((n, m), l)
 
 headSingleton : IntList -> Int
-headSingleton l =
-  case l of {
-    Nil -> err,                   -- Error: Empty stack at end of stream
-    Cons n l -> case l of {
-                  Nil -> n,
-                  Cons _ _ -> err -- Error: Non empty stack after end of stream
-                }
-  }
+headSingleton (Cons n Nil) = n
+headSingleton _ = err
 
 err : Int
 err = -1

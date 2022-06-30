@@ -25,26 +25,17 @@ initOrderedServer c =
 -- Server function
 --   This server sends the list reversed
 orderedServer : forall a:SL . dualof OrderingChannel;a -> IntList -o (IntList, a)
-orderedServer c list =
-  match c with {
-    Vals c ->
-      let (x, c)  = receive c in
-      let (list, c) = orderedServer[!Int;a] c (Cons x list) in
-      case list of {
-        Cons y ys ->
-          let c = send y c in
-          (ys, c)
-        -- Nil is never reached
-      },
-
-    -- Quicksorts with descending to send it reversed
-    Asc  c ->
-      (quicksort list (desc), c),
-    -- Quicksorts with ascending to send it reversed
-    Desc c ->
-      (quicksort list (asc), c)
+orderedServer (Asc  c) list = (quicksort list (desc), c) -- Quicksorts with descending to send it reversed
+orderedServer (Desc c) list = (quicksort list (asc) , c) -- Quicksorts with  ascending to send it reversed
+orderedServer (Vals c) list = 
+  let (x, c)  = receive c in
+  let (list, c) = orderedServer[!Int;a] c (Cons x list) in
+  case list of { 
+    Cons y ys -> 
+      let c = send y c in
+      (ys, c)
+    -- Nil is never reached
   }
-
 
 -- ==================== QUICKSORT ====================
 
@@ -52,13 +43,10 @@ orderedServer c list =
 --   The function it receives determines which order it sorts,
 --   ascending or descending
 quicksort : IntList -> (Int -> Int -> Bool) -> IntList
-quicksort list direction =
-  case list of {
-    Nil -> Nil,
-    Cons x xs ->
-      let (smaller, greater) = quicksortDivide x xs direction in
-      listAppend (quicksort smaller direction) (Cons x (quicksort greater direction))
-  }
+quicksort Nil         direction = Nil
+quicksort (Cons x xs) direction = 
+  let (smaller, greater) = quicksortDivide x xs direction in
+  listAppend (quicksort smaller direction) (Cons x (quicksort greater direction))
 
 -- quicksort option to sort by ascending
 asc : Int -> Int -> Bool
@@ -74,22 +62,17 @@ quicksortDivide i list direction = quicksortDivide' i list (Nil, Nil) direction
 
 -- Divides a list into lesser and greater or equal,given a pivot
 quicksortDivide' : Int -> IntList -> (IntList, IntList) -> (Int -> Int -> Bool) -> (IntList, IntList)
-quicksortDivide' i list d direction =
+quicksortDivide' i Nil d direction         = d
+quicksortDivide' i (Cons x xs) d direction = 
   let (smaller, greater) = d in
-  case list of {
-    Nil -> (smaller, greater),
-    Cons x xs -> if direction x i
-                 then quicksortDivide' i xs (Cons x smaller, greater) direction
-                 else quicksortDivide' i xs (smaller, Cons x greater) direction
-  }
+  if direction x i
+    then quicksortDivide' i xs (Cons x smaller, greater) direction
+    else quicksortDivide' i xs (smaller, Cons x greater) direction
 
 -- Appends two lists
 listAppend : IntList -> IntList -> IntList
-listAppend l ll =
-  case l of {
-    Nil -> ll,
-    Cons x xs -> Cons x (listAppend xs ll)
-  }
+listAppend Nil         ll = ll
+listAppend (Cons x xs) ll = Cons x (listAppend xs ll)
 
 -- ==================== Client ====================
 
@@ -112,18 +95,15 @@ descClient c =
 --  direction : Bool - is used to determine if Asc(True) or
 --                     Desc(False) is selected
 order : forall a:SL . OrderingChannel; a -> IntList -o Bool -o (a, IntList)
-order c sList direction =
-  case sList of {
-    Nil -> if direction
-           then (select Asc c , Nil)
-           else (select Desc c, Nil),
-    Cons x xs ->
-      let c          = select Vals c in
-      let c          = send x c in
-      let (c, rList) = order[?Int;a] c xs direction in
-      let (y, c)     = receive c in
-      (c, Cons y rList)
-  }
+order c Nil direction = if direction
+                        then (select Asc c , Nil)
+                        else (select Desc c, Nil)
+order c (Cons x xs) direction = 
+                        let c          = select Vals c in
+                        let c          = send x c in
+                        let (c, rList) = order[?Int;a] c xs direction in
+                        let (y, c)     = receive c in
+                        (c, Cons y rList)
 
 
 -- ==================== Mock List ====================

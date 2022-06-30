@@ -47,42 +47,25 @@ type TreeListChannel : SL = +{
 
 -- ===== SENDING =====
 sendTree : forall a:SL . Tree -> TreeChannel;a -> a
-sendTree tree c =
-  case tree of {
-    Empty ->
-      select Empty c,
-    Node i children ->
-      sendTreeList[a] children $ send i $ select Node c
-  }
+sendTree Empty             c = select Empty c
+sendTree (Node i children) c = sendTreeList[a] children $ send i $ select Node c
 
 sendTreeList : forall a:SL . TreeList -> TreeListChannel;a -> a
-sendTreeList list c =
-  case list of {
-    Nil ->
-      select Nil c,
-    Cons tree rest ->
-      sendTreeList[a] rest $ sendTree[TreeListChannel;a] tree $ select Cons c
-  }
+sendTreeList Nil              c = select Nil c
+sendTreeList (Cons tree rest) c = sendTreeList[a] rest 
+                                $ sendTree[TreeListChannel;a] tree $ select Cons c
 
 -- ===== RECEIVING =====
 receiveTree : forall a:SL . dualof TreeChannel;a -> (Tree, a)
-receiveTree c =
-  match c with {
-    Empty c ->
-      (Empty, c),
-    Node c ->
+receiveTree (Empty c) = (Empty,c)
+receiveTree (Node  c) = 
       let (i, c)        = receive c in
       let (children, c) = receiveTreeList[a] c in
       (Node i children, c)
-  }
 
 receiveTreeList : forall a:SL . dualof TreeListChannel;a -> (TreeList, a)
-receiveTreeList c =
-  match c with {
-    Nil c ->
-      (Nil, c),
-    Cons c ->
+receiveTreeList (Nil  x) = (Nil, c)
+receiveTreeList (Cons c) = 
       let (tree, c) = receiveTree[dualof TreeListChannel;a] c in
       let (rest, c) = receiveTreeList[a] c in
       (Cons tree rest, c)
-  }

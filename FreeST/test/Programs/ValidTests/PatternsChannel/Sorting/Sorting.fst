@@ -59,28 +59,19 @@ main =
 -- Quicksort.  Adapted from learnyouahaskell.com. The integer sorting
 -- function is a parameter.
 quicksort : (Int -> Int -> Bool) -> IntList -> IntList
-quicksort cmp xs =
-  case xs of {
-    Nil -> Nil,
-    Cons x xs' ->
-      let (smaller, greater) = split cmp x xs' (Nil, Nil) in
-      append (quicksort cmp smaller) (Cons x (quicksort cmp greater))
-  }
+quicksort cmp Nil = Nil
+quicksort cmp (Cons x xs') =
+  let (smaller, greater) = split cmp x xs' (Nil, Nil) in
+  append (quicksort cmp smaller) (Cons x (quicksort cmp greater))
 
 split : (Int -> Int -> Bool) -> Int -> IntList -> (IntList, IntList) -> (IntList, IntList)
-split cmp y xs pair  =
+split cmp y Nil          pair = pair
+split cmp y (Cons x xs') pair = 
   let (smaller, greater) = pair in
-  case xs of {
-    Nil -> pair,
-    Cons x xs' ->
-      split cmp y xs' (if cmp x y
-                       then (Cons x smaller, greater)
-                       else (smaller, Cons x greater))
-  }
+  split cmp y xs' (if cmp x y
+                    then (Cons x smaller, greater)
+                    else (smaller, Cons x greater))
 
 append : IntList -> IntList -> IntList
-append xs ys =
-  case xs of {
-    Nil -> ys,
-    Cons x xs' -> Cons x (append xs' ys)
-  }
+append Nil          ys = ys
+append (Cons x xs') ys = Cons x (append xs' ys)

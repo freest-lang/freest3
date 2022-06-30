@@ -33,28 +33,18 @@ stackPush = Value
 
 -- Pop the top Tree from the Stack (Leaf if empty)
 stackPop : TreeStack -> (TreeStack, Tree)
-stackPop ts =
-  case ts of {
-    Empty      -> (ts, Leaf),
-    Value t ts -> (ts, t)
-  }
+stackPop Empty        = (ts, Leaf)
+stackPop (Value t ts) = (ts, t)
 
 -- Is the Stack empty
 stackIsEmpty : TreeStack -> Bool
-stackIsEmpty ts =
-  case ts of {
-    Empty     -> True,
-    Value _ _ -> False
-  }
+stackIsEmpty Empty       = True
+stackIsEmpty (Value _ _) = False
 
 -- Size of the Stack
 stackSize : TreeStack -> Int
-stackSize ts =
-  case ts of {
-    Empty      -> 0,
-    Value _ ts -> 1 + stackSize ts
-  }
-
+stackSize Empty        = 0
+stackSize (Value _ ts) = 1 + stackSize st
 
 -- Channel to send/receive a Tree. It is important that both sender and receiver
 --  agree on an order to traverse the Tree.
@@ -67,15 +57,8 @@ type TreeC : SL = +{
 
 -- Sends a tree through a TreeC
 sendTree : Tree -> TreeC -> TreeC
-sendTree t c =
-  case t of {
-    Leaf ->
-      select Leaf c,
-
-    Node i lt rt ->
-      send i $ select Value $ sendTree lt $ sendTree rt c
-  }
-
+sendTree Leaf           c = select Leaf c
+sendTree (Node i lt rt) c = send i $ select Value $ sendTree lt $ sendTree rt c
 
 -- Facade function to receive a Tree through a channel
 receiveTree : dualof TreeC -> Tree
@@ -84,25 +67,20 @@ receiveTree = receiveTree_ Empty
 -- Receives a Tree from a TreeC
 --  This function also serves as an abstraction to the TreeStack usage
 receiveTree_ : TreeStack -> dualof TreeC -> Tree
-receiveTree_ ts c =
-  match c with {
-    Value c ->
+receiveTree_ ts (Value c) =
       let (i, c)   = receive c in
       errorWhen (stackIsEmpty ts) "Received Value without receiveing left AND right subtrees";
       let (ts, lt) = stackPop ts in
       errorWhen (stackIsEmpty ts) "Received Value without receiveing left OR right subtrees";
       let (ts, rt) = stackPop ts in
       let ts       = stackPush (Node i lt rt) ts in
-      receiveTree_ ts c,
-
-    Leaf c ->
-      receiveTree_ (stackPush Leaf ts) c,
-
-    End  c ->
+      receiveTree_ ts c
+receiveTree_ ts (Leaf c) =
+      receiveTree_ (stackPush Leaf ts) c
+receiveTree_ ts (End  c) =
       errorWhen (stackIsEmpty ts)  "Channel was closed without sending a Tree";
       errorWhen (stackSize ts > 1) "Channel was closed mid-stream or with leftover tree elements";
       snd[TreeStack, Tree] $ stackPop ts
-  }
 
 -- Generates an error with a given message if a given boolean is true
 errorWhen : Bool -> String -> ()
@@ -159,11 +137,5 @@ badClientSendOnlyValue c =
 -- Sends a tree through a TreeC
 -- !!! But forgets to send right subtree
 badSendTree : Tree -> TreeC -> TreeC
-badSendTree t c =
-  case t of {
-    Leaf ->
-      select Leaf c,
-
-    Node i lt rt ->
-      send i $ select Value $ badSendTree lt c -- $ badSendTree rt c
-  }
+badSendTree Leaf           c = select Leaf c
+badSendTree (Node i lt rt) c = send i $ select Value $ badSendTree lt c -- $ badSendTree rt c
