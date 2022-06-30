@@ -6,8 +6,6 @@ where
 import           Data.List(groupBy,sortOn)
 import           Data.Function((&))
 import           Data.Functor((<&>))
-import           Data.Traversable
-import           Control.Monad
 
 import           Syntax.Base
 import           Syntax.Expression
@@ -16,6 +14,8 @@ import qualified Validation.Rename as R
 import qualified Data.Map.Strict   as Map
 
 import           Util.FreestState
+
+import           Debug.Trace -- debug (used on debugM function)
 
 matchFuns :: ParseEnvP -> FreestState ParseEnv
 matchFuns pep = mapM matchFun pep
@@ -112,20 +112,23 @@ constructors' (T.Almanac _ T.Variant tm) = map (\(v,t) -> (v,countArrows t)) (Ma
 
 getKeys :: T.Type -> [Variable]
 getKeys (T.Almanac _ T.Variant tm) = Map.keys tm
+getKeys _ = []
+
 
 -- replace Variables -----------------------------------------------
 replaceExp :: Variable -> Variable -> Exp -> FreestState Exp
-replaceExp v p (Var     s v1)         = Var s (replaceVar v p v1) & return
+replaceExp v p (Var     s v1)         = Var     s      (replaceVar v p v1) & return
 replaceExp v p (Abs     s m b)        = Abs     s m <$> replaceBind v p b
-replaceExp v p (App     s e1 e2)      = App     s   <$> replaceExp v p e1 <*> replaceExp v p e2
-replaceExp v p (Pair s e1 e2)         = Pair    s   <$> replaceExp v p e1 <*> replaceExp v p e2
-replaceExp v p (BinLet s v1 v2 e1 e2) = BinLet  s (replaceVar v p v1) (replaceVar v p v2) <$> replaceExp v p e1 <*> replaceExp v p e2
-replaceExp v p (Case s e fm)          = Case    s <$> replaceExp v p e <*> mapM (substitute v p) fm
-replaceExp v p (TypeAbs s b)          = TypeAbs s <$> replaceBind v p b
+replaceExp v p (App     s e1 e2)      = App     s   <$> replaceExp  v p e1 <*> replaceExp v p e2
+replaceExp v p (Pair s e1 e2)         = Pair    s   <$> replaceExp  v p e1 <*> replaceExp v p e2
+replaceExp v p (BinLet s v1 v2 e1 e2) = BinLet  s      (replaceVar  v p v1)   (replaceVar v p v2)
+                                                    <$> replaceExp  v p e1 <*> replaceExp v p e2
+replaceExp v p (Case s e fm)          = Case    s   <$> replaceExp  v p e  <*> mapM (substitute v p) fm
+replaceExp v p (TypeAbs s b)          = TypeAbs s   <$> replaceBind v p b
 replaceExp v p (TypeApp s e t)        = flip (TypeApp s) t <$> replaceExp v p e
-replaceExp v p (Cond s e1 e2 e3)      = Cond    s <$> replaceExp v p e1 <*> replaceExp v p e2 <*> replaceExp v p e3
-replaceExp v p (UnLet s v1 e1 e2)     = UnLet   s (replaceVar v p v1) <$> replaceExp v p e1 <*> replaceExp v p e2
-replaceExp v p (CaseP s e flp)        = sub <$> replaceExp v p e <*> match vs' flp >>= replaceExp v p
+replaceExp v p (Cond s e1 e2 e3)      = Cond    s   <$> replaceExp  v p e1 <*> replaceExp v p e2 <*> replaceExp v p e3
+replaceExp v p (UnLet s v1 e1 e2)     = UnLet   s      (replaceVar  v p v1)<$> replaceExp v p e1 <*> replaceExp v p e2
+replaceExp v p (CaseP s e flp)        = sub         <$> replaceExp  v p e  <*>(replaceExp v p    =<< match vs' flp)
   where sub e (Case s _ fm) = Case s e fm
         vs' = [mkVar (getSpan e) "_"]
 replaceExp _ _ e = return e
