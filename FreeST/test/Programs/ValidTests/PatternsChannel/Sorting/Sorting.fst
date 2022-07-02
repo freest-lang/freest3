@@ -33,21 +33,12 @@ data IntList = Nil | Cons Int IntList
 -- Receive a series of integer values; return them in ascending or
 -- descending order
 sortingServer : forall a:SL . IntList -> dualof OrderingChannel;a -> (IntList, a)
-sortingServer xs c =
-  match c with {
-    Value c ->
-      let (x, c)  = receive c in
-      let (xs, c) = sortingServer[!Int;a] (Cons x xs) c in
-      case xs of {
-        Cons y ys -> (ys, send y c),
-        -- Nil is never reached
-        Nil -> (Nil, send 36042069 c)
-      },
-    Ascending c ->
-      (quicksort (\x:Int -> (\y:Int -> x < y)) xs, c),
-    Descending c ->
-      (quicksort (\x:Int -> (\y:Int -> x > y)) xs, c)
-  }
+sortingServer xs (Ascending  c) = (quicksort (\x:Int -> (\y:Int -> x < y)) xs, c)
+sortingServer xs (Descending c) = (quicksort (\x:Int -> (\y:Int -> x > y)) xs, c)
+sortingServer xs (Value      c) =
+  let (x, c)  = receive c in
+  let (xs, c) = sortingServer[!Int;a] (Cons x xs) c in
+  case xs of { Cons y ys -> (ys, send y c) }
 
 -- Putting it all together
 main : ()

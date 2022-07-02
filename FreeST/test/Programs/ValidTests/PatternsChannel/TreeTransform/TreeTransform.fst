@@ -28,18 +28,14 @@ type TreeC : SL = +{Leaf: Skip, Node: !Int;TreeC;TreeC;?Int}
   is read from the channel.
 -}
 transform : forall a : SL . Tree -> TreeC ; a -> (Tree, a)
-transform tree c =
-  case tree of {
-    Leaf ->
-      (Leaf, select Leaf c),
-    Node x l r ->
-      let c = select Node c in
-      let c = send x c in
-      let (l, c) = transform [TreeC ; ?Int ; a] l c in
-      let (r, c) = transform [?Int ; a] r c in
-      let (y, c) = receive c in
-      (Node y l r, c)
-  }
+transform Leaf c = (Leaf, select Leaf c)
+transform (Node x l r) c =
+  let c = select Node c in
+  let c = send x c in
+  let (l, c) = transform [TreeC ; ?Int ; a] l c in
+  let (r, c) = transform [?Int ; a] r c in
+  let (y, c) = receive c in
+  (Node y l r, c)
 
 {-
   Reads a tree from a given channel;
@@ -47,17 +43,13 @@ transform tree c =
   returns this sum.
 -}
 treeSum : forall a : SL . dualof TreeC ; a -> (Int, a)
-treeSum c =
-  match c with {
-    Leaf c ->
-     (0, c),
-    Node c ->
-      let (x, c) = receive c in
-      let (l, c) = treeSum [dualof TreeC ; !Int ; a] c in
-      let (r, c) = treeSum [!Int ; a] c in
-      let c = send (x + l + r) c in
-      (x + l + r, c)
-  }
+treeSum (Leaf c) = (0, c)
+treeSum (Node c) =
+  let (x, c) = receive c in
+  let (l, c) = treeSum [dualof TreeC ; !Int ; a] c in
+  let (r, c) = treeSum [!Int ; a] c in
+  let c = send (x + l + r) c in
+  (x + l + r, c)
 
 aTree : Tree
 aTree = Node 1 (Node 2 (Node 8 Leaf Leaf) (Node 3 (Node 5 Leaf Leaf) (Node 4 Leaf Leaf))) (Node 6 Leaf (Node 7 Leaf Leaf))
