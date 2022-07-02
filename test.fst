@@ -1,16 +1,19 @@
 
-mathServer : &{Negate: ?Int;!Int, Add: ?Int;?Int;!Int} -> Skip
-mathServer (Negate c) = 
-  let (n, c) = receive c in
-  send (-n) c
-mathServer (Add c) =
-  let (n1, c) = receive c in
-  let (n2, c) = receive c in
-  send (n1 + n2) c
+data List = Nil | List Int List
 
+f : List -> List -> Bool
+f Nil          Nil = False
+f ys           zs  = True
+f (Cons x xs)  zs  = True
+
+
+case 
+  Nil 
+    case 
+      Nil False
+      Cons True
+  Cons x xs 
+    case 
+      Nil = True
 main : Int
-main =
-  let (r,w) = new &{Negate: ?Int;!Int, Add: ?Int;?Int;!Int} in
-  let _ = fork (mathServer r) in
-  let (x, _) = receive (send 5 (select Negate w)) in
-  x
+main = 1
