@@ -1,9 +1,15 @@
 
 
-data T = A T | B | C
+data T = A | B
 
-f : T -> T -> Int
-f _ _ = 0
+f : T -> Int -> Int -> Int
+f x y z =
+  case x of {
+    A | y == z    -> 0
+      | otherwise -> 1, 
+    B | y == z    -> 2
+      | otherwise -> 3
+  }
 
 main : Int
-main = f B B
+main = f B 1 2

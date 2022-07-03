@@ -109,6 +109,7 @@ tokens :-
   in                            { \p s -> TokenIn (internalPos p) }
   data                          { \p s -> TokenData (internalPos p) }
   type                          { \p s -> TokenType (internalPos p) }
+  otherwise				              { \p s -> TokenOtherwise (internalPos p) }
   if				{ \p s -> TokenIf (internalPos p) }
   then				{ \p s -> TokenThen (internalPos p) }
   else				{ \p s -> TokenElse (internalPos p) }
@@ -181,6 +182,7 @@ data Token =
   | TokenData Span
   | TokenType Span
   | TokenPipe Span
+  | TokenOtherwise Span
   | TokenIf Span
   | TokenThen Span
   | TokenElse Span
@@ -256,6 +258,7 @@ instance Show Token where
   show (TokenData _) = "data"
   show (TokenType _) = "type"
   show (TokenPipe _) = "|"
+  show (TokenOtherwise _) = "otherwise"
   show (TokenIf _) = "if"
   show (TokenThen _) = "then"
   show (TokenElse _) = "else"
@@ -384,6 +387,7 @@ instance Located Token where
   getSpan (TokenGT p) = p
   getSpan (TokenWild p) = p
   getSpan (TokenCmp p _) = p
+  getSpan (TokenOtherwise p) = p
   getSpan (TokenIf p) = p
   getSpan (TokenThen p) = p
   getSpan (TokenElse p) = p
