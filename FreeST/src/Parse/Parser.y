@@ -90,6 +90,7 @@ import           System.FilePath
   data     {TokenData _}
   type     {TokenType _}
   '|'      {TokenPipe _}
+  otherwise{TokenOtherwise _}
   if       {TokenIf _}
   then     {TokenThen _}
   else     {TokenElse _}
@@ -163,6 +164,7 @@ Decl :: { () }
   : ProgVar ':' Type {% checkDupProgVarDecl $1 >> addToVEnv $1 $3 }
   -- Function declaration
   | ProgVar PatternSeq '=' Exp {% checkDupVarPat $2 >> addToPEnvP $1 $2 $4 }
+  | ProgVar PatternSeq GuardsF {% checkDupVarPat $2 >> addToPEnvP $1 $2 $3 }
   -- Type abbreviation
   | type KindedTVar TypeDecl {% checkDupTypeDecl (fst $2) >> uncurry addToTEnv $2 $3 }
   -- Datatype declaration
@@ -277,9 +279,12 @@ CaseMap :: { FieldMapP }
 --   : Constructor ProgVarWildSeq '->' Exp { ($1, ($2, $4)) }
 
 Case :: { ([Pattern], E.Exp) }
-  : ProgVarWild                    '->' Exp  { ([E.V $1], $3) }
-  | Constructor PatternSeq         '->' Exp  {% checkDupVarPat $2 >> return ([E.C $1 $2], $4) }
-  | '(' Constructor PatternSeq ')' '->' Exp  {% checkDupVarPat $3 >> return ([E.C $2 $3], $6) }
+  : CaseL         '->' Exp  { ($1, $3) }
+  | CaseL GuardsC           { ($1, $2) }
+
+CaseL :: { [Pattern] }
+  : ProgVarWild            { [E.V $1] }
+  | Constructor PatternSeq {% checkDupVarPat $2 >> return [E.C $1 $2] }
 
 PatternSeq :: { [Pattern] }
   :                     {[]}
@@ -289,6 +294,15 @@ Pattern :: { Pattern }
   : ProgVarWild                       { E.V $1 }
   | Constructor                       { E.C $1 [] }
   | '(' Constructor PatternSeq ')'    { E.C $2 $3 }
+
+GuardsC :: { Exp }
+  : '|' Exp       '->' Exp GuardsC {% mkSpanSpan $1 $4 >>= \s -> pure $ E.Cond s $2 $4 $5 }
+  | '|' otherwise '->' Exp         { $4 }
+
+GuardsF :: { Exp }
+  : '|' Exp       '=' Exp GuardsF  {% mkSpanSpan $1 $4 >>= \s -> pure $ E.Cond s $2 $4 $5 }
+  | '|' otherwise '=' Exp          { $4 }
+  -- | { undefined } -- TODOX when undefined becomes available
 
 Op :: { Variable }
    : '||'  {% flip mkVar "(||)" `fmap` mkSpan $1 }

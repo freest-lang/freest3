@@ -1,19 +1,13 @@
 
 data List = Nil | List Int List
 
-f : List -> List -> Bool
-f Nil          Nil = False
-f ys           zs  = True
-f (Cons x xs)  zs  = True
+data Pair = Pair Int Int
+data Pairs = N | P Pair Pairs
 
+f : Pairs -> Int
+f N             = 0
+f (P pair N)    = 1
+f (P pair rest) = f rest
 
-case 
-  Nil 
-    case 
-      Nil False
-      Cons True
-  Cons x xs 
-    case 
-      Nil = True
 main : Int
-main = 1
+main = f $ P (Pair 1 1) $ P (Pair 2 2) N

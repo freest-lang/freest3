@@ -17,6 +17,8 @@ import qualified Data.Map.Strict   as Map
 
 import           Util.FreestState
 
+import           Debug.Trace -- debug (used on debugM function)
+
 matchFuns :: ParseEnvP -> FreestState ParseEnv
 matchFuns pep = mapM matchFun pep
 
@@ -93,27 +95,30 @@ destruct' ((p:ps,e):xs) = ((pPats p)++ps,e) : destruct' xs
 
 -- mix -------------------------------------------------------------
 ruleMix :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
-ruleMix us cs = do
-  cons <- constructors $ getCons cs
-  match us $ groupOn (isVar.head.fst) cs
-           & concat.map (fill cons)
+ruleMix (v:us) cs = do
+  cons <- constructors $ getDataType cs
+  groupOn (isVar.head.fst) cs
+        & mapM (fill v cons)
+      <&> concat
+      >>= match (v:us)
 
 --rule mix aux
-fill :: [(Variable,Int)] -> [([Pattern],Exp)] -> [([Pattern],Exp)]
-fill cons cs 
-  | hasVar cs = fill' cons cs
-  | otherwise = cs
+fill :: Variable -> [(Variable,Int)] -> [([Pattern],Exp)] -> FreestState [([Pattern],Exp)]
+fill v cons cs 
+  | hasVar cs = fill' v cons cs
+  | otherwise = return cs
   where hasVar = isVar.head.fst.head
 
-fill' :: [(Variable,Int)] -> [([Pattern],Exp)] -> [([Pattern],Exp)]
-fill' _ [] = []
-fill' cons ((p:ps,e):cs) = map mkCons cons ++ fill' cons cs
-  where v = V $ mkVar (getSpan $ pVar p) "_"
-        mkCons (c,n) = ((C c (replicate n v):ps),e)
-
--- gets constructor
-getCons :: [([Pattern], Exp)] -> Variable
-getCons cs = filter (isCon.head.fst) cs
+fill' :: Variable -> [(Variable,Int)] -> [([Pattern],Exp)] -> FreestState [([Pattern],Exp)]
+fill' v _ [] = return []
+fill' v cons ((p:ps,e):cs) = (++) <$> mapM (mkCons v' e') cons <*> fill' v cons cs
+  where v' = V $ mkVar (getSpan $ pVar p) "_"
+        e' = replaceExp v (pVar p) e
+        mkCons v e' (c,n) = (,) (C c (replicate n v):ps) <$> e'
+  
+-- gets the first contructor name
+getDataType :: [([Pattern], Exp)] -> Variable
+getDataType cs = filter (isCon.head.fst) cs
                & pVar.head.fst.head
 
 -- returns constructors and the amount of variables they need
@@ -137,17 +142,18 @@ getKeys _ = []
 
 -- replace Variables -----------------------------------------------
 replaceExp :: Variable -> Variable -> Exp -> FreestState Exp
-replaceExp v p (Var     s v1)         = Var s (replaceVar v p v1) & return
+replaceExp v p (Var     s v1)         = Var     s      (replaceVar v p v1) & return
 replaceExp v p (Abs     s m b)        = Abs     s m <$> replaceBind v p b
-replaceExp v p (App     s e1 e2)      = App     s   <$> replaceExp v p e1 <*> replaceExp v p e2
-replaceExp v p (Pair s e1 e2)         = Pair    s   <$> replaceExp v p e1 <*> replaceExp v p e2
-replaceExp v p (BinLet s v1 v2 e1 e2) = BinLet  s (replaceVar v p v1) (replaceVar v p v2) <$> replaceExp v p e1 <*> replaceExp v p e2
-replaceExp v p (Case s e fm)          = Case    s <$> replaceExp v p e <*> mapM (substitute v p) fm
-replaceExp v p (TypeAbs s b)          = TypeAbs s <$> replaceBind v p b
+replaceExp v p (App     s e1 e2)      = App     s   <$> replaceExp  v p e1 <*> replaceExp v p e2
+replaceExp v p (Pair s e1 e2)         = Pair    s   <$> replaceExp  v p e1 <*> replaceExp v p e2
+replaceExp v p (BinLet s v1 v2 e1 e2) = BinLet  s      (replaceVar  v p v1)   (replaceVar v p v2)
+                                                    <$> replaceExp  v p e1 <*> replaceExp v p e2
+replaceExp v p (Case s e fm)          = Case    s   <$> replaceExp  v p e  <*> mapM (substitute v p) fm
+replaceExp v p (TypeAbs s b)          = TypeAbs s   <$> replaceBind v p b
 replaceExp v p (TypeApp s e t)        = flip (TypeApp s) t <$> replaceExp v p e
-replaceExp v p (Cond s e1 e2 e3)      = Cond    s <$> replaceExp v p e1 <*> replaceExp v p e2 <*> replaceExp v p e3
-replaceExp v p (UnLet s v1 e1 e2)     = UnLet   s (replaceVar v p v1) <$> replaceExp v p e1 <*> replaceExp v p e2
-replaceExp v p (CaseP s e flp)        = sub <$> replaceExp v p e <*> match vs' flp >>= replaceExp v p
+replaceExp v p (Cond s e1 e2 e3)      = Cond    s   <$> replaceExp  v p e1 <*> replaceExp v p e2 <*> replaceExp v p e3
+replaceExp v p (UnLet s v1 e1 e2)     = UnLet   s      (replaceVar  v p v1)<$> replaceExp v p e1 <*> replaceExp v p e2
+replaceExp v p (CaseP s e flp)        = sub         <$> replaceExp  v p e  <*>(replaceExp v p    =<< match vs' flp)
   where sub e (Case s _ fm) = Case s e fm
         vs' = [mkVar (getSpan e) "_"]
 replaceExp _ _ e = return e
