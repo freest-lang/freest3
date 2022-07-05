@@ -110,17 +110,21 @@ checkDupTypeDecl a = do
     pos tEnv = getSpan $ fst $ Map.elemAt (Map.findIndex a tEnv) tEnv
 
 
-checkDupVarPat :: [E.Pattern] -> FreestStateT ()
-checkDupVarPat ps = checkDupVarPat' ps []
+checkDupVarPat :: E.Pattern -> FreestStateT ()
+checkDupVarPat (E.C _ ps) = checkDupVarPats ps
+checkDupVarPat _          = return ()
 
-checkDupVarPat' :: [E.Pattern] -> [Variable] -> FreestStateT ()
-checkDupVarPat' [] _ = return ()
-checkDupVarPat' ((E.C c cs):xs) vs = checkDupVarPat' cs vs >> checkDupVarPat' xs vs
-checkDupVarPat' ((E.V v)   :xs) vs = do
+checkDupVarPats :: [E.Pattern] -> FreestStateT ()
+checkDupVarPats ps = checkDupVarPats' ps []
+
+checkDupVarPats' :: [E.Pattern] -> [Variable] -> FreestStateT ()
+checkDupVarPats' [] _ = return ()
+checkDupVarPats' ((E.C c cs):xs) vs = checkDupVarPats' cs vs >> checkDupVarPats' xs vs
+checkDupVarPats' ((E.V v)   :xs) vs = do
   case find (\v2 -> (==) (intern v) (intern v2)) vs of
     Just v2 -> addError $ DuplicateVar (getSpan v) "program" v2 (getSpan $ v2)
     Nothing -> return ()
-  checkDupVarPat' xs (v:vs)
+  checkDupVarPats' xs (v:vs)
 
 -- OPERATORS
 

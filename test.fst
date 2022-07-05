@@ -6,7 +6,7 @@ f : T -> Int
 f t = 
   case t of {
     A x -> 0,
-    A B -> 1,
+    (A B) -> 1,
     y -> 2
   }
 
