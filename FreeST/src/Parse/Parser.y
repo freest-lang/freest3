@@ -163,8 +163,8 @@ Decl :: { () }
   -- Function signature
   : ProgVar ':' Type {% checkDupProgVarDecl $1 >> addToVEnv $1 $3 }
   -- Function declaration
-  | ProgVar PatternSeq '=' Exp {% checkDupVarPats $2 >> addToPEnvP $1 $2 $4 }
-  | ProgVar PatternSeq GuardsF {% checkDupVarPats $2 >> addToPEnvP $1 $2 $3 }
+  | ProgVar PatternSeq '=' Exp   {% checkDupVarPats $2 >> addToPEnvP $1 $2 $4 }
+  | ProgVar PatternSeq GuardsFun {% checkDupVarPats $2 >> addToPEnvP $1 $2 $3 }
   -- Type abbreviation
   | type KindedTVar TypeDecl {% checkDupTypeDecl (fst $2) >> uncurry addToTEnv $2 $3 }
   -- Datatype declaration
@@ -279,25 +279,30 @@ CaseMap :: { FieldMapP }
 --   : Constructor ProgVarWildSeq '->' Exp { ($1, ($2, $4)) }
 
 Case :: { ([Pattern], E.Exp) }
-  : Pattern '->' Exp { ([$1],$3) }
-  | Pattern GuardsC  { ([$1],$2) }
+  : PatternC '->' Exp { ([$1],$3) }
+  | PatternC GuardsCase  { ([$1],$2) }
+
+PatternC :: { Pattern }
+  : ProgVarWild                    { E.V $1 }
+  | Constructor PatternSeq         { E.C $1 $2 }
+  | '(' Constructor PatternSeq ')' { E.C $2 $3 }
 
 PatternSeq :: { [Pattern] }
-  :                     {[]}
-  | Pattern PatternSeq  {$1:$2}
+  :                     { [] }
+  | Pattern PatternSeq  { $1:$2 }
 
 Pattern :: { Pattern }
   : ProgVarWild                       { E.V $1 }
   | Constructor                       { E.C $1 [] }
   | '(' Constructor PatternSeq ')'    { E.C $2 $3 }
 
-GuardsC :: { Exp }
-  : '|' Exp       '->' Exp GuardsC {% mkSpanSpan $1 $4 >>= \s -> pure $ E.Cond s $2 $4 $5 }
-  | '|' otherwise '->' Exp         { $4 }
-  | '|' '_'       '->' Exp          { $4 }
+GuardsCase :: { Exp }
+  : '|' Exp       '->' Exp GuardsCase {% mkSpanSpan $1 $4 >>= \s -> pure $ E.Cond s $2 $4 $5 }
+  | '|' otherwise '->' Exp            { $4 }
+  | '|' '_'       '->' Exp            { $4 }
 
-GuardsF :: { Exp }
-  : '|' Exp       '=' Exp GuardsF  {% mkSpanSpan $1 $4 >>= \s -> pure $ E.Cond s $2 $4 $5 }
+GuardsFun :: { Exp }
+  : '|' Exp       '=' Exp GuardsFun  {% mkSpanSpan $1 $4 >>= \s -> pure $ E.Cond s $2 $4 $5 }
   | '|' otherwise '=' Exp          { $4 }
   | '|' '_'       '=' Exp          { $4 }
   -- | EMPTY { undefined } -- TODOX when undefined becomes available

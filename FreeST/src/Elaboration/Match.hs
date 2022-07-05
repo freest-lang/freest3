@@ -54,8 +54,10 @@ ruleEmpty _ ((_,e):cs) = replaceExp v v e
 
 -- var -------------------------------------------------------------
 ruleVar :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
-ruleVar (v:us) cs = match us =<< (mapM replace cs)
-  where replace (p:ps,e) = (,) ps <$> (replaceExp v (pVar p) e)
+ruleVar (v:us) cs = match us =<< (mapM replaceIf cs)
+  where replace (p:ps,e)
+          | is_ p     = return (p:ps,e)
+          | otherwise = (,) ps <$> (replaceExp v (pVar p) e)
 
 -- con -------------------------------------------------------------
 ruleCon :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
@@ -164,6 +166,9 @@ isVar _     = False
 
 isCon :: Pattern -> Bool
 isCon = not.isVar
+
+is_ :: Pattern -> Bool
+is_ (V v) = intern v == "_"
 
 newVar :: Pattern -> FreestState Variable
 newVar = R.renameVar.pVar
