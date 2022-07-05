@@ -74,7 +74,9 @@ ruleEmpty _ ((_,e):cs) = replaceExp v v e
 -- var -------------------------------------------------------------
 ruleVar :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
 ruleVar (v:us) cs = match us =<< (mapM replace cs)
-  where replace (p:ps,e) = (,) ps <$> (replaceExp v (pVar p) e)
+  where replace (p:ps,e)
+          | is_ p     = return (ps,e)
+          | otherwise = (,) ps <$> (replaceExp v (pVar p) e)
 
 -- con -------------------------------------------------------------
 ruleCon :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
@@ -194,6 +196,9 @@ isChan (C c _) = Map.toList <$> getTEnv
              <&> map (getKeys.snd.snd)
              <&> concat
              <&> notElem c
+
+is_ :: Pattern -> Bool
+is_ (V v) = intern v == "_"
 
 newVar :: Pattern -> FreestState Variable
 newVar = R.renameVar.pVar
