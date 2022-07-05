@@ -28,5 +28,5 @@ getPerfects x = if x <= 1 then End else
                         else getPerfects (x-1)
 
 main : IntList
-main = getPerfects 10000
--- result = List 8128 (List 496 (List 28 (List 6 End)))
+main = getPerfects 1000
+-- result = List 496 (List 28 (List 6 End))

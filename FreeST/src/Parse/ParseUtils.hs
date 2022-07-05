@@ -121,10 +121,13 @@ checkDupVarPats' :: [E.Pattern] -> [Variable] -> FreestStateT ()
 checkDupVarPats' [] _ = return ()
 checkDupVarPats' ((E.C c cs):xs) vs = checkDupVarPats' cs vs >> checkDupVarPats' xs vs
 checkDupVarPats' ((E.V v)   :xs) vs = do
-  case find (\v2 -> (==) (intern v) (intern v2)) vs of
+  case find clause vs of
     Just v2 -> addError $ DuplicateVar (getSpan v) "program" v2 (getSpan $ v2)
     Nothing -> return ()
   checkDupVarPats' xs (v:vs)
+  where clause v2 = intern v /= "_" -- TODOX ugly if
+                 && intern v == intern v2
+
 
 -- OPERATORS
 
