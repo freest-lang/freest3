@@ -54,9 +54,9 @@ ruleEmpty _ ((_,e):cs) = replaceExp v v e
 
 -- var -------------------------------------------------------------
 ruleVar :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
-ruleVar (v:us) cs = match us =<< (mapM replaceIf cs)
+ruleVar (v:us) cs = match us =<< (mapM replace cs)
   where replace (p:ps,e)
-          | is_ p     = return (p:ps,e)
+          | is_ p     = return (ps,e)
           | otherwise = (,) ps <$> (replaceExp v (pVar p) e)
 
 -- con -------------------------------------------------------------
