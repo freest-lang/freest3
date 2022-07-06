@@ -286,15 +286,24 @@ PatternC :: { Pattern }
   : ProgVarWild                    { E.V $1 }
   | Constructor PatternSeq         { E.C $1 $2 }
   | '(' Constructor PatternSeq ')' { E.C $2 $3 }
+  | PatternLit                     { $1 }
 
 PatternSeq :: { [Pattern] }
   :                     { [] }
   | Pattern PatternSeq  { $1:$2 }
 
 Pattern :: { Pattern }
-  : ProgVarWild                       { E.V $1 }
-  | Constructor                       { E.C $1 [] }
-  | '(' Constructor PatternSeq ')'    { E.C $2 $3 }
+  : ProgVarWild                     { E.V $1 }
+  | Constructor                     { E.C $1 [] }
+  | '(' Constructor PatternSeq ')'  { E.C $2 $3 }
+  | PatternLit                      { $1 }
+
+PatternLit :: { Pattern }
+  : INT   { let (TokenInt    p x) = $1 in E.L $ E.Int p x }
+  -- : INT   {% let (TokenInt    p x) = $1 in E.L $ flip E.Int  x `fmap` liftModToSpan p }
+  -- | BOOL  {% let (TokenBool   p x) = $1 in E.L $ flip E.Bool x `fmap` liftModToSpan p }
+  -- | CHAR  {% let (TokenChar   p x) = $1 in E.L $ flip E.Char x `fmap` liftModToSpan p }
+  -- | STR   {% let (TokenString p x) = $1 in E.L $ flip String x `fmap` liftModToSpan p }
 
 GuardsCase :: { Exp }
   : '|' Exp       '->' Exp GuardsCase {% mkSpanSpan $1 $4 >>= \s -> pure $ E.Cond s $2 $4 $5 }

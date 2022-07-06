@@ -6,12 +6,13 @@ where
 import           Data.List(groupBy,sortOn)
 import           Data.Function((&))
 import           Data.Functor((<&>))
+import qualified Data.Map.Strict   as Map
 
 import           Syntax.Base
 import           Syntax.Expression
 import qualified Syntax.Type       as T
 import qualified Validation.Rename as R
-import qualified Data.Map.Strict   as Map
+import           Parse.ParseUtils(binOp)
 
 import           Util.FreestState
 
@@ -26,22 +27,28 @@ matchFun xs@((ps,_):_) = mapM newVar ps
 
 match :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
 match vs x
+  | isRuleLit   x = ruleLit   vs x
   | isRuleEmpty x = ruleEmpty vs x
   | isRuleVar   x = ruleVar   vs x
   | isRuleCon   x = ruleCon   vs x
   | otherwise     = ruleMix   vs x
 
 -- is rule ---------------------------------------------------------
+isRuleLit   :: [([Pattern],Exp)] -> Bool
+isRuleLit cs = any (check.fst) cs
+  where check p = not   (null p)
+               && isLit (head p)
+
 isRuleEmpty :: [([Pattern],Exp)] -> Bool
-isRuleEmpty cs = and $ map (null.fst) cs
+isRuleEmpty cs = all (null.fst) cs
 
 isRuleVar   :: [([Pattern],Exp)] -> Bool
-isRuleVar cs = and $ map (check.fst) cs
+isRuleVar cs = all (check.fst) cs
   where check p = not   (null p)
                && isVar (head p)
 
 isRuleCon   :: [([Pattern],Exp)] -> Bool
-isRuleCon cs = and $ map (check.fst) cs
+isRuleCon cs = all (check.fst) cs
   where check p = not   (null p)
                && isCon (head p)
 
@@ -119,6 +126,55 @@ getKeys :: T.Type -> [Variable]
 getKeys (T.Almanac _ T.Variant tm) = Map.keys tm
 getKeys _ = []
 
+-- lit -------------------------------------------------------------
+ruleLit :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
+ruleLit vs cs = do
+  -- ifs   -> vars until the first lit
+  -- elses -> everything else after the first lit
+  let (ifs,elses1) = span (not.isLit.head.fst) cs
+  let (p,elses2) = (head elses1, tail elses1)
+  let lit = head $ fst $ p
+  --- same literals and other vars
+  let ifRest1      = p : filter ((isGroup  lit).head.fst) elses2
+  -- dif literals and other vars
+  let elseRest    =       filter ((notGroup lit).head.fst) elses2
+  -- transform lits into vars
+  let ifRest2      = map (litToVar) ifRest1
+  -- if cond then group1 else group 2
+  let group1 = ifs++ifRest2
+  let group2 = ifs++elseRest
+  let cond = comp (head vs) $ pLit lit
+  -- 
+  g1 <- match vs group1
+  g2 <- match vs group2
+  return $ Cond (getSpan $ pLit lit ) cond g1 g2
+
+litToVar :: ([Pattern],Exp) -> ([Pattern],Exp) 
+litToVar (((L e):ps),exp) = (((V $ mkVar (getSpan e) "_"):ps),exp)
+litToVar p = p
+
+isGroup :: Pattern -> Pattern -> Bool
+isGroup _        (V _)  = True
+isGroup (L e1) (L e2) = sameLit' e1 e2
+
+notGroup :: Pattern -> Pattern -> Bool
+notGroup _      (V _)  = True
+notGroup (L e1) (L e2) = not $ sameLit' e1 e2
+
+sameLit' :: Exp -> Exp -> Bool
+sameLit' (Int    _ k1) (Int    _ k2) = k1 == k2
+sameLit' (Char   _ k1) (Char   _ k2) = k1 == k2
+sameLit' (Bool   _ k1) (Bool   _ k2) = k1 == k2
+sameLit' (String _ k1) (String _ k2) = k1 == k2
+sameLit' _               _               = False
+
+-- TODOX
+comp :: Variable -> Exp -> Exp
+comp v i@(Int    s k) = binOp (Var (getSpan v) v) (mkVar s "(==)") i
+-- comp v c@(E.Char   s k) = 
+-- comp v b@(E.Bool   s k) = 
+-- comp v s@(E.String s k) = 
+comp _ e = Bool (getSpan e) False
 
 -- replace Variables -----------------------------------------------
 replaceExp :: Variable -> Variable -> Exp -> FreestState Exp
@@ -156,16 +212,25 @@ pName (C v _) = intern v
 pVar :: Pattern -> Variable
 pVar (V v)   = v
 pVar (C v _) = v
+pVar (L e)   = mkVar (getSpan e) (show e)
 
 pPats :: Pattern -> [Pattern]
 pPats (C _ ps) = ps
+
+pLit :: Pattern -> Exp
+pLit (L e) = e
 
 isVar :: Pattern -> Bool
 isVar (V _) = True
 isVar _     = False
 
 isCon :: Pattern -> Bool
-isCon = not.isVar
+isCon (C _ _) = True
+isCon _       = False
+
+isLit :: Pattern -> Bool
+isLit (L _) = True
+isLit _     = False
 
 is_ :: Pattern -> Bool
 is_ (V v) = intern v == "_"

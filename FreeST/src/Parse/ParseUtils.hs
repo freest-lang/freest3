@@ -127,7 +127,7 @@ checkDupVarPats' ((E.V v)   :xs) vs = do
   checkDupVarPats' xs (v:vs)
   where clause v2 = intern v /= "_" -- TODOX ugly if
                  && intern v == intern v2
-
+checkDupVarPats' (_:xs) vs = checkDupVarPats' xs vs
 
 -- OPERATORS
 

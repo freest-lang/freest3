@@ -1,15 +1,10 @@
 
 
-data T = A T | B
+f : Int -> Int
+f 0 = 0
+f 1 = 1
+f x = x
 
-f : T -> Int
-f t = 
-  case t of {
-    A x -> 0,
-    (A B) -> 1,
-    _ | 1 == 2 -> 2
-      | _ -> 2
-  }
 
 main : Int
-main = f $ B
+main = f 1

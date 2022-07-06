@@ -61,11 +61,13 @@ type FieldMapP = [([Pattern], Exp)]
 
 data Pattern = V Variable           -- Variable   name
              | C Variable [Pattern] -- Construtor name patterns
+             | L Exp                -- Literal    content
 
 -- TODOX remove
 instance Show Pattern where
-  show (V v) = "V " ++ intern v
+  show (V v)    = "V " ++ intern v
   show (C v ps) = "C " ++ intern v ++ show ps
+  show (L e)    = "L VALUE"
 
 instance Located Exp where
   getSpan (Unit p             ) = p
