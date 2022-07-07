@@ -31,8 +31,8 @@ import           System.FilePath
 -- | Usage: `:l` or `:load`
 -- | Looses all the definitions made so far 
 ------------------------------------------------------------
-load :: String -> REPLState ()
-load f = do
+load :: String -> String -> REPLState ()
+load f msg = do
   b1 <- not <$> lift (doesFileExist f)
   let b2 = not $ "fst" `isExtensionOf` f
   when b1 $ lift $ putStrLn fileDoNotExist
@@ -46,7 +46,7 @@ load f = do
         else do
           put s2
           unlessM (wrapExec (elaboration >> get >>= put . emptyPEnv)) $
-            void $ wrapExec (renameState >> typeCheck)
+            unlessM (wrapExec (renameState >> typeCheck)) (lift $ putStrLn msg)
   where
     fileDoNotExist = showErrors True "<FreeST>" Map.empty (FileNotFound f)
     wrongFileExtension = showErrors True "<FreeST>" Map.empty (WrongFileExtension f)
@@ -60,10 +60,10 @@ load f = do
 reload ::  REPLState ()
 reload = do
   fp <- getFileName
-  lift $ putStrLn fp
-  let st' = initialState{runOpts=defaultOpts{runFilePath=fp}} in
+--  lift $ putStrLn fp
+  let st' = initialState{ runOpts=defaultOpts{runFilePath=fp}} in
     if fp /= "<interactive>"
-    then put st' >> load fp
+    then put st' >> load fp "OK. Module(s) reloaded!"
     else lift $ putStrLn "No files loaded yet"
 
 ------------------------------------------------------------
@@ -82,7 +82,7 @@ typeOf [] = lift $ putStrLn "syntax: ':t <expression-to-synthetise-type>'"
 typeOf q = do
   let query = mkVar defaultSpan q in
     getFromVEnv query >>= \case
-     Just t -> getTypeNames >>= \tn -> lift $ print $ getDefault tn t
+     Just t -> getTypeNames >>= \tn -> lift $ putStrLn $ q ++ " : " ++ show (getDefault tn t)
      Nothing -> lift $ putStrLn $ q ++ " is not in scope."
 
 ------------------------------------------------------------
@@ -100,7 +100,7 @@ kindOf [] = lift $ putStrLn "syntax: ':k <type-to-synthetise-kind>'"
 kindOf ts = do
   case parseType "<interactive>" ts of
     Left errors -> lift $ putStrLn (getErrors initialState{errors})
-    Right a@(T.Var _ x) -> getFromVEnv x >>= synthetiseVariable a x
+--    Right a@(T.Var _ x) -> getFromVEnv x >>= synthetiseVariable a x
     Right t -> void $ wrapRun $ K.synthetise Map.empty t
 
 synthetiseVariable :: T.Type -> Variable -> Maybe T.Type -> REPLState ()

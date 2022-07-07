@@ -1,10 +1,14 @@
 module Utils where
 
-import           Util.FreestState
+import Util.FreestState
 
-import           Control.Monad.State
-import           System.Console.Haskeline
-import           Data.Functor
+import Control.Arrow ((***))
+import Control.Monad (join)
+import Control.Monad.State
+import Data.Char (isSpace)
+import Data.Functor
+import Data.List
+import System.Console.Haskeline
 
 
 type REPLState = StateT FreestS IO
@@ -29,3 +33,15 @@ wrapRun f = do
 ignoreFst :: Maybe (a,b) -> Maybe b
 ignoreFst (Just (_,t)) = Just t
 ignoreFst Nothing = Nothing
+
+-- | Handle command line options
+-- Removes spaces and split option
+
+-- dropOption :: String -> String
+-- dropOption = dropBothEnds . takeWhile (not . isSpace) . dropWhile isSpace
+
+dropBothEnds :: String -> String
+dropBothEnds = dropWhileEnd isSpace . dropWhile isSpace
+
+splitOption :: String -> (String, String)
+splitOption = join (***) dropBothEnds . break isSpace
