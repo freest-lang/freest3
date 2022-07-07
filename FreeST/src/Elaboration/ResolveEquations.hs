@@ -55,8 +55,7 @@ buildRecursiveTypes = Map.mapWithKey buildRec <$> getTEnv >>= setTEnv
 -- | Clean rec types where the variable does not occur free
 
 cleanUnusedRecs :: FreestState ()
-cleanUnusedRecs = Map.mapWithKey (\x (k, t) -> (k, ) $ clean t) <$> getTEnv >>= setTEnv
-
+cleanUnusedRecs = Map.map (\(k, t) -> (k, ) $ clean t) <$> getTEnv >>= setTEnv
 
 clean :: T.Type -> T.Type
 clean (T.Rec p (Bind p' y k t))
