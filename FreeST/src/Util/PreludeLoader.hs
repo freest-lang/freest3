@@ -79,14 +79,16 @@ typeList =
   , (mkVar p "printStringLn", readT "String -> ()")
   -- Fork
   , (mkVar p "fork", readT "∀a:1T. a -> ()")
-  -- Error
+  -- Error & Undefined
   , (mkVar p "error", readT "∀a:*T . String -> a")
+  , (mkVar p "undefined", readT "∀a:*T . a")
   -- Session ops
   , (mkVar p "send", readT "∀a:1M . a -> ∀b:1S . !a;b 1-> b")
   , (mkVar p "receive", readT "∀a:1M . ∀b:1S . ?a;b -> (a, b)")
   -- Not the actual type for collect, but for writing it we would
   -- need polymorphism over the labels in some choice/variant
   , (mkVar p "collect", read "∀a:1T . a") 
+
   ]
   where p = defaultSpan {defModule = "Prelude"}
 

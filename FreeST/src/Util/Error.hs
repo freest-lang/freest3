@@ -87,8 +87,9 @@ data ErrorType =
   | WrongNumOfCons Span Variable Int [Variable] E.Exp
   | ExtractError Span String E.Exp T.Type
   | BranchNotInScope Span Variable T.Type
-  -- Builtin
+  -- Runtime errors
   | ErrorFunction Span String
+  | UndefinedFunction Span
   deriving Show
 
 instance Located ErrorType where
@@ -128,7 +129,8 @@ instance Located ErrorType where
   getSpan (WrongNumOfCons p _ _ _ _    ) = p
   getSpan (ExtractError p _ _ _        ) = p
   getSpan (BranchNotInScope p _ _      ) = p
-  getSpan (ErrorFunction _ _           ) = defaultSpan
+  getSpan (ErrorFunction p _           ) = p -- defaultSpan
+  getSpan (UndefinedFunction p         ) = p
 
 
 instance Message ErrorType where
@@ -242,6 +244,8 @@ instance Message ErrorType where
     "Choice branch not in scope.\n\t Branch " ++ style red sty ts x ++
     " is not present in the internal choice type " ++ style red sty ts t ++
     "\n\t Defined at: " ++ show (getSpan t)
---  Builtin
+--  Runtime
   msg (ErrorFunction s e) _ _ = -- TODO: This one is from the point of view of the callee not the caller
     e ++ "\n  error, called at module" ++ defModule s ++ ":" ++ show (startPos s)
+  msg (UndefinedFunction s) _ _ = 
+    "undefined function, called at " ++ defModule s ++ ":" ++ show (startPos s)
