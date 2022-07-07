@@ -56,6 +56,7 @@ isRuleCon cs = all (check.fst) cs
 
 -- empty -----------------------------------------------------------
 ruleEmpty :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
+ruleEmpty _ [] = return $ Int defaultSpan (-1) -- TODOX use freest undefined 
 ruleEmpty _ ((_,e):cs) = replaceExp v v e
   where v = mkVar (defaultSpan) "__"
 
