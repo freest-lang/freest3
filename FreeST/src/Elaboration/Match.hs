@@ -132,6 +132,9 @@ getKeys _ = []
 -- lit -------------------------------------------------------------
 ruleLit :: FunName -> [Variable] -> [([Pattern],Exp)] -> FreestState Exp
 ruleLit fn vs [] = return $ Int defaultSpan (-1) -- TODOX use freest undefined 
+ruleLit fn vs [] = TypeApp s v <$> (getType fn =<< countArgs fn)
+  where s = (getSpan fn)
+        v = Var s (mkVar s "undefined")
 ruleLit fn vs cs = do
   -- ifs   -> vars until the first lit
   -- elses -> everything else after the first lit
@@ -153,6 +156,7 @@ ruleLit fn vs cs = do
   g2 <- match fn vs group2
   return $ Cond (getSpan $ pLit lit ) cond g1 g2
 
+-- rule lit aux 
 litToVar :: ([Pattern],Exp) -> ([Pattern],Exp) 
 litToVar (((L e):ps),exp) = (((V $ mkVar (getSpan e) "_"):ps),exp)
 litToVar p = p
@@ -179,6 +183,14 @@ comp v i@(Int    s k) = binOp (Var (getSpan v) v) (mkVar s "(==)") i
 -- comp v b@(E.Bool   s k) = 
 -- comp v s@(E.String s k) = 
 comp _ e = Bool (getSpan e) False
+
+countArgs :: FunName -> FreestState Int
+countArgs fn = (length.fst.head) <$> flip (Map.!) fn getPEnvP
+
+getType :: FunName -> Int -> FreestState T.Type
+getType fn i = dropArrows i =<< flip (Map.!) fn =<< getVEnv
+  where dropArrows 0 t = t
+        dropArrows n (T.Arrow _ _ _ t2) = dropArrows (n-1) t2
 
 -- replace Variables -----------------------------------------------
 replaceExp :: FunName -> Variable -> Variable -> Exp -> FreestState Exp
