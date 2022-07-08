@@ -106,8 +106,10 @@ receiveTree_ ts c =
 
 -- Generates an error with a given message if a given boolean is true
 errorWhen : Bool -> String -> ()
-errorWhen True  s = error[()] s
-errorWhen False s = ()
+-- errorWhen True  s = error[()] s
+-- errorWhen False s = ()
+errorWhen b  s = if b then error[()] s else ()
+
 
 -- Simple treeClient that sends a Tree through a TreeC
 treeClient : TreeC -> ()

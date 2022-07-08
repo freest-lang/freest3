@@ -18,23 +18,26 @@ import           Util.FreestState
 
 import           Debug.Trace -- debug (used on debugM function)
 
+type FunName = Variable
+
 matchFuns :: ParseEnvP -> FreestState ParseEnv
-matchFuns pep = mapM matchFun pep
+matchFuns pep = sequence $ Map.mapWithKey matchFun pep
 
-matchFun :: [([Pattern],Exp)] -> FreestState ([Variable],Exp)
-matchFun xs@((ps,_):_) = mapM newVar ps
-                     >>= \args -> (,) args <$> match args xs
+matchFun :: FunName -> [([Pattern],Exp)] -> FreestState ([Variable],Exp)
+matchFun fn xs@((ps,_):_) = mapM newVar ps
+                        >>= \args -> (,) args <$> match fn args xs
 
-match :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
-match vs x
-  | isRuleLit   x = ruleLit   vs x
-  | isRuleEmpty x = ruleEmpty vs x
-  | isRuleVar   x = ruleVar   vs x
-  | isRuleCon   x = ruleCon   vs x
-  | otherwise     = ruleMix   vs x
+match :: FunName -> [Variable] -> [([Pattern],Exp)] -> FreestState Exp
+match fn vs x
+  | isRuleLit   x = ruleLit   fn vs x
+  | isRuleEmpty x = ruleEmpty fn vs x
+  | isRuleVar   x = ruleVar   fn vs x
+  | isRuleCon   x = ruleCon   fn vs x
+  | otherwise     = ruleMix   fn vs x
 
 -- is rule ---------------------------------------------------------
 isRuleLit   :: [([Pattern],Exp)] -> Bool
+isRuleLit [] = True
 isRuleLit cs = any (check.fst) cs
   where check p = not   (null p)
                && isLit (head p)
@@ -55,23 +58,22 @@ isRuleCon cs = all (check.fst) cs
 -- rules -----------------------------------------------------------
 
 -- empty -----------------------------------------------------------
-ruleEmpty :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
-ruleEmpty _ [] = return $ Int defaultSpan (-1) -- TODOX use freest undefined 
-ruleEmpty _ ((_,e):cs) = replaceExp v v e
+ruleEmpty :: FunName -> [Variable] -> [([Pattern],Exp)] -> FreestState Exp
+ruleEmpty fn _ ((_,e):cs) = replaceExp fn v v e
   where v = mkVar (defaultSpan) "__"
 
 -- var -------------------------------------------------------------
-ruleVar :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
-ruleVar (v:us) cs = match us =<< (mapM replace cs)
+ruleVar :: FunName -> [Variable] -> [([Pattern],Exp)] -> FreestState Exp
+ruleVar fn (v:us) cs = match fn us =<< (mapM replace cs)
   where replace (p:ps,e)
           | is_ p     = return (ps,e)
-          | otherwise = (,) ps <$> (replaceExp v (pVar p) e)
+          | otherwise = (,) ps <$> (replaceExp fn v (pVar p) e)
 
 -- con -------------------------------------------------------------
-ruleCon :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
-ruleCon (v:us) cs = groupSortBy (pName.head.fst) cs
+ruleCon :: FunName -> [Variable] -> [([Pattern],Exp)] -> FreestState Exp
+ruleCon fn (v:us) cs = groupSortBy (pName.head.fst) cs
                   & mapM destruct
-                >>= mapM (\(con,vs,cs) -> (,) con . (,) vs <$> match (vs++us) cs)
+                >>= mapM (\(con,vs,cs) -> (,) con . (,) vs <$> match fn (vs++us) cs)
                 <&> Case s (Var s v) . Map.fromList
   where s = getSpan v
   
@@ -85,26 +87,26 @@ destruct' [] = []
 destruct' ((p:ps,e):xs) = ((pPats p)++ps,e) : destruct' xs 
 
 -- mix -------------------------------------------------------------
-ruleMix :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
-ruleMix (v:us) cs = do
+ruleMix :: FunName -> [Variable] -> [([Pattern],Exp)] -> FreestState Exp
+ruleMix fn (v:us) cs = do
   cons <- constructors $ getDataType cs
   groupOn (isVar.head.fst) cs
-        & mapM (fill v cons)
+        & mapM (fill fn v cons)
       <&> concat
-      >>= match (v:us)
+      >>= match fn (v:us)
 
 --rule mix aux
-fill :: Variable -> [(Variable,Int)] -> [([Pattern],Exp)] -> FreestState [([Pattern],Exp)]
-fill v cons cs 
-  | hasVar cs = fill' v cons cs
+fill :: FunName -> Variable -> [(Variable,Int)] -> [([Pattern],Exp)] -> FreestState [([Pattern],Exp)]
+fill fn v cons cs 
+  | hasVar cs = fill' fn v cons cs
   | otherwise = return cs
   where hasVar = isVar.head.fst.head
 
-fill' :: Variable -> [(Variable,Int)] -> [([Pattern],Exp)] -> FreestState [([Pattern],Exp)]
-fill' v _ [] = return []
-fill' v cons ((p:ps,e):cs) = (++) <$> mapM (mkCons v' e') cons <*> fill' v cons cs
+fill' :: FunName -> Variable -> [(Variable,Int)] -> [([Pattern],Exp)] -> FreestState [([Pattern],Exp)]
+fill' fn v _ [] = return []
+fill' fn v cons ((p:ps,e):cs) = (++) <$> mapM (mkCons v' e') cons <*> fill' fn v cons cs
   where v' = V $ mkVar (getSpan $ pVar p) "_"
-        e' = replaceExp v (pVar p) e
+        e' = replaceExp fn v (pVar p) e
         mkCons v e' (c,n) = (,) (C c (replicate n v):ps) <$> e'
   
 -- gets the first contructor name
@@ -128,8 +130,9 @@ getKeys (T.Almanac _ T.Variant tm) = Map.keys tm
 getKeys _ = []
 
 -- lit -------------------------------------------------------------
-ruleLit :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
-ruleLit vs cs = do
+ruleLit :: FunName -> [Variable] -> [([Pattern],Exp)] -> FreestState Exp
+ruleLit fn vs [] = return $ Int defaultSpan (-1) -- TODOX use freest undefined 
+ruleLit fn vs cs = do
   -- ifs   -> vars until the first lit
   -- elses -> everything else after the first lit
   let (ifs,elses1) = span (not.isLit.head.fst) cs
@@ -146,8 +149,8 @@ ruleLit vs cs = do
   let group2 = ifs++elseRest
   let cond = comp (head vs) $ pLit lit
   -- 
-  g1 <- match vs group1
-  g2 <- match vs group2
+  g1 <- match fn vs group1
+  g2 <- match fn vs group2
   return $ Cond (getSpan $ pLit lit ) cond g1 g2
 
 litToVar :: ([Pattern],Exp) -> ([Pattern],Exp) 
@@ -178,33 +181,33 @@ comp v i@(Int    s k) = binOp (Var (getSpan v) v) (mkVar s "(==)") i
 comp _ e = Bool (getSpan e) False
 
 -- replace Variables -----------------------------------------------
-replaceExp :: Variable -> Variable -> Exp -> FreestState Exp
-replaceExp v p (Var     s v1)         = Var     s      (replaceVar v p v1) & return
-replaceExp v p (Abs     s m b)        = Abs     s m <$> replaceBind v p b
-replaceExp v p (App     s e1 e2)      = App     s   <$> replaceExp  v p e1 <*> replaceExp v p e2
-replaceExp v p (Pair s e1 e2)         = Pair    s   <$> replaceExp  v p e1 <*> replaceExp v p e2
-replaceExp v p (BinLet s v1 v2 e1 e2) = BinLet  s      (replaceVar  v p v1)   (replaceVar v p v2)
-                                                    <$> replaceExp  v p e1 <*> replaceExp v p e2
-replaceExp v p (Case s e fm)          = Case    s   <$> replaceExp  v p e  <*> mapM (substitute v p) fm
-replaceExp v p (TypeAbs s b)          = TypeAbs s   <$> replaceBind v p b
-replaceExp v p (TypeApp s e t)        = flip (TypeApp s) t <$> replaceExp v p e
-replaceExp v p (Cond s e1 e2 e3)      = Cond    s   <$> replaceExp  v p e1 <*> replaceExp v p e2 <*> replaceExp v p e3
-replaceExp v p (UnLet s v1 e1 e2)     = UnLet   s      (replaceVar  v p v1)<$> replaceExp v p e1 <*> replaceExp v p e2
-replaceExp v p (CaseP s e flp)        = sub         <$> replaceExp  v p e  <*>(replaceExp v p    =<< match vs' flp)
+replaceExp :: FunName -> Variable -> Variable -> Exp -> FreestState Exp
+replaceExp fn v p (Var     s v1)         = Var     s      (replaceVar v p v1) & return
+replaceExp fn v p (Abs     s m b)        = Abs     s m <$> replaceBind fn v p b
+replaceExp fn v p (App     s e1 e2)      = App     s   <$> replaceExp fn v p e1 <*> replaceExp fn v p e2
+replaceExp fn v p (Pair s e1 e2)         = Pair    s   <$> replaceExp fn v p e1 <*> replaceExp fn v p e2
+replaceExp fn v p (BinLet s v1 v2 e1 e2) = BinLet  s      (replaceVar    v p v1)   (replaceVar    v p v2)
+                                                       <$> replaceExp fn v p e1 <*> replaceExp fn v p e2
+replaceExp fn v p (Case s e fm)          = Case    s   <$> replaceExp fn v p e  <*> mapM (substitute fn v p) fm
+replaceExp fn v p (TypeAbs s b)          = TypeAbs s   <$> replaceBind fn v p b
+replaceExp fn v p (TypeApp s e t)        = flip (TypeApp s) t <$> replaceExp fn v p e
+replaceExp fn v p (Cond s e1 e2 e3)      = Cond    s   <$> replaceExp fn  v p e1 <*> replaceExp fn v p e2 <*> replaceExp fn v p e3
+replaceExp fn v p (UnLet s v1 e1 e2)     = UnLet   s      (replaceVar     v p v1)<$> replaceExp fn v p e1 <*> replaceExp fn v p e2
+replaceExp fn v p (CaseP s e flp)        = sub         <$> replaceExp fn  v p e  <*>(replaceExp fn v p    =<< match fn vs' flp)
   where sub e (Case s _ fm) = Case s e fm
         vs' = [mkVar (getSpan e) "_"]
-replaceExp _ _ e = return e
+replaceExp _ _ _ e = return e
 
-replaceBind :: Variable -> Variable -> Bind a Exp -> FreestState (Bind a Exp)
-replaceBind v p b@(Bind {var=v1,body=exp}) = (\e -> b {var=replaceVar v p v1,body=e}) <$> replaceExp v p exp
+replaceBind :: FunName -> Variable -> Variable -> Bind a Exp -> FreestState (Bind a Exp)
+replaceBind fn v p b@(Bind {var=v1,body=exp}) = (\e -> b {var=replaceVar v p v1,body=e}) <$> replaceExp fn v p exp
 
 replaceVar :: Variable -> Variable -> Variable -> Variable
 replaceVar (Variable _ name) (Variable _ name1) v@(Variable span name2)
   | name1 == name2 = Variable span name
   | otherwise      = v
 
-substitute :: Variable -> Variable -> ([Variable],Exp) -> FreestState ([Variable],Exp)
-substitute v p (vs,e) = (,) (map (replaceVar v p) vs) <$> (replaceExp v p e)
+substitute :: FunName -> Variable -> Variable -> ([Variable],Exp) -> FreestState ([Variable],Exp)
+substitute fn v p (vs,e) = (,) (map (replaceVar v p) vs) <$> (replaceExp fn v p e)
 
 -- aux
 pName :: Pattern -> String
