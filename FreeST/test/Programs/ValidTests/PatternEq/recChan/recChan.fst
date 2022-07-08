@@ -1,4 +1,4 @@
-type Chan : SL = +{Done: Skip, More: !Int;Chan}
+type Chan : 1S = +{Done: Skip, More: !Int;Chan}
 
 fives : Int -> Chan -> Skip
 fives 0 c = select Done c
@@ -17,5 +17,5 @@ sumFives c =
 main : Int
 main =
   let (w, r) = new Chan in
-  let _ = fork[Skip] (fives 32 w) in
+  let _ = fork@Skip (fives 32 w) in
   sumFives r

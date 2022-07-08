@@ -27,7 +27,7 @@ multiplosEntre i x n = if x == n
 -- (No fundo a Solucao apenas disponibiliza o acesso ao resultado)
 
 -- Tipo do canal (os parentesis fazem diferenca)
--- type TabuadaC = (rec x: SL. &{TabuadaSimples: ?Int; x, TabuadaAte: ?Int; ?Int; x, MultiplosEntre: ?Int; ?Int; ?Int; x, Solucao: !Bool; !Int; x, Fim: Skip})
+-- type TabuadaC = (rec x: 1S. &{TabuadaSimples: ?Int; x, TabuadaAte: ?Int; ?Int; x, MultiplosEntre: ?Int; ?Int; ?Int; x, Solucao: !Bool; !Int; x, Fim: Skip})
 
 initTabuadaServer : (rec x: 1S. &{TabuadaSimples: ?Int; x, TabuadaAte: ?Int; ?Int; x, MultiplosEntre: ?Int; ?Int; ?Int; x, Solucao: !Bool; !Int; x, Fim: Skip}) 1-> ()
 initTabuadaServer c = tabuadaServer c Empty

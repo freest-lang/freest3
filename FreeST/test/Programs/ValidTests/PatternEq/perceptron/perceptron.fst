@@ -34,8 +34,8 @@ data Connection = CEnd | Connection Channels Connection
 data Layers     = LEnd | Layers Connection Layers
 
 ---- Channels ----
-type Send    : SL = !Int
-type Receive : SL = dualof Send
+type Send    : 1S = !Int
+type Receive : 1S = dualof Send
 
 ---- Network ----
 

@@ -5,11 +5,11 @@ type Stream α:ML = !α; Stream[α]
 
 or
 
-type Stream α:ML = μb:SL. !α;b
+type Stream α:ML = μb:1S. !α;b
 
 or
 
-type Stream = ∀ α:SL. μb: SL. α;b
+type Stream = ∀ α:1S. μb: 1S. α;b
 
 -}
 

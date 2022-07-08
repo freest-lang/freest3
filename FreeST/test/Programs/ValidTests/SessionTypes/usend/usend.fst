@@ -2,13 +2,13 @@
 Unary send.
 The type of send is
 
-  ∀a:ML . a -> ∀b:SL . !a;b -o b
+  ∀a:ML . a -> ∀b:1S . !a;b -o b
 
 yet it can be used with an MU type via eta-conversion.
 -}
 
--- usend : ∀a:MU . a -> () -> ∀b:SL . !a;b 1-> b
--- usend = Λa:MU => λx:a -> λ_:() -> Λb:SL => send [a] x [b]
+-- usend : ∀a:MU . a -> () -> ∀b:1S . !a;b 1-> b
+-- usend = Λa:MU => λx:a -> λ_:() -> Λb:1S => send [a] x [b]
 
 main : ()
 main =
