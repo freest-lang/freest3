@@ -24,7 +24,7 @@ whether two context-free session types are equivalent.
 
 -}
 
-type T : SL = !Int;T;?Int
+type T : 1S = !Int;T;?Int
 
 writer : Int -> T -> ()
 writer i c =
@@ -40,5 +40,5 @@ reader c =
 main : ()
 main =
   let (w, r) = new T in
-  fork[()] $ writer 0 w;
+  fork @() $ writer 0 w;
   reader r

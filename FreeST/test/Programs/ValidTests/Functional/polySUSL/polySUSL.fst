@@ -1,9 +1,9 @@
-id' : forall a : TL . a -> a
+id' : forall a : 1T . a -> a
 id' x = x
 
 main : Int
 main =
-  let (w, r) = id'[(!Int, ?Int)] (new !Int) in
-  let x = fork[Skip] (send 5 w) in
+  let (w, r) = id' @(!Int, ?Int) (new !Int) in
+  let x = fork @Skip (send 5 w) in
   let (y, c) = receive r in
   y

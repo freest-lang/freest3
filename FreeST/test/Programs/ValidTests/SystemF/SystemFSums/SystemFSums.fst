@@ -16,13 +16,13 @@ inr : ∀a b . b -> (∀c. (a -> c) -> (b -> c) -> c)
 inr e = Λc => λ_:(a->c) -> λy:(b->c) -> y e
 
 cases : ∀a b c . (∀c . (a -> c) -> (b -> c) -> c) -> (a -> c) -> (b -> c) -> c
-cases e cl cr = e [c] cl cr
+cases e cl cr = e  @c cl cr
 
 fromL : ∀a b . (∀c . (a -> c) -> (b -> c) -> c) -> a -> a
-fromL l v = cases [a, b, a] l (id [a]) (λ_:b -> v)
+fromL l v = cases  @a @b @a l (id  @a) (λ_:b -> v)
 
 fromR : ∀a b . (∀c . (a -> c) -> (b -> c) -> c) -> b -> b
-fromR r v = cases [a, b, b] r (λ_:a -> v) (id [b])
+fromR r v = cases  @a @b @b r (λ_:a -> v) (id  @b)
 
 -- Examples
 
@@ -30,25 +30,25 @@ type IntPlusBool = ∀c . (Int -> c) -> (Bool -> c) -> c
 
 -- inject an Int in a Int+Bool sum
 inInt : Int -> IntPlusBool
-inInt n = inl [Int] [Bool] n
+inInt n = inl  @Int  @Bool n
 
 -- inject a Bool in a Int+Bool sum
 inBool : Bool -> IntPlusBool
-inBool b = inr [Int] [Bool] b
+inBool b = inr  @Int  @Bool b
 
 -- convert a Int+Bool sum into an Int
-main : Int
-main = fromL [Int, Bool] (inInt 324) 0
+main, toInt : Int
+
+main = fromL  @Int @Bool (inInt 324) 0
 
 -- same w/o using fromL
-toInt : Int
-toInt = cases [Int, Bool, Int] (inInt 324) (id [Int]) (λ_:Bool -> 0)
+toInt = cases  @Int @Bool @Int (inInt 324) (id  @Int) (λ_:Bool -> 0)
 
 -- convert a Int+Bool sum into a Bool
-main' : Bool
-main' = fromR [Int, Bool] (inBool True) False
+main', toBool : Bool
 
-toBool : Bool
-toBool = cases [Int, Bool, Bool] (inBool True) (λ_:Int -> False) (id [Bool])
+main' = fromR  @Int @Bool (inBool True) False
+
+toBool = cases  @Int @Bool @Bool (inBool True) (λ_:Int -> False) (id  @Bool)
 
 

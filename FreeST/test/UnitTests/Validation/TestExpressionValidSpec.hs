@@ -29,6 +29,6 @@ isExpr e t = testValidExpectation True (errors s) -- null (errors s)
  where
   s    = execState test initialState { varEnv = prelude }
   test = do
-    t' <- rename Map.empty =<< Dual.resolve t
-    e' <- rename Map.empty =<< Dual.resolve e
+    t' <- rename Map.empty Map.empty =<< Dual.resolve t
+    e' <- rename Map.empty Map.empty =<< Dual.resolve e
     checkAgainst Map.empty e' t'
