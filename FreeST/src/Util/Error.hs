@@ -63,6 +63,7 @@ data ErrorType =
   -- Elab
   | TypeVarOutOfScope Span Variable
   | FuctionLacksSignature Span Variable
+  | WrongNumberOfArguments Span Variable Int Int T.Type
   -- Duality
 --  | DualOfNonRecVar Span  T.Type
   | DualOfNonSession Span T.Type
@@ -86,8 +87,9 @@ data ErrorType =
   | WrongNumOfCons Span Variable Int [Variable] E.Exp
   | ExtractError Span String E.Exp T.Type
   | BranchNotInScope Span Variable T.Type
-  -- Builtin
+  -- Runtime errors
   | ErrorFunction Span String
+  | UndefinedFunction Span
   deriving Show
 
 instance Located ErrorType where
@@ -107,6 +109,7 @@ instance Located ErrorType where
   getSpan (MultipleFunBindings  p _ _  ) = p
   getSpan (TypeVarOutOfScope     p _   ) = p
   getSpan (FuctionLacksSignature p _   ) = p
+  getSpan (WrongNumberOfArguments p _ _ _ _) = p 
 --  getSpan (DualOfNonRecVar       p _   ) = p
   getSpan (DualOfNonSession      p _   ) = p
   getSpan (SignatureLacksBinding p _ _ ) = p
@@ -126,7 +129,8 @@ instance Located ErrorType where
   getSpan (WrongNumOfCons p _ _ _ _    ) = p
   getSpan (ExtractError p _ _ _        ) = p
   getSpan (BranchNotInScope p _ _      ) = p
-  getSpan (ErrorFunction _ _           ) = defaultSpan
+  getSpan (ErrorFunction p _           ) = p -- defaultSpan
+  getSpan (UndefinedFunction p         ) = p
 
 
 instance Message ErrorType where
@@ -173,6 +177,12 @@ instance Message ErrorType where
   msg (TypeVarOutOfScope _ x) sty ts = "Type variable not in scope: " ++ style red sty ts x
   msg (FuctionLacksSignature _ x) sty ts =
     "The binding for function " ++ style red sty ts x ++ " lacks an accompanying type signature"
+  msg (WrongNumberOfArguments p fun exp got t) sty ts =
+    "Wrong number of arguments in function " ++ style red sty ts (show fun) ++
+    "\n  expecting " ++ style red sty ts (show exp) ++
+    ", but got " ++ style red sty ts (show got) ++
+    "\n  Declared in file/module " ++ showModule (showModuleName p) p ++
+    ":\n  " ++ red sty (show fun ++ " : " ++ show t)
   msg (DualOfNonSession _ t) sty ts = 
     "Dualof applied to a non session type: " ++ style red sty ts t
   msg (SignatureLacksBinding _ x t) sty ts = 
@@ -234,6 +244,8 @@ instance Message ErrorType where
     "Choice branch not in scope.\n\t Branch " ++ style red sty ts x ++
     " is not present in the internal choice type " ++ style red sty ts t ++
     "\n\t Defined at: " ++ show (getSpan t)
---  Builtin
+--  Runtime
   msg (ErrorFunction s e) _ _ = -- TODO: This one is from the point of view of the callee not the caller
     e ++ "\n  error, called at module" ++ defModule s ++ ":" ++ show (startPos s)
+  msg (UndefinedFunction s) _ _ = 
+    "undefined function, called at " ++ defModule s ++ ":" ++ show (startPos s)

@@ -24,28 +24,28 @@
 
 -- Non contractive, non terminated
 
-rec b:SL. Skip ; b ; ?Bool
-rec z:SU.(+{A: Skip, C: z} ; rec b:SL.((Skip;b);?Bool))
-rec z1:SU.(rec z2:SU.(rec a:SL.(+{A: Skip, C: a} ; rec z3:SU.(rec b:SL.(Skip;(z3;?Bool))))))
-rec a:SL. (Skip ; a) ; !Bool
+rec b: 1S. Skip ; b ; ?Bool
+rec z: *S.(+{A: Skip, C: z} ; rec b: 1S.((Skip;b);?Bool))
+rec z1: *S.(rec z2: *S.(rec a: 1S.(+{A: Skip, C: a} ; rec z3: *S.(rec b: 1S.(Skip;(z3;?Bool))))))
+rec a: 1S. (Skip ; a) ; !Bool
 rec a. a; !Int
 rec a. rec b. rec c. rec d. a; !Bool
 rec a. ((a; !Bool); !Int) ; ?Bool
-rec z:SL.(rec z:SU.(Skip;(rec a:SU.(rec z:SL.&{B: (rec z:SL.(rec a:SL.(z;(Skip;b))))}))))
-rec z:SL.(rec a:SU.&{B: (rec z:SL.((z;Skip);b))})
-(rec a:SU.(a;!Bool));!Bool 
-rec a:SU.a;!Bool
-rec z:SL.(rec a:SU.&{B: (rec z:SL.((z;Skip);b))})
-rec z:SL.(rec z:SU.(Skip;(rec a:SU.(rec z:SL.&{B: (rec z:SL.(rec a:SL.(z;(Skip;b))))}))))
+rec z: 1S.(rec z: *S.(Skip;(rec a: *S.(rec z: 1S.&{B: (rec z: 1S.(rec a: 1S.(z;(Skip;b))))}))))
+rec z: 1S.(rec a: *S.&{B: (rec z: 1S.((z;Skip);b))})
+(rec a: *S.(a;!Bool));!Bool 
+rec a: *S.a;!Bool
+rec z: 1S.(rec a: *S.&{B: (rec z: 1S.((z;Skip);b))})
+rec z: 1S.(rec z: *S.(Skip;(rec a: *S.(rec z: 1S.&{B: (rec z: 1S.(rec a: 1S.(z;(Skip;b))))}))))
 
 -- Non contractive but terminated; recursion on non session type variables
 
 rec a. a
-rec a:TL. a
+rec a: 1T. a
 rec a. a;  a;  a;  a;  a
 rec a. rec b. rec c. rec d. a
-rec a:SU. (rec a:TU. Skip; a); (rec a:SU. (Skip; a))
-Skip; rec a:SU. ((rec a:MU. (Skip; a)); (rec a:SU. (Skip; a))); Skip; Skip
+rec a: *S. (rec a: *T. Skip; a); (rec a: *S. (Skip; a))
+Skip; rec a: *S. ((rec a: *M. (Skip; a)); (rec a: *S. (Skip; a))); Skip; Skip
 Int -> rec a. rec b. rec c. rec d. a
 (rec a. rec b. rec c. rec d. a) -> Bool
 (rec a. rec b. rec c. rec d. a, Int)
@@ -63,10 +63,10 @@ rec a. dualof dualof  dualof dualof  dualof dualof  dualof dualof  dualof dualof
 !Int ; (Int, Bool)
 Int -> Int ; !Int
 (Int, Bool) ; !Int
-rec a : SL . Int -> Int ; a 
-rec a : SU . Int -> Int ; a 
-rec a : TU . !Int ; a 
-rec a : TL . !Int ; a 
+rec a : 1S . Int -> Int ; a 
+rec a : *S . Int -> Int ; a 
+rec a : *T . !Int ; a 
+rec a : 1T . !Int ; a 
 +{ A: () }
 +{ A: () -> Bool }
 
@@ -75,12 +75,12 @@ rec a : TL . !Int ; a
 a
 Skip; a
 rec b. !Int; a
-Bool -o a
-(Char, Bool -o a)
-Int -> ∀ a : MU . b  
-Int -> ∀ a : MU . (Bool -> b)
-(Char, Int -> ∀ a : MU . (Bool -> b))
-forall a:SL . forall b:SL . forall z:SL . ((rec z:SL. (Skip;&{B: (+{A: (&{B: a, C: Skip};+{A: (?Bool;Skip), B: (z;Skip), C: (((?Int;&{A: ((((?();a);z);+{A: z, C: Skip});!Int), C: !Char});z);Skip)})};(+{A: !Char};(((?Int;&{A: ((((?();a);z);+{A: z, C: Skip});!Int), C: !Char});z);(?Char;((?Int;&{A: ((((?();a);z);+{A: z, C: Skip});!Int), C: !Char});z))))), C: Skip}));((a;&{B: (!Bool;(?();b)), C: (Skip;(?();c))});((?Int;+{B: a, C: ?Int});!Int)))
+Bool 1-> a
+(Char, Bool 1-> a)
+Int -> ∀ a : *M . b  
+Int -> ∀ a : *M . (Bool -> b)
+(Char, Int -> ∀ a : *M . (Bool -> b))
+forall a: 1S . forall b: 1S . forall z: 1S . ((rec z: 1S. (Skip;&{B: (+{A: (&{B: a, C: Skip};+{A: (?Bool;Skip), B: (z;Skip), C: (((?Int;&{A: ((((?();a);z);+{A: z, C: Skip});!Int), C: !Char});z);Skip)})};(+{A: !Char};(((?Int;&{A: ((((?();a);z);+{A: z, C: Skip});!Int), C: !Char});z);(?Char;((?Int;&{A: ((((?();a);z);+{A: z, C: Skip});!Int), C: !Char});z))))), C: Skip}));((a;&{B: (!Bool;(?();b)), C: (Skip;(?();c))});((?Int;+{B: a, C: ?Int});!Int)))
 
 -- Messages not of kind ML
 
@@ -102,31 +102,31 @@ rec a . ?(Int; a)
 
 -- The kind of the recursion variable is a sub-kind of the one of rec body
 -- expecting the other way around.
-rec a:MU . !a
+rec a: *M . !a
 
-forall b:SL. !Int; rec a:SL. b; a
+forall b: 1S. !Int; rec a: 1S. b; a
 
 
 -- Non contractive types
 
-rec a:SL. a
-rec a:SU. a
-rec a:SU. (Skip; a)
-rec a:SU. Skip; a; Skip
-rec a:SU. Skip; a; a; a; a; a
-Skip; rec a:SU. (Skip; a)
-Skip; rec a:SU. ( Skip; a; Skip)
-Skip; rec a:SU. ( Skip; a; Skip)
-Skip; Skip; Skip; rec a:SU. (Skip; a; a; a; a; a)
-rec a:SU. (((Skip ; a) ; a) ; a)
-rec a:SU. (rec a:SU. Skip; a); (rec a:SU. (Skip; a))
-Skip; rec a:SU. ((rec a:SU. (Skip; a)); (rec a:SU. (Skip; a))); Skip; Skip
+rec a: 1S. a
+rec a: *S. a
+rec a: *S. (Skip; a)
+rec a: *S. Skip; a; Skip
+rec a: *S. Skip; a; a; a; a; a
+Skip; rec a: *S. (Skip; a)
+Skip; rec a: *S. ( Skip; a; Skip)
+Skip; rec a: *S. ( Skip; a; Skip)
+Skip; Skip; Skip; rec a: *S. (Skip; a; a; a; a; a)
+rec a: *S. (((Skip ; a) ; a) ; a)
+rec a: *S. (rec a: *S. Skip; a); (rec a: *S. (Skip; a))
+Skip; rec a: *S. ((rec a: *S. (Skip; a)); (rec a: *S. (Skip; a))); Skip; Skip
 
 -- Types with a part that is non contractive but terminated
 
-Int -> rec a:SL. rec b:SL. rec c:SL. rec d:SL. a
-(rec a:TU. rec b:TU. rec c:TU. rec d:TU. a) -> Bool
-(rec a:SU. rec b:SU. rec c:SU. rec d:SU. a, Int)
+Int -> rec a: 1S. rec b: 1S. rec c: 1S. rec d: 1S. a
+(rec a: *T. rec b: *T. rec c: *T. rec d: *T. a) -> Bool
+(rec a: *S. rec b: *S. rec c: *S. rec d: *S. a, Int)
 
 -- HIGHER ORDER
 

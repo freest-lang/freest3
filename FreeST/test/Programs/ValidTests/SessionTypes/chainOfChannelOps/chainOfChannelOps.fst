@@ -1,9 +1,9 @@
-type T : SL = +{More: !Int;T, End: Skip}
+type T : 1S = +{More: !Int;T, End: Skip}
 
 main : Int
 main =
   let (w, r) = new T in
-  let _ = fork[Skip] $ select End $ send 2 $ select More $ send 5 $ select More w in
+  let _ = fork @Skip $ select End $ send 2 $ select More $ send 5 $ select More w in
   g r
 
 

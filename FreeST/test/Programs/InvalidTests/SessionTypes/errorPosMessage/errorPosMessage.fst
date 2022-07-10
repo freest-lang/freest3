@@ -2,7 +2,7 @@
 main : Int
 main =
   let (w, r) = new !Bool in
-  let _ = fork[Skip] (f w) in
+  let _ = fork @Skip (f w) in
   let (x, _) = f1 r in
   x
 

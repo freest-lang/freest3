@@ -1,7 +1,7 @@
 -- Tests for Contractivity
 Int -> Bool
   True
-Int -o Bool
+Int 1-> Bool
   True
 (Int,Bool)
   True
