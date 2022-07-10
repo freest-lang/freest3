@@ -13,7 +13,7 @@ import           Syntax.Base
 import           Syntax.Expression
 import qualified Syntax.Type       as T
 import qualified Validation.Rename as R
-import           Parse.ParseUtils(binOp)
+import           Parse.ParseUtils(binOp,unOp)
 
 import           Util.FreestState
 
@@ -178,10 +178,19 @@ sameLit' _             _             = False
 
 -- TODOX
 comp :: Variable -> Exp -> Exp
-comp v i@(Int    s k) = binOp (Var (getSpan v) v) (mkVar s "(==)") i
--- comp v c@(E.Char   s k) = 
--- comp v b@(E.Bool   s k) = 
--- comp v s@(E.String s k) = 
+comp v i@(Int    s  k) = binOp (Var (getSpan v) v) (mkVar s "(==)") i
+comp v b@(Bool   s2 k) = binOp b1 (mkVar s2 "(||)") b2 
+  where s1  = getSpan v
+        var = Var s1 v
+        b1 = binOp var (mkVar s2 "(&&)") b
+        b2 = binOp (unOp (mkVar s1 "not") var s1) (mkVar s2 "(&&)") 
+                   (unOp (mkVar s2 "not") b   s2)
+comp v c@(Char   s2 k) = binOp c1 (mkVar s2 "(==)") c2
+  where s1 = getSpan v
+        var = Var s1 v
+        c1 = unOp (mkVar s1 "ord") var s1
+        c2 = unOp (mkVar s2 "ord") c   s2
+-- comp v s@(String s k) = 
 comp _ e = Bool (getSpan e) False
 
 countArgs :: Variable -> FreestState Int

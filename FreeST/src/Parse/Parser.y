@@ -301,9 +301,9 @@ Pattern :: { Pattern }
   | PatternLit                      { $1 }
 
 PatternLit :: { Pattern }
-  : INT   { let (TokenInt    p x) = $1 in E.L $ E.Int p x }
-  -- : INT   {% let (TokenInt    p x) = $1 in E.L $ flip E.Int  x `fmap` liftModToSpan p }
-  -- | BOOL  {% let (TokenBool   p x) = $1 in E.L $ flip E.Bool x `fmap` liftModToSpan p }
+  : INT   { let (TokenInt    p x) = $1 in E.L $ E.Int  p x }
+  | BOOL  { let (TokenBool   p x) = $1 in E.L $ E.Bool p x }
+  | CHAR  { let (TokenChar   p x) = $1 in E.L $ E.Char p x }
   -- | CHAR  {% let (TokenChar   p x) = $1 in E.L $ flip E.Char x `fmap` liftModToSpan p }
   -- | STR   {% let (TokenString p x) = $1 in E.L $ flip String x `fmap` liftModToSpan p }
 
