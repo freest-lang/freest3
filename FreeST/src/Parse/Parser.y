@@ -118,6 +118,7 @@ import           System.FilePath
 %left NEG not    -- unary
 %right '.'       -- ∀ a:k . T and μ a:k . T
 %right '=>' '->' '1->' ARROW -- λλ a:k => e,  x:T -> e, λ x:T 1-> e, T -> T and T 1-> T
+%left '@'
 %right ';'       -- T;T and e;e
 %right MSG       -- !T and ?T
 %right dualof
@@ -225,7 +226,7 @@ App :: { E.Exp }
                                        \s1 -> pure $ E.App s (E.Var s (mkVar s1 "select")) (E.Var s1 $2)
                                    }
   | Primary                        { $1 }
-  | TApp                           { $1 }
+  | App '@' Type                   {% mkSpanSpan $1 $3 >>= \s -> pure $ E.TypeApp s $1 $3 }
    
 Primary :: { E.Exp }
   : INT                            {% let (TokenInt p x) = $1 in flip E.Int x `fmap` liftModToSpan p }
@@ -258,9 +259,6 @@ TAbs :: { E.Exp }
          \s -> mkSpanSpan k $2 >>=
          \s' -> pure $ E.TypeAbs s (Bind s' a k $2)
       }
-
-TApp :: { E.Exp }
-  : App '@' Type     {% mkSpanSpan $1 $3 >>= \s -> pure $ E.TypeApp s $1 $3 }
 
 Tuple :: { E.Exp }
   : Exp           { $1 }
