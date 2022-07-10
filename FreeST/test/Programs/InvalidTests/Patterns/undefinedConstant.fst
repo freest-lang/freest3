@@ -1,4 +1,4 @@
-
+-- This is invalid since f 2 is not defined.
 
 f : Int -> Int -> Int
 f 1 = (+1)

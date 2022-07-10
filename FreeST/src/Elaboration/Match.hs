@@ -7,6 +7,7 @@ import           Data.List(groupBy,sortOn)
 import           Data.Function((&))
 import           Data.Functor((<&>))
 import qualified Data.Map.Strict   as Map
+import           Data.Maybe
 
 import           Syntax.Base
 import           Syntax.Expression
@@ -131,7 +132,6 @@ getKeys _ = []
 
 -- lit -------------------------------------------------------------
 ruleLit :: FunName -> [Variable] -> [([Pattern],Exp)] -> FreestState Exp
-ruleLit fn vs [] = return $ Int defaultSpan (-1) -- TODOX use freest undefined 
 ruleLit fn vs [] = TypeApp s v <$> (getType fn =<< countArgs fn)
   where s = (getSpan fn)
         v = Var s (mkVar s "undefined")
@@ -142,11 +142,11 @@ ruleLit fn vs cs = do
   let (p,elses2) = (head elses1, tail elses1)
   let lit = head $ fst $ p
   --- same literals and other vars
-  let ifRest1      = p : filter ((isGroup  lit).head.fst) elses2
+  let ifRest1  = p : filter ((isGroup  lit).head.fst) elses2
   -- dif literals and other vars
-  let elseRest    =       filter ((notGroup lit).head.fst) elses2
+  let elseRest =     filter ((notGroup lit).head.fst) elses2
   -- transform lits into vars
-  let ifRest2      = map (litToVar) ifRest1
+  let ifRest2  = map (litToVar) ifRest1
   -- if cond then group1 else group 2
   let group1 = ifs++ifRest2
   let group2 = ifs++elseRest
@@ -162,7 +162,7 @@ litToVar (((L e):ps),exp) = (((V $ mkVar (getSpan e) "_"):ps),exp)
 litToVar p = p
 
 isGroup :: Pattern -> Pattern -> Bool
-isGroup _        (V _)  = True
+isGroup _      (V _ ) = True 
 isGroup (L e1) (L e2) = sameLit' e1 e2
 
 notGroup :: Pattern -> Pattern -> Bool
@@ -174,7 +174,7 @@ sameLit' (Int    _ k1) (Int    _ k2) = k1 == k2
 sameLit' (Char   _ k1) (Char   _ k2) = k1 == k2
 sameLit' (Bool   _ k1) (Bool   _ k2) = k1 == k2
 sameLit' (String _ k1) (String _ k2) = k1 == k2
-sameLit' _               _               = False
+sameLit' _             _             = False
 
 -- TODOX
 comp :: Variable -> Exp -> Exp
@@ -184,12 +184,13 @@ comp v i@(Int    s k) = binOp (Var (getSpan v) v) (mkVar s "(==)") i
 -- comp v s@(E.String s k) = 
 comp _ e = Bool (getSpan e) False
 
-countArgs :: FunName -> FreestState Int
-countArgs fn = (length.fst.head) <$> flip (Map.!) fn getPEnvP
+countArgs :: Variable -> FreestState Int
+countArgs fn =  length <$> fst <$> head <$> flip (Map.!) fn <$> getPEnvP
 
 getType :: FunName -> Int -> FreestState T.Type
-getType fn i = dropArrows i =<< flip (Map.!) fn =<< getVEnv
-  where dropArrows 0 t = t
+getType fn i = dropArrows i <$> flip (Map.!) fn <$> getVEnv
+  where dropArrows :: Int -> T.Type -> T.Type
+        dropArrows 0 t = t
         dropArrows n (T.Arrow _ _ _ t2) = dropArrows (n-1) t2
 
 -- replace Variables -----------------------------------------------
