@@ -5,7 +5,7 @@ Copyright   :  (c) Diogo Barros
 
 -}
 
-type OrderingChannel : SL = +{
+type OrderingChannel : 1S = +{
   Value: !Int ; OrderingChannel ; ?Int,
   Ascending: Skip,
   Descending: Skip}
@@ -32,19 +32,19 @@ data IntList = Nil | Cons Int IntList
 
 -- Receive a series of integer values; return them in ascending or
 -- descending order
-sortingServer : forall a:SL . IntList -> dualof OrderingChannel;a -> (IntList, a)
+sortingServer : forall a:1S . IntList -> dualof OrderingChannel;a -> (IntList, a)
 sortingServer xs (Ascending  c) = (quicksort (\x:Int -> (\y:Int -> x < y)) xs, c)
 sortingServer xs (Descending c) = (quicksort (\x:Int -> (\y:Int -> x > y)) xs, c)
 sortingServer xs (Value      c) =
   let (x, c)  = receive c in
-  let (xs, c) = sortingServer[!Int;a] (Cons x xs) c in
+  let (xs, c) = sortingServer@(!Int;a) (Cons x xs) c in
   case xs of { Cons y ys -> (ys, send y c) }
 
 -- Putting it all together
 main : ()
 main =
   let (w, r) = new OrderingChannel in
-  fork[(IntList, Skip)] (sortingServer[Skip] Nil r);
+  fork@(IntList, Skip) (sortingServer@Skip Nil r);
   client w
 
 -- Quicksort.  Adapted from learnyouahaskell.com. The integer sorting

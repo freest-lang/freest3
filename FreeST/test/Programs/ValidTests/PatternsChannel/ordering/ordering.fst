@@ -12,24 +12,24 @@ order to use in quicksort and returns the ordered list.
 
 data IntList = Nil | Cons Int IntList
 
-type OrderingChannel : SL = +{Vals: !Int; OrderingChannel; ?Int, Asc: Skip, Desc: Skip}
+type OrderingChannel : 1S = +{Vals: !Int; OrderingChannel; ?Int, Asc: Skip, Desc: Skip}
 
 -- ==================== Server ====================
 
 -- Facade function to initialize server with an empty list
 initOrderedServer : dualof OrderingChannel -> ()
 initOrderedServer c =
-  let _ = orderedServer[Skip] c Nil in
+  let _ = orderedServer@Skip c Nil in
   ()
 
 -- Server function
 --   This server sends the list reversed
-orderedServer : forall a:SL . dualof OrderingChannel;a -> IntList -o (IntList, a)
+orderedServer : forall a:1S . dualof OrderingChannel;a -> IntList 1-> (IntList, a)
 orderedServer (Asc  c) list = (quicksort list (desc), c) -- Quicksorts with descending to send it reversed
 orderedServer (Desc c) list = (quicksort list (asc) , c) -- Quicksorts with  ascending to send it reversed
 orderedServer (Vals c) list = 
   let (x, c)  = receive c in
-  let (list, c) = orderedServer[!Int;a] c (Cons x list) in
+  let (list, c) = orderedServer@(!Int;a) c (Cons x list) in
   case list of { 
     Cons y ys -> 
       let c = send y c in
@@ -79,13 +79,13 @@ listAppend (Cons x xs) ll = Cons x (listAppend xs ll)
 -- Simple client using Asc option
 ascClient : OrderingChannel -> IntList
 ascClient c =
-  let (c, rList) = order[Skip] c aList True in
+  let (c, rList) = order@Skip c aList True in
   rList
 
 -- Simple client using Desc option
 descClient : OrderingChannel -> IntList
 descClient c =
-  let (c, rList) = order[Skip] c aList False in
+  let (c, rList) = order@Skip c aList False in
   rList
 
 
@@ -94,14 +94,14 @@ descClient c =
 -- Function to send a list and receive it ordered
 --  direction : Bool - is used to determine if Asc(True) or
 --                     Desc(False) is selected
-order : forall a:SL . OrderingChannel; a -> IntList -o Bool -o (a, IntList)
+order : forall a:1S . OrderingChannel; a -> IntList 1-> Bool 1-> (a, IntList)
 order c Nil direction = if direction
                         then (select Asc c , Nil)
                         else (select Desc c, Nil)
 order c (Cons x xs) direction = 
                         let c          = select Vals c in
                         let c          = send x c in
-                        let (c, rList) = order[?Int;a] c xs direction in
+                        let (c, rList) = order@(?Int;a) c xs direction in
                         let (y, c)     = receive c in
                         (c, Cons y rList)
 
@@ -117,6 +117,6 @@ aList = Cons 4 (Cons 1 (Cons 3 (Cons 2 Nil)))
 main : IntList
 main =
   let (w, r) = new OrderingChannel in
-  let _      = fork[()] $ initOrderedServer r in
+  let _      = fork@() $ initOrderedServer r in
   descClient w
   --ascClient w
