@@ -1,4 +1,4 @@
-type T : SU = Skip
+type T : *S = Skip
 
 main : (T, T)
 main = new T

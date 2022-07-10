@@ -126,10 +126,15 @@ or
 
 To add a valid program test follow the steps below:
 
-1. Create or use a directory under `FreeST/test/Programs/ValidTests/` which represents the test category
-2. Create a new directory to add the test files 
-3. Create a FreeST program under the directory created on step 2 (i.e. `test.fst`)
-4. Create a file, under the directory created on step 2, with the expected result (`test.expected`)
+1. Create or use a directory under `FreeST/test/Programs/ValidTests/` which
+   represents the test category
+2. Create a new directory to add the test files (i.e. `test/`)
+3. Under the directory created on step two, create:
+   1. A FreeST program:
+      1. A single FreeST file with the same name of the directory created on step 2 (i.e. `test.fst`)
+      2. A program with several modules (the main file must also have the same name of the directory created on step 2).
+   2. An expected file (with the same name) with the expected result (i.e. `test.expected`).
+
 
 The contents of the ".expected" test file may be:
   - \<divergent\>, if the computation do not end.
@@ -137,7 +142,7 @@ The contents of the ".expected" test file may be:
   - The result of the computation
 
 
-The process of creating invalid tests is analogous. In the third step, the only
+The process of creating invalid tests is analogous. In the step 3.2, the only
 option that makes sense is "<pending>" since these are incorrect programs and
 thus they are expected to raise errors. Also, the tests must be
 placed under `FreeST/test/Programs/InvalidTests/`.

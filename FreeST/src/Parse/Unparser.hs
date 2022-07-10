@@ -8,6 +8,11 @@ Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of 
 Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc.ul.pt
 
 Converting AST terms to strings.
+
+Norman Ramsey, Unparsing Expressions With Prefix and Postfix Operators,
+Software—Practice and Experience, 1998.
+https://www.cs.tufts.edu/~nr/pubs/unparse.ps
+
 -}
 
 module Parse.Unparser
@@ -32,16 +37,13 @@ import           Prelude                 hiding ( Left
                                                 , Right
                                                 ) -- needed for Associativity
 
--- Positions (Base)
-
 instance Show Span where
   show (Span sp fp _)
     | sp == fp  = showPos sp
-    | otherwise = '(' : showPos sp ++ ")-(" ++ showPos fp ++ ")"
+    | otherwise = showPos sp ++ "-" ++ showPos fp ++ ""
     where
       showPos (l,c) = show l ++ ":" ++ show c
 
-        
 showModuleName :: Span -> String
 showModuleName s = showModuleWithDots (defModule s)
 
@@ -52,13 +54,13 @@ showModuleWithDots = map (\x -> if x == '/' then '.' else x )
 
 -- Kind
 instance Show K.Multiplicity where
-  show K.Un  = "U"
-  show K.Lin = "L"
+  show K.Un  = "*"
+  show K.Lin = "1"
 
 -- Type & Expression (Syntax.Base)
 instance Show Multiplicity where
   show Un  = "->"
-  show Lin = "-o"
+  show Lin = "1->"
 
 -- Choice view
 
@@ -71,10 +73,10 @@ instance Show T.Polarity where
   show T.In  = "?"
   show T.Out = "!"
 
--- Program and Type Variables.
+-- Program and Type Variables
 
 -- Note: show should be aligned with the creation of new variables;
--- see Syntax.ProgramVariables and Syntax.TypeVariables
+-- see Syntax.Variables
 
 instance Show Variable where
   show = showVar
@@ -119,10 +121,6 @@ showBindTerm (Bind _ x t e) m = showKind x t (show m) e -- λ x:t -> e
 
 -- Unparsing types and expressions
 
--- Norman Ramsey, Unparsing Expressions With Prefix and Postfix
--- Operators, Software—Practice and Experience, 1998.
--- https://www.cs.tufts.edu/~nr/pubs/unparse.ps
-
 data Precedence =
     PMin
   | PIn      -- in, else, match, case (expressions)
@@ -133,7 +131,7 @@ data Precedence =
   | PAdd     -- +, -
   | PMult    -- *, /
   | PDot     -- μ a:k . T
-  | PArrow   -- λλ a:k => e,  x:T -> e, λ x:T -o e, T -> T and T -o T and ∀ a:k . T
+  | PArrow   -- λλ a:k => e,  x:T -> e, λ x:T 1-> e, T -> T and T 1-> T and ∀ a:k . T
   | PSemi    -- T ; U
   | PMsg     -- !T and ?T
   | PDualof  -- dualof T
@@ -290,7 +288,8 @@ instance Unparse Exp where
     (inRator, "case " ++ s ++ " of {" ++ showFieldMapP m ++ "}")
     where s = bracket (unparse e) NonAssoc inRator
   -- Type Abstraction intro and elim
-  unparse (E.TypeApp _ x t) = (appRator, show x ++ " [" ++ show t ++ "]")
+  unparse (E.TypeApp _ x t) = (appRator, show x ++ " @" ++ t')
+    where t' = bracket (unparse t) Right appRator
   unparse (E.TypeAbs _ b) = (arrowRator, "Λ" ++ showBindExp b)
   -- Boolean elim
   unparse (E.Cond _ e1 e2 e3) =

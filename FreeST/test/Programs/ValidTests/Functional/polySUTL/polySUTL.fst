@@ -1,9 +1,9 @@
-id' : forall a : TL . a -> a
+id' : forall a : 1T . a -> a
 id' x = x
 
-f : Int -o Int
+f : Int 1-> Int
 f x = 2 * x
 
 main : Int
 main =
-  (id'[Int -o Int] f) 5
+  (id' @(Int 1-> Int) f) 5

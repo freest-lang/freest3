@@ -54,7 +54,7 @@ getTwo xs  =
 
 -- Streams
 
-type Stream : SL = +{
+type Stream : 1S = +{
     Node: !Int; Stream,
     Leaf: Stream,
     EndOfStream: Skip
@@ -96,19 +96,16 @@ recTree xs c =
 
 -- Babdly behaving writers
 
-writeNothing : Stream -> Skip
+writeNothing, writeTooMuch, writeRootTreeOnly, writeLeftTreeOnly : Stream -> Skip
 writeNothing c =
   select EndOfStream c
 
-writeTooMuch : Stream -> Skip
 writeTooMuch c =
   select EndOfStream $ select Leaf $ select Leaf c
 
-writeRootTreeOnly : Stream -> Skip
 writeRootTreeOnly c =
   select EndOfStream $ send 5 $ select Node c
 
-writeLeftTreeOnly : Stream -> Skip
 writeLeftTreeOnly c =
   select EndOfStream $ send 5 $ select Node $ select Leaf c
 
@@ -120,6 +117,6 @@ main =
 --  (fork[Skip] $ sendTree aTree w);
 --  (fork[Skip] $ writeNothing w);       -- 'P'
 --  (fork[Skip] $ writeTooMuch w);     -- 'X'
-  (fork[Skip] $ writeRootTreeOnly w);  -- 'R'
+  (fork @Skip $ writeRootTreeOnly w);  -- 'R'
 --  (fork[Skip] $ writeLeftTreeOnly w);  -- 'L'
   receiveTree r

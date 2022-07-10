@@ -10,7 +10,7 @@ type Stream = +{
 -}
 
 -- A sample client: (5*4)+(2*3)
-client : (rec x: SL. +{Add: x, Mult: x, Const: !Int;x, EOS: ?Int}) -> Int
+client : (rec x: 1S. +{Add: x, Mult: x, Const: !Int;x, EOS: ?Int}) -> Int
 client c =
   -- stream the arithmetic operation
   let c = select Const c in
@@ -35,7 +35,7 @@ client c =
   with any stream, independent of the fact that it may or may not
   represent a well formed arithmetic expression.
 -}
-size : (rec x: SL. &{Add: x, Mult: x, Const: ?Int;x, EOS: !Int}) -> Int -o Skip
+size : (rec x: 1S. &{Add: x, Mult: x, Const: ?Int;x, EOS: !Int}) -> Int 1-> Skip
 size s n =
   match s with {
     Add s   -> size s (n + 1),
@@ -48,8 +48,8 @@ size s n =
 -- expect 7 on the console.
 main : Int
 main =
-  let (c, s) = new rec x: SL. +{Add: x, Mult: x, Const: !Int;x, EOS: ?Int} in
-  let _ = fork[Skip] (size s 0) in
+  let (c, s) = new rec x: 1S. +{Add: x, Mult: x, Const: !Int;x, EOS: ?Int} in
+  let _ = fork @Skip (size s 0) in
   client c
 
 -- Auxiliary function because of fork : () -> ()

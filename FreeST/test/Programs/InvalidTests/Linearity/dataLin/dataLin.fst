@@ -1,6 +1,6 @@
-data T = C Int -o Int
+data T = C Int 1-> Int
 
-f : Int -o Int
+f : Int 1-> Int
 f x = x
 
 main : Int
