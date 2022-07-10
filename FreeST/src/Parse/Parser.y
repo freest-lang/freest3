@@ -43,9 +43,10 @@ import           System.FilePath
   String   {TokenStringT _}
   '()'     {TokenUnit _}
   '->'     {TokenUnArrow _}
-  '-o'     {TokenLinArrow _}
+  '1->'     {TokenLinArrow _}
   lambda   {TokenLambda _}
   Lambda   {TokenUpperLambda _}
+  '@'      {TokenAt _}
   Skip     {TokenSkip _}
   '('      {TokenLParen _}
   ')'      {TokenRParen _}
@@ -74,12 +75,12 @@ import           System.FilePath
   UPPER_ID {TokenUpperId _ _}
   LOWER_ID {TokenLowerId _ _}
   rec      {TokenRec _}
-  SU       {TokenSU _}
-  SL       {TokenSL _}
-  TU       {TokenTU _}
-  TL       {TokenTL _}
-  MU       {TokenMU _}
-  ML       {TokenML _}
+  US       {TokenUnS _}
+  LS       {TokenLinS _}
+  UT       {TokenUnT _}
+  LT       {TokenLinT _}
+  UM       {TokenUnM _}
+  LM       {TokenLinM _}
   INT      {TokenInt _ _ }
   BOOL     {TokenBool _ _}
   CHAR     {TokenChar _ _}
@@ -116,7 +117,8 @@ import           System.FilePath
 %right '^'        -- power
 %left NEG not    -- unary
 %right '.'       -- ∀ a:k . T and μ a:k . T
-%right '=>' '->' '-o' ARROW -- λλ a:k => e,  x:T -> e, λ x:T -o e, T -> T and T -o T
+%right '=>' '->' '1->' ARROW -- λλ a:k => e,  x:T -> e, λ x:T 1-> e, T -> T and T 1-> T
+%left '@'
 %right ';'       -- T;T and e;e
 %right MSG       -- !T and ?T
 %right dualof
@@ -161,7 +163,7 @@ NL :: { () }
 
 Decl :: { () }
   -- Function signature
-  : ProgVar ':' Type {% checkDupProgVarDecl $1 >> addToVEnv $1 $3 }
+  : ProgVarList ':' Type {% forM_ $1 (\x -> checkDupProgVarDecl x >> addToVEnv x $3) }
   -- Function declaration
   | ProgVar PatternSeq '=' Exp   {% checkDupVarPats $2 >> addToPEnvP $1 $2 $4 }
   | ProgVar PatternSeq GuardsFun {% checkDupVarPats $2 >> addToPEnvP $1 $2 $3 }
@@ -175,6 +177,10 @@ Decl :: { () }
       mapM_ (\(c, t) -> addToVEnv c t) bs
       uncurry addToTEnv $2 (T.Almanac (getSpan a) T.Variant (Map.fromList bs))
     }
+
+ProgVarList :: { [Variable] }
+  : ProgVar                 { [$1] }
+  | ProgVar ',' ProgVarList { $1 : $3}
 
 TypeDecl :: { T.Type }
   : '=' Type { $2 }
@@ -212,9 +218,6 @@ Exp :: { E.Exp }
   | Exp '/' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(/)") $3 }
   | Exp '^' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(^)") $3 }
   | '-' App %prec NEG              {% mkSpan $1 >>= \s -> pure $ unOp (mkVar s "negate") $2 s }
-  | '(' Op Exp ')'                 {% mkSpanSpan $1 $4 >>= pure . unOp $2 $3 } -- left section
-  | '(' Exp Op ')'                 {% mkSpanSpan $1 $4 >>= pure . unOp $3 $2 } -- right section
-  | '(' Exp '-' ')'                {% mkSpan $2 >>= \s -> pure $ unOp (mkVar s "(-)") $2 s } -- right section (-)
   | App                            { $1 }
 
 App :: { E.Exp }
@@ -222,8 +225,8 @@ App :: { E.Exp }
   | select Constructor             {% mkSpanSpan $1 $2 >>= \s -> mkSpan $2 >>=
                                        \s1 -> pure $ E.App s (E.Var s (mkVar s1 "select")) (E.Var s1 $2)
                                    }
-  | TApp ']'                       { $1 }
   | Primary                        { $1 }
+  | App '@' Type                   {% mkSpanSpan $1 $3 >>= \s -> pure $ E.TypeApp s $1 $3 }
    
 Primary :: { E.Exp }
   : INT                            {% let (TokenInt p x) = $1 in flip E.Int x `fmap` liftModToSpan p }
@@ -234,6 +237,9 @@ Primary :: { E.Exp }
   | ArbitraryProgVar               {% flip E.Var $1 `fmap` mkSpan $1 }
   | lambda ProgVarWildTBind Abs    {% let (m,e) = $3 in mkSpanSpan $1 e >>= \s -> pure $ E.Abs s m (Bind s (fst $2) (snd $2) e) }
   | Lambda KindBind TAbs           {% let (a,k) = $2 in mkSpanSpan $1 $3 >>= \s -> pure $ E.TypeAbs s (Bind s a k $3) }
+  | '(' Op Exp ')'                 {% mkSpanSpan $1 $4 >>= pure . unOp $2 $3 } -- left section
+  | '(' Exp Op ')'                 {% mkSpanSpan $1 $4 >>= pure . unOp $3 $2 } -- right section
+  | '(' Exp '-' ')'                {% mkSpan $2 >>= \s -> pure $ unOp (mkVar s "(-)") $2 s } -- right section (-)
   | '(' Exp ',' Tuple ')'          {% mkSpanSpan $1 $5 >>= \s -> pure $ E.Pair s $2 $4 }
   | '(' Exp ')'                    { $2 }
 
@@ -253,10 +259,6 @@ TAbs :: { E.Exp }
          \s -> mkSpanSpan k $2 >>=
          \s' -> pure $ E.TypeAbs s (Bind s' a k $2)
       }
-
-TApp :: { E.Exp }
-  : App '[' Type     {% mkSpanSpan $1 $3 >>= \s -> pure $ E.TypeApp s $1 $3 }
-  | TApp ',' Type    {% mkSpanSpan $1 $3 >>= \s -> pure $ E.TypeApp s $1 $3 }
 
 Tuple :: { E.Exp }
   : Exp           { $1 }
@@ -355,7 +357,7 @@ TupleType :: { T.Type }
 
 Arrow :: { Multiplicity }
   : '->' { Un  }
-  | '-o' { Lin }
+  | '1->' { Lin }
 
 Polarity :: { (Span, T.Polarity) }
   : '!' { (getSpan $1, T.Out) }
@@ -384,12 +386,12 @@ TypeSeq :: { [T.Type] }
 ----------
 
 Kind :: { K.Kind }
-  : SU {% K.su `fmap` mkSpan $1 }
-  | SL {% K.sl `fmap` mkSpan $1 }
-  | TU {% K.tu `fmap` mkSpan $1 }
-  | TL {% K.tl `fmap` mkSpan $1 }
-  | MU {% K.mu `fmap` mkSpan $1 }
-  | ML {% K.ml `fmap` mkSpan $1 }
+  : US {% K.us `fmap` mkSpan $1 }
+  | LS {% K.ls `fmap` mkSpan $1 }
+  | UT {% K.ut `fmap` mkSpan $1 }
+  | LT {% K.lt `fmap` mkSpan $1 }
+  | UM {% K.um `fmap` mkSpan $1 }
+  | LM {% K.lm `fmap` mkSpan $1 }
 
 -- PROGRAM VARIABLE
 

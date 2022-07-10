@@ -9,5 +9,5 @@ reader c = match c with {
 main : Skip
 main =
   let (w, r) = new +{C: Skip, D: Skip} in
-  let _ = fork[Skip] (writer w) in
+  let _ = fork @Skip (writer w) in
   reader r

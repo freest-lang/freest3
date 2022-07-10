@@ -13,7 +13,7 @@ mathServer c =
 main : Int
 main =
   let (w,r) = new +{Opposite: !Int;?Int, Plus: !Int;!Int;?Int} in
-  let x = fork[Skip] $ mathServer r in
+  let x = fork @Skip $ mathServer r in
   let w = select Plus w in
   let w = send 5 w in
   let w = send 18 w in
