@@ -19,7 +19,7 @@ import           Debug.Trace -- debug (used on debugM function)
 
 type Equation = ([Pattern],Exp)
 
-matchFuns :: ParseEnvP -> FreestState ParseEnv
+matchFuns :: ParseEnvPat -> FreestState ParseEnv
 matchFuns pep = mapM matchFun pep
 
 matchFun :: [Equation] -> FreestState ([Variable],Exp)
@@ -118,7 +118,6 @@ getKeys :: T.Type -> [Variable]
 getKeys (T.Almanac _ T.Variant tm) = Map.keys tm
 getKeys _ = []
 
-
 -- replace Variables -----------------------------------------------
 replaceExp :: Variable -> Variable -> Exp -> FreestState Exp
 replaceExp v p (Var     s v1)         = Var     s      (replaceVar v p v1) & return
@@ -132,7 +131,7 @@ replaceExp v p (TypeAbs s b)          = TypeAbs s   <$> replaceBind v p b
 replaceExp v p (TypeApp s e t)        = flip (TypeApp s) t <$> replaceExp v p e
 replaceExp v p (Cond s e1 e2 e3)      = Cond    s   <$> replaceExp  v p e1 <*> replaceExp v p e2 <*> replaceExp v p e3
 replaceExp v p (UnLet s v1 e1 e2)     = UnLet   s      (replaceVar  v p v1)<$> replaceExp v p e1 <*> replaceExp v p e2
-replaceExp v p (CaseP s e flp)        = sub         <$> replaceExp  v p e  <*>(replaceExp v p    =<< match vs' flp)
+replaceExp v p (CasePat s e flp)      = sub         <$> replaceExp  v p e  <*>(replaceExp v p    =<< match vs' flp)
   where sub e (Case s _ fm) = Case s e fm
         vs' = [mkVar (getSpan e) "_"]
 replaceExp _ _ e = return e

@@ -165,8 +165,8 @@ Decl :: { () }
   -- Function signature
   : ProgVarList ':' Type {% forM_ $1 (\x -> checkDupProgVarDecl x >> addToVEnv x $3) }
   -- Function declaration
-  | ProgVar PatternSeq '=' Exp   {% checkDupVarPats $2 >> addToPEnvP $1 $2 $4 }
-  | ProgVar PatternSeq GuardsFun {% checkDupVarPats $2 >> addToPEnvP $1 $2 $3 }
+  | ProgVar PatternSeq '=' Exp   {% checkDupVarPats $2 >> addToPEnvPat $1 $2 $4 }
+  | ProgVar PatternSeq GuardsFun {% checkDupVarPats $2 >> addToPEnvPat $1 $2 $3 }
   -- Type abbreviation
   | type KindedTVar TypeDecl {% checkDupTypeDecl (fst $2) >> uncurry addToTEnv $2 $3 }
   -- Datatype declaration
@@ -206,7 +206,7 @@ Exp :: { E.Exp }
   | new Type                       {% mkSpanSpan $1 $2 >>= \s -> pure $ E.New s $2 (T.Dualof (negSpan s) $2) }
   | match Exp with '{' MatchMap '}' {% let s' = getSpan $2 in mkSpanSpan $1 $6 >>= \s ->
                                        pure $ E.Case s (E.App s' (E.Var s' (mkVar s' "collect")) $2) $5 }
-  | case Exp of '{' CaseMap '}'    {% mkSpanSpan $1 $6 >>= \s -> pure $ E.CaseP s $2 $5 }
+  | case Exp of '{' CaseMap '}'    {% mkSpanSpan $1 $6 >>= \s -> pure $ E.CasePat s $2 $5 }
   | Exp '$' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ E.App s $1 $3 }
   | Exp '&' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $  E.App s $3 $1 }
   | Exp '||' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(||)") $3 }
@@ -272,42 +272,35 @@ MatchMap :: { FieldMap }
 Match :: { (Variable, ([Variable], E.Exp)) }
   : ArbitraryProgVar ProgVarWild '->' Exp { ($1, ([$2], $4)) }
 
-CaseMap :: { FieldMapP }
+CaseMap :: { FieldList }
   : Case             { [$1] }
   | Case ',' CaseMap { $1 : $3 }
-  -- | Case ',' CaseMap {% checkDupCaseP (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
-
--- Case :: { (Variable, ([Variable], E.Exp)) }
---   : Constructor ProgVarWildSeq '->' Exp { ($1, ($2, $4)) }
 
 Case :: { ([Pattern], E.Exp) }
-  : PatternC '->' Exp { ([$1],$3) }
-  | PatternC GuardsCase  { ([$1],$2) }
+  : PatternC '->' Exp   { ([$1],$3) }
+  | PatternC GuardsCase { ([$1],$2) }
 
 PatternC :: { Pattern }
-  : ProgVarWild                    { E.V $1 }
-  | Constructor PatternSeq         { E.C $1 $2 }
-  | '(' Constructor PatternSeq ')' { E.C $2 $3 }
+  : ProgVarWild             { E.V $1 }
+  | Constructor PatternSeq  { E.C $1 $2 }
+  | '(' PatternC ')'        { $2 }
 
 PatternSeq :: { [Pattern] }
-  :                     { [] }
-  | Pattern PatternSeq  { $1:$2 }
+  :                    { [] }
+  | Pattern PatternSeq { $1:$2 }
 
 Pattern :: { Pattern }
-  : ProgVarWild                       { E.V $1 }
-  | Constructor                       { E.C $1 [] }
-  | '(' Constructor PatternSeq ')'    { E.C $2 $3 }
+  : ProgVarWild                    { E.V $1 }
+  | Constructor                    { E.C $1 [] }
+  | '(' PatternC ')'               { $2 }
 
 GuardsCase :: { Exp }
   : '|' Exp       '->' Exp GuardsCase {% mkSpanSpan $1 $4 >>= \s -> pure $ E.Cond s $2 $4 $5 }
   | '|' otherwise '->' Exp            { $4 }
-  | '|' '_'       '->' Exp            { $4 }
 
 GuardsFun :: { Exp }
-  : '|' Exp       '=' Exp GuardsFun  {% mkSpanSpan $1 $4 >>= \s -> pure $ E.Cond s $2 $4 $5 }
-  | '|' otherwise '=' Exp          { $4 }
-  | '|' '_'       '=' Exp          { $4 }
-  -- | EMPTY { undefined } -- TODOX when undefined becomes available
+  : '|' Exp       '=' Exp GuardsFun   {% mkSpanSpan $1 $4 >>= \s -> pure $ E.Cond s $2 $4 $5 }
+  | '|' otherwise '=' Exp             { $4 }
 
 Op :: { Variable }
    : '||'  {% flip mkVar "(||)" `fmap` mkSpan $1 }
