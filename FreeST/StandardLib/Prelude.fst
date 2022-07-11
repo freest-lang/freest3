@@ -9,7 +9,7 @@ flip : forall a b c . (a -> b -> c) -> b -> a -> c
 flip f x y = f y x
 
 until : forall a . (a -> Bool) -> (a -> a) -> a -> a
-until p f x = if p x then x else until[a] p f (f x)
+until p f x = if p x then x else until @a p f (f x)
 
 -- | 'curry' converts an uncurried function to a curried function.
 -- curry fst 1 2
@@ -23,7 +23,7 @@ curry f x y =  f (x, y)
 -- 3
 
 uncurry  : forall a b c . (a -> b -> c) -> ((a, b) -> c)
-uncurry f p =  f (fst[a,b] p) (snd[a,b] p)
+uncurry f p =  f (fst@a @b p) (snd @a @b p)
 
 -- | Swap the components of a pair.
 swap : forall a b . (a,b) -> (b,a)

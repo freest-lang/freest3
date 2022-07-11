@@ -48,7 +48,7 @@ arbitraryVar ids = do
   return $ mkVar pos id
 
 instance Arbitrary K.Kind where
-  arbitrary = elements $ K.su pos : replicate 9 (K.sl pos) -- 90% of SL
+  arbitrary = elements $ K.us pos : replicate 9 (K.ls pos) -- 90% of SL
 
 instance (Arbitrary a, Arbitrary b) => Arbitrary (Bind a b) where
   arbitrary = liftM4 Bind (return pos) arbitrary arbitrary arbitrary

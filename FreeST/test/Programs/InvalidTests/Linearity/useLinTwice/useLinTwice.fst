@@ -1,4 +1,4 @@
-f : Int -o Int
+f : Int 1-> Int
 f x = x
 
 main : Int

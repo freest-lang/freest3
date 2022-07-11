@@ -4,7 +4,7 @@ Int
 Bool
 
 Int -> Int
-Int -o Int
+Int 1-> Int
 
 -- Regular Session Types
 

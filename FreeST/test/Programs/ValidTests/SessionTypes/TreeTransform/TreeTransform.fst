@@ -17,7 +17,7 @@ back the sum of the integer values under (and including) that node.
 
 data Tree = Leaf | Node Int Tree Tree
 
-type TreeC : SL = +{Leaf: Skip, Node: !Int;TreeC;TreeC;?Int}
+type TreeC : 1S = +{Leaf: Skip, Node: !Int;TreeC;TreeC;?Int}
 
 -- Note: we use the same constructors for the datatype and the channel, namely Leaf and Node
 
@@ -27,7 +27,7 @@ type TreeC : SL = +{Leaf: Skip, Node: !Int;TreeC;TreeC;?Int}
   returns a tree isomorphic to the input where each integer in nodes
   is read from the channel.
 -}
-transform : forall a : SL . Tree -> TreeC ; a -> (Tree, a)
+transform : forall a : 1S . Tree -> TreeC ; a -> (Tree, a)
 transform tree c =
   case tree of {
     Leaf ->
@@ -35,8 +35,8 @@ transform tree c =
     Node x l r ->
       let c = select Node c in
       let c = send x c in
-      let (l, c) = transform [TreeC ; ?Int ; a] l c in
-      let (r, c) = transform [?Int ; a] r c in
+      let (l, c) = transform  @(TreeC ; ?Int ; a) l c in
+      let (r, c) = transform  @(?Int ; a) r c in
       let (y, c) = receive c in
       (Node y l r, c)
   }
@@ -46,25 +46,25 @@ transform tree c =
   writes back on the channel the sum of the elements in the tree;
   returns this sum.
 -}
-treeSum : forall a : SL . dualof TreeC ; a -> (Int, a)
+treeSum : forall a : 1S . dualof TreeC ; a -> (Int, a)
 treeSum c =
   match c with {
     Leaf c ->
      (0, c),
     Node c ->
       let (x, c) = receive c in
-      let (l, c) = treeSum [dualof TreeC ; !Int ; a] c in
-      let (r, c) = treeSum [!Int ; a] c in
+      let (l, c) = treeSum  @(dualof TreeC ; !Int ; a) c in
+      let (r, c) = treeSum  @(!Int ; a) c in
       let c = send (x + l + r) c in
       (x + l + r, c)
   }
 
-aTree : Tree
+aTree, main : Tree
+
 aTree = Node 1 (Node 2 (Node 8 Leaf Leaf) (Node 3 (Node 5 Leaf Leaf) (Node 4 Leaf Leaf))) (Node 6 Leaf (Node 7 Leaf Leaf))
 
-main : Tree
 main =
   let (w, r) = new TreeC in
-  fork[(Int, Skip)] (treeSum [Skip] r );
-  let (t, _) = transform [Skip] aTree w in
+  fork @(Int, Skip) (treeSum  @Skip r );
+  let (t, _) = transform  @Skip aTree w in
   t

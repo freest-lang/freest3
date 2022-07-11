@@ -1,4 +1,4 @@
-type Choice : SL = +{More: !Int;Choice, Enough: Skip}
+type Choice : 1S = +{More: !Int;Choice, Enough: Skip}
 
 sendInt : Int -> Choice -> Skip
 sendInt i c =
@@ -22,6 +22,6 @@ rcvInt acc c =
 main : Int
 main =
   let (w, r) = new Choice in
-  let _ = fork[Skip] (sendInt 10 w) in
+  let _ = fork @Skip (sendInt 10 w) in
   let (i, _) = rcvInt 1 r in
   i

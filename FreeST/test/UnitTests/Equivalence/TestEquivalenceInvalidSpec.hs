@@ -16,7 +16,7 @@ matchInvalidSpec [a, b] =
   it (a ++ " `~/~` " ++ b) $ equivalent Map.empty t u `shouldBe` False
  where
   (Pair p t u) =
-    evalState (rename Map.empty (Pair p (read a) (read b))) initialState
+    evalState (rename Map.empty Map.empty (Pair p (read a) (read b))) initialState
 
 spec :: Spec
 spec = do

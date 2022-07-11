@@ -18,10 +18,10 @@ fib n = fibs !! n
 
 -- These should be in the prelude
 
-fst : forall a:TL, b:TU => (a, b) -> a
+fst : forall a: 1T, b: *T => (a, b) -> a
 fst p = let (x, _) = p in x
 
-snd : forall a:TU, b:TL => (a, b) -> b
+snd : forall a: *T, b: 1T => (a, b) -> b
 snd p = let (_, y) = p in y
 
 -- Stream
@@ -31,10 +31,10 @@ type Stream = () -> (Int, Stream)
 -- Deconstructors
 
 hd : Stream -> Int
-hd s = fst [Int, Stream] (s ())
+hd s = fst  @Int @Stream (s ())
 
 tl : Stream -> Stream
-tl s = snd [Int, Stream] (s ())
+tl s = snd  @Int @Stream (s ())
 
 nth : Int -> Stream -> Int
 nth n s = if n == 0 then hd s else nth (n - 1) (tl s)

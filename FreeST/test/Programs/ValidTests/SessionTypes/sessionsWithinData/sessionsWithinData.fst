@@ -10,6 +10,6 @@ read t =
 main : Int
 main =
   let (w, r) = new !Int in
-  fork[Int] $ read $ Two r;
+  fork @Int $ read $ Two r;
   let _ = send 5 w in
   10
