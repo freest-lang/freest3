@@ -17,14 +17,16 @@ import           Util.FreestState
 
 import           Debug.Trace -- debug (used on debugM function)
 
+type Equation = ([Pattern],Exp)
+
 matchFuns :: ParseEnvP -> FreestState ParseEnv
 matchFuns pep = mapM matchFun pep
 
-matchFun :: [([Pattern],Exp)] -> FreestState ([Variable],Exp)
+matchFun :: [Equation] -> FreestState ([Variable],Exp)
 matchFun xs@((ps,_):_) = mapM newVar ps
                      >>= \args -> (,) args <$> match args xs
 
-match :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
+match :: [Variable] -> [Equation] -> FreestState Exp
 match vs x
   | isRuleEmpty x = ruleEmpty vs x
   | isRuleVar   x = ruleVar   vs x
@@ -32,15 +34,15 @@ match vs x
   | otherwise     = ruleMix   vs x
 
 -- is rule ---------------------------------------------------------
-isRuleEmpty :: [([Pattern],Exp)] -> Bool
+isRuleEmpty :: [Equation] -> Bool
 isRuleEmpty cs = and $ map (null.fst) cs
 
-isRuleVar   :: [([Pattern],Exp)] -> Bool
+isRuleVar   :: [Equation] -> Bool
 isRuleVar cs = and $ map (check.fst) cs
   where check p = not   (null p)
                && isVar (head p)
 
-isRuleCon   :: [([Pattern],Exp)] -> Bool
+isRuleCon   :: [Equation] -> Bool
 isRuleCon cs = and $ map (check.fst) cs
   where check p = not   (null p)
                && isCon (head p)
@@ -48,17 +50,17 @@ isRuleCon cs = and $ map (check.fst) cs
 -- rules -----------------------------------------------------------
 
 -- empty -----------------------------------------------------------
-ruleEmpty :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
+ruleEmpty :: [Variable] -> [Equation] -> FreestState Exp
 ruleEmpty _ ((_,e):cs) = replaceExp v v e
   where v = mkVar (defaultSpan) "__"
 
 -- var -------------------------------------------------------------
-ruleVar :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
+ruleVar :: [Variable] -> [Equation] -> FreestState Exp
 ruleVar (v:us) cs = match us =<< (mapM replace cs)
   where replace (p:ps,e) = (,) ps <$> (replaceExp v (pVar p) e)
 
 -- con -------------------------------------------------------------
-ruleCon :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
+ruleCon :: [Variable] -> [Equation] -> FreestState Exp
 ruleCon (v:us) cs = groupSortBy (pName.head.fst) cs
                   & mapM destruct
                 >>= mapM (\(con,vs,cs) -> (,) con . (,) vs <$> match (vs++us) cs)
@@ -66,16 +68,13 @@ ruleCon (v:us) cs = groupSortBy (pName.head.fst) cs
   where s = getSpan v
   
 -- rule con aux 
-destruct :: [([Pattern],Exp)] -> FreestState (Variable, [Variable], [([Pattern],Exp)])
+destruct :: [Equation] -> FreestState (Variable, [Variable], [Equation])
 destruct l@((p:ps,_):cs) = mapM newVar (pPats p)
-                       <&> (\args -> (,,) (pVar p) args (destruct' l))
-
-destruct' :: [([Pattern],Exp)] -> [([Pattern],Exp)]
-destruct' [] = []
-destruct' ((p:ps,e):xs) = ((pPats p)++ps,e) : destruct' xs 
+                       <&> flip ((,,) (pVar p)) l'
+  where l' = map (\(p:ps,e) -> ((pPats p)++ps,e)) l
 
 -- mix -------------------------------------------------------------
-ruleMix :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
+ruleMix :: [Variable] -> [Equation] -> FreestState Exp
 ruleMix (v:us) cs = do
   cons <- constructors $ getDataType cs
   groupOn (isVar.head.fst) cs
@@ -84,13 +83,13 @@ ruleMix (v:us) cs = do
       >>= match (v:us)
 
 --rule mix aux
-fill :: Variable -> [(Variable,Int)] -> [([Pattern],Exp)] -> FreestState [([Pattern],Exp)]
+fill :: Variable -> [(Variable,Int)] -> [Equation] -> FreestState [Equation]
 fill v cons cs 
   | hasVar cs = fill' v cons cs
   | otherwise = return cs
   where hasVar = isVar.head.fst.head
 
-fill' :: Variable -> [(Variable,Int)] -> [([Pattern],Exp)] -> FreestState [([Pattern],Exp)]
+fill' :: Variable -> [(Variable,Int)] -> [Equation] -> FreestState [Equation]
 fill' v _ [] = return []
 fill' v cons ((p:ps,e):cs) = (++) <$> mapM (mkCons v' e') cons <*> fill' v cons cs
   where v' = V $ mkVar (getSpan $ pVar p) "_"
