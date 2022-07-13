@@ -50,15 +50,15 @@ match' vs x
 
 -- is rule ---------------------------------------------------------
 isRuleEmpty :: [Equation] -> Bool
-isRuleEmpty cs = and $ map (null.fst) cs
+isRuleEmpty cs = all (null.fst) cs
 
 isRuleVar   :: [Equation] -> Bool
-isRuleVar cs = and $ map (check.fst) cs
+isRuleVar cs = all (check.fst) cs
   where check p = not   (null p)
                && isVar (head p)
 
 isRuleCon   :: [Equation] -> Bool
-isRuleCon cs = and $ map (check.fst) cs
+isRuleCon cs = all (check.fst) cs
   where check p = not   (null p)
                && isCon (head p)
 
@@ -80,7 +80,7 @@ ruleChan (v:us) cs = groupSortBy (pName.head.fst) cs
 -- empty -----------------------------------------------------------
 ruleEmpty :: [Variable] -> [Equation] -> FreestState Exp
 ruleEmpty _ ((_,e):cs) = do v' <- v; replaceExp v' v' e
-  where v = R.renameVar $ mkVar (defaultSpan) "__"
+  where v = R.renameVar $ mkVar (defaultSpan) "_"
 
 -- var -------------------------------------------------------------
 ruleVar :: [Variable] -> [Equation] -> FreestState Exp
