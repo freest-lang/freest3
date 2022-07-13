@@ -6,6 +6,7 @@ where
 import           Data.List            (groupBy,sortOn)
 import           Data.Function        ((&))
 import           Data.Functor         ((<&>))
+import           Control.Monad        (filterM)
 import           Control.Monad.Extra  ((&&^))
 import           Control.Bool         (ifThenElseM)
 
@@ -28,11 +29,19 @@ matchFun :: [Equation] -> FreestState ([Variable],Exp)
 matchFun xs@((ps,_):_) = mapM newVar ps
                      >>= \args -> (,) args <$> match args xs
 
-match :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
-match vs x = ifThenElseM (isRuleChan x) 
-                         (ruleChan vs x) (match' vs x)
+match :: [Variable] -> [Equation] -> FreestState Exp
+match vs x = do
+  -- x' <- mapM reorder x
+  ifThenElseM (isRuleChan  x) 
+              (ruleChan vs x) (match' vs x)
 
-match' :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
+-- reorder :: Equation -> FreestState Equation
+-- reorder (ps,e) = flip (,) e <$> ps'
+--   where ps' = (++) 
+--           <$> filterM isChan ps 
+--           <*> filterM (\p -> not <$> isChan p) ps
+
+match' :: [Variable] -> [Equation] -> FreestState Exp
 match' vs x
   | isRuleEmpty x = ruleEmpty vs x
   | isRuleVar   x = ruleVar   vs x
@@ -53,7 +62,7 @@ isRuleCon cs = and $ map (check.fst) cs
   where check p = not   (null p)
                && isCon (head p)
 
-isRuleChan  :: [([Pattern],Exp)] -> FreestState Bool
+isRuleChan  :: [Equation] -> FreestState Bool
 isRuleChan cs = b1 &&^ b2
   where b1 = return $ (not $ isRuleEmpty cs) && (not $ isRuleVar cs) && (isRuleCon cs)
         b2 = and <$> mapM (isChan.head.fst) cs
@@ -70,8 +79,8 @@ ruleChan (v:us) cs = groupSortBy (pName.head.fst) cs
 
 -- empty -----------------------------------------------------------
 ruleEmpty :: [Variable] -> [Equation] -> FreestState Exp
-ruleEmpty _ ((_,e):cs) = replaceExp v v e
-  where v = mkVar (defaultSpan) "__"
+ruleEmpty _ ((_,e):cs) = do v' <- v; replaceExp v' v' e
+  where v = R.renameVar $ mkVar (defaultSpan) "__"
 
 -- var -------------------------------------------------------------
 ruleVar :: [Variable] -> [Equation] -> FreestState Exp
