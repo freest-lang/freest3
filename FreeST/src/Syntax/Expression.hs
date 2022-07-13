@@ -16,7 +16,7 @@ module Syntax.Expression
   ( Exp(..)
   , FieldMap
   , Pattern(..)
-  , FieldMapP
+  , FieldList
   )
 where
 
@@ -41,8 +41,8 @@ data Exp =
   | Pair Span Exp Exp
   | BinLet Span Variable Variable Exp Exp
   -- Datatype elim
-  | Case  Span Exp FieldMap
-  | CaseP Span Exp FieldMapP                       -- for pattern elimination
+  | Case    Span Exp FieldMap
+  | CasePat Span Exp FieldList                       -- for pattern elimination
   -- Type Abstraction intro and elim
   | TypeAbs Span (Bind K.Kind Exp)   -- Λ a:k => e
   | TypeApp Span Exp T.Type     -- e[T]
@@ -57,15 +57,10 @@ instance Default (Bind T.Type Exp) where
   omission p = Bind p (omission p) (T.Unit p) (Unit p)
 
 type FieldMap  = Map.Map Variable ([Variable], Exp)
-type FieldMapP = [([Pattern], Exp)]
+type FieldList = [([Pattern], Exp)]
 
 data Pattern = V Variable           -- Variable   name
              | C Variable [Pattern] -- Construtor name patterns
-
--- TODOX remove
-instance Show Pattern where
-  show (V v) = "V " ++ intern v
-  show (C v ps) = "C " ++ intern v ++ show ps
 
 instance Located Exp where
   getSpan (Unit p             ) = p

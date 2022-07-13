@@ -26,7 +26,9 @@ function : Int -> Tuple -> Tuple
 function x (T acc i) = T (x*(pow 2 i)+acc) (i+1)
 
 pow : Int -> Int -> Int
-pow b e = if e <= 0 then 1 else b * (pow b (e-1))
+pow b e 
+  | e <= 0    = 1 
+  | otherwise = b * (pow b (e-1))
 
 binary : IntList
 binary = (List 1 (List 1 (List 0 (List 1 End))))
