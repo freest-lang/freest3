@@ -3,7 +3,7 @@ module Elaboration.Match
   )
 where
 
-import           Data.List            (groupBy,sortOn)
+import           Data.List            (groupBy,sortOn,transpose)
 import           Data.Function        ((&))
 import           Data.Functor         ((<&>))
 import           Control.Monad        (filterM)
@@ -26,20 +26,18 @@ matchFuns :: ParseEnvPat -> FreestState ParseEnv
 matchFuns pep = mapM matchFun pep
 
 matchFun :: [Equation] -> FreestState ([Variable],Exp)
-matchFun xs@((ps,_):_) = mapM newVar ps
-                     >>= \args -> (,) args <$> match args xs
+matchFun xs@((ps,_):_) = do
+  debugM $ show xs
+  r <- mapM newVar ps
+   >>= \args -> (,) args <$> match args xs
+  debugM $ show r
+  return r
 
 match :: [Variable] -> [Equation] -> FreestState Exp
 match vs x = do
-  -- x' <- mapM reorder x
-  ifThenElseM (isRuleChan  x) 
-              (ruleChan vs x) (match' vs x)
-
--- reorder :: Equation -> FreestState Equation
--- reorder (ps,e) = flip (,) e <$> ps'
---   where ps' = (++) 
---           <$> filterM isChan ps 
---           <*> filterM (\p -> not <$> isChan p) ps
+  (vs',x') <- reorder vs x
+  ifThenElseM (isRuleChan   x') 
+              (ruleChan vs' x') (match' vs' x')
 
 match' :: [Variable] -> [Equation] -> FreestState Exp
 match' vs x
@@ -47,6 +45,20 @@ match' vs x
   | isRuleVar   x = ruleVar   vs x
   | isRuleCon   x = ruleCon   vs x
   | otherwise     = ruleMix   vs x
+
+reorder :: [Variable] -> [Equation] -> FreestState ([Variable],[Equation])
+reorder [] x = return ([],x)
+reorder vs x = do
+  -- destruct
+  let (pss1,es) = unzip x 
+  let z1   = zip (transpose pss1) vs 
+  z2 <- filterM (isChan.head.fst) z1
+  z3 <- filterM (\e -> not <$> (isChan $ head $ fst e)) z1
+  let z4   = z2 ++ z3
+  -- reconstruct
+  let (pss2,vs') = unzip z4 
+  let x'   = zip (transpose pss2) es 
+  return (vs',x')
 
 -- is rule ---------------------------------------------------------
 isRuleEmpty :: [Equation] -> Bool
