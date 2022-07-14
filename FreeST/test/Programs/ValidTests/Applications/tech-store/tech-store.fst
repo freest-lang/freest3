@@ -1,66 +1,3 @@
----------------------------------- Util.fst ----------------------------------
--- module Util where
-
--- | A mark for functions that do not terminate
-type Diverge = ()
-
--- | Discard an unrestricted value
-sink : forall a . a -> ()
-sink _ = ()
-
--- | Execute a thunk n times, sequentially
-repeat : forall a . Int -> (() -> a) -> ()
-repeat n thunk =
-    if n < 0
-    then ()
-    else 
-        thunk ();
-        repeat [a] (n - 1) thunk
-
----------------------------------- Concurrent.fst ----------------------------------
--- module Concurrent where
-
--- type Handler a = dualof a -o ()
-
--- | Receive a value from a star channel
-receive_ : forall a:TL . *?a -> a
-receive_ ch = fst [a, *?a] $ receive ch
-
--- | Send a value on a star channel
-send_ : forall a:TL . a -> *!a -o ()
-send_ x ch = sink [*!a] $ send x ch
-
--- | Fork n identical threads
-parallel : Int -> (() -> ()) -> ()
-parallel n thunk = repeat [()] n (\_:() -> fork (thunk ()))
-
--- | Create a new child process and a linear channel through which it can 
---   communicate with its parent process. Return the channel endpoint.
-forkWith : forall a:SL . (dualof a -o ()) -> a
-forkWith f =
-    let (x, y) = new a in
-    fork $ f y;
-    x
-
--- |Session initiation
--- |Accept a request for a linear session on a shared channel.
--- |The requester uses a conventional receive to obtain the channel end
-accept : forall a:SL b:SU . !a; b -> dualof a
-accept ch =
-    let (x, y) = new a in
-    send x ch;
-    y
-
--- |Session initiation on an start channel
-accept_ : forall a:SL . *!a -> dualof a
-accept_ ch = accept [a, *!a] ch
-
--- | Run a server process given its endpoint, a function to serve a client (a
--- handle) and the initial state.
-runServer : forall a:SL b . *!a -> (b -> dualof a -o b) -> b -> Diverge
-runServer ch handle state =
-    runServer [a, b] ch handle $ handle state $ accept_ [a] ch 
-
 ---------------------------------- SharedCounter ----------------------------------
 
 {- channel types -}
@@ -83,8 +20,8 @@ initStdout : StdOut
 initStdout = forkWith [StdOut] runStdout
 
 runStdout  : dualof StdOut -o ()
-runStdout stdout =
-    runServer [Printer, ()] stdout runPrinter ()
+runStdout =
+    runServer [Printer, ()] runPrinter ()
 
 runPrinter : () -> dualof Printer -o ()
 runPrinter _ printer =
@@ -214,7 +151,7 @@ initList stdout = forkWith [SharedList] (runListServer stdout)
 
 runListServer : StdOut -> dualof SharedList -o ()
 runListServer stdout ch =
-    runServer [ListC, List] ch (runListService stdout) Nil 
+    runServer [ListC, List] (runListService stdout) Nil ch
 
 runListService : StdOut -> List -> dualof ListC -o List
 runListService stdout list ch = 
@@ -337,7 +274,7 @@ initMapWith map = forkWith [SharedMap] (runMapServer map)
 
 runMapServer : Map -> dualof SharedMap -o ()
 runMapServer map ch = 
-    runServer [MapC, Map] ch runMapService map
+    runServer [MapC, Map] runMapService map ch
 
 runMapService : Map -> dualof MapC -o Map
 runMapService map ch =
@@ -406,8 +343,8 @@ initBank stdout =
     c
 
 bankWorker : StdOut -> dualof Bank -> ()
-bankWorker stdout ch =
-    runServer [BankService, ()] ch (runBankService stdout) ()
+bankWorker stdout =
+    runServer [BankService, ()] (runBankService stdout) ()
 
 -- TODO: Expand this function
 -- | Executes a function
@@ -643,7 +580,4 @@ main =
     fork $ client0 stdout store;
     fork $ client0 stdout store;
     fork $ client1 stdout store;
-    diverge ()
-
-diverge : () -> ()
-diverge = diverge
+    diverge 

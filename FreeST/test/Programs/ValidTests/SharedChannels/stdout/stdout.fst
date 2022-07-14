@@ -47,23 +47,20 @@ printStringLn' = printGeneric[String] (\printer:Printer -> select PrintStringLn 
 -- stdout server
 
 runStdout  : dualof StdOut -> ()
-runStdout stdout =
-    let (c, s) = new Printer in
-    let stdout = send c stdout in
-    runPrinter s;
-    runStdout stdout 
+runStdout =
+    runServer [Printer, ()] runPrinter ()
 
-runPrinter : dualof Printer -> ()
-runPrinter printer =
+runPrinter : () -> dualof Printer -o ()
+runPrinter _ printer =
     match printer with {
-        PrintBool     printer -> aux[Bool]   printer printBool     & runPrinter,
-        PrintBoolLn   printer -> aux[Bool]   printer printBoolLn   & runPrinter,
-        PrintInt      printer -> aux[Int]    printer printInt      & runPrinter,
-        PrintIntLn    printer -> aux[Int]    printer printIntLn    & runPrinter,
-        PrintChar     printer -> aux[Char]   printer printChar     & runPrinter,
-        PrintCharLn   printer -> aux[Char]   printer printCharLn   & runPrinter,
-        PrintString   printer -> aux[String] printer printString   & runPrinter,
-        PrintStringLn printer -> aux[String] printer printStringLn & runPrinter,
+        PrintBool     printer -> aux[Bool]   printer printBool     & runPrinter (),
+        PrintBoolLn   printer -> aux[Bool]   printer printBoolLn   & runPrinter (),
+        PrintInt      printer -> aux[Int]    printer printInt      & runPrinter (),
+        PrintIntLn    printer -> aux[Int]    printer printIntLn    & runPrinter (),
+        PrintChar     printer -> aux[Char]   printer printChar     & runPrinter (),
+        PrintCharLn   printer -> aux[Char]   printer printCharLn   & runPrinter (),
+        PrintString   printer -> aux[String] printer printString   & runPrinter (),
+        PrintStringLn printer -> aux[String] printer printStringLn & runPrinter (),
         Close         _       -> ()
     }
 
