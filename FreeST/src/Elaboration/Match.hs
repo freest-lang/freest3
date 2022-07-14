@@ -89,8 +89,9 @@ ruleCon (v:us) cs = groupSortBy (pName.head.fst) cs
 -- rule con aux 
 destruct :: [([Pattern],Exp)] -> FreestState (Variable, [Variable], [([Pattern],Exp)])
 destruct l@((p:ps,_):cs) = mapM newVar (pPats p)
-                       <&> (\args -> (,,) (pVar p) args (destruct' l))
+                       <&> (\args -> (pVar p, args, destruct' l)
 
+-- TODO: use a map
 destruct' :: [([Pattern],Exp)] -> [([Pattern],Exp)]
 destruct' [] = []
 destruct' ((p:ps,e):xs) = ((pPats p)++ps,e) : destruct' xs 
