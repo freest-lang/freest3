@@ -26,16 +26,12 @@ matchFuns :: ParseEnvPat -> FreestState ParseEnv
 matchFuns pep = mapM matchFun pep
 
 matchFun :: [Equation] -> FreestState ([Variable],Exp)
-matchFun xs@((ps,_):_) = do
-  debugM $ show xs
-  r <- mapM newVar ps
-   >>= \args -> (,) args <$> match args xs
-  debugM $ show r
-  return r
+matchFun xs@((ps,_):_) = mapM newVar ps
+                     >>= \args -> (,) args <$> match args xs
 
 match :: [Variable] -> [Equation] -> FreestState Exp
 match vs x = do
-  (vs,x) <- reorder vs x
+  -- (vs,x) <- reorder vs x -- for exhaustive matches
   ifThenElseM (isRuleChan  x) 
               (ruleChan vs x) (match' vs x)
 
@@ -46,19 +42,20 @@ match' vs x
   | isRuleCon   x = ruleCon   vs x
   | otherwise     = ruleMix   vs x
 
-reorder :: [Variable] -> [Equation] -> FreestState ([Variable],[Equation])
-reorder [] x = return ([],x)
-reorder vs x = do
-  -- destruct
-  let (pss1,es) = unzip x 
-  let z1   = zip (transpose pss1) vs 
-  z2 <- filterM (isChan.head.fst) z1
-  z3 <- filterM (\e -> not <$> (isChan $ head $ fst e)) z1
-  let z4   = z2 ++ z3
-  -- reconstruct
-  let (pss2,vs') = unzip z4 
-  let x'   = zip (transpose pss2) es 
-  return (vs',x')
+-- for exhaustive matches
+-- reorder :: [Variable] -> [Equation] -> FreestState ([Variable],[Equation])
+-- reorder [] x = return ([],x)
+-- reorder vs x = do
+--   -- destruct
+--   let (pss1,es) = unzip x 
+--   let z1   = zip (transpose pss1) vs 
+--   z2 <- filterM (isChan.head.fst) z1
+--   z3 <- filterM (\e -> not <$> (isChan $ head $ fst e)) z1
+--   let z4   = z2 ++ z3
+--   -- reconstruct
+--   let (pss2,vs') = unzip z4 
+--   let x'   = zip (transpose pss2) es 
+--   return (vs',x')
 
 -- is rule ---------------------------------------------------------
 isRuleEmpty :: [Equation] -> Bool
@@ -93,6 +90,10 @@ ruleChan (v:us) cs = groupSortBy (pName.head.fst) cs
 ruleEmpty :: [Variable] -> [Equation] -> FreestState Exp
 ruleEmpty _ ((_,e):cs) = do v' <- v; replaceExp v' v' e
   where v = R.renameVar $ mkVar (defaultSpan) "__"
+ruleEmpty vs css = do
+  debugM $ "################################ RuleEmpty"
+  debugM $ show vs ++ " " ++ show css
+  return $ Unit defaultSpan
 
 -- var -------------------------------------------------------------
 ruleVar :: [Variable] -> [Equation] -> FreestState Exp

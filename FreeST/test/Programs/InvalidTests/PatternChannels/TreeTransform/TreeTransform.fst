@@ -17,7 +17,7 @@ back the sum of the integer values under (and including) that node.
 
 data Tree = Leaf | Node Int Tree Tree
 
-type TreeC : SL = +{Leaf: Skip, Node: !Int;TreeC;TreeC;?Int}
+type TreeC : 1S = +{Leaf: Skip, Node: !Int;TreeC;TreeC;?Int}
 
 -- Note: we use the same constructors for the datatype and the channel, namely Leaf and Node
 
@@ -27,7 +27,7 @@ type TreeC : SL = +{Leaf: Skip, Node: !Int;TreeC;TreeC;?Int}
   returns a tree isomorphic to the input where each integer in nodes
   is read from the channel.
 -}
-transform : forall a : SL . Tree -> TreeC ; a -> (Tree, a)
+transform : forall a : 1S . Tree -> TreeC ; a -> (Tree, a)
 transform Leaf c = (Leaf, select Leaf c)
 transform (Node x l r) c =
   let c = select Node c in
@@ -42,7 +42,7 @@ transform (Node x l r) c =
   writes back on the channel the sum of the elements in the tree;
   returns this sum.
 -}
-treeSum : forall a : SL . dualof TreeC ; a -> (Int, a)
+treeSum : forall a : 1S . dualof TreeC ; a -> (Int, a)
 treeSum (Leaf c) = (0, c)
 treeSum (Node c) =
   let (x, c) = receive c in
@@ -57,6 +57,6 @@ aTree = Node 1 (Node 2 (Node 8 Leaf Leaf) (Node 3 (Node 5 Leaf Leaf) (Node 4 Lea
 main : Tree
 main =
   let (w, r) = new TreeC in
-  fork[(Int, Skip)] (treeSum [Skip] r );
-  let (t, _) = transform [Skip] aTree w in
+  fork[(Int, Skip)] (treeSum @Skip r );
+  let (t, _) = transform @Skip aTree w in
   t

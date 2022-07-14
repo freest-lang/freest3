@@ -41,9 +41,9 @@ getTwo (Cons left (Cons right zs)) = (zs, (left, right))
 
 -- Streams
 
-type Stream : SL = +{
-    Node: !Int; Stream,
-    Leaf: Stream,
+type Stream : 1S = +{
+    NodeC: !Int; Stream,
+    LeafC: Stream,
     EndOfStream: Skip
   }
 
@@ -53,9 +53,9 @@ sendTree : Tree -> Stream -> Skip
 sendTree t c = select EndOfStream $ streamTree t c
 
 streamTree : Tree -> Stream -> Stream
-streamTree Leaf c         = select Leaf c
+streamTree Leaf c         = select LeafC c
 streamTree (Node x l r) c = send x $ select Node $ streamTree r $ streamTree l c
-streamTree Error          = select Leaf c      
+streamTree Error         = select LeafC c      
 
 -- Reading trees from channels
 
@@ -63,9 +63,9 @@ receiveTree : dualof Stream -> Tree
 receiveTree = recTree Nil
 
 recTree : List -> dualof Stream -> Tree
-recTree xs (Leaf c)        = recTree (Cons Leaf xs) c
+recTree xs (LeafC c)       = recTree (Cons Leaf xs) c
 recTree xs (EndOfStream _) = getFromSingleton xs
-recTree xs (Node c)        = let (xs, p) = getTwo xs in
+recTree xs (NodeC c)       = let (xs, p) = getTwo xs in
                              let (left, right) = p in
                              let (root, c) = receive c in
                              recTree (Cons (Node root left right) xs) c
@@ -78,24 +78,24 @@ writeNothing c =
 
 writeTooMuch : Stream -> Skip
 writeTooMuch c =
-  select EndOfStream $ select Leaf $ select Leaf c
+  select EndOfStream $ select Leaf $ select LeafC c
 
 writeRootTreeOnly : Stream -> Skip
 writeRootTreeOnly c =
-  select EndOfStream $ send 5 $ select Node c
+  select EndOfStream $ send 5 $ select NodeC c
 
 writeLeftTreeOnly : Stream -> Skip
 writeLeftTreeOnly c =
-  select EndOfStream $ send 5 $ select Node $ select Leaf c
+  select EndOfStream $ send 5 $ select Node $ select LeafC c
 
 -- Go!
 
 main : Tree
 main =
   let (w, r) = new Stream in
---  (fork[Skip] $ sendTree aTree w);
---  (fork[Skip] $ writeNothing w);       -- 'P'
---  (fork[Skip] $ writeTooMuch w);     -- 'X'
-  (fork[Skip] $ writeRootTreeOnly w);  -- 'R'
---  (fork[Skip] $ writeLeftTreeOnly w);  -- 'L'
+--  (fork@Skip $ sendTree aTree w);
+--  (fork@Skip $ writeNothing w);       -- 'P'
+--  (fork@Skip $ writeTooMuch w);     -- 'X'
+  (fork@Skip $ writeRootTreeOnly w);  -- 'R'
+--  (fork@Skip $ writeLeftTreeOnly w);  -- 'L'
   receiveTree r
