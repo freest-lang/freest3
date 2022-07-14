@@ -284,8 +284,8 @@ instance Unparse Exp where
     (inRator, "case " ++ s ++ " of {" ++ showFieldMap m ++ "}")
     where s = bracket (unparse e) NonAssoc inRator
   -- TODOX REMOVE DEBUGGING
-  unparse (E.CaseP _ e m) =
-    (inRator, "case " ++ s ++ " of {" ++ showFieldMapP m ++ "}")
+  unparse (E.CasePat _ e m) =
+    (inRator, "case " ++ s ++ " of {" ++ showFieldList m ++ "}")
     where s = bracket (unparse e) NonAssoc inRator
   -- Type Abstraction intro and elim
   unparse (E.TypeApp _ x t) = (appRator, show x ++ " @" ++ t')
@@ -314,11 +314,16 @@ showFieldMap m = intercalate "; " $ map showAssoc (Map.toList m)
     show b ++ " " ++ unwords (map show a) ++ " -> " ++ show v
 
 -- TODOX for debugging
-showFieldMapP :: FieldMapP -> String
-showFieldMapP m = intercalate "; " $ map show m
+showFieldList :: FieldList -> String
+showFieldList m = intercalate "; " $ map show m
  where
   showAssoc (b, (a, v)) =
     show b ++ " " ++ unwords (map show a) ++ " -> " ++ show v
+
+-- TODOX remove
+instance Show Pattern where
+  show (E.V v)    = "V " ++ intern v
+  show (E.C v ps) = "C " ++ intern v ++ show ps
 
 isOp :: [String] -> Variable -> Bool
 isOp ops x = show x `elem` ops
