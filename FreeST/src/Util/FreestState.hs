@@ -45,20 +45,22 @@ type Imports = Set.Set FilePath
 
 type ParseEnv    = Map.Map Variable ([Variable], Exp)
 type ParseEnvPat = Map.Map Variable [([Pattern], Exp)]
+type ParseEnvChoices = Map.Map Variable [Variable]
 
 data FreestS = FreestS {
-    runOpts     :: RunOpts
-  , varEnv      :: VarEnv
-  , prog        :: Prog
-  , typeEnv     :: TypeEnv
-  , typenames   :: TypeOpsEnv
-  , warnings    :: Warnings
-  , errors      :: Errors
-  , nextIndex   :: Int
-  , parseEnv    :: ParseEnv    -- "discarded" after elaboration
-  , parseEnvPat :: ParseEnvPat -- for pattern elimination
-  , moduleName  :: Maybe FilePath
-  , imports     :: Imports
+    runOpts         :: RunOpts
+  , varEnv          :: VarEnv
+  , prog            :: Prog
+  , typeEnv         :: TypeEnv
+  , typenames       :: TypeOpsEnv
+  , warnings        :: Warnings
+  , errors          :: Errors
+  , nextIndex       :: Int
+  , parseEnv        :: ParseEnv    -- "discarded" after elaboration
+  , parseEnvPat     :: ParseEnvPat -- for pattern elimination
+  , parseEnvChoices :: ParseEnvChoices
+  , moduleName      :: Maybe FilePath
+  , imports         :: Imports
   } -- deriving Show -- FOR DEBUG purposes
 
 type FreestState = State FreestS
@@ -66,18 +68,19 @@ type FreestState = State FreestS
 -- | Initial State
 
 initialState :: FreestS
-initialState = FreestS { runOpts     = defaultOpts
-                       , varEnv      = Map.empty
-                       , prog        = Map.empty
-                       , typeEnv     = Map.empty
-                       , typenames   = Map.empty
-                       , warnings    = []
-                       , errors      = []
-                       , nextIndex   = 0
-                       , parseEnv    = Map.empty
-                       , parseEnvPat = Map.empty
-                       , moduleName  = Nothing
-                       , imports     = Set.empty
+initialState = FreestS { runOpts         = defaultOpts
+                       , varEnv          = Map.empty
+                       , prog            = Map.empty
+                       , typeEnv         = Map.empty
+                       , typenames       = Map.empty
+                       , warnings        = []
+                       , errors          = []
+                       , nextIndex       = 0
+                       , parseEnv        = Map.empty
+                       , parseEnvPat     = Map.empty
+                       , parseEnvChoices = Map.empty
+                       , moduleName      = Nothing
+                       , imports         = Set.empty
                        }
 
 -- | Parse Env
@@ -105,6 +108,15 @@ addToPEnvPat x xs e =
 
 getPEnvPat :: FreestState ParseEnvPat
 getPEnvPat = gets parseEnvPat
+
+addToPEnvChoices :: MonadState FreestS m => [Variable] -> m ()
+addToPEnvChoices cs =
+  modify (\s -> s
+    { parseEnvChoices = Map.union m (parseEnvChoices s) })
+    where m = Map.fromList $ zip cs $ replicate (length cs) cs
+
+getPEnvChoices :: FreestState ParseEnvChoices
+getPEnvChoices = gets parseEnvChoices
 
 -- | NEXT VAR
 

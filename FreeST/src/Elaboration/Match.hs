@@ -3,7 +3,7 @@ module Elaboration.Match
   )
 where
 
-import           Data.List            (groupBy,sortOn,transpose)
+import           Data.List            (groupBy,sortOn,find)
 import           Data.Function        ((&))
 import           Data.Functor         ((<&>))
 import           Control.Monad        (filterM)
@@ -30,15 +30,11 @@ matchFun xs@((ps,_):_) = mapM newVar ps
                      >>= \args -> (,) args <$> match args xs
 
 match :: [Variable] -> [Equation] -> FreestState Exp
-match vs x = do
-  ifThenElseM (isRuleChan  x) 
-              (ruleChan vs x) (match' vs x)
-
-match' :: [Variable] -> [Equation] -> FreestState Exp
-match' vs x
+match vs x
   | isRuleEmpty x = ruleEmpty vs x
   | isRuleVar   x = ruleVar   vs x
-  | isRuleCon   x = ruleCon   vs x
+  | isRuleCons  x = ruleCons  vs x
+  | isRuleChan  x = ruleChan  vs x
   | otherwise     = ruleMix   vs x
 
 -- is rule ---------------------------------------------------------
@@ -50,25 +46,17 @@ isRuleVar cs = all (check.fst) cs
   where check p = not   (null p)
                && isVar (head p)
 
-isRuleCon   :: [Equation] -> Bool
-isRuleCon cs = all (check.fst) cs
-  where check p = not   (null p)
-               && isCon (head p)
+isRuleCons   :: [Equation] -> Bool
+isRuleCons cs = all (check.fst) cs
+  where check p = not    (null p)
+               && isCons (head p)
 
-isRuleChan  :: [Equation] -> FreestState Bool
-isRuleChan cs = b1 &&^ b2
-  where b1 = return $ (not $ isRuleEmpty cs) && (not $ isRuleVar cs) && (isRuleCon cs)
-        b2 = and <$> mapM (isChan.head.fst) cs
+isRuleChan  :: [Equation] -> Bool
+isRuleChan cs = all (check.fst) cs
+  where check p = not    (null p)
+               && isChan (head p)
 
 -- rules -----------------------------------------------------------
-
--- chan ------------------------------------------------------------
-ruleChan :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
-ruleChan (v:us) cs = groupSortBy (pName.head.fst) cs
-                   & mapM destruct
-                 >>= mapM (\(con,vs,cs) -> (,) con . (,) vs <$> match (vs++us) cs)
-                 <&> Case s (App s (Var s (mkVar s "collect")) (Var s v)) . Map.fromList
-  where s = getSpan v
 
 -- empty -----------------------------------------------------------
 ruleEmpty :: [Variable] -> [Equation] -> FreestState Exp
@@ -83,11 +71,11 @@ ruleVar (v:us) cs = match us =<< (mapM replace cs)
           | otherwise = (,) ps <$> (replaceExp v (pVar p) e)
 
 -- con -------------------------------------------------------------
-ruleCon :: [Variable] -> [Equation] -> FreestState Exp
-ruleCon (v:us) cs = groupSortBy (pName.head.fst) cs
-                  & mapM destruct
-                >>= mapM (\(con,vs,cs) -> (,) con . (,) vs <$> match (vs++us) cs)
-                <&> Case s (Var s v) . Map.fromList
+ruleCons :: [Variable] -> [Equation] -> FreestState Exp
+ruleCons (v:us) cs = groupSortBy (pName.head.fst) cs
+                   & mapM destruct
+                 >>= mapM (\(con,vs,cs) -> (,) con . (,) vs <$> match (vs++us) cs)
+                 <&> Case s (Var s v) . Map.fromList
   where s = getSpan v
   
 -- rule con aux 
@@ -96,14 +84,29 @@ destruct l@((p:ps,_):cs) = mapM newVar (pPats p)
                        <&> flip ((,,) (pVar p)) l'
   where l' = map (\(p:ps,e) -> ((pPats p)++ps,e)) l
 
+-- chan ------------------------------------------------------------
+ruleChan :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
+ruleChan (v:us) cs = groupSortBy (pName.head.fst) cs
+                   & mapM destruct
+                 >>= mapM (\(con,vs,cs) -> (,) con . (,) vs <$> match (vs++us) cs)
+                 <&> Case s (App s (Var s (mkVar s "collect")) (Var s v)) . Map.fromList
+  where s = getSpan v
+
 -- mix -------------------------------------------------------------
 ruleMix :: [Variable] -> [Equation] -> FreestState Exp
 ruleMix (v:us) cs = do
-  cons <- constructors $ getDataType cs
+  cons <- getFill cs
   groupOn (isVar.head.fst) cs
         & mapM (fill v cons)
       <&> concat
       >>= match (v:us)
+
+getFill :: [Equation] -> FreestState [(Variable,Int)]
+getFill cs =
+  case find (isChan.head.fst) cs of
+    Nothing      -> constructors $ getDataType cs
+    Just (p:_,_) -> flip (Map.!) (pVar p) <$> getPEnvChoices
+                <&> \vs -> zip vs (replicate (length vs) 1)
 
 --rule mix aux
 fill :: Variable -> [(Variable,Int)] -> [Equation] -> FreestState [Equation]
@@ -115,13 +118,13 @@ fill v cons cs
 fill' :: Variable -> [(Variable,Int)] -> [Equation] -> FreestState [Equation]
 fill' v _ [] = return []
 fill' v cons ((p:ps,e):cs) = (++) <$> mapM (mkCons v' e') cons <*> fill' v cons cs
-  where v' = V $ mkVar (getSpan $ pVar p) "_"
+  where v' = PatVar $ mkVar (getSpan $ pVar p) "_"
         e' = replaceExp v (pVar p) e
-        mkCons v e' (c,n) = (,) (C c (replicate n v):ps) <$> e'
+        mkCons v e' (c,n) = (,) (PatCons c (replicate n v):ps) <$> e'
   
 -- gets the first contructor name
 getDataType :: [([Pattern], Exp)] -> Variable
-getDataType cs = filter (isCon.head.fst) cs
+getDataType cs = filter (isCons.head.fst) cs
                & pVar.head.fst.head
 
 -- returns constructors and the amount of variables they need
@@ -175,31 +178,32 @@ substitute v p (vs,e) = (,) (map (replaceVar v p) vs) <$> (replaceExp v p e)
 
 -- aux
 pName :: Pattern -> String
-pName (C v _) = intern v
+pName (PatCons v _) = intern v
+pName (PatChan v _) = intern v
 
 pVar :: Pattern -> Variable
-pVar (V v)   = v
-pVar (C v _) = v
+pVar (PatVar v)    = v
+pVar (PatCons v _) = v
+pVar (PatChan v _) = v
 
 pPats :: Pattern -> [Pattern]
-pPats (C _ ps) = ps
+pPats (PatCons _ ps) = ps
+pPats (PatChan _ ps) = ps
 
 isVar :: Pattern -> Bool
-isVar (V _) = True
-isVar _     = False
+isVar (PatVar _) = True
+isVar _          = False
 
-isCon :: Pattern -> Bool
-isCon = not.isVar
+isCons :: Pattern -> Bool
+isCons (PatCons _ _) = True
+isCons _             = False
 
-isChan :: Pattern -> FreestState Bool
-isChan (V _)   = return False
-isChan (C c _) = Map.toList <$> getTEnv
-             <&> map (getKeys.snd.snd)
-             <&> concat
-             <&> notElem c
+isChan :: Pattern -> Bool
+isChan (PatChan _ _) = True
+isChan _             = False
 
 is_ :: Pattern -> Bool
-is_ (V v) = intern v == "_"
+is_ (PatVar v) = show v == "_"
 
 newVar :: Pattern -> FreestState Variable
 newVar = R.renameVar.pVar
