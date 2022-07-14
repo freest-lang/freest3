@@ -2,24 +2,37 @@
 sink : Skip -> ()
 sink c = ()
 
-data Data    = A | B
-type Channel = &{C: Skip
-                ,D: Skip
-                }
+data Data = A | B
+type Channel : 1S = &{C: Skip,D: Skip}
 
 f : Data -> Channel -> Int
--- f A (C c) = 1
-f A c = 
+f A (C c) = 1 
+f B c = 
   match c with {
-    C c -> 1
-    -- D c -> 2
+    D c -> 2
+  }
+
+g : Channel -> Data -> Int
+g c x = 
+  match c with {
+    C c -> 
+      case x of {
+        A -> sink c; 1,
+        B -> sink c; 2
+      },
+    D c -> 
+      case x of {
+        A -> sink c; 1,
+        B -> sink c; 2
+      }
   }
 
 main : Int 
 main =
   let (w,r) = new Channel in
-  select D r;
-  f A w
+  select C r;
+  g w A
+  -- f A w
 
 -- f : T -> C -> Int
 -- f A (C c) = 1
