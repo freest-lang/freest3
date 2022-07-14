@@ -35,9 +35,9 @@ matchFun xs@((ps,_):_) = do
 
 match :: [Variable] -> [Equation] -> FreestState Exp
 match vs x = do
-  (vs',x') <- reorder vs x
-  ifThenElseM (isRuleChan   x') 
-              (ruleChan vs' x') (match' vs' x')
+  (vs,x) <- reorder vs x
+  ifThenElseM (isRuleChan  x) 
+              (ruleChan vs x) (match' vs x)
 
 match' :: [Variable] -> [Equation] -> FreestState Exp
 match' vs x
