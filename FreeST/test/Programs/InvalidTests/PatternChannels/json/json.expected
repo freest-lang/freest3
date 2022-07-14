@@ -1,5 +1,1 @@
-<pending>
-Data types and Types with the same name
-
-expected: 
 ConsObject name (StringVal James) (ConsObject age (IntVal 30) (ConsObject car NullVal (ConsObject children (ArrayVal (ConsArray (ObjectVal (ConsObject name (StringVal Jonah) EmptyObject)) (ConsArray (ObjectVal (ConsObject name (StringVal Johanson) EmptyObject)) EmptyArray))) EmptyObject)))

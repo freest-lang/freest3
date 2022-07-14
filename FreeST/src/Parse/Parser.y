@@ -165,8 +165,8 @@ Decl :: { () }
   -- Function signature
   : ProgVarList ':' Type {% forM_ $1 (\x -> checkDupProgVarDecl x >> addToVEnv x $3) }
   -- Function declaration
-  | ProgVar PatternSeq '=' Exp   {% checkDupVarPats $2 >> addToPEnvPat $1 $2 $4 }
-  | ProgVar PatternSeq GuardsFun {% checkDupVarPats $2 >> addToPEnvPat $1 $2 $3 }
+  | ProgVar PatternSeq '=' Exp   {% checkNumAndDup $1 $2 >> addToPEnvPat $1 $2 $4 }
+  | ProgVar PatternSeq GuardsFun {% checkNumAndDup $1 $2 >> addToPEnvPat $1 $2 $3 }
   -- Type abbreviation
   | type KindedTVar TypeDecl {% checkDupTypeDecl (fst $2) >> uncurry addToTEnv $2 $3 }
   -- Datatype declaration

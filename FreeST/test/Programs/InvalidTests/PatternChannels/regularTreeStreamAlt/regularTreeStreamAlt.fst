@@ -49,7 +49,7 @@ stackSize (Value _ ts) = 1 + stackSize st
 -- Channel to send/receive a Tree. It is important that both sender and receiver
 --  agree on an order to traverse the Tree.
 --  (In our particular case we will use PREORDER - node, left, right)
-type TreeC : SL = +{
+type TreeC : 1S = +{
   Value: !Int; TreeC,
   Leaf:  TreeC,
   End:   Skip }
@@ -80,7 +80,7 @@ receiveTree_ ts (Leaf c) =
 receiveTree_ ts (End  c) =
       errorWhen (stackIsEmpty ts)  "Channel was closed without sending a Tree";
       errorWhen (stackSize ts > 1) "Channel was closed mid-stream or with leftover tree elements";
-      snd[TreeStack, Tree] $ stackPop ts
+      snd@TreeStack@Tree $ stackPop ts
 
 -- Generates an error with a given message if a given boolean is true
 errorWhen : Bool -> String -> ()

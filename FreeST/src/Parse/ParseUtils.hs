@@ -26,7 +26,6 @@ import           Data.Bifunctor ( second )
 import           Data.List ( find )
 import qualified Data.Map.Strict as Map
 
-
 type FreestStateT = StateT FreestS (Either ErrorType)
 
 -- Modules
@@ -109,10 +108,21 @@ checkDupTypeDecl a = do
  where
     pos tEnv = getSpan $ fst $ Map.elemAt (Map.findIndex a tEnv) tEnv
 
+checkNumAndDup :: Variable -> [E.Pattern] -> FreestStateT ()
+checkNumAndDup fn ps = checkNumArgs fn ps >> checkDupVarPats ps
 
-checkDupVarPat :: E.Pattern -> FreestStateT ()
-checkDupVarPat (E.C _ ps) = checkDupVarPats ps
-checkDupVarPat _          = return ()
+-- TODOX
+-- checkNumArgs (every function line has to have the same amount of variables)
+checkNumArgs :: Variable -> [E.Pattern] -> FreestStateT ()
+checkNumArgs fn ps = do
+  env <- parseEnvPat <$> get
+  addError $ DifNumberOfArguments (getSpan fn) fn (length ps) (0)
+  -- case env Map.!? fn of
+  --   Nothing -> return ()
+  --   Just (ps':pss') ->
+  --     if length ps == length ps'
+  --       then return ()
+  --       else addError $ DifNumberOfArguments (getSpan fn) fn (length ps) (length ps')
 
 checkDupVarPats :: [E.Pattern] -> FreestStateT ()
 checkDupVarPats ps = checkDupVarPats' ps []
