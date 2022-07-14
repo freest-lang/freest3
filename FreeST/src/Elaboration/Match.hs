@@ -3,9 +3,10 @@ module Elaboration.Match
   )
 where
 
-import           Data.List            (groupBy,sortOn)
+import           Data.List            (groupBy,sortOn,transpose)
 import           Data.Function        ((&))
 import           Data.Functor         ((<&>))
+import           Control.Monad        (filterM)
 import           Control.Monad.Extra  ((&&^))
 import           Control.Bool         (ifThenElseM)
 
@@ -19,39 +20,61 @@ import           Util.FreestState
 
 import           Debug.Trace -- debug (used on debugM function)
 
-matchFuns :: ParseEnvP -> FreestState ParseEnv
+type Equation = ([Pattern],Exp)
+
+matchFuns :: ParseEnvPat -> FreestState ParseEnv
 matchFuns pep = mapM matchFun pep
 
-matchFun :: [([Pattern],Exp)] -> FreestState ([Variable],Exp)
-matchFun xs@((ps,_):_) = mapM newVar ps
-                     >>= \args -> (,) args <$> match args xs
+matchFun :: [Equation] -> FreestState ([Variable],Exp)
+matchFun xs@((ps,_):_) = do
+  debugM $ show xs
+  r <- mapM newVar ps
+   >>= \args -> (,) args <$> match args xs
+  debugM $ show r
+  return r
 
-match :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
-match vs x = ifThenElseM (isRuleChan x) 
-                         (ruleChan vs x) (match' vs x)
+match :: [Variable] -> [Equation] -> FreestState Exp
+match vs x = do
+  (vs,x) <- reorder vs x
+  ifThenElseM (isRuleChan  x) 
+              (ruleChan vs x) (match' vs x)
 
-match' :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
+match' :: [Variable] -> [Equation] -> FreestState Exp
 match' vs x
   | isRuleEmpty x = ruleEmpty vs x
   | isRuleVar   x = ruleVar   vs x
   | isRuleCon   x = ruleCon   vs x
   | otherwise     = ruleMix   vs x
 
+reorder :: [Variable] -> [Equation] -> FreestState ([Variable],[Equation])
+reorder [] x = return ([],x)
+reorder vs x = do
+  -- destruct
+  let (pss1,es) = unzip x 
+  let z1   = zip (transpose pss1) vs 
+  z2 <- filterM (isChan.head.fst) z1
+  z3 <- filterM (\e -> not <$> (isChan $ head $ fst e)) z1
+  let z4   = z2 ++ z3
+  -- reconstruct
+  let (pss2,vs') = unzip z4 
+  let x'   = zip (transpose pss2) es 
+  return (vs',x')
+
 -- is rule ---------------------------------------------------------
-isRuleEmpty :: [([Pattern],Exp)] -> Bool
+isRuleEmpty :: [Equation] -> Bool
 isRuleEmpty cs = and $ map (null.fst) cs
 
-isRuleVar   :: [([Pattern],Exp)] -> Bool
+isRuleVar   :: [Equation] -> Bool
 isRuleVar cs = and $ map (check.fst) cs
   where check p = not   (null p)
                && isVar (head p)
 
-isRuleCon   :: [([Pattern],Exp)] -> Bool
+isRuleCon   :: [Equation] -> Bool
 isRuleCon cs = and $ map (check.fst) cs
   where check p = not   (null p)
                && isCon (head p)
 
-isRuleChan  :: [([Pattern],Exp)] -> FreestState Bool
+isRuleChan  :: [Equation] -> FreestState Bool
 isRuleChan cs = b1 &&^ b2
   where b1 = return $ (not $ isRuleEmpty cs) && (not $ isRuleVar cs) && (isRuleCon cs)
         b2 = and <$> mapM (isChan.head.fst) cs
@@ -67,19 +90,19 @@ ruleChan (v:us) cs = groupSortBy (pName.head.fst) cs
   where s = getSpan v
 
 -- empty -----------------------------------------------------------
-ruleEmpty :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
-ruleEmpty _ ((_,e):cs) = replaceExp v v e
-  where v = mkVar (defaultSpan) "__"
+ruleEmpty :: [Variable] -> [Equation] -> FreestState Exp
+ruleEmpty _ ((_,e):cs) = do v' <- v; replaceExp v' v' e
+  where v = R.renameVar $ mkVar (defaultSpan) "__"
 
 -- var -------------------------------------------------------------
-ruleVar :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
+ruleVar :: [Variable] -> [Equation] -> FreestState Exp
 ruleVar (v:us) cs = match us =<< (mapM replace cs)
   where replace (p:ps,e)
           | is_ p     = return (ps,e)
           | otherwise = (,) ps <$> (replaceExp v (pVar p) e)
 
 -- con -------------------------------------------------------------
-ruleCon :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
+ruleCon :: [Variable] -> [Equation] -> FreestState Exp
 ruleCon (v:us) cs = groupSortBy (pName.head.fst) cs
                   & mapM destruct
                 >>= mapM (\(con,vs,cs) -> (,) con . (,) vs <$> match (vs++us) cs)
@@ -87,17 +110,13 @@ ruleCon (v:us) cs = groupSortBy (pName.head.fst) cs
   where s = getSpan v
   
 -- rule con aux 
-destruct :: [([Pattern],Exp)] -> FreestState (Variable, [Variable], [([Pattern],Exp)])
+destruct :: [Equation] -> FreestState (Variable, [Variable], [Equation])
 destruct l@((p:ps,_):cs) = mapM newVar (pPats p)
-                       <&> (\args -> (pVar p, args, destruct' l)
-
--- TODO: use a map
-destruct' :: [([Pattern],Exp)] -> [([Pattern],Exp)]
-destruct' [] = []
-destruct' ((p:ps,e):xs) = ((pPats p)++ps,e) : destruct' xs 
+                       <&> flip ((,,) (pVar p)) l'
+  where l' = map (\(p:ps,e) -> ((pPats p)++ps,e)) l
 
 -- mix -------------------------------------------------------------
-ruleMix :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
+ruleMix :: [Variable] -> [Equation] -> FreestState Exp
 ruleMix (v:us) cs = do
   cons <- constructors $ getDataType cs
   groupOn (isVar.head.fst) cs
@@ -106,13 +125,13 @@ ruleMix (v:us) cs = do
       >>= match (v:us)
 
 --rule mix aux
-fill :: Variable -> [(Variable,Int)] -> [([Pattern],Exp)] -> FreestState [([Pattern],Exp)]
+fill :: Variable -> [(Variable,Int)] -> [Equation] -> FreestState [Equation]
 fill v cons cs 
   | hasVar cs = fill' v cons cs
   | otherwise = return cs
   where hasVar = isVar.head.fst.head
 
-fill' :: Variable -> [(Variable,Int)] -> [([Pattern],Exp)] -> FreestState [([Pattern],Exp)]
+fill' :: Variable -> [(Variable,Int)] -> [Equation] -> FreestState [Equation]
 fill' v _ [] = return []
 fill' v cons ((p:ps,e):cs) = (++) <$> mapM (mkCons v' e') cons <*> fill' v cons cs
   where v' = V $ mkVar (getSpan $ pVar p) "_"
@@ -156,7 +175,7 @@ replaceExp v p (TypeAbs s b)          = TypeAbs s   <$> replaceBind v p b
 replaceExp v p (TypeApp s e t)        = flip (TypeApp s) t <$> replaceExp v p e
 replaceExp v p (Cond s e1 e2 e3)      = Cond    s   <$> replaceExp  v p e1 <*> replaceExp v p e2 <*> replaceExp v p e3
 replaceExp v p (UnLet s v1 e1 e2)     = UnLet   s      (replaceVar  v p v1)<$> replaceExp v p e1 <*> replaceExp v p e2
-replaceExp v p (CaseP s e flp)        = sub         <$> replaceExp  v p e  <*>(replaceExp v p    =<< match vs' flp)
+replaceExp v p (CasePat s e flp)      = sub         <$> replaceExp  v p e  <*>(replaceExp v p    =<< match vs' flp)
   where sub e (Case s _ fm) = Case s e fm
         vs' = [mkVar (getSpan e) "_"]
 replaceExp _ _ e = return e

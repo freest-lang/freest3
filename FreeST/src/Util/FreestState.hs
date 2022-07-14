@@ -43,22 +43,22 @@ type Errors = [ErrorType]
 
 type Imports = Set.Set FilePath 
 
-type ParseEnv  = Map.Map Variable ([Variable], Exp)
-type ParseEnvP = Map.Map Variable [([Pattern], Exp)]
+type ParseEnv    = Map.Map Variable ([Variable], Exp)
+type ParseEnvPat = Map.Map Variable [([Pattern], Exp)]
 
 data FreestS = FreestS {
-    runOpts    :: RunOpts
-  , varEnv     :: VarEnv
-  , prog       :: Prog
-  , typeEnv    :: TypeEnv
-  , typenames  :: TypeOpsEnv
-  , warnings   :: Warnings
-  , errors     :: Errors
-  , nextIndex  :: Int
-  , parseEnv   :: ParseEnv  -- "discarded" after elaboration
-  , parseEnvP  :: ParseEnvP -- for pattern elimination
-  , moduleName :: Maybe FilePath
-  , imports    :: Imports
+    runOpts     :: RunOpts
+  , varEnv      :: VarEnv
+  , prog        :: Prog
+  , typeEnv     :: TypeEnv
+  , typenames   :: TypeOpsEnv
+  , warnings    :: Warnings
+  , errors      :: Errors
+  , nextIndex   :: Int
+  , parseEnv    :: ParseEnv    -- "discarded" after elaboration
+  , parseEnvPat :: ParseEnvPat -- for pattern elimination
+  , moduleName  :: Maybe FilePath
+  , imports     :: Imports
   } -- deriving Show -- FOR DEBUG purposes
 
 type FreestState = State FreestS
@@ -66,18 +66,18 @@ type FreestState = State FreestS
 -- | Initial State
 
 initialState :: FreestS
-initialState = FreestS { runOpts    = defaultOpts
-                       , varEnv     = Map.empty
-                       , prog       = Map.empty
-                       , typeEnv    = Map.empty
-                       , typenames  = Map.empty
-                       , warnings   = []
-                       , errors     = []
-                       , nextIndex  = 0
-                       , parseEnv   = Map.empty
-                       , parseEnvP  = Map.empty
-                       , moduleName = Nothing
-                       , imports    = Set.empty
+initialState = FreestS { runOpts     = defaultOpts
+                       , varEnv      = Map.empty
+                       , prog        = Map.empty
+                       , typeEnv     = Map.empty
+                       , typenames   = Map.empty
+                       , warnings    = []
+                       , errors      = []
+                       , nextIndex   = 0
+                       , parseEnv    = Map.empty
+                       , parseEnvPat = Map.empty
+                       , moduleName  = Nothing
+                       , imports     = Set.empty
                        }
 
 -- | Parse Env
@@ -95,16 +95,16 @@ getPEnv = gets parseEnv
 setPEnv :: ParseEnv -> FreestState ()
 setPEnv parseEnv = modify (\s -> s { parseEnv })
 
--- | Parse Env P (with Patterns)
-  -- I have to build PEnvP to then translate into just PEnv
-addToPEnvP :: MonadState FreestS m => Variable -> [Pattern] -> Exp -> m ()
-addToPEnvP x xs e =
+-- | Parse Env Pat (with Patterns)
+
+addToPEnvPat :: MonadState FreestS m => Variable -> [Pattern] -> Exp -> m ()
+addToPEnvPat x xs e =
   modify (\s -> s 
-    { parseEnvP = Map.insertWith add x [(xs, e)] (parseEnvP s) })
+    { parseEnvPat = Map.insertWith add x [(xs, e)] (parseEnvPat s) })
     where add b a = (++) a b
 
-getPEnvP :: FreestState ParseEnvP
-getPEnvP = gets parseEnvP
+getPEnvPat :: FreestState ParseEnvPat
+getPEnvPat = gets parseEnvPat
 
 -- | NEXT VAR
 
