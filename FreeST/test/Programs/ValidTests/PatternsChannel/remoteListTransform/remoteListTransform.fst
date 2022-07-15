@@ -13,8 +13,8 @@ transform (List i rest) c =
 
 
 listSum : forall a : 1S . (rec x:1S. &{EndC: Skip, ListC: ?Int;x;!Int});a -> (Int,a)
-listSum (EndC  c) = (0, c)
-listSum (ListC c) = 
+listSum &(EndC  c) = (0, c)
+listSum &(ListC c) = 
     let (x, c) = receive c in
     let (rest, c) = listSum@(!Int;a) c in
     let c = send (x + rest) c in

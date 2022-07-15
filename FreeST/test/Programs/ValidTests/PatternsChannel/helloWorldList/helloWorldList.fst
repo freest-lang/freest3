@@ -1,8 +1,8 @@
 data List = Nil | Cons Char List
 
 server : forall α : 1S . (rec x:1S.&{Done: Skip, More: ?Char;x});α -> (List, α)
-server (Done c) = (Nil, c)
-server (More c) =
+server &(Done c) = (Nil, c)
+server &(More c) =
       let (h, c) = receive c in
       let (t, c) = server@α c in
       (Cons h t, c)

@@ -314,14 +314,14 @@ masterLoop channels nIterG =
 -- Run an island instance that holds a population an performs
 --   the GA on demand (by the master)
 runIsland : dualof IslandChannel -> Int 1-> Int 1-> Population 1-> ()
-runIsland (Fittest master) seed nIterI pop =
+runIsland &(Fittest master) seed nIterI pop =
   -- Get our population's fittest
   let (ourFittest, _) = getFittestIndividual pop in
   -- Send it to the master
   let master = send ourFittest master in
   -- Continue serving
   runIsland master seed nIterI pop
-runIsland (Crossover master) seed nIterI pop =
+runIsland &(Crossover master) seed nIterI pop =
   -- Receive true fittest
   let (fittest, master) = receive master in
   -- Kill unfittest from population...
@@ -332,7 +332,7 @@ runIsland (Crossover master) seed nIterI pop =
   let (seed, pop) = geneticAlg_ seed nIterI pop in
   -- Continue serving
   runIsland master seed nIterI pop
-runIsland (End master) seed nIterI pop = 
+runIsland &(End master) seed nIterI pop = 
   -- Stop (get some help  -Michael Jordan)
   ()
 

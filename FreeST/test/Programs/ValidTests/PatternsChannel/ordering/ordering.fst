@@ -25,9 +25,9 @@ initOrderedServer c =
 -- Server function
 --   This server sends the list reversed
 orderedServer : forall a:1S . dualof OrderingChannel;a -> IntList 1-> (IntList, a)
-orderedServer (Asc  c) list = (quicksort list (desc), c) -- Quicksorts with descending to send it reversed
-orderedServer (Desc c) list = (quicksort list (asc) , c) -- Quicksorts with  ascending to send it reversed
-orderedServer (Vals c) list = 
+orderedServer &(Asc  c) list = (quicksort list (desc), c) -- Quicksorts with descending to send it reversed
+orderedServer &(Desc c) list = (quicksort list (asc) , c) -- Quicksorts with  ascending to send it reversed
+orderedServer &(Vals c) list = 
   let (x, c)  = receive c in
   let (list, c) = orderedServer@(!Int;a) c (Cons x list) in
   case list of { 
