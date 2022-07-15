@@ -1,8 +1,8 @@
 mathServer : &{Negate: ?Int;!Int, Add: ?Int;?Int;!Int} -> Skip
-mathServer (Negate c) = 
+mathServer &(Negate c) = 
   let (n, c) = receive c in
   send (-n) c
-mathServer (Add c) =
+mathServer &(Add c) =
   let (n1, c) = receive c in
   let (n2, c) = receive c in
   send (n1 + n2) c

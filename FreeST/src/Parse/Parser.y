@@ -292,13 +292,13 @@ PatternC :: { Pattern }
   : ProgVarWild                 { E.PatVar  $1 }
   | Constructor PatternSeq      { E.PatCons $1 $2 }
   | '&' Constructor PatternSeq1 { E.PatChan $2 $3 }
-  | '(' Pattern ')'             { $2 }
+  | '(' PatternC ')'            { $2 }
 
 Pattern :: { Pattern }
   : ProgVarWild                         { E.PatVar  $1 }
   | Constructor                         { E.PatCons $1 [] }
   | '(' Constructor PatternSeq1 ')'     { E.PatCons $2 $3 }
-  | '(' '&' Constructor PatternSeq1 ')' { E.PatChan $3 $4 }
+  | '&' '(' Constructor PatternSeq1 ')' { E.PatChan $3 $4 }
   | '(' Pattern ')'                     { $2 }
 
 GuardsCase :: { Exp }

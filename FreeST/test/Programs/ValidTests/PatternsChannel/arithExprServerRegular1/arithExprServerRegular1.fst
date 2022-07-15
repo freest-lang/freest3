@@ -36,10 +36,10 @@ client c =
 data IntList = Nil | Cons Int IntList
 
 evaluate : dualof MathServer -> IntList 1-> Skip
-evaluate (Const s) l = let (n, s) = receive s in evaluate s (Cons n l)
-evaluate (Add   s) (Cons x (Cons y l)) = evaluate s (Cons (x + y) l)
-evaluate (Mult  s) (Cons x (Cons y l)) = evaluate s (Cons (x * y) l)
-evaluate (Done  s) (Cons x Nil) = send x s
+evaluate &(Const s) l = let (n, s) = receive s in evaluate s (Cons n l)
+evaluate &(Add   s) (Cons x (Cons y l)) = evaluate s (Cons (x + y) l)
+evaluate &(Mult  s) (Cons x (Cons y l)) = evaluate s (Cons (x * y) l)
+evaluate &(Done  s) (Cons x Nil) = send x s
 
 -- A sample interaction: evaluating an arithmetic expression;
 -- expect 26 on the console.

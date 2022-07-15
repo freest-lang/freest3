@@ -95,32 +95,34 @@ ruleChan (v:us) cs = groupSortBy (pName.head.fst) cs
 -- mix -------------------------------------------------------------
 ruleMix :: [Variable] -> [Equation] -> FreestState Exp
 ruleMix (v:us) cs = do
-  cons <- getFill cs
+  (pat,cons) <- getFill cs
   groupOn (isVar.head.fst) cs
-        & mapM (fill v cons)
+        & mapM (fill pat v cons)
       <&> concat
       >>= match (v:us)
 
-getFill :: [Equation] -> FreestState [(Variable,Int)]
+type PatBuild = (Variable -> [Pattern] -> Pattern)
+getFill :: [Equation] -> FreestState (PatBuild,[(Variable,Int)])
 getFill cs =
   case find (isChan.head.fst) cs of
-    Nothing      -> constructors $ getDataType cs
-    Just (p:_,_) -> flip (Map.!) (pVar p) <$> getPEnvChoices
-                <&> \vs -> zip vs (replicate (length vs) 1)
+    Nothing      -> (,) PatCons <$> (constructors $ getDataType cs)
+    Just (p:_,_) -> getPEnvChoices
+                <&> flip (Map.!) (pVar p)
+                <&> (\vs -> (PatChan, zip vs (replicate (length vs) 1)))
 
 --rule mix aux
-fill :: Variable -> [(Variable,Int)] -> [Equation] -> FreestState [Equation]
-fill v cons cs 
-  | hasVar cs = fill' v cons cs
+fill :: PatBuild -> Variable -> [(Variable,Int)] -> [Equation] -> FreestState [Equation]
+fill pat v cons cs 
+  | hasVar cs = fill' pat v cons cs
   | otherwise = return cs
   where hasVar = isVar.head.fst.head
 
-fill' :: Variable -> [(Variable,Int)] -> [Equation] -> FreestState [Equation]
-fill' v _ [] = return []
-fill' v cons ((p:ps,e):cs) = (++) <$> mapM (mkCons v' e') cons <*> fill' v cons cs
+fill' :: PatBuild -> Variable -> [(Variable,Int)] -> [Equation] -> FreestState [Equation]
+fill' pat v _ [] = return []
+fill' pat v cons ((p:ps,e):cs) = (++) <$> mapM (mkCons v' e') cons <*> fill' pat v cons cs
   where v' = PatVar $ mkVar (getSpan $ pVar p) "_"
         e' = replaceExp v (pVar p) e
-        mkCons v e' (c,n) = (,) (PatCons c (replicate n v):ps) <$> e'
+        mkCons v e' (c,n) = (,) (pat c (replicate n v):ps) <$> e'
   
 -- gets the first contructor name
 getDataType :: [([Pattern], Exp)] -> Variable
@@ -159,9 +161,9 @@ replaceExp v p (TypeAbs s b)          = TypeAbs s   <$> replaceBind v p b
 replaceExp v p (TypeApp s e t)        = flip (TypeApp s) t <$> replaceExp v p e
 replaceExp v p (Cond s e1 e2 e3)      = Cond    s   <$> replaceExp  v p e1 <*> replaceExp v p e2 <*> replaceExp v p e3
 replaceExp v p (UnLet s v1 e1 e2)     = UnLet   s      (replaceVar  v p v1)<$> replaceExp v p e1 <*> replaceExp v p e2
-replaceExp v p (CasePat s e flp)      = sub         <$> replaceExp  v p e  <*>(replaceExp v p    =<< match vs' flp)
-  where sub e (Case s _ fm) = Case s e fm
-        vs' = [mkVar (getSpan e) "_"]
+replaceExp v p (CasePat s e flp)      = encase =<< (R.renameVar $ mkVar(getSpan e) name)
+  where encase v' = UnLet s v' <$> replaceExp v p e <*> (replaceExp v p =<< match [v'] flp)
+        name = "hidden_var"
 replaceExp _ _ e = return e
 
 replaceBind :: Variable -> Variable -> Bind a Exp -> FreestState (Bind a Exp)

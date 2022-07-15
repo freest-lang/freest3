@@ -116,12 +116,11 @@ checkNumAndDup fn ps = checkNumArgs fn ps >> checkDupVarPats ps
 checkNumArgs :: Variable -> [E.Pattern] -> FreestStateT ()
 checkNumArgs fn ps = do
   env <- parseEnvPat <$> get
-  -- addError $ DifNumberOfArguments (getSpan fn) fn (length ps) (0)
   case env Map.!? fn of
     Nothing -> return ()
     Just pss ->
-      let lengths = map length pss in
-      if any (length ps == ) lengths
+      let lengths = map (length.fst) pss in
+      if all (length ps ==) lengths
         then return ()
         else addError $ DifNumberOfArguments (getSpan fn) fn (length ps) lengths
 

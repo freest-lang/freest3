@@ -33,29 +33,28 @@ initTabuadaServer : (rec x: 1S. &{TabuadaSimples: ?Int; x, TabuadaAte: ?Int; ?In
 initTabuadaServer c = tabuadaServer c Empty
 
 tabuadaServer : (rec x: 1S. &{TabuadaSimples: ?Int; x, TabuadaAte: ?Int; ?Int; x, MultiplosEntre: ?Int; ?Int; ?Int; x, Solucao: !Bool; !Int; x, Fim: Skip}) 1-> IntList -> ()
-tabuadaServer (Fim            c) result = ()
 -- Servicos
-tabuadaServer (TabuadaSimples c) result =
+tabuadaServer &(TabuadaSimples c) result =
   let (x1, c) = receive c in
   let result  = tabuadaSimples x1 in
   tabuadaServer c result
-tabuadaServer (TabuadaAte     c) result =
+tabuadaServer &(TabuadaAte     c) result =
   let (x1, c) = receive c in
   let (x2, c) = receive c in
   let result  = tabuadaAte x1 x2 in
   tabuadaServer c result
-tabuadaServer (MultiplosEntre c) result =
+tabuadaServer &(MultiplosEntre c) result =
   let (x1, c) = receive c in
   let (x2, c) = receive c in
   let (x3, c) = receive c in
   let result  = multiplosEntre x1 x2 x3 in
   tabuadaServer c result
 -- Solucao
-tabuadaServer (Solucao        c) Empty =
+tabuadaServer &(Solucao        c) Empty =
   let c = send False c in
   let c = send 0 c in
   tabuadaServer c Empty
-tabuadaServer (Solucao        c) (Node x l) =
+tabuadaServer &(Solucao        c) (Node x l) =
   let c = send True c in
   let c = send x c in
   tabuadaServer c l
