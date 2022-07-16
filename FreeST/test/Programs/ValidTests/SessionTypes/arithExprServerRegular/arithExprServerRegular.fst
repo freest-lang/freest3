@@ -51,7 +51,3 @@ main =
   let (c, s) = new rec x: 1S. +{Add: x, Mult: x, Const: !Int;x, EOS: ?Int} in
   let _ = fork @Skip (size s 0) in
   client c
-
--- Auxiliary function because of fork : () -> ()
-sink : Skip -> ()
-sink _ = ()

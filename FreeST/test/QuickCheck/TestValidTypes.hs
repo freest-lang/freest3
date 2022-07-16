@@ -18,6 +18,7 @@ import           Control.Monad.State
 import           ArbitraryTypes
 import qualified Data.Map.Strict               as Map
 import           Test.QuickCheck
+import           Debug.Trace
 -- import           Test.QuickCheck.Random       ( mkQCGen )
 
 -- main = verboseCheckWith
@@ -37,9 +38,6 @@ import           Test.QuickCheck
 equiv :: T.Type -> T.Type -> Bool
 equiv = equivalent kindEnv
 
--- norm :: T.Type -> T.Type
--- norm = normalise Map.empty
-
 kindEnv :: KindEnv
 kindEnv = Map.fromList (zip (map (mkVar defaultSpan) ids) (repeat (K.ls defaultSpan)))
         -- TODO: This env should only contain the free vars of t; plus
@@ -47,12 +45,14 @@ kindEnv = Map.fromList (zip (map (mkVar defaultSpan) ids) (repeat (K.ls defaultS
 
 kinded :: T.Type -> Bool
 kinded t =
-  null $ errors $ execState (synthetise kindEnv t) (initialState) --  "Kind synthesis")
-
+  null $ errors $ execState (synthetise kindEnv t) (initialState)
 
 -- Bisimilar types are bisimilar
 prop_bisimilar :: BisimPair -> Property
-prop_bisimilar (BisimPair t u) = kinded t && kinded u ==> t `bisimilar` u
+prop_bisimilar p@(BisimPair t u) =
+  kinded t && kinded u ==>
+    -- trace ("Check:\n" ++ show p) -- trace at TypeToGrammar instead
+    t `bisimilar` u
 
 -- Equivalence
 prop_equivalent :: BisimPair -> Property

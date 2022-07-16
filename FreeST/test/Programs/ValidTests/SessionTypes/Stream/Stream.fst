@@ -14,14 +14,14 @@ type Stream = ∀ α:SL. μb: SL. α;b
 -}
 
 -- An arbitrary Stream consumer
-consumeStream : ∀ α: 1M .
+consumeStream : ∀ α: 1T .
   ((μb: 1S. ?α;b) -> (μb: 1S. ?α;b)) -> -- A function that consumes the head of a stream
   (μb: 1S. ?α;b) ->                    -- The stream
   ()
 consumeStream f c = consumeStream @α f (f c)
 
 -- An arbitrary Stream producer
-produceStream : ∀ α: 1M .
+produceStream : ∀ α: 1T .
   ((μb: 1S. !α;b) -> (μb: 1S. !α;b)) -> -- A function that produces the head of a stream
   (μb: 1S. !α;b) ->                    -- The stream
   ()

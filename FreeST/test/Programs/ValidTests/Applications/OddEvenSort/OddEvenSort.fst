@@ -104,7 +104,3 @@ main =
   let (x6, _) = receive cr6 in printIntLn x6;
   let (x7, _) = receive cr7 in printIntLn x7
 
-
--- Auxiliary function because of fork : () -> ()
-sink : Skip -> ()
-sink _ = ()

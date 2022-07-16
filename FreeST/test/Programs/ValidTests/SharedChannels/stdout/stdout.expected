@@ -1,0 +1,4 @@
+<pending>
+Result should be "ABCD" or "CDAB"
+
+Waiting for non-deterministic testing (check issue #122)

@@ -4,20 +4,22 @@ import           Bisimulation.Bisimulation (bisimilar)
 import           Validation.Rename
 import           SpecUtils
 
--- Note that the tests cases should be kinded!
+-- Note that the tests cases should be kinded! but not necessarily renamed
 
 matchValidSpec :: [String] -> Spec
-matchValidSpec [t, u] =
-  it (t ++ " ~ " ++  u) (
-      {-# SCC "BISSIM_TEST_CALL" #-}
+matchValidSpec [s1, s2] =
+  it (show t ++ " ~ " ++  show u) (
+      {-# SCC "BISIM_TEST_CALL" #-}
       bisimilar t' u' `shouldBe` True)
     where
-      [t', u'] = renameTypes [read t, read u]
+      t = read s1
+      u = read s2
+      [t', u'] = renameTypes [t, u]
 
 spec :: Spec
 spec = do
   t <- runIO $ readFromFile "test/UnitTests/Equivalence/TestBisimValid.txt"
-  describe "Valid Bissim Test" $ mapM_ matchValidSpec (chunksOf 2 t)
+  describe "Valid Bisim Test" $ mapM_ matchValidSpec (chunksOf 2 t)
 
 main :: IO ()
 main = hspec spec

@@ -17,6 +17,7 @@ matchInvalidSpec [a, b] =
  where
   (Pair p t u) =
     evalState (rename Map.empty Map.empty (Pair p (read a) (read b))) initialState
+    -- evalState (rename Map.empty (Pair p (read a) (read b))) initialState :: Type
 
 spec :: Spec
 spec = do
