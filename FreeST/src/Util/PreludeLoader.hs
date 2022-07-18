@@ -68,16 +68,16 @@ typeList =
   , (mkVar p "fst", readT "∀ a:1T . ∀ b:*T . (a, b) -> a")
   , (mkVar p "snd", readT "∀ a:*T . ∀ b:1T . (a, b) -> b")
   -- Print
-  , (mkVar p "printInt"   , readT "Int -> ()")
-  , (mkVar p "printIntLn" , readT "Int -> ()")
-  , (mkVar p "printBool"  , readT "Bool -> ()")
-  , (mkVar p "printBoolLn", readT "Bool -> ()")
-  , (mkVar p "printChar"  , readT "Char -> ()")
-  , (mkVar p "printCharLn", readT "Char -> ()")
-  , (mkVar p "printUnit"  , readT "() -> ()")
-  , (mkVar p "printUnitLn", readT "() -> ()")
-  , (mkVar p "printString", readT "String -> ()")
-  , (mkVar p "printStringLn", readT "String -> ()")
+  , (mkVar p "#printInt"   , readT "Int -> ()")
+  , (mkVar p "#printIntLn" , readT "Int -> ()")
+  , (mkVar p "#printBool"  , readT "Bool -> ()")
+  , (mkVar p "#printBoolLn", readT "Bool -> ()")
+  , (mkVar p "#printChar"  , readT "Char -> ()")
+  , (mkVar p "#printCharLn", readT "Char -> ()")
+  , (mkVar p "#printUnit"  , readT "() -> ()")
+  , (mkVar p "#printUnitLn", readT "() -> ()")
+  , (mkVar p "#printString", readT "String -> ()")
+  , (mkVar p "#printStringLn", readT "String -> ()")
   -- Fork
   , (mkVar p "fork", readT "∀a:1T. a -> ()")
   -- Error & Undefined
@@ -89,7 +89,8 @@ typeList =
   -- Not the actual type for collect, but for writing it we would
   -- need polymorphism over the labels in some choice/variant
   , (mkVar p "collect", read "∀a:1T . a") 
-
+  --
+  , (mkVar p "stdout", readT "*?(rec x:1S . +{ PutBool: !Bool; x, PutBoolLn: !Bool  ; x, PutInt: !Int; x, PutIntLn: !Int   ; x, PutChar:  !Char  ; x, PutCharLn: !Char; x, PutString: !String; x, PutStringLn: !String; x, Close: Skip})")
   ]
   where p = defaultSpan {defModule = "Prelude"}
 

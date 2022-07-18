@@ -26,14 +26,14 @@ runStdout =
 runPrinter : () -> dualof Printer 1-> ()
 runPrinter _ printer =
     match printer with {
-        PrintBool     printer -> aux @Bool   printer printBool     & runPrinter (),
-        PrintBoolLn   printer -> aux @Bool   printer printBoolLn   & runPrinter (),
-        PrintInt      printer -> aux @Int    printer printInt      & runPrinter (),
-        PrintIntLn    printer -> aux @Int    printer printIntLn    & runPrinter (),
-        PrintChar     printer -> aux @Char   printer printChar     & runPrinter (),
-        PrintCharLn   printer -> aux @Char   printer printCharLn   & runPrinter (),
-        PrintString   printer -> aux @String printer printString   & runPrinter (),
-        PrintStringLn printer -> aux @String printer printStringLn & runPrinter (),
+        PrintBool     printer -> aux @Bool   printer #printBool     & runPrinter (),
+        PrintBoolLn   printer -> aux @Bool   printer #printBoolLn   & runPrinter (),
+        PrintInt      printer -> aux @Int    printer #printInt      & runPrinter (),
+        PrintIntLn    printer -> aux @Int    printer #printIntLn    & runPrinter (),
+        PrintChar     printer -> aux @Char   printer #printChar     & runPrinter (),
+        PrintCharLn   printer -> aux @Char   printer #printCharLn   & runPrinter (),
+        PrintString   printer -> aux @String printer #printString   & runPrinter (),
+        PrintStringLn printer -> aux @String printer #printStringLn & runPrinter (),
         Close         _       -> ()
     }
 
@@ -60,9 +60,6 @@ printStringLin = printGenericLin @String (\printer:Printer -> select PrintString
 
 printStringLnLin : String -> Printer -> Printer
 printStringLnLin = printGenericLin @String (\printer:Printer -> select PrintStringLn printer)
-
-printStringLnUn : String -> StdOut -> ()
-printStringLnUn = printGenericUn @String (\printer:Printer -> select PrintStringLn printer)
 
 printIntLin : Int -> Printer -> Printer
 printIntLin = printGenericLin @Int (\printer:Printer -> select PrintInt printer)

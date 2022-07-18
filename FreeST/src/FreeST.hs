@@ -7,7 +7,7 @@ where
 
 
 import           Elaboration.Elaboration ( elaboration )
-import           Interpreter.Builtin ( initialCtx )
+import           Interpreter.Builtin ( initialCtx, new )
 import           Interpreter.Eval ( evalAndPrint )
 import           Parse.Parser ( parseProgram, parseAndImport )
 import           Util.CmdLine
@@ -21,6 +21,12 @@ import           Control.Monad.State ( when, execState )
 import qualified Data.Map.Strict as Map
 import           Paths_FreeST ( getDataFileName )
 import           System.Exit ( die )
+
+import Syntax.Base
+import qualified Syntax.Kind as K
+import Syntax.Type
+import Interpreter.Value
+import qualified Syntax.Expression as E
 
 main :: IO ()
 main = checkAndRun =<< flags -- handleOpts =<< compilerOpts =<< getArgs
@@ -50,10 +56,14 @@ checkAndRun runOpts = do
 
  -- | Check if main was left undefined, eval and print result otherwise
   let m = getMain runOpts
-  when (m `Map.member` varEnv s5)
-    (evalAndPrint (typeEnv s5) initialCtx
-    (prog s5)
-    (prog s5 Map.! m))
+  when (m `Map.member` varEnv s5) $
+    new >>= \(clientChan, serverChan) ->
+    (evalAndPrint 
+      ({-Map.insert (Variable defaultSpan "stdout") (K.us defaultSpan, (Var defaultSpan (Variable defaultSpan "OutStreamProvider")))-} (typeEnv s5)) 
+      (Map.insert (Variable defaultSpan "#stdout") (Chan serverChan) (Map.insert (Variable defaultSpan "stdout") (Chan clientChan) initialCtx))
+      (prog s5)
+      ( E.UnLet defaultSpan (mkVar defaultSpan "_") (E.App defaultSpan (E.Var defaultSpan (Variable defaultSpan "fork")) (E.App defaultSpan (E.Var defaultSpan (Variable defaultSpan "#runStdout")) (E.Var defaultSpan (Variable defaultSpan "#stdout")))) (prog s5 Map.! m))
+    )
 
   where
     preludeHasErrors :: FilePath -> FreestS -> FreestS -> FreestS

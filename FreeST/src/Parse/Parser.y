@@ -163,7 +163,8 @@ NL :: { () }
 
 Decl :: { () }
   -- Function signature
-  : ProgVarList ':' Type {% forM_ $1 (\x -> checkDupProgVarDecl x >> addToVEnv x $3) }
+  :     ProgVarList ':' Type {% forM_ $1 (\x -> checkDupProgVarDecl x >> addToVEnv x $3) }
+  -- |     ProgVarList ':' Type {% forM_ $1 (\x -> checkDupProgVarDecl x >> addToVEnv x $3) }
   -- Function declaration
   | ProgVar ProgVarWildSeq '=' Exp {% checkDupFunDecl $1 >> addToPEnv $1 $2 $4 }
   -- Type abbreviation

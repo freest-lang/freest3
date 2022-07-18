@@ -35,6 +35,111 @@ fix f =
   (\x:(rec b.b -> (a -> a)) -> f (\z:a -> x x z))
   (\x:(rec b.b -> (a -> a)) -> f (\z:a -> x x z))
 
+------------------------------------------------------------
+
+-- stdout : OutStreamProvider
+-- stdout : fst @OutStreamProvider @dualof OutStreamProvider $ new OutStreamProvider --error @OutStreamProvider "Called!"
+
+#runStdout  : dualof OutStreamProvider -> ()
+#runStdout =
+    runServer @OutStream @() #runPrinter ()
+
+#runPrinter : () -> dualof OutStream 1-> ()
+#runPrinter _ printer =
+    match printer with {
+        PutBool     printer -> #aux @Bool   printer #printBool     & #runPrinter (),
+        PutBoolLn   printer -> #aux @Bool   printer #printBoolLn   & #runPrinter (),
+        PutInt      printer -> #aux @Int    printer #printInt      & #runPrinter (),
+        PutIntLn    printer -> #aux @Int    printer #printIntLn    & #runPrinter (),
+        PutChar     printer -> #aux @Char   printer #printChar     & #runPrinter (),
+        PutCharLn   printer -> #aux @Char   printer #printCharLn   & #runPrinter (),
+        PutString   printer -> #aux @String printer #printString   & #runPrinter (),
+        PutStringLn printer -> #aux @String printer #printStringLn & #runPrinter (),
+        Close         _       -> ()
+    }
+
+#aux : forall a . ?a;dualof OutStream -> (a -> ()) 1-> dualof OutStream
+#aux printer printFun =
+    let (x, printer) = receive printer in
+    printFun x;
+    printer
+
+type OutStreamProvider : *S = *?OutStream
+type OutStream : 1S = +{ PutBool    : !Bool  ; OutStream
+                       , PutBoolLn  : !Bool  ; OutStream
+                       , PutInt     : !Int   ; OutStream
+                       , PutIntLn   : !Int   ; OutStream
+                       , PutChar    : !Char  ; OutStream
+                       , PutCharLn  : !Char  ; OutStream
+                       , PutString  : !String; OutStream
+                       , PutStringLn: !String; OutStream
+                       , Close      : Skip
+                       }
+
+putGeneric : forall a . (OutStream -> !a;OutStream) -> OutStreamProvider -> a -> ()
+putGeneric sel outProv x =                                      
+    sel (receive_ @OutStream outProv) & send x & select Close & sink @Skip
+
+
+
+putBool : OutStreamProvider -> Bool -> ()
+putBool = putGeneric @Bool (\out:OutStream -> select PutBool out) 
+
+putBoolLn : OutStreamProvider -> Bool -> ()
+putBoolLn = putGeneric @Bool (\out:OutStream -> select PutBoolLn out)
+
+
+putInt : OutStreamProvider -> Int -> ()
+putInt = putGeneric @Int (\out:OutStream -> select PutInt out)
+
+putIntLn : OutStreamProvider -> Int -> ()
+putIntLn = putGeneric @Int (\out:OutStream -> select PutIntLn out)
+
+
+putChar : OutStreamProvider -> Char -> ()
+putChar = putGeneric @Char (\out:OutStream -> select PutChar out)
+
+putCharLn : OutStreamProvider -> Char -> ()
+putCharLn = putGeneric @Char (\out:OutStream -> select PutCharLn out)
+
+
+putString : OutStreamProvider -> String -> ()
+putString = putGeneric @String (\out:OutStream -> select PutString out)
+
+putStringLn : OutStreamProvider -> String -> ()
+putStringLn = putGeneric @String (\out:OutStream -> select PutStringLn out)
+
+
+
+printBool : Bool -> ()
+printBool = putBool stdout
+
+printBoolLn : Bool -> ()
+printBoolLn = putBoolLn stdout
+
+
+printInt : Int -> ()
+printInt = putInt stdout
+
+printIntLn : Int -> ()
+printIntLn = putIntLn stdout
+
+
+printChar : Char -> ()
+printChar = putChar stdout
+
+printCharLn : Char -> ()
+printCharLn = putCharLn stdout
+
+
+printString : String -> ()
+printString = putString stdout
+
+printStringLn : String -> ()
+printStringLn = putStringLn stdout
+
+------------------------------------------------------------
+
 -- | A mark for functions that do not terminate
 type Diverge = ()
 
