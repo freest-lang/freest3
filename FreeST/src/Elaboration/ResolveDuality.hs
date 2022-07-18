@@ -89,13 +89,14 @@ solveType v (  T.Rec    p b) = T.Rec p <$> solveBind solveType v b
 --   addDualof d >> solveDual vs v (changePos p t)
 solveType v d@(T.Dualof p t) = addDualof d >> solveDual v (changePos p t)
 
--- Var, Int, Char, Bool, Unit, Skip
+-- Var, Int, Char, Bool, Unit, Skip, End
 solveType _ t                = pure t
 
 
 solveDual :: Visited -> T.Type -> FreestState T.Type
 -- Session Types
 solveDual _ t@T.Skip{}          = pure t
+solveDual _ t@T.End{}           = pure t
 solveDual v (T.Semi    p t   u) = T.Semi p <$> solveDual v t <*> solveDual v u
 solveDual v (T.Message p pol t) = T.Message p (dual pol) <$> solveType v t
 solveDual v (T.Almanac p (T.Choice pol) m) =
@@ -147,6 +148,7 @@ changePos p (T.Arrow _ pol t u) = T.Arrow p pol t u
 changePos p (T.Pair _ t u     ) = T.Pair p t u
 changePos p (T.Almanac _ s m    ) = T.Almanac p s m
 changePos p (T.Skip _         ) = T.Skip p
+changePos p (T.End  _         ) = T.End p
 changePos p (T.Semi    _ t   u) = T.Semi p t u
 changePos p (T.Message _ pol b) = T.Message p pol b
 changePos p (T.Rec    _ xs    ) = T.Rec p xs

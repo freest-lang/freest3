@@ -8,7 +8,7 @@ Based on an example in
   ACM Trans. Program. Lang. Syst., 41(2):9:1–9:37, 2019.
 -}
 
-type  EStack : 1S = &{Push: ?Int; NEStack; EStack,  End: Skip}
+type  EStack : 1S = &{Push: ?Int; NEStack; EStack,  Stop: Skip}
 
 type NEStack : 1S = &{Push: ?Int; NEStack; NEStack, Pop: !Int}
 
@@ -16,7 +16,7 @@ eStack : ∀ a: 1S . EStack;a -> a
 eStack c =
   case collect c of {
     Push c -> let (x, c) = receive c in eStack @a (neStack @(EStack ; a) x c),
-    End  c -> c
+    Stop  c -> c
   }
 
 neStack : ∀ a: 1S . Int -> NEStack;a -> a
@@ -40,7 +40,7 @@ aStackClient c =
   let c = select Pop  c in let (x, c) = receive c in
   -- let c = select Pop  c in let (_, c) = receive c in
   -- Error: Branch Pop not present in internal choice type dualof EStack
-  let _ = select End  c in x
+  let _ = select Stop  c in x
 
 main : Int
 main =

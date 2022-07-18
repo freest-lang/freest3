@@ -267,7 +267,7 @@ geneticAlg_ seed iterations pop =
 type IslandChannel : 1S = +{
   Fittest:   ?Int; IslandChannel, -- Gets the fittest individual of an Island
   Crossover: !Int; IslandChannel, -- Sends an individual to perform a GA iteration
-  End:       Skip }               -- Close the channel
+  Done:       Skip }               -- Close the channel
 
 
 -- Channel for the client to ask master the result
@@ -351,7 +351,7 @@ runIsland master seed nIterI pop =
       let (seed, pop) = geneticAlg_ seed nIterI pop in
       -- Continue serving
       runIsland master seed nIterI pop,
-    End master ->
+    Done master ->
       -- Stop (get some help  -Michael Jordan)
       ()
   }
@@ -385,7 +385,7 @@ endIslands channels0 =
     Nil ->
       (),
     Cons channel channels1 ->
-      let _ = select End channel in
+      let _ = select Done channel in
       endIslands channels1
   }
 

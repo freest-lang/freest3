@@ -74,6 +74,44 @@ Skip;Skip
 Skip
 Skip
 
+-- End 
+
+[]
+End
+End
+
+[]
+End
+End;!Int
+
+[]
+End;!Int
+End;?Int
+
+[]
+End;!Int
+End;?Bool
+
+[]
+!Char;End;!Int
+!Char;End;?Bool
+
+[]
+(!Int;End;!Int);?Int
+!Int;End;!Bool
+
+[]
+(rec a:1S . +{A: !Int;a, B: End});!Int
+rec a:1S . +{A: !Int;a, B: End;a}
+
+[]
+rec a:1S . rec b:1S . +{A: !Int;b, B:End;a}
+rec a:1S . rec b:1S . +{A: !Int;b, B:End;b}
+
+[]
+rec a:1S  . &{N:!Int;!Int;a, L:End};?Bool
+rec a:1S  . &{N:!Int;!Int;a, L:Skip};End
+
 -- Functional and session, mixed
 
 []
@@ -571,8 +609,8 @@ rec x : 1S . &{N: x;!Int, L: x}
 rec y : 1S . &{N: y, L: y};!Int
 
 []
-&{And: (?Bool;(?Bool;(!Bool;(rec x : 1S . &{And: (?Bool;(?Bool;(!Bool;x))), End: Skip, Not: (?Bool;(!Bool;x)), Or: (?Bool;(?Bool;(!Bool;x)))})))), End: Skip, Not: (?Bool;(!Bool;(rec x : 1S . &{And: (?Bool;(?Bool;(!Bool;x))), End: Skip, Not: (?Bool;(!Bool;x)), Or: (?Bool;(?Bool;(!Bool;x)))}))), Or: (?Bool;(?Bool;(!Bool;(rec x : 1S . &{And: (?Bool;(?Bool;(!Bool;x))), End: Skip, Not: (?Bool;(!Bool;x)), Or: (?Bool;(?Bool;(!Bool;x)))}))))}
-&{And: (?Bool;(?Bool;(!Bool;(rec x : 1S . &{And: (?Bool;(?Bool;(!Bool;x))), End: Skip, Not: (?Bool;(!Bool;x)), Or: (?Bool;(?Bool;(!Bool;x)))})))), End: Skip, Not: (?Bool;(!Bool;(rec x : 1S . &{And: (?Bool;(?Bool;(!Bool;x))), End: Skip, Not: (?Bool;(!Bool;x)), Or: (?Bool;(?Bool;(!Bool;x)))}))), Or: (?Bool;(?Bool;(!Bool;(rec x : 1S . &{And: (?Bool;(?Bool;(!Bool;x))), End: Skip, Not: (?Bool;(!Bool;x)), Or: (?Bool;(?Bool;(!Bool;x)))}))))}
+&{And: (?Bool;(?Bool;(!Bool;(rec x : 1S . &{And: (?Bool;(?Bool;(!Bool;x))), Stop: Skip, Not: (?Bool;(!Bool;x)), Or: (?Bool;(?Bool;(!Bool;x)))})))), Stop: Skip, Not: (?Bool;(!Bool;(rec x : 1S . &{And: (?Bool;(?Bool;(!Bool;x))), Stop: Skip, Not: (?Bool;(!Bool;x)), Or: (?Bool;(?Bool;(!Bool;x)))}))), Or: (?Bool;(?Bool;(!Bool;(rec x : 1S . &{And: (?Bool;(?Bool;(!Bool;x))), Stop: Skip, Not: (?Bool;(!Bool;x)), Or: (?Bool;(?Bool;(!Bool;x)))}))))}
+&{And: (?Bool;(?Bool;(!Bool;(rec x : 1S . &{And: (?Bool;(?Bool;(!Bool;x))), Stop: Skip, Not: (?Bool;(!Bool;x)), Or: (?Bool;(?Bool;(!Bool;x)))})))), Stop: Skip, Not: (?Bool;(!Bool;(rec x : 1S . &{And: (?Bool;(?Bool;(!Bool;x))), Stop: Skip, Not: (?Bool;(!Bool;x)), Or: (?Bool;(?Bool;(!Bool;x)))}))), Or: (?Bool;(?Bool;(!Bool;(rec x : 1S . &{And: (?Bool;(?Bool;(!Bool;x))), Stop: Skip, Not: (?Bool;(!Bool;x)), Or: (?Bool;(?Bool;(!Bool;x)))}))))}
 
 -- -- Examples from QuickCheck
 

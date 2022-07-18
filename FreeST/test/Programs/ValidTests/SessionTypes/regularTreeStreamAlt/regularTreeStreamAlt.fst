@@ -62,7 +62,7 @@ stackSize ts =
 type TreeC : 1S = +{
   Value: !Int; TreeC,
   Leaf:  TreeC,
-  End:   Skip }
+  Finish:   Skip }
 
 
 -- Sends a tree through a TreeC
@@ -98,7 +98,7 @@ receiveTree_ ts c =
     Leaf c ->
       receiveTree_ (stackPush Leaf ts) c,
 
-    End  c ->
+    Finish  c ->
       errorWhen (stackIsEmpty ts)  "Channel was closed without sending a Tree";
       errorWhen (stackSize ts > 1) "Channel was closed mid-stream or with leftover tree elements";
       snd @TreeStack @Tree $ stackPop ts
@@ -114,7 +114,7 @@ errorWhen b s =
 -- Simple treeClient that sends a Tree through a TreeC
 treeClient : TreeC -> ()
 treeClient c =
-  let _ = select End $ sendTree aTree c in
+  let _ = select Finish $ sendTree aTree c in
   ()
 
 
@@ -124,34 +124,34 @@ treeClient c =
 -- This bad client ends prematurely
 badClientPrematureEnd : TreeC -> ()
 badClientPrematureEnd c =
-  let _ = select End c in
+  let _ = select Finish c in
   ()
 
 -- This bad client send an extra Value -1
 badClientSendExtraValue : TreeC -> ()
 badClientSendExtraValue c =
-  let _ = select End $ send (-1) $ select Value $ sendTree aTree c in
+  let _ = select Finish $ send (-1) $ select Value $ sendTree aTree c in
   -- Bad Code         ===========================
   ()
 
 -- This bad client send an extra Leaf
 badClientSendExtraLeaf : TreeC -> ()
 badClientSendExtraLeaf c =
-  let _ = select End $ select Leaf $ sendTree aTree c in
+  let _ = select Finish $ select Leaf $ sendTree aTree c in
   -- Bad  Code         =============
   ()
 
 -- This client does not send the right subtree
 badClientForgotRight: TreeC -> ()
 badClientForgotRight c =
-  let _ = select End $ badSendTree aTree c in
+  let _ = select Finish $ badSendTree aTree c in
   -- Bad Code          ===========
   ()
 
 -- This client only sends a value without sending leafs
 badClientSendOnlyValue : TreeC -> ()
 badClientSendOnlyValue c =
-  let _  = select End $ send 1 $ select Value c in
+  let _  = select Finish $ send 1 $ select Value c in
   -- Bad code          ========================
   ()
 

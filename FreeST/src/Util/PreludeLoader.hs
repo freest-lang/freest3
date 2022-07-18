@@ -86,6 +86,7 @@ typeList =
   -- Session ops
   , (mkVar p "send", readT "∀a:1T . a -> ∀b:1S . !a;b 1-> b")
   , (mkVar p "receive", readT "∀a:1T . ∀b:1S . ?a;b -> (a, b)")
+  , (mkVar p "close", readT "End -> ()")
   -- Not the actual type for collect, but for writing it we would
   -- need polymorphism over the labels in some choice/variant
   , (mkVar p "collect", read "∀a:1T . a") 

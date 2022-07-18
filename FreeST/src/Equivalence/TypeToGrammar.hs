@@ -68,6 +68,7 @@ toGrammar' (T.Almanac _  T.Variant m) = do -- Can't test this type directly
   getLHS $ Map.mapKeys (\k -> "<>" ++ show k) ms
 -- Session Types
 toGrammar' (T.Skip _) = return []
+toGrammar' (T.End _) = return [bottom]
 toGrammar' (T.Semi _ t u) = liftM2 (++) (toGrammar t) (toGrammar u)
 toGrammar' (T.Message _ p t) = do
   xs <- toGrammar t
