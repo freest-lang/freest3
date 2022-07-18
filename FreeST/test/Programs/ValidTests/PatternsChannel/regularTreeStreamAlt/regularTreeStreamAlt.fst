@@ -3,12 +3,12 @@
 main : Tree
 main =
   let (w, r) = new TreeC in
-  fork[()] $ treeClient w;
-  --fork[()] $ badClientPrematureEnd w;
-  --fork[()] $ badClientSendExtraValue w;
-  --fork[()] $ badClientSendExtraLeaf w;
-  --fork[()] $ badClientForgotRight w;
-  --fork[()] $ badClientSendOnlyValue w;
+  fork@() $ treeClient w;
+  --fork@() $ badClientPrematureEnd w;
+  --fork@() $ badClientSendExtraValue w;
+  --fork@() $ badClientSendExtraLeaf w;
+  --fork@() $ badClientForgotRight w;
+  --fork@() $ badClientSendOnlyValue w;
   receiveTree r
 
 
@@ -50,15 +50,15 @@ stackSize (Value _ ts) = 1 + stackSize st
 --  agree on an order to traverse the Tree.
 --  (In our particular case we will use PREORDER - node, left, right)
 type TreeC : 1S = +{
-  Value: !Int; TreeC,
-  Leaf:  TreeC,
-  End:   Skip }
+  ValueC: !Int; TreeC,
+  LeafC : TreeC,
+  End   : Skip }
 
 
 -- Sends a tree through a TreeC
 sendTree : Tree -> TreeC -> TreeC
-sendTree Leaf           c = select Leaf c
-sendTree (Node i lt rt) c = send i $ select Value $ sendTree lt $ sendTree rt c
+sendTree Leaf           c = select LeafC c
+sendTree (Node i lt rt) c = send i $ select ValueC $ sendTree lt $ sendTree rt c
 
 -- Facade function to receive a Tree through a channel
 receiveTree : dualof TreeC -> Tree
@@ -67,7 +67,7 @@ receiveTree = receiveTree_ Empty
 -- Receives a Tree from a TreeC
 --  This function also serves as an abstraction to the TreeStack usage
 receiveTree_ : TreeStack -> dualof TreeC -> Tree
-receiveTree_ ts (Value c) =
+receiveTree_ ts (ValueC c) =
       let (i, c)   = receive c in
       errorWhen (stackIsEmpty ts) "Received Value without receiveing left AND right subtrees";
       let (ts, lt) = stackPop ts in
@@ -75,7 +75,7 @@ receiveTree_ ts (Value c) =
       let (ts, rt) = stackPop ts in
       let ts       = stackPush (Node i lt rt) ts in
       receiveTree_ ts c
-receiveTree_ ts (Leaf c) =
+receiveTree_ ts (LeafC c) =
       receiveTree_ (stackPush Leaf ts) c
 receiveTree_ ts (End  c) =
       errorWhen (stackIsEmpty ts)  "Channel was closed without sending a Tree";
@@ -86,7 +86,7 @@ receiveTree_ ts (End  c) =
 errorWhen : Bool -> String -> ()
 errorWhen b s =
   if b
-  then error[()] s
+  then error@() s
   else ()
 
 -- Simple treeClient that sends a Tree through a TreeC
@@ -108,14 +108,14 @@ badClientPrematureEnd c =
 -- This bad client send an extra Value -1
 badClientSendExtraValue : TreeC -> ()
 badClientSendExtraValue c =
-  let _ = select End $ send (-1) $ select Value $ sendTree aTree c in
+  let _ = select End $ send (-1) $ select ValueC $ sendTree aTree c in
   -- Bad Code         ===========================
   ()
 
 -- This bad client send an extra Leaf
 badClientSendExtraLeaf : TreeC -> ()
 badClientSendExtraLeaf c =
-  let _ = select End $ select Leaf $ sendTree aTree c in
+  let _ = select End $ select LeafC $ sendTree aTree c in
   -- Bad  Code         =============
   ()
 
@@ -129,7 +129,7 @@ badClientForgotRight c =
 -- This client only sends a value without sending leafs
 badClientSendOnlyValue : TreeC -> ()
 badClientSendOnlyValue c =
-  let _  = select End $ send 1 $ select Value c in
+  let _  = select End $ send 1 $ select ValueC c in
   -- Bad code          ========================
   ()
 
@@ -137,5 +137,5 @@ badClientSendOnlyValue c =
 -- Sends a tree through a TreeC
 -- !!! But forgets to send right subtree
 badSendTree : Tree -> TreeC -> TreeC
-badSendTree Leaf           c = select Leaf c
-badSendTree (Node i lt rt) c = send i $ select Value $ badSendTree lt c -- $ badSendTree rt c
+badSendTree Leaf           c = select LeafC c
+badSendTree (Node i lt rt) c = send i $ select ValueC $ badSendTree lt c -- $ badSendTree rt c

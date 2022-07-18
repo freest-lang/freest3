@@ -53,9 +53,9 @@ sendTree : Tree -> Stream -> Skip
 sendTree t c = select EndOfStream $ streamTree t c
 
 streamTree : Tree -> Stream -> Stream
-streamTree Leaf c         = select LeafC c
-streamTree (Node x l r) c = send x $ select Node $ streamTree r $ streamTree l c
-streamTree Error         = select LeafC c      
+streamTree Leaf         c = select LeafC c
+streamTree (Node x l r) c = send x $ select NodeC $ streamTree r $ streamTree l c
+streamTree Error        c = select LeafC c      
 
 -- Reading trees from channels
 
@@ -78,7 +78,7 @@ writeNothing c =
 
 writeTooMuch : Stream -> Skip
 writeTooMuch c =
-  select EndOfStream $ select Leaf $ select LeafC c
+  select EndOfStream $ select LeafC $ select LeafC c
 
 writeRootTreeOnly : Stream -> Skip
 writeRootTreeOnly c =
@@ -86,7 +86,7 @@ writeRootTreeOnly c =
 
 writeLeftTreeOnly : Stream -> Skip
 writeLeftTreeOnly c =
-  select EndOfStream $ send 5 $ select Node $ select LeafC c
+  select EndOfStream $ send 5 $ select NodeC $ select LeafC c
 
 -- Go!
 

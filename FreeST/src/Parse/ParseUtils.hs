@@ -116,21 +116,22 @@ checkNumAndDup fn ps = checkNumArgs fn ps >> checkDupVarPats ps
 checkNumArgs :: Variable -> [E.Pattern] -> FreestStateT ()
 checkNumArgs fn ps = do
   env <- parseEnvPat <$> get
-  addError $ DifNumberOfArguments (getSpan fn) fn (length ps) (0)
-  -- case env Map.!? fn of
-  --   Nothing -> return ()
-  --   Just (ps':pss') ->
-  --     if length ps == length ps'
-  --       then return ()
-  --       else addError $ DifNumberOfArguments (getSpan fn) fn (length ps) (length ps')
+  case env Map.!? fn of
+    Nothing -> return ()
+    Just pss ->
+      let lengths = map (length.fst) pss in
+      if all (length ps ==) lengths
+        then return ()
+        else addError $ DifNumberOfArguments (getSpan fn) fn (length ps) lengths
+
 
 checkDupVarPats :: [E.Pattern] -> FreestStateT ()
 checkDupVarPats ps = checkDupVarPats' ps []
 
 checkDupVarPats' :: [E.Pattern] -> [Variable] -> FreestStateT ()
 checkDupVarPats' [] _ = return ()
-checkDupVarPats' ((E.C c cs):xs) vs = checkDupVarPats' cs vs >> checkDupVarPats' xs vs
-checkDupVarPats' ((E.V v)   :xs) vs = do
+checkDupVarPats' ((E.PatCons c cs):xs) vs = checkDupVarPats' cs vs >> checkDupVarPats' xs vs
+checkDupVarPats' ((E.PatVar  v)   :xs) vs = do
   case find clause vs of
     Just v2 -> addError $ DuplicateVar (getSpan v) "program" v2 (getSpan $ v2)
     Nothing -> return ()

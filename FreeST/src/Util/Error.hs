@@ -60,7 +60,7 @@ data ErrorType =
   | MultipleDeclarations Span Variable Span
   | MultipleTypeDecl Span Variable Span
   | MultipleFunBindings Span Variable Span -- TODOX remove?
-  | DifNumberOfArguments Span Variable Int Int -- TODOX see if necessary (needed to ensure no errors on Match)
+  | DifNumberOfArguments Span Variable Int [Int] -- TODOX see if necessary (needed to ensure no errors on Match)
   -- Elab
   | TypeVarOutOfScope Span Variable
   | FuctionLacksSignature Span Variable
@@ -179,10 +179,11 @@ instance Message ErrorType where
   -- TODOX
   msg (DifNumberOfArguments p fun n1 n2) sty ts =
     "Different number of arguments in funtion " ++ style red sty ts (show fun) ++
-    "\n got "++ style red sty ts (show n1) ++
-    ", and also "++ style red sty ts (show n2) ++
+    "\n  with "++ style red sty ts (show n1) ++
+    ", and also "++ style red sty ts (ns) ++
     "\n  Declared in file/module " ++ showModule (showModuleName p) p ++
     ":\n  " ++ red sty (show fun)
+    where ns = show (head n2) ++ concat (map ((" "++).show) $ tail n2)
   msg (TypeVarOutOfScope _ x) sty ts = "Type variable not in scope: " ++ style red sty ts x
   msg (FuctionLacksSignature _ x) sty ts =
     "The binding for function " ++ style red sty ts x ++ " lacks an accompanying type signature"

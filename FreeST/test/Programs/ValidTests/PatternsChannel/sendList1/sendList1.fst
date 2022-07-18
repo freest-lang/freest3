@@ -1,21 +1,21 @@
 data List = Cons Int List | Nil
 
-type ListOut : 1S = +{Nil : Skip, Cons: !Int;ListOut}
+type ListOut : 1S = +{NilC: Skip, ConsC: !Int;ListOut}
 type ListIn = dualof ListOut
 
 rcvList : forall a : 1S . ListIn;a -> (List, a)
-rcvList (Nil c) = (Nil, c)
-rcvList (Cons c) =
+rcvList (NilC  c) = (Nil, c)
+rcvList (ConsC c) =
   let (i, c) = receive c in
   let (xs, c) = rcvList@a c in
   (Cons i xs, c)
 
 sendList : forall a : 1S . ListOut;a -> List 1-> a
-sendList c Nil = select Nil c
+sendList c Nil = select NilC c
 sendList c (Cons x xs) =
-  let c = select Cons c in
+  let c = select ConsC c in
   let c = send x c in
-  sendList@a c xs,
+  sendList@a c xs
 
 
 main : List

@@ -131,9 +131,9 @@ fill v cons cs
 fill' :: Variable -> [(Variable,Int)] -> [Equation] -> FreestState [Equation]
 fill' v _ [] = return []
 fill' v cons ((p:ps,e):cs) = (++) <$> mapM (mkCons v' e') cons <*> fill' v cons cs
-  where v' = V $ mkVar (getSpan $ pVar p) "_"
+  where v' = PatVar $ mkVar (getSpan $ pVar p) "_"
         e' = replaceExp v (pVar p) e
-        mkCons v e' (c,n) = (,) (C c (replicate n v):ps) <$> e'
+        mkCons v e' (c,n) = (,) (PatCons c (replicate n v):ps) <$> e'
   
 -- gets the first contructor name
 getDataType :: [([Pattern], Exp)] -> Variable
@@ -191,31 +191,31 @@ substitute v p (vs,e) = (,) (map (replaceVar v p) vs) <$> (replaceExp v p e)
 
 -- aux
 pName :: Pattern -> String
-pName (C v _) = intern v
+pName (PatCons v _) = intern v
 
 pVar :: Pattern -> Variable
-pVar (V v)   = v
-pVar (C v _) = v
+pVar (PatVar  v)   = v
+pVar (PatCons v _) = v
 
 pPats :: Pattern -> [Pattern]
-pPats (C _ ps) = ps
+pPats (PatCons _ ps) = ps
 
 isVar :: Pattern -> Bool
-isVar (V _) = True
-isVar _     = False
+isVar (PatVar _) = True
+isVar _          = False
 
 isCon :: Pattern -> Bool
 isCon = not.isVar
 
 isChan :: Pattern -> FreestState Bool
-isChan (V _)   = return False
-isChan (C c _) = Map.toList <$> getTEnv
+isChan (PatVar _)    = return False
+isChan (PatCons c _) = Map.toList <$> getTEnv
              <&> map (getKeys.snd.snd)
              <&> concat
              <&> notElem c
 
 is_ :: Pattern -> Bool
-is_ (V v) = intern v == "_"
+is_ (PatVar v) = intern v == "_"
 
 newVar :: Pattern -> FreestState Variable
 newVar = R.renameVar.pVar

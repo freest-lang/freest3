@@ -280,19 +280,25 @@ Case :: { ([Pattern], E.Exp) }
   : PatternC '->' Exp   { ([$1],$3) }
   | PatternC GuardsCase { ([$1],$2) }
 
-PatternC :: { Pattern }
-  : ProgVarWild             { E.V $1 }
-  | Constructor PatternSeq  { E.C $1 $2 }
-  | '(' PatternC ')'        { $2 }
-
 PatternSeq :: { [Pattern] }
-  :                    { [] }
-  | Pattern PatternSeq { $1:$2 }
+  :             { [] }
+  | PatternSeq1 { $1 }
+
+PatternSeq1 :: { [Pattern] }
+  : Pattern             { [$1] }
+  | Pattern PatternSeq1 { $1:$2 }
+
+PatternC :: { Pattern }
+  : ProgVarWild                 { E.PatVar  $1 }
+  | Constructor PatternSeq      { E.PatCons $1 $2 }
+  | '(' PatternC ')'            { $2 }
 
 Pattern :: { Pattern }
-  : ProgVarWild                    { E.V $1 }
-  | Constructor                    { E.C $1 [] }
-  | '(' PatternC ')'               { $2 }
+  : ProgVarWild                         { E.PatVar  $1 }
+  | Constructor                         { E.PatCons $1 [] }
+  | '(' Constructor PatternSeq1 ')'     { E.PatCons $2 $3 }
+  | '(' Pattern ')'                     { $2 }
+
 
 GuardsCase :: { Exp }
   : '|' Exp       '->' Exp GuardsCase {% mkSpanSpan $1 $4 >>= \s -> pure $ E.Cond s $2 $4 $5 }
