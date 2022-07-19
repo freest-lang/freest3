@@ -1,4 +1,4 @@
-senddata List = Cons Int List | Nil
+data List = Cons Int List | Nil
 
 type ListOut : 1S = +{Nil : Skip, Cons: !Int;ListOut}
 type ListIn = dualof ListOut

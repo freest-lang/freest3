@@ -33,7 +33,7 @@ stackPush = Value
 
 -- Pop the top Tree from the Stack (Leaf if empty)
 stackPop : TreeStack -> (TreeStack, Tree)
-stackPop Empty        = (ts, Leaf)
+stackPop Empty        = (Empty, Leaf)
 stackPop (Value t ts) = (ts, t)
 
 -- Is the Stack empty
@@ -44,7 +44,7 @@ stackIsEmpty (Value _ _) = False
 -- Size of the Stack
 stackSize : TreeStack -> Int
 stackSize Empty        = 0
-stackSize (Value _ ts) = 1 + stackSize st
+stackSize (Value _ ts) = 1 + stackSize ts
 
 -- Channel to send/receive a Tree. It is important that both sender and receiver
 --  agree on an order to traverse the Tree.

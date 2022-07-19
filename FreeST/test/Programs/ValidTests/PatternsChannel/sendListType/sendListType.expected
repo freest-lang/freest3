@@ -1,5 +1,1 @@
-<pending>
-This creates a problem with Constructors being the same name as Choices.
-The algorithm probably has to change, and add a clause that the type is also a choice!
-
-exptected: Cons 2 (Cons 3 (Cons 4 (Cons 5 Nil)))
+Cons 2 (Cons 3 (Cons 4 (Cons 5 Nil)))
