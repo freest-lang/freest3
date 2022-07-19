@@ -112,6 +112,10 @@ rec a:1S . rec b:1S . +{A: !Int;b, B:End;b}
 rec a:1S  . &{N:!Int;!Int;a, L:End};?Bool
 rec a:1S  . &{N:!Int;!Int;a, L:Skip};End
 
+[]
+!(!Int;End)
+!(!Int;Skip;End;?Bool)
+
 -- Functional and session, mixed
 
 []

@@ -89,5 +89,16 @@ rec a  . (&{N:a;a;!Int, L:Skip};!Int)
 (rec b. +{A: (rec b. (rec a. (+{A: (Skip;(?Int;!())), B: (Skip;?Char)};a)))})
 +{A: (rec b. +{A: (((Skip;?Int);!());(rec b. +{A: (rec b. +{A: (((Skip;?Int);!());b), B: (?Char;b)})})), B: (?Char;(rec b. +{A: (rec b. +{A: (((Skip;?Int);!());b), B: (?Char;b)})}))})}
 
+-- End 
+
 !Int;End;!Bool
 !Bool;End;!Int
+
+End
+Skip
+
+!(End)
+!(Skip)
+
+!(!Int;End)
+!(?Int;End)
