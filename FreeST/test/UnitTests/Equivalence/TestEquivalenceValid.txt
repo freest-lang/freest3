@@ -802,23 +802,3 @@ rec z:1S . !Skip ; (rec x:1S . !x) ; &{A: z, B: Skip} ; z
 [("x","1S"), ("y","1S"), ("z","1S")]
 rec z:1S . (!Skip ; (rec x:1S . !x)) ; &{A: z ; &{B: x ; z}, B: Skip ; &{B: x ; z}, C: Skip ; &{B: x ; z}}
 rec z:1S . rec y:1S . !Skip ; (rec x:1S . !x) ; &{A: z, B: Skip, C: Skip} ; &{B: x} ; y
-
-[]
-?(Skip ; Int)
-?Int
-
-[]
-?Int
-?(Skip ; Int)
-
-[]
-?(Int ; Skip)
-?Int
-
-[]
-?(Int ; Skip)
-?(Int ; Skip)
-
-[]
-?((Skip ; Skip) ; Int)
-?Int
