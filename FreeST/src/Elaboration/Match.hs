@@ -7,7 +7,7 @@ import           Data.List            (groupBy,sortOn,transpose)
 import           Data.Function        ((&))
 import           Data.Functor         ((<&>))
 import           Control.Monad        (filterM)
-import           Control.Monad.Extra  ((&&^))
+import           Control.Monad.Extra  ((&&^),findM)
 import           Control.Bool         (ifThenElseM)
 
 import           Syntax.Base
@@ -31,7 +31,6 @@ matchFun xs@((ps,_):_) = mapM newVar ps
 
 match :: [Variable] -> [Equation] -> FreestState Exp
 match vs x = do
-  -- (vs,x) <- reorder vs x -- for exhaustive matches
   ifThenElseM (isRuleChan  x) 
               (ruleChan vs x) (match' vs x)
 
@@ -41,21 +40,6 @@ match' vs x
   | isRuleVar   x = ruleVar   vs x
   | isRuleCon   x = ruleCon   vs x
   | otherwise     = ruleMix   vs x
-
--- for exhaustive matches
--- reorder :: [Variable] -> [Equation] -> FreestState ([Variable],[Equation])
--- reorder [] x = return ([],x)
--- reorder vs x = do
---   -- destruct
---   let (pss1,es) = unzip x 
---   let z1   = zip (transpose pss1) vs 
---   z2 <- filterM (isChan.head.fst) z1
---   z3 <- filterM (\e -> not <$> (isChan $ head $ fst e)) z1
---   let z4   = z2 ++ z3
---   -- reconstruct
---   let (pss2,vs') = unzip z4 
---   let x'   = zip (transpose pss2) es 
---   return (vs',x')
 
 -- is rule ---------------------------------------------------------
 isRuleEmpty :: [Equation] -> Bool
@@ -77,14 +61,6 @@ isRuleChan cs = b1 &&^ b2
         b2 = and <$> mapM (isChan.head.fst) cs
 
 -- rules -----------------------------------------------------------
-
--- chan ------------------------------------------------------------
-ruleChan :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
-ruleChan (v:us) cs = groupSortBy (pName.head.fst) cs
-                   & mapM destruct
-                 >>= mapM (\(con,vs,cs) -> (,) con . (,) vs <$> match (vs++us) cs)
-                 <&> Case s (App s (Var s (mkVar s "collect")) (Var s v)) . Map.fromList
-  where s = getSpan v
 
 -- empty -----------------------------------------------------------
 ruleEmpty :: [Variable] -> [Equation] -> FreestState Exp
@@ -112,14 +88,31 @@ destruct l@((p:ps,_):cs) = mapM newVar (pPats p)
                        <&> flip ((,,) (pVar p)) l'
   where l' = map (\(p:ps,e) -> ((pPats p)++ps,e)) l
 
+-- chan ------------------------------------------------------------
+ruleChan :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
+ruleChan (v:us) cs = groupSortBy (pName.head.fst) cs
+                   & mapM destruct
+                 >>= mapM (\(con,vs,cs) -> (,) con . (,) vs <$> match (vs++us) cs)
+                 <&> Case s (App s (Var s (mkVar s "collect")) (Var s v)) . Map.fromList
+  where s = getSpan v
+
 -- mix -------------------------------------------------------------
 ruleMix :: [Variable] -> [Equation] -> FreestState Exp
 ruleMix (v:us) cs = do
-  cons <- constructors $ getDataType cs
+  cons <- getFiller cs
   groupOn (isVar.head.fst) cs
         & mapM (fill v cons)
       <&> concat
       >>= match (v:us)
+
+getFiller :: [Equation] -> FreestState [(Variable,Int)]
+getFiller cs = do
+  c <- findM (isChan.head.fst) cs
+  case c of 
+    Nothing -> constructors $ getDataType cs
+    Just (p:_,_) -> getPEnvChoices
+                <&> flip (Map.!) (pVar p)
+                <&> \vs -> zip vs (replicate (length vs) 1)
 
 --rule mix aux
 fill :: Variable -> [(Variable,Int)] -> [Equation] -> FreestState [Equation]

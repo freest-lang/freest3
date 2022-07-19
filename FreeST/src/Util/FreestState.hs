@@ -112,9 +112,12 @@ getPEnvPat = gets parseEnvPat
 
 addToPEnvChoices :: MonadState FreestS m => [Variable] -> m()
 addToPEnvChoices cs =
-  modify (\s -> 
-    { parseEnvChoice = Map.union m (parseEnvChoices s) })
+  modify (\s -> s
+    { parseEnvChoices = Map.union m (parseEnvChoices s) })
     where m = Map.fromList $ zip cs $ replicate (length cs) cs
+
+getPEnvChoices :: FreestState ParseEnvChoices
+getPEnvChoices = gets parseEnvChoices
 
 -- | NEXT VAR
 
