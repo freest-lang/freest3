@@ -20,6 +20,9 @@ import           Util.FreestState
 
 import           Debug.Trace -- debug (used on debugM function)
 
+
+-- match -----------------------------------------------------------
+
 type Equation = ([Pattern],Exp)
 
 matchFuns :: ParseEnvPat -> FreestState ParseEnv
@@ -71,7 +74,7 @@ ruleEmpty _ ((_,e):cs) = do v' <- v; replaceExp v' v' e
 ruleVar :: [Variable] -> [Equation] -> FreestState Exp
 ruleVar (v:us) cs = match us =<< (mapM replace cs)
   where replace (p:ps,e)
-          | is_ p     = return (ps,e)
+          | isPat_ p     = return (ps,e)
           | otherwise = (,) ps <$> (replaceExp v (pVar p) e)
 
 -- con -------------------------------------------------------------
@@ -207,8 +210,8 @@ isChan (PatCons c _) = Map.toList <$> getTEnv
              <&> concat
              <&> notElem c
 
-is_ :: Pattern -> Bool
-is_ (PatVar v) = intern v == "_"
+isPat_ :: Pattern -> Bool
+isPat_ (PatVar v) = is_ v
 
 newVar :: Pattern -> FreestState Variable
 newVar = R.renameVar.pVar

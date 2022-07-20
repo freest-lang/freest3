@@ -322,7 +322,7 @@ showFieldList m = intercalate "; " $ map show m
 
 -- TODOX remove
 instance Show Pattern where
-  show (E.PatVar  v)    = "PatVar" ++ intern v
+  show (E.PatVar  v)    = "PatVar "  ++ intern v
   show (E.PatCons v ps) = "PatCons " ++ intern v ++ show ps
 
 isOp :: [String] -> Variable -> Bool

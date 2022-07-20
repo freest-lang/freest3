@@ -68,7 +68,7 @@ checkDupCase x m =
 
 checkDupBind :: Variable -> [Variable] -> FreestStateT ()
 checkDupBind x xs
-  | intern x == "_" = return ()
+  | is_ x = return ()
   | otherwise = case find (== x) xs of
     Just y  -> addError $ DuplicateVar (getSpan y) "program" x (getSpan x)
     Nothing -> return ()
@@ -108,23 +108,6 @@ checkDupTypeDecl a = do
  where
     pos tEnv = getSpan $ fst $ Map.elemAt (Map.findIndex a tEnv) tEnv
 
-checkNumAndDup :: Variable -> [E.Pattern] -> FreestStateT ()
-checkNumAndDup fn ps = checkNumArgs fn ps >> checkDupVarPats ps
-
--- TODOX
--- checkNumArgs (every function line has to have the same amount of variables)
-checkNumArgs :: Variable -> [E.Pattern] -> FreestStateT ()
-checkNumArgs fn ps = do
-  env <- parseEnvPat <$> get
-  case env Map.!? fn of
-    Nothing -> return ()
-    Just pss ->
-      let lengths = map (length.fst) pss in
-      if all (length ps ==) lengths
-        then return ()
-        else addError $ DifNumberOfArguments (getSpan fn) fn (length ps) lengths
-
-
 checkDupVarPats :: [E.Pattern] -> FreestStateT ()
 checkDupVarPats ps = checkDupVarPats' ps []
 
@@ -136,8 +119,15 @@ checkDupVarPats' ((E.PatVar  v)   :xs) vs = do
     Just v2 -> addError $ DuplicateVar (getSpan v) "program" v2 (getSpan $ v2)
     Nothing -> return ()
   checkDupVarPats' xs (v:vs)
-  where clause v2 = intern v /= "_" -- TODOX ugly if
-                 && intern v == intern v2
+  where clause v2 = not (is_ v) && v == v2
+
+checkChoices :: [(Variable,T.Type)] -> FreestStateT ()
+checkChoices _ = return ()
+-- checkChoices [] = return ()
+-- checkChoices ((k,_):xs) = do 
+--   env <- getPEnvChoices
+
+                      
 
 -- OPERATORS
 
