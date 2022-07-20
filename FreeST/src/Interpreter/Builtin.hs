@@ -82,10 +82,26 @@ initialCtx = Map.fromList
   -- Prints
   , (var "#printValue"  , PrimitiveFun (\v -> IOValue $ putStr   (show v) $> Unit))
   , (var "#printValueLn", PrimitiveFun (\v -> IOValue $ putStrLn (show v) $> Unit))
-  , (var "#readBool", genericRead (\s -> Boolean (read s)))
-  , (var "#readInt", genericRead  (\s -> Integer (read s)))
-  , (var "#readChar", genericRead (\(c : s) -> Character c))
-  , (var "#readString", genericRead String)
+  -- Reads
+  , (var "#readBool", PrimitiveFun (\(Pair (Cons v l) nothingCons) -> genericGet nothingCons $ \s ->
+        case reads s of
+          [(x, "")] -> Cons v $ l ++ [[Boolean x]]
+          _         -> nothingCons
+        ))
+  , (var "#readInt", PrimitiveFun (\(Pair (Cons v l) nothingCons) -> genericGet nothingCons $ \s ->
+        case reads s of
+          [(x, "")] -> Cons v $ l ++ [[Integer x]]
+          _         -> nothingCons
+    ))
+      --genericRead  (\s _ -> Integer (read s)))
+  , (var "#readChar", PrimitiveFun (\(Pair (Cons v l) nothingCons) -> genericGet nothingCons $ \s -> 
+        case s of
+          (c : _) -> Cons v $ l ++ [[Character c]]
+          _       -> nothingCons
+    ))
+      --genericRead (\(c : s) -> Character c))
+  , (var "#readString", PrimitiveFun (\(Pair (Cons v l) nothingCons) -> genericGet nothingCons $ \s -> Cons v $ l ++ [[String s]]))
+      -- genericRead (\s _ -> String s))
   -- Id  
   , (var "id", PrimitiveFun id)
   -- Undefined
@@ -103,11 +119,21 @@ initialCtx = Map.fromList
   catchAny :: IO a -> (SomeException -> IO a) -> IO a
   catchAny = catch
 
-  genericRead :: (String -> Value) -> Value
+  genericRead :: (String -> (Value, Value) -> Value) -> Value
   genericRead f = PrimitiveFun 
-    (\(Pair (Cons v l) nothingCons) ->
+    (\(Pair justCons nothingCons) ->
       IOValue $
       catchAny
-        (getLine >>= \s -> return $ Cons v $ l ++ [[f s]]) 
+        (getLine >>= \s -> return $ f s (justCons, nothingCons)) 
         (\_ -> return nothingCons)
     )
+
+  genericGet :: Value -> (String -> Value) -> Value
+  genericGet nothingCons f = 
+    IOValue $
+    catchAny
+      (getLine >>= \s -> return $ f s) 
+      (\_ -> return nothingCons)
+
+  -- maybeRead :: String -> Maybe a
+  -- maybeRead = fmap fst . listToMaybe . reads
