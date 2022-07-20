@@ -57,12 +57,12 @@ checkAndRun runOpts = do
  -- | Check if main was left undefined, eval and print result otherwise
   let m = getMain runOpts
   when (m `Map.member` varEnv s5) $
-    new >>= \(clientChan, serverChan) ->
+    addPrimitiveChannels ["stdout", "stdin", "stderr"] initialCtx >>= \ctx ->
     (evalAndPrint 
-      ({-Map.insert (Variable defaultSpan "stdout") (K.us defaultSpan, (Var defaultSpan (Variable defaultSpan "OutStreamProvider")))-} (typeEnv s5)) 
-      (Map.insert (Variable defaultSpan "#stdout") (Chan serverChan) (Map.insert (Variable defaultSpan "stdout") (Chan clientChan) initialCtx))
+      (typeEnv s5) 
+      (ctx)
       (prog s5)
-      ( E.UnLet defaultSpan (mkVar defaultSpan "_") (E.App defaultSpan (E.Var defaultSpan (Variable defaultSpan "fork")) (E.App defaultSpan (E.Var defaultSpan (Variable defaultSpan "#runStdout")) (E.Var defaultSpan (Variable defaultSpan "#stdout")))) (prog s5 Map.! m))
+      (forkHandlers [("#runStdout", "#stdout"), ("#runStdIn", "#stdin")] (prog s5 Map.! m))
     )
 
   where
@@ -70,3 +70,20 @@ checkAndRun runOpts = do
     preludeHasErrors f s0 s1
       | hasErrors s1 = s0 { warnings = NoPrelude f : warnings s0 }
       | otherwise    = s1
+
+    addPrimitiveChannels :: [String] -> Ctx -> IO Ctx
+    addPrimitiveChannels [] ctx = return ctx
+    addPrimitiveChannels (varName : varNames) ctx = do
+      (clientChan, serverChan) <- new
+      addPrimitiveChannels varNames 
+        $ Map.insert (mkVar defaultSpan         varName ) (Chan clientChan) 
+        $ Map.insert (mkVar defaultSpan ("#" ++ varName)) (Chan serverChan) ctx
+
+    forkHandlers :: [(String, String)] -> E.Exp -> E.Exp
+    forkHandlers [] e = e
+    forkHandlers ((fun, var) : xs) e =
+      E.UnLet s (mkVar s "_") 
+        (E.App s (E.Var s (mkVar s "fork")) (E.App s (E.Var s (mkVar s fun)) (E.Var s (mkVar s var)))) 
+        $ forkHandlers xs e 
+      where
+        s = defaultSpan

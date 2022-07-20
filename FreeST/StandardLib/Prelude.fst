@@ -35,34 +35,8 @@ fix f =
   (\x:(rec b.b -> (a -> a)) -> f (\z:a -> x x z))
   (\x:(rec b.b -> (a -> a)) -> f (\z:a -> x x z))
 
-------------------------------------------------------------
 
--- stdout : OutStreamProvider
--- stdout : fst @OutStreamProvider @dualof OutStreamProvider $ new OutStreamProvider --error @OutStreamProvider "Called!"
-
-#runStdout  : dualof OutStreamProvider -> ()
-#runStdout =
-    runServer @OutStream @() #runPrinter ()
-
-#runPrinter : () -> dualof OutStream 1-> ()
-#runPrinter _ printer =
-    match printer with {
-        PutBool     printer -> #aux @Bool   printer #printBool     & #runPrinter (),
-        PutBoolLn   printer -> #aux @Bool   printer #printBoolLn   & #runPrinter (),
-        PutInt      printer -> #aux @Int    printer #printInt      & #runPrinter (),
-        PutIntLn    printer -> #aux @Int    printer #printIntLn    & #runPrinter (),
-        PutChar     printer -> #aux @Char   printer #printChar     & #runPrinter (),
-        PutCharLn   printer -> #aux @Char   printer #printCharLn   & #runPrinter (),
-        PutString   printer -> #aux @String printer #printString   & #runPrinter (),
-        PutStringLn printer -> #aux @String printer #printStringLn & #runPrinter (),
-        Close         _       -> ()
-    }
-
-#aux : forall a . ?a;dualof OutStream -> (a -> ()) 1-> dualof OutStream
-#aux printer printFun =
-    let (x, printer) = receive printer in
-    printFun x;
-    printer
+-- | OutStream & InStream
 
 type OutStreamProvider : *S = *?OutStream
 type OutStream : 1S = +{ PutBool    : !Bool  ; OutStream
@@ -76,40 +50,92 @@ type OutStream : 1S = +{ PutBool    : !Bool  ; OutStream
                        , Close      : Skip
                        }
 
-putGeneric : forall a . (OutStream -> !a;OutStream) -> OutStreamProvider -> a -> ()
-putGeneric sel outProv x =                                      
+#putGeneric : forall a . (OutStream -> !a;OutStream) -> OutStreamProvider -> a -> ()
+#putGeneric sel outProv x =                                      
     sel (receive_ @OutStream outProv) & send x & select Close & sink @Skip
 
-
-
 putBool : OutStreamProvider -> Bool -> ()
-putBool = putGeneric @Bool (\out:OutStream -> select PutBool out) 
+putBool = #putGeneric @Bool (\out:OutStream -> select PutBool out) 
 
 putBoolLn : OutStreamProvider -> Bool -> ()
-putBoolLn = putGeneric @Bool (\out:OutStream -> select PutBoolLn out)
+putBoolLn = #putGeneric @Bool (\out:OutStream -> select PutBoolLn out)
 
 
 putInt : OutStreamProvider -> Int -> ()
-putInt = putGeneric @Int (\out:OutStream -> select PutInt out)
+putInt = #putGeneric @Int (\out:OutStream -> select PutInt out)
 
 putIntLn : OutStreamProvider -> Int -> ()
-putIntLn = putGeneric @Int (\out:OutStream -> select PutIntLn out)
+putIntLn = #putGeneric @Int (\out:OutStream -> select PutIntLn out)
 
 
 putChar : OutStreamProvider -> Char -> ()
-putChar = putGeneric @Char (\out:OutStream -> select PutChar out)
+putChar = #putGeneric @Char (\out:OutStream -> select PutChar out)
 
 putCharLn : OutStreamProvider -> Char -> ()
-putCharLn = putGeneric @Char (\out:OutStream -> select PutCharLn out)
+putCharLn = #putGeneric @Char (\out:OutStream -> select PutCharLn out)
 
 
 putString : OutStreamProvider -> String -> ()
-putString = putGeneric @String (\out:OutStream -> select PutString out)
+putString = #putGeneric @String (\out:OutStream -> select PutString out)
 
 putStringLn : OutStreamProvider -> String -> ()
-putStringLn = putGeneric @String (\out:OutStream -> select PutStringLn out)
+putStringLn = #putGeneric @String (\out:OutStream -> select PutStringLn out)
 
 
+type InStreamProvider : *S = *?InStream
+type InStream : 1S = +{ GetBool  : &{Just: ?Bool  , Nothing: Skip}; InStream
+                      , GetInt   : &{Just: ?Int   , Nothing: Skip}; InStream
+                      , GetChar  : &{Just: ?Char  , Nothing: Skip}; InStream
+                      , GetString: &{Just: ?String, Nothing: Skip}; InStream
+                      , Close     : Skip
+                      }
+
+data MaybeBool   = NothingBool   | JustBool   Bool
+data MaybeInt    = NothingInt    | JustInt    Int
+data MaybeChar   = NothingChar   | JustChar   Char
+data MaybeString = NothingString | JustString String
+
+#genericGet : forall a b . (InStream -> &{Just: ?a  , Nothing: Skip};InStream) -> (a -> b, b) -> InStreamProvider -> b
+#genericGet sel maybeCons insp =
+    let (justCons, nothingCons) = maybeCons in
+    let ins = sel $ receive_ @InStream insp in
+    let (maybe, ins) = 
+        match ins with {
+            Just    ins -> 
+                let (b, ins) = receive ins in
+                (justCons b, ins),
+            Nothing ins -> 
+                (nothingCons, ins)
+        }
+        in
+    let _ = select Close ins in
+    maybe
+
+getBool : InStreamProvider -> MaybeBool
+getBool =
+    #genericGet @Bool @MaybeBool
+        (\inS:InStream -> select GetBool inS)
+        (JustBool, NothingBool)
+
+getInt : InStreamProvider -> MaybeInt
+getInt =
+    #genericGet @Int @MaybeInt
+        (\inS:InStream -> select GetInt inS)
+        (JustInt, NothingInt)
+
+getChar : InStreamProvider -> MaybeChar
+getChar =
+    #genericGet @Char @MaybeChar
+        (\inS:InStream -> select GetChar inS)
+        (JustChar, NothingChar)
+
+getString : InStreamProvider -> MaybeString
+getString =
+    #genericGet @String @MaybeString
+        (\inS:InStream -> select GetString inS)
+        (JustString, NothingString)
+
+-- | Stdout
 
 printBool : Bool -> ()
 printBool = putBool stdout
@@ -138,6 +164,70 @@ printString = putString stdout
 printStringLn : String -> ()
 printStringLn = putStringLn stdout
 
+-- Internal stdout functions
+#runStdout  : dualof OutStreamProvider -> ()
+#runStdout =
+    runServer @OutStream @() #runPrinter ()
+
+#runPrinter : () -> dualof OutStream 1-> ()
+#runPrinter _ printer =
+    match printer with {
+        PutBool     printer -> receiveAnd @Bool   @dualof OutStream (#printValue   @Bool  ) printer & #runPrinter (),
+        PutBoolLn   printer -> receiveAnd @Bool   @dualof OutStream (#printValueLn @Bool  ) printer & #runPrinter (),
+        PutInt      printer -> receiveAnd @Int    @dualof OutStream (#printValue   @Int   ) printer & #runPrinter (),
+        PutIntLn    printer -> receiveAnd @Int    @dualof OutStream (#printValueLn @Int   ) printer & #runPrinter (),
+        PutChar     printer -> receiveAnd @Char   @dualof OutStream (#printValue   @Char  ) printer & #runPrinter (),
+        PutCharLn   printer -> receiveAnd @Char   @dualof OutStream (#printValueLn @Char  ) printer & #runPrinter (),
+        PutString   printer -> receiveAnd @String @dualof OutStream (#printValue   @String) printer & #runPrinter (),
+        PutStringLn printer -> receiveAnd @String @dualof OutStream (#printValueLn @String) printer & #runPrinter (),
+        Close         _       -> ()
+    }
+
+-- | Stdin
+
+inputBool : MaybeBool
+inputBool = getBool stdin
+
+inputInt : MaybeInt
+inputInt = getInt stdin
+
+inputChar : MaybeChar
+inputChar = getChar stdin
+
+inputString : MaybeString
+inputString = getString stdin
+
+-- Internal stdin functions
+#runStdIn : dualof InStreamProvider -> ()
+#runStdIn =
+    runServer @InStream @() #runReader ()
+
+#runReader : () -> dualof InStream 1-> ()
+#runReader _ reader = 
+    match reader with {
+        GetBool reader -> #runReader () $
+            case #readBool @MaybeBool (JustBool, NothingBool) of {
+                JustBool x  -> select Just reader & send x,
+                NothingBool -> select Nothing reader
+            },
+        GetInt reader -> #runReader () $
+            case #readInt @MaybeInt (JustInt, NothingInt) of {
+                JustInt x  -> select Just reader & send x,
+                NothingInt -> select Nothing reader
+            },
+        GetChar reader -> #runReader () $
+            case #readChar @MaybeChar (JustChar, NothingChar) of {
+                JustChar x  -> select Just reader & send x,
+                NothingChar -> select Nothing reader
+            },
+        GetString reader -> #runReader () $
+            case #readString @MaybeString (JustString, NothingString) of {
+                JustString x  -> select Just reader & send x,
+                NothingString -> select Nothing reader
+            },
+        Close _-> ()
+    }
+
 ------------------------------------------------------------
 
 -- | A mark for functions that do not terminate
@@ -159,6 +249,14 @@ repeat n thunk =
     else 
         thunk ();
         repeat @a (n - 1) thunk
+
+-- | Receive a value from a linear channel and apply a function to it.
+--   Returns the continuation channel
+receiveAnd : forall a b:1S . (a -> ()) -> ?a;b 1-> b
+receiveAnd f ch =
+    let (x, ch) = receive ch in
+    f x;
+    ch
 
 -- | Receive a value from a star channel
 receive_ : forall a:1T . *?a -> a

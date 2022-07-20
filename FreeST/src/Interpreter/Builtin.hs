@@ -5,10 +5,11 @@ import           Interpreter.Value
 import           Syntax.Base
 
 import qualified Control.Concurrent.Chan as C
+import           Control.Exception ( catch, SomeException )
 import           Data.Char ( ord, chr )
 import           Data.Functor
 import qualified Data.Map as Map
-
+import Debug.Trace
 ------------------------------------------------------------
 -- Communication primitives
 ------------------------------------------------------------
@@ -79,16 +80,12 @@ initialCtx = Map.fromList
   , (var "fst", PrimitiveFun (\(Pair a _) -> a))
   , (var "snd", PrimitiveFun (\(Pair _ b) -> b))
   -- Prints
-  , (var "#printInt", PrimitiveFun (\(Integer x) -> IOValue $ putStr (show x) $> Unit))
-  , (var "#printIntLn", PrimitiveFun (\(Integer x) -> IOValue $ print x $> Unit))
-  , (var "#printBool", PrimitiveFun (\(Boolean x) -> IOValue $ putStr (show x) $> Unit))
-  , (var "#printBoolLn", PrimitiveFun (\(Boolean x) -> IOValue $ print x $> Unit))
-  , (var "#printChar", PrimitiveFun (\(Character x) -> IOValue $ putStr (show x) $> Unit))
-  , (var "#printCharLn", PrimitiveFun (\(Character x) -> IOValue $ print x $> Unit))
-  , (var "#printUnit"  , PrimitiveFun (\Unit -> IOValue $ putStr "()" $> Unit))
-  , (var "#printUnitLn", PrimitiveFun (\Unit -> IOValue $ putStrLn "()" $> Unit))
-  , (var "#printString", PrimitiveFun (\(String s) -> IOValue $ putStr s $> Unit))
-  , (var "#printStringLn", PrimitiveFun (\(String s) -> IOValue $ putStrLn s $> Unit) )
+  , (var "#printValue"  , PrimitiveFun (\v -> IOValue $ putStr   (show v) $> Unit))
+  , (var "#printValueLn", PrimitiveFun (\v -> IOValue $ putStrLn (show v) $> Unit))
+  , (var "#readBool", genericRead (\s -> Boolean (read s)))
+  , (var "#readInt", genericRead  (\s -> Integer (read s)))
+  , (var "#readChar", genericRead (\(c : s) -> Character c))
+  , (var "#readString", genericRead String)
   -- Id  
   , (var "id", PrimitiveFun id)
   -- Undefined
@@ -102,3 +99,15 @@ initialCtx = Map.fromList
  where
   var :: String -> Variable
   var = mkVar defaultSpan
+
+  catchAny :: IO a -> (SomeException -> IO a) -> IO a
+  catchAny = catch
+
+  genericRead :: (String -> Value) -> Value
+  genericRead f = PrimitiveFun 
+    (\(Pair (Cons v l) nothingCons) ->
+      IOValue $
+      catchAny
+        (getLine >>= \s -> return $ Cons v $ l ++ [[f s]]) 
+        (\_ -> return nothingCons)
+    )

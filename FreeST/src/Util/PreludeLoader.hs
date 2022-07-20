@@ -68,16 +68,13 @@ typeList =
   , (mkVar p "fst", readT "∀ a:1T . ∀ b:*T . (a, b) -> a")
   , (mkVar p "snd", readT "∀ a:*T . ∀ b:1T . (a, b) -> b")
   -- Print
-  , (mkVar p "#printInt"   , readT "Int -> ()")
-  , (mkVar p "#printIntLn" , readT "Int -> ()")
-  , (mkVar p "#printBool"  , readT "Bool -> ()")
-  , (mkVar p "#printBoolLn", readT "Bool -> ()")
-  , (mkVar p "#printChar"  , readT "Char -> ()")
-  , (mkVar p "#printCharLn", readT "Char -> ()")
-  , (mkVar p "#printUnit"  , readT "() -> ()")
-  , (mkVar p "#printUnitLn", readT "() -> ()")
-  , (mkVar p "#printString", readT "String -> ()")
-  , (mkVar p "#printStringLn", readT "String -> ()")
+  , (mkVar p "#printValue"   , readT "∀ a:*T . a -> ()")
+  , (mkVar p "#printValueLn" , readT "∀ a:*T . a -> ()")
+  -- Read
+  , (mkVar p "#readBool"  , readT "∀ a:*T . (Bool -> a, a) -> a")
+  , (mkVar p "#readInt"   , readT "∀ a:*T . (Int -> a, a) -> a")
+  , (mkVar p "#readChar"  , readT "∀ a:*T . (Char -> a, a) -> a")
+  , (mkVar p "#readString", readT "∀ a:*T . (String -> a, a) -> a")
   -- Fork
   , (mkVar p "fork", readT "∀a:1T. a -> ()")
   -- Error & Undefined
@@ -91,6 +88,8 @@ typeList =
   , (mkVar p "collect", read "∀a:1T . a") 
   --
   , (mkVar p "stdout", readT "*?(rec x:1S . +{ PutBool: !Bool; x, PutBoolLn: !Bool  ; x, PutInt: !Int; x, PutIntLn: !Int   ; x, PutChar:  !Char  ; x, PutCharLn: !Char; x, PutString: !String; x, PutStringLn: !String; x, Close: Skip})")
+  , (mkVar p "stderr", readT "*?(rec x:1S . +{ PutBool: !Bool; x, PutBoolLn: !Bool  ; x, PutInt: !Int; x, PutIntLn: !Int   ; x, PutChar:  !Char  ; x, PutCharLn: !Char; x, PutString: !String; x, PutStringLn: !String; x, Close: Skip})")
+  , (mkVar p "stdin" , readT "*?(rec x:1S . +{ GetBool: &{Just: ?Bool  , Nothing: Skip}; x, GetInt: &{Just: ?Int, Nothing: Skip}; x, GetChar: &{Just: ?Char, Nothing: Skip}; x, GetString: &{Just: ?String, Nothing: Skip}; x, Close: Skip})")
   ]
   where p = defaultSpan {defModule = "Prelude"}
 
