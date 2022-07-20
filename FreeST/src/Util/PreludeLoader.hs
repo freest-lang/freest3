@@ -70,6 +70,9 @@ typeList =
   -- Print
   , (mkVar p "#printValue"   , readT "∀ a:*T . a -> ()")
   , (mkVar p "#printValueLn" , readT "∀ a:*T . a -> ()")
+  -- Print to stderr
+  , (mkVar p "#printErrValue"   , readT "∀ a:*T . a -> ()")
+  , (mkVar p "#printErrValueLn" , readT "∀ a:*T . a -> ()")
   -- Read
   , (mkVar p "#readBool"  , readT "∀ a:*T . (Bool -> a, a) -> a")
   , (mkVar p "#readInt"   , readT "∀ a:*T . (Int -> a, a) -> a")

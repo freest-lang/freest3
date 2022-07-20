@@ -62,7 +62,7 @@ checkAndRun runOpts = do
       (typeEnv s5) 
       (ctx)
       (prog s5)
-      (forkHandlers [("#runStdout", "#stdout"), ("#runStdIn", "#stdin")] (prog s5 Map.! m))
+      (forkHandlers [("#runStdout", "#stdout"), ("#runStderr", "#stderr"), ("#runStdIn", "#stdin")] (prog s5 Map.! m))
     )
 
   where

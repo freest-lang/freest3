@@ -9,7 +9,8 @@ import           Control.Exception ( catch, SomeException )
 import           Data.Char ( ord, chr )
 import           Data.Functor
 import qualified Data.Map as Map
-import Debug.Trace
+import           System.IO
+
 ------------------------------------------------------------
 -- Communication primitives
 ------------------------------------------------------------
@@ -82,6 +83,9 @@ initialCtx = Map.fromList
   -- Prints
   , (var "#printValue"  , PrimitiveFun (\v -> IOValue $ putStr   (show v) $> Unit))
   , (var "#printValueLn", PrimitiveFun (\v -> IOValue $ putStrLn (show v) $> Unit))
+  -- Prints to stderr
+  , (var "#printErrValue"  , PrimitiveFun (\v -> IOValue $ hPutStr   stderr (show v) $> Unit))
+  , (var "#printErrValueLn", PrimitiveFun (\v -> IOValue $ hPutStrLn stderr (show v) $> Unit))
   -- Reads
   , (var "#readBool", PrimitiveFun (\(Pair (Cons v l) nothingCons) -> genericGet nothingCons $ \s ->
         case reads s of

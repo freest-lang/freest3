@@ -183,7 +183,26 @@ printStringLn = putStringLn stdout
         Close         _       -> ()
     }
 
+-- | Stderr
 
+-- Internal stderr functions
+#runStderr  : dualof OutStreamProvider -> ()
+#runStderr =
+    runServer @OutStream @() #runPrinter ()
+
+#runErrPrinter : () -> dualof OutStream 1-> ()
+#runErrPrinter _ printer =
+    match printer with {
+        PutBool     printer -> receiveAnd @Bool   @dualof OutStream (#printErrValue   @Bool  ) printer & #runErrPrinter (),
+        PutBoolLn   printer -> receiveAnd @Bool   @dualof OutStream (#printErrValueLn @Bool  ) printer & #runErrPrinter (),
+        PutInt      printer -> receiveAnd @Int    @dualof OutStream (#printErrValue   @Int   ) printer & #runErrPrinter (),
+        PutIntLn    printer -> receiveAnd @Int    @dualof OutStream (#printErrValueLn @Int   ) printer & #runErrPrinter (),
+        PutChar     printer -> receiveAnd @Char   @dualof OutStream (#printErrValue   @Char  ) printer & #runErrPrinter (),
+        PutCharLn   printer -> receiveAnd @Char   @dualof OutStream (#printErrValueLn @Char  ) printer & #runErrPrinter (),
+        PutString   printer -> receiveAnd @String @dualof OutStream (#printErrValue   @String) printer & #runErrPrinter (),
+        PutStringLn printer -> receiveAnd @String @dualof OutStream (#printErrValueLn @String) printer & #runErrPrinter (),
+        Close         _       -> ()
+    }
 
 -- | Stdin
 
