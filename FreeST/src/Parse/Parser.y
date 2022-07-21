@@ -165,8 +165,8 @@ Decl :: { () }
   -- Function signature
   : ProgVarList ':' Type {% forM_ $1 (\x -> checkDupProgVarDecl x >> addToVEnv x $3) }
   -- Function declaration
-  | ProgVar PatternSeq '=' Exp   {% checkDupVarPats $2 >> addToPEnvPat $1 $2 $4 }
-  | ProgVar PatternSeq GuardsFun {% checkDupVarPats $2 >> addToPEnvPat $1 $2 $3 }
+  | ProgVar PatternSeq '=' Exp   {% addToPEnvPat $1 $2 $4 }
+  | ProgVar PatternSeq GuardsFun {% addToPEnvPat $1 $2 $3 }
   -- Type abbreviation
   | type KindedTVar TypeDecl {% checkDupTypeDecl (fst $2) >> uncurry addToTEnv $2 $3 }
   -- Datatype declaration
@@ -277,28 +277,22 @@ CaseMap :: { FieldList }
   | Case ',' CaseMap { $1 : $3 }
 
 Case :: { ([Pattern], E.Exp) }
-  : PatternC '->' Exp   { ([$1],$3) }
-  | PatternC GuardsCase { ([$1],$2) }
+  : PatternCase '->' Exp   { ([$1],$3) }
+  | PatternCase GuardsCase { ([$1],$2) }
 
 PatternSeq :: { [Pattern] }
-  :             { [] }
-  | PatternSeq1 { $1 }
+  :                    { [] }
+  | Pattern PatternSeq {% checkDupVarPats ($1:$2) >> return ($1:$2) }
 
-PatternSeq1 :: { [Pattern] }
-  : Pattern             { [$1] }
-  | Pattern PatternSeq1 { $1:$2 }
-
-PatternC :: { Pattern }
-  : ProgVarWild                 { E.PatVar  $1 }
-  | Constructor PatternSeq      { E.PatCons $1 $2 }
-  | '(' PatternC ')'            { $2 }
+PatternCase :: { Pattern }
+  : Constructor Pattern PatternSeq { E.PatCons $1 ($2:$3) }
+  | Pattern    { $1 }
 
 Pattern :: { Pattern }
-  : ProgVarWild                         { E.PatVar  $1 }
-  | Constructor                         { E.PatCons $1 [] }
-  | '(' Constructor PatternSeq1 ')'     { E.PatCons $2 $3 }
-  | '(' Pattern ')'                     { $2 }
-
+  : ProgVarWild                            { E.PatVar  $1    }
+  | Constructor                            { E.PatCons $1 [] }
+  | '(' Constructor Pattern PatternSeq ')' { E.PatCons $2 ($3:$4) }
+  | '(' Pattern ')'                        { $2 }
 
 GuardsCase :: { Exp }
   : '|' Exp       '->' Exp GuardsCase {% mkSpanSpan $1 $4 >>= \s -> pure $ E.Cond s $2 $4 $5 }

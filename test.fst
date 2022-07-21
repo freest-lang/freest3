@@ -18,12 +18,10 @@
 --   select D r;
 --   printIntLn $ f B w
 
-data T = A Int | B Bool
 
-f : T -> T -> Int 
-f x y = -1
-f (A x) (B x) = 0
-f (A x) (B x) = 1
+f : &{A: &{C: Skip, D: Skip}, B: Skip} 1-> Int
+f (A (C c)) = 1
+f c = 2
 
 main : Int
 main = 1
