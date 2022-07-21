@@ -6,6 +6,7 @@ module Elaboration.Elaboration
 where
 
 import           Elaboration.Elaborate 
+import qualified Elaboration.Match as Match
 import           Elaboration.ResolveDuality as Dual
 import           Elaboration.ResolveEquations
 import           Equivalence.Normalisation ( normalise )
@@ -19,14 +20,15 @@ import           Util.PreludeLoader ( userDefined )
 
 import           Data.Functor
 import           Data.Maybe
-
-
-import           Elaboration.Match as Match
+import qualified Data.Map.Strict   as Map
 
 elaboration :: FreestState ()
 elaboration = do
+  -- | Checks code
+  checkNumArgs =<< getPEnvPat
+  -- TODOX check pattern matching construction size
   -- | Remove all patterns
-  (Match.matchFuns =<< getPEnvPat) >>= setPEnv 
+  (Match.matchFuns =<< getPEnvPat) >>= setPEnv
   -- | Solve the equations' system.
   solveEquations
   -- | From this point, there are no type names on the RHS
@@ -52,7 +54,17 @@ elaboration = do
   buildProg
   -- debugM . ("Program " ++) <$> show =<< getProg
 
+-- | Function validation before translation
 
+checkNumArgs :: ParseEnvPat -> FreestState ()
+checkNumArgs pep = tMapWithKeyM_ checkNumArgs' pep
+
+checkNumArgs' :: Variable -> [([E.Pattern],E.Exp)] -> FreestState ()
+checkNumArgs' fn lines  
+  | allSame $ map (length.fst) lines = return ()
+  | otherwise = addError $ DifNumberOfArguments (getSpan fn) fn 
+  where allSame (x:y:ys) = x == y && allSame (y:ys)
+        allSame _ = True
 
 -- | Elaboration over environments (VarEnv + ParseEnv)
 
@@ -61,7 +73,6 @@ elabVEnv = tMapWithKeyM_ (\pv t -> addToVEnv pv =<< elaborate t) . userDefined
 
 elabPEnv :: ParseEnv -> FreestState ()
 elabPEnv = tMapWithKeyM_ (\x (ps, e) -> addToPEnv x ps =<< elaborate e)
-
 
 -- | Build a program from the parse env
 
@@ -85,6 +96,3 @@ buildFunBody f as e = getFromVEnv f >>= \case
   buildExp _ xs _ = do
     t <- fromJust <$> getFromVEnv f
     addError (WrongNumberOfArguments (getSpan f) f (length as - length xs) (length as) t) $> e
-
-
-

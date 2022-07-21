@@ -25,6 +25,7 @@ module Syntax.Base
   , defaultSpan
   , Located(..)
   , negSpan
+  , is_
 ) where
 
 -- Default for the various syntactic categories
@@ -91,6 +92,9 @@ intern (Variable _ x) = x
 -- Making a variable from a string, type or program
 mkVar :: Span -> String -> Variable
 mkVar = Variable
+
+is_ :: Variable -> Bool
+is_ (Variable _ x) = x == "_"
 
 -- Making a new variable from a given variable. The variable is
 -- unique up to the point where the integer is

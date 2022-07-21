@@ -165,8 +165,8 @@ Decl :: { () }
   -- Function signature
   : ProgVarList ':' Type {% forM_ $1 (\x -> checkDupProgVarDecl x >> addToVEnv x $3) }
   -- Function declaration
-  | ProgVar PatternSeq '=' Exp   {% checkNumAndDup $1 $2 >> addToPEnvPat $1 $2 $4 }
-  | ProgVar PatternSeq GuardsFun {% checkNumAndDup $1 $2 >> addToPEnvPat $1 $2 $3 }
+  | ProgVar PatternSeq '=' Exp   {% checkDupVarPats $2 >> addToPEnvPat $1 $2 $4 }
+  | ProgVar PatternSeq GuardsFun {% checkDupVarPats $2 >> addToPEnvPat $1 $2 $3 }
   -- Type abbreviation
   | type KindedTVar TypeDecl {% checkDupTypeDecl (fst $2) >> uncurry addToTEnv $2 $3 }
   -- Datatype declaration
@@ -280,19 +280,25 @@ Case :: { ([Pattern], E.Exp) }
   : PatternC '->' Exp   { ([$1],$3) }
   | PatternC GuardsCase { ([$1],$2) }
 
-PatternC :: { Pattern }
-  : ProgVarWild             { E.V $1 }
-  | Constructor PatternSeq  { E.C $1 $2 }
-  | '(' PatternC ')'        { $2 }
-
 PatternSeq :: { [Pattern] }
-  :                    { [] }
-  | Pattern PatternSeq { $1:$2 }
+  :             { [] }
+  | PatternSeq1 { $1 }
+
+PatternSeq1 :: { [Pattern] }
+  : Pattern             { [$1] }
+  | Pattern PatternSeq1 { $1:$2 }
+
+PatternC :: { Pattern }
+  : ProgVarWild                 { E.PatVar  $1 }
+  | Constructor PatternSeq      { E.PatCons $1 $2 }
+  | '(' PatternC ')'            { $2 }
 
 Pattern :: { Pattern }
-  : ProgVarWild                    { E.V $1 }
-  | Constructor                    { E.C $1 [] }
-  | '(' PatternC ')'               { $2 }
+  : ProgVarWild                         { E.PatVar  $1 }
+  | Constructor                         { E.PatCons $1 [] }
+  | '(' Constructor PatternSeq1 ')'     { E.PatCons $2 $3 }
+  | '(' Pattern ')'                     { $2 }
+
 
 GuardsCase :: { Exp }
   : '|' Exp       '->' Exp GuardsCase {% mkSpanSpan $1 $4 >>= \s -> pure $ E.Cond s $2 $4 $5 }
@@ -329,7 +335,9 @@ Type :: { T.Type }
   | Skip                          {% T.Skip `fmap` mkSpan $1 }
   | Type ';' Type                 {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Semi s $1 $3 }
   | Polarity Type %prec MSG       {% mkSpanFromSpan (fst $1) $2 >>= \s -> pure $ T.Message s (snd $1) $2 }                                 
-  | ChoiceView '{' FieldList '}'  {% mkSpanFromSpan (fst $1) $4 >>= \s -> pure $ T.Almanac s (T.Choice (snd $1)) $3 } 
+  | ChoiceView '{' FieldList '}'  {% checkChoices (Map.toList $3)
+                                  >> addToPEnvChoices (Map.keys $3)
+                                  >> mkSpanFromSpan (fst $1) $4 >>= \s -> pure $ T.Almanac s (T.Choice (snd $1)) $3 } 
   -- Polymorphism and recursion
   | rec KindBind '.' Type         {% let (a,k) = $2 in flip T.Rec (Bind (getSpan a) a k $4) `fmap` mkSpanSpan $1 $4 }
   | forall KindBind Forall        {% let (a,k) = $2 in flip T.Forall (Bind (getSpan a) a k $3) `fmap` mkSpanSpan $1 $3 }

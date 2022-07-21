@@ -1,5 +1,0 @@
-<pending>
-Data types and Types with the same name
-
-expected: 
-Cons 2 (Cons 3 (Cons 4 (Cons 5 Nil)))
