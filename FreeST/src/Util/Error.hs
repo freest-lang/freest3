@@ -13,6 +13,7 @@ import qualified Syntax.Type as T
 import           Util.GetTOps
 import           Util.Message
 
+import           Data.List( intercalate )
 import qualified Data.Map as Map
 import           System.FilePath
 
@@ -57,6 +58,7 @@ data ErrorType =
   | RedundantPMatch Span Variable
   | DuplicateVar Span String Variable Span  -- string is the variable description: type or program
   | DuplicateFieldInDatatype Span Variable Span
+  | MissingChoices Span [Variable] Span
   | MultipleDeclarations Span Variable Span
   | MultipleTypeDecl Span Variable Span
   | MultipleFunBindings Span Variable Span -- TODOX remove?
@@ -105,6 +107,7 @@ instance Located ErrorType where
   getSpan (RedundantPMatch   p _         ) = p
   getSpan (DuplicateVar p _ _ _          ) = p
   getSpan (DuplicateFieldInDatatype p _ _) = p
+  getSpan (MissingChoices  p _ _       ) = p
   getSpan (MultipleDeclarations p _ _  ) = p
   getSpan (MultipleTypeDecl     p _ _  ) = p
   getSpan (MultipleFunBindings  p _ _  ) = p
@@ -164,6 +167,13 @@ instance Message ErrorType where
   msg (DuplicateFieldInDatatype p pv p') sty ts =
     "Multiple declarations of " ++ style red sty ts pv ++ " in a datatype declaration" ++
      "\n\tDeclared at: " ++ show p ++ " and " ++ show p'
+  msg (MissingChoices p vs p') sty ts = 
+    "Declared " ++ fields ++ (prettyList $ map (style red sty ts) vs) ++ 
+    " at: " ++ show p ++ ", but missing on " ++ show p'
+    where fields = if length vs == 1 then "field " else "fields "
+          prettyList (x:[])   = x
+          prettyList (x:y:[]) = x ++ " and " ++ y
+          prettyList (x:xs)   = x ++ ", "    ++ prettyList xs
   msg (MultipleDeclarations p pv p') sty ts =
     "Ambiguous occurrence " ++ style red sty ts pv ++
     "\n\tDeclared in modules: " ++ showModule (showModuleName p') p' ++

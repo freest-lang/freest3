@@ -18,18 +18,19 @@
 --   select D r;
 --   printIntLn $ f B w
 
-type Channel : 1S = &{A:Skip, B: Skip}
+data T = A | A
 
-type Channel2 : 1S = &{A:Skip, C: Skip}
+type Channel : 1S = &{A:Skip, B: Skip, C: Skip}
 
-f : &{A:Skip, C: Skip} 1-> Int 
-f (A c) = 0
-f (B c) = 1
+type Channel2 : 1S = &{A:Skip, D: Skip, E: Skip}
 
+-- f : &{A:Skip, C: Skip} 1-> Int 
+-- f (A c) = 0
+-- f (C c) = 1
 
-g : &{A:Skip, B: Skip} 1-> Int 
-g (A c) = 0
-g (C c) = 1
+-- g : &{A:Skip, B: Skip} 1-> Int 
+-- g (A c) = 0
+-- g (B c) = 1
 
 main : Int
 main = 1

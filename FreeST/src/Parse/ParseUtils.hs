@@ -22,9 +22,13 @@ import           Util.Error
 import           Util.FreestState
 
 import           Control.Monad.State
-import           Data.Bifunctor ( second )
-import           Data.List ( find )
+import           Data.Bifunctor  ( second )
+import           Data.List       ( find,(\\) )
+import           Data.List.Extra ( anySame )
+import qualified Data.Set        as Set
 import qualified Data.Map.Strict as Map
+
+import           Debug.Trace -- debug (used on debugM function)s
 
 type FreestStateT = StateT FreestS (Either ErrorType)
 
@@ -116,18 +120,27 @@ checkDupVarPats' [] _ = return ()
 checkDupVarPats' ((E.PatCons c cs):xs) vs = checkDupVarPats' cs vs >> checkDupVarPats' xs vs
 checkDupVarPats' ((E.PatVar  v)   :xs) vs = do
   case find clause vs of
-    Just v2 -> addError $ DuplicateVar (getSpan v) "program" v2 (getSpan $ v2)
     Nothing -> return ()
+    Just v2 -> addError $ DuplicateVar (getSpan v) "program" v2 (getSpan $ v2)
   checkDupVarPats' xs (v:vs)
   where clause v2 = not (is_ v) && v == v2
 
-checkChoices :: [(Variable,T.Type)] -> FreestStateT ()
-checkChoices _ = return ()
--- checkChoices [] = return ()
--- checkChoices ((k,_):xs) = do 
---   env <- getPEnvChoices
+checkChoices :: [Variable] -> [Variable] -> FreestStateT ()
+-- checkChoices _  _ = return ()
+checkChoices [] _ = return ()
+checkChoices (a:next) cs = do
+  env <- parseEnvChoices <$> get
+  case env Map.!? a of 
+    Nothing  -> return ()
+    Just cs' -> checkChoice here there
+             >> checkChoice there here
+             >> checkChoices next cs
+      where (here,there) = (cs\\cs',cs'\\cs)
 
-                      
+checkChoice :: [Variable] -> [Variable] -> FreestStateT ()
+checkChoice extra []      = return ()
+checkChoice extra missing = addError 
+            $ MissingChoices (getSpan $ head extra) extra (getSpan $ head missing)
 
 -- OPERATORS
 
