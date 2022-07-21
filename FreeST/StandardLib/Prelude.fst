@@ -50,36 +50,52 @@ type OutStream : 1S = +{ PutBool    : !Bool  ; OutStream
                        , Close      : Skip
                        }
 
-#putGeneric : forall a . (OutStream -> !a;OutStream) -> OutStreamProvider -> a -> ()
-#putGeneric sel outProv x =                                      
-    sel (receive_ @OutStream outProv) & send x & select Close & sink @Skip
 
-putBool : OutStreamProvider -> Bool -> ()
-putBool = #putGeneric @Bool (\out:OutStream -> select PutBool out) 
+#genericHPut : forall a . (OutStream -> !a;OutStream) -> a -> OutStream -> OutStream
+#genericHPut sel x outStream = sel outStream & send x
 
-putBoolLn : OutStreamProvider -> Bool -> ()
-putBoolLn = #putGeneric @Bool (\out:OutStream -> select PutBoolLn out)
+hPutBool, hPutBoolLn: Bool -> OutStream -> OutStream
+hPutBool   = #genericHPut @Bool (\out:OutStream -> select PutBool out)
+hPutBoolLn = #genericHPut @Bool (\out:OutStream -> select PutBoolLn out)
 
 
-putInt : OutStreamProvider -> Int -> ()
-putInt = #putGeneric @Int (\out:OutStream -> select PutInt out)
-
-putIntLn : OutStreamProvider -> Int -> ()
-putIntLn = #putGeneric @Int (\out:OutStream -> select PutIntLn out)
+hPutInt, hPutIntLn : Int -> OutStream -> OutStream
+hPutInt   = #genericHPut @Int (\out:OutStream -> select PutInt out)
+hPutIntLn = #genericHPut @Int (\out:OutStream -> select PutIntLn out)
 
 
-putChar : OutStreamProvider -> Char -> ()
-putChar = #putGeneric @Char (\out:OutStream -> select PutChar out)
-
-putCharLn : OutStreamProvider -> Char -> ()
-putCharLn = #putGeneric @Char (\out:OutStream -> select PutCharLn out)
+hPutChar, hPutCharLn : Char -> OutStream -> OutStream
+hPutChar   = #genericHPut @Char (\out:OutStream -> select PutChar out)
+hPutCharLn = #genericHPut @Char (\out:OutStream -> select PutCharLn out)
 
 
-putString : OutStreamProvider -> String -> ()
-putString = #putGeneric @String (\out:OutStream -> select PutString out)
+hPutString, hPutStringLn : String -> OutStream -> OutStream
+hPutString   = #genericHPut @String (\out:OutStream -> select PutString out)
+hPutStringLn = #genericHPut @String (\out:OutStream -> select PutStringLn out)
 
-putStringLn : OutStreamProvider -> String -> ()
-putStringLn = #putGeneric @String (\out:OutStream -> select PutStringLn out)
+
+#genericPut : forall a . (OutStream -> !a;OutStream) -> a -> OutStreamProvider -> ()
+#genericPut sel x outProv = 
+    sink @Skip $ select Close $ #genericHPut @a sel x $ receive_ @OutStream outProv 
+
+putBool, putBoolLn: Bool -> OutStreamProvider -> ()
+putBool   = #genericPut @Bool (\out:OutStream -> select PutBool out)
+putBoolLn = #genericPut @Bool (\out:OutStream -> select PutBoolLn out)
+
+
+putInt, putIntLn : Int -> OutStreamProvider -> ()
+putInt   = #genericPut @Int (\out:OutStream -> select PutInt out)
+putIntLn = #genericPut @Int (\out:OutStream -> select PutIntLn out)
+
+
+putChar, putCharLn : Char -> OutStreamProvider -> ()
+putChar   = #genericPut @Char (\out:OutStream -> select PutChar out)
+putCharLn = #genericPut @Char (\out:OutStream -> select PutCharLn out)
+
+
+putString, putStringLn : String -> OutStreamProvider -> ()
+putString   = #genericPut @String (\out:OutStream -> select PutString out)
+putStringLn = #genericPut @String (\out:OutStream -> select PutStringLn out)
 
 
 type InStreamProvider : *S = *?InStream
@@ -137,32 +153,24 @@ getString =
 
 -- | Stdout
 
-printBool : Bool -> ()
-printBool = putBool stdout
-
-printBoolLn : Bool -> ()
-printBoolLn = putBoolLn stdout
+printBool, printBoolLn : Bool -> ()
+printBool   = flip @Bool @OutStreamProvider @() putBool stdout
+printBoolLn = flip @Bool @OutStreamProvider @() putBoolLn stdout
 
 
-printInt : Int -> ()
-printInt = putInt stdout
-
-printIntLn : Int -> ()
-printIntLn = putIntLn stdout
+printInt, printIntLn : Int -> ()
+printInt   = flip @Int @OutStreamProvider @() putInt stdout
+printIntLn = flip @Int @OutStreamProvider @() putIntLn stdout
 
 
-printChar : Char -> ()
-printChar = putChar stdout
-
-printCharLn : Char -> ()
-printCharLn = putCharLn stdout
+printChar, printCharLn : Char -> ()
+printChar   = flip @Char @OutStreamProvider @() putChar stdout
+printCharLn = flip @Char @OutStreamProvider @() putCharLn stdout
 
 
-printString : String -> ()
-printString = putString stdout
-
-printStringLn : String -> ()
-printStringLn = putStringLn stdout
+printString, printStringLn : String -> ()
+printString   = flip @String @OutStreamProvider @() putString stdout
+printStringLn = flip @String @OutStreamProvider @() putStringLn stdout
 
 -- Internal stdout functions
 #runStdout  : dualof OutStreamProvider -> ()
@@ -219,8 +227,8 @@ inputString : MaybeString
 inputString = getString stdin
 
 -- Internal stdin functions
-#runStdIn : dualof InStreamProvider -> ()
-#runStdIn =
+#runStdin : dualof InStreamProvider -> ()
+#runStdin =
     runServer @InStream @() #runReader ()
 
 #runReader : () -> dualof InStream 1-> ()
