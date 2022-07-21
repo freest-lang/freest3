@@ -18,19 +18,12 @@
 --   select D r;
 --   printIntLn $ f B w
 
-data T = A | A
+data T = A Int | B Bool
 
-type Channel : 1S = &{A:Skip, B: Skip, C: Skip}
-
-type Channel2 : 1S = &{A:Skip, D: Skip, E: Skip}
-
--- f : &{A:Skip, C: Skip} 1-> Int 
--- f (A c) = 0
--- f (C c) = 1
-
--- g : &{A:Skip, B: Skip} 1-> Int 
--- g (A c) = 0
--- g (B c) = 1
+f : T -> T -> Int 
+f x y = -1
+f (A x) (B x) = 0
+f (A x) (B x) = 1
 
 main : Int
 main = 1
