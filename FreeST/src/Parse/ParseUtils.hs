@@ -126,6 +126,7 @@ checkDupVarPats' ((E.PatVar  v)   :xs) vs = do
   checkDupVarPats' xs (v:vs)
   where clause v2 = not (is_ v) && v == v2
 
+-- TODOX not reliable yet
 checkChoices :: [Variable] -> [Variable] -> FreestStateT ()
 -- checkChoices _  _ = return ()
 checkChoices [] _ = return ()
