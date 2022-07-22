@@ -78,6 +78,10 @@ typeList =
   , (mkVar p "#readInt"   , readT "∀ a:*T . (Int -> a, a) -> a")
   , (mkVar p "#readChar"  , readT "∀ a:*T . (Char -> a, a) -> a")
   , (mkVar p "#readString", readT "∀ a:*T . (String -> a, a) -> a")
+  -- Files
+  , (mkVar p "#putFile" , readT "∀ a:*T b c . a -> b -> (c, c) -> c")
+  , (mkVar p "#closeFile", readT "∀ a . a -> ()")
+  , (mkVar p "#openWriteFile", readT "∀ a b:1S c . String -> (() -> a) -> (((b, dualof b), a) -> c, c) -> c")
   -- Fork
   , (mkVar p "fork", readT "∀a:1T. a -> ()")
   -- Error & Undefined

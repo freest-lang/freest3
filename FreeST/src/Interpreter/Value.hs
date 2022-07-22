@@ -12,6 +12,8 @@ import           Parse.Unparser                 ( )
 import           Syntax.Base
 import qualified Syntax.Expression             as E
 
+import           System.IO                      ( Handle )
+
 data Value =
     Unit
   | Integer Int
@@ -27,6 +29,7 @@ data Value =
   | Chan ChannelEnd
   | Fork
   | IOValue (IO Value)
+  | Handle Handle
 
 type Ctx = Map.Map Variable Value
 

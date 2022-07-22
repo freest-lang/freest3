@@ -1,6 +1,24 @@
+{-
+
+Prelude structure:
+    1. Util       - utility functions
+    2. IO         - input/output functions (including files)
+    3. Concurrent - functions for concurrency and shared channels
+
+-}
+
 module Prelude where
 
--- | Prelude
+--   $$\   
+-- $$$$ |  
+-- \_$$ |  
+--   $$ |  
+--   $$ |  
+--   $$ |  
+-- $$$$$$\ 
+-- \______|
+
+
 
 id : forall a . a -> a
 id = \\a => \x:a -> x
@@ -36,6 +54,18 @@ fix f =
   (\x:(rec b.b -> (a -> a)) -> f (\z:a -> x x z))
 
 
+
+--  $$$$$$\  
+-- $$  __$$\ 
+-- \__/  $$ |
+--  $$$$$$  |
+-- $$  ____/ 
+-- $$ |      
+-- $$$$$$$$\ 
+-- \________|
+
+
+
 -- | OutStream & InStream
 
 type OutStreamProvider : *S = *?OutStream
@@ -51,32 +81,32 @@ type OutStream : 1S = +{ PutBool    : !Bool  ; OutStream
                        }
 
 
-#genericHPut : forall a . (OutStream -> !a;OutStream) -> a -> OutStream -> OutStream
+#genericHPut : forall a b:1S . (+{PutBool: !Bool; b, PutBoolLn: !Bool; b, PutInt: !Int; b, PutIntLn: !Int; b, PutChar: !Char; b, PutCharLn: !Char; b, PutString: !String; b, PutStringLn: !String; b, Close: Skip} -> !a;b) -> a -> +{PutBool: !Bool; b, PutBoolLn: !Bool; b, PutInt: !Int; b, PutIntLn: !Int; b, PutChar: !Char; b, PutCharLn: !Char; b, PutString: !String; b, PutStringLn: !String; b, Close: Skip} -> b
 #genericHPut sel x outStream = sel outStream & send x
 
 hPutBool, hPutBoolLn: Bool -> OutStream -> OutStream
-hPutBool   = #genericHPut @Bool (select PutBool)
-hPutBoolLn = #genericHPut @Bool (select PutBoolLn)
+hPutBool   = #genericHPut @Bool @OutStream (select PutBool)
+hPutBoolLn = #genericHPut @Bool @OutStream (select PutBoolLn)
 
 
 hPutInt, hPutIntLn : Int -> OutStream -> OutStream
-hPutInt   = #genericHPut @Int (select PutInt)
-hPutIntLn = #genericHPut @Int (select PutIntLn)
+hPutInt   = #genericHPut @Int @OutStream (select PutInt)
+hPutIntLn = #genericHPut @Int @OutStream (select PutIntLn)
 
 
 hPutChar, hPutCharLn : Char -> OutStream -> OutStream
-hPutChar   = #genericHPut @Char (select PutChar)
-hPutCharLn = #genericHPut @Char (select PutCharLn)
+hPutChar   = #genericHPut @Char @OutStream (select PutChar)
+hPutCharLn = #genericHPut @Char @OutStream (select PutCharLn)
 
 
 hPutString, hPutStringLn : String -> OutStream -> OutStream
-hPutString   = #genericHPut @String (select PutString)
-hPutStringLn = #genericHPut @String (select PutStringLn)
+hPutString   = #genericHPut @String @OutStream (select PutString)
+hPutStringLn = #genericHPut @String @OutStream (select PutStringLn)
 
 
 #genericPut : forall a . (OutStream -> !a;OutStream) -> a -> OutStreamProvider -> ()
 #genericPut sel x outProv = 
-    sink @Skip $ select Close $ #genericHPut @a sel x $ receive_ @OutStream outProv 
+    sink @Skip $ select Close $ #genericHPut @a @OutStream sel x $ receive_ @OutStream outProv 
 
 putBool, putBoolLn: Bool -> OutStreamProvider -> ()
 putBool   = #genericPut @Bool (select PutBool)
@@ -257,7 +287,109 @@ inputString = getString stdin
         Close _-> ()
     }
 
-------------------------------------------------------------
+-- type FailableR a: 1S = &{Ok: ?a, Nok: Skip}
+type FailableR : 1S = &{Ok: ReadFileStream , Error: Skip}
+type FailableW : 1S = &{Ok: WriteFileStream, Error: Skip}
+
+type ReadFileStream  : 1S = +{ GetBool  : &{Just: ?Bool  , Nothing: Skip}; FailableR {-Failable @ReadFileStream-}
+                             , GetInt   : &{Just: ?Int   , Nothing: Skip}; FailableR {-Failable @ReadFileStream-}
+                             , GetChar  : &{Just: ?Char  , Nothing: Skip}; FailableR {-Failable @ReadFileStream-}
+                             , GetString: &{Just: ?String, Nothing: Skip}; FailableR {-Failable @ReadFileStream-}
+                             , Close    : Skip
+                             }
+
+type WriteFileStream : 1S = +{ PutBool    : !Bool  ; FailableW {-Failable @WriteFileStream-}
+                             , PutBoolLn  : !Bool  ; FailableW {-Failable @WriteFileStream-}
+                             , PutInt     : !Int   ; FailableW {-Failable @WriteFileStream-}
+                             , PutIntLn   : !Int   ; FailableW {-Failable @WriteFileStream-}
+                             , PutChar    : !Char  ; FailableW {-Failable @WriteFileStream-}
+                             , PutCharLn  : !Char  ; FailableW {-Failable @WriteFileStream-}
+                             , PutString  : !String; FailableW {-Failable @WriteFileStream-}
+                             , PutStringLn: !String; FailableW {-Failable @WriteFileStream-}
+                             , Close      : Skip
+                             }
+
+hFilePutBool, hFilePutBoolLn : Bool -> WriteFileStream -> FailableW
+hFilePutBool   = #genericHPut @Bool @FailableW (\out:WriteFileStream -> select PutBool   out)
+hFilePutBoolLn = #genericHPut @Bool @FailableW (\out:WriteFileStream -> select PutBoolLn out)
+
+hFilePutInt, hFilePutIntLn : Int -> WriteFileStream -> FailableW
+hFilePutInt   = #genericHPut @Int @FailableW (\out:WriteFileStream -> select PutInt   out)
+hFilePutIntLn = #genericHPut @Int @FailableW (\out:WriteFileStream -> select PutIntLn out)
+
+hFilePutChar, hFilePutCharLn : Char -> WriteFileStream -> FailableW
+hFilePutChar   = #genericHPut @Char @FailableW (\out:WriteFileStream -> select PutChar   out)
+hFilePutCharLn = #genericHPut @Char @FailableW (\out:WriteFileStream -> select PutCharLn out)
+
+hFilePutString, hFilePutStringLn : String -> WriteFileStream -> FailableW
+hFilePutString   = #genericHPut @String @FailableW (\out:WriteFileStream -> select PutString   out)
+hFilePutStringLn = #genericHPut @String @FailableW (\out:WriteFileStream -> select PutStringLn out)
+
+
+
+
+type FilePath = String
+data FileHandle = FileHandle () 
+
+data MaybeF  = JustF ((WriteFileStream, dualof WriteFileStream), FileHandle) | NothingF 
+data FailedF = Ok | Error
+data MaybeS  = JustS WriteFileStream | NothingS
+
+
+openWriteFile : FilePath -> MaybeS
+openWriteFile fp = 
+    case #openWriteFile @FileHandle @WriteFileStream @MaybeF fp FileHandle (JustF, NothingF) of {
+        JustF v -> 
+            let (chs, fh) = v in
+            let (c, s) = chs in
+            fork $ runWriteFileStream fh s;
+            JustS c,
+        NothingF -> NothingS
+    }
+
+
+
+runWriteFileStream : FileHandle -> dualof WriteFileStream -> ()
+runWriteFileStream fh ch =
+    match ch with {
+        PutBool     ch -> f @Bool   fh ch,
+        PutBoolLn   ch -> f @Bool   fh ch,
+        PutInt      ch -> f @Int    fh ch,
+        PutIntLn    ch -> f @Int    fh ch,
+        PutChar     ch -> f @Char   fh ch,
+        PutCharLn   ch -> f @Char   fh ch,
+        PutString   ch -> f @String fh ch,
+        PutStringLn ch -> f @String fh ch,
+        Close       _  -> #closeFile @FileHandle fh
+    }
+
+f : forall a . FileHandle -> ?a;dualof FailableW -> ()
+f fh ch =
+    let (x, ch) = receive ch in
+    case #putFile @a @FileHandle @FailedF x fh (Ok, Error) of {
+        Ok    -> select Ok    ch & runWriteFileStream fh,
+        Error -> select Error ch & sink @Skip
+    }
+    -- runWriteFileStream fh $ select Ok ch
+
+
+
+
+
+
+
+
+
+--  $$$$$$\  
+-- $$ ___$$\ 
+-- \_/   $$ |
+--   $$$$$ / 
+--   \___$$\ 
+-- $$\   $$ |
+-- \$$$$$$  |
+--  \______/ 
+
+
 
 -- | A mark for functions that do not terminate
 type Diverge = ()
@@ -279,9 +411,11 @@ repeat n thunk =
         thunk ();
         repeat @a (n - 1) thunk
 
+-- type Consumer a = a 1-> ()
+
 -- | Receive a value from a linear channel and apply a function to it.
 --   Returns the continuation channel
-receiveAnd : forall a b:1S . (a -> ()) -> ?a;b 1-> b
+receiveAnd : forall a b:1S . (a -> ()) {- Consumer a -} -> ?a;b 1-> b
 receiveAnd f ch =
     let (x, ch) = receive ch in
     f x;
