@@ -97,15 +97,38 @@ initialCtx = Map.fromList
           [(x, "")] -> Cons v $ l ++ [[Integer x]]
           _         -> nothingCons
     ))
-      --genericRead  (\s _ -> Integer (read s)))
   , (var "#readChar", PrimitiveFun (\(Pair (Cons v l) nothingCons) -> genericGet nothingCons $ \s -> 
         case s of
           (c : _) -> Cons v $ l ++ [[Character c]]
           _       -> nothingCons
     ))
-      --genericRead (\(c : s) -> Character c))
   , (var "#readString", PrimitiveFun (\(Pair (Cons v l) nothingCons) -> genericGet nothingCons $ \s -> Cons v $ l ++ [[String s]]))
-      -- genericRead (\s _ -> String s))
+  -- Files
+  , (var "#putFile"
+    , PrimitiveFun (\v1 -> 
+      PrimitiveFun (\(Cons v2 [[Handle fh]]) ->
+      PrimitiveFun (\(Pair okCons errorCons) -> IOValue $
+        catchAny
+          (hPutStr fh (show v1) >> return okCons)
+          (\_ -> return errorCons)
+      ))))
+  , (var "#closeFile"
+    , PrimitiveFun (\(Cons v [[Handle fh]]) -> IOValue $
+      catchAny
+          (hClose fh >> return Unit)
+          (\_ -> return Unit)
+      ))
+  , (var "#openWriteFile"
+    , PrimitiveFun (\(String s) -> 
+      PrimitiveFun (\(Cons v1 l1) ->
+      PrimitiveFun (\(Pair (Cons v2 l2) nothingCons) -> IOValue $
+        catchAny 
+          (openFile s WriteMode >>= \handle -> 
+           new >>= \(clientChan, serverChan) -> return $
+            Cons v2 $ l2 ++ [[Pair (Pair (Chan clientChan) (Chan serverChan)) (Cons v1 (l1 ++ [[Handle handle]]))]]
+          )
+          (\_ -> return nothingCons)
+      ))))
   -- Id  
   , (var "id", PrimitiveFun id)
   -- Undefined
@@ -138,6 +161,3 @@ initialCtx = Map.fromList
     catchAny
       (getLine >>= \s -> return $ f s) 
       (\_ -> return nothingCons)
-
-  -- maybeRead :: String -> Maybe a
-  -- maybeRead = fmap fst . listToMaybe . reads
