@@ -55,23 +55,23 @@ type OutStream : 1S = +{ PutBool    : !Bool  ; OutStream
 #genericHPut sel x outStream = sel outStream & send x
 
 hPutBool, hPutBoolLn: Bool -> OutStream -> OutStream
-hPutBool   = #genericHPut @Bool (\out:OutStream -> select PutBool out)
-hPutBoolLn = #genericHPut @Bool (\out:OutStream -> select PutBoolLn out)
+hPutBool   = #genericHPut @Bool (select PutBool)
+hPutBoolLn = #genericHPut @Bool (select PutBoolLn)
 
 
 hPutInt, hPutIntLn : Int -> OutStream -> OutStream
-hPutInt   = #genericHPut @Int (\out:OutStream -> select PutInt out)
-hPutIntLn = #genericHPut @Int (\out:OutStream -> select PutIntLn out)
+hPutInt   = #genericHPut @Int (select PutInt)
+hPutIntLn = #genericHPut @Int (select PutIntLn)
 
 
 hPutChar, hPutCharLn : Char -> OutStream -> OutStream
-hPutChar   = #genericHPut @Char (\out:OutStream -> select PutChar out)
-hPutCharLn = #genericHPut @Char (\out:OutStream -> select PutCharLn out)
+hPutChar   = #genericHPut @Char (select PutChar)
+hPutCharLn = #genericHPut @Char (select PutCharLn)
 
 
 hPutString, hPutStringLn : String -> OutStream -> OutStream
-hPutString   = #genericHPut @String (\out:OutStream -> select PutString out)
-hPutStringLn = #genericHPut @String (\out:OutStream -> select PutStringLn out)
+hPutString   = #genericHPut @String (select PutString)
+hPutStringLn = #genericHPut @String (select PutStringLn)
 
 
 #genericPut : forall a . (OutStream -> !a;OutStream) -> a -> OutStreamProvider -> ()
@@ -79,23 +79,23 @@ hPutStringLn = #genericHPut @String (\out:OutStream -> select PutStringLn out)
     sink @Skip $ select Close $ #genericHPut @a sel x $ receive_ @OutStream outProv 
 
 putBool, putBoolLn: Bool -> OutStreamProvider -> ()
-putBool   = #genericPut @Bool (\out:OutStream -> select PutBool out)
-putBoolLn = #genericPut @Bool (\out:OutStream -> select PutBoolLn out)
+putBool   = #genericPut @Bool (select PutBool)
+putBoolLn = #genericPut @Bool (select PutBoolLn)
 
 
 putInt, putIntLn : Int -> OutStreamProvider -> ()
-putInt   = #genericPut @Int (\out:OutStream -> select PutInt out)
-putIntLn = #genericPut @Int (\out:OutStream -> select PutIntLn out)
+putInt   = #genericPut @Int (select PutInt)
+putIntLn = #genericPut @Int (select PutIntLn)
 
 
 putChar, putCharLn : Char -> OutStreamProvider -> ()
-putChar   = #genericPut @Char (\out:OutStream -> select PutChar out)
-putCharLn = #genericPut @Char (\out:OutStream -> select PutCharLn out)
+putChar   = #genericPut @Char (select PutChar)
+putCharLn = #genericPut @Char (select PutCharLn)
 
 
 putString, putStringLn : String -> OutStreamProvider -> ()
-putString   = #genericPut @String (\out:OutStream -> select PutString out)
-putStringLn = #genericPut @String (\out:OutStream -> select PutStringLn out)
+putString   = #genericPut @String (select PutString)
+putStringLn = #genericPut @String (select PutStringLn)
 
 
 type InStreamProvider : *S = *?InStream
