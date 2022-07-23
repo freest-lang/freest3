@@ -1,10 +1,13 @@
-main : (Int, Skip)
+main : Int
 main =
-  let (w, r) = new !(?Int) in
+  let (w, r) = new !(?Int;End);End in
   fork (
-    let (ri, wi) = new ?Int in
-    fork $ send ri w;
-    send 5 wi);
-  let (ri, _) = receive r in
-  receive ri
--- Expect (5, Skip)  
+    let (ri, wi) = new ?Int;End in
+    fork $ (send ri w & close);
+    send 5 wi & close);
+  let (ri, r) = receive r in
+  close r;
+  let (n, ri) = receive ri in
+  close ri;
+  n
+-- Expect 5

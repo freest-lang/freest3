@@ -1,5 +1,6 @@
-main : ((Int, Bool), Skip) 
+main : (Int, Bool) 
 main =
-  let (w, r) = new !(Int, Bool) in
+  let (w, r) = new !(Int, Bool);End in
   fork $ send (5, True) w;
-  receive r
+  let (p, r) = receive r in
+  close r; p

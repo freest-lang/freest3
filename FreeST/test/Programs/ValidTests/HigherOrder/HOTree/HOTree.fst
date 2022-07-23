@@ -1,11 +1,11 @@
 data Tree = Leaf | Node Tree Int Tree
-type WTree:1S = +{Leaf: Skip, Node: !RTree ; !Int ; !RTree}
-type RTree:1S = &{Leaf: Skip, Node: ?RTree ; ?Int ; ?RTree}
+type WTree:1S = +{Leaf: Skip, Node: !RTree ; !Int ; !RTree};End
+type RTree:1S = &{Leaf: Skip, Node: ?RTree ; ?Int ; ?RTree};End
 
-sendTree : Tree -> WTree -> Skip
+sendTree : Tree -> WTree -> ()
 sendTree t c =
   case t of {
-    Leaf -> select Leaf c,
+    Leaf -> select Leaf c & close,
     Node t1 x t2 ->
       let c = select Node c in
       -- left
@@ -17,13 +17,14 @@ sendTree t c =
       -- right
       let (w2, r2) = new WTree in
       let c = send r2 c in
+      close c;
       sendTree t2 w2
   }
 
 receiveTree : RTree -> Tree
 receiveTree c =
   match c with {
-    Leaf c -> Leaf,
+    Leaf c -> close c; Leaf,
     Node c ->
       -- left
       let (r1, c) = receive c in
@@ -33,6 +34,7 @@ receiveTree c =
       -- right
       let (r2, c) = receive c in
       let t2 = receiveTree r2 in
+      close c;
       Node t1 x t2
   }
 
@@ -51,6 +53,6 @@ aTree =
 
 main : Tree
 main =
-  let (w, r) = new WTree in
-  sendTree aTree w;
+  let (w, r) = new WTree;End in
+  sendTree aTree w; 
   receiveTree r
