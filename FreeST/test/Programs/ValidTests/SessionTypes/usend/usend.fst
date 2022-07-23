@@ -2,7 +2,7 @@
 Unary send.
 The type of send is
 
-  ∀a:ML . a -> ∀b:SL . !a;b -o b
+  ∀a:ML . a -> ∀b:SL . !a;b 1-> b
 
 yet it can be used with an MU type via eta-conversion.
 -}
@@ -14,10 +14,10 @@ main : ()
 main =
   -- let unfunc = usend [Int] 5 in -- unfunc : () -> ∀b: 1S . !Int;b 1-> b
   let unfunc = λ_:() -> send  @Int 5 in -- unfunc : () -> ∀b: 1S . !Int;b 1-> b
-  let (s1, r1) = new !Int in
-  let (s2, r2) = new !Int in
-  fork $ unfunc ()  @Skip s1;
-  fork $ unfunc ()  @Skip s2;
-  fork (let (x, _) = receive r1 in printIntLn x);
-  let (x, _) = receive r2 in printIntLn x ;
-  ()
+  let (s1, r1) = new !Int;End in
+  let (s2, r2) = new !Int;End in
+  fork (unfunc () @End s1 & close);
+  fork (unfunc () @End s2 & close);
+  fork (let (x, r1) = receive r1 in close r1; printIntLn x);
+  let (x, r2) = receive r2 in printIntLn x ;
+  close r2

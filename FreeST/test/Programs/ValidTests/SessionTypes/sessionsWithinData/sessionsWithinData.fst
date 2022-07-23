@@ -1,15 +1,14 @@
-data T = One Skip | Two ?Int
+data T = One End | Two ?Int;End
 
 read : T -> Int
 read t =
   case t of {
-    One _ -> 5,
-    Two c -> let (x, _) = receive c in x
+    One c -> close c; 5,
+    Two c -> let (x, c) = receive c in close c; x
   }
 
 main : Int
 main =
-  let (w, r) = new !Int in
-  fork @Int $ read $ Two r;
-  let _ = send 5 w in
-  10
+  let (w, r) = new !Int;End in
+  fork @() (send 10 w & close);
+  read $ Two r

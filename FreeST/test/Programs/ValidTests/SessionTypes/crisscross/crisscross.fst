@@ -10,21 +10,21 @@ channel or with asynchronous channels. In a typical synchronous
 
 -}
 
-writer : !Char -> !Bool 1-> ()
+writer : !Char;End -> !Bool;End 1-> ()
 writer w1 w2 =
-  let _ = send 'c' w1 in
-  let _ = send False w2 in
-  ()
+  send 'c' w1 & close;
+  send False w2 & close
 
-reader : ?Char -> ?Bool 1-> Bool
+reader : ?Char;End -> ?Bool;End 1-> Bool
 reader r1 r2 =
-  let (x, _) = receive r2 in
-  let (_, _) = receive r1 in
+  let (x, r2) = receive r2 in
+  let (_, r1) = receive r1 in
+  close r2; close r1; 
   x
 
 main : Bool
 main =
-  let (w1, r1) = new !Char in
-  let (w2, r2) = new !Bool in
+  let (w1, r1) = new !Char;End in
+  let (w2, r2) = new !Bool;End in
   fork @() (writer w1 w2);
   reader r1 r2

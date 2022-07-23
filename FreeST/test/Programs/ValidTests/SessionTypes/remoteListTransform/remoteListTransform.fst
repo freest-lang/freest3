@@ -1,8 +1,8 @@
 data IntList = Nil | Cons Int IntList
---type IntListC = +{Nil: Skip, Cons: !Int;IntListC;?Int}
---type IntListS = &{Nil: Skip, Cons: ?Int;IntListS;!Int}
+type IntListC : 1S = +{NilC: Skip, ConsC: !Int;IntListC;?Int}
+type IntListS : 1S = &{NilC: Skip, ConsC: ?Int;IntListS;!Int}
 
-transform : forall a : 1S . IntList -> (rec x: 1S. +{NilC: Skip, ConsC: !Int;x;?Int});a -> (IntList, a)
+transform : forall a : 1S . IntList -> IntListC;a -> (IntList, a)
 transform list c =
     case list of {
         Nil ->
@@ -16,7 +16,7 @@ transform list c =
     }
 
 
-listSum : forall a : 1S . (rec x: 1S. &{NilC: Skip, ConsC: ?Int;x;!Int});a -> (Int,a)
+listSum : forall a : 1S . IntListS;a -> (Int,a)
 listSum c =
     match c with {
         NilC c ->
@@ -33,7 +33,8 @@ aCons, main : IntList
 aCons = Cons 5 (Cons 4 (Cons 3 (Cons 2 (Cons 1 Nil))))
 
 main =
-    let (w, r) = new (rec x: 1S. +{NilC: Skip, ConsC: !Int;x;?Int}) in
-    let _ = fork @(Int, Skip) $ listSum @Skip r in
-    let (l, _) = transform @Skip aCons w in
+    let (w, r) = new IntListC;End in
+    let _ = fork @() $ (listSum @End r & snd @Int @End & close) in
+    let (l, c) = transform @End aCons w in
+    close c;
     l

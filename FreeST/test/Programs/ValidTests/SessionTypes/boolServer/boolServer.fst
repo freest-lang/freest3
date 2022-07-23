@@ -1,41 +1,48 @@
-boolServer :  &{And: Skip;?Bool;?Bool;!Bool;Skip,
-                Or: Skip;?Bool;?Bool;!Bool;Skip,
-                Not: Skip;?Bool;!Bool;Skip} -> ()
+type BoolServer : 1S = &{ And: Skip; ?Bool; ?Bool; !Bool
+                        , Or : Skip; ?Bool; ?Bool; !Bool
+                        , Not: Skip; ?Bool; !Bool
+                        }
+                        ; End
+type BoolClient : 1S = dualof BoolServer
+
+boolServer :  BoolServer -> ()
 boolServer c =
   match c with {
     And c1 ->
       let (n1, c2) = receive c1 in
       let (n2, c3) = receive c2 in
-      let x = send (n1 && n2) c3 in
-      (),
+      send (n1 && n2) c3 
+      & close,
 
     Or c1 ->
       let (n1, c2) = receive c1 in
       let (n2, c3) = receive c2 in
-      let x = send (n1 || n2) c3 in
-      (),
+      send (n1 || n2) c3
+      & close,
 
     Not c1 ->
       let (n1, c2) = receive c1 in
-      let x = send (not n1) c2 in
-      ()
+      send (not n1) c2
+      & close
   }
 
 main : Bool
 main = startClient client1
 
-client1 : +{And: !Bool;!Bool;?Bool;Skip, Or: !Bool;!Bool;?Bool;Skip, Not: !Bool;?Bool;Skip} -> Bool
+client1 : BoolClient -> Bool
 client1 w =
-  let w1 = select And w in
-  let w2 = send True w1 in
-  let r1 = send False w2 in
-  let (x, r2) = receive r1 in
+  let (x, r2) = 
+    select And w 
+    & send True  
+    & send False
+    & receive in
+  close r2;
   x
 
 
-startClient : (+{And: !Bool;!Bool;?Bool;Skip, Or: !Bool;!Bool;?Bool;Skip, Not: !Bool;?Bool;Skip} -> Bool) -> Bool
+startClient : (BoolClient -> Bool) -> Bool
 startClient client =
-  let (w,r) = new +{And: !Bool;!Bool;?Bool;Skip, Or: !Bool;!Bool;?Bool;Skip, Not: !Bool;?Bool;Skip} in
+  let (w,r) = new BoolClient in
   let x = fork @() (boolServer r) in
   client w
 

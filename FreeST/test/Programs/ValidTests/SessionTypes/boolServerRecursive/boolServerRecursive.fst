@@ -1,4 +1,11 @@
-boolServer : (rec x: 1S. &{And: ?Bool;?Bool;!Bool;x, Or: ?Bool;?Bool;!Bool;x, Not: ?Bool;!Bool;x, Done: Skip}) -> ()
+type BoolServer : 1S = &{ And : ?Bool; ?Bool; !Bool; BoolServer
+                        , Or  : ?Bool; ?Bool; !Bool; BoolServer
+                        , Not : ?Bool; !Bool; BoolServer
+                        , Done: End
+                        }
+type BoolClient : 1S = dualof BoolServer
+
+boolServer : BoolServer -> ()
 boolServer c =
   match c with {
     And c ->
@@ -6,7 +13,6 @@ boolServer c =
       let (n2, c) = receive c in
       let c = send (n1 && n2) c in
       boolServer c,
-
     Or c ->
       let (n1, c) = receive c in
       let (n2, c) = receive c in
@@ -17,25 +23,25 @@ boolServer c =
       -- let c = send c (not n) in
       -- boolServer c,
       (boolServer (send (not n) c)),
-
-    Done c ->
-      ()
+    Done c -> close c
   }
 
-client1 : (rec x: 1S. +{And: !Bool;!Bool;?Bool;x, Or: !Bool;!Bool;?Bool;x, Not: !Bool;?Bool;x,Done: Skip}) -> Bool
+client1 : BoolClient -> Bool
 client1 c =
-  let c = select And c in
-  let c = send True c in
-  let c = send True c in
-  let (x, c) = receive c in
-  let c = select Not c in
-  let c = send x c in
-  let (y, c) = receive c in
-  let c = select Done c in
+  let (x, c) = 
+    select And c
+    & send True
+    & send True
+    & receive in 
+  let (y, c) = 
+    select Not c
+    & send x 
+    & receive in
+  select Done c & close ;
   y
 
 main : Bool
 main =
-  let (w, r) = new rec x: 1S. +{And: !Bool;!Bool;?Bool;x, Or: !Bool;!Bool;?Bool;x, Not: !Bool;?Bool;x, Done: Skip} in
+  let (w, r) = new BoolClient in
   let x = fork @() (boolServer r) in
   client1 w
