@@ -6,5 +6,5 @@ main = 10
 data Tree = Leaf | Node Int Tree Tree
 
 -- invalid extract pair: Expecting a pair type; found Bool
-fun : !Int;Skip -> Tree -> Bool
-fun c t = let x = send t c in True
+fun : !Int;End -> Tree -> Bool
+fun c t = send t c & close; True
