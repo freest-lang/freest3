@@ -34,7 +34,7 @@ data Connection = CNil | Connection Channels Connection
 data Layers     = LNil | Layers Connection Layers
 
 ---- Channels ----
-type Send    : 1S = !Int
+type Send    : 1S = !Int;End
 type Receive : 1S = dualof Send
 
 ---- Network ----
@@ -130,8 +130,9 @@ recNeuron : RList -> Int
 recNeuron rs =
     case rs of {
         RNil -> 0,
-        RCons r rs ->
-            let (x,_) = receive r in
+        RCons r rs -> 
+            let (x, c) = receive r in
+            close c;
             x + recNeuron rs
     }
 
@@ -140,7 +141,7 @@ sendNeuron x ss =
     case ss of {
         SNil -> (),
         SCons s ss ->
-            send x s;
+            send x s & close;
             sendNeuron x ss
     }
 
