@@ -101,7 +101,7 @@ End;?Bool
 !Int;End;!Bool
 
 []
-(rec a:1S . +{A: !Int;a, B: End});!Int
+(rec a:1S . +{A: !Int;a, B: Skip;End;Skip});!Int
 rec a:1S . +{A: !Int;a, B: End;a}
 
 []
@@ -113,8 +113,20 @@ rec a:1S  . &{N:!Int;!Int;a, L:End};?Bool
 rec a:1S  . &{N:!Int;!Int;a, L:Skip};End
 
 []
+rec a:1S . !((rec a:1S . +{A: !Int;a, B: Skip;End;Skip});!Int);?(a;!(End);End;?Bool)
+rec b:1S . !(rec a:1S . +{A: !Int;a, B: End;a});Skip;?(b;Skip;!(End);End;b;!b)
+
+[]
 !(!Int;End)
 !(!Int;Skip;End;?Bool)
+
+[]
+∀ α: 1S . End;α;!Int
+∀ β: 1S . (End;β);Skip
+
+[]
+∀ α: 1S . rec a:1S . !((rec a:1S . +{A: !α;a, B: α;End;α});!Int);?(a;!(End);End)
+∀ β: 1S . rec b:1S . !(rec a:1S . +{A: !β;a, B: β;End;!a});Skip;?(b;Skip;!(End);End;β;!β)
 
 -- Functional and session, mixed
 
