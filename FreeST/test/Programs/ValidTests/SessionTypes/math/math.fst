@@ -13,6 +13,6 @@ mathServer c =
 main : Int
 main =
   let (r,w) = new &{Negate: ?Int;!Int, Add: ?Int;?Int;!Int} in
-  let _ = fork (mathServer r) in
+  let _ = fork (\_:()1-> mathServer r) in
   let (x, _) = receive (send 5 (select Negate w)) in
   x

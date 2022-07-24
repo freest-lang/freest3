@@ -53,8 +53,8 @@ main : ()
 main =
   let (w1, r1) = new !Int;!Int;Channel in
   let (w2, r2) = new Channel in
-  fork $ writeValues w1 ;
-  fork $ readValues r1 w2 ;
+  fork (\_:()1-> writeValues w1);
+  fork (\_:()1-> readValues r1 w2);
   receiveMain @Skip r2 ;
   ()
 

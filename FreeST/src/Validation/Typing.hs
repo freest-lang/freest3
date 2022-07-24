@@ -109,7 +109,9 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkVar p "send" = do
   -- Fork e
 synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "fork" = do
   t <- synthetise kEnv e
-  void $ K.checkAgainst kEnv (K.lt defaultSpan) t
+  (u1, u2) <- Extract.function e t
+  checkEquivTypes e kEnv u1 (T.Unit defaultSpan)
+  void $ K.checkAgainst kEnv (K.ut defaultSpan) u2
   return $ T.Unit p
 -- Application, general case
 synthetise kEnv (E.App _ e1 e2) = do

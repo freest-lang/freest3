@@ -101,7 +101,7 @@ mkNeurons0 input con0 =
                 CEnd -> (),
                 Connection c con0 -> 
                     let (s,_) = c in
-                    fork $ mkNeuron0 i s;
+                    fork (\_:()1-> mkNeuron0 i s);
                     mkNeurons0 input con0
             }
     }
@@ -116,7 +116,7 @@ mkNeurons con1 con2 =
         Connection c con3 -> 
             let (s1,_)  = c in
             let (r1,r2) = getHeads con1 in
-            fork $ mkNeuron r1 s1;
+            fork (\_:()1-> mkNeuron r1 s1);
             mkNeurons r2 con3
     }
 
