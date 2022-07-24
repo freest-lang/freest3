@@ -1,5 +1,6 @@
 module Elaboration.Match
-  ( matchFuns
+  ( addMissingVars
+  , matchFuns
   )
 where
 
@@ -20,10 +21,23 @@ import           Util.FreestState
 
 import           Debug.Trace -- debug (used on debugM function)
 
+type Equation = ([Pattern],Exp)
+
+-- filling functions -----------------------------------------------
+
+addMissingVars :: ParseEnvPat -> ParseEnvPat
+addMissingVars pep = Map.map fillVars pep
+
+fillVars :: [Equation] -> [Equation]
+fillVars fun = map (fillVars' maxLen) fun
+  where maxLen = foldr (max.length.fst) 0 fun
+
+fillVars' :: Int -> Equation -> Equation
+fillVars' n (ps,e) = (ps++missingVars,e) 
+  where pat = PatVar $ mkVar defaultSpan "_"
+        missingVars = replicate (n - (length ps)) pat
 
 -- match -----------------------------------------------------------
-
-type Equation = ([Pattern],Exp)
 
 matchFuns :: ParseEnvPat -> FreestState ParseEnv
 matchFuns pep = mapM matchFun pep
@@ -68,7 +82,7 @@ isRuleChan cs = b1 &&^ b2
 -- empty -----------------------------------------------------------
 ruleEmpty :: [Variable] -> [Equation] -> FreestState Exp
 ruleEmpty _ ((_,e):cs) = do v' <- v; replaceExp v' v' e
-  where v = R.renameVar $ mkVar (defaultSpan) "_"
+  where v = R.renameVar $ mkVar defaultSpan "_"
 
 -- var -------------------------------------------------------------
 ruleVar :: [Variable] -> [Equation] -> FreestState Exp

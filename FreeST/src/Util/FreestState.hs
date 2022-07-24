@@ -110,6 +110,9 @@ addToPEnvPat x xs e =
 getPEnvPat :: FreestState ParseEnvPat
 getPEnvPat = gets parseEnvPat
 
+setPEnvPat :: ParseEnvPat -> FreestState ()
+setPEnvPat parseEnvPat =  modify (\s -> s { parseEnvPat })
+
 addToPEnvChoices :: MonadState FreestS m => [Variable] -> m()
 addToPEnvChoices cs =
   modify (\s -> s

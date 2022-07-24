@@ -188,8 +188,8 @@ instance Message ErrorType where
     "\n\t                      " ++ showModule (showModuleName sp1) sp1
   -- TODOX
   msg (DifNumberOfArguments p fun) sty ts =
-    "Equation for '" ++ style red sty ts (show fun) ++
-    "have different number of arguments " ++
+    "Equations for " ++ style red sty ts (show fun) ++
+    " have different number of arguments " ++
     "\n  Declared in file/module " ++ showModule (showModuleName p) p ++
     ":\n  " ++ red sty (show fun)
   msg (TypeVarOutOfScope _ x) sty ts = "Type variable not in scope: " ++ style red sty ts x

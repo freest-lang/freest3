@@ -27,6 +27,7 @@ elaboration = do
   -- | Checks code
   checkNumArgs =<< getPEnvPat
   -- TODOX check pattern matching construction size
+  (Match.addMissingVars <$> getPEnvPat) >>= setPEnvPat
   -- | Remove all patterns
   (Match.matchFuns =<< getPEnvPat) >>= setPEnv
   -- | Solve the equations' system.

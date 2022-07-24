@@ -134,15 +134,16 @@ checkChoices (a:next) cs = do
   env <- parseEnvChoices <$> get
   case env Map.!? a of 
     Nothing  -> return ()
-    Just cs' -> checkChoice here there
-             >> checkChoice there here
+    Just cs' -> checkChoice here there p1 p2
+             >> checkChoice there here p2 p1
              >> checkChoices next cs
-      where (here,there) = (cs\\cs',cs'\\cs)
+      where (p1,p2)  = (getSpan $ head cs, getSpan $ head cs') 
+            (here,there) = (cs\\cs',cs'\\cs)
 
-checkChoice :: [Variable] -> [Variable] -> FreestStateT ()
-checkChoice extra []      = return ()
-checkChoice extra missing = addError 
-            $ MissingChoices (getSpan $ head extra) extra (getSpan $ head missing)
+checkChoice :: [Variable] -> [Variable] -> Span -> Span -> FreestStateT ()
+checkChoice []        missing     _  _  = return ()
+checkChoice (x:extra) []          p1 p2 = addError $ MissingChoices p1 (x:extra) p2
+checkChoice (x:extra) (y:missing) p1 p2 = addError $ MissingChoices p1 (x:extra) p2
 
 -- OPERATORS
 
