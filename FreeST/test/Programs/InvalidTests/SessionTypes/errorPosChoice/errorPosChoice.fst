@@ -1,7 +1,7 @@
 main : Bool
 main =
   let (w, r) = new &{B: !Bool} in
-  let _ = fork @Skip (f w) in
+  let _ = fork @Skip (\_:() 1-> f w) in
   let (x, _) = f1 r in
   x
 
