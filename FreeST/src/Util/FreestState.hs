@@ -95,13 +95,13 @@ setPEnv parseEnv = modify (\s -> s { parseEnv })
 
 -- | NEXT VAR
 
-getNextIndex :: FreestState Int
+getNextIndex :: MonadState FreestS m => m Int
 getNextIndex = do
   next <- gets nextIndex
   modify (\s -> s { nextIndex = next + 1 })
   return next
 
-freshTVar :: String -> Span -> FreestState Variable
+freshTVar :: MonadState FreestS m => String -> Span -> m Variable
 freshTVar s p = mkVar p . (s ++) . show <$> getNextIndex
 
 -- | VAR ENV

@@ -38,12 +38,12 @@ null l = l  @Bool (λhd:a tl:Bool -> False) True
 mainNull : Bool
 mainNull = null  @Char twoChars
 
-diverge : ∀a . () -> a
-diverge x = diverge  @a x
+diverge' : ∀a . () -> a
+diverge' x = diverge' @a x
 
 -- Function head takes the head of a non-empty list and diverges otherwise
 head : ∀a . (∀r . (a -> r -> r) -> r -> r) -> a
-head l = (l  @(() -> a) (λhd:a tl:(()->a) _:() -> hd) (diverge  @a)) ()
+head l = (l  @(() -> a) (λhd:a tl:(()->a) _:() -> hd) (diverge' @a)) ()
 -- head = Λa => λl:(∀r . (a -> r -> r) -> r -> r) ->
 --   (l [()->a] (λhd:a tl:(()->a) _:() -> hd) (diverge [a])) () -- extended version
 

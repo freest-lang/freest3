@@ -38,7 +38,7 @@ import qualified Validation.Kinding as K -- Again?
 import qualified Validation.Rename as Rename ( subs )
 
 import           Control.Monad.State            ( when
-                                                , unless
+                                                , unless, evalState, MonadState (get)
                                                 )
 import           Data.Functor
 import qualified Data.Map.Strict as Map
@@ -95,24 +95,21 @@ synthetise kEnv (E.App _ (E.Var p x) e) | x == mkVar p "collect" = do
 synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "receive" = do
   t        <- synthetise kEnv e
   (u1, u2) <- Extract.input e t
-  void $ K.checkAgainst kEnv (K.lm $ defaultSpan) u1
+  void $ K.checkAgainst kEnv (K.lt $ defaultSpan) u1
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
   return $ T.Pair p u1 u2
   -- Send e1 e2
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkVar p "send" = do
   t        <- synthetise kEnv e2
   (u1, u2) <- Extract.output e2 t
-  void $ K.checkAgainst kEnv (K.lm defaultSpan) u1
+  void $ K.checkAgainst kEnv (K.lt defaultSpan) u1
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
   checkAgainst kEnv e1 u1
   return u2
   -- Fork e
-synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "fork" = do
-  t <- synthetise kEnv e
-  (u1, u2) <- Extract.function e t
-  checkEquivTypes e kEnv u1 (T.Unit defaultSpan)
-  void $ K.checkAgainst kEnv (K.ut defaultSpan) u2
-  return $ T.Unit p
+synthetise kEnv (E.App p fork@(E.Var _ x) e) | x == mkVar p "fork" = do 
+  (_, t) <- get >>= \s -> Extract.function e (evalState (synthetise kEnv e) s)
+  synthetise kEnv (E.App p (E.TypeApp p fork t) e)
 -- Application, general case
 synthetise kEnv (E.App _ e1 e2) = do
   t        <- synthetise kEnv e1

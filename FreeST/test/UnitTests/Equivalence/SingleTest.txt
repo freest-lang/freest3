@@ -1,0 +1,5 @@
+!(+{go: Skip}) ; rec x. +{go: x}
+!(+{go: +{go: Skip}}) ; rec x. +{go: x}
+False
+
+-- stack test :units --ta "-m SingleTest"

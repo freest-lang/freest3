@@ -5,21 +5,21 @@ module Elaboration.Elaboration
   )
 where
 
+import           Elaboration.Elaborate 
 import           Elaboration.ResolveDuality as Dual
+import           Elaboration.ResolveEquations
 import           Equivalence.Normalisation ( normalise )
 import           Syntax.Base
 import qualified Syntax.Expression as E
-import qualified Syntax.Kind as K
 import           Syntax.Program ( VarEnv )
 import qualified Syntax.Type as T
 import           Util.Error
 import           Util.FreestState
 import           Util.PreludeLoader ( userDefined )
-import           Validation.Rename ( isFreeIn )
 
 import           Data.Functor
-import           Data.Map.Strict as Map
-import qualified Data.Set as Set
+import           Data.Maybe
+
 
 
 elaboration :: FreestState ()
@@ -29,9 +29,9 @@ elaboration = do
   -- | From this point, there are no type names on the RHS
   --   of the type declarations and datatypes (type env)
   -- | Substitute all type names on the function signatures
-  substitute =<< getVEnv
+  elabVEnv =<< getVEnv
   -- | same for parse env (which contains the functions' bodies)
-  substitute =<< getPEnv
+  elabPEnv =<< getPEnv
   -- | From this point, there are no type names on the function signatures
   --   and on the function bodies. 
   -- | Then, resolve all the dualof occurrences on:
@@ -49,123 +49,15 @@ elaboration = do
   buildProg
   -- debugM . ("Program " ++) <$> show =<< getProg
 
-type Visited = Set.Set Variable
-
--- | Solve equations (TypeEnv)
-
-solveEquations :: FreestState ()
-solveEquations = buildRecursiveTypes >> solveAll >> cleanUnusedRecs
- where
-  solveAll :: FreestState ()
-  solveAll =
-    getTEnv
-      >>= tMapWithKeyM (\x (k, v) -> (k, ) <$> solveEq Set.empty x v)
-      >>= setTEnv
-
-  solveEq :: Visited -> Variable -> T.Type -> FreestState T.Type
-  solveEq v f (T.Almanac p s tm) = T.Almanac p s <$> mapM (solveEq v f) tm
-  solveEq v f (T.Arrow p m t1 t2) =
-    T.Arrow p m <$> solveEq v f t1 <*> solveEq v f t2
-  solveEq v f (T.Pair p t1 t2) = T.Pair p <$> solveEq v f t1 <*> solveEq v f t2
-  solveEq v f (T.Semi p t1 t2) = T.Semi p <$> solveEq v f t1 <*> solveEq v f t2
-  solveEq v f (T.Message p pol t) = T.Message p pol <$> solveEq v f t
-  solveEq v f t@(T.Var p x)
-    | x `Set.member` v = pure t
-    | f == x = pure t
-    | otherwise = getFromTEnv x >>= \case
-      Just tx -> solveEq (f `Set.insert` v) x (snd tx)
-      Nothing -> addError (TypeVarOutOfScope p x) $> omission p
-  solveEq v f (T.Forall p (Bind p1 x k t)) =
-    T.Forall p . Bind p1 x k <$> solveEq (x `Set.insert` v) f t
-  solveEq v f (T.Rec p (Bind p1 x k t)) =
-    T.Rec p . Bind p1 x k <$> solveEq (x `Set.insert` v) f t
-  solveEq v f (T.Dualof p t) = T.Dualof p <$> solveEq v f t
-  solveEq _ _ p              = pure p
 
 
--- | Build recursive types
+-- | Elaboration over environments (VarEnv + ParseEnv)
 
-buildRecursiveTypes :: FreestState ()
-buildRecursiveTypes = Map.mapWithKey buildRec <$> getTEnv >>= setTEnv
-  where buildRec x (k, t) = (k, T.Rec (getSpan x) (Bind (getSpan x) x k t))
+elabVEnv :: VarEnv -> FreestState ()
+elabVEnv = tMapWithKeyM_ (\pv t -> addToVEnv pv =<< elaborate t) . userDefined
 
--- | Clean rec types where the variable does not occur free
-
-cleanUnusedRecs :: FreestState ()
-cleanUnusedRecs = Map.mapWithKey clean <$> getTEnv >>= setTEnv
- where
-  clean x u@(k, T.Rec _ Bind{body}) | x `isFreeIn` body = u
-                                    | otherwise      = (k, body)
-  clean _ kt = kt
-
-
--- | Substitutions over environment (VarEnv + ParseEnv)
-
-class Substitution t where
-  substitute :: t -> FreestState ()
-
--- | Substitute on function signatures (VarEnv)
-
-instance Substitution VarEnv where
-  substitute =
-    tMapWithKeyM_ (\pv t -> addToVEnv pv =<< elaborate t) . userDefined
-
--- | Substitute Types on the expressions (ParseEnv)
-
-instance Substitution ParseEnv where
-  substitute = tMapWithKeyM_ (\x (ps, e) -> addToPEnv x ps =<< elaborate e)
-
--- | Elaboration: Substitutions over Type, Exp, TypeMap, FieldMap, and Binds
-
-class Elaboration t where
-  elaborate :: t -> FreestState t
-
-instance Elaboration T.Type where
-  elaborate (  T.Almanac p s m ) = T.Almanac p s <$> elaborate m
-  elaborate (  T.Message p pol t) = T.Message p pol <$> elaborate t
-  elaborate (  T.Arrow p m t1 t2  ) = T.Arrow p m <$> elaborate t1 <*> elaborate t2
-  elaborate (  T.Pair p t1 t2   ) = T.Pair p <$> elaborate t1 <*> elaborate t2
-  elaborate (  T.Semi   p t1  t2) = T.Semi p <$> elaborate t1 <*> elaborate t2
-  elaborate (  T.Forall p kb    ) = T.Forall p <$> elaborate kb
-  elaborate (  T.Rec    p kb    ) = T.Rec p <$> elaborate kb
-  elaborate n@(T.Var    p tname ) = getFromTEnv tname >>= \case
-    Just t  -> addTypeName p n >> pure (changePos p (snd t))
-    Nothing -> pure n
-  elaborate (T.Dualof p t) = T.Dualof p <$> elaborate t
-  elaborate t              = pure t
-
--- Apply elaborateType over TypeMaps
-instance Elaboration T.TypeMap where
-  elaborate = mapM elaborate
-
-instance Elaboration a => Elaboration (Bind K.Kind a) where
-  elaborate (Bind p x k a) = Bind p x k <$> elaborate a
-
--- instance Elaboration (Bind K.Kind Exp) where
---   elaborate (Bind p x k e) = Bind p x k <$> elaborate e
-
-instance Elaboration (Bind T.Type E.Exp) where
-  elaborate (Bind p x t e) = Bind p x <$> elaborate t <*> elaborate e
-
--- Substitute expressions
-
-instance Elaboration E.Exp where
-  elaborate (E.Abs p m b   ) = E.Abs p m <$> elaborate b
-  elaborate (E.App  p e1 e2) = E.App p <$> elaborate e1 <*> elaborate e2
-  elaborate (E.Pair p e1 e2) = E.Pair p <$> elaborate e1 <*> elaborate e2
-  elaborate (E.BinLet p x y e1 e2) =
-    E.BinLet p x y <$> elaborate e1 <*> elaborate e2
-  elaborate (E.Case p e m) = E.Case p <$> elaborate e <*> elaborate m
-  elaborate (E.Cond p e1 e2 e3) =
-    E.Cond p <$> elaborate e1 <*> elaborate e2 <*> elaborate e3
-  elaborate (E.TypeApp p e t  ) = E.TypeApp p <$> elaborate e <*> elaborate t
-  elaborate (E.TypeAbs p b    ) = E.TypeAbs p <$> elaborate b
-  elaborate (E.UnLet p x e1 e2) = E.UnLet p x <$> elaborate e1 <*> elaborate e2
-  elaborate (E.New p t u      ) = E.New p <$> elaborate t <*> elaborate u
-  elaborate e                 = return e
-
-instance Elaboration E.FieldMap where
-  elaborate = mapM (\(ps, e) -> (ps, ) <$> elaborate e)
+elabPEnv :: ParseEnv -> FreestState ()
+elabPEnv = tMapWithKeyM_ (\x (ps, e) -> addToPEnv x ps =<< elaborate e)
 
 
 -- | Build a program from the parse env
@@ -173,40 +65,23 @@ instance Elaboration E.FieldMap where
 buildProg :: FreestState ()
 buildProg = getPEnv
   >>= tMapWithKeyM_ (\pv (ps, e) -> addToProg pv =<< buildFunBody pv ps e)
- where
-  buildFunBody :: Variable -> [Variable] -> E.Exp -> FreestState E.Exp
-  buildFunBody f as e = getFromVEnv f >>= \case
-    Just s  -> return $ buildExp e as s
+  
+buildFunBody :: Variable -> [Variable] -> E.Exp -> FreestState E.Exp
+buildFunBody f as e = getFromVEnv f >>= \case
+    Just s  -> buildExp e as s
     Nothing -> addError (FuctionLacksSignature (getSpan f) f) $> e
-      
-  buildExp :: E.Exp -> [Variable] -> T.Type -> E.Exp
-  buildExp e [] _ = e
+ where      
+  buildExp :: E.Exp -> [Variable] -> T.Type -> FreestState E.Exp
+  buildExp e [] _ = pure e
   buildExp e bs t@(T.Rec _ _) = buildExp e bs (normalise t)
   buildExp e (b : bs) (T.Arrow _ m t1 t2) =
-    E.Abs (getSpan b) m (Bind (getSpan b) b t1 (buildExp e bs t2))
-  buildExp _ _ t@(T.Dualof _ _) =
-    internalError "Elaboration.Elaboration.buildFunbody.buildExp" t
+    E.Abs (getSpan b) m . Bind (getSpan b) b t1 <$> buildExp e bs t2
   buildExp e bs (T.Forall p (Bind p1 x k t)) =
-    E.TypeAbs p (Bind p1 x k (buildExp e bs t))
-  buildExp e (b : bs) t =
-    E.Abs (getSpan b) Un (Bind (getSpan b) b (omission (getSpan b)) (buildExp e bs t))
+    E.TypeAbs p . Bind p1 x k <$> buildExp e bs t
+  buildExp _ _ t@(T.Dualof _ _) = internalError "Elaboration.Elaboration.buildFunbody.buildExp" t
+  buildExp _ xs _ = do
+    t <- fromJust <$> getFromVEnv f
+    addError (WrongNumberOfArguments (getSpan f) f (length as - length xs) (length as) t) $> e
 
--- | Changing positions
 
--- Change position of a given type with a given position
-changePos :: Span -> T.Type -> T.Type
-changePos p (T.Int  _         ) = T.Int p
-changePos p (T.Char _         ) = T.Char p
-changePos p (T.Bool _         ) = T.Bool p
-changePos p (T.Unit _         ) = T.Unit p
-changePos p (T.Arrow _ pol t u) = T.Arrow p pol (changePos p t) (changePos p u)
-changePos p (T.Pair    _ t   u) = T.Pair p t u
--- Datatype
--- Skip
-changePos p (T.Semi    _ t   u) = T.Semi p t u
-changePos p (T.Message _ pol b) = T.Message p pol b
-changePos p (T.Almanac _ s   m) = T.Almanac p s m
-changePos p (T.Rec     _ xs   ) = T.Rec p xs
-changePos p (T.Forall  _ xs   ) = T.Forall p xs
--- TypeVar
-changePos _ t                   = t
+

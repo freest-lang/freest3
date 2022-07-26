@@ -1,69 +1,70 @@
 {- |
 Module      :  MovingAverage
-Description :  Calculates the moving average
+Description :  Calculates the moving average of a series of numbers
 Copyright   :  (c) LASIGE and University of Lisbon, Portugal
 Maintainer  :  Bernardo Almeida
 
-Calculates the moving average.
+Calculates the moving average of a sequence of values, with a window of 3.
 
 Structure:
   - One thread sends values from 0 to 40, except whenever it would send a
     multiple of 10, it sends 100.
 
-  - One thread that receives that values and computes the moving average of the
+  - Another thread receives those values and computes the moving average of the
     current value with the previous two. Then, it sends the result to the main
     thread.
 
-  - The main thread starts both threads, receives the computed values and prints
-    them.
+  - The main thread starts both threads, receives the values of the moving
+    average and prints them.
 
 -}
 
-type Channel : 1S = +{More: !Int;Channel, End:Skip}
+type FiniteOutStream:1S = +{More: !Int;FiniteOutStream, Enough: Skip}
+type FiniteInStream:1S = dualof FiniteOutStream
 
-writeValues : !Int;!Int;Channel -> Skip
-writeValues c = send 1 c & send 2 & writeAll @Skip 3
+writeValues : !Int;!Int;FiniteOutStream 1-> ()
+writeValues c = send 1 c & send 2 & writeAll @() 3
 
-writeAll : ∀ a : 1S . Int -> Channel;a -> a
+writeAll : ∀ a:1S . Int -> FiniteOutStream;a -> a
 writeAll i c =
   if i <= 40 then
-     select More c & send (if mod i 10 == 0 then 100 else i) & writeAll @a (i + 1)
-  else select End c
+     select More c &
+     send (if mod i 10 == 0 then 100 else i) &
+     writeAll @a (i + 1)
+  else select Enough c
 
-readValues : ?Int;?Int;dualof Channel 1-> Channel 1-> Skip
-readValues c1 c2 =
-  let (x, c1) = receive c1 in
-  let (y, c1) = receive c1 in
-  readAll @Skip x y c1 c2 
+readValues : ?Int;?Int;FiniteInStream -> FiniteOutStream 1-> ()
+readValues from to =
+  let (x, from) = receive from in
+  let (y, from) = receive from in
+  readAll @Skip x y from to & sink @Skip
 
-readAll : ∀ a : 1S . Int -> Int -> dualof Channel ; a 1-> Channel 1-> a
-readAll x y c1 c2 =
-  match c1 with {
-    More c1 ->
-      let (z, c1) = receive c1 in
-      select More c2 & send (average3 x y z) &
-      readAll @a y z c1,
-    End c1 -> select End c2 ; c1
+readAll : ∀ a:1S . Int -> Int -> FiniteInStream;a -> FiniteOutStream 1-> a
+readAll x y from to =
+  match from with {
+    More from ->
+      let (z, from) = receive from in
+      select More to &
+      send (average3 x y z) &
+      readAll @a y z from,
+    Enough from -> select Enough to ; from
+  }
+
+collectValues : ∀ a:1S . FiniteInStream ; a -> a
+collectValues c =
+  match c with {
+     More c ->
+       let (v, c) = receive c in
+       printIntLn v ;
+       collectValues @a c,
+     Enough c -> c
   }
 
 average3 : Int -> Int -> Int -> Int
 average3 x y z = (x + y + z) / 3
 
-main : ()
+main : Skip
 main =
-  let (w1, r1) = new !Int;!Int;Channel in
-  let (w2, r2) = new Channel in
-  fork (\_:()1-> writeValues w1);
-  fork (\_:()1-> readValues r1 w2);
-  receiveMain @Skip r2 ;
-  ()
-
-receiveMain : ∀ a: 1S . dualof Channel ; a -> a
-receiveMain c =
-  match c with {
-     More c ->
-       let (v, c) = receive c in
-       printIntLn v ;
-       receiveMain @a c,
-     End c -> c
-  }
+  let r1 = forkWith @(?Int;?Int;FiniteInStream) writeValues in
+  let r2 = forkWith @FiniteInStream (readValues r1) in
+  collectValues @Skip r2

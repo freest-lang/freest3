@@ -55,9 +55,9 @@ renameState = do
 
 renameFun :: Variable -> T.Type -> FreestState ()
 renameFun f t = do
-  rename Map.empty t >>= addToVEnv f
+  rename Map.empty Map.empty t >>= addToVEnv f
   getFromProg f >>= \case
-    Just e  -> rename Map.empty e >>= addToProg f
+    Just e  -> rename Map.empty Map.empty e >>= addToProg f
     Nothing -> return ()
 
 -- Renaming the various syntactic categories
@@ -65,23 +65,23 @@ renameFun f t = do
 type Bindings = Map.Map String String
 
 class Rename t where
-  rename :: Bindings -> t -> FreestState t
+  rename :: Bindings -> Bindings -> t -> FreestState t
 
 -- Binds
 
 
 instance Rename t => Rename (Bind K.Kind t) where
-  rename bs (Bind p a k t) = do
-    a' <- rename bs a
-    t' <- rename (insertVar a a' bs) t
+  rename tbs pbs (Bind p a k t) = do
+    a' <- rename tbs pbs a
+    t' <- rename (insertVar a a' tbs) pbs t
     return $ Bind p a' k t'
 
 
 instance Rename (Bind T.Type E.Exp) where
-  rename bs (Bind p x t e) = do
-    x' <- rename bs x
-    t' <- rename bs t
-    e' <- rename (insertVar x x' bs) e
+  rename tbs pbs (Bind p x t e) = do
+    x' <- rename tbs pbs x
+    t' <- rename tbs pbs t
+    e' <- rename tbs (insertVar x x' pbs) e
     return $ Bind p x' t' e'
 
 -- instance Rename K.Kind where
@@ -95,79 +95,79 @@ instance Rename T.Type where
   --   | terminated Set.empty t = return $ T.Skip (pos t)
   --   | otherwise              = rename' bs t
 
-rename' :: Bindings -> T.Type -> FreestState T.Type
+rename' :: Bindings -> Bindings -> T.Type -> FreestState T.Type
   -- Almanac
-rename' bs (T.Almanac p s m) = T.Almanac p s <$> tMapM (rename bs) m
+rename' tbs pbs (T.Almanac p s m) = T.Almanac p s <$> tMapM (rename tbs pbs) m
   -- Functional types
-rename' bs (T.Arrow p m t u    ) = T.Arrow p m <$> rename bs t <*> rename bs u
-rename' bs (T.Message p pol t) = T.Message p pol <$> rename bs t
-rename' bs (T.Pair p t u     ) = T.Pair p <$> rename bs t <*> rename bs u
+rename' tbs pbs (T.Arrow p m t u    ) = T.Arrow p m <$> rename tbs pbs t <*> rename tbs pbs u
+rename' tbs pbs (T.Message p pol t) = T.Message p pol <$> rename tbs pbs t
+rename' tbs pbs (T.Pair p t u     ) = T.Pair p <$> rename tbs pbs t <*> rename tbs pbs u
   -- Session types
-rename' bs (T.Semi   p t   u ) = T.Semi p <$> rename bs t <*> rename bs u
+rename' tbs pbs (T.Semi   p t   u ) = T.Semi p <$> rename tbs pbs t <*> rename tbs pbs u
   -- Polymorphism
-rename' bs (T.Forall p b     ) = T.Forall p <$> rename bs b
+rename' tbs pbs (T.Forall p b     ) = T.Forall p <$> rename tbs pbs b
   -- Functional or session
-rename' bs (T.Rec    p b)
- | isProperRec b = T.Rec p <$> rename bs b
- | otherwise     = rename bs (body b)
-rename' bs (T.Var    p a     ) = return $ T.Var p (findWithDefaultVar a bs)
-rename' bs (T.CoVar    p a   ) = return $ T.CoVar p (findWithDefaultVar a bs)
+rename' tbs pbs (T.Rec    p b)
+ | isProperRec b = T.Rec p <$> rename tbs pbs b
+ | otherwise     = rename tbs pbs (body b)
+rename' tbs pbs (T.Var    p a     ) = return $ T.Var p (findWithDefaultVar a tbs)
+rename' tbs pbs (T.CoVar    p a   ) = return $ T.CoVar p (findWithDefaultVar a tbs)
   -- Type operators
-rename' _  t@T.Dualof{}        = internalError "Validation.Rename.rename" t
+rename' _ _  t@T.Dualof{}        = internalError "Validation.Rename.rename" t
   -- Otherwise: Basic, Skip, Message, TypeName
-rename' _  t                   = return t
+rename' _ _  t                   = return t
 
 
 -- Expressions
 
 instance Rename E.Exp where
   -- Variable
-  rename bs (E.Var p x) = return $ E.Var p (findWithDefaultVar x bs)
+  rename tbs pbs (E.Var p x) = return $ E.Var p (findWithDefaultVar x pbs)
   -- Abstraction intro and elim
-  rename bs (E.Abs p m b) = E.Abs p m <$> rename bs b
-  rename bs (E.App p e1 e2) = E.App p <$> rename bs e1 <*> rename bs e2
+  rename tbs pbs (E.Abs p m b) = E.Abs p m <$> rename tbs pbs b
+  rename tbs pbs (E.App p e1 e2) = E.App p <$> rename tbs pbs e1 <*> rename tbs pbs e2
   -- Pair intro and elim
-  rename bs (E.Pair p e1 e2) = E.Pair p <$> rename bs e1 <*> rename bs e2
-  rename bs (E.BinLet p x y e1 e2) = do
-    x'  <- rename bs x
-    y'  <- rename bs y
-    e1' <- rename bs e1
-    e2' <- rename (insertVar y y' (insertVar x x' bs)) e2
+  rename tbs pbs (E.Pair p e1 e2) = E.Pair p <$> rename tbs pbs e1 <*> rename tbs pbs e2
+  rename tbs pbs (E.BinLet p x y e1 e2) = do
+    x'  <- rename tbs pbs x
+    y'  <- rename tbs pbs y
+    e1' <- rename tbs pbs e1
+    e2' <- rename tbs (insertVar y y' (insertVar x x' pbs)) e2
     return $ E.BinLet p x' y' e1' e2'
   -- Datatype elim
-  rename bs (E.Case p e fm) =
-    E.Case p <$> rename bs e <*> tMapM (renameField bs) fm
+  rename tbs pbs (E.Case p e fm) =
+    E.Case p <$> rename tbs pbs e <*> tMapM (renameField tbs pbs) fm
   -- Type application & TypeAbs
-  rename bs (E.TypeAbs p b) = E.TypeAbs p <$> rename bs b
-  rename bs (E.TypeApp p e t) =
-    E.TypeApp p <$> rename bs e <*> rename bs t
+  rename tbs pbs (E.TypeAbs p b) = E.TypeAbs p <$> rename tbs pbs b
+  rename tbs pbs (E.TypeApp p e t) =
+    E.TypeApp p <$> rename tbs pbs e <*> rename tbs pbs t
   -- Boolean elim
-  rename bs (E.Cond p e1 e2 e3) =
-    E.Cond p <$> rename bs e1 <*> rename bs e2 <*> rename bs e3
+  rename tbs pbs (E.Cond p e1 e2 e3) =
+    E.Cond p <$> rename tbs pbs e1 <*> rename tbs pbs e2 <*> rename tbs pbs e3
   -- Let
-  rename bs (E.UnLet p x e1 e2) = do
-    x'  <- rename bs x
-    e1' <- rename bs e1
-    e2' <- rename (insertVar x x' bs) e2
+  rename tbs pbs (E.UnLet p x e1 e2) = do
+    x'  <- rename tbs pbs x
+    e1' <- rename tbs pbs e1
+    e2' <- rename tbs (insertVar x x' pbs) e2
     return $ E.UnLet p x' e1' e2'
   -- Session types
-  rename bs (E.New p t u) = E.New p <$> rename bs t <*> rename bs u
+  rename tbs pbs (E.New p t u) = E.New p <$> rename tbs pbs t <*> rename tbs pbs u
   -- Otherwise: Unit, Integer, Character, Boolean, Select
-  rename _ e = return e
+  rename _ _ e = return e
 
-renameField :: Bindings -> ([Variable], E.Exp) -> FreestState ([Variable], E.Exp)
-renameField bs (xs, e) = do
-  xs' <- mapM (rename bs) xs
-  e'  <- rename (insertProgVars xs') e
+renameField :: Bindings -> Bindings -> ([Variable], E.Exp) -> FreestState ([Variable], E.Exp)
+renameField tbs pbs (xs, e) = do
+  xs' <- mapM (rename tbs pbs) xs
+  e'  <- rename tbs (insertProgVars xs') e
   return (xs', e')
  where
   insertProgVars :: [Variable] -> Bindings
-  insertProgVars xs' = foldr (uncurry insertVar) bs (zip xs xs')
+  insertProgVars xs' = foldr (uncurry insertVar) pbs (zip xs xs')
 
 -- Program and Type variables
 
 instance Rename Variable where
-  rename _ = renameVar
+  rename _ _ = renameVar
 
 -- Managing variables
 
@@ -190,7 +190,7 @@ renameType = head . renameTypes . (: [])
 -- Rename a list of types
 renameTypes :: [T.Type] -> [T.Type]
 renameTypes ts =
-  evalState (mapM (rename Map.empty) ts) initialState
+  evalState (mapM (rename Map.empty Map.empty) ts) initialState
 
 -- Substitution and unfold, the renamed versions
 
@@ -218,6 +218,7 @@ isFreeIn x (T.Almanac _ _ m) =
 isFreeIn x (T.Arrow _ _ t u) = x `isFreeIn` t || x `isFreeIn` u
 isFreeIn x (T.Pair _ t u ) = x `isFreeIn` t || x `isFreeIn` u
     -- Session types
+isFreeIn x (T.Message _ _ t) = x `isFreeIn` t ---
 isFreeIn x (T.Semi _ t u) = x `isFreeIn` t || x `isFreeIn` u
   -- Polymorphism
 isFreeIn x (T.Forall _ (Bind _ y _ t)) = x /= y && x `isFreeIn` t
@@ -226,9 +227,4 @@ isFreeIn x (T.Rec    _ (Bind _ y _ t)) = x /= y && x `isFreeIn` t
 isFreeIn x (T.Var    _ y               ) = x == y
   -- Type operators
 isFreeIn x (T.Dualof _ t) = x `isFreeIn` t
-  
---isFreeIn _ t@T.Dualof{} =
--- It is used during elaboration; otherwise we should throw an internal error
---  internalError "Validation.Rename.isFreeIn" t
-  -- Basic, Skip, Message, TypeName
 isFreeIn _ _                             = False

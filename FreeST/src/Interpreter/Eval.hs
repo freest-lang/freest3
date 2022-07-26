@@ -91,11 +91,17 @@ evalCase _ _ _ _ v = internalError "Interpreter.Eval.evalCase" v
 
 evalVar :: TypeEnv -> Ctx -> Prog -> Variable -> IO Value
 evalVar tEnv ctx eenv x
-  | isDatatypeContructor x tEnv    = return $ Cons x []
-  | Map.member x eenv              = eval tEnv ctx eenv (eenv Map.! x)
-  | Map.member x ctx               = return $ ctx Map.! x
-  | x == mkVar defaultSpan "fork"  = return Fork
-  | x == mkVar defaultSpan "error" = return $ PrimitiveFun
-      (\(String e) -> unsafePerformIO $ die $
-          showErrors False "" Map.empty (ErrorFunction (getSpan x) e))
+  | isDatatypeContructor x tEnv  = return $ Cons x []
+  | Map.member x eenv            = eval tEnv ctx eenv (eenv Map.! x)
+  | Map.member x ctx             = return $ ctx Map.! x
+  | x == var "fork"              = return Fork
+  | x == var "error"             =
+     return $ PrimitiveFun (\(String e) -> exception (ErrorFunction (getSpan x) e))
+  | x == var "undefined"         =
+     return $ exception (UndefinedFunction (getSpan x))
+       -- String $ "undefined, called at " ++ show (getSpan x)
+--     return $ String $ "undefined, called at " ++ show (getSpan x)
   | otherwise                      = internalError "Interpreter.Eval.evalVar" x
+  where
+    var = mkVar defaultSpan
+    exception err = unsafePerformIO $ die $ showErrors False "" Map.empty err

@@ -84,9 +84,9 @@ forall a: 1S . forall b: 1S . forall z: 1S . ((rec z: 1S. (Skip;&{B: (+{A: (&{B:
 
 -- Messages not of kind ML
 
-!(Int, Bool)
-!(!Int; ?Bool)
-rec a . ?(Int; a)
+-- !(Int, Bool)
+-- !(!Int; ?Bool)
+-- rec a . ?(Int; a)
 
 -- Syntatically invalid datatypes, conflicting - removed these because they are not readable types anymore (only available for data declarations)
 
@@ -109,6 +109,7 @@ forall b: 1S. !Int; rec a: 1S. b; a
 
 -- Non contractive types
 
+<<<<<<< HEAD
 rec a: 1S. a
 rec a: *S. a
 rec a: *S. (Skip; a)
@@ -121,12 +122,56 @@ Skip; Skip; Skip; rec a: *S. (Skip; a; a; a; a; a)
 rec a: *S. (((Skip ; a) ; a) ; a)
 rec a: *S. (rec a: *S. Skip; a); (rec a: *S. (Skip; a))
 Skip; rec a: *S. ((rec a: *S. (Skip; a)); (rec a: *S. (Skip; a))); Skip; Skip
+=======
+rec a:SL. a
+SU
+
+rec a:SU. a
+SU
+
+rec a:SU. (Skip; a)
+SU
+
+rec a:SU. Skip; a; Skip
+SU
+
+rec a:SU. Skip; a; a; a; a; a
+SU
+
+Skip; rec a:SU. (Skip; a)
+SU
+
+Skip; rec a:SU. (Skip; a; Skip)
+SU
+
+Skip; rec a:SU. (Skip; a; Skip)
+SU
+
+Skip; Skip; Skip; rec a:SU. (Skip; a; a; a; a; a)
+SU
+
+rec a:SU. (((Skip ; a) ; a) ; a)
+SU
+
+rec a:SU. (rec a:SU. Skip; a); (rec a:SU. (Skip; a))
+SU
+
+Skip; rec a:SU. ((rec a:SU. (Skip; a)); (rec a:SU. (Skip; a))); Skip; Skip
+SU
+>>>>>>> higher-order
 
 -- Types with a part that is non contractive but terminated
 
 Int -> rec a: 1S. rec b: 1S. rec c: 1S. rec d: 1S. a
 (rec a: *T. rec b: *T. rec c: *T. rec d: *T. a) -> Bool
 (rec a: *S. rec b: *S. rec c: *S. rec d: *S. a, Int)
+
+-- Shared channels
+rec a:SU . ?Int; ?Int; a
+SU
+
+rec a:SU . +{One: !Int, Two: ?Int, Three: Skip}; a
+SU
 
 -- HIGHER ORDER
 

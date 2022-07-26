@@ -8,6 +8,11 @@ Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of 
 Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc.ul.pt
 
 Converting AST terms to strings.
+
+Norman Ramsey, Unparsing Expressions With Prefix and Postfix Operators,
+Software—Practice and Experience, 1998.
+https://www.cs.tufts.edu/~nr/pubs/unparse.ps
+
 -}
 
 module Parse.Unparser
@@ -32,16 +37,13 @@ import           Prelude                 hiding ( Left
                                                 , Right
                                                 ) -- needed for Associativity
 
--- Positions (Base)
-
 instance Show Span where
   show (Span sp fp _)
     | sp == fp  = showPos sp
-    | otherwise = '(' : showPos sp ++ ")-(" ++ showPos fp ++ ")"
+    | otherwise = showPos sp ++ "-" ++ showPos fp ++ ""
     where
       showPos (l,c) = show l ++ ":" ++ show c
 
-        
 showModuleName :: Span -> String
 showModuleName s = showModuleWithDots (defModule s)
 
@@ -71,10 +73,10 @@ instance Show T.Polarity where
   show T.In  = "?"
   show T.Out = "!"
 
--- Program and Type Variables.
+-- Program and Type Variables
 
 -- Note: show should be aligned with the creation of new variables;
--- see Syntax.ProgramVariables and Syntax.TypeVariables
+-- see Syntax.Variables
 
 instance Show Variable where
   show = showVar
@@ -92,11 +94,10 @@ showSortedVar x t = show x ++ ":" ++ show t
 
 instance Show K.Basic where
   show K.Session = "S"
-  show K.Message = "M"
   show K.Top     = "T"
 
 instance Show K.Kind where
-  show (K.Kind _ p m) = show m ++ show p
+  show (K.Kind _ p m) = show p ++ show m
 
 -- Binds
 
@@ -118,10 +119,6 @@ showBindTerm :: Bind T.Type E.Exp -> Multiplicity -> String
 showBindTerm (Bind _ x t e) m = showKind x t (show m) e -- λ x:t -> e
 
 -- Unparsing types and expressions
-
--- Norman Ramsey, Unparsing Expressions With Prefix and Postfix
--- Operators, Software—Practice and Experience, 1998.
--- https://www.cs.tufts.edu/~nr/pubs/unparse.ps
 
 data Precedence =
     PMin
@@ -208,6 +205,10 @@ instance Unparse T.Type where
     (maxRator, show v ++ "{" ++ showChoice m ++ "}")
   unparse (T.Forall _ b) = (arrowRator, "∀" ++ showBindType b) -- ++ "=>" ++ s)
     -- where s = bracket (unparse t) Right dotRator
+  unparse (T.Rec _ (Bind _ _ k (T.Semi _ t _)))   | K.isUn k = -- *!T   *?T
+    (maxRator, "*" ++ show t)
+  unparse (T.Rec _ (Bind _ _ k (T.Almanac _ (T.Choice v) m))) | K.isUn k = -- *+{}  *&{}
+    (maxRator, "*" ++ show v ++ "{" ++ showChoiceLabels m ++ "}")
   unparse (T.Rec _ b) = (dotRator, "rec " ++ showBindType b) -- xk ++ "." ++ s)
     -- where s = bracket (unparse t) Right dotRator
   unparse (T.Dualof _ t) = (dualofRator, "dualof " ++ s)
@@ -224,6 +225,10 @@ showDatatype m = intercalate " | "
 showChoice :: T.TypeMap -> String
 showChoice m = intercalate ", "
   $ Map.foldrWithKey (\c t acc -> (show c ++ ": " ++ show t) : acc) [] m
+
+showChoiceLabels :: T.TypeMap -> String
+showChoiceLabels m = intercalate ", "
+  $ Map.foldrWithKey (\c _ acc -> show c : acc) [] m
 
 -- Expression
 
