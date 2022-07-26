@@ -41,7 +41,7 @@ validTest dir (testFile, exp) = do
   (out, res) <- testOne testFile
 --  let out = exp
   case res of
-    Timeout -> doExpectationsMatch exp "<divergent>"
+    Timeout -> doExpectationsMatch "<divergent>" exp
     Failed  -> void $ assertFailure out
     Passed
       | "<pending>" `isPrefixOf` exp -> pendingWith $ intercalate "\n\t" $ tail $ lines exp
