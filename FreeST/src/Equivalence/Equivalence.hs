@@ -47,6 +47,7 @@ type Visited = Set.Set (Span, Span)
 -- A co-inductive definition for functional types. A bisimulation
 -- based definition for session types
 instance Equivalence T.Type where
+  -- equivalent _ = bisimilar
   equivalent = equiv Set.empty
    where
     equiv :: Visited -> K.KindEnv -> T.Type -> T.Type -> Bool
@@ -96,7 +97,6 @@ isSessionType :: K.KindEnv -> T.Type -> Bool
 isSessionType kEnv t = null (errors state) && K.isSession kind
  where
   (kind, state) = runState (synthetise kEnv t) initialState
-      -- (initialState "Kind synthesis for equivalence")
 
 {-
 -- An alternative is below. Lighter, but I don't have a proof that the
