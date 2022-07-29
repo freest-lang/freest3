@@ -46,8 +46,6 @@ type Imports = Set.Set FilePath
 type ParseEnv    = Map.Map Variable ([Variable], Exp)
 type ParseEnvPat = Map.Map Variable [([Pattern], Exp)]
 
-type ParseEnvChoices = Map.Map Variable [Variable]
-
 data FreestS = FreestS {
     runOpts         :: RunOpts
   , varEnv          :: VarEnv
@@ -59,7 +57,6 @@ data FreestS = FreestS {
   , nextIndex       :: Int
   , parseEnv        :: ParseEnv    -- "discarded" after elaboration
   , parseEnvPat     :: ParseEnvPat -- for pattern elimination
-  , parseEnvChoices :: ParseEnvChoices
   , moduleName      :: Maybe FilePath
   , imports         :: Imports
   } -- deriving Show -- FOR DEBUG purposes
@@ -79,7 +76,6 @@ initialState = FreestS { runOpts         = defaultOpts
                        , nextIndex       = 0
                        , parseEnv        = Map.empty
                        , parseEnvPat     = Map.empty
-                       , parseEnvChoices = Map.empty
                        , moduleName      = Nothing
                        , imports         = Set.empty
                        }
@@ -112,15 +108,6 @@ getPEnvPat = gets parseEnvPat
 
 setPEnvPat :: ParseEnvPat -> FreestState ()
 setPEnvPat parseEnvPat =  modify (\s -> s { parseEnvPat })
-
-addToPEnvChoices :: MonadState FreestS m => [Variable] -> m()
-addToPEnvChoices cs =
-  modify (\s -> s
-    { parseEnvChoices = foldl (insert cs) (parseEnvChoices s) cs })
-    where insert cs acc k = Map.insert k cs acc
-
-getPEnvChoices :: FreestState ParseEnvChoices
-getPEnvChoices = gets parseEnvChoices
 
 -- | NEXT VAR
 
