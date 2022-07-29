@@ -88,7 +88,7 @@ checkChanVar' cons (xs:xss) = do
       -- Channel pattern-matching
       mapM (\v -> addError $ InvalidVariablePatternChan (getSpan v) v) varsF
       -- nested patterns
-      -- >> checkChanVar' cons [ map Match.pPats $ filter Match.isCons xs ] 
+      >> checkChanVar' cons ( transpose $ map Match.pPats consF )
       >> checkChanVar' cons xss
     -- Data types pattern-matching
     else return ()
