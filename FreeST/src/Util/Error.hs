@@ -197,7 +197,6 @@ instance Message ErrorType where
     "Cannot mixture variables with pattern-matching channel choices." ++
     "\n  Declared in file/module " ++ showModule (showModuleName p) p ++
     ": " ++ red sty (show v)
-    -- TODOX check if alright
   msg (TypeVarOutOfScope _ x) sty ts = "Type variable not in scope: " ++ style red sty ts x
   msg (FuctionLacksSignature _ x) sty ts =
     "The binding for function " ++ style red sty ts x ++ " lacks an accompanying type signature"
