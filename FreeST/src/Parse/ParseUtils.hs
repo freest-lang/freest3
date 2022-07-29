@@ -126,25 +126,6 @@ checkDupVarPats' ((E.PatVar  v)   :xs) vs = do
   checkDupVarPats' xs (v:vs)
   where clause v2 = not (is_ v) && v == v2
 
--- TODOX not reliable yet
-checkChoices :: [Variable] -> [Variable] -> FreestStateT ()
--- checkChoices _  _ = return ()
-checkChoices [] _ = return ()
-checkChoices (a:next) cs = do
-  env <- parseEnvChoices <$> get
-  case env Map.!? a of 
-    Nothing  -> return ()
-    Just cs' -> checkChoice here there p1 p2
-             >> checkChoice there here p2 p1
-             >> checkChoices next cs
-      where (p1,p2)  = (getSpan $ head cs, getSpan $ head cs') 
-            (here,there) = (cs\\cs',cs'\\cs)
-
-checkChoice :: [Variable] -> [Variable] -> Span -> Span -> FreestStateT ()
-checkChoice []        missing     _  _  = return ()
-checkChoice (x:extra) []          p1 p2 = addError $ MissingChoices p1 (x:extra) p2
-checkChoice (x:extra) (y:missing) p1 p2 = addError $ MissingChoices p1 (x:extra) p2
-
 -- OPERATORS
 
 binOp :: E.Exp -> Variable -> E.Exp -> E.Exp

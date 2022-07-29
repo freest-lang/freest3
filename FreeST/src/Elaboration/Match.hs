@@ -1,10 +1,15 @@
 module Elaboration.Match
   ( addMissingVars
+  , getConstructors
   , matchFuns
+  , isCon
+  , isVar
+  , pVar 
+  , pPats
   )
 where
 
-import           Data.List            (groupBy,sortOn,transpose)
+import           Data.List            (groupBy,sortOn)
 import           Data.Function        ((&))
 import           Data.Functor         ((<&>))
 import           Control.Monad        (filterM)
@@ -15,6 +20,7 @@ import           Syntax.Base
 import           Syntax.Expression
 import qualified Syntax.Type       as T
 import qualified Validation.Rename as R
+import qualified Data.Set          as Set
 import qualified Data.Map.Strict   as Map
 
 import           Util.FreestState
@@ -73,9 +79,9 @@ isRuleCon cs = all (check.fst) cs
                && isCon (head p)
 
 isRuleChan  :: [Equation] -> FreestState Bool
-isRuleChan cs = b1 &&^ b2
+isRuleChan cs = b1 &&^ (and <$> b2)
   where b1 = return $ (not $ isRuleEmpty cs) && (not $ isRuleVar cs) && (isRuleCon cs)
-        b2 = and <$> mapM (isChan.head.fst) cs
+        b2 = mapM (isChan.head.fst) cs
 
 -- rules -----------------------------------------------------------
 
@@ -116,20 +122,11 @@ ruleChan (v:us) cs = groupSortBy (pName.head.fst) cs
 -- mix -------------------------------------------------------------
 ruleMix :: [Variable] -> [Equation] -> FreestState Exp
 ruleMix (v:us) cs = do
-  cons <- getFiller cs
+  cons <- constructors $ getDataType cs
   groupOn (isVar.head.fst) cs
         & mapM (fill v cons)
       <&> concat
       >>= match (v:us)
-
-getFiller :: [Equation] -> FreestState [(Variable,Int)]
-getFiller cs = do
-  c <- findM (isChan.head.fst) cs
-  case c of 
-    Nothing -> constructors $ getDataType cs
-    Just (p:_,_) -> getPEnvChoices
-                <&> flip (Map.!) (pVar p)
-                <&> \vs -> zip vs (replicate (length vs) 1)
 
 --rule mix aux
 fill :: Variable -> [(Variable,Int)] -> [Equation] -> FreestState [Equation]
@@ -217,12 +214,16 @@ isVar _          = False
 isCon :: Pattern -> Bool
 isCon = not.isVar
 
+getConstructors :: FreestState (Set.Set Variable)
+getConstructors = Map.elems <$> getTEnv
+              <&> map (getKeys.snd)
+              <&> concat
+              <&> Set.fromList
+
 isChan :: Pattern -> FreestState Bool
 isChan (PatVar _)    = return False
-isChan (PatCons c _) = Map.toList <$> getTEnv
-             <&> map (getKeys.snd.snd)
-             <&> concat
-             <&> notElem c
+isChan (PatCons c _) = getConstructors
+                   <&> Set.notMember c
 
 isPat_ :: Pattern -> Bool
 isPat_ (PatVar v) = is_ v

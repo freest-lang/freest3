@@ -329,8 +329,7 @@ Type :: { T.Type }
   | Skip                          {% T.Skip `fmap` mkSpan $1 }
   | Type ';' Type                 {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Semi s $1 $3 }
   | Polarity Type %prec MSG       {% mkSpanFromSpan (fst $1) $2 >>= \s -> pure $ T.Message s (snd $1) $2 }                                 
-  | ChoiceView '{' FieldList '}'  {% checkChoices     (Map.keys $3) (Map.keys $3)
-                                  >> addToPEnvChoices (Map.keys $3)
+  | ChoiceView '{' FieldList '}'  {% addToPEnvChoices (Map.keys $3)
                                   >> mkSpanFromSpan (fst $1) $4 >>= \s -> pure $ T.Almanac s (T.Choice (snd $1)) $3 } 
   -- Polymorphism and recursion
   | rec KindBind '.' Type         {% let (a,k) = $2 in flip T.Rec (Bind (getSpan a) a k $4) `fmap` mkSpanSpan $1 $4 }

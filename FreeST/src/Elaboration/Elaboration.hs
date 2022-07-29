@@ -19,14 +19,18 @@ import           Util.FreestState
 import           Util.PreludeLoader ( userDefined )
 
 import           Data.Functor
+import           Data.List      (transpose)
 import           Data.Maybe
-import qualified Data.Map.Strict   as Map
+import qualified Data.Map.Strict as Map
+import qualified Data.Set        as Set
 
 elaboration :: FreestState ()
 elaboration = do
-  -- | Checks code
+  -- | Checks correct number of arguments
   checkNumArgs =<< getPEnvPat
-  -- TODOX check pattern matching construction size
+  -- | Checks correct channels' pattern matching
+  checkChanVar =<< getPEnvPat
+  -- | Adds missing Vars to malformed functions
   (Match.addMissingVars <$> getPEnvPat) >>= setPEnvPat
   -- | Remove all patterns
   (Match.matchFuns =<< getPEnvPat) >>= setPEnv
@@ -66,6 +70,31 @@ checkNumArgs' fn lines
   | otherwise = addError $ DifNumberOfArguments (getSpan fn) fn 
   where allSame (x:y:ys) = x == y && allSame (y:ys)
         allSame _ = True
+
+checkChanVar :: ParseEnvPat -> FreestState ()
+checkChanVar penv = do
+  cons <- Match.getConstructors -- set with every constructor
+  tMapM_ (checkChanVar' cons.transpose.map fst) penv
+
+checkChanVar' :: Set.Set Variable -> [[E.Pattern]] -> FreestState ()
+checkChanVar' cons [] = return ()
+checkChanVar' cons (xs:xss) = do
+  if any Match.isVar xs && any Match.isCon xs then do
+    let varsF    = map Match.pVar $ filter Match.isVar xs
+    let consF    =                  filter Match.isCon xs
+    let consFVar = Set.fromList $ map Match.pVar consF
+    let inter    = Set.intersection cons consFVar
+    if Set.null inter then
+      -- Channel pattern-matching
+      mapM (\v -> addError $ InvalidVariablePatternChan (getSpan v) v) varsF
+      -- nested patterns
+      -- >> checkChanVar' cons [ map Match.pPats $ filter Match.isCons xs ] 
+      >> checkChanVar' cons xss
+    -- Data types pattern-matching
+    else return ()
+  else 
+    -- No mixture pattern-matching
+    return ()
 
 -- | Elaboration over environments (VarEnv + ParseEnv)
 
