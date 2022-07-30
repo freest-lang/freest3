@@ -19,30 +19,11 @@ Structure:
 
 -}
 
--- From module Concurrency
-
--- | Create a new child process and a linear channel through which it can 
---   communicate with its parent process. Return the channel endpoint.
-forkWith : ∀ a:1S b:*T . (dualof a *-> b) -> a
-forkWith f =
-  let (x, y) = new a in
-  fork $ f y;
-  x
-
--- | Similar to forkWith but with a linear signature
-forkWith1 : ∀ a:1S b:*T . (dualof a 1-> b) -> a
-forkWith1 f =
-  let (x, y) = new a in
-  fork $ f y;
-  x
-
--- This module
-
 type FiniteOutStream:1S = +{More: !Int;FiniteOutStream, Enough: Skip}
 type FiniteInStream:1S = dualof FiniteOutStream
 
-writeValues : !Int;!Int;FiniteOutStream -> Skip
-writeValues c = send 1 c & send 2 & writeAll @Skip 3
+writeValues : !Int;!Int;FiniteOutStream 1-> ()
+writeValues c = send 1 c & send 2 & writeAll @() 3
 
 writeAll : ∀ a:1S . Int -> FiniteOutStream;a -> a
 writeAll i c =
@@ -52,11 +33,11 @@ writeAll i c =
      writeAll @a (i + 1)
   else select Enough c
 
-readValues : ?Int;?Int;FiniteInStream -> FiniteOutStream 1-> Skip
+readValues : ?Int;?Int;FiniteInStream -> FiniteOutStream 1-> ()
 readValues from to =
   let (x, from) = receive from in
   let (y, from) = receive from in
-  readAll @Skip x y from to 
+  readAll @Skip x y from to & sink @Skip
 
 readAll : ∀ a:1S . Int -> Int -> FiniteInStream;a -> FiniteOutStream 1-> a
 readAll x y from to =
@@ -84,6 +65,6 @@ average3 x y z = (x + y + z) / 3
 
 main : Skip
 main =
-  let r1 = forkWith @(?Int;?Int;FiniteInStream) @Skip writeValues in
-  let r2 = forkWith1 @FiniteInStream @Skip (readValues r1) in
+  let r1 = forkWith @(?Int;?Int;FiniteInStream) writeValues in
+  let r2 = forkWith @FiniteInStream (readValues r1) in
   collectValues @Skip r2

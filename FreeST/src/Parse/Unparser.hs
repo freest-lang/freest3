@@ -94,7 +94,6 @@ showSortedVar x t = show x ++ ":" ++ show t
 
 instance Show K.Basic where
   show K.Session = "S"
-  show K.Message = "M"
   show K.Top     = "T"
 
 instance Show K.Kind where
@@ -206,6 +205,10 @@ instance Unparse T.Type where
     (maxRator, show v ++ "{" ++ showChoice m ++ "}")
   unparse (T.Forall _ b) = (arrowRator, "∀" ++ showBindType b) -- ++ "=>" ++ s)
     -- where s = bracket (unparse t) Right dotRator
+  unparse (T.Rec _ (Bind _ _ k (T.Semi _ t _)))   | K.isUn k = -- *!T   *?T
+    (maxRator, "*" ++ show t)
+  unparse (T.Rec _ (Bind _ _ k (T.Almanac _ (T.Choice v) m))) | K.isUn k = -- *+{}  *&{}
+    (maxRator, "*" ++ show v ++ "{" ++ showChoiceLabels m ++ "}")
   unparse (T.Rec _ b) = (dotRator, "rec " ++ showBindType b) -- xk ++ "." ++ s)
     -- where s = bracket (unparse t) Right dotRator
   unparse (T.Dualof _ t) = (dualofRator, "dualof " ++ s)
@@ -222,6 +225,10 @@ showDatatype m = intercalate " | "
 showChoice :: T.TypeMap -> String
 showChoice m = intercalate ", "
   $ Map.foldrWithKey (\c t acc -> (show c ++ ": " ++ show t) : acc) [] m
+
+showChoiceLabels :: T.TypeMap -> String
+showChoiceLabels m = intercalate ", "
+  $ Map.foldrWithKey (\c _ acc -> show c : acc) [] m
 
 -- Expression
 

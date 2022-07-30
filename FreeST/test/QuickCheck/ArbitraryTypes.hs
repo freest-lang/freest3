@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleInstances #-}
+
 module ArbitraryTypes
   ( BisimPair(..)
   , NonBisimPair(..)
@@ -9,13 +11,25 @@ import           Test.QuickCheck
 import qualified Syntax.Type                   as T
 import qualified Syntax.Kind                   as K
 import           Syntax.Base             hiding ( pos )
--- import           Parse.Unparser
+import           Validation.Contractive
 import qualified Validation.Rename             as Rename
+import qualified Data.Set                      as Set
 import qualified Data.Map.Strict               as Map
 import           Control.Monad
 
 pos :: Span
 pos = defaultSpan
+
+-- | Type variables
+ids :: [String]
+ids = ["x", "y", "z"]
+
+freeTypeVar :: Variable
+freeTypeVar = mkVar pos "δ"
+
+-- | Labels in choices
+choices :: [String]
+choices = ["A", "B", "C"]
 
 instance Arbitrary Multiplicity where
   arbitrary = elements [Un, Lin]
@@ -26,26 +40,15 @@ instance Arbitrary T.Polarity where
 instance Arbitrary T.View where
   arbitrary = elements [T.External, T.Internal]
   
-
-ids :: [String]            -- Type and program variables
-ids = ["x", "y", "z"]
-
-freeTypeVar :: Variable
-freeTypeVar = mkVar pos "δ"
-
--- choices :: [String]        -- Program Variables
--- choices = ["A", "B", "C"]
+instance Arbitrary T.Sort where
+  arbitrary = elements [
+    -- T.Record, T.Variant, -- These two yield too many 'precondition false'
+    T.Choice T.External, T.Choice T.Internal]
 
 instance Arbitrary Variable where
-  arbitrary = arbitraryVar ids
-
--- instance Arbitrary Variable where
---  arbitrary = arbitraryVar choices
-
-arbitraryVar :: [String] -> Gen Variable
-arbitraryVar ids = do
-  id <- elements ids
-  return $ mkVar pos id
+  arbitrary = do
+    id <- elements ids
+    return $ mkVar pos id
 
 instance Arbitrary K.Kind where
   arbitrary = elements $ K.us pos : replicate 9 (K.ls pos) -- 90% of SL
@@ -74,18 +77,23 @@ instance Arbitrary T.Type where
 type PairGen = Int -> Gen (T.Type, T.Type)
 
 bisimPair :: PairGen
-bisimPair 0 =
-  oneof
-    -- The various type constructors
-        [skipPair, messagePair, varPair]
+bisimPair 0 = oneof [skipPair, varPair, intPair]
 bisimPair n = oneof
-    -- The various type constructors
-  [ skipPair
-  , messagePair
-  , varPair
-  , choicePair bisimPair n
-  , recPair bisimPair n
+  [
+  -- Some functional type constructors
+    intPair
+  , charPair
+    -- Bool, String, Unit may not be needed
+  , arrowPair bisimPair n
+  , pairPair bisimPair n
+  -- The various session types constructors
+  , skipPair
   , semiPair bisimPair n
+  , messagePair bisimPair n
+  , choicePair bisimPair n
+  -- The recursive type constructors
+  , recPair bisimPair n
+  , varPair
     -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
   , skipT n
   , tSkip n
@@ -106,11 +114,20 @@ bisimPair n = oneof
 skipPair :: Gen (T.Type, T.Type)
 skipPair = return (T.Skip pos, T.Skip pos)
 
-messagePair :: Gen (T.Type, T.Type)
-messagePair = do
+intPair :: Gen (T.Type, T.Type)
+intPair = return (T.Int pos, T.Int pos)
+
+charPair :: Gen (T.Type, T.Type)
+charPair = return (T.Char pos, T.Char pos)
+
+messagePair :: PairGen -> Int -> Gen (T.Type, T.Type)
+messagePair pairGen n = do
   pol <- arbitrary
-  t <- elements [T.Int pos, T.Char pos, T.Bool pos, T.Unit pos]
-  return (T.Message pos pol t, T.Message pos pol t)
+  (t, u) <- pairGen (n `div` 4) -- HO CFST
+  return (T.Message pos pol t, T.Message pos pol u)
+  -- First Order
+  -- t <- elements [T.Int pos, T.Char pos, T.Bool pos, T.Unit pos]
+  -- return (T.Message pos pol t, T.Message pos pol t)
 
 varPair :: Gen (T.Type, T.Type)
 varPair = do
@@ -125,13 +142,13 @@ semiPair pairGen n = do
 
 choicePair :: PairGen -> Int -> Gen (T.Type, T.Type)
 choicePair pairGen n = do
-  p        <- arbitrary
+  c        <- arbitrary
   (m1, m2) <- typeMapPair pairGen n
-  return (T.Almanac pos (T.Choice p) m1, T.Almanac pos (T.Choice p) m2)
+  return (T.Almanac pos c m1, T.Almanac pos c m2)
 
 typeMapPair :: PairGen -> Int -> Gen (T.TypeMap, T.TypeMap)
 typeMapPair pairGen n = do
-  k     <- choose (1, length ids) -- previously choices
+  k     <- choose (1, length choices)
   pairs <- vectorOf k $ fieldPair (n `div` k)
   let (f1, f2) = unzip pairs
   return (Map.fromList f1, Map.fromList f2)
@@ -139,8 +156,26 @@ typeMapPair pairGen n = do
   fieldPair :: Int -> Gen ((Variable, T.Type), (Variable, T.Type))
   fieldPair n = do
     (t, u) <- pairGen (n `div` 4)
-    x      <- arbitrary
+    l      <- elements choices -- arbitrary
+    let x = mkVar pos l
     return ((x, t), (x, u))
+
+-- The various type constructors (except forall
+
+arrowPair :: PairGen -> Int -> Gen (T.Type, T.Type)
+arrowPair pairGen n = do
+  mult <- arbitrary
+  (t, u) <- pairGen (n `div` 8)
+  (v, w) <- pairGen (n `div` 8)
+  return (T.Arrow pos mult t v, T.Arrow pos mult u w)
+
+pairPair :: PairGen -> Int -> Gen (T.Type, T.Type)
+pairPair pairGen n = do
+  (t, u) <- pairGen (n `div` 8)
+  (v, w) <- pairGen (n `div` 8)
+  return (T.Pair pos t v, T.Pair pos u w)
+
+-- Recursion
 
 recPair :: PairGen -> Int -> Gen (T.Type, T.Type)
 recPair pairGen n = do
@@ -148,6 +183,9 @@ recPair pairGen n = do
   a      <- arbitrary
   k      <- arbitrary
   return (T.Rec pos (Bind pos a k t), T.Rec pos (Bind pos a k u))
+  -- return $ if contractive Set.empty a t && contractive Set.empty a u
+  --          then (T.Rec pos (Bind pos a k t), T.Rec pos (Bind pos a k u))
+  --          else (t, u)
 
 -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
 

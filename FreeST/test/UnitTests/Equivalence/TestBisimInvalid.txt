@@ -1,3 +1,13 @@
+-- Higher Order
+
+!((rec y. +{a:!Char;!Char;y, b: Skip}) -> (rec x. ?Bool;x)) ; ?Bool
+!((rec y. +{a:!Char;y, b: Skip}) -> (rec y. ?Bool;?Bool;y)) ; ?Bool
+
+(rec y. +{a:!Char;!Char;y, b: Skip}) -> Int
+(rec y. +{a:!Char;y, b: Skip}) -> Int
+
+-- First Order
+
 ((rec x.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))});((rec x.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))});?Int))
 ((rec x.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))});((rec x.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))});(?Int;((rec x.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))});?Int))))
 

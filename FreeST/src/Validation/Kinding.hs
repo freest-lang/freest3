@@ -50,13 +50,14 @@ checkAgainstSession kenv = checkAgainstSession' (Map.keysSet kenv) kenv
 -- Returns the kind of a given type
 synthetise' :: K.PolyVars -> K.KindEnv -> T.Type -> FreestState K.Kind
 -- Functional types
-synthetise' _ _ (T.Int    p) = return $ K.Kind p K.Un K.Message
-synthetise' _ _ (T.Char   p) = return $ K.Kind p K.Un K.Message
-synthetise' _ _ (T.Bool   p) = return $ K.Kind p K.Un K.Message
-synthetise' _ _ (T.Unit   p) = return $ K.Kind p K.Un K.Message
-synthetise' _ _ (T.String p) = return $ K.Kind p K.Un K.Message
+synthetise' _ _ (T.Int    p) = return $ K.ut p
+synthetise' _ _ (T.Char   p) = return $ K.ut p
+synthetise' _ _ (T.Bool   p) = return $ K.ut p
+synthetise' _ _ (T.Unit   p) = return $ K.ut p
+synthetise' _ _ (T.String p) = return $ K.ut p
 synthetise' s kEnv (T.Arrow p m t u) =
   synthetise' s kEnv t >> synthetise' s kEnv u $> K.Kind p (typeToKindMult m) K.Top
+                                                          -- K.Top
 synthetise' s kEnv (T.Pair p t u) = do
   (K.Kind _ mt _) <- synthetise' s kEnv t
   (K.Kind _ mu _) <- synthetise' s kEnv u
@@ -65,13 +66,21 @@ synthetise' s kEnv (T.Almanac p T.Variant m) = do
   ks <- tMapM (synthetise' s kEnv) m
   let K.Kind _ n _ = foldr1 join ks
   return $ K.Kind p n K.Top
-  -- Session types
+-- Shared session types
+synthetise' s kEnv (T.Rec p1 (Bind _ a k (T.Semi p2 (T.Message p3 pol t) (T.Var p4 tVar))))
+  | K.isUn k && a == tVar = do
+    checkAgainstSession' s (Map.insert a k kEnv) (T.Semi p2 (T.Message p3 pol t) (T.Var p4 tVar))
+    return $ K.us p1
+synthetise' s kEnv (T.Rec p1 (Bind p2 a k (T.Almanac p3 (T.Choice v) m)))
+  | K.isUn k && all (\t -> case t of (T.Var _ a') -> a == a' ; _ -> False) m = do
+    return $ K.us p1
+-- Session types
 synthetise' _ _    (T.Skip p    ) = return $ K.us p
 synthetise' s kEnv (T.Semi p t u) = do
   (K.Kind _ mt _) <- checkAgainstSession' s kEnv t
   (K.Kind _ mu _) <- checkAgainstSession' s kEnv u
-  return $ K.Kind p (join mt mu) K.Session                      
-synthetise' s kEnv (T.Message p _ t) = checkAgainst' s kEnv (K.lm p) t $> K.ls p
+  return $ K.Kind p (join mt mu) K.Session
+synthetise' s kEnv (T.Message p _ t) = checkAgainst' s kEnv (K.lt p) t $> K.ls p -- HO CFST
 synthetise' s kEnv (T.Almanac p (T.Choice _) m) =
   tMapM_ (checkAgainst' s kEnv (K.ls p)) m $> K.ls p
 -- Session or functional

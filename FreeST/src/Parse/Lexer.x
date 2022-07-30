@@ -96,8 +96,8 @@ tokens :-
   "1S"                            { \p s -> TokenLinS (internalPos p) }
   "*T"                            { \p s -> TokenUnT (internalPos p) }
   "1T"                            { \p s -> TokenLinT (internalPos p) }
-  "*M"                            { \p s -> TokenUnM (internalPos p) }
-  "1M"                            { \p s -> TokenLinM (internalPos p) }
+  -- "*M"                            { \p s -> TokenUnM (internalPos p) }
+  -- "1M"                            { \p s -> TokenLinM (internalPos p) }
 -- Basic types
   Int			        { \p s -> TokenIntT (internalPos p) }
   Char				{ \p s -> TokenCharT (internalPos p) }
@@ -249,8 +249,8 @@ instance Show Token where
   show (TokenLinS _) = "1S"
   show (TokenUnT _) = "*T"
   show (TokenLinT _) = "1T"
-  show (TokenUnM _) = "*M"
-  show (TokenLinM _) = "1M"
+  -- show (TokenUnM _) = "*M"
+  -- show (TokenLinM _) = "1M"
   show (TokenInt _ i) = show i
   show (TokenChar _ c) = show c
   show (TokenBool _ b) = show b
@@ -271,18 +271,19 @@ instance Show Token where
   show (TokenSelect _) = "select"
 --  show (TokenFork _) = "fork"
   show (TokenMatch _) = "match"
+  show (TokenWith _) = "with"
   show (TokenCase _) = "case"
+  show (TokenOf _) = "of"
   show (TokenForall _) = "forall"
+  show (TokenDualof _) = "dualof"
+  show (TokenFArrow _) = "=>"
   show (TokenMinus _) = "-"
   show (TokenTimes _) = "*"
   show (TokenRaise _) = "^"
+  show (TokenWild _) = "_"
   show (TokenLT _) = "<"
   show (TokenGT _) = ">"
-  show (TokenWild _) = "_"
   show (TokenCmp _ s) = show s
-  show (TokenOf _) = "of"
-  show (TokenDualof _) = "dualof"
-  show (TokenFArrow _) = "=>"
   show (TokenConjunction _) = "&&"
   show (TokenDisjunction _) = "||"
   show (TokenDiv _) = "/"

@@ -35,3 +35,61 @@ fix f =
   (\x:(rec b.b -> (a -> a)) -> f (\z:a -> x x z))
   (\x:(rec b.b -> (a -> a)) -> f (\z:a -> x x z))
 
+-- | A mark for functions that do not terminate
+type Diverge = ()
+
+-- | A function that diverges
+diverge : () --Diverge
+diverge = diverge
+
+-- | Discard an unrestricted value
+sink : forall a . a -> ()
+sink _ = ()
+
+-- | Execute a thunk n times, sequentially
+repeat : forall a . Int -> (() -> a) -> ()
+repeat n thunk =
+    if n < 0
+    then ()
+    else 
+        thunk ();
+        repeat @a (n - 1) thunk
+
+-- | Receive a value from a star channel
+receive_ : forall a:1T . *?a -> a
+receive_ ch = fst @a @*?a $ receive ch
+
+-- | Send a value on a star channel
+send_ : forall a:1T . a -> *!a 1-> ()
+send_ x ch = sink @*!a $ send x ch
+
+-- | Fork n identical threads
+parallel : Int -> (() -> ()) -> ()
+parallel n thunk = repeat @() n (\_:() -> fork (thunk ()))
+
+-- | Create a new child process and a linear channel through which it can 
+--   communicate with its parent process. Return the channel endpoint.
+forkWith : forall a:1S . (dualof a 1-> ()) -> a
+forkWith f =
+    let (x, y) = new a in
+    fork $ f y;
+    x
+
+-- |Session initiation
+-- |Accept a request for a linear session on a shared channel.
+-- |The requester uses a conventional receive to obtain the channel end
+accept : forall a:1S b:*S . !a; b -> dualof a
+accept ch =
+    let (x, y) = new a in
+    send x ch;
+    y
+
+-- |Session initiation on an start channel
+accept_ : forall a:1S . *!a -> dualof a
+accept_ ch = accept @a @*!a ch
+
+-- | Run a server process given its endpoint, a function to serve a client (a
+-- handle) and the initial state.
+runServer : forall a:1S b . (b -> dualof a 1-> b) -> b -> *!a -> () --Diverge
+runServer handle state ch =
+    runServer @a @b handle (handle state (accept_ @a ch)) ch 

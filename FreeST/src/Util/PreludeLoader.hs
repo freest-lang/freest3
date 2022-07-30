@@ -15,6 +15,7 @@ module Util.PreludeLoader
   ( prelude
   , isBuiltin
   , userDefined
+  , preludeNamingCtx
   )
 where
 
@@ -83,8 +84,8 @@ typeList =
   , (mkVar p "error", readT "∀a:*T . String -> a")
   , (mkVar p "undefined", readT "∀a:*T . a")
   -- Session ops
-  , (mkVar p "send", readT "∀a:1M . a -> ∀b:1S . !a;b 1-> b")
-  , (mkVar p "receive", readT "∀a:1M . ∀b:1S . ?a;b -> (a, b)")
+  , (mkVar p "send", readT "∀a:1T . a -> ∀b:1S . !a;b 1-> b")
+  , (mkVar p "receive", readT "∀a:1T . ∀b:1S . ?a;b -> (a, b)")
   -- Not the actual type for collect, but for writing it we would
   -- need polymorphism over the labels in some choice/variant
   , (mkVar p "collect", read "∀a:1T . a") 
@@ -108,3 +109,7 @@ isBuiltin = (`elem` map fst typeList)
 
 userDefined :: VarEnv -> VarEnv
 userDefined = Map.filterWithKey (\x _ -> not (isBuiltin x))
+
+-- Names from the prelude, in order 
+preludeNamingCtx :: [String]
+preludeNamingCtx = map intern $ Map.keys prelude

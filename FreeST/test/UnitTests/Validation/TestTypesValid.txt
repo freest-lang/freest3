@@ -206,10 +206,10 @@ forall a: 1S . forall b: 1S . forall z: 1S . (rec b: 1S.+{A: (b;&{A: (Skip;(rec 
 ∀ a . a -> a -> a -- Boolean type as Church Encoding
 1T
 
-∀ a : *M . a
+∀ a : 1T . a
 1T
 
-forall a : *M . a
+forall a : 1T . a
 1T
 
 ∀ a : *T . a -> a
@@ -242,7 +242,7 @@ forall a : *M . a
 Int -> ∀ a : *T . a
 1T
 
-(Int, ∀ a : 1M . a)
+(Int, ∀ a : 1T . a)
 1T
 
 Bool -> ∀ a : 1S . (rec a : 1S . !Int;a) -> a
@@ -269,5 +269,50 @@ rec a. dualof Skip
 rec y: 1S .             +{B: !(), C: !Bool} ; (+{A: y;!(), C: !()} ; y)
 1S
 
-rec x: 1S . rec y: 1S .  +{B: !(), C: !Bool} ; ((+{A: y, C: Skip};!())  ; x)
+rec x:1S . rec y:1S . +{B: !(), C: !Bool} ; ((+{A: y, C: Skip};!())  ; x)
 1S
+
+-- Messages not of kind ML
+
+!(Int, Bool)
+1S
+
+!(!Int; ?Bool)
+1S
+
+rec a:1S . ?(!Int; a)
+1S
+
+-- Shared channels, special syntax
+
+*!Int
+*S
+
+*?Int
+*S
+
+*?(rec x:1S . rec y:1S . +{B: !(), C: !Bool} ; ((+{A: y, C: Skip};!())  ; x))
+*S
+
+*+{One, Two}
+*S
+
+*&{One, Two}
+*S
+
+*&{Mon, Tue, ed, Thu, Fri, Sat, Sun}
+*S
+
+-- Shared channels, raw syntax
+
+rec a:*S . !Int; a
+*S
+
+rec a:*S . ?Int; a
+*S
+
+rec a:*S . +{One: a, Two: a}
+*S
+
+rec a:*S . &{One: a, Two: a}
+*S

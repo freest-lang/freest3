@@ -60,7 +60,8 @@ liftModToSpan (Span p1 p2 _) = do
 
 -- Parse errors
 
-checkDupField :: Variable -> T.TypeMap -> FreestStateT ()
+-- checkDupField :: Variable -> T.TypeMap -> FreestState ()
+checkDupField :: MonadState FreestS m => Variable -> Map.Map Variable v -> m ()
 checkDupField x m = 
   when (x `Map.member` m) $ addError $ MultipleFieldDecl (getSpan x) (getSpan k) x
   where
