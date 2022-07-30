@@ -27,9 +27,9 @@ import qualified Data.Set        as Set
 elaboration :: FreestState ()
 elaboration = do
   -- | Checks correct number of arguments
-  checkNumArgs =<< getPEnvPat
+  Match.checkNumArgs =<< getPEnvPat
   -- | Checks correct channels' pattern matching
-  checkChanVar =<< getPEnvPat
+  Match.checkChanVar =<< getPEnvPat
   -- | Adds missing Vars to malformed functions
   (Match.addMissingVars <$> getPEnvPat) >>= setPEnvPat
   -- | Remove all patterns
@@ -42,7 +42,7 @@ elaboration = do
   elabVEnv =<< getVEnv
   -- | same for parse env (which contains the functions' bodies)
   elabPEnv =<< getPEnv
-  -- | From this point, there are no type names on the function signatures
+  -- | From this3,221 point, there are no type names on the function signatures
   --   and on the function bodies. 
   -- | Then, resolve all the dualof occurrences on:
   -- | Type Env (i.e. type A = dualof !Int)
@@ -58,43 +58,6 @@ elaboration = do
   --   build a lambda expression: f = \x : T -> E
   buildProg
   -- debugM . ("Program " ++) <$> show =<< getProg
-
--- | Function validation before translation
-
-checkNumArgs :: ParseEnvPat -> FreestState ()
-checkNumArgs pep = tMapWithKeyM_ checkNumArgs' pep
-
-checkNumArgs' :: Variable -> [([E.Pattern],E.Exp)] -> FreestState ()
-checkNumArgs' fn lines  
-  | allSame $ map (length.fst) lines = return ()
-  | otherwise = addError $ DifNumberOfArguments (getSpan fn) fn 
-  where allSame (x:y:ys) = x == y && allSame (y:ys)
-        allSame _ = True
-
-checkChanVar :: ParseEnvPat -> FreestState ()
-checkChanVar penv = do
-  cons <- Match.getConstructors -- set with every constructor
-  tMapM_ (checkChanVar' cons.transpose.map fst) penv
-
-checkChanVar' :: Set.Set Variable -> [[E.Pattern]] -> FreestState ()
-checkChanVar' cons [] = return ()
-checkChanVar' cons (xs:xss) = do
-  if any Match.isVar xs && any Match.isCon xs then do
-    let varsF    = map Match.pVar $ filter Match.isVar xs
-    let consF    =                  filter Match.isCon xs
-    let consFVar = Set.fromList $ map Match.pVar consF
-    let inter    = Set.intersection cons consFVar
-    if Set.null inter then
-      -- Channel pattern-matching
-      mapM (\v -> addError $ InvalidVariablePatternChan (getSpan v) v) varsF
-      -- nested patterns
-      >> checkChanVar' cons ( transpose $ map Match.pPats consF )
-      >> checkChanVar' cons xss
-    -- Data types pattern-matching
-    else return ()
-  else 
-    -- No mixture pattern-matching
-    return ()
 
 -- | Elaboration over environments (VarEnv + ParseEnv)
 
