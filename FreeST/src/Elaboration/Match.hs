@@ -1,13 +1,8 @@
 module Elaboration.Match
   ( addMissingVars
-  , getConstructors
-  , matchFuns
-  , isCon
-  , isVar
-  , pVar 
-  , pPats
   , checkNumArgs
   , checkChanVar
+  , matchFuns
   )
 where
 

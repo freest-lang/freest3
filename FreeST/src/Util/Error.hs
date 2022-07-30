@@ -192,7 +192,7 @@ instance Message ErrorType where
     "Equations for " ++ style red sty ts (show fun) ++
     " have different number of arguments " ++
     "\n  Declared in file/module " ++ showModule (showModuleName p) p ++
-    ":\n  " ++ red sty (show fun)
+    ": " ++ red sty (show fun)
   msg (InvalidVariablePatternChan p v) sty ts = 
     "Cannot mixture variables with pattern-matching channel choices." ++
     "\n  Declared in file/module " ++ showModule (showModuleName p) p ++
