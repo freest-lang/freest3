@@ -1,4 +1,3 @@
-
 f : &{A: &{C: Skip, D: Skip}, B: Skip} 1-> Int
 f c =
   case collect c of {
@@ -7,7 +6,3 @@ f c =
     (A c)     -> 2,
     c         -> 3
   }
-
-
-main : Int
-main = 1

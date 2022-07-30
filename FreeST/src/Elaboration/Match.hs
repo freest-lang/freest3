@@ -48,6 +48,11 @@ checkChanVar :: ParseEnvPat -> FreestState ()
 checkChanVar penv = getConstructors >>= -- set with every constructor
   (\cons -> tMapM_ (checkChanVar' cons.transpose.map fst) penv) 
 
+-- [([Pattern],Exp)]
+checkChanVarCase :: FieldList -> FreestState ()
+checkChanVarCase fl = getConstructors >>=
+  (\cons -> checkChanVar' cons $ transpose $ map fst fl)
+
 checkChanVar' :: Set.Set Variable -> [[Pattern]] -> FreestState ()
 checkChanVar' cons [] = return ()
 checkChanVar' cons (xs:xss) 
@@ -59,7 +64,7 @@ checkChanVar' cons (xs:xss)
     let inter    = Set.intersection cons consFVar
     if Set.null inter then
       -- Channel pattern-matching
-      mapM (\v -> addError $ InvalidVariablePatternChan (getSpan v) v) varsF
+      mapM_ (\v -> addError $ InvalidVariablePatternChan (getSpan v) v) varsF
       -- nested patterns
       >> checkChanVar' cons ( transpose $ map pPats consF )
       -- next columns
@@ -197,10 +202,13 @@ constructors c = (findCons c).(map (snd.snd)).(Map.toList) <$> getTEnv -- finds 
 
 findCons :: Variable -> [T.Type] -> [(Variable,Int)]
 findCons c [] = []
-findCons c (t@(T.Almanac _ T.Variant tm):ts) 
-  | c `elem` getKeys t = map (\(v,t) -> (v,countArrows t)) (Map.toList tm)  -- if the constructor is inside, this is the correct data type
-  | otherwise = findCons c ts                                               -- otherwise search on the next
-  where countArrows (T.Arrow _ _ _ t2) = 1 + countArrows t2                 -- the number of arrows gives the number of components of each Constructor
+findCons c (t:ts) 
+  | c `elem` getKeys t = consAndNumber t
+  | otherwise = findCons c ts
+
+consAndNumber :: T.Type -> [(Variable,Int)]
+consAndNumber (T.Almanac _ T.Variant tm) = map (\(v,t) -> (v,countArrows t)) (Map.toList tm)
+  where countArrows (T.Arrow _ _ _ t2) = 1 + countArrows t2
         countArrows _ = 0 
 
 getKeys :: T.Type -> [Variable]
@@ -220,11 +228,8 @@ replaceExp v p (TypeAbs s b)          = TypeAbs s   <$> replaceBind v p b
 replaceExp v p (TypeApp s e t)        = flip (TypeApp s) t <$> replaceExp v p e
 replaceExp v p (Cond s e1 e2 e3)      = Cond    s   <$> replaceExp  v p e1 <*> replaceExp v p e2 <*> replaceExp v p e3
 replaceExp v p (UnLet s v1 e1 e2)     = UnLet   s      (replaceVar  v p v1)<$> replaceExp v p e1 <*> replaceExp v p e2
--- TODOX check cases
--- replaceExp v p (CasePat s e flp)      = encase =<< (R.renameVar $ mkVar(getSpan e) name)
---   where encase v' = UnLet s v' <$> replaceExp v p e <*> (replaceExp v p =<< match [v'] flp)
---         name = "hidden_var"
-replaceExp v p (CasePat s e flp)      = sub         <$> replaceExp  v p e  <*>(replaceExp v p    =<< match vs' flp)
+replaceExp v p (CasePat s e flp)      = checkChanVarCase flp
+                                     >> sub         <$> replaceExp  v p e  <*>(replaceExp v p    =<< match vs' flp)
   where sub e (Case s _ fm) = Case s e fm
         vs' = [mkVar (getSpan e) "_"]
 replaceExp _ _ e = return e
