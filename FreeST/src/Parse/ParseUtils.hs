@@ -112,6 +112,7 @@ checkDupTypeDecl a = do
  where
     pos tEnv = getSpan $ fst $ Map.elemAt (Map.findIndex a tEnv) tEnv
 
+-- verifies if there is any duplicated var in any patern, or nested pattern
 checkDupVarPats :: [E.Pattern] -> FreestStateT ()
 checkDupVarPats ps = checkDupVarPats' ps [] >> return ()
 

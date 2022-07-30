@@ -61,7 +61,7 @@ data ErrorType =
   | MissingChoices Span [Variable] Span
   | MultipleDeclarations Span Variable Span
   | MultipleTypeDecl Span Variable Span
-  | MultipleFunBindings Span Variable Span -- TODOX remove?
+  | MultipleFunBindings Span Variable Span -- TODOX remove? this is not an error anymore
   -- Elab
   | DifNumberOfArguments Span Variable 
   | InvalidVariablePatternChan Span Variable

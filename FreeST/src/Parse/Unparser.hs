@@ -283,7 +283,7 @@ instance Unparse Exp where
   unparse (E.Case _ e m) =
     (inRator, "case " ++ s ++ " of {" ++ showFieldMap m ++ "}")
     where s = bracket (unparse e) NonAssoc inRator
-  -- TODOX REMOVE DEBUGGING
+  -- TODOX internal Case
   unparse (E.CasePat _ e m) =
     (inRator, "case " ++ s ++ " of {" ++ showFieldList m ++ "}")
     where s = bracket (unparse e) NonAssoc inRator
@@ -313,14 +313,14 @@ showFieldMap m = intercalate "; " $ map showAssoc (Map.toList m)
   showAssoc (b, (a, v)) =
     show b ++ " " ++ unwords (map show a) ++ " -> " ++ show v
 
--- TODOX for debugging
+-- TODOX for internal Case
 showFieldList :: FieldList -> String
 showFieldList m = intercalate "; " $ map show m
  where
   showAssoc (b, (a, v)) =
     show b ++ " " ++ unwords (map show a) ++ " -> " ++ show v
 
--- TODOX remove
+-- TODOX for internal Case
 instance Show Pattern where
   show (E.PatVar  v)    = "PatVar "  ++ intern v
   show (E.PatCons v ps) = "PatCons " ++ intern v ++ show ps

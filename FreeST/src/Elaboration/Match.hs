@@ -39,8 +39,8 @@ checkNumArgs pep = tMapWithKeyM_ checkNumArgs' pep
 
 checkNumArgs' :: Variable -> [([Pattern],Exp)] -> FreestState ()
 checkNumArgs' fn lines  
-  | allSame $ map (length.fst) lines = return ()
-  | otherwise = addError $ DifNumberOfArguments (getSpan fn) fn 
+  | allSame $ map (length.fst) lines = return ()                  -- if every line has the same amount of arguments all is fine
+  | otherwise = addError $ DifNumberOfArguments (getSpan fn) fn   -- if not there's an error
   where allSame (x:y:ys) = x == y && allSame (y:ys)
         allSame _ = True
 
@@ -57,22 +57,22 @@ checkChanVar' :: Set.Set Variable -> [[Pattern]] -> FreestState ()
 checkChanVar' cons [] = return ()
 checkChanVar' cons (xs:xss) 
   | any isVar xs && 
-    any isCon xs = do
-    let varsF    = map pVar $ filter isVar xs
-    let consF    =            filter isCon xs
-    let consFVar = Set.fromList $ map pVar consF
-    let inter    = Set.intersection cons consFVar
-    if Set.null inter then
+    any isCon xs = do                                                           -- if has at least one var and cons
+    let varsF    = map pVar $ filter isVar xs                                   -- get vars
+    let consF    =            filter isCon xs                                   -- get constructors
+    let consFVar = Set.fromList $ map pVar consF                                -- get constructors' names
+    let inter    = Set.intersection cons consFVar                               -- intersection between actual constructors and our constructors 
+    if Set.null inter then                                                      -- if null they are channels
       -- Channel pattern-matching
-      mapM_ (\v -> addError $ InvalidVariablePatternChan (getSpan v) v) varsF
+      mapM_ (\v -> addError $ InvalidVariablePatternChan (getSpan v) v) varsF   -- error for each variable, since there is channel patterns
       -- nested patterns
-      >> checkChanVar' cons ( transpose $ map pPats consF )
+      >> checkChanVar' cons ( transpose $ map pPats consF )                     -- check for nested patterns
       -- next columns
-      >> checkChanVar' cons xss
+      >> checkChanVar' cons xss                                                 -- check for next column
     -- Data types pattern-matching
-    else return ()
+    else return ()                                                              -- else they are constructors, and all is fine
   -- No mixture pattern-matching
-  | otherwise = return ()
+  | otherwise = return ()                                                       -- otherwise there are only vars or cons, and all is fine
 
 -- filling functions -----------------------------------------------
 
@@ -82,10 +82,10 @@ addMissingVars pep = Map.map fillVars pep
 -- fills every function definition with its own max length of arguments
 fillVars :: [Equation] -> [Equation]
 fillVars fun = map (fillVars' maxLen) fun
-  where maxLen = foldr (max.length.fst) 0 fun
+  where maxLen = foldr (max.length.fst) 0 fun -- finds the maximum number of arguments in a function
 
 fillVars' :: Int -> Equation -> Equation
-fillVars' n (ps,e) = (ps++missingVars,e) 
+fillVars' n (ps,e) = (ps++missingVars,e)      -- fills with '_' variables all lines with missing arguments
   where pat = PatVar $ mkVar defaultSpan "_"
         missingVars = replicate (n - (length ps)) pat
 
@@ -198,19 +198,20 @@ getDataType cs = filter (isCon.head.fst) cs
 
 -- returns constructors and the amount of variables they need
 constructors :: Variable -> FreestState [(Variable,Int)]
-constructors c = (findCons c).(map (snd.snd)).(Map.toList) <$> getTEnv -- finds the constructors from the constructor data type
+constructors c = (findCons c).(map (snd.snd)).(Map.toList) <$> getTEnv  -- finds the constructors from the data type with the constructor c
 
 findCons :: Variable -> [T.Type] -> [(Variable,Int)]
 findCons c [] = []
 findCons c (t:ts) 
-  | c `elem` getKeys t = consAndNumber t
-  | otherwise = findCons c ts
+  | c `elem` getKeys t = consAndNumber t                                -- if the constructor is inside this data type, return its constructors and size
+  | otherwise = findCons c ts                                           -- if not continue searching
 
 consAndNumber :: T.Type -> [(Variable,Int)]
 consAndNumber (T.Almanac _ T.Variant tm) = map (\(v,t) -> (v,countArrows t)) (Map.toList tm)
-  where countArrows (T.Arrow _ _ _ t2) = 1 + countArrows t2
+  where countArrows (T.Arrow _ _ _ t2) = 1 + countArrows t2             -- the number of higher level arrows gives the number of components
         countArrows _ = 0 
 
+-- retuns the data type constructors
 getKeys :: T.Type -> [Variable]
 getKeys (T.Almanac _ T.Variant tm) = Map.keys tm
 getKeys _ = []
@@ -228,7 +229,7 @@ replaceExp v p (TypeAbs s b)          = TypeAbs s   <$> replaceBind v p b
 replaceExp v p (TypeApp s e t)        = flip (TypeApp s) t <$> replaceExp v p e
 replaceExp v p (Cond s e1 e2 e3)      = Cond    s   <$> replaceExp  v p e1 <*> replaceExp v p e2 <*> replaceExp v p e3
 replaceExp v p (UnLet s v1 e1 e2)     = UnLet   s      (replaceVar  v p v1)<$> replaceExp v p e1 <*> replaceExp v p e2
-replaceExp v p (CasePat s e flp)      = checkChanVarCase flp
+replaceExp v p (CasePat s e flp)      = checkChanVarCase flp  -- checks if there are variables with channel patterns
                                      >> sub         <$> replaceExp  v p e  <*>(replaceExp v p    =<< match vs' flp)
   where sub e (Case s _ fm) = Case s e fm
         vs' = [mkVar (getSpan e) "_"]
@@ -264,6 +265,7 @@ isVar _          = False
 isCon :: Pattern -> Bool
 isCon = not.isVar
 
+-- get every constructor from the file
 getConstructors :: FreestState (Set.Set Variable)
 getConstructors = Map.elems <$> getTEnv
               <&> map (getKeys.snd)

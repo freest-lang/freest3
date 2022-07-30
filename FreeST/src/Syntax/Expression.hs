@@ -79,3 +79,4 @@ instance Located Exp where
   getSpan (BinLet p _ _ _ _   ) = p
   getSpan (New p _ _          ) = p
   getSpan (Case  p _ _        ) = p
+  getSpan (CasePat  p _ _     ) = p
