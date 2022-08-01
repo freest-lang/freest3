@@ -218,6 +218,7 @@ isFreeIn x (T.Almanac _ _ m) =
 isFreeIn x (T.Arrow _ _ t u) = x `isFreeIn` t || x `isFreeIn` u
 isFreeIn x (T.Pair _ t u ) = x `isFreeIn` t || x `isFreeIn` u
     -- Session types
+isFreeIn x (T.Message _ _ t) = x `isFreeIn` t ---
 isFreeIn x (T.Semi _ t u) = x `isFreeIn` t || x `isFreeIn` u
   -- Polymorphism
 isFreeIn x (T.Forall _ (Bind _ y _ t)) = x /= y && x `isFreeIn` t
@@ -226,9 +227,4 @@ isFreeIn x (T.Rec    _ (Bind _ y _ t)) = x /= y && x `isFreeIn` t
 isFreeIn x (T.Var    _ y               ) = x == y
   -- Type operators
 isFreeIn x (T.Dualof _ t) = x `isFreeIn` t
-  
---isFreeIn _ t@T.Dualof{} =
--- It is used during elaboration; otherwise we should throw an internal error
---  internalError "Validation.Rename.isFreeIn" t
-  -- Basic, Skip, Message, TypeName
 isFreeIn _ _                             = False

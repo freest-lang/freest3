@@ -95,14 +95,14 @@ synthetise kEnv (E.App _ (E.Var p x) e) | x == mkVar p "collect" = do
 synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "receive" = do
   t        <- synthetise kEnv e
   (u1, u2) <- Extract.input e t
-  void $ K.checkAgainst kEnv (K.lm $ defaultSpan) u1
+  void $ K.checkAgainst kEnv (K.lt $ defaultSpan) u1
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
   return $ T.Pair p u1 u2
   -- Send e1 e2
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkVar p "send" = do
   t        <- synthetise kEnv e2
   (u1, u2) <- Extract.output e2 t
-  void $ K.checkAgainst kEnv (K.lm defaultSpan) u1
+  void $ K.checkAgainst kEnv (K.lt defaultSpan) u1
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
   checkAgainst kEnv e1 u1
   return u2

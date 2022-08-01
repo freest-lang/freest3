@@ -1,0 +1,4 @@
+<pending>
+
+Waiting for non-deterministic tests
+Output should be some permutation of lines "Oops an error ocurred!" and "7"

@@ -80,8 +80,8 @@ import           System.FilePath
   LS       {TokenLinS _}
   UT       {TokenUnT _}
   LT       {TokenLinT _}
-  UM       {TokenUnM _}
-  LM       {TokenLinM _}
+  -- UM       {TokenUnM _}
+  -- LM       {TokenLinM _}
   INT      {TokenInt _ _ }
   BOOL     {TokenBool _ _}
   CHAR     {TokenChar _ _}
@@ -118,6 +118,7 @@ import           System.FilePath
 %left NEG not    -- unary
 %right '.'       -- ∀ a:k . T and μ a:k . T
 %right '=>' '->' '1->' ARROW -- λλ a:k => e,  x:T -> e, λ x:T 1-> e, T -> T and T 1-> T
+%left '@'
 %right ';'       -- T;T and e;e
 %right MSG       -- !T and ?T
 %right dualof
@@ -224,7 +225,7 @@ App :: { E.Exp }
                                        \s1 -> pure $ E.App s (E.Var s (mkVar s1 "select")) (E.Var s1 $2)
                                    }
   | Primary                        { $1 }
-  | TApp                           { $1 }
+  | App '@' Type                   {% mkSpanSpan $1 $3 >>= \s -> pure $ E.TypeApp s $1 $3 }
    
 Primary :: { E.Exp }
   : INT                            {% let (TokenInt p x) = $1 in flip E.Int x `fmap` liftModToSpan p }
@@ -257,9 +258,6 @@ TAbs :: { E.Exp }
          \s -> mkSpanSpan k $2 >>=
          \s' -> pure $ E.TypeAbs s (Bind s' a k $2)
       }
-
-TApp :: { E.Exp }
-  : App '@' Type     {% mkSpanSpan $1 $3 >>= \s -> pure $ E.TypeApp s $1 $3 }
 
 Tuple :: { E.Exp }
   : Exp           { $1 }
@@ -308,6 +306,21 @@ Type :: { T.Type }
   | Type ';' Type                 {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Semi s $1 $3 }
   | Polarity Type %prec MSG       {% mkSpanFromSpan (fst $1) $2 >>= \s -> pure $ T.Message s (snd $1) $2 }                                 
   | ChoiceView '{' FieldList '}'  {% mkSpanFromSpan (fst $1) $4 >>= \s -> pure $ T.Almanac s (T.Choice (snd $1)) $3 } 
+  -- Star types
+  | '*' Polarity Type %prec MSG 
+    {% do
+        p <- mkSpan $1
+        tVar <- freshTVar "a" p
+        return (T.Rec p $ Bind p tVar (K.us p) $
+          T.Semi p (uncurry T.Message $2 $3) (T.Var p tVar)) }
+  | '*' ChoiceView '{' LabelList '}'
+    {% do
+        p <- mkSpan $1
+        tVar <- freshTVar "a" p
+        let tMap = Map.map ($ (T.Var p tVar)) $4
+        return (T.Rec p $ Bind p tVar (K.us p) $
+            T.Almanac (fst $2) (T.Choice (snd $2)) tMap) }
+
   -- Polymorphism and recursion
   | rec KindBind '.' Type         {% let (a,k) = $2 in flip T.Rec (Bind (getSpan a) a k $4) `fmap` mkSpanSpan $1 $4 }
   | forall KindBind Forall        {% let (a,k) = $2 in flip T.Forall (Bind (getSpan a) a k $3) `fmap` mkSpanSpan $1 $3 }
@@ -346,6 +359,11 @@ FieldList :: { T.TypeMap }
 Field :: { (Variable, T.Type) }
   : ArbitraryProgVar ':' Type { ($1, $3) }
 
+LabelList :: { Map.Map Variable (T.Type -> T.Type) }
+  : ArbitraryProgVar               { Map.singleton $1 id }
+  | ArbitraryProgVar ',' LabelList {% checkDupField $1 $3 >>
+                                    return (Map.insert $1 id $3) }
+
 -- TYPE SEQUENCE
 
 TypeSeq :: { [T.Type] }
@@ -361,8 +379,8 @@ Kind :: { K.Kind }
   | LS {% K.ls `fmap` mkSpan $1 }
   | UT {% K.ut `fmap` mkSpan $1 }
   | LT {% K.lt `fmap` mkSpan $1 }
-  | UM {% K.um `fmap` mkSpan $1 }
-  | LM {% K.lm `fmap` mkSpan $1 }
+  -- | UM {% K.um `fmap` mkSpan $1 }
+  -- | LM {% K.lm `fmap` mkSpan $1 }
 
 -- PROGRAM VARIABLE
 

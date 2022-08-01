@@ -1,13 +1,13 @@
 {- |
 Module      :  Equivalence.TypeToGrammar
-Description :  Conversion from types to grammars
+Description :  Converting types to grammars
 Copyright   :  (c) Bernardo Almeida, LASIGE, Faculty of Sciences, University of Lisbon
                    Andreia Mordido, LASIGE, Faculty of Sciences, University of Lisbon
                    Vasco Vasconcelos, LASIGE, Faculty of Sciences, University of Lisbon
 Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc.ul.pt
 
-This module builds the initial monadic state, and converts the session types
-given as parameter to context-free grammars
+This module converts a list of session types into a simple grammar without
+unreachable symbols
 -}
 
 {-# LANGUAGE FlexibleInstances #-}
@@ -17,63 +17,133 @@ module Equivalence.TypeToGrammar
   )
 where
 
-import           Bisimulation.Grammar
 import           Syntax.Base
 import qualified Syntax.Kind                   as K
 import qualified Syntax.Type                   as T
 import qualified Validation.Substitution       as Substitution
                                                 ( subsAll )
+import           Validation.Terminated          ( terminated )
+import           Elaboration.Elaborate          ( changePos )
 import           Equivalence.Normalisation      ( normalise )
+import           Bisimulation.Grammar
+import           Util.Error                     ( internalError )
 import           Util.FreestState               ( tMapM
                                                 , tMapM_
                                                 )
-import           Util.Error                     ( internalError )
 import           Control.Monad.State
 import           Data.Functor
 import qualified Data.Map.Strict               as Map
 import qualified Data.Set                      as Set
-import           Prelude                 hiding ( Word ) -- Word is (re)defined in module Bisimulation.Grammar
--- import           Parse.Unparser -- debug
-
--- Conversion to context-free grammars
+import           Prelude                       hiding ( Word ) -- redefined in module Bisimulation.Grammar
+import           Debug.Trace
 
 convertToGrammar :: [T.Type] -> Grammar
-convertToGrammar ts = -- trace ("types: " ++ show ts ++ "\n")  $
-                      Grammar (substitute θ word)
-                              (substitute θ (productions state))
- where
-  (word, state) = runState (mapM typeToGrammar ts) initial
-  θ             = substitution state
+convertToGrammar ts = {- trace (show ts ++ "\n" ++ show grammar) -} grammar
+  where
+    -- ts'           = mapM $ removeNames [] preludeNamingCtx (length preludeNamingCtx) ts
+    (word, state) = runState (mapM typeToGrammar ts) initial
+    θ             = substitution state
+    prods         = substitute θ (productions state)
+    grammar       = Grammar (substitute θ word) prods
 
 typeToGrammar :: T.Type -> TransState Word
 typeToGrammar t = collect [] t >> toGrammar t
 
 toGrammar :: T.Type -> TransState Word
-toGrammar (T.Almanac _ (T.Choice v) m) = do
-  ms <- tMapM toGrammar m
-  getLHS $ Map.mapKeys (\k -> show v ++ show k) ms
-toGrammar (T.Skip _    ) = return []
-toGrammar (T.Semi _ t u) = do
+-- Syntactic equality
+toGrammar t = case fatTerminal t of
+  Just t' ->  getLHS $ Map.singleton (show t') []
+  Nothing -> toGrammar' t
+
+toGrammar' :: T.Type -> TransState Word
+-- Functional Types
+toGrammar' (T.Arrow _ p t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
-  return $ xs ++ ys
-toGrammar t@T.Message{}    = typeTerminal t
-toGrammar t@T.Var{}                  = typeTerminal t
-toGrammar t@T.CoVar{}                = typeTerminal t
-toGrammar (T.Rec _ (Bind _ x _ _)) = return [x]
-toGrammar t = internalError "Equivalence.TypeToGrammar.toGrammar" t
+  getLHS $ Map.fromList [(show p ++ "d", xs), (show p ++ "r", ys)]
+toGrammar' (T.Pair _ t u) = do
+  xs <- toGrammar t
+  ys <- toGrammar u
+  getLHS $ Map.fromList [("*l", xs), ("*r", ys)]
+toGrammar' (T.Almanac _  T.Variant m) = do -- Can't test this type directly
+  ms <- tMapM toGrammar m
+  getLHS $ Map.mapKeys (\k -> "<>" ++ show k) ms
+-- Session Types
+toGrammar' (T.Skip _) = return []
+toGrammar' (T.Semi _ t u) = liftM2 (++) (toGrammar t) (toGrammar u)
+toGrammar' (T.Message _ p t) = do
+  xs <- toGrammar t
+  getLHS $ Map.fromList [(show p ++ "d", xs ++ [bottom]), (show p ++ "c", [])]
+-- toGrammar' (T.Choice _ v m) = do
+--   ms <- tMapM toGrammar m
+--   getLHS $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
+toGrammar' (T.Almanac _ (T.Choice v) m) = do
+  ms <- tMapM toGrammar m
+  getLHS $ Map.mapKeys (\k -> show v ++ show k) ms
+-- Polymorphism and recursive types
+toGrammar' (T.Forall _ (Bind _ _ k t)) = do
+  xs <- toGrammar' t
+  getLHS $  Map.singleton ('∀' : show k) xs
+toGrammar' (T.Rec _ (Bind _ x _ _)) = return [x]
+toGrammar' t@T.Var{} = getLHS $ Map.singleton (show t) []
+-- Type operators
+toGrammar' t@T.CoVar{} = getLHS $ Map.singleton (show t) []
+-- toGrammar' t@T.Dualof{} =
+toGrammar' t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 
-typeTerminal :: T.Type -> TransState Word
-typeTerminal = terminal . show
+-- Fat terminal types can be compared for syntactic equality
+-- Returns a normalised type in case the type can become fat terminal
+fatTerminal :: T.Type -> Maybe T.Type
+-- Functional Types
+fatTerminal t@T.Int{}             = Just t
+fatTerminal t@T.Char{}            = Just t
+fatTerminal t@T.Bool{}            = Just t
+fatTerminal t@T.String{}          = Just t
+fatTerminal t@T.Unit{}            = Just t
+fatTerminal (T.Arrow p m t u)     = Just (T.Arrow p m) <*> fatTerminal t <*> fatTerminal u
+fatTerminal (T.Pair p t u)        = Just (T.Pair p) <*> fatTerminal t <*> fatTerminal u
+fatTerminal (T.Almanac p T.Variant m) = Just (T.Almanac p T.Variant) <*> mapM fatTerminal m
+-- Session Types
+fatTerminal (T.Semi p t u) | terminated t = changePos p <$> fatTerminal u
+                           | terminated u = changePos p <$> fatTerminal t
+fatTerminal (T.Message p pol t)   = Just (T.Message p pol) <*> fatTerminal t
+-- These two would preclude distributivity:
+-- fatTerminal (T.Semi p t u)      = Just (T.Semi p) <*> fatTerminal t <*> fatTerminal u
+-- fatTerminal (T.Choice p pol m)  = Just (T.Choice p pol) <*> mapM fatTerminal m
+-- Default
+fatTerminal _                     = Nothing
 
-terminal :: Label -> TransState Word
-terminal l = getLHS $ Map.singleton l []
+{-
+-- Can this type become a fat terminal?
+syntactic :: T.Type -> Bool
+-- Functional Types
+syntactic t@T.Int{}             = True
+syntactic t@T.Char{}            = True
+syntactic t@T.Bool{}            = True
+syntactic t@T.String{}          = True
+syntactic t@T.Unit{}            = True
+syntactic (T.Arrow _ _ t u)     = syntactic t && syntactic u
+syntactic (T.Pair _ t u)        = syntactic t && syntactic u
+syntactic (T.Variant p m)       = Map.foldr (\t b -> b && syntactic t) True m
+-- Session Types
+syntactic (T.Semi _ T.Skip{} t) = syntactic t
+syntactic (T.Semi _ t T.Skip{}) = syntactic t
+syntactic (T.Message _ _ t)     = syntactic t
+-- These two would preclude distributivity:
+-- syntactic (T.Semi p t u)      = 
+-- syntactic (T.Choice p pol m)  = 
+-- Default
+syntactic _                     = False
+-}
+
 
 type SubstitutionList = [(T.Type, Variable)]
 
 collect :: SubstitutionList -> T.Type -> TransState ()
-collect σ (  T.Semi   _ t u          ) = collect σ t >> collect σ u
-collect σ (  T.Almanac _ (T.Choice v) m ) = tMapM_ (collect σ) m
+collect σ (T.Semi _ t u) = collect σ t >> collect σ u
+-- collect σ (T.Choice _ _ m) = tMapM_ (collect σ) m
+collect σ (T.Almanac _ (T.Choice v) m ) = tMapM_ (collect σ) m
+collect σ (T.Message _ _ t) = collect σ t
 collect σ t@(T.Rec _ (Bind _ x _ u)) = do
   let σ' = (t, x) : σ
   let u' = Substitution.subsAll σ' u
@@ -81,32 +151,45 @@ collect σ t@(T.Rec _ (Bind _ x _ u)) = do
   m         <- getTransitions z
   addProductions x (Map.map (++ zs) m)
   collect σ' u
+collect σ (T.Arrow _ _ t u) = collect σ t >> collect σ u
+collect σ (T.Pair _ t u) = collect σ t >> collect σ u
 collect _ _ = return ()
 
--- The state of the translation to grammars
+-- The state of the translation to grammar
 
 type Substitution = Map.Map Variable Variable
 
 type TransState = State TState
 
 data TState = TState {
-  productions  :: Productions
-, nextIndex    :: Int
-, substitution :: Substitution
-}
+    productions  :: Productions
+  , nextIndex    :: Int
+  , substitution :: Substitution
+  }
+
+-- A non-terminal without productions, guaranteed
+
+bottom :: Variable
+bottom = mkVar defaultSpan "⊥"
 
 -- State manipulating functions, get and put
 
 initial :: TState
-initial =
-  TState { productions = Map.empty, nextIndex = 1, substitution = Map.empty }
+initial = TState {
+    productions  = Map.empty
+  , nextIndex    = 1
+  , substitution = Map.empty
+  }
 
 getFreshVar :: TransState Variable
 getFreshVar = do
   s <- get
   let n = nextIndex s
   modify $ \s -> s { nextIndex = n + 1 }
-  return $ mkVar defaultSpan ("#X" ++ show n)
+  return $ makeFreshVar n
+
+makeFreshVar :: Int -> Variable
+makeFreshVar n = mkVar defaultSpan ("#X" ++ show n)
 
 getProductions :: TransState Productions
 getProductions = gets productions
@@ -132,7 +215,7 @@ putSubstitution x y =
   modify $ \s -> s { substitution = Map.insert x y (substitution s) }
 
 -- Get the LHS for given transitions; if no productions for the
--- transitions are found, add a new productions and return their LHS
+-- transitions are found, add new productions and return its LHS
 getLHS :: Transitions -> TransState Word
 getLHS ts = do
   ps <- getProductions
@@ -143,7 +226,7 @@ getLHS ts = do
       return [y]
     Just x -> return [x]
  where
-    -- Lookup a key for a value in the map. Probably O(n)
+  -- Lookup a key for a value in the map. Probably O(n)
   reverseLookup :: Eq a => Ord k => a -> Map.Map k a -> Maybe k
   reverseLookup a =
     Map.foldrWithKey (\k b acc -> if a == b then Just k else acc) Nothing
@@ -159,8 +242,7 @@ addProductions x ts = do
 existProductions :: Variable -> Transitions -> Productions -> TransState Bool
 -- existProductions x ts _ = return False
 existProductions x ts = Map.foldrWithKey
-  (\x' ts' acc -> sameTrans x x' ts ts' >>= \b -> if b then return True else acc
-  )
+  (\x' ts' acc -> sameTrans x x' ts ts' >>= \b -> if b then return True else acc)
   (return False)
 
 sameTrans :: Variable -> Variable -> Transitions -> Transitions -> TransState Bool
