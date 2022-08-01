@@ -41,33 +41,37 @@ checkNumArgs' fn lines
 
 checkChanVar :: ParseEnvPat -> FreestState ()
 checkChanVar penv = getConstructors >>= -- set with every constructor
-  (\cons -> tMapM_ (checkChanVar' cons.transpose.map fst) penv) 
+  (\cons -> tMapM_ ((mapM $ checkChanVar' cons).prep) penv) 
+  where prep = transpose.(map fst)
 
--- [([Pattern],Exp)]
 checkChanVarCase :: FieldList -> FreestState ()
 checkChanVarCase fl = getConstructors >>=
-  (\cons -> checkChanVar' cons $ transpose $ map fst fl)
+  (\cons -> mapM_ (checkChanVar' cons) $ prep fl)
+  where prep = transpose.(map fst)
 
-checkChanVar' :: Set.Set Variable -> [[Pattern]] -> FreestState ()
+checkChanVar' :: Set.Set Variable -> [Pattern] -> FreestState ()
 checkChanVar' cons [] = return ()
-checkChanVar' cons (xs:xss) 
-  | any isVar xs && 
-    any isCon xs = do                                                           -- if has at least one var and cons
-    let varsF    = map pVar $ filter isVar xs                                   -- get vars
-    let consF    =            filter isCon xs                                   -- get constructors
-    let consFVar = Set.fromList $ map pVar consF                                -- get constructors' names
-    let inter    = Set.intersection cons consFVar                               -- intersection between actual constructors and our constructors 
-    if Set.null inter then                                                      -- if null they are channels
-      -- Channel pattern-matching
-      mapM_ (\v -> addError $ InvalidVariablePatternChan (getSpan v) v) varsF   -- error for each variable, since there is channel patterns
+checkChanVar' cons xs
+  -- mixture rule
+  | any isVar xs &&                                           -- if has at least one var and cons
+    any isCon xs = do
+    let varsF    = map pVar $ filter isVar xs                 -- get vars
+    let consF    =            filter isCon xs                 -- get constructors
+    let consFVar = Set.fromList $ map pVar consF              -- get constructors' names
+    let inter    = Set.intersection cons consFVar             -- intersection between actual constructors and our constructors 
+    if Set.null inter then do                                 -- if null they are channels
+      -- Channel pattern
+      mapM_ (\v -> addError                                   -- error for each variable, since there is channel patterns
+            $ InvalidVariablePatternChan (getSpan v) v) varsF
       -- nested patterns
-      >> checkChanVar' cons ( transpose $ map pPats consF )                     -- check for nested patterns
-      -- next columns
-      >> checkChanVar' cons xss                                                 -- check for next column
-    -- Data types pattern-matching
-    else return ()                                                              -- else they are constructors, and all is fine
-  -- No mixture pattern-matching
-  | otherwise = return ()                                                       -- otherwise there are only vars or cons, and all is fine
+      groupSortBy pName consF                                 -- group by name
+        & map (transpose.(map pPats))                         -- get nested patterns and transpose them, each column each list
+        & mapM_ (mapM $ checkChanVar' cons)                   -- apply check 
+    else
+      -- Cons pattern
+      return ()
+  -- every other rule
+  | otherwise = return ()
 
 -- filling functions -----------------------------------------------
 
