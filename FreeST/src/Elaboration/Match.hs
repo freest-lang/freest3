@@ -28,6 +28,9 @@ type Equation = ([Pattern],Exp)
 
 -- Function validation before translation --------------------------
 
+-- check if there is choices with the same name as contructors
+checkChoices pec = return()
+
 -- check if the number of arguments is the same for every function definition
 checkNumArgs :: ParseEnvPat -> FreestState ()
 checkNumArgs pep = tMapWithKeyM_ checkNumArgs' pep
@@ -39,6 +42,7 @@ checkNumArgs' fn lines
   where allSame (x:y:ys) = x == y && allSame (y:ys)
         allSame _ = True
 
+-- check if there is mixture for channel patterns
 checkChanVar :: ParseEnvPat -> FreestState ()
 checkChanVar penv = getConstructors >>= -- set with every constructor
   (\cons -> tMapM_ ((mapM $ checkChanVar' cons).prep) penv) 

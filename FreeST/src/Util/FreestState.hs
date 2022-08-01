@@ -46,6 +46,8 @@ type Imports = Set.Set FilePath
 type ParseEnv    = Map.Map Variable ([Variable], Exp)
 type ParseEnvPat = Map.Map Variable [([Pattern], Exp)]
 
+type ParseEnvChoices = [Variable]
+
 data FreestS = FreestS {
     runOpts         :: RunOpts
   , varEnv          :: VarEnv
@@ -55,8 +57,9 @@ data FreestS = FreestS {
   , warnings        :: Warnings
   , errors          :: Errors
   , nextIndex       :: Int
-  , parseEnv        :: ParseEnv    -- "discarded" after elaboration
-  , parseEnvPat     :: ParseEnvPat -- for pattern elimination
+  , parseEnv        :: ParseEnv        -- "discarded" after elaboration
+  , parseEnvPat     :: ParseEnvPat     -- for pattern elimination
+  , parseEnvChoices :: ParseEnvChoices -- for choices conflicting with data type constructors
   , moduleName      :: Maybe FilePath
   , imports         :: Imports
   } -- deriving Show -- FOR DEBUG purposes
@@ -76,6 +79,7 @@ initialState = FreestS { runOpts         = defaultOpts
                        , nextIndex       = 0
                        , parseEnv        = Map.empty
                        , parseEnvPat     = Map.empty
+                       , parseEnvChoices = []
                        , moduleName      = Nothing
                        , imports         = Set.empty
                        }
@@ -108,6 +112,19 @@ getPEnvPat = gets parseEnvPat
 
 setPEnvPat :: ParseEnvPat -> FreestState ()
 setPEnvPat parseEnvPat =  modify (\s -> s { parseEnvPat })
+
+-- | Parse Env Choices (keeping choices for colision with constructors)
+
+addToPEnvChoices :: MonadState FreestS m => [Variable] -> m ()
+addToPEnvChoices xs =
+  modify (\s -> s
+    { parseEnvChoices = (parseEnvChoices s) ++ xs })
+
+getPEnvChoices :: FreestState ParseEnvChoices
+getPEnvChoices = gets parseEnvChoices
+
+setPEnvChoices :: ParseEnvChoices -> FreestState ()
+setPEnvChoices parseEnvChoices  = modify (\s -> s { parseEnvChoices })
 
 -- | NEXT VAR
 
