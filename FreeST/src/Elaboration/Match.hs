@@ -1,12 +1,13 @@
 module Elaboration.Match
   ( addMissingVars
+  , checkChoices
   , checkNumArgs
   , checkChanVar
   , matchFuns
   )
 where
 
-import           Data.List            (groupBy,sortOn,transpose)
+import           Data.List            (groupBy,sortOn,transpose,find)
 import           Data.Function        ((&))
 import           Data.Functor         ((<&>))
 import           Control.Monad.Extra  ((&&^))
@@ -19,6 +20,7 @@ import qualified Validation.Rename as R
 import           Util.Error
 import           Util.FreestState
 
+import           Data.Maybe           (isJust)
 import qualified Data.Set          as Set
 import qualified Data.Map.Strict   as Map
 
@@ -29,7 +31,13 @@ type Equation = ([Pattern],Exp)
 -- Function validation before translation --------------------------
 
 -- check if there is choices with the same name as contructors
-checkChoices pec = return()
+checkChoices :: ParseEnvChoices -> FreestState ()
+checkChoices pec = do
+  cons <- Set.toList <$> getConstructors -- [Variable]
+  map (\c -> (find (== c) cons,c)) pec
+    & filter (isJust.fst)
+    & mapM_ (\(Just cons,chan) -> addError 
+            $ ConflictChoiceCons (getSpan chan) chan (getSpan cons))
 
 -- check if the number of arguments is the same for every function definition
 checkNumArgs :: ParseEnvPat -> FreestState ()

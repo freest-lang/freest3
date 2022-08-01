@@ -19,7 +19,6 @@ import           Util.FreestState
 import           Util.PreludeLoader ( userDefined )
 
 import           Data.Functor
-import           Data.List      (transpose)
 import           Data.Maybe
 import qualified Data.Map.Strict as Map
 import qualified Data.Set        as Set

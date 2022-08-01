@@ -8,17 +8,17 @@ Maintainer  :  balmeida@lasige.di.fc.ul.pt
 data Tree = Leaf | Node Int Tree Tree
 
 type TreeChannel : 1S = +{
-  Leaf : Skip,
-  Node : !Int ; TreeChannel ; TreeChannel
+  LeafC: Skip,
+  NodeC: !Int ; TreeChannel ; TreeChannel
  }
 
 write : forall a: 1S . Tree -> TreeChannel; a -> a
 write t c =
   case t of {
     Leaf ->
-      select Leaf c,
+      select LeafC c,
     Node x l r ->
-      select Node c &
+      select NodeC c &
       send x &
       write  @(TreeChannel ; a) l &
       write @a r
@@ -27,9 +27,9 @@ write t c =
 read : forall a: 1S . dualof TreeChannel; a -> (Tree, a)
 read c =
   match c with {
-    Leaf c ->
+    LeafC c ->
       (Leaf, c),
-    Node c ->
+    NodeC c ->
       let (x, c) = receive c in
       let (left, c) = read  @(dualof TreeChannel ; a) c in
       let (right, c) = read  @a c in

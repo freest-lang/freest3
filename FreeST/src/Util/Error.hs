@@ -63,6 +63,7 @@ data ErrorType =
   | MultipleTypeDecl Span Variable Span
   | MultipleFunBindings Span Variable Span -- TODOX remove? this is not an error anymore
   -- Elab
+  | ConflictChoiceCons Span Variable Span
   | DifNumberOfArguments Span Variable 
   | InvalidVariablePatternChan Span Variable
   | TypeVarOutOfScope Span Variable
@@ -112,6 +113,7 @@ instance Located ErrorType where
   getSpan (MultipleDeclarations p _ _  ) = p
   getSpan (MultipleTypeDecl     p _ _  ) = p
   getSpan (MultipleFunBindings  p _ _  ) = p
+  getSpan (ConflictChoiceCons p _ _    ) = p
   getSpan (DifNumberOfArguments p _    ) = p
   getSpan (InvalidVariablePatternChan p _) = p
   getSpan (TypeVarOutOfScope     p _   ) = p
@@ -188,6 +190,11 @@ instance Message ErrorType where
     "Multiple bindings for function " ++ style red sty ts x ++
     "\n\t Declared in modules: " ++ showModule (showModuleName sp2) sp2 ++
     "\n\t                      " ++ showModule (showModuleName sp1) sp1
+  msg (ConflictChoiceCons p chan p2) sty ts =
+    "Confliting definitions between a choice and a constructor " ++
+    style red sty ts (show chan) ++ 
+    "\n  Declared in file/module: " ++ showModule (showModuleName p) p ++
+    "\n                           " ++ showModule (showModuleName p2) p2 
   msg (DifNumberOfArguments p fun) sty ts =
     "Equations for " ++ style red sty ts (show fun) ++
     " have different number of arguments " ++

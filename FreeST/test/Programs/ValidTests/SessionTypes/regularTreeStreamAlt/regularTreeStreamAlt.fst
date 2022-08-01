@@ -60,8 +60,8 @@ stackSize ts =
 --  agree on an order to traverse the Tree.
 --  (In our particular case we will use PREORDER - node, left, right)
 type TreeC : 1S = +{
-  Value: !Int; TreeC,
-  Leaf:  TreeC,
+  ValueC: !Int; TreeC,
+  LeafC:  TreeC,
   End:   Skip }
 
 
@@ -70,10 +70,10 @@ sendTree : Tree -> TreeC -> TreeC
 sendTree t c =
   case t of {
     Leaf ->
-      select Leaf c,
+      select LeafC c,
 
     Node i lt rt ->
-      send i $ select Value $ sendTree lt $ sendTree rt c
+      send i $ select ValueC $ sendTree lt $ sendTree rt c
   }
 
 
@@ -86,7 +86,7 @@ receiveTree = receiveTree_ Empty
 receiveTree_ : TreeStack -> dualof TreeC -> Tree
 receiveTree_ ts c =
   match c with {
-    Value c ->
+    ValueC c ->
       let (i, c)   = receive c in
       errorWhen (stackIsEmpty ts) "Received Value without receiveing left AND right subtrees";
       let (ts, lt) = stackPop ts in
@@ -95,7 +95,7 @@ receiveTree_ ts c =
       let ts       = stackPush (Node i lt rt) ts in
       receiveTree_ ts c,
 
-    Leaf c ->
+    LeafC c ->
       receiveTree_ (stackPush Leaf ts) c,
 
     End  c ->
@@ -130,14 +130,14 @@ badClientPrematureEnd c =
 -- This bad client send an extra Value -1
 badClientSendExtraValue : TreeC -> ()
 badClientSendExtraValue c =
-  let _ = select End $ send (-1) $ select Value $ sendTree aTree c in
+  let _ = select End $ send (-1) $ select ValueC $ sendTree aTree c in
   -- Bad Code         ===========================
   ()
 
 -- This bad client send an extra Leaf
 badClientSendExtraLeaf : TreeC -> ()
 badClientSendExtraLeaf c =
-  let _ = select End $ select Leaf $ sendTree aTree c in
+  let _ = select End $ select LeafC $ sendTree aTree c in
   -- Bad  Code         =============
   ()
 
@@ -151,7 +151,7 @@ badClientForgotRight c =
 -- This client only sends a value without sending leafs
 badClientSendOnlyValue : TreeC -> ()
 badClientSendOnlyValue c =
-  let _  = select End $ send 1 $ select Value c in
+  let _  = select End $ send 1 $ select ValueC c in
   -- Bad code          ========================
   ()
 
@@ -162,8 +162,8 @@ badSendTree : Tree -> TreeC -> TreeC
 badSendTree t c =
   case t of {
     Leaf ->
-      select Leaf c,
+      select LeafC c,
 
     Node i lt rt ->
-      send i $ select Value $ badSendTree lt c -- $ badSendTree rt c
+      send i $ select ValueC $ badSendTree lt c -- $ badSendTree rt c
   }

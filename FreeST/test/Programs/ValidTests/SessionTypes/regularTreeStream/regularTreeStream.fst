@@ -55,8 +55,8 @@ getTwo xs  =
 -- Streams
 
 type Stream : 1S = +{
-    Node: !Int; Stream,
-    Leaf: Stream,
+    NodeC: !Int; Stream,
+    LeafC: Stream,
     EndOfStream: Skip
   }
 
@@ -69,11 +69,11 @@ streamTree : Tree -> Stream -> Stream
 streamTree t c =
   case t of {
     Leaf ->
-      select Leaf c,
+      select LeafC c,
     Node x l r ->
-      send x $ select Node $ streamTree r $ streamTree l c,
+      send x $ select NodeC $ streamTree r $ streamTree l c,
     Error ->
-      select Leaf c
+      select LeafC c
   }
 
 -- Reading trees from channels
@@ -84,12 +84,12 @@ receiveTree = recTree Nil
 recTree : List -> dualof Stream -> Tree
 recTree xs c =
   match c with {
-    Node c ->
+    NodeC c ->
       let (xs, p) = getTwo xs in
       let (left, right) = p in
       let (root, c) = receive c in
       recTree (Cons (Node root left right) xs) c,
-    Leaf c ->
+    LeafC c ->
       recTree (Cons Leaf xs) c,
     EndOfStream _ -> getFromSingleton xs
   }
@@ -101,13 +101,13 @@ writeNothing c =
   select EndOfStream c
 
 writeTooMuch c =
-  select EndOfStream $ select Leaf $ select Leaf c
+  select EndOfStream $ select LeafC $ select LeafC c
 
 writeRootTreeOnly c =
-  select EndOfStream $ send 5 $ select Node c
+  select EndOfStream $ send 5 $ select NodeC c
 
 writeLeftTreeOnly c =
-  select EndOfStream $ send 5 $ select Node $ select Leaf c
+  select EndOfStream $ send 5 $ select NodeC $ select LeafC c
 
 -- Go!
 
