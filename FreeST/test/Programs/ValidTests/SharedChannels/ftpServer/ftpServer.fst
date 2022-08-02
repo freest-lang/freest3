@@ -39,7 +39,7 @@ init : Int -> dualof FTP -> Diverge
 init n pid =
   let (r, w) = new dualof FTPThread in
   let state = new *?File in
-  parallel n (\ _:() -> ftpThread state w);
+  parallel @() n (\ _:() -> ftpThread state w);
   ftpd pid r
 
 -- |FTP demon: wait for a client, wait for a thread;

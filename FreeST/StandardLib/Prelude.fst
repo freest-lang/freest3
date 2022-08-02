@@ -47,7 +47,7 @@ sink : forall a . a -> ()
 sink _ = ()
 
 -- | Execute a thunk n times, sequentially
-repeat : forall a . Int -> (() -> a) -> ()
+repeat : forall a:*T . Int -> (() -> a) -> ()
 repeat n thunk =
     if n < 0
     then ()
@@ -64,12 +64,12 @@ send_ : forall a:1T . a -> *!a 1-> ()
 send_ x ch = sink @*!a $ send x ch
 
 -- | Fork n identical threads
-parallel : Int -> (() -> ()) -> ()
-parallel n thunk = repeat @() n (\_:() -> fork @() thunk)
+parallel : forall a:*T . Int -> (() -> a) -> ()
+parallel n thunk = repeat @() n (\_:() -> fork @a thunk)
 
 -- | Create a new child process and a linear channel through which it can 
 --   communicate with its parent process. Return the channel endpoint.
-forkWith : forall a:1S . (dualof a 1-> ()) -> a
+forkWith : forall a:1S b:*T . (dualof a 1-> b) -> a
 forkWith f =
     let (x, y) = new a in
     fork (\_:()1-> f y);
