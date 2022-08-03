@@ -69,6 +69,7 @@ import           System.FilePath
   '-'      {TokenMinus _}
   '*'      {TokenTimes _}
   '^'      {TokenRaise _}
+  '++'     {TokenAppend _}
   '_'      {TokenWild _}
   '$'      {TokenDollar _}
   '.'      {TokenDot _}
@@ -111,6 +112,7 @@ import           System.FilePath
 %nonassoc new
 %left '||'       -- disjunction
 %left '&&'       -- conjunction
+%left '++'
 %nonassoc CMP    -- comparison (relational and equality)
 %left '+' '-'    -- aditive
 %left '*' '/'    -- multiplicative
@@ -217,6 +219,7 @@ Exp :: { E.Exp }
   | Exp '*' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(*)") $3 }
   | Exp '/' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(/)") $3 }
   | Exp '^' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(^)") $3 }
+  | Exp '++' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(++)") $3 }
   | '-' App %prec NEG              {% mkSpan $1 >>= \s -> pure $ unOp (mkVar s "negate") $2 s }
   | App                            { $1 }
 

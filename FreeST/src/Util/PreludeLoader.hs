@@ -64,24 +64,29 @@ typeList =
   -- Char
   , (mkVar p "ord", readT "Char -> Int")
   , (mkVar p "chr", readT "Int -> Char")
+  -- String
+  , (mkVar p "(++)", readT "String -> String -> String")
   -- Pair
   , (mkVar p "fst", readT "∀ a:1T . ∀ b:*T . (a, b) -> a")
   , (mkVar p "snd", readT "∀ a:*T . ∀ b:1T . (a, b) -> b")
-  -- Print
+  -- Show
+  , (mkVar p "show", readT "∀ a . a -> String")
+  -- Read
+  -- , (mkVar p "read", readT "∀ a . String -> a")
+  -- Print to stdout
   , (mkVar p "#printValue"   , readT "∀ a:*T . a -> ()")
-  , (mkVar p "#printValueLn" , readT "∀ a:*T . a -> ()")
   -- Print to stderr
   , (mkVar p "#printErrValue"   , readT "∀ a:*T . a -> ()")
-  , (mkVar p "#printErrValueLn" , readT "∀ a:*T . a -> ()")
   -- Read
   , (mkVar p "#readBool"  , readT "∀ a:*T . (Bool -> a, a) -> a")
   , (mkVar p "#readInt"   , readT "∀ a:*T . (Int -> a, a) -> a")
   , (mkVar p "#readChar"  , readT "∀ a:*T . (Char -> a, a) -> a")
   , (mkVar p "#readString", readT "∀ a:*T . (String -> a, a) -> a")
   -- Files
-  , (mkVar p "#putFile" , readT "∀ a:*T b c . a -> b -> (c, c) -> c")
+  , (mkVar p "#putFile" , readT "∀ a b . String -> a -> (b, b) -> b")
   , (mkVar p "#closeFile", readT "∀ a . a -> ()")
   , (mkVar p "#openWriteFile", readT "∀ a b:1S c . String -> (() -> a) -> (((b, dualof b), a) -> c, c) -> c")
+  , (mkVar p "#openReadFile" , readT "∀ a b:1S c . String -> (() -> a) -> (((b, dualof b), a) -> c, c) -> c")
   -- Fork
   , (mkVar p "fork", readT "∀a:1T. a -> ()")
   -- Error & Undefined
@@ -93,9 +98,9 @@ typeList =
   -- Not the actual type for collect, but for writing it we would
   -- need polymorphism over the labels in some choice/variant
   , (mkVar p "collect", read "∀a:1T . a") 
-  --
-  , (mkVar p "stdout", readT "*?(rec x:1S . +{ PutBool: !Bool; x, PutBoolLn: !Bool  ; x, PutInt: !Int; x, PutIntLn: !Int   ; x, PutChar:  !Char  ; x, PutCharLn: !Char; x, PutString: !String; x, PutStringLn: !String; x, Close: Skip})")
-  , (mkVar p "stderr", readT "*?(rec x:1S . +{ PutBool: !Bool; x, PutBoolLn: !Bool  ; x, PutInt: !Int; x, PutIntLn: !Int   ; x, PutChar:  !Char  ; x, PutCharLn: !Char; x, PutString: !String; x, PutStringLn: !String; x, Close: Skip})")
+  -- Native channels
+  , (mkVar p "stdout", readT "*?(rec x:1S . +{PutString: !String; x, PutStringLn: !String; x, Close: Skip})")
+  , (mkVar p "stderr", readT "*?(rec x:1S . +{PutString: !String; x, PutStringLn: !String; x, Close: Skip})")
   , (mkVar p "stdin" , readT "*?(rec x:1S . +{ GetBool: &{Just: ?Bool  , Nothing: Skip}; x, GetInt: &{Just: ?Int, Nothing: Skip}; x, GetChar: &{Just: ?Char, Nothing: Skip}; x, GetString: &{Just: ?String, Nothing: Skip}; x, Close: Skip})")
   ]
   where p = defaultSpan {defModule = "Prelude"}

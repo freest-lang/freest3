@@ -77,15 +77,19 @@ initialCtx = Map.fromList
   -- Chars
   , (var "chr", PrimitiveFun (\(Integer x) -> Character $ chr x))
   , (var "ord", PrimitiveFun (\(Character x) -> Integer $ ord x))
+  -- Strings
+  , (var "(++)", PrimitiveFun (\(String s1) -> PrimitiveFun (\(String s2) -> String $ s1 ++ s2)))
   -- Pairs
   , (var "fst", PrimitiveFun (\(Pair a _) -> a))
   , (var "snd", PrimitiveFun (\(Pair _ b) -> b))
-  -- Prints
+  -- Show
+  , (var "show", PrimitiveFun (String . show))
+  -- Read
+  -- , (var "read", )
+  -- Print to stdout
   , (var "#printValue"  , PrimitiveFun (\v -> IOValue $ putStr   (show v) $> Unit))
-  , (var "#printValueLn", PrimitiveFun (\v -> IOValue $ putStrLn (show v) $> Unit))
-  -- Prints to stderr
+  -- Print to stderr
   , (var "#printErrValue"  , PrimitiveFun (\v -> IOValue $ hPutStr   stderr (show v) $> Unit))
-  , (var "#printErrValueLn", PrimitiveFun (\v -> IOValue $ hPutStrLn stderr (show v) $> Unit))
   -- Reads
   , (var "#readBool", PrimitiveFun (\(Pair (Cons v l) nothingCons) -> genericGet nothingCons $ \s ->
         case reads s of
@@ -105,11 +109,11 @@ initialCtx = Map.fromList
   , (var "#readString", PrimitiveFun (\(Pair (Cons v l) nothingCons) -> genericGet nothingCons $ \s -> Cons v $ l ++ [[String s]]))
   -- Files
   , (var "#putFile"
-    , PrimitiveFun (\v1 -> 
+    , PrimitiveFun (\(String s) -> 
       PrimitiveFun (\(Cons v2 [[Handle fh]]) ->
       PrimitiveFun (\(Pair okCons errorCons) -> IOValue $
         catchAny
-          (hPutStr fh (show v1) >> return okCons)
+          (hPutStr fh s >> return okCons)
           (\_ -> return errorCons)
       ))))
   , (var "#closeFile"
@@ -124,6 +128,17 @@ initialCtx = Map.fromList
       PrimitiveFun (\(Pair (Cons v2 l2) nothingCons) -> IOValue $
         catchAny 
           (openFile s WriteMode >>= \handle -> 
+           new >>= \(clientChan, serverChan) -> return $
+            Cons v2 $ l2 ++ [[Pair (Pair (Chan clientChan) (Chan serverChan)) (Cons v1 (l1 ++ [[Handle handle]]))]]
+          )
+          (\_ -> return nothingCons)
+      ))))
+  , (var "#openReadFile"
+    , PrimitiveFun (\(String s) -> 
+      PrimitiveFun (\(Cons v1 l1) ->
+      PrimitiveFun (\(Pair (Cons v2 l2) nothingCons) -> IOValue $
+        catchAny 
+          (openFile s ReadMode >>= \handle -> 
            new >>= \(clientChan, serverChan) -> return $
             Cons v2 $ l2 ++ [[Pair (Pair (Chan clientChan) (Chan serverChan)) (Cons v1 (l1 ++ [[Handle handle]]))]]
           )

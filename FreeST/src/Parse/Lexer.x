@@ -91,6 +91,7 @@ tokens :-
   "/="  		        { \p s -> TokenCmp (internalPos p) "(/=)" }
   ("&&"|∧)  		        { \p s -> TokenConjunction (internalPos p) }
   ("||"|∨)  		        { \p s -> TokenDisjunction (internalPos p) }
+  "++"      { \p s -> TokenAppend (internalPos p)}
   "/"  		                { \p s -> TokenDiv (internalPos p) }
   "$"  		                { \p s -> TokenDollar (internalPos p) }
 -- Kinds
@@ -209,6 +210,7 @@ data Token =
   | TokenCmp Span String
   | TokenConjunction Span
   | TokenDisjunction Span
+  | TokenAppend Span
   | TokenDiv Span
   | TokenDollar Span
   | TokenModule Span
@@ -285,6 +287,7 @@ instance Show Token where
   show (TokenCmp _ s) = show s
   show (TokenConjunction _) = "&&"
   show (TokenDisjunction _) = "||"
+  show (TokenAppend _) = "++"
   show (TokenDiv _) = "/"
   show (TokenDollar _) = "$"
   show (TokenModule _) = "module"
