@@ -13,9 +13,9 @@ This module introduces the signatures for the functions in the prelude
 
 module Util.PreludeLoader
   ( prelude
-  , isBuiltin
+  -- , isBuiltin
   , userDefined
-  , preludeNamingCtx
+  -- , preludeNamingCtx
   )
 where
 
@@ -111,5 +111,5 @@ userDefined :: VarEnv -> VarEnv
 userDefined = Map.filterWithKey (\x _ -> not (isBuiltin x))
 
 -- Names from the prelude, in order 
-preludeNamingCtx :: [String]
-preludeNamingCtx = map intern $ Map.keys prelude
+-- preludeNamingCtx :: [String]
+-- preludeNamingCtx = map intern $ Map.keys prelude
