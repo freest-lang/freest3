@@ -13,9 +13,9 @@ This module introduces the signatures for the functions in the prelude
 
 module Util.PreludeLoader
   ( prelude
-  , isBuiltin
+  -- , isBuiltin
   , userDefined
-  , preludeNamingCtx
+  -- , preludeNamingCtx
   )
 where
 
@@ -33,8 +33,8 @@ typeList =
   [ -- Int
     (mkVar p "(+)"     , readT "Int -> Int -> Int")
   , (mkVar p "(-)"     , readT "Int -> Int -> Int")
-  , (mkVar p "(/)"     , readT "Int -> Int -> Int")
   , (mkVar p "(*)"     , readT "Int -> Int -> Int")
+  , (mkVar p "(/)"     , readT "Int -> Int -> Int")
   , (mkVar p "(^)"     , readT "Int -> Int -> Int")
   , (mkVar p "mod"     , readT "Int -> Int -> Int")
   , (mkVar p "rem"     , readT "Int -> Int -> Int")

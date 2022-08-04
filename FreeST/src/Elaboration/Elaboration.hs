@@ -15,11 +15,8 @@ import           Syntax.Program ( VarEnv )
 import qualified Syntax.Type as T
 import           Util.Error
 import           Util.FreestState
-import           Util.PreludeLoader ( userDefined )
-
 import           Data.Functor
 import           Data.Maybe
-
 
 
 elaboration :: FreestState ()
@@ -49,12 +46,10 @@ elaboration = do
   buildProg
   -- debugM . ("Program " ++) <$> show =<< getProg
 
-
-
 -- | Elaboration over environments (VarEnv + ParseEnv)
 
 elabVEnv :: VarEnv -> FreestState ()
-elabVEnv = tMapWithKeyM_ (\pv t -> addToVEnv pv =<< elaborate t) . userDefined
+elabVEnv = tMapWithKeyM_ (\pv t -> addToVEnv pv =<< elaborate t)
 
 elabPEnv :: ParseEnv -> FreestState ()
 elabPEnv = tMapWithKeyM_ (\x (ps, e) -> addToPEnv x ps =<< elaborate e)

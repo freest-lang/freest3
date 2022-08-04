@@ -31,7 +31,6 @@ import qualified Syntax.Type as T
 import           Syntax.Value
 import           Util.Error
 import           Util.FreestState
-import           Util.PreludeLoader ( userDefined ) -- debug
 import           Util.Warning
 import qualified Validation.Extract as Extract
 import qualified Validation.Kinding as K -- Again?
@@ -234,10 +233,8 @@ checkEquivTypes exp kEnv expected actual =
 checkEquivEnvs
   :: Span -> String -> E.Exp -> K.KindEnv -> VarEnv -> VarEnv -> FreestState ()
 checkEquivEnvs p branching exp kEnv vEnv1 vEnv2 = do
-  let vEnv1' = userDefined vEnv1
-      vEnv2' = userDefined vEnv2
-  unless (equivalent kEnv vEnv1' vEnv2') $
-    addError (NonEquivEnvs p branching (vEnv1' Map.\\ vEnv2') (vEnv2' Map.\\ vEnv1') exp)
+  unless (equivalent kEnv vEnv1 vEnv2) $
+    addError (NonEquivEnvs p branching (vEnv1 Map.\\ vEnv2) (vEnv2 Map.\\ vEnv1) exp)
 
 synthetiseCase :: Span -> K.KindEnv -> E.Exp -> E.FieldMap -> FreestState T.Type
 synthetiseCase p kEnv e fm  = do
