@@ -1,5 +1,66 @@
 module Prelude where
 
+-- | Builtins
+
+(+) : Int -> Int -> Int
+(-) : Int -> Int -> Int
+(*) : Int -> Int -> Int
+(/) : Int -> Int -> Int
+(^) : Int -> Int -> Int
+mod : Int -> Int -> Int
+rem : Int -> Int -> Int
+div : Int -> Int -> Int
+max : Int -> Int -> Int
+min : Int -> Int -> Int
+quot : Int -> Int -> Int
+gcd : Int -> Int -> Int
+lcm : Int -> Int -> Int
+subtract : Int -> Int -> Int
+succ : Int -> Int
+pred : Int -> Int
+abs : Int -> Int
+negate : Int -> Int
+even : Int -> Bool
+odd : Int -> Bool
+(==) : Int -> Int -> Bool
+(/=) : Int -> Int -> Bool
+(<) : Int -> Int -> Bool
+(>) : Int -> Int -> Bool
+(<=) : Int -> Int -> Bool
+(>=) : Int -> Int -> Bool
+  -- Bool
+not : Bool -> Bool
+(&&) : Bool -> Bool -> Bool
+(||) : Bool -> Bool -> Bool
+  -- Char
+ord : Char -> Int
+chr : Int -> Char
+  -- Pair
+fst : ∀ a:1T . ∀ b:*T . (a, b) -> a
+snd : ∀ a:*T . ∀ b:1T . (a, b) -> b
+  -- Print
+printInt : Int -> ()
+printIntLn : Int -> ()
+printBool : Bool -> ()
+printBoolLn : Bool -> ()
+printChar : Char -> ()
+printCharLn : Char -> ()
+printUnit : () -> ()
+printUnitLn : () -> ()
+printString : String -> ()
+printStringLn : String -> ()
+  -- Fork
+fork : ∀a:1T. a -> ()
+  -- Error & Undefined
+error : ∀a:*T . String -> a
+undefined : ∀a:*T . a
+  -- Session ops
+send : ∀a:1T . a -> ∀b:1S . !a;b 1-> b
+receive : ∀a:1T . ∀b:1S . ?a;b -> (a, b)
+  -- Not the actual type for collect, but for writing it we would
+  -- need polymorphism over the labels in some choice/variant
+collect : ∀a:1T . a
+
 -- | Prelude
 
 id : forall a . a -> a

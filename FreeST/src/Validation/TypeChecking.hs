@@ -26,7 +26,7 @@ import           Syntax.Program ( noConstructors )
 import qualified Syntax.Type as T
 import           Util.FreestState
 import           Util.Error
-import           Util.PreludeLoader ( userDefined )
+-- import           Util.PreludeLoader ( userDefined )
 import qualified Validation.Kinding as K
 import qualified Validation.Typing as Typing -- Again
 
@@ -59,7 +59,7 @@ typeCheck = do
   unless (hasErrors s) $ do
     -- * Check whether all function signatures have a binding
 --    debugM "checking whether all function signatures have a binding"
-    tMapWithKeyM_ checkHasBinding =<< getVEnv
+--    tMapWithKeyM_ checkHasBinding =<< getVEnv
     -- * Check function bodies
 --    debugM "checking the formation of all functions (typing)"
     tMapWithKeyM_ checkFunBody =<< getProg
@@ -70,14 +70,15 @@ typeCheck = do
 -- Check whether a given function signature has a corresponding
 -- binding. Exclude the builtin functions and the datatype
 -- constructors.
-checkHasBinding :: Variable -> T.Type -> FreestState ()
-checkHasBinding f _ = do
-  eEnv <- getProg
-  vEnv <- getVEnv
-  tEnv <- getTEnv
-  when (f `Map.member` userDefined (noConstructors tEnv vEnv) &&
-        f `Map.notMember` eEnv )
-    $ addError (SignatureLacksBinding (getSpan f) f (vEnv Map.! f))
+
+-- checkHasBinding :: Variable -> T.Type -> FreestState ()
+-- checkHasBinding f _ = do
+--   eEnv <- getProg
+--   vEnv <- getVEnv
+--   tEnv <- getTEnv
+--   when (f `Map.member` userDefined (noConstructors tEnv vEnv) &&
+--         f `Map.notMember` eEnv )
+--     $ addError (SignatureLacksBinding (getSpan f) f (vEnv Map.! f))
 
 -- Check a given function body against its type; make sure all linear
 -- variables are used.
