@@ -79,18 +79,48 @@ type OutStream : 1S = +{ PutString  : !String; OutStream
 #genericHPut : forall a b:1S . (+{PutString: !String; b, PutStringLn: !String; b, Close: Skip} -> !a;b) -> a -> +{PutString: !String; b, PutStringLn: !String; b, Close: Skip} -> b
 #genericHPut sel x outStream = sel outStream & send x
 
+-- hPutBool, hPutBoolLn: Bool -> OutStream -> OutStream
+-- hPutBool   = #genericHPut @Bool @OutStream (select PutBool)
+-- hPutBoolLn = #genericHPut @Bool @OutStream (select PutBoolLn)
+
+
+-- hPutInt, hPutIntLn : Int -> OutStream -> OutStream
+-- hPutInt   = #genericHPut @Int @OutStream (select PutInt)
+-- hPutIntLn = #genericHPut @Int @OutStream (select PutIntLn)
+
+
+-- hPutChar, hPutCharLn : Char -> OutStream -> OutStream
+-- hPutChar   = #genericHPut @Char @OutStream (select PutChar)
+-- hPutCharLn = #genericHPut @Char @OutStream (select PutCharLn)
+
+
 hPutString, hPutStringLn : String -> OutStream -> OutStream
-hPutString   = #genericHPut @String @OutStream (\out:OutStream -> select PutString out)
-hPutStringLn = #genericHPut @String @OutStream (\out:OutStream -> select PutStringLn out)
+hPutString   = #genericHPut @String @OutStream (select PutString)
+hPutStringLn = #genericHPut @String @OutStream (select PutStringLn)
 
 
 #genericPut : forall a . (OutStream -> !a;OutStream) -> a -> OutStreamProvider -> ()
 #genericPut sel x outProv = 
     sink @Skip $ select Close $ #genericHPut @a @OutStream sel x $ receive_ @OutStream outProv 
 
+-- putBool, putBoolLn: Bool -> OutStreamProvider -> ()
+-- putBool   = #genericPut @Bool (select PutBool)
+-- putBoolLn = #genericPut @Bool (select PutBoolLn)
+
+
+-- putInt, putIntLn : Int -> OutStreamProvider -> ()
+-- putInt   = #genericPut @Int (select PutInt)
+-- putIntLn = #genericPut @Int (select PutIntLn)
+
+
+-- putChar, putCharLn : Char -> OutStreamProvider -> ()
+-- putChar   = #genericPut @Char (select PutChar)
+-- putCharLn = #genericPut @Char (select PutCharLn)
+
+
 putString, putStringLn : String -> OutStreamProvider -> ()
-putString   = #genericPut @String (\out:OutStream -> select PutString out)
-putStringLn = #genericPut @String (\out:OutStream -> select PutStringLn out)
+putString   = #genericPut @String (select PutString)
+putStringLn = #genericPut @String (select PutStringLn)
 
 -- | InStream
 
