@@ -403,6 +403,7 @@ instance Located Token where
   getSpan (TokenFArrow p) = p
   getSpan (TokenConjunction p) = p
   getSpan (TokenDisjunction p) = p
+  getSpan (TokenAppend p) = p
   getSpan (TokenDiv p) = p
   getSpan (TokenDollar p) = p
   getSpan (TokenModule p) = p
