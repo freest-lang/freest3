@@ -1,33 +1,34 @@
 main : ()
 main =
     -- | use stdout print functions
-    printBool     True;
-    printBoolLn   False;
-    printChar     'a';
-    printCharLn   'b';
-    printInt      1;
-    printIntLn    2;
-    printString   "Hello, ";
-    printStringLn "World!";
+    putStr (show @Bool True); putStrLn (show @Bool False);
+    putStr (show @Char 'a') ; putStrLn (show @Char 'b');
+    putStr (show @Int 1)    ; putStrLn (show @Int 2);
+    putStr "Hello, "        ; putStrLn "World!";
     -- | print to stdout manually
-    receive_ @OutStream stdout & hPutStringLn "------------------" & select Close; 
+    receive_ @OutStream stdout & hPutStrLn "------------------" & hCloseOut; 
     -- | print to stderr using put functions
-    putString "Error: " stderr; putStringLn "everything is fine!" stderr;
+    hPutStr_ "Error: " stderr; hPutStrLn_ "everything is fine!" stderr;
     -- | get values from stdin
-    -- case inputBool   of { JustBool   b -> printBoolLn   b, NothingBool   -> printStringLn "oooops"};
-    -- case inputInt    of { JustInt    i -> printIntLn    i, NothingInt    -> printStringLn "oooops"};
-    -- case inputChar   of { JustChar   c -> printCharLn   c, NothingChar   -> printStringLn "oooops"};
-    -- case inputString of { JustString s -> printStringLn s, NothingString -> printStringLn "oooops"};
+    putStr @String $ "Insert a bool:";
+    print @Bool   $ readBool $ getLine;
+    putStr @String $ "Insert an int:";
+    print @Int    $ readInt  $ getLine;
+    putStr @String $ "Insert a char:";
+    print @Char   $ readChar $ getLine;
+    putStr @String $ "Insert a string:";
+    print @String $            getLine;
     -- | write to file
-    case openWriteFile "teste.txt" of {
-        JustS ch -> 
-            match hFilePutStringLn "Hello, World!" ch with {
-                Ok ch -> printStringLn "Ok!"; select Close ch & sink @Skip,
-                Error ch -> printStringLn "Error!"
-            },
-        NothingS -> ()
-    };
+    openWriteFile "teste.txt" &
+    hPutStrLn "Hello, World!" &
+    hCloseOut;
+    -- | wait a bit ...
+    getLine;
+    -- | read from same file
+    let (contents, ch) = hGetLine $ openReadFile "teste.txt" in
+    hCloseIn ch;
+    print @String contents;
     -- | extra print
-    printStringLn "-end-";
+    putStrLn "-end-";
     -- | unit!
     ()

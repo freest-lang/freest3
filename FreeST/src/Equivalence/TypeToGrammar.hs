@@ -22,6 +22,8 @@ import qualified Syntax.Kind                   as K
 import qualified Syntax.Type                   as T
 import qualified Validation.Substitution       as Substitution
                                                 ( subsAll )
+import           Validation.Terminated          ( terminated )
+import           Elaboration.Elaborate          ( changePos )
 import           Equivalence.Normalisation      ( normalise )
 import           Bisimulation.Grammar
 import           Util.Error                     ( internalError )
@@ -102,8 +104,8 @@ fatTerminal (T.Arrow p m t u)     = Just (T.Arrow p m) <*> fatTerminal t <*> fat
 fatTerminal (T.Pair p t u)        = Just (T.Pair p) <*> fatTerminal t <*> fatTerminal u
 fatTerminal (T.Almanac p T.Variant m) = Just (T.Almanac p T.Variant) <*> mapM fatTerminal m
 -- Session Types
-fatTerminal (T.Semi _ T.Skip{} t) = fatTerminal t
-fatTerminal (T.Semi _ t T.Skip{}) = fatTerminal t
+fatTerminal (T.Semi p t u) | terminated t = changePos p <$> fatTerminal u
+                           | terminated u = changePos p <$> fatTerminal t
 fatTerminal (T.Message p pol t)   = Just (T.Message p pol) <*> fatTerminal t
 -- These two would preclude distributivity:
 -- fatTerminal (T.Semi p t u)      = Just (T.Semi p) <*> fatTerminal t <*> fatTerminal u

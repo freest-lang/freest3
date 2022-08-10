@@ -20,7 +20,7 @@ import           Syntax.Expression
 import           Syntax.Kind
 import           Syntax.Program
 import qualified Syntax.Type as T
-import           Util.Warning
+
 -- import           Util.WarningMessage ()
 -- import           Util.PrettyWarning ()
 import           Util.Error
@@ -45,6 +45,8 @@ type Imports = Set.Set FilePath
 
 type ParseEnv = Map.Map Variable ([Variable], Exp)
 
+type Builtins = Set.Set Variable
+
 data FreestS = FreestS {
     runOpts    :: RunOpts
   , varEnv     :: VarEnv
@@ -57,6 +59,7 @@ data FreestS = FreestS {
   , parseEnv   :: ParseEnv -- "discarded" after elaboration
   , moduleName :: Maybe FilePath
   , imports    :: Imports
+  , builtins    :: Builtins
   } deriving Show -- FOR DEBUG purposes
 
 type FreestState = State FreestS
@@ -75,6 +78,7 @@ initialState = FreestS { runOpts    = defaultOpts
                        , parseEnv   = Map.empty
                        , moduleName = Nothing
                        , imports    = Set.empty
+                       , builtins   = Set.empty
                        }
 
 -- | Parse Env

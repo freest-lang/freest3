@@ -10,6 +10,8 @@ Prelude structure:
 
 module Prelude where
 
+
+
 --   $$\   
 -- $$$$ |  
 -- \_$$ |  
@@ -20,6 +22,92 @@ module Prelude where
 -- \______|
 
 
+
+-- | Builtins
+
+  -- Int
+(+) : Int -> Int -> Int
+(-) : Int -> Int -> Int
+(*) : Int -> Int -> Int
+(/) : Int -> Int -> Int
+(^) : Int -> Int -> Int
+mod : Int -> Int -> Int
+rem : Int -> Int -> Int
+div : Int -> Int -> Int
+max : Int -> Int -> Int
+min : Int -> Int -> Int
+quot : Int -> Int -> Int
+gcd : Int -> Int -> Int
+lcm : Int -> Int -> Int
+subtract : Int -> Int -> Int
+succ : Int -> Int
+pred : Int -> Int
+abs : Int -> Int
+negate : Int -> Int
+even : Int -> Bool
+odd : Int -> Bool
+(==) : Int -> Int -> Bool
+(/=) : Int -> Int -> Bool
+(<) : Int -> Int -> Bool
+(>) : Int -> Int -> Bool
+(<=) : Int -> Int -> Bool
+(>=) : Int -> Int -> Bool
+  -- Bool
+not : Bool -> Bool
+(&&) : Bool -> Bool -> Bool
+(||) : Bool -> Bool -> Bool
+  -- Char
+ord : Char -> Int
+chr : Int -> Char
+  -- String
+(++) : String -> String -> String
+show : ∀ a . a -> String
+-- read : ∀ a . String -> a
+readBool : String -> Bool
+readInt : String -> Int
+readChar : String -> Char
+  -- Pair
+fst : ∀ a:1T . ∀ b:*T . (a, b) -> a
+snd : ∀ a:*T . ∀ b:1T . (a, b) -> b
+  -- Internal Prints
+__putStrOut : String -> ()
+__putStrErr : String -> ()
+  -- Internal Gets
+__getChar : () -> Char
+__getLine : () -> String
+__getContents : () -> String
+  -- Fork
+fork : ∀a:1T. a -> ()
+  -- Error & Undefined
+error : ∀a:*T . String -> a
+undefined : ∀a:*T . a
+  -- Session ops
+send : ∀a:1T . a -> ∀b:1S . !a;b 1-> b
+receive : ∀a:1T . ∀b:1S . ?a;b -> (a, b)
+  -- Not the actual type for collect, but for writing it we would
+  -- need polymorphism over the labels in some choice/variant
+collect : ∀a:1T . a
+  -- Internal Files
+__openFile : FilePath -> IOMode -> FileHandle
+__putFileStr : FileHandle -> String -> ()
+__readFileChar : FileHandle -> Char
+__readFileLine : FileHandle -> String
+__closeFile : FileHandle -> ()
+
+
+
+--  $$$$$$\  
+-- $$  __$$\ 
+-- \__/  $$ |
+--  $$$$$$  |
+-- $$  ____/ 
+-- $$ |      
+-- $$$$$$$$\ 
+-- \________|
+
+
+
+-- | Prelude
 
 id : forall a . a -> a
 id = \\a => \x:a -> x
@@ -57,288 +145,6 @@ fix f =
 
 
 --  $$$$$$\  
--- $$  __$$\ 
--- \__/  $$ |
---  $$$$$$  |
--- $$  ____/ 
--- $$ |      
--- $$$$$$$$\ 
--- \________|
-
-
-
--- | OutStream
-
-type OutStreamProvider : *S = *?OutStream
-type OutStream : 1S = +{ PutString  : !String; OutStream
-                       , PutStringLn: !String; OutStream
-                       , Close      : Skip
-                       }
-
-
-#genericHPut : forall a b:1S . (+{PutString: !String; b, PutStringLn: !String; b, Close: Skip} -> !a;b) -> a -> +{PutString: !String; b, PutStringLn: !String; b, Close: Skip} -> b
-#genericHPut sel x outStream = sel outStream & send x
-
--- hPutBool, hPutBoolLn: Bool -> OutStream -> OutStream
--- hPutBool   = #genericHPut @Bool @OutStream (select PutBool)
--- hPutBoolLn = #genericHPut @Bool @OutStream (select PutBoolLn)
-
-
--- hPutInt, hPutIntLn : Int -> OutStream -> OutStream
--- hPutInt   = #genericHPut @Int @OutStream (select PutInt)
--- hPutIntLn = #genericHPut @Int @OutStream (select PutIntLn)
-
-
--- hPutChar, hPutCharLn : Char -> OutStream -> OutStream
--- hPutChar   = #genericHPut @Char @OutStream (select PutChar)
--- hPutCharLn = #genericHPut @Char @OutStream (select PutCharLn)
-
-
-hPutString, hPutStringLn : String -> OutStream -> OutStream
-hPutString   = #genericHPut @String @OutStream (select PutString)
-hPutStringLn = #genericHPut @String @OutStream (select PutStringLn)
-
-
-#genericPut : forall a . (OutStream -> !a;OutStream) -> a -> OutStreamProvider -> ()
-#genericPut sel x outProv = 
-    sink @Skip $ select Close $ #genericHPut @a @OutStream sel x $ receive_ @OutStream outProv 
-
--- putBool, putBoolLn: Bool -> OutStreamProvider -> ()
--- putBool   = #genericPut @Bool (select PutBool)
--- putBoolLn = #genericPut @Bool (select PutBoolLn)
-
-
--- putInt, putIntLn : Int -> OutStreamProvider -> ()
--- putInt   = #genericPut @Int (select PutInt)
--- putIntLn = #genericPut @Int (select PutIntLn)
-
-
--- putChar, putCharLn : Char -> OutStreamProvider -> ()
--- putChar   = #genericPut @Char (select PutChar)
--- putCharLn = #genericPut @Char (select PutCharLn)
-
-
-putString, putStringLn : String -> OutStreamProvider -> ()
-putString   = #genericPut @String (select PutString)
-putStringLn = #genericPut @String (select PutStringLn)
-
--- | InStream
-
-type InStreamProvider : *S = *?InStream
-type InStream : 1S = +{ GetBool  : &{Just: ?Bool  , Nothing: Skip}; InStream
-                      , GetInt   : &{Just: ?Int   , Nothing: Skip}; InStream
-                      , GetChar  : &{Just: ?Char  , Nothing: Skip}; InStream
-                      , GetString: &{Just: ?String, Nothing: Skip}; InStream
-                      , Close     : Skip
-                      }
-
-data MaybeBool   = NothingBool   | JustBool   Bool
-data MaybeInt    = NothingInt    | JustInt    Int
-data MaybeChar   = NothingChar   | JustChar   Char
-data MaybeString = NothingString | JustString String
-
-#genericGet : forall a b . (InStream -> &{Just: ?a  , Nothing: Skip};InStream) -> (a -> b, b) -> InStreamProvider -> b
-#genericGet sel maybeCons insp =
-    let (justCons, nothingCons) = maybeCons in
-    let ins = sel $ receive_ @InStream insp in
-    let (maybe, ins) = 
-        match ins with {
-            Just    ins -> 
-                let (b, ins) = receive ins in
-                (justCons b, ins),
-            Nothing ins -> 
-                (nothingCons, ins)
-        }
-        in
-    let _ = select Close ins in
-    maybe
-
-getBool : InStreamProvider -> MaybeBool
-getBool =
-    #genericGet @Bool @MaybeBool
-        (\inS:InStream -> select GetBool inS)
-        (JustBool, NothingBool)
-
-getInt : InStreamProvider -> MaybeInt
-getInt =
-    #genericGet @Int @MaybeInt
-        (\inS:InStream -> select GetInt inS)
-        (JustInt, NothingInt)
-
-getChar : InStreamProvider -> MaybeChar
-getChar =
-    #genericGet @Char @MaybeChar
-        (\inS:InStream -> select GetChar inS)
-        (JustChar, NothingChar)
-
-getString : InStreamProvider -> MaybeString
-getString =
-    #genericGet @String @MaybeString
-        (\inS:InStream -> select GetString inS)
-        (JustString, NothingString)
-
--- | Stdout
-
-printString, printStringLn : String -> ()
-printString   = flip @String @OutStreamProvider @() putString stdout
-printStringLn = flip @String @OutStreamProvider @() putStringLn stdout
-
--- Internal stdout functions
-#runStdout  : dualof OutStreamProvider -> ()
-#runStdout =
-    runServer @OutStream @() #runPrinter ()
-
-#runPrinter : () -> dualof OutStream 1-> ()
-#runPrinter _ printer =
-    match printer with {
-        PutString   printer -> receiveAnd @String @dualof OutStream (#printValue @String) printer & #runPrinter (),
-        PutStringLn printer -> receiveAnd @String @dualof OutStream (\s:String -> #printValue @String (s ++ "\n")) printer & #runPrinter (),
-        Close         _       -> ()
-    }
-
--- | Stderr
-
--- Internal stderr functions
-#runStderr  : dualof OutStreamProvider -> ()
-#runStderr =
-    runServer @OutStream @() #runErrPrinter ()
-
-#runErrPrinter : () -> dualof OutStream 1-> ()
-#runErrPrinter _ printer =
-    match printer with {
-        PutString   printer -> receiveAnd @String @dualof OutStream (#printErrValue @String) printer & #runErrPrinter (),
-        PutStringLn printer -> receiveAnd @String @dualof OutStream (\s:String -> #printErrValue @String (s ++ "\n")) printer & #runErrPrinter (),
-        Close         _       -> ()
-    }
-
--- | Stdin
-
-inputBool : MaybeBool
-inputBool = getBool stdin
-
-inputInt : MaybeInt
-inputInt = getInt stdin
-
-inputChar : MaybeChar
-inputChar = getChar stdin
-
-inputString : MaybeString
-inputString = getString stdin
-
--- Internal stdin functions
-#runStdin : dualof InStreamProvider -> ()
-#runStdin =
-    runServer @InStream @() #runReader ()
-
-#runReader : () -> dualof InStream 1-> ()
-#runReader _ reader = 
-    match reader with {
-        GetBool reader -> #runReader () $
-            case #readBool @MaybeBool (JustBool, NothingBool) of {
-                JustBool x  -> select Just reader & send x,
-                NothingBool -> select Nothing reader
-            },
-        GetInt reader -> #runReader () $
-            case #readInt @MaybeInt (JustInt, NothingInt) of {
-                JustInt x  -> select Just reader & send x,
-                NothingInt -> select Nothing reader
-            },
-        GetChar reader -> #runReader () $
-            case #readChar @MaybeChar (JustChar, NothingChar) of {
-                JustChar x  -> select Just reader & send x,
-                NothingChar -> select Nothing reader
-            },
-        GetString reader -> #runReader () $
-            case #readString @MaybeString (JustString, NothingString) of {
-                JustString x  -> select Just reader & send x,
-                NothingString -> select Nothing reader
-            },
-        Close _-> ()
-    }
-
-
--- | Files
-
--- type FailableR a: 1S = &{Ok: ?a, Nok: Skip}
-type FailableR : 1S = &{Ok: ReadFileStream , Error: Skip}
-type FailableW : 1S = &{Ok: WriteFileStream, Error: Skip}
-
-type ReadFileStream  : 1S = +{ GetBool  : &{Just: ?Bool  , Nothing: Skip}; FailableR {-Failable @ReadFileStream-}
-                             , GetInt   : &{Just: ?Int   , Nothing: Skip}; FailableR {-Failable @ReadFileStream-}
-                             , GetChar  : &{Just: ?Char  , Nothing: Skip}; FailableR {-Failable @ReadFileStream-}
-                             , GetString: &{Just: ?String, Nothing: Skip}; FailableR {-Failable @ReadFileStream-}
-                             , Close    : Skip
-                             }
-
-type WriteFileStream : 1S = +{ PutString  : !String; FailableW {-Failable @WriteFileStream-}
-                             , PutStringLn: !String; FailableW {-Failable @WriteFileStream-}
-                             , Close      : Skip
-                             }
-
-hFilePutString, hFilePutStringLn : String -> WriteFileStream -> FailableW
-hFilePutString   = #genericHPut @String @FailableW (\out:WriteFileStream -> select PutString   out)
-hFilePutStringLn = #genericHPut @String @FailableW (\out:WriteFileStream -> select PutStringLn out)
-
-
-
-
-type FilePath = String
-data FileHandle = FileHandle () 
-
-data MaybeF  = JustF ((WriteFileStream, dualof WriteFileStream), FileHandle) | NothingF 
-data FailedF = Ok | Error
-data MaybeS   = JustS  WriteFileStream | NothingS
-data MaybeSS  = JustSS WriteFileStream | NothingSS
-
-
-openWriteFile : FilePath -> MaybeS
-openWriteFile fp = 
-    case #openWriteFile @FileHandle @WriteFileStream @MaybeF fp FileHandle (JustF, NothingF) of {
-        JustF v -> 
-            let (chs, fh) = v in
-            let (c, s) = chs in
-            fork $ runWriteFileStream fh s;
-            JustS c,
-        NothingF -> NothingS
-    }
-
-
-
-runWriteFileStream : FileHandle -> dualof WriteFileStream -> ()
-runWriteFileStream fh ch =
-    match ch with {
-        PutString   ch -> let (s, ch) = receive ch in #f s fh ch,
-        PutStringLn ch -> let (s, ch) = receive ch in #f (s++"\n") fh ch,
-        Close       _  -> #closeFile @FileHandle fh
-    }
-
-#f : String -> FileHandle -> dualof FailableW -> ()
-#f s fh ch =
-    case #putFile @FileHandle @FailedF s fh (Ok, Error) of {
-        Ok    -> select Ok    ch & runWriteFileStream fh,
-        Error -> select Error ch & sink @Skip
-    }
-    -- runWriteFileStream fh $ select Ok ch
-
-
-openReadFile : FilePath -> MaybeS
-openReadFile fp = 
-    case #openReadFile @FileHandle @WriteFileStream @MaybeF fp FileHandle (JustF, NothingF) of {
-        JustF v -> 
-            let (chs, fh) = v in
-            let (c, s) = chs in
-            fork $ runWriteFileStream fh s;
-            JustS c,
-        NothingF -> NothingS
-    }
-
-
-
-
-
-
-
---  $$$$$$\  
 -- $$ ___$$\ 
 -- \_/   $$ |
 --   $$$$$ / 
@@ -346,6 +152,193 @@ openReadFile fp =
 -- $$\   $$ |
 -- \$$$$$$  |
 --  \______/ 
+
+
+
+-- | OutStream
+
+type OutStreamProvider : *S = *?OutStream
+type OutStream : 1S = +{ PutChar : !Char; OutStream
+                       , PutStr  : !String; OutStream
+                       , PutStrLn: !String; OutStream
+                       , Close   : Skip
+                       }
+
+hCloseOut : OutStream -> ()
+hCloseOut ch = sink @Skip $ select Close ch
+
+
+hGenericPut : forall a . (OutStream -> !a;OutStream) -> a -> OutStream -> OutStream
+hGenericPut sel x outStream = sel outStream & send x
+
+hPutChar : Char -> OutStream -> OutStream
+hPutChar = hGenericPut @Char (\ch:OutStream -> select PutChar ch) -- (select PutChar)
+
+hPutStr, hPutStrLn : String -> OutStream -> OutStream
+hPutStr   = hGenericPut @String (\ch:OutStream -> select PutStr   ch) -- (select PutStr)
+hPutStrLn = hGenericPut @String (\ch:OutStream -> select PutStrLn ch) -- (select PutStrLn)
+
+hPrint : forall a . a -> OutStream -> OutStream
+hPrint x = hPutStrLn (show @a x)
+
+hGenericPut_ : forall a . (a -> OutStream -> OutStream) -> a -> OutStreamProvider -> ()
+hGenericPut_ putF x outProv = 
+    hCloseOut $ putF x $ receive_ @OutStream outProv 
+
+hPutChar_ : Char -> OutStreamProvider -> ()
+hPutChar_ = hGenericPut_ @Char hPutChar
+
+hPutStr_, hPutStrLn_ : String -> OutStreamProvider -> ()
+hPutStr_   = hGenericPut_ @String hPutStr
+hPutStrLn_ = hGenericPut_ @String hPutStrLn
+
+hPrint_ : forall b . b -> OutStreamProvider -> ()
+-- hPrint_ = hGenericPut_ @b (hPrint @b)
+hPrint_ x ch = hGenericPut_ @b (hPrint @b) x ch
+
+
+-- | InStream
+
+type InStreamProvider : *S = *?InStream
+type InStream : 1S = +{ GetChar     : ?Char  ; InStream
+                      , GetLine     : ?String; InStream
+                      , Close       : Skip
+                      }
+
+hCloseIn : InStream -> ()
+hCloseIn ch = sink @Skip $ select Close ch
+
+hGenericGet : forall a . (InStream -> ?a;InStream) -> InStream -> (a, InStream)
+hGenericGet sel ch = receive $ sel ch
+
+hGetChar : InStream -> (Char, InStream)
+hGetChar = hGenericGet @Char (\ch:InStream -> select GetChar ch)
+
+hGetLine : InStream -> (String, InStream)
+hGetLine     = hGenericGet @String (\ch:InStream -> select GetLine     ch)
+
+hGenericGet_ : forall a . (InStream -> (a, InStream)) -> InStreamProvider -> a
+hGenericGet_ getF inp = 
+  let (x, ch) = getF $ receive_ @InStream inp in
+  let _ = hCloseIn ch in x
+
+hGetChar_ : InStreamProvider -> Char
+hGetChar_ = hGenericGet_ @Char hGetChar
+
+hGetLine_ : InStreamProvider -> String
+hGetLine_     = hGenericGet_ @String hGetLine
+
+-- | Stdout
+
+stdout : OutStreamProvider
+
+putChar : Char -> ()
+putChar = flip @Char @OutStreamProvider @() hPutChar_ stdout
+
+putStr, putStrLn : String -> ()
+putStr   = flip @String @OutStreamProvider @() hPutStr_ stdout
+putStrLn = flip @String @OutStreamProvider @() hPutStrLn_ stdout
+
+print : forall a . a -> ()
+-- print = putStrLn $ show @a
+print x = putStrLn $ show @a x
+
+-- Internal stdout functions
+runStdout  : dualof OutStreamProvider -> ()
+runStdout = runServer @OutStream @() runPrinter ()
+
+runPrinter : () -> dualof OutStream 1-> ()
+runPrinter _ printer =
+    match printer with {
+        PutChar     printer -> receiveAnd @Char   @dualof OutStream (\c:Char -> __putStrOut (show @Char c)) printer & runPrinter (),
+        PutStr   printer -> receiveAnd @String @dualof OutStream __putStrOut printer & runPrinter (),
+        PutStrLn printer -> receiveAnd @String @dualof OutStream (\s:String -> __putStrOut (s ++ "\n")) printer & runPrinter (),
+        Close         _     -> ()
+    }
+
+-- | Stderr
+
+stderr : OutStreamProvider
+
+-- Internal stderr functions
+runStderr  : dualof OutStreamProvider -> ()
+runStderr = runServer @OutStream @() runErrPrinter ()
+
+runErrPrinter : () -> dualof OutStream 1-> ()
+runErrPrinter _ printer =
+    match printer with {
+        PutChar     printer -> receiveAnd @Char   @dualof OutStream (\c:Char -> __putStrErr (show @Char c)) printer & runErrPrinter (),
+        PutStr   printer -> receiveAnd @String @dualof OutStream __putStrErr printer & runErrPrinter (),
+        PutStrLn printer -> receiveAnd @String @dualof OutStream (\s:String -> __putStrErr (s ++ "\n")) printer & runErrPrinter (),
+        Close       _       -> ()
+    }
+
+-- | Stdin
+
+stdin : InStreamProvider
+
+getChar : Char
+getChar = hGetChar_ stdin
+
+getLine : String
+getLine = hGetLine_ stdin
+
+-- Internal stdin functions
+runStdin : dualof InStreamProvider -> ()
+runStdin = runServer @InStream @() runReader ()
+
+runReader : () -> dualof InStream 1-> ()
+runReader _ reader = 
+    match reader with {
+        GetChar     reader -> runReader () $ send (__getChar     ()) reader,
+        GetLine     reader -> runReader () $ send (__getLine     ()) reader,
+        Close _-> ()
+    }
+
+
+-- | Files
+
+type FilePath = String
+data FileHandle = FileHandle () 
+
+data IOMode = ReadMode | WriteMode | AppendMode
+
+openWriteFile : FilePath -> OutStream
+openWriteFile fp =
+    forkWith @OutStream $ runWriteFile (__openFile fp WriteMode)
+
+runWriteFile : FileHandle -> dualof OutStream 1-> ()
+runWriteFile fh ch =
+    match ch with {
+        PutChar     ch -> let (c, ch) = receive ch in __putFileStr fh (show @Char c); runWriteFile fh ch,
+        PutStr   ch -> let (s, ch) = receive ch in __putFileStr fh s             ; runWriteFile fh ch,
+        PutStrLn ch -> let (s, ch) = receive ch in __putFileStr fh (s ++ "\n")   ; runWriteFile fh ch,
+        Close       _  -> __closeFile fh
+    }
+
+
+openReadFile : FilePath -> InStream
+openReadFile fp = 
+    forkWith @InStream $ runReadFile (__openFile fp ReadMode)
+
+runReadFile : FileHandle -> dualof InStream 1-> ()
+runReadFile fh ch =
+    match ch with {
+        GetChar     ch -> runReadFile fh $ send (__readFileChar     fh) ch,
+        GetLine     ch -> runReadFile fh $ send (__readFileLine     fh) ch,
+        Close       _  -> __closeFile fh
+    }
+
+
+
+-- $$\   $$\ 
+-- $$ |  $$ |
+-- $$ |  $$ |
+-- $$$$$$$$ |
+-- \_____$$ |
+--       $$ |
+--       $$ |
+--       \__|
 
 
 

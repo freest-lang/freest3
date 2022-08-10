@@ -10,7 +10,8 @@ import           Data.Char ( ord, chr )
 import           Data.Functor
 import qualified Data.Map as Map
 import           System.IO
-
+import Debug.Trace
+import System.IO.Unsafe ( unsafePerformIO )
 ------------------------------------------------------------
 -- Communication primitives
 ------------------------------------------------------------
@@ -85,65 +86,33 @@ initialCtx = Map.fromList
   -- Show
   , (var "show", PrimitiveFun (String . show))
   -- Read
-  -- , (var "read", )
+  , (var "readBool"  , PrimitiveFun (\(String s) -> Boolean (read s)))--(\(String s) -> Boolean (read s)))
+  , (var "readInt"   , PrimitiveFun (\(String s) -> Integer (read s)))
+  , (var "readChar"  , PrimitiveFun (\(String (c : _)) -> Character c))
   -- Print to stdout
-  , (var "#printValue"  , PrimitiveFun (\v -> IOValue $ putStr   (show v) $> Unit))
+  , (var "__putStrOut", PrimitiveFun (\v -> IOValue $ putStr (show v) $> Unit))
   -- Print to stderr
-  , (var "#printErrValue"  , PrimitiveFun (\v -> IOValue $ hPutStr   stderr (show v) $> Unit))
+  , (var "__putStrErr", PrimitiveFun (\v -> IOValue $ hPutStr stderr (show v) $> Unit))
   -- Reads
-  , (var "#readBool", PrimitiveFun (\(Pair (Cons v l) nothingCons) -> genericGet nothingCons $ \s ->
-        case reads s of
-          [(x, "")] -> Cons v $ l ++ [[Boolean x]]
-          _         -> nothingCons
-        ))
-  , (var "#readInt", PrimitiveFun (\(Pair (Cons v l) nothingCons) -> genericGet nothingCons $ \s ->
-        case reads s of
-          [(x, "")] -> Cons v $ l ++ [[Integer x]]
-          _         -> nothingCons
-    ))
-  , (var "#readChar", PrimitiveFun (\(Pair (Cons v l) nothingCons) -> genericGet nothingCons $ \s -> 
-        case s of
-          (c : _) -> Cons v $ l ++ [[Character c]]
-          _       -> nothingCons
-    ))
-  , (var "#readString", PrimitiveFun (\(Pair (Cons v l) nothingCons) -> genericGet nothingCons $ \s -> Cons v $ l ++ [[String s]]))
+  , (var "__getChar"    , PrimitiveFun (\_ -> IOValue $ getChar >>= (return . Character)))
+  , (var "__getLine"    , PrimitiveFun (\_ -> IOValue $ getLine >>= (return . String)))
+  , (var "__getContents", PrimitiveFun (\_ -> IOValue $ getContents >>= (return . String)))
   -- Files
-  , (var "#putFile"
-    , PrimitiveFun (\(String s) -> 
-      PrimitiveFun (\(Cons v2 [[Handle fh]]) ->
-      PrimitiveFun (\(Pair okCons errorCons) -> IOValue $
-        catchAny
-          (hPutStr fh s >> return okCons)
-          (\_ -> return errorCons)
-      ))))
-  , (var "#closeFile"
-    , PrimitiveFun (\(Cons v [[Handle fh]]) -> IOValue $
-      catchAny
-          (hClose fh >> return Unit)
-          (\_ -> return Unit)
-      ))
-  , (var "#openWriteFile"
-    , PrimitiveFun (\(String s) -> 
-      PrimitiveFun (\(Cons v1 l1) ->
-      PrimitiveFun (\(Pair (Cons v2 l2) nothingCons) -> IOValue $
-        catchAny 
-          (openFile s WriteMode >>= \handle -> 
-           new >>= \(clientChan, serverChan) -> return $
-            Cons v2 $ l2 ++ [[Pair (Pair (Chan clientChan) (Chan serverChan)) (Cons v1 (l1 ++ [[Handle handle]]))]]
-          )
-          (\_ -> return nothingCons)
-      ))))
-  , (var "#openReadFile"
-    , PrimitiveFun (\(String s) -> 
-      PrimitiveFun (\(Cons v1 l1) ->
-      PrimitiveFun (\(Pair (Cons v2 l2) nothingCons) -> IOValue $
-        catchAny 
-          (openFile s ReadMode >>= \handle -> 
-           new >>= \(clientChan, serverChan) -> return $
-            Cons v2 $ l2 ++ [[Pair (Pair (Chan clientChan) (Chan serverChan)) (Cons v1 (l1 ++ [[Handle handle]]))]]
-          )
-          (\_ -> return nothingCons)
-      ))))
+  , (var "__openFile",
+      PrimitiveFun (\(String s) ->
+      PrimitiveFun (\(Cons (Variable _ mode) _) -> IOValue $
+        case mode of
+          "ReadMode"   -> openFile s ReadMode   >>= return . Cons (var "FileHandle") . (: []) . (: []) . Handle
+          "WriteMode"  -> openFile s WriteMode  >>= return . Cons (var "FileHandle") . (: []) . (: []) . Handle
+          "AppendMode" -> openFile s AppendMode >>= return . Cons (var "FileHandle") . (: []) . (: []) . Handle
+    )))
+  , (var "__putFileStr",
+      PrimitiveFun (\(Cons _ [[Handle fh]]) -> PrimitiveFun (\(String s) ->
+        IOValue $ hPutStr fh s $> Unit
+    )))
+  , (var "__readFileChar"    , PrimitiveFun (\(Cons _ [[Handle fh]]) -> IOValue $ hGetChar     fh >>= return . Character))
+  , (var "__readFileLine"    , PrimitiveFun (\(Cons _ [[Handle fh]]) -> IOValue $ hGetLine     fh >>= return . String))
+  , (var "__closeFile", PrimitiveFun (\(Cons _ [[Handle fh]]) -> IOValue $ hClose fh $> Unit))
   -- Id  
   , (var "id", PrimitiveFun id)
   -- Undefined
@@ -151,28 +120,23 @@ initialCtx = Map.fromList
   -- Error
   -- , (var "error", PrimitiveFun (\(String e) ->
   --        unsafePerformIO $ die $ showErrors "" Map.empty [] (ErrorFunction s e)))
-
---  , (var "print", PrimitiveFun (\x -> IOValue (putStrLn (show x) >> return Unit)))
   ]
  where
   var :: String -> Variable
   var = mkVar defaultSpan
 
-  catchAny :: IO a -> (SomeException -> IO a) -> IO a
-  catchAny = catch
+  -- genericRead :: (String -> (Value, Value) -> Value) -> Value
+  -- genericRead f = PrimitiveFun 
+  --   (\(Pair justCons nothingCons) ->
+  --     IOValue $
+  --     catchAny
+  --       (getLine >>= \s -> return $ f s (justCons, nothingCons)) 
+  --       (\_ -> return nothingCons)
+  --   )
 
-  genericRead :: (String -> (Value, Value) -> Value) -> Value
-  genericRead f = PrimitiveFun 
-    (\(Pair justCons nothingCons) ->
-      IOValue $
-      catchAny
-        (getLine >>= \s -> return $ f s (justCons, nothingCons)) 
-        (\_ -> return nothingCons)
-    )
-
-  genericGet :: Value -> (String -> Value) -> Value
-  genericGet nothingCons f = 
-    IOValue $
-    catchAny
-      (getLine >>= \s -> return $ f s) 
-      (\_ -> return nothingCons)
+  -- genericGet :: Value -> (String -> Value) -> Value
+  -- genericGet nothingCons f = 
+  --   IOValue $
+  --   catchAny
+  --     (getLine >>= \s -> return $ f s) 
+  --     (\_ -> return nothingCons)

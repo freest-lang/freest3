@@ -290,6 +290,7 @@ Op :: { Variable }
    | '*'   {% flip mkVar "(*)" `fmap` mkSpan $1  }
    | '/'   {% flip mkVar "(/)"  `fmap` mkSpan $1 }
    | '^'   {% flip mkVar "(^)" `fmap` mkSpan $1 }
+   | '++'  {% flip mkVar "(++)" `fmap` mkSpan $1 }
 
 
 ----------
