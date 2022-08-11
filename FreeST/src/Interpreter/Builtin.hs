@@ -10,8 +10,7 @@ import           Data.Char ( ord, chr )
 import           Data.Functor
 import qualified Data.Map as Map
 import           System.IO
-import Debug.Trace
-import System.IO.Unsafe ( unsafePerformIO )
+
 ------------------------------------------------------------
 -- Communication primitives
 ------------------------------------------------------------
@@ -86,17 +85,16 @@ initialCtx = Map.fromList
   -- Show
   , (var "show", PrimitiveFun (String . show))
   -- Read
-  , (var "readBool"  , PrimitiveFun (\(String s) -> Boolean (read s)))--(\(String s) -> Boolean (read s)))
+  , (var "readBool"  , PrimitiveFun (\(String s) -> Boolean (read s)))
   , (var "readInt"   , PrimitiveFun (\(String s) -> Integer (read s)))
   , (var "readChar"  , PrimitiveFun (\(String (c : _)) -> Character c))
   -- Print to stdout
   , (var "__putStrOut", PrimitiveFun (\v -> IOValue $ putStr (show v) $> Unit))
   -- Print to stderr
   , (var "__putStrErr", PrimitiveFun (\v -> IOValue $ hPutStr stderr (show v) $> Unit))
-  -- Reads
+  -- Read from stdin
   , (var "__getChar"    , PrimitiveFun (\_ -> IOValue $ getChar >>= (return . Character)))
   , (var "__getLine"    , PrimitiveFun (\_ -> IOValue $ getLine >>= (return . String)))
-  , (var "__getContents", PrimitiveFun (\_ -> IOValue $ getContents >>= (return . String)))
   -- Files
   , (var "__openFile",
       PrimitiveFun (\(String s) ->
@@ -110,8 +108,8 @@ initialCtx = Map.fromList
       PrimitiveFun (\(Cons _ [[Handle fh]]) -> PrimitiveFun (\(String s) ->
         IOValue $ hPutStr fh s $> Unit
     )))
-  , (var "__readFileChar"    , PrimitiveFun (\(Cons _ [[Handle fh]]) -> IOValue $ hGetChar     fh >>= return . Character))
-  , (var "__readFileLine"    , PrimitiveFun (\(Cons _ [[Handle fh]]) -> IOValue $ hGetLine     fh >>= return . String))
+  , (var "__readFileChar", PrimitiveFun (\(Cons _ [[Handle fh]]) -> IOValue $ hGetChar fh >>= return . Character))
+  , (var "__readFileLine", PrimitiveFun (\(Cons _ [[Handle fh]]) -> IOValue $ hGetLine fh >>= return . String))
   , (var "__closeFile", PrimitiveFun (\(Cons _ [[Handle fh]]) -> IOValue $ hClose fh $> Unit))
   -- Id  
   , (var "id", PrimitiveFun id)
@@ -124,19 +122,3 @@ initialCtx = Map.fromList
  where
   var :: String -> Variable
   var = mkVar defaultSpan
-
-  -- genericRead :: (String -> (Value, Value) -> Value) -> Value
-  -- genericRead f = PrimitiveFun 
-  --   (\(Pair justCons nothingCons) ->
-  --     IOValue $
-  --     catchAny
-  --       (getLine >>= \s -> return $ f s (justCons, nothingCons)) 
-  --       (\_ -> return nothingCons)
-  --   )
-
-  -- genericGet :: Value -> (String -> Value) -> Value
-  -- genericGet nothingCons f = 
-  --   IOValue $
-  --   catchAny
-  --     (getLine >>= \s -> return $ f s) 
-  --     (\_ -> return nothingCons)

@@ -1,9 +1,12 @@
 {-
 
 Prelude structure:
-    1. Util       - utility functions
-    2. IO         - input/output functions (including files)
-    3. Concurrent - functions for concurrency and shared channels
+    1. Builtin        - builtin function definitions
+    2. Prelude        - utility functions
+    3. Concurrency    - functions for concurrency and shared channels
+    4, Out/In Streams - input and output channels + util functions
+    5. StdIO          - stdout, stdin, stderr
+    6. Files          - open files for reading, writing and appending
 
 (ASCII titles generated at https://ascii.today/)
 -}
@@ -105,8 +108,6 @@ __closeFile : FileHandle -> ()
 -- $$$$$$$$\ 
 -- \________|
 
-
-
 -- | Prelude
 
 id : forall a . a -> a
@@ -153,6 +154,89 @@ fix f =
 -- \$$$$$$  |
 --  \______/ 
 
+-- | Concurrency
+
+-- | A mark for functions that do not terminate
+type Diverge = ()
+
+-- | A function that diverges
+diverge : () --Diverge
+diverge = diverge
+
+-- | Discard an unrestricted value
+sink : forall a . a -> ()
+sink _ = ()
+
+-- | Execute a thunk n times, sequentially
+repeat : forall a . Int -> (() -> a) -> ()
+repeat n thunk =
+    if n < 0
+    then ()
+    else 
+        thunk ();
+        repeat @a (n - 1) thunk
+
+-- type Consumer a = a 1-> ()
+
+-- | Receive a value from a linear channel and apply a function to it.
+--   Returns the continuation channel
+receiveAnd : forall a b:1S . (a -> ()) {- Consumer a -} -> ?a;b 1-> b
+receiveAnd f ch =
+    let (x, ch) = receive ch in
+    f x;
+    ch
+
+-- | Receive a value from a star channel
+receive_ : forall a:1T . *?a -> a
+receive_ ch = fst @a @*?a $ receive ch
+
+-- | Send a value on a star channel
+send_ : forall a:1T . a -> *!a 1-> ()
+send_ x ch = sink @*!a $ send x ch
+
+-- | Fork n identical threads
+parallel : Int -> (() -> ()) -> ()
+parallel n thunk = repeat @() n (\_:() -> fork (thunk ()))
+
+-- | Create a new child process and a linear channel through which it can 
+--   communicate with its parent process. Return the channel endpoint.
+forkWith : forall a:1S . (dualof a 1-> ()) -> a
+forkWith f =
+    let (x, y) = new a in
+    fork $ f y;
+    x
+
+-- |Session initiation
+-- |Accept a request for a linear session on a shared channel.
+-- |The requester uses a conventional receive to obtain the channel end
+accept : forall a:1S b:*S . !a; b -> dualof a
+accept ch =
+    let (x, y) = new a in
+    send x ch;
+    y
+
+-- |Session initiation on an start channel
+accept_ : forall a:1S . *!a -> dualof a
+accept_ ch = accept @a @*!a ch
+
+-- | Run a server process given its endpoint, a function to serve a client (a
+-- handle) and the initial state.
+runServer : forall a:1S b . (b -> dualof a 1-> b) -> b -> *!a -> () --Diverge
+runServer handle state ch =
+    runServer @a @b handle (handle state (accept_ @a ch)) ch 
+
+
+
+-- $$\   $$\ 
+-- $$ |  $$ |
+-- $$ |  $$ |
+-- $$$$$$$$ |
+-- \_____$$ |
+--       $$ |
+--       $$ |
+--       \__|
+
+-- | Out/In Streams
 
 
 -- | OutStream
@@ -228,6 +312,17 @@ hGetChar_ = hGenericGet_ @Char hGetChar
 hGetLine_ : InStreamProvider -> String
 hGetLine_     = hGenericGet_ @String hGetLine
 
+
+
+-- $$$$$$$\  
+-- $$  ____| 
+-- $$ |      
+-- $$$$$$$\  
+-- \_____$$\ 
+-- $$\   $$ |
+-- \$$$$$$  |
+--  \______/ 
+
 -- | Stdout
 
 stdout : OutStreamProvider
@@ -296,6 +391,16 @@ runReader _ reader =
     }
 
 
+
+--  $$$$$$\  
+-- $$  __$$\ 
+-- $$ /  \__|
+-- $$$$$$$\  
+-- $$  __$$\ 
+-- $$ /  $$ |
+--  $$$$$$  |
+--  \______/ 
+
 -- | Files
 
 type FilePath = String
@@ -328,85 +433,3 @@ runReadFile fh ch =
         GetLine     ch -> runReadFile fh $ send (__readFileLine     fh) ch,
         Close       _  -> __closeFile fh
     }
-
-
-
--- $$\   $$\ 
--- $$ |  $$ |
--- $$ |  $$ |
--- $$$$$$$$ |
--- \_____$$ |
---       $$ |
---       $$ |
---       \__|
-
-
-
--- | A mark for functions that do not terminate
-type Diverge = ()
-
--- | A function that diverges
-diverge : () --Diverge
-diverge = diverge
-
--- | Discard an unrestricted value
-sink : forall a . a -> ()
-sink _ = ()
-
--- | Execute a thunk n times, sequentially
-repeat : forall a . Int -> (() -> a) -> ()
-repeat n thunk =
-    if n < 0
-    then ()
-    else 
-        thunk ();
-        repeat @a (n - 1) thunk
-
--- type Consumer a = a 1-> ()
-
--- | Receive a value from a linear channel and apply a function to it.
---   Returns the continuation channel
-receiveAnd : forall a b:1S . (a -> ()) {- Consumer a -} -> ?a;b 1-> b
-receiveAnd f ch =
-    let (x, ch) = receive ch in
-    f x;
-    ch
-
--- | Receive a value from a star channel
-receive_ : forall a:1T . *?a -> a
-receive_ ch = fst @a @*?a $ receive ch
-
--- | Send a value on a star channel
-send_ : forall a:1T . a -> *!a 1-> ()
-send_ x ch = sink @*!a $ send x ch
-
--- | Fork n identical threads
-parallel : Int -> (() -> ()) -> ()
-parallel n thunk = repeat @() n (\_:() -> fork (thunk ()))
-
--- | Create a new child process and a linear channel through which it can 
---   communicate with its parent process. Return the channel endpoint.
-forkWith : forall a:1S . (dualof a 1-> ()) -> a
-forkWith f =
-    let (x, y) = new a in
-    fork $ f y;
-    x
-
--- |Session initiation
--- |Accept a request for a linear session on a shared channel.
--- |The requester uses a conventional receive to obtain the channel end
-accept : forall a:1S b:*S . !a; b -> dualof a
-accept ch =
-    let (x, y) = new a in
-    send x ch;
-    y
-
--- |Session initiation on an start channel
-accept_ : forall a:1S . *!a -> dualof a
-accept_ ch = accept @a @*!a ch
-
--- | Run a server process given its endpoint, a function to serve a client (a
--- handle) and the initial state.
-runServer : forall a:1S b . (b -> dualof a 1-> b) -> b -> *!a -> () --Diverge
-runServer handle state ch =
-    runServer @a @b handle (handle state (accept_ @a ch)) ch 

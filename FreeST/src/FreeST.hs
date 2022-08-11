@@ -9,11 +9,14 @@ where
 import           Elaboration.Elaboration ( elaboration )
 import           Interpreter.Builtin ( initialCtx, new )
 import           Interpreter.Eval ( evalAndPrint )
+import           Interpreter.Value
 import           Parse.Parser ( parseProgram, parseAndImport )
 import           Util.CmdLine
 import           Util.FreestState
 import           Syntax.Base
 import           Syntax.Program (noConstructors, VarEnv)
+import qualified Syntax.Expression as E
+import qualified Syntax.Kind as K
 import           Util.Error
 import           Util.Warning
 import           Validation.Rename ( renameState )
@@ -25,11 +28,6 @@ import qualified Data.Set as Set
 import           Paths_FreeST ( getDataFileName )
 import           System.Exit ( die )
 
-import Syntax.Base
-import qualified Syntax.Kind as K
-import Syntax.Type
-import Interpreter.Value
-import qualified Syntax.Expression as E
 
 main :: IO ()
 main = checkAndRun =<< flags -- handleOpts =<< compilerOpts =<< getArgs

@@ -51,6 +51,7 @@ instance Show Value where
   show Chan{}         = "Skip" -- TODO: change this
   show Fork           = "fork"
   show IOValue{}      = "<IOValue>"
+  show (Handle h)     = show h 
 
 showTuple :: Value -> String
 showTuple (Pair v1 v2) = show v1 ++ ", " ++ showTuple v2

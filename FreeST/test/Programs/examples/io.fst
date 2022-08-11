@@ -10,13 +10,13 @@ main =
     -- | print to stderr using put functions
     hPutStr_ "Error: " stderr; hPutStrLn_ "everything is fine!" stderr;
     -- | get values from stdin
-    putStr @String $ "Insert a bool:";
+    putStr "Insert a bool:";
     print @Bool   $ readBool $ getLine;
-    putStr @String $ "Insert an int:";
+    putStr "Insert an int:";
     print @Int    $ readInt  $ getLine;
-    putStr @String $ "Insert a char:";
+    putStr "Insert a char:";
     print @Char   $ readChar $ getLine;
-    putStr @String $ "Insert a string:";
+    putStr "Insert a string:";
     print @String $            getLine;
     -- | write to file
     openWriteFile "teste.txt" &
