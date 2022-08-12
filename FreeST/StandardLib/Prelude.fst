@@ -344,15 +344,15 @@ print : forall a . a -> ()
 print x = putStrLn $ show @a x
 
 -- Internal stdout functions
-runStdout  : dualof OutStreamProvider -> ()
-runStdout = runServer @OutStream @() runPrinter ()
+__runStdout  : dualof OutStreamProvider -> ()
+__runStdout = runServer @OutStream @() __runPrinter ()
 
-runPrinter : () -> dualof OutStream 1-> ()
-runPrinter _ printer =
+__runPrinter : () -> dualof OutStream 1-> ()
+__runPrinter _ printer =
     match printer with {
-        PutChar  printer -> receiveAnd @Char   @dualof OutStream (\c:Char -> __putStrOut (show @Char c)) printer & runPrinter (),
-        PutStr   printer -> receiveAnd @String @dualof OutStream __putStrOut printer & runPrinter (),
-        PutStrLn printer -> receiveAnd @String @dualof OutStream (\s:String -> __putStrOut (s ++ "\n")) printer & runPrinter (),
+        PutChar  printer -> receiveAnd @Char   @dualof OutStream (\c:Char -> __putStrOut (show @Char c)) printer & __runPrinter (),
+        PutStr   printer -> receiveAnd @String @dualof OutStream __putStrOut printer & __runPrinter (),
+        PutStrLn printer -> receiveAnd @String @dualof OutStream (\s:String -> __putStrOut (s ++ "\n")) printer & __runPrinter (),
         Close    _       -> ()
     }
 
@@ -361,15 +361,15 @@ runPrinter _ printer =
 stderr : OutStreamProvider
 
 -- Internal stderr functions
-runStderr  : dualof OutStreamProvider -> ()
-runStderr = runServer @OutStream @() runErrPrinter ()
+__runStderr  : dualof OutStreamProvider -> ()
+__runStderr = runServer @OutStream @() __runErrPrinter ()
 
-runErrPrinter : () -> dualof OutStream 1-> ()
-runErrPrinter _ printer =
+__runErrPrinter : () -> dualof OutStream 1-> ()
+__runErrPrinter _ printer =
     match printer with {
-        PutChar     printer -> receiveAnd @Char   @dualof OutStream (\c:Char -> __putStrErr (show @Char c)) printer & runErrPrinter (),
-        PutStr   printer -> receiveAnd @String @dualof OutStream __putStrErr printer & runErrPrinter (),
-        PutStrLn printer -> receiveAnd @String @dualof OutStream (\s:String -> __putStrErr (s ++ "\n")) printer & runErrPrinter (),
+        PutChar     printer -> receiveAnd @Char   @dualof OutStream (\c:Char -> __putStrErr (show @Char c)) printer & __runErrPrinter (),
+        PutStr   printer -> receiveAnd @String @dualof OutStream __putStrErr printer & __runErrPrinter (),
+        PutStrLn printer -> receiveAnd @String @dualof OutStream (\s:String -> __putStrErr (s ++ "\n")) printer & __runErrPrinter (),
         Close       _       -> ()
     }
 
@@ -384,15 +384,15 @@ getLine : String
 getLine = hGetLine_ stdin
 
 -- Internal stdin functions
-runStdin : dualof InStreamProvider -> ()
-runStdin = runServer @InStream @() runReader ()
+__runStdin : dualof InStreamProvider -> ()
+__runStdin = runServer @InStream @() __runReader ()
 
-runReader : () -> dualof InStream 1-> ()
-runReader _ reader = 
+__runReader : () -> dualof InStream 1-> ()
+__runReader _ reader = 
     match reader with {
-        GetChar reader -> runReader () $ send (__getChar     ()) reader,
-        GetLine reader -> runReader () $ send (__getLine     ()) reader,
-        IsEOF   reader -> runReader () $ send False reader, -- stdin is always open
+        GetChar reader -> __runReader () $ send (__getChar     ()) reader,
+        GetLine reader -> __runReader () $ send (__getLine     ()) reader,
+        IsEOF   reader -> __runReader () $ send False reader, -- stdin is always open
         Close   _ -> ()
     }
 
