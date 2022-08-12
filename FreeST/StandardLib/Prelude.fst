@@ -95,6 +95,7 @@ __openFile : FilePath -> IOMode -> FileHandle
 __putFileStr : FileHandle -> String -> ()
 __readFileChar : FileHandle -> Char
 __readFileLine : FileHandle -> String
+__isEOF : FileHandle -> Bool
 __closeFile : FileHandle -> ()
 
 
@@ -286,6 +287,7 @@ hPrint_ x ch = hGenericPut_ @b (hPrint @b) x ch
 type InStreamProvider : *S = *?InStream
 type InStream : 1S = +{ GetChar     : ?Char  ; InStream
                       , GetLine     : ?String; InStream
+                      , IsEOF       : ?Bool  ; InStream
                       , Close       : Skip
                       }
 
@@ -299,7 +301,10 @@ hGetChar : InStream -> (Char, InStream)
 hGetChar = hGenericGet @Char (\ch:InStream -> select GetChar ch)
 
 hGetLine : InStream -> (String, InStream)
-hGetLine     = hGenericGet @String (\ch:InStream -> select GetLine     ch)
+hGetLine = hGenericGet @String (\ch:InStream -> select GetLine ch)
+
+hIsEOF : InStream -> (Bool, InStream)
+hIsEOF = hGenericGet @Bool (\ch:InStream -> select IsEOF ch)
 
 hGenericGet_ : forall a . (InStream -> (a, InStream)) -> InStreamProvider -> a
 hGenericGet_ getF inp = 
@@ -345,10 +350,10 @@ runStdout = runServer @OutStream @() runPrinter ()
 runPrinter : () -> dualof OutStream 1-> ()
 runPrinter _ printer =
     match printer with {
-        PutChar     printer -> receiveAnd @Char   @dualof OutStream (\c:Char -> __putStrOut (show @Char c)) printer & runPrinter (),
+        PutChar  printer -> receiveAnd @Char   @dualof OutStream (\c:Char -> __putStrOut (show @Char c)) printer & runPrinter (),
         PutStr   printer -> receiveAnd @String @dualof OutStream __putStrOut printer & runPrinter (),
         PutStrLn printer -> receiveAnd @String @dualof OutStream (\s:String -> __putStrOut (s ++ "\n")) printer & runPrinter (),
-        Close         _     -> ()
+        Close    _       -> ()
     }
 
 -- | Stderr
@@ -385,9 +390,10 @@ runStdin = runServer @InStream @() runReader ()
 runReader : () -> dualof InStream 1-> ()
 runReader _ reader = 
     match reader with {
-        GetChar     reader -> runReader () $ send (__getChar     ()) reader,
-        GetLine     reader -> runReader () $ send (__getLine     ()) reader,
-        Close _-> ()
+        GetChar reader -> runReader () $ send (__getChar     ()) reader,
+        GetLine reader -> runReader () $ send (__getLine     ()) reader,
+        IsEOF   reader -> runReader () $ send False reader, -- stdin is always open
+        Close   _ -> ()
     }
 
 
@@ -412,13 +418,17 @@ openWriteFile : FilePath -> OutStream
 openWriteFile fp =
     forkWith @OutStream $ runWriteFile (__openFile fp WriteMode)
 
+openAppendFile : FilePath -> OutStream
+openAppendFile fp =
+    forkWith @OutStream $ runWriteFile (__openFile fp AppendMode)
+
 runWriteFile : FileHandle -> dualof OutStream 1-> ()
 runWriteFile fh ch =
     match ch with {
-        PutChar     ch -> let (c, ch) = receive ch in __putFileStr fh (show @Char c); runWriteFile fh ch,
+        PutChar  ch -> let (c, ch) = receive ch in __putFileStr fh (show @Char c); runWriteFile fh ch,
         PutStr   ch -> let (s, ch) = receive ch in __putFileStr fh s             ; runWriteFile fh ch,
         PutStrLn ch -> let (s, ch) = receive ch in __putFileStr fh (s ++ "\n")   ; runWriteFile fh ch,
-        Close       _  -> __closeFile fh
+        Close    _  -> __closeFile fh
     }
 
 
@@ -429,7 +439,8 @@ openReadFile fp =
 runReadFile : FileHandle -> dualof InStream 1-> ()
 runReadFile fh ch =
     match ch with {
-        GetChar     ch -> runReadFile fh $ send (__readFileChar     fh) ch,
-        GetLine     ch -> runReadFile fh $ send (__readFileLine     fh) ch,
-        Close       _  -> __closeFile fh
+        GetChar ch -> runReadFile fh $ send (__readFileChar fh) ch,
+        GetLine ch -> runReadFile fh $ send (__readFileLine fh) ch,
+        IsEOF   ch -> runReadFile fh $ send (__isEOF fh       ) ch,
+        Close   _  -> __closeFile fh
     }
