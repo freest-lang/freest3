@@ -181,8 +181,8 @@ repeat n thunk =
 
 -- | Receive a value from a linear channel and apply a function to it.
 --   Returns the continuation channel
-receiveAnd : forall a b:1S . (a -> ()) {- Consumer a -} -> ?a;b 1-> b
-receiveAnd f ch =
+consume : forall a b:1S . (a -> ()) {- Consumer a -} -> ?a;b 1-> b
+consume f ch =
     let (x, ch) = receive ch in
     f x;
     ch
@@ -350,9 +350,9 @@ __runStdout = runServer @OutStream @() __runPrinter ()
 __runPrinter : () -> dualof OutStream 1-> ()
 __runPrinter _ printer =
     match printer with {
-        PutChar  printer -> receiveAnd @Char   @dualof OutStream (\c:Char -> __putStrOut (show @Char c)) printer & __runPrinter (),
-        PutStr   printer -> receiveAnd @String @dualof OutStream __putStrOut printer & __runPrinter (),
-        PutStrLn printer -> receiveAnd @String @dualof OutStream (\s:String -> __putStrOut (s ++ "\n")) printer & __runPrinter (),
+        PutChar  printer -> consume @Char   @dualof OutStream (\c:Char -> __putStrOut (show @Char c)) printer & __runPrinter (),
+        PutStr   printer -> consume @String @dualof OutStream __putStrOut printer & __runPrinter (),
+        PutStrLn printer -> consume @String @dualof OutStream (\s:String -> __putStrOut (s ++ "\n")) printer & __runPrinter (),
         Close    _       -> ()
     }
 
@@ -367,9 +367,9 @@ __runStderr = runServer @OutStream @() __runErrPrinter ()
 __runErrPrinter : () -> dualof OutStream 1-> ()
 __runErrPrinter _ printer =
     match printer with {
-        PutChar     printer -> receiveAnd @Char   @dualof OutStream (\c:Char -> __putStrErr (show @Char c)) printer & __runErrPrinter (),
-        PutStr   printer -> receiveAnd @String @dualof OutStream __putStrErr printer & __runErrPrinter (),
-        PutStrLn printer -> receiveAnd @String @dualof OutStream (\s:String -> __putStrErr (s ++ "\n")) printer & __runErrPrinter (),
+        PutChar  printer -> consume @Char   @dualof OutStream (\c:Char -> __putStrErr (show @Char c)) printer & __runErrPrinter (),
+        PutStr   printer -> consume @String @dualof OutStream __putStrErr printer & __runErrPrinter (),
+        PutStrLn printer -> consume @String @dualof OutStream (\s:String -> __putStrErr (s ++ "\n")) printer & __runErrPrinter (),
         Close       _       -> ()
     }
 
