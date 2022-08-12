@@ -444,3 +444,23 @@ runReadFile fh ch =
         IsEOF   ch -> runReadFile fh $ send (__isEOF fh       ) ch,
         Close   _  -> __closeFile fh
     }
+
+writeFile : FilePath -> String -> ()
+writeFile fp content = openWriteFile fp
+                     & hPutStr content
+                     & hCloseOut
+
+appendFile : FilePath -> String -> ()
+appendFile fp content = openAppendFile fp
+                     & hPutStr content
+                     & hCloseOut
+
+readFile : FilePath -> String
+readFile fp = __fullRead $ openReadFile fp
+
+__fullRead : InStream -> String
+__fullRead ch = 
+  let (isEOF, ch) = hIsEOF ch in
+  if isEOF
+  then hCloseIn ch; ""
+  else let (line, ch) = hGetLine ch in line ++ "\n" ++ (__fullRead ch)
