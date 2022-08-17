@@ -78,8 +78,7 @@ tabuadaServer c result =
           tabuadaServer c l
       },
 
-    Fim c ->
-      ()
+    Fim c -> close c
   }
 
 -- Funcao de "entrada" para a "verdadeira" funcao

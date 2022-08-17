@@ -12,14 +12,15 @@ channel or with asynchronous channels. In a typical synchronous
 
 writer : !Char;End -> !Bool;End 1-> ()
 writer w1 w2 =
-  send 'c' w1 & close;
-  send False w2 & close
+  let w1 = send 'c' w1 in 
+  let w2 = send False w2 in 
+  close w1; close w2 
 
 reader : ?Char;End -> ?Bool;End 1-> Bool
 reader r1 r2 =
   let (x, r2) = receive r2 in
   let (_, r1) = receive r1 in
-  close r2; close r1; 
+  close r1; close r2; 
   x
 
 main : Bool

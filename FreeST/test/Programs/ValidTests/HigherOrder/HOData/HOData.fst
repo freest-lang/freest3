@@ -16,7 +16,7 @@ aTree =
 main : Tree
 main =
   let (w, r) = new !Tree;End in
-  fork $ send aTree w;
+  fork (send aTree w & close);
   let (t, r) = receive r in 
   close r; 
   t

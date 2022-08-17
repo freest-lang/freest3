@@ -17,8 +17,8 @@ sendTree t c =
       -- right
       let (w2, r2) = new WTree in
       let c = send r2 c in
-      close c;
-      sendTree t2 w2
+      sendTree t2 w2;
+      close c
   }
 
 receiveTree : RTree -> Tree
@@ -53,6 +53,6 @@ aTree =
 
 main : Tree
 main =
-  let (w, r) = new WTree;End in
-  sendTree aTree w; 
+  let (w, r) = new WTree in
+  fork @() (sendTree aTree w); 
   receiveTree r
