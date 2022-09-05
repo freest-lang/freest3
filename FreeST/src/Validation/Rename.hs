@@ -30,15 +30,12 @@ import           Syntax.Program                 ( noConstructors )
 import qualified Syntax.Kind                   as K
 import qualified Syntax.Type                   as T
 import qualified Syntax.Expression             as E
---import           Syntax.Program
--- import           Validation.Terminated          ( terminated )
 import qualified Validation.Substitution       as Subs
                                                 ( subs
                                                 , unfold
                                                 )
 import           Util.Error                     ( internalError )
 import           Util.FreestState
-import           Util.PreludeLoader             ( userDefined )
 import qualified Data.Map.Strict               as Map
 import           Control.Monad.State
 
@@ -52,7 +49,7 @@ renameState = do
 
   -- VarEnv + ExpEnv, together
   vEnv <- getVEnv
-  tMapWithKeyM_ renameFun (userDefined (noConstructors tEnv vEnv))
+  tMapWithKeyM_ renameFun ((noConstructors tEnv vEnv))
 
 renameFun :: Variable -> T.Type -> FreestState ()
 renameFun f t = do

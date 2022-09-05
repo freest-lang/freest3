@@ -12,13 +12,16 @@ import           Interpreter.Eval ( evalAndPrint )
 import           Parse.Parser ( parseProgram, parseAndImport )
 import           Util.CmdLine
 import           Util.FreestState
-import           Util.PreludeLoader ( prelude )
+import           Syntax.Base
+import           Syntax.Program (noConstructors, VarEnv)
+import           Util.Error
 import           Util.Warning
 import           Validation.Rename ( renameState )
 import           Validation.TypeChecking ( typeCheck )
 
-import           Control.Monad.State ( when, execState )
+import           Control.Monad.State ( when, unless, execState )
 import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
 import           Paths_FreeST ( getDataFileName )
 import           System.Exit ( die )
 
@@ -29,11 +32,16 @@ checkAndRun :: RunOpts -> IO ()
 checkAndRun runOpts = do
   -- | Prelude
   preludeFp <- getDataFileName "Prelude.fst"
-  let s0 = initialState {varEnv = prelude, runOpts=runOpts{runFilePath=preludeFp}}
-  s1 <- preludeHasErrors (runFilePath runOpts) s0 <$> (parseProgram s0)
+  let s0 = initialState {runOpts=runOpts{runFilePath=preludeFp}}
+  s1 <- preludeHasErrors (runFilePath runOpts) s0 <$> parseProgram s0
+
+  -- | Prelude entries without body are builtins  
+  let venv = Map.keysSet (noConstructors (typeEnv s1) (varEnv s1))
+  let penv = Map.keysSet (parseEnv s1)
+  let bs = Set.difference venv penv
 
   -- | Parse
-  s2 <- parseAndImport s1{runOpts}
+  s2 <- parseAndImport s1{builtins=bs, runOpts}
   when (hasErrors s2) (die $ getErrors s2)
 
  -- | Solve type declarations and dualof operators
@@ -48,6 +56,15 @@ checkAndRun runOpts = do
   when (not (quietmode runOpts) && hasWarnings s5) (putStrLn $ getWarnings s5)
   when (hasErrors s5)  (die $ getErrors s5)
 
+ -- | Check whether a given function signature has a corresponding
+ --   binding
+  let venv = Map.keysSet (noConstructors (typeEnv s5) (varEnv s5))
+  let p = Map.keysSet (prog s5)
+  let bs = Set.difference (Set.difference venv p) (builtins s5)
+  
+  unless (Set.null bs) $
+    die $ getErrors $ Set.foldr (noSig (varEnv s5)) initialState bs
+  
  -- | Check if main was left undefined, eval and print result otherwise
   let m = getMain runOpts
   when (m `Map.member` varEnv s5)
@@ -56,6 +73,9 @@ checkAndRun runOpts = do
     (prog s5 Map.! m))
 
   where
+    noSig :: VarEnv -> Variable -> FreestS -> FreestS
+    noSig venv f acc = acc { errors = SignatureLacksBinding (getSpan f) f (venv Map.! f) : errors acc }
+      
     preludeHasErrors :: FilePath -> FreestS -> FreestS -> FreestS
     preludeHasErrors f s0 s1
       | hasErrors s1 = s0 { warnings = NoPrelude f : warnings s0 }

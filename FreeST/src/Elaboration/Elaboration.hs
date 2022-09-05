@@ -5,7 +5,7 @@ module Elaboration.Elaboration
   )
 where
 
-import           Elaboration.Elaborate 
+import           Elaboration.Elaborate
 import qualified Elaboration.Match as Match
 import           Elaboration.ResolveDuality as Dual
 import           Elaboration.ResolveEquations
@@ -16,12 +16,11 @@ import           Syntax.Program ( VarEnv )
 import qualified Syntax.Type as T
 import           Util.Error
 import           Util.FreestState
-import           Util.PreludeLoader ( userDefined )
 
 import           Data.Functor
-import           Data.Maybe
 import qualified Data.Map.Strict as Map
-import qualified Data.Set        as Set
+import           Data.Maybe
+import qualified Data.Set as Set
 
 elaboration :: FreestState ()
 elaboration = do
@@ -63,7 +62,7 @@ elaboration = do
 -- | Elaboration over environments (VarEnv + ParseEnv)
 
 elabVEnv :: VarEnv -> FreestState ()
-elabVEnv = tMapWithKeyM_ (\pv t -> addToVEnv pv =<< elaborate t) . userDefined
+elabVEnv = tMapWithKeyM_ (\pv t -> addToVEnv pv =<< elaborate t)
 
 elabPEnv :: ParseEnv -> FreestState ()
 elabPEnv = tMapWithKeyM_ (\x (ps, e) -> addToPEnv x ps =<< elaborate e)

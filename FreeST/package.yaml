@@ -45,13 +45,15 @@ library:
     - Syntax.Type
     - Syntax.Expression
     - Syntax.Kind
+    - Syntax.Program
     - Parse.ParseUtils
     - Parse.Read
     - Parse.Unparser
     - Util.Error
 #    - Util.PrettyError
     - Util.FreestState
-    - Util.PreludeLoader
+    - Util.CmdLine
+#    - Util.PreludeLoader
     - Parse.Lexer 
     - Parse.Parser
     - Validation.Subkind

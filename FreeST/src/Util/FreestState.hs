@@ -20,7 +20,7 @@ import           Syntax.Expression
 import           Syntax.Kind
 import           Syntax.Program
 import qualified Syntax.Type as T
-import           Util.Warning
+
 -- import           Util.WarningMessage ()
 -- import           Util.PrettyWarning ()
 import           Util.Error
@@ -48,40 +48,45 @@ type ParseEnvPat = Map.Map Variable [([Pattern], Exp)]
 
 type ParseEnvChoices = [Variable]
 
+type Builtins = Set.Set Variable
+
 data FreestS = FreestS {
-    runOpts         :: RunOpts
-  , varEnv          :: VarEnv
-  , prog            :: Prog
-  , typeEnv         :: TypeEnv
-  , typenames       :: TypeOpsEnv
-  , warnings        :: Warnings
-  , errors          :: Errors
-  , nextIndex       :: Int
-  , parseEnv        :: ParseEnv        -- "discarded" after elaboration
+    runOpts    :: RunOpts
+  , varEnv     :: VarEnv
+  , prog       :: Prog
+  , typeEnv    :: TypeEnv
+  , typenames  :: TypeOpsEnv
+  , warnings   :: Warnings
+  , errors     :: Errors
+  , nextIndex  :: Int
+  , parseEnv   :: ParseEnv -- "discarded" after elaboration
   , parseEnvPat     :: ParseEnvPat     -- for pattern elimination
   , parseEnvChoices :: ParseEnvChoices -- for choices conflicting with data type constructors
-  , moduleName      :: Maybe FilePath
-  , imports         :: Imports
-  } -- deriving Show -- FOR DEBUG purposes
+  , moduleName :: Maybe FilePath
+  , imports    :: Imports
+  , builtins    :: Builtins
+  } deriving Show -- FOR DEBUG purposes
+
 
 type FreestState = State FreestS
 
 -- | Initial State
 
 initialState :: FreestS
-initialState = FreestS { runOpts         = defaultOpts
-                       , varEnv          = Map.empty
-                       , prog            = Map.empty
-                       , typeEnv         = Map.empty
-                       , typenames       = Map.empty
-                       , warnings        = []
-                       , errors          = []
-                       , nextIndex       = 0
-                       , parseEnv        = Map.empty
+initialState = FreestS { runOpts    = defaultOpts
+                       , varEnv     = Map.empty
+                       , prog       = Map.empty
+                       , typeEnv    = Map.empty
+                       , typenames  = Map.empty
+                       , warnings   = []
+                       , errors     = []
+                       , nextIndex  = 0
+                       , parseEnv   = Map.empty
                        , parseEnvPat     = Map.empty
                        , parseEnvChoices = []
-                       , moduleName      = Nothing
-                       , imports         = Set.empty
+                       , moduleName = Nothing
+                       , imports    = Set.empty
+                       , builtins   = Set.empty
                        }
 
 -- | Parse Env
