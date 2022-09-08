@@ -39,7 +39,7 @@ init : Int -> dualof FTP -> Diverge
 init n pid =
   let (r, w) = new dualof FTPThread in
   let state = new *?File in
-  parallel n (\ _:() -> ftpThread state w);
+  parallel @() n (\ _:() -> ftpThread state w);
   ftpd pid r
 
 -- |FTP demon: wait for a client, wait for a thread;
@@ -115,11 +115,11 @@ main : Diverge
 main =
   let (ftpc, ftps) = new FTP in
   -- A few clients
-  fork $ putClient ftpc 27;
-  fork $ getClient ftpc;
-  fork $ getClient ftpc;
-  fork $ putClient' ftpc 93 66;
-  fork $ putgetClient ftpc 14;
-  fork $ putClient ftpc 59;
+  fork (\_:() 1-> putClient ftpc 27);
+  fork (\_:() 1-> getClient ftpc);
+  fork (\_:() 1-> getClient ftpc);
+  fork (\_:() 1-> putClient' ftpc 93 66);
+  fork (\_:() 1-> putgetClient ftpc 14);
+  fork (\_:() 1-> putClient ftpc 59);
   -- A server with three threads
   init 3 ftps

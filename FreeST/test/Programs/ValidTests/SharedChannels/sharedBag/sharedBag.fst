@@ -18,7 +18,7 @@ bagServer : State -> dualof SharedBag -> Diverge
 bagServer state serverChannel =
   let (clientSide, serverSide) = new Bag in
   send clientSide serverChannel;
-  fork $ handleClient state serverSide;
+  fork (\_:() 1-> handleClient state serverSide);
   bagServer state serverChannel
 
 -- | Handling a linear interaction with a particular client
@@ -54,8 +54,8 @@ get q =
 main : Int
 main =
   let (clientSide, serverSide) = new SharedBag in
-  fork $ emptyBagServer serverSide;
-  fork $ put 7 clientSide;
-  fork $ put 5 clientSide;
-  fork $ put 1 clientSide;
+  fork (\_:() 1-> emptyBagServer serverSide);
+  fork (\_:() 1-> put 7 clientSide);
+  fork (\_:() 1-> put 5 clientSide);
+  fork (\_:() 1-> put 1 clientSide);
   get clientSide + get clientSide

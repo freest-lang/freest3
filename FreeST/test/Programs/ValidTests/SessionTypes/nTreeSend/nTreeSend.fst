@@ -1,7 +1,7 @@
 main : Tree
 main =
   let (client, server) = new TreeChannel;End in
-  fork @() $ clientSendTree client;
+  fork @() (\_:()1-> clientSendTree client);
   let (t, server) = receiveTree @End server in
   close server;
   t

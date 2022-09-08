@@ -1,7 +1,7 @@
 main : Bool
 main =
   let (s, r) = new !Int;End in
-  fork @() (sender s 5);
+  fork @() (\_:()1-> sender s 5);
   if (div (f r) 2) == 5 then
     True
   else

@@ -24,5 +24,5 @@ rcvInt acc c =
 main : Int
 main =
   let (w,r) = new DD in
-  fork @() $ sendInt 0 w; 
+  fork @() (\_:()1-> sendInt 0 w); 
   rcvInt 0 r

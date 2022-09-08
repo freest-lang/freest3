@@ -1,7 +1,7 @@
 main : Bool
 main =
   let (w, r) = new ?Int;!Bool;End in
-  let x = fork @() (client w) in
+  let x = fork @() (\_:()1-> client w) in
   let c1 = send (-5) r in
   let (b, c2) = receive c1 in 
   close c2;

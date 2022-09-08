@@ -11,5 +11,5 @@ write c n =
 main : Char
 main =
   let (r, w) = new !Int;End in
-  fork @() (let (_, w) = receive w in close w);
+  fork @() (\_:()1-> let (_, w) = receive w in close w);
   write r 0

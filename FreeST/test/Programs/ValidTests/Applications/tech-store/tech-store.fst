@@ -17,7 +17,7 @@ type Printer : 1S = +{ PrintBool    : !Bool  ; Printer
 {- server -}
 
 initStdout : StdOut
-initStdout = forkWith @StdOut runStdout
+initStdout = forkWith @StdOut @() runStdout
 
 runStdout  : dualof StdOut 1-> ()
 runStdout =
@@ -75,7 +75,7 @@ type Counter : *S = *?Int
 
 initCounter : Counter
 initCounter = 
-    forkWith @Counter (\ch:*!Int 1-> runCounter 0 ch)
+    forkWith @Counter @() (\ch:*!Int 1-> runCounter 0 ch)
 
 runCounter : Int -> dualof Counter -> ()
 runCounter i counter =
@@ -108,7 +108,7 @@ runTailNode : forall a:1T . dualof (rec x:1S . ?a; ?x; End) -> dualof *!a 1-> ()
 runTailNode next tail =
     let i = receive_ @a tail in
     let next' = 
-        forkWith @dualof (rec x:1S . ?a; ?x; End) 
+        forkWith @dualof (rec x:1S . ?a; ?x; End) @()
             (\c:(rec x:1S . ?a; ?x; End) 1-> send i next & send c & close) 
         in
     runTailNode @a next' tail 
@@ -118,8 +118,8 @@ runTailNode next tail =
 initQueue : forall a:1T . () -> (*?a, *!a)
 initQueue _ =
     let (internalC, internalS) = new (rec x:1S . ?a; ?x; End) in
-    ( forkWith @*?a (runHeadNode @a internalC)
-    , forkWith @*!a (runTailNode @a internalS)
+    ( forkWith @*?a @() (runHeadNode @a internalC)
+    , forkWith @*!a @() (runTailNode @a internalS)
     )
 
 enqueue : forall a:1T . a -> (*?a, *!a) 1-> ()
@@ -147,7 +147,7 @@ type ListC : 1S = +{ Append: !ProductId; !Issue; !RmaNumber; ListC
 {- list server -}
 
 initList : StdOut -> SharedList
-initList stdout = forkWith @SharedList (runListServer stdout)
+initList stdout = forkWith @SharedList @() (runListServer stdout)
 
 runListServer : StdOut -> dualof SharedList 1-> ()
 runListServer stdout ch =
@@ -270,7 +270,7 @@ type MaybeValueC : 1S = &{ JustVal: dualof ValueC
 {- map server -}
 
 initMapWith : Map -> SharedMap
-initMapWith map = forkWith @SharedMap (runMapServer map)
+initMapWith map = forkWith @SharedMap @() (runMapServer map)
 
 runMapServer : Map -> dualof SharedMap 1-> ()
 runMapServer map ch = 
@@ -341,7 +341,7 @@ initBank stdout =
     -- runWith [Bank] $
     --     \bank:dualof Bank 1-> parallel 3 (bankWorker bank)
     let (c, s) = new Bank in
-    parallel 2 (\_:() -> bankWorker stdout s);
+    parallel @() 2 (\_:() -> bankWorker stdout s);
     c
 
 bankWorker : StdOut -> dualof Bank -> ()
@@ -511,14 +511,14 @@ setupStore stdout bank =
     -- buy
     let buyQueue = initQueue @dualof BuyC () in
     let stockMap = initMapWith initialStock in
-    parallel 3 (\_:() -> buyWorker buyQueue stockMap bank);
+    parallel @() 3 (\_:() -> buyWorker buyQueue stockMap bank);
     -- rma
     let rmaQueue = initQueue @dualof RmaC () in
     let counter = initCounter in
     let rmaList = initList stdout in
-    parallel  1 (\_:() -> rmaWorker rmaQueue counter rmaList);
+    parallel @()  1 (\_:() -> rmaWorker rmaQueue counter rmaList);
     -- store front
-    forkWith @TechStore $ runStoreFront buyQueue rmaQueue
+    forkWith @TechStore @() $ runStoreFront buyQueue rmaQueue
 
 initialStock : Map
 initialStock = 
@@ -579,7 +579,7 @@ main =
     --
     let bank = initBank stdout in
     let store = setupStore stdout bank in
-    fork $ client0 stdout store;
-    fork $ client0 stdout store;
-    fork $ client1 stdout store;
+    fork (\_:() 1-> client0 stdout store);
+    fork (\_:() 1-> client0 stdout store);
+    fork (\_:() 1-> client1 stdout store);
     diverge 

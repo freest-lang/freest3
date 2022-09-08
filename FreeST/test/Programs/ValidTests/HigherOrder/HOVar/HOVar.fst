@@ -1,7 +1,7 @@
 f : ∀a . a -> (a, a)
 f x =
   let (r, w) = new ?a;End in
-  fork (send x w & close);
+  fork (\_:()1-> send x w & close);
   let (y, r) = receive r in
   close r; 
   (y, y)

@@ -41,6 +41,6 @@ boe cakeStore =
 main : ()
 main =
     let (c, s) = new CakeStore in
-    fork $ ami c;
-    fork $ boe c;
+    fork (\_:() 1-> ami c);
+    fork (\_:() 1-> boe c);
     runCakeStore s True

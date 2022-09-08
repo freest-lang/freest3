@@ -20,7 +20,7 @@ runTailNode : dualof Internal -> dualof Tail 1-> ()
 runTailNode next tail =
     let i = receive_ @Int tail in
     let (prev', next') = new Internal in
-    fork $ (send i next & send prev' & close);
+    fork (\_:()1-> send i next & send prev' & close);
     runTailNode next' tail
     -- Internal error at Validation.Rename.rename: dualof
     -- runTailNode (fork_ [Internal] (λ c:dualof Internal -> send c (send i next))) tail
@@ -32,8 +32,8 @@ type Queue = (Head, Tail)
 initQueue : Queue
 initQueue =
     let (internalC, internalS) = new Internal in
-    (forkWith @Head (runHeadNode internalC),
-     forkWith @Tail (runTailNode internalS))
+    (forkWith @Head @() (runHeadNode internalC),
+     forkWith @Tail @() (runTailNode internalS))
 
 enqueue : Int -> Queue -> ()
 enqueue i queue = 
@@ -50,7 +50,7 @@ type Counter : *S = *?Int
 initCounter : Counter
 initCounter = 
     let (counterC, counterS) = new Counter in
-    fork $ runCounter 0 counterS;
+    fork (\_:() 1-> runCounter 0 counterS);
     counterC
 
 runCounter : Int -> dualof Counter -> ()
@@ -65,7 +65,7 @@ main =
     let queue   = initQueue in
     let counter = initCounter in
     -- writer-reader concurrency, no writter-writer nor reader-reader concurrency
-    parallel 10 $ (\_:() -> enqueue (receive_ @Int counter) queue);
+    parallel @() 10 $ (\_:() -> enqueue (receive_ @Int counter) queue);
     repeat @()  10 $ (\_:() -> printIntLn (dequeue queue))
     -- writer-reader, writter-writer and reader-reader concurrency
     -- parallel [()] 10 $ (\_:() -> enqueue (receiveUn[Int] counter) queue);

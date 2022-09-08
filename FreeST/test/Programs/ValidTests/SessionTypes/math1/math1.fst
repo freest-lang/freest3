@@ -18,7 +18,7 @@ mathServer c =
 main : Int
 main =
   let (w,r) = new MathClient in
-  fork @() $ mathServer r;
+  fork @() (\_:()1-> mathServer r);
   let (x, c) = 
     select Plus w
     & send 5 

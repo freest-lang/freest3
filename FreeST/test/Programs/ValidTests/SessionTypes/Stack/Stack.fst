@@ -46,6 +46,6 @@ aStackClient c =
 main : Int
 main =
   let (r, w) = new EStack;End in
-  fork (eStack @End r & close);
+  fork @() (\_:()1-> eStack @End r & close);
   aStackClient w
     

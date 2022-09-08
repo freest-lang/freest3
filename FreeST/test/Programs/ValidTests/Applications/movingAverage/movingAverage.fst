@@ -66,6 +66,6 @@ average3 x y z = (x + y + z) / 3
 
 main : ()
 main =
-  let r1 = forkWith @(?Int;?Int;FiniteInStream;End) writeValues in
-  let r2 = forkWith @FiniteInStream;End (readValues r1) in
+  let r1 = forkWith @(?Int;?Int;FiniteInStream;End) @() writeValues in
+  let r2 = forkWith @FiniteInStream;End @() (readValues r1) in
   collectValues @End r2 & close

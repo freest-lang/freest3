@@ -54,7 +54,7 @@ sortingServer xs c =
 main : ()
 main =
   let (w, r) = new OrderingChannel;End in
-  fork @() (sortingServer @End Nil r & snd @IntList @End & close);
+  fork @() (\_:()1-> sortingServer @End Nil r & snd @IntList @End & close);
   client w
 
 -- Quicksort.  Adapted from learnyouahaskell.com. The integer sorting

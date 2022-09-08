@@ -18,5 +18,5 @@ sumFives c =
 main : Int
 main =
   let (w, r) = new Chan in
-  let _ = fork @() (fives 32 w) in
+  let _ = fork @() (\_:()1-> fives 32 w) in
   sumFives r

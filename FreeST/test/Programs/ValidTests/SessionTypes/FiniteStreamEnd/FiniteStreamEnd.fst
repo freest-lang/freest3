@@ -23,5 +23,5 @@ foldServer sum c =
 main : Int
 main = 
     let (s, c) = new Fold in
-    fork (foldServer 0 s);
+    fork (\_:()1-> foldServer 0 s);
     foldClient 4 c

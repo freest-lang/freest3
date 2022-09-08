@@ -16,8 +16,8 @@ main =
   let unfunc = λ_:() -> send  @Int 5 in -- unfunc : () -> ∀b: 1S . !Int;b 1-> b
   let (s1, r1) = new !Int;End in
   let (s2, r2) = new !Int;End in
-  fork (unfunc () @End s1 & close);
-  fork (unfunc () @End s2 & close);
-  fork (let (x, r1) = receive r1 in close r1; printIntLn x);
+  fork @() (\_:()1-> unfunc () @End s1 & close);
+  fork @() (\_:()1-> unfunc () @End s2 & close);
+  fork @() (\_:()1-> let (x, r1) = receive r1 in close r1; printIntLn x);
   let (x, r2) = receive r2 in printIntLn x ;
   close r2

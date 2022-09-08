@@ -108,7 +108,7 @@ addToList i l =
 main : IntList
 main =
   let (r, w) = new TabuadaServer in
-  fork @() (initTabuadaServer r) ; 
+  fork @() (\_:()1-> initTabuadaServer r) ; 
   let (result, c) = select TabuadaSimples w 
                     & send 4 
                     & receiveList in

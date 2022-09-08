@@ -27,7 +27,7 @@ main, aList : List
 
 main =
   let (x, y) = new ListOut;End in
-  let _      = fork @() (sendList @End x aList & close) in
+  let _      = fork @() (\_:()1-> sendList @End x aList & close) in
   let (list, y) = rcvList @End y in
   close y;
   list

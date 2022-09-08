@@ -58,6 +58,6 @@ client2 ch =
 main : ()
 main =
     let (c, s) = new MathServer in
-    fork $ client1 c;
-    fork $ client2 c;
+    fork (\_:() 1-> client1 c);
+    fork (\_:() 1-> client2 c);
     runMathServer s

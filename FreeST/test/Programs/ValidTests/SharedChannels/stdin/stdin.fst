@@ -163,6 +163,6 @@ client2 stdin =
 main : ()
 main = 
     let (c, s) = new StdIn in
-    fork $ client1 c;
-    fork $ client2 c;
+    fork (\_:() 1-> client1 c);
+    fork (\_:() 1-> client2 c);
     runStdIn s

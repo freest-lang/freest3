@@ -12,5 +12,5 @@ receiveInt c =
 main : Int
 main =
   let (w,r) = new dualof !Int;End in
-  fork @() $ sendInt r ;
+  fork @() (\_:()1-> sendInt r);
   receiveInt w

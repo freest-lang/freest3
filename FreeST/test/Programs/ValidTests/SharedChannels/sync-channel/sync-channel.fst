@@ -40,7 +40,7 @@ forkNClients i ch =
     if i == 0
     then ()
     else 
-        fork $ client i ch; 
+        fork (\_:() 1-> client i ch); 
         forkNClients (i-1) ch
 
 nServers : Int

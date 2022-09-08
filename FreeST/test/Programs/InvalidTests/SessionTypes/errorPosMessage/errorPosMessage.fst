@@ -2,7 +2,7 @@
 main : Int
 main =
   let (w, r) = new !Bool in
-  fork @() (f w);
+  fork @() (\_:()-> f w);
   let (x, c) = f1 r in
   close c;
   x

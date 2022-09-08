@@ -17,6 +17,6 @@ consume c =
 main : Diverge
 main =
   let (p, c) = new Omega in
-    fork $ consume c;
+    fork (\_:() 1-> consume c);
     produce p
   

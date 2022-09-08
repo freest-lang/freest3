@@ -57,5 +57,5 @@ size s n =
 main : Int
 main =
   let (c, s) = new StreamClient in
-  fork @() (size s 0);
+  fork @() (\_:()1-> size s 0);
   client c

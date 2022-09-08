@@ -81,5 +81,5 @@ err = -1
 main : Int
 main =
   let (c, s) = new StreamClient in
-  let _ = fork @() (evaluate s Nil) in
+  let _ = fork @() (\_:()1-> evaluate s Nil) in
   client c

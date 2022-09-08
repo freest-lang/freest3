@@ -61,5 +61,5 @@ server' c =
 main : ()
 main =
   let (w, r) = new S0;End in
-  fork @() $ client 25 w;
+  fork @() (\_:()1-> client 25 w);
   server r

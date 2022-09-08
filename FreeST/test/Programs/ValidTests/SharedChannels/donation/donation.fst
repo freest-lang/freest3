@@ -35,9 +35,9 @@ helpSavingTheWolf donationServer =
         Accepted p ->                                           -- if accepted, we have three benefactors
             let (d, p) = receive p in
             close p;
-            fork $ donate d "Benefactor1" "2345" 5;
-            fork $ donate d "Benefactor2" "1234" 20;
-                   donate d "Benefactor3" "1004" 10,
+            fork (\_:()1-> donate d "Benefactor1" "2345" 5);
+            fork (\_:()1-> donate d "Benefactor2" "1234" 20);
+            donate d "Benefactor3" "1004" 10,
         Denied p ->                                             -- otherwise, print the reason
             let (reason, p) = receive p in 
             close p;
@@ -63,7 +63,7 @@ donationServer : DonationS -> ()
 donationServer donationService =
     let (p1, p2) = new Donation in                      -- create a channel for a new donation campaign
     let donationService = send p1 donationService in    -- send one end; keep the other (p2)
-    fork $ setup p2 "Help me" 2000;                     -- call with default values
+    fork (\_:() 1-> setup p2 "Help me" 2000);           -- call with default values
     donationServer donationService                      -- serve another client
 
 promotion : dualof Promotion -> ()
@@ -98,7 +98,7 @@ setup p title date =
 main : ()
 main = 
     let (ps1, ps2) = new DonationS in  -- create a Online Donation channel
-    fork $ helpSavingTheWolf ps2;      -- let the whole world know the other
-    fork $ helpSavingTheWolf ps2;
-    fork $ helpSavingTheWolf ps2;
+    fork (\_:() 1-> helpSavingTheWolf ps2);      -- let the whole world know the other
+    fork (\_:() 1-> helpSavingTheWolf ps2);
+    fork (\_:() 1-> helpSavingTheWolf ps2);
     donationServer ps1                 -- send one end to the Donation Server

@@ -54,5 +54,5 @@ aTree =
 main : Tree
 main =
   let (w, r) = new WTree in
-  fork @() (sendTree aTree w); 
+  fork @() (\_:()1-> sendTree aTree w); 
   receiveTree r
