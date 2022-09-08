@@ -221,6 +221,7 @@ checkAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
 -- checkAgainst kEnv (App p e1 e2) u = do
 --   t <- synthetise kEnv e2
 --   checkAgainst kEnv e1 (Fun p Un/Lin t u)
+-- Here we are checking a lin/un arrows against linear functions  
 checkAgainst kEnv e (T.Arrow _ Lin t u) = do 
   (t', u') <- Extract.function e =<< synthetise kEnv e
   checkEquivTypes e kEnv t' t 
