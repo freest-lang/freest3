@@ -10,10 +10,10 @@ type CreditCard = String
 
 -- type Promotion : *S = *?(String, CreditCard, Int)
 type Promotion  : *S = *?Promotion'
-type Promotion' : 1S = !String; !CreditCard; !Int
+type Promotion' : 1S = !String; !CreditCard; !Int; End 
 
-type Decision : 1S = &{ Accepted: ?Promotion
-                      , Denied  : ?String
+type Decision : 1S = &{ Accepted: ?Promotion; End
+                      , Denied  : ?String   ; End
                       }
 
 type DonationS : *S = *!Donation
@@ -33,20 +33,22 @@ helpSavingTheWolf donationServer =
     let p = select Commit p in                                  -- commit once happy
     match p with {                                              -- wait for the outcome
         Accepted p ->                                           -- if accepted, we have three benefactors
-            let (p, _) = receive p in
-            fork $ donate p "Benefactor1" "2345" 5;
-            fork $ donate p "Benefactor2" "1234" 20;
-                   donate p "Benefactor3" "1004" 10,
+            let (d, p) = receive p in
+            close p;
+            fork $ donate d "Benefactor1" "2345" 5;
+            fork $ donate d "Benefactor2" "1234" 20;
+                   donate d "Benefactor3" "1004" 10,
         Denied p ->                                             -- otherwise, print the reason
-            let (reason, _) = receive p in 
+            let (reason, p) = receive p in 
+            close p;
             printStringLn reason
     }
 
 donate : Promotion -> String -> CreditCard -> Int -> ()
 donate p donor ccard amount =
     -- let _ = send (donor, ccard, amount) p in ()
-    let (p', _) = receive p in
-    let _ = send donor p' & send ccard & send amount in ()
+    let (p, _) = receive p in
+    send donor p & send ccard & send amount & close
 
 
 -- 3. The bank that charges credit cards
@@ -73,6 +75,7 @@ promotion p =
     let (donor , p') = receive p' in
     let (ccard , p') = receive p' in
     let (amount, p') = receive p' in
+    close p';
     bank ccard amount;
     promotion p
 
@@ -83,10 +86,10 @@ setup p title date =
         SetTitle p -> let (t, p) = receive p in setup p t     date,
         Commit   p -> if date < 2013
                       then 
-                        let _ = select Denied   p & send "We can only accept 2013 donations\n" in ()
+                        select Denied   p & send "We can only accept 2013 donations\n" & close
                       else 
                         let (c, s) = new Promotion in
-                        let _ = select Accepted p & send c in
+                        select Accepted p & send c & close ;
                         promotion s
     }
 

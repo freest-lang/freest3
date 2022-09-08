@@ -22,8 +22,8 @@ Structure:
 type FiniteOutStream:1S = +{More: !Int;FiniteOutStream, Enough: Skip}
 type FiniteInStream:1S = dualof FiniteOutStream
 
-writeValues : !Int;!Int;FiniteOutStream 1-> ()
-writeValues c = send 1 c & send 2 & writeAll @() 3
+writeValues : !Int;!Int;FiniteOutStream;End 1-> ()
+writeValues c = send 1 c & send 2 & writeAll @End 3 & close
 
 writeAll : ∀ a:1S . Int -> FiniteOutStream;a -> a
 writeAll i c =
@@ -33,21 +33,22 @@ writeAll i c =
      writeAll @a (i + 1)
   else select Enough c
 
-readValues : ?Int;?Int;FiniteInStream -> FiniteOutStream 1-> ()
+readValues : ?Int;?Int;FiniteInStream;End -> FiniteOutStream;End 1-> ()
 readValues from to =
   let (x, from) = receive from in
   let (y, from) = receive from in
-  readAll @Skip x y from to & sink @Skip
+  let (x, y) = readAll @End @End x y from to in 
+  close x; close y
 
-readAll : ∀ a:1S . Int -> Int -> FiniteInStream;a -> FiniteOutStream 1-> a
+readAll : ∀ a:1S b:1S . Int -> Int -> FiniteInStream;a -> FiniteOutStream;b 1-> (a, b)
 readAll x y from to =
   match from with {
     More from ->
       let (z, from) = receive from in
       select More to &
       send (average3 x y z) &
-      readAll @a y z from,
-    Enough from -> select Enough to ; from
+      readAll @a @b y z from,
+    Enough from -> (from, select Enough to)
   }
 
 collectValues : ∀ a:1S . FiniteInStream ; a -> a
@@ -63,8 +64,8 @@ collectValues c =
 average3 : Int -> Int -> Int -> Int
 average3 x y z = (x + y + z) / 3
 
-main : Skip
+main : ()
 main =
-  let r1 = forkWith @(?Int;?Int;FiniteInStream) writeValues in
-  let r2 = forkWith @FiniteInStream (readValues r1) in
-  collectValues @Skip r2
+  let r1 = forkWith @(?Int;?Int;FiniteInStream;End) writeValues in
+  let r2 = forkWith @FiniteInStream;End (readValues r1) in
+  collectValues @End r2 & close

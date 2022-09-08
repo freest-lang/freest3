@@ -1,6 +1,8 @@
 data List = Nil | Cons Char List
+type InCharStream  : 1S = &{Done: Skip, More: ?Char;InCharStream}
+type OutCharStream : 1S = dualof InCharStream
 
-server : forall α : 1S . (rec x: 1S.&{Done: Skip, More: ?Char;x});α -> (List, α)
+server : forall α : 1S . InCharStream;α -> (List, α)
 server c =
   match c with {
     More c ->
@@ -11,7 +13,7 @@ server c =
       (Nil, c)
   }
 
-client : forall α : 1S . List -> (rec x: 1S.+{Done: Skip, More: !Char;x});α -> α
+client : forall α : 1S . List -> OutCharStream;α -> α
 client l c =
   case l of {
     Nil ->
@@ -29,7 +31,8 @@ hello, main : List
 hello = Cons 'H' (Cons 'e' (Cons 'l' (Cons 'l' (Cons 'o' Nil))))
 
 main = 
-  let (c, s) = new (rec x: 1S.+{Done: Skip, More: !Char;x}) in
-  let x = fork @Skip $ client @Skip hello c in
-  let (res, c) = server @Skip s in
+  let (c, s) = new OutCharStream;End in
+  let x = fork @() $ (client @End hello c & close) in
+  let (res, c) = server @End s in
+  close c;
   res

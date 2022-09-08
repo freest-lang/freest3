@@ -88,6 +88,8 @@ bisimPair n = oneof
   , pairPair bisimPair n
   -- The various session types constructors
   , skipPair
+  , endPair
+  , endTPair
   , semiPair bisimPair n
   , messagePair bisimPair n
   , choicePair bisimPair n
@@ -97,6 +99,7 @@ bisimPair n = oneof
     -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
   , skipT n
   , tSkip n
+  , endT n 
   , distrib n
   , assoc n
   , commut n
@@ -113,6 +116,16 @@ bisimPair n = oneof
 
 skipPair :: Gen (T.Type, T.Type)
 skipPair = return (T.Skip pos, T.Skip pos)
+
+endPair :: Gen (T.Type, T.Type)
+endPair = return (T.End pos, T.End pos)
+
+endTPair :: Gen (T.Type, T.Type)
+endTPair = do
+  t <- arbitrary
+  u <- arbitrary
+  return ( T.Semi pos (T.End pos) t
+         , T.Semi pos (T.End pos) u)
 
 intPair :: Gen (T.Type, T.Type)
 intPair = return (T.Int pos, T.Int pos)
@@ -198,6 +211,11 @@ tSkip :: Int -> Gen (T.Type, T.Type)
 tSkip n = do
   (t, u) <- bisimPair (n `div` 2)
   return (T.Semi pos t (T.Skip pos), u)
+
+endT :: Int -> Gen (T.Type, T.Type)
+endT n = do 
+  (t, u) <- bisimPair (n `div` 2)
+  return (T.Semi pos (T.End pos) t, T.End pos)
 
 distrib :: Int -> Gen (T.Type, T.Type)
 distrib n = do

@@ -13,7 +13,7 @@ exactly the same, but in fact 'select Push' works on two distinct types: EStack
 and NEStack. They both feature a Push-labelled field.
 -}
 
-type  EStack : 1S = &{Push: ?Int; NEStack; EStack,  End: Skip}
+type  EStack : 1S = &{Push: ?Int; NEStack; EStack,  Stop: Skip}
 type NEStack : 1S = &{Push: ?Int; NEStack; NEStack, Pop: !Int}
 
 -- Stack server. The empty stack case
@@ -21,7 +21,7 @@ eStack : forall a: 1S . EStack;a -> a
 eStack c =
   match c with {
     Push c -> let (x, c) = receive c in eStack @a (neStack @(EStack ; a) x c),
-    End  c -> c
+    Stop  c -> c
   }
 
 -- Stack server. The non-empty stack case
@@ -55,7 +55,7 @@ reverseThree c =
   pop     @(dualof NEStack ; dualof NEStack ; dualof EStack) &
   pop     @(dualof NEStack ; dualof EStack) &
   pop     @(dualof EStack) &
-  select End
+  select Stop
 
 -- A recursive client working on a nonempty stack
 reverseNE : forall a: 1S . Int -> dualof NEStack ; a -> dualof NEStack ; a
@@ -68,17 +68,17 @@ reverseNE n c =
     pop  @(dualof NEStack ; a)
 
 -- A generic client working on an empty stack
-reverseE : Int -> dualof EStack -> Skip
+reverseE : Int -> dualof EStack;End -> ()
 reverseE n c =
-  pushE  @Skip n c &
-  reverseNE  @(dualof EStack) (n-1) &
-  pop  @(dualof EStack) &
-  select End
+  pushE  @End n c &
+  reverseNE  @(dualof EStack;End) (n-1) &
+  pop  @(dualof EStack;End) &
+  select Stop & close
 
-main : Skip
+main : ()
 main =
-  let (r, w) = new EStack in
-  fork  @Skip $ eStack  @Skip r;
+  let (r, w) = new EStack;End in
+  fork  @() (eStack  @End r & close);
   reverseE 10 w
   -- reverseThree w
 

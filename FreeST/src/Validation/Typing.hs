@@ -105,6 +105,10 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkVar p "send" = do
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
   checkAgainst kEnv e1 u1
   return u2
+  -- Close e1
+synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "close" = do 
+  t <- Extract.end e =<< synthetise kEnv e
+  return $ T.Unit p 
   -- Fork e
 synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "fork" = do
   t <- synthetise kEnv e

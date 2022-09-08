@@ -3,7 +3,8 @@ id' x = x
 
 main : Int
 main =
-  let (w, r) = id' @(!Int, ?Int) (new !Int) in
-  let x = fork @Skip (send 5 w) in
+  let (w, r) = id' @(!Int;End, ?Int;End) (new !Int;End) in
+  let x = fork @() (send 5 w & close) in
   let (y, c) = receive r in
+  close c;
   y

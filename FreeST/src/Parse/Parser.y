@@ -49,6 +49,7 @@ import           System.FilePath
   Lambda   {TokenUpperLambda _}
   '@'      {TokenAt _}
   Skip     {TokenSkip _}
+  End      {TokenEnd _}
   '('      {TokenLParen _}
   ')'      {TokenRParen _}
   ','      {TokenComma _}
@@ -303,6 +304,7 @@ Type :: { T.Type }
   | '(' Type ',' TupleType ')'    {% mkSpanSpan $1 $5 >>= \s -> pure $ T.Pair s $2 $4 }
   -- Session types
   | Skip                          {% T.Skip `fmap` mkSpan $1 }
+  | End                           {% T.End `fmap` mkSpan $1 }
   | Type ';' Type                 {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Semi s $1 $3 }
   | Polarity Type %prec MSG       {% mkSpanFromSpan (fst $1) $2 >>= \s -> pure $ T.Message s (snd $1) $2 }                                 
   | ChoiceView '{' FieldList '}'  {% mkSpanFromSpan (fst $1) $4 >>= \s -> pure $ T.Almanac s (T.Choice (snd $1)) $3 } 

@@ -1,4 +1,4 @@
-type Sorter : 1S = +{Done: Skip, More: !Int ; ?Int; Sorter}
+type Sorter : 1S = +{Done: End, More: !Int ; ?Int; Sorter}
 
 -- first accepts the number of phases, the value in the node, the
 -- channel to the right and the channel where to announce the result
@@ -7,7 +7,8 @@ type Sorter : 1S = +{Done: Skip, More: !Int ; ?Int; Sorter}
 first : Int -> Int -> Sorter -> !Int 1-> Skip
 first n x right collect' =
   if n == 0
-  then let _ = select Done right in send x collect'
+  then select Done right & close ; 
+       send x collect'
   else let (min, right) = exchangeRight x right in
        first (n - 1) min right collect'
 
@@ -18,7 +19,7 @@ first n x right collect' =
 evenProcess : Int -> Int -> dualof Sorter -> Sorter 1-> !Int 1-> Skip
 evenProcess n x left right collect' =
   match left with {
-    Done left -> let _ = select Done right in send x collect',
+    Done left -> close left; select Done right & close ; send x collect',
     More left -> let (max, left) = exchangeLeft x left in
                  oddProcess (n - 1) max left right collect'
   }
@@ -30,7 +31,7 @@ evenProcess n x left right collect' =
 oddProcess : Int -> Int -> dualof Sorter -> Sorter 1-> !Int 1-> Skip
 oddProcess n x left right collect' =
   if n == 0
-  then let _ = select Done right in consume left ; send x collect'
+  then select Done right & close ; consume left ; send x collect'
   else let (min, right) = exchangeRight x right in
        evenProcess (n - 1) min left right collect'
 
@@ -40,7 +41,7 @@ oddProcess n x left right collect' =
 last : Int -> dualof Sorter -> !Int 1-> Skip
 last x left collect' =
   match left with {
-    Done left -> send x collect',
+    Done left -> close left; send x collect',
     More left -> let (max, left) = exchangeLeft x left in
                  last max left collect'
   }
@@ -62,7 +63,7 @@ exchangeLeft x left =
 consume : dualof Sorter -> ()
 consume c =
   match c with {
-    Done c -> (),
+    Done c -> close c,
     More c -> -- Should not happen
       let (_, c) = receive c in
       consume (send (-99) c)

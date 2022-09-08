@@ -5,7 +5,7 @@ type Reader : 1S = +{ ReadBool  : &{Just: ?Bool  , Nothing: Skip}; Reader
                     , ReadInt   : &{Just: ?Int   , Nothing: Skip}; Reader
                     , ReadChar  : &{Just: ?Char  , Nothing: Skip}; Reader
                     , ReadString: &{Just: ?String, Nothing: Skip}; Reader
-                    , Close     : Skip
+                    , Close     : End
                     }
 
 {-
@@ -14,7 +14,7 @@ type Reader : 1S = +{ ReadBool  : MaybeC[Bool]  ; Reader
                     , ReadInt   : MaybeC[Int]   ; Reader
                     , ReadChar  : MaybeC[Char]  ; Reader
                     , ReadString: MaybeC[String]; Reader
-                    , Close     : Skip
+                    , Close     : End
                     }
 
 type MaybeC : 1S = forall a . &{JustC: ?a  , NothingC: Skip}
@@ -37,7 +37,7 @@ readGeneric sel stdin =
                 (Nothing, reader)
         }
         in
-    let _ = select Close reader in
+    select Close reader & close;
     maybe
 
 readBool : StdIn -> Maybe[Bool]
@@ -71,7 +71,7 @@ readBool stdin =
                 (NothingBool, reader)
         }
         in
-    let _ = select Close reader in
+    select Close reader & close;
     maybe
 
 readInt : StdIn -> MaybeInt
@@ -86,7 +86,7 @@ readInt stdin =
                 (NothingInt, reader)
         }
         in
-    let _ = select Close reader in
+    select Close reader & close;
     maybe
 
 readChar : StdIn -> MaybeChar
@@ -101,7 +101,7 @@ readChar stdin =
                 (NothingChar, reader)
         }
         in
-    let _ = select Close reader in
+    select Close reader & close;
     maybe
 
 readString : StdIn -> MaybeString
@@ -116,7 +116,7 @@ readString stdin =
                 (NothingString, reader)
         }
         in
-    let _ = select Close reader in
+    select Close reader & close;
     maybe
 
 
@@ -137,7 +137,7 @@ runReader reader =
         ReadInt    reader -> runReader $ send 7       $ select Just reader,
         ReadChar   reader -> runReader $ send 'A'     $ select Just reader,
         ReadString reader -> runReader $ send "hello" $ select Just reader,
-        Close     _      -> ()
+        Close      reader -> close reader
     }
 
 

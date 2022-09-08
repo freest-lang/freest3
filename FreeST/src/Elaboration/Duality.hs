@@ -32,7 +32,7 @@ instance Duality T.Type where
   dualof (T.Var p x) = T.CoVar p x
   dualof (T.CoVar p x) = T.Var p x
   dualof (T.Dualof _ t) = dualof t
-  -- Non session-types & Skip
+  -- Non session-types, Skip & End
   dualof t = t
 
 instance Duality T.Polarity where

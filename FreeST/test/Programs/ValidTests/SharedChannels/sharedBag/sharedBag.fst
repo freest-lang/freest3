@@ -1,5 +1,5 @@
 -- | The client view of a linear interaction with a bag (multiset) of integer values
-type Bag:1S = +{Put: !Int, Get: ?Int}
+type Bag:1S = +{Put: !Int, Get: ?Int};End 
   
 -- | The client view of a shared interaction with a bag
 type SharedBag = *?Bag
@@ -26,8 +26,8 @@ handleClient : State -> dualof Bag -> ()
 handleClient state chan =
   let (readFromState, writeOnState) = state in
   match chan with
-    { Get chan -> let (n, _) = receive readFromState in send n chan; ()
-    , Put chan -> let (n, _) = receive chan in send n writeOnState; ()
+    { Get chan -> let (n, _) = receive readFromState in send n chan & close 
+    , Put chan -> let (n, chan) = receive chan in close chan; send n writeOnState
     }
 
 -- Client side, utilities
@@ -37,15 +37,15 @@ put : Int -> SharedBag -> ()
 put n q =
   let (c, _) = receive q in
   let c = select Put c in
-  send n c;
-  ()
+  send n c & close
 
 -- | Get an integer from a shared bag
 get : SharedBag -> Int
 get q =
   let (c, _) = receive q in
   let c = select Get c in
-  let (n, _) = receive c in
+  let (n, c) = receive c in
+  close c;
   n
 
 -- An application

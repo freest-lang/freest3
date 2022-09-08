@@ -76,6 +76,7 @@ synthetise' s kEnv (T.Rec p1 (Bind p2 a k (T.Almanac p3 (T.Choice v) m)))
     return $ K.us p1
 -- Session types
 synthetise' _ _    (T.Skip p    ) = return $ K.us p
+synthetise' _ _    (T.End p     ) = return $ K.ls p
 synthetise' s kEnv (T.Semi p t u) = do
   (K.Kind _ mt _) <- checkAgainstSession' s kEnv t
   (K.Kind _ mu _) <- checkAgainstSession' s kEnv u

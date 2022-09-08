@@ -1,14 +1,14 @@
 main : Bool
 main =
-  let (s, r) = new !Int in
-  let _ = fork @Skip $ sender s 5 in
+  let (s, r) = new !Int;End in
+  fork @() (sender s 5);
   if (div (f r) 2) == 5 then
     True
   else
     False
 
-f : ?Int -> Int
-f c = let (x, c) = receive c in x
+f : ?Int;End -> Int
+f c = let (x, c) = receive c in close c; x
 
-sender : !Int 1-> Int -> Skip
-sender c i = send (i * 2) c
+sender : !Int;End 1-> Int -> ()
+sender c i = send (i * 2) c & close

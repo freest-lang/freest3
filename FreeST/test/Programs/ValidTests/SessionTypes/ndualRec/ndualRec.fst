@@ -1,29 +1,28 @@
-type Choice : 1S = +{More: !Int;DD, Enough: Skip}
+type Choice : 1S = +{More: !Int;DD, Enough: End}
 type DD : 1S = dualof (dualof Choice)
 
-sendInt : Int -> DD -> Skip
+sendInt : Int -> DD -> ()
 sendInt i c =
-    let c = select More c in
-    let c = send i c in
-    let c = select More c in
-    let c = send (i + 1) c in
-    let c = select More c in
-    let c = send (i + 2) c in
-    select Enough c
+    select More c
+    & send i 
+    & select More
+    & send (i + 1) 
+    & select More 
+    & send (i + 2) 
+    & select Enough
+    & close
 
-rcvInt : Int -> dualof DD -> (Int, Skip)
+rcvInt : Int -> dualof DD -> Int
 rcvInt acc c =
   match c with {
-    Enough c -> (acc,c),
+    Enough c -> close c; acc,
     More c ->
       let (i, c) = receive c in
-      let (iii, c) = rcvInt (acc+i) c in
-      (iii, c)
+      rcvInt (acc+i) c
   }
 
 main : Int
 main =
   let (w,r) = new DD in
-  let _ = fork @Skip $ sendInt 0 w in
-  let (i, _) = rcvInt 0 r in
-  i
+  fork @() $ sendInt 0 w; 
+  rcvInt 0 r

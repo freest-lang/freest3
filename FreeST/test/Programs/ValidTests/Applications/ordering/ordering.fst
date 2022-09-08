@@ -17,10 +17,10 @@ type OrderingChannel : 1S = +{Vals: !Int; OrderingChannel; ?Int, Asc: Skip, Desc
 -- ==================== Server ====================
 
 -- Facade function to initialize server with an empty list
-initOrderedServer : dualof OrderingChannel -> ()
+initOrderedServer : dualof OrderingChannel;End -> ()
 initOrderedServer c =
-  let _ = orderedServer @Skip c Nil in
-  ()
+  let (_, c) = orderedServer @End c Nil in
+  close c
 
 -- Server function
 --   This server sends the list reversed
@@ -91,14 +91,16 @@ listAppend l ll =
 -- ==================== Client ====================
 
 -- Simple clients using Asc or Desc options
-ascClient, descClient : OrderingChannel -> IntList
+ascClient, descClient : OrderingChannel;End -> IntList
 
 ascClient c =
-  let (c, rList) = order @Skip c aList True in
+  let (c, rList) = order @End c aList True in
+  close c;
   rList
 
 descClient c =
-  let (c, rList) = order @Skip c aList False in
+  let (c, rList) = order @End c aList False in
+  close c;
   rList
 
 
@@ -132,7 +134,7 @@ aList = Cons 4 (Cons 1 (Cons 3 (Cons 2 Nil)))
 
 main : IntList
 main =
-  let (w, r) = new OrderingChannel in
+  let (w, r) = new OrderingChannel;End in
   let _      = fork @() $ initOrderedServer r in
   descClient w
   --ascClient w

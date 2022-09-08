@@ -2,9 +2,9 @@
 -- input 
 input, layers : IntList
 
-input = List 1 $ List 50 $ List 100 End
+input = Cons 1 $ Cons 50 $ Cons 100 Nil
 
-layers = List 50 $ List 50 $ List 50 End
+layers = Cons 50 $ Cons 50 $ Cons 50 Nil
 
 seed : Int
 seed = 1
@@ -12,7 +12,7 @@ seed = 1
 -- main
 main : Int
 main = 
-    let ls = List (len input) layers in -- add connection from entry neurons
+    let ls = Cons (len input) layers in -- add connection from entry neurons
     let ls = addTail 1 ls            in -- add connection to exit neuron
     let cons = mkLayers ls           in -- create network
     -- printLayers cons; -- TODO remove PRINT
@@ -24,17 +24,17 @@ main =
     r
 
 ---- Structures ----
-data IntList = End | List Int IntList
+data IntList = Nil | Cons Int IntList
 
-data SList   = SEnd | SList Send SList
-data RList   = REnd | RList Receive RList
+data SList   = SNil | SCons Send SList
+data RList   = RNil | RCons Receive RList
 
 type Channels   = (SList,RList)
-data Connection = CEnd | Connection Channels Connection
-data Layers     = LEnd | Layers Connection Layers
+data Connection = CNil | Connection Channels Connection
+data Layers     = LNil | Layers Connection Layers
 
 ---- Channels ----
-type Send    : 1S = !Int
+type Send    : 1S = !Int;End
 type Receive : 1S = dualof Send
 
 ---- Network ----
@@ -43,11 +43,11 @@ type Receive : 1S = dualof Send
 mkLayers : IntList -> Layers
 mkLayers ns = 
     case ns of {
-        End -> LEnd,
-        List n1 ns ->
+        Nil -> LNil,
+        Cons n1 ns ->
             case ns of {
-                End -> LEnd,
-                List n2 _ ->
+                Nil -> LNil,
+                Cons n2 _ ->
                     Layers (mkLayer n1 n2) (mkLayers ns)
             }
     }
@@ -55,24 +55,24 @@ mkLayers ns =
 mkLayer : Int -> Int -> Connection
 mkLayer n1 n2 = 
     if n1 <= 0 then
-        CEnd
+        CNil
     else
         Connection (mkChannels n2) (mkLayer (n1-1) n2)
 
 mkChannels : Int -> Channels
 mkChannels n =
     if n <= 0 then
-        (SEnd,REnd)
+        (SNil,RNil)
     else
         let (ss,rs) = mkChannels (n-1) in
         let (s,r)   = new Send         in
-        (SList s ss, RList r rs)
+        (SCons s ss, RCons r rs)
 
 -- startup
 startup : IntList -> Layers -> RList
 startup input ls =
     case ls of {
-        LEnd -> REnd,
+        LNil -> RNil,
         Layers l0 _ -> 
             mkNeurons0 input l0;
             startupN  ls
@@ -81,10 +81,10 @@ startup input ls =
 startupN : Layers -> RList
 startupN ls = 
     case ls of {
-        LEnd -> REnd,
+        LNil -> RNil,
         Layers l1 ls -> 
             case ls of {
-                LEnd -> receiveCs l1,
+                LNil -> receiveCs l1,
                 Layers l2 _ -> 
                     mkNeurons l1 l2;
                     startupN ls
@@ -95,10 +95,10 @@ startupN ls =
 mkNeurons0 : IntList -> Connection -> ()
 mkNeurons0 input con0 =
     case input of {
-        End -> (),
-        List i input -> 
+        Nil -> (),
+        Cons i input -> 
             case con0 of {
-                CEnd -> (),
+                CNil -> (),
                 Connection c con0 -> 
                     let (s,_) = c in
                     fork $ mkNeuron0 i s;
@@ -112,7 +112,7 @@ mkNeuron0 input ss = sendNeuron input ss
 mkNeurons : Connection -> Connection -> ()
 mkNeurons con1 con2 =
     case con2 of {
-        CEnd -> (),
+        CNil -> (),
         Connection c con3 -> 
             let (s1,_)  = c in
             let (r1,r2) = getHeads con1 in
@@ -129,18 +129,19 @@ mkNeuron rs ss =
 recNeuron : RList -> Int
 recNeuron rs =
     case rs of {
-        REnd -> 0,
-        RList r rs ->
-            let (x,_) = receive r in
+        RNil -> 0,
+        RCons r rs -> 
+            let (x, c) = receive r in
+            close c;
             x + recNeuron rs
     }
 
 sendNeuron : Int -> SList -> ()
 sendNeuron x ss =
     case ss of {
-        SEnd -> (),
-        SList s ss ->
-            send x s;
+        SNil -> (),
+        SCons s ss ->
+            send x s & close;
             sendNeuron x ss
     }
 
@@ -159,62 +160,62 @@ genIntBounded n l u = mod ((n+1) * (mod 111 100)) (u-l) + l
 len : IntList -> Int
 len xs =
     case xs of {
-        End -> 0,
-        List _ xs -> 1 + len xs
+        Nil -> 0,
+        Cons _ xs -> 1 + len xs
     }
 
 -- adds int to the end of a list
 addTail : Int -> IntList -> IntList
 addTail x xs =
     case xs of {
-        End -> List x End,
-        List e xs -> 
-            List e $ addTail x xs
+        Nil -> Cons x Nil,
+        Cons e xs -> 
+            Cons e $ addTail x xs
     }
 
 -- gets last layers receive channels
 receiveCs : Connection -> RList
 receiveCs con =
     case con of {
-        CEnd -> REnd,
+        CNil -> RNil,
         Connection c con ->
             let (_,rs) = c in
-            concatRList rs $ receiveCs con
+            concatRCons rs $ receiveCs con
     }
 
--- concatenates RLists
-concatRList : RList -> RList -> RList
-concatRList rs1 rs2 =
+-- concatenates RConss
+concatRCons : RList -> RList -> RList
+concatRCons rs1 rs2 =
     case rs1 of {
-        REnd -> rs2,
-        RList e rs1 -> 
-            RList e $ concatRList rs1 rs2
+        RNil -> rs2,
+        RCons e rs1 -> 
+            RCons e $ concatRCons rs1 rs2
     }
 
 -- gets the heads of the 
 getHeads : Connection -> (RList,Connection)
 getHeads con =
     case con of {
-        CEnd -> (REnd, CEnd),
+        CNil -> (RNil, CNil),
         Connection c con ->
             let (s,r) = c in
             let (heads,tails) = getHeads con in
             let (head ,tail ) = getHead r    in
-            (concatRList head heads, Connection (s,tail) tails)
+            (concatRCons head heads, Connection (s,tail) tails)
     }
 
 getHead : RList -> (RList,RList)
 getHead rs =
     case rs of {
-        REnd -> (REnd,REnd),
-        RList r rs -> (RList r REnd,rs)
+        RNil -> (RNil,RNil),
+        RCons r rs -> (RCons r RNil,rs)
     }
 
 -- prints
 printLayers : Layers -> ()
 printLayers ls = 
     case ls of {
-        LEnd -> (),
+        LNil -> (),
         Layers cs ls -> 
             printConnection cs;
             printLayers ls
@@ -223,7 +224,7 @@ printLayers ls =
 printConnection : Connection -> ()
 printConnection cs = 
     case cs of {
-        CEnd -> printStringLn "",
+        CNil -> printStringLn "",
         Connection _ cs ->
             printString "o ";
             printConnection cs

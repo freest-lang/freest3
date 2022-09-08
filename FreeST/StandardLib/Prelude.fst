@@ -57,6 +57,7 @@ undefined : ∀a:*T . a
   -- Session ops
 send : ∀a:1T . a -> ∀b:1S . !a;b 1-> b
 receive : ∀a:1T . ∀b:1S . ?a;b -> (a, b)
+close : End -> ()
   -- Not the actual type for collect, but for writing it we would
   -- need polymorphism over the labels in some choice/variant
 collect : ∀a:1T . a

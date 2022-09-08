@@ -2,14 +2,15 @@
 main : Int
 main =
   let (w, r) = new !Bool in
-  let _ = fork @Skip (f w) in
-  let (x, _) = f1 r in
+  fork @() (f w);
+  let (x, c) = f1 r in
+  close c;
   x
 
-type F = !Int
+type F = !Int;End
 
-f : F -> Skip
-f c = send c 4
+f : F -> ()
+f c = send c 4 & close
 
-f1 : dualof F -> (Int, Skip)
+f1 : dualof F -> (Int, End)
 f1 c = receive c

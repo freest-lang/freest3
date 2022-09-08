@@ -104,6 +104,7 @@ isSessionType kEnv t = null (errors state) && K.isSession kind
 
 isSessionType :: K.KindEnv -> T.Type -> Bool
 isSessionType _ T.Skip{} = True
+isSessionType _ T.End{}  = True
 isSessionType _ T.Semi{} = True
 isSessionType _ T.Message{} = True
 isSessionType _ T.Almanac _ (T.Choice v) _ = True
