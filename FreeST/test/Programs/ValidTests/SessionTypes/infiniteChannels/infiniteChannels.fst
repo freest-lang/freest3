@@ -1,14 +1,14 @@
 -- Creates an unbounded number of channels; diverges
-write : !Int;End 1-> Int *-> Char
+write : !Int;End -> Int 1-> ()
 write c n =
-  let _ = send n c in
+  let c = send n c in
   printIntLn n ;
-  let (r, w) = new !Int in
+  let (r, w) = new !Int;End in
   fork @() (let (_, w) = receive w in close w); 
-  write r (n + 1)
-  |> close
+  write r (n + 1) ;
+  close c
 
-main : Char
+main : ()
 main =
   let (r, w) = new !Int;End in
   fork @() (\_:()1-> let (_, w) = receive w in close w);
