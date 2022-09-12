@@ -39,15 +39,13 @@ spec = specTest' "Valid Tests" baseTestDir validTest
 validTest :: FilePath -> (FilePath, String) -> Expectation
 validTest dir (testFile, exp) = do
   (out, res) <- testOne testFile
---  let out = exp
-  case res of
-    Timeout
-      | "<pending>" `isPrefixOf` exp -> pendingMessage exp
-      | otherwise                    -> doExpectationsMatch exp "<divergent>"
-    Failed  -> void $ assertFailure out
-    Passed
-      | "<pending>" `isPrefixOf` exp -> pendingMessage exp
-      | otherwise -> doExpectationsMatch out exp
+  if "<pending>" `isPrefixOf` exp
+    then pendingMessage exp
+    else
+     case res of
+      Timeout -> doExpectationsMatch exp "<divergent>"
+      Failed  -> void $ assertFailure out
+      Passed  -> doExpectationsMatch out exp
 
 
 pendingMessage :: String -> Expectation
