@@ -19,9 +19,12 @@ type Printer : 1S = +{ PrintBool    : !Bool  ; Printer
 initStdout : StdOut
 initStdout = forkWith @StdOut @() runStdout
 
+-- Can't use eta-reduction here because we don't have subtyping.
+-- The main reason is due to the closure of runServer that will be
+-- '*!(dualof StdOut) -> ()' which is different from the type of this function:
+-- 'dualof StdOut 1-> ()'. Lin vs Un functions.
 runStdout  : dualof StdOut 1-> ()
-runStdout =
-    runServer @Printer @() runPrinter ()
+runStdout c = runServer @Printer @() runPrinter () c
 
 runPrinter : () -> dualof Printer 1-> ()
 runPrinter _ printer =

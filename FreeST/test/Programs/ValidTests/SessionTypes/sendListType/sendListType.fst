@@ -12,7 +12,7 @@ rcvList c =
     Nil c -> (Nil, c)
   }
 
-sendList : forall a : 1S . ListOut;a 1-> List -> a
+sendList : forall a : 1S . ListOut;a -> List 1-> a
 sendList c l =
   case l of {
     Cons x xs ->
