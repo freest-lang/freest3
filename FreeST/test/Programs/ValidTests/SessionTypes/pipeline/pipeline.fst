@@ -25,7 +25,7 @@ type TermChannel : 1S  = +{
 computeService : dualof TermChannel;!Int;End -> ()
 computeService c =
   let (n1, c1) = receiveEval @(!Int ; End) c in
-  send n1 c1 & close
+  send n1 c1 |> close
 
 -- Read an arithmetic expression in the front of a channel; compute
 -- its value; return the pair composed of this value and the channel
@@ -50,14 +50,14 @@ client : TermChannel;?Int;End -> Int
 client c = 
   let (x, c) = 
     select Add c
-    & select Const
-    & send 5
-    & select Mult
-    & select Const
-    & send 7
-    & select Const
-    & send 9
-    & receive in
+    |> select Const
+    |> send 5
+    |> select Mult
+    |> select Const
+    |> send 7
+    |> select Const
+    |> send 9
+    |> receive in
   close c;
   x
 

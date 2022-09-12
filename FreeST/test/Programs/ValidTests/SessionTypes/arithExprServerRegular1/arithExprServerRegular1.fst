@@ -50,7 +50,7 @@ evaluate s l =
     Const s -> let (n, s) = receive s in evaluate s (Cons n l),
     Add s   -> let (p, l) = head2 l in let (x, y) = p in evaluate s (Cons (x + y) l),
     Mult s  -> let (p, l) = head2 l in let (x, y) = p in evaluate s (Cons (x * y) l),
-    EOS s   -> send (headSingleton l) s & close
+    EOS s   -> send (headSingleton l) s |> close
   }
 
 head2 : IntList -> ((Int, Int), IntList)

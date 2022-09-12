@@ -3,7 +3,7 @@ type Omega : 1S = !Omega;End
 produce : Omega -> Diverge
 produce p =
   let (p', c') = new Omega in
-    send p' p & close;
+    send p' p |> close;
     printStringLn "Producing";
     consume c'
 

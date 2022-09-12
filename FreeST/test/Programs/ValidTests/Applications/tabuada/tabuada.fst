@@ -110,7 +110,7 @@ main =
   let (r, w) = new TabuadaServer in
   fork @() (\_:()1-> initTabuadaServer r) ; 
   let (result, c) = select TabuadaSimples w 
-                    & send 4 
-                    & receiveList in
-  select Fim c & close;
+                    |> send 4 
+                    |> receiveList in
+  select Fim c |> close;
   result

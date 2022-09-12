@@ -30,14 +30,14 @@ client1 : BoolClient -> Bool
 client1 c =
   let (x, c) = 
     select And c
-    & send True
-    & send True
-    & receive in 
+    |> send True
+    |> send True
+    |> receive in 
   let (y, c) = 
     select Not c
-    & send x 
-    & receive in
-  select Done c & close ;
+    |> send x 
+    |> receive in
+  select Done c |> close ;
   y
 
 main : Bool

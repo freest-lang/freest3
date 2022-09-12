@@ -63,7 +63,7 @@ type Stream : 1S = +{
 -- Writing trees on channels
 
 sendTree : Tree -> Stream -> ()
-sendTree t c = streamTree t c & select EndOfStream & close
+sendTree t c = streamTree t c |> select EndOfStream |> close
 
 streamTree : Tree -> Stream -> Stream
 streamTree t c =
@@ -98,16 +98,16 @@ recTree xs c =
 
 writeNothing, writeTooMuch, writeRootTreeOnly, writeLeftTreeOnly : Stream -> ()
 writeNothing c =
-  select EndOfStream c & close
+  select EndOfStream c |> close
 
 writeTooMuch c =
-  select Leaf c & select Leaf & select EndOfStream & close
+  select Leaf c |> select Leaf |> select EndOfStream |> close
 
 writeRootTreeOnly c =
-  select Node c & send 5 & select EndOfStream & close
+  select Node c |> send 5 |> select EndOfStream |> close
 
 writeLeftTreeOnly c =
-  select Leaf c & select Node & send 5 & select EndOfStream & close
+  select Leaf c |> select Node |> send 5 |> select EndOfStream |> close
 
 -- Go!
 

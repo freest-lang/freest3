@@ -10,7 +10,7 @@ main =
 type F = !Int;End
 
 f : F -> ()
-f c = send c 4 & close
+f c = send c 4 |> close
 
 f1 : dualof F -> (Int, End)
 f1 c = receive c

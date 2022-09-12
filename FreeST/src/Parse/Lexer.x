@@ -72,6 +72,7 @@ tokens :-
   "!"                           { \p s -> TokenMOut (internalPos p) }
   "?"				{ \p s -> TokenMIn (internalPos p) }
   "&"				{ \p s -> TokenAmpersand (internalPos p) }
+  "|>"				{ \p s -> TokenPipeOp (internalPos p) }
   "."                           { \p s -> TokenDot (internalPos p) }
   "="                           { \p s -> TokenEq (internalPos p) }
   "|"                           { \p s -> TokenPipe (internalPos p) }
@@ -165,6 +166,7 @@ data Token =
   | TokenLBrace Span
   | TokenRBrace Span
   | TokenAmpersand Span
+  | TokenPipeOp Span
   | TokenPlus Span
   | TokenRec Span
   | TokenDot Span
@@ -242,6 +244,7 @@ instance Show Token where
   show (TokenLBrace _) = "{"
   show (TokenRBrace _) = "}"
   show (TokenAmpersand _) = "&"
+  show (TokenPipeOp _) = "|>"
   show (TokenPlus _) = "+"
   show (TokenRec _) = "rec"
   show (TokenDot _) = "."
@@ -358,6 +361,7 @@ instance Located Token where
   getSpan (TokenLBrace p) = p
   getSpan (TokenRBrace p) = p
   getSpan (TokenAmpersand p) = p
+  getSpan (TokenPipeOp p) = p
   getSpan (TokenPlus p) = p
   getSpan (TokenRec p) = p
   getSpan (TokenDot p) = p

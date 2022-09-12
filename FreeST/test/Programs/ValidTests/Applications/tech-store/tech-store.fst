@@ -26,14 +26,14 @@ runStdout =
 runPrinter : () -> dualof Printer 1-> ()
 runPrinter _ printer =
     match printer with {
-        PrintBool     printer -> aux @Bool   printer printBool     & runPrinter (),
-        PrintBoolLn   printer -> aux @Bool   printer printBoolLn   & runPrinter (),
-        PrintInt      printer -> aux @Int    printer printInt      & runPrinter (),
-        PrintIntLn    printer -> aux @Int    printer printIntLn    & runPrinter (),
-        PrintChar     printer -> aux @Char   printer printChar     & runPrinter (),
-        PrintCharLn   printer -> aux @Char   printer printCharLn   & runPrinter (),
-        PrintString   printer -> aux @String printer printString   & runPrinter (),
-        PrintStringLn printer -> aux @String printer printStringLn & runPrinter (),
+        PrintBool     printer -> aux @Bool   printer printBool     |> runPrinter (),
+        PrintBoolLn   printer -> aux @Bool   printer printBoolLn   |> runPrinter (),
+        PrintInt      printer -> aux @Int    printer printInt      |> runPrinter (),
+        PrintIntLn    printer -> aux @Int    printer printIntLn    |> runPrinter (),
+        PrintChar     printer -> aux @Char   printer printChar     |> runPrinter (),
+        PrintCharLn   printer -> aux @Char   printer printCharLn   |> runPrinter (),
+        PrintString   printer -> aux @String printer printString   |> runPrinter (),
+        PrintStringLn printer -> aux @String printer printStringLn |> runPrinter (),
         Close         printer -> close printer
     }
 
@@ -47,12 +47,12 @@ aux printer printFun =
 
 printGenericLin : forall a . (Printer -> !a;Printer) -> a -> Printer -> Printer
 printGenericLin sel x printer = 
-    sel printer & send x 
+    sel printer |> send x 
 
 printGenericUn : forall a . (Printer -> !a;Printer) -> a -> StdOut -> ()
 printGenericUn sel x stdout =
-    printGenericLin @a sel x (receive_ @Printer stdout) & 
-    select Close & close
+    printGenericLin @a sel x (receive_ @Printer stdout) |> 
+    select Close |> close
 
 printStringLin : String -> Printer -> Printer
 printStringLin = printGenericLin @String (\printer:Printer -> select PrintString printer)
@@ -95,7 +95,7 @@ runCounter i counter =
 
 runHeadNode : forall a:1T . (rec x:1S . ?a; ?x; End) -> dualof *?a 1-> ()
 runHeadNode prev head = 
-    -- receive value & next node endpoint
+    -- receive value |> next node endpoint
     let (i, prev) = receive prev in
     let (prev', prev) = receive prev in
     close prev;
@@ -109,7 +109,7 @@ runTailNode next tail =
     let i = receive_ @a tail in
     let next' = 
         forkWith @dualof (rec x:1S . ?a; ?x; End) @()
-            (\c:(rec x:1S . ?a; ?x; End) 1-> send i next & send c & close) 
+            (\c:(rec x:1S . ?a; ?x; End) 1-> send i next |> send c |> close) 
         in
     runTailNode @a next' tail 
 
@@ -161,14 +161,14 @@ runListService stdout list ch =
             let (issue    , ch) = receive ch in
             let (rmaNumber, ch) = receive ch in
             -- logging
-            receive_ @Printer stdout &
-            printStringLin "RMA processed \t\t @ product id: " &
-            printIntLin    productId &
-            printStringLin ", issue: " &
-            printStringLin    issue &
-            printStringLin ", RMA id: " &
-            printIntLnLin  rmaNumber &
-            select Close & close;
+            receive_ @Printer stdout |>
+            printStringLin "RMA processed \t\t @ product id: " |>
+            printIntLin    productId |>
+            printStringLin ", issue: " |>
+            printStringLin    issue |>
+            printStringLin ", RMA id: " |>
+            printIntLnLin  rmaNumber |>
+            select Close |> close;
             --
             runListService stdout (Cons (productId, issue, rmaNumber) list) ch,
         Close c ->
@@ -182,13 +182,13 @@ append : SharedList -> (ProductId, Issue, RmaNumber) -> ()
 append ch triple =
     let (productId, pair) = triple in
     let (issue, rmaNumber) = pair in
-    receive_ @ListC ch &
-    select Append &
-    send productId &
-    send issue &
-    send rmaNumber &
-    select Close &
-    close 
+    receive_ @ListC ch
+    |> select Append
+    |> send productId
+    |> send issue
+    |> send rmaNumber
+    |> select Close
+    |> close 
 
 ---------------------------------- SharedMap ----------------------------------
 
@@ -291,8 +291,8 @@ runMapService map ch =
                         NothingValue  -> select NothingVal ch,
                         JustValue val -> 
                             let (amount, price) = val in
-                            select JustVal ch & 
-                            send amount &
+                            select JustVal ch |> 
+                            send amount |>
                             send price
                      } in
             runMapService map ch,
@@ -306,14 +306,14 @@ runMapService map ch =
 putLin : ProductName -> (Amount, Price) -> MapC 1-> MapC
 putLin pName val ch = 
     let (amount, price) = val in
-    select Put ch &
-    send pName &
-    send amount &
-    send price
+    select Put ch
+    |> send pName
+    |> send amount
+    |> send price
 
 getLin : ProductName -> MapC 1-> (MaybeValue, MapC)
 getLin pName ch =
-    let ch = select Get ch &
+    let ch = select Get ch |> 
              send pName in
     match ch with {
         JustVal ch -> 
@@ -359,8 +359,8 @@ runWith f =
 runBankService : StdOut -> () -> dualof BankService 1-> ()
 runBankService stdout _ ch =
     let (price, ch) = receive ch in
-    runWith @dualof PaymentC (\c:PaymentC 1-> send c ch & close) &
-    runPayment stdout price
+    runWith @dualof PaymentC (\c:PaymentC 1-> send c ch |> close)
+    |> runPayment stdout price
     
 
 runPayment : StdOut -> Price -> dualof PaymentC -> ()
@@ -370,14 +370,15 @@ runPayment stdout price ch =
     let (cccode, ch) = receive ch in
     close ch;
     -- logging
-    receive_ @Printer stdout &
-    printStringLin "Payment processed \t @ amount: " &
-    printIntLin    price &
-    printStringLin ", credit card: " &
-    printIntLin    ccnumber &
-    printStringLin ", credit card code: " &
-    printIntLnLin  cccode &
-    select Close & close
+    receive_ @Printer stdout
+    |> printStringLin "Payment processed \t @ amount: "
+    |> printIntLin    price
+    |> printStringLin ", credit card: "
+    |> printIntLin    ccnumber
+    |> printStringLin ", credit card code: "
+    |> printIntLnLin  cccode
+    |> select Close
+    |> close
 
 
 {- client functions -}
@@ -443,11 +444,11 @@ buyWorker buyQueue map bank =
     -- (try to) reserve from stock
     let (amount, price) = fromJustOrDefault (0, 0) $ getFromStock pName map in
     if amount < 1
-    then select OutOfStock ch & close 
+    then select OutOfStock ch |> close 
     else
-        let ch = select Available ch & send price in
+        let ch = select Available ch |> send price in
             match ch with {
-                Confirm ch -> send (createPayment price bank) ch & close,
+                Confirm ch -> send (createPayment price bank) ch |> close,
                 Cancel ch  -> close ch; returnToStock pName map
             }
     ;
@@ -470,8 +471,7 @@ getFromStock pName map =
             then putLin pName (amount-1, price) mapS
             -- if no stock, nothing
             else mapS
-    } &
-    select Close & close ;
+    } |> select Close |> close ;
     --
     maybeVal
     
@@ -487,8 +487,7 @@ returnToStock pName map =
         JustValue val -> 
             let (amount, price) = val in
             putLin pName (amount+1, price) mapS
-    } &
-    select Close & close 
+    } |> select Close |> close 
 
 {- rma workers -}
 
@@ -500,7 +499,7 @@ rmaWorker rmaQueue counter rmaList =
     let (issue    , ch) = receive ch in
     let rmaNumber = receive_ @Int counter in
     append rmaList (productId, issue, rmaNumber);
-    send rmaNumber ch & close ;
+    send rmaNumber ch |> close ;
     --
     rmaWorker rmaQueue counter rmaList
 
@@ -549,10 +548,10 @@ client0 stdout ch =
             let (price, buyC) = receive buyC in
             -- buyer's price limit
             if price > 100 
-            then select Cancel buyC & close
-            else let (paymentC, buyC) = select Confirm buyC & receive in
+            then select Cancel buyC |> close
+            else let (paymentC, buyC) = select Confirm buyC |> receive in
                  close buyC;
-                 send 123123123 paymentC & send 123 & close
+                 send 123123123 paymentC |> send 123 |> close
     }
 
 {- rma clients -}
@@ -564,9 +563,9 @@ client1 _ ch =
     -- go to the rma queue
     let (rmaC, _) = receive $ select Rma store in
     -- wait & do my business
-    let (rmaId, c) = send 1234567890 rmaC &
-                     send "Monitor flickers when punched" &
-                     receive in
+    let (rmaId, c) = send 1234567890 rmaC
+                     |> send "Monitor flickers when punched"
+                     |> receive in
     close c
 
 ---------------------------------- Main ----------------------------------

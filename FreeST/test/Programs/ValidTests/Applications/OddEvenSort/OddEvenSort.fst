@@ -7,7 +7,7 @@ type Sorter : 1S = +{Done: End, More: !Int ; ?Int; Sorter}
 first : Int -> Int -> Sorter -> !Int 1-> Skip
 first n x right collect' =
   if n == 0
-  then select Done right & close ; 
+  then select Done right |> close ; 
        send x collect'
   else let (min, right) = exchangeRight x right in
        first (n - 1) min right collect'
@@ -19,7 +19,7 @@ first n x right collect' =
 evenProcess : Int -> Int -> dualof Sorter -> Sorter 1-> !Int 1-> Skip
 evenProcess n x left right collect' =
   match left with {
-    Done left -> close left; select Done right & close ; send x collect',
+    Done left -> close left; select Done right |> close ; send x collect',
     More left -> let (max, left) = exchangeLeft x left in
                  oddProcess (n - 1) max left right collect'
   }
@@ -31,7 +31,7 @@ evenProcess n x left right collect' =
 oddProcess : Int -> Int -> dualof Sorter -> Sorter 1-> !Int 1-> Skip
 oddProcess n x left right collect' =
   if n == 0
-  then select Done right & close ; consume left ; send x collect'
+  then select Done right |> close ; consume left ; send x collect'
   else let (min, right) = exchangeRight x right in
        evenProcess (n - 1) min left right collect'
 

@@ -38,11 +38,11 @@ client : MathClient -> Bool
 client c =
   let (b, c) = 
     sendBool False c 
-    & sendBool True
-    & sendBool True
-    & select And
-    & receive in
-  select Quit c & close; 
+    |> sendBool True
+    |> sendBool True
+    |> select And
+    |> receive in
+  select Quit c |> close; 
   b
 
 
@@ -51,7 +51,7 @@ client c =
 sendBool : Bool -> MathClient 1-> MathClient
 sendBool b c =
   select Val c
-  & send b
+  |> send b
 
 
 -- ==================== Main ====================

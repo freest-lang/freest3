@@ -38,7 +38,7 @@ argIterPop = 5
 -- [PARALLEL] Amount of islands (each island has one population)
 argIslands = 4
 
--- [PARALLEL] Amount of population iteration & fittest individual sync
+-- [PARALLEL] Amount of population iteration |> fittest individual sync
 argIterIsl = 5
 
 -- Example clients using the sequential vs the parallel genetic algorithms
@@ -257,7 +257,7 @@ geneticAlg_ seed iterations pop =
     --let (fittest, _) = getFittestIndividual pop in
     -- Print information
     --printIntLn fittest;
-    -- Re-add the fittest individual & Continue the algorithm (-1 iteration)
+    -- Re-add the fittest individual |> Continue the algorithm (-1 iteration)
     geneticAlg_ seed (iterations - 1) (ConsPop fittest pop)
 
 
@@ -385,7 +385,7 @@ endIslands channels0 =
     Nil ->
       (),
     Cons channel channels1 ->
-      select Done channel & close;
+      select Done channel |> close;
       endIslands channels1
   }
 

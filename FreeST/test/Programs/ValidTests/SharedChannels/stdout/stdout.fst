@@ -15,7 +15,7 @@ type Printer : 1S = +{ PrintBool    : !Bool  ; Printer
 printGeneric : forall a . (Printer -> !a;Printer) -> StdOut -> a -> ()
 printGeneric sel stdout x =
     let (printer, _) = receive stdout in
-    sel printer & send x & select Close & close 
+    sel printer |> send x |> select Close |> close 
 
 printBool' : StdOut -> Bool -> ()
 printBool' = printGeneric @Bool (\printer:Printer -> select PrintBool printer) 
@@ -53,14 +53,14 @@ runStdout =
 runPrinter : () -> dualof Printer 1-> ()
 runPrinter _ printer =
     match printer with {
-        PrintBool     printer -> aux @Bool   printer printBool     & runPrinter (),
-        PrintBoolLn   printer -> aux @Bool   printer printBoolLn   & runPrinter (),
-        PrintInt      printer -> aux @Int    printer printInt      & runPrinter (),
-        PrintIntLn    printer -> aux @Int    printer printIntLn    & runPrinter (),
-        PrintChar     printer -> aux @Char   printer printChar     & runPrinter (),
-        PrintCharLn   printer -> aux @Char   printer printCharLn   & runPrinter (),
-        PrintString   printer -> aux @String printer printString   & runPrinter (),
-        PrintStringLn printer -> aux @String printer printStringLn & runPrinter (),
+        PrintBool     printer -> aux @Bool   printer printBool     |> runPrinter (),
+        PrintBoolLn   printer -> aux @Bool   printer printBoolLn   |> runPrinter (),
+        PrintInt      printer -> aux @Int    printer printInt      |> runPrinter (),
+        PrintIntLn    printer -> aux @Int    printer printIntLn    |> runPrinter (),
+        PrintChar     printer -> aux @Char   printer printChar     |> runPrinter (),
+        PrintCharLn   printer -> aux @Char   printer printCharLn   |> runPrinter (),
+        PrintString   printer -> aux @String printer printString   |> runPrinter (),
+        PrintStringLn printer -> aux @String printer printStringLn |> runPrinter (),
         Close         printer -> close printer
     }
 
@@ -77,9 +77,9 @@ aux printer printFun =
 client : StdOut -> String -> String -> ()
 client stdout s1 s2 =
     let printer = fst @Printer @StdOut $ receive stdout in
-    select PrintString printer & send s1 &
-    select PrintString         & send s2 &
-    select Close & close
+    select PrintString printer |> send s1 |>
+    select PrintString         |> send s2 |>
+    select Close |> close
 
 -- main
 

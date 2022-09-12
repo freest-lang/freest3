@@ -6,7 +6,7 @@ write c n =
   let (r, w) = new !Int in
   fork @() (let (_, w) = receive w in close w); 
   write r (n + 1)
-  & close
+  |> close
 
 main : Char
 main =

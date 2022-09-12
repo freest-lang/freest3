@@ -24,7 +24,7 @@ computeService : dualof TermChannel;!Int;End -> ()
 computeService c =
   let (n1, c1) = receiveEval @(!Int ; End) c in
   send n1 c1 
-  & close
+  |> close
 
 -- Read an arithmetic expression in the front of a channel; compute
 -- its value; return the pair composed of this value and the channel

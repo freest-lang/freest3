@@ -26,7 +26,7 @@ handleClient : State -> dualof Bag -> ()
 handleClient state chan =
   let (readFromState, writeOnState) = state in
   match chan with
-    { Get chan -> let (n, _) = receive readFromState in send n chan & close 
+    { Get chan -> let (n, _) = receive readFromState in send n chan |> close 
     , Put chan -> let (n, chan) = receive chan in close chan; send n writeOnState
     }
 
@@ -37,7 +37,7 @@ put : Int -> SharedBag -> ()
 put n q =
   let (c, _) = receive q in
   let c = select Put c in
-  send n c & close
+  send n c |> close
 
 -- | Get an integer from a shared bag
 get : SharedBag -> Int

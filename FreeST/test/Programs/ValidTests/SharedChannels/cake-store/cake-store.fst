@@ -16,10 +16,10 @@ runCakeStore cakeStore gotCake =
     let cakeStore = send c cakeStore in
     if gotCake
     then 
-        select Cake s & close;
+        select Cake s |> close;
         runCakeStore cakeStore False
     else 
-        select Disappointment s & close;
+        select Disappointment s |> close;
         runCakeStore cakeStore False
 
 ami : CakeStore -> ()

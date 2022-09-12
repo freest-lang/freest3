@@ -37,7 +37,7 @@ readGeneric sel stdin =
                 (Nothing, reader)
         }
         in
-    select Close reader & close;
+    select Close reader |> close;
     maybe
 
 readBool : StdIn -> Maybe[Bool]
@@ -71,7 +71,7 @@ readBool stdin =
                 (NothingBool, reader)
         }
         in
-    select Close reader & close;
+    select Close reader |> close;
     maybe
 
 readInt : StdIn -> MaybeInt
@@ -86,7 +86,7 @@ readInt stdin =
                 (NothingInt, reader)
         }
         in
-    select Close reader & close;
+    select Close reader |> close;
     maybe
 
 readChar : StdIn -> MaybeChar
@@ -101,7 +101,7 @@ readChar stdin =
                 (NothingChar, reader)
         }
         in
-    select Close reader & close;
+    select Close reader |> close;
     maybe
 
 readString : StdIn -> MaybeString
@@ -116,7 +116,7 @@ readString stdin =
                 (NothingString, reader)
         }
         in
-    select Close reader & close;
+    select Close reader |> close;
     maybe
 
 

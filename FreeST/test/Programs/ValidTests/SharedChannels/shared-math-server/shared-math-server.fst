@@ -33,26 +33,26 @@ client1 : MathServer -> ()
 client1 ch =
     let (c, _) = receive ch in
     let (n, c) = select Plus c 
-               & send 1
-               & send 2
-               & receive
+               |> send 1
+               |> send 2
+               |> receive
                in
     let (m, c) = select Neg c
-               & send n
-               & receive
+               |> send n
+               |> receive
                in
-    select Close c & close;
+    select Close c |> close;
     printIntLn m
 
 client2 : MathServer -> ()
 client2 ch =
     let (c, _) = receive ch in
     let (b, c) = select Greater c
-               & send 2
-               & send 1
-               & receive
+               |> send 2
+               |> send 1
+               |> receive
                in
-    select Close c & close; 
+    select Close c |> close; 
     printBoolLn b
 
 main : ()

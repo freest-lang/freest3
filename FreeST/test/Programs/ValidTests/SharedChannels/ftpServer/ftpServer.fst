@@ -79,7 +79,7 @@ actions state s b =
 putClient : FTP -> File -> ()
 putClient pid file =
   let (c, _) = receive pid in
-  select Put c & send file & select Bye & close 
+  select Put c |> send file |> select Bye |> close 
 
 -- |Get a file and terminate
 getClient : FTP -> ()
@@ -87,15 +87,15 @@ getClient pid =
   let (c, _) = receive pid in
   let c = select Get c in
   let (file, c) = receive c in
-  select Bye c & close
+  select Bye c |> close
 
 -- |Put two files and terminate
 putClient' : FTP -> File -> File -> ()
 putClient' pid file1 file2 =
   let c = receive_ @FTPSession pid in
-  select Put c & send file1 &
-  select Put   & send file2 &
-  select Bye & close
+  select Put c |> send file1 |>
+  select Put   |> send file2 |>
+  select Bye |> close
 
 -- |Get a file and terminate
 putgetClient : FTP -> File -> ()
@@ -107,7 +107,7 @@ putgetClient pid file =
   let (file, c) = receive c in
   let c         = select Put c in
   let c         = send file c in
-  select Bye c & close
+  select Bye c |> close
 
 -- Application
 

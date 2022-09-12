@@ -22,7 +22,7 @@ rcvInt acc c =
 main : Int
 main =
   let (w, r) = new Choice;End in
-  let _ = fork @() (\_:()1-> sendInt @End 10 w & close) in
+  let _ = fork @() (\_:()1-> sendInt @End 10 w |> close) in
   let (i, r) = rcvInt @End 1 r in
   close r; 
   i

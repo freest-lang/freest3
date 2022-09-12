@@ -7,12 +7,12 @@ mathServer c =
     Opposite c ->
       let (n, c) = receive c in
       send (-n) c
-      & close,
+      |> close,
     Plus c ->
       let (n1, c) = receive c in
       let (n2, c) = receive c in
       send (n1 + n2) c
-      & close
+      |> close
   }
 
 main : Int
@@ -21,8 +21,8 @@ main =
   fork @() (\_:()1-> mathServer r);
   let (x, c) = 
     select Plus w
-    & send 5 
-    & send 18
-    & receive in
+    |> send 5 
+    |> send 18
+    |> receive in
     close c;
     x

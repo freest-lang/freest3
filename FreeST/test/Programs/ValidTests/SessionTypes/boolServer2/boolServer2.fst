@@ -12,18 +12,18 @@ boolServer c =
       let (n1, c2) = receive c1 in
       let (n2, c3) = receive c2 in
       send (n1 && n2) c3
-      & close,
+      |> close,
 
     Or c1 ->
       let (n1, c2) = receive c1 in
       let (n2, c3) = receive c2 in
       send (n1 || n2) c3
-      & close,
+      |> close,
 
     Not c1 ->
       let (n1, c2) = receive c1 in
       send (not n1) c2
-      & close
+      |> close
   }
 
 main : Bool
@@ -37,9 +37,9 @@ client1 : BoolClient -> Bool
 client1 w =
   let (x, r2) = 
     select And w
-    & send True  
-    & send False 
-    & receive in
+    |> send True  
+    |> send False 
+    |> receive in
   close r2;
   x
 
@@ -47,8 +47,8 @@ client2 : BoolClient -> Bool
 client2 w =
   let (x, r2) = 
     select Not w
-    & send True
-    & receive in
+    |> send True
+    |> receive in
   close r2;
   x
 

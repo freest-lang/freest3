@@ -40,12 +40,12 @@ aStackClient c =
   let c = select Pop  c in let (x, c) = receive c in
   -- let c = select Pop  c in let (_, c) = receive c in
   -- Error: Branch Pop not present in internal choice type dualof EStack
-  select Stop  c & close;
+  select Stop  c |> close;
   x 
 
 main : Int
 main =
   let (r, w) = new EStack;End in
-  fork @() (\_:()1-> eStack @End r & close);
+  fork @() (\_:()1-> eStack @End r |> close);
   aStackClient w
     

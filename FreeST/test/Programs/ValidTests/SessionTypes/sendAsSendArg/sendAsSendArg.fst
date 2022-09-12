@@ -1,5 +1,5 @@
 f1 : !Int;!Int;End -> ()
-f1 c = send 5 c & send 5 & close
+f1 c = send 5 c |> send 5 |> close
 
 f2 : ?Int;?Int;End -> Int
 f2 c =

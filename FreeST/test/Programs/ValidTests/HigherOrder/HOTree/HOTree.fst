@@ -5,7 +5,7 @@ type RTree:1S = &{Leaf: Skip, Node: ?RTree ; ?Int ; ?RTree};End
 sendTree : Tree -> WTree -> ()
 sendTree t c =
   case t of {
-    Leaf -> select Leaf c & close,
+    Leaf -> select Leaf c |> close,
     Node t1 x t2 ->
       let c = select Node c in
       -- left

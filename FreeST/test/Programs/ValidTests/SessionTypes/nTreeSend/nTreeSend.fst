@@ -10,7 +10,7 @@ main =
 clientSendTree : TreeChannel;End -> ()
 clientSendTree c =
   sendTree @End aTree c
-  & close
+  |> close
 
 -- This function represents the following Tree:
 --                     0

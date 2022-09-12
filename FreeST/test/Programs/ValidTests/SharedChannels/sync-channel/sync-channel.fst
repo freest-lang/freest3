@@ -18,7 +18,7 @@ syncServerOnce limit ch =
         -- recursive call
         syncServerOnce (limit-1) ch;
         -- sync client
-        send 0 s & close
+        send 0 s |> close
 
 
 sync : SyncServer -> ()

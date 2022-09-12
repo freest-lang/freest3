@@ -73,7 +73,7 @@ sendTree t c =
       select Leaf c,
 
     Node i lt rt ->
-      sendTree rt c & sendTree lt & select Value & send i
+      sendTree rt c |> sendTree lt |> select Value |> send i
   }
 
 
@@ -114,7 +114,7 @@ errorWhen b s =
 
 -- Simple treeClient that sends a Tree through a TreeC
 treeClient : TreeC -> ()
-treeClient c = sendTree aTree c & select Finish & close
+treeClient c = sendTree aTree c |> select Finish |> close
 
 
 -- ==== BAD CLIENTS ===
@@ -123,30 +123,30 @@ treeClient c = sendTree aTree c & select Finish & close
 -- This bad client ends prematurely
 badClientPrematureEnd : TreeC -> ()
 badClientPrematureEnd c =
-  select Finish c & close
+  select Finish c |> close
 
 -- This bad client send an extra Value -1
 badClientSendExtraValue : TreeC -> ()
 badClientSendExtraValue c =
-  sendTree aTree c & select Value & send (-1) & select Finish & close  
+  sendTree aTree c |> select Value |> send (-1) |> select Finish |> close  
   -- Bad Code         ===========================
 
 -- This bad client send an extra Leaf
 badClientSendExtraLeaf : TreeC -> ()
 badClientSendExtraLeaf c =
-  sendTree aTree c & select Leaf & select Finish & close 
+  sendTree aTree c |> select Leaf |> select Finish |> close 
   -- Bad  Code         =============
 
 -- This client does not send the right subtree
 badClientForgotRight: TreeC -> ()
 badClientForgotRight c =
-  badSendTree aTree c & select Finish & close 
+  badSendTree aTree c |> select Finish |> close 
   -- Bad Code          ===========
 
 -- This client only sends a value without sending leafs
 badClientSendOnlyValue : TreeC -> ()
 badClientSendOnlyValue c =
-  select Value c & send 1 & select Finish & close
+  select Value c |> send 1 |> select Finish |> close
 
 
 -- Sends a tree through a TreeC

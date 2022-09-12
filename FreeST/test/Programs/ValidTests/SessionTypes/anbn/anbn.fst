@@ -24,7 +24,7 @@ client : Int -> S0;End -> ()
 client n c =
   let c = select A c in
   client' @End (n - 1) c 
-  & close
+  |> close
 
 -- for each A selected a B is also selected
 client' : forall a : 1S . Int -> S1;a -> a
@@ -42,7 +42,7 @@ server : dualof S0;End -> ()
 server c =
   match c with {
     A c -> server' @End c 
-           & close
+           |> close
   }
 
 -- For each A selected, a choice for B is also offered

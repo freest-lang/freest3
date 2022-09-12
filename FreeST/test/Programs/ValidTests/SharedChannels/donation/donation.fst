@@ -27,9 +27,9 @@ type Donation : 1S = +{ SetTitle: !String; Donation
 helpSavingTheWolf : dualof DonationS -> ()
 helpSavingTheWolf donationServer =
     let (p, donationServer) = receive donationServer in         -- get a session channel p from the donation server 
-    let p = select SetDate  p & send 2012 in                    -- setup the date
-    let p = select SetTitle p & send "Help Saving the Wolf" in  -- setup the title
-    let p = select SetDate  p & send 2013 in                    -- fix the 2012 date
+    let p = select SetDate  p |> send 2012 in                    -- setup the date
+    let p = select SetTitle p |> send "Help Saving the Wolf" in  -- setup the title
+    let p = select SetDate  p |> send 2013 in                    -- fix the 2012 date
     let p = select Commit p in                                  -- commit once happy
     match p with {                                              -- wait for the outcome
         Accepted p ->                                           -- if accepted, we have three benefactors
@@ -48,7 +48,7 @@ donate : Promotion -> String -> CreditCard -> Int -> ()
 donate p donor ccard amount =
     -- let _ = send (donor, ccard, amount) p in ()
     let (p, _) = receive p in
-    send donor p & send ccard & send amount & close
+    send donor p |> send ccard |> send amount |> close
 
 
 -- 3. The bank that charges credit cards
@@ -86,10 +86,10 @@ setup p title date =
         SetTitle p -> let (t, p) = receive p in setup p t     date,
         Commit   p -> if date < 2013
                       then 
-                        select Denied   p & send "We can only accept 2013 donations\n" & close
+                        select Denied   p |> send "We can only accept 2013 donations\n" |> close
                       else 
                         let (c, s) = new Promotion in
-                        select Accepted p & send c & close ;
+                        select Accepted p |> send c |> close ;
                         promotion s
     }
 

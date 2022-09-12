@@ -23,13 +23,13 @@ type FiniteOutStream:1S = +{More: !Int;FiniteOutStream, Enough: Skip}
 type FiniteInStream:1S = dualof FiniteOutStream
 
 writeValues : !Int;!Int;FiniteOutStream;End 1-> ()
-writeValues c = send 1 c & send 2 & writeAll @End 3 & close
+writeValues c = send 1 c |> send 2 |> writeAll @End 3 |> close
 
 writeAll : ∀ a:1S . Int -> FiniteOutStream;a -> a
 writeAll i c =
   if i <= 40 then
-     select More c &
-     send (if mod i 10 == 0 then 100 else i) &
+     select More c |>
+     send (if mod i 10 == 0 then 100 else i) |>
      writeAll @a (i + 1)
   else select Enough c
 
@@ -45,8 +45,8 @@ readAll x y from to =
   match from with {
     More from ->
       let (z, from) = receive from in
-      select More to &
-      send (average3 x y z) &
+      select More to |>
+      send (average3 x y z) |>
       readAll @a @b y z from,
     Enough from -> (from, select Enough to)
   }
@@ -68,4 +68,4 @@ main : ()
 main =
   let r1 = forkWith @(?Int;?Int;FiniteInStream;End) @() writeValues in
   let r2 = forkWith @FiniteInStream;End @() (readValues r1) in
-  collectValues @End r2 & close
+  collectValues @End r2 |> close

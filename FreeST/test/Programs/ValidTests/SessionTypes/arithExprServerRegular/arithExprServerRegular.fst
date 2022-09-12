@@ -49,7 +49,7 @@ size s n =
     Add s   -> size s (n + 1),
     Mult s  -> size s (n + 1),
     Const s -> let (_, s) = receive s in size s (n + 1),
-    EOS s   -> send n s & close
+    EOS s   -> send n s |> close
   }
 
 -- A sample interaction: counting the number of nodes in a stream;

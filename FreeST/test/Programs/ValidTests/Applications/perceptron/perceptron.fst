@@ -141,7 +141,7 @@ sendNeuron x ss =
     case ss of {
         SNil -> (),
         SCons s ss ->
-            send x s & close;
+            send x s |> close;
             sendNeuron x ss
     }
 

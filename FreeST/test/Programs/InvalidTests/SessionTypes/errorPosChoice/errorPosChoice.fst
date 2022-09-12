@@ -9,7 +9,7 @@ main =
 type F = +{B: !Bool};End
 
 f : F -> ()
-f c = let c = select c B in send c True & close
+f c = let c = select c B in send c True |> close
 
 f1 : dualof F -> (Bool, End)
 f1 c = match c with { B c -> receive c }
