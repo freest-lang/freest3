@@ -29,8 +29,10 @@ import qualified Validation.Kinding as K
 import qualified Validation.Typing as Typing -- Again
 
 
+import           Control.Monad.Extra ( allM, unlessM )
 import           Control.Monad.State ( when, get, unless )
 import           Control.Monad
+
 import qualified Data.Map.Strict as Map
 
 typeCheck :: FreestState ()
@@ -56,6 +58,8 @@ typeCheck = do
     tMapWithKeyM_ (checkFunBody (varEnv s)) =<< getProg
     -- * Check the main function
     checkMainFunction
+    -- * Checking final environment for linearity
+    checkLinearity
 
 -- Check a given function body against its type; make sure all linear
 -- variables are used.
@@ -79,4 +83,9 @@ checkMainFunction = do
     else when (isMainFlagSet runOpts) $
       addError (MainNotDefined (defaultSpan {defModule = runFilePath runOpts}) main)
 
+checkLinearity :: FreestState ()
+checkLinearity = do
+  venv <- getVEnv
+  m <- filterM (K.lin . snd) (Map.toList venv)
+  unless (null m) $ addError (LinearFunctionNotConsumed (getSpan (fst $ head m)) m) 
 
