@@ -10,5 +10,6 @@ main =
 f : ?Int;End -> Int
 f c = let (x, c) = receive c in close c; x
 
-sender : !Int;End 1-> Int -> ()
+sender : !Int;End -> Int 1-> ()
 sender c i = send (i * 2) c |> close
+

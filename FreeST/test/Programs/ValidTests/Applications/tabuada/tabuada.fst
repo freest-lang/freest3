@@ -40,7 +40,7 @@ type TabuadaClient = dualof TabuadaServer
 initTabuadaServer : TabuadaServer 1-> ()
 initTabuadaServer c = tabuadaServer c Empty
 
-tabuadaServer : TabuadaServer 1-> IntList -> ()
+tabuadaServer : TabuadaServer -> IntList 1-> ()
 tabuadaServer c result =
   match c with {
 
