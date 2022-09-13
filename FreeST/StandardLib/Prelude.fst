@@ -90,7 +90,7 @@ receive : ∀a:1T . ∀b:1S . ?a;b -> (a, b)
 close : End -> ()
   -- Not the actual type for collect, but for writing it we would
   -- need polymorphism over the labels in some choice/variant
-collect : ∀a:1T . a
+collect : ∀a:*T . a
   -- Internal Files
 __openFile : FilePath -> IOMode -> FileHandle
 __putFileStr : FileHandle -> String -> ()
@@ -247,15 +247,15 @@ type OutStreamProvider : *S = *?OutStream
 type OutStream : 1S = +{ PutChar : !Char; OutStream
                        , PutStr  : !String; OutStream
                        , PutStrLn: !String; OutStream
-                       , Close   : Skip
+                       , Close   : End
                        }
 
 hCloseOut : OutStream -> ()
-hCloseOut ch = sink @Skip $ select Close ch
+hCloseOut ch = select Close ch |> close
 
 
 hGenericPut : forall a . (OutStream -> !a;OutStream) -> a -> OutStream -> OutStream
-hGenericPut sel x outStream = sel outStream & send x
+hGenericPut sel x outStream = sel outStream |> send x
 
 hPutChar : Char -> OutStream -> OutStream
 hPutChar = hGenericPut @Char (\ch:OutStream -> select PutChar ch) -- (select PutChar)
@@ -289,11 +289,11 @@ type InStreamProvider : *S = *?InStream
 type InStream : 1S = +{ GetChar     : ?Char  ; InStream
                       , GetLine     : ?String; InStream
                       , IsEOF       : ?Bool  ; InStream
-                      , Close       : Skip
+                      , Close       : End
                       }
 
 hCloseIn : InStream -> ()
-hCloseIn ch = sink @Skip $ select Close ch
+hCloseIn ch = select Close ch |> close
 
 hGenericGet : forall a . (InStream -> ?a;InStream) -> InStream -> (a, InStream)
 hGenericGet sel ch = receive $ sel ch
@@ -351,10 +351,10 @@ __runStdout = runServer @OutStream @() __runPrinter ()
 __runPrinter : () -> dualof OutStream 1-> ()
 __runPrinter _ printer =
     match printer with {
-        PutChar  printer -> consume @Char   @dualof OutStream (\c:Char -> __putStrOut (show @Char c)) printer & __runPrinter (),
-        PutStr   printer -> consume @String @dualof OutStream __putStrOut printer & __runPrinter (),
-        PutStrLn printer -> consume @String @dualof OutStream (\s:String -> __putStrOut (s ++ "\n")) printer & __runPrinter (),
-        Close    _       -> ()
+        PutChar  printer -> consume @Char   @dualof OutStream (\c:Char -> __putStrOut (show @Char c)) printer |> __runPrinter (),
+        PutStr   printer -> consume @String @dualof OutStream __putStrOut printer |> __runPrinter (),
+        PutStrLn printer -> consume @String @dualof OutStream (\s:String -> __putStrOut (s ++ "\n")) printer |> __runPrinter (),
+        Close    printer -> close printer
     }
 
 -- | Stderr
@@ -368,10 +368,10 @@ __runStderr = runServer @OutStream @() __runErrPrinter ()
 __runErrPrinter : () -> dualof OutStream 1-> ()
 __runErrPrinter _ printer =
     match printer with {
-        PutChar  printer -> consume @Char   @dualof OutStream (\c:Char -> __putStrErr (show @Char c)) printer & __runErrPrinter (),
-        PutStr   printer -> consume @String @dualof OutStream __putStrErr printer & __runErrPrinter (),
-        PutStrLn printer -> consume @String @dualof OutStream (\s:String -> __putStrErr (s ++ "\n")) printer & __runErrPrinter (),
-        Close       _       -> ()
+        PutChar  printer -> consume @Char   @dualof OutStream (\c:Char -> __putStrErr (show @Char c)) printer |> __runErrPrinter (),
+        PutStr   printer -> consume @String @dualof OutStream __putStrErr printer |> __runErrPrinter (),
+        PutStrLn printer -> consume @String @dualof OutStream (\s:String -> __putStrErr (s ++ "\n")) printer |> __runErrPrinter (),
+        Close    printer -> close printer
     }
 
 -- | Stdin
@@ -394,7 +394,7 @@ __runReader _ reader =
         GetChar reader -> __runReader () $ send (__getChar     ()) reader,
         GetLine reader -> __runReader () $ send (__getLine     ()) reader,
         IsEOF   reader -> __runReader () $ send False reader, -- stdin is always open
-        Close   _ -> ()
+        Close   reader -> close reader
     }
 
 
@@ -417,11 +417,11 @@ data IOMode = ReadMode | WriteMode | AppendMode
 
 openWriteFile : FilePath -> OutStream
 openWriteFile fp =
-    forkWith @OutStream $ runWriteFile (__openFile fp WriteMode)
+    forkWith @OutStream @() $ runWriteFile (__openFile fp WriteMode)
 
 openAppendFile : FilePath -> OutStream
 openAppendFile fp =
-    forkWith @OutStream $ runWriteFile (__openFile fp AppendMode)
+    forkWith @OutStream @() $ runWriteFile (__openFile fp AppendMode)
 
 runWriteFile : FileHandle -> dualof OutStream 1-> ()
 runWriteFile fh ch =
@@ -429,13 +429,13 @@ runWriteFile fh ch =
         PutChar  ch -> let (c, ch) = receive ch in __putFileStr fh (show @Char c); runWriteFile fh ch,
         PutStr   ch -> let (s, ch) = receive ch in __putFileStr fh s             ; runWriteFile fh ch,
         PutStrLn ch -> let (s, ch) = receive ch in __putFileStr fh (s ++ "\n")   ; runWriteFile fh ch,
-        Close    _  -> __closeFile fh
+        Close    ch -> __closeFile fh; close ch
     }
 
 
 openReadFile : FilePath -> InStream
 openReadFile fp = 
-    forkWith @InStream $ runReadFile (__openFile fp ReadMode)
+    forkWith @InStream @() $ runReadFile (__openFile fp ReadMode)
 
 runReadFile : FileHandle -> dualof InStream 1-> ()
 runReadFile fh ch =
@@ -443,18 +443,18 @@ runReadFile fh ch =
         GetChar ch -> runReadFile fh $ send (__readFileChar fh) ch,
         GetLine ch -> runReadFile fh $ send (__readFileLine fh) ch,
         IsEOF   ch -> runReadFile fh $ send (__isEOF fh       ) ch,
-        Close   _  -> __closeFile fh
+        Close   ch -> __closeFile fh; close ch
     }
 
 writeFile : FilePath -> String -> ()
 writeFile fp content = openWriteFile fp
-                     & hPutStr content
-                     & hCloseOut
+                     |> hPutStr content
+                     |> hCloseOut
 
 appendFile : FilePath -> String -> ()
 appendFile fp content = openAppendFile fp
-                     & hPutStr content
-                     & hCloseOut
+                     |> hPutStr content
+                     |> hCloseOut
 
 readFile : FilePath -> String
 readFile fp = __fullRead $ openReadFile fp
