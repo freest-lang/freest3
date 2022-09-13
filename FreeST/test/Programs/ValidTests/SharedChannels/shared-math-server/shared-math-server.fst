@@ -2,7 +2,7 @@ type MathServer  : *S = *?MathService
 type MathService : 1S = +{ Plus   : !Int; !Int; ?Int; MathService
                          , Greater: !Int; !Int; ?Bool; MathService
                          , Neg    : !Int; ?Int; MathService
-                         , Close  : Skip
+                         , Close  : End
                          }
 
 runMathServer : dualof MathServer -> ()
@@ -26,38 +26,38 @@ runMathService ch =
         Neg     ch -> 
             let (n1, ch) = receive ch in
             runMathService $ send (-n1) ch,
-        Close   ch -> ()
+        Close   ch -> close ch
     }
 
 client1 : MathServer -> ()
 client1 ch =
     let (c, _) = receive ch in
     let (n, c) = select Plus c 
-               & send 1
-               & send 2
-               & receive
+               |> send 1
+               |> send 2
+               |> receive
                in
     let (m, c) = select Neg c
-               & send n
-               & receive
+               |> send n
+               |> receive
                in
-    let _ = select Close c in
+    select Close c |> close;
     printIntLn m
 
 client2 : MathServer -> ()
 client2 ch =
     let (c, _) = receive ch in
     let (b, c) = select Greater c
-               & send 2
-               & send 1
-               & receive
+               |> send 2
+               |> send 1
+               |> receive
                in
-    let _ = select Close c in
+    select Close c |> close; 
     printBoolLn b
 
 main : ()
 main =
     let (c, s) = new MathServer in
-    fork $ client1 c;
-    fork $ client2 c;
+    fork (\_:() 1-> client1 c);
+    fork (\_:() 1-> client2 c);
     runMathServer s

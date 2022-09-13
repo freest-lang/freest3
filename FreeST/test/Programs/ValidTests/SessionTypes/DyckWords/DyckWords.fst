@@ -96,7 +96,7 @@ concatT in1 in2 out =
   }
 
 -- A few functions to write on channels
-writeLtGt, writeDollar, writeLtLtGtGtLtGt, writeLtLtGtLtGtGt : D -> Skip
+writeLtGt, writeDollar, writeLtLtGtGtLtGt, writeLtLtGtLtGtGt : D;End -> End
 
 writeLtGt c =
   select Dollar $ select Gt $ select Lt c
@@ -110,21 +110,24 @@ writeLtLtGtLtGtGt c =
   select Dollar $ select Gt $ select Gt $ select Lt $ select Gt $ select Lt $ select Lt c
 
 -- Putting it all together: out1 -> in1-out2 --> in2
-mainForward : Skip
+mainForward : ()
 mainForward =
-  let (out1, in1) = new D in
-  let (out2, in2) = new D in
-  fork @Skip $ writeLtLtGtGtLtGt out1;
-  fork @(Skip, Skip) (forwardD @Skip @Skip in1 out2);
-  readD @Skip in2
+  let (out1, in1) = new D;End in
+  let (out2, in2) = new D;End in
+  fork @() (\_:()1-> writeLtLtGtGtLtGt out1 |> close);
+  fork @() (\_:()1-> let (c1, c2) = forwardD @End @End in1 out2 in close c1; close c2);
+  readD @End in2 |> close
 
 -- Putting it all together: (out1 | out2) --> in1-in2-out3 --> in3
-main : Skip
+main : ()
 main =
-  let (out1, in1) = new D in
-  let (out2, in2) = new D in
-  let (out3, in3) = new D in
-  fork @Skip (writeLtLtGtGtLtGt out1);
-  fork @Skip (writeLtLtGtLtGtGt out2);
-  fork @(Skip, (Skip, Skip)) (concatD @Skip @Skip @Skip in1 in2 out3);
-  readD @Skip in3
+  let (out1, in1) = new D;End in
+  let (out2, in2) = new D;End in
+  let (out3, in3) = new D;End in
+  fork @() (\_:()1-> writeLtLtGtGtLtGt out1 |> close);
+  fork @() (\_:()1-> writeLtLtGtLtGtGt out2 |> close);
+  fork @() (\_:()1-> 
+    let (c1, c23) = concatD @End @End @End in1 in2 out3 in 
+    let (c2, c3 ) = c23 in 
+    close c1; close c2; close c3);
+  readD @End in3 |> close

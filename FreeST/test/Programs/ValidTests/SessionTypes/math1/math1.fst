@@ -1,21 +1,28 @@
-mathServer : &{Opposite: ?Int;!Int, Plus: ?Int;?Int;!Int} -> Skip
+type MathServer : 1S = &{Opposite: ?Int;!Int, Plus: ?Int;?Int;!Int};End
+type MathClient : 1S = dualof MathServer
+
+mathServer : MathServer -> ()
 mathServer c =
   match c with {
-    Opposite c1 ->
-      let (n, c) = receive c1 in
-      send (-n) c,
-    Plus c1 ->
-      let (n1, c2) = receive c1 in
-      let (n2, c3) = receive c2 in
-      send (n1 + n2) c3
+    Opposite c ->
+      let (n, c) = receive c in
+      send (-n) c
+      |> close,
+    Plus c ->
+      let (n1, c) = receive c in
+      let (n2, c) = receive c in
+      send (n1 + n2) c
+      |> close
   }
 
 main : Int
 main =
-  let (w,r) = new +{Opposite: !Int;?Int, Plus: !Int;!Int;?Int} in
-  let x = fork @Skip $ mathServer r in
-  let w = select Plus w in
-  let w = send 5 w in
-  let w = send 18 w in
-  let (x, _) = receive w in
-  x
+  let (w,r) = new MathClient in
+  fork @() (\_:()1-> mathServer r);
+  let (x, c) = 
+    select Plus w
+    |> send 5 
+    |> send 18
+    |> receive in
+    close c;
+    x

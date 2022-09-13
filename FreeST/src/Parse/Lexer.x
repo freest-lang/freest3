@@ -74,6 +74,7 @@ tokens :-
   "!"                           { \p s -> TokenMOut (internalPos p) }
   "?"				{ \p s -> TokenMIn (internalPos p) }
   "&"				{ \p s -> TokenAmpersand (internalPos p) }
+  "|>"				{ \p s -> TokenPipeOp (internalPos p) }
   "."                           { \p s -> TokenDot (internalPos p) }
   "="                           { \p s -> TokenEq (internalPos p) }
   "|"                           { \p s -> TokenPipe (internalPos p) }
@@ -107,6 +108,7 @@ tokens :-
   Bool				{ \p s -> TokenBoolT (internalPos p) }
   String			{ \p s -> TokenStringT (internalPos p) }
   Skip				{ \p s -> TokenSkip (internalPos p) }
+  End			  	{ \p s -> TokenEnd (internalPos p) }
 -- Keywords
   (rec|μ)                       { \p s -> TokenRec (internalPos p) }
   let                           { \p s -> TokenLet (internalPos p) }
@@ -159,6 +161,7 @@ data Token =
   | TokenRBracket Span
   | TokenComma Span
   | TokenSkip Span
+  | TokenEnd Span
   | TokenColon Span
   | TokenUpperId Span String
   | TokenSemi Span
@@ -167,6 +170,7 @@ data Token =
   | TokenLBrace Span
   | TokenRBrace Span
   | TokenAmpersand Span
+  | TokenPipeOp Span
   | TokenPlus Span
   | TokenRec Span
   | TokenDot Span
@@ -236,6 +240,7 @@ instance Show Token where
   show (TokenRBracket _) = "]"
   show (TokenComma _) = ","
   show (TokenSkip _) = "Skip"
+  show (TokenEnd _) = "End"
   show (TokenColon _) = ":"
   show (TokenUpperId _ c) = "" ++ c
   show (TokenSemi _) = ";"
@@ -244,6 +249,7 @@ instance Show Token where
   show (TokenLBrace _) = "{"
   show (TokenRBrace _) = "}"
   show (TokenAmpersand _) = "&"
+  show (TokenPipeOp _) = "|>"
   show (TokenPlus _) = "+"
   show (TokenRec _) = "rec"
   show (TokenDot _) = "."
@@ -352,6 +358,7 @@ instance Located Token where
   getSpan (TokenRBracket p) = p
   getSpan (TokenComma p) = p
   getSpan (TokenSkip p) = p
+  getSpan (TokenEnd p) = p
   getSpan (TokenColon p) = p
   getSpan (TokenUpperId p _) = p
   getSpan (TokenSemi p) = p
@@ -360,6 +367,7 @@ instance Located Token where
   getSpan (TokenLBrace p) = p
   getSpan (TokenRBrace p) = p
   getSpan (TokenAmpersand p) = p
+  getSpan (TokenPipeOp p) = p
   getSpan (TokenPlus p) = p
   getSpan (TokenRec p) = p
   getSpan (TokenDot p) = p

@@ -41,7 +41,7 @@ readIntStream = consumeStream @(?Int) readInt @(dualof OutIntStream)
 mainIntStream : ()
 mainIntStream =
   let (w, r) = new OutIntStream in
-  fork @() (writeIntStream w);
+  fork @() (\_:() 1-> writeIntStream w);
   readIntStream r
 
 -- 2 _ Stream of out-char-in-bool values
@@ -66,11 +66,11 @@ writeIntStream = produceStream  @Int (\c:IntStream -> send 7 c)
 mainCharBoolStream : ()
 mainCharBoolStream =
   let (w, r) = new OutCharInBoolStream in
-  fork @() (writeCharReadBoolStream w);
+  fork @() (\_:() 1-> writeCharReadBoolStream w);
   readCharWriteBoolStream r
 
 main : ()
 main =
   let (w, r) = new IntStream in
-  fork @() (writeIntStream w);
+  fork @() (\_:() 1-> writeIntStream w);
   readIntStream r

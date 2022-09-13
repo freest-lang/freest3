@@ -1,1 +1,1 @@
-List 15 (List 10 (List 6 (List 3 (List 1 End))))
+Cons 15 (Cons 10 (Cons 6 (Cons 3 (Cons 1 Nil))))

@@ -22,11 +22,10 @@ type TermChannel : 1S  = +{
 
 -- Read an arithmetic expression from a channel; compute its value;
 -- return the value on the same channel.
-computeService : dualof TermChannel;!Int -> ()
+computeService : dualof TermChannel;!Int;End -> ()
 computeService c =
-  let (n1, c1) = receiveEval @(!Int ; Skip) c in
-  send n1 c1 &
-  (\_:Skip -> ())
+  let (n1, c1) = receiveEval @(!Int ; End) c in
+  send n1 c1 |> close
 
 -- Read an arithmetic expression in the front of a channel; compute
 -- its value; return the pair composed of this value and the channel
@@ -47,20 +46,23 @@ receiveEval c =
   }
 
 -- Compute 5 + (7 * 9); return the result
-client : TermChannel;?Int -> Int
-client c = select Add c
-        & select Const
-        & send 5
-        & select Mult
-        & select Const
-        & send 7
-        & select Const
-        & send 9
-        & receive
-        & fst @Int @Skip
+client : TermChannel;?Int;End -> Int
+client c = 
+  let (x, c) = 
+    select Add c
+    |> select Const
+    |> send 5
+    |> select Mult
+    |> select Const
+    |> send 7
+    |> select Const
+    |> send 9
+    |> receive in
+  close c;
+  x
 
 main : Int
 main =
-  let (w, r)  = new dualof TermChannel;!Int in
-  fork @() (computeService w);
+  let (w, r)  = new dualof TermChannel;!Int;End in
+  fork @() (\_:()1-> computeService w);
   client r

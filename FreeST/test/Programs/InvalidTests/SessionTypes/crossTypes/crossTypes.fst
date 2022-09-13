@@ -25,9 +25,10 @@ sendList c l =
 
 main : List
 main =
-  let (x, y) = new ListOut in
-  let _      = fork @Skip (sendList @Skip y aList) in
-  let (list, _) = rcvList @Skip x in
+  let (x, y) = new ListOut;End in
+  fork @() (\_:() -> sendList @End y aList |> close);
+  let (list, x) = rcvList @End x in
+  close x;
   list
 
 aList : List

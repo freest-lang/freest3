@@ -26,7 +26,7 @@ type FTP = *?FTPSession
 type FTPSession : 1S = +
   { Get: ?File ; FTPSession
   , Put: !File ; FTPSession
-  , Bye: Skip
+  , Bye: End
   }
 -- |An FTP thread channel as seen from the side of the FTP thread
 -- |Connects the FTP demon to its threads
@@ -39,7 +39,7 @@ init : Int -> dualof FTP -> Diverge
 init n pid =
   let (r, w) = new dualof FTPThread in
   let state = new *?File in
-  parallel n (\ _:() -> ftpThread state w);
+  parallel @() n (\ _:() -> ftpThread state w);
   ftpd pid r
 
 -- |FTP demon: wait for a client, wait for a thread;
@@ -70,35 +70,35 @@ actions state s b =
         printIntLn file;
         writeTo file state;
         actions state s b
-    , Bye s -> ftpThread state b
+    , Bye s -> close s; ftpThread state b
     }
 
 -- Sample clients
 
 -- |Put a file and terminate
-putClient : FTP -> File -> Skip
+putClient : FTP -> File -> ()
 putClient pid file =
   let (c, _) = receive pid in
-  select Put c & send file & select Bye
+  select Put c |> send file |> select Bye |> close 
 
 -- |Get a file and terminate
-getClient : FTP -> Skip
+getClient : FTP -> ()
 getClient pid =
   let (c, _) = receive pid in
   let c = select Get c in
   let (file, c) = receive c in
-  select Bye c
+  select Bye c |> close
 
 -- |Put two files and terminate
-putClient' : FTP -> File -> File -> Skip
+putClient' : FTP -> File -> File -> ()
 putClient' pid file1 file2 =
   let c = receive_ @FTPSession pid in
-  select Put c & send file1 &
-  select Put   & send file2 &
-  select Bye
+  select Put c |> send file1 |>
+  select Put   |> send file2 |>
+  select Bye |> close
 
 -- |Get a file and terminate
-putgetClient : FTP -> File -> Skip
+putgetClient : FTP -> File -> ()
 putgetClient pid file =
   let (c, _)    = receive pid in
   let c         = select Put c in
@@ -107,7 +107,7 @@ putgetClient pid file =
   let (file, c) = receive c in
   let c         = select Put c in
   let c         = send file c in
-  select Bye c
+  select Bye c |> close
 
 -- Application
 
@@ -115,11 +115,11 @@ main : Diverge
 main =
   let (ftpc, ftps) = new FTP in
   -- A few clients
-  fork $ putClient ftpc 27;
-  fork $ getClient ftpc;
-  fork $ getClient ftpc;
-  fork $ putClient' ftpc 93 66;
-  fork $ putgetClient ftpc 14;
-  fork $ putClient ftpc 59;
+  fork (\_:() 1-> putClient ftpc 27);
+  fork (\_:() 1-> getClient ftpc);
+  fork (\_:() 1-> getClient ftpc);
+  fork (\_:() 1-> putClient' ftpc 93 66);
+  fork (\_:() 1-> putgetClient ftpc 14);
+  fork (\_:() 1-> putClient ftpc 59);
   -- A server with three threads
   init 3 ftps

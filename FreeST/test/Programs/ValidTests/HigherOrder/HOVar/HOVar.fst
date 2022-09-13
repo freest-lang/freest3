@@ -1,8 +1,9 @@
 f : ∀a . a -> (a, a)
 f x =
-  let (r, w) = new ?a in
-  send x w;
-  let (y, _) = receive r in
+  let (r, w) = new ?a;End in
+  fork (\_:()1-> send x w |> close);
+  let (y, r) = receive r in
+  close r; 
   (y, y)
 
 main : (Bool, Bool)

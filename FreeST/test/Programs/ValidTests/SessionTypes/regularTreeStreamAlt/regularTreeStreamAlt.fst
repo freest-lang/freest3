@@ -3,7 +3,7 @@
 main : Tree
 main =
   let (w, r) = new TreeC in
-  fork @() $ treeClient w;
+  fork @() (\_:() 1-> treeClient w);
   --fork @() $ badClientPrematureEnd w;
   --fork @() $ badClientSendExtraValue w;
   --fork @() $ badClientSendExtraLeaf w;
@@ -62,7 +62,7 @@ stackSize ts =
 type TreeC : 1S = +{
   Value: !Int; TreeC,
   Leaf:  TreeC,
-  End:   Skip }
+  Finish:   End }
 
 
 -- Sends a tree through a TreeC
@@ -73,7 +73,7 @@ sendTree t c =
       select Leaf c,
 
     Node i lt rt ->
-      send i $ select Value $ sendTree lt $ sendTree rt c
+      sendTree rt c |> sendTree lt |> select Value |> send i
   }
 
 
@@ -98,7 +98,8 @@ receiveTree_ ts c =
     Leaf c ->
       receiveTree_ (stackPush Leaf ts) c,
 
-    End  c ->
+    Finish  c ->
+      close c; 
       errorWhen (stackIsEmpty ts)  "Channel was closed without sending a Tree";
       errorWhen (stackSize ts > 1) "Channel was closed mid-stream or with leftover tree elements";
       snd @TreeStack @Tree $ stackPop ts
@@ -113,9 +114,7 @@ errorWhen b s =
 
 -- Simple treeClient that sends a Tree through a TreeC
 treeClient : TreeC -> ()
-treeClient c =
-  let _ = select End $ sendTree aTree c in
-  ()
+treeClient c = sendTree aTree c |> select Finish |> close
 
 
 -- ==== BAD CLIENTS ===
@@ -124,36 +123,30 @@ treeClient c =
 -- This bad client ends prematurely
 badClientPrematureEnd : TreeC -> ()
 badClientPrematureEnd c =
-  let _ = select End c in
-  ()
+  select Finish c |> close
 
 -- This bad client send an extra Value -1
 badClientSendExtraValue : TreeC -> ()
 badClientSendExtraValue c =
-  let _ = select End $ send (-1) $ select Value $ sendTree aTree c in
+  sendTree aTree c |> select Value |> send (-1) |> select Finish |> close  
   -- Bad Code         ===========================
-  ()
 
 -- This bad client send an extra Leaf
 badClientSendExtraLeaf : TreeC -> ()
 badClientSendExtraLeaf c =
-  let _ = select End $ select Leaf $ sendTree aTree c in
+  sendTree aTree c |> select Leaf |> select Finish |> close 
   -- Bad  Code         =============
-  ()
 
 -- This client does not send the right subtree
 badClientForgotRight: TreeC -> ()
 badClientForgotRight c =
-  let _ = select End $ badSendTree aTree c in
+  badSendTree aTree c |> select Finish |> close 
   -- Bad Code          ===========
-  ()
 
 -- This client only sends a value without sending leafs
 badClientSendOnlyValue : TreeC -> ()
 badClientSendOnlyValue c =
-  let _  = select End $ send 1 $ select Value c in
-  -- Bad code          ========================
-  ()
+  select Value c |> send 1 |> select Finish |> close
 
 
 -- Sends a tree through a TreeC

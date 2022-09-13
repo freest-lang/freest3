@@ -1,4 +1,4 @@
-id' : forall x => x -> x
+id' : forall x . x -> x
 id' c = c
 
 main : Int

@@ -18,10 +18,10 @@ write t c =
     Leaf ->
       select Leaf c,
     Node x l r ->
-      select Node c &
-      send x &
-      write  @(TreeChannel ; a) l &
-      write @a r
+      select Node c
+      |> send x
+      |> write  @(TreeChannel ; a) l
+      |> write @a r
   }
 
 read : forall a: 1S . dualof TreeChannel; a -> (Tree, a)
@@ -41,6 +41,9 @@ aTree, main : Tree
 aTree = Node 7 (Node 5 Leaf Leaf) (Node 9 (Node 11 Leaf Leaf) (Node 15 Leaf Leaf))
 
 main =
-  let (writer, reader) = new TreeChannel in
-  fork  @Skip $ write  @Skip aTree writer;
-  fst  @Tree @Skip $ read  @Skip reader
+  let (writer, reader) = new TreeChannel;End in
+  fork  @() (\_:()1-> write  @End aTree writer |> close);
+  let (tree, reader) = read  @End reader in 
+  close reader;
+  tree
+

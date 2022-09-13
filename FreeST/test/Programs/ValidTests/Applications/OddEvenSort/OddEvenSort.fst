@@ -1,4 +1,4 @@
-type Sorter : 1S = +{Done: Skip, More: !Int ; ?Int; Sorter}
+type Sorter : 1S = +{Done: End, More: !Int ; ?Int; Sorter}
 
 -- first accepts the number of phases, the value in the node, the
 -- channel to the right and the channel where to announce the result
@@ -7,7 +7,8 @@ type Sorter : 1S = +{Done: Skip, More: !Int ; ?Int; Sorter}
 first : Int -> Int -> Sorter -> !Int 1-> Skip
 first n x right collect' =
   if n == 0
-  then let _ = select Done right in send x collect'
+  then select Done right |> close ; 
+       send x collect'
   else let (min, right) = exchangeRight x right in
        first (n - 1) min right collect'
 
@@ -18,7 +19,7 @@ first n x right collect' =
 evenProcess : Int -> Int -> dualof Sorter -> Sorter 1-> !Int 1-> Skip
 evenProcess n x left right collect' =
   match left with {
-    Done left -> let _ = select Done right in send x collect',
+    Done left -> close left; select Done right |> close ; send x collect',
     More left -> let (max, left) = exchangeLeft x left in
                  oddProcess (n - 1) max left right collect'
   }
@@ -30,7 +31,7 @@ evenProcess n x left right collect' =
 oddProcess : Int -> Int -> dualof Sorter -> Sorter 1-> !Int 1-> Skip
 oddProcess n x left right collect' =
   if n == 0
-  then let _ = select Done right in consume left ; send x collect'
+  then select Done right |> close ; consume left ; send x collect'
   else let (min, right) = exchangeRight x right in
        evenProcess (n - 1) min left right collect'
 
@@ -40,7 +41,7 @@ oddProcess n x left right collect' =
 last : Int -> dualof Sorter -> !Int 1-> Skip
 last x left collect' =
   match left with {
-    Done left -> send x collect',
+    Done left -> close left; send x collect',
     More left -> let (max, left) = exchangeLeft x left in
                  last max left collect'
   }
@@ -62,7 +63,7 @@ exchangeLeft x left =
 consume : dualof Sorter -> ()
 consume c =
   match c with {
-    Done c -> (),
+    Done c -> close c,
     More c -> -- Should not happen
       let (_, c) = receive c in
       consume (send (-99) c)
@@ -88,13 +89,13 @@ main =
   let (cw6, cr6) = new !Int in
   let (cw7, cr7) = new !Int in
   -- the various sorting nodes
-  fork @Skip (first       (p / 2)     99    l1 cw1);
-  fork @Skip (evenProcess (p / 2)     88 r1 l2 cw2);
-  fork @Skip (oddProcess  (p / 2 - 1) 33 r2 l3 cw3);
-  fork @Skip (evenProcess (p / 2)     11 r3 l4 cw4);
-  fork @Skip (oddProcess  (p / 2 - 1) 55 r4 l5 cw5);
-  fork @Skip (evenProcess (p / 2)     44 r5 l6 cw6);
-  fork @Skip (last                    77 r6    cw7);
+  fork @Skip (\_:() 1-> first       (p / 2)     99    l1 cw1);
+  fork @Skip (\_:() 1-> evenProcess (p / 2)     88 r1 l2 cw2);
+  fork @Skip (\_:() 1-> oddProcess  (p / 2 - 1) 33 r2 l3 cw3);
+  fork @Skip (\_:() 1-> evenProcess (p / 2)     11 r3 l4 cw4);
+  fork @Skip (\_:() 1-> oddProcess  (p / 2 - 1) 55 r4 l5 cw5);
+  fork @Skip (\_:() 1-> evenProcess (p / 2)     44 r5 l6 cw6);
+  fork @Skip (\_:() 1-> last                    77 r6    cw7);
   -- collect' and print results
   let (x1, _) = receive cr1 in printIntLn x1;
   let (x2, _) = receive cr2 in printIntLn x2;

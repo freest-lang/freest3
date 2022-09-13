@@ -1,8 +1,8 @@
-apply : (?Int -> (Int, Skip)) -> ?Int -> (Int, Skip)
+apply : (?Int;End -> (Int, End)) -> ?Int;End -> (Int, End)
 apply f = f
 
-main : Skip
+main : ()
 main =
-    let (r, w) = new ?Int in
-    fork  @(Int, Skip) (apply (receive  @Int @Skip) r) ;
-    send 5 w
+    let (r, w) = new ?Int;End in
+    fork  @() (\_:()1-> close (snd @Int @End (apply (receive  @Int @End) r))) ;
+    send 5 w |> close

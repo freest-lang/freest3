@@ -71,6 +71,7 @@ data ErrorType =
   | SignatureLacksBinding Span Variable T.Type
   | MainNotDefined Span Variable
   | UnrestrictedMainFun Span Variable T.Type K.Kind
+  | LinearFunctionNotConsumed Span [(Variable, T.Type)]
   -- Kinding
   | TypeVarNotInScope Span Variable -- Duplicated: TypeVarOutOfScope
   | TypeNotContractive Span T.Type Variable
@@ -115,6 +116,7 @@ instance Located ErrorType where
   getSpan (SignatureLacksBinding p _ _ ) = p
   getSpan (MainNotDefined p _          ) = p
   getSpan (UnrestrictedMainFun p _ _ _ ) = p
+  getSpan (LinearFunctionNotConsumed p _) = p
   getSpan (TypeVarNotInScope p _       ) = p
   getSpan (TypeNotContractive p _ _    ) = p
   getSpan (CantMatchKinds p _ _ _      ) = p
@@ -193,6 +195,11 @@ instance Message ErrorType where
   msg (UnrestrictedMainFun _ x t k) sty ts = 
     "The type of " ++ style red sty ts x ++ " must be non linear\n\t Found type " ++
     style red sty ts t ++ " of kind " ++ style red sty ts k
+  msg (LinearFunctionNotConsumed _ venv) sty _ =
+    "Found linear function(s) that were not consumed.\n  Located at:" ++
+    foldl (\acc (k,v) -> let s = getSpan k in
+             acc ++ "\n\t- " ++ defModule s ++ ":" ++ show s ++ ": " ++
+             red sty (show k ++ " : " ++ show v)) "" venv    
   -- Validation.Kinding
   msg (TypeVarNotInScope _ a) sty ts = "Type variable not in scope: " ++ style red sty ts a
   msg (TypeNotContractive _ t a) sty ts =

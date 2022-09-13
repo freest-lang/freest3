@@ -13,8 +13,10 @@ aTree =
     0
     (singleton 5)
 
-main : (Tree, Skip)
+main : Tree
 main =
-  let (w, r) = new !Tree in
-  fork $ send aTree w;
-  receive r
+  let (w, r) = new !Tree;End in
+  fork (\_:()1-> send aTree w |> close);
+  let (t, r) = receive r in 
+  close r; 
+  t

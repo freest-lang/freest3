@@ -13,7 +13,7 @@ main : Int
 main =
   let (tw, tr) = new Bool' in
   let (fw, fr) = new Bool' in
-  fork $ true' tw;
-  fork $ false' fw;
+  fork (\_:() 1-> true' tw);
+  fork (\_:() 1-> false' fw);
   cond @Int tr 1 2 + cond @Int fr 3 4
   -- 1
