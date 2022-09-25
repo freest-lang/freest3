@@ -50,15 +50,18 @@ initQueue _ =
     ( forkWith @*!a                          @() (runTail @a internalS)
     , forkWith @*?(+{Dequeue: ?a, Peek: ?a}) @() (runHead @a internalC)
     )
+    -- The () parameter is there to please the compiler only :(
 
 enqueue : forall a . a -> (*!a, *?(+{Dequeue: ?a, Peek: ?a})) -> ()
 enqueue i queue = 
-    fst @*!a @*?(+{Dequeue: ?a, Peek: ?a}) queue 
+    queue
+    |> fst @*!a @*?(+{Dequeue: ?a, Peek: ?a})
     |> send_ @a i
 
 dequeue : forall a . (*!a, *?(+{Dequeue: ?a, Peek: ?a})) -> a
 dequeue queue = 
-    snd @*!a @*?(+{Dequeue: ?a, Peek: ?a}) queue
+    queue
+    |> snd @*!a @*?(+{Dequeue: ?a, Peek: ?a})
     |> receive_ @+{Dequeue: ?a, Peek: ?a}
     |> select Dequeue
     |> receive
@@ -66,7 +69,8 @@ dequeue queue =
 
 peek : forall a . (*!a, *?(+{Dequeue: ?a, Peek: ?a})) -> a
 peek queue = 
-    snd @*!a @*?(+{Dequeue: ?a, Peek: ?a}) queue
+    queue
+    |> snd @*!a @*?(+{Dequeue: ?a, Peek: ?a})
     |> receive_ @+{Dequeue: ?a, Peek: ?a}
     |> select Peek
     |> receive

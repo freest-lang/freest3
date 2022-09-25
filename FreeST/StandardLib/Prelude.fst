@@ -205,7 +205,7 @@ parallel n thunk = repeat @() n (\_:() -> fork @a thunk)
 forkWith : forall a:1S b:*T . (dualof a 1-> b) -> a
 forkWith f =
     let (x, y) = new a in
-    fork (\_:()1-> f y);
+    fork (\_:() 1-> f y);
     x
 
 -- |Session initiation

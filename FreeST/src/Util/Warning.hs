@@ -36,5 +36,5 @@ instance Message WarningType where
   
   msg NoPrelude{} _ _ = "Couldn't find prelude; proceeding without it"
   msg (NonExhaustiveCase _ fm tm) sty _ =
-    "Pattern match(es) are non-exhaustive\n\t In a case alternative: Patterns not matched:" ++
+    "Pattern match(es) are non-exhaustive\n\t In a case alternative: Patterns not matched: " ++
     yellow sty (intercalate ", " $ map show $ Map.keys $ Map.difference tm fm)
