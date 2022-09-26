@@ -195,11 +195,13 @@ instance Message ErrorType where
   msg (UnrestrictedMainFun _ x t k) sty ts = 
     "The type of " ++ style red sty ts x ++ " must be non linear\n\t Found type " ++
     style red sty ts t ++ " of kind " ++ style red sty ts k
-  msg (LinearFunctionNotConsumed _ venv) sty _ =
-    "Found linear function(s) that were not consumed.\n  Located at:" ++
+  msg (LinearFunctionNotConsumed _ env) sty _ =
+    let c = length env 
+        term = if c > 1 then "s" else "" in
+    "Found " ++ show c ++ " top-level linear function" ++ term ++ " that were not consumed.\n  Located at:" ++
     foldl (\acc (k,v) -> let s = getSpan k in
              acc ++ "\n\t- " ++ defModule s ++ ":" ++ show s ++ ": " ++
-             red sty (show k ++ " : " ++ show v)) "" venv    
+             red sty (show k ++ " : " ++ show v)) "" env    
   -- Validation.Kinding
   msg (TypeVarNotInScope _ a) sty ts = "Type variable not in scope: " ++ style red sty ts a
   msg (TypeNotContractive _ t a) sty ts =
