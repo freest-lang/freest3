@@ -222,7 +222,7 @@ instance Message ErrorType where
     "Variable or data constructor not in scope: " ++ styledVar ++
     "\n  In module: " ++ showModule (showModuleName p) p ++
     "\n  (is " ++ styledVar ++ " a linear variable that has been consumed?)" ++
-    "\n  (is " ++ styledVar ++ " a function defined in other module that is not imported?)"
+    "\n  (is " ++ styledVar ++ " a function defined in a module that you forgot to import?)"
   msg (LinProgVar _ x t k) sty ts =
     "Program variable " ++ style red sty ts x ++ " is linear at the end of its scope\n\t  variable " ++
     style red sty ts x ++ " is of type " ++ style red sty ts t ++ " of kind " ++ style red sty ts k
