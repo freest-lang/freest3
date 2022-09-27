@@ -198,9 +198,9 @@ instance Message ErrorType where
   msg (LinearFunctionNotConsumed _ env) sty _ =
     let c = length env 
         term = if c > 1 then "s" else "" in
-    "Found " ++ show c ++ " top-level linear function" ++ term ++ " that were not consumed.\n  Located at:" ++
+    "Found " ++ show c ++ " top-level linear function" ++ term ++ " that were not consumed.\n  They are:" ++
     foldl (\acc (k,v) -> let s = getSpan k in
-             acc ++ "\n\t- " ++ defModule s ++ ":" ++ show s ++ ": " ++
+             acc ++ "\n    " ++ defModule s ++ ":" ++ show s ++ ": " ++
              red sty (show k ++ " : " ++ show v)) "" env    
   -- Validation.Kinding
   msg (TypeVarNotInScope _ a) sty ts = "Type variable not in scope: " ++ style red sty ts a
