@@ -16,7 +16,9 @@ module Parse.ParseUtils where
 
 import           Syntax.Base
 import qualified Syntax.Expression as E
--- import qualified Syntax.Kind as K
+import qualified Syntax.Kind as K
+import qualified Validation.Subkind as SK
+import           Validation.Kinding (synthetise)
 import qualified Syntax.Type as T
 import           Util.Error
 import           Util.FreestState
@@ -25,6 +27,7 @@ import           Control.Monad.State
 import           Data.Bifunctor ( second )
 import           Data.List ( find )
 import qualified Data.Map.Strict as Map
+import           Data.Bitraversable (bimapM)
 
 
 type FreestStateT = StateT FreestS (Either ErrorType)
@@ -36,7 +39,7 @@ mkSpan a = do
   let (Span p1 p2 _) = getSpan a
   f <- getFileName
   maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
-  
+
 mkSpanSpan :: (Located a, Located b) => a -> b -> FreestStateT Span
 mkSpanSpan a b = do
   let (Span p1 _ _) = getSpan a
@@ -59,7 +62,7 @@ liftModToSpan (Span p1 p2 _) = do
 
 -- checkDupField :: Variable -> T.TypeMap -> FreestState ()
 checkDupField :: MonadState FreestS m => Variable -> Map.Map Variable v -> m ()
-checkDupField x m = 
+checkDupField x m =
   when (x `Map.member` m) $ addError $ MultipleFieldDecl (getSpan x) (getSpan k) x
   where
     (k,_) = Map.elemAt (Map.findIndex x m) m
@@ -109,7 +112,7 @@ checkDupTypeDecl a = do
     Nothing     -> return ()
  where
     pos tEnv = getSpan $ fst $ Map.elemAt (Map.findIndex a tEnv) tEnv
-  
+
 checkDupFunDecl :: Variable -> FreestStateT ()
 checkDupFunDecl x = do
   eEnv <- parseEnv <$> get
@@ -127,16 +130,22 @@ unOp :: Variable -> E.Exp -> Span -> E.Exp
 unOp op expr s = E.App s (E.Var (getSpan op) op) expr
 
 
-typeListToFunType :: Variable -> [(Variable, [T.Type])] -> [(Variable, T.Type)]
-typeListToFunType a = map $ second typesToFun -- map (\(x, ts) -> (x, typeToFun ts))
+typeListToFunType :: MonadState FreestS m => Variable -> [(Variable, [T.Type])] -> m [(Variable, T.Type)]
+typeListToFunType a = mapM (bimapM pure $ typesToFun K.Un)
   -- Convert a list of types and a final type constructor to a type
  where
-  typesToFun []       = T.Var (getSpan a) a
-  typesToFun (t : ts) = T.Arrow (getSpan t) Un t (typesToFun ts)
-      
-typeListToRcdType :: [(Variable, [T.Type])] -> T.TypeMap 
+  typesToFun :: MonadState FreestS m => K.Multiplicity -> [T.Type] ->  m T.Type
+  typesToFun m []       = pure $ T.Var (getSpan a) a
+  typesToFun m (t : ts) = do
+    (K.Kind _ m' _) <- gets (evalState (synthetise Map.empty t))
+    T.Arrow (getSpan t) (kindToTypeMult m) t <$> typesToFun (SK.join m m') ts
+
+  kindToTypeMult K.Un = Un
+  kindToTypeMult K.Lin = Lin
+
+typeListToRcdType :: [(Variable, [T.Type])] -> T.TypeMap
 typeListToRcdType []             = Map.empty
-typeListToRcdType ((c, us) : ts) = 
+typeListToRcdType ((c, us) : ts) =
   Map.insert c (T.Almanac (getSpan c) T.Record $ typesToMap 0 us) (typeListToRcdType ts)
   where typesToMap n [] = Map.empty
         typesToMap n (t : ts) = Map.insert (mkVar (getSpan t) $ show n) t (typesToMap (n+1) ts)
