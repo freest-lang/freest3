@@ -127,10 +127,16 @@ unOp :: Variable -> E.Exp -> Span -> E.Exp
 unOp op expr s = E.App s (E.Var (getSpan op) op) expr
 
 
-typeListToType :: Variable -> [(Variable, [T.Type])] -> [(Variable, T.Type)]
-typeListToType a = map $ second typeToFun -- map (\(x, ts) -> (x, typeToFun ts))
+typeListToFunType :: Variable -> [(Variable, [T.Type])] -> [(Variable, T.Type)]
+typeListToFunType a = map $ second typesToFun -- map (\(x, ts) -> (x, typeToFun ts))
   -- Convert a list of types and a final type constructor to a type
  where
-  typeToFun []       = T.Var (getSpan a) a
-  typeToFun (t : ts) = T.Arrow (getSpan t) Un t (typeToFun ts)
+  typesToFun []       = T.Var (getSpan a) a
+  typesToFun (t : ts) = T.Arrow (getSpan t) Un t (typesToFun ts)
       
+typeListToRcdType :: [(Variable, [T.Type])] -> T.TypeMap 
+typeListToRcdType []             = Map.empty
+typeListToRcdType ((c, us) : ts) = 
+  Map.insert c (T.Almanac (getSpan c) T.Record $ typesToMap 0 us) (typeListToRcdType ts)
+  where typesToMap n [] = Map.empty
+        typesToMap n (t : ts) = Map.insert (mkVar (getSpan t) $ show n) t (typesToMap (n+1) ts)

@@ -53,14 +53,14 @@ instance Equivalence T.Type where
     equiv :: Visited -> K.KindEnv -> T.Type -> T.Type -> Bool
     -- Have we been here before?
     equiv v _ t1 t2 | (getSpan t1, getSpan t2) `Set.member` v  = True
-    -- Almanac
-    equiv v kEnv (T.Almanac _ T.Variant m1) (T.Almanac _ T.Variant m2) =
-      Map.size m1
-        == Map.size m2
-        && Map.foldlWithKey (equivField v kEnv m2) True m1
     -- Session types
     equiv _ kEnv t1 t2 | isSessionType kEnv t1 && isSessionType kEnv t2 =
       bisimilar t1 t2
+    -- Variants and Records (Choices are covered by isSessionType)
+    equiv v kEnv (T.Almanac _ _ m1) (T.Almanac _ _ m2) =
+      Map.size m1
+        == Map.size m2
+        && Map.foldlWithKey (equivField v kEnv m2) True m1
     -- Functional types
     equiv _ _ (T.Int  _) (T.Int  _)                    = True
     equiv _ _ (T.Char _) (T.Char _)                    = True

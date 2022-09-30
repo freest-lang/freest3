@@ -62,9 +62,9 @@ synthetise' s kEnv (T.Pair p t u) = do
   (K.Kind _ mt _) <- synthetise' s kEnv t
   (K.Kind _ mu _) <- synthetise' s kEnv u
   return $ K.Kind p (join mt mu) K.Top
-synthetise' s kEnv (T.Almanac p T.Variant m) = do
+synthetise' s kEnv (T.Almanac p t m) | t==T.Variant || t==T.Record = do
   ks <- tMapM (synthetise' s kEnv) m
-  let K.Kind _ n _ = foldr1 join ks
+  let K.Kind _ n _ = foldr join (K.ut defaultSpan) ks
   return $ K.Kind p n K.Top
 -- Shared session types
 synthetise' s kEnv (T.Rec p1 (Bind _ a k (T.Semi p2 (T.Message p3 pol t) (T.Var p4 tVar))))

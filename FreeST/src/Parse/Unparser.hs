@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 {- |
 Module      :  Syntax.Show
 Description :  The show module
@@ -197,7 +198,8 @@ instance Unparse T.Type where
    where
     l = bracket (unparse t) Left minRator
     r = bracket (unparse u) Right minRator
-  unparse (T.Almanac _ T.Variant m) = (maxRator, "[" ++ showDatatype m ++ "]")
+  unparse (T.Almanac _ T.Variant m) = (maxRator, "[" ++ showDatatype m ++ "]") -- what about ⟨⟩?
+  unparse (T.Almanac _ T.Record  m) = (maxRator, "{" ++ showDatatype m ++ "}") -- for completeness
   unparse (T.Semi _ t u  ) = (semiRator, l ++ " ; " ++ r)
    where
     l = bracket (unparse t) Left semiRator
@@ -220,7 +222,9 @@ showDatatype m = intercalate " | "
   $ Map.foldrWithKey (\c t acc -> (show c ++ showAsSequence t) : acc) [] m
  where
   showAsSequence :: T.Type -> String
-  showAsSequence (T.Arrow _ _ t u) = " " ++ show t ++ showAsSequence u
+  showAsSequence (T.Almanac _ _ t) = 
+    let fs = unwords (map (show . snd) $ Map.toList t) in
+    if fs == "" then "" else " "++fs
   showAsSequence _               = ""
 
 showChoice :: T.TypeMap -> String
