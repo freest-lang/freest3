@@ -1,4 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 module ArbitraryTypes
   ( BisimPair(..)
@@ -16,13 +18,16 @@ import qualified Validation.Rename             as Rename
 import qualified Data.Set                      as Set
 import qualified Data.Map.Strict               as Map
 import           Control.Monad
+import qualified Data.Set as S
+import qualified Data.Map.Strict as M
+import Validation.Terminated (terminated)
 
 pos :: Span
 pos = defaultSpan
 
 -- | Type variables
 ids :: [String]
-ids = ["x", "y", "z"]
+ids = ["a", "b", "c", "d", "e", "f", "g", "h", "i"]
 
 freeTypeVar :: Variable
 freeTypeVar = mkVar pos "δ"
@@ -39,7 +44,7 @@ instance Arbitrary T.Polarity where
 
 instance Arbitrary T.View where
   arbitrary = elements [T.External, T.Internal]
-  
+
 instance Arbitrary T.Sort where
   arbitrary = elements [
     -- T.Record, T.Variant, -- These two yield too many 'precondition false'
@@ -65,7 +70,7 @@ instance Show BisimPair where
 
 instance Arbitrary BisimPair where
   arbitrary = do
-    (t, u) <- sized bisimPair
+    (t, u) <- sized (bisimPair K.Top Set.empty)
     let [t', u'] = Rename.renameTypes [t, u]
     return $ BisimPair t' u'
 
@@ -74,43 +79,62 @@ instance Arbitrary T.Type where
     (BisimPair _ t) <- arbitrary
     return t
 
-type PairGen = Int -> Gen (T.Type, T.Type)
+type PairGen = Set.Set Variable -> Int -> Gen (T.Type, T.Type)
 
-bisimPair :: PairGen
-bisimPair 0 = oneof [skipPair, varPair, intPair]
-bisimPair n = oneof
-  [
-  -- Some functional type constructors
-    intPair
-  , charPair
-    -- Bool, String, Unit may not be needed
-  , arrowPair bisimPair n
-  , pairPair bisimPair n
-  -- The various session types constructors
-  , skipPair
-  , endPair
-  , endTPair
-  , semiPair bisimPair n
-  , messagePair bisimPair n
-  , choicePair bisimPair n
-  -- The recursive type constructors
-  , recPair bisimPair n
-  , varPair
-    -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
-  , skipT n
-  , tSkip n
-  , endT n 
-  , distrib n
-  , assoc n
-  , commut n
-    -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
-  , recRecL n
-  , recRecR n
-  , recFree n
-    -- , alphaConvert n
-  , subsOnBoth n
-  , unfoldt n
-  ]
+bisimPair :: K.Basic -> PairGen 
+-- Top types
+bisimPair K.Top cVars 0 = 
+  oneof [ bisimPair K.Session cVars 0 -- Top types include session types
+        , oneof [ intPair 
+                , charPair 
+                , varPair (bisimPair K.Top) cVars
+                ]
+        ]
+bisimPair K.Top cVars n = 
+  oneof [ bisimPair K.Session cVars n -- Top types include session types
+        , oneof [ intPair
+                , charPair
+                , varPair    (bisimPair K.Top) cVars 
+                , arrowPair  cVars n
+                , pairPair   cVars n
+                , recRecL    (bisimPair K.Top) cVars n
+                , recRecR    (bisimPair K.Top) cVars n
+                , recFree    (bisimPair K.Top) cVars n
+                , subsOnBoth (bisimPair K.Top) cVars n
+                , unfoldt    (bisimPair K.Top) cVars n
+                ]
+        ]
+-- Session types
+bisimPair K.Session cVars 0 =
+  oneof [ skipPair
+        , endPair
+        , varPair (bisimPair K.Session) cVars
+        ]
+bisimPair K.Session cVars n = 
+  oneof [ skipPair
+        , endPair
+        , varPair     (bisimPair K.Session) cVars
+        , semiPair    (bisimPair K.Session) cVars n
+        , messagePair cVars n
+        , choicePair  (bisimPair K.Session) cVars n
+        -- The recursive type constructors
+        , recPair     (bisimPair K.Session) cVars n
+        , varPair     (bisimPair K.Session) cVars -- repeated?
+          -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
+        , skipT       cVars n
+        , tSkip       cVars n
+        , endT cVars n
+        , distrib cVars n
+        , assoc       cVars n
+        , commut      (bisimPair K.Session) cVars n
+          -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
+        , recRecL     (bisimPair K.Session) cVars n
+        , recRecR     (bisimPair K.Session) cVars n
+        , recFree     (bisimPair K.Session) cVars n
+          -- , alphaConvert n
+        , subsOnBoth  (bisimPair K.Session) cVars n
+        , unfoldt     (bisimPair K.Session) cVars n
+        ]
 
 -- The various session type constructors
 
@@ -120,47 +144,41 @@ skipPair = return (T.Skip pos, T.Skip pos)
 endPair :: Gen (T.Type, T.Type)
 endPair = return (T.End pos, T.End pos)
 
-endTPair :: Gen (T.Type, T.Type)
-endTPair = do
-  t <- arbitrary
-  u <- arbitrary
-  return ( T.Semi pos (T.End pos) t
-         , T.Semi pos (T.End pos) u)
-
 intPair :: Gen (T.Type, T.Type)
 intPair = return (T.Int pos, T.Int pos)
 
 charPair :: Gen (T.Type, T.Type)
 charPair = return (T.Char pos, T.Char pos)
 
-messagePair :: PairGen -> Int -> Gen (T.Type, T.Type)
-messagePair pairGen n = do
+messagePair :: PairGen
+messagePair n cVars = do
   pol <- arbitrary
-  (t, u) <- pairGen (n `div` 4) -- HO CFST
+  (t, u) <- bisimPair K.Top n cVars --  HO CFST; n instead of (n `div` 4), otherwise lots of Skip and End
   return (T.Message pos pol t, T.Message pos pol u)
-  -- First Order
-  -- t <- elements [T.Int pos, T.Char pos, T.Bool pos, T.Unit pos]
-  -- return (T.Message pos pol t, T.Message pos pol t)
 
-varPair :: Gen (T.Type, T.Type)
-varPair = do
+varPair :: PairGen -> Set.Set Variable -> Gen (T.Type, T.Type)
+varPair altPairGen cVars = do
   a <- arbitrary
-  return (T.Var pos a, T.Var pos a)
+  if a `Set.member` cVars
+    then altPairGen cVars 1
+    else return (T.Var pos a, T.Var pos a)
 
-semiPair :: PairGen -> Int -> Gen (T.Type, T.Type)
-semiPair pairGen n = do
-  (t, u) <- pairGen (n `div` 8)
-  (v, w) <- pairGen (n `div` 8)
-  return (T.Semi pos t v, T.Semi pos u w)
+semiPair :: PairGen -> PairGen 
+semiPair pairGen cVars n = do 
+  (t1, t2) <- pairGen cVars (n `div` 2)
+  (u1, u2) <- pairGen (if terminated t1 then cVars else Set.empty) -- C-Seq1 / C-Seq2
+                      (n `div` 2)
+  return (T.Semi pos t1 u1, T.Semi pos t2 u2)
 
-choicePair :: PairGen -> Int -> Gen (T.Type, T.Type)
-choicePair pairGen n = do
+
+choicePair :: PairGen -> PairGen
+choicePair pairGen cVars n = do
   c        <- arbitrary
-  (m1, m2) <- typeMapPair pairGen n
+  (m1, m2) <- typeMapPair pairGen cVars n
   return (T.Almanac pos c m1, T.Almanac pos c m2)
 
-typeMapPair :: PairGen -> Int -> Gen (T.TypeMap, T.TypeMap)
-typeMapPair pairGen n = do
+typeMapPair :: PairGen -> Set.Set Variable -> Int -> Gen (T.TypeMap, T.TypeMap)
+typeMapPair pairGen cVars n = do
   k     <- choose (1, length choices)
   pairs <- vectorOf k $ fieldPair (n `div` k)
   let (f1, f2) = unzip pairs
@@ -168,33 +186,33 @@ typeMapPair pairGen n = do
  where
   fieldPair :: Int -> Gen ((Variable, T.Type), (Variable, T.Type))
   fieldPair n = do
-    (t, u) <- pairGen (n `div` 4)
+    (t, u) <- pairGen cVars (n `div` 4)
     l      <- elements choices -- arbitrary
     let x = mkVar pos l
     return ((x, t), (x, u))
 
--- The various type constructors (except forall
+-- The various type constructors (except forall)
 
-arrowPair :: PairGen -> Int -> Gen (T.Type, T.Type)
-arrowPair pairGen n = do
+arrowPair :: PairGen
+arrowPair cVars n = do
   mult <- arbitrary
-  (t, u) <- pairGen (n `div` 8)
-  (v, w) <- pairGen (n `div` 8)
+  (t, u) <- bisimPair K.Top cVars (n `div` 8)
+  (v, w) <- bisimPair K.Top cVars (n `div` 8)
   return (T.Arrow pos mult t v, T.Arrow pos mult u w)
 
-pairPair :: PairGen -> Int -> Gen (T.Type, T.Type)
-pairPair pairGen n = do
-  (t, u) <- pairGen (n `div` 8)
-  (v, w) <- pairGen (n `div` 8)
+pairPair :: PairGen
+pairPair cVars n = do
+  (t, u) <- bisimPair K.Top cVars (n `div` 8)
+  (v, w) <- bisimPair K.Top cVars (n `div` 8)
   return (T.Pair pos t v, T.Pair pos u w)
 
 -- Recursion
 
-recPair :: PairGen -> Int -> Gen (T.Type, T.Type)
-recPair pairGen n = do
-  (t, u) <- pairGen (n `div` 4)
+recPair :: PairGen -> PairGen
+recPair pairGen cVars n = do
   a      <- arbitrary
   k      <- arbitrary
+  (t, u) <- pairGen (Set.insert a cVars) n
   return (T.Rec pos (Bind pos a k t), T.Rec pos (Bind pos a k u))
   -- return $ if contractive Set.empty a t && contractive Set.empty a u
   --          then (T.Rec pos (Bind pos a k t), T.Rec pos (Bind pos a k u))
@@ -202,72 +220,73 @@ recPair pairGen n = do
 
 -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
 
-skipT :: Int -> Gen (T.Type, T.Type)
-skipT n = do
-  (t, u) <- bisimPair (n `div` 2)
+skipT :: PairGen
+skipT cVars n = do
+  (t, u) <- bisimPair K.Session cVars n --(n `div` 2)
   return (T.Semi pos (T.Skip pos) t, u)
 
-tSkip :: Int -> Gen (T.Type, T.Type)
-tSkip n = do
-  (t, u) <- bisimPair (n `div` 2)
+tSkip :: PairGen
+tSkip cVars n = do
+  (t, u) <- bisimPair K.Session cVars n -- (n `div` 2)
   return (T.Semi pos t (T.Skip pos), u)
 
-endT :: Int -> Gen (T.Type, T.Type)
-endT n = do 
-  (t, u) <- bisimPair (n `div` 2)
+endT :: PairGen
+endT cVars n = do
+  (t, u) <- bisimPair K.Session cVars (n `div` 2)
   return (T.Semi pos (T.End pos) t, T.End pos)
 
-distrib :: Int -> Gen (T.Type, T.Type)
-distrib n = do
-  (t , u ) <- bisimPair (n `div` 4)
-  (m1, m2) <- typeMapPair bisimPair (n `div` 4)
+distrib :: PairGen
+distrib cVars n = do
+  (t , u ) <- bisimPair K.Session cVars (n `div` 2)
+  (m1, m2) <- typeMapPair (bisimPair K.Session) cVars (n `div` 2)
   p        <- arbitrary
   return
     ( T.Semi pos (T.Almanac pos (T.Choice p) m1) t
     , T.Almanac pos (T.Choice p) (Map.map (\v -> T.Semi pos v u) m2)
     )
 
-assoc :: Int -> Gen (T.Type, T.Type)
-assoc n = do
-  (t, u) <- bisimPair (n `div` 6)
-  (v, w) <- bisimPair (n `div` 6)
-  (x, y) <- bisimPair (n `div` 6)
-  return (T.Semi pos t (T.Semi pos v x), T.Semi pos (T.Semi pos u w) y)
+assoc :: PairGen
+assoc cVars n = do
+  (t1, t2) <- bisimPair K.Session cVars (n `div` 6)
+  let cVars' = if terminated t1 then cVars else Set.empty
+  (u1, u2) <- bisimPair K.Session cVars (n `div` 6)
+  (v1, v2) <- bisimPair K.Session cVars (n `div` 6)
+  return (T.Semi pos t1 (T.Semi pos u1 v1), T.Semi pos (T.Semi pos t2 u2) v2)
 
-commut :: Int -> Gen (T.Type, T.Type)  -- TODO: this axiom be distributed among all others
-commut n = do
-  (t, u) <- bisimPair (n `div` 4)
+commut :: PairGen -> PairGen  -- TODO: this axiom be distributed among all others
+commut pairGen cVars n = do
+  (t, u) <- pairGen cVars (n `div` 4)
   return (u, t)
 
 -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
 
-recRecL :: Int -> Gen (T.Type, T.Type)
-recRecL n = do
-  (t, u)                <- bisimPair (n `div` 2)
+recRecL :: PairGen -> PairGen
+recRecL pairGen cVars n = do
   a <- arbitrary
   b <- arbitrary
   k <- arbitrary
+  (t, u) <- pairGen (Set.union (Set.fromList[a, b]) cVars) (n `div` 2)
   let u' = Rename.renameType u -- this type will be in a substitution
   return
     ( T.Rec pos (Bind pos a k (T.Rec pos (Bind pos b k t)))
     , T.Rec pos (Bind pos a k (Rename.subs (T.Var pos a) b u'))
     )
 
-recRecR :: Int -> Gen (T.Type, T.Type)
-recRecR n = do
-  (t, u)                <- bisimPair (n `div` 2)
+recRecR :: PairGen -> PairGen
+recRecR pairGen cVars n = do
   a <- arbitrary
   b <- arbitrary
   k <- arbitrary
+  (t, u) <- pairGen (Set.union (Set.fromList[a, b]) cVars) (n `div` 2)
   let u' = Rename.renameType u -- this type will be in a substitution
   return
     ( T.Rec pos (Bind pos a k (Rename.subs (T.Var pos a) b u'))
     , T.Rec pos (Bind pos a k (T.Rec pos (Bind pos b k t)))
     )
 
-recFree :: Int -> Gen (T.Type, T.Type)
-recFree n = do
-  (t, u) <- bisimPair (n `div` 2)
+recFree :: PairGen -> PairGen
+recFree pairGen cVars n = do
+  (t, u) <- pairGen cVars (n `div` 2)
   k      <- arbitrary
   return (T.Rec pos (Bind pos freeTypeVar k t), u)
 
@@ -279,20 +298,20 @@ recFree n = do
 --   return (Rec pos (KindBind pos x k) t,
 --           Rec pos (KindBind pos y k) (Rename.subs (TypeVar pos y) x u))
 
-subsOnBoth :: Int -> Gen (T.Type, T.Type)
-subsOnBoth n = do
-  (t, u) <- bisimPair (n `div` 4)
-  (v, w) <- bisimPair (n `div` 4)
+subsOnBoth :: PairGen -> PairGen
+subsOnBoth pairGen cVars n = do
+  (t, u) <- pairGen cVars (n `div` 4)
+  (v, w) <- pairGen cVars (n `div` 4)
   let [t', u', v', w'] = Rename.renameTypes [t, u, v, w] -- these types will be in a substitution
   x <- arbitrary
   return (Rename.subs t' x v', Rename.subs u' x w')
 
-unfoldt :: Int -> Gen (T.Type, T.Type)
-unfoldt n = do
-  (t, u) <- bisimPair (n `div` 2)
-  let u' = Rename.renameType u -- this type will be unfolded
+unfoldt :: PairGen -> PairGen
+unfoldt pairGen cVars n = do
   a <- arbitrary
   k <- arbitrary
+  (t, u) <- pairGen (Set.insert a  cVars) (n `div` 2)
+  let u' = Rename.renameType u -- this type will be unfolded
   return (T.Rec pos (Bind pos a k t), Rename.unfold (T.Rec pos (Bind pos a k u')))
 
 -- Arbitrary pairs of non-bisimilar types
@@ -304,18 +323,18 @@ instance Show NonBisimPair where
 
 instance Arbitrary NonBisimPair where
   arbitrary = do
-    (t, u) <- sized nonBisimPair
+    (t, u) <- sized (nonBisimPair Set.empty)
     let [t', u'] = Rename.renameTypes [t, u]
     return $ NonBisimPair t' u'
 
-nonBisimPair :: Int -> Gen (T.Type, T.Type)
-nonBisimPair 0 =
+nonBisimPair :: PairGen
+nonBisimPair cVars 0 =
   oneof
     -- Anti-axioms
         [skipMessage, varSkip, messageVar]
-nonBisimPair n = oneof
+nonBisimPair cVars n = oneof
     -- The various type constructors, excluding the "atoms": skip, message, var
-  [semiPair nonBisimPair n, recPair nonBisimPair n, choicePair nonBisimPair n]
+  [semiPair nonBisimPair cVars n, recPair nonBisimPair cVars n, choicePair nonBisimPair cVars n]
 
 -- A few anti-axioms
 
