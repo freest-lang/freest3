@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts, LambdaCase #-}
+{-# LANGUAGE BlockArguments #-}
 {- |
 Module      :  Parse.ParseUtils
 Description :  <optional short text displayed on contents page>
@@ -129,19 +130,11 @@ binOp l op r = E.App s (E.App (getSpan l) (E.Var (getSpan op) op) l) r
 unOp :: Variable -> E.Exp -> Span -> E.Exp
 unOp op expr s = E.App s (E.Var (getSpan op) op) expr
 
+-- Datatypes
 
-typeListToFunType :: MonadState FreestS m => Variable -> [(Variable, [T.Type])] -> m [(Variable, T.Type)]
-typeListToFunType a = mapM (bimapM pure $ typesToFun K.Un)
-  -- Convert a list of types and a final type constructor to a type
- where
-  typesToFun :: MonadState FreestS m => K.Multiplicity -> [T.Type] ->  m T.Type
-  typesToFun m []       = pure $ T.Var (getSpan a) a
-  typesToFun m (t : ts) = do
-    (K.Kind _ m' _) <- gets (evalState (synthetise Map.empty t))
-    T.Arrow (getSpan t) (kindToTypeMult m) t <$> typesToFun (SK.join m m') ts
-
-  kindToTypeMult K.Un = Un
-  kindToTypeMult K.Lin = Lin
+typeListsToUnArrows :: Variable -> [(Variable, [T.Type])] -> [(Variable, T.Type)]
+typeListsToUnArrows a = 
+  map \(c, ts) -> (c, foldr (T.Arrow (getSpan c) Un) (T.Var (getSpan a) a) ts)
 
 typeListToRcdType :: [(Variable, [T.Type])] -> T.TypeMap
 typeListToRcdType []             = Map.empty

@@ -174,8 +174,7 @@ Decl :: { () }
   | data KindedTVar '=' DataCons {% do
       let a = fst $2
       checkDupTypeDecl a
-      cs <- typeListToFunType a $4
-      mapM_ (uncurry addToVEnv) cs
+      mapM_ (uncurry addToVEnv) (typeListsToUnArrows a $4) -- fixed in elaboration
       uncurry addToTEnv $2 (T.Almanac (getSpan a) T.Variant (typeListToRcdType $4))
     }
 
