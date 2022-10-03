@@ -1,4 +1,4 @@
 data IntList = Nil | Cons Int IntList
 
-b : Bool
-b = Cons 4 Nil
+main : Bool
+main = Cons 4 Nil
