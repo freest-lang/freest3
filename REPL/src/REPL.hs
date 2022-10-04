@@ -27,7 +27,7 @@ main = do
   home <- (</> ".repl_history") <$> getHomeDirectory
   runFilePath <- getDataFileName "Prelude.fst"
   s1 <- parseProgram (initialState {runOpts=defaultOpts{runFilePath}})
-  evalStateT (runInputT (replSettings home) repl)
+  evalStateT (runInputT (replSettings home) (repl s1))
     s1{runOpts=defaultOpts{runFilePath="<interactive>"}}
 
 
@@ -78,21 +78,21 @@ optionList =
 
 -- | Runs the REPL 
 
-repl :: InputT REPLState ()
-repl = getInputLine "λfreest> " >>= parseOpt >> repl
+repl :: FreestS -> InputT REPLState ()
+repl s = getInputLine "λfreest> " >>= parseOpt s >> repl s
 
 -- | OPTIONS
 
 type Option = Maybe String
 
-parseOpt :: Option -> InputT REPLState ()
-parseOpt Nothing  = return ()
-parseOpt (Just xs)
+parseOpt :: FreestS -> Option -> InputT REPLState ()
+parseOpt _ Nothing  = return ()
+parseOpt s (Just xs)
   | isOpt [":q", ":quit"] = liftS $ die "Leaving FreeSTi."
   | isOpt [":h", ":help"] = liftS $ putStrLn helpMenu
-  | isOpt [":r", ":reload"] = lift reload
+  | isOpt [":r", ":reload"] = lift $ reload s
   | opt == ":{" = multilineCmd opt
-  | isOpt [":l", ":load"] =  lift $ load cont "OK. Module(s) loaded!"
+  | isOpt [":l", ":load"] =  lift $ load s cont "OK. Module(s) loaded!"
   | isOpt [":t",":type"] = lift $ typeOf cont
   | isOpt [":k",":kind"] = lift $ kindOf cont
   | isOpt [":i", ":info"] = lift $ info cont

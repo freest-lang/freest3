@@ -31,8 +31,8 @@ import           System.FilePath
 -- | Usage: `:l` or `:load`
 -- | Looses all the definitions made so far 
 ------------------------------------------------------------
-load :: String -> String -> REPLState ()
-load f msg = do
+load :: FreestS -> String -> String -> REPLState ()
+load s f msg = do
   b1 <- not <$> lift (doesFileExist f)
   let b2 = not $ "fst" `isExtensionOf` f
   when b1 $ lift $ putStrLn fileDoNotExist
@@ -40,7 +40,7 @@ load f msg = do
   if b1 && b2
     then return ()
     else do
-      s2 <- lift $ parseAndImport (initialState{runOpts=defaultOpts{runFilePath=f}})
+      s2 <- lift $ parseAndImport (s{runOpts=defaultOpts{runFilePath=f}})
       if hasErrors s2
         then lift $ putStrLn (getErrors s2)
         else do
@@ -57,13 +57,11 @@ load f msg = do
 -- | Looses all the definitions made so far 
 ------------------------------------------------------------
 
-reload ::  REPLState ()
-reload = do
+reload ::  FreestS -> REPLState ()
+reload s = do
   fp <- getFileName
---  lift $ putStrLn fp
-  let st' = initialState{ runOpts=defaultOpts{runFilePath=fp}} in
-    if fp /= "<interactive>"
-    then put st' >> load fp "OK. Module(s) reloaded!"
+  if fp /= "<interactive>"
+    then load s fp "OK. Module(s) reloaded!"
     else lift $ putStrLn "No files loaded yet"
 
 ------------------------------------------------------------
