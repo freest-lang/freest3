@@ -6,6 +6,7 @@ module Syntax.Program
   , PreludeNames
   , noConstructors
   , isDatatypeContructor
+  , isDatatype
   )
 where
 
@@ -46,10 +47,15 @@ noConstructors tEnv =
 -- type name associated to a datatype that defines the constructor
 -- (rather indirect)
 isDatatypeContructor :: Variable -> TypeEnv -> Bool
-isDatatypeContructor c tEnv = not $ Map.null $ Map.filter (isDatatype . snd)
+isDatatypeContructor c tEnv = not $ Map.null $ Map.filter (isInDatatype . snd)
                                                           tEnv
  where
-  isDatatype :: T.Type -> Bool
-  isDatatype (T.Rec _ (Bind _ _ _ t)) =  isDatatype t
-  isDatatype (T.Almanac _ T.Variant m) = c `Map.member` m
-  isDatatype _                = False
+  isInDatatype :: T.Type -> Bool
+  isInDatatype (T.Rec _ (Bind _ _ _ t)) =  isInDatatype t
+  isInDatatype (T.Almanac _ T.Variant m) = c `Map.member` m
+  isInDatatype _                = False
+
+isDatatype :: T.Type -> Bool
+isDatatype (T.Rec _ (Bind _ _ _ t)) =  isDatatype t
+isDatatype (T.Almanac _ T.Variant _) = True 
+isDatatype _                = False
