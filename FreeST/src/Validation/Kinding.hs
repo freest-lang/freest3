@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-|
 Module      :  Validation.Kinding
 Description :  Check the type formation
@@ -68,11 +69,11 @@ synthetise' s kEnv (T.Almanac p T.Variant m) = do
 -- Shared session types
 synthetise' s kEnv (T.Rec p1 (Bind _ a k (T.Semi p2 (T.Message p3 pol t) (T.Var p4 tVar))))
   | K.isUn k && a == tVar = do
-    checkAgainstSession' s (Map.insert a k kEnv) (T.Semi p2 (T.Message p3 pol t) (T.Var p4 tVar))
+    void $ checkAgainstSession' s (Map.insert a k kEnv) (T.Semi p2 (T.Message p3 pol t) (T.Var p4 tVar))
     return $ K.us p1
-synthetise' s kEnv (T.Rec p1 (Bind p2 a k (T.Almanac p3 (T.Choice v) m)))
-  | K.isUn k && all (\t -> case t of (T.Var _ a') -> a == a' ; _ -> False) m = do
-    return $ K.us p1
+synthetise' _ _ (T.Rec p (Bind _ a k (T.Almanac _ (T.Choice _) m)))
+  | K.isUn k && all (\case {(T.Var _ a') -> a == a' ; _ -> False }) m = do
+    return $ K.us p
 -- Session types
 synthetise' _ _    (T.Skip p    ) = return $ K.us p
 synthetise' _ _    (T.End p     ) = return $ K.ls p
@@ -95,7 +96,7 @@ synthetise' _ kEnv (T.Var p a) = case kEnv Map.!? a of
 -- Type operators
 synthetise' _ kEnv t@(T.CoVar p a) =
   case kEnv Map.!? a of
-    Just k -> when (not $ k <: K.ls p)
+    Just k -> unless (k <: K.ls p)
             (addError (CantMatchKinds p k (K.ls p) t)) $> K.ls p
     Nothing -> addError (TypeVarNotInScope p a) $> omission p
 
@@ -111,7 +112,7 @@ checkContractive s a t = let p = getSpan t in
 checkAgainst' :: K.PolyVars -> K.KindEnv -> K.Kind -> T.Type -> FreestState K.Kind
 checkAgainst' s kEnv expected t = do
   actual <- synthetise' s kEnv t
-  when (not $ actual <: expected)
+  unless (actual <: expected)
     (addError (CantMatchKinds (getSpan t) expected actual t))
   $> expected
 
