@@ -142,7 +142,7 @@ instance Message ErrorType where
     "File " ++ style red sty ts f ++ " does not exist (No such file or directory)"
   msg (WrongFileExtension f) sty ts = 
    "File has not a valid file extension\n\tExpecting: " ++ red sty (quote $ f -<.> "fst") ++
-   "\n\t\tbut got:   " ++ style red sty ts f
+   "\n\tbut got:   " ++ style red sty ts f
   msg (LexicalError _ tk) sty _ = "Lexical error on input " ++ red sty tk
   msg (PrematureEndOfFile _) _ _ =  "Parse error: Premature end of file"
   msg (ParseError _ x) sty _ = "Parse error on input " ++ red sty (quote x)

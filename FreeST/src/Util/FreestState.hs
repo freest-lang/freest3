@@ -110,10 +110,11 @@ freshTVar s p = mkVar p . (s ++) . show <$> getNextIndex
 
 -- | VAR ENV
 
-getVEnv :: FreestState VarEnv
+getVEnv :: MonadState FreestS m => m VarEnv
 getVEnv = gets varEnv
 
-getFromVEnv :: Variable -> FreestState (Maybe T.Type)
+-- getFromVEnv :: Variable -> FreestState (Maybe T.Type)
+getFromVEnv :: MonadState FreestS m => Variable -> m (Maybe T.Type)
 getFromVEnv x = do
   vEnv <- getVEnv
   return $ vEnv Map.!? x
@@ -132,10 +133,10 @@ setVEnv varEnv = modify (\s -> s { varEnv })
 
 -- | EXP ENV
 
-getProg :: FreestState Prog
+getProg ::  MonadState FreestS m => m Prog
 getProg = gets prog
 
-getFromProg :: Variable -> FreestState (Maybe Exp)
+getFromProg ::  MonadState FreestS m => Variable -> m (Maybe Exp)
 getFromProg x = do
   eEnv <- getProg
   return $ eEnv Map.!? x
@@ -148,14 +149,14 @@ setProg prog = modify (\s -> s { prog })
 
 -- | TYPE ENV
 
-getTEnv :: FreestState TypeEnv
+getTEnv :: MonadState FreestS m => m TypeEnv
 getTEnv = gets typeEnv
 
 addToTEnv :: MonadState FreestS m => Variable -> Kind -> T.Type -> m ()
 addToTEnv x k t =
   modify (\s -> s { typeEnv = Map.insert x (k, t) (typeEnv s) })
 
-getFromTEnv :: Variable -> FreestState (Maybe (Kind, T.Type))
+getFromTEnv :: MonadState FreestS m => Variable -> m (Maybe (Kind, T.Type))
 getFromTEnv b = do
   tEnv <- getTEnv
   return $ tEnv Map.!? b
@@ -168,7 +169,7 @@ setTEnv typeEnv = modify (\s -> s { typeEnv })
 addTypeName :: Span -> T.Type -> FreestState ()
 addTypeName p t = modify (\s -> s { typenames = Map.insert p t (typenames s) })
 
-getTypeNames :: FreestState TypeOpsEnv
+getTypeNames :: MonadState FreestS m => m TypeOpsEnv
 getTypeNames = gets typenames
 
 findTypeName :: Span -> T.Type -> FreestState T.Type

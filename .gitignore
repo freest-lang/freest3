@@ -36,6 +36,9 @@ dist-*
 # Stack
 stack.yaml.lock
 
+# FreeST
+.repl_history
+
 #Latex
 *.aux
 *.log

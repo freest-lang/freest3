@@ -55,6 +55,7 @@ library:
     - Util.FreestState
     - Util.CmdLine
 #    - Util.PreludeLoader
+    - Util.GetTOps
     - Parse.Lexer 
     - Parse.Parser
     - Validation.Subkind
@@ -65,7 +66,6 @@ library:
     - Validation.Substitution
     - Validation.Typing
     - Validation.TypeChecking
-    - Interpreter.Builtin
     - Interpreter.Eval
 
 executables:
