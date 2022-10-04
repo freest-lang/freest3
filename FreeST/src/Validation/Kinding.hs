@@ -113,16 +113,14 @@ checkAgainst' :: K.PolyVars -> K.KindEnv -> K.Kind -> T.Type -> FreestState K.Ki
 checkAgainst' s kEnv expected t = do
   actual <- synthetise' s kEnv t
   unless (actual <: expected)
-    (addError (CantMatchKinds (getSpan t) expected actual t))
-  $> expected
+    (addError (CantMatchKinds (getSpan t) expected actual t)) $> expected
 
 -- Check whether a given type is of a session kind. In any case return the
 -- kind of the type. This is a refined version of checkAgainst for a better error messages
 checkAgainstSession' :: K.PolyVars -> K.KindEnv -> T.Type -> FreestState K.Kind
 checkAgainstSession' s kEnv t = do
   k@(K.Kind _ _ p) <- synthetise' s kEnv t
-  when (p /= K.Session) (addError (ExpectingSession (getSpan t) t k)) 
-  return k
+  when (p /= K.Session) (addError (ExpectingSession (getSpan t) t k)) $> k
 
 -- Determine whether a given type is unrestricted
 un :: T.Type -> FreestState Bool
