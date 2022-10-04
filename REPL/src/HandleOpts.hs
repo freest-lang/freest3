@@ -6,6 +6,7 @@ import           Elaboration.Elaboration ( elaboration )
 import           Parse.Parser
 import           Syntax.Base
 import qualified Syntax.Expression as E
+import qualified Syntax.Kind as K
 import           Syntax.Program
 import qualified Syntax.Type as T
 import           Util.Error
@@ -98,22 +99,21 @@ kindOf [] = lift $ putStrLn "syntax: ':k <type-to-synthetise-kind>'"
 kindOf ts = do
   case parseType "<interactive>" ts of
     Left errors -> lift $ putStrLn (getErrors initialState{errors})
---    Right a@(T.Var _ x) -> getFromVEnv x >>= synthetiseVariable a x
+    Right a@(T.Var _ x) -> getFromTEnv x >>= synthVariable a x
     Right t -> void $ wrapRun $ K.synthetise Map.empty t
-
-synthetiseVariable :: T.Type -> Variable -> Maybe T.Type -> REPLState ()
-synthetiseVariable _ _ (Just t) = void $ wrapRun $ K.synthetise Map.empty t
-synthetiseVariable a x Nothing  = getFromTEnv x >>= \case
-  Just (k,t) -> void $ wrapRun $ K.synthetise (Map.singleton x k) t
-  Nothing -> void $ wrapRun $ K.synthetise Map.empty a
+  where
+    synthVariable :: T.Type -> Variable -> Maybe (K.Kind, T.Type) -> REPLState ()
+    synthVariable _ x (Just (k,t)) = void $ wrapRun $ K.synthetise (Map.singleton x k) t
+    synthVariable a _ Nothing  = void $ wrapRun $ K.synthetise Map.empty a
 
 
-------------------------------------------------------------
+
+-- | ----------------------------------------------------------
 -- | Displays the available information for the given name.
 -- | Usage: `:i <name>` or :info `<name>` 
 -- | It is used to display the location of some type or function definition and
 -- | also print the definition itself
-------------------------------------------------------------
+-- | ----------------------------------------------------------
 
 
 info :: String -> REPLState ()
