@@ -80,7 +80,7 @@ synthetise kEnv e'@(E.Abs p Un (Bind _ x t1 e)) = do
   checkEquivEnvs (getSpan e) "an unrestricted lambda" e' kEnv vEnv1 vEnv2
   return $ T.Arrow p Un t1 t2
 -- Application, the special cases first
-  -- Select PatCons e
+  -- Select C e
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
   | x == mkVar p "select" = do
     t <- synthetise kEnv e
