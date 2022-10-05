@@ -6,21 +6,21 @@ rcvList : forall a : 1S . dualof ListOut;a -> (List, a)
 rcvList (NilC  c) = (Nil, c)
 rcvList (ConsC c) =
   let (i, c) = receive c in
-  let (xs, c) = rcvList@a c in
+  let (xs, c) = rcvList @a c in
   (Cons i xs, c)
 
-sendList : forall a : 1S . ListOut;a 1-> List -> a
+sendList : forall a : 1S . ListOut;a -> List 1-> a
 sendList c Nil         = select NilC c
 sendList c (Cons x xs) =
   let c = select ConsC c in
   let c = send x c in
-  sendList@a c xs
+  sendList @a c xs
 
 main : List
 main =
   let (x, y) = new ListOut in
-  let _      = fork@Skip (sendList@Skip x aList) in
-  let (list, _) = rcvList@Skip y in
+  fork (\_:() 1-> sendList @Skip x aList) ;
+  let (list, _) = rcvList @Skip y in
   list
 
 aList : List

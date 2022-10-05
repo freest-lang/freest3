@@ -1,18 +1,18 @@
 -- V exercise 8c
 
-data IntList = End | List Int IntList
+data IntList = Nil | List Int IntList
 
 map' : (Int -> Int) -> IntList -> IntList
-map' f End           = End
+map' f Nil           = Nil
 map' f (List x rest) = List (f x) (map' f rest)
 
 sum' : IntList -> Int
-sum' End           = 0
+sum' Nil           = 0
 sum' (List x rest) = x + sum' rest
 
 generateFromTo : Int -> Int -> IntList
 generateFromTo f t 
-    | f > t     = End 
+    | f > t     = Nil 
     | otherwise = List f (generateFromTo (f+1) t) 
 
 total : (Int -> Int) -> Int -> Int

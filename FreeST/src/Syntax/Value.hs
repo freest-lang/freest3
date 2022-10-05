@@ -34,5 +34,6 @@ isVal (E.TypeApp _ (E.App _ (E.TypeApp _ (E.Var p x) _) v) _) | x == mkVar p "se
 isVal (E.TypeApp _ (E.Var p x) _) | x == mkVar p "receive" = True
 -- | receive [T] [U]
 isVal (E.TypeApp _ (E.TypeApp _ (E.Var p x) _) _) | x == mkVar p "receive" = True
+isVal (E.App _ (E.Var p x) _) | x == mkVar p "close" = True
 -- | otherwise
 isVal _ = False

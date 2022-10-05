@@ -21,12 +21,12 @@ initRandom =
     -- init bit sending 
     let (bitSend, bitRecv) = new BitStream in
     -- init bit sending threads
-    fork $ genericUnSender @Int 0 bitSend;
-    fork $ genericUnSender @Int 1 bitSend;
+    fork (\_:() 1-> genericUnSender @Int 0 bitSend);
+    fork (\_:() 1-> genericUnSender @Int 1 bitSend);
     -- init server/client endpoint
     let (client, server) = new Random in
     -- init random server
-    fork $ genericUnSender @Int (receiveBits 4 bitRecv) server;
+    fork (\_:() 1-> genericUnSender @Int (receiveBits 4 bitRecv) server);
     -- return client endpoint
     client
 

@@ -22,6 +22,6 @@ hello = Cons 'H' (Cons 'e' (Cons 'l' (Cons 'l' (Cons 'o' Nil))))
 main : List
 main =
   let (c, s) = new (rec x:1S.+{Done: Skip, More: !Char;x}) in
-  let x = fork@Skip $ client@Skip hello c in
+  fork (\_:() 1-> client@Skip hello c) ;
   let (res, c) = server@Skip s in
   res

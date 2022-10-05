@@ -38,7 +38,7 @@ argIterPop = 5
 -- [PARALLEL] Amount of islands (each island has one population)
 argIslands = 4
 
--- [PARALLEL] Amount of population iteration & fittest individual sync
+-- [PARALLEL] Amount of population iteration |> fittest individual sync
 argIterIsl = 5
 
 -- Example clients using the sequential vs the parallel genetic algorithms
@@ -257,7 +257,7 @@ geneticAlg_ seed iterations pop =
     --let (fittest, _) = getFittestIndividual pop in
     -- Print information
     --printIntLn fittest;
-    -- Re-add the fittest individual & Continue the algorithm (-1 iteration)
+    -- Re-add the fittest individual |> Continue the algorithm (-1 iteration)
     geneticAlg_ seed (iterations - 1) (ConsPop fittest pop)
 
 
@@ -267,7 +267,7 @@ geneticAlg_ seed iterations pop =
 type IslandChannel : 1S = +{
   Fittest:   ?Int; IslandChannel, -- Gets the fittest individual of an Island
   Crossover: !Int; IslandChannel, -- Sends an individual to perform a GA iteration
-  End:       Skip }               -- Close the channel
+  Done:       End }               -- Close the channel
 
 
 -- Channel for the client to ask master the result
@@ -289,12 +289,12 @@ initIslands_ channels seed islands popSize nIterI nIterG =
   if islands == 0
   then
     let (client, server) = new ResultChannel in
-    fork @() $ runMasterServer server channels nIterG;
+    fork @() (\_:() 1-> runMasterServer server channels nIterG);
     client
   else
     let (master, island) = new IslandChannel in
     let (seed, pop) = generatePopulation seed popSize in
-    fork @() $ runIsland island seed nIterI pop;
+    fork @() (\_:() 1-> runIsland island seed nIterI pop);
     initIslands_ (Cons master channels) seed (islands-1) popSize nIterI nIterG
 
 
@@ -351,9 +351,9 @@ runIsland master seed nIterI pop =
       let (seed, pop) = geneticAlg_ seed nIterI pop in
       -- Continue serving
       runIsland master seed nIterI pop,
-    End master ->
+    Done master ->
       -- Stop (get some help  -Michael Jordan)
-      ()
+      close master
   }
 
 
@@ -385,7 +385,7 @@ endIslands channels0 =
     Nil ->
       (),
     Cons channel channels1 ->
-      let _ = select End channel in
+      select Done channel |> close;
       endIslands channels1
   }
 

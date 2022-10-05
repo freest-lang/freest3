@@ -1,10 +1,10 @@
 -- I exercise 12
 
-data IntList = End | List Int IntList
+data IntList = Nil | List Int IntList
 
 getPows : Int -> Int -> IntList
 getPows p n 
-  | n == 0    = End
+  | n == 0    = Nil
   | otherwise = List (exp' p n) (getPows p (n-1))
 
 exp' : Int -> Int -> Int
@@ -21,4 +21,4 @@ main = getPows 2 50
 -- (List 268435456 (List 134217728 (List 67108864 (List 33554432 (List 16777216 (List 8388608 (List 4194304 
 -- (List 2097152 (List 1048576 (List 524288 (List 262144 (List 131072 (List 65536 (List 32768 (List 16384 
 -- (List 8192 (List 4096 (List 2048 (List 1024 (List 512 (List 256 (List 128 (List 64 (List 32 (List 16 
--- (List 8 (List 4 (List 2 End)))))))))))))))))))))))))))))))))))))))))))))))))
+-- (List 8 (List 4 (List 2 Nil)))))))))))))))))))))))))))))))))))))))))))))))))

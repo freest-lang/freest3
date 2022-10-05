@@ -27,12 +27,20 @@ multiplosEntre i x n = if x == n
 -- (No fundo a Solucao apenas disponibiliza o acesso ao resultado)
 
 -- Tipo do canal (os parentesis fazem diferenca)
--- type TabuadaC = (rec x: SL. &{TabuadaSimples: ?Int; x, TabuadaAte: ?Int; ?Int; x, MultiplosEntre: ?Int; ?Int; ?Int; x, Solucao: !Bool; !Int; x, Fim: Skip})
 
-initTabuadaServer : (rec x: 1S. &{TabuadaSimples: ?Int; x, TabuadaAte: ?Int; ?Int; x, MultiplosEntre: ?Int; ?Int; ?Int; x, Solucao: !Bool; !Int; x, Fim: Skip}) 1-> ()
+type TabuadaServer : 1S = &{ TabuadaSimples: ?Int ;             TabuadaServer
+                           , TabuadaAte    : ?Int ; ?Int;       TabuadaServer
+                           , MultiplosEntre: ?Int ; ?Int; ?Int; TabuadaServer
+                           , Solucao       : !Bool; !Int;       TabuadaServer
+                           , Fim           : End
+                           }
+
+type TabuadaClient = dualof TabuadaServer
+
+initTabuadaServer : TabuadaServer 1-> ()
 initTabuadaServer c = tabuadaServer c Empty
 
-tabuadaServer : (rec x: 1S. &{TabuadaSimples: ?Int; x, TabuadaAte: ?Int; ?Int; x, MultiplosEntre: ?Int; ?Int; ?Int; x, Solucao: !Bool; !Int; x, Fim: Skip}) 1-> IntList -> ()
+tabuadaServer : TabuadaServer -> IntList 1-> ()
 tabuadaServer c result =
   match c with {
 
@@ -70,16 +78,15 @@ tabuadaServer c result =
           tabuadaServer c l
       },
 
-    Fim c ->
-      ()
+    Fim c -> close c
   }
 
 -- Funcao de "entrada" para a "verdadeira" funcao
-receiveList : (rec x: 1S. +{TabuadaSimples: !Int; x, TabuadaAte: !Int; !Int; x, MultiplosEntre: !Int; !Int; !Int; x, Solucao: ?Bool; ?Int; x, Fim: Skip}) -> (IntList, (rec x: 1S. +{TabuadaSimples: !Int; x, TabuadaAte: !Int; !Int; x, MultiplosEntre: !Int; !Int; !Int; x, Solucao: ?Bool; ?Int; x, Fim: Skip}))
+receiveList : TabuadaClient -> (IntList, TabuadaClient)
 receiveList c = receiveListAux Empty c
 
 -- Funcao para receber uma lista pelo canal (devolve o canal no fim)
-receiveListAux : IntList -> (rec x: 1S. +{TabuadaSimples: !Int; x, TabuadaAte: !Int; !Int; x, MultiplosEntre: !Int; !Int; !Int; x, Solucao: ?Bool; ?Int; x, Fim: Skip}) -> (IntList, (rec x: 1S. +{TabuadaSimples: !Int; x, TabuadaAte: !Int; !Int; x, MultiplosEntre: !Int; !Int; !Int; x, Solucao: ?Bool; ?Int; x, Fim: Skip}))
+receiveListAux : IntList -> TabuadaClient -> (IntList, TabuadaClient)
 receiveListAux l c =
   let c      = select Solucao c in
   let (b, c) = receive c in
@@ -100,10 +107,10 @@ addToList i l =
 -- MAIN
 main : IntList
 main =
-  let (r, w) = new rec x: 1S. &{TabuadaSimples: ?Int; x, TabuadaAte: ?Int; ?Int; x, MultiplosEntre: ?Int; ?Int; ?Int; x, Solucao: !Bool; !Int; x, Fim: Skip} in
-  let _      = fork @() (initTabuadaServer r) in
-  let c      = select TabuadaSimples w in
-  let c      = send 4 c in
-  let (result, c) = receiveList c in
-  let c      = select Fim c in
+  let (r, w) = new TabuadaServer in
+  fork @() (\_:()1-> initTabuadaServer r) ; 
+  let (result, c) = select TabuadaSimples w 
+                    |> send 4 
+                    |> receiveList in
+  select Fim c |> close;
   result

@@ -1,5 +1,5 @@
 -- | The client view of a linear interaction with a bag (multiset) of integer values
-type Bag:1S = +{Put: !Int, Get: ?Int}
+type Bag:1S = +{Put: !Int, Get: ?Int};End 
   
 -- | The client view of a shared interaction with a bag
 type SharedBag = *?Bag
@@ -18,7 +18,7 @@ bagServer : State -> dualof SharedBag -> Diverge
 bagServer state serverChannel =
   let (clientSide, serverSide) = new Bag in
   send clientSide serverChannel;
-  fork $ handleClient state serverSide;
+  fork (\_:() 1-> handleClient state serverSide);
   bagServer state serverChannel
 
 -- | Handling a linear interaction with a particular client
@@ -26,8 +26,8 @@ handleClient : State -> dualof Bag -> ()
 handleClient state chan =
   let (readFromState, writeOnState) = state in
   match chan with
-    { Get chan -> let (n, _) = receive readFromState in send n chan; ()
-    , Put chan -> let (n, _) = receive chan in send n writeOnState; ()
+    { Get chan -> let (n, _) = receive readFromState in send n chan |> close 
+    , Put chan -> let (n, chan) = receive chan in close chan; send n writeOnState
     }
 
 -- Client side, utilities
@@ -37,15 +37,15 @@ put : Int -> SharedBag -> ()
 put n q =
   let (c, _) = receive q in
   let c = select Put c in
-  send n c;
-  ()
+  send n c |> close
 
 -- | Get an integer from a shared bag
 get : SharedBag -> Int
 get q =
   let (c, _) = receive q in
   let c = select Get c in
-  let (n, _) = receive c in
+  let (n, c) = receive c in
+  close c;
   n
 
 -- An application
@@ -54,8 +54,8 @@ get q =
 main : Int
 main =
   let (clientSide, serverSide) = new SharedBag in
-  fork $ emptyBagServer serverSide;
-  fork $ put 7 clientSide;
-  fork $ put 5 clientSide;
-  fork $ put 1 clientSide;
+  fork (\_:() 1-> emptyBagServer serverSide);
+  fork (\_:() 1-> put 7 clientSide);
+  fork (\_:() 1-> put 5 clientSide);
+  fork (\_:() 1-> put 1 clientSide);
   get clientSide + get clientSide

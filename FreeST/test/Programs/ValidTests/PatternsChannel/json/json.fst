@@ -12,7 +12,7 @@ More info on json at https://www.json.org
 main : Object
 main =
   let (w, r) = new ObjectChannel in
-  fork @Skip $ writeObject@Skip json w;
+  fork (\_:() 1-> writeObject@Skip json w);
   fst @Object @Skip $ readObject @Skip r
 
 -- A dataype for JSON
@@ -58,26 +58,26 @@ type ArrayChannel : 1S = +{
 
 -- Writing a JSON value on a channel
 writeValue : forall a : 1S . Value -> ValueChannel;a -> a
-writeValue (StringVal s) c = select StringValC c & send s
-writeValue (IntVal    i) c = select IntValC    c & send i
-writeValue (ObjectVal j) c = select ObjectValC c & writeObject @a j
-writeValue (ArrayVal  l) c = select ArrayValC  c & writeArray @a l
-writeValue (BoolVal   b) c = select BoolValC   c & send b
+writeValue (StringVal s) c = select StringValC c |> send s
+writeValue (IntVal    i) c = select IntValC    c |> send i
+writeValue (ObjectVal j) c = select ObjectValC c |> writeObject @a j
+writeValue (ArrayVal  l) c = select ArrayValC  c |> writeArray @a l
+writeValue (BoolVal   b) c = select BoolValC   c |> send b
 writeValue NullVal       c = select NullValC   c
 
 writeObject : forall a:1S . Object -> ObjectChannel;a -> a
 writeObject EmptyObject             c = select EmptyC c
 writeObject (ConsObject key val j1) c =
-      select ConsObjectC c &
-      send key &
-      writeValue @(ObjectChannel;a) val &
+      select ConsObjectC c |>
+      send key |>
+      writeValue @(ObjectChannel;a) val |>
       writeObject @a j1
 
 writeArray : forall a:1S . Array -> ArrayChannel;a -> a
 writeArray EmptyArray c       = select EmptyC c
 writeArray (ConsArray j l1) c =
-      select ConsObjectC c &
-      writeValue @(ArrayChannel;a) j &
+      select ConsObjectC c |>
+      writeValue @(ArrayChannel;a) j |>
       writeArray @a l1
 
 -- Reading a JSON value from a channel

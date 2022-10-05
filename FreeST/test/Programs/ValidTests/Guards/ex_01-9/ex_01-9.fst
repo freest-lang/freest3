@@ -1,9 +1,9 @@
 -- I exercise 9
 
-data IntList = End | List Int IntList
+data IntList = Nil | List Int IntList
 
 sumPowList : Int -> IntList -> Int
-sumPowList e End = 0
+sumPowList e Nil = 0
 sumPowList e (List x rest) = pow e x + (sumPowList e rest)
 
 pow : Int -> Int -> Int
@@ -19,5 +19,5 @@ listTo x list
 -- only positive integers
 
 main : Int
-main = sumPowList 2 (listTo 100 End)
+main = sumPowList 2 (listTo 100 Nil)
 -- result = 338350

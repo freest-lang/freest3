@@ -76,6 +76,7 @@ data ErrorType =
   | SignatureLacksBinding Span Variable T.Type
   | MainNotDefined Span Variable
   | UnrestrictedMainFun Span Variable T.Type K.Kind
+  | LinearFunctionNotConsumed Span [(Variable, T.Type)]
   -- Kinding
   | TypeVarNotInScope Span Variable -- Duplicated: TypeVarOutOfScope
   | TypeNotContractive Span T.Type Variable
@@ -124,6 +125,7 @@ instance Located ErrorType where
   getSpan (SignatureLacksBinding p _ _ ) = p
   getSpan (MainNotDefined p _          ) = p
   getSpan (UnrestrictedMainFun p _ _ _ ) = p
+  getSpan (LinearFunctionNotConsumed p _) = p
   getSpan (TypeVarNotInScope p _       ) = p
   getSpan (TypeNotContractive p _ _    ) = p
   getSpan (CantMatchKinds p _ _ _      ) = p
@@ -149,7 +151,7 @@ instance Message ErrorType where
     "File " ++ style red sty ts f ++ " does not exist (No such file or directory)"
   msg (WrongFileExtension f) sty ts = 
    "File has not a valid file extension\n\tExpecting: " ++ red sty (quote $ f -<.> "fst") ++
-   "\n\t\tbut got:   " ++ style red sty ts f
+   "\n\tbut got:   " ++ style red sty ts f
   msg (LexicalError _ tk) sty _ = "Lexical error on input " ++ red sty tk
   msg (PrematureEndOfFile _) _ _ =  "Parse error: Premature end of file"
   msg (ParseError _ x) sty _ = "Parse error on input " ++ red sty (quote x)
@@ -223,6 +225,13 @@ instance Message ErrorType where
   msg (UnrestrictedMainFun _ x t k) sty ts = 
     "The type of " ++ style red sty ts x ++ " must be non linear\n\t Found type " ++
     style red sty ts t ++ " of kind " ++ style red sty ts k
+  msg (LinearFunctionNotConsumed _ env) sty _ =
+    let c = length env 
+        term = if c > 1 then "s" else "" in
+    "Found " ++ show c ++ " top-level linear function" ++ term ++ " that were not consumed.\n  They are:" ++
+    foldl (\acc (k,v) -> let s = getSpan k in
+             acc ++ "\n    " ++ defModule s ++ ":" ++ show s ++ ": " ++
+             red sty (show k ++ " : " ++ show v)) "" env    
   -- Validation.Kinding
   msg (TypeVarNotInScope _ a) sty ts = "Type variable not in scope: " ++ style red sty ts a
   msg (TypeNotContractive _ t a) sty ts =
@@ -243,7 +252,7 @@ instance Message ErrorType where
     "Variable or data constructor not in scope: " ++ styledVar ++
     "\n  In module: " ++ showModule (showModuleName p) p ++
     "\n  (is " ++ styledVar ++ " a linear variable that has been consumed?)" ++
-    "\n  (is " ++ styledVar ++ " a function defined in other module that is not imported?)"
+    "\n  (is " ++ styledVar ++ " a function defined in a module that you forgot to import?)"
   msg (LinProgVar _ x t k) sty ts =
     "Program variable " ++ style red sty ts x ++ " is linear at the end of its scope\n\t  variable " ++
     style red sty ts x ++ " is of type " ++ style red sty ts t ++ " of kind " ++ style red sty ts k

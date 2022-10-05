@@ -1,16 +1,16 @@
 
 
 
-sendInt : !Int -> Skip
-sendInt c = send 5 c
+sendInt : !Int;End -> ()
+sendInt c = send 5 c |> close
 
-receiveInt : dualof (dualof (dualof !Int)) -> Int
+receiveInt : dualof (dualof (dualof !Int;End)) -> Int
 receiveInt c =
-  let (x, c) = receive c in x
+  let (x, c) = receive c in close c; x
 
 
 main : Int
 main =
-  let (w,r) = new dualof !Int in
-  let _     = fork @Skip $ sendInt r in
+  let (w,r) = new dualof !Int;End in
+  fork @() (\_:()1-> sendInt r);
   receiveInt w

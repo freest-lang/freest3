@@ -1,16 +1,17 @@
 main : Bool
 main =
   let (w, r) = new &{B: !Bool} in
-  let _ = fork @Skip (f w) in
-  let (x, _) = f1 r in
+  fork @() (\_:()-> f w);
+  let (x, c) = f1 r in
+  close c;
   x
 
-type F = +{B: !Bool}
+type F = +{B: !Bool};End
 
-f : F -> Skip
-f c = let c = select c B in send c True
+f : F -> ()
+f c = let c = select c B in send c True |> close
 
-f1 : dualof F -> (Bool, Skip)
+f1 : dualof F -> (Bool, End)
 f1 c = match c with { B c -> receive c }
 
 

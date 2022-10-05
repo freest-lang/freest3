@@ -32,6 +32,7 @@ If the trailing part is ommited (```:TOOL_NAME```) all the available tools will 
 
 The available tools to replace ```TOOL_NAME``` are:
   - freest
+  - freestig
   - TACAS2020
 
 

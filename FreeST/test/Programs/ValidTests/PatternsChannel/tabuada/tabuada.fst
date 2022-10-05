@@ -29,10 +29,10 @@ multiplosEntre i x n = if x == n
 -- Tipo do canal (os parentesis fazem diferenca)
 -- type TabuadaC = (rec x: 1S. &{TabuadaSimples: ?Int; x, TabuadaAte: ?Int; ?Int; x, MultiplosEntre: ?Int; ?Int; ?Int; x, Solucao: !Bool; !Int; x, Fim: Skip})
 
-initTabuadaServer : (rec x: 1S. &{TabuadaSimples: ?Int; x, TabuadaAte: ?Int; ?Int; x, MultiplosEntre: ?Int; ?Int; ?Int; x, Solucao: !Bool; !Int; x, Fim: Skip}) 1-> ()
+initTabuadaServer : (rec x: 1S. &{TabuadaSimples: ?Int; x, TabuadaAte: ?Int; ?Int; x, MultiplosEntre: ?Int; ?Int; ?Int; x, Solucao: !Bool; !Int; x, Fim: Skip}) -> ()
 initTabuadaServer c = tabuadaServer c Empty
 
-tabuadaServer : (rec x: 1S. &{TabuadaSimples: ?Int; x, TabuadaAte: ?Int; ?Int; x, MultiplosEntre: ?Int; ?Int; ?Int; x, Solucao: !Bool; !Int; x, Fim: Skip}) 1-> IntList -> ()
+tabuadaServer : (rec x: 1S. &{TabuadaSimples: ?Int; x, TabuadaAte: ?Int; ?Int; x, MultiplosEntre: ?Int; ?Int; ?Int; x, Solucao: !Bool; !Int; x, Fim: Skip}) -> IntList 1-> ()
 tabuadaServer (Fim            c) result = ()
 -- Servicos
 tabuadaServer (TabuadaSimples c) result =
@@ -84,7 +84,7 @@ addToList i (Node n l) = Node n (addToList i l)
 main : IntList
 main =
   let (r, w) = new rec x: 1S. &{TabuadaSimples: ?Int; x, TabuadaAte: ?Int; ?Int; x, MultiplosEntre: ?Int; ?Int; ?Int; x, Solucao: !Bool; !Int; x, Fim: Skip} in
-  let _      = fork@() (initTabuadaServer r) in
+  fork (\_:() 1-> initTabuadaServer r) ;
   let c      = select TabuadaSimples w in
   let c      = send 4 c in
   let (result, c) = receiveList c in

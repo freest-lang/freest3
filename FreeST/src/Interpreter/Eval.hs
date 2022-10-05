@@ -11,6 +11,7 @@ import           Syntax.Base
 import qualified Syntax.Expression as E
 import           Syntax.Program
 import           Util.Error
+import Util.FreestState
 
 import           Control.Concurrent ( forkIO )
 import           Data.Functor
@@ -22,9 +23,16 @@ import           System.IO.Unsafe ( unsafePerformIO )
 -- EVALUATION
 ------------------------------------------------------------
 
-evalAndPrint :: TypeEnv -> Ctx -> Prog -> E.Exp -> IO ()
-evalAndPrint tEnv ctx eenv e = do
-  res <- eval tEnv ctx eenv e
+-- evalAndPrint :: TypeEnv -> Ctx -> Prog -> E.Exp -> IO ()
+-- evalAndPrint tEnv ctx eenv e = do
+--   res <- eval tEnv ctx eenv e
+--   case res of
+--     IOValue io -> io >>= print
+--     _          -> print res
+
+evalAndPrint :: FreestS -> E.Exp -> IO ()
+evalAndPrint s e = do
+  res <- eval (typeEnv s) initialCtx (prog s) e
   case res of
     IOValue io -> io >>= print
     _          -> print res
@@ -49,7 +57,7 @@ eval tEnv ctx eenv (E.App _ e1 e2) = eval tEnv ctx eenv e1 >>= \case
   (Closure x e ctx') -> do
     !v <- eval tEnv ctx eenv e2
     eval tEnv (Map.insert x v ctx') eenv e
-  Fork -> forkIO (void $ eval tEnv ctx eenv e2) $> Unit
+  Fork -> forkIO (void $ eval tEnv ctx eenv (E.App (getSpan e2) e2 (E.Unit (getSpan e2)))) $> Unit
   (PrimitiveFun f) -> do
     !v <- eval tEnv ctx eenv e2
     case f v of
@@ -60,7 +68,7 @@ eval tEnv ctx eenv (E.App _ e1 e2) = eval tEnv ctx eenv e1 >>= \case
   (Cons x xs) -> do
     !v <- eval tEnv ctx eenv e2
     pure $ Cons x (xs ++ [[v]])
-  e -> error $ show e
+  c -> pure c
 eval tEnv ctx eenv (E.Pair _ e1 e2)  = Pair <$> eval tEnv ctx eenv e1 <*> eval tEnv ctx eenv e2
 eval tEnv ctx eenv (E.BinLet _ x y e1 e2) = do
   (Pair v1 v2) <- eval tEnv ctx eenv e1

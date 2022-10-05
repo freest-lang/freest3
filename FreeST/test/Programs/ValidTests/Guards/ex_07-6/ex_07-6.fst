@@ -1,7 +1,7 @@
 -- VII exercise 6
 
 data Tree = Leaf | Node Int Tree Tree
-data List = End | List Int List
+data List = Nil | List Int List
 
 tree_fold1 : (Int -> Bool -> Bool -> Bool) -> Bool -> Tree -> Bool
 tree_fold1 f e Leaf           = e
@@ -43,10 +43,10 @@ depth' _ y z
     | otherwise = 1 + y
 
 flatten : Tree -> List
-flatten tree = tree_fold3 flatten' End tree
+flatten tree = tree_fold3 flatten' Nil tree
 
 flatten' : Int -> List -> List -> List
-flatten' x End l2           = List x l2
+flatten' x Nil l2           = List x l2
 flatten' x (List y rest) l2 = List y (flatten' x rest l2)
 
 invert : Tree -> Tree
@@ -89,5 +89,5 @@ main =
 --result = True
 
 listSize : List -> Int
-listSize End           = 0
+listSize Nil           = 0
 listSize (List _ rest) = 1 + listSize rest

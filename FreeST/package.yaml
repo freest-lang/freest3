@@ -35,6 +35,7 @@ library:
     - happy
   exposed-modules:
     - FreeST
+    - Paths_FreeST
     - Bisimulation.Grammar
     - Bisimulation.Bisimulation
     - Elaboration.ResolveDuality
@@ -54,6 +55,7 @@ library:
     - Util.FreestState
     - Util.CmdLine
 #    - Util.PreludeLoader
+    - Util.GetTOps
     - Parse.Lexer 
     - Parse.Parser
     - Validation.Subkind
@@ -63,6 +65,8 @@ library:
     - Validation.Kinding
     - Validation.Substitution
     - Validation.Typing
+    - Validation.TypeChecking
+    - Interpreter.Eval
 
 executables:
   freest:

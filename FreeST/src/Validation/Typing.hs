@@ -37,7 +37,7 @@ import qualified Validation.Kinding as K -- Again?
 import qualified Validation.Rename as Rename ( subs )
 
 import           Control.Monad.State            ( when
-                                                , unless
+                                                , unless, evalState, MonadState (get)
                                                 )
 import           Data.Functor
 import qualified Data.Map.Strict as Map
@@ -105,11 +105,14 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkVar p "send" = do
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
   checkAgainst kEnv e1 u1
   return u2
+  -- Close e1
+synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "close" = do 
+  t <- Extract.end e =<< synthetise kEnv e
+  return $ T.Unit p 
   -- Fork e
-synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "fork" = do
-  t <- synthetise kEnv e
-  -- void $ K.checkAgainst kEnv (K.lt defaultSpan) t -- Redundant
-  return $ T.Unit p
+synthetise kEnv (E.App p fork@(E.Var _ x) e) | x == mkVar p "fork" = do 
+  (_, t) <- get >>= \s -> Extract.function e (evalState (synthetise kEnv e) s)
+  synthetise kEnv (E.App p (E.TypeApp p fork t) e)
 -- Application, general case
 synthetise kEnv (E.App _ e1 e2) = do
   t        <- synthetise kEnv e1
@@ -221,6 +224,10 @@ checkAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
 -- checkAgainst kEnv (App p e1 e2) u = do
 --   t <- synthetise kEnv e2
 --   checkAgainst kEnv e1 (Fun p Un/Lin t u)
+checkAgainst kEnv e (T.Arrow _ Lin t u) = do 
+  (t', u') <- Extract.function e =<< synthetise kEnv e
+  checkEquivTypes e kEnv t' t 
+  checkEquivTypes e kEnv u' u
 checkAgainst kEnv e t = checkEquivTypes e kEnv t =<< synthetise kEnv e
 
 -- EQUALITY EQUIVALENCE CHECKING

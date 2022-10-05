@@ -13,7 +13,7 @@ exactly the same, but in fact 'select Push' works on two distinct types: EStack
 and NEStack. They both feature a Push-labelled field.
 -}
 
-type  EStack : 1S = &{Push: ?Int; NEStack; EStack,  End: Skip}
+type  EStack : 1S = &{Push: ?Int; NEStack; EStack,  Stop: Skip}
 type NEStack : 1S = &{Push: ?Int; NEStack; NEStack, Pop: !Int}
 
 -- Stack server. The empty stack case
@@ -21,7 +21,7 @@ eStack : forall a: 1S . EStack;a -> a
 eStack c =
   match c with {
     Push c -> let (x, c) = receive c in eStack @a (neStack @(EStack ; a) x c),
-    End  c -> c
+    Stop  c -> c
   }
 
 -- Stack server. The non-empty stack case
@@ -34,11 +34,11 @@ neStack x c =
 
 -- Stack operations. Push on an empty stack
 pushE : forall a: 1S . Int -> dualof EStack ; a -> dualof NEStack ; dualof EStack ; a
-pushE n c = select Push c & send n
+pushE n c = select Push c |> send n
 
 -- Stack operations. Push on a nonempty stack
 pushNE : forall a: 1S . Int -> dualof NEStack ; a -> dualof NEStack ; dualof NEStack ; a
-pushNE n c = select Push c & send n
+pushNE n c = select Push c |> send n
 
 -- Stack operations. Pop from a nonempty stack (and print the result)
 pop : forall a: 1S . dualof NEStack;a -> a
@@ -49,13 +49,13 @@ pop c =
 -- A finite client
 reverseThree : dualof EStack -> Skip
 reverseThree c =
-  pushE   @Skip 5 c &
-  pushNE  @(dualof EStack) 6 &
-  pushNE  @(dualof NEStack ; dualof EStack) 7 &
-  pop     @(dualof NEStack ; dualof NEStack ; dualof EStack) &
-  pop     @(dualof NEStack ; dualof EStack) &
-  pop     @(dualof EStack) &
-  select End
+  pushE   @Skip 5 c
+  |> pushNE  @(dualof EStack) 6
+  |> pushNE  @(dualof NEStack ; dualof EStack) 7
+  |> pop     @(dualof NEStack ; dualof NEStack ; dualof EStack)
+  |> pop     @(dualof NEStack ; dualof EStack)
+  |> pop     @(dualof EStack)
+  |> select Stop
 
 -- A recursive client working on a nonempty stack
 reverseNE : forall a: 1S . Int -> dualof NEStack ; a -> dualof NEStack ; a
@@ -63,22 +63,23 @@ reverseNE n c =
   if n == 0
   then c
   else
-    pushNE  @a n c &
-    reverseNE  @(dualof NEStack ; a) (n - 1) &
-    pop  @(dualof NEStack ; a)
+    pushNE  @a n c
+    |> reverseNE  @(dualof NEStack ; a) (n - 1)
+    |> pop  @(dualof NEStack ; a)
 
 -- A generic client working on an empty stack
-reverseE : Int -> dualof EStack -> Skip
+reverseE : Int -> dualof EStack;End -> ()
 reverseE n c =
-  pushE  @Skip n c &
-  reverseNE  @(dualof EStack) (n-1) &
-  pop  @(dualof EStack) &
-  select End
+  pushE  @End n c
+  |> reverseNE  @(dualof EStack;End) (n-1)
+  |> pop  @(dualof EStack;End)
+  |> select Stop
+  |> close
 
-main : Skip
+main : ()
 main =
-  let (r, w) = new EStack in
-  fork  @Skip $ eStack  @Skip r;
+  let (r, w) = new EStack;End in
+  fork  @() (\_:()1-> eStack  @End r |> close);
   reverseE 10 w
   -- reverseThree w
 

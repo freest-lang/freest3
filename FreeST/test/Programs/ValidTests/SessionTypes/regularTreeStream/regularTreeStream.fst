@@ -57,13 +57,13 @@ getTwo xs  =
 type Stream : 1S = +{
     NodeC: !Int; Stream,
     LeafC: Stream,
-    EndOfStream: Skip
+    EndOfStreamC: End
   }
 
 -- Writing trees on channels
 
-sendTree : Tree -> Stream -> Skip
-sendTree t c = select EndOfStream $ streamTree t c
+sendTree : Tree -> Stream -> ()
+sendTree t c = streamTree t c |> select EndOfStreamC |> close
 
 streamTree : Tree -> Stream -> Stream
 streamTree t c =
@@ -91,32 +91,32 @@ recTree xs c =
       recTree (Cons (Node root left right) xs) c,
     LeafC c ->
       recTree (Cons Leaf xs) c,
-    EndOfStream _ -> getFromSingleton xs
+    EndOfStreamC c -> close c; getFromSingleton xs
   }
 
 -- Babdly behaving writers
 
-writeNothing, writeTooMuch, writeRootTreeOnly, writeLeftTreeOnly : Stream -> Skip
+writeNothing, writeTooMuch, writeRootTreeOnly, writeLeftTreeOnly : Stream -> ()
 writeNothing c =
-  select EndOfStream c
+  select EndOfStreamC c |> close
 
 writeTooMuch c =
-  select EndOfStream $ select LeafC $ select LeafC c
+  select LeafC c |> select LeafC |> select EndOfStreamC |> close
 
 writeRootTreeOnly c =
-  select EndOfStream $ send 5 $ select NodeC c
+  select NodeC c |> send 5 |> select EndOfStreamC |> close
 
 writeLeftTreeOnly c =
-  select EndOfStream $ send 5 $ select NodeC $ select LeafC c
+  select LeafC c |> select NodeC |> send 5 |> select EndOfStreamC |> close
 
 -- Go!
 
 main : Tree
 main =
-  let (w, r) = new Stream in
+  let (w, r) = new Stream;End in
 --  (fork[Skip] $ sendTree aTree w);
 --  (fork[Skip] $ writeNothing w);       -- 'P'
 --  (fork[Skip] $ writeTooMuch w);     -- 'X'
-  (fork @Skip $ writeRootTreeOnly w);  -- 'R'
+  fork @() (\_:()1-> writeRootTreeOnly w);  -- 'R'
 --  (fork[Skip] $ writeLeftTreeOnly w);  -- 'L'
   receiveTree r

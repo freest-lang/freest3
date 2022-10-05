@@ -250,7 +250,7 @@ geneticAlg_ seed iterations pop =
 type IslandChannel : 1S = +{
   Fittest:   ?Int; IslandChannel, -- Gets the fittest individual of an Island
   Crossover: !Int; IslandChannel, -- Sends an individual to perform a GA iteration
-  End:       Skip }               -- Close the channel
+  EndC:       Skip }               -- Close the channel
 
 
 -- Channel for the client to ask master the result
@@ -272,12 +272,12 @@ initIslands_ channels seed islands popSize nIterI nIterG =
   if islands == 0
   then
     let (client, server) = new ResultChannel in
-    fork@() $ runMasterServer server channels nIterG;
+    fork (\_:() 1-> runMasterServer server channels nIterG);
     client
   else
     let (master, island) = new IslandChannel in
     let (seed, pop) = generatePopulation seed popSize in
-    fork@() $ runIsland island seed nIterI pop;
+    fork (\_:() 1-> runIsland island seed nIterI pop);
     initIslands_ (Cons master channels) seed (islands-1) popSize nIterI nIterG
 
 
@@ -332,7 +332,7 @@ runIsland (Crossover master) seed nIterI pop =
   let (seed, pop) = geneticAlg_ seed nIterI pop in
   -- Continue serving
   runIsland master seed nIterI pop
-runIsland (End master) seed nIterI pop = 
+runIsland (EndC master) seed nIterI pop = 
   -- Stop (get some help  -Michael Jordan)
   ()
 
@@ -361,7 +361,7 @@ sendFittestF fittest island = (fittest, send fittest $ select Crossover island)
 endIslands : ListIslandChannel -> ()
 endIslands Nil = ()
 endIslands (Cons channel channels1) =
-  let _ = select End channel in
+  let _ = select EndC channel in
   endIslands channels1
 
 -- Fold function over a list of IslandChannels

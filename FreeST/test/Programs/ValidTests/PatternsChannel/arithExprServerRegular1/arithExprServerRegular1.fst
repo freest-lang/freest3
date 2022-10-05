@@ -15,16 +15,16 @@ type MathServer : 1S = +{Add: MathServer, Mult: MathServer, Const: !Int;MathServ
 client : MathServer -> Int
 client c =
   -- stream the arithmetic operation
-  select Const c & send 5 &
-  select Const & send 4 &
-  select Mult &
-  select Const & send 2 &
-  select Const & send 3 &
-  select Mult &
-  select Add &
-  select Done &
+  select Const c |> send 5 |>
+  select Const |> send 4 |>
+  select Mult |>
+  select Const |> send 2 |>
+  select Const |> send 3 |>
+  select Mult |>
+  select Add |>
+  select Done |>
   -- read the result
-  receive &
+  receive |>
   -- and return it
   fst @Int @Skip
 
@@ -46,5 +46,5 @@ evaluate (Done  s) (Cons x Nil) = send x s
 main : Int
 main =
   let (c, s) = new MathServer in
-  fork $ evaluate s Nil;
+  fork (\_:() 1-> evaluate s Nil);
   client c

@@ -4,7 +4,7 @@ type IListW : 1S = +{NilC: Skip, ConsC: !Int; IListW}
 
 iListW : forall a:1S . IList -> IListW;a -> a
 iListW Nil         c = select NilC c
-iListW (Cons x xs) c = select ConsC c & send x & iListW @a xs
+iListW (Cons x xs) c = select ConsC c |> send x |> iListW @a xs
 
 iListR : forall a:1S . (dualof IListW);a -> (IList, a)
 iListR (NilC c)  = (Nil, c)
@@ -39,8 +39,8 @@ aList = Cons 5 (Cons 3 (Cons 7 (Cons 1 Nil)))
 
 main : Int
 main = let (w, r) = new IListW in
-       fork@Skip $ iListW @Skip aList w;
-       fst @Int@Skip $ iLength' @Skip r
+       fork (\_:() 1-> iListW @Skip aList w);
+       fst @Int @Skip $ iLength' @Skip r
 
 -- main : IList
 -- main = let (w, r) = new IListW in

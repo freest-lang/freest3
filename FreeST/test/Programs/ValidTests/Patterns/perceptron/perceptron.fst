@@ -1,10 +1,10 @@
 
 -- input 
 input : IntList
-input = List 1 $ List 50 $ List 100 End
+input = List 1 $ List 50 $ List 100 Nil
 
 layers : IntList
-layers = List 50 $ List 50 $ List 50 End
+layers = List 50 $ List 50 $ List 50 Nil
 
 seed : Int
 seed = 1
@@ -24,14 +24,14 @@ main =
     r
 
 ---- Structures ----
-data IntList = End | List Int IntList
+data IntList = Nil | List Int IntList
 
-data SList   = SEnd | SList Send SList
-data RList   = REnd | RList Receive RList
+data SList   = SNil | SList Send SList
+data RList   = RNil | RList Receive RList
 
 type Channels   = (SList,RList)
-data Connection = CEnd | Connection Channels Connection
-data Layers     = LEnd | Layers Connection Layers
+data Connection = CNil | Connection Channels Connection
+data Layers     = LNil | Layers Connection Layers
 
 ---- Channels ----
 type Send    : 1S = !Int
@@ -41,21 +41,21 @@ type Receive : 1S = dualof Send
 
 -- structure
 mkLayers : IntList -> Layers
-mkLayers End           = LEnd
-mkLayers (List n1 End) = LEnd
+mkLayers Nil           = LNil
+mkLayers (List n1 Nil) = LNil
 mkLayers (List n1 (List n2 ns)) = Layers (mkLayer n1 n2) (mkLayers (List n2 ns))
 
 mkLayer : Int -> Int -> Connection
 mkLayer n1 n2 = 
     if n1 <= 0 then
-        CEnd
+        CNil
     else
         Connection (mkChannels n2) (mkLayer (n1-1) n2)
 
 mkChannels : Int -> Channels
 mkChannels n =
     if n <= 0 then
-        (SEnd,REnd)
+        (SNil,RNil)
     else
         let (ss,rs) = mkChannels (n-1) in
         let (s,r)   = new Send         in
@@ -63,14 +63,14 @@ mkChannels n =
 
 -- startup
 startup : IntList -> Layers -> RList
-startup input LEnd           = REnd
+startup input LNil           = RNil
 startup input (Layers l0 ls) = 
     mkNeurons0 input l0;
     startupN (Layers l0 ls)
 
 startupN : Layers -> RList
-startupN LEnd             = REnd
-startupN (Layers l1 LEnd) = receiveCs l1
+startupN LNil             = RNil
+startupN (Layers l1 LNil) = receiveCs l1
 startupN (Layers l1 (Layers l2 ls)) =
     mkNeurons l1 l2;
     startupN (Layers l2 ls)
@@ -79,7 +79,7 @@ startupN (Layers l1 (Layers l2 ls)) =
 mkNeurons0 : IntList -> Connection -> ()
 mkNeurons0 (List i input) (Connection c con0) =
     let (s,_) = c in
-    fork $ mkNeuron0 i s;
+    fork (\_:() 1-> mkNeuron0 i s);
     mkNeurons0 input con0
 mkNeurons0 _ _ = ()
 
@@ -87,11 +87,11 @@ mkNeuron0 : Int -> SList -> ()
 mkNeuron0 input ss = sendNeuron input ss
 
 mkNeurons : Connection -> Connection -> ()
-mkNeurons con1 CEnd = ()
+mkNeurons con1 CNil = ()
 mkNeurons con1 (Connection c con3) = 
     let (s1,_)  = c in
     let (r1,r2) = getHeads con1 in
-    fork $ mkNeuron r1 s1;
+    fork (\_:() 1-> mkNeuron r1 s1);
     mkNeurons r2 con3
 
 mkNeuron : RList -> SList -> ()
@@ -101,12 +101,12 @@ mkNeuron rs ss =
     sendNeuron x ss
 
 recNeuron : RList -> Int
-recNeuron REnd         = 0
+recNeuron RNil         = 0
 recNeuron (RList r rs) = let (x,_) = receive r in 
                          x + recNeuron rs
 
 sendNeuron : Int -> SList -> ()
-sendNeuron x SEnd = ()
+sendNeuron x SNil = ()
 sendNeuron x (SList s ss) = send x s; sendNeuron x ss
 
 ---- Auxiliary ----
@@ -122,28 +122,28 @@ genIntBounded n l u = mod ((n+1) * (mod 111 100)) (u-l) + l
 
 -- calculates the size of an IntList
 len : IntList -> Int
-len End = 0
+len Nil = 0
 len (List _ xs) = 1 + len xs
 
 -- adds int to the end of a list
 addTail : Int -> IntList -> IntList
-addTail x End         = List x End
+addTail x Nil         = List x Nil
 addTail x (List e xs) = List e $ addTail x xs
 
 -- gets last layers receive channels
 receiveCs : Connection -> RList
-receiveCs CEnd = REnd
+receiveCs CNil = RNil
 receiveCs (Connection c con) = let (_,rs) = c in
                                concatRList rs $ receiveCs con
 
 -- concatenates RLists
 concatRList : RList -> RList -> RList
-concatRList REnd rs2          = rs2
+concatRList RNil rs2          = rs2
 concatRList (RList e rs1) rs2 = RList e $ concatRList rs1 rs2
 
 -- gets the heads of the 
 getHeads : Connection -> (RList,Connection)
-getHeads CEnd = (REnd, CEnd)
+getHeads CNil = (RNil, CNil)
 getHeads (Connection c con) = 
     let (s,r) = c in
     let (heads,tails) = getHeads con in
@@ -151,16 +151,16 @@ getHeads (Connection c con) =
     (concatRList head heads, Connection (s,tail) tails)
 
 getHead : RList -> (RList,RList)
-getHead REnd         = (REnd,REnd)
-getHead (RList r rs) = (RList r REnd,rs) 
+getHead RNil         = (RNil,RNil)
+getHead (RList r rs) = (RList r RNil,rs) 
 
 -- prints
 printLayers : Layers -> ()
-printLayers LEnd           = ()
+printLayers LNil           = ()
 printLayers (Layers cs ls) = 
             printConnection cs;
             printLayers ls
 
 printConnection : Connection -> ()
-printConnection CEnd = printStringLn ""
+printConnection CNil = printStringLn ""
 printConnection (Connection _ cs) = printString "o "; printConnection cs

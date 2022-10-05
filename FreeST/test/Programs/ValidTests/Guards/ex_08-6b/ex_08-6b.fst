@@ -1,6 +1,6 @@
 -- VIII exercise 6b
 
-data List = End | List Int List | ListC Char List
+data List = Nil | List Int List | ListC Char List
 data Nbr = E | Nbr Int Nbr
 data MaybeList = Empty | Only List
 
@@ -12,28 +12,28 @@ jogar num list x =
         else Only jogada
 
 jogar' : Nbr -> List -> Int -> List
-jogar' E             list            x = End
-jogar' (Nbr y rest1) End             x = End
+jogar' E             list            x = Nil
+jogar' (Nbr y rest1) Nil             x = Nil
 jogar' (Nbr y rest1) (List  z rest2) x = List z (jogar' rest1 rest2 x)
 jogar' (Nbr y rest1) (ListC c rest2) x 
     | x == y    = List  x (jogar' rest1 rest2 x)
     | otherwise = ListC c (jogar' rest1 rest2 x)
 
 isCompleted :  List -> Bool
-isCompleted End            = True
+isCompleted Nil            = True
 isCompleted (List  _ rest) = isCompleted rest
 isCompleted (ListC _ _)    = False
 
 jogarJogo : Nbr -> List -> Nbr -> List
-jogarJogo num l E = ListC 'E' (ListC 'r' (ListC 'r' (ListC 'o' (ListC 'u' End))))
+jogarJogo num l E = ListC 'E' (ListC 'r' (ListC 'r' (ListC 'o' (ListC 'u' Nil))))
 jogarJogo num l (Nbr x rest) = jogarJogo' num l rest $ jogar num l x
 
 jogarJogo' : Nbr -> List -> Nbr -> MaybeList -> List
-jogarJogo' num l rest Empty       = ListC 'A' (ListC 'c' (ListC 'e' (ListC 'r' (ListC 't' (ListC 'o' (ListC 'u' End))))))
+jogarJogo' num l rest Empty       = ListC 'A' (ListC 'c' (ListC 'e' (ListC 'r' (ListC 't' (ListC 'o' (ListC 'u' Nil))))))
 jogarJogo' num l rest (Only list) = jogarJogo num list rest
 
 create : Int -> List
-create n | n == 0 = End | otherwise = ListC '-' (create (n-1))
+create n | n == 0 = Nil | otherwise = ListC '-' (create (n-1))
 
 numberLength : Nbr -> Int
 numberLength E            = 0
@@ -47,4 +47,4 @@ guesses = Nbr 3 (Nbr 1 (Nbr 0 E))
 
 main : List
 main = jogarJogo palavra (create (numberLength palavra)) guesses
---result = ListC 'E' (ListC 'r' (ListC 'r' (ListC 'o' (ListC 'u' End))))
+--result = ListC 'E' (ListC 'r' (ListC 'r' (ListC 'o' (ListC 'u' Nil))))

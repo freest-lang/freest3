@@ -100,7 +100,7 @@ nodes :: T.Type -> Int
 nodes (T.Semi   _ t u) = 1 + nodes t + nodes u
 nodes (T.Almanac _ (T.Choice _) m) = 1 + Map.foldr (\t acc -> nodes t + acc) 0 m
 nodes (T.Rec    _ (Bind _ _ _ t)) = 1 + nodes t
--- Skip, Message, TypeVar
+-- Skip, End, Message, TypeVar
 nodes _                = 1
 
 -- The constructor of a type
@@ -113,6 +113,7 @@ constr T.Arrow{} = "Fun"
 constr T.Pair{} = "Pair"
 constr (T.Almanac _ T.Variant _) = "Datatype"
 constr T.Skip{} = "Skip"
+constr T.End{} = "End"
 constr T.Semi{} = "Semi"
 constr T.Message{} = "Message"
 constr (T.Almanac _ (T.Choice _) _) = "Choice"

@@ -12,7 +12,7 @@ More info on json at https://www.json.org
 main : Object
 main =
   let (w, r) = new ObjectChannel in
-  fork  @Skip $ writeObject @Skip json w;
+  fork  @Skip (\_:() 1-> writeObject @Skip json w);
   fst  @Object @Skip $ readObject  @Skip r
 
 -- A dataype for JSON
@@ -60,21 +60,21 @@ type ArrayChannel : 1S = +{
 writeValue : forall a : 1S . Value -> ValueChannel;a -> a
 writeValue v c =
   case v of {
-    StringVal s -> select StringVal c & send s,
-    IntVal    i -> select IntVal    c & send i,
-    ObjectVal j -> select ObjectVal c & writeObject  @a j,
-    ArrayVal  l -> select ArrayVal  c & writeArray  @a l,
-    BoolVal   b -> select BoolVal   c & send b,
+    StringVal s -> select StringVal c |> send s,
+    IntVal    i -> select IntVal    c |> send i,
+    ObjectVal j -> select ObjectVal c |> writeObject  @a j,
+    ArrayVal  l -> select ArrayVal  c |> writeArray  @a l,
+    BoolVal   b -> select BoolVal   c |> send b,
     NullVal     -> select NullVal   c
   }
 writeObject : forall a: 1S . Object -> ObjectChannel;a -> a
 writeObject j c =
   case j of {
     ConsObject key val j1 ->
-      select ConsObject c &
-      send key &
-      writeValue  @(ObjectChannel ; a) val &
-      writeObject  @a j1,
+      select ConsObject c
+      |> send key
+      |> writeValue  @(ObjectChannel ; a) val
+      |> writeObject  @a j1,
     EmptyObject ->
       select Empty c
   }
@@ -82,9 +82,9 @@ writeArray : forall a: 1S . Array -> ArrayChannel;a -> a
 writeArray l c =
   case l of {
     ConsArray j l1 ->
-      select ConsObject c &
-      writeValue  @(ArrayChannel ; a) j &
-      writeArray  @a l1 ,
+      select ConsObject c
+      |> writeValue  @(ArrayChannel ; a) j
+      |> writeArray  @a l1 ,
     EmptyArray ->
       select Empty c
   }

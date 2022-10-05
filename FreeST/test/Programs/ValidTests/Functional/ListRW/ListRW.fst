@@ -7,7 +7,7 @@ iListW : forall a: 1S . IList -> IListW;a -> a
 iListW xs c =
   case xs of {
     Nil -> select NilC c,
-    Cons x xs -> select ConsC c & send x & iListW  @a xs
+    Cons x xs -> select ConsC c |> send x |> iListW  @a xs
   }
 
 iListR : forall a: 1S . (dualof IListW);a -> (IList, a)
@@ -48,9 +48,11 @@ aList : IList
 aList = Cons 5 (Cons 3 (Cons 7 (Cons 1 Nil)))
 
 main : Int
-main = let (w, r) = new IListW in
-       fork @Skip $ iListW  @Skip aList w;
-       fst  @Int @Skip $ iLength'  @Skip r
+main = let (w, r) = new IListW;End in
+       fork @() (\_:()1-> iListW  @End aList w |> close);
+       let (i, r) = iLength' @End r in 
+       close r;
+       i
 
 -- main : IList
 -- main = let (w, r) = new IListW in

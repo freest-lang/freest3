@@ -1,9 +1,9 @@
-type T : 1S = +{More: !Int;T, End: Skip}
+type T : 1S = +{More: !Int;T, Stop: End}
 
 main : Int
 main =
   let (w, r) = new T in
-  let _ = fork @Skip $ select End $ send 2 $ select More $ send 5 $ select More w in
+  fork @() (\_:()1-> select More w |> send 5 |> select More |> send 2 |> select Stop |> close);
   g r
 
 
@@ -13,5 +13,5 @@ g r =
    	More r ->
       let (v, r) = receive r in
       v + g r,
-    End r -> 0
+    Stop r -> close r; 0
   }

@@ -11,30 +11,33 @@ type Printer : 1S = +{ PrintBool    : !Bool  ; Printer
                      , PrintCharLn  : !Char  ; Printer
                      , PrintString  : !String; Printer
                      , PrintStringLn: !String; Printer
-                     , Close        : Skip
+                     , Close        : End
                      }
 
 {- server -}
 
 initStdout : StdOut
-initStdout = forkWith @StdOut runStdout
+initStdout = forkWith @StdOut @() runStdout
 
+-- Can't use eta-reduction here because we don't have subtyping.
+-- The main reason is due to the closure of runServer that will be
+-- '*!(dualof StdOut) -> ()' which is different from the type of this function:
+-- 'dualof StdOut 1-> ()'. Lin vs Un functions.
 runStdout  : dualof StdOut 1-> ()
-runStdout =
-    runServer @Printer @() runPrinter ()
+runStdout c = runServer @Printer @() runPrinter () c
 
 runPrinter : () -> dualof Printer 1-> ()
 runPrinter _ printer =
     match printer with {
-        PrintBool     printer -> aux @Bool   printer printBool     & runPrinter (),
-        PrintBoolLn   printer -> aux @Bool   printer printBoolLn   & runPrinter (),
-        PrintInt      printer -> aux @Int    printer printInt      & runPrinter (),
-        PrintIntLn    printer -> aux @Int    printer printIntLn    & runPrinter (),
-        PrintChar     printer -> aux @Char   printer printChar     & runPrinter (),
-        PrintCharLn   printer -> aux @Char   printer printCharLn   & runPrinter (),
-        PrintString   printer -> aux @String printer printString   & runPrinter (),
-        PrintStringLn printer -> aux @String printer printStringLn & runPrinter (),
-        Close         _       -> ()
+        PrintBool     printer -> aux @Bool   printer printBool     |> runPrinter (),
+        PrintBoolLn   printer -> aux @Bool   printer printBoolLn   |> runPrinter (),
+        PrintInt      printer -> aux @Int    printer printInt      |> runPrinter (),
+        PrintIntLn    printer -> aux @Int    printer printIntLn    |> runPrinter (),
+        PrintChar     printer -> aux @Char   printer printChar     |> runPrinter (),
+        PrintCharLn   printer -> aux @Char   printer printCharLn   |> runPrinter (),
+        PrintString   printer -> aux @String printer printString   |> runPrinter (),
+        PrintStringLn printer -> aux @String printer printStringLn |> runPrinter (),
+        Close         printer -> close printer
     }
 
 aux : forall a . ?a;dualof Printer -> (a -> ()) 1-> dualof Printer
@@ -47,13 +50,12 @@ aux printer printFun =
 
 printGenericLin : forall a . (Printer -> !a;Printer) -> a -> Printer -> Printer
 printGenericLin sel x printer = 
-    sel printer & send x 
+    sel printer |> send x 
 
 printGenericUn : forall a . (Printer -> !a;Printer) -> a -> StdOut -> ()
 printGenericUn sel x stdout =
-    printGenericLin @a sel x (receive_ @Printer stdout) & 
-    select Close &
-    sink @Skip
+    printGenericLin @a sel x (receive_ @Printer stdout) |> 
+    select Close |> close
 
 printStringLin : String -> Printer -> Printer
 printStringLin = printGenericLin @String (\printer:Printer -> select PrintString printer)
@@ -76,7 +78,7 @@ type Counter : *S = *?Int
 
 initCounter : Counter
 initCounter = 
-    forkWith @Counter (\ch:*!Int 1-> runCounter 0 ch)
+    forkWith @Counter @() (\ch:*!Int 1-> runCounter 0 ch)
 
 runCounter : Int -> dualof Counter -> ()
 runCounter i counter =
@@ -94,22 +96,23 @@ runCounter i counter =
 
 {- nodes -}
 
-runHeadNode : forall a:1T . (rec x:1S . ?a; ?x) -> dualof *?a 1-> ()
+runHeadNode : forall a:1T . (rec x:1S . ?a; ?x; End) -> dualof *?a 1-> ()
 runHeadNode prev head = 
-    -- receive value & next node endpoint
+    -- receive value |> next node endpoint
     let (i, prev) = receive prev in
-    let (prev, _) = receive prev in
+    let (prev', prev) = receive prev in
+    close prev;
     -- send value to client
     send_ @a i head;
     -- run node with new endpoint
-    runHeadNode @a prev head
+    runHeadNode @a prev' head
 
-runTailNode : forall a:1T . dualof (rec x:1S . ?a; ?x) -> dualof *!a 1-> ()
+runTailNode : forall a:1T . dualof (rec x:1S . ?a; ?x; End) -> dualof *!a 1-> ()
 runTailNode next tail =
     let i = receive_ @a tail in
     let next' = 
-        forkWith @dualof (rec x:1S . ?a; ?x) 
-            (\c:(rec x:1S . ?a; ?x) 1-> send i next & send c & sink @Skip) 
+        forkWith @dualof (rec x:1S . ?a; ?x; End) @()
+            (\c:(rec x:1S . ?a; ?x; End) 1-> send i next |> send c |> close) 
         in
     runTailNode @a next' tail 
 
@@ -117,9 +120,9 @@ runTailNode next tail =
 
 initQueue : forall a:1T . () -> (*?a, *!a)
 initQueue _ =
-    let (internalC, internalS) = new (rec x:1S . ?a; ?x) in
-    ( forkWith @*?a (runHeadNode @a internalC)
-    , forkWith @*!a (runTailNode @a internalS)
+    let (internalC, internalS) = new (rec x:1S . ?a; ?x; End) in
+    ( forkWith @*?a @() (runHeadNode @a internalC)
+    , forkWith @*!a @() (runTailNode @a internalS)
     )
 
 enqueue : forall a:1T . a -> (*?a, *!a) 1-> ()
@@ -141,13 +144,13 @@ data List = Nil
 
 type SharedList : *S = *?ListC
 type ListC : 1S = +{ Append: !ProductId; !Issue; !RmaNumber; ListC
-                   , Close: Skip 
+                   , Close: End 
                    }
 
 {- list server -}
 
 initList : StdOut -> SharedList
-initList stdout = forkWith @SharedList (runListServer stdout)
+initList stdout = forkWith @SharedList @() (runListServer stdout)
 
 runListServer : StdOut -> dualof SharedList 1-> ()
 runListServer stdout ch =
@@ -161,18 +164,18 @@ runListService stdout list ch =
             let (issue    , ch) = receive ch in
             let (rmaNumber, ch) = receive ch in
             -- logging
-            receive_ @Printer stdout &
-            printStringLin "RMA processed \t\t @ product id: " &
-            printIntLin    productId &
-            printStringLin ", issue: " &
-            printStringLin    issue &
-            printStringLin ", RMA id: " &
-            printIntLnLin  rmaNumber &
-            select Close &
-            (sink @Skip) ;
+            receive_ @Printer stdout |>
+            printStringLin "RMA processed \t\t @ product id: " |>
+            printIntLin    productId |>
+            printStringLin ", issue: " |>
+            printStringLin    issue |>
+            printStringLin ", RMA id: " |>
+            printIntLnLin  rmaNumber |>
+            select Close |> close;
             --
             runListService stdout (Cons (productId, issue, rmaNumber) list) ch,
-        Close _ -> 
+        Close c ->
+            close c; 
             list
     }
 
@@ -182,13 +185,13 @@ append : SharedList -> (ProductId, Issue, RmaNumber) -> ()
 append ch triple =
     let (productId, pair) = triple in
     let (issue, rmaNumber) = pair in
-    receive_ @ListC ch &
-    select Append &
-    send productId &
-    send issue &
-    send rmaNumber &
-    select Close &
-    sink @Skip
+    receive_ @ListC ch
+    |> select Append
+    |> send productId
+    |> send issue
+    |> send rmaNumber
+    |> select Close
+    |> close 
 
 ---------------------------------- SharedMap ----------------------------------
 
@@ -258,7 +261,7 @@ fromJustOrDefault default maybeVal =
 type SharedMap : *S = *?MapC
 type MapC : 1S = +{ Put: !ProductName; ValueC     ; MapC
                   , Get: !ProductName; MaybeValueC; MapC
-                  , Close: Skip
+                  , Close: End
                   }
 
 type ValueC : 1S = !Amount; !Price
@@ -270,7 +273,7 @@ type MaybeValueC : 1S = &{ JustVal: dualof ValueC
 {- map server -}
 
 initMapWith : Map -> SharedMap
-initMapWith map = forkWith @SharedMap (runMapServer map)
+initMapWith map = forkWith @SharedMap @() (runMapServer map)
 
 runMapServer : Map -> dualof SharedMap 1-> ()
 runMapServer map ch = 
@@ -291,12 +294,14 @@ runMapService map ch =
                         NothingValue  -> select NothingVal ch,
                         JustValue val -> 
                             let (amount, price) = val in
-                            select JustVal ch & 
-                            send amount &
+                            select JustVal ch |> 
+                            send amount |>
                             send price
                      } in
             runMapService map ch,
-        Close _ -> map
+        Close ch -> 
+            close ch; 
+            map
     }
 
 {- client functions -}
@@ -304,14 +309,14 @@ runMapService map ch =
 putLin : ProductName -> (Amount, Price) -> MapC 1-> MapC
 putLin pName val ch = 
     let (amount, price) = val in
-    select Put ch &
-    send pName &
-    send amount &
-    send price
+    select Put ch
+    |> send pName
+    |> send amount
+    |> send price
 
 getLin : ProductName -> MapC 1-> (MaybeValue, MapC)
 getLin pName ch =
-    let ch = select Get ch &
+    let ch = select Get ch |> 
              send pName in
     match ch with {
         JustVal ch -> 
@@ -327,9 +332,9 @@ getLin pName ch =
 {- channel types -}
 
 type Bank : *S = *?BankService
-type BankService : 1S = {- CreatePayment: -} !Price; ?PaymentC
+type BankService : 1S = {- CreatePayment: -} !Price; ?PaymentC; End
 
-type PaymentC : 1S = !CCNumber; !CCCode
+type PaymentC : 1S = !CCNumber; !CCCode; End 
 
 {- bank worker -}
 
@@ -339,7 +344,7 @@ initBank stdout =
     -- runWith [Bank] $
     --     \bank:dualof Bank 1-> parallel 3 (bankWorker bank)
     let (c, s) = new Bank in
-    parallel 2 (\_:() -> bankWorker stdout s);
+    parallel @() 2 (\_:() -> bankWorker stdout s);
     c
 
 bankWorker : StdOut -> dualof Bank -> ()
@@ -357,8 +362,8 @@ runWith f =
 runBankService : StdOut -> () -> dualof BankService 1-> ()
 runBankService stdout _ ch =
     let (price, ch) = receive ch in
-    runWith @dualof PaymentC (\c:PaymentC 1-> send c ch & sink @Skip) &
-    runPayment stdout price
+    runWith @dualof PaymentC (\c:PaymentC 1-> send c ch |> close)
+    |> runPayment stdout price
     
 
 runPayment : StdOut -> Price -> dualof PaymentC -> ()
@@ -366,16 +371,17 @@ runPayment stdout price ch =
     -- mock up 
     let (ccnumber, ch) = receive ch in
     let (cccode, ch) = receive ch in
+    close ch;
     -- logging
-    receive_ @Printer stdout &
-    printStringLin "Payment processed \t @ amount: " &
-    printIntLin    price &
-    printStringLin ", credit card: " &
-    printIntLin    ccnumber &
-    printStringLin ", credit card code: " &
-    printIntLnLin  cccode &
-    select Close &
-    sink @Skip
+    receive_ @Printer stdout
+    |> printStringLin "Payment processed \t @ amount: "
+    |> printIntLin    price
+    |> printStringLin ", credit card: "
+    |> printIntLin    ccnumber
+    |> printStringLin ", credit card code: "
+    |> printIntLnLin  cccode
+    |> select Close
+    |> close
 
 
 {- client functions -}
@@ -383,7 +389,8 @@ runPayment stdout price ch =
 createPayment : Price -> Bank -> PaymentC
 createPayment price bank =
     let ch = receive_ @BankService bank in
-    fst @PaymentC @Skip $ receive $ send price ch
+    let (p, ch) = receive $ send price ch in
+    close ch; p
 
 
 ---------------------------------- Tech Store ----------------------------------
@@ -403,14 +410,14 @@ type TechService : 1S = +{ Buy: ?BuyC
                          }
 
 type BuyC : 1S = !ProductName; AvailabilityC
-type RmaC : 1S = !ProductId; !Issue; ?RmaNumber
+type RmaC : 1S = !ProductId; !Issue; ?RmaNumber; End 
 
 type AvailabilityC : 1S = &{ Available : ?Price; CheckoutC
-                           , OutOfStock: Skip
+                           , OutOfStock: End
                            }
 
-type CheckoutC : 1S = +{ Confirm: ?PaymentC
-                       , Cancel : Skip
+type CheckoutC : 1S = +{ Confirm: ?PaymentC; End 
+                       , Cancel : End
                        }
 
 
@@ -440,12 +447,12 @@ buyWorker buyQueue map bank =
     -- (try to) reserve from stock
     let (amount, price) = fromJustOrDefault (0, 0) $ getFromStock pName map in
     if amount < 1
-    then select OutOfStock ch & sink @Skip
+    then select OutOfStock ch |> close 
     else
-        let ch = select Available ch & send price in
+        let ch = select Available ch |> send price in
             match ch with {
-                Confirm ch -> send (createPayment price bank) ch,
-                Cancel ch  -> returnToStock pName map; ch
+                Confirm ch -> send (createPayment price bank) ch |> close,
+                Cancel ch  -> close ch; returnToStock pName map
             }
     ;
     --
@@ -467,9 +474,7 @@ getFromStock pName map =
             then putLin pName (amount-1, price) mapS
             -- if no stock, nothing
             else mapS
-    } &
-    select Close &
-    (sink @Skip);
+    } |> select Close |> close ;
     --
     maybeVal
     
@@ -485,9 +490,7 @@ returnToStock pName map =
         JustValue val -> 
             let (amount, price) = val in
             putLin pName (amount+1, price) mapS
-    } &
-    select Close &
-    sink @Skip
+    } |> select Close |> close 
 
 {- rma workers -}
 
@@ -499,7 +502,7 @@ rmaWorker rmaQueue counter rmaList =
     let (issue    , ch) = receive ch in
     let rmaNumber = receive_ @Int counter in
     append rmaList (productId, issue, rmaNumber);
-    send rmaNumber ch;
+    send rmaNumber ch |> close ;
     --
     rmaWorker rmaQueue counter rmaList
 
@@ -510,14 +513,14 @@ setupStore stdout bank =
     -- buy
     let buyQueue = initQueue @dualof BuyC () in
     let stockMap = initMapWith initialStock in
-    parallel 3 (\_:() -> buyWorker buyQueue stockMap bank);
+    parallel @() 3 (\_:() -> buyWorker buyQueue stockMap bank);
     -- rma
     let rmaQueue = initQueue @dualof RmaC () in
     let counter = initCounter in
     let rmaList = initList stdout in
-    parallel  1 (\_:() -> rmaWorker rmaQueue counter rmaList);
+    parallel @()  1 (\_:() -> rmaWorker rmaQueue counter rmaList);
     -- store front
-    forkWith @TechStore $ runStoreFront buyQueue rmaQueue
+    forkWith @TechStore @() $ runStoreFront buyQueue rmaQueue
 
 initialStock : Map
 initialStock = 
@@ -541,16 +544,17 @@ client0 stdout ch =
     -- ask for product 'A'
     let buyC = send 'A' buyC in
     match buyC with {
-        OutOfStock _ -> 
+        OutOfStock c ->
+            close c; 
             printStringLnUn "[Client 0] I was unable to buy product 'A'" stdout,
         Available buyC -> 
             let (price, buyC) = receive buyC in
             -- buyer's price limit
             if price > 100 
-            then  select Cancel buyC & sink @Skip
-            else
-                let (paymentC, _) = select Confirm buyC & receive in
-                send 123123123 paymentC & send 123 & sink @Skip
+            then select Cancel buyC |> close
+            else let (paymentC, buyC) = select Confirm buyC |> receive in
+                 close buyC;
+                 send 123123123 paymentC |> send 123 |> close
     }
 
 {- rma clients -}
@@ -562,10 +566,10 @@ client1 _ ch =
     -- go to the rma queue
     let (rmaC, _) = receive $ select Rma store in
     -- wait & do my business
-    let (rmaId, _) = send 1234567890 rmaC &
-                     send "Monitor flickers when punched" &
-                     receive in
-    ()
+    let (rmaId, c) = send 1234567890 rmaC
+                     |> send "Monitor flickers when punched"
+                     |> receive in
+    close c
 
 ---------------------------------- Main ----------------------------------
 
@@ -577,7 +581,7 @@ main =
     --
     let bank = initBank stdout in
     let store = setupStore stdout bank in
-    fork $ client0 stdout store;
-    fork $ client0 stdout store;
-    fork $ client1 stdout store;
+    fork (\_:() 1-> client0 stdout store);
+    fork (\_:() 1-> client0 stdout store);
+    fork (\_:() 1-> client1 stdout store);
     diverge 

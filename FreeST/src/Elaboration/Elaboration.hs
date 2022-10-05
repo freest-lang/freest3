@@ -25,7 +25,7 @@ import qualified Data.Set as Set
 elaboration :: FreestState ()
 elaboration = do
   -- | Checks if there are choices with the same name as constructors
-  Match.checkChoices =<< getPEnvChoices
+--  Match.checkChoices =<< getPEnvChoices
   -- | Checks correct number of arguments
   Match.checkNumArgs =<< getPEnvPat
   -- | Checks correct channels' pattern matching

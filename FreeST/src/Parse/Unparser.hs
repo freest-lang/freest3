@@ -184,6 +184,7 @@ instance Unparse T.Type where
   unparse (T.String _     ) = (maxRator, "String")
   unparse (T.Unit _       ) = (maxRator, "()")
   unparse (T.Skip _       ) = (maxRator, "Skip")
+  unparse (T.End _        ) = (maxRator, "End")
   unparse (T.Var  _ a     ) = (maxRator, show a)
   unparse (T.CoVar _ a    ) = (maxRator, "dual " ++ show a)
   unparse (T.Message _ p t) = (msgRator, show p ++ m)

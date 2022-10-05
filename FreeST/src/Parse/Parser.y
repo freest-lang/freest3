@@ -48,6 +48,7 @@ import           System.FilePath
   Lambda   {TokenUpperLambda _}
   '@'      {TokenAt _}
   Skip     {TokenSkip _}
+  End      {TokenEnd _}
   '('      {TokenLParen _}
   ')'      {TokenRParen _}
   ','      {TokenComma _}
@@ -64,6 +65,7 @@ import           System.FilePath
   '||'     {TokenDisjunction _}
   '/'      {TokenDiv _}
   '&'      {TokenAmpersand _}
+  '|>'     {TokenPipeOp _}
   '+'      {TokenPlus _}
   '-'      {TokenMinus _}
   '*'      {TokenTimes _}
@@ -124,7 +126,7 @@ import           System.FilePath
 %right dualof
 %nonassoc ProgVarWildTBind
 %right '$'       -- function call
-%left '&'        -- function call
+%left '|>'        -- function call
 
 %%
 --------------
@@ -208,7 +210,7 @@ Exp :: { E.Exp }
                                        pure $ E.Case s (E.App s' (E.Var s' (mkVar s' "collect")) $2) $5 }
   | case Exp of '{' CaseMap '}'    {% mkSpanSpan $1 $6 >>= \s -> pure $ E.CasePat s $2 $5 }
   | Exp '$' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ E.App s $1 $3 }
-  | Exp '&' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $  E.App s $3 $1 }
+  | Exp '|>' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $  E.App s $3 $1 }
   | Exp '||' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(||)") $3 }
   | Exp '&&' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(&&)") $3 }
   | Exp CMP Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s (getText $2)) $3 }
@@ -327,6 +329,7 @@ Type :: { T.Type }
   | '(' Type ',' TupleType ')'    {% mkSpanSpan $1 $5 >>= \s -> pure $ T.Pair s $2 $4 }
   -- Session types
   | Skip                          {% T.Skip `fmap` mkSpan $1 }
+  | End                           {% T.End `fmap` mkSpan $1 }
   | Type ';' Type                 {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Semi s $1 $3 }
   | Polarity Type %prec MSG       {% mkSpanFromSpan (fst $1) $2 >>= \s -> pure $ T.Message s (snd $1) $2 }                                 
   | ChoiceView '{' FieldList '}'  {% addToPEnvChoices (Map.keys $3)

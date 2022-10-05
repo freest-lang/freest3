@@ -39,6 +39,7 @@ data Type =
   | Almanac Span Sort TypeMap
   -- Session Types
   | Skip Span
+  | End Span
   | Semi Span Type Type
   | Message Span Polarity Type
   -- Polymorphism and recursive types
@@ -69,6 +70,7 @@ instance Located Type where
   getSpan (Pair p _ _   ) = p
   getSpan (Almanac p _ _) = p
   getSpan (Skip p       ) = p
+  getSpan (End p        ) = p
   getSpan (Semi p _ _   ) = p
   getSpan (Message p _ _) = p
   getSpan (Forall p _   ) = p
