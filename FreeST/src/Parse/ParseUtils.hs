@@ -115,17 +115,16 @@ checkDupTypeDecl a = do
 
 -- verifies if there is any duplicated var in any patern, or nested pattern
 checkDupVarPats :: [E.Pattern] -> FreestStateT ()
-checkDupVarPats ps = checkDupVarPats' ps [] >> return ()
+checkDupVarPats ps = void $ checkDupVarPats' ps []
 
 checkDupVarPats' :: [E.Pattern] -> [Variable] -> FreestStateT [Variable]
 checkDupVarPats' [] vs = return vs
-checkDupVarPats' ((E.PatCons c cs):xs) vs = checkDupVarPats' cs vs >>= checkDupVarPats' xs
+checkDupVarPats' ((E.PatCons _ cs):xs) vs = checkDupVarPats' cs vs >>= checkDupVarPats' xs
 checkDupVarPats' ((E.PatVar  v)   :xs) vs = do
-  case find clause vs of
-    Nothing -> return []
-    Just v2 -> addError (DuplicateVar (getSpan v) "program" v2 (getSpan $ v2))
-            >> return []
-  checkDupVarPats' xs (v:vs)
+   case find clause vs of
+    Nothing -> checkDupVarPats' xs (v:vs)
+    Just v2 -> addError (DuplicateVar (getSpan v) "program" v2 (getSpan v2))
+            >> checkDupVarPats' xs (v:vs)
   where clause v2 = not (is_ v) && v == v2
 
 -- OPERATORS
@@ -146,4 +145,4 @@ typeListToType a = map $ second typeToFun -- map (\(x, ts) -> (x, typeToFun ts))
   typeToFun (t : ts) = T.Arrow (getSpan t) Un t (typeToFun ts)
 
 insertMap :: Ord k => k -> [v] -> Map.Map k [v] -> Map.Map k [v]
-insertMap k v = Map.insertWith (++) k v
+insertMap = Map.insertWith (++)
