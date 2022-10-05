@@ -79,14 +79,15 @@ optionList =
 -- | Runs the REPL 
 
 repl :: FreestS -> InputT REPLState ()
-repl s = getInputLine "λfreest> " >>= parseOpt s >> repl s
-
+repl s = handleInterrupt (repl s) $
+    withInterrupt $ getInputLine "λfreest> " >>= parseOpt s >> repl s
+ 
 -- | OPTIONS
 
 type Option = Maybe String
 
 parseOpt :: FreestS -> Option -> InputT REPLState ()
-parseOpt _ Nothing  = return ()
+parseOpt _ Nothing  = liftS $ die "Leaving FreeSTi."
 parseOpt s (Just xs)
   | isOpt [":q", ":quit"] = liftS $ die "Leaving FreeSTi."
   | isOpt [":h", ":help"] = liftS $ putStrLn helpMenu
