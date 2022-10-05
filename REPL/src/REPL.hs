@@ -108,7 +108,7 @@ parseOpt s (Just xs)
   | otherwise = do
       f <- lift getFileName
       st <- lift get
-      case parseExpr f opt of
+      case parseExpr f xs of
         Left err -> liftS $ print err
         Right e       -> do
           let s1 = execState (T.synthetise Map.empty e) st
