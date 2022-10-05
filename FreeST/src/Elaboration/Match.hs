@@ -289,7 +289,7 @@ isChan (PatCons c _) = getConstructors
                    <&> Set.notMember c
 
 isPat_ :: Pattern -> Bool
-isPat_ (PatVar v) = is_ v
+isPat_ (PatVar v) = isWild v
 
 newVar :: Pattern -> FreestState Variable
 newVar = R.renameVar.pVar

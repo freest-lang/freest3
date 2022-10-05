@@ -73,7 +73,7 @@ checkDupCase x m =
 
 checkDupBind :: Variable -> [Variable] -> FreestStateT ()
 checkDupBind x xs
-  | is_ x = return ()
+  | isWild x = return ()
   | otherwise = case find (== x) xs of
     Just y  -> addError $ DuplicateVar (getSpan y) "program" x (getSpan x)
     Nothing -> return ()
@@ -125,7 +125,7 @@ checkDupVarPats' ((E.PatVar  v)   :xs) vs = do
     Nothing -> checkDupVarPats' xs (v:vs)
     Just v2 -> addError (DuplicateVar (getSpan v) "program" v2 (getSpan v2))
             >> checkDupVarPats' xs (v:vs)
-  where clause v2 = not (is_ v) && v == v2
+  where clause v2 = not (isWild v) && v == v2
 
 -- OPERATORS
 
