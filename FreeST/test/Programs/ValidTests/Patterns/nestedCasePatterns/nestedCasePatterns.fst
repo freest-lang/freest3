@@ -1,25 +1,19 @@
 data List = Nil | Cons Int List
 
 f : List -> Int
-f xs =
-  case xs of {
-    Nil                   -> 0,
-    Cons _ Nil            -> 1,
-    (Cons _ (Cons x Nil)) -> 2,
-    xs                    -> 3,
-    Cons _ Nil            -> 3
-  }
+f Nil                   = 0
+f (Cons _ Nil)          = 1
+f (Cons _ (Cons x Nil)) = 2
+f xs                    = 3
+f (Cons _ Nil)          = 3
 
 g : List -> Int
-g xs =
+g Nil         = 0
+g (Cons _ xs) =
   case xs of {
-    Nil -> 0,
-    Cons _ xs -> 
-    case xs of {
-      Nil -> 1,
-      Cons _ Nil -> 2,
-      Cons _ _ -> 3
-    }
+    Nil -> 1,
+    Cons _ Nil -> 2,
+    Cons _ _ -> 3
   }
 
 main : Int
