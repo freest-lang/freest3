@@ -13,7 +13,6 @@ import qualified Syntax.Type as T
 import           Util.GetTOps
 import           Util.Message
 
-import           Data.List( intercalate )
 import qualified Data.Map as Map
 import           System.FilePath
 
@@ -61,7 +60,7 @@ data ErrorType =
   | MissingChoices Span [Variable] Span
   | MultipleDeclarations Span Variable Span
   | MultipleTypeDecl Span Variable Span
-  | MultipleFunBindings Span Variable Span -- TODOX remove? this is not an error anymore
+  | MultipleFunBindings Span Variable Span
   -- Elab
   | ConflictChoiceCons Span Variable Span
   | DifNumberOfArguments Span Variable 
