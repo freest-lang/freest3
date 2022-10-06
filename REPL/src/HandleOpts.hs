@@ -33,7 +33,13 @@ import           System.FilePath
 -- | Looses all the definitions made so far 
 ------------------------------------------------------------
 load :: FreestS -> String -> String -> REPLState ()
-load s f msg = do
+load s ('~':'/':f) msg = do
+  home <- lift getHomeDirectory
+  load' s (home </> f) msg
+load s f msg = load' s f msg
+
+load' :: FreestS -> String -> String -> REPLState ()
+load' s f msg = do
   b1 <- not <$> lift (doesFileExist f)
   let b2 = not $ "fst" `isExtensionOf` f
   when b1 $ lift $ putStrLn fileDoNotExist
