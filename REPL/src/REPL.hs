@@ -12,22 +12,24 @@ import           Validation.TypeChecking ( typeCheck )
 import qualified Validation.Typing as T
 
 import           Control.Monad.State
-import           Data.Char (isSpace)
 import           Data.List
 import qualified Data.Map.Strict as Map
 import           Paths_FreeST ( getDataFileName )
 import           System.Console.Haskeline
+import           System.Directory
+import           System.Environment
 import           System.Exit ( die )
-import System.Directory
-import System.FilePath
+import           System.FilePath
+
 
 
 main :: IO ()
 main = do
+  args <- getArgs
   home <- (</> ".repl_history") <$> getHomeDirectory
   runFilePath <- getDataFileName "Prelude.fst"
   s1 <- parseProgram (initialState {runOpts=defaultOpts{runFilePath}})
-  evalStateT (runInputT (replSettings home) (repl s1))
+  evalStateT (runInputT (replSettings home) (repl s1 args))
     s1{runOpts=defaultOpts{runFilePath="<interactive>"}}
 
 
@@ -78,9 +80,10 @@ optionList =
 
 -- | Runs the REPL 
 
-repl :: FreestS -> InputT REPLState ()
-repl s = handleInterrupt (repl s) $
-    withInterrupt $ getInputLine "λfreest> " >>= parseOpt s >> repl s
+repl :: FreestS -> [String] -> InputT REPLState ()
+repl s [] = handleInterrupt (repl s []) $
+    withInterrupt $ getInputLine "λfreest> " >>= parseOpt s >> repl s []
+repl s (x:_) = lift (load s x "OK. Module(s) loaded!") >> repl s []
  
 -- | OPTIONS
 
