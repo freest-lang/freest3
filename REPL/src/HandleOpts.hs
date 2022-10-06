@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE LambdaCase #-}
 module HandleOpts where
@@ -27,11 +28,14 @@ import           System.Directory
 import           System.FilePath
 
 
-------------------------------------------------------------
+-- | -------------------------------------------------------
 -- | Loads a file into the REPL
 -- | Usage: `:l` or `:load`
--- | Looses all the definitions made so far 
-------------------------------------------------------------
+-- | Details:
+-- |   - It looses all the definitions made so far
+-- |   - Deals with ~ in path
+-- |   - Deals with FileNotFound & WrongFileExtension
+-- | -------------------------------------------------------
 load :: FreestS -> String -> String -> REPLState ()
 load s ('~':'/':f) msg = do
   home <- lift getHomeDirectory
@@ -39,30 +43,30 @@ load s ('~':'/':f) msg = do
 load s f msg = load' s f msg
 
 load' :: FreestS -> String -> String -> REPLState ()
-load' s f msg = do
-  b1 <- not <$> lift (doesFileExist f)
-  let b2 = not $ "fst" `isExtensionOf` f
-  when b1 $ lift $ putStrLn fileDoNotExist
-  when b2 $ lift $ putStrLn wrongFileExtension
-  if b1 && b2
-    then return ()
+load' s f msg =
+  freestLoadAndRun s f msg ("fst" `isExtensionOf` f) =<< lift (doesFileExist f)
+  
+freestLoadAndRun :: FreestS -> String -> String -> Bool -> Bool -> REPLState ()
+freestLoadAndRun  _ f _ _ False = freestError $ FileNotFound f
+freestLoadAndRun _ f _ False _ = freestError $ WrongFileExtension f
+freestLoadAndRun s f msg _ _ = do
+  s2 <- lift $ parseAndImport (s{runOpts=defaultOpts{runFilePath=f}})
+  if hasErrors s2
+    then lift $ putStrLn (getErrors s2)
     else do
-      s2 <- lift $ parseAndImport (s{runOpts=defaultOpts{runFilePath=f}})
-      if hasErrors s2
-        then lift $ putStrLn (getErrors s2)
-        else do
-          put s2
-          unlessM (wrapExec (elaboration >> get >>= put . emptyPEnv)) $
-            unlessM (wrapExec (renameState >> typeCheck)) (lift $ putStrLn msg)
-  where
-    fileDoNotExist = showErrors True "<FreeST>" Map.empty (FileNotFound f)
-    wrongFileExtension = showErrors True "<FreeST>" Map.empty (WrongFileExtension f)
+      put s2
+      unlessM (wrapExec (elaboration >> get >>= put . emptyPEnv)) $
+        unlessM (wrapExec (renameState >> typeCheck)) (lift $ putStrLn msg)
 
-------------------------------------------------------------
+freestError :: ErrorType -> REPLState ()
+freestError = lift . putStrLn . showErrors True "<FreeST>" Map.empty
+
+-- | -------------------------------------------------------
 -- | Reloads the previously loaded file
 -- | Usage: `:r` or `:reload`
--- | Looses all the definitions made so far 
-------------------------------------------------------------
+-- | Details:
+-- |   - It looses all the definitions made so far
+-- | -------------------------------------------------------
 
 reload ::  FreestS -> REPLState ()
 reload s = do
@@ -71,7 +75,7 @@ reload s = do
     then load s fp "OK. Module(s) reloaded!"
     else lift $ putStrLn "No files loaded yet"
 
-------------------------------------------------------------
+-- | -------------------------------------------------------
 -- | Displays the type of a given expression 
 -- | Usage: `:t <expr>` or `:type <expr>`
 -- | It is used to display the type of some type.
@@ -79,7 +83,7 @@ reload s = do
 -- |   - A command line expression: TODO (see below)
 -- |   - A user defined function: `:t fun`
 -- |   - A datatype constructor: `:t Node`
-------------------------------------------------------------
+-- | -------------------------------------------------------
 
 -- TODO: :t (\x:Int -> x * x)
 typeOf :: String -> REPLState ()
@@ -90,14 +94,14 @@ typeOf q = do
      Just t -> getTypeNames >>= \tn -> lift $ putStrLn $ q ++ " : " ++ show (getDefault tn t)
      Nothing -> lift $ putStrLn $ q ++ " is not in scope."
 
-------------------------------------------------------------
+-- | -------------------------------------------------------
 -- | Displays the kind of a given type 
 -- | Usage: `:k <type>` or `:info <type>` 
 -- | It is used to display the kind of some type.
 -- | Shows the kind of:
 -- |   - A command line type: `:k Int`
 -- |   - A datatype or type abbreviation: `:k Tree`
-------------------------------------------------------------
+-- | -------------------------------------------------------
 
 -- TODO: elaborate after parsing?
 kindOf :: String -> REPLState ()
@@ -157,11 +161,11 @@ infoFun :: Variable -> T.Type -> Maybe E.Exp -> TypeOpsEnv -> String
 infoFun var t mbe tn = "\n" ++ show var ++ " : " ++ show (getDefault tn t) ++ 
       maybe "" (\e ->  "\n" ++ show var ++ " = " ++ show (getDefault tn e)) mbe
 
-------------------------------------------------------------
+-- | -------------------------------------------------------
 -- | Handles a multiline command.
 -- | Usage: `:{\n ..lines.. \n:}\n`
 -- | It is usually used to define functions, datatypes, or type abbreviations
-------------------------------------------------------------
+-- | -------------------------------------------------------
 
 multilineCmd :: String -> InputT REPLState ()
 multilineCmd xs' = do
@@ -180,11 +184,11 @@ readLoop s = getInputLine " |λ> " >>= \case
   Just str -> readLoop (s ++ "\n" ++ str)
   Nothing -> readLoop s
 
-------------------------------------------------------------
+-- | -------------------------------------------------------
 -- | The help menu
 -- | Usage: `:h` or `:help`
 -- | Displays the REPL's help menu
-------------------------------------------------------------
+-- | -------------------------------------------------------
 
 helpMenu :: String
 helpMenu = unlines
