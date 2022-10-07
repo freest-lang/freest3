@@ -34,13 +34,13 @@ instance Style K.Kind where
   style f sty _ = f sty . show
 
 instance Style Variable where
-  style f sty _ = f sty . quote . show
+  style f sty _ = quote . f sty . show
 
 instance Style VarEnv where
   style f sty _ = f sty . show
   
 instance Style FilePath where
-  style f sty _ = f sty . quote 
+  style f sty _ = quote . f sty
 
 
 quote :: String -> String
