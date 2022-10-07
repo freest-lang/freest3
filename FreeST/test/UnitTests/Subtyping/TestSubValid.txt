@@ -1,0 +1,192 @@
+-- Atomic top types (reflexivity)
+
+Int 
+Int 
+
+Char
+Char 
+
+Bool 
+Bool 
+
+String
+String 
+
+()
+()
+
+Skip 
+Skip
+
+End
+End
+
+-- Branch (covariant on width (label set) and depth (matched type))
+
+&{A: !Int}
+&{A: !Int}
+
+&{A: !Int         }
+&{A: !Int, B: !Int}
+
+&{A: !Int                   }
+&{A: !Int, B: !Int, C: ?Char}
+
+&{Plus : ?Int;?Int;!Int;End, Eq: ?Int;?Int;!Bool;End}
+&{Plus : ?Int;?Int;!Int;End, Eq: ?Int;?Int;!Bool;End}
+
+&{Plus : ?Int;?Int;!Int;End, Eq: ?Int;?Int;!Bool;End                    }
+&{Plus : ?Int;?Int;!Int;End, Eq: ?Int;?Int;!Bool;End, Neg: ?Int;!Int;End}
+
+&{A: &{AA: !Int           }}
+&{A: &{AA: !Int, AB: ?Bool}}
+
+&{A: +{AA: !Int, AB: ?Bool}}
+&{A: +{AB: ?Bool          }}
+
+-- (without filtering rule)
+&{A: +{AA: !Int, AB: &{ABA: &{ABAA: !Int             }}}}
+&{A: +{          AB: &{ABA: &{ABAA: !Int, ABAB: ?Bool}}}}
+
+-- Choice (contravariant on width (label set), covariant on depth (selected type))
+
++{A: ?Int}
++{A: ?Int}
+
++{A: ?Int, B: ?Int}
++{A: ?Int         }
+
++{Plus : !Int;!Int;?Int;End, Eq: !Int;!Int;?Bool;End, Neg: !Int;?Int;End}
++{Plus : !Int;!Int;?Int;End, Eq: !Int;!Int;?Bool;End, Neg: !Int;?Int;End}
+
++{Plus : !Int;!Int;?Int;End, Eq: !Int;!Int;?Bool;End, Neg: !Int;?Int;End}
++{Plus : !Int;!Int;?Int;End, Eq: !Int;!Int;?Bool;End                    }
+
+-- Sequential composition (covariant on before and after) 
+
+!Int;?Bool 
+!Int;?Bool 
+
+Skip;Skip 
+Skip;Skip
+
+Skip;Skip 
+Skip;Skip;Skip
+
+&{A: ?Int                   }; +{D: !Int;End}
+&{A: ?Int, B: !Bool, C: Skip}; +{D: !Int;End}
+
+&{A: ?Int}; +{D: !Int;Skip, E: Skip;!Bool}
+&{A: ?Int}; +{D: !Int;Skip               }
+
+-- (without filtering rule)
+&{A: ?Int                   }; +{D: !Int;?Bool, E: Skip;!Bool}
+&{A: ?Int, B: !Bool, C: Skip}; +{D: !Int;?Bool               }
+
+-- (without filtering rule)
+&{A: ?Int}; +{D: !Int;End, E: Skip;!Bool}
+&{A: ?Int}; +{D: !Int;End               }
+
+-- (without filtering rule)
+&{A: ?Int                   }; +{D: !Int;End, E: Skip;!Bool}
+&{A: ?Int, B: !Bool, C: Skip}; +{D: !Int;End               }
+
+-- Output (contravariant) 
+
+!(&{A: !Int})
+!(&{A: !Int})
+
+!(+{A: ?Int})
+!(+{A: ?Int})
+
+!(&{A: !Int, B: !Int})
+!(&{A: !Int         })
+
+!(+{A: ?Int         })
+!(+{A: ?Int, B: ?Int})
+
+!(Int 1-> Int)
+!(Int  -> Int)
+
+-- Input (covariant)
+
+?(&{A: !Int})
+?(&{A: !Int})
+
+?(+{A: ?Int})
+?(+{A: ?Int})
+
+?(&{A: !Int         })
+?(&{A: !Int, B: !Int})
+
+?(+{A: ?Int, B: ?Int})
+?(+{A: ?Int         })
+
+-- Arrow (contravariant on domain, covariant on range and multiplicity)
+
++{A: !Int} -> +{B: ?Bool}
++{A: !Int} -> +{B: ?Bool}
+
++{A: !Int         } -> +{A: !Int, B: !Int}
++{A: !Int, B: !Int} -> +{A: !Int         }
+
+&{A: !Int, B: !Int} -> &{A: !Int         }
+&{A: !Int         } -> &{A: !Int, B: !Int}
+
+!(+{A:!Int, B:?Char}) -> !(+{A:!Int})
+!(+{A:!Int}) -> !(+{A:!Int, B:?Char})
+
++{A: !Int} 1-> +{B: ?Bool}
++{A: !Int} 1-> +{B: ?Bool}
+
++{A: !Int         } 1-> +{A: !Int, B: !Int}
++{A: !Int, B: !Int} 1-> +{A: !Int         }
+
++{A: !Int} -> +{B: ?Bool}
++{A: !Int} 1-> +{B: ?Bool}
+
+&{A: !Int, B: !Int} -> &{A: !Int         }
+&{A: !Int         } 1-> &{A: !Int, B: !Int}
+
+!(+{A:!Int, B:?Char}) -> !(+{A:!Int})
+!(+{A:!Int}) 1-> !(+{A:!Int, B:?Char})
+
+-- Pair (covariant on first and second) 
+
+(Int, Int)
+(Int, Int)
+
+(+{A: !Bool, B:?Char}, Int)
+(+{A: !Bool, B:?Char}, Int)
+
+(Int, +{A: !Bool, B:?Char})
+(Int, +{A: !Bool         })
+
+(&{A: ?Bool         }, +{A: !Bool, B:?Char})
+(&{A: ?Bool, B:!Char}, +{A: !Bool         })
+
+(&{A: ?Bool         }, +{A: !(+{A: !Bool          }), B:?Char})
+(&{A: ?Bool, B:!Char}, +{A: !(+{A: !Bool, B: ?Char})         })
+
+(Int -> Bool, Bool -> Int)
+(Int 1-> Bool, Bool 1-> Int)
+
+(Int -> Bool, !(+{A: !Int, B: ?Bool}) -> Int)
+(Int -> Bool, !(+{A: !Int          }) -> Int)
+
+-- Recursive types 
+
+rec x . +{A: Skip         } -> (+{A: Skip, B: Skip}, x)
+rec x . +{A: Skip, B: Skip} -> (+{A: Skip         }, x)
+
+rec l:1S . +{Cons: ?(+{A:!Int, B:!Int});l, Nil: Skip}
+rec l:1S . +{Cons: ?(+{A:!Int});l, Nil: Skip}
+
+rec l:1S . +{Cons: !(+{A:!Int});l, Nil: Skip}
+rec l:1S . +{Cons: !(+{A:!Int, B:!Int});l, Nil: Skip}
+
+rec l:1S . +{Cons: ?(Int  -> Int);l, Nil: Skip}
+rec l:1S . +{Cons: ?(Int 1-> Int);l, Nil: Skip}
+
+rec l:1S . +{Cons: !(Int 1-> Int);l, Nil: Skip}
+rec l:1S . +{Cons: !(Int  -> Int);l, Nil: Skip}

@@ -11,14 +11,16 @@ session types into a grammar, which is pruned. An expansion tree is computed aft
 through an alternation of expansion of children nodes and their simplification, using the
 reflexive, congruence, and BPA rules.
 -}
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TupleSections, LambdaCase, MultiWayIf #-}
+
 module Bisimulation.Bisimulation
   ( bisimilar
   , bisimilarGrm -- For SGBisim
+  , (<~)
   )
 where
 
-import           Syntax.Base                    (Variable) -- Nonterminal symbols are type variables
+import           Syntax.Base                    (Variable, defaultSpan, Multiplicity (..)) -- Nonterminal symbols are type variables
 import qualified Syntax.Type                   as T
 import           Equivalence.TypeToGrammar      ( convertToGrammar )
 import           Bisimulation.Grammar
@@ -29,20 +31,26 @@ import qualified Data.Sequence                 as Queue
 import           Data.Bifunctor
 import           Data.List                      ( isPrefixOf
                                                 , union
+                                                , isSuffixOf
                                                 )
 -- Word is (re)defined in module Equivalence.Grammar
 import           Prelude                 hiding ( Word )
 import           Debug.Trace
+import Data.Function
+import Control.Monad.Extra ((||^))
 
-bisimilar :: T.Type -> T.Type -> Bool
-bisimilar t u = bisimilarGrm $ convertToGrammar [t, u]
+bisimilar :: T.Type -> T.Type ->  Bool
+bisimilar t u = (t <~ u) && (u <~ t)
+
+(<~) :: T.Type -> T.Type ->  Bool
+t <~ u = bisimilarGrm $ convertToGrammar [t, u]
 
 -- | Assumes a grammar without unreachable symbols
 bisimilarGrm :: Grammar -> Bool
 bisimilarGrm (Grammar [xs, ys] ps) = expand queue rules ps
  where
-  rules | allNormed ps = [reflex, congruence, bpa2, filtering]
-        | otherwise    = [reflex, congruence, bpa1, bpa2, filtering]
+  rules | allNormed ps = [reflex, congruence, bpa2{-, filtering-}]
+        | otherwise    = [reflex, congruence, bpa1, bpa2 {-, filtering-}]
   queue = Queue.singleton (Set.singleton (xs, ys), Set.empty)
 
 type Node = Set.Set (Word, Word)
@@ -97,16 +105,42 @@ expandNode ps = Set.foldr
   )
   (Just Set.empty)
 
-expandPair :: Productions -> (Word, Word) -> Maybe Node
-expandPair ps (xs, ys) | Map.keysSet m1 == Map.keysSet m2 = Just $ match m1 m2
-                       | otherwise                        = Nothing
+expandPair :: Productions -> (Word, Word) -> {-IO-} (Maybe Node)
+expandPair ps (xs, ys) =
+  if | (isChoicePair || isCoBranchPair) && ls2 `Set.isSubsetOf` ls1
+     -> Just $ match False m1 m2 Set.empty
+     | (isBranchPair || isCoChoicePair) && ls1 `Set.isSubsetOf` ls2
+     -> Just $ match True m1 m2 Set.empty
+     | isArrowPair || isCoArrowPair 
+     -> let m1'  = if isArrowPair   && isLinArrowSet ls2 then toLinArrowTrans m1 else m1
+            m2'  = if isCoArrowPair && isLinArrowSet ls1 then toLinArrowTrans m2 else m2
+            (ls1', ls2') = (Map.keysSet m1', Map.keysSet m2') in 
+        if ls1' == ls2'
+          then Just $ match True (rTrans m1') (rTrans m2') (match False (dTrans m1') (dTrans m2') Set.empty)
+          else Nothing
+     | ls1 == ls2 -> Just $ match True m1 m2 Set.empty
+     | otherwise  -> Nothing
  where
-  m1 = transitions xs ps
-  m2 = transitions ys ps
+  (m1, m2)        = (transitions xs ps, transitions ys ps)
+  (ls1, ls2)      = (Map.keysSet m1   , Map.keysSet m2   )
+  allLabels       = ls1 `Set.union` ls2
+  isChoicePair    = all (isPrefixOf "+" ) allLabels
+  isBranchPair    = all (isPrefixOf "&" ) allLabels
+  isCoChoicePair  = all (isPrefixOf "^+") allLabels
+  isCoBranchPair  = all (isPrefixOf "^&") allLabels
+  isArrowPair     = all (isPrefixOf "->"  ||^ isPrefixOf "1->" ) allLabels
+  isCoArrowPair   = all (isPrefixOf "^->" ||^ isPrefixOf "^1->") allLabels
+  isLinArrowSet   = all (isPrefixOf "1->")
+  toLinArrowTrans = Map.mapKeys (\case ('-':'>':cs) -> "1->"++cs; cs -> cs)
+  dTrans          = Map.filterWithKey (\l xs -> "d" `isSuffixOf` l)
+  rTrans          = Map.filterWithKey (\l xs -> "r" `isSuffixOf` l)
 
-match :: Transitions -> Transitions -> Node
-match m1 m2 =
-  Map.foldrWithKey (\l xs n -> Set.insert (xs, m2 Map.! l) n) Set.empty m1
+  match :: Bool -> Transitions -> Transitions -> Node -> Node
+  match b m1 m2 n =
+    if b then
+      Map.foldrWithKey (\l xs n' -> Set.insert (xs, m2 Map.! l) n') n m1
+    else
+      Map.foldrWithKey (\l xs n' -> Set.insert (m1 Map.! l, xs) n') n m2
 
 -- The fixed point of branch wrt the application of node transformations
 findFixedPoint
