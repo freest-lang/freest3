@@ -50,13 +50,9 @@ freestLoadAndRun :: FreestS -> String -> String -> Bool -> Bool -> REPLState ()
 freestLoadAndRun  _ f _ _ False = freestError $ FileNotFound f
 freestLoadAndRun _ f _ False _ = freestError $ WrongFileExtension f
 freestLoadAndRun s f msg _ _ = do
-  s2 <- lift $ parseAndImport (s{runOpts=defaultOpts{runFilePath=f}})
-  if hasErrors s2
-    then lift $ putStrLn (getErrors s2)
-    else do
-      put s2
-      unlessM (wrapExec (elaboration >> get >>= put . emptyPEnv)) $
-        unlessM (wrapExec (renameState >> typeCheck)) (lift $ putStrLn msg)
+  wrapIO_ (parseAndImport (s{runOpts=defaultOpts{runFilePath=f}}))
+    $ unlessM (wrapExec $ elaboration >> stopPipeline (renameState >> typeCheck))
+         (lift $ putStrLn msg)
 
 freestError :: ErrorType -> REPLState ()
 freestError = lift . putStrLn . showErrors True "<FreeST>" Map.empty
