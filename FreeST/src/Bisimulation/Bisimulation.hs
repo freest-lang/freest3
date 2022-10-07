@@ -108,9 +108,9 @@ expandNode ps = Set.foldr
   
 expandPair :: Productions -> (Word, Word) -> Maybe Node
 expandPair ps (xs, ys) =
-  if | (isChoicePair || isCoBranchPair) && ls2 `Set.isSubsetOf` ls1
+  if | (isChoicePair || isCoBranchPair) && not (Set.null ls2) && ls2 `Set.isSubsetOf` ls1
      -> Just $ match False m1 m2 Set.empty
-     | (isBranchPair || isCoChoicePair) && ls1 `Set.isSubsetOf` ls2
+     | (isBranchPair || isCoChoicePair) && not (Set.null ls1) && ls1 `Set.isSubsetOf` ls2
      -> Just $ match True m1 m2 Set.empty
      | isArrowPair || isCoArrowPair 
      -> let m1'  = if isArrowPair   && isLinArrowSet ls2 then toLinArrowTrans m1 else m1
