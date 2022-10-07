@@ -38,6 +38,7 @@ import           Prelude                 hiding ( Word )
 import           Debug.Trace
 import Data.Function
 import Control.Monad.Extra ((||^))
+import Parse.Read
 
 bisimilar :: T.Type -> T.Type ->  Bool
 bisimilar t u = (t <~ u) && (u <~ t)
@@ -104,8 +105,8 @@ expandNode ps = Set.foldr
       Just n'' -> Just (Set.union n' n'')
   )
   (Just Set.empty)
-
-expandPair :: Productions -> (Word, Word) -> {-IO-} (Maybe Node)
+  
+expandPair :: Productions -> (Word, Word) -> Maybe Node
 expandPair ps (xs, ys) =
   if | (isChoicePair || isCoBranchPair) && ls2 `Set.isSubsetOf` ls1
      -> Just $ match False m1 m2 Set.empty
@@ -124,14 +125,17 @@ expandPair ps (xs, ys) =
   (m1, m2)        = (transitions xs ps, transitions ys ps)
   (ls1, ls2)      = (Map.keysSet m1   , Map.keysSet m2   )
   allLabels       = ls1 `Set.union` ls2
+  -- string manipulation is cumbersome and prone to errors, maybe labels should have their own datatype?
   isChoicePair    = all (isPrefixOf "+" ) allLabels
   isBranchPair    = all (isPrefixOf "&" ) allLabels
   isCoChoicePair  = all (isPrefixOf "^+") allLabels
   isCoBranchPair  = all (isPrefixOf "^&") allLabels
   isArrowPair     = all (isPrefixOf "->"  ||^ isPrefixOf "1->" ) allLabels
   isCoArrowPair   = all (isPrefixOf "^->" ||^ isPrefixOf "^1->") allLabels
-  isLinArrowSet   = all (isPrefixOf "1->")
-  toLinArrowTrans = Map.mapKeys (\case ('-':'>':cs) -> "1->"++cs; cs -> cs)
+  isLinArrowSet   = all (isPrefixOf "1->" ||^ isPrefixOf "^1->")
+  toLinArrowTrans = Map.mapKeys (\case ('-':'>':cs) -> "1->"++cs
+                                       ('^':'-':'>':cs) -> "^1->"++cs
+                                       cs -> cs)
   dTrans          = Map.filterWithKey (\l xs -> "d" `isSuffixOf` l)
   rTrans          = Map.filterWithKey (\l xs -> "r" `isSuffixOf` l)
 

@@ -54,6 +54,7 @@ Skip
 +{Plus : !Int;!Int;?Int;End, Eq: !Int;!Int;?Bool;End}
 +{Plus : !Int;!Int;?Int;End, Eq: !Int;!Int;?Bool;End, Neg: !Int;?Int;End}
 
+-- failing
 +{Plus : !Int;!Int;?Int;End, Eq: !Int;!Int;?Bool;End}
 Skip 
 
@@ -156,5 +157,6 @@ rec l:1S . +{Cons: ?(+{A:!Int, B:!Int});l, Nil: Skip}
 rec l:1S . +{Cons: !(+{A:!Int, B:!Int});l, Nil: Skip}
 rec l:1S . +{Cons: !(+{A:!Int});l, Nil: Skip}
 
+-- failing
 (rec x.+{EOS: Skip, Node: x, Root: (!Int;x)})
 Skip 
