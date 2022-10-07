@@ -43,7 +43,7 @@ load s ('~':'/':f) msg = do
 load s f msg = load' s f msg
 
 load' :: FreestS -> String -> String -> REPLState ()
-load' s f msg =
+load' s f msg = 
   freestLoadAndRun s f msg ("fst" `isExtensionOf` f) =<< lift (doesFileExist f)
   
 freestLoadAndRun :: FreestS -> String -> String -> Bool -> Bool -> REPLState ()

@@ -34,7 +34,7 @@ wrapIO io cont = do
     else put s >> cont $> False
 
 wrapIO_ :: IO FreestS -> REPLState () -> REPLState ()
-wrapIO_   = void . wrapIO
+wrapIO_ io state = void $ wrapIO io state
 
 wrapRun :: Show a => FreestState a ->  REPLState Bool
 wrapRun f = do
