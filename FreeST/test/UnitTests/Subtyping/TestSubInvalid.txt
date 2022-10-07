@@ -54,7 +54,6 @@ Skip
 +{Plus : !Int;!Int;?Int;End, Eq: !Int;!Int;?Bool;End}
 +{Plus : !Int;!Int;?Int;End, Eq: !Int;!Int;?Bool;End, Neg: !Int;?Int;End}
 
--- failing
 +{Plus : !Int;!Int;?Int;End, Eq: !Int;!Int;?Bool;End}
 Skip 
 
@@ -146,6 +145,20 @@ Skip
 (&{A: ?Bool         }, +{A: !(+{A: !Bool          }), B:?Char})
 Skip
 
+-- End 
+
+!Int;End;!Bool
+!Bool;End;!Int
+
+End
+Skip
+
+!(End)
+!(Skip)
+
+!(!Int;End)
+!(?Int;End)
+
 -- Recursive types 
 
 rec l:1S . +{Cons: +{A:!Int};l, Nil: Skip}
@@ -157,6 +170,12 @@ rec l:1S . +{Cons: ?(+{A:!Int, B:!Int});l, Nil: Skip}
 rec l:1S . +{Cons: !(+{A:!Int, B:!Int});l, Nil: Skip}
 rec l:1S . +{Cons: !(+{A:!Int});l, Nil: Skip}
 
--- failing
 (rec x.+{EOS: Skip, Node: x, Root: (!Int;x)})
 Skip 
+
+rec a  . &{N:a;a;!Int, L:!Int}
+rec a  . (&{N:a;a;!Int, L:Skip};!Int)
+
+-- not sure if it terminates
+(rec b. +{A: (rec b. (rec a. (+{A: (Skip;(?Int;!())), B: (Skip;?Char)};a)))})
++{A: (rec b. +{A: (((Skip;?Int);!());(rec b. +{A: (rec b. +{A: (((Skip;?Int);!());b), B: (?Char;b)})})), B: (?Char;(rec b. +{A: (rec b. +{A: (((Skip;?Int);!());b), B: (?Char;b)})}))})}
