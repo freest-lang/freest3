@@ -11,7 +11,7 @@ session types into a grammar, which is pruned. An expansion tree is computed aft
 through an alternation of expansion of children nodes and their simplification, using the
 reflexive, congruence, and BPA rules.
 -}
-{-# LANGUAGE TupleSections, LambdaCase, MultiWayIf #-}
+{-# LANGUAGE TupleSections, LambdaCase, MultiWayIf, BlockArguments #-}
 
 module Bisimulation.Bisimulation
   ( bisimilar
@@ -48,10 +48,11 @@ t <~ u = bisimilarGrm $ convertToGrammar [t, u]
 
 -- | Assumes a grammar without unreachable symbols
 bisimilarGrm :: Grammar -> Bool
-bisimilarGrm (Grammar [xs, ys] ps) = expand queue rules ps
+bisimilarGrm g@(Grammar [xs, ys] ps) = -- trace (show g) 
+                                       expand queue rules ps
  where
   rules | allNormed ps = [reflex, congruence, bpa2{-, filtering-}]
-        | otherwise    = [reflex, congruence, bpa1, bpa2 {-, filtering-}]
+        | otherwise    = [reflex, congruence, bpa1, bpa2{-, filtering-}]
   queue = Queue.singleton (Set.singleton (xs, ys), Set.empty)
 
 type Node = Set.Set (Word, Word)
@@ -108,19 +109,25 @@ expandNode ps = Set.foldr
   
 expandPair :: Productions -> (Word, Word) -> Maybe Node
 expandPair ps (xs, ys) =
-  if | ls1 == ls2 -> Just $ match True m1 m2 Set.empty
+  -- trace ("\nlabel set 1: "++show ls1++"\nlabel set 2: "++show ls2)
+  if | ls1 == ls2 -> -- trace "normal subtyping" 
+                     Just $ match True m1 m2 Set.empty
      | (isChoicePair || isCoBranchPair) && not (Set.null ls2) && ls2 `Set.isSubsetOf` ls1
-     -> Just $ match False m1 m2 Set.empty
+     -> -- trace "choice/^branch subtyping" 
+        Just $ match False m1 m2 Set.empty
      | (isBranchPair || isCoChoicePair) && not (Set.null ls1) && ls1 `Set.isSubsetOf` ls2
-     -> Just $ match True m1 m2 Set.empty
+     -> -- trace "branch/^choice subtyping" 
+        Just $ match True m1 m2 Set.empty
      | isArrowPair || isCoArrowPair 
      -> let m1'  = if isArrowPair   && isLinArrowSet ls2 then toLinArrowTrans m1 else m1
             m2'  = if isCoArrowPair && isLinArrowSet ls1 then toLinArrowTrans m2 else m2
             (ls1', ls2') = (Map.keysSet m1', Map.keysSet m2') in 
+        -- trace "arrow subtyping" 
         if ls1' == ls2'
           then Just $ match True (rTrans m1') (rTrans m2') (match False (dTrans m1') (dTrans m2') Set.empty)
           else Nothing
-     | otherwise  -> Nothing
+     | otherwise  -> -- trace "no subtyping" 
+                     Nothing
  where
   (m1, m2)        = (transitions xs ps, transitions ys ps)
   (ls1, ls2)      = (Map.keysSet m1   , Map.keysSet m2   )

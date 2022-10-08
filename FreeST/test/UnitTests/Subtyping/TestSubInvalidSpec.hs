@@ -4,17 +4,14 @@ import           Bisimulation.Bisimulation ((<~))
 import           Validation.Rename
 import           SpecUtils
 
--- Note that the tests cases should be kinded!
-
 matchInvalidSpec :: [String] -> Spec
-matchInvalidSpec [t, u] =
-  it (t ++ " </~ " ++  u) (
-      {-# SCC "BISIM_TEST_CALL" #-}
-      (t' <~ u') `shouldBe` False)
+matchInvalidSpec [st, su] =
+  it (show t ++ " </~ " ++  show u) 
+    ({-# SCC "SUB_TEST_CALL" #-}
+     (t <~ u) `shouldBe` False
+    )
     where
-      [t', u'] = renameTypes [read t, read u]
-      -- readKenv :: String -> KindEnv
-      -- readKenv s = Map.fromList $ map (\(x,k) -> (mkVar defaultPos x, k)) (read s)
+      [t, u] = renameTypes [read st, read su]
 
 spec :: Spec
 spec = do

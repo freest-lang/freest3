@@ -1,25 +1,37 @@
+{-# LANGUAGE BlockArguments #-}
+
 module Subtyping.TestSubValidSpec (spec) where
 
-import           Bisimulation.Bisimulation ((<~))
+import qualified Syntax.Type as T
+import           Validation.Kinding               ( synthetise )
 import           Validation.Rename
+import           Bisimulation.Bisimulation        ((<~))
+import qualified Data.Map.Strict           as Map
+import           Util.FreestState                 ( initialState
+                                                  , errors
+                                                  )
+import           Control.Monad.State              ( execState )
 import           SpecUtils
 
--- Note that the tests cases should be kinded! but not necessarily renamed
-
 matchValidSpec :: [String] -> Spec
-matchValidSpec [s1, s2] =
-  it (show t ++ " <~ " ++  show u) (
-      {-# SCC "BISIM_TEST_CALL" #-}
-      (t' <~ u') `shouldBe` True)
+matchValidSpec [st, su] =
+  it (show t ++ " <~ " ++  show u) 
+    ( {-# SCC "SUB_TEST_CALL" #-}
+               wellFormed t
+    &&         wellFormed u
+    &&         (t <~ u) 
+    `shouldBe` True
+    )
     where
-      t = read s1
-      u = read s2
-      [t', u'] = renameTypes [t, u]
+      [t, u] = renameTypes [read st, read su]
+
+wellFormed :: Type -> Bool
+wellFormed t = null $ errors $ execState (synthetise Map.empty t) initialState
 
 spec :: Spec
 spec = do
   t <- runIO $ readFromFile "test/UnitTests/Subtyping/TestSubValid.txt"
-  describe "Valid Sub Test" $ mapM_ matchValidSpec (chunksOf 2 t)
+  describe "Valid Subtyping Test" $ mapM_ matchValidSpec (chunksOf 2 t)
 
 main :: IO ()
 main = hspec spec
