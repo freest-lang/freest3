@@ -57,7 +57,7 @@ instance (ResolveDuality a, ResolveDuality b) => ResolveDuality (Bind a b) where
 
 -- We need this one, to have the previous one working. In case E.TAbs a is a Kind 
 instance ResolveDuality K.Kind where
-  resolve k = pure k
+  resolve = pure
 
 instance ResolveDuality T.Type where
   resolve = solveType Set.empty
@@ -92,13 +92,12 @@ solveType v d@(T.Dualof p t) = addDualof d >> solveDual v (changePos p t)
 -- Var, Int, Char, Bool, Unit, Skip, End
 solveType _ t                = pure t
 
-
 solveDual :: Visited -> T.Type -> FreestState T.Type
 -- Session Types
 solveDual _ t@T.Skip{}          = pure t
 solveDual _ t@T.End{}           = pure t
 solveDual v (T.Semi    p t   u) = T.Semi p <$> solveDual v t <*> solveDual v u
-solveDual v (T.Message p pol t) = T.Message p (dual pol) <$> solveType v t
+solveDual v (T.Message p pol t) = T.Message p (dualof pol) <$> solveType v t
 solveDual v (T.Almanac p (T.Choice pol) m) =
   T.Almanac p (T.Choice $ dualof pol) <$> tMapM (solveDual v) m
 -- Recursive types
@@ -130,14 +129,7 @@ solveDBind
 solveDBind solve v (Bind p a k t) =
   Bind p a k <$> solve (Set.insert a v) (subs (T.CoVar p a) a t)
 
-dual :: T.Polarity -> T.Polarity
-dual T.In  = T.Out
-dual T.Out = T.In
-
-
--- | Changing positions
-
--- Change position of a given type with a given position
+-- |Change position of a given type with a given position
 changePos :: Span -> T.Type -> T.Type
 changePos p (T.Int    _       ) = T.Int p
 changePos p (T.Char   _       ) = T.Char p
@@ -146,7 +138,7 @@ changePos p (T.Unit   _       ) = T.Unit p
 changePos p (T.String _       ) = T.String p
 changePos p (T.Arrow _ pol t u) = T.Arrow p pol t u
 changePos p (T.Pair _ t u     ) = T.Pair p t u
-changePos p (T.Almanac _ s m    ) = T.Almanac p s m
+changePos p (T.Almanac _ s m  ) = T.Almanac p s m
 changePos p (T.Skip _         ) = T.Skip p
 changePos p (T.End  _         ) = T.End p
 changePos p (T.Semi    _ t   u) = T.Semi p t u
@@ -155,4 +147,4 @@ changePos p (T.Rec    _ xs    ) = T.Rec p xs
 changePos p (T.Forall _ xs    ) = T.Forall p xs
 changePos p (T.Var    _ x     ) = T.Var p x
 changePos p (T.Dualof _ t     ) = T.Dualof p t
-changePos p (T.CoVar _ t     ) = T.CoVar p t
+changePos p (T.CoVar _ t      ) = T.CoVar p t
