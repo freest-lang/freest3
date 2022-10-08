@@ -68,6 +68,9 @@ toGrammar' (T.Pair _ t u) = do
 toGrammar' (T.Almanac _  T.Variant m) = do -- Can't test this type directly
   ms <- tMapM toGrammar m
   getLHS $ Map.mapKeys (\k -> "<>" ++ show k) ms
+toGrammar' (T.Almanac _  T.Record m) = do -- Can't test this type directly
+  ms <- tMapM toGrammar m
+  getLHS $ Map.mapKeys (\k -> "{}" ++ show k) ms
 -- Session Types
 toGrammar' (T.Skip _) = return []
 toGrammar' t@(T.End _) = getLHS $ Map.singleton (show t) [bottom]
