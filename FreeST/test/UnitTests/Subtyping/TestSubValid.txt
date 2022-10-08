@@ -21,16 +21,30 @@ Skip
 End
 End
 
+-- End 
+
+End;Skip
+Skip;End 
+
+End;!Char
+End;?Bool 
+
++{A: End;!Int, B: ?Bool};!Int
++{             B: ?Bool};!Int
+
++{A: End, B: End};!Int
++{        B: End};?Bool
+
 -- Branch (covariant on width (label set) and depth (matched type))
 
 &{A: !Int}
 &{A: !Int}
 
 &{A: !Int         }
-&{A: !Int, B: !Int}
+&{A: !Int, B: !Int} 
 
-&{A: !Int                   }
-&{A: !Int, B: !Int, C: ?Char}
+&{A: !Int                  };!Int;!Char
+&{A: !Int, B: !Int, C: Skip};!Int;!Char
 
 &{Plus : ?Int;?Int;!Int;End, Eq: ?Int;?Int;!Bool;End}
 &{Plus : ?Int;?Int;!Int;End, Eq: ?Int;?Int;!Bool;End}
@@ -44,7 +58,7 @@ End
 &{A: +{AA: !Int, AB: ?Bool}}
 &{A: +{AB: ?Bool          }}
 
--- (without filtering rule)
+-- (does not pass with filtering rule, since the norms may differ (e.g. these types have 3 and 5 resp.))
 &{A: +{AA: !Int, AB: &{ABA: &{ABAA: !Int             }}}}
 &{A: +{          AB: &{ABA: &{ABAA: !Int, ABAB: ?Bool}}}}
 
@@ -176,17 +190,83 @@ Skip;Skip;Skip
 
 -- Recursive types 
 
-rec x . +{A: Skip         } -> (+{A: Skip, B: Skip}, x)
-rec x . +{A: Skip, B: Skip} -> (+{A: Skip         }, x)
+-- original
+rec x . (+{A: Skip         } -> (+{A: Skip, B: Skip}, x))
+rec x . (+{A: Skip, B: Skip} -> (+{A: Skip         }, x))
 
+-- unfold first
++{A: Skip} -> (+{A: Skip, B: Skip}, (rec x . (+{A: Skip} -> (+{A: Skip, B: Skip}, x))))
+rec x . (+{A: Skip, B: Skip} -> (+{A: Skip         }, x))
+
+-- unfold second
+rec x . (+{A: Skip} -> (+{A: Skip, B: Skip}, x))
++{A: Skip, B: Skip} -> (+{A: Skip}, (rec x . (+{A: Skip, B: Skip} -> (+{A: Skip}, x))))
+
+-- original
 rec l:1S . +{Cons: ?(+{A:!Int, B:!Int});l, Nil: Skip}
 rec l:1S . +{Cons: ?(+{A:!Int});l, Nil: Skip}
 
+-- unfold first
++{Cons: ?(+{A:!Int, B:!Int});(rec l:1S . +{Cons: ?(+{A:!Int, B:!Int});l, Nil: Skip}), Nil: Skip}
+rec l:1S . +{Cons: ?(+{A:!Int});l, Nil: Skip}
+
+-- unfold second
+rec l:1S . +{Cons: ?(+{A:!Int, B:!Int});l, Nil: Skip}
++{Cons: ?(+{A:!Int});(rec l:1S . +{Cons: ?(+{A:!Int});l, Nil: Skip}), Nil: Skip}
+
+-- original
 rec l:1S . +{Cons: !(+{A:!Int});l, Nil: Skip}
 rec l:1S . +{Cons: !(+{A:!Int, B:!Int});l, Nil: Skip}
 
+-- unfold first
++{Cons: !(+{A:!Int});(rec l:1S . +{Cons: !(+{A:!Int});l, Nil: Skip}), Nil: Skip}
+rec l:1S . +{Cons: !(+{A:!Int, B:!Int});l, Nil: Skip}
+
+-- unfold second
+rec l:1S . +{Cons: !(+{A:!Int});l, Nil: Skip}
++{Cons: !(+{A:!Int, B:!Int});(rec l:1S . +{Cons: !(+{A:!Int, B:!Int});l, Nil: Skip}), Nil: Skip}
+
+-- original 
 rec l:1S . +{Cons: ?(Int  -> Int);l, Nil: Skip}
 rec l:1S . +{Cons: ?(Int 1-> Int);l, Nil: Skip}
 
+-- unfold first 
++{Cons: ?(Int  -> Int);(rec l:1S . +{Cons: ?(Int  -> Int);l, Nil: Skip}), Nil: Skip}
+rec l:1S . +{Cons: ?(Int 1-> Int);l, Nil: Skip}
+
+-- unfold second
+rec l:1S . +{Cons: ?(Int  -> Int);l, Nil: Skip}
++{Cons: ?(Int 1-> Int);(rec l:1S . +{Cons: ?(Int 1-> Int);l, Nil: Skip}), Nil: Skip}
+
+-- original
 rec l:1S . +{Cons: !(Int 1-> Int);l, Nil: Skip}
 rec l:1S . +{Cons: !(Int  -> Int);l, Nil: Skip}
+
+-- unfold first
++{Cons: !(Int 1-> Int);(rec l:1S . +{Cons: !(Int 1-> Int);l, Nil: Skip}), Nil: Skip}
+rec l:1S . +{Cons: !(Int  -> Int);l, Nil: Skip}
+
+-- unfold second 
+rec l:1S . +{Cons: !(Int 1-> Int);l, Nil: Skip}
++{Cons: !(Int  -> Int);(rec l:1S . +{Cons: !(Int  -> Int);l, Nil: Skip}), Nil: Skip}
+
+-- original
+!(rec l:1S . +{Cons: !(Int  -> Int);l, Nil: Skip})
+!(rec l:1S . +{Cons: !(Int 1-> Int);l, Nil: Skip})
+
+-- unfold first 
+!(+{Cons: !(Int  -> Int);(rec l:1S . +{Cons: !(Int  -> Int);l, Nil: Skip}), Nil: Skip})
+!(rec l:1S . +{Cons: !(Int 1-> Int);l, Nil: Skip})
+
+-- unfold second
+!(rec l:1S . +{Cons: !(Int  -> Int);l, Nil: Skip})
+!(+{Cons: !(Int 1-> Int);(rec l:1S . +{Cons: !(Int 1-> Int);l, Nil: Skip}), Nil: Skip})
+
+rec i:1S . Skip
+Skip
+
+rec x:*T . !x
+!(rec x:*T . !x)
+
+rec h:1S . !((+{B: End, C: b} ; Skip) ; +{C: h} ; End ; Skip)
+!(+{B: End ; Skip, C: b ; Skip} ; +{C: (rec h:1S . !(+{B: End ; Skip, C: b ; Skip} ; +{C: h ; End ; Skip})) ; End ; Skip})
