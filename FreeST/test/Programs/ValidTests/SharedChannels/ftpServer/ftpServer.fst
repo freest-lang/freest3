@@ -10,7 +10,7 @@ type State = (*?File, *!File)
 -- |Read a file from the state
 readFrom : State -> File
 readFrom state =
-  fst @File @State $ receive $ fst @*?File @*!File state
+  fst @File @*?File $ receive $ fst @*?File @*!File state
 
 -- |Write a file to the state
 writeTo : File -> State -> ()
