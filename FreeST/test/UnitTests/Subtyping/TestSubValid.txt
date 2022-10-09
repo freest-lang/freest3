@@ -271,3 +271,27 @@ rec x:1S . !x
 -- are free variables ok in these tests? should we check type formation?
 rec h:1S . !((+{B: End, C: b} ; Skip) ; +{C: h} ; End ; Skip)
 !(+{B: End ; Skip, C: b ; Skip} ; +{C: (rec h:1S . !(+{B: End ; Skip, C: b ; Skip} ; +{C: h ; End ; Skip})) ; End ; Skip})
+
+-- Universal Types 
+
+∀ α: 1S . α -> α
+∀ β: 1S . β -> β
+
+Int -> ∀ α: 1S . α -> α
+Int 1-> ∀ α: 1S . α 1-> α
+
+-- free var α
+∀ β: 1S . β -> α
+∀ β: 1S . β -> α
+
+Int -> ∀ α: 1S . α -> α ; Skip
+Int -> ∀ α: 1S . α 1-> α
+
+Bool -> ∀ α: 1S . α -> α ; (α ; α)
+Bool -> ∀ α: 1S . α -> (α ; α) ; α
+
+∀ α: 1S . End;α;!Int
+∀ β: 1S . (End;β);Skip
+
+∀ α: 1S . rec a:1S . !((rec a:1S . +{A: !α;a, B: α;End;α});!Int)
+∀ β: 1S . rec b:1S . !(rec a:1S . +{A: !β;a, B: β;End;!a})

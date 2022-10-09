@@ -155,11 +155,8 @@ expandPair ps (xs, ys) =
   rTrans          = Map.filterWithKey (\l xs -> "r" `isSuffixOf` l)
 
   match :: Bool -> Transitions -> Transitions -> Node -> Node
-  match b m1 m2 n =
-    if b then
-      Map.foldrWithKey (\l xs n' -> Set.insert (xs, m2 Map.! l) n') n m1
-    else
-      Map.foldrWithKey (\l xs n' -> Set.insert (m1 Map.! l, xs) n') n m2
+  match True  m1 m2 n  = Map.foldrWithKey (\l xs n' -> Set.insert (xs, m2 Map.! l) n') n m1
+  match False m1 m2 n  = Map.foldrWithKey (\l xs n' -> Set.insert (m1 Map.! l, xs) n') n m2
 
 -- The fixed point of branch wrt the application of node transformations
 findFixedPoint
