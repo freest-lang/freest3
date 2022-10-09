@@ -8,7 +8,7 @@ import           Validation.Rename
 import           Bisimulation.Bisimulation        ((<~))
 import qualified Data.Map.Strict           as Map
 import           Util.FreestState                 ( initialState
-                                                  , errors
+                                                  , errors, FreestState
                                                   )
 import           Control.Monad.State              ( execState )
 import           SpecUtils
@@ -17,9 +17,9 @@ matchValidSpec :: [String] -> Spec
 matchValidSpec [st, su] =
   it (show t ++ " <~ " ++  show u) 
     ( {-# SCC "SUB_TEST_CALL" #-}
-               wellFormed t
-    &&         wellFormed u
-    &&         (t <~ u) 
+    {-           wellFormed t
+    &&           wellFormed u
+    &&-}         (t <~ u) 
     `shouldBe` True
     )
     where

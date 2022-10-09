@@ -47,7 +47,7 @@ convertToGrammar ts = {- trace (show ts ++ "\n" ++ show grammar) -} grammar
     grammar       = Grammar (substitute θ word) prods
 
 typeToGrammar :: T.Type -> TransState Word
-typeToGrammar t = collect [] t >> toGrammar True t
+typeToGrammar t = collect True [] t >> toGrammar True t
 
 -- the Bool indicates the local co/contravariance
 toGrammar :: Bool -> T.Type -> TransState Word
@@ -91,10 +91,10 @@ toGrammar' v (T.Almanac _ (T.Choice view) m) = do
 toGrammar' v (T.Forall _ (Bind _ _ k t)) = do
   xs <- toGrammar' v t
   getLHS $  Map.singleton ('∀' : show k) xs
-toGrammar' v (T.Rec _ (Bind _ x _ _)) = return [x]
-toGrammar' v t@T.Var{} = getLHS $ Map.singleton (show t) []
+toGrammar' v (T.Rec _ (Bind _ x _ _)) = return [mkVar defaultSpan (showV v++show x)]
+toGrammar' v t@T.Var{} = getLHS $ Map.singleton (showV v ++ show t) []
 -- Type operators
-toGrammar' v t@T.CoVar{} = getLHS $ Map.singleton (show t) []
+toGrammar' v t@T.CoVar{} = getLHS $ Map.singleton (showV v ++ show t) []
 -- toGrammar' t@T.Dualof{} =
 toGrammar' v t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 
@@ -149,21 +149,25 @@ syntactic _                     = False
 
 type SubstitutionList = [(T.Type, Variable)]
 
-collect :: SubstitutionList -> T.Type -> TransState ()
-collect σ (T.Semi _ t u) = collect σ t >> collect σ u
+collect :: Bool -> SubstitutionList -> T.Type -> TransState ()
+collect v σ (T.Semi _ t u) = collect v σ t >> collect v σ u
 -- collect σ (T.Choice _ _ m) = tMapM_ (collect σ) m
-collect σ (T.Almanac _ (T.Choice v) m ) = tMapM_ (collect σ) m
-collect σ (T.Message _ _ t) = collect σ t
-collect σ t@(T.Rec _ (Bind _ x _ u)) = do
+collect v σ (T.Almanac _ (T.Choice _) m ) = tMapM_ (collect v σ) m
+collect v σ (T.Message _ T.In t) = collect v σ t
+collect v σ (T.Message _ T.Out t) = collect (not v) σ t
+collect v σ t@(T.Rec _ (Bind _ x _ u)) = do
   let σ' = (t, x) : σ
   let u' = Substitution.subsAll σ' u
-  ~(z : zs) <- toGrammar True (normalise u')
+  ~(z : zs) <- toGrammar v (normalise u')
   m         <- getTransitions z
-  addProductions x (Map.map (++ zs) m)
-  collect σ' u
-collect σ (T.Arrow _ _ t u) = collect σ t >> collect σ u
-collect σ (T.Pair _ t u) = collect σ t >> collect σ u
-collect _ _ = return ()
+  addProductions (mkVar defaultSpan (showV v ++ show x)) (Map.map (++ zs) m)
+  ~(w : ws) <- toGrammar (not v) (normalise u')
+  n         <- getTransitions w
+  addProductions (mkVar defaultSpan (showV (not v) ++ show x)) (Map.map (++ ws) n)
+  collect v σ' u
+collect v σ (T.Arrow _ _ t u) = collect (not v) σ t >> collect v σ u
+collect v σ (T.Pair _ t u) = collect v σ t >> collect v σ u
+collect _ _ _ = return ()
 
 -- The state of the translation to grammar
 

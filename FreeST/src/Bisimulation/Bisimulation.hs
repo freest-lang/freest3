@@ -38,7 +38,15 @@ import           Prelude                 hiding ( Word )
 import           Debug.Trace
 import Data.Function
 import Control.Monad.Extra ((||^))
-import Parse.Read
+
+-- debug
+-- import Parse.Read
+-- import Validation.Rename
+-- import           Control.Monad.State              ( execState )
+-- import           Util.FreestState                 ( initialState
+--                                                   , errors
+--                                                   )
+-- import           Validation.Kinding               ( synthetise )
 
 bisimilar :: T.Type -> T.Type ->  Bool
 bisimilar t u = (t <~ u) && (u <~ t)

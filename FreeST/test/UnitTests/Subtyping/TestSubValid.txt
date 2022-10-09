@@ -265,8 +265,9 @@ rec l:1S . +{Cons: !(Int 1-> Int);l, Nil: Skip}
 rec i:1S . Skip
 Skip
 
-rec x:*T . !x
-!(rec x:*T . !x)
+rec x:1S . !x
+!(rec x:1S . !x)
 
+-- are free variables ok in these tests? should we check type formation?
 rec h:1S . !((+{B: End, C: b} ; Skip) ; +{C: h} ; End ; Skip)
 !(+{B: End ; Skip, C: b ; Skip} ; +{C: (rec h:1S . !(+{B: End ; Skip, C: b ; Skip} ; +{C: h ; End ; Skip})) ; End ; Skip})
