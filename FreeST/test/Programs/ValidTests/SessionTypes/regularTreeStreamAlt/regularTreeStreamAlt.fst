@@ -60,9 +60,9 @@ stackSize ts =
 --  agree on an order to traverse the Tree.
 --  (In our particular case we will use PREORDER - node, left, right)
 type TreeC : 1S = +{
-  Value: !Int; TreeC,
-  Leaf:  TreeC,
-  Finish:   End }
+  ValueC: !Int; TreeC,
+  LeafC:  TreeC,
+  FinishC:   End }
 
 
 -- Sends a tree through a TreeC
@@ -70,10 +70,10 @@ sendTree : Tree -> TreeC -> TreeC
 sendTree t c =
   case t of {
     Leaf ->
-      select Leaf c,
+      select LeafC c,
 
     Node i lt rt ->
-      sendTree rt c |> sendTree lt |> select Value |> send i
+      sendTree rt c |> sendTree lt |> select ValueC |> send i
   }
 
 
@@ -86,7 +86,7 @@ receiveTree = receiveTree_ Empty
 receiveTree_ : TreeStack -> dualof TreeC -> Tree
 receiveTree_ ts c =
   match c with {
-    Value c ->
+    ValueC c ->
       let (i, c)   = receive c in
       errorWhen (stackIsEmpty ts) "Received Value without receiveing left AND right subtrees";
       let (ts, lt) = stackPop ts in
@@ -95,10 +95,10 @@ receiveTree_ ts c =
       let ts       = stackPush (Node i lt rt) ts in
       receiveTree_ ts c,
 
-    Leaf c ->
+    LeafC c ->
       receiveTree_ (stackPush Leaf ts) c,
 
-    Finish  c ->
+    FinishC  c ->
       close c; 
       errorWhen (stackIsEmpty ts)  "Channel was closed without sending a Tree";
       errorWhen (stackSize ts > 1) "Channel was closed mid-stream or with leftover tree elements";
@@ -114,7 +114,7 @@ errorWhen b s =
 
 -- Simple treeClient that sends a Tree through a TreeC
 treeClient : TreeC -> ()
-treeClient c = sendTree aTree c |> select Finish |> close
+treeClient c = sendTree aTree c |> select FinishC |> close
 
 
 -- ==== BAD CLIENTS ===
@@ -123,30 +123,30 @@ treeClient c = sendTree aTree c |> select Finish |> close
 -- This bad client ends prematurely
 badClientPrematureEnd : TreeC -> ()
 badClientPrematureEnd c =
-  select Finish c |> close
+  select FinishC c |> close
 
 -- This bad client send an extra Value -1
 badClientSendExtraValue : TreeC -> ()
 badClientSendExtraValue c =
-  sendTree aTree c |> select Value |> send (-1) |> select Finish |> close  
+  sendTree aTree c |> select ValueC |> send (-1) |> select FinishC |> close  
   -- Bad Code         ===========================
 
 -- This bad client send an extra Leaf
 badClientSendExtraLeaf : TreeC -> ()
 badClientSendExtraLeaf c =
-  sendTree aTree c |> select Leaf |> select Finish |> close 
+  sendTree aTree c |> select LeafC |> select FinishC |> close 
   -- Bad  Code         =============
 
 -- This client does not send the right subtree
 badClientForgotRight: TreeC -> ()
 badClientForgotRight c =
-  badSendTree aTree c |> select Finish |> close 
+  badSendTree aTree c |> select FinishC |> close 
   -- Bad Code          ===========
 
 -- This client only sends a value without sending leafs
 badClientSendOnlyValue : TreeC -> ()
 badClientSendOnlyValue c =
-  select Value c |> send 1 |> select Finish |> close
+  select ValueC c |> send 1 |> select FinishC |> close
 
 
 -- Sends a tree through a TreeC
@@ -155,8 +155,8 @@ badSendTree : Tree -> TreeC -> TreeC
 badSendTree t c =
   case t of {
     Leaf ->
-      select Leaf c,
+      select LeafC c,
 
     Node i lt rt ->
-      send i $ select Value $ badSendTree lt c -- $ badSendTree rt c
+      send i $ select ValueC $ badSendTree lt c -- $ badSendTree rt c
   }

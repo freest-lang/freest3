@@ -20,8 +20,8 @@ with XploreNodeChan (adapted from the paper).
 
 data Tree = Leaf | Node Int Tree Tree
 
-type XploreTreeChan : 1S = +{Leaf: Skip,
-                       Node: XploreNodeChan}
+type XploreTreeChan : 1S = +{LeafC: Skip,
+                       NodeC: XploreNodeChan}
 
 type XploreNodeChan : 1S = &{
    Value : !Int;XploreNodeChan ,
@@ -35,9 +35,9 @@ exploreTree : forall a: 1S . XploreTreeChan;a -> Tree 1-> a
 exploreTree c tree =
   case tree of {
     Leaf ->
-      select Leaf c,
+      select LeafC c,
     Node x l r ->
-      exploreNode @a (select Node c) x l r
+      exploreNode @a (select NodeC c) x l r
     }
 
 exploreNode : forall a: 1S . XploreNodeChan;a -> Int 1-> Tree 1-> Tree 1-> a
@@ -60,9 +60,9 @@ exploreNode c x l r =
 server : forall a: 1S . dualof XploreTreeChan ;a -> Int 1-> (a, Int)
 server c1 n =
   match c1 with {
-    Leaf c1 ->
+    LeafC c1 ->
       (c1, n),
-    Node c1 ->
+    NodeC c1 ->
       serverNode @a c1 n
   }
 

@@ -25,8 +25,8 @@ import           Util.Error
 import           Util.FreestState
 
 import           Control.Monad.State
-import           Data.Bifunctor ( second )
-import           Data.List ( find )
+import           Data.Bifunctor  ( second )
+import           Data.List       ( find )
 import qualified Data.Map.Strict as Map
 import           Data.Bitraversable (bimapM)
 
@@ -74,7 +74,7 @@ checkDupCase x m =
 
 checkDupBind :: Variable -> [Variable] -> FreestStateT ()
 checkDupBind x xs
-  | intern x == "_" = return ()
+  | isWild x = return ()
   | otherwise = case find (== x) xs of
     Just y  -> addError $ DuplicateVar (getSpan y) "program" x (getSpan x)
     Nothing -> return ()
@@ -89,16 +89,16 @@ checkDupCons :: (Variable, [T.Type]) -> [(Variable, [T.Type])] -> FreestStateT (
 checkDupCons (x, _) xts
   | any compare xts = addError $ DuplicateFieldInDatatype (getSpan x) x pos
   | otherwise =
-     flip (Map.!?) x . varEnv <$> get >>= \case
+      gets (flip (Map.!?) x . varEnv) >>= \case
        Just _  -> addError $ MultipleDeclarations (getSpan x) x pos
        Nothing -> return ()
   where
-    compare = \(y, _) -> y == x
+    compare (y, _) = y == x
     pos = maybe defaultSpan (getSpan . fst) (find compare xts)
 
 checkDupProgVarDecl :: Variable -> FreestStateT ()
 checkDupProgVarDecl x = do
-  vEnv <- varEnv <$> get
+  vEnv <- gets varEnv
   case vEnv Map.!? x of
     Just _  -> addError $ MultipleDeclarations (getSpan x) x (pos vEnv)
     Nothing -> return ()
@@ -107,19 +107,26 @@ checkDupProgVarDecl x = do
 
 checkDupTypeDecl :: Variable -> FreestStateT ()
 checkDupTypeDecl a = do
-  tEnv <- typeEnv <$> get
+  tEnv <- gets typeEnv
   case tEnv Map.!? a of
-    Just (_, s) -> addError $ MultipleTypeDecl (getSpan a) a (pos tEnv)-- (getSpan s)
-    Nothing     -> return ()
+    Just _   -> addError $ MultipleTypeDecl (getSpan a) a (pos tEnv)-- (getSpan s)
+    Nothing  -> return ()
  where
     pos tEnv = getSpan $ fst $ Map.elemAt (Map.findIndex a tEnv) tEnv
 
-checkDupFunDecl :: Variable -> FreestStateT ()
-checkDupFunDecl x = do
-  eEnv <- parseEnv <$> get
-  case eEnv Map.!? x of
-    Just e  -> addError $ MultipleFunBindings (getSpan x) x (getSpan $ snd e)
-    Nothing -> return ()
+-- verifies if there is any duplicated var in any patern, or nested pattern
+checkDupVarPats :: [E.Pattern] -> FreestStateT ()
+checkDupVarPats ps = void $ checkDupVarPats' ps []
+
+checkDupVarPats' :: [E.Pattern] -> [Variable] -> FreestStateT [Variable]
+checkDupVarPats' [] vs = return vs
+checkDupVarPats' ((E.PatCons _ cs):xs) vs = checkDupVarPats' cs vs >>= checkDupVarPats' xs
+checkDupVarPats' ((E.PatVar  v)   :xs) vs = do
+   case find clause vs of
+    Nothing -> checkDupVarPats' xs (v:vs)
+    Just v2 -> addError (DuplicateVar (getSpan v) "program" v2 (getSpan v2))
+            >> checkDupVarPats' xs (v:vs)
+  where clause v2 = not (isWild v) && v == v2
 
 -- OPERATORS
 
