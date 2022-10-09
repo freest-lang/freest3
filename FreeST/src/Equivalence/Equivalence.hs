@@ -47,8 +47,8 @@ type Visited = Set.Set (Span, Span)
 -- A co-inductive definition for functional types. A bisimulation
 -- based definition for session types
 instance Equivalence T.Type where
-  -- equivalent _ = bisimilar
-  equivalent = equiv Set.empty
+  equivalent _ = bisimilar
+  -- equivalent = equiv Set.empty
    where
     equiv :: Visited -> K.KindEnv -> T.Type -> T.Type -> Bool
     -- Have we been here before?
