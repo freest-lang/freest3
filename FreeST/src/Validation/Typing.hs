@@ -42,6 +42,7 @@ import           Control.Monad.State            ( when
 import           Data.Functor
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
+import Equivalence.Subtyping (Subtyping((<:)))
 
 -- SYNTHESISING A TYPE
 
@@ -77,7 +78,7 @@ synthetise kEnv e'@(E.Abs p Un (Bind _ x t1 e)) = do
   t2 <- synthetise kEnv e
   difference kEnv x
   vEnv2 <- getVEnv
-  checkEquivEnvs (getSpan e) "an unrestricted lambda" e' kEnv vEnv1 vEnv2
+  checkEnvsSubtyping (getSpan e) "an unrestricted lambda" e' vEnv1 vEnv2
   return $ T.Arrow p Un t1 t2
 -- Application, the special cases first
   -- Select C e
@@ -138,7 +139,7 @@ synthetise kEnv e'@(E.Cond p e1 e2 e3) = do
   setVEnv vEnv2
   checkAgainst kEnv e3 t
   vEnv4 <- getVEnv
-  checkEquivEnvs p "a conditional" e' kEnv vEnv3 vEnv4
+  checkEnvsSubtyping p "a conditional" e' vEnv3 vEnv4
   return t
 -- Pair introduction
 synthetise kEnv (E.Pair p e1 e2) = do
@@ -205,7 +206,7 @@ checkAgainst kEnv e@(E.Cond p e1 e2 e3) t = do
   setVEnv vEnv2
   checkAgainst kEnv e3 t
   vEnv4 <- getVEnv
-  checkEquivEnvs p "a conditional" e kEnv vEnv3 vEnv4
+  checkEnvsSubtyping p "a conditional" e vEnv3 vEnv4
 -- Pair elimination
 checkAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
   t1       <- synthetise kEnv e1
@@ -224,11 +225,7 @@ checkAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
 -- checkAgainst kEnv (App p e1 e2) u = do
 --   t <- synthetise kEnv e2
 --   checkAgainst kEnv e1 (Fun p Un/Lin t u)
-checkAgainst kEnv e (T.Arrow _ Lin t u) = do 
-  (t', u') <- Extract.function e =<< synthetise kEnv e
-  checkEquivTypes e kEnv t' t 
-  checkEquivTypes e kEnv u' u
-checkAgainst kEnv e t = checkEquivTypes e kEnv t =<< synthetise kEnv e
+checkAgainst kEnv e t = checkSubtypeOf e t =<< synthetise kEnv e
 
 -- EQUALITY EQUIVALENCE CHECKING
 
@@ -243,14 +240,27 @@ checkEquivEnvs p branching exp kEnv vEnv1 vEnv2 = do
   unless (equivalent kEnv vEnv1 vEnv2) $
     addError (NonEquivEnvs p branching (vEnv1 Map.\\ vEnv2) (vEnv2 Map.\\ vEnv1) exp)
 
+-- SUBTYPING
+
+checkSubtypeOf :: E.Exp ->  T.Type -> T.Type -> FreestState ()
+checkSubtypeOf exp expected actual =
+  unless (actual <: expected) $
+    addError (NonEquivTypes (getSpan exp) expected actual exp)
+
+checkEnvsSubtyping
+  :: Span -> String -> E.Exp -> VarEnv -> VarEnv -> FreestState ()
+checkEnvsSubtyping p branching exp vEnv1 vEnv2 = do
+  unless (vEnv2 <: vEnv1) $
+    addError (NonEquivEnvs p branching (vEnv1 Map.\\ vEnv2) (vEnv2 Map.\\ vEnv1) exp)
+
 synthetiseCase :: Span -> K.KindEnv -> E.Exp -> E.FieldMap -> FreestState T.Type
 synthetiseCase p kEnv e fm  = do
   fm'  <- buildMap p fm =<< Extract.datatypeMap e =<< synthetise kEnv e
   vEnv <- getVEnv
   ~(t : ts, v : vs) <- Map.foldr (synthetiseMap kEnv vEnv)
                                  (return ([], [])) fm'
-  mapM_ (checkEquivTypes e kEnv t)           ts
-  mapM_ (checkEquivEnvs p "a case" e kEnv v) vs
+  mapM_ (checkSubtypeOf e t)           ts
+  mapM_ (checkEnvsSubtyping p "a case" e v) vs
   setVEnv v
   return t
 
