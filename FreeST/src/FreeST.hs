@@ -67,7 +67,7 @@ checkAndRun runOpts = do
   
  -- | Check if main was left undefined, eval and print result otherwise
   let m = getMain runOpts
-  when (m `Map.member` varEnv s5) $ evalAndPrint s5 (prog s5 Map.! m)
+  when (m `Map.member` varEnv s5) $ evalAndPrint m s5 (prog s5 Map.! m)
   -- when (m `Map.member` varEnv s5)
   --   (evalAndPrint (typeEnv s5) initialCtx
   --   (prog s5)

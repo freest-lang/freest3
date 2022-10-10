@@ -95,6 +95,7 @@ data ErrorType =
   -- Runtime errors
   | ErrorFunction Span String
   | UndefinedFunction Span
+  | RuntimeError Span String
   deriving Show
 
 instance Located ErrorType where
@@ -141,6 +142,7 @@ instance Located ErrorType where
   getSpan (BranchNotInScope p _ _      ) = p
   getSpan (ErrorFunction p _           ) = p -- defaultSpan
   getSpan (UndefinedFunction p         ) = p
+  getSpan (RuntimeError p _            ) = p
 
 
 instance Message ErrorType where
@@ -287,3 +289,5 @@ instance Message ErrorType where
     e ++ "\n  error, called at module" ++ defModule s ++ ":" ++ show (startPos s)
   msg (UndefinedFunction s) _ _ = 
     "undefined function, called at " ++ defModule s ++ ":" ++ show (startPos s)
+  msg (RuntimeError s e) _ _ = 
+    "Exception: " ++ defModule s ++ ":" ++ show (startPos s) ++ ": " ++ e

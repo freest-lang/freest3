@@ -21,7 +21,7 @@ data Value =
   | String String
   | Cons Variable [[Value]] -- TODO: Think how to do this in other way
   | Pair Value Value
-  | Closure Variable E.Exp Ctx
+  | Closure Variable Variable E.Exp Ctx -- The first variable is just the function name
   | TypeAbs E.Exp Ctx
   | PrimitiveFun (Value -> Value)
   | Chan ChannelEnd
