@@ -289,5 +289,4 @@ instance Message ErrorType where
     e ++ "\n  error, called at module" ++ defModule s ++ ":" ++ show (startPos s)
   msg (UndefinedFunction s) _ _ = 
     "undefined function, called at " ++ defModule s ++ ":" ++ show (startPos s)
-  msg (RuntimeError s e) _ _ = 
-    "Exception: " ++ defModule s ++ ":" ++ show (startPos s) ++ ": " ++ e
+  msg (RuntimeError _ e) _ _ = "Exception: " ++ e
