@@ -91,7 +91,7 @@ toGrammar' v (T.Almanac _ (T.Choice view) m) = do
 toGrammar' v (T.Forall _ (Bind _ _ k t)) = do
   xs <- toGrammar' v t
   getLHS $  Map.singleton ('∀' : show k) xs
-toGrammar' v (T.Rec _ (Bind _ x _ _)) = return [mkVar defaultSpan (showV v++show x)]
+toGrammar' v (T.Rec _ (Bind _ x _ _)) = return [mkVar defaultSpan (showV v++intern x)]
 toGrammar' v t@T.Var{} = getLHS $ Map.singleton (showV v ++ show t) []
 -- Type operators
 toGrammar' v t@T.CoVar{} = getLHS $ Map.singleton (showV v ++ show t) []
@@ -160,10 +160,10 @@ collect v σ t@(T.Rec _ (Bind _ x _ u)) = do
   let u' = Substitution.subsAll σ' u
   ~(z : zs) <- toGrammar v (normalise u')
   m         <- getTransitions z
-  addProductions (mkVar defaultSpan (showV v ++ show x)) (Map.map (++ zs) m)
+  addProductions (mkVar defaultSpan (showV v ++ intern x)) (Map.map (++ zs) m)
   ~(w : ws) <- toGrammar (not v) (normalise u')
   n         <- getTransitions w
-  addProductions (mkVar defaultSpan (showV (not v) ++ show x)) (Map.map (++ ws) n)
+  addProductions (mkVar defaultSpan (showV (not v) ++ intern x)) (Map.map (++ ws) n)
   collect v σ' u
 collect v σ (T.Arrow _ _ t u) = collect (not v) σ t >> collect v σ u
 collect v σ (T.Pair _ t u) = collect v σ t >> collect v σ u
