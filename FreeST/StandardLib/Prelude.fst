@@ -111,7 +111,7 @@ sink _ = ()
 -- | Execute a thunk n times, sequentially
 repeat : forall a:*T . Int -> (() -> a) -> ()
 repeat n thunk =
-    if n < 0
+    if n <= 0
     then ()
     else 
         thunk ();
