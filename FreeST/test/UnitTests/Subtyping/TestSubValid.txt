@@ -258,15 +258,50 @@ rec l:1S . +{Cons: !(Int 1-> Int);l, Nil: Skip}
 !(+{Cons: !(Int  -> Int);(rec l:1S . +{Cons: !(Int  -> Int);l, Nil: Skip}), Nil: Skip})
 !(rec l:1S . +{Cons: !(Int 1-> Int);l, Nil: Skip})
 
+-- unfold² first 
+!(+{Cons: !(Int  -> Int);+{Cons: !(Int  -> Int);(rec l:1S . +{Cons: !(Int  -> Int);l, Nil: Skip}), Nil: Skip}, Nil: Skip})
+!(rec l:1S . +{Cons: !(Int 1-> Int);l, Nil: Skip})
+
+-- unfold³ first 
+!(+{Cons: !(Int  -> Int);+{Cons: !(Int  -> Int);+{Cons: !(Int  -> Int);(rec l:1S . +{Cons: !(Int  -> Int);l, Nil: Skip}), Nil: Skip}, Nil: Skip}, Nil: Skip})
+!(rec l:1S . +{Cons: !(Int 1-> Int);l, Nil: Skip})
+
 -- unfold second
 !(rec l:1S . +{Cons: !(Int  -> Int);l, Nil: Skip})
 !(+{Cons: !(Int 1-> Int);(rec l:1S . +{Cons: !(Int 1-> Int);l, Nil: Skip}), Nil: Skip})
+
+-- unfold² second
+!(rec l:1S . +{Cons: !(Int  -> Int);l, Nil: Skip})
+!(+{Cons: !(Int 1-> Int);+{Cons: !(Int 1-> Int);(rec l:1S . +{Cons: !(Int 1-> Int);l, Nil: Skip}), Nil: Skip}, Nil: Skip})
+
+-- unfold³ second
+!(rec l:1S . +{Cons: !(Int  -> Int);l, Nil: Skip})
+!(+{Cons: !(Int 1-> Int);+{Cons: !(Int 1-> Int);+{Cons: !(Int 1-> Int);(rec l:1S . +{Cons: !(Int 1-> Int);l, Nil: Skip}), Nil: Skip}, Nil: Skip}, Nil: Skip})
+
 
 rec i:1S . Skip
 Skip
 
 rec x:1S . !x
 !(rec x:1S . !x)
+
+rec a:*T . Int -> !(a)
+Int -> !(rec a:*T . Int -> !(a))
+
+rec a:*T . Int -> !(a)
+Int -> !(Int -> !(rec a:*T . Int -> !(a)))
+
+rec a:*T . Int -> !(a)
+Int -> !(Int -> !(Int -> !(rec a:*T . Int -> !(a))))
+
+rec a:*T . !(a) -> Int 
+!(rec a:*T . !(a) -> Int) -> Int 
+
+rec a:*T . !(a) -> Int 
+!(!(rec a:*T . !(a) -> Int) -> Int) -> Int 
+
+rec a:*T . !(a) -> Int 
+!(!(!(rec a:*T . !(a) -> Int) -> Int) -> Int) -> Int 
 
 -- are free variables ok in these tests? should we check type formation?
 rec h:1S . !((+{B: End, C: b} ; Skip) ; +{C: h} ; End ; Skip)
