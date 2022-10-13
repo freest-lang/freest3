@@ -307,6 +307,18 @@ rec a:*T . !(a) -> Int
 rec h:1S . !((+{B: End, C: b} ; Skip) ; +{C: h} ; End ; Skip)
 !(+{B: End ; Skip, C: b ; Skip} ; +{C: (rec h:1S . !(+{B: End ; Skip, C: b ; Skip} ; +{C: h ; End ; Skip})) ; End ; Skip})
 
+-- Ref 
+*?(+{Assign: !Int, Deref: ?Int};End)
+*?(+{Assign: !Int, Deref: ?Int};End)
+
+-- Ref can be downgraded to Sink 
+*?(+{Assign: !Int, Deref: ?Int};End)
+*?(+{Assign: !Int};End)
+
+-- Ref can be downgraded to Source
+*?(+{Assign: !Int, Deref: ?Int};End)
+*?(+{Deref: ?Int};End)
+
 -- Universal Types 
 
 ∀ α: 1S . α -> α
