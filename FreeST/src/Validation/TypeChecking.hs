@@ -47,7 +47,7 @@ typeCheck = do
   --         ++ "  Tname " ++ show tn)
 
   -- * Check the formation of all type decls
-  mapM_ (K.synthetise Map.empty . snd) =<< getTEnv
+  mapM_ (uncurry $ K.checkAgainst Map.empty) =<< getTEnv
 
   -- * Check the formation of all function signatures
   mapM_ (K.synthetise Map.empty) =<< getVEnv

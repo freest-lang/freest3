@@ -1,7 +1,7 @@
 data List = Cons Int List | Nil
 
 type ListOut : 1S = +{NilC: Skip, ConsC: !Int;ListOut}
-type ListIn = dualof ListOut
+type ListIn  : 1S = dualof ListOut
 
 rcvList : forall a : 1S . ListIn;a -> (List, a)
 rcvList (NilC  c) = (Nil, c)
