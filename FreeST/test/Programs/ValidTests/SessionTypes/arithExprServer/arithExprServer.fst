@@ -46,18 +46,15 @@ receiveEval c =
 
 -- Compute 5 + (7 * 9); return the result
 client : TermChannel;?Int;End -> Int
-client c =
-  let (n, c) = receive $
-    send 9 $
-    select Const $
-    send 7 $
-    select Const $
-    select Mult $
-    send 5 $
-    select Const $
-    select Add c in
-  close c;
-  n
+client c = c |> select Add 
+             |> select Const 
+             |> send 5 
+             |> select Mult 
+             |> select Const 
+             |> send 7
+             |> select Const 
+             |> send 9 
+             |> receiveAndClose @Int
 
 main : Int
 main =

@@ -27,7 +27,7 @@ handleClient state chan =
   let (readFromState, writeOnState) = state in
   match chan with
     { Get chan -> let (n, _) = receive readFromState in send n chan |> close 
-    , Put chan -> let (n, chan) = receive chan in close chan; send n writeOnState
+    , Put chan -> send (receiveAndClose @Int chan) writeOnState
     }
 
 -- Client side, utilities
@@ -43,10 +43,7 @@ put n q =
 get : SharedBag -> Int
 get q =
   let (c, _) = receive q in
-  let c = select Get c in
-  let (n, c) = receive c in
-  close c;
-  n
+  c |> select Get |> receiveAndClose @Int
 
 -- An application
 

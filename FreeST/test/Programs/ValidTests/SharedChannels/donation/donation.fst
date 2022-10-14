@@ -33,15 +33,12 @@ helpSavingTheWolf donationServer =
     let p = select Commit p in                                  -- commit once happy
     match p with {                                              -- wait for the outcome
         Accepted p ->                                           -- if accepted, we have three benefactors
-            let (d, p) = receive p in
-            close p;
+            let d = receiveAndClose @Promotion p in 
             fork (\_:()1-> donate d "Benefactor1" "2345" 5);
             fork (\_:()1-> donate d "Benefactor2" "1234" 20);
             donate d "Benefactor3" "1004" 10,
         Denied p ->                                             -- otherwise, print the reason
-            let (reason, p) = receive p in 
-            close p;
-            printStringLn reason
+            printStringLn $ receiveAndClose @String p
     }
 
 donate : Promotion -> String -> CreditCard -> Int -> ()
@@ -74,8 +71,7 @@ promotion p =
     --
     let (donor , p') = receive p' in
     let (ccard , p') = receive p' in
-    let (amount, p') = receive p' in
-    close p';
+    let amount       = receiveAndClose @Int p' in
     bank ccard amount;
     promotion p
 

@@ -131,9 +131,7 @@ recNeuron rs =
     case rs of {
         RNil -> 0,
         RCons r rs -> 
-            let (x, c) = receive r in
-            close c;
-            x + recNeuron rs
+            (receiveAndClose @Int r) + recNeuron rs
     }
 
 sendNeuron : Int -> SList -> ()

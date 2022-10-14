@@ -65,7 +65,7 @@ aTree = Node 1 (Node 2 (Node 8 Leaf Leaf) (Node 3 (Node 5 Leaf Leaf) (Node 4 Lea
 
 main =
   let (w, r) = new TreeC;End in
-  fork @() (\_:()1-> let (_, r) = treeSum  @End r in close r);
+  fork @() (\_:()1-> close $ snd @Int @End $ treeSum @End r);
   let (t, w) = transform  @End aTree w in
   close w;
   t

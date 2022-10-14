@@ -16,9 +16,8 @@ sendTree t c =
       let c = send x c in
       -- right
       let (w2, r2) = new WTree in
-      let c = send r2 c in
-      sendTree t2 w2;
-      close c
+      c |> send r2 |> close; 
+      sendTree t2 w2
   }
 
 receiveTree : RTree -> Tree
@@ -32,9 +31,8 @@ receiveTree c =
       -- root
       let (x, c) = receive c in
       -- right
-      let (r2, c) = receive c in
+      let r2 = receiveAndClose @RTree c in
       let t2 = receiveTree r2 in
-      close c;
       Node t1 x t2
   }
 

@@ -21,6 +21,6 @@ main =
   let (s2, r2) = new !Int;End in
   fork (\_:() 1-> unfunc () @End s1 |> close);
   fork (\_:() 1-> unfunc () @End s2 |> close);
-  fork (\_:() 1-> let (x, r1) = receive r1 in close r1; printIntLn x);
-                  let (x, r2) = receive r2 in close r2 ; printIntLn x
+  fork (\_:() 1-> printIntLn $ receiveAndClose @Int r1);
+  printIntLn $ receiveAndClose @Int r2
   

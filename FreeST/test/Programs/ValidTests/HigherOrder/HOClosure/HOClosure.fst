@@ -5,4 +5,4 @@ sendClosure : Int -> (Int -> Int)
 sendClosure x =
   let (w, r) = new !(Int -> Int);End in
   fork (\_:()1-> send (\y:Int -> y + x) w |> close);
-  let (f, r) = receive r in close r; f
+  receiveAndClose @(Int -> Int) r

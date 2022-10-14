@@ -8,11 +8,9 @@ produce p =
     consume c'
 
 consume : dualof Omega -> Diverge
-consume c =
-  let (c', c) = receive c in
-    close c; 
+consume c = 
     printStringLn "Consuming";
-    produce c'
+    produce (receiveAndClose @Omega c)
 
 main : Diverge
 main =

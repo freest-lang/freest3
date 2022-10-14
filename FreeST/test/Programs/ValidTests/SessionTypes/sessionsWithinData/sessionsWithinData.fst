@@ -4,7 +4,7 @@ read : T -> Int
 read t =
   case t of {
     One c -> close c; 5,
-    Two c -> let (x, c) = receive c in close c; x
+    Two c -> receiveAndClose @Int c
   }
 
 main : Int

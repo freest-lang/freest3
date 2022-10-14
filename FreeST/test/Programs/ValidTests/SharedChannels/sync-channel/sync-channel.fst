@@ -26,8 +26,7 @@ sync ch =
     -- receive linear sync channel
     let (c, _) = receive ch in
     -- wait for sync
-    let (_, c) = receive c in
-    close c
+    receiveAndClose @Int c; ()
 
 client : Int -> SyncServer -> ()
 client id ch =

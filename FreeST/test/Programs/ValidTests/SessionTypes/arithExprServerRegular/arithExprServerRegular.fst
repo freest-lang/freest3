@@ -18,25 +18,19 @@ type StreamServer: 1S = dualof StreamClient
 
 -- A sample client: (5*4)+(2*3)
 client : StreamClient -> Int
-client c =
-  -- stream the arithmetic operation
-  let c = select Const c in
-  let c = send 5 c in
-  let c = select Const c in
-  let c = send 4 c in
-  let c = select Mult c in
-  let c = select Const c in
-  let c = send 2 c in
-  let c = select Const c in
-  let c = send 3 c in
-  let c = select Mult c in
-  let c = select Add c in
-  let c = select EOS c in
-  -- read the result
-  let (x, c) = receive c in
-  -- and return it
-  close c; 
-  x
+client c = c |> select Const
+             |> send 5
+             |> select Const
+             |> send 4
+             |> select Mult
+             |> select Const
+             |> send 2
+             |> select Const
+             |> send 3
+             |> select Mult
+             |> select Add
+             |> select EOS
+             |> receiveAndClose @Int
 
 {-|
   An easy consumer: counts the number of nodes in the stream.  Copes

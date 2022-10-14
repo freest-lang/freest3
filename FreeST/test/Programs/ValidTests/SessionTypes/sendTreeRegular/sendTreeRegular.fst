@@ -21,8 +21,7 @@ read (LeafC c) = close c ; Leaf
 read (NodeC c) =
   let (l, c) = receive c in
   let (x, c) = receive c in
-  let (r, c) = receive c in
-  close c ;
+  let  r     = receiveAndClose @TreeC c in 
   Node (read l) x (read r)
 
 write : Tree -> dualof TreeC -> ()
