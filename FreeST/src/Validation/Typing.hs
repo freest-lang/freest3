@@ -160,6 +160,8 @@ synthetise kEnv (E.Case p e fm) = synthetiseCase p kEnv e fm
 -- Session types
 synthetise kEnv (E.New p t u) = do
   K.checkAgainstSession kEnv t
+  -- TODO: a specific Error for the effect would be needed
+  unless (broughtToEnd t) (addError (RuntimeError p ("Ill formed type for new: " ++ show t)))
   return $ T.Pair p t u
 
 -- | Returns the type of a variable; removes it from vEnv if lin
@@ -298,3 +300,32 @@ buildAbstraction tm x (xs, e) = case tm Map.!? x of
   numberOfArgs :: T.Type -> Int
   numberOfArgs (T.Arrow _ _ _ t) = 1 + numberOfArgs t
   numberOfArgs _                 = 0
+
+-- Check whether a type is brought to an End
+broughtToEnd :: T.Type -> Bool
+broughtToEnd = wellEnded Set.empty
+
+wellEnded :: Set.Set Variable -> T.Type -> Bool
+wellEnded _ (T.Skip _) = False
+wellEnded _ (T.End _) = True
+wellEnded s (T.Semi _ t1 t2) = wellEnded s t1 || wellEnded s t2
+wellEnded _ (T.Message _ _ _) = False
+wellEnded s (T.Almanac _ _ m) = Map.foldr (\t b -> b && wellEnded s t) True m
+wellEnded s (T.Rec _ (Bind{var=v, body=t})) = wellEnded (Set.insert v s) t
+wellEnded s (T.Dualof _ t) = wellEnded s t
+
+-- Alternative 1 _ Only recursion variables are well ended (False negatives)
+-- There are non well-formed functions in the Prelude (e.g., forkWith)
+-- 327 examples, 213 failures, 12 pending
+
+-- wellEnded s (T.Var _ var) = var `Set.member` s
+-- wellEnded s (T.CoVar _ var) = var `Set.member` s -- ???
+
+-- Alternative 2 _ All type variables are well ended (False positives)
+-- Allows false positives: forkWith @Skip @Skip (id @Skip)
+-- 327 examples, 43 failures, 12 pending
+
+wellEnded s (T.Var _ _) = True
+wellEnded s (T.CoVar _ _) = True
+
+
