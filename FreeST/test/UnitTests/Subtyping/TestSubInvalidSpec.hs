@@ -1,14 +1,14 @@
 module Subtyping.TestSubInvalidSpec (spec) where
 
-import           Bisimulation.Bisimulation ((<~))
+import           Validation.Subkind ((<:))
 import           Validation.Rename
 import           SpecUtils
 
 matchInvalidSpec :: [String] -> Spec
 matchInvalidSpec [st, su] =
-  it (show t ++ " </~ " ++  show u) 
+  it (show t ++ " </: " ++  show u) 
     ({-# SCC "SUB_TEST_CALL" #-}
-     (t <~ u) `shouldBe` False
+     (t <: u) `shouldBe` False
     )
     where
       [t, u] = renameTypes [read st, read su]

@@ -5,7 +5,7 @@ module Subtyping.TestSubValidSpec (spec) where
 import qualified Syntax.Type as T
 import           Validation.Kinding               ( synthetise )
 import           Validation.Rename
-import           Bisimulation.Bisimulation        ((<~))
+import           Validation.Subkind               ((<:))
 import qualified Data.Map.Strict           as Map
 import           Util.FreestState                 ( initialState
                                                   , errors, FreestState
@@ -15,11 +15,11 @@ import           SpecUtils
 
 matchValidSpec :: [String] -> Spec
 matchValidSpec [st, su] =
-  it (show t ++ " <~ " ++  show u) 
+  it (show t ++ " <: " ++  show u) 
     ( {-# SCC "SUB_TEST_CALL" #-}
     {-           wellFormed t
     &&           wellFormed u
-    &&-}         (t <~ u) 
+    &&-}         (t <: u) 
     `shouldBe` True
     )
     where

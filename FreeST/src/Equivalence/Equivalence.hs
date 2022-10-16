@@ -18,7 +18,7 @@ module Equivalence.Equivalence
   )
 where
 
-import           Bisimulation.Bisimulation ( (<~) )
+import           Bisimulation.Bisimulation ( subsimilar )
 import           Syntax.Base
 import qualified Syntax.Kind as K
 import           Syntax.Program
@@ -47,7 +47,7 @@ type Visited = Set.Set (Span, Span)
 -- A co-inductive definition for functional types. A bisimulation
 -- based definition for session types
 instance Equivalence T.Type where
-  equivalent _ t u = (t <~ u) && (u <~ t) 
+  equivalent _ t u = t <: u && u <: t 
   {-
   equivalent = equiv Set.empty
    where

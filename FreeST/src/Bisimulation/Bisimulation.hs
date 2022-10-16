@@ -11,16 +11,15 @@ session types into a grammar, which is pruned. An expansion tree is computed aft
 through an alternation of expansion of children nodes and their simplification, using the
 reflexive, congruence, and BPA rules.
 -}
-{-# LANGUAGE TupleSections, LambdaCase, MultiWayIf, BlockArguments #-}
-
+{-# LANGUAGE TupleSections, LambdaCase , MultiWayIf #-}
 module Bisimulation.Bisimulation
   ( bisimilar
   , bisimilarGrm -- For SGBisim
-  , (<~)
+  , subsimilar 
   )
 where
 
-import           Syntax.Base                    (Variable, defaultSpan, Multiplicity (..)) -- Nonterminal symbols are type variables
+import           Syntax.Base                    (Variable) -- Nonterminal symbols are type variables
 import qualified Syntax.Type                   as T
 import           Equivalence.TypeToGrammar      ( convertToGrammar )
 import           Bisimulation.Grammar
@@ -31,13 +30,13 @@ import qualified Data.Sequence                 as Queue
 import           Data.Bifunctor
 import           Data.List                      ( isPrefixOf
                                                 , union
-                                                , isSuffixOf
                                                 )
 -- Word is (re)defined in module Equivalence.Grammar
 import           Prelude                 hiding ( Word )
 import           Debug.Trace
-import Data.Function
-import Control.Monad.Extra ((||^))
+import Data.Tuple (swap)
+import Control.Monad.Extra ((||^), (&&^))
+import Data.List.Extra (isSuffixOf)
 
 -- debug
 -- import Parse.Read
@@ -46,22 +45,32 @@ import Control.Monad.Extra ((||^))
 -- import           Util.FreestState                 ( initialState
 --                                                   , errors
 --                                                   )
--- import           Validation.Kinding               ( synthetise )
+-- import           Validation.Kinding
 
-bisimilar :: T.Type -> T.Type ->  Bool
-bisimilar t u = (t <~ u) && (u <~ t)
 
-(<~) :: T.Type -> T.Type ->  Bool
-t <~ u = bisimilarGrm $ convertToGrammar [t, u]
+bisimilar :: T.Type -> T.Type -> Bool
+bisimilar t u = bisimilarGrm $ convertToGrammar [t, u]
 
 -- | Assumes a grammar without unreachable symbols
 bisimilarGrm :: Grammar -> Bool
-bisimilarGrm g@(Grammar [xs, ys] ps) = -- trace (show g) 
-                                       expand queue rules ps
+bisimilarGrm (Grammar [xs, ys] ps) = expand expandPair queue rules ps
  where
-  rules | allNormed ps = [reflex, congruence, bpa2{-, filtering-}]
-        | otherwise    = [reflex, congruence, bpa1, bpa2{-, filtering-}]
+  rules | allNormed ps = [reflex, congruence, bpa2, filtering]
+        | otherwise    = [reflex, congruence, bpa1, bpa2, filtering]
   queue = Queue.singleton (Set.singleton (xs, ys), Set.empty)
+
+subsimilar :: T.Type -> T.Type -> Bool 
+subsimilar t u = subsimilarGrm $ convertToGrammar [t, u]
+
+-- | Assumes a grammar without unreachable symbols
+subsimilarGrm :: Grammar -> Bool
+subsimilarGrm (Grammar [xs, ys] ps) = expand expandPairSub queue rules ps
+ where
+  rules | allNormed ps = [reflex, congruence, bpa2] -- no filtering
+        | otherwise    = [reflex, congruence, bpa1, bpa2] -- no filtering
+  queue = Queue.singleton (Set.singleton (xs, ys), Set.empty)
+
+type PairExpander = Productions -> (Word, Word) -> Maybe Node
 
 type Node = Set.Set (Word, Word)
 
@@ -75,13 +84,13 @@ type NodeTransformation = Productions -> Ancestors -> Node -> Set.Set Node
 
 -- The expand-simplify loop
 
-expand :: BranchQueue -> [NodeTransformation] -> Productions -> Bool
-expand Queue.Empty _ _ = False
-expand ((n, a) Queue.:<| q) rules ps
+expand :: PairExpander -> BranchQueue -> [NodeTransformation] -> Productions -> Bool
+expand _ Queue.Empty _ _ = False
+expand pe ((n, a) Queue.:<| q) rules ps
   | Set.null n = True
-  | otherwise = case expandNode ps n of
-    Nothing -> expand q rules ps
-    Just n' -> expand (simplify q branch rules ps) rules ps
+  | otherwise = case expandNode pe ps n of
+    Nothing -> expand pe q rules ps
+    Just n' -> expand pe (simplify q branch rules ps) rules ps
       where
         n'' = pruneNode ps n'
         branch = Set.singleton (n'', Set.union a n)
@@ -105,37 +114,51 @@ maxLength n
   | Set.null n = 0
   | otherwise  = maximum (Set.map (\(a, b) -> max (length a) (length b)) n)
 
-expandNode :: Productions -> Node -> Maybe Node
-expandNode ps = Set.foldr
+expandNode :: PairExpander -> Productions -> Node -> Maybe Node
+expandNode pe ps = Set.foldr
   (\p acc -> case acc of
     Nothing -> Nothing
-    Just n' -> case expandPair ps p of
+    Just n' -> case pe ps p of
       Nothing  -> Nothing
       Just n'' -> Just (Set.union n' n'')
   )
   (Just Set.empty)
-  
-expandPair :: Productions -> (Word, Word) -> Maybe Node
-expandPair ps (xs, ys) =
-  -- trace ("\nlabel set 1: "++show ls1++"\nlabel set 2: "++show ls2)
-  if | ls1 == ls2 -> -- trace "normal subtyping" 
-                     Just $ match True m1 m2 Set.empty
-     | (isChoicePair || isCoBranchPair) && not (Set.null ls2) && ls2 `Set.isSubsetOf` ls1
-     -> -- trace "choice/^branch subtyping" 
-        Just $ match False m1 m2 Set.empty
-     | (isBranchPair || isCoChoicePair) && not (Set.null ls1) && ls1 `Set.isSubsetOf` ls2
+
+expandPair :: PairExpander
+expandPair ps (xs, ys) | Map.keysSet m1 == Map.keysSet m2 = Just $ match m1 m2
+                       | otherwise                        = Nothing
+ where
+  m1 = transitions xs ps
+  m2 = transitions ys ps
+
+expandPairSub :: PairExpander
+expandPairSub ps (xs, ys) =
+  -- trace ("\ntransitions 1: "++show m1++"\ntransitions 2: "++show m2)
+  if | isOutput ls1 && isOutput ls2
+     -> let x = match (dTrans m1) (dTrans m2)
+            y = Set.map swap x in 
+        -- trace ("output! "++show x++" becomes "++ show y) 
+        Just $ y
+               `Set.union` 
+               match (cTrans m1) (cTrans m2)
+     | (isUnArrowSet ls1 && isUnArrowSet ls2) 
+     || (isUnArrowSet ls1 && isLinArrowSet ls2) 
+     || (isLinArrowSet ls1 && isLinArrowSet ls2) -- too many clauses, will be solved with a datatype for labels.
+     -> -- trace "arrow subtyping!" $
+        let m1' = if isLinArrowSet ls2 then toLinArrowTrans m1 else m1 in
+        Just $ (swap `Set.map` match (dTrans m1') (dTrans m2)) 
+               `Set.union` 
+               match (rTrans m1') (rTrans m2)
+     | ls1 == ls2 -> -- trace "normal subtyping" 
+        Just $ match m1 m2
+     | isChoicePair && not (Set.null ls2) && ls2 `Set.isSubsetOf` ls1
+     -> -- trace "choice/^branch subtyping"  -- !(Int -> Int) </~ !(Int 1-> Int)
+        Just $ match m1 m2
+     | isBranchPair && not (Set.null ls1) && ls1 `Set.isSubsetOf` ls2
      -> -- trace "branch/^choice subtyping" 
-        Just $ match True m1 m2 Set.empty
-     | isArrowPair || isCoArrowPair 
-     -> let m1'  = if isArrowPair   && isLinArrowSet ls2 then toLinArrowTrans m1 else m1
-            m2'  = if isCoArrowPair && isLinArrowSet ls1 then toLinArrowTrans m2 else m2
-            (ls1', ls2') = (Map.keysSet m1', Map.keysSet m2') in 
-        -- trace "arrow subtyping" 
-        if ls1' == ls2'
-          then Just $ match True (rTrans m1') (rTrans m2') (match False (dTrans m1') (dTrans m2') Set.empty)
-          else Nothing
-     | otherwise  -> -- trace "no subtyping" 
-                     Nothing
+        Just $ match m1 m2
+     | otherwise -> -- trace "no subtyping"
+        Nothing
  where
   (m1, m2)        = (transitions xs ps, transitions ys ps)
   (ls1, ls2)      = (Map.keysSet m1   , Map.keysSet m2   )
@@ -143,20 +166,24 @@ expandPair ps (xs, ys) =
   -- string manipulation is cumbersome and prone to errors, maybe labels should have their own datatype?
   isChoicePair    = all (isPrefixOf "+" ) allLabels
   isBranchPair    = all (isPrefixOf "&" ) allLabels
-  isCoChoicePair  = all (isPrefixOf "^+") allLabels
-  isCoBranchPair  = all (isPrefixOf "^&") allLabels
   isArrowPair     = all (isPrefixOf "->"  ||^ isPrefixOf "1->" ) allLabels
-  isCoArrowPair   = all (isPrefixOf "^->" ||^ isPrefixOf "^1->") allLabels
-  isLinArrowSet   = all (isPrefixOf "1->" ||^ isPrefixOf "^1->")
+  isOutput        = (not . Set.null) &&^ all (isPrefixOf "!")
+  isLinArrowSet   = all (isPrefixOf "1->") &&^ (not . Set.null)
+  isUnArrowSet   = all (isPrefixOf "->") &&^ (not . Set.null)
   toLinArrowTrans = Map.mapKeys (\case ('-':'>':cs) -> "1->"++cs
                                        ('^':'-':'>':cs) -> "^1->"++cs
                                        cs -> cs)
   dTrans          = Map.filterWithKey (\l xs -> "d" `isSuffixOf` l)
   rTrans          = Map.filterWithKey (\l xs -> "r" `isSuffixOf` l)
+  cTrans          = Map.filterWithKey (\l xs -> "c" `isSuffixOf` l)
 
-  match :: Bool -> Transitions -> Transitions -> Node -> Node
-  match True  m1 m2 n  = Map.foldrWithKey (\l xs n' -> Set.insert (xs, m2 Map.! l) n') n m1
-  match False m1 m2 n  = Map.foldrWithKey (\l xs n' -> Set.insert (m1 Map.! l, xs) n') n m2
+match :: Transitions -> Transitions -> Node
+match m1 m2 =
+  Set.fromList $ Map.elems $ Map.intersectionWith (,) m1 m2
+
+-- match :: Transitions -> Transitions -> Node
+-- match m1 m2 =
+--   Map.foldrWithKey (\l xs n -> Set.insert (xs, m2 Map.! l) n) Set.empty m1
 
 -- The fixed point of branch wrt the application of node transformations
 findFixedPoint

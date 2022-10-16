@@ -47,57 +47,50 @@ convertToGrammar ts = {- trace (show ts ++ "\n" ++ show grammar) -} grammar
     grammar       = Grammar (substitute θ word) prods
 
 typeToGrammar :: T.Type -> TransState Word
-typeToGrammar t = collect True [] t >> toGrammar True t
+typeToGrammar t = collect [] t >> toGrammar t
 
--- the Bool indicates the local co/contravariance
-toGrammar :: Bool -> T.Type -> TransState Word
+toGrammar :: T.Type -> TransState Word
 -- Syntactic equality
-toGrammar v t = case fatTerminal t of
+toGrammar t = case fatTerminal t of
   Just t' ->  getLHS $ Map.singleton (show t') []
-  Nothing -> toGrammar' v t
+  Nothing -> toGrammar' t
 
--- Local co/contravariance
-showV :: Bool -> String
-showV True  = ""
-showV False = "^"
-
-toGrammar' :: Bool -> T.Type -> TransState Word
+toGrammar' :: T.Type -> TransState Word
 -- Functional Types
-toGrammar' v (T.Arrow _ p t u) = do
-  xs <- toGrammar (not v) t
-  ys <- toGrammar v u
-  getLHS $ Map.fromList [(showV v++show p ++ "d", xs), (showV v++show p ++ "r", ys)]
-toGrammar' v (T.Pair _ t u) = do
-  xs <- toGrammar v t
-  ys <- toGrammar v u
+toGrammar' (T.Arrow _ p t u) = do
+  xs <- toGrammar t
+  ys <- toGrammar u
+  getLHS $ Map.fromList [(show p ++ "d", xs), (show p ++ "r", ys)]
+toGrammar' (T.Pair _ t u) = do
+  xs <- toGrammar t
+  ys <- toGrammar u
   getLHS $ Map.fromList [("*l", xs), ("*r", ys)]
-toGrammar' v (T.Almanac _  T.Variant m) = do -- Can't test this type directly
-  ms <- tMapM (toGrammar v) m
+toGrammar' (T.Almanac _  T.Variant m) = do -- Can't test this type directly
+  ms <- tMapM toGrammar m
   getLHS $ Map.mapKeys (\k -> "<>" ++ show k) ms
 -- Session Types
-toGrammar' v (T.Skip _) = return []
-toGrammar' v t@(T.End _) = getLHS $ Map.singleton (show t) [bottom]
-toGrammar' v (T.Semi _ t u) = liftM2 (++) (toGrammar v t) (toGrammar v u)
-toGrammar' v (T.Message _ p t) = do
-  xs <- toGrammar (case p of T.In -> v; T.Out -> not v) t
+toGrammar' (T.Skip _) = return []
+toGrammar' t@(T.End _) = getLHS $ Map.singleton (show t) [bottom]
+toGrammar' (T.Semi _ t u) = liftM2 (++) (toGrammar t) (toGrammar u)
+toGrammar' (T.Message _ p t) = do
+  xs <- toGrammar t
   getLHS $ Map.fromList [(show p ++ "d", xs ++ [bottom]), (show p ++ "c", [])]
 -- toGrammar' (T.Choice _ v m) = do
 --   ms <- tMapM toGrammar m
 --   getLHS $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
-toGrammar' v (T.Almanac _ (T.Choice view) m) = do
-  ms <- tMapM (toGrammar v) m
-  getLHS $ Map.mapKeys (\k -> showV v ++ show view ++ show k) ms
+toGrammar' (T.Almanac _ (T.Choice v) m) = do
+  ms <- tMapM toGrammar m
+  getLHS $ Map.mapKeys (\k -> show v ++ show k) ms
 -- Polymorphism and recursive types
-toGrammar' v (T.Forall _ (Bind _ _ k t)) = do
-  xs <- toGrammar' v t
+toGrammar' (T.Forall _ (Bind _ _ k t)) = do
+  xs <- toGrammar' t
   getLHS $  Map.singleton ('∀' : show k) xs
-toGrammar' v (T.Rec _ (Bind _ x _ _)) = return [mkVar defaultSpan (showV v++intern x)]
-toGrammar' v t@T.Var{} = getLHS $ Map.singleton (showV v ++ show t) []
+toGrammar' (T.Rec _ (Bind _ x _ _)) = return [x]
+toGrammar' t@T.Var{} = getLHS $ Map.singleton (show t) []
 -- Type operators
-toGrammar' v t@T.CoVar{} = getLHS $ Map.singleton (showV v ++ show t) []
+toGrammar' t@T.CoVar{} = getLHS $ Map.singleton (show t) []
 -- toGrammar' t@T.Dualof{} =
-toGrammar' v t = internalError "Equivalence.TypeToGrammar.toGrammar" t
-
+toGrammar' t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 
 -- Fat terminal types can be compared for syntactic equality
 -- Returns a normalised type in case the type can become fat terminal
@@ -108,19 +101,17 @@ fatTerminal t@T.Char{}            = Just t
 fatTerminal t@T.Bool{}            = Just t
 fatTerminal t@T.String{}          = Just t
 fatTerminal t@T.Unit{}            = Just t
-{- SUBTYPING
-fatTerminal (T.Arrow p m t u)     = Just (T.Arrow p m) <*> fatTerminal t <*> fatTerminal u
-fatTerminal (T.Pair p t u)        = Just (T.Pair p) <*> fatTerminal t <*> fatTerminal u
-fatTerminal (T.Almanac p T.Variant m) = Just (T.Almanac p T.Variant) <*> mapM fatTerminal m
--- Session Types
-fatTerminal (T.Semi p t u) | terminated t = changePos p <$> fatTerminal u
-                           | terminated u = changePos p <$> fatTerminal t
-fatTerminal (T.Message p pol t)   = Just (T.Message p pol) <*> fatTerminal t
--- These two would preclude distributivity:
--- fatTerminal (T.Semi p t u)      = Just (T.Semi p) <*> fatTerminal t <*> fatTerminal u
--- fatTerminal (T.Choice p pol m)  = Just (T.Choice p pol) <*> mapM fatTerminal m
--- Default
--}
+-- fatTerminal (T.Arrow p m t u)     = Just (T.Arrow p m) <*> fatTerminal t <*> fatTerminal u
+-- fatTerminal (T.Pair p t u)        = Just (T.Pair p) <*> fatTerminal t <*> fatTerminal u
+-- fatTerminal (T.Almanac p T.Variant m) = Just (T.Almanac p T.Variant) <*> mapM fatTerminal m
+-- -- Session Types
+-- fatTerminal (T.Semi p t u) | terminated t = changePos p <$> fatTerminal u
+--                            | terminated u = changePos p <$> fatTerminal t
+-- fatTerminal (T.Message p pol t)   = Just (T.Message p pol) <*> fatTerminal t
+-- -- These two would preclude distributivity:
+-- -- fatTerminal (T.Semi p t u)      = Just (T.Semi p) <*> fatTerminal t <*> fatTerminal u
+-- -- fatTerminal (T.Choice p pol m)  = Just (T.Choice p pol) <*> mapM fatTerminal m
+-- -- Default
 fatTerminal _                     = Nothing
 
 {-
@@ -149,25 +140,21 @@ syntactic _                     = False
 
 type SubstitutionList = [(T.Type, Variable)]
 
-collect :: Bool -> SubstitutionList -> T.Type -> TransState ()
-collect v σ (T.Semi _ t u) = collect v σ t >> collect v σ u
+collect :: SubstitutionList -> T.Type -> TransState ()
+collect σ (T.Semi _ t u) = collect σ t >> collect σ u
 -- collect σ (T.Choice _ _ m) = tMapM_ (collect σ) m
-collect v σ (T.Almanac _ (T.Choice _) m ) = tMapM_ (collect v σ) m
-collect v σ (T.Message _ T.In t) = collect v σ t
-collect v σ (T.Message _ T.Out t) = collect (not v) σ t
-collect v σ t@(T.Rec _ (Bind _ x _ u)) = do
+collect σ (T.Almanac _ (T.Choice v) m ) = tMapM_ (collect σ) m
+collect σ (T.Message _ _ t) = collect σ t
+collect σ t@(T.Rec _ (Bind _ x _ u)) = do
   let σ' = (t, x) : σ
   let u' = Substitution.subsAll σ' u
-  ~(z : zs) <- toGrammar v (normalise u')
+  ~(z : zs) <- toGrammar (normalise u')
   m         <- getTransitions z
-  addProductions (mkVar defaultSpan (showV v ++ intern x)) (Map.map (++ zs) m)
-  ~(w : ws) <- toGrammar (not v) (normalise u')
-  n         <- getTransitions w
-  addProductions (mkVar defaultSpan (showV (not v) ++ intern x)) (Map.map (++ ws) n)
-  collect v σ' u
-collect v σ (T.Arrow _ _ t u) = collect (not v) σ t >> collect v σ u
-collect v σ (T.Pair _ t u) = collect v σ t >> collect v σ u
-collect _ _ _ = return ()
+  addProductions x (Map.map (++ zs) m)
+  collect σ' u
+collect σ (T.Arrow _ _ t u) = collect σ t >> collect σ u
+collect σ (T.Pair _ t u) = collect σ t >> collect σ u
+collect _ _ = return ()
 
 -- The state of the translation to grammar
 
