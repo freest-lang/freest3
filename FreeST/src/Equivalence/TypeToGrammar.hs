@@ -23,6 +23,7 @@ import qualified Syntax.Type                   as T
 import qualified Validation.Substitution       as Substitution
                                                 ( subsAll )
 import           Validation.Terminated          ( terminated )
+import           Validation.Kinding             ( typeToKindMult )
 import           Elaboration.Elaborate          ( changePos )
 import           Equivalence.Normalisation      ( normalise )
 import           Bisimulation.Grammar
@@ -52,7 +53,7 @@ typeToGrammar t = collect [] t >> toGrammar t
 toGrammar :: T.Type -> TransState Word
 -- Syntactic equality
 toGrammar t = case fatTerminal t of
-  Just t' ->  getLHS $ Map.singleton (show t') []
+  Just t' ->  getLHS $ Map.singleton (FatTerm $ show t') []
   Nothing -> toGrammar' t
 
 toGrammar' :: T.Type -> TransState Word
@@ -60,35 +61,38 @@ toGrammar' :: T.Type -> TransState Word
 toGrammar' (T.Arrow _ p t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
-  getLHS $ Map.fromList [(show p ++ "d", xs), (show p ++ "r", ys)]
+  getLHS $ Map.fromList [(Arrow (typeToKindMult p) Domain, xs), (Arrow (typeToKindMult p) Range, ys)]
 toGrammar' (T.Pair _ t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
-  getLHS $ Map.fromList [("*l", xs), ("*r", ys)]
+  getLHS $ Map.fromList [(Pair Fst, xs), (Pair Snd, ys)]
 toGrammar' (T.Almanac _  T.Variant m) = do -- Can't test this type directly
   ms <- tMapM toGrammar m
-  getLHS $ Map.mapKeys (\k -> "<>" ++ show k) ms
+  getLHS $ Map.mapKeys (Almanac K.Top T.External) ms
+toGrammar' (T.Almanac _  T.Record m) = do -- Can't test this type directly
+  ms <- tMapM toGrammar m
+  getLHS $ Map.mapKeys (Almanac K.Top T.Internal) ms
 -- Session Types
 toGrammar' (T.Skip _) = return []
-toGrammar' t@(T.End _) = getLHS $ Map.singleton (show t) [bottom]
+toGrammar' t@(T.End _) = getLHS $ Map.singleton (FatTerm "End") [bottom]
 toGrammar' (T.Semi _ t u) = liftM2 (++) (toGrammar t) (toGrammar u)
 toGrammar' (T.Message _ p t) = do
   xs <- toGrammar t
-  getLHS $ Map.fromList [(show p ++ "d", xs ++ [bottom]), (show p ++ "c", [])]
+  getLHS $ Map.fromList [(Message p Data, xs ++ [bottom]), (Message p Continuation, [])]
 -- toGrammar' (T.Choice _ v m) = do
 --   ms <- tMapM toGrammar m
 --   getLHS $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
 toGrammar' (T.Almanac _ (T.Choice v) m) = do
   ms <- tMapM toGrammar m
-  getLHS $ Map.mapKeys (\k -> show v ++ show k) ms
+  getLHS $ Map.mapKeys (Almanac K.Session v) ms
 -- Polymorphism and recursive types
 toGrammar' (T.Forall _ (Bind _ _ k t)) = do
   xs <- toGrammar' t
-  getLHS $  Map.singleton ('∀' : show k) xs
+  getLHS $  Map.singleton (Forall k) xs
 toGrammar' (T.Rec _ (Bind _ x _ _)) = return [x]
-toGrammar' t@T.Var{} = getLHS $ Map.singleton (show t) []
+toGrammar' (T.Var _ a) = getLHS $ Map.singleton (Var $ show a) []
 -- Type operators
-toGrammar' t@T.CoVar{} = getLHS $ Map.singleton (show t) []
+toGrammar' (T.CoVar _ a) = getLHS $ Map.singleton (Var $ show a) []
 -- toGrammar' t@T.Dualof{} =
 toGrammar' t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 

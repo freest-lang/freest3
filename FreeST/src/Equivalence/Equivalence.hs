@@ -37,6 +37,7 @@ import qualified Validation.Substitution as Subs
 import           Control.Monad.State ( runState )
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
+import           Equivalence.Subtyping -- instance Subsort Type (<:)
 
 
 class Equivalence t where

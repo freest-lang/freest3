@@ -18,6 +18,7 @@ module Validation.Kinding
   , checkAgainstSession
   , un
   , lin
+  , typeToKindMult
   )
 where
 

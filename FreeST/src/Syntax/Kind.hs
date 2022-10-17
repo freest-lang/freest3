@@ -37,20 +37,20 @@ import qualified Data.Set as Set
 
 -- Basic kind
 
-data Basic = Session | Top deriving Eq
+data Basic = Session | Top deriving (Eq, Ord)
 
 -- Multiplicity
-data Multiplicity = Un | Lin deriving Eq
+data Multiplicity = Un | Lin deriving (Eq, Ord)
 
 -- Kind
 
-data Kind = Kind Span Multiplicity Basic
+data Kind = Kind Span Multiplicity Basic deriving Ord
 
 instance Located Kind where
   getSpan (Kind p _ _) = p
 
--- instance Eq Kind whereP
---   (Kind _ b1 m1) == (Kind _ b2 m2) = True
+instance Eq Kind where
+   (Kind _ b1 m1) == (Kind _ b2 m2) = b1 == b2 && m1 == m2 
 
 
 -- The kind of conventional (non linear, non session) functional programming

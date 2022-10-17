@@ -28,7 +28,10 @@ map from labels to lists of type variables.
 {-# LANGUAGE FlexibleInstances #-}
 
 module Bisimulation.Grammar
-  ( Label
+  ( Label(..)
+  , DataOrCont(..)
+  , DomOrRng(..)
+  , FstOrSnd(..)
   , Transitions
   , Productions
   , Grammar(..)
@@ -41,13 +44,27 @@ where
 
 import           Syntax.Base
 import           Parse.Unparser                 ( )
-import qualified Data.Map.Strict               as Map
+import qualified Data.Map.Strict as Map
 import           Data.List                      ( intercalate )
 -- Word is (re)defined in module Equivalence.Grammar
 import           Prelude                 hiding ( Word )
+import qualified Syntax.Type     as T
+import qualified Syntax.Kind     as K           (Basic(..), Kind(..), Multiplicity)
 
 -- Terminal symbols are called labels
-type Label = String
+data Label = FatTerm String 
+           | End 
+           | Message T.Polarity     DataOrCont 
+           | Arrow   K.Multiplicity DomOrRng 
+           | Almanac K.Basic        T.View     Variable -- All this nesting may have an impact on performance...
+           | Pair    FstOrSnd
+           | Forall  K.Kind
+           | Var     String
+  deriving (Eq, Ord)
+
+data DataOrCont = Data   | Continuation deriving (Eq, Ord)
+data DomOrRng   = Domain | Range        deriving (Eq, Ord)
+data FstOrSnd   = Fst    | Snd          deriving (Eq, Ord)
 
 -- Non-terminal symbols are type variables Variable
 -- Words are strings of non-terminal symbols
@@ -88,6 +105,31 @@ insertProduction p x l w = Map.insertWith Map.union x (Map.singleton l w) p
 -- trans p xs = Map.elems (transitions xs p)
 
 -- Showing a grammar
+instance Show Label where 
+  show (FatTerm s) = s 
+  show End = "End" 
+  show (Message p dc) = show p ++ show dc  
+  show (Arrow m dr) = show m ++ show dr  
+  show (Pair fs) = show "," ++ show fs  
+  show (Forall a) = "∀" ++ show a
+  show (Var a) = a
+  show (Almanac K.Top     T.Internal l) = "{}" ++ show l 
+  show (Almanac K.Top     T.External l) = "<>" ++ show l 
+  show (Almanac K.Session T.Internal l) = "+"  ++ show l 
+  show (Almanac K.Session T.External l) = "&"  ++ show l
+  
+instance Show DomOrRng where 
+  show Domain = "d"
+  show Range  = "r"
+
+instance Show DataOrCont where 
+  show Data         = "d"
+  show Continuation = "c"
+
+instance Show FstOrSnd where 
+  show Fst = "fst"
+  show Snd = "snd"
+
 instance Show Grammar where
   show (Grammar xss p) =
     "start words: (" ++ intercalate ", " (map showWord xss) ++
@@ -104,4 +146,4 @@ showProductions = Map.foldrWithKey showTransitions ""
 
     showTransition :: Variable -> Label -> Word -> String -> String
     showTransition x l xs s =
-      s ++ "\n" ++ intern x ++ " -> " ++ l ++ " " ++ showWord xs
+      s ++ "\n" ++ intern x ++ " -> " ++ show l ++ " " ++ showWord xs

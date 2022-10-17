@@ -24,8 +24,8 @@ import           Syntax.Base
 import qualified Syntax.Kind                   as K
 import qualified Data.Map.Strict               as Map
 
-data Polarity = Out | In deriving Eq
-data View = External | Internal deriving Eq
+data Polarity = Out      | In      deriving  (Eq, Ord)
+data View     = External | Internal deriving (Eq, Ord)
 
 data Type =
   -- Functional Types
@@ -55,7 +55,7 @@ data Type =
 
 type TypeMap = Map.Map Variable Type
 
-data Sort = Record | Variant | Choice View deriving Eq
+data Sort = Record | Variant | Choice View deriving (Eq, Ord)
 
 instance Default Type where
   omission = Int

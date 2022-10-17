@@ -2,31 +2,17 @@
 
 module Subtyping.TestSubValidSpec (spec) where
 
-import qualified Syntax.Type as T
-import           Validation.Kinding               ( synthetise )
 import           Validation.Rename
 import           Validation.Subkind               ((<:))
-import qualified Data.Map.Strict           as Map
-import           Util.FreestState                 ( initialState
-                                                  , errors, FreestState
-                                                  )
-import           Control.Monad.State              ( execState )
+import           Equivalence.Subtyping
 import           SpecUtils
 
 matchValidSpec :: [String] -> Spec
 matchValidSpec [st, su] =
   it (show t ++ " <: " ++  show u) 
-    ( {-# SCC "SUB_TEST_CALL" #-}
-    {-           wellFormed t
-    &&           wellFormed u
-    &&-}         (t <: u) 
-    `shouldBe` True
-    )
-    where
-      [t, u] = renameTypes [read st, read su]
-
-wellFormed :: Type -> Bool
-wellFormed t = null $ errors $ execState (synthetise Map.empty t) initialState
+     ({-# SCC "SUB_TEST_CALL" #-} (t <: u) `shouldBe` True)
+  where 
+    [t, u] = renameTypes [read st, read su]
 
 spec :: Spec
 spec = do

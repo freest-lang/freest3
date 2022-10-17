@@ -19,7 +19,6 @@ import qualified Syntax.Kind                   as K
 import qualified Syntax.Type as T
 import Syntax.Program (VarEnv)
 import qualified Data.Map.Strict as Map
-import Bisimulation.Bisimulation (subsimilar)
 
 -- The subkinding relation. Note that subkinding is a partial order, hence
 -- should *not* be an instance class Ord.
@@ -44,10 +43,6 @@ instance Subsort K.Basic where
 
 instance Subsort K.Kind where
   (K.Kind _ b1 m1) <: (K.Kind _ b2 m2) = b1 <: b2 && m1 <: m2
-
-instance Subsort T.Type where
-  (<:) = subsimilar
-
 
 -- The least upper bound of two kinds
 
