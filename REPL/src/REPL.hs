@@ -1,6 +1,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 module REPL where
 
+import           Syntax.Base
 import           Elaboration.Elaboration ( elaboration )
 import           HandleOpts
 import           Interpreter.Eval ( evalAndPrint )
@@ -118,7 +119,7 @@ parseOpt s (Just xs)
           let s1 = execState (T.synthetise Map.empty e) st
           if hasErrors s1
             then liftS $ putStrLn $ getErrors s1
-            else liftS $ evalAndPrint st e
+            else liftS $ evalAndPrint (mkVar defaultSpan "main") st e
   where
     (opt, cont) = splitOption xs
     isOpt = elem opt
