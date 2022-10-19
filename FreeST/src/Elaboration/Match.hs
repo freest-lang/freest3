@@ -107,7 +107,7 @@ matchFuns :: ParseEnvPat -> FreestState ParseEnv
 matchFuns pep = mapM matchFun pep
 
 matchFun :: [Equation] -> FreestState ([Variable],Exp)
-matchFun xs@((ps,_):_) = imapM newVar ps                       -- creates new vars for the posterior lambda creation
+matchFun xs@((ps,_):_) = mapM newVar ps                       -- creates new vars for the posterior lambda creation
                      >>= \args -> (,) args <$> match args xs 
 
 match :: [Variable] -> [Equation] -> FreestState Exp
@@ -167,7 +167,7 @@ ruleCon (v:us) cs = groupSortBy (pName.head.fst) cs                             
   
 -- rule con aux 
 destruct :: [Equation] -> FreestState (Variable, [Variable], [Equation])
-destruct l@((p:ps,_):cs) = imapM newVar (pPats p)                                    -- creates new vars, for the case expression and the algorithm
+destruct l@((p:ps,_):cs) = mapM newVar (pPats p)                                    -- creates new vars, for the case expression and the algorithm
                        <&> flip ((,,) (pVar p)) l'                                  -- transforms into a case
   where l' = map (\(p:ps,e) -> ((pPats p)++ps,e)) l                                 -- unfolds the patterns
 
@@ -292,9 +292,12 @@ isChan (PatCons c _) = getConstructors
 isPat_ :: Pattern -> Bool
 isPat_ (PatVar v) = isWild v
 
-newVar :: Int -> Pattern -> FreestState Variable
-newVar i p = R.renameVar $ updateVar $ pVar p
-  where updateVar v = Variable (getSpan v) ("param"++(show i))
+newVar :: Pattern -> FreestState Variable
+newVar = R.renameVar.pVar
+
+-- newVar :: Int -> Pattern -> FreestState Variable
+-- newVar i p = R.renameVar $ updateVar $ pVar p
+--   where updateVar v = Variable (getSpan v) ("param"++(show i))
 
 groupOn :: Eq b => (a -> b) -> [a] -> [[a]]
 groupOn f = groupBy apply
@@ -303,6 +306,6 @@ groupOn f = groupBy apply
 groupSortBy :: Ord b => (a -> b) -> [a] -> [[a]]
 groupSortBy f = groupOn f . sortOn f
 
-imapM :: Monad m => (Int -> a -> m b) -> [a] -> m [b]
-imapM f l = zipWithM f indexes l
-  where indexes = [0..(length l)]
+-- imapM :: Monad m => (Int -> a -> m b) -> [a] -> m [b]
+-- imapM f l = zipWithM f indexes l
+--   where indexes = [0..(length l)]
