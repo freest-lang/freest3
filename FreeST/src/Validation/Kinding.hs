@@ -69,7 +69,8 @@ synthetise' s kEnv (T.Almanac p T.Variant m) = do
 -- Shared session types
 synthetise' s kEnv (T.Rec p1 (Bind _ a k (T.Semi p2 (T.Message p3 pol t) (T.Var p4 tVar))))
   | K.isUn k && a == tVar = do
-    void $ checkAgainstSession' s (Map.insert a k kEnv) (T.Semi p2 (T.Message p3 pol t) (T.Var p4 tVar))
+    void $ checkAgainstSession' s kEnv (T.Message p3 pol t)
+    -- void $ checkAgainstSession' s (Map.insert a k kEnv) (T.Semi p2 (T.Message p3 pol t) (T.Var p4 tVar))
     return $ K.us p1
 synthetise' _ _ (T.Rec p (Bind _ a k (T.Almanac _ (T.Choice _) m)))
   | K.isUn k && all (\case {(T.Var _ a') -> a == a' ; _ -> False }) m = do
