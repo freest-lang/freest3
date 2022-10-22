@@ -1,7 +1,7 @@
-data IntList = Nil | Cons Int IntList
+data List = Nil | Cons Int List
 
 --map :: (a -> b) -> [a] -> [b]
-map' : (Int -> Int) -> IntList -> IntList
+map' : (Int -> Int) -> List -> List
 map' f l =
     case l of {
         Nil -> Nil,
@@ -9,7 +9,7 @@ map' f l =
     }
 
 --(++) :: [a] -> [a] -> [a]
-plusplus : IntList -> IntList -> IntList
+plusplus : List -> List -> List
 plusplus l1 l2 =
     case l1 of {
         Nil -> l2,
@@ -17,7 +17,7 @@ plusplus l1 l2 =
     }
 
 --filter :: (a -> Bool) -> [a] -> [a]
-filter' : (Int -> Bool) -> IntList -> IntList
+filter' : (Int -> Bool) -> List -> List
 filter' f l =
     case l of {
         Nil -> Nil,
@@ -27,10 +27,10 @@ filter' f l =
                 else Cons x (filter' f rest)
     }
 
-data MaybeInt = Nothing | Just Int
+data Maybe = Nothing | Just Int
 
 --head :: [a] -> a
-safeHead' : IntList -> MaybeInt
+safeHead' : List -> Maybe
 safeHead' l = 
     case l of {
         Nil -> Nothing,
@@ -38,7 +38,7 @@ safeHead' l =
     }
 
 --last :: [a] -> a
-safeLast' : IntList -> MaybeInt
+safeLast' : List -> Maybe
 safeLast' l = 
     case l of {
         Nil -> Nothing,
@@ -50,7 +50,7 @@ safeLast' l =
     }
 
 --tail :: [a] -> [a]
-tail' : IntList -> IntList
+tail' : List -> List
 tail' l =
     case l of {
         Nil -> Nil,
@@ -58,7 +58,7 @@ tail' l =
     }
 
 --init :: [a] -> [a]
-init' : IntList -> IntList
+init' : List -> List
 init' l =
     case l of {
         Nil -> Nil,
@@ -70,7 +70,7 @@ init' l =
     }
 
 --null :: Foldable t => t a -> Bool
-null' : IntList -> Bool
+null' : List -> Bool
 null' l =
     case l of {
         Nil -> True,
@@ -78,7 +78,7 @@ null' l =
     }
 
 --length :: Foldable t => t a -> Int
-length' : IntList -> Int
+length' : List -> Int
 length' l = 
     case l of {
         Nil -> 0,
@@ -86,7 +86,7 @@ length' l =
     }
 
 --(!!) :: [a] -> Int -> a
-safeGetIndex' : IntList -> Int -> MaybeInt
+safeGetIndex' : List -> Int -> Maybe
 safeGetIndex' l i = 
     case l of {
         Nil -> Nothing,
@@ -97,20 +97,20 @@ safeGetIndex' l i =
     }
 
 --reverse :: [a] -> [a]
-reverse' : IntList -> IntList
+reverse' : List -> List
 reverse' l = reverse'' l Nil
 
-reverse'' : IntList -> IntList -> IntList
+reverse'' : List -> List -> List
 reverse'' from to =
     case from of {
         Nil -> to,
         Cons x rest -> reverse'' rest (Cons x to)
     }
 
--- "and", "or" and "any" modified to work for IntLists, now f (Int->Bool) is a parameter
+-- "and", "or" and "any" modified to work for Lists, now f (Int->Bool) is a parameter
 
 --and :: Foldable t => t Bool -> Bool
-andf' : (Int -> Bool) -> IntList ->  Bool
+andf' : (Int -> Bool) -> List ->  Bool
 andf' f l =
     case l of {
         Nil -> True,
@@ -121,7 +121,7 @@ andf' f l =
     } 
 
 --or :: Foldable t => t Bool -> Bool
-orf' : (Int -> Bool) -> IntList ->  Bool
+orf' : (Int -> Bool) -> List ->  Bool
 orf' f l =
     case l of {
         Nil -> False,
@@ -132,17 +132,17 @@ orf' f l =
     }
 
 --any :: Foldable t => (a -> Bool) -> t a -> Bool
-any' : (Int -> Bool) -> IntList -> Bool
+any' : (Int -> Bool) -> List -> Bool
 any' f l = orf' f l
 
 --all :: Foldable t => (a -> Bool) -> t a -> Bool
-all' : (Int -> Bool) -> IntList -> Bool
+all' : (Int -> Bool) -> List -> Bool
 all' f l = andf' f l
 
-data IntLCons = ENil | LCons IntList IntLCons
+data IntLCons = ENil | LCons List IntLCons
 
 --concat :: Foldable t => t [a] -> [a]
-concat' : IntLCons -> IntList
+concat' : IntLCons -> List
 concat' ll =
     case ll of {
         ENil -> Nil,
@@ -150,7 +150,7 @@ concat' ll =
     }
 
 --concatMap :: Foldable t => (a -> [b]) -> t a -> [b]
-concatMap' : (Int -> IntList) -> IntList -> IntList
+concatMap' : (Int -> List) -> List -> List
 concatMap' f l =
     case l of {
         Nil -> Nil,
@@ -161,10 +161,10 @@ concatMap' f l =
 -- Note: last (scanl f z xs) == foldl f z xs.
 
 --scanl :: (b -> a -> b) -> b -> [a] -> [b]
-scanl' : (Int -> Int -> Int) -> Int -> IntList -> IntList
+scanl' : (Int -> Int -> Int) -> Int -> List -> List
 scanl' f acc l = Cons acc (scan' f acc l)
 
-scan' : (Int -> Int -> Int) -> Int -> IntList -> IntList
+scan' : (Int -> Int -> Int) -> Int -> List -> List
 scan' f acc l = 
     case l of {
         Nil -> Nil,
@@ -172,7 +172,7 @@ scan' f acc l =
     }
 
 --scanl1 :: (a -> a -> a) -> [a] -> [a]
-scanl1' : (Int -> Int -> Int) -> IntList -> IntList
+scanl1' : (Int -> Int -> Int) -> List -> List
 scanl1' f l =
     case l of {
         Nil -> Nil,
@@ -180,36 +180,36 @@ scanl1' f l =
     }
 
 --scanr :: (a -> b -> b) -> b -> [a] -> [b]
-scanr' : (Int -> Int -> Int) -> Int -> IntList -> IntList
+scanr' : (Int -> Int -> Int) -> Int -> List -> List
 scanr' f acc l = reverse' (scanl' f acc (reverse' l))
 
 --scanr1 :: (a -> a -> a) -> [a] -> [a]
-scanr1' : (Int -> Int -> Int) -> IntList -> IntList
+scanr1' : (Int -> Int -> Int) -> List -> List
 scanr1' f l = reverse' (scanl1' f (reverse' l))
 
 
 -- INFINITE LOOPS --
 
 --iterate :: (a -> a) -> a -> [a]
-iterate' : (Int -> Int) -> Int -> IntList
+iterate' : (Int -> Int) -> Int -> List
 iterate' f x = Cons (f x) (iterate' f (f x))
 
 --repeat :: a -> [a]
-repeat' : Int -> IntList
+repeat' : Int -> List
 repeat' x = iterate' (\x : Int -> x) x
 
 --replicate :: Int -> a -> [a]
-replicate' : Int -> Int -> IntList
+replicate' : Int -> Int -> List
 replicate' n x = if n == 0 then Nil else Cons x (replicate' (n-1) x)
 
 --cycle :: [a] -> [a]
-cycle' : IntList -> IntList
+cycle' : List -> List
 cycle' l = cycle' (plusplus l l)
 
 --------------------
 
 --take :: Int -> [a] -> [a]
-take' : Int -> IntList -> IntList
+take' : Int -> List -> List
 take' i l =
     case l of {
         Nil -> Nil,
@@ -220,7 +220,7 @@ take' i l =
     }
 
 --drop :: Int -> [a] -> [a]
-drop' : Int -> IntList -> IntList
+drop' : Int -> List -> List
 drop' i l =
     case l of {
         Nil -> Nil,
@@ -230,14 +230,14 @@ drop' i l =
                 else drop' (i-1) rest
     }
 
-data ILTuple = ILT IntList IntList
+data ILTuple = ILT List List
 
 --splitAt :: Int -> [a] -> ([a], [a])
-splitAt' : Int -> IntList -> ILTuple
+splitAt' : Int -> List -> ILTuple
 splitAt' n l = ILT (take' n l) (drop' n l)
 
 --takeWhile :: (a -> Bool) -> [a] -> [a]
-takeWhile' : (Int -> Bool) -> IntList -> IntList
+takeWhile' : (Int -> Bool) -> List -> List
 takeWhile' f l =
     case l of {
         Nil -> Nil,
@@ -248,7 +248,7 @@ takeWhile' f l =
     }
 
 --dropWhile :: (a -> Bool) -> [a] -> [a]
-dropWhile' : (Int -> Bool) -> IntList -> IntList
+dropWhile' : (Int -> Bool) -> List -> List
 dropWhile' f l =
     case l of {
         Nil -> Nil,
@@ -259,15 +259,15 @@ dropWhile' f l =
     }
 
 --span :: (a -> Bool) -> [a] -> ([a], [a])
-span' : (Int -> Bool) -> IntList -> ILTuple
+span' : (Int -> Bool) -> List -> ILTuple
 span' f l = ILT (takeWhile' f l) (dropWhile' f l)
 
 --break :: (a -> Bool) -> [a] -> ([a], [a])
-break' : (Int -> Bool) -> IntList -> ILTuple
+break' : (Int -> Bool) -> List -> ILTuple
 break' f l = span' (\x : Int -> not (f x)) l
 
 --notElem :: (Foldable t, Eq a) => a -> t a -> Bool
-notElem' : Int -> IntList -> Bool
+notElem' : Int -> List -> Bool
 notElem' x l = 
     case l of {
         Nil -> True,
@@ -281,7 +281,7 @@ data ITuple = IT Int Int
 data ITCons = ITNil | ITL ITuple ITCons
 
 --lookup :: Eq a => a -> [(a, b)] -> Maybe b
-lookup' : Int -> ITCons -> MaybeInt
+lookup' : Int -> ITCons -> Maybe
 lookup' x tl =
     case tl of {
         ITNil -> Nothing,
@@ -295,7 +295,7 @@ lookup' x tl =
     }
 
 --zip :: [a] -> [b] -> [(a, b)]
-zip' : IntList -> IntList -> ITCons
+zip' : List -> List -> ITCons
 zip' l1 l2 =
     case l1 of {
         Nil -> ITNil,
@@ -310,7 +310,7 @@ data ITuple3 = IT3 Int Int Int
 data IT3Cons = IT3Nil | IT3L ITuple3 IT3Cons
 
 --zip3 :: [a] -> [b] -> [c] -> [(a, b, c)]
-zip3' : IntList -> IntList -> IntList -> IT3Cons
+zip3' : List -> List -> List -> IT3Cons
 zip3' l1 l2 l3 =
     case l1 of {
         Nil -> IT3Nil,
@@ -327,7 +327,7 @@ zip3' l1 l2 l3 =
 
 
 --zipWith :: (a -> b -> c) -> [a] -> [b] -> [c]
-zipWith' : (Int -> Int -> Int) -> IntList -> IntList -> IntList
+zipWith' : (Int -> Int -> Int) -> List -> List -> List
 zipWith' f l1 l2 =
     case l1 of {
         Nil -> Nil,
@@ -339,7 +339,7 @@ zipWith' f l1 l2 =
     }
 
 --zipWith3 :: (a -> b -> c -> d) -> [a] -> [b] -> [c] -> [d]
-zipWith3' : (Int -> Int -> Int -> Int) -> IntList -> IntList -> IntList -> IntList
+zipWith3' : (Int -> Int -> Int -> Int) -> List -> List -> List -> List
 zipWith3' f l1 l2 l3=
     case l1 of {
         Nil -> Nil,
@@ -358,7 +358,7 @@ zipWith3' f l1 l2 l3=
 unzip' : ITCons -> ILTuple
 unzip' l = ILT (unzipA l) (unzipB l)
 
-unzipA : ITCons -> IntList
+unzipA : ITCons -> List
 unzipA tl =
     case tl of {
         ITNil -> Nil,
@@ -368,7 +368,7 @@ unzipA tl =
             }
     }
 
-unzipB : ITCons -> IntList
+unzipB : ITCons -> List
 unzipB tl =
     case tl of {
         ITNil -> Nil,
@@ -378,13 +378,13 @@ unzipB tl =
             }
     }
 
-data IL3Tuple = IL3T IntList IntList IntList
+data IL3Tuple = IL3T List List List
 
 --unzip3 :: [(a, b, c)] -> ([a], [b], [c])
 unzip3' : IT3Cons -> IL3Tuple
 unzip3' l = IL3T (unzipA' l) (unzipB' l) (unzipC' l)
 
-unzipA' : IT3Cons -> IntList
+unzipA' : IT3Cons -> List
 unzipA' tl =
     case tl of {
         IT3Nil -> Nil,
@@ -394,7 +394,7 @@ unzipA' tl =
             }
     }
 
-unzipB' : IT3Cons -> IntList
+unzipB' : IT3Cons -> List
 unzipB' tl =
     case tl of {
         IT3Nil -> Nil,
@@ -404,7 +404,7 @@ unzipB' tl =
             }
     }
 
-unzipC' : IT3Cons -> IntList
+unzipC' : IT3Cons -> List
 unzipC' tl =
     case tl of {
         IT3Nil -> Nil,
@@ -498,10 +498,10 @@ unwords' sl =
             }
     }
 
-list1 : IntList
+list1 : List
 list1 = makeNCons 10
 
-list2 : IntList
+list2 : List
 list2 = makeNCons 2
 
 main : Bool
@@ -645,17 +645,17 @@ main =
 
 -- Auxiliary methods for main testing
 
-equalMaybe : MaybeInt -> Int -> Bool
+equalMaybe : Maybe -> Int -> Bool
 equalMaybe x b =
     case x of {
         Nothing -> False,
         Just a -> a == b
     }
 
-isNothing : MaybeInt -> Bool
+isNothing : Maybe -> Bool
 isNothing n = case n of { Nothing -> True, Just _ -> False }
 
-equalL : IntList -> IntList -> Bool
+equalL : List -> List -> Bool
 equalL l1 l2 =
     case l1 of {
         Nil -> 
@@ -727,22 +727,22 @@ equalT3L l1 l2 =
             }
     }
 
-makeNCons : Int -> IntList
+makeNCons : Int -> List
 makeNCons n = if n == 0 then Nil else Cons n (makeNCons (n-1))
 
-fst' : ILTuple -> IntList
+fst' : ILTuple -> List
 fst' tuple = case tuple of { ILT first _ -> first}
 
-snd' : ILTuple -> IntList
+snd' : ILTuple -> List
 snd' tuple = case tuple of { ILT _ second -> second}
 
-fst'' : IL3Tuple -> IntList
+fst'' : IL3Tuple -> List
 fst'' tuple = case tuple of { IL3T first _ _-> first}
 
-snd'' : IL3Tuple -> IntList
+snd'' : IL3Tuple -> List
 snd'' tuple = case tuple of { IL3T _ second _ -> second}
 
-trd'' : IL3Tuple -> IntList
+trd'' : IL3Tuple -> List
 trd'' tuple = case tuple of { IL3T _ _ third -> third}
 
 equalStr : Str -> Str -> Bool
