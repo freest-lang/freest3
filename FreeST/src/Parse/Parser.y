@@ -21,6 +21,7 @@ import           Data.Maybe
 import qualified Data.Set as Set
 import           System.Directory
 import           System.FilePath
+import           Paths_FreeST ( getDataFileName )
 }
 
 %partial modname Module
@@ -519,16 +520,29 @@ parseAndImport initial = do
       | otherwise = do
           let fileToImport = replaceBaseName defModule curImport -<.> "fst"
           exists <- doesFileExist fileToImport
-          if exists then do
-            s' <- parseProgram (s {moduleName = Nothing, runOpts=defaultOpts{runFilePath=fileToImport}})
-            let modName = fromJust $ moduleName s'
-            if curImport /= modName then
-              pure $ s' {errors = errors s ++ [NameModuleMismatch defaultSpan{defModule} modName curImport]}
-            else
-              doImports defModule (Set.insert curImport imported) (toImport ++ Set.toList (imports s')) s'
+          if exists then
+            importModule s fileToImport curImport defModule imported toImport
+          else do
+            fileToImport <- getDataFileName $ curImport -<.> "fst"
+            isStdLib <- doesFileExist fileToImport
+            if isStdLib then
+              importModule s fileToImport curImport defModule imported toImport                
+            else 
+              pure $ s {errors = errors s ++ [ImportNotFound defaultSpan{defModule} curImport fileToImport]}
+
+    importModule :: FreestS -> FilePath -> FilePath -> FilePath -> Imports -> [FilePath] -> IO FreestS
+    importModule s fileToImport curImport defModule imported toImport = do
+      s' <- parseProgram (s {moduleName = Nothing, runOpts=defaultOpts{runFilePath=fileToImport}})
+      case moduleName s' of
+        Just modName -> 
+          if curImport /= modName then
+            pure $ s' {errors = errors s ++ [NameModuleMismatch defaultSpan{defModule} modName curImport]}
           else
-            pure $ s {errors = errors s ++ [ImportNotFound defaultSpan{defModule} curImport fileToImport]}
-        
+            doImports defModule (Set.insert curImport imported) (toImport ++ Set.toList (imports s')) s'
+        Nothing ->
+            pure $ s' {errors = errors s ++ [MissingModHeader defaultSpan{defModule} curImport]}
+            
+
 -- Error Handling
 parseError :: [Token] -> FreestStateT a
 parseError [] = lift . Left $ PrematureEndOfFile defaultSpan

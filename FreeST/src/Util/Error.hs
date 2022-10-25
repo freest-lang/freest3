@@ -52,6 +52,7 @@ data ErrorType =
   | ParseError Span String -- String should be Token (circular import)
   | NameModuleMismatch Span FilePath FilePath
   | ImportNotFound Span FilePath FilePath
+  | MissingModHeader Span FilePath
   -- ParseUtils
   | MultipleFieldDecl Span Span Variable
   | RedundantPMatch Span Variable
@@ -106,6 +107,7 @@ instance Located ErrorType where
   getSpan (ParseError        p _         ) = p
   getSpan (NameModuleMismatch p _ _      ) = p
   getSpan (ImportNotFound p _ _          ) = p
+  getSpan (MissingModHeader p _            ) = p
   getSpan (MultipleFieldDecl p _ _       ) = p
   getSpan (RedundantPMatch   p _         ) = p
   getSpan (DuplicateVar p _ _ _          ) = p
@@ -155,7 +157,7 @@ instance Message ErrorType where
    "\n\tbut got:   " ++ style red sty ts f
   msg (LexicalError _ tk) sty _ = "Lexical error on input " ++ red sty tk
   msg (PrematureEndOfFile _) _ _ =  "Parse error: Premature end of file"
-  msg (ParseError _ x) sty _ = "Parse error on input " ++ red sty (quote x)
+  msg (ParseError _ x) sty _ = "Parse error on input: " ++ red sty (quote x)
 
   msg (ImportNotFound _ m f) sty tops =
     "Could not find module " ++ style red sty tops (showModuleWithDots m) ++
@@ -163,6 +165,8 @@ instance Message ErrorType where
   msg (NameModuleMismatch _ m f) sty tops =
     "File name does not match the module name.\n    Module name: " ++
     style red sty tops (showModuleWithDots m) ++ "\n    Filename:    " ++ style red sty tops (f -<.> "fst")
+  msg (MissingModHeader _ f) sty tops =
+    "File " ++ style red sty tops (f -<.> "fst") ++ " is missing the module header."
   msg (MultipleFieldDecl sp1 sp2 x) sty ts =
     "Multiple declarations of field " ++ style red sty ts x ++
     " in a choice type.\n\tDeclared at " ++ show sp1 ++ " and " ++ show sp2
