@@ -1,8 +1,8 @@
 -- TEST ERROR MESSAGES
 
 type Value = Int
-type Triple = (!Int, (Value, Value))
-type Pair = (!Int, Value)
+type Triple : 1T = (!Int, (Value, Value))
+type Pair : 1T = (!Int, Value)
 
 pairToValue : Pair -> Value
 pairToValue p =

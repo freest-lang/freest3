@@ -1,4 +1,4 @@
 
 data T = A | B
 
-type C = &{A: Skip, B: Skip}
+type C : 1S = &{A: Skip, B: Skip}

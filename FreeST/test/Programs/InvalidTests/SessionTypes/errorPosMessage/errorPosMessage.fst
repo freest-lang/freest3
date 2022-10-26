@@ -7,7 +7,7 @@ main =
   close c;
   x
 
-type F = !Int;End
+type F : 1S = !Int;End
 
 f : F -> ()
 f c = send c 4 |> close
