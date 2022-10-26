@@ -53,7 +53,6 @@ length Nil = 0
 length (Cons _ xs) = 1 + length xs
 
 --(!!) :: [a] -> Int -> a
--- TODO: Fix
 {-
 >>> ['a', 'b', 'c'] !! 0
 'a'
@@ -64,15 +63,11 @@ length (Cons _ xs) = 1 + length xs
 >>> ['a', 'b', 'c'] !! (-1)
 *** Exception: Prelude.!!: negative index
 -}
-elemAt : List -> Int -> Maybe
-elemAt l i = 
-    case l of {
-        Nil -> Nothing,
-        Cons x xs' ->
-            if i == 0
-                then Just x
-                else elemAt xs' (i-1)
-    }
+elemAt : List -> Int -> Int
+elemAt Nil         n | n < 0     = error @Int "Exception: Prelude.elemAt: negative index"
+                     | otherwise = error @Int "Exception: Prelude.elemAt: index too large"
+elemAt (Cons x xs) n | n == 0    = x
+                     | otherwise = elemAt xs (n - 1)
 
 --reverse :: [a] -> [a]
 reverse : List -> List
