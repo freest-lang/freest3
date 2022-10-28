@@ -1,5 +1,2 @@
--- IntListChan cannot be SU for it is a choice (which is SL)
+-- IntListChan cannot be *S for it is a choice whose components are not all *S
 type IntListChan : *S = +{Nil: Skip, Cons: !Int ; IntListChan}
-
-main : Int
-main = 5

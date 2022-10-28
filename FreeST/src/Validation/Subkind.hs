@@ -46,12 +46,16 @@ class Join t where
   join :: t -> t -> t
 
 instance Join K.Multiplicity where
-  join K.Un K.Un = K.Un
-  join _    _    = K.Lin
+  join K.Lin K.Lin = K.Lin
+  join _     _     = K.Un
+  -- join K.Un K.Un = K.Un
+  -- join _    _    = K.Lin
 
 instance Join K.Basic where
-  join K.Session K.Session = K.Session
-  join _         _         = K.Top
+  join K.Top K.Top = K.Top
+  join _         _         = K.Session
+  -- join K.Session K.Session = K.Session
+  -- join _         _         = K.Top
 
 instance Join K.Kind where
   join (K.Kind span m1 b1) (K.Kind _ m2 b2) = K.Kind span (join m1 m2) (join b1 b2)

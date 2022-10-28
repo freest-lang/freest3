@@ -67,14 +67,14 @@ synthetise' s kEnv (T.Almanac p T.Variant m) = do
   let K.Kind _ n _ = foldr1 join ks
   return $ K.Kind p n K.Top
 -- Shared session types
-synthetise' s kEnv (T.Rec p1 (Bind _ a k (T.Semi p2 (T.Message p3 pol t) (T.Var p4 tVar))))
-  | K.isUn k && a == tVar = do
-    void $ checkAgainstSession' s kEnv (T.Message p3 pol t)
-    -- void $ checkAgainstSession' s (Map.insert a k kEnv) (T.Semi p2 (T.Message p3 pol t) (T.Var p4 tVar))
-    return $ K.us p1
-synthetise' _ _ (T.Rec p (Bind _ a k (T.Almanac _ (T.Choice _) m)))
-  | K.isUn k && all (\case {(T.Var _ a') -> a == a' ; _ -> False }) m = do
-    return $ K.us p
+-- synthetise' s kEnv (T.Rec p1 (Bind _ a k (T.Semi p2 (T.Message p3 pol t) (T.Var p4 tVar))))
+--   | K.isUn k && a == tVar = do
+--     void $ checkAgainstSession' s kEnv (T.Message p3 pol t)
+--     -- void $ checkAgainstSession' s (Map.insert a k kEnv) (T.Semi p2 (T.Message p3 pol t) (T.Var p4 tVar))
+--     return $ K.us p1
+-- synthetise' _ _ (T.Rec p (Bind _ a k (T.Almanac _ (T.Choice _) m)))
+--   | K.isUn k && all (\case {(T.Var _ a') -> a == a' ; _ -> False }) m = do
+--     return $ K.us p
 -- Session types
 synthetise' _ _    (T.Skip p    ) = return $ K.us p
 synthetise' _ _    (T.End p     ) = return $ K.ls p
@@ -83,8 +83,11 @@ synthetise' s kEnv (T.Semi p t u) = do
   (K.Kind _ mu _) <- checkAgainstSession' s kEnv u
   return $ K.Kind p (join mt mu) K.Session
 synthetise' s kEnv (T.Message p _ t) = checkAgainst' s kEnv (K.lt p) t $> K.ls p -- HO CFST
-synthetise' s kEnv (T.Almanac p (T.Choice _) m) =
-  tMapM_ (checkAgainst' s kEnv (K.ls p)) m $> K.ls p
+synthetise' s kEnv (T.Almanac p (T.Choice _) m) = do
+  ks <- tMapM (synthetise' s kEnv) m
+  let K.Kind _ n _ = foldr1 join ks
+  return $ K.Kind p n K.Session
+  -- tMapM_ (checkAgainst' s kEnv (K.ls p)) m $> K.ls p
 -- Session or functional
 synthetise' s kEnv (T.Rec _ (Bind _ a k t)) =
   checkContractive s a t >> checkAgainst' s (Map.insert a k kEnv) k t $> k
