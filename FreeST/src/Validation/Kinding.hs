@@ -63,6 +63,14 @@ synthetise' s kEnv (T.Pair p t u) = do
   return $ K.Kind p (join mt mu) K.Top
 synthetise' s kEnv (T.Almanac p T.Variant m) =
   synthetiseAlmanac s kEnv m p K.Top
+-- Shared session types
+synthetise' s kEnv (T.Rec p (Bind _ a (K.Kind _ K.Un K.Session) (T.Semi _ u@(T.Message _ _ t) (T.Var _ b))))
+  | a == b = do
+    void $ checkAgainstSession' s kEnv u
+    return $ K.us p
+synthetise' _ _ (T.Rec p (Bind _ a (K.Kind _ K.Un K.Session) (T.Almanac _ (T.Choice _) m)))
+  | all (\case {(T.Var _ b) -> a == b ; _ -> False }) m =
+    return $ K.us p
 -- Session types
 synthetise' _ _ (T.Skip   p) = return $ K.us p
 synthetise' _ _ (T.End    p) = return $ K.ls p
