@@ -46,14 +46,10 @@ class Join t where
   join :: t -> t -> t
 
 instance Join K.Multiplicity where
-  -- join K.Lin K.Lin = K.Lin
-  -- join _     _     = K.Un
   join K.Un K.Un = K.Un
   join _    _    = K.Lin
 
 instance Join K.Basic where
-  -- join K.Top K.Top = K.Top
-  -- join _         _         = K.Session
   join K.Session K.Session = K.Session
   join _         _         = K.Top
 
