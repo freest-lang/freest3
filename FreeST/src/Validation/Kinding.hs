@@ -61,23 +61,18 @@ synthetise' s kEnv (T.Pair p t u) = do
   (K.Kind _ mt _) <- synthetise' s kEnv t
   (K.Kind _ mu _) <- synthetise' s kEnv u
   return $ K.Kind p (join mt mu) K.Top
-synthetise' s kEnv (T.Almanac p T.Variant m) =
-  synthetiseAlmanac s kEnv m p K.Top
+synthetise' s kEnv (T.Almanac p T.Variant m) = do
+  ks <- tMapM (synthetise' s kEnv) m
+  let K.Kind _ n _ = foldr1 join ks
+  return $ K.Kind p n K.Session
 -- Shared session types
-synthetise' s kEnv (T.Rec p (Bind _ _ (K.Kind _ K.Un K.Session) (T.Semi _ t _))) = do
-  void $ checkAgainstSession' s kEnv t
-  return $ K.us p
-  -- No need to check a == b, for this is guaranteed at parsing time
--- synthetise' s kEnv (T.Rec p (Bind _ a (K.Kind _ K.Un K.Session) (T.Semi _ u@(T.Message _ _ t) (T.Var _ b))))
---   | a == b = do
---     void $ checkAgainstSession' s kEnv u
---     return $ K.us p
-synthetise' _ _ (T.Rec p (Bind _ _ (K.Kind _ K.Un K.Session) (T.Almanac _ _ _))) =
+synthetise' s kEnv (T.Rec p (Bind _ a (K.Kind _ K.Un K.Session) (T.Semi _ u@(T.Message _ _ t) (T.Var _ b))))
+  | a == b = do
+    void $ checkAgainstSession' s kEnv u
     return $ K.us p
-  -- No need to check a == b, for this is guaranteed at parsing time
--- synthetise' _ _ (T.Rec p (Bind _ a (K.Kind _ K.Un K.Session) (T.Almanac _ (T.Choice _) m)))
---   | all (\case {(T.Var _ b) -> a == b ; _ -> False }) m =
---     return $ K.us p
+synthetise' _ _ (T.Rec p (Bind _ a (K.Kind _ K.Un K.Session) (T.Almanac _ (T.Choice _) m)))
+  | all (\case {(T.Var _ b) -> a == b ; _ -> False }) m =
+    return $ K.us p
 -- Session types
 synthetise' _ _ (T.Skip   p) = return $ K.us p
 synthetise' _ _ (T.End    p) = return $ K.ls p
@@ -88,7 +83,7 @@ synthetise' s kEnv (T.Semi p t u) = do
 synthetise' s kEnv (T.Message p _ t) =
   checkAgainst' s kEnv (K.lt p) t $> K.ls p
 synthetise' s kEnv (T.Almanac p (T.Choice _) m) =
-  synthetiseAlmanac s kEnv m p K.Session
+  tMapM_ (checkAgainst' s kEnv (K.ls p)) m $> K.ls p
 -- Session or functional
 synthetise' s kEnv (T.Rec _ (Bind _ a k t)) =
   checkContractive s a t >> checkAgainst' s (Map.insert a k kEnv) k t $> k
@@ -105,12 +100,6 @@ synthetise' _ kEnv t@(T.CoVar p a) =
             (addError (CantMatchKinds p k (K.ls p) t)) $> K.ls p
     Nothing -> addError (TypeVarNotInScope p a) $> omission p
 synthetise' _ _ t@T.Dualof{} = internalError "Validation.Kinding.synthetise'" t
-
-synthetiseAlmanac :: K.PolyVars -> K.KindEnv -> T.TypeMap -> Span -> K.Basic -> FreestState K.Kind
-synthetiseAlmanac s kEnv m p b = do
-  ks <- tMapM (synthetise' s kEnv) m
-  let K.Kind _ n _ = foldr1 join ks
-  return $ K.Kind p n b
 
 -- Check the contractivity of a given type; issue an error if not
 checkContractive :: K.PolyVars -> Variable -> T.Type -> FreestState ()
