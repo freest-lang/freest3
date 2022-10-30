@@ -288,7 +288,7 @@ PatternSeq :: { [Pattern] }
   | Pattern PatternSeq {% checkDupVarPats ($1:$2) >> return ($1:$2) }
 
 PatternCase :: { Pattern }
-  : Constructor Pattern PatternSeq { E.PatCons $1 ($2:$3) }
+  : Constructor Pattern PatternSeq {% checkDupVarPats ($2:$3) >> return (E.PatCons $1 ($2:$3)) }
   | Pattern    { $1 }
 
 Pattern :: { Pattern }
