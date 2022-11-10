@@ -23,6 +23,12 @@ Int
 
 -- branch label set covariance (width)
 
+Skip 
+&{A: !Int, B: !Int}
+
+&{A: !Int, B: !Int}
+Skip 
+
 &{A: !Int, B: !Int}
 &{A: !Int}
 
@@ -48,6 +54,12 @@ Skip
 
 -- choice label set contravariance (width)
 
++{A: ?Int, B: ?Int}
+Skip 
+
+Skip 
++{A: ?Int, B: ?Int}
+
 +{A: ?Int}
 +{A: ?Int, B: ?Int}
 
@@ -60,10 +72,16 @@ Skip
 -- sequential composition covariance 
 
 &{A: ?Int, B: !Bool, C: Skip}; +{D: !Int;End}
-&{A: ?Int}                   ; +{D: !Int;End}
+&{A: ?Int}                   ; +{D: !Int;End}               
 
 &{A: ?Int}; +{D: !Int;End}
 &{A: ?Int}; +{D: !Int;End, E: Skip;!Bool}
+
++{D: !Int}; &{A: ?Int, B: !Bool, C: Skip}
++{D: !Int}; &{A: ?Int}    
+
+!Int; +{E: ?Int}; +{D: !Int}; &{A: ?Int, B: !Bool, C: Skip}
+!Int; +{E: ?Int}; +{D: !Int}; &{A: ?Int}    
 
 &{A: ?Int, B: !Bool, C: Skip}; +{D: !Int;End}
 &{A: ?Int}                   ; +{D: !Int;End, E: Skip;!Bool}
@@ -97,6 +115,19 @@ Skip
 Skip
 
 -- Arrow (contravariant on domain, covariant on range and multiplicity)
+
+Skip
+Int -> Int 
+
+Int -> Int 
+Skip 
+
+Skip
+Int 1-> Int 
+
+Int 1-> Int 
+Skip 
+
 
 +{A: !Int, B: !Int} -> +{A: !Int, B: !Int}
 +{A: !Int         } -> +{A: !Int         }

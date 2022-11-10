@@ -52,10 +52,11 @@ import qualified Syntax.Type     as T
 import qualified Syntax.Kind     as K           (Basic(..), Kind(..), Multiplicity)
 
 -- Terminal symbols are called labels
-data Label = FatTerm String 
-           | End 
+data Label = FatTerm String
            | Message T.Polarity     DataOrCont 
-           | Arrow   K.Multiplicity DomOrRng 
+           | LinArrow   DomOrRng
+           | UnArrow 
+           | ChoiceMarker T.View
            | Almanac K.Basic        T.View     Variable -- All this nesting may have an impact on performance...
            | Pair    FstOrSnd
            | Forall  K.Kind
@@ -107,16 +108,17 @@ insertProduction p x l w = Map.insertWith Map.union x (Map.singleton l w) p
 -- Showing a grammar
 instance Show Label where 
   show (FatTerm s) = s 
-  show End = "End" 
   show (Message p dc) = show p ++ show dc  
-  show (Arrow m dr) = show m ++ show dr  
-  show (Pair fs) = show "," ++ show fs  
+  show (LinArrow dr) = "1->"++ show dr  
+  show UnArrow = "*->"
+  show (Pair fs) = "," ++ show fs  
   show (Forall a) = "∀" ++ show a
   show (Var a) = a
   show (Almanac K.Top     T.Internal l) = "{}" ++ show l 
   show (Almanac K.Top     T.External l) = "<>" ++ show l 
   show (Almanac K.Session T.Internal l) = "+"  ++ show l 
   show (Almanac K.Session T.External l) = "&"  ++ show l
+  show (ChoiceMarker v) = show v ++ "_"
   
 instance Show DomOrRng where 
   show Domain = "d"

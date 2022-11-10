@@ -11,7 +11,7 @@ session types into a grammar, which is pruned. An expansion tree is computed aft
 through an alternation of expansion of children nodes and their simplification, using the
 reflexive, congruence, and BPA rules.
 -}
-{-# LANGUAGE TupleSections, LambdaCase, BlockArguments, ViewPatterns, OverloadedLists #-}
+{-# LANGUAGE TupleSections, LambdaCase, BlockArguments, FlexibleInstances #-}
 
 module Bisimulation.Bisimulation
   ( bisimilar
@@ -54,7 +54,7 @@ bisimilar t u = bisimilarGrm $ convertToGrammar [t, u]
 
 -- | Assumes a grammar without unreachable symbols
 bisimilarGrm :: Grammar -> Bool
-bisimilarGrm (Grammar [xs, ys] ps) = expand expandPair queue rules ps
+bisimilarGrm (Grammar [xs, ys] ps) = expand expandPairBisim queue rules ps
  where
   rules | allNormed ps = [reflex, congruence, bpa2, filtering]
         | otherwise    = [reflex, congruence, bpa1, bpa2, filtering]
@@ -65,7 +65,8 @@ subsimilar t u = subsimilarGrm $ convertToGrammar [t, u]
 
 -- | Assumes a grammar without unreachable symbols
 subsimilarGrm :: Grammar -> Bool
-subsimilarGrm g@(Grammar [xs, ys] ps) = expand expandPairSub queue rules ps
+subsimilarGrm g@(Grammar [xs, ys] ps) = -- trace (show g) 
+                                        expand expandPairSub queue rules ps
  where
   rules | allNormed ps = [reflex, congruence, bpa2] -- no filtering
         | otherwise    = [reflex, congruence, bpa1, bpa2] -- no filtering
@@ -126,52 +127,109 @@ expandNode pe ps = Set.foldr
   (Just Set.empty)
 
 -- | Regular pair expansion
-expandPair :: PairExpander
-expandPair ps (xs, ys) | Map.keysSet m1 == Map.keysSet m2 = Just $ match m1 m2
-                       | otherwise                        = Nothing
- where
-  m1 = transitions xs ps
-  m2 = transitions ys ps
+expandPairBisim :: PairExpander
+expandPairBisim = expandPairWDCC bisimPartition
+-- | Was previously...
+-- expandPair :: PairExpander
+-- expandPair ps (xs, ys) | Map.keysSet m1 == Map.keysSet m2 = Just $ match m1 m2
+--                        | otherwise                        = Nothing
+--  where
+--   m1 = transitions xs ps
+--   m2 = transitions ys ps
 
--- | Modified pair expansion, for subtyping.
--- Uses OverloadedLists for readability and explicit blocks for 
--- better formatting in patterns
 expandPairSub :: PairExpander
-expandPairSub ps (xs, ys) = case (m1, m2) of
-{ -- Output contravariance
-  ([d1@(Message T.Out Data, _), c1@(Message T.Out Continuation, _)]
-  ,[d2@(Message T.Out Data, _), c2@(Message T.Out Continuation, _)]
-  ) 
-  -> Just $ Set.map swap (match [d1] [d2]) `Set.union` match [c1] [c2]
-  -- Arrow contravariance/subtyping
-; ([d1@(Arrow m11 Domain, dxs), r1@(Arrow m12 Range, rxs)]
-  ,[d2@(Arrow m21 Domain, _  ), r2@(Arrow m22 Range, _  )]
-  )
-  | m11 == m12 && m21 == m22 && m11 SK.<: m21
-  -> let d1' = (Arrow (SK.join m11 m21) Domain, dxs)
-         r1' = (Arrow (SK.join m12 m22) Range , rxs) in
-     Just $ Set.union (Set.map swap (match [d1'] [d2]))
-                      (match [r1'] [r2])
-; (bimap Map.keysSet Map.keysSet -> (ls1, ls2))
-  |  ls1 == ls2
-  || isChoiceSet ls1 && isChoiceSet ls2 && ls2 `Set.isSubsetOf` ls1
-  || isBranchSet ls1 && isBranchSet ls2 && ls1 `Set.isSubsetOf` ls2 
-  -> Just $ match m1 m2
-; _ -> Nothing
-}
+expandPairSub = expandPairWDCC subtypingPartition
+
+-- | A partition of the set of labels according to their variance in width and depth
+data Partition a =
+  Partition {rr, lr, rl, ll :: a}
+
+-- | A partition of the set of labels specialized for subtyping context-free session types
+subtypingPartition :: Partition (Label -> Bool)
+subtypingPartition =
+  Partition
+  { rr= \case (Almanac K.Session T.Internal _) -> False  
+              (LinArrow Domain               ) -> False
+              UnArrow                          -> False
+              (Message T.Out Data            ) -> False
+              (ChoiceMarker T.External       ) -> False 
+              _                                -> True
+  , lr= \case (Almanac K.Session T.External _) -> False 
+              (LinArrow Domain               ) -> False
+              (Message T.Out Data            ) -> False
+              (ChoiceMarker T.Internal       ) -> False 
+              _                                -> True
+  , rl= \case (Message T.Out Data            ) -> True
+              (LinArrow Domain               ) -> True
+              _                                -> False
+  , ll= \case (Message T.Out Data            ) -> True
+              (LinArrow Domain               ) -> True
+              _                                -> False
+  }
+
+-- | A partition of the set of labels specialized for bisimulation 
+--   (all labels bivariant in width and covariant in depth)
+bisimPartition :: Partition (Label -> Bool)
+bisimPartition =
+  Partition
+  { rr= const True
+  , lr= const True
+  , rl= const False
+  , ll= const False
+  }
+
+-- Pair expansion for width-depth covariant-contravariant simulation
+expandPairWDCC :: Partition (Label -> Bool) -> PairExpander
+expandPairWDCC p ps (xs, ys) =
+  -- trace ("\nnode: "++show (xs,ys))
+  let n' = Set.unions <$> sequence
+            -- Covariant on width and depth
+            [ if -- trace ("rr: \n  "++show (rr m1)++"\n  "++show (rr m2)) 
+                 Map.keysSet (rr m1) `Set.isSubsetOf` Map.keysSet (rr m2)
+                then -- trace "Success" 
+                     Just (match (rr m1) (rr m2))
+                else -- trace "Failure" 
+                     Nothing
+            -- Contravariant on width, covariant on depth
+            , if -- trace ("lr: \n  "++show (lr m1)++"\n  "++show (lr m2)) 
+                 Map.keysSet (lr m2) `Set.isSubsetOf` Map.keysSet (lr m1)
+                then -- trace "Success" 
+                     Just (match (lr m1) (lr m2))
+                else -- trace "Failure" 
+                     Nothing
+            -- Covariant on width, contravariant on depth
+            , if -- trace ("rl: \n  "++show (rl m1)++"\n  "++show (rl m2))
+                 Map.keysSet (rl m1) `Set.isSubsetOf` Map.keysSet (rl m2)
+                then -- trace "Success"  
+                     Just (Set.map swap $ match (rl m1) (rl m2))
+                else -- trace "Failure"  
+                     Nothing
+            -- Contravariant on width and depth
+            , if -- trace ("ll: \n  "++show (ll m1)++"\n  "++show (ll m2)) 
+                 Map.keysSet (ll m2) `Set.isSubsetOf` Map.keysSet (ll m1)
+                then -- trace "Success"  
+                     Just (Set.map swap $ match (ll m1) (ll m2))
+                else -- trace "Failure"  
+                     Nothing
+            ] in 
+  -- trace ("expanded node: "++show n') 
+  n' 
   where
-    m1 = transitions xs ps
-    m2 = transitions ys ps
-    isChoiceSet s = not (Set.null s) && all (\case Almanac K.Session T.Internal _ -> True; _ -> False) s
-    isBranchSet s = not (Set.null s) && all (\case Almanac K.Session T.External _ -> True; _ -> False) s
+    m1 = partition p $ transitions xs ps
+    m2 = partition p $ transitions ys ps
 
-match :: Transitions -> Transitions -> Node
-match m1 m2 =
-  Set.fromList $ Map.elems $ Map.intersectionWith (,) m1 m2
+    -- | Partition the transitions according to the signature of the simulation
+    partition :: Partition (Label -> Bool) -> Transitions -> Partition Transitions
+    partition p ts =
+      let trr = Map.filterWithKey (\k _ -> rr p k) ts
+          tlr = Map.filterWithKey (\k _ -> lr p k) ts
+          trl = Map.filterWithKey (\k _ -> rl p k) ts
+          tll = Map.filterWithKey (\k _ -> ll p k) ts in 
+      Partition trr tlr trl tll
 
--- match :: Transitions -> Transitions -> Node
--- match m1 m2 =
---   Map.foldrWithKey (\l xs n -> Set.insert (xs, m2 Map.! l) n) Set.empty m1
+    -- | Match transitions with the same label
+    match :: Transitions -> Transitions -> Node
+    match m1 m2 = Set.fromList $ Map.elems $ Map.intersectionWith (,) m1 m2
 
 -- The fixed point of branch wrt the application of node transformations
 findFixedPoint

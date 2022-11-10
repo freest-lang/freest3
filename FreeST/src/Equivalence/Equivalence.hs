@@ -15,10 +15,12 @@ Portability :  portable | non-portable (<reason>)
 
 module Equivalence.Equivalence
   ( Equivalence(..)
+  , Subsort(..)
   )
 where
 
-import           Bisimulation.Bisimulation ( subsimilar )
+import           Equivalence.Subtyping ((<:))
+import           Bisimulation.Bisimulation ( bisimilar, subsimilar )
 import           Syntax.Base
 import qualified Syntax.Kind as K
 import           Syntax.Program
@@ -28,7 +30,7 @@ import           Util.FreestState              ( initialState
                                                 , errors
                                                 )
 import           Validation.Kinding ( synthetise )
-import           Validation.Subkind ( (<:) )
+import           Validation.Subkind
 import qualified Validation.Substitution as Subs
                                                 ( unfold
                                                 , subs
@@ -37,18 +39,15 @@ import qualified Validation.Substitution as Subs
 import           Control.Monad.State ( runState )
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import           Equivalence.Subtyping -- instance Subsort Type (<:)
-
 
 class Equivalence t where
   equivalent :: K.KindEnv -> t -> t -> Bool
 
 type Visited = Set.Set (Span, Span)
 
--- A co-inductive definition for functional types. A bisimulation
--- based definition for session types
 instance Equivalence T.Type where
-  equivalent _ t u = t <: u && u <: t 
+  equivalent _ = bisimilar 
+  -- equivalent _ = bisimilar
   {-
   equivalent = equiv Set.empty
    where

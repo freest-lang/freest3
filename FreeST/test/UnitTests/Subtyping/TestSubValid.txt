@@ -156,6 +156,9 @@ Skip;Skip;Skip
 +{A: !Int         } 1-> +{A: !Int, B: !Int}
 +{A: !Int, B: !Int} 1-> +{A: !Int         }
 
+Int -> Int 
+Int 1-> Int 
+
 +{A: !Int} -> +{B: ?Bool}
 +{A: !Int} 1-> +{B: ?Bool}
 

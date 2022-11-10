@@ -22,6 +22,7 @@ where
 
 
 import           Equivalence.Equivalence
+import           Equivalence.Subtyping 
 import           Parse.Unparser () -- debug
 import           Syntax.Base
 import qualified Syntax.Expression as E
@@ -42,7 +43,6 @@ import           Control.Monad.State            ( when
 import           Data.Functor
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import Validation.Subkind ((<:))
 
 -- SYNTHESISING A TYPE
 

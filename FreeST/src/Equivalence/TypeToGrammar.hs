@@ -61,7 +61,9 @@ toGrammar' :: T.Type -> TransState Word
 toGrammar' (T.Arrow _ p t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
-  getLHS $ Map.fromList [(Arrow (typeToKindMult p) Domain, xs), (Arrow (typeToKindMult p) Range, ys)]
+  getLHS $ Map.fromList $
+    [(LinArrow Domain, xs), (LinArrow Range, ys)]
+    ++ [(UnArrow, []) | p == Un]
 toGrammar' (T.Pair _ t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
@@ -82,9 +84,9 @@ toGrammar' (T.Message _ p t) = do
 -- toGrammar' (T.Choice _ v m) = do
 --   ms <- tMapM toGrammar m
 --   getLHS $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
-toGrammar' (T.Almanac _ (T.Choice v) m) = do
+toGrammar' (T.Almanac p (T.Choice v) m) = do
   ms <- tMapM toGrammar m
-  getLHS $ Map.mapKeys (Almanac K.Session v) ms
+  getLHS $ Map.insert (ChoiceMarker v) [bottom] $ Map.mapKeys (Almanac K.Session v) ms
 -- Polymorphism and recursive types
 toGrammar' (T.Forall _ (Bind _ _ k t)) = do
   xs <- toGrammar' t
@@ -106,12 +108,12 @@ fatTerminal t@T.Bool{}            = Just t
 fatTerminal t@T.String{}          = Just t
 fatTerminal t@T.Unit{}            = Just t
 -- fatTerminal (T.Arrow p m t u)     = Just (T.Arrow p m) <*> fatTerminal t <*> fatTerminal u
--- fatTerminal (T.Pair p t u)        = Just (T.Pair p) <*> fatTerminal t <*> fatTerminal u
--- fatTerminal (T.Almanac p T.Variant m) = Just (T.Almanac p T.Variant) <*> mapM fatTerminal m
+fatTerminal (T.Pair p t u)        = Just (T.Pair p) <*> fatTerminal t <*> fatTerminal u
+fatTerminal (T.Almanac p T.Variant m) = Just (T.Almanac p T.Variant) <*> mapM fatTerminal m
 -- -- Session Types
--- fatTerminal (T.Semi p t u) | terminated t = changePos p <$> fatTerminal u
---                            | terminated u = changePos p <$> fatTerminal t
--- fatTerminal (T.Message p pol t)   = Just (T.Message p pol) <*> fatTerminal t
+fatTerminal (T.Semi p t u) | terminated t = changePos p <$> fatTerminal u
+                           | terminated u = changePos p <$> fatTerminal t
+fatTerminal (T.Message p pol t)   = Just (T.Message p pol) <*> fatTerminal t
 -- -- These two would preclude distributivity:
 -- -- fatTerminal (T.Semi p t u)      = Just (T.Semi p) <*> fatTerminal t <*> fatTerminal u
 -- -- fatTerminal (T.Choice p pol m)  = Just (T.Choice p pol) <*> mapM fatTerminal m

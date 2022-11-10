@@ -13,7 +13,10 @@ Portability :  portable | non-portable (<reason>)
 
 {-# LANGUAGE FlexibleInstances #-}
 
-module Equivalence.Subtyping where
+module Equivalence.Subtyping
+ ( Subsort(..)
+ )
+ where
 
 import           Bisimulation.Bisimulation ( subsimilar )
 import           Validation.Subkind ( (<:), Subsort )
