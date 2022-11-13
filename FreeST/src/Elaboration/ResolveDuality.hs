@@ -74,15 +74,6 @@ solveType v (T.Forall p (Bind p' a k t)) =
   T.Forall p . Bind p' a k <$> solveType v t
 solveType v (  T.Rec    p b) = T.Rec p <$> solveBind solveType v b
 -- Dualof
--- solveType vs v d@(T.Dualof p var@(T.Var p' x)) = case v Map.!? x of
---   Just t -> do
---     addDualof d
---     fv <- freshTVar "#X" p'
---     let b = Bind p' fv (K.ls p') (changePos p (subs (T.Var p' fv) x t))
---     T.Rec p <$> solveBind solveDual vs (x `Map.delete` v) b
---   Nothing -> addDualof d >> solveDual vs v (changePos p var)
--- solveType vs v d@(T.Dualof p t) =
---   addDualof d >> solveDual vs v (changePos p t)
 solveType v d@(T.Dualof p t) = addDualof d >> solveDual v (changePos p t)
 
 -- Var, Int, Char, Bool, Unit, Skip, End
@@ -100,13 +91,13 @@ solveDual v (T.Almanac p (T.Choice pol) m) =
 solveDual v t@(T.Rec p b@(Bind _ a _ _)) = do
   u <- solveDBind solveDual v b
   return $ cosubs t a (T.Rec p u)
-solveDual v t@(T.Var p a)
+solveDual v t@(T.Var p a) -- = pure $ T.Dualof p $ T.Var p a
   -- A recursion variable
   | a `Set.member` v = pure t
-  | otherwise        = pure $ T.CoVar p a
+  | otherwise        = pure $ T.Dualof p $ T.Var p a
 -- Dualof
+solveDual v (T.Dualof _ (T.Var p a)) = pure $ T.Var p a
 solveDual v d@(T.Dualof p t) = addDualof d >> solveType v (changePos p t)
-solveDual v (T.CoVar p a) = pure $ T.Var p a
 -- Non session-types
 solveDual _ t = addError (DualOfNonSession (getSpan t) t) $> t
 
@@ -123,7 +114,7 @@ solveDBind
   -> Bind a T.Type
   -> FreestState (Bind a T.Type)
 solveDBind solve v (Bind p a k t) =
-  Bind p a k <$> solve (Set.insert a v) (subs (T.CoVar p a) a t)
+  Bind p a k <$> solve (Set.insert a v) (subs (T.Dualof p $ T.Var p a) a t)
 
 -- |Change position of a given type with a given position
 changePos :: Span -> T.Type -> T.Type
@@ -140,5 +131,5 @@ changePos p (T.Message _ pol b) = T.Message p pol b
 changePos p (T.Rec    _ xs    ) = T.Rec p xs
 changePos p (T.Forall _ xs    ) = T.Forall p xs
 changePos p (T.Var    _ x     ) = T.Var p x
+changePos p (T.Dualof _ (T.Var _ x)) = T.Dualof p $ T.Var p x
 changePos p (T.Dualof _ t     ) = T.Dualof p t
-changePos p (T.CoVar _ t      ) = T.CoVar p t

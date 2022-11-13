@@ -23,12 +23,10 @@ instance Duality T.Type where
  -- dualof (T.Choice p pol m) = T.Choice p (dual pol) (Map.map dualof m)
   dualof (T.Almanac p (T.Choice v) m) =
     T.Almanac p (T.Choice $ dualof v) (Map.map dualof m)
-  dualof (T.Rec p (Bind p' a k t)) =
-    T.Rec p (Bind p' a k (dualof (subs (T.CoVar p' a) a t)))
-  -- T.Rec p (dualBind  b)
-  --   where dualBind (K.Bind p a k t) = K.Bind p a k (dualof t)
-  dualof (T.Var p x) = T.CoVar p x
-  dualof (T.CoVar p x) = T.Var p x
+  dualof u@(T.Rec p (Bind p' a k t)) =
+    T.Rec p (Bind p' a k (dualof (subs (T.Dualof p' $ T.Var p' a) a t)))
+  dualof (T.Var p x)              = T.Dualof p $ T.Var p x
+  dualof (T.Dualof _ (T.Var p x)) = T.Var p x
   dualof (T.Dualof _ t) = dualof t
   -- Non session-types, Skip & End
   dualof t = t

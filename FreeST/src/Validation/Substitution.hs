@@ -50,10 +50,10 @@ instance Subs T.Type Variable T.Type where
   subs t x u@(T.Var _ y)
     | y == x    = t
     | otherwise = u
-  subs (T.Var _ t) x u@(T.CoVar p y)
-    | y == x    = T.CoVar p t
+  subs (T.Var _ t) x u@(T.Dualof p (T.Var p' y))
+    | y == x    = T.Dualof p $ T.Var p' t
     | otherwise = u
-  subs t x u@(T.CoVar _ y)
+  subs t x u@(T.Dualof p (T.Var p' y))
     | y == x    = dualof t
     | otherwise = u
   subs _ _ t            = t
@@ -80,13 +80,14 @@ instance Cosubs T.Type where
     -- Polymorphism and recursion
   cosubs t x (T.Rec    p b      ) = T.Rec p (cosubs t x b)
   cosubs t x (T.Forall p b      ) = T.Forall p (cosubs t x b)
-  cosubs t x u@(T.CoVar _ y) | y == x = t
-                             | otherwise = u
+  cosubs t x u@(T.Dualof _ (T.Var _ y))
+    | y == x = t
+    | otherwise = u
   -- cosubs (T.Var _ t) x u@(T.CoVar p y) | y == x    = T.CoVar p t
   --                                    | otherwise = u
   -- cosubs t x u@(T.Var _ y) | y == x    = dualof t
   --                          | otherwise = u
-  cosubs _ _ t@T.Dualof{} = internalError "Validation.Substitution.cosubs" t
+--  cosubs _ _ t@T.Dualof{} = internalError "Validation.Substitution.cosubs" t
   cosubs _ _ t            = t
 
 instance Cosubs t => Cosubs (Bind K.Kind t) where
@@ -114,12 +115,12 @@ instance Duality T.Type where
  -- dualof (T.Choice p pol m) = T.Choice p (dual pol) (Map.map dualof m)
   dualof (T.Almanac p (T.Choice v) m) =
     T.Almanac p (T.Choice $ dualof v) (Map.map dualof m)
-  dualof (T.Rec p (Bind p' a k t)) =
-    T.Rec p (Bind p' a k (dualof (subs (T.CoVar p' a) a t)))
+  dualof u@(T.Rec p (Bind p' a k t)) =
+   T.Rec p (Bind p' a k (dualof (subs (T.Dualof p' $ T.Var p' a) a t)))
   -- T.Rec p (dualBind  b)
   --   where dualBind (K.Bind p a k t) = K.Bind p a k (dualof t)
-  dualof (T.Var p x) = T.CoVar p x
-  dualof (T.CoVar p x) = T.Var p x
+  dualof (T.Var p x) = T.Dualof p $ T.Var p x
+  dualof (T.Dualof _ (T.Var p x)) = T.Var p x
   dualof (T.Dualof _ t) = dualof t
   -- Non session-types & Skip
   dualof t = t
