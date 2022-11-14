@@ -112,6 +112,10 @@ import           Paths_FreeST ( getDataFileName )
 -- %nonassoc '()'
 %right in else match case
 %nonassoc new
+%right '.'       -- ∀ a:k . T and μ a:k . T
+%right '=>' '->' '1->' ARROW -- λλ a:k => e,  x:T -> e, λ x:T 1-> e, T -> T and T 1-> T
+%right ';'       -- T;T and e;e
+%left '@'
 %left '||'       -- disjunction
 %left '&&'       -- conjunction
 %nonassoc CMP    -- comparison (relational and equality)
@@ -119,10 +123,6 @@ import           Paths_FreeST ( getDataFileName )
 %left '*' '/'    -- multiplicative
 %right '^'        -- power
 %left NEG not    -- unary
-%right '.'       -- ∀ a:k . T and μ a:k . T
-%right '=>' '->' '1->' ARROW -- λλ a:k => e,  x:T -> e, λ x:T 1-> e, T -> T and T 1-> T
-%left '@'
-%right ';'       -- T;T and e;e
 %right MSG       -- !T and ?T
 %right dualof
 %nonassoc ProgVarWildTBind
