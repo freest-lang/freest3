@@ -47,7 +47,7 @@ client2 w = w |> select Not
 
 startClient : (BoolClient -> Bool) -> Bool
 startClient client =
-  let (w,r) = new BoolClient in
+  let (w,r) = new @BoolClient () in
   fork @() (\_:()1-> boolServer r);
   client w
 

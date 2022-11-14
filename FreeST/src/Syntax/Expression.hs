@@ -50,8 +50,6 @@ data Exp =
   | Cond Span Exp Exp Exp
   -- Let
   | UnLet Span Variable Exp Exp -- TODO: Derived; eliminate? If yes, which is type for the ProgVar? (cf. Abs)
-  -- Session types
-  | New Span T.Type T.Type
 
 instance Default (Bind T.Type Exp) where
   omission p = Bind p (omission p) (T.Unit p) (Unit p)
@@ -77,6 +75,5 @@ instance Located Exp where
   getSpan (Cond p _ _ _       ) = p
   getSpan (Pair p _ _         ) = p
   getSpan (BinLet p _ _ _ _   ) = p
-  getSpan (New p _ _          ) = p
   getSpan (Case  p _ _        ) = p
   getSpan (CasePat  p _ _     ) = p

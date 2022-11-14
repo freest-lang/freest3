@@ -92,7 +92,7 @@ writeLeftTreeOnly c =
 
 main : Tree
 main =
-  let (w, r) = new Stream in
+  let (w, r) = new @Stream () in
 --  (fork@Skip $ sendTree aTree w);
 --  (fork@Skip $ writeNothing w);       -- 'P'
 --  (fork@Skip $ writeTooMuch w);     -- 'X'

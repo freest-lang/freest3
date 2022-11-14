@@ -20,7 +20,7 @@ sendList c (Cons x xs) =
 
 main : List
 main =
-  let (x, y) = new ListOut in
+  let (x, y) = new @ListOut () in
   fork (\_:() 1-> sendList@Skip x aList) ;
   let (list, _) = rcvList@Skip y in
   list

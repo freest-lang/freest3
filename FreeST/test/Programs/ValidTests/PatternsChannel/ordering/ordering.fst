@@ -116,7 +116,7 @@ aList = Cons 4 (Cons 1 (Cons 3 (Cons 2 Nil)))
 
 main : IntList
 main =
-  let (w, r) = new OrderingChannel in
+  let (w, r) = new @OrderingChannel () in
   fork (\_:() 1-> initOrderedServer r) ;
   descClient w
   --ascClient w

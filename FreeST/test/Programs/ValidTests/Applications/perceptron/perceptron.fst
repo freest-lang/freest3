@@ -65,7 +65,7 @@ mkChannels n =
         (SNil,RNil)
     else
         let (ss,rs) = mkChannels (n-1) in
-        let (s,r)   = new Send         in
+        let (s,r)   = new @Send ()     in
         (SCons s ss, RCons r rs)
 
 -- startup

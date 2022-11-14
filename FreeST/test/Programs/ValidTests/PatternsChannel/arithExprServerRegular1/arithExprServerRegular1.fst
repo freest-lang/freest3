@@ -45,6 +45,6 @@ evaluate (Done  s) (Cons x Nil) = send x s
 -- expect 26 on the console.
 main : Int
 main =
-  let (c, s) = new MathServer in
+  let (c, s) = new @MathServer () in
   fork (\_:() 1-> evaluate s Nil);
   client c

@@ -21,7 +21,7 @@ collect' c n =
 
 bits' : Int -> Int
 bits' =
-  let (r, w) = new *?Bit in
+  let (r, w) = new @*?Bit () in
   fork (\_:() 1-> produce 1 w);
   fork (\_:() 1-> produce 0 w);
   collect' r
@@ -30,7 +30,7 @@ bits' =
 
 biasedBit : Bit
 biasedBit =
-  let (r, w) = new *?Int in --new *?Int in
+  let (r, w) = new @*?Int () in --new @*?Int () in
   fork (\_:() 1-> send 0 w);
   fork (\_:() 1-> send 1 w);
   let (b, _) = receive r in
@@ -176,7 +176,7 @@ noiseClient c = noiseClient $ snd[Int, dualof NoiseC] $ receive c
 main : ()
 main =
     -- some noise, uncommenting these lines affects randomness 
-    -- let (s, c) = new NoiseC in
+    -- let (s, c) = new @NoiseC () in
     -- fork (\_:() 1-> noiseServer s);
     -- fork (\_:() 1-> noiseClient c);
     --

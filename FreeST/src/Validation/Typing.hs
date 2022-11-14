@@ -157,10 +157,6 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
   return t2
 -- Datatype elimination
 synthetise kEnv (E.Case p e fm) = synthetiseCase p kEnv e fm
--- Session types
-synthetise kEnv (E.New p t u) = do
-  K.checkAgainstSession kEnv t
-  return $ T.Pair p t u
 
 -- | Returns the type of a variable; removes it from vEnv if lin
 

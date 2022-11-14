@@ -124,7 +124,7 @@ readString stdin =
 
 runStdIn : dualof StdIn -> ()
 runStdIn stdin =
-    let (c, s) = new Reader in
+    let (c, s) = new @Reader () in
     let stdin  = send c stdin in
     runReader s;
     runStdIn stdin
@@ -162,7 +162,7 @@ client2 stdin =
 
 main : ()
 main = 
-    let (c, s) = new StdIn in
+    let (c, s) = new @StdIn () in
     fork (\_:() 1-> client1 c);
     fork (\_:() 1-> client2 c);
     runStdIn s

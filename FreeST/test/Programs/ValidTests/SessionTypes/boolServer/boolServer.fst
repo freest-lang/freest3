@@ -38,7 +38,7 @@ client1 w = w |> select And
 
 startClient : (BoolClient -> Bool) -> Bool
 startClient client =
-  let (w,r) = new BoolClient in
+  let (w,r) = new @BoolClient () in
   let x = fork @() (\_:()1-> boolServer r) in
   client w
 

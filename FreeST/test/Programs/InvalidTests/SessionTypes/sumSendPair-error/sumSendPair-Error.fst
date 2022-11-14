@@ -20,7 +20,7 @@ rcvValue c = let (v, c) = receive c in v
  
 main : Value
 main =
-  let (x, y) = new !Int in   
+  let (x, y) = new @!Int () in   
   let aTriple = (x, (2, 3)) in
   let _ = fork @() (\_:() 1-> sendValue aTriple) in
   let (x, _) = receive y in x     

@@ -120,7 +120,7 @@ runTailNode next tail =
 
 initQueue : forall a:1T . () -> (*?a, *!a)
 initQueue _ =
-    let (internalC, internalS) = new (rec x:1S . ?a; ?x; End) in
+    let (internalC, internalS) = new @(rec x:1S . ?a; ?x; End) in
     ( forkWith @*?a @() (runHeadNode @a internalC)
     , forkWith @*!a @() (runTailNode @a internalS)
     )
@@ -343,7 +343,7 @@ initBank : StdOut -> Bank
 initBank stdout = 
     -- runWith [Bank] $
     --     \bank:dualof Bank 1-> parallel 3 (bankWorker bank)
-    let (c, s) = new Bank in
+    let (c, s) = new @Bank () in
     parallel @() 2 (\_:() -> bankWorker stdout s);
     c
 
@@ -355,7 +355,7 @@ bankWorker stdout =
 -- | Executes a function
 runWith : forall a:1S . (dualof a 1-> ()) -> a
 runWith f =
-    let (c, s) = new a in
+    let (c, s) = new @a () in
     f s;
     c
 

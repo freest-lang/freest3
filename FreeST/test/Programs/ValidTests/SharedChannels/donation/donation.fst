@@ -58,7 +58,7 @@ bank ccard amount =
 -- 4. The Online Donation Server
 donationServer : DonationS -> ()
 donationServer donationService =
-    let (p1, p2) = new Donation in                      -- create a channel for a new donation campaign
+    let (p1, p2) = new @Donation () in                      -- create a channel for a new donation campaign
     let donationService = send p1 donationService in    -- send one end; keep the other (p2)
     fork (\_:() 1-> setup p2 "Help me" 2000);           -- call with default values
     donationServer donationService                      -- serve another client
@@ -66,7 +66,7 @@ donationServer donationService =
 promotion : dualof Promotion -> ()
 promotion p =
     --
-    let (c, p') = new Promotion' in
+    let (c, p') = new @Promotion' () in
     let p = send c p in
     --
     let (donor , p') = receive p' in
@@ -84,7 +84,7 @@ setup p title date =
                       then 
                         select Denied   p |> send "We can only accept 2013 donations\n" |> close
                       else 
-                        let (c, s) = new Promotion in
+                        let (c, s) = new @Promotion () in
                         select Accepted p |> send c |> close ;
                         promotion s
     }
@@ -93,7 +93,7 @@ setup p title date =
 -- 5. Main
 main : ()
 main = 
-    let (ps1, ps2) = new DonationS in  -- create a Online Donation channel
+    let (ps1, ps2) = new @DonationS () in  -- create a Online Donation channel
     fork (\_:() 1-> helpSavingTheWolf ps2);      -- let the whole world know the other
     fork (\_:() 1-> helpSavingTheWolf ps2);
     fork (\_:() 1-> helpSavingTheWolf ps2);

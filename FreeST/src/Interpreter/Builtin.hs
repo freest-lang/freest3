@@ -8,6 +8,7 @@ import qualified Control.Concurrent.Chan as C
 import           Data.Char ( ord, chr )
 import           Data.Functor
 import qualified Data.Map as Map
+import Data.Bifunctor (Bifunctor(bimap))
 
 ------------------------------------------------------------
 -- Communication primitives
@@ -42,8 +43,9 @@ close ch = do
 initialCtx :: Ctx
 initialCtx = Map.fromList
   -- Integers
- [ -- Communication primitives
-    (var "send", PrimitiveFun (\v -> PrimitiveFun (\(Chan c) -> IOValue $ Chan <$> send v c)))
+  [ -- Communication primitives
+    (var "new", PrimitiveFun (\_ -> IOValue $ uncurry Pair <$> (bimap Chan Chan <$> new)))
+  , (var "send", PrimitiveFun (\v -> PrimitiveFun (\(Chan c) -> IOValue $ Chan <$> send v c)))
   , (var "receive", PrimitiveFun (\(Chan c) -> IOValue $ receive c >>= \(v, c) -> return $ Pair v (Chan c)))
   , (var "close", PrimitiveFun (\(Chan c) -> IOValue $ close c))
   -- Integers

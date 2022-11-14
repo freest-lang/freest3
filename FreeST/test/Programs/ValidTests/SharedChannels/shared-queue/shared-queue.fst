@@ -16,7 +16,7 @@ runHeadNode prev head =
 runTailNode : dualof Internal -> dualof Tail 1-> ()
 runTailNode next tail =
     let i = receive_ @Int tail in
-    let (prev', next') = new Internal in
+    let (prev', next') = new @Internal () in
     fork (\_:()1-> send i next |> send prev' |> close);
     runTailNode next' tail
     -- Internal error at Validation.Rename.rename: dualof
@@ -28,7 +28,7 @@ type Queue = (Head, Tail)
 
 initQueue : Queue
 initQueue =
-    let (internalC, internalS) = new Internal in
+    let (internalC, internalS) = new @Internal () in
     (forkWith @Head @() (runHeadNode internalC),
      forkWith @Tail @() (runTailNode internalS))
 
@@ -46,7 +46,7 @@ type Counter : *S = *?Int
 
 initCounter : Counter
 initCounter = 
-    let (counterC, counterS) = new Counter in
+    let (counterC, counterS) = new @Counter () in
     fork (\_:() 1-> runCounter 0 counterS);
     counterC
 

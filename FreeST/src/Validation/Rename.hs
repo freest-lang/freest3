@@ -148,8 +148,6 @@ instance Rename E.Exp where
     e1' <- rename tbs pbs e1
     e2' <- rename tbs (insertVar x x' pbs) e2
     return $ E.UnLet p x' e1' e2'
-  -- Session types
-  rename tbs pbs (E.New p t u) = E.New p <$> rename tbs pbs t <*> rename tbs pbs u
   -- Otherwise: Unit, Integer, Character, Boolean, Select
   rename _ _ e = return e
 

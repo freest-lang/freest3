@@ -12,7 +12,7 @@ unRecv : (() -> UnRecv) -> Int
 unRecv ur = case ur () of {UnRecv r _ -> let (n,_) = receive r in n}
 
 main : Int
-main = let (s, r) = new !Int in 
+main = let (s, r) = new @!Int () in 
        let us = UnSend s in -- us : () 1-> UnSend
        let ur = UnRecv r in -- ur : () 1-> UnRecv
        unSend 5 us;

@@ -39,6 +39,6 @@ reader c =
 
 main : ()
 main =
-  let (w, r) = new T in
+  let (w, r) = new @T () in
   fork @() (\_:() 1-> writer 0 w);
   reader r

@@ -98,7 +98,6 @@ import           Paths_FreeST ( getDataFileName )
   if       {TokenIf _}
   then     {TokenThen _}
   else     {TokenElse _}
-  new      {TokenNew _}
   select   {TokenSelect _}
   match    {TokenMatch _}
   with     {TokenWith _}
@@ -111,7 +110,6 @@ import           Paths_FreeST ( getDataFileName )
 -- %nonassoc '(' '['
 -- %nonassoc '()'
 %right in else match case
-%nonassoc new
 %left '||'       -- disjunction
 %left '&&'       -- conjunction
 %nonassoc CMP    -- comparison (relational and equality)
@@ -206,7 +204,6 @@ Exp :: { E.Exp }
   | let '(' ProgVarWild ',' ProgVarWild ')' '=' Exp in Exp
                                    {% mkSpanSpan $1 $10 >>= \s -> pure $ E.BinLet s $3 $5 $8 $10 }
   | if Exp then Exp else Exp       {% mkSpanSpan $1 $6 >>= \s -> pure $ E.Cond s $2 $4 $6 }
-  | new Type                       {% mkSpanSpan $1 $2 >>= \s -> pure $ E.New s $2 (T.Dualof (negSpan s) $2) }
   | match Exp with '{' MatchMap '}' {% let s' = getSpan $2 in mkSpanSpan $1 $6 >>= \s ->
                                        pure $ E.Case s (E.App s' (E.Var s' (mkVar s' "collect")) $2) $5 }
   | case Exp of '{' CaseMap '}'    {% mkSpanSpan $1 $6 >>= \s -> pure $ E.CasePat s $2 $5 }

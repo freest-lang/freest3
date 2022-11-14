@@ -33,6 +33,6 @@ aTree = Node 7 (Node 5 Leaf Leaf) (Node 9 (Node 11 Leaf Leaf) (Node 15 Leaf Leaf
 
 main : Tree
 main =
-  let (writer, reader) = new TreeChannel in
+  let (writer, reader) = new @TreeChannel () in
   fork (\_:() 1-> write @Skip aTree writer) ;
   fst @Tree@Skip $ read @Skip reader

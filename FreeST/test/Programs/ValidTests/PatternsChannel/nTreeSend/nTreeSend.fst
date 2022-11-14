@@ -1,6 +1,6 @@
 main : Tree
 main =
-  let (client, server) = new TreeChannel in
+  let (client, server) = new @TreeChannel () in
   fork (\_:() 1-> clientSendTree client);
   fst@Tree@Skip $ receiveTree@Skip server
 

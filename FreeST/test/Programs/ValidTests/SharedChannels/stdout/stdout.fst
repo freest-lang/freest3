@@ -85,7 +85,7 @@ client stdout s1 s2 =
 
 main : ()
 main = 
-    let (stdout, s) = new StdOut in
+    let (stdout, s) = new @StdOut () in
     fork (\_:() 1-> client stdout "A" "B");
     fork (\_:() 1-> client stdout "C" "D");
     runStdout s -- run stdout server

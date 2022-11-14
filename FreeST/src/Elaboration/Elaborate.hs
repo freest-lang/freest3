@@ -54,7 +54,6 @@ instance Elaboration E.Exp where
   elaborate (E.TypeApp p e t  ) = E.TypeApp p <$> elaborate e <*> elaborate t
   elaborate (E.TypeAbs p b    ) = E.TypeAbs p <$> elaborate b
   elaborate (E.UnLet p x e1 e2) = E.UnLet p x <$> elaborate e1 <*> elaborate e2
-  elaborate (E.New p t u      ) = E.New p <$> elaborate t <*> elaborate u
   elaborate e                 = return e
 
 instance Elaboration E.FieldMap where

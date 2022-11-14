@@ -50,6 +50,8 @@ printUnit : () -> ()
 printUnitLn : () -> ()
 printString : String -> ()
 printStringLn : String -> ()
+-- New
+new : ∀a:1S . () -> (a, dualof a)
   -- Fork
 fork : ∀a:*T. (() 1-> a) -> ()
   -- Error & Undefined
@@ -132,7 +134,7 @@ parallel n thunk = repeat @() n (λ_:() -> fork @a thunk)
 -- communicate with its parent process. Return the channel endpoint.
 forkWith : ∀a:1S b:*T . (dualof a 1-> b) -> a
 forkWith f =
-    let (x, y) = new a in
+    let (x, y) = new @a () in
     fork (λ_:() 1-> f y);
     x
 
@@ -140,7 +142,7 @@ forkWith f =
 -- channel. The requester uses a conventional receive to obtain the channel end.
 accept : ∀a:1S b:*S . !a; b -> dualof a
 accept ch =
-    let (x, y) = new a in
+    let (x, y) = new @a () in
     send x ch;
     y
 
