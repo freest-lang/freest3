@@ -18,3 +18,6 @@ k = True || False; ()
 
 l : Int -> Int
 l n = id @Skip; n
+
+m : Int -> Int 
+m n = id @Bool $ True; 1
