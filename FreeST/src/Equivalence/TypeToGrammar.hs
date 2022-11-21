@@ -83,7 +83,7 @@ toGrammar' (T.Almanac _ (T.Choice v) m) = do
   getLHS $ Map.mapKeys (\k -> show v ++ show k) ms
 -- Polymorphism and recursive types
 toGrammar' (T.Forall _ (Bind _ _ k t)) = do
-  xs <- toGrammar' t
+  xs <- toGrammar t
   getLHS $  Map.singleton ('∀' : show k) xs
 toGrammar' (T.Rec _ (Bind _ x _ _)) = return [x]
 toGrammar' t@T.Var{} = getLHS $ Map.singleton (show t) []
