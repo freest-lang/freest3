@@ -155,3 +155,11 @@ accept_ ch = accept @a @*!a ch
 runServer : forall a:1S b . (b -> dualof a 1-> b) -> b -> *!a -> () --Diverge
 runServer handle state ch =
     runServer @a @b handle (handle state (accept_ @a ch)) ch 
+
+-- | Receive a value from a channel that continues to End, close the 
+-- continuation and return the value.
+receiveAndClose : forall a:1T . ?a;End -> a 
+receiveAndClose c = 
+    let (x, c) = receive c in 
+    close c; 
+    x
