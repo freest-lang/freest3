@@ -1,26 +1,28 @@
 {-
-Unary send.
+Unrestricted send.
+
 The type of send is
 
-  ∀a:1T . a -> ∀b:1S . !a;b 1-> b
+  ∀a:1T . a *-> ∀b:1S . !a;b 1-> b
 
-yet it can be used with an *T type via eta-conversion.
+Any value (linear or unrestricted) can be sent.
 
-usend : ∀a:1T . a -> ∀b:1S . !a;b 1-> b
-usend = Λa:1T => λx:a -> λ_:() -> Λb:1S => send @a x @b
-Error:
-   The initial context is [x:a]
-     the final context is []
+Using eta-conversion one can write a variant of send that accepts only unrestricted values
 -}
 
-main : Int
+--send : ∀a:1T .     a *-> ∀b:1S .            !a;b 1-> b
+unsend : ∀a:*T .     a *-> ∀b:1S .     () *-> !a;b 1-> b
+unsend = Λa:*T => λx:a *-> Λb:1S => λ_:() *-> send @a x @b
+
+main : Bool
 main =
-  --  unfunc : () -> ∀b:1S . !Int;b 1-> b
-  let unfunc = λ_:() -> send @Int 5 in 
   let (s1, r1) = new !Int;End in
-  let (s2, r2) = new !Int;End in
-  fork (\_:() 1-> unfunc () @End s1 |> close);
-  fork (\_:() 1-> unfunc () @End s2 |> close);
-  fork (\_:() 1-> {- printIntLn $ -} receiveAndClose @Int r1);
-  {- printIntLn $ -} receiveAndClose @Int r2
+  let (s2, r2) = new !Bool;End in
+  fork (\_:() 1-> unsend @Int  5     @End () s1 |> close);
+  fork (\_:() 1-> unsend @Bool False @End () s2 |> close);
+  -- These work as well for un values can be promoted to lin
+  -- fork (\_:() 1-> send @Int  5     @End s1 |> close);
+  -- fork (\_:() 1-> send @Bool False @End s2 |> close);
+  receiveAndClose @Int  r1;
+  receiveAndClose @Bool r2
   
