@@ -25,8 +25,11 @@ import qualified Data.Set as Set
 import           Paths_FreeST ( getDataFileName )
 import           System.Exit ( die )
 
+isDev :: Bool
+isDev = True
+
 main :: IO ()
-main = checkAndRun =<< flags -- handleOpts =<< compilerOpts =<< getArgs
+main = checkAndRun =<< flags isDev -- handleOpts =<< compilerOpts =<< getArgs
 
 checkAndRun :: RunOpts -> IO ()
 checkAndRun runOpts = do
