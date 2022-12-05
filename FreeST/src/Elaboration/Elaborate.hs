@@ -18,7 +18,6 @@ instance Elaboration T.Type where
   elaborate (  T.Almanac p s m ) = T.Almanac p s <$> elaborate m
   elaborate (  T.Message p pol t) = T.Message p pol <$> elaborate t
   elaborate (  T.Arrow p m t1 t2  ) = T.Arrow p m <$> elaborate t1 <*> elaborate t2
-  elaborate (  T.Pair p t1 t2   ) = T.Pair p <$> elaborate t1 <*> elaborate t2
   elaborate (  T.Semi   p t1  t2) = T.Semi p <$> elaborate t1 <*> elaborate t2
   elaborate (  T.Forall p kb    ) = T.Forall p <$> elaborate kb
   elaborate (  T.Rec    p kb    ) = T.Rec p <$> elaborate kb
@@ -70,7 +69,6 @@ changePos p (T.Char _         ) = T.Char p
 changePos p (T.Bool _         ) = T.Bool p
 changePos p (T.Unit _         ) = T.Unit p
 changePos p (T.Arrow _ pol t u) = T.Arrow p pol (changePos p t) (changePos p u)
-changePos p (T.Pair    _ t   u) = T.Pair p t u
 -- Datatype
 -- Skip
 changePos p (T.Semi    _ t   u) = T.Semi p t u

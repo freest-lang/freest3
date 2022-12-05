@@ -193,11 +193,9 @@ instance Unparse T.Type where
    where
     l = bracket (unparse t) Left arrowRator
     r = bracket (unparse u) Right arrowRator
-  unparse (T.Pair _ t u) = (maxRator, "(" ++ l ++ ", " ++ r ++ ")")
-   where
-    l = bracket (unparse t) Left minRator
-    r = bracket (unparse u) Right minRator
   unparse (T.Almanac _ T.Variant m) = (maxRator, "[" ++ showDatatype m ++ "]")
+  unparse (T.Almanac _ T.Record m) | all (all isDigit . intern) $ Map.keys m = 
+    (maxRator, "(" ++ showTupleType m ++ ")")
   unparse (T.Semi _ t u  ) = (semiRator, l ++ " ; " ++ r)
    where
     l = bracket (unparse t) Left semiRator
@@ -226,6 +224,10 @@ showDatatype m = intercalate " | "
 showChoice :: T.TypeMap -> String
 showChoice m = intercalate ", "
   $ Map.foldrWithKey (\c t acc -> (show c ++ ": " ++ show t) : acc) [] m
+
+showTupleType :: T.TypeMap -> String 
+showTupleType m = intercalate ", " 
+  $ Map.foldr (\t acc -> show t : acc) [] m
 
 showChoiceLabels :: T.TypeMap -> String
 showChoiceLabels m = intercalate ", "

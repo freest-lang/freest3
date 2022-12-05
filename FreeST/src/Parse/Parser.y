@@ -327,7 +327,7 @@ Type :: { T.Type }
   | String                        {% T.String `fmap` mkSpan $1 }
   | '()'                          {% T.Unit `fmap` mkSpan $1 }
   | Type Arrow Type %prec ARROW   {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Arrow s $2 $1 $3 }
-  | '(' Type ',' TupleType ')'    {% mkSpanSpan $1 $5 >>= \s -> pure $ T.Pair s $2 $4 }
+  | '(' Type ',' TupleType ')'    {% mkSpanSpan $1 $5 >>= \s -> pure $ T.Almanac s T.Record $ tupleTypeMap [$2,$4]}
   -- Session types
   | Skip                          {% T.Skip `fmap` mkSpan $1 }
   | End                           {% T.End `fmap` mkSpan $1 }
@@ -366,7 +366,8 @@ Forall :: { T.Type }
 
 TupleType :: { T.Type }
   : Type               { $1 }
-  | Type ',' TupleType { T.Pair (getSpan $1) $1 $3 }
+  | Type ',' TupleType { T.Almanac (getSpan $1) T.Record $  tupleTypeMap [$1,$3]}
+                                               
 
 Arrow :: { Multiplicity }
   : '->' { Un  }

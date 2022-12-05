@@ -92,7 +92,6 @@ instance Rename T.Type where
   -- Functional types
   rename tbs pbs (T.Arrow p m t u)   = T.Arrow p m <$> rename tbs pbs t <*> rename tbs pbs u
   rename tbs pbs (T.Message p pol t) = T.Message p pol <$> rename tbs pbs t
-  rename tbs pbs (T.Pair p t u)      = T.Pair p <$> rename tbs pbs t <*> rename tbs pbs u
   -- Session types
   rename tbs pbs (T.Semi p t u)      = T.Semi p <$> rename tbs pbs t <*> rename tbs pbs u
   -- Polymorphism
@@ -207,7 +206,6 @@ isFreeIn x (T.Almanac _ _ m) =
   Map.foldr' (\t b -> x `isFreeIn` t || b) False m
     -- Functional types
 isFreeIn x (T.Arrow _ _ t u) = x `isFreeIn` t || x `isFreeIn` u
-isFreeIn x (T.Pair _ t u ) = x `isFreeIn` t || x `isFreeIn` u
     -- Session types
 isFreeIn x (T.Message _ _ t) = x `isFreeIn` t ---
 isFreeIn x (T.Semi _ t u) = x `isFreeIn` t || x `isFreeIn` u

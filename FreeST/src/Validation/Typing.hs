@@ -42,6 +42,7 @@ import           Control.Monad.State            ( when
 import           Data.Functor
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
+import Parse.ParseUtils (tupleTypeMap)
 
 -- SYNTHESISING A TYPE
 
@@ -96,7 +97,7 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "receive" = do
   (u1, u2) <- Extract.input e t
   void $ K.checkAgainst kEnv (K.lt $ defaultSpan) u1
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
-  return $ T.Pair p u1 u2
+  return $ T.Almanac p T.Record $ tupleTypeMap [u1, u2]
   -- Send e1 e2
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkVar p "send" = do
   t        <- synthetise kEnv e2
@@ -144,7 +145,8 @@ synthetise kEnv e'@(E.Cond p e1 e2 e3) = do
 synthetise kEnv (E.Pair p e1 e2) = do
   t1 <- synthetise kEnv e1
   t2 <- synthetise kEnv e2
-  return $ T.Pair p t1 t2
+  return $ T.Almanac p T.Record $ Map.fromList [(mkVar (getSpan t1) "0", t1)
+                                               ,(mkVar (getSpan t2) "1", t2)]
 -- Pair elimination
 synthetise kEnv (E.BinLet _ x y e1 e2) = do
   t1       <- synthetise kEnv e1
@@ -160,7 +162,7 @@ synthetise kEnv (E.Case p e fm) = synthetiseCase p kEnv e fm
 -- Session types
 synthetise kEnv (E.New p t u) = do
   K.checkAgainstSession kEnv t
-  return $ T.Pair p t u
+  return $ T.Almanac p T.Record $ tupleTypeMap [t,u]
 
 -- | Returns the type of a variable; removes it from vEnv if lin
 

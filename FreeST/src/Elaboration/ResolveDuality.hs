@@ -68,7 +68,6 @@ solveType :: Visited -> T.Type -> FreestState T.Type
 -- Functional Types
 solveType v (T.Arrow p pol t u) =
   T.Arrow p pol <$> solveType v t <*> solveType v u
-solveType v (T.Pair p t u     ) = T.Pair p <$> solveType v t <*> solveType v u
 solveType v (T.Almanac p s m   ) = T.Almanac p s <$> tMapM (solveType v) m
 -- Session Types
 solveType v (T.Semi    p t   u) = T.Semi p <$> solveType v t <*> solveType v u
@@ -137,7 +136,6 @@ changePos p (T.Bool   _       ) = T.Bool p
 changePos p (T.Unit   _       ) = T.Unit p
 changePos p (T.String _       ) = T.String p
 changePos p (T.Arrow _ pol t u) = T.Arrow p pol t u
-changePos p (T.Pair _ t u     ) = T.Pair p t u
 changePos p (T.Almanac _ s m  ) = T.Almanac p s m
 changePos p (T.Skip _         ) = T.Skip p
 changePos p (T.End  _         ) = T.End p
