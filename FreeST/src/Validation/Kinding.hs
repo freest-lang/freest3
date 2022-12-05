@@ -57,11 +57,7 @@ synthetise' _ _ (T.Unit   p) = return $ K.ut p
 synthetise' _ _ (T.String p) = return $ K.ut p
 synthetise' s kEnv (T.Arrow p m t u) =
   synthetise' s kEnv t >> synthetise' s kEnv u $> K.Kind p (typeToKindMult m) K.Top
-synthetise' s kEnv (T.Pair p t u) = do
-  (K.Kind _ mt _) <- synthetise' s kEnv t
-  (K.Kind _ mu _) <- synthetise' s kEnv u
-  return $ K.Kind p (join mt mu) K.Top
-synthetise' s kEnv (T.Almanac p T.Variant m) = do
+synthetise' s kEnv (T.Almanac p t m) | t == T.Variant || t == T.Record = do
   ks <- tMapM (synthetise' s kEnv) m
   let K.Kind _ n _ = foldr1 join ks
   return $ K.Kind p n K.Top

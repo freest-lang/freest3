@@ -35,7 +35,6 @@ data Type =
   | String Span
   | Unit Span
   | Arrow Span Multiplicity Type Type
-  | Pair Span Type Type
   | Almanac Span Sort TypeMap
   -- Session Types
   | Skip Span
@@ -67,7 +66,6 @@ instance Located Type where
   getSpan (String p     ) = p
   getSpan (Unit p       ) = p
   getSpan (Arrow p _ _ _) = p
-  getSpan (Pair p _ _   ) = p
   getSpan (Almanac p _ _) = p
   getSpan (Skip p       ) = p
   getSpan (End p        ) = p

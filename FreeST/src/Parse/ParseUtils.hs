@@ -36,7 +36,7 @@ mkSpan a = do
   let (Span p1 p2 _) = getSpan a
   f <- getFileName
   maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
-  
+
 mkSpanSpan :: (Located a, Located b) => a -> b -> FreestStateT Span
 mkSpanSpan a b = do
   let (Span p1 _ _) = getSpan a
@@ -59,7 +59,7 @@ liftModToSpan (Span p1 p2 _) = do
 
 -- checkDupField :: Variable -> T.TypeMap -> FreestState ()
 checkDupField :: MonadState FreestS m => Variable -> Map.Map Variable v -> m ()
-checkDupField x m = 
+checkDupField x m =
   when (x `Map.member` m) $ addError $ MultipleFieldDecl (getSpan x) (getSpan k) x
   where
     (k,_) = Map.elemAt (Map.findIndex x m) m
@@ -143,3 +143,8 @@ typeListToType a = map $ second typeToFun -- map (\(x, ts) -> (x, typeToFun ts))
 
 insertMap :: Ord k => k -> [v] -> Map.Map k [v] -> Map.Map k [v]
 insertMap = Map.insertWith (++)
+
+-- Tuples as a derived form of records
+tupleTypeMap :: [T.Type] -> T.TypeMap
+tupleTypeMap ts = Map.fromList $ zipWith (\i t -> (mkVar (getSpan t) (show i), t)) [0..] ts 
+
