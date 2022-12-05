@@ -35,7 +35,7 @@ type TabuadaServer : 1S = &{ TabuadaSimples: ?Int ;             TabuadaServer
                            , Fim           : End
                            }
 
-type TabuadaClient = dualof TabuadaServer
+type TabuadaClient : 1S = dualof TabuadaServer
 
 initTabuadaServer : TabuadaServer 1-> ()
 initTabuadaServer c = tabuadaServer c Empty

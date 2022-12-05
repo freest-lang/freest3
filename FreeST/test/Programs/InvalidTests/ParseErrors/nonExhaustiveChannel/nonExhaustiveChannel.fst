@@ -1,5 +1,5 @@
 
-type C = &{A: Skip, B: Skip}
+type C : 1S = &{A: Skip, B: Skip}
 
 f : C 1-> Int
 f (A c) = 0

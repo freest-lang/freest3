@@ -6,7 +6,7 @@ main =
   close c;
   x
 
-type F = +{B: !Bool};End
+type F : 1S = +{B: !Bool};End
 
 f : F -> ()
 f c = let c = select c B in send c True |> close

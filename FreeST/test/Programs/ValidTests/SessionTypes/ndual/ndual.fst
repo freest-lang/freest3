@@ -1,7 +1,7 @@
 
 -- TODO: recursiveVariation
 -- type DD = dualof (dualof !Int;DD)
-type DD = dualof (dualof !Int)
+type DD : 1S = dualof (dualof !Int)
 
 sendInt : ∀ a:1S . DD;a -> a
 sendInt c = send 5 c
