@@ -34,23 +34,15 @@ main =
 
 
 client1 : BoolClient -> Bool
-client1 w =
-  let (x, r2) = 
-    select And w
-    |> send True  
-    |> send False 
-    |> receive in
-  close r2;
-  x
+client1 w = w |> select And
+              |> send True  
+              |> send False 
+              |> receiveAndClose @Bool
 
 client2 : BoolClient -> Bool
-client2 w =
-  let (x, r2) = 
-    select Not w
-    |> send True
-    |> receive in
-  close r2;
-  x
+client2 w = w |> select Not
+              |> send True
+              |> receiveAndClose @Bool 
 
 
 startClient : (BoolClient -> Bool) -> Bool

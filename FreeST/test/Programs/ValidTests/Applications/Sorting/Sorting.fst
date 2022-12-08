@@ -21,12 +21,12 @@ client c =
   send 1 $ select Value $
   send 4 $ select Value $
   send 5 $ select Value c in
-  let (x, c) = receive c in printIntLn x;
-  let (x, c) = receive c in printIntLn x;
-  let (x, c) = receive c in printIntLn x;
-  let (x, c) = receive c in printIntLn x;
-  let (x, c) = receive c in printIntLn x;
-  let (x, c) = receive c in printIntLn x;
+  let (x, c) = receive c in print @Int x;
+  let (x, c) = receive c in print @Int x;
+  let (x, c) = receive c in print @Int x;
+  let (x, c) = receive c in print @Int x;
+  let (x, c) = receive c in print @Int x;
+  let (x, c) = receive c in print @Int x;
   close c
 
 data IntList = Nil | Cons Int IntList

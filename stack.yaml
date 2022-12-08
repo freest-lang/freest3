@@ -35,6 +35,7 @@ resolver: lts-18.24
 #   - wai
 packages:
 - FreeST
+- REPL
 #- TACAS2020
 #- TACAS2020-TEST
 #- SGBisim

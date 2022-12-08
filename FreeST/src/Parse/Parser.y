@@ -21,7 +21,7 @@ import           Data.Maybe
 import qualified Data.Set as Set
 import           System.Directory
 import           System.FilePath
-
+import           Paths_FreeST ( getDataFileName )
 }
 
 %partial modname Module
@@ -95,6 +95,7 @@ import           System.FilePath
   data     {TokenData _}
   type     {TokenType _}
   '|'      {TokenPipe _}
+  otherwise{TokenOtherwise _}
   if       {TokenIf _}
   then     {TokenThen _}
   else     {TokenElse _}
@@ -170,7 +171,8 @@ Decl :: { () }
   :     ProgVarList ':' Type {% forM_ $1 (\x -> checkDupProgVarDecl x >> addToVEnv x $3) }
   -- |     ProgVarList ':' Type {% forM_ $1 (\x -> checkDupProgVarDecl x >> addToVEnv x $3) }
   -- Function declaration
-  | ProgVar ProgVarWildSeq '=' Exp {% checkDupFunDecl $1 >> addToPEnv $1 $2 $4 }
+  | ProgVar PatternSeq '=' Exp   {% addToPEnvPat $1 $2 $4 }
+  | ProgVar PatternSeq GuardsFun {% addToPEnvPat $1 $2 $3 }
   -- Type abbreviation
   | type KindedTVar TypeDecl {% checkDupTypeDecl (fst $2) >> uncurry addToTEnv $2 $3 }
   -- Datatype declaration
@@ -210,7 +212,7 @@ Exp :: { E.Exp }
   | new Type                       {% mkSpanSpan $1 $2 >>= \s -> pure $ E.New s $2 (T.Dualof (negSpan s) $2) }
   | match Exp with '{' MatchMap '}' {% let s' = getSpan $2 in mkSpanSpan $1 $6 >>= \s ->
                                        pure $ E.Case s (E.App s' (E.Var s' (mkVar s' "collect")) $2) $5 }
-  | case Exp of '{' CaseMap '}'    {% mkSpanSpan $1 $6 >>= \s -> pure $ E.Case s $2 $5 }
+  | case Exp of '{' CaseMap '}'    {% mkSpanSpan $1 $6 >>= \s -> pure $ E.CasePat s $2 $5 }
   | Exp '$' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ E.App s $1 $3 }
   | Exp '|>' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $  E.App s $3 $1 }
   | Exp '||' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(||)") $3 }
@@ -277,12 +279,35 @@ MatchMap :: { FieldMap }
 Match :: { (Variable, ([Variable], E.Exp)) }
   : ArbitraryProgVar ProgVarWild '->' Exp { ($1, ([$2], $4)) }
 
-CaseMap :: { FieldMap }
-  : Case             { uncurry Map.singleton $1 }
-  | Case ',' CaseMap {% checkDupCase (fst $1) $3 >> return (uncurry Map.insert $1 $3) }
+CaseMap :: { FieldList }
+  : Case             { [$1] }
+  | Case ',' CaseMap { $1 : $3 }
 
-Case :: { (Variable, ([Variable], E.Exp)) }
-  : Constructor ProgVarWildSeq '->' Exp { ($1, ($2, $4)) }
+Case :: { ([Pattern], E.Exp) }
+  : PatternCase '->' Exp   { ([$1],$3) }
+  | PatternCase GuardsCase { ([$1],$2) }
+
+PatternSeq :: { [Pattern] }
+  :                    { [] }
+  | Pattern PatternSeq {% checkDupVarPats ($1:$2) >> return ($1:$2) }
+
+PatternCase :: { Pattern }
+  : Constructor Pattern PatternSeq {% checkDupVarPats ($2:$3) >> return (E.PatCons $1 ($2:$3)) }
+  | Pattern    { $1 }
+
+Pattern :: { Pattern }
+  : ProgVarWild                            { E.PatVar  $1    }
+  | Constructor                            { E.PatCons $1 [] }
+  | '(' Constructor Pattern PatternSeq ')' { E.PatCons $2 ($3:$4) }
+  | '(' Pattern ')'                        { $2 }
+
+GuardsCase :: { Exp }
+  : '|' Exp       '->' Exp GuardsCase {% mkSpanSpan $1 $4 >>= \s -> pure $ E.Cond s $2 $4 $5 }
+  | '|' otherwise '->' Exp            { $4 }
+
+GuardsFun :: { Exp }
+  : '|' Exp       '=' Exp GuardsFun   {% mkSpanSpan $1 $4 >>= \s -> pure $ E.Cond s $2 $4 $5 }
+  | '|' otherwise '=' Exp             { $4 }
 
 Op :: { Variable }
    : '||'  {% flip mkVar "(||)" `fmap` mkSpan $1 }
@@ -307,13 +332,14 @@ Type :: { T.Type }
   | String                        {% T.String `fmap` mkSpan $1 }
   | '()'                          {% T.Unit `fmap` mkSpan $1 }
   | Type Arrow Type %prec ARROW   {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Arrow s $2 $1 $3 }
-  | '(' Type ',' TupleType ')'    {% mkSpanSpan $1 $5 >>= \s -> pure $ T.Pair s $2 $4 }
+  | '(' Type ',' TupleType ')'    {% mkSpanSpan $1 $5 >>= \s -> pure $ T.Almanac s T.Record $ tupleTypeMap [$2,$4]}
   -- Session types
   | Skip                          {% T.Skip `fmap` mkSpan $1 }
   | End                           {% T.End `fmap` mkSpan $1 }
   | Type ';' Type                 {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Semi s $1 $3 }
   | Polarity Type %prec MSG       {% mkSpanFromSpan (fst $1) $2 >>= \s -> pure $ T.Message s (snd $1) $2 }                                 
-  | ChoiceView '{' FieldList '}'  {% mkSpanFromSpan (fst $1) $4 >>= \s -> pure $ T.Almanac s (T.Choice (snd $1)) $3 } 
+  | ChoiceView '{' FieldList '}'  {% addToPEnvChoices (Map.keys $3)
+                                  >> mkSpanFromSpan (fst $1) $4 >>= \s -> pure $ T.Almanac s (T.Choice (snd $1)) $3 } 
   -- Star types
   | '*' Polarity Type %prec MSG 
     {% do
@@ -345,7 +371,8 @@ Forall :: { T.Type }
 
 TupleType :: { T.Type }
   : Type               { $1 }
-  | Type ',' TupleType { T.Pair (getSpan $1) $1 $3 }
+  | Type ',' TupleType { T.Almanac (getSpan $1) T.Record $  tupleTypeMap [$1,$3]}
+                                               
 
 Arrow :: { Multiplicity }
   : '->' { Un  }
@@ -406,9 +433,10 @@ ProgVarWild :: { Variable }
   : ProgVar { $1 }
   | '_'     {% flip mkVar "_" `fmap` mkSpan $1 }
 
-ProgVarWildSeq :: { [Variable] }
-  :                            { [] }
-  | ProgVarWild ProgVarWildSeq {% checkDupBind $1 $2 >> return ($1 : $2) }
+-- TODO remove, only used on case
+-- ProgVarWildSeq :: { [Variable] }
+--   :                            { [] }
+--   | ProgVarWild ProgVarWildSeq {% checkDupBind $1 $2 >> return ($1 : $2) }
 
 ProgVarWildTBind :: { (Variable, T.Type) }
   : ProgVarWild ':' Type  %prec ProgVarWildTBind { ($1, $3) }
@@ -498,16 +526,29 @@ parseAndImport initial = do
       | otherwise = do
           let fileToImport = replaceBaseName defModule curImport -<.> "fst"
           exists <- doesFileExist fileToImport
-          if exists then do
-            s' <- parseProgram (s {moduleName = Nothing, runOpts=defaultOpts{runFilePath=fileToImport}})
-            let modName = fromJust $ moduleName s'
-            if curImport /= modName then
-              pure $ s' {errors = errors s ++ [NameModuleMismatch defaultSpan{defModule} modName curImport]}
-            else
-              doImports defModule (Set.insert curImport imported) (toImport ++ Set.toList (imports s')) s'
+          if exists then
+            importModule s fileToImport curImport defModule imported toImport
+          else do
+            fileToImport <- getDataFileName $ curImport -<.> "fst"
+            isStdLib <- doesFileExist fileToImport
+            if isStdLib then
+              importModule s fileToImport curImport defModule imported toImport                
+            else 
+              pure $ s {errors = errors s ++ [ImportNotFound defaultSpan{defModule} curImport fileToImport]}
+
+    importModule :: FreestS -> FilePath -> FilePath -> FilePath -> Imports -> [FilePath] -> IO FreestS
+    importModule s fileToImport curImport defModule imported toImport = do
+      s' <- parseProgram (s {moduleName = Nothing, runOpts=defaultOpts{runFilePath=fileToImport}})
+      case moduleName s' of
+        Just modName -> 
+          if curImport /= modName then
+            pure $ s' {errors = errors s ++ [NameModuleMismatch defaultSpan{defModule} modName curImport]}
           else
-            pure $ s {errors = errors s ++ [ImportNotFound defaultSpan{defModule} curImport fileToImport]}
-        
+            doImports defModule (Set.insert curImport imported) (toImport ++ Set.toList (imports s')) s'
+        Nothing ->
+            pure $ s' {errors = errors s ++ [MissingModHeader defaultSpan{defModule} curImport]}
+            
+
 -- Error Handling
 parseError :: [Token] -> FreestStateT a
 parseError [] = lift . Left $ PrematureEndOfFile defaultSpan

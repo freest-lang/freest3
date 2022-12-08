@@ -1,53 +1,49 @@
 {- |
-Module      :  Send a tree on a channel
-Description :  As in "Context-Free Session Types"
+Module      :  Exchange a binary tree on a channel
+Description :  As in "Context-Free Session Types", ICFP'16
 Copyright   :  (c) LASIGE and University of Lisbon, Portugal
 Maintainer  :  balmeida@lasige.di.fc.ul.pt
 -}
 
-data Tree = Leaf | Node Int Tree Tree
+data Tree = Leaf | Node Tree Int Tree
 
-{-
-type TreeChannel = +{
-  Leaf : Skip,
-  Node : !Int ; TreeChannel ; TreeChannel
-}
+aTree : Tree
+aTree = Node (Node Leaf 5 Leaf) 7 (Node (Node Leaf 11 Leaf) 9 (Node Leaf 15 Leaf))
 
-type TreeChannel = rec x::Su. +{
-  Leaf : Skip,
-  Node : !Int ; x ; x
-}
--}
+type TreeChannel : 1S = TreeC ; End
 
-sendTree : forall a: 1S . Tree -> (rec x: 1S. +{Leaf : Skip, Node: !Int;x;x}); a -> a
-sendTree t c =
-  case t of {
-    Leaf ->
-      select Leaf c,
-    Node x l r ->
-      let c = select Node c in
-      let c = send x c in
-      let c = sendTree @((rec x: 1S. +{Leaf: Skip, Node: !Int;x;x});a) l c in
-      sendTree @a r c
-  }
+type TreeC : 1S = &{
+  LeafC: Skip,
+  NodeC: TreeC ; ?Int ; TreeC
+ }
 
-receiveTree : forall a : 1S . (rec x: 1S. &{Leaf: Skip, Node: ?Int;x;x}); a -> (Tree, a)
-receiveTree c =
-  match c with {
-    Leaf c ->
-      (Leaf, c),
-    Node c ->
-      let (x, c) = receive c in
-      let (left, c) = receiveTree @((rec x: 1S. &{Leaf: Skip, Node: ?Int;x;x});a) c in
-      let (right, c) = receiveTree @a c in
-      (Node x left right, c)
-  }
+readTree : TreeChannel -> Tree
+readTree r = 
+  let (tree, r) = read @End r in 
+  close r;
+  tree
+-- where
+read : forall a:1S . TreeC ; a -> (Tree, a)
+read (LeafC c) = (Leaf, c)
+read (NodeC c) =
+  let (l, c) = read @(?Int ; TreeC ; a) c in
+  let (x, c) = receive c in
+  let (r, c) = read @a c in
+  (Node l x r, c)
+
+writeTree : Tree -> dualof TreeChannel -> ()
+writeTree tree writer =
+  write @End tree writer |> close
+-- where
+write : forall a:1S . Tree -> dualof TreeC ; a -> a
+write Leaf c = select LeafC c
+write (Node l x r) c = 
+  c |> select NodeC
+    |> write @(!Int;dualof TreeC;a) l
+    |> send x
+    |> write @a r
 
 main : Tree
 main =
-  let inTree = Node 7 (Node 5 Leaf Leaf) (Node 9 (Node 11 Leaf Leaf) (Node 15 Leaf Leaf)) in
-  let (writer, reader) = new (rec x: 1S. +{Leaf : Skip, Node: !Int;x;x});End in
-  let w = fork @() (\_:()1-> sendTree @End inTree writer |> close) in
-  let (outTree, r) = receiveTree @End reader in
-  close r; 
-  outTree
+  forkWith @TreeChannel @() (writeTree aTree) |>
+  readTree

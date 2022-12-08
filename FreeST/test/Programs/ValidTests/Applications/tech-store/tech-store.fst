@@ -367,8 +367,7 @@ runPayment : StdOut -> Price -> dualof PaymentC -> ()
 runPayment stdout price ch =
     -- mock up 
     let (ccnumber, ch) = receive ch in
-    let (cccode, ch) = receive ch in
-    close ch;
+    let cccode = receiveAndClose @Int ch in 
     -- logging
     receive_ @Printer stdout
     |> printStringLin "Payment processed \t @ amount: "
@@ -548,10 +547,13 @@ client0 stdout ch =
             let (price, buyC) = receive buyC in
             -- buyer's price limit
             if price > 100 
-            then select Cancel buyC |> close
-            else let (paymentC, buyC) = select Confirm buyC |> receive in
-                 close buyC;
-                 send 123123123 paymentC |> send 123 |> close
+            then buyC |> select Cancel
+                      |> close
+            else buyC |> select Confirm 
+                      |> receiveAndClose @PaymentC;End 
+                      |> send 123123123
+                      |> send 123 
+                      |> close
     }
 
 {- rma clients -}
@@ -563,10 +565,10 @@ client1 _ ch =
     -- go to the rma queue
     let (rmaC, _) = receive $ select Rma store in
     -- wait & do my business
-    let (rmaId, c) = send 1234567890 rmaC
+    let rmaId = rmaC |> send 1234567890
                      |> send "Monitor flickers when punched"
-                     |> receive in
-    close c
+                     |> receiveAndClose @Int in
+    ()
 
 ---------------------------------- Main ----------------------------------
 

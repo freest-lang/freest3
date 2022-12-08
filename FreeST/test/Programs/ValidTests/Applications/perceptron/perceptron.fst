@@ -17,9 +17,9 @@ main =
     let cons = mkLayers ls           in -- create network
     -- printLayers cons; -- TODO remove PRINT
     let rs = startup input cons      in -- start up network
-    -- printStringLn "Cenas e tal";
+    -- putStrLn "Cenas e tal";
     let r  = recNeuron rs            in
-    -- printString "Result: ";
+    -- putStr "Result: ";
     -- printIntLn r
     r
 
@@ -131,9 +131,7 @@ recNeuron rs =
     case rs of {
         RNil -> 0,
         RCons r rs -> 
-            let (x, c) = receive r in
-            close c;
-            x + recNeuron rs
+            (receiveAndClose @Int r) + recNeuron rs
     }
 
 sendNeuron : Int -> SList -> ()
@@ -224,8 +222,8 @@ printLayers ls =
 printConnection : Connection -> ()
 printConnection cs = 
     case cs of {
-        CNil -> printStringLn "",
+        CNil -> putStrLn "",
         Connection _ cs ->
-            printString "o ";
+            putStr "o ";
             printConnection cs
     }

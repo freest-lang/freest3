@@ -27,21 +27,18 @@ type Donation : 1S = +{ SetTitle: !String; Donation
 helpSavingTheWolf : dualof DonationS -> ()
 helpSavingTheWolf donationServer =
     let (p, donationServer) = receive donationServer in         -- get a session channel p from the donation server 
-    let p = select SetDate  p |> send 2012 in                    -- setup the date
-    let p = select SetTitle p |> send "Help Saving the Wolf" in  -- setup the title
-    let p = select SetDate  p |> send 2013 in                    -- fix the 2012 date
+    let p = select SetDate  p |> send 2012 in                   -- setup the date
+    let p = select SetTitle p |> send "Help Saving the Wolf" in -- setup the title
+    let p = select SetDate  p |> send 2013 in                   -- fix the 2012 date
     let p = select Commit p in                                  -- commit once happy
     match p with {                                              -- wait for the outcome
         Accepted p ->                                           -- if accepted, we have three benefactors
-            let (d, p) = receive p in
-            close p;
+            let d = receiveAndClose @Promotion p in 
             fork (\_:()1-> donate d "Benefactor1" "2345" 5);
             fork (\_:()1-> donate d "Benefactor2" "1234" 20);
             donate d "Benefactor3" "1004" 10,
         Denied p ->                                             -- otherwise, print the reason
-            let (reason, p) = receive p in 
-            close p;
-            printStringLn reason
+            putStrLn $ receiveAndClose @String p
     }
 
 donate : Promotion -> String -> CreditCard -> Int -> ()
@@ -54,8 +51,7 @@ donate p donor ccard amount =
 -- 3. The bank that charges credit cards
 bank : CreditCard -> Int -> ()
 bank ccard amount =
-    -- printStringLn $ "Charging " ++ show amount ++ " euros on card " ++ ccard
-    printString "Charging "; printInt amount; printString " euros on card "; printStringLn ccard
+    putStrLn $ "Charging " ++ show @Int amount ++ " euros on card " ++ ccard
 
 
 -- 4. The Online Donation Server
@@ -74,8 +70,7 @@ promotion p =
     --
     let (donor , p') = receive p' in
     let (ccard , p') = receive p' in
-    let (amount, p') = receive p' in
-    close p';
+    let amount       = receiveAndClose @Int p' in
     bank ccard amount;
     promotion p
 
@@ -97,8 +92,8 @@ setup p title date =
 -- 5. Main
 main : ()
 main = 
-    let (ps1, ps2) = new DonationS in  -- create a Online Donation channel
-    fork (\_:() 1-> helpSavingTheWolf ps2);      -- let the whole world know the other
+    let (ps1, ps2) = new DonationS in       -- create a Online Donation channel
+    fork (\_:() 1-> helpSavingTheWolf ps2); -- let the whole world know the other
     fork (\_:() 1-> helpSavingTheWolf ps2);
     fork (\_:() 1-> helpSavingTheWolf ps2);
-    donationServer ps1                 -- send one end to the Donation Server
+    donationServer ps1                      -- send one end to the Donation Server

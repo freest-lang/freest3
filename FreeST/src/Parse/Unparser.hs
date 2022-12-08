@@ -193,11 +193,9 @@ instance Unparse T.Type where
    where
     l = bracket (unparse t) Left arrowRator
     r = bracket (unparse u) Right arrowRator
-  unparse (T.Pair _ t u) = (maxRator, "(" ++ l ++ ", " ++ r ++ ")")
-   where
-    l = bracket (unparse t) Left minRator
-    r = bracket (unparse u) Right minRator
   unparse (T.Almanac _ T.Variant m) = (maxRator, "[" ++ showDatatype m ++ "]")
+  unparse (T.Almanac _ T.Record m) | all (all isDigit . intern) $ Map.keys m = 
+    (maxRator, "(" ++ showTupleType m ++ ")")
   unparse (T.Semi _ t u  ) = (semiRator, l ++ " ; " ++ r)
    where
     l = bracket (unparse t) Left semiRator
@@ -226,6 +224,10 @@ showDatatype m = intercalate " | "
 showChoice :: T.TypeMap -> String
 showChoice m = intercalate ", "
   $ Map.foldrWithKey (\c t acc -> (show c ++ ": " ++ show t) : acc) [] m
+
+showTupleType :: T.TypeMap -> String 
+showTupleType m = intercalate ", " 
+  $ Map.foldr (\t acc -> show t : acc) [] m
 
 showChoiceLabels :: T.TypeMap -> String
 showChoiceLabels m = intercalate ", "
@@ -291,6 +293,9 @@ instance Unparse Exp where
   unparse (E.Case _ e m) =
     (inRator, "case " ++ s ++ " of {" ++ showFieldMap m ++ "}")
     where s = bracket (unparse e) NonAssoc inRator
+  unparse (E.CasePat _ e m) =
+    (inRator, "case " ++ s ++ " of {" ++ showFieldList m ++ "}")
+    where s = bracket (unparse e) NonAssoc inRator
   -- Type Abstraction intro and elim
   unparse (E.TypeApp _ x t) = (appRator, show x ++ " @" ++ t')
     where t' = bracket (unparse t) Right appRator
@@ -316,6 +321,16 @@ showFieldMap m = intercalate "; " $ map showAssoc (Map.toList m)
  where
   showAssoc (b, (a, v)) =
     show b ++ " " ++ unwords (map show a) ++ " -> " ++ show v
+
+showFieldList :: FieldList -> String
+showFieldList m = intercalate "; " $ map show m
+ where
+  showAssoc (b, (a, v)) =
+    show b ++ " " ++ unwords (map show a) ++ " -> " ++ show v
+
+instance Show Pattern where
+  show (E.PatVar  v)    = "PatVar "  ++ intern v
+  show (E.PatCons v ps) = "PatCons " ++ intern v ++ show ps
 
 isOp :: [String] -> Variable -> Bool
 isOp ops x = show x `elem` ops

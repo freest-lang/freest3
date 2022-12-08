@@ -19,10 +19,7 @@ main : Int
 main =
   let (w,r) = new MathClient in
   fork @() (\_:()1-> mathServer r);
-  let (x, c) = 
-    select Plus w
+  w |> select Plus 
     |> send 5 
     |> send 18
-    |> receive in
-    close c;
-    x
+    |> receiveAndClose @Int

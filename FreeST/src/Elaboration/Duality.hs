@@ -1,17 +1,16 @@
 {-# LANGUAGE FlexibleInstances #-}
 
-module Elaboration.Duality where
+module Elaboration.Duality
+  ( Duality(..)
+  )
+where
 
 import           Syntax.Base                   (Bind(..))
 import qualified Data.Map                      as Map
 import qualified Syntax.Type                   as T
-import           Util.FreestState
-import           Util.Error
 import           Validation.Substitution
 
-
-
--- Calculates the dual of a session type
+-- The dual of an object
 class Duality t where
   dualof :: t -> t 
 
@@ -21,7 +20,6 @@ instance Duality T.Type where
   -- Session Types
   dualof (T.Semi p t u) = T.Semi p (dualof t) (dualof u)
   dualof (T.Message p pol t) = T.Message p (dualof pol) t
-  -- dualof (T.Message p pol t) = T.Message p (dual pol) (dualof t)
  -- dualof (T.Choice p pol m) = T.Choice p (dual pol) (Map.map dualof m)
   dualof (T.Almanac p (T.Choice v) m) =
     T.Almanac p (T.Choice $ dualof v) (Map.map dualof m)

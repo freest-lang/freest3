@@ -5,7 +5,8 @@ module Elaboration.Elaboration
   )
 where
 
-import           Elaboration.Elaborate 
+import           Elaboration.Elaborate
+import qualified Elaboration.Match as Match
 import           Elaboration.ResolveDuality as Dual
 import           Elaboration.ResolveEquations
 import           Equivalence.Normalisation ( normalise )
@@ -15,12 +16,24 @@ import           Syntax.Program ( VarEnv )
 import qualified Syntax.Type as T
 import           Util.Error
 import           Util.FreestState
-import           Data.Functor
-import           Data.Maybe
 
+import           Data.Functor
+import qualified Data.Map.Strict as Map
+import           Data.Maybe
+import qualified Data.Set as Set
 
 elaboration :: FreestState ()
 elaboration = do
+  -- | Checks if there are choices with the same name as constructors
+--  Match.checkChoices =<< getPEnvChoices
+  -- | Checks correct number of arguments
+  Match.checkNumArgs =<< getPEnvPat
+  -- | Checks correct channels' pattern matching
+  Match.checkChanVar =<< getPEnvPat
+  -- | Adds missing Vars to malformed functions
+  (Match.addMissingVars <$> getPEnvPat) >>= setPEnvPat
+  -- | Remove all patterns
+  (Match.matchFuns =<< getPEnvPat) >>= setPEnv
   -- | Solve the equations' system.
   solveEquations
   -- | From this point, there are no type names on the RHS
@@ -29,7 +42,7 @@ elaboration = do
   elabVEnv =<< getVEnv
   -- | same for parse env (which contains the functions' bodies)
   elabPEnv =<< getPEnv
-  -- | From this point, there are no type names on the function signatures
+  -- | From this3,221 point, there are no type names on the function signatures
   --   and on the function bodies. 
   -- | Then, resolve all the dualof occurrences on:
   -- | Type Env (i.e. type A = dualof !Int)
@@ -54,7 +67,6 @@ elabVEnv = tMapWithKeyM_ (\pv t -> addToVEnv pv =<< elaborate t)
 elabPEnv :: ParseEnv -> FreestState ()
 elabPEnv = tMapWithKeyM_ (\x (ps, e) -> addToPEnv x ps =<< elaborate e)
 
-
 -- | Build a program from the parse env
 
 buildProg :: FreestState ()
@@ -77,6 +89,3 @@ buildFunBody f as e = getFromVEnv f >>= \case
   buildExp _ xs _ = do
     t <- fromJust <$> getFromVEnv f
     addError (WrongNumberOfArguments (getSpan f) f (length as - length xs) (length as) t) $> e
-
-
-

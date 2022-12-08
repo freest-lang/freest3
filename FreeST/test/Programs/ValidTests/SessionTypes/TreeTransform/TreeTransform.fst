@@ -17,7 +17,7 @@ back the sum of the integer values under (and including) that node.
 
 data Tree = Leaf | Node Int Tree Tree
 
-type TreeC : 1S = +{Leaf: Skip, Node: !Int;TreeC;TreeC;?Int}
+type TreeC : 1S = +{LeafC: Skip, NodeC: !Int;TreeC;TreeC;?Int}
 
 -- Note: we use the same constructors for the datatype and the channel, namely Leaf and Node
 
@@ -31,9 +31,9 @@ transform : forall a : 1S . Tree -> TreeC ; a -> (Tree, a)
 transform tree c =
   case tree of {
     Leaf ->
-      (Leaf, select Leaf c),
+      (Leaf, select LeafC c),
     Node x l r ->
-      let c = select Node c in
+      let c = select NodeC c in
       let c = send x c in
       let (l, c) = transform  @(TreeC ; ?Int ; a) l c in
       let (r, c) = transform  @(?Int ; a) r c in
@@ -49,9 +49,9 @@ transform tree c =
 treeSum : forall a : 1S . dualof TreeC ; a -> (Int, a)
 treeSum c =
   match c with {
-    Leaf c ->
+    LeafC c ->
      (0, c),
-    Node c ->
+    NodeC c ->
       let (x, c) = receive c in
       let (l, c) = treeSum  @(dualof TreeC ; !Int ; a) c in
       let (r, c) = treeSum  @(!Int ; a) c in
@@ -65,7 +65,7 @@ aTree = Node 1 (Node 2 (Node 8 Leaf Leaf) (Node 3 (Node 5 Leaf Leaf) (Node 4 Lea
 
 main =
   let (w, r) = new TreeC;End in
-  fork @() (\_:()1-> let (_, r) = treeSum  @End r in close r);
+  fork @() (\_:()1-> close $ snd @Int @End $ treeSum @End r);
   let (t, w) = transform  @End aTree w in
   close w;
   t

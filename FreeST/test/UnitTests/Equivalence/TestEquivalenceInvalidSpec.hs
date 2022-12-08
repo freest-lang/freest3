@@ -12,12 +12,11 @@ import qualified Data.Map.Strict               as Map
 import           Control.Monad.State
 
 matchInvalidSpec :: [String] -> Spec
-matchInvalidSpec [a, b] =
-  it (a ++ " `~/~` " ++ b) $ equivalent Map.empty t u `shouldBe` False
+matchInvalidSpec [a, b] = it
+  (a ++ " ~/~ " ++ b)
+  (equivalent Map.empty a' b' `shouldBe` False)
  where
-  (Pair p t u) =
-    evalState (rename Map.empty Map.empty (Pair p (read a) (read b))) initialState
-    -- evalState (rename Map.empty (Pair p (read a) (read b))) initialState :: Type
+  [a', b'] = renameTypes [read a, read b]
 
 spec :: Spec
 spec = do

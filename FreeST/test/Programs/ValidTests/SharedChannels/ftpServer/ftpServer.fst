@@ -10,7 +10,7 @@ type State = (*?File, *!File)
 -- |Read a file from the state
 readFrom : State -> File
 readFrom state =
-  fst @File @State $ receive $ fst @*?File @*!File state
+  fst @File @*?File $ receive $ fst @*?File @*!File state
 
 -- |Write a file to the state
 writeTo : File -> State -> ()
@@ -63,11 +63,11 @@ actions state s b =
   match s with
     { Get s ->
         let file = readFrom state in
-        printIntLn (- file);
+        print @Int  (- file);
         actions state (send file s) b
     , Put s ->
         let (file, s) = receive s in
-        printIntLn file;
+        print @Int  file;
         writeTo file state;
         actions state s b
     , Bye s -> close s; ftpThread state b

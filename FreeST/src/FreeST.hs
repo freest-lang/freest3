@@ -28,9 +28,11 @@ import qualified Data.Set as Set
 import           Paths_FreeST ( getDataFileName )
 import           System.Exit ( die )
 
+isDev :: Bool
+isDev = True
 
 main :: IO ()
-main = checkAndRun =<< flags -- handleOpts =<< compilerOpts =<< getArgs
+main = checkAndRun =<< flags isDev -- handleOpts =<< compilerOpts =<< getArgs
 
 checkAndRun :: RunOpts -> IO ()
 checkAndRun runOpts = do
@@ -71,14 +73,17 @@ checkAndRun runOpts = do
   
  -- | Check if main was left undefined, eval and print result otherwise
   let m = getMain runOpts
-  when (m `Map.member` varEnv s5) $
-    addPrimitiveChannels ["stdout", "stdin", "stderr"] initialCtx >>= \ctx ->
-    (evalAndPrint 
-      (typeEnv s5) 
-      (ctx)
-      (prog s5)
-      (forkHandlers [("__runStdout", "_stdout"), ("__runStderr", "_stderr"), ("__runStdin", "_stdin")] (prog s5 Map.! m))
-    )
+  
+  when (m `Map.member` varEnv s5) $ evalAndPrint m s5 $
+    forkHandlers 
+      [ ("__runStdout", "__stdout")
+      , ("__runStderr", "__stderr")
+      , ("__runStdin", "__stdin")] 
+      (prog s5 Map.! m)
+  -- when (m `Map.member` varEnv s5)
+  --   (evalAndPrint (typeEnv s5) initialCtx
+  --   (prog s5)
+  --   (prog s5 Map.! m))
 
   where
     noSig :: VarEnv -> Variable -> FreestS -> FreestS
@@ -88,14 +93,6 @@ checkAndRun runOpts = do
     preludeHasErrors f s0 s1
       | hasErrors s1 = s0 { warnings = NoPrelude f : warnings s0 }
       | otherwise    = s1
-
-    addPrimitiveChannels :: [String] -> Ctx -> IO Ctx
-    addPrimitiveChannels [] ctx = return ctx
-    addPrimitiveChannels (varName : varNames) ctx = do
-      (clientChan, serverChan) <- new
-      addPrimitiveChannels varNames 
-        $ Map.insert (mkVar defaultSpan         varName ) (Chan clientChan) 
-        $ Map.insert (mkVar defaultSpan ("_" ++ varName)) (Chan serverChan) ctx
 
     forkHandlers :: [(String, String)] -> E.Exp -> E.Exp
     forkHandlers [] e = e

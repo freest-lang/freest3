@@ -9,12 +9,9 @@ type Internal : 1S = ?Int; ?Internal; End
 
 runHeadNode : Internal -> dualof Head 1-> ()
 runHeadNode prev head = 
-    let (i    , prev) = receive prev in
-    let (prev', prev) = receive prev in
-    close prev;
+    let (i, prev) = receive prev in
     send_ @Int i head;
-
-    runHeadNode prev' head
+    runHeadNode (receiveAndClose @Internal prev) head
 
 runTailNode : dualof Internal -> dualof Tail 1-> ()
 runTailNode next tail =

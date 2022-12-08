@@ -5,8 +5,7 @@ sendInt : !Int;End -> ()
 sendInt c = send 5 c |> close
 
 receiveInt : dualof (dualof (dualof !Int;End)) -> Int
-receiveInt c =
-  let (x, c) = receive c in close c; x
+receiveInt c = receiveAndClose @Int c
 
 
 main : Int

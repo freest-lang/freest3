@@ -52,15 +52,20 @@ data ErrorType =
   | ParseError Span String -- String should be Token (circular import)
   | NameModuleMismatch Span FilePath FilePath
   | ImportNotFound Span FilePath FilePath
+  | MissingModHeader Span FilePath
   -- ParseUtils
   | MultipleFieldDecl Span Span Variable
   | RedundantPMatch Span Variable
   | DuplicateVar Span String Variable Span  -- string is the variable description: type or program
   | DuplicateFieldInDatatype Span Variable Span
+  | MissingChoices Span [Variable] Span
   | MultipleDeclarations Span Variable Span
   | MultipleTypeDecl Span Variable Span
   | MultipleFunBindings Span Variable Span
   -- Elab
+  | ConflictChoiceCons Span Variable Span
+  | DifNumberOfArguments Span Variable 
+  | InvalidVariablePatternChan Span Variable
   | TypeVarOutOfScope Span Variable
   | FuctionLacksSignature Span Variable
   | WrongNumberOfArguments Span Variable Int Int T.Type
@@ -91,6 +96,7 @@ data ErrorType =
   -- Runtime errors
   | ErrorFunction Span String
   | UndefinedFunction Span
+  | RuntimeError Span String
   deriving Show
 
 instance Located ErrorType where
@@ -101,13 +107,18 @@ instance Located ErrorType where
   getSpan (ParseError        p _         ) = p
   getSpan (NameModuleMismatch p _ _      ) = p
   getSpan (ImportNotFound p _ _          ) = p
+  getSpan (MissingModHeader p _            ) = p
   getSpan (MultipleFieldDecl p _ _       ) = p
   getSpan (RedundantPMatch   p _         ) = p
   getSpan (DuplicateVar p _ _ _          ) = p
   getSpan (DuplicateFieldInDatatype p _ _) = p
+  getSpan (MissingChoices  p _ _       ) = p
   getSpan (MultipleDeclarations p _ _  ) = p
   getSpan (MultipleTypeDecl     p _ _  ) = p
   getSpan (MultipleFunBindings  p _ _  ) = p
+  getSpan (ConflictChoiceCons p _ _    ) = p
+  getSpan (DifNumberOfArguments p _    ) = p
+  getSpan (InvalidVariablePatternChan p _) = p
   getSpan (TypeVarOutOfScope     p _   ) = p
   getSpan (FuctionLacksSignature p _   ) = p
   getSpan (WrongNumberOfArguments p _ _ _ _) = p 
@@ -133,6 +144,7 @@ instance Located ErrorType where
   getSpan (BranchNotInScope p _ _      ) = p
   getSpan (ErrorFunction p _           ) = p -- defaultSpan
   getSpan (UndefinedFunction p         ) = p
+  getSpan (RuntimeError p _            ) = p
 
 
 instance Message ErrorType where
@@ -142,10 +154,10 @@ instance Message ErrorType where
     "File " ++ style red sty ts f ++ " does not exist (No such file or directory)"
   msg (WrongFileExtension f) sty ts = 
    "File has not a valid file extension\n\tExpecting: " ++ red sty (quote $ f -<.> "fst") ++
-   "\n\t\tbut got:   " ++ style red sty ts f
+   "\n\tbut got:   " ++ style red sty ts f
   msg (LexicalError _ tk) sty _ = "Lexical error on input " ++ red sty tk
   msg (PrematureEndOfFile _) _ _ =  "Parse error: Premature end of file"
-  msg (ParseError _ x) sty _ = "Parse error on input " ++ red sty (quote x)
+  msg (ParseError _ x) sty _ = "Parse error on input: " ++ red sty (quote x)
 
   msg (ImportNotFound _ m f) sty tops =
     "Could not find module " ++ style red sty tops (showModuleWithDots m) ++
@@ -153,6 +165,8 @@ instance Message ErrorType where
   msg (NameModuleMismatch _ m f) sty tops =
     "File name does not match the module name.\n    Module name: " ++
     style red sty tops (showModuleWithDots m) ++ "\n    Filename:    " ++ style red sty tops (f -<.> "fst")
+  msg (MissingModHeader _ f) sty tops =
+    "File " ++ style red sty tops (f -<.> "fst") ++ " is missing the module header."
   msg (MultipleFieldDecl sp1 sp2 x) sty ts =
     "Multiple declarations of field " ++ style red sty ts x ++
     " in a choice type.\n\tDeclared at " ++ show sp1 ++ " and " ++ show sp2
@@ -164,6 +178,13 @@ instance Message ErrorType where
   msg (DuplicateFieldInDatatype p pv p') sty ts =
     "Multiple declarations of " ++ style red sty ts pv ++ " in a datatype declaration" ++
      "\n\tDeclared at: " ++ show p ++ " and " ++ show p'
+  msg (MissingChoices p vs p') sty ts = 
+    "Declared " ++ fields ++ (prettyList $ map (style red sty ts) vs) ++ 
+    " at: " ++ show p ++ ", but missing on " ++ show p'
+    where fields = if length vs == 1 then "field " else "fields "
+          prettyList (x:[])   = x
+          prettyList (x:y:[]) = x ++ " and " ++ y
+          prettyList (x:xs)   = x ++ ", "    ++ prettyList xs
   msg (MultipleDeclarations p pv p') sty ts =
     "Ambiguous occurrence " ++ style red sty ts pv ++
     "\n\tDeclared in modules: " ++ showModule (showModuleName p') p' ++
@@ -176,6 +197,20 @@ instance Message ErrorType where
     "Multiple bindings for function " ++ style red sty ts x ++
     "\n\t Declared in modules: " ++ showModule (showModuleName sp2) sp2 ++
     "\n\t                      " ++ showModule (showModuleName sp1) sp1
+  msg (ConflictChoiceCons p chan p2) sty ts =
+    "Confliting definitions between a choice and a constructor " ++
+    style red sty ts (show chan) ++ 
+    "\n  Declared in file/module: " ++ showModule (showModuleName p) p ++
+    "\n                           " ++ showModule (showModuleName p2) p2 
+  msg (DifNumberOfArguments p fun) sty ts =
+    "Equations for " ++ style red sty ts (show fun) ++
+    " have different number of arguments " ++
+    "\n  Declared in file/module " ++ showModule (showModuleName p) p ++
+    ": " ++ red sty (show fun)
+  msg (InvalidVariablePatternChan p v) sty ts = 
+    "Cannot mixture variables with pattern-matching channel choices." ++
+    "\n  Declared in file/module " ++ showModule (showModuleName p) p ++
+    ": " ++ red sty (show v)
   msg (TypeVarOutOfScope _ x) sty ts = "Type variable not in scope: " ++ style red sty ts x
   msg (FuctionLacksSignature _ x) sty ts =
     "The binding for function " ++ style red sty ts x ++ " lacks an accompanying type signature"
@@ -195,11 +230,13 @@ instance Message ErrorType where
   msg (UnrestrictedMainFun _ x t k) sty ts = 
     "The type of " ++ style red sty ts x ++ " must be non linear\n\t Found type " ++
     style red sty ts t ++ " of kind " ++ style red sty ts k
-  msg (LinearFunctionNotConsumed _ venv) sty _ =
-    "Found linear function(s) that were not consumed.\n  Located at:" ++
+  msg (LinearFunctionNotConsumed _ env) sty _ =
+    let c = length env 
+        term = if c > 1 then "s" else "" in
+    "Found " ++ show c ++ " top-level linear function" ++ term ++ " that were not consumed.\n  They are:" ++
     foldl (\acc (k,v) -> let s = getSpan k in
-             acc ++ "\n\t- " ++ defModule s ++ ":" ++ show s ++ ": " ++
-             red sty (show k ++ " : " ++ show v)) "" venv    
+             acc ++ "\n    " ++ defModule s ++ ":" ++ show s ++ ": " ++
+             red sty (show k ++ " : " ++ show v)) "" env    
   -- Validation.Kinding
   msg (TypeVarNotInScope _ a) sty ts = "Type variable not in scope: " ++ style red sty ts a
   msg (TypeNotContractive _ t a) sty ts =
@@ -220,7 +257,7 @@ instance Message ErrorType where
     "Variable or data constructor not in scope: " ++ styledVar ++
     "\n  In module: " ++ showModule (showModuleName p) p ++
     "\n  (is " ++ styledVar ++ " a linear variable that has been consumed?)" ++
-    "\n  (is " ++ styledVar ++ " a function defined in other module that is not imported?)"
+    "\n  (is " ++ styledVar ++ " a function defined in a module that you forgot to import?)"
   msg (LinProgVar _ x t k) sty ts =
     "Program variable " ++ style red sty ts x ++ " is linear at the end of its scope\n\t  variable " ++
     style red sty ts x ++ " is of type " ++ style red sty ts t ++ " of kind " ++ style red sty ts k
@@ -256,3 +293,4 @@ instance Message ErrorType where
     e ++ "\n  error, called at module" ++ defModule s ++ ":" ++ show (startPos s)
   msg (UndefinedFunction s) _ _ = 
     "undefined function, called at " ++ defModule s ++ ":" ++ show (startPos s)
+  msg (RuntimeError _ e) _ _ = "Exception: " ++ e

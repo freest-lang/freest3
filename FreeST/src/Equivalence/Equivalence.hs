@@ -47,20 +47,20 @@ type Visited = Set.Set (Span, Span)
 -- A co-inductive definition for functional types. A bisimulation
 -- based definition for session types
 instance Equivalence T.Type where
-  -- equivalent _ = bisimilar
-  equivalent = equiv Set.empty
+  equivalent _ = bisimilar
+  -- equivalent = equiv Set.empty
    where
     equiv :: Visited -> K.KindEnv -> T.Type -> T.Type -> Bool
     -- Have we been here before?
     equiv v _ t1 t2 | (getSpan t1, getSpan t2) `Set.member` v  = True
-    -- Almanac
-    equiv v kEnv (T.Almanac _ T.Variant m1) (T.Almanac _ T.Variant m2) =
-      Map.size m1
-        == Map.size m2
-        && Map.foldlWithKey (equivField v kEnv m2) True m1
     -- Session types
     equiv _ kEnv t1 t2 | isSessionType kEnv t1 && isSessionType kEnv t2 =
       bisimilar t1 t2
+    -- Records and Variants (all other almanac sorts are session types)
+    equiv v kEnv (T.Almanac _ _ m1) (T.Almanac _ _ m2)  =
+      Map.size m1
+        == Map.size m2
+        && Map.foldlWithKey (equivField v kEnv m2) True m1
     -- Functional types
     equiv _ _ (T.Int  _) (T.Int  _)                    = True
     equiv _ _ (T.Char _) (T.Char _)                    = True
@@ -69,8 +69,6 @@ instance Equivalence T.Type where
     equiv _ _ (T.String _) (T.String _)                = True
     equiv v kEnv (T.Arrow _ n1 t1 t2) (T.Arrow _ n2 u1 u2) =
       n1 == n2 && equiv v kEnv t1 u1 && equiv v kEnv t2 u2
-    equiv v kEnv (T.Pair _ t1 t2) (T.Pair _ u1 u2) =
-      equiv v kEnv t1 u1 && equiv v kEnv t2 u2
     -- Polymorphism and recursion
     equiv v kEnv (T.Forall _ (Bind p a1 k1 t1)) (T.Forall _ (Bind _ a2 k2 t2))
       = k1 <: k2 && k2 <: k1 &&

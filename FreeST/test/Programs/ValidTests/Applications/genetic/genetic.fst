@@ -19,9 +19,9 @@ main : ()
 main =
   let result = clientParallel in
   -- Print value
-  printString "  Value: "; printIntLn result;
+  putStr "  Value: "; print @Int result;
   -- Print fitness
-  printString "Fitness: "; printIntLn $ fitnessAllOnes result
+  putStr "Fitness: "; print @Int $ fitnessAllOnes result
 
 -- Parameters
 argSeed, argPopSize, argIterPop, argIslands, argIterIsl : Int
@@ -234,7 +234,7 @@ geneticAlg seed populationSize iterations =
   -- Get first fittest individual
   --let (fittest, _) = getFittestIndividual pop in
   -- Print out first individual
-  --printIntLn fittest;
+  --print @Int fittest;
   -- Apply the genetic algorithm
   let (_, pop) = geneticAlg_ seed iterations pop in
   -- Get the resulting population's fittest individual
@@ -256,7 +256,7 @@ geneticAlg_ seed iterations pop =
     -- Compute fitness of the (hopefully) new fittest individual
     --let (fittest, _) = getFittestIndividual pop in
     -- Print information
-    --printIntLn fittest;
+    --print @Int fittest;
     -- Re-add the fittest individual |> Continue the algorithm (-1 iteration)
     geneticAlg_ seed (iterations - 1) (ConsPop fittest pop)
 
@@ -321,7 +321,7 @@ masterLoop channels nIterG =
     -- Get fittest from all
     let (fittest, channels) = receiveFittest channels in
     -- Print information
-    --printIntLn fittest;
+    --print @Int fittest;
     -- Send fittest to all
     let channels = sendFittest fittest channels in
     -- Continue iterating

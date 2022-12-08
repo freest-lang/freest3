@@ -60,15 +60,15 @@ handleFlags fg@(RunOpts f _ _ sty _) = do
     fileDoNotExist = showErrors sty "FreeST" Map.empty (FileNotFound f)
     wrongFileExtension = showErrors sty "FreeST" Map.empty (WrongFileExtension f)
 
-flags :: IO RunOpts
-flags = handleFlags =<< execParser opts
+flags :: Bool -> IO RunOpts
+flags b = handleFlags =<< execParser opts
   where
     opts = info (versionParser v <*> runOptsParser <**> helper) desc
     desc = fullDesc
      <> progDesc "Run FreeST"
      <> header v
     
-    v = "FreeST, Version " ++ showVersion version
+    v = "FreeST, Version " ++ showVersion version ++ if b then "-dev" else ""
 
 
 -- criticalError :: ErrorType -> IO ()

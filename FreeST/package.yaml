@@ -1,5 +1,5 @@
 name:                FreeST
-version:             2.2.0
+version:             2.3.0
 #github:              "githubuser/ContextFreeSession"
 license:             BSD3
 author:              "Bernardo Almeida, Andreia Mordido, Vasco T. Vasconcelos"
@@ -56,6 +56,7 @@ library:
     - Util.FreestState
     - Util.CmdLine
 #    - Util.PreludeLoader
+    - Util.GetTOps
     - Parse.Lexer 
     - Parse.Parser
     - Validation.Subkind
@@ -66,7 +67,6 @@ library:
     - Validation.Substitution
     - Validation.Typing
     - Validation.TypeChecking
-    - Interpreter.Builtin
     - Interpreter.Eval
 
 executables:

@@ -43,7 +43,10 @@ type Errors = [ErrorType]
 
 type Imports = Set.Set FilePath 
 
-type ParseEnv = Map.Map Variable ([Variable], Exp)
+type ParseEnv    = Map.Map Variable ([Variable], Exp)
+type ParseEnvPat = Map.Map Variable [([Pattern], Exp)]
+
+type ParseEnvChoices = [Variable]
 
 type Builtins = Set.Set Variable
 
@@ -57,10 +60,13 @@ data FreestS = FreestS {
   , errors     :: Errors
   , nextIndex  :: Int
   , parseEnv   :: ParseEnv -- "discarded" after elaboration
+  , parseEnvPat     :: ParseEnvPat     -- for pattern elimination
+  , parseEnvChoices :: ParseEnvChoices -- for choices conflicting with data type constructors
   , moduleName :: Maybe FilePath
   , imports    :: Imports
   , builtins    :: Builtins
   } deriving Show -- FOR DEBUG purposes
+
 
 type FreestState = State FreestS
 
@@ -76,6 +82,8 @@ initialState = FreestS { runOpts    = defaultOpts
                        , errors     = []
                        , nextIndex  = 0
                        , parseEnv   = Map.empty
+                       , parseEnvPat     = Map.empty
+                       , parseEnvChoices = []
                        , moduleName = Nothing
                        , imports    = Set.empty
                        , builtins   = Set.empty
@@ -96,6 +104,32 @@ getPEnv = gets parseEnv
 setPEnv :: ParseEnv -> FreestState ()
 setPEnv parseEnv = modify (\s -> s { parseEnv })
 
+-- | Parse Env Pat (with Patterns)
+
+addToPEnvPat :: MonadState FreestS m => Variable -> [Pattern] -> Exp -> m ()
+addToPEnvPat x xs e =
+  modify (\s -> s 
+    { parseEnvPat = Map.insertWith add x [(xs, e)] (parseEnvPat s) })
+    where add b a = (++) a b
+
+getPEnvPat :: FreestState ParseEnvPat
+getPEnvPat = gets parseEnvPat
+
+setPEnvPat :: ParseEnvPat -> FreestState ()
+setPEnvPat parseEnvPat =  modify (\s -> s { parseEnvPat })
+
+-- | Parse Env Choices (keeping choices for colision with constructors)
+
+addToPEnvChoices :: MonadState FreestS m => [Variable] -> m ()
+addToPEnvChoices xs =
+  modify (\s -> s
+    { parseEnvChoices = (parseEnvChoices s) ++ xs })
+
+getPEnvChoices :: FreestState ParseEnvChoices
+getPEnvChoices = gets parseEnvChoices
+
+setPEnvChoices :: ParseEnvChoices -> FreestState ()
+setPEnvChoices parseEnvChoices  = modify (\s -> s { parseEnvChoices })
 
 -- | NEXT VAR
 
@@ -110,10 +144,11 @@ freshTVar s p = mkVar p . (s ++) . show <$> getNextIndex
 
 -- | VAR ENV
 
-getVEnv :: FreestState VarEnv
+getVEnv :: MonadState FreestS m => m VarEnv
 getVEnv = gets varEnv
 
-getFromVEnv :: Variable -> FreestState (Maybe T.Type)
+-- getFromVEnv :: Variable -> FreestState (Maybe T.Type)
+getFromVEnv :: MonadState FreestS m => Variable -> m (Maybe T.Type)
 getFromVEnv x = do
   vEnv <- getVEnv
   return $ vEnv Map.!? x
@@ -132,10 +167,10 @@ setVEnv varEnv = modify (\s -> s { varEnv })
 
 -- | EXP ENV
 
-getProg :: FreestState Prog
+getProg ::  MonadState FreestS m => m Prog
 getProg = gets prog
 
-getFromProg :: Variable -> FreestState (Maybe Exp)
+getFromProg ::  MonadState FreestS m => Variable -> m (Maybe Exp)
 getFromProg x = do
   eEnv <- getProg
   return $ eEnv Map.!? x
@@ -148,14 +183,14 @@ setProg prog = modify (\s -> s { prog })
 
 -- | TYPE ENV
 
-getTEnv :: FreestState TypeEnv
+getTEnv :: MonadState FreestS m => m TypeEnv
 getTEnv = gets typeEnv
 
 addToTEnv :: MonadState FreestS m => Variable -> Kind -> T.Type -> m ()
 addToTEnv x k t =
   modify (\s -> s { typeEnv = Map.insert x (k, t) (typeEnv s) })
 
-getFromTEnv :: Variable -> FreestState (Maybe (Kind, T.Type))
+getFromTEnv :: MonadState FreestS m => Variable -> m (Maybe (Kind, T.Type))
 getFromTEnv b = do
   tEnv <- getTEnv
   return $ tEnv Map.!? b
@@ -168,7 +203,7 @@ setTEnv typeEnv = modify (\s -> s { typeEnv })
 addTypeName :: Span -> T.Type -> FreestState ()
 addTypeName p t = modify (\s -> s { typenames = Map.insert p t (typenames s) })
 
-getTypeNames :: FreestState TypeOpsEnv
+getTypeNames :: MonadState FreestS m => m TypeOpsEnv
 getTypeNames = gets typenames
 
 findTypeName :: Span -> T.Type -> FreestState T.Type

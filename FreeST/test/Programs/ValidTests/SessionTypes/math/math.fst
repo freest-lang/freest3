@@ -18,6 +18,4 @@ main : Int
 main =
   let (r,w) = new MathServer in
   let _ = fork (\_:()1-> mathServer r) in
-  let (x, w) = select Negate w |> send 5 |> receive in
-  close w;
-  x
+  w |> select Negate |> send 5 |> receiveAndClose @Int
