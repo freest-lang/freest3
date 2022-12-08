@@ -34,7 +34,7 @@ writer i c =
 reader : dualof T -> ()
 reader c =
   let (i, c) = receive c in
-  printIntLn i;
+  print @Int i;
   reader c
 
 main : ()
