@@ -33,6 +33,8 @@ odd : Int -> Bool
 not : Bool -> Bool
 (&&) : Bool -> Bool -> Bool
 (||) : Bool -> Bool -> Bool
+-- Function call
+(|>) : ∀a:*T. ∀b:*T. a -> (a -> b) -> b
 -- Char
 ord : Char -> Int
 chr : Int -> Char

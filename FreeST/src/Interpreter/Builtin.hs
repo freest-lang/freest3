@@ -46,7 +46,7 @@ initialCtx = Map.fromList
     (var "send", PrimitiveFun (\v -> PrimitiveFun (\(Chan c) -> IOValue $ Chan <$> send v c)))
   , (var "receive", PrimitiveFun (\(Chan c) -> IOValue $ receive c >>= \(v, c) -> return $ Pair v (Chan c)))
   , (var "close", PrimitiveFun (\(Chan c) -> IOValue $ close c))
-  -- Integers
+  -- Integer
   , (var "(+)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x + y)))
   , (var "(-)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x - y)))
   , (var "subtract", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ y - x)))
@@ -69,7 +69,7 @@ initialCtx = Map.fromList
   , (var "odd" , PrimitiveFun (\(Integer x) -> Boolean $ odd x))
   , (var "gcd", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x `gcd` y)))
   , (var "lcm", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x `lcm` y)))
-  -- Booleans
+  -- Boolean
   , (var "not", PrimitiveFun (\(Boolean x) -> Boolean $ not x))
   , (var "(&&)", PrimitiveFun (\(Boolean x) -> PrimitiveFun (\(Boolean y) -> Boolean $ x && y)))
   , (var "(||)", PrimitiveFun (\(Boolean x) -> PrimitiveFun (\(Boolean y) -> Boolean $ x || y)))
@@ -79,7 +79,9 @@ initialCtx = Map.fromList
   , (var "(>)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Boolean $ x > y)))
   , (var "(<=)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Boolean $ x <= y)))
   , (var "(>=)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Boolean $ x >= y)))
-  -- Chars
+  -- Function call
+  -- , (var "(|>)", ...)
+  -- Char
   , (var "chr", PrimitiveFun (\(Integer x) -> Character $ chr x))
   , (var "ord", PrimitiveFun (\(Character x) -> Integer $ ord x))
   -- Pairs

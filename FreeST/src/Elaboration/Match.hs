@@ -51,7 +51,7 @@ checkNumArgs' fn lines
   where allSame (x:y:ys) = x == y && allSame (y:ys)
         allSame _ = True
 
--- check if there is mixture for channel patterns
+-- check if there is a mixture of channel patterns
 checkChanVar :: ParseEnvPat -> FreestState ()
 checkChanVar penv = getConstructors >>= -- set with every constructor
   (\cons -> tMapM_ ((mapM $ checkChanVar' cons).prep) penv) 

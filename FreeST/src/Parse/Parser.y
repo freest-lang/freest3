@@ -211,7 +211,7 @@ Exp :: { E.Exp }
                                        pure $ E.Case s (E.App s' (E.Var s' (mkVar s' "collect")) $2) $5 }
   | case Exp of '{' CaseMap '}'    {% mkSpanSpan $1 $6 >>= \s -> pure $ E.CasePat s $2 $5 }
   | Exp '$' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ E.App s $1 $3 }
-  | Exp '|>' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $  E.App s $3 $1 }
+  | Exp '|>' Exp                   {% mkSpanSpan $1 $3 >>= \s -> pure $  E.App s $3 $1 }
   | Exp '||' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(||)") $3 }
   | Exp '&&' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(&&)") $3 }
   | Exp CMP Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s (getText $2)) $3 }
@@ -307,12 +307,13 @@ GuardsFun :: { Exp }
 
 Op :: { Variable }
    : '||'  {% flip mkVar "(||)" `fmap` mkSpan $1 }
-   | '&&'  {% flip mkVar "(&&)" `fmap` mkSpan $1  }
+   | '&&'  {% flip mkVar "(&&)" `fmap` mkSpan $1 }
    | CMP   {% flip mkVar (getText $1) `fmap` mkSpan $1 }
-   | '+'   {% flip mkVar "(+)" `fmap` mkSpan $1  }
-   | '*'   {% flip mkVar "(*)" `fmap` mkSpan $1  }
+   | '+'   {% flip mkVar "(+)"  `fmap` mkSpan $1 }
+   | '*'   {% flip mkVar "(*)"  `fmap` mkSpan $1 }
    | '/'   {% flip mkVar "(/)"  `fmap` mkSpan $1 }
-   | '^'   {% flip mkVar "(^)" `fmap` mkSpan $1 }
+   | '^'   {% flip mkVar "(^)"  `fmap` mkSpan $1 }
+   | '|>'  {% flip mkVar "(|>)" `fmap` mkSpan $1 }
 
 
 ----------

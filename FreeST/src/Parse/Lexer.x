@@ -60,13 +60,13 @@ tokens :-
   ("\\"|Λ)                      { \p s -> TokenUpperLambda (internalPos p) }
   ("=>"|⇒)                      { \p s -> TokenFArrow (internalPos p) }
   "@"                           { \p s -> TokenAt (internalPos p)}
-  "("				                    { \p s -> TokenLParen (internalPos p) }
-  ")"				                    { \p s -> TokenRParen (internalPos p) }
-  "["				                    { \p s -> TokenLBracket (internalPos p) }
-  "]"			                      { \p s -> TokenRBracket (internalPos p) }
-  "{"				                    { \p s -> TokenLBrace (internalPos p) }
-  "}"			                      { \p s -> TokenRBrace (internalPos p) }
-  ","				                    { \p s -> TokenComma (internalPos p) }
+  "("				{ \p s -> TokenLParen (internalPos p) }
+  ")"				{ \p s -> TokenRParen (internalPos p) }
+  "["				{ \p s -> TokenLBracket (internalPos p) }
+  "]"			        { \p s -> TokenRBracket (internalPos p) }
+  "{"				{ \p s -> TokenLBrace (internalPos p) }
+  "}"			        { \p s -> TokenRBrace (internalPos p) }
+  ","				{ \p s -> TokenComma (internalPos p) }
   ":"                           { \p s -> TokenColon (internalPos p) }
   ";"	       	      	  	{ \p s -> TokenSemi (internalPos p) }
   "!"                           { \p s -> TokenMOut (internalPos p) }
@@ -93,12 +93,10 @@ tokens :-
   "/"  		                { \p s -> TokenDiv (internalPos p) }
   "$"  		                { \p s -> TokenDollar (internalPos p) }
 -- Kinds
-  "*S"                            { \p s -> TokenUnS (internalPos p) }
-  "1S"                            { \p s -> TokenLinS (internalPos p) }
-  "*T"                            { \p s -> TokenUnT (internalPos p) }
-  "1T"                            { \p s -> TokenLinT (internalPos p) }
-  -- "*M"                            { \p s -> TokenUnM (internalPos p) }
-  -- "1M"                            { \p s -> TokenLinM (internalPos p) }
+  "*S"                          { \p s -> TokenUnS (internalPos p) }
+  "1S"                          { \p s -> TokenLinS (internalPos p) }
+  "*T"                          { \p s -> TokenUnT (internalPos p) }
+  "1T"                          { \p s -> TokenLinT (internalPos p) }
 -- Basic types
   Int			        { \p s -> TokenIntT (internalPos p) }
   Char				{ \p s -> TokenCharT (internalPos p) }
@@ -112,7 +110,7 @@ tokens :-
   in                            { \p s -> TokenIn (internalPos p) }
   data                          { \p s -> TokenData (internalPos p) }
   type                          { \p s -> TokenType (internalPos p) }
-  otherwise				              { \p s -> TokenOtherwise (internalPos p) }
+  otherwise			{ \p s -> TokenOtherwise (internalPos p) }
   if				{ \p s -> TokenIf (internalPos p) }
   then				{ \p s -> TokenThen (internalPos p) }
   else				{ \p s -> TokenElse (internalPos p) }
@@ -134,7 +132,7 @@ tokens :-
   ("(+)"|"(-)"|"(*)"|"(/)"
   |"(^)"|"(>)"|"(<)"|"(>=)"
   |"(<=)"|"(==)"|"(/=)"
-  |"(&&)"|"(||)")               { \p s -> TokenLowerId (internalPos p) s }
+  |"(&&)"|"(||)"|"(|>)")        { \p s -> TokenLowerId (internalPos p) s }
   @lowerId                      { \p s -> TokenLowerId (internalPos p) s }
   @upperId                      { \p s -> TokenUpperId (internalPos p) s }
 
