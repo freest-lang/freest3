@@ -283,9 +283,9 @@ hPutStr_, hPutStrLn_ : String -> OutStreamProvider -> ()
 hPutStr_   = hGenericPut_ @String hPutStr
 hPutStrLn_ = hGenericPut_ @String hPutStrLn
 
-hPrint_ : forall b . b -> OutStreamProvider -> ()
--- hPrint_ = hGenericPut_ @b (hPrint @b)
-hPrint_ x ch = hGenericPut_ @b (hPrint @b) x ch
+hPrint_ : forall a . a -> OutStreamProvider -> ()
+-- hPrint_ = hGenericPut_ @a (hPrint @a)
+hPrint_ x ch = hGenericPut_ @a (hPrint @a) x ch
 
 
 -- | InStream
@@ -389,6 +389,13 @@ getChar = hGetChar_ stdin
 getLine : String
 getLine = hGetLine_ stdin
 
+getContents : InStream -> String
+getContents ch = 
+  let (isEOF, ch) = hIsEOF ch in
+  if isEOF
+  then hCloseIn ch; ""
+  else let (line, ch) = hGetLine ch in line ++ "\n" ++ (getContents ch)
+
 -- Internal stdin functions
 __runStdin : dualof InStreamProvider -> ()
 __runStdin = runServer @InStream @() __runReader ()
@@ -422,32 +429,32 @@ data IOMode = ReadMode | WriteMode | AppendMode
 
 openWriteFile : FilePath -> OutStream
 openWriteFile fp =
-    forkWith @OutStream @() $ runWriteFile (__openFile fp WriteMode)
+    forkWith @OutStream @() $ __runWriteFile (__openFile fp WriteMode)
 
 openAppendFile : FilePath -> OutStream
 openAppendFile fp =
-    forkWith @OutStream @() $ runWriteFile (__openFile fp AppendMode)
+    forkWith @OutStream @() $ __runWriteFile (__openFile fp AppendMode)
 
-runWriteFile : FileHandle -> dualof OutStream 1-> ()
-runWriteFile fh ch =
+__runWriteFile : FileHandle -> dualof OutStream 1-> ()
+__runWriteFile fh ch =
     match ch with {
-        PutChar  ch -> let (c, ch) = receive ch in __putFileStr fh (show @Char c); runWriteFile fh ch,
-        PutStr   ch -> let (s, ch) = receive ch in __putFileStr fh s             ; runWriteFile fh ch,
-        PutStrLn ch -> let (s, ch) = receive ch in __putFileStr fh (s ++ "\n")   ; runWriteFile fh ch,
+        PutChar  ch -> let (c, ch) = receive ch in __putFileStr fh (show @Char c); __runWriteFile fh ch,
+        PutStr   ch -> let (s, ch) = receive ch in __putFileStr fh s             ; __runWriteFile fh ch,
+        PutStrLn ch -> let (s, ch) = receive ch in __putFileStr fh (s ++ "\n")   ; __runWriteFile fh ch,
         Close    ch -> __closeFile fh; close ch
     }
 
 
 openReadFile : FilePath -> InStream
 openReadFile fp = 
-    forkWith @InStream @() $ runReadFile (__openFile fp ReadMode)
+    forkWith @InStream @() $ __runReadFile (__openFile fp ReadMode)
 
-runReadFile : FileHandle -> dualof InStream 1-> ()
-runReadFile fh ch =
+__runReadFile : FileHandle -> dualof InStream 1-> ()
+__runReadFile fh ch =
     match ch with {
-        GetChar ch -> runReadFile fh $ send (__readFileChar fh) ch,
-        GetLine ch -> runReadFile fh $ send (__readFileLine fh) ch,
-        IsEOF   ch -> runReadFile fh $ send (__isEOF fh       ) ch,
+        GetChar ch -> __runReadFile fh $ send (__readFileChar fh) ch,
+        GetLine ch -> __runReadFile fh $ send (__readFileLine fh) ch,
+        IsEOF   ch -> __runReadFile fh $ send (__isEOF fh       ) ch,
         Close   ch -> __closeFile fh; close ch
     }
 
@@ -462,11 +469,4 @@ appendFile fp content = openAppendFile fp
                      |> hCloseOut
 
 readFile : FilePath -> String
-readFile fp = __fullRead $ openReadFile fp
-
-__fullRead : InStream -> String
-__fullRead ch = 
-  let (isEOF, ch) = hIsEOF ch in
-  if isEOF
-  then hCloseIn ch; ""
-  else let (line, ch) = hGetLine ch in line ++ "\n" ++ (__fullRead ch)
+readFile fp = getContents $ openReadFile fp
