@@ -31,7 +31,7 @@ evenProcess n x left right collect' =
 oddProcess : Int -> Int -> dualof Sorter -> Sorter 1-> !Int 1-> Skip
 oddProcess n x left right collect' =
   if n == 0
-  then select Done right |> close ; consume left ; send x collect'
+  then select Done right |> close ; consume' left ; send x collect'
   else let (min, right) = exchangeRight x right in
        evenProcess (n - 1) min left right collect'
 
@@ -60,13 +60,13 @@ exchangeLeft x left =
 
 -- Consume the rest of a left channel once sorting in complete for an
 -- odd process. The More branch is never exercised.
-consume : dualof Sorter -> ()
-consume c =
+consume' : dualof Sorter -> ()
+consume' c =
   match c with {
     Done c -> close c,
     More c -> -- Should not happen
       let (_, c) = receive c in
-      consume (send (-99) c)
+      consume' (send (-99) c)
   }
 
 main : ()
@@ -97,11 +97,11 @@ main =
   fork @Skip (\_:() 1-> evenProcess (p / 2)     44 r5 l6 cw6);
   fork @Skip (\_:() 1-> last                    77 r6    cw7);
   -- collect' and print results
-  let (x1, _) = receive cr1 in printIntLn x1;
-  let (x2, _) = receive cr2 in printIntLn x2;
-  let (x3, _) = receive cr3 in printIntLn x3;
-  let (x4, _) = receive cr4 in printIntLn x4;
-  let (x5, _) = receive cr5 in printIntLn x5;
-  let (x6, _) = receive cr6 in printIntLn x6;
-  let (x7, _) = receive cr7 in printIntLn x7
+  let (x1, _) = receive cr1 in print @Int x1;
+  let (x2, _) = receive cr2 in print @Int x2;
+  let (x3, _) = receive cr3 in print @Int x3;
+  let (x4, _) = receive cr4 in print @Int x4;
+  let (x5, _) = receive cr5 in print @Int x5;
+  let (x6, _) = receive cr6 in print @Int x6;
+  let (x7, _) = receive cr7 in print @Int x7
 

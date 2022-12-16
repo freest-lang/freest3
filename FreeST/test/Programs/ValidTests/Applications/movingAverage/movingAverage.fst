@@ -55,7 +55,7 @@ collectValues c =
   match c with {
      More c ->
        let (v, c) = receive c in
-       printIntLn v ;
+       print @Int v ;
        collectValues c,
      Enough c -> c |> close
   }

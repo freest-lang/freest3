@@ -51,6 +51,7 @@ library:
     - Parse.Read
     - Parse.Unparser
     - Util.Error
+    - Util.Warning
 #    - Util.PrettyError
     - Util.FreestState
     - Util.CmdLine

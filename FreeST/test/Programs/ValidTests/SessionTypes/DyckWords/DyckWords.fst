@@ -25,20 +25,20 @@ readD : forall a: 1S . dualof D;a -> a
 readD c =
   match c with {
     Lt c ->
-      printChar '<';
+      putStr (show @Char '<');
       readD @a (readT @(dualof D ; a) c),
     Dollar c ->
-      printCharLn '$';
+      print @Char '$';
       c
   }
 readT : forall a: 1S . dualof T;a -> a
 readT c =
   match c with {
     Lt c ->
-      printChar '<';
+      putStr (show @Char '<');
       readT @a (readT @(dualof T ; a) c),
     Gt c ->
-      printChar '>';
+      putStr (show @Char '>');
       c
   }
 

@@ -5,9 +5,12 @@ import           Interpreter.Value
 import           Syntax.Base
 
 import qualified Control.Concurrent.Chan as C
+import           Control.Exception ( catch, SomeException )
 import           Data.Char ( ord, chr )
 import           Data.Functor
 import qualified Data.Map as Map
+import           System.IO
+import System.IO.Unsafe
 
 ------------------------------------------------------------
 -- Communication primitives
@@ -84,20 +87,48 @@ initialCtx = Map.fromList
   -- Char
   , (var "chr", PrimitiveFun (\(Integer x) -> Character $ chr x))
   , (var "ord", PrimitiveFun (\(Character x) -> Integer $ ord x))
+  -- Strings
+  , (var "(++)", PrimitiveFun (\(String s1) -> PrimitiveFun (\(String s2) -> String $ s1 ++ s2)))
   -- Pairs
   , (var "fst", PrimitiveFun (\(Pair a _) -> a))
   , (var "snd", PrimitiveFun (\(Pair _ b) -> b))
-  -- Prints
-  , (var "printInt", PrimitiveFun (\(Integer x) -> IOValue $ putStr (show x) $> Unit))
-  , (var "printIntLn", PrimitiveFun (\(Integer x) -> IOValue $ print x $> Unit))
-  , (var "printBool", PrimitiveFun (\(Boolean x) -> IOValue $ putStr (show x) $> Unit))
-  , (var "printBoolLn", PrimitiveFun (\(Boolean x) -> IOValue $ print x $> Unit))
-  , (var "printChar", PrimitiveFun (\(Character x) -> IOValue $ putStr (show x) $> Unit))
-  , (var "printCharLn", PrimitiveFun (\(Character x) -> IOValue $ print x $> Unit))
-  , (var "printUnit"  , PrimitiveFun (\Unit -> IOValue $ putStr "()" $> Unit))
-  , (var "printUnitLn", PrimitiveFun (\Unit -> IOValue $ putStrLn "()" $> Unit))
-  , (var "printString", PrimitiveFun (\(String s) -> IOValue $ putStr s $> Unit))
-  , (var "printStringLn", PrimitiveFun (\(String s) -> IOValue $ putStrLn s $> Unit) )
+  -- Show
+  , (var "show", PrimitiveFun (String . show))
+  -- Read
+  , (var "readBool", PrimitiveFun (\(String s) -> Boolean (read s)))
+  , (var "readInt" , PrimitiveFun (\(String s) -> Integer (read s)))
+  , (var "readChar", PrimitiveFun (\(String (c : _)) -> Character c))
+  -- Print to stdout
+  , (var "__putStrOut", PrimitiveFun (\v -> IOValue $ putStr (show v) $> Unit))
+  -- Print to stderr
+  , (var "__putStrErr", PrimitiveFun (\v -> IOValue $ hPutStr stderr (show v) $> Unit))
+  -- Read from stdin
+  , (var "__getChar", PrimitiveFun (\_ -> IOValue $ getChar >>= (return . Character)))
+  , (var "__getLine", PrimitiveFun (\_ -> IOValue $ getLine >>= (return . String)))
+  -- Standard IO channels
+  , (var   "stdout", Chan stdout')
+  , (var   "stderr", Chan stderr')
+  , (var   "stdin" , Chan stdin')
+  , (var "__stdout", Chan __stdout)
+  , (var "__stderr", Chan __stderr)
+  , (var "__stdin" , Chan __stdin)
+  -- Files
+  , (var "__openFile",
+      PrimitiveFun (\(String s) ->
+      PrimitiveFun (\(Cons (Variable _ mode) _) -> IOValue $
+        case mode of
+          "ReadMode"   -> openFile s ReadMode   >>= return . Cons (var "FileHandle") . (: []) . (: []) . Handle
+          "WriteMode"  -> openFile s WriteMode  >>= return . Cons (var "FileHandle") . (: []) . (: []) . Handle
+          "AppendMode" -> openFile s AppendMode >>= return . Cons (var "FileHandle") . (: []) . (: []) . Handle
+    )))
+  , (var "__putFileStr",
+      PrimitiveFun (\(Cons _ [[Handle fh]]) -> PrimitiveFun (\(String s) ->
+        IOValue $ hPutStr fh s $> Unit
+    )))
+  , (var "__readFileChar", PrimitiveFun (\(Cons _ [[Handle fh]]) -> IOValue $ hGetChar fh >>= return . Character))
+  , (var "__readFileLine", PrimitiveFun (\(Cons _ [[Handle fh]]) -> IOValue $ hGetLine fh >>= return . String))
+  , (var "__isEOF", PrimitiveFun (\(Cons _ [[Handle fh]]) -> IOValue $ hIsEOF fh >>= return . Boolean))
+  , (var "__closeFile", PrimitiveFun (\(Cons _ [[Handle fh]]) -> IOValue $ hClose fh $> Unit))
   -- Id  
   , (var "id", PrimitiveFun id)
   -- Undefined
@@ -105,9 +136,11 @@ initialCtx = Map.fromList
   -- Error
   -- , (var "error", PrimitiveFun (\(String e) ->
   --        unsafePerformIO $ die $ showErrors "" Map.empty [] (ErrorFunction s e)))
-
---  , (var "print", PrimitiveFun (\x -> IOValue (putStrLn (show x) >> return Unit)))
   ]
  where
   var :: String -> Variable
   var = mkVar defaultSpan
+
+  (stdout', __stdout) = unsafePerformIO new
+  (stderr', __stderr) = unsafePerformIO new
+  (stdin' , __stdin ) = unsafePerformIO new

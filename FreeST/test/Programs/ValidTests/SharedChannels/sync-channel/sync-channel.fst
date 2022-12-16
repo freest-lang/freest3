@@ -30,9 +30,9 @@ sync ch =
 
 client : Int -> SyncServer -> ()
 client id ch =
-    printIntLn (-id);
+    print @Int  (-id);
     sync ch;
-    printIntLn id
+    print @Int  id
 
 forkNClients : Int -> SyncServer -> ()
 forkNClients i ch =

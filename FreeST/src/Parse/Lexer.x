@@ -41,7 +41,9 @@ $eol=[\n]
 -- # λ  -- forall not in range ([λ ∀])
 $greekId = [λ ∀ Λ μ]
 
-@lowerId = ($lower # $greekId) $alphaNumeric*
+$internal = \#
+
+@lowerId = ([$lower $internal] # $greekId) $alphaNumeric*
 @upperId = ($upper # $greekId) $alphaNumeric*
 
 @stringLiteral = \"(\\.|[^\"]|\n)*\"
@@ -90,6 +92,7 @@ tokens :-
   "/="  		        { \p s -> TokenCmp (internalPos p) "(/=)" }
   ("&&"|∧)  		        { \p s -> TokenConjunction (internalPos p) }
   ("||"|∨)  		        { \p s -> TokenDisjunction (internalPos p) }
+  "++"      { \p s -> TokenAppend (internalPos p)}
   "/"  		                { \p s -> TokenDiv (internalPos p) }
   "$"  		                { \p s -> TokenDollar (internalPos p) }
 -- Kinds
@@ -132,7 +135,8 @@ tokens :-
   ("(+)"|"(-)"|"(*)"|"(/)"
   |"(^)"|"(>)"|"(<)"|"(>=)"
   |"(<=)"|"(==)"|"(/=)"
-  |"(&&)"|"(||)"|"(|>)")        { \p s -> TokenLowerId (internalPos p) s }
+  |"(&&)"|"(||)"|"(|>)"
+  |"(++)")                      { \p s -> TokenLowerId (internalPos p) s }
   @lowerId                      { \p s -> TokenLowerId (internalPos p) s }
   @upperId                      { \p s -> TokenUpperId (internalPos p) s }
 
@@ -211,6 +215,7 @@ data Token =
   | TokenCmp Span String
   | TokenConjunction Span
   | TokenDisjunction Span
+  | TokenAppend Span
   | TokenDiv Span
   | TokenDollar Span
   | TokenModule Span
@@ -290,6 +295,7 @@ instance Show Token where
   show (TokenCmp _ s) = show s
   show (TokenConjunction _) = "&&"
   show (TokenDisjunction _) = "||"
+  show (TokenAppend _) = "++"
   show (TokenDiv _) = "/"
   show (TokenDollar _) = "$"
   show (TokenModule _) = "module"
@@ -408,6 +414,7 @@ instance Located Token where
   getSpan (TokenFArrow p) = p
   getSpan (TokenConjunction p) = p
   getSpan (TokenDisjunction p) = p
+  getSpan (TokenAppend p) = p
   getSpan (TokenDiv p) = p
   getSpan (TokenDollar p) = p
   getSpan (TokenModule p) = p

@@ -63,9 +63,6 @@ printStringLin = printGenericLin @String (\printer:Printer -> select PrintString
 printStringLnLin : String -> Printer -> Printer
 printStringLnLin = printGenericLin @String (\printer:Printer -> select PrintStringLn printer)
 
-printStringLnUn : String -> StdOut -> ()
-printStringLnUn = printGenericUn @String (\printer:Printer -> select PrintStringLn printer)
-
 printIntLin : Int -> Printer -> Printer
 printIntLin = printGenericLin @Int (\printer:Printer -> select PrintInt printer)
 

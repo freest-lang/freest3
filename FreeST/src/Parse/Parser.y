@@ -71,6 +71,7 @@ import           Paths_FreeST ( getDataFileName )
   '-'      {TokenMinus _}
   '*'      {TokenTimes _}
   '^'      {TokenRaise _}
+  '++'     {TokenAppend _}
   '_'      {TokenWild _}
   '$'      {TokenDollar _}
   '.'      {TokenDot _}
@@ -114,6 +115,7 @@ import           Paths_FreeST ( getDataFileName )
 %nonassoc new
 %left '||'       -- disjunction
 %left '&&'       -- conjunction
+%left '++'
 %nonassoc CMP    -- comparison (relational and equality)
 %left '+' '-'    -- aditive
 %left '*' '/'    -- multiplicative
@@ -166,7 +168,8 @@ NL :: { () }
 
 Decl :: { () }
   -- Function signature
-  : ProgVarList ':' Type {% forM_ $1 (\x -> checkDupProgVarDecl x >> addToVEnv x $3) }
+  :     ProgVarList ':' Type {% forM_ $1 (\x -> checkDupProgVarDecl x >> addToVEnv x $3) }
+  -- |     ProgVarList ':' Type {% forM_ $1 (\x -> checkDupProgVarDecl x >> addToVEnv x $3) }
   -- Function declaration
   | ProgVar PatternSeq '=' Exp   {% addToPEnvPat $1 $2 $4 }
   | ProgVar PatternSeq GuardsFun {% addToPEnvPat $1 $2 $3 }
@@ -220,6 +223,7 @@ Exp :: { E.Exp }
   | Exp '*' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(*)") $3 }
   | Exp '/' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(/)") $3 }
   | Exp '^' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(^)") $3 }
+  | Exp '++' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(++)") $3 }
   | '-' App %prec NEG              {% mkSpan $1 >>= \s -> pure $ unOp (mkVar s "negate") $2 s }
   | App                            { $1 }
 
@@ -314,6 +318,7 @@ Op :: { Variable }
    | '/'   {% flip mkVar "(/)"  `fmap` mkSpan $1 }
    | '^'   {% flip mkVar "(^)"  `fmap` mkSpan $1 }
    | '|>'  {% flip mkVar "(|>)" `fmap` mkSpan $1 }
+   | '++'  {% flip mkVar "(++)" `fmap` mkSpan $1 }
 
 
 ----------

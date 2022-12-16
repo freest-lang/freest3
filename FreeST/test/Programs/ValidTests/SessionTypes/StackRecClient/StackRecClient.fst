@@ -44,7 +44,7 @@ pushNE n c = select Push c |> send n
 pop : forall a: 1S . dualof NEStack;a -> a
 pop c = 
   let c = select Pop c in let (x, c) = receive c in
-  printInt x ; printString " " ; c
+  putStr (show @Int x) ; putStr " " ; c
 
 -- A finite client
 reverseThree : dualof EStack -> Skip

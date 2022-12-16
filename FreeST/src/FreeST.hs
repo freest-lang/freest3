@@ -7,13 +7,16 @@ where
 
 
 import           Elaboration.Elaboration ( elaboration )
-import           Interpreter.Builtin ( initialCtx )
+import           Interpreter.Builtin ( initialCtx, new )
 import           Interpreter.Eval ( evalAndPrint )
+import           Interpreter.Value
 import           Parse.Parser ( parseProgram, parseAndImport )
 import           Util.CmdLine
 import           Util.FreestState
 import           Syntax.Base
 import           Syntax.Program (noConstructors, VarEnv)
+import qualified Syntax.Expression as E
+import qualified Syntax.Kind as K
 import           Util.Error
 import           Util.Warning
 import           Validation.Rename ( renameState )
@@ -70,7 +73,13 @@ checkAndRun runOpts = do
   
  -- | Check if main was left undefined, eval and print result otherwise
   let m = getMain runOpts
-  when (m `Map.member` varEnv s5) $ evalAndPrint m s5 (prog s5 Map.! m)
+  
+  when (m `Map.member` varEnv s5) $ evalAndPrint m s5 $
+    forkHandlers 
+      [ ("__runStdout", "__stdout")
+      , ("__runStderr", "__stderr")
+      , ("__runStdin", "__stdin")] 
+      (prog s5 Map.! m)
   -- when (m `Map.member` varEnv s5)
   --   (evalAndPrint (typeEnv s5) initialCtx
   --   (prog s5)
@@ -84,3 +93,12 @@ checkAndRun runOpts = do
     preludeHasErrors f s0 s1
       | hasErrors s1 = s0 { warnings = NoPrelude f : warnings s0 }
       | otherwise    = s1
+
+    forkHandlers :: [(String, String)] -> E.Exp -> E.Exp
+    forkHandlers [] e = e
+    forkHandlers ((fun, var) : xs) e =
+      E.UnLet s (mkVar s "_") 
+        (E.App s (E.Var s (mkVar s "fork")) (E.App s (E.Var s (mkVar s fun)) (E.Var s (mkVar s var)))) 
+        $ forkHandlers xs e 
+      where
+        s = defaultSpan

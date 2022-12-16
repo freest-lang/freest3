@@ -12,6 +12,8 @@ import           Parse.Unparser                 ( )
 import           Syntax.Base
 import qualified Syntax.Expression             as E
 
+import           System.IO                      ( Handle )
+
 data Value =
     Unit
   | Integer Int
@@ -27,6 +29,7 @@ data Value =
   | Chan ChannelEnd
   | Fork
   | IOValue (IO Value)
+  | Handle Handle
 
 type Ctx = Map.Map Variable Value
 
@@ -48,6 +51,7 @@ instance Show Value where
   show Chan{}         = "Skip" -- TODO: change this
   show Fork           = "fork"
   show IOValue{}      = "<IOValue>"
+  show (Handle h)     = show h 
 
 showTuple :: Value -> String
 showTuple (Pair v1 v2) = show v1 ++ ", " ++ showTuple v2

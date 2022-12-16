@@ -7,7 +7,7 @@ ping n c = c |> send n |> pong
 pong : Pong -> Diverge
 pong c =
   let (n, c) = receive c in
-  printIntLn n;
+  print @Int n;
   ping (n + 1) c
 
 main : ()

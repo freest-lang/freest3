@@ -29,14 +29,14 @@ tail (Cons _ xs) = xs
 getFromSingleton : List -> Tree
 getFromSingleton xs =
   if null xs
-  then printChar 'P'; Error -- "Error: Premature EndOfStream"
+  then putStr (show @Char 'P'); Error -- "Error: Premature EndOfStream"
   else if not $ null $ tail xs
-  then printChar 'X'; Error -- "Error: Extraneous elements in the stream after reading a full tree"
+  then putStr (show @Char 'X'); Error -- "Error: Extraneous elements in the stream after reading a full tree"
   else head xs
 
 getTwo : List -> (List, (Tree, Tree))
-getTwo Nil             = printChar 'R'; (Nil, (Error, Error)) -- "Error: Empty stack on right subtree"
-getTwo (Cons left Nil) = printChar 'L'; (Nil, (Error, left )) -- "Error: Empty stack on left subtree",
+getTwo Nil             = putStr (show @Char 'R'); (Nil, (Error, Error)) -- "Error: Empty stack on right subtree"
+getTwo (Cons left Nil) = putStr (show @Char 'L'); (Nil, (Error, left )) -- "Error: Empty stack on left subtree",
 getTwo (Cons left (Cons right zs)) = (zs, (left, right))
 
 -- Streams

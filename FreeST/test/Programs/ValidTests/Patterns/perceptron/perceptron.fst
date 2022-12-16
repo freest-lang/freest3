@@ -17,9 +17,9 @@ main =
     let cons = mkLayers ls           in -- create network
     -- printLayers cons; -- TODO remove PRINT
     let rs = startup input cons      in -- start up network
-    -- printStringLn "Cenas e tal";
+    -- putStrLn "Cenas e tal";
     let r  = recNeuron rs            in
-    -- printString "Result: ";
+    -- putStr "Result: ";
     -- printIntLn r
     r
 
@@ -162,5 +162,5 @@ printLayers (Layers cs ls) =
             printLayers ls
 
 printConnection : Connection -> ()
-printConnection CNil = printStringLn ""
-printConnection (Connection _ cs) = printString "o "; printConnection cs
+printConnection CNil = putStrLn ""
+printConnection (Connection _ cs) = putStr "o "; printConnection cs
