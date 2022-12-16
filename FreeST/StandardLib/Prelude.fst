@@ -216,21 +216,17 @@ forkWith f =
 
 -- | Session initiation. Accept a request for a linear session on a shared
 -- channel. The requester uses a conventional receive to obtain the channel end.
-accept : ∀a:1S b:*S . !a; b -> dualof a
+accept : ∀a:1S . *!a -> dualof a
 accept ch =
     let (x, y) = new a in
     send x ch;
     y
 
--- |Session initiation on an star channel
-accept_ : ∀a:1S . *!a -> dualof a
-accept_ ch = accept @a @*!a ch
-
 -- | Run a server process given a function to serve a client (a handle), the
 -- initial state and the server's endpoint.
 runServer : ∀a:1S b . (b -> dualof a 1-> b) -> b -> *!a -> Diverge
 runServer handle state ch =
-    runServer @a @b handle (handle state (accept_ @a ch)) ch 
+    runServer @a @b handle (handle state (accept @a ch)) ch 
 
 
 
@@ -259,33 +255,33 @@ hCloseOut : OutStream -> ()
 hCloseOut ch = select Close ch |> close
 
 
-hGenericPut : forall a . (OutStream -> !a;OutStream) -> a -> OutStream -> OutStream
-hGenericPut sel x outStream = sel outStream |> send x
+__hGenericPut : forall a . (OutStream -> !a;OutStream) -> a -> OutStream -> OutStream
+__hGenericPut sel x outStream = sel outStream |> send x
 
 hPutChar : Char -> OutStream -> OutStream
-hPutChar = hGenericPut @Char (\ch:OutStream -> select PutChar ch) -- (select PutChar)
+hPutChar = __hGenericPut @Char (\ch:OutStream -> select PutChar ch) -- (select PutChar)
 
 hPutStr, hPutStrLn : String -> OutStream -> OutStream
-hPutStr   = hGenericPut @String (\ch:OutStream -> select PutStr   ch) -- (select PutStr)
-hPutStrLn = hGenericPut @String (\ch:OutStream -> select PutStrLn ch) -- (select PutStrLn)
+hPutStr   = __hGenericPut @String (\ch:OutStream -> select PutStr   ch) -- (select PutStr)
+hPutStrLn = __hGenericPut @String (\ch:OutStream -> select PutStrLn ch) -- (select PutStrLn)
 
 hPrint : forall a . a -> OutStream -> OutStream
 hPrint x = hPutStrLn (show @a x)
 
-hGenericPut_ : forall a . (a -> OutStream -> OutStream) -> a -> OutStreamProvider -> ()
-hGenericPut_ putF x outProv = 
+__hGenericPut_ : forall a . (a -> OutStream -> OutStream) -> a -> OutStreamProvider -> ()
+__hGenericPut_ putF x outProv = 
     hCloseOut $ putF x $ receive_ @OutStream outProv 
 
 hPutChar_ : Char -> OutStreamProvider -> ()
-hPutChar_ = hGenericPut_ @Char hPutChar
+hPutChar_ = __hGenericPut_ @Char hPutChar
 
 hPutStr_, hPutStrLn_ : String -> OutStreamProvider -> ()
-hPutStr_   = hGenericPut_ @String hPutStr
-hPutStrLn_ = hGenericPut_ @String hPutStrLn
+hPutStr_   = __hGenericPut_ @String hPutStr
+hPutStrLn_ = __hGenericPut_ @String hPutStrLn
 
 hPrint_ : forall a . a -> OutStreamProvider -> ()
--- hPrint_ = hGenericPut_ @a (hPrint @a)
-hPrint_ x ch = hGenericPut_ @a (hPrint @a) x ch
+-- hPrint_ = __hGenericPut_ @a (hPrint @a)
+hPrint_ x ch = __hGenericPut_ @a (hPrint @a) x ch
 
 
 -- | InStream
@@ -300,29 +296,44 @@ type InStream : 1S = +{ GetChar     : ?Char  ; InStream
 hCloseIn : InStream -> ()
 hCloseIn ch = select Close ch |> close
 
-hGenericGet : forall a . (InStream -> ?a;InStream) -> InStream -> (a, InStream)
-hGenericGet sel ch = receive $ sel ch
+__hGenericGet : forall a . (InStream -> ?a;InStream) -> InStream -> (a, InStream)
+__hGenericGet sel ch = receive $ sel ch
 
 hGetChar : InStream -> (Char, InStream)
-hGetChar = hGenericGet @Char (\ch:InStream -> select GetChar ch)
+hGetChar = __hGenericGet @Char (\ch:InStream -> select GetChar ch)
 
 hGetLine : InStream -> (String, InStream)
-hGetLine = hGenericGet @String (\ch:InStream -> select GetLine ch)
+hGetLine = __hGenericGet @String (\ch:InStream -> select GetLine ch)
+
+hGetContent : InStream -> (String, InStream)
+hGetContent ch = 
+  let (isEOF, ch) = hIsEOF ch in
+  if isEOF
+  then ("", ch)
+  else 
+    let (line, ch) = hGetLine ch in 
+    let (contents, ch) = hGetContent ch in
+    (line ++ "\n" ++ contents, ch)
 
 hIsEOF : InStream -> (Bool, InStream)
-hIsEOF = hGenericGet @Bool (\ch:InStream -> select IsEOF ch)
+hIsEOF = __hGenericGet @Bool (\ch:InStream -> select IsEOF ch)
 
-hGenericGet_ : forall a . (InStream -> (a, InStream)) -> InStreamProvider -> a
-hGenericGet_ getF inp = 
+__hGenericGet_ : forall a . (InStream -> (a, InStream)) -> InStreamProvider -> a
+__hGenericGet_ getF inp = 
   let (x, ch) = getF $ receive_ @InStream inp in
   let _ = hCloseIn ch in x
 
 hGetChar_ : InStreamProvider -> Char
-hGetChar_ = hGenericGet_ @Char hGetChar
+hGetChar_ = __hGenericGet_ @Char hGetChar
 
 hGetLine_ : InStreamProvider -> String
-hGetLine_     = hGenericGet_ @String hGetLine
+hGetLine_ = __hGenericGet_ @String hGetLine
 
+hGetContent_ : InStreamProvider -> String
+hGetContent_ inp = 
+  let (s, c) = receive_ @InStream inp |> hGetContent in
+  hCloseIn c;
+  s
 
 
 -- $$$$$$$\  
@@ -388,13 +399,6 @@ getChar = hGetChar_ stdin
 
 getLine : String
 getLine = hGetLine_ stdin
-
-getContents : InStream -> String
-getContents ch = 
-  let (isEOF, ch) = hIsEOF ch in
-  if isEOF
-  then hCloseIn ch; ""
-  else let (line, ch) = hGetLine ch in line ++ "\n" ++ (getContents ch)
 
 -- Internal stdin functions
 __runStdin : dualof InStreamProvider -> ()

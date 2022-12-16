@@ -42,4 +42,7 @@ appendFile fp content = openAppendFile fp
                      |> hCloseOut
 
 readFile : FilePath -> String
-readFile fp = getContents $ openReadFile fp
+readFile fp = 
+    let (content, f) = openReadFile fp |> hGetContent in
+    hCloseIn f;
+    content
