@@ -232,8 +232,9 @@ instance Message ErrorType where
     style red sty ts t ++ " of kind " ++ style red sty ts k
   msg (LinearFunctionNotConsumed _ env) sty _ =
     let c = length env 
-        term = if c > 1 then "s" else "" in
-    "Found " ++ show c ++ " top-level linear function" ++ term ++ " that were not consumed.\n  They are:" ++
+        plural = if c > 1 then "s" else ""
+        verb = if c > 1 then "were" else "was" in
+    "Found " ++ show c ++ " top-level linear function" ++ plural ++ " that " ++ verb ++ " not consumed.\n  They are:" ++
     foldl (\acc (k,v) -> let s = getSpan k in
              acc ++ "\n    " ++ defModule s ++ ":" ++ show s ++ ": " ++
              red sty (show k ++ " : " ++ show v)) "" env    
