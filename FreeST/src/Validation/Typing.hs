@@ -64,22 +64,17 @@ synthetise kEnv (E.UnLet _ x e1 e2) = do
   t2 <- synthetise kEnv e2
   difference kEnv x
   return t2
--- Abs introduction
-synthetise kEnv (E.Abs p Lin (Bind _ x t1 e)) = do
+-- Abstraction
+synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   void $ K.synthetise kEnv t1
+  vEnv1 <- getVEnv -- Redundant when mult == Lin
   addToVEnv x t1
   t2 <- synthetise kEnv e
   difference kEnv x
-  return $ T.Arrow p Lin t1 t2
-synthetise kEnv e'@(E.Abs p Un (Bind _ x t1 e)) = do
-  void $ K.synthetise kEnv t1
-  vEnv1 <- getVEnv
-  addToVEnv x t1
-  t2 <- synthetise kEnv e
-  difference kEnv x
-  vEnv2 <- getVEnv
-  checkEquivEnvs (getSpan e) "an unrestricted lambda" e' kEnv vEnv1 vEnv2
-  return $ T.Arrow p Un t1 t2
+  when (mult == Un) (do
+    vEnv2 <- getVEnv
+    checkEquivEnvs (getSpan e) "an unrestricted lambda" e' kEnv vEnv1 vEnv2)
+  return $ T.Arrow p mult t1 t2
 -- Application, the special cases first
   -- Select C e
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
@@ -192,7 +187,8 @@ difference kEnv x = do
 
 partialApplicationError :: E.Exp -> String -> FreestState T.Type
 partialApplicationError e s =
-  let p = getSpan e in addError (PartialApplied p e s) $> omission p
+  addError (PartialApplied p e s) $> omission p
+  where p = getSpan e
 
 -- CHECKING AGAINST A GIVEN TYPE
 
