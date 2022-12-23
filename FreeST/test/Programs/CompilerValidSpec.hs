@@ -43,7 +43,7 @@ validTest dir (testFile, exp) = do
     then pendingMessage exp
     else
      case res of
-      Timeout -> doExpectationsMatch "<divergent>" exp
+      Timeout -> doExpectationsMatch "<timeout>" exp
       Failed  -> void $ assertFailure out
       Passed  -> doExpectationsMatch out exp
 
