@@ -73,7 +73,7 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
   difference kEnv x
   when (mult == Un) (do
     vEnv2 <- getVEnv
-    checkEquivEnvs (getSpan e) "an unrestricted lambda" e' kEnv vEnv1 vEnv2)
+    checkEquivEnvs (getSpan e) NonEquivEnvsInUnFun e' kEnv vEnv1 vEnv2)
   return $ T.Arrow p mult t1 t2
 -- Application, the special cases first
   -- Select C e
@@ -134,7 +134,7 @@ synthetise kEnv e'@(E.Cond p e1 e2 e3) = do
   setVEnv vEnv2
   checkAgainst kEnv e3 t
   vEnv4 <- getVEnv
-  checkEquivEnvs p "a conditional" e' kEnv vEnv3 vEnv4
+  checkEquivEnvs p NonEquivEnvsInBranch e' kEnv vEnv3 vEnv4
   return t
 -- Pair introduction
 synthetise kEnv (E.Pair p e1 e2) = do
@@ -203,7 +203,7 @@ checkAgainst kEnv e@(E.Cond p e1 e2 e3) t = do
   setVEnv vEnv2
   checkAgainst kEnv e3 t
   vEnv4 <- getVEnv
-  checkEquivEnvs p "a conditional" e kEnv vEnv3 vEnv4
+  checkEquivEnvs p NonEquivEnvsInBranch e kEnv vEnv3 vEnv4
 -- Pair elimination
 checkAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
   t1       <- synthetise kEnv e1
@@ -236,10 +236,10 @@ checkEquivTypes exp kEnv expected actual =
     addError (NonEquivTypes (getSpan exp) expected actual exp)
 
 checkEquivEnvs
-  :: Span -> String -> E.Exp -> K.KindEnv -> VarEnv -> VarEnv -> FreestState ()
-checkEquivEnvs p branching exp kEnv vEnv1 vEnv2 = do
+  :: Span -> (Span -> VarEnv -> VarEnv -> E.Exp -> ErrorType) -> E.Exp -> K.KindEnv -> VarEnv -> VarEnv -> FreestState ()
+checkEquivEnvs p error exp kEnv vEnv1 vEnv2 =
   unless (equivalent kEnv vEnv1 vEnv2) $
-    addError (NonEquivEnvs p branching (vEnv1 Map.\\ vEnv2) (vEnv2 Map.\\ vEnv1) exp)
+    addError (error p (vEnv1 Map.\\ vEnv2) (vEnv2 Map.\\ vEnv1) exp)
 
 synthetiseCase :: Span -> K.KindEnv -> E.Exp -> E.FieldMap -> FreestState T.Type
 synthetiseCase p kEnv e fm  = do
@@ -248,7 +248,7 @@ synthetiseCase p kEnv e fm  = do
   ~(t : ts, v : vs) <- Map.foldr (synthetiseMap kEnv vEnv)
                                  (return ([], [])) fm'
   mapM_ (checkEquivTypes e kEnv t)           ts
-  mapM_ (checkEquivEnvs p "a case" e kEnv v) vs
+  mapM_ (checkEquivEnvs p NonEquivEnvsInBranch e kEnv v) vs
   setVEnv v
   return t
 
