@@ -31,10 +31,19 @@ four z s0 s1 = s0 $ s0 $ s1 $ z -- 100
 fifteen z s0 s1 = s1 $ s1 $ s1 $ s1 $ z -- 11111
 
 isZero : Bin -> Bool
-isZero n = n  @Bool True (λ_:Bool -> False) (λ_:Bool -> False)
+isZero n = n @Bool True (λ_:Bool -> False) (λ_:Bool -> False)
 
 toInt : Bin -> Int
-toInt n = n  @Int 0 (λx:Int -> 2 * x) (λx:Int -> 2 * x + 1)
+toInt n = n @Int 0 (λx:Int -> 2 * x) (λx:Int -> 2 * x + 1)
+
+succ' : Bin -> Bin
+succ' n = Λa => (one @a) (λs0:(a->a) -> s0 n@a) (λs1:(a->a) -> s1 n@a)
+
+-- succ' : Bin -> Bin
+-- succ' n = n @Bin
+--           one
+--           (λz:Bin -> λs0:(Bin->Bin) -> λs1:(Bin->Bin) -> s0 n)
+--           (λz:Bin -> λs0:(Bin->Bin) -> λs1:(Bin->Bin) -> s1 n)
 
 main : Bool
 main = isZero fifteen
