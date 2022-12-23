@@ -138,7 +138,7 @@ To add a valid program test follow the steps below:
 
 
 The contents of the ".expected" test file may be:
-  - \<divergent\>, if the computation do not end.
+  - \<timeout\>, if the computation does not terminate or is expected to exceed the time limit.
   - \<pending\>, can be used as a TODO list. These are tests that need to be taken care in the future.
   - The result of the computation
 
