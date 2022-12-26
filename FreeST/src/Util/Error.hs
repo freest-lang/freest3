@@ -105,7 +105,7 @@ instance Located ErrorType where
   getSpan (WrongFileExtension _            ) = defaultSpan
   getSpan (LexicalError p _                ) = p
   getSpan (PrematureEndOfFile p            ) = p
-  getSpan (ParseError        p _           ) = p
+  getSpan (ParseError p _                  ) = p
   getSpan (NameModuleMismatch p _ _        ) = p
   getSpan (ImportNotFound p _ _            ) = p
   getSpan (MissingModHeader p _            ) = p
@@ -113,26 +113,25 @@ instance Located ErrorType where
   getSpan (RedundantPMatch   p _           ) = p
   getSpan (DuplicateVar p _ _ _            ) = p
   getSpan (DuplicateFieldInDatatype p _ _  ) = p
-  getSpan (MissingChoices  p _ _           ) = p
+  getSpan (MissingChoices p _ _            ) = p
   getSpan (MultipleDeclarations p _ _      ) = p
-  getSpan (MultipleTypeDecl     p _ _      ) = p
-  getSpan (MultipleFunBindings  p _ _      ) = p
+  getSpan (MultipleTypeDecl p _ _          ) = p
+  getSpan (MultipleFunBindings p _ _       ) = p
   getSpan (ConflictChoiceCons p _ _        ) = p
   getSpan (DifNumberOfArguments p _        ) = p
   getSpan (InvalidVariablePatternChan p _  ) = p
-  getSpan (TypeVarOutOfScope     p _       ) = p
+  getSpan (TypeVarOutOfScope p _           ) = p
   getSpan (FuctionLacksSignature p _       ) = p
   getSpan (WrongNumberOfArguments p _ _ _ _) = p 
---  getSpan (DualOfNonRecVar       p _     ) = p
-  getSpan (DualOfNonSession      p _       ) = p
+  getSpan (DualOfNonSession p _            ) = p
   getSpan (SignatureLacksBinding p _ _     ) = p
   getSpan (MainNotDefined p _              ) = p
-  getSpan (UnrestrictedMainFun p _   _ _   ) = p
-  getSpan (LinearFunctionNotConsumed p  _  ) = p
+  getSpan (UnrestrictedMainFun p _ _ _     ) = p
+  getSpan (LinearFunctionNotConsumed p _   ) = p
   getSpan (TypeVarNotInScope p _           ) = p
   getSpan (TypeNotContractive p _ _        ) = p
   getSpan (CantMatchKinds p _ _ _          ) = p
-  getSpan (ExpectingSession    p _ _       ) = p
+  getSpan (ExpectingSession p _ _          ) = p
   getSpan (TypeAbsBodyNotValue p _ _       ) = p
   getSpan (VarOrConsNotInScope p _         ) = p
   getSpan (LinProgVar p _ _ _              ) = p
@@ -270,20 +269,25 @@ instance Message ErrorType where
   msg (NonEquivTypes _ t u e) sty ts =
     "Couldn't match expected type " ++ style red sty ts t ++ "\n              with actual type " ++
     style red sty ts u ++"\n                for expression " ++ style red sty ts e
-  msg (NonEquivEnvsInUnFun _ vEnv vEnv' e) sty ts =
-    "Couldn't match the final context against the initial context for an unrestricted function" ++
-    "\n\t The initial context is " ++ style red sty ts (vEnv Map.\\ vEnv') ++
-    "\n\t   the final context is " ++ style red sty ts (vEnv' Map.\\ vEnv) ++
-    "\n\t    and the function is " ++ style red sty ts e ++
-    "\n\t (unrestricted functions cannot update the context)" ++
-    "\n\t (if you must update the context, consider using a linear function)"
-  msg (NonEquivEnvsInBranch _ vEnv vEnv' e) sty ts =
+  msg (NonEquivEnvsInUnFun _ vEnv1 vEnv2 e) sty ts =
+    "Linear variable " ++ style red sty ts var ++ " was consumed in the body of an unrestricted function" ++
+    "\n\tvariable " ++ style red sty ts var ++ " is of type " ++ style red sty ts (vEnv1 Map.! var) ++
+    "\n\t  and the function is " ++ style red sty ts e ++
+    "\n\t(this risks duplicating or discarding the variable! Consider using a linear function instead.)"
+    where var = head $ Map.keys $ vEnv1 Map.\\ vEnv2
+    -- "Couldn't match the final context against the initial context for an unrestricted function" ++
+    -- "\n\t The initial context is " ++ style red sty ts (vEnv1 {-Map.\\ vEnv2-}) ++
+    -- "\n\t   the final context is " ++ style red sty ts (vEnv2 {-Map.\\ vEnv1-}) ++
+    -- "\n\t    and the function is " ++ style red sty ts e ++
+    -- "\n\t (unrestricted functions cannot update the context)" ++
+    -- "\n\t (if you must update the context, consider using a linear function)"
+  msg (NonEquivEnvsInBranch _ vEnv1 vEnv2 e) sty ts =
     "Couldn't match the final contexts in two distinct branches in a case or conditional expression " ++
-    "\n\t       One context is " ++ style red sty ts (vEnv Map.\\ vEnv') ++
-    "\n\t         the other is " ++ style red sty ts (vEnv' Map.\\ vEnv) ++
+    "\n\t       One context is " ++ style red sty ts (vEnv1 {-Map.\\ vEnv2-}) ++
+    "\n\t         the other is " ++ style red sty ts (vEnv2 {-Map.\\ vEnv1-}) ++
     "\n\tand the expression is " ++ style red sty ts e ++
-    "\n\t (was a variable consumed in one branch and not in the other?)" ++
-    "\n\t (is there a variable with different types in the two contexts?)"
+    "\n\t(was a variable consumed in one branch and not in the other?)" ++
+    "\n\t(is there a variable with different types in the two contexts?)"
   msg (DataConsNotInScope _ x) sty ts = "Data constructor " ++ style red sty ts x ++ " not in scope."
   msg (WrongNumOfCons _ x i xs e) sty ts =
     "The constructor " ++ style red sty ts x ++ " should have " ++ red sty (show i) ++

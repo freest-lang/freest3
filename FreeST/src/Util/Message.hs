@@ -34,7 +34,7 @@ instance Style K.Kind where
   style f sty _ = f sty . show
 
 instance Style Variable where
-  style f sty _ = quote . f sty . show
+  style f sty _ = {-quote . -} f sty . show
 
 instance Style VarEnv where
   style f sty _ = f sty . show
