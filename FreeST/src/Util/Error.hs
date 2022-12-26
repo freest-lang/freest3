@@ -270,11 +270,19 @@ instance Message ErrorType where
     "Couldn't match expected type " ++ style red sty ts t ++ "\n              with actual type " ++
     style red sty ts u ++"\n                for expression " ++ style red sty ts e
   msg (NonEquivEnvsInUnFun _ vEnv1 vEnv2 e) sty ts =
-    "Linear variable " ++ style red sty ts var ++ " was consumed in the body of an unrestricted function" ++
-    "\n\tvariable " ++ style red sty ts var ++ " is of type " ++ style red sty ts (vEnv1 Map.! var) ++
+    if length vars > 0
+    then "Linear variable " ++ style red sty ts (head vars) ++ " was consumed in the body of an unrestricted function" ++
+    "\n\tvariable " ++ style red sty ts (head vars) ++ " is of type " ++ style red sty ts (vEnv1 Map.! (head vars)) ++
     "\n\t  and the function is " ++ style red sty ts e ++
     "\n\t(this risks duplicating or discarding the variable! Consider using a linear function instead.)"
-    where var = head $ Map.keys $ vEnv1 Map.\\ vEnv2
+    else 
+    "Couldn't match the final context against the initial context for an unrestricted function" ++
+    "\n\t The initial context is " ++ style red sty ts (vEnv1 {-Map.\\ vEnv2-}) ++
+    "\n\t   the final context is " ++ style red sty ts (vEnv2 {-Map.\\ vEnv1-}) ++
+    "\n\t    and the function is " ++ style red sty ts e ++
+    "\n\t (unrestricted functions cannot update the context)" ++
+    "\n\t (if you must update the context, consider using a linear function)"
+    where vars = Map.keys $ vEnv1 Map.\\ vEnv2
     -- "Couldn't match the final context against the initial context for an unrestricted function" ++
     -- "\n\t The initial context is " ++ style red sty ts (vEnv1 {-Map.\\ vEnv2-}) ++
     -- "\n\t   the final context is " ++ style red sty ts (vEnv2 {-Map.\\ vEnv1-}) ++
