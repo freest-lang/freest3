@@ -16,12 +16,9 @@ A bidirectional type system.
 module Validation.Typing
   ( synthetise
   , checkAgainst
---  , fillFunType
   )
 where
 
-
-import           Equivalence.Equivalence
 import           Parse.Unparser () -- debug
 import           Syntax.Base
 import qualified Syntax.Expression as E
@@ -32,19 +29,17 @@ import           Syntax.Value
 import           Util.Error
 import           Util.FreestState
 import           Util.Warning
+import           Bisimulation.Bisimulation ( bisimilar )
 import qualified Validation.Extract as Extract
-import qualified Validation.Kinding as K -- Again?
+import qualified Validation.Kinding as K -- K Again?
 import qualified Validation.Rename as Rename ( subs )
 
-import           Control.Monad.State            ( when
-                                                , unless, evalState, MonadState (get)
-                                                )
+import           Control.Monad.State ( when
+                                     , unless, evalState, MonadState (get)
+                                     )
 import           Data.Functor
 import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
-import Parse.ParseUtils (tupleTypeMap)
-
--- SYNTHESISING A TYPE
+import           Parse.ParseUtils (tupleTypeMap)
 
 synthetise :: K.KindEnv -> E.Exp -> FreestState T.Type
 -- Basic expressions
@@ -55,8 +50,19 @@ synthetise _ (E.Unit p    ) = return $ T.Unit p
 synthetise _ (E.String p _) = return $ T.String p
   -- The 1st case is not strictly necessary but yields a better error message
 synthetise kEnv e@(E.Var p x)
-  | x == mkVar p "collect" = partialApplicationError e "channel of & type"
-  | otherwise = synthetiseVar kEnv x
+  | x == mkVar p "collect" =
+    addError (PartialApplied p e "channel of & type") $> omission p
+  | otherwise =  getFromVEnv x >>= \case
+    Just s -> do
+      k <- K.synthetise kEnv s
+      when (K.isLin k) $ removeFromVEnv x
+      return s
+    Nothing -> do
+      let p = getSpan x
+          s = omission p
+      addError (VarOrConsNotInScope p x)
+      addToVEnv x s
+      return s
 -- Unary let
 synthetise kEnv (E.UnLet _ x e1 e2) = do
   t1 <- synthetise kEnv e1
@@ -153,26 +159,34 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
   difference kEnv y
   return t2
 -- Datatype elimination
-synthetise kEnv (E.Case p e fm) = synthetiseCase p kEnv e fm
+synthetise kEnv (E.Case p e fm) = do
+  fm'  <- buildMap p fm =<< Extract.datatypeMap e =<< synthetise kEnv e
+  vEnv <- getVEnv
+  ~(t : ts, v : vs) <- Map.foldr (synthetiseMap kEnv vEnv)
+                                 (return ([], [])) fm'
+  mapM_ (checkEquivTypes e kEnv t) ts
+  mapM_ (checkEquivEnvs p NonEquivEnvsInBranch e kEnv v) vs
+  setVEnv v
+  return t
 -- Session types
 synthetise kEnv (E.New p t u) = do
   K.checkAgainstSession kEnv t
   return $ T.Almanac p T.Record $ tupleTypeMap [t,u]
 
--- | Returns the type of a variable; removes it from vEnv if lin
-
-synthetiseVar :: K.KindEnv -> Variable -> FreestState T.Type
-synthetiseVar kEnv x = getFromVEnv x >>= \case
-    Just s -> do
-      k <- K.synthetise kEnv s
-      when (K.isLin k) $ removeFromVEnv x
-      return s
-    Nothing -> do
-      let p = getSpan x
-          s = omission p
-      addError (VarOrConsNotInScope p x)
-      addToVEnv x s
-      return s
+synthetiseMap :: K.KindEnv -> VarEnv -> ([Variable], E.Exp)
+              -> FreestState ([T.Type], [VarEnv])
+              -> FreestState ([T.Type], [VarEnv])
+synthetiseMap kEnv vEnv (xs, e) state = do
+  (ts, envs) <- state
+  t          <- synthetise kEnv e
+  env        <- getVEnv
+  setVEnv vEnv
+  return (returnType xs t : ts, env : envs)
+ where
+  returnType :: [Variable] -> T.Type -> T.Type
+  returnType [] t                  = t
+  returnType (_:xs) (T.Arrow _ _ _ t2) = returnType xs t2
+  returnType _ t                  = t
 
 -- The difference operation. Removes a program variable from the
 -- variable environment and gives an error if it is linear
@@ -184,11 +198,6 @@ difference kEnv x = do
       when (K.isLin k) $ addError (LinProgVar (getSpan x) x t k)
     Nothing -> return ()
   removeFromVEnv x
-
-partialApplicationError :: E.Exp -> String -> FreestState T.Type
-partialApplicationError e s =
-  addError (PartialApplied p e s) $> omission p
-  where p = getSpan e
 
 -- CHECKING AGAINST A GIVEN TYPE
 
@@ -228,47 +237,19 @@ checkAgainst kEnv e (T.Arrow _ Lin t u) = do
   checkEquivTypes e kEnv u' u
 checkAgainst kEnv e t = checkEquivTypes e kEnv t =<< synthetise kEnv e
 
--- EQUALITY EQUIVALENCE CHECKING
-
 checkEquivTypes :: E.Exp -> K.KindEnv -> T.Type -> T.Type -> FreestState ()
 checkEquivTypes exp kEnv expected actual =
-  unless (equivalent kEnv actual expected) $
+  -- unless (equivalent kEnv actual expected) $
+  unless (bisimilar actual expected) $
     addError (NonEquivTypes (getSpan exp) expected actual exp)
 
-checkEquivEnvs
-  :: Span -> (Span -> VarEnv -> VarEnv -> E.Exp -> ErrorType) -> E.Exp -> K.KindEnv -> VarEnv -> VarEnv -> FreestState ()
+checkEquivEnvs :: Span -> (Span -> VarEnv -> VarEnv -> E.Exp -> ErrorType) -> E.Exp -> K.KindEnv -> VarEnv -> VarEnv -> FreestState ()
 checkEquivEnvs p error exp kEnv vEnv1 vEnv2 =
-  unless (equivalent kEnv vEnv1 vEnv2) $
+  -- unless (equivalent kEnv vEnv1 vEnv2) $
+  unless (Map.keysSet vEnv1 == Map.keysSet vEnv2) $
     addError (error p (vEnv1 Map.\\ vEnv2) (vEnv2 Map.\\ vEnv1) exp)
 
-synthetiseCase :: Span -> K.KindEnv -> E.Exp -> E.FieldMap -> FreestState T.Type
-synthetiseCase p kEnv e fm  = do
-  fm'  <- buildMap p fm =<< Extract.datatypeMap e =<< synthetise kEnv e
-  vEnv <- getVEnv
-  ~(t : ts, v : vs) <- Map.foldr (synthetiseMap kEnv vEnv)
-                                 (return ([], [])) fm'
-  mapM_ (checkEquivTypes e kEnv t)           ts
-  mapM_ (checkEquivEnvs p NonEquivEnvsInBranch e kEnv v) vs
-  setVEnv v
-  return t
-
-synthetiseMap :: K.KindEnv -> VarEnv -> ([Variable], E.Exp)
-              -> FreestState ([T.Type], [VarEnv])
-              -> FreestState ([T.Type], [VarEnv])
-synthetiseMap kEnv vEnv (xs, e) state = do
-  (ts, envs) <- state
-  t          <- synthetise kEnv e
-  env        <- getVEnv
-  setVEnv vEnv
-  return (returnType xs t : ts, env : envs)
- where
-  returnType :: [Variable] -> T.Type -> T.Type
-  returnType [] t                  = t
-  returnType (_:xs) (T.Arrow _ _ _ t2) = returnType xs t2
-  returnType _ t                  = t
-
-
--- Building abstractions for each case element
+-- Build abstractions for each case element
 
 buildMap :: Span -> E.FieldMap -> T.TypeMap -> FreestState E.FieldMap
 buildMap p fm tm = do

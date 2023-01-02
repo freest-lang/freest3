@@ -40,7 +40,7 @@ library:
     - Bisimulation.Bisimulation
     - Elaboration.ResolveDuality
     - Elaboration.Elaboration
-    - Equivalence.Equivalence
+#    - Equivalence.Equivalence
     - Equivalence.Normalisation
     - Syntax.Base
     - Syntax.Type

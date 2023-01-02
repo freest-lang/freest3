@@ -21,23 +21,22 @@ where
 import           Bisimulation.Bisimulation ( bisimilar )
 import           Syntax.Base
 import qualified Syntax.Kind as K
-import           Syntax.Program
 import qualified Syntax.Type as T
-import           Util.Error ( internalError )
-import           Util.FreestState              ( initialState
-                                                , errors
-                                                )
+import           Util.Error         ( internalError )
+import           Util.FreestState   ( initialState
+                                    , errors
+                                    )
 import           Validation.Kinding ( synthetise )
 import           Validation.Subkind ( (<:) )
 import qualified Validation.Substitution as Subs
                                                 ( unfold
                                                 , subs
                                                 )
-
 import           Control.Monad.State ( runState )
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
+-- DEPRECATED: use Bisimulation.bisimilar
 
 class Equivalence t where
   equivalent :: K.KindEnv -> t -> t -> Bool
@@ -112,13 +111,15 @@ isSessionType _ t@T.Dualof{} = internalError "Equivalence.Equivalence.isSessionT
 isSessionType _ _  = False
 -}
 
-instance Equivalence VarEnv where
-  equivalent kenv env1 env2 =
-    Map.size env1
-      == Map.size env2
-      && Map.foldlWithKey
-           (\acc b s ->
-             acc && b `Map.member` env2 && equivalent kenv s (env2 Map.! b)
-           )
-           True
-           env1
+-- No need: just compare the Map.keysSet
+--
+-- instance Equivalence VarEnv where
+--   equivalent kenv env1 env2 =
+--     Map.size env1
+--       == Map.size env2
+--       && Map.foldlWithKey
+--            (\acc b s ->
+--              acc && b `Map.member` env2 && equivalent kenv s (env2 Map.! b)
+--            )
+--            True
+--            env1
