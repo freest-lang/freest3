@@ -67,6 +67,7 @@ library:
     - Validation.Substitution
     - Validation.Typing
     - Validation.TypeChecking
+    - Interpreter.Builtin
     - Interpreter.Eval
 
 executables:
