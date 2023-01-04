@@ -105,13 +105,6 @@ initialCtx = Map.fromList
   -- Read from stdin
   , (var "__getChar", PrimitiveFun (\_ -> IOValue $ getChar >>= (return . Character)))
   , (var "__getLine", PrimitiveFun (\_ -> IOValue $ getLine >>= (return . String)))
-  -- Standard IO channels
-  , (var   "stdout", Chan stdout')
-  , (var   "stderr", Chan stderr')
-  , (var   "stdin" , Chan stdin')
-  , (var "__stdout", Chan __stdout)
-  , (var "__stderr", Chan __stderr)
-  , (var "__stdin" , Chan __stdin)
   -- Files
   , (var "__openFile",
       PrimitiveFun (\(String s) ->
@@ -140,7 +133,3 @@ initialCtx = Map.fromList
  where
   var :: String -> Variable
   var = mkVar defaultSpan
-
-  (stdout', __stdout) = unsafePerformIO new
-  (stderr', __stderr) = unsafePerformIO new
-  (stdin' , __stdin ) = unsafePerformIO new
