@@ -11,7 +11,7 @@ unRecv : UnRecv -> Int
 unRecv ur = case ur of {UnRecv r -> let (n,_) = receive r in n}
 
 main : Int
-main = let (s, r) = new !Int in 
+main = let (s, r) = new @!Int () in 
        let us = UnSend s in -- us : UnSend (linear)
        let ur = UnRecv r in -- ur : UnSend (linear)
        unSend 5 us;

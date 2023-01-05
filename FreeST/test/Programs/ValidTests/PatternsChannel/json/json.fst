@@ -11,7 +11,7 @@ More info on json at https://www.json.org
 
 main : Object
 main =
-  let (w, r) = new ObjectChannel in
+  let (w, r) = new @ObjectChannel () in
   fork (\_:() 1-> writeObject@Skip json w);
   fst @Object @Skip $ readObject @Skip r
 

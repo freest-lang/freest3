@@ -1,4 +1,4 @@
 main : Bool
 main =
-  let (_, _) = new Skip in
+  let (_, _) = new @Skip () in
   True

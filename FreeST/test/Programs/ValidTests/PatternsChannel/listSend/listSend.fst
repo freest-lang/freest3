@@ -17,6 +17,6 @@ aList = Cons 5 (Cons 7 (Cons 2 (Cons 6 (Cons 3 Nil))))
 
 main : List
 main =
-  let (w, r) = new rec x: 1S. +{NilC: Skip, ConsC: !Int;x} in
+  let (w, r) = new @(rec x: 1S. +{NilC: Skip, ConsC: !Int;x}) () in
   fork (\_:() 1-> flatten aList w) ;
   reconstruct r

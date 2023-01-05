@@ -288,11 +288,11 @@ initIslands_ : ListIslandChannel -> Int 1-> Int 1-> Int 1-> Int 1-> Int 1-> Resu
 initIslands_ channels seed islands popSize nIterI nIterG =
   if islands == 0
   then
-    let (client, server) = new ResultChannel in
+    let (client, server) = new @ResultChannel () in
     fork @() (\_:() 1-> runMasterServer server channels nIterG);
     client
   else
-    let (master, island) = new IslandChannel in
+    let (master, island) = new @IslandChannel () in
     let (seed, pop) = generatePopulation seed popSize in
     fork @() (\_:() 1-> runIsland island seed nIterI pop);
     initIslands_ (Cons master channels) seed (islands-1) popSize nIterI nIterG

@@ -7,7 +7,7 @@ type MathService : 1S = +{ Plus   : !Int; !Int; ?Int; MathService
 
 runMathServer : dualof MathServer -> ()
 runMathServer ch =
-    let (c, s) = new MathService in
+    let (c, s) = new @MathService () in
     let ch = send c ch in
     runMathService s;
     runMathServer ch
@@ -57,7 +57,7 @@ client2 ch =
 
 main : ()
 main =
-    let (c, s) = new MathServer in
+    let (c, s) = new @MathServer () in
     fork (\_:() 1-> client1 c);
     fork (\_:() 1-> client2 c);
     runMathServer s

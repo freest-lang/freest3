@@ -53,7 +53,7 @@ Int -> Int -> Int
 
 -- Send recv same thread
 
-let (w,r) = new !Int in let _ = send 5 w in let (v,_) = receive r in v
+let (w,r) = new @!Int () in let _ = send 5 w in let (v,_) = receive r in v
 Int
 
 -- Sequences of Λ, λ, ∀ abstractions and type applications abbreviated
@@ -84,10 +84,10 @@ Int
 
 -- Rec skip
 
-(\_:(rec x: *S. Skip, Skip) -> λy:Int -> y) (new Skip) 23
+(\_:(rec x: *S. Skip, Skip) -> λy:Int -> y) (new @Skip ()) 23
 Int
 
-(\_:Skip -> λy:Int -> y) (fst @Skip @Skip (new Skip)) 23
+(\_:Skip -> λy:Int -> y) (fst @Skip @Skip (new @Skip ())) 23
 Int
 
 -- Substitution

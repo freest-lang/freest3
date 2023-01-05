@@ -38,11 +38,11 @@ aList : IList
 aList = Cons 5 (Cons 3 (Cons 7 (Cons 1 Nil)))
 
 main : Int
-main = let (w, r) = new IListW in
+main = let (w, r) = new @IListW () in
        fork (\_:() 1-> iListW @Skip aList w);
        fst @Int @Skip $ iLength' @Skip r
 
 -- main : IList
--- main = let (w, r) = new IListW in
+-- main = let (w, r) = new @IListW () in
 --        fork (sink @Skip $ iListW @Skip aList w);
 --        fst @IList@Skip $ iListR' @Skip r

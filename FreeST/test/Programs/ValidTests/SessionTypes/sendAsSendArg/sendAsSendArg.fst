@@ -9,6 +9,6 @@ f2 c =
 
 main : Int
 main =
-  let (c1, c2) = new !Int;!Int;End in
+  let (c1, c2) = new @!Int;!Int;End () in
   let _ = fork @() (\_:()1-> f1 c1) in
   f2 c2 -- in x

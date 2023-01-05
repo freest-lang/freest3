@@ -50,6 +50,6 @@ size s n =
 -- expect 7 on the console.
 main : Int
 main =
-  let (c, s) = new StreamClient in
+  let (c, s) = new @StreamClient () in
   fork @() (\_:()1-> size s 0);
   client c

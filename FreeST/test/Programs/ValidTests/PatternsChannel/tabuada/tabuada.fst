@@ -83,7 +83,7 @@ addToList i (Node n l) = Node n (addToList i l)
 -- MAIN
 main : IntList
 main =
-  let (r, w) = new rec x: 1S. &{TabuadaSimples: ?Int; x, TabuadaAte: ?Int; ?Int; x, MultiplosEntre: ?Int; ?Int; ?Int; x, Solucao: !Bool; !Int; x, Fim: Skip} in
+  let (r, w) = new @(rec x: 1S. &{TabuadaSimples: ?Int; x, TabuadaAte: ?Int; ?Int; x, MultiplosEntre: ?Int; ?Int; ?Int; x, Solucao: !Bool; !Int; x, Fim: Skip}) () in
   fork (\_:() 1-> initTabuadaServer r) ;
   let c      = select TabuadaSimples w in
   let c      = send 4 c in

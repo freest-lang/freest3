@@ -43,7 +43,7 @@ sortingServer xs (Value      c) =
 -- Putting it all together
 main : ()
 main =
-  let (w, r) = new OrderingChannel in
+  let (w, r) = new @OrderingChannel () in
   fork (\_:() 1-> sortingServer@Skip Nil r);
   client w
 

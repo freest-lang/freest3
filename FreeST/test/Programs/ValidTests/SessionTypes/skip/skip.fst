@@ -1,2 +1,2 @@
 main : (Skip, Skip)
-main = new Skip
+main = new @Skip ()

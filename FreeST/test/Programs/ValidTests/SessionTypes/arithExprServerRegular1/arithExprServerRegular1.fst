@@ -74,6 +74,6 @@ err = -1
 -- expect 26 on the console.
 main : Int
 main =
-  let (c, s) = new StreamClient in
+  let (c, s) = new @StreamClient () in
   let _ = fork @() (\_:()1-> evaluate s Nil) in
   client c

@@ -74,20 +74,20 @@ main =
   -- number of inner processes
   let p = 5 in
   -- left-right communication channels
-  let (l1, r1) = new Sorter in
-  let (l2, r2) = new Sorter in
-  let (l3, r3) = new Sorter in
-  let (l4, r4) = new Sorter in
-  let (l5, r5) = new Sorter in
-  let (l6, r6) = new Sorter in
+  let (l1, r1) = new @Sorter () in
+  let (l2, r2) = new @Sorter () in
+  let (l3, r3) = new @Sorter () in
+  let (l4, r4) = new @Sorter () in
+  let (l5, r5) = new @Sorter () in
+  let (l6, r6) = new @Sorter () in
   -- collect' channels
-  let (cw1, cr1) = new !Int in
-  let (cw2, cr2) = new !Int in
-  let (cw3, cr3) = new !Int in
-  let (cw4, cr4) = new !Int in
-  let (cw5, cr5) = new !Int in
-  let (cw6, cr6) = new !Int in
-  let (cw7, cr7) = new !Int in
+  let (cw1, cr1) = new @!Int () in
+  let (cw2, cr2) = new @!Int () in
+  let (cw3, cr3) = new @!Int () in
+  let (cw4, cr4) = new @!Int () in
+  let (cw5, cr5) = new @!Int () in
+  let (cw6, cr6) = new @!Int () in
+  let (cw7, cr7) = new @!Int () in
   -- the various sorting nodes
   fork @Skip (\_:() 1-> first       (p / 2)     99    l1 cw1);
   fork @Skip (\_:() 1-> evenProcess (p / 2)     88 r1 l2 cw2);

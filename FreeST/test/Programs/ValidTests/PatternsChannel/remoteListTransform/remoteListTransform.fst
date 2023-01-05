@@ -25,7 +25,7 @@ aList = List 5 (List 4 (List 3 (List 2 (List 1 Nil))))
     
 main : IntList
 main =
-    let (w, r) = new (rec x:1S. +{NilC: Skip, ListC: !Int;x;?Int}) in
+    let (w, r) = new @(rec x:1S. +{NilC: Skip, ListC: !Int;x;?Int}) () in
     fork (\_:() 1-> listSum@Skip r) ;
     let (l, _) = transform@Skip aList w in
     l

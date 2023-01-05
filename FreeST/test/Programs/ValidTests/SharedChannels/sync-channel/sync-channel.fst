@@ -12,7 +12,7 @@ syncServerOnce limit ch =
     then ()
     else 
         -- create endpoints for syncing
-        let (c, s) = new SyncService in
+        let (c, s) = new @SyncService () in
         -- send client's endpoint
         let ch = send c ch in
         -- recursive call
@@ -47,6 +47,6 @@ nServers = 20
 
 main : ()
 main = 
-    let (c, s) = new SyncServer in
+    let (c, s) = new @SyncServer () in
     forkNClients nServers c;
     syncServer nServers s

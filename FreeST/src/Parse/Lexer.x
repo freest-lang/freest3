@@ -117,7 +117,7 @@ tokens :-
   if				{ \p s -> TokenIf (internalPos p) }
   then				{ \p s -> TokenThen (internalPos p) }
   else				{ \p s -> TokenElse (internalPos p) }
-  new				{ \p s -> TokenNew (internalPos p) }
+--  new				{ \p s -> TokenNew (internalPos p) }
   select		        { \p s -> TokenSelect (internalPos p) }
   match				{ \p s -> TokenMatch (internalPos p) }
   with				{ \p s -> TokenWith (internalPos p) }
@@ -194,7 +194,7 @@ data Token =
   | TokenIf Span
   | TokenThen Span
   | TokenElse Span
-  | TokenNew Span
+--  | TokenNew Span
 --  | TokenSend Span
 --  | TokenReceive Span
   | TokenSelect Span
@@ -274,7 +274,7 @@ instance Show Token where
   show (TokenIf _) = "if"
   show (TokenThen _) = "then"
   show (TokenElse _) = "else"
-  show (TokenNew _) = "new"
+--  show (TokenNew _) = "new"
 --  show (TokenSend _) = "send"
 --  show (TokenReceive _) = "receive"
   show (TokenSelect _) = "select"
@@ -389,7 +389,7 @@ instance Located Token where
   getSpan (TokenData p) = p
   getSpan (TokenType p) = p
   getSpan (TokenPipe p) = p
-  getSpan (TokenNew p) = p
+--  getSpan (TokenNew p) = p
 --  getSpan (TokenSend p) = p
 --  getSpan (TokenReceive p) = p
   getSpan (TokenSelect p) = p

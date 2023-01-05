@@ -169,10 +169,6 @@ synthetise kEnv (E.Case p e fm) = do
   mapM_ (checkEquivEnvs p NonEquivEnvsInBranch e kEnv v) vs
   setVEnv v
   return t
--- Session types
-synthetise kEnv (E.New p t u) = do
-  K.checkAgainstSession kEnv t
-  return $ T.Almanac p T.Record $ tupleTypeMap [t,u]
 
 synthetiseMap :: K.KindEnv -> VarEnv -> ([Variable], E.Exp)
               -> FreestState ([T.Type], [VarEnv])

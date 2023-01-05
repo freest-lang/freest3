@@ -12,7 +12,7 @@ type CakeService : 1S = &{ Cake: End
 
 runCakeStore : dualof CakeStore -> Bool -> ()
 runCakeStore cakeStore gotCake = 
-    let (c, s)    = new CakeService in
+    let (c, s)    = new @CakeService () in
     let cakeStore = send c cakeStore in
     if gotCake
     then 
@@ -40,7 +40,7 @@ boe cakeStore =
 
 main : ()
 main =
-    let (c, s) = new CakeStore in
+    let (c, s) = new @CakeStore () in
     fork (\_:() 1-> ami c);
     fork (\_:() 1-> boe c);
     runCakeStore s True

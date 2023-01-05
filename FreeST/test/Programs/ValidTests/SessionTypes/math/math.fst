@@ -14,6 +14,6 @@ mathServer c =
 
 main : Int
 main =
-  let (r,w) = new MathServer in
+  let (r,w) = new @MathServer () in
   let _ = fork (\_:()1-> mathServer r) in
   w |> select Negate |> send 5 |> receiveAndClose @Int

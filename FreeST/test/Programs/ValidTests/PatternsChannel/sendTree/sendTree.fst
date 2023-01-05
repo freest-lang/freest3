@@ -38,7 +38,7 @@ receiveTree (NodeC c) =
 main : Tree
 main =
   let inTree = Node 7 (Node 5 Leaf Leaf) (Node 9 (Node 11 Leaf Leaf) (Node 15 Leaf Leaf)) in
-  let (writer, reader) = new (rec x:1S . +{LeafC: Skip, NodeC: !Int;x;x}) in
+  let (writer, reader) = new @(rec x:1S . +{LeafC: Skip, NodeC: !Int;x;x}) () in
   fork (\_:() 1-> sendTree@Skip inTree writer) ;
   let (outTree, r) = receiveTree@Skip reader in
   outTree

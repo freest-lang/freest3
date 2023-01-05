@@ -44,7 +44,6 @@ instance DefaultTypeOp Exp where
     Cond p (getDefault m e1) (getDefault m e2) (getDefault m e3)
   getDefault m (UnLet p x e1 e2) =
     UnLet p x (getDefault m e1) (getDefault m e2)
-  getDefault m (New p t u) = New p (getDefault m t) (getDefault m u)
   getDefault _ e           = e
 
 instance DefaultTypeOp (Bind K.Kind Exp) where

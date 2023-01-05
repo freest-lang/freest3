@@ -87,6 +87,7 @@ fork : ∀a:*T. (() 1-> a) -> ()
 error : ∀a:*T . String -> a
 undefined : ∀a:*T . a
   -- Session ops
+new : ∀a:1S . () -> (a, dualof a)
 send : ∀a:1T . a -> ∀b:1S . !a;b 1-> b
 receive : ∀a:1T . ∀b:1S . ?a;b -> (a, b)
 close : End -> ()
@@ -212,7 +213,7 @@ parallel n thunk = repeat @() n (λ_:() -> fork @a thunk)
 -- communicate with its parent process. Return the channel endpoint.
 forkWith : ∀a:1S b:*T . (dualof a 1-> b) -> a
 forkWith f =
-    let (x, y) = new a in
+    let (x, y) = new @a () in
     fork (λ_:() 1-> f y);
     x
 
@@ -220,7 +221,7 @@ forkWith f =
 -- channel. The requester uses a conventional receive to obtain the channel end.
 accept : ∀a:1S . *!a -> dualof a
 accept ch =
-    let (x, y) = new a in
+    let (x, y) = new @a () in
     send x ch;
     y
 

@@ -2,7 +2,7 @@
 -- This main acts as the server that receives the Tree sent by a client
 main : Tree
 main =
-  let (w, r) = new TreeC in
+  let (w, r) = new @TreeC () in
   fork @() (\_:() 1-> treeClient w);
   --fork @() $ badClientPrematureEnd w;
   --fork @() $ badClientSendExtraValue w;

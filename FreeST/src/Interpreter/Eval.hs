@@ -85,9 +85,6 @@ eval fun tEnv ctx eenv (E.UnLet _ x e1 e2) = do
   !v <- eval fun tEnv ctx eenv e1
   eval fun tEnv (Map.insert x v ctx) eenv e2
 eval fun tEnv ctx eenv (E.Case s e m) = eval fun tEnv ctx eenv e >>=  evalCase fun s tEnv ctx eenv m 
-eval fun _ _   _    E.New{}        = do
-  (c1, c2) <- new
-  return $ Pair (Chan c1) (Chan c2)
 
 evalCase :: Variable -> Span -> TypeEnv -> Ctx -> Prog -> E.FieldMap -> Value -> IO Value
 evalCase name _ tEnv ctx eenv m (Chan c) = do
