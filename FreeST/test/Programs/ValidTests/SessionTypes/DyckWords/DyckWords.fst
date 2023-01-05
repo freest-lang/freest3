@@ -112,8 +112,8 @@ writeLtLtGtLtGtGt c =
 -- Putting it all together: out1 -> in1-out2 --> in2
 mainForward : ()
 mainForward =
-  let (out1, in1) = new @D;End () in
-  let (out2, in2) = new @D;End () in
+  let (out1, in1) = new @(D;End) () in
+  let (out2, in2) = new @(D;End) () in
   fork @() (\_:()1-> writeLtLtGtGtLtGt out1 |> close);
   fork @() (\_:()1-> let (c1, c2) = forwardD @End @End in1 out2 in close c1; close c2);
   readD @End in2 |> close
@@ -121,9 +121,9 @@ mainForward =
 -- Putting it all together: (out1 | out2) --> in1-in2-out3 --> in3
 main : ()
 main =
-  let (out1, in1) = new @D;End () in
-  let (out2, in2) = new @D;End () in
-  let (out3, in3) = new @D;End () in
+  let (out1, in1) = new @(D;End) () in
+  let (out2, in2) = new @(D;End) () in
+  let (out3, in3) = new @(D;End) () in
   fork @() (\_:()1-> writeLtLtGtGtLtGt out1 |> close);
   fork @() (\_:()1-> writeLtLtGtLtGtGt out2 |> close);
   fork @() (\_:()1-> 

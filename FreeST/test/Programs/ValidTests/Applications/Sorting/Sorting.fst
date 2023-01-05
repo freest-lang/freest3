@@ -53,7 +53,7 @@ sortingServer xs c =
 -- Putting it all together
 main : ()
 main =
-  let (w, r) = new @OrderingChannel;End () in
+  let (w, r) = new @(OrderingChannel;End) () in
   fork @() (\_:()1-> sortingServer @End Nil r |> snd @IntList @End |> close);
   client w
 

@@ -48,7 +48,7 @@ aList : IList
 aList = Cons 5 (Cons 3 (Cons 7 (Cons 1 Nil)))
 
 main : Int
-main = let (w, r) = new @IListW;End () in
+main = let (w, r) = new @(IListW;End) () in
        fork @() (\_:()1-> iListW  @End aList w |> close);
        let (i, r) = iLength' @End r in 
        close r;

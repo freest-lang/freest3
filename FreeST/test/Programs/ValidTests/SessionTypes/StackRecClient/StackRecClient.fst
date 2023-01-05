@@ -78,7 +78,7 @@ reverseE n c =
 
 main : ()
 main =
-  let (r, w) = new @EStack;End () in
+  let (r, w) = new @(EStack;End) () in
   fork  @() (\_:()1-> eStack  @End r |> close);
   reverseE 10 w
   -- reverseThree w

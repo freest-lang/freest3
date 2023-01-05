@@ -17,8 +17,8 @@ unsend = Λa:*T => λx:a *-> Λb:1S => λ_:() *-> send @a x @b
 
 main : Int
 main =
-  let (s1, r1) = new @!Int;End () in
-  let (s2, r2) = new @!Int;End () in
+  let (s1, r1) = new @(!Int;End) () in
+  let (s2, r2) = new @(!Int;End) () in
     
   let sendFive = unsend @Int 5 @End in
   fork (\_:() 1-> sendFive () s1 |> close);

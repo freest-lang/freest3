@@ -1,6 +1,6 @@
 main : Bool
 main =
-  let (s, r) = new @!Int;End () in
+  let (s, r) = new @(!Int;End) () in
   fork @() (\_:()1-> sender s 5);
   if (div (f r) 2) == 5 then
     True
