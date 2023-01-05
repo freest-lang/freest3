@@ -59,7 +59,7 @@ synthetise' s kEnv (T.Arrow p m t u) =
   synthetise' s kEnv t >> synthetise' s kEnv u $> K.Kind p (typeToKindMult m) K.Top
 synthetise' s kEnv (T.Almanac p t m) | t == T.Variant || t == T.Record = do
   ks <- tMapM (synthetise' s kEnv) m
-  let K.Kind _ n _ = foldr1 join ks
+  let K.Kind _ n _ = foldr join (K.ut defaultSpan) ks
   return $ K.Kind p n K.Top
 -- Shared session types
 synthetise' s kEnv (T.Rec p (Bind _ a (K.Kind _ K.Un K.Session) (T.Semi _ u@(T.Message _ _ t) (T.Var _ b))))

@@ -219,9 +219,8 @@ findCons c (t:ts)
   | otherwise = findCons c ts                                           -- if not continue searching
 
 consAndNumber :: T.Type -> [(Variable,Int)]
-consAndNumber (T.Almanac _ T.Variant tm) = map (\(v,t) -> (v,countArrows t)) (Map.toList tm)
-  where countArrows (T.Arrow _ _ _ t2) = 1 + countArrows t2             -- the number of higher level arrows gives the number of components
-        countArrows _ = 0 
+consAndNumber (T.Almanac _ T.Variant tm) = 
+  map (\(v,(T.Almanac _ _ tm)) -> (v, Map.size tm)) (Map.toList tm)
 
 -- retuns the data type constructors
 getKeys :: T.Type -> [Variable]

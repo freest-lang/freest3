@@ -179,9 +179,8 @@ Decl :: { () }
   | data KindedTVar '=' DataCons {% do
       let a = fst $2
       checkDupTypeDecl a
-      let bs = typeListToType a $4 :: [(Variable, T.Type)]
-      mapM_ (\(c, t) -> addToVEnv c t) bs
-      uncurry addToTEnv $2 (T.Almanac (getSpan a) T.Variant (Map.fromList bs))
+      mapM_ (uncurry addToVEnv) (typeListsToUnArrows a $4) -- fixed in elaboration
+      uncurry addToTEnv $2 (T.Almanac (getSpan a) T.Variant (typeListToRcdType $4))
     }
 
 ProgVarList :: { [Variable] }

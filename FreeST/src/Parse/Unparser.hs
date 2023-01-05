@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 {- |
 Module      :  Syntax.Show
 Description :  The show module
@@ -218,7 +219,9 @@ showDatatype m = intercalate " | "
   $ Map.foldrWithKey (\c t acc -> (show c ++ showAsSequence t) : acc) [] m
  where
   showAsSequence :: T.Type -> String
-  showAsSequence (T.Arrow _ _ t u) = " " ++ show t ++ showAsSequence u
+  showAsSequence (T.Almanac _ _ t) = 
+    let fs = unwords (map (show . snd) $ Map.toList t) in
+    if fs == "" then "" else " "++fs
   showAsSequence _               = ""
 
 showChoice :: T.TypeMap -> String

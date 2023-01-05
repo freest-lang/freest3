@@ -276,15 +276,15 @@ type ResultChannel : 1S = ?Int    -- Compute result and return it
 
 -- Structure that represents a list of IslandChannels
 --   Used by the master to hold all channels to the islands
-data ListIslandChannel = Nil | Cons IslandChannel ListIslandChannel
+data ListIslandChannel : 1T = Nil () | Cons IslandChannel ListIslandChannel
 
 
 -- Initialize all needed processes (islands + master) and return a
 --   ResultChannel for the client to request the result
-initIslands : Int -> Int -> Int -> Int -> Int -> ResultChannel
-initIslands = initIslands_ Nil
+initIslands : Int 1-> Int 1-> Int 1-> Int 1-> Int 1-> ResultChannel
+initIslands = initIslands_ $ Nil ()
 
-initIslands_ : ListIslandChannel -> Int -> Int -> Int -> Int -> Int -> ResultChannel
+initIslands_ : ListIslandChannel -> Int 1-> Int 1-> Int 1-> Int 1-> Int 1-> ResultChannel
 initIslands_ channels seed islands popSize nIterI nIterG =
   if islands == 0
   then
@@ -312,7 +312,7 @@ runMasterServer c channels nIterG =
   endIslands channels
 
 -- Auxiliary function that performs the getFittest-sendFittest loop
-masterLoop : ListIslandChannel -> Int -> ListIslandChannel
+masterLoop : ListIslandChannel -> Int 1-> ListIslandChannel
 masterLoop channels nIterG =
   if nIterG == 0
   then
@@ -382,7 +382,7 @@ sendFittestF fittest island = (fittest, send fittest $ select Crossover island)
 endIslands : ListIslandChannel -> ()
 endIslands channels0 =
   case channels0 of {
-    Nil ->
+    Nil _ ->
       (),
     Cons channel channels1 ->
       select Done channel |> close;
@@ -393,8 +393,8 @@ endIslands channels0 =
 foldIslands : forall a . (a -> IslandChannel -> (a, IslandChannel)) -> a -> ListIslandChannel -> (a, ListIslandChannel)
 foldIslands f x chs =
   case chs of {
-    Nil ->
-      (x, Nil),
+    Nil _ ->
+      (x, Nil ()),
     Cons ch chss ->
       let (x, ch) = f x ch in
       let (x, chss) = foldIslands @a f x chss in

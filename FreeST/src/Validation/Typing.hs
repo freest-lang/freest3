@@ -91,7 +91,8 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
   -- Collect e
 synthetise kEnv (E.App _ (E.Var p x) e) | x == mkVar p "collect" = do
   tm <- Extract.outChoiceMap e =<< synthetise kEnv e
-  return $ T.Almanac p T.Variant $ Map.map (flip (T.Arrow p Un) (T.Unit defaultSpan)) tm
+  return $ T.Almanac p T.Variant
+    (Map.map (T.Almanac p T.Record . Map.singleton (mkVar p "0")) tm)
   -- Receive e
 synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "receive" = do
   t        <- synthetise kEnv e
@@ -108,11 +109,11 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkVar p "send" = do
   checkAgainst kEnv e1 u1
   return u2
   -- Close e1
-synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "close" = do 
+synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "close" = do
   t <- Extract.end e =<< synthetise kEnv e
-  return $ T.Unit p 
+  return $ T.Unit p
   -- Fork e
-synthetise kEnv (E.App p fork@(E.Var _ x) e) | x == mkVar p "fork" = do 
+synthetise kEnv (E.App p fork@(E.Var _ x) e) | x == mkVar p "fork" = do
   (_, t) <- get >>= \s -> Extract.function e (evalState (synthetise kEnv e) s)
   synthetise kEnv (E.App p (E.TypeApp p fork t) e)
 -- Application, general case
@@ -231,9 +232,9 @@ checkAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
 -- checkAgainst kEnv (App p e1 e2) u = do
 --   t <- synthetise kEnv e2
 --   checkAgainst kEnv e1 (Fun p Un/Lin t u)
-checkAgainst kEnv e (T.Arrow _ Lin t u) = do 
+checkAgainst kEnv e (T.Arrow _ Lin t u) = do
   (t', u') <- Extract.function e =<< synthetise kEnv e
-  checkEquivTypes e kEnv t' t 
+  checkEquivTypes e kEnv t' t
   checkEquivTypes e kEnv u' u
 checkAgainst kEnv e t = checkEquivTypes e kEnv t =<< synthetise kEnv e
 
@@ -261,19 +262,23 @@ buildMap p fm tm = do
 buildAbstraction :: T.TypeMap -> Variable -> ([Variable], E.Exp)
                  -> FreestState ([Variable], E.Exp)
 buildAbstraction tm x (xs, e) = case tm Map.!? x of
-  Just t -> let n = numberOfArgs t in
+  Just (T.Almanac _ T.Record rtm) -> let n = Map.size rtm in
     if n /= length xs
       then addError (WrongNumOfCons (getSpan e) x n xs e) $> (xs, e)
-      else return (xs, buildAbstraction' (xs, e) t)
+      else return (xs, buildAbstraction' (xs, e) (map snd $ Map.toList rtm))
+  Just t -> internalError "variant not a record type" t
   Nothing -> -- Data constructor not in scope
     addError (DataConsNotInScope (getSpan x) x) $> (xs, e)
  where
-  buildAbstraction' :: ([Variable], E.Exp) -> T.Type -> E.Exp
+  buildAbstraction' :: ([Variable], E.Exp) -> [T.Type] -> E.Exp
   buildAbstraction' ([], e) _ = e
-  buildAbstraction' (x : xs, e) (T.Arrow _ _ t1 t2) =
-    E.Abs (getSpan e) Lin $ Bind (getSpan e) x t1 $ buildAbstraction' (xs, e) t2
-  buildAbstraction' ([x], e) t = E.Abs (getSpan e) Lin $ Bind (getSpan e) x t e
+  buildAbstraction' (x : xs, e) (t:ts) =
+    E.Abs (getSpan e) Lin $ Bind (getSpan e) x t $ buildAbstraction' (xs, e) ts
+
 
   numberOfArgs :: T.Type -> Int
   numberOfArgs (T.Arrow _ _ _ t) = 1 + numberOfArgs t
   numberOfArgs _                 = 0
+
+  numberOfFields :: T.Type -> Int
+  numberOfFields (T.Almanac _ _  tm) = Map.size tm
