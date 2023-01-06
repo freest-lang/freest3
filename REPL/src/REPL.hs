@@ -30,9 +30,9 @@ main = do
   home <- (</> ".repl_history") <$> getHomeDirectory
   runFilePath <- getDataFileName "Prelude.fst"
   s1 <- parseProgram (initialState {runOpts=defaultOpts{runFilePath}})
-  evalStateT (runInputT (replSettings home) (repl s1 args))
-    s1{runOpts=defaultOpts{runFilePath="<interactive>"}}
-
+  let s2 = emptyPEnv $ execState elaboration s1
+  evalStateT (runInputT (replSettings home) (repl s2 args))
+    s2{runOpts=defaultOpts{runFilePath="<interactive>"}}
 
 ------------------------------------------------------------
 -- AUTOCOMPLETE & HISTORY
