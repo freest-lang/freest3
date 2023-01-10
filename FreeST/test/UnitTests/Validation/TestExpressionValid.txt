@@ -36,14 +36,14 @@ Int
 -- Tuple destructor
 
 -- pairs
-let (x, y) = (2, True) in y
-Bool
+let (x, y) = (2, 'c') in y
+Char
 
-let (x, y) = (2, True) in x 
+let (x, y) = (2, 'c') in x 
 Int
 
--- let (x, y, z) = (6, True, 'a') in y
--- Bool
+-- let (x, y, z) = (6, 'c', 'a') in y
+-- Char
 
 (\x : Int -> x)
 Int -> Int
@@ -70,8 +70,8 @@ Int
 λ n:(∀ a . (a -> a) -> a -> a) -> Λ a => λ s:(a -> a) z:a -> s (n @a s z)
 (∀ a . (a -> a) -> a -> a) -> (∀ a . (a -> a) -> a -> a)
 
-(Λa b => λx:a y:b -> Λc => λz:(a -> b -> c) -> z x y) @Int @Bool
-Int -> Bool -> ∀c . (Int -> Bool -> c) -> c
+(Λa b => λx:a y:b -> Λc => λz:(a -> b -> c) -> z x y) @Int @Char
+Int -> Char -> ∀c . (Int -> Char -> c) -> c
 
 
 -- Lambda applied
@@ -79,7 +79,7 @@ Int -> Bool -> ∀c . (Int -> Bool -> c) -> c
 (λx:Int → x) 23
 Int
 
-(λ_:Bool → λy:Int → y) False 23
+(λ_:Char → λy:Int → y) 'a' 23
 Int
 
 -- Rec skip
@@ -92,5 +92,5 @@ Int
 
 -- Substitution
 
-(Λ a:*T => 5)@(Bool,Bool)
+(Λ a:*T => 5)@(Char,Char)
 Int
