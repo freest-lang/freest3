@@ -131,9 +131,6 @@ instance Rename E.Exp where
   rename tbs pbs (E.TypeAbs p b) = E.TypeAbs p <$> rename tbs pbs b
   rename tbs pbs (E.TypeApp p e t) =
     E.TypeApp p <$> rename tbs pbs e <*> rename tbs pbs t
-  -- Boolean elim
-  rename tbs pbs (E.Cond p e1 e2 e3) =
-    E.Cond p <$> rename tbs pbs e1 <*> rename tbs pbs e2 <*> rename tbs pbs e3
   -- Let
   rename tbs pbs (E.UnLet p x e1 e2) = do
     x'  <- rename tbs pbs x

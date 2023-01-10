@@ -48,8 +48,6 @@ instance Elaboration E.Exp where
   elaborate (E.BinLet p x y e1 e2) =
     E.BinLet p x y <$> elaborate e1 <*> elaborate e2
   elaborate (E.Case p e m) = E.Case p <$> elaborate e <*> elaborate m
-  elaborate (E.Cond p e1 e2 e3) =
-    E.Cond p <$> elaborate e1 <*> elaborate e2 <*> elaborate e3
   elaborate (E.TypeApp p e t  ) = E.TypeApp p <$> elaborate e <*> elaborate t
   elaborate (E.TypeAbs p b    ) = E.TypeAbs p <$> elaborate b
   elaborate (E.UnLet p x e1 e2) = E.UnLet p x <$> elaborate e1 <*> elaborate e2

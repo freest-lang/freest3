@@ -70,23 +70,20 @@ initialCtx = Map.fromList
   , (var "pred", PrimitiveFun (\(Integer x) -> Integer $ pred x))
   , (var "abs" , PrimitiveFun (\(Integer x) -> Integer $ abs x))
   , (var "quot", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x `quot` y)))
-  , (var "even", PrimitiveFun (\(Integer x) -> Boolean $ even x))
-  , (var "odd" , PrimitiveFun (\(Integer x) -> Boolean $ odd x))
+  , (var "even", PrimitiveFun (\(Integer x) -> boolean $ even x))
+  , (var "odd" , PrimitiveFun (\(Integer x) -> boolean $ odd x))
   , (var "gcd", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x `gcd` y)))
   , (var "lcm", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x `lcm` y)))
-  -- Boolean
-  , (var "not", PrimitiveFun (\(Boolean x) -> Boolean $ not x))
-  , (var "(&&)", PrimitiveFun (\(Boolean x) -> PrimitiveFun (\(Boolean y) -> Boolean $ x && y)))
-  , (var "(||)", PrimitiveFun (\(Boolean x) -> PrimitiveFun (\(Boolean y) -> Boolean $ x || y)))
-  , (var "(==)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Boolean $ x == y)))
-  , (var "(/=)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Boolean $ x /= y)))
-  , (var "(<)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Boolean $ x < y)))
-  , (var "(>)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Boolean $ x > y)))
-  , (var "(<=)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Boolean $ x <= y)))
-  , (var "(>=)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Boolean $ x >= y)))
-  -- Function call
-  -- , (var "(|>)", ...)
-  -- Char
+  -- Booleans
+  , (var "(&&)", PrimitiveFun (\(Cons x _) -> PrimitiveFun (\(Cons y _) -> boolean $ read (show x) && read (show y))))
+  , (var "(||)", PrimitiveFun (\(Cons x _) -> PrimitiveFun (\(Cons y _) -> boolean $ read (show x) || read (show y))))
+  , (var "(==)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> boolean $ x == y)))
+  , (var "(/=)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> boolean $ x /= y)))
+  , (var "(<)" , PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> boolean $ x <  y)))
+  , (var "(>)" , PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> boolean $ x >  y)))
+  , (var "(<=)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> boolean $ x <= y)))
+  , (var "(>=)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> boolean $ x >= y)))
+  -- Chars
   , (var "chr", PrimitiveFun (\(Integer x) -> Character $ chr x))
   , (var "ord", PrimitiveFun (\(Character x) -> Integer $ ord x))
   -- Strings
@@ -97,7 +94,7 @@ initialCtx = Map.fromList
   -- Show
   , (var "show", PrimitiveFun (String . show))
   -- Read
-  , (var "readBool", PrimitiveFun (\(String s) -> Boolean (read s)))
+  , (var "readBool", PrimitiveFun (\(String s) -> boolean (read s)))
   , (var "readInt" , PrimitiveFun (\(String s) -> Integer (read s)))
   , (var "readChar", PrimitiveFun (\(String (c : _)) -> Character c))
   -- Print to stdout
@@ -122,8 +119,8 @@ initialCtx = Map.fromList
     )))
   , (var "__readFileChar", PrimitiveFun (\(Cons _ [[Handle fh]]) -> IOValue $ hGetChar fh >>= return . Character))
   , (var "__readFileLine", PrimitiveFun (\(Cons _ [[Handle fh]]) -> IOValue $ hGetLine fh >>= return . String))
-  , (var "__isEOF", PrimitiveFun (\(Cons _ [[Handle fh]]) -> IOValue $ hIsEOF fh >>= return . Boolean))
-  , (var "__closeFile", PrimitiveFun (\(Cons _ [[Handle fh]]) -> IOValue $ hClose fh $> Unit))
+  , (var "__isEOF"       , PrimitiveFun (\(Cons _ [[Handle fh]]) -> IOValue $ hIsEOF fh >>= return . boolean))
+  , (var "__closeFile"   , PrimitiveFun (\(Cons _ [[Handle fh]]) -> IOValue $ hClose fh $> Unit))
   -- Id  
   , (var "id", PrimitiveFun id)
   -- Undefined
@@ -135,3 +132,5 @@ initialCtx = Map.fromList
  where
   var :: String -> Variable
   var = mkVar defaultSpan
+  boolean :: Bool -> Value
+  boolean b = Cons (mkVar defaultSpan (show b)) []

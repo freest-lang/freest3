@@ -56,7 +56,6 @@ odd : Int -> Bool
 (<=) : Int -> Int -> Bool
 (>=) : Int -> Int -> Bool
 -- Bool
-not : Bool -> Bool
 (&&) : Bool -> Bool -> Bool
 (||) : Bool -> Bool -> Bool
 -- Function call
@@ -114,6 +113,14 @@ __closeFile : FileHandle -> ()
 -- \________|
 
 -- | Prelude
+
+-- | Bool 
+data Bool = True | False 
+
+-- | Boolean complement
+not : Bool -> Bool 
+not True  = False 
+not False = True 
 
 -- | The identity function
 id : ∀a . a -> a

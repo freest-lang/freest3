@@ -238,7 +238,6 @@ replaceExp v p (BinLet s v1 v2 e1 e2) = BinLet  s      (replaceVar  v p v1)   (r
 replaceExp v p (Case s e fm)          = Case    s   <$> replaceExp  v p e  <*> mapM (substitute v p) fm
 replaceExp v p (TypeAbs s b)          = TypeAbs s   <$> replaceBind v p b
 replaceExp v p (TypeApp s e t)        = flip (TypeApp s) t <$> replaceExp v p e
-replaceExp v p (Cond s e1 e2 e3)      = Cond    s   <$> replaceExp  v p e1 <*> replaceExp v p e2 <*> replaceExp v p e3
 replaceExp v p (UnLet s v1 e1 e2)     = UnLet   s      (replaceVar  v p v1)<$> replaceExp v p e1 <*> replaceExp v p e2
 replaceExp v p (CasePat s e flp)      = do
   checkChanVarCase flp                                            -- checks if there are variables with channel patterns

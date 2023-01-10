@@ -37,6 +37,7 @@ import qualified Data.Map.Strict as Map
 import           Prelude                 hiding ( Left
                                                 , Right
                                                 ) -- needed for Associativity
+import qualified Data.Set as Set
 
 instance Show Span where
   show (Span sp fp _)
@@ -246,7 +247,6 @@ instance Unparse Exp where
   unparse (E.Unit _) = (maxRator, "()")
   unparse (E.Int _ i) = (maxRator, show i)
   unparse (E.Char _ c) = (maxRator, show c)
-  unparse (E.Bool _ b) = (maxRator, show b)
   unparse (E.String _ s) = (maxRator, show s)
   -- Variable
   unparse (E.Var  _ x) = (maxRator, show x)
@@ -292,6 +292,13 @@ instance Unparse Exp where
     p = "(" ++ show x ++ ", " ++ show y ++ ")"
     l = bracket (unparse e1) Left inRator
     r = bracket (unparse e2) Right inRator
+  -- Boolean elim
+  unparse (E.Case p e m) | Map.keysSet m == Set.fromList (map (mkVar p) ["True", "False"]) = 
+    (inRator, "if " ++ s1 ++ " then " ++ s2 ++ " else " ++ s3)
+    where s1 = bracket (unparse e) Left inRator
+          s2 = bracket (unparse $ snd $ m Map.! mkVar p "True" ) NonAssoc inRator
+          s3 = bracket (unparse $ snd $ m Map.! mkVar p "False") Right    inRator
+
   -- Datatype elim
   unparse (E.Case _ e m) =
     (inRator, "case " ++ s ++ " of {" ++ showFieldMap m ++ "}")
@@ -303,13 +310,6 @@ instance Unparse Exp where
   unparse (E.TypeApp _ x t) = (appRator, show x ++ " @" ++ t')
     where t' = bracket (unparse t) Right appRator
   unparse (E.TypeAbs _ b) = (arrowRator, "Λ" ++ showBindExp b)
-  -- Boolean elim
-  unparse (E.Cond _ e1 e2 e3) =
-    (inRator, "if " ++ s1 ++ " then " ++ s2 ++ " else " ++ s3)
-   where
-    s1 = bracket (unparse e1) Left inRator
-    s2 = bracket (unparse e2) NonAssoc inRator
-    s3 = bracket (unparse e3) Right inRator
   -- Session expressions
   unparse (E.UnLet _ x e1 e2) =
     (inRator, "let " ++ show x ++ " = " ++ l ++ " in " ++ r)

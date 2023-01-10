@@ -103,7 +103,6 @@ tokens :-
 -- Basic types
   Int			        { \p s -> TokenIntT (internalPos p) }
   Char				{ \p s -> TokenCharT (internalPos p) }
-  Bool				{ \p s -> TokenBoolT (internalPos p) }
   String			{ \p s -> TokenStringT (internalPos p) }
   Skip				{ \p s -> TokenSkip (internalPos p) }
   End			  	{ \p s -> TokenEnd (internalPos p) }
@@ -128,7 +127,6 @@ tokens :-
 -- Values
   \(\)				{ \p s -> TokenUnit (internalPos p) }
   (0+|[1-9]$digit*)      	{ \p s -> TokenInt (internalPos p) (read s) }
-  (True|False) 	      	 	{ \p s -> TokenBool (internalPos p) (read s) }
   @char				{ \p s -> TokenChar (internalPos p) (read s) }
   @stringLiteral		{ \p s -> TokenString (internalPos p) (read s) }
 -- Identifiers
@@ -146,7 +144,6 @@ data Token =
     TokenNL Span
   | TokenIntT Span
   | TokenCharT Span
-  | TokenBoolT Span
   | TokenStringT Span
   | TokenUnit Span
   | TokenUnArrow Span
@@ -183,7 +180,6 @@ data Token =
   | TokenInt Span Int
   | TokenChar Span Char
   | TokenString Span String
-  | TokenBool Span Bool
   | TokenLet Span
   | TokenIn Span
   | TokenEq Span
@@ -226,7 +222,6 @@ instance Show Token where
   show (TokenNL _) = "\\n"
   show (TokenIntT _) = "Int"
   show (TokenCharT _) = "Char"
-  show (TokenBoolT _) = "Bool"
   show (TokenUnit _) = "()"
   show (TokenStringT _) = "String"
   show (TokenUnArrow _) = "->"
@@ -262,7 +257,6 @@ instance Show Token where
   -- show (TokenLinM _) = "1M"
   show (TokenInt _ i) = show i
   show (TokenChar _ c) = show c
-  show (TokenBool _ b) = show b
   show (TokenString _ s) = s
   show (TokenLet _) = "let"
   show (TokenIn _) = "in"
@@ -345,7 +339,6 @@ instance Located Token where
   getSpan (TokenNL p) = p
   getSpan (TokenIntT p) = p
   getSpan (TokenCharT p) = p
-  getSpan (TokenBoolT p) = p
   getSpan (TokenUnit p) = p
   getSpan (TokenStringT p) = p
   getSpan (TokenUnArrow p) = p
@@ -381,7 +374,6 @@ instance Located Token where
   getSpan (TokenUnM p) = p
   getSpan (TokenInt p _) = p
   getSpan (TokenChar p _) = p
-  getSpan (TokenBool p _) = p
   getSpan (TokenString p _) = p
   getSpan (TokenLet p) = p
   getSpan (TokenIn p) = p

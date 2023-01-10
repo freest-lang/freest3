@@ -40,7 +40,6 @@ import           Paths_FreeST ( getDataFileName )
   import   {TokenImport _}  
   Int      {TokenIntT _}
   Char     {TokenCharT _}
-  Bool     {TokenBoolT _}
   String   {TokenStringT _}
   '()'     {TokenUnit _}
   '->'     {TokenUnArrow _}
@@ -86,7 +85,6 @@ import           Paths_FreeST ( getDataFileName )
   -- UM       {TokenUnM _}
   -- LM       {TokenLinM _}
   INT      {TokenInt _ _ }
-  BOOL     {TokenBool _ _}
   CHAR     {TokenChar _ _}
   STR      {TokenString _ _}
   let      {TokenLet _}
@@ -206,7 +204,7 @@ Exp :: { E.Exp }
   | Exp ';' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ E.UnLet s (mkVar s "_") $1 $3 }
   | let '(' ProgVarWild ',' ProgVarWild ')' '=' Exp in Exp
                                    {% mkSpanSpan $1 $10 >>= \s -> pure $ E.BinLet s $3 $5 $8 $10 }
-  | if Exp then Exp else Exp       {% mkSpanSpan $1 $6 >>= \s -> pure $ E.Cond s $2 $4 $6 }
+  | if Exp then Exp else Exp       {% mkSpanSpan $1 $6 >>= \s -> pure $ condCase s $2 $4 $6}
   | match Exp with '{' MatchMap '}' {% let s' = getSpan $2 in mkSpanSpan $1 $6 >>= \s ->
                                        pure $ E.Case s (E.App s' (E.Var s' (mkVar s' "collect")) $2) $5 }
   | case Exp of '{' CaseMap '}'    {% mkSpanSpan $1 $6 >>= \s -> pure $ E.CasePat s $2 $5 }
@@ -234,7 +232,6 @@ App :: { E.Exp }
    
 Primary :: { E.Exp }
   : INT                            {% let (TokenInt p x) = $1 in flip E.Int x `fmap` liftModToSpan p }
-  | BOOL                           {% let (TokenBool p x) = $1 in flip E.Bool x `fmap` liftModToSpan p }
   | CHAR                           {% let (TokenChar p x) = $1 in flip E.Char x `fmap` liftModToSpan p }
   | STR                            {% let (TokenString p x) = $1 in flip String x `fmap` liftModToSpan p }
   | '()'                           {% E.Unit `fmap` mkSpan $1 }
@@ -299,11 +296,11 @@ Pattern :: { Pattern }
   | '(' Pattern ')'                        { $2 }
 
 GuardsCase :: { Exp }
-  : '|' Exp       '->' Exp GuardsCase {% mkSpanSpan $1 $4 >>= \s -> pure $ E.Cond s $2 $4 $5 }
+  : '|' Exp       '->' Exp GuardsCase {% mkSpanSpan $1 $4 >>= \s -> pure $ condCase s $2 $4 $5 }
   | '|' otherwise '->' Exp            { $4 }
 
 GuardsFun :: { Exp }
-  : '|' Exp       '=' Exp GuardsFun   {% mkSpanSpan $1 $4 >>= \s -> pure $ E.Cond s $2 $4 $5 }
+  : '|' Exp       '=' Exp GuardsFun   {% mkSpanSpan $1 $4 >>= \s -> pure $ condCase s $2 $4 $5 }
   | '|' otherwise '=' Exp             { $4 }
 
 Op :: { Variable }
@@ -326,7 +323,6 @@ Type :: { T.Type }
   -- Functional types
   : Int                           {% T.Int `fmap` mkSpan $1 }
   | Char                          {% T.Char `fmap` mkSpan $1 }
-  | Bool                          {% T.Bool `fmap` mkSpan $1 }
   | String                        {% T.String `fmap` mkSpan $1 }
   | '()'                          {% T.Unit `fmap` mkSpan $1 }
   | Type Arrow Type %prec ARROW   {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Arrow s $2 $1 $3 }

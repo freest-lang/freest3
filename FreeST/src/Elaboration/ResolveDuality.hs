@@ -40,8 +40,6 @@ instance ResolveDuality E.Exp where
   resolve (E.Pair p e1 e2      ) = E.Pair p <$> resolve e1 <*> resolve e2
   resolve (E.BinLet p x y e1 e2) = E.BinLet p x y <$> resolve e1 <*> resolve e2
   resolve (E.Case p e m        ) = E.Case p <$> resolve e <*> resolveFieldMap m
-  resolve (E.Cond p e1 e2 e3) =
-    E.Cond p <$> resolve e1 <*> resolve e2 <*> resolve e3
   resolve (E.TypeApp p e t  ) = E.TypeApp p <$> resolve e <*> resolve t
   resolve (E.TypeAbs p b    ) = E.TypeAbs p <$> resolve b
   resolve (E.UnLet p x e1 e2) = E.UnLet p x <$> resolve e1 <*> resolve e2

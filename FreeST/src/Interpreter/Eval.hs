@@ -45,7 +45,6 @@ evalAndPrint name s e =
 eval :: Variable -> TypeEnv -> Ctx -> Prog -> E.Exp -> IO Value
 eval _ _ _   _ (E.Unit _                      )    = return Unit
 eval _ _ _   _ (E.Int    _ i                  )    = return $ Integer i
-eval _ _ _   _ (E.Bool   _ b                  )    = return $ Boolean b
 eval _ _ _   _ (E.Char   _ c                  )    = return $ Character c
 eval _ _ _   _ (E.String _ s                  )    = return $ String s
 eval _ _ ctx _ (E.TypeAbs _ (Bind _ _ _ e))        = return $ TypeAbs e ctx
@@ -78,9 +77,6 @@ eval fun tEnv ctx eenv (E.Pair _ e1 e2)  = Pair <$> eval fun tEnv ctx eenv e1 <*
 eval fun tEnv ctx eenv (E.BinLet _ x y e1 e2) = do
   (Pair v1 v2) <- eval fun tEnv ctx eenv e1
   eval fun tEnv (Map.insert x v1 (Map.insert y v2 ctx)) eenv e2
-eval fun tEnv ctx eenv (E.Cond _ cond e1 e2) = do
-  (Boolean b) <- eval fun tEnv ctx eenv cond 
-  if b then eval fun tEnv ctx eenv e1 else eval fun tEnv ctx eenv e2
 eval fun tEnv ctx eenv (E.UnLet _ x e1 e2) = do
   !v <- eval fun tEnv ctx eenv e1
   eval fun tEnv (Map.insert x v ctx) eenv e2

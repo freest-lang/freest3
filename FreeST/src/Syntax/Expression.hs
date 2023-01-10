@@ -30,7 +30,6 @@ data Exp =
     Unit Span
   | Int Span Int
   | Char Span Char
-  | Bool Span Bool
   | String Span String
   -- Variable
   | Var Span Variable
@@ -64,7 +63,6 @@ instance Located Exp where
   getSpan (Unit p             ) = p
   getSpan (Int p _            ) = p
   getSpan (Char p _           ) = p
-  getSpan (Bool p _           ) = p
   getSpan (String p _         ) = p
   getSpan (Var p _            ) = p
   getSpan (Abs p _ _          ) = p

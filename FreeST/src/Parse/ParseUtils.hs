@@ -156,3 +156,7 @@ typeListToRcdType ((c, us) : ts) =
   Map.insert c (T.Almanac (getSpan c) T.Record $ typesToMap 0 us) (typeListToRcdType ts)
   where typesToMap n [] = Map.empty
         typesToMap n (t : ts) = Map.insert (mkVar (getSpan t) $ show n) t (typesToMap (n+1) ts)
+
+condCase :: Span -> E.Exp -> E.Exp -> E.Exp -> E.Exp 
+condCase s i t e = E.Case s i $ Map.fromList [(mkVar s "True" , ([],t))
+                                             ,(mkVar s "False", ([],e))]

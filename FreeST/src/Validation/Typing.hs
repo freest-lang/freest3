@@ -45,7 +45,6 @@ synthetise :: K.KindEnv -> E.Exp -> FreestState T.Type
 -- Basic expressions
 synthetise _ (E.Int  p _  ) = return $ T.Int p
 synthetise _ (E.Char p _  ) = return $ T.Char p
-synthetise _ (E.Bool p _  ) = return $ T.Bool p
 synthetise _ (E.Unit p    ) = return $ T.Unit p
 synthetise _ (E.String p _) = return $ T.String p
   -- The 1st case is not strictly necessary but yields a better error message
@@ -132,17 +131,6 @@ synthetise kEnv (E.TypeApp _ e t) = do
   ~(T.Forall _ (Bind _ y k u')) <- Extract.forall e u
   void $ K.checkAgainst kEnv k t
   return $ Rename.subs t y u'
--- Boolean elimination
-synthetise kEnv e'@(E.Cond p e1 e2 e3) = do
-  checkAgainst kEnv e1 (T.Bool p)
-  vEnv2 <- getVEnv
-  t     <- synthetise kEnv e2
-  vEnv3 <- getVEnv
-  setVEnv vEnv2
-  checkAgainst kEnv e3 t
-  vEnv4 <- getVEnv
-  checkEquivEnvs p NonEquivEnvsInBranch e' kEnv vEnv3 vEnv4
-  return t
 -- Pair introduction
 synthetise kEnv (E.Pair p e1 e2) = do
   t1 <- synthetise kEnv e1
@@ -200,16 +188,6 @@ difference kEnv x = do
 
 -- | Check an expression against a given type
 checkAgainst :: K.KindEnv -> E.Exp -> T.Type -> FreestState ()
--- Boolean elimination
-checkAgainst kEnv e@(E.Cond p e1 e2 e3) t = do
-  checkAgainst kEnv e1 (T.Bool p)
-  vEnv2 <- getVEnv
-  checkAgainst kEnv e2 t
-  vEnv3 <- getVEnv
-  setVEnv vEnv2
-  checkAgainst kEnv e3 t
-  vEnv4 <- getVEnv
-  checkEquivEnvs p NonEquivEnvsInBranch e kEnv vEnv3 vEnv4
 -- Pair elimination
 checkAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
   t1       <- synthetise kEnv e1
