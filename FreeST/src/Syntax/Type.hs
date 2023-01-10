@@ -16,6 +16,7 @@ module Syntax.Type
   , Polarity(..)
   , Sort(..)
   , View(..)
+  , unit 
 --  , Multiplicity(..)
   )
 where
@@ -33,7 +34,6 @@ data Type =
   | Char Span
   | Bool Span
   | String Span
-  | Unit Span
   | Arrow Span Multiplicity Type Type
   | Almanac Span Sort TypeMap
   -- Session Types
@@ -64,7 +64,6 @@ instance Located Type where
   getSpan (Char p       ) = p
   getSpan (Bool p       ) = p
   getSpan (String p     ) = p
-  getSpan (Unit p       ) = p
   getSpan (Arrow p _ _ _) = p
   getSpan (Almanac p _ _) = p
   getSpan (Skip p       ) = p
@@ -78,3 +77,7 @@ instance Located Type where
   -- getSpan (App p _ _    ) = p
   getSpan (Dualof p _   ) = p
   getSpan (CoVar p _   ) = p
+
+-- Derived types
+unit :: Span -> Type 
+unit s = Almanac s Record Map.empty 

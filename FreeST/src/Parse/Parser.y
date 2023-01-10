@@ -324,7 +324,7 @@ Type :: { T.Type }
   : Int                           {% T.Int `fmap` mkSpan $1 }
   | Char                          {% T.Char `fmap` mkSpan $1 }
   | String                        {% T.String `fmap` mkSpan $1 }
-  | '()'                          {% T.Unit `fmap` mkSpan $1 }
+  | '()'                          {% mkSpan $1 >>= \s -> pure $ T.unit s}
   | Type Arrow Type %prec ARROW   {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Arrow s $2 $1 $3 }
   | '(' Type ',' TupleType ')'    {% mkSpanSpan $1 $5 >>= \s -> pure $ T.Almanac s T.Record $ tupleTypeMap [$2,$4]}
   -- Session types

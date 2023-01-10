@@ -64,7 +64,6 @@ changePos :: Span -> T.Type -> T.Type
 changePos p (T.Int  _         ) = T.Int p
 changePos p (T.Char _         ) = T.Char p
 changePos p (T.Bool _         ) = T.Bool p
-changePos p (T.Unit _         ) = T.Unit p
 changePos p (T.Arrow _ pol t u) = T.Arrow p pol (changePos p t) (changePos p u)
 -- Datatype
 -- Skip

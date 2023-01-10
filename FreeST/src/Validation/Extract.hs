@@ -81,7 +81,7 @@ message pol msg e t =
  where
   messageErr :: T.Type -> FreestState (T.Type, T.Type)
   messageErr u =
-    addError (ExtractError (getSpan e) msg e u) $> (T.Unit $ getSpan u, T.Skip $ getSpan u)
+    addError (ExtractError (getSpan e) msg e u) $> (T.unit (getSpan u), T.Skip $ getSpan u)
 
 end :: E.Exp -> T.Type -> FreestState ()
 end e t =

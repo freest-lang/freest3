@@ -63,7 +63,8 @@ toGrammar' (T.Arrow _ p t u) = do
   getLHS $ Map.fromList [(show p ++ "d", xs), (show p ++ "r", ys)]
 toGrammar' (T.Almanac _  t m) | t == T.Variant || t == T.Record = do -- Can't test this type directly
   ms <- tMapM toGrammar m
-  getLHS $ Map.mapKeys (\k -> (if t == T.Variant then "<>" else "{}") ++ show k) ms
+  let a = if t == T.Variant then "<>" else "{}" 
+  getLHS $ Map.insert (a++"✓") [] $ Map.mapKeys (\k -> a ++ show k) ms
 -- Session Types
 toGrammar' (T.Skip _) = return []
 toGrammar' t@(T.End _) = getLHS $ Map.singleton (show t) [bottom]
@@ -96,7 +97,6 @@ fatTerminal t@T.Int{}             = Just t
 fatTerminal t@T.Char{}            = Just t
 fatTerminal t@T.Bool{}            = Just t
 fatTerminal t@T.String{}          = Just t
-fatTerminal t@T.Unit{}            = Just t
 fatTerminal (T.Arrow p m t u)     = Just (T.Arrow p m) <*> fatTerminal t <*> fatTerminal u
 fatTerminal (T.Almanac p t m) | t == T.Variant || t == T.Record = 
   Just (T.Almanac p T.Variant) <*> mapM fatTerminal m
@@ -118,7 +118,6 @@ syntactic t@T.Int{}             = True
 syntactic t@T.Char{}            = True
 syntactic t@T.Bool{}            = True
 syntactic t@T.String{}          = True
-syntactic t@T.Unit{}            = True
 syntactic (T.Arrow _ _ t u)     = syntactic t && syntactic u
 syntactic (T.Pair _ t u)        = syntactic t && syntactic u
 syntactic (T.Variant p m)       = Map.foldr (\t b -> b && syntactic t) True m

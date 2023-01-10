@@ -45,7 +45,7 @@ synthetise :: K.KindEnv -> E.Exp -> FreestState T.Type
 -- Basic expressions
 synthetise _ (E.Int  p _  ) = return $ T.Int p
 synthetise _ (E.Char p _  ) = return $ T.Char p
-synthetise _ (E.Unit p    ) = return $ T.Unit p
+synthetise _ (E.Unit p    ) = return $ T.unit p
 synthetise _ (E.String p _) = return $ T.String p
   -- The 1st case is not strictly necessary but yields a better error message
 synthetise kEnv e@(E.Var p x)
@@ -110,7 +110,7 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkVar p "send" = do
   -- Close e1
 synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "close" = do
   t <- Extract.end e =<< synthetise kEnv e
-  return $ T.Unit p
+  return $ T.unit p
   -- Fork e
 synthetise kEnv (E.App p fork@(E.Var _ x) e) | x == mkVar p "fork" = do
   (_, t) <- get >>= \s -> Extract.function e (evalState (synthetise kEnv e) s)

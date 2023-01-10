@@ -102,7 +102,6 @@ nodes _                = 1
 constr :: T.Type -> String
 constr T.Int{}  = "Int"
 constr T.Char{} = "Char"
-constr T.Unit{} = "Unit"
 constr T.Bool{} = "Bool"
 constr T.Arrow{} = "Fun"
 constr (T.Almanac _ T.Record _) = "Record"

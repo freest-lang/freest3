@@ -184,7 +184,6 @@ instance Unparse T.Type where
   unparse (T.Char _       ) = (maxRator, "Char")
   unparse (T.Bool _       ) = (maxRator, "Bool")
   unparse (T.String _     ) = (maxRator, "String")
-  unparse (T.Unit _       ) = (maxRator, "()")
   unparse (T.Skip _       ) = (maxRator, "Skip")
   unparse (T.End _        ) = (maxRator, "End")
   unparse (T.Var  _ a     ) = (maxRator, show a)
@@ -196,8 +195,9 @@ instance Unparse T.Type where
     l = bracket (unparse t) Left arrowRator
     r = bracket (unparse u) Right arrowRator
   unparse (T.Almanac _ T.Variant m) = (maxRator, "[" ++ showDatatype m ++ "]")
-  unparse (T.Almanac _ T.Record m) | all (all isDigit . intern) $ Map.keys m = 
-    (maxRator, "(" ++ showTupleType m ++ ")")
+  unparse (T.Almanac _ T.Record m) 
+    | Map.null m = (maxRator, "()")
+    | all (all isDigit . intern) $ Map.keys m = (maxRator, "(" ++ showTupleType m ++ ")")
   unparse (T.Semi _ t u  ) = (semiRator, l ++ " ; " ++ r)
    where
     l = bracket (unparse t) Left semiRator
