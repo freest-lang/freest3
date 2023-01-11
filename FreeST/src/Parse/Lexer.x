@@ -41,8 +41,6 @@ $eol=[\n]
 -- # λ  -- forall not in range ([λ ∀])
 $greekId = [λ ∀ Λ μ]
 
-$internal = \#
-
 @lowerId = ([$lower $internal] # $greekId) $alphaNumeric*
 @upperId = ($upper # $greekId) $alphaNumeric*
 
