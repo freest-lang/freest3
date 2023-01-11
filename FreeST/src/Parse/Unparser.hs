@@ -94,7 +94,7 @@ showSortedVar x t = show x ++ ":" ++ show t
 
 -- Kind
 
-instance Show K.Basic where
+instance Show K.PreKind where
   show K.Session = "S"
   show K.Top     = "T"
 

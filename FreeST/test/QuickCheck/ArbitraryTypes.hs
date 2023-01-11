@@ -82,7 +82,7 @@ instance Arbitrary T.Type where
 
 type PairGen = Set.Set Variable -> Int -> Gen (T.Type, T.Type)
 
-bisimPair :: K.Basic -> PairGen 
+bisimPair :: K.PreKind -> PairGen 
 -- Top types
 bisimPair K.Top cVars 0 = 
   oneof [ bisimPair K.Session cVars 0 -- Top types include session types
