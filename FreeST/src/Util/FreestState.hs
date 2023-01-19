@@ -340,8 +340,6 @@ listTypes = typeListToType (mkList ds)
 
 listType :: T.Type
 listType = T.Almanac ds T.Variant (typeListToRcdType [(mkCons ds,[T.Int ds, T.Var ds (mkList ds)]), (mkNil ds, [])])
--- listType = T.Almanac ds T.Variant (Map.fromList listTypes)
-
 
 -- For constructors (used in Parser.y and here for lists)
 typeListToType :: Variable -> [(Variable, [T.Type])] -> [(Variable, T.Type)]
