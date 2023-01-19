@@ -10,17 +10,25 @@ import           Elaboration.Elaboration ( elaboration )
 import           Interpreter.Builtin ( initialCtx, new )
 import           Interpreter.Eval ( evalAndPrint )
 import           Interpreter.Value
+import           Parse.ParseUtils
 import           Parse.Parser ( parseProgram, parseAndImport )
-import           Util.CmdLine
-import           Util.FreestState
 import           Syntax.Base
+import           Syntax.MkName
 import           Syntax.Program (noConstructors, VarEnv)
 import qualified Syntax.Expression as E
 import qualified Syntax.Kind as K
+import           Util.CmdLine
 import           Util.Error
+import           Util.FreestState
 import           Util.Warning
 import           Validation.Rename ( renameState )
 import           Validation.TypeChecking ( typeCheck )
+
+import qualified Syntax.Kind as K
+import qualified Syntax.Type as T
+import           Syntax.Base
+import           Syntax.Program
+
 
 import           Control.Monad.State ( when, unless, execState )
 import qualified Data.Map.Strict as Map
@@ -47,7 +55,8 @@ checkAndRun runOpts = do
   let bs = Set.difference venv penv
 
   -- | Parse
-  s2 <- parseAndImport s1{builtins=bs, runOpts}
+  s2 <- parseAndImport s1{builtins=bs, runOpts
+                         }
   when (hasErrors s2) (die $ getErrors s2)
 
  -- | Solve type declarations and dualof operators
@@ -73,17 +82,12 @@ checkAndRun runOpts = do
   
  -- | Check if main was left undefined, eval and print result otherwise
   let m = getMain runOpts
-  
   when (m `Map.member` varEnv s5) $ evalAndPrint m s5 $
     forkHandlers 
       [ ("__runStdout", "__stdout")
       , ("__runStderr", "__stderr")
       , ("__runStdin", "__stdin")] 
       (prog s5 Map.! m)
-  -- when (m `Map.member` varEnv s5)
-  --   (evalAndPrint (typeEnv s5) initialCtx
-  --   (prog s5)
-  --   (prog s5 Map.! m))
 
   where
     noSig :: VarEnv -> Variable -> FreestS -> FreestS

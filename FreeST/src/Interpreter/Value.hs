@@ -6,11 +6,14 @@ module Interpreter.Value
   )
 where
 
-import qualified Control.Concurrent.Chan       as C
-import qualified Data.Map.Strict               as Map
-import           Parse.Unparser                 ( )
+import           Parse.Unparser ( )
 import           Syntax.Base
-import qualified Syntax.Expression             as E
+import qualified Syntax.Expression as E
+import           Syntax.MkName
+
+import qualified Control.Concurrent.Chan as C
+import qualified Data.Map.Strict as Map
+
 
 import           System.IO                      ( Handle )
 
@@ -42,7 +45,9 @@ instance Show Value where
   show (String    s)  = s
   show (Label     s)  = s
   show (Pair v1 v2 )  = "(" ++ show v1 ++ ", " ++ showTuple v2 ++ ")"
-  show (Cons c  xs )  = showCons c xs
+  show (Cons c  xs )
+    | c == mkCons defaultSpan = let ([y]:ys) = xs in "[" ++ show y ++ showNativeList ys ++ "]"
+    | otherwise               = showCons c xs
   show Closure{}      = "<fun>"
   show TypeAbs{}      = "<fun>"
   show PrimitiveFun{} = "<fun>"
@@ -64,8 +69,17 @@ showCons x xs = show x ++ " " ++ unwords (map showConstrList xs)
 
   showC :: Value -> String
   showC c@(Cons _ []) = show c
+  showC c@(Cons c' _) | c' == mkCons defaultSpan = show c
   showC c@Cons{}      = "(" ++ show c ++ ")"
   showC v             = show v
 
+
+showNativeList :: [[Value]] -> String
+showNativeList [[Cons _ []]]           = ""
+showNativeList ([Cons _ ([y]:ys)]:_) = "," ++ show y ++ showNativeList ys
+
+
 instance Located Value where
   getSpan _ = defaultSpan
+
+

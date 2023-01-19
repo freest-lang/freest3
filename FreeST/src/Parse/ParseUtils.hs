@@ -25,7 +25,6 @@ import           Util.Error
 import           Util.FreestState
 
 import           Control.Monad.State
-import           Data.Bifunctor  ( second )
 import           Data.List       ( find )
 import qualified Data.Map.Strict as Map
 import           Data.Bitraversable (bimapM)
@@ -149,13 +148,6 @@ insertMap = Map.insertWith (++)
 -- Tuples as a derived form of records
 tupleTypeMap :: [T.Type] -> T.TypeMap
 tupleTypeMap ts = Map.fromList $ zipWith (\i t -> (mkVar (getSpan t) (show i), t)) [0..] ts 
-
-typeListToRcdType :: [(Variable, [T.Type])] -> T.TypeMap
-typeListToRcdType []             = Map.empty
-typeListToRcdType ((c, us) : ts) =
-  Map.insert c (T.Almanac (getSpan c) T.Record $ typesToMap 0 us) (typeListToRcdType ts)
-  where typesToMap n [] = Map.empty
-        typesToMap n (t : ts) = Map.insert (mkVar (getSpan t) $ show n) t (typesToMap (n+1) ts)
 
 condCase :: Span -> E.Exp -> E.Exp -> E.Exp -> E.Exp 
 condCase s i t e = E.Case s i $ Map.fromList [(mkVar s "True" , ([],t))

@@ -6,6 +6,7 @@ where
 import           Parse.Lexer
 import           Parse.ParseUtils
 import           Syntax.Base
+import           Syntax.MkName
 import           Syntax.Expression as E
 import qualified Syntax.Kind as K
 import           Syntax.Program
@@ -55,6 +56,7 @@ import           Paths_FreeST ( getDataFileName )
   '['      {TokenLBracket _}
   ']'      {TokenRBracket _}
   ':'      {TokenColon _}
+  '::'      {TokenDoubleColon _}
   ';'      {TokenSemi _}
   '!'      {TokenMOut _}
   '?'      {TokenMIn _}
@@ -119,9 +121,10 @@ import           Paths_FreeST ( getDataFileName )
 %left '&&'       -- conjunction
 %left '++'
 %nonassoc CMP    -- comparison (relational and equality)
+%right '::'      -- lists
 %left '+' '-'    -- aditive
 %left '*' '/'    -- multiplicative
-%right '^'        -- power
+%right '^'       -- power
 %left NEG not    -- unary
 %right MSG       -- !T and ?T
 %right dualof
@@ -201,31 +204,32 @@ DataCon :: { (Variable, [T.Type]) }
 
 Exp :: { E.Exp }
   : let ProgVarWild '=' Exp in Exp {% mkSpanSpan $1 $6 >>= \s -> pure $ E.UnLet s $2 $4 $6 }
-  | Exp ';' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ E.UnLet s (mkVar s "_") $1 $3 }
+  | Exp ';' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ E.UnLet s (mkWild s) $1 $3 }
   | let '(' ProgVarWild ',' ProgVarWild ')' '=' Exp in Exp
                                    {% mkSpanSpan $1 $10 >>= \s -> pure $ E.BinLet s $3 $5 $8 $10 }
   | if Exp then Exp else Exp       {% mkSpanSpan $1 $6 >>= \s -> pure $ condCase s $2 $4 $6}
   | match Exp with '{' MatchMap '}' {% let s' = getSpan $2 in mkSpanSpan $1 $6 >>= \s ->
-                                       pure $ E.Case s (E.App s' (E.Var s' (mkVar s' "collect")) $2) $5 }
+                                       pure $ E.Case s (E.App s' (E.Var s' (mkCollect s')) $2) $5 }
   | case Exp of '{' CaseMap '}'    {% mkSpanSpan $1 $6 >>= \s -> pure $ E.CasePat s $2 $5 }
   | Exp '$' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ E.App s $1 $3 }
-  | Exp '|>' Exp                   {% mkSpanSpan $1 $3 >>= \s -> pure $  E.App s $3 $1 }
-  | Exp '||' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(||)") $3 }
-  | Exp '&&' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(&&)") $3 }
+  | Exp '|>' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $  E.App s $3 $1 }
+  | Exp '||' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkOr s) $3 }
+  | Exp '&&' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkAnd s) $3 }
   | Exp CMP Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s (getText $2)) $3 }
-  | Exp '+' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(+)") $3 }
-  | Exp '-' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(-)") $3 }
-  | Exp '*' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(*)") $3 }
-  | Exp '/' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(/)") $3 }
-  | Exp '^' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(^)") $3 }
-  | Exp '++' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(++)") $3 }
-  | '-' App %prec NEG              {% mkSpan $1 >>= \s -> pure $ unOp (mkVar s "negate") $2 s }
+  | Exp '+' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkPlus s) $3 }
+  | Exp '-' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkMinus s) $3 }
+  | Exp '*' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkTimes s) $3 }
+  | Exp '/' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkDiv s) $3 }
+  | Exp '^' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkPower s) $3 }
+  | Exp '++' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(++)") $3 } -- TODO:  mkFun on MkName.hs
+  | Exp '::' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkCons s) $3 }
+  | '-' App %prec NEG              {% mkSpan $1 >>= \s -> pure $ unOp (mkNeg s) $2 s }
   | App                            { $1 }
 
 App :: { E.Exp }
   : App Primary                    {% mkSpanSpan $1 $2 >>= \s -> return $ E.App s $1 $2 }
   | select Constructor             {% mkSpanSpan $1 $2 >>= \s -> mkSpan $2 >>=
-                                       \s1 -> pure $ E.App s (E.Var s (mkVar s1 "select")) (E.Var s1 $2)
+                                       \s1 -> pure $ E.App s (E.Var s (mkSelect s1)) (E.Var s1 $2)
                                    }
   | Primary                        { $1 }
   | App '@' Type                   {% mkSpanSpan $1 $3 >>= \s -> pure $ E.TypeApp s $1 $3 }
@@ -235,12 +239,14 @@ Primary :: { E.Exp }
   | CHAR                           {% let (TokenChar p x) = $1 in flip E.Char x `fmap` liftModToSpan p }
   | STR                            {% let (TokenString p x) = $1 in flip String x `fmap` liftModToSpan p }
   | '()'                           {% E.Unit `fmap` mkSpan $1 }
+  | '[' Exp ExpList                { binOp $2 (mkCons (getSpan $2)) $3 }
+  | '['']'                         {% mkSpan $1 >>= \s -> pure $ E.Var s (mkNil s) }
   | ArbitraryProgVar               {% flip E.Var $1 `fmap` mkSpan $1 }
   | lambda ProgVarWildTBind Abs    {% let (m,e) = $3 in mkSpanSpan $1 e >>= \s -> pure $ E.Abs s m (Bind s (fst $2) (snd $2) e) }
   | Lambda KindBind TAbs           {% let (a,k) = $2 in mkSpanSpan $1 $3 >>= \s -> pure $ E.TypeAbs s (Bind s a k $3) }
   | '(' Op Exp ')'                 {% mkSpanSpan $1 $4 >>= pure . unOp $2 $3 } -- left section
   | '(' Exp Op ')'                 {% mkSpanSpan $1 $4 >>= pure . unOp $3 $2 } -- right section
-  | '(' Exp '-' ')'                {% mkSpan $2 >>= \s -> pure $ unOp (mkVar s "(-)") $2 s } -- right section (-)
+  | '(' Exp '-' ')'                {% mkSpan $2 >>= \s -> pure $ unOp (mkMinus s) $2 s } -- right section (-)
   | '(' Exp ',' Tuple ')'          {% mkSpanSpan $1 $5 >>= \s -> pure $ E.Pair s $2 $4 }
   | '(' Exp ')'                    { $2 }
 
@@ -292,6 +298,8 @@ PatternCase :: { Pattern }
 Pattern :: { Pattern }
   : ProgVarWild                            { E.PatVar  $1    }
   | Constructor                            { E.PatCons $1 [] }
+  | '['']'                                 { E.PatCons (mkNil $ getSpan $1) [] }
+  | '(' Pattern '::' Pattern ')'           { E.PatCons (mkCons $ getSpan $3) ($2:[$4]) }
   | '(' Constructor Pattern PatternSeq ')' { E.PatCons $2 ($3:$4) }
   | '(' Pattern ')'                        { $2 }
 
@@ -303,17 +311,22 @@ GuardsFun :: { Exp }
   : '|' Exp       '=' Exp GuardsFun   {% mkSpanSpan $1 $4 >>= \s -> pure $ condCase s $2 $4 $5 }
   | '|' otherwise '=' Exp             { $4 }
 
-Op :: { Variable }
-   : '||'  {% flip mkVar "(||)" `fmap` mkSpan $1 }
-   | '&&'  {% flip mkVar "(&&)" `fmap` mkSpan $1 }
-   | CMP   {% flip mkVar (getText $1) `fmap` mkSpan $1 }
-   | '+'   {% flip mkVar "(+)"  `fmap` mkSpan $1 }
-   | '*'   {% flip mkVar "(*)"  `fmap` mkSpan $1 }
-   | '/'   {% flip mkVar "(/)"  `fmap` mkSpan $1 }
-   | '^'   {% flip mkVar "(^)"  `fmap` mkSpan $1 }
-   | '|>'  {% flip mkVar "(|>)" `fmap` mkSpan $1 }
-   | '++'  {% flip mkVar "(++)" `fmap` mkSpan $1 }
 
+ExpList :: { E.Exp }
+  : ']'             { E.Var (getSpan $1) (mkNil (getSpan $1)) }
+  | ',' Exp ExpList { binOp $2 (mkCons (getSpan $2)) $3 }
+
+
+Op :: { Variable }
+   : '||'  {% mkOr `fmap` mkSpan $1 }
+   | '&&'  {% mkAnd `fmap` mkSpan $1  }
+   | CMP   {% flip mkVar (getText $1) `fmap` mkSpan $1 }
+   | '+'   {% mkPlus `fmap` mkSpan $1  }
+   | '*'   {% mkTimes `fmap` mkSpan $1  }
+   | '/'   {% mkDiv `fmap` mkSpan $1 }
+   | '^'   {% mkPower `fmap` mkSpan $1 }
+   | '++'  {% flip mkVar "(++)" `fmap` mkSpan $1 }
+-- TODO: add List funs
 
 ----------
 -- TYPE --
@@ -327,6 +340,7 @@ Type :: { T.Type }
   | '()'                          {% mkSpan $1 >>= \s -> pure $ T.unit s}
   | Type Arrow Type %prec ARROW   {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Arrow s $2 $1 $3 }
   | '(' Type ',' TupleType ')'    {% mkSpanSpan $1 $5 >>= \s -> pure $ T.Almanac s T.Record $ tupleTypeMap [$2,$4]}
+  | '[' Int ']'                   {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Var s $ mkList s }
   -- Session types
   | Skip                          {% T.Skip `fmap` mkSpan $1 }
   | End                           {% T.End `fmap` mkSpan $1 }
@@ -425,7 +439,7 @@ Constructor :: { Variable }
 
 ProgVarWild :: { Variable }
   : ProgVar { $1 }
-  | '_'     {% flip mkVar "_" `fmap` mkSpan $1 }
+  | '_'     {% mkWild `fmap` mkSpan $1 }
 
 -- TODO remove, only used on case
 -- ProgVarWildSeq :: { [Variable] }
