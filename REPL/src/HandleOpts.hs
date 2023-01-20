@@ -5,6 +5,7 @@ module HandleOpts where
 
 import           Elaboration.Elaboration ( elaboration )
 import           Parse.Parser
+import           Paths_REPL (version)
 import           Syntax.Base
 import qualified Syntax.Expression as E
 import qualified Syntax.Kind as K
@@ -18,11 +19,11 @@ import qualified Validation.Kinding as K
 import           Validation.Rename ( renameState )
 import           Validation.TypeChecking ( typeCheck )
 
-
 import           Control.Monad.Extra
 import           Control.Monad.State
 import           Data.Char (isUpper)
 import qualified Data.Map.Strict as Map
+import           Data.Version ( showVersion )
 import           System.Console.Haskeline
 import           System.Directory
 import           System.FilePath
@@ -187,9 +188,9 @@ readLoop s = getInputLine " |λ> " >>= \case
 -- | -------------------------------------------------------
 
 helpMenu :: String
-helpMenu = unlines
+helpMenu = replVersion ++ "\n\n" ++ unlines
       ["-----------------------------------------------------------------------------------"
-      ,"                          FreeST Help Menu                                         "
+      ,"                          FreeSTi Help Menu                                        "
       ,"-----------------------------------------------------------------------------------"
       ,"Commands available from the prompt:\n"
       ,":help                     (:h)  Display the help menu"
@@ -204,3 +205,6 @@ helpMenu = unlines
       ,":reload                   (:r)  Reload last file loaded into REPL"
       ,"-----------------------------------------------------------------------------------"
       ]
+
+
+replVersion = "FreeSTi, Version " ++ showVersion version

@@ -1,11 +1,12 @@
 {-# LANGUAGE NamedFieldPuns #-}
 module REPL where
 
-import           Syntax.Base
 import           Elaboration.Elaboration ( elaboration )
 import           HandleOpts
 import           Interpreter.Eval ( evalAndPrint )
 import           Parse.Parser
+import           Paths_FreeST ( getDataFileName )
+import           Syntax.Base
 import           Util.FreestState
 import           Utils
 import           Validation.Rename ( renameState )
@@ -15,13 +16,11 @@ import qualified Validation.Typing as T
 import           Control.Monad.State
 import           Data.List
 import qualified Data.Map.Strict as Map
-import           Paths_FreeST ( getDataFileName )
 import           System.Console.Haskeline
 import           System.Directory
 import           System.Environment
 import           System.Exit ( die )
 import           System.FilePath
-
 
 
 main :: IO ()
@@ -94,6 +93,7 @@ parseOpt :: FreestS -> Option -> InputT REPLState ()
 parseOpt _ Nothing  = liftS $ die "Leaving FreeSTi."
 parseOpt s (Just xs)
   | isOpt [":q", ":quit"] = liftS $ die "Leaving FreeSTi."
+  | isOpt [":v", ":version"] = liftS $ putStrLn replVersion 
   | isOpt [":h", ":help"] = liftS $ putStrLn helpMenu
   | isOpt [":r", ":reload"] = lift $ reload s
   | opt == ":{" = multilineCmd opt
@@ -123,3 +123,6 @@ parseOpt s (Just xs)
   where
     (opt, cont) = splitOption xs
     isOpt = elem opt
+
+
+
