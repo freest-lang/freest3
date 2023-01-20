@@ -1,56 +1,290 @@
 module List where
 
-data List = Nil | Cons Int List
+-- TODO: (++)
+append : [Int] -> [Int] -> [Int]
+append [] ys      = ys
+append (x::xs) ys = x :: append xs ys 
 
-data Maybe = Nothing | Just Int
+head : [Int] -> Int
+head []       = error @Int "*** List.head: empty list"
+head (x :: _) = x
 
---map :: (a -> b) -> [a] -> [b]
-map : (Int -> Int) -> List -> List
-map f Nil = Nil
-map f (Cons x xs) = Cons (f x) (map f xs)
+last : [Int] -> Int
+last []        = error @Int "*** List.last: empty list"
+last (x :: []) = x
+last (_ :: xs) = last xs
 
---(++) :: [a] -> [a] -> [a]
-append : List -> List -> List
-append Nil ys = ys
-append (Cons x xs) ys = Cons x (append xs ys)
+tail : [Int] -> [Int]
+tail []        = error @[Int] "*** List.tail: empty list"
+tail (_ :: []) = []
+tail (_ :: xs) = xs
 
---filter :: (a -> Bool) -> [a] -> [a]
-filter : (Int -> Bool) -> List -> List
-filter _ Nil = Nil
-filter p (Cons x xs) | p x = filter p xs
-                     | otherwise = Cons x (filter p xs)
+init : [Int] -> [Int]
+init []        = error @[Int] "*** List.init: empty list"
+init (_ :: []) = []
+init (x::xs)   = x :: init xs
 
---head :: [a] -> a
-head : List -> Int
-head Nil = error @Int "*** Exception: Prelude.head: empty list"
-head (Cons x _) = x
+-- uncons :: [a] -> Maybe (a, [a])
 
---last :: [a] -> a
-last : List -> Int
-last Nil = error @Int "*** Exception: Prelude.last: empty list"
-last (Cons x Nil) = x
-last (Cons _ xs) = last xs
+singleton : Int -> [Int]
+singleton x = [x]
 
---tail :: [a] -> [a]
-tail : List -> List
-tail Nil = error @List "*** Exception: Prelude.tail: empty list"
-tail (Cons _ xs) = xs
+null : [Int] -> Bool
+null [] = True
+null _  = False
 
---init :: [a] -> [a]
-init : List -> List
-init Nil = error @List "*** Exception: Prelude.init: empty list"
-init (Cons _ Nil) = Nil
-init (Cons x xs) = Cons x (init xs)
+length : [Int] -> Int
+length []      = 0
+length (_::xs) = 1 + length xs
 
---null :: Foldable t => t a -> Bool
-null : List -> Bool
-null Nil = True
-null (Cons _ _ ) = False
 
---length :: Foldable t => t a -> Int
-length : List -> Int
-length Nil = 0
-length (Cons _ xs) = 1 + length xs
+-- List transformations
+
+map : (Int -> Int) -> [Int] -> [Int]
+map _ []      = []
+map f (x::xs) = f x :: map f xs
+
+reverse : [Int] -> [Int]
+reverse = foldl @[Int] (\acc:[Int] x:Int -> x::acc) [] 
+
+intersperse : Int -> [Int] -> [Int]
+intersperse _ []      = []
+intersperse v (x::[]) = [x]
+intersperse v (x::xs) = x :: v :: intersperse v xs
+
+-- intercalate : forall a:*T . [a] -> [[a]] -> [a]
+
+-- transpose : forall a:*T . [[a]] -> [[a]]
+
+-- subsequences : forall a:*T . [a] -> [[a]]
+
+-- permutations : forall a:*T . [a] -> [[a]]
+
+
+-- Reducing lists (folds)
+
+foldl : forall a . (a -> Int -> a) -> a -> [Int] -> a
+foldl f z []      = z                  
+foldl f z (x::xs) = foldl @a f (f z x) xs
+
+foldr : forall a . (Int -> a -> a) -> a -> [Int] -> a
+foldr f z []      = z 
+foldr f z (x::xs) = f x (foldr @a f z xs) 
+
+
+-- Special folds
+
+-- Functions that do not make sense for now. Not applicable for lists of integers
+-- concat, concatMap, and, or,
+
+any : (Int -> Bool) -> [Int] -> Bool
+any _ []      = False 
+any f (x::xs) = f x || any f xs
+
+all : (Int -> Bool) -> [Int] -> Bool
+-- all f xs = foldr (&&) True (map f xs)
+all _ []      = True 
+all f (x::xs) = f x && all f xs
+
+concatMap : (Int -> [Int]) -> [Int] -> [Int]
+concatMap _ []      = []
+concatMap f (x::xs) = append (f x) (concatMap f xs)
+
+
+-- TODO: test tomorrow
+
+sum : [Int] -> Int
+sum []      = 0
+sum (x::xs) = x + sum xs
+
+product : [Int] -> Int
+product []      = 1
+product (x::xs) = x * product xs
+
+maximum : [Int] -> Int
+maximum []      = error @Int "*** List.maximum: empty list"
+maximum (x::xs) = foldl @Int (\acc:Int y:Int -> if acc > y then acc else y) x xs
+
+
+minimum : [Int] -> Int
+minimum []      = error @Int "*** List.minimum: empty list"
+minimum (x::xs) = foldl @Int (\acc:Int y:Int -> if acc > y then y else acc) x xs
+
+-- Building lists
+
+-- Scans
+
+-- Note: Code taken from Haskell prelude
+-- Note: last (scanl f z xs) == foldl f z xs.
+-- scanl f z [x1, x2, ...] == [z, z `f` x1, (z `f` x1) `f` x2, ...]
+scanl : (Int -> Int -> Int) -> Int -> [Int] -> [Int]
+scanl _ q []      = [q]
+scanl f q (x::xs) = q :: scanl f (f q x) xs
+
+
+scanl1 : (Int -> Int -> Int) -> [Int] -> [Int]
+scanl1 _ []           = [] 
+scanl1 f (x::[])      = [x]
+scanl1 f (x::(y::xs)) = x :: scanl f (f x y) xs 
+
+-- | scanr f z [..., x1, x2] == [...,  x1 `f` (x2 `f` z) , x2 `f` z, z]
+
+scanr : (Int -> Int -> Int) -> Int -> [Int] -> [Int]
+scanr _ x []      = [x]
+scanr f x (y::ys) =
+  let res = scanr f x ys in (f y (head res)) :: res
+
+
+scanr1 : (Int -> Int -> Int) -> [Int] -> [Int]
+scanr1 _ []      = []
+scanr1 _ (x::[]) = [x]
+scanr1 f (x::xs) =
+  let res = scanr1 f xs in f x (head res) :: res 
+
+
+-- Accumulating maps
+
+mapAccumL : forall a . (a -> Int -> (a, Int)) -> a -> [Int] -> (a, [Int])
+mapAccumL _ s []      = (s, [])
+mapAccumL f s (z::zs) =
+  let (x,y) = f s z in
+  let (acc, ys) = mapAccumL @a f x zs in
+  (acc, y :: ys)
+
+mapAccumR : forall a . (a -> Int -> (a, Int)) -> a -> [Int] -> (a, [Int])
+mapAccumR _ s []      = (s, [])
+mapAccumR f s (z::zs) =
+  let (acc, ys) = mapAccumR @a f s zs in
+  let (x,y) = f acc z in
+  (x, y::ys)
+
+
+-- Sublists
+
+take : Int -> [Int] -> [Int]
+take _ []      = []
+take n (x::xs) 
+  | n < 0     = []
+  | otherwise = x :: take (n-1) xs
+
+drop : Int -> [Int] -> [Int]
+drop _ []      = []
+drop n (x::xs)
+  | n < 0     = x::xs
+  | otherwise = drop (n-1) xs
+
+splitAt : Int -> [Int] -> ([Int], [Int])
+splitAt _ []      = ([],[])
+splitAt n (x::xs)
+  | n <= 0    = ([],x::xs)
+  | otherwise = 
+    let (ys,zs) = splitAt (n-1) xs in
+    (x::ys,zs)
+   
+takeWhile : (Int -> Bool) -> [Int] -> [Int] 
+takeWhile _ []      = []
+takeWhile p (x::xs)
+  | p x       = x :: takeWhile p xs
+  | otherwise = []
+
+dropWhile : (Int -> Bool) -> [Int] -> [Int]
+dropWhile _ []      = []
+dropWhile p (x::xs)
+  | p x       = dropWhile p xs
+  | otherwise = x::xs
+
+span : (Int -> Bool) -> [Int] -> ([Int], [Int])
+span _ []      =  ([], [])
+span p (x::xs)
+  | p x       = let (ys,zs) = span p xs in (x::ys,zs)
+  | otherwise = ([],x::xs)
+    
+break : (Int -> Bool) -> [Int] -> ([Int], [Int])
+break p = span (\x : Int -> not (p x))
+-- break _ []            =  ([], [])
+-- break p (x::xs)
+--   | p x       = ([],x::xs)
+--   | otherwise = let (ys,zs) = break p xs in (x::ys,zs)
+
+
+  
+-- Searching lists
+
+-- Searching by equality
+
+elem : Int -> [Int] -> Bool
+elem x xs = any (== x) xs
+
+notElem : Int -> [Int] -> Bool
+notElem x xs = not $ elem x xs
+
+filter : (Int -> Bool) -> [Int] -> [Int]
+filter p = foldr @[Int] (\x:Int acc:[Int] -> if p x then x :: acc else acc) [] 
+
+partition : (Int -> Bool) -> [Int] -> ([Int], [Int])
+partition _ []      = ([],[]) 
+partition p (x::xs) =
+  let (ys,zs) = partition p xs in
+  if p x then (x::ys,zs) else (ys,x::zs)
+
+--lookup :: Eq a => a -> [(a, b)] -> Maybe b
+
+
+-- Indexing lists
+
+
+-- TODO:
+-- (!!) : [Int] -> Int -> Int
+-- (!!) xs x =
+--   error @Int "*** List.head: empty list"
+
+-- s     !! n | n < 0 =  error "Prelude.!!: negative index"
+-- []     !! _         =  error "Prelude.!!: index too large"
+-- (x:_)  !! 0         =  x
+-- (_:xs) !! n         =  xs !! (n-1)
+
+nth : [Int] -> Int -> Int
+nth [] _ =  error @Int "List.getAtIndex: index too large"
+nth (x::xs) n
+  | n <  0    = error @Int "List.getAtIndex: negative index"
+  | n == 0    = x
+  | otherwise = nth xs (n-1)
+
+
+-- elemIndex :: Eq a => a -> [a] -> Maybe Int
+-- elemIndices :: Eq a => a -> [a] -> [Int]
+-- findIndex :: (a -> Bool) -> [a] -> Maybe Int
+-- findIndices :: (a -> Bool) -> [a] -> [Int]
+
+
+
+-- Zipping and unzipping lists
+
+--zip :: [a] -> [b] -> [(a, b)]
+
+--zip3 :: [a] -> [b] -> [c] -> [(a, b, c)]
+
+--zipWith :: (a -> b -> c) -> [a] -> [b] -> [c]
+zipWith : (Int -> Int -> Int) -> [Int] -> [Int] -> [Int]
+zipWith _ []      _       = []
+zipWith _ _       []      = []
+zipWith f (x::xs) (y::ys) = f x y :: zipWith f xs ys
+
+--zipWith3 :: (a -> b -> c -> d) -> [a] -> [b] -> [c] -> [d]
+zipWith3 : (Int -> Int -> Int -> Int) -> [Int] -> [Int] -> [Int] -> [Int]
+zipWith3 _ []      _       _       = []
+zipWith3 _ _       []      _       = []
+zipWith3 _ _       _       []      = []
+zipWith3 f (x::xs) (y::ys) (z::zs) = f x y z :: zipWith3 f xs ys zs
+
+--unzip :: [(a, b)] -> ([a], [b])
+
+--unzip3 :: [(a, b, c)] -> ([a], [b], [c])
+
+
+
+-- Extra functions not present in Haskell's Prelude/Data.List
+
 
 --(!!) :: [a] -> Int -> a
 {-
@@ -63,148 +297,17 @@ length (Cons _ xs) = 1 + length xs
 >>> ['a', 'b', 'c'] !! (-1)
 *** Exception: Prelude.!!: negative index
 -}
-elemAt : List -> Int -> Int
-elemAt Nil         n | n < 0     = error @Int "Exception: Prelude.elemAt: negative index"
-                     | otherwise = error @Int "Exception: Prelude.elemAt: index too large"
-elemAt (Cons x xs) n | n == 0    = x
-                     | otherwise = elemAt xs (n - 1)
+elemAt : [Int] -> Int -> Int
+elemAt []      n 
+  | n < 0     = error @Int "Exception: Prelude.elemAt: negative index"
+  | otherwise = error @Int "Exception: Prelude.elemAt: index too large"
+elemAt (x::xs) n 
+  | n == 0    = x
+  | otherwise = elemAt xs (n - 1)
 
---reverse :: [a] -> [a]
-reverse : List -> List
-reverse = rev Nil
--- where
-rev : List -> List -> List
-rev xs Nil = xs
-rev xs (Cons y ys) = rev (Cons y xs) ys
-
---all :: Foldable t => (a -> Bool) -> t a -> Bool
-all : (Int -> Bool) -> List -> Bool
-all _ Nil = True
-all p (Cons x xs) = p x && all p xs
-
---any :: Foldable t => (a -> Bool) -> t a -> Bool
-any : (Int -> Bool) -> List ->  Bool
-any _ Nil = False
-any p (Cons x xs) = p x || any p xs
-
---concatMap :: Foldable t => (a -> [b]) -> t a -> [b]
-concatMap : (Int -> List) -> List -> List
-concatMap f Nil = Nil
-concatMap f (Cons x xs) = append (f x) (concatMap f xs)
-
--- Note: last (scanl f z xs) == foldl f z xs.
-
---scanl :: (b -> a -> b) -> b -> [a] -> [b]
-scanl : (Int -> Int -> Int) -> Int -> List -> List
-scanl f acc xs = Cons acc (scan f acc xs)
-
-scan : (Int -> Int -> Int) -> Int -> List -> List
-scan _ _ Nil = Nil
-scan f acc (Cons x xs) = Cons (f x acc) (scan f (f x acc) xs)
-
---scanl1 :: (a -> a -> a) -> [a] -> [a]
-scanl1 : (Int -> Int -> Int) -> List -> List
-scanl1 _ Nil = Nil
-scanl1 f (Cons x xs) = Cons x (scan f x xs)
-
---scanr :: (a -> b -> b) -> b -> [a] -> [b]
-scanr : (Int -> Int -> Int) -> Int -> List -> List
-scanr f acc l = reverse (scanl f acc (reverse l))
-
---scanr1 :: (a -> a -> a) -> [a] -> [a]
-scanr1 : (Int -> Int -> Int) -> List -> List
-scanr1 f l = reverse (scanl1 f (reverse l))
-
---take :: Int -> [a] -> [a]
-take : Int -> List -> List
-take i l =
-    case l of {
-        Nil -> Nil,
-        Cons x xs' -> 
-            if i == 0
-                then Nil
-                else Cons x (take (i-1) xs')
-    }
-
---drop :: Int -> [a] -> [a]
-drop : Int -> List -> List
-drop i l =
-    case l of {
-        Nil -> Nil,
-        Cons x xs' -> 
-            if i == 0
-                then l
-                else drop (i-1) xs'
-    }
-
---splitAt :: Int -> [a] -> ([a], [a])
-splitAt : Int -> List -> (List, List)
-splitAt n xs = (take n xs, drop n xs)
-
---Takewhile :: (a -> Bool) -> [a] -> [a]
-takeWhile : (Int -> Bool) -> List -> List
-takeWhile _ Nil = Nil
-takeWhile p (Cons x xs) | p x = Cons x (takeWhile p xs)
-                        | otherwise = Nil
-
---dropWhile :: (a -> Bool) -> [a] -> [a]
-dropWhile : (Int -> Bool) -> List -> List
-dropWhile _ Nil = Nil
-dropWhile p (Cons x xs) | p x = dropWhile p xs
-                        | otherwise = (Cons x xs)
-
---span :: (a -> Bool) -> [a] -> ([a], [a])
-span : (Int -> Bool) -> List -> (List, List)
-span f l =(takeWhile f l, dropWhile f l)
-
---break :: (a -> Bool) -> [a] -> ([a], [a])
-break : (Int -> Bool) -> List -> (List, List)
-break f l = span (\x : Int -> not (f x)) l
-
---elem :: (Foldable t, Eq a) => a -> t a -> Bool
-elem : Int -> List -> Bool
-elem _ Nil = False
-elem x (Cons y ys) | x == y = True
-                   | otherwise = elem x ys
-                   
---notElem :: (Foldable t, Eq a) => a -> t a -> Bool
-notElem : Int -> List -> Bool
-notElem x xs = not $ elem x xs
-
---lookup :: Eq a => a -> [(a, b)] -> Maybe b
-
---zip :: [a] -> [b] -> [(a, b)]
-
---zip3 :: [a] -> [b] -> [c] -> [(a, b, c)]
-
---zipWith :: (a -> b -> c) -> [a] -> [b] -> [c]
-zipWith : (Int -> Int -> Int) -> List -> List -> List
-zipWith f l1 l2 =
-    case l1 of {
-        Nil -> Nil,
-        Cons a xs'1 ->
-            case l2 of {
-                Nil -> Nil,
-                Cons b xs'2 -> Cons (f a b) (zipWith f xs'1 xs'2) 
-            }
-    }
-
---zipWith3 :: (a -> b -> c -> d) -> [a] -> [b] -> [c] -> [d]
-zipWith3 : (Int -> Int -> Int -> Int) -> List -> List -> List -> List
-zipWith3 f l1 l2 l3=
-    case l1 of {
-        Nil -> Nil,
-        Cons a xs'1 ->
-            case l2 of {
-                Nil -> Nil,
-                Cons b xs'2 -> 
-                    case l3 of {
-                        Nil -> Nil,
-                        Cons c xs'3 -> Cons (f a b c) (zipWith3 f xs'1 xs'2 xs'3) 
-                    }
-            }
-    }
-
---unzip :: [(a, b)] -> ([a], [b])
-
---unzip3 :: [(a, b, c)] -> ([a], [b], [c])
+-- TODO: polymorphic (==)
+equal : [Int] -> [Int] -> Bool
+equal []      []      = True
+equal []      _       = False
+equal _       []      = False
+equal (x::xs) (y::ys) = x == y && equal xs ys
