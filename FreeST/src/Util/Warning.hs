@@ -34,7 +34,7 @@ instance Located WarningType where
 instance Message WarningType where
   title _  sty = msgHeader (yellow sty "warning:") sty
   
-  msg NoPrelude{} _ _ = "Couldn't find prelude; proceeding without it"
+  msg NoPrelude{} _ _ = "Could not load the Prelude; proceeding without it"
   msg (NonExhaustiveCase _ fm tm) sty _ =
     "Pattern match(es) are non-exhaustive\n\t In a case alternative: Patterns not matched: " ++
     yellow sty (intercalate ", " $ map show $ Map.keys $ Map.difference tm fm)
