@@ -1,44 +1,44 @@
 -- Functional
 
-Int -> Bool
-Int -> Bool
+Int -> Int
+Int -> Int
 
-Int 1-> Bool
-Int 1-> Bool
+Int 1-> Int
+Int 1-> Int
 
-Int -> Bool -> Char
-Int -> Bool -> Char
+Int -> Int -> Char
+Int -> Int -> Char
 
-!(Int -> rec x. ?Bool;x)
-!(Int -> rec y. ?Bool;?Bool;y)
+!(Int -> rec x. ?Int;x)
+!(Int -> rec y. ?Int;?Int;y)
 
-(rec x. ?Bool;x) -> Char
-(rec y. ?Bool;?Bool;y) -> Char
+(rec x. ?Int;x) -> Char
+(rec y. ?Int;?Int;y) -> Char
 
-!Char -> (rec x. ?Bool;x)
-!Char -> (rec y. ?Bool;?Bool;y)
+!Char -> (rec x. ?Int;x)
+!Char -> (rec y. ?Int;?Int;y)
 
-(rec y. !Char;!Char;y) -> (rec x. ?Bool;x)
-(rec y. !Char;y) -> (rec y. ?Bool;?Bool;y)
+(rec y. !Char;!Char;y) -> (rec x. ?Int;x)
+(rec y. !Char;y) -> (rec y. ?Int;?Int;y)
 
-(Char, Bool)
-(Char, Bool)
+(Char, Int)
+(Char, Int)
 
-(Char -> !Int, Bool)
-(Char -> !Int, Bool)
+(Char -> !Int, Int)
+(Char -> !Int, Int)
 
-(rec y. !Char;!Char;y, Bool)
-(rec y. !Char;y, Bool)
+(rec y. !Char;!Char;y, Int)
+(rec y. !Char;y, Int)
 
-rec z. (!Bool, z)
-rec z. (!Bool, z)
+rec z. (!Int, z)
+rec z. (!Int, z)
 
 -- How do we test variant types?
 -- rec x . [Nil, Cons Int x]
 -- rec y . [Cons Int y, Nil]
 
-!((rec y. !Char;!Char;y) -> (rec x. ?Bool;x)) ; ?Bool
-!((rec y. !Char;y) -> (rec y. ?Bool;?Bool;y)) ; ?Bool
+!((rec y. !Char;!Char;y) -> (rec x. ?Int;x)) ; ?Int
+!((rec y. !Char;y) -> (rec y. ?Int;?Int;y)) ; ?Int
 
 -- Higher order
 
@@ -66,8 +66,8 @@ rec x. !x
 rec x. !x
 !(!(!(rec y. !y)))
 
-(Int, !Bool;Skip) -> (!(Char 1-> ?(Bool, !((Int, !Bool) -> (!(Char 1-> ?(Bool, !Int);Skip))))))
-(Int, !Bool) -> (!(Char 1-> ?(Bool, !((Int, Skip;(!Bool;Skip)) -> (!(Char 1-> ?(Bool, !Int)))))))
+(Int, !Int;Skip) -> (!(Char 1-> ?(Int, !((Int, !Int) -> (!(Char 1-> ?(Int, !Int);Skip))))))
+(Int, !Int) -> (!(Char 1-> ?(Int, !((Int, Skip;(!Int;Skip)) -> (!(Char 1-> ?(Int, !Int)))))))
 
 -- First order
 -- Note: many of these types are not well formed (most rec vars should be of kind 1S)
@@ -75,8 +75,8 @@ rec x. !x
 -- +{A: Char, B: +{A: Char}, C: +{A: !Int};!()}
 -- +{A: Char, B: +{A: Char}, C: +{A: !Int;!()}}
 
--- !Int; (?Bool; !Char)
--- (!Int; ?Bool); !Char
+-- !Int; (?Int; !Char)
+-- (!Int; ?Int); !Char
 
 -- ((rec termChan:1S.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)});(!Int;Skip))
 -- ((rec termChan:1S.&{Add: (termChan;termChan), Const: ?Int, Mult: (termChan;termChan)});!Int)
@@ -111,8 +111,8 @@ rec x. !x
 -- α
 -- (Skip;α)
 
--- &{And: (Skip;(?Bool;(?Bool;(!Bool;Skip)))), Not: (Skip;(?Bool;(!Bool;Skip))), Or: (Skip;(?Bool;(?Bool;(!Bool;Skip))))}
--- &{And: (?Bool;(?Bool;(!Bool;Skip))), Not: (?Bool;(!Bool;Skip)), Or: (?Bool;(?Bool;(!Bool;Skip)))}
+-- &{And: (Skip;(?Int;(?Int;(!Int;Skip)))), Not: (Skip;(?Int;(!Int;Skip))), Or: (Skip;(?Int;(?Int;(!Int;Skip))))}
+-- &{And: (?Int;(?Int;(!Int;Skip))), Not: (?Int;(!Int;Skip)), Or: (?Int;(?Int;(!Int;Skip)))}
 
 -- ((rec x.&{LeafC: Skip, NodeC: (?Int;(x;(x;!Int)))});Skip)
 -- (rec x.&{LeafC: Skip, NodeC: (?Int;(x;(x;!Int)))})
@@ -204,8 +204,8 @@ rec x. !x
 -- ((rec x.&{Leaf: Skip, Node: (rec y.+{Exit: Skip, Left: (x;y), Right: (x;y), Root: (?Int;y)})});((rec y.+{Exit: Skip, Left: ((rec x.&{Leaf: Skip, Node: (rec y.+{Exit: Skip, Left: (x;y), Right: (x;y), Root: (?Int;y)})});y), Right: ((rec x.&{Leaf: Skip, Node: (rec y.+{Exit: Skip, Left: (x;y), Right: (x;y), Root: (?Int;y)})});y), Root: (?Int;y)});α))
 -- (((rec x.&{Leaf: Skip, Node: (rec y.+{Exit: Skip, Left: (x;y), Right: (x;y), Root: (?Int;y)})});(rec y.+{Exit: Skip, Left: ((rec x.&{Leaf: Skip, Node: (rec y.+{Exit: Skip, Left: (x;y), Right: (x;y), Root: (?Int;y)})});y), Right: ((rec x.&{Leaf: Skip, Node: (rec y.+{Exit: Skip, Left: (x;y), Right: (x;y), Root: (?Int;y)})});y), Root: (?Int;y)}));α)
 
--- &{And: (Skip;(?Bool;(?Bool;(!Bool;Skip)))), Not: (Skip;(?Bool;(!Bool;Skip))), Or: (Skip;(?Bool;(?Bool;(!Bool;Skip))))}
--- &{And: (?Bool;(?Bool;(!Bool;Skip))), Not: (?Bool;(!Bool;Skip)), Or: (?Bool;(?Bool;(!Bool;Skip)))}
+-- &{And: (Skip;(?Int;(?Int;(!Int;Skip)))), Not: (Skip;(?Int;(!Int;Skip))), Or: (Skip;(?Int;(?Int;(!Int;Skip))))}
+-- &{And: (?Int;(?Int;(!Int;Skip))), Not: (?Int;(!Int;Skip)), Or: (?Int;(?Int;(!Int;Skip)))}
 
 -- α
 -- (Skip;α)
@@ -249,8 +249,8 @@ rec x. !x
 -- (Skip;a)
 -- a
 
--- &{And: (Skip;(?Bool;(?Bool;(!Bool;Skip)))), Not: (Skip;(?Bool;(!Bool;Skip))), Or: (Skip;(?Bool;(?Bool;(!Bool;Skip))))}
--- &{And: (?Bool;(?Bool;(!Bool;Skip))), Not: (?Bool;(!Bool;Skip)), Or: (?Bool;(?Bool;(!Bool;Skip)))}
+-- &{And: (Skip;(?Int;(?Int;(!Int;Skip)))), Not: (Skip;(?Int;(!Int;Skip))), Or: (Skip;(?Int;(?Int;(!Int;Skip))))}
+-- &{And: (?Int;(?Int;(!Int;Skip))), Not: (?Int;(!Int;Skip)), Or: (?Int;(?Int;(!Int;Skip)))}
 
--- !((rec y. !Char;!Char;y) , (rec x. ?Bool;x)) ; ?Bool
--- !((rec y. !Char;y) , (rec y. ?Bool;?Bool;y)) ; ?Bool
+-- !((rec y. !Char;!Char;y) , (rec x. ?Int;x)) ; ?Int
+-- !((rec y. !Char;y) , (rec y. ?Int;?Int;y)) ; ?Int

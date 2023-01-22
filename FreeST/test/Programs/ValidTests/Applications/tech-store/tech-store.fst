@@ -1,79 +1,5 @@
 ---------------------------------- SharedCounter ----------------------------------
 
-{- channel types -}
-
-type StdOut  : *S = *?Printer
-type Printer : 1S = +{ PrintBool    : !Bool  ; Printer
-                     , PrintBoolLn  : !Bool  ; Printer
-                     , PrintInt     : !Int   ; Printer
-                     , PrintIntLn   : !Int   ; Printer
-                     , PrintChar    : !Char  ; Printer
-                     , PrintCharLn  : !Char  ; Printer
-                     , PrintString  : !String; Printer
-                     , PrintStringLn: !String; Printer
-                     , Close        : End
-                     }
-
-{- server -}
-
-initStdout : StdOut
-initStdout = forkWith @StdOut @() runStdout
-
--- Can't use eta-reduction here because we don't have subtyping.
--- The main reason is due to the closure of runServer that will be
--- '*!(dualof StdOut) -> ()' which is different from the type of this function:
--- 'dualof StdOut 1-> ()'. Lin vs Un functions.
-runStdout  : dualof StdOut 1-> ()
-runStdout c = runServer @Printer @() runPrinter () c
-
-runPrinter : () -> dualof Printer 1-> ()
-runPrinter _ printer =
-    match printer with {
-        PrintBool     printer -> aux @Bool   printer printBool     |> runPrinter (),
-        PrintBoolLn   printer -> aux @Bool   printer printBoolLn   |> runPrinter (),
-        PrintInt      printer -> aux @Int    printer printInt      |> runPrinter (),
-        PrintIntLn    printer -> aux @Int    printer printIntLn    |> runPrinter (),
-        PrintChar     printer -> aux @Char   printer printChar     |> runPrinter (),
-        PrintCharLn   printer -> aux @Char   printer printCharLn   |> runPrinter (),
-        PrintString   printer -> aux @String printer printString   |> runPrinter (),
-        PrintStringLn printer -> aux @String printer printStringLn |> runPrinter (),
-        Close         printer -> close printer
-    }
-
-aux : forall a . ?a;dualof Printer -> (a -> ()) 1-> dualof Printer
-aux printer printFun =
-    let (x, printer) = receive printer in
-    printFun x;
-    printer
-
-{- client functions -}
-
-printGenericLin : forall a . (Printer -> !a;Printer) -> a -> Printer -> Printer
-printGenericLin sel x printer = 
-    sel printer |> send x 
-
-printGenericUn : forall a . (Printer -> !a;Printer) -> a -> StdOut -> ()
-printGenericUn sel x stdout =
-    printGenericLin @a sel x (receive_ @Printer stdout) |> 
-    select Close |> close
-
-printStringLin : String -> Printer -> Printer
-printStringLin = printGenericLin @String (\printer:Printer -> select PrintString printer)
-
-printStringLnLin : String -> Printer -> Printer
-printStringLnLin = printGenericLin @String (\printer:Printer -> select PrintStringLn printer)
-
-printStringLnUn : String -> StdOut -> ()
-printStringLnUn = printGenericUn @String (\printer:Printer -> select PrintStringLn printer)
-
-printIntLin : Int -> Printer -> Printer
-printIntLin = printGenericLin @Int (\printer:Printer -> select PrintInt printer)
-
-printIntLnLin : Int -> Printer -> Printer
-printIntLnLin = printGenericLin @Int (\printer:Printer -> select PrintIntLn printer)
-
----------------------------------- SharedCounter ----------------------------------
-
 type Counter : *S = *?Int
 
 initCounter : Counter
@@ -120,7 +46,7 @@ runTailNode next tail =
 
 initQueue : forall a:1T . () -> (*?a, *!a)
 initQueue _ =
-    let (internalC, internalS) = new (rec x:1S . ?a; ?x; End) in
+    let (internalC, internalS) = new @(rec x:1S . ?a; ?x; End) () in
     ( forkWith @*?a @() (runHeadNode @a internalC)
     , forkWith @*!a @() (runTailNode @a internalS)
     )
@@ -149,31 +75,31 @@ type ListC : 1S = +{ Append: !ProductId; !Issue; !RmaNumber; ListC
 
 {- list server -}
 
-initList : StdOut -> SharedList
-initList stdout = forkWith @SharedList @() (runListServer stdout)
+initList : SharedList
+initList = forkWith @SharedList @() runListServer
 
-runListServer : StdOut -> dualof SharedList 1-> ()
-runListServer stdout ch =
-    runServer @ListC @List (runListService stdout) Nil ch
+runListServer : dualof SharedList 1-> ()
+runListServer ch =
+    runServer @ListC @List runListService Nil ch
 
-runListService : StdOut -> List -> dualof ListC 1-> List
-runListService stdout list ch = 
+runListService : List -> dualof ListC 1-> List
+runListService list ch = 
     match ch with {
         Append ch -> 
             let (productId, ch) = receive ch in
             let (issue    , ch) = receive ch in
             let (rmaNumber, ch) = receive ch in
             -- logging
-            receive_ @Printer stdout |>
-            printStringLin "RMA processed \t\t @ product id: " |>
-            printIntLin    productId |>
-            printStringLin ", issue: " |>
-            printStringLin    issue |>
-            printStringLin ", RMA id: " |>
-            printIntLnLin  rmaNumber |>
-            select Close |> close;
+            receive_ @OutStream stdout
+            |> hPutStr "RMA processed \t\t @ product id: "
+            |> hPutStr (show @Int productId)
+            |> hPutStr ", issue: "
+            |> hPutStr issue
+            |> hPutStr ", RMA id: "
+            |> hPutStrLn (show @Int rmaNumber)
+            |> hCloseOut;
             --
-            runListService stdout (Cons (productId, issue, rmaNumber) list) ch,
+            runListService (Cons (productId, issue, rmaNumber) list) ch,
         Close c ->
             close c; 
             list
@@ -339,49 +265,47 @@ type PaymentC : 1S = !CCNumber; !CCCode; End
 {- bank worker -}
 
 
-initBank : StdOut -> Bank
-initBank stdout = 
+initBank : Bank
+initBank = 
     -- runWith [Bank] $
     --     \bank:dualof Bank 1-> parallel 3 (bankWorker bank)
-    let (c, s) = new Bank in
-    parallel @() 2 (\_:() -> bankWorker stdout s);
+    let (c, s) = new @Bank () in
+    parallel @() 2 (\_:() -> bankWorker s);
     c
 
-bankWorker : StdOut -> dualof Bank -> ()
-bankWorker stdout =
-    runServer @BankService @() (runBankService stdout) ()
+bankWorker : dualof Bank -> ()
+bankWorker =
+    runServer @BankService @() (runBankService) ()
 
 -- TODO: Expand this function
 -- | Executes a function
 runWith : forall a:1S . (dualof a 1-> ()) -> a
 runWith f =
-    let (c, s) = new a in
+    let (c, s) = new @a () in
     f s;
     c
 
-runBankService : StdOut -> () -> dualof BankService 1-> ()
-runBankService stdout _ ch =
+runBankService : () -> dualof BankService 1-> ()
+runBankService _ ch =
     let (price, ch) = receive ch in
     runWith @dualof PaymentC (\c:PaymentC 1-> send c ch |> close)
-    |> runPayment stdout price
+    |> runPayment price
     
 
-runPayment : StdOut -> Price -> dualof PaymentC -> ()
-runPayment stdout price ch =
+runPayment : Price -> dualof PaymentC -> ()
+runPayment price ch =
     -- mock up 
     let (ccnumber, ch) = receive ch in
     let cccode = receiveAndClose @Int ch in 
     -- logging
-    receive_ @Printer stdout
-    |> printStringLin "Payment processed \t @ amount: "
-    |> printIntLin    price
-    |> printStringLin ", credit card: "
-    |> printIntLin    ccnumber
-    |> printStringLin ", credit card code: "
-    |> printIntLnLin  cccode
-    |> select Close
-    |> close
-
+    receive_ @OutStream stdout
+    |> hPutStr "Payment processed \t @ amount: "
+    |> hPutStr (show @Int price)
+    |> hPutStr ", credit card: "
+    |> hPutStr (show @Int ccnumber)
+    |> hPutStr ", credit card code: "
+    |> hPutStrLn (show @Int cccode)
+    |> hCloseOut
 
 {- client functions -}
 
@@ -427,11 +351,15 @@ type RmaQueue = (*?dualof RmaC, *!dualof RmaC)
 
 runStoreFront : BuyQueue -> RmaQueue -> dualof TechStore 1-> ()
 runStoreFront buyQueue rmaQueue store =
-    match accept_ @TechService store with {
+    match accept @TechService store with {
         Buy ch ->
-            enqueue @dualof BuyC (accept @BuyC @Skip ch) buyQueue,
+            let (c, s) = new @BuyC () in
+            send c ch;
+            enqueue @dualof BuyC s buyQueue,
         Rma ch ->
-            enqueue @dualof RmaC (accept @RmaC @Skip ch) rmaQueue
+            let (c, s) = new @RmaC () in
+            send c ch;
+            enqueue @dualof RmaC s rmaQueue
             -- enqueue [dualof RmaC] (fst [dualof RmaC, Skip] (accept [RmaC, Skip] ch)) rmaQueue
     };
     runStoreFront buyQueue rmaQueue store
@@ -507,8 +435,8 @@ rmaWorker rmaQueue counter rmaList =
 
 {- store setup -}
 
-setupStore : StdOut -> Bank -> TechStore 
-setupStore stdout bank =
+setupStore : Bank -> TechStore 
+setupStore bank =
     -- buy
     let buyQueue = initQueue @dualof BuyC () in
     let stockMap = initMapWith initialStock in
@@ -516,7 +444,7 @@ setupStore stdout bank =
     -- rma
     let rmaQueue = initQueue @dualof RmaC () in
     let counter = initCounter in
-    let rmaList = initList stdout in
+    let rmaList = initList in
     parallel @()  1 (\_:() -> rmaWorker rmaQueue counter rmaList);
     -- store front
     forkWith @TechStore @() $ runStoreFront buyQueue rmaQueue
@@ -533,8 +461,8 @@ initialStock =
 
 {- buy clients -}
 
-client0 : StdOut -> TechStore -> ()
-client0 stdout ch = 
+client0 : TechStore -> ()
+client0 ch = 
     -- wait to be served by store
     let store = receive_ @TechService ch in
     -- go to the buy queue
@@ -545,7 +473,7 @@ client0 stdout ch =
     match buyC with {
         OutOfStock c ->
             close c; 
-            printStringLnUn "[Client 0] I was unable to buy product 'A'" stdout,
+            putStrLn "[Client 0] I was unable to buy product 'A'",
         Available buyC -> 
             let (price, buyC) = receive buyC in
             -- buyer's price limit
@@ -553,7 +481,7 @@ client0 stdout ch =
             then buyC |> select Cancel
                       |> close
             else buyC |> select Confirm 
-                      |> receiveAndClose @PaymentC;End 
+                      |> receiveAndClose @(PaymentC;End)
                       |> send 123123123
                       |> send 123 
                       |> close
@@ -561,8 +489,8 @@ client0 stdout ch =
 
 {- rma clients -}
 
-client1 : StdOut -> TechStore -> ()
-client1 _ ch =
+client1 : TechStore -> ()
+client1 ch =
     -- wait to be served by store
     let store = receive_ @TechService ch in
     -- go to the rma queue
@@ -579,11 +507,12 @@ client1 _ ch =
 
 main : ()
 main =
-    let stdout = initStdout in
-    --
-    let bank = initBank stdout in
-    let store = setupStore stdout bank in
-    fork (\_:() 1-> client0 stdout store);
-    fork (\_:() 1-> client0 stdout store);
-    fork (\_:() 1-> client1 stdout store);
+    let bank = initBank in
+    let store = setupStore bank in
+    fork (\_:() 1-> client0 store);
+    fork (\_:() 1-> client0 store);
+    fork (\_:() 1-> client1 store);
     diverge 
+
+diverge : ()
+diverge = diverge

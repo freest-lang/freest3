@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts, LambdaCase #-}
+{-# LANGUAGE BlockArguments #-}
 {- |
 Module      :  Parse.ParseUtils
 Description :  <optional short text displayed on contents page>
@@ -16,7 +17,9 @@ module Parse.ParseUtils where
 
 import           Syntax.Base
 import qualified Syntax.Expression as E
--- import qualified Syntax.Kind as K
+import qualified Syntax.Kind as K
+import qualified Validation.Subkind as SK
+import           Validation.Kinding (synthetise)
 import qualified Syntax.Type as T
 import           Util.Error
 import           Util.FreestState
@@ -25,6 +28,7 @@ import           Control.Monad.State
 import           Data.Bifunctor  ( second )
 import           Data.List       ( find )
 import qualified Data.Map.Strict as Map
+import           Data.Bitraversable (bimapM)
 
 
 type FreestStateT = StateT FreestS (Either ErrorType)
@@ -36,7 +40,7 @@ mkSpan a = do
   let (Span p1 p2 _) = getSpan a
   f <- getFileName
   maybe (Span p1 p2 f) (Span p1 p2) <$> getModuleName
-  
+
 mkSpanSpan :: (Located a, Located b) => a -> b -> FreestStateT Span
 mkSpanSpan a b = do
   let (Span p1 _ _) = getSpan a
@@ -59,7 +63,7 @@ liftModToSpan (Span p1 p2 _) = do
 
 -- checkDupField :: Variable -> T.TypeMap -> FreestState ()
 checkDupField :: MonadState FreestS m => Variable -> Map.Map Variable v -> m ()
-checkDupField x m = 
+checkDupField x m =
   when (x `Map.member` m) $ addError $ MultipleFieldDecl (getSpan x) (getSpan k) x
   where
     (k,_) = Map.elemAt (Map.findIndex x m) m
@@ -133,13 +137,26 @@ binOp l op r = E.App s (E.App (getSpan l) (E.Var (getSpan op) op) l) r
 unOp :: Variable -> E.Exp -> Span -> E.Exp
 unOp op expr s = E.App s (E.Var (getSpan op) op) expr
 
+-- Datatypes
 
-typeListToType :: Variable -> [(Variable, [T.Type])] -> [(Variable, T.Type)]
-typeListToType a = map $ second typeToFun -- map (\(x, ts) -> (x, typeToFun ts))
-  -- Convert a list of types and a final type constructor to a type
- where
-  typeToFun []       = T.Var (getSpan a) a
-  typeToFun (t : ts) = T.Arrow (getSpan t) Un t (typeToFun ts)
+typeListsToUnArrows :: Variable -> [(Variable, [T.Type])] -> [(Variable, T.Type)]
+typeListsToUnArrows a = 
+  map \(c, ts) -> (c, foldr (T.Arrow (getSpan c) Un) (T.Var (getSpan a) a) ts)
 
 insertMap :: Ord k => k -> [v] -> Map.Map k [v] -> Map.Map k [v]
 insertMap = Map.insertWith (++)
+
+-- Tuples as a derived form of records
+tupleTypeMap :: [T.Type] -> T.TypeMap
+tupleTypeMap ts = Map.fromList $ zipWith (\i t -> (mkVar (getSpan t) (show i), t)) [0..] ts 
+
+typeListToRcdType :: [(Variable, [T.Type])] -> T.TypeMap
+typeListToRcdType []             = Map.empty
+typeListToRcdType ((c, us) : ts) =
+  Map.insert c (T.Almanac (getSpan c) T.Record $ typesToMap 0 us) (typeListToRcdType ts)
+  where typesToMap n [] = Map.empty
+        typesToMap n (t : ts) = Map.insert (mkVar (getSpan t) $ show n) t (typesToMap (n+1) ts)
+
+condCase :: Span -> E.Exp -> E.Exp -> E.Exp -> E.Exp 
+condCase s i t e = E.Case s i $ Map.fromList [(mkVar s "True" , ([],t))
+                                             ,(mkVar s "False", ([],e))]

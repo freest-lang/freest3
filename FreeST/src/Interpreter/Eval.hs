@@ -18,22 +18,33 @@ import           Data.Functor
 import qualified Data.Map as Map
 import           System.Exit ( die )
 import           System.IO.Unsafe ( unsafePerformIO )
-
+import Debug.Trace (trace)
 ------------------------------------------------------------
 -- EVALUATION
 ------------------------------------------------------------
 
 evalAndPrint :: Variable -> FreestS -> E.Exp -> IO ()
-evalAndPrint name s e = do
-  res <- eval name (typeEnv s) initialCtx (prog s) e
+evalAndPrint name s e = 
+  addPrimitiveChannels ["stdout", "stdin", "stderr"] initialCtx >>= \ctx -> do
+
+  res <- eval name (typeEnv s) ctx (prog s) e
   case res of
     IOValue io -> io >>= print
     _          -> print res
+  
+  where
+    addPrimitiveChannels :: [String] -> Ctx -> IO Ctx
+    addPrimitiveChannels [] ctx = return ctx
+    addPrimitiveChannels (varName : varNames) ctx = do
+      (clientChan, serverChan) <- new
+      addPrimitiveChannels varNames 
+        $ Map.insert (mkVar defaultSpan         varName ) (Chan clientChan) 
+        $ Map.insert (mkVar defaultSpan ("__" ++ varName)) (Chan serverChan) ctx
+
 
 eval :: Variable -> TypeEnv -> Ctx -> Prog -> E.Exp -> IO Value
 eval _ _ _   _ (E.Unit _                      )    = return Unit
 eval _ _ _   _ (E.Int    _ i                  )    = return $ Integer i
-eval _ _ _   _ (E.Bool   _ b                  )    = return $ Boolean b
 eval _ _ _   _ (E.Char   _ c                  )    = return $ Character c
 eval _ _ _   _ (E.String _ s                  )    = return $ String s
 eval _ _ ctx _ (E.TypeAbs _ (Bind _ _ _ e))        = return $ TypeAbs e ctx
@@ -66,16 +77,10 @@ eval fun tEnv ctx eenv (E.Pair _ e1 e2)  = Pair <$> eval fun tEnv ctx eenv e1 <*
 eval fun tEnv ctx eenv (E.BinLet _ x y e1 e2) = do
   (Pair v1 v2) <- eval fun tEnv ctx eenv e1
   eval fun tEnv (Map.insert x v1 (Map.insert y v2 ctx)) eenv e2
-eval fun tEnv ctx eenv (E.Cond _ cond e1 e2) = do
-  (Boolean b) <- eval fun tEnv ctx eenv cond 
-  if b then eval fun tEnv ctx eenv e1 else eval fun tEnv ctx eenv e2
 eval fun tEnv ctx eenv (E.UnLet _ x e1 e2) = do
   !v <- eval fun tEnv ctx eenv e1
   eval fun tEnv (Map.insert x v ctx) eenv e2
 eval fun tEnv ctx eenv (E.Case s e m) = eval fun tEnv ctx eenv e >>=  evalCase fun s tEnv ctx eenv m 
-eval fun _ _   _    E.New{}        = do
-  (c1, c2) <- new
-  return $ Pair (Chan c1) (Chan c2)
 
 evalCase :: Variable -> Span -> TypeEnv -> Ctx -> Prog -> E.FieldMap -> Value -> IO Value
 evalCase name _ tEnv ctx eenv m (Chan c) = do

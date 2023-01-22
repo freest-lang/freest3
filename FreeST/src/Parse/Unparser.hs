@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 {- |
 Module      :  Syntax.Show
 Description :  The show module
@@ -36,6 +37,7 @@ import qualified Data.Map.Strict as Map
 import           Prelude                 hiding ( Left
                                                 , Right
                                                 ) -- needed for Associativity
+import qualified Data.Set as Set
 
 instance Show Span where
   show (Span sp fp _)
@@ -92,7 +94,7 @@ showSortedVar x t = show x ++ ":" ++ show t
 
 -- Kind
 
-instance Show K.Basic where
+instance Show K.PreKind where
   show K.Session = "S"
   show K.Top     = "T"
 
@@ -182,7 +184,6 @@ instance Unparse T.Type where
   unparse (T.Char _       ) = (maxRator, "Char")
   unparse (T.Bool _       ) = (maxRator, "Bool")
   unparse (T.String _     ) = (maxRator, "String")
-  unparse (T.Unit _       ) = (maxRator, "()")
   unparse (T.Skip _       ) = (maxRator, "Skip")
   unparse (T.End _        ) = (maxRator, "End")
   unparse (T.Var  _ a     ) = (maxRator, show a)
@@ -193,11 +194,10 @@ instance Unparse T.Type where
    where
     l = bracket (unparse t) Left arrowRator
     r = bracket (unparse u) Right arrowRator
-  unparse (T.Pair _ t u) = (maxRator, "(" ++ l ++ ", " ++ r ++ ")")
-   where
-    l = bracket (unparse t) Left minRator
-    r = bracket (unparse u) Right minRator
   unparse (T.Almanac _ T.Variant m) = (maxRator, "[" ++ showDatatype m ++ "]")
+  unparse (T.Almanac _ T.Record m) 
+    | Map.null m = (maxRator, "()")
+    | all (all isDigit . intern) $ Map.keys m = (maxRator, "(" ++ showTupleType m ++ ")")
   unparse (T.Semi _ t u  ) = (semiRator, l ++ " ; " ++ r)
    where
     l = bracket (unparse t) Left semiRator
@@ -220,12 +220,18 @@ showDatatype m = intercalate " | "
   $ Map.foldrWithKey (\c t acc -> (show c ++ showAsSequence t) : acc) [] m
  where
   showAsSequence :: T.Type -> String
-  showAsSequence (T.Arrow _ _ t u) = " " ++ show t ++ showAsSequence u
+  showAsSequence (T.Almanac _ _ t) = 
+    let fs = unwords (map (show . snd) $ Map.toList t) in
+    if fs == "" then "" else " "++fs
   showAsSequence _               = ""
 
 showChoice :: T.TypeMap -> String
 showChoice m = intercalate ", "
   $ Map.foldrWithKey (\c t acc -> (show c ++ ": " ++ show t) : acc) [] m
+
+showTupleType :: T.TypeMap -> String 
+showTupleType m = intercalate ", " 
+  $ Map.foldr (\t acc -> show t : acc) [] m
 
 showChoiceLabels :: T.TypeMap -> String
 showChoiceLabels m = intercalate ", "
@@ -241,7 +247,6 @@ instance Unparse Exp where
   unparse (E.Unit _) = (maxRator, "()")
   unparse (E.Int _ i) = (maxRator, show i)
   unparse (E.Char _ c) = (maxRator, show c)
-  unparse (E.Bool _ b) = (maxRator, show b)
   unparse (E.String _ s) = (maxRator, show s)
   -- Variable
   unparse (E.Var  _ x) = (maxRator, show x)
@@ -287,6 +292,13 @@ instance Unparse Exp where
     p = "(" ++ show x ++ ", " ++ show y ++ ")"
     l = bracket (unparse e1) Left inRator
     r = bracket (unparse e2) Right inRator
+  -- Boolean elim
+  unparse (E.Case p e m) | Map.keysSet m == Set.fromList (map (mkVar p) ["True", "False"]) = 
+    (inRator, "if " ++ s1 ++ " then " ++ s2 ++ " else " ++ s3)
+    where s1 = bracket (unparse e) Left inRator
+          s2 = bracket (unparse $ snd $ m Map.! mkVar p "True" ) NonAssoc inRator
+          s3 = bracket (unparse $ snd $ m Map.! mkVar p "False") Right    inRator
+
   -- Datatype elim
   unparse (E.Case _ e m) =
     (inRator, "case " ++ s ++ " of {" ++ showFieldMap m ++ "}")
@@ -298,15 +310,6 @@ instance Unparse Exp where
   unparse (E.TypeApp _ x t) = (appRator, show x ++ " @" ++ t')
     where t' = bracket (unparse t) Right appRator
   unparse (E.TypeAbs _ b) = (arrowRator, "Λ" ++ showBindExp b)
-  -- Boolean elim
-  unparse (E.Cond _ e1 e2 e3) =
-    (inRator, "if " ++ s1 ++ " then " ++ s2 ++ " else " ++ s3)
-   where
-    s1 = bracket (unparse e1) Left inRator
-    s2 = bracket (unparse e2) NonAssoc inRator
-    s3 = bracket (unparse e3) Right inRator
-  -- Unary Let
-  unparse (E.New _ t _) = (newRator, "new " ++ show t)
   -- Session expressions
   unparse (E.UnLet _ x e1 e2) =
     (inRator, "let " ++ show x ++ " = " ++ l ++ " in " ++ r)

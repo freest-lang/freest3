@@ -23,7 +23,10 @@ runOptsParser :: Parser RunOpts
 runOptsParser = RunOpts
   <$> strArgument
      ( help "FreeST (.fst) file"
-    <> metavar "FILEPATH" )   
+    <> metavar "FILEPATH" )
+  <*> many (strArgument 
+     ( help "Program arguments" 
+    <> metavar "args" ))
   <*> (optional . strOption)
      ( long "main"
     <> short 'm' 
@@ -49,7 +52,7 @@ versionParser s =
 
 
 handleFlags :: RunOpts -> IO RunOpts
-handleFlags fg@(RunOpts f _ sty _) = do
+handleFlags fg@(RunOpts f _ _ sty _) = do
   whenM (not <$> doesFileExist f) $ die fileDoNotExist :: IO ()
   when (not $ "fst" `isExtensionOf` f) $ die wrongFileExtension
   return fg
@@ -57,15 +60,15 @@ handleFlags fg@(RunOpts f _ sty _) = do
     fileDoNotExist = showErrors sty "FreeST" Map.empty (FileNotFound f)
     wrongFileExtension = showErrors sty "FreeST" Map.empty (WrongFileExtension f)
 
-flags :: IO RunOpts
-flags = handleFlags =<< execParser opts
+flags :: Bool -> IO RunOpts
+flags b = handleFlags =<< execParser opts
   where
     opts = info (versionParser v <*> runOptsParser <**> helper) desc
     desc = fullDesc
      <> progDesc "Run FreeST"
      <> header v
     
-    v = "FreeST, Version " ++ showVersion version
+    v = "FreeST, Version " ++ showVersion version ++ if b then "-dev" else ""
 
 
 -- criticalError :: ErrorType -> IO ()

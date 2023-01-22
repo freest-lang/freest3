@@ -61,13 +61,10 @@ toGrammar' (T.Arrow _ p t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
   getLHS $ Map.fromList [(show p ++ "d", xs), (show p ++ "r", ys)]
-toGrammar' (T.Pair _ t u) = do
-  xs <- toGrammar t
-  ys <- toGrammar u
-  getLHS $ Map.fromList [("*l", xs), ("*r", ys)]
-toGrammar' (T.Almanac _  T.Variant m) = do -- Can't test this type directly
+toGrammar' (T.Almanac _  t m) | t == T.Variant || t == T.Record = do -- Can't test this type directly
   ms <- tMapM toGrammar m
-  getLHS $ Map.mapKeys (\k -> "<>" ++ show k) ms
+  let a = if t == T.Variant then "<>" else "{}" 
+  getLHS $ Map.insert (a++"✓") [] $ Map.mapKeys (\k -> a ++ show k) ms
 -- Session Types
 toGrammar' (T.Skip _) = return []
 toGrammar' t@(T.End _) = getLHS $ Map.singleton (show t) [bottom]
@@ -83,7 +80,7 @@ toGrammar' (T.Almanac _ (T.Choice v) m) = do
   getLHS $ Map.mapKeys (\k -> show v ++ show k) ms
 -- Polymorphism and recursive types
 toGrammar' (T.Forall _ (Bind _ _ k t)) = do
-  xs <- toGrammar' t
+  xs <- toGrammar t
   getLHS $  Map.singleton ('∀' : show k) xs
 toGrammar' (T.Rec _ (Bind _ x _ _)) = return [x]
 toGrammar' t@T.Var{} = getLHS $ Map.singleton (show t) []
@@ -100,10 +97,9 @@ fatTerminal t@T.Int{}             = Just t
 fatTerminal t@T.Char{}            = Just t
 fatTerminal t@T.Bool{}            = Just t
 fatTerminal t@T.String{}          = Just t
-fatTerminal t@T.Unit{}            = Just t
 fatTerminal (T.Arrow p m t u)     = Just (T.Arrow p m) <*> fatTerminal t <*> fatTerminal u
-fatTerminal (T.Pair p t u)        = Just (T.Pair p) <*> fatTerminal t <*> fatTerminal u
-fatTerminal (T.Almanac p T.Variant m) = Just (T.Almanac p T.Variant) <*> mapM fatTerminal m
+fatTerminal (T.Almanac p t m) | t == T.Variant || t == T.Record = 
+  Just (T.Almanac p T.Variant) <*> mapM fatTerminal m
 -- Session Types
 fatTerminal (T.Semi p t u) | terminated t = changePos p <$> fatTerminal u
                            | terminated u = changePos p <$> fatTerminal t
@@ -122,7 +118,6 @@ syntactic t@T.Int{}             = True
 syntactic t@T.Char{}            = True
 syntactic t@T.Bool{}            = True
 syntactic t@T.String{}          = True
-syntactic t@T.Unit{}            = True
 syntactic (T.Arrow _ _ t u)     = syntactic t && syntactic u
 syntactic (T.Pair _ t u)        = syntactic t && syntactic u
 syntactic (T.Variant p m)       = Map.foldr (\t b -> b && syntactic t) True m
@@ -153,7 +148,7 @@ collect σ t@(T.Rec _ (Bind _ x _ u)) = do
   addProductions x (Map.map (++ zs) m)
   collect σ' u
 collect σ (T.Arrow _ _ t u) = collect σ t >> collect σ u
-collect σ (T.Pair _ t u) = collect σ t >> collect σ u
+collect σ (T.Almanac _ T.Record m) = tMapM_ (collect σ) m
 collect _ _ = return ()
 
 -- The state of the translation to grammar

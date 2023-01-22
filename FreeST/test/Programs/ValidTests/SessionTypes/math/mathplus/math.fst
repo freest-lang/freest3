@@ -57,6 +57,6 @@ sendBool b c =
 -- ==================== Main ====================
 main : Bool
 main =
-  let (r, w) = new MathServer in
+  let (r, w) = new @MathServer () in
   fork @() $ initMathServer r;
   client w

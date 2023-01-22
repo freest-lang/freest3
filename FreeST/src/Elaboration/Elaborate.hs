@@ -18,7 +18,6 @@ instance Elaboration T.Type where
   elaborate (  T.Almanac p s m ) = T.Almanac p s <$> elaborate m
   elaborate (  T.Message p pol t) = T.Message p pol <$> elaborate t
   elaborate (  T.Arrow p m t1 t2  ) = T.Arrow p m <$> elaborate t1 <*> elaborate t2
-  elaborate (  T.Pair p t1 t2   ) = T.Pair p <$> elaborate t1 <*> elaborate t2
   elaborate (  T.Semi   p t1  t2) = T.Semi p <$> elaborate t1 <*> elaborate t2
   elaborate (  T.Forall p kb    ) = T.Forall p <$> elaborate kb
   elaborate (  T.Rec    p kb    ) = T.Rec p <$> elaborate kb
@@ -49,12 +48,9 @@ instance Elaboration E.Exp where
   elaborate (E.BinLet p x y e1 e2) =
     E.BinLet p x y <$> elaborate e1 <*> elaborate e2
   elaborate (E.Case p e m) = E.Case p <$> elaborate e <*> elaborate m
-  elaborate (E.Cond p e1 e2 e3) =
-    E.Cond p <$> elaborate e1 <*> elaborate e2 <*> elaborate e3
   elaborate (E.TypeApp p e t  ) = E.TypeApp p <$> elaborate e <*> elaborate t
   elaborate (E.TypeAbs p b    ) = E.TypeAbs p <$> elaborate b
   elaborate (E.UnLet p x e1 e2) = E.UnLet p x <$> elaborate e1 <*> elaborate e2
-  elaborate (E.New p t u      ) = E.New p <$> elaborate t <*> elaborate u
   elaborate e                 = return e
 
 instance Elaboration E.FieldMap where
@@ -68,9 +64,7 @@ changePos :: Span -> T.Type -> T.Type
 changePos p (T.Int  _         ) = T.Int p
 changePos p (T.Char _         ) = T.Char p
 changePos p (T.Bool _         ) = T.Bool p
-changePos p (T.Unit _         ) = T.Unit p
 changePos p (T.Arrow _ pol t u) = T.Arrow p pol (changePos p t) (changePos p u)
-changePos p (T.Pair    _ t   u) = T.Pair p t u
 -- Datatype
 -- Skip
 changePos p (T.Semi    _ t   u) = T.Semi p t u

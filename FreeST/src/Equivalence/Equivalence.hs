@@ -21,23 +21,22 @@ where
 import           Bisimulation.Bisimulation ( bisimilar )
 import           Syntax.Base
 import qualified Syntax.Kind as K
-import           Syntax.Program
 import qualified Syntax.Type as T
-import           Util.Error ( internalError )
-import           Util.FreestState              ( initialState
-                                                , errors
-                                                )
+import           Util.Error         ( internalError )
+import           Util.FreestState   ( initialState
+                                    , errors
+                                    )
 import           Validation.Kinding ( synthetise )
 import           Validation.Subkind ( (<:) )
 import qualified Validation.Substitution as Subs
                                                 ( unfold
                                                 , subs
                                                 )
-
 import           Control.Monad.State ( runState )
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
+-- DEPRECATED: use Bisimulation.bisimilar
 
 class Equivalence t where
   equivalent :: K.KindEnv -> t -> t -> Bool
@@ -53,24 +52,21 @@ instance Equivalence T.Type where
     equiv :: Visited -> K.KindEnv -> T.Type -> T.Type -> Bool
     -- Have we been here before?
     equiv v _ t1 t2 | (getSpan t1, getSpan t2) `Set.member` v  = True
-    -- Almanac
-    equiv v kEnv (T.Almanac _ T.Variant m1) (T.Almanac _ T.Variant m2) =
-      Map.size m1
-        == Map.size m2
-        && Map.foldlWithKey (equivField v kEnv m2) True m1
     -- Session types
     equiv _ kEnv t1 t2 | isSessionType kEnv t1 && isSessionType kEnv t2 =
       bisimilar t1 t2
+    -- Records and Variants (all other almanac sorts are session types)
+    equiv v kEnv (T.Almanac _ _ m1) (T.Almanac _ _ m2)  =
+      Map.size m1
+        == Map.size m2
+        && Map.foldlWithKey (equivField v kEnv m2) True m1
     -- Functional types
     equiv _ _ (T.Int  _) (T.Int  _)                    = True
     equiv _ _ (T.Char _) (T.Char _)                    = True
     equiv _ _ (T.Bool _) (T.Bool _)                    = True
-    equiv _ _ (T.Unit _) (T.Unit _)                    = True
     equiv _ _ (T.String _) (T.String _)                = True
     equiv v kEnv (T.Arrow _ n1 t1 t2) (T.Arrow _ n2 u1 u2) =
       n1 == n2 && equiv v kEnv t1 u1 && equiv v kEnv t2 u2
-    equiv v kEnv (T.Pair _ t1 t2) (T.Pair _ u1 u2) =
-      equiv v kEnv t1 u1 && equiv v kEnv t2 u2
     -- Polymorphism and recursion
     equiv v kEnv (T.Forall _ (Bind p a1 k1 t1)) (T.Forall _ (Bind _ a2 k2 t2))
       = k1 <: k2 && k2 <: k1 &&
@@ -114,13 +110,15 @@ isSessionType _ t@T.Dualof{} = internalError "Equivalence.Equivalence.isSessionT
 isSessionType _ _  = False
 -}
 
-instance Equivalence VarEnv where
-  equivalent kenv env1 env2 =
-    Map.size env1
-      == Map.size env2
-      && Map.foldlWithKey
-           (\acc b s ->
-             acc && b `Map.member` env2 && equivalent kenv s (env2 Map.! b)
-           )
-           True
-           env1
+-- No need: just compare the Map.keysSet
+--
+-- instance Equivalence VarEnv where
+--   equivalent kenv env1 env2 =
+--     Map.size env1
+--       == Map.size env2
+--       && Map.foldlWithKey
+--            (\acc b s ->
+--              acc && b `Map.member` env2 && equivalent kenv s (env2 Map.! b)
+--            )
+--            True
+--            env1

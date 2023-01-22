@@ -40,12 +40,9 @@ instance ResolveDuality E.Exp where
   resolve (E.Pair p e1 e2      ) = E.Pair p <$> resolve e1 <*> resolve e2
   resolve (E.BinLet p x y e1 e2) = E.BinLet p x y <$> resolve e1 <*> resolve e2
   resolve (E.Case p e m        ) = E.Case p <$> resolve e <*> resolveFieldMap m
-  resolve (E.Cond p e1 e2 e3) =
-    E.Cond p <$> resolve e1 <*> resolve e2 <*> resolve e3
   resolve (E.TypeApp p e t  ) = E.TypeApp p <$> resolve e <*> resolve t
   resolve (E.TypeAbs p b    ) = E.TypeAbs p <$> resolve b
   resolve (E.UnLet p x e1 e2) = E.UnLet p x <$> resolve e1 <*> resolve e2
-  resolve (E.New p t u      ) = E.New p <$> resolve t <*> resolve u
   resolve e                   = return e
 
 -- This should be an instance but it overlaps with that one of ParseEnv
@@ -68,7 +65,6 @@ solveType :: Visited -> T.Type -> FreestState T.Type
 -- Functional Types
 solveType v (T.Arrow p pol t u) =
   T.Arrow p pol <$> solveType v t <*> solveType v u
-solveType v (T.Pair p t u     ) = T.Pair p <$> solveType v t <*> solveType v u
 solveType v (T.Almanac p s m   ) = T.Almanac p s <$> tMapM (solveType v) m
 -- Session Types
 solveType v (T.Semi    p t   u) = T.Semi p <$> solveType v t <*> solveType v u
@@ -134,10 +130,8 @@ changePos :: Span -> T.Type -> T.Type
 changePos p (T.Int    _       ) = T.Int p
 changePos p (T.Char   _       ) = T.Char p
 changePos p (T.Bool   _       ) = T.Bool p
-changePos p (T.Unit   _       ) = T.Unit p
 changePos p (T.String _       ) = T.String p
 changePos p (T.Arrow _ pol t u) = T.Arrow p pol t u
-changePos p (T.Pair _ t u     ) = T.Pair p t u
 changePos p (T.Almanac _ s m  ) = T.Almanac p s m
 changePos p (T.Skip _         ) = T.Skip p
 changePos p (T.End  _         ) = T.End p

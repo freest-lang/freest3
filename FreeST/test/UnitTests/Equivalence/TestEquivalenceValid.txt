@@ -9,8 +9,8 @@ Char
 Char
 
 []
-Bool
-Bool
+Int
+Int
 
 []
 ()
@@ -27,8 +27,8 @@ Bool
 ?Char
 
 []
-!Bool
-!Bool
+!Int
+!Int
 
 []
 ?()
@@ -90,15 +90,15 @@ End;?Int
 
 []
 End;!Int
-End;?Bool
+End;?Int
 
 []
 !Char;End;!Int
-!Char;End;?Bool
+!Char;End;?Int
 
 []
 (!Int;End;!Int);?Int
-!Int;End;!Bool
+!Int;End;!Int
 
 []
 (rec a:1S . +{A: !Int;a, B: Skip;End;Skip});!Int
@@ -109,16 +109,16 @@ rec a:1S . rec b:1S . +{A: !Int;b, B:End;a}
 rec a:1S . rec b:1S . +{A: !Int;b, B:End;b}
 
 []
-rec a:1S  . &{N:!Int;!Int;a, L:End};?Bool
+rec a:1S  . &{N:!Int;!Int;a, L:End};?Int
 rec a:1S  . &{N:!Int;!Int;a, L:Skip};End
 
 []
-rec a:1S . !((rec a:1S . +{A: !Int;a, B: Skip;End;Skip});!Int);?(a;!(End);End;?Bool)
+rec a:1S . !((rec a:1S . +{A: !Int;a, B: Skip;End;Skip});!Int);?(a;!(End);End;?Int)
 rec b:1S . !(rec a:1S . +{A: !Int;a, B: End;a});Skip;?(b;Skip;!(End);End;b;!b)
 
 []
 !(!Int;End)
-!(!Int;Skip;End;?Bool)
+!(!Int;Skip;End;?Int)
 
 []
 ∀ α: 1S . End;α;!Int
@@ -131,104 +131,104 @@ rec b:1S . !(rec a:1S . +{A: !Int;a, B: End;a});Skip;?(b;Skip;!(End);End;b;!b)
 -- Functional and session, mixed
 
 []
-!Int -> Bool
-!Int -> Bool
+!Int -> Int
+!Int -> Int
 
 []
-!Int -> ?Bool
-Skip;!Int -> ?Bool
+!Int -> ?Int
+Skip;!Int -> ?Int
 
 []
-!Int -> Bool
-Skip;!Int -> Bool
+!Int -> Int
+Skip;!Int -> Int
 
 []
-!Int -> Bool
-!Int;Skip -> Bool
+!Int -> Int
+!Int;Skip -> Int
 
 []
 !Int -> ?Char
 !Int -> Skip;?Char
 
 []
-!Int -> !Bool
-!Int -> Skip;!Bool
+!Int -> !Int
+!Int -> Skip;!Int
 
 []
-!Int -> Bool
-!Int;Skip -> Bool
+!Int -> Int
+!Int;Skip -> Int
 
 []
-!Int -> Bool
-!Int;Skip -> Bool
+!Int -> Int
+!Int;Skip -> Int
 
 []
-!Int -> ?Char -> Bool
-!Int -> ?Char -> Bool
+!Int -> ?Char -> Int
+!Int -> ?Char -> Int
 
 []
-!Char 1-> Bool
-!Char 1-> Bool
+!Char 1-> Int
+!Char 1-> Int
 
 []
-!Int 1-> Bool
-(Skip;!Int) 1-> Bool
+!Int 1-> Int
+(Skip;!Int) 1-> Int
 
 []
-!Int 1-> Bool
-(Skip;!Int) 1-> Bool
+!Int 1-> Int
+(Skip;!Int) 1-> Int
 
 []
-!Bool 1-> !Char
-!Bool 1-> !Char;Skip
+!Int 1-> !Char
+!Int 1-> !Char;Skip
 
 []
-!Int 1-> ?Bool
-!Int 1-> ?Bool;Skip
+!Int 1-> ?Int
+!Int 1-> ?Int;Skip
 
 []
-!Int 1-> Bool
-!Int;Skip 1-> Bool
+!Int 1-> Int
+!Int;Skip 1-> Int
 
 []
-!Int 1-> Bool
-!Int;Skip 1-> Bool
+!Int 1-> Int
+!Int;Skip 1-> Int
 
 []
-(!Char, Bool)
-(!Char, Bool)
+(!Char, Int)
+(!Char, Int)
 
 []
-(!Int , Bool)
-(Skip;!Int , Bool)
+(!Int , Int)
+(Skip;!Int , Int)
 
 []
-(Bool, !Char)
-(Bool, Skip;!Char)
+(Int, !Char)
+(Int, Skip;!Char)
 
 []
-(Int, ?Bool)
-(Int, ?Bool;Skip)
+(Int, ?Int)
+(Int, ?Int;Skip)
 
 []
-(!Int , Bool)
-(!Int;Skip , Bool)
+(!Int , Int)
+(!Int;Skip , Int)
 
 []
-+{A: !Bool, B: ?Char}
-+{B: ?Char, A: !Bool}
++{A: !Int, B: ?Char}
++{B: ?Char, A: !Int}
 
 []
-+{A: ?Bool, B: Skip;!Char}
-+{B: Skip;!Char, A: ?Bool}
++{A: ?Int, B: Skip;!Char}
++{B: Skip;!Char, A: ?Int}
 
 []
-&{A: !Bool;Skip, B: ?Char}
-&{B: ?Char, A: !Bool}
+&{A: !Int;Skip, B: ?Char}
+&{B: ?Char, A: !Int}
 
 []
-&{A: ?Bool, B: Skip;!Char}
-&{B: Skip;!Char, A: ?Bool}
+&{A: ?Int, B: Skip;!Char}
+&{B: Skip;!Char, A: ?Int}
 
 []
 +{Leaf: Skip, Node: !Int};Skip
@@ -237,16 +237,16 @@ Skip;!Int -> Bool
 -- Monoidal laws
 
 []
-(!Int; ?Bool); !Char
-!Int; (?Bool; !Char)
+(!Int; ?Int); !Char
+!Int; (?Int; !Char)
 
 []
-!Int; (?Bool; !Char)
-(!Int; ?Bool); !Char
+!Int; (?Int; !Char)
+(!Int; ?Int); !Char
 
 []
-!Bool; Skip
-!Bool
+!Int; Skip
+!Int
 
 -- Non-empty kind environment
 
@@ -272,8 +272,8 @@ Skip;!Int -> Bool
 +{Leaf: Skip; α, Node: !Int; α}
 
 [("y", "1S")]
-&{B: y ; y} ; ?Bool
-&{B: y ; y ; ?Bool}
+&{B: y ; y} ; ?Int
+&{B: y ; y ; ?Int}
 
 -- Terminated Recursive Types
 
@@ -407,28 +407,28 @@ rec a : 1T . a 1-> a
 
 -- Skip^omega
 -- []
--- rec x:1S.(+{A: Skip, C: x} ; rec z3:*S.(rec y:1S.(Skip;(z3;?Bool))))
--- rec z:*S.(+{A: Skip, C: z} ; rec y:1S.(Skip;y);?Bool) 
+-- rec x:1S.(+{A: Skip, C: x} ; rec z3:*S.(rec y:1S.(Skip;(z3;?Int))))
+-- rec z:*S.(+{A: Skip, C: z} ; rec y:1S.(Skip;y);?Int) 
 
 -- Skip^omega
 -- []
 -- Skip
--- rec y:1S. (Skip ; y) ; ?Bool
+-- rec y:1S. (Skip ; y) ; ?Int
 
 -- Skip^omega
 -- []
--- rec y:1S. (Skip ; y) ; ?Bool
+-- rec y:1S. (Skip ; y) ; ?Int
 -- Skip 
 
 -- Skip^omega
 -- []
 -- Skip
--- (rec y:1S. Skip ; y) ; ?Bool
+-- (rec y:1S. Skip ; y) ; ?Int
 
 -- Skip^omega
 -- []
--- rec y:1S. Skip ; y ; ?Bool
--- Skip ; (rec y:1S. Skip ; y ; ?Bool) ; ?Bool
+-- rec y:1S. Skip ; y ; ?Int
+-- Skip ; (rec y:1S. Skip ; y ; ?Int) ; ?Int
 
 -- Regular Recursive Types
 
@@ -480,27 +480,27 @@ rec w: 1S. rec z: 1S. (!Int; w; z)
 
 []
 rec x: 1S. rec y: 1S. (!Int; x; y)
-rec w: 1S. rec z: 1S. (!Int; w; ?Bool; z)
+rec w: 1S. rec z: 1S. (!Int; w; ?Int; z)
 
 []
-rec x: 1S . (?Bool; x)
-rec y: 1S . (?Bool; y; !Int)
+rec x: 1S . (?Int; x)
+rec y: 1S . (?Int; y; !Int)
 
 []
-rec x: 1S . (?Bool; x)
-rec y: 1S . (?Bool; y; y)
+rec x: 1S . (?Int; x)
+rec y: 1S . (?Int; y; y)
 
 []
 rec x: 1S . +{A: x}
-rec y: 1S . +{A: y}; !Bool
+rec y: 1S . +{A: y}; !Int
 
 []
-rec x: 1S . +{A: x}; ?Bool
-rec y: 1S . +{A: y}; !Bool
+rec x: 1S . +{A: x}; ?Int
+rec y: 1S . +{A: y}; !Int
 
 []
-rec x: 1S . (?Bool; x)
-rec y: 1S . (?Bool; y; y; !Char; y; ?Int; y; y; ?Bool; y; y)
+rec x: 1S . (?Int; x)
+rec y: 1S . (?Int; y; y; !Char; y; ?Int; y; y; ?Int; y; y)
 
 []
 rec x: 1S. &{Node: ?Int;x}
@@ -521,8 +521,8 @@ rec x: 1S. &{Leaf: Skip, Node: ?Int;x}
 rec x: 1S. &{Leaf: Skip, Node: ?Int;x}
 
 []
-rec x: 1S. &{Leaf: ?Bool, Node: ?Int;x;x}
-rec x: 1S. &{Leaf: ?Bool, Node: ?Int;x;x}
+rec x: 1S. &{Leaf: ?Int, Node: ?Int;x;x}
+rec x: 1S. &{Leaf: ?Int, Node: ?Int;x;x}
 
 []
 rec x: 1S. &{Leaf: Skip, Node: ?Int;x;x}
@@ -601,16 +601,16 @@ rec x: 1S . &{Add: x;x;!Int, Const: ?Int;!Int, Mult: x;x;!Int}
 ((rec termChan: 1S . +{Add: (termChan;termChan), Const: !Int, Mult: (termChan;termChan)});!Int)
 
 []
-(rec x: 1S . &{A: !Int ; x, B: Skip}) ; (rec x: 1S . &{A: !Int ; x, B: Skip}) ; ?Bool
-(rec x: 1S . &{A: !Int ; x, B: Skip}) ; ((rec x: 1S . &{A: !Int ; x, B: Skip}) ; ?Bool)
+(rec x: 1S . &{A: !Int ; x, B: Skip}) ; (rec x: 1S . &{A: !Int ; x, B: Skip}) ; ?Int
+(rec x: 1S . &{A: !Int ; x, B: Skip}) ; ((rec x: 1S . &{A: !Int ; x, B: Skip}) ; ?Int)
 
 []
-(rec x: 1S . &{A: !Int ; x}) ; (rec x: 1S . &{A: !Int ; x}) ; ?Bool
-(rec x: 1S . &{A: !Int ; x}) ; ((rec x: 1S . &{A: !Int ; x}) ; ?Bool)
+(rec x: 1S . &{A: !Int ; x}) ; (rec x: 1S . &{A: !Int ; x}) ; ?Int
+(rec x: 1S . &{A: !Int ; x}) ; ((rec x: 1S . &{A: !Int ; x}) ; ?Int)
 
 []
-!Char ; (rec x: 1S . &{A: !Int ; x,  B: Skip}) ; ?Bool
-!Char ; ((rec x: 1S . &{A: !Int ; x, B: Skip}) ; ?Bool)
+!Char ; (rec x: 1S . &{A: !Int ; x,  B: Skip}) ; ?Int
+!Char ; ((rec x: 1S . &{A: !Int ; x, B: Skip}) ; ?Int)
 
 []
 rec x: 1S . &{N: x; !Int, L: !Int}
@@ -625,8 +625,8 @@ rec x : 1S . &{N: x;!Int, L: x}
 rec y : 1S . &{N: y, L: y};!Int
 
 []
-&{And: (?Bool;(?Bool;(!Bool;(rec x : 1S . &{And: (?Bool;(?Bool;(!Bool;x))), Stop: Skip, Not: (?Bool;(!Bool;x)), Or: (?Bool;(?Bool;(!Bool;x)))})))), Stop: Skip, Not: (?Bool;(!Bool;(rec x : 1S . &{And: (?Bool;(?Bool;(!Bool;x))), Stop: Skip, Not: (?Bool;(!Bool;x)), Or: (?Bool;(?Bool;(!Bool;x)))}))), Or: (?Bool;(?Bool;(!Bool;(rec x : 1S . &{And: (?Bool;(?Bool;(!Bool;x))), Stop: Skip, Not: (?Bool;(!Bool;x)), Or: (?Bool;(?Bool;(!Bool;x)))}))))}
-&{And: (?Bool;(?Bool;(!Bool;(rec x : 1S . &{And: (?Bool;(?Bool;(!Bool;x))), Stop: Skip, Not: (?Bool;(!Bool;x)), Or: (?Bool;(?Bool;(!Bool;x)))})))), Stop: Skip, Not: (?Bool;(!Bool;(rec x : 1S . &{And: (?Bool;(?Bool;(!Bool;x))), Stop: Skip, Not: (?Bool;(!Bool;x)), Or: (?Bool;(?Bool;(!Bool;x)))}))), Or: (?Bool;(?Bool;(!Bool;(rec x : 1S . &{And: (?Bool;(?Bool;(!Bool;x))), Stop: Skip, Not: (?Bool;(!Bool;x)), Or: (?Bool;(?Bool;(!Bool;x)))}))))}
+&{And: (?Int;(?Int;(!Int;(rec x : 1S . &{And: (?Int;(?Int;(!Int;x))), Stop: Skip, Not: (?Int;(!Int;x)), Or: (?Int;(?Int;(!Int;x)))})))), Stop: Skip, Not: (?Int;(!Int;(rec x : 1S . &{And: (?Int;(?Int;(!Int;x))), Stop: Skip, Not: (?Int;(!Int;x)), Or: (?Int;(?Int;(!Int;x)))}))), Or: (?Int;(?Int;(!Int;(rec x : 1S . &{And: (?Int;(?Int;(!Int;x))), Stop: Skip, Not: (?Int;(!Int;x)), Or: (?Int;(?Int;(!Int;x)))}))))}
+&{And: (?Int;(?Int;(!Int;(rec x : 1S . &{And: (?Int;(?Int;(!Int;x))), Stop: Skip, Not: (?Int;(!Int;x)), Or: (?Int;(?Int;(!Int;x)))})))), Stop: Skip, Not: (?Int;(!Int;(rec x : 1S . &{And: (?Int;(?Int;(!Int;x))), Stop: Skip, Not: (?Int;(!Int;x)), Or: (?Int;(?Int;(!Int;x)))}))), Or: (?Int;(?Int;(!Int;(rec x : 1S . &{And: (?Int;(?Int;(!Int;x))), Stop: Skip, Not: (?Int;(!Int;x)), Or: (?Int;(?Int;(!Int;x)))}))))}
 
 -- -- Examples from QuickCheck
 
@@ -640,17 +640,17 @@ rec z: 1S. x
 
 -- This one is non-kinded (as of version April 24, 2019)
 --[]
---((rec z_0:1S. (((Skip;z_0);?Char);&{A: y, B: y, C: z_0}));((?Bool;(rec x_1:1S. +{A: x_1, B: Skip, C: y}));+{A: (rec y_2:1S. Skip), B: ?Int, C: !Bool}))
---(((rec z_3:1S. (((Skip;z_3);?Char);&{A: y, B: y, C: z_3}));(?Bool;(rec x_4:1S. +{A: x_4, B: Skip, C: y})));+{A: (rec y_5:1S. Skip), B: ?Int, C: !Bool})
+--((rec z_0:1S. (((Skip;z_0);?Char);&{A: y, B: y, C: z_0}));((?Int;(rec x_1:1S. +{A: x_1, B: Skip, C: y}));+{A: (rec y_2:1S. Skip), B: ?Int, C: !Int}))
+--(((rec z_3:1S. (((Skip;z_3);?Char);&{A: y, B: y, C: z_3}));(?Int;(rec x_4:1S. +{A: x_4, B: Skip, C: y})));+{A: (rec y_5:1S. Skip), B: ?Int, C: !Int})
 
 [("x", "1S"),("z", "1S")]
- (rec y_0: 1S. (!Bool;+{A: y_0, B: y_0, C: x})) ; (?Int ; (?Int;&{A: Skip, B: z, C: z}))
-((rec y_1: 1S. (!Bool;+{A: y_1, B: y_1, C: x})) ; ?Int) ; (?Int;&{A: Skip, B: z, C: z})
+ (rec y_0: 1S. (!Int;+{A: y_0, B: y_0, C: x})) ; (?Int ; (?Int;&{A: Skip, B: z, C: z}))
+((rec y_1: 1S. (!Int;+{A: y_1, B: y_1, C: x})) ; ?Int) ; (?Int;&{A: Skip, B: z, C: z})
 
 -- this one used to hang
 []
-rec y_0: 1S. !Bool; +{A: y_0}
-rec y_1: 1S. !Bool; +{A: y_1}
+rec y_0: 1S. !Int; +{A: y_0}
+rec y_1: 1S. !Int; +{A: y_1}
 
 -- this one used to hang
 []
@@ -663,12 +663,12 @@ rec y_0: 1S. !Char ; +{A: y_0, B: Skip, C: Skip}
 
 -- Unfold
 []
-rec x. !Bool ; !Bool
-!Bool ; !Bool
+rec x. !Int ; !Int
+!Int ; !Int
 
 [("y","1S"),("z","1S")]
-rec x: 1S. (((z;z);(Skip;y));?Bool)
-((z;z);(Skip;y));?Bool
+rec x: 1S. (((z;z);(Skip;y));?Int)
+((z;z);(Skip;y));?Int
 
 [("z","1S")]
 ((rec x: 1S. (rec y: 1S. z)) ; &{B: ?Int, C: ?Char}) ; +{A: Skip, B: !Char, C: Skip}
@@ -723,30 +723,30 @@ rec a: 1S. &{A: rec b. a}
 (rec d_1: 1S. y)
 
 [("x","1S"),("y","1S")]
-(&{A: ?Bool, C: (rec b: 1S. ?Char)};(rec a: *S. &{B: (((rec c: 1S. (&{A: y};(?Int;!Char)));y);x)}))
-&{A: (?Bool;&{B: ((rec b: 1S. (&{A: (y;(?Int;!Char))};y));x)}), C: (?Char;&{B: ((rec d: 1S. (&{A: (y;(?Int;!Char))};y));x)})}
+(&{A: ?Int, C: (rec b: 1S. ?Char)};(rec a: *S. &{B: (((rec c: 1S. (&{A: y};(?Int;!Char)));y);x)}))
+&{A: (?Int;&{B: ((rec b: 1S. (&{A: (y;(?Int;!Char))};y));x)}), C: (?Char;&{B: ((rec d: 1S. (&{A: (y;(?Int;!Char))};y));x)})}
 
 []
-rec a: 1S. (&{B: Skip, C: (rec d: 1S. (a;!Bool))})
-rec e: 1S. (&{B: Skip, C: e;!Bool})
+rec a: 1S. (&{B: Skip, C: (rec d: 1S. (a;!Int))})
+rec e: 1S. (&{B: Skip, C: e;!Int})
 
 -- this test takes a while
 [("x","1S"),("y","1S"),("z","1S")]
-((&{B: (((+{B: (Skip;x), C: (z;x)};&{A: x, B: Skip});Skip);+{A: (((Skip;!());((Skip;!Bool);x));(rec w: *S. ?Char)), B: (+{A: (z;+{A: (y;(Skip;y)), C: (Skip;(Skip;y))}), C: (z;+{A: (y;(Skip;y)), C: (Skip;(Skip;y))})};(rec o: *S. ?Char)), C: (x;(rec r: *S. ?Char))})};Skip);Skip)
-((Skip;(&{B: ((rec h: *S. (rec l: *S. (rec p: 1S. (+{B: Skip, C: z};x))));((Skip;&{A: x, B: Skip});Skip))};(+{A: (Skip;(!();(Skip;(!Bool;x)))),B: (+{A: z, C: z};(+{A: y, C: Skip};(Skip;y))), C: x};(rec q: *S. ?Char))));(Skip;Skip))
+((&{B: (((+{B: (Skip;x), C: (z;x)};&{A: x, B: Skip});Skip);+{A: (((Skip;!());((Skip;!Int);x));(rec w: *S. ?Char)), B: (+{A: (z;+{A: (y;(Skip;y)), C: (Skip;(Skip;y))}), C: (z;+{A: (y;(Skip;y)), C: (Skip;(Skip;y))})};(rec o: *S. ?Char)), C: (x;(rec r: *S. ?Char))})};Skip);Skip)
+((Skip;(&{B: ((rec h: *S. (rec l: *S. (rec p: 1S. (+{B: Skip, C: z};x))));((Skip;&{A: x, B: Skip});Skip))};(+{A: (Skip;(!();(Skip;(!Int;x)))),B: (+{A: z, C: z};(+{A: y, C: Skip};(Skip;y))), C: x};(rec q: *S. ?Char))));(Skip;Skip))
 
 -- this one takes loooonger!
 -- []
--- ((rec w:1S. &{B: ((+{A: &{B: x, C: Skip}};(+{A: ?Bool, B: w, C: (?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w))};Skip));+{A: (!Char;(((?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w));?Char);(?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w))))}), C: Skip});(x;((&{B: !Bool, C: Skip};((rec δ:*S. ?());y));(?Int;(+{B: x, C: ?Int};(!Int;Skip))))))
--- ((rec z:1S. (Skip;&{B: (+{A: (&{B: x, C: Skip};+{A: (?Bool;Skip), B: (z;Skip), C: (((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z);Skip)})};(+{A: !Char};(((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z);(?Char;((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z))))), C: Skip}));((x;&{B: (!Bool;(?();y)), C: (Skip;(?();y))});((?Int;+{B: x, C: ?Int});!Int)))
+-- ((rec w:1S. &{B: ((+{A: &{B: x, C: Skip}};(+{A: ?Int, B: w, C: (?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w))};Skip));+{A: (!Char;(((?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w));?Char);(?Int;(&{A: ((?();(x;w));((Skip;+{A: w, C: Skip});!Int)), C: !Char};w))))}), C: Skip});(x;((&{B: !Int, C: Skip};((rec δ:*S. ?());y));(?Int;(+{B: x, C: ?Int};(!Int;Skip))))))
+-- ((rec z:1S. (Skip;&{B: (+{A: (&{B: x, C: Skip};+{A: (?Int;Skip), B: (z;Skip), C: (((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z);Skip)})};(+{A: !Char};(((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z);(?Char;((?Int;&{A: ((((?();x);z);+{A: z, C: Skip});!Int), C: !Char});z))))), C: Skip}));((x;&{B: (!Int;(?();y)), C: (Skip;(?();y))});((?Int;+{B: x, C: ?Int});!Int)))
 
 []
 rec z_0: 1S. &{B: &{B: ?()}, C: (rec y_0: 1S. (z_0;y_0))}
 &{B: &{B: ?()}, C: (rec y_1: 1S. ((rec z_1: 1S. &{B: &{B: ?()}, C: (rec y_3: 1S. ((z_1;Skip);y_3))});y_1))}
 
 []
-(rec z_0: 1S. (rec x_1: 1S. ( (+{B: (rec w_1: 1S. +{A: Skip, C: w_1}), C:   (rec w_3: 1S. +{A: (!Bool;w_3), B: !Char, C: !Char})});(+{B: !Bool, C: z_0};x_1))))
-(rec w_7: 1S. ( +{B: +{A: Skip, C: (rec w_10: 1S. +{A: Skip, C: w_10})}, C: rec w_12: 1S. +{A: !Bool;w_12, B: !Char, C: !Char}};+{B: (!Bool;w_7), C: (w_7;w_7)}))
+(rec z_0: 1S. (rec x_1: 1S. ( (+{B: (rec w_1: 1S. +{A: Skip, C: w_1}), C:   (rec w_3: 1S. +{A: (!Int;w_3), B: !Char, C: !Char})});(+{B: !Int, C: z_0};x_1))))
+(rec w_7: 1S. ( +{B: +{A: Skip, C: (rec w_10: 1S. +{A: Skip, C: w_10})}, C: rec w_12: 1S. +{A: !Int;w_12, B: !Char, C: !Char}};+{B: (!Int;w_7), C: (w_7;w_7)}))
 
 []
 rec x_0: 1S. +{B: &{B: !Int};!Char, C: rec w_1: 1S. (x_0;(?();w_1))}
@@ -761,8 +761,8 @@ rec x: 1S. !Int; rec y: 1S. x;y
 rec z: 1S. !Int; rec w: 1S. z;w
 
 [("y","1S")]
-+{B: ?Int, C: y};+{A: ?Bool, B: (+{A: Skip};?Bool), C: y}
-+{B: (?Int;+{A: ?Bool, B: +{A: (Skip;?Bool)}, C: y}), C: (y;+{A: ?Bool, B: +{A: (Skip;?Bool)}, C: y})}
++{B: ?Int, C: y};+{A: ?Int, B: (+{A: Skip};?Int), C: y}
++{B: (?Int;+{A: ?Int, B: +{A: (Skip;?Int)}, C: y}), C: (y;+{A: ?Int, B: +{A: (Skip;?Int)}, C: y})}
 
 [("z","1S")]
 +{A: z, B: +{A: z}, C: (+{A: !Int};!())}
@@ -773,20 +773,20 @@ rec z: 1S. !Int; rec w: 1S. z;w
 +{A: +{A:Skip, B: Skip}, B: +{A: Skip, B: Skip}}
 
 [("z","1S")]
-(rec y: 1S.(&{A: z, C: ?Char};(&{A: !Int, B: !Bool, C: Skip};y)))
-&{A: (z;&{A: (!Int;(rec y1: 1S.&{A: (z;&{A: (!Int;y1), B: (!Bool;y1), C: (Skip;y1)}), C: (?Char;&{A: (!Int;y1), B: (!Bool;y1), C: (Skip;y1)})})), B: (!Bool;(rec y2: 1S.&{A: (z;&{A: (!Int;y2), B: (!Bool;y2), C: (Skip;y2)}), C: (?Char;&{A: (!Int;y2), B: (!Bool;y2), C: (Skip;y2)})})), C: (Skip;(rec y3: 1S.&{A: (z;&{A: (!Int;y3), B: (!Bool;y3), C: (Skip;y3)}), C: (?Char;&{A: (!Int;y3), B: (!Bool;y3), C: (Skip;y3)})}))}), C: (?Char;&{A: (!Int;(rec y4: 1S.&{A: (z;&{A: (!Int;y4), B: (!Bool;y4), C: (Skip;y4)}), C:(?Char;&{A: (!Int;y4), B: (!Bool;y4), C: (Skip;y4)})})), B: (!Bool;(rec y5: 1S.&{A: (z;&{A: (!Int;y5), B: (!Bool;y5), C: (Skip;y5)}), C: (?Char;&{A: (!Int;y5), B: (!Bool;y5), C: (Skip;y5)})})), C: (Skip;(rec y6: 1S.&{A: (z;&{A: (!Int;y6), B: (!Bool;y6), C: (Skip;y6)}), C: (?Char;&{A: (!Int;y6), B: (!Bool;y6), C: (Skip;y6)})}))})}
+(rec y: 1S.(&{A: z, C: ?Char};(&{A: !Int, B: !Int, C: Skip};y)))
+&{A: (z;&{A: (!Int;(rec y1: 1S.&{A: (z;&{A: (!Int;y1), B: (!Int;y1), C: (Skip;y1)}), C: (?Char;&{A: (!Int;y1), B: (!Int;y1), C: (Skip;y1)})})), B: (!Int;(rec y2: 1S.&{A: (z;&{A: (!Int;y2), B: (!Int;y2), C: (Skip;y2)}), C: (?Char;&{A: (!Int;y2), B: (!Int;y2), C: (Skip;y2)})})), C: (Skip;(rec y3: 1S.&{A: (z;&{A: (!Int;y3), B: (!Int;y3), C: (Skip;y3)}), C: (?Char;&{A: (!Int;y3), B: (!Int;y3), C: (Skip;y3)})}))}), C: (?Char;&{A: (!Int;(rec y4: 1S.&{A: (z;&{A: (!Int;y4), B: (!Int;y4), C: (Skip;y4)}), C:(?Char;&{A: (!Int;y4), B: (!Int;y4), C: (Skip;y4)})})), B: (!Int;(rec y5: 1S.&{A: (z;&{A: (!Int;y5), B: (!Int;y5), C: (Skip;y5)}), C: (?Char;&{A: (!Int;y5), B: (!Int;y5), C: (Skip;y5)})})), C: (Skip;(rec y6: 1S.&{A: (z;&{A: (!Int;y6), B: (!Int;y6), C: (Skip;y6)}), C: (?Char;&{A: (!Int;y6), B: (!Int;y6), C: (Skip;y6)})}))})}
 
 [("z","1S")]
 ((rec y0: 1S.(+{A: z, C: ?Int};(&{B: y0, C: z};y0)));Skip)
 +{A: (z;&{B: ((rec y10: 1S.+{A: (z;&{B: (y10;y10), C: (z;y10)}), C: (?Int;&{B: (y10;y10), C: (z;y10)})});(rec y21: 1S.+{A: (z;&{B: (y21;y21), C: (z;y21)}), C: (?Int;&{B: (y21;y21), C: (z;y21)})})), C: (z;(rec y32: 1S.+{A: (z;&{B: (y32;y32), C: (z;y32)}), C: (?Int;&{B: (y32;y32), C: (z;y32)})}))}), C: (?Int;&{B: ((rec y43: 1S.+{A: (z;&{B: (y43;y43), C: (z;y43)}), C: (?Int;&{B: (y43;y43), C: (z;y43)})});(rec y54: 1S.+{A: (z;&{B: (y54;y54), C: (z;y54)}), C: (?Int;&{B: (y54;y54), C: (z;y54)})})), C: (z;(rec y65: 1S.+{A: (z;&{B: (y65;y65), C: (z;y65)}), C: (?Int;&{B: (y65;y65), C: (z;y65)})}))})}
 
 []
-(+{A: !Bool, B: !()};(rec z0: 1S.(+{A: Skip, B: ?Bool, C: ?Char};z0)))
-+{A: (!Bool;+{A: (Skip;(rec z10: 1S.+{A: (Skip;z10), B: (?Bool;z10), C: (?Char;z10)})), B: (?Bool;(rec z21: 1S.+{A: (Skip;z21), B: (?Bool;z21), C: (?Char;z21)})), C: (?Char;(rec z32: 1S.+{A: (Skip;z32), B: (?Bool;z32), C: (?Char;z32)}))}), B: (!();+{A: (Skip;(rec z40: 1S.+{A: (Skip;z40), B: (?Bool;z40), C: (?Char;z40)})), B: (?Bool;(rec z51: 1S.+{A: (Skip;z51), B: (?Bool;z51), C: (?Char;z51)})), C: (?Char;(rec z62: 1S.+{A: (Skip;z62), B: (?Bool;z62), C: (?Char;z62)}))})}
+(+{A: !Int, B: !()};(rec z0: 1S.(+{A: Skip, B: ?Int, C: ?Char};z0)))
++{A: (!Int;+{A: (Skip;(rec z10: 1S.+{A: (Skip;z10), B: (?Int;z10), C: (?Char;z10)})), B: (?Int;(rec z21: 1S.+{A: (Skip;z21), B: (?Int;z21), C: (?Char;z21)})), C: (?Char;(rec z32: 1S.+{A: (Skip;z32), B: (?Int;z32), C: (?Char;z32)}))}), B: (!();+{A: (Skip;(rec z40: 1S.+{A: (Skip;z40), B: (?Int;z40), C: (?Char;z40)})), B: (?Int;(rec z51: 1S.+{A: (Skip;z51), B: (?Int;z51), C: (?Char;z51)})), C: (?Char;(rec z62: 1S.+{A: (Skip;z62), B: (?Int;z62), C: (?Char;z62)}))})}
 
 []
-((Skip;(rec z: 1S.(rec y: 1S.(rec x: 1S.(+{A: z, B: Skip, C: !Bool};(&{A:Skip, C: z};x))))));Skip)
-(rec y: 1S.+{A: (y;&{A: (Skip;(rec x: 1S.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x: 1S.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x), C:(y;x)})}))}), B: (Skip;&{A: (Skip;(rec x: 1S.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x: 1S.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x), C:(y;x)})}))}), C: (!Bool;&{A: (Skip;(rec x: 1S.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x: 1S.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Bool;&{A: (Skip;x), C:(y;x)})}))})})
+((Skip;(rec z: 1S.(rec y: 1S.(rec x: 1S.(+{A: z, B: Skip, C: !Int};(&{A:Skip, C: z};x))))));Skip)
+(rec y: 1S.+{A: (y;&{A: (Skip;(rec x: 1S.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x: 1S.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x), C:(y;x)})}))}), B: (Skip;&{A: (Skip;(rec x: 1S.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x: 1S.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x), C:(y;x)})}))}), C: (!Int;&{A: (Skip;(rec x: 1S.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x: 1S.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x), C:(y;x)})}))})})
 
 -- This one hangs
 -- []
@@ -811,20 +811,20 @@ Int -> ∀ α: 1S . α -> α ; Skip
 Int -> ∀ α: 1S . α -> α
 
 []
-Bool -> ∀ α: 1S . α -> α ; (α ; α)
-Bool -> ∀ α: 1S . α -> (α ; α) ; α
+Int -> ∀ α: 1S . α -> α ; (α ; α)
+Int -> ∀ α: 1S . α -> (α ; α) ; α
 
 -- []
--- rec y:1S .             +{B: !(), C: !Bool} ; (+{A: y;!(), C: !()} ; y)
--- rec x:1S . rec y:1S .  +{B: !(), C: !Bool} ; ((+{A: y, C: Skip};!())  ; x)
+-- rec y:1S .             +{B: !(), C: !Int} ; (+{A: y;!(), C: !()} ; y)
+-- rec x:1S . rec y:1S .  +{B: !(), C: !Int} ; ((+{A: y, C: Skip};!())  ; x)
 
 -- [("z", "1S")]
--- rec y:1S . (+{B: z, C: !Char};(?();!Bool);+{A: y;!(), C: Skip;!()});!Bool;y
--- rec y:1S . rec x:1S . (+{B: z, C: !Char});(?();!Bool;+{A: y, C: Skip};!());!Bool;x
+-- rec y:1S . (+{B: z, C: !Char};(?();!Int);+{A: y;!(), C: Skip;!()});!Int;y
+-- rec y:1S . rec x:1S . (+{B: z, C: !Char});(?();!Int;+{A: y, C: Skip};!());!Int;x
 
 -- [("z","1S")]
--- rec y:1S . (+{B: z;Skip, C: !Char;Skip};(?();!Bool);+{A: y;!(), C: Skip;!()});!Bool;y
--- rec y:1S . rec x:1S . (+{B: z, C: !Char};Skip;Skip);(?();!Bool;+{A: y, C: Skip};!());!Bool;x
+-- rec y:1S . (+{B: z;Skip, C: !Char;Skip};(?();!Int);+{A: y;!(), C: Skip;!()});!Int;y
+-- rec y:1S . rec x:1S . (+{B: z, C: !Char};Skip;Skip);(?();!Int;+{A: y, C: Skip};!());!Int;x
 
 -- Higher-order
 

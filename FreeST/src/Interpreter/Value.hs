@@ -12,10 +12,11 @@ import           Parse.Unparser                 ( )
 import           Syntax.Base
 import qualified Syntax.Expression             as E
 
+import           System.IO                      ( Handle )
+
 data Value =
     Unit
   | Integer Int
-  | Boolean Bool
   | Character Char
   | Label String -- to be sent on channels
   | String String
@@ -27,6 +28,7 @@ data Value =
   | Chan ChannelEnd
   | Fork
   | IOValue (IO Value)
+  | Handle Handle
 
 type Ctx = Map.Map Variable Value
 
@@ -36,7 +38,6 @@ type Channel = (ChannelEnd, ChannelEnd)
 instance Show Value where
   show Unit           = "()"
   show (Integer   i)  = show i
-  show (Boolean   b)  = show b
   show (Character c)  = show c
   show (String    s)  = s
   show (Label     s)  = s
@@ -48,6 +49,7 @@ instance Show Value where
   show Chan{}         = "Skip" -- TODO: change this
   show Fork           = "fork"
   show IOValue{}      = "<IOValue>"
+  show (Handle h)     = show h 
 
 showTuple :: Value -> String
 showTuple (Pair v1 v2) = show v1 ++ ", " ++ showTuple v2

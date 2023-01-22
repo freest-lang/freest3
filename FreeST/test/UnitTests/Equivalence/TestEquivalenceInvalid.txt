@@ -1,7 +1,7 @@
 -- Functional
 
 Int
-Bool
+Char
 
 Int -> Int
 Int 1-> Int
@@ -9,7 +9,7 @@ Int 1-> Int
 -- Regular Session Types
 
 !Int
-?Bool
+?Int
 
 Skip
 !Int
@@ -26,44 +26,44 @@ Skip; !Int; Skip
 +{A: Skip}
 +{A: !Char}
 
-+{A: ?Bool, B: Skip; !Char}
-+{B: Skip; !Char, A: ?Bool, C: !Char}
++{A: ?Int, B: Skip; !Char}
++{B: Skip; !Char, A: ?Int, C: !Char}
 
-&{A: ?Bool}
-&{B: ?Bool}
+&{A: ?Int}
+&{B: ?Int}
 
-&{A: ?Bool}
+&{A: ?Int}
 &{A: Skip}
 
-&{A: ?Bool, B: Skip; !Char}
-&{B: Skip; !Char, A: ?Bool, C:!Char}
+&{A: ?Int, B: Skip; !Char}
+&{B: Skip; !Char, A: ?Int, C:!Char}
 
 !Int
-rec a . !Bool
+rec a . !Char
 
 rec a . !Int
-rec a . !Bool
+rec a . !Char
 
 rec a. !Int; a; a
 rec a. ?Int; a; a
 
 rec a. rec b. !Int; a; b
-rec b. rec a. !Char; a; ?Bool; b
+rec b. rec a. !Char; a; ?Int; b
 
-rec a . ?Bool; a
-rec b . !Bool; b; b; !Char; b; ?Int; b; b; ?Bool; b; b
+rec a . ?Int; a
+rec b . !Int; b; b; !Char; b; ?Int; b; b; ?Int; b; b
 
-rec a . +{A: !Bool;a}
-rec b . +{A: b}; !Bool
-
-rec a . +{A: !Int, B: a}
-rec b . +{A: b, B: Skip}; !Bool
+rec a . +{A: !Int;a}
+rec b . +{A: b}; !Int
 
 rec a . +{A: !Int, B: a}
-rec b . +{A: Skip, B: b}; !Bool
+rec b . +{A: b, B: Skip}; !Int
 
-rec a. &{Leaf: ?Bool; a, Node: ?Int;a;a}
-rec a. &{Leaf: ?Bool, Node: ?Int;a;a}
+rec a . +{A: !Int, B: a}
+rec b . +{A: Skip, B: b}; !Int
+
+rec a. &{Leaf: ?Int; a, Node: ?Int;a;a}
+rec a. &{Leaf: ?Int, Node: ?Int;a;a}
 
 (rec a . &{LeafC: Skip, NodeC: (?Int;(a;a))}  ); a
  rec a . &{LeafC: Skip, NodeC: (?Int;(a;a))};a
@@ -71,8 +71,8 @@ rec a. &{Leaf: ?Bool, Node: ?Int;a;a}
 (rec a . &{N: a;!Int, L: Skip});?Int
 rec a . &{N: a;!Int;?Int, L:?Int}
 
-rec a. +{A: a; !Bool, B: !Bool}
-rec a. +{A: a; !Bool, B: !Bool}; +{B: Skip}; +{B: Skip}; !Bool
+rec a. +{A: a; !Int, B: !Int}
+rec a. +{A: a; !Int, B: !Int}; +{B: Skip}; +{B: Skip}; !Int
 
 rec a  . &{N:a;a;!Int, L:!Int}
 (rec a  . &{N:a;a;!Int, L:Skip});!Int
@@ -91,8 +91,8 @@ rec a  . (&{N:a;a;!Int, L:Skip};!Int)
 
 -- End 
 
-!Int;End;!Bool
-!Bool;End;!Int
+!Int;End;!Char
+!Char;End;!Int
 
 End
 Skip

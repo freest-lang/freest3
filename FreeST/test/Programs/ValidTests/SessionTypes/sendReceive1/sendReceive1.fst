@@ -1,6 +1,6 @@
 main : Bool
 main =
-  let (w, r) = new ?Int;!Bool;End in
+  let (w, r) = new @(?Int;!Bool;End) () in
   fork @() (\_:()1-> client w);
   r |> send (-5) |> receiveAndClose @Bool
 

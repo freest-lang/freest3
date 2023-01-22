@@ -34,11 +34,11 @@ writer i c =
 reader : dualof T -> ()
 reader c =
   let (i, c) = receive c in
-  printIntLn i;
+  print @Int i;
   reader c
 
 main : ()
 main =
-  let (w, r) = new T in
+  let (w, r) = new @T () in
   fork @() (\_:() 1-> writer 0 w);
   reader r

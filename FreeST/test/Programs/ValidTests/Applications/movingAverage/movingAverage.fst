@@ -55,7 +55,7 @@ collectValues c =
   match c with {
      More c ->
        let (v, c) = receive c in
-       printIntLn v ;
+       print @Int v ;
        collectValues c,
      Enough c -> c |> close
   }
@@ -66,5 +66,5 @@ average3 x y z = (x + y + z) / 3
 main : ()
 main =
   let r1 = forkWith @(?Int;?Int;FiniteInStream;End) @() writeValues in
-  let r2 = forkWith @FiniteInStream;End @() (readValues r1) in
+  let r2 = forkWith @(FiniteInStream;End) @() (readValues r1) in
   collectValues r2

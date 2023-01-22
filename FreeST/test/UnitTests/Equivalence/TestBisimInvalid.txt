@@ -1,7 +1,7 @@
 -- Higher Order
 
-!((rec y. +{a:!Char;!Char;y, b: Skip}) -> (rec x. ?Bool;x)) ; ?Bool
-!((rec y. +{a:!Char;y, b: Skip}) -> (rec y. ?Bool;?Bool;y)) ; ?Bool
+!((rec y. +{a:!Char;!Char;y, b: Skip}) -> (rec x. ?Int;x)) ; ?Int
+!((rec y. +{a:!Char;y, b: Skip}) -> (rec y. ?Int;?Int;y)) ; ?Int
 
 (rec y. +{a:!Char;!Char;y, b: Skip}) -> Int
 (rec y. +{a:!Char;y, b: Skip}) -> Int
@@ -42,9 +42,9 @@ Skip
 Skip
 
 !Int
-!Bool
+!Char
 
-!Bool
+!Char
 !Int
 
 a
@@ -71,9 +71,9 @@ Skip
 ((rec x.&{Leaf: Skip, Node: (?Int;(x;x))});a)
 (rec x.&{Leaf: Skip, Node: (?Int;(x;x))})
 
-((rec x.+{Leaf: Skip, Node: (!Int;(x;x))});?Bool)
+((rec x.+{Leaf: Skip, Node: (!Int;(x;x))});?Int)
 (rec x.+{Leaf: Skip, Node: (!Int;(x;x))})
 
-((rec x.+{Leaf: Skip, Node: (!Int;(x;x))});?Bool)
+((rec x.+{Leaf: Skip, Node: (!Int;(x;x))});?Int)
 (rec x.+{Leaf: Skip, Node: (!Int;(x;(x;(Skip;?Char))))})
 

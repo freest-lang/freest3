@@ -10,9 +10,7 @@ import           Syntax.Base
 import qualified Syntax.Type                  as T
 import           Syntax.Kind                  as K
 import           Validation.Kinding
--- import           Equivalence.Normalisation
-import           Equivalence.Equivalence
-import           Bisimulation.Bisimulation
+import           Bisimulation.Bisimulation        ( bisimilar )
 import           Util.FreestState
 import           Control.Monad.State
 import           ArbitraryTypes
@@ -35,9 +33,6 @@ import           Debug.Trace
 
 -- Convenience
 
-equiv :: T.Type -> T.Type -> Bool
-equiv = equivalent kindEnv
-
 kindEnv :: KindEnv
 kindEnv = Map.fromList (zip (map (mkVar defaultSpan) ids) (repeat (K.ls defaultSpan)))
         -- TODO: This env should only contain the free vars of t; plus
@@ -56,7 +51,7 @@ prop_bisimilar p@(BisimPair t u) =
 
 -- Equivalence
 prop_equivalent :: BisimPair -> Property
-prop_equivalent (BisimPair t u) = kinded t && kinded u ==> t `equiv` u
+prop_equivalent (BisimPair t u) = kinded t && kinded u ==> t `bisimilar` u
 
 -- Normalisation preserves bisimilarity
 -- prop_norm_preserves_bisim :: Type -> Property
@@ -107,10 +102,9 @@ nodes _                = 1
 constr :: T.Type -> String
 constr T.Int{}  = "Int"
 constr T.Char{} = "Char"
-constr T.Unit{} = "Unit"
 constr T.Bool{} = "Bool"
 constr T.Arrow{} = "Fun"
-constr T.Pair{} = "Pair"
+constr (T.Almanac _ T.Record _) = "Record"
 constr (T.Almanac _ T.Variant _) = "Datatype"
 constr T.Skip{} = "Skip"
 constr T.End{} = "End"

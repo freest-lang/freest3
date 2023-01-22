@@ -3,21 +3,19 @@ module Equivalence.TestEquivalenceInvalidSpec
   )
 where
 
-import           Equivalence.Equivalence        ( equivalent )
+import           Bisimulation.Bisimulation        ( bisimilar )
 import           Validation.Rename
 import           Syntax.Type
 import           Util.FreestState
 import           SpecUtils
-import qualified Data.Map.Strict               as Map
 import           Control.Monad.State
 
 matchInvalidSpec :: [String] -> Spec
-matchInvalidSpec [a, b] =
-  it (a ++ " `~/~` " ++ b) $ equivalent Map.empty t u `shouldBe` False
+matchInvalidSpec [a, b] = it
+  (a ++ " ~/~ " ++ b)
+  (bisimilar a' b' `shouldBe` False)
  where
-  (Pair p t u) =
-    evalState (rename Map.empty Map.empty (Pair p (read a) (read b))) initialState
-    -- evalState (rename Map.empty (Pair p (read a) (read b))) initialState :: Type
+  [a', b'] = renameTypes [read a, read b]
 
 spec :: Spec
 spec = do

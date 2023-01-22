@@ -22,8 +22,6 @@ class DefaultTypeOp a where
 instance DefaultTypeOp T.Type where
   getDefault m (T.Arrow p mu t u) =
     lookupPos m p $ T.Arrow p mu (getDefault m t) (getDefault m u)
-  getDefault m (T.Pair p t u) =
-    lookupPos m p $ T.Pair p (getDefault m t) (getDefault m u)
   getDefault m (T.Almanac p s cm) =
     lookupPos m p $ T.Almanac p s $ getDefault m cm
   getDefault m (T.Semi p t u) =
@@ -37,7 +35,6 @@ instance DefaultTypeOp T.Type where
 instance DefaultTypeOp Exp where
   getDefault m (Abs p mul b   ) = Abs p mul $ getDefault m b
   getDefault m (App  p e1 e2) = App p (getDefault m e1) (getDefault m e2)
-  getDefault m (Pair p e1 e2) = Pair p (getDefault m e1) (getDefault m e2)
   getDefault m (BinLet p x y e1 e2) =
     BinLet p x y (getDefault m e1) (getDefault m e2)
   getDefault m (Case p e fm  ) = Case p (getDefault m e) (getDefault m fm)
@@ -47,7 +44,6 @@ instance DefaultTypeOp Exp where
     Cond p (getDefault m e1) (getDefault m e2) (getDefault m e3)
   getDefault m (UnLet p x e1 e2) =
     UnLet p x (getDefault m e1) (getDefault m e2)
-  getDefault m (New p t u) = New p (getDefault m t) (getDefault m u)
   getDefault _ e           = e
 
 instance DefaultTypeOp (Bind K.Kind Exp) where

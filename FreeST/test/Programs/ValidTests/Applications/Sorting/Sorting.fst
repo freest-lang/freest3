@@ -21,12 +21,12 @@ client c =
   send 1 $ select Value $
   send 4 $ select Value $
   send 5 $ select Value c in
-  let (x, c) = receive c in printIntLn x;
-  let (x, c) = receive c in printIntLn x;
-  let (x, c) = receive c in printIntLn x;
-  let (x, c) = receive c in printIntLn x;
-  let (x, c) = receive c in printIntLn x;
-  let (x, c) = receive c in printIntLn x;
+  let (x, c) = receive c in print @Int x;
+  let (x, c) = receive c in print @Int x;
+  let (x, c) = receive c in print @Int x;
+  let (x, c) = receive c in print @Int x;
+  let (x, c) = receive c in print @Int x;
+  let (x, c) = receive c in print @Int x;
   close c
 
 data IntList = Nil | Cons Int IntList
@@ -53,7 +53,7 @@ sortingServer xs c =
 -- Putting it all together
 main : ()
 main =
-  let (w, r) = new OrderingChannel;End in
+  let (w, r) = new @(OrderingChannel;End) () in
   fork @() (\_:()1-> sortingServer @End Nil r |> snd @IntList @End |> close);
   client w
 

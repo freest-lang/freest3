@@ -4,11 +4,11 @@ module Equivalence.TestEquivalenceValidSpec
 where
 
 import           Syntax.Kind                   as K
-import           Equivalence.Equivalence
+import           Bisimulation.Bisimulation      ( bisimilar )
 import           Validation.Rename
 import           Validation.Kinding             ( synthetise )
 import           SpecUtils
-import           Util.FreestState              ( initialState
+import           Util.FreestState               ( initialState
                                                 , errors
                                                 )
 import           Control.Monad.State            ( execState )
@@ -18,7 +18,7 @@ matchValidSpec [k, t, u] = it
   (k ++ "  |-  " ++ t ++ " ~ " ++ u)
   (          wellFormed kEnv t'
   &&         wellFormed kEnv u'
-  &&         equivalent kEnv t' u'
+  &&         bisimilar t' u'
   `shouldBe` True
   )
  where

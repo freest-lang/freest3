@@ -2,12 +2,16 @@
 
 # Create folder on tmp and copy files
 
-version=`cat ../FreeST/package.yaml | grep -e "version:" | sed -E 's/version\W+//g'`
+version=`cat ../FreeST/package.yaml | grep -e "version:" |  sed -E 's/version: *//g'`
 path=freest-$version/
 
 mkdir $path
 # mkdir $path/FreeST/
-cp -r ../FreeST/src ../FreeST/StandardLib/ $path
+cp -r ../FreeST/src $path
+
+mkdir $path/StandardLib/
+cp -r ../FreeST/StandardLib/Prelude.fst $path/StandardLib/
+
 
 # Suppose that you have the project freest-mode cloned
 # (at the same level of this one)
@@ -24,18 +28,18 @@ rm -rf $path/src/.stack-work/
 
 mkdir $path/examples/
 # copy test examples into release
-cp ../FreeST/test/Programs/ValidTests/anbn/anbn.fst  $path/examples/AnBn.fst
-cp ../FreeST/test/Programs/ValidTests/arithExprServer/arithExprServer.fst  $path/examples/ArithExprServer.fst
-cp ../FreeST/test/Programs/ValidTests/crisscross/crisscross.fst  $path/examples/Crisscross.fst
-cp ../FreeST/test/Programs/ValidTests/fixZcombinator/fixZcombinator.fst $path/examples/FixZcombinator.fst
-cp ../FreeST/test/Programs/ValidTests/lazyTreeTraversal/lazyTreeTraversal.fst $path/examples/LazyTreeTraversal.fst
-cp ../FreeST/test/Programs/ValidTests/ordering/ordering.fst $path/examples/Ordering.fst
-cp ../FreeST/test/Programs/ValidTests/DyckWords/DyckWords.fst $path/examples/
-cp ../FreeST/test/Programs/ValidTests/Unnormed/Unnormed.fst  $path/examples/
-cp ../FreeST/test/Programs/ValidTests/TreeTransform/TreeTransform.fst  $path/examples/
+cp ../FreeST/test/Programs/ValidTests/SessionTypes/anbn/anbn.fst  $path/examples/AnBn.fst
+cp ../FreeST/test/Programs/ValidTests/SessionTypes/arithExprServer/arithExprServer.fst  $path/examples/ArithExprServer.fst
+cp ../FreeST/test/Programs/ValidTests/SessionTypes/crisscross/crisscross.fst  $path/examples/Crisscross.fst
+cp ../FreeST/test/Programs/ValidTests/Functional/fixZcombinator/fixZcombinator.fst $path/examples/FixZcombinator.fst
+cp ../FreeST/test/Programs/ValidTests/SessionTypes/lazyTreeTraversal/lazyTreeTraversal.fst $path/examples/LazyTreeTraversal.fst
+cp ../FreeST/test/Programs/ValidTests/Applications/ordering/ordering.fst $path/examples/Ordering.fst
+cp ../FreeST/test/Programs/ValidTests/SessionTypes/DyckWords/DyckWords.fst $path/examples/
+cp ../FreeST/test/Programs/ValidTests/SessionTypes/Unnormed/Unnormed.fst  $path/examples/
+cp ../FreeST/test/Programs/ValidTests/SessionTypes/TreeTransform/TreeTransform.fst  $path/examples/
 
 
-resolverVersion=`cat ../stack.yaml | grep -e "^resolver:" | sed -E 's/resolver\W+//g'`
+resolverVersion=`cat ../stack.yaml | grep -e "^resolver:" | sed -E 's/resolver: *//g'`
 
 # Create stack.yaml file
 

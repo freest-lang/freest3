@@ -79,7 +79,7 @@ aTree = Node 1 (Node 2 Leaf (Node 3 Leaf (Node 4 Leaf (Node 5 Leaf Leaf)))) (Nod
 
 main : Tree
 main =
-  let (w, r) = new (rec x: 1S. +{LeafC: Skip, NodeC: !Int;x;x;?Int}) in
+  let (w, r) = new @(rec x: 1S. +{LeafC: Skip, NodeC: !Int;x;x;?Int}) () in
 --  let t, w = fork (transform[Skip] aTree w) in
 --  let n, r = treeSum[Skip] r in
   let _ = fork (treeSum @Skip r) in

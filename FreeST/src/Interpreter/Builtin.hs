@@ -5,9 +5,13 @@ import           Interpreter.Value
 import           Syntax.Base
 
 import qualified Control.Concurrent.Chan as C
+import           Control.Exception ( catch, SomeException )
 import           Data.Char ( ord, chr )
 import           Data.Functor
 import qualified Data.Map as Map
+import           System.IO
+import           System.IO.Unsafe
+import           Data.Bifunctor (Bifunctor(bimap))
 
 ------------------------------------------------------------
 -- Communication primitives
@@ -42,11 +46,12 @@ close ch = do
 initialCtx :: Ctx
 initialCtx = Map.fromList
   -- Integers
- [ -- Communication primitives
-    (var "send", PrimitiveFun (\v -> PrimitiveFun (\(Chan c) -> IOValue $ Chan <$> send v c)))
+  [ -- Communication primitives
+    (var "new", PrimitiveFun (\_ -> IOValue $ uncurry Pair <$> (bimap Chan Chan <$> new)))
+  , (var "send", PrimitiveFun (\v -> PrimitiveFun (\(Chan c) -> IOValue $ Chan <$> send v c)))
   , (var "receive", PrimitiveFun (\(Chan c) -> IOValue $ receive c >>= \(v, c) -> return $ Pair v (Chan c)))
   , (var "close", PrimitiveFun (\(Chan c) -> IOValue $ close c))
-  -- Integers
+  -- Integer
   , (var "(+)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x + y)))
   , (var "(-)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x - y)))
   , (var "subtract", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ y - x)))
@@ -65,37 +70,57 @@ initialCtx = Map.fromList
   , (var "pred", PrimitiveFun (\(Integer x) -> Integer $ pred x))
   , (var "abs" , PrimitiveFun (\(Integer x) -> Integer $ abs x))
   , (var "quot", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x `quot` y)))
-  , (var "even", PrimitiveFun (\(Integer x) -> Boolean $ even x))
-  , (var "odd" , PrimitiveFun (\(Integer x) -> Boolean $ odd x))
+  , (var "even", PrimitiveFun (\(Integer x) -> boolean $ even x))
+  , (var "odd" , PrimitiveFun (\(Integer x) -> boolean $ odd x))
   , (var "gcd", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x `gcd` y)))
   , (var "lcm", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Integer $ x `lcm` y)))
   -- Booleans
-  , (var "not", PrimitiveFun (\(Boolean x) -> Boolean $ not x))
-  , (var "(&&)", PrimitiveFun (\(Boolean x) -> PrimitiveFun (\(Boolean y) -> Boolean $ x && y)))
-  , (var "(||)", PrimitiveFun (\(Boolean x) -> PrimitiveFun (\(Boolean y) -> Boolean $ x || y)))
-  , (var "(==)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Boolean $ x == y)))
-  , (var "(/=)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Boolean $ x /= y)))
-  , (var "(<)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Boolean $ x < y)))
-  , (var "(>)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Boolean $ x > y)))
-  , (var "(<=)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Boolean $ x <= y)))
-  , (var "(>=)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> Boolean $ x >= y)))
+  , (var "(&&)", PrimitiveFun (\(Cons x _) -> PrimitiveFun (\(Cons y _) -> boolean $ read (show x) && read (show y))))
+  , (var "(||)", PrimitiveFun (\(Cons x _) -> PrimitiveFun (\(Cons y _) -> boolean $ read (show x) || read (show y))))
+  , (var "(==)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> boolean $ x == y)))
+  , (var "(/=)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> boolean $ x /= y)))
+  , (var "(<)" , PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> boolean $ x <  y)))
+  , (var "(>)" , PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> boolean $ x >  y)))
+  , (var "(<=)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> boolean $ x <= y)))
+  , (var "(>=)", PrimitiveFun (\(Integer x) -> PrimitiveFun (\(Integer y) -> boolean $ x >= y)))
   -- Chars
   , (var "chr", PrimitiveFun (\(Integer x) -> Character $ chr x))
   , (var "ord", PrimitiveFun (\(Character x) -> Integer $ ord x))
+  -- Strings
+  , (var "(++)", PrimitiveFun (\(String s1) -> PrimitiveFun (\(String s2) -> String $ s1 ++ s2)))
   -- Pairs
   , (var "fst", PrimitiveFun (\(Pair a _) -> a))
   , (var "snd", PrimitiveFun (\(Pair _ b) -> b))
-  -- Prints
-  , (var "printInt", PrimitiveFun (\(Integer x) -> IOValue $ putStr (show x) $> Unit))
-  , (var "printIntLn", PrimitiveFun (\(Integer x) -> IOValue $ print x $> Unit))
-  , (var "printBool", PrimitiveFun (\(Boolean x) -> IOValue $ putStr (show x) $> Unit))
-  , (var "printBoolLn", PrimitiveFun (\(Boolean x) -> IOValue $ print x $> Unit))
-  , (var "printChar", PrimitiveFun (\(Character x) -> IOValue $ putStr (show x) $> Unit))
-  , (var "printCharLn", PrimitiveFun (\(Character x) -> IOValue $ print x $> Unit))
-  , (var "printUnit"  , PrimitiveFun (\Unit -> IOValue $ putStr "()" $> Unit))
-  , (var "printUnitLn", PrimitiveFun (\Unit -> IOValue $ putStrLn "()" $> Unit))
-  , (var "printString", PrimitiveFun (\(String s) -> IOValue $ putStr s $> Unit))
-  , (var "printStringLn", PrimitiveFun (\(String s) -> IOValue $ putStrLn s $> Unit) )
+  -- Show
+  , (var "show", PrimitiveFun (String . show))
+  -- Read
+  , (var "readBool", PrimitiveFun (\(String s) -> boolean (read s)))
+  , (var "readInt" , PrimitiveFun (\(String s) -> Integer (read s)))
+  , (var "readChar", PrimitiveFun (\(String (c : _)) -> Character c))
+  -- Print to stdout
+  , (var "__putStrOut", PrimitiveFun (\v -> IOValue $ putStr (show v) $> Unit))
+  -- Print to stderr
+  , (var "__putStrErr", PrimitiveFun (\v -> IOValue $ hPutStr stderr (show v) $> Unit))
+  -- Read from stdin
+  , (var "__getChar", PrimitiveFun (\_ -> IOValue $ getChar >>= (return . Character)))
+  , (var "__getLine", PrimitiveFun (\_ -> IOValue $ getLine >>= (return . String)))
+  -- Files
+  , (var "__openFile",
+      PrimitiveFun (\(String s) ->
+      PrimitiveFun (\(Cons (Variable _ mode) _) -> IOValue $
+        case mode of
+          "ReadMode"   -> openFile s ReadMode   >>= return . Cons (var "FileHandle") . (: []) . (: []) . Handle
+          "WriteMode"  -> openFile s WriteMode  >>= return . Cons (var "FileHandle") . (: []) . (: []) . Handle
+          "AppendMode" -> openFile s AppendMode >>= return . Cons (var "FileHandle") . (: []) . (: []) . Handle
+    )))
+  , (var "__putFileStr",
+      PrimitiveFun (\(Cons _ [[Handle fh]]) -> PrimitiveFun (\(String s) ->
+        IOValue $ hPutStr fh s $> Unit
+    )))
+  , (var "__readFileChar", PrimitiveFun (\(Cons _ [[Handle fh]]) -> IOValue $ hGetChar fh >>= return . Character))
+  , (var "__readFileLine", PrimitiveFun (\(Cons _ [[Handle fh]]) -> IOValue $ hGetLine fh >>= return . String))
+  , (var "__isEOF"       , PrimitiveFun (\(Cons _ [[Handle fh]]) -> IOValue $ hIsEOF fh >>= return . boolean))
+  , (var "__closeFile"   , PrimitiveFun (\(Cons _ [[Handle fh]]) -> IOValue $ hClose fh $> Unit))
   -- Id  
   , (var "id", PrimitiveFun id)
   -- Undefined
@@ -103,9 +128,9 @@ initialCtx = Map.fromList
   -- Error
   -- , (var "error", PrimitiveFun (\(String e) ->
   --        unsafePerformIO $ die $ showErrors "" Map.empty [] (ErrorFunction s e)))
-
---  , (var "print", PrimitiveFun (\x -> IOValue (putStrLn (show x) >> return Unit)))
   ]
  where
   var :: String -> Variable
   var = mkVar defaultSpan
+  boolean :: Bool -> Value
+  boolean b = Cons (mkVar defaultSpan (show b)) []

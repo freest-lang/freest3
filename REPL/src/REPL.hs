@@ -1,6 +1,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 module REPL where
 
+import           Syntax.Base
 import           Elaboration.Elaboration ( elaboration )
 import           HandleOpts
 import           Interpreter.Eval ( evalAndPrint )
@@ -29,9 +30,9 @@ main = do
   home <- (</> ".repl_history") <$> getHomeDirectory
   runFilePath <- getDataFileName "Prelude.fst"
   s1 <- parseProgram (initialState {runOpts=defaultOpts{runFilePath}})
-  evalStateT (runInputT (replSettings home) (repl s1 args))
-    s1{runOpts=defaultOpts{runFilePath="<interactive>"}}
-
+  let s2 = emptyPEnv $ execState elaboration s1
+  evalStateT (runInputT (replSettings home) (repl s2 args))
+    s2{runOpts=defaultOpts{runFilePath="<interactive>"}}
 
 ------------------------------------------------------------
 -- AUTOCOMPLETE & HISTORY
@@ -118,7 +119,7 @@ parseOpt s (Just xs)
           let s1 = execState (T.synthetise Map.empty e) st
           if hasErrors s1
             then liftS $ putStrLn $ getErrors s1
-            else liftS $ evalAndPrint st e
+            else liftS $ evalAndPrint (mkVar defaultSpan "main") st e
   where
     (opt, cont) = splitOption xs
     isOpt = elem opt

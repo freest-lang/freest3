@@ -37,8 +37,8 @@ type FTPThread = *?(dualof FTPSession)
 -- |Initialise the server: create n FTP threads and launch the demon
 init : Int -> dualof FTP -> Diverge
 init n pid =
-  let (r, w) = new dualof FTPThread in
-  let state = new *?File in
+  let (r, w) = new @(dualof FTPThread) () in
+  let state = new @*?File () in
   parallel @() n (\ _:() -> ftpThread state w);
   ftpd pid r
 
@@ -46,7 +46,7 @@ init n pid =
 -- |pass the client to the thread
 ftpd : dualof FTP -> dualof FTPThread -> Diverge
 ftpd pid b = 
-  send (accept_ @FTPSession pid) b;
+  send (accept @FTPSession pid) b;
   ftpd pid b
 
 -- |An FTP thread: receive a request from the demon;
@@ -63,11 +63,11 @@ actions state s b =
   match s with
     { Get s ->
         let file = readFrom state in
-        printIntLn (- file);
+        print @Int  (- file);
         actions state (send file s) b
     , Put s ->
         let (file, s) = receive s in
-        printIntLn file;
+        print @Int  file;
         writeTo file state;
         actions state s b
     , Bye s -> close s; ftpThread state b
@@ -113,7 +113,7 @@ putgetClient pid file =
 
 main : Diverge
 main =
-  let (ftpc, ftps) = new FTP in
+  let (ftpc, ftps) = new @FTP () in
   -- A few clients
   fork (\_:() 1-> putClient ftpc 27);
   fork (\_:() 1-> getClient ftpc);

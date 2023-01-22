@@ -58,6 +58,6 @@ client c = c |> select Add
 
 main : Int
 main =
-  let (w, r)  = new dualof TermChannel;!Int;End in
+  let (w, r)  = new @(dualof TermChannel;!Int;End) () in
   fork @() (\_:()1-> computeService w);
   client r

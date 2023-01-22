@@ -26,7 +26,7 @@ boolServer c =
 
 main : Bool
 main =
-  let (w,r) = new BoolClient in
+  let (w,r) = new @BoolClient () in
   let x = fork @() (\_:()1-> boolServer r) in
   let ret = client1 w in
   ret

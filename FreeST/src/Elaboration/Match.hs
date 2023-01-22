@@ -51,7 +51,7 @@ checkNumArgs' fn lines
   where allSame (x:y:ys) = x == y && allSame (y:ys)
         allSame _ = True
 
--- check if there is mixture for channel patterns
+-- check if there is a mixture of channel patterns
 checkChanVar :: ParseEnvPat -> FreestState ()
 checkChanVar penv = getConstructors >>= -- set with every constructor
   (\cons -> tMapM_ ((mapM $ checkChanVar' cons).prep) penv) 
@@ -107,7 +107,7 @@ matchFuns :: ParseEnvPat -> FreestState ParseEnv
 matchFuns pep = mapM matchFun pep
 
 matchFun :: [Equation] -> FreestState ([Variable],Exp)
-matchFun xs@((ps,_):_) = imapM newVar ps                       -- creates new vars for the posterior lambda creation
+matchFun xs@((ps,_):_) = mapM newVar ps                       -- creates new vars for the posterior lambda creation
                      >>= \args -> (,) args <$> match args xs 
 
 match :: [Variable] -> [Equation] -> FreestState Exp
@@ -167,7 +167,7 @@ ruleCon (v:us) cs = groupSortBy (pName.head.fst) cs                             
   
 -- rule con aux 
 destruct :: [Equation] -> FreestState (Variable, [Variable], [Equation])
-destruct l@((p:ps,_):cs) = imapM newVar (pPats p)                                    -- creates new vars, for the case expression and the algorithm
+destruct l@((p:ps,_):cs) = mapM newVar (pPats p)                                    -- creates new vars, for the case expression and the algorithm
                        <&> flip ((,,) (pVar p)) l'                                  -- transforms into a case
   where l' = map (\(p:ps,e) -> ((pPats p)++ps,e)) l                                 -- unfolds the patterns
 
@@ -219,9 +219,8 @@ findCons c (t:ts)
   | otherwise = findCons c ts                                           -- if not continue searching
 
 consAndNumber :: T.Type -> [(Variable,Int)]
-consAndNumber (T.Almanac _ T.Variant tm) = map (\(v,t) -> (v,countArrows t)) (Map.toList tm)
-  where countArrows (T.Arrow _ _ _ t2) = 1 + countArrows t2             -- the number of higher level arrows gives the number of components
-        countArrows _ = 0 
+consAndNumber (T.Almanac _ T.Variant tm) = 
+  map (\(v,(T.Almanac _ _ tm)) -> (v, Map.size tm)) (Map.toList tm)
 
 -- retuns the data type constructors
 getKeys :: T.Type -> [Variable]
@@ -239,12 +238,12 @@ replaceExp v p (BinLet s v1 v2 e1 e2) = BinLet  s      (replaceVar  v p v1)   (r
 replaceExp v p (Case s e fm)          = Case    s   <$> replaceExp  v p e  <*> mapM (substitute v p) fm
 replaceExp v p (TypeAbs s b)          = TypeAbs s   <$> replaceBind v p b
 replaceExp v p (TypeApp s e t)        = flip (TypeApp s) t <$> replaceExp v p e
-replaceExp v p (Cond s e1 e2 e3)      = Cond    s   <$> replaceExp  v p e1 <*> replaceExp v p e2 <*> replaceExp v p e3
 replaceExp v p (UnLet s v1 e1 e2)     = UnLet   s      (replaceVar  v p v1)<$> replaceExp v p e1 <*> replaceExp v p e2
-replaceExp v p (CasePat s e flp)      = checkChanVarCase flp  -- checks if there are variables with channel patterns
-                                     >> sub         <$> replaceExp  v p e  <*>(replaceExp v p    =<< match vs' flp)
-  where sub e (Case s _ fm) = Case s e fm
-        vs' = [mkVar (getSpan e) "_"]
+replaceExp v p (CasePat s e flp)      = do
+  checkChanVarCase flp                                            -- checks if there are variables with channel patterns
+  nVar <- R.renameVar $ Variable (getSpan e) "unlet_hidden_var"   -- creates an hidden variable
+  UnLet s nVar <$> replaceExp v p e
+               <*> (replaceExp v p =<< match [nVar] flp)          -- this variables then acts as the pattern variable
 replaceExp _ _ e = return e
 
 replaceBind :: Variable -> Variable -> Bind a Exp -> FreestState (Bind a Exp)
@@ -292,9 +291,12 @@ isChan (PatCons c _) = getConstructors
 isPat_ :: Pattern -> Bool
 isPat_ (PatVar v) = isWild v
 
-newVar :: Int -> Pattern -> FreestState Variable
-newVar i p = R.renameVar $ updateVar $ pVar p
-  where updateVar v = Variable (getSpan v) ("param"++(show i))
+newVar :: Pattern -> FreestState Variable
+newVar = R.renameVar.pVar
+
+-- newVar :: Int -> Pattern -> FreestState Variable
+-- newVar i p = R.renameVar $ updateVar $ pVar p
+--   where updateVar v = Variable (getSpan v) ("param"++(show i))
 
 groupOn :: Eq b => (a -> b) -> [a] -> [[a]]
 groupOn f = groupBy apply
@@ -303,6 +305,6 @@ groupOn f = groupBy apply
 groupSortBy :: Ord b => (a -> b) -> [a] -> [[a]]
 groupSortBy f = groupOn f . sortOn f
 
-imapM :: Monad m => (Int -> a -> m b) -> [a] -> m [b]
-imapM f l = zipWithM f indexes l
-  where indexes = [0..(length l)]
+-- imapM :: Monad m => (Int -> a -> m b) -> [a] -> m [b]
+-- imapM f l = zipWithM f indexes l
+--   where indexes = [0..(length l)]

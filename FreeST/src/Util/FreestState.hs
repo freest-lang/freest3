@@ -270,6 +270,7 @@ debugM err = do
 
 data RunOpts = RunOpts { runFilePath  :: FilePath
 --                     , preludeFile  :: Maybe FilePath
+                       , args         :: [String]
                        , mainFunction :: Maybe Variable
                        , isStylable   :: Bool
                        , quietmode    :: Bool
@@ -279,6 +280,7 @@ data RunOpts = RunOpts { runFilePath  :: FilePath
 defaultOpts :: RunOpts
 defaultOpts = RunOpts { runFilePath  = ""
 --                    , preludeFile  = Just "Prelude.fst"
+                      , args = []
                       , mainFunction = Nothing
                       , isStylable   = True
                       , quietmode    = False

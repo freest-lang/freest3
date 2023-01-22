@@ -21,6 +21,7 @@ import           Data.Maybe
 import qualified Data.Set as Set
 import           System.Directory
 import           System.FilePath
+import           Paths_FreeST ( getDataFileName )
 }
 
 %partial modname Module
@@ -39,7 +40,6 @@ import           System.FilePath
   import   {TokenImport _}  
   Int      {TokenIntT _}
   Char     {TokenCharT _}
-  Bool     {TokenBoolT _}
   String   {TokenStringT _}
   '()'     {TokenUnit _}
   '->'     {TokenUnArrow _}
@@ -70,6 +70,7 @@ import           System.FilePath
   '-'      {TokenMinus _}
   '*'      {TokenTimes _}
   '^'      {TokenRaise _}
+  '++'     {TokenAppend _}
   '_'      {TokenWild _}
   '$'      {TokenDollar _}
   '.'      {TokenDot _}
@@ -84,7 +85,6 @@ import           System.FilePath
   -- UM       {TokenUnM _}
   -- LM       {TokenLinM _}
   INT      {TokenInt _ _ }
-  BOOL     {TokenBool _ _}
   CHAR     {TokenChar _ _}
   STR      {TokenString _ _}
   let      {TokenLet _}
@@ -97,7 +97,6 @@ import           System.FilePath
   if       {TokenIf _}
   then     {TokenThen _}
   else     {TokenElse _}
-  new      {TokenNew _}
   select   {TokenSelect _}
   match    {TokenMatch _}
   with     {TokenWith _}
@@ -110,23 +109,24 @@ import           System.FilePath
 -- %nonassoc '(' '['
 -- %nonassoc '()'
 %right in else match case
-%nonassoc new
+%right '.'       -- ∀ a:k . T and μ a:k . T
+%right '=>' '->' '1->' ARROW -- λλ a:k => e,  x:T -> e, λ x:T 1-> e, T -> T and T 1-> T
+%right ';'       -- T;T and e;e
+%left '@'
+%right '$'       -- function call
+%left '|>'        -- function call
 %left '||'       -- disjunction
 %left '&&'       -- conjunction
+%left '++'
 %nonassoc CMP    -- comparison (relational and equality)
 %left '+' '-'    -- aditive
 %left '*' '/'    -- multiplicative
 %right '^'        -- power
 %left NEG not    -- unary
-%right '.'       -- ∀ a:k . T and μ a:k . T
-%right '=>' '->' '1->' ARROW -- λλ a:k => e,  x:T -> e, λ x:T 1-> e, T -> T and T 1-> T
-%left '@'
-%right ';'       -- T;T and e;e
 %right MSG       -- !T and ?T
 %right dualof
 %nonassoc ProgVarWildTBind
-%right '$'       -- function call
-%left '|>'        -- function call
+
 
 %%
 --------------
@@ -165,7 +165,8 @@ NL :: { () }
 
 Decl :: { () }
   -- Function signature
-  : ProgVarList ':' Type {% forM_ $1 (\x -> checkDupProgVarDecl x >> addToVEnv x $3) }
+  :     ProgVarList ':' Type {% forM_ $1 (\x -> checkDupProgVarDecl x >> addToVEnv x $3) }
+  -- |     ProgVarList ':' Type {% forM_ $1 (\x -> checkDupProgVarDecl x >> addToVEnv x $3) }
   -- Function declaration
   | ProgVar PatternSeq '=' Exp   {% addToPEnvPat $1 $2 $4 }
   | ProgVar PatternSeq GuardsFun {% addToPEnvPat $1 $2 $3 }
@@ -175,9 +176,8 @@ Decl :: { () }
   | data KindedTVar '=' DataCons {% do
       let a = fst $2
       checkDupTypeDecl a
-      let bs = typeListToType a $4 :: [(Variable, T.Type)]
-      mapM_ (\(c, t) -> addToVEnv c t) bs
-      uncurry addToTEnv $2 (T.Almanac (getSpan a) T.Variant (Map.fromList bs))
+      mapM_ (uncurry addToVEnv) (typeListsToUnArrows a $4) -- fixed in elaboration
+      uncurry addToTEnv $2 (T.Almanac (getSpan a) T.Variant (typeListToRcdType $4))
     }
 
 ProgVarList :: { [Variable] }
@@ -204,13 +204,12 @@ Exp :: { E.Exp }
   | Exp ';' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ E.UnLet s (mkVar s "_") $1 $3 }
   | let '(' ProgVarWild ',' ProgVarWild ')' '=' Exp in Exp
                                    {% mkSpanSpan $1 $10 >>= \s -> pure $ E.BinLet s $3 $5 $8 $10 }
-  | if Exp then Exp else Exp       {% mkSpanSpan $1 $6 >>= \s -> pure $ E.Cond s $2 $4 $6 }
-  | new Type                       {% mkSpanSpan $1 $2 >>= \s -> pure $ E.New s $2 (T.Dualof (negSpan s) $2) }
+  | if Exp then Exp else Exp       {% mkSpanSpan $1 $6 >>= \s -> pure $ condCase s $2 $4 $6}
   | match Exp with '{' MatchMap '}' {% let s' = getSpan $2 in mkSpanSpan $1 $6 >>= \s ->
                                        pure $ E.Case s (E.App s' (E.Var s' (mkVar s' "collect")) $2) $5 }
   | case Exp of '{' CaseMap '}'    {% mkSpanSpan $1 $6 >>= \s -> pure $ E.CasePat s $2 $5 }
   | Exp '$' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $ E.App s $1 $3 }
-  | Exp '|>' Exp                    {% mkSpanSpan $1 $3 >>= \s -> pure $  E.App s $3 $1 }
+  | Exp '|>' Exp                   {% mkSpanSpan $1 $3 >>= \s -> pure $  E.App s $3 $1 }
   | Exp '||' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(||)") $3 }
   | Exp '&&' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(&&)") $3 }
   | Exp CMP Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s (getText $2)) $3 }
@@ -219,6 +218,7 @@ Exp :: { E.Exp }
   | Exp '*' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(*)") $3 }
   | Exp '/' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(/)") $3 }
   | Exp '^' Exp                    {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(^)") $3 }
+  | Exp '++' Exp                   {% mkSpan $2 >>= \s -> pure $ binOp $1 (mkVar s "(++)") $3 }
   | '-' App %prec NEG              {% mkSpan $1 >>= \s -> pure $ unOp (mkVar s "negate") $2 s }
   | App                            { $1 }
 
@@ -232,7 +232,6 @@ App :: { E.Exp }
    
 Primary :: { E.Exp }
   : INT                            {% let (TokenInt p x) = $1 in flip E.Int x `fmap` liftModToSpan p }
-  | BOOL                           {% let (TokenBool p x) = $1 in flip E.Bool x `fmap` liftModToSpan p }
   | CHAR                           {% let (TokenChar p x) = $1 in flip E.Char x `fmap` liftModToSpan p }
   | STR                            {% let (TokenString p x) = $1 in flip String x `fmap` liftModToSpan p }
   | '()'                           {% E.Unit `fmap` mkSpan $1 }
@@ -287,7 +286,7 @@ PatternSeq :: { [Pattern] }
   | Pattern PatternSeq {% checkDupVarPats ($1:$2) >> return ($1:$2) }
 
 PatternCase :: { Pattern }
-  : Constructor Pattern PatternSeq { E.PatCons $1 ($2:$3) }
+  : Constructor Pattern PatternSeq {% checkDupVarPats ($2:$3) >> return (E.PatCons $1 ($2:$3)) }
   | Pattern    { $1 }
 
 Pattern :: { Pattern }
@@ -297,21 +296,23 @@ Pattern :: { Pattern }
   | '(' Pattern ')'                        { $2 }
 
 GuardsCase :: { Exp }
-  : '|' Exp       '->' Exp GuardsCase {% mkSpanSpan $1 $4 >>= \s -> pure $ E.Cond s $2 $4 $5 }
+  : '|' Exp       '->' Exp GuardsCase {% mkSpanSpan $1 $4 >>= \s -> pure $ condCase s $2 $4 $5 }
   | '|' otherwise '->' Exp            { $4 }
 
 GuardsFun :: { Exp }
-  : '|' Exp       '=' Exp GuardsFun   {% mkSpanSpan $1 $4 >>= \s -> pure $ E.Cond s $2 $4 $5 }
+  : '|' Exp       '=' Exp GuardsFun   {% mkSpanSpan $1 $4 >>= \s -> pure $ condCase s $2 $4 $5 }
   | '|' otherwise '=' Exp             { $4 }
 
 Op :: { Variable }
    : '||'  {% flip mkVar "(||)" `fmap` mkSpan $1 }
-   | '&&'  {% flip mkVar "(&&)" `fmap` mkSpan $1  }
+   | '&&'  {% flip mkVar "(&&)" `fmap` mkSpan $1 }
    | CMP   {% flip mkVar (getText $1) `fmap` mkSpan $1 }
-   | '+'   {% flip mkVar "(+)" `fmap` mkSpan $1  }
-   | '*'   {% flip mkVar "(*)" `fmap` mkSpan $1  }
+   | '+'   {% flip mkVar "(+)"  `fmap` mkSpan $1 }
+   | '*'   {% flip mkVar "(*)"  `fmap` mkSpan $1 }
    | '/'   {% flip mkVar "(/)"  `fmap` mkSpan $1 }
-   | '^'   {% flip mkVar "(^)" `fmap` mkSpan $1 }
+   | '^'   {% flip mkVar "(^)"  `fmap` mkSpan $1 }
+   | '|>'  {% flip mkVar "(|>)" `fmap` mkSpan $1 }
+   | '++'  {% flip mkVar "(++)" `fmap` mkSpan $1 }
 
 
 ----------
@@ -322,11 +323,10 @@ Type :: { T.Type }
   -- Functional types
   : Int                           {% T.Int `fmap` mkSpan $1 }
   | Char                          {% T.Char `fmap` mkSpan $1 }
-  | Bool                          {% T.Bool `fmap` mkSpan $1 }
   | String                        {% T.String `fmap` mkSpan $1 }
-  | '()'                          {% T.Unit `fmap` mkSpan $1 }
+  | '()'                          {% mkSpan $1 >>= \s -> pure $ T.unit s}
   | Type Arrow Type %prec ARROW   {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Arrow s $2 $1 $3 }
-  | '(' Type ',' TupleType ')'    {% mkSpanSpan $1 $5 >>= \s -> pure $ T.Pair s $2 $4 }
+  | '(' Type ',' TupleType ')'    {% mkSpanSpan $1 $5 >>= \s -> pure $ T.Almanac s T.Record $ tupleTypeMap [$2,$4]}
   -- Session types
   | Skip                          {% T.Skip `fmap` mkSpan $1 }
   | End                           {% T.End `fmap` mkSpan $1 }
@@ -365,7 +365,8 @@ Forall :: { T.Type }
 
 TupleType :: { T.Type }
   : Type               { $1 }
-  | Type ',' TupleType { T.Pair (getSpan $1) $1 $3 }
+  | Type ',' TupleType { T.Almanac (getSpan $1) T.Record $  tupleTypeMap [$1,$3]}
+                                               
 
 Arrow :: { Multiplicity }
   : '->' { Un  }
@@ -519,16 +520,29 @@ parseAndImport initial = do
       | otherwise = do
           let fileToImport = replaceBaseName defModule curImport -<.> "fst"
           exists <- doesFileExist fileToImport
-          if exists then do
-            s' <- parseProgram (s {moduleName = Nothing, runOpts=defaultOpts{runFilePath=fileToImport}})
-            let modName = fromJust $ moduleName s'
-            if curImport /= modName then
-              pure $ s' {errors = errors s ++ [NameModuleMismatch defaultSpan{defModule} modName curImport]}
-            else
-              doImports defModule (Set.insert curImport imported) (toImport ++ Set.toList (imports s')) s'
+          if exists then
+            importModule s fileToImport curImport defModule imported toImport
+          else do
+            fileToImport <- getDataFileName $ curImport -<.> "fst"
+            isStdLib <- doesFileExist fileToImport
+            if isStdLib then
+              importModule s fileToImport curImport defModule imported toImport                
+            else 
+              pure $ s {errors = errors s ++ [ImportNotFound defaultSpan{defModule} curImport fileToImport]}
+
+    importModule :: FreestS -> FilePath -> FilePath -> FilePath -> Imports -> [FilePath] -> IO FreestS
+    importModule s fileToImport curImport defModule imported toImport = do
+      s' <- parseProgram (s {moduleName = Nothing, runOpts=defaultOpts{runFilePath=fileToImport}})
+      case moduleName s' of
+        Just modName -> 
+          if curImport /= modName then
+            pure $ s' {errors = errors s ++ [NameModuleMismatch defaultSpan{defModule} modName curImport]}
           else
-            pure $ s {errors = errors s ++ [ImportNotFound defaultSpan{defModule} curImport fileToImport]}
-        
+            doImports defModule (Set.insert curImport imported) (toImport ++ Set.toList (imports s')) s'
+        Nothing ->
+            pure $ s' {errors = errors s ++ [MissingModHeader defaultSpan{defModule} curImport]}
+            
+
 -- Error Handling
 parseError :: [Token] -> FreestStateT a
 parseError [] = lift . Left $ PrematureEndOfFile defaultSpan

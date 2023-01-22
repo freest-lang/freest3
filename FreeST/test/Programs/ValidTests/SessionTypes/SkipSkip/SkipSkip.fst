@@ -1,6 +1,9 @@
-f : Skip;Skip -> Int
-f x = 1
+f : Skip;Skip;End -> Int
+f x = close x; 1
 
 
 main : Int
-main = f (fst @Skip @Skip $ new Skip)
+main = 
+    let (x, y) = new @(Skip;End) () in
+    fork (\_:() 1-> close y);
+    f x

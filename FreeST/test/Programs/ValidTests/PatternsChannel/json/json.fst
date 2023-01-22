@@ -11,9 +11,11 @@ More info on json at https://www.json.org
 
 main : Object
 main =
-  let (w, r) = new ObjectChannel in
-  fork (\_:() 1-> writeObject@Skip json w);
-  fst @Object @Skip $ readObject @Skip r
+  let (w, r) = new @(ObjectChannel;End) () in
+  fork (\_:() 1-> writeObject @End json w |> close);
+  let (obj, r) = readObject @End r in
+  close r;
+  obj
 
 -- A dataype for JSON
 data Value = StringVal String |

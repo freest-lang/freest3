@@ -1,12 +1,12 @@
 main : Bool
 main =
-  let (w, r) = new &{B: !Bool} in
+  let (w, r) = new @&{B: !Bool} () in
   fork @() (\_:()-> f w);
   let (x, c) = f1 r in
   close c;
   x
 
-type F = +{B: !Bool};End
+type F : 1S = +{B: !Bool};End
 
 f : F -> ()
 f c = let c = select c B in send c True |> close
