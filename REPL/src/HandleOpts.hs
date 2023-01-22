@@ -4,8 +4,9 @@
 module HandleOpts where
 
 import           Elaboration.Elaboration ( elaboration )
+import           FreeST
 import           Parse.Parser
-import           Paths_REPL (version)
+import           Paths_FreeST (version)
 import           Syntax.Base
 import qualified Syntax.Expression as E
 import qualified Syntax.Kind as K
@@ -207,4 +208,5 @@ helpMenu = replVersion ++ "\n\n" ++ unlines
       ]
 
 
-replVersion = "FreeSTi, Version " ++ showVersion version
+replVersion :: String
+replVersion = "FreeSTi, version " ++ showVersion version ++ if isDev then "-dev" else ""

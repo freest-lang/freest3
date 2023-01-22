@@ -2,6 +2,7 @@
 module FreeST
   ( main
   , checkAndRun
+  , isDev
   )
 where
 

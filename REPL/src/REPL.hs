@@ -22,9 +22,9 @@ import           System.Environment
 import           System.Exit ( die )
 import           System.FilePath
 
-
 main :: IO ()
 main = do
+  putStrLn $ replVersion ++ ": https://freest-lang.github.io/  :h for help"
   args <- getArgs
   home <- (</> ".repl_history") <$> getHomeDirectory
   runFilePath <- getDataFileName "Prelude.fst"
