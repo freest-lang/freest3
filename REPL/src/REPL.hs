@@ -24,9 +24,10 @@ import           System.FilePath
 
 main :: IO ()
 main = do
-  putStrLn $ replVersion ++ ": https://freest-lang.github.io/  :h for help"
   args <- getArgs
   home <- (</> ".repl_history") <$> getHomeDirectory
+  when (head args == "-v") (die replVersion)
+  putStrLn $ replVersion ++ ": https://freest-lang.github.io/  :h for help"
   runFilePath <- getDataFileName "Prelude.fst"
   s1 <- parseProgram (initialState {runOpts=defaultOpts{runFilePath}})
   let s2 = emptyPEnv $ execState elaboration s1
