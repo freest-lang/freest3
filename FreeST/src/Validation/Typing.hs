@@ -129,7 +129,7 @@ synthetise kEnv e@(E.TypeAbs _ (Bind p a k e')) =
 -- New @t - check that t comes to an End
 synthetise kEnv (E.TypeApp p new@(E.Var _ x) t) | x == mkVar p "new" = do
   -- TODO: a specific Error for the effect would be needed
-  unless (broughtToEnd t) (addError (RuntimeError p ("Ill formed type for new: " ++ show t)))
+  unless (broughtToEnd t) (addError (UnendedSession p t))
   -- TODO: is there a better way of doing this for `new`?
   u                             <- synthetise kEnv new
   ~(T.Forall _ (Bind _ y k u')) <- Extract.forall new u

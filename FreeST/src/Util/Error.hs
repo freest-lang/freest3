@@ -95,6 +95,7 @@ data ErrorType =
   | WrongNumOfCons Span Variable Int [Variable] E.Exp
   | ExtractError Span String E.Exp T.Type
   | BranchNotInScope Span Variable T.Type
+  | UnendedSession Span T.Type
   -- Runtime errors
   | ErrorFunction Span String
   | UndefinedFunction Span
@@ -144,6 +145,7 @@ instance Located ErrorType where
   getSpan (WrongNumOfCons p _ _ _ _        ) = p
   getSpan (ExtractError p _ _ _            ) = p
   getSpan (BranchNotInScope p _ _          ) = p
+  getSpan (UnendedSession p _              ) = p
   getSpan (ErrorFunction p _               ) = p -- defaultSpan
   getSpan (UndefinedFunction p             ) = p
   getSpan (RuntimeError p _                ) = p
@@ -313,6 +315,8 @@ instance Message ErrorType where
     "Choice branch not in scope.\n\t Branch " ++ style red sty ts x ++
     " is not present in the internal choice type " ++ style red sty ts t ++
     "\n\t Defined at: " ++ show (getSpan t)
+  msg (UnendedSession s t) sty ts =
+    "Session type created with new does not reach an End\n\tIn type: " ++ style red sty ts (show t)
 --  Runtime
   msg (ErrorFunction s e) _ _ = -- TODO: This one is from the point of view of the callee not the caller
     e ++ "\n  error, called at module" ++ defModule s ++ ":" ++ show (startPos s)
