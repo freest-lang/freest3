@@ -38,7 +38,6 @@ import           Prelude                 hiding ( Left
                                                 , Right
                                                 ) -- needed for Associativity
 import qualified Data.Set as Set
-import Debug.Trace
 
 instance Show Span where
   show (Span sp fp _)
