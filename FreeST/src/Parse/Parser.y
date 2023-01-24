@@ -546,8 +546,14 @@ parseAndImport initial = do
 
     importModule :: FreestS -> FilePath -> FilePath -> FilePath -> Imports -> [FilePath] -> IO FreestS
     importModule s fileToImport curImport defModule imported toImport = do
-      s' <- parseProgram (s {moduleName = Nothing, runOpts=defaultOpts{runFilePath=fileToImport}})
-      case moduleName s' of
+      s' <- parseProgram (s {moduleName = Nothing, runOpts=defaultOpts{runFilePath=fileToImport}})         
+      let modName = fromJust $ moduleName s'
+      if curImport /= modName then
+        pure $ s' {errors = errors s ++ [NameModuleMismatch defaultSpan{defModule} modName curImport]}
+      else
+        doImports defModule (Set.insert curImport imported) (toImport ++ Set.toList (imports s')) s'
+
+{-      case moduleName s' of
         Just modName -> 
           if curImport /= modName then
             pure $ s' {errors = errors s ++ [NameModuleMismatch defaultSpan{defModule} modName curImport]}
@@ -555,8 +561,9 @@ parseAndImport initial = do
             doImports defModule (Set.insert curImport imported) (toImport ++ Set.toList (imports s')) s'
         Nothing ->
             pure $ s' {errors = errors s ++ [MissingModHeader defaultSpan{defModule} curImport]}
-            
+-}   
 
+          
 -- Error Handling
 parseError :: [Token] -> FreestStateT a
 parseError [] = lift . Left $ PrematureEndOfFile defaultSpan

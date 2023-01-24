@@ -8,10 +8,9 @@ copyright:           "2020 authors"
 #extra-source-files:
 #- README.md
 data-dir: StandardLib
-data-files: Prelude.fst
-# Metadata used when publishing your package
-# synopsis:            Short description of your package
-# category:            Web
+data-files:
+  - Prelude.fst
+  - List.fst
 
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
