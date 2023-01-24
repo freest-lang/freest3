@@ -55,24 +55,23 @@ checkAndRun runOpts = do
   let bs = Set.difference venv penv
 
   -- | Parse
-  s2 <- parseAndImport s1{builtins=bs, runOpts
-                         }
+  s2 <- parseAndImport s1{builtins=bs, runOpts}
   when (hasErrors s2) (die $ getErrors s2)
 
- -- | Solve type declarations and dualof operators
+  -- | Solve type declarations and dualof operators
   let s3 = emptyPEnv $ execState elaboration s2
   when (hasErrors s3) (die $ getErrors s3)
 
- -- | Rename
+  -- | Rename
   let s4 = execState renameState s3
 
- -- | Type check
+  -- | Type check
   let s5 = execState typeCheck s4
   when (not (quietmode runOpts) && hasWarnings s5) (putStrLn $ getWarnings s5)
   when (hasErrors s5)  (die $ getErrors s5)
 
- -- | Check whether a given function signature has a corresponding
- --   binding
+  -- | Check whether a given function signature has a corresponding
+  --   binding
   let venv = Map.keysSet (noConstructors (typeEnv s5) (varEnv s5))
   let p = Map.keysSet (prog s5)
   let bs = Set.difference (Set.difference venv p) (builtins s5)
@@ -80,7 +79,7 @@ checkAndRun runOpts = do
   unless (Set.null bs) $
     die $ getErrors $ Set.foldr (noSig (varEnv s5)) initialState bs
   
- -- | Check if main was left undefined, eval and print result otherwise
+  -- | Check if main was left undefined, eval and print result otherwise
   let m = getMain runOpts
   when (m `Map.member` varEnv s5) $ evalAndPrint m s5 $
     forkHandlers 

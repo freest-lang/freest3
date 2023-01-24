@@ -16,6 +16,7 @@ Portability :  portable | non-portable (<reason>)
 module Parse.ParseUtils where
 
 import           Syntax.Base
+import           Syntax.Program
 import qualified Syntax.Expression as E
 import qualified Syntax.Kind as K
 import qualified Validation.Subkind as SK
@@ -28,7 +29,6 @@ import           Control.Monad.State
 import           Data.List       ( find )
 import qualified Data.Map.Strict as Map
 import           Data.Bitraversable (bimapM)
-
 
 type FreestStateT = StateT FreestS (Either ErrorType)
 
@@ -136,6 +136,20 @@ binOp l op r = E.App s (E.App (getSpan l) (E.Var (getSpan op) op) l) r
 unOp :: Variable -> E.Exp -> Span -> E.Exp
 unOp op expr s = E.App s (E.Var (getSpan op) op) expr
 
+
+leftSection :: Variable -> E.Exp -> Span -> FreestStateT E.Exp
+leftSection op e s = do
+  venv <- getVEnv
+  i <- getNextIndex
+  let v = mkNewVar i (mkVar s "_x")
+  let t = genFstType (venv Map.! op)
+  return $ E.Abs s Un (Bind s v t
+             (E.App s (E.App s (E.Var (getSpan op) op) (E.Var (getSpan op) v)) e))
+  where
+    genFstType (T.Arrow _ _ t _) = t
+    genFstType t = t
+
+    
 -- Datatypes
 
 typeListsToUnArrows :: Variable -> [(Variable, [T.Type])] -> [(Variable, T.Type)]
