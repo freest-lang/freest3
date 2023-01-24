@@ -1,4 +1,4 @@
--- import List
+import List
 
 main : Bool
 main = 

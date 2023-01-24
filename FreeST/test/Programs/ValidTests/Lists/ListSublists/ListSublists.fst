@@ -2,7 +2,7 @@ import List
 
 main : Bool
 main =
-    let list = [1, 2, 3, 4] in
+    let list = [1, 2, 3, 4] in 
     -- take
     equal (take 1 []) [] &&
     equal (take 0 list) [] &&

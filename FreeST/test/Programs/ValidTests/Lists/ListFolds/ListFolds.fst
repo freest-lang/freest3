@@ -5,10 +5,10 @@ main =
     let list = [1, 2, 3, 4] in
     -- foldl
     foldl @Int (+) 0 [] == 0 &&
-    foldl @Int (+) 0 list == 0 &&
+    foldl @Int (+) 0 list /= 0 &&
     -- foldr
     foldr @Int (+) 0 [] == 0 &&
-    foldr @Int (+) 0 list == 0 &&
+    foldr @Int (+) 0 list /= 0 &&
     
     -- special folds
     -- any
@@ -16,7 +16,7 @@ main =
     any (>0) list &&
     not (any (<0) list) &&
     -- all
-    not (all (>0) []) &&
+    all (>0) [] &&
     all (>0) list &&
     not (all (<0) list) &&
     -- concatMap
