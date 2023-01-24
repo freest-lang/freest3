@@ -38,6 +38,7 @@ import           Prelude                 hiding ( Left
                                                 , Right
                                                 ) -- needed for Associativity
 import qualified Data.Set as Set
+import Debug.Trace
 
 instance Show Span where
   show (Span sp fp _)
@@ -252,31 +253,35 @@ instance Unparse Exp where
   unparse (E.Var  _ x) = (maxRator, show x)
   -- Abstraction intro and elim
   unparse (E.Abs _ m b) = (arrowRator, "λ" ++ showBindTerm b m)
-  unparse (E.App _ (E.App _ (E.Var p x) e1) e2) | show x == "(||)" =
+  unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | show x == "(||)" =
    (disjRator, l ++ " || " ++ r)
    where
     l = bracket (unparse e1) Left disjRator
     r = bracket (unparse e2) Right disjRator
-  unparse (E.App _ (E.App _ (E.Var p x) e1) e2) | show x == "(&&)" =
+  unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | show x == "(&&)" =
    (conjRator, l ++ " && " ++ r)
    where
     l = bracket (unparse e1) Left conjRator
     r = bracket (unparse e2) Right conjRator
-  unparse (E.App _ (E.App _ (E.Var p x) e1) e2) | isCmp x =
+  unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | isCmp x =
    (cmpRator, l ++ showOp x ++ r)
    where
     l = bracket (unparse e1) Left cmpRator
     r = bracket (unparse e2) Right cmpRator
-  unparse (E.App _ (E.App _ (E.Var p x) e1) e2) | isAdd x =
+  unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | isAdd x =
    (addRator, l ++ showOp x ++ r)
    where
     l = bracket (unparse e1) Left addRator
     r = bracket (unparse e2) Right addRator
-  unparse (E.App _ (E.App _ (E.Var p x) e1) e2) | isMult x =
+  unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | isMult x =
    (multRator, l ++ showOp x ++ r)
    where
     l = bracket (unparse e1) Left multRator
     r = bracket (unparse e2) Right multRator
+  unparse e@(E.App _ (E.App _ (E.Var _ x) _) _) | show x == "(::)" =
+    (maxRator, "[" ++ intercalate ", " list ++ "]")
+    where
+      list = map (snd . unparse) (joinList e)
   unparse (E.App _ e1 e2) = (appRator, l ++ " " ++ r)
    where
     l = bracket (unparse e1) Left appRator
@@ -298,7 +303,6 @@ instance Unparse Exp where
     where s1 = bracket (unparse e) Left inRator
           s2 = bracket (unparse $ snd $ m Map.! mkVar p "True" ) NonAssoc inRator
           s3 = bracket (unparse $ snd $ m Map.! mkVar p "False") Right    inRator
-
   -- Datatype elim
   unparse (E.Case _ e m) =
     (inRator, "case " ++ s ++ " of {" ++ showFieldMap m ++ "}")
@@ -359,3 +363,11 @@ instance {-# OVERLAPPING #-} Show VarEnv where
 venvToList :: VarEnv -> [String]
 venvToList =
   Map.foldrWithKey (\k v acc -> showSortedVar k v : acc) []
+
+
+joinList :: E.Exp -> [E.Exp]
+joinList (E.Var _ x) | show x == "[]"   = []
+joinList (E.App _ (E.App _ (E.Var _ x) e1) e2)
+  | show x == "(::)" = e1 : joinList e2
+  | show x == "[]"   = []  
+joinList e = [e]
