@@ -553,6 +553,8 @@ parseAndImport initial = do
       else
         doImports defModule (Set.insert curImport imported) (toImport ++ Set.toList (imports s')) s'
 
+-- TODO: test MissingModHeader
+
 {-      case moduleName s' of
         Just modName -> 
           if curImport /= modName then
