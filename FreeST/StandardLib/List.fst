@@ -164,13 +164,13 @@ mapAccumR f s (z::zs) =
 take : Int -> [Int] -> [Int]
 take _ []      = []
 take n (x::xs) 
-  | n < 0     = []
+  | n <= 0    = []
   | otherwise = x :: take (n-1) xs
 
 drop : Int -> [Int] -> [Int]
 drop _ []      = []
 drop n (x::xs)
-  | n < 0     = x::xs
+  | n <= 0    = x::xs
   | otherwise = drop (n-1) xs
 
 splitAt : Int -> [Int] -> ([Int], [Int])

@@ -244,7 +244,7 @@ Primary :: { E.Exp }
   | ArbitraryProgVar               {% flip E.Var $1 `fmap` mkSpan $1 }
   | lambda ProgVarWildTBind Abs    {% let (m,e) = $3 in mkSpanSpan $1 e >>= \s -> pure $ E.Abs s m (Bind s (fst $2) (snd $2) e) }
   | Lambda KindBind TAbs           {% let (a,k) = $2 in mkSpanSpan $1 $3 >>= \s -> pure $ E.TypeAbs s (Bind s a k $3) }
-  | '(' Op Exp ')'                 {% mkSpanSpan $1 $4 >>= pure . unOp $2 $3 } -- left section
+  | '(' Op Exp ')'                 {% mkSpanSpan $1 $4 >>= leftSection $2 $3 } -- left section
   | '(' Exp Op ')'                 {% mkSpanSpan $1 $4 >>= pure . unOp $3 $2 } -- right section
   | '(' Exp '-' ')'                {% mkSpan $2 >>= \s -> pure $ unOp (mkMinus s) $2 s } -- right section (-)
   | '(' Exp ',' Tuple ')'          {% mkSpanSpan $1 $5 >>= \s -> pure $ E.Pair s $2 $4 }
