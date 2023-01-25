@@ -44,9 +44,6 @@ showErrors sty f tops err =
       | isExtensionOf "fst" mod = Left $ takeBaseName mod
       | otherwise               = Right mod
 
--- TODO: finish this
-
-
 -- | Errors
 
 data ErrorType =
