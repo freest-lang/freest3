@@ -20,35 +20,35 @@ cons hd tl c n = c hd (tl  @r c n)
 --          Λr => λc:(a -> r -> r) -> λn:r -> c hd (tl [r] c n) -- extended version
 
 -- Some lists
-empty, singleton, twoChars : ∀r . (Char -> r -> r) -> r -> r
-empty = nil  @Char
+empty', singleton', twoChars : ∀r . (Char -> r -> r) -> r -> r
+empty' = nil  @Char
 
-singleton = cons  @Char 'a' empty
+singleton' = cons  @Char 'a' empty'
 
-twoChars = cons  @Char 'b' singleton
+twoChars = cons  @Char 'b' singleton'
 
 mainChars : Char
-mainChars = head  @Char twoChars -- null  @Char (nil  @Char)
+mainChars = head'  @Char twoChars -- null'  @Char (nil  @Char)
 
 -- The null predicate: is the list empty?
-null : ∀a . (∀r . (a -> r -> r) -> r -> r) -> Bool
-null l = l  @Bool (λhd:a tl:Bool -> False) True
+null' : ∀a . (∀r . (a -> r -> r) -> r -> r) -> Bool
+null' l = l  @Bool (λhd:a tl:Bool -> False) True
 -- null = Λa => λl:(∀r . (a -> r -> r) -> r -> r) -> l [Bool] (λhd:a tl:Bool -> False) True -- extended version
 
 mainNull : Bool
-mainNull = null  @Char twoChars
+mainNull = null'  @Char twoChars
 
 diverge' : ∀a . () -> a
 diverge' x = diverge' @a x
 
 -- Function head takes the head of a non-empty list and diverges otherwise
-head : ∀a . (∀r . (a -> r -> r) -> r -> r) -> a
-head l = (l  @(() -> a) (λhd:a tl:(()->a) _:() -> hd) (diverge' @a)) ()
+head' : ∀a . (∀r . (a -> r -> r) -> r -> r) -> a
+head' l = (l  @(() -> a) (λhd:a tl:(()->a) _:() -> hd) (diverge' @a)) ()
 -- head = Λa => λl:(∀r . (a -> r -> r) -> r -> r) ->
 --   (l [()->a] (λhd:a tl:(()->a) _:() -> hd) (diverge [a])) () -- extended version
 
 mainHead : Char
-mainHead = head  @Char twoChars
+mainHead = head'  @Char twoChars
 
 -- Pairs in preparation for the tail function
 
@@ -64,8 +64,8 @@ snd' : ∀ a b . (∀ c . (a -> b -> c) -> c) -> b
 snd' p = p @b (λf:a-> λs:b-> s)
 
 -- Function tail takes the tail of a non-empty list.
-tail : ∀ a . (∀ b . (a -> b -> b) -> b -> b) -> (∀ b . (a -> b -> b) -> b -> b)
-tail l = (fst' @(∀b:*T . (a -> b -> b) -> b -> b) @(∀b:*T . (a -> b -> b) -> b -> b) (
+tail' : ∀ a . (∀ b . (a -> b -> b) -> b -> b) -> (∀ b . (a -> b -> b) -> b -> b)
+tail' l = (fst' @(∀b:*T . (a -> b -> b) -> b -> b) @(∀b:*T . (a -> b -> b) -> b -> b) (
             l @(∀c:*T . ((∀b:*T . (a -> b -> b) -> b -> b) -> (∀b:*T . (a -> b -> b) -> b -> b) -> c) -> c)
               (λh:a-> λt:(∀c.((∀b.(a->b->b)->b->b)->(∀b.(a->b->b)->b->b)->c)->c)->
                 pair @(∀b:*T . (a -> b -> b) -> b -> b) @(∀b:*T . (a -> b -> b) -> b -> b)
@@ -74,14 +74,14 @@ tail l = (fst' @(∀b:*T . (a -> b -> b) -> b -> b) @(∀b:*T . (a -> b -> b) ->
               (pair @(∀b:*T . (a -> b -> b) -> b -> b) @(∀b:*T . (a -> b -> b) -> b -> b) (nil @a) (nil @a))))
 
 mainTail : Char
-mainTail = head  @Char $ tail  @Char twoChars
+mainTail = head'  @Char $ tail'  @Char twoChars
 
 -- The length of a list, given as a primitive Int
-length : ∀a . (∀r . (a -> r -> r) -> r -> r) -> Int
-length l = l  @Int (λ_:a -> succ) 0
+length' : ∀a . (∀r . (a -> r -> r) -> r -> r) -> Int
+length' l = l  @Int (λ_:a -> succ) 0
 
 mainLength : Int
-mainLength = length  @Char twoChars
+mainLength = length'  @Char twoChars
 
 -- Natural numbers
 type Nat = ∀ a . (a -> a) -> a -> a
@@ -99,4 +99,4 @@ replicate : ∀ x . Nat -> x -> (∀ r . (x -> r -> r) -> r -> r)
 replicate n val = n @(∀r:*T . (x -> r -> r) -> r -> r) (cons @x val) (nil @x)
 
 main : Int
-main = length  @Char $ replicate  @Char four 'a'
+main = length'  @Char $ replicate  @Char four 'a'

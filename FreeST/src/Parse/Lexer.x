@@ -68,6 +68,7 @@ tokens :-
   "}"			        { \p s -> TokenRBrace (internalPos p) }
   ","				{ \p s -> TokenComma (internalPos p) }
   ":"                           { \p s -> TokenColon (internalPos p) }
+  "::"                           { \p s -> TokenDoubleColon (internalPos p) }
   ";"	       	      	  	{ \p s -> TokenSemi (internalPos p) }
   "!"                           { \p s -> TokenMOut (internalPos p) }
   "?"				{ \p s -> TokenMIn (internalPos p) }
@@ -157,6 +158,7 @@ data Token =
   | TokenSkip Span
   | TokenEnd Span
   | TokenColon Span
+  | TokenDoubleColon Span
   | TokenUpperId Span String
   | TokenSemi Span
   | TokenMOut Span
@@ -235,6 +237,7 @@ instance Show Token where
   show (TokenSkip _) = "Skip"
   show (TokenEnd _) = "End"
   show (TokenColon _) = ":"
+  show (TokenDoubleColon _) = "::"
   show (TokenUpperId _ c) = "" ++ c
   show (TokenSemi _) = ";"
   show (TokenMOut _) = "!"
@@ -352,6 +355,7 @@ instance Located Token where
   getSpan (TokenSkip p) = p
   getSpan (TokenEnd p) = p
   getSpan (TokenColon p) = p
+  getSpan (TokenDoubleColon p) = p
   getSpan (TokenUpperId p _) = p
   getSpan (TokenSemi p) = p
   getSpan (TokenMOut p) = p

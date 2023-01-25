@@ -10,8 +10,9 @@ import           Interpreter.Value
 import           Syntax.Base
 import qualified Syntax.Expression as E
 import           Syntax.Program
+import           Syntax.MkName
 import           Util.Error
-import Util.FreestState
+import           Util.FreestState
 
 import           Control.Concurrent ( forkIO )
 import           Data.Functor
@@ -54,9 +55,9 @@ eval fun tEnv ctx eenv (E.TypeApp _ e _         )    = eval fun tEnv ctx eenv e 
   (TypeAbs v ctx) -> eval fun tEnv ctx eenv v
   v -> return v
 eval fun tEnv ctx eenv (E.App p (E.Var _ x) e)
-  | x == mkVar p "select" =
+  | x == mkSelect p =
       return $ PrimitiveFun (\(Chan c) -> IOValue $ Chan <$> send (Label $ show e) c)
-  | x == mkVar p "collect" = eval fun tEnv ctx eenv e
+  | x == mkCollect p = eval fun tEnv ctx eenv e
 eval fun tEnv ctx eenv (E.App _ e1 e2) = eval fun tEnv ctx eenv e1 >>= \case
   (Closure fun x e ctx') -> do
     !v <- eval fun tEnv ctx eenv e2
@@ -100,16 +101,15 @@ evalCase name s tEnv ctx eenv m (Cons x xs) =
 evalCase _ _ _ _ _ _ v = internalError "Interpreter.Eval.evalCase" v
 
 evalVar :: Variable -> TypeEnv -> Ctx -> Prog -> Variable -> IO Value
-evalVar name tEnv ctx eenv x
+evalVar _ tEnv ctx eenv x
   | isDatatypeContructor x tEnv  = return $ Cons x []
   | Map.member x eenv            = eval x tEnv ctx eenv (eenv Map.! x)
   | Map.member x ctx             = return $ ctx Map.! x
-  | x == var "fork"              = return Fork
-  | x == var "error"             =
+  | x == mkFork defaultSpan      = return Fork
+  | x == mkError                 =
      return $ PrimitiveFun (\(String e) -> exception (ErrorFunction (getSpan x) e))
-  | x == var "undefined"         =
+  | x == mkUndefined             =
      return $ exception (UndefinedFunction (getSpan x))
   | otherwise                      = internalError "Interpreter.Eval.evalVar" x
   where
-    var = mkVar defaultSpan
     exception err = unsafePerformIO $ die $ showErrors False "" Map.empty err
