@@ -26,7 +26,7 @@ main :: IO ()
 main = do
   args <- getArgs
   home <- (</> ".repl_history") <$> getHomeDirectory
-  when (head args == "-v") (die replVersion)
+  when (not (null args) && head args == "-v") (die replVersion)
   putStrLn $ replVersion ++ ": https://freest-lang.github.io/  :h for help"
   runFilePath <- getDataFileName "Prelude.fst"
   s1 <- parseProgram (initialState {runOpts=defaultOpts{runFilePath}})
