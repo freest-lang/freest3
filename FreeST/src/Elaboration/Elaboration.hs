@@ -13,61 +13,50 @@ import           Elaboration.ResolveEquations
 import           Equivalence.Normalisation ( normalise )
 import           Syntax.Base
 import qualified Syntax.Expression as E
+import qualified Syntax.Kind as K
 import           Syntax.Program ( VarEnv, isDatatypeContructor )
 import qualified Syntax.Type as T
-import qualified Syntax.Kind as K
-import           Validation.Kinding (synthetise)
-import qualified Validation.Subkind as SK (join)
 import           Util.Error
 import           Util.FreestState
+import           Validation.Kinding (synthetise)
+import qualified Validation.Subkind as SK (join)
 
+import           Control.Monad (when)
 import           Data.Functor
 import qualified Data.Map.Strict as Map
 import           Data.Maybe
-import qualified Data.Map.Strict as Map
-import           Control.Monad (when)
 
 elaboration :: FreestState ()
 elaboration = do
   -- | Fix the multiplicity of the data constructor types
   fixConsTypes
   -- | Checks if there are choices with the same name as constructors
---  Match.checkChoices =<< getPEnvChoices
+  --  Match.checkChoices =<< getPEnvChoices
   -- | Checks correct number of arguments
   Match.checkNumArgs =<< getPEnvPat
   -- | Checks correct channels' pattern matching
   Match.checkChanVar =<< getPEnvPat
   -- | Adds missing Vars to malformed functions
-  (Match.addMissingVars <$> getPEnvPat) >>= setPEnvPat
+  getPEnvPat >>= setPEnvPat . Match.addMissingVars
   -- | Remove all patterns
   (Match.matchFuns =<< getPEnvPat) >>= setPEnv
   -- | Solve the equations' system.
 --  debugM . ("EqsI " ++) <$> show =<< getTEnv
   solveEquations
---  debugM . ("EqsF " ++) <$> show =<< getTEnv
-  
-  
   -- | From this point, there are no type names on the function signatures
   --   and on the function bodies. 
   -- | Then, resolve all the dualof occurrences on:
   -- | Type Env (i.e. type A = dualof !Int)
 --  debugM . ("TEnvI " ++) <$> show =<< getTEnv
   (Dual.resolve =<< getTEnv) >>= setTEnv
---  debugM . ("TEnvF " ++) <$> show =<< getTEnv
-
   -- | From this point, there are no type names on the RHS
   --   of the type declarations and datatypes (type env)
   -- | Substitute all type names on the function signatures
   elabVEnv =<< getVEnv
   -- | same for parse env (which contains the functions' bodies)
   elabPEnv =<< getPEnv
-
-  
   -- | Var Env (i.e. f : dualof !Int -> Skip)
---  debugM . ("VenvI " ++) <$> show . Map.filterWithKey(\k _ -> k == mkVar defaultSpan "rcvInt") =<< getVEnv
   (Dual.resolve =<< getVEnv) >>= setVEnv
-
-
   -- | Parse Env (i.e. f c = send 5 c)
   (Dual.resolve =<< getPEnv) >>= setPEnv
   -- | From this point there are no more occurrences of the dualof operator
@@ -77,6 +66,7 @@ elaboration = do
   --   build a lambda expression: f = \x : T -> E
   buildProg
   -- debugM . ("Program " ++) <$> show =<< getProg
+  -- debugM . ("VenvI " ++) <$> show . Map.filterWithKey(\k _ -> k == mkVar defaultSpan "rcvInt") =<< getVEnv
 
 -- | Fix the multiplicity of the data constructor types
 fixConsTypes :: FreestState ()
