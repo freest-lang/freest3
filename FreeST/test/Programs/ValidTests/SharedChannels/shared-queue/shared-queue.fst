@@ -63,7 +63,7 @@ main =
     let counter = initCounter in
     -- writer-reader concurrency, no writter-writer nor reader-reader concurrency
     parallel @() 10 $ (\_:() -> enqueue (receive_ @Int counter) queue);
-    repeat @()  10 $ (\_:() -> printIntLn (dequeue queue))
+    repeat @()  10 $ (\_:() -> print @Int (dequeue queue))
     -- writer-reader, writter-writer and reader-reader concurrency
     -- parallel [()] 10 $ (\_:() -> enqueue (receiveUn[Int] counter) queue);
     -- parallel [()]  10 $ (\_:() -> printIntLn (dequeue queue))

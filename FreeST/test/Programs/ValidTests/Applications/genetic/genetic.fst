@@ -46,7 +46,10 @@ clientSequential, clientParallel : Int
 
 clientSequential = geneticAlg argSeed argPopSize argIterPop
 
-clientParallel = fst @Int @Skip $ receive $ initIslands argSeed argIslands argPopSize argIterPop argIterIsl
+clientParallel = 
+  let (i, c) = receive $ initIslands argSeed argIslands argPopSize argIterPop argIterIsl in
+  close c;
+  i
 
 
 -- ===== CONSTANTS =====
@@ -271,7 +274,7 @@ type IslandChannel : 1S = +{
 
 
 -- Channel for the client to ask master the result
-type ResultChannel : 1S = ?Int    -- Compute result and return it
+type ResultChannel : 1S = ?Int;End    -- Compute result and return it
 
 
 -- Structure that represents a list of IslandChannels
@@ -307,7 +310,7 @@ runMasterServer c channels nIterG =
   -- Get fittest individual from all islands...
   let (fittest, channels) = receiveFittest channels in
   -- ... and send it to the client
-  let _ = send fittest c in
+  send fittest c |> close;
   -- End all islands
   endIslands channels
 

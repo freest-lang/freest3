@@ -59,16 +59,16 @@ streamTree Error        c = select LeafC c
 
 -- Reading trees from channels
 
-receiveTree : dualof Stream -> Tree
-receiveTree = recTree Nil
+receiveTree : forall a:1S . dualof Stream;a -> (Tree, a)
+receiveTree c = recTree @a Nil c
 
-recTree : List -> dualof Stream -> Tree
-recTree xs (LeafC c)       = recTree (Cons Leaf xs) c
-recTree xs (EndOfStream _) = getFromSingleton xs
+recTree : forall a:1S . List -> dualof Stream;a -> (Tree, a)
+recTree xs (LeafC c)       = recTree @a (Cons Leaf xs) c
+recTree xs (EndOfStream c) = (getFromSingleton xs, c)
 recTree xs (NodeC c)       = let (xs, p) = getTwo xs in
                              let (left, right) = p in
                              let (root, c) = receive c in
-                             recTree (Cons (Node root left right) xs) c
+                             recTree @a (Cons (Node root left right) xs) c
 
 -- Babdly behaving writers
 
@@ -80,11 +80,11 @@ writeTooMuch : Stream -> Skip
 writeTooMuch c =
   select EndOfStream $ select LeafC $ select LeafC c
 
-writeRootTreeOnly : Stream -> Skip
+writeRootTreeOnly : forall a:1S . Stream;a -> a
 writeRootTreeOnly c =
   select EndOfStream $ send 5 $ select NodeC c
 
-writeLeftTreeOnly : Stream -> Skip
+writeLeftTreeOnly : forall a:1S . Stream;a -> a
 writeLeftTreeOnly c =
   select EndOfStream $ send 5 $ select NodeC $ select LeafC c
 
@@ -92,10 +92,12 @@ writeLeftTreeOnly c =
 
 main : Tree
 main =
-  let (w, r) = new @Stream () in
+  let (w, r) = new @(Stream;End) () in
 --  (fork@Skip $ sendTree aTree w);
 --  (fork@Skip $ writeNothing w);       -- 'P'
 --  (fork@Skip $ writeTooMuch w);     -- 'X'
-  fork (\_:() 1-> writeRootTreeOnly w);  -- 'R'
+  fork (\_:() 1-> writeRootTreeOnly @End w |> close);  -- 'R'
 --  (fork@Skip $ writeLeftTreeOnly w);  -- 'L'
-  receiveTree r
+  let (list, r) = receiveTree @End r in
+  close r;
+  list

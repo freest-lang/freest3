@@ -12,7 +12,7 @@ type OrderingChannel : 1S = +{
 
 -- Send a series of integer values to the server; receive and print
 -- the values in ascending or descending order
-client : OrderingChannel -> ()
+client : OrderingChannel;End -> ()
 client c =
   let c = select Descending {- Ascending -} $
   send 9 $ select Value $
@@ -26,7 +26,8 @@ client c =
   let (x, c) = receive c in print @Int x;
   let (x, c) = receive c in print @Int x;
   let (x, c) = receive c in print @Int x;
-  let (x, c) = receive c in print @Int x
+  let (x, c) = receive c in print @Int x;
+  close c
 
 data IntList = Nil | Cons Int IntList
 
@@ -43,8 +44,8 @@ sortingServer xs (Value      c) =
 -- Putting it all together
 main : ()
 main =
-  let (w, r) = new @OrderingChannel () in
-  fork (\_:() 1-> sortingServer@Skip Nil r);
+  let (w, r) = new @(OrderingChannel;End) () in
+  fork @() (\_:()1-> sortingServer @End Nil r |> snd @IntList @End |> close);
   client w
 
 -- Quicksort.  Adapted from learnyouahaskell.com. The integer sorting

@@ -27,7 +27,7 @@ handleClient state chan =
   let (readFromState, writeOnState) = state in
   match chan with
     { Get chan -> let (n, _) = receive readFromState in send n chan |> close 
-    , Put chan -> send (receiveAndClose @Int chan) writeOnState
+    , Put chan -> let _ = send (receiveAndClose @Int chan) writeOnState in ()
     }
 
 -- Client side, utilities

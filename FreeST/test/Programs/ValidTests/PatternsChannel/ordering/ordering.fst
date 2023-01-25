@@ -17,10 +17,10 @@ type OrderingChannel : 1S = +{Vals: !Int; OrderingChannel; ?Int, Asc: Skip, Desc
 -- ==================== Server ====================
 
 -- Facade function to initialize server with an empty list
-initOrderedServer : dualof OrderingChannel -> ()
-initOrderedServer c =
-  let _ = orderedServer@Skip c Nil in
-  ()
+initOrderedServer : forall a:1S . dualof OrderingChannel;a -> a
+initOrderedServer c = 
+  let (_, c) = orderedServer @a c Nil in
+  c
 
 -- Server function
 --   This server sends the list reversed
@@ -29,7 +29,7 @@ orderedServer (Asc  c) list = (quicksort list (desc), c) -- Quicksorts with desc
 orderedServer (Desc c) list = (quicksort list (asc) , c) -- Quicksorts with  ascending to send it reversed
 orderedServer (Vals c) list = 
   let (x, c)  = receive c in
-  let (list, c) = orderedServer@(!Int;a) c (Cons x list) in
+  let (list, c) = orderedServer @(!Int;a) c (Cons x list) in
   case list of { 
     Cons y ys -> 
       let c = send y c in
@@ -77,15 +77,17 @@ listAppend (Cons x xs) ll = Cons x (listAppend xs ll)
 -- ==================== Client ====================
 
 -- Simple client using Asc option
-ascClient : OrderingChannel -> IntList
+ascClient : OrderingChannel;End -> IntList
 ascClient c =
-  let (c, rList) = order@Skip c aList True in
+  let (c, rList) = order @End c aList True in
+  close c;
   rList
 
 -- Simple client using Desc option
-descClient : OrderingChannel -> IntList
+descClient : OrderingChannel;End -> IntList
 descClient c =
-  let (c, rList) = order@Skip c aList False in
+  let (c, rList) = order @End c aList False in
+  close c;
   rList
 
 
@@ -116,7 +118,7 @@ aList = Cons 4 (Cons 1 (Cons 3 (Cons 2 Nil)))
 
 main : IntList
 main =
-  let (w, r) = new @OrderingChannel () in
-  fork (\_:() 1-> initOrderedServer r) ;
+  let (w, r) = new @(OrderingChannel;End) () in
+  fork (\_:() 1-> initOrderedServer @End r |> close) ;
   descClient w
   --ascClient w

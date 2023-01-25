@@ -1,4 +1,4 @@
-mathServer : &{Negate: ?Int;!Int, Add: ?Int;?Int;!Int} -> Skip
+mathServer : &{Negate: ?Int;!Int, Add: ?Int;?Int;!Int};End -> End
 mathServer (Negate c) = 
   let (n, c) = receive c in
   send (-n) c
@@ -9,7 +9,8 @@ mathServer (Add c) =
 
 main : Int
 main =
-  let (r,w) = new @&{Negate: ?Int;!Int, Add: ?Int;?Int;!Int} () in
-  fork (\_:() 1-> mathServer r) ;
-  let (x, _) = receive (send 5 (select Negate w)) in
+  let (r,w) = new @(&{Negate: ?Int;!Int, Add: ?Int;?Int;!Int};End) () in
+  fork (\_:() 1-> mathServer r |> close) ;
+  let (x, w) = receive (send 5 (select Negate w)) in
+  close w;
   x

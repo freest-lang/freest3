@@ -49,7 +49,10 @@ clientSequential = geneticAlg argSeed argPopSize argIterPop
 
 -- Example of a client using the parallel genetic algorithm
 clientParallel : Int
-clientParallel = fst@Int@Skip $ receive $ initIslands argSeed argIslands argPopSize argIterPop argIterIsl
+clientParallel = 
+  let (i, c) = receive $ initIslands argSeed argIslands argPopSize argIterPop argIterIsl in
+  close c;
+  i
 
 
 -- ===== CONSTANTS =====
@@ -250,11 +253,11 @@ geneticAlg_ seed iterations pop =
 type IslandChannel : 1S = +{
   Fittest:   ?Int; IslandChannel, -- Gets the fittest individual of an Island
   Crossover: !Int; IslandChannel, -- Sends an individual to perform a GA iteration
-  EndC:       Skip }               -- Close the channel
+  EndC:       End }               -- Close the channel
 
 
 -- Channel for the client to ask master the result
-type ResultChannel : 1S = ?Int    -- Compute result and return it
+type ResultChannel : 1S = ?Int;End    -- Compute result and return it
 
 
 -- Structure that represents a list of IslandChannels
@@ -264,10 +267,10 @@ data ListIslandChannel : 1T = Nil() | Cons IslandChannel ListIslandChannel
 
 -- Initialize all needed processes (islands + master) and return a
 --   ResultChannel for the client to request the result
-initIslands : Int 1-> Int 1-> Int 1-> Int 1-> Int 1-> ResultChannel
+initIslands : Int 1-> Int 1-> Int 1-> Int 1-> Int 1-> ResultChannel;End
 initIslands = initIslands_ $ Nil()
 
-initIslands_ : ListIslandChannel -> Int 1-> Int 1-> Int 1-> Int 1-> Int 1-> ResultChannel
+initIslands_ : ListIslandChannel -> Int 1-> Int 1-> Int 1-> Int 1-> Int 1-> ResultChannel;End
 initIslands_ channels seed islands popSize nIterI nIterG =
   if islands == 0
   then
@@ -290,7 +293,8 @@ runMasterServer c channels nIterG =
   -- Get fittest individual from all islands...
   let (fittest, channels) = receiveFittest channels in
   -- ... and send it to the client
-  let _ = send fittest c in
+  send fittest c
+  |> close;
   -- End all islands
   endIslands channels
 
@@ -334,7 +338,7 @@ runIsland (Crossover master) seed nIterI pop =
   runIsland master seed nIterI pop
 runIsland (EndC master) seed nIterI pop = 
   -- Stop (get some help  -Michael Jordan)
-  ()
+  close master
 
 -- Compute the absolute fittest individual of all islands
 receiveFittest : ListIslandChannel -> (Individual, ListIslandChannel)
@@ -361,7 +365,7 @@ sendFittestF fittest island = (fittest, send fittest $ select Crossover island)
 endIslands : ListIslandChannel -> ()
 endIslands (Nil _) = ()
 endIslands (Cons channel channels1) =
-  let _ = select EndC channel in
+  select EndC channel |> close;
   endIslands channels1
 
 -- Fold function over a list of IslandChannels

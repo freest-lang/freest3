@@ -1,12 +1,12 @@
-data T : 1T = One Skip | Two ?Int
+data T : 1T = One Skip | Two ?Int;End
 
 read : T -> Int
 read (One _) = 5
-read (Two c) = let (x, _) = receive c in x
+read (Two c) = receiveAndClose @Int c
 
 main : Int
 main =
-  let (w, r) = new @!Int () in
+  let (w, r) = new @(!Int;End) () in
   fork (\_:() 1-> read $ Two r);
-  let _ = send 5 w in
+  send 5 w |> close;
   10

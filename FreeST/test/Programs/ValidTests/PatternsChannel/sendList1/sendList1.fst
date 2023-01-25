@@ -20,9 +20,10 @@ sendList c (Cons x xs) =
 
 main : List
 main =
-  let (x, y) = new @ListOut () in
-  fork (\_:() 1-> sendList@Skip x aList) ;
-  let (list, _) = rcvList@Skip y in
+  let (x, y) = new @(ListOut;End) () in
+  fork (\_:() 1-> sendList@End x aList |> close) ;
+  let (list, y) = rcvList@End y in
+  close y;
   list
 
 aList : List
