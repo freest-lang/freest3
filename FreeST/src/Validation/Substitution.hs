@@ -27,6 +27,8 @@ import           Syntax.Base
 import qualified Syntax.Kind                   as K
 import qualified Syntax.Type                   as T
 import           Util.Error                     ( internalError )
+import Elaboration.Duality
+import Debug.Trace
 
 -- [t/x]u, substitute t for for every occurrence of x in u
 -- Assume types were renamed (hence, x/=y and no -the-fly renaming needed)
@@ -55,6 +57,10 @@ instance Subs T.Type Variable T.Type where
     | otherwise = u
   subs t x u@(T.Dualof p (T.Var p' y))
     | y == x    = dualof t
+       -- let tmp = dualof t in
+       -- trace ("subs [t/x] (dual u): " ++ show t ++ " || " ++ show x ++ " || " ++ show y ++
+       --        "\nRESULT:              " ++ show tmp ++ "\n") 
+       --  tmp
     | otherwise = u
   subs _ _ t            = t
   -- Can't issue this error because we use
@@ -90,6 +96,7 @@ instance Cosubs T.Type where
 --  cosubs _ _ t@T.Dualof{} = internalError "Validation.Substitution.cosubs" t
   cosubs _ _ t            = t
 
+
 instance Cosubs t => Cosubs (Bind K.Kind t) where
   cosubs t x (Bind p y k u) = Bind p y k (cosubs t x u)
 
@@ -100,38 +107,46 @@ unfold t@(T.Rec _ (Bind _ x _ u)) = subs t x u
 unfold t = internalError "Validation.Substitution.unfold" t
 
 
--- DUPLICATED, check Elaboration.Duality
--- Calculates the dual of a session type
-class Duality t where
-  dualof :: t -> t
+-- -- DUPLICATED, check Elaboration.Duality
+-- -- Calculates the dual of a session type
+-- class Duality t where
+--   dualof :: t -> t
 
--- Lindley-Morris Duality, Polished, Definition 31
--- https://arxiv.org/pdf/2004.01322.pdf
-instance Duality T.Type where 
-  -- Session Types
-  dualof (T.Semi p t u) = T.Semi p (dualof t) (dualof u)
-  dualof (T.Message p pol t) = T.Message p (dualof pol) t
-  -- dualof (T.Message p pol t) = T.Message p (dual pol) (dualof t)
- -- dualof (T.Choice p pol m) = T.Choice p (dual pol) (Map.map dualof m)
-  dualof (T.Almanac p (T.Choice v) m) =
-    T.Almanac p (T.Choice $ dualof v) (Map.map dualof m)
-  dualof u@(T.Rec p (Bind p' a k t)) =
-   T.Rec p (Bind p' a k (dualof (subs (T.Dualof p' $ T.Var p' a) a t)))
-  -- T.Rec p (dualBind  b)
-  --   where dualBind (K.Bind p a k t) = K.Bind p a k (dualof t)
-  dualof (T.Var p x) = T.Dualof p $ T.Var p x
-  dualof (T.Dualof _ (T.Var p x)) = T.Var p x
-  dualof (T.Dualof _ t) = dualof t
-  -- Non session-types & Skip
-  dualof t = t
+-- -- Lindley-Morris Duality, Polished, Definition 31
+-- -- https://arxiv.org/pdf/2004.01322.pdf
+-- instance Duality T.Type where 
+--   -- Session Types
+--   dualof (T.Semi p t u) = T.Semi p (dualof t) (dualof u)
+--   dualof (T.Message p pol t) = T.Message p (dualof pol) t
+--   -- dualof (T.Message p pol t) = T.Message p (dual pol) (dualof t)
+--  -- dualof (T.Choice p pol m) = T.Choice p (dual pol) (Map.map dualof m)
+--   dualof (T.Almanac p (T.Choice v) m) =
+--     T.Almanac p (T.Choice $ dualof v) (Map.map dualof m)
+--   dualof u@(T.Rec p (Bind p' a k t)) =
+--     -- subs u a (T.Rec p (Bind p' a k (dualof t)))
 
-instance Duality T.Polarity where
-  dualof T.In  = T.Out
-  dualof T.Out = T.In
+-- --    dualLM(μX.S) = μX.(dualLM(S){-X/X})
+--    let b = Bind p' a k (dualof t) in
+--    T.Rec p (Bind p' a k (subs (T.Dualof p' (T.Var p' a)) a (T.Rec p b)))
+-- --   T.Rec p (Bind p' a k (subs (T.Dualof p' (T.Var p' a)) a (dualof t)))
+-- --   T.Rec p (Bind p' a k (dualof (subs (T.Dualof p' $ T.Var p' a) a t)))
+--   -- T.Rec p (dualBind  b)
+--   --   where dualBind (K.Bind p a k t) = K.Bind p a k (dualof t)
+--   dualof (T.Var p x) = T.Dualof p $ T.Var p x
+--   dualof (T.Dualof _ (T.Var p x)) = T.Var p x
+--   dualof (T.Dualof _ t) = dualof t
+--   -- Non session-types & Skip
+--   dualof t = t
 
-instance Duality T.View where
-  dualof T.Internal = T.External
-  dualof T.External = T.Internal
+-- instance Duality T.Polarity where
+--   dualof T.In  = T.Out
+--   dualof T.Out = T.In
+
+-- instance Duality T.View where
+--   dualof T.Internal = T.External
+--   dualof T.External = T.Internal
+
+
 
 {-
 

@@ -42,20 +42,32 @@ elaboration = do
   -- | Remove all patterns
   (Match.matchFuns =<< getPEnvPat) >>= setPEnv
   -- | Solve the equations' system.
+--  debugM . ("EqsI " ++) <$> show =<< getTEnv
   solveEquations
+--  debugM . ("EqsF " ++) <$> show =<< getTEnv
+  
+  
+  -- | From this point, there are no type names on the function signatures
+  --   and on the function bodies. 
+  -- | Then, resolve all the dualof occurrences on:
+  -- | Type Env (i.e. type A = dualof !Int)
+--  debugM . ("TEnvI " ++) <$> show =<< getTEnv
+  (Dual.resolve =<< getTEnv) >>= setTEnv
+--  debugM . ("TEnvF " ++) <$> show =<< getTEnv
+
   -- | From this point, there are no type names on the RHS
   --   of the type declarations and datatypes (type env)
   -- | Substitute all type names on the function signatures
   elabVEnv =<< getVEnv
   -- | same for parse env (which contains the functions' bodies)
   elabPEnv =<< getPEnv
-  -- | From this3,221 point, there are no type names on the function signatures
-  --   and on the function bodies. 
-  -- | Then, resolve all the dualof occurrences on:
-  -- | Type Env (i.e. type A = dualof !Int)
-  (Dual.resolve =<< getTEnv) >>= setTEnv
+
+  
   -- | Var Env (i.e. f : dualof !Int -> Skip)
+--  debugM . ("VenvI " ++) <$> show . Map.filterWithKey(\k _ -> k == mkVar defaultSpan "rcvInt") =<< getVEnv
   (Dual.resolve =<< getVEnv) >>= setVEnv
+
+
   -- | Parse Env (i.e. f c = send 5 c)
   (Dual.resolve =<< getPEnv) >>= setPEnv
   -- | From this point there are no more occurrences of the dualof operator

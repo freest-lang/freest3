@@ -74,7 +74,12 @@ solveType v (T.Forall p (Bind p' a k t)) =
   T.Forall p . Bind p' a k <$> solveType v t
 solveType v (  T.Rec    p b) = T.Rec p <$> solveBind solveType v b
 -- Dualof
-solveType v d@(T.Dualof p t) = addDualof d >> solveDual v (changePos p t)
+solveType v d@(T.Dualof p t) = -- do
+  addDualof d >> solveDual v (changePos p t)
+  -- addDualof d
+  -- res <- solveDual v (changePos p t)
+  -- -- debugM $ "Dualof t => " ++ show d ++ " ~~> " ++ show res
+  -- return res
 
 -- Var, Int, Char, Bool, Unit, Skip, End
 solveType _ t                = pure t
@@ -88,16 +93,26 @@ solveDual v (T.Message p pol t) = T.Message p (dualof pol) <$> solveType v t
 solveDual v (T.Almanac p (T.Choice pol) m) =
   T.Almanac p (T.Choice $ dualof pol) <$> tMapM (solveDual v) m
 -- Recursive types
-solveDual v t@(T.Rec p b@(Bind _ a _ _)) = do
+solveDual v t@(T.Rec p b) = do
   u <- solveDBind solveDual v b
-  return $ cosubs t a (T.Rec p u)
-solveDual v t@(T.Var p a) -- = pure $ T.Dualof p $ T.Var p a
-  -- A recursion variable
-  | a `Set.member` v = pure t
-  | otherwise        = pure $ T.Dualof p $ T.Var p a
+
+  -- debugM $ "cosubs [t/co-x]u:   [" ++ show t ++ "/" ++ show a ++ "] (" ++ show (T.Rec p u)
+  --       ++ ")\nBIND: " ++ show (body b)
+  --       ++ "\nDBIND: " ++ show (body u)
+  --       ++"\nRESULT= " ++ show (cosubs t a (T.Rec p u)) 
+  --       ++ "\npos = " ++ show (bSpan b) ++ "\n"
+    
+  return $ cosubs t (var b) (T.Rec p u)
+solveDual v t@(T.Var p a) = pure $ T.Dualof p $ T.Var p a
+  -- -- A recursion variable
+  -- | a `Set.member` v = pure t
+  -- | otherwise        = pure $ T.Dualof p $ T.Var p a
 -- Dualof
 solveDual v (T.Dualof _ (T.Var p a)) = pure $ T.Var p a
-solveDual v d@(T.Dualof p t) = addDualof d >> solveType v (changePos p t)
+solveDual v d@(T.Dualof p t) = do
+--  debugM $ "double dual -> " ++ show d
+
+  addDualof d >> solveType v (changePos p t)
 -- Non session-types
 solveDual _ t = addError (DualOfNonSession (getSpan t) t) $> t
 
