@@ -21,12 +21,14 @@ module Validation.Substitution
   )
 where
 
-import qualified Data.Map.Strict               as Map
 -- import           Elaboration.Duality
-import           Syntax.Base                   
-import qualified Syntax.Kind                   as K
-import qualified Syntax.Type                   as T
-import           Util.Error                     ( internalError )
+import qualified Data.Map.Strict as Map
+import           Syntax.Base
+import qualified Syntax.Kind as K
+import qualified Syntax.Type as T
+import           Util.Error ( internalError )
+import           Elaboration.Duality
+
 
 -- [t/x]u, substitute t for for every occurrence of x in u
 -- Assume types were renamed (hence, x/=y and no -the-fly renaming needed)
@@ -50,10 +52,10 @@ instance Subs T.Type Variable T.Type where
   subs t x u@(T.Var _ y)
     | y == x    = t
     | otherwise = u
-  subs (T.Var _ t) x u@(T.CoVar p y)
-    | y == x    = T.CoVar p t
+  subs (T.Var _ t) x u@(T.Dualof p (T.Var p' y))
+    | y == x    = T.Dualof p $ T.Var p' t
     | otherwise = u
-  subs t x u@(T.CoVar _ y)
+  subs t x u@(T.Dualof p (T.Var p' y))
     | y == x    = dualof t
     | otherwise = u
   subs _ _ t            = t
@@ -80,14 +82,11 @@ instance Cosubs T.Type where
     -- Polymorphism and recursion
   cosubs t x (T.Rec    p b      ) = T.Rec p (cosubs t x b)
   cosubs t x (T.Forall p b      ) = T.Forall p (cosubs t x b)
-  cosubs t x u@(T.CoVar _ y) | y == x = t
-                             | otherwise = u
-  -- cosubs (T.Var _ t) x u@(T.CoVar p y) | y == x    = T.CoVar p t
-  --                                    | otherwise = u
-  -- cosubs t x u@(T.Var _ y) | y == x    = dualof t
-  --                          | otherwise = u
-  cosubs _ _ t@T.Dualof{} = internalError "Validation.Substitution.cosubs" t
+  cosubs t x u@(T.Dualof _ (T.Var _ y))
+    | y == x = t
+    | otherwise = u
   cosubs _ _ t            = t
+
 
 instance Cosubs t => Cosubs (Bind K.Kind t) where
   cosubs t x (Bind p y k u) = Bind p y k (cosubs t x u)
@@ -98,39 +97,6 @@ unfold :: T.Type -> T.Type
 unfold t@(T.Rec _ (Bind _ x _ u)) = subs t x u
 unfold t = internalError "Validation.Substitution.unfold" t
 
-
--- DUPLICATED, check Elaboration.Duality
--- Calculates the dual of a session type
-class Duality t where
-  dualof :: t -> t
-
--- Lindley-Morris Duality, Polished, Definition 31
--- https://arxiv.org/pdf/2004.01322.pdf
-instance Duality T.Type where 
-  -- Session Types
-  dualof (T.Semi p t u) = T.Semi p (dualof t) (dualof u)
-  dualof (T.Message p pol t) = T.Message p (dualof pol) t
-  -- dualof (T.Message p pol t) = T.Message p (dual pol) (dualof t)
- -- dualof (T.Choice p pol m) = T.Choice p (dual pol) (Map.map dualof m)
-  dualof (T.Almanac p (T.Choice v) m) =
-    T.Almanac p (T.Choice $ dualof v) (Map.map dualof m)
-  dualof (T.Rec p (Bind p' a k t)) =
-    T.Rec p (Bind p' a k (dualof (subs (T.CoVar p' a) a t)))
-  -- T.Rec p (dualBind  b)
-  --   where dualBind (K.Bind p a k t) = K.Bind p a k (dualof t)
-  dualof (T.Var p x) = T.CoVar p x
-  dualof (T.CoVar p x) = T.Var p x
-  dualof (T.Dualof _ t) = dualof t
-  -- Non session-types & Skip
-  dualof t = t
-
-instance Duality T.Polarity where
-  dualof T.In  = T.Out
-  dualof T.Out = T.In
-
-instance Duality T.View where
-  dualof T.Internal = T.External
-  dualof T.External = T.Internal
 
 {-
 

@@ -89,7 +89,7 @@ synthetise' _ kEnv (T.Var p a) = case kEnv Map.!? a of
   Just k -> return k
   Nothing -> addError (TypeVarNotInScope p a) $> omission p
 -- Type operators
-synthetise' _ kEnv t@(T.CoVar p a) =
+synthetise' _ kEnv t@(T.Dualof p (T.Var _ a)) =
   case kEnv Map.!? a of
     Just k -> unless (k <: K.ls p)
             (addError (CantMatchKinds p k (K.ls p) t)) $> K.ls p
