@@ -47,7 +47,7 @@ data Type =
   | Var Span Variable
   -- Type operators
   | Dualof Span Type
-  | CoVar Span Variable
+--  | CoVar Span Variable
 
 -- | Abs Pos (Bind Type)       -- λ a:k => T, Operator abstraction
 -- | App Pos Type Type
@@ -76,7 +76,7 @@ instance Located Type where
   -- getSpan (Abs p _      ) = p
   -- getSpan (App p _ _    ) = p
   getSpan (Dualof p _   ) = p
-  getSpan (CoVar p _   ) = p
+--  getSpan (CoVar p _   ) = p
 
 -- Derived types
 unit :: Span -> Type 

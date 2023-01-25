@@ -85,7 +85,7 @@ toGrammar' (T.Forall _ (Bind _ _ k t)) = do
 toGrammar' (T.Rec _ (Bind _ x _ _)) = return [x]
 toGrammar' t@T.Var{} = getLHS $ Map.singleton (show t) []
 -- Type operators
-toGrammar' t@T.CoVar{} = getLHS $ Map.singleton (show t) []
+toGrammar' t@(T.Dualof _ T.Var{}) = getLHS $ Map.singleton (show t) []
 -- toGrammar' t@T.Dualof{} =
 toGrammar' t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 
