@@ -91,8 +91,6 @@ concatMap _ []      = []
 concatMap f (x::xs) = append (f x) (concatMap f xs)
 
 
--- TODO: test tomorrow
-
 sum : [Int] -> Int
 sum []      = 0
 sum (x::xs) = x + sum xs
@@ -244,9 +242,9 @@ partition p (x::xs) =
 -- (_:xs) !! n         =  xs !! (n-1)
 
 nth : [Int] -> Int -> Int
-nth [] _ =  error @Int "List.getAtIndex: index too large"
+nth [] _ =  error @Int "*** List.getAtIndex: index too large"
 nth (x::xs) n
-  | n <  0    = error @Int "List.getAtIndex: negative index"
+  | n <  0    = error @Int "*** List.getAtIndex: negative index"
   | n == 0    = x
   | otherwise = nth xs (n-1)
 
@@ -299,8 +297,8 @@ zipWith3 f (x::xs) (y::ys) (z::zs) = f x y z :: zipWith3 f xs ys zs
 -}
 elemAt : [Int] -> Int -> Int
 elemAt []      n 
-  | n < 0     = error @Int "Exception: Prelude.elemAt: negative index"
-  | otherwise = error @Int "Exception: Prelude.elemAt: index too large"
+  | n < 0     = error @Int "*** Exception: Prelude.elemAt: negative index"
+  | otherwise = error @Int "*** Exception: Prelude.elemAt: index too large"
 elemAt (x::xs) n 
   | n == 0    = x
   | otherwise = elemAt xs (n - 1)
