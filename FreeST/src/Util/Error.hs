@@ -262,7 +262,6 @@ instance Message ErrorType where
   msg (TypeAbsBodyNotValue _ e e') sty ts _ =
     "The body of type abstraction " ++ style red sty ts e ++ "\n                        namely " ++
     style red sty ts e' ++ "\n                is not a value"
-
   msg (VarOrConsNotInScope p pv) sty ts b =
     let styledVar = style red sty ts pv in
     let modDesc = if isLeft b then "file" else "module" in
@@ -270,8 +269,6 @@ instance Message ErrorType where
     "\n  In " ++ modDesc ++ ": " ++ fromEither b ++ -- showModule (showModuleName p) p ++
     "\n  (is " ++ styledVar ++ " a linear variable that has been consumed?)" ++
     "\n  (is " ++ styledVar ++ " defined in a module that you forgot to import?)"
-
-
   msg (LinProgVar _ x t k) sty ts _ =
     "Program variable " ++ style red sty ts x ++ " is linear at the end of its scope\n\t  variable " ++
     style red sty ts x ++ " is of type " ++ style red sty ts t ++ " of kind " ++ style red sty ts k
@@ -324,7 +321,7 @@ instance Message ErrorType where
     "Choice branch not in scope.\n\t Branch " ++ style red sty ts x ++
     " is not present in the internal choice type " ++ style red sty ts t ++
     "\n\t Defined at: " ++ show (getSpan t)
-  msg (UnendedSession s t) sty ts =
+  msg (UnendedSession s t) sty ts _ =
     "Session type created with new does not reach an End\n\tIn type: " ++ style red sty ts (show t)
 --  Runtime
   msg (ErrorFunction s e) _ _ _ = -- TODO: This one is from the point of view of the callee not the caller
