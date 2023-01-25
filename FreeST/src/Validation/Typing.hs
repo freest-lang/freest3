@@ -272,10 +272,10 @@ broughtToEnd :: T.Type -> Bool
 broughtToEnd = wellEnded Set.empty
 
 wellEnded :: Set.Set Variable -> T.Type -> Bool
-wellEnded _ (T.Skip _) = False
-wellEnded _ (T.End _) = True
+wellEnded _ T.Skip{} = False
+wellEnded _ T.End{} = True
 wellEnded s (T.Semi _ t1 t2) = wellEnded s t1 || wellEnded s t2
-wellEnded _ (T.Message _ _ _) = False
+wellEnded _ T.Message{} = False
 wellEnded s (T.Almanac _ _ m) = Map.foldr (\t b -> b && wellEnded s t) True m
 wellEnded s (T.Rec _ (Bind{var=v, body=t})) = wellEnded (Set.insert v s) t
 wellEnded s (T.Dualof _ t) = wellEnded s t
@@ -291,5 +291,5 @@ wellEnded s (T.Dualof _ t) = wellEnded s t
 -- Allows false positives: forkWith @Skip @Skip (id @Skip)
 -- 327 examples, 43 failures, 12 pending
 
-wellEnded s (T.Var _ _) = True
-wellEnded s (T.CoVar _ _) = True
+wellEnded _ (T.Var _ _) = True
+-- wellEnded s (T.CoVar _ _) = True
