@@ -63,11 +63,11 @@ intersperse v (x::xs) = x :: v :: intersperse v xs
 
 -- Reducing lists (folds)
 
-foldl : forall a . (a -> Int -> a) -> a -> [Int] -> a
+foldl : forall a:*T . (a -> Int -> a) -> a -> [Int] -> a
 foldl f z []      = z                  
 foldl f z (x::xs) = foldl @a f (f z x) xs
 
-foldr : forall a . (Int -> a -> a) -> a -> [Int] -> a
+foldr : forall a:*T . (Int -> a -> a) -> a -> [Int] -> a
 foldr f z []      = z 
 foldr f z (x::xs) = f x (foldr @a f z xs) 
 
@@ -142,14 +142,14 @@ scanr1 f (x::xs) =
 
 -- Accumulating maps
 
-mapAccumL : forall a . (a -> Int -> (a, Int)) -> a -> [Int] -> (a, [Int])
+mapAccumL : forall a:*T . (a -> Int -> (a, Int)) -> a -> [Int] -> (a, [Int])
 mapAccumL _ s []      = (s, [])
 mapAccumL f s (z::zs) =
   let (x,y) = f s z in
   let (acc, ys) = mapAccumL @a f x zs in
   (acc, y :: ys)
 
-mapAccumR : forall a . (a -> Int -> (a, Int)) -> a -> [Int] -> (a, [Int])
+mapAccumR : forall a:*T . (a -> Int -> (a, Int)) -> a -> [Int] -> (a, [Int])
 mapAccumR _ s []      = (s, [])
 mapAccumR f s (z::zs) =
   let (acc, ys) = mapAccumR @a f s zs in

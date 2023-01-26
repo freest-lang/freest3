@@ -59,20 +59,20 @@ odd : Int -> Bool
 (&&) : Bool -> Bool -> Bool
 (||) : Bool -> Bool -> Bool
 -- Function call
-(|>) : ∀a:*T. ∀b:*T. a -> (a -> b) -> b
+(|>) : forall a:*T b:*T. a -> (a -> b) -> b
 -- Char
 ord : Char -> Int
 chr : Int -> Char
   -- String
 (++) : String -> String -> String
-show : ∀ a . a -> String
+show : forall a:*T . a -> String
 -- read : ∀ a . String -> a
 readBool : String -> Bool
 readInt : String -> Int
 readChar : String -> Char
   -- Pair
-fst : ∀ a:1T . ∀ b:*T . (a, b) -> a
-snd : ∀ a:*T . ∀ b:1T . (a, b) -> b
+fst : forall a:1T b:*T . (a, b) -> a
+snd : forall a:*T b:1T . (a, b) -> b
   -- Internal Prints
 __putStrOut : String -> ()
 __putStrErr : String -> ()
@@ -81,18 +81,18 @@ __getChar : () -> Char
 __getLine : () -> String
 __getContents : () -> String
   -- Fork
-fork : ∀a:*T. (() 1-> a) -> ()
+fork : forall a:*T. (() 1-> a) -> ()
   -- Error & Undefined
-error : ∀a:*T . String -> a
-undefined : ∀a:*T . a
+error : forall a:*T . String -> a
+undefined : forall a:*T . a
   -- Session ops
-new : ∀a:1S . () -> (a, dualof a)
-send : ∀a:1T . a -> ∀b:1S . !a;b 1-> b
-receive : ∀a:1T . ∀b:1S . ?a;b -> (a, b)
+new : forall a:1S . () -> (a, dualof a)
+send : forall a:1T . a -> forall b:1S . !a;b 1-> b
+receive : forall a:1T b:1S . ?a;b -> (a, b)
 close : End -> ()
   -- Not the actual type for collect, but for writing it we would
   -- need polymorphism over the labels in some choice/variant
-collect : ∀a:*T . a
+collect : forall a:*T . a
   -- Internal Files
 __openFile : FilePath -> IOMode -> FileHandle
 __putFileStr : FileHandle -> String -> ()
@@ -127,7 +127,7 @@ not False = True
 -- | id 5       -- 5
 -- | id "Hello" -- "Hello"
 -- | ```
-id : ∀a . a -> a
+id : forall a:*T . a -> a
 id x = x
 
 -- | Swap the order of parameters to a function
@@ -140,7 +140,7 @@ id x = x
 -- |  flippedTest : Bool -> Int -> Bool
 -- |  flippedTest = flip @Int @Bool @Bool
 -- |  ```
-flip : ∀a b c . (a -> b -> c) -> b -> a -> c
+flip : forall a:*T b:*T c:*T . (a -> b -> c) -> b -> a -> c
 flip f x y = f y x
 
 -- | Applies the function passed as the second argument to the third one and uses the predicate in the
@@ -152,7 +152,7 @@ flip f x y = f y x
 -- | firstPowerGreaterThan : Int -> Int
 -- | firstPowerGreaterThan limit = until (> limit) (*2) 1
 -- | ```  
-until : ∀a . (a -> Bool) -> (a -> a) -> a -> a
+until : forall a:*T . (a -> Bool) -> (a -> a) -> a -> a
 until p f x = if p x then x else until @a p f (f x)
 
 -- | Convert a function that receives a pair into a function that receives its
@@ -167,7 +167,7 @@ until p f x = if p x then x else until @a p f (f x)
 -- | sum : Int -> Int -> Int
 -- | sum = curry @Int @Int @Int sumPair
 -- | ```
-curry : ∀a b c . ((a, b) -> c) -> a -> b -> c
+curry : forall a:*T b:*T c:*T . ((a, b) -> c) -> a -> b -> c
 curry f x y = f (x, y)
 
 -- | Convert a function that receives its arguments one at a time into a function
@@ -178,15 +178,15 @@ curry f x y = f (x, y)
 -- | sumPair : (Int, Int) -> Int
 -- | sumPair = uncurry @Int @Int @Int (+)
 -- | ```
-uncurry : ∀a b c . (a -> b -> c) -> ((a, b) -> c)
+uncurry : forall a:*T b:*T c:*T . (a -> b -> c) -> ((a, b) -> c)
 uncurry f p = f (fst@a @b p) (snd @a @b p)
 
 -- | Swap the components of a pair. The expression `swap (1, True)` evaluates to `(True, 1)`.
-swap : ∀a b . (a, b) -> (b, a)
+swap : forall a:*T b:*T . (a, b) -> (b, a)
 swap x = let (a, b) = x in (b, a)
 
 -- | Fixed-point Z combinator
-fix : ∀a . ((a -> a) -> (a -> a)) -> (a -> a)
+fix : forall a:*T . ((a -> a) -> (a -> a)) -> (a -> a)
 fix f =
   (λx:(μb.b -> (a -> a)) -> f (λz:a -> x x z))
   (λx:(μb.b -> (a -> a)) -> f (λz:a -> x x z))
@@ -212,7 +212,7 @@ type Diverge = ()
 -- diverge = diverge
 
 -- | Discard an unrestricted value
-sink : ∀a . a -> ()
+sink : forall a:*T . a -> ()
 sink _ = ()
 
 -- | Execute a thunk n times, sequentially
@@ -223,7 +223,7 @@ sink _ = ()
 -- |     -- print "Hello!" 5 times sequentially
 -- |     repeat @() n (\_:() -> putStrLn "Hello!")
 -- | ```
-repeat : ∀a . Int -> (() -> a) -> ()
+repeat : forall a:*T . Int -> (() -> a) -> ()
 repeat n thunk =
     if n <= 0
     then ()
@@ -240,7 +240,7 @@ repeat n thunk =
 -- |     -- print "Hello!" 5 times in parallel
 -- |     parallel @() n (\_:() -> putStrLn "Hello!")
 -- | ```
-parallel : ∀a . Int -> (() -> a) -> ()
+parallel : forall a:*T . Int -> (() -> a) -> ()
 parallel n thunk = repeat @() n (λ_:() -> fork @a thunk)
 
 -- type Consumer a = a 1-> ()
@@ -258,7 +258,7 @@ parallel n thunk = repeat @() n (λ_:() -> fork @a thunk)
 -- |     -- send a string through the channel (and close it)
 -- |     send "Hello!" s |> close
 -- | ```
-consume : forall a b:1S . (a -> ()) {- Consumer a -} -> ?a;b 1-> b
+consume : forall a:*T b:1S . (a -> ()) {- Consumer a -} -> ?a;b 1-> b
 consume f ch =
     let (x, ch) = receive ch in
     f x;
@@ -277,18 +277,18 @@ consume f ch =
 -- |     -- send a string through the channel (and close it)
 -- |     send "Hello!" s |> close
 -- | ```
-receiveAndClose : ∀a:1T . ?a;End -> a 
+receiveAndClose : forall a:1T . ?a;End -> a 
 receiveAndClose c =
     let (x, c) = receive c in 
     close c;
     x
 
 -- | Receive a value from a star channel. Unrestricted version of `receive`.
-receive_ : ∀a:1T . *?a -> a
+receive_ : forall a:1T . *?a -> a
 receive_ ch = ch |> receive |> fst @a @*?a
 
 -- | Send a value on a star channel. Unrestricted version of `send`.
-send_ : ∀a:1T . a -> *!a 1-> ()
+send_ : forall a:1T . a -> *!a 1-> ()
 send_ x ch = ch |> send x |> sink @*!a
 
 -- | Create a new child process and a linear channel through which it can
@@ -302,7 +302,7 @@ send_ x ch = ch |> send x |> sink @*!a
 -- |     -- send the string to be printed
 -- |     send "Hello!"
 -- | ```
-forkWith : ∀a:1S b . (dualof a 1-> b) -> a
+forkWith : forall a:1S b . (dualof a 1-> b) -> a
 forkWith f =
     let (x, y) = new @a () in
     fork (λ_:() 1-> f y);
@@ -310,7 +310,7 @@ forkWith f =
 
 -- | Session initiation. Accept a request for a linear session on a shared
 -- | channel. The requester uses a conventional receive to obtain the channel end.
-accept : ∀a:1S . *!a -> dualof a
+accept : forall a:1S . *!a -> dualof a
 accept ch =
     let (x, y) = new @a () in
     send x ch;
@@ -340,7 +340,7 @@ accept ch =
 -- | runCounterServer : dualof SharedCounter -> Diverge
 -- | runCounterServer = runServer @Counter @Int counterService 0 
 -- | ```
-runServer : ∀a:1S b . (b -> dualof a 1-> b) -> b -> *!a -> Diverge
+runServer : forall a:1S b:*T . (b -> dualof a 1-> b) -> b -> *!a -> Diverge
 runServer handle state ch =
     runServer @a @b handle (handle state (accept @a ch)) ch 
 
@@ -375,7 +375,7 @@ hCloseOut : OutStream -> ()
 hCloseOut ch = select Close ch |> close
 
 
-__hGenericPut : forall a . (OutStream -> !a;OutStream) -> a -> OutStream -> OutStream
+__hGenericPut : forall a:*T . (OutStream -> !a;OutStream) -> a -> OutStream -> OutStream
 __hGenericPut sel x outStream = sel outStream |> send x
 
 -- | Send a character through an `OutStream` channel endpoint. Does the same as 
@@ -396,7 +396,7 @@ hPutStrLn = __hGenericPut @String (\ch:OutStream -> select PutStrLn ch) -- (sele
 -- | Sends the string representation of a value through an `OutStream` channel endpoint, to be outputed
 -- |     with the newline character. Does the same as `hPutStrLn (show @t v)`, where `v` is the value to
 -- |     be sent and `t` its type.
-hPrint : forall a . a -> OutStream -> OutStream
+hPrint : forall a:*T . a -> OutStream -> OutStream
 hPrint x = hPutStrLn (show @a x)
 
 __hGenericPut_ : forall a . (a -> OutStream -> OutStream) -> a -> OutStreamProvider -> ()
@@ -424,7 +424,7 @@ hPutStrLn_ = __hGenericPut_ @String hPutStrLn
 -- | Unrestricted version of `hPrint`. Behaves the same, except it first receives an `OutStream` 
 -- |     channel endpoint (via session initiation), executes an `hPrint` and then closes the 
 -- |     enpoint with `hCloseOut`.
-hPrint_ : forall a . a -> OutStreamProvider -> ()
+hPrint_ : forall a:*T . a -> OutStreamProvider -> ()
 -- hPrint_ = __hGenericPut_ @a (hPrint @a)
 hPrint_ x ch = __hGenericPut_ @a (hPrint @a) x ch
 
@@ -448,7 +448,7 @@ type InStreamProvider : *S = *?InStream
 hCloseIn : InStream -> ()
 hCloseIn ch = select Close ch |> close
 
-__hGenericGet : forall a . (InStream -> ?a;InStream) -> InStream -> (a, InStream)
+__hGenericGet : forall a:*T . (InStream -> ?a;InStream) -> InStream -> (a, InStream)
 __hGenericGet sel ch = receive $ sel ch
 
 -- | Reads a character from an `InStream` channel endpoint. Does the same as 
@@ -478,7 +478,7 @@ hGetContent ch =
     let (contents, ch) = hGetContent ch in
     (line ++ "\n" ++ contents, ch)
 
-__hGenericGet_ : forall a . (InStream -> (a, InStream)) -> InStreamProvider -> a
+__hGenericGet_ : forall a:*T . (InStream -> (a, InStream)) -> InStreamProvider -> a
 __hGenericGet_ getF inp = 
   let (x, ch) = getF $ receive_ @InStream inp in
   let _ = hCloseIn ch in x
@@ -539,7 +539,7 @@ putStrLn = flip @String @OutStreamProvider @() hPutStrLn_ stdout
 -- | Print the string representation of a given value to `stdout`, followed by the newline character 
 -- |     `\n`. Does the same as `hPrint_ @t v stdout`, where `v` is the value to be printed and `t`
 -- |     its type.
-print : forall a . a -> ()
+print : forall a:*T . a -> ()
 -- print = putStrLn $ show @a
 print x = putStrLn $ show @a x
 
