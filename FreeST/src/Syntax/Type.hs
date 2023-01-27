@@ -32,7 +32,6 @@ data Type =
   -- Functional Types
     Int Span
   | Char Span
-  | Bool Span
   | String Span
   | Arrow Span Multiplicity Type Type
   | Almanac Span Sort TypeMap
@@ -62,7 +61,6 @@ instance Default Type where
 instance Located Type where
   getSpan (Int  p       ) = p
   getSpan (Char p       ) = p
-  getSpan (Bool p       ) = p
   getSpan (String p     ) = p
   getSpan (Arrow p _ _ _) = p
   getSpan (Almanac p _ _) = p

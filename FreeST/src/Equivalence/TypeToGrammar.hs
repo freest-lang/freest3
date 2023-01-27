@@ -95,7 +95,6 @@ fatTerminal :: T.Type -> Maybe T.Type
 -- Functional Types
 fatTerminal t@T.Int{}             = Just t
 fatTerminal t@T.Char{}            = Just t
-fatTerminal t@T.Bool{}            = Just t
 fatTerminal t@T.String{}          = Just t
 fatTerminal (T.Arrow p m t u)     = Just (T.Arrow p m) <*> fatTerminal t <*> fatTerminal u
 fatTerminal (T.Almanac p t m) | t == T.Variant || t == T.Record = 
@@ -116,7 +115,6 @@ syntactic :: T.Type -> Bool
 -- Functional Types
 syntactic t@T.Int{}             = True
 syntactic t@T.Char{}            = True
-syntactic t@T.Bool{}            = True
 syntactic t@T.String{}          = True
 syntactic (T.Arrow _ _ t u)     = syntactic t && syntactic u
 syntactic (T.Pair _ t u)        = syntactic t && syntactic u

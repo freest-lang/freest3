@@ -182,7 +182,6 @@ instance Show T.Type where
 instance Unparse T.Type where
   unparse (T.Int  _       ) = (maxRator, "Int")
   unparse (T.Char _       ) = (maxRator, "Char")
-  unparse (T.Bool _       ) = (maxRator, "Bool")
   unparse (T.String _     ) = (maxRator, "String")
   unparse (T.Skip _       ) = (maxRator, "Skip")
   unparse (T.End _        ) = (maxRator, "End")
@@ -194,6 +193,8 @@ instance Unparse T.Type where
    where
     l = bracket (unparse t) Left arrowRator
     r = bracket (unparse u) Right arrowRator
+  unparse t@(T.Almanac _ T.Variant m) | isBool m  = (maxRator, "Bool")
+    where isBool m = Set.map show (Map.keysSet m) == Set.fromList ["True", "False"] 
   unparse (T.Almanac _ T.Variant m) = (maxRator, "[" ++ showDatatype m ++ "]")
   unparse (T.Almanac _ T.Record m) 
     | Map.null m = (maxRator, "()")

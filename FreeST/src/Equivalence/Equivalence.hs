@@ -63,7 +63,6 @@ instance Equivalence T.Type where
     -- Functional types
     equiv _ _ (T.Int  _) (T.Int  _)                    = True
     equiv _ _ (T.Char _) (T.Char _)                    = True
-    equiv _ _ (T.Bool _) (T.Bool _)                    = True
     equiv _ _ (T.String _) (T.String _)                = True
     equiv v kEnv (T.Arrow _ n1 t1 t2) (T.Arrow _ n2 u1 u2) =
       n1 == n2 && equiv v kEnv t1 u1 && equiv v kEnv t2 u2

@@ -118,7 +118,6 @@ solveDBind solve v (Bind p a k t) =
 changePos :: Span -> T.Type -> T.Type
 changePos p (T.Int    _       ) = T.Int p
 changePos p (T.Char   _       ) = T.Char p
-changePos p (T.Bool   _       ) = T.Bool p
 changePos p (T.String _       ) = T.String p
 changePos p (T.Arrow _ pol t u) = T.Arrow p pol t u
 changePos p (T.Almanac _ s m  ) = T.Almanac p s m
