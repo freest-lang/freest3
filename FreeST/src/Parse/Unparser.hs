@@ -324,14 +324,11 @@ instance Unparse Exp where
 showFieldMap :: FieldMap -> String
 showFieldMap m = intercalate "; " $ map showAssoc (Map.toList m)
  where
-  showAssoc (b, (a, v)) =
-    show b ++ " " ++ unwords (map show a) ++ " -> " ++ show v
+  showAssoc (b, ([], v)) = show b ++ " -> " ++ show v
+  showAssoc (b, (a,  v)) = show b ++ " " ++ unwords (map show a) ++ " -> " ++ show v
 
 showFieldList :: FieldList -> String
 showFieldList m = intercalate "; " $ map show m
- where
-  showAssoc (b, (a, v)) =
-    show b ++ " " ++ unwords (map show a) ++ " -> " ++ show v
 
 instance Show Pattern where
   show (E.PatVar  v)    = "PatVar "  ++ intern v
