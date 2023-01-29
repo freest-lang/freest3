@@ -21,14 +21,12 @@ module Syntax.MkName
   , mkUndefined
   ) where
  
-
 import Syntax.Base
-
 
 mk :: String -> Span -> Variable
 mk = flip mkVar
 
-mkWild,mkOr,mkAnd,mkPlus,mkMinus,mkTimes,mkDiv,mkPower,mkNeg :: Span -> Variable
+mkWild, mkOr, mkAnd, mkPlus, mkMinus, mkTimes, mkDiv, mkPower, mkNeg :: Span -> Variable
  
 mkWild = mk "_"
 mkOr = mk "(||)"
@@ -40,14 +38,14 @@ mkDiv = mk "(/)"
 mkPower = mk "(^)"
 mkNeg = mk "negate"
 
-mkList,mkCons,mkNil :: Span -> Variable
+mkList, mkCons, mkNil :: Span -> Variable
 mkList = mk "[Int]"
 mkCons = mk "(::)"
 mkNil  = mk "[]"
 
-mkSelect,mkCollect,mkSend,mkReceive,mkClose,mkFork :: Span -> Variable
+mkSelect, mkCollect, mkSend, mkReceive, mkClose, mkFork :: Span -> Variable
 mkSelect = mk "select"
-mkCollect = mk "collect"
+mkCollect = mk "#collect"
 mkSend = mk "send"
 mkReceive = mk "receive"
 mkClose = mk "close"

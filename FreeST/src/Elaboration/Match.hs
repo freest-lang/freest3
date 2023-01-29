@@ -13,14 +13,13 @@ import           Data.Functor         ((<&>))
 import           Control.Monad        (zipWithM)
 import           Control.Monad.Extra  ((&&^))
 import           Control.Bool         (ifThenElseM)
-
 import           Syntax.Base
+import           Syntax.MkName
 import           Syntax.Expression
 import qualified Syntax.Type       as T
 import qualified Validation.Rename as R
 import           Util.Error
 import           Util.FreestState
-
 import           Data.Maybe           (isJust)
 import qualified Data.Set          as Set
 import qualified Data.Map.Strict   as Map
@@ -176,7 +175,7 @@ ruleChan :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
 ruleChan (v:us) cs = groupSortBy (pName.head.fst) cs                                      -- group by constructor name
                    & mapM destruct                                                        -- transforms into a case
                  >>= mapM (\(con,vs,cs) -> (,) con . (,) vs <$> match (vs++us) cs)        -- matches every case expression, with the case's missing variables
-                 <&> Case s (App s (Var s (mkVar s "collect")) (Var s v)) . Map.fromList  -- makes the case collect
+                 <&> Case s (App s (Var s (mkCollect s)) (Var s v)) . Map.fromList  -- makes the case collect
   where s = getSpan v
 
 -- mix -------------------------------------------------------------

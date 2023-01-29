@@ -92,7 +92,6 @@ data ErrorType =
   | TypeAbsBodyNotValue Span E.Exp E.Exp
   | VarOrConsNotInScope Span Variable
   | LinProgVar Span Variable T.Type K.Kind
-  | PartialApplied Span E.Exp String
   | NonEquivTypes Span T.Type T.Type E.Exp
   | NonEquivEnvsInBranch Span VarEnv VarEnv E.Exp
   | NonEquivEnvsInUnFun Span VarEnv VarEnv E.Exp
@@ -142,7 +141,6 @@ instance Located ErrorType where
   getSpan (TypeAbsBodyNotValue p _ _       ) = p
   getSpan (VarOrConsNotInScope p _         ) = p
   getSpan (LinProgVar p _ _ _              ) = p
-  getSpan (PartialApplied p _ _            ) = p
   getSpan (NonEquivTypes p _ _ _           ) = p
   getSpan (NonEquivEnvsInBranch p _ _ _    ) = p
   getSpan (NonEquivEnvsInUnFun p _ _ _     ) = p
@@ -272,9 +270,6 @@ instance Message ErrorType where
   msg (LinProgVar _ x t k) sty ts _ =
     "Program variable " ++ style red sty ts x ++ " is linear at the end of its scope\n\t  variable " ++
     style red sty ts x ++ " is of type " ++ style red sty ts t ++ " of kind " ++ style red sty ts k
-  msg (PartialApplied _ e s) sty ts _ = 
-    "Ooops! You're asking too much. I cannot type a partially applied " ++ style red sty ts e ++
-    ".\n\t Consider applying " ++ style red sty ts e ++ " to an expression denoting a " ++ s ++ "."
   msg (NonEquivTypes _ t u e) sty ts _ =
     "Couldn't match expected type " ++ style red sty ts t ++ "\n              with actual type " ++
     style red sty ts u ++"\n                for expression " ++ style red sty ts e

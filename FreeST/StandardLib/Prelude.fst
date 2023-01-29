@@ -90,9 +90,6 @@ new : forall a:1S . () -> (a, dualof a)
 send : forall a:1T . a -> forall b:1S . !a;b 1-> b
 receive : forall a:1T b:1S . ?a;b -> (a, b)
 close : End -> ()
-  -- Not the actual type for collect, but for writing it we would
-  -- need polymorphism over the labels in some choice/variant
-collect : forall a:*T . a
   -- Internal Files
 __openFile : FilePath -> IOMode -> FileHandle
 __putFileStr : FileHandle -> String -> ()

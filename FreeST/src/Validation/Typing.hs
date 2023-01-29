@@ -21,6 +21,7 @@ where
 
 import           Parse.Unparser () -- debug
 import           Syntax.Base
+import           Syntax.MkName
 import qualified Syntax.Expression as E
 import qualified Syntax.Kind as K
 import           Syntax.Program
@@ -48,11 +49,8 @@ synthetise _ (E.Int  p _  ) = return $ T.Int p
 synthetise _ (E.Char p _  ) = return $ T.Char p
 synthetise _ (E.Unit p    ) = return $ T.unit p
 synthetise _ (E.String p _) = return $ T.String p
-  -- The 1st case is not strictly necessary but yields a better error message
-synthetise kEnv e@(E.Var p x)
-  | x == mkVar p "collect" =
-    addError (PartialApplied p e "channel of & type") $> omission p
-  | otherwise =  getFromVEnv x >>= \case
+synthetise kEnv e@(E.Var p x) =
+  getFromVEnv x >>= \case
     Just s -> do
       k <- K.synthetise kEnv s
       when (K.isLin k) $ removeFromVEnv x
@@ -89,7 +87,7 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
     m <- Extract.inChoiceMap e t
     Extract.choiceBranch p m c t
   -- Collect e
-synthetise kEnv (E.App _ (E.Var p x) e) | x == mkVar p "collect" = do
+synthetise kEnv (E.App _ (E.Var p x) e) | x == mkCollect p = do
   tm <- Extract.outChoiceMap e =<< synthetise kEnv e
   return $ T.Almanac p T.Variant
     (Map.map (T.Almanac p T.Record . Map.singleton (mkVar p "0")) tm)
