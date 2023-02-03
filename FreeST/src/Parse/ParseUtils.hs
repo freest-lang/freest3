@@ -19,6 +19,7 @@ import           Syntax.Base
 import           Syntax.Program
 import qualified Syntax.Expression as E
 import qualified Syntax.Kind as K
+import           Syntax.MkName (mkTrue, mkFalse, mkTupleLabels)
 import qualified Validation.Subkind as SK
 import           Validation.Kinding (synthetise)
 import qualified Syntax.Type as T
@@ -161,8 +162,8 @@ insertMap = Map.insertWith (++)
 
 -- Tuples as a derived form of records
 tupleTypeMap :: [T.Type] -> T.TypeMap
-tupleTypeMap ts = Map.fromList $ zipWith (\i t -> (mkVar (getSpan t) (show i), t)) [0..] ts 
+tupleTypeMap ts = Map.fromList $ zipWith (\mk t -> (mk (getSpan t), t)) mkTupleLabels ts 
 
 condCase :: Span -> E.Exp -> E.Exp -> E.Exp -> E.Exp 
-condCase s i t e = E.Case s i $ Map.fromList [(mkVar s "True" , ([],t))
-                                             ,(mkVar s "False", ([],e))]
+condCase s i t e = E.Case s i $ Map.fromList [(mkTrue  s, ([],t))
+                                             ,(mkFalse s, ([],e))]

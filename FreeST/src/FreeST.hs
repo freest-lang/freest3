@@ -15,6 +15,7 @@ import           Parse.ParseUtils
 import           Parse.Parser ( parseProgram, parseAndImport )
 import           Syntax.Base
 import           Syntax.MkName
+import qualified Syntax.Type as T
 import           Syntax.Program (noConstructors, VarEnv)
 import qualified Syntax.Expression as E
 import qualified Syntax.Kind as K
@@ -24,12 +25,6 @@ import           Util.FreestState
 import           Util.Warning
 import           Validation.Rename ( renameState )
 import           Validation.TypeChecking ( typeCheck )
-
-import qualified Syntax.Kind as K
-import qualified Syntax.Type as T
-import           Syntax.Base
-import           Syntax.Program
-
 
 import           Control.Monad.State ( when, unless, execState )
 import qualified Data.Map.Strict as Map
@@ -101,8 +96,8 @@ checkAndRun runOpts = do
     forkHandlers :: [(String, String)] -> E.Exp -> E.Exp
     forkHandlers [] e = e
     forkHandlers ((fun, var) : xs) e =
-      E.UnLet s (mkVar s "_") 
-        (E.App s (E.Var s (mkVar s "fork")) (E.App s (E.Var s (mkVar s fun)) (E.Var s (mkVar s var)))) 
+      E.UnLet s (mkWild s)
+        (E.App s (E.Var s (mkFork s)) (E.App s (E.Var s (mkVar s fun)) (E.Var s (mkVar s var)))) 
         $ forkHandlers xs e 
       where
         s = defaultSpan

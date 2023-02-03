@@ -30,6 +30,7 @@ import           Syntax.Expression as E
 import qualified Syntax.Kind as K
 import           Syntax.Program
 import qualified Syntax.Type as T
+import           Syntax.MkName ( mkTrue, mkFalse )
 
 import           Data.Char ( isDigit )
 import           Data.List ( intercalate )
@@ -298,11 +299,11 @@ instance Unparse Exp where
     l = bracket (unparse e1) Left inRator
     r = bracket (unparse e2) Right inRator
   -- Boolean elim
-  unparse (E.Case p e m) | Map.keysSet m == Set.fromList (map (mkVar p) ["True", "False"]) = 
+  unparse (E.Case p e m) | Map.keysSet m == Set.fromList [mkTrue p, mkFalse p] = 
     (inRator, "if " ++ s1 ++ " then " ++ s2 ++ " else " ++ s3)
     where s1 = bracket (unparse e) Left inRator
-          s2 = bracket (unparse $ snd $ m Map.! mkVar p "True" ) NonAssoc inRator
-          s3 = bracket (unparse $ snd $ m Map.! mkVar p "False") Right    inRator
+          s2 = bracket (unparse $ snd $ m Map.! mkTrue  p) NonAssoc inRator
+          s3 = bracket (unparse $ snd $ m Map.! mkFalse p) Right    inRator
   -- Datatype elim
   unparse (E.Case _ e m) =
     (inRator, "case " ++ s ++ " of {" ++ showFieldMap m ++ "}")

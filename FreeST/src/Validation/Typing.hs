@@ -82,7 +82,7 @@ synthetise kEnv e'@(E.Abs p mult (Bind _ x t1 e)) = do
 -- Application, the special cases first
   -- Select C e
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
-  | x == mkVar p "select" = do
+  | x == mkSelect p = do
     t <- synthetise kEnv e
     m <- Extract.inChoiceMap e t
     Extract.choiceBranch p m c t
@@ -90,16 +90,16 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
 synthetise kEnv (E.App _ (E.Var p x) e) | x == mkCollect p = do
   tm <- Extract.outChoiceMap e =<< synthetise kEnv e
   return $ T.Almanac p T.Variant
-    (Map.map (T.Almanac p T.Record . Map.singleton (mkVar p "0")) tm)
+    (Map.map (T.Almanac p T.Record . Map.singleton (head mkTupleLabels p)) tm)
   -- Receive e
-synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "receive" = do
+synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
   t        <- synthetise kEnv e
   (u1, u2) <- Extract.input e t
   void $ K.checkAgainst kEnv (K.lt $ defaultSpan) u1
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
   return $ T.Almanac p T.Record $ tupleTypeMap [u1, u2]
   -- Send e1 e2
-synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkVar p "send" = do
+synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
   t        <- synthetise kEnv e2
   (u1, u2) <- Extract.output e2 t
   void $ K.checkAgainst kEnv (K.lt defaultSpan) u1
@@ -107,11 +107,11 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkVar p "send" = do
   checkAgainst kEnv e1 u1
   return u2
   -- Close e1
-synthetise kEnv (E.App p (E.Var _ x) e) | x == mkVar p "close" = do
+synthetise kEnv (E.App p (E.Var _ x) e) | x == mkClose p = do
   t <- Extract.end e =<< synthetise kEnv e
   return $ T.unit p
   -- Fork e
-synthetise kEnv (E.App p fork@(E.Var _ x) e) | x == mkVar p "fork" = do
+synthetise kEnv (E.App p fork@(E.Var _ x) e) | x == mkFork p = do
   (_, t) <- get >>= \s -> Extract.function e (evalState (synthetise kEnv e) s)
   synthetise kEnv (E.App p (E.TypeApp p fork t) e)
 -- Application, general case
@@ -125,7 +125,7 @@ synthetise kEnv e@(E.TypeAbs _ (Bind p a k e')) =
   unless (isVal e') (addError (TypeAbsBodyNotValue (getSpan e') e e')) >>
   T.Forall p . Bind p a k <$> synthetise (Map.insert a k kEnv) e'
 -- New @t - check that t comes to an End
-synthetise kEnv (E.TypeApp p new@(E.Var _ x) t) | x == mkVar p "new" = do
+synthetise kEnv (E.TypeApp p new@(E.Var _ x) t) | x == mkNew p = do
   unless (broughtToEnd t) (addError (UnendedSession p t))
   u                             <- synthetise kEnv new
   ~(T.Forall _ (Bind _ y k u')) <- Extract.forall new u
@@ -143,8 +143,8 @@ synthetise kEnv (E.TypeApp _ e t) = do
 synthetise kEnv (E.Pair p e1 e2) = do
   t1 <- synthetise kEnv e1
   t2 <- synthetise kEnv e2
-  return $ T.Almanac p T.Record $ Map.fromList [(mkVar (getSpan t1) "0", t1)
-                                               ,(mkVar (getSpan t2) "1", t2)]
+  return $ T.Almanac p T.Record $ 
+    Map.fromList (zipWith (\ml t -> (ml $ getSpan t, t)) mkTupleLabels [t1, t2])
 -- Pair elimination
 synthetise kEnv (E.BinLet _ x y e1 e2) = do
   t1       <- synthetise kEnv e1

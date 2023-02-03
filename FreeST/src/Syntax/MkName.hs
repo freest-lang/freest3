@@ -8,9 +8,13 @@ module Syntax.MkName
   , mkDiv
   , mkPower
   , mkNeg
+  , mkTrue
+  , mkFalse
   , mkList
   , mkCons
   , mkNil
+  , mkTupleLabels
+  , mkNew 
   , mkSelect
   , mkCollect
   , mkSend
@@ -19,6 +23,7 @@ module Syntax.MkName
   , mkFork
   , mkError
   , mkUndefined
+  , mkMain 
   ) where
  
 import Syntax.Base
@@ -38,12 +43,20 @@ mkDiv = mk "(/)"
 mkPower = mk "(^)"
 mkNeg = mk "negate"
 
+mkTrue, mkFalse :: Span -> Variable 
+mkTrue  = mk "True"
+mkFalse = mk "False"
+
 mkList, mkCons, mkNil :: Span -> Variable
 mkList = mk "[Int]"
 mkCons = mk "(::)"
 mkNil  = mk "[]"
 
-mkSelect, mkCollect, mkSend, mkReceive, mkClose, mkFork :: Span -> Variable
+mkTupleLabels :: [Span -> Variable]
+mkTupleLabels = map (mk . show) [0..]
+
+mkNew, mkSelect, mkCollect, mkSend, mkReceive, mkClose, mkFork :: Span -> Variable
+mkNew = mk "new"
 mkSelect = mk "select"
 mkCollect = mk "#collect"
 mkSend = mk "send"
@@ -55,5 +68,7 @@ mkError, mkUndefined :: Variable
 mkError = mk "error" defaultSpan
 mkUndefined = mk "undefined" defaultSpan
 
+mkMain :: Variable 
+mkMain = mk "main" defaultSpan
 
 -- TODO: mk for all builtin functions in Interpreter.Builtin

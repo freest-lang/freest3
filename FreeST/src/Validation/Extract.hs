@@ -38,6 +38,7 @@ import           Util.FreestState
 import           Data.Functor
 import qualified Data.Map.Strict as Map
 import qualified Data.Set        as Set
+import Syntax.MkName (mkTupleLabels)
 
 
 function :: E.Exp -> T.Type -> FreestState (T.Type, T.Type)
@@ -54,8 +55,8 @@ pair e t =
       return (m Map.! l0, m Map.! l1)
     u              -> let p = getSpan u in
       addError (ExtractError p "a pair" e u) $> (omission p, omission p)
-  where l0 = mkVar defaultSpan "0"
-        l1 = mkVar defaultSpan "1"
+  where l0 = (mkTupleLabels !! 0) defaultSpan
+        l1 = (mkTupleLabels !! 1) defaultSpan 
 
 forall :: E.Exp -> T.Type -> FreestState T.Type
 forall e t =

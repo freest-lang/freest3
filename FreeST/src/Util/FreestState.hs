@@ -289,7 +289,7 @@ defaultOpts = RunOpts { runFilePath  = ""
                       }
 
 getMain :: RunOpts -> Variable
-getMain opts = fromMaybe (mkVar defaultSpan "main") maybeMain
+getMain opts = fromMaybe mkMain maybeMain
   where maybeMain = mainFunction opts
 
 isMainFlagSet :: RunOpts -> Bool

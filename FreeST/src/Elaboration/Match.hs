@@ -97,7 +97,7 @@ fillVars fun = map (fillVars' maxLen) fun
 
 fillVars' :: Int -> Equation -> Equation
 fillVars' n (ps,e) = (ps++missingVars,e)      -- fills with '_' variables all lines with missing arguments
-  where pat = PatVar $ mkVar defaultSpan "_"
+  where pat = PatVar $ mkWild defaultSpan
         missingVars = replicate (n - (length ps)) pat
 
 -- match -----------------------------------------------------------
@@ -147,7 +147,7 @@ isRuleChan cs = b1 &&^ b2           -- it cannot be empty or var, but has to be 
 -- empty -----------------------------------------------------------
 ruleEmpty :: [Variable] -> [Equation] -> FreestState Exp
 ruleEmpty _ ((_,e):cs) = (\v -> replaceExp v v e) =<< v
-  where v = R.renameVar $ mkVar defaultSpan "_"
+  where v = R.renameVar $ mkWild defaultSpan
 
 -- var -------------------------------------------------------------
 ruleVar :: [Variable] -> [Equation] -> FreestState Exp
@@ -198,7 +198,7 @@ fill' :: Variable -> [(Variable,Int)] -> [Equation] -> FreestState [Equation]
 fill' v _ [] = return []
 fill' v cons ((p:ps,e):cs) = (++) <$> mapM (mkCons v' e') cons      -- concats the new constructors with the rest 
                                   <*> fill' v cons cs
-  where v' = PatVar $ mkVar (getSpan $ pVar p) "_"                  -- nested Patterns -> Variables
+  where v' = PatVar $ mkWild (getSpan $ pVar p)                     -- nested Patterns -> Variables
         e' = replaceExp v (pVar p) e                                -- replace the variable that is becoming a Constructor
         mkCons v e (c,n) = (,) (PatCons c (replicate n v):ps) <$> e -- creates a list with the Constuctor and corresponding nested variables
   
