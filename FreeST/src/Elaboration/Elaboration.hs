@@ -25,6 +25,8 @@ import           Control.Monad (when)
 import           Data.Functor
 import qualified Data.Map.Strict as Map
 import           Data.Maybe
+import Validation.Substitution (free)
+import qualified Syntax.Base as T
 
 elaboration :: FreestState ()
 elaboration = do
@@ -89,7 +91,9 @@ fixConsTypes = do
 -- | Elaboration over environments (VarEnv + ParseEnv)
 
 elabVEnv :: VarEnv -> FreestState ()
-elabVEnv = tMapWithKeyM_ (\pv t -> addToVEnv pv =<< elaborate t)
+elabVEnv = tMapWithKeyM_ (\pv t -> addToVEnv pv . quantifyFreeVars =<< elaborate t)
+  where quantifyFreeVars t = foldr (\v t -> T.Forall p (T.Bind p v (K.ut p) t)) t (free t) 
+          where p = getSpan t 
 
 elabPEnv :: ParseEnv -> FreestState ()
 elabPEnv = tMapWithKeyM_ (\x (ps, e) -> addToPEnv x ps =<< elaborate e)

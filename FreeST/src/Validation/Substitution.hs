@@ -18,6 +18,7 @@ module Validation.Substitution
   , cosubs
   , subsAll
   , unfold
+  , free
   )
 where
 
@@ -28,6 +29,7 @@ import qualified Syntax.Kind as K
 import qualified Syntax.Type as T
 import           Util.Error ( internalError )
 import           Elaboration.Duality
+import qualified Data.Set as Set
 
 
 -- [t/x]u, substitute t for for every occurrence of x in u
@@ -98,28 +100,22 @@ unfold t@(T.Rec _ (Bind _ x _ u)) = subs t x u
 unfold t = internalError "Validation.Substitution.unfold" t
 
 
-{-
-
--- Not needed. Cf. Validation.Renam.isFreeIn.
 -- The set of free type variables in a type
 free :: T.Type -> Set.Set Variable
-  -- Functional types
 free (T.Arrow _ _ t u) = free t `Set.union` free u
-free (T.Pair _ t u) = free t `Set.union` free u
-free (T.Variant _ m) = freeMap m
-  -- Session types
+free (T.Almanac _ _ m) = freeMap m
+free (T.Message _ _ t) = free t 
 free (T.Semi _ t u) = free t `Set.union` free u
-free (T.Choice _ _ m) = freeMap m
-  -- Functional or session
-free (T.Rec _ (Bind _ x _) t) = Set.delete x (free t)
+free (T.Rec    _ (Bind _ x _ t)) = Set.delete x (free t)
+free (T.Forall _ (Bind _ x _ t)) = Set.delete x (free t)
 free (T.Var _ x) = Set.singleton x
-  -- T.Type operators
-free t@T.Dualof{} = internalError "Validation.Substitution.free" t
-  -- Otherwise: Basic, Skip, Message
-free _ = Set.empty
+free (T.Dualof _ x) = free x
+free _ = Set.empty 
 
 freeMap :: T.TypeMap -> Set.Set Variable
 freeMap = Map.foldr (\t acc -> free t `Set.union` acc) Set.empty
+
+{-
 
 Define [t/x]u to be the result of substituting t for every free
 occurrence of x in u, and changing bound variables to avoid clashes
