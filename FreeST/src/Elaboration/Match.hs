@@ -43,7 +43,7 @@ checkChoices pec = do
 checkNumArgs :: ParseEnvPat -> FreestState ()
 checkNumArgs pep = tMapWithKeyM_ checkNumArgs' pep
 
-checkNumArgs' :: Variable -> [([Pattern],Exp)] -> FreestState ()
+checkNumArgs' :: Variable -> [Equation] -> FreestState ()
 checkNumArgs' fn lines  
   | allSame $ map (length.fst) lines = return ()                  -- if every line has the same amount of arguments all is fine
   | otherwise = addError $ DifNumberOfArguments (getSpan fn) fn   -- if not there's an error
@@ -116,12 +116,18 @@ match vs x = do
 
 match' :: [Variable] -> [Equation] -> FreestState Exp
 match' vs x                                                   -- then goes to check other rules
+  | isRuleLit   x = ruleLit   vs x
   | isRuleEmpty x = ruleEmpty vs x
   | isRuleVar   x = ruleVar   vs x
   | isRuleCon   x = ruleCon   vs x
   | otherwise     = ruleMix   vs x
 
 -- is rule ---------------------------------------------------------
+isRuleLit   :: [Equation] -> Bool
+isRuleLit cs = any (check.fst) cs
+  where check p = not   (null p)
+               && isLit (head p)
+
 isRuleEmpty :: [Equation] -> Bool
 isRuleEmpty cs = all (null.fst) cs  -- all have to be empty
 
@@ -171,7 +177,7 @@ destruct l@((p:ps,_):cs) = mapM newVar (pPats p)                                
   where l' = map (\(p:ps,e) -> ((pPats p)++ps,e)) l                                 -- unfolds the patterns
 
 -- chan ------------------------------------------------------------
-ruleChan :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
+ruleChan :: [Variable] -> [Equation] -> FreestState Exp
 ruleChan (v:us) cs = groupSortBy (pName.head.fst) cs                                      -- group by constructor name
                    & mapM destruct                                                        -- transforms into a case
                  >>= mapM (\(con,vs,cs) -> (,) con . (,) vs <$> match (vs++us) cs)        -- matches every case expression, with the case's missing variables
@@ -226,6 +232,66 @@ getKeys :: T.Type -> [Variable]
 getKeys (T.Almanac _ T.Variant tm) = Map.keys tm
 getKeys _ = []
 
+-- lit -------------------------------------------------------------
+ruleLit :: [Variable] -> [Equation] -> FreestState Exp
+ruleLit vs cs = do
+  -- ifs   -> vars until the first lit
+  -- elses -> everything else after the first lit
+  let (ifs,elses1) = span (not.isLit.head.fst) cs
+  let (p,elses2) = (head elses1, tail elses1)
+  let lit = head $ fst $ p
+  --- same literals and other vars
+  let ifRest1  = p : filter ((isGroup  lit).head.fst) elses2
+  -- dif literals and other vars
+  let elseRest =     filter ((notGroup lit).head.fst) elses2
+  -- transform lits into vars
+  let ifRest2  = map (litToVar) ifRest1
+  -- if cond then group1 else group 2
+  let group1 = ifs++ifRest2
+  let group2 = ifs++elseRest
+  let cond = comp (head vs) $ pLit lit
+  -- 
+  g1 <- match vs group1
+  g2 <- match vs group2
+  return $ Cond (getSpan $ pLit lit ) cond g1 g2
+
+-- rule lit aux 
+litToVar :: Equation -> Equation
+litToVar (((L e):ps),exp) = (((V $ mkVar (getSpan e) "_"):ps),exp)
+litToVar p = p
+
+isGroup :: Pattern -> Pattern -> Bool
+isGroup _      (V _ ) = True 
+isGroup (L e1) (L e2) = sameLit' e1 e2
+
+notGroup :: Pattern -> Pattern -> Bool
+notGroup _      (V _)  = True
+notGroup (L e1) (L e2) = not $ sameLit' e1 e2
+
+sameLit' :: Exp -> Exp -> Bool
+sameLit' (Int    _ k1) (Int    _ k2) = k1 == k2
+sameLit' (Char   _ k1) (Char   _ k2) = k1 == k2
+sameLit' (Bool   _ k1) (Bool   _ k2) = k1 == k2
+sameLit' (String _ k1) (String _ k2) = k1 == k2
+sameLit' _             _             = False
+
+-- TODOX
+comp :: Variable -> Exp -> Exp
+comp v i@(Int    s  k) = binOp (Var (getSpan v) v) (mkVar s "(==)") i
+comp v b@(Bool   s2 k) = binOp b1 (mkVar s2 "(||)") b2 
+  where s1  = getSpan v
+        var = Var s1 v
+        b1 = binOp var (mkVar s2 "(&&)") b
+        b2 = binOp (unOp (mkVar s1 "not") var s1) (mkVar s2 "(&&)") 
+                   (unOp (mkVar s2 "not") b   s2)
+comp v c@(Char   s2 k) = binOp c1 (mkVar s2 "(==)") c2
+  where s1 = getSpan v
+        var = Var s1 v
+        c1 = unOp (mkVar s1 "ord") var s1
+        c2 = unOp (mkVar s2 "ord") c   s2
+-- comp v s@(String s k) = 
+comp _ e = Bool (getSpan e) False
+
 -- replace Variables -----------------------------------------------
 replaceExp :: Variable -> Variable -> Exp -> FreestState Exp
 replaceExp v p (Var     s v1)         = Var     s      (replaceVar v p v1) & return
@@ -240,7 +306,7 @@ replaceExp v p (TypeApp s e t)        = flip (TypeApp s) t <$> replaceExp v p e
 replaceExp v p (UnLet s v1 e1 e2)     = UnLet   s      (replaceVar  v p v1)<$> replaceExp v p e1 <*> replaceExp v p e2
 replaceExp v p (CasePat s e flp)      = do
   checkChanVarCase flp                                            -- checks if there are variables with channel patterns
-  nVar <- R.renameVar $ Variable (getSpan e) "unlet_hidden_var"   -- creates an hidden variable
+  nVar <- R.renameVar $ Variable (getSpan e) "unLetHiddenVar"     -- creates an hidden variable
   UnLet s nVar <$> replaceExp v p e
                <*> (replaceExp v p =<< match [nVar] flp)          -- this variables then acts as the pattern variable
 replaceExp _ _ e = return e
@@ -267,6 +333,9 @@ pVar (PatCons v _) = v
 
 pPats :: Pattern -> [Pattern]
 pPats (PatCons _ ps) = ps
+
+pLit :: Pattern -> Exp
+pLit (PatLit e) = e
 
 isVar :: Pattern -> Bool
 isVar (PatVar _) = True

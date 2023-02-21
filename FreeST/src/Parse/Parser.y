@@ -296,12 +296,17 @@ PatternCase :: { Pattern }
   | Pattern    { $1 }
 
 Pattern :: { Pattern }
-  : ProgVarWild                            { E.PatVar  $1    }
+  : PatternLit                             { $1 }
+  | ProgVarWild                            { E.PatVar  $1    }
   | Constructor                            { E.PatCons $1 [] }
   | '['']'                                 { E.PatCons (mkNil $ getSpan $1) [] }
   | '(' Pattern '::' Pattern ')'           { E.PatCons (mkCons $ getSpan $3) ($2:[$4]) }
   | '(' Constructor Pattern PatternSeq ')' { E.PatCons $2 ($3:$4) }
   | '(' Pattern ')'                        { $2 }
+
+PatternLit :: { Pattern }
+  : INT   { let (TokenInt  p x) = $1 in E.PatLit $ E.Int  p x }
+  | CHAR  { let (TokenChar p x) = $1 in E.PatLit $ E.Char p x }
 
 GuardsCase :: { Exp }
   : '|' Exp       '->' Exp GuardsCase {% mkSpanSpan $1 $4 >>= \s -> pure $ condCase s $2 $4 $5 }

@@ -58,6 +58,7 @@ type FieldList = [([Pattern], Exp)]
 
 data Pattern = PatVar  Variable           -- Variable   name
              | PatCons Variable [Pattern] -- Construtor name patterns
+             | PatLit Exp
 
 instance Located Exp where
   getSpan (Unit p             ) = p
