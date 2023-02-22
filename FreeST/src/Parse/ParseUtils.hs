@@ -120,6 +120,7 @@ checkDupVarPats ps = void $ checkDupVarPats' ps []
 
 checkDupVarPats' :: [E.Pattern] -> [Variable] -> FreestStateT [Variable]
 checkDupVarPats' [] vs = return vs
+checkDupVarPats' ((E.PatLit  _   ):xs) vs = checkDupVarPats' xs vs
 checkDupVarPats' ((E.PatCons _ cs):xs) vs = checkDupVarPats' cs vs >>= checkDupVarPats' xs
 checkDupVarPats' ((E.PatVar  v)   :xs) vs = do
    case find clause vs of
@@ -167,3 +168,6 @@ tupleTypeMap ts = Map.fromList $ zipWith (\mk t -> (mk (getSpan t), t)) mkTupleL
 condCase :: Span -> E.Exp -> E.Exp -> E.Exp -> E.Exp 
 condCase s i t e = E.Case s i $ Map.fromList [(mkTrue  s, ([],t))
                                              ,(mkFalse s, ([],e))]
+
+condCaseNoElse :: Span -> E.Exp -> E.Exp -> E.Exp
+condCaseNoElse s i t = E.Case s i $ Map.fromList [(mkTrue  s, ([],t))]

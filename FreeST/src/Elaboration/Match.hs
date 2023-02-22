@@ -24,6 +24,8 @@ import           Data.Maybe           (isJust)
 import qualified Data.Set          as Set
 import qualified Data.Map.Strict   as Map
 
+import           Parse.ParseUtils(binOp,unOp,condCase,condCaseNoElse)
+
 import           Debug.Trace -- debug (used on debugM function)
 
 type Equation = ([Pattern],Exp)
@@ -67,9 +69,11 @@ checkChanVar' cons xs
   -- mixture rule
   | any isVar xs &&                                           -- if has at least one var and cons
     any isCon xs = do
+    debugM "HERE"
     let varsF    = map pVar $ filter isVar xs                 -- get vars
     let consF    =            filter isCon xs                 -- get constructors
     let consFVar = Set.fromList $ map pVar consF              -- get constructors' names
+    debugM "HERE"
     let inter    = Set.intersection cons consFVar             -- intersection between actual constructors and our constructors 
     if Set.null inter then do                                 -- if null they are channels
       -- Channel pattern
@@ -144,6 +148,7 @@ isRuleCon cs = all (check.fst) cs   -- every pattern has to be a constructor
 isRuleChan  :: [Equation] -> FreestState Bool
 isRuleChan cs = b1 &&^ b2           -- it cannot be empty or var, but has to be Con, in adition to all being channels 
   where b1 = return $ (not $ isRuleEmpty cs) 
+                   && (not $ isRuleLit cs) 
                    && (not $ isRuleVar cs) 
                    && (isRuleCon cs)
         b2 = and <$> mapM (isChan.head.fst) cs
@@ -252,45 +257,40 @@ ruleLit vs cs = do
   let cond = comp (head vs) $ pLit lit
   -- 
   g1 <- match vs group1
-  g2 <- match vs group2
-  return $ Cond (getSpan $ pLit lit ) cond g1 g2
+  if null group2 then do
+    return $ condCaseNoElse (getSpan $ pLit lit ) cond g1
+  else do
+    g2 <- match vs group2
+    return $ condCase (getSpan $ pLit lit ) cond g1 g2
 
 -- rule lit aux 
 litToVar :: Equation -> Equation
-litToVar (((L e):ps),exp) = (((V $ mkVar (getSpan e) "_"):ps),exp)
+litToVar (((PatLit e):ps),exp) = (((PatVar $ mkVar (getSpan e) "_"):ps),exp)
 litToVar p = p
 
 isGroup :: Pattern -> Pattern -> Bool
-isGroup _      (V _ ) = True 
-isGroup (L e1) (L e2) = sameLit' e1 e2
+isGroup _           (PatVar _ ) = True 
+isGroup (PatLit e1) (PatLit e2) = sameLit' e1 e2
 
 notGroup :: Pattern -> Pattern -> Bool
-notGroup _      (V _)  = True
-notGroup (L e1) (L e2) = not $ sameLit' e1 e2
+notGroup _           (PatVar _)  = True
+notGroup (PatLit e1) (PatLit e2) = not $ sameLit' e1 e2
 
 sameLit' :: Exp -> Exp -> Bool
 sameLit' (Int    _ k1) (Int    _ k2) = k1 == k2
 sameLit' (Char   _ k1) (Char   _ k2) = k1 == k2
-sameLit' (Bool   _ k1) (Bool   _ k2) = k1 == k2
 sameLit' (String _ k1) (String _ k2) = k1 == k2
 sameLit' _             _             = False
 
--- TODOX
 comp :: Variable -> Exp -> Exp
 comp v i@(Int    s  k) = binOp (Var (getSpan v) v) (mkVar s "(==)") i
-comp v b@(Bool   s2 k) = binOp b1 (mkVar s2 "(||)") b2 
-  where s1  = getSpan v
-        var = Var s1 v
-        b1 = binOp var (mkVar s2 "(&&)") b
-        b2 = binOp (unOp (mkVar s1 "not") var s1) (mkVar s2 "(&&)") 
-                   (unOp (mkVar s2 "not") b   s2)
 comp v c@(Char   s2 k) = binOp c1 (mkVar s2 "(==)") c2
   where s1 = getSpan v
         var = Var s1 v
         c1 = unOp (mkVar s1 "ord") var s1
         c2 = unOp (mkVar s2 "ord") c   s2
 -- comp v s@(String s k) = 
-comp _ e = Bool (getSpan e) False
+-- comp _ e = Bool (getSpan e) False
 
 -- replace Variables -----------------------------------------------
 replaceExp :: Variable -> Variable -> Exp -> FreestState Exp
@@ -330,6 +330,7 @@ pName (PatCons v _) = intern v
 pVar :: Pattern -> Variable
 pVar (PatVar  v)   = v
 pVar (PatCons v _) = v
+pVar (PatLit  e)   = mkVar (getSpan e) (show e)
 
 pPats :: Pattern -> [Pattern]
 pPats (PatCons _ ps) = ps
@@ -342,7 +343,12 @@ isVar (PatVar _) = True
 isVar _          = False
 
 isCon :: Pattern -> Bool
-isCon = not.isVar
+isCon (PatCons _ _) = True
+isCon _             = False
+
+isLit :: Pattern -> Bool
+isLit (PatLit _) = True
+isLit _          = False
 
 -- get every constructor from the file
 getConstructors :: FreestState (Set.Set Variable)
@@ -352,9 +358,9 @@ getConstructors = Map.elems <$> getTEnv
               <&> Set.fromList
 
 isChan :: Pattern -> FreestState Bool
-isChan (PatVar _)    = return False
 isChan (PatCons c _) = getConstructors
                    <&> Set.notMember c
+isChan _ = return False
 
 isPat_ :: Pattern -> Bool
 isPat_ (PatVar v) = isWild v
