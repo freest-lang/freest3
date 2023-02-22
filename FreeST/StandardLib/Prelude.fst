@@ -140,9 +140,10 @@ id x = x
 flip : forall a:*T b:*T c:*T . (a -> b -> c) -> b -> a -> c
 flip f x y = f y x
 
--- | Applies the function passed as the second argument to the third one and uses the predicate in the
--- |     first argument to evaluate the result, if it comes as True it returns it, otherwise, it 
--- |     continues to apply the function on previous results until the predicate evaluates to True.
+-- | Applies the function passed as the second argument to the third one and
+-- uses the predicate in the first argument to evaluate the result, if it comes
+-- as True it returns it, otherwise, it continues to apply the function on
+-- previous results until the predicate evaluates to True.
 -- | 
 -- | ```
 -- | -- | First base 2 power greater than a given limit
@@ -167,8 +168,8 @@ until p f x = if p x then x else until @a p f (f x)
 curry : forall a:*T b:*T c:*T . ((a, b) -> c) -> a -> b -> c
 curry f x y = f (x, y)
 
--- | Convert a function that receives its arguments one at a time into a function
--- | on pairs.
+-- | Convert a function that receives its arguments one at a time into a
+-- function on pairs.
 -- | 
 -- | ```
 -- | -- | Sums the elements of a pair of integers
@@ -178,7 +179,8 @@ curry f x y = f (x, y)
 uncurry : forall a:*T b:*T c:*T . (a -> b -> c) -> ((a, b) -> c)
 uncurry f p = f (fst@a @b p) (snd @a @b p)
 
--- | Swap the components of a pair. The expression `swap (1, True)` evaluates to `(True, 1)`.
+-- | Swap the components of a pair. The expression `swap (1, True)` evaluates to
+-- `(True, 1)`.
 swap : forall a:*T b:*T . (a, b) -> (b, a)
 swap x = let (a, b) = x in (b, a)
 
@@ -228,14 +230,14 @@ repeat n thunk =
         thunk ();
         repeat @a (n - 1) thunk
 
--- | Fork n identical threads. Works the same as a `repeat` call but in parallel instead of 
--- | sequentially.
+-- | Fork n identical threads. Works the same as a `repeat` call but in parallel
+-- instead of sequentially.
 -- | 
 -- | ```
 -- | main : ()
 -- | main = 
 -- |     -- print "Hello!" 5 times in parallel
--- |     parallel @() n (\_:() -> putStrLn "Hello!")
+-- |     parallel @() 5 (\_:() -> putStrLn "Hello!")
 -- | ```
 parallel : forall a:*T . Int -> (() -> a) -> ()
 parallel n thunk = repeat @() n (λ_:() -> fork @a thunk)
@@ -288,6 +290,15 @@ receive_ ch = ch |> receive |> fst @a @*?a
 send_ : forall a:1T . a -> *!a 1-> ()
 send_ x ch = ch |> send x |> sink @*!a
 
+-- | Session initiation. Accept a request for a linear session on a shared
+-- channel. The requester uses a conventional receive to obtain the channel
+-- end.
+accept : forall a:1S . *!a -> dualof a
+accept ch =
+    let (x, y) = new @a () in
+    send x ch;
+    y
+
 -- | Create a new child process and a linear channel through which it can
 -- | communicate with its parent process. Return the channel endpoint.
 -- | 
@@ -305,20 +316,12 @@ forkWith f =
     fork (λ_:() 1-> f y);
     x
 
--- | Session initiation. Accept a request for a linear session on a shared
--- | channel. The requester uses a conventional receive to obtain the channel end.
-accept : forall a:1S . *!a -> dualof a
-accept ch =
-    let (x, y) = new @a () in
-    send x ch;
-    y
-
--- | Run an infinite shared server thread given a function to serve a client (a handle), the initial 
--- |     state, and the server's shared channel endpoint. It can be seen as an infinite sequential 
--- |     application of the handle function over a newly accepted session, while contiuously updating
--- |     the state. 
+-- | Run an infinite shared server thread given a function to serve a client (a
+-- handle), the initial state, and the server's shared channel endpoint. It can
+-- be seen as an infinite sequential application of the handle function over a
+-- newly accepted session, while continuously the state.
 -- |     
--- | Note this only works with session types that use session initiation.
+-- | Note this only work with session types that use session initiation.
 -- | 
 -- | ```
 -- | type SharedCounter : *S = *?Counter
@@ -329,9 +332,9 @@ accept ch =
 -- | 
 -- | -- | Handler for a counter
 -- | counterService : Int -> dualof Counter 1-> Int
--- | counterService i (Inc ch) = close ch; i+1 
--- | counterService i (Dec ch) = close ch; i-1
--- | counterService i (Get ch) = send i ch |> close; i
+-- | counterService i (Inc ch) = close ch; i + 1 
+-- | counterService i (Dec ch) = close ch; i - 1
+-- | counterService i (Get ch) = ch |> send i |> close; i
 -- | 
 -- | -- | Counter server
 -- | runCounterServer : dualof SharedCounter -> Diverge
@@ -354,10 +357,10 @@ runServer handle state ch =
 
 -- # Output and input streams
 
--- | The `OutStream` type describes output streams (such as `stdout`, `stderr` and write files).
--- |     `PutStr` outputs a character, `PutStr` outputs a string, and `PutStrLn` outputs a string 
--- |     followed by the newline character (`\n`). Operations in this channel end with the `Close`
--- |     option.
+-- | The `OutStream` type describes output streams (such as `stdout`, `stderr`
+-- and write files). `PutStr` outputs a character, `PutStr` outputs a string,
+-- and `PutStrLn` outputs a string followed by the newline character (`\n`).
+-- Operations in this channel end with the `Close` option.
 type OutStream : 1S = +{ PutChar : !Char; OutStream
                        , PutStr  : !String; OutStream
                        , PutStrLn: !String; OutStream
@@ -367,32 +370,32 @@ type OutStream : 1S = +{ PutChar : !Char; OutStream
 -- | Unrestricted session type for the `OutStream` type.
 type OutStreamProvider : *S = *?OutStream
 
--- | Closes an `OutStream` channel endpoint. Does the same as a `close`.
+-- | Closes an `OutStream` channel endpoint. Behaves as a `close`.
 hCloseOut : OutStream -> ()
-hCloseOut ch = select Close ch |> close
-
+hCloseOut ch = ch |> select Close |> close
 
 __hGenericPut : forall a:*T . (OutStream -> !a;OutStream) -> a -> OutStream -> OutStream
 __hGenericPut sel x outStream = sel outStream |> send x
 
--- | Send a character through an `OutStream` channel endpoint. Does the same as 
+-- | Send a character through an `OutStream` channel endpoint. Behaves as 
 -- |     `|> select PutChar |> send`.
 hPutChar : Char -> OutStream -> OutStream
-hPutChar = __hGenericPut @Char (\ch:OutStream -> select PutChar ch) -- (select PutChar)
+hPutChar = __hGenericPut @Char (\ch:OutStream -> select PutChar ch)
 
--- | Send a String through an `OutStream` channel endpoint. Does the same as 
+-- | Send a String through an `OutStream` channel endpoint. Behaves as 
 -- |     `|> select PutString |> send`.
 hPutStr : String -> OutStream -> OutStream
-hPutStr   = __hGenericPut @String (\ch:OutStream -> select PutStr   ch) -- (select PutStr)
+hPutStr   = __hGenericPut @String (\ch:OutStream -> select PutStr   ch)
 
--- | Send a string through an `OutStream` channel endpoint, to be outputed with the newline character. 
--- |     Does the same as `|> select PutStringLn |> send`.
+-- | Send a string through an `OutStream` channel endpoint, to be output with
+-- the newline character. Behaves as
+--|     `|> select PutStringLn |> send`.
 hPutStrLn : String -> OutStream -> OutStream
-hPutStrLn = __hGenericPut @String (\ch:OutStream -> select PutStrLn ch) -- (select PutStrLn)
+hPutStrLn = __hGenericPut @String (\ch:OutStream -> select PutStrLn ch)
 
--- | Sends the string representation of a value through an `OutStream` channel endpoint, to be outputed
--- |     with the newline character. Does the same as `hPutStrLn (show @t v)`, where `v` is the value to
--- |     be sent and `t` its type.
+-- | Sends the string representation of a value through an `OutStream` channel
+-- endpoint, to be output with the newline character. Behaves as `hPutStrLn
+-- (show @t v)`, where `v` is the value to be sent and `t` its type.
 hPrint : forall a:*T . a -> OutStream -> OutStream
 hPrint x = hPutStrLn (show @a x)
 
@@ -400,38 +403,38 @@ __hGenericPut_ : forall a . (a -> OutStream -> OutStream) -> a -> OutStreamProvi
 __hGenericPut_ putF x outProv = 
     hCloseOut $ putF x $ receive_ @OutStream outProv 
 
--- | Unrestricted version of `hPutChar`. Behaves the same, except it first receives an `OutStream` 
--- |     channel endpoint (via session initiation), executes an `hPutChar` and then closes the 
--- |     enpoint with `hCloseOut`.
+-- | Unrestricted version of `hPutChar`. Behaves the same, except it first
+-- receives an `OutStream` channel endpoint (via session initiation), executes
+-- an `hPutChar` and then closes the enpoint with `hCloseOut`.
 hPutChar_ : Char -> OutStreamProvider -> ()
 hPutChar_ = __hGenericPut_ @Char hPutChar
 
--- | Unrestricted version of `hPutStr`. Behaves the same, except it first receives an `OutStream` 
--- |     channel endpoint (via session initiation), executes an `hPutStr` and then closes the 
--- |     enpoint with `hCloseOut`.
+-- | Unrestricted version of `hPutStr`. Behaves similarly, except that it first
+-- receives an `OutStream` channel endpoint (via session initiation), executes
+-- an `hPutStr` and then closes the enpoint with `hCloseOut`.
 hPutStr_ : String -> OutStreamProvider -> ()
-hPutStr_   = __hGenericPut_ @String hPutStr
+hPutStr_ = __hGenericPut_ @String hPutStr
 
--- | Unrestricted version of `hPutStrLn`. Behaves the same, except it first receives an `OutStream` 
--- |     channel endpoint (via session initiation), executes an `hPutStrLn` and then closes the 
--- |     enpoint with `hCloseOut`.
+-- | Unrestricted version of `hPutStrLn`. Behaves similarly, except that it
+-- first receives an `OutStream` channel endpoint (via session initiation),
+-- executes an `hPutStrLn` and then closes the enpoint with `hCloseOut`.
 hPutStrLn_ : String -> OutStreamProvider -> ()
 hPutStrLn_ = __hGenericPut_ @String hPutStrLn
 
--- | Unrestricted version of `hPrint`. Behaves the same, except it first receives an `OutStream` 
--- |     channel endpoint (via session initiation), executes an `hPrint` and then closes the 
--- |     enpoint with `hCloseOut`.
+-- | Unrestricted version of `hPrint`. Behaves similarly, except that it first
+-- receives an `OutStream` channel endpoint (via session initiation), executes
+-- an `hPrint` and then closes the enpoint with `hCloseOut`.
 hPrint_ : forall a:*T . a -> OutStreamProvider -> ()
 -- hPrint_ = __hGenericPut_ @a (hPrint @a)
-hPrint_ x ch = __hGenericPut_ @a (hPrint @a) x ch
+hPrint_ x c = __hGenericPut_ @a (hPrint @a) a c
 
 
 -- InStream
 
--- | The `InStream` type describes input streams (such as `stdin` and read files).
--- |     `GetChar` reads a single character, `GetLine` reads a line, and `IsEOF` checks for the EOF
--- |     (End-Of-File) token, i.e., if an input stream reached the end. Operations in this channel end 
--- |     with the `Close` option.
+-- | The `InStream` type describes input streams (such as `stdin` and read
+-- files). `GetChar` reads a single character, `GetLine` reads a line, and
+-- `IsEOF` checks for the EOF (End-Of-File) token, i.e., if an input stream
+-- reached the end. Operations in this channel end with the `Close` option.
 type InStream : 1S = +{ GetChar     : ?Char  ; InStream
                       , GetLine     : ?String; InStream
                       , IsEOF       : ?Bool  ; InStream
@@ -441,19 +444,19 @@ type InStream : 1S = +{ GetChar     : ?Char  ; InStream
 -- | Unrestricted session type for the `OutStream` type.
 type InStreamProvider : *S = *?InStream
 
--- | Closes an `InStream` channel endpoint. Does the same as a `close`.
+-- | Closes an `InStream` channel endpoint. Behaves as a `close`.
 hCloseIn : InStream -> ()
 hCloseIn ch = select Close ch |> close
 
 __hGenericGet : forall a:*T . (InStream -> ?a;InStream) -> InStream -> (a, InStream)
 __hGenericGet sel ch = receive $ sel ch
 
--- | Reads a character from an `InStream` channel endpoint. Does the same as 
+-- | Reads a character from an `InStream` channel endpoint. Behaves as 
 -- |     `|> select GetChar |> receive`.
 hGetChar : InStream -> (Char, InStream)
 hGetChar = __hGenericGet @Char (\ch:InStream -> select GetChar ch)
 
--- | Reads a line (as a string) from an `InStream` channel endpoint. Does the same as 
+-- | Reads a line (as a string) from an `InStream` channel endpoint. Behaves as 
 -- |     `|> select GetLine |> receive`.
 hGetLine : InStream -> (String, InStream)
 hGetLine = __hGenericGet @String (\ch:InStream -> select GetLine ch)
@@ -518,26 +521,25 @@ hGetContent_ inp =
 -- | Standard output stream. Prints to the console.
 stdout : OutStreamProvider
 
--- | Print a character to `stdout`. Does the same as `hPutChar_ c stdout`, where `c` is the character
--- |     to be printed.
+-- | Print a character to `stdout`. Behaves as `hPutChar_ c stdout`, where `c`
+-- is the character to be printed.
 putChar : Char -> ()
 putChar = flip @Char @OutStreamProvider @() hPutChar_ stdout
 
--- | Print a string to `stdout`. Does the same as `hPutStr_ s stdout`, where `s` is the string to be 
--- |     printed.
+-- | Print a string to `stdout`. Behaves as `hPutStr_ s stdout`, where `s` is
+-- the string to be printed.
 putStr : String -> ()
 putStr   = flip @String @OutStreamProvider @() hPutStr_ stdout
 
--- | Print a string to `stdout`, followed by the newline character `\n`. Does the same as 
--- |     `hPutStrLn_ s stdout`, where `s` is the string to be printed.
+-- | Print a string to `stdout`, followed by the newline character `\n`. Behaves
+-- as `hPutStrLn_ s stdout`, where `s` is the string to be printed.
 putStrLn : String -> ()
 putStrLn = flip @String @OutStreamProvider @() hPutStrLn_ stdout
 
--- | Print the string representation of a given value to `stdout`, followed by the newline character 
--- |     `\n`. Does the same as `hPrint_ @t v stdout`, where `v` is the value to be printed and `t`
--- |     its type.
+-- | Print the string representation of a given value to `stdout`, followed by
+-- the newline character `\n`. Behaves as `hPrint_ @t v stdout`, where `v` is
+-- the value to be printed and `t` its type.
 print : forall a:*T . a -> ()
--- print = putStrLn $ show @a
 print x = putStrLn $ show @a x
 
 -- Internal stdout functions
