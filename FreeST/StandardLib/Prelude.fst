@@ -425,7 +425,7 @@ hPutStrLn_ = __hGenericPut_ @String hPutStrLn
 -- | an `hPrint` and then closes the enpoint with `hCloseOut`.
 hPrint_ : forall a:*T . a -> OutStreamProvider -> ()
 -- hPrint_ = __hGenericPut_ @a (hPrint @a)
-hPrint_ x c = __hGenericPut_ @a (hPrint @a) a c
+hPrint_ x c = __hGenericPut_ @a (hPrint @a) x c
 
 
 -- InStream
