@@ -187,8 +187,8 @@ swap x = let (a, b) = x in (b, a)
 -- | Fixed-point Z combinator
 fix : forall a:*T . ((a -> a) -> (a -> a)) -> (a -> a)
 fix f =
-  (λx:(μb.b -> (a -> a)) -> f (λz:a -> x x z))
-  (λx:(μb.b -> (a -> a)) -> f (λz:a -> x x z))
+  (\x:(rec b.b -> (a -> a)) -> f (\z:a -> x x z))
+  (\x:(rec b.b -> (a -> a)) -> f (\z:a -> x x z))
 
 
 
@@ -240,7 +240,7 @@ repeat n thunk =
 -- |     parallel @() 5 (\_:() -> putStrLn "Hello!")
 -- | ```
 parallel : forall a:*T . Int -> (() -> a) -> ()
-parallel n thunk = repeat @() n (λ_:() -> fork @a thunk)
+parallel n thunk = repeat @() n (\_:() -> fork @a thunk)
 
 -- type Consumer a = a 1-> ()
 
@@ -313,7 +313,7 @@ accept ch =
 forkWith : forall a:1S b . (dualof a 1-> b) -> a
 forkWith f =
     let (x, y) = new @a () in
-    fork (λ_:() 1-> f y);
+    fork (\_:() 1-> f y);
     x
 
 -- | Runs an infinite shared server thread given a function to serve a client (a
