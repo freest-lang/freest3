@@ -180,7 +180,7 @@ Decl :: { () }
       let a = fst $2
       checkDupTypeDecl a
       mapM_ (uncurry addToVEnv) (typeListsToUnArrows a $4) -- fixed in elaboration
-      uncurry addToTEnv $2 (T.Almanac (getSpan a) T.Variant (typeListToRcdType $4))
+      uncurry addToTEnv $2 (T.Labelled (getSpan a) T.Variant (typeListToRcdType $4))
     }
 
 ProgVarList :: { [Variable] }
@@ -339,7 +339,7 @@ Type :: { T.Type }
   | String                        {% T.String `fmap` mkSpan $1 }
   | '()'                          {% mkSpan $1 >>= \s -> pure $ T.unit s}
   | Type Arrow Type %prec ARROW   {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Arrow s $2 $1 $3 }
-  | '(' Type ',' TupleType ')'    {% mkSpanSpan $1 $5 >>= \s -> pure $ T.Almanac s T.Record $ tupleTypeMap [$2,$4]}
+  | '(' Type ',' TupleType ')'    {% mkSpanSpan $1 $5 >>= \s -> pure $ T.tuple s [$2,$4]}
   | '[' Int ']'                   {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Var s $ mkList s }
   -- Session types
   | Skip                          {% T.Skip `fmap` mkSpan $1 }
@@ -347,7 +347,7 @@ Type :: { T.Type }
   | Type ';' Type                 {% mkSpanSpan $1 $3 >>= \s -> pure $ T.Semi s $1 $3 }
   | Polarity Type %prec MSG       {% mkSpanFromSpan (fst $1) $2 >>= \s -> pure $ T.Message s (snd $1) $2 }                                 
   | ChoiceView '{' FieldList '}'  {% addToPEnvChoices (Map.keys $3)
-                                  >> mkSpanFromSpan (fst $1) $4 >>= \s -> pure $ T.Almanac s (T.Choice (snd $1)) $3 } 
+                                  >> mkSpanFromSpan (fst $1) $4 >>= \s -> pure $ T.Labelled s (T.Choice (snd $1)) $3 } 
   -- Star types
   | '*' Polarity Type %prec MSG 
     {% do
@@ -361,7 +361,7 @@ Type :: { T.Type }
         tVar <- freshTVar "a" p
         let tMap = Map.map ($ (T.Var p tVar)) $4
         return (T.Rec p $ Bind p tVar (K.us p) $
-            T.Almanac (fst $2) (T.Choice (snd $2)) tMap) }
+            T.Labelled (fst $2) (T.Choice (snd $2)) tMap) }
 
   -- Polymorphism and recursion
   | rec KindBind '.' Type         {% let (a,k) = $2 in flip T.Rec (Bind (getSpan a) a k $4) `fmap` mkSpanSpan $1 $4 }
@@ -379,7 +379,7 @@ Forall :: { T.Type }
 
 TupleType :: { T.Type }
   : Type               { $1 }
-  | Type ',' TupleType { T.Almanac (getSpan $1) T.Record $  tupleTypeMap [$1,$3]}
+  | Type ',' TupleType { T.tuple (getSpan $1) [$1,$3] }
                                                
 
 Arrow :: { Multiplicity }

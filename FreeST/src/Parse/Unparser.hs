@@ -194,23 +194,23 @@ instance Unparse T.Type where
    where
     l = bracket (unparse t) Left arrowRator
     r = bracket (unparse u) Right arrowRator
-  unparse t@(T.Almanac _ T.Variant m) | isBool m  = (maxRator, "Bool")
+  unparse t@(T.Labelled _ T.Variant m) | isBool m  = (maxRator, "Bool")
     where isBool m = Set.map show (Map.keysSet m) == Set.fromList ["True", "False"] 
-  unparse (T.Almanac _ T.Variant m) = (maxRator, "[" ++ showDatatype m ++ "]")
-  unparse (T.Almanac _ T.Record m) 
+  unparse (T.Labelled _ T.Variant m) = (maxRator, "[" ++ showDatatype m ++ "]")
+  unparse (T.Labelled _ T.Record m) 
     | Map.null m = (maxRator, "()")
     | all (all isDigit . intern) $ Map.keys m = (maxRator, "(" ++ showTupleType m ++ ")")
   unparse (T.Semi _ t u  ) = (semiRator, l ++ " ; " ++ r)
    where
     l = bracket (unparse t) Left semiRator
     r = bracket (unparse u) Right semiRator
-  unparse (T.Almanac _ (T.Choice v) m) =
+  unparse (T.Labelled _ (T.Choice v) m) =
     (maxRator, show v ++ "{" ++ showChoice m ++ "}")
   unparse (T.Forall _ b) = (arrowRator, "∀" ++ showBindType b) -- ++ "=>" ++ s)
     -- where s = bracket (unparse t) Right dotRator
   unparse (T.Rec _ (Bind _ _ k (T.Semi _ t _)))   | K.isUn k = -- *!T   *?T
     (maxRator, "*" ++ show t)
-  unparse (T.Rec _ (Bind _ _ k (T.Almanac _ (T.Choice v) m))) | K.isUn k = -- *+{}  *&{}
+  unparse (T.Rec _ (Bind _ _ k (T.Labelled _ (T.Choice v) m))) | K.isUn k = -- *+{}  *&{}
     (maxRator, "*" ++ show v ++ "{" ++ showChoiceLabels m ++ "}")
   unparse (T.Rec _ b) = (dotRator, "rec " ++ showBindType b) -- xk ++ "." ++ s)
     -- where s = bracket (unparse t) Right dotRator
@@ -222,7 +222,7 @@ showDatatype m = intercalate " | "
   $ Map.foldrWithKey (\c t acc -> (show c ++ showAsSequence t) : acc) [] m
  where
   showAsSequence :: T.Type -> String
-  showAsSequence (T.Almanac _ _ t) = 
+  showAsSequence (T.Labelled _ _ t) = 
     let fs = unwords (map (show . snd) $ Map.toList t) in
     if fs == "" then "" else " "++fs
   showAsSequence _               = ""

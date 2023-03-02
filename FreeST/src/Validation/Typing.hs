@@ -41,7 +41,6 @@ import           Control.Monad.State ( when
 import           Data.Functor
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import           Parse.ParseUtils (tupleTypeMap)
 
 synthetise :: K.KindEnv -> E.Exp -> FreestState T.Type
 -- Basic expressions
@@ -89,15 +88,15 @@ synthetise kEnv (E.App p (E.App _ (E.Var _ x) (E.Var _ c)) e)
   -- Collect e
 synthetise kEnv (E.App _ (E.Var p x) e) | x == mkCollect p = do
   tm <- Extract.outChoiceMap e =<< synthetise kEnv e
-  return $ T.Almanac p T.Variant
-    (Map.map (T.Almanac p T.Record . Map.singleton (head mkTupleLabels p)) tm)
+  return $ T.Labelled p T.Variant
+    (Map.map (T.Labelled p T.Record . Map.singleton (head mkTupleLabels p)) tm)
   -- Receive e
 synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
   t        <- synthetise kEnv e
   (u1, u2) <- Extract.input e t
   void $ K.checkAgainst kEnv (K.lt $ defaultSpan) u1
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
-  return $ T.Almanac p T.Record $ tupleTypeMap [u1, u2]
+  return $ T.tuple p [u1, u2]
   -- Send e1 e2
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
   t        <- synthetise kEnv e2
@@ -143,7 +142,7 @@ synthetise kEnv (E.TypeApp _ e t) = do
 synthetise kEnv (E.Pair p e1 e2) = do
   t1 <- synthetise kEnv e1
   t2 <- synthetise kEnv e2
-  return $ T.Almanac p T.Record $ 
+  return $ T.Labelled p T.Record $ 
     Map.fromList (zipWith (\ml t -> (ml $ getSpan t, t)) mkTupleLabels [t1, t2])
 -- Pair elimination
 synthetise kEnv (E.BinLet _ x y e1 e2) = do
@@ -244,7 +243,7 @@ buildMap p fm tm = do
 buildAbstraction :: T.TypeMap -> Variable -> ([Variable], E.Exp)
                  -> FreestState ([Variable], E.Exp)
 buildAbstraction tm x (xs, e) = case tm Map.!? x of
-  Just (T.Almanac _ T.Record rtm) -> let n = Map.size rtm in
+  Just (T.Labelled _ T.Record rtm) -> let n = Map.size rtm in
     if n /= length xs
       then addError (WrongNumOfCons (getSpan e) x n xs e) $> (xs, e)
       else return (xs, buildAbstraction' (xs, e) (map snd $ Map.toList rtm))
@@ -263,7 +262,7 @@ buildAbstraction tm x (xs, e) = case tm Map.!? x of
   numberOfArgs _                 = 0
 
   numberOfFields :: T.Type -> Int
-  numberOfFields (T.Almanac _ _  tm) = Map.size tm
+  numberOfFields (T.Labelled _ _  tm) = Map.size tm
 
 -- Check whether a type is brought to an End
 broughtToEnd :: T.Type -> Bool
@@ -274,7 +273,7 @@ wellEnded _ T.Skip{} = False
 wellEnded _ T.End{} = True
 wellEnded s (T.Semi _ t1 t2) = wellEnded s t1 || wellEnded s t2
 wellEnded _ T.Message{} = False
-wellEnded s (T.Almanac _ _ m) = Map.foldr (\t b -> b && wellEnded s t) True m
+wellEnded s (T.Labelled _ _ m) = Map.foldr (\t b -> b && wellEnded s t) True m
 wellEnded s (T.Rec _ (Bind{var=v, body=t})) = wellEnded (Set.insert v s) t
 wellEnded s (T.Dualof _ t) = wellEnded s t
 

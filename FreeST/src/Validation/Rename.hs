@@ -87,8 +87,8 @@ instance Rename (Bind T.Type E.Exp) where
 -- Types
 
 instance Rename T.Type where
-  -- Almanac
-  rename tbs pbs (T.Almanac p s m)   = T.Almanac p s <$> tMapM (rename tbs pbs) m
+  -- Labelled
+  rename tbs pbs (T.Labelled p s m)   = T.Labelled p s <$> tMapM (rename tbs pbs) m
   -- Functional types
   rename tbs pbs (T.Arrow p m t u)   = T.Arrow p m <$> rename tbs pbs t <*> rename tbs pbs u
   rename tbs pbs (T.Message p pol t) = T.Message p pol <$> rename tbs pbs t
@@ -198,8 +198,8 @@ isProperRec (Bind _ x _ t) = x `isFreeIn` t
 -- Does a given type variable x occur free in a type t?
 -- If not, then rec x.t can be renamed to t alone.
 isFreeIn :: Variable -> T.Type -> Bool
-  -- Almanac
-isFreeIn x (T.Almanac _ _ m) =
+  -- Labelled
+isFreeIn x (T.Labelled _ _ m) =
   Map.foldr' (\t b -> x `isFreeIn` t || b) False m
     -- Functional types
 isFreeIn x (T.Arrow _ _ t u) = x `isFreeIn` t || x `isFreeIn` u

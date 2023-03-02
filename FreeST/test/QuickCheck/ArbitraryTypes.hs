@@ -21,7 +21,6 @@ import           Control.Monad
 import qualified Data.Set as S
 import qualified Data.Map.Strict as M
 import Validation.Terminated (terminated)
-import Parse.ParseUtils (tupleTypeMap)
 
 pos :: Span
 pos = defaultSpan
@@ -176,7 +175,7 @@ choicePair :: PairGen -> PairGen
 choicePair pairGen cVars n = do
   c        <- arbitrary
   (m1, m2) <- typeMapPair pairGen cVars n
-  return (T.Almanac pos c m1, T.Almanac pos c m2)
+  return (T.Labelled pos c m1, T.Labelled pos c m2)
 
 typeMapPair :: PairGen -> Set.Set Variable -> Int -> Gen (T.TypeMap, T.TypeMap)
 typeMapPair pairGen cVars n = do
@@ -205,7 +204,7 @@ pairPair :: PairGen
 pairPair cVars n = do
   (t, u) <- bisimPair K.Top cVars (n `div` 8)
   (v, w) <- bisimPair K.Top cVars (n `div` 8)
-  return (T.Almanac pos T.Record $ tupleTypeMap [t,v], T.Almanac pos T.Record $ tupleTypeMap [u,w])
+  return (T.tuple pos [t,v], T.tuple pos [u,w])
 
 -- Recursion
 
@@ -242,8 +241,8 @@ distrib cVars n = do
   (m1, m2) <- typeMapPair (bisimPair K.Session) cVars (n `div` 2)
   p        <- arbitrary
   return
-    ( T.Semi pos (T.Almanac pos (T.Choice p) m1) t
-    , T.Almanac pos (T.Choice p) (Map.map (\v -> T.Semi pos v u) m2)
+    ( T.Semi pos (T.Labelled pos (T.Choice p) m1) t
+    , T.Labelled pos (T.Choice p) (Map.map (\v -> T.Semi pos v u) m2)
     )
 
 assoc :: PairGen

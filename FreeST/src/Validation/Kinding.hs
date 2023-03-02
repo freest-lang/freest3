@@ -55,7 +55,7 @@ synthetise' _ _ (T.Char   p) = return $ K.ut p
 synthetise' _ _ (T.String p) = return $ K.ut p
 synthetise' s kEnv (T.Arrow p m t u) =
   synthetise' s kEnv t >> synthetise' s kEnv u $> K.Kind p (typeToKindMult m) K.Top
-synthetise' s kEnv (T.Almanac p t m) | t == T.Variant || t == T.Record = do
+synthetise' s kEnv (T.Labelled p t m) | t == T.Variant || t == T.Record = do
   ks <- tMapM (synthetise' s kEnv) m
   let K.Kind _ n _ = foldr join (K.ut defaultSpan) ks
   return $ K.Kind p n K.Top
@@ -64,7 +64,7 @@ synthetise' s kEnv (T.Rec p (Bind _ a (K.Kind _ K.Un K.Session) (T.Semi _ u@(T.M
   | a == b = do
     void $ checkAgainstSession' s kEnv u
     return $ K.us p
-synthetise' _ _ (T.Rec p (Bind _ a (K.Kind _ K.Un K.Session) (T.Almanac _ (T.Choice _) m)))
+synthetise' _ _ (T.Rec p (Bind _ a (K.Kind _ K.Un K.Session) (T.Labelled _ (T.Choice _) m)))
   | all (\case {(T.Var _ b) -> a == b ; _ -> False }) m =
     return $ K.us p
 -- Session types
@@ -76,7 +76,7 @@ synthetise' s kEnv (T.Semi p t u) = do
   return $ K.Kind p (join mt mu) K.Session
 synthetise' s kEnv (T.Message p _ t) =
   checkAgainst' s kEnv (K.lt p) t $> K.ls p
-synthetise' s kEnv (T.Almanac p (T.Choice _) m) =
+synthetise' s kEnv (T.Labelled p (T.Choice _) m) =
   tMapM_ (checkAgainst' s kEnv (K.ls p)) m $> K.ls p
 -- Session or functional
 synthetise' s kEnv (T.Rec _ (Bind _ a k t)) =

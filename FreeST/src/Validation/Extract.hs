@@ -51,7 +51,7 @@ function e t =
 pair :: E.Exp -> T.Type -> FreestState (T.Type, T.Type)
 pair e t =
   case normalise t of
-    (T.Almanac _ T.Record m) | Map.keysSet m == Set.fromList [l0, l1] ->
+    (T.Labelled _ T.Record m) | Map.keysSet m == Set.fromList [l0, l1] ->
       return (m Map.! l0, m Map.! l1)
     u              -> let p = getSpan u in
       addError (ExtractError p "a pair" e u) $> (omission p, omission p)
@@ -99,9 +99,9 @@ inChoiceMap = choiceMap T.Internal "an internal choice (+)"
 choiceMap :: T.View -> String -> E.Exp -> T.Type -> FreestState T.TypeMap
 choiceMap view msg e t =
   case normalise t of
-    (T.Almanac _ (T.Choice view') m) ->
+    (T.Labelled _ (T.Choice view') m) ->
       if view == view' then return m else choiceErr t
-    (T.Semi _ (T.Almanac _ (T.Choice view') m) u) ->
+    (T.Semi _ (T.Labelled _ (T.Choice view') m) u) ->
       if view == view'
       then return $ Map.map (\v -> T.Semi (getSpan v) v u) m
       else choiceErr t
@@ -114,7 +114,7 @@ choiceMap view msg e t =
 datatypeMap :: E.Exp -> T.Type -> FreestState T.TypeMap
 datatypeMap e t =
   case normalise t of
-    (T.Almanac _ T.Variant m) -> return m
+    (T.Labelled _ T.Variant m) -> return m
     u                ->
       addError (ExtractError (getSpan e) "a datatype" e u) $> Map.empty
 

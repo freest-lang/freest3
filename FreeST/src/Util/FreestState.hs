@@ -339,7 +339,7 @@ listTypes = typeListToType (mkList ds)
               [(mkCons ds,[T.Int ds, T.Var ds (mkList ds)]), (mkNil ds, [])]
 
 listType :: T.Type
-listType = T.Almanac ds T.Variant (typeListToRcdType [(mkCons ds,[T.Int ds, T.Var ds (mkList ds)]), (mkNil ds, [])])
+listType = T.Labelled ds T.Variant (typeListToRcdType [(mkCons ds,[T.Int ds, T.Var ds (mkList ds)]), (mkNil ds, [])])
 
 -- For constructors (used in Parser.y and here for lists)
 typeListToType :: Variable -> [(Variable, [T.Type])] -> [(Variable, T.Type)]
@@ -353,6 +353,6 @@ typeListToType a = map $ second typeToFun -- map (\(x, ts) -> (x, typeToFun ts))
 typeListToRcdType :: [(Variable, [T.Type])] -> T.TypeMap
 typeListToRcdType []             = Map.empty
 typeListToRcdType ((c, us) : ts) =
-  Map.insert c (T.Almanac (getSpan c) T.Record $ typesToMap 0 us) (typeListToRcdType ts)
+  Map.insert c (T.Labelled (getSpan c) T.Record $ typesToMap 0 us) (typeListToRcdType ts)
   where typesToMap n [] = Map.empty
         typesToMap n (t : ts) = Map.insert (mkVar (getSpan t) $ show n) t (typesToMap (n+1) ts)
