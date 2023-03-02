@@ -160,10 +160,6 @@ typeListsToUnArrows a =
 insertMap :: Ord k => k -> [v] -> Map.Map k [v] -> Map.Map k [v]
 insertMap = Map.insertWith (++)
 
--- Tuples as a derived form of records
-tupleTypeMap :: [T.Type] -> T.TypeMap
-tupleTypeMap ts = Map.fromList $ zipWith (\mk t -> (mk (getSpan t), t)) mkTupleLabels ts 
-
 condCase :: Span -> E.Exp -> E.Exp -> E.Exp -> E.Exp 
 condCase s i t e = E.Case s i $ Map.fromList [(mkTrue  s, ([],t))
                                              ,(mkFalse s, ([],e))]

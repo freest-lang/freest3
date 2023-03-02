@@ -41,7 +41,6 @@ import           Control.Monad.State ( when
 import           Data.Functor
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import           Parse.ParseUtils (tupleTypeMap)
 
 synthetise :: K.KindEnv -> E.Exp -> FreestState T.Type
 -- Basic expressions
@@ -97,7 +96,7 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkReceive p = do
   (u1, u2) <- Extract.input e t
   void $ K.checkAgainst kEnv (K.lt $ defaultSpan) u1
 --  void $ K.checkAgainst kEnv (K.lm $ pos u1) u1
-  return $ T.Almanac p T.Record $ tupleTypeMap [u1, u2]
+  return $ T.tuple p [u1, u2]
   -- Send e1 e2
 synthetise kEnv (E.App p (E.App _ (E.Var _ x) e1) e2) | x == mkSend p = do
   t        <- synthetise kEnv e2

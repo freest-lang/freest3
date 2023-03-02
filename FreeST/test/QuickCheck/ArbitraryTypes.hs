@@ -21,7 +21,6 @@ import           Control.Monad
 import qualified Data.Set as S
 import qualified Data.Map.Strict as M
 import Validation.Terminated (terminated)
-import Parse.ParseUtils (tupleTypeMap)
 
 pos :: Span
 pos = defaultSpan
@@ -205,7 +204,7 @@ pairPair :: PairGen
 pairPair cVars n = do
   (t, u) <- bisimPair K.Top cVars (n `div` 8)
   (v, w) <- bisimPair K.Top cVars (n `div` 8)
-  return (T.Almanac pos T.Record $ tupleTypeMap [t,v], T.Almanac pos T.Record $ tupleTypeMap [u,w])
+  return (T.tuple pos [t,v], T.tuple pos [u,w])
 
 -- Recursion
 

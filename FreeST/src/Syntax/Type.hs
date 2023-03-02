@@ -17,6 +17,7 @@ module Syntax.Type
   , Sort(..)
   , View(..)
   , unit 
+  , tuple 
 --  , Multiplicity(..)
   )
 where
@@ -24,6 +25,7 @@ where
 import           Syntax.Base
 import qualified Syntax.Kind                   as K
 import qualified Data.Map.Strict               as Map
+import Syntax.MkName (mkTupleLabels)
 
 data Polarity = Out | In deriving Eq
 data View = External | Internal deriving Eq
@@ -76,6 +78,11 @@ instance Located Type where
   getSpan (Dualof p _   ) = p
 --  getSpan (CoVar p _   ) = p
 
--- Derived types
+-- Derived forms
 unit :: Span -> Type 
 unit s = Almanac s Record Map.empty 
+
+tuple :: Span -> [Type] -> Type
+tuple s ts = Almanac s Record (tupleTypeMap ts)
+  where tupleTypeMap :: [Type] -> TypeMap
+        tupleTypeMap ts = Map.fromList $ zipWith (\mk t -> (mk (getSpan t), t)) mkTupleLabels ts 
