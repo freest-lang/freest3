@@ -36,7 +36,7 @@ data Type =
   | Char Span
   | String Span
   | Arrow Span Multiplicity Type Type
-  | Almanac Span Sort TypeMap
+  | Labelled Span Sort TypeMap
   -- Session Types
   | Skip Span
   | End Span
@@ -65,7 +65,7 @@ instance Located Type where
   getSpan (Char p       ) = p
   getSpan (String p     ) = p
   getSpan (Arrow p _ _ _) = p
-  getSpan (Almanac p _ _) = p
+  getSpan (Labelled p _ _) = p
   getSpan (Skip p       ) = p
   getSpan (End p        ) = p
   getSpan (Semi p _ _   ) = p
@@ -80,9 +80,9 @@ instance Located Type where
 
 -- Derived forms
 unit :: Span -> Type 
-unit s = Almanac s Record Map.empty 
+unit s = Labelled s Record Map.empty 
 
 tuple :: Span -> [Type] -> Type
-tuple s ts = Almanac s Record (tupleTypeMap ts)
+tuple s ts = Labelled s Record (tupleTypeMap ts)
   where tupleTypeMap :: [Type] -> TypeMap
         tupleTypeMap ts = Map.fromList $ zipWith (\mk t -> (mk (getSpan t), t)) mkTupleLabels ts 

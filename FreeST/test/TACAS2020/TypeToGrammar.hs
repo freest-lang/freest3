@@ -54,7 +54,7 @@ toGrammar (Message _ p b) = do
   y <- freshVar
   addProductions y $ Map.singleton (MessageLabel p b) []
   return [y]
-toGrammar (Almanac _ (Choice v) m) = do
+toGrammar (Labelled _ (Choice v) m) = do
   ms <- tMapM toGrammar m
   y <- freshVar
   addProductions y $ Map.mapKeys (ChoiceLabel v) ms

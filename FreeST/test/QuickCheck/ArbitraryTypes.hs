@@ -175,7 +175,7 @@ choicePair :: PairGen -> PairGen
 choicePair pairGen cVars n = do
   c        <- arbitrary
   (m1, m2) <- typeMapPair pairGen cVars n
-  return (T.Almanac pos c m1, T.Almanac pos c m2)
+  return (T.Labelled pos c m1, T.Labelled pos c m2)
 
 typeMapPair :: PairGen -> Set.Set Variable -> Int -> Gen (T.TypeMap, T.TypeMap)
 typeMapPair pairGen cVars n = do
@@ -241,8 +241,8 @@ distrib cVars n = do
   (m1, m2) <- typeMapPair (bisimPair K.Session) cVars (n `div` 2)
   p        <- arbitrary
   return
-    ( T.Semi pos (T.Almanac pos (T.Choice p) m1) t
-    , T.Almanac pos (T.Choice p) (Map.map (\v -> T.Semi pos v u) m2)
+    ( T.Semi pos (T.Labelled pos (T.Choice p) m1) t
+    , T.Labelled pos (T.Choice p) (Map.map (\v -> T.Semi pos v u) m2)
     )
 
 assoc :: PairGen

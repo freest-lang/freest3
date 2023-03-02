@@ -61,7 +61,7 @@ toGrammar' (T.Arrow _ p t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
   getLHS $ Map.fromList [(show p ++ "d", xs), (show p ++ "r", ys)]
-toGrammar' (T.Almanac _  t m) | t == T.Variant || t == T.Record = do -- Can't test this type directly
+toGrammar' (T.Labelled _  t m) | t == T.Variant || t == T.Record = do -- Can't test this type directly
   ms <- tMapM toGrammar m
   let a = if t == T.Variant then "<>" else "{}" 
   getLHS $ Map.insert (a++"✓") [] $ Map.mapKeys (\k -> a ++ show k) ms
@@ -75,7 +75,7 @@ toGrammar' (T.Message _ p t) = do
 -- toGrammar' (T.Choice _ v m) = do
 --   ms <- tMapM toGrammar m
 --   getLHS $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
-toGrammar' (T.Almanac _ (T.Choice v) m) = do
+toGrammar' (T.Labelled _ (T.Choice v) m) = do
   ms <- tMapM toGrammar m
   getLHS $ Map.mapKeys (\k -> show v ++ show k) ms
 -- Polymorphism and recursive types
@@ -97,8 +97,8 @@ fatTerminal t@T.Int{}             = Just t
 fatTerminal t@T.Char{}            = Just t
 fatTerminal t@T.String{}          = Just t
 fatTerminal (T.Arrow p m t u)     = Just (T.Arrow p m) <*> fatTerminal t <*> fatTerminal u
-fatTerminal (T.Almanac p t m) | t == T.Variant || t == T.Record = 
-  Just (T.Almanac p T.Variant) <*> mapM fatTerminal m
+fatTerminal (T.Labelled p t m) | t == T.Variant || t == T.Record = 
+  Just (T.Labelled p T.Variant) <*> mapM fatTerminal m
 -- Session Types
 fatTerminal (T.Semi p t u) | terminated t = changePos p <$> fatTerminal u
                            | terminated u = changePos p <$> fatTerminal t
@@ -136,7 +136,7 @@ type SubstitutionList = [(T.Type, Variable)]
 collect :: SubstitutionList -> T.Type -> TransState ()
 collect σ (T.Semi _ t u) = collect σ t >> collect σ u
 -- collect σ (T.Choice _ _ m) = tMapM_ (collect σ) m
-collect σ (T.Almanac _ (T.Choice v) m ) = tMapM_ (collect σ) m
+collect σ (T.Labelled _ (T.Choice v) m ) = tMapM_ (collect σ) m
 collect σ (T.Message _ _ t) = collect σ t
 collect σ t@(T.Rec _ (Bind _ x _ u)) = do
   let σ' = (t, x) : σ
@@ -146,7 +146,7 @@ collect σ t@(T.Rec _ (Bind _ x _ u)) = do
   addProductions x (Map.map (++ zs) m)
   collect σ' u
 collect σ (T.Arrow _ _ t u) = collect σ t >> collect σ u
-collect σ (T.Almanac _ T.Record m) = tMapM_ (collect σ) m
+collect σ (T.Labelled _ T.Record m) = tMapM_ (collect σ) m
 collect _ _ = return ()
 
 -- The state of the translation to grammar

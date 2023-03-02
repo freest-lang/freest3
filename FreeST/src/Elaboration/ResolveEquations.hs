@@ -26,7 +26,7 @@ solveAll =
     >>= setTEnv
 
 solveEq :: Visited -> Variable -> T.Type -> FreestState T.Type
-solveEq v f (T.Almanac p s tm) = T.Almanac p s <$> mapM (solveEq v f) tm
+solveEq v f (T.Labelled p s tm) = T.Labelled p s <$> mapM (solveEq v f) tm
 solveEq v f (T.Arrow p m t1 t2) =
   T.Arrow p m <$> solveEq v f t1 <*> solveEq v f t2
 solveEq v f (T.Semi p t1 t2) = T.Semi p <$> solveEq v f t1 <*> solveEq v f t2
@@ -60,7 +60,7 @@ clean :: T.Type -> T.Type
 clean (T.Rec p (Bind p' y k t))
   | y `isFreeIn` t = T.Rec p $ Bind p' y k (clean t)
   | otherwise      = clean t
-clean (T.Almanac p s tm) = T.Almanac p s $ Map.map clean tm
+clean (T.Labelled p s tm) = T.Labelled p s $ Map.map clean tm
 clean (T.Arrow p m t1 t2) = T.Arrow p m (clean t1) (clean t2)
 clean (T.Semi p t1 t2) = T.Semi p (clean t1) (clean t2) 
 clean (T.Message p pol t) = T.Message p pol (clean t)

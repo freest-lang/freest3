@@ -55,8 +55,8 @@ instance Equivalence T.Type where
     -- Session types
     equiv _ kEnv t1 t2 | isSessionType kEnv t1 && isSessionType kEnv t2 =
       bisimilar t1 t2
-    -- Records and Variants (all other almanac sorts are session types)
-    equiv v kEnv (T.Almanac _ _ m1) (T.Almanac _ _ m2)  =
+    -- Records and Variants (all other Labelled sorts are session types)
+    equiv v kEnv (T.Labelled _ _ m1) (T.Labelled _ _ m2)  =
       Map.size m1
         == Map.size m2
         && Map.foldlWithKey (equivField v kEnv m2) True m1
@@ -102,7 +102,7 @@ isSessionType _ T.Skip{} = True
 isSessionType _ T.End{}  = True
 isSessionType _ T.Semi{} = True
 isSessionType _ T.Message{} = True
-isSessionType _ T.Almanac _ (T.Choice v) _ = True
+isSessionType _ T.Labelled _ (T.Choice v) _ = True
 isSessionType _ (T.Rec _ (Bind _ _ k) _) = K.isSession k
 isSessionType kEnv (T.Var _ x) = Map.member x kEnv -- Polymorphic variable
 isSessionType _ t@T.Dualof{} = internalError "Equivalence.Equivalence.isSessionType" t

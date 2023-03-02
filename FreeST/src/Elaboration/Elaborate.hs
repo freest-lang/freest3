@@ -15,7 +15,7 @@ class Elaboration t where
   elaborate :: t -> FreestState t
 
 instance Elaboration T.Type where
-  elaborate (  T.Almanac p s m ) = T.Almanac p s <$> elaborate m
+  elaborate (  T.Labelled p s m ) = T.Labelled p s <$> elaborate m
   elaborate (  T.Message p pol t) = T.Message p pol <$> elaborate t
   elaborate (  T.Arrow p m t1 t2  ) = T.Arrow p m <$> elaborate t1 <*> elaborate t2
   elaborate (  T.Semi   p t1  t2) = T.Semi p <$> elaborate t1 <*> elaborate t2
@@ -68,7 +68,7 @@ changePos p (T.Arrow _ pol t u) = T.Arrow p pol (changePos p t) (changePos p u)
 -- Skip
 changePos p (T.Semi    _ t   u) = T.Semi p t u
 changePos p (T.Message _ pol b) = T.Message p pol b
-changePos p (T.Almanac _ s   m) = T.Almanac p s m
+changePos p (T.Labelled _ s   m) = T.Labelled p s m
 changePos p (T.Rec     _ xs   ) = T.Rec p xs
 changePos p (T.Forall  _ xs   ) = T.Forall p xs
 -- TypeVar
