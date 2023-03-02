@@ -28,11 +28,12 @@ import qualified Data.Set                      as Set
 import qualified Data.Sequence                 as Queue
 import           Data.Bifunctor
 import           Data.List                      ( isPrefixOf
-                                                , union
+                                                , union, stripPrefix
                                                 )
 -- Word is (re)defined in module Equivalence.Grammar
 import           Prelude                 hiding ( Word )
 import           Debug.Trace
+import Data.Bitraversable (bisequence)
 
 bisimilar :: T.Type -> T.Type -> Bool
 bisimilar t u = bisimilarGrm $ convertToGrammar [t, u]
@@ -132,16 +133,7 @@ congruence _ a = Set.singleton . Set.filter (not . congruentToAncestors)
 
   congruentToPair :: (Word, Word) -> (Word, Word) -> Bool
   congruentToPair (xs, ys) (xs', ys') =
-    not (null xs')
-      &&           xs'
-      `isPrefixOf` xs
-      &&           not (null ys')
-      &&           ys'
-      `isPrefixOf` ys
-      &&           (xs'' == ys'' || congruentToAncestors (xs'', ys''))
-   where
-    xs'' = drop (length xs') xs
-    ys'' = drop (length ys') ys
+      xs == ys || maybe False congruentToAncestors (bisequence (stripPrefix xs' xs, stripPrefix ys' ys))
 
 filtering :: NodeTransformation
 filtering ps _ n | normsMatch = Set.singleton n
