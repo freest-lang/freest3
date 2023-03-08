@@ -14,16 +14,14 @@ import           Util.FreestState               ( initialState
 import           Control.Monad.State            ( execState )
 
 matchValidSpec :: [String] -> Spec
-matchValidSpec [k, t, u] = it
-  (k ++ "  |-  " ++ t ++ " ~ " ++ u)
-  (          wellFormed kEnv t'
-  &&         wellFormed kEnv u'
-  &&         bisimilar t' u'
-  `shouldBe` True
-  )
- where
-  [t', u'] = renameTypes [read t, read u]
-  kEnv     = readKenv k
+matchValidSpec [k, t, u] |
+  wellFormed kEnv t' &&
+  wellFormed kEnv u' = it
+    (k ++ "  |-  " ++ t ++ " ~ " ++ u)
+    (bisimilar t' u' `shouldBe` True)
+  where
+    [t', u'] = renameTypes [read t, read u]
+    kEnv     = readKenv k
 
 wellFormed :: K.KindEnv -> Type -> Bool
 wellFormed kEnv t = null $ errors $ execState (synthetise kEnv t) initialState
