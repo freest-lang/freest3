@@ -246,6 +246,12 @@ To view the test coverage run ``` make coverage ```. The output files will be st
 information available and contains links for more specific information)
 
 
+# Drawing the FreeST Module Dependency Graph
+
+$ stack install graphmod
+$ find FreeST/src/ -name '*.hs' | xargs graphmod -q -p | xdot -
+
+
 # Build & Run other tools
 
  - CFSTEquiv: ``` $ stack run CFSTEquiv```
