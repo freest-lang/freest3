@@ -42,7 +42,7 @@ instance Equiv T.Type where
   equiv v (T.Message _ _ t1) (T.Message _ _ t2) = equiv v t1 t2
   equiv v (T.Forall _ b1) (T.Forall _ b2) = equiv v b1 b2
   equiv v (T.Rec _ b1) (T.Rec _ b2) = equiv v b1 b2
-  equiv v (T.Var _ x1) (T.Var _ x2) = x1 == x2 || v Map.! x1 == x2
+  equiv v (T.Var _ x1) (T.Var _ x2) =  maybe False (== x2) (Map.lookup x1 v)
   equiv v (T.Dualof _ t1) (T.Dualof _ t2) = equiv v t1 t2
   equiv _ _ _ = False
   

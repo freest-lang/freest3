@@ -38,8 +38,8 @@ import Data.Bitraversable (bisequence)
 
 bisimilar :: T.Type -> T.Type -> Bool
 bisimilar t u =
-  t == u || -- Alpha-equivalence, 11% speed up (roughly)
-  (bisimilarGrm $ convertToGrammar [t, u])
+  t == u || -- Alpha-equivalence, 11% speed up in :program tests
+  bisimilarGrm (convertToGrammar [t, u])
 
 -- | Assumes a grammar without unreachable symbols
 bisimilarGrm :: Grammar -> Bool

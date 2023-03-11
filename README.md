@@ -160,8 +160,7 @@ where the `SPEC_NAME` is one of the following:
 
 - Valid equivalence tests: `TestEquivalenceValid`
 - Invalid equivalence tests: `TestEquivalenceInvalid`
-- Well formed expressions: `TestExpressionInvalid
-`
+- Well formed expressions: `TestExpressionInvalid`
 - Non Well formed expressions: `TestExpressionValid`
 - All equivalence tests: `TestEquivalence`
 - Valid types tests: `TestTypesValid`
