@@ -966,6 +966,10 @@ rec x:1S. !x
 (Int, !Int;Skip) -> (!(Char 1-> ?(Int, !((Int, !Int) -> (!(Char 1-> ?(Int, !Int);Skip))))))
 (Int, !Int) -> (!(Char 1-> ?(Int, !((Int, Skip;(!Int;Skip)) -> (!(Char 1-> ?(Int, !Int)))))))
 
+[]
+!(forall a . a) ; Skip
+!(forall b . b)
+
 -- Terminated Recursive Types
 
 -- Ill-formed - TODO: should be well-formed
