@@ -70,9 +70,6 @@ show : forall a:*T . a -> String
 readBool : String -> Bool
 readInt : String -> Int
 readChar : String -> Char
-  -- Pair
-fst : forall a:1T b:*T . (a, b) -> a
-snd : forall a:*T b:1T . (a, b) -> b
   -- Internal Prints
 __putStrOut : String -> ()
 __putStrErr : String -> ()
@@ -190,7 +187,13 @@ fix f =
   (\x:(rec b.b -> (a -> a)) -> f (\z:a -> x x z))
   (\x:(rec b.b -> (a -> a)) -> f (\z:a -> x x z))
 
+-- | Extracts the first element from a pair, discarding the second.
+fst : forall a:1T b:*T . (a, b) -> a
+fst p = let (x,_) = p in x
 
+-- | Extracts the second element from a pair, discarding the first.
+snd : forall a:*T b:1T . (a, b) -> b
+snd p = let (_,y) = p in y
 
 --  $$$$$$\  
 -- $$ ___$$\ 

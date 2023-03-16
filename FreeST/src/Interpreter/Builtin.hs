@@ -88,9 +88,6 @@ initialCtx = Map.fromList
   , (var "ord", PrimitiveFun (\(Character x) -> Integer $ ord x))
   -- Strings
   , (var "(++)", PrimitiveFun (\(String s1) -> PrimitiveFun (\(String s2) -> String $ s1 ++ s2)))
-  -- Pairs
-  , (var "fst", PrimitiveFun (\(Pair a _) -> a))
-  , (var "snd", PrimitiveFun (\(Pair _ b) -> b))
   -- Show
   , (var "show", PrimitiveFun (String . show))
   -- Read
