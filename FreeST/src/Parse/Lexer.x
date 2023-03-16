@@ -129,11 +129,6 @@ tokens :-
   @char				{ \p s -> TokenChar (internalPos p) (read s) }
   @stringLiteral		{ \p s -> TokenString (internalPos p) (read s) }
 -- Identifiers
-  ("(+)"|"(-)"|"(*)"|"(/)"
-  |"(^)"|"(>)"|"(<)"|"(>=)"
-  |"(<=)"|"(==)"|"(/=)"
-  |"(&&)"|"(||)"|"(|>)"
-  |"(++)")                      { \p s -> TokenLowerId (internalPos p) s }
   @lowerId                      { \p s -> TokenLowerId (internalPos p) s }
   @upperId                      { \p s -> TokenUpperId (internalPos p) s }
 

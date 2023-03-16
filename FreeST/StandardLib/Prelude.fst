@@ -58,8 +58,6 @@ odd : Int -> Bool
 -- Bool
 (&&) : Bool -> Bool -> Bool
 (||) : Bool -> Bool -> Bool
--- Function call
-(|>) : forall a:*T b:*T. a -> (a -> b) -> b
 -- Char
 ord : Char -> Int
 chr : Int -> Char
@@ -136,6 +134,27 @@ id x = x
 -- |  ```
 flip : forall a:*T b:*T c:*T . (a -> b -> c) -> b -> a -> c
 flip f x y = f y x
+
+-- | Application operator. Takes a function and an argument, and applies 
+-- | the first to the latter. This operator has low right-associative binding 
+-- | precedence, allowing parentheses to be omitted in certain situations.
+-- | For example:
+-- | ```
+-- | f $ g $ h x = f (g (h x))
+-- | ```
+($) : forall a:*T b:*T. (a -> b) -> a -> b 
+($) f x = f x
+
+-- | Reverse application operator. Provides notational convenience, especially
+-- | when chaining channel operations. For example:
+-- | ```
+-- | let (w,r) = !Int;!Bool;End in 
+-- | w |> send 5 |> send True |> close;
+-- | c |> receive |> receiveAndClose
+-- | ```
+-- | Its binding precedence is higher than `$`.
+(|>) : forall a:*T b:*T. a -> (a -> b) -> b
+(|>) x f = f x
 
 -- | Applies the function passed as the second argument to the third one and
 -- | uses the predicate in the first argument to evaluate the result, if it comes

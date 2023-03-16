@@ -326,6 +326,8 @@ Op :: { Variable }
    | '/'   {% mkDiv `fmap` mkSpan $1 }
    | '^'   {% mkPower `fmap` mkSpan $1 }
    | '++'  {% flip mkVar "(++)" `fmap` mkSpan $1 }
+   | '|>'  {% flip mkVar "(|>)" `fmap` mkSpan $1 }
+   | '$'   {% flip mkVar "($)" `fmap` mkSpan $1 }
 -- TODO: add List funs
 
 ----------
@@ -432,7 +434,9 @@ ArbitraryProgVar :: { Variable }
  | Constructor { $1 }
 
 ProgVar :: { Variable }
-  : LOWER_ID {% flip mkVar (getText $1) `fmap` mkSpan $1 }
+  : LOWER_ID    {% flip mkVar (getText $1) `fmap` mkSpan $1 }
+  | '(' Op ')'  {% mkSpanSpan $1 $3 >>= \s -> pure $ mkVar s $ intern $2 }
+  | '(' '-' ')' {% mkSpanSpan $1 $3 >>= \s -> pure $ mkMinus s }
 
 Constructor :: { Variable }
   : UPPER_ID {% flip mkVar (getText $1) `fmap` mkSpan $1 }
