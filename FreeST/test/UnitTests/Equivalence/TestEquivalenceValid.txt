@@ -968,9 +968,9 @@ rec x:1S. !x
 (Int, !Int) -> (!(Char 1-> ?(Int, !((Int, Skip;(!Int;Skip)) -> (!(Char 1-> ?(Int, !Int)))))))
 
 -- This a current and well known bug
--- []
--- !(forall a . a) ; Skip
--- !(forall b . b)
+[]
+!(forall a . a) ; Skip
+!(forall b . b)
 
 
 -- Dualof
