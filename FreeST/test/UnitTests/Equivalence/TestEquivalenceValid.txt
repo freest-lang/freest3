@@ -526,9 +526,9 @@ rec x: 1S . &{Add: x;x;!Int, Const: ?Int;!Int, Mult: x;x;!Int}
 !Char ; ((rec x: 1S . &{A: !Int ; x, B: Skip}) ; ?Int)
 
 -- This test is perfectly OK
--- []
---  rec x: 1S . &{N: x; !Int, L: !Int}
--- (rec x: 1S . &{N: x; !Int, L: Skip}); !Int
+[]
+rec x: 1S . &{N: x; !Int, L: !Int}
+(rec x: 1S . &{N: x; !Int, L: Skip}); !Int
 
 []
 rec x: 1S . (&{N: x;!Int, L: Skip}; ?Int)
@@ -732,6 +732,7 @@ rec y_0: 1S. !Char ; +{A: y_0, B: Skip, C: Skip}
 !Char ; !Int ; &{A: x, B: z} ; &{A: Skip} ; ?() ; &{B: y}
 
 -- Unfold
+
 []
 rec x. !Int ; !Int
 !Int ; !Int
@@ -803,7 +804,6 @@ rec e: 1S. (&{B: Skip, C: e;!Int})
 [("x","1S"),("y","1S"),("z","1S")]
 ((&{B: (((+{B: (Skip;x), C: (z;x)};&{A: x, B: Skip});Skip);+{A: (((Skip;!());((Skip;!Int);x));(rec w: *S. ?Char)), B: (+{A: (z;+{A: (y;(Skip;y)), C: (Skip;(Skip;y))}), C: (z;+{A: (y;(Skip;y)), C: (Skip;(Skip;y))})};(rec o: *S. ?Char)), C: (x;(rec r: *S. ?Char))})};Skip);Skip)
 ((Skip;(&{B: ((rec h: *S. (rec l: *S. (rec p: 1S. (+{B: Skip, C: z};x))));((Skip;&{A: x, B: Skip});Skip))};(+{A: (Skip;(!();(Skip;(!Int;x)))),B: (+{A: z, C: z};(+{A: y, C: Skip};(Skip;y))), C: x};(rec q: *S. ?Char))));(Skip;Skip))
-
 
 []
 rec z_0: 1S. &{B: &{B: ?()}, C: (rec y_0: 1S. (z_0;y_0))}
