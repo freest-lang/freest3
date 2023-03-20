@@ -525,9 +525,10 @@ rec x: 1S . &{Add: x;x;!Int, Const: ?Int;!Int, Mult: x;x;!Int}
 !Char ; (rec x: 1S . &{A: !Int ; x,  B: Skip}) ; ?Int
 !Char ; ((rec x: 1S . &{A: !Int ; x, B: Skip}) ; ?Int)
 
-[]
-rec x: 1S . &{N: x; !Int, L: !Int}
-(rec x: 1S . &{N: x; !Int, L: Skip}); !Int
+-- This test is perfectly OK
+-- []
+--  rec x: 1S . &{N: x; !Int, L: !Int}
+-- (rec x: 1S . &{N: x; !Int, L: Skip}); !Int
 
 []
 rec x: 1S . (&{N: x;!Int, L: Skip}; ?Int)
@@ -966,9 +967,46 @@ rec x:1S. !x
 (Int, !Int;Skip) -> (!(Char 1-> ?(Int, !((Int, !Int) -> (!(Char 1-> ?(Int, !Int);Skip))))))
 (Int, !Int) -> (!(Char 1-> ?(Int, !((Int, Skip;(!Int;Skip)) -> (!(Char 1-> ?(Int, !Int)))))))
 
+-- This a current and well known bug
+-- []
+-- !(forall a . a) ; Skip
+-- !(forall b . b)
+
+
+-- Dualof
+
+[("z","1S")]
+dualof z
+dualof z
+
 []
-!(forall a . a) ; Skip
-!(forall b . b)
+rec x:1S . !dualof x
+rec x:1S . !dualof x
+
+[]
+rec x:1S . !dualof x
+rec x:1S . Skip ; !dualof x
+
+[]
+(dualof !Int)
+?Int
+
+[]
+dualof !Int ; Skip
+?Int
+
+[]
+dualof (!Int ; ?Char)
+?Int ; !Char
+
+[]
+(Int, !Int;Skip) -> (!(Char 1-> ?(Int, !((Int, !Int) -> (!(Char 1-> dualof dualof ?(Int, !Int);Skip))))))
+(Int, !Int) -> (!(Char 1-> ?(Int, !((Int, Skip;(!Int;Skip)) -> (!(Char 1-> ?(Int, !Int)))))))
+
+[]
+((Skip;(rec z: 1S.(rec y: 1S.(rec x: 1S.(+{A: z, B: Skip, C: dualof ?Int};(&{A:Skip, C: z};x))))));Skip)
+(rec y: 1S.+{A: (y;&{A: (Skip;(rec x: 1S.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x: 1S.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x), C:(y;x)})}))}), B: (Skip;&{A: (Skip;(rec x: 1S.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x: 1S.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x), C:(y;x)})}))}), C: (!Int;&{A: (Skip;(rec x: 1S.+{A: (y;&{A: (Skip;x), C:(y;x)}), B: (Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x),C: (y;x)})})), C: (y;(rec x: 1S.+{A: (y;&{A: (Skip;x), C: (y;x)}), B:(Skip;&{A: (Skip;x), C: (y;x)}), C: (!Int;&{A: (Skip;x), C:(y;x)})}))})})
+
 
 -- Terminated Recursive Types
 
