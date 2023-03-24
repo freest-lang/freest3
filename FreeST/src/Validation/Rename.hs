@@ -17,6 +17,8 @@ module Validation.Rename
   ( renameState
   , renameType
   , renameTypes
+  , renameExp
+  , renameExps
   , renameVar
   , subs
   , unfold
@@ -177,6 +179,15 @@ renameType = head . renameTypes . (: [])
 -- Rename a list of types
 renameTypes :: [T.Type] -> [T.Type]
 renameTypes ts =
+  evalState (mapM (rename Map.empty Map.empty) ts) initialState
+
+-- Rename a type
+renameExp :: E.Exp -> E.Exp
+renameExp = head . renameExps . (: [])
+
+-- Rename a list of types
+renameExps :: [E.Exp] -> [E.Exp]
+renameExps ts =
   evalState (mapM (rename Map.empty Map.empty) ts) initialState
 
 -- Substitution and unfold, the renamed versions

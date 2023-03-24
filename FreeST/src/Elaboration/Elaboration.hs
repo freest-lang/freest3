@@ -3,6 +3,17 @@
 module Elaboration.Elaboration
   ( elaboration
   , Elaboration(..)
+  -- TEST INFERENCE
+  , fixConsTypes
+  , Match.checkNumArgs
+  , Match.checkChanVar
+  , Match.addMissingVars
+  , Match.matchFuns
+  , solveEquations
+  , Dual.resolve
+  , elabPEnv
+  , elabVEnv
+  , buildProg
   )
 where
 

@@ -465,8 +465,8 @@ TypeName :: { Variable }
 
 KindBind :: { (Variable, K.Kind) }
   : TypeVar ':' Kind { ($1, $3) }
-  | TypeVar          {% (freshKVar =<< mkSpan $1) >>= \kv -> pure ($1, kv) }
---  | TypeVar          { ($1, omission (getSpan $1)) }
+--  | TypeVar          {% (freshKVar =<< mkSpan $1) >>= \kv -> pure ($1, kv) }
+  | TypeVar          { ($1, omission (getSpan $1)) }
 
 
 KindedTVar :: { (Variable, K.Kind) }    -- for type and data declarations

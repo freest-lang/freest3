@@ -13,6 +13,8 @@ data-files:
   - List.fst
   - File.fst
 
+# build-type: Custom
+
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
@@ -78,6 +80,15 @@ executables:
       - alex
       - happy
     ghc-options: -main-is FreeST -threaded -rtsopts -with-rtsopts=-N
+
+  inf:
+    main: Elaboration/TestInference.hs
+    source-dirs:         src
+    build-tools:
+      - alex
+      - happy
+    ghc-options: -main-is Elaboration.TestInference
+    
 
 tests:
     units:

@@ -144,6 +144,9 @@ getNextIndex = do
 freshTVar :: MonadState FreestS m => String -> Span -> m Variable
 freshTVar s p = mkVar p . (s ++) . show <$> getNextIndex
 
+freshKVar :: MonadState FreestS m => Span -> m K.Kind
+freshKVar s = K.KindVar s . mkVar s . ("k" ++) . show <$> getNextIndex
+
 -- | VAR ENV
 
 getVEnv :: MonadState FreestS m => m VarEnv

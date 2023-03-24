@@ -16,6 +16,7 @@ A bidirectional type system.
 module Validation.Typing
   ( synthetise
   , checkAgainst
+  , buildMap
   )
 where
 
@@ -111,12 +112,12 @@ synthetise kEnv (E.App p (E.Var _ x) e) | x == mkClose p = do
   return $ T.unit p
   -- Fork e
 synthetise kEnv (E.App p fork@(E.Var _ x) e) | x == mkFork p = do
-  (_, t) <- get >>= \s -> Extract.function e (evalState (synthetise kEnv e) s)
+  (_, _, t) <- get >>= \s -> Extract.function e (evalState (synthetise kEnv e) s)
   synthetise kEnv (E.App p (E.TypeApp p fork t) e)
 -- Application, general case
 synthetise kEnv (E.App _ e1 e2) = do
   t        <- synthetise kEnv e1
-  (u1, u2) <- Extract.function e1 t
+  (_, u1, u2) <- Extract.function e1 t
   checkAgainst kEnv e2 u1
   return u2
 -- Type abstraction
@@ -154,6 +155,7 @@ synthetise kEnv (E.BinLet _ x y e1 e2) = do
 -- Datatype elimination
 synthetise kEnv (E.Case p e fm) = do
   fm'  <- buildMap p fm =<< Extract.datatypeMap e =<< synthetise kEnv e
+--  debugM (show fm')
   vEnv <- getVEnv
   ~(t : ts, v : vs) <- Map.foldr (synthetiseMap kEnv vEnv)
                                  (return ([], [])) fm'
@@ -211,7 +213,7 @@ checkAgainst kEnv (E.BinLet _ x y e1 e2) t2 = do
 --   t <- synthetise kEnv e2
 --   checkAgainst kEnv e1 (Fun p Un/Lin t u)
 checkAgainst kEnv e (T.Arrow _ Lin t u) = do
-  (t', u') <- Extract.function e =<< synthetise kEnv e
+  (_, t', u') <- Extract.function e =<< synthetise kEnv e
   checkEquivTypes e kEnv t' t
   checkEquivTypes e kEnv u' u
 checkAgainst kEnv e t = checkEquivTypes e kEnv t =<< synthetise kEnv e

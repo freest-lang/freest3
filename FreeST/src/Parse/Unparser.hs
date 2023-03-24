@@ -59,6 +59,7 @@ showModuleWithDots = map (\x -> if x == '/' then '.' else x )
 instance Show K.Multiplicity where
   show K.Un  = "*"
   show K.Lin = "1"
+  show (K.MultVar v) = show v
 
 -- Type & Expression (Syntax.Base)
 instance Show Multiplicity where
@@ -102,6 +103,7 @@ instance Show K.PreKind where
 
 instance Show K.Kind where
   show (K.Kind _ p m) = show p ++ show m
+  show (K.KindVar _ v) = show v
 
 -- Binds
 
@@ -120,7 +122,8 @@ showBindExp (Bind _ a k e) = showKind a k "=>" e -- Λ a:k => e
 
 -- Type bind
 showBindTerm :: Bind T.Type E.Exp -> Multiplicity -> String
-showBindTerm (Bind _ x t e) m = showKind x t (show m) e -- λ x:t -> e
+showBindTerm (Bind _ x t e) m = -- showKind x t (show m) e -- λ x:t -> e
+  show x ++ ":" ++ "(" ++ show t ++ ")" ++ spaced (show m) ++ show e
 
 -- Unparsing types and expressions
 
@@ -209,10 +212,10 @@ instance Unparse T.Type where
     (maxRator, show v ++ "{" ++ showChoice m ++ "}")
   unparse (T.Forall _ b) = (arrowRator, "∀" ++ showBindType b) -- ++ "=>" ++ s)
     -- where s = bracket (unparse t) Right dotRator
-  unparse (T.Rec _ (Bind _ _ k (T.Semi _ t _)))   | K.isUn k = -- *!T   *?T
-    (maxRator, "*" ++ show t)
-  unparse (T.Rec _ (Bind _ _ k (T.Labelled _ (T.Choice v) m))) | K.isUn k = -- *+{}  *&{}
-    (maxRator, "*" ++ show v ++ "{" ++ showChoiceLabels m ++ "}")
+  -- unparse (T.Rec _ (Bind _ _ k (T.Semi _ t _)))   | K.isUn k = -- *!T   *?T
+  --   (maxRator, "*" ++ show t)
+  -- unparse (T.Rec _ (Bind _ _ k (T.Labelled _ (T.Choice v) m))) | K.isUn k = -- *+{}  *&{}
+  --   (maxRator, "*" ++ show v ++ "{" ++ showChoiceLabels m ++ "}")
   unparse (T.Rec _ b) = (dotRator, "rec " ++ showBindType b) -- xk ++ "." ++ s)
     -- where s = bracket (unparse t) Right dotRator
   unparse (T.Dualof _ t) = (dualofRator, "dualof " ++ s)

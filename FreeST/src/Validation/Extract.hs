@@ -1,3 +1,4 @@
+
 {-|
 Module      :  Validation.Extract
 Description :  The various extract functions
@@ -41,12 +42,13 @@ import qualified Data.Set        as Set
 import Syntax.MkName (mkTupleLabels)
 
 
-function :: E.Exp -> T.Type -> FreestState (T.Type, T.Type)
+function :: E.Exp -> T.Type -> FreestState (Multiplicity, T.Type, T.Type)
 function e t =
   case normalise t of
-    (T.Arrow _ _ u v) -> return (u, v)
+    (T.Arrow _ m u v) -> return (m, u, v)
     u               -> let p = getSpan e in
-      addError (ExtractError p "an arrow" e u) $> (omission p, omission p)
+      addError (ExtractError p "an arrow" e u) $> (Un,  omission p, omission p)
+-- TODO: add default multiplicity
 
 pair :: E.Exp -> T.Type -> FreestState (T.Type, T.Type)
 pair e t =
