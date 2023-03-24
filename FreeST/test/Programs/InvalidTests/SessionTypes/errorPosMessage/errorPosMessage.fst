@@ -1,13 +1,13 @@
 
 main : Int
 main =
-  let (w, r) = new !Bool in
+  let (w, r) = new @!Bool () in
   fork @() (\_:()-> f w);
   let (x, c) = f1 r in
   close c;
   x
 
-type F = !Int;End
+type F : 1S = !Int;End
 
 f : F -> ()
 f c = send c 4 |> close

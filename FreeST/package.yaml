@@ -1,5 +1,5 @@
 name:                FreeST
-version:             2.2.0
+version:             2.3.0
 #github:              "githubuser/ContextFreeSession"
 license:             BSD3
 author:              "Bernardo Almeida, Andreia Mordido, Vasco T. Vasconcelos"
@@ -8,10 +8,10 @@ copyright:           "2020 authors"
 #extra-source-files:
 #- README.md
 data-dir: StandardLib
-data-files: Prelude.fst
-# Metadata used when publishing your package
-# synopsis:            Short description of your package
-# category:            Web
+data-files:
+  - Prelude.fst
+  - List.fst
+  - File.fst
 
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
@@ -39,9 +39,9 @@ library:
     - Bisimulation.Grammar
     - Bisimulation.Bisimulation
     - Elaboration.ResolveDuality
-    - Elaboration.Elaboration
-    - Equivalence.Equivalence    
+    - Elaboration.Elaboration   
     - Equivalence.Subtyping
+#    - Equivalence.Equivalence
     - Equivalence.Normalisation
     - Syntax.Base
     - Syntax.Type
@@ -52,6 +52,7 @@ library:
     - Parse.Read
     - Parse.Unparser
     - Util.Error
+    - Util.Warning
 #    - Util.PrettyError
     - Util.FreestState
     - Util.CmdLine
@@ -67,6 +68,7 @@ library:
     - Validation.Substitution
     - Validation.Typing
     - Validation.TypeChecking
+    - Interpreter.Builtin
     - Interpreter.Eval
 
 executables:

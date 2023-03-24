@@ -1,12 +1,12 @@
-f : (() 1-> +{A: Skip, B: Skip}) -> Skip
-f g = g () |> select B
+f : (() 1-> +{A: Skip, B: Skip};End) -> ()
+f g = g () |> select B |> close 
 
 
-main : Skip
-main = let (c,b) = new +{A: Skip, B: Skip, C: Skip} in
-       f (\_:() 1-> c);
+main : ()
+main = let (c,b) = new @(+{A: Skip, B: Skip, C: Skip};End) ()  in
+       fork (\_:() 1-> f (\_:() 1-> c));
        match b with {
-        A c -> c,
-        B c -> c,
-        C c -> c
+        A c -> close c,
+        B c -> close c,
+        C c -> close c
        }

@@ -12,7 +12,7 @@ upper bound of two kinds and other functions to manipulate kinds.
 {-# LANGUAGE FlexibleInstances #-}
 
 module Syntax.Kind
-  ( Basic(..)
+  ( PreKind(..)
   , Kind(..)
   , Multiplicity(..)
   , KindEnv
@@ -35,22 +35,24 @@ import           Syntax.Base hiding ( Multiplicity(..) )
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
--- Basic kind
-
-data Basic = Session | Top deriving (Eq, Ord)
+-- Pre-kind
+data PreKind = Session | Top deriving (Eq, Ord)
 
 -- Multiplicity
 data Multiplicity = Un | Lin deriving (Eq, Ord)
 
 -- Kind
 
-data Kind = Kind Span Multiplicity Basic deriving Ord
+data Kind = Kind Span Multiplicity PreKind
+
+instance Eq Kind where 
+  Kind _ m1 pk1 == Kind _ m2 pk2 = m1 == m2 && pk1 == pk2 
+
+instance Ord Kind where 
+  Kind _ m1 pk1 <= Kind _ m2 pk2 = m1 <= m2 && pk1 <= pk2 
 
 instance Located Kind where
   getSpan (Kind p _ _) = p
-
-instance Eq Kind where
-   (Kind _ b1 m1) == (Kind _ b2 m2) = b1 == b2 && m1 == m2 
 
 
 -- The kind of conventional (non linear, non session) functional programming

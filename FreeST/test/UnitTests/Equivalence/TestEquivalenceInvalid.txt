@@ -1,104 +1,243 @@
 -- Functional
 
+[]
 Int
-Bool
+Char
 
+[]
 Int -> Int
 Int 1-> Int
 
 -- Regular Session Types
 
+[]
 !Int
-?Bool
+?Int
 
+[]
 Skip
 !Int
 
+[]
 Skip
 Skip; !Int
 
+[]
 ?Int
 Skip; !Int; Skip
 
+[]
 +{A: Skip}
 +{B: Skip}
 
+[]
 +{A: Skip}
 +{A: !Char}
 
-+{A: ?Bool, B: Skip; !Char}
-+{B: Skip; !Char, A: ?Bool, C: !Char}
+[]
++{A: ?Int, B: Skip; !Char}
++{B: Skip; !Char, A: ?Int, C: !Char}
 
-&{A: ?Bool}
-&{B: ?Bool}
+[]
+&{A: ?Int}
+&{B: ?Int}
 
-&{A: ?Bool}
+[]
+&{A: ?Int}
 &{A: Skip}
 
-&{A: ?Bool, B: Skip; !Char}
-&{B: Skip; !Char, A: ?Bool, C:!Char}
+[]
+&{A: ?Int, B: Skip; !Char}
+&{B: Skip; !Char, A: ?Int, C:!Char}
 
+[]
 !Int
-rec a . !Bool
+rec a . !Char
 
+[]
 rec a . !Int
-rec a . !Bool
+rec a . !Char
 
-rec a. !Int; a; a
-rec a. ?Int; a; a
+[]
+rec a:1S. !Int; a; a
+rec a:1S. ?Int; a; a
 
-rec a. rec b. !Int; a; b
-rec b. rec a. !Char; a; ?Bool; b
+[]
+rec a:1S. rec b:1S. !Int; a; b
+rec b:1S. rec a:1S. !Char; a; ?Int; b
 
-rec a . ?Bool; a
-rec b . !Bool; b; b; !Char; b; ?Int; b; b; ?Bool; b; b
+[]
+rec a:1S . ?Int; a
+rec b:1S . !Int; b; b; !Char; b; ?Int; b; b; ?Int; b; b
 
-rec a . +{A: !Bool;a}
-rec b . +{A: b}; !Bool
+[]
+rec a:1S . +{A: !Int;a}
+rec b:1S . +{A: b}; !Int
 
-rec a . +{A: !Int, B: a}
-rec b . +{A: b, B: Skip}; !Bool
+[]
+rec a:1S . +{A: !Int, B: a}
+rec b:1S . +{A: b, B: Skip}; !Int
 
-rec a . +{A: !Int, B: a}
-rec b . +{A: Skip, B: b}; !Bool
+[]
+rec a:1S . +{A: !Int, B: a}
+rec b:1S . +{A: Skip, B: b}; !Int
 
-rec a. &{Leaf: ?Bool; a, Node: ?Int;a;a}
-rec a. &{Leaf: ?Bool, Node: ?Int;a;a}
+[]
+rec a:1S. &{Leaf: ?Int; a, Node: ?Int;a;a}
+rec a:1S. &{Leaf: ?Int, Node: ?Int;a;a}
 
-(rec a . &{LeafC: Skip, NodeC: (?Int;(a;a))}  ); a
- rec a . &{LeafC: Skip, NodeC: (?Int;(a;a))};a
+[("a", "1S")]
+(rec a:1S . &{LeafC: Skip, NodeC: (?Int;(a;a))}  ); a
+rec a:1S . &{LeafC: Skip, NodeC: (?Int;(a;a))};a
 
-(rec a . &{N: a;!Int, L: Skip});?Int
-rec a . &{N: a;!Int;?Int, L:?Int}
+[]
+(rec a:1S . &{N: a;!Int, L: Skip});?Int
+rec a:1S . &{N: a;!Int;?Int, L:?Int}
 
-rec a. +{A: a; !Bool, B: !Bool}
-rec a. +{A: a; !Bool, B: !Bool}; +{B: Skip}; +{B: Skip}; !Bool
+[]
+rec a:1S. +{A: a; !Int, B: !Int}
+rec a:1S. +{A: a; !Int, B: !Int}; +{B: Skip}; +{B: Skip}; !Int
 
-rec a  . &{N:a;a;!Int, L:!Int}
-(rec a  . &{N:a;a;!Int, L:Skip});!Int
+[]
+rec a:1S  . &{N:a;a;!Int, L:!Int}
+(rec a:1S  . &{N:a;a;!Int, L:Skip});!Int
 
-rec a  . &{N:a;a;!Int, L:!Int}
-rec a  . &{N:a;a;!Int, L:Skip};!Int
+[]
+rec a:1S  . &{N:a;a;!Int, L:!Int}
+rec a:1S  . &{N:a;a;!Int, L:Skip};!Int
 
-rec a  . &{N:a;a;!Int, L:!Int}
-rec a  . (&{N:a;a;!Int, L:Skip};!Int)
+[]
+rec a:1S  . &{N:a;a;!Int, L:!Int}
+rec a:1S  . (&{N:a;a;!Int, L:Skip};!Int)
 
-(rec a. +{A: a; ?Char, B: ?Char}); ?Char
-(rec a. +{A: a; +{B: Skip}; +{B: Skip}; ?Char, B: +{B: Skip}; +{B: Skip}; ?Char}); +{B: Skip}; +{B: Skip}; ?Char
+[]
+(rec a:1S. +{A: a; ?Char, B: ?Char}); ?Char
+(rec a:1S. +{A: a; +{B: Skip}; +{B: Skip}; ?Char, B: +{B: Skip}; +{B: Skip}; ?Char}); +{B: Skip}; +{B: Skip}; ?Char
 
-(rec b. +{A: (rec b. (rec a. (+{A: (Skip;(?Int;!())), B: (Skip;?Char)};a)))})
-+{A: (rec b. +{A: (((Skip;?Int);!());(rec b. +{A: (rec b. +{A: (((Skip;?Int);!());b), B: (?Char;b)})})), B: (?Char;(rec b. +{A: (rec b. +{A: (((Skip;?Int);!());b), B: (?Char;b)})}))})}
+[]
+(rec b:1S. +{A: (rec b:1S. (rec a:1S. (+{A: (Skip;(?Int;!())), B: (Skip;?Char)};a)))})
++{A: (rec b:1S. +{A: (((Skip;?Int);!());(rec b:1S. +{A: (rec b:1S. +{A: (((Skip;?Int);!());b), B: (?Char;b)})})), B: (?Char;(rec b:1S. +{A: (rec b:1S. +{A: (((Skip;?Int);!());b), B: (?Char;b)})}))})}
 
 -- End 
 
-!Int;End;!Bool
-!Bool;End;!Int
+[]
+!Int;End;!Char
+!Char;End;!Int
 
+[]
 End
 Skip
 
+[]
 !(End)
 !(Skip)
 
+[]
 !(!Int;End)
 !(?Int;End)
+
+-- Session types
+
+-- Higher Order
+
+[]
+!((rec y:1S. +{A:!Char;!Char;y, B: Skip}) -> (rec x:1S. ?Int;x)) ; ?Int
+!((rec y:1S. +{A:!Char;y, B: Skip}) -> (rec y:1S. ?Int;?Int;y)) ; ?Int
+
+[]
+(rec y:1S. +{a:!Char;!Char;y, b: Skip}) -> Int
+(rec y:1S. +{a:!Char;y, b: Skip}) -> Int
+
+-- First Order
+
+[]
+((rec x:1S.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))});((rec x:1S.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))});?Int))
+((rec x:1S.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))});((rec x:1S.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))});(?Int;((rec x:1S.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))});?Int))))
+
+[]
+(Skip;((rec x:1S.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))});?Int))
+Skip
+
+[]
+((rec x:1S.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))});((rec x:1S.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))});?Int))
+((rec x:1S.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))});((rec x:1S.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))});(?Int;?Int)))
+
+[]
+(rec x:1S.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))})
+(Skip;?Int)
+
+[]
+(rec x:1S.+{EOS: Skip, Node: x, Root: (!Int;x)})
+Skip
+
+[]
+Skip
+(rec x:1S.+{EOS: Skip, Node: x, Root: (!Int;x)})
+
+[]
+((rec x:1S.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))});((rec x:1S.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))});?Int))
+((rec x:1S.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))});((rec x:1S.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))});(?Int;((rec x:1S.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))});?Int))))
+
+[]
+(Skip;((rec x:1S.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))});?Int))
+Skip
+
+[]
+((rec x:1S.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))});((rec x:1S.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))});?Int))
+((rec x:1S.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))});((rec x:1S.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))});(?Int;?Int)))
+
+[]
+(rec x:1S.+{LeafC: Skip, NodeC: (!Int;(x;(x;?Int)))})
+(Skip;?Int)
+
+[]
+(Skip;?Int)
+Skip
+
+[]
+!Int
+!Char
+
+[]
+!Char
+!Int
+
+[("a", "1S")]
+a
+Skip
+
+[("a", "1S")]
+((rec x:1S.+{Leaf: Skip, Node: (!Int;(x;x))});((rec x:1S.+{Leaf: Skip, Node: (!Int;(x;x))});(a;!Int)))
+((rec x:1S.+{Leaf: Skip, Node: (!Int;(x;x))});((rec x:1S.+{Leaf: Skip, Node: (!Int;(x;x))});a))
+
+[("a", "1S")]
+((rec x:1S.+{Leaf: Skip, Node: (!Int;(x;x))});(a;!Char))
+((rec x:1S.+{Leaf: Skip, Node: (!Int;(x;x))});(a;!Int))
+
+[("a", "1S")]
+(Skip;a)
+(a;!Char)
+
+[]
+((rec x:1S.+{Leaf: Skip, Node: (!Int;(x;x))});Skip)
+(rec x:1S.+{Leaf: Skip, Node: (!Int;(x;(x;(Skip;?Char))))})
+
+[]
+((rec x:1S.&{Leaf: Skip, Node: (?Int;(x;x))});Skip)
+(rec x:1S.&{Leaf: Skip, Node: (?Int;(x;(x;(Skip;!Char))))})
+
+[("a", "1S")]
+((rec x:1S.&{Leaf: Skip, Node: (?Int;(x;x))});(rec x:1S.&{Leaf: Skip, Node: (?Int;(x;x))}))
+((rec x:1S.&{Leaf: Skip, Node: (?Int;(x;x))});((rec x:1S.&{Leaf: Skip, Node: (?Int;(x;x))});a))
+
+[("a", "1S")]
+((rec x:1S.&{Leaf: Skip, Node: (?Int;(x;x))});a)
+(rec x:1S.&{Leaf: Skip, Node: (?Int;(x;x))})
+
+[]
+((rec x:1S.+{Leaf: Skip, Node: (!Int;(x;x))});?Int)
+(rec x:1S.+{Leaf: Skip, Node: (!Int;(x;x))})
+
+[]
+((rec x:1S.+{Leaf: Skip, Node: (!Int;(x;x))});?Int)
+(rec x:1S.+{Leaf: Skip, Node: (!Int;(x;(x;(Skip;?Char))))})

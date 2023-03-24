@@ -16,8 +16,9 @@ Portability :  portable | non-portable (<reason>)
 module Util.FreestState where
 
 import           Syntax.Base
+import           Syntax.MkName
 import           Syntax.Expression
-import           Syntax.Kind
+import qualified Syntax.Kind as K
 import           Syntax.Program
 import qualified Syntax.Type as T
 
@@ -28,6 +29,7 @@ import           Util.Warning
 -- import           Util.PrettyError ()
 
 import           Control.Monad.State
+import           Data.Bifunctor ( second )
 import           Data.List ( intercalate )
 import qualified Data.Map.Strict as Map
 import           Data.Maybe
@@ -74,9 +76,9 @@ type FreestState = State FreestS
 
 initialState :: FreestS
 initialState = FreestS { runOpts    = defaultOpts
-                       , varEnv     = Map.empty
+                       , varEnv     = initialVEnv
                        , prog       = Map.empty
-                       , typeEnv    = Map.empty
+                       , typeEnv    = initialTEnv
                        , typenames  = Map.empty
                        , warnings   = []
                        , errors     = []
@@ -186,11 +188,11 @@ setProg prog = modify (\s -> s { prog })
 getTEnv :: MonadState FreestS m => m TypeEnv
 getTEnv = gets typeEnv
 
-addToTEnv :: MonadState FreestS m => Variable -> Kind -> T.Type -> m ()
+addToTEnv :: MonadState FreestS m => Variable -> K.Kind -> T.Type -> m ()
 addToTEnv x k t =
   modify (\s -> s { typeEnv = Map.insert x (k, t) (typeEnv s) })
 
-getFromTEnv :: MonadState FreestS m => Variable -> m (Maybe (Kind, T.Type))
+getFromTEnv :: MonadState FreestS m => Variable -> m (Maybe (K.Kind, T.Type))
 getFromTEnv b = do
   tEnv <- getTEnv
   return $ tEnv Map.!? b
@@ -270,6 +272,7 @@ debugM err = do
 
 data RunOpts = RunOpts { runFilePath  :: FilePath
 --                     , preludeFile  :: Maybe FilePath
+                       , args         :: [String]
                        , mainFunction :: Maybe Variable
                        , isStylable   :: Bool
                        , quietmode    :: Bool
@@ -279,13 +282,14 @@ data RunOpts = RunOpts { runFilePath  :: FilePath
 defaultOpts :: RunOpts
 defaultOpts = RunOpts { runFilePath  = ""
 --                    , preludeFile  = Just "Prelude.fst"
+                      , args = []
                       , mainFunction = Nothing
                       , isStylable   = True
                       , quietmode    = False
                       }
 
 getMain :: RunOpts -> Variable
-getMain opts = fromMaybe (mkVar defaultSpan "main") maybeMain
+getMain opts = fromMaybe mkMain maybeMain
   where maybeMain = mainFunction opts
 
 isMainFlagSet :: RunOpts -> Bool
@@ -319,3 +323,36 @@ getImports = gets imports
 
 
 
+-- | Lists
+
+ds :: Span
+ds = defaultSpan
+
+initialTEnv :: TypeEnv
+initialTEnv = Map.singleton (mkList ds) (K.ut ds, listType)
+
+initialVEnv :: VarEnv
+initialVEnv = Map.fromList listTypes
+
+listTypes :: [(Variable, T.Type)]
+listTypes = typeListToType (mkList ds)
+              [(mkCons ds,[T.Int ds, T.Var ds (mkList ds)]), (mkNil ds, [])]
+
+listType :: T.Type
+listType = T.Labelled ds T.Variant (typeListToRcdType [(mkCons ds,[T.Int ds, T.Var ds (mkList ds)]), (mkNil ds, [])])
+
+-- For constructors (used in Parser.y and here for lists)
+typeListToType :: Variable -> [(Variable, [T.Type])] -> [(Variable, T.Type)]
+typeListToType a = map $ second typeToFun -- map (\(x, ts) -> (x, typeToFun ts))
+  -- Convert a list of types and a final type constructor to a type
+ where
+  typeToFun []       = T.Var (getSpan a) a
+  typeToFun (t : ts) = T.Arrow (getSpan t) Un t (typeToFun ts)
+
+
+typeListToRcdType :: [(Variable, [T.Type])] -> T.TypeMap
+typeListToRcdType []             = Map.empty
+typeListToRcdType ((c, us) : ts) =
+  Map.insert c (T.Labelled (getSpan c) T.Record $ typesToMap 0 us) (typeListToRcdType ts)
+  where typesToMap n [] = Map.empty
+        typesToMap n (t : ts) = Map.insert (mkVar (getSpan t) $ show n) t (typesToMap (n+1) ts)

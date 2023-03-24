@@ -19,12 +19,12 @@ receiveBits nBits bitS =
 initRandom : Random
 initRandom =
     -- init bit sending 
-    let (bitSend, bitRecv) = new BitStream in
+    let (bitSend, bitRecv) = new @BitStream () in
     -- init bit sending threads
     fork (\_:() 1-> genericUnSender @Int 0 bitSend);
     fork (\_:() 1-> genericUnSender @Int 1 bitSend);
     -- init server/client endpoint
-    let (client, server) = new Random in
+    let (client, server) = new @Random () in
     -- init random server
     fork (\_:() 1-> genericUnSender @Int (receiveBits 4 bitRecv) server);
     -- return client endpoint

@@ -16,6 +16,8 @@ module Syntax.Type
   , Polarity(..)
   , Sort(..)
   , View(..)
+  , unit 
+  , tuple 
 --  , Multiplicity(..)
   )
 where
@@ -23,6 +25,7 @@ where
 import           Syntax.Base
 import qualified Syntax.Kind                   as K
 import qualified Data.Map.Strict               as Map
+import Syntax.MkName (mkTupleLabels)
 
 data Polarity = Out      | In      deriving  (Eq, Ord)
 data View     = External | Internal deriving (Eq, Ord)
@@ -31,12 +34,9 @@ data Type =
   -- Functional Types
     Int Span
   | Char Span
-  | Bool Span
   | String Span
-  | Unit Span
   | Arrow Span Multiplicity Type Type
-  | Pair Span Type Type
-  | Almanac Span Sort TypeMap
+  | Labelled Span Sort TypeMap
   -- Session Types
   | Skip Span
   | End Span
@@ -48,7 +48,7 @@ data Type =
   | Var Span Variable
   -- Type operators
   | Dualof Span Type
-  | CoVar Span Variable
+--  | CoVar Span Variable
 
 -- | Abs Pos (Bind Type)       -- λ a:k => T, Operator abstraction
 -- | App Pos Type Type
@@ -63,12 +63,9 @@ instance Default Type where
 instance Located Type where
   getSpan (Int  p       ) = p
   getSpan (Char p       ) = p
-  getSpan (Bool p       ) = p
   getSpan (String p     ) = p
-  getSpan (Unit p       ) = p
   getSpan (Arrow p _ _ _) = p
-  getSpan (Pair p _ _   ) = p
-  getSpan (Almanac p _ _) = p
+  getSpan (Labelled p _ _) = p
   getSpan (Skip p       ) = p
   getSpan (End p        ) = p
   getSpan (Semi p _ _   ) = p
@@ -79,4 +76,13 @@ instance Located Type where
   -- getSpan (Abs p _      ) = p
   -- getSpan (App p _ _    ) = p
   getSpan (Dualof p _   ) = p
-  getSpan (CoVar p _   ) = p
+--  getSpan (CoVar p _   ) = p
+
+-- Derived forms
+unit :: Span -> Type 
+unit s = Labelled s Record Map.empty 
+
+tuple :: Span -> [Type] -> Type
+tuple s ts = Labelled s Record (tupleTypeMap ts)
+  where tupleTypeMap :: [Type] -> TypeMap
+        tupleTypeMap ts = Map.fromList $ zipWith (\mk t -> (mk (getSpan t), t)) mkTupleLabels ts 

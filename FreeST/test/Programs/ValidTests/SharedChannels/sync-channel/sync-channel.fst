@@ -12,7 +12,7 @@ syncServerOnce limit ch =
     then ()
     else 
         -- create endpoints for syncing
-        let (c, s) = new SyncService in
+        let (c, s) = new @SyncService () in
         -- send client's endpoint
         let ch = send c ch in
         -- recursive call
@@ -26,14 +26,13 @@ sync ch =
     -- receive linear sync channel
     let (c, _) = receive ch in
     -- wait for sync
-    let (_, c) = receive c in
-    close c
+    receiveAndClose @Int c; ()
 
 client : Int -> SyncServer -> ()
 client id ch =
-    printIntLn (-id);
+    print @Int  (-id);
     sync ch;
-    printIntLn id
+    print @Int  id
 
 forkNClients : Int -> SyncServer -> ()
 forkNClients i ch =
@@ -48,6 +47,6 @@ nServers = 20
 
 main : ()
 main = 
-    let (c, s) = new SyncServer in
+    let (c, s) = new @SyncServer () in
     forkNClients nServers c;
     syncServer nServers s

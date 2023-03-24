@@ -1,10 +1,10 @@
-f : (&{A: Skip, B: Skip, C:Skip}, +{A: Skip, B: Skip}) -> ()
+f : (&{A: Skip, B: Skip, C:Skip};End, +{A: Skip, B: Skip};End) -> ()
 f p = let (b,c) = p in
-      select A c;
+      fork (\_:() 1-> c |> select A |> close);
       match b with {
-        A c -> (),
-        B c -> ()
+        A c -> close c,
+        B c -> close c
       }
 
 main : ()
-main = f $ new &{A: Skip, B: Skip}
+main = f $ new @(&{A: Skip, B: Skip};End) ()

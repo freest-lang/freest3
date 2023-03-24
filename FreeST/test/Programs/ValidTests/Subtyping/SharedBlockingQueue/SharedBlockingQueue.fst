@@ -34,7 +34,7 @@ queueHandle sr qs =
 
 -- | Create an empty shared queue.
 emptyQueue : Queue  
-emptyQueue = forkWith @Queue @Diverge (runServer @QueueService @(*!T, *?T) queueHandle (new *!T))
+emptyQueue = forkWith @Queue @Diverge (runServer @QueueService @(*!T, *?T) queueHandle (new @(*!T) ()))
 
 -- | Add an element to the back of a queue. 
 --   Write permission is enough.
@@ -54,8 +54,8 @@ dequeue q = q |> receive_ @DequeueService
 
 main : ()
 main = let q = emptyQueue in 
-       let (w,r) = new *!Int in 
+       let (w,r) = new @(*!Int) () in 
        let n = 10 in 
        parallel @() n (\_:() -> enqueue 1 q); -- lin/un function subtyping
        parallel @() n (\_:() -> send (dequeue q) w; ());
-       repeat   @() n (\_:() -> printIntLn $ receive_ @Int r)
+       repeat   @() n (\_:() -> print @Int $ receive_ @Int r)

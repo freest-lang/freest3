@@ -1,15 +1,11 @@
 main : Bool
 main =
-  let (w, r) = new ?Int;!Bool;End in
-  let x = fork @() (\_:()1-> client w) in
-  let c1 = send (-5) r in
-  let (b, c2) = receive c1 in 
-  close c2;
-  b
+  let (w, r) = new @(?Int;!Bool;End) () in
+  fork @() (\_:()1-> client w);
+  r |> send (-5) |> receiveAndClose @Bool
 
 
 client : ?Int;!Bool;End -> ()
 client c =
-  let (n, r1) = receive c in
-  let r2 = send (n >= 0) r1 in
-  close r2
+  let (n, c) = receive c in
+  c |> send (n >= 0) |> close

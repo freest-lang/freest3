@@ -46,10 +46,9 @@ renameState = do
   -- | Why do we need to rename the tenv ??
   -- tEnv' <- tMapM (\(k, s) -> rename Map.empty s >>= \s' -> return (k, s')) tEnv
   -- setTEnv tEnv'
-
   -- VarEnv + ExpEnv, together
   vEnv <- getVEnv
-  tMapWithKeyM_ renameFun ((noConstructors tEnv vEnv))
+  tMapWithKeyM_ renameFun (noConstructors tEnv vEnv)
 
 renameFun :: Variable -> T.Type -> FreestState ()
 renameFun f t = do
@@ -60,7 +59,7 @@ renameFun f t = do
 
 -- Renaming the various syntactic categories
 
-type Bindings = Map.Map String String
+type Bindings = Map.Map String String -- Why String and not Syntax.Base.Variable?
 
 class Rename t where
   rename :: Bindings -> Bindings -> t -> FreestState t
@@ -88,39 +87,34 @@ instance Rename (Bind T.Type E.Exp) where
 -- Types
 
 instance Rename T.Type where
-  rename = rename'
-  -- rename bs t
-  --   | terminated Set.empty t = return $ T.Skip (pos t)
-  --   | otherwise              = rename' bs t
-
-rename' :: Bindings -> Bindings -> T.Type -> FreestState T.Type
-  -- Almanac
-rename' tbs pbs (T.Almanac p s m) = T.Almanac p s <$> tMapM (rename tbs pbs) m
+  -- Labelled
+  rename tbs pbs (T.Labelled p s m)   = T.Labelled p s <$> tMapM (rename tbs pbs) m
   -- Functional types
-rename' tbs pbs (T.Arrow p m t u    ) = T.Arrow p m <$> rename tbs pbs t <*> rename tbs pbs u
-rename' tbs pbs (T.Message p pol t) = T.Message p pol <$> rename tbs pbs t
-rename' tbs pbs (T.Pair p t u     ) = T.Pair p <$> rename tbs pbs t <*> rename tbs pbs u
+  rename tbs pbs (T.Arrow p m t u)   = T.Arrow p m <$> rename tbs pbs t <*> rename tbs pbs u
+  rename tbs pbs (T.Message p pol t) = T.Message p pol <$> rename tbs pbs t
   -- Session types
-rename' tbs pbs (T.Semi   p t   u ) = T.Semi p <$> rename tbs pbs t <*> rename tbs pbs u
+  rename tbs pbs (T.Semi p t u)      = T.Semi p <$> rename tbs pbs t <*> rename tbs pbs u
   -- Polymorphism
-rename' tbs pbs (T.Forall p b     ) = T.Forall p <$> rename tbs pbs b
+  rename tbs pbs (T.Forall p b)      = T.Forall p <$> rename tbs pbs b
   -- Functional or session
-rename' tbs pbs (T.Rec    p b)
- | isProperRec b = T.Rec p <$> rename tbs pbs b
- | otherwise     = rename tbs pbs (body b)
-rename' tbs pbs (T.Var    p a     ) = return $ T.Var p (findWithDefaultVar a tbs)
-rename' tbs pbs (T.CoVar    p a   ) = return $ T.CoVar p (findWithDefaultVar a tbs)
+  rename tbs pbs (T.Rec    p b)
+    | isProperRec b = T.Rec p <$> rename tbs pbs b
+    | otherwise     = rename tbs pbs (body b)
+  rename tbs _ (T.Var    p a     ) = return $ T.Var p (findWithDefaultVar a tbs)
+  rename tbs _ (T.Dualof p (T.Var p' a)) =
+    return $ T.Dualof p $ T.Var p' (findWithDefaultVar a tbs)
+--rename' tbs pbs (T.CoVar    p a   ) = return $ T.CoVar p (findWithDefaultVar a tbs)
   -- Type operators
-rename' _ _  t@T.Dualof{}        = internalError "Validation.Rename.rename" t
+  rename _ _ t@T.Dualof{}          = internalError "Validation.Rename.rename" t
   -- Otherwise: Basic, Skip, Message, TypeName
-rename' _ _  t                   = return t
+  rename _ _ t                       = return t
 
 
 -- Expressions
 
 instance Rename E.Exp where
   -- Variable
-  rename tbs pbs (E.Var p x) = return $ E.Var p (findWithDefaultVar x pbs)
+  rename _ pbs (E.Var p x) = return $ E.Var p (findWithDefaultVar x pbs)
   -- Abstraction intro and elim
   rename tbs pbs (E.Abs p m b) = E.Abs p m <$> rename tbs pbs b
   rename tbs pbs (E.App p e1 e2) = E.App p <$> rename tbs pbs e1 <*> rename tbs pbs e2
@@ -139,17 +133,12 @@ instance Rename E.Exp where
   rename tbs pbs (E.TypeAbs p b) = E.TypeAbs p <$> rename tbs pbs b
   rename tbs pbs (E.TypeApp p e t) =
     E.TypeApp p <$> rename tbs pbs e <*> rename tbs pbs t
-  -- Boolean elim
-  rename tbs pbs (E.Cond p e1 e2 e3) =
-    E.Cond p <$> rename tbs pbs e1 <*> rename tbs pbs e2 <*> rename tbs pbs e3
   -- Let
   rename tbs pbs (E.UnLet p x e1 e2) = do
     x'  <- rename tbs pbs x
     e1' <- rename tbs pbs e1
     e2' <- rename tbs (insertVar x x' pbs) e2
     return $ E.UnLet p x' e1' e2'
-  -- Session types
-  rename tbs pbs (E.New p t u) = E.New p <$> rename tbs pbs t <*> rename tbs pbs u
   -- Otherwise: Unit, Integer, Character, Boolean, Select
   rename _ _ e = return e
 
@@ -209,12 +198,11 @@ isProperRec (Bind _ x _ t) = x `isFreeIn` t
 -- Does a given type variable x occur free in a type t?
 -- If not, then rec x.t can be renamed to t alone.
 isFreeIn :: Variable -> T.Type -> Bool
-  -- Almanac
-isFreeIn x (T.Almanac _ _ m) =
+  -- Labelled
+isFreeIn x (T.Labelled _ _ m) =
   Map.foldr' (\t b -> x `isFreeIn` t || b) False m
     -- Functional types
 isFreeIn x (T.Arrow _ _ t u) = x `isFreeIn` t || x `isFreeIn` u
-isFreeIn x (T.Pair _ t u ) = x `isFreeIn` t || x `isFreeIn` u
     -- Session types
 isFreeIn x (T.Message _ _ t) = x `isFreeIn` t ---
 isFreeIn x (T.Semi _ t u) = x `isFreeIn` t || x `isFreeIn` u

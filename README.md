@@ -138,7 +138,7 @@ To add a valid program test follow the steps below:
 
 
 The contents of the ".expected" test file may be:
-  - \<divergent\>, if the computation do not end.
+  - \<timeout\>, if the computation does not terminate or is expected to exceed the time limit.
   - \<pending\>, can be used as a TODO list. These are tests that need to be taken care in the future.
   - The result of the computation
 
@@ -160,8 +160,7 @@ where the `SPEC_NAME` is one of the following:
 
 - Valid equivalence tests: `TestEquivalenceValid`
 - Invalid equivalence tests: `TestEquivalenceInvalid`
-- Well formed expressions: `TestExpressionInvalid
-`
+- Well formed expressions: `TestExpressionInvalid`
 - Non Well formed expressions: `TestExpressionValid`
 - All equivalence tests: `TestEquivalence`
 - Valid types tests: `TestTypesValid`
@@ -244,6 +243,12 @@ This will generate a file testSuiteProf.prof with the running times and allocate
 To view the test coverage run ``` make coverage ```. The output files will be stored at 
 [test/outputs](test/outputs) folder. (The main file is hpc_index.html that summarizes the 
 information available and contains links for more specific information)
+
+
+# Drawing the FreeST Module Dependency Graph
+
+$ stack install graphmod
+$ find FreeST/src/ -name '*.hs' | xargs graphmod -q -p | xdot -
 
 
 # Build & Run other tools

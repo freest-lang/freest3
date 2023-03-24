@@ -1,11 +1,11 @@
 -- Tests for Contractivity
-Int -> Bool
+Int -> Char
   True
-Int 1-> Bool
+Int 1-> Char
   True
-(Int,Bool)
+(Int,Char)
   True
-[a:Int,b:Bool]
+[a:Int,b:Char]
   True
 Int
   True
@@ -13,17 +13,17 @@ Int
   True
 ?Int
   True
-+{a:!Int,b:?Bool}
++{a:!Int,b:?Char}
   True
-&{a:?Int,b:!Bool}
+&{a:?Int,b:!Char}
   True
 Skip
   True
-!Int;?Bool
+!Int;?Char
   True
-rec x . ?Bool
+rec x . ?Char
   True
-forall a . Bool
+forall a . Char
   True
 rec x . Skip;x
   True

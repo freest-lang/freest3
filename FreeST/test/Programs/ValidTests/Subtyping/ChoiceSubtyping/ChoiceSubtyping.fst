@@ -1,12 +1,12 @@
-writer : +{C: Skip} -> Skip
-writer c = select C c
+writer : +{C: Skip};End -> ()
+writer c = c |> select C |> close 
 
-reader : &{C: Skip, D: Skip} -> Skip
-reader (C c) = c 
-reader (D c) = c 
+reader : &{C: Skip, D: Skip};End -> ()
+reader (C c) = close c 
+reader (D c) = close c 
   
-main : Skip
+main : ()
 main =
-  let (w, r) = new +{C: Skip} in
-  let _ = fork @Skip (\_:() 1-> writer w) in
+  let (w, r) = new @(+{C: Skip};End) () in
+  let _ = fork @() (\_:() 1-> writer w) in
   reader r

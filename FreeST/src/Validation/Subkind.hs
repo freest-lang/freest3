@@ -28,7 +28,7 @@ import qualified Data.Map.Strict as Map
 --     \ /
 --      *S
 
--- The Subsort class. Instances include Multiplicity, Basic kinds and Kind
+-- The Subsort class. Instances include Multiplicity, PreKind and Kind
 
 class Subsort t where
   (<:) :: t -> t -> Bool
@@ -37,7 +37,7 @@ instance Subsort K.Multiplicity where
   K.Lin <: K.Un = False
   _     <: _    = True
 
-instance Subsort K.Basic where
+instance Subsort K.PreKind where
   K.Top <: K.Session = False
   _     <: _         = True
 
@@ -53,7 +53,7 @@ instance Join K.Multiplicity where
   join K.Un K.Un = K.Un
   join _    _    = K.Lin
 
-instance Join K.Basic where
+instance Join K.PreKind where
   join K.Session K.Session = K.Session
   join _         _         = K.Top
 

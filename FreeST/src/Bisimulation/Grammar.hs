@@ -49,17 +49,17 @@ import           Data.List                      ( intercalate )
 -- Word is (re)defined in module Equivalence.Grammar
 import           Prelude                 hiding ( Word )
 import qualified Syntax.Type     as T
-import qualified Syntax.Kind     as K           (Basic(..), Kind(..), Multiplicity)
+import qualified Syntax.Kind     as K           (PreKind(..), Kind(..), Multiplicity)
 
 -- Terminal symbols are called labels
 data Label = FatTerm String
            | Message T.Polarity     DataOrCont 
            | LinArrow   DomOrRng
            | UnArrow 
-           | ChoiceMarker T.View
-           | Almanac K.Basic        T.View     Variable -- All this nesting may have an impact on performance...
+           | Checkmark K.PreKind T.View
+           | Almanac K.PreKind        T.View     Variable -- All this nesting may have an impact on performance...
            | Pair    FstOrSnd
-           | Forall  K.Kind
+           | Forall  K.Kind 
            | Var     String
   deriving (Eq, Ord)
 
@@ -112,13 +112,16 @@ instance Show Label where
   show (LinArrow dr) = "1->"++ show dr  
   show UnArrow = "*->"
   show (Pair fs) = "," ++ show fs  
-  show (Forall a) = "∀" ++ show a
+  show (Forall k) = "∀" ++ show k++show (getSpan k)
   show (Var a) = a
   show (Almanac K.Top     T.Internal l) = "{}" ++ show l 
   show (Almanac K.Top     T.External l) = "<>" ++ show l 
   show (Almanac K.Session T.Internal l) = "+"  ++ show l 
   show (Almanac K.Session T.External l) = "&"  ++ show l
-  show (ChoiceMarker v) = show v ++ "_"
+  show (Checkmark K.Top     T.Internal) = "{}✓" 
+  show (Checkmark K.Top     T.External) = "<>✓" 
+  show (Checkmark K.Session T.Internal) = "+✓"  
+  show (Checkmark K.Session T.External) = "&✓" 
   
 instance Show DomOrRng where 
   show Domain = "d"

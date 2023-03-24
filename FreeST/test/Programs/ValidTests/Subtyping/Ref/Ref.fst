@@ -1,14 +1,14 @@
 type T = Int
 
 type Ref : *S = *?(RefService)
-type RefService : *S = +{Assign: !T, Deref: ?T};End
+type RefService : 1S = +{Assign: !T, Deref: ?T};End
 
 -- A Ref can be downgraded to either a Source or a Sink
-type SourceService : *S = +{Deref : ?T};End
+type SourceService : 1S = +{Deref : ?T};End
 type Source : *S = *?(SourceService)
 
-type SinkService : *S = +{Assign : !T};End
-type Sink   : *S = *?(+{Assign: !T};End)
+type SinkService : 1S = +{Assign : !T};End
+type Sink : *S = *?(+{Assign: !T};End)
 
 -- Constructor
 ref : T -> Ref 

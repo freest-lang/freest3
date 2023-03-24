@@ -10,16 +10,16 @@ where
 import           Data.List            (groupBy,sortOn,transpose,find)
 import           Data.Function        ((&))
 import           Data.Functor         ((<&>))
+import           Control.Monad        (zipWithM)
 import           Control.Monad.Extra  ((&&^))
 import           Control.Bool         (ifThenElseM)
-
 import           Syntax.Base
+import           Syntax.MkName
 import           Syntax.Expression
 import qualified Syntax.Type       as T
 import qualified Validation.Rename as R
 import           Util.Error
 import           Util.FreestState
-
 import           Data.Maybe           (isJust)
 import qualified Data.Set          as Set
 import qualified Data.Map.Strict   as Map
@@ -50,7 +50,7 @@ checkNumArgs' fn lines
   where allSame (x:y:ys) = x == y && allSame (y:ys)
         allSame _ = True
 
--- check if there is mixture for channel patterns
+-- check if there is a mixture of channel patterns
 checkChanVar :: ParseEnvPat -> FreestState ()
 checkChanVar penv = getConstructors >>= -- set with every constructor
   (\cons -> tMapM_ ((mapM $ checkChanVar' cons).prep) penv) 
@@ -97,7 +97,7 @@ fillVars fun = map (fillVars' maxLen) fun
 
 fillVars' :: Int -> Equation -> Equation
 fillVars' n (ps,e) = (ps++missingVars,e)      -- fills with '_' variables all lines with missing arguments
-  where pat = PatVar $ mkVar defaultSpan "_"
+  where pat = PatVar $ mkWild defaultSpan
         missingVars = replicate (n - (length ps)) pat
 
 -- match -----------------------------------------------------------
@@ -147,7 +147,7 @@ isRuleChan cs = b1 &&^ b2           -- it cannot be empty or var, but has to be 
 -- empty -----------------------------------------------------------
 ruleEmpty :: [Variable] -> [Equation] -> FreestState Exp
 ruleEmpty _ ((_,e):cs) = (\v -> replaceExp v v e) =<< v
-  where v = R.renameVar $ mkVar defaultSpan "_"
+  where v = R.renameVar $ mkWild defaultSpan
 
 -- var -------------------------------------------------------------
 ruleVar :: [Variable] -> [Equation] -> FreestState Exp
@@ -175,7 +175,7 @@ ruleChan :: [Variable] -> [([Pattern],Exp)] -> FreestState Exp
 ruleChan (v:us) cs = groupSortBy (pName.head.fst) cs                                      -- group by constructor name
                    & mapM destruct                                                        -- transforms into a case
                  >>= mapM (\(con,vs,cs) -> (,) con . (,) vs <$> match (vs++us) cs)        -- matches every case expression, with the case's missing variables
-                 <&> Case s (App s (Var s (mkVar s "collect")) (Var s v)) . Map.fromList  -- makes the case collect
+                 <&> Case s (App s (Var s (mkCollect s)) (Var s v)) . Map.fromList  -- makes the case collect
   where s = getSpan v
 
 -- mix -------------------------------------------------------------
@@ -198,7 +198,7 @@ fill' :: Variable -> [(Variable,Int)] -> [Equation] -> FreestState [Equation]
 fill' v _ [] = return []
 fill' v cons ((p:ps,e):cs) = (++) <$> mapM (mkCons v' e') cons      -- concats the new constructors with the rest 
                                   <*> fill' v cons cs
-  where v' = PatVar $ mkVar (getSpan $ pVar p) "_"                  -- nested Patterns -> Variables
+  where v' = PatVar $ mkWild (getSpan $ pVar p)                     -- nested Patterns -> Variables
         e' = replaceExp v (pVar p) e                                -- replace the variable that is becoming a Constructor
         mkCons v e (c,n) = (,) (PatCons c (replicate n v):ps) <$> e -- creates a list with the Constuctor and corresponding nested variables
   
@@ -218,13 +218,12 @@ findCons c (t:ts)
   | otherwise = findCons c ts                                           -- if not continue searching
 
 consAndNumber :: T.Type -> [(Variable,Int)]
-consAndNumber (T.Almanac _ T.Variant tm) = map (\(v,t) -> (v,countArrows t)) (Map.toList tm)
-  where countArrows (T.Arrow _ _ _ t2) = 1 + countArrows t2             -- the number of higher level arrows gives the number of components
-        countArrows _ = 0 
+consAndNumber (T.Labelled _ T.Variant tm) = 
+  map (\(v,(T.Labelled _ _ tm)) -> (v, Map.size tm)) (Map.toList tm)
 
 -- retuns the data type constructors
 getKeys :: T.Type -> [Variable]
-getKeys (T.Almanac _ T.Variant tm) = Map.keys tm
+getKeys (T.Labelled _ T.Variant tm) = Map.keys tm
 getKeys _ = []
 
 -- replace Variables -----------------------------------------------
@@ -238,12 +237,12 @@ replaceExp v p (BinLet s v1 v2 e1 e2) = BinLet  s      (replaceVar  v p v1)   (r
 replaceExp v p (Case s e fm)          = Case    s   <$> replaceExp  v p e  <*> mapM (substitute v p) fm
 replaceExp v p (TypeAbs s b)          = TypeAbs s   <$> replaceBind v p b
 replaceExp v p (TypeApp s e t)        = flip (TypeApp s) t <$> replaceExp v p e
-replaceExp v p (Cond s e1 e2 e3)      = Cond    s   <$> replaceExp  v p e1 <*> replaceExp v p e2 <*> replaceExp v p e3
 replaceExp v p (UnLet s v1 e1 e2)     = UnLet   s      (replaceVar  v p v1)<$> replaceExp v p e1 <*> replaceExp v p e2
-replaceExp v p (CasePat s e flp)      = checkChanVarCase flp  -- checks if there are variables with channel patterns
-                                     >> sub         <$> replaceExp  v p e  <*>(replaceExp v p    =<< match vs' flp)
-  where sub e (Case s _ fm) = Case s e fm
-        vs' = [mkVar (getSpan e) "_"]
+replaceExp v p (CasePat s e flp)      = do
+  checkChanVarCase flp                                            -- checks if there are variables with channel patterns
+  nVar <- R.renameVar $ Variable (getSpan e) "unLetHiddenVar"     -- creates an hidden variable
+  UnLet s nVar <$> replaceExp v p e
+               <*> (replaceExp v p =<< match [nVar] flp)          -- this variables then acts as the pattern variable
 replaceExp _ _ e = return e
 
 replaceBind :: Variable -> Variable -> Bind a Exp -> FreestState (Bind a Exp)
@@ -294,9 +293,17 @@ isPat_ (PatVar v) = isWild v
 newVar :: Pattern -> FreestState Variable
 newVar = R.renameVar.pVar
 
+-- newVar :: Int -> Pattern -> FreestState Variable
+-- newVar i p = R.renameVar $ updateVar $ pVar p
+--   where updateVar v = Variable (getSpan v) ("param"++(show i))
+
 groupOn :: Eq b => (a -> b) -> [a] -> [[a]]
 groupOn f = groupBy apply
   where apply n1 n2 = f n1 == f n2
 
 groupSortBy :: Ord b => (a -> b) -> [a] -> [[a]]
 groupSortBy f = groupOn f . sortOn f
+
+-- imapM :: Monad m => (Int -> a -> m b) -> [a] -> m [b]
+-- imapM f l = zipWithM f indexes l
+--   where indexes = [0..(length l)]

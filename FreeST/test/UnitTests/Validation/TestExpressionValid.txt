@@ -36,14 +36,14 @@ Int
 -- Tuple destructor
 
 -- pairs
-let (x, y) = (2, True) in y
-Bool
+let (x, y) = (2, 'c') in y
+Char
 
-let (x, y) = (2, True) in x 
+let (x, y) = (2, 'c') in x 
 Int
 
--- let (x, y, z) = (6, True, 'a') in y
--- Bool
+-- let (x, y, z) = (6, 'c', 'a') in y
+-- Char
 
 (\x : Int -> x)
 Int -> Int
@@ -53,7 +53,7 @@ Int -> Int -> Int
 
 -- Send recv same thread
 
-let (w,r) = new !Int in let _ = send 5 w in let (v,_) = receive r in v
+let (w,r) = new @(!Int;End) () in let _ = send 5 w |> close in let (v,r) = receive r in close r; v
 Int
 
 -- Sequences of Λ, λ, ∀ abstractions and type applications abbreviated
@@ -70,8 +70,8 @@ Int
 λ n:(∀ a . (a -> a) -> a -> a) -> Λ a => λ s:(a -> a) z:a -> s (n @a s z)
 (∀ a . (a -> a) -> a -> a) -> (∀ a . (a -> a) -> a -> a)
 
-(Λa b => λx:a y:b -> Λc => λz:(a -> b -> c) -> z x y) @Int @Bool
-Int -> Bool -> ∀c . (Int -> Bool -> c) -> c
+(Λa b => λx:a y:b -> Λc => λz:(a -> b -> c) -> z x y) @Int @Char
+Int -> Char -> ∀c . (Int -> Char -> c) -> c
 
 
 -- Lambda applied
@@ -79,18 +79,18 @@ Int -> Bool -> ∀c . (Int -> Bool -> c) -> c
 (λx:Int → x) 23
 Int
 
-(λ_:Bool → λy:Int → y) False 23
+(λ_:Char → λy:Int → y) 'a' 23
 Int
 
 -- Rec skip
 
-(\_:(rec x: *S. Skip, Skip) -> λy:Int -> y) (new Skip) 23
+(\x:(rec x: *S. Skip;End, Skip;End) -> λy:Int 1-> let (w,r) = x in close w; close r; y) (new @(Skip;End) ()) 23
 Int
 
-(\_:Skip -> λy:Int -> y) (fst @Skip @Skip (new Skip)) 23
+(\x:(Skip;End,Skip;End) -> λy:Int 1-> let (r,w) = x in close r ; close w ; y) (new @(Skip;End) ()) 23
 Int
 
 -- Substitution
 
-(Λ a:*T => 5)@(Bool,Bool)
+(Λ a:*T => 5)@(Char,Char)
 Int

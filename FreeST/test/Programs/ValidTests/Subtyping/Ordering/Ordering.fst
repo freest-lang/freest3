@@ -12,17 +12,16 @@ order to use in quicksort and returns the ordered list.
 
 data IntList = Nil | Cons Int IntList
 
-type OrderingServer  : 1S = &{Vals: ?Int; OrderingServer; !Int, Asc: Skip, Desc: Skip}
-type DescClient  : 1S = +{Vals: !Int; DescClient; ?Int, Desc: Skip}
-type AscClient   : 1S = +{Vals: !Int; AscClient ; ?Int, Asc : Skip}
+type OrderingServer  : 1S = &{Vals: ?Int;OrderingServer;!Int, Asc: Skip, Desc: Skip}
+type DescClient  : 1S = +{Vals: !Int;DescClient;?Int, Desc: Skip}
+type AscClient   : 1S = +{Vals: !Int;AscClient;?Int , Asc : Skip}
 
 -- ==================== Server ====================
 
 -- Facade function to initialize server with an empty list
-initOrderedServer : OrderingServer -> ()
+initOrderedServer : OrderingServer;End -> ()
 initOrderedServer c =
-  let _ = orderedServer@Skip c Nil in
-  ()
+  orderedServer@End c Nil |> snd @IntList @End |> close 
 
 -- Server function
 --   This server sends the list reversed
@@ -79,17 +78,17 @@ listAppend (Cons x xs) ll = Cons x (listAppend xs ll)
 -- ==================== Client ====================
 
 -- Simple client using Asc option
-ascClient : AscClient -> IntList
+ascClient : AscClient;End -> IntList
 ascClient c =
-  let (c, rList) = orderAsc@Skip c aList in
-  rList
+  let (c, rList) = orderAsc@End c aList in
+  close c; rList
 
 
 -- Simple client using Desc option
-descClient : DescClient -> IntList
+descClient : DescClient;End -> IntList
 descClient c =
-  let (c, rList) = orderDesc@Skip c aList in
-  rList
+  let (c, rList) = orderDesc@End c aList in
+  close c; rList
 
 
 -- ==================== Client Aux Functions ====================
@@ -97,7 +96,7 @@ descClient c =
 -- Function to send a list and receive it ordered
 --  direction : Bool - is used to determine if Asc(True) or
 --                     Desc(False) is selected
-orderAsc : forall a:1S . AscClient; a -> IntList 1-> (a, IntList)
+orderAsc : forall a:1S . AscClient;a -> IntList 1-> (a, IntList)
 orderAsc c Nil         = (select Asc c , Nil)
 orderAsc c (Cons x xs) = let c          = select Vals c in
                          let c          = send x c in
@@ -105,7 +104,7 @@ orderAsc c (Cons x xs) = let c          = select Vals c in
                          let (y, c)     = receive c in
                          (c, Cons y rList)
 
-orderDesc : forall a:1S . DescClient; a -> IntList 1-> (a, IntList)
+orderDesc : forall a:1S . DescClient;a -> IntList 1-> (a, IntList)
 orderDesc c Nil         = (select Desc c , Nil)
 orderDesc c (Cons x xs) = let c          = select Vals c in
                           let c          = send x c in
@@ -123,10 +122,10 @@ aList = Cons 4 (Cons 1 (Cons 3 (Cons 2 Nil)))
 
 main : IntList
 main =
-  let (w, r) = new AscClient in
+  let (w, r) = new @(AscClient;End) () in
   fork (\_:() 1-> initOrderedServer r) ;
   ascClient w;
 
-  let (w, r) = new DescClient in
+  let (w, r) = new @(DescClient;End) () in
   fork (\_:() 1-> initOrderedServer r) ;
   descClient w

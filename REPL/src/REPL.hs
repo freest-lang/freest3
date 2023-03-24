@@ -5,6 +5,8 @@ import           Elaboration.Elaboration ( elaboration )
 import           HandleOpts
 import           Interpreter.Eval ( evalAndPrint )
 import           Parse.Parser
+import           Paths_FreeST ( getDataFileName )
+import           Syntax.Base
 import           Util.FreestState
 import           Utils
 import           Validation.Rename ( renameState )
@@ -12,24 +14,25 @@ import           Validation.TypeChecking ( typeCheck )
 import qualified Validation.Typing as T
 
 import           Control.Monad.State
-import           Data.Char (isSpace)
 import           Data.List
 import qualified Data.Map.Strict as Map
-import           Paths_FreeST ( getDataFileName )
 import           System.Console.Haskeline
+import           System.Directory
+import           System.Environment
 import           System.Exit ( die )
-import System.Directory
-import System.FilePath
-
+import           System.FilePath
 
 main :: IO ()
 main = do
+  args <- getArgs
   home <- (</> ".repl_history") <$> getHomeDirectory
+  when (not (null args) && head args == "-v") (die replVersion)
+  putStrLn $ replVersion ++ ": https://freest-lang.github.io/  :h for help"
   runFilePath <- getDataFileName "Prelude.fst"
   s1 <- parseProgram (initialState {runOpts=defaultOpts{runFilePath}})
-  evalStateT (runInputT (replSettings home) (repl s1))
-    s1{runOpts=defaultOpts{runFilePath="<interactive>"}}
-
+  let s2 = emptyPEnv $ execState elaboration s1
+  evalStateT (runInputT (replSettings home) (repl s2 args))
+    s2{runOpts=defaultOpts{runFilePath="<interactive>"}}
 
 ------------------------------------------------------------
 -- AUTOCOMPLETE & HISTORY
@@ -78,9 +81,10 @@ optionList =
 
 -- | Runs the REPL 
 
-repl :: FreestS -> InputT REPLState ()
-repl s = handleInterrupt (repl s) $
-    withInterrupt $ getInputLine "λfreest> " >>= parseOpt s >> repl s
+repl :: FreestS -> [String] -> InputT REPLState ()
+repl s [] = handleInterrupt (repl s []) $
+    withInterrupt $ getInputLine "λfreest> " >>= parseOpt s >> repl s []
+repl s (x:_) = lift (load s x "OK. Module(s) loaded!") >> repl s []
  
 -- | OPTIONS
 
@@ -90,6 +94,7 @@ parseOpt :: FreestS -> Option -> InputT REPLState ()
 parseOpt _ Nothing  = liftS $ die "Leaving FreeSTi."
 parseOpt s (Just xs)
   | isOpt [":q", ":quit"] = liftS $ die "Leaving FreeSTi."
+  | isOpt [":v", ":version"] = liftS $ putStrLn replVersion 
   | isOpt [":h", ":help"] = liftS $ putStrLn helpMenu
   | isOpt [":r", ":reload"] = lift $ reload s
   | opt == ":{" = multilineCmd opt
@@ -115,7 +120,10 @@ parseOpt s (Just xs)
           let s1 = execState (T.synthetise Map.empty e) st
           if hasErrors s1
             then liftS $ putStrLn $ getErrors s1
-            else liftS $ evalAndPrint st e
+            else liftS $ evalAndPrint (mkVar defaultSpan "main") st e
   where
     (opt, cont) = splitOption xs
     isOpt = elem opt
+
+
+

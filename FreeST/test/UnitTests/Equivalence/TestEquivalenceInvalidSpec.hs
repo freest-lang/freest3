@@ -3,27 +3,34 @@ module Equivalence.TestEquivalenceInvalidSpec
   )
 where
 
-import           Equivalence.Equivalence        ( equivalent )
+import           Syntax.Kind                   as K
+import           Bisimulation.Bisimulation      ( bisimilar )
 import           Validation.Rename
-import           Syntax.Type
-import           Util.FreestState
+import           Validation.Kinding             ( synthetise )
 import           SpecUtils
-import qualified Data.Map.Strict               as Map
-import           Control.Monad.State
+import           Util.FreestState               ( initialState
+                                                , errors
+                                                )
+import           Control.Monad.State            ( execState )
 
 matchInvalidSpec :: [String] -> Spec
-matchInvalidSpec [a, b] =
-  it (a ++ " `~/~` " ++ b) $ equivalent Map.empty t u `shouldBe` False
- where
-  (Pair p t u) =
-    evalState (rename Map.empty Map.empty (Pair p (read a) (read b))) initialState
-    -- evalState (rename Map.empty (Pair p (read a) (read b))) initialState :: Type
+matchInvalidSpec [k, t, u]  |
+  wellFormed kEnv t' &&
+  wellFormed kEnv u' = it
+    (k ++ "  |-  " ++ t ++ " ~ " ++ u)
+    (bisimilar t' u' `shouldBe` False)
+  where
+    [t', u'] = renameTypes [read t, read u]
+    kEnv     = readKenv k
+
+wellFormed :: K.KindEnv -> Type -> Bool
+wellFormed kEnv t = null $ errors $ execState (synthetise kEnv t) initialState
 
 spec :: Spec
 spec = do
   t <- runIO
     $ readFromFile "test/UnitTests/Equivalence/TestEquivalenceInvalid.txt"
-  describe "Invalid Equivalence Test" $ mapM_ matchInvalidSpec (chunksOf 2 t)
+  describe "Invalid Equivalence Test" $ mapM_ matchInvalidSpec (chunksOf 3 t)
 
 main :: IO ()
 main = hspec spec

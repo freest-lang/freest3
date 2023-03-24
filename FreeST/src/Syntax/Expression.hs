@@ -30,7 +30,6 @@ data Exp =
     Unit Span
   | Int Span Int
   | Char Span Char
-  | Bool Span Bool
   | String Span String
   -- Variable
   | Var Span Variable
@@ -50,11 +49,9 @@ data Exp =
   | Cond Span Exp Exp Exp
   -- Let
   | UnLet Span Variable Exp Exp -- TODO: Derived; eliminate? If yes, which is type for the ProgVar? (cf. Abs)
-  -- Session types
-  | New Span T.Type T.Type
 
 instance Default (Bind T.Type Exp) where
-  omission p = Bind p (omission p) (T.Unit p) (Unit p)
+  omission p = Bind p (omission p) (T.unit p) (Unit p)
 
 type FieldMap  = Map.Map Variable ([Variable], Exp)
 type FieldList = [([Pattern], Exp)]
@@ -66,7 +63,6 @@ instance Located Exp where
   getSpan (Unit p             ) = p
   getSpan (Int p _            ) = p
   getSpan (Char p _           ) = p
-  getSpan (Bool p _           ) = p
   getSpan (String p _         ) = p
   getSpan (Var p _            ) = p
   getSpan (Abs p _ _          ) = p
@@ -77,6 +73,5 @@ instance Located Exp where
   getSpan (Cond p _ _ _       ) = p
   getSpan (Pair p _ _         ) = p
   getSpan (BinLet p _ _ _ _   ) = p
-  getSpan (New p _ _          ) = p
   getSpan (Case  p _ _        ) = p
   getSpan (CasePat  p _ _     ) = p

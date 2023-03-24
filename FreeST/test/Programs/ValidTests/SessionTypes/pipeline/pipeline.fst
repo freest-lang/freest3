@@ -47,22 +47,18 @@ receiveEval c =
 
 -- Compute 5 + (7 * 9); return the result
 client : TermChannel;?Int;End -> Int
-client c = 
-  let (x, c) = 
-    select Add c
-    |> select Const
-    |> send 5
-    |> select Mult
-    |> select Const
-    |> send 7
-    |> select Const
-    |> send 9
-    |> receive in
-  close c;
-  x
+client c = c |> select Add
+             |> select Const
+             |> send 5
+             |> select Mult
+             |> select Const
+             |> send 7
+             |> select Const
+             |> send 9
+             |> receiveAndClose @Int 
 
 main : Int
 main =
-  let (w, r)  = new dualof TermChannel;!Int;End in
+  let (w, r)  = new @(dualof TermChannel;!Int;End) () in
   fork @() (\_:()1-> computeService w);
   client r

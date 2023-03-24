@@ -64,16 +64,12 @@ toGrammar' (T.Arrow _ p t u) = do
   getLHS $ Map.fromList $
     [(LinArrow Domain, xs), (LinArrow Range, ys)]
     ++ [(UnArrow, []) | p == Un]
-toGrammar' (T.Pair _ t u) = do
-  xs <- toGrammar t
-  ys <- toGrammar u
-  getLHS $ Map.fromList [(Pair Fst, xs), (Pair Snd, ys)]
-toGrammar' (T.Almanac _  T.Variant m) = do -- Can't test this type directly
+toGrammar' (T.Labelled _  T.Variant m) = do -- Can't test this type directly
   ms <- tMapM toGrammar m
-  getLHS $ Map.mapKeys (Almanac K.Top T.External) ms
-toGrammar' (T.Almanac _  T.Record m) = do -- Can't test this type directly
+  getLHS $ Map.insert (Checkmark K.Top T.External) [] $ Map.mapKeys (Almanac K.Top T.External) ms
+toGrammar' (T.Labelled _  T.Record m) = do -- Can't test this type directly
   ms <- tMapM toGrammar m
-  getLHS $ Map.mapKeys (Almanac K.Top T.Internal) ms
+  getLHS $ Map.insert (Checkmark K.Top T.Internal) [] $ Map.mapKeys (Almanac K.Top T.Internal) ms
 -- Session Types
 toGrammar' (T.Skip _) = return []
 toGrammar' t@(T.End _) = getLHS $ Map.singleton (FatTerm "End") [bottom]
@@ -81,20 +77,17 @@ toGrammar' (T.Semi _ t u) = liftM2 (++) (toGrammar t) (toGrammar u)
 toGrammar' (T.Message _ p t) = do
   xs <- toGrammar t
   getLHS $ Map.fromList [(Message p Data, xs ++ [bottom]), (Message p Continuation, [])]
--- toGrammar' (T.Choice _ v m) = do
---   ms <- tMapM toGrammar m
---   getLHS $ Map.mapKeys (\k -> showChoiceView v ++ show k) ms
-toGrammar' (T.Almanac p (T.Choice v) m) = do
+toGrammar' (T.Labelled _ (T.Choice v) m) = do
   ms <- tMapM toGrammar m
-  getLHS $ Map.insert (ChoiceMarker v) [bottom] $ Map.mapKeys (Almanac K.Session v) ms
+  getLHS $ Map.insert (Checkmark K.Session v) [bottom] $ Map.mapKeys (Almanac K.Session v) ms
 -- Polymorphism and recursive types
 toGrammar' (T.Forall _ (Bind _ _ k t)) = do
-  xs <- toGrammar' t
+  xs <- toGrammar t
   getLHS $  Map.singleton (Forall k) xs
 toGrammar' (T.Rec _ (Bind _ x _ _)) = return [x]
 toGrammar' (T.Var _ a) = getLHS $ Map.singleton (Var $ show a) []
 -- Type operators
-toGrammar' (T.CoVar _ a) = getLHS $ Map.singleton (Var $ show a) []
+toGrammar' t@(T.Dualof _ T.Var{}) = getLHS $ Map.singleton (Var $ show t) []
 -- toGrammar' t@T.Dualof{} =
 toGrammar' t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 
@@ -104,12 +97,7 @@ fatTerminal :: T.Type -> Maybe T.Type
 -- Functional Types
 fatTerminal t@T.Int{}             = Just t
 fatTerminal t@T.Char{}            = Just t
-fatTerminal t@T.Bool{}            = Just t
 fatTerminal t@T.String{}          = Just t
-fatTerminal t@T.Unit{}            = Just t
--- fatTerminal (T.Arrow p m t u)     = Just (T.Arrow p m) <*> fatTerminal t <*> fatTerminal u
-fatTerminal (T.Pair p t u)        = Just (T.Pair p) <*> fatTerminal t <*> fatTerminal u
-fatTerminal (T.Almanac p T.Variant m) = Just (T.Almanac p T.Variant) <*> mapM fatTerminal m
 -- -- Session Types
 fatTerminal (T.Semi p t u) | terminated t = changePos p <$> fatTerminal u
                            | terminated u = changePos p <$> fatTerminal t
@@ -126,9 +114,7 @@ syntactic :: T.Type -> Bool
 -- Functional Types
 syntactic t@T.Int{}             = True
 syntactic t@T.Char{}            = True
-syntactic t@T.Bool{}            = True
 syntactic t@T.String{}          = True
-syntactic t@T.Unit{}            = True
 syntactic (T.Arrow _ _ t u)     = syntactic t && syntactic u
 syntactic (T.Pair _ t u)        = syntactic t && syntactic u
 syntactic (T.Variant p m)       = Map.foldr (\t b -> b && syntactic t) True m
@@ -149,7 +135,7 @@ type SubstitutionList = [(T.Type, Variable)]
 collect :: SubstitutionList -> T.Type -> TransState ()
 collect σ (T.Semi _ t u) = collect σ t >> collect σ u
 -- collect σ (T.Choice _ _ m) = tMapM_ (collect σ) m
-collect σ (T.Almanac _ (T.Choice v) m ) = tMapM_ (collect σ) m
+collect σ (T.Labelled _ (T.Choice v) m ) = tMapM_ (collect σ) m
 collect σ (T.Message _ _ t) = collect σ t
 collect σ t@(T.Rec _ (Bind _ x _ u)) = do
   let σ' = (t, x) : σ
@@ -159,7 +145,7 @@ collect σ t@(T.Rec _ (Bind _ x _ u)) = do
   addProductions x (Map.map (++ zs) m)
   collect σ' u
 collect σ (T.Arrow _ _ t u) = collect σ t >> collect σ u
-collect σ (T.Pair _ t u) = collect σ t >> collect σ u
+collect σ (T.Labelled _ T.Record m) = tMapM_ (collect σ) m
 collect _ _ = return ()
 
 -- The state of the translation to grammar

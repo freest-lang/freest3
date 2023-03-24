@@ -81,7 +81,7 @@ instance Arbitrary T.Type where
 
 type PairGen = Set.Set Variable -> Int -> Gen (T.Type, T.Type)
 
-bisimPair :: K.Basic -> PairGen 
+bisimPair :: K.PreKind -> PairGen 
 -- Top types
 bisimPair K.Top cVars 0 = 
   oneof [ bisimPair K.Session cVars 0 -- Top types include session types
@@ -175,7 +175,7 @@ choicePair :: PairGen -> PairGen
 choicePair pairGen cVars n = do
   c        <- arbitrary
   (m1, m2) <- typeMapPair pairGen cVars n
-  return (T.Almanac pos c m1, T.Almanac pos c m2)
+  return (T.Labelled pos c m1, T.Labelled pos c m2)
 
 typeMapPair :: PairGen -> Set.Set Variable -> Int -> Gen (T.TypeMap, T.TypeMap)
 typeMapPair pairGen cVars n = do
@@ -204,7 +204,7 @@ pairPair :: PairGen
 pairPair cVars n = do
   (t, u) <- bisimPair K.Top cVars (n `div` 8)
   (v, w) <- bisimPair K.Top cVars (n `div` 8)
-  return (T.Pair pos t v, T.Pair pos u w)
+  return (T.tuple pos [t,v], T.tuple pos [u,w])
 
 -- Recursion
 
@@ -241,8 +241,8 @@ distrib cVars n = do
   (m1, m2) <- typeMapPair (bisimPair K.Session) cVars (n `div` 2)
   p        <- arbitrary
   return
-    ( T.Semi pos (T.Almanac pos (T.Choice p) m1) t
-    , T.Almanac pos (T.Choice p) (Map.map (\v -> T.Semi pos v u) m2)
+    ( T.Semi pos (T.Labelled pos (T.Choice p) m1) t
+    , T.Labelled pos (T.Choice p) (Map.map (\v -> T.Semi pos v u) m2)
     )
 
 assoc :: PairGen

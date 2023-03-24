@@ -60,14 +60,15 @@ tokens :-
   ("\\"|Λ)                      { \p s -> TokenUpperLambda (internalPos p) }
   ("=>"|⇒)                      { \p s -> TokenFArrow (internalPos p) }
   "@"                           { \p s -> TokenAt (internalPos p)}
-  "("				                    { \p s -> TokenLParen (internalPos p) }
-  ")"				                    { \p s -> TokenRParen (internalPos p) }
-  "["				                    { \p s -> TokenLBracket (internalPos p) }
-  "]"			                      { \p s -> TokenRBracket (internalPos p) }
-  "{"				                    { \p s -> TokenLBrace (internalPos p) }
-  "}"			                      { \p s -> TokenRBrace (internalPos p) }
-  ","				                    { \p s -> TokenComma (internalPos p) }
+  "("				{ \p s -> TokenLParen (internalPos p) }
+  ")"				{ \p s -> TokenRParen (internalPos p) }
+  "["				{ \p s -> TokenLBracket (internalPos p) }
+  "]"			        { \p s -> TokenRBracket (internalPos p) }
+  "{"				{ \p s -> TokenLBrace (internalPos p) }
+  "}"			        { \p s -> TokenRBrace (internalPos p) }
+  ","				{ \p s -> TokenComma (internalPos p) }
   ":"                           { \p s -> TokenColon (internalPos p) }
+  "::"                           { \p s -> TokenDoubleColon (internalPos p) }
   ";"	       	      	  	{ \p s -> TokenSemi (internalPos p) }
   "!"                           { \p s -> TokenMOut (internalPos p) }
   "?"				{ \p s -> TokenMIn (internalPos p) }
@@ -90,19 +91,17 @@ tokens :-
   "/="  		        { \p s -> TokenCmp (internalPos p) "(/=)" }
   ("&&"|∧)  		        { \p s -> TokenConjunction (internalPos p) }
   ("||"|∨)  		        { \p s -> TokenDisjunction (internalPos p) }
+  "++"      { \p s -> TokenAppend (internalPos p)}
   "/"  		                { \p s -> TokenDiv (internalPos p) }
   "$"  		                { \p s -> TokenDollar (internalPos p) }
 -- Kinds
-  "*S"                            { \p s -> TokenUnS (internalPos p) }
-  "1S"                            { \p s -> TokenLinS (internalPos p) }
-  "*T"                            { \p s -> TokenUnT (internalPos p) }
-  "1T"                            { \p s -> TokenLinT (internalPos p) }
-  -- "*M"                            { \p s -> TokenUnM (internalPos p) }
-  -- "1M"                            { \p s -> TokenLinM (internalPos p) }
+  "*S"                          { \p s -> TokenUnS (internalPos p) }
+  "1S"                          { \p s -> TokenLinS (internalPos p) }
+  "*T"                          { \p s -> TokenUnT (internalPos p) }
+  "1T"                          { \p s -> TokenLinT (internalPos p) }
 -- Basic types
   Int			        { \p s -> TokenIntT (internalPos p) }
   Char				{ \p s -> TokenCharT (internalPos p) }
-  Bool				{ \p s -> TokenBoolT (internalPos p) }
   String			{ \p s -> TokenStringT (internalPos p) }
   Skip				{ \p s -> TokenSkip (internalPos p) }
   End			  	{ \p s -> TokenEnd (internalPos p) }
@@ -112,11 +111,11 @@ tokens :-
   in                            { \p s -> TokenIn (internalPos p) }
   data                          { \p s -> TokenData (internalPos p) }
   type                          { \p s -> TokenType (internalPos p) }
-  otherwise				              { \p s -> TokenOtherwise (internalPos p) }
+  otherwise			{ \p s -> TokenOtherwise (internalPos p) }
   if				{ \p s -> TokenIf (internalPos p) }
   then				{ \p s -> TokenThen (internalPos p) }
   else				{ \p s -> TokenElse (internalPos p) }
-  new				{ \p s -> TokenNew (internalPos p) }
+--  new				{ \p s -> TokenNew (internalPos p) }
   select		        { \p s -> TokenSelect (internalPos p) }
   match				{ \p s -> TokenMatch (internalPos p) }
   with				{ \p s -> TokenWith (internalPos p) }
@@ -127,14 +126,9 @@ tokens :-
 -- Values
   \(\)				{ \p s -> TokenUnit (internalPos p) }
   (0+|[1-9]$digit*)      	{ \p s -> TokenInt (internalPos p) (read s) }
-  (True|False) 	      	 	{ \p s -> TokenBool (internalPos p) (read s) }
   @char				{ \p s -> TokenChar (internalPos p) (read s) }
   @stringLiteral		{ \p s -> TokenString (internalPos p) (read s) }
 -- Identifiers
-  ("(+)"|"(-)"|"(*)"|"(/)"
-  |"(^)"|"(>)"|"(<)"|"(>=)"
-  |"(<=)"|"(==)"|"(/=)"
-  |"(&&)"|"(||)")               { \p s -> TokenLowerId (internalPos p) s }
   @lowerId                      { \p s -> TokenLowerId (internalPos p) s }
   @upperId                      { \p s -> TokenUpperId (internalPos p) s }
 
@@ -144,7 +138,6 @@ data Token =
     TokenNL Span
   | TokenIntT Span
   | TokenCharT Span
-  | TokenBoolT Span
   | TokenStringT Span
   | TokenUnit Span
   | TokenUnArrow Span
@@ -160,6 +153,7 @@ data Token =
   | TokenSkip Span
   | TokenEnd Span
   | TokenColon Span
+  | TokenDoubleColon Span
   | TokenUpperId Span String
   | TokenSemi Span
   | TokenMOut Span
@@ -181,7 +175,6 @@ data Token =
   | TokenInt Span Int
   | TokenChar Span Char
   | TokenString Span String
-  | TokenBool Span Bool
   | TokenLet Span
   | TokenIn Span
   | TokenEq Span
@@ -192,7 +185,7 @@ data Token =
   | TokenIf Span
   | TokenThen Span
   | TokenElse Span
-  | TokenNew Span
+--  | TokenNew Span
 --  | TokenSend Span
 --  | TokenReceive Span
   | TokenSelect Span
@@ -213,6 +206,7 @@ data Token =
   | TokenCmp Span String
   | TokenConjunction Span
   | TokenDisjunction Span
+  | TokenAppend Span
   | TokenDiv Span
   | TokenDollar Span
   | TokenModule Span
@@ -223,7 +217,6 @@ instance Show Token where
   show (TokenNL _) = "\\n"
   show (TokenIntT _) = "Int"
   show (TokenCharT _) = "Char"
-  show (TokenBoolT _) = "Bool"
   show (TokenUnit _) = "()"
   show (TokenStringT _) = "String"
   show (TokenUnArrow _) = "->"
@@ -239,6 +232,7 @@ instance Show Token where
   show (TokenSkip _) = "Skip"
   show (TokenEnd _) = "End"
   show (TokenColon _) = ":"
+  show (TokenDoubleColon _) = "::"
   show (TokenUpperId _ c) = "" ++ c
   show (TokenSemi _) = ";"
   show (TokenMOut _) = "!"
@@ -259,7 +253,6 @@ instance Show Token where
   -- show (TokenLinM _) = "1M"
   show (TokenInt _ i) = show i
   show (TokenChar _ c) = show c
-  show (TokenBool _ b) = show b
   show (TokenString _ s) = s
   show (TokenLet _) = "let"
   show (TokenIn _) = "in"
@@ -271,7 +264,7 @@ instance Show Token where
   show (TokenIf _) = "if"
   show (TokenThen _) = "then"
   show (TokenElse _) = "else"
-  show (TokenNew _) = "new"
+--  show (TokenNew _) = "new"
 --  show (TokenSend _) = "send"
 --  show (TokenReceive _) = "receive"
   show (TokenSelect _) = "select"
@@ -292,6 +285,7 @@ instance Show Token where
   show (TokenCmp _ s) = show s
   show (TokenConjunction _) = "&&"
   show (TokenDisjunction _) = "||"
+  show (TokenAppend _) = "++"
   show (TokenDiv _) = "/"
   show (TokenDollar _) = "$"
   show (TokenModule _) = "module"
@@ -341,7 +335,6 @@ instance Located Token where
   getSpan (TokenNL p) = p
   getSpan (TokenIntT p) = p
   getSpan (TokenCharT p) = p
-  getSpan (TokenBoolT p) = p
   getSpan (TokenUnit p) = p
   getSpan (TokenStringT p) = p
   getSpan (TokenUnArrow p) = p
@@ -357,6 +350,7 @@ instance Located Token where
   getSpan (TokenSkip p) = p
   getSpan (TokenEnd p) = p
   getSpan (TokenColon p) = p
+  getSpan (TokenDoubleColon p) = p
   getSpan (TokenUpperId p _) = p
   getSpan (TokenSemi p) = p
   getSpan (TokenMOut p) = p
@@ -377,7 +371,6 @@ instance Located Token where
   getSpan (TokenUnM p) = p
   getSpan (TokenInt p _) = p
   getSpan (TokenChar p _) = p
-  getSpan (TokenBool p _) = p
   getSpan (TokenString p _) = p
   getSpan (TokenLet p) = p
   getSpan (TokenIn p) = p
@@ -385,7 +378,7 @@ instance Located Token where
   getSpan (TokenData p) = p
   getSpan (TokenType p) = p
   getSpan (TokenPipe p) = p
-  getSpan (TokenNew p) = p
+--  getSpan (TokenNew p) = p
 --  getSpan (TokenSend p) = p
 --  getSpan (TokenReceive p) = p
   getSpan (TokenSelect p) = p
@@ -410,6 +403,7 @@ instance Located Token where
   getSpan (TokenFArrow p) = p
   getSpan (TokenConjunction p) = p
   getSpan (TokenDisjunction p) = p
+  getSpan (TokenAppend p) = p
   getSpan (TokenDiv p) = p
   getSpan (TokenDollar p) = p
   getSpan (TokenModule p) = p

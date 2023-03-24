@@ -11,12 +11,12 @@ type State = (*?Int, *!Int)
 
 -- | An empty shared bag
 emptyBagServer : dualof SharedBag -> Diverge
-emptyBagServer = bagServer (new *?Int)
+emptyBagServer = bagServer (new @*?Int ())
 
 -- | A shared bag server with a state
 bagServer : State -> dualof SharedBag -> Diverge
 bagServer state serverChannel =
-  let (clientSide, serverSide) = new Bag in
+  let (clientSide, serverSide) = new @Bag () in
   send clientSide serverChannel;
   fork (\_:() 1-> handleClient state serverSide);
   bagServer state serverChannel
@@ -27,7 +27,7 @@ handleClient state chan =
   let (readFromState, writeOnState) = state in
   match chan with
     { Get chan -> let (n, _) = receive readFromState in send n chan |> close 
-    , Put chan -> let (n, chan) = receive chan in close chan; send n writeOnState
+    , Put chan -> let _ = send (receiveAndClose @Int chan) writeOnState in ()
     }
 
 -- Client side, utilities
@@ -43,17 +43,14 @@ put n q =
 get : SharedBag -> Int
 get q =
   let (c, _) = receive q in
-  let c = select Get c in
-  let (n, c) = receive c in
-  close c;
-  n
+  c |> select Get |> receiveAndClose @Int
 
 -- An application
 
 -- | Put three numbers and get two; return the sum
 main : Int
 main =
-  let (clientSide, serverSide) = new SharedBag in
+  let (clientSide, serverSide) = new @SharedBag () in
   fork (\_:() 1-> emptyBagServer serverSide);
   fork (\_:() 1-> put 7 clientSide);
   fork (\_:() 1-> put 5 clientSide);

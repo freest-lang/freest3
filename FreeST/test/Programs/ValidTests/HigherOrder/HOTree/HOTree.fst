@@ -9,16 +9,15 @@ sendTree t c =
     Node t1 x t2 ->
       let c = select Node c in
       -- left
-      let (w1, r1) = new WTree in
+      let (w1, r1) = new @WTree () in
       let c = send r1 c in
       sendTree t1 w1;
       -- root
       let c = send x c in
       -- right
-      let (w2, r2) = new WTree in
-      let c = send r2 c in
-      sendTree t2 w2;
-      close c
+      let (w2, r2) = new @WTree () in
+      c |> send r2 |> close; 
+      sendTree t2 w2
   }
 
 receiveTree : RTree -> Tree
@@ -32,9 +31,8 @@ receiveTree c =
       -- root
       let (x, c) = receive c in
       -- right
-      let (r2, c) = receive c in
+      let r2 = receiveAndClose @RTree c in
       let t2 = receiveTree r2 in
-      close c;
       Node t1 x t2
   }
 
@@ -53,6 +51,6 @@ aTree =
 
 main : Tree
 main =
-  let (w, r) = new WTree in
+  let (w, r) = new @WTree () in
   fork @() (\_:()1-> sendTree aTree w); 
   receiveTree r

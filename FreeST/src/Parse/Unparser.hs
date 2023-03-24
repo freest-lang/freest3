@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 {- |
 Module      :  Syntax.Show
 Description :  The show module
@@ -29,6 +30,7 @@ import           Syntax.Expression as E
 import qualified Syntax.Kind as K
 import           Syntax.Program
 import qualified Syntax.Type as T
+import           Syntax.MkName ( mkTrue, mkFalse )
 
 import           Data.Char ( isDigit )
 import           Data.List ( intercalate )
@@ -36,6 +38,7 @@ import qualified Data.Map.Strict as Map
 import           Prelude                 hiding ( Left
                                                 , Right
                                                 ) -- needed for Associativity
+import qualified Data.Set as Set
 
 instance Show Span where
   show (Span sp fp _)
@@ -92,7 +95,7 @@ showSortedVar x t = show x ++ ":" ++ show t
 
 -- Kind
 
-instance Show K.Basic where
+instance Show K.PreKind where
   show K.Session = "S"
   show K.Top     = "T"
 
@@ -180,35 +183,34 @@ instance Show T.Type where
 instance Unparse T.Type where
   unparse (T.Int  _       ) = (maxRator, "Int")
   unparse (T.Char _       ) = (maxRator, "Char")
-  unparse (T.Bool _       ) = (maxRator, "Bool")
   unparse (T.String _     ) = (maxRator, "String")
-  unparse (T.Unit _       ) = (maxRator, "()")
   unparse (T.Skip _       ) = (maxRator, "Skip")
   unparse (T.End _        ) = (maxRator, "End")
   unparse (T.Var  _ a     ) = (maxRator, show a)
-  unparse (T.CoVar _ a    ) = (maxRator, "dual " ++ show a)
+  unparse (T.Dualof _ a@T.Var{}) = (maxRator, "dual " ++ show a)
   unparse (T.Message _ p t) = (msgRator, show p ++ m)
     where m = bracket (unparse t) Right msgRator
   unparse (T.Arrow _ m t u) = (arrowRator, l ++ spaced (show m) ++ r)
    where
     l = bracket (unparse t) Left arrowRator
     r = bracket (unparse u) Right arrowRator
-  unparse (T.Pair _ t u) = (maxRator, "(" ++ l ++ ", " ++ r ++ ")")
-   where
-    l = bracket (unparse t) Left minRator
-    r = bracket (unparse u) Right minRator
-  unparse (T.Almanac _ T.Variant m) = (maxRator, "[" ++ showDatatype m ++ "]")
+  unparse t@(T.Labelled _ T.Variant m) | isBool m  = (maxRator, "Bool")
+    where isBool m = Set.map show (Map.keysSet m) == Set.fromList ["True", "False"] 
+  unparse (T.Labelled _ T.Variant m) = (maxRator, "[" ++ showDatatype m ++ "]")
+  unparse (T.Labelled _ T.Record m) 
+    | Map.null m = (maxRator, "()")
+    | all (all isDigit . intern) $ Map.keys m = (maxRator, "(" ++ showTupleType m ++ ")")
   unparse (T.Semi _ t u  ) = (semiRator, l ++ " ; " ++ r)
    where
     l = bracket (unparse t) Left semiRator
     r = bracket (unparse u) Right semiRator
-  unparse (T.Almanac _ (T.Choice v) m) =
+  unparse (T.Labelled _ (T.Choice v) m) =
     (maxRator, show v ++ "{" ++ showChoice m ++ "}")
   unparse (T.Forall _ b) = (arrowRator, "∀" ++ showBindType b) -- ++ "=>" ++ s)
     -- where s = bracket (unparse t) Right dotRator
   unparse (T.Rec _ (Bind _ _ k (T.Semi _ t _)))   | K.isUn k = -- *!T   *?T
     (maxRator, "*" ++ show t)
-  unparse (T.Rec _ (Bind _ _ k (T.Almanac _ (T.Choice v) m))) | K.isUn k = -- *+{}  *&{}
+  unparse (T.Rec _ (Bind _ _ k (T.Labelled _ (T.Choice v) m))) | K.isUn k = -- *+{}  *&{}
     (maxRator, "*" ++ show v ++ "{" ++ showChoiceLabels m ++ "}")
   unparse (T.Rec _ b) = (dotRator, "rec " ++ showBindType b) -- xk ++ "." ++ s)
     -- where s = bracket (unparse t) Right dotRator
@@ -220,12 +222,18 @@ showDatatype m = intercalate " | "
   $ Map.foldrWithKey (\c t acc -> (show c ++ showAsSequence t) : acc) [] m
  where
   showAsSequence :: T.Type -> String
-  showAsSequence (T.Arrow _ _ t u) = " " ++ show t ++ showAsSequence u
+  showAsSequence (T.Labelled _ _ t) = 
+    let fs = unwords (map (show . snd) $ Map.toList t) in
+    if fs == "" then "" else " "++fs
   showAsSequence _               = ""
 
 showChoice :: T.TypeMap -> String
 showChoice m = intercalate ", "
   $ Map.foldrWithKey (\c t acc -> (show c ++ ": " ++ show t) : acc) [] m
+
+showTupleType :: T.TypeMap -> String 
+showTupleType m = intercalate ", " 
+  $ Map.foldr (\t acc -> show t : acc) [] m
 
 showChoiceLabels :: T.TypeMap -> String
 showChoiceLabels m = intercalate ", "
@@ -241,37 +249,40 @@ instance Unparse Exp where
   unparse (E.Unit _) = (maxRator, "()")
   unparse (E.Int _ i) = (maxRator, show i)
   unparse (E.Char _ c) = (maxRator, show c)
-  unparse (E.Bool _ b) = (maxRator, show b)
   unparse (E.String _ s) = (maxRator, show s)
   -- Variable
   unparse (E.Var  _ x) = (maxRator, show x)
   -- Abstraction intro and elim
   unparse (E.Abs _ m b) = (arrowRator, "λ" ++ showBindTerm b m)
-  unparse (E.App _ (E.App _ (E.Var p x) e1) e2) | show x == "(||)" =
+  unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | show x == "(||)" =
    (disjRator, l ++ " || " ++ r)
    where
     l = bracket (unparse e1) Left disjRator
     r = bracket (unparse e2) Right disjRator
-  unparse (E.App _ (E.App _ (E.Var p x) e1) e2) | show x == "(&&)" =
+  unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | show x == "(&&)" =
    (conjRator, l ++ " && " ++ r)
    where
     l = bracket (unparse e1) Left conjRator
     r = bracket (unparse e2) Right conjRator
-  unparse (E.App _ (E.App _ (E.Var p x) e1) e2) | isCmp x =
+  unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | isCmp x =
    (cmpRator, l ++ showOp x ++ r)
    where
     l = bracket (unparse e1) Left cmpRator
     r = bracket (unparse e2) Right cmpRator
-  unparse (E.App _ (E.App _ (E.Var p x) e1) e2) | isAdd x =
+  unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | isAdd x =
    (addRator, l ++ showOp x ++ r)
    where
     l = bracket (unparse e1) Left addRator
     r = bracket (unparse e2) Right addRator
-  unparse (E.App _ (E.App _ (E.Var p x) e1) e2) | isMult x =
+  unparse (E.App _ (E.App _ (E.Var _ x) e1) e2) | isMult x =
    (multRator, l ++ showOp x ++ r)
    where
     l = bracket (unparse e1) Left multRator
     r = bracket (unparse e2) Right multRator
+  unparse e@(E.App _ (E.App _ (E.Var _ x) _) _) | show x == "(::)" =
+    (maxRator, "[" ++ intercalate ", " list ++ "]")
+    where
+      list = map (snd . unparse) (joinList e)
   unparse (E.App _ e1 e2) = (appRator, l ++ " " ++ r)
    where
     l = bracket (unparse e1) Left appRator
@@ -287,6 +298,12 @@ instance Unparse Exp where
     p = "(" ++ show x ++ ", " ++ show y ++ ")"
     l = bracket (unparse e1) Left inRator
     r = bracket (unparse e2) Right inRator
+  -- Boolean elim
+  unparse (E.Case p e m) | Map.keysSet m == Set.fromList [mkTrue p, mkFalse p] = 
+    (inRator, "if " ++ s1 ++ " then " ++ s2 ++ " else " ++ s3)
+    where s1 = bracket (unparse e) Left inRator
+          s2 = bracket (unparse $ snd $ m Map.! mkTrue  p) NonAssoc inRator
+          s3 = bracket (unparse $ snd $ m Map.! mkFalse p) Right    inRator
   -- Datatype elim
   unparse (E.Case _ e m) =
     (inRator, "case " ++ s ++ " of {" ++ showFieldMap m ++ "}")
@@ -298,15 +315,6 @@ instance Unparse Exp where
   unparse (E.TypeApp _ x t) = (appRator, show x ++ " @" ++ t')
     where t' = bracket (unparse t) Right appRator
   unparse (E.TypeAbs _ b) = (arrowRator, "Λ" ++ showBindExp b)
-  -- Boolean elim
-  unparse (E.Cond _ e1 e2 e3) =
-    (inRator, "if " ++ s1 ++ " then " ++ s2 ++ " else " ++ s3)
-   where
-    s1 = bracket (unparse e1) Left inRator
-    s2 = bracket (unparse e2) NonAssoc inRator
-    s3 = bracket (unparse e3) Right inRator
-  -- Unary Let
-  unparse (E.New _ t _) = (newRator, "new " ++ show t)
   -- Session expressions
   unparse (E.UnLet _ x e1 e2) =
     (inRator, "let " ++ show x ++ " = " ++ l ++ " in " ++ r)
@@ -317,14 +325,11 @@ instance Unparse Exp where
 showFieldMap :: FieldMap -> String
 showFieldMap m = intercalate "; " $ map showAssoc (Map.toList m)
  where
-  showAssoc (b, (a, v)) =
-    show b ++ " " ++ unwords (map show a) ++ " -> " ++ show v
+  showAssoc (b, ([], v)) = show b ++ " -> " ++ show v
+  showAssoc (b, (a,  v)) = show b ++ " " ++ unwords (map show a) ++ " -> " ++ show v
 
 showFieldList :: FieldList -> String
 showFieldList m = intercalate "; " $ map show m
- where
-  showAssoc (b, (a, v)) =
-    show b ++ " " ++ unwords (map show a) ++ " -> " ++ show v
 
 instance Show Pattern where
   show (E.PatVar  v)    = "PatVar "  ++ intern v
@@ -356,3 +361,11 @@ instance {-# OVERLAPPING #-} Show VarEnv where
 venvToList :: VarEnv -> [String]
 venvToList =
   Map.foldrWithKey (\k v acc -> showSortedVar k v : acc) []
+
+
+joinList :: E.Exp -> [E.Exp]
+joinList (E.Var _ x) | show x == "[]"   = []
+joinList (E.App _ (E.App _ (E.Var _ x) e1) e2)
+  | show x == "(::)" = e1 : joinList e2
+  | show x == "[]"   = []  
+joinList e = [e]

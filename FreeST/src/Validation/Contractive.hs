@@ -24,10 +24,9 @@ import qualified Data.Set as Set
 
 contractive :: K.PolyVars -> Variable -> T.Type -> Bool
 contractive s a (T.Semi _ t u)
-  | terminated t                              = contractive s a u
-  | otherwise                                 = contractive s a t
-contractive s a (T.Rec _ (Bind _ _ _ t))    = contractive s a t
-contractive s a (T.Forall _ (Bind _ _ _ t)) = contractive s a t
-contractive s a (T.Var _ b)                   = b `Set.notMember` s && a /= b
-contractive _ _ _                             = True
+  | terminated t                         = contractive s a u
+  | otherwise                            = contractive s a t
+contractive s a (T.Rec _ (Bind _ _ _ t)) = contractive s a t
+contractive s a (T.Var _ b)              = a /= b && b `Set.notMember` s
+contractive _ _ _                        = True
 

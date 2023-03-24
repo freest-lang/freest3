@@ -12,7 +12,7 @@ type Stream = +{
 type MathServer : 1S = +{Add: MathServer, Mult: MathServer, Const: !Int;MathServer, Done: ?Int}
 
 -- A sample client: (5*4)+(2*3)
-client : MathServer -> Int
+client : MathServer;End -> Int
 client c =
   -- stream the arithmetic operation
   select Const c |> send 5 |>
@@ -23,10 +23,8 @@ client c =
   select Mult |>
   select Add |>
   select Done |>
-  -- read the result
-  receive |>
-  -- and return it
-  fst @Int @Skip
+  -- read the result and return it
+  receiveAndClose @Int
 
 {-|
   An arithmetic stream evaluator.
@@ -35,7 +33,7 @@ client c =
 
 data IntList = Nil | Cons Int IntList
 
-evaluate : dualof MathServer -> IntList 1-> Skip
+evaluate : dualof MathServer;End -> IntList 1-> End
 evaluate (Const s) l = let (n, s) = receive s in evaluate s (Cons n l)
 evaluate (Add   s) (Cons x (Cons y l)) = evaluate s (Cons (x + y) l)
 evaluate (Mult  s) (Cons x (Cons y l)) = evaluate s (Cons (x * y) l)
@@ -45,6 +43,6 @@ evaluate (Done  s) (Cons x Nil) = send x s
 -- expect 26 on the console.
 main : Int
 main =
-  let (c, s) = new MathServer in
-  fork (\_:() 1-> evaluate s Nil);
+  let (c, s) = new @(MathServer;End) () in
+  fork (\_:() 1-> evaluate s Nil |> close);
   client c

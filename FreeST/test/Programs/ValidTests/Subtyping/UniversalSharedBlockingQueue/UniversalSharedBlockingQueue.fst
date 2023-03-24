@@ -41,7 +41,7 @@ emptyQueue _ = forkWith @(*?(+{Enqueue: !a, Dequeue: ?a};End))
                         (runServer @(+{Enqueue: !a, Dequeue: ?a};End) 
                                    @(*!a, *?a) 
                                    (queueHandle @a) 
-                                   (new *!a))
+                                   (new @(*!a) ()))
 
 -- | Add an element to the back of a queue. 
 --   Write permission is enough.
@@ -61,8 +61,8 @@ dequeue q = q |> receive_ @(+{Dequeue: ?a};End)
 
 main : ()
 main = let q = emptyQueue @Bool () in 
-       let (w,r) = new *!Bool in 
+       let (w,r) = new @(*!Bool) () in 
        let n = 10 in 
        parallel @() n (\_:() -> enqueue @Bool True q); -- lin/un function subtyping
        parallel @() n (\_:() -> send (dequeue @Bool q) w; ());
-       repeat   @() n (\_:() -> printBoolLn $ receive_ @Bool r)
+       repeat   @() n (\_:() -> print @Bool $ receive_ @Bool r)

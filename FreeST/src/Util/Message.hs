@@ -1,7 +1,6 @@
-{-# LANGUAGE FlexibleInstances, TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 module Util.Message where
 
-import           Parse.Unparser
 import           Syntax.Base
 import qualified Syntax.Expression as E
 import qualified Syntax.Kind as K
@@ -18,7 +17,7 @@ type Stylable = Bool
 
 class Message a where
   title :: a -> Stylable -> Span -> FilePath -> String
-  msg   :: a -> Stylable -> TypeOpsEnv -> String
+  msg   :: a -> Stylable -> TypeOpsEnv -> Either String String -> String
   
 
 class Show a => Style a where
@@ -34,13 +33,13 @@ instance Style K.Kind where
   style f sty _ = f sty . show
 
 instance Style Variable where
-  style f sty _ = f sty . quote . show
+  style f sty _ = {-quote . -} f sty . show
 
 instance Style VarEnv where
   style f sty _ = f sty . show
   
 instance Style FilePath where
-  style f sty _ = f sty . quote 
+  style f sty _ = quote . f sty
 
 
 quote :: String -> String

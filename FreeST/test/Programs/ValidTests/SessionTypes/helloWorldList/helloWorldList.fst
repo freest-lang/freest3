@@ -31,7 +31,7 @@ hello, main : List
 hello = Cons 'H' (Cons 'e' (Cons 'l' (Cons 'l' (Cons 'o' Nil))))
 
 main = 
-  let (c, s) = new OutCharStream;End in
+  let (c, s) = new @(OutCharStream;End) () in
   let x = fork @() (\_:()1-> client @End hello c |> close) in
   let (res, c) = server @End s in
   close c;

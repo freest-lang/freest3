@@ -20,10 +20,11 @@ module Bisimulation.Bisimulation
   )
 where
 
-import           Syntax.Base                    (Variable) -- Nonterminal symbols are type variables
+import           Syntax.Base                    (Located(..), Span(..), defaultSpan, Variable) -- Nonterminal symbols are type variables
 import qualified Syntax.Type                   as T
 import qualified Syntax.Kind                   as K
 import           Equivalence.TypeToGrammar      ( convertToGrammar )
+import           Bisimulation.AlphaEquivalence
 import           Bisimulation.Grammar
 import           Bisimulation.Norm
 import qualified Data.Map.Strict               as Map
@@ -31,7 +32,7 @@ import qualified Data.Set                      as Set
 import qualified Data.Sequence                 as Queue
 import           Data.Bifunctor
 import           Data.List                      ( isPrefixOf
-                                                , union
+                                                , union, stripPrefix
                                                 )
 import           Data.Tuple                     (swap)
 -- Word is (re)defined in module Equivalence.Grammar
@@ -48,9 +49,12 @@ import           Util.FreestState                 ( initialState
                                                   )
 import           Validation.Kinding
 
+import Data.Bitraversable (bisequence)
 
 bisimilar :: T.Type -> T.Type -> Bool
-bisimilar t u = bisimilarGrm $ convertToGrammar [t, u]
+bisimilar t u =
+  t == u || -- Alpha-equivalence, 11% speed up in :program tests
+  bisimilarGrm (convertToGrammar [t, u])
 
 -- | Assumes a grammar without unreachable symbols
 bisimilarGrm :: Grammar -> Bool
@@ -61,11 +65,13 @@ bisimilarGrm (Grammar [xs, ys] ps) = expand expandPairBisim queue rules ps
   queue = Queue.singleton (Set.singleton (xs, ys), Set.empty)
 
 subsimilar :: T.Type -> T.Type -> Bool
-subsimilar t u = subsimilarGrm $ convertToGrammar [t, u]
+subsimilar t u = 
+  t == u || 
+  subsimilarGrm (convertToGrammar [t, u])
 
 -- | Assumes a grammar without unreachable symbols
 subsimilarGrm :: Grammar -> Bool
-subsimilarGrm g@(Grammar [xs, ys] ps) = -- trace (show g) 
+subsimilarGrm g@(Grammar [xs, ys] ps) = --trace (show g) 
                                         expand expandPairSub queue rules ps
  where
   rules | allNormed ps = [reflex, congruence, bpa2] -- no filtering
@@ -152,12 +158,10 @@ subtypingPartition =
               (LinArrow Domain               ) -> False
               UnArrow                          -> False
               (Message T.Out Data            ) -> False
-              (ChoiceMarker T.External       ) -> False 
               _                                -> True
   , lr= \case (Almanac K.Session T.External _) -> False 
               (LinArrow Domain               ) -> False
-              (Message T.Out Data            ) -> False
-              (ChoiceMarker T.Internal       ) -> False 
+              (Message T.Out Data            ) -> False 
               _                                -> True
   , rl= \case (Message T.Out Data            ) -> True
               (LinArrow Domain               ) -> True
@@ -181,38 +185,38 @@ bisimPartition =
 -- Pair expansion for width-depth covariant-contravariant simulation
 expandPairWDCC :: Partition (Label -> Bool) -> PairExpander
 expandPairWDCC p ps (xs, ys) =
-  -- trace ("\nnode: "++show (xs,ys))
+  --trace ("\nnode: "++show (xs,ys))
   let n' = Set.unions <$> sequence
             -- Covariant on width and depth
-            [ if -- trace ("rr: \n  "++show (rr m1)++"\n  "++show (rr m2)) 
+            [ if --trace ("rr: \n  "++show (rr m1)++"\n  "++show (rr m2)) 
                  Map.keysSet (rr m1) `Set.isSubsetOf` Map.keysSet (rr m2)
-                then -- trace "Success" 
+                then --trace ("Success: "++show (Map.keysSet (rr m1))++" ⊆ "++show (Map.keysSet (rr m2))) 
                      Just (match (rr m1) (rr m2))
-                else -- trace "Failure" 
+                else --trace ("Failure: "++show (Map.keysSet (rr m1))++" /⊆ "++show (Map.keysSet (rr m2)))
                      Nothing
             -- Contravariant on width, covariant on depth
-            , if -- trace ("lr: \n  "++show (lr m1)++"\n  "++show (lr m2)) 
+            , if --trace ("lr: \n  "++show (lr m1)++"\n  "++show (lr m2)) 
                  Map.keysSet (lr m2) `Set.isSubsetOf` Map.keysSet (lr m1)
-                then -- trace "Success" 
+                then --trace "Success" 
                      Just (match (lr m1) (lr m2))
-                else -- trace "Failure" 
+                else --trace "Failure" 
                      Nothing
             -- Covariant on width, contravariant on depth
-            , if -- trace ("rl: \n  "++show (rl m1)++"\n  "++show (rl m2))
+            , if --trace ("rl: \n  "++show (rl m1)++"\n  "++show (rl m2))
                  Map.keysSet (rl m1) `Set.isSubsetOf` Map.keysSet (rl m2)
-                then -- trace "Success"  
+                then --trace "Success"  
                      Just (Set.map swap $ match (rl m1) (rl m2))
-                else -- trace "Failure"  
+                else --trace "Failure"  
                      Nothing
             -- Contravariant on width and depth
-            , if -- trace ("ll: \n  "++show (ll m1)++"\n  "++show (ll m2)) 
+            , if --trace ("ll: \n  "++show (ll m1)++"\n  "++show (ll m2)) 
                  Map.keysSet (ll m2) `Set.isSubsetOf` Map.keysSet (ll m1)
-                then -- trace "Success"  
+                then --trace "Success"  
                      Just (Set.map swap $ match (ll m1) (ll m2))
-                else -- trace "Failure"  
+                else --trace "Failure"  
                      Nothing
             ] in 
-  -- trace ("expanded node: "++show n') 
+  --trace ("expanded node: "++show n') 
   n' 
   where
     m1 = partition p $ transitions xs ps
@@ -255,16 +259,7 @@ congruence _ a = Set.singleton . Set.filter (not . congruentToAncestors)
 
   congruentToPair :: (Word, Word) -> (Word, Word) -> Bool
   congruentToPair (xs, ys) (xs', ys') =
-    not (null xs')
-      &&           xs'
-      `isPrefixOf` xs
-      &&           not (null ys')
-      &&           ys'
-      `isPrefixOf` ys
-      &&           (xs'' == ys'' || congruentToAncestors (xs'', ys''))
-   where
-    xs'' = drop (length xs') xs
-    ys'' = drop (length ys') ys
+      xs == ys || maybe False congruentToAncestors (bisequence (stripPrefix xs' xs, stripPrefix ys' ys))
 
 filtering :: NodeTransformation
 filtering ps _ n | normsMatch = Set.singleton n
