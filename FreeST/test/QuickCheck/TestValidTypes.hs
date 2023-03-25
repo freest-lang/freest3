@@ -92,24 +92,28 @@ prop_distribution (BisimPair t u) =
 
 -- The number of nodes in a type
 nodes :: T.Type -> Int
-nodes (T.Semi   _ t u) = 1 + nodes t + nodes u
 nodes (T.Labelled _ (T.Choice _) m) = 1 + Map.foldr (\t acc -> nodes t + acc) 0 m
+nodes (T.Semi   _ t u) = 1 + nodes t + nodes u
+nodes (T.Message _ _ t) = 1 + nodes t
+nodes (T.Forall _ (Bind _ _ _ t)) = 1 + nodes t
 nodes (T.Rec    _ (Bind _ _ _ t)) = 1 + nodes t
--- Skip, End, Message, TypeVar
+nodes (T.Dualof _ t) = 1 + nodes t
+-- Int, Char, String, Skip, End, TypeVar
 nodes _                = 1
 
 -- The constructor of a type
 constr :: T.Type -> String
 constr T.Int{}  = "Int"
 constr T.Char{} = "Char"
-constr T.Arrow{} = "Fun"
+constr T.Arrow{} = "Arrow"
 constr (T.Labelled _ T.Record _) = "Record"
 constr (T.Labelled _ T.Variant _) = "Datatype"
+constr (T.Labelled _ (T.Choice _) _) = "Choice"
 constr T.Skip{} = "Skip"
 constr T.End{} = "End"
 constr T.Semi{} = "Semi"
 constr T.Message{} = "Message"
-constr (T.Labelled _ (T.Choice _) _) = "Choice"
+constr T.Forall{} = "Forall"
 constr T.Rec{} = "Rec"
-constr T.Var{} = "TypeVar"
+constr T.Var{} = "Var"
 constr T.Dualof{} = "Dualof"
