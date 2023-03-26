@@ -15,19 +15,17 @@ import qualified Syntax.Kind                   as K
 import           Syntax.Base             hiding ( pos )
 import           Validation.Contractive
 import qualified Validation.Rename             as Rename
-import qualified Data.Set                      as Set
-import qualified Data.Map.Strict               as Map
 import           Control.Monad
-import qualified Data.Set as S
-import qualified Data.Map.Strict as M
-import Validation.Terminated (terminated)
+import qualified Data.Set                      as S
+import qualified Data.Map.Strict               as M
+import           Validation.Terminated (terminated)
 
 pos :: Span
 pos = defaultSpan
 
 -- | Type variables
 ids :: [String]
-ids = ["a", "b", "c", "d", "e", "f", "g", "h", "i"]
+ids = ["a", "b", "c"] -- , "d", "e", "f", "g", "h", "i"]
 
 freeTypeVar :: Variable
 freeTypeVar = mkVar pos "δ"
@@ -70,7 +68,7 @@ instance Show BisimPair where
 
 instance Arbitrary BisimPair where
   arbitrary = do
-    (t, u) <- sized (bisimPair K.Top Set.empty)
+    (t, u) <- sized (bisimPair K.Top S.empty)
     let [t', u'] = Rename.renameTypes [t, u]
     return $ BisimPair t' u'
 
@@ -79,7 +77,7 @@ instance Arbitrary T.Type where
     (BisimPair _ t) <- arbitrary
     return t
 
-type PairGen = Set.Set Variable -> Int -> Gen (T.Type, T.Type)
+type PairGen = S.Set Variable -> Int -> Gen (T.Type, T.Type)
 
 bisimPair :: K.PreKind -> PairGen 
 -- Top types
@@ -97,6 +95,9 @@ bisimPair K.Top cVars n =
                 , varPair    (bisimPair K.Top) cVars 
                 , arrowPair  cVars n
                 , pairPair   cVars n
+                , recPair    (bisimPair K.Session) cVars n
+                , commut     (bisimPair K.Session) cVars n
+                  -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
                 , recRecL    (bisimPair K.Top) cVars n
                 , recRecR    (bisimPair K.Top) cVars n
                 , recFree    (bisimPair K.Top) cVars n
@@ -117,21 +118,18 @@ bisimPair K.Session cVars n =
         , semiPair    (bisimPair K.Session) cVars n
         , messagePair cVars n
         , choicePair  (bisimPair K.Session) cVars n
-        -- The recursive type constructors
         , recPair     (bisimPair K.Session) cVars n
-        , varPair     (bisimPair K.Session) cVars -- repeated?
           -- Lemma 3.4 _ Laws for sequential composition (ICFP'16)
         , skipT       cVars n
         , tSkip       cVars n
-        , endT cVars n
-        , distrib cVars n
+        , endT        cVars n
+        , distrib     cVars n
         , assoc       cVars n
         , commut      (bisimPair K.Session) cVars n
           -- Lemma 3.5 _ Laws for mu-types (ICFP'16)
         , recRecL     (bisimPair K.Session) cVars n
         , recRecR     (bisimPair K.Session) cVars n
         , recFree     (bisimPair K.Session) cVars n
-          -- , alphaConvert n
         , subsOnBoth  (bisimPair K.Session) cVars n
         , unfoldt     (bisimPair K.Session) cVars n
         ]
@@ -153,23 +151,22 @@ charPair = return (T.Char pos, T.Char pos)
 messagePair :: PairGen
 messagePair n cVars = do
   pol <- arbitrary
-  (t, u) <- bisimPair K.Top n cVars --  HO CFST; n instead of (n `div` 4), otherwise lots of Skip and End
+  (t, u) <- bisimPair K.Top n cVars
   return (T.Message pos pol t, T.Message pos pol u)
 
-varPair :: PairGen -> Set.Set Variable -> Gen (T.Type, T.Type)
+varPair :: PairGen -> S.Set Variable -> Gen (T.Type, T.Type)
 varPair altPairGen cVars = do
   a <- arbitrary
-  if a `Set.member` cVars
+  if a `S.member` cVars
     then altPairGen cVars 1
     else return (T.Var pos a, T.Var pos a)
 
 semiPair :: PairGen -> PairGen 
 semiPair pairGen cVars n = do 
   (t1, t2) <- pairGen cVars (n `div` 2)
-  (u1, u2) <- pairGen (if terminated t1 then cVars else Set.empty) -- C-Seq1 / C-Seq2
+  (u1, u2) <- pairGen cVars -- (if terminated t1 then cVars else S.empty) -- C-Seq1 / C-Seq2
                       (n `div` 2)
   return (T.Semi pos t1 u1, T.Semi pos t2 u2)
-
 
 choicePair :: PairGen -> PairGen
 choicePair pairGen cVars n = do
@@ -177,12 +174,12 @@ choicePair pairGen cVars n = do
   (m1, m2) <- typeMapPair pairGen cVars n
   return (T.Labelled pos c m1, T.Labelled pos c m2)
 
-typeMapPair :: PairGen -> Set.Set Variable -> Int -> Gen (T.TypeMap, T.TypeMap)
+typeMapPair :: PairGen -> S.Set Variable -> Int -> Gen (T.TypeMap, T.TypeMap)
 typeMapPair pairGen cVars n = do
   k     <- choose (1, length choices)
   pairs <- vectorOf k $ fieldPair (n `div` k)
   let (f1, f2) = unzip pairs
-  return (Map.fromList f1, Map.fromList f2)
+  return (M.fromList f1, M.fromList f2)
  where
   fieldPair :: Int -> Gen ((Variable, T.Type), (Variable, T.Type))
   fieldPair n = do
@@ -212,9 +209,9 @@ recPair :: PairGen -> PairGen
 recPair pairGen cVars n = do
   a      <- arbitrary
   k      <- arbitrary
-  (t, u) <- pairGen (Set.insert a cVars) n
+  (t, u) <- pairGen (S.insert a cVars) n
   return (T.Rec pos (Bind pos a k t), T.Rec pos (Bind pos a k u))
-  -- return $ if contractive Set.empty a t && contractive Set.empty a u
+  -- return $ if contractive S.empty a t && contractive S.empty a u
   --          then (T.Rec pos (Bind pos a k t), T.Rec pos (Bind pos a k u))
   --          else (t, u)
 
@@ -242,13 +239,13 @@ distrib cVars n = do
   p        <- arbitrary
   return
     ( T.Semi pos (T.Labelled pos (T.Choice p) m1) t
-    , T.Labelled pos (T.Choice p) (Map.map (\v -> T.Semi pos v u) m2)
+    , T.Labelled pos (T.Choice p) (M.map (\v -> T.Semi pos v u) m2)
     )
 
 assoc :: PairGen
 assoc cVars n = do
   (t1, t2) <- bisimPair K.Session cVars (n `div` 6)
-  let cVars' = if terminated t1 then cVars else Set.empty
+  let cVars' = if terminated t1 then cVars else S.empty
   (u1, u2) <- bisimPair K.Session cVars (n `div` 6)
   (v1, v2) <- bisimPair K.Session cVars (n `div` 6)
   return (T.Semi pos t1 (T.Semi pos u1 v1), T.Semi pos (T.Semi pos t2 u2) v2)
@@ -265,7 +262,7 @@ recRecL pairGen cVars n = do
   a <- arbitrary
   b <- arbitrary
   k <- arbitrary
-  (t, u) <- pairGen (Set.union (Set.fromList[a, b]) cVars) (n `div` 2)
+  (t, u) <- pairGen (S.union (S.fromList[a, b]) cVars) (n `div` 2)
   let u' = Rename.renameType u -- this type will be in a substitution
   return
     ( T.Rec pos (Bind pos a k (T.Rec pos (Bind pos b k t)))
@@ -277,7 +274,7 @@ recRecR pairGen cVars n = do
   a <- arbitrary
   b <- arbitrary
   k <- arbitrary
-  (t, u) <- pairGen (Set.union (Set.fromList[a, b]) cVars) (n `div` 2)
+  (t, u) <- pairGen (S.union (S.fromList[a, b]) cVars) (n `div` 2)
   let u' = Rename.renameType u -- this type will be in a substitution
   return
     ( T.Rec pos (Bind pos a k (Rename.subs (T.Var pos a) b u'))
@@ -310,7 +307,7 @@ unfoldt :: PairGen -> PairGen
 unfoldt pairGen cVars n = do
   a <- arbitrary
   k <- arbitrary
-  (t, u) <- pairGen (Set.insert a  cVars) (n `div` 2)
+  (t, u) <- pairGen (S.insert a  cVars) (n `div` 2)
   let u' = Rename.renameType u -- this type will be unfolded
   return (T.Rec pos (Bind pos a k t), Rename.unfold (T.Rec pos (Bind pos a k u')))
 
@@ -323,7 +320,7 @@ instance Show NonBisimPair where
 
 instance Arbitrary NonBisimPair where
   arbitrary = do
-    (t, u) <- sized (nonBisimPair Set.empty)
+    (t, u) <- sized (nonBisimPair S.empty)
     let [t', u'] = Rename.renameTypes [t, u]
     return $ NonBisimPair t' u'
 
