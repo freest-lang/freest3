@@ -24,7 +24,7 @@ module Prelude where
 -- $$$$$$\ 
 -- \______|
 
-
+-- # Builtin
 
 -- Signatures for the builtin operators
 
@@ -81,9 +81,14 @@ fork : forall a:*T. (() 1-> a) -> ()
 error : forall a:*T . String -> a
 undefined : forall a:*T . a
   -- Session ops
+-- | Creates two endpoints of a channels of the given type.
 new : forall a:1S . () -> (a, dualof a)
+-- | Sends a value on a channel. Returns the continuation channel.
 send : forall a:1T . a -> forall b:1S . !a;b 1-> b
+-- | Receives a value on a channel. Returns the received value and 
+-- | the continuation channel.
 receive : forall a:1T b:1S . ?a;b -> (a, b)
+-- | Closes a channel.
 close : End -> ()
   -- Internal Files
 __openFile : FilePath -> IOMode -> FileHandle
