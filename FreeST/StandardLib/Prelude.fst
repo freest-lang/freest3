@@ -153,9 +153,8 @@ flip f x y = f y x
 -- | Reverse application operator. Provides notational convenience, especially
 -- | when chaining channel operations. For example:
 -- | ```
--- | let (w,r) = !Int;!Bool;End in 
--- | w |> send 5 |> send True |> close;
--- | c |> receive |> receiveAndClose
+-- | f : !Int;!Bool;End -> () 
+-- | f c = c |> send 5 |> send True |> close
 -- | ```
 -- | Its binding precedence is higher than `$`.
 (|>) : forall a:*T b:*T. a -> (a -> b) -> b
