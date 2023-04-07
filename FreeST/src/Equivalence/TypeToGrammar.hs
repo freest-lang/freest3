@@ -62,8 +62,8 @@ toGrammar' (T.Arrow _ p t u) = do
   xs <- toGrammar t
   ys <- toGrammar u
   getLHS $ Map.fromList $
-    [(LinArrow Domain, xs), (LinArrow Range, ys)]
-    ++ [(UnArrow, []) | p == Un]
+    [(Arrow Domain, xs), (Arrow Range, ys)]
+    ++ [(LinArrow, []) | p == Lin]
 toGrammar' (T.Labelled _  T.Variant m) = do -- Can't test this type directly
   ms <- tMapM toGrammar m
   getLHS $ Map.insert (Checkmark K.Top T.External) [] $ Map.mapKeys (Almanac K.Top T.External) ms

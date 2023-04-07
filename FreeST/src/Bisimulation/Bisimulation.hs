@@ -155,19 +155,19 @@ subtypingPartition :: Partition (Label -> Bool)
 subtypingPartition =
   Partition
   { rr= \case (Almanac K.Session T.Internal _) -> False  
-              (LinArrow Domain               ) -> False
-              UnArrow                          -> False
+              (Arrow Domain                  ) -> False
               (Message T.Out Data            ) -> False
               _                                -> True
   , lr= \case (Almanac K.Session T.External _) -> False 
-              (LinArrow Domain               ) -> False
+              (Arrow Domain                  ) -> False
+              LinArrow                          -> False
               (Message T.Out Data            ) -> False 
               _                                -> True
   , rl= \case (Message T.Out Data            ) -> True
-              (LinArrow Domain               ) -> True
+              (Arrow Domain                  ) -> True
               _                                -> False
   , ll= \case (Message T.Out Data            ) -> True
-              (LinArrow Domain               ) -> True
+              (Arrow Domain                  ) -> True
               _                                -> False
   }
 

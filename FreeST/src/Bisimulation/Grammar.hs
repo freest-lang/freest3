@@ -54,8 +54,8 @@ import qualified Syntax.Kind     as K           (PreKind(..), Kind(..), Multipli
 -- Terminal symbols are called labels
 data Label = FatTerm String
            | Message T.Polarity     DataOrCont 
-           | LinArrow   DomOrRng
-           | UnArrow 
+           | Arrow   DomOrRng
+           | LinArrow 
            | Checkmark K.PreKind T.View
            | Almanac K.PreKind        T.View     Variable -- All this nesting may have an impact on performance...
            | Pair    FstOrSnd
@@ -109,8 +109,8 @@ insertProduction p x l w = Map.insertWith Map.union x (Map.singleton l w) p
 instance Show Label where 
   show (FatTerm s) = s 
   show (Message p dc) = show p ++ show dc  
-  show (LinArrow dr) = "1->"++ show dr  
-  show UnArrow = "*->"
+  show (Arrow dr) = "->"++ show dr  
+  show LinArrow = "1->"
   show (Pair fs) = "," ++ show fs  
   show (Forall k) = "∀" ++ show k++show (getSpan k)
   show (Var a) = a
