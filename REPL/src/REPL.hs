@@ -31,7 +31,7 @@ main = do
   runFilePath <- getDataFileName "Prelude.fst"
   s1 <- parseProgram (initialState {runOpts=defaultOpts{runFilePath}})
   let s2 = emptyPEnv $ execState elaboration s1
-  evalStateT (runInputT (replSettings home) (repl s2 args))
+  evalStateT (runInputT (replSettings home) (repl s1 args))
     s2{runOpts=defaultOpts{runFilePath="<interactive>"}}
 
 ------------------------------------------------------------
@@ -97,15 +97,15 @@ parseOpt s (Just xs)
   | isOpt [":v", ":version"] = liftS $ putStrLn replVersion 
   | isOpt [":h", ":help"] = liftS $ putStrLn helpMenu
   | isOpt [":r", ":reload"] = lift $ reload s
-  | opt == ":{" = multilineCmd opt
+  | opt == ":{" = multilineCmd s opt
   | isOpt [":l", ":load"] =  lift $ load s cont "OK. Module(s) loaded!"
   | isOpt [":t",":type"] = lift $ typeOf cont
   | isOpt [":k",":kind"] = lift $ kindOf cont
   | isOpt [":i", ":info"] = lift $ info cont
   | ":" `isPrefixOf` opt = liftS $ putStrLn $ "unknown command '" ++ opt ++ "', use :h for help"
   | isOpt ["data","type"] = do
-      st <- lift get
-      let s1 = parseDefs st "<interactive>" xs -- opt TODO: CHECK opt xs xs'??
+      -- st <- lift get
+      let s1 = parseDefs s "<interactive>" xs -- opt TODO: CHECK opt xs xs'??
       let s2 = emptyPEnv $ execState (elaboration >> renameState >> typeCheck) s1
       if hasErrors s2
         then liftS $ putStrLn $ getErrors s2
