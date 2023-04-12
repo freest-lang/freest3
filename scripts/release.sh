@@ -9,7 +9,7 @@ version=`cat ../FreeST/package.yaml | grep -e "version:" |  sed -E 's/version: *
 path=freest-$version/
 freest_path=$path/FreeST
 repl_path=$path/REPL/
-examples_path=$freest_path/examples/
+examples_path=$path/examples/
 stdlib_path=$freest_path/StandardLib/
 pkg_path=$path/packages
 freest_mode_path=$pkg_path/freest-mode/
@@ -164,11 +164,12 @@ this will only work for the current terminal session. If you want to keep it amo
 freest examples/LazyTreeTraversal.fst
 \`\`\`
 
-# Tutorial and some examples
+# Website, tutorial and some examples
 
-You can find a small tutorial and some examples at [RSS Tryit](http://rss.di.fc.ul.pt/tryit/FreeST).
+- FreeST website: https://freest-lang.github.io
+
+- You can find a small tutorial and some examples at [RSS Tryit](http://rss.di.fc.ul.pt/tryit/FreeST).
 The examples are also available on freest-$version/examples/
-
 
 # FreeST mode
 We provide two simple modes both for emacs and atom. You can find it, as well as, the installation instructions under freest-$version/packages/
@@ -178,5 +179,5 @@ FreeST is under the [BSD3 license.](https://opensource.org/licenses/BSD-3-Clause
 
 " > $path/README.md
 
-#zip -rq FreeST-$version.zip freest-$version/
-#rm -rf $path
+zip -rq FreeST-$version.zip freest-$version/
+rm -rf $path
