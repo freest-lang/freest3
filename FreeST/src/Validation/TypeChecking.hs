@@ -12,30 +12,28 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-{-# LANGUAGE LambdaCase #-}
-
 module Validation.TypeChecking
   ( typeCheck
   )
 where
 
-import           Control.Monad.State            ( when
-                                                , get
-                                                , unless
-                                                )
-import qualified Data.Map.Strict               as Map
-import           Data.Maybe
 import           Syntax.Base
-import qualified Syntax.Expression             as E
-import qualified Syntax.Kind                   as K
-import           Syntax.Program                 ( noConstructors )
-import           Syntax.ProgramVariable
-import qualified Syntax.Type                   as T
+import qualified Syntax.Expression as E
+import qualified Syntax.Kind as K
+import           Syntax.Program ( noConstructors, VarEnv )
+import qualified Syntax.Type as T
 import           Util.FreestState
 import           Util.Error
-import           Util.PreludeLoader             ( userDefined )
-import qualified Validation.Kinding            as K
-import qualified Validation.Typing             as Typing -- Again
+-- import           Util.PreludeLoader ( userDefined )
+import qualified Validation.Kinding as K
+import qualified Validation.Typing as Typing -- Again
+
+
+import           Control.Monad.Extra ( allM, unlessM )
+import           Control.Monad.State ( when, get, unless )
+import           Control.Monad
+
+import qualified Data.Map.Strict as Map
 
 typeCheck :: FreestState ()
 typeCheck = do
@@ -49,49 +47,25 @@ typeCheck = do
   --         ++ "  Tname " ++ show tn)
 
   -- * Check the formation of all type decls
---  debugM "checking the formation of all type decls"
-  mapM_ (K.synthetise Map.empty . snd) =<< getTEnv
+  mapM_ (uncurry $ K.checkAgainst Map.empty) =<< getTEnv
 
   -- * Check the formation of all function signatures
---  debugM "checking the formation of all function signatures (kinding)"
   mapM_ (K.synthetise Map.empty) =<< getVEnv
   -- Gets the state and only continues if there are no errors so far
-  -- Can't continue to equivalence if there are ill-formed types
-  -- (i.e. not contractive under a certain variable)
   s <- get
   unless (hasErrors s) $ do
-    -- * Check whether all function signatures have a binding
---    debugM "checking whether all function signatures have a binding"
-    tMapWithKeyM_ checkHasBinding =<< getVEnv
     -- * Check function bodies
---    debugM "checking the formation of all functions (typing)"
-    tMapWithKeyM_ checkFunBody =<< getProg
+    tMapWithKeyM_ (checkFunBody (varEnv s)) =<< getProg
     -- * Check the main function
---    debugM "checking the main function"
     checkMainFunction
-
--- Check whether a given function signature has a corresponding
--- binding. Exclude the builtin functions and the datatype
--- constructors.
-checkHasBinding :: ProgVar -> T.Type -> FreestState ()
-checkHasBinding f _ = do
-  eEnv <- getProg
-  vEnv <- getVEnv
-  tEnv <- getTEnv
-  when
-      (               f
-      `Map.member`    userDefined (noConstructors tEnv vEnv)
-      &&              f
-      `Map.notMember` eEnv
-      )
-    $ let p = pos f in addError (SignatureLacksBinding p f (vEnv Map.! f))
+    -- * Checking final environment for linearity
+    checkLinearity
 
 -- Check a given function body against its type; make sure all linear
 -- variables are used.
-checkFunBody :: ProgVar -> E.Exp -> FreestState ()
-checkFunBody f e = getFromVEnv f >>= \case
-  Just s  -> Typing.checkAgainst Map.empty e s
-  Nothing -> return ()
+checkFunBody :: VarEnv -> Variable -> E.Exp -> FreestState ()
+checkFunBody venv f e =
+  forM_ (venv Map.!? f) (Typing.checkAgainst Map.empty e)
 
 checkMainFunction :: FreestState ()
 checkMainFunction = do
@@ -103,10 +77,15 @@ checkMainFunction = do
     then do
       let t = vEnv Map.! main
       k <- K.synthetise Map.empty t
-      when (K.isLin k) $ addError (UnrestrictedMainFun defaultPos main t k)
-    else when (isMainFlagSet runOpts) $ addError (MainNotDefined defaultPos main)
+      when (K.isLin k) $
+        let sp = getSpan $ fst $ Map.elemAt (Map.findIndex main vEnv) vEnv in
+        addError (UnrestrictedMainFun sp main t k)
+    else when (isMainFlagSet runOpts) $
+      addError (MainNotDefined (defaultSpan {defModule = runFilePath runOpts}) main)
 
--- validMainType :: T.Type -> Bool -- TODO: why this restriction?
--- validMainType T.Forall{} = False
--- validMainType T.Fun{}    = False
--- validMainType _          = True
+checkLinearity :: FreestState ()
+checkLinearity = do
+  venv <- getVEnv
+  m <- filterM (K.lin . snd) (Map.toList venv)
+  unless (null m) $ addError (LinearFunctionNotConsumed (getSpan (fst $ head m)) m) 
+

@@ -11,44 +11,95 @@ Multiplicity, that will be used the remaining Compiler.
 -}
 
 module Syntax.Base
-( Default(..)
-, Variable(..)
-, Pos(..) 
-, Position(..)
-, Multiplicity(..)
-, defaultPos
-, negPos
+  ( Default(..)
+  , Pos
+  , Multiplicity(..)
+  , defaultPos
+  , negPos
+  , Bind(..)
+  , Variable(..)
+  , intern
+  , mkVar
+  , mkNewVar
+  , Span(..)
+  , defaultSpan
+  , Located(..)
+  , negSpan
+  , isWild
 ) where
 
 -- Default for the various syntactic categories
 
 class Default t where
-  omission :: Pos -> t
+  omission :: Span -> t
 
 -- Position
 
-data Pos = Pos Int Int deriving (Eq, Ord)
+type Pos = (Int, Int)
 
-class Position t where
-  pos :: t -> Pos  
+-- class Position t where
+--   pos :: t -> Pos  
 
 defaultPos :: Pos
-defaultPos = Pos 0 0
+defaultPos = (0, 0)
 
 negPos :: Pos -> Pos
-negPos (Pos i j) = Pos (negate i) (negate j)
+negPos (i, j) = (negate i, negate j)
+
+-- Span
+
+class Located t where
+  getSpan :: t -> Span
+
+data Span = Span
+  { startPos     :: Pos
+  , endPos       :: Pos
+  , defModule    :: FilePath
+  } deriving (Eq, Ord)
+
+defaultSpan :: Span
+defaultSpan = Span defaultPos defaultPos ""
+
+negSpan :: Span -> Span
+negSpan s = s {startPos = negPos (startPos s), endPos = negPos (endPos s)}
 
 -- Multiplicity for types and expressions
 
 data Multiplicity = Un | Lin deriving Eq
 
 -- Type and program variable
+data Variable = Variable Span String
 
-class Position t => Variable t where
-  -- The string, internal representation of a variable
-  intern :: t -> String
-  -- Making a variable from a string, type or program
-  mkVar :: Pos -> String -> t
-  -- Making a new variable from a given variable. The variable is
-  -- unique up to the point where the integer is
-  mkNewVar :: Int -> t -> t
+instance Eq Variable where
+  (Variable _ x) == (Variable _ y) = x == y
+  
+instance Ord Variable where
+  (Variable _ x) <= (Variable _ y) = x <= y
+
+-- instance Position Variable where
+--   pos (Variable p _) = startPos p
+  
+instance Located Variable where
+  getSpan (Variable p _) = p
+
+instance Default Variable where
+  omission p = mkVar p "omission"
+
+-- The string, internal representation of a variable
+intern :: Variable -> String
+intern (Variable _ x) = x
+
+-- Making a variable from a string, type or program
+mkVar :: Span -> String -> Variable
+mkVar = Variable
+
+isWild :: Variable -> Bool
+isWild (Variable _ x) = x == "_"
+
+-- Making a new variable from a given variable. The variable is
+-- unique up to the point where the integer is
+mkNewVar :: Int -> Variable -> Variable
+mkNewVar next (Variable p str) = Variable p (show next ++ '#' : str)
+
+-- Bind: (λ x:t -> e), (∀ a:k . t) or (Λ a:k => e) 
+data Bind a b = Bind {bSpan :: Span, var :: Variable, binder :: a, body :: b}

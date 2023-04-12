@@ -1,100 +1,82 @@
 module Util.CmdLine where
 
-import           Data.Functor
-import qualified Data.Map.Strict               as Map
-import           Data.Version                   ( showVersion )
-import           Paths_FreeST                   ( version
-                                                )
-import           Syntax.Base
-import           System.Console.GetOpt
-import           System.Directory
-import           System.Exit                    ( die )
-import           System.FilePath
-import           Util.ErrorMessage (Color(..))
-import           Util.PrettyError (formatColor, formatBold)
 import           Util.Error
 import           Util.FreestState
+import           Syntax.Base
+
+import           Control.Bool ( whenM )
+import           Control.Monad
+import qualified Data.Map.Strict as Map
+import           Data.String
+import           Data.Version ( showVersion )
+import           Options.Applicative
+import           Paths_FreeST ( version )
+import           System.Directory
+import           System.Exit ( die )
+import           System.FilePath
 
 
-data Flag
-  = Main String           -- -m --main
-  | Version               -- -v --version
-  | Help                  -- -h --help
-  | Quiet                 -- -q --quiet
---  | Prelude String      -- -p --prelude
-  deriving Show
+instance Data.String.IsString Variable where
+  fromString = mkVar defaultSpan
+
+runOptsParser :: Parser RunOpts
+runOptsParser = RunOpts
+  <$> strArgument
+     ( help "FreeST (.fst) file"
+    <> metavar "FILEPATH" )
+  <*> many (strArgument 
+     ( help "Program arguments" 
+    <> metavar "args" ))
+  <*> (optional . strOption)
+     ( long "main"
+    <> short 'm' 
+    <> help "Main function"
+    <> metavar "STRING" )
+  <*> flag True False    -- This is the reverse of switch
+     ( long "no-colors"
+    <> long "no-colours"
+    <> help "Remove styles from the errors messages")
+  <*> switch
+     ( long "quiet"
+    <> short 'q'
+    <> help "Suppress warnings" )
+  
 
 
-compilerOpts :: [String] -> IO ([Flag], [String])
-compilerOpts argv = case getOpt Permute options argv of
-  (o, n, []) -> return (o, n)
-  (_, _, errs) ->
-    ioError $ userError $ concat errs ++ usageInfo helpHeader options
+versionParser :: String -> Parser (a -> a)
+versionParser s =
+  infoOption s
+   (  long "version"
+  <> short 'v'
+  <> help "Show version" )
 
 
-options :: [OptDescr Flag]
-options =
-  [ Option ['v'] ["version"] (NoArg Version)               "show version number"
-  , Option ['h'] ["help"]    (NoArg Help)                  "show help menu"
-  , Option ['m'] ["main"]    (ReqArg Main "main_function") "main function"
-  , Option ['q'] ["quiet"]   (NoArg Quiet)                 "suppress warnings"
---  , Option ['p'] ["prelude"] (ReqArg Prelude "prelude_file") "prelude file"
---  , Option [] ["no-colors", "no-colours"]    (NoArg Main) "Black and white errors"
---  , Option Warnings as errors
--- verbose (full comment depth)
--- -i --import ??
-  ]
+handleFlags :: RunOpts -> IO RunOpts
+handleFlags fg@(RunOpts f _ _ sty _) = do
+  whenM (not <$> doesFileExist f) $ die fileDoNotExist :: IO ()
+  when (not $ "fst" `isExtensionOf` f) $ die wrongFileExtension
+  return fg
+  where
+    fileDoNotExist = showErrors sty "FreeST" Map.empty (FileNotFound f)
+    wrongFileExtension = showErrors sty "FreeST" Map.empty (WrongFileExtension f)
 
-helpMenu :: IO ()
-helpMenu = putStrLn $ usageInfo helpHeader options
-
-helpHeader :: String
-helpHeader = "Usage: freest [OPTION...] files..."
-
-freestVersion :: IO ()
-freestVersion =
-  putStrLn $ formatBold $ "FreeST, Version " ++ showVersion version
+flags :: Bool -> IO RunOpts
+flags b = handleFlags =<< execParser opts
+  where
+    opts = info (versionParser v <*> runOptsParser <**> helper) desc
+    desc = fullDesc
+     <> progDesc "Run FreeST"
+     <> header v
+    
+    v = "FreeST, Version " ++ showVersion version ++ if b then "-dev" else ""
 
 
-handleOpts :: ([Flag], [String]) -> IO RunOpts
-handleOpts = handleOpts' initialOpts
- where
-  handleOpts' :: RunOpts -> ([Flag], [String]) -> IO RunOpts
-  handleOpts' opts ([], []) = throwError NoInputFile $> opts
-  handleOpts' opts ([], [x]) =
-    pure $ opts { runFilePath = Just x } <> defaultOpts
-  handleOpts' opts (flags, xs) = do
-    m <- mapM (handleFlags opts xs) flags -- join ??
-    pure $ foldr (<>) initialOpts m <> defaultOpts
-
-handleFlags :: RunOpts -> [String] -> Flag -> IO RunOpts
-handleFlags opts []      (     Main _) = throwError NoInputFile $> opts
-handleFlags opts [file ] (     Main s) = handleFile opts file s
-handleFlags opts (x : _) flag@(Main _) = do
-  putStrLn
-    $  formatBold (formatColor (Just Cyan) "warning: ")
-    ++ "multiple files provided. using: "
-    ++ formatColor (Just Red) x
-  handleFlags opts [x] flag
-handleFlags opts _ Version = freestVersion $> opts
-handleFlags opts _ Help    = helpMenu $> opts
-handleFlags opts []   Quiet  = throwError NoInputFile $> opts
-handleFlags opts [xs] Quiet  = return $ opts { runFilePath  = Just xs ,quietmode = True }
---handleFlags opts _ (Prelude prelude) =
-   -- check if exists? ...
---  return $ opts { preludeFile = Just prelude }
+-- criticalError :: ErrorType -> IO ()
+-- criticalError = die . formatError "" Map.empty []
 
 
-handleFile :: RunOpts -> FilePath -> String -> IO RunOpts
-handleFile opts fpath defaultMain
-  | "fst" `isExtensionOf` fpath = do
-    f <- doesFileExist fpath
-    if f then
-      pure $ opts { runFilePath  = Just fpath
-                  , mainFunction = Just $ mkVar defaultPos defaultMain
-                  }
-    else throwError (FileNotFound fpath) $> opts
-  | otherwise = die $ show fpath ++ " has not extension fst "
-
-throwError :: ErrorType -> IO ()
-throwError = die . formatError Nothing Map.empty []
+-- | More options ?
+-- -  -p --prelude -> Custom prelude file
+-- - --no-colors --no-colours -> "Remove colors from error messages"
+-- --  Option Warnings as errors ??
+-- -- verbose (full comment depth)

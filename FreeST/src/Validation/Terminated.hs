@@ -16,12 +16,12 @@ module Validation.Terminated
   )
 where
 
-import qualified Syntax.Kind                   as K
+import Syntax.Base                             (Bind(..))         
 import qualified Syntax.Type                   as T
 
 terminated :: T.Type -> Bool
-terminated (T.Skip _                 ) = True
-terminated (T.Semi _ t u             ) = terminated t && terminated u
-terminated (T.Rec  _ (K.Bind _ _ _ t)) = terminated t
-terminated _                           = False
+terminated (T.Skip _              ) = True
+terminated (T.Semi _ t u          ) = terminated t && terminated u
+terminated (T.Rec _ (Bind _ _ _ t)) = terminated t
+terminated _                        = False
 

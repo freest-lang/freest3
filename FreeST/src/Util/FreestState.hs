@@ -1,3 +1,5 @@
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-|
 Module      :  FreestState
 Description :  The FreeST state
@@ -11,131 +13,82 @@ Portability :  portable | non-portable (<reason>)
 <module description starting at first column>
 -}
 
-module Util.FreestState (
--- * State
-    FreestState
-  , FreestS(..)
-  , initialState
--- * Monad & map
-  , tMapM
-  , tMapM_
-  , tMapWithKeyM
-  , tMapWithKeyM_
--- * Next index
-  , getNextIndex
-  , freshTVar
--- * Variable environment
-  , getVEnv
-  , getFromVEnv
-  , addToVEnv
-  , setVEnv
-  , removeFromVEnv
--- * Type environment
-  , getTEnv
-  , getFromTEnv
-  , addToTEnv
-  , setTEnv
--- * Program
-  , getProg
-  , getFromProg
-  , addToProg
-  , setProg
--- * Warnings
-  --, Warnings
-  , getWarnings
-  , addWarning
-  , hasWarnings
-  --, WarningMessage(..)
-  --, WarningMsg(..)
--- * Errors
-  , Errors
-  , getErrors
-  , addError
-  , hasErrors
-  , ErrorMessage(..)
-  , ErrorMsg(..)
-  , getFileName
--- * Typenames
-  , addTypeName
-  , getTypeNames
-  , findTypeName
-  , addDualof
-  , debugM
--- * Parse Env
-  , ParseEnv
-  , emptyPEnv
-  , addToPEnv
-  , getPEnv
-  , setPEnv
--- * Run Options
-  , RunOpts(..)
-  , defaultOpts
-  , initialOpts
-  , getMain
-  , isMainFlagSet
-  , isQuietFlagSet
-  , getOpts
-  )
-where
+module Util.FreestState where
 
-import           Control.Applicative
+import           Syntax.Base
+import           Syntax.MkName
+import           Syntax.Expression
+import qualified Syntax.Kind as K
+import           Syntax.Program
+import qualified Syntax.Type as T
+
+-- import           Util.WarningMessage ()
+-- import           Util.PrettyWarning ()
+import           Util.Error
+import           Util.Warning
+-- import           Util.PrettyError ()
+
 import           Control.Monad.State
-import           Data.List ( intercalate ) -- , sortBy )
+import           Data.Bifunctor ( second )
+import           Data.List ( intercalate )
 import qualified Data.Map.Strict as Map
 import           Data.Maybe
+import qualified Data.Set as Set
 import qualified Data.Traversable as Traversable
 import           Debug.Trace -- debug (used on debugM function)
-import           Syntax.Base
-import           Syntax.Expression
-import           Syntax.Kind
-import           Syntax.Program
-import           Syntax.ProgramVariable
-import qualified Syntax.Type as T
-import           Syntax.TypeVariable
-import           Util.Warning
-import           Util.WarningMessage ()
-import           Util.PrettyWarning ()
--- import           Util.PreludeLoader
-import           Util.Error
-import           Util.ErrorMessage
-import           Util.PrettyError ()
 
 -- | The typing state
 
 type Warnings = [WarningType]
 
--- type Errors = Set.Set String
--- type Errors = [(Pos, String)]
 type Errors = [ErrorType]
 
-type ParseEnv = Map.Map ProgVar ([ProgVar], Exp)
+type Imports = Set.Set FilePath 
+
+type ParseEnv    = Map.Map Variable ([Variable], Exp)
+type ParseEnvPat = Map.Map Variable [([Pattern], Exp)]
+
+type ParseEnvChoices = [Variable]
+
+type Builtins = Set.Set Variable
 
 data FreestS = FreestS {
-  runOpts    :: RunOpts
-, varEnv     :: VarEnv
-, prog       :: Prog
-, typeEnv    :: TypeEnv
-, typenames  :: TypeOpsEnv
-, warnings   :: Warnings
-, errors     :: Errors
-, nextIndex  :: Int
-, parseEnv   :: ParseEnv -- "discarded" after elaboration
-} deriving Show -- FOR DEBUG purposes
+    runOpts    :: RunOpts
+  , varEnv     :: VarEnv
+  , prog       :: Prog
+  , typeEnv    :: TypeEnv
+  , typenames  :: TypeOpsEnv
+  , warnings   :: Warnings
+  , errors     :: Errors
+  , nextIndex  :: Int
+  , parseEnv   :: ParseEnv -- "discarded" after elaboration
+  , parseEnvPat     :: ParseEnvPat     -- for pattern elimination
+  , parseEnvChoices :: ParseEnvChoices -- for choices conflicting with data type constructors
+  , moduleName :: Maybe FilePath
+  , imports    :: Imports
+  , builtins    :: Builtins
+  } deriving Show -- FOR DEBUG purposes
+
 
 type FreestState = State FreestS
 
 -- | Initial State
 
 initialState :: FreestS
-initialState = FreestS { runOpts    = initialOpts
-                       , varEnv     = Map.empty
+initialState = FreestS { runOpts    = defaultOpts
+                       , varEnv     = initialVEnv
                        , prog       = Map.empty
-                       , typeEnv    = Map.empty
+                       , typeEnv    = initialTEnv
                        , typenames  = Map.empty
                        , warnings   = []
                        , errors     = []
                        , nextIndex  = 0
                        , parseEnv   = Map.empty
+                       , parseEnvPat     = Map.empty
+                       , parseEnvChoices = []
+                       , moduleName = Nothing
+                       , imports    = Set.empty
+                       , builtins   = Set.empty
                        }
 
 -- | Parse Env
@@ -143,7 +96,7 @@ initialState = FreestS { runOpts    = initialOpts
 emptyPEnv :: FreestS -> FreestS
 emptyPEnv s = s { parseEnv = Map.empty }
 
-addToPEnv :: ProgVar -> [ProgVar] -> Exp -> FreestState ()
+addToPEnv :: MonadState FreestS m => Variable -> [Variable] -> Exp -> m ()
 addToPEnv x xs e =
   modify (\s -> s { parseEnv = Map.insert x (xs, e) (parseEnv s) })
 
@@ -151,95 +104,117 @@ getPEnv :: FreestState ParseEnv
 getPEnv = gets parseEnv
 
 setPEnv :: ParseEnv -> FreestState ()
-setPEnv pEnv = modify (\s -> s { parseEnv = pEnv })
+setPEnv parseEnv = modify (\s -> s { parseEnv })
 
+-- | Parse Env Pat (with Patterns)
+
+addToPEnvPat :: MonadState FreestS m => Variable -> [Pattern] -> Exp -> m ()
+addToPEnvPat x xs e =
+  modify (\s -> s 
+    { parseEnvPat = Map.insertWith add x [(xs, e)] (parseEnvPat s) })
+    where add b a = (++) a b
+
+getPEnvPat :: FreestState ParseEnvPat
+getPEnvPat = gets parseEnvPat
+
+setPEnvPat :: ParseEnvPat -> FreestState ()
+setPEnvPat parseEnvPat =  modify (\s -> s { parseEnvPat })
+
+-- | Parse Env Choices (keeping choices for colision with constructors)
+
+addToPEnvChoices :: MonadState FreestS m => [Variable] -> m ()
+addToPEnvChoices xs =
+  modify (\s -> s
+    { parseEnvChoices = (parseEnvChoices s) ++ xs })
+
+getPEnvChoices :: FreestState ParseEnvChoices
+getPEnvChoices = gets parseEnvChoices
+
+setPEnvChoices :: ParseEnvChoices -> FreestState ()
+setPEnvChoices parseEnvChoices  = modify (\s -> s { parseEnvChoices })
 
 -- | NEXT VAR
 
-getNextIndex :: FreestState Int
+getNextIndex :: MonadState FreestS m => m Int
 getNextIndex = do
   next <- gets nextIndex
   modify (\s -> s { nextIndex = next + 1 })
   return next
 
-freshTVar :: String -> Pos -> FreestState TypeVar
+freshTVar :: MonadState FreestS m => String -> Span -> m Variable
 freshTVar s p = mkVar p . (s ++) . show <$> getNextIndex
-
--- | FILE NAME
-
-getFileName :: FreestState String
-getFileName = fromMaybe "" . runFilePath <$> gets runOpts
 
 -- | VAR ENV
 
-getVEnv :: FreestState VarEnv
+getVEnv :: MonadState FreestS m => m VarEnv
 getVEnv = gets varEnv
 
-getFromVEnv :: ProgVar -> FreestState (Maybe T.Type)
+-- getFromVEnv :: Variable -> FreestState (Maybe T.Type)
+getFromVEnv :: MonadState FreestS m => Variable -> m (Maybe T.Type)
 getFromVEnv x = do
   vEnv <- getVEnv
   return $ vEnv Map.!? x
 
-removeFromVEnv :: ProgVar -> FreestState ()
+removeFromVEnv :: Variable -> FreestState ()
 removeFromVEnv b = modify (\s -> s { varEnv = Map.delete b (varEnv s) })
 
-addToVEnv :: ProgVar -> T.Type -> FreestState ()
+addToVEnv :: MonadState FreestS m => Variable -> T.Type -> m ()
 addToVEnv b t = modify (\s -> s { varEnv = Map.insert b t (varEnv s) })
 
--- vEnvMember :: ProgVar -> FreestState Bool
+-- vEnvMember :: Variable -> FreestState Bool
 -- vEnvMember x = Map.member x <$> getVEnv
 
 setVEnv :: VarEnv -> FreestState ()
-setVEnv vEnv = modify (\s -> s { varEnv = vEnv })
+setVEnv varEnv = modify (\s -> s { varEnv })
 
 -- | EXP ENV
 
-getProg :: FreestState Prog
+getProg ::  MonadState FreestS m => m Prog
 getProg = gets prog
 
-getFromProg :: ProgVar -> FreestState (Maybe Exp)
+getFromProg ::  MonadState FreestS m => Variable -> m (Maybe Exp)
 getFromProg x = do
   eEnv <- getProg
   return $ eEnv Map.!? x
 
-addToProg :: ProgVar -> Exp -> FreestState ()
+addToProg :: Variable -> Exp -> FreestState ()
 addToProg k v = modify (\s -> s { prog = Map.insert k v (prog s) })
 
 setProg :: Prog -> FreestState ()
-setProg p = modify (\s -> s { prog = p })
+setProg prog = modify (\s -> s { prog })
 
 -- | TYPE ENV
 
-getTEnv :: FreestState TypeEnv
+getTEnv :: MonadState FreestS m => m TypeEnv
 getTEnv = gets typeEnv
 
-addToTEnv :: TypeVar -> Kind -> T.Type -> FreestState ()
+addToTEnv :: MonadState FreestS m => Variable -> K.Kind -> T.Type -> m ()
 addToTEnv x k t =
   modify (\s -> s { typeEnv = Map.insert x (k, t) (typeEnv s) })
 
-getFromTEnv :: TypeVar -> FreestState (Maybe (Kind, T.Type))
+getFromTEnv :: MonadState FreestS m => Variable -> m (Maybe (K.Kind, T.Type))
 getFromTEnv b = do
   tEnv <- getTEnv
   return $ tEnv Map.!? b
 
 setTEnv :: TypeEnv -> FreestState ()
-setTEnv tEnv = modify (\s -> s { typeEnv = tEnv })
+setTEnv typeEnv = modify (\s -> s { typeEnv })
 
 -- | TYPENAMES
 
-addTypeName :: Pos -> T.Type -> FreestState ()
+addTypeName :: Span -> T.Type -> FreestState ()
 addTypeName p t = modify (\s -> s { typenames = Map.insert p t (typenames s) })
 
-getTypeNames :: FreestState TypeOpsEnv
+getTypeNames :: MonadState FreestS m => m TypeOpsEnv
 getTypeNames = gets typenames
 
-findTypeName :: Pos -> T.Type -> FreestState T.Type
+findTypeName :: Span -> T.Type -> FreestState T.Type
 findTypeName p t = Map.findWithDefault t p <$> getTypeNames
 
 addDualof :: T.Type -> FreestState ()
 addDualof d@(T.Dualof p t) = do
   tn <- getTypeNames
-  case tn Map.!? pos t of
+  case tn Map.!? (getSpan t) of
     Just (T.Dualof _ _) -> return ()
     Just u -> modify (\s -> s { typenames = Map.insert p (T.Dualof p u) tn })
     Nothing -> modify (\s -> s { typenames = Map.insert p d tn })
@@ -251,8 +226,7 @@ getWarnings :: FreestS -> String
 getWarnings s =
    (intercalate "\n" . map f . take 10 . reverse . warnings) s
   where
-    f = formatWarning (runFilePath $ runOpts s) (typenames s)
---    cmp x y = compare (pos x) (pos y)
+    f = showWarnings (runFilePath $ runOpts s) (typenames s)
 
 hasWarnings :: FreestS -> Bool
 hasWarnings = not . null . warnings
@@ -262,18 +236,15 @@ addWarning w = modify (\s -> s { warnings = w : warnings s })
 
 -- | ERRORS
 
-getErrors :: PreludeNames -> FreestS -> String
-getErrors v s =
-   (intercalate "\n" . map f . take 10 . reverse . errors) s
---   (intercalate "\n" . map f . take 10 . sortBy errCmp . reverse . errors) s
-  where
-    f = formatError (runFilePath $ runOpts s) (typenames s) v
---    errCmp x y = compare (pos x) (pos y)
+getErrors :: FreestS -> String
+getErrors s = (intercalate "\n" . map f . take 10 . reverse . errors) s
+  where f = showErrors (isStylable $ runOpts s) (runFilePath $ runOpts s) (typenames s)
 
 hasErrors :: FreestS -> Bool
 hasErrors = not . null . errors
 
-addError :: ErrorType -> FreestState ()
+-- addError :: ErrorType -> FreestState ()
+addError :: MonadState FreestS m => ErrorType -> m ()
 addError e = modify (\s -> s { errors = e : errors s })
 
 -- | Traversing Map.map over FreestStates
@@ -299,38 +270,89 @@ debugM err = do
 
 -- | Run Options
 
-data RunOpts = RunOpts { runFilePath  :: Maybe FilePath
+data RunOpts = RunOpts { runFilePath  :: FilePath
 --                     , preludeFile  :: Maybe FilePath
-                       , mainFunction :: Maybe ProgVar
+                       , args         :: [String]
+                       , mainFunction :: Maybe Variable
+                       , isStylable   :: Bool
                        , quietmode    :: Bool
                        } deriving Show
 
-instance Semigroup RunOpts where
-  o1 <> o2 = RunOpts { runFilePath  = runFilePath o1 <|> runFilePath o2
---                    , preludeFile  = preludeFile o1 <|> preludeFile o2
-                     , mainFunction = mainFunction o1 <|> mainFunction o2
-                     , quietmode    = quietmode o1 || quietmode o2
-                     }
 
 defaultOpts :: RunOpts
-defaultOpts = RunOpts { runFilePath  = Nothing
+defaultOpts = RunOpts { runFilePath  = ""
 --                    , preludeFile  = Just "Prelude.fst"
+                      , args = []
                       , mainFunction = Nothing
+                      , isStylable   = True
                       , quietmode    = False
                       }
 
-initialOpts :: RunOpts
-initialOpts = RunOpts Nothing Nothing False -- Nothing
-
-getMain :: RunOpts -> ProgVar
-getMain opts = fromMaybe (mkVar defaultPos "main") maybeMain
+getMain :: RunOpts -> Variable
+getMain opts = fromMaybe mkMain maybeMain
   where maybeMain = mainFunction opts
 
 isMainFlagSet :: RunOpts -> Bool
 isMainFlagSet = isJust . mainFunction
 
-isQuietFlagSet :: RunOpts -> Bool
-isQuietFlagSet = quietmode
-
-getOpts :: FreestState RunOpts
+getOpts :: MonadState FreestS m => m RunOpts
 getOpts = gets runOpts
+
+-- | FILE NAME
+
+getFileName :: MonadState FreestS m => m String
+getFileName = runFilePath <$> getOpts
+
+
+-- | Modules & Imports
+
+setModuleName :: MonadState FreestS m => Maybe FilePath -> m ()
+setModuleName moduleName = modify (\s -> s { moduleName })
+
+getModuleName :: MonadState FreestS m => m (Maybe FilePath)
+getModuleName = gets moduleName
+
+setImports :: MonadState FreestS m => Imports -> m ()
+setImports imports = modify (\s -> s { imports })
+
+addImport :: MonadState FreestS m => FilePath -> m ()
+addImport imp = modify (\s -> s { imports = Set.insert imp (imports s) })
+
+getImports :: MonadState FreestS m => m Imports
+getImports = gets imports 
+
+
+
+-- | Lists
+
+ds :: Span
+ds = defaultSpan
+
+initialTEnv :: TypeEnv
+initialTEnv = Map.singleton (mkList ds) (K.ut ds, listType)
+
+initialVEnv :: VarEnv
+initialVEnv = Map.fromList listTypes
+
+listTypes :: [(Variable, T.Type)]
+listTypes = typeListToType (mkList ds)
+              [(mkCons ds,[T.Int ds, T.Var ds (mkList ds)]), (mkNil ds, [])]
+
+listType :: T.Type
+listType = T.Labelled ds T.Variant (typeListToRcdType [(mkCons ds,[T.Int ds, T.Var ds (mkList ds)]), (mkNil ds, [])])
+
+-- For constructors (used in Parser.y and here for lists)
+typeListToType :: Variable -> [(Variable, [T.Type])] -> [(Variable, T.Type)]
+typeListToType a = map $ second typeToFun -- map (\(x, ts) -> (x, typeToFun ts))
+  -- Convert a list of types and a final type constructor to a type
+ where
+  typeToFun []       = T.Var (getSpan a) a
+  typeToFun (t : ts) = T.Arrow (getSpan t) Un t (typeToFun ts)
+
+
+typeListToRcdType :: [(Variable, [T.Type])] -> T.TypeMap
+typeListToRcdType []             = Map.empty
+typeListToRcdType ((c, us) : ts) =
+  Map.insert c (T.Labelled (getSpan c) T.Record $ typesToMap 0 us) (typeListToRcdType ts)
+  where typesToMap n [] = Map.empty
+        typesToMap n (t : ts) = Map.insert (mkVar (getSpan t) $ show n) t (typesToMap (n+1) ts)

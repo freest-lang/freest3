@@ -1,7 +1,3 @@
 
 -- Discard linear values
-let (_, _) = new !Int in ()
-
--- Substitution
-
-(Λ a:MU => 5)[(Bool,Bool)]
+let (_, _) = new @!Int () in ()

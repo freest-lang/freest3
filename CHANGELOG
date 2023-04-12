@@ -1,3 +1,21 @@
+# Version 3.0.0
+  - REPL (freesti)
+  - New syntax for kinds: 1S and *S for linear and unrestricted session types, 1T and *T for linear and unrestricted functional types
+  - Higher-order session types (removed kinds ML and MU)
+  - New syntax for functions: 1-> and *-> (or simply ->) for linear and unrestricted functions
+  - Pattern matching on function arguments (datatype constructors and internal choices)
+  - 'End' type and 'close' function for closing channels
+  - Simple module system
+  - Shared channels
+  - Library functions to work with shared channels
+  - Library functions to work with concurrency
+  - Primitives for file handling
+  - Primitives for handling Standard Input/Output (stdout, stdin and stderr)
+  - 'hPut' functions to interact with a shared printing system
+  - Builtin support for lists of integers: [], [1,2,3] and (1::2::[])
+  - Library functions over lists ('import List')
+  - Bug fixes
+
 # Version 2.2.0
   - Fork can be used with and without type parameters
   - Send and receive can be used partially applied

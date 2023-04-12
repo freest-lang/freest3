@@ -5,9 +5,8 @@ module GrammarParser (
 
 import GrammarLexer
 import Bisimulation.Grammar
-import Syntax.TypeVariables
 import Syntax.Base
-import Syntax.Types
+import Syntax.Type
 import Prelude hiding (Word)
 import qualified Data.Map.Strict as Map
 import System.Exit
@@ -47,7 +46,7 @@ Terminal :: { String }
   | SYM LOWER_ID    { getText $1 ++ getText $2 }
   | SYM UPPER_ID    { getText $1 ++ getText $2 }
     
-NonTerminal :: { TypeVar }
+NonTerminal :: { Variable }
   : UPPER_ID  { mkVar defaultPos (getText $1) }
 
 {
@@ -61,7 +60,7 @@ parseError (t:_) = putStrLn ("Parse error on token: " ++ show t) >> exitFailure
 insertProd :: Productions -> Productions -> Productions
 insertProd = Map.foldlWithKey (\acc t ts -> insert t ts acc)
   where
-    insert :: TypeVar -> Transitions -> Productions -> Productions
+    insert :: Variable -> Transitions -> Productions -> Productions
     insert t ts ps = do
       case ps Map.!? t of
         Just tss -> Map.insert t (Map.union ts tss) ps

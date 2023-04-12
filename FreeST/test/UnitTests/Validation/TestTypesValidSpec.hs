@@ -7,7 +7,6 @@ import           Control.Monad.State            ( runState )
 import qualified Data.Map.Strict               as Map
                                                 ( empty )
 import           Elaboration.ResolveDuality    as Dual
-import           Elaboration.Elaboration
 import           SpecUtils
 import           Syntax.Kind                    ( Kind )
 import           Util.FreestState               ( initialState

@@ -14,12 +14,14 @@ reflexive, congruence, and BPA rules.
 {-# LANGUAGE TupleSections #-}
 module Bisimulation.Bisimulation
   ( bisimilar
+  , bisimilarGrm -- For SGBisim
   )
 where
 
-import           Syntax.TypeVariable -- Nonterminal symbols are type variables
+import           Syntax.Base                    (Variable) -- Nonterminal symbols are type variables
 import qualified Syntax.Type                   as T
 import           Equivalence.TypeToGrammar      ( convertToGrammar )
+import           Bisimulation.AlphaEquivalence
 import           Bisimulation.Grammar
 import           Bisimulation.Norm
 import qualified Data.Map.Strict               as Map
@@ -27,22 +29,24 @@ import qualified Data.Set                      as Set
 import qualified Data.Sequence                 as Queue
 import           Data.Bifunctor
 import           Data.List                      ( isPrefixOf
-                                                , union
+                                                , union, stripPrefix
                                                 )
 -- Word is (re)defined in module Equivalence.Grammar
 import           Prelude                 hiding ( Word )
-
--- import           Debug.Trace
+import           Debug.Trace
+import Data.Bitraversable (bisequence)
 
 bisimilar :: T.Type -> T.Type -> Bool
-bisimilar t u = bisimilarGrm $ convertToGrammar [t, u]
+bisimilar t u =
+  t == u || -- Alpha-equivalence, 11% speed up in :program tests
+  bisimilarGrm (convertToGrammar [t, u])
 
+-- | Assumes a grammar without unreachable symbols
 bisimilarGrm :: Grammar -> Bool
-bisimilarGrm (Grammar [xs, ys] ps) = expand queue rules ps'
+bisimilarGrm (Grammar [xs, ys] ps) = expand queue rules ps
  where
-  ps' = pruneProductions ps
-  rules | allNormed ps' = [reflex, congruence, bpa2, filtering]
-        | otherwise     = [reflex, congruence, bpa1, bpa2, filtering]
+  rules | allNormed ps = [reflex, congruence, bpa2, filtering]
+        | otherwise    = [reflex, congruence, bpa1, bpa2, filtering]
   queue = Queue.singleton (Set.singleton (xs, ys), Set.empty)
 
 type Node = Set.Set (Word, Word)
@@ -64,7 +68,9 @@ expand ((n, a) Queue.:<| q) rules ps
   | otherwise = case expandNode ps n of
     Nothing -> expand q rules ps
     Just n' -> expand (simplify q branch rules ps) rules ps
-      where branch = Set.singleton (n', Set.union a n)
+      where
+        n'' = pruneNode ps n'
+        branch = Set.singleton (n'', Set.union a n)
 
 simplify
   :: BranchQueue
@@ -106,18 +112,6 @@ match :: Transitions -> Transitions -> Node
 match m1 m2 =
   Map.foldrWithKey (\l xs n -> Set.insert (xs, m2 Map.! l) n) Set.empty m1
 
--- Pruning
-
-pruneProductions :: Productions -> Productions
-pruneProductions p = Map.map (Map.map (pruneWord p)) p
-
-pruneNode :: Productions -> Node -> Node
-pruneNode ps = Set.map $ bimap (pruneWord ps) (pruneWord ps)
-  -- Set.map (\(xs, ys) -> (pruneWord ps xs, pruneWord ps ys))
-
-pruneWord :: Productions -> Word -> Word
-pruneWord p = foldr (\x ys -> if normed p x then x : ys else [x]) []
-
 -- The fixed point of branch wrt the application of node transformations
 findFixedPoint
   :: Set.Set Branch -> [NodeTransformation] -> Productions -> Set.Set Branch
@@ -126,7 +120,6 @@ findFixedPoint branch rules ps | branch == branch' = branch
  where
   branch' = foldr apply branch rules
   apply :: NodeTransformation -> Set.Set Branch -> Set.Set Branch
---    (\(n, a) bs -> Set.union (Set.map (\s -> (s, a)) (trans ps a n)) bs)
   apply trans =
     foldr (\(n, a) bs -> Set.union (Set.map (, a) (trans ps a n)) bs) Set.empty
 
@@ -143,21 +136,12 @@ congruence _ a = Set.singleton . Set.filter (not . congruentToAncestors)
 
   congruentToPair :: (Word, Word) -> (Word, Word) -> Bool
   congruentToPair (xs, ys) (xs', ys') =
-    not (null xs')
-      &&           xs'
-      `isPrefixOf` xs
-      &&           not (null ys')
-      &&           ys'
-      `isPrefixOf` ys
-      &&           (xs'' == ys'' || congruentToAncestors (xs'', ys''))
-   where
-    xs'' = drop (length xs') xs
-    ys'' = drop (length ys') ys
+      xs == ys || maybe False congruentToAncestors (bisequence (stripPrefix xs' xs, stripPrefix ys' ys))
 
 filtering :: NodeTransformation
 filtering ps _ n | normsMatch = Set.singleton n
                  | otherwise  = Set.empty
-  where normsMatch = and $ Set.map (uncurry (sameNorm ps)) n
+  where normsMatch = and $ Set.map (uncurry (equallyNormed ps)) n
 
 applyBpa
   :: (Productions -> Ancestors -> (Word, Word) -> Set.Set Node)
@@ -180,7 +164,7 @@ bpa1' p a (x : xs, y : ys) = case findInAncestors a x y of
     (bpa1' p (Set.delete (x : xs', y : ys') a) (x : xs, y : ys))
 bpa1' _ _ _ = Set.empty
 
-findInAncestors :: Ancestors -> TypeVar -> TypeVar -> Maybe (Word, Word)
+findInAncestors :: Ancestors -> Variable -> Variable -> Maybe (Word, Word)
 findInAncestors a x y = Set.foldr
   (\p acc -> case acc of
     Just p  -> Just p
@@ -189,7 +173,7 @@ findInAncestors a x y = Set.foldr
   Nothing
   a
 
-findInPair :: (Word, Word) -> TypeVar -> TypeVar -> Maybe (Word, Word)
+findInPair :: (Word, Word) -> Variable -> Variable -> Maybe (Word, Word)
 findInPair (x' : xs, y' : ys) x y | x == x' && y == y' = Just (xs, ys)
                                   | otherwise          = Nothing
 findInPair _ _ _ = Nothing
@@ -205,22 +189,23 @@ bpa2' p a (x : xs, y : ys)
     Just gamma -> Set.singleton (pairsBPA2 p (x : xs) (y : ys) gamma)
 bpa2' _ _ _ = Set.empty
 
-gammaBPA2 :: Productions -> TypeVar -> TypeVar -> Maybe Word
+gammaBPA2 :: Productions -> Variable -> Variable -> Maybe Word
 gammaBPA2 p x y = throughPath p ls [x1]
- where
-  x0 = if norm p [x] <= norm p [y] then x else y
-  x1 = if norm p [x] <= norm p [y] then y else x
-  ls = pathToSkip p x0
+  where
+    nx = norm p [x]
+    ny = norm p [y]
+    x0 = if nx <= ny then x else y
+    x1 = if nx <= ny then y else x
+    ls = pathToSkip p x0
 
 pairsBPA2 :: Productions -> Word -> Word -> Word -> Node
 pairsBPA2 p (x : xs) (y : ys) gamma = Set.fromList [p1, p2]
  where
   p1 = if norm p [x] >= norm p [y] then ([x], y : gamma) else (x : gamma, [y])
-  p2 =
-    if norm p [x] >= norm p [y] then (gamma ++ xs, ys) else (xs, gamma ++ ys)
+  p2 = if norm p [x] >= norm p [y] then (gamma ++ xs, ys) else (xs, gamma ++ ys)
 
 -- only applicable to normed variables
-pathToSkip :: Productions -> TypeVar -> [Label]
+pathToSkip :: Productions -> Variable -> [Label]
 pathToSkip p x = fst . head $ filter (null . snd) ps
   where ps = pathToSkip' p (Map.assocs $ Map.mapKeys (: []) (transitions x p))
 
@@ -244,3 +229,10 @@ throughPath p (l : ls) xs | not (Map.member l ts) = Nothing
   xs' = ts Map.! l
 throughPath p _ xs = Just xs
 
+-- Pruning nodes (Warning: pruneWord is duplicated from Bisimulation.Norm)
+
+pruneNode :: Productions -> Node -> Node
+pruneNode ps = Set.map $ bimap pruneWord pruneWord
+  where
+    pruneWord :: Word -> Word
+    pruneWord = foldr (\x ys -> x : if normed ps x then ys else []) []

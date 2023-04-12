@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-|
 Module      :  Validation.Kinding
 Description :  Check the type formation
@@ -20,85 +21,83 @@ module Validation.Kinding
   )
 where
 
-import           Data.Functor
 import           Syntax.Base
-import           Syntax.TypeVariable
-import qualified Syntax.Type                   as T
-import qualified Syntax.Kind                   as K
+import qualified Syntax.Type as T
+import qualified Syntax.Kind as K
 import           Validation.Contractive
-import           Validation.Subkind             ( (<:)
-                                                , join
-                                                )
+import           Validation.Subkind ( (<:), join )
 import           Util.FreestState
 import           Util.Error
-import           Control.Monad                  ( unless )
-import qualified Control.Monad.State           as S
-import qualified Data.Map.Strict               as Map
-import qualified Data.Set               as Set
 
+import           Control.Monad.State hiding (join)
+import           Data.Functor
+import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
 
 -- Exported Functions: Top-level definitions of those defined in this module
 
+-- synthetise :: MonadState FreestS m => K.KindEnv -> T.Type -> m K.Kind
 synthetise :: K.KindEnv -> T.Type -> FreestState K.Kind
-synthetise kenv = synthetise'  (Map.keysSet kenv) kenv
+synthetise kenv = synthetise' (Map.keysSet kenv) kenv
 
 checkAgainst :: K.KindEnv -> K.Kind -> T.Type -> FreestState K.Kind
 checkAgainst kenv = checkAgainst' (Map.keysSet kenv) kenv
 
-checkAgainstSession :: K.KindEnv -> T.Type -> FreestState ()
+checkAgainstSession :: K.KindEnv -> T.Type -> FreestState K.Kind
 checkAgainstSession kenv = checkAgainstSession' (Map.keysSet kenv) kenv
-
 
 -- Kinding
 -- Returns the kind of a given type
 synthetise' :: K.PolyVars -> K.KindEnv -> T.Type -> FreestState K.Kind
 -- Functional types
-synthetise' _ _ (T.Int    p) = return $ K.Kind p K.Message K.Un
-synthetise' _ _ (T.Char   p) = return $ K.Kind p K.Message K.Un
-synthetise' _ _ (T.Bool   p) = return $ K.Kind p K.Message K.Un
-synthetise' _ _ (T.Unit   p) = return $ K.Kind p K.Message K.Un
-synthetise' _ _ (T.String p) = return $ K.Kind p K.Message K.Un
-synthetise' s kEnv (T.Arrow p m t u) = -- do
-  synthetise' s kEnv t >>
-  synthetise' s kEnv u $> K.Kind p K.Top (typeToKindMult m)
-synthetise' s kEnv (T.Pair p t u) = do
-  (K.Kind _ _ mt) <- synthetise' s kEnv t
-  (K.Kind _ _ mu) <- synthetise' s kEnv u
-  return $ K.Kind p K.Top (join mt mu)
-synthetise' s kEnv (T.Variant p m) = do
+synthetise' _ _ (T.Int    p) = return $ K.ut p
+synthetise' _ _ (T.Char   p) = return $ K.ut p
+synthetise' _ _ (T.String p) = return $ K.ut p
+synthetise' s kEnv (T.Arrow p m t u) =
+  synthetise' s kEnv t >> synthetise' s kEnv u $> K.Kind p (typeToKindMult m) K.Top
+synthetise' s kEnv (T.Labelled p t m) | t == T.Variant || t == T.Record = do
   ks <- tMapM (synthetise' s kEnv) m
-  let K.Kind _ _ n = foldr1 join ks
-  return $ K.Kind p K.Top n
-  -- Session types
-synthetise' _ _    (T.Skip p    ) = return $ K.su p
+  let K.Kind _ n _ = foldr join (K.ut defaultSpan) ks
+  return $ K.Kind p n K.Top
+-- Shared session types
+synthetise' s kEnv (T.Rec p (Bind _ a (K.Kind _ K.Un K.Session) (T.Semi _ u@(T.Message _ _ t) (T.Var _ b))))
+  | a == b = do
+    void $ checkAgainstSession' s kEnv u
+    return $ K.us p
+synthetise' _ _ (T.Rec p (Bind _ a (K.Kind _ K.Un K.Session) (T.Labelled _ (T.Choice _) m)))
+  | all (\case {(T.Var _ b) -> a == b ; _ -> False }) m =
+    return $ K.us p
+-- Session types
+synthetise' _ _ (T.Skip   p) = return $ K.us p
+synthetise' _ _ (T.End    p) = return $ K.ls p
 synthetise' s kEnv (T.Semi p t u) = do
-  checkAgainstSession' s kEnv t
-  checkAgainstSession' s kEnv u
-  return $ K.sl p
-synthetise' s kEnv (T.Message p _ t) = checkAgainst' s kEnv (K.ml p) t $> K.sl p
-synthetise' s kEnv (T.Choice p _ m) =
-  tMapM_ (checkAgainst' s kEnv (K.sl p)) m $> K.sl p
+  (K.Kind _ mt _) <- checkAgainstSession' s kEnv t
+  (K.Kind _ mu _) <- checkAgainstSession' s kEnv u
+  return $ K.Kind p (join mt mu) K.Session
+synthetise' s kEnv (T.Message p _ t) =
+  checkAgainst' s kEnv (K.lt p) t $> K.ls p
+synthetise' s kEnv (T.Labelled p (T.Choice _) m) =
+  tMapM_ (checkAgainst' s kEnv (K.ls p)) m $> K.ls p
 -- Session or functional
-synthetise' s kEnv (T.Rec _ (K.Bind _ a k t)) =
+synthetise' s kEnv (T.Rec _ (Bind _ a k t)) =
   checkContractive s a t >> checkAgainst' s (Map.insert a k kEnv) k t $> k
-synthetise' s kEnv (T.Forall _ (K.Bind p a k t)) = do
-  (K.Kind _ _ m) <- synthetise' (Set.insert a s) (Map.insert a k kEnv) t
-  return $ K.Kind p K.Top m
+synthetise' s kEnv (T.Forall _ (Bind p a k t)) = do
+  (K.Kind _ m _) <- synthetise' (Set.insert a s) (Map.insert a k kEnv) t
+  return $ K.Kind p m K.Top
 synthetise' _ kEnv (T.Var p a) = case kEnv Map.!? a of
   Just k -> return k
   Nothing -> addError (TypeVarNotInScope p a) $> omission p
 -- Type operators
-synthetise' _ kEnv t@(T.CoVar p a) =
+synthetise' _ kEnv t@(T.Dualof p (T.Var _ a)) =
   case kEnv Map.!? a of
-    Just k -> S.when (not $ k <: K.sl p)
-            (addError (CantMatchKinds p k (K.sl p) t)) $> K.sl p
+    Just k -> unless (k <: K.ls p)
+            (addError (CantMatchKinds p k (K.ls p) t)) $> K.ls p
     Nothing -> addError (TypeVarNotInScope p a) $> omission p
-
 synthetise' _ _ t@T.Dualof{} = internalError "Validation.Kinding.synthetise'" t
 
 -- Check the contractivity of a given type; issue an error if not
-checkContractive :: K.PolyVars -> TypeVar -> T.Type -> FreestState ()
-checkContractive s a t = let p = pos t in
+checkContractive :: K.PolyVars -> Variable -> T.Type -> FreestState ()
+checkContractive s a t = let p = getSpan t in
   unless (contractive s a t) $ addError (TypeNotContractive p t a)
 
 -- Check a type against a given kind
@@ -106,18 +105,15 @@ checkContractive s a t = let p = pos t in
 checkAgainst' :: K.PolyVars -> K.KindEnv -> K.Kind -> T.Type -> FreestState K.Kind
 checkAgainst' s kEnv expected t = do
   actual <- synthetise' s kEnv t
-  S.when (not $ actual <: expected)
-    (addError (CantMatchKinds (pos t) expected actual t))
-  $> expected
+  unless (actual <: expected)
+    (addError (CantMatchKinds (getSpan t) expected actual t)) $> expected
 
 -- Check whether a given type is of a session kind. In any case return the
--- multiplicity of the kind of the type. This is a refined version of
--- checkAgainst for a better error messages
-checkAgainstSession' :: K.PolyVars -> K.KindEnv -> T.Type -> FreestState ()
+-- kind of the type. This is a refined version of checkAgainst for a better error messages
+checkAgainstSession' :: K.PolyVars -> K.KindEnv -> T.Type -> FreestState K.Kind
 checkAgainstSession' s kEnv t = do
-  k@(K.Kind _ p _) <- synthetise' s kEnv t
-  S.when (p /= K.Session) $ let p = pos t in
-    addError (ExpectingSession p t k)
+  k@(K.Kind _ _ p) <- synthetise' s kEnv t
+  when (p /= K.Session) (addError (ExpectingSession (getSpan t) t k)) $> k
 
 -- Determine whether a given type is unrestricted
 un :: T.Type -> FreestState Bool
@@ -130,7 +126,7 @@ lin = mult K.Lin
 -- Determine whether a given type is of a given multiplicity
 mult :: K.Multiplicity -> T.Type -> FreestState Bool
 mult m1 t = do
-  (K.Kind _ _ m2) <- synthetise' Set.empty Map.empty t
+  (K.Kind _ m2 _) <- synthetise' Set.empty Map.empty t
   return $ m2 == m1
 
 -- Type to kind multiplicity

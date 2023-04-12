@@ -1,6 +1,6 @@
 data Tree = Leaf | Node Int Tree Tree
 
-flatten : Tree -> (rec x:SL. +{Root: !Int;x, Node: x, EOS: Skip}) -> rec x:SL. +{Root: !Int;x, Node: x, EOS: Skip}
+flatten : Tree -> (rec x: 1S. +{Root: !Int;x, Node: x, EOS: Skip}) -> rec x: 1S. +{Root: !Int;x, Node: x, EOS: Skip}
 flatten tree c =
   case tree of {
     Leaf ->
@@ -14,7 +14,7 @@ flatten tree c =
               flatten r c
   }
 
-raise : (rec x:SL. +{Root: ?Int;x, Node: x, EOS: Skip}) -> (Tree, rec x:SL. +{Root: ?Int;x, Node: x, EOS: Skip})
+raise : (rec x: 1S. +{Root: ?Int;x, Node: x, EOS: Skip}) -> (Tree, rec x: 1S. +{Root: ?Int;x, Node: x, EOS: Skip})
 raise c =
   match c with {
     EOS c -> (Leaf, c),

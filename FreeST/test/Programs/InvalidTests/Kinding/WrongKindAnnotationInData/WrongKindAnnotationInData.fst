@@ -1,0 +1,1 @@
+data T : 1S = A !Int | B Char

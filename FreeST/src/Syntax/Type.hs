@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 {- |
 Module      :  Syntax.Types
 Description :  The types in FreeST.
@@ -13,67 +14,75 @@ module Syntax.Type
   ( Type(..)
   , TypeMap
   , Polarity(..)
+  , Sort(..)
   , View(..)
+  , unit 
+  , tuple 
 --  , Multiplicity(..)
   )
 where
 
 import           Syntax.Base
-import           Syntax.TypeVariable            ( TypeVar )
-import           Syntax.ProgramVariable         ( ProgVar )
 import qualified Syntax.Kind                   as K
 import qualified Data.Map.Strict               as Map
+import Syntax.MkName (mkTupleLabels)
 
 data Polarity = Out | In deriving Eq
 data View = External | Internal deriving Eq
 
 data Type =
   -- Functional Types
-    Int Pos
-  | Char Pos
-  | Bool Pos
-  | String Pos
-  | Unit Pos
-  | Arrow Pos Multiplicity Type Type
-  | Pair Pos Type Type
-  | Variant Pos TypeMap
+    Int Span
+  | Char Span
+  | String Span
+  | Arrow Span Multiplicity Type Type
+  | Labelled Span Sort TypeMap
   -- Session Types
-  | Skip Pos
-  | Semi Pos Type Type
-  | Message Pos Polarity Type
-  | Choice Pos View TypeMap
+  | Skip Span
+  | End Span
+  | Semi Span Type Type
+  | Message Span Polarity Type
   -- Polymorphism and recursive types
-  | Forall Pos (K.Bind Type)   -- ∀ a:k . T, Universal type
-  | Rec Pos (K.Bind Type)      -- μ a:k . T, Recursive type
-  | Var Pos TypeVar
+  | Forall Span (Bind K.Kind Type)   -- ∀k . T, Universal type
+  | Rec Span (Bind K.Kind Type)      -- μ a:k . T, Recursive type
+  | Var Span Variable
   -- Type operators
-  | Dualof Pos Type
-  | CoVar Pos TypeVar
-  -- | Abs Pos (Bind Type)       -- λ a:k => T, Operator abstraction
-  -- | App Pos Type Type
+  | Dualof Span Type
+--  | CoVar Span Variable
 
-type TypeMap = Map.Map ProgVar Type
+-- | Abs Pos (Bind Type)       -- λ a:k => T, Operator abstraction
+-- | App Pos Type Type
 
-instance Position Type where
-  pos (Int  p       ) = p
-  pos (Char p       ) = p
-  pos (Bool p       ) = p
-  pos (String p     ) = p
-  pos (Unit p       ) = p
-  pos (Arrow p _ _ _) = p
-  pos (Pair p _ _   ) = p
-  pos (Variant p _  ) = p
-  pos (Skip p       ) = p
-  pos (Semi p _ _   ) = p
-  pos (Message p _ _) = p
-  pos (Choice p _ _ ) = p
-  pos (Forall p _   ) = p
-  pos (Rec p _      ) = p
-  pos (Var p _      ) = p
-  -- pos (Abs p _      ) = p
-  -- pos (App p _ _    ) = p
-  pos (Dualof p _   ) = p
-  pos (CoVar p _   ) = p
+type TypeMap = Map.Map Variable Type
+
+data Sort = Record | Variant | Choice View deriving Eq
 
 instance Default Type where
   omission = Int
+
+instance Located Type where
+  getSpan (Int  p       ) = p
+  getSpan (Char p       ) = p
+  getSpan (String p     ) = p
+  getSpan (Arrow p _ _ _) = p
+  getSpan (Labelled p _ _) = p
+  getSpan (Skip p       ) = p
+  getSpan (End p        ) = p
+  getSpan (Semi p _ _   ) = p
+  getSpan (Message p _ _) = p
+  getSpan (Forall p _   ) = p
+  getSpan (Rec p _      ) = p
+  getSpan (Var p _      ) = p
+  -- getSpan (Abs p _      ) = p
+  -- getSpan (App p _ _    ) = p
+  getSpan (Dualof p _   ) = p
+--  getSpan (CoVar p _   ) = p
+
+-- Derived forms
+unit :: Span -> Type 
+unit s = Labelled s Record Map.empty 
+
+tuple :: Span -> [Type] -> Type
+tuple s ts = Labelled s Record (tupleTypeMap ts)
+  where tupleTypeMap :: [Type] -> TypeMap
+        tupleTypeMap ts = Map.fromList $ zipWith (\mk t -> (mk (getSpan t), t)) mkTupleLabels ts 

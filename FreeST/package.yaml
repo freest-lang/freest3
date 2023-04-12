@@ -1,5 +1,5 @@
 name:                FreeST
-version:             2.2.0
+version:             3.0.0
 #github:              "githubuser/ContextFreeSession"
 license:             BSD3
 author:              "Bernardo Almeida, Andreia Mordido, Vasco T. Vasconcelos"
@@ -8,26 +8,25 @@ copyright:           "2020 authors"
 #extra-source-files:
 #- README.md
 data-dir: StandardLib
-data-files: Prelude.fst
-# Metadata used when publishing your package
-# synopsis:            Short description of your package
-# category:            Web
+data-files:
+  - Prelude.fst
+  - List.fst
+  - File.fst
 
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
 
 dependencies:
-- base >= 4.7 && < 5
-- containers >=0.5.9
-# - unordered-containers >= 0.2
-- mtl >= 2.2.1
-- array <= 0.5.4.0
-- directory >= 1.3.2.0
-- filepath >= 1.4.2
-- process <= 1.6.13.2
-# - silently >= 1.2.5.1
-# - synchronous-channels >= 0.2
+  - base >= 4.7 && < 5
+  - array <= 0.5.4.0       # alex dependency
+  - containers >=0.5.9
+  - mtl >= 2.2.1
+  - directory >= 1.3.2.0
+  - filepath >= 1.4.2
+  - optparse-applicative >= 0.16.1.0
+  - control-bool >= 0.2.1
+  - extra >= 1.7.9       # TODO, replace control-bool and its occurrences, there's no point on having both
 
 library:
   source-dirs: src
@@ -36,25 +35,28 @@ library:
     - happy
   exposed-modules:
     - FreeST
+    - Paths_FreeST
     - Bisimulation.Grammar
     - Bisimulation.Bisimulation
     - Elaboration.ResolveDuality
     - Elaboration.Elaboration
-    - Equivalence.Equivalence
+#    - Equivalence.Equivalence
     - Equivalence.Normalisation
-    - Syntax.TypeVariable
     - Syntax.Base
     - Syntax.Type
     - Syntax.Expression
     - Syntax.Kind
-    - Syntax.ProgramVariable
+    - Syntax.Program
     - Parse.ParseUtils
     - Parse.Read
     - Parse.Unparser
     - Util.Error
-    - Util.PrettyError
+    - Util.Warning
+#    - Util.PrettyError
     - Util.FreestState
-    - Util.PreludeLoader
+    - Util.CmdLine
+#    - Util.PreludeLoader
+    - Util.GetTOps
     - Parse.Lexer 
     - Parse.Parser
     - Validation.Subkind
@@ -64,6 +66,9 @@ library:
     - Validation.Kinding
     - Validation.Substitution
     - Validation.Typing
+    - Validation.TypeChecking
+    - Interpreter.Builtin
+    - Interpreter.Eval
 
 executables:
   freest:
@@ -95,7 +100,7 @@ tests:
         - hspec >= 2.7.1       
         - HUnit >= 1.6.0.0
         - silently >= 1.2.5.1
-      ghc-options: -threaded +RTS -N -RTS
+      ghc-options: -O2 -threaded -rtsopts -with-rtsopts=-N
 
     valid-types-quick:
       main: QuickCheckSpec.hs
