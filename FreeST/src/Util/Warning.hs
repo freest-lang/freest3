@@ -1,43 +1,43 @@
-module Util.Warning
-    ( WarningType(..)
-    , formatWarning
-    ) where
+module Util.Warning where
 
-
+import           Parse.Unparser (showModuleName)
 import           Syntax.Base
-import           Syntax.Program                 ( TypeOpsEnv )
-import qualified Syntax.Type                   as T
-import qualified Syntax.Expression             as E
-import           Util.PrettyWarning
-import           Util.WarningMessage
-import qualified Data.Map                      as Map
-import           Data.Maybe
-import           Parse.Unparser                 ( showFieldMap ) -- temporary
+import qualified Syntax.Expression as E
+import           Syntax.Program ( TypeOpsEnv )
+import qualified Syntax.Type as T
+import           Util.Message
+
+import           Data.Either.Extra (fromEither , isLeft)
+import           Data.List ( intercalate )
+import qualified Data.Map as Map
+import           System.FilePath
 
 
-formatWarning:: Maybe String -> TypeOpsEnv -> WarningType -> String
-formatWarning mFile tops wrn = format (pos wrn) (warningMsg wrn)
+showWarnings :: String -> TypeOpsEnv -> WarningType -> String
+showWarnings f tops wrn =
+  let mod = trimModule f (defModule $ getSpan wrn) in
+  let base = replaceBaseName f (fromEither mod) in
+  let modEither = if isLeft mod then Left base else Right $ showModuleName (getSpan wrn) in    
+    title wrn True (getSpan wrn) base ++ "\n  " ++ msg wrn True tops modEither
   where
-   f = fromMaybe "FreeST" mFile
-   format p e = formatHeader f p ++ formatBody tops e
-
-
--- Warnings
--- FreeST.hs:82:
-   -- styleCyan "warning: " ++ "Couldn't find prelude; proceeding without it"
--- CmdLine:72:
-   -- multiple files provided
+    trimModule f mod
+      | null mod                = Left $ takeBaseName f
+      | isExtensionOf "fst" mod = Left $ takeBaseName mod
+      | otherwise               = Right mod
 
 data WarningType =
-  NonExhaustiveCase Pos E.FieldMap T.TypeMap
+    NoPrelude FilePath
+  | NonExhaustiveCase Span E.FieldMap T.TypeMap
   deriving Show
 
-instance Position WarningType where
-  pos (NonExhaustiveCase p _ _) = p
+instance Located WarningType where
+  getSpan (NoPrelude f)             = defaultSpan {defModule = f}
+  getSpan (NonExhaustiveCase p _ _) = p
 
-warningMsg :: WarningType -> [WarningMessage]
-warningMsg (NonExhaustiveCase _ fm tm) =
-  [ Warning "Pattern match(es) are non-exhaustive\n\t"
-  , Warning "In a case alternative: Patterns not matched:"
-  , Warning $ formatColor (Just Pink) $ foldr (\k acc -> show k ++ acc) ""
-            $ Map.keys $ Map.difference tm fm]
+instance Message WarningType where
+  title _  sty = msgHeader (yellow sty "warning:") sty
+  
+  msg NoPrelude{} _ _ _ = "Could not load the Prelude; proceeding without it"
+  msg (NonExhaustiveCase _ fm tm) sty _ _ =
+    "Pattern match(es) are non-exhaustive\n\t In a case alternative: Patterns not matched: " ++
+    yellow sty (intercalate ", " $ map show $ Map.keys $ Map.difference tm fm)

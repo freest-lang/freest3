@@ -9,85 +9,77 @@ Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc
 This module defines kinds. It also defines the subkinding relation, the least
 upper bound of two kinds and other functions to manipulate kinds.
 -}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Syntax.Kind
-  ( Basic(..)
-  , Bind(..)
+  ( PreKind(..)
   , Kind(..)
   , Multiplicity(..)
   , KindEnv
   , PolyVars
-  , tl
-  , tu
-  , sl
-  , su
-  , mu
-  , ml
+  , lt
+  , ut
+  , ls
+  , us
+  -- , um
+  -- , lm
   , isLin
   , isUn
   , isSession
-  , body
   )
 where
 
-import qualified Data.Map.Strict               as Map
-import qualified Data.Set                      as Set
-import           Syntax.Base             hiding ( Multiplicity(..) )
-import           Syntax.TypeVariable
 
--- Basic kind
+import           Syntax.Base hiding ( Multiplicity(..) )
 
-data Basic = Message | Session | Top deriving Eq
+import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
+
+-- Pre-kind
+data PreKind = Session | Top deriving Eq
 
 -- Multiplicity
 data Multiplicity = Un | Lin deriving Eq
 
 -- Kind
+data Kind = Kind Span Multiplicity PreKind
 
-data Kind = Kind Pos Basic Multiplicity
+instance Located Kind where
+  getSpan (Kind p _ _) = p
 
-instance Position Kind where
-  pos (Kind p _ _) = p
+-- instance Eq Kind whereP
+--   (Kind _ b1 m1) == (Kind _ b2 m2) = True
+
 
 -- The kind of conventional (non linear, non session) functional programming
 -- languages' types (Alternative: the kind that sits at the top of the
 -- hierarchy)
 instance Default Kind where
-  omission = tu
+  omission _ = ut defaultSpan
 
 -- Abbreviations for the six proper kinds
-tl, tu, sl, su, mu, ml :: Pos -> Kind
-tl p = Kind p Top Lin
-tu p = Kind p Top Un
-sl p = Kind p Session Lin
-su p = Kind p Session Un
-mu p = Kind p Message Un
-ml p = Kind p Message Lin
+lt, ut, ls, us{-, um, lm-} :: Span -> Kind
+lt p = Kind p Lin Top 
+ut p = Kind p Un Top 
+ls p = Kind p Lin Session 
+us p = Kind p Un Session 
+-- um p = Kind p Un Message
+-- lm p = Kind p Lin Message
 
 isLin :: Kind -> Bool
-isLin (Kind _ _ m) = m == Lin
+isLin (Kind _ m _) = m == Lin
 
 isUn :: Kind -> Bool
 isUn = not . isLin
 
 isSession :: Kind -> Bool
-isSession (Kind _ b _) = b == Session
-
--- Bind: ∀ a:k . t or Λ a:k => e
-
-data Bind a = Bind Pos TypeVar Kind a
-
-instance Position (Bind a) where
-  pos (Bind p _ _ _) = p
-
-instance Default a => Default (Bind a) where
-  omission p = Bind p (omission p) (omission p) (omission p)
-
-body :: Bind a -> a
-body (Bind _ _ _ a) = a
+isSession (Kind _ _ b) = b == Session
 
 -- Kind environment
 
-type KindEnv = Map.Map TypeVar Kind
+type KindEnv = Map.Map Variable Kind
 
-type PolyVars = Set.Set TypeVar
+type PolyVars = Set.Set Variable
+
+instance (Default a) => Default (Bind Kind a) where
+  omission p = Bind p (omission p) (omission p) (omission p)

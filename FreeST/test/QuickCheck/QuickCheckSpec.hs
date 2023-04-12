@@ -10,8 +10,8 @@ args = stdArgs {maxSuccess = 150135, replay = Just (mkQCGen 1095646480, 0)}
 
 spec :: Spec
 spec =
-  describe "QuickCheck" $ do
+  describe "QuickCheck" $
     prop "prop_bisimilar" $
-      verboseCheckWith args prop_bisimilar -- prop_distribution
+      {-quickCheckWith-} verboseCheckWith args {- prop_bisimilar -} prop_distribution
 
 main = hspec spec
