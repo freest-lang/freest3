@@ -31,12 +31,17 @@ $digit = [$ascdigit] -- $unidigit]
 $ascsymbol = [\!\#\$\%\&\*\+\.\/\<\=\>\?\@\\\^\|\-\~]
 $symbol = [$ascsymbol] -- $unisymbol]
 
+
 $alphaNumeric = [$letter$digit\_\']
 
 $eol=[\n]
 
 @char = \'(\\n|[\\.]|.) \'
 @blockComment = "{-" (\-[^\}]|[^\-]|\n)* "-}"
+
+@numspc = _*         -- numeric spacer 
+
+@decimal = $digit(numspc $digit)*
 
 -- # λ  -- forall not in range ([λ ∀])
 $greekId = [λ ∀ Λ μ]
@@ -101,6 +106,7 @@ tokens :-
   "1T"                          { \p s -> TokenLinT (internalPos p) }
 -- Basic types
   Int			        { \p s -> TokenIntT (internalPos p) }
+  Float       { \p s -> TokenFloatT (internalPos p)}
   Char				{ \p s -> TokenCharT (internalPos p) }
   String			{ \p s -> TokenStringT (internalPos p) }
   Skip				{ \p s -> TokenSkip (internalPos p) }
@@ -126,6 +132,7 @@ tokens :-
 -- Values
   \(\)				{ \p s -> TokenUnit (internalPos p) }
   (0+|[1-9]$digit*)      	{ \p s -> TokenInt (internalPos p) (read s) }
+  (@numspc @decimal \. @decimal)       { \p s -> TokenFloat (internalPos p) (read s)}
   @char				{ \p s -> TokenChar (internalPos p) (read s) }
   @stringLiteral		{ \p s -> TokenString (internalPos p) (read s) }
 -- Identifiers
@@ -137,6 +144,7 @@ tokens :-
 data Token =
     TokenNL Span
   | TokenIntT Span
+  | TokenFloatT Span
   | TokenCharT Span
   | TokenStringT Span
   | TokenUnit Span
@@ -173,6 +181,7 @@ data Token =
   | TokenUnM Span
   | TokenLinM Span
   | TokenInt Span Int
+  | TokenFloat Span Float
   | TokenChar Span Char
   | TokenString Span String
   | TokenLet Span
@@ -216,6 +225,7 @@ data Token =
 instance Show Token where
   show (TokenNL _) = "\\n"
   show (TokenIntT _) = "Int"
+  show (TokenFloatT _) = "Float"
   show (TokenCharT _) = "Char"
   show (TokenUnit _) = "()"
   show (TokenStringT _) = "String"
@@ -252,6 +262,7 @@ instance Show Token where
   -- show (TokenUnM _) = "*M"
   -- show (TokenLinM _) = "1M"
   show (TokenInt _ i) = show i
+  show (TokenFloat _ i) = show i 
   show (TokenChar _ c) = show c
   show (TokenString _ s) = s
   show (TokenLet _) = "let"
@@ -334,6 +345,7 @@ internalPos (AlexPn _ l c) = let p = (l, c) in Span p p ""
 instance Located Token where
   getSpan (TokenNL p) = p
   getSpan (TokenIntT p) = p
+  getSpan (TokenFloatT p) = p
   getSpan (TokenCharT p) = p
   getSpan (TokenUnit p) = p
   getSpan (TokenStringT p) = p
@@ -370,6 +382,7 @@ instance Located Token where
   getSpan (TokenLinM p) = p
   getSpan (TokenUnM p) = p
   getSpan (TokenInt p _) = p
+  getSpan (TokenFloat p _) = p
   getSpan (TokenChar p _) = p
   getSpan (TokenString p _) = p
   getSpan (TokenLet p) = p

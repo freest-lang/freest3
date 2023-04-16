@@ -40,6 +40,7 @@ import           Paths_FreeST ( getDataFileName )
   module   {TokenModule _}  
   import   {TokenImport _}  
   Int      {TokenIntT _}
+  Float    {TokenFloatT _}
   Char     {TokenCharT _}
   String   {TokenStringT _}
   '()'     {TokenUnit _}
@@ -87,6 +88,7 @@ import           Paths_FreeST ( getDataFileName )
   -- UM       {TokenUnM _}
   -- LM       {TokenLinM _}
   INT      {TokenInt _ _ }
+  FLOAT    {TokenFloat _ _}
   CHAR     {TokenChar _ _}
   STR      {TokenString _ _}
   let      {TokenLet _}
@@ -236,6 +238,7 @@ App :: { E.Exp }
    
 Primary :: { E.Exp }
   : INT                            {% let (TokenInt p x) = $1 in flip E.Int x `fmap` liftModToSpan p }
+  | FLOAT                          {% let (TokentFloat p x) = $1 in flip E.Float x `fmap` liftModToSpan p}
   | CHAR                           {% let (TokenChar p x) = $1 in flip E.Char x `fmap` liftModToSpan p }
   | STR                            {% let (TokenString p x) = $1 in flip String x `fmap` liftModToSpan p }
   | '()'                           {% E.Unit `fmap` mkSpan $1 }
@@ -337,6 +340,7 @@ Op :: { Variable }
 Type :: { T.Type }
   -- Functional types
   : Int                           {% T.Int `fmap` mkSpan $1 }
+  | Float                         {% T.Float `fmap` mkSpan $1}
   | Char                          {% T.Char `fmap` mkSpan $1 }
   | String                        {% T.String `fmap` mkSpan $1 }
   | '()'                          {% mkSpan $1 >>= \s -> pure $ T.unit s}
