@@ -3,14 +3,13 @@
 module Subtyping.TestSubValidSpec (spec) where
 
 import           Validation.Rename
-import           Validation.Subkind               ((<:))
-import           Equivalence.Subtyping
+import           Bisimulation.Bisimulation
 import           SpecUtils
 
 matchValidSpec :: [String] -> Spec
 matchValidSpec [st, su] =
   it (show t ++ " <: " ++  show u) 
-     ({-# SCC "SUB_TEST_CALL" #-} (t <: u) `shouldBe` True)
+     ({-# SCC "SUB_TEST_CALL" #-} (t `subtypeOf` u) `shouldBe` True)
   where 
     [t, u] = renameTypes [read st, read su]
 

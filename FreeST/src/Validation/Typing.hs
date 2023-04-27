@@ -19,7 +19,6 @@ module Validation.Typing
   )
 where
 
-import           Equivalence.Subtyping 
 import           Parse.Unparser () -- debug
 import           Syntax.Base
 import           Syntax.MkName
@@ -31,7 +30,7 @@ import           Syntax.Value
 import           Util.Error
 import           Util.FreestState
 import           Util.Warning
-import           Bisimulation.Bisimulation ( bisimilar, subsimilar )
+import           Bisimulation.Bisimulation ( bisimilar, subtypeOf )
 import qualified Validation.Extract as Extract
 import qualified Validation.Kinding as K -- K Again?
 import qualified Validation.Rename as Rename ( subs )
@@ -226,14 +225,8 @@ checkEquivTypes exp kEnv expected actual =
 
 checkSubtypeOf :: E.Exp ->  T.Type -> T.Type -> FreestState ()
 checkSubtypeOf exp expected actual = do 
-  unless (actual <: expected) $
+  unless (actual `subtypeOf` expected) $
     addError (NonEquivTypes (getSpan exp) expected actual exp)
-
--- checkEnvsSubtyping
---   :: Span -> String -> E.Exp -> VarEnv -> VarEnv -> FreestState ()
--- checkEnvsSubtyping p branching exp vEnv1 vEnv2 = do
---   unless (vEnv2 <: vEnv1) $
---     addError (NonEquivEnvs p branching (vEnv1 Map.\\ vEnv2) (vEnv2 Map.\\ vEnv1) exp)
 
 checkEquivEnvs :: Span -> (Span -> VarEnv -> VarEnv -> E.Exp -> ErrorType) -> E.Exp -> K.KindEnv -> VarEnv -> VarEnv -> FreestState ()
 checkEquivEnvs p error exp kEnv vEnv1 vEnv2 =

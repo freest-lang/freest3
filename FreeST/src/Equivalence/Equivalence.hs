@@ -19,8 +19,7 @@ module Equivalence.Equivalence
   )
 where
 
-import           Equivalence.Subtyping ((<:))
-import           Bisimulation.Bisimulation ( bisimilar, subsimilar )
+import           Bisimulation.Bisimulation ( bisimilar )
 import           Syntax.Base
 import qualified Syntax.Kind as K
 import qualified Syntax.Type as T

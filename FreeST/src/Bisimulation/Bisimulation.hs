@@ -16,7 +16,7 @@ reflexive, congruence, and BPA rules.
 module Bisimulation.Bisimulation
   ( bisimilar
   , bisimilarGrm -- For SGBisim
-  , subsimilar
+  , subtypeOf
   )
 where
 
@@ -64,14 +64,14 @@ bisimilarGrm (Grammar [xs, ys] ps) = expand expandPairBisim queue rules ps
         | otherwise    = [reflex, congruence, bpa1, bpa2, filtering]
   queue = Queue.singleton (Set.singleton (xs, ys), Set.empty)
 
-subsimilar :: T.Type -> T.Type -> Bool
-subsimilar t u = 
+subtypeOf :: T.Type -> T.Type -> Bool
+subtypeOf t u = 
   t == u || 
-  subsimilarGrm (convertToGrammar [t, u])
+  subG (convertToGrammar [t, u])
 
 -- | Assumes a grammar without unreachable symbols
-subsimilarGrm :: Grammar -> Bool
-subsimilarGrm g@(Grammar [xs, ys] ps) = --trace (show g) 
+subG :: Grammar -> Bool
+subG g@(Grammar [xs, ys] ps) = --trace (show g) 
                                         expand expandPairSub queue rules ps
  where
   rules | allNormed ps = [reflex, congruence, bpa2] -- no filtering
@@ -132,41 +132,42 @@ expandNode pe ps = Set.foldr
   )
   (Just Set.empty)
 
--- | Regular pair expansion
 expandPairBisim :: PairExpander
-expandPairBisim = expandPairWDCC bisimPartition
--- | Was previously...
--- expandPair :: PairExpander
--- expandPair ps (xs, ys) | Map.keysSet m1 == Map.keysSet m2 = Just $ match m1 m2
---                        | otherwise                        = Nothing
---  where
---   m1 = transitions xs ps
---   m2 = transitions ys ps
+expandPairBisim ps (xs, ys) | Map.keysSet m1 == Map.keysSet m2 = Just $ match m1 m2
+                            | otherwise                        = Nothing
+ where 
+  m1 = transitions xs ps
+  m2 = transitions ys ps
+  match :: Transitions -> Transitions -> Node
+  match m1 m2 =
+    Map.foldrWithKey (\l xs n -> Set.insert (xs, m2 Map.! l) n) Set.empty m1
+-- Alternative, XYZW-based implementation
+-- expandPairBisim = expandPairXYZW bisimPartition
 
 expandPairSub :: PairExpander
-expandPairSub = expandPairWDCC subtypingPartition
+expandPairSub = expandPairXYZW subtypingPartition
 
 -- | A partition of the set of labels according to their variance in width and depth
 data Partition a =
-  Partition {rr, lr, rl, ll :: a}
+  Partition {aX, aY, aZ, aW :: a}
 
 -- | A partition of the set of labels specialized for subtyping context-free session types
 subtypingPartition :: Partition (Label -> Bool)
 subtypingPartition =
   Partition
-  { rr= \case (Almanac K.Session T.Internal _) -> False  
+  { aX= \case (Almanac _ T.Internal _) -> False  
               (Arrow Domain                  ) -> False
               (Message T.Out Data            ) -> False
               _                                -> True
-  , lr= \case (Almanac K.Session T.External _) -> False 
+  , aY= \case (Almanac _ T.External _) -> False 
               (Arrow Domain                  ) -> False
               LinArrow                          -> False
               (Message T.Out Data            ) -> False 
               _                                -> True
-  , rl= \case (Message T.Out Data            ) -> True
+  , aZ= \case (Message T.Out Data            ) -> True
               (Arrow Domain                  ) -> True
               _                                -> False
-  , ll= \case (Message T.Out Data            ) -> True
+  , aW= \case (Message T.Out Data            ) -> True
               (Arrow Domain                  ) -> True
               _                                -> False
   }
@@ -176,44 +177,44 @@ subtypingPartition =
 bisimPartition :: Partition (Label -> Bool)
 bisimPartition =
   Partition
-  { rr= const True
-  , lr= const True
-  , rl= const False
-  , ll= const False
+  { aX= const True
+  , aY= const True
+  , aZ= const False
+  , aW= const False
   }
 
--- Pair expansion for width-depth covariant-contravariant simulation
-expandPairWDCC :: Partition (Label -> Bool) -> PairExpander
-expandPairWDCC p ps (xs, ys) =
-  --trace ("\nnode: "++show (xs,ys))
+-- Pair expansion for XYZW-simulation
+expandPairXYZW :: Partition (Label -> Bool) -> PairExpander
+expandPairXYZW p ps (xs, ys) =
+  --trace ("\nnode: "++show (xs,ys)++"\ntransitions:\n  "++show(transitions xs ps)++"\n  "++show(transitions ys ps))
   let n' = Set.unions <$> sequence
             -- Covariant on width and depth
-            [ if --trace ("rr: \n  "++show (rr m1)++"\n  "++show (rr m2)) 
-                 Map.keysSet (rr m1) `Set.isSubsetOf` Map.keysSet (rr m2)
-                then --trace ("Success: "++show (Map.keysSet (rr m1))++" ⊆ "++show (Map.keysSet (rr m2))) 
-                     Just (match (rr m1) (rr m2))
-                else --trace ("Failure: "++show (Map.keysSet (rr m1))++" /⊆ "++show (Map.keysSet (rr m2)))
+            [ if --trace ("aX: \n  "++show (aX m1)++"\n  "++show (aX m2)) 
+                 Map.keysSet (aX m1) `Set.isSubsetOf` Map.keysSet (aX m2)
+                then --trace ("Success: "++show (Map.keysSet (aX m1))++" ⊆ "++show (Map.keysSet (aX m2))) 
+                     Just (match (aX m1) (aX m2))
+                else --trace ("Failure: "++show (Map.keysSet (aX m1))++" /⊆ "++show (Map.keysSet (aX m2)))
                      Nothing
             -- Contravariant on width, covariant on depth
-            , if --trace ("lr: \n  "++show (lr m1)++"\n  "++show (lr m2)) 
-                 Map.keysSet (lr m2) `Set.isSubsetOf` Map.keysSet (lr m1)
-                then --trace "Success" 
-                     Just (match (lr m1) (lr m2))
-                else --trace "Failure" 
+            , if --trace ("aY: \n  "++show (aY m1)++"\n  "++show (aY m2)) 
+                 Map.keysSet (aY m2) `Set.isSubsetOf` Map.keysSet (aY m1)
+                then --trace ("Success: "++show (Map.keysSet (aY m2))++" ⊆ "++show (Map.keysSet (aY m1))) 
+                     Just (match (aY m1) (aY m2))
+                else --trace ("Failure: "++show (Map.keysSet (aY m2))++" /⊆ "++show (Map.keysSet (aY m1)))
                      Nothing
             -- Covariant on width, contravariant on depth
-            , if --trace ("rl: \n  "++show (rl m1)++"\n  "++show (rl m2))
-                 Map.keysSet (rl m1) `Set.isSubsetOf` Map.keysSet (rl m2)
-                then --trace "Success"  
-                     Just (Set.map swap $ match (rl m1) (rl m2))
-                else --trace "Failure"  
+            , if --trace ("aZ: \n  "++show (aZ m1)++"\n  "++show (aZ m2))
+                 Map.keysSet (aZ m1) `Set.isSubsetOf` Map.keysSet (aZ m2)
+                then --trace ("Success: "++show (Map.keysSet (aZ m1))++" ⊆ "++show (Map.keysSet (aZ m2))) 
+                     Just (Set.map swap $ match (aZ m1) (aZ m2))
+                else --trace ("Failure: "++show (Map.keysSet (aZ m1))++" /⊆ "++show (Map.keysSet (aZ m2)))   
                      Nothing
             -- Contravariant on width and depth
-            , if --trace ("ll: \n  "++show (ll m1)++"\n  "++show (ll m2)) 
-                 Map.keysSet (ll m2) `Set.isSubsetOf` Map.keysSet (ll m1)
-                then --trace "Success"  
-                     Just (Set.map swap $ match (ll m1) (ll m2))
-                else --trace "Failure"  
+            , if --trace ("aW: \n  "++show (aW m1)++"\n  "++show (aW m2)) 
+                 Map.keysSet (aW m2) `Set.isSubsetOf` Map.keysSet (aW m1)
+                then --trace ("Success: "++show (Map.keysSet (aW m2))++" ⊆ "++show (Map.keysSet (aW m1)))   
+                     Just (Set.map swap $ match (aW m1) (aW m2))
+                else --trace ("Failure: "++show (Map.keysSet (aW m2))++" /⊆ "++show (Map.keysSet (aW m1)))  
                      Nothing
             ] in 
   --trace ("expanded node: "++show n') 
@@ -225,11 +226,11 @@ expandPairWDCC p ps (xs, ys) =
     -- | Partition the transitions according to the signature of the simulation
     partition :: Partition (Label -> Bool) -> Transitions -> Partition Transitions
     partition p ts =
-      let trr = Map.filterWithKey (\k _ -> rr p k) ts
-          tlr = Map.filterWithKey (\k _ -> lr p k) ts
-          trl = Map.filterWithKey (\k _ -> rl p k) ts
-          tll = Map.filterWithKey (\k _ -> ll p k) ts in 
-      Partition trr tlr trl tll
+      let tX = Map.filterWithKey (\k _ -> aX p k) ts
+          tY = Map.filterWithKey (\k _ -> aY p k) ts
+          tZ = Map.filterWithKey (\k _ -> aZ p k) ts
+          tW = Map.filterWithKey (\k _ -> aW p k) ts in 
+      Partition tX tY tZ tW
 
     -- | Match transitions with the same label
     match :: Transitions -> Transitions -> Node

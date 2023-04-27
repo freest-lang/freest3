@@ -196,10 +196,11 @@ instance Unparse T.Type where
     r = bracket (unparse u) Right arrowRator
   unparse t@(T.Labelled _ T.Variant m) | isBool m  = (maxRator, "Bool")
     where isBool m = Set.map show (Map.keysSet m) == Set.fromList ["True", "False"] 
-  unparse (T.Labelled _ T.Variant m) = (maxRator, "[" ++ showDatatype m ++ "]")
+  unparse (T.Labelled _ T.Variant m) = (maxRator, "<" ++ showChoice m ++ ">") -- For testing (no concrete syntax)
   unparse (T.Labelled _ T.Record m) 
     | Map.null m = (maxRator, "()")
     | all (all isDigit . intern) $ Map.keys m = (maxRator, "(" ++ showTupleType m ++ ")")
+    | otherwise = (maxRator, "{" ++ showChoice m ++ "}") -- For testing (no concrete syntax)
   unparse (T.Semi _ t u  ) = (semiRator, l ++ " ; " ++ r)
    where
     l = bracket (unparse t) Left semiRator

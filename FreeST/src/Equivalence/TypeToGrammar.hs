@@ -66,10 +66,10 @@ toGrammar' (T.Arrow _ p t u) = do
     ++ [(LinArrow, []) | p == Lin]
 toGrammar' (T.Labelled _  T.Variant m) = do -- Can't test this type directly
   ms <- tMapM toGrammar m
-  getLHS $ Map.insert (Checkmark K.Top T.External) [] $ Map.mapKeys (Almanac K.Top T.External) ms
+  getLHS $ Map.insert (Checkmark K.Top T.External) [bottom] $ Map.mapKeys (Almanac K.Top T.External) ms
 toGrammar' (T.Labelled _  T.Record m) = do -- Can't test this type directly
   ms <- tMapM toGrammar m
-  getLHS $ Map.insert (Checkmark K.Top T.Internal) [] $ Map.mapKeys (Almanac K.Top T.Internal) ms
+  getLHS $ Map.insert (Checkmark K.Top T.Internal) [bottom] $ Map.mapKeys (Almanac K.Top T.Internal) ms
 -- Session Types
 toGrammar' (T.Skip _) = return []
 toGrammar' t@(T.End _) = getLHS $ Map.singleton (FatTerm "End") [bottom]
@@ -135,7 +135,7 @@ type SubstitutionList = [(T.Type, Variable)]
 collect :: SubstitutionList -> T.Type -> TransState ()
 collect σ (T.Semi _ t u) = collect σ t >> collect σ u
 -- collect σ (T.Choice _ _ m) = tMapM_ (collect σ) m
-collect σ (T.Labelled _ (T.Choice v) m ) = tMapM_ (collect σ) m
+collect σ (T.Labelled _ _ m ) = tMapM_ (collect σ) m
 collect σ (T.Message _ _ t) = collect σ t
 collect σ t@(T.Rec _ (Bind _ x _ u)) = do
   let σ' = (t, x) : σ
@@ -145,7 +145,6 @@ collect σ t@(T.Rec _ (Bind _ x _ u)) = do
   addProductions x (Map.map (++ zs) m)
   collect σ' u
 collect σ (T.Arrow _ _ t u) = collect σ t >> collect σ u
-collect σ (T.Labelled _ T.Record m) = tMapM_ (collect σ) m
 collect _ _ = return ()
 
 -- The state of the translation to grammar
