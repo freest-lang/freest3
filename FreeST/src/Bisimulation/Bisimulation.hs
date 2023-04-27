@@ -45,8 +45,8 @@ bisimilar t u =
 bisimilarGrm :: Grammar -> Bool
 bisimilarGrm (Grammar [xs, ys] ps) = expand queue rules ps
  where
-  rules | allNormed ps = [reflex, congruence, bpa2, filtering]
-        | otherwise    = [reflex, congruence, bpa1, bpa2, filtering]
+  rules | allNormed ps = [reflex, bpa2, filtering]
+        | otherwise    = [reflex, bpa1, bpa2, filtering]
   queue = Queue.singleton (Set.singleton (xs, ys), Set.empty)
 
 type Node = Set.Set (Word, Word)
@@ -128,8 +128,10 @@ findFixedPoint branch rules ps | branch == branch' = branch
 reflex :: NodeTransformation
 reflex _ _ = Set.singleton . Set.filter (uncurry (/=))
 
-congruence :: NodeTransformation
-congruence _ a = Set.singleton . Set.filter (not . congruentToAncestors)
+{- No speedup coming from this rule
+
+headCongruence :: NodeTransformation
+headCongruence _ a = Set.singleton . Set.filter (not . congruentToAncestors)
  where
   congruentToAncestors :: (Word, Word) -> Bool
   congruentToAncestors p = or $ Set.map (congruentToPair p) a
@@ -137,6 +139,7 @@ congruence _ a = Set.singleton . Set.filter (not . congruentToAncestors)
   congruentToPair :: (Word, Word) -> (Word, Word) -> Bool
   congruentToPair (xs, ys) (xs', ys') =
       xs == ys || maybe False congruentToAncestors (bisequence (stripPrefix xs' xs, stripPrefix ys' ys))
+-}
 
 filtering :: NodeTransformation
 filtering ps _ n | normsMatch = Set.singleton n

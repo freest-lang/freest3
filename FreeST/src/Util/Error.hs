@@ -264,7 +264,7 @@ instance Message ErrorType where
     let styledVar = style red sty ts pv in
     let modDesc = if isLeft b then "file" else "module" in
     "Variable or data constructor not in scope: " ++ styledVar ++
-    "\n  In " ++ modDesc ++ ": " ++ fromEither b ++ -- showModule (showModuleName p) p ++
+    -- "\n  In " ++ modDesc ++ ": " ++ fromEither b ++ -- showModule (showModuleName p) p ++
     "\n  (is " ++ styledVar ++ " a linear variable that has been consumed?)" ++
     "\n  (is " ++ styledVar ++ " defined in a module that you forgot to import?)"
   msg (LinProgVar _ x t k) sty ts _ =
