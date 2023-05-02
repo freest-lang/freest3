@@ -41,7 +41,7 @@ $eol=[\n]
 
 @numspc = _*         -- numeric spacer 
 
-@decimal = $digit(numspc $digit)*
+@decimal = $digit(@numspc$digit)*
 
 -- # λ  -- forall not in range ([λ ∀])
 $greekId = [λ ∀ Λ μ]
@@ -132,7 +132,7 @@ tokens :-
 -- Values
   \(\)				{ \p s -> TokenUnit (internalPos p) }
   (0+|[1-9]$digit*)      	{ \p s -> TokenInt (internalPos p) (read s) }
-  (@numspc @decimal \. @decimal)       { \p s -> TokenFloat (internalPos p) (read s)}
+  (@numspc@decimal\.@decimal)       { \p s -> TokenFloat (internalPos p) (read s)}
   @char				{ \p s -> TokenChar (internalPos p) (read s) }
   @stringLiteral		{ \p s -> TokenString (internalPos p) (read s) }
 -- Identifiers

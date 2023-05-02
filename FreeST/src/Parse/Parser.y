@@ -238,7 +238,7 @@ App :: { E.Exp }
    
 Primary :: { E.Exp }
   : INT                            {% let (TokenInt p x) = $1 in flip E.Int x `fmap` liftModToSpan p }
-  | FLOAT                          {% let (TokentFloat p x) = $1 in flip E.Float x `fmap` liftModToSpan p}
+  | FLOAT                          {% let (TokenFloat p x) = $1 in flip E.Float x `fmap` liftModToSpan p}
   | CHAR                           {% let (TokenChar p x) = $1 in flip E.Char x `fmap` liftModToSpan p }
   | STR                            {% let (TokenString p x) = $1 in flip String x `fmap` liftModToSpan p }
   | '()'                           {% E.Unit `fmap` mkSpan $1 }

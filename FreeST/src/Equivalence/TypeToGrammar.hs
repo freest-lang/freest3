@@ -94,6 +94,7 @@ toGrammar' t = internalError "Equivalence.TypeToGrammar.toGrammar" t
 fatTerminal :: T.Type -> Maybe T.Type
 -- Functional Types
 fatTerminal t@T.Int{}             = Just t
+fatTerminal t@T.Float{}           = Just t
 fatTerminal t@T.Char{}            = Just t
 fatTerminal t@T.String{}          = Just t
 fatTerminal (T.Arrow p m t u)     = Just (T.Arrow p m) <*> fatTerminal t <*> fatTerminal u
