@@ -87,7 +87,10 @@ synthetise' s kEnv (T.Rec _ (Bind _ a k t)) = do
 --   checkContractive s a t >> checkAgainst' s (Map.insert a k kEnv) k t $> k
   checkContractive s a t
   k'@(K.Kind p m _) <- synthetise' s (Map.insert a k kEnv) t
-  unless (k' <: k) (addError $ CantMatchKinds (getSpan t) k k' t) $> k'
+  unless (k' <: k) (addError $ CantMatchKinds (getSpan t) k k' t) -- $> k'
+  if unr (Map.keysSet (Map.insert a k kEnv) Set.\\ s) t
+    then pure $ K.Kind p m K.Absorb
+    else pure k'
 synthetise' s kEnv (T.Forall _ (Bind p a k t)) = do
   (K.Kind _ m _) <- synthetise' (Set.insert a s) (Map.insert a k kEnv) t
   return $ K.Kind p m K.Top
@@ -146,3 +149,11 @@ mult m1 t = do
 typeToKindMult :: Multiplicity -> K.Multiplicity
 typeToKindMult Lin = K.Lin
 typeToKindMult Un = K.Un
+
+-- Unnormed lifted to types
+unr :: Set.Set Variable -> T.Type -> Bool
+unr s (T.Semi _ t u) = unr s t || unr s u
+unr s (T.Rec _ (Bind _ a _ t)) = unr (Set.insert a s) t
+unr s (T.Labelled _ (T.Choice _) m) = all (unr s) (Map.elems m)
+unr s (T.Var _ a) = Set.member a s
+unr _ _ = False
