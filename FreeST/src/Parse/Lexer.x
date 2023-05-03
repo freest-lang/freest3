@@ -16,7 +16,6 @@ $greek = [\880-\1023] -- # λ  -- forall not in range ([λ ∀])
 
 $upperA  = [A-Z]
 $upper = [$upperA$greek]
-
 -- $lowerU  = \x02 -- Trick Alex into handling Unicode. See [Unicode in Alex].
 $lowerA = [a-z]
 $lower = [$lowerA$greek\_] --  $greek \_]
@@ -99,6 +98,8 @@ tokens :-
   "1S"                          { \p s -> TokenLinS (internalPos p) }
   "*T"                          { \p s -> TokenUnT (internalPos p) }
   "1T"                          { \p s -> TokenLinT (internalPos p) }
+  "1A"                          { \p s -> TokenLinA (internalPos p) }
+  "*A"                          { \p s -> TokenUnA (internalPos p) } -- TODO: remove later
 -- Basic types
   Int			        { \p s -> TokenIntT (internalPos p) }
   Char				{ \p s -> TokenCharT (internalPos p) }
@@ -170,8 +171,10 @@ data Token =
   | TokenLinS Span
   | TokenUnT Span
   | TokenLinT Span
-  | TokenUnM Span
-  | TokenLinM Span
+  -- | TokenUnM Span
+  -- | TokenLinM Span
+  | TokenLinA Span
+  | TokenUnA Span
   | TokenInt Span Int
   | TokenChar Span Char
   | TokenString Span String
@@ -249,6 +252,8 @@ instance Show Token where
   show (TokenLinS _) = "1S"
   show (TokenUnT _) = "*T"
   show (TokenLinT _) = "1T"
+  show (TokenUnA _) = "*A"
+  show (TokenLinA _) = "1A"
   -- show (TokenUnM _) = "*M"
   -- show (TokenLinM _) = "1M"
   show (TokenInt _ i) = show i
@@ -367,8 +372,10 @@ instance Located Token where
   getSpan (TokenLinS p) = p
   getSpan (TokenUnT p) = p
   getSpan (TokenLinT p) = p
-  getSpan (TokenLinM p) = p
-  getSpan (TokenUnM p) = p
+  getSpan (TokenLinA p) = p
+  getSpan (TokenUnA p) = p
+  -- getSpan (TokenLinM p) = p
+  -- getSpan (TokenUnM p) = p
   getSpan (TokenInt p _) = p
   getSpan (TokenChar p _) = p
   getSpan (TokenString p _) = p

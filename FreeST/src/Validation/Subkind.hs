@@ -10,7 +10,8 @@ Maintainer  :  balmeida@lasige.di.fc.ul.pt, afmordido@fc.ul.pt, vmvasconcelos@fc
 
 module Validation.Subkind
   ( (<:)
-  , join
+  , Join (..)
+  , Meet (..)
   )
 where
 
@@ -21,8 +22,10 @@ import qualified Syntax.Kind                   as K
 --      1T
 --     /  \
 --    *T  1S
---     \ /
---      *S
+--     \ /  \
+--      *S  1E
+--       \  /
+--        *E
 
 -- The Subsort class. Instances include Multiplicity, PreKind and Kind
 
@@ -35,10 +38,11 @@ instance Subsort K.Multiplicity where
 
 instance Subsort K.PreKind where
   K.Top <: K.Session = False
+--  K.Session <: K.Absorb = False
   _     <: _         = True
 
 instance Subsort K.Kind where
-  (K.Kind _ b1 m1) <: (K.Kind _ b2 m2) = b1 <: b2 && m1 <: m2
+  K.Kind _ b1 m1 <: K.Kind _ b2 m2 = b1 <: b2 && m1 <: m2
 
 -- The least upper bound of two kinds
 
@@ -50,8 +54,29 @@ instance Join K.Multiplicity where
   join _    _    = K.Lin
 
 instance Join K.PreKind where
+  join K.Absorb K.Absorb = K.Absorb
   join K.Session K.Session = K.Session
+  join K.Absorb K.Session = K.Session
+  join K.Session K.Absorb = K.Session  
   join _         _         = K.Top
 
 instance Join K.Kind where
-  join (K.Kind span m1 b1) (K.Kind _ m2 b2) = K.Kind span (join m1 m2) (join b1 b2)
+  join (K.Kind s m1 b1) (K.Kind _ m2 b2) = K.Kind s (join m1 m2) (join b1 b2)
+
+class Meet t where
+  meet :: t -> t -> t
+
+instance Meet K.Multiplicity where
+  meet K.Un _    = K.Un
+  meet _    K.Un = K.Un
+  meet _    _    = K.Lin
+
+instance Meet K.PreKind where
+  meet K.Absorb _         = K.Absorb
+  meet _         K.Absorb = K.Absorb
+  meet K.Session _         = K.Session
+  meet _         K.Session = K.Session
+  meet _         _         = K.Top
+
+instance Meet K.Kind where
+  meet (K.Kind s m1 b1) (K.Kind _ m2 b2) = K.Kind s (join m1 m2) (meet b1 b2)
